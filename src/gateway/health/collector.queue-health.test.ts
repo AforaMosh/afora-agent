@@ -1,7 +1,7 @@
 // Queue health collector tests cover real SQLite dead letters and active ingress pressure.
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createEmptyPluginRegistry } from "../../plugins/registry-empty.js";
-import { createOpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+import { createAforaTestState } from "../../test-utils/afora-test-state.js";
 
 vi.mock("../../config/config.js", () => ({
   getRuntimeConfig: () => ({ session: { store: "/tmp/queue-health-sessions" } }),
@@ -41,9 +41,9 @@ describe("queue health collector", () => {
   });
 
   it("includes outbound and ingress dead letters in the health snapshot", async () => {
-    const openClawState = await createOpenClawTestState({
+    const aforaState = await createAforaTestState({
       layout: "state-only",
-      prefix: "openclaw-health-dq-",
+      prefix: "afora-health-dq-",
     });
     try {
       const { moveDeliveryQueueEntryToFailed, upsertDeliveryQueueEntry } =
@@ -76,14 +76,14 @@ describe("queue health collector", () => {
         ],
       });
     } finally {
-      await openClawState.cleanup();
+      await aforaState.cleanup();
     }
   });
 
   it("surfaces a retry-floor ingress lane with 55 blocked followers", async () => {
-    const openClawState = await createOpenClawTestState({
+    const aforaState = await createAforaTestState({
       layout: "state-only",
-      prefix: "openclaw-health-ingress-pressure-",
+      prefix: "afora-health-ingress-pressure-",
     });
     try {
       const { createChannelIngressQueue } = await import("../../channels/message/ingress-queue.js");
@@ -163,7 +163,7 @@ describe("queue health collector", () => {
         /private-lane|private-owner|private payload|private handler error|retry-head-private/,
       );
     } finally {
-      await openClawState.cleanup();
+      await aforaState.cleanup();
     }
   });
 });

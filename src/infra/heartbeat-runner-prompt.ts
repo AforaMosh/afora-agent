@@ -1,6 +1,6 @@
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { isHeartbeatContentEffectivelyEmpty } from "../auto-reply/heartbeat.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { readHeartbeatMonitorScratch } from "../cron/scratch-store.js";
 import { resolveCronJobsStorePathFromConfig } from "../cron/store.js";
 import { formatErrorMessage } from "./errors.js";
@@ -75,7 +75,7 @@ export function shouldPreflightExecEventWake(
 }
 
 export async function resolveHeartbeatPreflight(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   heartbeat?: HeartbeatConfig;
   sessionKey?: string;
@@ -222,7 +222,7 @@ function appendHeartbeatScratch(prompt: string, heartbeatScratchContent?: string
 }
 
 export function resolveHeartbeatRunPrompt(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   heartbeat?: HeartbeatConfig;
   preflight: HeartbeatPreflight;
   canRelayToUser: boolean;

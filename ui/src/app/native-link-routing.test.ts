@@ -23,7 +23,7 @@ afterEach(() => {
 function installBridge() {
   const messages: NativeMessage[] = [];
   const postMessage = vi.fn((message: NativeMessage) => messages.push(message));
-  vi.stubGlobal("webkit", { messageHandlers: { openclawLink: { postMessage } } });
+  vi.stubGlobal("webkit", { messageHandlers: { aforaLink: { postMessage } } });
   return { messages, postMessage };
 }
 
@@ -81,7 +81,7 @@ describe("native link routing", () => {
     const event = contextMenu(anchor);
 
     expect(event.defaultPrevented).toBe(false);
-    expect(document.querySelector("openclaw-native-link-menu")).toBeNull();
+    expect(document.querySelector("afora-native-link-menu")).toBeNull();
   });
 
   it("routes an unmodified external click inline and preserves page-level cleanup", () => {
@@ -121,7 +121,7 @@ describe("native link routing", () => {
     await import("../components/github-link-hovercard-registration.ts");
     const define = vi.spyOn(customElements, "define");
     const provider = document.createElement(
-      "openclaw-github-link-hovercard-provider",
+      "afora-github-link-hovercard-provider",
     ) as GitHubLinkHovercardProvider;
     provider.client = {
       request: vi.fn().mockResolvedValue({
@@ -130,22 +130,22 @@ describe("native link routing", () => {
         kind: "issue",
         login: "octocat",
         number: 102691,
-        owner: "openclaw",
-        repo: "openclaw",
+        owner: "afora",
+        repo: "afora",
         state: "open",
         title: "Open links in a sidebar browser",
         updatedAt: "2026-07-09T10:00:00Z",
       }),
     } as unknown as GatewayBrowserClient;
     const anchor = document.createElement("a");
-    anchor.href = "https://github.com/openclaw/openclaw/issues/102691";
+    anchor.href = "https://github.com/AforaMosh/afora-agent/issues/102691";
     anchor.textContent = "#102691";
     provider.append(anchor);
     document.body.append(provider);
     anchor.focus();
     await vi.waitFor(() => expect(document.querySelector(".github-link-hovercard")).not.toBeNull());
     const hovercardDefines = define.mock.calls.filter(
-      ([tag]) => tag === "openclaw-github-link-hovercard-provider",
+      ([tag]) => tag === "afora-github-link-hovercard-provider",
     );
     expect(hovercardDefines).toHaveLength(1);
     define.mockRestore();
@@ -155,7 +155,7 @@ describe("native link routing", () => {
     const bridge = installBridge();
     routing = startNativeLinkRouting();
     const provider = document.createElement(
-      "openclaw-github-link-hovercard-provider",
+      "afora-github-link-hovercard-provider",
     ) as GitHubLinkHovercardProvider;
     provider.client = {
       request: vi.fn().mockResolvedValue({
@@ -164,15 +164,15 @@ describe("native link routing", () => {
         kind: "issue",
         login: "octocat",
         number: 102691,
-        owner: "openclaw",
-        repo: "openclaw",
+        owner: "afora",
+        repo: "afora",
         state: "open",
         title: "Open links in a sidebar browser",
         updatedAt: "2026-07-09T10:00:00Z",
       }),
     } as unknown as GatewayBrowserClient;
     const anchor = document.createElement("a");
-    anchor.href = "https://github.com/openclaw/openclaw/issues/102691";
+    anchor.href = "https://github.com/AforaMosh/afora-agent/issues/102691";
     anchor.textContent = "#102691";
     provider.append(anchor);
     document.body.append(provider);
@@ -186,7 +186,7 @@ describe("native link routing", () => {
     expect(bridge.messages).toEqual([
       {
         type: "open-link",
-        url: "https://github.com/openclaw/openclaw/issues/102691",
+        url: "https://github.com/AforaMosh/afora-agent/issues/102691",
         target: "inline",
       },
     ]);
@@ -222,7 +222,7 @@ describe("native link routing", () => {
     const anchor = appendLink("https://example.com/report?q=1");
 
     expect(contextMenu(anchor).defaultPrevented).toBe(true);
-    const firstMenu = document.querySelector("openclaw-native-link-menu");
+    const firstMenu = document.querySelector("afora-native-link-menu");
     await (firstMenu as HTMLElement & { updateComplete: Promise<boolean> }).updateComplete;
     expect(
       [...firstMenu!.querySelectorAll('[role="menuitem"]')].map((item) =>
@@ -237,7 +237,7 @@ describe("native link routing", () => {
     });
 
     contextMenu(anchor);
-    const secondMenu = document.querySelector("openclaw-native-link-menu");
+    const secondMenu = document.querySelector("afora-native-link-menu");
     await (secondMenu as HTMLElement & { updateComplete: Promise<boolean> }).updateComplete;
     menuItem("Copy Link").click();
     await vi.waitFor(() =>
@@ -253,7 +253,7 @@ describe("native link routing", () => {
 
     contextMenu(firstAnchor);
     const firstMenu = document.querySelector<HTMLElement & { updateComplete: Promise<boolean> }>(
-      "openclaw-native-link-menu",
+      "afora-native-link-menu",
     );
     expect(firstMenu).not.toBeNull();
     await firstMenu?.updateComplete;
@@ -261,14 +261,14 @@ describe("native link routing", () => {
     expect(firstDropdown).not.toBeNull();
 
     contextMenu(secondAnchor);
-    const secondMenu = document.querySelector("openclaw-native-link-menu");
+    const secondMenu = document.querySelector("afora-native-link-menu");
     expect(secondMenu).not.toBe(firstMenu);
 
     firstDropdown?.dispatchEvent(
       new CustomEvent("wa-after-hide", { bubbles: true, composed: true }),
     );
 
-    expect(document.querySelector("openclaw-native-link-menu")).toBe(secondMenu);
+    expect(document.querySelector("afora-native-link-menu")).toBe(secondMenu);
   });
 
   it("mounts a fallback menu inside an active dialog", async () => {
@@ -283,7 +283,7 @@ describe("native link routing", () => {
 
     contextMenu(anchor);
 
-    const menu = dialog.querySelector("openclaw-native-link-menu");
+    const menu = dialog.querySelector("afora-native-link-menu");
     expect(menu).not.toBeNull();
     await (menu as HTMLElement & { updateComplete: Promise<boolean> }).updateComplete;
     expect(menuItem("Open in Sidebar")).not.toBeNull();
@@ -292,7 +292,7 @@ describe("native link routing", () => {
   it("keeps modal menus in the styled light-DOM slot", async () => {
     installBridge();
     routing = startNativeLinkRouting();
-    const modal = document.createElement("openclaw-modal-dialog");
+    const modal = document.createElement("afora-modal-dialog");
     const anchor = document.createElement("a");
     anchor.href = "https://example.com/modal-link";
     modal.append(anchor);
@@ -301,7 +301,7 @@ describe("native link routing", () => {
 
     contextMenu(anchor);
 
-    const menu = modal.querySelector("openclaw-native-link-menu");
+    const menu = modal.querySelector("afora-native-link-menu");
     expect(menu).not.toBeNull();
     expect(menu?.getRootNode()).toBe(document);
     await (menu as HTMLElement & { updateComplete: Promise<boolean> }).updateComplete;
@@ -313,14 +313,14 @@ describe("native link routing", () => {
     routing = startNativeLinkRouting();
     const anchor = appendLink("https://example.com/report");
     contextMenu(anchor);
-    expect(document.querySelector("openclaw-native-link-menu")).not.toBeNull();
+    expect(document.querySelector("afora-native-link-menu")).not.toBeNull();
 
     routing.dispose();
     routing = undefined;
     anchor.addEventListener("click", (event) => event.preventDefault());
     click(anchor);
 
-    expect(document.querySelector("openclaw-native-link-menu")).toBeNull();
+    expect(document.querySelector("afora-native-link-menu")).toBeNull();
     expect(bridge.messages).toEqual([]);
   });
 });

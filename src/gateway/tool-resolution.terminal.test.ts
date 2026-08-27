@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { GatewayRequestContext } from "./server-methods/types.js";
 import { setFallbackGatewayContext } from "./server-plugin-fallback-context.js";
 import { TerminalSessionManager } from "./terminal/session-manager.js";
@@ -51,7 +51,7 @@ describe("resolveGatewayScopedTools terminal ownership", () => {
 
     try {
       const result = resolveGatewayScopedTools({
-        cfg: { tools: { allow: ["terminal"] } } as OpenClawConfig,
+        cfg: { tools: { allow: ["terminal"] } } as AforaConfig,
         sessionKey: childSessionKey,
         runId: "shared-run",
         senderIsOwner: true,

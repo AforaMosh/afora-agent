@@ -914,7 +914,7 @@ export async function downloadActionsArtifactArchive(params) {
   const headers = {
     accept: "application/vnd.github+json",
     authorization: `Bearer ${token}`,
-    "user-agent": "openclaw-publication-artifact",
+    "user-agent": "afora-publication-artifact",
     "x-github-api-version": ACTIONS_ARTIFACT_API_VERSION,
   };
   const apiRoot = `https://api.github.com/repos/${expected.repository}`;

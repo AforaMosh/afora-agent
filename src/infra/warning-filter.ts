@@ -1,7 +1,7 @@
 // Filters known noisy process warnings once per runtime.
 import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 
-const warningFilterKey = Symbol.for("openclaw.warning-filter");
+const warningFilterKey = Symbol.for("afora.warning-filter");
 
 /** Normalized process warning fields used by the shared warning suppressor. */
 export type ProcessWarning = {

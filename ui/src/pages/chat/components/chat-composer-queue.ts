@@ -33,7 +33,7 @@ type ChatQueueReorder = {
   offered: boolean;
 };
 
-const DRAG_MIME = "application/x-openclaw-queued-message";
+const DRAG_MIME = "application/x-afora-queued-message";
 const DRAG_OVER_CLASS = "chat-queue__item--drop-target";
 
 function sendStateLabel(item: ChatQueueItem): string | null {
@@ -289,7 +289,7 @@ function renderChatQueueItem(
             `
           : editable
             ? html`
-                <openclaw-tooltip .content=${t("chat.queue.editQueuedMessage")}>
+                <afora-tooltip .content=${t("chat.queue.editQueuedMessage")}>
                   <button
                     class="chat-queue__edit"
                     type="button"
@@ -299,13 +299,13 @@ function renderChatQueueItem(
                   >
                     ${icons.pencil}
                   </button>
-                </openclaw-tooltip>
+                </afora-tooltip>
               `
             : nothing}
         ${busy || editing
           ? nothing
           : html`
-              <openclaw-tooltip .content=${t("chat.queue.removeQueuedMessage")}>
+              <afora-tooltip .content=${t("chat.queue.removeQueuedMessage")}>
                 <button
                   class="chat-queue__remove"
                   type="button"
@@ -321,7 +321,7 @@ function renderChatQueueItem(
                 >
                   ${icons.x}
                 </button>
-              </openclaw-tooltip>
+              </afora-tooltip>
             `}
       </span>
       ${

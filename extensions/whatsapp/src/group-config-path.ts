@@ -1,5 +1,5 @@
 // Whatsapp helper module supports group config path behavior.
-import { DEFAULT_ACCOUNT_ID, type OpenClawConfig } from "openclaw/plugin-sdk/account-core";
+import { DEFAULT_ACCOUNT_ID, type AforaConfig } from "afora-agent/plugin-sdk/account-core";
 
 const WHATSAPP_GROUP_SCOPE_FIELDS = ["groupPolicy", "groupAllowFrom", "groups"] as const;
 
@@ -35,7 +35,7 @@ function hasConfiguredField(config: unknown, field: WhatsAppGroupScopeField): bo
 }
 
 function resolveSpecificFieldBasePath(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   field: WhatsAppGroupScopeField;
 }): string | undefined {
@@ -59,7 +59,7 @@ function resolveSpecificFieldBasePath(params: {
 }
 
 function resolveWhatsAppGroupScopeBasePath(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): string {
   const accountId = normalizePathAccountId(params.accountId);
@@ -81,7 +81,7 @@ function resolveWhatsAppGroupScopeBasePath(params: {
 }
 
 export function resolveWhatsAppConfigPath(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   field: WhatsAppGroupScopeField;
 }): string {
@@ -89,7 +89,7 @@ export function resolveWhatsAppConfigPath(params: {
 }
 
 export function resolveWhatsAppGroupsConfigPath(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): string {
   return `${

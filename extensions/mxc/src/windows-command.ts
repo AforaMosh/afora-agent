@@ -50,7 +50,7 @@ export function createWindowsCommandBridge(params: {
     return { command: params.script, cleanup: () => {} };
   }
 
-  const bridgeDir = mkdtempSync(path.join(params.tempDir, ".openclaw-mxc-cmd-"));
+  const bridgeDir = mkdtempSync(path.join(params.tempDir, ".afora-mxc-cmd-"));
   const commandFile = path.join(bridgeDir, `${randomBytes(8).toString("hex")}.cmd`);
   try {
     writeFileSync(commandFile, `@echo off\r\n${params.script}`, { flag: "wx", mode: 0o600 });

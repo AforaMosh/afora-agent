@@ -9,30 +9,30 @@ import {
 } from "../../config/sessions/session-accessor.js";
 import type { CronJob } from "../../cron/types.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
-import { withOpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
+import { withAforaTestState } from "../../test-utils/afora-test-state.js";
 import { sessionMutationHandlers } from "./sessions-mutations.js";
 import type { GatewayClient, GatewayRequestContext } from "./types.js";
 
 const sqliteTransactionLabels = vi.hoisted(() => [] as string[]);
 
-vi.mock("../../state/openclaw-agent-db.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../state/openclaw-agent-db.js")>();
-  const runOpenClawAgentWriteTransaction: typeof actual.runOpenClawAgentWriteTransaction = (
+vi.mock("../../state/afora-agent-db.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../state/afora-agent-db.js")>();
+  const runAforaAgentWriteTransaction: typeof actual.runAforaAgentWriteTransaction = (
     operation,
     options,
     transactionOptions,
   ) => {
     sqliteTransactionLabels.push(transactionOptions?.operationLabel ?? "agent.write");
-    return actual.runOpenClawAgentWriteTransaction(operation, options, transactionOptions);
+    return actual.runAforaAgentWriteTransaction(operation, options, transactionOptions);
   };
-  return { ...actual, runOpenClawAgentWriteTransaction };
+  return { ...actual, runAforaAgentWriteTransaction };
 });
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
 });
 
 function humanClient(): GatewayClient {
@@ -47,7 +47,7 @@ function humanClient(): GatewayClient {
     connect: {
       minProtocol: 1,
       maxProtocol: 1,
-      client: { id: "openclaw-control-ui", version: "test", platform: "test", mode: "webchat" },
+      client: { id: "afora-control-ui", version: "test", platform: "test", mode: "webchat" },
       role: "operator",
       scopes: ["operator.read", "operator.write", "operator.admin"],
     },
@@ -55,7 +55,7 @@ function humanClient(): GatewayClient {
 }
 
 test("single non-label sessions.patch avoids a whole-store projection", async () => {
-  await withOpenClawTestState({ scenario: "minimal" }, async (state) => {
+  await withAforaTestState({ scenario: "minimal" }, async (state) => {
     const targetKey = "agent:main:single-patch-target";
     await upsertSessionEntryCore(
       { agentId: "main", sessionKey: targetKey },
@@ -68,7 +68,7 @@ test("single non-label sessions.patch avoids a whole-store projection", async ()
       );
     }
 
-    const database = openOpenClawAgentDatabase({ agentId: "main", env: state.env });
+    const database = openAforaAgentDatabase({ agentId: "main", env: state.env });
     const statements = trackSqliteStatementExecutions(
       database.db,
       ["whole-store-projection"] as const,
@@ -113,7 +113,7 @@ test("single non-label sessions.patch avoids a whole-store projection", async ()
 });
 
 test("sessions.patchMany archives 30 human sessions without transcript hydration", async () => {
-  await withOpenClawTestState({ scenario: "minimal" }, async (state) => {
+  await withAforaTestState({ scenario: "minimal" }, async (state) => {
     const targets = Array.from({ length: 30 }, (_, index) => ({
       key: `agent:main:archive-perf-${index}`,
       expectedSessionId: `session-archive-perf-${index}`,
@@ -153,7 +153,7 @@ test("sessions.patchMany archives 30 human sessions without transcript hydration
       transcriptTails.set(target.key, tail.messageId);
     }
 
-    const database = openOpenClawAgentDatabase({ agentId: "main", env: state.env });
+    const database = openAforaAgentDatabase({ agentId: "main", env: state.env });
     const statements = trackSqliteStatementExecutions(
       database.db,
       ["whole-store-projection", "transcript-full-hydration"] as const,
@@ -332,7 +332,7 @@ test("sessions.patchMany archives 30 human sessions without transcript hydration
           message !== null &&
           typeof message === "object" &&
           "customType" in message &&
-          message.customType === "openclaw.system-note"
+          message.customType === "afora.system-note"
         );
       });
       expect(auditNotes).toHaveLength(1);

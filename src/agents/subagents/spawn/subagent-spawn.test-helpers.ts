@@ -1,7 +1,7 @@
 // Subagent spawn test helpers install mocked runtime seams so sessions_spawn
 // tests can exercise orchestration without real gateway/session-store effects.
 import os from "node:os";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { expect, vi } from "vitest";
 import { resolveLeastPrivilegeOperatorScopesForMethod } from "../../../gateway/method-scopes.js";
 import type { SubagentLifecycleHookRunner } from "../../../plugins/hooks.js";

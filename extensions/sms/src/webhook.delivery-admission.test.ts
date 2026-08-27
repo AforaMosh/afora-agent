@@ -135,7 +135,7 @@ describe("SMS delivery callback admission", () => {
 
     expect(rejectedRes.statusCode).toBe(503);
     expect(rejectedRes.setHeaderMock).not.toHaveBeenCalledWith(
-      "x-openclaw-delivery-accepted",
+      "x-afora-delivery-accepted",
       "durable",
     );
     expect(delivery.record).toHaveBeenCalledTimes(3_000);
@@ -169,7 +169,7 @@ describe("SMS delivery callback admission", () => {
 
     expect(reopenedRes.statusCode).toBe(200);
     expect(reopenedRes.setHeaderMock).toHaveBeenCalledWith(
-      "x-openclaw-delivery-accepted",
+      "x-afora-delivery-accepted",
       "durable",
     );
     expect(delivery.record).toHaveBeenCalledTimes(3_001);

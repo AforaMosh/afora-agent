@@ -1,7 +1,7 @@
 // Imported by dispatch-from-config.test.ts to keep its mocked suite in one Vitest module graph.
 import { AsyncResource } from "node:async_hooks";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import type { SessionBindingRecord } from "../../infra/outbound/session-binding-service.js";
 import { registerPluginCommand } from "../../plugins/commands.js";
 import type { PluginTargetedInboundClaimOutcome } from "../../plugins/hooks.test-fixtures.js";
@@ -525,7 +525,7 @@ describe("dispatchReplyFromConfig", () => {
 
   it("emits diagnostics when enabled", async () => {
     setNoAbort();
-    const cfg = { diagnostics: { enabled: true } } as OpenClawConfig;
+    const cfg = { diagnostics: { enabled: true } } as AforaConfig;
     const dispatcher = createDispatcher();
     const ctx = buildTestCtx({
       Provider: "slack",
@@ -571,7 +571,7 @@ describe("dispatchReplyFromConfig", () => {
     sessionStoreMocks.currentEntry = {
       sessionId: "test-uuid-1234",
     };
-    const cfg = { diagnostics: { enabled: true } } as OpenClawConfig;
+    const cfg = { diagnostics: { enabled: true } } as AforaConfig;
     const dispatcher = createDispatcher();
     const ctx = buildTestCtx({
       Provider: "slack",
@@ -609,7 +609,7 @@ describe("dispatchReplyFromConfig", () => {
     sessionStoreMocks.currentEntry = {
       sessionId: "target-session-uuid-9999",
     };
-    const cfg = { diagnostics: { enabled: true } } as OpenClawConfig;
+    const cfg = { diagnostics: { enabled: true } } as AforaConfig;
     const dispatcher = createDispatcher();
     const ctx = buildTestCtx({
       Provider: "slack",
@@ -634,7 +634,7 @@ describe("dispatchReplyFromConfig", () => {
 
   it("marks diagnostic progress for real reply events but not reply start callbacks", async () => {
     setNoAbort();
-    const cfg = { diagnostics: { enabled: true } } as OpenClawConfig;
+    const cfg = { diagnostics: { enabled: true } } as AforaConfig;
     const dispatcher = createDispatcher();
     const ctx = buildTestCtx({
       Provider: "slack",
@@ -676,7 +676,7 @@ describe("dispatchReplyFromConfig", () => {
           verboseDefault: "on",
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const dispatcher = createDispatcher();
     const ctx = buildTestCtx({
       Provider: "discord",
@@ -750,7 +750,7 @@ describe("dispatchReplyFromConfig", () => {
       ((hookName?: string) =>
         hookName === "inbound_claim" || hookName === "message_received") as () => boolean,
     );
-    hookMocks.registry.plugins = [{ id: "openclaw-codex-app-server", status: "loaded" }];
+    hookMocks.registry.plugins = [{ id: "afora-codex-app-server", status: "loaded" }];
     hookMocks.runner.runInboundClaimForPluginOutcome.mockResolvedValue({
       status: "handled",
       result: { handled: true },
@@ -768,13 +768,13 @@ describe("dispatchReplyFromConfig", () => {
       boundAt: 1710000000000,
       metadata: {
         pluginBindingOwner: "plugin",
-        pluginId: "openclaw-codex-app-server",
-        pluginRoot: "/Users/huntharo/github/openclaw-app-server",
+        pluginId: "afora-codex-app-server",
+        pluginRoot: "/Users/huntharo/github/afora-app-server",
         data: {
           kind: "codex-app-server-session",
           version: 1,
           sessionFile: "/tmp/session.jsonl",
-          workspaceDir: "/workspace/openclaw",
+          workspaceDir: "/workspace/afora",
         },
       },
     } satisfies SessionBindingRecord);
@@ -827,7 +827,7 @@ describe("dispatchReplyFromConfig", () => {
         ]
       | undefined;
     expect(resolveCalls).toBe(1);
-    expect(inboundClaimCall?.[0]).toBe("openclaw-codex-app-server");
+    expect(inboundClaimCall?.[0]).toBe("afora-codex-app-server");
     expect(inboundClaimCall?.[1]?.channel).toBe("discord");
     expect(inboundClaimCall?.[1]?.accountId).toBe("default");
     expect(inboundClaimCall?.[1]?.conversationId).toBe("conversation-1");
@@ -965,8 +965,8 @@ describe("dispatchReplyFromConfig", () => {
     );
     const dispatcher = createDispatcher();
     const ctx = buildTestCtx({
-      Provider: "openclaw",
-      Surface: "openclaw",
+      Provider: "afora",
+      Surface: "afora",
       OriginatingChannel: "slack",
       OriginatingTo: "user:U123",
       From: "user:U123",
@@ -1472,7 +1472,7 @@ describe("dispatchReplyFromConfig", () => {
     const order: string[] = [];
     const rawPath = "/Users/demo/Library/Messages/Attachments/ab/cd/photo.jpg";
     const stagedPath =
-      "/tmp/openclaw-proof/.openclaw/media/remote-cache/agent-main-imessage/photo.jpg";
+      "/tmp/afora-proof/.afora/media/remote-cache/agent-main-imessage/photo.jpg";
     stageSandboxMediaMocks.stageSandboxMedia.mockImplementationOnce(async (paramsUnknown) => {
       order.push("stage");
       const params = paramsUnknown as {
@@ -1483,7 +1483,7 @@ describe("dispatchReplyFromConfig", () => {
         remoteMediaMode?: string;
       };
       expect(params.sessionKey).toBe("agent:main:imessage:direct:user");
-      expect(params.workspaceDir).toContain(".openclaw/workspace");
+      expect(params.workspaceDir).toContain(".afora/workspace");
       expect(params.remoteMediaMode).toBe("cache");
       params.ctx.media = [{ path: stagedPath, url: stagedPath, contentType: "image/jpeg" }];
       params.sessionCtx.media = params.ctx.media;
@@ -1493,7 +1493,7 @@ describe("dispatchReplyFromConfig", () => {
       ((hookName?: string) =>
         hookName === "inbound_claim" || hookName === "message_received") as () => boolean,
     );
-    hookMocks.registry.plugins = [{ id: "openclaw-codex-app-server", status: "loaded" }];
+    hookMocks.registry.plugins = [{ id: "afora-codex-app-server", status: "loaded" }];
     hookMocks.runner.runInboundClaimForPluginOutcome.mockImplementationOnce(
       async (_plugin, event) => {
         order.push("claim");
@@ -1520,13 +1520,13 @@ describe("dispatchReplyFromConfig", () => {
       boundAt: 1710000000000,
       metadata: {
         pluginBindingOwner: "plugin",
-        pluginId: "openclaw-codex-app-server",
-        pluginRoot: "/plugins/openclaw-codex-app-server",
+        pluginId: "afora-codex-app-server",
+        pluginRoot: "/plugins/afora-codex-app-server",
         data: {
           kind: "codex-app-server-session",
           version: 1,
           sessionFile: "/tmp/session.jsonl",
-          workspaceDir: "/workspace/openclaw",
+          workspaceDir: "/workspace/afora",
         },
       },
     } satisfies SessionBindingRecord);
@@ -1737,7 +1737,7 @@ describe("dispatchReplyFromConfig", () => {
       ((hookName?: string) =>
         hookName === "inbound_claim" || hookName === "message_received") as () => boolean,
     );
-    hookMocks.registry.plugins = [{ id: "openclaw-codex-app-server", status: "loaded" }];
+    hookMocks.registry.plugins = [{ id: "afora-codex-app-server", status: "loaded" }];
     hookMocks.runner.runInboundClaimForPluginOutcome.mockResolvedValue({
       status: "handled",
       result: { handled: true },
@@ -1766,8 +1766,8 @@ describe("dispatchReplyFromConfig", () => {
               boundAt: 1710000000000,
               metadata: {
                 pluginBindingOwner: "plugin",
-                pluginId: "openclaw-codex-app-server",
-                pluginRoot: "/plugins/openclaw-codex-app-server",
+                pluginId: "afora-codex-app-server",
+                pluginRoot: "/plugins/afora-codex-app-server",
               },
             } satisfies SessionBindingRecord)
           : null,
@@ -1809,7 +1809,7 @@ describe("dispatchReplyFromConfig", () => {
       }),
     );
     expect(hookMocks.runner.runInboundClaimForPluginOutcome).toHaveBeenCalledWith(
-      "openclaw-codex-app-server",
+      "afora-codex-app-server",
       expect.objectContaining({
         channel: "discord",
         conversationId: "1510164477642014740",
@@ -1830,7 +1830,7 @@ describe("dispatchReplyFromConfig", () => {
       ((hookName?: string) =>
         hookName === "inbound_claim" || hookName === "message_received") as () => boolean,
     );
-    hookMocks.registry.plugins = [{ id: "openclaw-codex-app-server", status: "loaded" }];
+    hookMocks.registry.plugins = [{ id: "afora-codex-app-server", status: "loaded" }];
     hookMocks.runner.runInboundClaimForPluginOutcome.mockResolvedValue({
       status: "handled",
       result: { handled: true, reply: { text: "should not send" } },
@@ -1848,13 +1848,13 @@ describe("dispatchReplyFromConfig", () => {
       boundAt: 1710000000000,
       metadata: {
         pluginBindingOwner: "plugin",
-        pluginId: "openclaw-codex-app-server",
-        pluginRoot: "/workspace/openclaw-app-server",
+        pluginId: "afora-codex-app-server",
+        pluginRoot: "/workspace/afora-app-server",
         data: {
           kind: "codex-app-server-session",
           version: 1,
           sessionFile: "/tmp/session.jsonl",
-          workspaceDir: "/workspace/openclaw",
+          workspaceDir: "/workspace/afora",
         },
       },
     } satisfies SessionBindingRecord);
@@ -1915,7 +1915,7 @@ describe("dispatchReplyFromConfig", () => {
       ((hookName?: string) =>
         hookName === "inbound_claim" || hookName === "message_received") as () => boolean,
     );
-    hookMocks.registry.plugins = [{ id: "openclaw-codex-app-server", status: "loaded" }];
+    hookMocks.registry.plugins = [{ id: "afora-codex-app-server", status: "loaded" }];
     hookMocks.runner.runInboundClaimForPluginOutcome.mockResolvedValue({
       status: "handled",
       result: { handled: true },
@@ -1933,14 +1933,14 @@ describe("dispatchReplyFromConfig", () => {
       boundAt: 1710000000000,
       metadata: {
         pluginBindingOwner: "plugin",
-        pluginId: "openclaw-codex-app-server",
-        pluginRoot: "/Users/huntharo/github/openclaw-app-server",
+        pluginId: "afora-codex-app-server",
+        pluginRoot: "/Users/huntharo/github/afora-app-server",
         detachHint: "/codex detach",
         data: {
           kind: "codex-app-server-session",
           version: 1,
           sessionFile: "/tmp/session.jsonl",
-          workspaceDir: "/workspace/openclaw",
+          workspaceDir: "/workspace/afora",
         },
       },
     } satisfies SessionBindingRecord);
@@ -1991,7 +1991,7 @@ describe("dispatchReplyFromConfig", () => {
       ((hookName?: string) =>
         hookName === "inbound_claim" || hookName === "message_received") as () => boolean,
     );
-    hookMocks.registry.plugins = [{ id: "openclaw-codex-app-server", status: "loaded" }];
+    hookMocks.registry.plugins = [{ id: "afora-codex-app-server", status: "loaded" }];
     hookMocks.runner.runInboundClaimForPluginOutcome.mockResolvedValue({
       status: "handled",
       result: { handled: true },
@@ -2009,8 +2009,8 @@ describe("dispatchReplyFromConfig", () => {
       boundAt: 1710000000000,
       metadata: {
         pluginBindingOwner: "plugin",
-        pluginId: "openclaw-codex-app-server",
-        pluginRoot: "/Users/huntharo/github/openclaw-app-server",
+        pluginId: "afora-codex-app-server",
+        pluginRoot: "/Users/huntharo/github/afora-app-server",
       },
     } satisfies SessionBindingRecord);
     const cfg = emptyConfig;
@@ -2040,7 +2040,7 @@ describe("dispatchReplyFromConfig", () => {
     expect(result).toEqual({ queuedFinal: false, counts: { tool: 0, block: 0, final: 0 } });
     expect(sessionBindingMocks.touch).toHaveBeenCalledWith("binding-command-unknown-slash");
     expect(hookMocks.runner.runInboundClaimForPluginOutcome).toHaveBeenCalledWith(
-      "openclaw-codex-app-server",
+      "afora-codex-app-server",
       expect.objectContaining({ content: "/notes keep this with the bound plugin" }),
       expect.objectContaining({
         pluginBinding: expect.objectContaining({ bindingId: "binding-command-unknown-slash" }),

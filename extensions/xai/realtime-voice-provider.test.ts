@@ -1,5 +1,5 @@
 // Xai tests cover realtime voice provider plugin behavior.
-import { REALTIME_VOICE_AUDIO_FORMAT_PCM16_24KHZ } from "openclaw/plugin-sdk/realtime-voice";
+import { REALTIME_VOICE_AUDIO_FORMAT_PCM16_24KHZ } from "afora-agent/plugin-sdk/realtime-voice";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { XAI_REALTIME_MAX_PENDING_PLAYBACK_MARKS } from "./realtime-voice-config.js";
 import { buildXaiRealtimeVoiceProvider } from "./realtime-voice-provider.js";
@@ -93,11 +93,11 @@ vi.mock("ws", () => ({
   default: FakeWebSocket,
 }));
 
-vi.mock("openclaw/plugin-sdk/provider-auth", () => ({
+vi.mock("afora-agent/plugin-sdk/provider-auth", () => ({
   isProviderAuthProfileConfigured: isProviderAuthProfileConfiguredMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/provider-auth-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/provider-auth-runtime", () => ({
   resolveApiKeyForProvider: resolveApiKeyForProviderMock,
 }));
 
@@ -242,14 +242,14 @@ describe("buildXaiRealtimeVoiceProvider", () => {
 
   it("checks realtime readiness in the selected agent directory", () => {
     isProviderAuthProfileConfiguredMock.mockImplementation(
-      ({ agentDir }) => agentDir === "/tmp/openclaw-molty-agent",
+      ({ agentDir }) => agentDir === "/tmp/afora-molty-agent",
     );
     const provider = buildXaiRealtimeVoiceProvider();
     const cfg = {
       agents: {
         list: [
-          { id: "helper", agentDir: "/tmp/openclaw-helper-agent" },
-          { id: "molty", agentDir: "/tmp/openclaw-molty-agent" },
+          { id: "helper", agentDir: "/tmp/afora-helper-agent" },
+          { id: "molty", agentDir: "/tmp/afora-molty-agent" },
         ],
       },
     } as never;
@@ -258,19 +258,19 @@ describe("buildXaiRealtimeVoiceProvider", () => {
     expect(isProviderAuthProfileConfiguredMock).toHaveBeenCalledWith({
       provider: "xai",
       cfg,
-      agentDir: "/tmp/openclaw-molty-agent",
+      agentDir: "/tmp/afora-molty-agent",
     });
   });
 
   it("resolves realtime auth from the selected agent directory", async () => {
     resolveApiKeyForProviderMock.mockImplementation(async ({ agentDir }) => ({
-      apiKey: agentDir === "/tmp/openclaw-molty-agent" ? "xai-molty" : undefined,
+      apiKey: agentDir === "/tmp/afora-molty-agent" ? "xai-molty" : undefined,
     }));
     const cfg = {
       agents: {
         list: [
-          { id: "helper", agentDir: "/tmp/openclaw-helper-agent" },
-          { id: "molty", agentDir: "/tmp/openclaw-molty-agent" },
+          { id: "helper", agentDir: "/tmp/afora-helper-agent" },
+          { id: "molty", agentDir: "/tmp/afora-molty-agent" },
         ],
       },
     } as never;
@@ -287,7 +287,7 @@ describe("buildXaiRealtimeVoiceProvider", () => {
     expect(resolveApiKeyForProviderMock).toHaveBeenCalledWith({
       provider: "xai",
       cfg,
-      agentDir: "/tmp/openclaw-molty-agent",
+      agentDir: "/tmp/afora-molty-agent",
     });
     expect((socket.args[1] as { headers?: Record<string, string> }).headers?.Authorization).toBe(
       "Bearer xai-molty",
@@ -724,17 +724,17 @@ describe("buildXaiRealtimeVoiceProvider", () => {
     socket.emitServer({
       type: "conversation.item.input_audio_transcription.updated",
       item_id: "item_1",
-      transcript: "open claw",
+      transcript: "afora",
     });
     socket.emitServer({
       type: "conversation.item.input_audio_transcription.completed",
       item_id: "item_1",
-      transcript: "OpenClaw",
+      transcript: "Afora",
     });
     bridge.close();
 
     expect(onTranscript).toHaveBeenCalledOnce();
-    expect(onTranscript).toHaveBeenCalledWith("user", "OpenClaw", true);
+    expect(onTranscript).toHaveBeenCalledWith("user", "Afora", true);
   });
 
   it("forwards standard incremental input-transcription events", async () => {
@@ -747,10 +747,10 @@ describe("buildXaiRealtimeVoiceProvider", () => {
     socket.emitServer({
       type: "conversation.item.input_audio_transcription.delta",
       item_id: "item_speech",
-      delta: "open claw",
+      delta: "afora",
     });
 
-    expect(onTranscript).toHaveBeenCalledWith("user", "open claw", false);
+    expect(onTranscript).toHaveBeenCalledWith("user", "afora", false);
   });
 
   it("surfaces input transcription failures and discards their stale replacement text", async () => {
@@ -801,14 +801,14 @@ describe("buildXaiRealtimeVoiceProvider", () => {
 
     socket.emitServer({ type: "response.created" });
     socket.emitServer({ type: "response.output_audio_transcript.delta", delta: "Hello " });
-    socket.emitServer({ type: "response.output_audio_transcript.delta", delta: "OpenClaw" });
+    socket.emitServer({ type: "response.output_audio_transcript.delta", delta: "Afora" });
     socket.emitServer({ type: "response.output_audio_transcript.done" });
     socket.emitServer({ type: "response.done" });
     bridge.close();
 
     expect(onTranscript).toHaveBeenNthCalledWith(1, "assistant", "Hello ", false);
-    expect(onTranscript).toHaveBeenNthCalledWith(2, "assistant", "OpenClaw", false);
-    expect(onTranscript).toHaveBeenNthCalledWith(3, "assistant", "Hello OpenClaw", true);
+    expect(onTranscript).toHaveBeenNthCalledWith(2, "assistant", "Afora", false);
+    expect(onTranscript).toHaveBeenNthCalledWith(3, "assistant", "Hello Afora", true);
     expect(onTranscript).toHaveBeenCalledTimes(3);
   });
 
@@ -1094,20 +1094,20 @@ describe("buildXaiRealtimeVoiceProvider", () => {
     socket.emitServer({
       type: "response.function_call_arguments.delta",
       item_id: "item_tool_1",
-      name: "openclaw_agent_consult",
+      name: "afora_agent_consult",
       call_id: "call_1",
       delta: JSON.stringify({ question: "delegate this" }),
     });
     socket.emitServer({
       type: "response.function_call_arguments.done",
       item_id: "item_tool_1",
-      name: "openclaw_agent_consult",
+      name: "afora_agent_consult",
       call_id: "call_1",
     });
     socket.emitServer({
       type: "response.function_call_arguments.done",
       item_id: "item_tool_1",
-      name: "openclaw_agent_consult",
+      name: "afora_agent_consult",
       call_id: "call_1",
       arguments: JSON.stringify({ question: "delegate this" }),
     });
@@ -1117,7 +1117,7 @@ describe("buildXaiRealtimeVoiceProvider", () => {
     expect(onToolCall).toHaveBeenCalledWith({
       itemId: "item_tool_1",
       callId: "call_1",
-      name: "openclaw_agent_consult",
+      name: "afora_agent_consult",
       args: { question: "delegate this" },
     });
   });
@@ -1343,7 +1343,7 @@ describe("buildXaiRealtimeVoiceProvider", () => {
       socket.emitServer({
         type: "response.function_call_arguments.done",
         item_id: "item_call_1",
-        name: "openclaw_agent_consult",
+        name: "afora_agent_consult",
         call_id: "call_1",
         arguments: "{}",
       });
@@ -1393,7 +1393,7 @@ describe("buildXaiRealtimeVoiceProvider", () => {
       socket.emitServer({
         type: "response.function_call_arguments.done",
         item_id: `item_${callId}`,
-        name: "openclaw_agent_consult",
+        name: "afora_agent_consult",
         call_id: callId,
         arguments: "{}",
       });
@@ -1443,7 +1443,7 @@ describe("buildXaiRealtimeVoiceProvider", () => {
       socket.emitServer({
         type: "response.function_call_arguments.done",
         item_id: `item_${callId}`,
-        name: "openclaw_agent_consult",
+        name: "afora_agent_consult",
         call_id: callId,
         arguments: JSON.stringify({ question: callId }),
       });
@@ -1478,7 +1478,7 @@ describe("buildXaiRealtimeVoiceProvider", () => {
     socket.emitServer({
       type: "response.function_call_arguments.done",
       item_id: "item_call_1",
-      name: "openclaw_agent_consult",
+      name: "afora_agent_consult",
       call_id: "call_1",
       arguments: JSON.stringify({ question: "call_1" }),
     });
@@ -1523,7 +1523,7 @@ describe("buildXaiRealtimeVoiceProvider", () => {
     socket.emitServer({
       type: "response.function_call_arguments.done",
       item_id: "item_call_1",
-      name: "openclaw_agent_consult",
+      name: "afora_agent_consult",
       call_id: "call_1",
       arguments: JSON.stringify({ question: "call_1" }),
     });
@@ -1592,7 +1592,7 @@ describe("buildXaiRealtimeVoiceProvider", () => {
       firstSocket.emitServer({
         type: "response.function_call_arguments.done",
         item_id: `item_${callId}`,
-        name: "openclaw_agent_consult",
+        name: "afora_agent_consult",
         call_id: callId,
         arguments: JSON.stringify({ question: callId }),
       });
@@ -1647,14 +1647,14 @@ describe("buildXaiRealtimeVoiceProvider", () => {
         id: "item_replayed_call",
         type: "function_call",
         call_id: "call_replayed",
-        name: "openclaw_agent_consult",
+        name: "afora_agent_consult",
         arguments: JSON.stringify({ question: "recover me" }),
       },
     });
     expect(onToolCall).toHaveBeenCalledWith({
       itemId: "item_replayed_call",
       callId: "call_replayed",
-      name: "openclaw_agent_consult",
+      name: "afora_agent_consult",
       args: { question: "recover me" },
     });
     bridge.close();
@@ -1674,7 +1674,7 @@ describe("buildXaiRealtimeVoiceProvider", () => {
       type: "response.function_call_arguments.done",
       item_id: "item_failed_output",
       call_id: "call_failed_output",
-      name: "openclaw_agent_consult",
+      name: "afora_agent_consult",
       arguments: "{}",
     });
     const sendError = new Error("realtime transport rejected the output");
@@ -1729,7 +1729,7 @@ describe("buildXaiRealtimeVoiceProvider", () => {
       type: "response.function_call_arguments.done",
       item_id: "item_lost_output",
       call_id: "call_lost_output",
-      name: "openclaw_agent_consult",
+      name: "afora_agent_consult",
       arguments: JSON.stringify({ question: "recover output" }),
     });
     firstSocket.emitServer({ type: "response.done", response: { status: "completed" } });
@@ -1763,7 +1763,7 @@ describe("buildXaiRealtimeVoiceProvider", () => {
       type: "response.function_call_arguments.done",
       item_id: "item_saved_output",
       call_id: "call_saved_output",
-      name: "openclaw_agent_consult",
+      name: "afora_agent_consult",
       arguments: JSON.stringify({ question: "saved output" }),
     });
     firstSocket.emitServer({ type: "response.done", response: { status: "completed" } });
@@ -1789,7 +1789,7 @@ describe("buildXaiRealtimeVoiceProvider", () => {
         id: "item_saved_output",
         type: "function_call",
         call_id: "call_saved_output",
-        name: "openclaw_agent_consult",
+        name: "afora_agent_consult",
         arguments: JSON.stringify({ question: "saved output" }),
       },
       {
@@ -1826,7 +1826,7 @@ describe("buildXaiRealtimeVoiceProvider", () => {
       firstSocket.emitServer({
         type: "response.function_call_arguments.done",
         item_id: `item_${callId}`,
-        name: "openclaw_agent_consult",
+        name: "afora_agent_consult",
         call_id: callId,
         arguments: JSON.stringify({ question: callId }),
       });
@@ -1897,7 +1897,7 @@ describe("buildXaiRealtimeVoiceProvider", () => {
     expect(String(secondSocket.args[0])).toContain("conversation_id=conv_text_queue");
     secondSocket.open();
 
-    bridge.sendUserMessage?.("OpenClaw finished checking.");
+    bridge.sendUserMessage?.("Afora finished checking.");
     expect(
       parseSent(secondSocket).filter((event) => event.type === "conversation.item.create"),
     ).toEqual([]);
@@ -1909,7 +1909,7 @@ describe("buildXaiRealtimeVoiceProvider", () => {
         item: {
           type: "message",
           role: "user",
-          content: [{ type: "input_text", text: "OpenClaw finished checking." }],
+          content: [{ type: "input_text", text: "Afora finished checking." }],
         },
       },
       { type: "response.create" },
@@ -2145,8 +2145,8 @@ describe("buildXaiRealtimeVoiceProvider", () => {
       tools: [
         {
           type: "function",
-          name: "openclaw_agent_consult",
-          description: "Consult OpenClaw",
+          name: "afora_agent_consult",
+          description: "Consult Afora",
           parameters: { type: "object", properties: {} },
         },
       ],

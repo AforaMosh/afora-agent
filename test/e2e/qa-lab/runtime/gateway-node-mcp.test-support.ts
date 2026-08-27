@@ -4,7 +4,7 @@ import { once } from "node:events";
 import path from "node:path";
 import { createInterface } from "node:readline";
 import { setTimeout as delay } from "node:timers/promises";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { expect, vi } from "vitest";
 import type { startQaGatewayChild } from "../../../../extensions/qa-lab/api.js";
 import type { NodePluginToolDescriptor } from "../../../../packages/gateway-protocol/src/schema/nodes.js";
@@ -12,7 +12,7 @@ import type { McpServerConfig } from "../../../../src/config/types.mcp.js";
 
 export const TEST_TIMEOUT_MS = 180_000;
 const WAIT_TIMEOUT_MS = 30_000;
-const FIXTURE_READY_TYPE = "openclaw-mcp-parity-ready";
+const FIXTURE_READY_TYPE = "afora-mcp-parity-ready";
 const NODE_DISPLAY_NAME = "QA MCP parity node";
 export const NODE_MCP_COMMAND = "mcp.tools.call.v1";
 export const WAIT_OPTIONS = { timeout: WAIT_TIMEOUT_MS, interval: 100 };

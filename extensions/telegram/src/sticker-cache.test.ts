@@ -1,9 +1,9 @@
-import type { PluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { PluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
 // Telegram tests cover sticker cache plugin behavior.
 import {
   createPluginStateSyncKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setTelegramRuntime } from "./runtime.js";
 import { clearTelegramRuntimeForTest } from "./runtime.test-support.js";
@@ -14,8 +14,8 @@ import {
   TELEGRAM_STICKER_CACHE_NAMESPACE,
 } from "./sticker-cache-store.legacy-state.js";
 
-vi.mock("openclaw/plugin-sdk/state-paths", () => ({
-  resolveStateDir: () => "/tmp/openclaw-test-sticker-cache",
+vi.mock("afora-agent/plugin-sdk/state-paths", () => ({
+  resolveStateDir: () => "/tmp/afora-test-sticker-cache",
 }));
 
 describe("sticker-cache", () => {

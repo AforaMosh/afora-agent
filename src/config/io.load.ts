@@ -28,13 +28,13 @@ import {
 } from "./io.warnings.js";
 import { migrateLegacyContextBudgetConfig, migratePersistedImplicitMainRoster } from "./legacy.js";
 import { resolveShellEnvExpectedKeys } from "./shell-env-expected-keys.js";
-import type { OpenClawConfig } from "./types.js";
+import type { AforaConfig } from "./types.js";
 import { validateConfigObjectWithPlugins } from "./validation.js";
 
 export function loadConfigFromContext(
   context: ConfigIoContext,
   options: { skipSuspiciousRecovery?: boolean } = {},
-): OpenClawConfig {
+): AforaConfig {
   const { deps, configPath } = context;
   let envBeforeRead: Record<string, string | undefined> | undefined;
   try {
@@ -98,7 +98,7 @@ export function loadConfigFromContext(
     // below like any invalid config — never load as an empty config marked
     // valid, which would run with defaults and poison lastKnownGood.
     if (typeof validationConfigRaw === "object" && validationConfigRaw !== null) {
-      const duplicates = findDuplicateAgentDirs(validationConfigRaw as OpenClawConfig, {
+      const duplicates = findDuplicateAgentDirs(validationConfigRaw as AforaConfig, {
         env: deps.env,
         homedir: deps.homedir,
       });

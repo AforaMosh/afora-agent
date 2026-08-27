@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 // The Control UI lobster pet has a CLI cousin: on roughly one day in sixteen
 // the interactive banner gains a tiny ASCII lobster. The day comes from the
 // shared lobster-day hash (the sidebar pet dresses up on the same days), so

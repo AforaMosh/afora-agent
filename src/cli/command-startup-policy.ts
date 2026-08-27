@@ -37,7 +37,7 @@ export function resolveCliStartupPolicy(params: {
   const env = params.env ?? process.env;
   return {
     suppressDoctorStdout,
-    hideBanner: isTruthyEnvValue(env.OPENCLAW_HIDE_BANNER) || commandPolicy.hideBanner,
+    hideBanner: isTruthyEnvValue(env.AFORA_HIDE_BANNER) || commandPolicy.hideBanner,
     skipConfigGuard:
       configGuard === "skip" || (configGuard === "when-suppressed" && suppressDoctorStdout),
     ...(configGuard === "validate" ? { validateConfigOnly: true } : {}),

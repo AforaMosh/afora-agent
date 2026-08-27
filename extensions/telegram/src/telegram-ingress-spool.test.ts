@@ -2,13 +2,13 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
-  closeOpenClawStateDatabaseForTest,
+  closeAforaStateDatabaseForTest,
   createChannelIngressQueueForTests as createChannelIngressQueue,
   createPluginStateKeyedStoreForTests,
   createPluginStateSyncKeyedStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { beginTelegramPollRegistration } from "./poll-answer-context.js";
 import { recordTelegramPollRegistryEntry } from "./poll-registry.js";
@@ -30,10 +30,10 @@ import {
 async function withTempState<T>(
   fn: (stateDir: string, spoolDir: string) => Promise<T>,
 ): Promise<T> {
-  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-tg-spool-"));
+  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-tg-spool-"));
   const spoolDir = resolveTelegramIngressSpoolDir({
     accountId: "acct",
-    env: { OPENCLAW_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
+    env: { AFORA_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
   });
   const openKeyedStore = <StoreValue>(
     options: Parameters<typeof createPluginStateKeyedStoreForTests<StoreValue>>[1],
@@ -54,14 +54,14 @@ async function withTempState<T>(
     return await fn(stateDir, spoolDir);
   } finally {
     clearTelegramRuntimeForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(stateDir, { recursive: true, force: true });
   }
 }
 
 afterEach(() => {
   clearTelegramRuntimeForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 describe("telegram ingress spool mapping", () => {
@@ -154,7 +154,7 @@ describe("telegram ingress spool mapping", () => {
       const queue = openTelegramIngressQueue(spoolDir);
       const monitor = createTelegramIngressMonitor({
         queue,
-        cfg: { channels: { telegram: { groupPolicy: "open" } } } as OpenClawConfig,
+        cfg: { channels: { telegram: { groupPolicy: "open" } } } as AforaConfig,
         accountId: "acct",
         onError,
         dispatch: async (update) => {
@@ -254,7 +254,7 @@ describe("telegram ingress spool mapping", () => {
       const queue = openTelegramIngressQueue(spoolDir);
       const monitor = createTelegramIngressMonitor({
         queue,
-        cfg: { channels: { telegram: { groupPolicy: "open" } } } as OpenClawConfig,
+        cfg: { channels: { telegram: { groupPolicy: "open" } } } as AforaConfig,
         accountId: "acct",
         dispatch: (update) => {
           const updateId = resolveTelegramUpdateId(update);

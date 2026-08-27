@@ -1,10 +1,10 @@
 // Verifies default model alias config values and overrides.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PluginManifestRegistry } from "../plugins/manifest-registry.js";
 import { applyModelDefaults as applyModelDefaultsWithPolicy } from "./defaults.js";
-import type { ModelProviderConfig, OpenClawConfig } from "./types.js";
+import type { ModelProviderConfig, AforaConfig } from "./types.js";
 
 const providerPolicyMocks = vi.hoisted(() => ({
   normalizeProviderConfigForConfigDefaults: vi.fn(
@@ -13,7 +13,7 @@ const providerPolicyMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./provider-policy.js", () => ({
-  applyProviderConfigDefaultsForConfig: (params: { config: OpenClawConfig }) => params.config,
+  applyProviderConfigDefaultsForConfig: (params: { config: AforaConfig }) => params.config,
   normalizeProviderConfigForConfigDefaults: (
     ...args: Parameters<typeof providerPolicyMocks.normalizeProviderConfigForConfigDefaults>
   ) => providerPolicyMocks.normalizeProviderConfigForConfigDefaults(...args),
@@ -22,7 +22,7 @@ vi.mock("./provider-policy.js", () => ({
 const emptyManifestRegistry = { plugins: [] } satisfies Pick<PluginManifestRegistry, "plugins">;
 
 function applyModelDefaults(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   options?: Parameters<typeof applyModelDefaultsWithPolicy>[1],
 ) {
   return applyModelDefaultsWithPolicy(cfg, options ?? { manifestRegistry: emptyManifestRegistry });
@@ -62,7 +62,7 @@ describe("applyModelDefaults", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
   }
 
   function buildMistralProviderConfig(overrides?: {
@@ -91,7 +91,7 @@ describe("applyModelDefaults", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
   }
 
   function buildProviderTokenDefaultsConfig(params: {
@@ -135,7 +135,7 @@ describe("applyModelDefaults", () => {
           origin: "config",
           rootDir: "/tmp/custom-provider-plugin",
           source: "test",
-          manifestPath: "/tmp/custom-provider-plugin/openclaw.plugin.json",
+          manifestPath: "/tmp/custom-provider-plugin/afora.plugin.json",
           modelIdNormalization: {
             providers: {
               myproxy: {
@@ -163,7 +163,7 @@ describe("applyModelDefaults", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const next = applyModelDefaults(cfg);
 
     expect(next.agents?.defaults?.models?.["anthropic/claude-opus-5"]?.alias).toBe("opus");
@@ -180,7 +180,7 @@ describe("applyModelDefaults", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const next = applyModelDefaults(cfg);
 
@@ -197,7 +197,7 @@ describe("applyModelDefaults", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const next = applyModelDefaults(cfg);
 
@@ -215,7 +215,7 @@ describe("applyModelDefaults", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const next = applyModelDefaults(cfg);
 
@@ -234,7 +234,7 @@ describe("applyModelDefaults", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const next = applyModelDefaults(cfg);
 
@@ -256,7 +256,7 @@ describe("applyModelDefaults", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const next = applyModelDefaults(cfg);
 
@@ -275,7 +275,7 @@ describe("applyModelDefaults", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const next = applyModelDefaults(cfg);
 
@@ -298,7 +298,7 @@ describe("applyModelDefaults", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const next = applyModelDefaults(cfg);
 
@@ -327,7 +327,7 @@ describe("applyModelDefaults", () => {
           },
         ],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const next = applyModelDefaults(cfg);
 
@@ -362,7 +362,7 @@ describe("applyModelDefaults", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const provider = cfg.models.providers.google;
     mockNormalizedProvider({
@@ -399,7 +399,7 @@ describe("applyModelDefaults", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const provider = cfg.models.providers.google;
     mockNormalizedProvider({
@@ -582,7 +582,7 @@ describe("applyModelDefaults", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     mockNormalizedProvider({
       ...cfg.models.providers.anthropic,

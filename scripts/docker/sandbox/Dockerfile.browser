@@ -2,12 +2,12 @@
 
 FROM debian:bookworm-slim@sha256:f9c6a2fd2ddbc23e336b6257a5245e31f996953ef06cd13a59fa0a1df2d5c252
 
-LABEL org.openclaw.sandbox-browser.contract="2026-05-12-cdp-relay-auth"
+LABEL org.afora.sandbox-browser.contract="2026-05-12-cdp-relay-auth"
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN --mount=type=cache,id=openclaw-sandbox-bookworm-apt-cache,target=/var/cache/apt,sharing=locked \
-  --mount=type=cache,id=openclaw-sandbox-bookworm-apt-lists,target=/var/lib/apt,sharing=locked \
+RUN --mount=type=cache,id=afora-sandbox-bookworm-apt-cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,id=afora-sandbox-bookworm-apt-lists,target=/var/lib/apt,sharing=locked \
   apt-get update \
   && apt-get install -y --no-install-recommends \
     bash \
@@ -25,7 +25,7 @@ RUN --mount=type=cache,id=openclaw-sandbox-bookworm-apt-cache,target=/var/cache/
     x11vnc \
     xvfb
 
-COPY --chmod=755 scripts/sandbox-browser-entrypoint.sh /usr/local/bin/openclaw-sandbox-browser
+COPY --chmod=755 scripts/sandbox-browser-entrypoint.sh /usr/local/bin/afora-sandbox-browser
 
 RUN useradd --create-home --shell /bin/bash sandbox
 USER sandbox
@@ -33,4 +33,4 @@ WORKDIR /home/sandbox
 
 EXPOSE 9222 5900 6080
 
-CMD ["openclaw-sandbox-browser"]
+CMD ["afora-sandbox-browser"]

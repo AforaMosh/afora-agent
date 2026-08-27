@@ -1,7 +1,7 @@
 /**
  * Dispatches serialized embedded-agent subscription events to specific handlers.
  */
-import { isPromiseLike } from "@openclaw/normalization-core/promise-like";
+import { isPromiseLike } from "@afora/normalization-core/promise-like";
 import {
   handleAgentEnd,
   handleAgentStart,

@@ -55,7 +55,7 @@ export function buildMemoryEngineOptions(
       id: plugin.id,
       label:
         plugin.id === DEFAULT_MEMORY_ENGINE_ID
-          ? t("memoryPage.engine.openClawMemory")
+          ? t("memoryPage.engine.aforaMemory")
           : plugin.name,
       available: true,
     }))
@@ -73,7 +73,7 @@ export function buildMemoryEngineOptions(
     const unavailable = {
       id: selected,
       label:
-        selected === DEFAULT_MEMORY_ENGINE_ID ? t("memoryPage.engine.openClawMemory") : selected,
+        selected === DEFAULT_MEMORY_ENGINE_ID ? t("memoryPage.engine.aforaMemory") : selected,
       available: false,
     };
     if (selected === DEFAULT_MEMORY_ENGINE_ID) {
@@ -187,7 +187,7 @@ type MemoryViewProps = {
 
 const MEMORY_PANEL_ID = "memory-settings-panel";
 
-const MEMORY_DOCS_URL = "https://docs.openclaw.ai/concepts/memory";
+const MEMORY_DOCS_URL = "https://docs.afora.ai/concepts/memory";
 
 const MEMORY_ENGINE_OFF = "";
 
@@ -209,7 +209,7 @@ function renderEngineSection(props: MemoryViewProps) {
   const engineId = selectedEngineId(props.engineSelection);
   const defaultEngine =
     props.engineOptions.find((option) => option.id === DEFAULT_MEMORY_ENGINE_ID)?.label ??
-    t("memoryPage.engine.openClawMemory");
+    t("memoryPage.engine.aforaMemory");
   const defaultState = renderSettingsDefaultState({
     value: defaultEngine,
     overridden: props.engineSelection.kind !== "auto",
@@ -426,12 +426,12 @@ export function renderMemory(props: MemoryViewProps) {
                   <span class="agent-scope-control__label"
                     >${t("memoryPage.dreaming.agentScope.rowTitle")}</span
                   >
-                  <openclaw-agent-select
+                  <afora-agent-select
                     .options=${props.agents}
                     .value=${props.agentId ?? ""}
                     .accessibleLabel=${t("memoryPage.dreaming.agentScope.rowTitle")}
                     .onSelect=${(value: string) => props.onAgentChange(value || null)}
-                  ></openclaw-agent-select>
+                  ></afora-agent-select>
                 </div>
               `}
         </div>

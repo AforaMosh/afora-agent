@@ -1,11 +1,11 @@
-# OpenClaw Discord
+# Afora Discord
 
-Official OpenClaw channel plugin for Discord servers, channels, DMs, slash commands, and app events.
+Official Afora channel plugin for Discord servers, channels, DMs, slash commands, and app events.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/discord
+afora plugins install @afora/discord
 ```
 
-Configure a Discord bot token and the channels or servers OpenClaw should handle. The plugin lets OpenClaw agents receive Discord messages and respond through the configured Discord app.
+Configure a Discord bot token and the channels or servers Afora should handle. The plugin lets Afora agents receive Discord messages and respond through the configured Discord app.

@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import {
   clearRuntimeAuthProfileStoreSnapshots,
@@ -17,7 +17,7 @@ const tempDirs: string[] = [];
 vi.mock("./prepared-model-catalog.js", () => ({
   loadProviderScopedThinkingCatalog: vi.fn(async () => []),
   loadPreparedModelCatalogOwnerSnapshot: vi.fn(
-    async (params: { agentDir: string; agentId?: string; config: OpenClawConfig }) => ({
+    async (params: { agentDir: string; agentId?: string; config: AforaConfig }) => ({
       agentDir: params.agentDir,
       agentId: params.agentId,
       config: params.config,
@@ -48,12 +48,12 @@ describe("provider auth warm worker", () => {
   it("preserves runtime-only auth profile snapshots in the worker warm input", async () => {
     // Runtime-only profiles are not persisted to disk, so the worker input must
     // carry them explicitly or warming loses provider availability.
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-provider-auth-worker-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-provider-auth-worker-"));
     tempDirs.push(root);
 
     await withEnvAsync(
       {
-        OPENCLAW_STATE_DIR: path.join(root, "state"),
+        AFORA_STATE_DIR: path.join(root, "state"),
       },
       async () => {
         const agentDir = path.join(root, "agent");
@@ -68,7 +68,7 @@ describe("provider auth warm worker", () => {
               },
             },
           },
-        } as unknown as OpenClawConfig;
+        } as unknown as AforaConfig;
         const result = await runProviderAuthWarmWorkerInput({
           cfg,
           runtimeAuthStores: [
@@ -97,13 +97,13 @@ describe("provider auth warm worker", () => {
   }, 30_000);
 
   it("respects cooled-down inline api keys in the worker warm input", async () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-provider-auth-worker-cooldown-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-provider-auth-worker-cooldown-"));
     tempDirs.push(root);
 
     await withEnvAsync(
       {
-        OPENCLAW_DISABLE_PERSISTED_PLUGIN_REGISTRY: "1",
-        OPENCLAW_STATE_DIR: path.join(root, "state"),
+        AFORA_DISABLE_PERSISTED_PLUGIN_REGISTRY: "1",
+        AFORA_STATE_DIR: path.join(root, "state"),
       },
       async () => {
         const agentDir = path.join(root, "agent");
@@ -119,7 +119,7 @@ describe("provider auth warm worker", () => {
               },
             },
           },
-        } as unknown as OpenClawConfig;
+        } as unknown as AforaConfig;
 
         const usageId = resolveInlineProviderApiKeyUsageId("cooled-down");
         const result = await runProviderAuthWarmWorkerInput({

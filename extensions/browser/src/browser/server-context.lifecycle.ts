@@ -8,7 +8,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { getChromeMcpModule } from "./chrome-mcp.runtime.js";
 import type { RunningChrome } from "./chrome.js";
-import { stopOpenClawChrome } from "./chrome.js";
+import { stopAforaChrome } from "./chrome.js";
 import type { ResolvedBrowserProfile } from "./config.js";
 import { BrowserProfileUnavailableError } from "./errors.js";
 import type { ExtensionRelayHandle } from "./extension-relay/relay-server.js";
@@ -402,7 +402,7 @@ async function cleanupProfileResources(params: {
   }
   for (const running of managedHandles) {
     try {
-      await stopOpenClawChrome(running);
+      await stopAforaChrome(running);
       releaseProfileHandle(runtime, running);
       stopped = true;
     } catch (err) {

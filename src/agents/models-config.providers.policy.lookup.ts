@@ -1,7 +1,7 @@
 /**
  * Resolves provider plugin lookup keys from provider config aliases.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { MODEL_APIS } from "../config/types.models.js";
 import type { ProviderConfig } from "./models-config.providers.secrets.js";
 

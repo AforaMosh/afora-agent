@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { resolveSharedMainAuthAgentDir } from "../agents/auth-profiles/shared-main-dir.js";
 import { writePersistedAuthProfileStoreRaw } from "../agents/auth-profiles/sqlite.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { writeConfigMachineState } from "../state/config-machine-state.js";
 import {
   collectAuthProfileHealthFindings,
@@ -32,8 +32,8 @@ vi.mock("../agents/auth-profiles.js", async () => {
   };
 });
 
-function doctorFixtureConfig(config: unknown): OpenClawConfig {
-  return config as OpenClawConfig;
+function doctorFixtureConfig(config: unknown): AforaConfig {
+  return config as AforaConfig;
 }
 
 describe("doctor auth hints", () => {
@@ -73,7 +73,7 @@ describe("doctor auth hints", () => {
   it("does not report a legacy shared auth owner without stored credentials", () => {
     const env = {
       ...process.env,
-      OPENCLAW_STATE_DIR: tempDirs.make("openclaw-doctor-shared-auth-"),
+      AFORA_STATE_DIR: tempDirs.make("afora-doctor-shared-auth-"),
     };
     noteSharedAuthStoreStatus(env);
 
@@ -83,7 +83,7 @@ describe("doctor auth hints", () => {
   it("reports the legacy shared auth owner with stored credentials", () => {
     const env = {
       ...process.env,
-      OPENCLAW_STATE_DIR: tempDirs.make("openclaw-doctor-shared-auth-"),
+      AFORA_STATE_DIR: tempDirs.make("afora-doctor-shared-auth-"),
     };
     writePersistedAuthProfileStoreRaw(
       {
@@ -97,14 +97,14 @@ describe("doctor auth hints", () => {
     noteSharedAuthStoreStatus(env);
 
     expect(mocks.note).toHaveBeenCalledWith(
-      expect.stringContaining("openclaw doctor --fix"),
+      expect.stringContaining("afora doctor --fix"),
       "Shared auth store",
     );
 
     mocks.note.mockClear();
     const relocatedEnv = {
       ...process.env,
-      OPENCLAW_STATE_DIR: tempDirs.make("openclaw-doctor-relocated-auth-"),
+      AFORA_STATE_DIR: tempDirs.make("afora-doctor-relocated-auth-"),
     };
     writeConfigMachineState("auth.sharedStore", { location: "state-db" }, { env: relocatedEnv });
     noteSharedAuthStoreStatus(relocatedEnv);

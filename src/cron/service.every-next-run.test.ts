@@ -1,5 +1,5 @@
 // Every-next-run regression tests cover next-run calculations for repeating jobs.
-import { MAX_DATE_TIMESTAMP_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_DATE_TIMESTAMP_MS } from "@afora/normalization-core/number-coercion";
 import { describe, expect, it } from "vitest";
 import {
   computeJobNextRunAtMs,

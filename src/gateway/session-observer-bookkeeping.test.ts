@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createHarness, persistedLiveDigest } from "./session-observer.test-utils.js";
 
 describe("session observer run bookkeeping", () => {
@@ -49,7 +49,7 @@ describe("session observer run bookkeeping", () => {
         defaults: { utilityModel: "openai/gpt-test" },
         list: [{ id: "main", default: true }, { id: "work" }],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const digest = persistedLiveDigest({ agentId: "work", sessionKey: "global" });
     const readSession = vi.fn(() => ({
       sessionId: "global-session-id",

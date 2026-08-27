@@ -54,7 +54,7 @@ export function buildWebUiChatEvidenceManifest({ candidateRef, candidateSha, sta
     id: "web-ui-chat-proof",
     title: "Mantis Web UI Chat Proof",
     summary:
-      "Mantis ran the OpenClaw Control UI chat proof against the candidate ref, sent a message through the mocked Gateway, rendered the final reply in the browser, and captured browser artifacts for review.",
+      "Mantis ran the Afora Control UI chat proof against the candidate ref, sent a message through the mocked Gateway, rendered the final reply in the browser, and captured browser artifacts for review.",
     scenario: "web-ui-chat-proof",
     comparison: {
       candidate: {
@@ -119,7 +119,7 @@ function renderReport({ candidateRef, candidateSha, outputDir, status }) {
     "",
     "## Scenario",
     "",
-    "OpenClaw Control UI chat was loaded in a browser with the mocked Gateway harness. The proof sends a chat message through the GUI, verifies the `chat.send` request, emits a final Gateway reply, and waits for the reply to render in the web chat thread.",
+    "Afora Control UI chat was loaded in a browser with the mocked Gateway harness. The proof sends a chat message through the GUI, verifies the `chat.send` request, emits a final Gateway reply, and waits for the reply to render in the web chat thread.",
     "",
     "## Artifacts",
     "",

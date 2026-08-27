@@ -5,12 +5,12 @@ import {
   extractErrorCode,
   PlatformMessageNotDispatchedError,
   readErrorName,
-} from "openclaw/plugin-sdk/error-runtime";
-import { buildTimeoutAbortSignal } from "openclaw/plugin-sdk/extension-shared";
-import { withTrustedEnvProxyGuardedFetchMode } from "openclaw/plugin-sdk/fetch-runtime";
-import { extensionForMime } from "openclaw/plugin-sdk/media-mime";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { fetchWithSsrFGuard, type SsrFPolicy } from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/error-runtime";
+import { buildTimeoutAbortSignal } from "afora-agent/plugin-sdk/extension-shared";
+import { withTrustedEnvProxyGuardedFetchMode } from "afora-agent/plugin-sdk/fetch-runtime";
+import { extensionForMime } from "afora-agent/plugin-sdk/media-mime";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { fetchWithSsrFGuard, type SsrFPolicy } from "afora-agent/plugin-sdk/ssrf-runtime";
 import {
   postSlackMessageWithIdentityFallback,
   type SlackPostMessageIdentity,

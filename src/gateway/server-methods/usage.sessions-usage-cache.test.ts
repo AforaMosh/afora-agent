@@ -1,6 +1,6 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
 const mocks = vi.hoisted(() => ({
   discoverAllSessions: vi.fn(),
@@ -32,7 +32,7 @@ import { testApi, usageHandlers } from "./usage.js";
 const config = {
   agents: { list: [{ id: "main", default: true }, { id: "opus" }] },
   session: {},
-} as OpenClawConfig;
+} as AforaConfig;
 
 const baseParams = {
   startDate: "2026-02-01",
@@ -58,7 +58,7 @@ function sessionSummary(totalTokens: number) {
 
 async function runSessionsUsage(
   params: Record<string, unknown>,
-  runtimeConfig: OpenClawConfig = config,
+  runtimeConfig: AforaConfig = config,
 ) {
   const respond = vi.fn();
   await expectDefined(

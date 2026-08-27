@@ -1,12 +1,12 @@
 // Discord plugin module implements reply safety behavior.
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-dispatch-runtime";
-import { resolveSendableOutboundReplyParts } from "openclaw/plugin-sdk/reply-payload";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-dispatch-runtime";
+import { resolveSendableOutboundReplyParts } from "afora-agent/plugin-sdk/reply-payload";
 import {
   sanitizeAssistantVisibleText,
   sanitizeAssistantVisibleTextWithProfile,
   findCodeRegions,
-} from "openclaw/plugin-sdk/text-chunking";
-import { stripPlainTextToolCallBlocks } from "openclaw/plugin-sdk/tool-payload";
+} from "afora-agent/plugin-sdk/text-chunking";
+import { stripPlainTextToolCallBlocks } from "afora-agent/plugin-sdk/tool-payload";
 
 const DISCORD_INTERNAL_CHANNEL_LINE_RE =
   /^(?:>\s*)?(?:analysis|commentary|thinking|reasoning)\s*[:=]/i;

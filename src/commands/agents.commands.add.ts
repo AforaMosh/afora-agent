@@ -1,10 +1,10 @@
-// Implements `openclaw agents add`, including config mutation, workspace setup, auth copy, and route binding setup.
+// Implements `afora agents add`, including config mutation, workspace setup, auth copy, and route binding setup.
 import fs from "node:fs/promises";
 import path from "node:path";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   checkAgentCreationGate,
   createAgent,
@@ -104,7 +104,7 @@ export async function agentsAddCommand(
   const nonInteractive = opts.nonInteractive === true || hasFlags;
   if (!opts.nonInteractive && !hasAutomationFlags && !isTerminalInteractive()) {
     runtime.error(
-      `Agent creation needs an interactive TTY. Use \`${formatCliCommand("openclaw agents add <id> --non-interactive --workspace <dir>")}\` for automation.`,
+      `Agent creation needs an interactive TTY. Use \`${formatCliCommand("afora agents add <id> --non-interactive --workspace <dir>")}\` for automation.`,
     );
     runtime.exit(1);
     return;
@@ -123,14 +123,14 @@ export async function agentsAddCommand(
   if (nonInteractive) {
     if (!workspaceFlag) {
       runtime.error(
-        `Non-interactive agent creation requires --workspace. Re-run ${formatCliCommand("openclaw agents add <id> --workspace <path>")} or omit flags to use the wizard.`,
+        `Non-interactive agent creation requires --workspace. Re-run ${formatCliCommand("afora agents add <id> --workspace <path>")} or omit flags to use the wizard.`,
       );
       runtime.exit(1);
       return;
     }
     if (!nameInput) {
       runtime.error(
-        `Agent name is required in non-interactive mode. Run ${formatCliCommand("openclaw agents add <id> --workspace <path>")}.`,
+        `Agent name is required in non-interactive mode. Run ${formatCliCommand("afora agents add <id> --workspace <path>")}.`,
       );
       runtime.exit(1);
       return;
@@ -139,7 +139,7 @@ export async function agentsAddCommand(
     if (!validation.ok) {
       runtime.error(
         validation.reason === "reserved-id"
-          ? `"${validation.agentId}" is reserved. Choose another name, or run ${formatCliCommand("openclaw agents list")} to inspect configured agents.`
+          ? `"${validation.agentId}" is reserved. Choose another name, or run ${formatCliCommand("afora agents list")} to inspect configured agents.`
           : validation.message,
       );
       runtime.exit(1);
@@ -163,7 +163,7 @@ export async function agentsAddCommand(
     if (created.status === "error") {
       runtime.error(
         created.reason === "reserved-id"
-          ? `"${created.agentId}" is reserved. Choose another name, or run ${formatCliCommand("openclaw agents list")} to inspect configured agents.`
+          ? `"${created.agentId}" is reserved. Choose another name, or run ${formatCliCommand("afora agents list")} to inspect configured agents.`
           : created.reason === "already-exists"
             ? `Agent "${created.agentId}" already exists.`
             : created.message,
@@ -218,7 +218,7 @@ export async function agentsAddCommand(
 
   const prompter = createClackPrompter();
   try {
-    await prompter.intro("Add OpenClaw agent");
+    await prompter.intro("Add Afora agent");
     const name =
       nameInput ??
       (await prompter.text({
@@ -448,7 +448,7 @@ export async function agentsAddCommand(
         await prompter.note(
           [
             "Routing unchanged. Add bindings when you're ready.",
-            "Docs: https://docs.openclaw.ai/concepts/multi-agent",
+            "Docs: https://docs.afora.ai/concepts/multi-agent",
           ].join("\n"),
           "Routing",
         );

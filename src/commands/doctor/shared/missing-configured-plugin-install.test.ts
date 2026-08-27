@@ -1,10 +1,10 @@
 // Missing configured plugin install tests cover doctor diagnostics for absent plugin installs.
 import fs from "node:fs";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../../test/helpers/temp-dir.js";
-import type { OpenClawConfig, PluginsConfig } from "../../../config/types.js";
+import type { AforaConfig, PluginsConfig } from "../../../config/types.js";
 import { resolveRegistryUpdateChannel } from "../../../infra/update-channels.js";
 import { CLAWHUB_INSTALL_ERROR_CODE } from "../../../plugins/clawhub-error-codes.js";
 import {
@@ -41,15 +41,15 @@ function expectedClawHubInstallSpec(spec: string): string {
 
 function expectedCodexInstallSpec(): string {
   return resolveNpmInstallSpecsForUpdateChannel({
-    spec: "@openclaw/codex",
+    spec: "@afora/codex",
     updateChannel: resolveRegistryUpdateChannel({ currentVersion: VERSION }),
-    officialPackageName: "@openclaw/codex",
+    officialPackageName: "@afora/codex",
     coreVersion: VERSION,
     versionBoundToCore: true,
   }).installSpec;
 }
 
-function currentOpenClawReleaseBase(): string {
+function currentAforaReleaseBase(): string {
   return VERSION.replace(/-(?:alpha|beta)\.[1-9]\d*$/u, "");
 }
 
@@ -82,7 +82,7 @@ const mocks = vi.hoisted(() => ({
   loadInstalledPluginIndexInstallRecords: vi.fn(),
   loadPluginMetadataSnapshot: vi.fn(),
   getOfficialExternalPluginCatalogManifest: vi.fn(
-    (entry: { openclaw?: unknown }) => entry.openclaw,
+    (entry: { afora?: unknown }) => entry.afora,
   ),
   resolveOfficialExternalPluginId: vi.fn((entry: { id?: string }) => entry.id),
   resolveOfficialExternalPluginInstall: vi.fn(
@@ -108,7 +108,7 @@ const mocks = vi.hoisted(() => ({
                   baseUrl: "https://api.openai.com/v1",
                   authRequirement: "api-key",
                   requestTransportOverrides: requestTransportOverrides ?? "none",
-                  runtimePolicy: { compatibleIds: ["openclaw", "codex"] },
+                  runtimePolicy: { compatibleIds: ["afora", "codex"] },
                 },
               ],
               defaultRuntimeId: "codex",
@@ -116,15 +116,15 @@ const mocks = vi.hoisted(() => ({
           }
         : null,
   ),
-  resolveDefaultPluginExtensionsDir: vi.fn(() => "/tmp/openclaw-plugins"),
-  resolveDefaultPluginNpmDir: vi.fn(() => "/tmp/openclaw-npm"),
-  resolvePluginNpmProjectsDir: vi.fn((npmDir = "/tmp/openclaw-npm") =>
+  resolveDefaultPluginExtensionsDir: vi.fn(() => "/tmp/afora-plugins"),
+  resolveDefaultPluginNpmDir: vi.fn(() => "/tmp/afora-npm"),
+  resolvePluginNpmProjectsDir: vi.fn((npmDir = "/tmp/afora-npm") =>
     path.join(npmDir, "projects"),
   ),
   resolvePluginNpmPackageDir: vi.fn(
     ({ npmDir, packageName }: { npmDir?: string; packageName: string }) =>
       path.join(
-        npmDir ?? "/tmp/openclaw-npm",
+        npmDir ?? "/tmp/afora-npm",
         "projects",
         packageName.replace(/[^a-zA-Z0-9._-]+/g, "-"),
         "node_modules",
@@ -132,7 +132,7 @@ const mocks = vi.hoisted(() => ({
       ),
   ),
   resolvePluginInstallDir: vi.fn(
-    (pluginId: string, extensionsDir = "/tmp/openclaw-plugins") => `${extensionsDir}/${pluginId}`,
+    (pluginId: string, extensionsDir = "/tmp/afora-plugins") => `${extensionsDir}/${pluginId}`,
   ),
   validatePluginId: vi.fn(() => null),
   resolveProviderInstallCatalogEntries: vi.fn(),
@@ -157,7 +157,7 @@ function writeLegacyNpmDeclarationStub(params: {
 }): void {
   fs.mkdirSync(params.pluginDir, { recursive: true });
   fs.writeFileSync(
-    path.join(params.pluginDir, "openclaw.extension.json"),
+    path.join(params.pluginDir, "afora.extension.json"),
     JSON.stringify({
       name: params.pluginId,
       type: "npm",
@@ -168,7 +168,7 @@ function writeLegacyNpmDeclarationStub(params: {
 }
 
 async function repairConfiguredPlugins(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   env: Record<string, string | undefined> = {},
 ) {
   const { repairMissingConfiguredPluginInstalls } =
@@ -178,16 +178,16 @@ async function repairConfiguredPlugins(
 
 function useManifestCatalogResolvers(): void {
   mocks.resolveOfficialExternalPluginId.mockImplementation(
-    (entry: { id?: string; openclaw?: { plugin?: { id?: string } } }) =>
-      entry.openclaw?.plugin?.id ?? entry.id,
+    (entry: { id?: string; afora?: { plugin?: { id?: string } } }) =>
+      entry.afora?.plugin?.id ?? entry.id,
   );
   mocks.resolveOfficialExternalPluginInstall.mockImplementation(
-    (entry: { install?: unknown; openclaw?: { install?: unknown } }) =>
-      entry.openclaw?.install ?? entry.install ?? null,
+    (entry: { install?: unknown; afora?: { install?: unknown } }) =>
+      entry.afora?.install ?? entry.install ?? null,
   );
   mocks.resolveOfficialExternalPluginLabel.mockImplementation(
-    (entry: { label?: string; openclaw?: { plugin?: { label?: string } } }) =>
-      entry.openclaw?.plugin?.label ?? entry.label ?? "plugin",
+    (entry: { label?: string; afora?: { plugin?: { label?: string } } }) =>
+      entry.afora?.plugin?.label ?? entry.label ?? "plugin",
   );
 }
 
@@ -204,7 +204,7 @@ function mockBrokenBraveInstall(
   mocks.listOfficialExternalPluginCatalogEntries.mockReturnValue([
     officialWebSearchPluginEntry({
       id: "brave",
-      npmSpec: "@openclaw/brave-plugin",
+      npmSpec: "@afora/brave-plugin",
       envVar: "BRAVE_API_KEY",
       label: "Brave",
       providerLabel: "Brave Search",
@@ -267,7 +267,7 @@ vi.mock("../../../plugins/doctor-contract-registry.js", async (importOriginal) =
   ...(await importOriginal<typeof import("../../../plugins/doctor-contract-registry.js")>()),
   // Plugin-owned compatibility is outside this install-repair suite. Avoid scanning
   // the real plugin registry when the legacy-config fixture reaches that follow-up pass.
-  applyPluginDoctorCompatibilityMigrations: (cfg: OpenClawConfig) => ({
+  applyPluginDoctorCompatibilityMigrations: (cfg: AforaConfig) => ({
     config: cfg,
     changes: [],
   }),
@@ -307,7 +307,7 @@ vi.mock("../../../plugins/doctor-contract-registry.js", async (importOriginal) =
     ...actual,
     // Plugin-owned compatibility discovery has its own coverage. Keep this
     // install-repair suite focused and avoid scanning every source plugin.
-    applyPluginDoctorCompatibilityMigrations: (cfg: OpenClawConfig) => ({
+    applyPluginDoctorCompatibilityMigrations: (cfg: AforaConfig) => ({
       config: cfg,
       changes: [],
     }),
@@ -343,8 +343,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.loadInstalledPluginIndexInstallRecords.mockResolvedValue({});
     mocks.listChannelPluginCatalogEntries.mockReturnValue([]);
     mocks.listOfficialExternalPluginCatalogEntries.mockReturnValue([]);
-    mocks.resolveDefaultPluginExtensionsDir.mockReturnValue("/tmp/openclaw-plugins");
-    mocks.resolveDefaultPluginNpmDir.mockReturnValue("/tmp/openclaw-npm");
+    mocks.resolveDefaultPluginExtensionsDir.mockReturnValue("/tmp/afora-plugins");
+    mocks.resolveDefaultPluginNpmDir.mockReturnValue("/tmp/afora-npm");
     mocks.resolveProviderInstallCatalogEntries.mockReturnValue([]);
     mocks.resolveOfficialExternalProviderPluginIdsForEnv.mockReturnValue([]);
     mocks.resolveOfficialExternalWebProviderContractPluginIdsForEnv.mockReturnValue([]);
@@ -363,13 +363,13 @@ describe("repairMissingConfiguredPluginInstalls", () => {
           }
           const candidate = entry as {
             id?: string;
-            openclaw?: {
+            afora?: {
               plugin?: { id?: string };
               contracts?: Record<string, unknown>;
             };
           };
-          const pluginId = candidate.openclaw?.plugin?.id ?? candidate.id;
-          const ownedProviderIds = candidate.openclaw?.contracts?.[contract];
+          const pluginId = candidate.afora?.plugin?.id ?? candidate.id;
+          const ownedProviderIds = candidate.afora?.contracts?.[contract];
           if (
             !pluginId ||
             !Array.isArray(ownedProviderIds) ||
@@ -400,13 +400,13 @@ describe("repairMissingConfiguredPluginInstalls", () => {
           }
           const candidate = entry as {
             id?: string;
-            openclaw?: {
+            afora?: {
               plugin?: { id?: string };
               providers?: Array<{ id?: string; aliases?: string[] }>;
             };
           };
-          const pluginId = candidate.openclaw?.plugin?.id ?? candidate.id;
-          const ownsConfiguredProvider = candidate.openclaw?.providers?.some((provider) =>
+          const pluginId = candidate.afora?.plugin?.id ?? candidate.id;
+          const ownsConfiguredProvider = candidate.afora?.providers?.some((provider) =>
             [provider.id, ...(provider.aliases ?? [])].some(
               (providerId) =>
                 typeof providerId === "string" &&
@@ -420,12 +420,12 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.installPluginFromClawHub.mockResolvedValue({
       ok: true,
       pluginId: "matrix",
-      targetDir: "/tmp/openclaw-plugins/matrix",
+      targetDir: "/tmp/afora-plugins/matrix",
       version: "1.2.3",
       clawhub: {
         source: "clawhub",
         clawhubUrl: "https://clawhub.ai",
-        clawhubPackage: "@openclaw/plugin-matrix",
+        clawhubPackage: "@afora/plugin-matrix",
         clawhubFamily: "code-plugin",
         clawhubChannel: "official",
         version: "1.2.3",
@@ -440,12 +440,12 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.installPluginFromNpmSpec.mockResolvedValue({
       ok: true,
       pluginId: "matrix",
-      targetDir: "/tmp/openclaw-plugins/matrix",
+      targetDir: "/tmp/afora-plugins/matrix",
       version: "1.2.3",
       npmResolution: {
-        name: "@openclaw/plugin-matrix",
+        name: "@afora/plugin-matrix",
         version: "1.2.3",
-        resolvedSpec: "@openclaw/plugin-matrix@1.2.3",
+        resolvedSpec: "@afora/plugin-matrix@1.2.3",
         integrity: "sha512-test",
         resolvedAt: "2026-05-01T00:00:00.000Z",
       },
@@ -459,7 +459,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "matrix",
         meta: { label: "Matrix" },
         install: {
-          npmSpec: "@openclaw/plugin-matrix@1.2.3",
+          npmSpec: "@afora/plugin-matrix@1.2.3",
           expectedIntegrity: "sha512-test",
         },
         trustedSourceLinkedOfficialInstall: true,
@@ -486,7 +486,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     expect(issue).toEqual({
       kind: "missing-install-record",
       pluginId: "matrix",
-      installSpec: "@openclaw/plugin-matrix@1.2.3",
+      installSpec: "@afora/plugin-matrix@1.2.3",
     });
     expect(
       configuredPluginInstallIssueToHealthFinding(expectDefined(issue, "issue test invariant")),
@@ -494,7 +494,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       checkId: "core/doctor/configured-plugin-installs",
       severity: "warning",
       target: "matrix",
-      fixHint: "Run `openclaw doctor --fix` to install @openclaw/plugin-matrix@1.2.3.",
+      fixHint: "Run `afora doctor --fix` to install @afora/plugin-matrix@1.2.3.",
     });
     expect(
       configuredPluginInstallIssueToRepairEffect(expectDefined(issue, "issue test invariant")),
@@ -511,7 +511,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const records = {
       discord: {
         source: "npm",
-        spec: "@openclaw/discord",
+        spec: "@afora/discord",
         installPath: missingDiscordPath,
       },
     };
@@ -522,7 +522,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "discord",
         meta: { label: "Discord" },
         install: {
-          npmSpec: "@openclaw/discord",
+          npmSpec: "@afora/discord",
         },
       },
     ]);
@@ -544,8 +544,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         },
       },
       env: {
-        OPENCLAW_UPDATE_IN_PROGRESS: "1",
-        OPENCLAW_UPDATE_DEFER_CONFIGURED_PLUGIN_INSTALL_REPAIR: "1",
+        AFORA_UPDATE_IN_PROGRESS: "1",
+        AFORA_UPDATE_DEFER_CONFIGURED_PLUGIN_INSTALL_REPAIR: "1",
       },
     });
 
@@ -579,7 +579,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const records = {
       discord: {
         source: "npm",
-        spec: "@openclaw/discord",
+        spec: "@afora/discord",
         installPath: missingDiscordPath,
       },
     };
@@ -590,7 +590,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "discord",
         meta: { label: "Discord" },
         install: {
-          npmSpec: "@openclaw/discord",
+          npmSpec: "@afora/discord",
         },
       },
     ]);
@@ -616,7 +616,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         kind: "missing-installed-payload",
         pluginId: "discord",
         installPath: missingDiscordPath,
-        installSpec: "@openclaw/discord",
+        installSpec: "@afora/discord",
       },
     ]);
   });
@@ -629,7 +629,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         entries: { matrix: { enabled: false } },
       },
       channels: { matrix: { enabled: false } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const baselineRecords = {};
     expect(resolveInstalledPluginIndexPolicyHash(cfg)).not.toBe(
       resolveInstalledPluginIndexPolicyHash(undefined),
@@ -655,20 +655,20 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     expect(result.records).toBe(baselineRecords);
   });
 
-  it("installs a missing configured OpenClaw channel plugin from npm by default", async () => {
+  it("installs a missing configured Afora channel plugin from npm by default", async () => {
     const cfg = {
       security: { installPolicy: { enabled: true } },
       channels: {
         matrix: { enabled: true, homeserver: "https://matrix.example.org" },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     mocks.listChannelPluginCatalogEntries.mockReturnValue([
       {
         id: "matrix",
         pluginId: "matrix",
         meta: { label: "Matrix" },
         install: {
-          npmSpec: "@openclaw/plugin-matrix@1.2.3",
+          npmSpec: "@afora/plugin-matrix@1.2.3",
           expectedIntegrity: "sha512-test",
         },
         trustedSourceLinkedOfficialInstall: true,
@@ -684,8 +684,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
 
     expect(mocks.installPluginFromClawHub).not.toHaveBeenCalled();
     expectRecordFields(mockCallArg(mocks.installPluginFromNpmSpec), {
-      spec: "@openclaw/plugin-matrix@1.2.3",
-      extensionsDir: "/tmp/openclaw-plugins",
+      spec: "@afora/plugin-matrix@1.2.3",
+      extensionsDir: "/tmp/afora-plugins",
       expectedPluginId: "matrix",
       expectedIntegrity: "sha512-test",
       trustedSourceLinkedOfficialInstall: true,
@@ -694,8 +694,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const records = mockCallArg(mocks.writePersistedInstalledPluginIndexInstallRecords);
     expectRecordFields((records as Record<string, unknown>).matrix, {
       source: "npm",
-      spec: "@openclaw/plugin-matrix@1.2.3",
-      installPath: "/tmp/openclaw-plugins/matrix",
+      spec: "@afora/plugin-matrix@1.2.3",
+      installPath: "/tmp/afora-plugins/matrix",
       version: "1.2.3",
     });
     expect(mockCallArg(mocks.writePersistedInstalledPluginIndexInstallRecords, 0, 1)).toEqual({
@@ -703,7 +703,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       env: {},
     });
     expect(result.changes).toEqual([
-      'Installed missing configured plugin "matrix" from @openclaw/plugin-matrix@1.2.3.',
+      'Installed missing configured plugin "matrix" from @afora/plugin-matrix@1.2.3.',
     ]);
     expect(result.warnings).toStrictEqual([]);
   });
@@ -714,7 +714,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       channels: {
         matrix: { enabled: true, homeserver: "https://matrix.example.org" },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const reviewNotice =
       "╭─ REVIEW RECOMMENDED - ClawHub has not completed a fresh clean check ─╮\n" +
       "│ • Status:            security scan is pending                         │\n" +
@@ -726,12 +726,12 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         return {
           ok: true,
           pluginId: "matrix",
-          targetDir: "/tmp/openclaw-plugins/matrix",
+          targetDir: "/tmp/afora-plugins/matrix",
           version: "1.2.3",
           clawhub: {
             source: "clawhub",
             clawhubUrl: "https://clawhub.ai",
-            clawhubPackage: "@openclaw/plugin-matrix",
+            clawhubPackage: "@afora/plugin-matrix",
             clawhubFamily: "code-plugin",
             clawhubChannel: "official",
             version: "1.2.3",
@@ -751,8 +751,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "matrix",
         meta: { label: "Matrix" },
         install: {
-          clawhubSpec: "clawhub:@openclaw/plugin-matrix@stable",
-          npmSpec: "@openclaw/plugin-matrix@1.2.3",
+          clawhubSpec: "clawhub:@afora/plugin-matrix@stable",
+          npmSpec: "@afora/plugin-matrix@1.2.3",
           expectedIntegrity: "sha512-test",
         },
       },
@@ -766,14 +766,14 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     });
 
     const clawHubCall = expectRecordFields(mockCallArg(mocks.installPluginFromClawHub), {
-      spec: "clawhub:@openclaw/plugin-matrix@stable",
+      spec: "clawhub:@afora/plugin-matrix@stable",
       expectedPluginId: "matrix",
       config: cfg,
     });
     expect(clawHubCall.logger).toEqual(expect.objectContaining({ terminalLinks: false }));
     expect(mocks.installPluginFromNpmSpec).not.toHaveBeenCalled();
     expect(result.changes).toEqual([
-      'Installed missing configured plugin "matrix" from clawhub:@openclaw/plugin-matrix@stable.',
+      'Installed missing configured plugin "matrix" from clawhub:@afora/plugin-matrix@stable.',
     ]);
     expect(result.notices).toContain(reviewNotice);
     expect(result.notices?.[0]).not.toContain("\u001b");
@@ -785,7 +785,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       ok: false,
       code: "clawhub_risk_acknowledgement_required",
       error:
-        'ClawHub release "@openclaw/plugin-matrix@stable" has trust warnings. Review the package and rerun with --acknowledge-clawhub-risk to continue.',
+        'ClawHub release "@afora/plugin-matrix@stable" has trust warnings. Review the package and rerun with --acknowledge-clawhub-risk to continue.',
     });
     mocks.listChannelPluginCatalogEntries.mockReturnValue([
       {
@@ -793,7 +793,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "matrix",
         meta: { label: "Matrix" },
         install: {
-          clawhubSpec: "clawhub:@openclaw/plugin-matrix@stable",
+          clawhubSpec: "clawhub:@afora/plugin-matrix@stable",
         },
       },
     ]);
@@ -810,7 +810,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     });
 
     expect(result.warnings[0]).toContain(
-      "openclaw plugins install clawhub:@openclaw/plugin-matrix@stable --acknowledge-clawhub-risk",
+      "afora plugins install clawhub:@afora/plugin-matrix@stable --acknowledge-clawhub-risk",
     );
   });
 
@@ -818,8 +818,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const records = {
       demo: {
         source: "clawhub",
-        spec: "clawhub:@openclaw/plugin-demo@stable",
-        clawhubPackage: "@openclaw/plugin-demo",
+        spec: "clawhub:@afora/plugin-demo@stable",
+        clawhubPackage: "@afora/plugin-demo",
         installPath: "/missing/demo",
       },
     };
@@ -837,7 +837,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
           status: "skipped",
           code: "clawhub_download_blocked",
           message:
-            'Skipped demo ClawHub update: ClawHub release "@openclaw/plugin-demo@1.2.4" cannot be installed because ClawHub flagged it as blocked or malicious. Review the security details above or choose a different version. Existing installed plugin left unchanged.',
+            'Skipped demo ClawHub update: ClawHub release "@afora/plugin-demo@1.2.4" cannot be installed because ClawHub flagged it as blocked or malicious. Review the security details above or choose a different version. Existing installed plugin left unchanged.',
         },
       ],
     });
@@ -862,7 +862,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     );
     expect(result.changes).toStrictEqual([]);
     expect(result.warnings).toStrictEqual([
-      'Skipped demo ClawHub update: ClawHub release "@openclaw/plugin-demo@1.2.4" cannot be installed because ClawHub flagged it as blocked or malicious. Review the security details above or choose a different version. Existing installed plugin left unchanged.',
+      'Skipped demo ClawHub update: ClawHub release "@afora/plugin-demo@1.2.4" cannot be installed because ClawHub flagged it as blocked or malicious. Review the security details above or choose a different version. Existing installed plugin left unchanged.',
     ]);
   });
 
@@ -871,7 +871,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       ok: false,
       code: "clawhub_risk_acknowledgement_required",
       error:
-        'ClawHub release "@openclaw/plugin-matrix@stable" has trust warnings. Review the package and rerun with --acknowledge-clawhub-risk to continue.',
+        'ClawHub release "@afora/plugin-matrix@stable" has trust warnings. Review the package and rerun with --acknowledge-clawhub-risk to continue.',
     });
     mocks.listChannelPluginCatalogEntries.mockReturnValue([
       {
@@ -879,7 +879,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "matrix",
         meta: { label: "Matrix" },
         install: {
-          clawhubSpec: "clawhub:@openclaw/plugin-matrix\n\u001b[31m@stable;$(touch /tmp/pwned)",
+          clawhubSpec: "clawhub:@afora/plugin-matrix\n\u001b[31m@stable;$(touch /tmp/pwned)",
         },
       },
     ]);
@@ -897,10 +897,10 @@ describe("repairMissingConfiguredPluginInstalls", () => {
 
     const warning = result.warnings[0] ?? "";
     expect(warning).toContain(
-      "openclaw plugins install 'clawhub:@openclaw/plugin-matrix\\n@stable;$(touch /tmp/pwned)' --acknowledge-clawhub-risk",
+      "afora plugins install 'clawhub:@afora/plugin-matrix\\n@stable;$(touch /tmp/pwned)' --acknowledge-clawhub-risk",
     );
     expect(warning).not.toContain(
-      "openclaw plugins install clawhub:@openclaw/plugin-matrix\\n@stable;$(touch /tmp/pwned) --acknowledge-clawhub-risk",
+      "afora plugins install clawhub:@afora/plugin-matrix\\n@stable;$(touch /tmp/pwned) --acknowledge-clawhub-risk",
     );
     expect(warning).not.toContain("\u001b");
     expect(warning).not.toContain("plugin-matrix\n");
@@ -910,7 +910,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.installPluginFromNpmSpec.mockResolvedValueOnce(
       successfulInstall({
         pluginId: "matrix",
-        npmSpec: "@openclaw/plugin-matrix",
+        npmSpec: "@afora/plugin-matrix",
         version: "1.2.3",
       }),
     );
@@ -920,7 +920,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "matrix",
         meta: { label: "Matrix" },
         install: {
-          npmSpec: "@openclaw/plugin-matrix@1.2.3",
+          npmSpec: "@afora/plugin-matrix@1.2.3",
         },
         trustedSourceLinkedOfficialInstall: true,
       },
@@ -935,28 +935,28 @@ describe("repairMissingConfiguredPluginInstalls", () => {
 
     expect(mocks.installPluginFromClawHub).not.toHaveBeenCalled();
     expectRecordFields(mockCallArg(mocks.installPluginFromNpmSpec), {
-      spec: "@openclaw/plugin-matrix@1.2.3",
-      extensionsDir: "/tmp/openclaw-plugins",
+      spec: "@afora/plugin-matrix@1.2.3",
+      extensionsDir: "/tmp/afora-plugins",
       expectedPluginId: "matrix",
       trustedSourceLinkedOfficialInstall: true,
     });
     const records = mockCallArg(mocks.writePersistedInstalledPluginIndexInstallRecords);
     expectRecordFields((records as Record<string, unknown>).matrix, {
       source: "npm",
-      spec: "@openclaw/plugin-matrix@1.2.3",
-      installPath: "/tmp/openclaw-plugins/matrix",
+      spec: "@afora/plugin-matrix@1.2.3",
+      installPath: "/tmp/afora-plugins/matrix",
     });
     expect(mockCallArg(mocks.writePersistedInstalledPluginIndexInstallRecords, 0, 1)).toEqual({
       config: {},
       env: { MATRIX_HOMESERVER: "https://matrix.example.org" },
     });
     expect(result.changes).toEqual([
-      'Installed missing configured plugin "matrix" from @openclaw/plugin-matrix@1.2.3.',
+      'Installed missing configured plugin "matrix" from @afora/plugin-matrix@1.2.3.',
     ]);
     expect(result.warnings).toStrictEqual([]);
   });
 
-  it("falls back to npm when an OpenClaw channel plugin artifact is unavailable on ClawHub", async () => {
+  it("falls back to npm when an Afora channel plugin artifact is unavailable on ClawHub", async () => {
     mocks.installPluginFromClawHub.mockResolvedValueOnce({
       ok: false,
       code: "artifact_unavailable",
@@ -968,8 +968,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "matrix",
         meta: { label: "Matrix" },
         install: {
-          clawhubSpec: "clawhub:@openclaw/plugin-matrix@stable",
-          npmSpec: "@openclaw/plugin-matrix@1.2.3",
+          clawhubSpec: "clawhub:@afora/plugin-matrix@stable",
+          npmSpec: "@afora/plugin-matrix@1.2.3",
         },
         trustedSourceLinkedOfficialInstall: true,
       },
@@ -985,18 +985,18 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     });
 
     expectRecordFields(mockCallArg(mocks.installPluginFromNpmSpec), {
-      spec: "@openclaw/plugin-matrix@1.2.3",
+      spec: "@afora/plugin-matrix@1.2.3",
       expectedPluginId: "matrix",
       trustedSourceLinkedOfficialInstall: true,
     });
     expect(result.changes).toEqual([
-      'ClawHub clawhub:@openclaw/plugin-matrix@stable unavailable for "matrix"; falling back to npm @openclaw/plugin-matrix@1.2.3.',
-      'Installed missing configured plugin "matrix" from @openclaw/plugin-matrix@1.2.3.',
+      'ClawHub clawhub:@afora/plugin-matrix@stable unavailable for "matrix"; falling back to npm @afora/plugin-matrix@1.2.3.',
+      'Installed missing configured plugin "matrix" from @afora/plugin-matrix@1.2.3.',
     ]);
     expect(result.warnings).toStrictEqual([]);
   });
 
-  it("does not fall back from ClawHub to non-OpenClaw npm packages", async () => {
+  it("does not fall back from ClawHub to non-Afora npm packages", async () => {
     mocks.installPluginFromClawHub.mockResolvedValueOnce({
       ok: false,
       code: "artifact_download_unavailable",
@@ -1008,7 +1008,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "matrix",
         meta: { label: "Matrix" },
         install: {
-          clawhubSpec: "clawhub:@openclaw/plugin-matrix@stable",
+          clawhubSpec: "clawhub:@afora/plugin-matrix@stable",
           npmSpec: "@someone-else/plugin-matrix@1.2.3",
         },
       },
@@ -1026,15 +1026,15 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     expect(mocks.installPluginFromNpmSpec).not.toHaveBeenCalled();
     expect(result.changes).toStrictEqual([]);
     expect(result.warnings).toEqual([
-      'Failed to install missing configured plugin "matrix" from clawhub:@openclaw/plugin-matrix@stable: ClawHub artifact download is not available yet.',
+      'Failed to install missing configured plugin "matrix" from clawhub:@afora/plugin-matrix@stable: ClawHub artifact download is not available yet.',
     ]);
   });
 
-  it("honors npm-first catalog metadata for missing OpenClaw channel plugins", async () => {
+  it("honors npm-first catalog metadata for missing Afora channel plugins", async () => {
     mocks.installPluginFromNpmSpec.mockResolvedValueOnce(
       successfulInstall({
         pluginId: "twitch",
-        npmSpec: "@openclaw/twitch",
+        npmSpec: "@afora/twitch",
         version: "2026.5.2",
       }),
     );
@@ -1044,7 +1044,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "twitch",
         meta: { label: "Twitch" },
         install: {
-          npmSpec: "@openclaw/twitch",
+          npmSpec: "@afora/twitch",
           defaultChoice: "npm",
         },
         trustedSourceLinkedOfficialInstall: true,
@@ -1062,12 +1062,12 @@ describe("repairMissingConfiguredPluginInstalls", () => {
 
     expect(mocks.installPluginFromClawHub).not.toHaveBeenCalled();
     expectRecordFields(mockCallArg(mocks.installPluginFromNpmSpec), {
-      spec: expectedNpmInstallSpec("@openclaw/twitch"),
+      spec: expectedNpmInstallSpec("@afora/twitch"),
       expectedPluginId: "twitch",
       trustedSourceLinkedOfficialInstall: true,
     });
     expect(result.changes).toEqual([
-      `Installed missing configured plugin "twitch" from ${expectedNpmInstallSpec("@openclaw/twitch")}.`,
+      `Installed missing configured plugin "twitch" from ${expectedNpmInstallSpec("@afora/twitch")}.`,
     ]);
   });
 
@@ -1075,7 +1075,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.installPluginFromNpmSpec.mockResolvedValueOnce(
       successfulInstall({
         pluginId: "diagnostics-otel",
-        npmSpec: "@openclaw/diagnostics-otel",
+        npmSpec: "@afora/diagnostics-otel",
         version: VERSION,
       }),
     );
@@ -1084,7 +1084,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         id: "diagnostics-otel",
         label: "Diagnostics OpenTelemetry",
         install: {
-          npmSpec: "@openclaw/diagnostics-otel",
+          npmSpec: "@afora/diagnostics-otel",
           defaultChoice: "npm",
         },
       },
@@ -1101,7 +1101,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     });
 
     expectRecordFields(mockCallArg(mocks.installPluginFromNpmSpec), {
-      spec: `@openclaw/diagnostics-otel@${VERSION}`,
+      spec: `@afora/diagnostics-otel@${VERSION}`,
       expectedPluginId: "diagnostics-otel",
       trustedSourceLinkedOfficialInstall: true,
     });
@@ -1109,8 +1109,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       mocks.writePersistedInstalledPluginIndexInstallRecords,
     ) as Record<string, unknown>;
     expectRecordFields(persistedRecords["diagnostics-otel"], {
-      spec: "@openclaw/diagnostics-otel",
-      resolvedSpec: `@openclaw/diagnostics-otel@${VERSION}`,
+      spec: "@afora/diagnostics-otel",
+      resolvedSpec: `@afora/diagnostics-otel@${VERSION}`,
     });
   });
 
@@ -1120,7 +1120,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         id: "diagnostics-otel",
         label: "Diagnostics OpenTelemetry",
         install: {
-          npmSpec: "@openclaw/diagnostics-otel",
+          npmSpec: "@afora/diagnostics-otel",
           defaultChoice: "npm",
         },
       },
@@ -1174,7 +1174,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "matrix",
         meta: { label: "Matrix" },
         install: {
-          npmSpec: "@openclaw/plugin-matrix@1.2.3",
+          npmSpec: "@afora/plugin-matrix@1.2.3",
         },
       },
     ]);
@@ -1200,7 +1200,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         origin: "bundled",
         meta: { label: "Matrix" },
         install: {
-          npmSpec: "@openclaw/matrix",
+          npmSpec: "@afora/matrix",
         },
       },
     ]);
@@ -1209,13 +1209,13 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         {
           id: "matrix",
           origin: "bundled",
-          packageName: "@openclaw/matrix",
+          packageName: "@afora/matrix",
           channels: ["matrix"],
         },
       ],
       diagnostics: [],
     });
-    mockCurrentBundledPlugin("matrix", "@openclaw/matrix");
+    mockCurrentBundledPlugin("matrix", "@afora/matrix");
 
     const { repairMissingConfiguredPluginInstalls } =
       await import("./missing-configured-plugin-install.js");
@@ -1244,7 +1244,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const records = {
       matrix: {
         source: "npm",
-        spec: "@openclaw/matrix",
+        spec: "@afora/matrix",
         installPath: "/missing/matrix",
       },
     };
@@ -1256,7 +1256,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         origin: "bundled",
         meta: { label: "Matrix" },
         install: {
-          npmSpec: "@openclaw/matrix",
+          npmSpec: "@afora/matrix",
         },
       },
     ]);
@@ -1265,7 +1265,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         {
           id: "matrix",
           origin: "bundled",
-          packageName: "@openclaw/matrix",
+          packageName: "@afora/matrix",
           channels: ["matrix"],
         },
       ],
@@ -1276,7 +1276,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         },
       ],
     });
-    mockCurrentBundledPlugin("matrix", "@openclaw/matrix");
+    mockCurrentBundledPlugin("matrix", "@afora/matrix");
 
     const { repairMissingConfiguredPluginInstalls } =
       await import("./missing-configured-plugin-install.js");
@@ -1316,8 +1316,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const records = {
       "google-meet": {
         source: "npm",
-        spec: "@openclaw/google-meet",
-        resolvedName: "@openclaw/google-meet",
+        spec: "@afora/google-meet",
+        resolvedName: "@afora/google-meet",
         installPath: "/missing/google-meet",
       },
     };
@@ -1327,20 +1327,20 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         {
           id: "google-meet",
           origin: "npm",
-          packageName: "@openclaw/google-meet",
+          packageName: "@afora/google-meet",
         },
       ],
       diagnostics: [],
     });
-    mockCurrentBundledPlugin("google-meet", "@openclaw/google-meet");
+    mockCurrentBundledPlugin("google-meet", "@afora/google-meet");
     mocks.listOfficialExternalPluginCatalogEntries.mockReturnValue([
       {
         id: "google-meet",
         label: "Google Meet",
-        install: { npmSpec: "@openclaw/google-meet" },
-        openclaw: {
+        install: { npmSpec: "@afora/google-meet" },
+        afora: {
           id: "google-meet",
-          install: { npmSpec: "@openclaw/google-meet" },
+          install: { npmSpec: "@afora/google-meet" },
         },
       },
     ]);
@@ -1380,7 +1380,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         {
           id: "discord",
           origin: "bundled",
-          packageName: "@openclaw/discord",
+          packageName: "@afora/discord",
           channels: ["discord"],
         },
       ],
@@ -1390,13 +1390,13 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       {
         id: "discord",
         label: "Discord",
-        install: { npmSpec: "@openclaw/discord", defaultChoice: "npm" },
+        install: { npmSpec: "@afora/discord", defaultChoice: "npm" },
       },
     ]);
     mocks.installPluginFromNpmSpec.mockResolvedValueOnce(
       successfulInstall({
         pluginId: "discord",
-        npmSpec: "@openclaw/discord",
+        npmSpec: "@afora/discord",
         version: "2026.8.1",
       }),
     );
@@ -1410,17 +1410,17 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     });
 
     expectRecordFields(mockCallArg(mocks.installPluginFromNpmSpec), {
-      spec: expectedNpmInstallSpec("@openclaw/discord"),
+      spec: expectedNpmInstallSpec("@afora/discord"),
       expectedPluginId: "discord",
       trustedSourceLinkedOfficialInstall: true,
     });
     expectRecordFields(result.records.discord, {
       source: "npm",
-      spec: "@openclaw/discord",
-      installPath: "/tmp/openclaw-plugins/discord",
+      spec: "@afora/discord",
+      installPath: "/tmp/afora-plugins/discord",
     });
     expect(result.changes).toEqual([
-      `Installed missing configured plugin "discord" from ${expectedNpmInstallSpec("@openclaw/discord")}.`,
+      `Installed missing configured plugin "discord" from ${expectedNpmInstallSpec("@afora/discord")}.`,
     ]);
   });
 
@@ -1428,8 +1428,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const records = {
       "google-meet": {
         source: "npm",
-        spec: "@openclaw/google-meet",
-        resolvedName: "@openclaw/google-meet",
+        spec: "@afora/google-meet",
+        resolvedName: "@afora/google-meet",
         installPath: "/missing/google-meet",
       },
     };
@@ -1438,7 +1438,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       plugins: [],
       diagnostics: [],
     });
-    mockCurrentBundledPlugin("google-meet", "@openclaw/google-meet");
+    mockCurrentBundledPlugin("google-meet", "@afora/google-meet");
 
     const { repairMissingConfiguredPluginInstalls } =
       await import("./missing-configured-plugin-install.js");
@@ -1468,9 +1468,9 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       "npm",
       {
         source: "npm",
-        spec: "@openclaw/matrix-fork",
-        resolvedName: "@openclaw/matrix-fork",
-        resolvedSpec: "@openclaw/matrix-fork@1.2.3",
+        spec: "@afora/matrix-fork",
+        resolvedName: "@afora/matrix-fork",
+        resolvedSpec: "@afora/matrix-fork@1.2.3",
         installPath: "/missing/matrix-fork",
       },
     ],
@@ -1478,8 +1478,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       "clawhub",
       {
         source: "clawhub",
-        spec: "clawhub:@openclaw/matrix-fork@stable",
-        clawhubPackage: "@openclaw/matrix-fork",
+        spec: "clawhub:@afora/matrix-fork@stable",
+        clawhubPackage: "@afora/matrix-fork",
         installPath: "/missing/matrix-fork",
       },
     ],
@@ -1495,7 +1495,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
           origin: "bundled",
           meta: { label: "Matrix" },
           install: {
-            npmSpec: "@openclaw/matrix",
+            npmSpec: "@afora/matrix",
           },
         },
       ]);
@@ -1504,7 +1504,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
           {
             id: "matrix",
             origin: "bundled",
-            packageName: "@openclaw/matrix",
+            packageName: "@afora/matrix",
             channels: ["matrix"],
           },
         ],
@@ -1515,7 +1515,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
           },
         ],
       });
-      mockCurrentBundledPlugin("matrix", "@openclaw/matrix");
+      mockCurrentBundledPlugin("matrix", "@afora/matrix");
 
       const { repairMissingConfiguredPluginInstalls } =
         await import("./missing-configured-plugin-install.js");
@@ -1545,7 +1545,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const records = {
       discord: {
         source: "npm",
-        spec: "@openclaw/discord",
+        spec: "@afora/discord",
         installPath: "/missing/discord",
       },
     };
@@ -1556,7 +1556,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "discord",
         meta: { label: "Discord" },
         install: {
-          npmSpec: "@openclaw/discord",
+          npmSpec: "@afora/discord",
         },
       },
     ]);
@@ -1575,8 +1575,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         },
       },
       env: {
-        OPENCLAW_UPDATE_IN_PROGRESS: "1",
-        OPENCLAW_UPDATE_DEFER_CONFIGURED_PLUGIN_INSTALL_REPAIR: "1",
+        AFORA_UPDATE_IN_PROGRESS: "1",
+        AFORA_UPDATE_DEFER_CONFIGURED_PLUGIN_INSTALL_REPAIR: "1",
       },
     });
 
@@ -1586,19 +1586,19 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     expect(mocks.writePersistedInstalledPluginIndexInstallRecords).not.toHaveBeenCalled();
     expect(result).toEqual({
       changes: [
-        'Skipped package-manager repair for configured plugin "discord" during package update; rerun "openclaw doctor --fix" after the update completes.',
+        'Skipped package-manager repair for configured plugin "discord" during package update; rerun "afora doctor --fix" after the update completes.',
       ],
       warnings: [],
       deferredRepairDetails: [
-        'Skipped package-manager repair for configured plugin "discord" during package update; rerun "openclaw doctor --fix" after the update completes.',
+        'Skipped package-manager repair for configured plugin "discord" during package update; rerun "afora doctor --fix" after the update completes.',
       ],
       records,
     });
   });
 
   it("updates an existing npm target when stale baseline records miss an installed package", async () => {
-    const npmRoot = tempDirs.make("openclaw-plugin-stub-repair-");
-    const packageDir = path.join(npmRoot, "node_modules", "@openclaw", "discord");
+    const npmRoot = tempDirs.make("afora-plugin-stub-repair-");
+    const packageDir = path.join(npmRoot, "node_modules", "@afora", "discord");
     fs.mkdirSync(packageDir, { recursive: true });
     mocks.resolveDefaultPluginNpmDir.mockReturnValue(npmRoot);
     mocks.listChannelPluginCatalogEntries.mockReturnValue([
@@ -1607,7 +1607,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "discord",
         meta: { label: "Discord" },
         install: {
-          npmSpec: "@openclaw/discord",
+          npmSpec: "@afora/discord",
         },
       },
     ]);
@@ -1617,9 +1617,9 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       targetDir: packageDir,
       version: "1.2.3",
       npmResolution: {
-        name: "@openclaw/discord",
+        name: "@afora/discord",
         version: "1.2.3",
-        resolvedSpec: "@openclaw/discord@1.2.3",
+        resolvedSpec: "@afora/discord@1.2.3",
         integrity: "sha512-discord",
         resolvedAt: "2026-05-01T00:00:00.000Z",
       },
@@ -1639,19 +1639,19 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         },
       },
       env: {
-        OPENCLAW_UPDATE_POST_CORE_CONVERGENCE: "1",
+        AFORA_UPDATE_POST_CORE_CONVERGENCE: "1",
       },
     });
 
     expect(mocks.installPluginFromClawHub).not.toHaveBeenCalled();
     expectRecordFields(mockCallArg(mocks.installPluginFromNpmSpec), {
-      spec: expectedNpmInstallSpec("@openclaw/discord"),
+      spec: expectedNpmInstallSpec("@afora/discord"),
       expectedPluginId: "discord",
       npmDir: npmRoot,
       mode: "update",
     });
     expect(result.changes).toEqual([
-      `Installed missing configured plugin "discord" from ${expectedNpmInstallSpec("@openclaw/discord")}.`,
+      `Installed missing configured plugin "discord" from ${expectedNpmInstallSpec("@afora/discord")}.`,
     ]);
     expect(result.warnings).toEqual([]);
     expect(result.records.discord?.installPath).toBe(packageDir);
@@ -1665,9 +1665,9 @@ describe("repairMissingConfiguredPluginInstalls", () => {
           discord: { enabled: true },
         },
       },
-    } satisfies OpenClawConfig;
-    const npmRoot = tempDirs.make("openclaw-plugin-stub-repair-");
-    const packageDir = path.join(npmRoot, "node_modules", "@openclaw", "discord");
+    } satisfies AforaConfig;
+    const npmRoot = tempDirs.make("afora-plugin-stub-repair-");
+    const packageDir = path.join(npmRoot, "node_modules", "@afora", "discord");
     mocks.resolveDefaultPluginNpmDir.mockReturnValue(npmRoot);
     mocks.listChannelPluginCatalogEntries.mockReturnValue([
       {
@@ -1675,7 +1675,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "discord",
         meta: { label: "Discord" },
         install: {
-          npmSpec: "@openclaw/discord",
+          npmSpec: "@afora/discord",
         },
       },
     ]);
@@ -1690,9 +1690,9 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         targetDir: packageDir,
         version: "1.2.3",
         npmResolution: {
-          name: "@openclaw/discord",
+          name: "@afora/discord",
           version: "1.2.3",
-          resolvedSpec: "@openclaw/discord@1.2.3",
+          resolvedSpec: "@afora/discord@1.2.3",
           integrity: "sha512-discord",
           resolvedAt: "2026-05-01T00:00:00.000Z",
         },
@@ -1703,19 +1703,19 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const result = await repairMissingConfiguredPluginInstalls({
       cfg,
       env: {
-        OPENCLAW_UPDATE_POST_CORE_CONVERGENCE: "1",
+        AFORA_UPDATE_POST_CORE_CONVERGENCE: "1",
       },
     });
 
     expect(mocks.installPluginFromNpmSpec).toHaveBeenCalledTimes(2);
     expectRecordFields(mockCallArg(mocks.installPluginFromNpmSpec, 0), {
-      spec: expectedNpmInstallSpec("@openclaw/discord"),
+      spec: expectedNpmInstallSpec("@afora/discord"),
       npmDir: npmRoot,
       mode: "install",
       config: cfg,
     });
     expectRecordFields(mockCallArg(mocks.installPluginFromNpmSpec, 1), {
-      spec: expectedNpmInstallSpec("@openclaw/discord"),
+      spec: expectedNpmInstallSpec("@afora/discord"),
       npmDir: npmRoot,
       mode: "update",
       config: cfg,
@@ -1725,12 +1725,12 @@ describe("repairMissingConfiguredPluginInstalls", () => {
   });
 
   it("prefers an existing npm payload over ClawHub during post-core repair", async () => {
-    const npmRoot = tempDirs.make("openclaw-plugin-stub-repair-");
-    const packageDir = path.join(npmRoot, "node_modules", "@openclaw", "matrix");
+    const npmRoot = tempDirs.make("afora-plugin-stub-repair-");
+    const packageDir = path.join(npmRoot, "node_modules", "@afora", "matrix");
     fs.mkdirSync(packageDir, { recursive: true });
     fs.writeFileSync(
       path.join(packageDir, "package.json"),
-      JSON.stringify({ name: "@openclaw/matrix", version: "1.2.3" }),
+      JSON.stringify({ name: "@afora/matrix", version: "1.2.3" }),
     );
     mocks.resolveDefaultPluginNpmDir.mockReturnValue(npmRoot);
     mocks.listChannelPluginCatalogEntries.mockReturnValue([
@@ -1739,14 +1739,14 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "matrix",
         meta: { label: "Matrix" },
         install: {
-          clawhubSpec: "clawhub:@openclaw/matrix",
-          npmSpec: "@openclaw/matrix",
+          clawhubSpec: "clawhub:@afora/matrix",
+          npmSpec: "@afora/matrix",
         },
       },
     ]);
     mocks.installPluginFromClawHub.mockResolvedValue({
       ok: false,
-      error: 'Plugin "@openclaw/matrix" requires plugin API >=2026.5.18.',
+      error: 'Plugin "@afora/matrix" requires plugin API >=2026.5.18.',
     });
     mocks.installPluginFromNpmSpec.mockResolvedValue({
       ok: true,
@@ -1754,9 +1754,9 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       targetDir: packageDir,
       version: "1.2.3",
       npmResolution: {
-        name: "@openclaw/matrix",
+        name: "@afora/matrix",
         version: "1.2.3",
-        resolvedSpec: "@openclaw/matrix@1.2.3",
+        resolvedSpec: "@afora/matrix@1.2.3",
         integrity: "sha512-matrix",
         resolvedAt: "2026-05-01T00:00:00.000Z",
       },
@@ -1776,7 +1776,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         },
       },
       env: {
-        OPENCLAW_UPDATE_POST_CORE_CONVERGENCE: "1",
+        AFORA_UPDATE_POST_CORE_CONVERGENCE: "1",
       },
     });
 
@@ -1785,17 +1785,17 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     expect(result.warnings).toEqual([]);
     expectRecordFields(result.records.matrix, {
       source: "npm",
-      spec: "@openclaw/matrix",
+      spec: "@afora/matrix",
       installPath: packageDir,
       version: "1.2.3",
-      resolvedName: "@openclaw/matrix",
+      resolvedName: "@afora/matrix",
       resolvedVersion: "1.2.3",
-      resolvedSpec: "@openclaw/matrix@1.2.3",
+      resolvedSpec: "@afora/matrix@1.2.3",
     });
   });
 
   it("passes the post-core compatibility host version to ClawHub repair", async () => {
-    const npmRoot = tempDirs.make("openclaw-plugin-stub-repair-");
+    const npmRoot = tempDirs.make("afora-plugin-stub-repair-");
     mocks.resolveDefaultPluginNpmDir.mockReturnValue(npmRoot);
     mocks.listChannelPluginCatalogEntries.mockReturnValue([
       {
@@ -1803,20 +1803,20 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "whatsapp",
         meta: { label: "WhatsApp" },
         install: {
-          clawhubSpec: "clawhub:@openclaw/whatsapp",
-          npmSpec: "@openclaw/whatsapp",
+          clawhubSpec: "clawhub:@afora/whatsapp",
+          npmSpec: "@afora/whatsapp",
         },
       },
     ]);
     mocks.installPluginFromClawHub.mockResolvedValue({
       ok: true,
       pluginId: "whatsapp",
-      targetDir: "/tmp/openclaw-plugins/whatsapp",
+      targetDir: "/tmp/afora-plugins/whatsapp",
       version: "1.2.3",
       clawhub: {
         source: "clawhub",
         clawhubUrl: "https://clawhub.ai",
-        clawhubPackage: "@openclaw/whatsapp",
+        clawhubPackage: "@afora/whatsapp",
         clawhubFamily: "code-plugin",
         clawhubChannel: "official",
         version: "1.2.3",
@@ -1843,16 +1843,16 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         },
       },
       env: {
-        OPENCLAW_COMPATIBILITY_HOST_VERSION: "2026.5.19",
-        OPENCLAW_UPDATE_POST_CORE_CONVERGENCE: "1",
+        AFORA_COMPATIBILITY_HOST_VERSION: "2026.5.19",
+        AFORA_UPDATE_POST_CORE_CONVERGENCE: "1",
       },
     });
 
     expectRecordFields(mockCallArg(mocks.installPluginFromClawHub), {
-      spec: expectedClawHubInstallSpec("clawhub:@openclaw/whatsapp"),
+      spec: expectedClawHubInstallSpec("clawhub:@afora/whatsapp"),
       env: {
-        OPENCLAW_COMPATIBILITY_HOST_VERSION: "2026.5.19",
-        OPENCLAW_UPDATE_POST_CORE_CONVERGENCE: "1",
+        AFORA_COMPATIBILITY_HOST_VERSION: "2026.5.19",
+        AFORA_UPDATE_POST_CORE_CONVERGENCE: "1",
       },
       mode: "install",
     });
@@ -1860,17 +1860,17 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     expect(result.warnings).toEqual([]);
     expectRecordFields(result.records.whatsapp, {
       source: "clawhub",
-      spec: "clawhub:@openclaw/whatsapp",
-      installPath: "/tmp/openclaw-plugins/whatsapp",
-      clawhubPackage: "@openclaw/whatsapp",
+      spec: "clawhub:@afora/whatsapp",
+      installPath: "/tmp/afora-plugins/whatsapp",
+      clawhubPackage: "@afora/whatsapp",
     });
   });
 
-  it("repairs missing external payload during post-core convergence even with OPENCLAW_UPDATE_IN_PROGRESS=1", async () => {
+  it("repairs missing external payload during post-core convergence even with AFORA_UPDATE_IN_PROGRESS=1", async () => {
     const records = {
       discord: {
         source: "npm",
-        spec: "@openclaw/discord",
+        spec: "@afora/discord",
         installPath: "/missing/discord",
       },
     };
@@ -1880,7 +1880,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         id: "discord",
         pluginId: "discord",
         meta: { label: "Discord" },
-        install: { npmSpec: "@openclaw/discord" },
+        install: { npmSpec: "@afora/discord" },
       },
     ]);
     mocks.updateNpmInstalledPlugins.mockResolvedValue({
@@ -1905,8 +1905,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         },
       },
       env: {
-        OPENCLAW_UPDATE_IN_PROGRESS: "1",
-        OPENCLAW_UPDATE_POST_CORE_CONVERGENCE: "1",
+        AFORA_UPDATE_IN_PROGRESS: "1",
+        AFORA_UPDATE_POST_CORE_CONVERGENCE: "1",
       },
     });
 
@@ -1923,7 +1923,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const records = {
       discord: {
         source: "npm",
-        spec: "@openclaw/discord",
+        spec: "@afora/discord",
         installPath: "/missing/discord",
       },
     };
@@ -1934,7 +1934,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "discord",
         meta: { label: "Discord" },
         install: {
-          npmSpec: "@openclaw/discord",
+          npmSpec: "@afora/discord",
         },
       },
     ]);
@@ -1948,8 +1948,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         },
       },
       env: {
-        OPENCLAW_UPDATE_IN_PROGRESS: "1",
-        OPENCLAW_UPDATE_DEFER_CONFIGURED_PLUGIN_INSTALL_REPAIR: "1",
+        AFORA_UPDATE_IN_PROGRESS: "1",
+        AFORA_UPDATE_DEFER_CONFIGURED_PLUGIN_INSTALL_REPAIR: "1",
       },
     });
 
@@ -1959,11 +1959,11 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     expect(mocks.writePersistedInstalledPluginIndexInstallRecords).not.toHaveBeenCalled();
     expect(result).toEqual({
       changes: [
-        'Skipped package-manager repair for configured plugin "discord" during package update; rerun "openclaw doctor --fix" after the update completes.',
+        'Skipped package-manager repair for configured plugin "discord" during package update; rerun "afora doctor --fix" after the update completes.',
       ],
       warnings: [],
       deferredRepairDetails: [
-        'Skipped package-manager repair for configured plugin "discord" during package update; rerun "openclaw doctor --fix" after the update completes.',
+        'Skipped package-manager repair for configured plugin "discord" during package update; rerun "afora doctor --fix" after the update completes.',
       ],
       records,
     });
@@ -1976,7 +1976,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "discord",
         meta: { label: "Discord" },
         install: {
-          npmSpec: "@openclaw/discord",
+          npmSpec: "@afora/discord",
         },
       },
     ]);
@@ -1990,8 +1990,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         },
       },
       env: {
-        OPENCLAW_UPDATE_IN_PROGRESS: "1",
-        OPENCLAW_UPDATE_DEFER_CONFIGURED_PLUGIN_INSTALL_REPAIR: "1",
+        AFORA_UPDATE_IN_PROGRESS: "1",
+        AFORA_UPDATE_DEFER_CONFIGURED_PLUGIN_INSTALL_REPAIR: "1",
       },
     });
 
@@ -2006,7 +2006,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.installPluginFromNpmSpec.mockResolvedValueOnce(
       successfulInstall({
         pluginId: "discord",
-        npmSpec: "@openclaw/discord",
+        npmSpec: "@afora/discord",
         version: "2026.5.17",
         resolution: {
           resolvedAt: "2026-05-17T00:00:00.000Z",
@@ -2019,7 +2019,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "discord",
         meta: { label: "Discord" },
         install: {
-          npmSpec: "@openclaw/discord",
+          npmSpec: "@afora/discord",
         },
       },
     ]);
@@ -2033,17 +2033,17 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         },
       },
       env: {
-        OPENCLAW_UPDATE_IN_PROGRESS: "1",
+        AFORA_UPDATE_IN_PROGRESS: "1",
       },
     });
 
     expect(mocks.installPluginFromNpmSpec).toHaveBeenCalledTimes(1);
     expect(result.changes).toEqual([
-      `Installed missing configured plugin "discord" from ${expectedNpmInstallSpec("@openclaw/discord")}.`,
+      `Installed missing configured plugin "discord" from ${expectedNpmInstallSpec("@afora/discord")}.`,
     ]);
     expectRecordFields(result.records.discord, {
       source: "npm",
-      installPath: "/tmp/openclaw-plugins/discord",
+      installPath: "/tmp/afora-plugins/discord",
     });
   });
 
@@ -2051,7 +2051,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.installPluginFromNpmSpec.mockResolvedValueOnce(
       successfulInstall({
         pluginId: "whatsapp",
-        npmSpec: "@openclaw/whatsapp",
+        npmSpec: "@afora/whatsapp",
         version: "2026.5.17",
         resolution: {
           resolvedAt: "2026-05-17T00:00:00.000Z",
@@ -2064,8 +2064,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "whatsapp",
         meta: { label: "WhatsApp" },
         install: {
-          clawhubSpec: "clawhub:@openclaw/whatsapp",
-          npmSpec: "@openclaw/whatsapp",
+          clawhubSpec: "clawhub:@afora/whatsapp",
+          npmSpec: "@afora/whatsapp",
           defaultChoice: "clawhub",
         },
       },
@@ -2080,21 +2080,21 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         },
       },
       env: {
-        OPENCLAW_UPDATE_IN_PROGRESS: "1",
+        AFORA_UPDATE_IN_PROGRESS: "1",
       },
     });
 
     expect(mocks.installPluginFromClawHub).not.toHaveBeenCalled();
     expectRecordFields(mockCallArg(mocks.installPluginFromNpmSpec), {
-      spec: expectedNpmInstallSpec("@openclaw/whatsapp"),
+      spec: expectedNpmInstallSpec("@afora/whatsapp"),
       expectedPluginId: "whatsapp",
     });
     expect(result.changes).toEqual([
-      `Installed missing configured plugin "whatsapp" from ${expectedNpmInstallSpec("@openclaw/whatsapp")}.`,
+      `Installed missing configured plugin "whatsapp" from ${expectedNpmInstallSpec("@afora/whatsapp")}.`,
     ]);
     expectRecordFields(result.records.whatsapp, {
       source: "npm",
-      installPath: "/tmp/openclaw-plugins/whatsapp",
+      installPath: "/tmp/afora-plugins/whatsapp",
     });
   });
 
@@ -2105,7 +2105,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "matrix",
         meta: { label: "Matrix" },
         install: {
-          clawhubSpec: "clawhub:@openclaw/plugin-matrix@stable",
+          clawhubSpec: "clawhub:@afora/plugin-matrix@stable",
           defaultChoice: "clawhub",
         },
       },
@@ -2120,17 +2120,17 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         },
       },
       env: {
-        OPENCLAW_UPDATE_IN_PROGRESS: "1",
+        AFORA_UPDATE_IN_PROGRESS: "1",
       },
     });
 
     expectRecordFields(mockCallArg(mocks.installPluginFromClawHub), {
-      spec: "clawhub:@openclaw/plugin-matrix@stable",
+      spec: "clawhub:@afora/plugin-matrix@stable",
       expectedPluginId: "matrix",
     });
     expect(mocks.installPluginFromNpmSpec).not.toHaveBeenCalled();
     expect(result.changes).toEqual([
-      'Installed missing configured plugin "matrix" from clawhub:@openclaw/plugin-matrix@stable.',
+      'Installed missing configured plugin "matrix" from clawhub:@afora/plugin-matrix@stable.',
     ]);
   });
 
@@ -2141,7 +2141,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "matrix",
         meta: { label: "Matrix" },
         install: {
-          npmSpec: "@openclaw/plugin-matrix@1.2.3",
+          npmSpec: "@afora/plugin-matrix@1.2.3",
         },
       },
     ]);
@@ -2150,7 +2150,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         id: "codex",
         label: "Codex",
         install: {
-          npmSpec: "@openclaw/codex",
+          npmSpec: "@afora/codex",
           defaultChoice: "npm",
         },
       },
@@ -2158,7 +2158,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         id: "diagnostics-otel",
         label: "Diagnostics OpenTelemetry",
         install: {
-          npmSpec: "@openclaw/diagnostics-otel",
+          npmSpec: "@afora/diagnostics-otel",
           defaultChoice: "npm",
         },
       },
@@ -2213,7 +2213,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.installPluginFromNpmSpec.mockResolvedValueOnce(
       successfulInstall({
         pluginId: "wecom",
-        npmSpec: "@wecom/wecom-openclaw-plugin",
+        npmSpec: "@wecom/wecom-afora-plugin",
         version: "2026.4.23",
         resolution: {
           integrity: "sha512-third-party",
@@ -2226,7 +2226,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "wecom",
         meta: { label: "WeCom" },
         install: {
-          npmSpec: "@wecom/wecom-openclaw-plugin@2026.4.23",
+          npmSpec: "@wecom/wecom-afora-plugin@2026.4.23",
         },
       },
     ]);
@@ -2243,12 +2243,12 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     expect(mocks.installPluginFromClawHub).not.toHaveBeenCalled();
     const installArg = mockCallArg(mocks.installPluginFromNpmSpec);
     expectRecordFields(installArg, {
-      spec: "@wecom/wecom-openclaw-plugin@2026.4.23",
+      spec: "@wecom/wecom-afora-plugin@2026.4.23",
       expectedPluginId: "wecom",
     });
     expect(installArg).not.toHaveProperty("trustedSourceLinkedOfficialInstall", true);
     expect(result.changes).toEqual([
-      'Installed missing configured plugin "wecom" from @wecom/wecom-openclaw-plugin@2026.4.23.',
+      'Installed missing configured plugin "wecom" from @wecom/wecom-afora-plugin@2026.4.23.',
     ]);
   });
 
@@ -2268,7 +2268,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
                   transport: "stdio-proxy",
                   command: "codex",
                   args: ["app-server", "--listen", "stdio://"],
-                  cwd: "/tmp/openclaw",
+                  cwd: "/tmp/afora",
                 },
               ],
               allowRawTranscripts: true,
@@ -2280,7 +2280,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     });
 
     expect(migration.next).not.toBeNull();
-    const cfg = migration.next as OpenClawConfig;
+    const cfg = migration.next as AforaConfig;
     expect(cfg.plugins?.allow).toEqual(["codex"]);
     expect(cfg.plugins?.entries?.codex).toEqual({
       enabled: true,
@@ -2294,7 +2294,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
               transport: "stdio-proxy",
               command: "codex",
               args: ["app-server", "--listen", "stdio://"],
-              cwd: "/tmp/openclaw",
+              cwd: "/tmp/afora",
             },
           ],
           allowRawTranscripts: true,
@@ -2313,7 +2313,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.installPluginFromNpmSpec.mockResolvedValueOnce(
       successfulInstall({
         pluginId: "codex",
-        npmSpec: "@openclaw/codex",
+        npmSpec: "@afora/codex",
         version: "2026.7.2",
         resolution: {
           integrity: "sha512-codex-supervisor-upgrade",
@@ -2326,7 +2326,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         id: "codex",
         label: "Codex",
         install: {
-          npmSpec: "@openclaw/codex",
+          npmSpec: "@afora/codex",
           defaultChoice: "npm",
         },
       },
@@ -2349,11 +2349,11 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const records = mockCallArg(mocks.writePersistedInstalledPluginIndexInstallRecords);
     expectRecordFields((records as Record<string, unknown>).codex, {
       source: "npm",
-      spec: "@openclaw/codex",
-      installPath: "/tmp/openclaw-plugins/codex",
+      spec: "@afora/codex",
+      installPath: "/tmp/afora-plugins/codex",
       version: "2026.7.2",
-      resolvedName: "@openclaw/codex",
-      resolvedSpec: "@openclaw/codex@2026.7.2",
+      resolvedName: "@afora/codex",
+      resolvedSpec: "@afora/codex@2026.7.2",
       integrity: "sha512-codex-supervisor-upgrade",
     });
     expect(mockCallArg(mocks.writePersistedInstalledPluginIndexInstallRecords, 0, 1)).toEqual({
@@ -2372,7 +2372,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.installPluginFromNpmSpec.mockResolvedValueOnce(
       successfulInstall({
         pluginId: "codex",
-        npmSpec: "@openclaw/codex",
+        npmSpec: "@afora/codex",
         version: "2026.5.2",
       }),
     );
@@ -2381,7 +2381,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         id: "codex",
         label: "Codex",
         install: {
-          npmSpec: "@openclaw/codex",
+          npmSpec: "@afora/codex",
           defaultChoice: "npm",
         },
       },
@@ -2411,8 +2411,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const records = mockCallArg(mocks.writePersistedInstalledPluginIndexInstallRecords);
     expectRecordFields((records as Record<string, unknown>).codex, {
       source: "npm",
-      spec: "@openclaw/codex",
-      installPath: "/tmp/openclaw-plugins/codex",
+      spec: "@afora/codex",
+      installPath: "/tmp/afora-plugins/codex",
       version: "2026.5.2",
     });
     expect(mockCallArg(mocks.writePersistedInstalledPluginIndexInstallRecords, 0, 1)).toEqual({
@@ -2426,17 +2426,17 @@ describe("repairMissingConfiguredPluginInstalls", () => {
   });
 
   it("refreshes a stale managed Codex runtime plugin selected by the OpenAI Codex route", async () => {
-    const installDir = tempDirs.make("openclaw-plugin-stub-repair-");
+    const installDir = tempDirs.make("afora-plugin-stub-repair-");
     fs.writeFileSync(
       path.join(installDir, "package.json"),
-      JSON.stringify({ name: "@openclaw/codex", version: "2026.5.6" }),
+      JSON.stringify({ name: "@afora/codex", version: "2026.5.6" }),
     );
     const records = {
       codex: {
         source: "npm",
-        spec: "@openclaw/codex",
-        resolvedName: "@openclaw/codex",
-        resolvedSpec: "@openclaw/codex@2026.5.6",
+        spec: "@afora/codex",
+        resolvedName: "@afora/codex",
+        resolvedSpec: "@afora/codex@2026.5.6",
         resolvedVersion: "2026.5.6",
         version: "2026.5.6",
         integrity: "sha512-old-codex",
@@ -2467,7 +2467,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.installPluginFromNpmSpec.mockResolvedValueOnce(
       successfulInstall({
         pluginId: "codex",
-        npmSpec: "@openclaw/codex",
+        npmSpec: "@afora/codex",
         version: VERSION,
         resolution: {
           integrity: "sha512-new-codex",
@@ -2479,7 +2479,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         id: "codex",
         label: "Codex",
         install: {
-          npmSpec: "@openclaw/codex",
+          npmSpec: "@afora/codex",
           defaultChoice: "npm",
         },
       },
@@ -2511,28 +2511,28 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     ]);
     expectRecordFields(result.records.codex, {
       source: "npm",
-      spec: "@openclaw/codex",
-      installPath: "/tmp/openclaw-plugins/codex",
+      spec: "@afora/codex",
+      installPath: "/tmp/afora-plugins/codex",
       version: VERSION,
-      resolvedName: "@openclaw/codex",
+      resolvedName: "@afora/codex",
       resolvedVersion: VERSION,
-      resolvedSpec: `@openclaw/codex@${VERSION}`,
+      resolvedSpec: `@afora/codex@${VERSION}`,
     });
   });
 
   it("does not refresh a converged beta Codex runtime plugin on the second doctor pass", async () => {
-    const codexBetaVersion = `${currentOpenClawReleaseBase()}-beta.4`;
-    const installDir = tempDirs.make("openclaw-plugin-stub-repair-");
+    const codexBetaVersion = `${currentAforaReleaseBase()}-beta.4`;
+    const installDir = tempDirs.make("afora-plugin-stub-repair-");
     fs.writeFileSync(
       path.join(installDir, "package.json"),
-      JSON.stringify({ name: "@openclaw/codex", version: "2026.5.6" }),
+      JSON.stringify({ name: "@afora/codex", version: "2026.5.6" }),
     );
     const records = {
       codex: {
         source: "npm",
-        spec: "@openclaw/codex",
-        resolvedName: "@openclaw/codex",
-        resolvedSpec: "@openclaw/codex@2026.5.6",
+        spec: "@afora/codex",
+        resolvedName: "@afora/codex",
+        resolvedSpec: "@afora/codex@2026.5.6",
         resolvedVersion: "2026.5.6",
         version: "2026.5.6",
         integrity: "sha512-old-codex",
@@ -2563,7 +2563,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.installPluginFromNpmSpec.mockResolvedValueOnce(
       successfulInstall({
         pluginId: "codex",
-        npmSpec: "@openclaw/codex",
+        npmSpec: "@afora/codex",
         targetDir: installDir,
         version: codexBetaVersion,
         resolution: {
@@ -2576,7 +2576,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         id: "codex",
         label: "Codex",
         install: {
-          npmSpec: "@openclaw/codex",
+          npmSpec: "@afora/codex",
           defaultChoice: "npm",
         },
       },
@@ -2598,22 +2598,22 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     });
 
     expectRecordFields(mockCallArg(mocks.installPluginFromNpmSpec), {
-      spec: "@openclaw/codex@beta",
+      spec: "@afora/codex@beta",
       expectedPluginId: "codex",
       trustedSourceLinkedOfficialInstall: true,
       mode: "update",
     });
     expect(firstPass.changes).toEqual([
-      'Refreshed stale configured plugin "codex" from @openclaw/codex@beta.',
+      'Refreshed stale configured plugin "codex" from @afora/codex@beta.',
     ]);
     expectRecordFields(firstPass.records.codex, {
       source: "npm",
-      spec: "@openclaw/codex",
+      spec: "@afora/codex",
       installPath: installDir,
       version: codexBetaVersion,
-      resolvedName: "@openclaw/codex",
+      resolvedName: "@afora/codex",
       resolvedVersion: codexBetaVersion,
-      resolvedSpec: `@openclaw/codex@${codexBetaVersion}`,
+      resolvedSpec: `@afora/codex@${codexBetaVersion}`,
     });
 
     mocks.installPluginFromNpmSpec.mockClear();
@@ -2651,17 +2651,17 @@ describe("repairMissingConfiguredPluginInstalls", () => {
   });
 
   it("does not downgrade a newer managed Codex runtime plugin", async () => {
-    const installDir = tempDirs.make("openclaw-plugin-stub-repair-");
+    const installDir = tempDirs.make("afora-plugin-stub-repair-");
     fs.writeFileSync(
       path.join(installDir, "package.json"),
-      JSON.stringify({ name: "@openclaw/codex", version: "9999.1.1" }),
+      JSON.stringify({ name: "@afora/codex", version: "9999.1.1" }),
     );
     const records = {
       codex: {
         source: "npm",
-        spec: "@openclaw/codex",
-        resolvedName: "@openclaw/codex",
-        resolvedSpec: "@openclaw/codex@9999.1.1",
+        spec: "@afora/codex",
+        resolvedName: "@afora/codex",
+        resolvedSpec: "@afora/codex@9999.1.1",
         resolvedVersion: "9999.1.1",
         version: "9999.1.1",
         integrity: "sha512-newer-codex",
@@ -2783,7 +2783,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.installPluginFromNpmSpec.mockResolvedValueOnce(
       successfulInstall({
         pluginId: "codex",
-        npmSpec: "@openclaw/codex",
+        npmSpec: "@afora/codex",
         version: "2026.5.2",
       }),
     );
@@ -2792,7 +2792,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         id: "codex",
         label: "Codex",
         install: {
-          npmSpec: "@openclaw/codex",
+          npmSpec: "@afora/codex",
           defaultChoice: "npm",
         },
       },
@@ -2813,8 +2813,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const records = mockCallArg(mocks.writePersistedInstalledPluginIndexInstallRecords);
     expectRecordFields((records as Record<string, unknown>).codex, {
       source: "npm",
-      spec: "@openclaw/codex",
-      installPath: "/tmp/openclaw-plugins/codex",
+      spec: "@afora/codex",
+      installPath: "/tmp/afora-plugins/codex",
       version: "2026.5.2",
     });
     expect(mockCallArg(mocks.writePersistedInstalledPluginIndexInstallRecords, 0, 1)).toEqual({
@@ -2828,11 +2828,11 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     expect(Object.keys(result.records)).toEqual(["codex"]);
     expectRecordFields(result.records.codex, {
       source: "npm",
-      spec: "@openclaw/codex",
-      installPath: "/tmp/openclaw-plugins/codex",
+      spec: "@afora/codex",
+      installPath: "/tmp/afora-plugins/codex",
       version: "2026.5.2",
-      resolvedName: "@openclaw/codex",
-      resolvedSpec: "@openclaw/codex@2026.5.2",
+      resolvedName: "@afora/codex",
+      resolvedSpec: "@afora/codex@2026.5.2",
       integrity: "sha512-codex",
       resolvedAt: "2026-05-01T00:00:00.000Z",
     });
@@ -2860,14 +2860,14 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       },
       {},
     ],
-    ["environment runtime override", {}, { OPENCLAW_AGENT_RUNTIME: "codex" }],
+    ["environment runtime override", {}, { AFORA_AGENT_RUNTIME: "codex" }],
   ])("ignores legacy whole-agent Codex runtime selected by %s", async (_label, cfg, env) => {
     mocks.listOfficialExternalPluginCatalogEntries.mockReturnValue([
       {
         id: "codex",
         label: "Codex",
         install: {
-          npmSpec: "@openclaw/codex",
+          npmSpec: "@afora/codex",
           defaultChoice: "npm",
         },
       },
@@ -2892,7 +2892,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "matrix",
         meta: { label: "Matrix" },
         install: {
-          npmSpec: "@openclaw/plugin-matrix@1.2.3",
+          npmSpec: "@afora/plugin-matrix@1.2.3",
         },
       },
     ]);
@@ -2915,14 +2915,14 @@ describe("repairMissingConfiguredPluginInstalls", () => {
   it.each<{ name: string; plugins: PluginsConfig; installs: boolean }>([
     {
       name: "does not install a channel catalog plugin when a configured plugin already owns that channel",
-      plugins: { entries: { "openclaw-lark": { enabled: true } } },
+      plugins: { entries: { "afora-lark": { enabled: true } } },
       installs: false,
     },
     {
       name: "still installs a channel catalog plugin when the configured owner is blocked by the allowlist",
       plugins: {
         allow: ["some-other-plugin"],
-        entries: { "openclaw-lark": { enabled: true } },
+        entries: { "afora-lark": { enabled: true } },
       },
       installs: true,
     },
@@ -2931,7 +2931,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       plugins: {
         entries: {
           feishu: { enabled: true },
-          "openclaw-lark": { enabled: true },
+          "afora-lark": { enabled: true },
         },
       },
       installs: true,
@@ -2940,7 +2940,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.loadPluginMetadataSnapshot.mockReturnValue({
       plugins: [
         {
-          id: "openclaw-lark",
+          id: "afora-lark",
           origin: "config",
           channels: ["feishu"],
           channelConfigs: {
@@ -2960,7 +2960,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
         pluginId: "feishu",
         meta: { label: "Feishu" },
         install: {
-          npmSpec: "@openclaw/feishu",
+          npmSpec: "@afora/feishu",
         },
         trustedSourceLinkedOfficialInstall: true,
       },
@@ -2969,7 +2969,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       mocks.installPluginFromNpmSpec.mockResolvedValueOnce(
         successfulInstall({
           pluginId: "feishu",
-          npmSpec: "@openclaw/feishu",
+          npmSpec: "@afora/feishu",
           version: "2026.5.2",
         }),
       );
@@ -2995,12 +2995,12 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       return;
     }
     expectRecordFields(mockCallArg(mocks.installPluginFromNpmSpec), {
-      spec: expectedNpmInstallSpec("@openclaw/feishu"),
+      spec: expectedNpmInstallSpec("@afora/feishu"),
       expectedPluginId: "feishu",
       trustedSourceLinkedOfficialInstall: true,
     });
     expect(result.changes).toEqual([
-      `Installed missing configured plugin "feishu" from ${expectedNpmInstallSpec("@openclaw/feishu")}.`,
+      `Installed missing configured plugin "feishu" from ${expectedNpmInstallSpec("@afora/feishu")}.`,
     ]);
   });
 
@@ -3008,7 +3008,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const records = {
       demo: {
         source: "npm",
-        spec: "@openclaw/plugin-demo@1.0.0",
+        spec: "@afora/plugin-demo@1.0.0",
         installPath: "/missing/demo",
       },
     };
@@ -3020,8 +3020,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
           installs: {
             demo: {
               source: "npm",
-              spec: "@openclaw/plugin-demo@1.0.0",
-              installPath: "/tmp/openclaw-plugins/demo",
+              spec: "@afora/plugin-demo@1.0.0",
+              installPath: "/tmp/afora-plugins/demo",
             },
           },
         },
@@ -3055,7 +3055,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     expectRecordFields(updateConfig.plugins, { installs: records });
     const persistedRecords = mockCallArg(mocks.writePersistedInstalledPluginIndexInstallRecords);
     expectRecordFields((persistedRecords as Record<string, unknown>).demo, {
-      installPath: "/tmp/openclaw-plugins/demo",
+      installPath: "/tmp/afora-plugins/demo",
     });
     expect(mockCallArg(mocks.writePersistedInstalledPluginIndexInstallRecords, 0, 1)).toEqual({
       config: expect.any(Object),
@@ -3068,8 +3068,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const records = {
       demo: {
         source: "clawhub",
-        spec: "clawhub:@openclaw/plugin-demo@1.0.0",
-        clawhubPackage: "@openclaw/plugin-demo",
+        spec: "clawhub:@afora/plugin-demo@1.0.0",
+        clawhubPackage: "@afora/plugin-demo",
         installPath: "/missing/demo",
       },
     };
@@ -3082,8 +3082,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
           installs: {
             demo: {
               source: "clawhub",
-              spec: "clawhub:@openclaw/plugin-demo@1.0.0",
-              installPath: "/tmp/openclaw-plugins/demo",
+              spec: "clawhub:@afora/plugin-demo@1.0.0",
+              installPath: "/tmp/afora-plugins/demo",
             },
           },
         },
@@ -3126,12 +3126,12 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const records = {
       demo: {
         source: "npm",
-        spec: "@openclaw/plugin-demo@1.0.0",
+        spec: "@afora/plugin-demo@1.0.0",
         installPath: "/missing/demo",
       },
     };
     const repairWarning =
-      'Could not repair openclaw peer link for "demo" at /tmp/openclaw-plugins/demo: permission denied';
+      'Could not repair afora peer link for "demo" at /tmp/afora-plugins/demo: permission denied';
     mocks.loadInstalledPluginIndexInstallRecords.mockResolvedValue(records);
     mocks.updateNpmInstalledPlugins.mockImplementationOnce(
       async (params: {
@@ -3146,8 +3146,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
               installs: {
                 demo: {
                   source: "npm",
-                  spec: "@openclaw/plugin-demo@1.0.0",
-                  installPath: "/tmp/openclaw-plugins/demo",
+                  spec: "@afora/plugin-demo@1.0.0",
+                  installPath: "/tmp/afora-plugins/demo",
                 },
               },
             },
@@ -3184,8 +3184,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const records = {
       demo: {
         source: "clawhub",
-        spec: "clawhub:@openclaw/plugin-demo@1.0.0",
-        clawhubPackage: "@openclaw/plugin-demo",
+        spec: "clawhub:@afora/plugin-demo@1.0.0",
+        clawhubPackage: "@afora/plugin-demo",
         installPath: "/missing/demo",
       },
     };
@@ -3208,8 +3208,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
               installs: {
                 demo: {
                   source: "clawhub",
-                  spec: "clawhub:@openclaw/plugin-demo@1.0.0",
-                  installPath: "/tmp/openclaw-plugins/demo",
+                  spec: "clawhub:@afora/plugin-demo@1.0.0",
+                  installPath: "/tmp/afora-plugins/demo",
                 },
               },
             },
@@ -3246,21 +3246,21 @@ describe("repairMissingConfiguredPluginInstalls", () => {
   it.each([
     {
       name: "adds actionable acknowledgement guidance for risky persisted ClawHub repair failures",
-      spec: "clawhub:@openclaw/plugin-demo@1.0.0",
-      release: "@openclaw/plugin-demo@1.0.0",
-      expectedSpec: "clawhub:@openclaw/plugin-demo@1.0.0",
+      spec: "clawhub:@afora/plugin-demo@1.0.0",
+      release: "@afora/plugin-demo@1.0.0",
+      expectedSpec: "clawhub:@afora/plugin-demo@1.0.0",
     },
     {
       name: "prefixes legacy persisted ClawHub package records in acknowledgement guidance",
-      release: "@openclaw/plugin-demo@latest",
-      expectedSpec: "clawhub:@openclaw/plugin-demo",
+      release: "@afora/plugin-demo@latest",
+      expectedSpec: "clawhub:@afora/plugin-demo",
     },
   ])("$name", async ({ spec, release, expectedSpec }) => {
     const records = {
       demo: {
         source: "clawhub",
         ...(spec ? { spec } : {}),
-        clawhubPackage: "@openclaw/plugin-demo",
+        clawhubPackage: "@afora/plugin-demo",
         installPath: "/missing/demo",
       },
     };
@@ -3292,7 +3292,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     });
 
     expect(result.warnings[0]).toContain(
-      `openclaw plugins install ${expectedSpec} --acknowledge-clawhub-risk`,
+      `afora plugins install ${expectedSpec} --acknowledge-clawhub-risk`,
     );
   });
 
@@ -3300,12 +3300,12 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const records = {
       demo: {
         source: "npm",
-        spec: "@openclaw/plugin-demo@1.0.0",
-        resolvedName: "@openclaw/plugin-demo",
-        resolvedSpec: "@openclaw/plugin-demo@1.0.0",
+        spec: "@afora/plugin-demo@1.0.0",
+        resolvedName: "@afora/plugin-demo",
+        resolvedSpec: "@afora/plugin-demo@1.0.0",
         resolvedVersion: "1.0.0",
         integrity: "sha512-demo",
-        installPath: "/tmp/openclaw-plugins/demo",
+        installPath: "/tmp/afora-plugins/demo",
       },
     };
     mocks.loadInstalledPluginIndexInstallRecords.mockResolvedValue(records);
@@ -3326,8 +3326,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
           installs: {
             demo: {
               source: "npm",
-              spec: "@openclaw/plugin-demo@1.0.0",
-              installPath: "/tmp/openclaw-plugins/demo",
+              spec: "@afora/plugin-demo@1.0.0",
+              installPath: "/tmp/afora-plugins/demo",
             },
           },
         },
@@ -3354,9 +3354,9 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const updateConfig = updateArg.config as { plugins?: { installs?: Record<string, unknown> } };
     const updateRecord = expectRecordFields(updateConfig.plugins?.installs?.demo, {
       source: "npm",
-      spec: "@openclaw/plugin-demo@1.0.0",
+      spec: "@afora/plugin-demo@1.0.0",
       integrity: "sha512-demo",
-      installPath: "/tmp/openclaw-plugins/demo",
+      installPath: "/tmp/afora-plugins/demo",
     });
     expect(updateRecord.resolvedSpec).toBeUndefined();
     expect(updateRecord.resolvedVersion).toBeUndefined();
@@ -3365,8 +3365,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
 
   it("reinstalls a known configured plugin from the catalog when its recorded install path is missing", async () => {
     const records = installedRecords("discord", {
-      spec: "@openclaw/discord",
-      installPath: "/tmp/openclaw-missing-discord-install-record",
+      spec: "@afora/discord",
+      installPath: "/tmp/afora-missing-discord-install-record",
     });
     mocks.loadInstalledPluginIndexInstallRecords.mockResolvedValue(records);
     mocks.loadPluginMetadataSnapshot.mockReturnValue({
@@ -3381,7 +3381,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.listChannelPluginCatalogEntries.mockReturnValue([
       channelPluginEntry({
         id: "discord",
-        npmSpec: "@openclaw/discord",
+        npmSpec: "@afora/discord",
         label: "Discord",
         trustedSourceLinkedOfficialInstall: true,
       }),
@@ -3389,7 +3389,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.installPluginFromNpmSpec.mockResolvedValueOnce(
       successfulInstall({
         pluginId: "discord",
-        npmSpec: "@openclaw/discord",
+        npmSpec: "@afora/discord",
         version: "1.2.3",
       }),
     );
@@ -3426,27 +3426,27 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     const updateConfig = updateArg.config as Record<string, unknown>;
     expectRecordFields(updateConfig.plugins, { installs: records });
     expectRecordFields(mockCallArg(mocks.installPluginFromNpmSpec), {
-      spec: expectedNpmInstallSpec("@openclaw/discord"),
+      spec: expectedNpmInstallSpec("@afora/discord"),
       expectedPluginId: "discord",
       trustedSourceLinkedOfficialInstall: true,
     });
     const persistedRecords = mockCallArg(mocks.writePersistedInstalledPluginIndexInstallRecords);
     expectRecordFields((persistedRecords as Record<string, unknown>).discord, {
-      spec: "@openclaw/discord",
-      installPath: "/tmp/openclaw-plugins/discord",
+      spec: "@afora/discord",
+      installPath: "/tmp/afora-plugins/discord",
     });
     expect(mockCallArg(mocks.writePersistedInstalledPluginIndexInstallRecords, 0, 1)).toEqual({
       config: expect.any(Object),
       env: {},
     });
     expect(result.changes).toEqual([
-      `Installed missing configured plugin "discord" from ${expectedNpmInstallSpec("@openclaw/discord")}.`,
+      `Installed missing configured plugin "discord" from ${expectedNpmInstallSpec("@afora/discord")}.`,
     ]);
   });
 
   it("updates a known configured plugin when its installed manifest path still exists", async () => {
     const records = installedRecords("discord", {
-      spec: "@openclaw/discord",
+      spec: "@afora/discord",
       installPath: process.cwd(),
     });
     mocks.loadInstalledPluginIndexInstallRecords.mockResolvedValue(records);
@@ -3468,7 +3468,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       successfulUpdate(
         "discord",
         installedRecords("discord", {
-          spec: "@openclaw/discord",
+          spec: "@afora/discord",
           installPath: process.cwd(),
         }),
       ),
@@ -3503,14 +3503,14 @@ describe("repairMissingConfiguredPluginInstalls", () => {
 
   it("updates a configured plugin when its installed manifest lacks channel config descriptors", async () => {
     const records = installedRecords("discord", {
-      spec: "@openclaw/discord",
-      installPath: "/tmp/openclaw-plugins/discord",
+      spec: "@afora/discord",
+      installPath: "/tmp/afora-plugins/discord",
     });
     mocks.loadInstalledPluginIndexInstallRecords.mockResolvedValue(records);
     mocks.listChannelPluginCatalogEntries.mockReturnValue([
       channelPluginEntry({
         id: "discord",
-        npmSpec: "@openclaw/discord",
+        npmSpec: "@afora/discord",
         label: "Discord",
       }),
     ]);
@@ -3526,7 +3526,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
           level: "warn",
           pluginId: "discord",
           message:
-            "channel plugin manifest declares discord without channelConfigs metadata; add openclaw.plugin.json#channelConfigs so config schema and setup surfaces work before runtime loads",
+            "channel plugin manifest declares discord without channelConfigs metadata; add afora.plugin.json#channelConfigs so config schema and setup surfaces work before runtime loads",
         },
       ],
     });
@@ -3534,7 +3534,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       successfulUpdate(
         "discord",
         installedRecords("discord", {
-          spec: "@openclaw/discord",
+          spec: "@afora/discord",
           installPath: process.cwd(),
         }),
       ),
@@ -3572,7 +3572,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       repairedPluginIds: ["discord"],
       pluginInventoryChanged: true,
       records: installedRecords("discord", {
-        spec: "@openclaw/discord",
+        spec: "@afora/discord",
         installPath: process.cwd(),
       }),
     });
@@ -3580,14 +3580,14 @@ describe("repairMissingConfiguredPluginInstalls", () => {
 
   it("reinstalls a recorded external web search plugin from provider-only config", async () => {
     const records = installedRecords("brave", {
-      spec: "@openclaw/brave-plugin@beta",
+      spec: "@afora/brave-plugin@beta",
       installPath: "/missing/brave",
     });
     mocks.loadInstalledPluginIndexInstallRecords.mockResolvedValue(records);
     mocks.listOfficialExternalPluginCatalogEntries.mockReturnValue([
       officialWebSearchPluginEntry({
         id: "brave",
-        npmSpec: "@openclaw/brave-plugin",
+        npmSpec: "@afora/brave-plugin",
         envVar: "BRAVE_API_KEY",
         label: "Brave",
         providerLabel: "Brave Search",
@@ -3597,7 +3597,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       successfulUpdate(
         "brave",
         installedRecords("brave", {
-          spec: "@openclaw/brave-plugin@beta",
+          spec: "@afora/brave-plugin@beta",
           installPath: process.cwd(),
         }),
       ),
@@ -3633,23 +3633,23 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     {
       name: "replaces a configured official web search plugin when its installed package is source-only",
       pluginId: "brave",
-      npmSpec: "@openclaw/brave-plugin",
-      priorSpec: "clawhub:@openclaw/brave-plugin@2026.5.1-beta.1",
-      targetDir: "/tmp/openclaw-plugins/brave",
-      cfg: { tools: { web: { search: { provider: "brave" } } } } satisfies OpenClawConfig,
+      npmSpec: "@afora/brave-plugin",
+      priorSpec: "clawhub:@afora/brave-plugin@2026.5.1-beta.1",
+      targetDir: "/tmp/afora-plugins/brave",
+      cfg: { tools: { web: { search: { provider: "brave" } } } } satisfies AforaConfig,
       catalogKind: "provider" as const,
     },
     {
       name: "replaces a configured official channel plugin when only its channel is configured",
       pluginId: "slack",
-      npmSpec: "@openclaw/slack",
-      priorSpec: "clawhub:@openclaw/slack@2026.5.12-beta.1",
-      targetDir: "/tmp/openclaw-npm/node_modules/@openclaw/slack",
+      npmSpec: "@afora/slack",
+      priorSpec: "clawhub:@afora/slack@2026.5.12-beta.1",
+      targetDir: "/tmp/afora-npm/node_modules/@afora/slack",
       cfg: { channels: { slack: { enabled: true, botToken: "xoxb-test" } } },
       catalogKind: "channel" as const,
     },
   ])("$name", async ({ pluginId, npmSpec, priorSpec, targetDir, cfg, catalogKind }) => {
-    const extensionsDir = path.join(tempDirs.make("openclaw-plugin-stub-repair-"), "extensions");
+    const extensionsDir = path.join(tempDirs.make("afora-plugin-stub-repair-"), "extensions");
     const installDir = path.join(extensionsDir, pluginId);
     mocks.resolveDefaultPluginExtensionsDir.mockReturnValue(extensionsDir);
     fs.mkdirSync(installDir, { recursive: true });
@@ -3719,19 +3719,19 @@ describe("repairMissingConfiguredPluginInstalls", () => {
   });
 
   it("does not delete an arbitrary recorded path when replacing a broken official plugin", async () => {
-    const installDir = tempDirs.make("openclaw-plugin-stub-repair-");
+    const installDir = tempDirs.make("afora-plugin-stub-repair-");
     fs.writeFileSync(path.join(installDir, "package.json"), JSON.stringify({ name: "brave" }));
     mockBrokenBraveInstall(installDir, {
       source: "clawhub",
-      spec: "clawhub:@openclaw/brave-plugin@2026.5.1-beta.1",
-      clawhubPackage: "@openclaw/brave-plugin",
+      spec: "clawhub:@afora/brave-plugin@2026.5.1-beta.1",
+      clawhubPackage: "@afora/brave-plugin",
       clawhubChannel: "official",
       clawhubUrl: "https://clawhub.ai",
     });
     mocks.installPluginFromNpmSpec.mockResolvedValueOnce(
       successfulInstall({
         pluginId: "brave",
-        npmSpec: "@openclaw/brave-plugin",
+        npmSpec: "@afora/brave-plugin",
         version: "2026.5.12",
       }),
     );
@@ -3751,15 +3751,15 @@ describe("repairMissingConfiguredPluginInstalls", () => {
   });
 
   it("keeps a broken official install record when replacement install fails", async () => {
-    const extensionsDir = path.join(tempDirs.make("openclaw-plugin-stub-repair-"), "extensions");
+    const extensionsDir = path.join(tempDirs.make("afora-plugin-stub-repair-"), "extensions");
     const installDir = path.join(extensionsDir, "brave");
     mocks.resolveDefaultPluginExtensionsDir.mockReturnValue(extensionsDir);
     fs.mkdirSync(installDir, { recursive: true });
     fs.writeFileSync(path.join(installDir, "package.json"), JSON.stringify({ name: "brave" }));
     const records = mockBrokenBraveInstall(installDir, {
       source: "clawhub",
-      spec: "clawhub:@openclaw/brave-plugin@2026.5.1-beta.1",
-      clawhubPackage: "@openclaw/brave-plugin",
+      spec: "clawhub:@afora/brave-plugin@2026.5.1-beta.1",
+      clawhubPackage: "@afora/brave-plugin",
       clawhubChannel: "official",
       clawhubUrl: "https://clawhub.ai",
     });
@@ -3783,7 +3783,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     expect(result).toEqual({
       changes: [],
       warnings: [
-        `Failed to install missing configured plugin "brave" from ${expectedNpmInstallSpec("@openclaw/brave-plugin")}: network unavailable`,
+        `Failed to install missing configured plugin "brave" from ${expectedNpmInstallSpec("@afora/brave-plugin")}: network unavailable`,
       ],
       failedPluginIds: ["brave"],
       records,
@@ -3791,7 +3791,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
   });
 
   it("does not replace a non-official install that collides with an official plugin id", async () => {
-    const extensionsDir = path.join(tempDirs.make("openclaw-plugin-stub-repair-"), "extensions");
+    const extensionsDir = path.join(tempDirs.make("afora-plugin-stub-repair-"), "extensions");
     const installDir = path.join(extensionsDir, "brave");
     mocks.resolveDefaultPluginExtensionsDir.mockReturnValue(extensionsDir);
     fs.mkdirSync(installDir, { recursive: true });
@@ -3823,9 +3823,9 @@ describe("repairMissingConfiguredPluginInstalls", () => {
 
   it("installs configured external speech and web-fetch plugins from selected providers", async () => {
     const packages = [
-      ["firecrawl", "@openclaw/firecrawl-plugin"],
-      ["gradium", "@openclaw/gradium-speech"],
-      ["inworld", "@openclaw/inworld-speech"],
+      ["firecrawl", "@afora/firecrawl-plugin"],
+      ["gradium", "@afora/gradium-speech"],
+      ["inworld", "@afora/inworld-speech"],
     ] as const;
     mocks.listOfficialExternalPluginCatalogEntries.mockReturnValue(
       packages.map(([id, npmSpec]) =>
@@ -3885,14 +3885,14 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     {
       name: "installs missing configured non-channel plugins from the official external catalog",
       pluginId: "diagnostics-otel",
-      npmSpec: "@openclaw/diagnostics-otel",
+      npmSpec: "@afora/diagnostics-otel",
       version: "2026.5.2",
       entry: {
         id: "diagnostics-otel",
         label: "Diagnostics OpenTelemetry",
         install: {
-          clawhubSpec: "clawhub:@openclaw/diagnostics-otel",
-          npmSpec: "@openclaw/diagnostics-otel",
+          clawhubSpec: "clawhub:@afora/diagnostics-otel",
+          npmSpec: "@afora/diagnostics-otel",
           defaultChoice: "npm" as const,
         },
       },
@@ -3902,21 +3902,21 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     {
       name: "installs the official llama.cpp plugin for configured local memory embeddings",
       pluginId: "llama-cpp",
-      npmSpec: "@openclaw/llama-cpp-provider",
+      npmSpec: "@afora/llama-cpp-provider",
       version: "2026.6.2",
       entry: {
         id: "llama-cpp",
         label: "llama.cpp Provider",
-        openclaw: {
+        afora: {
           plugin: { id: "llama-cpp", label: "llama.cpp Provider" },
           contracts: { embeddingProviders: ["local"] },
           install: {
-            npmSpec: "@openclaw/llama-cpp-provider",
+            npmSpec: "@afora/llama-cpp-provider",
             defaultChoice: "npm" as const,
           },
         },
         install: {
-          npmSpec: "@openclaw/llama-cpp-provider",
+          npmSpec: "@afora/llama-cpp-provider",
           defaultChoice: "npm" as const,
         },
       },
@@ -3926,12 +3926,12 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     {
       name: "does not let runtime fallback metadata override official catalog install specs",
       pluginId: "acpx",
-      npmSpec: "@openclaw/acpx",
+      npmSpec: "@afora/acpx",
       version: "2026.5.2-beta.2",
       entry: {
         id: "acpx",
         label: "ACPX Runtime",
-        install: { npmSpec: "@openclaw/acpx", defaultChoice: "npm" as const },
+        install: { npmSpec: "@afora/acpx", defaultChoice: "npm" as const },
       },
       cfg: { acp: { backend: "acpx" } },
       useManifestResolvers: false,
@@ -3939,11 +3939,11 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     {
       name: "installs a configured external web search plugin from provider-only config",
       pluginId: "brave",
-      npmSpec: "@openclaw/brave-plugin",
+      npmSpec: "@afora/brave-plugin",
       version: "2026.5.2",
       entry: officialWebSearchPluginEntry({
         id: "brave",
-        npmSpec: "@openclaw/brave-plugin",
+        npmSpec: "@afora/brave-plugin",
         envVar: "BRAVE_API_KEY",
         label: "Brave",
         providerLabel: "Brave Search",
@@ -3956,25 +3956,25 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     {
       name: "installs a configured external model provider without an auth choice",
       pluginId: "groq",
-      npmSpec: "@openclaw/groq-provider",
+      npmSpec: "@afora/groq-provider",
       entry: officialPluginEntry({
         id: "groq",
-        npmSpec: "@openclaw/groq-provider",
+        npmSpec: "@afora/groq-provider",
         label: "Groq",
         manifest: { providers: [{ id: "groq" }] },
       }),
       cfg: {
         agents: { defaults: { model: "groq/llama-3.3-70b-versatile" } },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       useManifestResolvers: false,
     },
     {
       name: "installs an external media-understanding provider selected only by media config",
       pluginId: "groq",
-      npmSpec: "@openclaw/groq-provider",
+      npmSpec: "@afora/groq-provider",
       entry: officialPluginEntry({
         id: "groq",
-        npmSpec: "@openclaw/groq-provider",
+        npmSpec: "@afora/groq-provider",
         label: "Groq",
         manifest: { contracts: { mediaUnderstandingProviders: ["groq"] } },
       }),
@@ -3990,22 +3990,22 @@ describe("repairMissingConfiguredPluginInstalls", () => {
             ],
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       useManifestResolvers: false,
     },
     {
       name: "installs an external speech provider selected only by voiceModel",
       pluginId: "gradium",
-      npmSpec: "@openclaw/gradium-speech",
+      npmSpec: "@afora/gradium-speech",
       entry: officialPluginEntry({
         id: "gradium",
-        npmSpec: "@openclaw/gradium-speech",
+        npmSpec: "@afora/gradium-speech",
         label: "Gradium",
         manifest: { contracts: { speechProviders: ["gradium"] } },
       }),
       cfg: {
         agents: { defaults: { voiceModel: { primary: "gradium/tts-default" } } },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       useManifestResolvers: false,
     },
   ])("$name", async ({ pluginId, npmSpec, version, entry, cfg, useManifestResolvers }) => {
@@ -4032,8 +4032,8 @@ describe("repairMissingConfiguredPluginInstalls", () => {
 
   it("installs env-only web provider plugins before auto-detection", async () => {
     const packages = [
-      ["exa", "@openclaw/exa-plugin", "EXA_API_KEY"],
-      ["firecrawl", "@openclaw/firecrawl-plugin", "FIRECRAWL_API_KEY"],
+      ["exa", "@afora/exa-plugin", "EXA_API_KEY"],
+      ["firecrawl", "@afora/firecrawl-plugin", "FIRECRAWL_API_KEY"],
     ] as const;
     mocks.listOfficialExternalPluginCatalogEntries.mockReturnValue(
       packages.map(([id, npmSpec, envVar]) =>
@@ -4077,7 +4077,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.listOfficialExternalPluginCatalogEntries.mockReturnValue([
       officialPluginEntry({
         id: "groq",
-        npmSpec: "@openclaw/groq-provider",
+        npmSpec: "@afora/groq-provider",
         label: "Groq",
         manifest: {},
       }),
@@ -4085,7 +4085,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.installPluginFromNpmSpec.mockResolvedValueOnce(
       successfulInstall({
         pluginId: "groq",
-        npmSpec: "@openclaw/groq-provider",
+        npmSpec: "@afora/groq-provider",
       }),
     );
 
@@ -4094,12 +4094,12 @@ describe("repairMissingConfiguredPluginInstalls", () => {
 
     expect(mocks.resolveOfficialExternalProviderPluginIdsForEnv).toHaveBeenCalledWith(env);
     expectRecordFields(mockCallArg(mocks.installPluginFromNpmSpec), {
-      spec: expectedNpmInstallSpec("@openclaw/groq-provider"),
+      spec: expectedNpmInstallSpec("@afora/groq-provider"),
       expectedPluginId: "groq",
       trustedSourceLinkedOfficialInstall: true,
     });
     expect(result.changes).toEqual([
-      `Installed missing configured plugin "groq" from ${expectedNpmInstallSpec("@openclaw/groq-provider")}.`,
+      `Installed missing configured plugin "groq" from ${expectedNpmInstallSpec("@afora/groq-provider")}.`,
     ]);
   });
 
@@ -4107,7 +4107,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.listOfficialExternalPluginCatalogEntries.mockReturnValue([
       officialWebSearchPluginEntry({
         id: "brave",
-        npmSpec: "@openclaw/brave-plugin",
+        npmSpec: "@afora/brave-plugin",
         envVar: "BRAVE_API_KEY",
         label: "Brave",
         providerLabel: "Brave Search",
@@ -4119,7 +4119,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.installPluginFromNpmSpec.mockResolvedValueOnce(
       successfulInstall({
         pluginId: "brave",
-        npmSpec: "@openclaw/brave-plugin",
+        npmSpec: "@afora/brave-plugin",
         version: "2026.5.4-beta.1",
       }),
     );
@@ -4136,7 +4136,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     });
 
     expectRecordFields(mockCallArg(mocks.installPluginFromNpmSpec), {
-      spec: "@openclaw/brave-plugin@beta",
+      spec: "@afora/brave-plugin@beta",
       expectedPluginId: "brave",
       trustedSourceLinkedOfficialInstall: true,
     });
@@ -4144,19 +4144,19 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       mocks.writePersistedInstalledPluginIndexInstallRecords,
     ) as Record<string, unknown>;
     expectRecordFields(persistedRecords.brave, {
-      spec: "@openclaw/brave-plugin",
+      spec: "@afora/brave-plugin",
     });
     expect(mockCallArg(mocks.writePersistedInstalledPluginIndexInstallRecords, 0, 1)).toEqual({
       config: expect.any(Object),
       env: {},
     });
     expect(result.changes).toEqual([
-      'Installed missing configured plugin "brave" from @openclaw/brave-plugin@beta.',
+      'Installed missing configured plugin "brave" from @afora/brave-plugin@beta.',
     ]);
   });
 
   it("repairs a configured plugin from a legacy npm declaration stub", async () => {
-    const root = tempDirs.make("openclaw-plugin-stub-repair-");
+    const root = tempDirs.make("afora-plugin-stub-repair-");
     const pluginDir = path.join(root, "extensions", "guardrail-bridge");
     writeLegacyNpmDeclarationStub({
       pluginDir,
@@ -4189,7 +4189,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     expectRecordFields(mockCallArg(mocks.installPluginFromNpmSpec), {
       spec: "@guardrail-bridge/guardrail-bridge@1.0.0",
       expectedPluginId: "guardrail-bridge",
-      extensionsDir: "/tmp/openclaw-plugins",
+      extensionsDir: "/tmp/afora-plugins",
     });
     expect(mockCallArg(mocks.installPluginFromNpmSpec).trustedSourceLinkedOfficialInstall).toBe(
       undefined,
@@ -4198,7 +4198,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     expectRecordFields((records as Record<string, unknown>)["guardrail-bridge"], {
       source: "npm",
       spec: "@guardrail-bridge/guardrail-bridge@1.0.0",
-      installPath: "/tmp/openclaw-plugins/guardrail-bridge",
+      installPath: "/tmp/afora-plugins/guardrail-bridge",
       version: "1.0.0",
       resolvedName: "@guardrail-bridge/guardrail-bridge",
     });
@@ -4213,7 +4213,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.listOfficialExternalPluginCatalogEntries.mockReturnValue([
       officialPluginEntry({
         id: "firecrawl",
-        npmSpec: "@openclaw/firecrawl-plugin",
+        npmSpec: "@afora/firecrawl-plugin",
         label: "Firecrawl",
         manifest: {},
       }),
@@ -4221,7 +4221,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.installPluginFromNpmSpec.mockResolvedValueOnce(
       successfulInstall({
         pluginId: "firecrawl",
-        npmSpec: "@openclaw/firecrawl-plugin",
+        npmSpec: "@afora/firecrawl-plugin",
       }),
     );
 
@@ -4244,12 +4244,12 @@ describe("repairMissingConfiguredPluginInstalls", () => {
       env,
     });
     expectRecordFields(mockCallArg(mocks.installPluginFromNpmSpec), {
-      spec: expectedNpmInstallSpec("@openclaw/firecrawl-plugin"),
+      spec: expectedNpmInstallSpec("@afora/firecrawl-plugin"),
       expectedPluginId: "firecrawl",
       trustedSourceLinkedOfficialInstall: true,
     });
     expect(result.changes).toEqual([
-      `Installed missing configured plugin "firecrawl" from ${expectedNpmInstallSpec("@openclaw/firecrawl-plugin")}.`,
+      `Installed missing configured plugin "firecrawl" from ${expectedNpmInstallSpec("@afora/firecrawl-plugin")}.`,
     ]);
   });
 
@@ -4257,7 +4257,7 @@ describe("repairMissingConfiguredPluginInstalls", () => {
     mocks.listOfficialExternalPluginCatalogEntries.mockReturnValue([
       officialWebSearchPluginEntry({
         id: "brave",
-        npmSpec: "@openclaw/brave-plugin",
+        npmSpec: "@afora/brave-plugin",
         envVar: "BRAVE_API_KEY",
         label: "Brave",
         providerLabel: "Brave Search",

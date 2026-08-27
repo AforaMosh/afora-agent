@@ -36,7 +36,7 @@ export function writeTempPlugin(params: {
   const file = path.join(pluginDir, params.filename ?? `${params.id}.mjs`);
   fs.writeFileSync(file, params.body, "utf-8");
   fs.writeFileSync(
-    path.join(pluginDir, "openclaw.plugin.json"),
+    path.join(pluginDir, "afora.plugin.json"),
     JSON.stringify(
       {
         id: params.id,
@@ -62,14 +62,14 @@ export function cleanupTempPluginTestEnvironment(
   clearPluginLoaderCache();
   setActivePluginRegistry(createEmptyPluginRegistry());
   if (originalBundledPluginsDir === undefined) {
-    delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+    delete process.env.AFORA_BUNDLED_PLUGINS_DIR;
   } else {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = originalBundledPluginsDir;
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = originalBundledPluginsDir;
   }
   if (originalDisableBundledPlugins === undefined) {
-    delete process.env.OPENCLAW_DISABLE_BUNDLED_PLUGINS;
+    delete process.env.AFORA_DISABLE_BUNDLED_PLUGINS;
   } else {
-    process.env.OPENCLAW_DISABLE_BUNDLED_PLUGINS = originalDisableBundledPlugins;
+    process.env.AFORA_DISABLE_BUNDLED_PLUGINS = originalDisableBundledPlugins;
   }
 }
 

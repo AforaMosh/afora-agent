@@ -30,7 +30,7 @@ describe("secrets runtime snapshot telegram token inheritance", () => {
           },
         }),
         env: {},
-        agentDirs: ["/tmp/openclaw-agent-main"],
+        agentDirs: ["/tmp/afora-agent-main"],
         loadAuthStore: () => loadAuthStoreWithProfiles({}),
       }),
     ).rejects.toThrow('Environment variable "MISSING_ENABLED_TELEGRAM_TOKEN" is missing or empty.');
@@ -56,7 +56,7 @@ describe("secrets runtime snapshot telegram token inheritance", () => {
           },
         }),
         env: {},
-        agentDirs: ["/tmp/openclaw-agent-main"],
+        agentDirs: ["/tmp/afora-agent-main"],
         loadAuthStore: () => loadAuthStoreWithProfiles({}),
       }),
     ).rejects.toThrow('Environment variable "MISSING_ENABLED_TELEGRAM_TOKEN" is missing or empty.');
@@ -91,7 +91,7 @@ describe("secrets runtime snapshot telegram token inheritance", () => {
       env: {
         TELEGRAM_WORK_TOKEN: "telegram-work-token",
       },
-      agentDirs: ["/tmp/openclaw-agent-main"],
+      agentDirs: ["/tmp/afora-agent-main"],
       loadAuthStore: () => loadAuthStoreWithProfiles({}),
     });
 
@@ -128,7 +128,7 @@ describe("secrets runtime snapshot telegram token inheritance", () => {
           },
         }),
         env: {},
-        agentDirs: ["/tmp/openclaw-agent-main"],
+        agentDirs: ["/tmp/afora-agent-main"],
         loadAuthStore: () => loadAuthStoreWithProfiles({}),
       }),
     ).rejects.toThrow(
@@ -158,7 +158,7 @@ describe("secrets runtime snapshot telegram token inheritance", () => {
       env: {
         TELEGRAM_BASE_TOKEN: "telegram-base-token",
       },
-      agentDirs: ["/tmp/openclaw-agent-main"],
+      agentDirs: ["/tmp/afora-agent-main"],
       loadAuthStore: () => loadAuthStoreWithProfiles({}),
     });
 
@@ -188,7 +188,7 @@ describe("secrets runtime snapshot telegram token inheritance", () => {
         },
       }),
       env: {},
-      agentDirs: ["/tmp/openclaw-agent-main"],
+      agentDirs: ["/tmp/afora-agent-main"],
       loadAuthStore: () => loadAuthStoreWithProfiles({}),
     });
 
@@ -217,7 +217,7 @@ describe("secrets runtime snapshot telegram token inheritance", () => {
         },
       }),
       env: {},
-      agentDirs: ["/tmp/openclaw-agent-main"],
+      agentDirs: ["/tmp/afora-agent-main"],
       loadAuthStore: () => loadAuthStoreWithProfiles({}),
     });
 
@@ -251,7 +251,7 @@ describe("secrets runtime snapshot telegram token inheritance", () => {
         },
       }),
       env: {},
-      agentDirs: ["/tmp/openclaw-agent-main"],
+      agentDirs: ["/tmp/afora-agent-main"],
       loadAuthStore: () => loadAuthStoreWithProfiles({}),
     });
 

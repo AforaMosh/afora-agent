@@ -8,7 +8,7 @@ import { promoteToPopoverTopLayer } from "../../../components/menu-surface.ts";
 import "../../../components/web-awesome.ts";
 import { t } from "../../../i18n/index.ts";
 import { EDITOR_IDS, EDITOR_LABELS, type EditorId } from "../../../lib/editor-links.ts";
-import { OpenClawLightDomElement } from "../../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../../lit/afora-element.ts";
 
 export type SessionDiffScope =
   | { scope: "all" | "uncommitted" }
@@ -64,7 +64,7 @@ export type SessionDiffMenuAction =
   | { kind: "toggle-split" }
   | { kind: "toggle-wrap" };
 
-class SessionDiffMenu extends OpenClawLightDomElement {
+class SessionDiffMenu extends AforaLightDomElement {
   @property({ attribute: false }) menu: SessionDiffMenuData | null = null;
   @property({ attribute: false }) onAction: (action: SessionDiffMenuAction) => void = () => {};
   @property({ attribute: false }) onClose: () => void = () => {};
@@ -322,12 +322,12 @@ class SessionDiffMenu extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-session-diff-menu")) {
-  customElements.define("openclaw-session-diff-menu", SessionDiffMenu);
+if (!customElements.get("afora-session-diff-menu")) {
+  customElements.define("afora-session-diff-menu", SessionDiffMenu);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "openclaw-session-diff-menu": SessionDiffMenu;
+    "afora-session-diff-menu": SessionDiffMenu;
   }
 }

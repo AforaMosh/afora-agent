@@ -63,7 +63,7 @@ describe("fleet cli", () => {
       "create",
       "tenant-a",
       "--image",
-      "registry.example/openclaw:v1",
+      "registry.example/afora:v1",
       "--runtime",
       "podman",
       "--port",
@@ -91,7 +91,7 @@ describe("fleet cli", () => {
     expect(mocks.runFleetCreateCommand).toHaveBeenCalledOnce();
     expect(mocks.runFleetCreateCommand).toHaveBeenCalledWith({
       tenant: "tenant-a",
-      image: "registry.example/openclaw:v1",
+      image: "registry.example/afora:v1",
       runtime: "podman",
       port: 19_123,
       memory: "3g",
@@ -111,7 +111,7 @@ describe("fleet cli", () => {
 
     expect(mocks.runFleetCreateCommand).toHaveBeenCalledWith({
       tenant: "tenant-b",
-      image: "ghcr.io/openclaw/openclaw:latest",
+      image: "ghcr.io/AforaMosh/afora-agent:latest",
       runtime: "docker",
       port: undefined,
       memory: "2g",

@@ -172,7 +172,7 @@ case "${1:-check}" in
     check_manifests
     check_pngs
 
-    temp_dir="$(mktemp -d /tmp/openclaw-app-icon-variants.XXXXXX)"
+    temp_dir="$(mktemp -d /tmp/afora-app-icon-variants.XXXXXX)"
     trap 'rm -rf "$temp_dir"' EXIT
     render_release_dark_icon "$temp_dir/1024-dark.png"
     render_debug_dark_icon "$temp_dir/1024-debug-dark.png"

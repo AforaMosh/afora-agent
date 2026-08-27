@@ -19,7 +19,7 @@ Single-Gateway setups keep the existing menu unchanged. With two or more Gateway
 
 ## State model
 
-- Source: `WorkActivityStore` (`apps/macos/Sources/OpenClaw/WorkActivityStore.swift`).
+- Source: `WorkActivityStore` (`apps/macos/Sources/Afora/WorkActivityStore.swift`).
 - Events arrive as `ControlAgentEvent` with a `runId`; the handler (`ControlChannel.routeWorkActivity`) reads `sessionKey` from the event payload and defaults to `"main"` if absent.
 - Priority: the main session (`sessionKey == "main"` by default) always wins. If main is active, its state shows immediately. If main is idle, the most recently active non-main session shows instead. The store does not flip mid-activity; it only switches when the current session goes idle or main becomes active.
 - Activity kinds:
@@ -63,7 +63,7 @@ Single-Gateway setups keep the existing menu unchanged. With two or more Gateway
 
 ## Status row text (menu)
 
-- With two or more Gateways, the connection label appends the primary Gateway's catalog display name, such as `OpenClaw Active — Mac Studio`.
+- With two or more Gateways, the connection label appends the primary Gateway's catalog display name, such as `Afora Active — Mac Studio`.
 - While work is active: `<Session role> · <activity label>` (`"\(roleLabel) · \(activity.label)"` in `MenuContentView`), where role label is `Main` or `Other`.
 - When idle: falls back to the health summary.
 
@@ -81,7 +81,7 @@ Single-Gateway setups keep the existing menu unchanged. With two or more Gateway
   - `System (auto)` (default)
   - `Working: main` / `Working: other` (per tool kind: bash, read, write, edit, other)
   - `Idle`
-- Stored under `UserDefaults` key `openclaw.iconOverride`; mapped to `IconState.overridden`.
+- Stored under `UserDefaults` key `afora.iconOverride`; mapped to `IconState.overridden`.
 
 ## Testing checklist
 

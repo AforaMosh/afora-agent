@@ -1,8 +1,8 @@
 // Discord plugin module implements preflight audio behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { getFileExtension } from "openclaw/plugin-sdk/media-mime";
-import { createChannelPreflightAudio } from "openclaw/plugin-sdk/media-understanding-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { getFileExtension } from "afora-agent/plugin-sdk/media-mime";
+import { createChannelPreflightAudio } from "afora-agent/plugin-sdk/media-understanding-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 type DiscordAudioAttachment = {
   content_type?: string;
@@ -65,7 +65,7 @@ export async function resolveDiscordPreflightAudioMentionContext(params: {
   isDirectMessage: boolean;
   shouldRequireMention: boolean;
   mentionRegexes: RegExp[];
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   abortSignal?: AbortSignal;
 }): Promise<{
   hasAudioAttachment: boolean;

@@ -1,8 +1,8 @@
 // Discord plugin module implements native command route behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import * as conversationRuntime from "openclaw/plugin-sdk/conversation-binding-runtime";
-import type { ResolvedAgentRoute } from "openclaw/plugin-sdk/routing";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import * as conversationRuntime from "afora-agent/plugin-sdk/conversation-binding-runtime";
+import type { ResolvedAgentRoute } from "afora-agent/plugin-sdk/routing";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   resolveDiscordBoundConversationRoute,
   resolveDiscordEffectiveRoute,
@@ -28,7 +28,7 @@ type DiscordNativeInteractionRouteState = {
 };
 
 export async function resolveDiscordNativeInteractionRouteState(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   guildId?: string;
   memberRoleIds?: string[];

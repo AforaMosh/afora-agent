@@ -12,7 +12,7 @@ on:
       - apps/ios/**
       - apps/macos/Sources/**
       - apps/macos/Package.swift
-      - apps/shared/OpenClawKit/Sources/**
+      - apps/shared/AforaKit/Sources/**
       - apps/.i18n/native/**
       - apps/.i18n/native-source.json
       - scripts/control-ui-i18n.ts
@@ -37,7 +37,7 @@ concurrency:
 jobs:
   resolve-base:
     if: >-
-      github.repository == 'openclaw/openclaw' &&
+      github.repository == 'AforaMosh/afora-agent' &&
       (github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     outputs:
@@ -153,25 +153,25 @@ jobs:
 
       - name: Ensure translation provider secrets exist
         env:
-          OPENCLAW_DOCS_I18N_OPENAI_API_KEY: ${{ secrets.OPENCLAW_DOCS_I18N_OPENAI_API_KEY }}
+          AFORA_DOCS_I18N_OPENAI_API_KEY: ${{ secrets.AFORA_DOCS_I18N_OPENAI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           set -euo pipefail
-          if [ -z "${OPENCLAW_DOCS_I18N_OPENAI_API_KEY:-}" ] && [ -z "${OPENAI_API_KEY:-}" ] && [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-            echo "Missing OPENCLAW_DOCS_I18N_OPENAI_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY secret."
+          if [ -z "${AFORA_DOCS_I18N_OPENAI_API_KEY:-}" ] && [ -z "${OPENAI_API_KEY:-}" ] && [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+            echo "Missing AFORA_DOCS_I18N_OPENAI_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY secret."
             exit 1
           fi
 
       - name: Refresh native locale artifact
         env:
-          OPENCLAW_DOCS_I18N_OPENAI_API_KEY: ${{ secrets.OPENCLAW_DOCS_I18N_OPENAI_API_KEY }}
+          AFORA_DOCS_I18N_OPENAI_API_KEY: ${{ secrets.AFORA_DOCS_I18N_OPENAI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ANTHROPIC_MODEL: claude-opus-4-8
-          OPENAI_MODEL: ${{ vars.OPENCLAW_CI_OPENAI_MODEL_BARE || 'gpt-5.6-sol' }}
-          OPENCLAW_CONTROL_UI_I18N_THINKING: low
-          OPENCLAW_CONTROL_UI_I18N_AUTH_OPTIONAL: "0"
+          OPENAI_MODEL: ${{ vars.AFORA_CI_OPENAI_MODEL_BARE || 'gpt-5.6-sol' }}
+          AFORA_CONTROL_UI_I18N_THINKING: low
+          AFORA_CONTROL_UI_I18N_AUTH_OPTIONAL: "0"
           LOCALE: ${{ matrix.locale }}
         run: |
           set -euo pipefail
@@ -182,27 +182,27 @@ jobs:
             local openai_api_key="${3-}"
             if [ "$provider" = "openai" ]; then
               OPENAI_API_KEY="$openai_api_key" \
-                OPENCLAW_CONTROL_UI_I18N_PROVIDER="$provider" \
-                OPENCLAW_CONTROL_UI_I18N_MODEL="$model" \
+                AFORA_CONTROL_UI_I18N_PROVIDER="$provider" \
+                AFORA_CONTROL_UI_I18N_MODEL="$model" \
                 node --import tsx scripts/native-app-i18n.ts sync --write --locale "${LOCALE}"
               return
             fi
-            OPENCLAW_CONTROL_UI_I18N_PROVIDER="$provider" \
-              OPENCLAW_CONTROL_UI_I18N_MODEL="$model" \
+            AFORA_CONTROL_UI_I18N_PROVIDER="$provider" \
+              AFORA_CONTROL_UI_I18N_MODEL="$model" \
               node --import tsx scripts/native-app-i18n.ts sync --write --locale "${LOCALE}"
           }
 
           run_openai_refresh() {
             local status=1
-            if [ -n "${OPENCLAW_DOCS_I18N_OPENAI_API_KEY:-}" ]; then
+            if [ -n "${AFORA_DOCS_I18N_OPENAI_API_KEY:-}" ]; then
               set +e
-              run_refresh openai "${OPENAI_MODEL}" "${OPENCLAW_DOCS_I18N_OPENAI_API_KEY}"
+              run_refresh openai "${OPENAI_MODEL}" "${AFORA_DOCS_I18N_OPENAI_API_KEY}"
               status="$?"
               set -e
               if [ "$status" -eq 0 ]; then
                 return 0
               fi
-              if [ -z "${OPENAI_API_KEY:-}" ] || [ "${OPENAI_API_KEY}" = "${OPENCLAW_DOCS_I18N_OPENAI_API_KEY}" ]; then
+              if [ -z "${OPENAI_API_KEY:-}" ] || [ "${OPENAI_API_KEY}" = "${AFORA_DOCS_I18N_OPENAI_API_KEY}" ]; then
                 return "$status"
               fi
               echo "::warning::Docs OpenAI native locale refresh key failed for ${LOCALE}; retrying with repository OpenAI key."
@@ -221,7 +221,7 @@ jobs:
             if [ "$status" -eq 0 ]; then
               exit 0
             fi
-            if [ -z "${OPENCLAW_DOCS_I18N_OPENAI_API_KEY:-}" ] && [ -z "${OPENAI_API_KEY:-}" ]; then
+            if [ -z "${AFORA_DOCS_I18N_OPENAI_API_KEY:-}" ] && [ -z "${OPENAI_API_KEY:-}" ]; then
               exit "$status"
             fi
             echo "::warning::Anthropic native locale refresh failed for ${LOCALE}; retrying with OpenAI."
@@ -307,13 +307,13 @@ jobs:
           auto-merge: "true"
           generated-paths: |
             apps/.i18n/native
-            apps/android/app/src/main/java/ai/openclaw/app/i18n/NativeStringResources.kt
+            apps/android/app/src/main/java/ai/afora/app/i18n/NativeStringResources.kt
             apps/android/app/src/main/res/values*/assistant.xml
             apps/android/app/src/main/res/values*/strings.xml
             apps/android/app/src/thirdParty/res/values*/accessibility_strings.xml
             apps/android/wear/src/main/res/values*/strings.xml
             apps/ios/Resources/Localizable.xcstrings
-            apps/macos/Sources/OpenClaw/Resources/Localizable.xcstrings
+            apps/macos/Sources/Afora/Resources/Localizable.xcstrings
             apps/ios/Sources/*.lproj/InfoPlist.strings
             apps/ios/WatchApp/*.lproj/InfoPlist.strings
             apps/ios/ShareExtension/*.lproj/InfoPlist.strings
@@ -327,7 +327,7 @@ jobs:
             apps/ios
             apps/macos/Sources
             apps/macos/Package.swift
-            apps/shared/OpenClawKit/Sources
+            apps/shared/AforaKit/Sources
             scripts/control-ui-i18n.ts
             scripts/android-app-i18n.ts
             scripts/apple-app-i18n.ts

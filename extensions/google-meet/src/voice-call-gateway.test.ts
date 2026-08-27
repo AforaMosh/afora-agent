@@ -9,7 +9,7 @@ import {
   joinMeetViaVoiceCallGateway,
 } from "./voice-call-gateway.js";
 
-type GatewayRuntime = typeof import("openclaw/plugin-sdk/gateway-runtime");
+type GatewayRuntime = typeof import("afora-agent/plugin-sdk/gateway-runtime");
 type GatewayClientOptions = ConstructorParameters<GatewayRuntime["GatewayClient"]>[0];
 type GatewayClientInstance = InstanceType<GatewayRuntime["GatewayClient"]>;
 
@@ -30,7 +30,7 @@ const gatewayMocks = vi.hoisted(() => ({
   actualClients: [] as GatewayClientInstance[],
 }));
 
-vi.mock("openclaw/plugin-sdk/gateway-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/gateway-runtime", () => ({
   GatewayClient: vi.fn(function MockGatewayClient(params: GatewayClientOptions) {
     gatewayMocks.clientOptions = params;
     if (gatewayMocks.constructorError) {
@@ -78,12 +78,12 @@ describe("Google Meet voice-call gateway", () => {
   });
 
   afterAll(() => {
-    vi.doUnmock("openclaw/plugin-sdk/gateway-runtime");
+    vi.doUnmock("afora-agent/plugin-sdk/gateway-runtime");
     vi.resetModules();
   });
 
   it("stops the real gateway client's referenced reconnect after a localhost connection fails", async () => {
-    const actual = await vi.importActual<GatewayRuntime>("openclaw/plugin-sdk/gateway-runtime");
+    const actual = await vi.importActual<GatewayRuntime>("afora-agent/plugin-sdk/gateway-runtime");
     gatewayMocks.actualGatewayClient = actual.GatewayClient;
     gatewayMocks.startGatewayClientWhenEventLoopReady.mockImplementation((client, options) =>
       actual.startGatewayClientWhenEventLoopReady(

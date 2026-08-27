@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { migratePersistedImplicitMainRoster } from "../../config/legacy.roster.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveAgentHarnessPolicy as resolveAgentHarnessPolicyBase } from "./policy.js";
 
 function resolveAgentHarnessPolicy(
@@ -8,11 +8,11 @@ function resolveAgentHarnessPolicy(
 ): ReturnType<typeof resolveAgentHarnessPolicyBase> {
   return resolveAgentHarnessPolicyBase({
     ...params,
-    config: migratePersistedImplicitMainRoster(params.config).config as OpenClawConfig,
+    config: migratePersistedImplicitMainRoster(params.config).config as AforaConfig,
   });
 }
 
-function openAIProviderConfig(overrides: Record<string, unknown>): OpenClawConfig {
+function openAIProviderConfig(overrides: Record<string, unknown>): AforaConfig {
   return {
     models: {
       providers: {
@@ -24,7 +24,7 @@ function openAIProviderConfig(overrides: Record<string, unknown>): OpenClawConfi
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 describe("resolveAgentHarnessPolicy", () => {
@@ -37,7 +37,7 @@ describe("resolveAgentHarnessPolicy", () => {
     {
       name: "HTTP official Responses route",
       params: { config: openAIProviderConfig({ baseUrl: "http://api.openai.com/v1" }) },
-      runtime: "openclaw",
+      runtime: "afora",
     },
     {
       name: "HTTP official ChatGPT route",
@@ -47,22 +47,22 @@ describe("resolveAgentHarnessPolicy", () => {
           baseUrl: "http://chatgpt.com/backend-api/codex",
         }),
       },
-      runtime: "openclaw",
+      runtime: "afora",
     },
     {
       name: "custom endpoint",
       params: { config: openAIProviderConfig({ baseUrl: "https://relay.example.test/v1" }) },
-      runtime: "openclaw",
+      runtime: "afora",
     },
     {
       name: "authored Completions route",
       params: { config: openAIProviderConfig({ api: "openai-completions" }) },
-      runtime: "openclaw",
+      runtime: "afora",
     },
     {
       name: "request override",
       params: { config: openAIProviderConfig({ headers: { "x-route": "custom" } }) },
-      runtime: "openclaw",
+      runtime: "afora",
     },
   ])("uses the provider-owned runtime for $name", ({ params, runtime }) => {
     expect(
@@ -106,7 +106,7 @@ describe("resolveAgentHarnessPolicy", () => {
                 },
               },
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
           env: {},
         }),
       ).toEqual({ runtime: "auto", runtimeSource: "implicit" });
@@ -133,7 +133,7 @@ describe("resolveAgentHarnessPolicy", () => {
           config: customConfig,
           env: {},
         }),
-      ).toEqual({ runtime: "openclaw", runtimeSource: "implicit" });
+      ).toEqual({ runtime: "afora", runtimeSource: "implicit" });
     },
   );
 
@@ -166,7 +166,7 @@ describe("resolveAgentHarnessPolicy", () => {
       agentId: undefined,
       sessionKey: "agent:writer:main",
     },
-  ])("keeps $name on OpenClaw", ({ agents, agentId, sessionKey }) => {
+  ])("keeps $name on Afora", ({ agents, agentId, sessionKey }) => {
     const config = openAIProviderConfig({});
     config.agents = agents;
     expect(
@@ -178,10 +178,10 @@ describe("resolveAgentHarnessPolicy", () => {
         sessionKey,
         env: {},
       }),
-    ).toEqual({ runtime: "openclaw", runtimeSource: "implicit" });
+    ).toEqual({ runtime: "afora", runtimeSource: "implicit" });
   });
 
-  it("keeps prepared request overrides on OpenClaw", () => {
+  it("keeps prepared request overrides on Afora", () => {
     expect(
       resolveAgentHarnessPolicy({
         provider: "openai",
@@ -191,14 +191,14 @@ describe("resolveAgentHarnessPolicy", () => {
         requestTransportOverrides: "present",
         env: {},
       }),
-    ).toEqual({ runtime: "openclaw", runtimeSource: "implicit" });
+    ).toEqual({ runtime: "afora", runtimeSource: "implicit" });
   });
 
   it("applies global request params before a concrete model is selected", () => {
     const config = openAIProviderConfig({});
     config.agents = { defaults: { params: { temperature: 0.2 } } };
     expect(resolveAgentHarnessPolicy({ provider: "openai", config, env: {} })).toEqual({
-      runtime: "openclaw",
+      runtime: "afora",
       runtimeSource: "implicit",
     });
   });
@@ -207,7 +207,7 @@ describe("resolveAgentHarnessPolicy", () => {
     {
       name: "later route facts fill an omitted adapter",
       models: [{ id: "gpt-5.5" }, { id: "gpt-5.5", api: "openai-completions" }],
-      runtime: "openclaw",
+      runtime: "afora",
     },
     {
       name: "a provider-looking native id stays distinct",
@@ -215,7 +215,7 @@ describe("resolveAgentHarnessPolicy", () => {
         { id: "openai/gpt-5.5", api: "openai-responses" },
         { id: "gpt-5.5", api: "openai-completions" },
       ],
-      runtime: "openclaw",
+      runtime: "afora",
     },
     {
       name: "an authored empty header map stays authoritative",
@@ -228,7 +228,7 @@ describe("resolveAgentHarnessPolicy", () => {
     {
       name: "later headers fill an omitted header map",
       models: [{ id: "gpt-5.5" }, { id: "gpt-5.5", headers: { "x-route": "custom" } }],
-      runtime: "openclaw",
+      runtime: "afora",
     },
   ])("keeps duplicate model config aligned: $name", ({ models, runtime }) => {
     expect(

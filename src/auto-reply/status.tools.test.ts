@@ -1,6 +1,6 @@
 /** Tests /tools status output for compact and verbose tool inventory modes. */
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { buildCommandsMessage, buildHelpMessage, buildToolsMessage } from "./status.js";
 
 vi.mock("../plugins/commands.js", () => ({
@@ -11,7 +11,7 @@ describe("tools product copy", () => {
   it("mentions /tools in command discovery copy", () => {
     const cfg = {
       commands: { config: false, debug: false },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expect(buildCommandsMessage(cfg)).toContain("/tools - List available runtime tools.");
     expect(buildCommandsMessage(cfg)).toContain("More: /tools for available capabilities");

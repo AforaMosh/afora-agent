@@ -1,8 +1,8 @@
 /**
  * Queues embedded-agent session compaction onto the correct command lane.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST } from "../../context-engine/host-compat.js";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { AFORA_EMBEDDED_CONTEXT_ENGINE_HOST } from "../../context-engine/host-compat.js";
 import { ensureContextEnginesInitialized } from "../../context-engine/init.js";
 import {
   resolveContextEngine,
@@ -367,7 +367,7 @@ async function compactEmbeddedAgentSessionImpl(
   });
   // Native control operations reuse the backend's existing authenticated session.
   // Run them before generic model preparation so subscription-only CLI sessions do
-  // not incorrectly require an OpenClaw model API credential.
+  // not incorrectly require an Afora model API credential.
   const nativeCliResult = await compactNativeCliSession({
     runtime: runtimeSelection.selectedHarnessRuntime,
     compactParams: {
@@ -473,7 +473,7 @@ async function compactResolvedContextEngine(
     selectedHarnessRuntime: params.modelSelectionLocked === true ? lockedHarnessRuntime : undefined,
   });
   const lockedNativeHarness =
-    params.modelSelectionLocked === true && selectedHarnessRuntime !== "openclaw";
+    params.modelSelectionLocked === true && selectedHarnessRuntime !== "afora";
   const attemptNativeHarnessCompaction = shouldAttemptNativeHarnessCompaction({
     provider: ceProvider,
     nativeHarnessCompaction: resolvedCompactionTarget.nativeHarnessCompaction,
@@ -596,7 +596,7 @@ async function compactResolvedContextEngine(
     contextEnginePluginId: resolveContextEngineOwnerPluginId(contextEngine),
   });
   const contextEngineRuntimeSettings = buildContextEngineRuntimeSettings({
-    contextEngineHost: OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST,
+    contextEngineHost: AFORA_EMBEDDED_CONTEXT_ENGINE_HOST,
     provider: ceProvider,
     requestedModel: params.model,
     resolvedModel: ceModelId,
@@ -955,7 +955,7 @@ function shouldAttemptNativeHarnessCompaction(params: {
   selectedHarnessRuntime?: string | null;
 }): boolean {
   const selectedRuntime = normalizeOptionalAgentRuntimeId(params.selectedHarnessRuntime);
-  if (!selectedRuntime || selectedRuntime === "auto" || selectedRuntime === "openclaw") {
+  if (!selectedRuntime || selectedRuntime === "auto" || selectedRuntime === "afora") {
     return false;
   }
   return isOpenAIProvider(params.provider) ? params.nativeHarnessCompaction === true : true;

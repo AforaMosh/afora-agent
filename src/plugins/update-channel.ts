@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { readInstalledPackageVersion } from "../infra/package-update-utils.js";
 import type { UpdateChannel } from "../infra/update-channels.js";
 import { resolveBundledPluginSources } from "./bundled-sources.js";
@@ -46,13 +46,13 @@ type PluginChannelSyncSummary = {
 };
 
 type PluginChannelSyncResult = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   changed: boolean;
   summary: PluginChannelSyncSummary;
 };
 
 export async function syncPluginsForUpdateChannel(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   channel: UpdateChannel;
   coreVersion?: string;
   workspaceDir?: string;

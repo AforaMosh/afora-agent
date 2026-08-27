@@ -1,6 +1,6 @@
 // Browser tests cover pw tools core ssrf guard plugin behavior.
-import { expectDefined } from "@openclaw/normalization-core";
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
+import { expectDefined } from "@afora/normalization-core";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 function requireInvocationOrder(mock: { invocationCallOrder: number[] }, context: string): number {

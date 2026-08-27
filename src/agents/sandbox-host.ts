@@ -1,4 +1,4 @@
-import { asOptionalRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalRecord as asRecord } from "@afora/normalization-core/record-coerce";
 
 export type SandboxHostCsp = {
   connectDomains?: string[];
@@ -278,7 +278,7 @@ export function buildSandboxHostProxyHtml(csp?: SandboxHostCsp): string {
     }
     if (event.source === inner.contentWindow) {
       if (typeof event.data?.method === "string" && event.data.method.startsWith("ui/notifications/sandbox-")) return;
-      if (event.data?.type === "openclaw:widget-bridge-port-offer") {
+      if (event.data?.type === "afora:widget-bridge-port-offer") {
         const port = event.ports[0];
         if (!widgetBridgePortOffered && port) {
           widgetBridgePortOffered = true;

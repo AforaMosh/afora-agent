@@ -22,8 +22,8 @@ describe("ingestMemoryWikiSource human notes", () => {
     const pagePath = path.join(config.vault.path, "sources", "roadmap.md");
     const userNote = "KEY INSIGHT: covers $1 of the Q2 roadmap";
     const edited = (await fs.readFile(pagePath, "utf8")).replace(
-      "<!-- openclaw:human:start -->\n<!-- openclaw:human:end -->",
-      `<!-- openclaw:human:start -->\n${userNote}\n<!-- openclaw:human:end -->`,
+      "<!-- afora:human:start -->\n<!-- afora:human:end -->",
+      `<!-- afora:human:start -->\n${userNote}\n<!-- afora:human:end -->`,
     );
     await fs.writeFile(pagePath, edited, "utf8");
 
@@ -42,18 +42,18 @@ describe("ingestMemoryWikiSource human notes", () => {
   it.each([
     {
       name: "closing",
-      malformedNotes: "<!-- openclaw:human:start -->\nHANDWRITTEN NOTE MUST SURVIVE",
-      missingMarker: /openclaw:human:end/i,
+      malformedNotes: "<!-- afora:human:start -->\nHANDWRITTEN NOTE MUST SURVIVE",
+      missingMarker: /afora:human:end/i,
     },
     {
       name: "opening",
-      malformedNotes: "HANDWRITTEN NOTE MUST SURVIVE\n<!-- openclaw:human:end -->",
-      missingMarker: /openclaw:human:start/i,
+      malformedNotes: "HANDWRITTEN NOTE MUST SURVIVE\n<!-- afora:human:end -->",
+      missingMarker: /afora:human:start/i,
     },
     {
       name: "opening and closing",
       malformedNotes: "HANDWRITTEN NOTE MUST SURVIVE",
-      missingMarker: /openclaw:human:start/i,
+      missingMarker: /afora:human:start/i,
     },
   ])(
     "preserves the source page when handwritten Notes are missing the $name marker",
@@ -71,7 +71,7 @@ describe("ingestMemoryWikiSource human notes", () => {
 
       const pagePath = path.join(config.vault.path, "sources", "roadmap.md");
       const existingPage = (await fs.readFile(pagePath, "utf8")).replace(
-        "<!-- openclaw:human:start -->\n<!-- openclaw:human:end -->",
+        "<!-- afora:human:start -->\n<!-- afora:human:end -->",
         malformedNotes,
       );
       await fs.writeFile(pagePath, existingPage, "utf8");
@@ -104,16 +104,16 @@ describe("ingestMemoryWikiSource human notes", () => {
     const pagePath = path.join(config.vault.path, "sources", "notes.md");
     const userNote = "MY PRIVATE NOTE";
     const edited = (await fs.readFile(pagePath, "utf8")).replace(
-      "<!-- openclaw:human:start -->\n<!-- openclaw:human:end -->",
-      `<!-- openclaw:human:start -->\n${userNote}\n<!-- openclaw:human:end -->`,
+      "<!-- afora:human:start -->\n<!-- afora:human:end -->",
+      `<!-- afora:human:start -->\n${userNote}\n<!-- afora:human:end -->`,
     );
     await fs.writeFile(pagePath, edited, "utf8");
 
     const sourceWithMarkers = [
       "second body",
-      "<!-- openclaw:human:start -->",
+      "<!-- afora:human:start -->",
       "INJECTED FROM SOURCE",
-      "<!-- openclaw:human:end -->",
+      "<!-- afora:human:end -->",
       "",
     ].join("\n");
     await fs.writeFile(inputPath, sourceWithMarkers, "utf8");
@@ -137,9 +137,9 @@ describe("ingestMemoryWikiSource human notes", () => {
 
     const sourceWithMarkers = [
       "first body",
-      "<!-- openclaw:human:start -->",
+      "<!-- afora:human:start -->",
       "OLD SOURCE MARKER PAYLOAD",
-      "<!-- openclaw:human:end -->",
+      "<!-- afora:human:end -->",
       "",
     ].join("\n");
     await fs.writeFile(inputPath, sourceWithMarkers, "utf8");
@@ -152,8 +152,8 @@ describe("ingestMemoryWikiSource human notes", () => {
     const pagePath = path.join(config.vault.path, "sources", "windows-notes.md");
     const userNote = "CRLF USER NOTE";
     const edited = (await fs.readFile(pagePath, "utf8")).replace(
-      "<!-- openclaw:human:start -->\n<!-- openclaw:human:end -->",
-      `<!-- openclaw:human:start -->\n${userNote}\n<!-- openclaw:human:end -->`,
+      "<!-- afora:human:start -->\n<!-- afora:human:end -->",
+      `<!-- afora:human:start -->\n${userNote}\n<!-- afora:human:end -->`,
     );
     await fs.writeFile(pagePath, edited.replace(/\n/g, "\r\n"), "utf8");
 
@@ -186,12 +186,12 @@ describe("ingestMemoryWikiSource human notes", () => {
     const pagePath = path.join(config.vault.path, "sources", "diary.md");
     const noteWithMarker = [
       "EARLY NOTE before any quoted marker",
-      "<!-- openclaw:human:start -->",
+      "<!-- afora:human:start -->",
       "LATE NOTE after a pasted marker",
     ].join("\n");
     const edited = (await fs.readFile(pagePath, "utf8")).replace(
-      "<!-- openclaw:human:start -->\n<!-- openclaw:human:end -->",
-      `<!-- openclaw:human:start -->\n${noteWithMarker}\n<!-- openclaw:human:end -->`,
+      "<!-- afora:human:start -->\n<!-- afora:human:end -->",
+      `<!-- afora:human:start -->\n${noteWithMarker}\n<!-- afora:human:end -->`,
     );
     await fs.writeFile(pagePath, edited, "utf8");
 
@@ -225,8 +225,8 @@ describe("ingestMemoryWikiSource human notes", () => {
       "\n",
     );
     const edited = (await fs.readFile(pagePath, "utf8")).replace(
-      "<!-- openclaw:human:start -->\n<!-- openclaw:human:end -->",
-      `<!-- openclaw:human:start -->\n${noteWithHeading}\n<!-- openclaw:human:end -->`,
+      "<!-- afora:human:start -->\n<!-- afora:human:end -->",
+      `<!-- afora:human:start -->\n${noteWithHeading}\n<!-- afora:human:end -->`,
     );
     await fs.writeFile(pagePath, edited, "utf8");
 

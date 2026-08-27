@@ -1,5 +1,5 @@
 /** Query helpers for discovering secret target registry entries. */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { loadChannelSecretContractApi } from "./channel-contract-api.js";
 import { getPath } from "./path-utils.js";
 import { getCoreSecretTargetRegistry, getSecretTargetRegistry } from "./target-registry-data.js";
@@ -22,15 +22,15 @@ let compiledSecretTargetRegistryState: {
   authProfilesTargetsById: Map<string, CompiledTargetRegistryEntry[]>;
   compiledSecretTargetRegistry: CompiledTargetRegistryEntry[];
   knownTargetIds: Set<string>;
-  openClawCompiledSecretTargets: CompiledTargetRegistryEntry[];
-  openClawTargetsById: Map<string, CompiledTargetRegistryEntry[]>;
+  aforaCompiledSecretTargets: CompiledTargetRegistryEntry[];
+  aforaTargetsById: Map<string, CompiledTargetRegistryEntry[]>;
   targetsByType: Map<string, CompiledTargetRegistryEntry[]>;
 } | null = null;
 
-let compiledCoreOpenClawTargetState: {
+let compiledCoreAforaTargetState: {
   knownTargetIds: Set<string>;
-  openClawCompiledSecretTargets: CompiledTargetRegistryEntry[];
-  openClawTargetsById: Map<string, CompiledTargetRegistryEntry[]>;
+  aforaCompiledSecretTargets: CompiledTargetRegistryEntry[];
+  aforaTargetsById: Map<string, CompiledTargetRegistryEntry[]>;
   planTargetsByType: Map<string, CompiledTargetRegistryEntry[]>;
 } | null = null;
 
@@ -40,7 +40,7 @@ let compiledCoreAuthProfileTargetState: {
 } | null = null;
 
 // Channel contract entries are process-stable; plugin install/reload is the owner of freshness.
-const compiledChannelOpenClawTargets = new Map<string, CompiledTargetRegistryEntry[] | null>();
+const compiledChannelAforaTargets = new Map<string, CompiledTargetRegistryEntry[] | null>();
 
 function buildTargetTypeIndex(
   compiledSecretTargetRegistry: CompiledTargetRegistryEntry[],
@@ -80,8 +80,8 @@ function buildConfigTargetIdIndex(
 
 function compileSecretTargetRegistryState(registry: SecretTargetRegistryEntry[]) {
   const compiledSecretTargetRegistry = registry.map(compileTargetRegistryEntry);
-  const openClawCompiledSecretTargets = compiledSecretTargetRegistry.filter(
-    (entry) => entry.configFile === "openclaw.json",
+  const aforaCompiledSecretTargets = compiledSecretTargetRegistry.filter(
+    (entry) => entry.configFile === "afora.json",
   );
   const authProfilesCompiledSecretTargets = compiledSecretTargetRegistry.filter(
     (entry) => entry.configFile === "auth-profiles.json",
@@ -91,8 +91,8 @@ function compileSecretTargetRegistryState(registry: SecretTargetRegistryEntry[])
     authProfilesTargetsById: buildConfigTargetIdIndex(authProfilesCompiledSecretTargets),
     compiledSecretTargetRegistry,
     knownTargetIds: new Set(compiledSecretTargetRegistry.map((entry) => entry.id)),
-    openClawCompiledSecretTargets,
-    openClawTargetsById: buildConfigTargetIdIndex(openClawCompiledSecretTargets),
+    aforaCompiledSecretTargets,
+    aforaTargetsById: buildConfigTargetIdIndex(aforaCompiledSecretTargets),
     targetsByType: buildTargetTypeIndex(compiledSecretTargetRegistry),
   };
 }
@@ -105,25 +105,25 @@ function getCompiledSecretTargetRegistryState() {
   return compiledSecretTargetRegistryState;
 }
 
-function getConfiguredSecretTargetRegistryState(config: OpenClawConfig, env: NodeJS.ProcessEnv) {
+function getConfiguredSecretTargetRegistryState(config: AforaConfig, env: NodeJS.ProcessEnv) {
   return compileSecretTargetRegistryState(getSecretTargetRegistry({ config, env }));
 }
 
-function getCompiledCoreOpenClawTargetState() {
-  if (compiledCoreOpenClawTargetState) {
-    return compiledCoreOpenClawTargetState;
+function getCompiledCoreAforaTargetState() {
+  if (compiledCoreAforaTargetState) {
+    return compiledCoreAforaTargetState;
   }
   const compiledCoreSecretTargets = getCoreSecretTargetRegistry().map(compileTargetRegistryEntry);
-  const openClawCompiledSecretTargets = compiledCoreSecretTargets.filter(
-    (entry) => entry.configFile === "openclaw.json",
+  const aforaCompiledSecretTargets = compiledCoreSecretTargets.filter(
+    (entry) => entry.configFile === "afora.json",
   );
-  compiledCoreOpenClawTargetState = {
+  compiledCoreAforaTargetState = {
     knownTargetIds: new Set(compiledCoreSecretTargets.map((entry) => entry.id)),
-    openClawCompiledSecretTargets,
-    openClawTargetsById: buildConfigTargetIdIndex(openClawCompiledSecretTargets),
+    aforaCompiledSecretTargets,
+    aforaTargetsById: buildConfigTargetIdIndex(aforaCompiledSecretTargets),
     planTargetsByType: buildTargetTypeIndex(compiledCoreSecretTargets),
   };
-  return compiledCoreOpenClawTargetState;
+  return compiledCoreAforaTargetState;
 }
 
 function getCompiledCoreAuthProfileTargetState() {
@@ -140,7 +140,7 @@ function getCompiledCoreAuthProfileTargetState() {
   return compiledCoreAuthProfileTargetState;
 }
 
-function getCompiledChannelOpenClawTargets(
+function getCompiledChannelAforaTargets(
   channelId: string,
 ): CompiledTargetRegistryEntry[] | null {
   const normalizedChannelId = channelId.trim();
@@ -152,18 +152,18 @@ function getCompiledChannelOpenClawTargets(
   ) {
     return null;
   }
-  if (compiledChannelOpenClawTargets.has(normalizedChannelId)) {
-    return compiledChannelOpenClawTargets.get(normalizedChannelId) ?? null;
+  if (compiledChannelAforaTargets.has(normalizedChannelId)) {
+    return compiledChannelAforaTargets.get(normalizedChannelId) ?? null;
   }
   const compiledEntries =
     loadChannelSecretContractApi({
       channelId: normalizedChannelId,
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       env: process.env,
     })
-      ?.secretTargetRegistryEntries?.filter((entry) => entry.configFile === "openclaw.json")
+      ?.secretTargetRegistryEntries?.filter((entry) => entry.configFile === "afora.json")
       .map(compileTargetRegistryEntry) ?? null;
-  compiledChannelOpenClawTargets.set(normalizedChannelId, compiledEntries);
+  compiledChannelAforaTargets.set(normalizedChannelId, compiledEntries);
   return compiledEntries;
 }
 
@@ -178,12 +178,12 @@ function normalizeAllowedTargetIds(targetIds?: Iterable<string>): Set<string> | 
   );
 }
 
-function configHasPluginEntries(config: OpenClawConfig): boolean {
+function configHasPluginEntries(config: AforaConfig): boolean {
   return Boolean(config.plugins?.entries && Object.keys(config.plugins.entries).length > 0);
 }
 
-function getConfiguredChannelOpenClawTargets(
-  config: OpenClawConfig,
+function getConfiguredChannelAforaTargets(
+  config: AforaConfig,
   env: NodeJS.ProcessEnv,
 ): CompiledTargetRegistryEntry[] | null {
   const entries: CompiledTargetRegistryEntry[] = [];
@@ -204,7 +204,7 @@ function getConfiguredChannelOpenClawTargets(
     }
     entries.push(
       ...(contract.secretTargetRegistryEntries
-        ?.filter((entry) => entry.configFile === "openclaw.json")
+        ?.filter((entry) => entry.configFile === "afora.json")
         .map(compileTargetRegistryEntry) ?? []),
     );
   }
@@ -337,7 +337,7 @@ export function isKnownSecretTargetId(value: unknown): value is string {
 /** Checks the static core registry without materializing plugin/channel contracts. */
 export function isKnownCoreSecretTargetId(value: unknown): value is string {
   return (
-    typeof value === "string" && getCompiledCoreOpenClawTargetState().knownTargetIds.has(value)
+    typeof value === "string" && getCompiledCoreAforaTargetState().knownTargetIds.has(value)
   );
 }
 
@@ -350,7 +350,7 @@ export function resolvePlanTargetAgainstRegistry(candidate: {
   providerId?: string;
   accountId?: string;
 }): ResolvedPlanTarget | null {
-  const coreEntries = getCompiledCoreOpenClawTargetState().planTargetsByType.get(candidate.type);
+  const coreEntries = getCompiledCoreAforaTargetState().planTargetsByType.get(candidate.type);
   if (coreEntries) {
     return resolvePlanTargetAgainstEntries(candidate, coreEntries);
   }
@@ -360,7 +360,7 @@ export function resolvePlanTargetAgainstRegistry(candidate: {
     if (/[\\/:]/.test(explicitChannelId)) {
       return null;
     }
-    const channelEntries = getCompiledChannelOpenClawTargets(explicitChannelId) ?? [];
+    const channelEntries = getCompiledChannelAforaTargets(explicitChannelId) ?? [];
     const channelTypeEntries = buildTargetTypeIndex(channelEntries).get(candidate.type);
     if (channelTypeEntries) {
       return resolvePlanTargetAgainstEntries(candidate, channelTypeEntries);
@@ -417,7 +417,7 @@ export function resolveSecretPlanTargetByPathCore(params: {
   configFile: SecretTargetConfigFile;
   pathSegments: string[];
 }): ResolvedPlanTarget | null {
-  if (params.configFile === "openclaw.json") {
+  if (params.configFile === "afora.json") {
     return resolveConfigSecretTargetByPath(params.pathSegments);
   }
   for (const entry of getCompiledSecretTargetRegistryState().authProfilesCompiledSecretTargets) {
@@ -437,10 +437,10 @@ export function resolveSecretPlanTargetByPathCore(params: {
 }
 
 /**
- * Resolves an openclaw.json config path to the matching plan-capable secrets target.
+ * Resolves an afora.json config path to the matching plan-capable secrets target.
  */
 export function resolveConfigSecretTargetByPath(pathSegments: string[]): ResolvedPlanTarget | null {
-  for (const entry of getCompiledCoreOpenClawTargetState().openClawCompiledSecretTargets) {
+  for (const entry of getCompiledCoreAforaTargetState().aforaCompiledSecretTargets) {
     if (!entry.includeInPlan) {
       continue;
     }
@@ -457,7 +457,7 @@ export function resolveConfigSecretTargetByPath(pathSegments: string[]): Resolve
 
   const explicitChannelId = pathSegments[0] === "channels" ? (pathSegments[1]?.trim() ?? "") : "";
   const explicitChannelEntries = explicitChannelId
-    ? getCompiledChannelOpenClawTargets(explicitChannelId)
+    ? getCompiledChannelAforaTargets(explicitChannelId)
     : null;
   // Channel-owned contracts get first chance for explicit channel paths before bundled defaults.
   for (const entry of explicitChannelEntries ?? []) {
@@ -475,7 +475,7 @@ export function resolveConfigSecretTargetByPath(pathSegments: string[]): Resolve
     return resolved;
   }
 
-  for (const entry of getCompiledSecretTargetRegistryState().openClawCompiledSecretTargets) {
+  for (const entry of getCompiledSecretTargetRegistryState().aforaCompiledSecretTargets) {
     if (!entry.includeInPlan) {
       continue;
     }
@@ -492,36 +492,36 @@ export function resolveConfigSecretTargetByPath(pathSegments: string[]): Resolve
   return null;
 }
 
-/** Discovers configured secret-bearing values in openclaw.json. */
+/** Discovers configured secret-bearing values in afora.json. */
 export function discoverConfigSecretTargets(
-  config: OpenClawConfig,
+  config: AforaConfig,
   options: { env?: NodeJS.ProcessEnv } = {},
 ): DiscoveredConfigSecretTarget[] {
   return discoverConfigSecretTargetsByIds(config, undefined, options);
 }
 
 /**
- * Discovers configured openclaw.json targets, optionally limited to selected registry ids.
+ * Discovers configured afora.json targets, optionally limited to selected registry ids.
  */
 export function discoverConfigSecretTargetsByIds(
-  config: OpenClawConfig,
+  config: AforaConfig,
   targetIds?: Iterable<string>,
   options: { env?: NodeJS.ProcessEnv } = {},
 ): DiscoveredConfigSecretTarget[] {
   const env = options.env ?? process.env;
   const allowedTargetIds = normalizeAllowedTargetIds(targetIds);
-  const coreState = getCompiledCoreOpenClawTargetState();
+  const coreState = getCompiledCoreAforaTargetState();
   const hasOnlyCoreTargetIds =
     allowedTargetIds !== null &&
     Array.from(allowedTargetIds).every((targetId) => coreState.knownTargetIds.has(targetId));
   const configuredChannelEntries =
     !hasOnlyCoreTargetIds && !configHasPluginEntries(config)
-      ? getConfiguredChannelOpenClawTargets(config, env)
+      ? getConfiguredChannelAforaTargets(config, env)
       : null;
   const configuredEntries = hasOnlyCoreTargetIds
-    ? coreState.openClawCompiledSecretTargets
+    ? coreState.aforaCompiledSecretTargets
     : configuredChannelEntries
-      ? [...coreState.openClawCompiledSecretTargets, ...configuredChannelEntries]
+      ? [...coreState.aforaCompiledSecretTargets, ...configuredChannelEntries]
       : null;
   const configuredEntriesById = configuredEntries
     ? buildConfigTargetIdIndex(configuredEntries)
@@ -535,8 +535,8 @@ export function discoverConfigSecretTargetsByIds(
     : getConfiguredSecretTargetRegistryState(config, env);
   const discoveryEntries = resolveDiscoveryEntries({
     allowedTargetIds,
-    defaultEntries: configuredEntries ?? registryState?.openClawCompiledSecretTargets ?? [],
-    entriesById: configuredEntriesById ?? registryState?.openClawTargetsById ?? new Map(),
+    defaultEntries: configuredEntries ?? registryState?.aforaCompiledSecretTargets ?? [],
+    entriesById: configuredEntriesById ?? registryState?.aforaTargetsById ?? new Map(),
   });
   return discoverSecretTargetsFromEntries(config, discoveryEntries);
 }

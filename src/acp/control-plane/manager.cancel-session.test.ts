@@ -1,5 +1,5 @@
 /** Tests ACP manager cancellation of active turns and idle sessions. */
-import type { AcpRuntimeEvent } from "@openclaw/acp-core/runtime/types";
+import type { AcpRuntimeEvent } from "@afora/acp-core/runtime/types";
 import { describe, expect, it, vi } from "vitest";
 import {
   requireTaskByRunId,

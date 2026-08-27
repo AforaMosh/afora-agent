@@ -3,7 +3,7 @@
  * Reads supported CLI credential stores, decides whether those credentials can
  * safely bootstrap local auth profiles, and returns runtime/persisted overlays.
  */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import {
   readClaudeCliCredentialsCached,
   readCodexCliCredentialsCached,
@@ -296,7 +296,7 @@ function listScopedExternalCliProfileIds(params: {
   options?: ExternalCliAuthProfileOptions;
 }): string[] {
   const { options, providerConfig, store } = params;
-  // Bootstrap-only CLI state must not enter any sibling slot once OpenClaw
+  // Bootstrap-only CLI state must not enter any sibling slot once Afora
   // owns OAuth for the provider, regardless of how discovery was scoped.
   if (providerConfig.bootstrapOnly && hasManagedProviderOAuth(store, providerConfig)) {
     return [];

@@ -1,7 +1,7 @@
 // Slack tests cover context plugin behavior.
 import type { App } from "@slack/bolt";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setSlackRuntime } from "../runtime.js";
 import { createSlackMonitorContext } from "./context.js";
@@ -19,7 +19,7 @@ function createTestContext(params?: {
     cfg: {
       channels: { slack: { enabled: true } },
       session: { dmScope: params?.dmScope ?? "main" },
-    } as OpenClawConfig,
+    } as AforaConfig,
     accountId: "default",
     botToken: "xoxb-test",
     app: { client: params?.appClient ?? {} } as App,
@@ -49,7 +49,7 @@ function createTestContext(params?: {
     threadInheritParent: false,
     slashCommand: {
       enabled: true,
-      name: "openclaw",
+      name: "afora",
       ephemeral: true,
       sessionPrefix: "slack:slash",
     },

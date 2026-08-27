@@ -13,9 +13,9 @@ import {
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
-const captureUiProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+const captureUiProof = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 const proofDir = path.resolve(".artifacts/control-ui-e2e/activity-run-inspector");
 const hmacRef = `hmac-sha256:v1:${"a".repeat(32)}:${"b".repeat(64)}`;
 
@@ -360,7 +360,7 @@ describeControlUiE2e("Control UI durable Activity run inspector", () => {
 
       await page.setViewportSize({ height: 900, width: 720 });
       const mobileLayout = await page.locator("main.content").evaluate((content) => {
-        const outlet = content.querySelector("openclaw-router-outlet");
+        const outlet = content.querySelector("afora-router-outlet");
         const streamElement = content.querySelector<HTMLElement>(".activity-stream");
         if (!outlet || !streamElement) {
           throw new Error("Mobile Live Activity layout is incomplete");

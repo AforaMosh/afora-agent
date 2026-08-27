@@ -4,7 +4,7 @@ import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import JSZip from "jszip";
-import { asOptionalRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { asOptionalRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import * as tar from "tar";
 import { resolveLlamaCppDataDir } from "./defaults.js";
 import {
@@ -104,7 +104,7 @@ export async function downloadVerifiedFile(params: {
   // Setup/doctor closure must not cold-load the SSRF barrel (DNS, proxy state,
   // logging); defer it to actual download time per the closure guard contract.
   const { fetchWithSsrFGuard, ssrfPolicyFromHttpBaseUrlAllowedOrigin } =
-    await import("openclaw/plugin-sdk/ssrf-runtime");
+    await import("afora-agent/plugin-sdk/ssrf-runtime");
   try {
     const { response, release } = await fetchWithSsrFGuard({
       url: params.url,

@@ -4,10 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import * as imageGenerationRuntime from "../../image-generation/runtime.js";
 import * as mediaStore from "../../media/store.js";
-import { createOpenClawTools } from "../openclaw-tools.js";
+import { createAforaTools } from "../afora-tools.js";
 import { createImageGenerateTool } from "./image-generate-tool.js";
 import * as pdfNativeProviders from "./pdf-native-providers.js";
 import {
@@ -28,8 +28,8 @@ vi.mock("../provider-stream.js", () => ({
   registerProviderStreamForModel: vi.fn(),
 }));
 
-vi.mock("../openclaw-plugin-tools.js", () => ({
-  resolveOpenClawPluginToolsForOptions: () => [],
+vi.mock("../afora-plugin-tools.js", () => ({
+  resolveAforaPluginToolsForOptions: () => [],
 }));
 
 const { stubPdfToolInfra } = createPdfToolInfraStub(completeMock);
@@ -38,7 +38,7 @@ const ONE_PIXEL_PNG = Buffer.from(
   "base64",
 );
 
-function requireTool(tools: ReturnType<typeof createOpenClawTools>, name: "view_image" | "pdf") {
+function requireTool(tools: ReturnType<typeof createAforaTools>, name: "view_image" | "pdf") {
   const tool = tools.find((candidate) => candidate.name === name);
   expect(tool, `${name} tool registration`).toBeDefined();
   if (!tool) {
@@ -60,7 +60,7 @@ describe.runIf(process.platform === "win32")("host-local media tool file URLs", 
 
   it("loads Unicode and space file URLs through registered image and PDF tools", async () => {
     await withTempPdfAgentDir(async (agentDir) => {
-      const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-media-file-url-Å "));
+      const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-media-file-url-Å "));
       try {
         const imagePath = path.join(workspaceDir, "café image.png");
         const pdfPath = path.join(workspaceDir, "résumé document.pdf");
@@ -73,13 +73,13 @@ describe.runIf(process.platform === "win32")("host-local media tool file URLs", 
         });
         vi.spyOn(pdfNativeProviders, "anthropicAnalyzePdf").mockResolvedValue("native summary");
 
-        const config: OpenClawConfig = {
+        const config: AforaConfig = {
           agents: {
             entries: { main: { default: true } },
             defaults: { pdfModel: { primary: "anthropic/claude-opus-4-6" } },
           },
-        } as OpenClawConfig;
-        const tools = createOpenClawTools({
+        } as AforaConfig;
+        const tools = createAforaTools({
           agentDir,
           workspaceDir,
           config,

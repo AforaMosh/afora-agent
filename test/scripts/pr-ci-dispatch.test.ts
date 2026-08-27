@@ -11,7 +11,7 @@ const changedSha = "fedcba9876543210fedcba9876543210fedcba98";
 const describePosix = process.platform === "win32" ? describe.skip : describe;
 
 function createFakeGh() {
-  const tempDir = tempDirs.make("openclaw-pr-ci-dispatch-");
+  const tempDir = tempDirs.make("afora-pr-ci-dispatch-");
   const binDir = join(tempDir, "bin");
   const pathGh = join(binDir, "gh");
   const realGh = join(tempDir, "real-gh");
@@ -21,24 +21,24 @@ function createFakeGh() {
   mkdirSync(binDir);
   const fakeGhScript = `#!/usr/bin/env bash
 set -euo pipefail
-printf '%s\\t%s\\n' "$(basename "$0")" "$*" >> "$OPENCLAW_TEST_GH_CALLS"
+printf '%s\\t%s\\n' "$(basename "$0")" "$*" >> "$AFORA_TEST_GH_CALLS"
 case "$1 $2" in
   "auth token") printf 'forwarded-test-token\\n' ;;
   "api --method")
-    if [ "\${OPENCLAW_TEST_GH_MODE:-}" = "pending-head-change" ]; then
+    if [ "\${AFORA_TEST_GH_MODE:-}" = "pending-head-change" ]; then
       printf '{"workflow_runs":[]}\\n'
-    elif [ -e "$OPENCLAW_TEST_GH_SEEN_RUN_LIST" ]; then
-      printf '{"workflow_runs":[{"id":99,"html_url":"https://github.com/openclaw/openclaw/actions/runs/99","head_sha":"%s","created_at":"2026-01-01T00:00:00Z","status":"queued"}]}\\n' "$OPENCLAW_TEST_HEAD_SHA"
+    elif [ -e "$AFORA_TEST_GH_SEEN_RUN_LIST" ]; then
+      printf '{"workflow_runs":[{"id":99,"html_url":"https://github.com/AforaMosh/afora-agent/actions/runs/99","head_sha":"%s","created_at":"2026-01-01T00:00:00Z","status":"queued"}]}\\n' "$AFORA_TEST_HEAD_SHA"
     else
-      : > "$OPENCLAW_TEST_GH_SEEN_RUN_LIST"
+      : > "$AFORA_TEST_GH_SEEN_RUN_LIST"
       printf '{"workflow_runs":[]}\\n'
     fi
     ;;
   "pr view")
-    if [ -e "$OPENCLAW_TEST_GH_DISPATCHED" ] && [ -n "\${OPENCLAW_TEST_GH_MODE:-}" ]; then
-      printf '%s\\n' "$OPENCLAW_TEST_CHANGED_HEAD_SHA"
+    if [ -e "$AFORA_TEST_GH_DISPATCHED" ] && [ -n "\${AFORA_TEST_GH_MODE:-}" ]; then
+      printf '%s\\n' "$AFORA_TEST_CHANGED_HEAD_SHA"
     else
-      printf '%s\\n' "$OPENCLAW_TEST_HEAD_SHA"
+      printf '%s\\n' "$AFORA_TEST_HEAD_SHA"
     fi
     ;;
   "workflow run")
@@ -46,7 +46,7 @@ case "$1 $2" in
       echo "missing forwarded credentials" >&2
       exit 3
     fi
-    : > "$OPENCLAW_TEST_GH_DISPATCHED"
+    : > "$AFORA_TEST_GH_DISPATCHED"
     ;;
   *) echo "unexpected gh invocation: $*" >&2; exit 2 ;;
 esac
@@ -68,20 +68,20 @@ function runDispatch(
 ) {
   let nodeOptions = process.env.NODE_OPTIONS ?? "";
   if (options.immediateTimers) {
-    const preload = join(tempDirs.make("openclaw-pr-ci-dispatch-timers-"), "immediate-timers.cjs");
+    const preload = join(tempDirs.make("afora-pr-ci-dispatch-timers-"), "immediate-timers.cjs");
     writeFileSync(preload, "global.setTimeout = (callback) => { callback(); return 0; };\n");
     nodeOptions = `${nodeOptions} --require ${preload}`.trim();
   }
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     NODE_OPTIONS: nodeOptions,
-    OPENCLAW_GH_BIN: fakeGh.realGh,
-    OPENCLAW_TEST_CHANGED_HEAD_SHA: changedSha,
-    OPENCLAW_TEST_GH_CALLS: fakeGh.calls,
-    OPENCLAW_TEST_GH_DISPATCHED: fakeGh.dispatched,
-    OPENCLAW_TEST_GH_MODE: options.mode ?? "",
-    OPENCLAW_TEST_GH_SEEN_RUN_LIST: fakeGh.seenRunList,
-    OPENCLAW_TEST_HEAD_SHA: sha,
+    AFORA_GH_BIN: fakeGh.realGh,
+    AFORA_TEST_CHANGED_HEAD_SHA: changedSha,
+    AFORA_TEST_GH_CALLS: fakeGh.calls,
+    AFORA_TEST_GH_DISPATCHED: fakeGh.dispatched,
+    AFORA_TEST_GH_MODE: options.mode ?? "",
+    AFORA_TEST_GH_SEEN_RUN_LIST: fakeGh.seenRunList,
+    AFORA_TEST_HEAD_SHA: sha,
     PATH: `${fakeGh.binDir}:${process.env.PATH ?? ""}`,
   };
   for (const name of [
@@ -105,7 +105,7 @@ function runDispatch(
 
 describePosix("scripts/pr ci-dispatch", () => {
   it("warns when a same-named local branch points away from the dispatched remote head", () => {
-    const repo = tempDirs.make("openclaw-pr-ci-dispatch-repo-");
+    const repo = tempDirs.make("afora-pr-ci-dispatch-repo-");
     const git = (...args: string[]) =>
       spawnSync("git", args, { cwd: repo, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
     git("init", "-q", "-b", "main");
@@ -121,7 +121,7 @@ describePosix("scripts/pr ci-dispatch", () => {
   });
 
   it("stays silent when no same-named local branch exists", () => {
-    const repo = tempDirs.make("openclaw-pr-ci-dispatch-repo-");
+    const repo = tempDirs.make("afora-pr-ci-dispatch-repo-");
     spawnSync("git", ["init", "-q", "-b", "main"], { cwd: repo, encoding: "utf8" });
 
     const fakeGh = createFakeGh();
@@ -137,7 +137,7 @@ describePosix("scripts/pr ci-dispatch", () => {
 
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
     expect(result.stdout).toContain(
-      "observed_run_url=https://github.com/openclaw/openclaw/actions/runs/99",
+      "observed_run_url=https://github.com/AforaMosh/afora-agent/actions/runs/99",
     );
     const calls = readFileSync(fakeGh.calls, "utf8");
     const callLines = calls.trim().split("\n");
@@ -146,7 +146,7 @@ describePosix("scripts/pr ci-dispatch", () => {
     );
     expect(callLines).toContain("gh\tauth token");
     expect(callLines).toContain(
-      `gh\tapi --method GET repos/openclaw/openclaw/actions/workflows/ci.yml/runs -f event=workflow_dispatch -f head_sha=${sha} -f per_page=20`,
+      `gh\tapi --method GET repos/AforaMosh/afora-agent/actions/workflows/ci.yml/runs -f event=workflow_dispatch -f head_sha=${sha} -f per_page=20`,
     );
     expect(callLines.some((call) => call.startsWith("gh\tpr view 12345"))).toBe(true);
     expect(callLines.some((call) => /^real-gh\t(?:api|pr view)/u.test(call))).toBe(false);
@@ -161,11 +161,11 @@ describePosix("scripts/pr ci-dispatch", () => {
         encoding: "utf8",
         env: {
           ...process.env,
-          OPENCLAW_GH_BIN: fakeGh.realGh,
-          OPENCLAW_TEST_GH_CALLS: fakeGh.calls,
-          OPENCLAW_TEST_GH_DISPATCHED: fakeGh.dispatched,
-          OPENCLAW_TEST_GH_SEEN_RUN_LIST: fakeGh.seenRunList,
-          OPENCLAW_TEST_HEAD_SHA: sha,
+          AFORA_GH_BIN: fakeGh.realGh,
+          AFORA_TEST_GH_CALLS: fakeGh.calls,
+          AFORA_TEST_GH_DISPATCHED: fakeGh.dispatched,
+          AFORA_TEST_GH_SEEN_RUN_LIST: fakeGh.seenRunList,
+          AFORA_TEST_HEAD_SHA: sha,
           PATH: `${fakeGh.binDir}:${process.env.PATH ?? ""}`,
         },
       },

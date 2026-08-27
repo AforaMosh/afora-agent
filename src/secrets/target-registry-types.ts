@@ -1,5 +1,5 @@
 /** Config document that owns a registered secret-bearing target. */
-export type SecretTargetConfigFile = "openclaw.json" | "auth-profiles.json"; // pragma: allowlist secret
+export type SecretTargetConfigFile = "afora.json" | "auth-profiles.json"; // pragma: allowlist secret
 /** Storage shape used by a target: inline SecretInput or a sibling `*Ref` field. */
 export type SecretTargetShape = "secret_input" | "sibling_ref"; // pragma: allowlist secret
 /** Resolved value shape accepted by runtime and apply validation. */
@@ -26,7 +26,7 @@ export type SecretTargetRegistryEntry = {
   secretShape: SecretTargetShape;
   /** Runtime value shape accepted after SecretRef resolution. */
   expectedResolvedValue: SecretTargetExpected;
-  /** Enables `openclaw secrets apply` targeting for this entry. */
+  /** Enables `afora secrets apply` targeting for this entry. */
   includeInPlan: boolean;
   /** Enables interactive/non-interactive configure candidate generation. */
   includeInConfigure: boolean;

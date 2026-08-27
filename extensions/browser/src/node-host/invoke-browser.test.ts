@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import nodePath from "node:path";
-import { MAX_TIMER_TIMEOUT_MS } from "openclaw/plugin-sdk/number-runtime";
+import { MAX_TIMER_TIMEOUT_MS } from "afora-agent/plugin-sdk/number-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BROWSER_PROXY_MAX_FILE_BYTES } from "../browser-proxy-envelope.js";
 import { toErrorObject } from "../infra/errors.js";
@@ -33,7 +33,7 @@ const configMocks = vi.hoisted(() => ({
 const browserConfigMocks = vi.hoisted(() => ({
   resolveBrowserConfig: vi.fn((browser?: { defaultProfile?: string }) => ({
     enabled: true,
-    defaultProfile: browser?.defaultProfile ?? "openclaw",
+    defaultProfile: browser?.defaultProfile ?? "afora",
   })),
 }));
 
@@ -194,7 +194,7 @@ describe("runBrowserProxyCommand", () => {
     });
     browserConfigMocks.resolveBrowserConfig.mockReset().mockReturnValue({
       enabled: true,
-      defaultProfile: "openclaw",
+      defaultProfile: "afora",
     });
     configMocks.loadConfig.mockReturnValue({
       browser: {},
@@ -202,7 +202,7 @@ describe("runBrowserProxyCommand", () => {
     });
     browserConfigMocks.resolveBrowserConfig.mockReturnValue({
       enabled: true,
-      defaultProfile: "openclaw",
+      defaultProfile: "afora",
     });
     controlServiceMocks.startBrowserControlServiceFromConfig.mockResolvedValue(true);
     uploadMocks.stageBrowserProxyUploadRequest
@@ -296,8 +296,8 @@ describe("runBrowserProxyCommand", () => {
       files: [{ name: "report.txt", contentBase64: "aGVsbG8=" }],
     };
     const staged = {
-      body: { ref: "e12", paths: ["/tmp/openclaw/uploads/.proxy-upload-1/0/report.txt"] },
-      directory: "/tmp/openclaw/uploads/.proxy-upload-1",
+      body: { ref: "e12", paths: ["/tmp/afora/uploads/.proxy-upload-1/0/report.txt"] },
+      directory: "/tmp/afora/uploads/.proxy-upload-1",
     };
     uploadMocks.stageBrowserProxyUploadRequest.mockResolvedValueOnce(staged);
     dispatcherMocks.dispatch.mockResolvedValueOnce({ status: 200, body: { ok: true } });
@@ -327,8 +327,8 @@ describe("runBrowserProxyCommand", () => {
 
   it("discards staged copies when the route rejects the upload", async () => {
     const staged = {
-      body: { paths: ["/tmp/openclaw/uploads/.proxy-upload-1/0/report.txt"] },
-      directory: "/tmp/openclaw/uploads/.proxy-upload-1",
+      body: { paths: ["/tmp/afora/uploads/.proxy-upload-1/0/report.txt"] },
+      directory: "/tmp/afora/uploads/.proxy-upload-1",
     };
     uploadMocks.stageBrowserProxyUploadRequest.mockResolvedValueOnce(staged);
     dispatcherMocks.dispatch.mockResolvedValueOnce({
@@ -356,8 +356,8 @@ describe("runBrowserProxyCommand", () => {
 
   it("retains staged copies when dispatch fails after Browser ownership is uncertain", async () => {
     const staged = {
-      body: { paths: ["/tmp/openclaw/uploads/.proxy-upload-1/0/report.txt"] },
-      directory: "/tmp/openclaw/uploads/.proxy-upload-1",
+      body: { paths: ["/tmp/afora/uploads/.proxy-upload-1/0/report.txt"] },
+      directory: "/tmp/afora/uploads/.proxy-upload-1",
     };
     uploadMocks.stageBrowserProxyUploadRequest.mockResolvedValueOnce(staged);
     dispatcherMocks.dispatch.mockRejectedValueOnce(new Error("dispatch failed"));
@@ -382,8 +382,8 @@ describe("runBrowserProxyCommand", () => {
 
   it("retains staged copies when the timeout wins before dispatch settles", async () => {
     const staged = {
-      body: { paths: ["/tmp/openclaw/uploads/.proxy-upload-1/0/report.txt"] },
-      directory: "/tmp/openclaw/uploads/.proxy-upload-1",
+      body: { paths: ["/tmp/afora/uploads/.proxy-upload-1/0/report.txt"] },
+      directory: "/tmp/afora/uploads/.proxy-upload-1",
     };
     uploadMocks.stageBrowserProxyUploadRequest.mockResolvedValueOnce(staged);
     dispatcherMocks.dispatch
@@ -446,8 +446,8 @@ describe("runBrowserProxyCommand", () => {
 
   it("does not dispatch after upload staging exhausts the proxy deadline", async () => {
     const staged = {
-      body: { paths: ["/tmp/openclaw/uploads/.proxy-uploads/upload-1/0/report.txt"] },
-      directory: "/tmp/openclaw/uploads/.proxy-uploads/upload-1",
+      body: { paths: ["/tmp/afora/uploads/.proxy-uploads/upload-1/0/report.txt"] },
+      directory: "/tmp/afora/uploads/.proxy-uploads/upload-1",
     };
     let nowMs = 1_000;
     const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => nowMs);
@@ -515,7 +515,7 @@ describe("runBrowserProxyCommand", () => {
   });
 
   it("serializes plural action downloads without reading nested page paths", async () => {
-    const tempDir = await fs.mkdtemp(nodePath.join(os.tmpdir(), "openclaw-browser-proxy-action-"));
+    const tempDir = await fs.mkdtemp(nodePath.join(os.tmpdir(), "afora-browser-proxy-action-"));
     const firstPath = nodePath.join(tempDir, "first.txt");
     const secondPath = nodePath.join(tempDir, "second.txt");
     const nestedPagePath = nodePath.join(tempDir, "page-controlled.txt");
@@ -567,7 +567,7 @@ describe("runBrowserProxyCommand", () => {
   });
 
   it("rejects an aggregate above the proxy transport budget", async () => {
-    const tempDir = await fs.mkdtemp(nodePath.join(os.tmpdir(), "openclaw-browser-proxy-limit-"));
+    const tempDir = await fs.mkdtemp(nodePath.join(os.tmpdir(), "afora-browser-proxy-limit-"));
     const firstPath = nodePath.join(tempDir, "first.bin");
     const secondPath = nodePath.join(tempDir, "second.bin");
     try {
@@ -646,12 +646,12 @@ describe("runBrowserProxyCommand", () => {
         JSON.stringify({
           method: "GET",
           path: "/snapshot",
-          profile: "openclaw",
+          profile: "afora",
           timeoutMs: 5,
         }),
       ),
     ).rejects.toThrow(
-      /browser proxy timed out for GET \/snapshot after 5ms; ws-backed browser action; profile=openclaw; status\(running=true, cdpHttp=true, cdpReady=false, cdpUrl=http:\/\/127\.0\.0\.1:18792\)/,
+      /browser proxy timed out for GET \/snapshot after 5ms; ws-backed browser action; profile=afora; status\(running=true, cdpHttp=true, cdpReady=false, cdpUrl=http:\/\/127\.0\.0\.1:18792\)/,
     );
     await vi.advanceTimersByTimeAsync(10);
     await result;
@@ -739,7 +739,7 @@ describe("runBrowserProxyCommand", () => {
         JSON.stringify({
           method: "POST",
           path: "/act",
-          profile: "openclaw",
+          profile: "afora",
           timeoutMs: 50,
         }),
       ),
@@ -753,7 +753,7 @@ describe("runBrowserProxyCommand", () => {
         error: "headed mode needs a display",
         reason: "no_display_for_headed_profile",
         details: {
-          profile: "openclaw",
+          profile: "afora",
           requestedHeadless: false,
           headlessSource: "config",
           displayPresent: false,
@@ -768,7 +768,7 @@ describe("runBrowserProxyCommand", () => {
         JSON.stringify({
           method: "POST",
           path: "/start",
-          profile: "openclaw",
+          profile: "afora",
           errorEnvelope: "browser-v1",
         }),
       ),
@@ -781,7 +781,7 @@ describe("runBrowserProxyCommand", () => {
           error: "headed mode needs a display",
           reason: "no_display_for_headed_profile",
           details: {
-            profile: "openclaw",
+            profile: "afora",
             requestedHeadless: false,
             headlessSource: "config",
             displayPresent: false,
@@ -794,7 +794,7 @@ describe("runBrowserProxyCommand", () => {
   it("rejects unauthorized query.profile when allowProfiles is configured", async () => {
     configMocks.loadConfig.mockReturnValue({
       browser: {},
-      nodeHost: { browserProxy: { enabled: true, allowProfiles: ["openclaw"] } },
+      nodeHost: { browserProxy: { enabled: true, allowProfiles: ["afora"] } },
     });
 
     await expect(
@@ -812,7 +812,7 @@ describe("runBrowserProxyCommand", () => {
 
   it("uses the browser source snapshot for proxy default-profile decisions", async () => {
     configMocks.loadConfig.mockReturnValue({
-      browser: { defaultProfile: "openclaw" },
+      browser: { defaultProfile: "afora" },
       nodeHost: { browserProxy: { enabled: true, allowProfiles: ["work"] } },
     });
     configMocks.sourceConfig = {
@@ -822,7 +822,7 @@ describe("runBrowserProxyCommand", () => {
     browserConfigMocks.resolveBrowserConfig.mockImplementation(
       (browser?: { defaultProfile?: string }) => ({
         enabled: true,
-        defaultProfile: browser?.defaultProfile ?? "openclaw",
+        defaultProfile: browser?.defaultProfile ?? "afora",
       }),
     );
     dispatcherMocks.dispatch.mockResolvedValue({
@@ -845,7 +845,7 @@ describe("runBrowserProxyCommand", () => {
   it("rejects unauthorized body.profile when allowProfiles is configured", async () => {
     configMocks.loadConfig.mockReturnValue({
       browser: {},
-      nodeHost: { browserProxy: { enabled: true, allowProfiles: ["openclaw"] } },
+      nodeHost: { browserProxy: { enabled: true, allowProfiles: ["afora"] } },
     });
 
     await expect(
@@ -864,7 +864,7 @@ describe("runBrowserProxyCommand", () => {
   it("rejects persistent profile creation when allowProfiles is configured", async () => {
     configMocks.loadConfig.mockReturnValue({
       browser: {},
-      nodeHost: { browserProxy: { enabled: true, allowProfiles: ["openclaw"] } },
+      nodeHost: { browserProxy: { enabled: true, allowProfiles: ["afora"] } },
     });
 
     await expect(
@@ -897,7 +897,7 @@ describe("runBrowserProxyCommand", () => {
   it("rejects persistent profile deletion when allowProfiles is configured", async () => {
     configMocks.loadConfig.mockReturnValue({
       browser: {},
-      nodeHost: { browserProxy: { enabled: true, allowProfiles: ["openclaw"] } },
+      nodeHost: { browserProxy: { enabled: true, allowProfiles: ["afora"] } },
     });
 
     await expect(
@@ -915,7 +915,7 @@ describe("runBrowserProxyCommand", () => {
   it("rejects persistent profile reset when allowProfiles is configured", async () => {
     configMocks.loadConfig.mockReturnValue({
       browser: {},
-      nodeHost: { browserProxy: { enabled: true, allowProfiles: ["openclaw"] } },
+      nodeHost: { browserProxy: { enabled: true, allowProfiles: ["afora"] } },
     });
 
     await expect(
@@ -923,7 +923,7 @@ describe("runBrowserProxyCommand", () => {
         JSON.stringify({
           method: "POST",
           path: "/reset-profile",
-          body: { profile: "openclaw", name: "openclaw" },
+          body: { profile: "afora", name: "afora" },
           timeoutMs: 50,
         }),
       ),
@@ -934,7 +934,7 @@ describe("runBrowserProxyCommand", () => {
   it("canonicalizes an allowlisted body profile into the dispatched query", async () => {
     configMocks.loadConfig.mockReturnValue({
       browser: {},
-      nodeHost: { browserProxy: { enabled: true, allowProfiles: ["openclaw"] } },
+      nodeHost: { browserProxy: { enabled: true, allowProfiles: ["afora"] } },
     });
     dispatcherMocks.dispatch.mockResolvedValue({
       status: 200,
@@ -945,14 +945,14 @@ describe("runBrowserProxyCommand", () => {
       JSON.stringify({
         method: "POST",
         path: "/stop",
-        body: { profile: "openclaw" },
+        body: { profile: "afora" },
         timeoutMs: 50,
       }),
     );
 
     const request = firstBrowserDispatchRequest();
     expect(request.path).toBe("/stop");
-    expect(request.query).toEqual({ profile: "openclaw" });
+    expect(request.query).toEqual({ profile: "afora" });
   });
 
   it("caps browser proxy command timeout before dispatch", async () => {

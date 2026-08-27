@@ -1,6 +1,6 @@
 // Cached, model-phrased caretaker greetings over deterministic gateway facts.
 import { createHash } from "node:crypto";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import type { SystemAgentChatQuestion } from "../../packages/gateway-protocol/src/index.js";
 import {
   CONFIG_AUDIT_MAX_ENTRIES,
@@ -297,7 +297,7 @@ function normalizeGreetingText(text: string): string | null {
  * Appending deterministically removes that class instead of validating it.
  */
 export const SYSTEM_AGENT_EXTERNAL_EDIT_ALERT =
-  "Heads up: the config was edited outside OpenClaw while I was away — open History to review it.";
+  "Heads up: the config was edited outside Afora while I was away — open History to review it.";
 
 function withHostOwnedAlerts(text: string, facts: SystemAgentGreetingFacts): string {
   if (!facts.recentExternalEdit) {
@@ -601,7 +601,7 @@ export function buildSystemAgentGreetingQuestion(
 ): SystemAgentChatQuestion {
   const exceptional: SystemAgentChatQuestion["options"] = [];
   if (!overview.config.exists) {
-    addQuickAction(exceptional, { label: "Set up OpenClaw", reply: "setup" });
+    addQuickAction(exceptional, { label: "Set up Afora", reply: "setup" });
   } else if (!overview.config.valid) {
     addQuickAction(exceptional, { label: "Inspect config", reply: "doctor" });
   } else if (!overview.defaultModel) {

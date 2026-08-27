@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { runExecMock } = vi.hoisted(() => ({ runExecMock: vi.fn() }));
 
-vi.mock("openclaw/plugin-sdk/process-runtime", () => ({ runExec: runExecMock }));
+vi.mock("afora-agent/plugin-sdk/process-runtime", () => ({ runExec: runExecMock }));
 
 import { resolveQaNodeExecPath } from "./node-exec.js";
 

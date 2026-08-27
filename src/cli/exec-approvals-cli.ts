@@ -1,10 +1,10 @@
 // CLI for reading and mutating exec approval allowlists locally, via gateway, or via node.
 import fs from "node:fs/promises";
-import { readByteStreamWithLimit } from "@openclaw/media-core/read-byte-stream-with-limit";
-import { expectDefined } from "@openclaw/normalization-core";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { readByteStreamWithLimit } from "@afora/media-core/read-byte-stream-with-limit";
+import { expectDefined } from "@afora/normalization-core";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import type { Command } from "commander";
 import JSON5 from "json5";
 import {
@@ -22,7 +22,7 @@ import {
   renderTerminalSafeTable,
 } from "../../packages/terminal-core/src/table.js";
 import { isRich, theme } from "../../packages/terminal-core/src/theme.js";
-import { readBestEffortConfig, type OpenClawConfig } from "../config/config.js";
+import { readBestEffortConfig, type AforaConfig } from "../config/config.js";
 import { ADMIN_SCOPE, APPROVALS_SCOPE, type OperatorScope } from "../gateway/method-scopes.js";
 import { readFileDescriptorBounded } from "../infra/boundary-file-read.js";
 import { formatErrorMessage } from "../infra/errors.js";
@@ -80,10 +80,10 @@ type NativeExecApprovalsSnapshot =
 type ExecApprovalsSnapshot = FileExecApprovalsSnapshot | NativeExecApprovalsSnapshot;
 
 type ConfigSnapshotLike = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 };
 type ConfigLoadResult = {
-  config: OpenClawConfig | null;
+  config: AforaConfig | null;
   timedOut: boolean;
 };
 type ApprovalsTargetSource = "gateway" | "node" | "local";
@@ -520,7 +520,7 @@ async function loadPendingApprovals(
   const [exec, plugin, systemAgent] = await Promise.all([
     listCall("exec.approval.list"),
     listCall("plugin.approval.list"),
-    listCall("openclaw.approval.list"),
+    listCall("afora.approval.list"),
   ]);
   return [
     ...readPendingApprovalList(exec, "exec"),
@@ -766,7 +766,7 @@ function buildEffectivePolicyReport(params: {
     return {
       scopes: [],
       note: params.nativePolicy
-        ? "This node enforces a host-native exec policy; OpenClaw approvals-file policy math does not apply."
+        ? "This node enforces a host-native exec policy; Afora approvals-file policy math does not apply."
         : "Host approvals policy unavailable.",
     };
   }
@@ -1123,7 +1123,7 @@ export function registerExecApprovalsCli(program: Command) {
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/approvals", "docs.openclaw.ai/cli/approvals")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/approvals", "docs.afora.ai/cli/approvals")}\n`,
     );
 
   const pendingCmd = approvals
@@ -1251,18 +1251,18 @@ export function registerExecApprovalsCli(program: Command) {
       "after",
       () =>
         `\n${theme.heading("Examples:")}\n${formatExample(
-          'openclaw approvals allowlist add "~/Projects/**/bin/rg"',
+          'afora approvals allowlist add "~/Projects/**/bin/rg"',
           "Allowlist a local binary pattern for the main agent.",
         )}\n${formatExample(
-          'openclaw approvals allowlist add --agent main --node <id|name|ip> "/usr/bin/uptime"',
+          'afora approvals allowlist add --agent main --node <id|name|ip> "/usr/bin/uptime"',
           "Allowlist on a specific node/agent.",
         )}\n${formatExample(
-          'openclaw approvals allowlist add --agent "*" "/usr/bin/uname"',
+          'afora approvals allowlist add --agent "*" "/usr/bin/uname"',
           "Allowlist for all agents (wildcard).",
         )}\n${formatExample(
-          'openclaw approvals allowlist remove "~/Projects/**/bin/rg"',
+          'afora approvals allowlist remove "~/Projects/**/bin/rg"',
           "Remove an allowlist pattern.",
-        )}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/approvals", "docs.openclaw.ai/cli/approvals")}\n`,
+        )}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/approvals", "docs.afora.ai/cli/approvals")}\n`,
     );
 
   registerAllowlistMutationCommand({

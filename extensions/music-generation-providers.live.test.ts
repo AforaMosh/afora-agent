@@ -2,12 +2,12 @@
 import {
   resolveApiKeyForProvider,
   resolveDefaultAgentDir,
-} from "openclaw/plugin-sdk/agent-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+} from "afora-agent/plugin-sdk/agent-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   registerProviderPlugin,
   requireRegisteredProvider,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
 import {
   isAuthErrorMessage,
   isBillingErrorMessage,
@@ -19,8 +19,8 @@ import {
   isTimeoutErrorMessage,
   isTruthyEnvValue,
   readLiveTestConfig,
-} from "openclaw/plugin-sdk/test-live";
-import { collectProviderApiKeys, getShellEnvAppliedKeys } from "openclaw/plugin-sdk/test-live-auth";
+} from "afora-agent/plugin-sdk/test-live";
+import { collectProviderApiKeys, getShellEnvAppliedKeys } from "afora-agent/plugin-sdk/test-live-auth";
 import {
   DEFAULT_LIVE_MUSIC_MODELS,
   encodePngRgba,
@@ -30,7 +30,7 @@ import {
   redactLiveApiKey,
   resolveConfiguredLiveMusicModels,
   resolveLiveMusicAuthStore,
-} from "openclaw/plugin-sdk/test-media-generation";
+} from "afora-agent/plugin-sdk/test-media-generation";
 import { describe, expect, it } from "vitest";
 import falPlugin from "./fal/index.js";
 import googlePlugin from "./google/index.js";
@@ -40,10 +40,10 @@ import { maybeLoadShellEnvForGenerationProviders } from "./test-support/generati
 
 const LIVE = isLiveTestEnabled();
 const REQUIRE_PROFILE_KEYS =
-  isLiveProfileKeyModeEnabled() || isTruthyEnvValue(process.env.OPENCLAW_LIVE_REQUIRE_PROFILE_KEYS);
+  isLiveProfileKeyModeEnabled() || isTruthyEnvValue(process.env.AFORA_LIVE_REQUIRE_PROFILE_KEYS);
 const describeLive = LIVE ? describe : describe.skip;
-const providerFilter = parseCsvFilter(process.env.OPENCLAW_LIVE_MUSIC_GENERATION_PROVIDERS);
-const envModelMap = parseProviderModelMap(process.env.OPENCLAW_LIVE_MUSIC_GENERATION_MODELS);
+const providerFilter = parseCsvFilter(process.env.AFORA_LIVE_MUSIC_GENERATION_PROVIDERS);
+const envModelMap = parseProviderModelMap(process.env.AFORA_LIVE_MUSIC_GENERATION_MODELS);
 
 type LiveProviderCase = {
   plugin: Parameters<typeof registerProviderPlugin>[0]["plugin"];
@@ -81,7 +81,7 @@ const CASES: LiveProviderCase[] = [
   .filter((entry) => (providerFilter ? providerFilter.has(entry.providerId) : true))
   .toSorted((left, right) => left.providerId.localeCompare(right.providerId));
 
-function withPluginsEnabled(cfg: OpenClawConfig): OpenClawConfig {
+function withPluginsEnabled(cfg: AforaConfig): AforaConfig {
   return {
     ...cfg,
     plugins: {

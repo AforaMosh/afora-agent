@@ -1,34 +1,34 @@
 {
-  "name": "@openclaw/tokenjuice",
+  "name": "@afora/tokenjuice",
   "version": "2026.8.1",
-  "description": "OpenClaw tokenjuice exec output compaction plugin",
+  "description": "Afora tokenjuice exec output compaction plugin",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   },
   "type": "module",
   "dependencies": {
     "tokenjuice": "0.8.1"
   },
   "peerDependencies": {
-    "openclaw": ">=2026.8.1"
+    "afora-agent": ">=2026.8.1"
   },
   "peerDependenciesMeta": {
-    "openclaw": {
+    "afora": {
       "optional": true
     }
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*",
-    "openclaw": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*",
+    "afora-agent": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
     "install": {
-      "clawhubSpec": "clawhub:@openclaw/tokenjuice",
-      "npmSpec": "@openclaw/tokenjuice",
+      "clawhubSpec": "clawhub:@afora/tokenjuice",
+      "npmSpec": "@afora/tokenjuice",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.5.28"
     },
@@ -36,7 +36,7 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1",
+      "aforaVersion": "2026.8.1",
       "bundledDist": false
     },
     "release": {

@@ -15,7 +15,7 @@ describe("loadVitestExperimentalConfig", () => {
     expect(
       loadVitestExperimentalConfig(
         {
-          OPENCLAW_VITEST_FS_MODULE_CACHE: "1",
+          AFORA_VITEST_FS_MODULE_CACHE: "1",
         },
         "linux",
       ),
@@ -30,14 +30,14 @@ describe("loadVitestExperimentalConfig", () => {
     expect(
       loadVitestExperimentalConfig(
         {
-          OPENCLAW_VITEST_FS_MODULE_CACHE_PATH: "/tmp/openclaw-vitest-cache",
+          AFORA_VITEST_FS_MODULE_CACHE_PATH: "/tmp/afora-vitest-cache",
         },
         "linux",
       ),
     ).toEqual({
       experimental: {
         fsModuleCache: true,
-        fsModuleCachePath: "/tmp/openclaw-vitest-cache",
+        fsModuleCachePath: "/tmp/afora-vitest-cache",
       },
     });
   });
@@ -50,7 +50,7 @@ describe("loadVitestExperimentalConfig", () => {
     expect(
       loadVitestExperimentalConfig(
         {
-          OPENCLAW_VITEST_FS_MODULE_CACHE: "1",
+          AFORA_VITEST_FS_MODULE_CACHE: "1",
         },
         "win32",
       ),
@@ -65,7 +65,7 @@ describe("loadVitestExperimentalConfig", () => {
     expect(
       loadVitestExperimentalConfig(
         {
-          OPENCLAW_VITEST_FS_MODULE_CACHE: "0",
+          AFORA_VITEST_FS_MODULE_CACHE: "0",
         },
         "linux",
       ),
@@ -76,8 +76,8 @@ describe("loadVitestExperimentalConfig", () => {
     expect(
       loadVitestExperimentalConfig(
         {
-          OPENCLAW_VITEST_IMPORT_DURATIONS: "true",
-          OPENCLAW_VITEST_PRINT_IMPORT_BREAKDOWN: "1",
+          AFORA_VITEST_IMPORT_DURATIONS: "true",
+          AFORA_VITEST_PRINT_IMPORT_BREAKDOWN: "1",
         },
         "linux",
       ),

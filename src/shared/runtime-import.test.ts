@@ -33,10 +33,10 @@ describe("runtime-import", () => {
 
     expect(
       await captureRuntimeImportSpecifier(
-        "C:\\Users\\alice\\openclaw\\dist\\subagent-registry.js",
+        "C:\\Users\\alice\\afora\\dist\\subagent-registry.js",
         ["./subagent-registry.runtime.js"],
       ),
-    ).toBe("file:///C:/Users/alice/openclaw/dist/subagent-registry.runtime.js");
+    ).toBe("file:///C:/Users/alice/afora/dist/subagent-registry.runtime.js");
   });
 
   it("resolves runtime imports from file URL base paths", async () => {
@@ -44,10 +44,10 @@ describe("runtime-import", () => {
 
     expect(
       await captureRuntimeImportSpecifier(
-        "file:///C:/Users/alice/openclaw/dist/subagent-registry.js",
+        "file:///C:/Users/alice/afora/dist/subagent-registry.js",
         ["./subagent-registry.runtime.js"],
       ),
-    ).toBe("file:///C:/Users/alice/openclaw/dist/subagent-registry.runtime.js");
+    ).toBe("file:///C:/Users/alice/afora/dist/subagent-registry.runtime.js");
   });
 
   it("resolves absolute Windows runtime import parts directly", async () => {
@@ -55,10 +55,10 @@ describe("runtime-import", () => {
 
     expect(
       await captureRuntimeImportSpecifier(
-        "file:///C:/Users/alice/openclaw/dist/subagent-registry.js",
-        ["D:\\OpenClaw\\dist\\subagent-registry.runtime.js"],
+        "file:///C:/Users/alice/afora/dist/subagent-registry.js",
+        ["D:\\Afora\\dist\\subagent-registry.runtime.js"],
       ),
-    ).toBe("file:///D:/OpenClaw/dist/subagent-registry.runtime.js");
+    ).toBe("file:///D:/Afora/dist/subagent-registry.runtime.js");
   });
 
   it("keeps non-Windows import paths unchanged", () => {
@@ -74,16 +74,16 @@ describe("runtime-import", () => {
     const importModule = vi.fn(async (specifier: string) => ({ specifier }));
 
     const result = await importRuntimeModule(
-      "C:\\Users\\alice\\openclaw\\dist\\subagent-registry.js",
+      "C:\\Users\\alice\\afora\\dist\\subagent-registry.js",
       ["./subagent-registry.runtime.js"],
       importModule,
     );
 
     expect(importModule).toHaveBeenCalledWith(
-      "file:///C:/Users/alice/openclaw/dist/subagent-registry.runtime.js",
+      "file:///C:/Users/alice/afora/dist/subagent-registry.runtime.js",
     );
     expect(result).toEqual({
-      specifier: "file:///C:/Users/alice/openclaw/dist/subagent-registry.runtime.js",
+      specifier: "file:///C:/Users/alice/afora/dist/subagent-registry.runtime.js",
     });
   });
 });

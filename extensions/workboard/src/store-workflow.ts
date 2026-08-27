@@ -6,10 +6,10 @@ import type {
   WorkboardClaim,
   WorkboardNotification,
   WorkboardRunAttempt,
-} from "@openclaw/workboard-contract";
-import { isFutureDateTimestampMs } from "openclaw/plugin-sdk/number-runtime";
-import { safeEqualSecret } from "openclaw/plugin-sdk/security-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "@afora/workboard-contract";
+import { isFutureDateTimestampMs } from "afora-agent/plugin-sdk/number-runtime";
+import { safeEqualSecret } from "afora-agent/plugin-sdk/security-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   appendEvent,
   assertCanMutateClaimedCard,

@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import type { MediaUnderstandingConfig } from "../config/types.tools.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { runCapability } from "./runner.js";
@@ -42,7 +42,7 @@ function createOpenAiAudioProvider(
   });
 }
 
-function createOpenAiAudioCfg(extra?: Partial<OpenClawConfig>): OpenClawConfig {
+function createOpenAiAudioCfg(extra?: Partial<AforaConfig>): AforaConfig {
   return {
     models: {
       providers: {
@@ -53,7 +53,7 @@ function createOpenAiAudioCfg(extra?: Partial<OpenClawConfig>): OpenClawConfig {
       },
     },
     ...extra,
-  } as unknown as OpenClawConfig;
+  } as unknown as AforaConfig;
 }
 
 async function createMockExecutable(dir: string, name: string) {
@@ -64,10 +64,10 @@ async function createMockExecutable(dir: string, name: string) {
 
 async function runAutoAudioCase(params: {
   transcribeAudio: (req: AudioTranscriptionRequest) => Promise<{ text: string; model: string }>;
-  cfgExtra?: Partial<OpenClawConfig>;
+  cfgExtra?: Partial<AforaConfig>;
 }) {
   let runResult: Awaited<ReturnType<typeof runCapability>> | undefined;
-  await withAudioFixture("openclaw-auto-audio", async ({ ctx, media, cache }) => {
+  await withAudioFixture("afora-auto-audio", async ({ ctx, media, cache }) => {
     const providerRegistry = createOpenAiAudioProvider(params.transcribeAudio);
     const cfg = createOpenAiAudioCfg(params.cfgExtra);
     runResult = await runCapability({
@@ -126,7 +126,7 @@ describe("runCapability auto audio entries", () => {
     }));
 
     try {
-      await withAudioFixture("openclaw-auto-audio-oauth-skip", async ({ ctx, media, cache }) => {
+      await withAudioFixture("afora-auto-audio-oauth-skip", async ({ ctx, media, cache }) => {
         const openAiTranscribe = vi.fn(async (req: AudioTranscriptionRequest) => ({
           text: "openai",
           model: req.model ?? "unknown",
@@ -149,7 +149,7 @@ describe("runCapability auto audio entries", () => {
                 },
               },
             },
-          } as unknown as OpenClawConfig,
+          } as unknown as AforaConfig,
           ctx,
           attachments: cache,
           media,
@@ -204,7 +204,7 @@ describe("runCapability auto audio entries", () => {
     const resolveApiKeyForProviderCore = vi.mocked(modelAuth.resolveApiKeyForProviderCore);
     resolveApiKeyForProviderCore.mockClear();
 
-    await withAudioFixture("openclaw-auto-audio-workspace-auth", async ({ ctx, media, cache }) => {
+    await withAudioFixture("afora-auto-audio-workspace-auth", async ({ ctx, media, cache }) => {
       const result = await runCapability({
         capability: "audio",
         cfg: {
@@ -215,7 +215,7 @@ describe("runCapability auto audio entries", () => {
               },
             },
           },
-        } as unknown as OpenClawConfig,
+        } as unknown as AforaConfig,
         ctx,
         attachments: cache,
         media,
@@ -223,8 +223,8 @@ describe("runCapability auto audio entries", () => {
           text: `workspace ${req.apiKey}`,
           model: req.model ?? "unknown",
         })),
-        agentDir: "/tmp/openclaw-agent",
-        workspaceDir: "/tmp/openclaw-workspace",
+        agentDir: "/tmp/afora-agent",
+        workspaceDir: "/tmp/afora-workspace",
       });
 
       expect(result.decision.outcome).toBe("success");
@@ -234,8 +234,8 @@ describe("runCapability auto audio entries", () => {
     expect(resolveApiKeyForProviderCore).toHaveBeenCalledWith(
       expect.objectContaining({
         provider: "openai",
-        agentDir: "/tmp/openclaw-agent",
-        workspaceDir: "/tmp/openclaw-workspace",
+        agentDir: "/tmp/afora-agent",
+        workspaceDir: "/tmp/afora-workspace",
       }),
     );
   });
@@ -244,7 +244,7 @@ describe("runCapability auto audio entries", () => {
     let runResult: Awaited<ReturnType<typeof runCapability>> | undefined;
     let seenModel: string | undefined;
 
-    await withAudioFixture("openclaw-auto-audio-codex", async ({ ctx, media, cache }) => {
+    await withAudioFixture("afora-auto-audio-codex", async ({ ctx, media, cache }) => {
       const providerRegistry = createProviderRegistry({
         openai: {
           id: "openai",
@@ -265,7 +265,7 @@ describe("runCapability auto audio entries", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       runResult = await runCapability({
         capability: "audio",
@@ -295,7 +295,7 @@ describe("runCapability auto audio entries", () => {
     let runResult: Awaited<ReturnType<typeof runCapability>> | undefined;
     let seenModel: string | undefined;
 
-    await withAudioFixture("openclaw-auto-audio-xai", async ({ ctx, media, cache }) => {
+    await withAudioFixture("afora-auto-audio-xai", async ({ ctx, media, cache }) => {
       const providerRegistry = createProviderRegistry({
         xai: {
           id: "xai",
@@ -315,7 +315,7 @@ describe("runCapability auto audio entries", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       runResult = await runCapability({
         capability: "audio",
@@ -341,7 +341,7 @@ describe("runCapability auto audio entries", () => {
   });
 
   it("prefers provider keys over auto-detected local whisper", async () => {
-    const binDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-auto-audio-bin-"));
+    const binDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-auto-audio-bin-"));
     try {
       await createMockExecutable(binDir, "whisper");
       clearMediaUnderstandingBinaryCacheForTests();
@@ -442,7 +442,7 @@ describe("runCapability auto audio entries", () => {
             },
           },
         },
-      } as Partial<OpenClawConfig>,
+      } as Partial<AforaConfig>,
     });
 
     expect(requireCapabilityOutput(result, 0).text).toBe("ok");
@@ -469,7 +469,7 @@ describe("runCapability auto audio entries", () => {
             },
           },
         },
-      } as Partial<OpenClawConfig>,
+      } as Partial<AforaConfig>,
     });
 
     expect(requireCapabilityOutput(result, 0).text).toBe("ok");
@@ -491,7 +491,7 @@ describe("runCapability auto audio entries", () => {
               audio,
             },
           },
-        } as Partial<OpenClawConfig>,
+        } as Partial<AforaConfig>,
       });
     };
 
@@ -523,7 +523,7 @@ describe("runCapability auto audio entries", () => {
   });
 
   it("uses mistral when only mistral key is configured", async () => {
-    const isolatedAgentDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-audio-agent-"));
+    const isolatedAgentDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-audio-agent-"));
     let runResult: Awaited<ReturnType<typeof runCapability>> | undefined;
     try {
       await withEnvAsync(
@@ -534,10 +534,10 @@ describe("runCapability auto audio entries", () => {
           GEMINI_API_KEY: undefined,
           GOOGLE_API_KEY: undefined,
           MISTRAL_API_KEY: "mistral-test-key", // pragma: allowlist secret
-          OPENCLAW_AGENT_DIR: isolatedAgentDir,
+          AFORA_AGENT_DIR: isolatedAgentDir,
         },
         async () => {
-          await withAudioFixture("openclaw-auto-audio-mistral", async ({ ctx, media, cache }) => {
+          await withAudioFixture("afora-auto-audio-mistral", async ({ ctx, media, cache }) => {
             const providerRegistry = createProviderRegistry({
               openai: {
                 id: "openai",
@@ -572,7 +572,7 @@ describe("runCapability auto audio entries", () => {
                   },
                 },
               },
-            } as unknown as OpenClawConfig;
+            } as unknown as AforaConfig;
 
             runResult = await runCapability({
               capability: "audio",

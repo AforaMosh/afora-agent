@@ -6,8 +6,8 @@
 import {
   findNormalizedProviderValue,
   normalizeProviderId,
-} from "@openclaw/model-catalog-core/provider-id";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+} from "@afora/model-catalog-core/provider-id";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   type ProviderAuthAliasLookupParams,
   resolveProviderIdForAuth,
@@ -44,7 +44,7 @@ const OPENAI_CODEX_PROVIDER_ID = "openai";
 // OpenAI Codex auth can reuse OpenAI API-key credentials. Keep this special
 // case local so generic provider alias resolution stays provider-owned.
 function isOpenAIApiKeyCompatibleWithCodexAuth(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   authAliasLookupParams?: ProviderAuthAliasLookupParams;
   providerAuthKey: string;
   credential?: AuthProfileCredential;
@@ -63,7 +63,7 @@ function isOpenAIApiKeyCompatibleWithCodexAuth(params: {
 }
 
 function isCredentialProviderCompatibleWithAuthProvider(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   authAliasLookupParams?: ProviderAuthAliasLookupParams;
   providerAuthKey: string;
   credential: AuthProfileCredential;
@@ -86,7 +86,7 @@ function isCredentialProviderCompatibleWithAuthProvider(params: {
 
 /** Returns true when a stored credential can authenticate the requested provider. */
 export function isStoredCredentialCompatibleWithAuthProvider(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   authAliasLookupParams?: ProviderAuthAliasLookupParams;
   provider: string;
   credential: AuthProfileCredential;
@@ -103,7 +103,7 @@ export function isStoredCredentialCompatibleWithAuthProvider(params: {
 }
 
 function isConfiguredProfileCompatibleWithAuthProvider(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   authAliasLookupParams?: ProviderAuthAliasLookupParams;
   providerAuthKey: string;
   provider: string;
@@ -128,7 +128,7 @@ function isConfiguredProfileCompatibleWithAuthProvider(params: {
 }
 
 function listProfilesCompatibleWithAuthProvider(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   authAliasLookupParams?: ProviderAuthAliasLookupParams;
   store: AuthProfileStore;
   provider: string;
@@ -150,7 +150,7 @@ function listProfilesCompatibleWithAuthProvider(params: {
 }
 
 function resolveProviderAuthMode(
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
   provider: string,
 ): string | undefined {
   const providers = cfg?.models?.providers;
@@ -162,14 +162,14 @@ function resolveProviderAuthMode(
   return typeof auth === "string" ? auth : undefined;
 }
 
-function providerAllowsAwsSdkAuth(cfg: OpenClawConfig | undefined, provider: string): boolean {
+function providerAllowsAwsSdkAuth(cfg: AforaConfig | undefined, provider: string): boolean {
   const authMode = resolveProviderAuthMode(cfg, provider);
   return authMode === "aws-sdk";
 }
 
 /** Returns true when config declares an aws-sdk auth profile for a provider. */
 export function isConfiguredAwsSdkAuthProfileForProvider(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   authAliasLookupParams?: ProviderAuthAliasLookupParams;
   provider: string;
   profileId: string;
@@ -195,7 +195,7 @@ export function isConfiguredAwsSdkAuthProfileForProvider(params: {
 
 /** Resolves whether a profile can be used for a provider right now. */
 export function resolveAuthProfileEligibility(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   authAliasLookupParams?: ProviderAuthAliasLookupParams;
   store: AuthProfileStore;
   provider: string;
@@ -262,7 +262,7 @@ export function resolveAuthProfileEligibility(params: {
 }
 
 type ResolveAuthProfileOrderParams = {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   store: AuthProfileStore;
   provider: string;
   /** Exact prepared metadata for request paths that must not rediscover plugin aliases. */
@@ -455,7 +455,7 @@ function resolveAuthOrder(
 }
 
 function isNativeCredentialProviderCompatibleWithAuthProvider(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   authAliasLookupParams?: ProviderAuthAliasLookupParams;
   providerAuthKey: string;
   credential: AuthProfileCredential | undefined;

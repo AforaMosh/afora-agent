@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 import { createServer as createNetServer } from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildControlUiSessionPath } from "@openclaw/session-url-contract";
+import { buildControlUiSessionPath } from "@afora/session-url-contract";
 import type { ConsoleMessage, Frame, Locator, Page, Request } from "playwright";
 import type { InlineConfig, Plugin, PreviewServer, ViteDevServer } from "vite";
 import { PROTOCOL_VERSION } from "../../../packages/gateway-protocol/src/version.js";
@@ -35,7 +35,7 @@ export function controlUiSessionUrl(baseUrl: string, sessionKey: string): string
 
 export async function navigateToControlUiSession(page: Page, sessionKey: string): Promise<void> {
   await page.evaluate((pathname) => {
-    const app = document.querySelector("openclaw-app") as HTMLElement & {
+    const app = document.querySelector("afora-app") as HTMLElement & {
       runtime?: {
         context: {
           navigate: (routeId: string, options: { pathname: string }) => void;
@@ -43,14 +43,14 @@ export async function navigateToControlUiSession(page: Page, sessionKey: string)
       };
     };
     if (!app.runtime) {
-      throw new Error("OpenClaw application runtime is unavailable");
+      throw new Error("Afora application runtime is unavailable");
     }
     app.runtime.context.navigate("chat", { pathname });
   }, controlUiSessionPath(sessionKey));
   await page.waitForURL((url) => url.pathname === controlUiSessionPath(sessionKey));
   await page.waitForFunction(
     (targetSessionKey) =>
-      [...document.querySelectorAll<HTMLElement>("openclaw-chat-pane")].some(
+      [...document.querySelectorAll<HTMLElement>("afora-chat-pane")].some(
         (pane) =>
           pane.classList.contains("chat-pane-cache__pane--visible") &&
           (pane as HTMLElement & { sessionKey?: string }).sessionKey === targetSessionKey,
@@ -66,7 +66,7 @@ export function controlUiBundledGatewayUrl(baseUrl: string): string {
 }
 
 export function controlUiBundledSettingsStorageKey(baseUrl: string): string {
-  return `openclaw.control.settings.v1:${controlUiBundledGatewayUrl(baseUrl)}`;
+  return `afora.control.settings.v1:${controlUiBundledGatewayUrl(baseUrl)}`;
 }
 
 type ControlUiRouteTarget = {
@@ -95,7 +95,7 @@ export async function waitForControlUiRoute(page: Page, target: ControlUiRouteTa
   try {
     const handle = await page.waitForFunction(
       (expected) => {
-        const app = document.querySelector("openclaw-app") as HTMLElement & {
+        const app = document.querySelector("afora-app") as HTMLElement & {
           runtime?: {
             router: {
               getState: () => {
@@ -126,7 +126,7 @@ export async function waitForControlUiRoute(page: Page, target: ControlUiRouteTa
     await handle.dispose();
   } catch (error) {
     const state = await page.evaluate(() => {
-      const app = document.querySelector("openclaw-app") as HTMLElement & {
+      const app = document.querySelector("afora-app") as HTMLElement & {
         runtime?: {
           router: {
             getState: () => unknown;
@@ -154,13 +154,13 @@ export async function waitForControlUiRoute(page: Page, target: ControlUiRouteTa
  */
 export async function waitForConfirmModal(page: Page): Promise<Locator> {
   await page.waitForFunction(() => {
-    const modal = [...document.querySelectorAll("openclaw-modal-dialog")].at(-1);
+    const modal = [...document.querySelectorAll("afora-modal-dialog")].at(-1);
     const dialog = modal?.shadowRoot
       ?.querySelector("wa-dialog")
       ?.shadowRoot?.querySelector("dialog");
     return Boolean(dialog) && getComputedStyle(dialog as Element).opacity === "1";
   });
-  return page.locator("openclaw-modal-dialog").last();
+  return page.locator("afora-modal-dialog").last();
 }
 
 export async function waitForControlUiSettingsTakeover(
@@ -168,7 +168,7 @@ export async function waitForControlUiSettingsTakeover(
   pathname = "/settings/appearance",
 ): Promise<{ search: Locator; sidebar: Locator }> {
   await waitForControlUiRoute(page, { pathname, routeId: "appearance" });
-  const appSidebar = page.locator("openclaw-app-sidebar");
+  const appSidebar = page.locator("afora-app-sidebar");
   const sidebar = page.locator(".settings-sidebar");
   const search = sidebar.getByRole("searchbox", { name: "Search settings" });
   await appSidebar.waitFor({ state: "detached" });
@@ -439,13 +439,13 @@ async function installControlUiE2eUnhandledRejectionRing(page: Page): Promise<vo
   controlUiE2eUnhandledRejectionPages.add(page);
   await page.addInitScript(() => {
     const windowWithDiagnostics = window as Window & {
-      __OPENCLAW_CONTROL_UI_E2E_UNHANDLED_REJECTIONS__?: Array<{
+      __AFORA_CONTROL_UI_E2E_UNHANDLED_REJECTIONS__?: Array<{
         at: string;
         reason: unknown;
       }>;
     };
     const events: Array<{ at: string; reason: unknown }> = [];
-    windowWithDiagnostics["__OPENCLAW_CONTROL_UI_E2E_UNHANDLED_REJECTIONS__"] = events;
+    windowWithDiagnostics["__AFORA_CONTROL_UI_E2E_UNHANDLED_REJECTIONS__"] = events;
     window.addEventListener("unhandledrejection", (event) => {
       let reason: unknown;
       if (event.reason instanceof Error) {
@@ -592,7 +592,7 @@ export async function startControlUiE2eServer(
     clearScreen: false,
     configFile: false,
     define: {
-      "globalThis.OPENCLAW_CONTROL_UI_BUILD_INFO": JSON.stringify(resolvedBuildInfo),
+      "globalThis.AFORA_CONTROL_UI_BUILD_INFO": JSON.stringify(resolvedBuildInfo),
     },
     logLevel: "error",
     optimizeDeps: {
@@ -679,7 +679,7 @@ function createBundledControlUiE2eConfig(
     configFile: false,
     define: {
       ...config.define,
-      "globalThis.OPENCLAW_CONTROL_UI_BUILD_INFO": JSON.stringify(
+      "globalThis.AFORA_CONTROL_UI_BUILD_INFO": JSON.stringify(
         DEFAULT_CONTROL_UI_E2E_BUILD_INFO,
       ),
     },
@@ -696,7 +696,7 @@ export async function buildProductionControlUiE2e(outDir: string, buildId: strin
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     NODE_ENV: "production",
-    OPENCLAW_CONTROL_UI_BUILD_ID: buildId,
+    AFORA_CONTROL_UI_BUILD_ID: buildId,
   };
   for (const key of Object.keys(env)) {
     if (key.startsWith("VITEST")) {
@@ -834,7 +834,7 @@ function normalizeScenario(
     agentModel:
       scenario.agentModel === undefined ? "openai/gpt-5.5" : scenario.agentModel?.trim() || null,
     assistantAgentId: scenario.assistantAgentId?.trim() || defaultAgentId,
-    assistantName: scenario.assistantName?.trim() || "OpenClaw",
+    assistantName: scenario.assistantName?.trim() || "Afora",
     basePath,
     controlUiTabs: scenario.controlUiTabs ?? [],
     controlUiWidgetKinds: scenario.controlUiWidgetKinds ?? [],
@@ -986,21 +986,21 @@ function installControlUiMockGateway(
     socketUrls: () => string[];
   };
   type WindowWithGateway = Window & {
-    __OPENCLAW_CONTROL_UI_BASE_PATH__?: string;
-    openclawControlUiE2eGateway?: ExposedGateway;
+    __AFORA_CONTROL_UI_BASE_PATH__?: string;
+    aforaControlUiE2eGateway?: ExposedGateway;
   };
 
   const scenario: BrowserScenario = input.scenario;
-  const serverBuildIdStateKey = "openclaw.control-ui-e2e.serverBuildId";
+  const serverBuildIdStateKey = "afora.control-ui-e2e.serverBuildId";
   let serverBuildId = scenario.serverBuildId;
   try {
     serverBuildId = window.sessionStorage.getItem(serverBuildIdStateKey)?.trim() || serverBuildId;
   } catch {
     // The scenario value remains authoritative when browser storage is unavailable.
   }
-  (window as unknown as WindowWithGateway)["__OPENCLAW_CONTROL_UI_BASE_PATH__"] = scenario.basePath;
+  (window as unknown as WindowWithGateway)["__AFORA_CONTROL_UI_BASE_PATH__"] = scenario.basePath;
   const protocolVersion = input.protocolVersion;
-  const methodResponseOverridesStorageKey = "openclaw.control-ui-e2e.method-responses.v1";
+  const methodResponseOverridesStorageKey = "afora.control-ui-e2e.method-responses.v1";
   const methodResponseOverrides: Record<string, unknown> = {};
   try {
     const storedOverrides = window.sessionStorage.getItem(methodResponseOverridesStorageKey);
@@ -1029,12 +1029,12 @@ function installControlUiMockGateway(
   }> = [];
   let sessionMessageEventIndex = 0;
   let sessionMessageEventTimer: number | null = null;
-  const offlineStateKey = "openclaw.control-ui-e2e.gatewayOffline";
+  const offlineStateKey = "afora.control-ui-e2e.gatewayOffline";
   // Gateway-owned custom group catalog (sessions.groups.*). Persisted in
   // sessionStorage so a page reload keeps the catalog the way the real
   // gateway's SQLite store does; renames replay onto static sessions.list
   // fixtures because the real gateway rewrites member categories server-side.
-  const groupsStateKey = "openclaw.control-ui-e2e.sessionGroups";
+  const groupsStateKey = "afora.control-ui-e2e.sessionGroups";
   let groupsState: {
     names: string[];
     defaults: Record<string, { cwd?: string; worktree?: boolean }>;
@@ -1067,7 +1067,7 @@ function installControlUiMockGateway(
   // and advance the hash so autosave -> reload flows round-trip edits the way
   // the real gateway does. Active only when the scenario ships a config.get
   // fixture with a raw string; persisted in sessionStorage like groupsState.
-  const configStateKey = "openclaw.control-ui-e2e.configState";
+  const configStateKey = "afora.control-ui-e2e.configState";
   const baseConfigResponse: Record<string, unknown> | null = (() => {
     const configured = scenario.methodResponses["config.get"];
     return isRecord(configured) && typeof configured.raw === "string" ? configured : null;
@@ -1919,7 +1919,7 @@ function installControlUiMockGateway(
               ? params.agentId
               : scenario.defaultAgentId,
           shell: "/bin/zsh",
-          cwd: scenario.workspace || "/workspace/openclaw",
+          cwd: scenario.workspace || "/workspace/afora",
           confined: false,
           attached: true,
           owner: "conn",
@@ -1986,7 +1986,7 @@ function installControlUiMockGateway(
       typeof response.sessionId === "string"
     ) {
       session = terminalSessions.get(response.sessionId);
-      data = "OpenClaw mock terminal\r\nType anything and the mock Gateway will echo it.\r\n$ ";
+      data = "Afora mock terminal\r\nType anything and the mock Gateway will echo it.\r\n$ ";
     } else if (method === "terminal.input" && isRecord(params)) {
       session =
         typeof params.sessionId === "string" ? terminalSessions.get(params.sessionId) : undefined;
@@ -2312,7 +2312,7 @@ function installControlUiMockGateway(
     },
   };
 
-  (window as unknown as WindowWithGateway).openclawControlUiE2eGateway = exposed;
+  (window as unknown as WindowWithGateway).aforaControlUiE2eGateway = exposed;
   const RoutedWebSocket = function (url: string | URL, protocols?: string | string[]) {
     const resolvedUrl = String(url);
     if (scenario.webSocketPassthroughPrefixes.some((prefix) => resolvedUrl.startsWith(prefix))) {
@@ -2364,11 +2364,11 @@ function createMockGatewayControls(
       ({ eventName, eventPayload }) => {
         const gateway = (
           window as Window & {
-            openclawControlUiE2eGateway?: {
+            aforaControlUiE2eGateway?: {
               emit: (event: string, payload?: unknown) => void;
             };
           }
-        ).openclawControlUiE2eGateway;
+        ).aforaControlUiE2eGateway;
         if (!gateway) {
           throw new Error("Mock Gateway is not installed");
         }
@@ -2382,11 +2382,11 @@ function createMockGatewayControls(
     await page.evaluate((payload) => {
       const gateway = (
         window as Window & {
-          openclawControlUiE2eGateway?: {
+          aforaControlUiE2eGateway?: {
             deliverLatest: (frame: unknown) => void;
           };
         }
-      ).openclawControlUiE2eGateway;
+      ).aforaControlUiE2eGateway;
       if (!gateway) {
         throw new Error("Mock Gateway is not installed");
       }
@@ -2398,11 +2398,11 @@ function createMockGatewayControls(
     page.evaluate((targetMethod) => {
       const gateway = (
         window as Window & {
-          openclawControlUiE2eGateway?: {
+          aforaControlUiE2eGateway?: {
             findRequests: (method?: string) => MockGatewayRequest[];
           };
         }
-      ).openclawControlUiE2eGateway;
+      ).aforaControlUiE2eGateway;
       return gateway?.findRequests(targetMethod) ?? [];
     }, method);
 
@@ -2412,11 +2412,11 @@ function createMockGatewayControls(
         ({ closeCode, closeReason }) => {
           const gateway = (
             window as Window & {
-              openclawControlUiE2eGateway?: {
+              aforaControlUiE2eGateway?: {
                 closeLatest: (code?: number, reason?: string) => void;
               };
             }
-          ).openclawControlUiE2eGateway;
+          ).aforaControlUiE2eGateway;
           if (!gateway) {
             throw new Error("Mock Gateway is not installed");
           }
@@ -2431,11 +2431,11 @@ function createMockGatewayControls(
         ({ targetMethod, requestMatch }) => {
           const gateway = (
             window as Window & {
-              openclawControlUiE2eGateway?: {
+              aforaControlUiE2eGateway?: {
                 deferNext: (method: string, match?: Record<string, unknown>) => void;
               };
             }
-          ).openclawControlUiE2eGateway;
+          ).aforaControlUiE2eGateway;
           if (!gateway) {
             throw new Error("Mock Gateway is not installed");
           }
@@ -2462,11 +2462,11 @@ function createMockGatewayControls(
       return await page.evaluate(() => {
         const gateway = (
           window as Window & {
-            openclawControlUiE2eGateway?: {
+            aforaControlUiE2eGateway?: {
               socketCount: () => number;
             };
           }
-        ).openclawControlUiE2eGateway;
+        ).aforaControlUiE2eGateway;
         return gateway?.socketCount() ?? 0;
       });
     },
@@ -2474,11 +2474,11 @@ function createMockGatewayControls(
       return await page.evaluate(() => {
         const gateway = (
           window as Window & {
-            openclawControlUiE2eGateway?: {
+            aforaControlUiE2eGateway?: {
               socketUrls: () => string[];
             };
           }
-        ).openclawControlUiE2eGateway;
+        ).aforaControlUiE2eGateway;
         return gateway?.socketUrls() ?? [];
       });
     },
@@ -2487,7 +2487,7 @@ function createMockGatewayControls(
         ({ targetMethod, responseError }) => {
           const gateway = (
             window as Window & {
-              openclawControlUiE2eGateway?: {
+              aforaControlUiE2eGateway?: {
                 rejectDeferred: (
                   method: string,
                   error?: {
@@ -2499,7 +2499,7 @@ function createMockGatewayControls(
                 ) => void;
               };
             }
-          ).openclawControlUiE2eGateway;
+          ).aforaControlUiE2eGateway;
           if (!gateway) {
             throw new Error("Mock Gateway is not installed");
           }
@@ -2513,11 +2513,11 @@ function createMockGatewayControls(
         ({ targetMethod, responsePayload }) => {
           const gateway = (
             window as Window & {
-              openclawControlUiE2eGateway?: {
+              aforaControlUiE2eGateway?: {
                 resolveDeferred: (method: string, payload?: unknown) => void;
               };
             }
-          ).openclawControlUiE2eGateway;
+          ).aforaControlUiE2eGateway;
           if (!gateway) {
             throw new Error("Mock Gateway is not installed");
           }
@@ -2530,11 +2530,11 @@ function createMockGatewayControls(
       await page.evaluate((nextOnline) => {
         const gateway = (
           window as Window & {
-            openclawControlUiE2eGateway?: {
+            aforaControlUiE2eGateway?: {
               setOnline: (online: boolean) => void;
             };
           }
-        ).openclawControlUiE2eGateway;
+        ).aforaControlUiE2eGateway;
         if (!gateway) {
           throw new Error("Mock Gateway is not installed");
         }
@@ -2545,11 +2545,11 @@ function createMockGatewayControls(
       await page.evaluate((nextBuildId) => {
         const gateway = (
           window as Window & {
-            openclawControlUiE2eGateway?: {
+            aforaControlUiE2eGateway?: {
               setServerBuildId: (buildId: string) => void;
             };
           }
-        ).openclawControlUiE2eGateway;
+        ).aforaControlUiE2eGateway;
         if (!gateway) {
           throw new Error("Mock Gateway is not installed");
         }
@@ -2560,11 +2560,11 @@ function createMockGatewayControls(
       await page.evaluate((nextScopes) => {
         const gateway = (
           window as Window & {
-            openclawControlUiE2eGateway?: {
+            aforaControlUiE2eGateway?: {
               setOperatorScopes: (scopes: string[]) => void;
             };
           }
-        ).openclawControlUiE2eGateway;
+        ).aforaControlUiE2eGateway;
         if (!gateway) {
           throw new Error("Mock Gateway is not installed");
         }
@@ -2575,11 +2575,11 @@ function createMockGatewayControls(
       await page.evaluate((nextMessages) => {
         const gateway = (
           window as Window & {
-            openclawControlUiE2eGateway?: {
+            aforaControlUiE2eGateway?: {
               setHistoryMessages: (messages: unknown[]) => void;
             };
           }
-        ).openclawControlUiE2eGateway;
+        ).aforaControlUiE2eGateway;
         if (!gateway) {
           throw new Error("Mock Gateway is not installed");
         }
@@ -2591,11 +2591,11 @@ function createMockGatewayControls(
         ({ targetMethod, responsePayload }) => {
           const gateway = (
             window as Window & {
-              openclawControlUiE2eGateway?: {
+              aforaControlUiE2eGateway?: {
                 setMethodResponse: (method: string, payload: unknown) => void;
               };
             }
-          ).openclawControlUiE2eGateway;
+          ).aforaControlUiE2eGateway;
           if (!gateway) {
             throw new Error("Mock Gateway is not installed");
           }
@@ -2608,11 +2608,11 @@ function createMockGatewayControls(
       await page.evaluate((nextPolicy) => {
         const gateway = (
           window as Window & {
-            openclawControlUiE2eGateway?: {
+            aforaControlUiE2eGateway?: {
               setSessionSharingPolicy: (policy: typeof nextPolicy) => void;
             };
           }
-        ).openclawControlUiE2eGateway;
+        ).aforaControlUiE2eGateway;
         if (!gateway) {
           throw new Error("Mock Gateway is not installed");
         }
@@ -2627,11 +2627,11 @@ function createMockGatewayControls(
             (targetMethod) => {
               const gateway = (
                 window as Window & {
-                  openclawControlUiE2eGateway?: {
+                  aforaControlUiE2eGateway?: {
                     requests: MockGatewayRequest[];
                   };
                 }
-              ).openclawControlUiE2eGateway;
+              ).aforaControlUiE2eGateway;
               return Boolean(gateway?.requests.some((request) => request.method === targetMethod));
             },
             method,
@@ -2708,7 +2708,7 @@ async function captureControlUiE2eFailureDiagnosticsUnsafe(
     pageEvents?: ControlUiE2eDiagnosticEvent[];
   },
 ): Promise<void> {
-  const configuredDir = process.env.OPENCLAW_UI_E2E_DIAGNOSTIC_DIR?.trim();
+  const configuredDir = process.env.AFORA_UI_E2E_DIAGNOSTIC_DIR?.trim();
   const artifactDir = path.resolve(
     configuredDir || path.join(resolveRepoRoot(), ".artifacts", "control-ui-e2e-timeouts", "local"),
   );
@@ -2751,13 +2751,13 @@ async function captureControlUiE2eFailureDiagnosticsUnsafe(
         socketUrls?: () => string[];
       };
       const windowState = window as Window & {
-        __OPENCLAW_CONTROL_UI_E2E_UNHANDLED_REJECTIONS__?: unknown[];
-        openclawControlUiE2eGateway?: MockGateway;
+        __AFORA_CONTROL_UI_E2E_UNHANDLED_REJECTIONS__?: unknown[];
+        aforaControlUiE2eGateway?: MockGateway;
       };
-      const app = document.querySelector("openclaw-app") as
+      const app = document.querySelector("afora-app") as
         | (HTMLElement & { runtime?: Runtime })
         | null;
-      const shell = document.querySelector("openclaw-app-shell") as
+      const shell = document.querySelector("afora-app-shell") as
         | (HTMLElement & { runtime?: Runtime })
         | null;
       const runtime = app?.runtime ?? shell?.runtime;
@@ -2835,13 +2835,13 @@ async function captureControlUiE2eFailureDiagnosticsUnsafe(
           url: window.location.href,
         },
         mockGateway: {
-          installed: Boolean(windowState.openclawControlUiE2eGateway),
-          requests: copy(windowState.openclawControlUiE2eGateway?.requests ?? []),
-          socketStates: copy(windowState.openclawControlUiE2eGateway?.socketStates?.() ?? []),
-          socketUrls: copy(windowState.openclawControlUiE2eGateway?.socketUrls?.() ?? []),
+          installed: Boolean(windowState.aforaControlUiE2eGateway),
+          requests: copy(windowState.aforaControlUiE2eGateway?.requests ?? []),
+          socketStates: copy(windowState.aforaControlUiE2eGateway?.socketStates?.() ?? []),
+          socketUrls: copy(windowState.aforaControlUiE2eGateway?.socketUrls?.() ?? []),
         },
         unhandledRejections: copy(
-          windowState["__OPENCLAW_CONTROL_UI_E2E_UNHANDLED_REJECTIONS__"] ?? [],
+          windowState["__AFORA_CONTROL_UI_E2E_UNHANDLED_REJECTIONS__"] ?? [],
         ),
       };
     });

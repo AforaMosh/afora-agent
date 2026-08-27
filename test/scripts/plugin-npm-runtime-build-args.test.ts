@@ -49,7 +49,7 @@ describe("plugin npm runtime build args", () => {
   });
 
   it("reports package-local missing static asset sources", () => {
-    const repoRoot = createTempDir("openclaw-plugin-npm-runtime-assets-");
+    const repoRoot = createTempDir("afora-plugin-npm-runtime-assets-");
     const demoDir = path.join(repoRoot, "extensions", "demo");
     const otherDir = path.join(repoRoot, "extensions", "other");
     fs.mkdirSync(path.join(demoDir, "assets"), { recursive: true });
@@ -58,7 +58,7 @@ describe("plugin npm runtime build args", () => {
     fs.writeFileSync(
       path.join(demoDir, "package.json"),
       JSON.stringify({
-        openclaw: {
+        afora: {
           build: {
             staticAssets: [
               { source: "./assets/present.js", output: "assets/present.js" },
@@ -72,7 +72,7 @@ describe("plugin npm runtime build args", () => {
     fs.writeFileSync(
       path.join(otherDir, "package.json"),
       JSON.stringify({
-        openclaw: {
+        afora: {
           build: {
             staticAssets: [{ source: "./assets/other-missing.js", output: "assets/other.js" }],
           },

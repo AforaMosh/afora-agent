@@ -1,7 +1,7 @@
 /** Resolves cheap, secret-free local credential evidence declared by provider manifests. */
 import fs from "node:fs";
 import os from "node:os";
-import { normalizeOptionalString as normalizeOptionalPathInput } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString as normalizeOptionalPathInput } from "@afora/normalization-core/string-coerce";
 import { normalizeOptionalSecretInput } from "../utils/normalize-secret-input.js";
 
 type LocalProviderAuthEvidence = {

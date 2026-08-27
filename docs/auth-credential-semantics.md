@@ -10,8 +10,8 @@ These semantics keep selection-time and runtime auth behavior aligned. They are 
 
 - `resolveAuthProfileOrder` (profile ordering)
 - `resolveApiKeyForProfile` (runtime credential resolution)
-- `openclaw models status --probe`
-- `openclaw doctor` auth checks (`doctor-auth`)
+- `afora models status --probe`
+- `afora doctor` auth checks (`doctor-auth`)
 
 ## Stable probe reason codes
 
@@ -49,9 +49,9 @@ Token credentials (`type: "token"`) support inline `token` and/or `tokenRef`.
 
 ## Agent copy portability
 
-Agent auth inheritance is read-through. When an agent has no local profile, it resolves profiles from the shared auth store at runtime without copying secret material into its own credential store (`agents/<agentId>/agent/openclaw-agent.sqlite`). The shared store lives in `state/openclaw.sqlite` after `openclaw doctor --fix` performs the one-time relocation. Until then, doctor reports the legacy `agents/main/agent/openclaw-agent.sqlite` owner and leaves that agent undeletable.
+Agent auth inheritance is read-through. When an agent has no local profile, it resolves profiles from the shared auth store at runtime without copying secret material into its own credential store (`agents/<agentId>/agent/afora-agent.sqlite`). The shared store lives in `state/afora.sqlite` after `afora doctor --fix` performs the one-time relocation. Until then, doctor reports the legacy `agents/main/agent/afora-agent.sqlite` owner and leaves that agent undeletable.
 
-Explicit copy flows, such as `openclaw agents add`, use this portability policy:
+Explicit copy flows, such as `afora agents add`, use this portability policy:
 
 - `api_key` and `token` profiles are portable unless `copyToAgents: false`.
 - `oauth` profiles are not portable by default because refresh tokens can be single-use or rotation-sensitive.
@@ -63,18 +63,18 @@ Non-portable profiles remain available through the shared read-through base unle
 
 `auth.profiles` entries with `mode: "aws-sdk"` are routing metadata, not stored credentials. They are valid when the target provider uses `models.providers.<id>.auth: "aws-sdk"`, the route the plugin-owned Amazon Bedrock setup writes. These profile ids may appear in `auth.order` and session overrides even when no matching entry exists in the credential store.
 
-Do not write `type: "aws-sdk"` into the credential store; stored credentials are only `api_key`, `token`, or `oauth`. If a legacy `auth-profiles.json` has such a marker, `openclaw doctor --fix` moves it to `auth.profiles` and removes the marker from the store.
+Do not write `type: "aws-sdk"` into the credential store; stored credentials are only `api_key`, `token`, or `oauth`. If a legacy `auth-profiles.json` has such a marker, `afora doctor --fix` moves it to `auth.profiles` and removes the marker from the store.
 
 ## Explicit auth order filtering
 
 - When `auth.order.<provider>` or the auth-store order override is set for a provider, `models status --probe` only probes profile ids that remain in the resolved auth order for that provider. The stored override wins over `auth.order` config.
 - A stored profile for that provider that is omitted from the explicit order is not silently tried later. Probe output reports it with `reasonCode: excluded_by_auth_order` and the detail `Excluded by auth.order for this provider.`
-- A valid session user pin is an explicit per-session exception: OpenClaw tries that profile first even when it is omitted from the provider order, then uses the ordered same-provider profiles as retry candidates. A cooldown or disabled window applies only to the affected profile; it does not suppress its eligible siblings.
+- A valid session user pin is an explicit per-session exception: Afora tries that profile first even when it is omitted from the provider order, then uses the ordered same-provider profiles as retry candidates. A cooldown or disabled window applies only to the affected profile; it does not suppress its eligible siblings.
 
 ## Probe target resolution
 
 - Probe targets can come from auth profiles, environment credentials, or `models.json` (result `source`: `profile`, `env`, `models.json`).
-- If a provider has credentials but OpenClaw cannot resolve a probeable model candidate for it, `models status --probe` reports `status: no_model` with `reasonCode: no_model`.
+- If a provider has credentials but Afora cannot resolve a probeable model candidate for it, `models status --probe` reports `status: no_model` with `reasonCode: no_model`.
 
 ## External CLI credential discovery
 

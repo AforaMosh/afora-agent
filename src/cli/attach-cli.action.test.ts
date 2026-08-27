@@ -58,14 +58,14 @@ vi.mock("../gateway/call.js", () => ({
           expiresAtMs: 2_000_000_000_000,
           mcpConfig: {
             mcpServers: {
-              openclaw: {
+              afora: {
                 type: "http",
                 url: "http://127.0.0.1:9999/mcp",
-                headers: { Authorization: "Bearer ${OPENCLAW_MCP_TOKEN}" },
+                headers: { Authorization: "Bearer ${AFORA_MCP_TOKEN}" },
               },
             },
           },
-          env: { OPENCLAW_MCP_TOKEN: "tok-123" },
+          env: { AFORA_MCP_TOKEN: "tok-123" },
         };
       }
       return {};
@@ -92,16 +92,16 @@ import { callGateway } from "../gateway/call.js";
 import { registerAttachCli } from "./attach-cli.js";
 
 async function runAttach(...args: string[]) {
-  const program = new Command().name("openclaw").exitOverride();
+  const program = new Command().name("afora").exitOverride();
   await registerAttachCli(program);
-  await program.parseAsync(["node", "openclaw", "attach", ...args]);
+  await program.parseAsync(["node", "afora", "attach", ...args]);
 }
 const tick = () =>
   new Promise<void>((resolve) => {
     setImmediate(resolve);
   });
 
-describe("openclaw attach (action)", () => {
+describe("afora attach (action)", () => {
   beforeEach(() => {
     gatewayCalls.length = 0;
     logs.length = 0;
@@ -121,7 +121,7 @@ describe("openclaw attach (action)", () => {
     expect(out).toContain("agent:main:cli");
     expect(out).toContain("--mcp-config");
     expect(out).toContain("--strict-mcp-config");
-    expect(out).toContain("OPENCLAW_MCP_TOKEN");
+    expect(out).toContain("AFORA_MCP_TOKEN");
     expect(out).not.toContain("attach.revoke");
   });
 
@@ -252,8 +252,8 @@ describe("openclaw attach (action)", () => {
         sessionKey: "agent:main:spawn",
         token: "tok-123",
         expiresAtMs: 2_000_000_000_000,
-        mcpConfig: { mcpServers: { openclaw: {} } },
-        env: { OPENCLAW_MCP_TOKEN: "tok-123" },
+        mcpConfig: { mcpServers: { afora: {} } },
+        env: { AFORA_MCP_TOKEN: "tok-123" },
       } as never;
     });
     vi.mocked(callGateway).mockImplementationOnce(async (p) => {
@@ -292,7 +292,7 @@ describe("openclaw attach (action)", () => {
       sessionKey: "agent:main:x",
       token: "tok-123",
       expiresAtMs: "soon",
-      mcpConfig: { mcpServers: { openclaw: {} } },
+      mcpConfig: { mcpServers: { afora: {} } },
       env: {},
     } as never);
     await runAttach("--print-config");

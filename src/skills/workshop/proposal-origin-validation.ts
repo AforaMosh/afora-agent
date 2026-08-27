@@ -1,4 +1,4 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { MAX_SKILL_PROPOSAL_ORIGIN_RUN_IDS } from "./types.js";
 
 function isValidOrigin(value: unknown): boolean {

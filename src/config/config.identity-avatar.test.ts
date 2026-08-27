@@ -7,11 +7,11 @@ import { validateConfigObject } from "./validation.js";
 describe("identity avatar validation", () => {
   it("accepts workspace-relative avatar paths", async () => {
     await withTempHome(async (home) => {
-      const workspace = path.join(home, "openclaw");
+      const workspace = path.join(home, "afora");
       const res = validateConfigObject({
         agents: {
           entries: {
-            main: { default: true, workspace, identity: { avatar: "avatars/openclaw.png" } },
+            main: { default: true, workspace, identity: { avatar: "avatars/afora.png" } },
           },
         },
       });
@@ -21,7 +21,7 @@ describe("identity avatar validation", () => {
 
   it("accepts http(s) and data avatars", async () => {
     await withTempHome(async (home) => {
-      const workspace = path.join(home, "openclaw");
+      const workspace = path.join(home, "afora");
       const httpRes = validateConfigObject({
         agents: {
           entries: {
@@ -52,7 +52,7 @@ describe("identity avatar validation", () => {
 
   it("rejects avatar paths outside workspace", async () => {
     await withTempHome(async (home) => {
-      const workspace = path.join(home, "openclaw");
+      const workspace = path.join(home, "afora");
       const res = validateConfigObject({
         agents: {
           entries: {

@@ -1,11 +1,11 @@
 // Verifies exec host, sandbox, and approval-default resolution for embedded agents.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionEntry } from "../config/sessions.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import * as execApprovals from "../infra/exec-approvals.js";
 import { resolveExecDefaults, resolveNodeExecEligibility } from "./exec-defaults.js";
 
-function withDefaultAgent(config: OpenClawConfig): OpenClawConfig {
+function withDefaultAgent(config: AforaConfig): AforaConfig {
   return {
     ...config,
     agents: { ...config.agents, list: [{ id: "main", default: true }] },

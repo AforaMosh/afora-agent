@@ -79,7 +79,7 @@ describe("managed Codex app-server binary", () => {
   });
 
   it("keeps the pinned package ahead of stale desktop bundles for ordinary turns", async () => {
-    const pluginRoot = path.join("/tmp", "openclaw", "extensions", "codex");
+    const pluginRoot = path.join("/tmp", "afora", "extensions", "codex");
     const pluginLocalCommand = managedCommandPath(pluginRoot, "darwin");
     const pathExists = vi.fn(
       async (filePath: string) =>
@@ -106,7 +106,7 @@ describe("managed Codex app-server binary", () => {
   });
 
   it("prefers the ChatGPT.app desktop bundle for Computer Use", async () => {
-    const pluginRoot = path.join("/tmp", "openclaw", "extensions", "codex");
+    const pluginRoot = path.join("/tmp", "afora", "extensions", "codex");
     const pluginLocalCommand = managedCommandPath(pluginRoot, "darwin");
     const pathExists = vi.fn(
       async (filePath: string) =>
@@ -128,7 +128,7 @@ describe("managed Codex app-server binary", () => {
   });
 
   it("falls back to the legacy Codex.app desktop bundle when ChatGPT.app is absent", async () => {
-    const pluginRoot = path.join("/tmp", "openclaw", "extensions", "codex");
+    const pluginRoot = path.join("/tmp", "afora", "extensions", "codex");
     const pluginLocalCommand = managedCommandPath(pluginRoot, "darwin");
     const pathExists = vi.fn(
       async (filePath: string) =>
@@ -150,7 +150,7 @@ describe("managed Codex app-server binary", () => {
   });
 
   it("falls back to the source plugin-local binary when neither desktop bundle exists", async () => {
-    const pluginRoot = path.join("/tmp", "openclaw", "extensions", "codex");
+    const pluginRoot = path.join("/tmp", "afora", "extensions", "codex");
     const pluginLocalCommand = managedCommandPath(pluginRoot, "darwin");
     const pathExists = vi.fn(async (filePath: string) => filePath === pluginLocalCommand);
 
@@ -170,7 +170,7 @@ describe("managed Codex app-server binary", () => {
   });
 
   it("finds Codex in the package install root used by packaged plugins", async () => {
-    const installRoot = path.join("/tmp", "openclaw-plugin-package", "codex");
+    const installRoot = path.join("/tmp", "afora-plugin-package", "codex");
     const pluginRoot = path.join(installRoot, "dist", "extensions", "codex");
     const installedCommand = managedCommandPath(installRoot, "linux");
     const pathExists = vi.fn(async (filePath: string) => filePath === installedCommand);
@@ -189,8 +189,8 @@ describe("managed Codex app-server binary", () => {
   });
 
   it("prefers the bundled plugin binary over a stale hoisted package binary", async () => {
-    const installRoot = path.join("/tmp", "openclaw-package");
-    const packageRoot = path.join(installRoot, "node_modules", "openclaw");
+    const installRoot = path.join("/tmp", "afora-package");
+    const packageRoot = path.join(installRoot, "node_modules", "afora");
     const bundledPluginRoot = path.join(packageRoot, "dist", "extensions", "codex");
     const bundledCommand = managedCommandPath(bundledPluginRoot, "linux");
     const hoistedCommand = managedCommandPath(installRoot, "linux");
@@ -213,8 +213,8 @@ describe("managed Codex app-server binary", () => {
   });
 
   it("falls back to the hoisted package when the bundled plugin binary is absent", async () => {
-    const installRoot = path.join("/tmp", "openclaw-package");
-    const packageRoot = path.join(installRoot, "node_modules", "openclaw");
+    const installRoot = path.join("/tmp", "afora-package");
+    const packageRoot = path.join(installRoot, "node_modules", "afora");
     const bundledPluginRoot = path.join(packageRoot, "dist", "extensions", "codex");
     const hoistedCommand = managedCommandPath(installRoot, "linux");
     const pathExists = vi.fn(async (filePath: string) => filePath === hoistedCommand);
@@ -233,8 +233,8 @@ describe("managed Codex app-server binary", () => {
   });
 
   it("finds Codex bins hoisted into an isolated npm project root", async () => {
-    const projectRoot = path.join("/tmp", "state", "npm", "projects", "openclaw-codex-hash");
-    const pluginRoot = path.join(projectRoot, "node_modules", "@openclaw", "codex");
+    const projectRoot = path.join("/tmp", "state", "npm", "projects", "afora-codex-hash");
+    const pluginRoot = path.join(projectRoot, "node_modules", "@afora", "codex");
     const installedCommand = managedCommandPath(projectRoot, "linux");
     const pathExists = vi.fn(async (filePath: string) => filePath === installedCommand);
 
@@ -256,12 +256,12 @@ describe("managed Codex app-server binary", () => {
       "C:\\",
       "Users",
       "test",
-      ".openclaw",
+      ".afora",
       "npm",
       "projects",
-      "openclaw-codex-hash",
+      "afora-codex-hash",
     );
-    const pluginRoot = path.win32.join(projectRoot, "node_modules", "@openclaw", "codex");
+    const pluginRoot = path.win32.join(projectRoot, "node_modules", "@afora", "codex");
     const installedCommand = managedCommandPath(projectRoot, "win32");
     const pathExists = vi.fn(async (filePath: string) => filePath === installedCommand);
 
@@ -279,7 +279,7 @@ describe("managed Codex app-server binary", () => {
   });
 
   it("falls back to the resolved Codex package bin when no command shim exists", async () => {
-    const installRoot = await mkdtemp(path.join(os.tmpdir(), "openclaw-codex-package-"));
+    const installRoot = await mkdtemp(path.join(os.tmpdir(), "afora-codex-package-"));
     const pluginRoot = path.join(installRoot, "dist", "extensions", "codex");
     const packageRoot = path.join(installRoot, "node_modules", "@openai", "codex");
     const packageBin = path.join(packageRoot, "bin", "codex.js");
@@ -315,7 +315,7 @@ describe("managed Codex app-server binary", () => {
     await expect(
       resolveManagedCodexAppServerStartOptions(startOptions("managed"), {
         platform: "darwin",
-        pluginRoot: path.join("/tmp", "openclaw", "extensions", "codex"),
+        pluginRoot: path.join("/tmp", "afora", "extensions", "codex"),
         pathExists: vi.fn(async () => false),
       }),
     ).rejects.toThrow("Managed Codex app-server binary was not found");

@@ -1,9 +1,9 @@
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   deliveryContextFromSession,
   sessionDeliveryOrigin,
-} from "openclaw/plugin-sdk/session-store-runtime";
-import { normalizeOptionalString, uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/session-store-runtime";
+import { normalizeOptionalString, uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   ACTIVE_MEMORY_DEBUG_PREFIX,
   ACTIVE_MEMORY_STATUS_PREFIX,
@@ -14,7 +14,7 @@ import {
 } from "./types.js";
 
 function resolveCanonicalSessionKeyFromSessionId(params: {
-  api: OpenClawPluginApi;
+  api: AforaPluginApi;
   agentId: string;
   sessionId?: string;
 }): string | undefined {
@@ -58,7 +58,7 @@ function resolveCanonicalSessionKeyFromSessionId(params: {
 }
 
 function resolveRecallRunChannelContext(params: {
-  api: OpenClawPluginApi;
+  api: AforaPluginApi;
   agentId: string;
   sessionKey?: string;
   sessionId?: string;
@@ -274,7 +274,7 @@ function sanitizeDebugText(text: string): string {
 }
 
 async function persistPluginStatusLines(params: {
-  api: OpenClawPluginApi;
+  api: AforaPluginApi;
   agentId: string;
   sessionKey?: string;
   statusLine?: string;

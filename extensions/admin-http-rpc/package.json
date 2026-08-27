@@ -1,13 +1,13 @@
 {
-  "name": "@openclaw/admin-http-rpc",
+  "name": "@afora/admin-http-rpc",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw admin HTTP RPC endpoint",
+  "description": "Afora admin HTTP RPC endpoint",
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

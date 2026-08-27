@@ -1,9 +1,9 @@
-// Matrix plugin entrypoint registers its OpenClaw integration.
+// Matrix plugin entrypoint registers its Afora integration.
 import {
   defineBundledChannelEntry,
-  type OpenClawPluginApi,
-} from "openclaw/plugin-sdk/channel-entry-contract";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+  type AforaPluginApi,
+} from "afora-agent/plugin-sdk/channel-entry-contract";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 import { registerMatrixCliMetadata } from "./cli-metadata.js";
 import { registerMatrixSubagentHooks } from "./subagent-hooks-api.js";
 
@@ -11,7 +11,7 @@ const loadMatrixHandlersRuntimeModule = createLazyRuntimeModule(
   () => import("./plugin-entry.handlers.runtime.js"),
 );
 
-export function registerMatrixFullRuntime(api: OpenClawPluginApi): void {
+export function registerMatrixFullRuntime(api: AforaPluginApi): void {
   api.registerGatewayMethod("matrix.verify.recoveryKey", async (ctx) => {
     const { handleVerifyRecoveryKey } = await loadMatrixHandlersRuntimeModule();
     await handleVerifyRecoveryKey(ctx);

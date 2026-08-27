@@ -26,8 +26,8 @@ This page covers the Perplexity **provider** setup. For the Perplexity **tool** 
 ## Install plugin
 
 ```bash
-openclaw plugins install @openclaw/perplexity-plugin
-openclaw gateway restart
+afora plugins install @afora/perplexity-plugin
+afora gateway restart
 ```
 
 ## Getting started
@@ -35,13 +35,13 @@ openclaw gateway restart
 <Steps>
   <Step title="Set the API key">
     ```bash
-    openclaw configure --section web
+    afora configure --section web
     ```
 
     Or set the key directly:
 
     ```bash
-    openclaw config set plugins.entries.perplexity.config.webSearch.apiKey "pplx-xxxxxxxxxxxx"
+    afora config set plugins.entries.perplexity.config.webSearch.apiKey "pplx-xxxxxxxxxxxx"
     ```
 
     A key exported as `PERPLEXITY_API_KEY` or `OPENROUTER_API_KEY` in the Gateway
@@ -53,7 +53,7 @@ openclaw gateway restart
     credential; no further setup is required. To pin the provider explicitly:
 
     ```bash
-    openclaw config set tools.web.search.provider perplexity
+    afora config set tools.web.search.provider perplexity
     ```
 
   </Step>
@@ -97,7 +97,7 @@ Native-only filters return a descriptive error on the chat-completions path.
     <Warning>
     A key exported only in an interactive shell is not visible to a
     launchd/systemd Gateway daemon unless that environment is explicitly
-    imported. Set the key in `~/.openclaw/.env` or via `env.shellEnv` so the
+    imported. Set the key in `~/.afora/.env` or via `env.shellEnv` so the
     Gateway process can read it. See [Environment variables](/help/environment)
     for the full precedence order.
     </Warning>
@@ -105,7 +105,7 @@ Native-only filters return a descriptive error on the chat-completions path.
 
   <Accordion title="OpenRouter proxy setup">
     To route Perplexity searches through OpenRouter, set an `OPENROUTER_API_KEY`
-    (prefix `sk-or-`) instead of a native Perplexity key. OpenClaw detects the
+    (prefix `sk-or-`) instead of a native Perplexity key. Afora detects the
     key and switches to the Sonar transport automatically. Useful if you already
     have OpenRouter billing set up and want to consolidate providers there.
   </Accordion>

@@ -39,7 +39,7 @@ function parsePidPair(output: string): [number, number] {
 }
 
 afterEach(async () => {
-  delete process.env.OPENCLAW_SERVICE_MARKER;
+  delete process.env.AFORA_SERVICE_MARKER;
   for (const pid of activePids) {
     try {
       process.kill(pid, "SIGKILL");
@@ -53,7 +53,7 @@ afterEach(async () => {
 
 describe.skipIf(process.platform === "win32")("service-managed child lifecycle", () => {
   it("cancels the complete admitted command group before settling", async () => {
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
+    process.env.AFORA_SERVICE_MARKER = "afora";
     const adapter = await createChildAdapter({
       argv: [
         "/bin/sh",
@@ -82,7 +82,7 @@ describe.skipIf(process.platform === "win32")("service-managed child lifecycle",
     { reason: "overall-timeout" as const, timeoutMs: 100, noOutputTimeoutMs: undefined },
     { reason: "no-output-timeout" as const, timeoutMs: undefined, noOutputTimeoutMs: 100 },
   ])("removes the group before returning $reason", async (timing) => {
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
+    process.env.AFORA_SERVICE_MARKER = "afora";
     const run = await createProcessSupervisor().spawn({
       mode: "child",
       argv: [
@@ -104,7 +104,7 @@ describe.skipIf(process.platform === "win32")("service-managed child lifecycle",
   });
 
   it("preserves root-result timing while retaining descendant cleanup ownership", async () => {
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
+    process.env.AFORA_SERVICE_MARKER = "afora";
     const adapter = await createChildAdapter({
       argv: [
         "/bin/sh",
@@ -129,7 +129,7 @@ describe.skipIf(process.platform === "win32")("service-managed child lifecycle",
   });
 
   it("flushes forwarded output before exposing the root result", async () => {
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
+    process.env.AFORA_SERVICE_MARKER = "afora";
     const outputBytes = 8 * 1024 * 1024;
     const adapter = await createChildAdapter({
       argv: [process.execPath, "-e", `process.stdout.write(Buffer.alloc(${outputBytes}, 120))`],
@@ -145,7 +145,7 @@ describe.skipIf(process.platform === "win32")("service-managed child lifecycle",
   });
 
   it("retains output emitted before adapter listeners subscribe", async () => {
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
+    process.env.AFORA_SERVICE_MARKER = "afora";
     const adapter = await createChildAdapter({
       argv: [
         process.execPath,
@@ -173,7 +173,7 @@ describe.skipIf(process.platform === "win32")("service-managed child lifecycle",
   });
 
   it("preserves an exited root result when cleanup races forwarded output", async () => {
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
+    process.env.AFORA_SERVICE_MARKER = "afora";
     const outputBytes = 8 * 1024 * 1024;
     const adapter = await createChildAdapter({
       argv: [
@@ -198,7 +198,7 @@ describe.skipIf(process.platform === "win32")("service-managed child lifecycle",
   });
 
   it("revalidates and escalates when the group ignores SIGTERM", async () => {
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
+    process.env.AFORA_SERVICE_MARKER = "afora";
     const adapter = await createChildAdapter({
       argv: [
         "/bin/sh",
@@ -222,8 +222,8 @@ describe.skipIf(process.platform === "win32")("service-managed child lifecycle",
   });
 
   it("self-cleans when lineage closes but a descendant retains output", async () => {
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
-    const tempDir = tempDirs.make("openclaw-service-child-natural-lineage-");
+    process.env.AFORA_SERVICE_MARKER = "afora";
+    const tempDir = tempDirs.make("afora-service-child-natural-lineage-");
     const descendantPath = path.join(tempDir, "descendant.cjs");
     const rootPath = path.join(tempDir, "root.cjs");
     await writeFile(
@@ -270,8 +270,8 @@ describe.skipIf(process.platform === "win32")("service-managed child lifecycle",
   });
 
   it("preserves the supervisor TERM grace for a delayed authentic root result", async () => {
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
-    const tempDir = tempDirs.make("openclaw-service-child-term-grace-");
+    process.env.AFORA_SERVICE_MARKER = "afora";
+    const tempDir = tempDirs.make("afora-service-child-term-grace-");
     const descendantPath = path.join(tempDir, "descendant.cjs");
     const rootPath = path.join(tempDir, "root.cjs");
     await writeFile(
@@ -350,8 +350,8 @@ describe.skipIf(process.platform === "win32")("service-managed child lifecycle",
     { label: "after TERM grace", repeatKill: false },
     { label: "when repeated KILL arrives", repeatKill: true },
   ])("hard-cleans output-holding descendants $label", async ({ repeatKill }) => {
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
-    const tempDir = tempDirs.make("openclaw-service-child-lineage-term-");
+    process.env.AFORA_SERVICE_MARKER = "afora";
+    const tempDir = tempDirs.make("afora-service-child-lineage-term-");
     const descendantPath = path.join(tempDir, "descendant.cjs");
     const rootPath = path.join(tempDir, "root.cjs");
     await writeFile(
@@ -405,7 +405,7 @@ describe.skipIf(process.platform === "win32")("service-managed child lifecycle",
   });
 
   it("preserves split UTF-8 sequences on service stdout and stderr", async () => {
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
+    process.env.AFORA_SERVICE_MARKER = "afora";
     const adapter = await createChildAdapter({
       argv: [
         process.execPath,
@@ -436,7 +436,7 @@ describe.skipIf(process.platform === "win32")("service-managed child lifecycle",
   });
 
   it("flushes incomplete UTF-8 before exposing a root result with retained authority", async () => {
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
+    process.env.AFORA_SERVICE_MARKER = "afora";
     const descendantScript = "setTimeout(() => {}, 1500)";
     const rootScript = `
       const { spawn } = require("node:child_process");
@@ -472,7 +472,7 @@ describe.skipIf(process.platform === "win32")("service-managed child lifecycle",
   });
 
   it("reports startup failure before secret-pipe failure without an unhandled rejection", async () => {
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
+    process.env.AFORA_SERVICE_MARKER = "afora";
     const unhandled: unknown[] = [];
     const onUnhandled = (error: unknown) => {
       unhandled.push(error);
@@ -500,7 +500,7 @@ describe.skipIf(process.platform === "win32")("service-managed child lifecycle",
   });
 
   it("keeps stdin and the secret descriptor distinct from lifecycle channels", async () => {
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
+    process.env.AFORA_SERVICE_MARKER = "afora";
     const adapter = await createChildAdapter({
       argv: [
         "/bin/sh",
@@ -525,7 +525,7 @@ describe.skipIf(process.platform === "win32")("service-managed child lifecycle",
   });
 
   it("fails closed when the command drops its lineage descriptor early", async () => {
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
+    process.env.AFORA_SERVICE_MARKER = "afora";
     const adapter = await createChildAdapter({
       argv: ["/bin/sh", "-c", `exec 3>&-; trap '' TERM; printf "%s\\n" "$$"; sleep 60`],
       stdinMode: "pipe-closed",
@@ -543,13 +543,13 @@ describe.skipIf(process.platform === "win32")("service-managed child lifecycle",
   });
 
   it("defers an identity-loss rejection until the caller waits", async () => {
-    const tempDir = tempDirs.make("openclaw-service-child-identity-loss-");
+    const tempDir = tempDirs.make("afora-service-child-identity-loss-");
     const scriptPath = path.join(tempDir, "identity-loss.mts");
     const childModuleUrl = new URL("./child.ts", import.meta.url).href;
     await writeFile(
       scriptPath,
       `
-        process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
+        process.env.AFORA_SERVICE_MARKER = "afora";
         const { createChildAdapter } = await import(${JSON.stringify(childModuleUrl)});
         const adapter = await createChildAdapter({
           argv: ["/bin/sh", "-c", "sleep 0.05; kill -KILL $PPID; sleep 0.05"],
@@ -567,7 +567,7 @@ describe.skipIf(process.platform === "win32")("service-managed child lifecycle",
     );
     const host = spawn(process.execPath, ["--import", "tsx", scriptPath], {
       stdio: ["ignore", "pipe", "pipe"],
-      env: { ...process.env, OPENCLAW_SERVICE_MARKER: "openclaw" },
+      env: { ...process.env, AFORA_SERVICE_MARKER: "afora" },
     });
     let stderr = "";
     host.stderr.on("data", (chunk) => {
@@ -582,13 +582,13 @@ describe.skipIf(process.platform === "win32")("service-managed child lifecycle",
   });
 
   it("fails closed when the service host exits", async () => {
-    const tempDir = tempDirs.make("openclaw-service-child-host-");
+    const tempDir = tempDirs.make("afora-service-child-host-");
     const scriptPath = path.join(tempDir, "host.mts");
     const childModuleUrl = new URL("./child.ts", import.meta.url).href;
     await writeFile(
       scriptPath,
       `
-        process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
+        process.env.AFORA_SERVICE_MARKER = "afora";
         const { createChildAdapter } = await import(${JSON.stringify(childModuleUrl)});
         const adapter = await createChildAdapter({
           argv: ["/bin/sh", "-c", 'sleep 60 >/dev/null 2>&1 & child=$!; printf "%s %s\\\\n" "$$" "$child"; wait'],
@@ -605,7 +605,7 @@ describe.skipIf(process.platform === "win32")("service-managed child lifecycle",
     );
     const host = spawn(process.execPath, ["--import", "tsx", scriptPath], {
       stdio: ["ignore", "pipe", "pipe"],
-      env: { ...process.env, OPENCLAW_SERVICE_MARKER: "openclaw" },
+      env: { ...process.env, AFORA_SERVICE_MARKER: "afora" },
     });
     let stdout = "";
     let stderr = "";

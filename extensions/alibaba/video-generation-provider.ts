@@ -1,4 +1,4 @@
-import { buildDashscopeVideoGenerationProvider } from "openclaw/plugin-sdk/video-generation";
+import { buildDashscopeVideoGenerationProvider } from "afora-agent/plugin-sdk/video-generation";
 
 const DEFAULT_ALIBABA_VIDEO_BASE_URL = "https://dashscope-intl.aliyuncs.com";
 

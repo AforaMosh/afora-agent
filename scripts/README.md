@@ -53,7 +53,7 @@ new directory taxonomy.
   checks, and focused validation helpers.
 - `docs-*` and `check-docs-*`: docs listing, link auditing, MDX checks,
   spellcheck, sync, and i18n glossary checks.
-- `release-*`, `openclaw-npm-*`, and `plugin-*-release-*`: release preparation,
+- `release-*`, `afora-npm-*`, and `plugin-*-release-*`: release preparation,
   package verification, and publishing helpers.
 - `docker-*`, `test-docker-*`, and `test-live-*-docker.sh`: Docker E2E planning,
   rerun, timing, and live/package lane helpers.
@@ -72,4 +72,4 @@ new directory taxonomy.
 - Add or update focused tests under `test/scripts/` when changing script
   behavior.
 
-See also [Scripts](https://docs.openclaw.ai/help/scripts) for public-facing script guidance.
+See also [Scripts](https://docs.afora.ai/help/scripts) for public-facing script guidance.

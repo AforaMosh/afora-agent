@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   attachPluginInstallOwnerMigrations,
   resolvePluginInstallTransaction,
@@ -9,7 +9,7 @@ import {
 import { PLUGIN_INSTALL_ERROR_CODE } from "./install.js";
 import {
   disablePluginAfterUpdateFailure,
-  repairOpenClawPeerLinksForNpmInstalls,
+  repairAforaPeerLinksForNpmInstalls,
 } from "./update-config.js";
 import type {
   PluginUpdateChannelFallback,
@@ -19,7 +19,7 @@ import type {
 } from "./update-source.js";
 
 export function recordPluginUpdateFailure(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   disableOnFailure?: boolean;
   dryRun?: boolean;
   logger: PluginUpdateLogger;
@@ -31,14 +31,14 @@ export function recordPluginUpdateFailure(params: {
     code?: string;
     installedPayloadRunnable?: boolean;
   };
-}): { config: OpenClawConfig; changed: boolean } {
+}): { config: AforaConfig; changed: boolean } {
   const options = params.options ?? {};
   const preserveInstalledPayload =
     options.code === PLUGIN_INSTALL_ERROR_CODE.NPM_METADATA_FAILURE &&
     options.installedPayloadRunnable === true;
   if (params.disableOnFailure && !params.dryRun && !preserveInstalledPayload) {
     const message =
-      `Disabled "${params.pluginId}" after plugin update failure; OpenClaw will continue without it. ` +
+      `Disabled "${params.pluginId}" after plugin update failure; Afora will continue without it. ` +
       params.message;
     params.logger.warn?.(message);
     params.outcomes.push({
@@ -86,7 +86,7 @@ export function recordPluginUpdateTransaction(
 }
 
 export async function finalizePluginUpdateSummary(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   changed: boolean;
   outcomes: PluginUpdateOutcome[];
   ranNpmInstaller: boolean;
@@ -97,7 +97,7 @@ export async function finalizePluginUpdateSummary(params: {
   if (params.ranNpmInstaller) {
     try {
       changed =
-        (await repairOpenClawPeerLinksForNpmInstalls({
+        (await repairAforaPeerLinksForNpmInstalls({
           config: params.config,
           logger: params.logger,
         })) || changed;

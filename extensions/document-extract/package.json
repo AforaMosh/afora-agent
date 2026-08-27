@@ -1,16 +1,16 @@
 {
-  "name": "@openclaw/document-extract-plugin",
+  "name": "@afora/document-extract-plugin",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw local document extraction plugin",
+  "description": "Afora local document extraction plugin",
   "type": "module",
   "dependencies": {
     "clawpdf": "0.3.0"
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

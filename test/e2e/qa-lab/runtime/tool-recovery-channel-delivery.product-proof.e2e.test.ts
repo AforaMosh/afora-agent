@@ -11,7 +11,7 @@ import {
 } from "../../../../extensions/qa-lab/api.js";
 import { getFreePort } from "../../../../src/test-utils/ports.js";
 
-const RECOVERY_MARKER = "OPENCLAW_E2E_EDIT_FAILURE_MATCHED_RETRY";
+const RECOVERY_MARKER = "AFORA_E2E_EDIT_FAILURE_MATCHED_RETRY";
 const FINAL_MARKER = `${RECOVERY_MARKER}_FINAL`;
 const FIXTURE_PATH = "issue-46548-edit-recovery.txt";
 const TIMEOUT_MS = 120_000;
@@ -93,7 +93,7 @@ async function waitForRecoveryDelivery(state: ReturnType<typeof createQaBusState
   return { outbound, text: outbound.map((message) => message.text).join("\n") };
 }
 
-describe.runIf(process.env.OPENCLAW_TOOL_RECOVERY_CHANNEL_PROOF === "1")(
+describe.runIf(process.env.AFORA_TOOL_RECOVERY_CHANNEL_PROOF === "1")(
   "tool recovery channel delivery product proof",
   () => {
     it(

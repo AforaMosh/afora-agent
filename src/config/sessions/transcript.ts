@@ -15,12 +15,12 @@ import {
   extractFirstTextBlock,
 } from "../../shared/chat-message-content.js";
 import {
-  OPENCLAW_DELIVERY_MIRROR_MODEL,
-  OPENCLAW_TRANSCRIPT_ARTIFACT_API,
-  OPENCLAW_TRANSCRIPT_ARTIFACT_PROVIDER,
-  isTranscriptOnlyOpenClawAssistantModel,
-} from "../../shared/transcript-only-openclaw-assistant.js";
-import type { OpenClawConfig } from "../types.openclaw.js";
+  AFORA_DELIVERY_MIRROR_MODEL,
+  AFORA_TRANSCRIPT_ARTIFACT_API,
+  AFORA_TRANSCRIPT_ARTIFACT_PROVIDER,
+  isTranscriptOnlyAforaAssistantModel,
+} from "../../shared/transcript-only-afora-assistant.js";
+import type { AforaConfig } from "../types.afora.js";
 import {
   parseSqliteSessionFileMarker,
   type SqliteSessionFileMarker,
@@ -152,7 +152,7 @@ export { resolveSessionTranscriptFile } from "./transcript-file-resolve.js";
 
 function parseAssistantTranscriptText(
   line: string,
-  options?: { excludeTranscriptOnlyOpenClawAssistant?: boolean },
+  options?: { excludeTranscriptOnlyAforaAssistant?: boolean },
 ): AssistantTranscriptText | undefined {
   const parsed = JSON.parse(line) as {
     id?: unknown;
@@ -165,8 +165,8 @@ function parseAssistantTranscriptText(
     return undefined;
   }
   if (
-    options?.excludeTranscriptOnlyOpenClawAssistant &&
-    isTranscriptOnlyOpenClawAssistantMessage(message)
+    options?.excludeTranscriptOnlyAforaAssistant &&
+    isTranscriptOnlyAforaAssistantMessage(message)
   ) {
     return undefined;
   }
@@ -183,11 +183,11 @@ function parseAssistantTranscriptText(
   };
 }
 
-function isTranscriptOnlyOpenClawAssistantMessage(message: {
+function isTranscriptOnlyAforaAssistantMessage(message: {
   provider?: unknown;
   model?: unknown;
 }): boolean {
-  return isTranscriptOnlyOpenClawAssistantModel(message.provider, message.model);
+  return isTranscriptOnlyAforaAssistantModel(message.provider, message.model);
 }
 
 type SessionConversationTranscriptTarget = {
@@ -209,7 +209,7 @@ function parseRecentConversationText(
         provenance?: unknown;
         provider?: unknown;
         model?: unknown;
-        __openclaw?: unknown;
+        __afora?: unknown;
       }
     | undefined;
   if (
@@ -219,7 +219,7 @@ function parseRecentConversationText(
   ) {
     return undefined;
   }
-  if (message.role === "assistant" && isTranscriptOnlyOpenClawAssistantMessage(message)) {
+  if (message.role === "assistant" && isTranscriptOnlyAforaAssistantMessage(message)) {
     return undefined;
   }
   const upstreamUserText =
@@ -367,7 +367,7 @@ export async function readLatestAssistantTextFromSessionTranscript(
   for await (const line of streamSessionTranscriptLinesReverse(sessionFile)) {
     try {
       const assistantText = parseAssistantTranscriptText(line, {
-        excludeTranscriptOnlyOpenClawAssistant: true,
+        excludeTranscriptOnlyAforaAssistant: true,
       });
       if (assistantText) {
         return assistantText;
@@ -394,7 +394,7 @@ export async function appendAssistantMessageToSessionTranscript(params: {
   /** Optional override for store path (mostly for tests). */
   storePath?: string;
   updateMode?: SessionTranscriptUpdateMode;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   beforeMessageWrite?: AssistantBeforeMessageWrite;
 }): Promise<SessionTranscriptAppendResult> {
   const sessionKey = params.sessionKey.trim();
@@ -430,9 +430,9 @@ export async function appendAssistantMessageToSessionTranscript(params: {
     message: {
       role: "assistant" as const,
       content: [{ type: "text", text: mirrorText }],
-      api: OPENCLAW_TRANSCRIPT_ARTIFACT_API,
-      provider: OPENCLAW_TRANSCRIPT_ARTIFACT_PROVIDER,
-      model: OPENCLAW_DELIVERY_MIRROR_MODEL,
+      api: AFORA_TRANSCRIPT_ARTIFACT_API,
+      provider: AFORA_TRANSCRIPT_ARTIFACT_PROVIDER,
+      model: AFORA_DELIVERY_MIRROR_MODEL,
       usage: {
         input: 0,
         output: 0,
@@ -449,7 +449,7 @@ export async function appendAssistantMessageToSessionTranscript(params: {
       },
       stopReason: "stop" as const,
       timestamp: Date.now(),
-      ...(params.deliveryMirror ? { openclawDeliveryMirror: params.deliveryMirror } : {}),
+      ...(params.deliveryMirror ? { aforaDeliveryMirror: params.deliveryMirror } : {}),
     } as SessionTranscriptAssistantMessage,
   });
 }
@@ -466,7 +466,7 @@ export async function appendExactAssistantMessageToSessionTranscript(params: {
   idempotencyKey?: string;
   storePath?: string;
   updateMode?: SessionTranscriptUpdateMode;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   beforeMessageWrite?: AssistantBeforeMessageWrite;
 }): Promise<SessionTranscriptAppendResult> {
   const sessionKey = params.sessionKey.trim();
@@ -693,8 +693,8 @@ async function touchSqliteAssistantAppendSessionEntry(params: {
 
 function isRedundantDeliveryMirror(message: SessionTranscriptAssistantMessage): boolean {
   return (
-    message.provider === OPENCLAW_TRANSCRIPT_ARTIFACT_PROVIDER &&
-    message.model === OPENCLAW_DELIVERY_MIRROR_MODEL
+    message.provider === AFORA_TRANSCRIPT_ARTIFACT_PROVIDER &&
+    message.model === AFORA_DELIVERY_MIRROR_MODEL
   );
 }
 
@@ -730,8 +730,8 @@ async function readLatestVisibleTranscriptMessage(scope: {
 }
 
 function isIdentifiedDeliveryMirror(message: SessionTranscriptAssistantMessage): boolean {
-  const marker = (message as { openclawDeliveryMirror?: InternalSessionTranscriptDeliveryMirror })
-    .openclawDeliveryMirror;
+  const marker = (message as { aforaDeliveryMirror?: InternalSessionTranscriptDeliveryMirror })
+    .aforaDeliveryMirror;
   return (
     isRedundantDeliveryMirror(message) &&
     (marker?.kind === "channel-final" ||
@@ -762,7 +762,7 @@ function extractAssistantMessageText(message: AgentMessage): string | null {
 async function findLatestEquivalentAssistantMessageId(
   target: SessionTranscriptTurnWriteContext,
   message: SessionTranscriptAssistantMessage,
-  config?: OpenClawConfig,
+  config?: AforaConfig,
 ): Promise<string | undefined> {
   const expectedText = extractAssistantMessageText(redactTranscriptMessage(message, config));
   if (!expectedText) {

@@ -6,7 +6,7 @@ export function createCommandsLightVitestConfig(env?: Record<string, string | un
   return createScopedVitestConfig(commandsLightTestFiles, {
     dir: "src/commands",
     env,
-    includeOpenClawRuntimeSetup: false,
+    includeAforaRuntimeSetup: false,
     name: "commands-light",
     passWithNoTests: true,
   });

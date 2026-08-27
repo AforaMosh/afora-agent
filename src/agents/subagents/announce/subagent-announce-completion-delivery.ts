@@ -2,7 +2,7 @@
  * Direct completion fallback and source-delivery evidence for subagent announcements.
  */
 import { sanitizePendingFinalDeliveryText } from "../../../auto-reply/reply/pending-final-delivery.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { sourceDeliveryTargetsMatch } from "../../../infra/outbound/source-delivery-plan.js";
 import { deriveSessionChatTypeFromKey } from "../../../sessions/session-chat-type-shared.js";
 import { isNonTerminalAgentRunStatus } from "../../../shared/agent-run-status.js";
@@ -82,7 +82,7 @@ export function hasFailedSubagentNoOutputCompletion(
 }
 
 export async function deliverCompletionDirect(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   requesterSessionKey: string;
   requesterAgentId?: string;
   directIdempotencyKey: string;

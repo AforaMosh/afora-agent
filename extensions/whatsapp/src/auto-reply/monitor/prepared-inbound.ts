@@ -5,9 +5,9 @@ import {
   type CommandFacts,
   type NormalizedLocation,
   type SupplementalContextFacts,
-} from "openclaw/plugin-sdk/channel-inbound";
-import { resolveChannelMessageSourceReplyDeliveryMode } from "openclaw/plugin-sdk/channel-outbound";
-import type { ReplyThreadingPolicy } from "openclaw/plugin-sdk/reply-reference";
+} from "afora-agent/plugin-sdk/channel-inbound";
+import { resolveChannelMessageSourceReplyDeliveryMode } from "afora-agent/plugin-sdk/channel-outbound";
+import type { ReplyThreadingPolicy } from "afora-agent/plugin-sdk/reply-reference";
 
 type PreparedChannelInboundCommandAuthorization =
   | { kind: "not_checked" }

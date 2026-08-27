@@ -15,7 +15,7 @@ type SessionCostUsageTestApi = {
 
 function getTestApi(): SessionCostUsageTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.sessionCostUsageTestApi")
+    Symbol.for("afora.sessionCostUsageTestApi")
   ] as SessionCostUsageTestApi;
 }
 

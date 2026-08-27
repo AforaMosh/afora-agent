@@ -1,7 +1,7 @@
 // Resolves the utility model used for short internal tasks (titles, progress
 // narration). Unset config derives the provider-declared small model from the
 // agent's primary provider; an explicit empty string disables utility routing.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { getCurrentPluginMetadataSnapshot } from "../plugins/current-plugin-metadata-snapshot.js";
 import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.types.js";
 import { resolveAgentConfig, resolveAgentEffectiveModelPrimary } from "./agent-scope.js";
@@ -18,7 +18,7 @@ type UtilityModelSetting =
  * explicit opt-out ("disabled"), distinct from unset ("auto"); the agent-level
  * value wins over defaults even when it is the empty string.
  */
-export function readUtilityModelSetting(cfg: OpenClawConfig, agentId: string): UtilityModelSetting {
+export function readUtilityModelSetting(cfg: AforaConfig, agentId: string): UtilityModelSetting {
   const value =
     resolveAgentConfig(cfg, agentId)?.utilityModel ?? cfg.agents?.defaults?.utilityModel;
   if (value === undefined) {
@@ -36,7 +36,7 @@ export function readUtilityModelSetting(cfg: OpenClawConfig, agentId: string): U
  * without a snapshot simply get no derived default.
  */
 function resolveProviderDefaultUtilityModelRef(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: string;
   metadataSnapshot?: PluginMetadataSnapshot;
 }): string | undefined {
@@ -70,7 +70,7 @@ function resolveProviderDefaultUtilityModelRef(params: {
  * provider and auth owner.
  */
 export function resolveUtilityModelRefForAgent(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   /** Pass when the caller already resolved the primary provider. */
   primaryProvider?: string;

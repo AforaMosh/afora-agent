@@ -7,9 +7,9 @@ scenario:
   coverage:
     primary:
       - cli.channel-picker
-  objective: Drive the real interactive channel picker in an isolated OpenClaw home and verify its persisted configuration.
+  objective: Drive the real interactive channel picker in an isolated Afora home and verify its persisted configuration.
   successCriteria:
-    - The producer launches the compiled OpenClaw CLI through a real PTY with an isolated OPENCLAW_HOME.
+    - The producer launches the compiled Afora CLI through a real PTY with an isolated AFORA_HOME.
     - The interaction selects Telegram, enters a test token, finishes the picker, and exits successfully.
     - The written config enables the Telegram plugin and channel, preserves the default group mention gate, and records configure wizard metadata.
     - Missing final output, a stalled picker, non-zero exit, or mismatched configuration produces failed evidence.

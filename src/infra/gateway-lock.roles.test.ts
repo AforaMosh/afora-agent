@@ -12,7 +12,7 @@ import {
 } from "./gateway-lock.js";
 
 const fixtureRootTracker = createSuiteTempRootTracker({
-  prefix: "openclaw-gateway-lock-workshop-",
+  prefix: "afora-gateway-lock-workshop-",
 });
 let fixtureRoot = "";
 
@@ -29,15 +29,15 @@ describe("Gateway lock roles", () => {
   it("keeps a live Workshop apply owner while Gateway startup races", async () => {
     const stateDir = await fixtureRootTracker.make("case");
     const lockDir = path.join(fixtureRoot, "__locks");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     await fs.writeFile(configPath, "{}", "utf8");
     const env = {
       ...process.env,
-      OPENCLAW_ALLOW_MULTI_GATEWAY: "1",
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_ALLOW_MULTI_GATEWAY: "1",
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_STATE_DIR: stateDir,
     };
-    const readProcessCmdline = () => ["openclaw", "skills", "workshop", "apply", "proposal-id"];
+    const readProcessCmdline = () => ["afora", "skills", "workshop", "apply", "proposal-id"];
     const lock = await acquireGatewayLock({
       allowInTests: true,
       env,
@@ -86,12 +86,12 @@ describe("Gateway lock roles", () => {
   it("keeps an explicit Gateway role visible to active-port discovery", async () => {
     const stateDir = await fixtureRootTracker.make("gateway-role");
     const lockDir = path.join(fixtureRoot, "__locks");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     await fs.writeFile(configPath, "{}", "utf8");
     const env = {
       ...process.env,
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_STATE_DIR: stateDir,
     };
     const lock = await acquireGatewayLock({
       allowInTests: true,
@@ -115,7 +115,7 @@ describe("Gateway lock roles", () => {
           env,
           lockDir,
           platform: "darwin",
-          readProcessCmdline: () => ["openclaw-gateway"],
+          readProcessCmdline: () => ["afora-gateway"],
           readProcessStartTime: () => null,
         }),
       ).resolves.toBe(28789);
@@ -127,14 +127,14 @@ describe("Gateway lock roles", () => {
   it("keeps agent-embedded ownership distinct from a running Gateway", async () => {
     const stateDir = await fixtureRootTracker.make("agent-embedded-role");
     const lockDir = path.join(fixtureRoot, "__locks");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     await fs.writeFile(configPath, "{}", "utf8");
     const env = {
       ...process.env,
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_STATE_DIR: stateDir,
     };
-    const readProcessCmdline = () => ["openclaw", "agent", "--local", "--message", "hello"];
+    const readProcessCmdline = () => ["afora", "agent", "--local", "--message", "hello"];
     const lock = await acquireGatewayLock({
       allowInTests: true,
       env,
@@ -174,7 +174,7 @@ describe("Gateway lock roles", () => {
           timeoutMs: 15,
         }),
       ).rejects.toThrow(
-        `another embedded OpenClaw state writer is active (pid ${process.pid}); lock timeout after 15ms`,
+        `another embedded Afora state writer is active (pid ${process.pid}); lock timeout after 15ms`,
       );
     } finally {
       await lock.release();

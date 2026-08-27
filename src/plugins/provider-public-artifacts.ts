@@ -1,6 +1,6 @@
 import path from "node:path";
 // Extracts provider public artifacts from plugin metadata.
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import { resolveBundledPluginsDir } from "./bundled-dir.js";
 import {
   loadPluginManifestRegistryCore,

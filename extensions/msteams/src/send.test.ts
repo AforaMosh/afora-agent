@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promi
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 import { deleteMessageMSTeams, editMessageMSTeams, sendMessageMSTeams } from "./send.js";
 
 const mockState = vi.hoisted(() => ({
@@ -28,18 +28,18 @@ const mockState = vi.hoisted(() => ({
 }));
 
 // `loadOutboundMediaFromUrl` is re-exported from msteams's runtime-api which
-// pulls from `openclaw/plugin-sdk/outbound-media` (post-migration). Mock the
+// pulls from `afora/plugin-sdk/outbound-media` (post-migration). Mock the
 // canonical source so the re-export carries our stub through.
-vi.mock("openclaw/plugin-sdk/outbound-media", () => ({
+vi.mock("afora-agent/plugin-sdk/outbound-media", () => ({
   loadOutboundMediaFromUrl: mockState.loadOutboundMediaFromUrl,
 }));
 
-vi.mock("openclaw/plugin-sdk/markdown-table-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/markdown-table-runtime", () => ({
   resolveMarkdownTableMode: mockState.resolveMarkdownTableMode,
 }));
 
-vi.mock("openclaw/plugin-sdk/text-chunking", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/text-chunking")>();
+vi.mock("afora-agent/plugin-sdk/text-chunking", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/text-chunking")>();
   return {
     ...actual,
     convertMarkdownTables: mockState.convertMarkdownTables,
@@ -218,8 +218,8 @@ function firstObjectArg(mock: MockWithCalls): Record<string, unknown> {
 }
 
 async function useActualOutboundMediaLoader() {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/outbound-media")>(
-    "openclaw/plugin-sdk/outbound-media",
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/outbound-media")>(
+    "afora-agent/plugin-sdk/outbound-media",
   );
   mockState.loadOutboundMediaFromUrl.mockImplementation(actual.loadOutboundMediaFromUrl);
 }
@@ -280,7 +280,7 @@ describe("sendMessageMSTeams", () => {
     });
 
     const result = await sendMessageMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: "conversation:19:conversation@thread.tacv2",
       text: "hello",
       mediaUrl: "file:///tmp/agent-workspace/inline.png",
@@ -317,7 +317,7 @@ describe("sendMessageMSTeams", () => {
     { name: "reader-free gateway authority", hostReader: false },
   ])("loads workspace-relative media through $name", async ({ hostReader }) => {
     const workspaceDir = await realpath(
-      await mkdtemp(join(tmpdir(), "openclaw-msteams-workspace-")),
+      await mkdtemp(join(tmpdir(), "afora-msteams-workspace-")),
     );
     const filePath = join(workspaceDir, "report.txt");
     const fileContents = Buffer.from("approved Teams attachment");
@@ -334,7 +334,7 @@ describe("sendMessageMSTeams", () => {
       await useActualOutboundMediaLoader();
 
       await sendMessageMSTeams({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         to: "conversation:19:conversation@thread.tacv2",
         text: "approved attachment",
         mediaUrl: "report.txt",
@@ -362,7 +362,7 @@ describe("sendMessageMSTeams", () => {
   });
 
   it("rejects workspace-relative attachments outside host-approved roots", async () => {
-    const sandbox = await realpath(await mkdtemp(join(tmpdir(), "openclaw-msteams-roots-")));
+    const sandbox = await realpath(await mkdtemp(join(tmpdir(), "afora-msteams-roots-")));
     const workspaceDir = join(sandbox, "workspace");
     const approvedReader = vi.fn(async (candidate: string) => await readFile(candidate));
 
@@ -373,7 +373,7 @@ describe("sendMessageMSTeams", () => {
 
       await expect(
         sendMessageMSTeams({
-          cfg: {} as OpenClawConfig,
+          cfg: {} as AforaConfig,
           to: "conversation:19:conversation@thread.tacv2",
           text: "outside attachment",
           mediaUrl: "../outside.txt",
@@ -393,7 +393,7 @@ describe("sendMessageMSTeams", () => {
 
     await expect(
       sendMessageMSTeams({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         to: "conversation:19:conversation@thread.tacv2",
         text: "private attachment",
         mediaUrl: "report.txt",
@@ -415,7 +415,7 @@ describe("sendMessageMSTeams", () => {
     mockState.convertMarkdownTables.mockReturnValue("hello");
 
     const result = await sendMessageMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: "conversation:19:conversation@thread.tacv2",
       text: "hello",
     });
@@ -454,7 +454,7 @@ describe("sendMessageMSTeams", () => {
     });
 
     await sendMessageMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: "conversation:19:channel@thread.tacv2",
       text: "threaded reply",
     });
@@ -481,7 +481,7 @@ describe("sendMessageMSTeams", () => {
     });
 
     await sendMessageMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: "conversation:19:channel@thread.tacv2",
       text: "top-level reply",
     });
@@ -506,7 +506,7 @@ describe("sendMessageMSTeams", () => {
     });
 
     await sendMessageMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: `conversation:${graphConversationId}`,
       text: "report",
       mediaUrl: "https://example.com/report.pdf",
@@ -534,7 +534,7 @@ describe("sendMessageMSTeams", () => {
 
     await expect(
       sendMessageMSTeams({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         to: "conversation:19:group-id@thread.v2",
         text: "report",
         mediaUrl: "https://example.com/report.pdf",
@@ -577,7 +577,7 @@ describe("editMessageMSTeams", () => {
     });
 
     const result = await editMessageMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: "conversation:19:conversation@thread.tacv2",
       activityId: "activity-123",
       text: "Updated message text",
@@ -606,7 +606,7 @@ describe("editMessageMSTeams", () => {
 
     await expect(
       editMessageMSTeams({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         to: "conversation:19:conversation@thread.tacv2",
         activityId: "activity-123",
         text: "Updated text",
@@ -642,7 +642,7 @@ describe("deleteMessageMSTeams", () => {
     });
 
     const result = await deleteMessageMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: "conversation:19:conversation@thread.tacv2",
       activityId: "activity-456",
     });
@@ -665,7 +665,7 @@ describe("deleteMessageMSTeams", () => {
 
     await expect(
       deleteMessageMSTeams({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         to: "conversation:19:conversation@thread.tacv2",
         activityId: "activity-456",
       }),
@@ -693,7 +693,7 @@ describe("deleteMessageMSTeams", () => {
     });
 
     await deleteMessageMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: "conversation:19:conv@thread.tacv2",
       activityId: "activity-789",
     });

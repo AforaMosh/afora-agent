@@ -1,11 +1,11 @@
 // Migrate Hermes tests cover config plugin behavior.
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/provider-auth";
+import type { AforaConfig } from "afora-agent/plugin-sdk/provider-auth";
 import {
-  resolvePreferredOpenClawTmpDir,
+  resolvePreferredAforaTmpDir,
   tempWorkspace,
   type TempWorkspace,
-} from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/temp-path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildHermesMigrationProvider } from "./provider.js";
 import { makeConfigRuntime, makeContext, writeFile } from "./test/provider-helpers.js";
@@ -40,8 +40,8 @@ async function makeHermesPaths(sourceName = "hermes") {
 describe("Hermes migration config mapping", () => {
   beforeEach(async () => {
     testWorkspace = await tempWorkspace({
-      rootDir: resolvePreferredOpenClawTmpDir(),
-      prefix: "openclaw-migrate-hermes-",
+      rootDir: resolvePreferredAforaTmpDir(),
+      prefix: "afora-migrate-hermes-",
     });
   });
 
@@ -153,7 +153,7 @@ describe("Hermes migration config mapping", () => {
     const { source, workspaceDir, stateDir } = await makeHermesPaths();
     const config = {
       agents: { defaults: { workspace: workspaceDir } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     await writeFile(
       path.join(source, "config.yaml"),
       [
@@ -203,7 +203,7 @@ describe("Hermes migration config mapping", () => {
     const { source, workspaceDir, stateDir } = await makeHermesPaths();
     const config = {
       agents: { defaults: { workspace: workspaceDir } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     await writeFile(
       path.join(source, "config.yaml"),
       [
@@ -603,7 +603,7 @@ describe("Hermes migration config mapping", () => {
     expect(providers?.custom?.api).toBe("anthropic-messages");
   });
 
-  it("keeps built-in Hermes provider overrides on OpenClaw's canonical provider IDs", async () => {
+  it("keeps built-in Hermes provider overrides on Afora's canonical provider IDs", async () => {
     const { root, source } = await makeHermesPaths();
     await writeFile(
       path.join(source, "config.yaml"),
@@ -1051,7 +1051,7 @@ describe("Hermes migration config mapping", () => {
     expect(providers?.moonshot?.baseUrl).toBe("https://api.moonshot.cn/v1");
   });
 
-  it("maps the Hermes MiniMax China route to OpenClaw's canonical provider", async () => {
+  it("maps the Hermes MiniMax China route to Afora's canonical provider", async () => {
     const { root, source } = await makeHermesPaths();
     await writeFile(
       path.join(source, "config.yaml"),

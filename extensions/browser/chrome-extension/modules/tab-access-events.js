@@ -12,7 +12,7 @@ export function registerTabAccessEvents({
   scheduleTabsSync,
   detachDebugger,
   pauseTab,
-  removeTabFromOpenClawGroup,
+  removeTabFromAforaGroup,
   runAccessMutation,
 }) {
   let groupEventRevision = 0;
@@ -52,7 +52,7 @@ export function registerTabAccessEvents({
           await pauseTab(source.tabId);
         } else {
           policy.invalidateTab(source.tabId);
-          await removeTabFromOpenClawGroup(source.tabId);
+          await removeTabFromAforaGroup(source.tabId);
           scheduleTabsSync();
         }
       } finally {

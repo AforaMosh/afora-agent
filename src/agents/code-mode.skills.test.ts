@@ -1,11 +1,11 @@
 /** Tests Code Mode skills and read tools. */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Skill } from "../skills/loading/skill-contract.js";
 import { resolveSkillsPrompt } from "../skills/loading/workspace-skill-prompt.js";
 import { createFixtureSkillEntry } from "../skills/test-support/test-helpers.js";
-import { createOpenClawReadTool } from "./agent-tools.read.js";
+import { createAforaReadTool } from "./agent-tools.read.js";
 import { resolveCodeModeSkills } from "./code-mode-skills.js";
 import { applyCodeModeCatalog } from "./code-mode.js";
 import {
@@ -148,14 +148,14 @@ describe("Code Mode skills and read tools", () => {
 
   it("returns ordinary read content through tools.callValue", async () => {
     const { config, catalogRef, tools: codeModeTools } = createCodeModeHarness();
-    const read = createOpenClawReadTool(
+    const read = createAforaReadTool(
       createReadTool("/workspace", {
         operations: {
           access: async () => {},
           detectImageMimeType: async () => null,
           readFile: async () => Buffer.from("ordinary file content"),
         },
-      }) as unknown as Parameters<typeof createOpenClawReadTool>[0],
+      }) as unknown as Parameters<typeof createAforaReadTool>[0],
     );
     applyCodeModeCatalog({
       tools: [...codeModeTools, read],
@@ -169,7 +169,7 @@ describe("Code Mode skills and read tools", () => {
     const details = await runUntilCompleted({
       execTool: expectDefined(codeModeTools[0], "codeModeTools[0] test invariant"),
       waitTool: expectDefined(codeModeTools[1], "codeModeTools[1] test invariant"),
-      code: `return await tools.callValue("openclaw:core:read", { path: "notes.txt" });`,
+      code: `return await tools.callValue("afora:core:read", { path: "notes.txt" });`,
     });
 
     expect(details.status).toBe("completed");

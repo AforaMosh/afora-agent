@@ -7,7 +7,7 @@ type ScopedToolExecutionValidator = {
 };
 
 const executionValidators = new AsyncLocalStorage<ScopedToolExecutionValidator>();
-const INTERNAL_TOOL_EXECUTION_VALIDATION = Symbol.for("openclaw.internalToolExecutionValidation");
+const INTERNAL_TOOL_EXECUTION_VALIDATION = Symbol.for("afora.internalToolExecutionValidation");
 
 type InternalToolExecutionValidation = {
   toolCallId: string;

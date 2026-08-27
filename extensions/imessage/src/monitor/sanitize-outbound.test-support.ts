@@ -1,5 +1,5 @@
 // Imessage test support covers sanitize outbound plugin behavior.
-import { sanitizeForPlainText } from "openclaw/plugin-sdk/channel-outbound";
+import { sanitizeForPlainText } from "afora-agent/plugin-sdk/channel-outbound";
 import { describe, expect, it } from "vitest";
 import {
   protectIMessageFencedRoleMarkers,
@@ -72,10 +72,10 @@ describe("sanitizeOutboundText", () => {
     "<relevant_memories< previous_response>noise< / previous_response>>hidden</relevant_memories< previous_response>noise< / previous_response>>",
     "<function_response< system-reminder>noise< / system-reminder>>hidden</function_response< system-reminder>noise< / system-reminder>>",
     "<thi<details><summary>noise</summary></details>nking>hidden</thi<details>nking>",
-    "<thi<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>noise<<<END_OPENCLAW_INTERNAL_CONTEXT>>>nking>hidden</thi<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>noise<<<END_OPENCLAW_INTERNAL_CONTEXT>>>nking>",
-    "<thinking<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>noise<<<END_OPENCLAW_INTERNAL_CONTEXT>>>>hidden</thinking<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>noise<<<END_OPENCLAW_INTERNAL_CONTEXT>>>>",
-    "<relevant_<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>noise<<<END_OPENCLAW_INTERNAL_CONTEXT>>>memories>hidden</relevant_<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>noise<<<END_OPENCLAW_INTERNAL_CONTEXT>>>memories>",
-    "<function_response<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>noise<<<END_OPENCLAW_INTERNAL_CONTEXT>>>>hidden</function_response<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>noise<<<END_OPENCLAW_INTERNAL_CONTEXT>>>>",
+    "<thi<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>noise<<<END_AFORA_INTERNAL_CONTEXT>>>nking>hidden</thi<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>noise<<<END_AFORA_INTERNAL_CONTEXT>>>nking>",
+    "<thinking<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>noise<<<END_AFORA_INTERNAL_CONTEXT>>>>hidden</thinking<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>noise<<<END_AFORA_INTERNAL_CONTEXT>>>>",
+    "<relevant_<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>noise<<<END_AFORA_INTERNAL_CONTEXT>>>memories>hidden</relevant_<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>noise<<<END_AFORA_INTERNAL_CONTEXT>>>memories>",
+    "<function_response<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>noise<<<END_AFORA_INTERNAL_CONTEXT>>>>hidden</function_response<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>noise<<<END_AFORA_INTERNAL_CONTEXT>>>>",
   ])("rejects ambiguous nested HTML before any destructive sanitization", (source) => {
     expect(() => sanitizeIMessageFinalOutboundText(source)).toThrow(
       "iMessage outbound ambiguous nested HTML is not allowed",
@@ -89,7 +89,7 @@ describe("sanitizeOutboundText", () => {
       "std::vector<std::vector<int>>",
       "t<int>",
       "```cpp\nif(a<b && c<d)\nstd::vector<std::vector<int>>\n```",
-      "ordinary <<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>> mention without an ending marker",
+      "ordinary <<<BEGIN_AFORA_INTERNAL_CONTEXT>>> mention without an ending marker",
       `<strong title="<previous_response>">bold</strong> <del data-note='<system-reminder>'>strike</del>`,
       `<strong title="<tag>">bold</strong> <del data-note='s>'>strike</del>`,
       `<strong title="b>">bold</strong> <del data-note='s>'>strike</del>`,
@@ -111,7 +111,7 @@ describe("sanitizeOutboundText", () => {
     "< SYSTEM-REMINDER data-origin='runtime'>PRIVATE_RUNTIME_SECRET< / SYSTEM-REMINDER >",
     "<previous_response>PRIVATE_RUNTIME_SECRET</previous_response>",
     "< previous_response data-origin='runtime'>PRIVATE_RUNTIME_SECRET< / previous_response >",
-    "<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>PRIVATE_RUNTIME_SECRET<<<END_OPENCLAW_INTERNAL_CONTEXT>>>",
+    "<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>PRIVATE_RUNTIME_SECRET<<<END_AFORA_INTERNAL_CONTEXT>>>",
   ])("removes private runtime blocks and their payload before role protection", (hidden) => {
     for (const source of [hidden, `\`${hidden}\``, `\`\`\`xml\n${hidden}\n\`\`\``]) {
       const sanitized = sanitizeIMessageFinalOutboundText(`${source}\nvisible companion`);
@@ -233,7 +233,7 @@ describe("sanitizeOutboundText", () => {
     );
     expect(
       sanitizeIMessageFinalOutboundText(
-        "before <<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>private<<<END_OPENCLAW_INTERNAL_CONTEXT>>> after",
+        "before <<<BEGIN_AFORA_INTERNAL_CONTEXT>>>private<<<END_AFORA_INTERNAL_CONTEXT>>> after",
       ).text,
     ).toBe("before  after");
   });
@@ -327,7 +327,7 @@ describe("sanitizeOutboundText", () => {
     const source = [
       "<system-reminder>\ue000</system-reminder>",
       "<previous_response>\ue001</previous_response>",
-      "<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>\ue002<<<END_OPENCLAW_INTERNAL_CONTEXT>>>",
+      "<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>\ue002<<<END_AFORA_INTERNAL_CONTEXT>>>",
       "```yaml",
       "user:",
       "system:",

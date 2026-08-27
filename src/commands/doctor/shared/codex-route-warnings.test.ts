@@ -1,10 +1,10 @@
 // Codex route warning tests cover doctor diagnostics for Codex route configuration.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveAgentHarnessPolicy } from "../../../agents/harness/policy.js";
 import type { SessionEntry } from "../../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 
 const mocks = vi.hoisted(() => ({
   ensureAuthProfileStore: vi.fn(),
@@ -62,7 +62,7 @@ type CodexRouteRepairOptions = Omit<
 >;
 
 // These fixtures intentionally exercise raw legacy shapes that current config validation rejects.
-const asLegacyConfig = (cfg: unknown): OpenClawConfig => cfg as OpenClawConfig;
+const asLegacyConfig = (cfg: unknown): AforaConfig => cfg as AforaConfig;
 
 function collectCodexRouteWarnings(cfg: unknown, options: CodexRouteWarningOptions = {}): string[] {
   return collectCodexRouteWarningsUnderTest({ cfg: asLegacyConfig(cfg), ...options });
@@ -80,7 +80,7 @@ type CodexRouteRepairResult = ReturnType<typeof maybeRepairCodexRoutes>;
 type AgentRuntime = ReturnType<typeof resolveAgentHarnessPolicy>["runtime"];
 
 function expectAgentRuntime(
-  config: OpenClawConfig,
+  config: AforaConfig,
   expected: AgentRuntime,
   options: { provider?: string; modelId?: string; agentId?: string } = {},
 ) {
@@ -155,7 +155,7 @@ function legacyRouteWarning(...routes: string[]): string {
   return [
     "- Legacy `codex/*` and `openai-codex/*` model refs should be rewritten to `openai/*`.",
     ...routes,
-    "- Run `openclaw doctor --fix`: it rewrites configured model refs and stale sessions to `openai/*`, moves Codex intent to provider/model runtime policy, and clears old whole-agent runtime pins.",
+    "- Run `afora doctor --fix`: it rewrites configured model refs and stale sessions to `openai/*`, moves Codex intent to provider/model runtime policy, and clears old whole-agent runtime pins.",
   ].join("\n");
 }
 
@@ -163,13 +163,13 @@ function disabledCodexPluginWarning(...routes: string[]): string {
   return [
     "- Codex runtime is selected, but the Codex plugin is disabled.",
     ...routes,
-    "- Enable plugins.entries.codex and plugin loading, and remove `codex` from plugins.deny; or set the affected OpenAI models to an OpenClaw runtime policy.",
+    "- Enable plugins.entries.codex and plugin loading, and remove `codex` from plugins.deny; or set the affected OpenAI models to an Afora runtime policy.",
   ].join("\n");
 }
 
 function codexCompactionWarning(...details: string[]): string {
   return [
-    "- Codex runtime uses native server-side compaction and ignores OpenClaw compaction summarizer overrides.",
+    "- Codex runtime uses native server-side compaction and ignores Afora compaction summarizer overrides.",
     ...details,
   ].join("\n");
 }
@@ -277,12 +277,12 @@ describe("collectCodexRouteWarnings", () => {
     ]);
   });
 
-  it("ignores OPENCLAW_AGENT_RUNTIME when reporting legacy model refs", () => {
+  it("ignores AFORA_AGENT_RUNTIME when reporting legacy model refs", () => {
     const warnings = collectCodexRouteWarnings(
       {
         agents: { defaults: { model: "openai-codex/gpt-5.5" } },
       },
-      { env: { OPENCLAW_AGENT_RUNTIME: "codex" } },
+      { env: { AFORA_AGENT_RUNTIME: "codex" } },
     );
 
     expect(warnings).toStrictEqual([
@@ -357,7 +357,7 @@ describe("collectCodexRouteWarnings", () => {
             config: {
               appServer: {
                 command:
-                  "node C:\\Users\\me\\.openclaw\\npm\\node_modules\\@openai\\codex\\bin\\codex.js",
+                  "node C:\\Users\\me\\.afora\\npm\\node_modules\\@openai\\codex\\bin\\codex.js",
               },
             },
           },
@@ -368,13 +368,13 @@ describe("collectCodexRouteWarnings", () => {
     expect(warnings).toStrictEqual([
       [
         "- Codex app-server command override includes inline arguments.",
-        '- plugins.entries.codex.config.appServer.command: "node C:\\Users\\me\\.openclaw\\npm\\node_modules\\@openai\\codex\\bin\\codex.js" starts with "node" and embeds "C:\\Users\\me\\.openclaw\\npm\\node_modules\\@openai\\codex\\bin\\codex.js". The command field must be only the executable path.',
+        '- plugins.entries.codex.config.appServer.command: "node C:\\Users\\me\\.afora\\npm\\node_modules\\@openai\\codex\\bin\\codex.js" starts with "node" and embeds "C:\\Users\\me\\.afora\\npm\\node_modules\\@openai\\codex\\bin\\codex.js". The command field must be only the executable path.',
         "- Remove the override to use managed Codex startup, or move script/options to plugins.entries.codex.config.appServer.args.",
       ].join("\n"),
       [
-        "- Custom Codex app-server command bypasses OpenClaw's managed exact-version binary.",
+        "- Custom Codex app-server command bypasses Afora's managed exact-version binary.",
         "- plugins.entries.codex.config.appServer.command: Doctor did not execute, inspect, or rewrite this command.",
-        "- Remove the override to use managed Codex startup, or verify the custom binary matches the Codex version bundled with this OpenClaw release.",
+        "- Remove the override to use managed Codex startup, or verify the custom binary matches the Codex version bundled with this Afora release.",
       ].join("\n"),
     ]);
   });
@@ -420,7 +420,7 @@ describe("collectCodexRouteWarnings", () => {
       appServer: { command },
     });
     expect(repaired.warnings.join("\n")).toContain(
-      "Custom Codex app-server command bypasses OpenClaw's managed exact-version binary.",
+      "Custom Codex app-server command bypasses Afora's managed exact-version binary.",
     );
     expect(repaired.warnings.join("\n")).toContain("agents.defaults.params.temperature");
     expect(repaired.warnings.join("\n")).toContain(
@@ -452,9 +452,9 @@ describe("collectCodexRouteWarnings", () => {
               },
               agentRuntime: { id: "codex" },
             },
-            "openai/gpt-5.6-openclaw": {
+            "openai/gpt-5.6-afora": {
               params: { fastMode: true, serviceTier: "priority" },
-              agentRuntime: { id: "openclaw" },
+              agentRuntime: { id: "afora" },
             },
           },
         },
@@ -462,7 +462,7 @@ describe("collectCodexRouteWarnings", () => {
           coder: { params: { topP: 0.8 } },
           worker: {
             models: {
-              "openai/gpt-5.6-sol": { agentRuntime: { id: "openclaw" } },
+              "openai/gpt-5.6-sol": { agentRuntime: { id: "afora" } },
             },
           },
         },
@@ -481,7 +481,7 @@ describe("collectCodexRouteWarnings", () => {
     );
     expect(result.warnings.join("\n")).toContain("agents.defaults.params.temperature");
     expect(result.warnings.join("\n")).toContain("agents.entries.coder.params.topP");
-    expect(result.warnings.join("\n")).not.toContain("gpt-5.6-openclaw.params.serviceTier");
+    expect(result.warnings.join("\n")).not.toContain("gpt-5.6-afora.params.serviceTier");
   });
 
   it("canonicalizes and repairs a redundant legacy tier in one pass", () => {
@@ -554,7 +554,7 @@ describe("collectCodexRouteWarnings", () => {
     const cfg = {
       plugins: DISABLED_CODEX_PLUGIN_CONFIG,
       agents: { defaults: { model: { primary: "openai/gpt-5.4-nano" } } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expect(
       collectCodexRouteWarnings(cfg, {
@@ -572,7 +572,7 @@ describe("collectCodexRouteWarnings", () => {
     ]);
   });
 
-  it("warns when Codex runtime has OpenClaw compaction summarizer overrides", () => {
+  it("warns when Codex runtime has Afora compaction summarizer overrides", () => {
     const warnings = collectCodexRouteWarnings({
       agents: {
         defaults: {
@@ -586,7 +586,7 @@ describe("collectCodexRouteWarnings", () => {
       codexCompactionWarning(
         "- agents.defaults.compaction.model: openai/gpt-5.4 is ignored while this agent uses Codex runtime.",
         "- agents.defaults.compaction.provider: custom-summary is ignored while this agent uses Codex runtime.",
-        "- Run `openclaw doctor --fix`: it removes unsupported Codex compaction overrides.",
+        "- Run `afora doctor --fix`: it removes unsupported Codex compaction overrides.",
       ),
     ]);
   });
@@ -604,7 +604,7 @@ describe("collectCodexRouteWarnings", () => {
       codexCompactionWarning(
         "- agents.defaults.compaction.model: openai/gpt-5.4 is ignored while this agent uses Codex runtime.",
         "- agents.defaults.compaction.provider: custom-summary is ignored while this agent uses Codex runtime.",
-        "- Run `openclaw doctor --fix`: it removes unsupported Codex compaction overrides.",
+        "- Run `afora doctor --fix`: it removes unsupported Codex compaction overrides.",
       ),
     ]);
   });
@@ -624,7 +624,7 @@ describe("collectCodexRouteWarnings", () => {
       codexCompactionWarning(
         "- agents.defaults.compaction.model: openai/gpt-5.4 is ignored while this agent uses Codex runtime.",
         "- agents.defaults.compaction.provider: custom-summary is ignored while this agent uses Codex runtime.",
-        "- Run `openclaw doctor --fix`: it removes unsupported Codex compaction overrides.",
+        "- Run `afora doctor --fix`: it removes unsupported Codex compaction overrides.",
       ),
     ]);
   });
@@ -998,7 +998,7 @@ describe("collectCodexRouteWarnings", () => {
     const result = maybeRepairCodexRoutes({
       models: {
         providers: {
-          openai: { baseUrl: "https://proxy.example.test/v1", agentRuntime: { id: "openclaw" } },
+          openai: { baseUrl: "https://proxy.example.test/v1", agentRuntime: { id: "afora" } },
         },
       },
       agents: {
@@ -1255,7 +1255,7 @@ describe("collectCodexRouteWarnings", () => {
         ],
       },
       hooks: { gmail: { model: "openai-codex/gpt-5.4" } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expect(collectCodexRouteWarnings(cfg)).toStrictEqual([
       legacyRouteWarning("- hooks.gmail.model: openai-codex/gpt-5.4 should become openai/gpt-5.4."),
@@ -1395,7 +1395,7 @@ describe("collectCodexRouteWarnings", () => {
             id: "worker",
             model: "anthropic/claude-sonnet-4-6",
             models: {
-              "anthropic/claude-sonnet-4-6": { agentRuntime: { id: "openclaw" } },
+              "anthropic/claude-sonnet-4-6": { agentRuntime: { id: "afora" } },
             },
           },
         ],
@@ -1594,14 +1594,14 @@ describe("collectCodexRouteWarnings", () => {
         list: [{ id: "worker", model: "anthropic/claude-sonnet-4-6" }],
       },
       hooks: { gmail: { model: "openai-codex/gpt-5.4" } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expect(collectCodexRouteWarnings(cfg)).toStrictEqual([
       legacyRouteWarning("- hooks.gmail.model: openai-codex/gpt-5.4 should become openai/gpt-5.4."),
       codexCompactionWarning(
         "- agents.defaults.compaction.model: openai/gpt-5.4 is ignored while this agent uses Codex runtime.",
         "- agents.defaults.compaction.provider: custom-summary is ignored while this agent uses Codex runtime.",
-        "- Run `openclaw doctor --fix`: it removes unsupported Codex compaction overrides.",
+        "- Run `afora doctor --fix`: it removes unsupported Codex compaction overrides.",
       ),
     ]);
 
@@ -1689,7 +1689,7 @@ describe("collectCodexRouteWarnings", () => {
       ),
       codexCompactionWarning(
         "- agents.list.codex.compaction.model: openai/gpt-5.4 is ignored while this agent uses Codex runtime.",
-        "- Run `openclaw doctor --fix`: it removes unsupported Codex compaction overrides.",
+        "- Run `afora doctor --fix`: it removes unsupported Codex compaction overrides.",
       ),
     ]);
   });
@@ -1726,7 +1726,7 @@ describe("collectCodexRouteWarnings", () => {
         providers: {
           openai: {
             baseUrl: "https://api.openai.com/v1",
-            agentRuntime: { id: "openclaw" },
+            agentRuntime: { id: "afora" },
             models: [],
           },
         },
@@ -1749,7 +1749,7 @@ describe("collectCodexRouteWarnings", () => {
       provider: "custom-summary",
     });
     expect(result.cfg.agents?.defaults?.models?.["openai/gpt-5.4"]).toBeUndefined();
-    expectAgentRuntime(result.cfg, "openclaw");
+    expectAgentRuntime(result.cfg, "afora");
   });
 
   it("repairs configured Codex model refs to canonical OpenAI refs with model-scoped Codex runtime", () => {
@@ -2199,7 +2199,7 @@ describe("collectCodexRouteWarnings", () => {
       defaults: {
         model: "anthropic/claude-sonnet-4-6",
         models: {
-          "openai/gpt-5.5": { agentRuntime: { id: "openclaw" } },
+          "openai/gpt-5.5": { agentRuntime: { id: "afora" } },
         },
       },
       list: [
@@ -2226,7 +2226,7 @@ describe("collectCodexRouteWarnings", () => {
             id: "",
             model: "gpt-5.5",
             models: {
-              "openai/gpt-5.5": { agentRuntime: { id: "openclaw" } },
+              "openai/gpt-5.5": { agentRuntime: { id: "afora" } },
             },
           },
         ],
@@ -2257,29 +2257,29 @@ describe("collectCodexRouteWarnings", () => {
 
   itAddsCodexToAllowlist("adds Codex to plugin allowlists when re-enabling Codex", false);
 
-  it("keeps the Codex plugin disabled when OpenAI routes explicitly use the OpenClaw runtime", () => {
+  it("keeps the Codex plugin disabled when OpenAI routes explicitly use the Afora runtime", () => {
     const result = maybeRepairCodexRoutes({
       plugins: DISABLED_CODEX_PLUGIN_CONFIG,
       models: {
         providers: {
-          openai: { agentRuntime: { id: "openclaw" }, models: [] },
+          openai: { agentRuntime: { id: "afora" }, models: [] },
         },
       },
       agents: { defaults: { model: "gpt-5.5" } },
     });
 
     expectCodexPluginDisabled(result);
-    expectAgentRuntime(result.cfg, "openclaw", { modelId: "gpt-5.5" });
+    expectAgentRuntime(result.cfg, "afora", { modelId: "gpt-5.5" });
   });
 
   itKeepsCodexPluginDisabled(
-    "keeps the Codex plugin disabled when an auth-profiled OpenAI route explicitly uses the OpenClaw runtime",
+    "keeps the Codex plugin disabled when an auth-profiled OpenAI route explicitly uses the Afora runtime",
     {
       agents: {
         defaults: {
           model: "openai/gpt-5.5@work",
           models: {
-            "openai/gpt-5.5": { agentRuntime: { id: "openclaw" } },
+            "openai/gpt-5.5": { agentRuntime: { id: "afora" } },
           },
         },
       },
@@ -2371,13 +2371,13 @@ describe("collectCodexRouteWarnings", () => {
     );
   });
 
-  it("keeps repaired OpenAI refs on Codex runtime even when the OpenAI provider is otherwise OpenClaw/API-key routed", () => {
+  it("keeps repaired OpenAI refs on Codex runtime even when the OpenAI provider is otherwise Afora/API-key routed", () => {
     const result = maybeRepairCodexRoutes({
       models: {
         providers: {
           openai: {
             baseUrl: "https://api.openai.com/v1",
-            agentRuntime: { id: "openclaw" },
+            agentRuntime: { id: "afora" },
             models: [],
           },
         },
@@ -2398,7 +2398,7 @@ describe("collectCodexRouteWarnings", () => {
         providers: {
           openai: {
             baseUrl: "https://api.openai.com/v1",
-            agentRuntime: { id: "openclaw" },
+            agentRuntime: { id: "afora" },
             models: [],
           },
         },
@@ -2418,10 +2418,10 @@ describe("collectCodexRouteWarnings", () => {
     });
     expect(result.cfg.agents?.list?.[1]?.model).toBe("openai/gpt-5.5");
     expect(result.cfg.agents?.list?.[1]?.models?.["openai/gpt-5.5"]?.agentRuntime).toEqual({
-      id: "openclaw",
+      id: "afora",
     });
     expectAgentRuntime(result.cfg, "codex", { modelId: "gpt-5.5" });
-    expectAgentRuntime(result.cfg, "openclaw", { modelId: "gpt-5.5", agentId: "worker" });
+    expectAgentRuntime(result.cfg, "afora", { modelId: "gpt-5.5", agentId: "worker" });
   });
 
   it("preserves inherited default legacy runtime pins for listed-agent legacy refs", () => {
@@ -2429,19 +2429,19 @@ describe("collectCodexRouteWarnings", () => {
       agents: {
         defaults: {
           models: {
-            "openai-codex/gpt-5.4": { agentRuntime: { id: "openclaw" } },
+            "openai-codex/gpt-5.4": { agentRuntime: { id: "afora" } },
           },
         },
         list: [{ id: "worker", model: "openai-codex/gpt-5.4" }],
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
-    expectAgentRuntime(cfg, "openclaw", { provider: "openai-codex", agentId: "worker" });
+    expectAgentRuntime(cfg, "afora", { provider: "openai-codex", agentId: "worker" });
 
     const result = maybeRepairCodexRoutes(cfg);
 
     expect(result.cfg.agents?.defaults?.models?.["openai/gpt-5.4"]?.agentRuntime).toEqual({
-      id: "openclaw",
+      id: "afora",
     });
     expect(result.cfg.agents?.defaults?.models?.["openai-codex/gpt-5.4"]).toBeUndefined();
     expect(result.cfg.agents?.list?.[0]?.model).toBe("openai/gpt-5.4");
@@ -2449,7 +2449,7 @@ describe("collectCodexRouteWarnings", () => {
     expect(result.changes.join("\n")).not.toContain(
       'Set agents.list.worker.models.openai/gpt-5.4.agentRuntime.id to "codex"',
     );
-    expectAgentRuntime(result.cfg, "openclaw", { agentId: "worker" });
+    expectAgentRuntime(result.cfg, "afora", { agentId: "worker" });
   });
 
   it("preserves listed-agent legacy model-map runtime pins while repairing listed-agent refs", () => {
@@ -2460,26 +2460,26 @@ describe("collectCodexRouteWarnings", () => {
             id: "worker",
             model: "openai-codex/gpt-5.4",
             models: {
-              "openai-codex/gpt-5.4": { agentRuntime: { id: "openclaw" } },
+              "openai-codex/gpt-5.4": { agentRuntime: { id: "afora" } },
             },
           },
         ],
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
-    expectAgentRuntime(cfg, "openclaw", { provider: "openai-codex", agentId: "worker" });
+    expectAgentRuntime(cfg, "afora", { provider: "openai-codex", agentId: "worker" });
 
     const result = maybeRepairCodexRoutes(cfg);
 
     expect(result.cfg.agents?.list?.[0]?.model).toBe("openai/gpt-5.4");
     expect(result.cfg.agents?.list?.[0]?.models?.["openai/gpt-5.4"]?.agentRuntime).toEqual({
-      id: "openclaw",
+      id: "afora",
     });
     expect(result.cfg.agents?.list?.[0]?.models?.["openai-codex/gpt-5.4"]).toBeUndefined();
     expect(result.changes.join("\n")).not.toContain(
       'Set agents.list.worker.models.openai/gpt-5.4.agentRuntime.id to "codex"',
     );
-    expectAgentRuntime(result.cfg, "openclaw", { agentId: "worker" });
+    expectAgentRuntime(result.cfg, "afora", { agentId: "worker" });
   });
 
   it("preserves inherited default wildcard runtime pins for listed-agent legacy refs", () => {
@@ -2487,19 +2487,19 @@ describe("collectCodexRouteWarnings", () => {
       agents: {
         defaults: {
           models: {
-            "openai-codex/*": { agentRuntime: { id: "openclaw" } },
+            "openai-codex/*": { agentRuntime: { id: "afora" } },
           },
         },
         list: [{ id: "worker", model: "openai-codex/gpt-5.4" }],
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
-    expectAgentRuntime(cfg, "openclaw", { provider: "openai-codex", agentId: "worker" });
+    expectAgentRuntime(cfg, "afora", { provider: "openai-codex", agentId: "worker" });
 
     const result = maybeRepairCodexRoutes(cfg);
 
     expect(result.cfg.agents?.defaults?.models?.["openai/*"]?.agentRuntime).toEqual({
-      id: "openclaw",
+      id: "afora",
     });
     expect(result.cfg.agents?.defaults?.models?.["openai-codex/*"]).toBeUndefined();
     expect(result.cfg.agents?.list?.[0]?.model).toBe("openai/gpt-5.4");
@@ -2507,32 +2507,32 @@ describe("collectCodexRouteWarnings", () => {
     expect(result.changes.join("\n")).not.toContain(
       'Set agents.list.worker.models.openai/gpt-5.4.agentRuntime.id to "codex"',
     );
-    expectAgentRuntime(result.cfg, "openclaw", { agentId: "worker" });
+    expectAgentRuntime(result.cfg, "afora", { agentId: "worker" });
   });
 
   it("preserves provider-level legacy runtime pins while repairing default legacy refs", () => {
     const cfg = {
       models: {
         providers: {
-          "openai-codex": { agentRuntime: { id: "openclaw" } },
+          "openai-codex": { agentRuntime: { id: "afora" } },
         },
       },
       agents: { defaults: { model: "openai-codex/gpt-5.4" } },
       plugins: DISABLED_CODEX_PLUGIN_CONFIG,
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
-    expectAgentRuntime(cfg, "openclaw", { provider: "openai-codex" });
+    expectAgentRuntime(cfg, "afora", { provider: "openai-codex" });
 
     const result = maybeRepairCodexRoutes(cfg);
 
     expect(result.cfg.agents?.defaults?.model).toBe("openai/gpt-5.4");
     expect(result.cfg.agents?.defaults?.models?.["openai/gpt-5.4"]?.agentRuntime).toEqual({
-      id: "openclaw",
+      id: "afora",
     });
     expect(result.changes.join("\n")).toContain(
-      'Set agents.defaults.models.openai/gpt-5.4.agentRuntime.id to "openclaw"',
+      'Set agents.defaults.models.openai/gpt-5.4.agentRuntime.id to "afora"',
     );
-    expectAgentRuntime(result.cfg, "openclaw");
+    expectAgentRuntime(result.cfg, "afora");
   });
 
   it("preserves legacy provider catalog runtime pins while repairing default legacy refs", () => {
@@ -2540,25 +2540,25 @@ describe("collectCodexRouteWarnings", () => {
       models: {
         providers: {
           "openai-codex": {
-            models: [{ id: "gpt-5.4", agentRuntime: { id: "openclaw" } }],
+            models: [{ id: "gpt-5.4", agentRuntime: { id: "afora" } }],
           },
         },
       },
       agents: { defaults: { model: "openai-codex/gpt-5.4" } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
-    expectAgentRuntime(cfg, "openclaw", { provider: "openai-codex" });
+    expectAgentRuntime(cfg, "afora", { provider: "openai-codex" });
 
     const result = maybeRepairCodexRoutes(cfg);
 
     expect(result.cfg.agents?.defaults?.model).toBe("openai/gpt-5.4");
     expect(result.cfg.agents?.defaults?.models?.["openai/gpt-5.4"]?.agentRuntime).toEqual({
-      id: "openclaw",
+      id: "afora",
     });
     expect(result.changes.join("\n")).toContain(
-      'Set agents.defaults.models.openai/gpt-5.4.agentRuntime.id to "openclaw"',
+      'Set agents.defaults.models.openai/gpt-5.4.agentRuntime.id to "afora"',
     );
-    expectAgentRuntime(result.cfg, "openclaw");
+    expectAgentRuntime(result.cfg, "afora");
   });
 
   it("preserves legacy provider catalog runtime pins while repairing listed-agent legacy refs", () => {
@@ -2566,34 +2566,34 @@ describe("collectCodexRouteWarnings", () => {
       models: {
         providers: {
           "openai-codex": {
-            models: [{ id: "gpt-5.4", agentRuntime: { id: "openclaw" } }],
+            models: [{ id: "gpt-5.4", agentRuntime: { id: "afora" } }],
           },
         },
       },
       agents: {
         list: [{ id: "worker", model: "openai-codex/gpt-5.4" }],
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
-    expectAgentRuntime(cfg, "openclaw", { provider: "openai-codex", agentId: "worker" });
+    expectAgentRuntime(cfg, "afora", { provider: "openai-codex", agentId: "worker" });
 
     const result = maybeRepairCodexRoutes(cfg);
 
     expect(result.cfg.agents?.list?.[0]?.model).toBe("openai/gpt-5.4");
     expect(result.cfg.agents?.list?.[0]?.models?.["openai/gpt-5.4"]?.agentRuntime).toEqual({
-      id: "openclaw",
+      id: "afora",
     });
     expect(result.changes.join("\n")).toContain(
-      'Set agents.list.worker.models.openai/gpt-5.4.agentRuntime.id to "openclaw"',
+      'Set agents.list.worker.models.openai/gpt-5.4.agentRuntime.id to "afora"',
     );
-    expectAgentRuntime(result.cfg, "openclaw", { agentId: "worker" });
+    expectAgentRuntime(result.cfg, "afora", { agentId: "worker" });
   });
 
   it("shields listed canonical refs when provider-level legacy default pins migrate", () => {
     const cfg = {
       models: {
         providers: {
-          "openai-codex": { agentRuntime: { id: "openclaw" } },
+          "openai-codex": { agentRuntime: { id: "afora" } },
         },
       },
       agents: {
@@ -2603,16 +2603,16 @@ describe("collectCodexRouteWarnings", () => {
           { id: "regular", model: "openai/gpt-5.4" },
         ],
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
-    expectAgentRuntime(cfg, "openclaw", { provider: "openai-codex", agentId: "main" });
+    expectAgentRuntime(cfg, "afora", { provider: "openai-codex", agentId: "main" });
     expectAgentRuntime(cfg, "codex", { agentId: "regular" });
 
     const result = maybeRepairCodexRoutes(cfg);
 
     expect(result.cfg.agents?.defaults?.model).toBe("openai/gpt-5.4");
     expect(result.cfg.agents?.defaults?.models?.["openai/gpt-5.4"]?.agentRuntime).toEqual({
-      id: "openclaw",
+      id: "afora",
     });
     expect(result.cfg.agents?.list?.[0]?.model).toBeUndefined();
     expect(result.cfg.agents?.list?.[1]?.model).toBe("openai/gpt-5.4");
@@ -2622,7 +2622,7 @@ describe("collectCodexRouteWarnings", () => {
     expect(result.changes.join("\n")).toContain(
       'Set agents.list.regular.models.openai/gpt-5.4.agentRuntime.id to "codex"',
     );
-    expectAgentRuntime(result.cfg, "openclaw", { agentId: "main" });
+    expectAgentRuntime(result.cfg, "afora", { agentId: "main" });
     expectAgentRuntime(result.cfg, "codex", { agentId: "regular" });
   });
 
@@ -2630,26 +2630,26 @@ describe("collectCodexRouteWarnings", () => {
     const cfg = {
       models: {
         providers: {
-          "openai-codex": { agentRuntime: { id: "openclaw" } },
+          "openai-codex": { agentRuntime: { id: "afora" } },
         },
       },
       agents: {
         list: [{ id: "worker", model: "openai-codex/gpt-5.4" }],
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
-    expectAgentRuntime(cfg, "openclaw", { provider: "openai-codex", agentId: "worker" });
+    expectAgentRuntime(cfg, "afora", { provider: "openai-codex", agentId: "worker" });
 
     const result = maybeRepairCodexRoutes(cfg);
 
     expect(result.cfg.agents?.list?.[0]?.model).toBe("openai/gpt-5.4");
     expect(result.cfg.agents?.list?.[0]?.models?.["openai/gpt-5.4"]?.agentRuntime).toEqual({
-      id: "openclaw",
+      id: "afora",
     });
     expect(result.changes.join("\n")).toContain(
-      'Set agents.list.worker.models.openai/gpt-5.4.agentRuntime.id to "openclaw"',
+      'Set agents.list.worker.models.openai/gpt-5.4.agentRuntime.id to "afora"',
     );
-    expectAgentRuntime(result.cfg, "openclaw", { agentId: "worker" });
+    expectAgentRuntime(result.cfg, "afora", { agentId: "worker" });
   });
 
   it("does not apply pre-existing canonical default runtime pins to listed-agent legacy refs", () => {
@@ -2657,19 +2657,19 @@ describe("collectCodexRouteWarnings", () => {
       agents: {
         defaults: {
           models: {
-            "openai/*": { agentRuntime: { id: "openclaw" } },
+            "openai/*": { agentRuntime: { id: "afora" } },
           },
         },
         list: [{ id: "worker", model: "openai-codex/gpt-5.4" }],
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expectAgentRuntime(cfg, "auto", { provider: "openai-codex", agentId: "worker" });
 
     const result = maybeRepairCodexRoutes(cfg);
 
     expect(result.cfg.agents?.defaults?.models?.["openai/*"]?.agentRuntime).toEqual({
-      id: "openclaw",
+      id: "afora",
     });
     expect(result.cfg.agents?.list?.[0]?.model).toBe("openai/gpt-5.4");
     expect(result.cfg.agents?.list?.[0]?.models?.["openai/gpt-5.4"]?.agentRuntime).toEqual({
@@ -2686,19 +2686,19 @@ describe("collectCodexRouteWarnings", () => {
       agents: {
         defaults: {
           models: {
-            "openai-codex/gpt-5.5": { alias: "legacy-codex", agentRuntime: { id: "openclaw" } },
+            "openai-codex/gpt-5.5": { alias: "legacy-codex", agentRuntime: { id: "afora" } },
           },
         },
       },
     });
 
     expect(result.cfg.agents?.defaults?.models).toEqual({
-      "openai/gpt-5.5": { alias: "legacy-codex", agentRuntime: { id: "openclaw" } },
+      "openai/gpt-5.5": { alias: "legacy-codex", agentRuntime: { id: "afora" } },
     });
     expect(result.changes.join("\n")).not.toContain(
       'Set agents.defaults.models.openai/gpt-5.5.agentRuntime.id to "codex"',
     );
-    expectAgentRuntime(result.cfg, "openclaw", { modelId: "gpt-5.5" });
+    expectAgentRuntime(result.cfg, "afora", { modelId: "gpt-5.5" });
   });
 
   it("overwrites non-concrete model-scoped runtime pins when preserving Codex route intent", () => {
@@ -2731,7 +2731,7 @@ describe("collectCodexRouteWarnings", () => {
         providers: {
           openai: {
             baseUrl: "https://api.openai.com/v1",
-            agentRuntime: { id: "openclaw" },
+            agentRuntime: { id: "afora" },
             models: [],
           },
         },
@@ -2747,7 +2747,7 @@ describe("collectCodexRouteWarnings", () => {
     expect(result.cfg.agents?.defaults?.model).toEqual({ primary: "openai/gpt-5.4" });
     expect(result.cfg.agents?.defaults?.heartbeat?.model).toBe("openai-codex/gpt-5.4");
     expect(result.cfg.agents?.defaults?.models).toBeUndefined();
-    expectAgentRuntime(result.cfg, "openclaw");
+    expectAgentRuntime(result.cfg, "afora");
     expect(result.changes).toStrictEqual([]);
     expect(result.warnings).toStrictEqual([
       legacyRouteWarning(
@@ -2782,7 +2782,7 @@ describe("collectCodexRouteWarnings", () => {
         providers: {
           openai: {
             baseUrl: "https://api.openai.com/v1",
-            agentRuntime: { id: "openclaw" },
+            agentRuntime: { id: "afora" },
             models: [],
           },
         },
@@ -2794,7 +2794,7 @@ describe("collectCodexRouteWarnings", () => {
     expect(result.cfg.agents?.defaults?.model).toBe("openai/gpt-5.4");
     expect(result.cfg.agents?.defaults?.models).toBeUndefined();
     expect(result.cfg.hooks?.gmail?.model).toBe("openai-codex/gpt-5.4");
-    expectAgentRuntime(result.cfg, "openclaw");
+    expectAgentRuntime(result.cfg, "afora");
     expect(result.changes).toStrictEqual([]);
     expect(result.warnings).toStrictEqual([
       legacyRouteWarning("- hooks.gmail.model: openai-codex/gpt-5.4 should become openai/gpt-5.4."),
@@ -2945,7 +2945,7 @@ describe("collectCodexRouteWarnings", () => {
         model: "codex/foo",
         providerOverride: "custom",
         modelOverride: "openai-codex/bar",
-        agentRuntimeOverride: "openclaw",
+        agentRuntimeOverride: "afora",
       },
       legacy: {
         sessionId: "s-legacy",
@@ -2963,7 +2963,7 @@ describe("collectCodexRouteWarnings", () => {
       model: "codex/foo",
       providerOverride: "custom",
       modelOverride: "openai-codex/bar",
-      agentRuntimeOverride: "openclaw",
+      agentRuntimeOverride: "afora",
       updatedAt: 1,
     });
     expect(store.legacy).toMatchObject({
@@ -3161,7 +3161,7 @@ describe("collectCodexRouteWarnings", () => {
     expect(getSession(store, "ordinary").agentHarnessId).toBeUndefined();
   });
 
-  it("preserves explicit OpenClaw runtime pins while repairing legacy session routes", () => {
+  it("preserves explicit Afora runtime pins while repairing legacy session routes", () => {
     const store: Record<string, SessionEntry> = {
       main: {
         sessionId: "s1",
@@ -3191,7 +3191,7 @@ describe("collectCodexRouteWarnings", () => {
     expect(getSession(store, "main").authProfileOverride).toBe("openai-codex:default");
   });
 
-  it("preserves Codex runtime intent alongside explicit OpenClaw harness pins", () => {
+  it("preserves Codex runtime intent alongside explicit Afora harness pins", () => {
     const store: Record<string, SessionEntry> = {
       main: {
         sessionId: "s1",
@@ -3361,7 +3361,7 @@ describe("collectCodexRouteWarnings", () => {
     expect(getSession(store, "main").modelOverride).toBe("gpt-5.5");
   });
 
-  it("preserves canonical OpenAI sessions that are explicitly pinned to OpenClaw", () => {
+  it("preserves canonical OpenAI sessions that are explicitly pinned to Afora", () => {
     const store: Record<string, SessionEntry> = {
       main: {
         sessionId: "s1",
@@ -3370,8 +3370,8 @@ describe("collectCodexRouteWarnings", () => {
         model: "gpt-5.5",
         providerOverride: "openai",
         modelOverride: "gpt-5.4",
-        agentHarnessId: "openclaw",
-        agentRuntimeOverride: "openclaw",
+        agentHarnessId: "afora",
+        agentRuntimeOverride: "afora",
         authProfileOverride: "openai:work",
       },
     };
@@ -3383,8 +3383,8 @@ describe("collectCodexRouteWarnings", () => {
 
     expect(result).toEqual({ changed: false, sessionKeys: [] });
     expect(getSession(store, "main").updatedAt).toBe(1);
-    expect(getSession(store, "main").agentHarnessId).toBe("openclaw");
-    expect(getSession(store, "main").agentRuntimeOverride).toBe("openclaw");
+    expect(getSession(store, "main").agentHarnessId).toBe("afora");
+    expect(getSession(store, "main").agentRuntimeOverride).toBe("afora");
     expect(getSession(store, "main").authProfileOverride).toBe("openai:work");
   });
 
@@ -3456,7 +3456,7 @@ describe("collectCodexRouteWarnings", () => {
         defaults: {
           model: { primary: "openai-codex/gpt-5.4" },
           models: {
-            "openai-codex/gpt-5.4": { agentRuntime: { id: "openclaw" } },
+            "openai-codex/gpt-5.4": { agentRuntime: { id: "afora" } },
           },
         },
       },
@@ -3472,7 +3472,7 @@ describe("collectCodexRouteWarnings", () => {
       | { agentRuntime?: { id?: string } }
       | undefined;
     expect(migrated).toBeDefined();
-    expect(migrated?.agentRuntime).toEqual({ id: "openclaw" });
+    expect(migrated?.agentRuntime).toEqual({ id: "afora" });
     expect(result.cfg.agents?.defaults?.models?.["openai-codex/gpt-5.4"]).toBeUndefined();
   });
 
@@ -3483,7 +3483,7 @@ describe("collectCodexRouteWarnings", () => {
           defaults: {
             model: { primary: "openai-codex/gpt-5.4" },
             models: {
-              "openai-codex/gpt-5.4": { agentRuntime: { id: "openclaw" } },
+              "openai-codex/gpt-5.4": { agentRuntime: { id: "afora" } },
               "openai/gpt-5.4": {
                 alias: "canonical-codex",
                 agentRuntime: { id: canonicalRuntimeId },
@@ -3497,11 +3497,11 @@ describe("collectCodexRouteWarnings", () => {
       expect(result.cfg.agents?.defaults?.model).toEqual({ primary: "openai/gpt-5.4" });
       expect(result.cfg.agents?.defaults?.models?.["openai/gpt-5.4"]).toEqual({
         alias: "canonical-codex",
-        agentRuntime: { id: "openclaw" },
+        agentRuntime: { id: "afora" },
       });
       expect(result.cfg.agents?.defaults?.models?.["openai-codex/gpt-5.4"]).toBeUndefined();
       expect(result.cfg.plugins?.entries?.codex?.enabled).toBe(false);
-      expectAgentRuntime(result.cfg, "openclaw");
+      expectAgentRuntime(result.cfg, "afora");
     });
   }
 });

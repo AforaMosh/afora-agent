@@ -2,7 +2,7 @@
 import {
   asDateTimestampMs,
   parseStrictFiniteNumber,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 
 /** Coerces temporal schedule fields without accepting partial, non-finite, or invalid-Date values. */
 export function coerceFiniteScheduleNumber(value: unknown): number | undefined {

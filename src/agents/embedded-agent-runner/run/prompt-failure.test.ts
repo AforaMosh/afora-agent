@@ -29,7 +29,7 @@ function makeParams(overrides: Partial<Params> = {}): Params {
     },
     sessionIdUsed: "session:prompt-failure-test",
     lane: "test",
-    agentDir: "/tmp/openclaw-prompt-failure-test",
+    agentDir: "/tmp/afora-prompt-failure-test",
     suspensionSessionId: "session:prompt-failure-test",
     runtimeAuthRetry: false,
     maybeRefreshRuntimeAuthForAuthError: vi.fn(async () => false),

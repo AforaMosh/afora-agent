@@ -1,7 +1,7 @@
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import type { Context, Model } from "openclaw/plugin-sdk/llm";
-import { streamSimple } from "openclaw/plugin-sdk/llm";
-import { isTruthyEnvValue } from "openclaw/plugin-sdk/runtime-env";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import type { Context, Model } from "afora-agent/plugin-sdk/llm";
+import { streamSimple } from "afora-agent/plugin-sdk/llm";
+import { isTruthyEnvValue } from "afora-agent/plugin-sdk/runtime-env";
 import { describe, expect, it } from "vitest";
 import {
   buildAnthropicCompactionContextChunk,
@@ -11,7 +11,7 @@ import { wrapAnthropicProviderStream } from "./stream-wrappers.js";
 
 const settings = resolveAnthropicCompactionLiveSettings(
   process.env,
-  isTruthyEnvValue(process.env.OPENCLAW_LIVE_TEST),
+  isTruthyEnvValue(process.env.AFORA_LIVE_TEST),
 );
 const describeLive = settings.enabled ? describe : describe.skip;
 

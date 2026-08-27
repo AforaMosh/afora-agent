@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
   runDetachedWebhookWork: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/webhook-request-guards", () => ({
+vi.mock("afora-agent/plugin-sdk/webhook-request-guards", () => ({
   runDetachedWebhookWork: mocks.runDetachedWebhookWork,
 }));
 

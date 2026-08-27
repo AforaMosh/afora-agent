@@ -1,7 +1,7 @@
 import { initialState, Task } from "@lit/task";
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { readNonBlankString } from "@openclaw/normalization-core/string-coerce";
+import { asFiniteNumber } from "@afora/normalization-core/number-coercion";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { readNonBlankString } from "@afora/normalization-core/string-coerce";
 import { ReactiveElement } from "lit";
 import type { ControlUiGitHubPreview } from "../../../src/gateway/control-ui-contract.js";
 import type { GatewayBrowserClient } from "../api/gateway.ts";
@@ -553,7 +553,7 @@ export class GitHubLinkHovercardProvider extends ReactiveElement {
     }
     const card = document.createElement("div");
     nextHovercardId += 1;
-    card.id = `openclaw-github-hovercard-${nextHovercardId}`;
+    card.id = `afora-github-hovercard-${nextHovercardId}`;
     card.className = "github-link-hovercard";
     card.dataset.open = "true";
     // A tooltip may not own controls: its content is flattened and unreachable.

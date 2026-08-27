@@ -1,6 +1,6 @@
 // Feishu plugin module implements approval auth behavior.
-import { createChannelApprovalAuth } from "openclaw/plugin-sdk/approval-auth-runtime";
-import { normalizeOptionalLowercaseString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { createChannelApprovalAuth } from "afora-agent/plugin-sdk/approval-auth-runtime";
+import { normalizeOptionalLowercaseString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveFeishuAccount } from "./accounts.js";
 import { normalizeFeishuTarget } from "./targets.js";
 

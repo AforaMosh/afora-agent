@@ -2,24 +2,24 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import {
   buildExecRemoteCommand,
   disposeSshSandboxSession,
   shellEscape,
   type CreateSandboxBackendParams,
-} from "openclaw/plugin-sdk/sandbox";
+} from "afora-agent/plugin-sdk/sandbox";
 import {
-  resolvePreferredOpenClawTmpDir,
+  resolvePreferredAforaTmpDir,
   tempWorkspace,
   type TempWorkspace,
-} from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/temp-path";
 import {
   createSandboxBrowserConfig,
   createSandboxPruneConfig,
   createSandboxSshConfig,
   createSandboxTestContext,
-} from "openclaw/plugin-sdk/test-fixtures";
+} from "afora-agent/plugin-sdk/test-fixtures";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenShellSandboxBackend } from "./backend.types.js";
 import {
@@ -29,12 +29,12 @@ import {
 } from "./cli.js";
 import { resolveOpenShellPluginConfig } from "./config.js";
 
-const openShellTestWorkspaceRoot = resolvePreferredOpenClawTmpDir();
+const openShellTestWorkspaceRoot = resolvePreferredAforaTmpDir();
 
 function createOpenShellTestWorkspace(label: string): Promise<TempWorkspace> {
   return tempWorkspace({
     rootDir: openShellTestWorkspaceRoot,
-    prefix: `openclaw-openshell-${label}-`,
+    prefix: `afora-openshell-${label}-`,
   });
 }
 
@@ -54,9 +54,9 @@ let createOpenShellSandboxBackendManager: typeof import("./backend.js").createOp
 let createOpenShellSandboxBackendFactory: typeof import("./backend.js").createOpenShellSandboxBackendFactory;
 
 async function installOpenShellBackendMocks() {
-  vi.doMock("openclaw/plugin-sdk/sandbox", async () => {
-    const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/sandbox")>(
-      "openclaw/plugin-sdk/sandbox",
+  vi.doMock("afora-agent/plugin-sdk/sandbox", async () => {
+    const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/sandbox")>(
+      "afora-agent/plugin-sdk/sandbox",
     );
     return {
       ...actual,
@@ -77,7 +77,7 @@ async function installOpenShellBackendMocks() {
 }
 
 function uninstallOpenShellBackendMocks() {
-  vi.doUnmock("openclaw/plugin-sdk/sandbox");
+  vi.doUnmock("afora-agent/plugin-sdk/sandbox");
   vi.doUnmock("./cli.js");
   vi.resetModules();
 }
@@ -86,7 +86,7 @@ function resetOpenShellBackendMocks() {
   vi.clearAllMocks();
   cliMocks.createOpenShellSshSession.mockResolvedValue({
     command: "ssh",
-    configPath: "/tmp/openclaw-openshell-test-ssh-config",
+    configPath: "/tmp/afora-openshell-test-ssh-config",
     host: "openshell-test",
   });
   sandboxMocks.runSshSandboxCommand.mockImplementation(
@@ -279,9 +279,9 @@ describe("openshell backend manager", () => {
     const repeated = await createBackend("agent:main");
     const other = await createBackend("agent:other");
     const workspaceScoped = await createBackend(`agent:main:workspace:${"a".repeat(32)}`);
-    const legacyRuntimeId = "openclaw-agent-main-25bffc4d";
+    const legacyRuntimeId = "afora-agent-main-25bffc4d";
     const adoptedLegacy = await createBackend("agent:main", [legacyRuntimeId]);
-    const punctuationLegacyRuntimeId = "openclaw-agent-foo-bar-baz-ab401a99";
+    const punctuationLegacyRuntimeId = "afora-agent-foo-bar-baz-ab401a99";
     const adoptedPunctuationLegacy = await createBackend("agent:foo_bar.baz", [
       punctuationLegacyRuntimeId,
     ]);
@@ -303,7 +303,7 @@ describe("openshell backend manager", () => {
 
   it("does not recreate an unreachable registered legacy sandbox name", async () => {
     const scopeKey = "agent:main'$(touch /tmp/pwn)";
-    const legacyRuntimeId = "openclaw-agent-main-touch-tmp-pwn-87608e6a";
+    const legacyRuntimeId = "afora-agent-main-touch-tmp-pwn-87608e6a";
     cliMocks.runOpenShellCli.mockResolvedValue({
       code: 1,
       stdout: "",
@@ -326,7 +326,7 @@ describe("openshell backend manager", () => {
         script: "true",
       }),
     ).rejects.toThrow(
-      `Run \`openclaw sandbox recreate --session ${shellEscape(scopeKey)}\` to migrate this scope`,
+      `Run \`afora sandbox recreate --session ${shellEscape(scopeKey)}\` to migrate this scope`,
     );
     expect(cliMocks.runOpenShellCli).toHaveBeenCalledTimes(1);
     expect(cliMocks.runOpenShellCli).not.toHaveBeenCalledWith(
@@ -338,7 +338,7 @@ describe("openshell backend manager", () => {
 
   it("does not execute a registered legacy sandbox that is no longer ready", async () => {
     const scopeKey = "agent:main";
-    const legacyRuntimeId = "openclaw-agent-main-25bffc4d";
+    const legacyRuntimeId = "afora-agent-main-25bffc4d";
     cliMocks.runOpenShellCli
       .mockResolvedValueOnce({
         code: 0,
@@ -408,7 +408,7 @@ describe("openshell backend manager", () => {
       sandboxMocks.remoteRoot = remoteWorkspace.dir;
       await using remoteAgentWorkspace = await createOpenShellTestWorkspace("agent-remote");
       sandboxMocks.remoteAgentRoot = remoteAgentWorkspace.dir;
-      const materializedDir = path.join(sandboxMocks.remoteRoot, ".openclaw", "sandbox-skills");
+      const materializedDir = path.join(sandboxMocks.remoteRoot, ".afora", "sandbox-skills");
       await fs.mkdir(materializedDir, { recursive: true });
       await fs.writeFile(path.join(materializedDir, "stale.txt"), "stale", "utf8");
       await fs.writeFile(path.join(skillsWorkspaceDir, "SKILL.md"), "# Skill\n", "utf8");
@@ -431,7 +431,7 @@ describe("openshell backend manager", () => {
 
       const result = await backend.runRemoteShellScript({
         script: 'test -d "$1"',
-        args: ["/sandbox/.openclaw/sandbox-skills"],
+        args: ["/sandbox/.afora/sandbox-skills"],
       });
 
       expect(result?.code).toBe(0);
@@ -453,7 +453,7 @@ describe("openshell backend manager", () => {
       sandboxMocks.remoteAgentRoot = remoteAgentWorkspace.dir;
       await using outsideWorkspace = await createOpenShellTestWorkspace("outside");
       const outsideDir = outsideWorkspace.dir;
-      await fs.symlink(outsideDir, path.join(sandboxMocks.remoteRoot, ".openclaw"));
+      await fs.symlink(outsideDir, path.join(sandboxMocks.remoteRoot, ".afora"));
       await fs.writeFile(path.join(skillsWorkspaceDir, "SKILL.md"), "# Skill\n", "utf8");
       cliMocks.runOpenShellCli.mockResolvedValue({ code: 0, stdout: "", stderr: "" });
 
@@ -479,7 +479,7 @@ describe("openshell backend manager", () => {
     },
   );
 
-  it("checks runtime status with config override from OpenClaw config", async () => {
+  it("checks runtime status with config override from Afora config", async () => {
     cliMocks.runOpenShellCli.mockResolvedValue({
       code: 0,
       stdout: "{}",
@@ -489,15 +489,15 @@ describe("openshell backend manager", () => {
     const manager = createOpenShellSandboxBackendManager({
       pluginConfig: resolveOpenShellPluginConfig({
         command: "openshell",
-        from: "openclaw",
+        from: "afora",
       }),
     });
 
     const result = await manager.describeRuntime({
       entry: {
-        containerName: "openclaw-session-1234",
+        containerName: "afora-session-1234",
         backendId: "openshell",
-        runtimeLabel: "openclaw-session-1234",
+        runtimeLabel: "afora-session-1234",
         sessionKey: "agent:main",
         createdAtMs: 1,
         lastUsedAtMs: 1,
@@ -530,10 +530,10 @@ describe("openshell backend manager", () => {
     });
     expect(cliMocks.runOpenShellCli).toHaveBeenCalledWith({
       context: {
-        sandboxName: "openclaw-session-1234",
+        sandboxName: "afora-session-1234",
         config: expectedConfig,
       },
-      args: ["sandbox", "get", "openclaw-session-1234"],
+      args: ["sandbox", "get", "afora-session-1234"],
     });
   });
 
@@ -553,13 +553,13 @@ describe("openshell backend manager", () => {
 
     await manager.removeRuntime({
       entry: {
-        containerName: "openclaw-session-5678",
+        containerName: "afora-session-5678",
         backendId: "openshell",
-        runtimeLabel: "openclaw-session-5678",
+        runtimeLabel: "afora-session-5678",
         sessionKey: "agent:main",
         createdAtMs: 1,
         lastUsedAtMs: 1,
-        image: "openclaw",
+        image: "afora",
         configLabelKind: "Source",
       },
       config: {},
@@ -571,10 +571,10 @@ describe("openshell backend manager", () => {
     });
     expect(cliMocks.runOpenShellCli).toHaveBeenCalledWith({
       context: {
-        sandboxName: "openclaw-session-5678",
+        sandboxName: "afora-session-5678",
         config: expectedConfig,
       },
-      args: ["sandbox", "delete", "openclaw-session-5678"],
+      args: ["sandbox", "delete", "afora-session-5678"],
     });
   });
 
@@ -605,7 +605,7 @@ describe("openshell backend manager", () => {
   it("preserves a local sandbox skills shadow when mirror sync crosses filesystems", async () => {
     await using workspace = await createOpenShellTestWorkspace("workspace");
     const workspaceDir = workspace.dir;
-    const shadowFile = path.join(workspaceDir, ".openclaw", "sandbox-skills", "user-note.txt");
+    const shadowFile = path.join(workspaceDir, ".afora", "sandbox-skills", "user-note.txt");
     await fs.mkdir(path.dirname(shadowFile), { recursive: true });
     await fs.writeFile(shadowFile, "local shadow", "utf8");
 
@@ -624,11 +624,11 @@ describe("openshell backend manager", () => {
       if (args[0] === "sandbox" && args[1] === "download") {
         const tmpDir = expectDefined(args[4], "OpenShell download destination");
         await fs.writeFile(path.join(tmpDir, "from-remote.txt"), "remote", "utf8");
-        await fs.mkdir(path.join(tmpDir, ".openclaw", "sandbox-skills", "skills"), {
+        await fs.mkdir(path.join(tmpDir, ".afora", "sandbox-skills", "skills"), {
           recursive: true,
         });
         await fs.writeFile(
-          path.join(tmpDir, ".openclaw", "sandbox-skills", "skills", "generated.txt"),
+          path.join(tmpDir, ".afora", "sandbox-skills", "skills", "generated.txt"),
           "generated",
           "utf8",
         );
@@ -664,7 +664,7 @@ describe("openshell backend manager", () => {
         "remote",
       );
       await expectPathMissing(
-        path.join(workspaceDir, ".openclaw", "sandbox-skills", "skills", "generated.txt"),
+        path.join(workspaceDir, ".afora", "sandbox-skills", "skills", "generated.txt"),
       );
     } finally {
       renameSpy.mockRestore();
@@ -678,8 +678,8 @@ describe("openshell backend manager", () => {
       if (args[0] === "sandbox" && args[1] === "download") {
         const tmpDir = expectDefined(args[4], "OpenShell download destination");
         await fs.writeFile(path.join(tmpDir, "from-remote.txt"), "remote", "utf8");
-        await fs.mkdir(path.join(tmpDir, ".openclaw"), { recursive: true });
-        await fs.writeFile(path.join(tmpDir, ".openclaw", "sandbox-skills"), "poison", "utf8");
+        await fs.mkdir(path.join(tmpDir, ".afora"), { recursive: true });
+        await fs.writeFile(path.join(tmpDir, ".afora", "sandbox-skills"), "poison", "utf8");
       }
       return { code: 0, stdout: "", stderr: "" };
     });
@@ -708,20 +708,20 @@ describe("openshell backend manager", () => {
     await expect(fs.readFile(path.join(workspaceDir, "from-remote.txt"), "utf8")).resolves.toBe(
       "remote",
     );
-    await expectPathMissing(path.join(workspaceDir, ".openclaw", "sandbox-skills"));
+    await expectPathMissing(path.join(workspaceDir, ".afora", "sandbox-skills"));
   });
 
   it("restores a local sandbox skills shadow when mirror download has a file parent", async () => {
     await using workspace = await createOpenShellTestWorkspace("workspace");
     const workspaceDir = workspace.dir;
-    const shadowFile = path.join(workspaceDir, ".openclaw", "sandbox-skills", "user-note.txt");
+    const shadowFile = path.join(workspaceDir, ".afora", "sandbox-skills", "user-note.txt");
     await fs.mkdir(path.dirname(shadowFile), { recursive: true });
     await fs.writeFile(shadowFile, "local shadow", "utf8");
     cliMocks.runOpenShellCli.mockImplementation(async ({ args }: { args: string[] }) => {
       if (args[0] === "sandbox" && args[1] === "download") {
         const tmpDir = expectDefined(args[4], "OpenShell download destination");
         await fs.writeFile(path.join(tmpDir, "from-remote.txt"), "remote", "utf8");
-        await fs.writeFile(path.join(tmpDir, ".openclaw"), "poison", "utf8");
+        await fs.writeFile(path.join(tmpDir, ".afora"), "poison", "utf8");
       }
       return { code: 0, stdout: "", stderr: "" };
     });
@@ -751,7 +751,7 @@ describe("openshell backend manager", () => {
       "remote",
     );
     await expect(fs.readFile(shadowFile, "utf8")).resolves.toBe("local shadow");
-    expect((await fs.stat(path.join(workspaceDir, ".openclaw"))).isDirectory()).toBe(true);
+    expect((await fs.stat(path.join(workspaceDir, ".afora"))).isDirectory()).toBe(true);
   });
 });
 
@@ -763,11 +763,11 @@ function createOpenShellBackendSandboxConfig(): CreateSandboxBackendParams["cfg"
     backend: "openshell",
     scope: "session",
     workspaceAccess: "rw",
-    workspaceRoot: "/tmp/openclaw-sandboxes",
+    workspaceRoot: "/tmp/afora-sandboxes",
     dockerTmpfsSource: "configured",
     docker: {
-      image: "openclaw-sandbox:bookworm-slim",
-      containerPrefix: "openclaw-sbx-",
+      image: "afora-sandbox:bookworm-slim",
+      containerPrefix: "afora-sbx-",
       workdir: "/workspace",
       readOnlyRoot: false,
       tmpfs: [],
@@ -776,7 +776,7 @@ function createOpenShellBackendSandboxConfig(): CreateSandboxBackendParams["cfg"
       binds: [],
       env: {},
     },
-    ssh: createSandboxSshConfig("/tmp/openclaw-sandboxes"),
+    ssh: createSandboxSshConfig("/tmp/afora-sandboxes"),
     browser: createSandboxBrowserConfig(),
     tools: { allow: ["*"], deny: [] },
     prune: createSandboxPruneConfig(),
@@ -804,9 +804,9 @@ async function readOpenShellSshConfig(params: {
     name: "openshell-ssh-config",
     script: [
       "#!/bin/sh",
-      "cat <<'OPENCLAW_SSH_CONFIG'",
+      "cat <<'AFORA_SSH_CONFIG'",
       params.configText,
-      "OPENCLAW_SSH_CONFIG",
+      "AFORA_SSH_CONFIG",
     ].join("\n"),
   });
   const session = await createOpenShellSshSession({
@@ -1582,7 +1582,7 @@ describe("openshell fs bridges", () => {
     const skillFile = path.join(skillsWorkspaceDir, "skills", "demo", "SKILL.md");
     const shadowFile = path.join(
       workspaceDir,
-      ".openclaw",
+      ".afora",
       "sandbox-skills",
       "skills",
       "demo",
@@ -1610,17 +1610,17 @@ describe("openshell fs bridges", () => {
 
     await expect(
       bridge.readFile({
-        filePath: "/sandbox/.openclaw/sandbox-skills/skills/demo/SKILL.md",
+        filePath: "/sandbox/.afora/sandbox-skills/skills/demo/SKILL.md",
       }),
     ).resolves.toEqual(Buffer.from("# Demo\nmaterialized\n"));
     await expect(
       bridge.readFile({
-        filePath: ".openclaw/sandbox-skills/skills/demo/SKILL.md",
+        filePath: ".afora/sandbox-skills/skills/demo/SKILL.md",
       }),
     ).resolves.toEqual(Buffer.from("# Demo\nmaterialized\n"));
     await expect(
       bridge.writeFile({
-        filePath: ".openclaw/sandbox-skills/skills/demo/SKILL.md",
+        filePath: ".afora/sandbox-skills/skills/demo/SKILL.md",
         data: "owned",
       }),
     ).rejects.toThrow(/read-only/);

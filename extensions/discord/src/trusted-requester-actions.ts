@@ -1,5 +1,5 @@
 // Discord guild-admin actions need a Discord sender identity for permission checks.
-import type { ChannelMessageActionName } from "openclaw/plugin-sdk/channel-contract";
+import type { ChannelMessageActionName } from "afora-agent/plugin-sdk/channel-contract";
 
 const trustedRequesterGuildAdminActions = new Set<ChannelMessageActionName>([
   "emoji-upload",

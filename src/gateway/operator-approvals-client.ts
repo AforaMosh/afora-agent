@@ -5,7 +5,7 @@ import {
   GATEWAY_CLIENT_MODES,
   GATEWAY_CLIENT_NAMES,
 } from "../../packages/gateway-protocol/src/client-info.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createDeferredCore } from "../shared/deferred.js";
 import { resolveGatewayClientBootstrap } from "./client-bootstrap.js";
 import { startGatewayClientWhenEventLoopReady } from "./client-start-readiness.js";
@@ -36,7 +36,7 @@ export async function createOperatorApprovalsGatewayClient(
     | "onHelloOk"
     | "onReconnectPaused"
   > & {
-    config: OpenClawConfig;
+    config: AforaConfig;
     gatewayUrl?: string;
   },
 ): Promise<GatewayClient> {
@@ -77,7 +77,7 @@ export async function createOperatorApprovalsGatewayClient(
 /** Run a callback with a started operator-approvals Gateway client and close it after. */
 export async function withOperatorApprovalsGatewayClient<T>(
   params: {
-    config: OpenClawConfig;
+    config: AforaConfig;
     gatewayUrl?: string;
     clientDisplayName: string;
   },

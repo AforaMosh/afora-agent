@@ -1,4 +1,4 @@
-import { isContextOverflow } from "@openclaw/ai/internal/runtime";
+import { isContextOverflow } from "@afora/ai/internal/runtime";
 import { InvalidSummaryOutputError } from "../../../packages/agent-core/src/harness/types.js";
 import type { AssistantMessage, Model } from "../../llm/types.js";
 import { MAX_OVERFLOW_COMPACTION_ATTEMPTS } from "../agent-compaction-constants.js";
@@ -29,7 +29,7 @@ type CompactionWorkOutcome =
 
 /** @internal */
 export const agentSessionAutomaticCompaction: unique symbol = Symbol.for(
-  "openclaw.agent-session.automatic-compaction",
+  "afora.agent-session.automatic-compaction",
 );
 
 export abstract class AgentSessionCompaction extends AgentSessionInspection {

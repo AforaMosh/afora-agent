@@ -11,7 +11,7 @@ import path from "node:path";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { ResolvedBrowserConfig } from "./config.js";
 
 /** Browser executable candidate with product metadata and filesystem path. */

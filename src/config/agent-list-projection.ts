@@ -1,8 +1,8 @@
 import { listAgentEntries } from "../agents/agent-scope.js";
-import type { OpenClawConfig } from "./types.js";
+import type { AforaConfig } from "./types.js";
 
 /** Attach the non-serialized list projection used by legacy runtime consumers. */
-export function attachAgentListProjection(config: OpenClawConfig): OpenClawConfig {
+export function attachAgentListProjection(config: AforaConfig): AforaConfig {
   const agents = config.agents;
   if (!agents || typeof agents !== "object" || Array.isArray(agents)) {
     return config;

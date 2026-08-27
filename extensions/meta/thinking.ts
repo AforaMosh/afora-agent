@@ -2,7 +2,7 @@
 import type {
   ProviderDefaultThinkingPolicyContext,
   ProviderThinkingProfile,
-} from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/plugin-entry";
 import { META_MODEL_CATALOG } from "./models.js";
 
 const META_REASONING_MODEL_IDS = new Set(

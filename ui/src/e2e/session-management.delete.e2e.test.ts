@@ -52,7 +52,7 @@ suite.define(() => {
       await row.hover();
       await row.getByRole("button", { name: "Open session menu" }).click();
       await page
-        .locator("openclaw-session-menu")
+        .locator("afora-session-menu")
         .getByRole("menuitem", { name: "Delete…" })
         .click();
 

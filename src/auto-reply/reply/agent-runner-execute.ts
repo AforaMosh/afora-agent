@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { isLikelyContextOverflowError } from "../../agents/failover/classify.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { withBeforeAgentReplyObserver } from "../../plugins/before-agent-reply.js";
@@ -71,7 +71,7 @@ type ExecutePreparedReplyAgentRunInput = Pick<
     typeof createReplyRestartRecoveryClaimController
   >["beginBeforeAgentReply"];
   blockReplyPipeline: BlockReplyPipeline | null;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   checkpointBeforeAgentReply: ReturnType<
     typeof createReplyRestartRecoveryClaimController
   >["checkpointBeforeAgentReply"];
@@ -460,7 +460,7 @@ export function createReplyAgentRestartRecoveryController(
     "followupRun" | "opts" | "runtimePolicySessionKey" | "sessionCtx" | "sessionKey" | "storePath"
   > & {
     activeSessionStore: Record<string, SessionEntry> | undefined;
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     getActiveSessionEntry: () => SessionEntry | undefined;
     replyOperation: ReplyOperation;
     restartRecoverySourceTurnId: string | undefined;

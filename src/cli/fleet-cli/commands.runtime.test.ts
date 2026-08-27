@@ -106,9 +106,9 @@ describe("fleet command output", () => {
   it("writes the documented secret-bearing create JSON shape", async () => {
     const result = {
       tenant: "acme",
-      containerName: "openclaw-cell-acme",
+      containerName: "afora-cell-acme",
       port: 19_100,
-      image: "ghcr.io/openclaw/openclaw:latest",
+      image: "ghcr.io/AforaMosh/afora-agent:latest",
       runtime: "docker" as const,
       started: true,
       token: "gw-token",
@@ -127,7 +127,7 @@ describe("fleet command output", () => {
   it("prints the Gateway token exactly once in human create output", async () => {
     mocks.create.mockResolvedValue({
       tenant: "acme",
-      containerName: "openclaw-cell-acme",
+      containerName: "afora-cell-acme",
       port: 19_100,
       image: "image",
       runtime: "docker",
@@ -174,7 +174,7 @@ describe("fleet command output", () => {
   it("writes status JSON and describes retained data on removal", async () => {
     const status = {
       tenant: "acme",
-      containerName: "openclaw-cell-acme",
+      containerName: "afora-cell-acme",
       runtime: "docker" as const,
       port: 19_100,
       image: "image",

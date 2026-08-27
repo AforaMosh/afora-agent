@@ -32,7 +32,7 @@ type PreparedDev = {
   plan: ClawAddPlan;
 };
 
-const CLAW_DEV_RESULT_SCHEMA_VERSION = "openclaw.clawDev.v1" as const;
+const CLAW_DEV_RESULT_SCHEMA_VERSION = "afora.clawDev.v1" as const;
 
 function formatDiagnostics(diagnostics: ClawDiagnostic[]): string {
   return diagnostics
@@ -78,7 +78,7 @@ function logDevPlanSummary(plan: ClawAddPlan, runtime: RuntimeEnv): void {
 }
 
 async function prepareDev(projectPath: string, opts: ClawsDevOptions): Promise<PreparedDev> {
-  const temporaryDirectory = await mkdtemp(join(tmpdir(), "openclaw-claw-dev-"));
+  const temporaryDirectory = await mkdtemp(join(tmpdir(), "afora-claw-dev-"));
   try {
     const build = await buildClawProject(projectPath, join(temporaryDirectory, "claw.tgz"));
     const extracted = await extractBuiltClawArtifact(build.artifact);
@@ -97,7 +97,7 @@ async function prepareDev(projectPath: string, opts: ClawsDevOptions): Promise<P
       if (!configSnapshot.valid) {
         throw new ClawProjectError(
           "config_unavailable",
-          "OpenClaw config is invalid; fix it before previewing a Claw project.",
+          "Afora config is invalid; fix it before previewing a Claw project.",
         );
       }
       const config = configSnapshot.resolved;
@@ -107,7 +107,7 @@ async function prepareDev(projectPath: string, opts: ClawsDevOptions): Promise<P
         manifest: result.manifest,
         clawMarkdownBody: result.clawMarkdownBody,
         packageBootstrap: result.packageBootstrap,
-        openClawProfile: result.openClawProfile,
+        aforaProfile: result.aforaProfile,
         source: {
           ...result.source,
           integrityKind: "artifact",
@@ -199,7 +199,7 @@ export async function runClawsValidateCommand(
       root: result.root,
       source: result.claw.source,
       manifest: result.claw.manifest,
-      ...(result.claw.openClawProfile ? { openClawProfile: result.claw.openClawProfile } : {}),
+      ...(result.claw.aforaProfile ? { aforaProfile: result.claw.aforaProfile } : {}),
       excludedPaths: result.excludedPaths,
       diagnostics: result.diagnostics,
     });

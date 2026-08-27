@@ -35,7 +35,7 @@ semantic coverage IDs. QA Lab resolves every primary owner from the catalog;
 there is no second scenario-ID list. Run it with:
 
 ```bash
-OPENCLAW_ENABLE_PRIVATE_QA_CLI=1 pnpm openclaw qa run \
+AFORA_ENABLE_PRIVATE_QA_CLI=1 pnpm afora qa run \
   --qa-profile personal-agent \
   --provider-mode mock-openai \
   --concurrency 1
@@ -51,7 +51,7 @@ lane. Do not point it at live chat services or real personal accounts.
 
 Scenarios use only fake users, fake preferences, fake secrets, and the
 temporary QA gateway workspace created by the suite. They must not read or
-write real OpenClaw user memory, sessions, credentials, launch agents, global
+write real Afora user memory, sessions, credentials, launch agents, global
 configs, or live gateway state.
 
 Artifacts stay under the existing QA suite artifact directory and are treated

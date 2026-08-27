@@ -2,19 +2,19 @@
 summary: "Visual summary and technical evidence for the May 2026 performance, package-size, dependency, and shrinkwrap cleanup"
 read_when:
   - You are validating the May 2026 performance and package-size cleanup
-  - You need the numbers behind the OpenClaw performance and dependency blog post
+  - You need the numbers behind the Afora performance and dependency blog post
   - You need historical context before changing current policy at /gateway/security/dependency-locking
 title: "Release performance sweep"
 ---
 
-This page captures the evidence behind the May 2026 OpenClaw performance,
+This page captures the evidence behind the May 2026 Afora performance,
 package-size, dependency, and shrinkwrap cleanup. It is the technical companion
 to the public blog post.
 
 Two audits are combined here:
 
 - **Release performance sweep:** GitHub Releases from `v2026.5.28` back through
-  stable `v2026.4.23`, using the `OpenClaw Performance` workflow,
+  stable `v2026.4.23`, using the `Afora Performance` workflow,
   `profile=smoke`, mock-provider lane. Most tag rows are one sample; the
   `v2026.5.27` and `v2026.5.28` rows use the latest repeat-3 release-branch
   artifacts.
@@ -24,7 +24,7 @@ Two audits are combined here:
 - **Install footprint sweep:** fresh `npm install --ignore-scripts` installs
   into temporary packages, with `du -sk node_modules` for size and a
   `node_modules` walk for package-instance counts.
-- **npm package size sweep:** `npm pack openclaw@<version> --dry-run --json`
+- **npm package size sweep:** `npm pack afora@<version> --dry-run --json`
   for published releases, recording compressed tarball size, unpacked size, and
   file count.
 
@@ -58,7 +58,7 @@ and **3 unavailable CI runs**. Latest stable measured point: `v2026.5.28`.
   <Card title="Latest stable install" icon="hard-drive">
     **361.7MiB fresh install**
 
-    Cuts the nested OpenClaw dependency tree sharply from the `2026.5.22`
+    Cuts the nested Afora dependency tree sharply from the `2026.5.22`
     shrinkwrap-introduction peak, though a smaller 259.7MiB nested tree still
     remains in the local install audit.
 
@@ -83,7 +83,7 @@ graph instead of removing the capabilities themselves.
     instances fell from **372** to **301**.
   </Card>
   <Card title="Nested tree" icon="unplug">
-    Nested `openclaw/node_modules` fell from **656.1MiB** to **259.7MiB** in
+    Nested `afora/node_modules` fell from **656.1MiB** to **259.7MiB** in
     the same local install audit.
   </Card>
   <Card title="Native optional cones" icon="cpu">
@@ -146,8 +146,8 @@ Compared with the previous stable release:
 | Install size from latest release `2026.5.27`    |  767.1MiB |     361.7MiB | 52.8% lower |
 | Dependencies from monthly high `2026.2.26`      |       645 |          300 | 53.5% lower |
 | Dependencies from latest release `2026.5.27`    |       371 |          300 | 19.1% lower |
-| Nested `openclaw/node_modules` from `2026.5.22` |   911.8MB |     259.7MiB | 71.5% lower |
-| Nested `openclaw/node_modules` from `2026.5.27` |  656.1MiB |     259.7MiB | 60.4% lower |
+| Nested `afora/node_modules` from `2026.5.22` |   911.8MB |     259.7MiB | 71.5% lower |
+| Nested `afora/node_modules` from `2026.5.27` |  656.1MiB |     259.7MiB | 60.4% lower |
 
 ### npm package size
 
@@ -235,7 +235,7 @@ targeted CLI or gateway regressions.
 Dependency samples use one stable release per month, plus the
 `2026.5.22` shrinkwrap-introduction event and the latest `2026.5.28` release.
 
-| Point              | Installed deps | Fresh install | OpenClaw package | Nested `openclaw/node_modules` | Root shrinkwrap | Canvas install behavior                   |
+| Point              | Installed deps | Fresh install | Afora package | Nested `afora/node_modules` | Root shrinkwrap | Canvas install behavior                   |
 | ------------------ | -------------: | ------------: | ---------------: | -----------------------------: | --------------- | ----------------------------------------- |
 | Jan `2026.1.30`    |            605 |       438.4MB |           45.8MB |                          2.4MB | no              | top-level wrapper + `darwin-arm64`        |
 | Feb `2026.2.26`    |            645 |       575.7MB |          110.1MB |                          3.5MB | no              | top-level wrapper + `darwin-arm64`        |
@@ -248,10 +248,10 @@ Dependency samples use one stable release per month, plus the
 
 ### Shrinkwrap boundary
 
-`2026.5.20` shipped with no root shrinkwrap and no large nested OpenClaw
+`2026.5.20` shipped with no root shrinkwrap and no large nested Afora
 dependency tree. `2026.5.22` introduced root shrinkwrap and installed 911.8MB
-under nested `openclaw/node_modules`. `2026.5.28` keeps shrinkwrap and still
-installs 259.7MiB under nested `openclaw/node_modules`, but no longer installs
+under nested `afora/node_modules`. `2026.5.28` keeps shrinkwrap and still
+installs 259.7MiB under nested `afora/node_modules`, but no longer installs
 any `@napi-rs/canvas` packages in the local fresh-install audit.
 
 Published tarball inspection verifies the boundary:
@@ -270,7 +270,7 @@ Published tarball inspection verifies the boundary:
 
 The important distinction: **shrinkwrap itself is not the problem**.
 `v2026.5.28` still ships root shrinkwrap. The problem was the package shape
-that made npm materialize a large nested OpenClaw dependency tree and all 12
+that made npm materialize a large nested Afora dependency tree and all 12
 `@napi-rs/canvas` platform packages. The nested tree is smaller in `v2026.5.28`,
 and the canvas platform fanout no longer lands in the local audit.
 

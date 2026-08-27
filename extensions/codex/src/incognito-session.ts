@@ -1,1 +1,1 @@
-export { isIncognitoSessionKey } from "openclaw/plugin-sdk/routing";
+export { isIncognitoSessionKey } from "afora-agent/plugin-sdk/routing";

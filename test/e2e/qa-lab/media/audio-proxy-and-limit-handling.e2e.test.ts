@@ -13,7 +13,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { openaiMediaUnderstandingProvider } from "../../../../extensions/openai/api.js";
 import type { MsgContext } from "../../../../src/auto-reply/templating.js";
-import type { OpenClawConfig } from "../../../../src/config/types.js";
+import type { AforaConfig } from "../../../../src/config/types.js";
 import { applyMediaUnderstanding } from "../../../../src/media-understanding/apply.js";
 import { withEnvAsync } from "../../../../src/test-utils/env.js";
 
@@ -215,7 +215,7 @@ async function startForwardProxy(
   return await listen(server);
 }
 
-function createConfig(providerBaseUrl: string, maxBytes: number): OpenClawConfig {
+function createConfig(providerBaseUrl: string, maxBytes: number): AforaConfig {
   return {
     models: {
       providers: {
@@ -247,7 +247,7 @@ async function createAudioContext(
   filePath: string;
   workspaceDir: string;
 }> {
-  tempRoot ??= await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-audio-qa-")));
+  tempRoot ??= await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), "afora-audio-qa-")));
   const filePath = path.join(tempRoot, fileName);
   await fs.writeFile(filePath, Buffer.alloc(size, 0x52));
   return {

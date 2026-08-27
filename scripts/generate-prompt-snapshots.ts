@@ -1,4 +1,4 @@
-// Generate Prompt Snapshots script supports OpenClaw repository automation.
+// Generate Prompt Snapshots script supports Afora repository automation.
 import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -108,7 +108,7 @@ function factorCodexDynamicToolSnapshotFiles(files: PromptSnapshotFile[]): Promp
 async function formatPromptSnapshotFiles(
   files: PromptSnapshotFile[],
 ): Promise<PromptSnapshotFile[]> {
-  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-prompt-snapshots-"));
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-prompt-snapshots-"));
   try {
     await writeSnapshotFiles(tmpRoot, files);
     await formatSnapshotFiles(tmpRoot, files);

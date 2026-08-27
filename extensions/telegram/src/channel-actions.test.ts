@@ -1,5 +1,5 @@
 // Telegram tests cover channel actions plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { telegramMessageActions } from "./channel-actions.js";
 
@@ -57,7 +57,7 @@ describe("telegramMessageActions", () => {
         conversationReadOrigin: "direct-operator",
         mediaAccess: { localRoots: ["/tmp/forged-root"], workspaceDir: "/tmp/forged-root" },
       },
-      cfg: { channels: { telegram: { botToken: "tok" } } } as OpenClawConfig,
+      cfg: { channels: { telegram: { botToken: "tok" } } } as AforaConfig,
       accountId: "work",
       mediaAccess,
       mediaLocalRoots: ["/tmp/conflicting-root"],
@@ -136,7 +136,7 @@ describe("telegramMessageActions", () => {
     const cases = [
       {
         name: "configured telegram enables poll",
-        cfg: { channels: { telegram: { botToken: "tok" } } } as OpenClawConfig,
+        cfg: { channels: { telegram: { botToken: "tok" } } } as AforaConfig,
         expectSend: true,
         expectPoll: true,
         expectTopicEdit: true,
@@ -150,7 +150,7 @@ describe("telegramMessageActions", () => {
               actions: { sendMessage: false },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         expectSend: false,
         expectPoll: false,
         expectTopicEdit: true,
@@ -164,7 +164,7 @@ describe("telegramMessageActions", () => {
               actions: { poll: false },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         expectSend: true,
         expectPoll: false,
         expectTopicEdit: true,
@@ -192,7 +192,7 @@ describe("telegramMessageActions", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         expectSend: true,
         expectPoll: false,
         expectTopicEdit: true,
@@ -214,7 +214,7 @@ describe("telegramMessageActions", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         expectSend: false,
         expectPoll: false,
         expectTopicEdit: true,
@@ -248,7 +248,7 @@ describe("telegramMessageActions", () => {
     const cases = [
       {
         name: "default config",
-        cfg: { channels: { telegram: { botToken: "tok" } } } as OpenClawConfig,
+        cfg: { channels: { telegram: { botToken: "tok" } } } as AforaConfig,
         expectSticker: false,
       },
       {
@@ -261,7 +261,7 @@ describe("telegramMessageActions", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         expectSticker: true,
       },
       {
@@ -275,7 +275,7 @@ describe("telegramMessageActions", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         expectSticker: false,
       },
     ] as const;
@@ -316,7 +316,7 @@ describe("telegramMessageActions", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const defaultActions =
       telegramMessageActions.describeMessageTool?.({
@@ -338,7 +338,7 @@ describe("telegramMessageActions", () => {
   });
 
   it("normalizes reaction message identifiers before dispatch", async () => {
-    const cfg = { channels: { telegram: { botToken: "tok" } } } as OpenClawConfig;
+    const cfg = { channels: { telegram: { botToken: "tok" } } } as AforaConfig;
     const cases = [
       {
         name: "numeric channelId/messageId",
@@ -427,7 +427,7 @@ describe("telegramMessageActions", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const discovery = telegramMessageActions.describeMessageTool?.({ cfg });
 
@@ -451,7 +451,7 @@ describe("telegramMessageActions", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const discovery = telegramMessageActions.describeMessageTool?.({
       cfg,
@@ -471,7 +471,7 @@ describe("telegramMessageActions", () => {
           actions: { poll: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const discovery = telegramMessageActions.describeMessageTool?.({ cfg });
     const schema = Array.isArray(discovery?.schema) ? discovery.schema[0] : undefined;
@@ -505,7 +505,7 @@ describe("telegramMessageActions", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const discovery = telegramMessageActions.describeMessageTool?.({
       cfg,
@@ -527,7 +527,7 @@ describe("telegramMessageActions", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       telegramMessageActions.describeMessageTool?.({
@@ -559,7 +559,7 @@ describe("telegramMessageActions", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const discovery = telegramMessageActions.describeMessageTool?.({ cfg });
 

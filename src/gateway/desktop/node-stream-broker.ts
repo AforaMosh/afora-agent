@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import type { IncomingMessage } from "node:http";
 import type { Duplex } from "node:stream";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { createWebSocketStream, WebSocket, WebSocketServer, type RawData } from "ws";
 import { registerSecretValueForRedaction } from "../../logging/secret-redaction-registry.js";
 import { NODE_DESKTOP_ATTACH_PATH } from "../../shared/node-desktop-stream.js";

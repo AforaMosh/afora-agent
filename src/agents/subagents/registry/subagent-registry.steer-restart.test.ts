@@ -1,8 +1,8 @@
 // Subagent registry steer-restart tests cover replacing child runs after steer
 // commands while preserving lifecycle hooks and completion delivery.
 
-import { expectDefined } from "@openclaw/normalization-core";
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { expectDefined } from "@afora/normalization-core";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ContextEngine } from "../../../context-engine/types.js";
 import { getDetachedTaskLifecycleRuntime } from "../../../tasks/detached-task-runtime.js";

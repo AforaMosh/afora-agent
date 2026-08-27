@@ -3,13 +3,13 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { NodeWorkerLaunchStore, type NodeWorkerLaunchReceipt } from "./node-worker-launch-store.js";
 import {
   inspectNodeWorkerProcessIdentity,
@@ -50,7 +50,7 @@ afterEach(async () => {
   }
   spawned.clear();
   ownedProcessGroups.length = 0;
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 function fixture(label: string) {
@@ -77,7 +77,7 @@ function insertLaunch(params: {
   supervisor: NodeWorkerProcessIdentity;
   worker?: NodeWorkerProcessIdentity;
 }) {
-  const database = openOpenClawStateDatabase({ env: params.env }).db;
+  const database = openAforaStateDatabase({ env: params.env }).db;
   database
     .prepare(
       `INSERT INTO node_worker_launches (
@@ -147,7 +147,7 @@ function writeSupervisorOwnerScript(root: string): string {
       const [bundleRoot, stateDir, inputPath] = process.argv.slice(2);
       const supervisor = createNodeWorkerSupervisor({
         bundleRoot,
-        env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+        env: { ...process.env, AFORA_STATE_DIR: stateDir },
       });
       const shutdown = async () => {
         await supervisor.close();
@@ -155,7 +155,7 @@ function writeSupervisorOwnerScript(root: string): string {
       };
       process.once("SIGTERM", () => void shutdown());
       const input = JSON.parse(fs.readFileSync(inputPath, "utf8"));
-      const receipt = await supervisor.launch(input, ${JSON.stringify({ kind: "unix", socketPath: "/tmp/openclaw-worker/gateway.sock" })});
+      const receipt = await supervisor.launch(input, ${JSON.stringify({ kind: "unix", socketPath: "/tmp/afora-worker/gateway.sock" })});
       process.stdout.write(JSON.stringify(receipt) + "\\n");
       setInterval(() => {}, 1000);
     `,
@@ -178,7 +178,7 @@ function spawnSupervisorOwner(params: {
       "tsx",
       writeSupervisorOwnerScript(params.root),
       params.bundleRoot,
-      params.env.OPENCLAW_STATE_DIR!,
+      params.env.AFORA_STATE_DIR!,
       inputPath,
     ],
     { stdio: ["ignore", "pipe", "pipe"] },
@@ -399,7 +399,7 @@ describe("node worker supervisor recovery", () => {
         import { NodeWorkerLaunchStore } from ${JSON.stringify(storeUrl)};
         import { requireNodeWorkerProcessIdentity } from ${JSON.stringify(identityUrl)};
         const [stateDir, claimPath] = process.argv.slice(2);
-        const store = new NodeWorkerLaunchStore({ env: { ...process.env, OPENCLAW_STATE_DIR: stateDir } });
+        const store = new NodeWorkerLaunchStore({ env: { ...process.env, AFORA_STATE_DIR: stateDir } });
         const result = store.claim(
           JSON.parse(fs.readFileSync(claimPath, "utf8")),
           requireNodeWorkerProcessIdentity(process.pid),
@@ -411,7 +411,7 @@ describe("node worker supervisor recovery", () => {
     );
     const owner = spawn(
       process.execPath,
-      ["--import", "tsx", scriptPath, env.OPENCLAW_STATE_DIR!, claimPath],
+      ["--import", "tsx", scriptPath, env.AFORA_STATE_DIR!, claimPath],
       { stdio: ["ignore", "pipe", "pipe"] },
     );
     spawned.add(owner);

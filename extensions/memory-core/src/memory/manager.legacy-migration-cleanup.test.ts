@@ -3,21 +3,21 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
+import type { AforaConfig } from "afora-agent/plugin-sdk/memory-core-host-engine-foundation";
 import {
   ensureMemoryIndexSchema,
   loadSqliteVecExtension,
-} from "openclaw/plugin-sdk/memory-core-host-engine-storage";
-import { resolveOpenClawAgentSqlitePath } from "openclaw/plugin-sdk/sqlite-runtime";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
+import { resolveAforaAgentSqlitePath } from "afora-agent/plugin-sdk/sqlite-runtime";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  closeOpenClawStateDatabaseForTest,
-} from "openclaw/plugin-sdk/sqlite-runtime-testing";
+  closeAforaAgentDatabasesForTest,
+  closeAforaStateDatabaseForTest,
+} from "afora-agent/plugin-sdk/sqlite-runtime-testing";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import "./test-runtime-mocks.js";
 import { closeAllMemoryIndexManagers, MemoryIndexManager } from "./manager.js";
 
-const originalStateDir = process.env.OPENCLAW_STATE_DIR;
+const originalStateDir = process.env.AFORA_STATE_DIR;
 
 describe("memory legacy migration cleanup", () => {
   let fixtureRoot = "";
@@ -25,28 +25,28 @@ describe("memory legacy migration cleanup", () => {
   let manager: MemoryIndexManager | undefined;
 
   beforeEach(async () => {
-    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-memory-migration-cleanup-"));
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-memory-migration-cleanup-"));
     workspaceDir = path.join(fixtureRoot, "workspace");
     await fs.mkdir(path.join(workspaceDir, "memory"), { recursive: true });
-    Reflect.set(process.env, "OPENCLAW_STATE_DIR", path.join(fixtureRoot, "state"));
+    Reflect.set(process.env, "AFORA_STATE_DIR", path.join(fixtureRoot, "state"));
   });
 
   afterEach(async () => {
     await manager?.close();
     manager = undefined;
     await closeAllMemoryIndexManagers();
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     if (originalStateDir === undefined) {
-      Reflect.deleteProperty(process.env, "OPENCLAW_STATE_DIR");
+      Reflect.deleteProperty(process.env, "AFORA_STATE_DIR");
     } else {
-      Reflect.set(process.env, "OPENCLAW_STATE_DIR", originalStateDir);
+      Reflect.set(process.env, "AFORA_STATE_DIR", originalStateDir);
     }
     await fs.rm(fixtureRoot, { recursive: true, force: true });
   });
 
   it("removes migrated chunks and FTS rows when the dirty source file is already deleted", async () => {
-    const dbPath = resolveOpenClawAgentSqlitePath({ agentId: "main" });
+    const dbPath = resolveAforaAgentSqlitePath({ agentId: "main" });
     await fs.mkdir(path.dirname(dbPath), { recursive: true });
     const seedDb = new DatabaseSync(dbPath, { allowExtension: true });
     let vectorExtensionPath: string | undefined;
@@ -157,7 +157,7 @@ describe("memory legacy migration cleanup", () => {
           },
           list: [{ id: "main", default: true }],
         },
-      }) as OpenClawConfig;
+      }) as AforaConfig;
     const cfg = createConfig({ provider: "none", vectorEnabled: false });
     const result = await MemoryIndexManager.get({ cfg, agentId: "main" });
     if (!result) {

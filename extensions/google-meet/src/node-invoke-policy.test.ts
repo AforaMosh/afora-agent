@@ -1,5 +1,5 @@
 // Google Meet node.invoke policy tests cover caller-controlled command sanitization.
-import type { OpenClawPluginNodeInvokePolicyContext } from "openclaw/plugin-sdk/plugin-entry";
+import type { AforaPluginNodeInvokePolicyContext } from "afora-agent/plugin-sdk/plugin-entry";
 import { describe, expect, it, vi } from "vitest";
 import { resolveGoogleMeetConfig } from "./config.js";
 import {
@@ -8,11 +8,11 @@ import {
 } from "./node-invoke-policy.js";
 
 function createContext(params: unknown, pluginConfig: Record<string, unknown> = {}) {
-  const invokeNode = vi.fn<OpenClawPluginNodeInvokePolicyContext["invokeNode"]>(async () => ({
+  const invokeNode = vi.fn<AforaPluginNodeInvokePolicyContext["invokeNode"]>(async () => ({
     ok: true,
     payload: { ok: true },
   }));
-  const ctx: OpenClawPluginNodeInvokePolicyContext = {
+  const ctx: AforaPluginNodeInvokePolicyContext = {
     nodeId: "node-1",
     command: GOOGLE_MEET_CHROME_NODE_COMMAND,
     params,

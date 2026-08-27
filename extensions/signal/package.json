@@ -1,16 +1,16 @@
 {
-  "name": "@openclaw/signal",
+  "name": "@afora/signal",
   "version": "2026.8.1",
-  "description": "OpenClaw Signal channel plugin",
+  "description": "Afora Signal channel plugin",
   "type": "module",
   "dependencies": {
     "ws": "8.21.1",
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
@@ -89,8 +89,8 @@
       }
     },
     "install": {
-      "clawhubSpec": "clawhub:@openclaw/signal",
-      "npmSpec": "@openclaw/signal",
+      "clawhubSpec": "clawhub:@afora/signal",
+      "npmSpec": "@afora/signal",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.6.9",
       "allowInvalidConfigRecovery": true
@@ -99,7 +99,7 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1",
+      "aforaVersion": "2026.8.1",
       "bundledDist": false
     },
     "release": {
@@ -109,6 +109,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   }
 }

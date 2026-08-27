@@ -3,7 +3,7 @@
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { runBeforeToolCallHook } from "../agents/agent-tools.before-tool-call.js";
 import { resolveToolLoopDetectionConfig } from "../agents/agent-tools.js";
 import { getChannelAgentToolMeta } from "../agents/channel-tools.js";
@@ -17,7 +17,7 @@ import {
   normalizeConversationReadInvocationOrigin,
   type ConversationReadInvocationOrigin,
 } from "../channels/plugins/conversation-read-origin.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { logWarn } from "../logger.js";
 import { isTestDefaultMemorySlotDisabled } from "../plugins/config-state.js";
@@ -68,7 +68,7 @@ type ToolsInvokeOutcome =
       };
     };
 
-function resolveSessionTarget(params: { cfg: OpenClawConfig; input: ToolsInvokeInput }) {
+function resolveSessionTarget(params: { cfg: AforaConfig; input: ToolsInvokeInput }) {
   const rawSessionKey = normalizeOptionalString(params.input.sessionKey) ?? "main";
   const resolved = resolveRequestedSessionAgentId(
     params.cfg,
@@ -89,7 +89,7 @@ function resolveSessionTarget(params: { cfg: OpenClawConfig; input: ToolsInvokeI
   };
 }
 
-function resolveMemoryToolDisableReasons(cfg: OpenClawConfig): string[] {
+function resolveMemoryToolDisableReasons(cfg: AforaConfig): string[] {
   if (!process.env.VITEST) {
     return [];
   }
@@ -162,7 +162,7 @@ function resolveToolSource(tool: AnyAgentTool): "core" | "plugin" | "channel" {
 
 /** Resolves, authorizes, and invokes one gateway-visible core/plugin/channel tool. */
 export async function invokeGatewayTool(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   input: ToolsInvokeInput;
   messageChannel?: string;
   accountId?: string;

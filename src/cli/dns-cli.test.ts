@@ -1,5 +1,5 @@
 // Regression: the dns setup brew-prefix probe must be bounded by a SIGKILL-backed
-// timeout so a hung binary cannot block `openclaw dns setup`, while long-running
+// timeout so a hung binary cannot block `afora dns setup`, while long-running
 // setup steps (install/restart/sudo writes) stay unbounded.
 import fs from "node:fs";
 import os from "node:os";
@@ -10,7 +10,7 @@ const spawnSyncMock = vi.hoisted(() => vi.fn());
 const testState = vi.hoisted(() => ({ zonePath: "" }));
 
 vi.mock("node:child_process", async () => {
-  const { mockNodeChildProcessSpawnSync } = await import("openclaw/plugin-sdk/test-node-mocks");
+  const { mockNodeChildProcessSpawnSync } = await import("afora-agent/plugin-sdk/test-node-mocks");
   return mockNodeChildProcessSpawnSync(spawnSyncMock, () =>
     vi.importActual<typeof import("node:child_process")>("node:child_process"),
   );
@@ -21,7 +21,7 @@ vi.mock("../infra/widearea-dns.js", async () => {
     getWideAreaZonePath: () => testState.zonePath,
     normalizeWideAreaDomain: (d: string) => d,
     replaceWideAreaZoneFile: vi.fn(),
-    resolveWideAreaDiscoveryDomain: () => "openclaw.internal.",
+    resolveWideAreaDiscoveryDomain: () => "afora.internal.",
   };
 });
 
@@ -55,7 +55,7 @@ describe("dns-cli probe bounds", () => {
   beforeEach(() => {
     // A real writable temp prefix lets the un-mocked fs writes (Corefile, conf.d,
     // zone bootstrap) succeed on Linux CI without touching sudo paths.
-    brewPrefix = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-dns-cli-test-"));
+    brewPrefix = fs.mkdtempSync(path.join(os.tmpdir(), "afora-dns-cli-test-"));
     testState.zonePath = path.join(brewPrefix, "test.zone");
     spawnSyncMock.mockReset();
     spawnSyncMock.mockImplementation((cmd: string, args: string[]) => {
@@ -79,11 +79,11 @@ describe("dns-cli probe bounds", () => {
     await withMockedPlatform("darwin", () =>
       program.parseAsync([
         "node",
-        "openclaw",
+        "afora",
         "dns",
         "setup",
         "--domain",
-        "openclaw.internal",
+        "afora.internal",
         "--apply",
       ]),
     );

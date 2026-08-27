@@ -8,15 +8,15 @@ import type {
   WAMessageKey,
   proto,
 } from "baileys";
-import { formatCliCommand, VERSION } from "openclaw/plugin-sdk/cli-runtime";
-import { toErrorObject } from "openclaw/plugin-sdk/error-runtime";
+import { formatCliCommand, VERSION } from "afora-agent/plugin-sdk/cli-runtime";
+import { toErrorObject } from "afora-agent/plugin-sdk/error-runtime";
 import {
   createHttp1EnvHttpProxyAgent,
   createHttp1ProxyAgent,
   createNodeProxyAgent,
-} from "openclaw/plugin-sdk/fetch-runtime";
-import { danger, success, getChildLogger, toPinoLikeLogger } from "openclaw/plugin-sdk/runtime-env";
-import { ensureDir, resolveUserPath } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/fetch-runtime";
+import { danger, success, getChildLogger, toPinoLikeLogger } from "afora-agent/plugin-sdk/runtime-env";
+import { ensureDir, resolveUserPath } from "afora-agent/plugin-sdk/text-utility-runtime";
 import {
   readCredsJsonRaw,
   restoreCredsFromBackupIfNeeded,
@@ -65,7 +65,7 @@ const LOGGED_OUT_STATUS = 401;
 const WHATSAPP_WEBSOCKET_PROXY_TARGET = "https://mmg.whatsapp.net/";
 const CREDS_FLUSH_TIMEOUT_MESSAGE =
   "Queued WhatsApp creds save did not finish before auth bootstrap; skipping repair and continuing with primary creds.";
-const OPENCLAW_WHATSAPP_WEB_SOCKET_URL_ENV = "OPENCLAW_WHATSAPP_WEB_SOCKET_URL";
+const AFORA_WHATSAPP_WEB_SOCKET_URL_ENV = "AFORA_WHATSAPP_WEB_SOCKET_URL";
 
 async function rejectUnsafeWebCredsPath(authDir: string): Promise<void> {
   await assertWebCredsPathRegularFileOrMissing(resolveWebCredsPath(authDir));
@@ -178,7 +178,7 @@ function resolveWaWebSocketUrl(value: string | URL | undefined): string | URL | 
 }
 
 function resolveEnvWaWebSocketUrl(): string | undefined {
-  const value = resolveWaWebSocketUrl(process.env[OPENCLAW_WHATSAPP_WEB_SOCKET_URL_ENV]);
+  const value = resolveWaWebSocketUrl(process.env[AFORA_WHATSAPP_WEB_SOCKET_URL_ENV]);
   if (!value) {
     return undefined;
   }
@@ -186,10 +186,10 @@ function resolveEnvWaWebSocketUrl(): string | undefined {
   try {
     url = new URL(value);
   } catch {
-    throw new Error(`${OPENCLAW_WHATSAPP_WEB_SOCKET_URL_ENV} must be a valid URL.`);
+    throw new Error(`${AFORA_WHATSAPP_WEB_SOCKET_URL_ENV} must be a valid URL.`);
   }
   if (url.protocol !== "ws:" && url.protocol !== "wss:") {
-    throw new Error(`${OPENCLAW_WHATSAPP_WEB_SOCKET_URL_ENV} must use ws:// or wss://.`);
+    throw new Error(`${AFORA_WHATSAPP_WEB_SOCKET_URL_ENV} must use ws:// or wss://.`);
   }
   return url.toString();
 }
@@ -339,7 +339,7 @@ async function createWaSocketInternal(
     version,
     logger,
     printQRInTerminal: false,
-    browser: ["openclaw", "cli", VERSION],
+    browser: ["afora", "cli", VERSION],
     syncFullHistory: false,
     fireInitQueries: receiveMode !== "directory",
     markOnlineOnConnect: false,
@@ -401,7 +401,7 @@ async function createWaSocketInternal(
           if (status === LOGGED_OUT_STATUS) {
             console.error(
               danger(
-                `WhatsApp session logged out. Run: ${formatCliCommand("openclaw channels login")}`,
+                `WhatsApp session logged out. Run: ${formatCliCommand("afora channels login")}`,
               ),
             );
           }

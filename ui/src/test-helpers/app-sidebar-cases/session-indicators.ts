@@ -247,8 +247,8 @@ describe("AppSidebar session indicators", () => {
             pullRequests: [
               {
                 number: 1,
-                owner: "openclaw",
-                repo: "openclaw",
+                owner: "afora",
+                repo: "afora",
                 branch: "feature/test",
                 title: "Test",
                 url: "https://example.test/pr/1",

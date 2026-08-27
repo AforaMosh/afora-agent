@@ -3,15 +3,15 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   asDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "openclaw/plugin-sdk/number-runtime";
+} from "afora-agent/plugin-sdk/number-runtime";
 import {
   createHostedOutboundMediaStore,
   type HostedOutboundMediaChunkRecord,
   type HostedOutboundMediaMetaRecord,
   type HostedOutboundMediaStore,
-} from "openclaw/plugin-sdk/outbound-media";
-import { safeEqualSecret } from "openclaw/plugin-sdk/security-runtime";
-import { resolveWebhookPath } from "openclaw/plugin-sdk/webhook-ingress";
+} from "afora-agent/plugin-sdk/outbound-media";
+import { safeEqualSecret } from "afora-agent/plugin-sdk/security-runtime";
+import { resolveWebhookPath } from "afora-agent/plugin-sdk/webhook-ingress";
 import { getZaloRuntime } from "./runtime.js";
 import { ZALO_OUTBOUND_MEDIA_TTL_MS } from "./timeouts.js";
 

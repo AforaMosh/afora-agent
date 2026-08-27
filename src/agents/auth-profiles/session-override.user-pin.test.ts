@@ -1,7 +1,7 @@
 // Focused lifecycle coverage for explicit auth-profile pins.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionEntry } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveSessionAuthProfileOverride } from "./session-override.js";
 import type { AuthProfileStore } from "./types.js";
 
@@ -64,7 +64,7 @@ async function resolveSession(params: {
   isNewSession: boolean;
 }): Promise<string | undefined> {
   return await resolveSessionAuthProfileOverride({
-    cfg: {} as OpenClawConfig,
+    cfg: {} as AforaConfig,
     provider: "openai",
     agentDir: "/tmp/agent",
     sessionEntry: params.sessionEntry,

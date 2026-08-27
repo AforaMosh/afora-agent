@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { Model } from "../../llm/types.js";
 import type { AuthProfileStore } from "../auth-profiles.js";
 import { resolveAgentHarnessPreparedAuthSupport } from "../harness/support.js";
@@ -30,17 +30,17 @@ function authStore(
   return { version: 1, profiles, ...(order ? { order } : {}) };
 }
 
-function providerConfig(provider: string, config: Record<string, unknown>): OpenClawConfig {
+function providerConfig(provider: string, config: Record<string, unknown>): AforaConfig {
   return {
     models: {
       providers: {
         [provider]: { baseUrl: "", models: [], ...config },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
-function openAIConfig(config: Record<string, unknown>): OpenClawConfig {
+function openAIConfig(config: Record<string, unknown>): AforaConfig {
   return providerConfig("openai", config);
 }
 
@@ -296,7 +296,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
             vault: { source: "file", path: "/tmp/secrets.json", mode: "json" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: {},
       authProfileStore: authStore(
         {
@@ -351,7 +351,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
         modelId: "grok-4",
         config: {
           auth: { order: { xai: ["xai:missing"] } },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: {},
         authProfileStore: authStore({
           "xai:backup": apiKeyProfile("xai", "backup-key"),
@@ -367,7 +367,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
         modelId: "grok-4",
         config: {
           auth: { order: { xai: [] } },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: {},
         authProfileStore: authStore({
           "xai:backup": apiKeyProfile("xai", "backup-key"),
@@ -441,7 +441,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
     expect(plan.modelRoute).toBeUndefined();
     expect(plan.deferredRouteSupport).toEqual({
       requestTransportOverrides: "none",
-      runtimePolicy: { compatibleIds: ["openclaw", "codex"] },
+      runtimePolicy: { compatibleIds: ["afora", "codex"] },
     });
     expect(resolveAgentHarnessPreparedAuthSupport({ plan })).toEqual({ source: "harness" });
   });
@@ -526,7 +526,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
             },
           },
           secrets: { providers: { default: { source: "env" } } },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: { DIRECT_OPENAI_KEY: "sk-direct" },
         harnessId: "codex",
         harnessRuntime: "codex",
@@ -557,7 +557,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
               openai: { apiKey: "configured-platform-key", baseUrl: "", models: [] },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: {},
         authProfileStore: store,
       }),
@@ -587,7 +587,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: {},
         harnessId: "codex",
         harnessRuntime: "codex",
@@ -617,7 +617,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: {},
         harnessId: "codex",
         harnessRuntime: "codex",
@@ -681,7 +681,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
             keyRef: {
               source: "env",
               provider: "default",
-              id: "OPENCLAW_TEST_MISSING_PREPARED_AUTH",
+              id: "AFORA_TEST_MISSING_PREPARED_AUTH",
             },
           },
           "openai:backup": openAIApiKeyProfile("backup-key"),
@@ -708,7 +708,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
             vault: { source: "file", path: "/tmp/secrets.json", mode: "json" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: {},
       harnessId: "codex",
       harnessRuntime: "codex",
@@ -754,7 +754,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
             vault: { source: "file", path: "/tmp/secrets.json", mode: "json" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: {},
       harnessId: "codex",
       harnessRuntime: "codex",
@@ -804,7 +804,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: { DIRECT_OPENAI_KEY: "sk-direct" },
         harnessId: "codex",
         harnessRuntime: "codex",
@@ -837,7 +837,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         sessionAuthProfileId: "openai:platform",
         sessionAuthProfileSource: "user",
         authProfileStore: authStore({
@@ -860,7 +860,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const plan = prepareAgentRuntimeAuthPlan({
       ...openAIChatGptAuthFixture(),
       config,
@@ -897,7 +897,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: { OPENAI_API_KEY: "ambient-platform-key" },
         authProfileStore: authStore(
           {
@@ -970,7 +970,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: {},
       authProfileStore: authStore(
         {
@@ -1008,7 +1008,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
               openai: { apiKey: "openai:bound", baseUrl: "", models: [] },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: {},
         authProfileStore: authStore({
           "openai:bound": openAIApiKeyProfile("bound-platform-key"),
@@ -1031,7 +1031,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: {},
         authProfileStore: authStore(
           {
@@ -1063,7 +1063,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
               openai: { apiKey: "openai:bound", baseUrl: "", models: [] },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: {},
         authProfileStore: store,
       }),
@@ -1084,7 +1084,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: {},
       authProfileStore: authStore({
         "openai:bound": openAITokenProfile("subscription-token", Date.now() + 60_000),
@@ -1118,7 +1118,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
             vault: { source: "file", path: "/tmp/openai-secrets.json", mode: "json" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: {},
       authProfileStore: authStore(
         {
@@ -1160,7 +1160,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
             vault: { source: "file", path: "/tmp/openai-secrets.json", mode: "json" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: {},
       authProfileStore: authStore(
         {
@@ -1196,7 +1196,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const store = authStore(
       {
         "openai:platform-backup": openAIApiKeyProfile("profile-platform-key"),
@@ -1300,7 +1300,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
             openai: { apiKey: "configured-platform-key", baseUrl: "", models: [] },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: {},
       authProfileStore: store,
     });
@@ -1360,7 +1360,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
         models: {
           providers: { openai: { apiKey: "configured-platform-key", baseUrl: "", models: [] } },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: {},
       authProfileStore: authStore({}),
     });
@@ -1394,7 +1394,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
       label: "ambient OAuth token behind a Platform profile",
       config: {
         models: { providers: { openai: { auth: "oauth", baseUrl: "", models: [] } } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: { OPENAI_API_KEY: "ambient-oauth-token" },
       profileId: "openai:platform",
       profile: {
@@ -1434,7 +1434,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const store = authStore({});
       const prepared = prepareAgentRuntimeAuth({
         ...openAIChatGptAuthFixture(),
@@ -1509,7 +1509,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
             vault: { source: "file", path: "/tmp/openai-secrets.json", mode: "json" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: {},
       authProfileStore: authStore(
         {
@@ -1556,7 +1556,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: {},
       authProfileStore: authStore({}),
     });
@@ -1592,7 +1592,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: {},
       authProfileStore: authStore({
         "openai:platform": openAIApiKeyProfile("profile-platform-key"),
@@ -1628,7 +1628,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: {},
       authProfileStore: authStore({}),
     });
@@ -1666,7 +1666,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
         modelId: "gpt-5.5",
         config: {
           models: { providers: { openai: { auth, baseUrl: "", models: [] } } },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: {},
         authProfileStore: authStore({ "openai:wrong-route": profile }),
       }),
@@ -1680,7 +1680,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
         modelId: "gpt-5.5",
         config: {
           models: { providers: { openai: { auth: "oauth", baseUrl: "", models: [] } } },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: {},
         authProfileStore: authStore({}),
         harnessId: "codex",
@@ -1705,7 +1705,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: {},
         authProfileStore: authStore({}),
       }),
@@ -1729,7 +1729,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
       baseUrl: "https://relay.example.test/v1",
       authRequirement: "api-key",
       requestTransportOverrides: "none",
-      runtimePolicy: { compatibleIds: ["openclaw"] },
+      runtimePolicy: { compatibleIds: ["afora"] },
     });
   });
 
@@ -1828,7 +1828,7 @@ describe("prepareAgentRuntimeAuthPlan", () => {
               "openai:missing": { provider: "openai", mode: "oauth" },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         authProfileStore: authStore({}),
         sessionAuthProfileId: "openai:missing",
         sessionAuthProfileSource: "user",

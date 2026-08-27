@@ -1,9 +1,9 @@
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 // Xai plugin module implements web search behavior.
 import type {
   WebSearchProviderPlugin,
   WebSearchProviderSetupContext,
-} from "openclaw/plugin-sdk/provider-web-search-config-contract";
+} from "afora-agent/plugin-sdk/provider-web-search-config-contract";
 import { buildXaiWebSearchProviderBase } from "./web-search-provider-shared.js";
 
 const loadXaiWebSearchProviderRuntime = createLazyRuntimeModule(

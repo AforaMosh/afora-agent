@@ -37,7 +37,7 @@ describe("structured prompt media replay", () => {
   });
 
   it("retains the runtime fact carrier when queued hydration fails", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-runtime-failure-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-runtime-failure-"));
     const media = [{ path: path.join(workspaceDir, "missing.png"), contentType: "image/png" }];
     const message = attachRuntimePromptMediaFacts(
       { role: "user" as const, content: "missing attachment" },
@@ -100,12 +100,12 @@ describe("structured prompt media replay", () => {
   });
 
   it("preserves persisted facts when replay hydration fails", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-replay-failure-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-replay-failure-"));
     const missingPath = path.join(workspaceDir, "missing.png");
     const message = {
       role: "user" as const,
       content: "missing attachment",
-      __openclaw: { media: [{ path: missingPath, contentType: "image/png" }] },
+      __afora: { media: [{ path: missingPath, contentType: "image/png" }] },
     } as unknown as AgentMessage;
 
     try {
@@ -115,7 +115,7 @@ describe("structured prompt media replay", () => {
         workspaceOnly: true,
       });
       const replayed = result[0] as unknown as Record<string, unknown>;
-      expect(replayed["__openclaw"]).toMatchObject({
+      expect(replayed["__afora"]).toMatchObject({
         media: [expect.objectContaining({ path: missingPath })],
       });
       expect(replayed.content).toEqual([{ type: "text", text: "missing attachment" }]);
@@ -168,7 +168,7 @@ describe("structured prompt media replay", () => {
   });
 
   it("expands a home-relative path carried by a media fact", async () => {
-    const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-fact-home-"));
+    const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-fact-home-"));
     const imagePath = path.join(homeDir, "Pictures", "photo.png");
     await fs.mkdir(path.dirname(imagePath), { recursive: true });
     await fs.writeFile(imagePath, Buffer.from(TINY_PNG_BASE64, "base64"));
@@ -190,7 +190,7 @@ describe("structured prompt media replay", () => {
   });
 
   it("keeps same-spelled relative refs from different workspaces distinct", async () => {
-    const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-relative-roots-"));
+    const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-relative-roots-"));
     const stagedDir = path.join(rootDir, "staged");
     const currentDir = path.join(rootDir, "current");
     await fs.mkdir(stagedDir, { recursive: true });
@@ -217,7 +217,7 @@ describe("structured prompt media replay", () => {
   });
 
   it("does not duplicate an already-materialized offloaded slot", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-materialized-offload-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-materialized-offload-"));
     const imagePath = path.join(workspaceDir, "offloaded.png");
     await fs.writeFile(imagePath, Buffer.from(TINY_PNG_BASE64, "base64"));
     const image = { type: "image" as const, data: TINY_PNG_BASE64, mimeType: "image/png" };
@@ -251,7 +251,7 @@ describe("structured prompt media replay", () => {
   });
 
   it("prefers persisted fact-index layout when runtime order is also present", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-layout-authority-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-layout-authority-"));
     const describedPath = path.join(workspaceDir, "described.png");
     const inlinePath = path.join(workspaceDir, "inline.png");
     const offloadedPath = path.join(workspaceDir, "offloaded.png");
@@ -314,7 +314,7 @@ describe("structured prompt media replay", () => {
   });
 
   it("retries an offloaded fact even when an unrelated explicit image exists", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-offload-retry-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-offload-retry-"));
     const explicitImage = {
       type: "image" as const,
       data: TINY_PNG_BASE64,
@@ -343,7 +343,7 @@ describe("structured prompt media replay", () => {
   });
 
   it("does not assign a partial offloaded fact to an existing inline image", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-partial-facts-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-partial-facts-"));
     const offloadedPath = path.join(workspaceDir, "offloaded.png");
     const offloadedBuffer = createSolidPngBuffer(1, 1, { r: 0, g: 0, b: 255 });
     await fs.writeFile(offloadedPath, offloadedBuffer);
@@ -373,7 +373,7 @@ describe("structured prompt media replay", () => {
   });
 
   it("preserves fact order for partial hydration without persisted layout", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-partial-order-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-partial-order-"));
     const firstPath = path.join(workspaceDir, "first.png");
     const secondPath = path.join(workspaceDir, "second.png");
     const thirdPath = path.join(workspaceDir, "third.png");
@@ -482,7 +482,7 @@ describe("structured prompt media replay", () => {
     const message = {
       role: "user" as const,
       content: [{ type: "text" as const, text: "legacy identity-less" }, inlineImage],
-      __openclaw: { media: [{ kind: "image" }] },
+      __afora: { media: [{ kind: "image" }] },
     } as unknown as AgentMessage;
 
     const result = await hydratePromptMediaMessages([message], {
@@ -501,7 +501,7 @@ describe("structured prompt media replay", () => {
     const message = {
       role: "user" as const,
       content: [{ type: "text" as const, text: "remote identity" }, inlineImage],
-      __openclaw: {
+      __afora: {
         media: [{ kind: "image", url: "https://example.test/remote.png" }],
       },
     } as unknown as AgentMessage;
@@ -510,7 +510,7 @@ describe("structured prompt media replay", () => {
       workspaceDir: "/tmp",
       model: { input: ["text", "image"] },
     });
-    const meta = (result[0] as unknown as Record<string, unknown>)["__openclaw"] as
+    const meta = (result[0] as unknown as Record<string, unknown>)["__afora"] as
       | Record<string, unknown>
       | undefined;
 
@@ -522,14 +522,14 @@ describe("structured prompt media replay", () => {
   });
 
   it("hydrates an identity-bearing persisted fact beside an unowned inline block", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-legacy-inline-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-legacy-inline-"));
     const imagePath = path.join(workspaceDir, "inline.png");
     await fs.writeFile(imagePath, Buffer.from(TINY_PNG_BASE64, "base64"));
     const inlineImage = { type: "image" as const, data: TINY_PNG_BASE64, mimeType: "image/png" };
     const message = {
       role: "user" as const,
       content: [{ type: "text" as const, text: "legacy" }, inlineImage],
-      __openclaw: { media: [{ path: imagePath, contentType: "image/png" }] },
+      __afora: { media: [{ path: imagePath, contentType: "image/png" }] },
     } as unknown as AgentMessage;
 
     try {
@@ -549,7 +549,7 @@ describe("structured prompt media replay", () => {
   });
 
   it("keeps identity-bearing persisted facts ahead of an unowned inline block", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-legacy-order-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-legacy-order-"));
     const existingPath = path.join(workspaceDir, "existing.png");
     const hydratedPath = path.join(workspaceDir, "hydrated.png");
     const hydratedBuffer = createSolidPngBuffer(1, 1, { r: 0, g: 255, b: 0 });
@@ -563,7 +563,7 @@ describe("structured prompt media replay", () => {
     const message = {
       role: "user" as const,
       content: [{ type: "text" as const, text: "legacy order" }, existingImage],
-      __openclaw: {
+      __afora: {
         media: [
           { path: existingPath, contentType: "image/png" },
           { path: hydratedPath, contentType: "image/png" },
@@ -589,7 +589,7 @@ describe("structured prompt media replay", () => {
   });
 
   it("dedupes the local path alias of a claim-check fact", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-image-alias-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-image-alias-"));
     const workspaceDir = path.join(stateDir, "workspace");
     const inboundDir = path.join(stateDir, "media", "inbound");
     const mediaId = "aliased.png";
@@ -597,8 +597,8 @@ describe("structured prompt media replay", () => {
     await fs.mkdir(workspaceDir, { recursive: true });
     await fs.mkdir(inboundDir, { recursive: true });
     await fs.writeFile(imagePath, Buffer.from(TINY_PNG_BASE64, "base64"));
-    const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
-    setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+    const envSnapshot = captureEnv(["AFORA_STATE_DIR"]);
+    setTestEnvValue("AFORA_STATE_DIR", stateDir);
 
     try {
       const result = await detectAndLoadPromptImages({
@@ -624,7 +624,7 @@ describe("structured prompt media replay", () => {
   });
 
   it("keeps described image facts suppressed across serialize and restore", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-replay-suppressed-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-replay-suppressed-"));
     const imagePath = path.join(workspaceDir, "described.png");
     await fs.writeFile(imagePath, Buffer.from(TINY_PNG_BASE64, "base64"));
     const serialized = JSON.stringify(
@@ -637,7 +637,7 @@ describe("structured prompt media replay", () => {
       }),
     );
     const restored = JSON.parse(serialized) as AgentMessage;
-    const meta = (restored as unknown as Record<string, unknown>)["__openclaw"] as
+    const meta = (restored as unknown as Record<string, unknown>)["__afora"] as
       | Record<string, unknown>
       | undefined;
     const persistedMedia = meta?.media as

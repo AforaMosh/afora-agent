@@ -7,9 +7,9 @@ const hoisted = vi.hoisted(() => ({
     | { finalize: (statusLine: string) => void | Promise<void>; deliveryId: string }
     | undefined,
 }));
-vi.mock("openclaw/plugin-sdk/question-gateway-runtime", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/question-gateway-runtime", async (importOriginal) => {
   const original =
-    await importOriginal<typeof import("openclaw/plugin-sdk/question-gateway-runtime")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/question-gateway-runtime")>();
   return {
     ...original,
     questionGatewayRuntime: {

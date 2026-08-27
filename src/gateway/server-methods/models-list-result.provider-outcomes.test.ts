@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   type PreparedGatewayModelCatalogSnapshot,
   registerGatewayModelCatalogPrivateAccess,
@@ -19,7 +19,7 @@ const emptyAuthStore = { version: 1, profiles: {} } as const;
 
 describe("models.list provider catalog outcomes", () => {
   it("preserves an auth rejection when no usable models are visible", async () => {
-    const config = {} as OpenClawConfig;
+    const config = {} as AforaConfig;
     const snapshot = {
       agentId: "main",
       agentDir: "/tmp/models-list-provider-outcomes-agent",
@@ -66,7 +66,7 @@ describe("models.list provider catalog outcomes", () => {
           models: { "openai/*": {}, "openai/gpt-5.6-sol": {} },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const model = {
       id: "gpt-5.6-sol",
       name: "GPT-5.6 Sol",
@@ -142,7 +142,7 @@ describe("models.list provider catalog outcomes", () => {
           models: { "openai/*": {}, "openai/gpt-5.6-sol": {} },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const model = {
       id: "gpt-5.6-sol",
       name: "GPT-5.6 Sol",

@@ -1,6 +1,6 @@
 /** Tests Code Mode TypeScript execution. */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const loadCodeModeTypeScriptRuntime = vi.hoisted(() =>

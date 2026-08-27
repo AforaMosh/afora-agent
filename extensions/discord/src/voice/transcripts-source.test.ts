@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 // Discord tests cover transcripts source plugin behavior.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -46,7 +46,7 @@ describe("discordVoiceTranscriptsSourceProvider", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     await expect(
       discordVoiceTranscriptsSourceProvider.accessControl?.authorize({
@@ -284,7 +284,7 @@ describe("discordVoiceTranscriptsSourceProvider", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const source = { providerId: "discord-voice", guildId: "g1", channelId: "c1" };
 
     expect(
@@ -322,7 +322,7 @@ describe("discordVoiceTranscriptsSourceProvider", () => {
 
     const unavailableOnly = {
       channels: { discord: { accounts: { work: unavailableAccount } } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     expect(
       discordVoiceTranscriptsSourceProvider.accessControl?.resolveAccountId({
         cfg: unavailableOnly,

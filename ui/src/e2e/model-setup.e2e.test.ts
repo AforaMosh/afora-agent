@@ -11,7 +11,7 @@ const suite = createControlUiE2eSuite({
   unavailableMessage: (executablePath) => `Playwright Chromium is unavailable at ${executablePath}`,
 });
 
-const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
 const localPrepareOptions = [
   {
     id: "ollama",
@@ -24,7 +24,7 @@ const localPrepareOptions = [
     id: "llama-cpp",
     brandId: "llama-cpp",
     label: "llama.cpp",
-    hint: "Install a verified llama.cpp server and run a private GGUF model managed by OpenClaw",
+    hint: "Install a verified llama.cpp server and run a private GGUF model managed by Afora",
     actionLabel: "Set up model",
   },
   {
@@ -54,12 +54,12 @@ suite.define(() => {
           featureMethods: [
             "chat.metadata",
             "chat.startup",
-            "openclaw.setup.detect",
-            "openclaw.setup.activate",
-            "openclaw.chat",
+            "afora.setup.detect",
+            "afora.setup.activate",
+            "afora.chat",
           ],
           methodResponses: {
-            "openclaw.setup.detect": {
+            "afora.setup.detect": {
               candidates: [
                 {
                   kind: "codex-cli",
@@ -72,18 +72,18 @@ suite.define(() => {
                 },
               ],
               manualProviders: [{ id: "openai", label: "OpenAI" }],
-              workspace: "/tmp/openclaw-e2e",
+              workspace: "/tmp/afora-e2e",
               setupComplete: false,
             },
-            "openclaw.setup.activate": {
+            "afora.setup.activate": {
               ok: true,
               modelRef: "openai/gpt-5",
               latencyMs: 73,
               lines: ["Model ready"],
             },
-            "openclaw.chat": {
+            "afora.chat": {
               sessionId: "e2e-custodian",
-              reply: "## Hi, I'm OpenClaw",
+              reply: "## Hi, I'm Afora",
               action: "none",
               question: {
                 id: "onboarding-next-step",
@@ -107,9 +107,9 @@ suite.define(() => {
         await expect.poll(() => candidate.locator('[data-provider-icon="codex"]').count()).toBe(1);
         await candidate.getByRole("button", { name: "Test & use" }).click();
 
-        const detect = await gateway.waitForRequest("openclaw.setup.detect");
+        const detect = await gateway.waitForRequest("afora.setup.detect");
         expect(detect.params).toEqual({ agentId: "main" });
-        const activate = await gateway.waitForRequest("openclaw.setup.activate");
+        const activate = await gateway.waitForRequest("afora.setup.activate");
         expect(activate.params).toEqual({
           kind: "codex-cli",
           agentId: "main",
@@ -123,10 +123,10 @@ suite.define(() => {
         await expect
           .poll(async () => page.locator(".model-setup-success").textContent())
           .toContain("Verified in 73 ms");
-        await gateway.setMethodResponse("openclaw.setup.detect", {
+        await gateway.setMethodResponse("afora.setup.detect", {
           candidates: [],
           manualProviders: [{ id: "openai", label: "OpenAI" }],
-          workspace: "/tmp/openclaw-e2e",
+          workspace: "/tmp/afora-e2e",
           setupComplete: true,
           configuredModel: "openai/gpt-5",
         });
@@ -156,7 +156,7 @@ suite.define(() => {
           });
         }
 
-        const chatRequest = await gateway.waitForRequest("openclaw.chat");
+        const chatRequest = await gateway.waitForRequest("afora.chat");
         expect(chatRequest.params).toMatchObject({
           sessionId: expect.stringMatching(/^control-ui-onboarding-/u),
           welcomeVariant: "onboarding",
@@ -166,7 +166,7 @@ suite.define(() => {
         await expect
           .poll(() => page.locator(".shell").getAttribute("class"))
           .not.toContain("shell--onboarding");
-        const userTurns = (await gateway.getRequests("openclaw.chat")).filter((request) => {
+        const userTurns = (await gateway.getRequests("afora.chat")).filter((request) => {
           const params = request.params;
           return typeof params === "object" && params !== null && "message" in params;
         });
@@ -204,15 +204,15 @@ suite.define(() => {
               featured: true,
             },
           ],
-          workspace: "/tmp/openclaw-e2e",
+          workspace: "/tmp/afora-e2e",
           setupComplete: false,
         };
         const gateway = await installMockGateway(page, {
           featureMethods: [
             "chat.metadata",
             "chat.startup",
-            "openclaw.setup.detect",
-            "openclaw.setup.auth.start",
+            "afora.setup.detect",
+            "afora.setup.auth.start",
             "wizard.next",
           ],
           methodResponses: {
@@ -224,8 +224,8 @@ suite.define(() => {
               valid: true,
               issues: [],
             },
-            "openclaw.setup.detect": initialDetection,
-            "openclaw.setup.auth.start": {
+            "afora.setup.detect": initialDetection,
+            "afora.setup.auth.start": {
               sessionId: "device-code-session",
               done: false,
               status: "running",
@@ -256,7 +256,7 @@ suite.define(() => {
         await gateway.deferNext("config.get");
         await page.getByRole("button", { name: "Pair" }).click();
 
-        const start = await gateway.waitForRequest("openclaw.setup.auth.start");
+        const start = await gateway.waitForRequest("afora.setup.auth.start");
         expect(start.params).toMatchObject({ authChoice: "provider-device-code" });
         await expect
           .poll(async () => (await gateway.getRequests("config.get")).length)
@@ -276,7 +276,7 @@ suite.define(() => {
         await expect.poll(() => page.getByText("Working…").count()).toBe(0);
         await page.getByText("Expires in 14 minutes").waitFor();
         await page
-          .locator("openclaw-modal-dialog")
+          .locator("afora-modal-dialog")
           .getByRole("alert")
           .filter({ hasText: "authoritative snapshot unavailable" })
           .waitFor();
@@ -298,13 +298,13 @@ suite.define(() => {
         await page.getByRole("button", { name: "Continue" }).waitFor();
         await page.getByRole("button", { name: "Cancel" }).waitFor();
 
-        await gateway.setMethodResponse("openclaw.setup.detect", {
+        await gateway.setMethodResponse("afora.setup.detect", {
           ...initialDetection,
           authOptions: [],
           configuredModel: "provider/verified-model",
           setupComplete: true,
         });
-        const detectCountBeforeCompletion = (await gateway.getRequests("openclaw.setup.detect"))
+        const detectCountBeforeCompletion = (await gateway.getRequests("afora.setup.detect"))
           .length;
         await page.getByRole("button", { name: "Continue" }).click();
         await expect.poll(async () => (await gateway.getRequests("wizard.next")).length).toBe(2);
@@ -315,7 +315,7 @@ suite.define(() => {
           answer: { stepId: "device-code" },
         });
         await expect
-          .poll(async () => (await gateway.getRequests("openclaw.setup.detect")).length)
+          .poll(async () => (await gateway.getRequests("afora.setup.detect")).length)
           .toBe(detectCountBeforeCompletion + 1);
         await page.getByRole("heading", { name: "Connection verified" }).waitFor();
         await expect
@@ -347,26 +347,26 @@ suite.define(() => {
               website: "https://ollama.com/download",
             },
           ],
-          workspace: "/tmp/openclaw-e2e",
+          workspace: "/tmp/afora-e2e",
           setupComplete: false,
         };
         const gateway = await installMockGateway(page, {
           featureMethods: [
             "chat.metadata",
             "chat.startup",
-            "openclaw.setup.detect",
-            "openclaw.setup.activate",
-            "openclaw.setup.prepare.start",
+            "afora.setup.detect",
+            "afora.setup.activate",
+            "afora.setup.prepare.start",
             "wizard.next",
           ],
           methodResponses: {
-            "openclaw.setup.detect": initialDetection,
-            "openclaw.setup.prepare.start": {
+            "afora.setup.detect": initialDetection,
+            "afora.setup.prepare.start": {
               sessionId: "ollama-prepare-session",
               done: false,
               status: "running",
             },
-            "openclaw.setup.activate": {
+            "afora.setup.activate": {
               ok: true,
               modelRef: "ollama/qwen3:0.6b",
               latencyMs: 284,
@@ -414,7 +414,7 @@ suite.define(() => {
                       "Start or restart the Ollama server for this address.",
                       "If Ollama is not installed on that machine, download it at https://ollama.com/download",
                       "",
-                      "Continue when it is running. OpenClaw will retry this address.",
+                      "Continue when it is running. Afora will retry this address.",
                     ].join("\n"),
                   },
                 },
@@ -458,7 +458,7 @@ suite.define(() => {
           .getByRole("button", { name: "Choose connection" })
           .click();
 
-        const start = await gateway.waitForRequest("openclaw.setup.prepare.start");
+        const start = await gateway.waitForRequest("afora.setup.prepare.start");
         expect(start.params).toMatchObject({ authChoice: "ollama" });
 
         if (artifactDir) {
@@ -486,7 +486,7 @@ suite.define(() => {
         await page.getByRole("button", { name: "Submit" }).click();
         await page.getByText("Ollama could not be reached at http://127.0.0.1:11434.").waitFor();
         await page
-          .getByText("Continue when it is running. OpenClaw will retry this address.")
+          .getByText("Continue when it is running. Afora will retry this address.")
           .waitFor();
 
         if (artifactDir) {
@@ -513,7 +513,7 @@ suite.define(() => {
           .poll(() => page.locator('.model-setup-success [data-provider-icon="ollama"]').count())
           .toBe(1);
 
-        const activate = await gateway.waitForRequest("openclaw.setup.activate");
+        const activate = await gateway.waitForRequest("afora.setup.activate");
         expect(activate.params).toEqual({
           kind: "provider-auto:ollama",
           agentId: "main",
@@ -528,7 +528,7 @@ suite.define(() => {
           });
         }
 
-        await gateway.setMethodResponse("openclaw.setup.detect", {
+        await gateway.setMethodResponse("afora.setup.detect", {
           ...initialDetection,
           candidates: [],
           configuredModel: "ollama/qwen3:0.6b",
@@ -581,12 +581,12 @@ suite.define(() => {
           featureMethods: [
             "chat.metadata",
             "chat.startup",
-            "openclaw.setup.detect",
-            "openclaw.setup.activate",
-            "openclaw.setup.prepare.start",
+            "afora.setup.detect",
+            "afora.setup.activate",
+            "afora.setup.prepare.start",
           ],
           methodResponses: {
-            "openclaw.setup.detect": {
+            "afora.setup.detect": {
               candidates: [],
               unavailableCandidates: [],
               manualProviders: [
@@ -619,10 +619,10 @@ suite.define(() => {
                 },
               ],
               authOptions: [],
-              workspace: "/tmp/openclaw-e2e",
+              workspace: "/tmp/afora-e2e",
               setupComplete: false,
             },
-            "openclaw.setup.activate": {
+            "afora.setup.activate": {
               ok: true,
               modelRef: "qwen/qwen3-coder-plus",
               latencyMs: 412,
@@ -647,7 +647,7 @@ suite.define(() => {
           page
             .locator("[data-manual-provider]")
             .evaluateAll((options) => options.some((option) => option === document.activeElement));
-        const providerHideMarker = "data-openclaw-test-after-hide";
+        const providerHideMarker = "data-afora-test-after-hide";
         const armProviderHide = () =>
           providerPicker.evaluate((element, marker) => {
             element.removeAttribute(marker);
@@ -804,7 +804,7 @@ suite.define(() => {
             }),
         );
         await page.getByRole("button", { name: "Connect & verify" }).click();
-        const activate = await gateway.waitForRequest("openclaw.setup.activate");
+        const activate = await gateway.waitForRequest("afora.setup.activate");
         expect(activate.params).toEqual({
           kind: "api-key",
           agentId: "main",
@@ -823,7 +823,7 @@ suite.define(() => {
           await page.setViewportSize({ height: 844, width: 390 });
           await expect
             .poll(() =>
-              page.locator("openclaw-modal-dialog.nav-drawer").evaluate((element) => {
+              page.locator("afora-modal-dialog.nav-drawer").evaluate((element) => {
                 const dialog = element.shadowRoot
                   ?.querySelector("wa-dialog")
                   ?.shadowRoot?.querySelector("dialog");
@@ -842,11 +842,11 @@ suite.define(() => {
           .poll(() => page.locator(".model-setup-success").textContent())
           .toContain("Verified in 412 ms");
 
-        const detectCountBeforeDismiss = (await gateway.getRequests("openclaw.setup.detect"))
+        const detectCountBeforeDismiss = (await gateway.getRequests("afora.setup.detect"))
           .length;
         await page.getByRole("button", { name: "Stay in settings" }).click();
         await expect
-          .poll(async () => (await gateway.getRequests("openclaw.setup.detect")).length)
+          .poll(async () => (await gateway.getRequests("afora.setup.detect")).length)
           .toBe(detectCountBeforeDismiss + 1);
         await providerTrigger.click();
         await expect.poll(manualProviderMenuReady).toBe(true);
@@ -874,11 +874,11 @@ suite.define(() => {
           featureMethods: [
             "chat.metadata",
             "chat.startup",
-            "openclaw.setup.detect",
-            "openclaw.setup.verify",
+            "afora.setup.detect",
+            "afora.setup.verify",
           ],
           methodResponses: {
-            "openclaw.setup.detect": {
+            "afora.setup.detect": {
               candidates: [
                 {
                   kind: "existing-model",
@@ -900,11 +900,11 @@ suite.define(() => {
                 },
               ],
               manualProviders: [],
-              workspace: "/tmp/openclaw-e2e",
+              workspace: "/tmp/afora-e2e",
               configuredModel: "openai/gpt-5",
               setupComplete: true,
             },
-            "openclaw.setup.verify": {
+            "afora.setup.verify": {
               ok: true,
               modelRef: "openai/gpt-5",
               latencyMs: 1234,
@@ -928,7 +928,7 @@ suite.define(() => {
           await page.setViewportSize({ height: 844, width: 390 });
           await expect
             .poll(() =>
-              page.locator("openclaw-modal-dialog.nav-drawer").evaluate((element) => {
+              page.locator("afora-modal-dialog.nav-drawer").evaluate((element) => {
                 const dialog = element.shadowRoot
                   ?.querySelector("wa-dialog")
                   ?.shadowRoot?.querySelector("dialog");
@@ -944,18 +944,18 @@ suite.define(() => {
           await page.setViewportSize({ height: 900, width: 1280 });
         }
         await page.getByRole("button", { name: "Check model" }).click();
-        const verify = await gateway.waitForRequest("openclaw.setup.verify");
+        const verify = await gateway.waitForRequest("afora.setup.verify");
         expect(verify.params).toEqual({ agentId: "main" });
         await page.getByText("Ready · 1234 ms").waitFor();
-        const detectCountBeforeRefresh = (await gateway.getRequests("openclaw.setup.detect"))
+        const detectCountBeforeRefresh = (await gateway.getRequests("afora.setup.detect"))
           .length;
-        const verifyCountBeforeRefresh = (await gateway.getRequests("openclaw.setup.verify"))
+        const verifyCountBeforeRefresh = (await gateway.getRequests("afora.setup.verify"))
           .length;
         await page.getByRole("button", { name: "Check again" }).click();
         await expect
-          .poll(async () => (await gateway.getRequests("openclaw.setup.verify")).length)
+          .poll(async () => (await gateway.getRequests("afora.setup.verify")).length)
           .toBe(verifyCountBeforeRefresh + 1);
-        expect((await gateway.getRequests("openclaw.setup.detect")).length).toBe(
+        expect((await gateway.getRequests("afora.setup.detect")).length).toBe(
           detectCountBeforeRefresh,
         );
         await page.getByRole("button", { name: "Check again" }).waitFor();

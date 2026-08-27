@@ -1,5 +1,5 @@
 // Codex tests cover app inventory cache plugin behavior.
-import { MAX_DATE_TIMESTAMP_MS } from "openclaw/plugin-sdk/number-runtime";
+import { MAX_DATE_TIMESTAMP_MS } from "afora-agent/plugin-sdk/number-runtime";
 import { describe, expect, it, vi } from "vitest";
 import {
   CodexAppInventoryCache,

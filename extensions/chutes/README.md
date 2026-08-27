@@ -1,12 +1,12 @@
-# OpenClaw Chutes Provider
+# Afora Chutes Provider
 
-Official OpenClaw provider plugin for Chutes.
+Official Afora provider plugin for Chutes.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/chutes-provider
-openclaw gateway restart
+afora plugins install @afora/chutes-provider
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/providers/chutes> for setup and configuration.
+See <https://docs.afora.ai/providers/chutes> for setup and configuration.

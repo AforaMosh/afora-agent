@@ -11,8 +11,8 @@ scenario:
   objective: Verify the plugin install compatibility owner enforces independent package-declared minimum host and plugin API ranges.
   successCriteria:
     - A package can support a newer host through independent compatibility floors without requiring package-host version equality.
-    - A package whose openclaw.install.minHostVersion exceeds the current host is rejected with an incompatible-host error.
-    - A package whose openclaw.compat.pluginApi range excludes the current runtime is rejected with an incompatible-plugin-API error.
+    - A package whose afora.install.minHostVersion exceeds the current host is rejected with an incompatible-host error.
+    - A package whose afora.compat.pluginApi range excludes the current runtime is rejected with an incompatible-plugin-API error.
     - Malformed compatibility metadata fails with a specific validation error.
   docsRefs:
     - docs/plugins/compatibility.md

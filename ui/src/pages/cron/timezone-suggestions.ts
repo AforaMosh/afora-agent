@@ -1,4 +1,4 @@
-import { sortUniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { sortUniqueStrings } from "@afora/normalization-core/string-normalization";
 import type { CronJob } from "../../api/types.ts";
 
 function resolveBrowserTimezone(): string {

@@ -4,9 +4,9 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { SessionManager } from "../../agents/sessions/session-manager.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  resolveIncognitoOpenClawAgentSqlitePath,
-} from "../../state/openclaw-agent-db.js";
+  closeAforaAgentDatabasesForTest,
+  resolveIncognitoAforaAgentSqlitePath,
+} from "../../state/afora-agent-db.js";
 import { resolveSessionStorePathCore } from "./paths.js";
 import {
   createSessionEntryWithTranscript,
@@ -20,7 +20,7 @@ import { replaceTranscriptEvents } from "./session-accessor.sqlite-transcript-wr
 const sessionKey = "agent:main:dashboard:incognito-round-trip";
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
 });
 
 describe("incognito transcript access", () => {
@@ -96,8 +96,8 @@ describe("incognito transcript access", () => {
     const stateDir = fs.realpathSync(
       fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), "incognito-maintenance-")),
     );
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
-    const storePath = resolveIncognitoOpenClawAgentSqlitePath({ agentId: "main", env });
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
+    const storePath = resolveIncognitoAforaAgentSqlitePath({ agentId: "main", env });
     const archiveDirectory = path.join(path.dirname(path.dirname(storePath)), "sessions");
     const staleScope = {
       agentId: "main",
@@ -167,7 +167,7 @@ describe("incognito transcript access", () => {
       expect(fs.existsSync(storePath)).toBe(false);
       expect(fs.existsSync(archiveDirectory)).toBe(false);
     } finally {
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
       fs.rmSync(stateDir, { force: true, recursive: true });
     }
   });

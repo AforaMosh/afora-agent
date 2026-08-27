@@ -2,11 +2,11 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import {
   removePathWithinRoot,
-  resolvePreferredOpenClawTmpDir,
+  resolvePreferredAforaTmpDir,
   root,
-} from "openclaw/plugin-sdk/file-access-runtime";
+} from "afora-agent/plugin-sdk/file-access-runtime";
 
-const RESOURCE_HANDLE_PREFIX = "openclaw:computer-resource:v1:";
+const RESOURCE_HANDLE_PREFIX = "afora:computer-resource:v1:";
 const RESOURCE_ROOT_NAME = "cua-computer-resources";
 const MAX_RESOURCE_TREE_ENTRIES = 10_000;
 
@@ -87,7 +87,7 @@ async function requireEntry(
 }
 
 async function createCuaExecutionResources(): Promise<CuaExecutionResources> {
-  const preferredTmpRoot = await root(resolvePreferredOpenClawTmpDir(), {
+  const preferredTmpRoot = await root(resolvePreferredAforaTmpDir(), {
     hardlinks: "reject",
     mode: 0o700,
     symlinks: "reject",

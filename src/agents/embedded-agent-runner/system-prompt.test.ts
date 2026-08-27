@@ -35,7 +35,7 @@ describe("buildEmbeddedSystemPrompt", () => {
 
   it("forwards provider prompt contributions into the embedded prompt", () => {
     const prompt = buildEmbeddedSystemPrompt({
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
       reasoningTagHint: false,
       runtimeInfo: {
         host: "local",
@@ -59,7 +59,7 @@ describe("buildEmbeddedSystemPrompt", () => {
 
   it("keeps post-compaction curated context scoped to the prepared project", () => {
     const prompt = buildEmbeddedSystemPrompt({
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
       reasoningTagHint: false,
       runtimeInfo: {
         host: "local",
@@ -76,7 +76,7 @@ describe("buildEmbeddedSystemPrompt", () => {
       activeProjectKeys: ["github.com/acme/Alpha"],
       contextFiles: [
         {
-          path: "/tmp/openclaw/MEMORY.md",
+          path: "/tmp/afora/MEMORY.md",
           content: [
             "- Alpha compaction fact. <!-- project: github.com/acme/Alpha -->",
             "- Beta compaction fact. <!-- project: github.com/acme/Beta -->",
@@ -103,7 +103,7 @@ describe("buildEmbeddedSystemPrompt", () => {
         },
       },
       agentId: "main",
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
       reasoningTagHint: false,
       runtimeInfo: {
         agentId: "main",
@@ -135,7 +135,7 @@ describe("buildEmbeddedSystemPrompt", () => {
         },
       },
       agentId: "main",
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
       reasoningTagHint: false,
       runtimeInfo: {
         agentId: "main",
@@ -169,7 +169,7 @@ describe("buildEmbeddedSystemPrompt", () => {
         },
       },
       agentId: "main",
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
       reasoningTagHint: false,
       proactiveSubagentOrchestration: true,
       runtimeInfo: {
@@ -201,7 +201,7 @@ describe("buildEmbeddedSystemPrompt", () => {
           },
         },
       },
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
       reasoningTagHint: false,
       runtimeInfo: {
         host: "local",
@@ -218,7 +218,7 @@ describe("buildEmbeddedSystemPrompt", () => {
     });
 
     expect(prompt).toContain("tools.fs.workspaceOnly ON");
-    expect(prompt).toContain("`.openclaw/tmp/`");
+    expect(prompt).toContain("`.afora/tmp/`");
     expect(prompt).toContain("never exec-write `/tmp`");
   });
 
@@ -231,7 +231,7 @@ describe("buildEmbeddedSystemPrompt", () => {
           },
         },
       },
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
       reasoningTagHint: false,
       runtimeInfo: {
         host: "local",
@@ -253,7 +253,7 @@ describe("buildEmbeddedSystemPrompt", () => {
 
   it("forwards the subagent prompt surface to embedded prompt rendering", () => {
     const prompt = buildEmbeddedSystemPrompt({
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
       reasoningTagHint: false,
       promptSurface: "subagent",
       runtimeInfo: {
@@ -273,7 +273,7 @@ describe("buildEmbeddedSystemPrompt", () => {
     });
 
     expect(prompt).toContain("- sessions_spawn");
-    expect(prompt).not.toContain("OpenClaw lists the standard tools above");
+    expect(prompt).not.toContain("Afora lists the standard tools above");
     expect(prompt).not.toContain("For long waits, avoid rapid poll loops");
     expect(prompt).not.toContain("Larger work: use `sessions_spawn`");
     expect(prompt).not.toContain("Do not poll `subagents list` / `sessions_list` in a loop");
@@ -287,7 +287,7 @@ describe("buildEmbeddedSystemPrompt", () => {
     registerTestMemoryPromptBuilder(() => ["## Memory Recall", "Use memory carefully.", ""]);
 
     const prompt = buildEmbeddedSystemPrompt({
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
       reasoningTagHint: false,
       runtimeInfo: {
         host: "local",
@@ -309,7 +309,7 @@ describe("buildEmbeddedSystemPrompt", () => {
 
   it("includes active background process references in the embedded prompt", () => {
     const prompt = buildEmbeddedSystemPrompt({
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
       reasoningTagHint: false,
       runtimeInfo: {
         host: "local",

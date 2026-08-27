@@ -1,6 +1,6 @@
 // Owns config snapshots, include boundaries, and recovery for plugin installation.
 import { readConfigFileSnapshotForWrite } from "../config/config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   resolveInstallConfigMutationPreflights,
   selectInstallMutationWriteOptions,
@@ -98,7 +98,7 @@ function isAllowedPluginRecoveryIssue(
 }
 
 function collectRequestedPluginInstallPaths(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   installRecords: Awaited<ReturnType<typeof loadInstalledPluginIndexInstallRecords>>,
   request: PluginInstallRequestContext,
   env: NodeJS.ProcessEnv,
@@ -134,11 +134,11 @@ async function collectRequestedPluginLocationBridgePaths(
 }
 
 function removeOwnedMissingPluginLoadPaths(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   issues: readonly { path?: string; message?: string }[],
   ownedLoadPaths: ReadonlySet<string>,
   env: NodeJS.ProcessEnv,
-): OpenClawConfig {
+): AforaConfig {
   const missingPaths = new Set<string>();
   for (const issue of issues) {
     const missingPath = extractMissingPluginLoadPath(issue);
@@ -173,7 +173,7 @@ function removeOwnedMissingPluginLoadPaths(
 }
 
 async function resolveRequestedPluginInstallPaths(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   issues: readonly { path?: string; message?: string }[],
   request: PluginInstallRequestContext,
   env: NodeJS.ProcessEnv,
@@ -205,13 +205,13 @@ async function loadConfigFromSnapshotForInstall(
   const mutationWriteOptions = selectInstallMutationWriteOptions(writeOptions);
   if (resolvePluginInstallInvalidConfigPolicy(request) !== "allow-plugin-recovery") {
     throw buildInvalidPluginInstallConfigError(
-      "Config invalid; run `openclaw doctor --fix` before installing plugins.",
+      "Config invalid; run `afora doctor --fix` before installing plugins.",
     );
   }
   const parsed = (snapshot.parsed ?? {}) as Record<string, unknown>;
   if (!snapshot.exists || Object.keys(parsed).length === 0) {
     throw buildInvalidPluginInstallConfigError(
-      "Config file could not be parsed; run `openclaw doctor` to repair it.",
+      "Config file could not be parsed; run `afora doctor` to repair it.",
     );
   }
   const ownedLoadPaths = await resolveRequestedPluginInstallPaths(
@@ -227,12 +227,12 @@ async function loadConfigFromSnapshotForInstall(
   ) {
     const pluginLabel = request.bundledPluginId ?? "the requested plugin";
     throw buildInvalidPluginInstallConfigError(
-      `Config invalid outside the plugin recovery path for ${pluginLabel}; run \`openclaw doctor --fix\` before reinstalling it.`,
+      `Config invalid outside the plugin recovery path for ${pluginLabel}; run \`afora doctor --fix\` before reinstalling it.`,
     );
   }
   if (!supportsPluginRecoveryIncludeShape(parsed)) {
     throw buildInvalidPluginInstallConfigError(
-      "Config plugin recovery uses an unsupported $include shape; use a single-file top-level plugins include or run `openclaw doctor --fix` before reinstalling it.",
+      "Config plugin recovery uses an unsupported $include shape; use a single-file top-level plugins include or run `afora doctor --fix` before reinstalling it.",
     );
   }
   const { hookMutation, pluginMutation } = resolveInstallConfigMutationPreflights({

@@ -14,20 +14,20 @@ import {
 } from "../../config/sessions/session-accessor.js";
 import { resolveSqliteTargetFromSessionStorePath } from "../../config/sessions/session-sqlite-target.js";
 import { waitForSessionTranscriptIndexReconcile } from "../../config/sessions/session-transcript-reconcile.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resetAgentEventsForTest } from "../../infra/agent-events.js";
 import { clearAgentRunContext, registerAgentRunContext } from "../../infra/agent-run-registry.js";
 import {
-  registerOpenClawAgentDatabase,
-  unregisterOpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db-registry.js";
+  registerAforaAgentDatabase,
+  unregisterAforaAgentDatabase,
+} from "../../state/afora-agent-db-registry.js";
 import {
-  closeOpenClawAgentDatabaseByPath,
-  openOpenClawAgentDatabase,
+  closeAforaAgentDatabaseByPath,
+  openAforaAgentDatabase,
   readOpenIncognitoAgentDatabaseGeneration,
-  resolveIncognitoOpenClawAgentSqlitePath,
-} from "../../state/openclaw-agent-db.js";
-import { withOpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+  resolveIncognitoAforaAgentSqlitePath,
+} from "../../state/afora-agent-db.js";
+import { withAforaTestState } from "../../test-utils/afora-test-state.js";
 import { bumpSessionAutomationVersion } from "../session-automation-index.js";
 import { persistGatewaySessionLifecycleEvent } from "../session-lifecycle-state.js";
 import type { GatewaySessionRow } from "../session-utils.types.js";
@@ -73,7 +73,7 @@ function identifiedClient(profileId: string): GatewayClient {
     connect: {
       minProtocol: 1,
       maxProtocol: 1,
-      client: { id: "openclaw-control-ui", version: "test", platform: "test", mode: "webchat" },
+      client: { id: "afora-control-ui", version: "test", platform: "test", mode: "webchat" },
       role: "operator",
       scopes: ["operator.read", "operator.write"],
     },
@@ -86,7 +86,7 @@ function identifiedClient(profileId: string): GatewayClient {
   };
 }
 
-function requestContext(config: OpenClawConfig): GatewayRequestContext {
+function requestContext(config: AforaConfig): GatewayRequestContext {
   return {
     chatAbortControllers: new Map(),
     getRuntimeConfig: () => config,
@@ -118,8 +118,8 @@ async function listSessions(params: {
   };
 }
 
-async function seedSessions(): Promise<OpenClawConfig> {
-  const config: OpenClawConfig = {
+async function seedSessions(): Promise<AforaConfig> {
+  const config: AforaConfig = {
     agents: { list: [{ id: "main", default: true }, { id: "work" }] },
   };
   await upsertSessionEntryCore(
@@ -201,7 +201,7 @@ describe("sessions.list single-flight", () => {
     { agentId: "work", archived: "all" as const, limit: 10 },
     { archived: "all" as const, limit: 2 },
   ])("preserves output for filters and pagination: %j", async (request) => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       vi.spyOn(Date, "now").mockReturnValue(1_800_000_000_000);
       const config = await seedSessions();
       const client = identifiedClient("owner@example.com");
@@ -221,7 +221,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("collapses concurrent identical requests to one combined store load", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const config = await seedSessions();
       const context = requestContext(config);
       const client = identifiedClient("owner@example.com");
@@ -239,7 +239,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("reuses a completed result until a projection fence advances", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const config = await seedSessions();
       let diskSpaceVersion = 0;
       const context = {
@@ -270,7 +270,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("rebuilds configured targets after registry-only register and unregister", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async (state) => {
+    await withAforaTestState({ scenario: "minimal" }, async (state) => {
       const config = await seedSessions();
       const extraStorePath = path.join(state.stateDir, "extra-main-sessions.json");
       const extraDatabasePath = resolveSqliteTargetFromSessionStorePath(extraStorePath, {
@@ -286,8 +286,8 @@ describe("sessions.list single-flight", () => {
           visibility: "shared",
         },
       );
-      closeOpenClawAgentDatabaseByPath(extraDatabasePath);
-      unregisterOpenClawAgentDatabase({ agentId: "main", env: state.env, path: extraDatabasePath });
+      closeAforaAgentDatabaseByPath(extraDatabasePath);
+      unregisterAforaAgentDatabase({ agentId: "main", env: state.env, path: extraDatabasePath });
 
       const context = requestContext(config);
       const client = identifiedClient("owner@example.com");
@@ -297,14 +297,14 @@ describe("sessions.list single-flight", () => {
       expect(await listSessions({ client, context, request })).toBe(first);
       expect(loader.calls).toHaveBeenCalledTimes(1);
 
-      registerOpenClawAgentDatabase({ agentId: "main", env: state.env, path: extraDatabasePath });
+      registerAforaAgentDatabase({ agentId: "main", env: state.env, path: extraDatabasePath });
       const registered = await listSessions({ client, context, request });
       expect(registered.sessions.map((session) => session.key)).toContain(extraSessionKey);
       expect(loader.calls).toHaveBeenCalledTimes(2);
       expect(await listSessions({ client, context, request })).toBe(registered);
       expect(loader.calls).toHaveBeenCalledTimes(2);
 
-      unregisterOpenClawAgentDatabase({ agentId: "main", env: state.env, path: extraDatabasePath });
+      unregisterAforaAgentDatabase({ agentId: "main", env: state.env, path: extraDatabasePath });
       const unregistered = await listSessions({ client, context, request });
       expect(unregistered.sessions.map((session) => session.key)).not.toContain(extraSessionKey);
       expect(loader.calls).toHaveBeenCalledTimes(3);
@@ -312,7 +312,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("fences configured lists when incognito membership opens and closes", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async (state) => {
+    await withAforaTestState({ scenario: "minimal" }, async (state) => {
       const config = await seedSessions();
       const context = requestContext(config);
       const client = identifiedClient("owner@example.com");
@@ -324,12 +324,12 @@ describe("sessions.list single-flight", () => {
       expect(await listSessions({ client, context, request })).toBe(first);
       expect(loader.calls).toHaveBeenCalledTimes(1);
 
-      const incognitoPath = resolveIncognitoOpenClawAgentSqlitePath({
+      const incognitoPath = resolveIncognitoAforaAgentSqlitePath({
         agentId: "guest",
         env: state.env,
       });
       const generationBeforeOpen = readOpenIncognitoAgentDatabaseGeneration();
-      const database = openOpenClawAgentDatabase({
+      const database = openAforaAgentDatabase({
         agentId: "guest",
         env: state.env,
         path: incognitoPath,
@@ -337,7 +337,7 @@ describe("sessions.list single-flight", () => {
       const openedGeneration = readOpenIncognitoAgentDatabaseGeneration();
       expect(openedGeneration).toBeGreaterThan(generationBeforeOpen);
       expect(
-        openOpenClawAgentDatabase({ agentId: "guest", env: state.env, path: incognitoPath }),
+        openAforaAgentDatabase({ agentId: "guest", env: state.env, path: incognitoPath }),
       ).toBe(database);
       expect(readOpenIncognitoAgentDatabaseGeneration()).toBe(openedGeneration);
       const entry = {
@@ -365,7 +365,7 @@ describe("sessions.list single-flight", () => {
       expect(opened.sessions.map((session) => session.key)).toContain(childKey);
       expect(loader.calls).toHaveBeenCalledTimes(2);
 
-      expect(closeOpenClawAgentDatabaseByPath(incognitoPath)).toBe(true);
+      expect(closeAforaAgentDatabaseByPath(incognitoPath)).toBe(true);
       const closed = await listSessions({ client, context, request });
       expect(closed.sessions.map((session) => session.key)).not.toContain(childKey);
       expect(loader.calls).toHaveBeenCalledTimes(3);
@@ -373,7 +373,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("invalidates a completed result after terminal lifecycle persistence lands", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const config = await seedSessions();
       const context = requestContext(config);
       const client = identifiedClient("owner@example.com");
@@ -403,7 +403,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("invalidates a completed result after a committed transcript update", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const config = await seedSessions();
       const context = requestContext(config);
       const client = identifiedClient("owner@example.com");
@@ -425,7 +425,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("invalidates a completed result when a cron automation binding changes", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const config = await seedSessions();
       const context = requestContext(config);
       const client = identifiedClient("owner@example.com");
@@ -447,7 +447,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("does not cache title rows degraded during projection rebuild", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async (state) => {
+    await withAforaTestState({ scenario: "minimal" }, async (state) => {
       const config = await seedSessions();
       const sessionKey = "agent:main:active";
       const sessionId = "main-active";
@@ -461,7 +461,7 @@ describe("sessions.list single-flight", () => {
           touchSessionEntry: false,
         },
       );
-      const database = openOpenClawAgentDatabase({ agentId: "main", env: state.env });
+      const database = openAforaAgentDatabase({ agentId: "main", env: state.env });
       database.db
         .prepare("UPDATE session_transcript_index_state SET needs_rebuild = 1 WHERE session_id = ?")
         .run(sessionId);
@@ -494,7 +494,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("invalidates a completed result after an external session identity mutation", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const config = await seedSessions();
       const context = requestContext(config);
       const client = identifiedClient("owner@example.com");
@@ -519,7 +519,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("expires completed rows at the earliest projected agent-status deadline", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const clock = vi.spyOn(Date, "now").mockReturnValue(1_000);
       const config = await seedSessions();
       for (const [name, expiresAt] of [
@@ -578,7 +578,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("expires retained child links when the child is outside the visible page", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const { clock, config } = await seedSessionsWithActivityTimes();
       const parentSessionKey = "agent:main:active";
       const childSessionKey = "agent:main:zzz-child";
@@ -612,7 +612,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("refreshes live subagent runtimes while retaining concurrent single-flight", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const now = 1_800_000_000_000;
       const clock = vi.spyOn(Date, "now").mockReturnValue(now);
       const config = await seedSessions();
@@ -679,7 +679,7 @@ describe("sessions.list single-flight", () => {
       after: { keys: ["agent:main:active"], totalCount: 2 },
     },
   ])("refreshes activity-filtered results when $description", async (scenario) => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const { clock, config } = await seedSessionsWithActivityTimes();
       const context = requestContext(config);
       const client = identifiedClient("owner@example.com");
@@ -704,7 +704,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("collapses concurrent activity-filtered requests into one projection", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const { clock, config } = await seedSessionsWithActivityTimes();
       const context = requestContext(config);
       const client = identifiedClient("owner@example.com");
@@ -722,7 +722,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("expires completed children from parent-filtered listings at the retention boundary", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const { clock, config } = await seedSessionsWithActivityTimes();
       const parentSessionKey = "agent:main:active";
       const childSessionKey = "agent:main:child";
@@ -754,7 +754,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("rejects a zero-minute activity window without loading the session store", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const config = await seedSessions();
       const respond = vi.fn();
 
@@ -775,7 +775,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("rebuilds a completed result when a projected run ends without a store mutation", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const config = await seedSessions();
       const context = requestContext(config);
       const client = identifiedClient("owner@example.com");
@@ -815,7 +815,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("does not cache a reply-owned active projection past turn completion", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const config = await seedSessions();
       const context = requestContext(config);
       const client = identifiedClient("owner@example.com");
@@ -845,7 +845,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("does not share filtered results across client identities", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const config = await seedSessions();
       const context = requestContext(config);
 
@@ -869,7 +869,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("refills a page from the loaded store when a selected row becomes hidden", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const config = await seedSessions();
       for (const [name, updatedAt] of [
         ["third", 500],
@@ -926,7 +926,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("rejects followers and retries after an underlying store failure", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const config = await seedSessions();
       const context = requestContext(config);
       const client = identifiedClient("owner@example.com");
@@ -945,7 +945,7 @@ describe("sessions.list single-flight", () => {
   });
 
   it("does not share work that started before an intervening session mutation", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const config = await seedSessions();
       let releaseRows!: () => void;
       loader.rowGate = new Promise<void>((resolve) => {

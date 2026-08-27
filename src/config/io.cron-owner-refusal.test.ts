@@ -139,7 +139,7 @@ it("materializes a proven retained owner before the commit recheck", async () =>
     {
       storePath: "/tmp/custom-cron.json",
       provenOwnerAgentId: "ops",
-      env: { OPENCLAW_STATE_DIR: "/tmp/state" },
+      env: { AFORA_STATE_DIR: "/tmp/state" },
     },
     injected,
   );
@@ -149,7 +149,7 @@ it("materializes a proven retained owner before the commit recheck", async () =>
   expect(injected.materializeLegacyDefaultCronJobOwners).toHaveBeenCalledWith({
     storePath: "/tmp/custom-cron.json",
     legacyDefaultAgentId: "ops",
-    env: { OPENCLAW_STATE_DIR: "/tmp/state" },
+    env: { AFORA_STATE_DIR: "/tmp/state" },
   });
 });
 

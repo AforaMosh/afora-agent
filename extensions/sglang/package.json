@@ -1,13 +1,13 @@
 {
-  "name": "@openclaw/sglang-provider",
+  "name": "@afora/sglang-provider",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw SGLang provider plugin",
+  "description": "Afora SGLang provider plugin",
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

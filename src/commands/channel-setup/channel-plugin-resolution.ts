@@ -1,5 +1,5 @@
 // Resolves or installs channel plugins needed by setup/onboarding flows.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import {
   listRawChannelPluginCatalogEntries,
@@ -8,7 +8,7 @@ import {
 import { getChannelPlugin, normalizeChannelId } from "../../channels/plugins/index.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.plugin.js";
 import type { ChannelId } from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { createClackPrompter } from "../../wizard/clack-prompter.js";
 import type { WizardPrompter } from "../../wizard/prompts.js";
@@ -27,7 +27,7 @@ type ChannelPluginSnapshot = {
 };
 
 type ResolveInstallableChannelPluginResult = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channelId?: ChannelId;
   plugin?: ChannelPlugin;
   catalogEntry?: ChannelPluginCatalogEntry;
@@ -36,7 +36,7 @@ type ResolveInstallableChannelPluginResult = {
   supportsRequestedCapability?: boolean;
 };
 
-function resolveWorkspaceDir(cfg: OpenClawConfig, agentId?: string) {
+function resolveWorkspaceDir(cfg: AforaConfig, agentId?: string) {
   return resolveAgentWorkspaceDir(cfg, agentId ?? resolveDefaultAgentId(cfg));
 }
 
@@ -56,7 +56,7 @@ function resolveResolvedChannelId(params: {
 
 function resolveCatalogChannelEntry(
   raw: string,
-  cfg: OpenClawConfig | null,
+  cfg: AforaConfig | null,
   workspaceDir?: string,
 ) {
   const trimmed = normalizeOptionalLowercaseString(raw);
@@ -93,7 +93,7 @@ function findScopedChannelPlugin(
 }
 
 function loadScopedChannelPlugin(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   runtime: RuntimeEnv;
   channelId: ChannelId;
   supports: (plugin: ChannelPlugin) => boolean;
@@ -112,7 +112,7 @@ function loadScopedChannelPlugin(params: {
 
 /** Resolve an existing channel plugin, scoped setup plugin, or installable catalog entry. */
 export async function resolveInstallableChannelPlugin(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   runtime: RuntimeEnv;
   rawChannel?: string | null;
   channelId?: ChannelId;

@@ -1,5 +1,5 @@
 // Control UI controller manages form utils gateway state.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 
 export function cloneConfigObject<T>(value: T): T {
   return structuredClone(value);
@@ -9,7 +9,7 @@ export function serializeConfigForm(form: Record<string, unknown>): string {
   return `${JSON.stringify(form, null, 2).trimEnd()}\n`;
 }
 
-export const REDACTED_SENTINEL = "__OPENCLAW_REDACTED__";
+export const REDACTED_SENTINEL = "__AFORA_REDACTED__";
 
 /** True when a form subtree still carries server-redacted secret placeholders. */
 export function containsRedactedSentinel(value: unknown): boolean {

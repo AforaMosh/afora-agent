@@ -1,10 +1,10 @@
 // Doctor bootstrap-size tests cover prompt-context budget warnings and note rendering.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 
 const note = vi.hoisted(() => vi.fn());
 const resolveAgentWorkspaceDir = vi.hoisted(() =>
-  vi.fn<(_cfg: OpenClawConfig, agentId: string) => string>(() => "/tmp/workspace"),
+  vi.fn<(_cfg: AforaConfig, agentId: string) => string>(() => "/tmp/workspace"),
 );
 const resolveDefaultAgentId = vi.hoisted(() => vi.fn(() => "main"));
 const listAgentIds = vi.hoisted(() => vi.fn(() => ["main"]));
@@ -56,7 +56,7 @@ describe("noteBootstrapFileSize", () => {
       ],
       contextFiles: [{ path: "/tmp/workspace/AGENTS.md", content: "a".repeat(20_000) }],
     });
-    await noteBootstrapFileSize({} as OpenClawConfig);
+    await noteBootstrapFileSize({} as AforaConfig);
     expect(note).toHaveBeenCalledTimes(1);
     const [message, title] = note.mock.calls[0] ?? [];
     expect(title).toBe("Bootstrap file size");
@@ -79,7 +79,7 @@ describe("noteBootstrapFileSize", () => {
       bootstrapFiles: [],
       contextFiles: [],
     });
-    await noteBootstrapFileSize({} as OpenClawConfig);
+    await noteBootstrapFileSize({} as AforaConfig);
     expect(resolveBootstrapMaxChars).toHaveBeenCalledWith(expect.anything(), "custom-agent");
     expect(resolveBootstrapTotalMaxChars).toHaveBeenCalledWith(expect.anything(), "custom-agent");
     expect(resolveBootstrapContextForRun).toHaveBeenCalledWith(
@@ -99,7 +99,7 @@ describe("noteBootstrapFileSize", () => {
       ],
       contextFiles: [{ path: "/tmp/workspace/AGENTS.md", content: "a".repeat(1_000) }],
     });
-    await noteBootstrapFileSize({} as OpenClawConfig);
+    await noteBootstrapFileSize({} as AforaConfig);
     expect(note).not.toHaveBeenCalled();
   });
 
@@ -124,7 +124,7 @@ describe("noteBootstrapFileSize", () => {
           : [],
     }));
 
-    await noteBootstrapFileSize({} as OpenClawConfig);
+    await noteBootstrapFileSize({} as AforaConfig);
 
     expect(note).toHaveBeenCalledTimes(1);
     expect(note.mock.calls[0]?.[0]).toContain('Agent "secondary":');

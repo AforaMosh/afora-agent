@@ -1,7 +1,7 @@
 // Verifies owner display secrets stay redacted in config IO paths.
 import { describe, expect, it } from "vitest";
 import { retainGeneratedOwnerDisplaySecret } from "./io.owner-display-secret.js";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import type { AforaConfig } from "./types.afora.js";
 
 type OwnerDisplaySecretRuntimeState = Parameters<
   typeof retainGeneratedOwnerDisplaySecret
@@ -16,13 +16,13 @@ function createState(): OwnerDisplaySecretRuntimeState {
 describe("retainGeneratedOwnerDisplaySecret", () => {
   it("keeps generated owner display secrets in runtime state without persisting config", () => {
     const state = createState();
-    const configPath = "/tmp/openclaw.json";
+    const configPath = "/tmp/afora.json";
     const config = {
       commands: {
         ownerDisplay: "hash",
         ownerDisplaySecret: "generated-owner-secret",
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = retainGeneratedOwnerDisplaySecret({
       config,
@@ -37,14 +37,14 @@ describe("retainGeneratedOwnerDisplaySecret", () => {
 
   it("clears pending state when no generated secret is present", () => {
     const state = createState();
-    const configPath = "/tmp/openclaw.json";
+    const configPath = "/tmp/afora.json";
     state.pendingByPath.set(configPath, "stale-secret");
     const config = {
       commands: {
         ownerDisplay: "hash",
         ownerDisplaySecret: "existing-secret",
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = retainGeneratedOwnerDisplaySecret({
       config,

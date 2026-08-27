@@ -1,6 +1,6 @@
 // Slack plugin module implements assistant behavior.
 import type { Block, KnownBlock } from "@slack/web-api";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
 import { buildSlackAssistantThreadMetadata, DEFAULT_SLACK_SUGGESTED_PROMPTS } from "../context.js";
 import type { SlackMonitorContext, SlackAssistantThreadContext } from "../context.js";
 

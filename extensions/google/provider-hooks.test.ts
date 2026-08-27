@@ -1,4 +1,4 @@
-import { createCapturedThinkingConfigStream } from "openclaw/plugin-sdk/provider-test-contracts";
+import { createCapturedThinkingConfigStream } from "afora-agent/plugin-sdk/provider-test-contracts";
 import { describe, expect, it } from "vitest";
 import { GOOGLE_GEMINI_PROVIDER_HOOKS } from "./provider-hooks.js";
 

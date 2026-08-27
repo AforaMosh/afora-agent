@@ -1,11 +1,11 @@
 // Gateway-owned GPT-Live WebRTC bridge: werift media peer plus OpenAI sideband control.
 import { randomUUID } from "node:crypto";
-import { toErrorObject } from "openclaw/plugin-sdk/error-runtime";
-import type { PluginLogger } from "openclaw/plugin-sdk/plugin-entry";
+import { toErrorObject } from "afora-agent/plugin-sdk/error-runtime";
+import type { PluginLogger } from "afora-agent/plugin-sdk/plugin-entry";
 import type {
   RealtimeVoiceBridge,
   RealtimeVoiceBridgeCreateRequest,
-} from "openclaw/plugin-sdk/realtime-voice";
+} from "afora-agent/plugin-sdk/realtime-voice";
 import WebSocket, { type RawData } from "ws";
 import { OpenAIQuicksilverPendingAudio } from "./realtime-quicksilver-audio-buffer.js";
 import { OpenAIQuicksilverDelegationController } from "./realtime-quicksilver-delegation-controller.js";

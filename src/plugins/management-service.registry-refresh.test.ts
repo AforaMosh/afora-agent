@@ -61,7 +61,7 @@ const {
 const installSnapshot = {
   config: {},
   baseHash: "base-hash",
-  writeOptions: { expectedConfigPath: "/tmp/openclaw.json" },
+  writeOptions: { expectedConfigPath: "/tmp/afora.json" },
 };
 
 function mockClawHubWorkboardInstall() {
@@ -94,7 +94,7 @@ function metadataSnapshot(enabled: boolean, installed = false) {
       origin: "bundled",
       rootDir: "/tmp/workboard",
       source: "/tmp/workboard/index.ts",
-      manifestPath: "/tmp/workboard/openclaw.plugin.json",
+      manifestPath: "/tmp/workboard/afora.plugin.json",
     },
     installOwner,
   );
@@ -104,7 +104,7 @@ function metadataSnapshot(enabled: boolean, installed = false) {
         recordInstalledPluginIndexInstallOwner(
           {
             pluginId: "workboard",
-            packageName: "@openclaw/workboard",
+            packageName: "@afora/workboard",
             origin: "bundled",
             rootDir: "/tmp/workboard",
             enabled,
@@ -143,11 +143,11 @@ describe("plugin management registry refresh", () => {
         snapshot: {
           valid: true,
           parsed: {},
-          path: "/tmp/openclaw.json",
+          path: "/tmp/afora.json",
           sourceConfig: { plugins: { entries: { workboard: { enabled: !enabled } } } },
           hash: "base-hash",
         },
-        writeOptions: { expectedConfigPath: "/tmp/openclaw.json" },
+        writeOptions: { expectedConfigPath: "/tmp/afora.json" },
       });
       mocks.replaceConfig.mockResolvedValue({});
       mocks.metadata
@@ -175,7 +175,7 @@ describe("plugin management registry refresh", () => {
       snapshot: {
         valid: true,
         parsed: {},
-        path: "/tmp/openclaw.json",
+        path: "/tmp/afora.json",
         sourceConfig: {},
         hash: "base-hash",
       },
@@ -220,7 +220,7 @@ describe("plugin management registry refresh", () => {
       snapshot: {
         valid: true,
         parsed: config,
-        path: "/tmp/openclaw.json",
+        path: "/tmp/afora.json",
         sourceConfig: config,
         hash: "base-hash",
       },

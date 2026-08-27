@@ -284,7 +284,7 @@ export const overflowServerMiscCases = [
   {
     id: "errors-malformed-streaming-fragment",
     source: errorsSource,
-    signal: { message: "OpenClaw transport error: malformed_streaming_fragment" },
+    signal: { message: "Afora transport error: malformed_streaming_fragment" },
     expected: null,
   },
   {

@@ -1,17 +1,17 @@
 // Zalo test support covers monitor.polling.media reply plugin behavior.
 import type { ServerResponse } from "node:http";
-import { expectDefined } from "@openclaw/normalization-core";
-import type { OpenKeyedStoreOptions } from "openclaw/plugin-sdk/plugin-state-runtime";
+import { expectDefined } from "@afora/normalization-core";
+import type { OpenKeyedStoreOptions } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import {
   createEmptyPluginRegistry,
   createRuntimeEnv,
   setActivePluginRegistry,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
-import { createReplyDispatcher } from "openclaw/plugin-sdk/reply-runtime";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { createReplyDispatcher } from "afora-agent/plugin-sdk/reply-runtime";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PluginRuntime } from "../runtime-api.js";
 import { setZaloRuntime } from "./runtime.js";

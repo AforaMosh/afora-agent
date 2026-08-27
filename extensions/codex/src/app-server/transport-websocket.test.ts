@@ -55,7 +55,7 @@ describe("Codex app-server websocket transport", () => {
         const message = JSON.parse(rawDataToText(data)) as { id?: number; method?: string };
         if (message.method === "initialize") {
           socket.send(
-            JSON.stringify({ id: message.id, result: { userAgent: "openclaw/0.147.0" } }),
+            JSON.stringify({ id: message.id, result: { userAgent: "afora-agent/0.147.0" } }),
           );
           return;
         }
@@ -286,7 +286,7 @@ describe("Codex app-server websocket transport", () => {
   }, 5_000);
 
   it("can speak JSON-RPC over the canonical unix control socket", async () => {
-    const tempDir = await mkdtemp(path.join(os.tmpdir(), "openclaw-codex-unix-"));
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), "afora-codex-unix-"));
     tempDirs.push(tempDir);
     const socketPath = path.join(tempDir, "app-server.sock");
     const httpServer = http.createServer();
@@ -302,7 +302,7 @@ describe("Codex app-server websocket transport", () => {
           socket.send(
             JSON.stringify({
               id: message.id,
-              result: { userAgent: `openclaw/${CODEX_APP_SERVER_VERSION}` },
+              result: { userAgent: `afora/${CODEX_APP_SERVER_VERSION}` },
             }),
           );
           return;

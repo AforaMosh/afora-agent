@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginRuntime } from "../plugins/runtime/types.js";
 
 type ConsultParams = Parameters<
@@ -38,7 +38,7 @@ vi.mock("../talk/agent-consult-runtime.js", () => ({
 
 import { createTalkClientAgentConsultRunner } from "./talk-client-gateway-control.js";
 
-const config = {} as OpenClawConfig;
+const config = {} as AforaConfig;
 const coreParams = {
   config,
   prompt: "check",

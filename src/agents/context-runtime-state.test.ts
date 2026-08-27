@@ -11,8 +11,8 @@ describe("context runtime state", () => {
     const moduleUrl = new URL("./context-runtime-state.ts", import.meta.url).href;
     const output = execNodeEvalSync(
       `
-        const runtimeKey = Symbol.for("openclaw.contextWindowRuntimeState");
-        delete globalThis[Symbol.for("openclaw.contextWindowCacheState")];
+        const runtimeKey = Symbol.for("afora.contextWindowRuntimeState");
+        delete globalThis[Symbol.for("afora.contextWindowCacheState")];
         const legacyLoadPromise = Promise.resolve();
         globalThis[runtimeKey] = {
           generation: 7,

@@ -2,9 +2,9 @@
 import { afterEach, vi } from "vitest";
 
 const DEBUG_PROXY_ENV_KEYS = [
-  "OPENCLAW_DEBUG_PROXY_ENABLED",
-  "OPENCLAW_DEBUG_PROXY_SESSION_ID",
-  "OPENCLAW_STATE_DIR",
+  "AFORA_DEBUG_PROXY_ENABLED",
+  "AFORA_DEBUG_PROXY_SESSION_ID",
+  "AFORA_STATE_DIR",
 ] as const;
 
 type DebugProxyEnvKey = (typeof DEBUG_PROXY_ENV_KEYS)[number];
@@ -33,11 +33,11 @@ export function installDebugProxyTestResetHooks() {
   let priorProxyEnv = originalProxyEnv;
 
   afterEach(async () => {
-    const { closeDebugProxyCaptureStore } = await import("openclaw/plugin-sdk/proxy-capture");
-    const { closeOpenClawStateDatabaseForTest } =
-      await import("openclaw/plugin-sdk/sqlite-runtime-testing");
+    const { closeDebugProxyCaptureStore } = await import("afora-agent/plugin-sdk/proxy-capture");
+    const { closeAforaStateDatabaseForTest } =
+      await import("afora-agent/plugin-sdk/sqlite-runtime-testing");
     closeDebugProxyCaptureStore();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     globalThis.fetch = originalFetch;
     vi.restoreAllMocks();
     restoreDebugProxyEnv(priorProxyEnv);

@@ -1,7 +1,7 @@
 // Whatsapp tests cover channel react action plugin behavior.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { handleWhatsAppMessageAction } from "./channel-react-action.js";
-import type { OpenClawConfig } from "./runtime-api.js";
+import type { AforaConfig } from "./runtime-api.js";
 
 const hoisted = vi.hoisted(() => ({
   handleWhatsAppAction: vi.fn(async () => ({ content: [{ type: "text", text: '{"ok":true}' }] })),
@@ -92,7 +92,7 @@ vi.mock("./channel-react-action.runtime.js", async () => {
 describe("whatsapp react action messageId resolution", () => {
   const baseCfg = {
     channels: { whatsapp: { actions: { reactions: true }, allowFrom: ["*"] } },
-  } as OpenClawConfig;
+  } as AforaConfig;
 
   beforeEach(() => {
     hoisted.handleWhatsAppAction.mockClear();

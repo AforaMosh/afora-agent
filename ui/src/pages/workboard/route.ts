@@ -41,6 +41,6 @@ export const page = definePage({
     import("./workboard-page.ts").then(() => ({
       header: true,
       render: (data: WorkboardRouteData | undefined) =>
-        html`<openclaw-workboard-page .routeData=${data}></openclaw-workboard-page>`,
+        html`<afora-workboard-page .routeData=${data}></afora-workboard-page>`,
     })),
 });

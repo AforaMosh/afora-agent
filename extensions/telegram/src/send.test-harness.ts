@@ -1,11 +1,11 @@
 // Telegram plugin module implements send harness behavior.
 import type { Bot } from "grammy";
-import { resolveMarkdownTableMode } from "openclaw/plugin-sdk/markdown-table-runtime";
+import { resolveMarkdownTableMode } from "afora-agent/plugin-sdk/markdown-table-runtime";
 import {
   buildOutboundMediaLoadOptions,
   normalizePollInput,
-} from "openclaw/plugin-sdk/media-runtime";
-import type { MockFn } from "openclaw/plugin-sdk/plugin-test-runtime";
+} from "afora-agent/plugin-sdk/media-runtime";
+import type { MockFn } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { beforeEach, vi } from "vitest";
 import { markdownToTelegramHtml } from "./format.js";
 import { inputRichBlocksToPlainText, type InputRichBlock } from "./rich-block-model.js";
@@ -93,7 +93,7 @@ const { probeVideoDimensions } = vi.hoisted(() => ({
 const { loadConfig, resolveStorePath } = vi.hoisted(() => ({
   loadConfig: vi.fn(() => ({})),
   resolveStorePath: vi.fn(
-    (storePath?: string) => storePath ?? "/tmp/openclaw-telegram-send-tests.json",
+    (storePath?: string) => storePath ?? "/tmp/afora-telegram-send-tests.json",
   ),
 }));
 
@@ -143,7 +143,7 @@ type TelegramSendTestMocks = {
   probeVideoDimensions: MockFn;
 };
 
-vi.mock("openclaw/plugin-sdk/web-media", () => ({
+vi.mock("afora-agent/plugin-sdk/web-media", () => ({
   loadWebMedia,
 }));
 
@@ -201,9 +201,9 @@ vi.mock("undici", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/plugin-config-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/plugin-config-runtime")>(
-    "openclaw/plugin-sdk/plugin-config-runtime",
+vi.mock("afora-agent/plugin-sdk/plugin-config-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/plugin-config-runtime")>(
+    "afora-agent/plugin-sdk/plugin-config-runtime",
   );
   return {
     ...actual,
@@ -245,7 +245,7 @@ export function getTelegramSendTestMocks(): TelegramSendTestMocks {
 export function installTelegramSendTestHooks() {
   beforeEach(() => {
     loadConfig.mockReturnValue({});
-    resolveStorePath.mockReturnValue("/tmp/openclaw-telegram-send-tests.json");
+    resolveStorePath.mockReturnValue("/tmp/afora-telegram-send-tests.json");
     loadWebMedia.mockReset();
     probeVideoDimensions.mockReset();
     probeVideoDimensions.mockResolvedValue(undefined);

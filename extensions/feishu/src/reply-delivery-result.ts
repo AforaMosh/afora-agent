@@ -1,10 +1,10 @@
-import { createChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
+import { createChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
 import {
   createMessageReceiptFromOutboundResults,
   type MessageReceipt,
   type MessageReceiptPartKind,
-} from "openclaw/plugin-sdk/channel-outbound";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 
 export type FeishuReplyDeliverySource = {
   messageId?: string;

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { PROCESS_NODE_VERSION_CHECK } from "../../../node-version.mjs";
 import {
   type WorkerAdmissionHandshake,
@@ -30,7 +30,7 @@ import {
   workerSshRemoteCommand,
 } from "./ssh.js";
 
-const BOOTSTRAP_ROOT = ".openclaw-worker";
+const BOOTSTRAP_ROOT = ".afora-worker";
 const BOOTSTRAP_RECEIPT = "bootstrap-receipt.json";
 const DEFAULT_BOOTSTRAP_TIMEOUT_MS = 10 * 60_000;
 const BUNDLE_TRANSFER_MIN_THROUGHPUT_BYTES_PER_SECOND = 125_000;
@@ -41,10 +41,10 @@ const NPM_MISSING_EXIT_CODE = 43;
 const LOCK_TIMEOUT_EXIT_CODE = 44;
 const NODE_UNSUPPORTED_EXIT_CODE = 45;
 const LOCK_MAX_AGE_SECONDS = 60 * 60;
-const NODE_MISSING_MARKER = "OPENCLAW_WORKER_NODE_MISSING";
-const NODE_UNSUPPORTED_MARKER = "OPENCLAW_WORKER_NODE_UNSUPPORTED";
-const NPM_MISSING_MARKER = "OPENCLAW_WORKER_NPM_MISSING";
-const BOOTSTRAP_OUTPUT_TAG = "OPENCLAW_WORKER_BOOTSTRAP_V1";
+const NODE_MISSING_MARKER = "AFORA_WORKER_NODE_MISSING";
+const NODE_UNSUPPORTED_MARKER = "AFORA_WORKER_NODE_UNSUPPORTED";
+const NPM_MISSING_MARKER = "AFORA_WORKER_NPM_MISSING";
+const BOOTSTRAP_OUTPUT_TAG = "AFORA_WORKER_BOOTSTRAP_V1";
 const BUNDLE_HASH_PATTERN = /^[a-f0-9]{64}$/u;
 const NPM_INTEGRITY_PATTERN = /^sha512-[A-Za-z0-9+/]{86}==$/u;
 const WORKER_BUNDLE_ARTIFACT_PATHS = [
@@ -91,7 +91,7 @@ try {
   const actual = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
   const expected = JSON.parse(process.argv[2]);
   const shapeMatches =
-    Object.keys(actual).sort().join(",") === "bundleHash,openclawVersion,protocolFeatures";
+    Object.keys(actual).sort().join(",") === "bundleHash,aforaVersion,protocolFeatures";
   const featuresMatch =
     Array.isArray(actual.protocolFeatures) &&
     Array.isArray(expected.protocolFeatures) &&
@@ -100,7 +100,7 @@ try {
   process.exit(
     shapeMatches &&
       actual.bundleHash === expected.bundleHash &&
-      actual.openclawVersion === expected.openclawVersion &&
+      actual.aforaVersion === expected.aforaVersion &&
       featuresMatch
       ? 0
       : 1,
@@ -260,8 +260,8 @@ fi
 incoming=$root/.incoming
 ensure_private_directory "$incoming"
 incoming=$(cd "$incoming" && pwd -P)
-find "$incoming" -type f -name 'openclaw-upload-*.tgz.*' -mmin +60 -exec rm -f -- {} + 2>/dev/null || true
-upload=$incoming/openclaw-upload-$hash.tgz.$operation_token
+find "$incoming" -type f -name 'afora-upload-*.tgz.*' -mmin +60 -exec rm -f -- {} + 2>/dev/null || true
+upload=$incoming/afora-upload-$hash.tgz.$operation_token
 
 if [ -d "$install_dir" ] && [ ! -L "$install_dir" ] && [ -f "$receipt" ] &&
   node -e '${RECEIPT_MATCH_JS}' "$receipt" "$expected_receipt" &&
@@ -503,13 +503,13 @@ type WorkerBootstrapDependencies = {
 
 function normalizeHandshake(artifact: WorkerInstallationArtifact): WorkerAdmissionHandshake {
   const bundleHash = artifact.bundleHash.trim();
-  const openclawVersion = artifact.openclawVersion.trim();
+  const aforaVersion = artifact.aforaVersion.trim();
   const protocolFeatures = artifact.protocolFeatures.map((feature) => feature.trim());
   if (!BUNDLE_HASH_PATTERN.test(bundleHash)) {
     throw new Error("Worker bundle hash must be a lowercase SHA-256 digest");
   }
-  if (!openclawVersion) {
-    throw new Error("Worker OpenClaw version must be non-empty");
+  if (!aforaVersion) {
+    throw new Error("Worker Afora version must be non-empty");
   }
   if (
     protocolFeatures.length > WORKER_PROTOCOL_MAX_FEATURES ||
@@ -521,10 +521,10 @@ function normalizeHandshake(artifact: WorkerInstallationArtifact): WorkerAdmissi
   }
   if (artifact.install === "npm") {
     if (
-      !isExactSemverVersion(openclawVersion) ||
-      artifact.packageSpec !== `openclaw@${openclawVersion}`
+      !isExactSemverVersion(aforaVersion) ||
+      artifact.packageSpec !== `afora@${aforaVersion}`
     ) {
-      throw new Error(`Worker npm install must use exact package openclaw@${openclawVersion}`);
+      throw new Error(`Worker npm install must use exact package afora@${aforaVersion}`);
     }
     if (!NPM_INTEGRITY_PATTERN.test(artifact.packageIntegrity)) {
       throw new Error("Worker npm install requires a pinned SHA-512 package integrity");
@@ -532,7 +532,7 @@ function normalizeHandshake(artifact: WorkerInstallationArtifact): WorkerAdmissi
   } else if (!BUNDLE_HASH_PATTERN.test(artifact.tarballSha256)) {
     throw new Error("Worker bundle archive digest must be a lowercase SHA-256 digest");
   }
-  return { bundleHash, openclawVersion, protocolFeatures };
+  return { bundleHash, aforaVersion, protocolFeatures };
 }
 
 function parseReceiptJson(
@@ -550,7 +550,7 @@ function parseReceiptJson(
   }
   if (
     parsed.bundleHash !== expected.bundleHash ||
-    parsed.openclawVersion !== expected.openclawVersion ||
+    parsed.aforaVersion !== expected.aforaVersion ||
     parsed.protocolFeatures.length !== expected.protocolFeatures.length ||
     parsed.protocolFeatures.some((feature, index) => feature !== expected.protocolFeatures[index])
   ) {
@@ -606,7 +606,7 @@ async function runSshScript(params: {
 }
 
 function workerUploadFilename(bundleHash: string, operationToken: string): string {
-  return `openclaw-upload-${bundleHash}.tgz.${operationToken}`;
+  return `afora-upload-${bundleHash}.tgz.${operationToken}`;
 }
 
 const CLEANUP_UPLOAD_SCRIPT = String.raw`set -eu
@@ -633,7 +633,7 @@ if [ ! -d "$incoming" ] || [ -L "$incoming" ]; then
   exit 0
 fi
 incoming=$(cd "$incoming" && pwd -P)
-rm -f -- "$incoming/openclaw-upload-$hash.tgz.$operation_token"
+rm -f -- "$incoming/afora-upload-$hash.tgz.$operation_token"
 `;
 
 async function cleanupRemoteUpload(params: {
@@ -733,7 +733,7 @@ export async function bootstrapWorker(
     ssh: request.ssh,
     pinnedHostKey: request.pinnedHostKey,
     resolveIdentity: dependencies.resolveIdentity,
-    temporaryDirectoryPrefix: "openclaw-worker-bootstrap-",
+    temporaryDirectoryPrefix: "afora-worker-bootstrap-",
   });
   let needsUploadCleanup = true;
   try {

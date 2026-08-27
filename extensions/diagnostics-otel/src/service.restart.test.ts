@@ -31,7 +31,7 @@ import {
   resetDiagnosticEventsForTest,
   type DiagnosticTraceContext,
   waitForDiagnosticEventsDrained,
-} from "openclaw/plugin-sdk/diagnostic-runtime";
+} from "afora-agent/plugin-sdk/diagnostic-runtime";
 import { afterEach, expect, test } from "vitest";
 import {
   type CapturedLogRecord,
@@ -41,7 +41,7 @@ import {
 import { createDiagnosticsOtelService } from "./service.js";
 import { createOtelContext, emitRealSdkSignals, startOtelService } from "./service.test-helpers.js";
 
-const PRELOAD_ENV = "OPENCLAW_OTEL_PRELOADED";
+const PRELOAD_ENV = "AFORA_OTEL_PRELOADED";
 const OWNERSHIP_ENV_KEYS = [
   PRELOAD_ENV,
   "OTEL_SDK_DISABLED",
@@ -96,8 +96,8 @@ function assertCorrelatedGeneration(
   logRecords: CapturedLogRecord[],
   logTrace: DiagnosticTraceContext,
 ): void {
-  const run = spans.find((span) => span.name === "openclaw.run");
-  const model = spans.find((span) => span.name === "openclaw.model.call");
+  const run = spans.find((span) => span.name === "afora.run");
+  const model = spans.find((span) => span.name === "afora.model.call");
   const correlatedLog = logRecords.find(
     (record) => record.traceId === logTrace.traceId && record.spanId === logTrace.spanId,
   );

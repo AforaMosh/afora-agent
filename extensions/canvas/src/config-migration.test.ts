@@ -1,5 +1,5 @@
 // Canvas tests cover config migration plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, test } from "vitest";
 import { migrateLegacyCanvasHostConfig } from "./config-migration.js";
 
@@ -11,7 +11,7 @@ describe("migrateLegacyCanvasHostConfig", () => {
         root: "~/canvas",
         liveReload: false,
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     if (!result) {
       throw new Error("expected Canvas config migration result");
@@ -53,7 +53,7 @@ describe("migrateLegacyCanvasHostConfig", () => {
           },
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     if (!result) {
       throw new Error("expected Canvas config migration result");
@@ -77,6 +77,6 @@ describe("migrateLegacyCanvasHostConfig", () => {
   });
 
   test("ignores configs without legacy canvasHost", () => {
-    expect(migrateLegacyCanvasHostConfig({} as OpenClawConfig)).toBeNull();
+    expect(migrateLegacyCanvasHostConfig({} as AforaConfig)).toBeNull();
   });
 });

@@ -3,7 +3,7 @@ import { promises as fs } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { withSecureTestNodeCommand } from "../secrets/test-node-command.test-support.js";
 import type { SkillStatusEntry } from "../skills/discovery/status.js";
 import { withEnvAsync } from "../test-utils/env.js";
@@ -63,8 +63,8 @@ function createSkill(overrides: Partial<SkillStatusEntry> = {}): SkillStatusEntr
     description: "Missing tool",
     source: "workspace",
     bundled: false,
-    filePath: "/tmp/openclaw-test-workspace/skills/missing-tool/SKILL.md",
-    baseDir: "/tmp/openclaw-test-workspace/skills/missing-tool",
+    filePath: "/tmp/afora-test-workspace/skills/missing-tool/SKILL.md",
+    baseDir: "/tmp/afora-test-workspace/skills/missing-tool",
     skillKey: "missing-tool",
     always: false,
     disabled: false,
@@ -76,14 +76,14 @@ function createSkill(overrides: Partial<SkillStatusEntry> = {}): SkillStatusEntr
     userInvocable: true,
     commandVisible: false,
     requirements: {
-      bins: ["openclaw-test-missing-skill-bin"],
+      bins: ["afora-test-missing-skill-bin"],
       anyBins: [],
       env: [],
       config: [],
       os: [],
     },
     missing: {
-      bins: ["openclaw-test-missing-skill-bin"],
+      bins: ["afora-test-missing-skill-bin"],
       anyBins: [],
       env: [],
       config: [],
@@ -146,7 +146,7 @@ describe("CORE_HEALTH_CHECKS", () => {
     clearHealthChecksForTest();
     mocks.loadModelCatalog.mockClear();
     mocks.loadModelCatalog.mockResolvedValue([]);
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       hooks: {
         gmail: {
           model: "openai/gpt-5.5",
@@ -216,14 +216,14 @@ describe("CORE_HEALTH_CHECKS", () => {
   });
 
   it("includes Claw state diagnostics in core doctor checks", () => {
-    vi.stubEnv("OPENCLAW_EXPERIMENTAL_CLAWS", "1");
+    vi.stubEnv("AFORA_EXPERIMENTAL_CLAWS", "1");
     expect(createCoreHealthChecks(createDeps()).map((check) => check.id)).toContain(
       "core/doctor/claws-state",
     );
   });
 
   it("passes one live Gateway cron inventory provider to Claw diagnostics", async () => {
-    vi.stubEnv("OPENCLAW_EXPERIMENTAL_CLAWS", "1");
+    vi.stubEnv("AFORA_EXPERIMENTAL_CLAWS", "1");
     const listGatewayCronJobs = vi.fn(async () => []);
     mocks.collectClawStateHealthFindings.mockImplementationOnce(async (options) => {
       await options?.cronGateway?.list({ includeDisabled: true });
@@ -241,7 +241,7 @@ describe("CORE_HEALTH_CHECKS", () => {
   });
 
   it("reads every stable Gateway cron inventory page for Claw diagnostics", async () => {
-    vi.stubEnv("OPENCLAW_EXPERIMENTAL_CLAWS", "1");
+    vi.stubEnv("AFORA_EXPERIMENTAL_CLAWS", "1");
     const firstJob = { id: "job-1" };
     const secondJob = { id: "job-2" };
     mocks.callGateway
@@ -289,7 +289,7 @@ describe("CORE_HEALTH_CHECKS", () => {
   });
 
   it("rejects a Gateway cron inventory that changes between pages", async () => {
-    vi.stubEnv("OPENCLAW_EXPERIMENTAL_CLAWS", "1");
+    vi.stubEnv("AFORA_EXPERIMENTAL_CLAWS", "1");
     mocks.callGateway
       .mockResolvedValueOnce({
         jobs: [{ id: "job-1" }],
@@ -321,7 +321,7 @@ describe("CORE_HEALTH_CHECKS", () => {
   });
 
   it("omits Claw state diagnostics without the experiment", () => {
-    vi.stubEnv("OPENCLAW_EXPERIMENTAL_CLAWS", "");
+    vi.stubEnv("AFORA_EXPERIMENTAL_CLAWS", "");
     expect(createCoreHealthChecks(createDeps()).map((check) => check.id)).not.toContain(
       "core/doctor/claws-state",
     );
@@ -455,10 +455,10 @@ describe("CORE_HEALTH_CHECKS", () => {
   it("converts unavailable skills into repair-capable health findings", async () => {
     const unavailableSkill = createSkill();
     const detectUnavailableSkills = vi.fn(async () => [unavailableSkill]);
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
-          workspace: "/tmp/openclaw-test-workspace",
+          workspace: "/tmp/afora-test-workspace",
           skills: ["missing-tool"],
         },
       },
@@ -483,7 +483,7 @@ describe("CORE_HEALTH_CHECKS", () => {
       mode: "lint",
       runtime,
       cfg,
-      cwd: "/tmp/openclaw-test-workspace",
+      cwd: "/tmp/afora-test-workspace",
     });
     expect(findings).toContainEqual(
       expect.objectContaining({
@@ -498,7 +498,7 @@ describe("CORE_HEALTH_CHECKS", () => {
           mode: "fix",
           runtime,
           cfg,
-          cwd: "/tmp/openclaw-test-workspace",
+          cwd: "/tmp/afora-test-workspace",
         },
         { paths: ["skills.entries.other-tool.enabled"] },
       ),
@@ -509,7 +509,7 @@ describe("CORE_HEALTH_CHECKS", () => {
           mode: "fix",
           runtime,
           cfg,
-          cwd: "/tmp/openclaw-test-workspace",
+          cwd: "/tmp/afora-test-workspace",
         },
         { paths: ["skills.entries.missing-tool.enabled"] },
       ),
@@ -524,7 +524,7 @@ describe("CORE_HEALTH_CHECKS", () => {
         mode: "fix",
         runtime,
         cfg,
-        cwd: "/tmp/openclaw-test-workspace",
+        cwd: "/tmp/afora-test-workspace",
       },
       findings,
     );
@@ -554,8 +554,8 @@ describe("CORE_HEALTH_CHECKS", () => {
                   "Anyone on your network can fully control your agent.",
                 ].join("\n"),
                 remediation: [
-                  "Fix: openclaw config set gateway.bind loopback",
-                  "Fix: openclaw doctor --fix to generate a token",
+                  "Fix: afora config set gateway.bind loopback",
+                  "Fix: afora doctor --fix to generate a token",
                 ].join("\n"),
               },
             ];
@@ -585,8 +585,8 @@ describe("CORE_HEALTH_CHECKS", () => {
         message: 'CRITICAL: Gateway bound to "lan" (0.0.0.0) without authentication.',
         fixHint: [
           "Anyone on your network can fully control your agent.",
-          "Fix: openclaw config set gateway.bind loopback",
-          "Fix: openclaw doctor --fix to generate a token",
+          "Fix: afora config set gateway.bind loopback",
+          "Fix: afora doctor --fix to generate a token",
         ].join("\n"),
       }),
     ]);
@@ -612,13 +612,13 @@ describe("CORE_HEALTH_CHECKS", () => {
             params: { temperature: 0.7 },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
     });
     expect(findings.map((finding) => finding.message)).toEqual(
       expect.arrayContaining([
         expect.stringContaining("Codex plugin is disabled by config"),
         "Codex app-server command override includes inline arguments.",
-        "Custom Codex app-server command bypasses OpenClaw's managed exact-version binary.",
+        "Custom Codex app-server command bypasses Afora's managed exact-version binary.",
         "Explicit native Codex model routes cannot reproduce authored request transport parameters.",
       ]),
     );
@@ -627,12 +627,12 @@ describe("CORE_HEALTH_CHECKS", () => {
       target: "openai/gpt-5.5",
       requirement: "Codex plugin enabled for routes that use the Codex runtime.",
       fixHint:
-        "Enable plugins.entries.codex and plugin loading, and remove codex from plugins.deny; or set the affected OpenAI models to an OpenClaw runtime policy.",
+        "Enable plugins.entries.codex and plugin loading, and remove codex from plugins.deny; or set the affected OpenAI models to an Afora runtime policy.",
     });
   });
 
   it("uses the read-only model catalog for hooks.gmail.model checks", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       hooks: {
         gmail: {
           model: "openai/gpt-5.5",
@@ -646,7 +646,7 @@ describe("CORE_HEALTH_CHECKS", () => {
 
   it("skips gateway auth warning when SecretRef-managed token resolves in lint checks", async () => {
     const check = CORE_HEALTH_CHECKS.find((entry) => entry.id === "core/doctor/gateway-auth");
-    await withEnvAsync({ OPENCLAW_TEST_GATEWAY_TOKEN: "resolved-test-token" }, async () => {
+    await withEnvAsync({ AFORA_TEST_GATEWAY_TOKEN: "resolved-test-token" }, async () => {
       const findings = await check?.detect({
         mode: "lint",
         runtime: { log() {}, error() {}, exit() {} },
@@ -658,7 +658,7 @@ describe("CORE_HEALTH_CHECKS", () => {
               token: {
                 source: "env",
                 provider: "default",
-                id: "OPENCLAW_TEST_GATEWAY_TOKEN",
+                id: "AFORA_TEST_GATEWAY_TOKEN",
               },
             },
           },
@@ -675,12 +675,12 @@ describe("CORE_HEALTH_CHECKS", () => {
     });
   });
 
-  it("reports unresolved SecretRefs even when OPENCLAW_GATEWAY_TOKEN is set", async () => {
+  it("reports unresolved SecretRefs even when AFORA_GATEWAY_TOKEN is set", async () => {
     const check = CORE_HEALTH_CHECKS.find((entry) => entry.id === "core/doctor/gateway-auth");
     await withEnvAsync(
       {
-        OPENCLAW_GATEWAY_TOKEN: "fallback-token",
-        OPENCLAW_MISSING_GATEWAY_REF_TOKEN: undefined,
+        AFORA_GATEWAY_TOKEN: "fallback-token",
+        AFORA_MISSING_GATEWAY_REF_TOKEN: undefined,
       },
       async () => {
         const findings = await check?.detect({
@@ -694,7 +694,7 @@ describe("CORE_HEALTH_CHECKS", () => {
                 token: {
                   source: "env",
                   provider: "default",
-                  id: "OPENCLAW_MISSING_GATEWAY_REF_TOKEN",
+                  id: "AFORA_MISSING_GATEWAY_REF_TOKEN",
                 },
               },
             },
@@ -718,7 +718,7 @@ describe("CORE_HEALTH_CHECKS", () => {
   });
 
   it("does not execute or warn for valid exec SecretRefs during default gateway auth lint checks", async () => {
-    tmp = await fs.mkdtemp(join(tmpdir(), "openclaw-health-exec-ref-"));
+    tmp = await fs.mkdtemp(join(tmpdir(), "afora-health-exec-ref-"));
     const markerPath = join(tmp, "exec-ran");
     const check = CORE_HEALTH_CHECKS.find((entry) => entry.id === "core/doctor/gateway-auth");
 
@@ -756,7 +756,7 @@ describe("CORE_HEALTH_CHECKS", () => {
   });
 
   it("executes exec SecretRefs when gateway auth lint explicitly allows exec checks", async () => {
-    tmp = await fs.mkdtemp(join(tmpdir(), "openclaw-health-exec-ref-"));
+    tmp = await fs.mkdtemp(join(tmpdir(), "afora-health-exec-ref-"));
     const markerPath = join(tmp, "exec-ran");
     const resolverPath = join(tmp, "resolve-token.cjs");
     await fs.writeFile(
@@ -811,7 +811,7 @@ describe("CORE_HEALTH_CHECKS", () => {
   });
 
   it("reports exec SecretRef failures when gateway auth lint explicitly allows exec checks", async () => {
-    tmp = await fs.mkdtemp(join(tmpdir(), "openclaw-health-exec-ref-"));
+    tmp = await fs.mkdtemp(join(tmpdir(), "afora-health-exec-ref-"));
     const resolverPath = join(tmp, "fail-token.cjs");
     await fs.writeFile(
       resolverPath,
@@ -820,7 +820,7 @@ describe("CORE_HEALTH_CHECKS", () => {
     );
     const check = CORE_HEALTH_CHECKS.find((entry) => entry.id === "core/doctor/gateway-auth");
 
-    const findings = await withEnvAsync({ OPENCLAW_GATEWAY_TOKEN: "fallback-token" }, async () =>
+    const findings = await withEnvAsync({ AFORA_GATEWAY_TOKEN: "fallback-token" }, async () =>
       withSecureTestNodeCommand(async (command) =>
         check?.detect({
           mode: "lint",
@@ -860,7 +860,7 @@ describe("CORE_HEALTH_CHECKS", () => {
         severity: "warning",
         message: expect.stringContaining("Gateway token SecretRef could not be resolved:"),
         fixHint:
-          "Run `openclaw doctor --allow-exec` to verify exec SecretRefs during doctor, or `openclaw secrets audit --allow-exec` to audit all exec SecretRefs.",
+          "Run `afora doctor --allow-exec` to verify exec SecretRefs during doctor, or `afora secrets audit --allow-exec` to audit all exec SecretRefs.",
       }),
     );
   });
@@ -871,7 +871,7 @@ describe("CORE_HEALTH_CHECKS", () => {
         createDeps({
           async collectWorkspaceSuggestionNotes(): Promise<readonly string[]> {
             return [
-              "- Tip: back up the agent workspace in a private git repo; keep ~/.openclaw out of git (credentials, sessions). Details: /concepts/agent-workspace#git-backup-recommended",
+              "- Tip: back up the agent workspace in a private git repo; keep ~/.afora out of git (credentials, sessions). Details: /concepts/agent-workspace#git-backup-recommended",
               "Memory system not found in workspace.",
             ];
           },
@@ -886,11 +886,11 @@ describe("CORE_HEALTH_CHECKS", () => {
       cfg: {
         agents: {
           defaults: {
-            workspace: "/tmp/openclaw-test-workspace",
+            workspace: "/tmp/afora-test-workspace",
           },
         },
       },
-      cwd: "/tmp/openclaw-test-workspace",
+      cwd: "/tmp/afora-test-workspace",
     });
 
     expect(findings).toContainEqual(
@@ -898,7 +898,7 @@ describe("CORE_HEALTH_CHECKS", () => {
         checkId: "core/doctor/workspace-suggestions",
         severity: "info",
         message:
-          "Tip: back up the agent workspace in a private git repo; keep ~/.openclaw out of git (credentials, sessions). Details: /concepts/agent-workspace#git-backup-recommended",
+          "Tip: back up the agent workspace in a private git repo; keep ~/.afora out of git (credentials, sessions). Details: /concepts/agent-workspace#git-backup-recommended",
       }),
     );
     expect(findings).toContainEqual(

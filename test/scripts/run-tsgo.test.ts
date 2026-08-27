@@ -14,7 +14,7 @@ const { createTempDir } = createScriptTestHarness();
 
 describe("run-tsgo sparse guard", () => {
   it("ends sparse-checkout failures with the stable failure trailer", () => {
-    const cwd = createTempDir("openclaw-run-tsgo-");
+    const cwd = createTempDir("afora-run-tsgo-");
     spawnSync("git", ["init", "-q"], { cwd });
     spawnSync("git", ["config", "core.sparseCheckout", "true"], { cwd });
 
@@ -33,7 +33,7 @@ describe("run-tsgo sparse guard", () => {
   });
 
   it("ignores non-core projects", () => {
-    const cwd = createTempDir("openclaw-run-tsgo-");
+    const cwd = createTempDir("afora-run-tsgo-");
 
     expect(
       getSparseTsgoGuardError(["-p", "tsconfig.extensions.json"], {
@@ -44,7 +44,7 @@ describe("run-tsgo sparse guard", () => {
   });
 
   it("ignores full worktrees", () => {
-    const cwd = createTempDir("openclaw-run-tsgo-");
+    const cwd = createTempDir("afora-run-tsgo-");
 
     expect(
       getSparseTsgoGuardError(["-p", "test/tsconfig/tsconfig.core.test.json"], {
@@ -55,7 +55,7 @@ describe("run-tsgo sparse guard", () => {
   });
 
   it("ignores metadata-only commands", () => {
-    const cwd = createTempDir("openclaw-run-tsgo-");
+    const cwd = createTempDir("afora-run-tsgo-");
 
     expect(
       getSparseTsgoGuardError(["-p", "test/tsconfig/tsconfig.core.test.json", "--showConfig"], {
@@ -66,7 +66,7 @@ describe("run-tsgo sparse guard", () => {
   });
 
   it("ignores sparse worktrees when the required files are present", () => {
-    const cwd = createTempDir("openclaw-run-tsgo-");
+    const cwd = createTempDir("afora-run-tsgo-");
     const requiredPaths = [
       "packages/plugin-package-contract/src/index.ts",
       "ui/config/control-ui-chunking.ts",
@@ -93,7 +93,7 @@ describe("run-tsgo sparse guard", () => {
   });
 
   it("rejects package-test sparse worktrees missing inherited declaration roots", () => {
-    const cwd = createTempDir("openclaw-run-tsgo-");
+    const cwd = createTempDir("afora-run-tsgo-");
 
     expect(
       getSparseTsgoGuardError(["-p", "test/tsconfig/tsconfig.test.packages.json"], {
@@ -111,7 +111,7 @@ describe("run-tsgo sparse guard", () => {
   });
 
   it("rejects declaration-shard sparse worktrees missing inherited roots", () => {
-    const cwd = createTempDir("openclaw-run-tsgo-");
+    const cwd = createTempDir("afora-run-tsgo-");
 
     expect(
       getSparseTsgoGuardError(["-p", "test/tsconfig/tsconfig.test.extension-declarations.json"], {
@@ -129,7 +129,7 @@ describe("run-tsgo sparse guard", () => {
   });
 
   it("rejects sparse core worktrees that include only selected ui and package files", () => {
-    const cwd = createTempDir("openclaw-run-tsgo-");
+    const cwd = createTempDir("afora-run-tsgo-");
     const requiredPaths = [
       "packages/plugin-package-contract/src/index.ts",
       "ui/config/control-ui-chunking.ts",
@@ -168,7 +168,7 @@ describe("run-tsgo sparse guard", () => {
   });
 
   it("returns a helpful message for sparse UI worktrees missing transitive project files", () => {
-    const cwd = createTempDir("openclaw-run-tsgo-");
+    const cwd = createTempDir("afora-run-tsgo-");
     const uiToolDisplay = path.join(cwd, "ui/src/lib/chat/tool-display.ts");
     fs.mkdirSync(path.dirname(uiToolDisplay), { recursive: true });
     fs.writeFileSync(uiToolDisplay, "", "utf8");
@@ -180,13 +180,13 @@ describe("run-tsgo sparse guard", () => {
       }),
     ).toMatchInlineSnapshot(`
       "tsconfig.ui.json cannot be typechecked from this sparse checkout because tracked project inputs are missing or only partially included:
-      - apps/shared/OpenClawKit/Sources/OpenClawKit/Resources/tool-display.json
+      - apps/shared/AforaKit/Sources/AforaKit/Resources/tool-display.json
       Expand this worktree's sparse checkout to include those paths, or rerun in a full worktree."
     `);
   });
 
   it("rejects sparse UI worktrees missing the transitive src root", () => {
-    const cwd = createTempDir("openclaw-run-tsgo-");
+    const cwd = createTempDir("afora-run-tsgo-");
 
     expect(
       getSparseTsgoGuardError(["-p", "tsconfig.ui.json"], {
@@ -203,7 +203,7 @@ describe("run-tsgo sparse guard", () => {
   });
 
   it("returns a helpful message for sparse core-test worktrees missing ui and packages files", () => {
-    const cwd = createTempDir("openclaw-run-tsgo-");
+    const cwd = createTempDir("afora-run-tsgo-");
 
     expect(
       getSparseTsgoGuardError(["-p", "test/tsconfig/tsconfig.core.test.json"], {
@@ -223,12 +223,12 @@ describe("run-tsgo sparse guard", () => {
   });
 
   it("recognizes the check:changed sparse-skip env", () => {
-    expect(shouldSkipSparseTsgoGuardError({ OPENCLAW_TSGO_SPARSE_SKIP: "1" })).toBe(true);
-    expect(shouldSkipSparseTsgoGuardError({ OPENCLAW_TSGO_SPARSE_SKIP: "true" })).toBe(true);
-    expect(shouldSkipSparseTsgoGuardError({ OPENCLAW_TSGO_SPARSE_SKIP: "0" })).toBe(false);
+    expect(shouldSkipSparseTsgoGuardError({ AFORA_TSGO_SPARSE_SKIP: "1" })).toBe(true);
+    expect(shouldSkipSparseTsgoGuardError({ AFORA_TSGO_SPARSE_SKIP: "true" })).toBe(true);
+    expect(shouldSkipSparseTsgoGuardError({ AFORA_TSGO_SPARSE_SKIP: "0" })).toBe(false);
     expect(createSparseTsgoSkipEnv({ PATH: "/usr/bin" })).toStrictEqual({
       PATH: "/usr/bin",
-      OPENCLAW_TSGO_SPARSE_SKIP: "1",
+      AFORA_TSGO_SPARSE_SKIP: "1",
     });
   });
 });

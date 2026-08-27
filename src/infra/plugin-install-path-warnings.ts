@@ -1,7 +1,7 @@
 // Detects and formats plugin install path warnings.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 
 type PluginInstallPathIssue = {

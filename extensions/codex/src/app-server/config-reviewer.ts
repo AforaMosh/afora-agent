@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { homedir as readHomeDir } from "node:os";
 import path from "node:path";
-import { resolveProviderIdForAuth } from "openclaw/plugin-sdk/agent-runtime";
+import { resolveProviderIdForAuth } from "afora-agent/plugin-sdk/agent-runtime";
 import { parse as parseToml } from "smol-toml";
 import type {
   CodexAppServerHomeScope,

@@ -1,4 +1,4 @@
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import type { AssistantDeliveryTtsFacts } from "../llm/types.js";
 
 type TextRange = {

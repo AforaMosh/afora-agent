@@ -68,13 +68,13 @@ describe("board session shell", () => {
     );
     render(renderBoardSessionSurface(props), unlinked);
 
-    const chip = linked.querySelector<HTMLElementTagNameMap["openclaw-workboard-card-chip"]>(
-      "openclaw-workboard-card-chip",
+    const chip = linked.querySelector<HTMLElementTagNameMap["afora-workboard-card-chip"]>(
+      "afora-workboard-card-chip",
     );
     expect(chip?.sessionKey).toBe("agent:main:workboard-link");
     expect(chip?.client).toBe(client);
     expect(chip?.active).toBe(true);
-    expect(unlinked.querySelector("openclaw-workboard-card-chip")).toBeNull();
+    expect(unlinked.querySelector("afora-workboard-card-chip")).toBeNull();
   });
 
   it("renders nothing without a board", () => {
@@ -242,7 +242,7 @@ describe("board session shell", () => {
     expect(container.querySelector(`.board-session-surface--dock-${dock}`)).not.toBeNull();
     expect(container.querySelector("[data-test-divider]") !== null).toBe(dock === "bottom");
     expect(container.querySelector("[data-test-chat]") !== null).toBe(dock === "bottom");
-    expect(container.querySelector("openclaw-board-view")).not.toBeNull();
+    expect(container.querySelector("afora-board-view")).not.toBeNull();
   });
 
   it("renders the hidden dock as board-only", () => {
@@ -271,7 +271,7 @@ describe("board session shell", () => {
 
     expect(container.querySelector("[data-test-chat]")).toBeNull();
     expect(container.querySelector(".board-session-surface--dock-hidden")).not.toBeNull();
-    expect(container.querySelector("openclaw-board-view")).not.toBeNull();
+    expect(container.querySelector("afora-board-view")).not.toBeNull();
   });
 
   it("preserves the board while the bottom chat mounts only for that dock", () => {
@@ -295,31 +295,31 @@ describe("board session shell", () => {
     };
 
     render(renderBoardSessionSurface({ ...props, dock: "right" }), container);
-    const board = container.querySelector("openclaw-board-view");
+    const board = container.querySelector("afora-board-view");
     expect(container.querySelector("[data-test-chat]")).toBeNull();
 
     render(renderBoardSessionSurface({ ...props, dock: "left" }), container);
-    expect(container.querySelector("openclaw-board-view")).toBe(board);
+    expect(container.querySelector("afora-board-view")).toBe(board);
     expect(container.querySelector("[data-test-chat]")).toBeNull();
 
     render(renderBoardSessionSurface({ ...props, dock: "bottom" }), container);
-    expect(container.querySelector("openclaw-board-view")).toBe(board);
+    expect(container.querySelector("afora-board-view")).toBe(board);
     expect(container.querySelector("[data-test-chat]")).not.toBeNull();
 
     render(renderBoardSessionSurface({ ...props, dock: "hidden" }), container);
-    expect(container.querySelector("openclaw-board-view")).toBe(board);
+    expect(container.querySelector("afora-board-view")).toBe(board);
     expect(container.querySelector("[data-test-chat]")).toBeNull();
 
     render(renderBoardSessionSurface({ ...props, active: false, dock: "bottom" }), container);
     const hiddenSurface = container.querySelector<HTMLElement>(".board-session-surface");
     expect(hiddenSurface?.hidden).toBe(true);
     expect(hiddenSurface?.hasAttribute("inert")).toBe(true);
-    expect(container.querySelector("openclaw-board-view")).toBe(board);
+    expect(container.querySelector("afora-board-view")).toBe(board);
     expect(board?.active).toBe(false);
     expect(container.querySelector("[data-test-chat]")).toBeNull();
 
     render(renderBoardSessionSurface({ ...props, dock: "right" }), container);
-    expect(container.querySelector("openclaw-board-view")).toBe(board);
+    expect(container.querySelector("afora-board-view")).toBe(board);
     expect(container.querySelector<HTMLElement>(".board-session-surface")?.hidden).toBe(false);
     expect(board?.active).toBe(true);
   });

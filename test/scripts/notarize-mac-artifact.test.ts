@@ -33,8 +33,8 @@ describe("notarize-mac-artifact input validation", () => {
   });
 
   it("rejects extra artifact arguments before notarization", () => {
-    const tempRoot = tempDirs.make("openclaw-notary-extra-");
-    const artifact = path.join(tempRoot, "OpenClaw.zip");
+    const tempRoot = tempDirs.make("afora-notary-extra-");
+    const artifact = path.join(tempRoot, "Afora.zip");
     writeFileSync(artifact, "placeholder", "utf8");
 
     const result = spawnSync("bash", [scriptPath, artifact, "extra"], {
@@ -48,8 +48,8 @@ describe("notarize-mac-artifact input validation", () => {
   });
 
   it("fails before notarization when an explicit staple app path is missing", () => {
-    const tempRoot = tempDirs.make("openclaw-notary-staple-");
-    const artifact = path.join(tempRoot, "OpenClaw.zip");
+    const tempRoot = tempDirs.make("afora-notary-staple-");
+    const artifact = path.join(tempRoot, "Afora.zip");
     const missingApp = path.join(tempRoot, "Missing.app");
     writeFileSync(artifact, "placeholder", "utf8");
 
@@ -70,9 +70,9 @@ describe("notarize-mac-artifact input validation", () => {
   });
 
   it("records the accepted notarization id before stapling", () => {
-    const tempRoot = tempDirs.make("openclaw-notary-result-");
-    const artifact = path.join(tempRoot, "OpenClaw.zip");
-    const app = path.join(tempRoot, "OpenClaw.app");
+    const tempRoot = tempDirs.make("afora-notary-result-");
+    const artifact = path.join(tempRoot, "Afora.zip");
+    const app = path.join(tempRoot, "Afora.app");
     const binDir = path.join(tempRoot, "bin");
     const resultPath = path.join(tempRoot, "notary-result.json");
     const accepted = {

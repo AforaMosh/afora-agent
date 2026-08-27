@@ -1,13 +1,13 @@
-# Tavily OpenClaw plugin
+# Tavily Afora plugin
 
-Official OpenClaw plugin for Tavily.
+Official Afora plugin for Tavily.
 
 ## Install
 
 ```sh
-openclaw plugins install @openclaw/tavily-plugin
+afora plugins install @afora/tavily-plugin
 ```
 
 ## Docs
 
-See `docs/tools/tavily.md` in the OpenClaw repository, or the published docs at `https://docs.openclaw.ai/tools/tavily`.
+See `docs/tools/tavily.md` in the Afora repository, or the published docs at `https://docs.afora.ai/tools/tavily`.

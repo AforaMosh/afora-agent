@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { withPluginRuntimePluginIdScope } from "./gateway-request-scope.js";
 import type { PluginRuntime } from "./types.js";
 
@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
     instanceId: `instance:${runId}`,
     runId,
   })),
-  getRuntimeConfig: vi.fn(() => ({}) as OpenClawConfig),
+  getRuntimeConfig: vi.fn(() => ({}) as AforaConfig),
   prepareAgentRunAdmission: vi.fn(),
   runEmbeddedAgentCore: vi.fn(),
 }));
@@ -33,7 +33,7 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
-const config = {} as OpenClawConfig;
+const config = {} as AforaConfig;
 const params = {
   config,
   prompt: "check",

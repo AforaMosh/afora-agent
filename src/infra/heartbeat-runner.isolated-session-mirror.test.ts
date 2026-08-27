@@ -1,6 +1,6 @@
 // Covers isolated heartbeat outbound session routing and base-session bookkeeping.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { resolveMainSessionKey } from "../config/sessions.js";
 import { runHeartbeatOnce } from "./heartbeat-runner.js";
 import { installHeartbeatRunnerTestRuntime } from "./heartbeat-runner.test-harness.js";
@@ -43,7 +43,7 @@ function latestDeliveryRequest(): DeliveryRequest {
   return request as DeliveryRequest;
 }
 
-function makeIsolatedLastTargetConfig(tmpDir: string, storePath: string): OpenClawConfig {
+function makeIsolatedLastTargetConfig(tmpDir: string, storePath: string): AforaConfig {
   return {
     agents: {
       list: [{ id: "main", default: true }],

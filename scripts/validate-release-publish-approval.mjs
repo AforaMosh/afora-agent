@@ -26,9 +26,9 @@ function canonicalPackages(value) {
   if (
     packages.length === 0 ||
     new Set(packages).size !== packages.length ||
-    packages.some((entry) => !/^@openclaw\/[a-z0-9][a-z0-9._-]*$/u.test(entry))
+    packages.some((entry) => !/^@afora\/[a-z0-9][a-z0-9._-]*$/u.test(entry))
   ) {
-    fail("ClawHub bootstrap approval requires a unique @openclaw/* package set.");
+    fail("ClawHub bootstrap approval requires a unique @afora/* package set.");
   }
   return packages.toSorted((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 }
@@ -52,7 +52,7 @@ if (approvalPath) {
     expectedApproval = {
       version: 1,
       repository: process.env.GITHUB_REPOSITORY,
-      workflow: "OpenClaw Release Publish",
+      workflow: "Afora Release Publish",
       parentRunId: releasePublishRunId,
       workflowBranch: expectedBranch,
       releaseTag: process.env.RELEASE_TAG,
@@ -67,7 +67,7 @@ if (approvalPath) {
       version: 2,
       kind: "clawhub-bootstrap",
       repository: process.env.GITHUB_REPOSITORY,
-      workflow: "OpenClaw Release Publish",
+      workflow: "Afora Release Publish",
       parentRunId: releasePublishRunId,
       parentRunAttempt: positiveRunAttempt(expectedRunAttempt),
       workflowBranch: expectedBranch,
@@ -88,7 +88,7 @@ if (approvalPath) {
 }
 
 const checks = [
-  ["workflowName", "OpenClaw Release Publish"],
+  ["workflowName", "Afora Release Publish"],
   ["headBranch", expectedBranch],
   ["event", "workflow_dispatch"],
 ];

@@ -2,15 +2,15 @@
  * Signal reactions via signal-cli JSON-RPC API
  */
 
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { requireRuntimeConfig } from "openclaw/plugin-sdk/plugin-config-runtime";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { requireRuntimeConfig } from "afora-agent/plugin-sdk/plugin-config-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveSignalAccount } from "./accounts.js";
 import { signalRpcRequest, type SignalTransportKind } from "./client-adapter.js";
 import { resolveSignalRpcContext } from "./rpc-context.js";
 
 export type SignalReactionOpts = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   baseUrl?: string;
   transportKind?: SignalTransportKind;
   account?: string;

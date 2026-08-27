@@ -3,16 +3,16 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  runOpenClawAgentWriteTransaction,
-} from "../../state/openclaw-agent-db.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../../state/openclaw-state-db-readonly.js";
+  closeAforaAgentDatabasesForTest,
+  runAforaAgentWriteTransaction,
+} from "../../state/afora-agent-db.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../../state/afora-state-db-readonly.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  runOpenClawStateWriteTransaction,
-} from "../../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../../state/openclaw-state-db.paths.js";
-import type { OpenClawConfig } from "../types.openclaw.js";
+  closeAforaStateDatabaseForTest,
+  runAforaStateWriteTransaction,
+} from "../../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../../state/afora-state-db.paths.js";
+import type { AforaConfig } from "../types.afora.js";
 import { migrateLegacyMainSessionKeys } from "./legacy-main-session-migration.js";
 import { readExactSessionEntryRowForCanonicalRepair } from "./session-accessor.sqlite-canonical-repair.js";
 import { writeSessionEntry } from "./session-accessor.sqlite-entry-store.js";
@@ -23,7 +23,7 @@ import type { SessionEntry } from "./types.js";
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 type Fixture = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   stateDir: string;
 };
@@ -32,20 +32,20 @@ type LegacyMainSessionMigrationOutcomeKind = Awaited<
   ReturnType<typeof migrateLegacyMainSessionKeys>
 >["outcomes"][number]["kind"];
 
-function createFixture(cfg: OpenClawConfig = { agents: { entries: { ops: {} } } }): Fixture {
-  const rawRoot = tempDirs.make("openclaw-legacy-main-session-");
+function createFixture(cfg: AforaConfig = { agents: { entries: { ops: {} } } }): Fixture {
+  const rawRoot = tempDirs.make("afora-legacy-main-session-");
   const root = fs.realpathSync.native(rawRoot);
   const stateDir = path.join(root, "state");
   fs.mkdirSync(stateDir, { recursive: true });
   return {
     cfg,
-    env: { ...process.env, OPENCLAW_AGENT_DIR: undefined, OPENCLAW_STATE_DIR: stateDir },
+    env: { ...process.env, AFORA_AGENT_DIR: undefined, AFORA_STATE_DIR: stateDir },
     stateDir,
   };
 }
 
 function databasePath(stateDir: string, agentId: string): string {
-  return path.join(stateDir, "agents", agentId, "agent", "openclaw-agent.sqlite");
+  return path.join(stateDir, "agents", agentId, "agent", "afora-agent.sqlite");
 }
 
 function seedClaim(params: {
@@ -59,7 +59,7 @@ function seedClaim(params: {
     sessionId: `session-${params.key.replaceAll(":", "-")}`,
     updatedAt: 100,
   };
-  runOpenClawAgentWriteTransaction(
+  runAforaAgentWriteTransaction(
     (database) => {
       writeSessionEntry(database, params.key, entry, {
         allowStoredAliases: true,
@@ -85,7 +85,7 @@ function seedClaim(params: {
 }
 
 function readClaim(params: { databaseAgentId: string; databasePath: string; key: string }) {
-  return runOpenClawAgentWriteTransaction(
+  return runAforaAgentWriteTransaction(
     (database) => {
       const entry = readExactSessionEntryRowForCanonicalRepair(database, params.key)?.entry;
       return entry
@@ -104,7 +104,7 @@ function outcomeKinds(result: Awaited<ReturnType<typeof migrateLegacyMainSession
 }
 
 function setLedgerStatus(env: NodeJS.ProcessEnv, status: string): void {
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       db.prepare("UPDATE migration_sources SET status = ? WHERE source_key = ?").run(
         status,
@@ -117,7 +117,7 @@ function setLedgerStatus(env: NodeJS.ProcessEnv, status: string): void {
 }
 
 function readLedgerReport(env: NodeJS.ProcessEnv): unknown {
-  return withExistingOpenClawStateDatabaseReadOnly(
+  return withExistingAforaStateDatabaseReadOnly(
     ({ db }) => {
       const row = db
         .prepare("SELECT report_json FROM migration_sources WHERE source_key = ?")
@@ -129,8 +129,8 @@ function readLedgerReport(env: NodeJS.ProcessEnv): unknown {
 }
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 describe("legacy main session migration", () => {
@@ -157,7 +157,7 @@ describe("legacy main session migration", () => {
           env: fixture.env,
           mode: "detect",
         });
-        expect(fs.existsSync(resolveOpenClawStateSqlitePath(fixture.env))).toBe(false);
+        expect(fs.existsSync(resolveAforaStateSqlitePath(fixture.env))).toBe(false);
         return result;
       },
     },
@@ -519,7 +519,7 @@ describe("legacy main session migration", () => {
       env: fixture.env,
       mode: "detect",
     });
-    const changedMainKey: OpenClawConfig = {
+    const changedMainKey: AforaConfig = {
       ...fixture.cfg,
       session: { ...fixture.cfg.session, mainKey: "primary" },
     };
@@ -697,7 +697,7 @@ describe("legacy main session migration", () => {
       databasePath: databasePath(fixture.stateDir, "main"),
       key: "agent:main:chat",
     });
-    const env = { ...fixture.env, OPENCLAW_STATE_DIR: stateAlias };
+    const env = { ...fixture.env, AFORA_STATE_DIR: stateAlias };
 
     const result = await migrateLegacyMainSessionKeys({
       cfg: fixture.cfg,

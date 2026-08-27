@@ -13,12 +13,12 @@ import {
   type ApplicationStatusBanner,
 } from "../app/update-overlay-helpers.ts";
 import { t } from "../i18n/index.ts";
-import { OpenClawLightDomContentsElement } from "../lit/openclaw-element.ts";
+import { AforaLightDomContentsElement } from "../lit/afora-element.ts";
 import { PollController } from "../lit/poll-controller.ts";
 import { getSafeLocalStorage } from "../local-storage.ts";
 import { icons } from "./icons.ts";
 
-const UPDATE_BANNER_DISMISS_KEY = "openclaw:control-ui:update-banner-dismissed:v1";
+const UPDATE_BANNER_DISMISS_KEY = "afora:control-ui:update-banner-dismissed:v1";
 
 type DismissedUpdate = {
   latestVersion: string;
@@ -58,7 +58,7 @@ function dismiss(update: UpdateAvailable): void {
   }
 }
 
-class SidebarUpdateCard extends OpenClawLightDomContentsElement {
+class SidebarUpdateCard extends AforaLightDomContentsElement {
   @property({ attribute: false }) updateAvailable: UpdateAvailable | null = null;
   @property({ attribute: false }) updateSchedule: UpdateScheduleState | null = null;
   @property({ attribute: false }) heldUpdateCampaignId: string | null = null;
@@ -302,6 +302,6 @@ class SidebarUpdateCard extends OpenClawLightDomContentsElement {
   }
 }
 
-if (!customElements.get("openclaw-sidebar-update-card")) {
-  customElements.define("openclaw-sidebar-update-card", SidebarUpdateCard);
+if (!customElements.get("afora-sidebar-update-card")) {
+  customElements.define("afora-sidebar-update-card", SidebarUpdateCard);
 }

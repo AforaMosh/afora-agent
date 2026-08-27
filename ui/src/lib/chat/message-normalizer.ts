@@ -2,7 +2,7 @@
  * Message normalization utilities for chat rendering.
  */
 
-import { mediaKindFromMime } from "@openclaw/media-core/constants";
+import { mediaKindFromMime } from "@afora/media-core/constants";
 import { z } from "zod";
 import { stripInboundMetadata } from "../../../../src/auto-reply/reply/strip-inbound-meta.js";
 import {
@@ -93,7 +93,7 @@ const rawContentBlocksSchema = z
   .transform((items) =>
     items.filter((item): item is z.infer<typeof rawContentBlockSchema> => item !== null),
   );
-const rawOpenClawMetadataSchema = z
+const rawAforaMetadataSchema = z
   .looseObject({
     replyToId: optionalMessageStringSchema,
     replyToPreview: z
@@ -106,7 +106,7 @@ const rawOpenClawMetadataSchema = z
   })
   .optional()
   .catch(undefined);
-const rawOpenClawDeliverySchema = z
+const rawAforaDeliverySchema = z
   .object({
     audioAsVoice: z.literal(true).optional(),
     replyToCurrent: z.literal(true).optional(),
@@ -128,8 +128,8 @@ const rawMessageSchema = z
     tool_use_id: optionalMessageStringSchema,
     toolName: optionalMessageStringSchema,
     tool_name: optionalMessageStringSchema,
-    __openclaw: rawOpenClawMetadataSchema,
-    openclawDelivery: rawOpenClawDeliverySchema,
+    __afora: rawAforaMetadataSchema,
+    aforaDelivery: rawAforaDeliverySchema,
   })
   .catch({});
 
@@ -259,7 +259,7 @@ function isRenderableAssistantAttachment(url: string): boolean {
   return (
     /^https?:\/\//i.test(trimmed) ||
     /^data:(?:image|audio|video)\//i.test(trimmed) ||
-    /^\/(?:__openclaw__|media)\//.test(trimmed) ||
+    /^\/(?:__afora__|media)\//.test(trimmed) ||
     trimmed.startsWith("file://") ||
     trimmed.startsWith("~") ||
     trimmed.startsWith("/") ||
@@ -275,7 +275,7 @@ function shouldPreserveRelativeAssistantAttachment(url: string): boolean {
   return (
     !/^https?:\/\//i.test(trimmed) &&
     !/^data:(?:image|audio|video)\//i.test(trimmed) &&
-    !/^\/(?:__openclaw__|media)\//.test(trimmed) &&
+    !/^\/(?:__afora__|media)\//.test(trimmed) &&
     !trimmed.startsWith("file://") &&
     !trimmed.startsWith("~") &&
     !trimmed.startsWith("/") &&
@@ -458,7 +458,7 @@ function stripMessageDisplayMetadata(items: MessageContentItem[]): MessageConten
 
 function expandTextContent(
   text: string,
-  delivery: z.infer<typeof rawOpenClawDeliverySchema>,
+  delivery: z.infer<typeof rawAforaDeliverySchema>,
 ): {
   content: MessageContentItem[];
   audioAsVoice: boolean;
@@ -558,7 +558,7 @@ export function normalizeMessage(message: unknown): NormalizedMessage {
     role = "toolResult";
   }
   const isAssistantMessage = role === "assistant";
-  const delivery = isAssistantMessage ? m.openclawDelivery : undefined;
+  const delivery = isAssistantMessage ? m.aforaDelivery : undefined;
 
   // Extract content
   let content: MessageContentItem[] = [];
@@ -688,19 +688,19 @@ export function normalizeMessage(message: unknown): NormalizedMessage {
 
   const timestamp = m.timestamp ?? Date.now();
   const id = m.id;
-  const openClawMeta = m["__openclaw"];
-  const structuredReplyToId = openClawMeta?.replyToId?.trim() ?? "";
+  const aforaMeta = m["__afora"];
+  const structuredReplyToId = aforaMeta?.replyToId?.trim() ?? "";
   if (structuredReplyToId) {
     replyTarget = { kind: "id", id: structuredReplyToId };
   }
-  const replyPreviewRecord = openClawMeta?.replyToPreview;
+  const replyPreviewRecord = aforaMeta?.replyToPreview;
   const replyPreviewText = replyPreviewRecord?.text?.trim() ?? "";
   const replyPreviewSender = replyPreviewRecord?.senderLabel?.trim() ?? "";
   const metaSender = normalizeSenderIdentity({
-    id: openClawMeta?.senderId,
-    name: openClawMeta?.senderName,
-    username: openClawMeta?.senderUsername,
-    profileAvatarUrl: openClawMeta?.senderProfileAvatarUrl,
+    id: aforaMeta?.senderId,
+    name: aforaMeta?.senderName,
+    username: aforaMeta?.senderUsername,
+    profileAvatarUrl: aforaMeta?.senderProfileAvatarUrl,
   });
   const rawLabel = m.senderLabel?.trim() ?? "";
   const legacyLabelIdentity = rawLabel ? splitOpaqueIdLabel(rawLabel) : null;

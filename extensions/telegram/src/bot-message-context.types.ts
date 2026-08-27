@@ -4,16 +4,16 @@ import type { Message } from "grammy/types";
 import type {
   ChannelIngressContextBinding,
   ResolvedChannelMessageIngress,
-} from "openclaw/plugin-sdk/channel-ingress-runtime";
+} from "afora-agent/plugin-sdk/channel-ingress-runtime";
 import type {
-  OpenClawConfig,
+  AforaConfig,
   DmPolicy,
   TelegramDirectConfig,
   TelegramGroupConfig,
   TelegramTopicConfig,
-} from "openclaw/plugin-sdk/config-contracts";
-import type { HistoryEntry } from "openclaw/plugin-sdk/reply-history";
-import type { MsgContext } from "openclaw/plugin-sdk/reply-runtime";
+} from "afora-agent/plugin-sdk/config-contracts";
+import type { HistoryEntry } from "afora-agent/plugin-sdk/reply-history";
+import type { MsgContext } from "afora-agent/plugin-sdk/reply-runtime";
 import type { TelegramMediaKind } from "./bot/body-helpers.js";
 import type { StickerMetadata, TelegramContext } from "./bot/types.js";
 import type { TelegramReplyChainEntry } from "./message-cache.js";
@@ -63,7 +63,7 @@ export type TelegramLogger = {
 type ResolveTelegramGroupConfig = (
   chatId: string | number,
   messageThreadId: number | undefined,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ) => {
   groupConfig?: TelegramGroupConfig | TelegramDirectConfig;
   topicConfig?: TelegramTopicConfig;
@@ -74,10 +74,10 @@ type ResolveGroupActivation = (params: {
   agentId?: string;
   messageThreadId?: number;
   sessionKey?: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }) => boolean | undefined;
 
-type ResolveGroupRequireMention = (chatId: string | number, cfg: OpenClawConfig) => boolean;
+type ResolveGroupRequireMention = (chatId: string | number, cfg: AforaConfig) => boolean;
 
 type TelegramMessageContextRuntimeOverrides = Partial<
   Pick<
@@ -109,7 +109,7 @@ export type BuildTelegramMessageContextParams = {
   storeAllowFrom: string[];
   options?: TelegramMessageContextOptions;
   bot: Bot;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   account: { accountId: string };
   ownerAgentId?: string;
   historyLimit: number;
@@ -125,7 +125,7 @@ export type BuildTelegramMessageContextParams = {
   resolveTelegramGroupConfig: ResolveTelegramGroupConfig;
   runtime?: TelegramMessageContextRuntimeOverrides;
   sessionRuntime?: TelegramMessageContextSessionRuntimeOverrides;
-  upsertPairingRequest?: typeof import("openclaw/plugin-sdk/conversation-runtime").upsertChannelPairingRequest;
+  upsertPairingRequest?: typeof import("afora-agent/plugin-sdk/conversation-runtime").upsertChannelPairingRequest;
   /** Global (per-account) handler for sendChatAction 401 backoff (#27092). */
   sendChatActionHandler: TelegramSendChatActionHandler;
 };

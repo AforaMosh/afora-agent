@@ -20,7 +20,7 @@ function childEnv(): NodeJS.ProcessEnv {
     // drop GITHUB_ACTIONS so the child's reporter cannot annotate the parent.
     if (
       key.startsWith("VITEST") ||
-      key.startsWith("OPENCLAW_VITEST") ||
+      key.startsWith("AFORA_VITEST") ||
       key === "GITHUB_ACTIONS" ||
       key === "FORCE_COLOR"
     ) {
@@ -29,8 +29,8 @@ function childEnv(): NodeJS.ProcessEnv {
     env[key] = value;
   }
   env.NO_COLOR = "1";
-  delete env.OPENCLAW_SKIP_CHANNELS;
-  delete env.OPENCLAW_SKIP_CRON;
+  delete env.AFORA_SKIP_CHANNELS;
+  delete env.AFORA_SKIP_CRON;
   return env;
 }
 
@@ -74,16 +74,16 @@ function fixtureFiles(): Record<string, string> {
       `import ${gatewayMocksPath};`,
       'import { expect, it } from "vitest";',
       'it("seeds gateway helper env", () => {',
-      '  expect(process.env.OPENCLAW_SKIP_CHANNELS).toBe("1");',
-      '  expect(process.env.OPENCLAW_SKIP_CRON).toBe("1");',
+      '  expect(process.env.AFORA_SKIP_CHANNELS).toBe("1");',
+      '  expect(process.env.AFORA_SKIP_CRON).toBe("1");',
       "});",
       "",
     ].join("\n"),
     "02-b-gateway-env.test.ts": [
       'import { expect, it } from "vitest";',
       'it("restores gateway helper env", () => {',
-      "  expect(process.env.OPENCLAW_SKIP_CHANNELS).toBeUndefined();",
-      "  expect(process.env.OPENCLAW_SKIP_CRON).toBeUndefined();",
+      "  expect(process.env.AFORA_SKIP_CHANNELS).toBeUndefined();",
+      "  expect(process.env.AFORA_SKIP_CRON).toBeUndefined();",
       "});",
       "",
     ].join("\n"),
@@ -109,7 +109,7 @@ function fixtureFiles(): Record<string, string> {
     "04-a-session-suspension.test.ts": [
       `import { fenceSessionSuspensionWritesForGatewayShutdown } from ${sessionSuspensionPath};`,
       'import { expect, it } from "vitest";',
-      'const testApi = (globalThis as Record<PropertyKey, { isSessionSuspensionWriteCleanupActiveForTest(): boolean }>)[Symbol.for("openclaw.sessionSuspensionTestApi")];',
+      'const testApi = (globalThis as Record<PropertyKey, { isSessionSuspensionWriteCleanupActiveForTest(): boolean }>)[Symbol.for("afora.sessionSuspensionTestApi")];',
       'it("seeds the session suspension shutdown fence", () => {',
       "  fenceSessionSuspensionWritesForGatewayShutdown();",
       "  expect(testApi?.isSessionSuspensionWriteCleanupActiveForTest()).toBe(true);",
@@ -119,7 +119,7 @@ function fixtureFiles(): Record<string, string> {
     "04-b-session-suspension.test.ts": [
       `import ${sessionSuspensionPath};`,
       'import { expect, it } from "vitest";',
-      'const testApi = (globalThis as Record<PropertyKey, { isSessionSuspensionWriteCleanupActiveForTest(): boolean }>)[Symbol.for("openclaw.sessionSuspensionTestApi")];',
+      'const testApi = (globalThis as Record<PropertyKey, { isSessionSuspensionWriteCleanupActiveForTest(): boolean }>)[Symbol.for("afora.sessionSuspensionTestApi")];',
       'it("clears the session suspension shutdown fence", () => {',
       "  expect(testApi?.isSessionSuspensionWriteCleanupActiveForTest()).toBe(false);",
       "});",
@@ -165,7 +165,7 @@ function fixtureFiles(): Record<string, string> {
 }
 
 it("cleans every shared runner surface between files", async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-non-isolated-runner-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-non-isolated-runner-"));
   try {
     const vitestPackageDir = path.dirname(require.resolve("vitest/package.json"));
     await fs.symlink(path.dirname(vitestPackageDir), path.join(root, "node_modules"), "junction");

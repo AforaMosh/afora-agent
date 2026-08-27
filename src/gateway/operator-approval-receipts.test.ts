@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import { tableExists } from "../state/openclaw-state-db-schema-helpers.js";
+import { tableExists } from "../state/afora-state-db-schema-helpers.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import {
   forceDenyOperatorApproval,
   insertOperatorApproval,
@@ -16,13 +16,13 @@ import {
 const RETENTION_MS = 30 * 24 * 60 * 60_000;
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 function databaseOptions() {
-  return { env: { OPENCLAW_STATE_DIR: tempDirs.make("openclaw-approval-receipts-") } };
+  return { env: { AFORA_STATE_DIR: tempDirs.make("afora-approval-receipts-") } };
 }
 
 function approval(
@@ -146,7 +146,7 @@ describe("operator approval decision receipts", () => {
       nowMs: 2_006,
       databaseOptions: database,
     });
-    openOpenClawStateDatabase(database)
+    openAforaStateDatabase(database)
       .db.prepare("UPDATE operator_approvals SET presentation_json = ? WHERE approval_id = ?")
       .run("{", "payload-corrupt");
 
@@ -283,7 +283,7 @@ describe("operator approval decision receipts", () => {
         databaseOptions: database,
       });
     }
-    const db = openOpenClawStateDatabase(database).db;
+    const db = openAforaStateDatabase(database).db;
     db.prepare("UPDATE operator_approvals SET presentation_json = ? WHERE approval_id = ?").run(
       JSON.stringify({ kind: "exec", commandText: "x".repeat(70_000) }),
       "page-b",
@@ -361,7 +361,7 @@ describe("operator approval decision receipts", () => {
         approval: approval(`binding-${bindingState}`),
         databaseOptions: database,
       });
-      const db = openOpenClawStateDatabase(database).db;
+      const db = openAforaStateDatabase(database).db;
       if (bindingState === "missing") {
         db.prepare("DELETE FROM operator_approval_execution_identities").run();
       } else if (bindingState === "malformed") {
@@ -396,7 +396,7 @@ describe("operator approval decision receipts", () => {
           missingEvidence: ["decision.execution_link"],
         }),
       ]);
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
     }
   });
 
@@ -421,7 +421,7 @@ describe("operator approval decision receipts", () => {
         databaseOptions: database,
       }).receipts,
     ).toEqual([]);
-    expect(tableExists(openOpenClawStateDatabase(database).db, "execution_decision_facts")).toBe(
+    expect(tableExists(openAforaStateDatabase(database).db, "execution_decision_facts")).toBe(
       false,
     );
   });

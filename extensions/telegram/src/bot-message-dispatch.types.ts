@@ -4,15 +4,15 @@ import type {
   AgentPlanStep,
   ChannelProgressDraftLine,
   TextChunkMode,
-} from "openclaw/plugin-sdk/channel-outbound";
+} from "afora-agent/plugin-sdk/channel-outbound";
 import type {
-  OpenClawConfig,
+  AforaConfig,
   ReplyToMode,
   TelegramAccountConfig,
-} from "openclaw/plugin-sdk/config-contracts";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-payload";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import type { SessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
+} from "afora-agent/plugin-sdk/config-contracts";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-payload";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+import type { SessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
 import type { TelegramBotDeps } from "./bot-deps.js";
 import type { TelegramMessageContext } from "./bot-message-context.js";
 import type { TelegramBotOptions } from "./bot.types.js";
@@ -28,7 +28,7 @@ import type {
 export type DispatchTelegramMessageParams = {
   context: TelegramMessageContext;
   bot: Bot;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   runtime: RuntimeEnv;
   replyToMode: ReplyToMode;
   streamMode: TelegramStreamMode;

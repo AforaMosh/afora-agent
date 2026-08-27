@@ -29,7 +29,7 @@ type CompactionSafeguardRuntimeValue = {
   provider?: string;
   /**
    * Pending human-readable cancel reason from the current safeguard compaction
-   * attempt. OpenClaw consumes this to replace the upstream generic
+   * attempt. Afora consumes this to replace the upstream generic
    * "Compaction cancelled" message.
    */
   cancelReason?: string;

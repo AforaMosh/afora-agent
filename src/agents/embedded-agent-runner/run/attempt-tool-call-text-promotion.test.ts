@@ -1,7 +1,7 @@
 // Coverage for promoting standalone text tool calls into structured events.
 
-import { expectDefined } from "@openclaw/normalization-core";
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { expectDefined } from "@afora/normalization-core";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, it, vi } from "vitest";
 import { wrapStreamFnPromoteStandaloneTextToolCalls } from "./attempt-tool-call-text-promotion.js";
 

@@ -1,5 +1,5 @@
 {
-	"$schema": "https://raw.githubusercontent.com/openclaw/openclaw/main/src/agents/modes/interactive/theme/theme-schema.json",
+	"$schema": "https://raw.githubusercontent.com/AforaMosh/afora-agent/main/src/agents/modes/interactive/theme/theme-schema.json",
 	"name": "light",
 	"vars": {
 		"teal": "#5a8080",

@@ -143,11 +143,11 @@ describe("buildEmbeddedAgentSettingsSnapshot", () => {
 
 describe("createPreparedEmbeddedAgentSettingsManager", () => {
   it("keeps trusted file-backed settings runtime-scoped after preparation", async () => {
-    const baseDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-agent-settings-"));
+    const baseDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-agent-settings-"));
     try {
       const cwd = path.join(baseDir, "workspace");
       const agentDir = path.join(baseDir, "agent");
-      const projectSettingsDir = path.join(cwd, ".openclaw");
+      const projectSettingsDir = path.join(cwd, ".afora");
       const agentSettingsPath = path.join(agentDir, "settings.json");
       await fs.mkdir(projectSettingsDir, { recursive: true });
       await fs.mkdir(agentDir, { recursive: true });

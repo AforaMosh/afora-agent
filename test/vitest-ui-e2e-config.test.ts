@@ -35,7 +35,7 @@ describe("Control UI E2E Vitest sharding", () => {
   });
 
   it("covers every file once while balancing source bytes", async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-ui-e2e-shards-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-ui-e2e-shards-"));
     tempDirs.push(tempDir);
     const files = [600, 500, 400, 300, 200, 100].map((bytes, index) => {
       const moduleId = path.join(tempDir, `suite-${index}.e2e.test.ts`);

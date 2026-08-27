@@ -3,8 +3,8 @@
  *
  * Truncates and reshapes portable presentation blocks to match per-channel limits.
  */
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import {
   renderMessagePresentationChartFallbackText,
   renderMessagePresentationControlFallbackLabel,
@@ -40,7 +40,7 @@ type SelectCandidate = {
 type ButtonSelection = ReadonlySet<MessagePresentationButton> | undefined;
 
 const PRESENTATION_FALLBACK_CONTINUATION = Symbol.for(
-  "openclaw.presentation.fallback-continuation",
+  "afora.presentation.fallback-continuation",
 );
 
 function positiveInteger(value: number | undefined): number | undefined {

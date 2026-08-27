@@ -1,6 +1,6 @@
 // Memory Core plugin module serializes full memory reindex builds across processes.
 import type { DatabaseSync } from "node:sqlite";
-import { openNodeSqliteDatabase } from "openclaw/plugin-sdk/sqlite-runtime";
+import { openNodeSqliteDatabase } from "afora-agent/plugin-sdk/sqlite-runtime";
 
 export type MemoryReindexLockHandle = {
   release: () => void;

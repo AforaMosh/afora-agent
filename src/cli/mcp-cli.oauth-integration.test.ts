@@ -15,8 +15,8 @@ import {
 import { readMcpOAuthCredentialsStatus } from "../agents/mcp-oauth.js";
 import { withTempHome } from "../config/home-env.test-harness.js";
 import { defaultRuntime } from "../runtime.js";
-import { withOpenClawStateDatabaseReadOnly } from "../state/openclaw-state-db-readonly.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { withAforaStateDatabaseReadOnly } from "../state/afora-state-db-readonly.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { getFreePort } from "../test-utils/ports.js";
 import { registerMcpCli } from "./mcp-cli.js";
 
@@ -127,12 +127,12 @@ async function startOAuthFixture(port: number) {
 
 afterEach(() => {
   vi.restoreAllMocks();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 describe("mcp login OAuth integration", () => {
   it("keeps per-requester list, status, and doctor probes read only", async () => {
-    await withTempHome(`openclaw-mcp-read-only-${randomUUID()}-`, async () => {
+    await withTempHome(`afora-mcp-read-only-${randomUUID()}-`, async () => {
       const logs: string[] = [];
       const json: unknown[] = [];
       vi.spyOn(defaultRuntime, "log").mockImplementation((line) => logs.push(String(line)));
@@ -168,7 +168,7 @@ describe("mcp login OAuth integration", () => {
         program.parseAsync(["mcp", "doctor", "--probe", "--json"], { from: "user" }),
       ).rejects.toThrow("MCP doctor found errors");
       expect(json.at(-1)).toMatchObject({ servers: [{ name: "fixture" }] });
-      withOpenClawStateDatabaseReadOnly(({ db }) => {
+      withAforaStateDatabaseReadOnly(({ db }) => {
         expect(db.prepare("SELECT count(*) AS count FROM mcp_oauth_stores").get()).toEqual({
           count: 0,
         });
@@ -182,7 +182,7 @@ describe("mcp login OAuth integration", () => {
   });
 
   it("clears requester credentials when the same URL changes to shared OAuth", async () => {
-    await withTempHome(`openclaw-mcp-identity-flip-${randomUUID()}-`, async () => {
+    await withTempHome(`afora-mcp-identity-flip-${randomUUID()}-`, async () => {
       const serverUrl = "https://mcp.example.com/rpc";
       const program = new Command().exitOverride();
       registerMcpCli(program);
@@ -238,7 +238,7 @@ describe("mcp login OAuth integration", () => {
   });
 
   it("captures the browser callback, persists tokens, and closes the port", async () => {
-    await withTempHome(`openclaw-mcp-login-${randomUUID()}-`, async () => {
+    await withTempHome(`afora-mcp-login-${randomUUID()}-`, async () => {
       const oauthPort = await getFreePort();
       const callbackPort = await getFreePort();
       const fixture = await startOAuthFixture(oauthPort);

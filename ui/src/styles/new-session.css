@@ -1,6 +1,6 @@
 /* Full-page new-session draft: the welcome and draft form one top-anchored
    composition, with the target row and composer between hero and recents. */
-openclaw-new-session-page {
+afora-new-session-page {
   display: flex;
   flex: 1 1 0;
   min-width: 0;
@@ -33,7 +33,7 @@ openclaw-new-session-page {
   color: var(--accent);
 }
 
-html.openclaw-native-macos .new-session-page__incognito-rail {
+html.afora-native-macos .new-session-page__incognito-rail {
   top: 52px;
 }
 
@@ -140,7 +140,7 @@ html.openclaw-native-macos .new-session-page__incognito-rail {
   position: relative;
 }
 
-.new-session-page__select--agent openclaw-agent-select {
+.new-session-page__select--agent afora-agent-select {
   width: auto;
   max-width: min(40vw, 260px);
 }
@@ -420,7 +420,7 @@ wa-popover.new-session-page__project-popover::part(body) {
 }
 
 .connect-machine-dialog {
-  --openclaw-modal-width: 480px;
+  --afora-modal-width: 480px;
 }
 
 .connect-machine-dialog__card {

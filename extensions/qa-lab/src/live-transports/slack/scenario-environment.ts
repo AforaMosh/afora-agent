@@ -1,7 +1,7 @@
 import path from "node:path";
 import type { WebClient } from "@slack/web-api";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { QaRunnerCliRegistration } from "openclaw/plugin-sdk/qa-runner-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { QaRunnerCliRegistration } from "afora-agent/plugin-sdk/qa-runner-runtime";
 import {
   patchLiveQaGatewayConfig,
   readLiveQaGatewayConfig,
@@ -26,7 +26,7 @@ type FlowPreparationInput = Parameters<NonNullable<AdapterDefinition["prepareFlo
 export type SlackQaScenarioEnvironment = {
   channelId: string;
   configureScenario: (implementation: SlackQaScenarioImplementation) => Promise<{
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     primaryModel: string;
     run: SlackQaScenarioRun;
   }>;
@@ -101,7 +101,7 @@ export function createSlackQaScenarioEnvironment(params: {
             assertSlackCodexApprovalModelSupported(primaryModel);
           }
           const snapshot = await readLiveQaGatewayConfig(input.gateway);
-          const cfg = buildSlackQaConfig(snapshot.config as OpenClawConfig, {
+          const cfg = buildSlackQaConfig(snapshot.config as AforaConfig, {
             channelId: params.channelId,
             driverBotUserId: params.driverBotUserId,
             overrides: implementation.configOverrides,

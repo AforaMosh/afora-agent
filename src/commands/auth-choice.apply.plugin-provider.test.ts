@@ -1,5 +1,5 @@
 // Auth-choice plugin provider tests cover loaded provider setup, plugin install, and credential routing.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   applyAuthChoiceLoadedPluginProvider,
@@ -197,7 +197,7 @@ function buildLocalProviderInstallCatalogEntry() {
     label: LOCAL_PROVIDER_LABEL,
     origin: "bundled" as const,
     install: {
-      npmSpec: "@openclaw/local-provider",
+      npmSpec: "@afora/local-provider",
     },
   };
 }

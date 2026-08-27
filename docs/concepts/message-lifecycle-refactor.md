@@ -10,7 +10,7 @@ title: "Message lifecycle refactor"
 <Note>
 This page originated as a forward-looking design proposal. The core of that
 design has since shipped in `src/channels/message/*` and the public
-`openclaw/plugin-sdk/channel-outbound` / `channel-inbound` subpaths. For the
+`afora/plugin-sdk/channel-outbound` / `channel-inbound` subpaths. For the
 current API, use [Channel outbound API](/plugins/sdk-channel-outbound) and
 [Channel inbound API](/plugins/sdk-channel-inbound). This page tracks what
 shipped, where the implementation diverged from the original sketch, and what
@@ -64,8 +64,8 @@ The internal domain lives in `src/channels/message/*`:
 | `../turn/lifecycle.ts` | Canonical assembled and routed channel-turn dispatch (lives in `src/channels/turn/`)                               |
 | `reply-pipeline.ts`    | `createChannelReplyPipeline`, reply-prefix and typing-callback helpers                                             |
 
-Public surface: `openclaw/plugin-sdk/channel-outbound` (send/receipt/durable/live/reply-pipeline
-helpers) and `openclaw/plugin-sdk/channel-inbound` (inbound context, `runChannelInboundEvent`,
+Public surface: `afora/plugin-sdk/channel-outbound` (send/receipt/durable/live/reply-pipeline
+helpers) and `afora/plugin-sdk/channel-inbound` (inbound context, `runChannelInboundEvent`,
 `dispatchChannelInboundReply`). See those pages for adapter examples, current
 type names, and migration notes — they are the source of truth for the API
 shape, not the sketches below.
@@ -120,7 +120,7 @@ idempotent `ack()` and explicit `nack(error)`. The ack policy
 Telegram polling uses this to persist a safe-completed update watermark
 (`safeCompletedUpdateId` in `extensions/telegram/src/bot-update-tracker.ts`):
 grammY still observes every update as it enters the middleware chain, but
-OpenClaw only advances the persisted restart watermark past updates that
+Afora only advances the persisted restart watermark past updates that
 finished dispatch, so failed or still-pending updates replay after a restart.
 Telegram's upstream `getUpdates` offset is still owned by grammY; a fully
 durable polling source that controls platform-level redelivery beyond this
@@ -163,8 +163,8 @@ target `channel-outbound` and `channel-inbound` directly.
 The design sketch below never shipped as literally described. Record kept for
 historical accuracy; do not treat these type names as current API.
 
-- **No `MessageOrigin` / `shouldDropOpenClawEcho`.** The original plan called
-  for a `source: "openclaw"` origin tag on gateway-failure messages plus a
+- **No `MessageOrigin` / `shouldDropAforaEcho`.** The original plan called
+  for a `source: "afora"` origin tag on gateway-failure messages plus a
   shared predicate that drops tagged bot-authored echoes in shared rooms
   before `allowBots` authorization. That type and predicate do not exist in
   the codebase. `allowBots` itself is a real per-channel config key (Slack,
@@ -201,7 +201,7 @@ implemented and load-bearing today.
 - **iMessage** (`extensions/imessage/src/monitor/echo-cache.ts`,
   `persisted-echo-cache.ts`): the monitor records sent messages in an echo
   cache after a successful send. Durable final sends must still populate that
-  cache, or OpenClaw can re-ingest its own replies as inbound user messages.
+  cache, or Afora can re-ingest its own replies as inbound user messages.
 - **Tlon** (`extensions/tlon/src/monitor/index.ts`): appends an optional model
   signature and records participated threads after group replies. Durable
   delivery must not bypass those effects.
@@ -241,7 +241,7 @@ payload, conflict, cancelled, unknown). Core policy:
 
 - Whether Telegram should eventually replace the grammY (`1.43.0`) polling
   runner with a fully durable polling source that controls platform-level
-  redelivery, not only OpenClaw's persisted restart watermark
+  redelivery, not only Afora's persisted restart watermark
   (`safeCompletedUpdateId`).
 - Whether live preview state should live in the same record as the final send
   intent or in a sibling live-state store.

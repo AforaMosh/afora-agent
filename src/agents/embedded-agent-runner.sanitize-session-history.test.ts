@@ -1,14 +1,14 @@
 // Behavior coverage for replay-history sanitization across provider policies.
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
 import type {
   AssistantMessage,
   ThinkingContent,
   UserMessage,
   Usage,
-} from "openclaw/plugin-sdk/llm";
+} from "afora-agent/plugin-sdk/llm";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { markInboundContextLabel } from "../auto-reply/reply/inbound-context-marker.js";
-import { OPENCLAW_TRANSCRIPT_ARTIFACT_API } from "../shared/transcript-only-openclaw-assistant.js";
+import { AFORA_TRANSCRIPT_ARTIFACT_API } from "../shared/transcript-only-afora-assistant.js";
 import {
   expectOpenAIResponsesStrictSanitizeCall,
   loadSanitizeSessionHistoryWithCleanMocks,
@@ -937,9 +937,9 @@ describe("sanitizeSessionHistory", () => {
       ),
       castAgentMessage({
         role: "assistant",
-        provider: "openclaw",
+        provider: "afora",
         model: "delivery-mirror",
-        api: OPENCLAW_TRANSCRIPT_ARTIFACT_API,
+        api: AFORA_TRANSCRIPT_ARTIFACT_API,
         content: [{ type: "text", text: "visible reply" }],
         stopReason: "stop",
       }),
@@ -1594,7 +1594,7 @@ describe("sanitizeSessionHistory", () => {
           text: [
             markInboundContextLabel("Conversation info:"),
             "```json",
-            '{"chat_id":"channel:123","sender":"OpenClaw"}',
+            '{"chat_id":"channel:123","sender":"Afora"}',
             "```",
             "",
             "Pong",
@@ -1629,7 +1629,7 @@ describe("sanitizeSessionHistory", () => {
     const metadataOnlyText = [
       markInboundContextLabel("Conversation info:"),
       "```json",
-      '{"chat_id":"channel:123","sender":"OpenClaw"}',
+      '{"chat_id":"channel:123","sender":"Afora"}',
       "```",
     ].join("\n");
     const messages = castAgentMessages([

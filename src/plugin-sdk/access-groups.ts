@@ -6,14 +6,14 @@ import {
 } from "../channels/allow-from.js";
 import type { ChannelId } from "../channels/plugins/types.public.js";
 import type { AccessGroupConfig } from "../config/types.access-groups.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 export { ACCESS_GROUP_ALLOW_FROM_PREFIX, parseAccessGroupAllowFromEntry };
 
-/** Resolves membership for an access group using the full OpenClaw config. */
+/** Resolves membership for an access group using the full Afora config. */
 export type AccessGroupMembershipResolver = (params: {
   /** Full config, available when membership needs cross-channel or provider state. */
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   /** Access group name referenced by `accessGroup:<name>`. */
   name: string;
   /** Access group config selected by name. */
@@ -161,7 +161,7 @@ export async function resolveAccessGroupAllowFromState(params: {
 /** Returns the matched `accessGroup:<name>` allowlist entries for a sender. */
 export async function resolveAccessGroupAllowFromMatches(params: {
   /** Full config containing `accessGroups`. */
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   /** Raw allowlist entries that may include `accessGroup:<name>` references. */
   allowFrom: Array<string | number> | null | undefined;
   /** Channel where the inbound sender is being checked. */
@@ -199,7 +199,7 @@ export async function resolveAccessGroupAllowFromMatches(params: {
 /** Expands a matching access-group allowlist with the concrete sender entry. */
 export async function expandAllowFromWithAccessGroups(params: {
   /** Full config containing `accessGroups`. */
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   /** Raw allowlist entries that may include `accessGroup:<name>` references. */
   allowFrom: Array<string | number> | null | undefined;
   /** Channel where the inbound sender is being checked. */

@@ -4,7 +4,7 @@ import { text } from "node:stream/consumers";
 import type { Page } from "playwright";
 import { expect, it } from "vitest";
 import { resetLogger, setLoggerOverride } from "../../../src/logging.js";
-import { createOpenClawTestState } from "../../../src/test-utils/openclaw-test-state.ts";
+import { createAforaTestState } from "../../../src/test-utils/afora-test-state.ts";
 import { getFreePort } from "../../../src/test-utils/ports.ts";
 import { waitForControlUiGatewayReady } from "../test-helpers/control-ui-e2e-readiness.ts";
 import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts";
@@ -16,9 +16,9 @@ const suite = createControlUiE2eSuite({
     `Playwright Chromium is not available at ${executablePath}`,
 });
 
-const captureUiProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+const captureUiProof = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 const proofDir = path.resolve(
-  process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim() || ".artifacts/control-ui-e2e",
+  process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim() || ".artifacts/control-ui-e2e",
   "logs-lifecycle",
 );
 const viewport = { height: 900, width: 1_440 };
@@ -52,17 +52,17 @@ async function visibleMessages(page: Page) {
 suite.define(() => {
   it("replaces a changed log source and preserves visible recovery through reconnect", async () => {
     const port = await getFreePort();
-    const state = await createOpenClawTestState({
+    const state = await createAforaTestState({
       label: "control-ui-logs-lifecycle",
       layout: "home",
       env: {
-        OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-        OPENCLAW_SKIP_CANVAS_HOST: "1",
-        OPENCLAW_SKIP_CHANNELS: "1",
-        OPENCLAW_SKIP_CRON: "1",
-        OPENCLAW_SKIP_GMAIL_WATCHER: "1",
-        OPENCLAW_SKIP_PROVIDERS: "1",
-        OPENCLAW_TEST_MINIMAL_GATEWAY: "1",
+        AFORA_SKIP_BROWSER_CONTROL_SERVER: "1",
+        AFORA_SKIP_CANVAS_HOST: "1",
+        AFORA_SKIP_CHANNELS: "1",
+        AFORA_SKIP_CRON: "1",
+        AFORA_SKIP_GMAIL_WATCHER: "1",
+        AFORA_SKIP_PROVIDERS: "1",
+        AFORA_TEST_MINIMAL_GATEWAY: "1",
         VITEST: "1",
       },
     });
@@ -120,7 +120,7 @@ suite.define(() => {
           const url = new URL("logs", suite.server.baseUrl);
           url.searchParams.set("gatewayUrl", `ws://127.0.0.1:${port}`);
           await page.goto(url.toString());
-          const confirmation = page.locator("openclaw-gateway-url-confirmation");
+          const confirmation = page.locator("afora-gateway-url-confirmation");
           await confirmation.waitFor();
           await confirmation.getByRole("button", { name: "Confirm", exact: true }).click();
           await waitForControlUiGatewayReady(page);
@@ -139,7 +139,7 @@ suite.define(() => {
           const downloadPromise = page.waitForEvent("download");
           await page.getByRole("button", { name: "Export filtered" }).click();
           const download = await downloadPromise;
-          expect(download.suggestedFilename()).toMatch(/^openclaw-logs-filtered-.*\.log$/);
+          expect(download.suggestedFilename()).toMatch(/^afora-logs-filtered-.*\.log$/);
           const downloadStream = await download.createReadStream();
           if (!downloadStream) {
             throw new Error("filtered log export did not provide a readable download");
@@ -172,7 +172,7 @@ suite.define(() => {
           await gateway?.close({ reason: "logs lifecycle reconnect proof" });
           gateway = null;
           await page.waitForFunction(() => {
-            const app = document.querySelector("openclaw-app") as
+            const app = document.querySelector("afora-app") as
               | (HTMLElement & {
                   runtime?: { context?: { gateway?: { snapshot?: { phase?: string } } } };
                 })

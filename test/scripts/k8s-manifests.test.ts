@@ -71,9 +71,9 @@ describe("k8s manifests", () => {
     expect(deployment).toMatchObject({
       apiVersion: "apps/v1",
       kind: "Deployment",
-      metadata: { name: "openclaw" },
+      metadata: { name: "afora" },
     });
-    expect(matchLabels).toEqual({ app: "openclaw" });
+    expect(matchLabels).toEqual({ app: "afora" });
     expect(templateLabels).toMatchObject(matchLabels);
     expect(serviceSelector).toEqual(matchLabels);
     expect(ports).toContainEqual({
@@ -97,14 +97,14 @@ describe("k8s manifests", () => {
 
     expect(gateway.command).toEqual(["node", "/app/dist/index.js", "gateway", "run"]);
     expect(findNamed(env, "HOME")).toMatchObject({ value: "/home/node" });
-    expect(findNamed(env, "OPENCLAW_CONFIG_DIR")).toMatchObject({ value: "/home/node/.openclaw" });
-    expect(findNamed(env, "OPENCLAW_GATEWAY_TOKEN")).toMatchObject({
-      valueFrom: { secretKeyRef: { key: "OPENCLAW_GATEWAY_TOKEN", name: "openclaw-secrets" } },
+    expect(findNamed(env, "AFORA_CONFIG_DIR")).toMatchObject({ value: "/home/node/.afora" });
+    expect(findNamed(env, "AFORA_GATEWAY_TOKEN")).toMatchObject({
+      valueFrom: { secretKeyRef: { key: "AFORA_GATEWAY_TOKEN", name: "afora-secrets" } },
     });
-    expect(findNamed(volumes, "openclaw-home")).toMatchObject({
-      persistentVolumeClaim: { claimName: "openclaw-home-pvc" },
+    expect(findNamed(volumes, "afora-home")).toMatchObject({
+      persistentVolumeClaim: { claimName: "afora-home-pvc" },
     });
-    expect(findNamed(volumes, "config")).toMatchObject({ configMap: { name: "openclaw-config" } });
+    expect(findNamed(volumes, "config")).toMatchObject({ configMap: { name: "afora-config" } });
     expect(securityContext).toMatchObject({
       allowPrivilegeEscalation: false,
       readOnlyRootFilesystem: true,
@@ -116,11 +116,11 @@ describe("k8s manifests", () => {
     const configMap = readManifest("configmap.yaml");
     const pvc = readManifest("pvc.yaml");
     const data = assertRecord(configMap.data, "configmap data");
-    const config = JSON.parse(String(data["openclaw.json"])) as Record<string, unknown>;
-    const gateway = assertRecord(config.gateway, "openclaw config gateway");
-    const auth = assertRecord(gateway.auth, "openclaw config auth");
-    const agents = assertRecord(config.agents, "openclaw config agents");
-    const defaults = assertRecord(agents.defaults, "openclaw config agent defaults");
+    const config = JSON.parse(String(data["afora.json"])) as Record<string, unknown>;
+    const gateway = assertRecord(config.gateway, "afora config gateway");
+    const auth = assertRecord(gateway.auth, "afora config auth");
+    const agents = assertRecord(config.agents, "afora config agents");
+    const defaults = assertRecord(agents.defaults, "afora config agent defaults");
     const pvcSpec = assertRecord(pvc.spec, "pvc spec");
     const resources = assertRecord(pvcSpec.resources, "pvc resources");
     const requests = assertRecord(resources.requests, "pvc resource requests");
@@ -128,16 +128,16 @@ describe("k8s manifests", () => {
     expect(configMap).toMatchObject({
       apiVersion: "v1",
       kind: "ConfigMap",
-      metadata: { name: "openclaw-config" },
+      metadata: { name: "afora-config" },
     });
     expect(gateway).toMatchObject({ mode: "local", port: 18789 });
     expect(auth).toMatchObject({ mode: "token" });
-    expect(defaults).toMatchObject({ workspace: "~/.openclaw/workspace" });
-    expect(data["AGENTS.md"]).toContain("OpenClaw Assistant");
+    expect(defaults).toMatchObject({ workspace: "~/.afora/workspace" });
+    expect(data["AGENTS.md"]).toContain("Afora Assistant");
     expect(pvc).toMatchObject({
       apiVersion: "v1",
       kind: "PersistentVolumeClaim",
-      metadata: { name: "openclaw-home-pvc" },
+      metadata: { name: "afora-home-pvc" },
     });
     expect(requests).toMatchObject({ storage: "10Gi" });
   });

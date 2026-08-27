@@ -1,6 +1,6 @@
 import type { cleanupBrowserSessionsForLifecycleEnd } from "../../../browser-lifecycle-cleanup.js";
 import { getRuntimeConfig } from "../../../config/config.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import type { ResolveContextEngineOptions } from "../../../context-engine/registry.js";
 import type { ContextEngine } from "../../../context-engine/types.js";
 import { callGateway } from "../../../gateway/call.js";
@@ -45,12 +45,12 @@ export type SubagentRegistryDeps = {
   maybeWakeRequesterAfterAllChildrenSettled: RequesterSettleWakeModule["maybeWakeRequesterAfterAllChildrenSettled"];
   ensureContextEnginesInitialized?: () => void;
   loadAgentRuntimePluginRegistryHandle?: (params: {
-    config: OpenClawConfig;
+    config: AforaConfig;
     workspaceDir?: string;
     allowGatewaySubagentBinding?: boolean;
   }) => PluginRegistry | undefined;
   resolveContextEngine?: (
-    cfg?: OpenClawConfig,
+    cfg?: AforaConfig,
     options?: ResolveContextEngineOptions,
   ) => Promise<ContextEngine>;
 };
@@ -97,7 +97,7 @@ export let subagentRegistryDeps: SubagentRegistryDeps = defaultSubagentRegistryD
 type SubagentRegistryRuntimeModule = {
   ensureContextEnginesInitialized: () => void;
   resolveContextEngine: (
-    cfg?: OpenClawConfig,
+    cfg?: AforaConfig,
     options?: ResolveContextEngineOptions,
   ) => Promise<ContextEngine>;
 };
@@ -116,7 +116,7 @@ const subagentRegistryPluginRuntimeLoader = createLazyPromiseLoader(
 );
 
 export async function loadSubagentRegistryPluginRuntimeHandle(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   workspaceDir?: string;
   allowGatewaySubagentBinding?: boolean;
 }): Promise<PluginRegistry | undefined> {
@@ -130,7 +130,7 @@ export async function loadSubagentRegistryPluginRuntimeHandle(params: {
 }
 
 export async function resolveSubagentRegistryContextEngine(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   options?: ResolveContextEngineOptions,
 ) {
   const runtime = await subagentRegistryRuntimeLoader.load();

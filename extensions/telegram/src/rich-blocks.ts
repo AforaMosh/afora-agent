@@ -1,5 +1,5 @@
 // Markdown → Bot API 10.2 InputRichBlock[] for Telegram rich messages.
-import type { MarkdownTableMode } from "openclaw/plugin-sdk/config-contracts";
+import type { MarkdownTableMode } from "afora-agent/plugin-sdk/config-contracts";
 import {
   FormatCapabilityProfile,
   isAutoLinkedFileRef,
@@ -11,7 +11,7 @@ import {
   type MarkdownStyle,
   type MarkdownTableCell,
   type MarkdownTableMeta,
-} from "openclaw/plugin-sdk/text-chunking";
+} from "afora-agent/plugin-sdk/text-chunking";
 import {
   inputRichBlocksToPlainText,
   maxInputRichBlockNesting,

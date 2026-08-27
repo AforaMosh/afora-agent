@@ -1,5 +1,5 @@
 // Codex tests cover command plugins management plugin behavior.
-import type { PluginCommandContext, PluginCommandResult } from "openclaw/plugin-sdk/plugin-entry";
+import type { PluginCommandContext, PluginCommandResult } from "afora-agent/plugin-sdk/plugin-entry";
 import { describe, expect, it, vi } from "vitest";
 import type { v2 } from "./app-server/protocol.js";
 import {
@@ -133,7 +133,7 @@ describe("Codex /codex plugins subcommand", () => {
 
     const result = await handleCodexPluginsSubcommand(fakeCtx, ["list"], io);
     expect(result.text).toContain("ON   google-calendar");
-    expect(result.text).toContain("openclaw.json");
+    expect(result.text).toContain("afora.json");
   });
 
   it("lists effective disabled status when the global plugin switch is off", async () => {
@@ -727,7 +727,7 @@ describe("Codex /codex plugins subcommand", () => {
       io,
     );
     expect(installed.text).toContain("points to a different plugin identity");
-    expect(enabled.text).toContain("enabled in openclaw.json");
+    expect(enabled.text).toContain("enabled in afora.json");
     expect(runtime.install).not.toHaveBeenCalled();
     expect(io.current()["security-review@company-tools"]).toEqual({
       enabled: true,

@@ -172,9 +172,9 @@ describe("toSanitizedMarkdownHtml links", () => {
     });
 
     it("links http:// URLs", () => {
-      const html = toSanitizedMarkdownHtml("Visit http://github.com/openclaw");
+      const html = toSanitizedMarkdownHtml("Visit http://github.com/afora");
       expect(html).toBe(
-        '<p>Visit <a href="http://github.com/openclaw" class="markdown-bare-url markdown-github-link" rel="noreferrer noopener" target="_blank">http://github.com/openclaw</a></p>\n',
+        '<p>Visit <a href="http://github.com/afora" class="markdown-bare-url markdown-github-link" rel="noreferrer noopener" target="_blank">http://github.com/afora</a></p>\n',
       );
     });
 
@@ -219,9 +219,9 @@ describe("toSanitizedMarkdownHtml links", () => {
     });
 
     it("does NOT rewrite explicit markdown links with CJK display text", () => {
-      const html = toSanitizedMarkdownHtml("[OpenClaw中文](https://docs.openclaw.ai)");
+      const html = toSanitizedMarkdownHtml("[Afora中文](https://docs.afora.ai)");
       expect(html).toBe(
-        '<p><a href="https://docs.openclaw.ai" rel="noreferrer noopener" target="_blank">OpenClaw中文</a></p>\n',
+        '<p><a href="https://docs.afora.ai" rel="noreferrer noopener" target="_blank">Afora中文</a></p>\n',
       );
     });
 
@@ -596,17 +596,17 @@ describe("toSanitizedMarkdownHtml links", () => {
 
   describe("github link marks", () => {
     it.each([
-      ["bare autolink", "https://github.com/openclaw/openclaw/pull/3434", "openclaw/openclaw#3434"],
+      ["bare autolink", "https://github.com/AforaMosh/afora-agent/pull/3434", "AforaMosh/afora-agent#3434"],
       [
         "bare issue autolink",
-        "https://github.com/openclaw/openclaw/issues/3435",
-        "openclaw/openclaw#3435",
+        "https://github.com/AforaMosh/afora-agent/issues/3435",
+        "AforaMosh/afora-agent#3435",
       ],
-      ["issue shorthand", "[#3434](https://github.com/openclaw/openclaw/pull/3434)", "#3434"],
-      ["labelled link", "[the fix](https://github.com/openclaw/openclaw/pull/3434)", "the fix"],
-      ["www host", "[the fix](https://www.github.com/openclaw/openclaw/pull/3434)", "the fix"],
-      ["http scheme", "[the fix](http://github.com/openclaw/openclaw/pull/3434)", "the fix"],
-      ["list item", "- [the fix](https://github.com/openclaw/openclaw/pull/3434)", "the fix"],
+      ["issue shorthand", "[#3434](https://github.com/AforaMosh/afora-agent/pull/3434)", "#3434"],
+      ["labelled link", "[the fix](https://github.com/AforaMosh/afora-agent/pull/3434)", "the fix"],
+      ["www host", "[the fix](https://www.github.com/AforaMosh/afora-agent/pull/3434)", "the fix"],
+      ["http scheme", "[the fix](http://github.com/AforaMosh/afora-agent/pull/3434)", "the fix"],
+      ["list item", "- [the fix](https://github.com/AforaMosh/afora-agent/pull/3434)", "the fix"],
     ])("marks %s", (_kind, input, expectedText) => {
       const fragment = htmlFragment(toSanitizedMarkdownHtml(input));
       const link = fragment.querySelector<HTMLAnchorElement>("a");
@@ -628,14 +628,14 @@ describe("toSanitizedMarkdownHtml links", () => {
     });
 
     it.each([
-      ["a files-tab path", "https://github.com/openclaw/openclaw/pull/3434/files"],
-      ["a commits path", "https://github.com/openclaw/openclaw/pull/3434/commits"],
+      ["a files-tab path", "https://github.com/AforaMosh/afora-agent/pull/3434/files"],
+      ["a commits path", "https://github.com/AforaMosh/afora-agent/pull/3434/commits"],
       [
         "an issue comment fragment",
-        "https://github.com/openclaw/openclaw/issues/3434#issuecomment-1",
+        "https://github.com/AforaMosh/afora-agent/issues/3434#issuecomment-1",
       ],
-      ["a review comment query", "https://github.com/openclaw/openclaw/pull/3434?tab=files"],
-      ["a diff anchor", "https://github.com/openclaw/openclaw/pull/3434/files#diff-abc123"],
+      ["a review comment query", "https://github.com/AforaMosh/afora-agent/pull/3434?tab=files"],
+      ["a diff anchor", "https://github.com/AforaMosh/afora-agent/pull/3434/files#diff-abc123"],
     ])("keeps the specific destination visible for %s", (_kind, input) => {
       const fragment = htmlFragment(toSanitizedMarkdownHtml(input));
       const link = fragment.querySelector<HTMLAnchorElement>("a");
@@ -645,11 +645,11 @@ describe("toSanitizedMarkdownHtml links", () => {
     });
 
     it.each([
-      ["non-github host", "[docs](https://example.com/openclaw)"],
-      ["lookalike host", "[docs](https://notgithub.com/openclaw)"],
-      ["github in query", "[docs](https://example.com/?to=https://github.com/openclaw)"],
-      ["subdomain host", "[pages](https://openclaw.github.io/openclaw)"],
-      ["image-only link", "[![build](data:image/png;base64,x)](https://github.com/openclaw)"],
+      ["non-github host", "[docs](https://example.com/afora)"],
+      ["lookalike host", "[docs](https://notgithub.com/afora)"],
+      ["github in query", "[docs](https://example.com/?to=https://github.com/afora)"],
+      ["subdomain host", "[pages](https://afora.github.io/afora)"],
+      ["image-only link", "[![build](data:image/png;base64,x)](https://github.com/afora)"],
     ])("leaves %s unmarked", (_kind, input) => {
       const fragment = htmlFragment(toSanitizedMarkdownHtml(input));
       expect(fragment.querySelector("a.markdown-github-link")).toBeNull();
@@ -658,7 +658,7 @@ describe("toSanitizedMarkdownHtml links", () => {
     it("leaves github urls inside code untouched", () => {
       const fragment = htmlFragment(
         toSanitizedMarkdownHtml(
-          "`https://github.com/openclaw/openclaw`\n\n```\nhttps://github.com/openclaw/openclaw\n```",
+          "`https://github.com/AforaMosh/afora-agent`\n\n```\nhttps://github.com/AforaMosh/afora-agent\n```",
         ),
       );
       expect(fragment.querySelector("a")).toBeNull();
@@ -667,10 +667,10 @@ describe("toSanitizedMarkdownHtml links", () => {
 
     it("keeps the hover preview target intact on marked links", () => {
       const fragment = htmlFragment(
-        toSanitizedMarkdownHtml("[#3434](https://github.com/openclaw/openclaw/pull/3434)"),
+        toSanitizedMarkdownHtml("[#3434](https://github.com/AforaMosh/afora-agent/pull/3434)"),
       );
       const link = fragment.querySelector<HTMLAnchorElement>("a.markdown-github-link");
-      expect(link?.getAttribute("href")).toBe("https://github.com/openclaw/openclaw/pull/3434");
+      expect(link?.getAttribute("href")).toBe("https://github.com/AforaMosh/afora-agent/pull/3434");
       expect(link?.getAttribute("target")).toBe("_blank");
     });
   });

@@ -35,13 +35,13 @@ type PluginStateStoreTestApi = {
 
 function getSqliteTestApi(): PluginStateSqliteTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.pluginStateSqliteTestApi")
+    Symbol.for("afora.pluginStateSqliteTestApi")
   ] as PluginStateSqliteTestApi;
 }
 
 function getStoreTestApi(): PluginStateStoreTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.pluginStateStoreTestApi")
+    Symbol.for("afora.pluginStateStoreTestApi")
   ] as PluginStateStoreTestApi;
 }
 

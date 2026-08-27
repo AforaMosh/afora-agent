@@ -22,7 +22,7 @@ import {
   sessionBindingIdentity,
   createCodexTestBindingStore,
   type CodexThread,
-  type OpenClawConfig,
+  type AforaConfig,
   type PluginRuntime,
   originalPath,
   tempDirs,
@@ -125,7 +125,7 @@ afterEach(async () => {
 });
 
 describe("Codex supervision catalog", () => {
-  it("enriches only the local source row with its adopted OpenClaw session", async () => {
+  it("enriches only the local source row with its adopted Afora session", async () => {
     const control = createControl({
       listPage: vi.fn(async () => ({
         sessions: [{ threadId: "source-thread", status: "active", archived: false }],
@@ -147,7 +147,7 @@ describe("Codex supervision catalog", () => {
       invoke,
     });
     const sessionKey = supervisionSessionKey("source-thread");
-    const sessionId = "openclaw-session-existing";
+    const sessionId = "afora-session-existing";
     entries.push({
       sessionKey,
       entry: adoptedEntry({
@@ -189,7 +189,7 @@ describe("Codex supervision catalog", () => {
     });
     const { runtime, entries } = createRuntime();
     const sessionKey = supervisionSessionKey("source-thread");
-    const sessionId = "openclaw-session-pending";
+    const sessionId = "afora-session-pending";
     entries.push({
       sessionKey,
       entry: {
@@ -221,7 +221,7 @@ describe("Codex supervision catalog", () => {
       })),
     });
     const sessionKey = supervisionSessionKey("source-thread");
-    const sessionId = "openclaw-session-forged-marker";
+    const sessionId = "afora-session-forged-marker";
     const { runtime, entries } = createRuntime({
       entries: [
         {
@@ -258,12 +258,12 @@ describe("Codex supervision catalog", () => {
     const sources = [
       {
         threadId: "unlocked-thread",
-        sessionId: "openclaw-session-unlocked",
+        sessionId: "afora-session-unlocked",
         entryPatch: { modelSelectionLocked: false },
       },
       {
         threadId: "wrong-harness-thread",
-        sessionId: "openclaw-session-wrong-harness",
+        sessionId: "afora-session-wrong-harness",
         entryPatch: { agentHarnessId: "other-harness" },
       },
     ];
@@ -434,7 +434,7 @@ describe("Codex supervision actions", () => {
     expect(transcriptMirrorMocks.importCodexThreadHistoryToTranscript).toHaveBeenCalledWith({
       thread: sourceThread,
       storePath: resolveStorePath(undefined, { agentId: "main" }),
-      sessionId: "openclaw-session-1",
+      sessionId: "afora-session-1",
       sessionKey: first.sessionKey,
       agentId: "main",
       cwd: "/workspace/project",
@@ -445,7 +445,7 @@ describe("Codex supervision actions", () => {
     await expect(
       bindingStore.read(
         sessionBindingIdentity({
-          sessionId: "openclaw-session-1",
+          sessionId: "afora-session-1",
           sessionKey: first.sessionKey,
           config,
         }),
@@ -473,7 +473,7 @@ describe("Codex supervision actions", () => {
   it("does not join concurrent local continues across explicit agent owners", async () => {
     const runtimeConfig = {
       agents: { ownership: "explicit", list: [{ id: "alpha" }, { id: "beta" }] },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const { runtime, createSessionEntry } = createRuntime();
     const { api } = createGatewayApi(runtime, runtimeConfig);
     const bindingStore = createCodexTestBindingStore();
@@ -504,7 +504,7 @@ describe("Codex supervision actions", () => {
 
   it("baselines a re-continued adoption from its bound canonical thread", async () => {
     const sessionKey = supervisionSessionKey("thread-1");
-    const sessionId = "openclaw-session-existing";
+    const sessionId = "afora-session-existing";
     const canonicalTurn = {
       id: "turn-canonical",
       status: "completed",
@@ -567,10 +567,10 @@ describe("Codex supervision actions", () => {
   it("keeps adopted sessions discoverable when the configured default agent changes", async () => {
     const originalConfig = {
       agents: { list: [{ id: "alpha", default: true }, { id: "beta" }] },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const changedConfig = {
       agents: { list: [{ id: "alpha" }, { id: "beta", default: true }] },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const { runtime, createSessionEntry } = createRuntime();
     const { api } = createGatewayApi(runtime);
     const bindingStore = createCodexTestBindingStore();
@@ -670,7 +670,7 @@ describe("Codex supervision actions", () => {
           sessionKey,
           entry: interruptedAdoptionEntry({
             sourceThreadId: "thread-1",
-            sessionId: "openclaw-session-initializing",
+            sessionId: "afora-session-initializing",
           }),
         },
       ],
@@ -678,7 +678,7 @@ describe("Codex supervision actions", () => {
     const control = createEligibleControl();
 
     await expect(archiveTestSession({ control, runtime })).rejects.toThrow(
-      "cannot be archived while its OpenClaw branch is initializing",
+      "cannot be archived while its Afora branch is initializing",
     );
     expect(control.readThread).not.toHaveBeenCalled();
     expect(control.archiveThread).not.toHaveBeenCalled();
@@ -698,12 +698,12 @@ describe("Codex supervision actions", () => {
     });
 
     await expect(archiveTestSession({ control, bindingStore, runtime })).rejects.toThrow(
-      "cannot be archived until its OpenClaw branch starts",
+      "cannot be archived until its Afora branch starts",
     );
     expect(control.archiveThread).not.toHaveBeenCalled();
 
     const identity = sessionBindingIdentity({
-      sessionId: "openclaw-session-1",
+      sessionId: "afora-session-1",
       sessionKey: continued.sessionKey,
       config,
     });
@@ -776,7 +776,7 @@ describe("Codex supervision actions", () => {
     }
     expect(archiveResult.error).toBeInstanceOf(Error);
     expect((archiveResult.error as Error).message).toContain(
-      "cannot be archived until its OpenClaw branch starts",
+      "cannot be archived until its Afora branch starts",
     );
     expect(control.archiveThread).not.toHaveBeenCalled();
   });

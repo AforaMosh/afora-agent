@@ -1,12 +1,12 @@
 /** Migration provider context and report-directory helpers. */
 import path from "node:path";
-import { isValidAgentId, normalizeAgentId } from "@openclaw/normalization-core/agent-id";
-import { timestampMsToIsoFileStamp } from "@openclaw/normalization-core/number-coercion";
+import { isValidAgentId, normalizeAgentId } from "@afora/normalization-core/agent-id";
+import { timestampMsToIsoFileStamp } from "@afora/normalization-core/number-coercion";
 import { listAgentIds } from "../../agents/agent-scope.js";
 import { formatCliCommand } from "../../cli/command-format.js";
 import { getRuntimeConfig } from "../../config/config.js";
 import { resolveStateDir } from "../../config/paths.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { MigrationProviderContext } from "../../plugins/types.js";
 import type { RuntimeEnv } from "../../runtime.js";
 
@@ -15,7 +15,7 @@ export function createMigrationLogger(runtime: RuntimeEnv, opts: { json?: boolea
   const info = opts.json ? runtime.error : runtime.log;
   return {
     debug: (message: string) => {
-      if (process.env.OPENCLAW_VERBOSE === "1") {
+      if (process.env.AFORA_VERBOSE === "1") {
         info(message);
       }
     },
@@ -37,7 +37,7 @@ export function buildMigrationReportDir(
 
 /** Resolves an explicit migration owner without allowing typo-created agent stores. */
 export function resolveMigrationTargetAgentId(
-  config: OpenClawConfig,
+  config: AforaConfig,
   rawAgentId: string | undefined,
 ): string | undefined {
   const raw = rawAgentId?.trim();
@@ -51,7 +51,7 @@ export function resolveMigrationTargetAgentId(
   const knownAgentIds = new Set(listAgentIds(config).map(normalizeAgentId));
   if (!knownAgentIds.has(agentId)) {
     throw new Error(
-      `Unknown agent id "${raw}". Use "${formatCliCommand("openclaw agents list")}" to see configured agents.`,
+      `Unknown agent id "${raw}". Use "${formatCliCommand("afora agents list")}" to see configured agents.`,
     );
   }
   return agentId;
@@ -66,7 +66,7 @@ export function buildMigrationContext(params: {
   overwrite?: boolean;
   providerOptions?: Record<string, unknown>;
   backupPath?: string;
-  configOverride?: OpenClawConfig;
+  configOverride?: AforaConfig;
   runtime: RuntimeEnv;
   reportDir?: string;
   json?: boolean;

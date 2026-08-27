@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { WebSocket, type RawData } from "ws";
 import {
   QA_EVIDENCE_FILENAME,
@@ -21,7 +21,7 @@ import {
   MIN_CLIENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION,
 } from "../../../../packages/gateway-protocol/src/index.js";
-import type { OpenClawConfig } from "../../../../src/config/types.openclaw.js";
+import type { AforaConfig } from "../../../../src/config/types.afora.js";
 import {
   MAX_BUFFERED_BYTES,
   MAX_PAYLOAD_BYTES,
@@ -397,7 +397,7 @@ function requirePluginSurfaceUrl(hello: Record<string, unknown>): string {
   const url = hello.pluginSurfaceUrls[FIXTURE_SURFACE];
   assertContract(typeof url === "string" && url.length > 0, "hello-ok omitted fixture surface URL");
   assertContract(
-    new URL(url).pathname.startsWith("/__openclaw__/cap/"),
+    new URL(url).pathname.startsWith("/__afora__/cap/"),
     `fixture surface URL was not capability scoped: ${new URL(url).pathname}`,
   );
   return url;
@@ -449,11 +449,11 @@ async function provePluginSurface(client: RawGatewayClient, hello: Record<string
 }
 
 async function createFixturePlugin() {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gateway-ws-contracts-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-gateway-ws-contracts-"));
   const pluginDir = path.join(root, FIXTURE_PLUGIN_ID);
   await fs.mkdir(pluginDir, { recursive: true });
   await fs.writeFile(
-    path.join(pluginDir, "openclaw.plugin.json"),
+    path.join(pluginDir, "afora.plugin.json"),
     `${JSON.stringify(
       {
         id: FIXTURE_PLUGIN_ID,
@@ -491,7 +491,7 @@ async function createFixturePlugin() {
   };
 }
 
-function withFixturePlugin(config: OpenClawConfig, pluginDir: string): OpenClawConfig {
+function withFixturePlugin(config: AforaConfig, pluginDir: string): AforaConfig {
   return {
     ...config,
     plugins: {

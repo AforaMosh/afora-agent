@@ -158,7 +158,7 @@ function makeRunReplyAgentParams(
 
 describe("runReplyAgent final MEDIA replies", () => {
   beforeEach(() => {
-    vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+    vi.stubEnv("AFORA_TEST_FAST", "1");
     executeAgentTurnMock.mockReset();
     resolveOutboundAttachmentFromUrlMock.mockReset();
     enqueueFollowupRunMock.mockReset();

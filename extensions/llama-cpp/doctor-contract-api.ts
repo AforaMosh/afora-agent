@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   LLAMA_CPP_DEFAULT_PORT,
   LLAMA_CPP_PROVIDER_ID,
@@ -15,13 +15,13 @@ const PROVIDER_PATH = "models.providers.llama-cpp";
 export const legacyConfigRules = [
   {
     path: ["models", "providers", LLAMA_CPP_PROVIDER_ID, "baseUrl"],
-    message: `${PROVIDER_PATH}.baseUrl uses the retired in-process runtime. Run "openclaw doctor --fix", then rerun interactive llama.cpp setup.`,
+    message: `${PROVIDER_PATH}.baseUrl uses the retired in-process runtime. Run "afora doctor --fix", then rerun interactive llama.cpp setup.`,
     match: (value: unknown) => value === LEGACY_BASE_URL,
   },
 ];
 
-export function normalizeCompatibilityConfig({ cfg }: { cfg: OpenClawConfig }): {
-  config: OpenClawConfig;
+export function normalizeCompatibilityConfig({ cfg }: { cfg: AforaConfig }): {
+  config: AforaConfig;
   changes: string[];
 } {
   const provider = cfg.models?.providers?.[LLAMA_CPP_PROVIDER_ID];

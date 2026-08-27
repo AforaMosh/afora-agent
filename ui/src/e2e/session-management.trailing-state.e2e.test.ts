@@ -247,7 +247,7 @@ suite.define(() => {
               worktree: {
                 id: "combined-state-worktree",
                 branch: "fix/combined-state",
-                repoRoot: "/tmp/openclaw",
+                repoRoot: "/tmp/afora",
               },
             },
           ),
@@ -279,11 +279,11 @@ suite.define(() => {
               {
                 branch: "fix/combined-state",
                 number: 1,
-                owner: "openclaw",
-                repo: "openclaw",
+                owner: "afora",
+                repo: "afora",
                 state: "open",
                 title: "Combined state fix",
-                url: "https://example.test/openclaw/openclaw/pull/1",
+                url: "https://example.test/AforaMosh/afora-agent/pull/1",
               },
             ],
             rateLimited: false,

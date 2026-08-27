@@ -108,7 +108,7 @@ function populatedColdOpenScenario(): ControlUiMockGatewayScenario {
                 {
                   targetId: "target-1",
                   tabId: "tab-1",
-                  title: "OpenClaw",
+                  title: "Afora",
                   url: "https://example.test/",
                 },
               ],
@@ -155,7 +155,7 @@ function populatedColdOpenScenario(): ControlUiMockGatewayScenario {
               "--- a/README.md",
               "+++ b/README.md",
               "@@ -1 +1,2 @@",
-              " OpenClaw",
+              " Afora",
               "+Cold-open invariant",
               "",
             ].join("\n"),
@@ -216,7 +216,7 @@ function populatedColdOpenScenario(): ControlUiMockGatewayScenario {
 }
 
 async function openColdSidebar(page: Page, scenario = coldOpenScenario()) {
-  await page.route("**/__openclaw__/assistant-media?*", (route) =>
+  await page.route("**/__afora__/assistant-media?*", (route) =>
     route.fulfill({ body: ONE_PIXEL_PNG, contentType: "image/png" }),
   );
   const gateway = await installMockGateway(page, scenario);
@@ -235,7 +235,7 @@ async function readColdOpenOutcome(page: Page): Promise<ColdOpenOutcome> {
   const activePanel = page.locator(".side-panel__panel:not([hidden])");
   await activePanel.waitFor();
   await activePanel.locator(":scope > *").first().waitFor();
-  const emptyState = activePanel.locator("openclaw-panel-empty-state").first();
+  const emptyState = activePanel.locator("afora-panel-empty-state").first();
   const genericEmptyState = (await emptyState.count()) > 0;
   return {
     outcome: genericEmptyState ? "generic-empty" : "content",

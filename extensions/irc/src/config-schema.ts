@@ -8,7 +8,7 @@ import {
   buildChannelConfigSchema,
   buildMultiAccountChannelSchema,
   requireOpenAllowFrom,
-} from "openclaw/plugin-sdk/channel-config-schema";
+} from "afora-agent/plugin-sdk/channel-config-schema";
 import { z } from "zod";
 import { ircChannelConfigUiHints } from "./config-ui-hints.js";
 

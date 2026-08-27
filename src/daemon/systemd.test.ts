@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 // Systemd tests cover Linux service install, start, stop, and status behavior.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildGatewayInstallPlan } from "../commands/daemon-install-helpers.js";
 
@@ -32,7 +32,7 @@ const findSystemGatewayServicesMock = vi.hoisted(() =>
         label: string;
         detail: string;
         scope: "user" | "system";
-        marker?: "openclaw" | "clawdbot";
+        marker?: "afora" | "clawdbot";
         legacy?: boolean;
       }>
     >
@@ -110,9 +110,9 @@ import {
 } from "./systemd.js";
 
 const TEST_SERVICE_HOME = "/home/test";
-const TEST_MANAGED_HOME = "/tmp/openclaw-test-home";
-const GATEWAY_SERVICE = "openclaw-gateway.service";
-const NODE_SERVICE = "openclaw-node.service";
+const TEST_MANAGED_HOME = "/tmp/afora-test-home";
+const GATEWAY_SERVICE = "afora-gateway.service";
+const NODE_SERVICE = "afora-node.service";
 
 const createExecFileError = (
   message: string,
@@ -197,10 +197,10 @@ function mockReadGatewayServiceFile(
 }
 
 async function expectExecStartWithoutEnvironment(envFileLine: string) {
-  mockReadGatewayServiceFile(["[Service]", "ExecStart=/usr/bin/openclaw gateway run", envFileLine]);
+  mockReadGatewayServiceFile(["[Service]", "ExecStart=/usr/bin/afora gateway run", envFileLine]);
 
   const command = await readSystemdServiceExecStart({ HOME: TEST_SERVICE_HOME });
-  expect(command?.programArguments).toEqual(["/usr/bin/openclaw", "gateway", "run"]);
+  expect(command?.programArguments).toEqual(["/usr/bin/afora", "gateway", "run"]);
   expect(command?.environment).toBeUndefined();
 }
 
@@ -410,7 +410,7 @@ describe("systemd availability", () => {
     });
 
     await expect(
-      isSystemdUserServiceAvailable({ USER: "openclaw", SUDO_USER: "admin" }),
+      isSystemdUserServiceAvailable({ USER: "afora", SUDO_USER: "admin" }),
     ).resolves.toBe(true);
     expect(execFileMock).toHaveBeenCalledTimes(1);
   });
@@ -418,15 +418,15 @@ describe("systemd availability", () => {
   it("resolves the effective non-root account instead of stale SUDO_USER", () => {
     mockEffectiveUid(1000);
     vi.spyOn(os, "userInfo").mockReturnValue({
-      username: "openclaw",
+      username: "afora",
       uid: 1000,
       gid: 1000,
       shell: "/bin/bash",
-      homedir: "/home/openclaw",
+      homedir: "/home/afora",
     });
 
-    expect(resolveSystemdUserServiceAccount({ USER: "openclaw", SUDO_USER: "admin" })).toBe(
-      "openclaw",
+    expect(resolveSystemdUserServiceAccount({ USER: "afora", SUDO_USER: "admin" })).toBe(
+      "afora",
     );
   });
 });
@@ -452,7 +452,7 @@ describe("isSystemdServiceEnabled", () => {
     err.code = "ENOENT";
     vi.spyOn(fs, "access").mockRejectedValueOnce(err);
 
-    const result = await isSystemdServiceEnabled({ env: { HOME: "/tmp/openclaw-test-home" } });
+    const result = await isSystemdServiceEnabled({ env: { HOME: "/tmp/afora-test-home" } });
 
     expect(result).toBe(false);
     expect(execFileMock).not.toHaveBeenCalled();
@@ -556,7 +556,7 @@ describe("isSystemdServiceEnabled", () => {
     vi.spyOn(fs, "access").mockResolvedValue(undefined);
     execFileMock
       .mockImplementationOnce((_cmd, args, _opts, cb) => {
-        expect(args).toEqual(["--user", "is-enabled", "openclaw-gateway.service"]);
+        expect(args).toEqual(["--user", "is-enabled", "afora-gateway.service"]);
         const err = new Error("Failed to connect to bus") as Error & { code?: number };
         err.code = 1;
         cb(err, "", "Failed to connect to bus");
@@ -564,13 +564,13 @@ describe("isSystemdServiceEnabled", () => {
       .mockImplementationOnce((_cmd, args, _opts, cb) => {
         expect(args[0]).toBe("--machine");
         expect(args[1]).toMatch(/^[^@]+@$/);
-        expect(args.slice(2)).toEqual(["--user", "is-enabled", "openclaw-gateway.service"]);
+        expect(args.slice(2)).toEqual(["--user", "is-enabled", "afora-gateway.service"]);
         const err = new Error("permission denied") as Error & { code?: number };
         err.code = 1;
         cb(err, "", "permission denied");
       });
     await expect(
-      isSystemdServiceEnabled({ env: { HOME: "/tmp/openclaw-test-home" } }),
+      isSystemdServiceEnabled({ env: { HOME: "/tmp/afora-test-home" } }),
     ).rejects.toThrow("systemctl is-enabled unavailable: permission denied");
   });
 
@@ -580,12 +580,12 @@ describe("isSystemdServiceEnabled", () => {
       // On Ubuntu 24.04, `systemctl --user is-enabled <unit>` exits with
       // code 4 and prints "not-found" to stdout when the unit doesn't exist.
       const err = new Error(
-        "Command failed: systemctl --user is-enabled openclaw-gateway.service",
+        "Command failed: systemctl --user is-enabled afora-gateway.service",
       ) as Error & { code?: number };
       err.code = 4;
       cb(err, "not-found\n", "");
     });
-    const result = await isSystemdServiceEnabled({ env: { HOME: "/tmp/openclaw-test-home" } });
+    const result = await isSystemdServiceEnabled({ env: { HOME: "/tmp/afora-test-home" } });
     expect(result).toBe(false);
   });
 });
@@ -621,7 +621,7 @@ describe("isSystemdUnitActive", () => {
   });
 });
 
-describe("system-scope gateway unit detection (openclaw#87577)", () => {
+describe("system-scope gateway unit detection (afora#87577)", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     execFileMock.mockReset();
@@ -650,18 +650,18 @@ describe("system-scope gateway unit detection (openclaw#87577)", () => {
     // resolution is handled separately by doctor (issue #79375).
     mockUnitFileLayout({
       user: true,
-      system: "/etc/systemd/system/openclaw-gateway.service",
+      system: "/etc/systemd/system/afora-gateway.service",
     });
     const result = await findInstalledSystemdGatewayScope({ HOME: TEST_MANAGED_HOME });
     expect(result?.scope).toBe("user");
     expect(result?.unitName).toBe(GATEWAY_SERVICE);
-    expect(result?.unitPath).toContain("/.config/systemd/user/openclaw-gateway.service");
+    expect(result?.unitPath).toContain("/.config/systemd/user/afora-gateway.service");
   });
 
   it("findSystemdGatewayInstallation reports the dueling state when both units exist", async () => {
     mockUnitFileLayout({
       user: true,
-      system: "/etc/systemd/system/openclaw-gateway.service",
+      system: "/etc/systemd/system/afora-gateway.service",
     });
     const installation = await findSystemdGatewayInstallation({ HOME: TEST_MANAGED_HOME });
     expect(installation.kind).toBe("dueling");
@@ -669,11 +669,11 @@ describe("system-scope gateway unit detection (openclaw#87577)", () => {
       throw new Error("expected dueling installation");
     }
     expect(installation.user.scope).toBe("user");
-    expect(installation.user.unitPath).toContain("/.config/systemd/user/openclaw-gateway.service");
+    expect(installation.user.unitPath).toContain("/.config/systemd/user/afora-gateway.service");
     expect(installation.system).toEqual({
       scope: "system",
       unitName: GATEWAY_SERVICE,
-      unitPath: "/etc/systemd/system/openclaw-gateway.service",
+      unitPath: "/etc/systemd/system/afora-gateway.service",
     });
   });
 
@@ -685,7 +685,7 @@ describe("system-scope gateway unit detection (openclaw#87577)", () => {
   });
 
   it("findSystemdGatewayInstallation reports system-only", async () => {
-    mockUnitFileLayout({ system: "/etc/systemd/system/openclaw-gateway.service" });
+    mockUnitFileLayout({ system: "/etc/systemd/system/afora-gateway.service" });
     const installation = await findSystemdGatewayInstallation({ HOME: TEST_MANAGED_HOME });
     expect(installation.kind).toBe("system");
   });
@@ -698,10 +698,10 @@ describe("system-scope gateway unit detection (openclaw#87577)", () => {
     findSystemGatewayServicesMock.mockResolvedValueOnce([
       {
         platform: "linux",
-        label: "openclaw-rescue.service",
-        detail: "unit: /etc/systemd/system/openclaw-rescue.service",
+        label: "afora-rescue.service",
+        detail: "unit: /etc/systemd/system/afora-rescue.service",
         scope: "system",
-        marker: "openclaw",
+        marker: "afora",
       },
     ]);
     const installation = await findSystemdGatewayInstallation({ HOME: TEST_MANAGED_HOME });
@@ -718,14 +718,14 @@ describe("system-scope gateway unit detection (openclaw#87577)", () => {
   it("formatDuelingScopesWarning renders remediation only for the dueling state", async () => {
     mockUnitFileLayout({
       user: true,
-      system: "/etc/systemd/system/openclaw-gateway.service",
+      system: "/etc/systemd/system/afora-gateway.service",
     });
     const installation = await findSystemdGatewayInstallation({ HOME: TEST_MANAGED_HOME });
     const warning = formatDuelingScopesWarning(installation, 18789);
-    expect(warning).toContain("/.config/systemd/user/openclaw-gateway.service");
-    expect(warning).toContain("/etc/systemd/system/openclaw-gateway.service");
+    expect(warning).toContain("/.config/systemd/user/afora-gateway.service");
+    expect(warning).toContain("/etc/systemd/system/afora-gateway.service");
     expect(warning).toContain("18789");
-    expect(warning).toContain("openclaw doctor --fix");
+    expect(warning).toContain("afora doctor --fix");
     // The unguarded startup path must not hand out a destructive command.
     expect(warning).not.toContain("rm ");
     expect(warning).not.toContain("disable --now");
@@ -740,7 +740,7 @@ describe("system-scope gateway unit detection (openclaw#87577)", () => {
           system: {
             scope: "system",
             unitName: GATEWAY_SERVICE,
-            unitPath: "/etc/systemd/system/openclaw-gateway.service",
+            unitPath: "/etc/systemd/system/afora-gateway.service",
           },
         },
         18789,
@@ -749,20 +749,20 @@ describe("system-scope gateway unit detection (openclaw#87577)", () => {
   });
 
   it("findInstalledSystemdGatewayScope detects system-scope unit in /etc/systemd/system", async () => {
-    mockUnitFileLayout({ system: "/etc/systemd/system/openclaw-gateway.service" });
+    mockUnitFileLayout({ system: "/etc/systemd/system/afora-gateway.service" });
     const result = await findInstalledSystemdGatewayScope({ HOME: TEST_MANAGED_HOME });
     expect(result).toEqual({
       scope: "system",
       unitName: GATEWAY_SERVICE,
-      unitPath: "/etc/systemd/system/openclaw-gateway.service",
+      unitPath: "/etc/systemd/system/afora-gateway.service",
     });
   });
 
   it("findInstalledSystemdGatewayScope falls back to /usr/lib/systemd/system", async () => {
-    mockUnitFileLayout({ system: "/usr/lib/systemd/system/openclaw-gateway.service" });
+    mockUnitFileLayout({ system: "/usr/lib/systemd/system/afora-gateway.service" });
     const result = await findInstalledSystemdGatewayScope({ HOME: TEST_MANAGED_HOME });
     expect(result?.scope).toBe("system");
-    expect(result?.unitPath).toBe("/usr/lib/systemd/system/openclaw-gateway.service");
+    expect(result?.unitPath).toBe("/usr/lib/systemd/system/afora-gateway.service");
   });
 
   it("findInstalledSystemdGatewayScope returns null when no unit file exists", async () => {
@@ -777,17 +777,17 @@ describe("system-scope gateway unit detection (openclaw#87577)", () => {
     findSystemGatewayServicesMock.mockResolvedValueOnce([
       {
         platform: "linux",
-        label: "openclaw.service",
-        detail: "unit: /etc/systemd/system/openclaw.service",
+        label: "afora.service",
+        detail: "unit: /etc/systemd/system/afora.service",
         scope: "system",
-        marker: "openclaw",
+        marker: "afora",
       },
     ]);
     const result = await findInstalledSystemdGatewayScope({ HOME: TEST_MANAGED_HOME });
     expect(result).toEqual({
       scope: "system",
-      unitName: "openclaw.service",
-      unitPath: "/etc/systemd/system/openclaw.service",
+      unitName: "afora.service",
+      unitPath: "/etc/systemd/system/afora.service",
     });
   });
 
@@ -812,14 +812,14 @@ describe("system-scope gateway unit detection (openclaw#87577)", () => {
     findSystemGatewayServicesMock.mockResolvedValueOnce([
       {
         platform: "linux",
-        label: "openclaw.service",
-        detail: "unit: /etc/systemd/system/openclaw.service",
+        label: "afora.service",
+        detail: "unit: /etc/systemd/system/afora.service",
         scope: "system",
-        marker: "openclaw",
+        marker: "afora",
       },
     ]);
     execFileMock.mockImplementationOnce((_cmd, args, _opts, cb) => {
-      expect(args).toEqual(["is-enabled", "openclaw.service"]);
+      expect(args).toEqual(["is-enabled", "afora.service"]);
       cb(null, "enabled\n", "");
     });
     await expect(isSystemdServiceEnabled({ env: { HOME: TEST_MANAGED_HOME } })).resolves.toBe(true);
@@ -830,10 +830,10 @@ describe("system-scope gateway unit detection (openclaw#87577)", () => {
     findSystemGatewayServicesMock.mockResolvedValueOnce([
       {
         platform: "linux",
-        label: "openclaw.service",
-        detail: "unit: /etc/systemd/system/openclaw.service",
+        label: "afora.service",
+        detail: "unit: /etc/systemd/system/afora.service",
         scope: "system",
-        marker: "openclaw",
+        marker: "afora",
       },
     ]);
     mockEffectiveUid(1000);
@@ -841,14 +841,14 @@ describe("system-scope gateway unit detection (openclaw#87577)", () => {
     await expect(
       restartSystemdService({ stdout, env: { HOME: TEST_MANAGED_HOME } }),
     ).rejects.toThrow(
-      /openclaw\.service is a system-scope unit \(\/etc\/systemd\/system\/openclaw\.service\); run `sudo systemctl restart openclaw\.service`/,
+      /afora\.service is a system-scope unit \(\/etc\/systemd\/system\/afora\.service\); run `sudo systemctl restart afora\.service`/,
     );
     expect(execFileMock).not.toHaveBeenCalled();
     expect(write).not.toHaveBeenCalled();
   });
 
   it("isSystemdServiceEnabled reports true for an enabled system-scope unit", async () => {
-    mockUnitFileLayout({ system: "/etc/systemd/system/openclaw-gateway.service" });
+    mockUnitFileLayout({ system: "/etc/systemd/system/afora-gateway.service" });
     execFileMock.mockImplementationOnce((_cmd, args, _opts, cb) => {
       expect(args).toEqual(["is-enabled", GATEWAY_SERVICE]);
       cb(null, "enabled\n", "");
@@ -857,7 +857,7 @@ describe("system-scope gateway unit detection (openclaw#87577)", () => {
   });
 
   it("isSystemdServiceEnabled reports false for a disabled system-scope unit", async () => {
-    mockUnitFileLayout({ system: "/etc/systemd/system/openclaw-gateway.service" });
+    mockUnitFileLayout({ system: "/etc/systemd/system/afora-gateway.service" });
     execFileMock.mockImplementationOnce((_cmd, args, _opts, cb) => {
       expect(args).toEqual(["is-enabled", GATEWAY_SERVICE]);
       cb(createExecFileError("disabled", { code: 1 }), "disabled\n", "");
@@ -868,14 +868,14 @@ describe("system-scope gateway unit detection (openclaw#87577)", () => {
   });
 
   it("readSystemdServiceRuntime queries the system manager for system-scope units", async () => {
-    mockUnitFileLayout({ system: "/etc/systemd/system/openclaw-gateway.service" });
+    mockUnitFileLayout({ system: "/etc/systemd/system/afora-gateway.service" });
     execFileMock.mockImplementationOnce((_cmd, args, _opts, cb) => {
       expect(args[0]).toBe("show");
       expect(args).not.toContain("--user");
       cb(
         null,
         [
-          "Id=openclaw-gateway.service",
+          "Id=afora-gateway.service",
           "ActiveState=active",
           "SubState=running",
           "MainPID=4242",
@@ -886,24 +886,24 @@ describe("system-scope gateway unit detection (openclaw#87577)", () => {
     const runtime = await readSystemdServiceRuntime({ HOME: TEST_MANAGED_HOME });
     expect(runtime.status).toBe("running");
     expect(runtime.pid).toBe(4242);
-    expect(runtime.systemd?.unit).toBe("openclaw-gateway.service");
+    expect(runtime.systemd?.unit).toBe("afora-gateway.service");
   });
 
   it("restartSystemdService refuses to use the user manager when the unit is system-scope and the caller is not root", async () => {
-    mockUnitFileLayout({ system: "/etc/systemd/system/openclaw-gateway.service" });
+    mockUnitFileLayout({ system: "/etc/systemd/system/afora-gateway.service" });
     mockEffectiveUid(1000);
     const { stdout, write } = createWritableStreamMock();
     await expect(
       restartSystemdService({ stdout, env: { HOME: TEST_MANAGED_HOME } }),
     ).rejects.toThrow(
-      /system-scope unit .* run `sudo systemctl restart openclaw-gateway\.service`/,
+      /system-scope unit .* run `sudo systemctl restart afora-gateway\.service`/,
     );
     expect(execFileMock).not.toHaveBeenCalled();
     expect(write).not.toHaveBeenCalled();
   });
 
   it("restartSystemdService restarts the system unit directly when running as root", async () => {
-    mockUnitFileLayout({ system: "/etc/systemd/system/openclaw-gateway.service" });
+    mockUnitFileLayout({ system: "/etc/systemd/system/afora-gateway.service" });
     mockEffectiveUid(0);
     execFileMock
       .mockImplementationOnce((_cmd, args, _opts, cb) => {
@@ -921,7 +921,7 @@ describe("system-scope gateway unit detection (openclaw#87577)", () => {
   });
 
   it("startSystemdService clears the start-limit latch before starting the system unit", async () => {
-    mockUnitFileLayout({ system: "/etc/systemd/system/openclaw-gateway.service" });
+    mockUnitFileLayout({ system: "/etc/systemd/system/afora-gateway.service" });
     mockEffectiveUid(0);
     execFileMock
       .mockImplementationOnce((_cmd, args, _opts, cb) => {
@@ -938,11 +938,11 @@ describe("system-scope gateway unit detection (openclaw#87577)", () => {
   });
 
   it("stopSystemdService surfaces sudo guidance for system-scope units without root", async () => {
-    mockUnitFileLayout({ system: "/etc/systemd/system/openclaw-gateway.service" });
+    mockUnitFileLayout({ system: "/etc/systemd/system/afora-gateway.service" });
     mockEffectiveUid(1000);
     const { stdout } = createWritableStreamMock();
     await expect(stopSystemdService({ stdout, env: { HOME: TEST_MANAGED_HOME } })).rejects.toThrow(
-      /sudo systemctl stop openclaw-gateway\.service/,
+      /sudo systemctl stop afora-gateway\.service/,
     );
     expect(execFileMock).not.toHaveBeenCalled();
   });
@@ -952,7 +952,7 @@ describe("isNonFatalSystemdInstallProbeError", () => {
   it("matches wrapper-only WSL install probe failures", () => {
     expect(
       isNonFatalSystemdInstallProbeError(
-        new Error("Command failed: systemctl --user is-enabled openclaw-gateway.service"),
+        new Error("Command failed: systemctl --user is-enabled afora-gateway.service"),
       ),
     ).toBe(true);
   });
@@ -1016,7 +1016,7 @@ describe("readSystemdServiceRuntime", () => {
         cb(null, "", "");
       })
       .mockImplementationOnce((_cmd, _args, _opts, cb) => {
-        const detail = "Unit openclaw-gateway.service could not be found.";
+        const detail = "Unit afora-gateway.service could not be found.";
         cb(createExecFileError(detail, { stderr: detail }), "", detail);
       });
 
@@ -1046,20 +1046,20 @@ describe("readSystemdServiceRuntime", () => {
 
   it("does not call an installed unit missing when systemd disagrees with its definition", async () => {
     const accessSpy = vi.spyOn(fs, "access").mockImplementation(async (pathArg) => {
-      if (pathLikeToString(pathArg) === "/etc/systemd/system/openclaw-gateway.service") {
+      if (pathLikeToString(pathArg) === "/etc/systemd/system/afora-gateway.service") {
         return;
       }
       throw Object.assign(new Error("ENOENT"), { code: "ENOENT" });
     });
     execFileMock.mockImplementationOnce((_cmd, _args, _opts, cb) => {
-      const detail = "Unit openclaw-gateway.service could not be found.";
+      const detail = "Unit afora-gateway.service could not be found.";
       cb(createExecFileError(detail, { stderr: detail }), "", detail);
     });
 
     try {
       await expect(readSystemdServiceRuntime({ HOME: TEST_MANAGED_HOME })).resolves.toEqual({
         status: "unknown",
-        detail: "Unit openclaw-gateway.service could not be found.",
+        detail: "Unit afora-gateway.service could not be found.",
         missingUnit: false,
       });
     } finally {
@@ -1150,7 +1150,7 @@ describe("readSystemdServiceRuntime", () => {
         cb(
           null,
           [
-            "Id=openclaw-gateway.service",
+            "Id=afora-gateway.service",
             "ActiveState=active",
             "SubState=running",
             "MainPID=1234",
@@ -1172,7 +1172,7 @@ describe("readSystemdServiceRuntime", () => {
       lastExitStatus: 0,
       lastExitReason: "running",
       systemd: {
-        unit: "openclaw-gateway.service",
+        unit: "afora-gateway.service",
         killMode: "process",
         tasksCurrent: 807,
         memoryCurrent: 11_918_534_246,
@@ -1181,7 +1181,7 @@ describe("readSystemdServiceRuntime", () => {
   });
 
   // Regression for #84698: status probes must bound the systemctl subprocess so a
-  // wedged systemd socket cannot hang `openclaw status` (which advertises --timeout).
+  // wedged systemd socket cannot hang `afora status` (which advertises --timeout).
   it("passes a kill-backed timeout to systemctl when a read deadline is set", async () => {
     execFileMock.mockReset();
     execFileMock.mockImplementation((_cmd, _args, _opts, cb) => cb(null, "", ""));
@@ -1216,7 +1216,7 @@ describe("readSystemdServiceRuntime", () => {
         cb(
           null,
           [
-            "Id=openclaw-gateway.service",
+            "Id=afora-gateway.service",
             "ActiveState=failed",
             "SubState=failed",
             "Result=exit-code",
@@ -1245,37 +1245,37 @@ describe("readSystemdServiceRuntime", () => {
 describe("resolveSystemdUserUnitPath", () => {
   it.each([
     {
-      name: "uses default service name when OPENCLAW_PROFILE is unset",
+      name: "uses default service name when AFORA_PROFILE is unset",
       env: { HOME: "/home/test" },
-      expected: "/home/test/.config/systemd/user/openclaw-gateway.service",
+      expected: "/home/test/.config/systemd/user/afora-gateway.service",
     },
     {
-      name: "uses profile-specific service name when OPENCLAW_PROFILE is set to a custom value",
-      env: { HOME: "/home/test", OPENCLAW_PROFILE: "jbphoenix" },
-      expected: "/home/test/.config/systemd/user/openclaw-gateway-jbphoenix.service",
+      name: "uses profile-specific service name when AFORA_PROFILE is set to a custom value",
+      env: { HOME: "/home/test", AFORA_PROFILE: "jbphoenix" },
+      expected: "/home/test/.config/systemd/user/afora-gateway-jbphoenix.service",
     },
     {
-      name: "prefers OPENCLAW_SYSTEMD_UNIT over OPENCLAW_PROFILE",
+      name: "prefers AFORA_SYSTEMD_UNIT over AFORA_PROFILE",
       env: {
         HOME: "/home/test",
-        OPENCLAW_PROFILE: "jbphoenix",
-        OPENCLAW_SYSTEMD_UNIT: "custom-unit",
+        AFORA_PROFILE: "jbphoenix",
+        AFORA_SYSTEMD_UNIT: "custom-unit",
       },
       expected: "/home/test/.config/systemd/user/custom-unit.service",
     },
     {
-      name: "handles OPENCLAW_SYSTEMD_UNIT with .service suffix",
+      name: "handles AFORA_SYSTEMD_UNIT with .service suffix",
       env: {
         HOME: "/home/test",
-        OPENCLAW_SYSTEMD_UNIT: "custom-unit.service",
+        AFORA_SYSTEMD_UNIT: "custom-unit.service",
       },
       expected: "/home/test/.config/systemd/user/custom-unit.service",
     },
     {
-      name: "trims whitespace from OPENCLAW_SYSTEMD_UNIT",
+      name: "trims whitespace from AFORA_SYSTEMD_UNIT",
       env: {
         HOME: "/home/test",
-        OPENCLAW_SYSTEMD_UNIT: "  custom-unit  ",
+        AFORA_SYSTEMD_UNIT: "  custom-unit  ",
       },
       expected: "/home/test/.config/systemd/user/custom-unit.service",
     },
@@ -1286,8 +1286,8 @@ describe("resolveSystemdUserUnitPath", () => {
 
 describe("splitArgsPreservingQuotes", () => {
   it("splits on whitespace outside quotes", () => {
-    expect(splitArgsPreservingQuotes('/usr/bin/openclaw gateway start --name "My Bot"')).toEqual([
-      "/usr/bin/openclaw",
+    expect(splitArgsPreservingQuotes('/usr/bin/afora gateway start --name "My Bot"')).toEqual([
+      "/usr/bin/afora",
       "gateway",
       "start",
       "--name",
@@ -1297,50 +1297,50 @@ describe("splitArgsPreservingQuotes", () => {
 
   it("supports systemd-style backslash escaping", () => {
     expect(
-      splitArgsPreservingQuotes('openclaw --name "My \\"Bot\\"" --foo bar', {
+      splitArgsPreservingQuotes('afora --name "My \\"Bot\\"" --foo bar', {
         escapeMode: "backslash",
       }),
-    ).toEqual(["openclaw", "--name", 'My "Bot"', "--foo", "bar"]);
+    ).toEqual(["afora", "--name", 'My "Bot"', "--foo", "bar"]);
   });
 
   it("supports schtasks-style escaped quotes while preserving other backslashes", () => {
     expect(
-      splitArgsPreservingQuotes('openclaw --path "C:\\\\Program Files\\\\OpenClaw"', {
+      splitArgsPreservingQuotes('afora --path "C:\\\\Program Files\\\\Afora"', {
         escapeMode: "backslash-quote-only",
       }),
-    ).toEqual(["openclaw", "--path", "C:\\\\Program Files\\\\OpenClaw"]);
+    ).toEqual(["afora", "--path", "C:\\\\Program Files\\\\Afora"]);
 
     expect(
-      splitArgsPreservingQuotes('openclaw --label "My \\"Quoted\\" Name"', {
+      splitArgsPreservingQuotes('afora --label "My \\"Quoted\\" Name"', {
         escapeMode: "backslash-quote-only",
       }),
-    ).toEqual(["openclaw", "--label", 'My "Quoted" Name']);
+    ).toEqual(["afora", "--label", 'My "Quoted" Name']);
   });
 });
 
 describe("parseSystemdEnvAssignments", () => {
   it("parses single-quoted whole assignments", () => {
     expect(
-      parseSystemdEnvAssignments("'OPENCLAW_GATEWAY_TOKEN=single quoted token' FOO=bar"),
+      parseSystemdEnvAssignments("'AFORA_GATEWAY_TOKEN=single quoted token' FOO=bar"),
     ).toEqual([
-      { key: "OPENCLAW_GATEWAY_TOKEN", value: "single quoted token" },
+      { key: "AFORA_GATEWAY_TOKEN", value: "single quoted token" },
       { key: "FOO", value: "bar" },
     ]);
   });
 
   it("keeps apostrophes inside unquoted assignment values literal", () => {
-    expect(parseSystemdEnvAssignments("FOO=can't OPENCLAW_GATEWAY_TOKEN=token")).toEqual([
+    expect(parseSystemdEnvAssignments("FOO=can't AFORA_GATEWAY_TOKEN=token")).toEqual([
       { key: "FOO", value: "can't" },
-      { key: "OPENCLAW_GATEWAY_TOKEN", value: "token" },
+      { key: "AFORA_GATEWAY_TOKEN", value: "token" },
     ]);
   });
 });
 
 describe("parseSystemdExecStart", () => {
   it("preserves quoted arguments", () => {
-    const execStart = '/usr/bin/openclaw gateway start --name "My Bot"';
+    const execStart = '/usr/bin/afora gateway start --name "My Bot"';
     expect(parseSystemdExecStart(execStart)).toEqual([
-      "/usr/bin/openclaw",
+      "/usr/bin/afora",
       "gateway",
       "start",
       "--name",
@@ -1354,14 +1354,14 @@ describe("readSystemdServiceExecStart", () => {
     vi.restoreAllMocks();
   });
 
-  it("loads OPENCLAW_GATEWAY_TOKEN from EnvironmentFile", async () => {
+  it("loads AFORA_GATEWAY_TOKEN from EnvironmentFile", async () => {
     const readFileSpy = mockReadGatewayServiceFile(
-      ["[Service]", "ExecStart=/usr/bin/openclaw gateway run", "EnvironmentFile=%h/.openclaw/.env"],
-      { [`${TEST_SERVICE_HOME}/.openclaw/.env`]: "OPENCLAW_GATEWAY_TOKEN=env-file-token\n" },
+      ["[Service]", "ExecStart=/usr/bin/afora gateway run", "EnvironmentFile=%h/.afora/.env"],
+      { [`${TEST_SERVICE_HOME}/.afora/.env`]: "AFORA_GATEWAY_TOKEN=env-file-token\n" },
     );
 
     const command = await readSystemdServiceExecStart({ HOME: TEST_SERVICE_HOME });
-    expect(command?.environment?.OPENCLAW_GATEWAY_TOKEN).toBe("env-file-token");
+    expect(command?.environment?.AFORA_GATEWAY_TOKEN).toBe("env-file-token");
     expect(readFileSpy).toHaveBeenCalledTimes(2);
   });
 
@@ -1369,29 +1369,29 @@ describe("readSystemdServiceExecStart", () => {
     mockReadGatewayServiceFile(
       [
         "[Service]",
-        "ExecStart=/usr/bin/openclaw gateway run",
-        "EnvironmentFile=%h/.openclaw/.env",
-        'Environment="OPENCLAW_GATEWAY_TOKEN=inline-token"',
+        "ExecStart=/usr/bin/afora gateway run",
+        "EnvironmentFile=%h/.afora/.env",
+        'Environment="AFORA_GATEWAY_TOKEN=inline-token"',
       ],
-      { [`${TEST_SERVICE_HOME}/.openclaw/.env`]: "OPENCLAW_GATEWAY_TOKEN=env-file-token\n" },
+      { [`${TEST_SERVICE_HOME}/.afora/.env`]: "AFORA_GATEWAY_TOKEN=env-file-token\n" },
     );
 
     const command = await readSystemdServiceExecStart({ HOME: TEST_SERVICE_HOME });
-    expect(command?.environment?.OPENCLAW_GATEWAY_TOKEN).toBe("env-file-token");
-    expect(command?.environmentValueSources?.OPENCLAW_GATEWAY_TOKEN).toBe("inline-and-file");
+    expect(command?.environment?.AFORA_GATEWAY_TOKEN).toBe("env-file-token");
+    expect(command?.environmentValueSources?.AFORA_GATEWAY_TOKEN).toBe("inline-and-file");
   });
 
   it("reads all inline assignments in order before EnvironmentFile overrides", async () => {
     mockReadGatewayServiceFile(
       [
         "[Service]",
-        "ExecStart=/usr/bin/openclaw gateway run",
+        "ExecStart=/usr/bin/afora gateway run",
         'Environment=PLAIN=first "QUOTED=value with spaces" REPEATED=first',
         "Environment='REPEATED=last value' INLINE_FILE=inline",
-        "EnvironmentFile=%h/.openclaw/.env",
+        "EnvironmentFile=%h/.afora/.env",
       ],
       {
-        [`${TEST_SERVICE_HOME}/.openclaw/.env`]: ["INLINE_FILE=file", "FILE_ONLY=from-file"].join(
+        [`${TEST_SERVICE_HOME}/.afora/.env`]: ["INLINE_FILE=file", "FILE_ONLY=from-file"].join(
           "\n",
         ),
       },
@@ -1415,84 +1415,84 @@ describe("readSystemdServiceExecStart", () => {
   });
 
   it("ignores missing optional EnvironmentFile entries", async () => {
-    await expectExecStartWithoutEnvironment("EnvironmentFile=-%h/.openclaw/missing.env");
+    await expectExecStartWithoutEnvironment("EnvironmentFile=-%h/.afora/missing.env");
   });
 
   it("keeps parsing when non-optional EnvironmentFile entries are missing", async () => {
-    await expectExecStartWithoutEnvironment("EnvironmentFile=%h/.openclaw/missing.env");
+    await expectExecStartWithoutEnvironment("EnvironmentFile=%h/.afora/missing.env");
   });
 
   it("supports multiple EnvironmentFile entries and quoted paths", async () => {
     vi.spyOn(fs, "readFile").mockImplementation(async (pathname) => {
       const pathValue = pathLikeToString(pathname);
-      if (pathValue.endsWith("/openclaw-gateway.service")) {
+      if (pathValue.endsWith("/afora-gateway.service")) {
         return [
           "[Service]",
-          "ExecStart=/usr/bin/openclaw gateway run",
-          'EnvironmentFile=%h/.openclaw/first.env "%h/.openclaw/second env.env"',
+          "ExecStart=/usr/bin/afora gateway run",
+          'EnvironmentFile=%h/.afora/first.env "%h/.afora/second env.env"',
         ].join("\n");
       }
-      if (pathValue === "/home/test/.openclaw/first.env") {
-        return "OPENCLAW_GATEWAY_TOKEN=first-token\n"; // pragma: allowlist secret
+      if (pathValue === "/home/test/.afora/first.env") {
+        return "AFORA_GATEWAY_TOKEN=first-token\n"; // pragma: allowlist secret
       }
-      if (pathValue === "/home/test/.openclaw/second env.env") {
-        return 'OPENCLAW_GATEWAY_PASSWORD="second password"\n'; // pragma: allowlist secret
+      if (pathValue === "/home/test/.afora/second env.env") {
+        return 'AFORA_GATEWAY_PASSWORD="second password"\n'; // pragma: allowlist secret
       }
       throw new Error(`unexpected readFile path: ${pathValue}`);
     });
 
     const command = await readSystemdServiceExecStart({ HOME: "/home/test" });
     expect(command?.environment).toEqual({
-      OPENCLAW_GATEWAY_TOKEN: "first-token",
-      OPENCLAW_GATEWAY_PASSWORD: "second password", // pragma: allowlist secret
+      AFORA_GATEWAY_TOKEN: "first-token",
+      AFORA_GATEWAY_PASSWORD: "second password", // pragma: allowlist secret
     });
   });
 
   it("resolves relative EnvironmentFile paths from the unit directory", async () => {
     vi.spyOn(fs, "readFile").mockImplementation(async (pathname) => {
       const pathValue = pathLikeToString(pathname);
-      if (pathValue.endsWith("/openclaw-gateway.service")) {
+      if (pathValue.endsWith("/afora-gateway.service")) {
         return [
           "[Service]",
-          "ExecStart=/usr/bin/openclaw gateway run",
+          "ExecStart=/usr/bin/afora gateway run",
           "EnvironmentFile=./gateway.env ./override.env",
         ].join("\n");
       }
       if (pathValue.endsWith("/.config/systemd/user/gateway.env")) {
         return [
-          "OPENCLAW_GATEWAY_TOKEN=relative-token", // pragma: allowlist secret
-          "OPENCLAW_GATEWAY_PASSWORD=relative-password", // pragma: allowlist secret
+          "AFORA_GATEWAY_TOKEN=relative-token", // pragma: allowlist secret
+          "AFORA_GATEWAY_PASSWORD=relative-password", // pragma: allowlist secret
         ].join("\n");
       }
       if (pathValue.endsWith("/.config/systemd/user/override.env")) {
-        return "OPENCLAW_GATEWAY_TOKEN=override-token\n"; // pragma: allowlist secret
+        return "AFORA_GATEWAY_TOKEN=override-token\n"; // pragma: allowlist secret
       }
       throw new Error(`unexpected readFile path: ${pathValue}`);
     });
 
     const command = await readSystemdServiceExecStart({ HOME: "/home/test" });
     expect(command?.environment).toEqual({
-      OPENCLAW_GATEWAY_TOKEN: "override-token",
-      OPENCLAW_GATEWAY_PASSWORD: "relative-password", // pragma: allowlist secret
+      AFORA_GATEWAY_TOKEN: "override-token",
+      AFORA_GATEWAY_PASSWORD: "relative-password", // pragma: allowlist secret
     });
   });
 
   it("parses EnvironmentFile content with comments and quoted values", async () => {
     vi.spyOn(fs, "readFile").mockImplementation(async (pathname) => {
       const pathValue = pathLikeToString(pathname);
-      if (pathValue.endsWith("/openclaw-gateway.service")) {
+      if (pathValue.endsWith("/afora-gateway.service")) {
         return [
           "[Service]",
-          "ExecStart=/usr/bin/openclaw gateway run",
-          "EnvironmentFile=%h/.openclaw/gateway.env",
+          "ExecStart=/usr/bin/afora gateway run",
+          "EnvironmentFile=%h/.afora/gateway.env",
         ].join("\n");
       }
-      if (pathValue === "/home/test/.openclaw/gateway.env") {
+      if (pathValue === "/home/test/.afora/gateway.env") {
         return [
           "# comment",
           "; another comment",
-          'OPENCLAW_GATEWAY_TOKEN="quoted token"', // pragma: allowlist secret
-          'OPENCLAW_GATEWAY_PASSWORD="symbol \\" \\\\ \\$ \\`"', // pragma: allowlist secret
+          'AFORA_GATEWAY_TOKEN="quoted token"', // pragma: allowlist secret
+          'AFORA_GATEWAY_PASSWORD="symbol \\" \\\\ \\$ \\`"', // pragma: allowlist secret
           'MIXED_API_KEY="55\\"55" "FIVE" cinco',
           'UNQUOTED_QUOTES_API_KEY=foo"bar"',
         ].join("\n");
@@ -1502,14 +1502,14 @@ describe("readSystemdServiceExecStart", () => {
 
     const command = await readSystemdServiceExecStart({ HOME: "/home/test" });
     expect(command?.environment).toEqual({
-      OPENCLAW_GATEWAY_TOKEN: "quoted token",
-      OPENCLAW_GATEWAY_PASSWORD: 'symbol " \\ $ `', // pragma: allowlist secret
+      AFORA_GATEWAY_TOKEN: "quoted token",
+      AFORA_GATEWAY_PASSWORD: 'symbol " \\ $ `', // pragma: allowlist secret
       MIXED_API_KEY: '55"55FIVEcinco',
       UNQUOTED_QUOTES_API_KEY: 'foo"bar"',
     });
     expect(command?.environmentValueSources).toEqual({
-      OPENCLAW_GATEWAY_TOKEN: "file",
-      OPENCLAW_GATEWAY_PASSWORD: "file", // pragma: allowlist secret
+      AFORA_GATEWAY_TOKEN: "file",
+      AFORA_GATEWAY_PASSWORD: "file", // pragma: allowlist secret
       MIXED_API_KEY: "file",
       UNQUOTED_QUOTES_API_KEY: "file",
     });
@@ -1526,13 +1526,13 @@ describe("stageSystemdService", () => {
       nodeEnvFilePath: string;
     }) => Promise<void>,
   ): Promise<void> {
-    const tempHomeRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-systemd-stage-"));
+    const tempHomeRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-systemd-stage-"));
     const home = path.join(tempHomeRoot, "home");
-    const stateDir = path.join(home, ".openclaw");
+    const stateDir = path.join(home, ".afora");
     const env = {
       HOME: home,
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_SYSTEMD_UNIT: "openclaw-gateway-stage-test",
+      AFORA_STATE_DIR: stateDir,
+      AFORA_SYSTEMD_UNIT: "afora-gateway-stage-test",
     };
     const unitPath = resolveSystemdUserUnitPath(env);
     const envFilePath = path.join(stateDir, "gateway.systemd.env");
@@ -1567,24 +1567,24 @@ describe("stageSystemdService", () => {
       await fs.writeFile(unitPath, previous, "utf8");
       mockSystemctlStatusOk();
       assertNoSystemSystemdOwnershipMock.mockRejectedValueOnce(
-        new Error("system scope owns openclaw-gateway-stage-test.service"),
+        new Error("system scope owns afora-gateway-stage-test.service"),
       );
 
       await expect(
         stageSystemdService({
           env,
           stdout: createWritableStreamMock().stdout,
-          programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+          programArguments: ["/usr/bin/afora", "gateway", "run"],
           workingDirectory: "/tmp",
-          environment: { OPENCLAW_GATEWAY_PORT: "18789" },
+          environment: { AFORA_GATEWAY_PORT: "18789" },
         }),
-      ).rejects.toThrow("system scope owns openclaw-gateway-stage-test.service");
+      ).rejects.toThrow("system scope owns afora-gateway-stage-test.service");
 
       await expect(fs.readFile(unitPath, "utf8")).resolves.toBe(previous);
       await expect(fs.access(envFilePath)).rejects.toMatchObject({ code: "ENOENT" });
       await expect(fs.access(`${unitPath}.bak`)).rejects.toMatchObject({ code: "ENOENT" });
       expect(assertNoSystemSystemdOwnershipMock).toHaveBeenCalledWith(
-        "openclaw-gateway-stage-test.service",
+        "afora-gateway-stage-test.service",
       );
     });
   });
@@ -1602,9 +1602,9 @@ describe("stageSystemdService", () => {
         stageSystemdService({
           env,
           stdout: createWritableStreamMock().stdout,
-          programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+          programArguments: ["/usr/bin/afora", "gateway", "run"],
           workingDirectory: "/tmp",
-          environment: { OPENCLAW_GATEWAY_PORT: "18789" },
+          environment: { AFORA_GATEWAY_PORT: "18789" },
         }),
       ).rejects.toThrow(`Refusing to rewrite symlinked managed systemd file: ${unitPath}`);
 
@@ -1617,7 +1617,7 @@ describe("stageSystemdService", () => {
   it("refuses to rewrite a symlinked managed environment file", async () => {
     await withStageFixture(async ({ env, envFilePath }) => {
       const targetPath = path.join(path.dirname(envFilePath), "operator-gateway.env");
-      const previous = "OPENCLAW_GATEWAY_TOKEN=operator-token\n";
+      const previous = "AFORA_GATEWAY_TOKEN=operator-token\n";
       await fs.writeFile(targetPath, previous, "utf8");
       await fs.symlink(targetPath, envFilePath);
       mockSystemctlStatusOk();
@@ -1626,10 +1626,10 @@ describe("stageSystemdService", () => {
         stageSystemdService({
           env,
           stdout: createWritableStreamMock().stdout,
-          programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+          programArguments: ["/usr/bin/afora", "gateway", "run"],
           workingDirectory: "/tmp",
-          environment: { OPENCLAW_GATEWAY_TOKEN: "new-token" },
-          environmentValueSources: { OPENCLAW_GATEWAY_TOKEN: "file" },
+          environment: { AFORA_GATEWAY_TOKEN: "new-token" },
+          environmentValueSources: { AFORA_GATEWAY_TOKEN: "file" },
         }),
       ).rejects.toThrow(`Refusing to rewrite symlinked managed systemd file: ${envFilePath}`);
 
@@ -1649,13 +1649,13 @@ describe("stageSystemdService", () => {
         stageSystemdService({
           env,
           stdout: createWritableStreamMock().stdout,
-          programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+          programArguments: ["/usr/bin/afora", "gateway", "run"],
           workingDirectory: "/tmp",
           environment: {
-            OPENCLAW_GATEWAY_PORT: "18789",
-            OPENCLAW_GATEWAY_TOKEN: "new-token",
+            AFORA_GATEWAY_PORT: "18789",
+            AFORA_GATEWAY_TOKEN: "new-token",
           },
-          environmentValueSources: { OPENCLAW_GATEWAY_TOKEN: "file" },
+          environmentValueSources: { AFORA_GATEWAY_TOKEN: "file" },
         }),
       ).rejects.toThrow("system ownership appeared");
 
@@ -1667,7 +1667,7 @@ describe("stageSystemdService", () => {
   it("restores existing unit and environment files after a publication race", async () => {
     await withStageFixture(async ({ env, unitPath, envFilePath }) => {
       const previous = "[Unit]\nDescription=Previous gateway\n";
-      const previousEnv = "OPENCLAW_GATEWAY_TOKEN=previous-token\n";
+      const previousEnv = "AFORA_GATEWAY_TOKEN=previous-token\n";
       await fs.mkdir(path.dirname(unitPath), { recursive: true });
       await fs.writeFile(unitPath, previous, "utf8");
       await fs.writeFile(envFilePath, previousEnv, "utf8");
@@ -1689,13 +1689,13 @@ describe("stageSystemdService", () => {
         stageSystemdService({
           env,
           stdout: createWritableStreamMock().stdout,
-          programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+          programArguments: ["/usr/bin/afora", "gateway", "run"],
           workingDirectory: "/tmp",
           environment: {
-            OPENCLAW_GATEWAY_PORT: "18789",
-            OPENCLAW_GATEWAY_TOKEN: "new-token",
+            AFORA_GATEWAY_PORT: "18789",
+            AFORA_GATEWAY_TOKEN: "new-token",
           },
-          environmentValueSources: { OPENCLAW_GATEWAY_TOKEN: "file" },
+          environmentValueSources: { AFORA_GATEWAY_TOKEN: "file" },
         }),
       ).rejects.toThrow("system ownership appeared");
 
@@ -1712,23 +1712,23 @@ describe("stageSystemdService", () => {
   });
 
   it("uses the profile-derived gateway unit name for ownership checks", async () => {
-    const tempHomeRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-systemd-profile-"));
+    const tempHomeRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-systemd-profile-"));
     const env = {
       HOME: path.join(tempHomeRoot, "home"),
-      OPENCLAW_STATE_DIR: path.join(tempHomeRoot, "state"),
-      OPENCLAW_PROFILE: "work",
+      AFORA_STATE_DIR: path.join(tempHomeRoot, "state"),
+      AFORA_PROFILE: "work",
     };
     try {
       mockSystemctlStatusOk();
       await stageSystemdService({
         env,
         stdout: createWritableStreamMock().stdout,
-        programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+        programArguments: ["/usr/bin/afora", "gateway", "run"],
         workingDirectory: "/tmp",
-        environment: { OPENCLAW_GATEWAY_PORT: "18789" },
+        environment: { AFORA_GATEWAY_PORT: "18789" },
       });
       expect(assertNoSystemSystemdOwnershipMock).toHaveBeenCalledWith(
-        "openclaw-gateway-work.service",
+        "afora-gateway-work.service",
       );
     } finally {
       await fs.rm(tempHomeRoot, { recursive: true, force: true });
@@ -1748,9 +1748,9 @@ describe("stageSystemdService", () => {
         installSystemdService({
           env,
           stdout: createWritableStreamMock().stdout,
-          programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+          programArguments: ["/usr/bin/afora", "gateway", "run"],
           workingDirectory: "/tmp",
-          environment: { OPENCLAW_GATEWAY_PORT: "18789" },
+          environment: { AFORA_GATEWAY_PORT: "18789" },
         }),
       ).rejects.toThrow("system ownership appeared before activation");
 
@@ -1764,7 +1764,7 @@ describe("stageSystemdService", () => {
     await withStageFixture(async ({ env, stateDir, unitPath, envFilePath }) => {
       await fs.writeFile(
         path.join(stateDir, ".env"),
-        ["OPENCLAW_GATEWAY_TOKEN=dotenv-token", "LLM_API_KEY=dotenv-key"].join("\n"),
+        ["AFORA_GATEWAY_TOKEN=dotenv-token", "LLM_API_KEY=dotenv-key"].join("\n"),
         "utf8",
       );
 
@@ -1773,22 +1773,22 @@ describe("stageSystemdService", () => {
       await stageSystemdService({
         env,
         stdout: createWritableStreamMock().stdout,
-        programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+        programArguments: ["/usr/bin/afora", "gateway", "run"],
         workingDirectory: "/tmp",
         environment: {
-          OPENCLAW_GATEWAY_TOKEN: "dotenv-token",
+          AFORA_GATEWAY_TOKEN: "dotenv-token",
           LLM_API_KEY: "dotenv-key",
-          OPENCLAW_GATEWAY_PORT: "18789",
+          AFORA_GATEWAY_PORT: "18789",
         },
       });
 
       const unit = await fs.readFile(unitPath, "utf8");
 
-      expect(unit).toContain("Description=OpenClaw Gateway");
-      expect(unit).not.toContain("OPENCLAW_SERVICE_VERSION");
+      expect(unit).toContain("Description=Afora Gateway");
+      expect(unit).not.toContain("AFORA_SERVICE_VERSION");
       expect(unit).not.toContain("EnvironmentFile=");
-      expect(unit).toContain("Environment=OPENCLAW_GATEWAY_PORT=18789");
-      expect(unit).not.toContain("Environment=OPENCLAW_GATEWAY_TOKEN=dotenv-token");
+      expect(unit).toContain("Environment=AFORA_GATEWAY_PORT=18789");
+      expect(unit).not.toContain("Environment=AFORA_GATEWAY_TOKEN=dotenv-token");
       expect(unit).not.toContain("Environment=LLM_API_KEY=dotenv-key");
       await expect(fs.access(envFilePath)).rejects.toMatchObject({ code: "ENOENT" });
     });
@@ -1796,7 +1796,7 @@ describe("stageSystemdService", () => {
 
   it("drops previously managed dotenv keys on restage while preserving operator entries", async () => {
     await withStageFixture(async ({ env, unitPath, envFilePath, stateDir }) => {
-      const wrapperPath = path.join(stateDir, "openclaw-wrapper");
+      const wrapperPath = path.join(stateDir, "afora-wrapper");
       await fs.writeFile(wrapperPath, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
       await fs.writeFile(
         envFilePath,
@@ -1810,7 +1810,7 @@ describe("stageSystemdService", () => {
           "[Service]",
           `ExecStart=${wrapperPath} gateway run`,
           `EnvironmentFile=-${envFilePath}`,
-          "Environment=OPENCLAW_SERVICE_MANAGED_ENV_KEYS=OPENAI_API_KEY",
+          "Environment=AFORA_SERVICE_MANAGED_ENV_KEYS=OPENAI_API_KEY",
         ].join("\n"),
         "utf8",
       );
@@ -1821,7 +1821,7 @@ describe("stageSystemdService", () => {
         stdout: createWritableStreamMock().stdout,
         programArguments: [wrapperPath, "gateway", "run"],
         workingDirectory: "/tmp",
-        environment: { OPENCLAW_GATEWAY_PORT: "18789" },
+        environment: { AFORA_GATEWAY_PORT: "18789" },
       });
 
       expect(await fs.readFile(envFilePath, "utf8")).toBe("OPERATOR_API_KEY=operator-owned\n");
@@ -1831,7 +1831,7 @@ describe("stageSystemdService", () => {
 
   it("round-trips file-managed secrets through parse, repair planning, and emit", async () => {
     await withStageFixture(async ({ env, unitPath, envFilePath, stateDir }) => {
-      const wrapperPath = path.join(stateDir, "openclaw-wrapper");
+      const wrapperPath = path.join(stateDir, "afora-wrapper");
       const fileBackedOpenAiKey = "file-backed-openai-test-key";
       await fs.writeFile(wrapperPath, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
       await fs.chmod(wrapperPath, 0o755);
@@ -1847,8 +1847,8 @@ describe("stageSystemdService", () => {
           `ExecStart=${wrapperPath} gateway --port 18789`,
           `EnvironmentFile=-${envFilePath}`,
           "Environment=HOME=" + env.HOME,
-          "Environment=OPENCLAW_GATEWAY_PORT=18789",
-          "Environment=OPENCLAW_SERVICE_MANAGED_ENV_KEYS=OPENAI_API_KEY",
+          "Environment=AFORA_GATEWAY_PORT=18789",
+          "Environment=AFORA_SERVICE_MANAGED_ENV_KEYS=OPENAI_API_KEY",
         ].join("\n"),
         "utf8",
       );
@@ -1856,7 +1856,7 @@ describe("stageSystemdService", () => {
       const command = await readSystemdServiceExecStart(env);
       expect(command?.environment?.OPENAI_API_KEY).toBe(fileBackedOpenAiKey);
       expect(command?.environmentValueSources?.OPENAI_API_KEY).toBe("file");
-      expect(command?.environmentValueSources?.OPENCLAW_SERVICE_MANAGED_ENV_KEYS).toBe("inline");
+      expect(command?.environmentValueSources?.AFORA_SERVICE_MANAGED_ENV_KEYS).toBe("inline");
 
       const plan = await buildGatewayInstallPlan({
         env: { ...env, PATH: "/usr/bin:/bin" },
@@ -1881,7 +1881,7 @@ describe("stageSystemdService", () => {
         },
       });
       expect(plan.environmentValueSources?.OPENAI_API_KEY).toBe("file");
-      expect(plan.environment.OPENCLAW_SERVICE_MANAGED_ENV_KEYS).toBe("OPENAI_API_KEY");
+      expect(plan.environment.AFORA_SERVICE_MANAGED_ENV_KEYS).toBe("OPENAI_API_KEY");
 
       mockSystemctlStatusOk();
       await stageSystemdService({
@@ -1896,7 +1896,7 @@ describe("stageSystemdService", () => {
       ]);
       expect(rewrittenUnit).toContain(`EnvironmentFile=-${envFilePath}`);
       expect(rewrittenUnit).toContain(
-        "Environment=OPENCLAW_SERVICE_MANAGED_ENV_KEYS=OPENAI_API_KEY",
+        "Environment=AFORA_SERVICE_MANAGED_ENV_KEYS=OPENAI_API_KEY",
       );
       expect(rewrittenUnit).not.toContain(fileBackedOpenAiKey);
       expect(rewrittenEnvFile).toBe(`OPENAI_API_KEY=${fileBackedOpenAiKey}\n`);
@@ -1913,19 +1913,19 @@ describe("stageSystemdService", () => {
       await stageSystemdService({
         env,
         stdout: createWritableStreamMock().stdout,
-        programArguments: ["/usr/bin/openclaw", "node", "run"],
+        programArguments: ["/usr/bin/afora", "node", "run"],
         workingDirectory: "/tmp",
         environment: {
-          OPENCLAW_GATEWAY_TOKEN: "file-backed-token",
-          OPENCLAW_GATEWAY_PASSWORD: gatewayPassword,
-          OPENCLAW_GATEWAY_PORT: "18789",
-          OPENCLAW_SERVICE_MANAGED_ENV_KEYS: "OPENCLAW_GATEWAY_PASSWORD,OPENCLAW_GATEWAY_TOKEN", // pragma: allowlist secret
-          OPENCLAW_SERVICE_KIND: "node",
+          AFORA_GATEWAY_TOKEN: "file-backed-token",
+          AFORA_GATEWAY_PASSWORD: gatewayPassword,
+          AFORA_GATEWAY_PORT: "18789",
+          AFORA_SERVICE_MANAGED_ENV_KEYS: "AFORA_GATEWAY_PASSWORD,AFORA_GATEWAY_TOKEN", // pragma: allowlist secret
+          AFORA_SERVICE_KIND: "node",
         },
         environmentValueSources: {
-          openclaw_gateway_token: "file",
-          openclaw_gateway_password: "file", // pragma: allowlist secret
-          openclaw_service_managed_env_keys: "inline",
+          afora_gateway_token: "file",
+          afora_gateway_password: "file", // pragma: allowlist secret
+          afora_service_managed_env_keys: "inline",
         },
       });
 
@@ -1936,16 +1936,16 @@ describe("stageSystemdService", () => {
       ]);
 
       expect(unit).toContain(`EnvironmentFile=-${nodeEnvFilePath}`);
-      expect(unit).toContain("Environment=OPENCLAW_GATEWAY_PORT=18789");
-      expect(unit).not.toContain("Environment=OPENCLAW_GATEWAY_TOKEN=file-backed-token");
-      expect(unit).not.toContain("Environment=OPENCLAW_GATEWAY_PASSWORD=");
+      expect(unit).toContain("Environment=AFORA_GATEWAY_PORT=18789");
+      expect(unit).not.toContain("Environment=AFORA_GATEWAY_TOKEN=file-backed-token");
+      expect(unit).not.toContain("Environment=AFORA_GATEWAY_PASSWORD=");
       expect(envFile).toBe(
-        'OPENCLAW_GATEWAY_TOKEN=file-backed-token\nOPENCLAW_GATEWAY_PASSWORD="symbol \\" \\\\ \\$ \\`"\n',
+        'AFORA_GATEWAY_TOKEN=file-backed-token\nAFORA_GATEWAY_PASSWORD="symbol \\" \\\\ \\$ \\`"\n',
       );
       expect(envFileStat.mode & 0o777).toBe(0o600);
       await expect(readSystemdServiceExecStart(env)).resolves.toMatchObject({
         environment: {
-          OPENCLAW_GATEWAY_PASSWORD: gatewayPassword,
+          AFORA_GATEWAY_PASSWORD: gatewayPassword,
         },
       });
       await expect(fs.access(envFilePath)).rejects.toThrow();
@@ -1955,7 +1955,7 @@ describe("stageSystemdService", () => {
   it("migrates operator entries from the legacy gateway env file when writing node env files", async () => {
     await withStageFixture(async ({ env, unitPath, envFilePath, nodeEnvFilePath }) => {
       const legacyGatewayEnvFile =
-        ["OPENCLAW_GATEWAY_TOKEN=legacy-node-token", "OPENROUTER_API_KEY=operator-key"].join("\n") +
+        ["AFORA_GATEWAY_TOKEN=legacy-node-token", "OPENROUTER_API_KEY=operator-key"].join("\n") +
         "\n";
       await fs.writeFile(envFilePath, legacyGatewayEnvFile, {
         encoding: "utf8",
@@ -1967,15 +1967,15 @@ describe("stageSystemdService", () => {
       await stageSystemdService({
         env,
         stdout: createWritableStreamMock().stdout,
-        programArguments: ["/usr/bin/openclaw", "node", "run"],
+        programArguments: ["/usr/bin/afora", "node", "run"],
         workingDirectory: "/tmp",
         environment: {
-          OPENCLAW_GATEWAY_TOKEN: "fresh-file-token",
-          OPENCLAW_GATEWAY_PORT: "18789",
-          OPENCLAW_SERVICE_KIND: "node",
+          AFORA_GATEWAY_TOKEN: "fresh-file-token",
+          AFORA_GATEWAY_PORT: "18789",
+          AFORA_SERVICE_KIND: "node",
         },
         environmentValueSources: {
-          OPENCLAW_GATEWAY_TOKEN: "file",
+          AFORA_GATEWAY_TOKEN: "file",
         },
       });
 
@@ -1986,9 +1986,9 @@ describe("stageSystemdService", () => {
       ]);
 
       expect(unit).toContain(`EnvironmentFile=-${nodeEnvFilePath}`);
-      expect(unit).not.toContain("OPENCLAW_GATEWAY_TOKEN=fresh-file-token");
+      expect(unit).not.toContain("AFORA_GATEWAY_TOKEN=fresh-file-token");
       expect(nodeEnvFile).toBe(
-        "OPENROUTER_API_KEY=operator-key\nOPENCLAW_GATEWAY_TOKEN=fresh-file-token\n",
+        "OPENROUTER_API_KEY=operator-key\nAFORA_GATEWAY_TOKEN=fresh-file-token\n",
       );
       expect(gatewayEnvFile).toBe(legacyGatewayEnvFile);
     });
@@ -1996,11 +1996,11 @@ describe("stageSystemdService", () => {
 
   it("clears stale node file-backed managed keys without touching the gateway env file", async () => {
     await withStageFixture(async ({ env, unitPath, envFilePath, nodeEnvFilePath }) => {
-      await fs.writeFile(envFilePath, "OPENCLAW_GATEWAY_TOKEN=stale-token\n", {
+      await fs.writeFile(envFilePath, "AFORA_GATEWAY_TOKEN=stale-token\n", {
         encoding: "utf8",
         mode: 0o600,
       });
-      await fs.writeFile(nodeEnvFilePath, "OPENCLAW_GATEWAY_TOKEN=stale-node-token\n", {
+      await fs.writeFile(nodeEnvFilePath, "AFORA_GATEWAY_TOKEN=stale-node-token\n", {
         encoding: "utf8",
         mode: 0o600,
       });
@@ -2010,14 +2010,14 @@ describe("stageSystemdService", () => {
       await stageSystemdService({
         env,
         stdout: createWritableStreamMock().stdout,
-        programArguments: ["/usr/bin/openclaw", "node", "run"],
+        programArguments: ["/usr/bin/afora", "node", "run"],
         workingDirectory: "/tmp",
         environment: {
-          OPENCLAW_GATEWAY_PORT: "18789",
-          OPENCLAW_SERVICE_KIND: "node",
+          AFORA_GATEWAY_PORT: "18789",
+          AFORA_SERVICE_KIND: "node",
         },
         environmentValueSources: {
-          OPENCLAW_GATEWAY_TOKEN: "file",
+          AFORA_GATEWAY_TOKEN: "file",
         },
       });
 
@@ -2026,7 +2026,7 @@ describe("stageSystemdService", () => {
       expect(unit).not.toContain("EnvironmentFile=");
       await expect(fs.access(nodeEnvFilePath)).rejects.toThrow();
       await expect(fs.readFile(envFilePath, "utf8")).resolves.toBe(
-        "OPENCLAW_GATEWAY_TOKEN=stale-token\n",
+        "AFORA_GATEWAY_TOKEN=stale-token\n",
       );
     });
   });
@@ -2043,11 +2043,11 @@ describe("stageSystemdService", () => {
       await stageSystemdService({
         env,
         stdout: createWritableStreamMock().stdout,
-        programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+        programArguments: ["/usr/bin/afora", "gateway", "run"],
         workingDirectory: "/tmp",
         environment: {
           LLM_API_KEY: "$SECRET_FROM_SHELL",
-          OPENCLAW_GATEWAY_PORT: "18789",
+          AFORA_GATEWAY_PORT: "18789",
         },
         environmentValueSources: {
           LLM_API_KEY: "inline-and-file",
@@ -2069,11 +2069,11 @@ describe("stageSystemdService", () => {
         unitPath,
         [
           "[Service]",
-          "ExecStart=/usr/bin/openclaw node run",
-          "Environment=FOO=bar OPENCLAW_GATEWAY_TOKEN=inline-token BAZ=qux",
-          "Environment=OPENCLAW_GATEWAY_TOKEN=token-only-line",
-          "Environment='OPENCLAW_GATEWAY_TOKEN=single-quoted-token' FROM_SINGLE=kept",
-          "Environment=OPENCLAW_GATEWAY_PORT=18789",
+          "ExecStart=/usr/bin/afora node run",
+          "Environment=FOO=bar AFORA_GATEWAY_TOKEN=inline-token BAZ=qux",
+          "Environment=AFORA_GATEWAY_TOKEN=token-only-line",
+          "Environment='AFORA_GATEWAY_TOKEN=single-quoted-token' FROM_SINGLE=kept",
+          "Environment=AFORA_GATEWAY_PORT=18789",
         ].join("\n"),
         { encoding: "utf8", mode: 0o600 },
       );
@@ -2084,15 +2084,15 @@ describe("stageSystemdService", () => {
       await stageSystemdService({
         env,
         stdout: createWritableStreamMock().stdout,
-        programArguments: ["/usr/bin/openclaw", "node", "run"],
+        programArguments: ["/usr/bin/afora", "node", "run"],
         workingDirectory: "/tmp",
         environment: {
-          OPENCLAW_GATEWAY_TOKEN: "fresh-token",
-          OPENCLAW_GATEWAY_PORT: "18789",
-          OPENCLAW_SERVICE_KIND: "node",
+          AFORA_GATEWAY_TOKEN: "fresh-token",
+          AFORA_GATEWAY_PORT: "18789",
+          AFORA_SERVICE_KIND: "node",
         },
         environmentValueSources: {
-          OPENCLAW_GATEWAY_TOKEN: "file",
+          AFORA_GATEWAY_TOKEN: "file",
         },
       });
 
@@ -2102,13 +2102,13 @@ describe("stageSystemdService", () => {
         fs.stat(`${unitPath}.bak`),
       ]);
 
-      expect(unit).not.toContain("Environment=OPENCLAW_GATEWAY_TOKEN=fresh-token");
-      expect(backupUnit).not.toContain("Environment=OPENCLAW_GATEWAY_TOKEN=inline-token");
-      expect(backupUnit).not.toContain("Environment=OPENCLAW_GATEWAY_TOKEN=token-only-line");
+      expect(unit).not.toContain("Environment=AFORA_GATEWAY_TOKEN=fresh-token");
+      expect(backupUnit).not.toContain("Environment=AFORA_GATEWAY_TOKEN=inline-token");
+      expect(backupUnit).not.toContain("Environment=AFORA_GATEWAY_TOKEN=token-only-line");
       expect(backupUnit).not.toContain("single-quoted-token");
       expect(backupUnit).toContain("Environment=FOO=bar BAZ=qux");
       expect(backupUnit).toContain("Environment=FROM_SINGLE=kept");
-      expect(backupUnit).toContain("Environment=OPENCLAW_GATEWAY_PORT=18789");
+      expect(backupUnit).toContain("Environment=AFORA_GATEWAY_PORT=18789");
       expect(backupStat.mode & 0o777).toBe(0o600);
     });
   });
@@ -2117,7 +2117,7 @@ describe("stageSystemdService", () => {
     await withStageFixture(async ({ env, stateDir, unitPath, envFilePath }) => {
       await fs.writeFile(
         path.join(stateDir, ".env"),
-        ["OPENCLAW_GATEWAY_TOKEN=stale-token", "LLM_API_KEY=dotenv-key"].join("\n"),
+        ["AFORA_GATEWAY_TOKEN=stale-token", "LLM_API_KEY=dotenv-key"].join("\n"),
         "utf8",
       );
 
@@ -2126,10 +2126,10 @@ describe("stageSystemdService", () => {
       await stageSystemdService({
         env,
         stdout: createWritableStreamMock().stdout,
-        programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+        programArguments: ["/usr/bin/afora", "gateway", "run"],
         workingDirectory: "/tmp",
         environment: {
-          OPENCLAW_GATEWAY_TOKEN: "fresh-token",
+          AFORA_GATEWAY_TOKEN: "fresh-token",
           LLM_API_KEY: "dotenv-key",
         },
       });
@@ -2137,7 +2137,7 @@ describe("stageSystemdService", () => {
       const unit = await fs.readFile(unitPath, "utf8");
 
       expect(unit).not.toContain("EnvironmentFile=");
-      expect(unit).toContain("Environment=OPENCLAW_GATEWAY_TOKEN=fresh-token");
+      expect(unit).toContain("Environment=AFORA_GATEWAY_TOKEN=fresh-token");
       expect(unit).not.toContain("Environment=LLM_API_KEY=dotenv-key");
       await expect(fs.access(envFilePath)).rejects.toMatchObject({ code: "ENOENT" });
     });
@@ -2145,11 +2145,11 @@ describe("stageSystemdService", () => {
 
   it("clears stale inline-managed keys from env file on re-stage (#76860)", async () => {
     await withStageFixture(async ({ env, stateDir, unitPath, envFilePath }) => {
-      // Existing env file carries a stale OPENCLAW_GATEWAY_TOKEN that the
+      // Existing env file carries a stale AFORA_GATEWAY_TOKEN that the
       // operator previously wrote there but staging now supplies inline.
       await fs.writeFile(
         envFilePath,
-        ["OPENCLAW_GATEWAY_TOKEN=stale-gateway-token", "OPENROUTER_API_KEY=or-operator-key"].join(
+        ["AFORA_GATEWAY_TOKEN=stale-gateway-token", "OPENROUTER_API_KEY=or-operator-key"].join(
           "\n",
         ) + "\n",
         { encoding: "utf8", mode: 0o600 },
@@ -2162,21 +2162,21 @@ describe("stageSystemdService", () => {
       await stageSystemdService({
         env,
         stdout: createWritableStreamMock().stdout,
-        programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+        programArguments: ["/usr/bin/afora", "gateway", "run"],
         workingDirectory: "/tmp",
-        // Staging manages OPENCLAW_GATEWAY_TOKEN inline; OPENCLAW_SERVICE_MANAGED_ENV_KEYS
-        // marks it as an OpenClaw-managed key so the stale env-file copy is cleared.
+        // Staging manages AFORA_GATEWAY_TOKEN inline; AFORA_SERVICE_MANAGED_ENV_KEYS
+        // marks it as an Afora-managed key so the stale env-file copy is cleared.
         environment: {
-          OPENCLAW_GATEWAY_TOKEN: "fresh-gateway-token",
+          AFORA_GATEWAY_TOKEN: "fresh-gateway-token",
           LLM_API_KEY: "dotenv-key",
           OPENROUTER_API_KEY: "or-operator-key",
-          OPENCLAW_SERVICE_MANAGED_ENV_KEYS: "OPENCLAW_GATEWAY_TOKEN",
+          AFORA_SERVICE_MANAGED_ENV_KEYS: "AFORA_GATEWAY_TOKEN",
         },
         environmentValueSources: {
-          OPENCLAW_GATEWAY_TOKEN: "inline-and-file",
+          AFORA_GATEWAY_TOKEN: "inline-and-file",
           LLM_API_KEY: "inline",
           OPENROUTER_API_KEY: "file",
-          OPENCLAW_SERVICE_MANAGED_ENV_KEYS: "inline",
+          AFORA_SERVICE_MANAGED_ENV_KEYS: "inline",
         },
       });
 
@@ -2186,11 +2186,11 @@ describe("stageSystemdService", () => {
       ]);
       // Stale inline-managed key must be removed from the env file so the
       // fresh inline Environment= value wins (EnvironmentFile would override it).
-      expect(envFile).not.toContain("OPENCLAW_GATEWAY_TOKEN");
+      expect(envFile).not.toContain("AFORA_GATEWAY_TOKEN");
       // Operator-added key not managed inline must survive.
       expect(envFile).toContain("OPENROUTER_API_KEY=or-operator-key");
       expect(envFile).not.toContain("LLM_API_KEY");
-      expect(unit).toContain("Environment=OPENCLAW_GATEWAY_TOKEN=fresh-gateway-token");
+      expect(unit).toContain("Environment=AFORA_GATEWAY_TOKEN=fresh-gateway-token");
       expect(unit).not.toContain("Environment=OPENROUTER_API_KEY=or-operator-key");
       expect(unit).not.toContain("Environment=LLM_API_KEY=dotenv-key");
     });
@@ -2209,9 +2209,9 @@ describe("stageSystemdService", () => {
       await stageSystemdService({
         env,
         stdout: createWritableStreamMock().stdout,
-        programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+        programArguments: ["/usr/bin/afora", "gateway", "run"],
         workingDirectory: "/tmp",
-        environment: { OPENCLAW_GATEWAY_PORT: "18789" },
+        environment: { AFORA_GATEWAY_PORT: "18789" },
       });
 
       const envFile = await fs.readFile(envFilePath, "utf8");
@@ -2241,7 +2241,7 @@ describe("stageSystemdService", () => {
       await stageSystemdService({
         env,
         stdout: createWritableStreamMock().stdout,
-        programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+        programArguments: ["/usr/bin/afora", "gateway", "run"],
         workingDirectory: "/tmp",
         environment: { LLM_API_KEY: "new-value" },
       });
@@ -2272,9 +2272,9 @@ describe("stageSystemdService", () => {
       await stageSystemdService({
         env,
         stdout: createWritableStreamMock().stdout,
-        programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+        programArguments: ["/usr/bin/afora", "gateway", "run"],
         workingDirectory: "/tmp",
-        environment: { OPENCLAW_GATEWAY_PORT: "18789" },
+        environment: { AFORA_GATEWAY_PORT: "18789" },
       });
 
       const envFile = await fs.readFile(envFilePath, "utf8");
@@ -2304,9 +2304,9 @@ describe("stageSystemdService", () => {
       await stageSystemdService({
         env,
         stdout: createWritableStreamMock().stdout,
-        programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+        programArguments: ["/usr/bin/afora", "gateway", "run"],
         workingDirectory: "/tmp",
-        environment: { OPENCLAW_GATEWAY_PORT: "18789" },
+        environment: { AFORA_GATEWAY_PORT: "18789" },
       });
 
       const envFile = await fs.readFile(envFilePath, "utf8");
@@ -2331,9 +2331,9 @@ describe("stageSystemdService", () => {
       await stageSystemdService({
         env,
         stdout: createWritableStreamMock().stdout,
-        programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+        programArguments: ["/usr/bin/afora", "gateway", "run"],
         workingDirectory: "/tmp",
-        environment: { OPENCLAW_GATEWAY_PORT: "18789" },
+        environment: { AFORA_GATEWAY_PORT: "18789" },
       });
 
       const envFile = await fs.readFile(envFilePath, "utf8");
@@ -2365,9 +2365,9 @@ describe("stageSystemdService", () => {
       await stageSystemdService({
         env,
         stdout: createWritableStreamMock().stdout,
-        programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+        programArguments: ["/usr/bin/afora", "gateway", "run"],
         workingDirectory: "/tmp",
-        environment: { OPENCLAW_GATEWAY_PORT: "18789" },
+        environment: { AFORA_GATEWAY_PORT: "18789" },
       });
 
       const envFile = await fs.readFile(envFilePath, "utf8");
@@ -2387,14 +2387,14 @@ describe("systemd service install and uninstall", () => {
       nodeEnvFilePath: string;
     }) => Promise<void>,
   ): Promise<void> {
-    const tempHomeRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-node-systemd-"));
+    const tempHomeRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-node-systemd-"));
     const home = path.join(tempHomeRoot, "home");
-    const stateDir = path.join(home, ".openclaw");
+    const stateDir = path.join(home, ".afora");
     const env = {
       HOME: home,
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_SYSTEMD_UNIT: "openclaw-node",
-      OPENCLAW_SERVICE_KIND: "node",
+      AFORA_STATE_DIR: stateDir,
+      AFORA_SYSTEMD_UNIT: "afora-node",
+      AFORA_SERVICE_KIND: "node",
     };
     const unitPath = resolveSystemdUserUnitPath(env);
     const nodeEnvFilePath = path.join(stateDir, "node.systemd.env");
@@ -2412,7 +2412,7 @@ describe("systemd service install and uninstall", () => {
     execFileMock.mockReset();
   });
 
-  it("activates the OPENCLAW_SYSTEMD_UNIT override during install", async () => {
+  it("activates the AFORA_SYSTEMD_UNIT override during install", async () => {
     await withNodeSystemdFixture(async ({ env, unitPath }) => {
       execFileMock
         .mockImplementationOnce((_cmd, args, _opts, cb) => {
@@ -2435,19 +2435,19 @@ describe("systemd service install and uninstall", () => {
       await installSystemdService({
         env,
         stdout: createWritableStreamMock().stdout,
-        programArguments: ["/usr/bin/openclaw", "node", "run"],
+        programArguments: ["/usr/bin/afora", "node", "run"],
         workingDirectory: "/tmp",
-        description: "OpenClaw Node Host",
+        description: "Afora Node Host",
         environment: {
-          OPENCLAW_SYSTEMD_UNIT: "openclaw-node",
+          AFORA_SYSTEMD_UNIT: "afora-node",
         },
       });
 
       const unit = await fs.readFile(unitPath, "utf8");
-      expect(unitPath).toMatch(/openclaw-node\.service$/);
-      expect(unit).toContain("Description=OpenClaw Node Host");
-      expect(unit).toContain("openclaw node run");
-      expect(unit).not.toContain("OPENCLAW_SERVICE_VERSION");
+      expect(unitPath).toMatch(/afora-node\.service$/);
+      expect(unit).toContain("Description=Afora Node Host");
+      expect(unit).toContain("afora node run");
+      expect(unit).not.toContain("AFORA_SERVICE_VERSION");
       expect(execFileMock).toHaveBeenCalledTimes(4);
     });
   });
@@ -2468,7 +2468,7 @@ describe("systemd service install and uninstall", () => {
           cb(
             createExecFileError("enable failed"),
             "",
-            "Unit file openclaw-node.service does not exist.",
+            "Unit file afora-node.service does not exist.",
           );
         })
         .mockImplementationOnce((_cmd, args, _opts, cb) => {
@@ -2487,10 +2487,10 @@ describe("systemd service install and uninstall", () => {
       await installSystemdService({
         env,
         stdout: createWritableStreamMock().stdout,
-        programArguments: ["/usr/bin/openclaw", "node", "run"],
+        programArguments: ["/usr/bin/afora", "node", "run"],
         workingDirectory: "/tmp",
         environment: {
-          OPENCLAW_SYSTEMD_UNIT: "openclaw-node",
+          AFORA_SYSTEMD_UNIT: "afora-node",
         },
       });
 
@@ -2532,10 +2532,10 @@ describe("systemd service install and uninstall", () => {
       await installSystemdService({
         env: installEnv,
         stdout: createWritableStreamMock().stdout,
-        programArguments: ["/usr/bin/openclaw", "node", "run"],
+        programArguments: ["/usr/bin/afora", "node", "run"],
         workingDirectory: "/tmp",
         environment: {
-          OPENCLAW_SYSTEMD_UNIT: "openclaw-node",
+          AFORA_SYSTEMD_UNIT: "afora-node",
         },
       });
 
@@ -2546,7 +2546,7 @@ describe("systemd service install and uninstall", () => {
   it("uses the sudo-u target user for install activation machine-scope retry", async () => {
     await withNodeSystemdFixture(async ({ env }) => {
       mockEffectiveUid(1000);
-      const installEnv = { ...env, USER: "openclaw", SUDO_USER: "admin" };
+      const installEnv = { ...env, USER: "afora", SUDO_USER: "admin" };
       execFileMock
         .mockImplementationOnce((_cmd, args, _opts, cb) => {
           assertUserSystemctlArgs(args, "status");
@@ -2567,7 +2567,7 @@ describe("systemd service install and uninstall", () => {
           );
         })
         .mockImplementationOnce((_cmd, args, _opts, cb) => {
-          assertMachineUserSystemctlArgs(args, "openclaw", "enable", NODE_SERVICE);
+          assertMachineUserSystemctlArgs(args, "afora", "enable", NODE_SERVICE);
           cb(null, "", "");
         })
         .mockImplementationOnce((_cmd, args, _opts, cb) => {
@@ -2578,10 +2578,10 @@ describe("systemd service install and uninstall", () => {
       await installSystemdService({
         env: installEnv,
         stdout: createWritableStreamMock().stdout,
-        programArguments: ["/usr/bin/openclaw", "node", "run"],
+        programArguments: ["/usr/bin/afora", "node", "run"],
         workingDirectory: "/tmp",
         environment: {
-          OPENCLAW_SYSTEMD_UNIT: "openclaw-node",
+          AFORA_SYSTEMD_UNIT: "afora-node",
         },
       });
 
@@ -2618,10 +2618,10 @@ describe("systemd service install and uninstall", () => {
         installSystemdService({
           env,
           stdout: createWritableStreamMock().stdout,
-          programArguments: ["/usr/bin/openclaw", "node", "run"],
+          programArguments: ["/usr/bin/afora", "node", "run"],
           workingDirectory: "/tmp",
           environment: {
-            OPENCLAW_SYSTEMD_UNIT: "openclaw-node",
+            AFORA_SYSTEMD_UNIT: "afora-node",
           },
         }),
       ).rejects.toThrow("systemctl --user unavailable: Failed to connect to bus: No medium found");
@@ -2632,16 +2632,16 @@ describe("systemd service install and uninstall", () => {
 
   it.each([
     "Access denied",
-    "Unit openclaw-node.service is not loaded properly: Invalid argument.",
-    "Failed to disable unit: Access denied.\nUnit openclaw-node.service is not active.",
+    "Unit afora-node.service is not loaded properly: Invalid argument.",
+    "Failed to disable unit: Access denied.\nUnit afora-node.service is not active.",
     "Unit is not loaded.",
     "Unit inactive.",
     "Unit unrelated.service is not active.",
   ])("refuses to remove the unit when systemctl disable fails: %s", async (detail) => {
     await withNodeSystemdFixture(async ({ env, unitPath, nodeEnvFilePath }) => {
       await fs.mkdir(path.dirname(unitPath), { recursive: true });
-      await fs.writeFile(unitPath, "[Unit]\nDescription=OpenClaw Node\n", "utf8");
-      await fs.writeFile(nodeEnvFilePath, "OPENCLAW_GATEWAY_TOKEN=preserved-token\n", "utf8");
+      await fs.writeFile(unitPath, "[Unit]\nDescription=Afora Node\n", "utf8");
+      await fs.writeFile(nodeEnvFilePath, "AFORA_GATEWAY_TOKEN=preserved-token\n", "utf8");
       execFileMock
         .mockImplementationOnce((_cmd, args, _opts, cb) => {
           assertUserSystemctlArgs(args, "status");
@@ -2657,17 +2657,17 @@ describe("systemd service install and uninstall", () => {
       await expect(uninstallSystemdService({ env, stdout })).rejects.toThrow(
         `systemctl disable failed: ${detail}`,
       );
-      await expect(fs.readFile(unitPath, "utf8")).resolves.toContain("OpenClaw Node");
+      await expect(fs.readFile(unitPath, "utf8")).resolves.toContain("Afora Node");
       await expect(fs.readFile(nodeEnvFilePath, "utf8")).resolves.toContain("preserved-token");
     });
   });
 
   it.each([
-    "Unit file openclaw-node.service does not exist.",
-    "Failed to disable unit: Unit file openclaw-node.service does not exist.",
-    "Unit openclaw-node.service could not be found.",
-    "Failed to stop openclaw-node.service: Unit openclaw-node.service not loaded.",
-    "Failed to stop openclaw-node.service: Unit openclaw-node.service is not active.",
+    "Unit file afora-node.service does not exist.",
+    "Failed to disable unit: Unit file afora-node.service does not exist.",
+    "Unit afora-node.service could not be found.",
+    "Failed to stop afora-node.service: Unit afora-node.service not loaded.",
+    "Failed to stop afora-node.service: Unit afora-node.service is not active.",
   ])("keeps missing or inactive systemd unit removal idempotent: %s", async (detail) => {
     await withNodeSystemdFixture(async ({ env }) => {
       execFileMock
@@ -2687,15 +2687,15 @@ describe("systemd service install and uninstall", () => {
     });
   });
 
-  it("disables the OPENCLAW_SYSTEMD_UNIT override during uninstall", async () => {
+  it("disables the AFORA_SYSTEMD_UNIT override during uninstall", async () => {
     await withNodeSystemdFixture(async ({ env, unitPath, nodeEnvFilePath }) => {
       await fs.mkdir(path.dirname(unitPath), { recursive: true });
-      await fs.writeFile(unitPath, "[Unit]\nDescription=OpenClaw Node\n", "utf8");
+      await fs.writeFile(unitPath, "[Unit]\nDescription=Afora Node\n", "utf8");
       await fs.writeFile(
         nodeEnvFilePath,
         [
-          "OPENCLAW_GATEWAY_TOKEN=stale-node-token",
-          "OPENCLAW_GATEWAY_PASSWORD=stale-password",
+          "AFORA_GATEWAY_TOKEN=stale-node-token",
+          "AFORA_GATEWAY_PASSWORD=stale-password",
           "OPENROUTER_API_KEY=operator-key",
           "LLM_API_KEY=$SECRET_FROM_SHELL",
           "LITERAL_API_KEY=\\$SECRET_FROM_SHELL",
@@ -2741,8 +2741,8 @@ describe("systemd service install and uninstall", () => {
   it("removes a password-only node environment file during uninstall", async () => {
     await withNodeSystemdFixture(async ({ env, unitPath, nodeEnvFilePath }) => {
       await fs.mkdir(path.dirname(unitPath), { recursive: true });
-      await fs.writeFile(unitPath, "[Unit]\nDescription=OpenClaw Node\n", "utf8");
-      await fs.writeFile(nodeEnvFilePath, "OPENCLAW_GATEWAY_PASSWORD=stale-password\n", {
+      await fs.writeFile(unitPath, "[Unit]\nDescription=Afora Node\n", "utf8");
+      await fs.writeFile(nodeEnvFilePath, "AFORA_GATEWAY_PASSWORD=stale-password\n", {
         encoding: "utf8",
         mode: 0o600,
       });
@@ -2768,10 +2768,10 @@ describe("systemd service install and uninstall", () => {
   it("preserves node env file values when unit removal fails during uninstall", async () => {
     await withNodeSystemdFixture(async ({ env, unitPath, nodeEnvFilePath }) => {
       await fs.mkdir(path.dirname(unitPath), { recursive: true });
-      await fs.writeFile(unitPath, "[Unit]\nDescription=OpenClaw Node\n", "utf8");
+      await fs.writeFile(unitPath, "[Unit]\nDescription=Afora Node\n", "utf8");
       await fs.writeFile(
         nodeEnvFilePath,
-        "OPENCLAW_GATEWAY_TOKEN=stale-node-token\nOPENROUTER_API_KEY=operator-key\n",
+        "AFORA_GATEWAY_TOKEN=stale-node-token\nOPENROUTER_API_KEY=operator-key\n",
         { encoding: "utf8", mode: 0o600 },
       );
 
@@ -2794,9 +2794,9 @@ describe("systemd service install and uninstall", () => {
         "EACCES: permission denied",
       );
 
-      await expect(fs.readFile(unitPath, "utf8")).resolves.toContain("OpenClaw Node");
+      await expect(fs.readFile(unitPath, "utf8")).resolves.toContain("Afora Node");
       await expect(fs.readFile(nodeEnvFilePath, "utf8")).resolves.toBe(
-        "OPENCLAW_GATEWAY_TOKEN=stale-node-token\nOPENROUTER_API_KEY=operator-key\n",
+        "AFORA_GATEWAY_TOKEN=stale-node-token\nOPENROUTER_API_KEY=operator-key\n",
       );
       expect(execFileMock).toHaveBeenCalledTimes(2);
     });
@@ -2873,7 +2873,7 @@ describe("uninstallLegacySystemdUnits", () => {
   });
 
   it("preserves a legacy unit file when systemctl cannot disable it", async () => {
-    const tempHomeRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-legacy-unit-"));
+    const tempHomeRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-legacy-unit-"));
     const env = { HOME: path.join(tempHomeRoot, "home") };
     const unitPath = path.join(env.HOME, ".config", "systemd", "user", "clawdbot-gateway.service");
     try {
@@ -2912,7 +2912,7 @@ describe("uninstallUserSystemdGatewayUnit", () => {
   async function withUserUnitFixture(
     run: (context: { env: Record<string, string>; unitPath: string }) => Promise<void>,
   ): Promise<void> {
-    const tempHomeRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-user-unit-"));
+    const tempHomeRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-user-unit-"));
     const home = path.join(tempHomeRoot, "home");
     const env = { HOME: home };
     const unitPath = resolveSystemdUserUnitPath(env);
@@ -2931,7 +2931,7 @@ describe("uninstallUserSystemdGatewayUnit", () => {
 
   it("disables and removes the user-scope unit when systemctl is available", async () => {
     await withUserUnitFixture(async ({ env, unitPath }) => {
-      await fs.writeFile(unitPath, "[Unit]\nDescription=OpenClaw Gateway\n", "utf8");
+      await fs.writeFile(unitPath, "[Unit]\nDescription=Afora Gateway\n", "utf8");
       execFileMock
         .mockImplementationOnce((_cmd, args, _opts, cb) => {
           assertUserSystemctlArgs(args, "status");
@@ -2980,7 +2980,7 @@ describe("uninstallUserSystemdGatewayUnit", () => {
 
   it("removes the unit file only when systemctl is unavailable", async () => {
     await withUserUnitFixture(async ({ env, unitPath }) => {
-      await fs.writeFile(unitPath, "[Unit]\nDescription=OpenClaw Gateway\n", "utf8");
+      await fs.writeFile(unitPath, "[Unit]\nDescription=Afora Gateway\n", "utf8");
       execFileMock.mockImplementation((_cmd, _args, _opts, cb) =>
         cb(createExecFileError("spawn systemctl ENOENT", { code: "ENOENT" }), "", ""),
       );
@@ -3000,7 +3000,7 @@ describe("uninstallUserSystemdGatewayUnit", () => {
 
   it("preserves the unit file when systemctl cannot disable the service", async () => {
     await withUserUnitFixture(async ({ env, unitPath }) => {
-      await fs.writeFile(unitPath, "[Unit]\nDescription=OpenClaw Gateway\n", "utf8");
+      await fs.writeFile(unitPath, "[Unit]\nDescription=Afora Gateway\n", "utf8");
       execFileMock
         .mockImplementationOnce((_cmd, args, _opts, cb) => {
           assertUserSystemctlArgs(args, "status");
@@ -3022,7 +3022,7 @@ describe("uninstallUserSystemdGatewayUnit", () => {
 
   it("surfaces daemon-reload failure after removing the disabled unit", async () => {
     await withUserUnitFixture(async ({ env, unitPath }) => {
-      await fs.writeFile(unitPath, "[Unit]\nDescription=OpenClaw Gateway\n", "utf8");
+      await fs.writeFile(unitPath, "[Unit]\nDescription=Afora Gateway\n", "utf8");
       execFileMock
         .mockImplementationOnce((_cmd, args, _opts, cb) => {
           assertUserSystemctlArgs(args, "status");
@@ -3214,17 +3214,17 @@ describe("systemd service control", () => {
     execFileMock
       .mockImplementationOnce((_cmd, _args, _opts, cb) => cb(null, "", ""))
       .mockImplementationOnce((_cmd, args, _opts, cb) => {
-        assertUserSystemctlArgs(args, "reset-failed", "openclaw-gateway-work.service");
+        assertUserSystemctlArgs(args, "reset-failed", "afora-gateway-work.service");
         // args[0] is the "--user" scope flag; the systemctl verb is args[1].
         restartSequence.push(args[1] ?? "");
         cb(null, "", "");
       })
       .mockImplementationOnce((_cmd, args, _opts, cb) => {
-        assertUserSystemctlArgs(args, "restart", "openclaw-gateway-work.service");
+        assertUserSystemctlArgs(args, "restart", "afora-gateway-work.service");
         restartSequence.push(args[1] ?? "");
         cb(null, "", "");
       });
-    await assertRestartSuccess({ OPENCLAW_PROFILE: "work" });
+    await assertRestartSuccess({ AFORA_PROFILE: "work" });
     // reset-failed must clear any start-limit-hit latch before the restart so a
     // crash-looped unit can recover.
     expect(restartSequence).toEqual(["reset-failed", "restart"]);

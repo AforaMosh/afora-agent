@@ -269,7 +269,7 @@ describe("reconcileSessionChanged", () => {
         sessionId: "s1",
         modelProvider: "openai",
         model: "gpt-5.6-luna",
-        agentRuntime: { id: "openclaw", source: "model" },
+        agentRuntime: { id: "afora", source: "model" },
         thinkingLevels: [
           { id: "max", label: "max" },
           { id: "ultra", label: "ultra" },
@@ -305,7 +305,7 @@ describe("reconcileSessionChanged", () => {
         sessionId: "s1",
         modelProvider: "openai",
         model: "gpt-5.6-luna",
-        agentRuntime: { id: "openclaw", source: "model" },
+        agentRuntime: { id: "afora", source: "model" },
         thinkingLevels: [
           { id: "max", label: "max" },
           { id: "ultra", label: "ultra" },
@@ -356,7 +356,7 @@ describe("reconcileSessionChanged", () => {
         sessionId: "s1",
         modelProvider: "openai",
         model: "gpt-5.6-luna",
-        agentRuntime: { id: "openclaw", source: "session-key" },
+        agentRuntime: { id: "afora", source: "session-key" },
         thinkingLevels: [
           { id: "max", label: "max" },
           { id: "ultra", label: "ultra" },
@@ -376,7 +376,7 @@ describe("reconcileSessionChanged", () => {
         modelProvider: "openai",
         model: "gpt-5.6-luna",
         contextTokens: null,
-        agentRuntime: { id: "openclaw", source: "model" },
+        agentRuntime: { id: "afora", source: "model" },
         thinkingLevels: [
           { id: "max", label: "max" },
           { id: "ultra", label: "ultra" },

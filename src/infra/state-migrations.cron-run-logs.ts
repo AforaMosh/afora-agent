@@ -1,6 +1,6 @@
 /** One-shot import of legacy cron run history into the authoritative task ledger. */
 import type { DatabaseSync } from "node:sqlite";
-import { safeParseJsonRecord } from "@openclaw/normalization-core";
+import { safeParseJsonRecord } from "@afora/normalization-core";
 import {
   cronRunLogEntryToTaskDetail,
   cronRunStatusToTaskStatus,

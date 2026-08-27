@@ -1,11 +1,11 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { resolveAllAgentSessionStoreTargetsSync } from "../config/sessions.js";
 import { listSessionEntriesCore } from "../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { SessionMutationTarget } from "./session-sharing-target-input.js";
 
 export function resolveSessionGroupMutationTargetsByName(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): Map<string, SessionMutationTarget[]> {
   const targetsByName = new Map<string, SessionMutationTarget[]>();
   for (const storeTarget of resolveAllAgentSessionStoreTargetsSync(cfg)) {

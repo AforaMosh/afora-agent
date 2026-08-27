@@ -2,7 +2,7 @@
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { getAcpSessionManager } from "../../acp/control-plane/manager.js";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import {
@@ -28,7 +28,7 @@ import {
   type SessionAbortTargetIdentity,
   type SessionAbortTargetResult,
 } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { logVerbose } from "../../globals.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { isAcpSessionKey, isSubagentSessionKey } from "../../routing/session-key.js";
@@ -98,7 +98,7 @@ const abortTestApi = {
 };
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.abortTestApi")] = abortTestApi;
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.abortTestApi")] = abortTestApi;
 }
 
 export function abortSessionRunTargetWithOutcome(params: { key?: string; sessionId?: string }): {
@@ -152,7 +152,7 @@ export function formatAbortReplyText(
 }
 
 function resolveStoredSessionId(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
 }): string | undefined {
   const agentId = resolveSessionAgentId({
@@ -174,7 +174,7 @@ function resolveStoredSessionId(params: {
 
 function resolveBoundAcpAbortTargetSessionKey(params: {
   ctx: FinalizedRuntimeMsgContext;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   activeSessionKey: string;
 }): string | undefined {
   const bindingContext = resolveConversationBindingContextFromMessage({
@@ -197,7 +197,7 @@ function resolveBoundAcpAbortTargetSessionKey(params: {
 }
 
 function normalizeRequesterSessionKey(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   key: string | undefined,
 ): string | undefined {
   const cleaned = normalizeOptionalString(key);
@@ -209,7 +209,7 @@ function normalizeRequesterSessionKey(
 }
 
 export async function stopSubagentsForRequester(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   requesterSessionKey?: string;
 }): Promise<{ stopped: number; failed: number }> {
   const requesterKey = normalizeRequesterSessionKey(params.cfg, params.requesterSessionKey);
@@ -289,7 +289,7 @@ export async function stopSubagentsForRequester(params: {
 
 export async function tryFastAbortFromMessage(params: {
   ctx: FinalizedRuntimeMsgContext;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }): Promise<{
   handled: boolean;
   aborted: boolean;

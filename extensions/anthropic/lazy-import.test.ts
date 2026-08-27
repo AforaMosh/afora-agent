@@ -1,10 +1,10 @@
 import type {
-  OpenClawPluginNodeHostCommand,
-  OpenClawPluginNodeInvokePolicy,
-} from "openclaw/plugin-sdk/plugin-entry";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
-import { createPluginRuntimeMock } from "openclaw/plugin-sdk/plugin-test-runtime";
-import type { SessionCatalogProvider } from "openclaw/plugin-sdk/session-catalog";
+  AforaPluginNodeHostCommand,
+  AforaPluginNodeInvokePolicy,
+} from "afora-agent/plugin-sdk/plugin-entry";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
+import { createPluginRuntimeMock } from "afora-agent/plugin-sdk/plugin-test-runtime";
+import type { SessionCatalogProvider } from "afora-agent/plugin-sdk/session-catalog";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 describe("anthropic session catalog lazy imports", () => {
@@ -41,8 +41,8 @@ describe("anthropic session catalog lazy imports", () => {
 
     const { default: anthropicPlugin } = await import("./index.js");
     const catalogs: SessionCatalogProvider[] = [];
-    const nodeCommands: OpenClawPluginNodeHostCommand[] = [];
-    const nodePolicies: OpenClawPluginNodeInvokePolicy[] = [];
+    const nodeCommands: AforaPluginNodeHostCommand[] = [];
+    const nodePolicies: AforaPluginNodeInvokePolicy[] = [];
     anthropicPlugin.register(
       createTestPluginApi({
         id: "anthropic",

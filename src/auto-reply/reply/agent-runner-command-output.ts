@@ -1,6 +1,6 @@
-import { asFiniteNumber as readFiniteNumberValue } from "@openclaw/normalization-core/number-coercion";
-import { asOptionalRecord as readRecordValue } from "@openclaw/normalization-core/record-coerce";
-import { readStringValue } from "@openclaw/normalization-core/string-coerce";
+import { asFiniteNumber as readFiniteNumberValue } from "@afora/normalization-core/number-coercion";
+import { asOptionalRecord as readRecordValue } from "@afora/normalization-core/record-coerce";
+import { readStringValue } from "@afora/normalization-core/string-coerce";
 import type { EmbeddedAgentEvent } from "../../agents/embedded-agent-subscribe.shared-types.js";
 import { inferToolMetaFromArgsCore } from "../../agents/tool-display.js";
 import type { GetReplyOptions } from "../types.js";

@@ -52,7 +52,7 @@ import {
 import { logLanePhase } from "./reporting.ts";
 import { formatError, sleep } from "./shared.ts";
 
-export async function runOpenClaw(params: {
+export async function runAfora(params: {
   lane: LaneState;
   args: string[];
   env: NodeJS.ProcessEnv;
@@ -71,7 +71,7 @@ export async function runOpenClaw(params: {
 
 export async function runOnboard(params: LaneCommandParams & { providerConfig: ProviderConfig }) {
   await withAllocatedGatewayPort(params.lane, async () => {
-    await runOpenClaw({
+    await runAfora({
       lane: params.lane,
       env: params.env,
       args: buildReleaseOnboardArgs({
@@ -245,7 +245,7 @@ export async function waitForGateway(
     }
     let result;
     try {
-      result = await runOpenClaw({
+      result = await runAfora({
         lane: params.lane,
         env: params.env,
         args: statusArgs,
@@ -270,7 +270,7 @@ export async function waitForGateway(
 
 async function resolveGatewayStatusArgs(lane: LaneState, env: NodeJS.ProcessEnv, logPath: string) {
   try {
-    const help = await runOpenClaw({
+    const help = await runAfora({
       lane,
       env,
       args: ["gateway", "status", "--help"],
@@ -286,7 +286,7 @@ async function resolveGatewayStatusArgs(lane: LaneState, env: NodeJS.ProcessEnv,
 }
 
 export async function runModelsSet(params: LaneCommandParams & { providerConfig: ProviderConfig }) {
-  await runOpenClaw({
+  await runAfora({
     lane: params.lane,
     env: params.env,
     args: ["models", "set", params.providerConfig.model],
@@ -295,7 +295,7 @@ export async function runModelsSet(params: LaneCommandParams & { providerConfig:
   });
   const providerConfigOverride = buildReleaseProviderConfigOverride(params.providerConfig);
   if (providerConfigOverride) {
-    await runOpenClaw({
+    await runAfora({
       lane: params.lane,
       env: params.env,
       args: [
@@ -310,7 +310,7 @@ export async function runModelsSet(params: LaneCommandParams & { providerConfig:
       timeoutMs: 2 * 60 * 1000,
     });
   }
-  await runOpenClaw({
+  await runAfora({
     lane: params.lane,
     env: params.env,
     args: [
@@ -323,21 +323,21 @@ export async function runModelsSet(params: LaneCommandParams & { providerConfig:
     logPath: params.logPath,
     timeoutMs: 2 * 60 * 1000,
   });
-  await runOpenClaw({
+  await runAfora({
     lane: params.lane,
     env: params.env,
     args: buildCrossOsReleaseSmokeMemorySlotConfigArgs(),
     logPath: params.logPath,
     timeoutMs: 2 * 60 * 1000,
   });
-  await runOpenClaw({
+  await runAfora({
     lane: params.lane,
     env: params.env,
     args: ["config", "set", "agents.defaults.skipBootstrap", "true", "--strict-json"],
     logPath: params.logPath,
     timeoutMs: 2 * 60 * 1000,
   });
-  await runOpenClaw({
+  await runAfora({
     lane: params.lane,
     env: params.env,
     args: ["config", "set", "tools.profile", CROSS_OS_RELEASE_SMOKE_TOOLS_PROFILE],
@@ -354,7 +354,7 @@ export async function runAgentTurn(
     const sessionId = buildCrossOsReleaseAgentSessionId(params.label, attempt);
     try {
       const logOffset = readLogFileSize(params.logPath);
-      const result = await runOpenClaw({
+      const result = await runAfora({
         lane: params.lane,
         env: params.env,
         args: buildReleaseAgentTurnArgs(sessionId),

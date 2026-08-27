@@ -2,8 +2,8 @@
  * Builds extension factories available to embedded-agent runtime sessions.
  */
 import { randomUUID } from "node:crypto";
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ProviderRuntimeModel } from "../../plugins/provider-runtime-model.types.js";
 import { normalizeAcceptedSessionSpawnResult } from "../accepted-session-spawn.js";
 import { setCompactionSafeguardRuntime } from "../agent-hooks/compaction-safeguard-runtime.js";
@@ -52,7 +52,7 @@ function buildAgentToolResultMiddlewareFactory(
   // mutable session identity after a later turn has started.
   const sessionId = context.sessionId ?? sessionManager.getSessionId?.();
   const runner = createAgentToolResultMiddlewareRunner({
-    runtime: "openclaw",
+    runtime: "afora",
     ...(agentId ? { agentId } : {}),
     ...(sessionId ? { sessionId } : {}),
     ...(sessionKey ? { sessionKey } : {}),
@@ -68,7 +68,7 @@ function buildAgentToolResultMiddlewareFactory(
         typeof event.toolCallId === "string" && event.toolCallId.trim()
           ? event.toolCallId
           : undefined;
-      const toolCallId = eventToolCallId ?? `openclaw-${randomUUID()}`;
+      const toolCallId = eventToolCallId ?? `afora-${randomUUID()}`;
       const content = Array.isArray(event.content) ? event.content : [];
       const current = {
         content,
@@ -120,7 +120,7 @@ function buildAgentToolResultMiddlewareFactory(
 }
 
 export function buildEmbeddedExtensionFactories(params: {
-  cfg: OpenClawConfig | undefined;
+  cfg: AforaConfig | undefined;
   sessionManager: SessionManager;
   workspaceDir?: string;
   provider: string;

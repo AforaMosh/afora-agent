@@ -1,4 +1,4 @@
-import type { OpenClawConfig, TtsConfig } from "../config/types.js";
+import type { AforaConfig, TtsConfig } from "../config/types.js";
 import { mergeDeep } from "../infra/deep-merge.js";
 import { parseTtsDirectives } from "./directives.js";
 import { canonicalizeSpeechProviderId, getSpeechProvider } from "./provider-registry.js";
@@ -11,13 +11,13 @@ import { resolveTtsProvider } from "./tts-provider-resolution.js";
 import { resolveTtsConfig, resolveTtsPrefsPath, resolveTtsRuntimeConfig } from "./tts-settings.js";
 
 type PreparedTtsRequest = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   directives: TtsDirectiveParseResult;
 };
 
 /** Merge a surface TTS override and resolve its inline synthesis directives. */
 export function prepareTtsRequest(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   override?: TtsConfig;
   text: string;
 }): PreparedTtsRequest {
@@ -37,7 +37,7 @@ export function prepareTtsRequest(params: {
 }
 
 export function resolveExplicitTtsOverrides(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   prefsPath?: string;
   provider?: string;
   modelId?: string;

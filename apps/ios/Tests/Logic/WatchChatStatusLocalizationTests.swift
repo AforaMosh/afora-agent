@@ -1,5 +1,5 @@
 import Foundation
-import OpenClawKit
+import AforaKit
 import Testing
 
 struct WatchChatStatusLocalizationTests {
@@ -153,13 +153,13 @@ struct WatchChatStatusLocalizationTests {
     }
 
     @Test func `gateway presentation localizes key and keeps backend override verbatim`() {
-        let localized = OpenClawWatchAppStatus(
+        let localized = AforaWatchAppStatus(
             code: .gatewayProblem,
             localizationKey: "Gateway update required")
-        let backendOverride = OpenClawWatchAppStatus(
+        let backendOverride = AforaWatchAppStatus(
             code: .gatewayProblem,
             verbatim: "Gateway says update channel beta")
-        let localizedTalkFailure = OpenClawWatchAppStatus(
+        let localizedTalkFailure = AforaWatchAppStatus(
             code: .talkFailure,
             localizationKey: "Paused")
 
@@ -176,9 +176,9 @@ struct WatchChatStatusLocalizationTests {
 
     private static func semanticPayload() -> [String: Any] {
         [
-            "type": OpenClawWatchPayloadType.appSnapshot.rawValue,
+            "type": AforaWatchPayloadType.appSnapshot.rawValue,
             "gatewayStatus": [
-                "code": OpenClawWatchAppStatusCode.gatewayProblem.rawValue,
+                "code": AforaWatchAppStatusCode.gatewayProblem.rawValue,
                 "localizationKey": "Gateway update required",
             ],
             "gatewayConnected": false,
@@ -186,14 +186,14 @@ struct WatchChatStatusLocalizationTests {
             "agentAvatarUrl": "https://example.com/avatar.png",
             "sessionKey": "main",
             "talkStatus": [
-                "code": OpenClawWatchAppStatusCode.talkOff.rawValue,
+                "code": AforaWatchAppStatusCode.talkOff.rawValue,
             ],
             "talkEnabled": false,
             "talkListening": false,
             "talkSpeaking": false,
             "pendingApprovalCount": 0,
             "chatStatus": [
-                "code": OpenClawWatchAppStatusCode.chatConnectIPhone.rawValue,
+                "code": AforaWatchAppStatusCode.chatConnectIPhone.rawValue,
             ],
         ]
     }

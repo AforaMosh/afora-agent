@@ -1,5 +1,5 @@
 // Keep transient network policy aligned across retries and process-level handling.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { collectNestedErrorCandidates, extractErrorCodeOrErrno } from "./error-graph-internal.js";
 import { readErrorName } from "./errors.js";
 

@@ -8,7 +8,7 @@ import {
   addTimerTimeoutGraceMs,
   clampPositiveTimerTimeoutMs,
   resolveTimerTimeoutMs,
-} from "openclaw/plugin-sdk/number-runtime";
+} from "afora-agent/plugin-sdk/number-runtime";
 import {
   BROWSER_ACTION_TRANSPORT_SLACK_MS,
   resolveBrowserActRequestTimeoutMs,

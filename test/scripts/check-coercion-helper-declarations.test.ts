@@ -271,10 +271,10 @@ describe("coercion helper declaration AST guard", () => {
       "src/z.ts [readString] has no function declaration; remove the carve-out",
     );
     expect(output).toContain(
-      "Core/package/UI/workspace-script code: use the matching @openclaw/normalization-core export or module.",
+      "Core/package/UI/workspace-script code: use the matching @afora/normalization-core export or module.",
     );
     expect(output).toContain(
-      "Bundled plugin production code: use the matching openclaw/plugin-sdk runtime; number-runtime is bundled/private-local, not a third-party typed contract.",
+      "Bundled plugin production code: use the matching afora/plugin-sdk runtime; number-runtime is bundled/private-local, not a third-party typed contract.",
     );
     expect(output).toContain("Dependency-free, copied, generated, or serialized code");
   });

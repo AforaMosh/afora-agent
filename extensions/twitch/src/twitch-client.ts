@@ -1,11 +1,11 @@
 // Twitch plugin module implements twitch client behavior.
 import { RefreshingAuthProvider, StaticAuthProvider } from "@twurple/auth";
 import { ChatClient, LogLevel } from "@twurple/chat";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { channelReadyPatch } from "openclaw/plugin-sdk/gateway-runtime";
-import { chunkTextForOutbound } from "openclaw/plugin-sdk/text-chunking";
-import { sliceUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { channelReadyPatch } from "afora-agent/plugin-sdk/gateway-runtime";
+import { chunkTextForOutbound } from "afora-agent/plugin-sdk/text-chunking";
+import { sliceUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { TWITCH_CHAT_MESSAGE_LIMIT } from "./constants.js";
 import { resolveTwitchToken } from "./token.js";
 import type {
@@ -111,7 +111,7 @@ export class TwitchClientManager {
    */
   async getClient(
     account: TwitchAccountConfig,
-    cfg?: OpenClawConfig,
+    cfg?: AforaConfig,
     accountId?: string,
   ): Promise<ChatClient> {
     const key = this.getAccountKey(account);
@@ -139,7 +139,7 @@ export class TwitchClientManager {
   private async createConnectedClient(
     key: string,
     account: TwitchAccountConfig,
-    cfg?: OpenClawConfig,
+    cfg?: AforaConfig,
     accountId?: string,
   ): Promise<ChatClient> {
     const tokenResolution = resolveTwitchToken(cfg, {
@@ -148,7 +148,7 @@ export class TwitchClientManager {
 
     if (!tokenResolution.token) {
       this.logger.error(
-        `Missing Twitch token for account ${account.username} (set channels.twitch.accounts.${account.username}.token or OPENCLAW_TWITCH_ACCESS_TOKEN for default)`,
+        `Missing Twitch token for account ${account.username} (set channels.twitch.accounts.${account.username}.token or AFORA_TWITCH_ACCESS_TOKEN for default)`,
       );
       throw new Error("Missing Twitch token");
     }
@@ -410,7 +410,7 @@ export class TwitchClientManager {
     account: TwitchAccountConfig,
     channel: string,
     message: string,
-    cfg?: OpenClawConfig,
+    cfg?: AforaConfig,
     accountId?: string,
   ): Promise<{ ok: boolean; error?: string; messageId?: string }> {
     try {

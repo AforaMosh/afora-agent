@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { isRecord } from "../utils.js";
 
 const CRON_RUNTIME_AUTHORITY_MAX_BYTES = 64 * 1024;

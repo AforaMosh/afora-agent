@@ -10,7 +10,7 @@ Use this page when a node is visible in status but node tools fail.
 
 ## Node goes offline after SSH logout (Linux)
 
-On Linux, `openclaw node install` creates a **user-level** systemd service. The
+On Linux, `afora node install` creates a **user-level** systemd service. The
 `systemd --user` instance is torn down when your last login session ends, so the
 node service stops the moment you log out — even though it looked healthy
 (`enabled` + `running`) while you were connected.
@@ -30,12 +30,12 @@ sudo loginctl enable-linger "$USER"
 Then restart the node service and verify it survives logout:
 
 ```bash
-openclaw node restart
+afora node restart
 # log out, then from another machine:
-openclaw nodes status
+afora nodes status
 ```
 
-`openclaw node install` prints a warning with this recovery command when it
+`afora node install` prints a warning with this recovery command when it
 detects lingering is disabled. Don't mix a user-level service with a
 system-level one for the same node. The duplicate-scope guard that prevents
 two managers from running the same unit name is enforced for gateway units
@@ -47,19 +47,19 @@ before switching.
 ## Command ladder
 
 ```bash
-openclaw status
-openclaw gateway status
-openclaw logs --follow
-openclaw doctor
-openclaw channels status --probe
+afora status
+afora gateway status
+afora logs --follow
+afora doctor
+afora channels status --probe
 ```
 
 Then run node-specific checks:
 
 ```bash
-openclaw nodes status
-openclaw nodes describe --node <idOrNameOrIp>
-openclaw approvals get --node <idOrNameOrIp>
+afora nodes status
+afora nodes describe --node <idOrNameOrIp>
+afora approvals get --node <idOrNameOrIp>
 ```
 
 Healthy signals:
@@ -75,9 +75,9 @@ Healthy signals:
 Quick check and fix:
 
 ```bash
-openclaw nodes describe --node <idOrNameOrIp>
-openclaw nodes canvas snapshot --node <idOrNameOrIp>
-openclaw logs --follow
+afora nodes describe --node <idOrNameOrIp>
+afora nodes canvas snapshot --node <idOrNameOrIp>
+afora logs --follow
 ```
 
 If you see `NODE_BACKGROUND_UNAVAILABLE`, bring the node app to the foreground and retry.
@@ -100,15 +100,15 @@ Three separate gates control whether a node command succeeds:
 2. **Gateway node command policy**: is the RPC command ID allowed by `gateway.nodes.commands.allow` / `gateway.nodes.commands.deny` and platform defaults?
 3. **Exec approvals**: can this node run a specific shell command locally?
 
-Node pairing is an identity/trust gate, not a per-command approval surface. For `system.run`, the per-node policy lives in that node's exec approvals file (`openclaw approvals get --node ...`), not in the gateway pairing record.
+Node pairing is an identity/trust gate, not a per-command approval surface. For `system.run`, the per-node policy lives in that node's exec approvals file (`afora approvals get --node ...`), not in the gateway pairing record.
 
 Quick checks:
 
 ```bash
-openclaw devices list
-openclaw nodes status
-openclaw approvals get --node <idOrNameOrIp>
-openclaw approvals allowlist add --node <idOrNameOrIp> "/usr/bin/uname"
+afora devices list
+afora nodes status
+afora approvals get --node <idOrNameOrIp>
+afora approvals allowlist add --node <idOrNameOrIp> "/usr/bin/uname"
 ```
 
 - Pairing missing: approve the node device first.
@@ -128,17 +128,17 @@ For approval-backed `host=node` runs, the gateway also binds execution to the pr
 | `LOCATION_PERMISSION_REQUIRED`         | Requested location mode not granted.                                                                                                                                                    |
 | `LOCATION_BACKGROUND_UNAVAILABLE`      | App is backgrounded but only While Using permission exists.                                                                                                                             |
 | `COMPUTER_DISABLED`                    | Enable **Allow Computer Control** in the macOS app, then approve the pairing update.                                                                                                    |
-| `ACCESSIBILITY_REQUIRED`               | Grant Accessibility to the current OpenClaw app bundle in macOS System Settings.                                                                                                        |
+| `ACCESSIBILITY_REQUIRED`               | Grant Accessibility to the current Afora app bundle in macOS System Settings.                                                                                                        |
 | `SYSTEM_RUN_DENIED: approval required` | Exec request needs explicit approval.                                                                                                                                                   |
 | `SYSTEM_RUN_DENIED: allowlist miss`    | Command blocked by allowlist mode. On Windows node hosts, shell-wrapper forms like `cmd.exe /c ...` are treated as allowlist misses in allowlist mode unless approved via the ask flow. |
 
 ## Fast recovery loop
 
 ```bash
-openclaw nodes status
-openclaw nodes describe --node <idOrNameOrIp>
-openclaw approvals get --node <idOrNameOrIp>
-openclaw logs --follow
+afora nodes status
+afora nodes describe --node <idOrNameOrIp>
+afora approvals get --node <idOrNameOrIp>
+afora logs --follow
 ```
 
 If still stuck:

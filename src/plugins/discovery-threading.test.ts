@@ -3,13 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PluginDiscoveryResult } from "./discovery.js";
 import * as installedPluginIndexRecordReader from "./installed-plugin-index-record-reader.js";
 
-const discoverOpenClawPluginsMock = vi.fn();
+const discoverAforaPluginsMock = vi.fn();
 
 vi.mock("./discovery.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./discovery.js")>();
   return {
     ...actual,
-    discoverOpenClawPlugins: (...args: unknown[]) => discoverOpenClawPluginsMock(...args),
+    discoverAforaPlugins: (...args: unknown[]) => discoverAforaPluginsMock(...args),
   };
 });
 
@@ -20,39 +20,39 @@ const emptyDiscovery: PluginDiscoveryResult = { candidates: [], diagnostics: [] 
 
 describe("discovery threading", () => {
   beforeEach(() => {
-    discoverOpenClawPluginsMock.mockReset();
-    discoverOpenClawPluginsMock.mockReturnValue(emptyDiscovery);
+    discoverAforaPluginsMock.mockReset();
+    discoverAforaPluginsMock.mockReturnValue(emptyDiscovery);
   });
 
-  it("skips internal discoverOpenClawPlugins when discovery is supplied", () => {
+  it("skips internal discoverAforaPlugins when discovery is supplied", () => {
     loadPluginManifestRegistryCore({ discovery: emptyDiscovery });
-    expect(discoverOpenClawPluginsMock).not.toHaveBeenCalled();
+    expect(discoverAforaPluginsMock).not.toHaveBeenCalled();
 
-    discoverOpenClawPluginsMock.mockClear();
+    discoverAforaPluginsMock.mockClear();
     loadInstalledPluginIndexWithDiscovery({ discovery: emptyDiscovery, installRecords: {} });
-    expect(discoverOpenClawPluginsMock).not.toHaveBeenCalled();
+    expect(discoverAforaPluginsMock).not.toHaveBeenCalled();
   });
 
-  it("calls discoverOpenClawPlugins when neither discovery nor candidates supplied", () => {
+  it("calls discoverAforaPlugins when neither discovery nor candidates supplied", () => {
     loadPluginManifestRegistryCore({});
-    expect(discoverOpenClawPluginsMock).toHaveBeenCalledTimes(1);
+    expect(discoverAforaPluginsMock).toHaveBeenCalledTimes(1);
 
-    discoverOpenClawPluginsMock.mockClear();
+    discoverAforaPluginsMock.mockClear();
     loadInstalledPluginIndexWithDiscovery({ installRecords: {} });
-    expect(discoverOpenClawPluginsMock).toHaveBeenCalledTimes(1);
+    expect(discoverAforaPluginsMock).toHaveBeenCalledTimes(1);
   });
 
   it("prefers explicit candidates over discovery when both are supplied", () => {
     loadPluginManifestRegistryCore({ candidates: [], diagnostics: [], discovery: emptyDiscovery });
-    expect(discoverOpenClawPluginsMock).not.toHaveBeenCalled();
+    expect(discoverAforaPluginsMock).not.toHaveBeenCalled();
 
-    discoverOpenClawPluginsMock.mockClear();
+    discoverAforaPluginsMock.mockClear();
     loadInstalledPluginIndexWithDiscovery({
       candidates: [],
       discovery: emptyDiscovery,
       installRecords: {},
     });
-    expect(discoverOpenClawPluginsMock).not.toHaveBeenCalled();
+    expect(discoverAforaPluginsMock).not.toHaveBeenCalled();
   });
 
   it("preserves explicit candidate diagnostics without loading persisted install records", () => {
@@ -71,6 +71,6 @@ describe("discovery threading", () => {
     expect(result.manifestRegistry.diagnostics).toEqual(diagnostics);
     expect(result.discovery).toBeUndefined();
     expect(readInstallRecords).not.toHaveBeenCalled();
-    expect(discoverOpenClawPluginsMock).not.toHaveBeenCalled();
+    expect(discoverAforaPluginsMock).not.toHaveBeenCalled();
   });
 });

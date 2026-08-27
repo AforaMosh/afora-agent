@@ -1,4 +1,4 @@
-import { asOptionalRecord } from "@openclaw/normalization-core";
+import { asOptionalRecord } from "@afora/normalization-core";
 import type {
   WorkerTranscriptCommitRequestFrame,
   WorkerTranscriptMessage,

@@ -1,10 +1,10 @@
-import type { EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams } from "openclaw/plugin-sdk/agent-harness-runtime";
+import type { EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import type {
   CodexDynamicToolCallResponse,
   CodexDynamicToolDiagnosticTerminalReason,
 } from "./protocol.js";
 
-/** OpenClaw-only dynamic-tool facts that never cross into the Codex protocol. */
+/** Afora-only dynamic-tool facts that never cross into the Codex protocol. */
 export type CodexDynamicToolRuntimeResponse = CodexDynamicToolCallResponse & {
   executionStarted?: boolean;
   executedArguments?: Record<string, unknown>;
@@ -71,7 +71,7 @@ export function withDynamicToolExecutionState<T extends CodexDynamicToolRuntimeR
     sideEffectEvidence?: boolean;
   },
 ): T {
-  // Keep post-hook arguments non-enumerable so only OpenClaw terminal-outcome
+  // Keep post-hook arguments non-enumerable so only Afora terminal-outcome
   // bookkeeping sees them; Codex receives contentItems + success.
   Object.defineProperties(response, {
     executedArguments: {

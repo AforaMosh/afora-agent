@@ -38,7 +38,7 @@ describe("buildCurrentConversationContextBlock", () => {
         {
           role: "user",
           content:
-            'Conversation info: ⟦openclaw:ctx⟧\n```json\n{"message_id":"123"}\n```\n\nActual user fact',
+            'Conversation info: ⟦afora:ctx⟧\n```json\n{"message_id":"123"}\n```\n\nActual user fact',
         },
         ...Array.from({ length: 15 }, () => ({ role: "toolResult", content: "tool output" })),
         {

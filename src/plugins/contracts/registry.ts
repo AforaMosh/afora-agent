@@ -1,7 +1,7 @@
 // Plugin contract registry assembles bundled plugin fixtures for shared contract tests.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { loadBundledCapabilityRuntimeRegistry } from "../bundled-capability-runtime.js";
-import { discoverOpenClawPlugins } from "../discovery.js";
+import { discoverAforaPlugins } from "../discovery.js";
 import { loadPluginManifestRegistryCore } from "../manifest-registry.js";
 import { resolveBundledExplicitProviderContractsFromPublicArtifacts } from "../provider-contract-public-artifacts.js";
 import type { ProviderPlugin, WebFetchProviderPlugin, WebSearchProviderPlugin } from "../types.js";
@@ -187,7 +187,7 @@ function loadScopedCapabilityRuntimeRegistryEntries<T>(params: {
   capabilityLabel: string;
   loadEntries: (registry: BundledCapabilityRuntimeRegistry) => T[];
 }): T[] {
-  const discovery = discoverOpenClawPlugins({});
+  const discovery = discoverAforaPlugins({});
   let lastFailure: Error | undefined;
 
   // Manifest IDs exist before registration; only observed runtime entries prove the load worked.

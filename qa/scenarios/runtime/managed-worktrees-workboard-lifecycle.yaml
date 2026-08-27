@@ -9,7 +9,7 @@ scenario:
       - agent-runtime.managed-worktrees-workboard-lifecycle
   objective: Prove the real child gateway materializes Workboard card workspaces as managed wb-<card-id> worktrees, writes the resolved checkout and branch back to each card, runs their subagents, removes a clean checkout losslessly, and retains a dirty checkout with a recorded cleanup outcome.
   successCriteria:
-    - Dispatch materializes the card's source workspace under the managed state directory as wb-<card-id> on branch openclaw/wb-<card-id>.
+    - Dispatch materializes the card's source workspace under the managed state directory as wb-<card-id> on branch afora/wb-<card-id>.
     - The dispatched card persists the resolved managed checkout path and branch while retaining its source workspace metadata.
     - A real mock-provider subagent run reaches a terminal outcome, and run-end cleanup removes its clean checkout losslessly with a recorded removed-lossless outcome.
     - A second real subagent run leaves an untracked file, and run-end cleanup records retained-dirty while keeping the live checkout intact.

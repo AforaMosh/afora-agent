@@ -1,5 +1,5 @@
 import type { CreateGhosttyTerminalOptions } from "@openclaw/libterminal/browser";
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
 
 function isEventListener(value: unknown): value is EventListener {
   return typeof value === "function";

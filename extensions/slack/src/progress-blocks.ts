@@ -7,7 +7,7 @@ import {
   type ChannelProgressDraftCompositorSnapshot,
   type ChannelProgressDraftLine,
   formatPlanChecklistLines,
-} from "openclaw/plugin-sdk/channel-outbound";
+} from "afora-agent/plugin-sdk/channel-outbound";
 import { SLACK_MAX_BLOCKS } from "./blocks-input.js";
 import { normalizeSlackOutboundText } from "./format.js";
 import { escapeSlackMrkdwn } from "./monitor/mrkdwn.js";
@@ -36,7 +36,7 @@ type SlackPlanTask = {
 
 function buildSessionSources(url: string): NonNullable<TaskUpdateChunk["sources"]> {
   // The live Slack API requires url_source; @slack/types 3.0.0 still declares the old `url` tag.
-  return [{ type: "url_source", url, text: "Open in OpenClaw" }] as unknown as NonNullable<
+  return [{ type: "url_source", url, text: "Open in Afora" }] as unknown as NonNullable<
     TaskUpdateChunk["sources"]
   >;
 }
@@ -292,7 +292,7 @@ export function buildSlackProgressStreamChunks(params: {
       { type: "plan_update", title: compactChunkText(title) },
       {
         type: "task_update",
-        id: "openclaw_summary",
+        id: "afora_summary",
         title: "Completed",
         status: "complete",
         ...(formatTaskDiffOutput(params.diffStat)
@@ -445,7 +445,7 @@ export function buildSlackProgressCardBlocks(params: {
               {
                 type: "button" as const,
                 action_id: SLACK_SESSION_LINK_ACTION_ID,
-                text: { type: "plain_text" as const, text: "Open in OpenClaw" },
+                text: { type: "plain_text" as const, text: "Open in Afora" },
                 url: params.sessionUrl,
               },
             ],

@@ -1,5 +1,5 @@
 #[cfg(not(target_os = "windows"))]
-use crate::cli::openclaw_home;
+use crate::cli::afora_home;
 use serde::Deserialize;
 #[cfg(not(target_os = "windows"))]
 use serde::Serialize;
@@ -62,7 +62,7 @@ pub fn install(app: &AppHandle, channel: InstallChannel) -> Result<(), String> {
         .path()
         .resolve("install-cli.sh", BaseDirectory::Resource)
         .map_err(|error| format!("Bundled installer is unavailable: {error}"))?;
-    let prefix = openclaw_home().map_err(|error| error.to_string())?;
+    let prefix = afora_home().map_err(|error| error.to_string())?;
 
     let mut command = Command::new("bash");
     command
@@ -73,7 +73,7 @@ pub fn install(app: &AppHandle, channel: InstallChannel) -> Result<(), String> {
     if matches!(channel, InstallChannel::Dev) {
         command
             .args(["--install-method", "git", "--git-dir"])
-            .arg(prefix.join("dev/openclaw"));
+            .arg(prefix.join("dev/afora"));
     }
     command
         .stdin(Stdio::null())

@@ -1,4 +1,4 @@
-// Zai plugin entrypoint registers its OpenClaw integration.
+// Zai plugin entrypoint registers its Afora integration.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -8,7 +8,7 @@ import type {
   ProviderAuthMethodNonInteractiveContext,
   ProviderResolveDynamicModelContext,
   ProviderWrapStreamFnContext,
-} from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/plugin-entry";
 import {
   applyAuthProfileConfig,
   buildApiKeyCredential,
@@ -18,24 +18,24 @@ import {
   type SecretInput,
   upsertAuthProfileWithLockOrThrow,
   validateApiKeyInput,
-} from "openclaw/plugin-sdk/provider-auth-api-key";
-import { defineSingleProviderPluginEntry } from "openclaw/plugin-sdk/provider-entry";
+} from "afora-agent/plugin-sdk/provider-auth-api-key";
+import { defineSingleProviderPluginEntry } from "afora-agent/plugin-sdk/provider-entry";
 import {
   buildProviderReplayFamilyHooks,
   resolveFamilyForwardCompatModel,
-} from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/provider-model-shared";
 import {
   createPayloadPatchStreamWrapper,
   createToolStreamWrapper,
   defaultToolStreamExtraParams,
-} from "openclaw/plugin-sdk/provider-stream-shared";
-import { fetchZaiUsage } from "openclaw/plugin-sdk/provider-usage";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/provider-stream-shared";
+import { fetchZaiUsage } from "afora-agent/plugin-sdk/provider-usage";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { detectZaiEndpoint, type ZaiEndpointId } from "./detect.js";
 import { zaiMediaUnderstandingProvider } from "./media-understanding-provider.js";
 import { buildZaiModelDefinition, resolveZaiBaseUrl } from "./model-definitions.js";
 import { applyZaiConfig, applyZaiProviderConfig, resolveZaiModelId } from "./onboard.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 import { resolveThinkingProfile, resolveZaiReasoningEffort } from "./provider-policy-api.js";
 
 const PROVIDER_ID = "zai";

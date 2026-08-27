@@ -10,7 +10,7 @@ import {
 import { getActiveGatewayRootWorkCount } from "../process/gateway-work-admission.js";
 import { getActiveSecretsRuntimeConfigSnapshot } from "../secrets/runtime-state.js";
 import { createChannelTestPluginBase, createTestRegistry } from "../test-utils/channel-plugins.js";
-import { createOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { createAforaTestState } from "../test-utils/afora-test-state.js";
 import { getFreePort } from "../test-utils/ports.js";
 import { CLI_DEFAULT_OPERATOR_SCOPES } from "./method-scopes.js";
 import { dispatchGatewayRequestInProcess } from "./server-in-process-dispatch.js";
@@ -20,19 +20,19 @@ import { createSyntheticPluginRuntimeClient } from "./server-plugin-runtime-clie
 describe("createGatewayKernel", () => {
   it("keeps startup readiness and sidecar shutdown at their lifecycle boundaries", async () => {
     const port = await getFreePort();
-    const state = await createOpenClawTestState({
+    const state = await createAforaTestState({
       label: "gateway-kernel-deferred-readiness",
       layout: "home",
       env: {
-        OPENCLAW_GATEWAY_PASSWORD: undefined,
-        OPENCLAW_GATEWAY_TOKEN: undefined,
-        OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-        OPENCLAW_SKIP_CANVAS_HOST: "1",
-        OPENCLAW_SKIP_CHANNELS: "1",
-        OPENCLAW_SKIP_CRON: "1",
-        OPENCLAW_SKIP_GMAIL_WATCHER: "1",
-        OPENCLAW_SKIP_PROVIDERS: "1",
-        OPENCLAW_TEST_MINIMAL_GATEWAY: "0",
+        AFORA_GATEWAY_PASSWORD: undefined,
+        AFORA_GATEWAY_TOKEN: undefined,
+        AFORA_SKIP_BROWSER_CONTROL_SERVER: "1",
+        AFORA_SKIP_CANVAS_HOST: "1",
+        AFORA_SKIP_CHANNELS: "1",
+        AFORA_SKIP_CRON: "1",
+        AFORA_SKIP_GMAIL_WATCHER: "1",
+        AFORA_SKIP_PROVIDERS: "1",
+        AFORA_TEST_MINIMAL_GATEWAY: "0",
         VITEST: "1",
       },
     });
@@ -202,21 +202,21 @@ describe("createGatewayKernel", () => {
 
   it("dispatches health and an agent turn without creating a transport", async () => {
     const port = await getFreePort();
-    const state = await createOpenClawTestState({
+    const state = await createAforaTestState({
       label: "gateway-kernel-no-transport",
       layout: "home",
       env: {
-        OPENCLAW_DIAGNOSTICS: "1",
-        OPENCLAW_DIAGNOSTICS_TIMELINE_PATH: undefined,
-        OPENCLAW_GATEWAY_PASSWORD: undefined,
-        OPENCLAW_GATEWAY_TOKEN: undefined,
-        OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-        OPENCLAW_SKIP_CANVAS_HOST: "1",
-        OPENCLAW_SKIP_CHANNELS: "1",
-        OPENCLAW_SKIP_CRON: "1",
-        OPENCLAW_SKIP_GMAIL_WATCHER: "1",
-        OPENCLAW_SKIP_PROVIDERS: "1",
-        OPENCLAW_TEST_MINIMAL_GATEWAY: "1",
+        AFORA_DIAGNOSTICS: "1",
+        AFORA_DIAGNOSTICS_TIMELINE_PATH: undefined,
+        AFORA_GATEWAY_PASSWORD: undefined,
+        AFORA_GATEWAY_TOKEN: undefined,
+        AFORA_SKIP_BROWSER_CONTROL_SERVER: "1",
+        AFORA_SKIP_CANVAS_HOST: "1",
+        AFORA_SKIP_CHANNELS: "1",
+        AFORA_SKIP_CRON: "1",
+        AFORA_SKIP_GMAIL_WATCHER: "1",
+        AFORA_SKIP_PROVIDERS: "1",
+        AFORA_TEST_MINIMAL_GATEWAY: "1",
         VITEST: "1",
       },
     });
@@ -261,7 +261,7 @@ describe("createGatewayKernel", () => {
       stageActivePluginRegistry(ambientRegistry, null, "default");
       capturedLoadedPluginRegistry = captureActivePluginRegistrySnapshot();
       const timelinePath = state.path("kernel-startup.jsonl");
-      state.envVars.OPENCLAW_DIAGNOSTICS_TIMELINE_PATH = timelinePath;
+      state.envVars.AFORA_DIAGNOSTICS_TIMELINE_PATH = timelinePath;
       const token = "gateway-kernel-no-transport-token";
       await state.writeConfig({
         gateway: {
@@ -388,19 +388,19 @@ describe("createGatewayKernel", () => {
 
   it("runs kernel teardown when required TLS material is unavailable", async () => {
     const port = await getFreePort();
-    const state = await createOpenClawTestState({
+    const state = await createAforaTestState({
       label: "gateway-kernel-tls-failure",
       layout: "home",
       env: {
-        OPENCLAW_GATEWAY_PASSWORD: undefined,
-        OPENCLAW_GATEWAY_TOKEN: undefined,
-        OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-        OPENCLAW_SKIP_CANVAS_HOST: "1",
-        OPENCLAW_SKIP_CHANNELS: "1",
-        OPENCLAW_SKIP_CRON: "1",
-        OPENCLAW_SKIP_GMAIL_WATCHER: "1",
-        OPENCLAW_SKIP_PROVIDERS: "1",
-        OPENCLAW_TEST_MINIMAL_GATEWAY: "1",
+        AFORA_GATEWAY_PASSWORD: undefined,
+        AFORA_GATEWAY_TOKEN: undefined,
+        AFORA_SKIP_BROWSER_CONTROL_SERVER: "1",
+        AFORA_SKIP_CANVAS_HOST: "1",
+        AFORA_SKIP_CHANNELS: "1",
+        AFORA_SKIP_CRON: "1",
+        AFORA_SKIP_GMAIL_WATCHER: "1",
+        AFORA_SKIP_PROVIDERS: "1",
+        AFORA_TEST_MINIMAL_GATEWAY: "1",
         VITEST: "1",
       },
     });

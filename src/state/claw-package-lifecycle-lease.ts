@@ -7,14 +7,14 @@ import {
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../infra/kysely-sync.js";
-import type { DB as OpenClawStateKyselyDatabase } from "./openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "./afora-state-db.generated.js";
 import {
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "./openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "./openclaw-state-db.paths.js";
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "./afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "./afora-state-db.paths.js";
 
-type ClawPackageLifecycleDatabase = Pick<OpenClawStateKyselyDatabase, "state_leases">;
+type ClawPackageLifecycleDatabase = Pick<AforaStateKyselyDatabase, "state_leases">;
 
 type ClawPackageLifecycleArtifact =
   | { kind: "plugin"; source: "clawhub"; ref: string }
@@ -30,7 +30,7 @@ export type MaintainedClawPackageLifecycleLease = {
   release: () => void;
 };
 
-type ClawPackageLifecycleLeaseOptions = OpenClawStateDatabaseOptions & {
+type ClawPackageLifecycleLeaseOptions = AforaStateDatabaseOptions & {
   nowMs?: number;
   owner?: string;
   required?: boolean;
@@ -63,7 +63,7 @@ export function acquireClawPackageLifecycleLease(
   options: ClawPackageLifecycleLeaseOptions = {},
 ): ClawPackageLifecycleLease | null {
   const env = options.env ?? process.env;
-  const databasePath = options.path ?? resolveOpenClawStateSqlitePath(env);
+  const databasePath = options.path ?? resolveAforaStateSqlitePath(env);
   const nowMs = options.nowMs ?? Date.now();
   const expiresAt = nowMs + LEASE_TTL_MS;
   const owner = options.owner ?? randomUUID();
@@ -71,7 +71,7 @@ export function acquireClawPackageLifecycleLease(
   let acquired = false;
 
   try {
-    runOpenClawStateWriteTransaction(
+    runAforaStateWriteTransaction(
       ({ db }) => {
         const state = kyselyFor(db);
         executeSqliteQuerySync(
@@ -92,7 +92,7 @@ export function acquireClawPackageLifecycleLease(
         );
         if (existing) {
           throw new ClawPackageLifecycleBusyError(
-            `Package ${artifact.ref} is being changed by another OpenClaw lifecycle; retry after ${new Date(existing.expires_at ?? expiresAt).toISOString()}.`,
+            `Package ${artifact.ref} is being changed by another Afora lifecycle; retry after ${new Date(existing.expires_at ?? expiresAt).toISOString()}.`,
           );
         }
         executeSqliteQuerySync(
@@ -125,7 +125,7 @@ export function acquireClawPackageLifecycleLease(
   return {
     heartbeat: (heartbeatNowMs = Date.now()) => {
       const heartbeatExpiresAt = heartbeatNowMs + LEASE_TTL_MS;
-      runOpenClawStateWriteTransaction(
+      runAforaStateWriteTransaction(
         ({ db }) => {
           const result = executeSqliteQuerySync(
             db,
@@ -149,7 +149,7 @@ export function acquireClawPackageLifecycleLease(
       );
     },
     release: () => {
-      runOpenClawStateWriteTransaction(
+      runAforaStateWriteTransaction(
         ({ db }) => {
           executeSqliteQuerySync(
             db,

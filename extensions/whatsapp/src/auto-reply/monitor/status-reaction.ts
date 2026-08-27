@@ -2,9 +2,9 @@
 import {
   createStatusReactionController,
   type StatusReactionController,
-} from "openclaw/plugin-sdk/channel-feedback";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/channel-feedback";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
 import type { AdmittedWebInboundMessage } from "../../inbound/types.js";
 import { sendReactionWhatsApp } from "../../send.js";
 import { resolveWhatsAppReactionEligibility } from "./reaction-eligibility.js";
@@ -12,7 +12,7 @@ import { resolveWhatsAppReactionEligibility } from "./reaction-eligibility.js";
 export type { StatusReactionController };
 
 type WhatsAppStatusReactionParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   msg: AdmittedWebInboundMessage;
   agentId: string;
   sessionKey: string;

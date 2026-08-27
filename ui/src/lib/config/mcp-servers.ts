@@ -1,5 +1,5 @@
-import { redactSensitiveUrlLikeString } from "@openclaw/net-policy/redact-sensitive-url";
-import { asNullableRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
+import { redactSensitiveUrlLikeString } from "@afora/net-policy/redact-sensitive-url";
+import { asNullableRecord as asRecord } from "@afora/normalization-core/record-coerce";
 import { t } from "../../i18n/index.ts";
 import { formatUiError } from "../format-error.ts";
 import type { RuntimeConfigCapability } from "./runtime-config-capability.ts";

@@ -1,5 +1,5 @@
-import type { HealthCheckContext, HealthFinding } from "openclaw/plugin-sdk/health";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { HealthCheckContext, HealthFinding } from "afora-agent/plugin-sdk/health";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { policyRoutingRules } from "../policy-routing.js";
 import {
   collectPolicyEvidence,
@@ -144,7 +144,7 @@ async function evaluatePolicyUncached(ctx: HealthCheckContext): Promise<PolicyEv
       source: "policy",
       path: policyFile.displayName,
       target: `oc://${policyFile.ocDocName}`,
-      requirement: "oc://openclaw.config/plugins/entries/policy/config/expectedHash",
+      requirement: "oc://afora.config/plugins/entries/policy/config/expectedHash",
       fixHint: `Restore the approved policy artifact or update plugins.entries.policy.config.expectedHash after review.`,
     });
     return {
@@ -198,13 +198,13 @@ async function evaluatePolicyUncached(ctx: HealthCheckContext): Promise<PolicyEv
         checkId: CHECK_IDS.policyUnmigratedToolsFile,
         severity: "error",
         message:
-          "TOOLS.md contains unmigrated governed tool declarations; run `openclaw doctor --fix` to migrate them into the AGENTS.md `## Tools` section before policy evaluation can pass.",
+          "TOOLS.md contains unmigrated governed tool declarations; run `afora doctor --fix` to migrate them into the AGENTS.md `## Tools` section before policy evaluation can pass.",
         source: "policy",
         path: "TOOLS.md",
         target: "oc://TOOLS.md/tools",
         requirement: `oc://${policyFile.ocDocName}/tools/requireMetadata`,
         fixHint:
-          "Run `openclaw doctor --fix` to migrate TOOLS.md into the AGENTS.md `## Tools` section.",
+          "Run `afora doctor --fix` to migrate TOOLS.md into the AGENTS.md `## Tools` section.",
       };
     }
     evidence = await collectPolicyEvidence(ctx.cfg as Record<string, unknown>, {
@@ -356,7 +356,7 @@ function channelFindings(
         severity: "error",
         message: `Channel '${channel.id}' uses denied provider '${channel.provider}'.`,
         source: "policy",
-        path: "openclaw config",
+        path: "afora config",
         ocPath: channel.source,
         target: channel.source,
         requirement: rule.requirement,
@@ -398,7 +398,7 @@ function policyAttestationFindings(
       source: "policy",
       path: "policy attestation",
       target: "oc://policy/attestation/current",
-      requirement: "oc://openclaw.config/plugins/entries/policy/config/expectedAttestationHash",
+      requirement: "oc://afora.config/plugins/entries/policy/config/expectedAttestationHash",
       fixHint: `Run policy check, review attestation ${current.attestationHash}, then update plugins.entries.policy.config.expectedAttestationHash and the supervisor/gateway accepted attestation.`,
     },
   ];

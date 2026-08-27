@@ -13,10 +13,10 @@ function writeExecutable(path: string, source: string): void {
 }
 
 function runSurvivor(overrides: NodeJS.ProcessEnv = {}) {
-  const root = tempDirs.make("openclaw-upgrade-survivor-registry-");
+  const root = tempDirs.make("afora-upgrade-survivor-registry-");
   const binDir = join(root, "bin");
   const captureDir = join(root, "capture");
-  const packageTarball = join(root, "openclaw-current.tgz");
+  const packageTarball = join(root, "afora-current.tgz");
   mkdirSync(binDir);
   mkdirSync(captureDir);
   writeFileSync(packageTarball, "candidate");
@@ -29,13 +29,13 @@ if [[ "\${1:-}" != */scripts/test-docker-all.mjs ]] || [ "\${2:-}" != "--prepare
 fi
 printf '%s\n' "$*" >>"$CAPTURE_DIR/node-args"
 printf '%s|%s|%s\n' \
-  "$OPENCLAW_DOCKER_ALL_LANES" \
-  "$OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPECS" \
-  "$OPENCLAW_UPGRADE_SURVIVOR_SCENARIOS" >>"$CAPTURE_DIR/node-env"
-mkdir -p "$OPENCLAW_DOCKER_ALL_LOG_DIR/prepublish-plugin-registry"
+  "$AFORA_DOCKER_ALL_LANES" \
+  "$AFORA_UPGRADE_SURVIVOR_BASELINE_SPECS" \
+  "$AFORA_UPGRADE_SURVIVOR_SCENARIOS" >>"$CAPTURE_DIR/node-env"
+mkdir -p "$AFORA_DOCKER_ALL_LOG_DIR/prepublish-plugin-registry"
 printf '{"packages":[]}\n' \
-  >"$OPENCLAW_DOCKER_ALL_LOG_DIR/prepublish-plugin-registry/prepublish-plugin-registry.json"
-printf '{"dir":"%s"}\n' "$OPENCLAW_DOCKER_ALL_LOG_DIR/prepublish-plugin-registry"
+  >"$AFORA_DOCKER_ALL_LOG_DIR/prepublish-plugin-registry/prepublish-plugin-registry.json"
+printf '{"dir":"%s"}\n' "$AFORA_DOCKER_ALL_LOG_DIR/prepublish-plugin-registry"
 `,
   );
   writeExecutable(
@@ -59,14 +59,14 @@ done
       ...process.env,
       CAPTURE_DIR: captureDir,
       REAL_NODE: process.execPath,
-      OPENCLAW_CURRENT_PACKAGE_TGZ: packageTarball,
-      OPENCLAW_DOCKER_E2E_DISABLE_RESOURCE_LIMITS: "1",
-      OPENCLAW_SKIP_CHANNELS: "1",
-      OPENCLAW_SKIP_PROVIDERS: "1",
-      OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_DIR: join(root, "artifacts"),
-      OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC: "openclaw@2026.7.1-2",
-      OPENCLAW_UPGRADE_SURVIVOR_E2E_SKIP_BUILD: "1",
-      OPENCLAW_UPGRADE_SURVIVOR_PUBLISHED_BASELINE: "1",
+      AFORA_CURRENT_PACKAGE_TGZ: packageTarball,
+      AFORA_DOCKER_E2E_DISABLE_RESOURCE_LIMITS: "1",
+      AFORA_SKIP_CHANNELS: "1",
+      AFORA_SKIP_PROVIDERS: "1",
+      AFORA_UPGRADE_SURVIVOR_ARTIFACT_DIR: join(root, "artifacts"),
+      AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC: "afora@2026.7.1-2",
+      AFORA_UPGRADE_SURVIVOR_E2E_SKIP_BUILD: "1",
+      AFORA_UPGRADE_SURVIVOR_PUBLISHED_BASELINE: "1",
       PATH: `${binDir}:${process.env.PATH ?? ""}`,
       TMPDIR: root,
       ...overrides,
@@ -79,7 +79,7 @@ done
 describe("standalone upgrade survivor plugin registry", () => {
   it("prepares and mounts a planner-owned registry for the current candidate", () => {
     const { captureDir, result } = runSurvivor({
-      OPENCLAW_UPGRADE_SURVIVOR_SCENARIO: "configured-plugin-installs",
+      AFORA_UPGRADE_SURVIVOR_SCENARIO: "configured-plugin-installs",
     });
 
     expect(result.status, result.stderr).toBe(0);
@@ -87,40 +87,40 @@ describe("standalone upgrade survivor plugin registry", () => {
       "scripts/test-docker-all.mjs --prepare-plugin-registry",
     );
     expect(readFileSync(join(captureDir, "node-env"), "utf8")).toBe(
-      "published-upgrade-survivor|openclaw@2026.7.1-2|configured-plugin-installs\n",
+      "published-upgrade-survivor|afora@2026.7.1-2|configured-plugin-installs\n",
     );
     expect(readFileSync(join(captureDir, "docker-args"), "utf8")).toContain(
-      ":/tmp/openclaw-prepublish-plugin-registry:ro",
+      ":/tmp/afora-prepublish-plugin-registry:ro",
     );
   });
 
   it("preserves an explicitly supplied registry without preparing another", () => {
-    const registryDir = tempDirs.make("openclaw-external-plugin-registry-");
+    const registryDir = tempDirs.make("afora-external-plugin-registry-");
     writeFileSync(join(registryDir, "prepublish-plugin-registry.json"), '{"external":true}\n');
 
     const { captureDir, result } = runSurvivor({
-      OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_DIR: registryDir,
-      OPENCLAW_UPGRADE_SURVIVOR_SCENARIO: "external-only-scenario",
+      AFORA_PREPUBLISH_PLUGIN_REGISTRY_DIR: registryDir,
+      AFORA_UPGRADE_SURVIVOR_SCENARIO: "external-only-scenario",
     });
 
     expect(result.status, result.stderr).toBe(0);
     expect(existsSync(join(captureDir, "node-args"))).toBe(false);
     expect(readFileSync(join(captureDir, "docker-args"), "utf8")).toContain(
-      `${registryDir}:/tmp/openclaw-prepublish-plugin-registry:ro`,
+      `${registryDir}:/tmp/afora-prepublish-plugin-registry:ro`,
     );
   });
 
   it("does not prepare a registry for a published candidate", () => {
     const { captureDir, packageTarball, result } = runSurvivor({
-      OPENCLAW_CURRENT_PACKAGE_TGZ: undefined,
-      OPENCLAW_UPGRADE_SURVIVOR_CANDIDATE: "openclaw@2026.8.1",
-      OPENCLAW_UPGRADE_SURVIVOR_SCENARIO: "published-only-scenario",
+      AFORA_CURRENT_PACKAGE_TGZ: undefined,
+      AFORA_UPGRADE_SURVIVOR_CANDIDATE: "afora@2026.8.1",
+      AFORA_UPGRADE_SURVIVOR_SCENARIO: "published-only-scenario",
     });
 
     expect(result.status, result.stderr).toBe(0);
     expect(existsSync(join(captureDir, "node-args"))).toBe(false);
     expect(readFileSync(join(captureDir, "docker-args"), "utf8")).not.toContain(
-      "/tmp/openclaw-prepublish-plugin-registry",
+      "/tmp/afora-prepublish-plugin-registry",
     );
     expect(existsSync(packageTarball)).toBe(true);
   });

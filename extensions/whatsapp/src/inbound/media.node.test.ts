@@ -33,7 +33,7 @@ vi.mock("baileys", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/media-store", () => ({
+vi.mock("afora-agent/plugin-sdk/media-store", () => ({
   saveMediaStream,
 }));
 

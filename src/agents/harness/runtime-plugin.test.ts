@@ -1,6 +1,6 @@
 // Verifies harness ownership, payload availability, and run-owned registry lookup.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { createEmptyPluginRegistry } from "../../plugins/registry-empty.js";
 import { resolveAgentRuntimePluginLoadPlan } from "./runtime-plugin-load-plan.js";
 import {
@@ -93,7 +93,7 @@ describe("harness runtime plugins", () => {
     const plan = resolveAgentRuntimePluginLoadPlan({
       config: { plugins: { allow: ["openai"] } },
       workspaceDir: "/tmp/workspace",
-      selections: [{ provider: "openai", modelId: "gpt-5.5", runtime: "openclaw" }],
+      selections: [{ provider: "openai", modelId: "gpt-5.5", runtime: "afora" }],
     });
 
     expect(plan.pluginIds).toEqual(["openai"]);
@@ -129,7 +129,7 @@ describe("harness runtime plugins", () => {
 
   const memorySelectionCases: Array<{
     name: string;
-    config: OpenClawConfig;
+    config: AforaConfig;
     expectedPluginIds: string[];
   }> = [
     {
@@ -346,7 +346,7 @@ describe("harness runtime plugins", () => {
   });
 
   it("keeps a restrictive allowlist authoritative", () => {
-    const config = { plugins: { allow: ["telegram"] } } as OpenClawConfig;
+    const config = { plugins: { allow: ["telegram"] } } as AforaConfig;
     mocks.resolveManifestActivationPlan.mockReturnValueOnce({ entries: [] });
     expect(
       resolveAgentHarnessRuntimeAvailability({

@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createQaBusState } from "./bus-state.js";
 import type { QaLabServerHandle } from "./lab-server.types.js";
@@ -72,7 +72,7 @@ beforeEach(() => {
       startedScenarioIds: context.selectedScenarios.map((scenario) => scenario.id),
       watchUrl: "http://127.0.0.1:43123",
       runtimeParityCell: {
-        runtime: params?.forcedRuntime ?? "openclaw",
+        runtime: params?.forcedRuntime ?? "afora",
         transcriptBytes: "",
         toolCalls: [],
         finalText: "ok",
@@ -131,7 +131,7 @@ describe("runtime parity Control UI ownership", () => {
       outputDir: "/qa-output",
       providerMode: "mock-openai",
       scenarioIds: [testCase.scenarioId],
-      runtimePair: ["openclaw", "codex"],
+      runtimePair: ["afora", "codex"],
       lab,
       startLab: async () => lab,
       ...(testCase.explicit === undefined ? {} : { controlUiEnabled: testCase.explicit }),
@@ -143,7 +143,7 @@ describe("runtime parity Control UI ownership", () => {
         controlUiEnabled: params.controlUiEnabled,
       })),
     ).toEqual([
-      { runtime: "openclaw", controlUiEnabled: testCase.enabled },
+      { runtime: "afora", controlUiEnabled: testCase.enabled },
       { runtime: "codex", controlUiEnabled: testCase.enabled },
     ]);
     expect(result.startedScenarioIds).toEqual([testCase.scenarioId]);
@@ -151,14 +151,14 @@ describe("runtime parity Control UI ownership", () => {
 
   it("forwards config mutation to both runtime cells", async () => {
     const lab = createControlUiTestLab();
-    const mutateConfig = vi.fn((config: OpenClawConfig) => config);
+    const mutateConfig = vi.fn((config: AforaConfig) => config);
 
     await runQaFlowSuiteFromRuntime({
       repoRoot: "/qa-repo",
       outputDir: "/qa-output",
       providerMode: "mock-openai",
       scenarioIds: ["runtime-channel"],
-      runtimePair: ["openclaw", "codex"],
+      runtimePair: ["afora", "codex"],
       lab,
       startLab: async () => lab,
       mutateConfig,

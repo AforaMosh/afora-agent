@@ -2,7 +2,7 @@
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import type { ChannelPluginCatalogEntry } from "../../channels/plugins/catalog.js";
 import { applyPluginAutoEnable } from "../../config/plugin-auto-enable.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import {
   resolveConfiguredChannelPluginIds,
@@ -20,7 +20,7 @@ import {
 import { getTrustedChannelPluginCatalogEntry } from "./trusted-catalog.js";
 
 type InstallResult = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   installed: boolean;
   pluginId?: string;
   status: OnboardingPluginInstallStatus;
@@ -41,7 +41,7 @@ function toOnboardingPluginInstallEntry(
 
 /** Install or reuse the plugin package required by a trusted channel catalog entry. */
 export async function ensureChannelSetupPluginInstalled(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   entry: ChannelPluginCatalogEntry;
   prompter: WizardPrompter;
   runtime: RuntimeEnv;
@@ -73,7 +73,7 @@ export async function ensureChannelSetupPluginInstalled(params: {
 }
 
 function loadChannelSetupPluginRegistry(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   runtime: RuntimeEnv;
   workspaceDir?: string;
   onlyPluginIds?: string[];
@@ -108,7 +108,7 @@ function loadChannelSetupPluginRegistry(params: {
 }
 
 function resolveScopedChannelPluginId(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   pluginId?: string;
   workspaceDir?: string;
@@ -126,7 +126,7 @@ function resolveScopedChannelPluginId(params: {
 }
 
 function resolveUniqueManifestScopedChannelPluginId(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   workspaceDir?: string;
 }): string | undefined {
@@ -141,7 +141,7 @@ function resolveUniqueManifestScopedChannelPluginId(params: {
 
 /** Load an inactive setup-plugin registry snapshot for resolving a channel without side effects. */
 export function loadChannelSetupPluginRegistrySnapshotForChannel(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   runtime: RuntimeEnv;
   channel: string;
   pluginId?: string;

@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"OpenClaw"</string>
+    <string name="app_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Afora"</string>
     <string name="chat" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"聊天"</string>
     <string name="session" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"会话"</string>
     <string name="model" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"模型"</string>
@@ -39,7 +39,7 @@
     <string name="agent" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"智能体"</string>
     <string name="system" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"系统"</string>
     <string name="start_conversation" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"开始对话"</string>
-    <string name="start_conversation_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"在手表上说话或输入文字。已配对的手机会通过其已认证的 OpenClaw 会话发送消息。"</string>
+    <string name="start_conversation_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"在手表上说话或输入文字。已配对的手机会通过其已认证的 Afora 会话发送消息。"</string>
     <string name="current_session" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"当前会话"</string>
     <string name="appearance" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"外观"</string>
     <string name="theme_dark" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"深色"</string>
@@ -61,28 +61,28 @@
     <string name="phone_ready" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"手机已就绪"</string>
     <string name="gateway_connected" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Gateway 已连接"</string>
     <string name="gateway_offline" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Gateway 离线"</string>
-    <string name="gateway_offline_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"请在已配对手机的 OpenClaw 中重新连接 Gateway。"</string>
-    <string name="open_phone_app" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"在手机上打开 OpenClaw"</string>
+    <string name="gateway_offline_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"请在已配对手机的 Afora 中重新连接 Gateway。"</string>
+    <string name="open_phone_app" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"在手机上打开 Afora"</string>
     <string name="phone_not_ready_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"手表本身不会启动 Gateway，也不会对其进行身份验证。"</string>
     <string name="phone_unavailable" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"无法连接手机"</string>
-    <string name="phone_unavailable_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"请将已配对的手机放在附近，并安装匹配的 OpenClaw 应用。"</string>
+    <string name="phone_unavailable_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"请将已配对的手机放在附近，并安装匹配的 Afora 应用。"</string>
     <string name="selection_not_found" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"所选项目已不可用"</string>
     <string name="message_not_sent" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"操作未被接受"</string>
     <string name="something_went_wrong" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"出现错误"</string>
     <string name="refresh_and_try_again" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"请刷新列表后重试。"</string>
     <string name="try_again" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"请在手表上重试。"</string>
     <string name="update_required" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"需要更新"</string>
-    <string name="update_required_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"请更新手机和手表上的 OpenClaw。"</string>
+    <string name="update_required_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"请更新手机和手表上的 Afora。"</string>
     <string name="refresh" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"刷新"</string>
     <string name="retry" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"重试"</string>
-    <string name="notification_channel_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"OpenClaw 回复"</string>
+    <string name="notification_channel_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Afora 回复"</string>
     <string name="notification_reply" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"回复"</string>
-    <string name="notification_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"OpenClaw 回复"</string>
+    <string name="notification_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Afora 回复"</string>
     <string name="notification_reply_failed_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"回复未发送"</string>
     <string name="notification_reply_failed_text" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"手机不可用。点按“回复”重试。"</string>
-    <string name="notification_phone_changed_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"打开 OpenClaw 进行回复"</string>
+    <string name="notification_phone_changed_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"打开 Afora 进行回复"</string>
     <string name="notification_phone_changed_text" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"您的首选手机已更改。回复前请打开应用以重新加载会话。"</string>
-    <string name="tile_label" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"OpenClaw"</string>
+    <string name="tile_label" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Afora"</string>
     <string name="tile_description" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"打开会话并通过已配对的手机回复"</string>
     <string name="tile_open" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"打开"</string>
     <string name="tile_phone_proxy" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"手机代理"</string>

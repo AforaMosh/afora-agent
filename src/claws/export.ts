@@ -2,23 +2,23 @@ import { createHash } from "node:crypto";
 import { closeSync } from "node:fs";
 import { mkdir, realpath, rm } from "node:fs/promises";
 import { basename, dirname, relative, resolve, sep } from "node:path";
-import { coerceErrorMessage } from "@openclaw/normalization-core/error-coercion";
+import { coerceErrorMessage } from "@afora/normalization-core/error-coercion";
 import { stringify as stringifyYaml } from "yaml";
 import { listAgentEntries, resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import { openLocalAgentAvatarFile } from "../agents/identity-avatar-file.js";
 import { MAX_WORKSPACE_BOOTSTRAP_FILE_BYTES } from "../agents/workspace-bootstrap-read.js";
 import { normalizeConfiguredMcpServers } from "../config/mcp-config-normalize.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { readFileDescriptorBoundedSync } from "../infra/boundary-file-read.js";
 import { FsSafeError, root as fsSafeRoot } from "../infra/fs-safe.js";
 import { AVATAR_MAX_BYTES, isAvatarDataUrl, isAvatarHttpUrl } from "../shared/avatar-policy.js";
-import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
+import type { AforaStateDatabaseOptions } from "../state/afora-state-db.js";
 import { resolveUserPath } from "../utils.js";
 import { readClawStatus } from "./lifecycle-state.js";
 import type { PackageRemovalDeps } from "./package-remove.js";
 import { readClawManifestFile } from "./reader.js";
 import { isPortableClawAvatar } from "./schema-portability.js";
-import { parseClawManifest, parseClawOpenClawProfile } from "./schema.js";
+import { parseClawManifest, parseClawAforaProfile } from "./schema.js";
 import { MAX_CLAW_MANIFEST_BYTES, MAX_MANAGED_WORKSPACE_BYTES } from "./source-limits.js";
 import { materializeClawToolProfile } from "./tool-profile-consent.js";
 import {
@@ -27,15 +27,15 @@ import {
   CLAW_SCHEMA_VERSION,
   type ClawManifest,
   type ClawMcpServer,
-  type ClawOpenClawExtension,
-  type ClawOpenClawProfile,
+  type ClawAforaExtension,
+  type ClawAforaProfile,
   type ClawPackagePreflight,
 } from "./types.js";
 
-export const CLAW_EXPORT_RESULT_SCHEMA_VERSION = "openclaw.clawExportResult.v1" as const;
+export const CLAW_EXPORT_RESULT_SCHEMA_VERSION = "afora.clawExportResult.v1" as const;
 const MAX_EXPORT_FILE_BYTES = 1024 * 1024;
 
-type AgentConfig = NonNullable<NonNullable<OpenClawConfig["agents"]>["list"]>[number];
+type AgentConfig = NonNullable<NonNullable<AforaConfig["agents"]>["list"]>[number];
 type ClawBootstrapFileName = (typeof CLAW_BOOTSTRAP_FILE_NAMES)[number];
 
 function decodeUtf8(content: Buffer): string | undefined {
@@ -52,7 +52,7 @@ type ClawExportResult = {
   agentId: string;
   outputDirectory: string;
   manifest: ClawManifest;
-  openClawProfile?: ClawOpenClawProfile;
+  aforaProfile?: ClawAforaProfile;
   filesWritten: string[];
 };
 
@@ -83,10 +83,10 @@ function portableAgent(agent: AgentConfig, avatar: string | undefined): ClawMani
   };
 }
 
-function portableOpenClawProfile(
+function portableAforaProfile(
   agent: AgentConfig,
-  extensions: ClawOpenClawExtension[],
-): ClawOpenClawProfile | undefined {
+  extensions: ClawAforaExtension[],
+): ClawAforaProfile | undefined {
   const configuredTools = {
     ...(agent.tools?.profile ? { profile: agent.tools.profile } : {}),
     ...(agent.tools?.allow?.length ? { allow: agent.tools.allow } : {}),
@@ -94,7 +94,7 @@ function portableOpenClawProfile(
     ...(agent.tools?.deny?.length ? { deny: agent.tools.deny } : {}),
     ...(agent.tools?.fs?.workspaceOnly === true ? { fs: { workspaceOnly: true as const } } : {}),
   };
-  let tools: NonNullable<ClawOpenClawProfile["agent"]["tools"]> = configuredTools;
+  let tools: NonNullable<ClawAforaProfile["agent"]["tools"]> = configuredTools;
   if (configuredTools.profile || configuredTools.allow?.length) {
     try {
       tools = materializeClawToolProfile({ tools: configuredTools }).tools ?? {};
@@ -198,7 +198,7 @@ function isClawBootstrapFileName(value: string): value is ClawBootstrapFileName 
   return (CLAW_BOOTSTRAP_FILE_NAMES as readonly string[]).includes(value);
 }
 function readPortableAvatar(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agent: AgentConfig;
   workspace: string;
 }): { source?: string; sidecar?: { path: string; content: Buffer } } {
@@ -311,8 +311,8 @@ function portableMcpServer(server: Record<string, unknown>): ClawMcpServer {
 export async function exportClawAgent(
   agentId: string,
   outputDirectory: string,
-  options: OpenClawStateDatabaseOptions & {
-    config: OpenClawConfig;
+  options: AforaStateDatabaseOptions & {
+    config: AforaConfig;
     packageDeps?: PackageRemovalDeps;
     packagePreflight?: ClawPackagePreflight;
     sourceMcpServers?: Record<string, Record<string, unknown>>;
@@ -484,10 +484,10 @@ export async function exportClawAgent(
       version: pkg.version,
     }))
     .toSorted((left, right) => comparePortableText(left.id, right.id));
-  const openClawProfile = portableOpenClawProfile(agent, extensions);
-  const openClawProfilePath = "profiles/openclaw.yml";
-  const openClawProfileRaw = openClawProfile
-    ? Buffer.from(stringifyYaml(openClawProfile))
+  const aforaProfile = portableAforaProfile(agent, extensions);
+  const aforaProfilePath = "profiles/afora.yml";
+  const aforaProfileRaw = aforaProfile
+    ? Buffer.from(stringifyYaml(aforaProfile))
     : undefined;
   const portablePackages = record.packages
     .filter((pkg) => !pkg.extension)
@@ -548,11 +548,11 @@ export async function exportClawAgent(
       parsed.diagnostics.map((diagnostic) => diagnostic.message).join("; "),
     );
   }
-  if (openClawProfile) {
-    const parsedProfile = parseClawOpenClawProfile(openClawProfile);
+  if (aforaProfile) {
+    const parsedProfile = parseClawAforaProfile(aforaProfile);
     if (!parsedProfile.ok) {
       throw new ClawExportError(
-        "export_openclaw_profile_invalid",
+        "export_afora_profile_invalid",
         parsedProfile.diagnostics.map((diagnostic) => diagnostic.message).join("; "),
       );
     }
@@ -579,23 +579,23 @@ export async function exportClawAgent(
       await output.write(path, file.content, { mkdir: true, overwrite: false });
       filesWritten.push(path);
     }
-    if (openClawProfileRaw) {
-      await output.write(openClawProfilePath, openClawProfileRaw, {
+    if (aforaProfileRaw) {
+      await output.write(aforaProfilePath, aforaProfileRaw, {
         mkdir: true,
         overwrite: false,
       });
-      filesWritten.push(openClawProfilePath);
+      filesWritten.push(aforaProfilePath);
     }
     const packageJson = {
-      name: `openclaw-claw-${record.install.agentId}`,
+      name: `afora-claw-${record.install.agentId}`,
       version: derivativePackageVersion(manifest, [
         ...contents,
         ...(clawMarkdownBody ? [{ path: "CLAW.md#body", content: clawMarkdownBody }] : []),
-        ...(openClawProfileRaw ? [{ path: openClawProfilePath, content: openClawProfileRaw }] : []),
+        ...(aforaProfileRaw ? [{ path: aforaProfilePath, content: aforaProfileRaw }] : []),
         ...(exportedBootstrap ? [{ path: "BOOTSTRAP.md", content: exportedBootstrap }] : []),
       ]),
       type: "module",
-      openclaw: { claw: "CLAW.md" },
+      afora: { claw: "CLAW.md" },
     };
     await output.write("package.json", Buffer.from(`${JSON.stringify(packageJson, null, 2)}\n`), {
       overwrite: false,
@@ -627,7 +627,7 @@ export async function exportClawAgent(
     agentId,
     outputDirectory: target,
     manifest,
-    ...(openClawProfile ? { openClawProfile } : {}),
+    ...(aforaProfile ? { aforaProfile } : {}),
     filesWritten,
   };
 }

@@ -1,10 +1,10 @@
 // Imessage tests cover doctor contract api plugin behavior.
-import { expectDefined } from "@openclaw/normalization-core";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import { expectDefined } from "@afora/normalization-core";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import { legacyConfigRules, normalizeCompatibilityConfig } from "./doctor-contract-api.js";
 
-function imessageConfig(entry: Record<string, unknown>): OpenClawConfig {
+function imessageConfig(entry: Record<string, unknown>): AforaConfig {
   return { channels: { imessage: entry } } as never;
 }
 

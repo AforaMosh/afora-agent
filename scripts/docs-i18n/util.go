@@ -14,8 +14,8 @@ const (
 	workflowVersion          = 16
 	promptVersion            = 32
 	docsI18nEngineName       = "codex"
-	envDocsI18nProvider      = "OPENCLAW_DOCS_I18N_PROVIDER"
-	envDocsI18nModel         = "OPENCLAW_DOCS_I18N_MODEL"
+	envDocsI18nProvider      = "AFORA_DOCS_I18N_PROVIDER"
+	envDocsI18nModel         = "AFORA_DOCS_I18N_MODEL"
 	defaultOpenAIModel       = "gpt-5.6"
 	defaultFallbackProvider  = "openai"
 	defaultFallbackModelName = defaultOpenAIModel
@@ -103,7 +103,7 @@ func isWhitespace(b byte) bool {
 
 func validateNoTranslationTranscriptArtifacts(source, translated string) error {
 	sourceLower := strings.ToLower(source)
-	for _, token := range []string{"<openclaw_docs_i18n_input>", "</openclaw_docs_i18n_input>"} {
+	for _, token := range []string{"<afora_docs_i18n_input>", "</afora_docs_i18n_input>"} {
 		if strings.Contains(strings.ToLower(translated), token) && !strings.Contains(sourceLower, token) {
 			return fmt.Errorf("agent transcript artifact leaked into translation: %q", token)
 		}

@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolvePreferredOpenClawTmpDir } from "../../infra/tmp-openclaw-dir.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { resolvePreferredAforaTmpDir } from "../../infra/tmp-afora-dir.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { createChannelIngressQueue } from "./ingress-queue.js";
 
 export type IngressDrainTestPayload = { text: string };
@@ -23,12 +23,12 @@ export function createTestIngressQueue(
 
 export async function withTempState<T>(fn: (stateDir: string) => Promise<T>): Promise<T> {
   const stateDir = await fs.mkdtemp(
-    path.join(resolvePreferredOpenClawTmpDir(), "openclaw-ingress-drain-"),
+    path.join(resolvePreferredAforaTmpDir(), "afora-ingress-drain-"),
   );
   try {
     return await fn(stateDir);
   } finally {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(stateDir, { recursive: true, force: true });
   }
 }

@@ -4,7 +4,7 @@ import path from "node:path";
 import { listAgentIds, resolveAgentDir } from "../agents/agent-scope.js";
 import { resolveSharedAuthStorePath } from "../agents/auth-profiles/path-resolve.js";
 import { resolveAuthProfileDatabasePath } from "../agents/auth-profiles/sqlite.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveUserPath } from "../utils.js";
 
 export type AuthProfileStoreTarget =
@@ -13,7 +13,7 @@ export type AuthProfileStoreTarget =
 
 /** Lists canonical auth-profile databases that may contain SecretRefs. */
 export function listAuthProfileStoreTargets(
-  config: OpenClawConfig,
+  config: AforaConfig,
   stateDir: string,
   env: NodeJS.ProcessEnv = process.env,
 ): AuthProfileStoreTarget[] {
@@ -22,8 +22,8 @@ export function listAuthProfileStoreTargets(
   // ambient process env, so scans do not include unrelated host-global stores.
   const scopedEnv = {
     ...env,
-    OPENCLAW_STATE_DIR: stateDir,
-    OPENCLAW_AGENT_DIR: undefined,
+    AFORA_STATE_DIR: stateDir,
+    AFORA_AGENT_DIR: undefined,
   };
   const addTarget = (target: AuthProfileStoreTarget) => {
     const key = path.resolve(target.path);

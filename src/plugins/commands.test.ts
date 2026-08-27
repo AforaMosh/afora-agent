@@ -137,7 +137,7 @@ beforeEach(() => {
     selection: {
       provider: "openai",
       modelId: "gpt-5.5",
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
     },
     model: {
       provider: "openai",
@@ -165,7 +165,7 @@ beforeEach(() => {
   completionMocks.resolveSimpleCompletionSelectionForAgent.mockReturnValue({
     provider: "openai",
     modelId: "gpt-5.5",
-    agentDir: "/tmp/openclaw-agent",
+    agentDir: "/tmp/afora-agent",
   });
   setActivePluginRegistry(
     createTestRegistry([
@@ -356,7 +356,7 @@ describe("registerPluginCommand", () => {
       expected: {
         ok: false,
         error:
-          "Agent prompt guidance 1 surface 1 must be one of: openclaw_main, pi_main, codex_app_server, cli_backend, acp_backend, subagent",
+          "Agent prompt guidance 1 surface 1 must be one of: afora_main, pi_main, codex_app_server, cli_backend, acp_backend, subagent",
       },
     },
     {
@@ -582,7 +582,7 @@ describe("registerPluginCommand", () => {
         "  Use /demo_cmd everywhere.  ",
         {
           text: "  Use /demo_cmd for main agent routing.  ",
-          surfaces: ["openclaw_main"],
+          surfaces: ["afora_main"],
         },
         {
           text: "Use /demo_cmd for subagents.",
@@ -598,7 +598,7 @@ describe("registerPluginCommand", () => {
       "Use /demo_cmd for main agent routing.",
       "Use /demo_cmd for subagents.",
     ]);
-    expect(listRegisteredPluginAgentPromptGuidance({ surface: "openclaw_main" })).toEqual([
+    expect(listRegisteredPluginAgentPromptGuidance({ surface: "afora_main" })).toEqual([
       "Use /demo_cmd everywhere.",
       "Use /demo_cmd for main agent routing.",
     ]);
@@ -715,7 +715,7 @@ describe("registerPluginCommand", () => {
     });
     const env = {
       ...process.env,
-      OPENCLAW_BUNDLED_PLUGINS_DIR: path.resolve("extensions"),
+      AFORA_BUNDLED_PLUGINS_DIR: path.resolve("extensions"),
     };
 
     expect(getPluginCommandSpecs("discord", { env })).toStrictEqual([]);
@@ -1527,7 +1527,7 @@ describe("registerPluginCommand", () => {
       senderId: "U123",
       isAuthorizedSender: true,
       agentId: "codex",
-      sessionKey: "plugin-binding:openclaw-codex-app-server:dm",
+      sessionKey: "plugin-binding:afora-codex-app-server:dm",
       authProfileId: "openai:owner@example.com",
       commandBody: "/runtimecheck",
       config: {} as never,

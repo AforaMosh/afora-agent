@@ -19,8 +19,8 @@ import {
 } from "./guard-shared.mjs";
 
 /** Marker used to identify dependency guard comments. */
-const dependencyChangeMarker = "<!-- openclaw:dependency-guard -->";
-const dependencyGraphGuardMarker = "<!-- openclaw:dependency-graph-guard -->";
+const dependencyChangeMarker = "<!-- afora:dependency-guard -->";
+const dependencyGraphGuardMarker = "<!-- afora:dependency-graph-guard -->";
 export const dependencyChangedLabel = "dependencies-changed";
 const allowDependenciesCommand = "/allow-dependencies-change";
 export {
@@ -33,7 +33,7 @@ export {
 
 const maxListedFiles = 25;
 const autoscrubCommitMessage = "chore: remove dependency lockfile change";
-const securityTeamSlug = process.env.OPENCLAW_SECURITY_TEAM_SLUG ?? "openclaw-secops";
+const securityTeamSlug = process.env.AFORA_SECURITY_TEAM_SLUG ?? "afora-secops";
 const dependencyManifestFields = [
   "dependencies",
   "devDependencies",
@@ -231,7 +231,7 @@ export async function findDependencyOverrideCommandAsync(input) {
 }
 
 function dependencyGraphGuardStateMarker(state, headSha) {
-  return `<!-- openclaw:dependency-graph-guard state=${state} sha=${headSha ?? "<head-sha>"} -->`;
+  return `<!-- afora:dependency-graph-guard state=${state} sha=${headSha ?? "<head-sha>"} -->`;
 }
 
 function hasDependencyGraphGuardState(comment, state, headSha) {
@@ -305,7 +305,7 @@ export function renderAuthorizedDependencyComment(override) {
     "",
     "### Dependency graph change authorized",
     "",
-    "This PR includes dependency graph changes. A repository admin or member of `@openclaw/openclaw-secops` authorized this exact head SHA with `/allow-dependencies-change`.",
+    "This PR includes dependency graph changes. A repository admin or member of `@AforaMosh/afora-agent-secops` authorized this exact head SHA with `/allow-dependencies-change`.",
     "",
     `- Approved SHA: ${markdownCode(override.sha)}`,
     `- Approved by: @${sanitizeGuardDisplayValue(override.login)}`,
@@ -324,7 +324,7 @@ export function renderTrustedDependencyComment({ actor, headSha }) {
     "",
     "### Dependency graph changes noted",
     "",
-    "This PR includes dependency graph changes. The dependency guard is informational because the PR author is a repository admin or a member of `@openclaw/openclaw-secops`.",
+    "This PR includes dependency graph changes. The dependency guard is informational because the PR author is a repository admin or a member of `@AforaMosh/afora-agent-secops`.",
     "",
     `- Current SHA: ${markdownCode(headSha ?? "<head-sha>")}`,
     `- Trusted actor: @${sanitizeGuardDisplayValue(actor.login)}`,
@@ -361,7 +361,7 @@ export function renderAutoscrubbedDependencyComment({ baseBranch, lockfileChange
 
 ### Dependency lockfile changes were removed
 
-OpenClaw does not accept package lockfile changes through PRs. This PR did not change dependency graph fields in package manifests, so the workflow restored the lockfile residue from the target branch automatically.
+Afora does not accept package lockfile changes through PRs. This PR did not change dependency graph fields in package manifests, so the workflow restored the lockfile residue from the target branch automatically.
 
 Restored lockfiles:
 ${fileLines.join("\n")}
@@ -436,14 +436,14 @@ export function renderBlockedDependencyComment({
     "",
     "### Dependency graph changes are blocked",
     "",
-    "OpenClaw does not accept dependency graph changes through PRs unless a repository admin or security explicitly authorizes the current head SHA. Dependency updates are generated internally by maintainers so external PRs cannot change the resolved graph.",
+    "Afora does not accept dependency graph changes through PRs unless a repository admin or security explicitly authorizes the current head SHA. Dependency updates are generated internally by maintainers so external PRs cannot change the resolved graph.",
     "",
     "Detected dependency graph changes:",
     ...reasons,
     ...autoscrubLines,
     ...removalSteps,
     "",
-    "If this PR intentionally needs a dependency graph change, ask a repository admin or member of `@openclaw/openclaw-secops` to comment:",
+    "If this PR intentionally needs a dependency graph change, ask a repository admin or member of `@AforaMosh/afora-agent-secops` to comment:",
     "",
     "```text",
     allowDependenciesCommand,
@@ -518,7 +518,7 @@ function renderManifestChangeLine(change) {
 }
 
 export function githubApi(token, options = {}) {
-  const api = createGitHubApi(token, { ...options, userAgent: "openclaw-dependency-guard" });
+  const api = createGitHubApi(token, { ...options, userAgent: "afora-dependency-guard" });
   return {
     ...api,
     graphql: async (query, variables) => {
@@ -703,16 +703,16 @@ async function main() {
   }
 
   const api = githubApi(token);
-  const autoscrubToken = process.env.OPENCLAW_DEPENDENCY_GUARD_AUTOSCRUB_TOKEN;
+  const autoscrubToken = process.env.AFORA_DEPENDENCY_GUARD_AUTOSCRUB_TOKEN;
   const autoscrubApi = autoscrubToken ? githubApi(autoscrubToken) : null;
-  const explicitSecurityApprovers = securityApproverSet(process.env.OPENCLAW_SECURITY_APPROVERS);
+  const explicitSecurityApprovers = securityApproverSet(process.env.AFORA_SECURITY_APPROVERS);
   const trustedCommentAuthors = dependencyGuardCommentAuthors(
-    process.env.OPENCLAW_DEPENDENCY_GUARD_COMMENT_BOTS,
+    process.env.AFORA_DEPENDENCY_GUARD_COMMENT_BOTS,
   );
   const issuePath = `/repos/${owner}/${repo}/issues/${eventPullRequest.number}`;
   const pullPath = `/repos/${owner}/${repo}/pulls/${eventPullRequest.number}`;
   const pullRequest = await api.request(pullPath);
-  const mode = process.env.OPENCLAW_DEPENDENCY_GUARD_MODE ?? "enforce";
+  const mode = process.env.AFORA_DEPENDENCY_GUARD_MODE ?? "enforce";
   const files = await api.paginate(`${pullPath}/files`);
   const dependencyFiles = files
     .map((file) => file.filename)

@@ -5,7 +5,7 @@ import {
   DmPolicySchema,
   GroupPolicySchema,
   MarkdownConfigSchema,
-} from "openclaw/plugin-sdk/channel-config-schema";
+} from "afora-agent/plugin-sdk/channel-config-schema";
 import { z } from "zod";
 import { buildSecretInputSchema } from "./secret-input.js";
 

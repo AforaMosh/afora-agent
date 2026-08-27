@@ -1,4 +1,4 @@
-import { sliceUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { sliceUtf16Safe } from "@afora/normalization-core/utf16-slice";
 
 /** Masks credential-like values without splitting UTF-16 surrogate pairs at the edges. */
 export function maskApiKey(value: string): string {

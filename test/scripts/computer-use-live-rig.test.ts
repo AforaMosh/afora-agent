@@ -26,12 +26,12 @@ function createRigRepository(): {
   fixture: string;
   proof: string;
 } {
-  const root = mkdtempSync(path.join(tmpdir(), "openclaw-computer-use-rig-"));
+  const root = mkdtempSync(path.join(tmpdir(), "afora-computer-use-rig-"));
   fixtureRoots.push(root);
   const scriptsDev = path.join(root, "scripts", "dev");
   const fakeBin = path.join(root, "fake-bin");
-  const app = path.join(root, "OpenClaw.app");
-  const appExecutable = path.join(app, "Contents", "MacOS", "OpenClaw");
+  const app = path.join(root, "Afora.app");
+  const appExecutable = path.join(app, "Contents", "MacOS", "Afora");
   mkdirSync(scriptsDev, { recursive: true });
   mkdirSync(fakeBin);
   mkdirSync(path.dirname(appExecutable), { recursive: true });
@@ -50,8 +50,8 @@ function createRigRepository(): {
   writeExecutable(path.join(fakeBin, "xdpyinfo"), "#!/bin/sh\nexit 0\n");
 
   runGit(root, "init", "-q");
-  runGit(root, "config", "user.name", "OpenClaw Test");
-  runGit(root, "config", "user.email", "openclaw-test@example.com");
+  runGit(root, "config", "user.name", "Afora Test");
+  runGit(root, "config", "user.email", "afora-test@example.com");
   runGit(root, "add", "scripts");
   runGit(root, "commit", "-q", "-m", "fixture");
 

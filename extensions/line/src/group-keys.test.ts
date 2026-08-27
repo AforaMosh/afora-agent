@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 // Line tests cover group keys plugin behavior.
 import { describe, expect, it } from "vitest";
 import {
@@ -57,7 +57,7 @@ describe("account-scoped LINE groups", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveLineGroupsConfig(cfg, "work")).toEqual({
       "group:g1": { requireMention: false },
@@ -104,7 +104,7 @@ describe("line group policy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveLineGroupRequireMention({ cfg, groupId: "same" })).toBe(false);
     expect(resolveLineGroupRequireMention({ cfg, groupId: "room:same" })).toBe(false);
@@ -135,7 +135,7 @@ describe("line group policy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveLineGroupRequireMention({ cfg, groupId: "g123", accountId: "work" })).toBe(false);
   });

@@ -1,5 +1,5 @@
 // Detects plugin version drift between config, manifests, and installs.
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { parseClawHubPluginSpec } from "../infra/clawhub-spec.js";
 import { parseRegistryNpmSpec } from "../infra/npm-registry-spec.js";
@@ -40,10 +40,10 @@ export function resolvePluginVersionDriftUpdateCommand(entry: PluginVersionDrift
   if (exactNpmPackageName) {
     const exactNpmTarget = `${exactNpmPackageName}@${entry.gatewayVersion}`;
     if (parseRegistryNpmSpec(exactNpmTarget)?.selectorKind === "exact-version") {
-      return `openclaw plugins update ${exactNpmTarget}`;
+      return `afora plugins update ${exactNpmTarget}`;
     }
   }
-  return `openclaw plugins update ${entry.pluginId}`;
+  return `afora plugins update ${entry.pluginId}`;
 }
 
 /**
@@ -55,7 +55,7 @@ function normalizeVersion(value: string): string {
   return value.replace(/-\d+$/, "");
 }
 
-function isPluginEnabled(config: OpenClawConfig | undefined, pluginId: string): boolean {
+function isPluginEnabled(config: AforaConfig | undefined, pluginId: string): boolean {
   const normalizedPluginConfig = normalizePluginsConfig(config?.plugins);
   return resolveEffectiveEnableState({
     id: pluginId,
@@ -90,10 +90,10 @@ function shouldCompareOfficialInstallToGateway(params: {
  * version and return any mismatches.
  *
  * @param params.gatewayVersion The gateway version string (typically the
- *   `version` field of the installed openclaw package.json).
+ *   `version` field of the installed afora package.json).
  * @param params.installRecords The full set of recorded plugin installs (as
  *   produced by `loadInstalledPluginIndexInstallRecords`).
- * @param params.config The merged daemon-side OpenClawConfig (optional).
+ * @param params.config The merged daemon-side AforaConfig (optional).
  *   Plugins inactive under the effective activation policy are skipped.
  *
  * The returned `drifts` list is sorted by `pluginId` for stable output.
@@ -101,7 +101,7 @@ function shouldCompareOfficialInstallToGateway(params: {
 export function detectPluginVersionDrift(params: {
   gatewayVersion: string;
   installRecords: Record<string, PluginInstallRecord>;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): PluginVersionDriftReport {
   const { gatewayVersion, installRecords, config } = params;
   const normalizedGateway = normalizeVersion(gatewayVersion);

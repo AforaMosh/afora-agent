@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import type { CommandOptions, SpawnResult } from "openclaw/plugin-sdk/process-runtime";
+import type { CommandOptions, SpawnResult } from "afora-agent/plugin-sdk/process-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createLinuxNodeCommands } from "./commands.js";
 import type { ResolvedLinuxNodePluginConfig } from "./config.js";

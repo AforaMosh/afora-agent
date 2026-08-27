@@ -4,7 +4,7 @@ description: "Manage Trello boards, lists, and cards via the Trello REST API."
 homepage: https://developer.atlassian.com/cloud/trello/rest/
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "emoji": "📋",
         "requires": { "bins": ["curl", "jq"], "env": ["TRELLO_API_KEY", "TRELLO_TOKEN"] },
@@ -24,7 +24,7 @@ metadata:
 
 # Trello Skill
 
-Manage Trello boards, lists, and cards directly from OpenClaw.
+Manage Trello boards, lists, and cards directly from Afora.
 
 ## Setup
 

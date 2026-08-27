@@ -1,7 +1,7 @@
 // Maps speech-synthesis output metadata to a playable MIME type. Provider
 // outputFormat strings are free-form (e.g. "mp3_44100_128", "pcm-wav"), so
 // matching is prefix/suffix-based with the file extension as a tiebreaker.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 
 export function inferSpeechMimeType(
   outputFormat: string | undefined,

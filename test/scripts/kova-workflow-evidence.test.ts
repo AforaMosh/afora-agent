@@ -12,7 +12,7 @@ type Pair = {
 };
 
 const PROFILE = "release";
-const TARGET = "local-build:/work/openclaw";
+const TARGET = "local-build:/work/afora";
 const MODEL = "gpt-5.6";
 const INCLUDE_FILTERS = ["scenario:scenario-a", "scenario:scenario-b"];
 const FIRST_PAIR: Pair = { scenario: "scenario-a", state: "state-a" };
@@ -62,7 +62,7 @@ function record(pair: Pair, repeatIndex: number, repeat: number, authMode: "live
             environmentDependent: true,
             requestCount: 1,
             models: [{ value: MODEL, count: 1 }],
-            source: "openclaw-timeline",
+            source: "afora-timeline",
           }
         : {
             authMode: "mock",
@@ -151,7 +151,7 @@ function runCli({
   repeat?: string;
   includeAuth?: boolean;
 } = {}) {
-  const root = tempRoots.make("openclaw-kova-evidence-");
+  const root = tempRoots.make("afora-kova-evidence-");
   const planPath = join(root, "plan.json");
   const reportPath = join(root, "report.json");
   writeFileSync(planPath, lanePlan);

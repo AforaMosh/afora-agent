@@ -2,13 +2,13 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { testing as sessionMcpTesting } from "../../agents/agent-bundle-mcp-runtime.js";
 import { getOrCreateSessionMcpRuntime } from "../../agents/agent-bundle-mcp-tools.js";
 import * as bootstrapCache from "../../agents/bootstrap-cache.js";
 import { buildChannelInboundEventContext } from "../../channels/inbound-event/context.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import type { InternalSessionEntry as SessionEntry } from "../../config/sessions.js";
 import {
   appendTranscriptMessage,
@@ -39,10 +39,10 @@ import {
 } from "../../sessions/session-lifecycle-admission.js";
 import { listSessionStateEventsSince } from "../../sessions/session-state-events.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  resolveIncognitoOpenClawAgentSqlitePath,
-} from "../../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  resolveIncognitoAforaAgentSqlitePath,
+} from "../../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import {
   createChannelTestPluginBase,
   createTestRegistry,
@@ -129,7 +129,7 @@ let suiteRoot = "";
 let suiteCase = 0;
 
 beforeAll(async () => {
-  suiteRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-session-suite-"));
+  suiteRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-session-suite-"));
 });
 
 afterAll(async () => {
@@ -186,7 +186,7 @@ describe("resolveReplySessionPreprocessingState", () => {
 
   function resolvePreprocessingState(storePath: string) {
     return resolveReplySessionPreprocessingState({
-      cfg: { session: { store: storePath } } as OpenClawConfig,
+      cfg: { session: { store: storePath } } as AforaConfig,
       ctx: finalizeInboundContext({
         Body: "<media:audio>",
         RawBody: "<media:audio>",
@@ -202,7 +202,7 @@ describe("resolveReplySessionPreprocessingState", () => {
   }
 
   it("returns the valid durable harness owner lock before preprocessing", async () => {
-    const storePath = await createStorePath("openclaw-media-preflight-valid-");
+    const storePath = await createStorePath("afora-media-preflight-valid-");
     await writeSessionStoreFast(storePath, {
       [sessionKey]: {
         sessionId: "native-media-session",
@@ -238,7 +238,7 @@ describe("resolveReplySessionPreprocessingState", () => {
       },
     ],
   ] as const)("rejects a reserved %s before preprocessing", async (_label, entry) => {
-    const storePath = await createStorePath(`openclaw-media-preflight-invalid-${_label}-`);
+    const storePath = await createStorePath(`afora-media-preflight-invalid-${_label}-`);
     await writeSessionStoreFast(storePath, entry ? { [sessionKey]: entry } : {});
 
     expect(() => resolvePreprocessingState(storePath)).toThrow();
@@ -429,18 +429,18 @@ beforeEach(() => {
     });
 });
 afterEach(async () => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   resetSystemEventsForTest();
   await sessionMcpTesting.resetSessionMcpRuntimeManager();
 });
 describe("initSessionState guarded initialization", () => {
   it("pins an admitted non-default-agent incognito session to its process-local store", async () => {
-    const stateDir = await makeCaseDir("openclaw-session-incognito-init-");
-    await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+    const stateDir = await makeCaseDir("afora-session-incognito-init-");
+    await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
       const agentId = "work";
       const sessionId = "incognito-work-session";
       const sessionKey = "agent:work:dashboard:incognito-work-session";
-      const storePath = resolveIncognitoOpenClawAgentSqlitePath({ agentId });
+      const storePath = resolveIncognitoAforaAgentSqlitePath({ agentId });
       await upsertSessionEntryCore(
         { agentId, sessionKey, storePath },
         { sessionId, incognito: true, updatedAt: Date.now() },
@@ -452,7 +452,7 @@ describe("initSessionState guarded initialization", () => {
             cfg: {
               agents: { list: [{ id: "main", default: true }, { id: agentId }] },
               session: { store: path.join(stateDir, "durable", "{agentId}", "sessions.json") },
-            } as OpenClawConfig,
+            } as AforaConfig,
             ctx: {
               Body: "hello from incognito webchat",
               Provider: "webchat",
@@ -470,13 +470,13 @@ describe("initSessionState guarded initialization", () => {
           storePath,
         });
       } finally {
-        closeOpenClawAgentDatabasesForTest();
+        closeAforaAgentDatabasesForTest();
       }
     });
   });
 
   it("rejects inbound work for an archived session", async () => {
-    const storePath = await createStorePath("openclaw-session-init-archived-");
+    const storePath = await createStorePath("afora-session-init-archived-");
     const sessionKey = "agent:main:telegram:chat:archived";
     await writeSessionStoreFast(storePath, {
       [sessionKey]: {
@@ -492,7 +492,7 @@ describe("initSessionState guarded initialization", () => {
           Body: "blocked while archived",
           SessionKey: sessionKey,
         },
-        cfg: { session: { store: storePath } } as OpenClawConfig,
+        cfg: { session: { store: storePath } } as AforaConfig,
       }),
     ).rejects.toThrow(
       'Session "agent:main:telegram:chat:archived" is archived. Restore it before starting new work.',
@@ -500,7 +500,7 @@ describe("initSessionState guarded initialization", () => {
   });
 
   it("serializes concurrent initializers before reading the guarded snapshot", async () => {
-    const storePath = await createStorePath("openclaw-session-init-race-");
+    const storePath = await createStorePath("afora-session-init-race-");
     const sessionKey = "agent:main:telegram:chat:42";
     await writeSessionStoreFast(storePath, {
       [sessionKey]: {
@@ -508,7 +508,7 @@ describe("initSessionState guarded initialization", () => {
         updatedAt: 100,
       },
     });
-    const cfg: OpenClawConfig = { session: { store: storePath } };
+    const cfg: AforaConfig = { session: { store: storePath } };
     let releaseWriter = () => {};
     const writerReleased = new Promise<void>((resolve) => {
       releaseWriter = resolve;
@@ -543,7 +543,7 @@ describe("initSessionState guarded initialization", () => {
 describe("initSessionState thread forking", () => {
   it("forks a new SQLite session from the parent session", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const root = await makeCaseDir("openclaw-thread-session-");
+    const root = await makeCaseDir("afora-thread-session-");
     const parentSessionId = "parent-session";
     const parentSessionFile = path.join(root, "parent.jsonl");
 
@@ -559,7 +559,7 @@ describe("initSessionState thread forking", () => {
 
     const cfg = {
       session: { store: storePath },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const threadSessionKey = "agent:main:slack:channel:c1:thread:123";
     const threadLabel = "Slack thread #general: starter";
@@ -595,7 +595,7 @@ describe("initSessionState thread forking", () => {
 
   it("forks from parent when thread session key already exists but was not forked yet", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const root = await makeCaseDir("openclaw-thread-session-existing-");
+    const root = await makeCaseDir("afora-thread-session-existing-");
     const parentSessionId = "parent-session";
     const storePath = path.join(root, "sessions.json");
     const parentSessionKey = "agent:main:slack:channel:c1";
@@ -631,7 +631,7 @@ describe("initSessionState thread forking", () => {
 
     const cfg = {
       session: { store: storePath },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const first = await initSessionState({
       ctx: {
@@ -673,7 +673,7 @@ describe("initSessionState thread forking", () => {
   });
 
   it("skips fork and creates fresh session when parent tokens exceed threshold", async () => {
-    const root = await makeCaseDir("openclaw-thread-session-overflow-");
+    const root = await makeCaseDir("afora-thread-session-overflow-");
     const parentSessionId = "parent-overflow";
     const parentSessionFile = path.join(root, "parent.jsonl");
 
@@ -691,7 +691,7 @@ describe("initSessionState thread forking", () => {
 
     const cfg = {
       session: { store: storePath },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const threadSessionKey = "agent:main:slack:channel:c1:thread:456";
     const result = await initSessionState({
@@ -715,7 +715,7 @@ describe("initSessionState thread forking", () => {
   });
 
   it("skips fork when resolved parent token estimate exceeds threshold", async () => {
-    const root = await makeCaseDir("openclaw-thread-session-overflow-estimated-");
+    const root = await makeCaseDir("afora-thread-session-overflow-estimated-");
     const parentSessionId = "parent-overflow-estimated";
     const parentSessionFile = path.join(root, "parent.jsonl");
 
@@ -734,7 +734,7 @@ describe("initSessionState thread forking", () => {
 
     const cfg = {
       session: { store: storePath },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const threadSessionKey = "agent:main:slack:channel:c1:thread:estimated";
     const result = await initSessionState({
@@ -761,12 +761,12 @@ describe("initSessionState thread forking", () => {
   });
 
   it("records topic-specific SQLite session identity when MessageThreadId is present", async () => {
-    const root = await makeCaseDir("openclaw-topic-session-");
+    const root = await makeCaseDir("afora-topic-session-");
     const storePath = path.join(root, "sessions.json");
 
     const cfg = {
       session: { store: storePath },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -782,12 +782,12 @@ describe("initSessionState thread forking", () => {
   });
 
   it("records topic-specific SQLite session identity from SessionKey", async () => {
-    const root = await makeCaseDir("openclaw-topic-session-key-");
+    const root = await makeCaseDir("afora-topic-session-key-");
     const storePath = path.join(root, "sessions.json");
 
     const cfg = {
       session: { store: storePath },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     setActivePluginRegistry(createSessionConversationTestRegistry());
     try {
@@ -809,9 +809,9 @@ describe("initSessionState thread forking", () => {
 
 describe("initSessionState RawBody", () => {
   it("uses RawBody for command extraction and reset triggers when Body contains wrapped context", async () => {
-    const root = await makeCaseDir("openclaw-rawbody-");
+    const root = await makeCaseDir("afora-rawbody-");
     const storePath = path.join(root, "sessions.json");
-    const cfg: OpenClawConfig = { session: { store: storePath } };
+    const cfg: AforaConfig = { session: { store: storePath } };
 
     const statusResult = await initSessionState({
       ctx: {
@@ -838,7 +838,7 @@ describe("initSessionState RawBody", () => {
   });
 
   it("preserves argument casing while still matching reset triggers case-insensitively", async () => {
-    const root = await makeCaseDir("openclaw-rawbody-reset-case-");
+    const root = await makeCaseDir("afora-rawbody-reset-case-");
     const storePath = path.join(root, "sessions.json");
 
     const cfg = {
@@ -846,7 +846,7 @@ describe("initSessionState RawBody", () => {
         store: storePath,
         resetTriggers: ["/new"],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const ctx = {
       RawBody: "/NEW KeepThisCase",
@@ -887,7 +887,7 @@ describe("initSessionState RawBody", () => {
       expected: "explain [Current message - respond to this] and /new syntax",
     },
   ])("preserves the raw message after a reset trigger", async ({ body, expected }) => {
-    const root = await makeCaseDir("openclaw-rawbody-reset-message-");
+    const root = await makeCaseDir("afora-rawbody-reset-message-");
     const storePath = path.join(root, "sessions.json");
     const result = await initSessionState({
       ctx: {
@@ -900,7 +900,7 @@ describe("initSessionState RawBody", () => {
           store: storePath,
           resetTriggers: ["/new"],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(result.isNewSession).toBe(true);
@@ -908,10 +908,10 @@ describe("initSessionState RawBody", () => {
     expect(result.sessionCtx.agentText).toBe(expected);
   });
 
-  it.each(["@openclaw /new", "@openclaw/new"])(
+  it.each(["@afora /new", "@afora/new"])(
     "preserves bracketed multiline payloads after group mention form %s",
     async (prefix) => {
-      const root = await makeCaseDir("openclaw-group-reset-message-");
+      const root = await makeCaseDir("afora-group-reset-message-");
       const storePath = path.join(root, "sessions.json");
       const expected = "review [Q3]\n[Current message - respond to this]\nand explain /new syntax";
       const result = await initSessionState({
@@ -927,10 +927,10 @@ describe("initSessionState RawBody", () => {
           },
           messages: {
             groupChat: {
-              mentionPatterns: [String.raw`@openclaw`],
+              mentionPatterns: [String.raw`@afora`],
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
       });
 
       expect(result.isNewSession).toBe(true);
@@ -942,26 +942,26 @@ describe("initSessionState RawBody", () => {
   it.each([
     {
       name: "command suffix",
-      body: "/new@openclaw keep [this]\nline",
+      body: "/new@afora keep [this]\nline",
       resetTriggers: ["/new"],
       expected: "keep [this]\nline",
     },
     {
       name: "custom trigger and command suffix",
-      body: "/fresh@openclaw keep [this]\nline",
+      body: "/fresh@afora keep [this]\nline",
       resetTriggers: ["/fresh"],
       expected: "keep [this]\nline",
     },
     {
       name: "empty payload",
-      body: "/new@openclaw",
+      body: "/new@afora",
       resetTriggers: ["/new"],
       expected: "",
       omitBotUsername: true,
     },
     {
       name: "configured mention alias without bot username",
-      body: "/new@openclaw keep [this]\nline",
+      body: "/new@afora keep [this]\nline",
       resetTriggers: ["/new"],
       expected: "keep [this]\nline",
       omitBotUsername: true,
@@ -969,12 +969,12 @@ describe("initSessionState RawBody", () => {
   ])(
     "preserves reset payloads with $name",
     async ({ body, resetTriggers, expected, omitBotUsername }) => {
-      const root = await makeCaseDir("openclaw-suffixed-reset-message-");
+      const root = await makeCaseDir("afora-suffixed-reset-message-");
       const storePath = path.join(root, "sessions.json");
       const result = await initSessionState({
         ctx: {
           RawBody: body,
-          BotUsername: omitBotUsername ? undefined : "openclaw",
+          BotUsername: omitBotUsername ? undefined : "afora",
           ChatType: omitBotUsername ? "group" : "direct",
           SessionKey: "agent:main:telegram:dm:s1",
         },
@@ -985,10 +985,10 @@ describe("initSessionState RawBody", () => {
           },
           messages: {
             groupChat: {
-              mentionPatterns: [String.raw`@openclaw`],
+              mentionPatterns: [String.raw`@afora`],
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
       });
 
       expect(result.isNewSession).toBe(true);
@@ -998,7 +998,7 @@ describe("initSessionState RawBody", () => {
   );
 
   it("anchors a reset payload after an explicit channel envelope and sender prefix", async () => {
-    const root = await makeCaseDir("openclaw-structural-reset-message-");
+    const root = await makeCaseDir("afora-structural-reset-message-");
     const storePath = path.join(root, "sessions.json");
     const result = await initSessionState({
       ctx: {
@@ -1013,7 +1013,7 @@ describe("initSessionState RawBody", () => {
           store: storePath,
           resetTriggers: ["/new"],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(result.isNewSession).toBe(true);
@@ -1022,7 +1022,7 @@ describe("initSessionState RawBody", () => {
   });
 
   it("does not search past an anchored reset-like payload", async () => {
-    const root = await makeCaseDir("openclaw-reset-like-sender-message-");
+    const root = await makeCaseDir("afora-reset-like-sender-message-");
     const storePath = path.join(root, "sessions.json");
     const result = await initSessionState({
       ctx: {
@@ -1036,7 +1036,7 @@ describe("initSessionState RawBody", () => {
           store: storePath,
           resetTriggers: ["/new"],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(result.isNewSession).toBe(true);
@@ -1045,7 +1045,7 @@ describe("initSessionState RawBody", () => {
   });
 
   it("keeps quoted markers and reset text in history out of reset parsing", async () => {
-    const root = await makeCaseDir("openclaw-history-reset-message-");
+    const root = await makeCaseDir("afora-history-reset-message-");
     const storePath = path.join(root, "sessions.json");
     const payload = "review [Current message - respond to this]\nand explain /new syntax";
     const ctx = buildChannelInboundEventContext({
@@ -1077,7 +1077,7 @@ describe("initSessionState RawBody", () => {
       ctx,
       cfg: {
         session: { store: storePath, resetTriggers: ["/new"] },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(ctx).toMatchObject({
@@ -1090,10 +1090,10 @@ describe("initSessionState RawBody", () => {
   });
 
   it("supports a bounded Body-only legacy envelope without searching flat history", async () => {
-    const storePath = await createStorePath("openclaw-body-only-reset-");
+    const storePath = await createStorePath("afora-body-only-reset-");
     const cfg = {
       session: { store: storePath, resetTriggers: ["/new"] },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const legacy = await initSessionState({
       ctx: {
@@ -1126,10 +1126,10 @@ describe("initSessionState RawBody", () => {
   });
 
   it("does not treat transcript-only or explicitly empty raw text as a reset command", async () => {
-    const storePath = await createStorePath("openclaw-audio-reset-");
+    const storePath = await createStorePath("afora-audio-reset-");
     const cfg = {
       session: { store: storePath, resetTriggers: ["/new"] },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const transcriptOnly = await initSessionState({
       ctx: {
@@ -1170,17 +1170,17 @@ describe("initSessionState RawBody", () => {
   });
 
   it("does not rotate an unauthorized group session with a mentioned reset payload", async () => {
-    const storePath = await createStorePath("openclaw-group-reset-unauthorized-");
+    const storePath = await createStorePath("afora-group-reset-unauthorized-");
     const result = await initSessionState({
       ctx: {
-        RawBody: "@openclaw /new keep [Q3]\nline 2",
+        RawBody: "@afora /new keep [Q3]\nline 2",
         ChatType: "group",
         SessionKey: "agent:main:whatsapp:group:g1",
       },
       cfg: {
         session: { store: storePath, resetTriggers: ["/new"] },
-        messages: { groupChat: { mentionPatterns: [String.raw`@openclaw`] } },
-      } as OpenClawConfig,
+        messages: { groupChat: { mentionPatterns: [String.raw`@afora`] } },
+      } as AforaConfig,
       commandAuthorized: false,
     });
 
@@ -1189,7 +1189,7 @@ describe("initSessionState RawBody", () => {
   });
 
   it("drops cached skills snapshot when /new rotates an existing session", async () => {
-    const root = await makeCaseDir("openclaw-rawbody-reset-skills-");
+    const root = await makeCaseDir("afora-rawbody-reset-skills-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:main:signal:direct:uuid:reset-skills";
     const existingSessionId = "session-with-stale-skills";
@@ -1236,7 +1236,7 @@ describe("initSessionState RawBody", () => {
         store: storePath,
         resetTriggers: ["/new"],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -1280,7 +1280,7 @@ describe("initSessionState RawBody", () => {
   });
 
   it("drains stale system events when /new rotates an existing session", async () => {
-    const root = await makeCaseDir("openclaw-rawbody-reset-system-events-");
+    const root = await makeCaseDir("afora-rawbody-reset-system-events-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:main:whatsapp:dm:system-events";
     const existingSessionId = "session-with-stale-events";
@@ -1300,7 +1300,7 @@ describe("initSessionState RawBody", () => {
         store: storePath,
         resetTriggers: ["/new"],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -1332,7 +1332,7 @@ describe("initSessionState RawBody", () => {
     // rollover. Previously the carryover was gated on resetTriggered, so the
     // next non-/new turn dropped the override and reverted to the default
     // model despite the "Model set to ... for this session" ack.
-    const root = await makeCaseDir("openclaw-daily-rollover-model-");
+    const root = await makeCaseDir("afora-daily-rollover-model-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:main:discord:channel:daily-rollover";
     const existingSessionId = "session-before-daily-reset";
@@ -1356,7 +1356,7 @@ describe("initSessionState RawBody", () => {
 
     const cfg = {
       session: { store: storePath, reset: { mode: "daily", atHour: 4 } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -1388,7 +1388,7 @@ describe("initSessionState RawBody", () => {
   it.each(["owed", "unresolved"] as const)(
     "preserves %s delivery-notice debt across an implicit daily stale rollover",
     async (noticeState) => {
-      const root = await makeCaseDir("openclaw-daily-rollover-notice-");
+      const root = await makeCaseDir("afora-daily-rollover-notice-");
       const storePath = path.join(root, "sessions.json");
       const sessionKey = "agent:main:telegram:notice-rollover";
       const staleStartedAt = Date.now() - 48 * 60 * 60 * 1000;
@@ -1418,7 +1418,7 @@ describe("initSessionState RawBody", () => {
         },
         cfg: {
           session: { store: storePath, reset: { mode: "daily", atHour: 4 } },
-        } as OpenClawConfig,
+        } as AforaConfig,
       });
 
       // Erasing the debt at rollover would recreate the silent ambiguous loss.
@@ -1433,12 +1433,12 @@ describe("initSessionState RawBody", () => {
   );
 
   it("stamps trusted creation provenance when initializing a missing session", async () => {
-    const root = await makeCaseDir("openclaw-session-creation-provenance-");
+    const root = await makeCaseDir("afora-session-creation-provenance-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:main:dashboard:created";
 
     const result = await withEnvAsync(
-      { OPENCLAW_STATE_DIR: path.join(root, "state") },
+      { AFORA_STATE_DIR: path.join(root, "state") },
       async () => {
         const initialized = await initSessionState({
           ctx: {
@@ -1450,7 +1450,7 @@ describe("initSessionState RawBody", () => {
               actor: { type: "human", id: "profile-ada" },
             },
           },
-          cfg: { session: { store: storePath } } as OpenClawConfig,
+          cfg: { session: { store: storePath } } as AforaConfig,
         });
         expect(listSessionStateEventsSince(sessionKey, "main", 0, 20).events).toContainEqual(
           expect.objectContaining({
@@ -1482,9 +1482,9 @@ describe("initSessionState RawBody", () => {
   });
 
   it("records channel senders but skips unknown and own-agent prompt identities", async () => {
-    const root = await makeCaseDir("openclaw-session-participant-admission-");
+    const root = await makeCaseDir("afora-session-participant-admission-");
     const storePath = path.join(root, "sessions.json");
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as AforaConfig;
 
     await initSessionState({
       ctx: {
@@ -1529,7 +1529,7 @@ describe("initSessionState RawBody", () => {
   });
 
   it("preserves session lineage across an implicit daily stale rollover (#90119)", async () => {
-    const root = await makeCaseDir("openclaw-daily-rollover-lineage-");
+    const root = await makeCaseDir("afora-daily-rollover-lineage-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:main:subagent:daily-rollover-lineage";
     const existingSessionId = "session-before-daily-reset-lineage";
@@ -1571,7 +1571,7 @@ describe("initSessionState RawBody", () => {
       },
       cfg: {
         session: { store: storePath, reset: { mode: "daily", atHour: 4 } },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(result.isNewSession).toBe(true);
@@ -1647,7 +1647,7 @@ describe("initSessionState RawBody", () => {
       absent: ["modelOverride", "providerOverride"],
     },
   ])("$name", async (scenario) => {
-    const storePath = await createStorePath(`openclaw-daily-rollover-${scenario.slug}-`);
+    const storePath = await createStorePath(`afora-daily-rollover-${scenario.slug}-`);
     const sessionKey =
       "sessionKey" in scenario && typeof scenario.sessionKey === "string"
         ? scenario.sessionKey
@@ -1672,7 +1672,7 @@ describe("initSessionState RawBody", () => {
       },
       cfg: {
         session: { store: storePath, reset: { mode: "daily", atHour: 4 } },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(result.isNewSession).toBe(true);
@@ -1723,7 +1723,7 @@ describe("initSessionState RawBody", () => {
       includeBinding: false,
     },
   ])("$name", async (scenario) => {
-    const storePath = await createStorePath("openclaw-rawbody-acp-reset-");
+    const storePath = await createStorePath("afora-rawbody-acp-reset-");
     const sessionKey = "agent:codex:acp:binding:discord:default:feedface";
     const existingSessionId = "session-existing";
     await writeSessionStoreFast(storePath, {
@@ -1762,7 +1762,7 @@ describe("initSessionState RawBody", () => {
         },
         ...(bindings ? { bindings } : {}),
         channels: { discord: { allowFrom: ["*"] } },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(result.resetTriggered).toBe(true);
@@ -1770,7 +1770,7 @@ describe("initSessionState RawBody", () => {
     expect(result.sessionId).not.toBe(existingSessionId);
   });
   it("does not suppress /new when active conversation binding points to a non-ACP session", async () => {
-    const root = await makeCaseDir("openclaw-rawbody-acp-nonacp-binding-");
+    const root = await makeCaseDir("afora-rawbody-acp-nonacp-binding-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:codex:acp:binding:discord:default:feedface";
     const existingSessionId = "session-existing";
@@ -1805,7 +1805,7 @@ describe("initSessionState RawBody", () => {
           allowFrom: ["*"],
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     sessionBindingTesting.resetSessionBindingAdaptersForTests();
     registerSessionBindingAdapter({
@@ -1855,7 +1855,7 @@ describe("initSessionState RawBody", () => {
   });
 
   it("does not suppress /new when active target session key is non-ACP even with configured ACP binding", async () => {
-    const root = await makeCaseDir("openclaw-rawbody-acp-configured-fallback-target-");
+    const root = await makeCaseDir("afora-rawbody-acp-configured-fallback-target-");
     const storePath = path.join(root, "sessions.json");
     const channelId = "1478836151241412759";
     const fallbackSessionKey = "agent:main:discord:channel:focus-target";
@@ -1889,7 +1889,7 @@ describe("initSessionState RawBody", () => {
           allowFrom: ["*"],
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -1916,7 +1916,7 @@ describe("initSessionState RawBody", () => {
     const targetSessionKey = "agent:main:main";
     const cfg = {
       session: { store: storePath },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     setMinimalCurrentConversationBindingRegistryForTests();
     registerCurrentConversationBindingAdapterForTest({
@@ -1957,15 +1957,15 @@ describe("initSessionState RawBody", () => {
   });
 
   it("uses the default per-agent sessions store when config store is unset", async () => {
-    const root = await makeCaseDir("openclaw-session-store-default-");
-    const stateDir = path.join(root, ".openclaw");
+    const root = await makeCaseDir("afora-session-store-default-");
+    const stateDir = path.join(root, ".afora");
     const agentId = "worker1";
     const sessionKey = `agent:${agentId}:telegram:12345`;
     const sessionId = "sess-worker-1";
     const sessionFile = path.join(stateDir, "agents", agentId, "sessions", `${sessionId}.jsonl`);
     const storePath = path.join(stateDir, "agents", agentId, "sessions", "sessions.json");
 
-    await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+    await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
       await fs.mkdir(path.dirname(storePath), { recursive: true });
       await writeSessionStoreFast(storePath, {
         [sessionKey]: {
@@ -1975,7 +1975,7 @@ describe("initSessionState RawBody", () => {
         },
       });
 
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const result = await initSessionState({
         ctx: {
           Body: "hello",
@@ -2051,7 +2051,7 @@ describe("initSessionState RawBody", () => {
       channel: conversation.channel as "slack" | "signal" | "googlechat",
       accountId: "default",
     });
-    const storePath = await createStorePath("openclaw-generic-current-binding-");
+    const storePath = await createStorePath("afora-generic-current-binding-");
     const boundSessionKey = `agent:codex:acp:binding:${conversation.channel}:default:test`;
 
     await getSessionBindingService().bind({
@@ -2068,7 +2068,7 @@ describe("initSessionState RawBody", () => {
       },
       cfg: {
         session: { store: storePath },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(result.sessionKey).toBe(boundSessionKey);
@@ -2080,7 +2080,7 @@ describe("initSessionState RawBody", () => {
       channel: "slack",
       accountId: "default",
     });
-    const storePath = await createStorePath("openclaw-bound-admission-id-");
+    const storePath = await createStorePath("afora-bound-admission-id-");
     const sourceSessionKey = "agent:main:slack:source";
     const sourceSessionId = "source-admission-session";
     const boundSessionKey = "agent:main:plugin-binding:codex:bound-target";
@@ -2111,7 +2111,7 @@ describe("initSessionState RawBody", () => {
         SenderId: "U123",
         ChatType: "direct",
       },
-      cfg: { session: { store: storePath } } as OpenClawConfig,
+      cfg: { session: { store: storePath } } as AforaConfig,
       expectedExistingSessionId: sourceSessionId,
       pinExpectedExistingSession: true,
     });
@@ -2205,7 +2205,7 @@ describe("initSessionState reset policy", () => {
     },
   ])("$name", async (scenario) => {
     vi.setSystemTime(scenario.now);
-    const storePath = await createStorePath(`openclaw-reset-${scenario.slug}-`);
+    const storePath = await createStorePath(`afora-reset-${scenario.slug}-`);
     const sessionKey = scenario.slug.startsWith("idle-")
       ? "agent:main:main"
       : `agent:main:whatsapp:dm:${scenario.slug}`;
@@ -2216,7 +2216,7 @@ describe("initSessionState reset policy", () => {
 
     const result = await initSessionState({
       ctx: { Body: "hello", SessionKey: sessionKey, Provider: "internal", Surface: "internal" },
-      cfg: { session: { store: storePath, ...scenario.session } } as OpenClawConfig,
+      cfg: { session: { store: storePath, ...scenario.session } } as AforaConfig,
       requestedSessionId:
         "requestedSessionId" in scenario && scenario.requestedSessionId === "existing"
           ? existingSessionId
@@ -2242,7 +2242,7 @@ describe("initSessionState reset policy", () => {
   });
   it("drains stale system events when idle rollover creates a new session", async () => {
     vi.setSystemTime(new Date(2026, 0, 18, 5, 30, 0));
-    const root = await makeCaseDir("openclaw-reset-idle-system-events-");
+    const root = await makeCaseDir("afora-reset-idle-system-events-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:main:whatsapp:dm:idle-system-events";
     const existingSessionId = "idle-system-events-session";
@@ -2263,7 +2263,7 @@ describe("initSessionState reset policy", () => {
         store: storePath,
         reset: { mode: "idle", idleMinutes: 30 },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const result = await initSessionState({
       ctx: { Body: "hello", SessionKey: sessionKey },
       cfg,
@@ -2286,7 +2286,7 @@ describe("initSessionState reset policy", () => {
 
   it("reuses completed run entries while the session is still fresh", async () => {
     vi.setSystemTime(new Date(2026, 0, 18, 5, 30, 0));
-    const root = await makeCaseDir("openclaw-reset-terminal-entry-");
+    const root = await makeCaseDir("afora-reset-terminal-entry-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:main:whatsapp:dm:terminal-entry";
     const existingSessionId = "terminal-entry-old";
@@ -2301,7 +2301,7 @@ describe("initSessionState reset policy", () => {
       },
     });
 
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as AforaConfig;
     const result = await initSessionState({
       ctx: { Body: "hello", SessionKey: sessionKey },
       cfg,
@@ -2373,7 +2373,7 @@ describe("initSessionState reset policy", () => {
     },
   ])("$name", async (scenario) => {
     vi.setSystemTime(new Date(2026, 0, 18, 5, 30, 0));
-    const root = await makeCaseDir("openclaw-reset-terminal-entry-");
+    const root = await makeCaseDir("afora-reset-terminal-entry-");
     const storePath = path.join(root, "sessions.json");
     const existingSessionId = "terminal-entry-old";
     const now = Date.now();
@@ -2390,7 +2390,7 @@ describe("initSessionState reset policy", () => {
       transcriptMutationOrder: scenario.transcriptMutationOrder,
     });
 
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as AforaConfig;
     const result = await initSessionState({
       ctx: { Body: "hello", SessionKey: scenario.sessionKey },
       cfg,
@@ -2423,7 +2423,7 @@ describe("initSessionState reset policy", () => {
 
   it("recovers failed group sessions without rotating the transcript", async () => {
     vi.setSystemTime(new Date(2026, 0, 18, 5, 30, 0));
-    const root = await makeCaseDir("openclaw-reset-failed-entry-");
+    const root = await makeCaseDir("afora-reset-failed-entry-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:main:telegram:group:-1001";
     const existingSessionId = "failed-entry-old";
@@ -2440,16 +2440,16 @@ describe("initSessionState reset policy", () => {
       },
     });
 
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as AforaConfig;
     const result = await initSessionState({
       ctx: {
-        Body: "@openclaw hello",
-        RawBody: "@openclaw hello",
-        CommandBody: "@openclaw hello",
+        Body: "@afora hello",
+        RawBody: "@afora hello",
+        CommandBody: "@afora hello",
         SessionKey: sessionKey,
         ChatType: "group",
         Provider: "telegram",
-        BotUsername: "openclaw",
+        BotUsername: "afora",
       },
       cfg,
     });
@@ -2486,7 +2486,7 @@ describe("initSessionState reset policy", () => {
     },
   ])("$name", async ({ body, slug }) => {
     vi.setSystemTime(new Date(2026, 0, 18, 5, 30, 0));
-    const root = await makeCaseDir(`openclaw-reset-${slug}-stale-`);
+    const root = await makeCaseDir(`afora-reset-${slug}-stale-`);
     const storePath = path.join(root, "sessions.json");
     const sessionKey = `agent:main:whatsapp:dm:${slug}-stale`;
     const existingSessionId = `${slug}-stale-session-id`;
@@ -2503,7 +2503,7 @@ describe("initSessionState reset policy", () => {
         store: storePath,
         reset: { mode: "daily", atHour: 4, idleMinutes: 30 },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const result = await initSessionState({
       ctx: {
         Body: body,
@@ -2524,7 +2524,7 @@ describe("initSessionState reset policy", () => {
   });
 
   it("keeps multiline slash skill payloads on the current session", async () => {
-    const root = await makeCaseDir("openclaw-skill-multiline-session-");
+    const root = await makeCaseDir("afora-skill-multiline-session-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:main:whatsapp:dm:skill-multiline";
     const existingSessionId = "skill-multiline-session-id";
@@ -2544,7 +2544,7 @@ describe("initSessionState reset policy", () => {
         CommandBody: body,
         SessionKey: sessionKey,
       },
-      cfg: { session: { store: storePath } } as OpenClawConfig,
+      cfg: { session: { store: storePath } } as AforaConfig,
     });
 
     expect(result.resetTriggered).toBe(false);
@@ -2555,7 +2555,7 @@ describe("initSessionState reset policy", () => {
 
   it("does not preserve a stale session for unauthorized /reset soft", async () => {
     vi.setSystemTime(new Date(2026, 0, 18, 5, 30, 0));
-    const root = await makeCaseDir("openclaw-reset-soft-stale-unauthorized-");
+    const root = await makeCaseDir("afora-reset-soft-stale-unauthorized-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:main:whatsapp:dm:soft-stale-unauthorized";
     const existingSessionId = "soft-stale-unauthorized-session-id";
@@ -2572,7 +2572,7 @@ describe("initSessionState reset policy", () => {
         store: storePath,
         reset: { mode: "daily", atHour: 4, idleMinutes: 30 },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const result = await initSessionState({
       ctx: {
         Body: "/reset soft",
@@ -2638,7 +2638,7 @@ describe("initSessionState reset policy", () => {
     },
   ])("$name", async (scenario) => {
     vi.setSystemTime(new Date(2026, 0, 18, 5, 0, 0));
-    const storePath = await createStorePath(`openclaw-reset-${scenario.slug}-`);
+    const storePath = await createStorePath(`afora-reset-${scenario.slug}-`);
     await writeSessionStoreFast(storePath, {
       [scenario.sessionKey]: {
         sessionId: scenario.sessionId,
@@ -2648,7 +2648,7 @@ describe("initSessionState reset policy", () => {
 
     const result = await initSessionState({
       ctx: { SessionKey: scenario.sessionKey, ...scenario.ctx },
-      cfg: { session: { store: storePath, ...scenario.session } } as OpenClawConfig,
+      cfg: { session: { store: storePath, ...scenario.session } } as AforaConfig,
     });
 
     expect(result.isNewSession).toBe(false);
@@ -2665,7 +2665,7 @@ describe("initSessionState reset policy", () => {
 describe("initSessionState browser tab cleanup", () => {
   it("closes tracked browser tabs when idle session expires", async () => {
     vi.setSystemTime(new Date(2026, 0, 18, 5, 30, 0));
-    const storePath = await createStorePath("openclaw-tab-cleanup-idle-");
+    const storePath = await createStorePath("afora-tab-cleanup-idle-");
     const sessionKey = "agent:main:whatsapp:dm:tab-idle";
     const existingSessionId = "tab-idle-session-id";
 
@@ -2681,7 +2681,7 @@ describe("initSessionState browser tab cleanup", () => {
         store: storePath,
         reset: { mode: "daily", atHour: 4, idleMinutes: 30 },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const result = await initSessionState({
       ctx: { Body: "hello", SessionKey: sessionKey },
       cfg,
@@ -2708,7 +2708,7 @@ describe("initSessionState browser tab cleanup", () => {
     },
   ])("$name", async ({ slug, config }) => {
     vi.setSystemTime(new Date(2026, 0, 18, 5, 30, 0));
-    const storePath = await createStorePath(`openclaw-tab-cleanup-${slug}-`);
+    const storePath = await createStorePath(`afora-tab-cleanup-${slug}-`);
     const sessionKey = `agent:main:webchat:dm:tab-${slug}`;
 
     await writeSessionStoreFast(storePath, {
@@ -2724,7 +2724,7 @@ describe("initSessionState browser tab cleanup", () => {
         store: storePath,
         reset: { mode: "daily", atHour: 4, idleMinutes: 30 },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const result = await initSessionState({
       ctx: { Body: "hello", SessionKey: sessionKey },
       cfg,
@@ -2735,7 +2735,7 @@ describe("initSessionState browser tab cleanup", () => {
   });
 
   it("closes tracked browser tabs on explicit /new reset", async () => {
-    const storePath = await createStorePath("openclaw-tab-cleanup-reset-");
+    const storePath = await createStorePath("afora-tab-cleanup-reset-");
     const sessionKey = "agent:main:telegram:dm:tab-reset";
     const existingSessionId = "tab-reset-session-id";
 
@@ -2748,7 +2748,7 @@ describe("initSessionState browser tab cleanup", () => {
 
     const cfg = {
       session: { store: storePath, idleMinutes: 999 },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const result = await initSessionState({
       ctx: {
         Body: "/new",
@@ -2768,12 +2768,12 @@ describe("initSessionState browser tab cleanup", () => {
   });
 
   it("does not close browser tabs for a fresh session without previous state", async () => {
-    const storePath = await createStorePath("openclaw-tab-cleanup-fresh-");
+    const storePath = await createStorePath("afora-tab-cleanup-fresh-");
     const sessionKey = "agent:main:telegram:dm:tab-fresh";
 
     const cfg = {
       session: { store: storePath, idleMinutes: 999 },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const result = await initSessionState({
       ctx: {
         Body: "hello",
@@ -2787,7 +2787,7 @@ describe("initSessionState browser tab cleanup", () => {
   });
 
   it("includes the peer-scoped runtime key for direct-message cleanup", async () => {
-    const storePath = await createStorePath("openclaw-tab-cleanup-peer-key-");
+    const storePath = await createStorePath("afora-tab-cleanup-peer-key-");
     const canonicalKey = "agent:main:main";
     const existingSessionId = "tab-peer-key-session-id";
     await writeSessionStoreFast(storePath, {
@@ -2797,7 +2797,7 @@ describe("initSessionState browser tab cleanup", () => {
       },
     });
 
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as AforaConfig;
     const result = await initSessionState({
       ctx: {
         Body: "/new",
@@ -2825,7 +2825,7 @@ describe("initSessionState browser tab cleanup", () => {
 
 describe("initSessionState channel reset overrides", () => {
   it("uses channel-specific reset policy when configured", async () => {
-    const root = await makeCaseDir("openclaw-channel-idle-");
+    const root = await makeCaseDir("afora-channel-idle-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:main:discord:dm:123";
     const sessionId = "session-override";
@@ -2845,7 +2845,7 @@ describe("initSessionState channel reset overrides", () => {
         resetByType: { direct: { mode: "idle", idleMinutes: 10 } },
         resetByChannel: { discord: { mode: "idle", idleMinutes: 10080 } },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -2875,7 +2875,7 @@ describe("initSessionState reset triggers in WhatsApp groups", () => {
     });
   }
 
-  function makeCfg(params: { storePath: string; allowFrom: string[] }): OpenClawConfig {
+  function makeCfg(params: { storePath: string; allowFrom: string[] }): AforaConfig {
     return {
       session: { store: params.storePath, idleMinutes: 999 },
       channels: {
@@ -2884,12 +2884,12 @@ describe("initSessionState reset triggers in WhatsApp groups", () => {
           groupPolicy: "open",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
   }
 
   it("requires canonical command authorization before rotating durable session state", async () => {
     const sessionKey = "agent:main:whatsapp:group:owner-only-reset";
-    const storePath = await createStorePath("openclaw-group-reset-owner-only-");
+    const storePath = await createStorePath("afora-group-reset-owner-only-");
     const existingSessionId = "existing-owner-session";
     await seedSessionStore({ storePath, sessionKey, sessionId: existingSessionId });
     setActivePluginRegistry(
@@ -2910,7 +2910,7 @@ describe("initSessionState reset triggers in WhatsApp groups", () => {
         session: { store: storePath, idleMinutes: 999 },
         channels: { whatsapp: { allowFrom: ["*"] } },
         commands: { ownerAllowFrom: ["owner"] },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const baseContext = {
         Body: "/new /model openai/gpt-5",
         RawBody: "/new /model openai/gpt-5",
@@ -2947,7 +2947,7 @@ describe("initSessionState reset triggers in WhatsApp groups", () => {
   it("applies WhatsApp group reset authorization across sender variants", async () => {
     const sessionKey = "agent:main:whatsapp:group:120363406150318674@g.us";
     const existingSessionId = "existing-session-123";
-    const storePath = await createStorePath("openclaw-group-reset");
+    const storePath = await createStorePath("afora-group-reset");
     const cases = [
       {
         name: "authorized sender",
@@ -3012,7 +3012,7 @@ describe("initSessionState reset triggers in WhatsApp groups", () => {
   it("preserves scoped WhatsApp group activation state across stale rollover", async () => {
     const sessionKey =
       "agent:main:whatsapp:group:120363406150318674@g.us:thread:whatsapp-account-work";
-    const storePath = await createStorePath("openclaw-group-activation-backfill-");
+    const storePath = await createStorePath("afora-group-activation-backfill-");
     await writeSessionStoreFast(storePath, {
       [sessionKey]: {
         sessionId: "old-group-activation-session",
@@ -3071,7 +3071,7 @@ describe("initSessionState reset triggers in Slack channels", () => {
     const existingSessionId = "existing-session-123";
     const sessionKey = "agent:main:slack:channel:c2";
     const body = "<@U123> /new take notes";
-    const storePath = await createStorePath("openclaw-slack-channel-new-");
+    const storePath = await createStorePath("afora-slack-channel-new-");
     await seedSessionStore({
       storePath,
       sessionKey,
@@ -3079,7 +3079,7 @@ describe("initSessionState reset triggers in Slack channels", () => {
     });
     const cfg = {
       session: { store: storePath, idleMinutes: 999 },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -3124,7 +3124,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
   }
 
   it("rejects explicit resets without replacing a model-locked session", async () => {
-    const storePath = await createStorePath("openclaw-reset-model-locked-");
+    const storePath = await createStorePath("afora-reset-model-locked-");
     const sessionKey = "agent:main:telegram:dm:model-locked";
     const existingSessionId = "existing-model-locked-session";
 
@@ -3157,7 +3157,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
           },
           cfg: {
             session: { store: storePath, idleMinutes: 999 },
-          } as OpenClawConfig,
+          } as AforaConfig,
         }),
       ).rejects.toThrow(MODEL_SELECTION_LOCKED_RESET_MESSAGE);
 
@@ -3173,7 +3173,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
   });
 
   it("does not implicitly expire a model-locked session", async () => {
-    const storePath = await createStorePath("openclaw-expiry-model-locked-");
+    const storePath = await createStorePath("afora-expiry-model-locked-");
     const sessionKey = "agent:main:telegram:dm:model-locked-expiry";
     const existingSessionId = "existing-model-locked-expiry-session";
     await writeSessionStoreFast(storePath, {
@@ -3202,7 +3202,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
       },
       cfg: {
         session: { store: storePath, idleMinutes: 1 },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(result.isNewSession).toBe(false);
@@ -3217,7 +3217,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
   });
 
   it("preserves behavior overrides across /new and /reset", async () => {
-    const storePath = await createStorePath("openclaw-reset-overrides-");
+    const storePath = await createStorePath("afora-reset-overrides-");
     const sessionKey = "agent:main:telegram:dm:user-overrides";
     const existingSessionId = "existing-session-overrides";
     const overrides = {
@@ -3242,7 +3242,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
   });
 
   it("preserves usage family metadata across /new and /reset", async () => {
-    const storePath = await createStorePath("openclaw-reset-usage-family-");
+    const storePath = await createStorePath("afora-reset-usage-family-");
     const sessionKey = "agent:main:telegram:dm:user-usage-family";
     const existingSessionId = "existing-session-usage-family";
     const cases = await runExplicitResetCases({
@@ -3276,7 +3276,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
   });
 
   it("preserves selected auth profile overrides across /new and /reset", async () => {
-    const storePath = await createStorePath("openclaw-reset-model-auth-");
+    const storePath = await createStorePath("afora-reset-model-auth-");
     const sessionKey = "agent:main:telegram:dm:user-model-auth";
     const existingSessionId = "existing-session-model-auth";
     const overrides = {
@@ -3330,7 +3330,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
   });
 
   it("clears auto-sourced model/provider/auth overrides on /new and /reset (#69301)", async () => {
-    const storePath = await createStorePath("openclaw-reset-auto-overrides-");
+    const storePath = await createStorePath("afora-reset-auto-overrides-");
     const sessionKey = "agent:main:telegram:direct:6761477233";
     const existingSessionId = "existing-session-auto-overrides";
     const autoOverrides = {
@@ -3365,7 +3365,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
   });
 
   it("clears recovered auto fallback model overrides without modelOverrideSource on /new and /reset", async () => {
-    const storePath = await createStorePath("openclaw-reset-recovered-auto-fallback-");
+    const storePath = await createStorePath("afora-reset-recovered-auto-fallback-");
     const sessionKey = "agent:main:telegram:direct:6761477233";
     const existingSessionId = "existing-session-recovered-auto-fallback";
     const autoOverrides = {
@@ -3396,7 +3396,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
   });
 
   it("clears recovered Codex fallback metadata for Discord channel sessions on /new", async () => {
-    const storePath = await createStorePath("openclaw-reset-discord-codex-fallback-");
+    const storePath = await createStorePath("afora-reset-discord-codex-fallback-");
     const sessionKey = "agent:main:discord:channel:1488013357016420522";
     const existingSessionId = "existing-discord-codex-fallback";
     await seedSessionStoreWithOverrides({
@@ -3436,7 +3436,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(result.isNewSession).toBe(true);
@@ -3453,7 +3453,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
   });
 
   it("clears stale runtime model cache fields on /new and /reset (#77322)", async () => {
-    const storePath = await createStorePath("openclaw-reset-runtime-model-cache-");
+    const storePath = await createStorePath("afora-reset-runtime-model-cache-");
     const sessionKey = "agent:main:telegram:direct:runtime-model-cache";
     const existingSessionId = "existing-session-runtime-model-cache";
     const runtimeModelCache = {
@@ -3529,7 +3529,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
   });
 
   it("preserves spawned session ownership metadata across /new and /reset", async () => {
-    const storePath = await createStorePath("openclaw-reset-spawned-metadata-");
+    const storePath = await createStorePath("afora-reset-spawned-metadata-");
     const sessionKey = "agent:main:subagent:owned-child";
     const existingSessionId = "existing-session-owned-child";
     const overrides = {
@@ -3559,7 +3559,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
 
       const cfg = {
         session: { store: storePath, idleMinutes: 999 },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       const result = await initSessionState({
         ctx: {
@@ -3584,7 +3584,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
   });
 
   it("requires operator.admin when Provider is internal even if Surface carries external metadata", async () => {
-    const storePath = await createStorePath("openclaw-internal-reset-provider-authoritative-");
+    const storePath = await createStorePath("afora-internal-reset-provider-authoritative-");
     const sessionKey = "agent:main:telegram:dm:provider-authoritative";
     const existingSessionId = "existing-session-provider-authoritative";
 
@@ -3597,7 +3597,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
 
     const cfg = {
       session: { store: storePath, idleMinutes: 999 },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -3638,7 +3638,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
       entry: {},
     },
   ])("$name", async ({ slug, body, entry }) => {
-    const storePath = await createStorePath(`openclaw-${slug}-`);
+    const storePath = await createStorePath(`afora-${slug}-`);
     const sessionKey = `agent:main:telegram:dm:user-${slug}`;
     const existingSessionId = `existing-session-${slug}`;
     await seedSessionStoreWithOverrides({
@@ -3658,7 +3658,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
         ChatType: "direct",
         SessionKey: sessionKey,
       },
-      cfg: { session: { store: storePath, idleMinutes: 999 } } as OpenClawConfig,
+      cfg: { session: { store: storePath, idleMinutes: 999 } } as AforaConfig,
     });
 
     expect(result.resetTriggered).toBe(false);
@@ -3666,7 +3666,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
     expect(result.sessionId).toBe(existingSessionId);
   });
   it("retains the transcript in place on /new", async () => {
-    const storePath = await createStorePath("openclaw-archive-old-");
+    const storePath = await createStorePath("afora-archive-old-");
     const sessionKey = "agent:main:telegram:dm:user-archive";
     const existingSessionId = "existing-session-archive";
     await seedSessionStoreWithOverrides({
@@ -3686,7 +3686,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
 
     const cfg = {
       session: { store: storePath, idleMinutes: 999 },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -3723,7 +3723,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
   });
 
   it("drains foreign work before appending a reply reset boundary", async () => {
-    const storePath = await createStorePath("openclaw-rollover-admission-");
+    const storePath = await createStorePath("afora-rollover-admission-");
     const sessionKey = "agent:main:telegram:dm:rollover-admission";
     const existingSessionId = "session-before-admitted-rollover";
     const transcriptPath = path.join(path.dirname(storePath), `${existingSessionId}.jsonl`);
@@ -3754,7 +3754,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
         Provider: "telegram",
         Surface: "telegram",
       },
-      cfg: { session: { store: storePath, idleMinutes: 999 } } as OpenClawConfig,
+      cfg: { session: { store: storePath, idleMinutes: 999 } } as AforaConfig,
     });
 
     try {
@@ -3776,7 +3776,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
   });
 
   it("keeps the initiating reply admission during an in-band rollover", async () => {
-    const storePath = await createStorePath("openclaw-rollover-initiator-");
+    const storePath = await createStorePath("afora-rollover-initiator-");
     const sessionKey = "agent:main:telegram:dm:rollover-initiator";
     const existingSessionId = "session-before-initiating-rollover";
     await writeSessionStoreFast(storePath, {
@@ -3805,7 +3805,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
               Provider: "telegram",
               Surface: "telegram",
             },
-            cfg: { session: { store: storePath, idleMinutes: 999 } } as OpenClawConfig,
+            cfg: { session: { store: storePath, idleMinutes: 999 } } as AforaConfig,
           }),
       );
       expect(result.sessionId).toBe(existingSessionId);
@@ -3816,7 +3816,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
   });
 
   it("cancels a competing admitted rollover without deadlocking the session", async () => {
-    const storePath = await createStorePath("openclaw-rollover-contenders-");
+    const storePath = await createStorePath("afora-rollover-contenders-");
     const sessionKey = "agent:main:telegram:dm:rollover-contenders";
     const existingSessionId = "session-before-competing-rollovers";
     await writeSessionStoreFast(storePath, {
@@ -3852,7 +3852,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
                 Provider: "telegram",
                 Surface: "telegram",
               },
-              cfg: { session: { store: storePath, idleMinutes: 999 } } as OpenClawConfig,
+              cfg: { session: { store: storePath, idleMinutes: 999 } } as AforaConfig,
               signal: controller.signal,
             }),
         );
@@ -3879,7 +3879,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
       expectedInterruption: true,
     },
   ])("$name", async ({ body, expectedInterruption }) => {
-    const storePath = await createStorePath("openclaw-rollover-revalidation-");
+    const storePath = await createStorePath("afora-rollover-revalidation-");
     const sessionKey = "agent:main:telegram:dm:rollover-revalidation";
     const staleSessionId = "stale-session-before-revalidation";
     const replacementSessionId = "fresh-replacement-before-revalidation";
@@ -4003,7 +4003,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
       },
       cfg: {
         session: { store: storePath, reset: { mode: "idle", idleMinutes: 1 } },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
     const replaceSession = runExclusiveSessionStoreWrite(storePath, async () => {
       await writeSessionStoreFast(storePath, {
@@ -4050,7 +4050,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
     try {
       // Simulate: it is 5am, session was last active at 3am (before 4am daily boundary)
       vi.setSystemTime(new Date(2026, 0, 18, 5, 0, 0));
-      const storePath = await createStorePath("openclaw-stale-archive-");
+      const storePath = await createStorePath("afora-stale-archive-");
       const sessionKey = "agent:main:telegram:dm:archive-stale-user";
       const existingSessionId = "stale-session-to-be-archived";
       const transcriptPath = path.join(path.dirname(storePath), `${existingSessionId}.jsonl`);
@@ -4065,7 +4065,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
 
       const cfg = {
         session: { store: storePath, reset: { mode: "daily", atHour: 4 } },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const result = await initSessionState({
         ctx: {
           Body: "hello",
@@ -4100,7 +4100,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
     let operation: ReturnType<typeof replyRunRegistry.begin> | undefined;
     try {
       vi.setSystemTime(new Date(2026, 0, 18, 5, 0, 0));
-      const storePath = await createStorePath("openclaw-active-stale-archive-");
+      const storePath = await createStorePath("afora-active-stale-archive-");
       const sessionKey = "agent:main:telegram:dm:active-stale-user";
       const transcriptPath = path.join(path.dirname(storePath), `${existingSessionId}.jsonl`);
       const sessionStartedAt = new Date(2026, 0, 18, 3, 0, 0).getTime();
@@ -4122,7 +4122,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
 
       const cfg = {
         session: { store: storePath, reset: { mode: "daily", atHour: 4 } },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const result = await initSessionState({
         ctx: {
           Body: "hello while active",
@@ -4159,7 +4159,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
     let operation: ReturnType<typeof replyRunRegistry.begin> | undefined;
     try {
       vi.setSystemTime(new Date(2026, 0, 18, 5, 0, 0));
-      const storePath = await createStorePath("openclaw-queued-stale-archive-");
+      const storePath = await createStorePath("afora-queued-stale-archive-");
       const sessionKey = "agent:main:telegram:dm:queued-stale-user";
       const existingSessionId = "queued-stale-session";
       const transcriptPath = path.join(path.dirname(storePath), `${existingSessionId}.jsonl`);
@@ -4179,7 +4179,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
 
       const cfg = {
         session: { store: storePath, reset: { mode: "daily", atHour: 4 } },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const result = await initSessionState({
         ctx: {
           Body: "hello after boundary",
@@ -4216,7 +4216,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
     let operation: ReturnType<typeof replyRunRegistry.begin> | undefined;
     try {
       vi.setSystemTime(new Date(2026, 0, 18, 5, 0, 0));
-      const storePath = await createStorePath("openclaw-active-other-stale-archive-");
+      const storePath = await createStorePath("afora-active-other-stale-archive-");
       const sessionKey = "agent:main:telegram:dm:active-other-stale-user";
       const existingSessionId = "inactive-stale-session";
       const transcriptPath = path.join(path.dirname(storePath), `${existingSessionId}.jsonl`);
@@ -4237,7 +4237,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
 
       const cfg = {
         session: { store: storePath, reset: { mode: "daily", atHour: 4 } },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const result = await initSessionState({
         ctx: {
           Body: "hello after boundary",
@@ -4272,7 +4272,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
     vi.useFakeTimers();
     try {
       vi.setSystemTime(new Date(2026, 0, 18, 5, 0, 0));
-      const storePath = await createStorePath("openclaw-cli-implicit-reset-");
+      const storePath = await createStorePath("afora-cli-implicit-reset-");
       const sessionKey = "agent:main:telegram:dm:claude-cli-user";
       const existingSessionId = "provider-owned-session";
       const transcriptPath = path.join(path.dirname(storePath), `${existingSessionId}.jsonl`);
@@ -4299,7 +4299,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
       });
       await fs.writeFile(transcriptPath, '{"type":"message"}\n', "utf8");
 
-      const cfg = { session: { store: storePath } } as OpenClawConfig;
+      const cfg = { session: { store: storePath } } as AforaConfig;
       const result = await initSessionState({
         ctx: {
           Body: "hello",
@@ -4332,7 +4332,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
   });
 
   it("honors explicit reset policies for provider-owned CLI sessions", async () => {
-    const storePath = await createStorePath("openclaw-cli-explicit-reset-");
+    const storePath = await createStorePath("afora-cli-explicit-reset-");
     const sessionKey = "agent:main:telegram:dm:claude-cli-explicit-user";
     const existingSessionId = "provider-owned-explicit-session";
     const cfg = {
@@ -4340,7 +4340,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
         store: storePath,
         reset: { mode: "idle", idleMinutes: 1 },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await writeSessionStoreFast(storePath, {
       [sessionKey]: {
@@ -4376,7 +4376,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
   });
 
   it("disposes the previous bundle MCP runtime on session rollover", async () => {
-    const storePath = await createStorePath("openclaw-stale-runtime-dispose-");
+    const storePath = await createStorePath("afora-stale-runtime-dispose-");
     const sessionKey = "agent:main:telegram:dm:runtime-stale-user";
     const existingSessionId = "stale-runtime-session";
     const cfg = {
@@ -4384,7 +4384,7 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
         store: storePath,
         reset: { mode: "idle", idleMinutes: 1 },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await writeSessionStoreFast(storePath, {
       [sessionKey]: {
@@ -4421,12 +4421,12 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
   });
 
   it("idle-based new session does NOT preserve overrides (no entry to read)", async () => {
-    const storePath = await createStorePath("openclaw-idle-no-preserve-");
+    const storePath = await createStorePath("afora-idle-no-preserve-");
     const sessionKey = "agent:main:telegram:dm:new-user";
 
     const cfg = {
       session: { store: storePath, idleMinutes: 0 },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -4461,7 +4461,7 @@ describe("drainFormattedSystemEvents", () => {
       enqueueSystemEvent("Model switched.", { sessionKey: "agent:main:main" });
 
       const result = await drainFormattedSystemEvents({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         agentId: "main",
         sessionKey: "agent:main:main",
         isMainSession: true,
@@ -4482,7 +4482,7 @@ describe("drainFormattedSystemEvents", () => {
     ]);
 
     const result = await drainFormattedSystemEvents({
-      cfg: { channels: {} } as OpenClawConfig,
+      cfg: { channels: {} } as AforaConfig,
       agentId: "main",
       sessionKey: "agent:main:main",
       isMainSession: true,
@@ -4508,7 +4508,7 @@ describe("drainFormattedSystemEvents", () => {
       enqueueSystemEvent("Model switched.", { sessionKey: "agent:main:main" });
 
       const result = await drainFormattedSystemEvents({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         agentId: "main",
         sessionKey: "agent:main:main",
         isMainSession: true,
@@ -4533,7 +4533,7 @@ describe("drainFormattedSystemEvents", () => {
       });
 
       const result = await drainFormattedSystemEvents({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         agentId: "main",
         sessionKey: "agent:main:main",
         isMainSession: true,
@@ -4559,7 +4559,7 @@ describe("persistSessionUsageUpdate", () => {
   }
 
   it("accounts exhausted-run usage without committing its model and persists CLI binding", async () => {
-    const storePath = await createStorePath("openclaw-usage-exhausted-");
+    const storePath = await createStorePath("afora-usage-exhausted-");
     await seedSessionStore(storePath, sessionKey, {
       sessionId: "s1",
       updatedAt: 1,
@@ -4607,7 +4607,7 @@ describe("persistSessionUsageUpdate", () => {
   });
 
   it("accounts goal usage when fresh token snapshots are persisted", async () => {
-    const storePath = await createStorePath("openclaw-usage-goal-");
+    const storePath = await createStorePath("afora-usage-goal-");
     await seedSessionStore(storePath, sessionKey, {
       sessionId: "s1",
       updatedAt: 1,
@@ -5002,7 +5002,7 @@ describe("persistSessionUsageUpdate", () => {
     update: Omit<Parameters<typeof persistSessionUsageUpdate>[0], "storePath" | "sessionKey">;
     expected: Partial<SessionEntry>;
   }>)("$name", async ({ seed, update, expected, name }) => {
-    const storePath = await createStorePath("openclaw-usage-");
+    const storePath = await createStorePath("afora-usage-");
     await seedSessionStore(storePath, sessionKey, {
       sessionId: "s1",
       updatedAt: Date.now(),
@@ -5023,13 +5023,13 @@ describe("persistSessionUsageUpdate", () => {
     );
   });
   it("snapshots estimatedCostUsd instead of accumulating (fixes #69347)", async () => {
-    const storePath = await createStorePath("openclaw-usage-cost-");
+    const storePath = await createStorePath("afora-usage-cost-");
     await seedSessionStore(storePath, sessionKey, {
       sessionId: "s1",
       updatedAt: Date.now(),
     });
 
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         ownership: "explicit",
         entries: { main: {}, other: {} },
@@ -5060,7 +5060,7 @@ describe("persistSessionUsageUpdate", () => {
       storePath,
       sessionKey,
       cfg,
-      agentDir: "/tmp/openclaw-main-agent",
+      agentDir: "/tmp/afora-main-agent",
       usage: { input: 2_000, output: 500, cacheRead: 1_000, cacheWrite: 200 },
       lastCallUsage: { input: 800, output: 200, cacheRead: 300, cacheWrite: 50 },
       providerUsed: "openai",
@@ -5080,7 +5080,7 @@ describe("persistSessionUsageUpdate", () => {
       storePath,
       sessionKey,
       cfg,
-      agentDir: "/tmp/openclaw-main-agent",
+      agentDir: "/tmp/afora-main-agent",
       usage: { input: 2_000, output: 500, cacheRead: 1_000, cacheWrite: 200 },
       lastCallUsage: { input: 800, output: 200, cacheRead: 300, cacheWrite: 50 },
       providerUsed: "openai",
@@ -5096,7 +5096,7 @@ describe("persistSessionUsageUpdate", () => {
   });
 
   it("preserves the displayed session model when an internal announce uses fallback", async () => {
-    const storePath = await createStorePath("openclaw-usage-internal-announce-model-");
+    const storePath = await createStorePath("afora-usage-internal-announce-model-");
     const topicSessionKey = "agent:main:telegram:group:-1003871627242:topic:6823";
     await seedSessionStore(storePath, topicSessionKey, {
       sessionId: "s1",
@@ -5170,7 +5170,7 @@ describe("persistSessionUsageUpdate", () => {
   });
 
   it("persists zero estimatedCostUsd for free priced models", async () => {
-    const storePath = await createStorePath("openclaw-usage-free-cost-");
+    const storePath = await createStorePath("afora-usage-free-cost-");
     await seedSessionStore(storePath, sessionKey, {
       sessionId: "s1",
       updatedAt: Date.now(),
@@ -5198,7 +5198,7 @@ describe("persistSessionUsageUpdate", () => {
             },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       usage: { input: 5_107, output: 1_827, cacheRead: 1_536, cacheWrite: 0 },
       lastCallUsage: { input: 5_107, output: 1_827, cacheRead: 1_536, cacheWrite: 0 },
       providerUsed: "openai",
@@ -5216,7 +5216,7 @@ describe("persistSessionUsageUpdate", () => {
 describe("initSessionState stale threadId fallback", () => {
   it("does not inherit lastThreadId from a previous thread interaction in non-thread sessions", async () => {
     const storePath = await createStorePath("stale-thread-");
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as AforaConfig;
 
     // First interaction: inside a DM topic (thread session)
     const threadResult = await initSessionState({
@@ -5244,7 +5244,7 @@ describe("initSessionState stale threadId fallback", () => {
 
   it("preserves explicit transport thread routing in non-thread sessions", async () => {
     const storePath = await createStorePath("transport-thread-");
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as AforaConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -5264,7 +5264,7 @@ describe("initSessionState stale threadId fallback", () => {
 
   it("preserves external thread routing for internal turns and clears it for external non-thread turns", async () => {
     const storePath = await createStorePath("internal-thread-route-");
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as AforaConfig;
     const sessionKey = "agent:main:main";
 
     await writeSessionStoreFast(storePath, {
@@ -5333,7 +5333,7 @@ describe("initSessionState stale threadId fallback", () => {
 
   it("preserves lastThreadId within the same thread session", async () => {
     const storePath = await createStorePath("preserve-thread-");
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as AforaConfig;
 
     // First message in thread
     await initSessionState({
@@ -5392,7 +5392,7 @@ describe("initSessionState dmScope delivery migration", () => {
       },
       cfg: {
         session: { store: storePath, dmScope: "per-channel-peer" },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     const persisted = readSessionStoreFast(storePath);
@@ -5447,7 +5447,7 @@ describe("initSessionState internal channel routing preservation", () => {
         },
       },
     });
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as AforaConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -5507,7 +5507,7 @@ describe("initSessionState internal channel routing preservation", () => {
         updatedAt: Date.now(),
       },
     });
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as AforaConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -5548,7 +5548,7 @@ describe("initSessionState internal channel routing preservation", () => {
         },
       },
     });
-    const cfg = { session: { store: storePath } } as OpenClawConfig;
+    const cfg = { session: { store: storePath } } as AforaConfig;
 
     const result = await initSessionState({
       ctx: {
@@ -5711,7 +5711,7 @@ describe("initSessionState internal channel routing preservation", () => {
       cfg: {
         ...("config" in scenario ? scenario.config : {}),
         session: { store: storePath, ...("session" in scenario ? scenario.session : {}) },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expectEntryFields(result.sessionEntry, scenario.expected, scenario.name);

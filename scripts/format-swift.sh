@@ -16,11 +16,11 @@ fi
 if [[ "$scope" != "ios" ]]; then
   swiftformat --lint apps/macos/Sources \
     --config config/swiftformat \
-    --exclude '**/OpenClawProtocol'
+    --exclude '**/AforaProtocol'
   swiftformat --lint \
     apps/macos-mlx-tts/Sources \
-    apps/shared/OpenClawKit/Sources/OpenClawNativeState \
-    apps/shared/OpenClawMLXTTSProtocol/Sources \
+    apps/shared/AforaKit/Sources/AforaNativeState \
+    apps/shared/AforaMLXTTSProtocol/Sources \
     apps/swabble/Sources \
     --config config/swiftformat
 fi
@@ -34,6 +34,6 @@ node scripts/ios-write-swift-filelist.mjs
   cd apps/ios
   swiftformat --lint \
     --config ../../config/swiftformat \
-    --unexclude "$PWD/Sources,$PWD/ShareExtension,$PWD/ActivityWidget,$PWD/WatchApp,$PWD/../shared/OpenClawKit/Sources/OpenClawChatUI,$PWD/../shared/OpenClawKit/Sources/OpenClawKit,$PWD/../shared/OpenClawKit/Sources/OpenClawNativeState,$PWD/../shared/OpenClawKit/Sources/OpenClawProtocol,$PWD/../swabble/Sources/SwabbleKit" \
+    --unexclude "$PWD/Sources,$PWD/ShareExtension,$PWD/ActivityWidget,$PWD/WatchApp,$PWD/../shared/AforaKit/Sources/AforaChatUI,$PWD/../shared/AforaKit/Sources/AforaKit,$PWD/../shared/AforaKit/Sources/AforaNativeState,$PWD/../shared/AforaKit/Sources/AforaProtocol,$PWD/../swabble/Sources/SwabbleKit" \
     --filelist SwiftSources.input.xcfilelist
 )

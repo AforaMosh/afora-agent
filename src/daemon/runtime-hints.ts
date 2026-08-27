@@ -50,7 +50,7 @@ export function buildPlatformServiceStartHints(params: {
 }): string[] {
   const platform = params.platform ?? process.platform;
   const base = [params.installCommand, params.startCommand];
-  // Native service-manager commands are supplemental hints; the OpenClaw
+  // Native service-manager commands are supplemental hints; the Afora
   // commands stay first because they know the generated profile/env paths.
   switch (platform) {
     case "darwin":

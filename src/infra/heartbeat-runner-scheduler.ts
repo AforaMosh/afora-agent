@@ -1,6 +1,6 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { getRuntimeConfig } from "../config/config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizeAgentId, resolveAgentIdFromSessionKey } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { formatErrorMessage } from "./errors.js";
@@ -58,12 +58,12 @@ type HeartbeatAgentState = {
 
 export type HeartbeatRunner = {
   stop: () => void;
-  updateConfig: (cfg: OpenClawConfig) => void;
+  updateConfig: (cfg: AforaConfig) => void;
 };
 
 export function startHeartbeatRunner(opts: {
-  cfg?: OpenClawConfig;
-  readCurrentConfig?: () => OpenClawConfig;
+  cfg?: AforaConfig;
+  readCurrentConfig?: () => AforaConfig;
   runtime?: RuntimeEnv;
   abortSignal?: AbortSignal;
   runOnce?: typeof runHeartbeatOnce;
@@ -213,7 +213,7 @@ export function startHeartbeatRunner(opts: {
     agent.floodLoggedSinceLastRun = false;
   };
 
-  const updateConfig = (cfg: OpenClawConfig) => {
+  const updateConfig = (cfg: AforaConfig) => {
     if (state.stopped) {
       return;
     }

@@ -1,4 +1,4 @@
-import { resolveAgentModelPrimaryValue } from "openclaw/plugin-sdk/provider-onboard";
+import { resolveAgentModelPrimaryValue } from "afora-agent/plugin-sdk/provider-onboard";
 import { describe, expect, it } from "vitest";
 import { applyFireworksConfig } from "./onboard.js";
 import { FIREWORKS_DEFAULT_MODEL_REF, buildFireworksCatalogModels } from "./provider-catalog.js";

@@ -4,16 +4,16 @@ import path from "node:path";
 import {
   clearConfigCache,
   clearRuntimeConfigSnapshot,
-} from "openclaw/plugin-sdk/runtime-config-snapshot";
+} from "afora-agent/plugin-sdk/runtime-config-snapshot";
 import { describe, expect, it, vi } from "vitest";
 import { upsertSessionEntryCore } from "../../../../src/config/sessions/session-accessor.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../../../src/state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../../../../src/state/openclaw-state-db.js";
+import { closeAforaAgentDatabasesForTest } from "../../../../src/state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../../../../src/state/afora-state-db.js";
 import { createTempDirTracker } from "../../../../test/helpers/temp-dir.js";
 import {
   extractAgentIdFromSessionsDir,
   resolveSessionTranscriptsDirForAgent,
-} from "./openclaw-runtime-session.js";
+} from "./afora-runtime-session.js";
 import {
   listSessionTranscriptCorpusEntriesForAgent,
   parseCanonicalSessionSyncTargetFromPath,
@@ -112,11 +112,11 @@ describe("memory session directory ownership", () => {
     const platform = vi.spyOn(process, "platform", "get").mockReturnValue("win32");
     const tempDirs = createTempDirTracker();
     const tmpDir = tempDirs.make("session-windows-ownership-");
-    const originalStateDir = process.env.OPENCLAW_STATE_DIR;
-    const originalConfigPath = process.env.OPENCLAW_CONFIG_PATH;
+    const originalStateDir = process.env.AFORA_STATE_DIR;
+    const originalConfigPath = process.env.AFORA_CONFIG_PATH;
     try {
-      process.env.OPENCLAW_STATE_DIR = tmpDir;
-      delete process.env.OPENCLAW_CONFIG_PATH;
+      process.env.AFORA_STATE_DIR = tmpDir;
+      delete process.env.AFORA_CONFIG_PATH;
       clearRuntimeConfigSnapshot();
       clearConfigCache();
 
@@ -141,17 +141,17 @@ describe("memory session directory ownership", () => {
       platform.mockRestore();
       // Agent close releases leases through shared state; close agent handles first while the
       // fixture env is active, then close shared state before removing the Windows-owned directory.
-      closeOpenClawAgentDatabasesForTest();
-      closeOpenClawStateDatabaseForTest();
+      closeAforaAgentDatabasesForTest();
+      closeAforaStateDatabaseForTest();
       if (originalStateDir === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.AFORA_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = originalStateDir;
+        process.env.AFORA_STATE_DIR = originalStateDir;
       }
       if (originalConfigPath === undefined) {
-        delete process.env.OPENCLAW_CONFIG_PATH;
+        delete process.env.AFORA_CONFIG_PATH;
       } else {
-        process.env.OPENCLAW_CONFIG_PATH = originalConfigPath;
+        process.env.AFORA_CONFIG_PATH = originalConfigPath;
       }
       clearRuntimeConfigSnapshot();
       clearConfigCache();

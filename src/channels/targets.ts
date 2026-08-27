@@ -2,7 +2,7 @@
  * Shared messaging-target parsing primitives for channel plugins and SDK consumers.
  * Channel-specific grammars stay in plugins; this file owns common target shapes and parse order.
  */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 
 /** Canonical route target families shared by channel-owned parsers. */
 export type MessagingTargetKind = "user" | "channel";

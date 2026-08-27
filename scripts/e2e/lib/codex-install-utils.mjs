@@ -7,11 +7,11 @@ import { readPluginInstallRecords } from "./plugin-index-sqlite.mjs";
 export { readJson };
 
 export function stateDir() {
-  return process.env.OPENCLAW_STATE_DIR || path.join(process.env.HOME, ".openclaw");
+  return process.env.AFORA_STATE_DIR || path.join(process.env.HOME, ".afora");
 }
 
 export function configPath() {
-  return process.env.OPENCLAW_CONFIG_PATH || path.join(stateDir(), "openclaw.json");
+  return process.env.AFORA_CONFIG_PATH || path.join(stateDir(), "afora.json");
 }
 
 export function managedNpmRoot() {

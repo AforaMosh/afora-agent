@@ -1,5 +1,5 @@
 // Policy doctor health-check catalog.
-import type { HealthCheck } from "openclaw/plugin-sdk/health";
+import type { HealthCheck } from "afora-agent/plugin-sdk/health";
 import { createPolicyChannelProviderChecks, createPolicyIngressChecks } from "./scopes/channels.js";
 import { createPolicyCoreChecks } from "./scopes/core.js";
 import { createPolicyDataAuthChecks } from "./scopes/data-auth.js";

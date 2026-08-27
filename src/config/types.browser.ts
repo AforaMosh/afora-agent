@@ -14,10 +14,10 @@ export type BrowserProfileConfig = {
   /** Extra Chrome MCP arguments for existing-session profiles. */
   mcpArgs?: string[];
   /**
-   * Profile driver (default: openclaw). "extension" attaches to the user's
-   * signed-in browser through the OpenClaw Chrome extension relay.
+   * Profile driver (default: afora). "extension" attaches to the user's
+   * signed-in browser through the Afora Chrome extension relay.
    */
-  driver?: "openclaw" | "clawd" | "existing-session" | "extension";
+  driver?: "afora" | "clawd" | "existing-session" | "extension";
   /** If true, launch this profile in headless mode. Falls back to browser.headless. */
   headless?: boolean;
   /** Browser executable path for this profile. Falls back to browser.executablePath. */
@@ -56,7 +56,7 @@ export type BrowserConfig = {
   noSandbox?: boolean;
   /** If true: never launch; only attach to an existing browser. Default: false */
   attachOnly?: boolean;
-  /** Default profile to use when profile param is omitted. Default: "openclaw" */
+  /** Default profile to use when profile param is omitted. Default: "afora" */
   defaultProfile?: string;
   /** Named browser profiles with explicit CDP ports or URLs. */
   profiles?: Record<string, BrowserProfileConfig>;

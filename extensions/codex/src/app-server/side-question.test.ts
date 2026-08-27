@@ -2,17 +2,17 @@
 import {
   nativeHookRelayTesting,
   type NativeHookRelayRegistrationHandle,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   onInternalDiagnosticEvent,
   resetDiagnosticEventsForTest,
   type DiagnosticEventPayload,
-} from "openclaw/plugin-sdk/diagnostic-runtime";
+} from "afora-agent/plugin-sdk/diagnostic-runtime";
 import {
   initializeGlobalHookRunner,
   resetGlobalHookRunner,
-} from "openclaw/plugin-sdk/hook-runtime";
-import { createMockPluginRegistry } from "openclaw/plugin-sdk/plugin-test-runtime";
+} from "afora-agent/plugin-sdk/hook-runtime";
+import { createMockPluginRegistry } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   codexTestTurnIds,
@@ -32,7 +32,7 @@ const readCodexAppServerBindingMock = vi.fn();
 const isCodexAppServerNativeAuthProfileMock = vi.fn();
 const getSharedCodexAppServerClientMock = vi.fn();
 const refreshCodexAppServerAuthTokensMock = vi.fn();
-const createOpenClawCodingToolsMock = vi.fn();
+const createAforaCodingToolsMock = vi.fn();
 const toolExecuteMock = vi.fn();
 const handleCodexAppServerApprovalRequestMock = vi.fn();
 const resolveCodexProviderWebSearchSupportForClientMock = vi.fn();
@@ -96,8 +96,8 @@ vi.mock("./provider-capabilities.js", () => ({
     resolveCodexProviderWebSearchSupportForClientMock(...args),
 }));
 
-vi.mock("openclaw/plugin-sdk/agent-harness", () => ({
-  createOpenClawCodingTools: (...args: unknown[]) => createOpenClawCodingToolsMock(...args),
+vi.mock("afora-agent/plugin-sdk/agent-harness", () => ({
+  createAforaCodingTools: (...args: unknown[]) => createAforaCodingToolsMock(...args),
 }));
 
 const { runCodexAppServerSideQuestion: runCodexAppServerSideQuestionImpl } =
@@ -472,7 +472,7 @@ async function runSideQuestionWithManagedWebSearchCall(
 ) {
   const client = createFakeClient();
   if (!options.preserveToolFactory) {
-    createOpenClawCodingToolsMock.mockReturnValue([
+    createAforaCodingToolsMock.mockReturnValue([
       {
         name: "web_search",
         description: "Search the web",
@@ -523,7 +523,7 @@ describe("runCodexAppServerSideQuestion", () => {
     isCodexAppServerNativeAuthProfileMock.mockReset();
     getSharedCodexAppServerClientMock.mockReset();
     refreshCodexAppServerAuthTokensMock.mockReset();
-    createOpenClawCodingToolsMock.mockReset();
+    createAforaCodingToolsMock.mockReset();
     toolExecuteMock.mockReset();
     handleCodexAppServerApprovalRequestMock.mockReset();
     resolveCodexProviderWebSearchSupportForClientMock.mockReset();
@@ -540,7 +540,7 @@ describe("runCodexAppServerSideQuestion", () => {
     toolExecuteMock.mockResolvedValue({
       content: [{ type: "text", text: "tool output" }],
     });
-    createOpenClawCodingToolsMock.mockReturnValue([
+    createAforaCodingToolsMock.mockReturnValue([
       {
         name: "wiki_status",
         description: "Check wiki status",
@@ -713,7 +713,7 @@ describe("runCodexAppServerSideQuestion", () => {
     ]);
     expect(client.request.mock.calls.some(([method]) => method === "turn/interrupt")).toBe(false);
 
-    const [toolOptions] = mockCall(createOpenClawCodingToolsMock);
+    const [toolOptions] = mockCall(createAforaCodingToolsMock);
     expect(toolOptions).toHaveProperty("agentDir", "/tmp/agent");
     expect(toolOptions).toHaveProperty("workspaceDir", "/tmp/workspace");
     expect(toolOptions).toHaveProperty("sessionId", "session-1");
@@ -785,7 +785,7 @@ describe("runCodexAppServerSideQuestion", () => {
     const environment = environmentAdd?.[1] as
       | { environmentId?: string; execServerUrl?: string }
       | undefined;
-    expect(environment?.environmentId).toMatch(/^openclaw-sandbox-/u);
+    expect(environment?.environmentId).toMatch(/^afora-sandbox-/u);
     expect(environment?.execServerUrl).toMatch(/^ws:\/\/127\.0\.0\.1:/u);
     const forkParams = client.request.mock.calls.find(([method]) => method === "thread/fork")?.[1];
     expect(forkParams).toMatchObject({ cwd: "/remote/synced-workspace" });
@@ -958,7 +958,7 @@ describe("runCodexAppServerSideQuestion", () => {
     await runCodexAppServerSideQuestion(sideParams());
     await runCodexAppServerSideQuestion(sideParams());
 
-    const runIds = createOpenClawCodingToolsMock.mock.calls.map(
+    const runIds = createAforaCodingToolsMock.mock.calls.map(
       ([options]) => (options as { runId: string }).runId,
     );
     expect(runIds).toHaveLength(2);
@@ -1015,7 +1015,7 @@ describe("runCodexAppServerSideQuestion", () => {
     expect(turnCall?.[1]).not.toHaveProperty("effort");
     expect(turnCall?.[1]).not.toHaveProperty("collaborationMode");
     expect(turnCall?.[1]).not.toHaveProperty("personality");
-    expect(createOpenClawCodingToolsMock).toHaveBeenCalledWith(
+    expect(createAforaCodingToolsMock).toHaveBeenCalledWith(
       expect.objectContaining({ modelProvider: "openai", modelId: "gpt-5.5" }),
     );
   });
@@ -1182,7 +1182,7 @@ describe("runCodexAppServerSideQuestion", () => {
   });
 
   it("disables hosted search when side-question sender policy removes managed web_search", async () => {
-    createOpenClawCodingToolsMock.mockImplementation((options: { senderId?: string }) =>
+    createAforaCodingToolsMock.mockImplementation((options: { senderId?: string }) =>
       options.senderId === "restricted-sender"
         ? []
         : [
@@ -1252,13 +1252,13 @@ describe("runCodexAppServerSideQuestion", () => {
     });
     expect(toolResponse).toEqual({
       success: false,
-      contentItems: [{ type: "inputText", text: "Unknown OpenClaw tool: web_search" }],
+      contentItems: [{ type: "inputText", text: "Unknown Afora tool: web_search" }],
     });
     expect(toolExecuteMock).not.toHaveBeenCalled();
   });
 
   it("preserves managed web_search while planning hosted search for Responses side questions", async () => {
-    createOpenClawCodingToolsMock.mockImplementation(
+    createAforaCodingToolsMock.mockImplementation(
       (options: { suppressManagedWebSearch?: boolean }) =>
         options.suppressManagedWebSearch === false
           ? [
@@ -1289,7 +1289,7 @@ describe("runCodexAppServerSideQuestion", () => {
     });
     expect(toolResponse).toEqual({
       success: false,
-      contentItems: [{ type: "inputText", text: "Unknown OpenClaw tool: web_search" }],
+      contentItems: [{ type: "inputText", text: "Unknown Afora tool: web_search" }],
     });
     expect(toolExecuteMock).not.toHaveBeenCalled();
   });
@@ -1306,7 +1306,7 @@ describe("runCodexAppServerSideQuestion", () => {
     });
     expect(toolResponse).toEqual({
       success: false,
-      contentItems: [{ type: "inputText", text: "Unknown OpenClaw tool: web_search" }],
+      contentItems: [{ type: "inputText", text: "Unknown Afora tool: web_search" }],
     });
     expect(toolExecuteMock).not.toHaveBeenCalled();
   });
@@ -1333,7 +1333,7 @@ describe("runCodexAppServerSideQuestion", () => {
     });
     expect(toolResponse).toEqual({
       success: false,
-      contentItems: [{ type: "inputText", text: "Unknown OpenClaw tool: web_search" }],
+      contentItems: [{ type: "inputText", text: "Unknown Afora tool: web_search" }],
     });
     expect(toolExecuteMock).not.toHaveBeenCalled();
     expect(resolveCodexProviderWebSearchSupportForClientMock).not.toHaveBeenCalled();
@@ -1361,13 +1361,13 @@ describe("runCodexAppServerSideQuestion", () => {
     });
     expect(toolResponse).toEqual({
       success: false,
-      contentItems: [{ type: "inputText", text: "Unknown OpenClaw tool: web_search" }],
+      contentItems: [{ type: "inputText", text: "Unknown Afora tool: web_search" }],
     });
     expect(toolExecuteMock).not.toHaveBeenCalled();
     expect(resolveCodexProviderWebSearchSupportForClientMock).not.toHaveBeenCalled();
   });
 
-  it("rejects /btw before forking when the current OpenClaw session is sandboxed", async () => {
+  it("rejects /btw before forking when the current Afora session is sandboxed", async () => {
     await expect(
       runCodexAppServerSideQuestion(
         sideParams({
@@ -1376,7 +1376,7 @@ describe("runCodexAppServerSideQuestion", () => {
         }),
       ),
     ).rejects.toThrow(
-      "Codex-native /btw side-question mode is unavailable because OpenClaw sandboxing is active for this session.",
+      "Codex-native /btw side-question mode is unavailable because Afora sandboxing is active for this session.",
     );
 
     expect(getSharedCodexAppServerClientMock).not.toHaveBeenCalled();
@@ -1397,7 +1397,7 @@ describe("runCodexAppServerSideQuestion", () => {
         }),
       ),
     ).rejects.toThrow(
-      "Codex-native /btw side-question mode is unavailable because OpenClaw sandboxing is active for this session.",
+      "Codex-native /btw side-question mode is unavailable because Afora sandboxing is active for this session.",
     );
 
     expect(getSharedCodexAppServerClientMock).not.toHaveBeenCalled();
@@ -1412,7 +1412,7 @@ describe("runCodexAppServerSideQuestion", () => {
         }),
       ),
     ).rejects.toThrow(
-      "Codex-native /btw side-question mode is unavailable because OpenClaw exec host=node is active for this session.",
+      "Codex-native /btw side-question mode is unavailable because Afora exec host=node is active for this session.",
     );
 
     expect(getSharedCodexAppServerClientMock).not.toHaveBeenCalled();
@@ -1436,7 +1436,7 @@ describe("runCodexAppServerSideQuestion", () => {
         }),
       ),
     ).rejects.toThrow(
-      "Codex-native /btw side-question mode is unavailable because OpenClaw exec host=node is active for this session.",
+      "Codex-native /btw side-question mode is unavailable because Afora exec host=node is active for this session.",
     );
 
     expect(getSharedCodexAppServerClientMock).not.toHaveBeenCalled();
@@ -1515,7 +1515,7 @@ describe("runCodexAppServerSideQuestion", () => {
     const turnStartCall = client.request.mock.calls.find(([method]) => method === "turn/start");
     expect(turnStartCall?.[1]).not.toHaveProperty("config");
     expect(relayIdDuringFork).toBeDefined();
-    expect(createOpenClawCodingToolsMock).toHaveBeenCalledWith(
+    expect(createAforaCodingToolsMock).toHaveBeenCalledWith(
       expect.objectContaining({ runId: "run-side-1" }),
     );
     expect(
@@ -2320,7 +2320,7 @@ describe("runCodexAppServerSideQuestion", () => {
         ],
       },
     };
-    createOpenClawCodingToolsMock.mockImplementation((options) =>
+    createAforaCodingToolsMock.mockImplementation((options) =>
       (options as { preparedModelRuntime?: unknown }).preparedModelRuntime === preparedModelRuntime
         ? [
             {
@@ -2362,11 +2362,11 @@ describe("runCodexAppServerSideQuestion", () => {
       } as never),
     );
     await vi.waitFor(() =>
-      expect(createOpenClawCodingToolsMock).toHaveBeenCalledWith(
+      expect(createAforaCodingToolsMock).toHaveBeenCalledWith(
         expect.objectContaining({ preparedModelRuntime }),
       ),
     );
-    const toolFactoryOptions = mockCall(createOpenClawCodingToolsMock)[0] as {
+    const toolFactoryOptions = mockCall(createAforaCodingToolsMock)[0] as {
       preparedModelRuntime?: unknown;
     };
     expect(toolFactoryOptions.preparedModelRuntime).toBe(preparedModelRuntime);
@@ -2467,7 +2467,7 @@ describe("runCodexAppServerSideQuestion", () => {
   it("omits computer control from side threads without a compaction owner", async () => {
     const client = createFakeClient();
     const computerExecute = vi.fn();
-    createOpenClawCodingToolsMock.mockReturnValue([
+    createAforaCodingToolsMock.mockReturnValue([
       {
         name: "computer",
         description: "Control a desktop",
@@ -2509,7 +2509,7 @@ describe("runCodexAppServerSideQuestion", () => {
     expect(computerExecute).not.toHaveBeenCalled();
     expect(toolResponse).toEqual({
       success: false,
-      contentItems: [{ type: "inputText", text: "Unknown OpenClaw tool: computer" }],
+      contentItems: [{ type: "inputText", text: "Unknown Afora tool: computer" }],
     });
   });
 
@@ -3111,7 +3111,7 @@ describe("runCodexAppServerSideQuestion", () => {
     await expect(run).resolves.toEqual({ text: "Tool answer." });
 
     expect(beforeToolCall).toHaveBeenCalledTimes(1);
-    expect(createOpenClawCodingToolsMock).toHaveBeenCalledWith(
+    expect(createAforaCodingToolsMock).toHaveBeenCalledWith(
       expect.objectContaining({ hookChannelId: "voice-room" }),
     );
     expect(toolExecuteMock).toHaveBeenCalledTimes(1);
@@ -3173,7 +3173,7 @@ describe("runCodexAppServerSideQuestion", () => {
 
   it("cleans up notification handlers when side tool setup fails", async () => {
     const client = createFakeClient();
-    createOpenClawCodingToolsMock.mockImplementation(() => {
+    createAforaCodingToolsMock.mockImplementation(() => {
       throw new Error("tool setup failed");
     });
     getSharedCodexAppServerClientMock.mockResolvedValue(client);

@@ -1,7 +1,7 @@
 import type { Selectable } from "kysely";
 import { executeSqliteQuerySync } from "../../infra/kysely-sync.js";
-import { withOpenClawAgentDatabaseReadOnly } from "../../state/openclaw-agent-db-readonly.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
+import { withAforaAgentDatabaseReadOnly } from "../../state/afora-agent-db-readonly.js";
+import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.generated.js";
 import { normalizeSessionDeliveryState } from "../../utils/delivery-context.shared.js";
 import type { SessionEntrySummary } from "./session-accessor.sqlite-contract.js";
 import {
@@ -14,7 +14,7 @@ import type { SessionEntryListScope } from "./session-accessor.types.js";
 import { projectCanonicalSessionEntryShape } from "./store-entry-shape.js";
 import type { SessionEntry } from "./types.js";
 
-type CanonicalRepairRow = Selectable<OpenClawAgentKyselyDatabase["session_nodes"]> & {
+type CanonicalRepairRow = Selectable<AforaAgentKyselyDatabase["session_nodes"]> & {
   current_agent_harness_id: string | null;
   current_chat_type: string | null;
   current_ended_at: number | null;
@@ -107,7 +107,7 @@ export function listSqliteSessionEntriesWithCanonicalOwnerEvidence(
 ): Array<SessionEntrySummary & { canonicalOwnerSessionKey?: string; rawEntryJson?: string }> {
   const resolved = resolveSqliteScope({ ...scope, sessionKey: "" });
   const databaseOptions = toDatabaseOptions(resolved);
-  const result = withOpenClawAgentDatabaseReadOnly((database) => {
+  const result = withAforaAgentDatabaseReadOnly((database) => {
     const db = getSessionKysely(database.db);
     const rows = executeSqliteQuerySync(
       database.db,

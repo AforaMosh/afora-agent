@@ -1,7 +1,7 @@
 // Doctor node-hosting preconditions expose config combinations that leave browser auth healthy
 // while machine authentication or onboarding remains unavailable.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { HealthFinding } from "../flows/health-checks.js";
 import { hasConfiguredGatewayAuthSecretInput } from "../gateway/auth-config-utils.js";
 
@@ -9,7 +9,7 @@ const CHECK_ID = "core/doctor/node-hosting-preconditions";
 const LOOPBACK_JOIN_CODE_MESSAGE =
   "Gateway is only bound to loopback. Set gateway.bind=lan, enable tailscale serve, or configure plugins.entries.device-pair.config.publicUrl.";
 
-function usesIdentityHeadersWithoutMachineCredentials(cfg: OpenClawConfig): boolean {
+function usesIdentityHeadersWithoutMachineCredentials(cfg: AforaConfig): boolean {
   const hasToken = hasConfiguredGatewayAuthSecretInput(cfg, "gateway.auth.token");
   const hasPassword = hasConfiguredGatewayAuthSecretInput(cfg, "gateway.auth.password");
   if (hasToken || hasPassword) {
@@ -26,7 +26,7 @@ function usesIdentityHeadersWithoutMachineCredentials(cfg: OpenClawConfig): bool
   );
 }
 
-function lacksNodeOnboardingUrl(cfg: OpenClawConfig): boolean {
+function lacksNodeOnboardingUrl(cfg: AforaConfig): boolean {
   const bind = cfg.gateway?.bind ?? "loopback";
   if (bind !== "loopback" && bind !== "auto") {
     return false;
@@ -44,7 +44,7 @@ function lacksNodeOnboardingUrl(cfg: OpenClawConfig): boolean {
 
 /** Collects config-only warnings for node authentication, onboarding, and worker ingress. */
 export function collectNodeHostingPreconditionFindings(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): readonly HealthFinding[] {
   const findings: HealthFinding[] = [];
   if (usesIdentityHeadersWithoutMachineCredentials(cfg)) {
@@ -56,7 +56,7 @@ export function collectNodeHostingPreconditionFindings(
       path: "gateway.auth",
       requirement: "machine-client-auth",
       fixHint:
-        "Switch gateway.auth.mode to token and configure gateway.auth.token as a SecretRef so machine clients can authenticate as devices. Keep trusted-proxy only if machine clients use a clean loopback/direct gateway.auth.password path. For Access-fronted gateways, configure the node gateway.cloudflareAccess.clientId / clientSecret SecretInputs or set CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET before openclaw connect.",
+        "Switch gateway.auth.mode to token and configure gateway.auth.token as a SecretRef so machine clients can authenticate as devices. Keep trusted-proxy only if machine clients use a clean loopback/direct gateway.auth.password path. For Access-fronted gateways, configure the node gateway.cloudflareAccess.clientId / clientSecret SecretInputs or set CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET before afora connect.",
     });
   }
   if (lacksNodeOnboardingUrl(cfg)) {
@@ -67,7 +67,7 @@ export function collectNodeHostingPreconditionFindings(
       path: "gateway.bind",
       requirement: "node-onboarding-url",
       fixHint:
-        "If an edge proxy fronts node onboarding, allow /j/* and /__openclaw__/worker without edge identity auth, and preserve WebSocket upgrade on /__openclaw__/worker. Both routes enforce their own credentials.",
+        "If an edge proxy fronts node onboarding, allow /j/* and /__afora__/worker without edge identity auth, and preserve WebSocket upgrade on /__afora__/worker. Both routes enforce their own credentials.",
     });
   }
   return findings;

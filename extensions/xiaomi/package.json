@@ -1,22 +1,22 @@
 {
-  "name": "@openclaw/xiaomi-provider",
+  "name": "@afora/xiaomi-provider",
   "version": "2026.8.1",
-  "description": "OpenClaw Xiaomi provider plugin.",
+  "description": "Afora Xiaomi provider plugin.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   },
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
     "install": {
-      "clawhubSpec": "clawhub:@openclaw/xiaomi-provider",
-      "npmSpec": "@openclaw/xiaomi-provider",
+      "clawhubSpec": "clawhub:@afora/xiaomi-provider",
+      "npmSpec": "@afora/xiaomi-provider",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.7.2"
     },
@@ -24,7 +24,7 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1",
+      "aforaVersion": "2026.8.1",
       "bundledDist": false
     },
     "release": {

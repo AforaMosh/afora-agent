@@ -9,11 +9,11 @@ const suite = createControlUiE2eSuite({
     `Playwright Chromium is not installed or cannot start at ${executablePath}. Run \`pnpm --dir ui exec playwright install --with-deps chromium\`.`,
 });
 
-const expectUploadSurface = process.env.OPENCLAW_TERMINAL_UPLOAD_EXPECT_PRESENT !== "0";
-const screenshotPath = process.env.OPENCLAW_TERMINAL_UPLOAD_SCREENSHOT?.trim();
-const progressScreenshotPath = process.env.OPENCLAW_TERMINAL_UPLOAD_PROGRESS_SCREENSHOT?.trim();
-const errorScreenshotPath = process.env.OPENCLAW_TERMINAL_UPLOAD_ERROR_SCREENSHOT?.trim();
-const videoDir = process.env.OPENCLAW_TERMINAL_UPLOAD_VIDEO_DIR?.trim();
+const expectUploadSurface = process.env.AFORA_TERMINAL_UPLOAD_EXPECT_PRESENT !== "0";
+const screenshotPath = process.env.AFORA_TERMINAL_UPLOAD_SCREENSHOT?.trim();
+const progressScreenshotPath = process.env.AFORA_TERMINAL_UPLOAD_PROGRESS_SCREENSHOT?.trim();
+const errorScreenshotPath = process.env.AFORA_TERMINAL_UPLOAD_ERROR_SCREENSHOT?.trim();
+const videoDir = process.env.AFORA_TERMINAL_UPLOAD_VIDEO_DIR?.trim();
 
 suite.define(() => {
   it("uploads picked and dropped files, then pastes staged paths without Enter", async () => {
@@ -27,16 +27,16 @@ suite.define(() => {
         await page.addInitScript(() => {
           (
             window as Window & {
-              ["__OPENCLAW_NATIVE_CONTROL_AUTH__"]?: { gatewayUrl: string; token: string };
+              ["__AFORA_NATIVE_CONTROL_AUTH__"]?: { gatewayUrl: string; token: string };
             }
-          )["__OPENCLAW_NATIVE_CONTROL_AUTH__"] = {
+          )["__AFORA_NATIVE_CONTROL_AUTH__"] = {
             gatewayUrl: "ws://gateway.example.test",
             token: "test",
           };
         });
-        const stagedPath = "/tmp/openclaw-terminal-upload/sample file.pdf";
-        const stagedNotesPath = "/tmp/openclaw-terminal-upload/notes.txt";
-        const stagedDropPath = "/tmp/openclaw-terminal-upload/dropped.png";
+        const stagedPath = "/tmp/afora-terminal-upload/sample file.pdf";
+        const stagedNotesPath = "/tmp/afora-terminal-upload/notes.txt";
+        const stagedDropPath = "/tmp/afora-terminal-upload/dropped.png";
         const gateway = await installMockGateway(page, {
           deferredMethods: ["connect"],
           featureMethods: ["terminal.open", "terminal.upload"],
@@ -146,8 +146,8 @@ suite.define(() => {
         const pickedInput = (await gateway.getRequests("terminal.input"))[0]?.params as {
           data?: string;
         };
-        expect(pickedInput.data).toContain("'/tmp/openclaw-terminal-upload/sample file.pdf'");
-        expect(pickedInput.data).toContain("/tmp/openclaw-terminal-upload/notes.txt");
+        expect(pickedInput.data).toContain("'/tmp/afora-terminal-upload/sample file.pdf'");
+        expect(pickedInput.data).toContain("/tmp/afora-terminal-upload/notes.txt");
         expect(pickedInput.data).not.toMatch(/[\r\n]/);
 
         await gateway.setMethodResponse("terminal.upload", { path: stagedDropPath, size: 3 });
@@ -180,7 +180,7 @@ suite.define(() => {
         const droppedInput = (await gateway.getRequests("terminal.input")).at(-1)?.params as {
           data?: string;
         };
-        expect(droppedInput.data).toContain("/tmp/openclaw-terminal-upload/dropped.png");
+        expect(droppedInput.data).toContain("/tmp/afora-terminal-upload/dropped.png");
         expect(droppedInput.data).not.toMatch(/[\r\n]/);
 
         await gateway.deferNext("terminal.upload");
@@ -198,7 +198,7 @@ suite.define(() => {
         await page.getByRole("button", { name: "Cancel" }).click();
         await expect.poll(async () => await page.locator(".tp-upload-card").count()).toBe(0);
         await gateway.resolveDeferred("terminal.upload", {
-          path: "/tmp/openclaw-terminal-upload/cancelled.zip",
+          path: "/tmp/afora-terminal-upload/cancelled.zip",
           size: 3,
         });
         await page.waitForTimeout(100);

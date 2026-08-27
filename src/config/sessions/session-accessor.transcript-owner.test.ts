@@ -1,10 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { withTempHome } from "openclaw/plugin-sdk/test-env";
+import { withTempHome } from "afora-agent/plugin-sdk/test-env";
 import { describe, expect, it } from "vitest";
 import { AgentSelectionRequiredError } from "../../agents/agent-scope-config.js";
 import { retainLegacyDefaultAgentId } from "../legacy.default-agent-owner.js";
-import type { OpenClawConfig } from "../types.openclaw.js";
+import type { AforaConfig } from "../types.afora.js";
 import { loadTranscriptEvents, replaceSessionEntry } from "./session-accessor.js";
 import { persistSessionTranscriptTurn } from "./session-accessor.transcript-turn.js";
 
@@ -15,7 +15,7 @@ describe("transcript turn logical ownership", () => {
       const cfg = {
         agents: { ownership: "explicit", entries: { ops: {}, research: {} } },
         session: { store: storePath },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
 
       await expect(
         persistSessionTranscriptTurn(
@@ -80,7 +80,7 @@ describe("transcript turn logical ownership", () => {
           entries: { ops: {}, research: {} },
         },
         session: { store: storePath },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       const scope = {
         agentId: "research",
         sessionId: "persisted-owner-transcript-session",
@@ -123,7 +123,7 @@ describe("transcript turn logical ownership", () => {
           entries: { ops: {}, research: {} },
         },
         session: { store: storePath },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
 
       await expect(
         persistSessionTranscriptTurn(
@@ -153,7 +153,7 @@ describe("transcript turn logical ownership", () => {
           entries: { ops: {}, research: {} },
         },
         session: { store: fixedStorePath },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       const scope = {
         agentId: "research",
         sessionId: "research-global-session",
@@ -194,7 +194,7 @@ describe("transcript turn logical ownership", () => {
           entries: { ops: {}, research: {} },
         },
         session: { store: configuredStorePath },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
 
       await expect(
         persistSessionTranscriptTurn(
@@ -223,7 +223,7 @@ describe("transcript turn logical ownership", () => {
           entries: { ops: {}, research: {} },
         },
         session: { store: path.join(home, "shared-sessions.json") },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
 
       await expect(
         persistSessionTranscriptTurn(
@@ -257,7 +257,7 @@ describe("transcript turn logical ownership", () => {
             entries: { ops: {}, research: {} },
           },
           session: { store: fixedStorePath },
-        } satisfies OpenClawConfig;
+        } satisfies AforaConfig;
 
         await expect(
           persistSessionTranscriptTurn(

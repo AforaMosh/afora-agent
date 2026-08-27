@@ -16,9 +16,9 @@ import {
   type EmbeddedRunAttemptParamsV2,
   type NativeHookRelayEvent,
   type NativeHookRelayRegistrationHandle,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { loadExecApprovals } from "openclaw/plugin-sdk/exec-approvals-runtime";
-import { readStringField as readString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { loadExecApprovals } from "afora-agent/plugin-sdk/exec-approvals-runtime";
+import { readStringField as readString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveCodexAppServerForModelProvider } from "./app-server-policy.js";
 import { handleCodexAppServerApprovalRequest } from "./approval-bridge.js";
 import {
@@ -43,13 +43,13 @@ import {
   isCodexSandboxExecServerEnabled,
   readCodexPluginConfig,
   resolveCodexAppServerHomeScope,
-  resolveOpenClawExecPolicyForCodexAppServer,
+  resolveAforaExecPolicyForCodexAppServer,
   resolveCodexModelBackedReviewerPolicyContext,
   shouldAutoApproveCodexAppServerApprovals,
   type CodexAppServerRuntimeOptions,
 } from "./config.js";
 import {
-  resolveCodexExternalSandboxPolicyForOpenClawSandbox,
+  resolveCodexExternalSandboxPolicyForAforaSandbox,
   resolveCodexMessageToolProvider,
   resolveCodexSandboxEnvironmentSelection,
   shouldEnableCodexAppServerNativeToolSurface,
@@ -199,7 +199,7 @@ export async function runCodexAppServerSideQuestion(
     config: params.cfg,
     agentId: params.agentId,
   });
-  const execPolicy = resolveOpenClawExecPolicyForCodexAppServer({
+  const execPolicy = resolveAforaExecPolicyForCodexAppServer({
     approvals: loadExecApprovals(),
     config: params.cfg,
     agentId: sessionAgentId,
@@ -428,7 +428,7 @@ export async function runCodexAppServerSideQuestion(
     });
     if (!environment) {
       throw new Error(
-        "Codex app-server did not register an OpenClaw sandbox exec-server environment.",
+        "Codex app-server did not register an Afora sandbox exec-server environment.",
       );
     }
     sandboxEnvironment = environment;
@@ -737,7 +737,7 @@ export async function runCodexAppServerSideQuestion(
             ...(sandboxEnvironment
               ? {
                   cwd: sandboxEnvironment.cwd,
-                  sandboxPolicy: resolveCodexExternalSandboxPolicyForOpenClawSandbox(
+                  sandboxPolicy: resolveCodexExternalSandboxPolicyForAforaSandbox(
                     params.sandbox ?? undefined,
                   ),
                   environments: resolveCodexSandboxEnvironmentSelection(
@@ -1018,8 +1018,8 @@ async function createCodexSideToolBridge(input: {
   const messageToolProvider = resolveCodexMessageToolProvider(input.params);
   let tools: AnyAgentTool[] = [];
   if (supportsModelTools(runtimeModel)) {
-    const createOpenClawCodingTools = (await import("openclaw/plugin-sdk/agent-harness"))
-      .createOpenClawCodingTools;
+    const createAforaCodingTools = (await import("afora-agent/plugin-sdk/agent-harness"))
+      .createAforaCodingTools;
     const sandboxSessionKey =
       input.params.sandboxSessionKey?.trim() ||
       input.params.sessionKey?.trim() ||
@@ -1033,7 +1033,7 @@ async function createCodexSideToolBridge(input: {
             sessionKey: sandboxSessionKey,
             workspaceDir: input.cwd,
           });
-    const allTools = createOpenClawCodingTools({
+    const allTools = createAforaCodingTools({
       agentId: input.sessionAgentId,
       sessionKey: sandboxSessionKey,
       runSessionKey:

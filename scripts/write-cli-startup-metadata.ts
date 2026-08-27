@@ -1,4 +1,4 @@
-// Write Cli Startup Metadata script supports OpenClaw repository automation.
+// Write Cli Startup Metadata script supports Afora repository automation.
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import fs, {
@@ -12,10 +12,10 @@ import fs, {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { toErrorObject } from "@openclaw/normalization-core/error-coercion";
+import { toErrorObject } from "@afora/normalization-core/error-coercion";
 import pMap from "p-map";
 import type { RootHelpRenderOptions } from "../src/cli/program/root-help.js";
-import type { OpenClawConfig } from "../src/config/config.js";
+import type { AforaConfig } from "../src/config/config.js";
 import { resolveCliStartupRootHelpBundleIdentity } from "./lib/cli-startup-root-help-bundle.js";
 import { resolveWindowsTaskkillPath } from "./lib/windows-taskkill.mjs";
 
@@ -383,7 +383,7 @@ function readBundledChannelCatalog(
       const raw = readFileSync(packageJsonPath, "utf8");
       signature.update(`${dirEntry.name}\0${raw}\0`);
       const parsed = JSON.parse(raw) as {
-        openclaw?: {
+        afora?: {
           channel?: {
             id?: unknown;
             order?: unknown;
@@ -391,12 +391,12 @@ function readBundledChannelCatalog(
           };
         };
       };
-      const id = parsed.openclaw?.channel?.id;
+      const id = parsed.afora?.channel?.id;
       if (typeof id !== "string" || !id.trim()) {
         continue;
       }
-      const orderRaw = parsed.openclaw?.channel?.order;
-      const labelRaw = parsed.openclaw?.channel?.label;
+      const orderRaw = parsed.afora?.channel?.order;
+      const labelRaw = parsed.afora?.channel?.label;
       entries.push({
         id: id.trim(),
         order: typeof orderRaw === "number" ? orderRaw : 999,
@@ -417,7 +417,7 @@ function readBundledChannelCatalog(
 }
 
 function createRootHelpRenderStateDir(): string {
-  return mkdtempSync(path.join(tmpdir(), "openclaw-build-root-help-"));
+  return mkdtempSync(path.join(tmpdir(), "afora-build-root-help-"));
 }
 
 function cleanupRootHelpRenderStateDir(stateDir: string): void {
@@ -477,19 +477,19 @@ function createIsolatedRootHelpRenderContext(
   const homeDir = path.join(stateDir, "home");
   const env: NodeJS.ProcessEnv = {
     HOME: homeDir,
-    LOGNAME: process.env.LOGNAME ?? process.env.USER ?? "openclaw-build",
-    USER: process.env.USER ?? process.env.LOGNAME ?? "openclaw-build",
+    LOGNAME: process.env.LOGNAME ?? process.env.USER ?? "afora-build",
+    USER: process.env.USER ?? process.env.LOGNAME ?? "afora-build",
     PATH: process.env.PATH ?? "",
     TMPDIR: process.env.TMPDIR ?? "/tmp",
     LANG: process.env.LANG ?? "C.UTF-8",
     LC_ALL: process.env.LC_ALL ?? "C.UTF-8",
     TERM: process.env.TERM ?? "dumb",
     NO_COLOR: "1",
-    OPENCLAW_BUNDLED_PLUGINS_DIR: bundledPluginsDir,
-    OPENCLAW_DISABLE_BUNDLED_PLUGINS: "",
-    OPENCLAW_STATE_DIR: stateDir,
+    AFORA_BUNDLED_PLUGINS_DIR: bundledPluginsDir,
+    AFORA_DISABLE_BUNDLED_PLUGINS: "",
+    AFORA_STATE_DIR: stateDir,
   };
-  const config: OpenClawConfig = {
+  const config: AforaConfig = {
     agents: {
       defaults: {
         workspace: workspaceDir,
@@ -897,11 +897,11 @@ async function renderSourceCommandHelpText(
   renderContext: RootHelpRenderContext,
   taskContext?: RenderTaskContext,
 ): Promise<string> {
-  return await spawnText(["openclaw.mjs", command, "--help"], {
+  return await spawnText(["afora.mjs", command, "--help"], {
     cwd: rootDir,
     env: {
       ...renderContext.env,
-      OPENCLAW_DISABLE_CLI_STARTUP_HELP_FAST_PATH: "1",
+      AFORA_DISABLE_CLI_STARTUP_HELP_FAST_PATH: "1",
     },
     failureMessage: `Failed to render source ${command} help`,
     onTerminalFailure: taskContext?.reportFailure,

@@ -1,7 +1,7 @@
 // Volcengine tests cover index plugin behavior.
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { registerSingleProviderPlugin } from "openclaw/plugin-sdk/plugin-test-runtime";
+import { registerSingleProviderPlugin } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { describe, expect, it } from "vitest";
 import { VOLCENGINE_UNSUPPORTED_TOOL_SCHEMA_KEYWORDS } from "./api.js";
 import plugin from "./index.js";
@@ -61,7 +61,7 @@ describe("volcengine plugin", () => {
 
   it("declares its coding provider auth alias in the manifest", () => {
     const pluginJson = JSON.parse(
-      readFileSync(resolve(import.meta.dirname, "openclaw.plugin.json"), "utf-8"),
+      readFileSync(resolve(import.meta.dirname, "afora.plugin.json"), "utf-8"),
     );
 
     expect(pluginJson.providerAuthAliases).toEqual({
@@ -71,7 +71,7 @@ describe("volcengine plugin", () => {
 
   it("declares OpenAI-compatible streaming usage support in the manifest", () => {
     const pluginJson = JSON.parse(
-      readFileSync(resolve(import.meta.dirname, "openclaw.plugin.json"), "utf-8"),
+      readFileSync(resolve(import.meta.dirname, "afora.plugin.json"), "utf-8"),
     );
 
     expect(pluginJson.providerRequest?.providers).toMatchObject({

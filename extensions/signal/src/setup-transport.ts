@@ -1,11 +1,11 @@
 // Signal setup owns transport discovery and canonical account writes.
-import { normalizeAccountId, resolveAccountEntry } from "openclaw/plugin-sdk/account-resolution";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import { normalizeAccountId, resolveAccountEntry } from "afora-agent/plugin-sdk/account-resolution";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   DEFAULT_ACCOUNT_ID,
   patchChannelConfigForAccount,
-} from "openclaw/plugin-sdk/setup-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/setup-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { SignalTransportConfig } from "./account-types.js";
 import {
   listSignalAccountIds,
@@ -54,7 +54,7 @@ function normalizeTransport(transport: SignalTransportConfig): SignalTransportCo
 }
 
 function assertSignalContainerTransportHasAccount(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   transport: SignalTransportConfig;
 }): void {
@@ -69,7 +69,7 @@ function assertSignalContainerTransportHasAccount(params: {
 }
 
 function assertSignalLocalEndpointDoesNotConflictWithManagedSibling(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   transport: SignalTransportConfig;
 }): void {
@@ -109,7 +109,7 @@ function assertSignalLocalEndpointDoesNotConflictWithManagedSibling(params: {
 }
 
 export function resolveConfiguredSignalTransport(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   accountId: string,
 ): SignalTransportConfig | undefined {
   const signal = cfg.channels?.signal;
@@ -152,7 +152,7 @@ function alignManagedConnectionUrlAfterBindChange(params: {
 }
 
 export function prepareSignalManagedNativeTransport(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   overrides?: Omit<SignalManagedNativeTransport, "kind">;
 }): SignalManagedNativeTransport {
@@ -259,7 +259,7 @@ export function prepareSignalManagedNativeTransport(params: {
 }
 
 export async function probeSignalTransport(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   transport: SignalTransportConfig;
   account?: string;
@@ -288,10 +288,10 @@ export async function probeSignalTransport(params: {
 }
 
 export function writeSignalAccountTransport(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   transport: SignalTransportConfig;
-}): OpenClawConfig {
+}): AforaConfig {
   const transport = normalizeTransport(params.transport);
   assertSignalContainerTransportHasAccount({
     cfg: params.cfg,

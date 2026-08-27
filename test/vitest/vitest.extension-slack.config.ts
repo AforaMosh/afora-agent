@@ -7,7 +7,7 @@ export function createExtensionSlackVitestConfig(
   return createScopedVitestConfig(["extensions/slack/**/*.test.ts"], {
     dir: "extensions",
     env,
-    includeOpenClawRuntimeSetup: false,
+    includeAforaRuntimeSetup: false,
     name: "extension-slack",
     passWithNoTests: true,
     setupFiles: ["test/setup.extensions.ts"],

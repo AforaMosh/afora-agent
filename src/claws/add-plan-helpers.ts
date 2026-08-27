@@ -1,4 +1,4 @@
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import type { AgentConfig } from "../config/types.agents.js";
 import type { ClawInstallStatus } from "./provenance.js";
 import type { ClawAddPlan } from "./types.js";

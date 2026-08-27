@@ -7,8 +7,8 @@ import {
   createTestWizardPrompter,
   runSetupWizardConfigure,
   runSetupWizardFinalize,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
-import { withTempDir } from "openclaw/plugin-sdk/test-env";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { withTempDir } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -60,7 +60,7 @@ describe("ClickClack setup wizard", () => {
     mocks.me.mockReset();
     mocks.resolveWorkspaceId.mockReset();
     mocks.workspaces.mockReset();
-    mocks.me.mockResolvedValue({ id: "usr_bot", handle: "openclaw" });
+    mocks.me.mockResolvedValue({ id: "usr_bot", handle: "afora" });
     mocks.resolveWorkspaceId.mockResolvedValue("wsp_default");
     mocks.workspaces.mockResolvedValue([
       { id: "wsp_default", name: "Default", slug: "default", created_at: "2026-01-01" },
@@ -221,7 +221,7 @@ describe("ClickClack setup wizard", () => {
       mocks.resolveWorkspaceId.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
     );
     expect(note).toHaveBeenCalledWith(
-      "Connected as @openclaw — workspace Default resolved.",
+      "Connected as @afora — workspace Default resolved.",
       "ClickClack connection",
     );
   });

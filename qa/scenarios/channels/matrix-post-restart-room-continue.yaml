@@ -24,7 +24,7 @@ scenario:
       conversationKind: group
       conversationId: "!qa-restart:crabline.test"
       senderId: "@driver:crabline.test"
-      mentionPrefix: "@openclaw "
+      mentionPrefix: "@afora "
       firstPrefix: MATRIX_QA_RESTART_FIRST
       secondPrefix: MATRIX_QA_RESTART_SECOND
       timeoutMs: 60000

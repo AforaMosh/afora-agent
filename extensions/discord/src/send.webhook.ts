@@ -1,14 +1,14 @@
 // Discord plugin module implements send.webhook behavior.
-import { recordChannelActivity } from "openclaw/plugin-sdk/channel-activity-runtime";
-import { recordOutboundMessageIdentity } from "openclaw/plugin-sdk/channel-outbound";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { buildTimeoutAbortSignal } from "openclaw/plugin-sdk/extension-shared";
+import { recordChannelActivity } from "afora-agent/plugin-sdk/channel-activity-runtime";
+import { recordOutboundMessageIdentity } from "afora-agent/plugin-sdk/channel-outbound";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { buildTimeoutAbortSignal } from "afora-agent/plugin-sdk/extension-shared";
 import {
   readProviderJsonResponse,
   readResponseTextLimited,
-} from "openclaw/plugin-sdk/provider-http";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/provider-http";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { resolveDiscordClientAccountContext } from "./client.js";
 import {
   DiscordError,
@@ -31,7 +31,7 @@ const DISCORD_WEBHOOK_ERROR_BODY_LIMIT_BYTES = 8 * 1024;
 const DISCORD_WEBHOOK_TIMEOUT_MS = DISCORD_REST_TIMEOUT_MS;
 
 type DiscordWebhookSendOpts = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   webhookId: string;
   webhookToken: string;
   accountId?: string;

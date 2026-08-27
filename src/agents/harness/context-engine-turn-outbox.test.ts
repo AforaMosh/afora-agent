@@ -13,9 +13,9 @@ import type {
 import type { ContextEngine } from "../../context-engine/types.js";
 import { createUserTurnTranscriptRecorder } from "../../sessions/user-turn-transcript.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import type { ContextEngineLogicalTurnLease } from "./context-engine-logical-turn.js";
 import { drainPendingContextEngineTurnsBeforeRun } from "./context-engine-turn-attempt.js";
 import {
@@ -33,7 +33,7 @@ type ContextEngineTurnOutboxPayload = Parameters<
 >[0]["payload"];
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
   for (const tempDir of tempDirs.splice(0)) {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
@@ -85,11 +85,11 @@ describe("context-engine turn outbox", () => {
   });
 
   it("retains a queued turn when commitTurn resolves outside its contract", async () => {
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-context-outbox-contract-"));
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-context-outbox-contract-"));
     tempDirs.push(stateDir);
-    const database = openOpenClawAgentDatabase({
+    const database = openAforaAgentDatabase({
       agentId: "main",
-      env: { OPENCLAW_STATE_DIR: stateDir },
+      env: { AFORA_STATE_DIR: stateDir },
     });
     const payload = createPayload({
       advancementKey: "session-a:invalid-result",
@@ -138,7 +138,7 @@ describe("context-engine turn outbox", () => {
   });
 
   it("drains prior work before fresh-turn assembly and records dispatch admission", async () => {
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-context-outbox-recovery-"));
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-context-outbox-recovery-"));
     tempDirs.push(stateDir);
     const target = {
       agentId: "main",
@@ -159,7 +159,7 @@ describe("context-engine turn outbox", () => {
       logicalTurnId: "recovered-logical-turn",
       role: "user" as const,
     } satisfies TranscriptTurnAdmission;
-    const database = openOpenClawAgentDatabase({
+    const database = openAforaAgentDatabase({
       agentId: target.agentId,
       path: admission.storePath,
     });
@@ -276,7 +276,7 @@ describe("context-engine turn outbox", () => {
   });
 
   it("discards admission-only recovery even when the transcript has descendants", async () => {
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-context-outbox-unaccepted-"));
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-context-outbox-unaccepted-"));
     tempDirs.push(stateDir);
     const target = {
       agentId: "main",
@@ -297,7 +297,7 @@ describe("context-engine turn outbox", () => {
       logicalTurnId: "unaccepted-logical-turn",
       role: "user" as const,
     } satisfies TranscriptTurnAdmission;
-    const database = openOpenClawAgentDatabase({
+    const database = openAforaAgentDatabase({
       agentId: target.agentId,
       path: admission.storePath,
     });
@@ -373,11 +373,11 @@ describe("context-engine turn outbox", () => {
   });
 
   it("retains unrecoverable accepted recovery as a blocking marker", async () => {
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-context-outbox-blocked-"));
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-context-outbox-blocked-"));
     tempDirs.push(stateDir);
-    const database = openOpenClawAgentDatabase({
+    const database = openAforaAgentDatabase({
       agentId: "main",
-      env: { OPENCLAW_STATE_DIR: stateDir },
+      env: { AFORA_STATE_DIR: stateDir },
     });
     const payload = createPayload({
       advancementKey: "session-a:unrecoverable",
@@ -464,11 +464,11 @@ describe("context-engine turn outbox", () => {
   });
 
   it("does not let later same-session turns overtake a failed commit", async () => {
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-context-outbox-order-"));
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-context-outbox-order-"));
     tempDirs.push(stateDir);
-    const database = openOpenClawAgentDatabase({
+    const database = openAforaAgentDatabase({
       agentId: "main",
-      env: { OPENCLAW_STATE_DIR: stateDir },
+      env: { AFORA_STATE_DIR: stateDir },
     });
     const enqueue = (advancementKey: string, sessionId: string, sequence: number) =>
       enqueueContextEngineTurnCommit({
@@ -555,11 +555,11 @@ describe("context-engine turn outbox", () => {
   });
 
   it("retries the current session before the next run and degrades if it stays blocked", async () => {
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-context-outbox-retry-"));
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-context-outbox-retry-"));
     tempDirs.push(stateDir);
-    const database = openOpenClawAgentDatabase({
+    const database = openAforaAgentDatabase({
       agentId: "main",
-      env: { OPENCLAW_STATE_DIR: stateDir },
+      env: { AFORA_STATE_DIR: stateDir },
     });
     const payload = createPayload({
       advancementKey: "session-a:retry",

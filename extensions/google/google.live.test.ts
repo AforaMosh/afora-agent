@@ -1,21 +1,21 @@
 // Google tests cover google plugin behavior.
-import { toErrorObject as toLintErrorObject } from "openclaw/plugin-sdk/error-runtime";
+import { toErrorObject as toLintErrorObject } from "afora-agent/plugin-sdk/error-runtime";
 import {
   completeSimple,
   type Model,
   type ProviderContext,
   type ProviderModel,
   type ProviderStreamFunction,
-} from "openclaw/plugin-sdk/llm";
-import { resolveFfmpegBin } from "openclaw/plugin-sdk/media-runtime";
+} from "afora-agent/plugin-sdk/llm";
+import { resolveFfmpegBin } from "afora-agent/plugin-sdk/media-runtime";
 import {
   createCapturedPluginRegistration,
   registerProviderPlugin,
   requireRegisteredProvider,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
-import { normalizeTranscriptForMatch } from "openclaw/plugin-sdk/provider-test-contracts";
-import type { RealtimeVoiceBridge } from "openclaw/plugin-sdk/realtime-voice";
-import { isLiveTestEnabled } from "openclaw/plugin-sdk/test-live";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { normalizeTranscriptForMatch } from "afora-agent/plugin-sdk/provider-test-contracts";
+import type { RealtimeVoiceBridge } from "afora-agent/plugin-sdk/realtime-voice";
+import { isLiveTestEnabled } from "afora-agent/plugin-sdk/test-live";
 import { describe, expect, it } from "vitest";
 import plugin from "./index.js";
 import { buildGoogleLiveCatalogProvider } from "./provider-catalog.js";
@@ -161,7 +161,7 @@ describeLive("google plugin live", () => {
           messages: [
             {
               role: "user",
-              content: "Reply with exactly: OpenClaw live catalog OK",
+              content: "Reply with exactly: Afora live catalog OK",
               timestamp: Date.now(),
             },
           ],
@@ -250,7 +250,7 @@ describeLive("google plugin live", () => {
     const provider = requireRegisteredProvider(speechProviders, "google");
 
     const audioFile = await provider.synthesize({
-      text: "OpenClaw Google text to speech integration test OK.",
+      text: "Afora Google text to speech integration test OK.",
       cfg: { plugins: { enabled: true } } as never,
       providerConfig: { apiKey: GOOGLE_API_KEY },
       target: "audio-file",
@@ -271,7 +271,7 @@ describeLive("google plugin live", () => {
     const provider = requireRegisteredProvider(speechProviders, "google");
 
     const audioFile = await provider.synthesize({
-      text: "OpenClaw Google voice note integration test OK.",
+      text: "Afora Google voice note integration test OK.",
       cfg: { plugins: { enabled: true } } as never,
       providerConfig: { apiKey: GOOGLE_API_KEY },
       target: "voice-note",
@@ -345,7 +345,7 @@ describeLive("google plugin live", () => {
       },
       onReady: () => {
         readyCount += 1;
-        bridge.triggerGreeting?.("Reply with exactly: OpenClaw Google realtime ready.");
+        bridge.triggerGreeting?.("Reply with exactly: Afora Google realtime ready.");
       },
       onError: (error) => errors.push(error),
       onClose: (reason) => closeReasons.push(reason),
@@ -441,7 +441,7 @@ describeLive("google plugin live", () => {
       closeReasons,
     });
 
-    bridge.sendUserMessage?.("Reply with exactly: OpenClaw lazy bridge ready.");
+    bridge.sendUserMessage?.("Reply with exactly: Afora lazy bridge ready.");
     try {
       await bridge.connect();
       // Gemini 3.1 can omit transcription.finished. Wait for output to go idle
@@ -475,7 +475,7 @@ describeLive("google plugin live", () => {
       finalAssistantTranscripts.some((text) => {
         const normalized = normalizeTranscriptForMatch(text);
         return (
-          normalized.includes("openclaw") &&
+          normalized.includes("afora") &&
           normalized.includes("lazy") &&
           normalized.includes("bridge")
         );
@@ -495,7 +495,7 @@ describeLive("google plugin live", () => {
     let lastError: unknown;
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
-        result = await tool?.execute({ query: "OpenClaw GitHub", count: 1 });
+        result = await tool?.execute({ query: "Afora GitHub", count: 1 });
         lastError = undefined;
         break;
       } catch (error) {
@@ -531,7 +531,7 @@ describeLive("google plugin live", () => {
         searchConfig: { provider: "gemini", cacheTtlMinutes: 0, timeoutSeconds: 90 },
       } as never);
 
-      const result = await tool?.execute({ query: "OpenClaw GitHub", count: 1 });
+      const result = await tool?.execute({ query: "Afora GitHub", count: 1 });
 
       expect(process.env.GEMINI_API_KEY).toBeUndefined();
       expect(process.env.GOOGLE_API_KEY).toBeUndefined();

@@ -4,9 +4,9 @@ import os from "node:os";
 import path from "node:path";
 import type {
   AnyAgentTool,
-  OpenClawPluginApi,
-  OpenClawPluginToolContext,
-} from "openclaw/plugin-sdk/core";
+  AforaPluginApi,
+  AforaPluginToolContext,
+} from "afora-agent/plugin-sdk/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { registerWhatsAppCallTool } from "./agent-tools-call.js";
 
@@ -18,11 +18,11 @@ const defaultDependencyMocks = vi.hoisted(() => ({
   oauthDir: "",
 }));
 
-vi.mock("openclaw/plugin-sdk/setup-tools", () => ({
+vi.mock("afora-agent/plugin-sdk/setup-tools", () => ({
   detectBinary: vi.fn(async () => defaultDependencyMocks.binaryFound),
 }));
 
-vi.mock("openclaw/plugin-sdk/state-paths", () => ({
+vi.mock("afora-agent/plugin-sdk/state-paths", () => ({
   resolveOAuthDir: () => defaultDependencyMocks.oauthDir,
 }));
 
@@ -33,10 +33,10 @@ vi.mock("./connection-controller-runtime-context.js", () => ({
 
 function createApi(params?: {
   speech?: Partial<
-    Awaited<ReturnType<OpenClawPluginApi["runtime"]["tts"]["textToSpeechTelephony"]>>
+    Awaited<ReturnType<AforaPluginApi["runtime"]["tts"]["textToSpeechTelephony"]>>
   >;
-  runCommand?: OpenClawPluginApi["runtime"]["system"]["runCommandWithTimeout"];
-}): OpenClawPluginApi {
+  runCommand?: AforaPluginApi["runtime"]["system"]["runCommandWithTimeout"];
+}): AforaPluginApi {
   return {
     config: {},
     registerTool: vi.fn(),
@@ -64,12 +64,12 @@ function createApi(params?: {
           })),
       },
     },
-  } as unknown as OpenClawPluginApi;
+  } as unknown as AforaPluginApi;
 }
 
 function createContext(
-  overrides: Partial<OpenClawPluginToolContext> = {},
-): OpenClawPluginToolContext {
+  overrides: Partial<AforaPluginToolContext> = {},
+): AforaPluginToolContext {
   return {
     config: { channels: { whatsapp: { actions: { calls: true } } } },
     messageChannel: "whatsapp",
@@ -80,8 +80,8 @@ function createContext(
 }
 
 function resolveRegisteredCallTool(
-  api: OpenClawPluginApi,
-  context: OpenClawPluginToolContext,
+  api: AforaPluginApi,
+  context: AforaPluginToolContext,
 ): AnyAgentTool | null {
   registerWhatsAppCallTool(api);
   const factory = vi.mocked(api.registerTool).mock.calls.at(-1)?.[0];
@@ -102,7 +102,7 @@ describe("WhatsApp call tool", () => {
   beforeEach(async () => {
     runtimeContextMocks.controllers.clear();
     defaultDependencyMocks.binaryFound = true;
-    rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-whatsapp-call-test-"));
+    rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-whatsapp-call-test-"));
     defaultDependencyMocks.oauthDir = path.join(rootDir, "call dir", "$HOME's");
     stateDir = path.join(defaultDependencyMocks.oauthDir, "whatsapp-calls", "default");
     await fs.mkdir(stateDir, { recursive: true });
@@ -171,7 +171,7 @@ describe("WhatsApp call tool", () => {
         killed: false,
         termination: "exit" as const,
       };
-    }) as OpenClawPluginApi["runtime"]["system"]["runCommandWithTimeout"];
+    }) as AforaPluginApi["runtime"]["system"]["runCommandWithTimeout"];
     const tool = resolveRegisteredCallTool(createApi({ runCommand }), createContext());
 
     const result = await tool?.execute("call-2", {
@@ -211,7 +211,7 @@ describe("WhatsApp call tool", () => {
       signal: null,
       killed: false,
       termination: "exit" as const,
-    })) as OpenClawPluginApi["runtime"]["system"]["runCommandWithTimeout"];
+    })) as AforaPluginApi["runtime"]["system"]["runCommandWithTimeout"];
     runtimeContextMocks.controllers.set("default", {
       getActiveListener: () => null,
       getCurrentSock: () => ({
@@ -261,7 +261,7 @@ describe("WhatsApp call tool", () => {
         killed: false,
         termination: "exit" as const,
       };
-    }) as OpenClawPluginApi["runtime"]["system"]["runCommandWithTimeout"];
+    }) as AforaPluginApi["runtime"]["system"]["runCommandWithTimeout"];
     const tool = resolveRegisteredCallTool(createApi({ runCommand }), createContext());
 
     await expect(tool?.execute("call-3", { action: "call", message: "Hello" })).rejects.toThrow(
@@ -280,7 +280,7 @@ describe("WhatsApp call tool", () => {
       signal: "SIGTERM" as const,
       killed: true,
       termination: "timeout" as const,
-    })) as OpenClawPluginApi["runtime"]["system"]["runCommandWithTimeout"];
+    })) as AforaPluginApi["runtime"]["system"]["runCommandWithTimeout"];
     const tool = resolveRegisteredCallTool(createApi({ runCommand }), createContext());
 
     await expect(
@@ -304,7 +304,7 @@ describe("WhatsApp call tool", () => {
           killed: false,
           termination: "exit" as const,
         };
-      }) as OpenClawPluginApi["runtime"]["system"]["runCommandWithTimeout"];
+      }) as AforaPluginApi["runtime"]["system"]["runCommandWithTimeout"];
       const tool = resolveRegisteredCallTool(
         createApi({
           runCommand,

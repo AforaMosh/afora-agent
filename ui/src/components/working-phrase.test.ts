@@ -19,7 +19,7 @@ const NOW = 2_000_000_000;
 const PHRASE_TEXT = /^·\s\S+…$/;
 
 function mountPhrase(seed = "stream-working:test"): WorkingPhraseElement {
-  const element = document.createElement("openclaw-working-phrase") as WorkingPhraseElement;
+  const element = document.createElement("afora-working-phrase") as WorkingPhraseElement;
   element.seed = seed;
   element.startMs = NOW;
   document.body.appendChild(element);
@@ -33,7 +33,7 @@ async function textAt(element: WorkingPhraseElement, elapsedMs: number): Promise
   return element.textContent?.replace(/\s+/g, " ").trim() ?? "";
 }
 
-describe("openclaw-working-phrase", () => {
+describe("afora-working-phrase", () => {
   let element: WorkingPhraseElement;
 
   beforeEach(() => {

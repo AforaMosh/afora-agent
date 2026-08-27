@@ -1,5 +1,5 @@
 // Skill contract tests cover full and compact catalog serialization.
-import { formatSkillsForPrompt as upstreamFormatSkillsForPrompt } from "openclaw/plugin-sdk/agent-sessions";
+import { formatSkillsForPrompt as upstreamFormatSkillsForPrompt } from "afora-agent/plugin-sdk/agent-sessions";
 import { describe, expect, it } from "vitest";
 import { createCanonicalFixtureSkill } from "../test-support/test-helpers.js";
 import {

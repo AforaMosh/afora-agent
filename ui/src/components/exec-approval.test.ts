@@ -36,7 +36,7 @@ async function renderApproval(
   const queue = Array.isArray(requestOrQueue) ? requestOrQueue : [requestOrQueue];
   const onDecision = overrides.onDecision ?? vi.fn();
   render(
-    html`<openclaw-exec-approval
+    html`<afora-exec-approval
       .props=${{
         queue,
         busy: overrides.busy ?? false,
@@ -44,10 +44,10 @@ async function renderApproval(
         nowMs: overrides.nowMs ?? Date.now(),
         onDecision,
       }}
-    ></openclaw-exec-approval>`,
+    ></afora-exec-approval>`,
     container,
   );
-  const approval = container.querySelector<LitElement>("openclaw-exec-approval");
+  const approval = container.querySelector<LitElement>("afora-exec-approval");
   if (!approval) {
     throw new Error("Expected exec approval");
   }
@@ -69,7 +69,7 @@ function chord(key: string, init: KeyboardEventInit = {}): KeyboardEvent {
   return new KeyboardEvent("keydown", { key, metaKey: true, bubbles: true, ...init });
 }
 
-describe("openclaw-exec-approval", () => {
+describe("afora-exec-approval", () => {
   beforeEach(async () => {
     restoreDialogPolyfill = installDialogPolyfill();
     await i18n.setLocale("en");
@@ -88,7 +88,7 @@ describe("openclaw-exec-approval", () => {
   it("does not render a modal when an approval arrives", async () => {
     await renderApproval(createExecRequest());
 
-    expect(container.querySelector("openclaw-modal-dialog")).toBeNull();
+    expect(container.querySelector("afora-modal-dialog")).toBeNull();
   });
 
   it("uses neutral unavailable copy for exec allow-always decisions", async () => {
@@ -321,12 +321,12 @@ describe("openclaw-exec-approval", () => {
 
     expect(modal.dispatchEvent(cancel)).toBe(true);
     await approval.updateComplete;
-    expect(container.querySelector("openclaw-modal-dialog")).toBeNull();
+    expect(container.querySelector("afora-modal-dialog")).toBeNull();
     expect(onDecision).not.toHaveBeenCalled();
 
     (approval as LitElement & { show(): void }).show();
     await approval.updateComplete;
-    expect(container.querySelector("openclaw-modal-dialog")).not.toBeNull();
+    expect(container.querySelector("afora-modal-dialog")).not.toBeNull();
   });
 
   // Settings Escape guards read this fact; a pending queue alone must not
@@ -354,12 +354,12 @@ describe("openclaw-exec-approval", () => {
       createExecRequest({ id: "approval-other", request: { command: "pnpm test" } }),
     ];
     const { approval } = await renderApproval(queue);
-    expect(container.querySelector("openclaw-modal-dialog")).toBeNull();
+    expect(container.querySelector("afora-modal-dialog")).toBeNull();
 
     (approval as LitElement & { show(): void }).show();
     await approval.updateComplete;
 
-    expect(container.querySelector("openclaw-modal-dialog")).not.toBeNull();
+    expect(container.querySelector("afora-modal-dialog")).not.toBeNull();
     expect(container.querySelector(".exec-approval-card")?.getAttribute("data-approval-id")).toBe(
       "approval-inline",
     );
@@ -369,15 +369,15 @@ describe("openclaw-exec-approval", () => {
 
   it("closes and resets after the approval queue drains", async () => {
     await renderOpenedApproval(createExecRequest());
-    expect(container.querySelector("openclaw-modal-dialog")).not.toBeNull();
+    expect(container.querySelector("afora-modal-dialog")).not.toBeNull();
 
     let rendered = await renderApproval([]);
     await rendered.approval.updateComplete;
-    expect(container.querySelector("openclaw-modal-dialog")).toBeNull();
+    expect(container.querySelector("afora-modal-dialog")).toBeNull();
 
     rendered = await renderApproval(createExecRequest());
     await rendered.approval.updateComplete;
 
-    expect(container.querySelector("openclaw-modal-dialog")).toBeNull();
+    expect(container.querySelector("afora-modal-dialog")).toBeNull();
   });
 });

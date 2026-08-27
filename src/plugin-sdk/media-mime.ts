@@ -6,5 +6,5 @@ export {
   getFileExtension,
   mimeTypeFromFilePath,
   normalizeMimeType,
-} from "@openclaw/media-core/mime";
-export { mediaKindFromMime, type MediaKind } from "@openclaw/media-core/constants";
+} from "@afora/media-core/mime";
+export { mediaKindFromMime, type MediaKind } from "@afora/media-core/constants";

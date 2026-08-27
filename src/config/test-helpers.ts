@@ -4,7 +4,7 @@ import path from "node:path";
 import { withTempHome as withTempHomeBase } from "../plugin-sdk/test-env.js";
 import { resetPluginLoaderTestStateForTest } from "../plugins/loader.test-fixtures.js";
 import { clearPluginMetadataLifecycleCaches } from "../plugins/plugin-metadata-lifecycle.js";
-import { resetConfigRuntimeState, type OpenClawConfig } from "./config.js";
+import { resetConfigRuntimeState, type AforaConfig } from "./config.js";
 
 function resetConfigTestRuntimeState(): void {
   resetConfigRuntimeState();
@@ -16,16 +16,16 @@ export async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise
   resetConfigTestRuntimeState();
   try {
     return await withTempHomeBase(fn, {
-      prefix: "openclaw-config-",
+      prefix: "afora-config-",
       env: {
-        OPENCLAW_CONFIG_PATH: undefined,
-        OPENCLAW_BUNDLED_PLUGINS_DIR: undefined,
-        OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
-        OPENCLAW_PLUGIN_CATALOG_PATHS: undefined,
-        OPENCLAW_MPM_CATALOG_PATHS: undefined,
-        OPENCLAW_LOAD_SHELL_ENV: undefined,
-        OPENCLAW_DEFER_SHELL_ENV_FALLBACK: undefined,
-        OPENCLAW_SHELL_ENV_TIMEOUT_MS: undefined,
+        AFORA_CONFIG_PATH: undefined,
+        AFORA_BUNDLED_PLUGINS_DIR: undefined,
+        AFORA_DISABLE_BUNDLED_PLUGINS: undefined,
+        AFORA_PLUGIN_CATALOG_PATHS: undefined,
+        AFORA_MPM_CATALOG_PATHS: undefined,
+        AFORA_LOAD_SHELL_ENV: undefined,
+        AFORA_DEFER_SHELL_ENV_FALLBACK: undefined,
+        AFORA_SHELL_ENV_TIMEOUT_MS: undefined,
         ANTHROPIC_API_KEY: undefined,
         ANTHROPIC_OAUTH_TOKEN: undefined,
       },
@@ -39,8 +39,8 @@ export function createProcessEnvFixture(overrides: NodeJS.ProcessEnv = {}): Node
   return { ...overrides };
 }
 
-export async function writeOpenClawConfig(home: string, config: unknown): Promise<string> {
-  const configPath = path.join(home, ".openclaw", "openclaw.json");
+export async function writeAforaConfig(home: string, config: unknown): Promise<string> {
+  const configPath = path.join(home, ".afora", "afora.json");
   await fs.mkdir(path.dirname(configPath), { recursive: true });
   await fs.writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
   return configPath;
@@ -53,9 +53,9 @@ export async function writeStateDirDotEnv(
     stateDir?: string;
   },
 ): Promise<{ dotEnvPath: string; stateDir: string }> {
-  const stateDir = params?.stateDir ?? params?.env?.OPENCLAW_STATE_DIR?.trim();
+  const stateDir = params?.stateDir ?? params?.env?.AFORA_STATE_DIR?.trim();
   if (!stateDir) {
-    throw new Error("Expected OPENCLAW_STATE_DIR or explicit stateDir for .env test setup");
+    throw new Error("Expected AFORA_STATE_DIR or explicit stateDir for .env test setup");
   }
   const dotEnvPath = path.join(stateDir, ".env");
   await fs.mkdir(path.dirname(dotEnvPath), { recursive: true });
@@ -68,7 +68,7 @@ export async function withTempHomeConfig<T>(
   fn: (params: { home: string; configPath: string }) => Promise<T>,
 ): Promise<T> {
   return withTempHome(async (home) => {
-    const configPath = await writeOpenClawConfig(home, config);
+    const configPath = await writeAforaConfig(home, config);
     return fn({ home, configPath });
   });
 }
@@ -104,7 +104,7 @@ export async function withEnvOverride<T>(
 
 export function buildWebSearchProviderConfig(params: {
   provider: NonNullable<
-    NonNullable<NonNullable<NonNullable<OpenClawConfig["tools"]>["web"]>["search"]>["provider"]
+    NonNullable<NonNullable<NonNullable<AforaConfig["tools"]>["web"]>["search"]>["provider"]
   >;
   enabled?: boolean;
   providerConfig?: Record<string, unknown>;

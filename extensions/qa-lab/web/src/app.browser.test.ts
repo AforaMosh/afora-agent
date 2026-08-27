@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import type { QaBusStateSnapshot } from "openclaw/plugin-sdk/qa-channel-protocol";
+import type { QaBusStateSnapshot } from "afora-agent/plugin-sdk/qa-channel-protocol";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Bootstrap, RunnerSelection } from "./ui-types.js";
 
@@ -370,7 +370,7 @@ describe("QA Lab runner browser interactions", () => {
     selectValue(root, "#run-profile", "smoke-ci");
     selectValue(root, "#execution-channel", "telegram");
     selectValue(root, "#evidence-mode", "slim");
-    selectValue(root, "#runtime-pair", "openclaw,codex");
+    selectValue(root, "#runtime-pair", "afora,codex");
     selectValue(root, "#runtime-pair-lane", "core");
     root.querySelector<HTMLButtonElement>("[data-action='run-suite']")?.click();
 
@@ -382,7 +382,7 @@ describe("QA Lab runner browser interactions", () => {
         channel: "telegram",
         channelDriver: "crabline",
         evidenceMode: "slim",
-        runtimePair: ["openclaw", "codex"],
+        runtimePair: ["afora", "codex"],
         runtimePairLane: "core",
         scenarioIds: null,
       }),

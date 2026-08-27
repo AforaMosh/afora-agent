@@ -1,6 +1,6 @@
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 // Control UI module implements tool display behavior.
-import SHARED_TOOL_DISPLAY_JSON from "../../../../apps/shared/OpenClawKit/Sources/OpenClawKit/Resources/tool-display.json" with { type: "json" };
+import SHARED_TOOL_DISPLAY_JSON from "../../../../apps/shared/AforaKit/Sources/AforaKit/Resources/tool-display.json" with { type: "json" };
 import {
   defaultTitle,
   formatToolDetailText,
@@ -11,9 +11,9 @@ import {
 import type { ToolDetailMode } from "../../../../src/agents/tool-display-exec.js";
 import type { ControlUiEmbedSandboxMode } from "../../../../src/gateway/control-ui-contract.js";
 
-const A2UI_PATH = "/__openclaw__/a2ui";
-const CANVAS_HOST_PATH = "/__openclaw__/canvas";
-const CANVAS_CAPABILITY_PATH_PREFIX = "/__openclaw__/cap";
+const A2UI_PATH = "/__afora__/a2ui";
+const CANVAS_HOST_PATH = "/__afora__/canvas";
+const CANVAS_CAPABILITY_PATH_PREFIX = "/__afora__/cap";
 
 type ToolDisplaySpec = ToolDisplaySpecBase & {
   icon?: string;

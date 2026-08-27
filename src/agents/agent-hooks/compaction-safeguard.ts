@@ -3,9 +3,9 @@
 import fs from "node:fs";
 import path from "node:path";
 /* oxlint-disable max-lines -- TODO: split this grandfathered oversized file. */
-import { parseDateFirstTimestampMs } from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { sliceUtf16Safe, truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { parseDateFirstTimestampMs } from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { sliceUtf16Safe, truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import {
   computeFileLists,
   formatFileOperations,
@@ -1474,6 +1474,6 @@ const testing = {
 } as const;
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.compactionSafeguardTestApi")] =
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.compactionSafeguardTestApi")] =
     testing;
 }

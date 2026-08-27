@@ -9,7 +9,7 @@ title: "LLM task"
 `llm-task` is a bundled **optional plugin tool** that runs a single JSON-only
 LLM call and returns structured output, optionally validated against a JSON
 Schema. It gives workflow engines like Lobster an LLM step without custom
-OpenClaw code per workflow.
+Afora code per workflow.
 
 ## Enable
 
@@ -71,7 +71,7 @@ completion, so include the resolved agent default as well as any override target
 `authProfileId` parameter. The `config` keys are selection defaults used when a
 tool call omits the corresponding parameter.
 
-Run `openclaw doctor --fix` once for llm-task entries created by older releases.
+Run `afora doctor --fix` once for llm-task entries created by older releases.
 Doctor grants the shipped model/profile selection permissions and moves any
 legacy `config.allowedModels` value into `llm.allowedCompletionModels` without widening it.
 
@@ -97,7 +97,7 @@ and `details.model` naming what actually ran.
 
 Each call starts a fresh prompt-only inference operation. It does not reuse the
 calling agent's transcript or native runtime session, run agent lifecycle hooks,
-or deliver model output to a channel. OpenClaw uses the selected provider,
+or deliver model output to a channel. Afora uses the selected provider,
 model, auth profile, and runtime exactly once; it does not fall back to another
 route when that owner cannot provide a literal zero-tool call.
 
@@ -121,24 +121,24 @@ fail before inference because Gemini CLI has no literal raw-input mode.
 ### Important limitation
 
 The example below assumes the **standalone Lobster CLI** is running where
-`openclaw.invoke` already has the correct gateway URL/auth context.
+`afora.invoke` already has the correct gateway URL/auth context.
 
-For the bundled **embedded** Lobster runner inside OpenClaw, this nested CLI
+For the bundled **embedded** Lobster runner inside Afora, this nested CLI
 pattern is **not currently reliable**:
 
 ```lobster
-openclaw.invoke --tool llm-task --action json --args-json '{ ... }'
+afora.invoke --tool llm-task --action json --args-json '{ ... }'
 ```
 
 Until embedded Lobster has a supported bridge for this flow, prefer either:
 
 - direct `llm-task` tool calls outside Lobster, or
-- Lobster steps that do not rely on nested `openclaw.invoke` calls.
+- Lobster steps that do not rely on nested `afora.invoke` calls.
 
 Standalone Lobster CLI example:
 
 ```lobster
-openclaw.invoke --tool llm-task --action json --args-json '{
+afora.invoke --tool llm-task --action json --args-json '{
   "prompt": "Given the input email, return intent and draft.",
   "thinking": "low",
   "input": {
@@ -162,7 +162,7 @@ openclaw.invoke --tool llm-task --action json --args-json '{
 - **JSON-only**: the model is instructed to return only a JSON value, no code
   fences, no commentary.
 - **No tools**: the selected runtime must expose a literal empty model-callable
-  tool surface. OpenClaw rejects tool-shaped results instead of treating them as
+  tool surface. Afora rejects tool-shaped results instead of treating them as
   task output.
 - **Isolated**: the run has no agent transcript, session reuse, lifecycle hooks,
   channel delivery, or provider fallback.

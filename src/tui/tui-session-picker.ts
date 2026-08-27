@@ -1,6 +1,6 @@
 // Shared recent-session query and presentation used by the TUI and CLI resume picker.
 import { fuzzyFilter } from "@earendil-works/pi-tui";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { formatRelativeTimestamp } from "../infra/format-time/format-relative.ts";
 import { parseAgentSessionKey } from "../routing/session-key.js";
 import type { TuiBackend, TuiSessionList } from "./tui-backend.js";

@@ -1,6 +1,6 @@
 import http from "node:http";
 import type { AddressInfo } from "node:net";
-import { rawDataToString } from "@openclaw/gateway-client/websocket-data";
+import { rawDataToString } from "@afora/gateway-client/websocket-data";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { WebSocket, WebSocketServer } from "ws";
 import {
@@ -41,10 +41,10 @@ import type {
 
 const BUILD = {
   bundleHash: "a".repeat(64),
-  openclawVersion: "2026.8.12",
+  aforaVersion: "2026.8.12",
   protocolFeatures: ["worker-heartbeat-v1"],
 } as const;
-const WORKER_GATEWAY_PATH = "/__openclaw__/worker";
+const WORKER_GATEWAY_PATH = "/__afora__/worker";
 const RESOLVED_AUTH: ResolvedGatewayAuth = { mode: "none", allowTailscale: false };
 const activeHarnesses: PublicWorkerHarness[] = [];
 
@@ -62,7 +62,7 @@ function workerConnect(
     maxProtocol: PROTOCOL_VERSION,
     client: {
       id: GATEWAY_CLIENT_IDS.WORKER,
-      version: BUILD.openclawVersion,
+      version: BUILD.aforaVersion,
       platform: "linux",
       mode: GATEWAY_CLIENT_MODES.WORKER,
     },
@@ -282,7 +282,7 @@ async function withHarness(
 ): Promise<void> {
   await withTempConfig({
     cfg: {},
-    prefix: "openclaw-public-worker-ingress-",
+    prefix: "afora-public-worker-ingress-",
     run: async () => {
       const harness = new PublicWorkerHarness(options);
       activeHarnesses.push(harness);
@@ -483,7 +483,7 @@ describe("public worker ingress", () => {
       await expect(
         requestUpgradeRejection(
           harness.port,
-          `/__openclaw__/cap/${"a".repeat(32)}${WORKER_GATEWAY_PATH}`,
+          `/__afora__/cap/${"a".repeat(32)}${WORKER_GATEWAY_PATH}`,
         ),
       ).resolves.toEqual({ status: 404, body: "" });
       expect(harness.handlePluginUpgrade).not.toHaveBeenCalled();

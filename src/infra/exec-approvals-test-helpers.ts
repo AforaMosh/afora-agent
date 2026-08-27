@@ -24,7 +24,7 @@ export function makePathEnv(binDir: string): NodeJS.ProcessEnv {
 /** Create a real temp directory for exec-approval tests that need filesystem paths. */
 export function makeExecApprovalsTempDir(): string {
   const tempDir = fs.realpathSync(
-    fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-exec-approvals-")),
+    fs.mkdtempSync(path.join(os.tmpdir(), "afora-exec-approvals-")),
   );
   tempDirs.add(tempDir);
   return tempDir;

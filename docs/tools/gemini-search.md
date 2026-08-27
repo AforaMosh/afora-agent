@@ -8,7 +8,7 @@ read_when:
 title: "Gemini search"
 ---
 
-OpenClaw supports Gemini models with built-in
+Afora supports Gemini models with built-in
 [Google Search grounding](https://ai.google.dev/gemini-api/docs/grounding),
 which returns AI-synthesized answers backed by live Google Search results with
 citations.
@@ -25,7 +25,7 @@ citations.
     `models.providers.google.apiKey`, or configure a dedicated web-search key via:
 
     ```bash
-    openclaw configure --section web
+    afora configure --section web
     ```
 
   </Step>
@@ -72,7 +72,7 @@ then `models.providers.google.apiKey`. For base URLs, the dedicated
 `plugins.entries.google.config.webSearch.baseUrl` wins before
 `models.providers.google.baseUrl`.
 
-For a gateway install, put env keys in `~/.openclaw/.env`.
+For a gateway install, put env keys in `~/.afora/.env`.
 
 ### Request headers
 
@@ -80,7 +80,7 @@ Set `plugins.entries.google.config.webSearch.headers` when an operator gateway
 needs extra request metadata. Plain string values use normal config handling;
 they are not automatically treated as secret merely because they are headers.
 When a header contains a secret, use a [SecretRef](/gateway/secrets) value as
-shown above. OpenClaw resolves that value at runtime and applies the existing
+shown above. Afora resolves that value at runtime and applies the existing
 secret redaction path to it.
 
 The Gemini request keeps ownership of `Content-Type`, `x-goog-api-key`, and
@@ -106,7 +106,7 @@ inline citations. The results include both the synthesized answer and the source
 URLs.
 
 - Citation URLs from Gemini grounding are automatically resolved from Google
-  redirect URLs to direct URLs via a HEAD request through OpenClaw's SSRF-guarded
+  redirect URLs to direct URLs via a HEAD request through Afora's SSRF-guarded
   fetch path (redirect following, http/https validation).
 - Redirect resolution uses strict SSRF defaults, so redirects to
   private/internal targets are blocked.

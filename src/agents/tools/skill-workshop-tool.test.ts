@@ -11,21 +11,21 @@ import { readSkillProposalRecord } from "../../skills/workshop/store.js";
 import { withSkillCollectionLock } from "../../skills/workshop/target-lock.js";
 import type { SkillWorkshopProposalMutationBudget } from "../../skills/workshop/types.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../../test-utils/afora-test-state.js";
 import { createTrackedTempDirs } from "../../test-utils/tracked-temp-dirs.js";
-import { createOpenClawTools } from "../openclaw-tools.js";
+import { createAforaTools } from "../afora-tools.js";
 import { createSkillWorkshopTool } from "./skill-workshop-tool.js";
 
 const tempDirs = createTrackedTempDirs();
-let testState: OpenClawTestState;
+let testState: AforaTestState;
 let stateDir = "";
 
 beforeEach(async () => {
-  testState = await createOpenClawTestState({
+  testState = await createAforaTestState({
     layout: "state-only",
-    prefix: "openclaw-skill-workshop-state-",
+    prefix: "afora-skill-workshop-state-",
   });
   stateDir = testState.stateDir;
 });
@@ -37,7 +37,7 @@ afterEach(async () => {
 
 describe("skill_workshop tool", () => {
   it("gives an isolated collection review only read and reconcile", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-collection-tool-");
+    const workspaceDir = await tempDirs.make("afora-skill-collection-tool-");
     await writeWorkspaceSkills(workspaceDir, [
       { name: "duplicate", description: "Duplicate procedure" },
     ]);
@@ -71,7 +71,7 @@ describe("skill_workshop tool", () => {
   });
 
   it("reserves the one reconciliation before awaiting its commit", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-collection-concurrent-tool-");
+    const workspaceDir = await tempDirs.make("afora-skill-collection-concurrent-tool-");
     await writeWorkspaceSkills(workspaceDir, [{ name: "procedure", description: "Procedure" }]);
     const collectionReconcile = { approvedSkillNames: new Set(["procedure"]) };
     const tool = createSkillWorkshopTool({
@@ -114,7 +114,7 @@ describe("skill_workshop tool", () => {
   });
 
   it("bounds total collection text returned to the reviewer", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-collection-budget-");
+    const workspaceDir = await tempDirs.make("afora-skill-collection-budget-");
     await writeWorkspaceSkills(workspaceDir, [
       {
         name: "oversized",
@@ -134,7 +134,7 @@ describe("skill_workshop tool", () => {
   });
 
   it("reads a full skill above the ordinary 40KB Workshop limit", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-collection-full-read-");
+    const workspaceDir = await tempDirs.make("afora-skill-collection-full-read-");
     await writeWorkspaceSkills(workspaceDir, [
       { name: "large", description: "Large procedure", body: "x".repeat(40_001) },
     ]);
@@ -155,7 +155,7 @@ describe("skill_workshop tool", () => {
   });
 
   it("keeps reconcile unavailable to ordinary off and propose sessions", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-collection-policy-");
+    const workspaceDir = await tempDirs.make("afora-skill-collection-policy-");
     for (const mode of ["off", "propose"] as const) {
       const tool = createSkillWorkshopTool({
         workspaceDir,
@@ -168,7 +168,7 @@ describe("skill_workshop tool", () => {
   });
 
   it("describes action selection and pending-proposal discovery in its schema", () => {
-    const tool = createSkillWorkshopTool({ workspaceDir: "/tmp/openclaw" });
+    const tool = createSkillWorkshopTool({ workspaceDir: "/tmp/afora" });
     const schema = JSON.stringify(tool.parameters);
 
     expect(schema).toContain("create = new skill");
@@ -186,7 +186,7 @@ describe("skill_workshop tool", () => {
   });
 
   it("evaluates an exact pending draft and exposes the persisted result", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-evaluate-");
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-evaluate-");
     const tool = createSkillWorkshopTool({ workspaceDir, agentId: "main" });
     const created = await tool.execute("call-create", {
       action: "create",
@@ -234,10 +234,10 @@ describe("skill_workshop tool", () => {
   });
 
   it("documents that proposal_content must be final skill body content, not a plan or change description", () => {
-    const tool = createSkillWorkshopTool({ workspaceDir: "/tmp/openclaw" });
+    const tool = createSkillWorkshopTool({ workspaceDir: "/tmp/afora" });
     const schema = JSON.stringify(tool.parameters);
     const proposalOnlySchema = JSON.stringify(
-      createSkillWorkshopTool({ workspaceDir: "/tmp/openclaw", proposalOnly: true }).parameters,
+      createSkillWorkshopTool({ workspaceDir: "/tmp/afora", proposalOnly: true }).parameters,
     );
 
     expect(schema).toContain("final skill body");
@@ -248,9 +248,9 @@ describe("skill_workshop tool", () => {
     expect(schema).toContain("Proposal frontmatter is added automatically");
   });
 
-  it("is exposed in the OpenClaw tool set", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-tool-");
-    const tools = createOpenClawTools({
+  it("is exposed in the Afora tool set", async () => {
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-tool-");
+    const tools = createAforaTools({
       workspaceDir,
       config: {},
       disablePluginTools: true,
@@ -259,8 +259,8 @@ describe("skill_workshop tool", () => {
   });
 
   it("stays exposed when autonomous proposal capture is disabled", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-tool-");
-    const tools = createOpenClawTools({
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-tool-");
+    const tools = createAforaTools({
       workspaceDir,
       config: {
         skills: {
@@ -278,11 +278,11 @@ describe("skill_workshop tool", () => {
 
   it("describes the configured foreground repair outcome", () => {
     const disabled = createSkillWorkshopTool({
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
       config: { skills: { workshop: { autonomous: { mode: "off" } } } },
     });
     const enabled = createSkillWorkshopTool({
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
       config: { skills: { workshop: { autonomous: { mode: "propose" } } } },
     });
 
@@ -292,9 +292,9 @@ describe("skill_workshop tool", () => {
   });
 
   it("keeps proposal state inside an injected state directory", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-isolated-workspace-");
-    const isolatedStateDir = await tempDirs.make("openclaw-skill-workshop-isolated-state-");
-    const env = { ...process.env, OPENCLAW_STATE_DIR: isolatedStateDir };
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-isolated-workspace-");
+    const isolatedStateDir = await tempDirs.make("afora-skill-workshop-isolated-state-");
+    const env = { ...process.env, AFORA_STATE_DIR: isolatedStateDir };
     const isolatedTool = createSkillWorkshopTool({ workspaceDir, env, proposalOnly: true });
 
     const created = await isolatedTool.execute("call-isolated-create", {
@@ -321,7 +321,7 @@ describe("skill_workshop tool", () => {
   });
 
   it("durably completes a proposal review and blocks later work", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-review-completion-");
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-review-completion-");
     let completions = 0;
     const progress: Array<{ proposalIds: string[]; remaining: number }> = [];
     let releaseProgress!: () => void;
@@ -380,7 +380,7 @@ describe("skill_workshop tool", () => {
   });
 
   it("revises support files without requiring the proposal body again", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-support-revise-");
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-support-revise-");
     const tool = createSkillWorkshopTool({ workspaceDir, agentId: "main" });
     const created = await tool.execute("call-create", {
       action: "create",
@@ -417,7 +417,7 @@ describe("skill_workshop tool", () => {
   });
 
   it("honors a larger internal review mutation budget", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-history-review-");
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-history-review-");
     const proposalMutationBudget: SkillWorkshopProposalMutationBudget = { remaining: 3 };
     const tool = createSkillWorkshopTool({
       workspaceDir,
@@ -445,7 +445,7 @@ describe("skill_workshop tool", () => {
   });
 
   it("counts repeated revisions as one distinct proposal idea", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-distinct-review-");
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-distinct-review-");
     const proposalMutationBudget: SkillWorkshopProposalMutationBudget = { remaining: 3 };
     const tool = createSkillWorkshopTool({
       workspaceDir,
@@ -471,9 +471,9 @@ describe("skill_workshop tool", () => {
     expect(proposalMutationBudget.successfulMutations).toBe(3);
   });
 
-  it("is not exposed from sandboxed OpenClaw tool sets", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-tool-");
-    const tools = createOpenClawTools({
+  it("is not exposed from sandboxed Afora tool sets", async () => {
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-tool-");
+    const tools = createAforaTools({
       workspaceDir,
       config: {},
       disablePluginTools: true,
@@ -486,7 +486,7 @@ describe("skill_workshop tool", () => {
   it("creates pending skill proposals without applying them", async () => {
     // Creation writes reviewable proposal artifacts under state, not live skill
     // files in the workspace.
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-tool-");
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-tool-");
     const tool = createSkillWorkshopTool({
       workspaceDir,
       config: {},
@@ -693,7 +693,7 @@ describe("skill_workshop tool", () => {
   });
 
   it("rejects whitespace-only proposal content while preserving raw valid markdown", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-tool-");
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-tool-");
     const tool = createSkillWorkshopTool({
       workspaceDir,
       config: {},
@@ -732,7 +732,7 @@ describe("skill_workshop tool", () => {
   });
 
   it("applies, rejects, and quarantines proposals through the workshop service", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-tool-");
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-tool-");
     const tool = createSkillWorkshopTool({ workspaceDir, config: {}, agentId: "main" });
 
     const created = await tool.execute("call-1", {
@@ -871,7 +871,7 @@ describe("skill_workshop tool", () => {
   it.each(["off", "propose", "auto"] as const)(
     "enforces foreground repair receipts in autonomous mode %s",
     async (mode) => {
-      const workspaceDir = await tempDirs.make(`openclaw-skill-workshop-repair-${mode}-`);
+      const workspaceDir = await tempDirs.make(`afora-skill-workshop-repair-${mode}-`);
       const runId = `repair-${mode}`;
       const skillName = `weather-planner-${mode}`;
       const tool = createSkillWorkshopTool({
@@ -946,7 +946,7 @@ describe("skill_workshop tool", () => {
   );
 
   it("matches an aliased used-skill receipt by canonical file", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-repair-alias-");
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-repair-alias-");
     const runId = "repair-alias";
     const skillName = "canonical-skill-key";
     const skillFile = path.join(workspaceDir, "skills", skillName, "SKILL.md");
@@ -988,8 +988,8 @@ describe("skill_workshop tool", () => {
   });
 
   it("keeps proposal discovery scoped to the tool agent across workspace changes", async () => {
-    const firstWorkspaceDir = await tempDirs.make("openclaw-skill-workshop-tool-first-");
-    const secondWorkspaceDir = await tempDirs.make("openclaw-skill-workshop-tool-second-");
+    const firstWorkspaceDir = await tempDirs.make("afora-skill-workshop-tool-first-");
+    const secondWorkspaceDir = await tempDirs.make("afora-skill-workshop-tool-second-");
     const firstTool = createSkillWorkshopTool({
       workspaceDir: firstWorkspaceDir,
       config: {},

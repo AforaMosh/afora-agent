@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createCodeModeNamespaceRuntime } from "./code-mode-namespaces.js";
 import { applyCodeModeCatalog, resolveCodeModeConfig } from "./code-mode.js";

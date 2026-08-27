@@ -2,11 +2,11 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { resolveUserTimezone } from "../agents/date-time.js";
 import { normalizeChatType } from "../channels/chat-type.js";
 import { resolveSenderLabel, type SenderLabelParams } from "../channels/sender-label.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   resolveTimezone,
   formatUtcTimestamp,
@@ -69,7 +69,7 @@ function sanitizeEnvelopeHeaderPart(value: string): string {
 }
 
 /** Resolves envelope formatting defaults from agent config. */
-export function resolveEnvelopeFormatOptions(cfg?: OpenClawConfig): EnvelopeFormatOptions {
+export function resolveEnvelopeFormatOptions(cfg?: AforaConfig): EnvelopeFormatOptions {
   const defaults = cfg?.agents?.defaults;
   const configuredTimezone = normalizeOptionalString(defaults?.userTimezone);
   return {

@@ -1,5 +1,5 @@
 // Status-reaction controller helpers for channel-visible agent activity.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { TOOL_DISPLAY_CONFIG } from "../agents/tool-display-config.js";
 import { resolveToolDisplay } from "../agents/tool-display.js";
 

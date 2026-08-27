@@ -21,7 +21,7 @@ import { resolveEditableSnapshotConfig } from "../../lib/config/config-state-mod
 import { formatUiError } from "../../lib/format-error.ts";
 import { canCallGatewayMethod } from "../../lib/gateway-methods.ts";
 import { GatewayPageController } from "../../lit/gateway-page-controller.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import {
   buildCloudWorkerDeletePatch,
@@ -36,7 +36,7 @@ import {
   type ConfiguredCloudWorkerProfile,
 } from "./cloud-worker-config.ts";
 
-const CLOUD_WORKERS_DOCS_URL = "https://docs.openclaw.ai/gateway/cloud-workers";
+const CLOUD_WORKERS_DOCS_URL = "https://docs.afora.ai/gateway/cloud-workers";
 type EditorState = { kind: "add" } | { kind: "edit"; profileId: string } | null;
 
 function formControlValue(event: Event): string {
@@ -48,7 +48,7 @@ function formControlValue(event: Event): string {
     : "";
 }
 
-class CloudWorkersPage extends OpenClawLightDomElement {
+class CloudWorkersPage extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context!: ApplicationContext;
 
@@ -575,6 +575,6 @@ class CloudWorkersPage extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-cloud-workers-page")) {
-  customElements.define("openclaw-cloud-workers-page", CloudWorkersPage);
+if (!customElements.get("afora-cloud-workers-page")) {
+  customElements.define("afora-cloud-workers-page", CloudWorkersPage);
 }

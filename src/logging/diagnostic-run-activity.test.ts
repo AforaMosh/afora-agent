@@ -3,8 +3,8 @@ import {
   emitDiagnosticEvent as emitPluginDiagnosticEvent,
   emitTrustedDiagnosticEvent as emitPluginTrustedDiagnosticEvent,
   emitTrustedDiagnosticEventWithPrivateData as emitPluginTrustedDiagnosticEventWithPrivateData,
-} from "openclaw/plugin-sdk/diagnostic-runtime";
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+} from "afora-agent/plugin-sdk/diagnostic-runtime";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { hasInternalDiagnosticEventListeners } from "../infra/diagnostic-event-listener-presence.js";
 import {
@@ -867,7 +867,7 @@ describe("repeated request liveness", () => {
     });
 
     const obsoleteProvenanceKey = Symbol.for(
-      "openclaw.diagnosticSemanticRunProgressProvenance.state.v1",
+      "afora.diagnosticSemanticRunProgressProvenance.state.v1",
     );
     const previousObsoleteProvenance = Reflect.get(globalThis, obsoleteProvenanceKey);
     const forgedEvent = {

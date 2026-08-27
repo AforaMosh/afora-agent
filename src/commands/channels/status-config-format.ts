@@ -1,5 +1,5 @@
 // Config-only channel status formatter used when the gateway is unreachable.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { formatDocsLink } from "../../../packages/terminal-core/src/links.js";
 import { theme } from "../../../packages/terminal-core/src/theme.js";
 import {
@@ -13,7 +13,7 @@ import {
   buildReadOnlySourceChannelAccountSnapshot,
 } from "../../channels/plugins/status.js";
 import type { ChannelAccountSnapshot } from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { listExplicitConfiguredChannelIdsForConfig } from "../../plugins/channel-plugin-ids.js";
 import { resolveMissingOfficialExternalChannelPluginRepairHints } from "../../plugins/official-external-plugin-repair-hints.js";
 import {
@@ -32,9 +32,9 @@ type ChannelStatusPluginLabel = {
 
 /** Render channel status lines from config snapshots without calling the gateway. */
 export async function formatConfigChannelsStatusLines(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   meta: { path?: string; mode?: "local" | "remote" },
-  opts?: { sourceConfig?: OpenClawConfig; channel?: string; fallbackReason?: string },
+  opts?: { sourceConfig?: AforaConfig; channel?: string; fallbackReason?: string },
 ): Promise<string[]> {
   const lines: string[] = [];
   lines.push(

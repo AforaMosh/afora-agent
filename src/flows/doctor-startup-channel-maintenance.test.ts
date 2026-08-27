@@ -45,8 +45,8 @@ describe("doctor startup channel maintenance", () => {
     await expect(
       collectChannelPreviewWarningHealthFindings({
         cfg,
-        doctorFixCommand: "openclaw doctor --fix --dry-run",
-        env: { OPENCLAW_TEST: "1" },
+        doctorFixCommand: "afora doctor --fix --dry-run",
+        env: { AFORA_TEST: "1" },
         allowExec: true,
       }),
     ).resolves.toEqual([
@@ -57,18 +57,18 @@ describe("doctor startup channel maintenance", () => {
         path: "channels.matrix",
         requirement: "Configured channels should not emit doctor preview warnings.",
         fixHint:
-          "Run `openclaw doctor --fix --dry-run` if the channel warning recommends repair, or update the affected channel config manually.",
+          "Run `afora doctor --fix --dry-run` if the channel warning recommends repair, or update the affected channel config manually.",
       },
     ]);
     expect(mocks.resolveDoctorChannelPreviewConfig).toHaveBeenCalledWith({
       cfg,
-      env: { OPENCLAW_TEST: "1" },
+      env: { AFORA_TEST: "1" },
       allowExec: true,
     });
     expect(mocks.collectChannelDoctorPreviewWarnings).toHaveBeenCalledWith({
       cfg,
-      doctorFixCommand: "openclaw doctor --fix --dry-run",
-      env: { OPENCLAW_TEST: "1" },
+      doctorFixCommand: "afora doctor --fix --dry-run",
+      env: { AFORA_TEST: "1" },
     });
   });
 
@@ -91,7 +91,7 @@ describe("doctor startup channel maintenance", () => {
 
     await maybeRunDoctorStartupChannelMaintenance({
       cfg,
-      env: { OPENCLAW_TEST: "1" },
+      env: { AFORA_TEST: "1" },
       runChannelPluginStartupMaintenance: async (input) => {
         calls.push(input);
       },
@@ -102,7 +102,7 @@ describe("doctor startup channel maintenance", () => {
     expect(calls).toHaveLength(1);
     const [call] = calls as Array<{
       cfg: typeof cfg;
-      env: { OPENCLAW_TEST: string };
+      env: { AFORA_TEST: string };
       log: { info: (message: string) => void; warn: (message: string) => void };
       trigger: string;
       logPrefix: string;
@@ -111,7 +111,7 @@ describe("doctor startup channel maintenance", () => {
       throw new Error("Expected startup maintenance call");
     }
     expect(call.cfg).toBe(cfg);
-    expect(call.env).toEqual({ OPENCLAW_TEST: "1" });
+    expect(call.env).toEqual({ AFORA_TEST: "1" });
     expect(call.trigger).toBe("doctor-fix");
     expect(call.logPrefix).toBe("doctor");
     expect(call.log.info).toBeTypeOf("function");

@@ -32,7 +32,7 @@ import {
 } from "../agents/model-auth-provider-config.js";
 import { resolveManagedSecretRefRuntimeProviderAuth } from "../agents/model-auth-runtime-config.js";
 import { readProviderJsonResponse } from "../agents/provider-http-errors.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { cancelUnreadResponseBody } from "../infra/http-body.js";
 import { logWarn } from "../logger.js";
 import {
@@ -47,7 +47,7 @@ import {
   type CachedCopilotToken,
 } from "./provider-auth-copilot-cache.js";
 
-export type { OpenClawConfig } from "../config/config.js";
+export type { AforaConfig } from "../config/config.js";
 export type { CachedCopilotToken } from "./provider-auth-copilot-cache.js";
 export type { SecretInput } from "../config/types.secrets.js";
 export type { SecretInputMode } from "../plugins/provider-auth-types.js";
@@ -162,7 +162,7 @@ const COPILOT_PROVIDER_ID = "github-copilot";
 
 const COPILOT_TOKEN_EXCHANGE_TIMEOUT_MS = 30_000;
 
-function readGithubCopilotDomainFromConfig(config?: OpenClawConfig): string | undefined {
+function readGithubCopilotDomainFromConfig(config?: AforaConfig): string | undefined {
   const params = config?.models?.providers?.[COPILOT_PROVIDER_ID]?.params;
   const value = params && typeof params === "object" ? params.githubDomain : undefined;
   if (typeof value !== "string" || value.trim().length === 0) {
@@ -201,7 +201,7 @@ function warnOnceOnRejectedConfigDomain(configured: string): void {
 function resolveGithubCopilotDomain(params?: {
   env?: NodeJS.ProcessEnv;
   explicit?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): string {
   const env = params?.env ?? process.env;
   const fromEnv = env.COPILOT_GITHUB_DOMAIN?.trim();
@@ -304,11 +304,11 @@ export async function resolveCopilotApiToken(params: {
    */
   githubDomain?: string;
   /**
-   * OpenClaw config used to resolve the persisted `githubDomain` provider
+   * Afora config used to resolve the persisted `githubDomain` provider
    * param when an explicit `githubDomain` is not supplied. Precedence is
    * `COPILOT_GITHUB_DOMAIN` env > explicit `githubDomain` > config.
    */
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): Promise<{
   /** Copilot API token, from cache or fresh exchange. */
   token: string;
@@ -409,7 +409,7 @@ export function isProviderApiKeyConfigured(params: {
   /** Provider id to check for config/env auth or local auth profiles. */
   provider: string;
   /** Optional runtime config used to resolve provider-owned API-key credentials. */
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   /** Agent directory containing auth profiles. */
   agentDir?: string;
   /** Optional allowed profile credential types. */
@@ -543,7 +543,7 @@ export function listUsableProviderAuthProfileIds(params: {
   /** Provider id whose usable auth profiles should be listed. */
   provider: string;
   /** Optional runtime config used to resolve auth profile order and default agent dir. */
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   /** Agent directory containing auth profiles. */
   agentDir?: string;
   /** Optional allowed profile credential types. */
@@ -568,7 +568,7 @@ export function isProviderAuthProfileConfigured(params: {
   /** Provider id to check for usable auth profiles. */
   provider: string;
   /** Optional runtime config used to resolve auth profile order and default agent dir. */
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   /** Agent directory containing auth profiles. */
   agentDir?: string;
   /** Optional allowed profile credential types. */
@@ -588,7 +588,7 @@ export async function resolveProviderAuthProfileApiKey(params: {
   /** Provider id whose first usable auth profile should resolve to an API key. */
   provider: string;
   /** Optional runtime config used to resolve auth profile order and secret refs. */
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   /** Agent directory containing auth profiles. */
   agentDir?: string;
   /** Optional allowed profile credential types. */
@@ -618,7 +618,7 @@ export async function resolveProviderAuthProfileApiKey(params: {
 
 function resolveUsableProviderAuthProfiles(params: {
   provider: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentDir?: string;
   allowKeychainPrompt?: boolean;
   includeExternalCliAuth?: boolean;

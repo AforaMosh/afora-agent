@@ -1,8 +1,8 @@
 import type { Message } from "grammy/types";
-import { resolveChannelContextVisibilityMode } from "openclaw/plugin-sdk/context-visibility-runtime";
-import { kindFromMime } from "openclaw/plugin-sdk/media-runtime";
-import { danger, logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { evaluateSupplementalContextVisibility } from "openclaw/plugin-sdk/security-runtime";
+import { resolveChannelContextVisibilityMode } from "afora-agent/plugin-sdk/context-visibility-runtime";
+import { kindFromMime } from "afora-agent/plugin-sdk/media-runtime";
+import { danger, logVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { evaluateSupplementalContextVisibility } from "afora-agent/plugin-sdk/security-runtime";
 import { expandTelegramAllowFromWithAccessGroups } from "./access-groups.js";
 import {
   resolveTelegramAccount,

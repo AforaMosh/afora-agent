@@ -50,7 +50,7 @@ describe("secrets runtime snapshot auth refresh failure", () => {
     if (os.platform() === "win32") {
       return;
     }
-    await withTempHome("openclaw-secrets-runtime-refresh-fail-", async (home) => {
+    await withTempHome("afora-secrets-runtime-refresh-fail-", async (home) => {
       const { secretFile, agentDir } = await createOpenAIFileRuntimeFixture(home);
 
       let loadAuthStoreCalls = 0;
@@ -102,7 +102,7 @@ describe("secrets runtime snapshot auth refresh failure", () => {
     if (os.platform() === "win32") {
       return;
     }
-    await withTempHome("openclaw-secrets-runtime-refresh-owner-", async (home) => {
+    await withTempHome("afora-secrets-runtime-refresh-owner-", async (home) => {
       const { secretFile, agentDir } = await createOpenAIFileRuntimeFixture(home);
       const firstRef = { source: "file" as const, provider: "default", id: "/accounts/first" };
       const secondRef = { source: "file" as const, provider: "default", id: "/accounts/second" };
@@ -205,7 +205,7 @@ describe("secrets runtime snapshot auth refresh failure", () => {
     if (os.platform() === "win32") {
       return;
     }
-    await withTempHome("openclaw-secrets-runtime-auth-route-", async (home) => {
+    await withTempHome("afora-secrets-runtime-auth-route-", async (home) => {
       const { secretFile, agentDir } = await createOpenAIFileRuntimeFixture(home);
       const profileId = "openai:default";
       const loadAuthStore = () =>

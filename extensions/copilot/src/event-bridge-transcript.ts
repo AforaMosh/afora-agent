@@ -1,8 +1,8 @@
 import type { Attachment, SessionEvent } from "@github/copilot-sdk";
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-harness-runtime";
-import { sanitizeToolResult } from "openclaw/plugin-sdk/agent-harness-runtime";
-import { parseDateStringTimestampMs } from "openclaw/plugin-sdk/number-runtime";
-import { readNonEmptyStringPreservingWhitespace as readNonEmptyString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { sanitizeToolResult } from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { parseDateStringTimestampMs } from "afora-agent/plugin-sdk/number-runtime";
+import { readNonEmptyStringPreservingWhitespace as readNonEmptyString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { buildCopilotAssistantUsage, type CopilotUsageSnapshot } from "./usage-bridge.js";
 
 export type AssistantMessage = Extract<AgentMessage, { role: "assistant" }>;

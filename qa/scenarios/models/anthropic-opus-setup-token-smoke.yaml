@@ -23,7 +23,7 @@ scenario:
     - extensions/qa-lab/src/suite.ts
   execution:
     kind: flow
-    summary: Run with `OPENCLAW_LIVE_SETUP_TOKEN_VALUE=<setup-token> pnpm openclaw qa suite --provider-mode live-frontier --model anthropic/claude-opus-5 --alt-model anthropic/claude-opus-5 --scenario anthropic-opus-setup-token-smoke`.
+    summary: Run with `AFORA_LIVE_SETUP_TOKEN_VALUE=<setup-token> pnpm afora qa suite --provider-mode live-frontier --model anthropic/claude-opus-5 --alt-model anthropic/claude-opus-5 --scenario anthropic-opus-setup-token-smoke`.
     config:
       requiredProviderMode: live-frontier
       requiredProvider: anthropic
@@ -56,7 +56,7 @@ flow:
             message:
               expr: "`expected token profile ${config.profileId} in QA config`"
         - assert:
-            expr: "!env.gateway.runtimeEnv.OPENCLAW_LIVE_SETUP_TOKEN_VALUE"
+            expr: "!env.gateway.runtimeEnv.AFORA_LIVE_SETUP_TOKEN_VALUE"
             message: setup-token value should not be passed to the gateway child env
       detailsExpr: "`provider=${selected?.provider} model=${selected?.model} auth=setup-token profile=${config.profileId}`"
     - name: talks through regular Anthropic Opus

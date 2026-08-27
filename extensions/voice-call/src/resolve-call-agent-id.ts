@@ -1,4 +1,4 @@
-import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
+import { normalizeAgentId } from "afora-agent/plugin-sdk/routing";
 import type { VoiceCallConfig } from "./config.js";
 import type { CallRecord } from "./types.js";
 

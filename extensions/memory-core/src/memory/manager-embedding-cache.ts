@@ -3,7 +3,7 @@ import type { DatabaseSync, SQLInputValue } from "node:sqlite";
 import {
   parseEmbedding,
   type MemoryChunk,
-} from "openclaw/plugin-sdk/memory-core-host-engine-storage";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
 
 type EmbeddingCacheDb = Pick<DatabaseSync, "prepare">;
 

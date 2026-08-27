@@ -7,7 +7,7 @@ export const adversarialResolved = {
   model: overlongUnicode("模", 96),
   agentRuntime: {
     id: overlongUnicode("運", 48),
-    fallback: "openclaw" as const,
+    fallback: "afora" as const,
     source: "session-key" as const,
   },
   thinkingLevel: overlongUnicode("考", 16),

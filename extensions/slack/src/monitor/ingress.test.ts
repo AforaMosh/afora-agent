@@ -5,18 +5,18 @@ import os from "node:os";
 import path from "node:path";
 import { App, type Receiver, type ReceiverEvent } from "@slack/bolt";
 import type { WebClientOptions } from "@slack/web-api";
-import type { ChannelIngressQueue } from "openclaw/plugin-sdk/channel-outbound";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { PluginJsonValue } from "openclaw/plugin-sdk/plugin-entry";
+import type { ChannelIngressQueue } from "afora-agent/plugin-sdk/channel-outbound";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { PluginJsonValue } from "afora-agent/plugin-sdk/plugin-entry";
 import {
-  closeOpenClawStateDatabaseForTest,
+  closeAforaStateDatabaseForTest,
   createChannelIngressQueueForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
 import {
   peekSystemEventEntries,
   resetSystemEventsForTest,
-} from "openclaw/plugin-sdk/system-event-runtime";
+} from "afora-agent/plugin-sdk/system-event-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createSlackMonitorContext } from "./context.js";
 import { registerSlackMemberEvents } from "./events/members.js";
@@ -160,7 +160,7 @@ function attachBoltMemberIngress(params: {
     );
   }
   const ctx = createSlackMonitorContext({
-    cfg: {} as OpenClawConfig,
+    cfg: {} as AforaConfig,
     accountId: "default",
     botToken: "xoxb-test",
     app,
@@ -189,7 +189,7 @@ function attachBoltMemberIngress(params: {
     replyToMode: "off",
     slashCommand: {
       enabled: false,
-      name: "openclaw",
+      name: "afora",
       sessionPrefix: "slack:slash",
       ephemeral: true,
     },
@@ -227,7 +227,7 @@ async function withQueue(
   fn: (queue: ChannelIngressQueue<SlackIngressPayload>) => Promise<void>,
 ): Promise<void> {
   const rawRoot = await fs.mkdtemp(
-    path.join(os.tmpdir(), `openclaw-slack-ingress-${crypto.randomUUID()}-`),
+    path.join(os.tmpdir(), `afora-slack-ingress-${crypto.randomUUID()}-`),
   );
   const stateDir = await fs.realpath(rawRoot);
   const queue = createChannelIngressQueueForTests<SlackIngressPayload>({
@@ -238,14 +238,14 @@ async function withQueue(
   try {
     await fn(queue);
   } finally {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(stateDir, { recursive: true, force: true });
   }
 }
 
 describe("Slack durable ingress", () => {
   afterEach(() => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     resetSystemEventsForTest();
   });
 
@@ -594,7 +594,7 @@ describe("Slack durable ingress", () => {
 
 describe("Slack relay durable ingress", () => {
   afterEach(() => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
   });
 
   const relayMessage = {

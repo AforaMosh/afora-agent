@@ -19,7 +19,7 @@ type ChildAdmissionParams = {
 
 /** ACP child keys deduplicate task rows; symbols keep anonymous starts distinct. */
 const pendingChildAdmissions = resolveGlobalMap<string, Set<string | symbol>>(
-  Symbol.for("openclaw.pendingChildAdmissions"),
+  Symbol.for("afora.pendingChildAdmissions"),
   "close-only",
 );
 

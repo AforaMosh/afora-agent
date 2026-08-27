@@ -1,7 +1,7 @@
 // Docker backend manager tests cover runtime image matching and removal error
 // handling for sandbox and browser containers.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { resolveSandboxConfigForAgent } from "./config.js";
 
 const dockerMocks = vi.hoisted(() => ({
@@ -33,7 +33,7 @@ const {
   podmanSandboxBackendManager,
 } = await import("./docker-backend.js");
 
-function createConfig(): OpenClawConfig {
+function createConfig(): AforaConfig {
   return {
     agents: {
       defaults: {
@@ -42,11 +42,11 @@ function createConfig(): OpenClawConfig {
           scope: "session",
           workspaceAccess: "none",
           docker: {
-            image: "openclaw-sandbox:bookworm-slim",
+            image: "afora-sandbox:bookworm-slim",
           },
           browser: {
             enabled: true,
-            image: "openclaw-sandbox-browser:bookworm-slim",
+            image: "afora-sandbox-browser:bookworm-slim",
           },
         },
       },
@@ -137,7 +137,7 @@ describe("docker sandbox backend manager", () => {
   it("matches ordinary sandbox runtimes against sandbox.docker.image", async () => {
     dockerMocks.execContainer.mockResolvedValueOnce({
       code: 0,
-      stdout: "openclaw-sandbox:bookworm-slim\n",
+      stdout: "afora-sandbox:bookworm-slim\n",
       stderr: "",
     });
 
@@ -158,7 +158,7 @@ describe("docker sandbox backend manager", () => {
 
     expect(result).toEqual({
       running: true,
-      actualConfigLabel: "openclaw-sandbox:bookworm-slim",
+      actualConfigLabel: "afora-sandbox:bookworm-slim",
       configLabelMatch: true,
     });
   });
@@ -166,7 +166,7 @@ describe("docker sandbox backend manager", () => {
   it("matches browser runtimes against sandbox.browser.image", async () => {
     dockerMocks.execContainer.mockResolvedValueOnce({
       code: 0,
-      stdout: "openclaw-sandbox-browser:bookworm-slim\n",
+      stdout: "afora-sandbox-browser:bookworm-slim\n",
       stderr: "",
     });
 
@@ -187,7 +187,7 @@ describe("docker sandbox backend manager", () => {
 
     expect(result).toEqual({
       running: true,
-      actualConfigLabel: "openclaw-sandbox-browser:bookworm-slim",
+      actualConfigLabel: "afora-sandbox-browser:bookworm-slim",
       configLabelMatch: true,
     });
   });
@@ -197,7 +197,7 @@ describe("docker sandbox backend manager", () => {
     // sandbox matching stable for those existing containers.
     dockerMocks.execContainer.mockResolvedValueOnce({
       code: 0,
-      stdout: "openclaw-sandbox:bookworm-slim\n",
+      stdout: "afora-sandbox:bookworm-slim\n",
       stderr: "",
     });
 
@@ -217,7 +217,7 @@ describe("docker sandbox backend manager", () => {
 
     expect(result).toEqual({
       running: true,
-      actualConfigLabel: "openclaw-sandbox:bookworm-slim",
+      actualConfigLabel: "afora-sandbox:bookworm-slim",
       configLabelMatch: true,
     });
   });
@@ -238,7 +238,7 @@ describe("docker sandbox backend manager", () => {
           sessionKey: "agent:coder:main",
           createdAtMs: 1,
           lastUsedAtMs: 1,
-          image: "openclaw-sandbox:bookworm-slim",
+          image: "afora-sandbox:bookworm-slim",
         },
         config: createConfig(),
       }),
@@ -263,7 +263,7 @@ describe("docker sandbox backend manager", () => {
           sessionKey: "agent:coder:main",
           createdAtMs: 1,
           lastUsedAtMs: 1,
-          image: "openclaw-sandbox:bookworm-slim",
+          image: "afora-sandbox:bookworm-slim",
         },
         config: createConfig(),
       }),
@@ -286,7 +286,7 @@ describe("docker sandbox backend manager", () => {
         sessionKey: "agent:coder:main",
         createdAtMs: 1,
         lastUsedAtMs: 1,
-        image: "openclaw-sandbox:bookworm-slim",
+        image: "afora-sandbox:bookworm-slim",
       },
       config: createConfig(),
     });
@@ -319,7 +319,7 @@ describe("docker sandbox backend manager", () => {
           sessionKey: "agent:coder:main",
           createdAtMs: 1,
           lastUsedAtMs: 1,
-          image: "openclaw-sandbox:bookworm-slim",
+          image: "afora-sandbox:bookworm-slim",
         },
         config: createConfig(),
       }),
@@ -346,7 +346,7 @@ describe("docker sandbox backend manager", () => {
           sessionKey: "agent:coder:main",
           createdAtMs: 1,
           lastUsedAtMs: 1,
-          image: "openclaw-sandbox:bookworm-slim",
+          image: "afora-sandbox:bookworm-slim",
         },
         config: createConfig(),
       }),
@@ -364,7 +364,7 @@ describe("docker sandbox backend manager", () => {
         scopeKey: "agent:coder:main",
         workspaceDir: "/workspace",
         agentWorkspaceDir: "/workspace",
-        skillsWorkspaceDir: "/workspace/.openclaw/sandbox-skills",
+        skillsWorkspaceDir: "/workspace/.afora/sandbox-skills",
         cfg: resolveSandboxConfigForAgent(config),
       }),
     ).rejects.toThrow(
@@ -378,7 +378,7 @@ describe("docker sandbox backend manager", () => {
     dockerMocks.execContainer
       .mockResolvedValueOnce({
         code: 0,
-        stdout: "localhost/openclaw-sandbox:bookworm-slim\tsha256:abc123\n",
+        stdout: "localhost/afora-sandbox:bookworm-slim\tsha256:abc123\n",
         stderr: "",
       })
       .mockResolvedValueOnce({
@@ -396,7 +396,7 @@ describe("docker sandbox backend manager", () => {
         sessionKey: "agent:coder:main",
         createdAtMs: 1,
         lastUsedAtMs: 1,
-        image: "openclaw-sandbox:bookworm-slim",
+        image: "afora-sandbox:bookworm-slim",
         configLabelKind: "Image",
       },
       config: createConfig(),
@@ -405,13 +405,13 @@ describe("docker sandbox backend manager", () => {
 
     expect(result).toEqual({
       running: true,
-      actualConfigLabel: "localhost/openclaw-sandbox:bookworm-slim",
+      actualConfigLabel: "localhost/afora-sandbox:bookworm-slim",
       configLabelMatch: true,
     });
     expect(dockerMocks.execContainer).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({ id: "podman", command: "podman" }),
-      ["image", "inspect", "-f", "{{.Id}}", "openclaw-sandbox:bookworm-slim"],
+      ["image", "inspect", "-f", "{{.Id}}", "afora-sandbox:bookworm-slim"],
       { allowFailure: true },
     );
   });

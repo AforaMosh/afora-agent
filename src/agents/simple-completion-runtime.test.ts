@@ -1,7 +1,7 @@
 // Simple completion runtime tests cover model resolution, provider auth, and
 // one-shot completion wiring before requests reach the shared LLM stream path.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { Model } from "../llm/types.js";
 import {
   looksLikeSecretSentinel,
@@ -59,8 +59,8 @@ vi.mock("../plugins/current-plugin-metadata-snapshot.js", async (importOriginal)
   getCurrentPluginMetadataSnapshot: hoisted.getCurrentPluginMetadataSnapshotMock,
 }));
 
-vi.mock("@openclaw/ai/transports", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@openclaw/ai/transports")>()),
+vi.mock("@afora/ai/transports", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@afora/ai/transports")>()),
   prepareModelForSimpleCompletion: hoisted.prepareModelForSimpleCompletionMock,
 }));
 
@@ -200,7 +200,7 @@ describe("prepareSimpleCompletionModel", () => {
       cfg: undefined,
       provider: "anthropic",
       modelId: "claude-opus-4-6",
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       modelResolver: bindSimpleCompletionModelResolverWorkspace(
         hoisted.resolveModelAsyncMock as typeof resolveModelAsync,
         "/tmp/runtime-workspace",
@@ -237,7 +237,7 @@ describe("prepareSimpleCompletionModel", () => {
       cfg: {},
       provider: "anthropic",
       modelId: "claude-opus-4-6",
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       profileId: "anthropic:p2",
       bindAuthOwner: true,
     });
@@ -570,7 +570,7 @@ describe("prepareSimpleCompletionModel", () => {
       cfg: undefined,
       provider: "amazon-bedrock-mantle",
       modelId: "anthropic.claude-opus-4-7",
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
     });
 
     const runtimeAuthInput = callArg(hoisted.prepareProviderRuntimeAuthMock) as {
@@ -584,7 +584,7 @@ describe("prepareSimpleCompletionModel", () => {
       };
     };
     expect(runtimeAuthInput.provider).toBe("amazon-bedrock-mantle");
-    expect(runtimeAuthInput.workspaceDir).toBe("/tmp/openclaw-agent");
+    expect(runtimeAuthInput.workspaceDir).toBe("/tmp/afora-agent");
     expect(runtimeAuthInput.context?.apiKey).toBe("__amazon_bedrock_mantle_iam__");
     expect(runtimeAuthInput.context?.authMode).toBe("api-key");
     expect(runtimeAuthInput.context?.modelId).toBe("anthropic.claude-opus-4-7");
@@ -727,7 +727,7 @@ describe("prepareSimpleCompletionModelForAgent", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const modelResolver = createOpenAIRouteModelResolver({
       api: "openai-chatgpt-responses",
       baseUrl: "https://chatgpt.com/backend-api/codex",
@@ -770,7 +770,7 @@ describe("prepareSimpleCompletionModelForAgent", () => {
   it("keeps the Codex route for OAuth auth", async () => {
     const cfg = {
       agents: { defaults: { model: "openai/gpt-5.5" } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const modelResolver = createOpenAIRouteModelResolver({
       api: "openai-chatgpt-responses",
       baseUrl: "https://chatgpt.com/backend-api/codex",
@@ -812,7 +812,7 @@ describe("prepareSimpleCompletionModelForAgent", () => {
         },
       },
       agents: { defaults: { model: "openai/gpt-5.5" } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const modelResolver = createOpenAIRouteModelResolver({
       api: "openai-responses",
       baseUrl: "https://relay.example/v1",
@@ -841,7 +841,7 @@ describe("prepareSimpleCompletionModelForAgent", () => {
   it("honors an explicit model ref while selecting its auth-compatible route", async () => {
     const cfg = {
       agents: { defaults: { model: "anthropic/claude-opus-4-6" } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const modelResolver = createOpenAIRouteModelResolver({
       api: "openai-chatgpt-responses",
       baseUrl: "https://chatgpt.com/backend-api/codex",
@@ -882,7 +882,7 @@ describe("completeWithPreparedSimpleCompletionModel", () => {
     } satisfies Model<"ollama">;
     const preparedModel = {
       ...model,
-      api: "openclaw-ollama-simple-test",
+      api: "afora-ollama-simple-test",
     };
     const cfg = {
       models: { providers: { ollama: { baseUrl: "http://remote-ollama:11434", models: [] } } },
@@ -919,7 +919,7 @@ describe("completeWithPreparedSimpleCompletionModel", () => {
   });
 
   it.each(["max", "ultra"] as const)(
-    "normalizes OpenClaw-only %s before using shared model runtime simple completion",
+    "normalizes Afora-only %s before using shared model runtime simple completion",
     async (reasoning) => {
       const model = {
         provider: "openai",
@@ -1059,7 +1059,7 @@ describe("completeWithPreparedSimpleCompletionModel", () => {
     } satisfies Model<"anthropic-messages">;
     const preparedModel = {
       ...model,
-      api: "openclaw-provider-simple:anthropic:production-sonnet",
+      api: "afora-provider-simple:anthropic:production-sonnet",
     } satisfies Model;
     hoisted.prepareModelForSimpleCompletionMock.mockReturnValueOnce(preparedModel);
 

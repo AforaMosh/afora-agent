@@ -1,4 +1,4 @@
-/** Tests merging user OpenClaw MCP server config into Claude bundle-MCP overlays. */
+/** Tests merging user Afora MCP server config into Claude bundle-MCP overlays. */
 import fs from "node:fs/promises";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -26,9 +26,9 @@ describe("prepareCliBundleMcpConfig user mcp.servers", () => {
     authMocks.resolveMcpOAuthAccessToken.mockReset();
   });
 
-  it("merges user-configured mcp.servers from OpenClaw config", async () => {
+  it("merges user-configured mcp.servers from Afora config", async () => {
     const workspaceDir = await cliBundleMcpHarness.tempHarness.createTempDir(
-      "openclaw-cli-bundle-mcp-user-servers-",
+      "afora-cli-bundle-mcp-user-servers-",
     );
 
     const prepared = await prepareCliBundleMcpConfig({
@@ -63,9 +63,9 @@ describe("prepareCliBundleMcpConfig user mcp.servers", () => {
     await prepared.cleanup?.();
   });
 
-  it("translates OpenClaw transport field on user mcp.servers into Claude type", async () => {
+  it("translates Afora transport field on user mcp.servers into Claude type", async () => {
     const workspaceDir = await cliBundleMcpHarness.tempHarness.createTempDir(
-      "openclaw-cli-bundle-mcp-user-servers-transport-",
+      "afora-cli-bundle-mcp-user-servers-transport-",
     );
 
     const prepared = await prepareCliBundleMcpConfig({
@@ -111,7 +111,7 @@ describe("prepareCliBundleMcpConfig user mcp.servers", () => {
 
   it("preserves explicit type and still strips transport on user mcp.servers", async () => {
     const workspaceDir = await cliBundleMcpHarness.tempHarness.createTempDir(
-      "openclaw-cli-bundle-mcp-user-servers-transport-explicit-",
+      "afora-cli-bundle-mcp-user-servers-transport-explicit-",
     );
 
     const prepared = await prepareCliBundleMcpConfig({
@@ -153,7 +153,7 @@ describe("prepareCliBundleMcpConfig user mcp.servers", () => {
     );
     const warn = vi.fn();
     const workspaceDir = await cliBundleMcpHarness.tempHarness.createTempDir(
-      "openclaw-cli-bundle-mcp-user-servers-oauth-",
+      "afora-cli-bundle-mcp-user-servers-oauth-",
     );
 
     const prepared = await prepareCliBundleMcpConfig({
@@ -198,10 +198,10 @@ describe("prepareCliBundleMcpConfig user mcp.servers", () => {
   });
 
   it("user mcp.servers do not override the loopback additionalConfig", async () => {
-    // The OpenClaw loopback server is generated runtime state and must win over
+    // The Afora loopback server is generated runtime state and must win over
     // user config with the same server name.
     const workspaceDir = await cliBundleMcpHarness.tempHarness.createTempDir(
-      "openclaw-cli-bundle-mcp-user-servers-loopback-",
+      "afora-cli-bundle-mcp-user-servers-loopback-",
     );
 
     const prepared = await prepareCliBundleMcpConfig({
@@ -216,7 +216,7 @@ describe("prepareCliBundleMcpConfig user mcp.servers", () => {
         plugins: { enabled: false },
         mcp: {
           servers: {
-            openclaw: {
+            afora: {
               type: "http",
               url: "https://example.com/malicious",
             },
@@ -225,10 +225,10 @@ describe("prepareCliBundleMcpConfig user mcp.servers", () => {
       },
       additionalConfig: {
         mcpServers: {
-          openclaw: {
+          afora: {
             type: "http",
             url: "http://127.0.0.1:23119/mcp",
-            headers: { Authorization: "Bearer ${OPENCLAW_MCP_TOKEN}" },
+            headers: { Authorization: "Bearer ${AFORA_MCP_TOKEN}" },
           },
         },
       },
@@ -238,14 +238,14 @@ describe("prepareCliBundleMcpConfig user mcp.servers", () => {
     const raw = JSON.parse(await fs.readFile(generatedConfigPath, "utf-8")) as {
       mcpServers?: Record<string, { url?: string }>;
     };
-    expect(raw.mcpServers?.openclaw?.url).toBe("http://127.0.0.1:23119/mcp");
+    expect(raw.mcpServers?.afora?.url).toBe("http://127.0.0.1:23119/mcp");
 
     await prepared.cleanup?.();
   });
 
   it("replaces overlapping bundle server entries with user-configured mcp.servers", async () => {
     const workspaceDir = await cliBundleMcpHarness.tempHarness.createTempDir(
-      "openclaw-cli-bundle-mcp-user-servers-replace-",
+      "afora-cli-bundle-mcp-user-servers-replace-",
     );
     await writeClaudeBundleManifest({
       homeDir: cliBundleMcpHarness.bundleProbeHomeDir,
@@ -254,7 +254,7 @@ describe("prepareCliBundleMcpConfig user mcp.servers", () => {
     });
     const pluginDir = path.join(
       cliBundleMcpHarness.bundleProbeHomeDir,
-      ".openclaw",
+      ".afora",
       "extensions",
       "omi",
     );

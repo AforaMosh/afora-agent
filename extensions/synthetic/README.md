@@ -1,16 +1,16 @@
-# OpenClaw Synthetic Provider
+# Afora Synthetic Provider
 
-Official OpenClaw provider plugin for Synthetic's hosted Anthropic-compatible
+Official Afora provider plugin for Synthetic's hosted Anthropic-compatible
 API.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/synthetic-provider
-openclaw gateway restart
+afora plugins install @afora/synthetic-provider
+afora gateway restart
 ```
 
 Configure `SYNTHETIC_API_KEY`, then select a `synthetic/<model-id>` model.
 
-See https://docs.openclaw.ai/providers/synthetic for model and configuration
+See https://docs.afora.ai/providers/synthetic for model and configuration
 details.

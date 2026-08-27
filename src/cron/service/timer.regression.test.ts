@@ -17,7 +17,7 @@ import {
   HEARTBEAT_SKIP_PREEMPTED,
   type HeartbeatRunResult,
 } from "../../infra/heartbeat-wake.js";
-import { openOpenClawStateDatabase } from "../../state/openclaw-state-db.js";
+import { openAforaStateDatabase } from "../../state/afora-state-db.js";
 import { CRON_TASK_KIND } from "../../tasks/cron-task-contract.js";
 import { cancelTaskById, listTaskRecords } from "../../tasks/task-registry.js";
 import {
@@ -1256,7 +1256,7 @@ describe("cron service timer regressions", () => {
     };
     const state = createCronServiceState({
       cronEnabled: true,
-      storePath: "/tmp/openclaw-cron-abort-test/jobs.json",
+      storePath: "/tmp/afora-cron-abort-test/jobs.json",
       log: noopLogger,
       nowMs: () => Date.now(),
       enqueueSystemEvent,
@@ -1309,7 +1309,7 @@ describe("cron service timer regressions", () => {
       };
       const state = createCronServiceState({
         cronEnabled: true,
-        storePath: "/tmp/openclaw-cron-preempted-test/jobs.json",
+        storePath: "/tmp/afora-cron-preempted-test/jobs.json",
         log: noopLogger,
         nowMs: () => Date.now(),
         enqueueSystemEvent: vi.fn(),
@@ -2037,7 +2037,7 @@ describe("cron service timer regressions", () => {
       (await loadCronStore(store.storePath)).jobs.find((job) => job.id === catchupJob.id)?.state
         .runningAtMs,
     ).toBeUndefined();
-    const receipt = openOpenClawStateDatabase()
+    const receipt = openAforaStateDatabase()
       .db.prepare(
         "SELECT status FROM cron_run_receipts WHERE store_key = ? AND job_id = ? ORDER BY started_at_ms DESC LIMIT 1",
       )
@@ -2882,7 +2882,7 @@ describe("cron service timer regressions", () => {
 
       const order: string[] = [];
       const enqueueSystemEvent = vi.fn(() => {
-        const persisted = openOpenClawStateDatabase()
+        const persisted = openAforaStateDatabase()
           .db.prepare("SELECT enabled FROM cron_jobs WHERE store_key = ? AND job_id = ?")
           .get(cronStoreKey(store.storePath), malformed.id) as { enabled: number };
         expect(persisted.enabled).toBe(0);

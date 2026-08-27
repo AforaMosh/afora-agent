@@ -24,7 +24,7 @@ async function openSessionMenu(sidebar: SidebarLifecycleState, key: string) {
   }
   button.click();
   await sidebar.updateComplete;
-  const menu = sidebar.querySelector<TestSessionMenu>("openclaw-session-menu");
+  const menu = sidebar.querySelector<TestSessionMenu>("afora-session-menu");
   if (!menu) {
     throw new Error("expected session menu");
   }

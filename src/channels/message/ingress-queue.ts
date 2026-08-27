@@ -1,7 +1,7 @@
 /**
  * Durable channel ingress queue.
  *
- * Stores, claims, completes, and tombstones inbound channel events in OpenClaw state.
+ * Stores, claims, completes, and tombstones inbound channel events in Afora state.
  */
 import { randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
@@ -13,12 +13,12 @@ import {
 } from "../../infra/kysely-sync.js";
 import type {
   ChannelIngressEvents,
-  DB as OpenClawStateKyselyDatabase,
-} from "../../state/openclaw-state-db.generated.js";
+  DB as AforaStateKyselyDatabase,
+} from "../../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../../state/afora-state-db.js";
 
 /** Pending or retryable inbound channel event stored in the durable ingress queue. */
 export type ChannelIngressQueueRecord<TPayload, TMetadata = unknown> = {
@@ -253,12 +253,12 @@ export type CreateChannelIngressQueueOptions = {
   now?: () => number;
 };
 
-type ChannelIngressDatabase = Pick<OpenClawStateKyselyDatabase, "channel_ingress_events">;
+type ChannelIngressDatabase = Pick<AforaStateKyselyDatabase, "channel_ingress_events">;
 type ChannelIngressRow = Selectable<ChannelIngressEvents>;
 
 // Failed rows need to distinguish a retained JSON null payload from the "null"
 // scrub marker written by older versions. Invalid JSON cannot collide with enqueue output.
-const FAILED_NULL_PAYLOAD_SENTINEL = "OPENCLAW_CHANNEL_INGRESS_FAILED_NULL_V1";
+const FAILED_NULL_PAYLOAD_SENTINEL = "AFORA_CHANNEL_INGRESS_FAILED_NULL_V1";
 
 function normalizePart(value: string | undefined, fallback: string): string {
   const normalized = value?.trim();
@@ -271,12 +271,12 @@ function createStateDirEnv(
   baseEnv: NodeJS.ProcessEnv = process.env,
 ): NodeJS.ProcessEnv {
   const env = Object.create(baseEnv) as NodeJS.ProcessEnv;
-  env.OPENCLAW_STATE_DIR = stateDir;
+  env.AFORA_STATE_DIR = stateDir;
   return env;
 }
 
 export function openChannelIngressDatabase(stateDir?: string) {
-  return openOpenClawStateDatabase({
+  return openAforaStateDatabase({
     env: stateDir ? createStateDirEnv(stateDir) : process.env,
   });
 }
@@ -521,7 +521,7 @@ function queueNameForParts(channelId: string, accountId: string): string {
   return JSON.stringify([channelId, accountId]);
 }
 
-/** Creates a durable channel/account-scoped ingress queue backed by the OpenClaw state database. */
+/** Creates a durable channel/account-scoped ingress queue backed by the Afora state database. */
 export function createChannelIngressQueue<
   TPayload,
   TMetadata = unknown,
@@ -546,7 +546,7 @@ export function createChannelIngressQueue<
     const receivedAt = enqueueOptions?.receivedAt ?? now();
     const updatedAt = now();
     const database = openChannelIngressDatabase(options.stateDir);
-    return runOpenClawStateWriteTransaction(
+    return runAforaStateWriteTransaction(
       (tx) => {
         const kysely = getChannelIngressKysely(tx.db);
         const insert = executeSqliteQuerySync(
@@ -754,7 +754,7 @@ export function createChannelIngressQueue<
         : storedLaneKey;
     };
     const database = openChannelIngressDatabase(options.stateDir);
-    return runOpenClawStateWriteTransaction(
+    return runAforaStateWriteTransaction(
       (tx) => {
         const kysely = getChannelIngressKysely(tx.db);
         let effectiveBlocked = blocked;
@@ -883,7 +883,7 @@ export function createChannelIngressQueue<
       throw new Error("Channel ingress event id cannot be empty");
     }
     const database = openChannelIngressDatabase(options.stateDir);
-    return runOpenClawStateWriteTransaction(
+    return runAforaStateWriteTransaction(
       (tx) => {
         const kysely = getChannelIngressKysely(tx.db);
         const transitionAt = now();
@@ -933,7 +933,7 @@ export function createChannelIngressQueue<
     const eventId = idFrom(claimRef);
     const refreshedAt = refreshOptions?.refreshedAt ?? now();
     const database = openChannelIngressDatabase(options.stateDir);
-    return runOpenClawStateWriteTransaction(
+    return runAforaStateWriteTransaction(
       (tx) => {
         const kysely = getChannelIngressKysely(tx.db);
         const result = executeSqliteQuerySync(
@@ -961,7 +961,7 @@ export function createChannelIngressQueue<
   ): Promise<boolean> => {
     const eventId = idFrom(claimRef);
     const database = openChannelIngressDatabase(options.stateDir);
-    return runOpenClawStateWriteTransaction(
+    return runAforaStateWriteTransaction(
       (tx) => {
         const kysely = getChannelIngressKysely(tx.db);
         const result = executeSqliteQuerySync(
@@ -1022,7 +1022,7 @@ export function createChannelIngressQueue<
           // identity contract above.
           continue;
         }
-        const tombstoned = runOpenClawStateWriteTransaction(
+        const tombstoned = runAforaStateWriteTransaction(
           (tx) =>
             tombstoneCorruptPayloadRow({
               db: tx.db,
@@ -1056,7 +1056,7 @@ export function createChannelIngressQueue<
     const token = claimTokenFrom(idOrClaim);
     const completedAt = completeOptions?.completedAt ?? now();
     const database = openChannelIngressDatabase(options.stateDir);
-    return runOpenClawStateWriteTransaction(
+    return runAforaStateWriteTransaction(
       (tx) => {
         const kysely = getChannelIngressKysely(tx.db);
         const baseUpdate = kysely
@@ -1128,7 +1128,7 @@ export function createChannelIngressQueue<
     const token = claimTokenFrom(idOrClaim);
     const releasedAt = releaseOptions?.releasedAt ?? now();
     const database = openChannelIngressDatabase(options.stateDir);
-    return runOpenClawStateWriteTransaction(
+    return runAforaStateWriteTransaction(
       (tx) => {
         const kysely = getChannelIngressKysely(tx.db);
         const baseUpdate = kysely
@@ -1171,7 +1171,7 @@ export function createChannelIngressQueue<
     const token = claimTokenFrom(idOrClaim);
     const failedAt = failOptions.failedAt ?? now();
     const database = openChannelIngressDatabase(options.stateDir);
-    return runOpenClawStateWriteTransaction(
+    return runAforaStateWriteTransaction(
       (tx) => {
         const kysely = getChannelIngressKysely(tx.db);
         const baseUpdate = kysely
@@ -1210,7 +1210,7 @@ export function createChannelIngressQueue<
     const eventId = idFrom(id);
     const resubmittedAt = resubmitOptions?.resubmittedAt ?? now();
     const database = openChannelIngressDatabase(options.stateDir);
-    return runOpenClawStateWriteTransaction(
+    return runAforaStateWriteTransaction(
       (tx) => {
         const row = selectRow(tx.db, queueName, eventId);
         if (!row) {
@@ -1280,7 +1280,7 @@ export function createChannelIngressQueue<
     const eventId = idFrom(idOrRecord);
     const token = claimTokenFrom(idOrRecord);
     const database = openChannelIngressDatabase(options.stateDir);
-    return runOpenClawStateWriteTransaction(
+    return runAforaStateWriteTransaction(
       (tx) => {
         const kysely = getChannelIngressKysely(tx.db);
         const baseDelete = kysely
@@ -1322,7 +1322,7 @@ export function createChannelIngressQueue<
       return 0;
     }
     const database = openChannelIngressDatabase(options.stateDir);
-    return runOpenClawStateWriteTransaction(
+    return runAforaStateWriteTransaction(
       (tx) => {
         const kysely = getChannelIngressKysely(tx.db);
         let deleted = 0;

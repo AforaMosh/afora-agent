@@ -2,7 +2,7 @@
 import { createServer } from "node:http";
 import { describe, expect, it, vi } from "vitest";
 import { GatewayLockError } from "../../infra/gateway-lock.js";
-import { OpenClawAgentDatabaseMediaMigrationRequiredError } from "../../state/openclaw-agent-db-migration-required.js";
+import { AforaAgentDatabaseMediaMigrationRequiredError } from "../../state/afora-agent-db-migration-required.js";
 import { testing } from "./run.test-support.js";
 
 const loadGatewayTlsRuntimeMock = vi.hoisted(() =>
@@ -24,7 +24,7 @@ describe("supervised gateway lock recovery", () => {
   it("uses exit 78 for offline agent database migration requirements", () => {
     expect(
       testing.resolveGatewayStartupFailureExitCode(
-        new OpenClawAgentDatabaseMediaMigrationRequiredError("/tmp/openclaw-agent.sqlite", 14),
+        new AforaAgentDatabaseMediaMigrationRequiredError("/tmp/afora-agent.sqlite", 14),
       ),
     ).toBe(78);
   });
@@ -104,7 +104,7 @@ describe("supervised gateway lock recovery", () => {
 
   it("preserves an agent-embedded owner error under a supervisor", async () => {
     const err = new GatewayLockError(
-      "another embedded OpenClaw state writer is active (pid 123); lock timeout after 5000ms",
+      "another embedded Afora state writer is active (pid 123); lock timeout after 5000ms",
     );
     const startLoop = vi.fn(async () => {
       throw err;
@@ -225,7 +225,7 @@ describe("supervised gateway lock recovery", () => {
     });
   });
 
-  it("recognizes only the OpenClaw health response", () => {
+  it("recognizes only the Afora health response", () => {
     expect(
       testing.isGatewayHealthzResponse(200, JSON.stringify({ ok: true, status: "live" })),
     ).toBe(true);

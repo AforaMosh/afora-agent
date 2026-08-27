@@ -7,7 +7,7 @@ import {
   NODE_WORKER_SUPERVISOR_LAUNCH_COMMAND,
   NODE_WORKER_SUPERVISOR_STATUS_COMMAND,
 } from "../infra/node-commands.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import type { NodeHostClient } from "./client.js";
 import { NodeWorkerLaunchStore } from "./node-worker-launch-store.js";
 import {
@@ -17,7 +17,7 @@ import {
 import { prepareNodeHostRuntime } from "./runtime.js";
 
 vi.mock("../infra/path-env.js", () => ({
-  ensureOpenClawCliOnPath: vi.fn(),
+  ensureAforaCliOnPath: vi.fn(),
 }));
 
 vi.mock("./mcp.js", () => ({
@@ -48,7 +48,7 @@ vi.mock("./skills.js", () => ({
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 describe("node-host runtime worker supervisor lifetime", () => {

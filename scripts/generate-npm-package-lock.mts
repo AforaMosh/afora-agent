@@ -37,7 +37,7 @@ type NpmLockOptions = {
 
 const SCRIPT_ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ROOT_DIR = path.resolve(
-  process.env.OPENCLAW_NPM_PACKAGE_LOCK_REPO_ROOT?.trim() || SCRIPT_ROOT_DIR,
+  process.env.AFORA_NPM_PACKAGE_LOCK_REPO_ROOT?.trim() || SCRIPT_ROOT_DIR,
 );
 const EXACT_VERSION_PATTERN = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/u;
 const STABLE_VERSION_PATTERN = /^(\d+)\.(\d+)\.(\d+)$/u;
@@ -45,7 +45,7 @@ const NPM_LOCK_COMMAND_TIMEOUT_MS = 10 * 60 * 1000;
 const NPM_LOCK_COMMAND_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
 const NPM_LOCK_DEFAULT_JOBS = 4;
 const NPM_LOCK_MAX_JOBS = 16;
-const NPM_LOCK_WORKER_KIND = "openclaw-npm-lock-package";
+const NPM_LOCK_WORKER_KIND = "afora-npm-lock-package";
 
 function usage() {
   return [
@@ -620,14 +620,14 @@ export function createNpmLockExecOptions(
     cwd,
     env: invocation.env ?? env,
     maxBuffer: readPositiveIntEnv(
-      "OPENCLAW_NPM_LOCK_COMMAND_MAX_BUFFER_BYTES",
+      "AFORA_NPM_LOCK_COMMAND_MAX_BUFFER_BYTES",
       NPM_LOCK_COMMAND_MAX_BUFFER_BYTES,
       env,
     ),
     shell: invocation.shell,
     stdio: ["ignore", "pipe", "pipe"] satisfies ["ignore", "pipe", "pipe"],
     timeout: readPositiveIntEnv(
-      "OPENCLAW_NPM_LOCK_COMMAND_TIMEOUT_MS",
+      "AFORA_NPM_LOCK_COMMAND_TIMEOUT_MS",
       NPM_LOCK_COMMAND_TIMEOUT_MS,
       env,
     ),
@@ -935,7 +935,7 @@ export function createNpmPackageLockInstallStrategyArgs(
 }
 
 export function generateNpmPackageLock(packageDir: string, options: NpmLockOptions = {}) {
-  const tempDir = mkdtempSync(path.join(tmpdir(), "openclaw-npm-lock-"));
+  const tempDir = mkdtempSync(path.join(tmpdir(), "afora-npm-lock-"));
   try {
     const env = options.env ?? process.env;
     const packageJson = parseJsonObject(
@@ -1063,7 +1063,7 @@ function listManagedNpmLockPackageDirs() {
         return false;
       }
       const packageJson: unknown = JSON.parse(readFileSync(packageJsonPath, "utf8"));
-      return recordAt(recordAt(packageJson, "openclaw"), "release")?.publishToNpm === true;
+      return recordAt(recordAt(packageJson, "afora"), "release")?.publishToNpm === true;
     })
     .toSorted((left, right) => left.localeCompare(right));
 }
@@ -1218,16 +1218,16 @@ export function resolveNpmLockJobs(
   env: NodeJS.ProcessEnv = process.env,
   fallback = NPM_LOCK_DEFAULT_JOBS,
 ) {
-  const raw = rawValue ?? env.OPENCLAW_NPM_LOCK_JOBS ?? String(fallback);
+  const raw = rawValue ?? env.AFORA_NPM_LOCK_JOBS ?? String(fallback);
   const rawText =
     typeof raw === "string" || typeof raw === "number" || typeof raw === "bigint"
       ? String(raw)
       : "";
-  const jobs = readPositiveIntEnv("OPENCLAW_NPM_LOCK_JOBS", rawText, {
-    OPENCLAW_NPM_LOCK_JOBS: rawText,
+  const jobs = readPositiveIntEnv("AFORA_NPM_LOCK_JOBS", rawText, {
+    AFORA_NPM_LOCK_JOBS: rawText,
   });
   if (jobs > NPM_LOCK_MAX_JOBS) {
-    throw new Error(`invalid OPENCLAW_NPM_LOCK_JOBS: ${rawText}; maximum is ${NPM_LOCK_MAX_JOBS}`);
+    throw new Error(`invalid AFORA_NPM_LOCK_JOBS: ${rawText}; maximum is ${NPM_LOCK_MAX_JOBS}`);
   }
   return jobs;
 }

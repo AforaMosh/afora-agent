@@ -1,12 +1,12 @@
 // Deepseek tests cover index plugin behavior.
-import type { Context, Model } from "openclaw/plugin-sdk/llm";
-import { createAssistantMessageEventStream } from "openclaw/plugin-sdk/llm";
+import type { Context, Model } from "afora-agent/plugin-sdk/llm";
+import { createAssistantMessageEventStream } from "afora-agent/plugin-sdk/llm";
 import {
   registerSingleProviderPlugin,
   resolveProviderPluginChoice,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
-import { buildOpenAICompletionsParams } from "openclaw/plugin-sdk/provider-transport-runtime";
-import { createProviderUsageFetch, makeResponse } from "openclaw/plugin-sdk/test-env";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { buildOpenAICompletionsParams } from "afora-agent/plugin-sdk/provider-transport-runtime";
+import { createProviderUsageFetch, makeResponse } from "afora-agent/plugin-sdk/test-env";
 import { describe, expect, it } from "vitest";
 import { runSingleProviderCatalog } from "../test-support/provider-model-test-helpers.js";
 import deepseekPlugin from "./index.js";

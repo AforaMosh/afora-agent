@@ -39,8 +39,8 @@ export function isNodeVersionAtLeast(version, minimum) {
   return version.patch >= minimum.patch;
 }
 
-/** Checks OpenClaw's supported release lines. Node 23 remains unsupported. */
-export function isSupportedOpenClawNodeVersion(value) {
+/** Checks Afora's supported release lines. Node 23 remains unsupported. */
+export function isSupportedAforaNodeVersion(value) {
   const version = parseNodeReleaseVersion(value);
   if (!version) {
     return false;
@@ -71,6 +71,6 @@ function renderProcessNodeVersionCheck() {
 })(process.versions.node)`;
 }
 
-// Worker bootstrap runs before OpenClaw is transferred. Carry the canonical
+// Worker bootstrap runs before Afora is transferred. Carry the canonical
 // release policy as a self-contained expression instead of a second parser.
 export const PROCESS_NODE_VERSION_CHECK = renderProcessNodeVersionCheck();

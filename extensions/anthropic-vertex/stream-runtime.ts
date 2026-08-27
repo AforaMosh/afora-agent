@@ -1,17 +1,17 @@
 /**
  * Anthropic Vertex stream runtime. It constructs Vertex SDK clients and adapts
- * OpenClaw stream options for the shared Anthropic Messages transport.
+ * Afora stream options for the shared Anthropic Messages transport.
  */
 import { AnthropicVertex as AnthropicVertexSdk } from "@anthropic-ai/vertex-sdk";
 import { GoogleAuth, type GoogleAuthOptions } from "google-auth-library";
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
 import {
   clampThinkingLevel,
   stream as streamDefault,
   type Model,
   type ModelThinkingLevel,
   type ProviderStreamOptions,
-} from "openclaw/plugin-sdk/llm";
+} from "afora-agent/plugin-sdk/llm";
 import {
   resolveClaudeFable5ModelIdentity,
   resolveClaudeModelIdentity,
@@ -22,7 +22,7 @@ import {
   supportsClaudeAdaptiveThinking,
   supportsClaudeNativeMaxEffort,
   supportsClaudeNativeXhighEffort,
-} from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/provider-model-shared";
 import { EnvHttpProxyAgent, fetch as undiciFetch } from "undici";
 import {
   resolveAnthropicVertexAdcCredentials,
@@ -155,7 +155,7 @@ function resolveAnthropicVertexMaxTokens(params: {
 }
 
 /**
- * Create a StreamFn that routes through OpenClaw's generic model stream with an
+ * Create a StreamFn that routes through Afora's generic model stream with an
  * injected `AnthropicVertex` client.  All streaming, message conversion, and
  * event handling is handled by the shared model runtime - we only supply the GCP-authenticated
  * client and provider transport options.

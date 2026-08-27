@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { AforaConfig } from "../../../config/config.js";
 import { replaceSessionEntry } from "../../../config/sessions/session-accessor.js";
 import { SUBAGENT_ENDED_REASON_KILLED } from "./subagent-lifecycle-events.js";
 import { buildSubagentList } from "./subagent-list.js";
@@ -19,7 +19,7 @@ const STALE_UNENDED_SUBAGENT_RUN_MS = 2 * 60 * 60 * 1_000;
 let testWorkspaceDir = os.tmpdir();
 
 beforeAll(async () => {
-  testWorkspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-subagent-list-"));
+  testWorkspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-subagent-list-"));
 });
 
 afterAll(async () => {
@@ -40,7 +40,7 @@ describe("buildSubagentList", () => {
     const cfg = {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const list = buildSubagentList({
       cfg,
       runs: [],
@@ -68,7 +68,7 @@ describe("buildSubagentList", () => {
     const cfg = {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const list = buildSubagentList({
       cfg,
       runs: [run],
@@ -97,7 +97,7 @@ describe("buildSubagentList", () => {
     const cfg = {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const list = buildSubagentList({
       cfg,
@@ -160,7 +160,7 @@ describe("buildSubagentList", () => {
       addSubagentRunForTests(run);
 
       const list = buildSubagentList({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         runs: [run],
         recentMinutes: 30,
       });
@@ -203,7 +203,7 @@ describe("buildSubagentList", () => {
     const cfg = {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const list = buildSubagentList({
       cfg,
       runs: [orchestratorRun],
@@ -295,7 +295,7 @@ describe("buildSubagentList", () => {
       }
 
       const list = buildSubagentList({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         runs: [parentRun],
         recentMinutes: 30,
       });
@@ -340,7 +340,7 @@ describe("buildSubagentList", () => {
     const cfg = {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const list = buildSubagentList({
       cfg,
@@ -385,7 +385,7 @@ describe("buildSubagentList", () => {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
       session: { store: storePath },
-    } as OpenClawConfig;
+    } as AforaConfig;
     // Prompt/cache usage is separate from visible IO so operators can spot
     // cache-heavy sessions without misreading it as assistant output.
     const list = buildSubagentList({
@@ -419,7 +419,7 @@ describe("buildSubagentList", () => {
     const cfg = {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const list = buildSubagentList({
       cfg,
@@ -465,7 +465,7 @@ describe("buildSubagentList", () => {
     const cfg = {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const list = buildSubagentList({
       cfg,

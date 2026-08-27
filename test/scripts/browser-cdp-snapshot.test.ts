@@ -17,12 +17,12 @@ function runAssertSnapshot(snapshotPath: string, env: Record<string, string> = {
 
 describe("browser CDP snapshot assertions", () => {
   it("rejects oversized snapshots before reading them into diagnostics", () => {
-    const root = tempDirs.make("openclaw-browser-cdp-snapshot-");
+    const root = tempDirs.make("afora-browser-cdp-snapshot-");
     const snapshotPath = path.join(root, "snapshot.txt");
     writeFileSync(snapshotPath, "x".repeat(33), "utf8");
 
     const result = runAssertSnapshot(snapshotPath, {
-      OPENCLAW_BROWSER_CDP_SNAPSHOT_MAX_BYTES: "32",
+      AFORA_BROWSER_CDP_SNAPSHOT_MAX_BYTES: "32",
     });
 
     expect(result.status).toBe(1);
@@ -31,7 +31,7 @@ describe("browser CDP snapshot assertions", () => {
   });
 
   it("bounds missing-needle snapshot diagnostics", () => {
-    const root = tempDirs.make("openclaw-browser-cdp-snapshot-");
+    const root = tempDirs.make("afora-browser-cdp-snapshot-");
     const snapshotPath = path.join(root, "snapshot.txt");
     writeFileSync(snapshotPath, `${"old snapshot line\n".repeat(6 * 1024)}recent tail`, "utf8");
 

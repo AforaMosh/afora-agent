@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prototype Afora TUI"
+  short_description: "Compare isolated Afora TUI variants in tmux"
+  default_prompt: "Use $prototype-afora-tui to isolate an Afora Clack or Pi TUI surface with fixture data and compare multiple interactive variants in tmux."

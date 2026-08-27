@@ -1,8 +1,8 @@
 // Dispatches final reply payloads through visible senders and message tools.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import type { TypingCallbacks } from "../../channels/typing.js";
 import type { HumanDelayConfig } from "../../config/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   findPlatformMessageRejectedError,
   isProvenDeliveryNotSentError,
@@ -151,7 +151,7 @@ function buildReplyDispatchRuntimeInfo(
 export type ReplyDispatcherOptions = {
   deliver: ReplyDispatchDeliverer;
   silentReplyContext?: {
-    cfg?: OpenClawConfig;
+    cfg?: AforaConfig;
     sessionKey?: string;
     surface?: string;
     conversationType?: SilentReplyConversationType;

@@ -1,17 +1,17 @@
 ---
 summary: "Migration hub: cross-system imports, machine-to-machine moves, and plugin upgrades"
 read_when:
-  - You are moving OpenClaw to a new laptop or server
+  - You are moving Afora to a new laptop or server
   - You are coming from another agent system and want to keep state
   - You are upgrading an in-place plugin
 title: "Migration guide"
 ---
 
-OpenClaw supports three migration paths: importing from another agent system, moving an existing install to a new machine, and upgrading a plugin in place.
+Afora supports three migration paths: importing from another agent system, moving an existing install to a new machine, and upgrading a plugin in place.
 
 ## Import from another agent system
 
-Bundled migration providers bring instructions, MCP servers, skills, model config, and (opt-in) API keys into OpenClaw. Plans are previewed before any change and secrets are redacted in reports. Standalone `openclaw migrate` is backed by a verified backup; fresh onboarding imports instead stage and verify local artifacts before publishing them with configuration committed before any irreversible external activation.
+Bundled migration providers bring instructions, MCP servers, skills, model config, and (opt-in) API keys into Afora. Plans are previewed before any change and secrets are redacted in reports. Standalone `afora migrate` is backed by a verified backup; fresh onboarding imports instead stage and verify local artifacts before publishing them with configuration committed before any irreversible external activation.
 
 <CardGroup cols={2}>
   <Card title="Migrating from Claude" href="/install/migrating-claude" icon="brain">
@@ -22,20 +22,20 @@ Bundled migration providers bring instructions, MCP servers, skills, model confi
   </Card>
 </CardGroup>
 
-The CLI entry point is [`openclaw migrate`](/cli/migrate). Onboarding can also offer migration when it detects a known source (`openclaw onboard --flow import`).
+The CLI entry point is [`afora migrate`](/cli/migrate). Onboarding can also offer migration when it detects a known source (`afora onboard --flow import`).
 
-## Move OpenClaw to a new machine
+## Move Afora to a new machine
 
-Copy the **state directory** (`~/.openclaw/` by default) and your **workspace** to preserve:
+Copy the **state directory** (`~/.afora/` by default) and your **workspace** to preserve:
 
-- **Config** — `openclaw.json` and all gateway settings.
+- **Config** — `afora.json` and all gateway settings.
 - **Auth** — per-agent `auth-profiles.json` (API keys plus OAuth), plus any channel or provider state under `credentials/`.
 - **Sessions** — conversation history and agent state.
 - **Channel state** — WhatsApp login, Telegram session, and similar.
 - **Workspace files** — `MEMORY.md`, `USER.md`, skills, and prompts.
 
 <Tip>
-Run `openclaw status` on the old machine to confirm your state directory path. Custom profiles use `~/.openclaw-<profile>/` or a path set via `OPENCLAW_STATE_DIR`.
+Run `afora status` on the old machine to confirm your state directory path. Custom profiles use `~/.afora-<profile>/` or a path set via `AFORA_STATE_DIR`.
 </Tip>
 
 ### Migration steps
@@ -46,9 +46,9 @@ Run `openclaw status` on the old machine to confirm your state directory path. C
     archive:
 
     ```bash
-    openclaw gateway stop
-    mkdir -p ~/Backups/openclaw
-    openclaw backup create --output ~/Backups/openclaw --verify
+    afora gateway stop
+    mkdir -p ~/Backups/afora
+    afora backup create --output ~/Backups/afora --verify
     ```
 
     Stop the Gateway before taking a machine-move snapshot. A raw copy of a
@@ -58,8 +58,8 @@ Run `openclaw status` on the old machine to confirm your state directory path. C
 
   </Step>
 
-  <Step title="Install OpenClaw on the new machine">
-    [Install](/install) the CLI (and Node if needed) on the new machine. It is fine if onboarding creates a fresh `~/.openclaw/` — you overwrite it next.
+  <Step title="Install Afora on the new machine">
+    [Install](/install) the CLI (and Node if needed) on the new machine. It is fine if onboarding creates a fresh `~/.afora/` — you overwrite it next.
   </Step>
 
   <Step title="Transfer and restore to staging">
@@ -68,12 +68,12 @@ Run `openclaw status` on the old machine to confirm your state directory path. C
     staging directory:
 
     ```bash
-    openclaw backup restore <archive.tar.gz> --target ~/openclaw-restored
+    afora backup restore <archive.tar.gz> --target ~/afora-restored
     ```
 
     Restore never activates in place. With the Gateway stopped, use the
     restored `manifest.json` mapping to move the state and workspace assets to
-    their recorded destinations, or point `OPENCLAW_STATE_DIR` at the restored
+    their recorded destinations, or point `AFORA_STATE_DIR` at the restored
     state asset. Confirm ownership matches the user that will run the Gateway.
 
     <Warning>
@@ -88,9 +88,9 @@ Run `openclaw status` on the old machine to confirm your state directory path. C
     On the new machine, run [Doctor](/gateway/doctor) to apply config migrations and repair services:
 
     ```bash
-    openclaw doctor
-    openclaw gateway restart
-    openclaw status
+    afora doctor
+    afora gateway restart
+    afora status
     ```
 
   </Step>
@@ -99,19 +99,19 @@ Run `openclaw status` on the old machine to confirm your state directory path. C
 If Telegram or Discord uses the default env fallback (`TELEGRAM_BOT_TOKEN` or `DISCORD_BOT_TOKEN`), verify the migrated state-dir `.env` contains those keys without printing the secret values:
 
 ```bash
-awk -F= '/^(TELEGRAM_BOT_TOKEN|DISCORD_BOT_TOKEN)=/ { print $1 "=present" }' ~/.openclaw/.env
+awk -F= '/^(TELEGRAM_BOT_TOKEN|DISCORD_BOT_TOKEN)=/ { print $1 "=present" }' ~/.afora/.env
 ```
 
-`openclaw doctor` also warns when an enabled default Telegram or Discord account has no configured token and the matching env variable is unavailable to the doctor process.
+`afora doctor` also warns when an enabled default Telegram or Discord account has no configured token and the matching env variable is unavailable to the doctor process.
 
 ### Common pitfalls
 
 <AccordionGroup>
   <Accordion title="Profile or state-dir mismatch">
-    If the old gateway used `--profile` or `OPENCLAW_STATE_DIR` and the new one does not, channels will appear logged out and sessions will be empty. Launch the gateway with the **same** profile or state-dir you migrated, then rerun `openclaw doctor`.
+    If the old gateway used `--profile` or `AFORA_STATE_DIR` and the new one does not, channels will appear logged out and sessions will be empty. Launch the gateway with the **same** profile or state-dir you migrated, then rerun `afora doctor`.
   </Accordion>
 
-  <Accordion title="Copying only openclaw.json">
+  <Accordion title="Copying only afora.json">
     The config file alone is not enough. Model auth profiles live under `agents/<agentId>/agent/auth-profiles.json`, and channel and provider state lives under `credentials/`. Always migrate the **entire** state directory.
   </Accordion>
 
@@ -132,7 +132,7 @@ awk -F= '/^(TELEGRAM_BOT_TOKEN|DISCORD_BOT_TOKEN)=/ { print $1 "=present" }' ~/.
 
 On the new machine, confirm:
 
-- [ ] `openclaw status` shows the gateway running.
+- [ ] `afora status` shows the gateway running.
 - [ ] Channels are still connected (no re-pairing needed).
 - [ ] The dashboard opens and shows existing sessions.
 - [ ] Workspace files (memory, configs) are present.
@@ -145,7 +145,7 @@ In-place plugin upgrades preserve the same plugin id and config keys but may mov
 
 ## Related
 
-- [`openclaw migrate`](/cli/migrate): CLI reference for cross-system imports.
+- [`afora migrate`](/cli/migrate): CLI reference for cross-system imports.
 - [Install overview](/install): all installation methods.
 - [Doctor](/gateway/doctor): post-migration health check.
-- [Uninstall](/install/uninstall): removing OpenClaw cleanly.
+- [Uninstall](/install/uninstall): removing Afora cleanly.

@@ -1,7 +1,7 @@
 // Doctor startup channel maintenance runs channel plugin startup repairs.
 import { runChannelPluginStartupMaintenance } from "../channels/plugins/lifecycle-startup.js";
 import { resolveDoctorChannelPreviewConfig } from "../commands/doctor/shared/preview-warnings.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { HealthFinding } from "./health-checks.js";
 
 const CHANNEL_PREVIEW_WARNINGS_CHECK_ID = "core/doctor/channel-preview-warnings";
@@ -24,14 +24,14 @@ function warningPath(warning: string): string | undefined {
 
 /** Collect read-only channel doctor preview warnings as structured findings. */
 export async function collectChannelPreviewWarningHealthFindings(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   doctorFixCommand?: string;
   env?: NodeJS.ProcessEnv;
   allowExec?: boolean;
 }): Promise<readonly HealthFinding[]> {
   const { collectChannelDoctorPreviewWarnings } =
     await import("../commands/doctor/shared/channel-doctor.js");
-  const doctorFixCommand = params.doctorFixCommand ?? "openclaw doctor --fix";
+  const doctorFixCommand = params.doctorFixCommand ?? "afora doctor --fix";
   const previewConfig = await resolveDoctorChannelPreviewConfig({
     cfg: params.cfg,
     env: params.env ?? process.env,
@@ -67,7 +67,7 @@ export async function collectChannelPreviewWarningHealthFindings(params: {
 
 /** Runs channel plugin startup maintenance when doctor fix mode explicitly permits repairs. */
 export async function maybeRunDoctorStartupChannelMaintenance(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   runChannelPluginStartupMaintenance?: ChannelPluginStartupMaintenanceRunner;
   runtime: DoctorStartupMaintenanceRuntime;

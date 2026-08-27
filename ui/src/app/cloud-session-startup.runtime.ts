@@ -1,4 +1,4 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import type { GatewaySessionRow } from "../api/types.ts";
 import { formatUiError } from "../lib/format-error.ts";
 import {
@@ -121,7 +121,7 @@ function buildInitialUserMessage(
     role: "user",
     content,
     timestamp: createdAt,
-    __openclaw: {
+    __afora: {
       idempotencyKey: `${identity.messageId}:user`,
       ...(identity.messageSeq !== undefined ? { seq: identity.messageSeq } : {}),
     },

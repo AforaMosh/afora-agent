@@ -1,15 +1,15 @@
-import type { ChannelInboundMediaInput } from "openclaw/plugin-sdk/channel-inbound";
+import type { ChannelInboundMediaInput } from "afora-agent/plugin-sdk/channel-inbound";
 import type {
   ChannelIngressContextBinding,
   ResolvedChannelMessageIngress,
-} from "openclaw/plugin-sdk/channel-ingress-runtime";
+} from "afora-agent/plugin-sdk/channel-ingress-runtime";
 // Signal plugin helpers isolate active-run control scheduling from the inbound handler.
 import {
   listChatCommands,
   maybeResolveTextAlias,
   normalizeCommandBody,
-} from "openclaw/plugin-sdk/command-auth-native";
-import { isAbortRequestText } from "openclaw/plugin-sdk/command-primitives-runtime";
+} from "afora-agent/plugin-sdk/command-auth-native";
+import { isAbortRequestText } from "afora-agent/plugin-sdk/command-primitives-runtime";
 import type { SignalIngressLifecycle } from "../signal-ingress.js";
 
 export type SignalInboundEntry = {

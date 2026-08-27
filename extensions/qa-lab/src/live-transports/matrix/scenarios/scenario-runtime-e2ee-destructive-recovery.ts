@@ -3,14 +3,14 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createMatrixQaClient } from "../substrate/client.js";
 import {
-  createMatrixQaOpenClawCliRuntime,
+  createMatrixQaAforaCliRuntime,
   formatMatrixQaCliCommand,
   redactMatrixQaCliOutput,
   type MatrixQaCliRunResult,
 } from "./scenario-runtime-cli.js";
 import type { MatrixQaScenarioContext } from "./scenario-runtime-shared.js";
 
-export type MatrixQaCliRuntime = Awaited<ReturnType<typeof createMatrixQaOpenClawCliRuntime>>;
+export type MatrixQaCliRuntime = Awaited<ReturnType<typeof createMatrixQaAforaCliRuntime>>;
 
 export type MatrixQaCliBackupStatus = {
   backup?: {
@@ -60,7 +60,7 @@ function requireMatrixQaCliRuntimeEnv(context: MatrixQaScenarioContext) {
 }
 
 export function requireMatrixQaGatewayConfigPath(context: MatrixQaScenarioContext) {
-  const configPath = requireMatrixQaCliRuntimeEnv(context).OPENCLAW_CONFIG_PATH?.trim();
+  const configPath = requireMatrixQaCliRuntimeEnv(context).AFORA_CONFIG_PATH?.trim();
   if (!configPath) {
     throw new Error("Matrix E2EE destructive QA scenarios require the gateway config path");
   }
@@ -75,7 +75,7 @@ export async function createMatrixQaRecoveryCliRuntime(params: {
   label: string;
   userId: string;
 }) {
-  return await createMatrixQaOpenClawCliRuntime({
+  return await createMatrixQaAforaCliRuntime({
     accountId: params.accountId,
     accessToken: params.accessToken,
     artifactLabel: params.label,

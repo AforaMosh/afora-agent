@@ -1,7 +1,7 @@
 // Hook command tests cover metadata config keys and missing-hook exit status.
 import { Command } from "commander";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveConfiguredInternalHookNames } from "../hooks/configured.js";
 import type { HookStatusEntry, HookStatusReport } from "../hooks/hooks-status.js";
 import { createEmptyInstallChecks } from "./requirements-test-fixtures.js";
@@ -103,10 +103,10 @@ const sourceConfig = {
 const hook: HookStatusEntry = {
   name: "display-name",
   description: "Hook with a metadata config-key override",
-  source: "openclaw-workspace",
-  filePath: "/tmp/openclaw-hook-workspace/HOOK.md",
-  baseDir: "/tmp/openclaw-hook-workspace",
-  handlerPath: "/tmp/openclaw-hook-workspace/handler.js",
+  source: "afora-workspace",
+  filePath: "/tmp/afora-hook-workspace/HOOK.md",
+  baseDir: "/tmp/afora-hook-workspace",
+  handlerPath: "/tmp/afora-hook-workspace/handler.js",
   hookKey: "metadata-key",
   events: [],
   unknownEvents: [],
@@ -119,8 +119,8 @@ const hook: HookStatusEntry = {
 };
 
 const report: HookStatusReport = {
-  workspaceDir: "/tmp/openclaw-hook-workspace",
-  managedHooksDir: "/tmp/openclaw-managed-hooks",
+  workspaceDir: "/tmp/afora-hook-workspace",
+  managedHooksDir: "/tmp/afora-managed-hooks",
   hooks: [hook],
 };
 
@@ -138,8 +138,8 @@ function configureExplicitFleet() {
     agents: {
       ownership: "explicit" as const,
       list: [
-        { id: "main", workspace: "/tmp/openclaw-main-workspace" },
-        { id: "research", workspace: "/tmp/openclaw-research-workspace" },
+        { id: "main", workspace: "/tmp/afora-main-workspace" },
+        { id: "research", workspace: "/tmp/afora-research-workspace" },
       ],
     },
   };
@@ -150,7 +150,7 @@ function configureExplicitFleet() {
     throw new Error("selection required");
   });
   mocks.resolveAgentWorkspaceDir.mockImplementation(
-    (_config: unknown, agentId: string) => `/tmp/openclaw-${agentId}-workspace`,
+    (_config: unknown, agentId: string) => `/tmp/afora-${agentId}-workspace`,
   );
   return config;
 }
@@ -163,7 +163,7 @@ describe("hooks CLI metadata config keys", () => {
     mocks.buildWorkspaceHookStatus.mockReturnValue(report);
     mocks.getRuntimeConfig.mockReturnValue(sourceConfig);
     mocks.listAgentIds.mockReturnValue(["main"]);
-    mocks.resolveAgentWorkspaceDir.mockReturnValue("/tmp/openclaw-hook-workspace");
+    mocks.resolveAgentWorkspaceDir.mockReturnValue("/tmp/afora-hook-workspace");
     mocks.resolveDefaultAgentId.mockReturnValue("main");
     mocks.tryResolveLegacyCompatibilityAgentId.mockReturnValue("main");
     mocks.readConfigFileSnapshot.mockResolvedValue({ sourceConfig, hash: "config-hash" });
@@ -197,7 +197,7 @@ describe("hooks CLI metadata config keys", () => {
       },
       baseHash: "config-hash",
     });
-    const writtenConfig = mocks.replaceConfigFile.mock.calls[0]?.[0]?.nextConfig as OpenClawConfig;
+    const writtenConfig = mocks.replaceConfigFile.mock.calls[0]?.[0]?.nextConfig as AforaConfig;
     expect(resolveConfiguredInternalHookNames(writtenConfig)).toEqual(
       new Set(testCase.enabled ? ["metadata-key"] : []),
     );
@@ -424,7 +424,7 @@ describe("hooks CLI metadata config keys", () => {
     expect(mocks.resolveDefaultAgentId).not.toHaveBeenCalled();
     expect(mocks.resolveAgentWorkspaceDir).toHaveBeenCalledWith(explicitFleet, "research");
     expect(mocks.buildWorkspaceHookStatus).toHaveBeenCalledWith(
-      "/tmp/openclaw-research-workspace",
+      "/tmp/afora-research-workspace",
       expect.anything(),
     );
   });
@@ -460,7 +460,7 @@ describe("hooks CLI metadata config keys", () => {
     });
 
     expect(mocks.buildWorkspaceHookStatus).toHaveBeenCalledWith(
-      "/tmp/openclaw-hook-workspace",
+      "/tmp/afora-hook-workspace",
       expect.anything(),
     );
   });

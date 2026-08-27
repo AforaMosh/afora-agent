@@ -19,8 +19,8 @@ import {
 const SCENARIO_ID = "clawhub-release-candidate-checklist";
 const SCENARIO_TITLE = "ClawHub release candidate npm package install proof";
 const SOURCE_PATH = "test/e2e/qa-lab/plugins/clawhub-release-candidate-install.ts";
-const DEFAULT_TARBALL_ENV = "OPENCLAW_QA_RELEASE_CANDIDATE_TARBALL";
-const CHECKOUT_BUILD_RESULT_PREFIX = "__OPENCLAW_QA_RELEASE_CANDIDATE_TARBALL__";
+const DEFAULT_TARBALL_ENV = "AFORA_QA_RELEASE_CANDIDATE_TARBALL";
+const CHECKOUT_BUILD_RESULT_PREFIX = "__AFORA_QA_RELEASE_CANDIDATE_TARBALL__";
 const execFileAsync = promisify(execFile);
 const CLAWHUB_BLOCKED_PREREQUISITE_PATTERNS = [
   /\bprlctl\b/i,
@@ -96,7 +96,7 @@ function parseOptions(
   env: NodeJS.ProcessEnv = process.env,
 ): ProducerOptions {
   let artifactBase = "";
-  let buildFromCheckout = env.OPENCLAW_QA_RELEASE_CANDIDATE_BUILD === "1";
+  let buildFromCheckout = env.AFORA_QA_RELEASE_CANDIDATE_BUILD === "1";
   let platform: string | undefined;
   let repoRoot = process.cwd();
   let tarballEnv = DEFAULT_TARBALL_ENV;
@@ -181,8 +181,8 @@ async function buildCandidateTarballFromCheckout(options: ProducerOptions) {
   const destination = path.join(options.artifactBase, "package");
   await fs.mkdir(destination, { recursive: true });
   const evalScript = `
-    import { packOpenClaw } from "./scripts/e2e/parallels/package-artifact.ts";
-    const artifact = await packOpenClaw({ destination: ${JSON.stringify(destination)} });
+    import { packAfora } from "./scripts/e2e/parallels/package-artifact.ts";
+    const artifact = await packAfora({ destination: ${JSON.stringify(destination)} });
     process.stdout.write(${JSON.stringify(CHECKOUT_BUILD_RESULT_PREFIX)} + JSON.stringify({ path: artifact.path }) + "\\n");
   `;
   const result = await execFileAsync(

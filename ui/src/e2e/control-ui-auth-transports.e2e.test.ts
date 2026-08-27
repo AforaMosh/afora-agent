@@ -3,7 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { createServer, type IncomingMessage } from "node:http";
 import net from "node:net";
 import path from "node:path";
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord } from "@afora/normalization-core/record-coerce";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { WebSocket, WebSocketServer, type RawData } from "ws";
@@ -11,9 +11,9 @@ import { ConnectErrorDetailCodes } from "../../../packages/gateway-protocol/src/
 import type { GatewayServer } from "../../../src/gateway/server.js";
 import { waitForActiveGatewayRootWork } from "../../../src/process/gateway-work-admission.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../../../src/test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../../../src/test-utils/afora-test-state.js";
 import {
   canRunPlaywrightChromium,
   controlUiE2eWaitTimeoutMs,
@@ -24,12 +24,12 @@ import {
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
-const captureUiProofEnabled = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+const captureUiProofEnabled = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 const artifactDir = path.resolve(
   process.cwd(),
-  process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim() ||
+  process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim() ||
     ".artifacts/control-ui-e2e/control-ui-auth-transports",
 );
 const viewport = { height: 900, width: 1280 };
@@ -83,7 +83,7 @@ type RealGateway = {
   cleanup: () => Promise<void>;
   port: number;
   server: GatewayServer;
-  state: OpenClawTestState;
+  state: AforaTestState;
   url: string;
 };
 
@@ -377,19 +377,19 @@ async function getFreePort(): Promise<number> {
 
 async function startRealGateway(allowedOrigin: string): Promise<RealGateway> {
   const port = await getFreePort();
-  const state = await createOpenClawTestState({
+  const state = await createAforaTestState({
     label: "control-ui-auth-transports",
     layout: "home",
     env: {
-      OPENCLAW_GATEWAY_PASSWORD: undefined,
-      OPENCLAW_GATEWAY_TOKEN: undefined,
-      OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-      OPENCLAW_SKIP_CANVAS_HOST: "1",
-      OPENCLAW_SKIP_CHANNELS: "1",
-      OPENCLAW_SKIP_CRON: "1",
-      OPENCLAW_SKIP_GMAIL_WATCHER: "1",
-      OPENCLAW_SKIP_PROVIDERS: "1",
-      OPENCLAW_TEST_MINIMAL_GATEWAY: "1",
+      AFORA_GATEWAY_PASSWORD: undefined,
+      AFORA_GATEWAY_TOKEN: undefined,
+      AFORA_SKIP_BROWSER_CONTROL_SERVER: "1",
+      AFORA_SKIP_CANVAS_HOST: "1",
+      AFORA_SKIP_CHANNELS: "1",
+      AFORA_SKIP_CRON: "1",
+      AFORA_SKIP_GMAIL_WATCHER: "1",
+      AFORA_SKIP_PROVIDERS: "1",
+      AFORA_TEST_MINIMAL_GATEWAY: "1",
       VITEST: "1",
     },
   });
@@ -480,7 +480,7 @@ async function createBrowserPage(
   expect(response?.status()).toBe(200);
   // Source-served UI startup shares CI shard CPU. Bound navigation and the
   // first rendered interaction separately; transport assertions stay narrow.
-  const confirmation = page.locator("openclaw-gateway-url-confirmation");
+  const confirmation = page.locator("afora-gateway-url-confirmation");
   await confirmation.waitFor({ timeout: controlUiSettleTimeoutMs });
   expect(await confirmation.textContent()).toContain(gatewayUrl);
   expect(proxy.evidence).toHaveLength(evidenceStartIndex);
@@ -544,7 +544,7 @@ async function waitForVisibleFailure(page: Page, expectedText: string): Promise<
   const raw = (await failure.locator(".login-gate__failure-raw").textContent()) ?? "";
   expect(raw.toLowerCase()).toContain(expectedText.toLowerCase());
   expect(await failure.locator(".login-gate__failure-steps").isVisible()).toBe(true);
-  expect(await page.locator("openclaw-app-shell").count()).toBe(0);
+  expect(await page.locator("afora-app-shell").count()).toBe(0);
   return raw;
 }
 
@@ -634,7 +634,7 @@ describeControlUiE2e("Control UI real auth transports E2E", () => {
 
     const connected = await createBrowserPage(allowedUi.baseUrl, proxy.trustedUrl);
     await connected.page
-      .locator("openclaw-app-shell")
+      .locator("afora-app-shell")
       .waitFor({ timeout: controlUiSettleTimeoutMs });
     const trustedEvidence = await waitForConnectionEvidence(
       (entry) =>
@@ -645,7 +645,7 @@ describeControlUiE2e("Control UI real auth transports E2E", () => {
     );
     expect(trustedEvidence.browserConnect).toMatchObject({
       authFields: [],
-      clientId: "openclaw-control-ui",
+      clientId: "afora-control-ui",
       clientMode: "webchat",
       hasDevice: true,
     });
@@ -692,7 +692,7 @@ describeControlUiE2e("Control UI real auth transports E2E", () => {
     await closeContext(rejected.context);
 
     const allowed = await createBrowserPage(allowedUi.baseUrl, proxy.trustedUrl);
-    await allowed.page.locator("openclaw-app-shell").waitFor({ timeout: controlUiSettleTimeoutMs });
+    await allowed.page.locator("afora-app-shell").waitFor({ timeout: controlUiSettleTimeoutMs });
     const allowedOrigin = new URL(allowedUi.baseUrl).origin;
     const allowedEvidence = await waitForConnectionEvidence(
       (entry) =>

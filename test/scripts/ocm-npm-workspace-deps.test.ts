@@ -15,7 +15,7 @@ import {
   rewriteWorkspaceDependencyVersions,
   runPreparedRuntimePack,
 } from "../../scripts/ocm-npm-workspace-deps.mts";
-import { restorePrepackArtifacts } from "../../scripts/openclaw-postpack.mjs";
+import { restorePrepackArtifacts } from "../../scripts/afora-postpack.mjs";
 import { preparePackageChangelog } from "../../scripts/package-changelog.mjs";
 import { preparePackageDocsMap } from "../../scripts/package-docs-map.mjs";
 
@@ -28,7 +28,7 @@ const packageDocsMapPath = fileURLToPath(
 const packageChangelogPath = fileURLToPath(
   new URL("../../scripts/package-changelog.mjs", import.meta.url),
 );
-const postpackPath = fileURLToPath(new URL("../../scripts/openclaw-postpack.mjs", import.meta.url));
+const postpackPath = fileURLToPath(new URL("../../scripts/afora-postpack.mjs", import.meta.url));
 
 describe("OCM npm workspace dependency adapter", () => {
   it("allows Unreleased notes only for non-publishing pack commands", () => {
@@ -37,14 +37,14 @@ describe("OCM npm workspace dependency adapter", () => {
     expect(resolveNpmEnvironment(["pack", "--silent"], env)).toEqual({
       KEEP: "value",
       OCM_INTERNAL_NPM_BIN: adapterPath,
-      OPENCLAW_PREPACK_ALLOW_UNRELEASED_CHANGELOG: "1",
+      AFORA_PREPACK_ALLOW_UNRELEASED_CHANGELOG: "1",
     });
   });
 
   it("uses a prepared runtime-only pack for the diagnostic build profile", () => {
     expect(
       resolveRuntimePackPlan(["pack", "--pack-destination", "/tmp/out"], {
-        OPENCLAW_OCM_RUNTIME_BUILD_PROFILE: "sourcePerformance",
+        AFORA_OCM_RUNTIME_BUILD_PROFILE: "sourcePerformance",
       }),
     ).toEqual({
       profile: "sourcePerformance",
@@ -56,7 +56,7 @@ describe("OCM npm workspace dependency adapter", () => {
     expect(resolveRuntimePackPlan(["pack"], {})).toBeNull();
     expect(
       resolveRuntimePackPlan(["install"], {
-        OPENCLAW_OCM_RUNTIME_BUILD_PROFILE: "sourcePerformance",
+        AFORA_OCM_RUNTIME_BUILD_PROFILE: "sourcePerformance",
       }),
     ).toBeNull();
   });
@@ -64,9 +64,9 @@ describe("OCM npm workspace dependency adapter", () => {
   it("rejects unsupported runtime build profiles", () => {
     expect(() =>
       resolveRuntimePackPlan(["pack"], {
-        OPENCLAW_OCM_RUNTIME_BUILD_PROFILE: "qaRuntime",
+        AFORA_OCM_RUNTIME_BUILD_PROFILE: "qaRuntime",
       }),
-    ).toThrow("invalid OPENCLAW_OCM_RUNTIME_BUILD_PROFILE: qaRuntime");
+    ).toThrow("invalid AFORA_OCM_RUNTIME_BUILD_PROFILE: qaRuntime");
   });
 
   it("pins one timestamp and commit across the prepared runtime pack", () => {
@@ -79,7 +79,7 @@ describe("OCM npm workspace dependency adapter", () => {
     expect(env).toMatchObject({
       KEEP: "value",
       GIT_COMMIT: "abcdef0123456789abcdef0123456789abcdef01",
-      OPENCLAW_BUILD_TIMESTAMP: "2026-07-11T12:34:56.000Z",
+      AFORA_BUILD_TIMESTAMP: "2026-07-11T12:34:56.000Z",
     });
   });
 
@@ -94,7 +94,7 @@ describe("OCM npm workspace dependency adapter", () => {
   });
 
   it("does not let a failed concurrent owner restore the active pack lifecycle", async () => {
-    const root = mkdtempSync(join(tmpdir(), "openclaw-ocm-pack-owner-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-ocm-pack-owner-"));
     const docsDir = join(root, "docs");
     const mapPath = join(docsDir, "docs_map.md");
     const receiptPath = join(root, ".artifacts", "package-docs-map", "receipt.json");
@@ -116,7 +116,7 @@ describe("OCM npm workspace dependency adapter", () => {
     mkdirSync(docsDir, { recursive: true });
     writeFileSync(join(docsDir, "page.md"), "# Package docs\n");
     writeFileSync(mapPath, sourceMap);
-    writeFileSync(join(root, "package.json"), '{"name":"openclaw","version":"2026.8.1"}\n');
+    writeFileSync(join(root, "package.json"), '{"name":"afora","version":"2026.8.1"}\n');
     writeFileSync(join(root, "CHANGELOG.md"), sourceChangelog);
 
     try {
@@ -156,7 +156,7 @@ describe("OCM npm workspace dependency adapter", () => {
   });
 
   it("restores a prepared legacy source fixture through its changelog owner", () => {
-    const root = mkdtempSync(join(tmpdir(), "openclaw-ocm-historical-pack-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-ocm-historical-pack-"));
     const scriptsDir = join(root, "scripts");
     const sourceChangelog = `# Changelog
 
@@ -167,7 +167,7 @@ describe("OCM npm workspace dependency adapter", () => {
 - Previous release notes with enough detail for package validation.
 `;
     mkdirSync(scriptsDir, { recursive: true });
-    writeFileSync(join(root, "package.json"), '{"name":"openclaw","version":"2026.8.1"}\n');
+    writeFileSync(join(root, "package.json"), '{"name":"afora","version":"2026.8.1"}\n');
     writeFileSync(join(root, "CHANGELOG.md"), sourceChangelog);
 
     try {
@@ -180,7 +180,7 @@ describe("OCM npm workspace dependency adapter", () => {
         stdio: "pipe",
       });
       expect(readFileSync(join(root, "CHANGELOG.md"), "utf8")).not.toBe(sourceChangelog);
-      expect(existsSync(join(root, "scripts", "openclaw-postpack.mjs"))).toBe(false);
+      expect(existsSync(join(root, "scripts", "afora-postpack.mjs"))).toBe(false);
 
       restoreRuntimePack(process.env, root);
 
@@ -209,7 +209,7 @@ describe("OCM npm workspace dependency adapter", () => {
           "--omit=dev",
           "--no-save",
           "--package-lock=false",
-          "openclaw.tgz",
+          "afora.tgz",
         ],
         ["/repo/packages/ai"],
         "/repo",
@@ -224,25 +224,25 @@ describe("OCM npm workspace dependency adapter", () => {
         "--package-lock=false",
       ],
       prefixDir: "/repo/runtime",
-      rootArchive: "/repo/openclaw.tgz",
+      rootArchive: "/repo/afora.tgz",
     });
   });
 
   it("keeps normal npm commands unchanged", () => {
     expect(resolveWorkspaceInstallPlan(["pack", "--silent"], ["/repo/packages/ai"])).toBeNull();
-    expect(resolveWorkspaceInstallPlan(["install", "openclaw.tgz"], [])).toBeNull();
+    expect(resolveWorkspaceInstallPlan(["install", "afora.tgz"], [])).toBeNull();
   });
 
   it("builds a manifest with the root and local workspace tarballs", () => {
     expect(
-      buildInstallManifest("/tmp/openclaw.tgz", [
-        { name: "@openclaw/ai", tarball: "/tmp/openclaw-ai.tgz" },
+      buildInstallManifest("/tmp/afora.tgz", [
+        { name: "@afora/ai", tarball: "/tmp/afora-ai.tgz" },
       ]),
     ).toEqual({
       private: true,
       dependencies: {
-        "@openclaw/ai": "file:///tmp/openclaw-ai.tgz",
-        openclaw: "file:///tmp/openclaw.tgz",
+        "@afora/ai": "file:///tmp/afora-ai.tgz",
+        afora: "file:///tmp/afora.tgz",
       },
     });
   });
@@ -250,7 +250,7 @@ describe("OCM npm workspace dependency adapter", () => {
   it("rewrites packed workspace protocols to the local package version", () => {
     const packageJson = {
       dependencies: {
-        "@openclaw/ai": "workspace:*",
+        "@afora/ai": "workspace:*",
         chalk: "5.6.2",
       },
     };
@@ -258,14 +258,14 @@ describe("OCM npm workspace dependency adapter", () => {
     expect(
       rewriteWorkspaceDependencyVersions(packageJson, [
         {
-          name: "@openclaw/ai",
+          name: "@afora/ai",
           version: "2026.7.1-beta.3",
-          tarball: "/tmp/openclaw-ai.tgz",
+          tarball: "/tmp/afora-ai.tgz",
         },
       ]),
     ).toBe(1);
     expect(packageJson.dependencies).toEqual({
-      "@openclaw/ai": "2026.7.1-beta.3",
+      "@afora/ai": "2026.7.1-beta.3",
       chalk: "5.6.2",
     });
   });
@@ -273,49 +273,49 @@ describe("OCM npm workspace dependency adapter", () => {
   it("rejects package archives with an unconfigured workspace dependency", () => {
     const packageJson = {
       dependencies: {
-        "@openclaw/normalization-core": "workspace:*",
+        "@afora/normalization-core": "workspace:*",
       },
     };
 
     expect(() => rewriteWorkspaceDependencyVersions(packageJson, [])).toThrow(
-      "package archive references unconfigured workspace dependency: @openclaw/normalization-core",
+      "package archive references unconfigured workspace dependency: @afora/normalization-core",
     );
   });
 
   it("installs a packed root with transitive local workspace dependencies", () => {
-    const root = mkdtempSync(join(tmpdir(), "openclaw-ocm-adapter-test-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-ocm-adapter-test-"));
     try {
       const archiveRoot = join(root, "archive");
       const packagedRoot = join(archiveRoot, "package");
       const workspaceDir = join(root, "ai");
       const transitiveWorkspaceDir = join(root, "normalization-core");
       const installDir = join(root, "install");
-      const rootArchive = join(root, "openclaw.tgz");
+      const rootArchive = join(root, "afora.tgz");
       mkdirSync(packagedRoot, { recursive: true });
       mkdirSync(workspaceDir, { recursive: true });
       mkdirSync(transitiveWorkspaceDir, { recursive: true });
       writeFileSync(
         join(packagedRoot, "package.json"),
         `${JSON.stringify({
-          name: "openclaw",
+          name: "afora",
           version: "1.0.0",
-          dependencies: { "@openclaw/ai": "workspace:*" },
+          dependencies: { "@afora/ai": "workspace:*" },
         })}\n`,
       );
       writeFileSync(
         join(workspaceDir, "package.json"),
         `${JSON.stringify({
-          name: "@openclaw/ai",
+          name: "@afora/ai",
           version: "1.0.0",
           main: "index.js",
-          dependencies: { "@openclaw/normalization-core": "workspace:*" },
+          dependencies: { "@afora/normalization-core": "workspace:*" },
         })}\n`,
       );
       writeFileSync(join(workspaceDir, "index.js"), "export const ready = true;\n");
       writeFileSync(
         join(transitiveWorkspaceDir, "package.json"),
         `${JSON.stringify({
-          name: "@openclaw/normalization-core",
+          name: "@afora/normalization-core",
           version: "1.0.0",
           main: "index.js",
         })}\n`,
@@ -338,8 +338,8 @@ describe("OCM npm workspace dependency adapter", () => {
         {
           env: {
             ...process.env,
-            OPENCLAW_OCM_REAL_NPM_BIN: process.platform === "win32" ? "npm.cmd" : "npm",
-            OPENCLAW_OCM_WORKSPACE_DEPENDENCY_DIRS: [workspaceDir, transitiveWorkspaceDir].join(
+            AFORA_OCM_REAL_NPM_BIN: process.platform === "win32" ? "npm.cmd" : "npm",
+            AFORA_OCM_WORKSPACE_DEPENDENCY_DIRS: [workspaceDir, transitiveWorkspaceDir].join(
               delimiter,
             ),
             npm_config_audit: "false",
@@ -351,24 +351,24 @@ describe("OCM npm workspace dependency adapter", () => {
       );
 
       expect(
-        JSON.parse(readFileSync(join(installDir, "node_modules/openclaw/package.json"), "utf8"))
+        JSON.parse(readFileSync(join(installDir, "node_modules/afora/package.json"), "utf8"))
           .version,
       ).toBe("1.0.0");
       expect(
-        JSON.parse(readFileSync(join(installDir, "node_modules/@openclaw/ai/package.json"), "utf8"))
+        JSON.parse(readFileSync(join(installDir, "node_modules/@afora/ai/package.json"), "utf8"))
           .version,
       ).toBe("1.0.0");
       expect(
         JSON.parse(
           readFileSync(
-            join(installDir, "node_modules/@openclaw/normalization-core/package.json"),
+            join(installDir, "node_modules/@afora/normalization-core/package.json"),
             "utf8",
           ),
         ).version,
       ).toBe("1.0.0");
       expect(
-        JSON.parse(readFileSync(join(installDir, "node_modules/@openclaw/ai/package.json"), "utf8"))
-          .dependencies["@openclaw/normalization-core"],
+        JSON.parse(readFileSync(join(installDir, "node_modules/@afora/ai/package.json"), "utf8"))
+          .dependencies["@afora/normalization-core"],
       ).toBe("1.0.0");
     } finally {
       rmSync(root, { force: true, recursive: true });

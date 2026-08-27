@@ -1,5 +1,5 @@
 import { note } from "../../packages/terminal-core/src/note.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { HealthFinding } from "../flows/health-checks.js";
 import { inspectHostDesktop } from "../gateway/desktop/host-source.js";
 import { runCommandWithTimeout } from "../process/exec-runner.js";
@@ -21,7 +21,7 @@ function hostDesktopSeverity(
 
 /** Collects the non-mutating host desktop diagnostic shared by doctor modes. */
 export async function collectHostDesktopHealthFindings(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): Promise<readonly HealthFinding[]> {
   const inspection = await inspectHostDesktop({ config: cfg.desktop?.host });
   return [
@@ -36,7 +36,7 @@ export async function collectHostDesktopHealthFindings(
 
 /** Renders host desktop health and offers an explicitly confirmed macOS service repair. */
 export async function noteHostDesktopHealth(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   deps: {
     platform?: NodeJS.Platform;
     prompter?: Pick<DoctorPrompter, "shouldRepair" | "confirmRuntimeRepair">;

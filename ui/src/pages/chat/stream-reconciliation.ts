@@ -1,10 +1,10 @@
-import { readSessionMessageIdentity } from "@openclaw/gateway-client/browser";
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
+import { readSessionMessageIdentity } from "@afora/gateway-client/browser";
+import { asFiniteNumber } from "@afora/normalization-core/number-coercion";
+import { asNullableRecord } from "@afora/normalization-core/record-coerce";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   advanceAccumulatedStreamText,
   streamSegmentHasItemId,
@@ -126,7 +126,7 @@ function buildAssistantStreamMessage(
     role: "assistant",
     content: [{ type: "text", text: stream }],
     timestamp,
-    openclawStreamFallback: {
+    aforaStreamFallback: {
       replacementText,
       source,
       ...(itemId ? { itemId } : {}),
@@ -137,7 +137,7 @@ function buildAssistantStreamMessage(
 }
 
 function unkeyedStreamFallbackMetadata(message: unknown): Record<string, unknown> | null {
-  const metadata = asNullableRecord(asNullableRecord(message)?.openclawStreamFallback);
+  const metadata = asNullableRecord(asNullableRecord(message)?.aforaStreamFallback);
   return metadata && !normalizeOptionalString(metadata.itemId) ? metadata : null;
 }
 
@@ -255,7 +255,7 @@ function streamFallbackItemId(message: unknown): string | null {
   if (!message || typeof message !== "object") {
     return null;
   }
-  const fallback = (message as { openclawStreamFallback?: unknown }).openclawStreamFallback;
+  const fallback = (message as { aforaStreamFallback?: unknown }).aforaStreamFallback;
   if (!fallback || typeof fallback !== "object") {
     return null;
   }

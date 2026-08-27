@@ -4,7 +4,7 @@
  * JSONL logging.
  */
 import crypto from "node:crypto";
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
 import { describe, expect, it } from "vitest";
 import { createAnthropicPayloadLogger } from "./anthropic-payload-log.js";
 
@@ -16,7 +16,7 @@ describe("createAnthropicPayloadLogger", () => {
   it("sanitizes credential fields and image base64 payload data before writing logs", async () => {
     const lines: string[] = [];
     const logger = createAnthropicPayloadLogger({
-      env: { OPENCLAW_ANTHROPIC_PAYLOAD_LOG: "1" },
+      env: { AFORA_ANTHROPIC_PAYLOAD_LOG: "1" },
       writer: {
         filePath: "memory",
         write: (line) => lines.push(line),
@@ -88,7 +88,7 @@ describe("createAnthropicPayloadLogger", () => {
   it("sanitizes usage and error fields before writing logs", () => {
     const lines: string[] = [];
     const logger = createAnthropicPayloadLogger({
-      env: { OPENCLAW_ANTHROPIC_PAYLOAD_LOG: "1" },
+      env: { AFORA_ANTHROPIC_PAYLOAD_LOG: "1" },
       writer: {
         filePath: "memory",
         write: (line) => lines.push(line),

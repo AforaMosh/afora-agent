@@ -1,12 +1,12 @@
 // Whatsapp tests cover status issues plugin behavior.
-import { buildRuntimeAccountStatusSnapshot } from "openclaw/plugin-sdk/status-helpers";
+import { buildRuntimeAccountStatusSnapshot } from "afora-agent/plugin-sdk/status-helpers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { collectWhatsAppStatusIssues } from "./status-issues.js";
 
 describe("collectWhatsAppStatusIssues", () => {
   beforeEach(() => {
-    vi.stubEnv("OPENCLAW_CONTAINER_HINT", "");
-    vi.stubEnv("OPENCLAW_PROFILE", "");
+    vi.stubEnv("AFORA_CONTAINER_HINT", "");
+    vi.stubEnv("AFORA_PROFILE", "");
   });
 
   afterEach(() => {
@@ -28,7 +28,7 @@ describe("collectWhatsAppStatusIssues", () => {
         accountId: "default",
         kind: "auth",
         message: "Not linked (no WhatsApp Web session).",
-        fix: "Run: openclaw channels login (scan QR on the gateway host).",
+        fix: "Run: afora channels login (scan QR on the gateway host).",
       },
     ]);
   });
@@ -48,7 +48,7 @@ describe("collectWhatsAppStatusIssues", () => {
         accountId: "default",
         kind: "auth",
         message: "Session logged out: status=401",
-        fix: "Run: openclaw channels login (scan QR on the gateway host).",
+        fix: "Run: afora channels login (scan QR on the gateway host).",
       },
     },
     {
@@ -66,7 +66,7 @@ describe("collectWhatsAppStatusIssues", () => {
         accountId: "default",
         kind: "runtime",
         message: "Linked but session conflict (reconnectAttempts=2): status=440",
-        fix: "Run: openclaw doctor (or restart the gateway). If it persists, relink via channels login and check logs.",
+        fix: "Run: afora doctor (or restart the gateway). If it persists, relink via channels login and check logs.",
       },
     },
   ])("preserves projected $name guidance", ({ runtime, expected }) => {
@@ -120,7 +120,7 @@ describe("collectWhatsAppStatusIssues", () => {
         accountId: "work",
         kind: "runtime",
         message: "Linked but disconnected (reconnectAttempts=2): socket closed",
-        fix: "Run: openclaw doctor (or restart the gateway). If it persists, relink via channels login and check logs.",
+        fix: "Run: afora doctor (or restart the gateway). If it persists, relink via channels login and check logs.",
       },
     ]);
   });
@@ -144,7 +144,7 @@ describe("collectWhatsAppStatusIssues", () => {
         accountId: "default",
         kind: "runtime",
         message: "Linked but stale (last inbound 2m ago).",
-        fix: "Run: openclaw doctor (or restart the gateway). If it persists, relink via channels login and check logs.",
+        fix: "Run: afora doctor (or restart the gateway). If it persists, relink via channels login and check logs.",
       },
     ]);
   });
@@ -174,7 +174,7 @@ describe("collectWhatsAppStatusIssues", () => {
         kind: "runtime",
         message:
           "Linked but recently reconnected (reconnectAttempts=3): status=408 Request Time-out Connection was lost",
-        fix: "Watch: openclaw logs --follow and run openclaw channels status --probe if disconnects continue. If it keeps flapping, restart the gateway or relink via channels login.",
+        fix: "Watch: afora logs --follow and run afora channels status --probe if disconnects continue. If it keeps flapping, restart the gateway or relink via channels login.",
       },
     ]);
   });

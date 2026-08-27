@@ -19,7 +19,7 @@
 // loadCostUsageSummaryFromCache dependency is stubbed.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 
 const mocks = vi.hoisted(() => ({
   loadCostUsageSummaryFromCache: vi.fn(),
@@ -67,7 +67,7 @@ describe("costUsageCache bounded growth", () => {
   it("does not grow without bound when (startMs, endMs) varies across day rollover and range switches", async () => {
     const config = {
       agents: { entries: { main: { default: true } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     // 600 distinct (startMs, endMs) pairs — larger than the 256 caps used by
     // the smallest sibling caches (RUN_LOOKUP_CACHE_LIMIT,
@@ -102,7 +102,7 @@ describe("costUsageCache bounded growth", () => {
   it("evicts settled entries before in-flight entries when possible", async () => {
     const config = {
       agents: { entries: { main: { default: true } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const pending = new Promise<ReturnType<typeof createSummary>>(() => {});
     mocks.loadCostUsageSummaryFromCache.mockReturnValueOnce(pending);
 

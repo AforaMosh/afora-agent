@@ -1,8 +1,8 @@
 /**
  * Repairs malformed tool-call arguments in embedded-agent stream results.
  */
-import { extractBalancedJsonPrefix } from "@openclaw/normalization-core";
-import { safeParseJsonRecord } from "@openclaw/normalization-core/json-coercion";
+import { extractBalancedJsonPrefix } from "@afora/normalization-core";
+import { safeParseJsonRecord } from "@afora/normalization-core/json-coercion";
 import { normalizeProviderId } from "../../model-selection.js";
 import type { StreamFn } from "../../runtime/index.js";
 import type { MutableAssistantMessageEventStream } from "../../stream-compat.js";

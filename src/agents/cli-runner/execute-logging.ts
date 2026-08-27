@@ -81,7 +81,7 @@ export function resolveNodeClaudeAuthEnv(context: PreparedCliRunContext): Record
     data.fill(0);
   }
 }
-export const CLI_BACKEND_PRESERVE_ENV = "OPENCLAW_LIVE_CLI_BACKEND_PRESERVE_ENV";
+export const CLI_BACKEND_PRESERVE_ENV = "AFORA_LIVE_CLI_BACKEND_PRESERVE_ENV";
 export function parseCliBackendPreserveEnv(raw: string | undefined): Set<string> {
   const trimmed = raw?.trim();
   if (!trimmed) {
@@ -120,8 +120,8 @@ function formatCliEnvKeyList(keys: readonly string[]): string {
 }
 function buildCliEnvMcpLog(childEnv: Record<string, string>): string {
   return [
-    `token=${childEnv.OPENCLAW_MCP_TOKEN ? "set" : "missing"}`,
-    `capture=${childEnv.OPENCLAW_MCP_CLI_CAPTURE_KEY ? "set" : "missing"}`,
+    `token=${childEnv.AFORA_MCP_TOKEN ? "set" : "missing"}`,
+    `capture=${childEnv.AFORA_MCP_CLI_CAPTURE_KEY ? "set" : "missing"}`,
   ].join(" ");
 }
 function fingerprintCliSessionId(sessionId?: string): string {
@@ -204,7 +204,7 @@ export function logCliInvocation(params: {
   const logArgs = buildCliLogArgs(params);
   params.log(`cli argv: ${params.command} ${logArgs.join(" ")}`);
   params.log(`cli env auth: ${buildCliEnvAuthLog(params.env)}`);
-  if (params.env.OPENCLAW_MCP_TOKEN) {
+  if (params.env.AFORA_MCP_TOKEN) {
     params.log(`cli env mcp: ${buildCliEnvMcpLog(params.env)}`);
   }
 }

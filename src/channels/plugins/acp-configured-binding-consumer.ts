@@ -3,7 +3,7 @@
  *
  * Converts channel configured-binding rules into persistent ACP binding records.
  */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import {
   buildConfiguredAcpSessionKey,
   normalizeBindingConfig,
@@ -18,7 +18,7 @@ import {
   resolveAgentExplicitModelPrimary,
   resolveAgentWorkspaceDir,
 } from "../../agents/agent-scope.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type {
   ConfiguredBindingRuleConfig,
   ConfiguredBindingTargetFactory,
@@ -26,7 +26,7 @@ import type {
 import type { ConfiguredBindingConsumer } from "./configured-binding-consumers.js";
 import type { ChannelConfiguredBindingConversationRef } from "./types.adapters.js";
 
-function resolveAgentRuntimeAcpDefaults(params: { cfg: OpenClawConfig; ownerAgentId: string }): {
+function resolveAgentRuntimeAcpDefaults(params: { cfg: AforaConfig; ownerAgentId: string }): {
   acpAgentId?: string;
   mode?: string;
   cwd?: string;
@@ -47,7 +47,7 @@ function resolveAgentRuntimeAcpDefaults(params: { cfg: OpenClawConfig; ownerAgen
 }
 
 function resolveConfiguredBindingWorkspaceCwd(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
 }): string | undefined {
   // Only bind cwd when the agent has an explicit workspace contract; otherwise let ACP choose
@@ -92,7 +92,7 @@ function buildConfiguredAcpSpec(params: {
 }
 
 function buildAcpTargetFactory(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   binding: ConfiguredBindingRuleConfig;
   channel: string;
   agentId: string;

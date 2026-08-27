@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginRuntime, RuntimeLogger } from "../plugins/runtime/types.js";
 import type { createMeetingRealtimeEngineBindings } from "./agent-consult.js";
 import type { startMeetingAgentRealtimeEngine } from "./realtime-agent-engine.js";
@@ -72,7 +72,7 @@ const config = {
     bargeInCooldownMs: 0,
     bargeInPeakThreshold: 0,
     bargeInRmsThreshold: 0,
-    guestName: "OpenClaw",
+    guestName: "Afora",
     joinTimeoutMs: 1_000,
     launch: true,
     reuseExistingTab: true,
@@ -194,7 +194,7 @@ describe.each(cases)("$name Chrome transport parity", (testCase) => {
     await expect(
       transport.launchInChrome({
         config,
-        fullConfig: { transcripts: { enabled: false } } as OpenClawConfig,
+        fullConfig: { transcripts: { enabled: false } } as AforaConfig,
         logger,
         meetingSessionId: "session-1",
         mode: "agent",
@@ -274,7 +274,7 @@ describe.each(cases)("$name Chrome transport parity", (testCase) => {
 
     const result = await transport.launchOnNode({
       config,
-      fullConfig: { transcripts: { enabled: false } } as OpenClawConfig,
+      fullConfig: { transcripts: { enabled: false } } as AforaConfig,
       logger,
       meetingSessionId: "session-1",
       mode: "agent",
@@ -301,7 +301,7 @@ describe.each(cases)("$name Chrome transport parity", (testCase) => {
     expect(
       Reflect.get(
         nodeAudioTransport,
-        Symbol.for("openclaw.internal.meeting-node-output-generation.v1"),
+        Symbol.for("afora.internal.meeting-node-output-generation.v1"),
       ),
     ).toBe(true);
   });

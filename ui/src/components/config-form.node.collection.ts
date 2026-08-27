@@ -396,7 +396,7 @@ export function renderArray(
           </button>
         </div>
       </div>
-      <openclaw-config-form-collection-draft
+      <afora-config-form-collection-draft
         id=${draftId}
         .props=${draftProps}
         @config-collection-draft-commit=${(event: CustomEvent<ConfigFormCollectionDraftCommit>) => {
@@ -420,7 +420,7 @@ export function renderArray(
             event.preventDefault();
           }
         }}
-      ></openclaw-config-form-collection-draft>
+      ></afora-config-form-collection-draft>
       ${arrayValue.length === 0
         ? renderSettingsEmpty(t("configForm.noItems"))
         : html`
@@ -433,7 +433,7 @@ export function renderArray(
                       <span class="settings-row__title">#${index + 1}</span>
                     </div>
                     <div class="settings-row__control">
-                      <openclaw-tooltip .content=${t("configForm.removeItem")}>
+                      <afora-tooltip .content=${t("configForm.removeItem")}>
                         <button
                           type="button"
                           class="btn btn--icon"
@@ -471,7 +471,7 @@ export function renderArray(
                         >
                           ${icons.trash}
                         </button>
-                      </openclaw-tooltip>
+                      </afora-tooltip>
                     </div>
                   </div>
                   ${renderNode({
@@ -585,7 +585,7 @@ function renderMapField(
         </div>
       </div>
 
-      <openclaw-config-form-collection-draft
+      <afora-config-form-collection-draft
         id=${draftId}
         .props=${draftProps}
         @config-collection-draft-commit=${(event: CustomEvent<ConfigFormCollectionDraftCommit>) => {
@@ -599,7 +599,7 @@ function renderMapField(
             event.preventDefault();
           }
         }}
-      ></openclaw-config-form-collection-draft>
+      ></afora-config-form-collection-draft>
       ${visibleEntries.length === 0
         ? renderSettingsEmpty(t("configForm.noCustomEntries"))
         : html`
@@ -654,7 +654,7 @@ function renderMapField(
                       />
                     </div>
                     <div class="settings-row__control">
-                      <openclaw-tooltip .content=${t("configForm.removeEntry")}>
+                      <afora-tooltip .content=${t("configForm.removeEntry")}>
                         <button
                           type="button"
                           class="btn btn--icon"
@@ -669,7 +669,7 @@ function renderMapField(
                         >
                           ${icons.trash}
                         </button>
-                      </openclaw-tooltip>
+                      </afora-tooltip>
                     </div>
                   </div>
                   ${anySchema

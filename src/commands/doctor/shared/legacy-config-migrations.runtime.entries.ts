@@ -1,4 +1,4 @@
-import { normalizeAgentId } from "@openclaw/normalization-core/agent-id";
+import { normalizeAgentId } from "@afora/normalization-core/agent-id";
 import {
   defineLegacyConfigMigration,
   getRecord,
@@ -56,7 +56,7 @@ export const LEGACY_CONFIG_MIGRATIONS_RUNTIME_ENTRIES: LegacyConfigMigrationSpec
     legacyRules: [
       {
         path: ["agents", "list"],
-        message: 'agents.list moved to keyed agents.entries. Run "openclaw doctor --fix".',
+        message: 'agents.list moved to keyed agents.entries. Run "afora doctor --fix".',
       },
     ],
     apply: migrateAgentEntries,

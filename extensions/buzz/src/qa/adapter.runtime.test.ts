@@ -2,7 +2,7 @@ import {
   parseQaTarget,
   type QaBusInboundMessageInput,
   type QaBusMessage,
-} from "openclaw/plugin-sdk/qa-channel-protocol";
+} from "afora-agent/plugin-sdk/qa-channel-protocol";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { parseBuzzQaCredentialPayload } from "./credentials.js";
 
@@ -138,12 +138,12 @@ describe("Buzz QA transport adapter", () => {
       conversation: { id: "qa-routing-primary", kind: "group" },
       senderId: "driver",
       senderName: "QA Driver",
-      text: "@openclaw reply exactly: QA-CHANNEL-CANARY-OK",
+      text: "@afora reply exactly: QA-CHANNEL-CANARY-OK",
     });
 
     expect(sendMessage).toHaveBeenCalledWith({
       mentionSut: true,
-      text: "@openclaw reply exactly: QA-CHANNEL-CANARY-OK",
+      text: "@afora reply exactly: QA-CHANNEL-CANARY-OK",
     });
     expect(addInboundMessage).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -209,7 +209,7 @@ describe("Buzz QA transport adapter", () => {
       conversation: { id: "main", kind: "channel" },
       senderId: "driver",
       senderName: "QA Driver",
-      text: "@openclaw root",
+      text: "@afora root",
     });
     await relayDriverState.onMessage?.({
       id: "native-sut-root",
@@ -226,7 +226,7 @@ describe("Buzz QA transport adapter", () => {
       conversation: { id: "main", kind: "channel" },
       senderId: "driver",
       senderName: "QA Driver",
-      text: "@openclaw follow-up",
+      text: "@afora follow-up",
       threadId: root.id,
     });
     await relayDriverState.onMessage?.({
@@ -242,7 +242,7 @@ describe("Buzz QA transport adapter", () => {
 
     expect(sendMessage).toHaveBeenLastCalledWith({
       mentionSut: true,
-      text: "@openclaw follow-up",
+      text: "@afora follow-up",
       threadId: "native-root",
     });
     expect(addOutboundMessage).toHaveBeenLastCalledWith(
@@ -294,7 +294,7 @@ describe("Buzz QA transport adapter", () => {
       conversation: { id: "main", kind: "group" },
       senderId: "driver",
       senderName: "QA Driver",
-      text: "@openclaw root",
+      text: "@afora root",
     });
     await vi.waitFor(() => expect(addInboundMessage).toHaveBeenCalledOnce());
     const outboundPromise = relayDriverState.onMessage?.({

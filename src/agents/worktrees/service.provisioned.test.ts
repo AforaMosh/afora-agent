@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { insertRegistryWorktree } from "./registry.js";
 import { ManagedWorktreeService } from "./service.js";
 
@@ -20,8 +20,8 @@ async function initializeRepository(root: string, gitTemplate: string): Promise<
   const repo = path.join(root, "repo");
   await fs.mkdir(repo, { recursive: true });
   await git(repo, "init", "-b", "main", `--template=${gitTemplate}`);
-  await git(repo, "config", "user.name", "OpenClaw Test");
-  await git(repo, "config", "user.email", "openclaw-test@example.invalid");
+  await git(repo, "config", "user.name", "Afora Test");
+  await git(repo, "config", "user.email", "afora-test@example.invalid");
   await fs.writeFile(path.join(repo, "README.md"), "base\n");
   await git(repo, "add", "README.md");
   await git(repo, "commit", "-m", "initial");
@@ -48,7 +48,7 @@ describe("ManagedWorktreeService provisioned state", () => {
 
   beforeAll(async () => {
     const tempRoot = await fs.realpath(os.tmpdir());
-    templateRoot = await fs.mkdtemp(path.join(tempRoot, "openclaw-worktree-state-template-"));
+    templateRoot = await fs.mkdtemp(path.join(tempRoot, "afora-worktree-state-template-"));
     gitTemplate = path.join(templateRoot, "git-template");
     await fs.mkdir(path.join(gitTemplate, "hooks"), { recursive: true });
     templateRepo = await initializeRepository(templateRoot, gitTemplate);
@@ -60,17 +60,17 @@ describe("ManagedWorktreeService provisioned state", () => {
 
   beforeEach(async () => {
     const tempRoot = await fs.realpath(os.tmpdir());
-    root = await fs.mkdtemp(path.join(tempRoot, "openclaw-worktree-state-"));
+    root = await fs.mkdtemp(path.join(tempRoot, "afora-worktree-state-"));
     repo = path.join(root, "repo");
     await fs.cp(templateRepo, repo, { mode: fsConstants.COPYFILE_FICLONE, recursive: true });
     repo = await fs.realpath(repo);
-    env = { ...process.env, OPENCLAW_STATE_DIR: path.join(root, "openclaw-state") };
+    env = { ...process.env, AFORA_STATE_DIR: path.join(root, "afora-state") };
     now = 1_700_000_000_000;
     service = new ManagedWorktreeService({ env, now: () => now });
   });
 
   afterEach(async () => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(root, { recursive: true, force: true });
   });
 
@@ -157,14 +157,14 @@ describe("ManagedWorktreeService provisioned state", () => {
     await git(repo, "commit", "-m", "ignore local environment");
     await addRemote(root, repo);
     const legacyPath = path.join(root, "legacy-worktree");
-    await git(repo, "worktree", "add", "-b", "openclaw/legacy", legacyPath, "HEAD");
+    await git(repo, "worktree", "add", "-b", "afora-agent/legacy", legacyPath, "HEAD");
     insertRegistryWorktree(env, {
       id: "legacy",
       name: "legacy",
       repoFingerprint: "legacy-fingerprint",
       repoRoot: repo,
       path: legacyPath,
-      branch: "openclaw/legacy",
+      branch: "afora-agent/legacy",
       baseRef: "HEAD",
       ownerKind: "session",
       createdAt: now,

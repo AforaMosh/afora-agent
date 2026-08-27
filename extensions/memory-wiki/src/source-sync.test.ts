@@ -2,7 +2,7 @@
 import os from "node:os";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../api.js";
+import type { AforaConfig } from "../api.js";
 import { resolveMemoryWikiConfig } from "./config.js";
 import { withMemoryWikiVaultMutation } from "./mutation-coordinator.js";
 import { syncMemoryWikiImportedSources } from "./source-sync.js";
@@ -43,7 +43,7 @@ const refreshResult = {
 
 const appConfig = {
   agents: { list: [{ id: "main", default: true }] },
-} as OpenClawConfig;
+} as AforaConfig;
 
 let vaultCounter = 0;
 
@@ -188,11 +188,11 @@ describe("syncMemoryWikiImportedSources", () => {
     const firstAppConfig = {
       agents: { list: [{ id: "main", default: true }] },
       update: { channel: "stable" },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const secondAppConfig = {
       agents: { list: [{ id: "main", default: true }] },
       update: { channel: "beta" },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const firstGate = deferred<typeof bridgeResult>();
     const secondResult = { ...bridgeResult, pagePaths: ["sources/beta.md"] };
     syncBridgeMock.mockReturnValueOnce(firstGate.promise).mockResolvedValueOnce(secondResult);

@@ -1,4 +1,4 @@
-import { withServer } from "openclaw/plugin-sdk/test-env";
+import { withServer } from "afora-agent/plugin-sdk/test-env";
 import { describe, expect, it } from "vitest";
 import { sendMessageNextcloudTalk, sendReactionNextcloudTalk } from "./send.js";
 import type { CoreConfig } from "./types.js";

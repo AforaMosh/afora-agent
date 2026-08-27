@@ -1,8 +1,8 @@
 // User turn transcript helpers extract user-turn text from session transcripts.
 import { randomUUID } from "node:crypto";
-import { mimeTypeFromFilePath } from "@openclaw/media-core/mime";
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { mimeTypeFromFilePath } from "@afora/media-core/mime";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { AgentMessage } from "../../packages/agent-core/src/types.js";
 import {
   persistSessionTranscriptTurn,
@@ -122,7 +122,7 @@ export function buildLateMediaAttachedProjection(message: AgentMessage): {
   text?: string;
   media: MediaFact[];
 } {
-  const isLateMedia = readOpenClawMessageMeta(message)?.lateMedia === true;
+  const isLateMedia = readAforaMessageMeta(message)?.lateMedia === true;
   const media = isLateMedia ? (readPersistedMediaFacts(message) ?? []) : [];
   const text = media
     .flatMap((fact) => {
@@ -133,8 +133,8 @@ export function buildLateMediaAttachedProjection(message: AgentMessage): {
   return { ...(text ? { text } : {}), media };
 }
 
-function readOpenClawMessageMeta(message: AgentMessage): Record<string, unknown> | undefined {
-  return asOptionalRecord(Reflect.get(message, "__openclaw"));
+function readAforaMessageMeta(message: AgentMessage): Record<string, unknown> | undefined {
+  return asOptionalRecord(Reflect.get(message, "__afora"));
 }
 export function buildPersistedUserTurnMessage(params: UserTurnInput): PersistedUserTurnMessage {
   const normalizedMedia = (params.media ?? []).map(normalizeStructuredMediaEntryForTranscript);
@@ -144,14 +144,14 @@ export function buildPersistedUserTurnMessage(params: UserTurnInput): PersistedU
   // derived from each message's own `timestamp` field, so the current turn and
   // every historical turn serialize identically on the wire. Persisting a stamp
   // here would NOT match the bare-current arrival (the gateway no longer stamps
-  // the live turn) — see https://github.com/openclaw/openclaw/issues/3658.
-  const openClawMeta = buildPersistedUserTurnMetadata(params, normalizedMedia);
+  // the live turn) — see https://github.com/AforaMosh/afora-agent/issues/3658.
+  const aforaMeta = buildPersistedUserTurnMetadata(params, normalizedMedia);
   const message = {
     role: "user",
     content: text,
     timestamp: params.timestamp ?? Date.now(),
     ...(params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : {}),
-    ...(Object.keys(openClawMeta).length > 0 ? { __openclaw: openClawMeta } : {}),
+    ...(Object.keys(aforaMeta).length > 0 ? { __afora: aforaMeta } : {}),
   } as PersistedUserTurnMessage;
   return applyInputProvenanceToUserMessage(message, params.provenance) as PersistedUserTurnMessage;
 }
@@ -200,12 +200,12 @@ function buildLateResolvedMediaMessage(params: {
     ...params.resolvedMessage,
     content,
     idempotencyKey,
-    __openclaw: { ...readOpenClawMessageMeta(params.resolvedMessage), lateMedia: true },
+    __afora: { ...readAforaMessageMeta(params.resolvedMessage), lateMedia: true },
   } as PersistedUserTurnMessage;
 }
 
 function isBeforeAgentRunBlockedMessage(message: AgentMessage): boolean {
-  const marker = (message as { __openclaw?: { beforeAgentRunBlocked?: unknown } })["__openclaw"]
+  const marker = (message as { __afora?: { beforeAgentRunBlocked?: unknown } })["__afora"]
     ?.beforeAgentRunBlocked;
   return marker !== undefined;
 }
@@ -236,12 +236,12 @@ export function mergePreparedUserTurnMessageForRuntime(params: {
   ) {
     return params.runtimeMessage;
   }
-  const runtimeMeta = readOpenClawMessageMeta(params.runtimeMessage);
-  const preparedMeta = readOpenClawMessageMeta(params.preparedMessage);
+  const runtimeMeta = readAforaMessageMeta(params.runtimeMessage);
+  const preparedMeta = readAforaMessageMeta(params.preparedMessage);
   return {
     ...params.runtimeMessage,
     ...params.preparedMessage,
-    ...(preparedMeta ? { __openclaw: { ...runtimeMeta, ...preparedMeta } } : {}),
+    ...(preparedMeta ? { __afora: { ...runtimeMeta, ...preparedMeta } } : {}),
     ...(userMessageHasImageContent(params.runtimeMessage)
       ? { content: params.runtimeMessage.content }
       : {}),
@@ -342,7 +342,7 @@ async function confirmPersistedSteerTargetRunId(params: {
       return undefined;
     }
     const currentTarget = normalizePersistedSteerTargetRunId(
-      message["__openclaw"]?.steerTargetRunId,
+      message["__afora"]?.steerTargetRunId,
     );
     return currentTarget === params.targetRunId
       ? undefined
@@ -707,7 +707,7 @@ export function createUserTurnTranscriptRecorder(
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.userTurnTranscriptTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.userTurnTranscriptTestApi")] = {
     persistUserTurnTranscript,
   };
 }

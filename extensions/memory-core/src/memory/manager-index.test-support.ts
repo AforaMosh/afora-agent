@@ -1,16 +1,16 @@
 import { mkdirSync, rmSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
-import { resolveSessionTranscriptsDirForAgent } from "openclaw/plugin-sdk/memory-core-host-runtime-core";
-import { clearEmbeddingProviders as clearRegistry } from "openclaw/plugin-sdk/plugin-test-runtime";
-import { upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
-import { appendSessionTranscriptMessageByIdentity } from "openclaw/plugin-sdk/session-transcript-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/memory-core-host-engine-foundation";
+import { resolveSessionTranscriptsDirForAgent } from "afora-agent/plugin-sdk/memory-core-host-runtime-core";
+import { clearEmbeddingProviders as clearRegistry } from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { upsertSessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
+import { appendSessionTranscriptMessageByIdentity } from "afora-agent/plugin-sdk/session-transcript-runtime";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  closeOpenClawStateDatabaseForTest,
-} from "openclaw/plugin-sdk/sqlite-runtime-testing";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
+  closeAforaAgentDatabasesForTest,
+  closeAforaStateDatabaseForTest,
+} from "afora-agent/plugin-sdk/sqlite-runtime-testing";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
 import {
   configureMemoryCoreDreamingStateForTests,
@@ -370,18 +370,18 @@ export function createManagerIndexFixture(deps: {
   let root = "";
   let workspace = "";
   let memory = "";
-  const originalStateDir = process.env.OPENCLAW_STATE_DIR;
+  const originalStateDir = process.env.AFORA_STATE_DIR;
   const managers = new Set<MemoryIndexManager>();
 
   const setStateDir = (stateDir: string): void => {
-    Reflect.set(process.env, "OPENCLAW_STATE_DIR", stateDir);
+    Reflect.set(process.env, "AFORA_STATE_DIR", stateDir);
   };
 
   const restoreStateDir = (): void => {
     if (originalStateDir === undefined) {
-      Reflect.deleteProperty(process.env, "OPENCLAW_STATE_DIR");
+      Reflect.deleteProperty(process.env, "AFORA_STATE_DIR");
     } else {
-      Reflect.set(process.env, "OPENCLAW_STATE_DIR", originalStateDir);
+      Reflect.set(process.env, "AFORA_STATE_DIR", originalStateDir);
     }
   };
 
@@ -439,7 +439,7 @@ export function createManagerIndexFixture(deps: {
         list: [{ id: "main", default: true }],
       },
       models: params.providerAliases ? { providers: params.providerAliases } : undefined,
-    } as OpenClawConfig);
+    } as AforaConfig);
 
   const requireManager = (
     result: ManagerResult,
@@ -495,7 +495,7 @@ export function createManagerIndexFixture(deps: {
           role: message.role,
           timestamp: message.timestamp,
           content: [{ type: "text", text: message.content }],
-          ...(message.senderIsOwner ? { __openclaw: { senderIsOwner: true } } : {}),
+          ...(message.senderIsOwner ? { __afora: { senderIsOwner: true } } : {}),
         },
       });
     }
@@ -519,7 +519,7 @@ export function createManagerIndexFixture(deps: {
 
   beforeAll(async () => {
     const rawRoot = await fs.mkdtemp(
-      path.join(resolvePreferredOpenClawTmpDir(), "openclaw-mem-fixtures-"),
+      path.join(resolvePreferredAforaTmpDir(), "afora-mem-fixtures-"),
     );
     root = await fs.realpath(rawRoot);
     workspace = path.join(root, "workspace");
@@ -537,8 +537,8 @@ export function createManagerIndexFixture(deps: {
     vi.useRealTimers();
     await Promise.all(Array.from(managers).map((manager) => manager.close()));
     await deps.closeAllMemorySearchManagers();
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     resetMemoryCoreDreamingStateForTests();
     clearRegistry();
     managers.clear();

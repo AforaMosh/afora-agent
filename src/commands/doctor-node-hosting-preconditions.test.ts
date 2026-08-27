@@ -1,9 +1,9 @@
 // Doctor node-hosting precondition tests cover browser-only auth and unreachable onboarding.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { collectNodeHostingPreconditionFindings } from "./doctor-node-hosting-preconditions.js";
 
-function findingsFor(cfg: OpenClawConfig) {
+function findingsFor(cfg: AforaConfig) {
   return collectNodeHostingPreconditionFindings(cfg);
 }
 
@@ -52,7 +52,7 @@ describe("node-hosting preconditions", () => {
     },
   ] satisfies Array<{
     name: string;
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     requirements: string[];
   }>)("warns when $name", ({ cfg, requirements }) => {
     expect(findingsFor(cfg).map((finding) => finding.requirement)).toEqual(requirements);
@@ -81,14 +81,14 @@ describe("node-hosting preconditions", () => {
     });
 
     expect(findings.find((finding) => finding.requirement === "machine-client-auth")?.fixHint).toBe(
-      "Switch gateway.auth.mode to token and configure gateway.auth.token as a SecretRef so machine clients can authenticate as devices. Keep trusted-proxy only if machine clients use a clean loopback/direct gateway.auth.password path. For Access-fronted gateways, configure the node gateway.cloudflareAccess.clientId / clientSecret SecretInputs or set CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET before openclaw connect.",
+      "Switch gateway.auth.mode to token and configure gateway.auth.token as a SecretRef so machine clients can authenticate as devices. Keep trusted-proxy only if machine clients use a clean loopback/direct gateway.auth.password path. For Access-fronted gateways, configure the node gateway.cloudflareAccess.clientId / clientSecret SecretInputs or set CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET before afora connect.",
     );
     expect(findings.find((finding) => finding.requirement === "node-onboarding-url")).toMatchObject(
       {
         message:
           "Gateway is only bound to loopback. Set gateway.bind=lan, enable tailscale serve, or configure plugins.entries.device-pair.config.publicUrl.",
         fixHint:
-          "If an edge proxy fronts node onboarding, allow /j/* and /__openclaw__/worker without edge identity auth, and preserve WebSocket upgrade on /__openclaw__/worker. Both routes enforce their own credentials.",
+          "If an edge proxy fronts node onboarding, allow /j/* and /__afora__/worker without edge identity auth, and preserve WebSocket upgrade on /__afora__/worker. Both routes enforce their own credentials.",
       },
     );
   });

@@ -162,7 +162,7 @@ export async function runCliRecovery<TAttempt>(params: {
         isFailoverError(recoveryError) &&
         shouldRetryFreshCliSessionAfterFailover({
           error: recoveryError,
-          hasHistoryPrompt: Boolean(context.openClawHistoryPrompt),
+          hasHistoryPrompt: Boolean(context.aforaHistoryPrompt),
         }) &&
         retryableSessionId &&
         runParams.sessionKey

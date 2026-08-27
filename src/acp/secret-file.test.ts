@@ -7,7 +7,7 @@ import { readSecretFromFile } from "./secret-file.js";
 
 describe("readSecretFromFile", () => {
   it("reads and trims secrets from regular files", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-acp-secret-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-acp-secret-"));
     const file = path.join(dir, "secret.txt");
     try {
       await fs.writeFile(file, " token-value \n", "utf8");

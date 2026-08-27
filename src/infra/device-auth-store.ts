@@ -8,12 +8,12 @@ import {
   normalizeDeviceAuthRole,
   normalizeDeviceAuthScopes,
 } from "../shared/device-auth.js";
-import { withExistingOpenClawStateDatabaseArtifactPreservingReadOnly } from "../state/openclaw-state-db-readonly.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import { withExistingAforaStateDatabaseArtifactPreservingReadOnly } from "../state/afora-state-db-readonly.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../state/afora-state-db.js";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
@@ -21,7 +21,7 @@ import {
 } from "./kysely-sync.js";
 
 type DeviceAuthDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "device_auth_tokens" | "gateway_origin_device_tokens"
 >;
 type DeviceAuthRow = {
@@ -50,11 +50,11 @@ CREATE TABLE IF NOT EXISTS gateway_origin_device_tokens (
 function ensureOriginDeviceAuthSchema(env?: NodeJS.ProcessEnv): void {
   assertNoLegacyDeviceAuth(env);
   const options = env ? { env } : {};
-  const database = openOpenClawStateDatabase(options);
+  const database = openAforaStateDatabase(options);
   if (ensuredOriginDatabases.has(database.db)) {
     return;
   }
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       // sqlite-allow-raw -- Feature-local additive schema DDL; token rows use Kysely.
       db.exec(ORIGIN_DEVICE_AUTH_SCHEMA_SQL);
@@ -74,7 +74,7 @@ function assertNoLegacyDeviceAuth(env: NodeJS.ProcessEnv | undefined): void {
   }
   if (hasLegacy) {
     throw new Error(
-      "Legacy device auth requires migration; stop the Gateway and run `openclaw doctor --fix`.",
+      "Legacy device auth requires migration; stop the Gateway and run `afora doctor --fix`.",
     );
   }
 }
@@ -152,7 +152,7 @@ export function loadDeviceAuthToken(params: {
   env?: NodeJS.ProcessEnv;
 }): DeviceAuthEntry | null {
   assertNoLegacyDeviceAuth(params.env);
-  const { db } = openOpenClawStateDatabase({ env: params.env });
+  const { db } = openAforaStateDatabase({ env: params.env });
   return readDeviceAuthTokenFromDatabase(db, params);
 }
 
@@ -164,7 +164,7 @@ export function loadDeviceAuthTokenReadOnly(params: {
 }): DeviceAuthEntry | null {
   assertNoLegacyDeviceAuth(params.env);
   return (
-    withExistingOpenClawStateDatabaseArtifactPreservingReadOnly(
+    withExistingAforaStateDatabaseArtifactPreservingReadOnly(
       ({ db }) => {
         return readDeviceAuthTokenFromDatabase(db, params);
       },
@@ -179,7 +179,7 @@ export function loadDeviceAuthTokens(params: {
   env?: NodeJS.ProcessEnv;
 }): DeviceAuthEntry[] {
   assertNoLegacyDeviceAuth(params.env);
-  const { db } = openOpenClawStateDatabase({ env: params.env });
+  const { db } = openAforaStateDatabase({ env: params.env });
   return executeSqliteQuerySync(
     db,
     getNodeSqliteKysely<DeviceAuthDatabase>(db)
@@ -205,7 +205,7 @@ export function storeDeviceAuthToken(params: {
   assertNoLegacyDeviceAuth(params.env);
   const entry = createDeviceAuthEntry(params);
   let stored = false;
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       const kysely = getNodeSqliteKysely<DeviceAuthDatabase>(db);
       // Fenced writes update only the row that supplied the request snapshot;
@@ -260,7 +260,7 @@ export function clearDeviceAuthToken(params: {
 }): boolean {
   assertNoLegacyDeviceAuth(params.env);
   let cleared = false;
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       const baseQuery = getNodeSqliteKysely<DeviceAuthDatabase>(db)
         .deleteFrom("device_auth_tokens")
@@ -285,7 +285,7 @@ export function loadOriginDeviceToken(params: {
   env?: NodeJS.ProcessEnv;
 }): DeviceAuthEntry | null {
   ensureOriginDeviceAuthSchema(params.env);
-  const { db } = openOpenClawStateDatabase({ env: params.env });
+  const { db } = openAforaStateDatabase({ env: params.env });
   return readOriginDeviceTokenFromDatabase(db, params);
 }
 
@@ -298,7 +298,7 @@ export function loadOriginDeviceTokenReadOnly(params: {
 }): DeviceAuthEntry | null {
   assertNoLegacyDeviceAuth(params.env);
   return (
-    withExistingOpenClawStateDatabaseArtifactPreservingReadOnly(
+    withExistingAforaStateDatabaseArtifactPreservingReadOnly(
       ({ db }) => {
         return readOriginDeviceTokenFromDatabase(db, params);
       },
@@ -320,7 +320,7 @@ export function storeOriginDeviceToken(params: {
   ensureOriginDeviceAuthSchema(params.env);
   const entry = createDeviceAuthEntry(params);
   let stored = false;
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       const kysely = getNodeSqliteKysely<DeviceAuthDatabase>(db);
       const result =
@@ -376,7 +376,7 @@ export function clearOriginDeviceToken(params: {
 }): boolean {
   ensureOriginDeviceAuthSchema(params.env);
   let cleared = false;
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       const baseQuery = getNodeSqliteKysely<DeviceAuthDatabase>(db)
         .deleteFrom("gateway_origin_device_tokens")

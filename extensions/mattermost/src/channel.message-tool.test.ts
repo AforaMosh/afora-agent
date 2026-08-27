@@ -1,6 +1,6 @@
 // Mattermost tests cover account-isolated message-tool discovery.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 import { mattermostPlugin } from "./channel.js";
 
 describe("Mattermost message-tool SecretRef inspection", () => {
@@ -12,7 +12,7 @@ describe("Mattermost message-tool SecretRef inspection", () => {
             botToken: {
               source: "env",
               provider: "default",
-              id: "OPENCLAW_TEST_MISSING_MATTERMOST_TOKEN",
+              id: "AFORA_TEST_MISSING_MATTERMOST_TOKEN",
             },
             baseUrl: "https://mm.example.com",
           },
@@ -20,7 +20,7 @@ describe("Mattermost message-tool SecretRef inspection", () => {
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 
   it("keeps healthy account actions discoverable", () => {
     expect(mattermostPlugin.actions?.describeMessageTool({ cfg })?.actions).toEqual(

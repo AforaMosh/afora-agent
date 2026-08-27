@@ -73,7 +73,7 @@ type PreparedChannelAdmissionEvidence = Readonly<{
 
 const CHANNEL_ADMISSION_EVIDENCE_MAX_CONTRIBUTIONS = 16;
 const CHANNEL_ADMISSION_EVIDENCE_MAX_AGE_MS = 30 * 24 * 60 * 60_000;
-const CHANNEL_ADMISSION_EVIDENCE_STATE_KEY = Symbol.for("openclaw.channelAdmissionEvidenceState");
+const CHANNEL_ADMISSION_EVIDENCE_STATE_KEY = Symbol.for("afora.channelAdmissionEvidenceState");
 const state = resolveGlobalSingleton(CHANNEL_ADMISSION_EVIDENCE_STATE_KEY, () => ({
   collectionEnabled: false,
   generation: 0,

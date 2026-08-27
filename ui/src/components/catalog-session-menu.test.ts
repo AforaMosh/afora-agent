@@ -22,10 +22,10 @@ describe("catalog session menu", () => {
     containers.push(container);
     document.body.append(container);
     render(
-      html`<openclaw-catalog-session-menu .lastActive=${"57d"}></openclaw-catalog-session-menu>`,
+      html`<afora-catalog-session-menu .lastActive=${"57d"}></afora-catalog-session-menu>`,
       container,
     );
-    const menu = container.querySelector("openclaw-catalog-session-menu") as CatalogMenuElement;
+    const menu = container.querySelector("afora-catalog-session-menu") as CatalogMenuElement;
     await menu.updateComplete;
     const dropdown = menu.querySelector<HTMLElement & { open: boolean }>("wa-dropdown");
     const items = [...menu.querySelectorAll<CatalogMenuItem>("wa-dropdown-item")];
@@ -50,16 +50,16 @@ describe("catalog session menu", () => {
       order.push(backingState ? action : "cleared");
     });
     render(
-      html`<openclaw-catalog-session-menu
+      html`<afora-catalog-session-menu
         .onAction=${onAction}
         .onClose=${() => {
           backingState = null;
           order.push("close");
         }}
-      ></openclaw-catalog-session-menu>`,
+      ></afora-catalog-session-menu>`,
       container,
     );
-    const menu = container.querySelector("openclaw-catalog-session-menu") as CatalogMenuElement;
+    const menu = container.querySelector("afora-catalog-session-menu") as CatalogMenuElement;
     await menu.updateComplete;
 
     menu.querySelectorAll<CatalogMenuItem>("wa-dropdown-item")[index]?.click();
@@ -75,13 +75,13 @@ describe("catalog session menu", () => {
     containers.push(container);
     document.body.append(container);
     render(
-      html`<openclaw-catalog-session-menu
+      html`<afora-catalog-session-menu
         .terminalDisabled=${true}
         .onAction=${onAction}
-      ></openclaw-catalog-session-menu>`,
+      ></afora-catalog-session-menu>`,
       container,
     );
-    const menu = container.querySelector("openclaw-catalog-session-menu") as CatalogMenuElement;
+    const menu = container.querySelector("afora-catalog-session-menu") as CatalogMenuElement;
     await menu.updateComplete;
     const terminal = menu.querySelector<CatalogMenuItem>('wa-dropdown-item[value="terminal"]');
 

@@ -1,5 +1,5 @@
-// Duckduckgo plugin entrypoint registers its OpenClaw integration.
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+// Duckduckgo plugin entrypoint registers its Afora integration.
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import { createDuckDuckGoWebSearchProvider } from "./src/ddg-search-provider.js";
 
 export default definePluginEntry({

@@ -12,9 +12,9 @@ import type { RuntimeEnv } from "../runtime.js";
 import { resolveUserPath, shortenHomePath } from "../utils.js";
 import { GIT_BACKUP_PUSH_CREDENTIAL_WARNING } from "./backup-git.js";
 
-const BACKUP_CRON_JOB_NAME = "openclaw-backup-scheduled";
+const BACKUP_CRON_JOB_NAME = "afora-backup-scheduled";
 const LOCAL_GATEWAY_REQUIRED_ERROR =
-  "backup enable manages backups on the Gateway host and currently requires a local Gateway. Create the cron job manually with openclaw cron add for remote Gateways.";
+  "backup enable manages backups on the Gateway host and currently requires a local Gateway. Create the cron job manually with afora cron add for remote Gateways.";
 
 type BackupScheduleOptions = GatewayRpcOpts & {
   repository?: string;
@@ -60,7 +60,7 @@ function buildScheduledArgv(
     throw new Error("Use either --global-only or --agent <id>, not both.");
   }
   return [
-    "openclaw",
+    "afora",
     "backup",
     "git",
     "create",
@@ -125,7 +125,7 @@ export async function backupEnableCommand(
     const origin = await executeGitCommand(repositoryPath, ["remote", "get-url", "origin"]);
     if (origin.code !== 0) {
       throw new Error(
-        `--push requires an origin remote. Run: openclaw backup git init --repository ${shortenHomePath(repositoryPath)} --remote <url>`,
+        `--push requires an origin remote. Run: afora backup git init --repository ${shortenHomePath(repositoryPath)} --remote <url>`,
       );
     }
     if (!redactSecrets) {

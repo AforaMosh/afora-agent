@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import type { PairedDevice } from "./index.ts";
 import {
@@ -153,16 +153,16 @@ describe("buildDeviceInventory", () => {
           deviceId: "dev-label",
           operatorLabel: "Kitchen Mac",
           displayName: "MacBook Pro",
-          clientId: "openclaw-macos",
+          clientId: "afora-macos",
         }),
         device({
           deviceId: "dev-display",
           displayName: "Living Room iPad",
-          clientId: "openclaw-ios",
+          clientId: "afora-ios",
         }),
         device({
           deviceId: "dev-client",
-          clientId: "openclaw-control-ui",
+          clientId: "afora-control-ui",
         }),
         device({
           deviceId: "dev-id-only",
@@ -176,7 +176,7 @@ describe("buildDeviceInventory", () => {
     );
     expect(namesById["dev-label"]).toBe("Kitchen Mac");
     expect(namesById["dev-display"]).toBe("Living Room iPad");
-    expect(namesById["dev-client"]).toBe("openclaw-control-ui");
+    expect(namesById["dev-client"]).toBe("afora-control-ui");
     expect(namesById["dev-id-only"]).toBe("dev-id-only");
   });
 

@@ -1,13 +1,13 @@
-import { createChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
+import { createChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
 // Discord plugin module implements native command reply behavior.
-import { PlatformMessageNotDispatchedError } from "openclaw/plugin-sdk/error-runtime";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-dispatch-runtime";
+import { PlatformMessageNotDispatchedError } from "afora-agent/plugin-sdk/error-runtime";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-dispatch-runtime";
 import {
   resolveSendableOutboundReplyParts,
   resolveTextChunksWithFallback,
-} from "openclaw/plugin-sdk/reply-payload";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { loadWebMedia } from "openclaw/plugin-sdk/web-media";
+} from "afora-agent/plugin-sdk/reply-payload";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { loadWebMedia } from "afora-agent/plugin-sdk/web-media";
 import { chunkDiscordTextWithMode } from "../chunk.js";
 import type {
   ButtonInteraction,

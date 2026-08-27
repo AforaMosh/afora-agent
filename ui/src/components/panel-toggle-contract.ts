@@ -1,10 +1,10 @@
-import type { UiCommandParams } from "@openclaw/gateway-protocol";
+import type { UiCommandParams } from "@afora/gateway-protocol";
 
-export const TERMINAL_PANEL_TOGGLE_EVENT = "openclaw:terminal-toggle";
-export const TERMINAL_PANEL_DOCK_BOTTOM_EVENT = "openclaw:terminal-dock-bottom";
-export const BROWSER_PANEL_TOGGLE_EVENT = "openclaw:browser-toggle";
-export const DESKTOP_PANEL_TOGGLE_EVENT = "openclaw:desktop-toggle";
-export const UI_COMMAND_EVENT = "openclaw:ui-command";
+export const TERMINAL_PANEL_TOGGLE_EVENT = "afora:terminal-toggle";
+export const TERMINAL_PANEL_DOCK_BOTTOM_EVENT = "afora:terminal-dock-bottom";
+export const BROWSER_PANEL_TOGGLE_EVENT = "afora:browser-toggle";
+export const DESKTOP_PANEL_TOGGLE_EVENT = "afora:desktop-toggle";
+export const UI_COMMAND_EVENT = "afora:ui-command";
 
 export type UiCommandDetail = UiCommandParams;
 

@@ -9,7 +9,7 @@ export default defineConfig({
     ...e2eConfig.test,
     fileParallelism: false,
     globalSetup: [],
-    include: ["test/e2e/qa-lab/runtime/package-openclaw-for-docker.e2e.test.ts"],
+    include: ["test/e2e/qa-lab/runtime/package-afora-for-docker.e2e.test.ts"],
     maxWorkers: 1,
     name: "package-docker",
   },

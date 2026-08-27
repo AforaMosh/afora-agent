@@ -17,11 +17,11 @@ import {
   resolveRetainedManagedNpmInstallPackageInfo,
 } from "../plugins/managed-npm-retention.js";
 import { writeManagedNpmPlugin } from "../plugins/test-helpers/managed-npm-plugin.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { maybeRepairStaleManagedNpmInstallGenerations } from "./doctor-plugin-generations.js";
 import { maybeRepairPluginRegistryState } from "./doctor-plugin-registry.js";
 
-const PACKAGE_NAME = "@proof/openclaw-generation";
+const PACKAGE_NAME = "@proof/afora-generation";
 const PLUGIN_ID = "generation-proof";
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
@@ -61,13 +61,13 @@ function setInstallTimestamp(packageDir: string, timestamp: Date): void {
 
 afterEach(() => {
   vi.restoreAllMocks();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   clearLoadInstalledPluginIndexInstallRecordsCache();
 });
 
 describe("doctor managed npm generation repair", () => {
   it("retires the stale flat install and prunes it after gateway shutdown", async () => {
-    const stateDir = tempDirs.make("openclaw-doctor-plugin-generation-");
+    const stateDir = tempDirs.make("afora-doctor-plugin-generation-");
     const npmDir = path.join(stateDir, "npm");
     const activePackageDir = writeManagedGeneration(stateDir, "2026.7.1");
     const stalePackageDir = writeManagedFlat(stateDir, "2026.6.11");
@@ -88,7 +88,7 @@ describe("doctor managed npm generation repair", () => {
 
     await expect(
       maybeRepairStaleManagedNpmInstallGenerations({
-        env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+        env: { ...process.env, AFORA_STATE_DIR: stateDir },
         prompter: { shouldRepair: true },
         stateDir,
       }),
@@ -107,7 +107,7 @@ describe("doctor managed npm generation repair", () => {
   });
 
   it("persists the recency fallback when no authoritative record exists", async () => {
-    const stateDir = tempDirs.make("openclaw-doctor-plugin-generation-");
+    const stateDir = tempDirs.make("afora-doctor-plugin-generation-");
     const activePackageDir = writeManagedGeneration(stateDir, "1.0.0");
     const stalePackageDir = writeManagedFlat(stateDir, "9.0.0");
     const activeTimestamp = new Date("2026-01-02T00:00:00.000Z");
@@ -124,7 +124,7 @@ describe("doctor managed npm generation repair", () => {
           entries: { [PLUGIN_ID]: { enabled: true } },
         },
       },
-      env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+      env: { ...process.env, AFORA_STATE_DIR: stateDir },
       prompter: { shouldRepair: true },
       stateDir,
     });

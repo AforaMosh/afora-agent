@@ -191,14 +191,14 @@ jobs:
           if ($ok) {
             "wsl2_ok=true" >> $env:GITHUB_OUTPUT
             "wsl2_restart_required=false" >> $env:GITHUB_OUTPUT
-            "OPENCLAW_WSL2_PROBE_OK=true" >> $env:GITHUB_ENV
-            "OPENCLAW_WSL2_RESTART_REQUIRED=false" >> $env:GITHUB_ENV
+            "AFORA_WSL2_PROBE_OK=true" >> $env:GITHUB_ENV
+            "AFORA_WSL2_RESTART_REQUIRED=false" >> $env:GITHUB_ENV
             Write-Host "wsl2_ok=true"
           } else {
             "wsl2_ok=false" >> $env:GITHUB_OUTPUT
             "wsl2_restart_required=$($restartRequired.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
-            "OPENCLAW_WSL2_PROBE_OK=false" >> $env:GITHUB_ENV
-            "OPENCLAW_WSL2_RESTART_REQUIRED=$($restartRequired.ToString().ToLowerInvariant())" >> $env:GITHUB_ENV
+            "AFORA_WSL2_PROBE_OK=false" >> $env:GITHUB_ENV
+            "AFORA_WSL2_RESTART_REQUIRED=$($restartRequired.ToString().ToLowerInvariant())" >> $env:GITHUB_ENV
             Write-Warning "wsl2_ok=false"
           }
 
@@ -230,7 +230,7 @@ jobs:
         run: |
           set -euo pipefail
           source .github/actions/setup-pnpm-store-cache/ensure-node.sh
-          openclaw_ensure_node "$REQUESTED_NODE_VERSION"
+          afora_ensure_node "$REQUESTED_NODE_VERSION"
 
       - name: Setup pnpm
         if: ${{ inputs.run_windows_ci }}
@@ -274,8 +274,8 @@ jobs:
         env:
           CI: true
           NODE_OPTIONS: --max-old-space-size=8192
-          OPENCLAW_TEST_SKIP_FULL_EXTENSIONS_SHARD: 1
-          OPENCLAW_VITEST_MAX_WORKERS: 1
+          AFORA_TEST_SKIP_FULL_EXTENSIONS_SHARD: 1
+          AFORA_VITEST_MAX_WORKERS: 1
         run: |
           set -euo pipefail
           export PATH="$NODE_BIN:$PATH"
@@ -307,7 +307,7 @@ jobs:
         shell: bash
         env:
           CI_WINDOWS_SCHTASKS_PROOF_PATH: ${{ github.workspace }}\.artifacts\windows-schtasks\proof.json
-          CI_WINDOWS_SCHTASKS_ROOT: ${{ runner.temp }}\openclaw-schtasks-${{ github.run_id }}-${{ github.run_attempt }}
+          CI_WINDOWS_SCHTASKS_ROOT: ${{ runner.temp }}\afora-schtasks-${{ github.run_id }}-${{ github.run_attempt }}
           CI_WINDOWS_SCHTASKS_TEST_ID: ${{ github.run_id }}-${{ github.run_attempt }}
           EXPECTED_HEAD: ${{ inputs.target_ref }}
         run: |
@@ -332,13 +332,13 @@ jobs:
         shell: pwsh
         env:
           TEST_ID: ${{ github.run_id }}-${{ github.run_attempt }}
-          TEST_ROOT: ${{ runner.temp }}\openclaw-schtasks-${{ github.run_id }}-${{ github.run_attempt }}
+          TEST_ROOT: ${{ runner.temp }}\afora-schtasks-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           $ErrorActionPreference = "Continue"
           $cleanupErrors = @()
           $profile = "schtasks-int-$env:TEST_ID"
-          $taskName = "OpenClaw Gateway ($profile)"
-          $stateDir = Join-Path $env:USERPROFILE ".openclaw-$profile"
+          $taskName = "Afora Gateway ($profile)"
+          $stateDir = Join-Path $env:USERPROFILE ".afora-$profile"
           New-Item -ItemType Directory -Force -Path $env:TEST_ROOT | Out-Null
           schtasks.exe /End /TN $taskName 2>$null
           Start-Sleep -Milliseconds 200
@@ -425,8 +425,8 @@ jobs:
           name: windows-schtasks-proof-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             .artifacts/windows-schtasks/proof.json
-            ${{ runner.temp }}\openclaw-schtasks-${{ github.run_id }}-${{ github.run_attempt }}\failure-diagnostics.json
-            ${{ runner.temp }}\openclaw-schtasks-${{ github.run_id }}-${{ github.run_attempt }}\cleanup-summary.txt
+            ${{ runner.temp }}\afora-schtasks-${{ github.run_id }}-${{ github.run_attempt }}\failure-diagnostics.json
+            ${{ runner.temp }}\afora-schtasks-${{ github.run_id }}-${{ github.run_attempt }}\cleanup-summary.txt
           if-no-files-found: warn
           retention-days: 7
 
@@ -435,10 +435,10 @@ jobs:
         shell: pwsh
         env:
           TEST_ID: ${{ github.run_id }}-${{ github.run_attempt }}
-          TEST_ROOT: ${{ runner.temp }}\openclaw-schtasks-${{ github.run_id }}-${{ github.run_attempt }}
+          TEST_ROOT: ${{ runner.temp }}\afora-schtasks-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           $profile = "schtasks-int-$env:TEST_ID"
-          Remove-Item -LiteralPath (Join-Path $env:USERPROFILE ".openclaw-$profile") -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -LiteralPath (Join-Path $env:USERPROFILE ".afora-$profile") -Recurse -Force -ErrorAction SilentlyContinue
           Remove-Item -LiteralPath $env:TEST_ROOT -Recurse -Force -ErrorAction SilentlyContinue
 
       - name: Keep runner alive for SSH inspection
@@ -461,8 +461,8 @@ jobs:
       - name: Enforce WSL2 requirement
         if: ${{ always() && !cancelled() && inputs.require_wsl2 }}
         run: |
-          if ($env:OPENCLAW_WSL2_PROBE_OK -ne "true") {
-            if ($env:OPENCLAW_WSL2_RESTART_REQUIRED -eq "true") {
+          if ($env:AFORA_WSL2_PROBE_OK -ne "true") {
+            if ($env:AFORA_WSL2_RESTART_REQUIRED -eq "true") {
               Write-Error "WSL2 probe enabled required Windows features, but the runner needs a reboot before WSL2 can start."
               exit 1
             }

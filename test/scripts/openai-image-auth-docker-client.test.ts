@@ -7,8 +7,8 @@ import {
 
 describe("OpenAI image auth Docker client mock server", () => {
   it("rejects oversized request bodies before recording them", async () => {
-    const previousLimit = process.env.OPENCLAW_MOCK_OPENAI_REQUEST_MAX_BYTES;
-    process.env.OPENCLAW_MOCK_OPENAI_REQUEST_MAX_BYTES = "4";
+    const previousLimit = process.env.AFORA_MOCK_OPENAI_REQUEST_MAX_BYTES;
+    process.env.AFORA_MOCK_OPENAI_REQUEST_MAX_BYTES = "4";
     const records: RequestRecord[] = [];
     const server = await startMockServer(records);
     try {
@@ -25,9 +25,9 @@ describe("OpenAI image auth Docker client mock server", () => {
     } finally {
       await server.close();
       if (previousLimit === undefined) {
-        delete process.env.OPENCLAW_MOCK_OPENAI_REQUEST_MAX_BYTES;
+        delete process.env.AFORA_MOCK_OPENAI_REQUEST_MAX_BYTES;
       } else {
-        process.env.OPENCLAW_MOCK_OPENAI_REQUEST_MAX_BYTES = previousLimit;
+        process.env.AFORA_MOCK_OPENAI_REQUEST_MAX_BYTES = previousLimit;
       }
     }
   });

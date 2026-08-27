@@ -1,6 +1,6 @@
 // Msteams tests cover graph messages.search plugin behavior.
 import { beforeAll, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 import {
   CHANNEL_TO,
   CHAT_ID,
@@ -45,7 +45,7 @@ describe("searchMessagesMSTeams", () => {
     });
 
     const result = await searchMessagesMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
       query: "meeting notes",
     });
@@ -70,7 +70,7 @@ describe("searchMessagesMSTeams", () => {
     });
 
     const result = await searchMessagesMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHANNEL_TO,
       query: "sprint",
     });
@@ -101,7 +101,7 @@ describe("searchMessagesMSTeams", () => {
     });
 
     const result = await searchMessagesMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
       query: "BUDGET",
       from: "finance bot",
@@ -136,7 +136,7 @@ describe("searchMessagesMSTeams", () => {
     });
 
     const result = await searchMessagesMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
       query: "hello",
       from: "AAD-USER-1",
@@ -155,7 +155,7 @@ describe("searchMessagesMSTeams", () => {
     });
 
     const result = await searchMessagesMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
       query: "match",
       limit: 1,
@@ -175,7 +175,7 @@ describe("searchMessagesMSTeams", () => {
     });
 
     const result = await searchMessagesMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
       query: "match",
       limit: Number.POSITIVE_INFINITY,
@@ -199,7 +199,7 @@ describe("searchMessagesMSTeams", () => {
     });
 
     const result = await searchMessagesMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
       query: "missing",
     });
@@ -216,7 +216,7 @@ describe("searchMessagesMSTeams", () => {
     mockState.fetchGraphJson.mockResolvedValue({ value: [] });
 
     await searchMessagesMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: "user:aad-user-1",
       query: "hello",
     });

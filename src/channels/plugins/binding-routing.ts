@@ -3,7 +3,7 @@
  *
  * Applies configured and runtime conversation bindings to agent route resolution.
  */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { logVerbose } from "../../globals.js";
 import {
   getSessionBindingService,
@@ -82,7 +82,7 @@ function isPluginOwnedRuntimeBindingRecord(record: SessionBindingRecord | null):
  */
 export function resolveConfiguredBindingRoute(
   params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     route: ResolvedAgentRoute;
   } & ConfiguredBindingRouteConversationInput,
 ): ConfiguredBindingRouteResult {
@@ -188,7 +188,7 @@ export function resolveRuntimeConversationBindingRoute(
  * Ensures a configured binding target is ready without blocking route resolution indefinitely.
  */
 export async function ensureConfiguredBindingRouteReady(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   bindingResolution: ConfiguredBindingResolution | null;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const readyPromise = ensureConfiguredBindingTargetReady(params);

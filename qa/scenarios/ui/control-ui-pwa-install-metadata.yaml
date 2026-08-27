@@ -12,7 +12,7 @@ scenario:
   successCriteria:
     - The unauthenticated manifest request is rejected with an HTTP Basic challenge.
     - Chromium's PWA manifest loader sends credentials for every manifest request.
-    - The manifest is same-origin, error-free, and declares standalone OpenClaw installation metadata.
+    - The manifest is same-origin, error-free, and declares standalone Afora installation metadata.
     - The document manifest link retains the use-credentials contract.
   docsRefs:
     - docs/web/control-ui.md

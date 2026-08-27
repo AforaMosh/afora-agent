@@ -1,6 +1,6 @@
 // Active session shutdown tracker.
 // Remembers sessions needing `session_end` hooks during gateway shutdown/restart.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveGlobalMap } from "../shared/global-singleton.js";
 
 // Module-level tracker of sessions that have received `session_start` but not
@@ -17,7 +17,7 @@ import { resolveGlobalMap } from "../shared/global-singleton.js";
 // runs. That is what keeps the shutdown finalizer from double-firing.
 
 type ActiveSessionForShutdown = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   sessionId: string;
   storePath: string;
@@ -26,7 +26,7 @@ type ActiveSessionForShutdown = {
 };
 
 const trackedSessions = resolveGlobalMap<string, ActiveSessionForShutdown>(
-  Symbol.for("openclaw.activeSessionsForShutdown"),
+  Symbol.for("afora.activeSessionsForShutdown"),
   "close-and-restart",
 );
 

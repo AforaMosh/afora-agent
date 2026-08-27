@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { getFileLockProcessStartTime } from "../shared/pid-alive.js";
 import { acquireFileLockSync } from "./file-lock-manager.js";
 import { isLockOwnerDefinitelyStale } from "./stale-lock-file.js";
@@ -48,7 +48,7 @@ function rejectUnsupportedLockPath(lockPath: string): void {
   }
   throw Object.assign(
     new Error(
-      `Legacy storage lock requires manual removal after verifying no older OpenClaw process is running: ${lockPath}`,
+      `Legacy storage lock requires manual removal after verifying no older Afora process is running: ${lockPath}`,
     ),
     { code: "file_lock_stale", lockPath },
   );

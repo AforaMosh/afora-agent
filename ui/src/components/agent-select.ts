@@ -8,7 +8,7 @@ import { t } from "../i18n/index.ts";
 import { resolveAgentTextAvatar } from "../lib/agents/display.ts";
 import { AuthenticatedAvatarRouteLoader } from "../lib/authenticated-avatar-route.ts";
 import { deriveAvatarInitial, resolveAgentAvatarUrl } from "../lib/avatar.ts";
-import { OpenClawLightDomElement } from "../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../lit/afora-element.ts";
 import { icons } from "./icons.ts";
 import { syncDropdownItemRadio } from "./web-awesome.ts";
 
@@ -62,7 +62,7 @@ export function renderAgentSelectCopy(option: AgentSelectOption) {
   `;
 }
 
-export class AgentSelect extends OpenClawLightDomElement {
+export class AgentSelect extends AforaLightDomElement {
   @property({ attribute: false }) options: readonly AgentSelectOption[] = [];
   @property({ attribute: false }) value = "";
   @property({ attribute: false }) placeholder = "";

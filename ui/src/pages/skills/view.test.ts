@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { render } from "lit";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SkillStatusReport } from "../../api/types.ts";
@@ -43,7 +43,7 @@ describe("renderSkills", () => {
       container,
     );
 
-    expect(container.querySelector('openclaw-agent-select[name="skills-agent"]')).toBeNull();
+    expect(container.querySelector('afora-agent-select[name="skills-agent"]')).toBeNull();
     expect(container.querySelector('input[name="skills-filter"]')).toBeInstanceOf(HTMLInputElement);
   });
 
@@ -71,7 +71,7 @@ describe("renderSkills", () => {
         onSelect: (value: string) => void;
         updateComplete: Promise<boolean>;
       }
-    >('openclaw-agent-select[name="skills-agent"]');
+    >('afora-agent-select[name="skills-agent"]');
     const filter = container.querySelector<HTMLInputElement>('input[name="skills-filter"]');
     expect(selector).toBeInstanceOf(HTMLElement);
     expect(filter).toBeInstanceOf(HTMLInputElement);
@@ -104,7 +104,7 @@ describe("renderSkills", () => {
         options: Array<{ value: string; label: string }>;
         updateComplete: Promise<boolean>;
       }
-    >('openclaw-agent-select[name="skills-agent"]');
+    >('afora-agent-select[name="skills-agent"]');
     await selector?.updateComplete;
 
     expect(selector?.options.find((option) => option.value === "main")?.label).toBe(
@@ -427,7 +427,7 @@ describe("renderSkills", () => {
 
     expect(
       container.querySelector<HTMLElement & { disabled: boolean }>(
-        'openclaw-agent-select[name="skills-agent"]',
+        'afora-agent-select[name="skills-agent"]',
       )?.disabled,
     ).toBe(true);
     const refresh = Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find(

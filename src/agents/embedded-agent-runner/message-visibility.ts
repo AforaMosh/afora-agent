@@ -1,4 +1,4 @@
-import { hasNonEmptyString } from "@openclaw/normalization-core/string-coerce";
+import { hasNonEmptyString } from "@afora/normalization-core/string-coerce";
 import {
   isSilentReplyPayloadText,
   isSilentReplyText,
@@ -162,7 +162,7 @@ export function readTerminalSourceReplyDeliveryMirror(
   if (!message || typeof message !== "object") {
     return undefined;
   }
-  const marker = (message as { openclawDeliveryMirror?: unknown }).openclawDeliveryMirror;
+  const marker = (message as { aforaDeliveryMirror?: unknown }).aforaDeliveryMirror;
   if (!marker || typeof marker !== "object") {
     return undefined;
   }
@@ -199,7 +199,7 @@ export function isIntermediateAssistantTranscriptMessage(message: unknown): bool
   if (phase !== undefined) {
     return phase === "commentary";
   }
-  const fallback = record.openclawStreamFallback;
+  const fallback = record.aforaStreamFallback;
   if (!fallback || typeof fallback !== "object" || Array.isArray(fallback)) {
     return false;
   }

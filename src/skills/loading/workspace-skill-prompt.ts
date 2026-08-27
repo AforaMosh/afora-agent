@@ -1,5 +1,5 @@
 // Workspace skill prompt helpers render bounded catalogs and reusable snapshots.
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { resolveEffectiveAgentSkillsLimits } from "../discovery/agent-filter.js";
 import { filterPromptVisibleSkillEntries } from "../discovery/skill-index.js";
@@ -15,7 +15,7 @@ import { resolveWorkspaceSkillPromptEntries } from "./workspace-skill-loader.js"
 const skillsLogger = createSubsystemLogger("skills");
 
 type WorkspaceSkillBuildOptions = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   managedSkillsDir?: string;
   bundledSkillsDir?: string;
   entries?: SkillEntry[];
@@ -74,7 +74,7 @@ export function buildSkillSnapshot(
 type ResolveSkillsPromptParams = {
   skillsSnapshot?: SkillSnapshot;
   entries?: SkillEntry[];
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir: string;
   agentId?: string;
   eligibility?: SkillEligibilityContext;

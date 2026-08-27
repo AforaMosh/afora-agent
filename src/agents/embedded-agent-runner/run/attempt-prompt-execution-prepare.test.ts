@@ -5,8 +5,8 @@ const hoisted = vi.hoisted(() => ({
   resolveImageSanitizationLimits: vi.fn(() => ({ maxDimensionPx: 2048 })),
 }));
 
-vi.mock("@openclaw/media-core/constants", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@openclaw/media-core/constants")>()),
+vi.mock("@afora/media-core/constants", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@afora/media-core/constants")>()),
   MAX_IMAGE_BYTES: 1_234,
   mediaKindFromMime: (mime?: string) =>
     mime ? (mime.startsWith("image/") ? "image" : "unknown") : undefined,
@@ -146,14 +146,14 @@ describe("prepareEmbeddedAttemptPromptExecution", () => {
   it.each([
     {
       name: "facts-only",
-      message: { __openclaw: { media: [{ path: "/tmp/fact.png", contentType: "image/png" }] } },
+      message: { __afora: { media: [{ path: "/tmp/fact.png", contentType: "image/png" }] } },
       expectedPath: "/tmp/fact.png",
     },
     {
       name: "both-equal",
       message: {
         MediaPath: "/tmp/equal.png",
-        __openclaw: { media: [{ path: "/tmp/equal.png", contentType: "image/png" }] },
+        __afora: { media: [{ path: "/tmp/equal.png", contentType: "image/png" }] },
       },
       expectedPath: "/tmp/equal.png",
     },
@@ -161,21 +161,21 @@ describe("prepareEmbeddedAttemptPromptExecution", () => {
       name: "both-conflict",
       message: {
         MediaPath: "/tmp/legacy-conflict.png",
-        __openclaw: { media: [{ path: "/tmp/canonical.png", contentType: "image/png" }] },
+        __afora: { media: [{ path: "/tmp/canonical.png", contentType: "image/png" }] },
       },
       expectedPath: "/tmp/canonical.png",
     },
     {
       name: "sparse",
       message: {
-        __openclaw: { media: [{}, { path: "/tmp/sparse.png", contentType: "image/png" }] },
+        __afora: { media: [{}, { path: "/tmp/sparse.png", contentType: "image/png" }] },
       },
       expectedPath: "/tmp/sparse.png",
       expectedIndex: 1,
     },
     {
       name: "type-only",
-      message: { __openclaw: { media: [{ contentType: "image/png" }] } },
+      message: { __afora: { media: [{ contentType: "image/png" }] } },
       expectedPath: undefined,
     },
     {
@@ -183,7 +183,7 @@ describe("prepareEmbeddedAttemptPromptExecution", () => {
       message: {
         role: "user",
         content: "",
-        __openclaw: { media: [{ path: "/tmp/media-only.png", kind: "image" }] },
+        __afora: { media: [{ path: "/tmp/media-only.png", kind: "image" }] },
       },
       expectedPath: "/tmp/media-only.png",
     },
@@ -218,7 +218,7 @@ describe("prepareEmbeddedAttemptPromptExecution", () => {
       content: "compare",
       MediaPaths: ["/tmp/legacy-inline.png", "/tmp/legacy-offloaded.png"],
       MediaTypes: ["image/png", "image/png"],
-      __openclaw: {
+      __afora: {
         media: [
           {
             path: "/tmp/inline.png",

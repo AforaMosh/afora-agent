@@ -9,14 +9,14 @@ title: "Secrets management"
 sidebarTitle: "Secrets management"
 ---
 
-OpenClaw supports additive SecretRefs so supported credentials do not need to live as plaintext in configuration.
+Afora supports additive SecretRefs so supported credentials do not need to live as plaintext in configuration.
 
 <Note>
 Plaintext still works. SecretRefs are opt-in per credential.
 </Note>
 
 <Warning>
-Plaintext credentials remain agent-readable when they sit in files the agent can inspect, including `openclaw.json`, `.env`, retired auth-profile JSON archives, or generated `agents/*/agent/models.json` files. SecretRefs reduce that local blast radius once every supported credential is migrated and `openclaw secrets audit --check` reports no plaintext residue.
+Plaintext credentials remain agent-readable when they sit in files the agent can inspect, including `afora.json`, `.env`, retired auth-profile JSON archives, or generated `agents/*/agent/models.json` files. SecretRefs reduce that local blast radius once every supported credential is migrated and `afora secrets audit --check` reports no plaintext residue.
 </Warning>
 
 ## Runtime model
@@ -34,18 +34,18 @@ Gateway ingress protection, structurally invalid config or resolved values, poli
 
 ## Egress-time injection (sentinels)
 
-For model-provider credentials backed by SecretRefs, OpenClaw mints an opaque, process-local sentinel during model-auth resolution. Auth storage, stream options, SDK configuration, logs, error objects, and most runtime introspection therefore see a value such as `oc-sent-v2.<authenticated-ciphertext>.end`, not the provider credential. The guarded model fetch and managed local-provider health probes replace known sentinels in URL and header values immediately before each request leaves the process.
+For model-provider credentials backed by SecretRefs, Afora mints an opaque, process-local sentinel during model-auth resolution. Auth storage, stream options, SDK configuration, logs, error objects, and most runtime introspection therefore see a value such as `oc-sent-v2.<authenticated-ciphertext>.end`, not the provider credential. The guarded model fetch and managed local-provider health probes replace known sentinels in URL and header values immediately before each request leaves the process.
 
-Unknown sentinel-shaped values fail closed before network activity. OpenClaw refuses to send the request rather than forwarding an unresolved sentinel to a provider. Resolved secret values are also registered for exact-value log redaction as a defense in depth measure.
+Unknown sentinel-shaped values fail closed before network activity. Afora refuses to send the request rather than forwarding an unresolved sentinel to a provider. Resolved secret values are also registered for exact-value log redaction as a defense in depth measure.
 
 Provider adapters use the latest injection point their SDK supports:
 
-- SDKs with a custom fetch option receive OpenClaw's guarded fetch, so the SDK retains the sentinel.
-- SDKs without a custom fetch option unwrap the sentinel immediately before client construction. Plugin-owned provider streams and agent harnesses unwrap at the final core-owned handoff because those transports do not share OpenClaw's guarded fetch.
+- SDKs with a custom fetch option receive Afora's guarded fetch, so the SDK retains the sentinel.
+- SDKs without a custom fetch option unwrap the sentinel immediately before client construction. Plugin-owned provider streams and agent harnesses unwrap at the final core-owned handoff because those transports do not share Afora's guarded fetch.
 
 Sentinels reduce plaintext exposure across the model-call chain, but they are not process isolation. The real value still exists in same-process memory and appears at the final adapter boundary. Plain environment credentials that are not configured through SecretRefs remain plaintext and are outside this mechanism.
 
-Set `OPENCLAW_SECRET_SENTINELS=off` (also accepts `0` or `false`, case-insensitive) to disable sentinel minting during incident response or compatibility troubleshooting. The kill switch does not disable exact-value redaction registration.
+Set `AFORA_SECRET_SENTINELS=off` (also accepts `0` or `false`, case-insensitive) to disable sentinel minting during incident response or compatibility troubleshooting. The kill switch does not disable exact-value redaction registration.
 
 ## Agent-access boundary
 
@@ -54,8 +54,8 @@ SecretRefs stop credentials from being persisted in config and generated model f
 For production deployments where agent-accessible files are in scope, treat migration as complete only when all of these hold:
 
 - Supported credentials use SecretRefs instead of plaintext values.
-- Legacy plaintext residue is scrubbed from `openclaw.json`, the SQLite auth-profile store, `.env`, and generated `models.json` files. Retired auth JSON is doctor-owned migration input and is never rewritten by `secrets apply`.
-- `openclaw secrets audit --check` is clean after migration.
+- Legacy plaintext residue is scrubbed from `afora.json`, the SQLite auth-profile store, `.env`, and generated `models.json` files. Retired auth JSON is doctor-owned migration input and is never rewritten by `secrets apply`.
+- `afora secrets audit --check` is clean after migration.
 - Any remaining unsupported or rotating credentials are protected by OS isolation, container isolation, or an external credential proxy.
 
 This is why the audit/configure/apply workflow is a security migration gate, not just a convenience helper.
@@ -82,7 +82,7 @@ SecretRefs are validated only on effectively active surfaces:
   - `gateway.remote.url` is configured
   - `gateway.tailscale.mode` is `serve` or `funnel`
   - In local mode without those remote surfaces: `gateway.remote.token` is active when token auth can win and no env/auth token is configured; `gateway.remote.password` is active only when password auth can win and no env/auth password is configured.
-- Active `gateway.auth.token` / `gateway.auth.password` SecretRefs stay authoritative over `OPENCLAW_GATEWAY_TOKEN` / `OPENCLAW_GATEWAY_PASSWORD`; environment credentials are fallbacks when the corresponding local config input is absent.
+- Active `gateway.auth.token` / `gateway.auth.password` SecretRefs stay authoritative over `AFORA_GATEWAY_TOKEN` / `AFORA_GATEWAY_PASSWORD`; environment credentials are fallbacks when the corresponding local config input is absent.
 
 </Accordion>
 
@@ -182,12 +182,12 @@ Define providers under `secrets.providers`:
       teamstore: { source: "store" },
       filemain: {
         source: "file",
-        path: "~/.openclaw/secrets.json",
+        path: "~/.afora/secrets.json",
         mode: "json", // or "singleValue"
       },
       vault: {
         source: "exec",
-        command: "/usr/local/bin/openclaw-vault-resolver",
+        command: "/usr/local/bin/afora-vault-resolver",
         args: ["--profile", "prod"],
         passEnv: ["PATH", "VAULT_ADDR"],
         jsonOnly: true,
@@ -223,7 +223,7 @@ Provider aliases are source-specific. A matching explicit provider entry wins; i
 - `mode: "json"` (default) expects a JSON object payload and resolves `id` as a JSON pointer.
 - `mode: "singleValue"` expects ref id `"value"` and returns the raw file contents (trailing newline stripped).
 - Path must pass ownership/permission checks; `timeoutMs` (default 5000) and `maxBytes` (default 1 MiB) bound the read.
-- Windows fail-closed: if ACL verification is unavailable for the path, resolution fails. Move the secret to a path whose ACLs OpenClaw can verify; there is no provider-level bypass.
+- Windows fail-closed: if ACL verification is unavailable for the path, resolution fails. Move the secret to a path whose ACLs Afora can verify; there is no provider-level bypass.
 
 </Accordion>
 
@@ -232,8 +232,8 @@ Provider aliases are source-specific. A matching explicit provider entry wins; i
 - `command` must be a regular file, not a symlink. For package-manager shims, resolve the real binary path (for example with `realpath "$(command -v vault)"`) and configure that absolute path. Use `trustedDirs` to restrict executables to approved directories.
 - Supports `timeoutMs` (default 5000), `noOutputTimeoutMs` (default equals `timeoutMs`), `maxOutputBytes` (default 1 MiB), `env`/`passEnv` allowlist, and `trustedDirs`.
 - `jsonOnly` defaults to `true`. With `jsonOnly: false` and a single requested id, plain non-JSON stdout is accepted as that id's value.
-- Windows fail-closed: if ACL verification is unavailable for the command path, resolution fails. Use a command path whose ACLs OpenClaw can verify; there is no provider-level bypass.
-- Plugin-managed exec providers can use `pluginIntegration` instead of a copied `command`/`args`. OpenClaw resolves the current command details from the installed plugin manifest during startup/reload; if the plugin is disabled, removed, untrusted, or no longer declares the integration, active SecretRefs on that provider fail closed.
+- Windows fail-closed: if ACL verification is unavailable for the command path, resolution fails. Use a command path whose ACLs Afora can verify; there is no provider-level bypass.
+- Plugin-managed exec providers can use `pluginIntegration` instead of a copied `command`/`args`. Afora resolves the current command details from the installed plugin manifest during startup/reload; if the plugin is disabled, removed, untrusted, or no longer declares the integration, active SecretRefs on that provider fail closed.
 
 Request payload (stdin):
 
@@ -257,7 +257,7 @@ Optional per-id errors:
 }
 ```
 
-`code` is an optional machine-readable diagnostic. OpenClaw displays the recognized
+`code` is an optional machine-readable diagnostic. Afora displays the recognized
 codes `NOT_FOUND` and `AMBIGUOUS_DUPLICATE_KEY` with the provider and ref id. Other
 codes and free-form fields such as `message` are accepted for protocol-v1 compatibility
 but are not displayed because resolver output can contain credential material.
@@ -265,7 +265,7 @@ but are not displayed because resolver output can contain credential material.
 </Accordion>
 
 <Accordion title="Store provider">
-- Reads values from OpenClaw's shared state SQLite database.
+- Reads values from Afora's shared state SQLite database.
 - The provider has no connection settings. `secrets.defaults.store` selects its default alias.
 - Only team scope is resolved in this release. Identity scope is reserved for a later release.
 
@@ -273,20 +273,20 @@ but are not displayed because resolver output can contain credential material.
 
 ## Shared secret store
 
-The shared secret store is a Gateway-wide, team-scoped place for secrets and environment values that should be available to every Gateway process using the same state database. Manage it from **Settings → Secrets** in the Control UI or locally with `openclaw secrets store`. The CLI commands operate on the local state database and do not accept Gateway URL or token options.
+The shared secret store is a Gateway-wide, team-scoped place for secrets and environment values that should be available to every Gateway process using the same state database. Manage it from **Settings → Secrets** in the Control UI or locally with `afora secrets store`. The CLI commands operate on the local state database and do not accept Gateway URL or token options.
 
 Entries have a `secret` or `env` kind. The kind controls CLI disclosure, not SecretRef resolution:
 
 - `secret` values are write-only after saving. Gateway list results, the Control UI, and CLI list/get output never include them; there is no reveal RPC.
-- `env` values remain visible to administrators in the Control UI and can be returned by `store list` and `store get`. Team-scoped `env` entries are also added to the environment of commands run by OpenClaw's own exec tool, after inherited process values and before explicit per-call env. Protected host keys and sandbox-blocked credential names are ignored with a visible warning. This covers direct tool calls, Code Mode (whose guest reaches shell through the same `openclaw:core:exec` tool), sandboxed exec, and `node` -hosted exec.
+- `env` values remain visible to administrators in the Control UI and can be returned by `store list` and `store get`. Team-scoped `env` entries are also added to the environment of commands run by Afora's own exec tool, after inherited process values and before explicit per-call env. Protected host keys and sandbox-blocked credential names are ignored with a visible warning. This covers direct tool calls, Code Mode (whose guest reaches shell through the same `afora:core:exec` tool), sandboxed exec, and `node` -hosted exec.
 
-It does not cover commands executed inside a provider-native harness — the Codex app-server and its sandbox exec-server, or ACP children such as Claude Code. Those harnesses assemble their own child environment and never pass through OpenClaw's exec preparation, so store entries are absent there. The store snapshot is also read once per agent run, so entries added mid-run apply from the next run onward.
+It does not cover commands executed inside a provider-native harness — the Codex app-server and its sandbox exec-server, or ACP children such as Claude Code. Those harnesses assemble their own child environment and never pass through Afora's exec preparation, so store entries are absent there. The store snapshot is also read once per agent run, so entries added mid-run apply from the next run onward.
 
 By default, `secret` entries are never injected into subprocess environments. When the default-off [secret egress proxy](#secret-egress-proxy) is enabled, Gateway-hosted exec commands receive process-local sentinels instead of plaintext values.
 
 Names use the same uppercase grammar as env SecretRefs, and each UTF-8 value is limited to 64 KiB (65,536 bytes). A `secret` entry must carry a value; empty secrets are rejected because they would surface only as a confusing downstream auth failure. `env` entries may be empty. This supports PEM keys and service-account JSON without inheriting the smaller limits of ordinary environment variables.
 
-Reference an entry from `openclaw.json` with the `store` source:
+Reference an entry from `afora.json` with the `store` source:
 
 ```json5
 {
@@ -300,20 +300,20 @@ Reference an entry from `openclaw.json` with the `store` source:
 }
 ```
 
-Control UI set/delete operations automatically refresh the active secrets runtime when the changed name is referenced by a `store` SecretRef in the active source config. Names that are not referenced skip that work. Direct CLI writes remain an offline/local path; after changing a config-referenced value with the CLI, run `openclaw secrets reload` so the active in-memory snapshot picks it up.
+Control UI set/delete operations automatically refresh the active secrets runtime when the changed name is referenced by a `store` SecretRef in the active source config. Names that are not referenced skip that work. Direct CLI writes remain an offline/local path; after changing a config-referenced value with the CLI, run `afora secrets reload` so the active in-memory snapshot picks it up.
 
 <Warning>
-Store values are not encrypted at rest. They are stored unencrypted in the shared state SQLite database (`state/openclaw.sqlite`), protected by the same `0600` file and `0700` directory permissions as other credentials in that database. Operators who need stronger storage isolation should use an external exec provider such as the [1Password plugin](/plugins/onepassword) or [Vault SecretRefs](/plugins/vault).
+Store values are not encrypted at rest. They are stored unencrypted in the shared state SQLite database (`state/afora.sqlite`), protected by the same `0600` file and `0700` directory permissions as other credentials in that database. Operators who need stronger storage isolation should use an external exec provider such as the [1Password plugin](/plugins/onepassword) or [Vault SecretRefs](/plugins/vault).
 </Warning>
 
 ## Secret egress proxy
 
-The secret egress proxy lets Gateway-hosted agent subprocesses use shared-store `secret` entries without receiving their plaintext. OpenClaw puts the existing authenticated sentinel in the subprocess environment, then a Gateway-owned loopback proxy replaces it in request URLs, headers, and streamed bodies immediately before egress.
+The secret egress proxy lets Gateway-hosted agent subprocesses use shared-store `secret` entries without receiving their plaintext. Afora puts the existing authenticated sentinel in the subprocess environment, then a Gateway-owned loopback proxy replaces it in request URLs, headers, and streamed bodies immediately before egress.
 
 Each secret must also name the exact HTTPS hosts where substitution is allowed. Hostnames are stored lowercase in ASCII/punycode form and matched exactly; wildcards, suffix matching, and ports are not supported. A secret with no allowed hosts is never substituted. Bind a host without replacing the stored value:
 
 ```bash
-openclaw secrets store set OPENAI_API_KEY --allow-host api.openai.com
+afora secrets store set OPENAI_API_KEY --allow-host api.openai.com
 ```
 
 Repeat `--allow-host` to replace the binding with multiple hosts, or use `--clear-allowed-hosts` to remove every binding. A refused request names the secret and prints the exact `store set ... --allow-host ...` command needed for that destination.
@@ -321,15 +321,15 @@ Repeat `--allow-host` to replace the binding with multiple hosts, or use `--clea
 Enable it explicitly, then restart the Gateway:
 
 ```bash
-openclaw config set secrets.egressProxy.enabled true --strict-json
-openclaw gateway restart
+afora config set secrets.egressProxy.enabled true --strict-json
+afora gateway restart
 ```
 
 For example, bind an OpenAI key to its API host and enable the proxy:
 
 ```bash
-openclaw secrets store set OPENAI_API_KEY --allow-host api.openai.com
-openclaw config set secrets.egressProxy.enabled true --strict-json
+afora secrets store set OPENAI_API_KEY --allow-host api.openai.com
+afora config set secrets.egressProxy.enabled true --strict-json
 ```
 
 After restarting the Gateway, a Gateway-hosted agent can run:
@@ -338,7 +338,7 @@ After restarting the Gateway, a Gateway-hosted agent can run:
 curl -sS https://api.openai.com/v1/models -H "Authorization: Bearer $OPENAI_API_KEY"
 ```
 
-In the agent environment, `$OPENAI_API_KEY` is an `oc-sent-v2...end` sentinel. The proxy replaces it with the stored value only for `api.openai.com`. A request to an unbound host is refused with `Secret "OPENAI_API_KEY" is not allowed for host "<host>". Run: openclaw secrets store set OPENAI_API_KEY --allow-host <host>`.
+In the agent environment, `$OPENAI_API_KEY` is an `oc-sent-v2...end` sentinel. The proxy replaces it with the stored value only for `api.openai.com`. A request to an unbound host is refused with `Secret "OPENAI_API_KEY" is not allowed for host "<host>". Run: afora secrets store set OPENAI_API_KEY --allow-host <host>`.
 
 Equivalent config:
 
@@ -353,13 +353,13 @@ Equivalent config:
 }
 ```
 
-When enabled, OpenClaw adds these values to Gateway-hosted exec environments:
+When enabled, Afora adds these values to Gateway-hosted exec environments:
 
 - `HTTPS_PROXY` and `HTTP_PROXY`, with per-run credentials embedded in the loopback proxy URL
 - `NODE_EXTRA_CA_CERTS`, `SSL_CERT_FILE`, `CURL_CA_BUNDLE`, and `REQUESTS_CA_BUNDLE`, pointing at the ephemeral CA certificate
 - each team-store `secret` entry as an `oc-sent-v2...end` sentinel; `env` entries keep their existing behavior and precedence
 
-Proxy authentication uses standard Basic proxy auth with username `openclaw` and a random per-run password. The token expires when the exact agent run closes, including cancellation and replacement. Base64 is not treated as encryption: the listener binds only to loopback, and a process that can read the proxy token from the agent environment can already read the sentinels in that environment. Missing, wrong, or expired credentials receive `407 Proxy Authentication Required` and are never forwarded.
+Proxy authentication uses standard Basic proxy auth with username `afora` and a random per-run password. The token expires when the exact agent run closes, including cancellation and replacement. Base64 is not treated as encryption: the listener binds only to loopback, and a process that can read the proxy token from the agent environment can already read the sentinels in that environment. Missing, wrong, or expired credentials receive `407 Proxy Authentication Required` and are never forwarded.
 
 The run snapshot registers each sentinel together with its secret name and allowed hosts. After proxy authentication, the proxy looks up the matched sentinel in that run's registration and authorizes the normalized destination hostname before decrypting the sentinel. A sentinel that is unregistered, unresolved, unbound, or bound to another host is refused before its plaintext is forwarded.
 
@@ -367,7 +367,7 @@ The run snapshot registers each sentinel together with its secret name and allow
 Destination binding does not make an allowed host trustworthy. A bound service that reflects request credentials can still return the plaintext to the agent. DNS-level compromise can redirect a permitted hostname because policy is hostname-based, not an IP pin. Non-HTTPS requests are refused rather than protected, and HTTPS interception still has the protocol limits below. Use external network policy or process isolation when those threats are in scope.
 </Warning>
 
-The CA is generated once per Gateway start under the state directory. Its directory is mode `0700`, its private keys are mode `0600`, it is removed during Gateway shutdown, and OpenClaw never installs it in a system trust store. Requests fail closed when a sentinel cannot be authenticated or resolved; the proxy never forwards or silently strips an unresolved sentinel. Request bodies are scanned as a stream with a bounded carry window, so substitution also works when a sentinel crosses chunk boundaries or appears in a large upload.
+The CA is generated once per Gateway start under the state directory. Its directory is mode `0700`, its private keys are mode `0600`, it is removed during Gateway shutdown, and Afora never installs it in a system trust store. Requests fail closed when a sentinel cannot be authenticated or resolved; the proxy never forwards or silently strips an unresolved sentinel. Request bodies are scanned as a stream with a bounded carry window, so substitution also works when a sentinel crosses chunk boundaries or appears in a large upload.
 
 `bypassHosts` contains exact hostnames that must remain end-to-end TLS for certificate-pinned clients. Those hosts use an authenticated blind CONNECT tunnel. No substitution is possible inside the tunnel; a sentinel sent there is safe by construction because it is authenticated ciphertext rather than a credential, so the vendor sees an invalid credential and rejects it.
 
@@ -394,7 +394,7 @@ Use a file SecretRef on a supported credential field instead:
     providers: {
       xai_key_file: {
         source: "file",
-        path: "~/.openclaw/secrets/xai-api-key.txt",
+        path: "~/.afora/secrets/xai-api-key.txt",
         mode: "singleValue",
       },
     },
@@ -460,7 +460,7 @@ For a dedicated 1Password guide covering service accounts, the bundled agent ski
 
   </Accordion>
   <Accordion title="Bitwarden Secrets Manager (`bws`)">
-    Use a resolver wrapper to map SecretRef ids to Bitwarden Secrets Manager item keys. The repository includes `scripts/secrets/openclaw-bws-resolver.mjs`; install or copy it to an absolute trusted path on the host that runs the Gateway.
+    Use a resolver wrapper to map SecretRef ids to Bitwarden Secrets Manager item keys. The repository includes `scripts/secrets/afora-bws-resolver.mjs`; install or copy it to an absolute trusted path on the host that runs the Gateway.
 
     Requirements:
 
@@ -475,7 +475,7 @@ For a dedicated 1Password guide covering service accounts, the bundled agent ski
         providers: {
           bws: {
             source: "exec",
-            command: "/usr/local/bin/openclaw-bws-resolver.mjs",
+            command: "/usr/local/bin/afora-bws-resolver.mjs",
             passEnv: ["BWS_ACCESS_TOKEN", "BWS_SERVER_URL", "PATH", "BWS_BIN"],
             jsonOnly: true,
           },
@@ -489,7 +489,7 @@ For a dedicated 1Password guide covering service accounts, the bundled agent ski
             apiKey: {
               source: "exec",
               provider: "bws",
-              id: "openclaw/providers/openai/apiKey",
+              id: "afora-agent/providers/openai/apiKey",
             },
           },
         },
@@ -497,10 +497,10 @@ For a dedicated 1Password guide covering service accounts, the bundled agent ski
     }
     ```
 
-    The resolver batches requested ids, runs `bws secret list`, and returns values for matching secret `key` fields. Use keys that satisfy the exec SecretRef id contract, such as `openclaw/providers/openai/apiKey`; env-var-style keys with underscores are rejected before the resolver runs. If more than one visible Bitwarden secret shares the requested key, the resolver fails that id as ambiguous instead of guessing. After updating config, verify the resolver path:
+    The resolver batches requested ids, runs `bws secret list`, and returns values for matching secret `key` fields. Use keys that satisfy the exec SecretRef id contract, such as `afora/providers/openai/apiKey`; env-var-style keys with underscores are rejected before the resolver runs. If more than one visible Bitwarden secret shares the requested key, the resolver fails that id as ambiguous instead of guessing. After updating config, verify the resolver path:
 
     ```bash
-    openclaw secrets audit --allow-exec
+    afora secrets audit --allow-exec
     ```
 
   </Accordion>
@@ -513,7 +513,7 @@ For a dedicated 1Password guide covering service accounts, the bundled agent ski
             source: "exec",
             command: "/absolute/non-symlink/path/to/vault",
             trustedDirs: ["/absolute/non-symlink/path/to"],
-            args: ["kv", "get", "-field=OPENAI_API_KEY", "secret/openclaw"],
+            args: ["kv", "get", "-field=OPENAI_API_KEY", "secret/afora"],
             passEnv: ["VAULT_ADDR", "VAULT_TOKEN"],
             jsonOnly: false,
           },
@@ -532,7 +532,7 @@ For a dedicated 1Password guide covering service accounts, the bundled agent ski
     ```
   </Accordion>
   <Accordion title="password-store (`pass`)">
-    Use a small resolver wrapper to map SecretRef ids directly to `pass` entries. Save this as an executable at an absolute path that passes your exec-provider path checks, for example `/usr/local/bin/openclaw-pass-resolver`. The `#!/usr/bin/env node` shebang resolves `node` from the resolver process `PATH`, so include `PATH` in `passEnv`. If `pass` is not on that `PATH`, set `PASS_BIN` in the parent environment and include it in `passEnv` too:
+    Use a small resolver wrapper to map SecretRef ids directly to `pass` entries. Save this as an executable at an absolute path that passes your exec-provider path checks, for example `/usr/local/bin/afora-pass-resolver`. The `#!/usr/bin/env node` shebang resolves `node` from the resolver process `PATH`, so include `PATH` in `passEnv`. If `pass` is not on that `PATH`, set `PASS_BIN` in the parent environment and include it in `passEnv` too:
 
     ```js
     #!/usr/bin/env node
@@ -581,7 +581,7 @@ For a dedicated 1Password guide covering service accounts, the bundled agent ski
         providers: {
           pass_store: {
             source: "exec",
-            command: "/usr/local/bin/openclaw-pass-resolver",
+            command: "/usr/local/bin/afora-pass-resolver",
             passEnv: ["PATH", "HOME", "GNUPGHOME", "GPG_TTY", "PASSWORD_STORE_DIR", "PASS_BIN"],
             jsonOnly: true,
           },
@@ -595,7 +595,7 @@ For a dedicated 1Password guide covering service accounts, the bundled agent ski
             apiKey: {
               source: "exec",
               provider: "pass_store",
-              id: "openclaw/providers/openai/apiKey",
+              id: "afora-agent/providers/openai/apiKey",
             },
           },
         },
@@ -606,8 +606,8 @@ For a dedicated 1Password guide covering service accounts, the bundled agent ski
     Keep the secret on the first line of the `pass` entry, or customize the wrapper to return the full `pass show` output instead. After updating config, verify both the static audit and the exec resolver path:
 
     ```bash
-    openclaw secrets audit --check
-    openclaw secrets audit --allow-exec
+    afora secrets audit --check
+    afora secrets audit --allow-exec
     ```
 
   </Accordion>
@@ -698,7 +698,7 @@ The core `ssh` sandbox backend also supports SecretRefs for SSH auth material:
 
 Runtime behavior:
 
-- OpenClaw resolves these refs during sandbox activation, not lazily on each SSH call.
+- Afora resolves these refs during sandbox activation, not lazily on each SSH call.
 - Resolved values are written to a temp directory with restrictive file permissions (`0o600`) and used in the generated SSH config.
 - If the effective sandbox backend is not `ssh` (or sandbox mode is `off`), these refs stay inactive and do not block startup.
 
@@ -715,12 +715,12 @@ Runtime-minted or rotating credentials and OAuth refresh material are intentiona
 - Field without a ref: unchanged.
 - Field with a ref: required on active surfaces during activation.
 - If both plaintext and ref are present, the ref takes precedence on supported precedence paths.
-- The redaction sentinel `__OPENCLAW_REDACTED__` is reserved for internal config redaction/restore and is rejected as literal submitted config data.
+- The redaction sentinel `__AFORA_REDACTED__` is reserved for internal config redaction/restore and is rejected as literal submitted config data.
 
 Warning and audit signals:
 
 - `SECRETS_REF_OVERRIDES_PLAINTEXT` (runtime warning)
-- `REF_SHADOWED` (audit finding when SQLite auth-profile credentials take precedence over `openclaw.json` refs)
+- `REF_SHADOWED` (audit finding when SQLite auth-profile credentials take precedence over `afora.json` refs)
 - `STORE_PLAINTEXT_RESIDUE` (audit finding when a stored name still has an equivalent plaintext config value)
 
 Google Chat `serviceAccount` accepts inline JSON or a SecretRef. Doctor moves the retired sibling `serviceAccountRef` into this canonical field when it is unset.
@@ -747,7 +747,7 @@ Activation contract:
 
 ## Degraded and recovered signals
 
-When reload-time activation fails after a healthy state, OpenClaw enters degraded secrets state, emitting one-shot system events and log codes:
+When reload-time activation fails after a healthy state, Afora enters degraded secrets state, emitting one-shot system events and log codes:
 
 - `SECRETS_RELOADER_DEGRADED`
 - `SECRETS_RELOADER_RECOVERED`
@@ -758,8 +758,8 @@ Behavior:
 - Recovered: emitted once after the next successful activation.
 - Repeated failures while already degraded log warnings but do not re-emit the event.
 - A strict startup failure never emits a degraded event, because runtime never became active. A successful startup with cold owners logs the owner degradation but does not emit a reloader event.
-- Ref-scoped startup and reload failures emit a structured `SECRETS_DEGRADED` warning for each affected owner. Provider-scoped outages emit one `SECRETS_PROVIDER_DEGRADED` warning with the provider and complete affected-owner list instead of repeating the provider failure per owner. Warnings include a redacted reason, `cold` or `stale` owner state, and the `openclaw secrets reload` retry hint. They never include resolved values or SecretRef ids.
-- `openclaw doctor` lists cold and stale owners with their affected config paths, redacted reason, and retry guidance.
+- Ref-scoped startup and reload failures emit a structured `SECRETS_DEGRADED` warning for each affected owner. Provider-scoped outages emit one `SECRETS_PROVIDER_DEGRADED` warning with the provider and complete affected-owner list instead of repeating the provider failure per owner. Warnings include a redacted reason, `cold` or `stale` owner state, and the `afora secrets reload` retry hint. They never include resolved values or SecretRef ids.
+- `afora doctor` lists cold and stale owners with their affected config paths, redacted reason, and retry guidance.
 
 ## Command-path resolution
 
@@ -767,10 +767,10 @@ Command paths can opt into supported SecretRef resolution via a gateway snapshot
 
 <Tabs>
   <Tab title="Strict command paths">
-    For example `openclaw memory` remote-memory paths and `openclaw qr --remote` when it needs remote shared-secret refs. They read from the active snapshot and fail fast when a required SecretRef is unavailable.
+    For example `afora memory` remote-memory paths and `afora qr --remote` when it needs remote shared-secret refs. They read from the active snapshot and fail fast when a required SecretRef is unavailable.
   </Tab>
   <Tab title="Read-only command paths">
-    For example `openclaw status`, `openclaw status --all`, `openclaw channels status`, `openclaw channels resolve`, `openclaw security audit`, and read-only doctor/config repair flows. They also prefer the active snapshot, but degrade instead of aborting when a targeted SecretRef is unavailable.
+    For example `afora status`, `afora status --all`, `afora channels status`, `afora channels resolve`, `afora security audit`, and read-only doctor/config repair flows. They also prefer the active snapshot, but degrade instead of aborting when a targeted SecretRef is unavailable.
 
     Read-only behavior:
 
@@ -784,7 +784,7 @@ Command paths can opt into supported SecretRef resolution via a gateway snapshot
 
 Other notes:
 
-- Snapshot refresh after backend secret rotation is handled by `openclaw secrets reload`.
+- Snapshot refresh after backend secret rotation is handled by `afora secrets reload`.
 - Gateway RPC method used by these command paths: `secrets.resolve`.
 
 ## Audit and configure workflow
@@ -794,36 +794,36 @@ Default operator flow:
 <Steps>
   <Step title="Audit current state">
     ```bash
-    openclaw secrets audit --check
+    afora secrets audit --check
     ```
   </Step>
   <Step title="Configure and apply SecretRefs">
     ```bash
-    openclaw secrets configure --apply
+    afora secrets configure --apply
     ```
   </Step>
   <Step title="Re-audit">
     ```bash
-    openclaw secrets audit --check
+    afora secrets audit --check
     ```
   </Step>
 </Steps>
 
 Do not treat the migration as complete until the re-audit is clean. If the audit still reports plaintext values at rest, the agent-access risk remains even when runtime APIs return redacted values.
 
-If you save a plan instead of applying during `configure`, apply that saved plan with `openclaw secrets apply --from <plan-path>` before the re-audit.
+If you save a plan instead of applying during `configure`, apply that saved plan with `afora secrets apply --from <plan-path>` before the re-audit.
 
 <AccordionGroup>
   <Accordion title="secrets audit">
     Findings include:
 
-    - Plaintext values at rest (`openclaw.json`, SQLite auth-profile rows, `.env`, and generated `agents/*/agent/models.json`).
+    - Plaintext values at rest (`afora.json`, SQLite auth-profile rows, `.env`, and generated `agents/*/agent/models.json`).
     - Plaintext sensitive provider header residues in generated `models.json` entries.
     - Unresolved refs.
-    - Precedence shadowing (SQLite auth profiles taking priority over `openclaw.json` refs).
+    - Precedence shadowing (SQLite auth profiles taking priority over `afora.json` refs).
     - Store residue (a stored name still has an equivalent plaintext value in config).
 
-    Exec note: by default, audit skips exec SecretRef resolvability checks to avoid command side effects. Use `openclaw secrets audit --allow-exec` to execute exec providers during audit.
+    Exec note: by default, audit skips exec SecretRef resolvability checks to avoid command side effects. Use `afora secrets audit --allow-exec` to execute exec providers during audit.
 
     Header residue note: sensitive provider header detection is name-heuristic based (common auth/credential header names and fragments such as `authorization`, `x-api-key`, `token`, `secret`, `password`, and `credential`).
 
@@ -832,7 +832,7 @@ If you save a plan instead of applying during `configure`, apply that saved plan
     Interactive helper that:
 
     - Configures `secrets.providers` first (`env`/`file`/`exec`/`store`, add/edit/remove).
-    - Lets you select supported secret-bearing fields in `openclaw.json` plus the SQLite auth-profile store for one agent scope.
+    - Lets you select supported secret-bearing fields in `afora.json` plus the SQLite auth-profile store for one agent scope.
     - Can create a new auth-profile mapping directly in the target picker.
     - Captures SecretRef details (`source`, `provider`, `id`).
     - Runs preflight resolution and can apply immediately.
@@ -841,14 +841,14 @@ If you save a plan instead of applying during `configure`, apply that saved plan
 
     Helpful modes:
 
-    - `openclaw secrets configure --providers-only`
-    - `openclaw secrets configure --skip-provider-setup`
-    - `openclaw secrets configure --agent <id>`
+    - `afora secrets configure --providers-only`
+    - `afora secrets configure --skip-provider-setup`
+    - `afora secrets configure --agent <id>`
 
     `configure` apply defaults:
 
     - Scrub matching static credentials from SQLite auth-profile rows for targeted providers.
-    - Leave retired `auth.json` untouched; run `openclaw doctor --fix` to migrate and archive it.
+    - Leave retired `auth.json` untouched; run `afora doctor --fix` to migrate and archive it.
     - Scrub matching known secret lines from the effective state and active-config `.env` files (deduplicated when both paths match).
 
   </Accordion>
@@ -856,10 +856,10 @@ If you save a plan instead of applying during `configure`, apply that saved plan
     Apply a saved plan:
 
     ```bash
-    openclaw secrets apply --from /tmp/openclaw-secrets-plan.json
-    openclaw secrets apply --from /tmp/openclaw-secrets-plan.json --allow-exec
-    openclaw secrets apply --from /tmp/openclaw-secrets-plan.json --dry-run
-    openclaw secrets apply --from /tmp/openclaw-secrets-plan.json --dry-run --allow-exec
+    afora secrets apply --from /tmp/afora-secrets-plan.json
+    afora secrets apply --from /tmp/afora-secrets-plan.json --allow-exec
+    afora secrets apply --from /tmp/afora-secrets-plan.json --dry-run
+    afora secrets apply --from /tmp/afora-secrets-plan.json --dry-run --allow-exec
     ```
 
     Exec note: dry-run skips exec checks unless `--allow-exec` is set; write mode rejects plans containing exec SecretRefs/providers unless `--allow-exec` is set.
@@ -872,7 +872,7 @@ If you save a plan instead of applying during `configure`, apply that saved plan
 ## One-way safety policy
 
 <Warning>
-OpenClaw intentionally does not write rollback backups containing historical plaintext secret values.
+Afora intentionally does not write rollback backups containing historical plaintext secret values.
 </Warning>
 
 Safety model:

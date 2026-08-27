@@ -7,7 +7,7 @@
  */
 
 import crypto from "node:crypto";
-import { resolveGlobalSingleton } from "openclaw/plugin-sdk/global-singleton";
+import { resolveGlobalSingleton } from "afora-agent/plugin-sdk/global-singleton";
 
 interface PendingUpload {
   id: string;
@@ -21,7 +21,7 @@ interface PendingUpload {
 }
 
 const { pendingUploads, pendingUploadTimers } = resolveGlobalSingleton(
-  Symbol.for("openclaw.msteams.pendingUploadState"),
+  Symbol.for("afora.msteams.pendingUploadState"),
   () => ({
     pendingUploads: new Map<string, PendingUpload>(),
     /** Timer handles keyed by upload ID, cleared on explicit removal to prevent ghost cleanup. */

@@ -4,7 +4,7 @@ struct IPadSidebarScreenChrome<Content: View>: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     let title: String
     let subtitle: String
-    let headerSidebarAction: OpenClawSidebarHeaderAction?
+    let headerSidebarAction: AforaSidebarHeaderAction?
     let usesNativeNavigationChrome: Bool
     let gatewayAction: (() -> Void)?
     @ViewBuilder var content: Content
@@ -12,7 +12,7 @@ struct IPadSidebarScreenChrome<Content: View>: View {
     init(
         title: String,
         subtitle: String,
-        headerSidebarAction: OpenClawSidebarHeaderAction? = nil,
+        headerSidebarAction: AforaSidebarHeaderAction? = nil,
         usesNativeNavigationChrome: Bool = false,
         gatewayAction: (() -> Void)? = nil,
         @ViewBuilder content: () -> Content)
@@ -27,28 +27,28 @@ struct IPadSidebarScreenChrome<Content: View>: View {
 
     var body: some View {
         ZStack {
-            OpenClawProBackground()
+            AforaProBackground()
             ScrollView {
                 VStack(alignment: .leading, spacing: self.isCompactHeight ? 10 : 16) {
                     if !self.usesNativeNavigationChrome {
-                        OpenClawAdaptiveHeaderRow(
+                        AforaAdaptiveHeaderRow(
                             title: .localized(self.title),
                             subtitle: .localized(self.subtitle),
-                            titleFont: self.isCompactHeight ? OpenClawType.headline : OpenClawType.title2SemiBold,
+                            titleFont: self.isCompactHeight ? AforaType.headline : AforaType.title2SemiBold,
                             subtitleLineLimit: self.isCompactHeight ? 1 : 2)
                         {
                             if let headerSidebarAction {
-                                OpenClawSidebarHeaderLeadingSlot(action: headerSidebarAction)
+                                AforaSidebarHeaderLeadingSlot(action: headerSidebarAction)
                             }
                         } accessory: {
                             self.gatewayPill
                         }
-                        .padding(.horizontal, OpenClawProMetric.pagePadding)
+                        .padding(.horizontal, AforaProMetric.pagePadding)
                     }
                     self.content
                 }
                 .padding(.vertical, self.isCompactHeight ? 10 : 18)
-                .font(OpenClawType.body)
+                .font(AforaType.body)
             }
             .safeAreaPadding(.bottom, self.bottomScrollInset)
         }
@@ -65,7 +65,7 @@ struct IPadSidebarScreenChrome<Content: View>: View {
                 }
             }
             if self.usesNativeNavigationChrome, let headerSidebarAction {
-                OpenClawSidebarToolbarItem(
+                AforaSidebarToolbarItem(
                     action: headerSidebarAction,
                     placement: .topBarLeading)
             }
@@ -80,17 +80,17 @@ struct IPadSidebarScreenChrome<Content: View>: View {
     private var gatewayPill: some View {
         if let gatewayAction {
             Button(action: gatewayAction) {
-                OpenClawGatewayCompactPill()
+                AforaGatewayCompactPill()
             }
             .buttonBorderShape(.capsule)
-            .openClawGlassButton()
+            .aforaGlassButton()
             .accessibilityHint("Opens Settings / Gateway")
         } else {
-            OpenClawGatewayCompactPill()
+            AforaGatewayCompactPill()
         }
     }
 
     private var bottomScrollInset: CGFloat {
-        self.isCompactHeight ? 150 : OpenClawProMetric.bottomScrollInset
+        self.isCompactHeight ? 150 : AforaProMetric.bottomScrollInset
     }
 }

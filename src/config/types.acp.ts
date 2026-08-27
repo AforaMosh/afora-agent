@@ -1,5 +1,5 @@
 // Defines ACP session and runtime configuration types.
-import type { AcpSessionUpdateTag } from "@openclaw/acp-core/runtime/types";
+import type { AcpSessionUpdateTag } from "@afora/acp-core/runtime/types";
 
 export type AcpDispatchConfig = {
   /** Master switch for ACP turn dispatch in the reply pipeline. */
@@ -13,7 +13,7 @@ export type AcpStreamConfig = {
   deliveryMode?: "live" | "final_only";
   /**
    * Per-sessionUpdate visibility overrides.
-   * Keys not listed here fall back to OpenClaw defaults.
+   * Keys not listed here fall back to Afora defaults.
    */
   tagVisibility?: Partial<Record<AcpSessionUpdateTag, boolean>>;
 };

@@ -1,9 +1,9 @@
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { replaceSessionEntry } from "../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { withTempHome } from "../plugin-sdk/test-env.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
 import { createPluginRecord } from "./loader-records.js";
 import { createPluginRegistry } from "./registry.js";
 import { createPluginRuntime } from "./runtime/index.js";
@@ -62,9 +62,9 @@ describe("plugin registry SQLite session ownership", () => {
           enabled: true,
           configSchema: false,
         });
-        const ownerApi = pluginRegistry.createApi(ownerRecord, { config: {} as OpenClawConfig });
+        const ownerApi = pluginRegistry.createApi(ownerRecord, { config: {} as AforaConfig });
         const callerApi = pluginRegistry.createApi(callerRecord, {
-          config: {} as OpenClawConfig,
+          config: {} as AforaConfig,
         });
         ownerApi.registerAgentHarness({
           id: "test-harness",
@@ -97,7 +97,7 @@ describe("plugin registry SQLite session ownership", () => {
         ).rejects.toThrow('owned by plugin "harness-owner"');
         expect(runEmbeddedAgent).toHaveBeenCalledOnce();
       } finally {
-        closeOpenClawAgentDatabasesForTest();
+        closeAforaAgentDatabasesForTest();
       }
     });
   });

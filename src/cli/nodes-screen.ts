@@ -1,6 +1,6 @@
 // Screen-recording payload helpers for node media commands.
 import * as path from "node:path";
-import { extnameFromAnyPath } from "@openclaw/media-core/file-name";
+import { extnameFromAnyPath } from "@afora/media-core/file-name";
 import {
   parseScreenSnapshotResult,
   type ScreenSnapshotResult,
@@ -39,7 +39,7 @@ export function parseScreenRecordPayload(value: unknown): ScreenRecordPayload {
 /** Build the temp output path for a screen recording artifact. */
 export function screenRecordTempPath(opts: { ext: string; tmpDir?: string; id?: string }) {
   const { tmpDir, id, ext } = resolveTempPathParts(opts);
-  return path.join(tmpDir, `openclaw-screen-record-${id}${ext}`);
+  return path.join(tmpDir, `afora-screen-record-${id}${ext}`);
 }
 
 /** Decode and write a screen recording payload to disk. */
@@ -78,7 +78,7 @@ export function screenSnapshotTempPath(opts: { ext: string; tmpDir?: string; id?
   // No default extension: the node chooses the encoding, and assuming PNG here
   // is how a JPEG snapshot ends up named `.png`.
   const { tmpDir, id, ext } = resolveTempPathParts(opts);
-  return path.join(tmpDir, `openclaw-screen-snapshot-${id}${ext}`);
+  return path.join(tmpDir, `afora-screen-snapshot-${id}${ext}`);
 }
 
 /** Decode and write a screen snapshot payload to disk. */

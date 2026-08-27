@@ -1,8 +1,8 @@
 import {
   asOptionalObjectRecord,
   asOptionalRecord as readRecordField,
-} from "@openclaw/normalization-core/record-coerce";
-import { readStringValue } from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/record-coerce";
+import { readStringValue } from "@afora/normalization-core/string-coerce";
 import {
   emitAgentActivityEvent,
   type AgentCommandOutputEventData,

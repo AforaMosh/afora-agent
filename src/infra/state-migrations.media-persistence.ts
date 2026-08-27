@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
   decodeSessionArchiveBytes,
   encodeSessionArchiveContent,
@@ -17,20 +17,20 @@ import {
   canonicalizePersistedUserMessageMedia,
   hasMeaningfulRetiredMediaCarrier,
 } from "../media/media-facts.js";
-import { assertOpenClawAgentDatabaseOwner } from "../state/openclaw-agent-db-maintenance.js";
-import { registerOpenClawAgentDatabase } from "../state/openclaw-agent-db-registry.js";
-import { assertOpenClawAgentSchemaContains } from "../state/openclaw-agent-db-schema-helpers.js";
+import { assertAforaAgentDatabaseOwner } from "../state/afora-agent-db-maintenance.js";
+import { registerAforaAgentDatabase } from "../state/afora-agent-db-registry.js";
+import { assertAforaAgentSchemaContains } from "../state/afora-agent-db-schema-helpers.js";
 import {
-  ensureOpenClawAgentDatabaseSchema,
-  migrateOpenClawAgentDatabaseToMediaPrerequisiteSchema,
-} from "../state/openclaw-agent-db-schema.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../state/openclaw-agent-db.generated.js";
+  ensureAforaAgentDatabaseSchema,
+  migrateAforaAgentDatabaseToMediaPrerequisiteSchema,
+} from "../state/afora-agent-db-schema.js";
+import type { DB as AforaAgentKyselyDatabase } from "../state/afora-agent-db.generated.js";
 import {
-  OPENCLAW_AGENT_SCHEMA_VERSION,
-  type OpenClawAgentDatabase,
-} from "../state/openclaw-agent-db.js";
-import { OPENCLAW_AGENT_SCHEMA_SQL } from "../state/openclaw-agent-schema.js";
-import { OPENCLAW_SQLITE_BUSY_TIMEOUT_MS } from "../state/openclaw-state-db.js";
+  AFORA_AGENT_SCHEMA_VERSION,
+  type AforaAgentDatabase,
+} from "../state/afora-agent-db.js";
+import { AFORA_AGENT_SCHEMA_SQL } from "../state/afora-agent-schema.js";
+import { AFORA_SQLITE_BUSY_TIMEOUT_MS } from "../state/afora-state-db.js";
 import { VERSION } from "../version.js";
 import { repairGatewayAgentMediaMigrationStartupFailures } from "./gateway-boot-lifecycle.js";
 import {
@@ -46,11 +46,11 @@ import { readSqliteUserVersion } from "./sqlite-user-version.js";
 import { resolveAgentDatabaseMigrationTargets } from "./state-migrations.media-persistence-targets.js";
 import type { MigrationMessages } from "./state-migrations.types.js";
 
-const PREVIOUS_MEDIA_SCHEMA_VERSION = OPENCLAW_AGENT_SCHEMA_VERSION - 1;
+const PREVIOUS_MEDIA_SCHEMA_VERSION = AFORA_AGENT_SCHEMA_VERSION - 1;
 const ARCHIVE_TEMP_MARKER = ".media-retirement";
 
 type MediaMigrationDatabase = Pick<
-  OpenClawAgentKyselyDatabase,
+  AforaAgentKyselyDatabase,
   "schema_meta" | "session_windows" | "trajectory_runtime_events" | "transcript_events"
 >;
 
@@ -295,7 +295,7 @@ function createMigrationDatabaseHandle(
   database: DatabaseSync,
   agentId: string,
   pathname: string,
-): OpenClawAgentDatabase {
+): AforaAgentDatabase {
   return {
     agentId,
     db: database,
@@ -311,18 +311,18 @@ function migrateAgentDatabase(params: {
 }): { rewrittenSessions: number; rewrittenTrajectoryRows: number; versionAdvanced: boolean } {
   const database = openNodeSqliteDatabase(params.pathname);
   try {
-    database.exec(`PRAGMA busy_timeout = ${OPENCLAW_SQLITE_BUSY_TIMEOUT_MS};`);
-    let metadata = assertOpenClawAgentDatabaseOwner(database, {
+    database.exec(`PRAGMA busy_timeout = ${AFORA_SQLITE_BUSY_TIMEOUT_MS};`);
+    let metadata = assertAforaAgentDatabaseOwner(database, {
       agentId: params.agentId,
       pathname: params.pathname,
     });
     let userVersion = readSqliteUserVersion(database);
     if (userVersion <= PREVIOUS_MEDIA_SCHEMA_VERSION) {
-      migrateOpenClawAgentDatabaseToMediaPrerequisiteSchema(database, {
+      migrateAforaAgentDatabaseToMediaPrerequisiteSchema(database, {
         agentId: params.agentId,
         path: params.pathname,
       });
-      metadata = assertOpenClawAgentDatabaseOwner(database, {
+      metadata = assertAforaAgentDatabaseOwner(database, {
         agentId: params.agentId,
         pathname: params.pathname,
       });
@@ -330,10 +330,10 @@ function migrateAgentDatabase(params: {
     }
     if (
       userVersion !== PREVIOUS_MEDIA_SCHEMA_VERSION &&
-      userVersion !== OPENCLAW_AGENT_SCHEMA_VERSION
+      userVersion !== AFORA_AGENT_SCHEMA_VERSION
     ) {
       throw new Error(
-        `${params.pathname} uses schema version ${userVersion}; expected ${PREVIOUS_MEDIA_SCHEMA_VERSION} or ${OPENCLAW_AGENT_SCHEMA_VERSION}`,
+        `${params.pathname} uses schema version ${userVersion}; expected ${PREVIOUS_MEDIA_SCHEMA_VERSION} or ${AFORA_AGENT_SCHEMA_VERSION}`,
       );
     }
     if (metadata.schemaVersion !== userVersion) {
@@ -341,22 +341,22 @@ function migrateAgentDatabase(params: {
         `${params.pathname} metadata schema version ${metadata.schemaVersion ?? "invalid"} does not match ${userVersion}`,
       );
     }
-    if (userVersion === OPENCLAW_AGENT_SCHEMA_VERSION) {
+    if (userVersion === AFORA_AGENT_SCHEMA_VERSION) {
       // Doctor can encounter a current-version database before newly additive schema exists.
       // Converge it through the canonical agent-schema owner before media validation.
-      ensureOpenClawAgentDatabaseSchema(database, {
+      ensureAforaAgentDatabaseSchema(database, {
         agentId: params.agentId,
         path: params.pathname,
       });
     }
     // Remove after 2026-10-12: drop the v15-to-v16 media cutover once schema 16 is the support floor.
     if (userVersion === PREVIOUS_MEDIA_SCHEMA_VERSION) {
-      repairCanonicalSqliteIndexes(database, params.pathname, OPENCLAW_AGENT_SCHEMA_SQL, {
+      repairCanonicalSqliteIndexes(database, params.pathname, AFORA_AGENT_SCHEMA_SQL, {
         validateAfterRepair: () =>
-          assertOpenClawAgentSchemaContains(database, params.pathname, OPENCLAW_AGENT_SCHEMA_SQL),
+          assertAforaAgentSchemaContains(database, params.pathname, AFORA_AGENT_SCHEMA_SQL),
       });
     }
-    assertOpenClawAgentSchemaContains(database, params.pathname, OPENCLAW_AGENT_SCHEMA_SQL);
+    assertAforaAgentSchemaContains(database, params.pathname, AFORA_AGENT_SCHEMA_SQL);
     const planned = planTranscriptRows(database, params.pathname);
     const db = getNodeSqliteKysely<MediaMigrationDatabase>(database);
     const plannedTrajectoryRows = executeSqliteQuerySync(
@@ -420,14 +420,14 @@ function migrateAgentDatabase(params: {
           );
         }
         if (versionAdvanced) {
-          database.exec(`PRAGMA user_version = ${OPENCLAW_AGENT_SCHEMA_VERSION};`);
+          database.exec(`PRAGMA user_version = ${AFORA_AGENT_SCHEMA_VERSION};`);
           executeSqliteQuerySync(
             database,
             db
               .updateTable("schema_meta")
               .set({
                 app_version: VERSION,
-                schema_version: OPENCLAW_AGENT_SCHEMA_VERSION,
+                schema_version: AFORA_AGENT_SCHEMA_VERSION,
                 updated_at: Date.now(),
               })
               .where("meta_key", "=", "primary"),
@@ -435,7 +435,7 @@ function migrateAgentDatabase(params: {
         }
       },
       {
-        busyTimeoutMs: OPENCLAW_SQLITE_BUSY_TIMEOUT_MS,
+        busyTimeoutMs: AFORA_SQLITE_BUSY_TIMEOUT_MS,
         databaseLabel: params.pathname,
         operationLabel: "media-persistence-retirement",
       },
@@ -631,7 +631,7 @@ export function migrateLegacyMediaPersistence(
         pathname,
       });
       if (entry.source !== "registry" || result.versionAdvanced) {
-        registerOpenClawAgentDatabase({ agentId: entry.agentId, env, path: pathname });
+        registerAforaAgentDatabase({ agentId: entry.agentId, env, path: pathname });
       }
       if (
         result.versionAdvanced ||
@@ -639,7 +639,7 @@ export function migrateLegacyMediaPersistence(
         result.rewrittenTrajectoryRows > 0
       ) {
         changes.push(
-          `Migrated media persistence in ${pathname}: ${result.rewrittenSessions} transcript session(s), ${result.rewrittenTrajectoryRows} trajectory row(s), schema v${OPENCLAW_AGENT_SCHEMA_VERSION}.`,
+          `Migrated media persistence in ${pathname}: ${result.rewrittenSessions} transcript session(s), ${result.rewrittenTrajectoryRows} trajectory row(s), schema v${AFORA_AGENT_SCHEMA_VERSION}.`,
         );
       }
     } catch (error) {

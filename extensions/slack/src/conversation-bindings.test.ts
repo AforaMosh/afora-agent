@@ -2,19 +2,19 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { closeOpenClawStateDatabaseForTest } from "openclaw/plugin-sdk/plugin-state-test-runtime";
+import { closeAforaStateDatabaseForTest } from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import {
   createTestRegistry,
   setActivePluginRegistry,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
 import {
   getSessionBindingService,
   testing as sessionBindingTesting,
-} from "openclaw/plugin-sdk/session-binding-runtime";
+} from "afora-agent/plugin-sdk/session-binding-runtime";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { slackPlugin } from "./channel.js";
 import { registerSlackInstallationState } from "./installation-identity-state.js";
-import type { OpenClawConfig } from "./runtime-api.js";
+import type { AforaConfig } from "./runtime-api.js";
 import { setSlackRuntime } from "./runtime.js";
 
 type SlackInstallationStateRegistration = ReturnType<typeof registerSlackInstallationState>;
@@ -26,15 +26,15 @@ const CONVERSATION = {
 };
 
 describe("Slack runtime conversation bindings", () => {
-  let cfg: OpenClawConfig;
+  let cfg: AforaConfig;
   let previousStateDir: string | undefined;
   let testStateDir = "";
   let installationState: SlackInstallationStateRegistration;
 
   beforeEach(async () => {
-    previousStateDir = process.env.OPENCLAW_STATE_DIR;
-    testStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-slack-bindings-"));
-    process.env.OPENCLAW_STATE_DIR = testStateDir;
+    previousStateDir = process.env.AFORA_STATE_DIR;
+    testStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-slack-bindings-"));
+    process.env.AFORA_STATE_DIR = testStateDir;
     cfg = { channels: { slack: {} } };
     setSlackRuntime({ config: { current: () => cfg } } as never);
     setActivePluginRegistry(
@@ -47,12 +47,12 @@ describe("Slack runtime conversation bindings", () => {
   afterEach(async () => {
     installationState.release();
     sessionBindingTesting.resetSessionBindingAdaptersForTests();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     setSlackRuntime(null as never);
     if (previousStateDir === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.AFORA_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = previousStateDir;
+      process.env.AFORA_STATE_DIR = previousStateDir;
     }
     await fs.rm(testStateDir, { recursive: true, force: true });
   });

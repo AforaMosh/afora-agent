@@ -3,13 +3,13 @@ import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
-import { resolveModelRefFromString } from "openclaw/plugin-sdk/agent-runtime";
-import { formatErrorMessage as formatQaErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { formatMemoryDreamingDay } from "openclaw/plugin-sdk/memory-core-host-status";
-import { resolveSessionTranscriptsDirForAgent } from "openclaw/plugin-sdk/memory-host-core";
-import { createPluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-store-runtime";
-import { buildAgentSessionKey } from "openclaw/plugin-sdk/routing";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { resolveModelRefFromString } from "afora-agent/plugin-sdk/agent-runtime";
+import { formatErrorMessage as formatQaErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { formatMemoryDreamingDay } from "afora-agent/plugin-sdk/memory-core-host-status";
+import { resolveSessionTranscriptsDirForAgent } from "afora-agent/plugin-sdk/memory-host-core";
+import { createPluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-store-runtime";
+import { buildAgentSessionKey } from "afora-agent/plugin-sdk/routing";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import * as browserRuntime from "./browser-runtime.js";
 import * as cronRunWait from "./cron-run-wait.js";
 import * as discoveryEval from "./discovery-eval.js";
@@ -56,7 +56,7 @@ function setActiveMemorySessionDisabled(
     maxEntries: 10_000,
     env: {
       ...process.env,
-      OPENCLAW_STATE_DIR: path.join(env.gateway.tempRoot, "state"),
+      AFORA_STATE_DIR: path.join(env.gateway.tempRoot, "state"),
     },
   });
   const key = activeMemoryToggleKey(sessionKey);
@@ -116,11 +116,11 @@ export async function runQaSuiteScenarioSteps(
   const stepResults: QaSuiteScenarioResult["steps"] = [];
   for (const step of steps) {
     try {
-      if (process.env.OPENCLAW_QA_DEBUG === "1") {
+      if (process.env.AFORA_QA_DEBUG === "1") {
         console.error(`[qa-suite] start scenario="${name}" step="${step.name}"`);
       }
       const details = await step.run();
-      if (process.env.OPENCLAW_QA_DEBUG === "1") {
+      if (process.env.AFORA_QA_DEBUG === "1") {
         console.error(`[qa-suite] pass scenario="${name}" step="${step.name}"`);
       }
       stepResults.push({
@@ -134,7 +134,7 @@ export async function runQaSuiteScenarioSteps(
         stepResults.push({ name: step.name, status: "skip", details });
         return { name, status: "skip", steps: stepResults, details };
       }
-      if (process.env.OPENCLAW_QA_DEBUG === "1") {
+      if (process.env.AFORA_QA_DEBUG === "1") {
         console.error(`[qa-suite] fail scenario="${name}" step="${step.name}" details=${details}`);
       }
       stepResults.push({ name: step.name, status: "fail", details });

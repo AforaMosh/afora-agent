@@ -1,6 +1,6 @@
 // Synology Chat plugin module implements gateway runtime behavior.
-import { DEFAULT_ACCOUNT_ID, type OpenClawConfig } from "openclaw/plugin-sdk/account-resolution";
-import { registerPluginHttpRoute } from "openclaw/plugin-sdk/webhook-ingress";
+import { DEFAULT_ACCOUNT_ID, type AforaConfig } from "afora-agent/plugin-sdk/account-resolution";
+import { registerPluginHttpRoute } from "afora-agent/plugin-sdk/webhook-ingress";
 import { listAccountIds, resolveAccount } from "./accounts.js";
 import { resolveSynologyPublicWebhookRouteKey } from "./hosted-media-route.js";
 import { dispatchSynologyChatInboundEvent } from "./inbound-event.js";
@@ -78,7 +78,7 @@ function createUnknownArgsLogAdapter(
 }
 
 function collectSynologyGatewayStartupIssues(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   account: ResolvedSynologyChatAccount;
   accountId: string;
 }): SynologyGatewayStartupIssue[] {
@@ -174,7 +174,7 @@ function collectSynologyGatewayStartupIssues(params: {
 }
 
 export function collectSynologyGatewayRoutingFindings(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   account: ResolvedSynologyChatAccount;
 }) {
   return collectSynologyGatewayStartupIssues({
@@ -197,7 +197,7 @@ export function collectSynologyGatewayRoutingFindings(params: {
 }
 
 export function validateSynologyGatewayAccountStartup(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   account: ResolvedSynologyChatAccount;
   accountId: string;
   log?: SynologyGatewayLog;
@@ -211,7 +211,7 @@ export function validateSynologyGatewayAccountStartup(params: {
 }
 
 export async function registerSynologyWebhookRoute(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   account: ResolvedSynologyChatAccount;
   accountId: string;
   log?: SynologyGatewayLog;

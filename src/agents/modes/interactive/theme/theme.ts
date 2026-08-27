@@ -541,7 +541,7 @@ export function loadThemeFromPath(themePath: string, mode?: ColorMode): Theme {
 // ============================================================================
 
 // Use globalThis to share theme across module loaders (tsx + jiti in dev mode)
-const THEME_KEY = Symbol.for("openclaw:agent-theme");
+const THEME_KEY = Symbol.for("afora:agent-theme");
 
 // Export theme as a getter that reads from globalThis
 // This ensures all module instances (tsx, jiti) see the same theme

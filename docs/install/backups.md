@@ -1,17 +1,17 @@
 ---
-summary: "Back up OpenClaw state: archives, per-database snapshots, scheduling, offsite copies, and continuous replication"
+summary: "Back up Afora state: archives, per-database snapshots, scheduling, offsite copies, and continuous replication"
 read_when:
-  - You want a backup routine for an OpenClaw install instead of a one-off archive
+  - You want a backup routine for an Afora install instead of a one-off archive
   - You want scheduled, offsite, or continuous backups without copying the whole database every time
-  - You need to restore OpenClaw state from a backup
+  - You need to restore Afora state from a backup
 title: "Backups"
 ---
 
 # Backups
 
-OpenClaw keeps its authoritative state in SQLite: one global control-plane
+Afora keeps its authoritative state in SQLite: one global control-plane
 database plus one database per agent, all under the state directory (usually
-`~/.openclaw`). See [Database schemas](/reference/database-schemas) for the
+`~/.afora`). See [Database schemas](/reference/database-schemas) for the
 exact layout. This guide covers protecting that state: one-off archives,
 per-database snapshots, scheduling, offsite copies, and continuous
 replication for installs that should not re-upload whole databases on every
@@ -33,9 +33,9 @@ committed state safely.
 
 ## Choose a path
 
-- One-off, everything, portable: `openclaw backup create` archive.
-- One database, compact and verified: `openclaw backup sqlite create`.
-- Versioned and incremental by content: `openclaw backup git create`.
+- One-off, everything, portable: `afora backup create` archive.
+- One database, compact and verified: `afora backup sqlite create`.
+- Versioned and incremental by content: `afora backup git create`.
 - Regular protection: provision the Gateway-owned backup automation.
 - Continuous, incremental, seconds of data loss: replicate the databases with
   Litestream.
@@ -43,7 +43,7 @@ committed state safely.
 ## Full archives
 
 ```bash
-openclaw backup create --output ~/Backups/openclaw --verify
+afora backup create --output ~/Backups/afora --verify
 ```
 
 This writes a timestamped `.tar.gz` covering state, config, credentials,
@@ -59,21 +59,21 @@ daily routine for small installs. For large workspaces or frequent backups,
 prefer snapshots or continuous replication below.
 
 On ephemeral container hosts, keep the archive outside the container and use
-`openclaw backup restore` as the disaster-recovery primitive for rebuilding a
+`afora backup restore` as the disaster-recovery primitive for rebuilding a
 fresh persistent state tree. Restore stages files only; activation remains an
 explicit offline deployment step.
 
 ## Per-database snapshots
 
 ```bash
-openclaw backup sqlite create --global --repository ~/Backups/openclaw-sqlite
-openclaw backup sqlite create --agent main --repository ~/Backups/openclaw-sqlite
+afora backup sqlite create --global --repository ~/Backups/afora-sqlite
+afora backup sqlite create --agent main --repository ~/Backups/afora-sqlite
 ```
 
 Each run publishes one verified snapshot directory (`manifest.json` plus
 `database.sqlite`) into the repository directory. Snapshots are vacuumed, so
 deleted-page remnants do not inflate them, and every snapshot records a
-SHA-256 that `openclaw backup sqlite verify` rechecks later.
+SHA-256 that `afora backup sqlite verify` rechecks later.
 
 Snapshot repositories are local directories. Scheduling, upload, retention,
 and restore-on-boot are intentionally left to the operator; the sections
@@ -87,8 +87,8 @@ Pushing requires the repository to have an `origin` remote first, so
 initialize it once before enabling a pushed schedule:
 
 ```bash
-openclaw backup git init --repository ~/Backups/openclaw-git --remote git@github.com:you/openclaw-backups.git
-openclaw backup enable --repository ~/Backups/openclaw-git --every 24h --push
+afora backup git init --repository ~/Backups/afora-git --remote git@github.com:you/afora-backups.git
+afora backup enable --repository ~/Backups/afora-git --every 24h --push
 ```
 
 `backup enable --push` refuses to schedule when no `origin` remote is
@@ -108,7 +108,7 @@ Use `--global-only` or `--agent <id>` to narrow the scope. Add
 the fixed scheduled job instead of creating another one. Disable it with:
 
 ```bash
-openclaw backup disable
+afora backup disable
 ```
 
 The Gateway must be reachable while enabling or disabling the schedule. There
@@ -119,8 +119,8 @@ example that snapshots the control-plane database and the `main` agent
 database:
 
 ```bash
-0 3 * * * openclaw backup sqlite create --global --repository "$HOME/Backups/openclaw-sqlite" --json >> "$HOME/Backups/openclaw-backup.log" 2>&1
-5 3 * * * openclaw backup sqlite create --agent main --repository "$HOME/Backups/openclaw-sqlite" --json >> "$HOME/Backups/openclaw-backup.log" 2>&1
+0 3 * * * afora backup sqlite create --global --repository "$HOME/Backups/afora-sqlite" --json >> "$HOME/Backups/afora-backup.log" 2>&1
+5 3 * * * afora backup sqlite create --agent main --repository "$HOME/Backups/afora-sqlite" --json >> "$HOME/Backups/afora-backup.log" 2>&1
 ```
 
 On macOS, a `launchd` job works the same way; on servers provisioned from the
@@ -129,8 +129,8 @@ emits one machine-readable result per run, so the log doubles as a backup
 audit trail. Prune old snapshot directories on your own retention schedule.
 
 Every non-dry-run archive, local SQLite snapshot, and Git backup attempt is
-also recorded in the shared state database. `openclaw status` shows the newest
-attempt, and `openclaw doctor` suggests a one-off or scheduled backup when no
+also recorded in the shared state database. `afora status` shows the newest
+attempt, and `afora doctor` suggests a one-off or scheduled backup when no
 successful run is recorded or the newest success is more than 14 days old.
 
 ## Copy backups offsite
@@ -139,7 +139,7 @@ Archives and snapshot repositories are plain files, so any sync tool works.
 An `rclone` example targeting an S3-compatible bucket:
 
 ```bash
-rclone sync ~/Backups/openclaw-sqlite remote:openclaw-backups/sqlite
+rclone sync ~/Backups/afora-sqlite remote:afora-backups/sqlite
 ```
 
 Because every archive and local snapshot is a full copy, offsite syncs re-upload
@@ -153,19 +153,19 @@ replication.
 Git-backed backups dump each selected database into deterministic `schema.sql`,
 `manifest.json`, and per-table JSONL files, then create one commit for the
 whole run. Unchanged database content produces no commit, so Git stores and
-pushes only content changes by construction. OpenClaw stages only the
+pushes only content changes by construction. Afora stages only the
 backup-owned `global` and `agents` paths, not unrelated files elsewhere in the
 repository.
 
 ```bash
-openclaw backup git init --repository ~/Backups/openclaw-git --remote <private-git-url>
-openclaw backup git create --repository ~/Backups/openclaw-git --all --push
-openclaw backup git log --repository ~/Backups/openclaw-git
+afora backup git init --repository ~/Backups/afora-git --remote <private-git-url>
+afora backup git create --repository ~/Backups/afora-git --all --push
+afora backup git log --repository ~/Backups/afora-git
 ```
 
-Use a repository dedicated to OpenClaw backups. Existing `global/` and
+Use a repository dedicated to Afora backups. Existing `global/` and
 `agents/<agentId>/` scopes must be empty or contain a valid schema-version-1
-OpenClaw backup manifest. OpenClaw refuses to replace any other scope, and an
+Afora backup manifest. Afora refuses to replace any other scope, and an
 `--all` run validates every existing agent scope before deleting stale
 backup-owned entries.
 
@@ -182,8 +182,8 @@ backup; see [Backup CLI](/cli/backup#versioned-git-backups) for the exact list.
 Verify or restore one database at any commit without overwriting a live file:
 
 ```bash
-openclaw backup git verify --repository ~/Backups/openclaw-git --ref <commit> --global
-openclaw backup git restore --repository ~/Backups/openclaw-git --ref <commit> --agent main --target ./restored-agent.sqlite
+afora backup git verify --repository ~/Backups/afora-git --ref <commit> --global
+afora backup git restore --repository ~/Backups/afora-git --ref <commit> --agent main --target ./restored-agent.sqlite
 ```
 
 Git restore converges derived search state: it rebuilds content-backed FTS5
@@ -194,24 +194,24 @@ table hashes, SQLite integrity, and foreign keys.
 ## Continuous replication with Litestream
 
 [Litestream](https://litestream.io) is an open-source replication daemon for
-SQLite. It runs alongside the Gateway with no OpenClaw changes: it watches
+SQLite. It runs alongside the Gateway with no Afora changes: it watches
 each database's write-ahead log and streams incremental changes to object
 storage, with periodic snapshots so restores stay fast. Only changed pages
 leave the machine, which makes it the right tool when backups must not
 re-upload whole databases.
 
-OpenClaw's databases run in WAL mode, which is Litestream's one hard
+Afora's databases run in WAL mode, which is Litestream's one hard
 requirement. A minimal `litestream.yml` replicating the control-plane
 database and one agent database to an S3-compatible bucket:
 
 ```yaml
 dbs:
-  - path: /home/user/.openclaw/state/openclaw.sqlite
+  - path: /home/user/.afora/state/afora.sqlite
     replicas:
-      - url: s3://openclaw-backups/state
-  - path: /home/user/.openclaw/agents/main/agent/openclaw-agent.sqlite
+      - url: s3://afora-backups/state
+  - path: /home/user/.afora/agents/main/agent/afora-agent.sqlite
     replicas:
-      - url: s3://openclaw-backups/agents/main
+      - url: s3://afora-backups/agents/main
 ```
 
 Run `litestream replicate` under your process supervisor, one entry per
@@ -219,7 +219,7 @@ database you care about. To recover, restore to a fresh path and activate it
 offline:
 
 ```bash
-litestream restore -o ./restored-openclaw.sqlite s3://openclaw-backups/state
+litestream restore -o ./restored-afora.sqlite s3://afora-backups/state
 ```
 
 Litestream replicates database bytes only. Config, credentials files, and
@@ -233,7 +233,7 @@ Restore is deliberately explicit; nothing overwrites live state in place.
 
 ### Restore a full archive
 
-Start only from an archive you created or otherwise trust. `openclaw backup
+Start only from an archive you created or otherwise trust. `afora backup
 verify` checks archive structure and payload layout, but it does not
 authenticate the archive or make untrusted content safe.
 
@@ -242,11 +242,11 @@ up](/cli/backup#what-gets-backed-up). Then verify and extract into a fresh
 staging directory with one command:
 
 ```bash
-ARCHIVE=./2026-03-09T08-00-00.000+08-00-openclaw-backup.tar.gz
-openclaw backup restore "$ARCHIVE" --target ./restored-openclaw
+ARCHIVE=./2026-03-09T08-00-00.000+08-00-afora-backup.tar.gz
+afora backup restore "$ARCHIVE" --target ./restored-afora
 ```
 
-The target must not exist or must be empty. OpenClaw verifies archive structure,
+The target must not exist or must be empty. Afora verifies archive structure,
 the manifest, hardlinks, symbolic-link containment, and SQLite databases before it writes the target. A
 non-empty target is refused, and a failed extraction cleans its incomplete
 output. The command never touches the live state directory and has no force or
@@ -258,8 +258,8 @@ credentials, auth profiles, sessions, and workspace data.
   ratchet state, especially WhatsApp, may desynchronize after rollback and need
   relinking. Approvals and delivery/dedupe state also roll back, so review
   pending approvals before resuming the Gateway. Plugin `node_modules` trees
-  are not archived; after activation, run `openclaw plugins update <id>` or
-  reinstall with `openclaw plugins install <spec> --force`. Run `openclaw
+  are not archived; after activation, run `afora plugins update <id>` or
+  reinstall with `afora plugins install <spec> --force`. Run `afora
   skills list` or start an agent session to regenerate the omitted
   `plugin-skills/` symlink index from current plugin metadata.
 </Warning>
@@ -280,24 +280,24 @@ The archive layout is:
 
 To activate, stop the Gateway and any node hosts that use the restored files.
 Make a fresh backup of current state or move it aside. Then move the extracted
-state asset into place, or point `OPENCLAW_STATE_DIR` at that asset, and run
-`openclaw doctor` before restarting the Gateway. On a new machine or under a
+state asset into place, or point `AFORA_STATE_DIR` at that asset, and run
+`afora doctor` before restarting the Gateway. On a new machine or under a
 different home directory, use the manifest to map config, credentials, and
 workspace assets to their new paths. See [Updating](/install/updating#rollback)
 for the rollback workflow.
 
 ### Restore a database
 
-For a snapshot, `openclaw backup sqlite restore <snapshot-directory> --target
+For a snapshot, `afora backup sqlite restore <snapshot-directory> --target
 <new-database-path>` writes a re-verified database to a fresh target. For Git
-history, `openclaw backup git restore --repository <dir> --ref <commit>
+history, `afora backup git restore --repository <dir> --ref <commit>
 (--global | --agent <id>) --target <new-database-path>` materializes and
 verifies a fresh database. For Litestream, `litestream restore` writes a fresh
 database file. Move the result into place while the Gateway is stopped, then
-start the Gateway and check `openclaw health` and `openclaw doctor`.
+start the Gateway and check `afora health` and `afora doctor`.
 
-After restoring onto a different OpenClaw version, preflight the database
-first with `openclaw database preflight`; see
+After restoring onto a different Afora version, preflight the database
+first with `afora database preflight`; see
 [Database schemas](/reference/database-schemas#preflight-a-target-release).
 
 ## Related

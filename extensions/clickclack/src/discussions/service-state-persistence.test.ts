@@ -1,15 +1,15 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { PluginRuntime } from "openclaw/plugin-sdk/core";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/core";
 import type {
   OpenKeyedStoreOptions,
   PluginStateSyncKeyedStore,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateSyncKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { describe, expect, it, vi } from "vitest";
 import type { ClickClackClient } from "../http-client.js";
 import type { ClickClackChannel } from "../types.js";
@@ -34,8 +34,8 @@ function legacyCreateResponse(
 describe("ClickClack discussion state persistence", () => {
   it("persists legacy create responses through the production plugin-state store", async () => {
     resetPluginStateStoreForTests();
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-clickclack-state-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-clickclack-state-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
     const stores = new Map<string, PluginStateSyncKeyedStore<unknown>>();
     const openSyncKeyedStore = (<T>(options: OpenKeyedStoreOptions) => {
       const created = createPluginStateSyncKeyedStoreForTests<T>("clickclack", {

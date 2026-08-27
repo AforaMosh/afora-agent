@@ -3,7 +3,7 @@ import { formatCliCommand } from "../cli/command-format.js";
 import { isUnconfiguredConfigSource } from "../cli/fresh-install-config.js";
 import { hasResolvedRosterBeforeMigrations } from "../config/agent-roster-provenance.js";
 import { formatConfigIssueLines } from "../config/issue-format.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { withConsoleSubsystemsSuppressed } from "../logging/console.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { LocalOnboardingState } from "../state/local-onboarding-state.js";
@@ -46,13 +46,13 @@ export type GuidedOnboardingDeps = {
     agentName?: string,
   ) => Promise<void>;
   createPrompter?: () => WizardPrompter | Promise<WizardPrompter>;
-  persistRiskAcknowledgement?: (config: OpenClawConfig) => Promise<string | void>;
+  persistRiskAcknowledgement?: (config: AforaConfig) => Promise<string | void>;
   persistAccessMode?: (mode: GuidedAccessMode) => Promise<void>;
   listManualOptions?: typeof import("../system-agent/setup-inference.js").listManualSetupInferenceOptions;
   /**
    * "hatch" (default) runs the local custodian flow: question zero, quiet
    * failure collection, deterministic setup apply, then the agent TUI.
-   * "chat" preserves the legacy handoff into the OpenClaw system-agent chat —
+   * "chat" preserves the legacy handoff into the Afora system-agent chat —
    * remote-gateway onboarding requires it because setup must apply remotely.
    */
   handoffMode?: "hatch" | "chat";
@@ -101,7 +101,7 @@ async function openSystemAgentChat(
   await runChat(workspace, runtime, acceptRisk, agentName);
 }
 
-async function persistRiskAcknowledgement(config: OpenClawConfig): Promise<string | undefined> {
+async function persistRiskAcknowledgement(config: AforaConfig): Promise<string | undefined> {
   const securityAcknowledgedAt = config.wizard?.securityAcknowledgedAt;
   if (!securityAcknowledgedAt) {
     return undefined;
@@ -146,8 +146,8 @@ async function runGuidedOnboardingFlow(
     );
     await prompter.outro(
       t("wizard.guided.invalidConfigRepair", {
-        fixCommand: formatCliCommand("openclaw doctor --fix"),
-        inspectCommand: formatCliCommand("openclaw config validate"),
+        fixCommand: formatCliCommand("afora doctor --fix"),
+        inspectCommand: formatCliCommand("afora config validate"),
       }),
     );
     runtime.exit(1);
@@ -218,7 +218,7 @@ async function runGuidedOnboardingFlow(
       "Another onboarding run owns a different workspace. Retry onboarding with its approved workspace.",
     );
   }
-  const assertLocalSetupOwner = (config: OpenClawConfig) => {
+  const assertLocalSetupOwner = (config: AforaConfig) => {
     if (
       localSetup?.status === "pending" &&
       localOnboarding?.readLocalOnboardingStateForConfig(snapshot.path, config)?.runId !==
@@ -258,8 +258,8 @@ async function runGuidedOnboardingFlow(
     }
   }
 
-  // Inference is the only prerequisite for OpenClaw. Use the caller's or
-  // current default workspace as isolated probe context; OpenClaw owns any
+  // Inference is the only prerequisite for Afora. Use the caller's or
+  // current default workspace as isolated probe context; Afora owns any
   // workspace choice and persistence after the live completion succeeds.
   const workspace = resolveUserPath(
     opts.workspace?.trim() ||
@@ -542,7 +542,7 @@ async function runGuidedOnboardingFlow(
     if (workspaceConflict) {
       await prompter.note(
         t("wizard.guided.workspaceConflictClassic", {
-          command: formatCliCommand("openclaw onboard --classic"),
+          command: formatCliCommand("afora onboard --classic"),
         }),
         t("wizard.setup.workspaceConflictTitle"),
       );
@@ -560,7 +560,7 @@ async function runGuidedOnboardingFlow(
     }
   } else {
     // Announced default: apply the same setup plan the conversational "yes"
-    // would, then hand off to the hatch instead of parking in the OpenClaw chat.
+    // would, then hand off to the hatch instead of parking in the Afora chat.
     const applyProgress = prompter.progress(t("wizard.guided.settingUp"));
     try {
       if (localSetup?.status === "pending") {
@@ -612,7 +612,7 @@ async function runGuidedOnboardingFlow(
             })
           : await readConfigFileSnapshot();
       if (!appliedSnapshot.valid) {
-        throw new Error("Setup wrote an invalid OpenClaw config.");
+        throw new Error("Setup wrote an invalid Afora config.");
       }
       persistedConfig = appliedSnapshot.sourceConfig ?? appliedSnapshot.config;
       applyProgress.stop(t("wizard.guided.setupDone"));

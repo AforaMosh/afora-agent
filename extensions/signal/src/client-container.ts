@@ -6,22 +6,22 @@
  * to keep the two modes cleanly isolated.
  */
 
-import { coerceErrorMessage, toErrorObject } from "openclaw/plugin-sdk/error-runtime";
-import { resolveFetch } from "openclaw/plugin-sdk/fetch-runtime";
+import { coerceErrorMessage, toErrorObject } from "afora-agent/plugin-sdk/error-runtime";
+import { resolveFetch } from "afora-agent/plugin-sdk/fetch-runtime";
 import {
   detectMime,
   extractOriginalFilename,
   parseMediaContentLength,
-} from "openclaw/plugin-sdk/media-runtime";
+} from "afora-agent/plugin-sdk/media-runtime";
 import {
   parseStrictNonNegativeInteger,
   resolveTimerTimeoutMs,
-} from "openclaw/plugin-sdk/number-runtime";
+} from "afora-agent/plugin-sdk/number-runtime";
 import {
   readResponseTextPrefix,
   readResponseWithLimit,
-} from "openclaw/plugin-sdk/response-limit-runtime";
-import { readRegularFile } from "openclaw/plugin-sdk/security-runtime";
+} from "afora-agent/plugin-sdk/response-limit-runtime";
+import { readRegularFile } from "afora-agent/plugin-sdk/security-runtime";
 import WebSocket from "ws";
 
 type ContainerRpcOptions = {

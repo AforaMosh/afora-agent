@@ -1,5 +1,5 @@
 // Normalizes SCP remote host and path values.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 
 // SCP host/path normalization rejects shell metacharacters before values are
 // embedded in remote-copy commands.

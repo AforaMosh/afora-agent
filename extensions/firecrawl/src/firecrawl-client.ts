@@ -1,7 +1,7 @@
 // Firecrawl plugin module implements firecrawl client behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { parseFiniteNumber } from "openclaw/plugin-sdk/number-runtime";
-import { readProviderJsonObjectResponse } from "openclaw/plugin-sdk/provider-http";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { parseFiniteNumber } from "afora-agent/plugin-sdk/number-runtime";
+import { readProviderJsonObjectResponse } from "afora-agent/plugin-sdk/provider-http";
 import {
   DEFAULT_CACHE_TTL_MINUTES,
   markdownToText,
@@ -12,21 +12,21 @@ import {
   withSelfHostedWebToolsEndpoint,
   withStrictWebToolsEndpoint,
   writeCache,
-} from "openclaw/plugin-sdk/provider-web-fetch";
-import { normalizeSecretInput } from "openclaw/plugin-sdk/secret-input";
+} from "afora-agent/plugin-sdk/provider-web-fetch";
+import { normalizeSecretInput } from "afora-agent/plugin-sdk/secret-input";
 import {
   truncateSanitizedExternalContent,
   wrapExternalContent,
   wrapWebContent,
-} from "openclaw/plugin-sdk/security-runtime";
+} from "afora-agent/plugin-sdk/security-runtime";
 import {
   SsrFBlockedError,
   isBlockedHostnameOrIp,
   isPrivateIpAddress,
   resolvePinnedHostnameWithPolicy,
   type LookupFn,
-} from "openclaw/plugin-sdk/ssrf-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/ssrf-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { z } from "zod";
 import {
   DEFAULT_FIRECRAWL_BASE_URL,
@@ -80,7 +80,7 @@ async function readFirecrawlJsonResponse(
 }
 
 type FirecrawlSearchParams = {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   query: string;
   count?: number;
   timeoutSeconds?: number;
@@ -97,7 +97,7 @@ type FirecrawlSearchParams = {
 };
 
 type FirecrawlScrapeParams = {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   url: string;
   extractMode: "markdown" | "text";
   access?: "credential" | "keyless";

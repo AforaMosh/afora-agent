@@ -1,11 +1,11 @@
-/** Reads Agent/Codex/Claude/Cursor bundle manifests into OpenClaw plugin manifest metadata. */
+/** Reads Agent/Codex/Claude/Cursor bundle manifests into Afora plugin manifest metadata. */
 import fs from "node:fs";
 import path from "node:path";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import { normalizeUniqueSingleOrTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-coerce";
+import { normalizeUniqueSingleOrTrimmedStringList } from "@afora/normalization-core/string-normalization";
 import JSON5 from "json5";
 import { matchRootFileOpenFailure } from "../infra/boundary-file-read.js";
 import { readRootStructuredFileSync } from "../infra/json-files.js";
@@ -25,7 +25,7 @@ export const CODEX_BUNDLE_MANIFEST_RELATIVE_PATH = ".codex-plugin/plugin.json";
 export const CLAUDE_BUNDLE_MANIFEST_RELATIVE_PATH = ".claude-plugin/plugin.json";
 export const CURSOR_BUNDLE_MANIFEST_RELATIVE_PATH = ".cursor-plugin/plugin.json";
 export const AGENT_BUNDLE_MANIFEST_RELATIVE_PATH = "plugin.json";
-const AGENT_BUNDLE_EXTENSION_NAMESPACE = "ai.openclaw";
+const AGENT_BUNDLE_EXTENSION_NAMESPACE = "ai.afora";
 const AGENT_BUNDLE_MANIFEST_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json";
 const MAX_AGENT_BUNDLE_MANIFEST_BYTES = 256 * 1024;
 const log = createSubsystemLogger("plugins/bundle-manifest");
@@ -38,7 +38,7 @@ type BundlePluginManifest = {
   version?: string;
   skills: string[];
   settingsFiles?: string[];
-  // Only include hook roots that OpenClaw can execute via HOOK.md + handler files.
+  // Only include hook roots that Afora can execute via HOOK.md + handler files.
   hooks: string[];
   bundleFormat: PluginBundleFormat;
   activation?: PluginManifestActivation;
@@ -373,17 +373,17 @@ function resolveAgentActivation(
     log.warn(`ignoring Agent Plugins extensions in ${manifestPath}: expected an object`);
     return undefined;
   }
-  const openclawExtension = raw.extensions[AGENT_BUNDLE_EXTENSION_NAMESPACE];
-  if (openclawExtension === undefined) {
+  const aforaExtension = raw.extensions[AGENT_BUNDLE_EXTENSION_NAMESPACE];
+  if (aforaExtension === undefined) {
     return undefined;
   }
-  if (!isRecord(openclawExtension)) {
+  if (!isRecord(aforaExtension)) {
     log.warn(
       `ignoring Agent Plugins ${AGENT_BUNDLE_EXTENSION_NAMESPACE} extension in ${manifestPath}: expected an object`,
     );
     return undefined;
   }
-  return normalizeManifestActivation(openclawExtension.activation);
+  return normalizeManifestActivation(aforaExtension.activation);
 }
 
 export function loadBundleManifest(params: {
@@ -527,7 +527,7 @@ export function detectBundleManifestFormat(rootDir: string): PluginBundleFormat 
   if (pluginScanExistsSync(path.join(rootDir, PLUGIN_MANIFEST_FILENAME))) {
     return null;
   }
-  // Client-specific bundle dirs and native OpenClaw manifests take precedence;
+  // Client-specific bundle dirs and native Afora manifests take precedence;
   // the portable root manifest is the fallback when neither is present.
   if (pluginScanExistsSync(path.join(rootDir, AGENT_BUNDLE_MANIFEST_RELATIVE_PATH))) {
     const agentManifest = loadBundleManifestFile({

@@ -1,5 +1,5 @@
 ---
-summary: "OpenClaw Nostr channel plugin for NIP-04 encrypted direct messages."
+summary: "Afora Nostr channel plugin for NIP-04 encrypted direct messages."
 read_when:
   - You are installing, configuring, or auditing the nostr plugin
 title: "Nostr plugin"
@@ -7,11 +7,11 @@ title: "Nostr plugin"
 
 # Nostr plugin
 
-OpenClaw Nostr channel plugin for NIP-04 encrypted direct messages.
+Afora Nostr channel plugin for NIP-04 encrypted direct messages.
 
 ## Distribution
 
-- Package: `@openclaw/nostr`
+- Package: `@afora/nostr`
 - Install route: npm; ClawHub
 
 ## Surface

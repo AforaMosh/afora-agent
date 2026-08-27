@@ -3,8 +3,8 @@ import {
   installChannelActionsContractSuite,
   installChannelSetupContractSuite,
   installChannelStatusContractSuite,
-} from "openclaw/plugin-sdk/channel-test-helpers";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+} from "afora-agent/plugin-sdk/channel-test-helpers";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { afterEach, describe, expect, vi } from "vitest";
 import { slackPlugin } from "../api.js";
 import { slackSetupPlugin } from "../setup-plugin-api.js";
@@ -43,7 +43,7 @@ describe("slack actions contract", () => {
               appToken: "xapp-test",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         expectedActions: slackDefaultActions,
         expectedCapabilities: ["presentation"],
       },
@@ -55,7 +55,7 @@ describe("slack actions contract", () => {
               enabled: true,
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         expectedActions: [],
         expectedCapabilities: [],
       },
@@ -69,7 +69,7 @@ describe("slack setup contract", () => {
     cases: [
       {
         name: "default account stores tokens and enables the channel",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         input: {
           botToken: "xoxb-test",
           appToken: "xapp-test",
@@ -83,7 +83,7 @@ describe("slack setup contract", () => {
       },
       {
         name: "non-default env setup is rejected",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         accountId: "ops",
         input: {
           useEnv: true,
@@ -100,7 +100,7 @@ describe("slack setup contract", () => {
               signingSecret: "test-signing-secret",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         input: {
           useEnv: true,
         },
@@ -122,7 +122,7 @@ describe("slack setup contract", () => {
       },
       {
         name: "Socket Mode env setup rejects a missing app token",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         input: {
           useEnv: true,
         },
@@ -134,7 +134,7 @@ describe("slack setup contract", () => {
       },
       {
         name: "Socket Mode env setup accepts bot and app tokens",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         input: {
           useEnv: true,
         },
@@ -148,7 +148,7 @@ describe("slack setup contract", () => {
       },
       {
         name: "user identity stores the user and Socket Mode transport tokens",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         input: {
           identity: "user",
           userToken: "test-user-token",
@@ -167,7 +167,7 @@ describe("slack setup contract", () => {
       },
       {
         name: "HTTP user identity stores the user token and signing secret",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         input: {
           identity: "user",
           mode: "http",
@@ -197,7 +197,7 @@ describe("slack setup contract", () => {
               appToken: "test-old-app-token",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         input: {
           mode: "http",
           userToken: "test-user-token",
@@ -222,7 +222,7 @@ describe("slack setup contract", () => {
               mode: "relay",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         input: {
           identity: "user",
           userToken: "test-user-token",
@@ -234,7 +234,7 @@ describe("slack setup contract", () => {
       },
       {
         name: "user identity rejects the bot-only env shortcut",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         input: {
           identity: "user",
           useEnv: true,
@@ -245,7 +245,7 @@ describe("slack setup contract", () => {
       },
       {
         name: "explicit bot identity keeps the bot and app token setup contract",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         input: {
           identity: "bot",
           mode: "http",
@@ -280,7 +280,7 @@ describe("slack status contract", () => {
               appToken: "xapp-test",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         runtime: {
           accountId: "default",
           connected: true,

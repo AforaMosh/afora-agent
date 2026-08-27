@@ -1,5 +1,5 @@
 // Normalizes config tag metadata for schema and docs surfaces.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import type { ConfigUiHint, ConfigUiHints } from "../shared/config-ui-hints-types.js";
 
 /** Stable config UI tag vocabulary used for filtering and grouping schema hints. */

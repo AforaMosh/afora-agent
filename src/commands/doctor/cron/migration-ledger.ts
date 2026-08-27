@@ -7,15 +7,15 @@ import {
   getNodeSqliteKysely,
 } from "../../../infra/kysely-sync.js";
 import { openNodeSqliteDatabase } from "../../../infra/node-sqlite.js";
-import type { DB as OpenClawStateDatabase } from "../../../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateDatabase } from "../../../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../../../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../../../state/openclaw-state-db.paths.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../../../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../../../state/afora-state-db.paths.js";
 import type { LegacyCronMigrationSource } from "./legacy-store-migration.js";
 
-type CronMigrationDatabase = Pick<OpenClawStateDatabase, "migration_runs" | "migration_sources">;
+type CronMigrationDatabase = Pick<AforaStateDatabase, "migration_runs" | "migration_sources">;
 
 function migrationRunId(source: LegacyCronMigrationSource): string {
   return `cron-legacy:${source.sourceKey}`;
@@ -36,7 +36,7 @@ function hasLegacyCronMigrationReceiptInDatabase(
 }
 
 export function hasLegacyCronMigrationReceipt(source: LegacyCronMigrationSource): boolean {
-  return hasLegacyCronMigrationReceiptInDatabase(openOpenClawStateDatabase().db, source);
+  return hasLegacyCronMigrationReceiptInDatabase(openAforaStateDatabase().db, source);
 }
 
 function tableExists(db: DatabaseSync, tableName: string): boolean {
@@ -48,7 +48,7 @@ function tableExists(db: DatabaseSync, tableName: string): boolean {
 }
 
 export function hasLegacyCronMigrationReceiptReadOnly(source: LegacyCronMigrationSource): boolean {
-  const statePath = resolveOpenClawStateSqlitePath(process.env);
+  const statePath = resolveAforaStateSqlitePath(process.env);
   if (!fs.existsSync(statePath)) {
     return false;
   }
@@ -130,7 +130,7 @@ export function acquireLegacyCronMigrationReceipt(
 }
 
 export function markLegacyCronMigrationSourceRemoved(source: LegacyCronMigrationSource): void {
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     executeSqliteQuerySync(
       db,
       getNodeSqliteKysely<CronMigrationDatabase>(db)

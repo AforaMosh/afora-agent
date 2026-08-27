@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Runs one named live-test shard with OPENCLAW_LIVE_TEST enabled.
+// Runs one named live-test shard with AFORA_LIVE_TEST enabled.
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -18,37 +18,37 @@ const LIVE_TEST_SUFFIX = ".live.test.ts";
 const OPTIONAL_LIVE_SHARD_FILE_ENVS = new Map([
   [
     "extensions/codex/src/app-server/native-subagent-monitor.live.test.ts",
-    ["OPENCLAW_LIVE_CODEX_NATIVE_SUBAGENT"],
+    ["AFORA_LIVE_CODEX_NATIVE_SUBAGENT"],
   ],
   [
     "extensions/codex/src/native-thread-coexistence.live.test.ts",
-    ["OPENCLAW_LIVE_CODEX_THREAD_COEXISTENCE"],
+    ["AFORA_LIVE_CODEX_THREAD_COEXISTENCE"],
   ],
-  ["src/agents/agent-mcp-style.cache.live.test.ts", ["OPENCLAW_LIVE_CACHE_TEST"]],
-  ["src/agents/cli-runner/bundle-mcp.gemini.live.test.ts", ["OPENCLAW_LIVE_CLI_MCP_GEMINI"]],
-  ["src/agents/embedded-agent-runner.cache.live.test.ts", ["OPENCLAW_LIVE_CACHE_TEST"]],
-  ["src/agents/live-cache-regression.live.test.ts", ["OPENCLAW_LIVE_CACHE_TEST"]],
-  ["src/agents/provider-headers.live.test.ts", ["OPENCLAW_LIVE_CACHE_TEST"]],
-  ["src/agents/subagents/announce/subagent-announce.live.test.ts", ["OPENCLAW_LIVE_SUBAGENT_E2E"]],
-  ["src/agents/tools/image-tool.ollama.live.test.ts", ["OPENCLAW_LIVE_OLLAMA_IMAGE"]],
-  ["src/agents/tools/image-tool.providers.live.test.ts", ["OPENCLAW_LIVE_IMAGE_TOOL_TEST"]],
+  ["src/agents/agent-mcp-style.cache.live.test.ts", ["AFORA_LIVE_CACHE_TEST"]],
+  ["src/agents/cli-runner/bundle-mcp.gemini.live.test.ts", ["AFORA_LIVE_CLI_MCP_GEMINI"]],
+  ["src/agents/embedded-agent-runner.cache.live.test.ts", ["AFORA_LIVE_CACHE_TEST"]],
+  ["src/agents/live-cache-regression.live.test.ts", ["AFORA_LIVE_CACHE_TEST"]],
+  ["src/agents/provider-headers.live.test.ts", ["AFORA_LIVE_CACHE_TEST"]],
+  ["src/agents/subagents/announce/subagent-announce.live.test.ts", ["AFORA_LIVE_SUBAGENT_E2E"]],
+  ["src/agents/tools/image-tool.ollama.live.test.ts", ["AFORA_LIVE_OLLAMA_IMAGE"]],
+  ["src/agents/tools/image-tool.providers.live.test.ts", ["AFORA_LIVE_IMAGE_TOOL_TEST"]],
   [
     "extensions/openai/realtime-quicksilver-gateway-bridge.live.test.ts",
-    ["OPENCLAW_LIVE_GPT_LIVE"],
+    ["AFORA_LIVE_GPT_LIVE"],
   ],
-  ["extensions/openai/realtime-quicksilver.live.test.ts", ["OPENCLAW_LIVE_GPT_LIVE"]],
-  ["src/skills/workshop/experience-review.live.test.ts", ["OPENCLAW_LIVE_SKILL_EXPERIENCE_REVIEW"]],
-  ["src/system-agent/rescue-channel.live.test.ts", ["OPENCLAW_LIVE_SYSTEM_AGENT_RESCUE_CHANNEL"]],
-  ["src/gateway/android-node.capabilities.live.test.ts", ["OPENCLAW_LIVE_ANDROID_NODE"]],
-  ["src/gateway/gateway-acp-bind.live.test.ts", ["OPENCLAW_LIVE_ACP_BIND"]],
-  ["src/gateway/gateway-acp-spawn-defaults.live.test.ts", ["OPENCLAW_LIVE_ACP_SPAWN_DEFAULTS"]],
-  ["src/gateway/gateway-cli-backend.live.test.ts", ["OPENCLAW_LIVE_CLI_BACKEND"]],
-  ["src/gateway/gateway-codex-bind.live.test.ts", ["OPENCLAW_LIVE_CODEX_BIND"]],
-  ["src/gateway/gateway-codex-harness.live.test.ts", ["OPENCLAW_LIVE_CODEX_HARNESS"]],
-  ["src/gateway/gateway-openai-long-context.live.test.ts", ["OPENCLAW_LIVE_OPENAI_LONG_CONTEXT"]],
-  ["src/gateway/gateway-trajectory-export.live.test.ts", ["OPENCLAW_LIVE_CODEX_HARNESS"]],
-  ["src/infra/push-apns-http2.live.test.ts", ["OPENCLAW_LIVE_APNS_REACHABILITY"]],
-  ["test/image-generation.infer-cli.live.test.ts", ["OPENCLAW_LIVE_INFER_CLI_TEST"]],
+  ["extensions/openai/realtime-quicksilver.live.test.ts", ["AFORA_LIVE_GPT_LIVE"]],
+  ["src/skills/workshop/experience-review.live.test.ts", ["AFORA_LIVE_SKILL_EXPERIENCE_REVIEW"]],
+  ["src/system-agent/rescue-channel.live.test.ts", ["AFORA_LIVE_SYSTEM_AGENT_RESCUE_CHANNEL"]],
+  ["src/gateway/android-node.capabilities.live.test.ts", ["AFORA_LIVE_ANDROID_NODE"]],
+  ["src/gateway/gateway-acp-bind.live.test.ts", ["AFORA_LIVE_ACP_BIND"]],
+  ["src/gateway/gateway-acp-spawn-defaults.live.test.ts", ["AFORA_LIVE_ACP_SPAWN_DEFAULTS"]],
+  ["src/gateway/gateway-cli-backend.live.test.ts", ["AFORA_LIVE_CLI_BACKEND"]],
+  ["src/gateway/gateway-codex-bind.live.test.ts", ["AFORA_LIVE_CODEX_BIND"]],
+  ["src/gateway/gateway-codex-harness.live.test.ts", ["AFORA_LIVE_CODEX_HARNESS"]],
+  ["src/gateway/gateway-openai-long-context.live.test.ts", ["AFORA_LIVE_OPENAI_LONG_CONTEXT"]],
+  ["src/gateway/gateway-trajectory-export.live.test.ts", ["AFORA_LIVE_CODEX_HARNESS"]],
+  ["src/infra/push-apns-http2.live.test.ts", ["AFORA_LIVE_APNS_REACHABILITY"]],
+  ["test/image-generation.infer-cli.live.test.ts", ["AFORA_LIVE_INFER_CLI_TEST"]],
 ]);
 const SKIPPED_ASSERTION_STATUSES = new Set(["disabled", "pending", "skipped", "todo"]);
 const QA_RUNTIME_LIVE_TEST = "extensions/qa-lab/src/matrix-channel-driver.lifecycle.live.test.ts";
@@ -390,7 +390,7 @@ export function buildLiveShardPnpmArgs(files: string[], passthroughArgs: string[
 export function resolveLiveShardPreparation(files: string[]) {
   return files.includes(QA_RUNTIME_LIVE_TEST)
     ? {
-        env: { OPENCLAW_BUILD_PRIVATE_QA: "1" },
+        env: { AFORA_BUILD_PRIVATE_QA: "1" },
         profile: "qaRuntime",
         requiredArtifact: QA_RUNTIME_ARTIFACT,
       }
@@ -401,7 +401,7 @@ export function resolveLiveShardPreparation(files: string[]) {
  * Builds the Vitest JSON report path used to prove that a live shard ran tests.
  */
 export function buildLiveShardReportPath(shard: string, env = process.env) {
-  const reportDir = env.OPENCLAW_LIVE_SHARD_REPORT_DIR || ".artifacts/live-shards";
+  const reportDir = env.AFORA_LIVE_SHARD_REPORT_DIR || ".artifacts/live-shards";
   return path.join(reportDir, `${shard}.vitest.json`);
 }
 

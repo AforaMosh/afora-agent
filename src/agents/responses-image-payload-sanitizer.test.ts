@@ -1,4 +1,4 @@
-import { sanitizeResponsesImagePayload } from "@openclaw/ai/transports";
+import { sanitizeResponsesImagePayload } from "@afora/ai/transports";
 // Verifies Responses image payloads are canonicalized or replaced before send.
 import { describe, expect, it } from "vitest";
 

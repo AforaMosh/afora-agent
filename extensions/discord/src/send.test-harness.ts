@@ -1,7 +1,7 @@
 // Discord plugin module implements send harness behavior.
 import { createServer } from "node:http";
-import type { MockFn } from "openclaw/plugin-sdk/plugin-test-runtime";
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import type { MockFn } from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { vi } from "vitest";
 import { RequestClient } from "./internal/discord.js";
 

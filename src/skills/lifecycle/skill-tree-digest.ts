@@ -44,7 +44,7 @@ async function collectEntries(root: string, relativeDir = ""): Promise<SkillTree
   return collected;
 }
 
-/** Digests every installed skill file except OpenClaw's own provenance metadata. */
+/** Digests every installed skill file except Afora's own provenance metadata. */
 export async function digestClawHubSkillTree(skillDir: string): Promise<string> {
   const entries = await collectEntries(skillDir);
   return `sha256:${createHash("sha256").update(JSON.stringify(entries)).digest("hex")}`;

@@ -1,5 +1,5 @@
 // Qa Lab plugin module implements cli behavior.
-import { listQaRunnerCliContributions } from "openclaw/plugin-sdk/qa-runner-runtime";
+import { listQaRunnerCliContributions } from "afora-agent/plugin-sdk/qa-runner-runtime";
 import { discordQaCliRegistration } from "./discord/cli.js";
 import { matrixQaCliRegistration } from "./matrix/cli.js";
 import type { LiveTransportQaCliRegistration } from "./shared/live-transport-cli.js";
@@ -19,7 +19,7 @@ function createBlockedQaRunnerCliRegistration(params: {
         .description(params.description ?? `Run the ${params.commandName} live QA lane`)
         .action(() => {
           throw new Error(
-            `QA runner "${params.commandName}" is installed but not active. Enable or allow plugin "${params.pluginId}" in your OpenClaw config, then try again.`,
+            `QA runner "${params.commandName}" is installed but not active. Enable or allow plugin "${params.pluginId}" in your Afora config, then try again.`,
           );
         });
     },

@@ -1,6 +1,6 @@
 /** Pure configured-model selection helpers safe for config validation. */
 import { toAgentModelListLike } from "../config/model-input.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveAgentConfig, resolveAgentEffectiveModelPrimary } from "./agent-scope.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "./defaults.js";
 import type { ModelManifestNormalizationContext, ModelRef } from "./model-ref-shared.js";
@@ -8,7 +8,7 @@ import { normalizeModelSelection, resolveConfiguredModelRef } from "./model-sele
 
 export function resolveDefaultModelForAgent(
   params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     agentId?: string;
     allowPluginNormalization?: boolean;
   } & ModelManifestNormalizationContext,
@@ -42,7 +42,7 @@ export function resolveDefaultModelForAgent(
 }
 
 export function resolveSubagentConfiguredModelSelection(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   includeAgentPrimary?: boolean;
 }): string | undefined {

@@ -1,8 +1,8 @@
 {
-  "name": "@openclaw/oc-path",
+  "name": "@afora/oc-path",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw oc:// workspace path plugin",
+  "description": "Afora oc:// workspace path plugin",
   "type": "module",
   "dependencies": {
     "jsonc-parser": "3.3.1",
@@ -10,18 +10,18 @@
     "yaml": "2.9.0"
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*",
-    "openclaw": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*",
+    "afora-agent": "workspace:*"
   },
   "peerDependencies": {
-    "openclaw": ">=2026.8.1"
+    "afora-agent": ">=2026.8.1"
   },
   "peerDependenciesMeta": {
-    "openclaw": {
+    "afora": {
       "optional": true
     }
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

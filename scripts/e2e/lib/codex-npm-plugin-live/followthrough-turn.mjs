@@ -1,4 +1,4 @@
-// Runs one package-installed OpenClaw turn with explicit message-tool-only
+// Runs one package-installed Afora turn with explicit message-tool-only
 // source delivery so Codex exposes the progress/final control under test.
 import fs from "node:fs";
 import path from "node:path";

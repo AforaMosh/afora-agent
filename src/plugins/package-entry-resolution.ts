@@ -1,7 +1,7 @@
 // Resolves package entry files for plugin loading and public surfaces.
 import fs from "node:fs";
 import path from "node:path";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   matchRootFileOpenFailure,
   openRootFile,
@@ -29,8 +29,8 @@ function runtimeExtensionsLengthMismatchMessage(params: {
   extensionsLength: number;
 }): string {
   return (
-    `package.json openclaw.runtimeExtensions length (${params.runtimeExtensionsLength}) ` +
-    `must match openclaw.extensions length (${params.extensionsLength})`
+    `package.json afora.runtimeExtensions length (${params.runtimeExtensionsLength}) ` +
+    `must match afora.extensions length (${params.extensionsLength})`
   );
 }
 
@@ -61,7 +61,7 @@ function resolvePackageRuntimeExtensionEntries(params: {
 }): RuntimeExtensionsResolution {
   const packageManifest = getPackageManifestMetadata(params.manifest ?? undefined);
   const runtimeExtensionsResult = readPackageManifestStringList({
-    fieldName: "openclaw.runtimeExtensions",
+    fieldName: "afora.runtimeExtensions",
     value: packageManifest?.runtimeExtensions,
   });
   if (!runtimeExtensionsResult.ok) {
@@ -244,7 +244,7 @@ export async function validatePackageExtensionEntriesForInstall(params: {
   if (runtimeSetupEntry && !setupEntry) {
     return {
       ok: false,
-      error: "package.json openclaw.runtimeSetupEntry requires openclaw.setupEntry",
+      error: "package.json afora.runtimeSetupEntry requires afora.setupEntry",
     };
   }
   if (setupEntry) {

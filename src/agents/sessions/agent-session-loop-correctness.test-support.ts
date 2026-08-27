@@ -2,7 +2,7 @@ import {
   createAssistantMessageEventStream,
   type AssistantMessage,
   type Model,
-} from "openclaw/plugin-sdk/llm";
+} from "afora-agent/plugin-sdk/llm";
 import { afterEach, beforeEach, vi } from "vitest";
 import { createResourceLoader } from "./agent-session-loop-resource-loader.test-support.js";
 import { AgentSession } from "./agent-session.js";

@@ -1,6 +1,6 @@
 /** Tests Code Mode runtime and output limits. */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { codeModeFailureCode } from "./code-mode-runtime.js";
 import { applyCodeModeCatalog, createCodeModeTools, resolveCodeModeConfig } from "./code-mode.js";

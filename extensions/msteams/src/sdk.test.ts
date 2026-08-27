@@ -5,7 +5,7 @@ import { sendMSTeamsActivityWithReference } from "./sdk-proactive.js";
 import { createMSTeamsTokenProvider, loadMSTeamsSdkWithAuth } from "./sdk.js";
 import type { MSTeamsCredentials, MSTeamsFederatedCredentials } from "./token.js";
 
-const privateQaRuntimeSymbol = Symbol.for("openclaw.msteams.privateQaRuntime");
+const privateQaRuntimeSymbol = Symbol.for("afora.msteams.privateQaRuntime");
 const privateQaBotToken = [
   Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString("base64url"),
   Buffer.from(JSON.stringify({ appid: "test-app-id", tid: "test-tenant" })).toString("base64url"),
@@ -18,8 +18,8 @@ const { readSecretFile } = vi.hoisted(() => ({
     .mockResolvedValue("-----BEGIN RSA PRIVATE KEY-----\nfake-key\n-----END RSA PRIVATE KEY-----"),
 }));
 
-vi.mock("openclaw/plugin-sdk/secret-file", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/secret-file")>();
+vi.mock("afora-agent/plugin-sdk/secret-file", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/secret-file")>();
   return {
     ...actual,
     readSecretFile,
@@ -100,7 +100,7 @@ describe("createMSTeamsApp", () => {
   });
 
   it("passes the complete private QA bootstrap into the SDK App", async () => {
-    vi.stubEnv("OPENCLAW_BUILD_PRIVATE_QA", "1");
+    vi.stubEnv("AFORA_BUILD_PRIVATE_QA", "1");
     vi.stubEnv("CLIENT_SECRET", "ambient-private-qa-secret");
     (
       globalThis as typeof globalThis & {
@@ -146,7 +146,7 @@ describe("createMSTeamsApp", () => {
   });
 
   it("routes a private QA proactive send through the loopback Connector", async () => {
-    vi.stubEnv("OPENCLAW_BUILD_PRIVATE_QA", "1");
+    vi.stubEnv("AFORA_BUILD_PRIVATE_QA", "1");
     vi.stubEnv("CLIENT_SECRET", "ambient-private-qa-secret");
     const outbound: Array<{
       activity: Record<string, unknown>;
@@ -186,7 +186,7 @@ describe("createMSTeamsApp", () => {
         app,
         {
           serviceUrl: "https://smba.trafficmanager.net/qa",
-          agent: { id: "test-app-id", name: "OpenClaw QA", role: "bot" },
+          agent: { id: "test-app-id", name: "Afora QA", role: "bot" },
           user: { id: "qa-driver" },
           conversation: {
             id: "19:qa-primary@thread.tacv2",
@@ -281,7 +281,7 @@ describe("createMSTeamsApp", () => {
     );
   });
 
-  it("preserves both Teams SDK and OpenClaw User-Agent fragments", async () => {
+  it("preserves both Teams SDK and Afora User-Agent fragments", async () => {
     const creds: MSTeamsCredentials = {
       type: "secret",
       appId: "test-app-id",
@@ -294,7 +294,7 @@ describe("createMSTeamsApp", () => {
       app as unknown as { client?: { options?: { headers?: Record<string, string> } } }
     ).client?.options?.headers;
 
-    expect(headers?.["User-Agent"]).toMatch(/^teams\.ts\[apps\]\/\S+ OpenClaw\/\S+$/);
+    expect(headers?.["User-Agent"]).toMatch(/^teams\.ts\[apps\]\/\S+ Afora\/\S+$/);
   });
 
   it("bounds Teams SDK API requests", async () => {
@@ -365,7 +365,7 @@ describe("createMSTeamsApp", () => {
       cloud?: { botScope?: string; graphScope?: string };
     };
     // @microsoft/teams.apps still gives app-level sends its public serviceUrl
-    // default. OpenClaw proactive sends use stored reference serviceUrls instead.
+    // default. Afora proactive sends use stored reference serviceUrls instead.
     expect(internals.api?.serviceUrl).toBe("https://smba.trafficmanager.net/teams");
     expect(internals.cloud?.botScope).toBe("https://api.botframework.azure.cn/.default");
     expect(internals.cloud?.graphScope).toBe("https://microsoftgraph.chinacloudapi.cn/.default");

@@ -1,6 +1,6 @@
 // Qa Lab plugin module implements gateway log redaction behavior.
-import { redactSensitiveText } from "openclaw/plugin-sdk/logging-core";
-import { escapeRegExp } from "openclaw/plugin-sdk/text-utility-runtime";
+import { redactSensitiveText } from "afora-agent/plugin-sdk/logging-core";
+import { escapeRegExp } from "afora-agent/plugin-sdk/text-utility-runtime";
 import {
   QA_PROVIDER_SECRET_ENV_KEY_PATTERNS,
   QA_PROVIDER_SECRET_ENV_VARS,
@@ -8,7 +8,7 @@ import {
 
 const QA_GATEWAY_DEBUG_SECRET_ENV_VARS = Object.freeze([
   ...QA_PROVIDER_SECRET_ENV_VARS,
-  "OPENCLAW_GATEWAY_TOKEN",
+  "AFORA_GATEWAY_TOKEN",
 ]);
 const QA_GATEWAY_DEBUG_SECRET_VALUE_KEYS = Object.freeze([
   "accessToken",

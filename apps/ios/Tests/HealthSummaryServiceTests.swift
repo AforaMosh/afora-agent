@@ -1,7 +1,7 @@
 import Foundation
-import OpenClawKit
+import AforaKit
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 struct HealthSummaryServiceTests {
     @Test func `date range covers the current calendar day`() throws {

@@ -2,7 +2,7 @@
  * Regression coverage for embedded-agent message text utilities.
  * Verifies visible text extraction, reasoning formatting, and thinking-tag promotion.
  */
-import type { AssistantMessage } from "openclaw/plugin-sdk/llm";
+import type { AssistantMessage } from "afora-agent/plugin-sdk/llm";
 import { describe, expect, it } from "vitest";
 import {
   extractEmbeddedAssistantText,

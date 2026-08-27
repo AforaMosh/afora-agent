@@ -1,5 +1,5 @@
 // Msteams tests cover channel plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import { MSTeamsConfigSchema } from "../config-api.js";
 import { msteamsDirectoryContractPlugin } from "../directory-contract-api.js";
@@ -7,7 +7,7 @@ import { msTeamsApprovalAuth } from "./approval-auth.js";
 import { msteamsPlugin } from "./channel.js";
 import { msteamsSetupPlugin } from "./channel.setup.js";
 
-function createConfiguredMSTeamsCfg(): OpenClawConfig {
+function createConfiguredMSTeamsCfg(): AforaConfig {
   return {
     channels: {
       msteams: {
@@ -64,7 +64,7 @@ describe("msteamsPlugin", () => {
   });
 
   it("preserves the default account and allowlist across runtime and setup", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         msteams: {
           ...createConfiguredMSTeamsCfg().channels?.msteams,

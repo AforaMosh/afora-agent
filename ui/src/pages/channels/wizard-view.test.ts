@@ -160,7 +160,7 @@ describe("renderChannelWizard", () => {
           step: {
             id: "copy-command",
             type: "note",
-            message: "openclaw channels add",
+            message: "afora channels add",
           },
           stepIndex: 1,
           busy: false,
@@ -192,7 +192,7 @@ describe("renderChannelWizard", () => {
     await vi.waitFor(() => expect(execCommand).toHaveBeenCalledWith("copy"));
     await vi.waitFor(() => expect(copy?.textContent?.trim()).toBe("Copied!"));
     expect(copy?.getAttribute("aria-label")).toBe("Copied!");
-    expect(copiedText).toBe("openclaw channels add");
+    expect(copiedText).toBe("afora channels add");
     expect(document.querySelector("textarea")).toBeNull();
   });
 
@@ -214,7 +214,7 @@ describe("renderChannelWizard", () => {
         wizard: {
           phase: "step",
           channel: null,
-          step: { id: "copy-command", type: "note", message: "openclaw channels add" },
+          step: { id: "copy-command", type: "note", message: "afora channels add" },
           stepIndex: 1,
           busy: false,
           validationError: null,
@@ -243,7 +243,7 @@ describe("renderChannelWizard", () => {
       const feedback = copied ? "Copied!" : "Copy failed";
       await vi.waitFor(() => expect(button?.textContent?.trim()).toBe(feedback));
       expect(button?.getAttribute("aria-label")).toBe(feedback);
-      expect(writeText).toHaveBeenCalledWith("openclaw channels add");
+      expect(writeText).toHaveBeenCalledWith("afora channels add");
       expect(execCommand).toHaveBeenCalledTimes(copied ? 0 : 1);
 
       await i18n.setLocale("de");

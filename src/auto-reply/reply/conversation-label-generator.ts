@@ -1,10 +1,10 @@
 // Generates short labels for sessions from conversation context.
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import { runIsolatedCompletion } from "../../agents/isolated-completion.js";
 import { splitTrailingAuthProfile } from "../../agents/model-ref-profile.js";
 import { resolveSimpleCompletionSelectionForAgent } from "../../agents/simple-completion-runtime.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
 const DEFAULT_MAX_LABEL_LENGTH = 128;
 // Reasoning models spend output tokens before emitting the short visible label.
@@ -22,7 +22,7 @@ type ConversationLabelAttempt = {
 export type ConversationLabelParams = {
   userMessage: string;
   prompt: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
   agentDir?: string;
   agentHarnessRuntimeOverride?: string;
@@ -51,7 +51,7 @@ function resolveTimeoutMs(value: number | undefined): number {
 }
 
 function resolveAttemptSelection(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   agentDir?: string;
   attempt: ConversationLabelAttempt;
@@ -75,7 +75,7 @@ function resolveRawModelProvider(modelRef: string | undefined): string | undefin
 }
 
 function resolveAttemptKey(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   agentDir?: string;
   attempt: ConversationLabelAttempt;
@@ -95,7 +95,7 @@ function resolveAttemptKey(params: {
 }
 
 async function completeLabel(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   agentDir?: string;
   agentHarnessRuntimeOverride?: string;
@@ -128,7 +128,7 @@ async function completeLabel(params: {
 }
 
 async function runLabelAttempts(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   agentDir?: string;
   agentHarnessRuntimeOverride?: string;

@@ -1,8 +1,8 @@
 /** Loads capability providers through the canonical scoped plugin loader. */
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { withBundledPluginEnablementCompat } from "./bundled-compat.js";
-import { discoverOpenClawPlugins, type PluginDiscoveryResult } from "./discovery.js";
-import { loadOpenClawPluginsWithInternalOverrides } from "./loader-runtime-load.js";
+import { discoverAforaPlugins, type PluginDiscoveryResult } from "./discovery.js";
+import { loadAforaPluginsWithInternalOverrides } from "./loader-runtime-load.js";
 import type { PluginLoadOptions } from "./loader.js";
 import { loadPluginManifestRegistryCore } from "./manifest-registry.js";
 import type { PluginRuntime } from "./runtime/types.js";
@@ -42,7 +42,7 @@ export function loadBundledCapabilityRuntimeRegistry(params: {
           config: params.config,
           pluginIds: params.pluginIds,
         }) ?? {});
-  const discovery = params.discovery ?? discoverOpenClawPlugins({ env });
+  const discovery = params.discovery ?? discoverAforaPlugins({ env });
   const pluginIds = new Set(params.pluginIds);
   const manifestRegistry = loadPluginManifestRegistryCore({
     config,
@@ -56,7 +56,7 @@ export function loadBundledCapabilityRuntimeRegistry(params: {
     ),
     diagnostics: manifestRegistry.diagnostics,
   };
-  return loadOpenClawPluginsWithInternalOverrides(
+  return loadAforaPluginsWithInternalOverrides(
     {
       config,
       env,

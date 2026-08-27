@@ -1,6 +1,6 @@
 import { lstatSync, realpathSync } from "node:fs";
 import path from "node:path";
-import { isPathInside } from "openclaw/plugin-sdk/security-runtime";
+import { isPathInside } from "afora-agent/plugin-sdk/security-runtime";
 
 export type MxcWorkspaceAccess = "none" | "ro" | "rw";
 
@@ -9,7 +9,7 @@ export type MxcReadOnlySkillMount = {
   containerPath: string;
 };
 
-const MATERIALIZED_SANDBOX_SKILLS_WORKSPACE_PARTS = [".openclaw", "sandbox-skills"] as const;
+const MATERIALIZED_SANDBOX_SKILLS_WORKSPACE_PARTS = [".afora", "sandbox-skills"] as const;
 
 function containerJoin(root: string, ...parts: string[]): string {
   const normalizedRoot = root.endsWith("/") && root !== "/" ? root.slice(0, -1) : root;

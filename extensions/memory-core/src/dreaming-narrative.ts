@@ -1,16 +1,16 @@
 // Memory Core plugin module implements dreaming narrative behavior.
 import { createHash } from "node:crypto";
-import { createAsyncLock } from "openclaw/plugin-sdk/async-lock-runtime";
+import { createAsyncLock } from "afora-agent/plugin-sdk/async-lock-runtime";
 import {
   extractErrorCode,
   formatErrorMessage,
   RequestScopedSubagentRuntimeError,
   readErrorName,
   SUBAGENT_RUNTIME_REQUEST_SCOPE_ERROR_CODE,
-} from "openclaw/plugin-sdk/error-runtime";
-import { resolveGlobalMap } from "openclaw/plugin-sdk/global-singleton";
-import { getRuntimeConfig } from "openclaw/plugin-sdk/runtime-config-snapshot";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/error-runtime";
+import { resolveGlobalMap } from "afora-agent/plugin-sdk/global-singleton";
+import { getRuntimeConfig } from "afora-agent/plugin-sdk/runtime-config-snapshot";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import pLimit from "p-limit";
 import { readDreamsFile, resolveDreamsPath, updateDreamsFile } from "./dreaming-dreams-file.js";
 import {
@@ -103,13 +103,13 @@ const NARRATIVE_MESSAGE_FETCH_LIMIT = 5;
 // is visible, so retry briefly before falling back to synthetic diary text.
 const NARRATIVE_MESSAGE_SETTLE_DELAYS_MS = [50, 150, 300, 750] as const;
 const DREAMING_SESSION_OWNER_KEY = "memory-core-v2";
-const DIARY_START_MARKER = "<!-- openclaw:dreaming:diary:start -->";
-const DIARY_END_MARKER = "<!-- openclaw:dreaming:diary:end -->";
-const BACKFILL_ENTRY_MARKER = "openclaw:dreaming:backfill-entry";
+const DIARY_START_MARKER = "<!-- afora:dreaming:diary:start -->";
+const DIARY_END_MARKER = "<!-- afora:dreaming:diary:end -->";
+const BACKFILL_ENTRY_MARKER = "afora:dreaming:backfill-entry";
 const RECENT_DIARY_CONTEXT_LIMIT = 3;
 const RECENT_DIARY_CONTEXT_MAX_CHARS = 360;
 const NARRATIVE_SESSION_LOCKS_KEY = Symbol.for(
-  "openclaw.memoryCore.dreamingNarrative.sessionLocks",
+  "afora.memoryCore.dreamingNarrative.sessionLocks",
 );
 
 type NarrativeSessionLockEntry = {

@@ -1,4 +1,4 @@
-import type { ComputerActParams } from "openclaw/plugin-sdk/computer-use";
+import type { ComputerActParams } from "afora-agent/plugin-sdk/computer-use";
 import type { CuaDriverSession } from "./driver-client.js";
 import {
   resolveBrowserElementRef,

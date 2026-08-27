@@ -3,7 +3,7 @@
  * catalogs expose only currently served models under OpenRouter's `arcee-ai/*`
  * namespace.
  */
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-shared";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-model-shared";
 import { buildArceeModelDefinition, ARCEE_BASE_URL, ARCEE_MODEL_CATALOG } from "./models.js";
 
 /** Canonical OpenRouter API base URL for Arcee-routed models. */

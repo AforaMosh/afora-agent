@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buzzSetupContract } from "./setup-core.js";
 
@@ -30,7 +30,7 @@ describe("buzzSetupContract", () => {
           privateKey: "11".repeat(32),
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = buzzSetupContract.applyAccountConfig({
       cfg,
@@ -53,7 +53,7 @@ describe("buzzSetupContract", () => {
           authTag: '["auth","owner","kind=9","signature"]',
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = buzzSetupContract.applyAccountConfig({
       cfg,
@@ -75,7 +75,7 @@ describe("buzzSetupContract", () => {
           authTag: '["auth","owner","kind=9","signature"]',
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = buzzSetupContract.applyAccountConfig({
       cfg,

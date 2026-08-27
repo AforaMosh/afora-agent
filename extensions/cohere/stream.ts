@@ -1,5 +1,5 @@
-import type { ProviderWrapStreamFnContext } from "openclaw/plugin-sdk/plugin-entry";
-import { createPayloadPatchStreamWrapper } from "openclaw/plugin-sdk/provider-stream-shared";
+import type { ProviderWrapStreamFnContext } from "afora-agent/plugin-sdk/plugin-entry";
+import { createPayloadPatchStreamWrapper } from "afora-agent/plugin-sdk/provider-stream-shared";
 
 export function wrapCohereProviderStream(ctx: ProviderWrapStreamFnContext) {
   return createPayloadPatchStreamWrapper(ctx.streamFn, ({ payload }) => {

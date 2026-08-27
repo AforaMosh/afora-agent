@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const PREPUBLISH_PLUGIN_REGISTRY_MANIFEST = "prepublish-plugin-registry.json";
-const SCHEMA = "openclaw.prepublish-plugin-registry/v1";
+const SCHEMA = "afora.prepublish-plugin-registry/v1";
 const SHA256_PATTERN = /^[0-9a-f]{64}$/u;
 const SOURCE_SHA_PATTERN = /^[0-9a-f]{40}$/u;
 const PACKAGE_NAME_PATTERN = /^@[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/u;
@@ -220,8 +220,8 @@ function findPublishablePlugin(repoRoot, packageName) {
     );
   }
   const match = matches[0];
-  if (match.packageJson.openclaw?.release?.publishToNpm !== true) {
-    throw new Error(`${packageName} is not marked openclaw.release.publishToNpm`);
+  if (match.packageJson.afora?.release?.publishToNpm !== true) {
+    throw new Error(`${packageName} is not marked afora.release.publishToNpm`);
   }
   return match;
 }

@@ -1,4 +1,4 @@
-// Verifies state-dir migrations preserve existing OpenClaw runtime data.
+// Verifies state-dir migrations preserve existing Afora runtime data.
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -8,7 +8,7 @@ import {
   readPersistedInstalledPluginIndex,
   writePersistedInstalledPluginIndex,
 } from "../plugins/installed-plugin-index-store.js";
-import { runOpenClawStateWriteTransaction } from "../state/openclaw-state-db.js";
+import { runAforaStateWriteTransaction } from "../state/afora-state-db.js";
 import { withTestDir } from "../test-helpers/temp-dir.js";
 import {
   autoMigrateLegacyStateDir,
@@ -17,7 +17,7 @@ import {
 
 async function withStateDirFixture(run: (root: string) => Promise<void>): Promise<void> {
   try {
-    await withTestDir({ prefix: "openclaw-state-dir-" }, async (root) => {
+    await withTestDir({ prefix: "afora-state-dir-" }, async (root) => {
       await run(root);
     });
   } finally {
@@ -53,13 +53,13 @@ describe("legacy state dir auto-migration", () => {
     });
   });
 
-  it("skips state-dir migration when OPENCLAW_STATE_DIR is explicitly set", async () => {
+  it("skips state-dir migration when AFORA_STATE_DIR is explicitly set", async () => {
     await withStateDirFixture(async (root) => {
       const legacyDir = path.join(root, ".clawdbot");
       fs.mkdirSync(legacyDir, { recursive: true });
 
       const result = await autoMigrateLegacyStateDir({
-        env: { OPENCLAW_STATE_DIR: path.join(root, "custom-state") } as NodeJS.ProcessEnv,
+        env: { AFORA_STATE_DIR: path.join(root, "custom-state") } as NodeJS.ProcessEnv,
         homedir: () => root,
       });
 
@@ -87,7 +87,7 @@ describe("legacy state dir auto-migration", () => {
       );
 
       const result = await autoMigrateLegacyStateDir({
-        env: { OPENCLAW_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
+        env: { AFORA_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
         homedir: () => root,
       });
 
@@ -122,7 +122,7 @@ describe("legacy state dir auto-migration", () => {
   it("does not move or link a state dir with invalid full-shaped embedded install records", async () => {
     await withStateDirFixture(async (root) => {
       const legacyDir = path.join(root, ".clawdbot");
-      const targetDir = path.join(root, ".openclaw");
+      const targetDir = path.join(root, ".afora");
       const sourcePath = path.join(legacyDir, "plugins", "installs.json");
       fs.mkdirSync(path.dirname(sourcePath), { recursive: true });
       fs.writeFileSync(
@@ -138,7 +138,7 @@ describe("legacy state dir auto-migration", () => {
             {
               pluginId: "__proto__",
               installRecord: { source: "bogus", passthrough: { retained: true } },
-              manifestPath: "/plugins/demo/openclaw.plugin.json",
+              manifestPath: "/plugins/demo/afora.plugin.json",
               manifestHash: "legacy",
               rootDir: "/plugins/demo",
               origin: "global",
@@ -179,7 +179,7 @@ describe("legacy state dir auto-migration", () => {
         "utf8",
       );
       const installRecordsJson = '{"__proto__":{"source":"bogus"}}';
-      runOpenClawStateWriteTransaction(
+      runAforaStateWriteTransaction(
         ({ db }) => {
           db.prepare(
             `
@@ -195,11 +195,11 @@ describe("legacy state dir auto-migration", () => {
             `,
           ).run(installRecordsJson);
         },
-        { env: { ...process.env, OPENCLAW_STATE_DIR: stateDir } },
+        { env: { ...process.env, AFORA_STATE_DIR: stateDir } },
       );
 
       const result = await autoMigrateLegacyStateDir({
-        env: { OPENCLAW_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
+        env: { AFORA_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
         homedir: () => root,
       });
 
@@ -209,7 +209,7 @@ describe("legacy state dir auto-migration", () => {
       ]);
       expect(fs.existsSync(sourcePath)).toBe(true);
       expect(fs.existsSync(`${sourcePath}.migrated`)).toBe(false);
-      const row = runOpenClawStateWriteTransaction(
+      const row = runAforaStateWriteTransaction(
         ({ db }) =>
           db
             .prepare(
@@ -218,7 +218,7 @@ describe("legacy state dir auto-migration", () => {
                 WHERE index_key = 'installed-plugin-index'`,
             )
             .get() as { install_records_json: string; updated_at_ms: number | bigint },
-        { env: { ...process.env, OPENCLAW_STATE_DIR: stateDir } },
+        { env: { ...process.env, AFORA_STATE_DIR: stateDir } },
       );
       expect(row).toEqual({ install_records_json: installRecordsJson, updated_at_ms: 123 });
     });
@@ -247,7 +247,7 @@ describe("legacy state dir auto-migration", () => {
                 spec: "demo@latest",
                 version: "1.0.0",
               }),
-              manifestPath: "/plugins/demo/openclaw.plugin.json",
+              manifestPath: "/plugins/demo/afora.plugin.json",
               manifestHash: "test",
               rootDir: "/plugins/demo",
               origin: "global",
@@ -276,7 +276,7 @@ describe("legacy state dir auto-migration", () => {
       );
 
       const result = await autoMigrateLegacyStateDir({
-        env: { OPENCLAW_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
+        env: { AFORA_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
         homedir: () => root,
       });
 
@@ -308,7 +308,7 @@ describe("legacy state dir auto-migration", () => {
       fs.writeFileSync(archivePath, legacyJson, "utf8");
 
       const first = await autoMigrateLegacyStateDir({
-        env: { OPENCLAW_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
+        env: { AFORA_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
         homedir: () => root,
       });
 
@@ -324,7 +324,7 @@ describe("legacy state dir auto-migration", () => {
 
       resetAutoMigrateLegacyStateDirForTest();
       const second = await autoMigrateLegacyStateDir({
-        env: { OPENCLAW_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
+        env: { AFORA_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
         homedir: () => root,
       });
       expect(second.changes).toStrictEqual([]);
@@ -351,7 +351,7 @@ describe("legacy state dir auto-migration", () => {
       fs.writeFileSync(archivePath, "older archive", "utf8");
 
       const first = await autoMigrateLegacyStateDir({
-        env: { OPENCLAW_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
+        env: { AFORA_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
         homedir: () => root,
       });
 
@@ -368,7 +368,7 @@ describe("legacy state dir auto-migration", () => {
 
       resetAutoMigrateLegacyStateDirForTest();
       const second = await autoMigrateLegacyStateDir({
-        env: { OPENCLAW_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
+        env: { AFORA_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
         homedir: () => root,
       });
       expect(second.changes).toStrictEqual([]);
@@ -403,7 +403,7 @@ describe("legacy state dir auto-migration", () => {
 
   it("migrates the legacy plugin install index before config reads", async () => {
     await withStateDirFixture(async (root) => {
-      const stateDir = path.join(root, ".openclaw");
+      const stateDir = path.join(root, ".afora");
       const sourcePath = path.join(stateDir, "plugins", "installs.json");
       fs.mkdirSync(path.dirname(sourcePath), { recursive: true });
       fs.writeFileSync(

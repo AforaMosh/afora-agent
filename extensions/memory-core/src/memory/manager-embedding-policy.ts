@@ -1,6 +1,6 @@
 // Memory Core plugin module implements manager embedding policy behavior.
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { retryAsync } from "openclaw/plugin-sdk/retry-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { retryAsync } from "afora-agent/plugin-sdk/retry-runtime";
 
 type MemoryEmbeddingTextPart = {
   type: "text";

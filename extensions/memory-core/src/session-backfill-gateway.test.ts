@@ -1,5 +1,5 @@
-import type { GatewayRequestHandlerOptions } from "openclaw/plugin-sdk/gateway-runtime";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
+import type { GatewayRequestHandlerOptions } from "afora-agent/plugin-sdk/gateway-runtime";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { registerSessionBackfillGatewayMethods } from "./session-backfill-gateway.js";
 import { executeSessionBackfill, executeSessionBackfillBatch } from "./session-backfill.js";
@@ -49,7 +49,7 @@ function createHarness(config?: Record<string, unknown>) {
     ) {
       methods.set(method, { handler, scope: options?.scope });
     },
-  } as unknown as OpenClawPluginApi;
+  } as unknown as AforaPluginApi;
   registerSessionBackfillGatewayMethods(api);
   return { api, methods };
 }

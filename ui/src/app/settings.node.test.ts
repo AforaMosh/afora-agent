@@ -30,15 +30,15 @@ function setControlUiBasePath(value: string | undefined) {
       "window",
       value == null
         ? ({} as TestWindow)
-        : ({ __OPENCLAW_CONTROL_UI_BASE_PATH__: value } as unknown as TestWindow),
+        : ({ __AFORA_CONTROL_UI_BASE_PATH__: value } as unknown as TestWindow),
     );
     return;
   }
   if (value == null) {
-    delete (window as TestWindow)["__OPENCLAW_CONTROL_UI_BASE_PATH__"];
+    delete (window as TestWindow)["__AFORA_CONTROL_UI_BASE_PATH__"];
     return;
   }
-  Object.defineProperty(window, "__OPENCLAW_CONTROL_UI_BASE_PATH__", {
+  Object.defineProperty(window, "__AFORA_CONTROL_UI_BASE_PATH__", {
     value,
     writable: true,
     configurable: true,
@@ -151,28 +151,28 @@ describe("loadSettings default gateway URL derivation", () => {
       host: "gateway.example:8443",
       pathname: "/ignored/path",
     });
-    setControlUiBasePath(" /openclaw/ ");
+    setControlUiBasePath(" /afora/ ");
 
-    expect(loadSettings().gatewayUrl).toBe(expectedGatewayUrl("/openclaw"));
+    expect(loadSettings().gatewayUrl).toBe(expectedGatewayUrl("/afora"));
   });
 
   it("binds standalone documents to the page Gateway without persisting a selection", () => {
     setTestLocation({
       protocol: "https:",
       host: "gateway.example:8443",
-      pathname: "/openclaw/approve/exec%3A1",
+      pathname: "/afora/approve/exec%3A1",
     });
-    setControlUiBasePath("/openclaw");
+    setControlUiBasePath("/afora");
     const remote = makeSettings("wss://remote.example:8443", {
       sessionKey: "agent:remote:main",
       lastActiveSessionKey: "agent:remote:main",
     });
     const sessionCredential = ["page", "session", "credential"].join("-");
-    persistSessionToken(expectedGatewayUrl("/openclaw"), sessionCredential);
+    persistSessionToken(expectedGatewayUrl("/afora"), sessionCredential);
     const before = [...Array(localStorage.length)].map((_, index) => localStorage.key(index));
 
     expect(resolvePageGatewaySettings(remote)).toMatchObject({
-      gatewayUrl: expectedGatewayUrl("/openclaw"),
+      gatewayUrl: expectedGatewayUrl("/afora"),
       token: sessionCredential,
       sessionKey: "main",
       lastActiveSessionKey: "main",
@@ -196,10 +196,10 @@ describe("loadSettings default gateway URL derivation", () => {
     setTestLocation({
       protocol: "http:",
       host: "gateway.example:18789",
-      pathname: "/apps/openclaw/chat",
+      pathname: "/apps/afora/chat",
     });
 
-    expect(loadSettings().gatewayUrl).toBe(expectedGatewayUrl("/apps/openclaw"));
+    expect(loadSettings().gatewayUrl).toBe(expectedGatewayUrl("/apps/afora"));
   });
 
   it("skips node sessionStorage accessors that warn without a storage file", () => {
@@ -230,9 +230,9 @@ describe("loadSettings default gateway URL derivation", () => {
       host: "gateway.example:8443",
       pathname: "/",
     });
-    sessionStorage.setItem("openclaw.control.token.v1", "legacy-session-token");
-    const gatewayUrl = "wss://gateway.example:8443/openclaw";
-    const scopedKey = `openclaw.control.settings.v1:${gatewayUrl}`;
+    sessionStorage.setItem("afora.control.token.v1", "legacy-session-token");
+    const gatewayUrl = "wss://gateway.example:8443/afora";
+    const scopedKey = `afora.control.settings.v1:${gatewayUrl}`;
     localStorage.setItem(
       scopedKey,
       JSON.stringify({
@@ -242,7 +242,7 @@ describe("loadSettings default gateway URL derivation", () => {
       }),
     );
     localStorage.setItem(
-      "openclaw.control.currentGateway.v1:wss://gateway.example:8443",
+      "afora.control.currentGateway.v1:wss://gateway.example:8443",
       gatewayUrl,
     );
 
@@ -256,7 +256,7 @@ describe("loadSettings default gateway URL derivation", () => {
     >;
     expect(rewritten.token).toBeUndefined();
     expect(rewritten.sessionsByGateway).toEqual({
-      "wss://gateway.example:8443/openclaw": {
+      "wss://gateway.example:8443/afora": {
         sessionKey: "agent",
         lastActiveSessionKey: "agent",
       },
@@ -359,7 +359,7 @@ describe("loadSettings default gateway URL derivation", () => {
     expect(settings.gatewayUrl).toBe(gwUrl);
     expect(settings.token).toBe("memory-only-token");
 
-    const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
+    const scopedKey = `afora.control.settings.v1:${gwUrl}`;
     expect(JSON.parse(localStorage.getItem(scopedKey) ?? "{}")).toEqual({
       gatewayUrl: gwUrl,
       theme: "claw",
@@ -404,7 +404,7 @@ describe("loadSettings default gateway URL derivation", () => {
     });
     expect(loadSettings().pinnedAgentIds).toEqual(["main", "research"]);
 
-    const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
+    const scopedKey = `afora.control.settings.v1:${gwUrl}`;
     const persisted = JSON.parse(localStorage.getItem(scopedKey) ?? "{}") as Record<
       string,
       unknown
@@ -423,7 +423,7 @@ describe("loadSettings default gateway URL derivation", () => {
 
     const gwUrl = expectedGatewayUrl("");
     localStorage.setItem(
-      `openclaw.control.settings.v1:${gwUrl}`,
+      `afora.control.settings.v1:${gwUrl}`,
       JSON.stringify({
         gatewayUrl: gwUrl,
         textScale: 123,
@@ -472,7 +472,7 @@ describe("loadSettings default gateway URL derivation", () => {
     });
 
     const gwUrl = expectedGatewayUrl("");
-    const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
+    const scopedKey = `afora.control.settings.v1:${gwUrl}`;
     saveSettings({ ...loadSettings(), chatSendShortcut: "modifier-enter" });
     expect(JSON.parse(localStorage.getItem(scopedKey) ?? "{}").chatSendShortcut).toBe(
       "modifier-enter",
@@ -499,7 +499,7 @@ describe("loadSettings default gateway URL derivation", () => {
     });
 
     const gwUrl = expectedGatewayUrl("");
-    const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
+    const scopedKey = `afora.control.settings.v1:${gwUrl}`;
     expect(loadSettings().chatFollowUpMode).toBeUndefined();
     saveSettings({ ...loadSettings(), chatFollowUpMode: "queue" });
     expect(JSON.parse(localStorage.getItem(scopedKey) ?? "{}").chatFollowUpMode).toBe("queue");
@@ -528,7 +528,7 @@ describe("loadSettings default gateway URL derivation", () => {
     });
 
     const gwUrl = expectedGatewayUrl("");
-    const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
+    const scopedKey = `afora.control.settings.v1:${gwUrl}`;
     expect(loadSettings().catalogOpenTarget).toBe("viewer");
     saveSettings({ ...loadSettings(), catalogOpenTarget: "terminal" });
     expect(JSON.parse(localStorage.getItem(scopedKey) ?? "{}").catalogOpenTarget).toBe("terminal");
@@ -553,7 +553,7 @@ describe("loadSettings default gateway URL derivation", () => {
     });
 
     const gwUrl = expectedGatewayUrl("");
-    const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
+    const scopedKey = `afora.control.settings.v1:${gwUrl}`;
     expect(loadSettings().sidebarLiveActivity).toBe(true);
 
     saveSettings({ ...loadSettings(), sidebarLiveActivity: false });
@@ -569,7 +569,7 @@ describe("loadSettings default gateway URL derivation", () => {
   it("defaults advanced settings off and persists only an explicit opt-in", () => {
     setTestLocation({ protocol: "https:", host: "gateway.example:8443", pathname: "/" });
     const gwUrl = expectedGatewayUrl("");
-    const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
+    const scopedKey = `afora.control.settings.v1:${gwUrl}`;
 
     expect(loadSettings().showAdvancedSettings).toBe(false);
     saveSettings({ ...loadSettings(), showAdvancedSettings: true });
@@ -585,7 +585,7 @@ describe("loadSettings default gateway URL derivation", () => {
   it("normalizes and persists browser-local chat message width", () => {
     setTestLocation({ protocol: "https:", host: "gateway.example:8443", pathname: "/" });
     const gwUrl = expectedGatewayUrl("");
-    const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
+    const scopedKey = `afora.control.settings.v1:${gwUrl}`;
 
     expect(normalizeChatMessageMaxWidth("  min(1280px,   82%)  ")).toBe("min(1280px, 82%)");
     expect(normalizeChatMessageMaxWidth("960px; color: red")).toBeUndefined();
@@ -610,7 +610,7 @@ describe("loadSettings default gateway URL derivation", () => {
     });
 
     const gwUrl = expectedGatewayUrl("");
-    const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
+    const scopedKey = `afora.control.settings.v1:${gwUrl}`;
     saveSettings({ ...loadSettings(), realtimeTalkInputDeviceId: " usb-mic " });
     expect(JSON.parse(localStorage.getItem(scopedKey) ?? "{}").realtimeTalkInputDeviceId).toBe(
       "usb-mic",
@@ -631,7 +631,7 @@ describe("loadSettings default gateway URL derivation", () => {
     });
 
     const gwUrl = expectedGatewayUrl("");
-    const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
+    const scopedKey = `afora.control.settings.v1:${gwUrl}`;
     saveSettings({ ...loadSettings(), realtimeTalkVideoDeviceId: " back-camera " });
     expect(JSON.parse(localStorage.getItem(scopedKey) ?? "{}").realtimeTalkVideoDeviceId).toBe(
       "back-camera",
@@ -652,7 +652,7 @@ describe("loadSettings default gateway URL derivation", () => {
     });
 
     const gwUrl = expectedGatewayUrl("");
-    const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
+    const scopedKey = `afora.control.settings.v1:${gwUrl}`;
     expect(loadSettings().composerHoldToRecord).toBe(true);
 
     saveSettings({ ...loadSettings(), composerHoldToRecord: false });
@@ -674,7 +674,7 @@ describe("loadSettings default gateway URL derivation", () => {
     });
 
     const gwUrl = expectedGatewayUrl("");
-    const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
+    const scopedKey = `afora.control.settings.v1:${gwUrl}`;
     expect(loadSettings().talkCameraAutoEnable).toBeUndefined();
 
     saveSettings({ ...loadSettings(), talkCameraAutoEnable: true });
@@ -753,7 +753,7 @@ describe("loadSettings default gateway URL derivation", () => {
       sidebarEntries: [],
     });
 
-    const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
+    const scopedKey = `afora.control.settings.v1:${gwUrl}`;
     const persisted = JSON.parse(localStorage.getItem(scopedKey) ?? "{}") as Record<
       string,
       unknown
@@ -770,7 +770,7 @@ describe("loadSettings default gateway URL derivation", () => {
       pathname: "/",
     });
     const defaults = loadSettings();
-    const scopedKey = `openclaw.control.settings.v1:${defaults.gatewayUrl}`;
+    const scopedKey = `afora.control.settings.v1:${defaults.gatewayUrl}`;
     expect(defaults.textScale).toBeUndefined();
 
     saveSettings({ ...defaults, textScale: 125 });
@@ -790,7 +790,7 @@ describe("loadSettings default gateway URL derivation", () => {
       pathname: "/",
     });
     const gatewayUrl = expectedGatewayUrl("");
-    const scopedKey = `openclaw.control.settings.v1:${gatewayUrl}`;
+    const scopedKey = `afora.control.settings.v1:${gatewayUrl}`;
     localStorage.setItem(scopedKey, JSON.stringify({ gatewayUrl, textScale: 100 }));
 
     expect(loadSettings().textScale).toBeUndefined();
@@ -858,7 +858,7 @@ describe("loadSettings default gateway URL derivation", () => {
     });
     const gwUrl = expectedGatewayUrl("");
     localStorage.setItem(
-      `openclaw.control.settings.v1:${gwUrl}`,
+      `afora.control.settings.v1:${gwUrl}`,
       JSON.stringify({
         gatewayUrl: gwUrl,
         boardSessionViews: {
@@ -890,7 +890,7 @@ describe("loadSettings default gateway URL derivation", () => {
     setTestLocation({ protocol: "https:", host: "gateway.example:8443", pathname: "/" });
     const gwUrl = expectedGatewayUrl("");
     localStorage.setItem(
-      `openclaw.control.settings.v1:${gwUrl}`,
+      `afora.control.settings.v1:${gwUrl}`,
       JSON.stringify({
         gatewayUrl: gwUrl,
         sidebarSessionLayouts: { "agent:main:main": { columns: "invalid" } },
@@ -910,7 +910,7 @@ describe("loadSettings default gateway URL derivation", () => {
     });
     const gwUrl = expectedGatewayUrl("");
     localStorage.setItem(
-      `openclaw.control.settings.v1:${gwUrl}`,
+      `afora.control.settings.v1:${gwUrl}`,
       JSON.stringify({ gatewayUrl: gwUrl, chatSplitLayout: { columns: "invalid" } }),
     );
 
@@ -956,7 +956,7 @@ describe("loadSettings default gateway URL derivation", () => {
 
     const gwUrl = expectedGatewayUrl("");
     localStorage.setItem(
-      `openclaw.control.settings.v1:${gwUrl}`,
+      `afora.control.settings.v1:${gwUrl}`,
       JSON.stringify({
         gatewayUrl: gwUrl,
         theme: "custom",
@@ -1024,7 +1024,7 @@ describe("loadSettings default gateway URL derivation", () => {
     });
 
     const gwUrl = expectedGatewayUrl("");
-    const scopedKey = `openclaw.control.settings.v1:wss://gateway.example:8443`;
+    const scopedKey = `afora.control.settings.v1:wss://gateway.example:8443`;
 
     // Pre-seed sessionsByGateway with 11 stale gateway entries so the next
     // saveSettings call pushes the total to 12 and triggers the cap (10).
@@ -1084,7 +1084,7 @@ describe("loadSettings default gateway URL derivation", () => {
     setControlUiBasePath("/gateway-b");
 
     expect(loadSettings().gatewayUrl).toBe(expectedGatewayUrl("/gateway-b"));
-    expect(localStorage.getItem("openclaw.control.settings.v1")).toBeNull();
+    expect(localStorage.getItem("afora.control.settings.v1")).toBeNull();
   });
 
   it("keeps custom gateway selections isolated per Control UI base path", () => {
@@ -1118,7 +1118,7 @@ describe("loadSettings default gateway URL derivation", () => {
       pathname: "/",
     });
     localStorage.setItem(
-      "openclaw.control.user.v1",
+      "afora.control.user.v1",
       JSON.stringify({ name: "Buns", avatar: "🦞" }),
     );
 
@@ -1126,7 +1126,7 @@ describe("loadSettings default gateway URL derivation", () => {
       name: "Buns",
       avatar: "🦞",
     });
-    expect(JSON.parse(localStorage.getItem("openclaw.control.user.v1") ?? "{}")).toEqual({
+    expect(JSON.parse(localStorage.getItem("afora.control.user.v1") ?? "{}")).toEqual({
       name: "Buns",
       avatar: "🦞",
     });
@@ -1134,7 +1134,7 @@ describe("loadSettings default gateway URL derivation", () => {
 
   it("normalizes invalid local user identity values on load", () => {
     localStorage.setItem(
-      "openclaw.control.user.v1",
+      "afora.control.user.v1",
       JSON.stringify({
         name: "  ",
         avatar: "https://example.com/avatar.png",

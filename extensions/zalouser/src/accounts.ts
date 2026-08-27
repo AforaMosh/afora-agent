@@ -1,9 +1,9 @@
-import { createAccountListHelpers } from "openclaw/plugin-sdk/account-helpers";
+import { createAccountListHelpers } from "afora-agent/plugin-sdk/account-helpers";
 // Zalouser plugin module implements accounts behavior.
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-resolution";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "afora-agent/plugin-sdk/account-resolution";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { ResolvedZalouserAccount, ZalouserAccountConfig, ZalouserConfig } from "./types.js";
 
 const loadZalouserAccountsRuntime = createLazyRuntimeModule(() => import("./accounts.runtime.js"));
@@ -21,7 +21,7 @@ const {
 });
 export { listZalouserAccountIds, resolveDefaultZalouserAccountId };
 
-function mergeZalouserAccountConfig(cfg: OpenClawConfig, accountId: string): ZalouserAccountConfig {
+function mergeZalouserAccountConfig(cfg: AforaConfig, accountId: string): ZalouserAccountConfig {
   const merged = resolveMergedZalouserAccountConfig(cfg, accountId);
   return {
     ...merged,
@@ -46,7 +46,7 @@ function resolveProfile(config: ZalouserAccountConfig, accountId: string): strin
   return "default";
 }
 
-function resolveZalouserAccountBase(params: { cfg: OpenClawConfig; accountId?: string | null }) {
+function resolveZalouserAccountBase(params: { cfg: AforaConfig; accountId?: string | null }) {
   const accountId = normalizeAccountId(
     params.accountId ?? resolveDefaultZalouserAccountId(params.cfg),
   );
@@ -62,7 +62,7 @@ function resolveZalouserAccountBase(params: { cfg: OpenClawConfig; accountId?: s
 }
 
 export function resolveZalouserAccountSync(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): ResolvedZalouserAccount {
   const { accountId, enabled, merged, profile } = resolveZalouserAccountBase(params);

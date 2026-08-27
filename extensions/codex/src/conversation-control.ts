@@ -1,14 +1,14 @@
-import { resolveAgentDir } from "openclaw/plugin-sdk/agent-runtime";
+import { resolveAgentDir } from "afora-agent/plugin-sdk/agent-runtime";
 // Codex plugin module implements conversation control behavior.
 import {
   applyModelOverrideWithAuthProfileCompatibility,
   ModelSelectionLockedError,
-} from "openclaw/plugin-sdk/model-session-runtime";
+} from "afora-agent/plugin-sdk/model-session-runtime";
 import {
   getSessionEntry,
   patchSessionEntry,
   resolveStorePath,
-} from "openclaw/plugin-sdk/session-store-runtime";
+} from "afora-agent/plugin-sdk/session-store-runtime";
 import { resolveCodexBindingAppServerConnection } from "./app-server/binding-connection.js";
 import type { CodexAppServerClient } from "./app-server/client.js";
 import { isCodexFastServiceTier } from "./app-server/config.js";
@@ -42,7 +42,7 @@ type CodexAppServerBindingLookup = Omit<CodexAppServerAuthProfileLookup, "authPr
 
 type PermissionsMode = "default" | "yolo";
 
-const CODEX_CONVERSATION_CONTROL_STATE = Symbol.for("openclaw.codex.conversationControl");
+const CODEX_CONVERSATION_CONTROL_STATE = Symbol.for("afora.codex.conversationControl");
 
 function getActiveTurns(): Map<string, ActiveTurn> {
   const globalState = globalThis as typeof globalThis & {
@@ -385,7 +385,7 @@ async function requireThreadBinding(
 ) {
   const binding = await bindingStore.read(identity);
   if (!binding?.threadId) {
-    throw new Error("No Codex thread is attached to this OpenClaw session yet.");
+    throw new Error("No Codex thread is attached to this Afora session yet.");
   }
   return binding;
 }

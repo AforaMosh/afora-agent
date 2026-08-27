@@ -1,5 +1,5 @@
 // Browser tests cover cdp.helpers.fuzz plugin behavior.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import {
   appendCdpPath,

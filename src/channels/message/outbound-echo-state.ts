@@ -1,4 +1,4 @@
-const OUTBOUND_MESSAGE_IDENTITIES_KEY = Symbol.for("openclaw.outboundMessageIdentities");
+const OUTBOUND_MESSAGE_IDENTITIES_KEY = Symbol.for("afora.outboundMessageIdentities");
 
 type OutboundMessageIdentityState = Map<string, number>;
 

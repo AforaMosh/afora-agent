@@ -7,7 +7,7 @@ Use this rubric when assigning category Completeness scores for the
 
 For each category, ask:
 
-- Can an operator deploy and manage OpenClaw on Kubernetes end to end?
+- Can an operator deploy and manage Afora on Kubernetes end to end?
 - Are the taxonomy features present as supported manifests, commands, and docs rather than examples only?
 - Are setup, normal operation, status or inspection, redeploy, teardown, and secret rotation represented where relevant?
 - Are local Kind validation, namespace/image customization, provider secrets, and secure exposure branches covered?

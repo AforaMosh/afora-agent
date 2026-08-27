@@ -1,28 +1,28 @@
 // Ollama embedding runtime implements provider integration.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/provider-auth";
+import type { AforaConfig } from "afora-agent/plugin-sdk/provider-auth";
 import {
   isKnownEnvApiKeyMarker,
   isNonSecretApiKeyMarker,
   normalizeOptionalSecretInput,
-} from "openclaw/plugin-sdk/provider-auth";
-import { resolveEnvApiKey } from "openclaw/plugin-sdk/provider-auth-runtime";
+} from "afora-agent/plugin-sdk/provider-auth";
+import { resolveEnvApiKey } from "afora-agent/plugin-sdk/provider-auth-runtime";
 import {
   readProviderJsonResponse,
   readResponseTextLimited,
-} from "openclaw/plugin-sdk/provider-http";
-import { normalizeProviderId } from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/provider-http";
+import { normalizeProviderId } from "afora-agent/plugin-sdk/provider-model-shared";
 import {
   coerceSecretRef,
   hasConfiguredSecretInput,
   normalizeResolvedSecretInputString,
   resolveConfiguredSecretInputString,
-} from "openclaw/plugin-sdk/secret-input-runtime";
+} from "afora-agent/plugin-sdk/secret-input-runtime";
 import {
   formatErrorMessage,
   ssrfPolicyFromHttpBaseUrlAllowedOrigin,
   type SsrFPolicy,
-} from "openclaw/plugin-sdk/ssrf-runtime";
-import { fetchConfiguredLocalOriginWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime-internal";
+} from "afora-agent/plugin-sdk/ssrf-runtime";
+import { fetchConfiguredLocalOriginWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime-internal";
 import { DEFAULT_OLLAMA_EMBEDDING_MODEL, OLLAMA_CLOUD_BASE_URL } from "./defaults.js";
 import { normalizeOllamaWireModelId } from "./model-id.js";
 import { readProviderBaseUrl } from "./provider-base-url.js";
@@ -46,7 +46,7 @@ type MemoryCoreAcquireLocalService = (
 ) => Promise<{ release: () => void } | undefined>;
 
 type OllamaEmbeddingOptions = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentDir?: string;
   provider?: string;
   remote?: {
@@ -222,7 +222,7 @@ function resolveSourcedOllamaEmbeddingKey(params: {
 }
 
 async function resolveConfiguredOllamaEmbeddingSecret(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   value: unknown;
   path: string;
 }): Promise<string | undefined> {

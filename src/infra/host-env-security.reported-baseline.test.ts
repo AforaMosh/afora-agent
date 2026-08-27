@@ -1,8 +1,8 @@
 // Covers reported host-env security baseline parity.
 import fs from "node:fs";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
-import { sortUniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { expectDefined } from "@afora/normalization-core";
+import { sortUniqueStrings } from "@afora/normalization-core/string-normalization";
 import { describe, expect, it } from "vitest";
 import {
   isDangerousHostEnvOverrideVarName,

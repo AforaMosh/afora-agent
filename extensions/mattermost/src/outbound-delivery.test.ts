@@ -1,5 +1,5 @@
 // Mattermost tests cover the shared outbound delivery path.
-import { sendDurableMessageBatch } from "openclaw/plugin-sdk/channel-outbound";
+import { sendDurableMessageBatch } from "afora-agent/plugin-sdk/channel-outbound";
 import {
   addTestHook,
   createEmptyPluginRegistry,
@@ -9,7 +9,7 @@ import {
   resetGlobalHookRunner,
   setActivePluginRegistry,
   type PluginHookRegistration,
-} from "openclaw/plugin-sdk/channel-test-helpers";
+} from "afora-agent/plugin-sdk/channel-test-helpers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const sendMessageMattermostMock = vi.hoisted(() => vi.fn());

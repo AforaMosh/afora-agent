@@ -1,8 +1,8 @@
 // Memory Core provider module implements model/runtime integration.
 import type {
-  OpenClawConfig,
+  AforaConfig,
   ResolvedMemorySearchConfig,
-} from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-foundation";
 import {
   resolveEmbeddingProviderFallbackModel,
   resolveEmbeddingProviderFallbackRemote,
@@ -183,7 +183,7 @@ export function applyMemoryFallbackProviderState(params: {
 }
 
 export function resolveMemoryFallbackProviderRequest(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   settings: ResolvedMemorySearchConfig;
   currentProviderId: string | null;
 }): {

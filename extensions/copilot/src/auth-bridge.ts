@@ -2,7 +2,7 @@
 import { createHash } from "node:crypto";
 import { homedir as osHomedir } from "node:os";
 import { join, resolve } from "node:path";
-import { readNonEmptyStringPreservingWhitespace as readNonEmptyString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { readNonEmptyStringPreservingWhitespace as readNonEmptyString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 /**
  * Pure functional auth resolver for the copilot agent runtime.
@@ -20,15 +20,15 @@ import { readNonEmptyStringPreservingWhitespace as readNonEmptyString } from "op
  *   - Reads optional explicit overrides from the harness attempt params
  *     (`auth.useLoggedInUser`, `auth.gitHubToken`) for direct CLI / test
  *     use cases.
- *   - Falls back to OPENCLAW_GITHUB_TOKEN, COPILOT_GITHUB_TOKEN,
+ *   - Falls back to AFORA_GITHUB_TOKEN, COPILOT_GITHUB_TOKEN,
  *     GH_TOKEN, or GITHUB_TOKEN env vars (in that precedence) when
  *     no contract-resolved token is given; synthesises a stable,
  *     non-reversible pool fingerprint so token rotation busts the
  *     client pool cleanly.
  *   - Computes a per-agent `copilotHome` default
- *     (`<openClawHome>/.openclaw/agents/<agentId>/copilot`, or
+ *     (`<aforaHome>/.afora/agents/<agentId>/copilot`, or
  *     `<agentDir>/copilot` when an agent directory is supplied) that
- *     respects `OPENCLAW_HOME` for the home directory root.
+ *     respects `AFORA_HOME` for the home directory root.
  *   - Defaults to `useLoggedInUser` when no token signal is available.
  *
  * Precedence (highest to lowest):
@@ -38,7 +38,7 @@ import { readNonEmptyStringPreservingWhitespace as readNonEmptyString } from "op
  *   3. `resolvedApiKey` + `authProfileId` from the contract (core's
  *      AuthProfileStore-resolved token — the production main path for
  *      a configured `github-copilot` auth profile)
- *   4. OPENCLAW_GITHUB_TOKEN, then COPILOT_GITHUB_TOKEN, then
+ *   4. AFORA_GITHUB_TOKEN, then COPILOT_GITHUB_TOKEN, then
  *      GH_TOKEN, then GITHUB_TOKEN env vars (mirrors the
  *      shipped `github-copilot` provider precedence so headless
  *      users who already follow the documented
@@ -262,7 +262,7 @@ function resolveCopilotHome(args: {
   }
   // When the host hands us an agent directory we isolate the SDK CLI state
   // (config.json, logs/, session-store.db, session-state/) under a dedicated
-  // "copilot" subdir so it cannot collide with OpenClaw's own files
+  // "copilot" subdir so it cannot collide with Afora's own files
   // (models.json, auth-profiles.json, ...) in the same agent directory.
   // This matches the documented layout and mirrors how the codex harness
   // isolates `<agentDir>/codex-home/`.
@@ -270,11 +270,11 @@ function resolveCopilotHome(args: {
     return resolve(join(args.agentDir, "copilot"));
   }
 
-  const openClawHome = readNonEmptyString(args.env.OPENCLAW_HOME);
-  const rootHome = openClawHome ? resolve(openClawHome) : safeHomeDir(args.homeDir);
+  const aforaHome = readNonEmptyString(args.env.AFORA_HOME);
+  const rootHome = aforaHome ? resolve(aforaHome) : safeHomeDir(args.homeDir);
   // Per-agent isolation per proposal section 3.6:
-  //   <openClawHome>/.openclaw/agents/<agentId>/copilot
-  return resolve(join(rootHome, ".openclaw", "agents", args.agentId, "copilot"));
+  //   <aforaHome>/.afora/agents/<agentId>/copilot
+  return resolve(join(rootHome, ".afora", "agents", args.agentId, "copilot"));
 }
 
 function safeHomeDir(homeDir: () => string): string {
@@ -292,7 +292,7 @@ function safeHomeDir(homeDir: () => string): string {
 function readEnvTokenFallback(
   env: NodeJS.ProcessEnv,
 ): { token: string; profileId: string; profileVersion: string } | undefined {
-  // OPENCLAW_GITHUB_TOKEN is the harness-specific override and stays at
+  // AFORA_GITHUB_TOKEN is the harness-specific override and stays at
   // the top so operators can pin a token without disturbing system-wide
   // gh / Copilot CLI config. The remaining entries mirror the shipped
   // `github-copilot` provider precedence
@@ -303,7 +303,7 @@ function readEnvTokenFallback(
   // agentRuntime.id: "copilot" gets the token they configured rather
   // than silently falling through to the logged-in CLI user.
   const candidates: Array<{ name: string; value: string | undefined }> = [
-    { name: "OPENCLAW_GITHUB_TOKEN", value: readNonEmptyString(env.OPENCLAW_GITHUB_TOKEN) },
+    { name: "AFORA_GITHUB_TOKEN", value: readNonEmptyString(env.AFORA_GITHUB_TOKEN) },
     { name: "COPILOT_GITHUB_TOKEN", value: readNonEmptyString(env.COPILOT_GITHUB_TOKEN) },
     { name: "GH_TOKEN", value: readNonEmptyString(env.GH_TOKEN) },
     { name: "GITHUB_TOKEN", value: readNonEmptyString(env.GITHUB_TOKEN) },

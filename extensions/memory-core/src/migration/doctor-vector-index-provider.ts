@@ -1,5 +1,5 @@
 import path from "node:path";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import {
   createVectorIndexProviderDiagnostic,
   type InspectConfiguredProvider,
@@ -9,8 +9,8 @@ import {
 // enumeration does not cold-load it with this closure.
 const inspectConfiguredProvider: InspectConfiguredProvider = async (params) => {
   const [{ resolveAgentConfig }, foundation] = await Promise.all([
-    import("openclaw/plugin-sdk/agent-runtime"),
-    import("openclaw/plugin-sdk/memory-core-host-engine-foundation"),
+    import("afora-agent/plugin-sdk/agent-runtime"),
+    import("afora-agent/plugin-sdk/memory-core-host-engine-foundation"),
   ]);
   let settings: ReturnType<typeof foundation.resolveMemorySearchConfig>;
   try {

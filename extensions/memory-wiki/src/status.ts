@@ -1,9 +1,9 @@
 // Memory Wiki plugin module implements status behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { listActiveMemoryPublicArtifacts } from "openclaw/plugin-sdk/memory-host-core";
-import { pathExists } from "openclaw/plugin-sdk/security-runtime";
-import type { OpenClawConfig } from "../api.js";
+import { listActiveMemoryPublicArtifacts } from "afora-agent/plugin-sdk/memory-host-core";
+import { pathExists } from "afora-agent/plugin-sdk/security-runtime";
+import type { AforaConfig } from "../api.js";
 import { walkMemoryWikiDirectory } from "./bounded-walk.js";
 import { filterMemoryWikiBridgeArtifacts, resolveMemoryWikiVaultAgentId } from "./bridge.js";
 import type { ResolvedMemoryWikiConfig } from "./config.js";
@@ -65,7 +65,7 @@ export type MemoryWikiDoctorReport = {
 };
 
 type ResolveMemoryWikiStatusDeps = {
-  appConfig?: OpenClawConfig;
+  appConfig?: AforaConfig;
   callerAgentId?: string;
   pathExists?: (inputPath: string) => Promise<boolean>;
   listPublicArtifacts?: typeof listActiveMemoryPublicArtifacts;
@@ -285,7 +285,7 @@ export function buildMemoryWikiDoctorReport(status: MemoryWikiStatus): MemoryWik
     code: warning.code,
     message:
       warning.code === "vault-missing"
-        ? "Run `openclaw wiki init` to create the vault layout."
+        ? "Run `afora wiki init` to create the vault layout."
         : warning.code === "obsidian-cli-missing"
           ? "Install the official Obsidian CLI or disable `obsidian.useOfficialCli`."
           : warning.code === "bridge-disabled"

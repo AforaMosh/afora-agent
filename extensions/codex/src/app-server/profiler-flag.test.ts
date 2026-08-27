@@ -16,7 +16,7 @@ describe("isCodexAppServerProfilerEnabled", () => {
     ).toBe(true);
     expect(
       isCodexAppServerProfilerEnabled(undefined, {
-        OPENCLAW_DIAGNOSTICS: "profiler",
+        AFORA_DIAGNOSTICS: "profiler",
       } as NodeJS.ProcessEnv),
     ).toBe(true);
   });
@@ -24,7 +24,7 @@ describe("isCodexAppServerProfilerEnabled", () => {
   it("uses the documented diagnostics env disable override", () => {
     expect(
       isCodexAppServerProfilerEnabled({ diagnostics: { flags: ["codex.profiler"] } }, {
-        OPENCLAW_DIAGNOSTICS: "0",
+        AFORA_DIAGNOSTICS: "0",
       } as NodeJS.ProcessEnv),
     ).toBe(false);
   });

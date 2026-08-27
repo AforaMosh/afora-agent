@@ -1,4 +1,4 @@
-import type { WebSearchProviderPlugin } from "openclaw/plugin-sdk/provider-web-search-contract";
+import type { WebSearchProviderPlugin } from "afora-agent/plugin-sdk/provider-web-search-contract";
 import { createParallelFreeWebSearchProviderBase } from "./src/parallel-free-web-search-provider.shared.js";
 import { createParallelWebSearchProviderBase } from "./src/parallel-web-search-provider.shared.js";
 

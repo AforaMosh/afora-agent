@@ -42,7 +42,7 @@ function writeChannelCatalog(
       entries: [
         {
           name: `@example/${id}`,
-          openclaw: {
+          afora: {
             channel: { id, label, selectionLabel: label, docsPath: `/channels/${id}`, blurb: id },
             install: { npmSpec: `@example/${id}`, ...(defaultChoice ? { defaultChoice } : {}) },
           },
@@ -55,21 +55,21 @@ function writeChannelCatalog(
 describe("channel plugin catalog", () => {
   it("keeps third-party channel ids mapped with catalog install trust", () => {
     const options = {
-      workspaceDir: "/tmp/openclaw-channel-catalog-empty-workspace",
+      workspaceDir: "/tmp/afora-channel-catalog-empty-workspace",
       env: {},
     };
 
     const wecom = getChannelPluginCatalogEntry("wecom", options);
     expect(wecom?.id).toBe("wecom");
-    expect(wecom?.pluginId).toBe("wecom-openclaw-plugin");
+    expect(wecom?.pluginId).toBe("wecom-afora-plugin");
     expect(wecom?.trustedSourceLinkedOfficialInstall).toBe(true);
-    expect(wecom?.install?.npmSpec).toBe("@wecom/wecom-openclaw-plugin@2026.5.7");
+    expect(wecom?.install?.npmSpec).toBe("@wecom/wecom-afora-plugin@2026.5.7");
 
     const yuanbao = getChannelPluginCatalogEntry("yuanbao", options);
     expect(yuanbao?.id).toBe("yuanbao");
-    expect(yuanbao?.pluginId).toBe("openclaw-plugin-yuanbao");
+    expect(yuanbao?.pluginId).toBe("afora-plugin-yuanbao");
     expect(yuanbao?.trustedSourceLinkedOfficialInstall).toBe(true);
-    expect(yuanbao?.install?.npmSpec).toBe("openclaw-plugin-yuanbao@2.15.0");
+    expect(yuanbao?.install?.npmSpec).toBe("afora-plugin-yuanbao@2.15.0");
   });
 
   it("excludes only the rejected origin/plugin pair when resolving fallback copies", () => {
@@ -92,7 +92,7 @@ describe("channel plugin catalog", () => {
         pluginId: "telegram",
         origin: "bundled",
         rootDir: "/tmp/bundled-telegram",
-        packageName: "@openclaw/telegram",
+        packageName: "@afora/telegram",
         channel: {
           id: "telegram",
           label: "Telegram",
@@ -100,7 +100,7 @@ describe("channel plugin catalog", () => {
           docsPath: "/channels/telegram",
           blurb: "bundled",
         },
-        install: { npmSpec: "@openclaw/telegram@1.0.0" },
+        install: { npmSpec: "@afora/telegram@1.0.0" },
       },
     ] satisfies PluginChannelCatalogEntry[]);
 
@@ -114,7 +114,7 @@ describe("channel plugin catalog", () => {
   it.each(["__proto__", "constructor", "toString"])(
     "rejects inherited install default choice %s from external catalog input",
     (defaultChoice) => {
-      const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-channel-catalog-choice-"));
+      const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-channel-catalog-choice-"));
       tempDirs.push(root);
       const catalogPath = path.join(root, "catalog.json");
       writeChannelCatalog(catalogPath, "unsafe-choice", "Unsafe Choice", defaultChoice);
@@ -129,7 +129,7 @@ describe("channel plugin catalog", () => {
   );
 
   it("reloads external catalog entries after the explicit plugin metadata lifecycle reset", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-channel-external-catalog-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-channel-external-catalog-"));
     tempDirs.push(root);
     const catalogPath = path.join(root, "catalog.json");
     const options = { catalogPaths: [catalogPath], workspaceDir: root, env: {} };
@@ -144,9 +144,9 @@ describe("channel plugin catalog", () => {
   });
 
   it("reloads official generated catalog entries after the explicit plugin metadata lifecycle reset", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-channel-official-catalog-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-channel-official-catalog-"));
     tempDirs.push(root);
-    fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ name: "openclaw" }));
+    fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ name: "afora" }));
     vi.spyOn(process, "cwd").mockReturnValue(root);
     const catalogPath = path.join(root, "dist", "channel-catalog.json");
     const options = { catalogPaths: [path.join(root, "external.json")], env: {} };

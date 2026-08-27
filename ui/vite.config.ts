@@ -166,7 +166,7 @@ function normalizeBuildTimestamp(value: string | undefined): string | null {
   }
   const timestamp = normalizeControlUiBuildInfo({ builtAt: explicit }).builtAt;
   if (!timestamp) {
-    throw new Error("OPENCLAW_BUILD_TIMESTAMP must be a valid UTC ISO-8601 timestamp ending in Z");
+    throw new Error("AFORA_BUILD_TIMESTAMP must be a valid UTC ISO-8601 timestamp ending in Z");
   }
   return timestamp;
 }
@@ -212,7 +212,7 @@ export function resolveControlUiBuildInfo(
         commitAt: readCommitTimestamp(commit),
       }).commitAt
     : null;
-  const builtAt = normalizeBuildTimestamp(env.OPENCLAW_BUILD_TIMESTAMP);
+  const builtAt = normalizeBuildTimestamp(env.AFORA_BUILD_TIMESTAMP);
   // Branch/dirty identity is advisory: the readers return null instead of
   // throwing, so malformed environment or Git state never blocks a build.
   // Tags must not be presented as branches in GitHub-built artifacts.
@@ -222,13 +222,13 @@ export function resolveControlUiBuildInfo(
     normalizeControlUiBuildInfo({ branch: githubBranch }).branch ??
     normalizeControlUiBuildInfo({ branch: (sources.readGitBranch ?? readGitBranch)() }).branch;
   const dirty = (sources.readGitDirty ?? readGitDirty)();
-  const releaseFlag = env.OPENCLAW_CONTROL_UI_RELEASE_BUILD?.trim();
+  const releaseFlag = env.AFORA_CONTROL_UI_RELEASE_BUILD?.trim();
   if (releaseFlag && releaseFlag !== "1") {
-    throw new Error("OPENCLAW_CONTROL_UI_RELEASE_BUILD must be 1 when set");
+    throw new Error("AFORA_CONTROL_UI_RELEASE_BUILD must be 1 when set");
   }
   const release = releaseFlag === "1";
   const metadata = { version, commit, builtAt, release };
-  const explicitBuildId = env.OPENCLAW_CONTROL_UI_BUILD_ID?.trim();
+  const explicitBuildId = env.AFORA_CONTROL_UI_BUILD_ID?.trim();
   return {
     ...metadata,
     commitAt,
@@ -289,7 +289,7 @@ function resolveTsconfigPathAlias(key: string, target: string): ControlUiViteAli
 
 function sourcePackageAlias(packageId: string, subpath?: string): ControlUiViteAlias {
   return {
-    find: `@openclaw/${packageId}${subpath ? `/${subpath}` : ""}`,
+    find: `@afora/${packageId}${subpath ? `/${subpath}` : ""}`,
     replacement: path.join(
       repoRoot,
       "packages",
@@ -391,7 +391,7 @@ function controlUiServiceWorkerBuildIdPlugin(buildId: string, buildOutDir: strin
       const swPath = path.join(buildOutDir, "sw.js");
       const publicSwPath = path.join(here, "public/sw.js");
       const source = fs.readFileSync(publicSwPath, "utf8");
-      const placeholder = '"__OPENCLAW_CONTROL_UI_BUILD_ID__"';
+      const placeholder = '"__AFORA_CONTROL_UI_BUILD_ID__"';
       const updated = source.replace(placeholder, JSON.stringify(buildId));
       if (updated === source) {
         throw new Error(`Control UI service worker build id placeholder missing in ${swPath}`);
@@ -421,7 +421,7 @@ function controlUiPrecompressedAssetsPlugin(buildOutDir: string): Plugin {
 }
 
 export default function controlUiViteConfig(options: { outDir?: string } = {}): UserConfig {
-  const envBase = process.env.OPENCLAW_CONTROL_UI_BASE_PATH?.trim();
+  const envBase = process.env.AFORA_CONTROL_UI_BASE_PATH?.trim();
   const base = envBase ? normalizeBase(envBase) : "./";
   const bootstrapConfigPath =
     base === "./" ? "/control-ui-config.json" : `${base}control-ui-config.json`;
@@ -430,7 +430,7 @@ export default function controlUiViteConfig(options: { outDir?: string } = {}): 
   return {
     base,
     define: {
-      "globalThis.OPENCLAW_CONTROL_UI_BUILD_INFO": JSON.stringify(buildInfo),
+      "globalThis.AFORA_CONTROL_UI_BUILD_INFO": JSON.stringify(buildInfo),
     },
     publicDir: path.resolve(here, "public"),
     css: {

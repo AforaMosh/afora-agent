@@ -11,7 +11,7 @@ import {
 
 describe("SQLite sessions/transcripts schema baseline", () => {
   it("includes session and transcript DDL while excluding unrelated agent tables", async () => {
-    const sourceSql = await readFile("src/state/openclaw-agent-schema.sql", "utf8");
+    const sourceSql = await readFile("src/state/afora-agent-schema.sql", "utf8");
 
     const rendered = renderSqliteSessionSchemaBaseline(sourceSql);
 
@@ -44,7 +44,7 @@ describe("SQLite sessions/transcripts schema baseline", () => {
   });
 
   it("checks generated SQL and hash artifacts for drift", async () => {
-    const tmp = await mkdtemp(path.join(os.tmpdir(), "openclaw-sqlite-schema-baseline-"));
+    const tmp = await mkdtemp(path.join(os.tmpdir(), "afora-sqlite-schema-baseline-"));
     const schemaPath = path.join(tmp, "schema.sql");
     const sqlPath = path.join(tmp, "baseline.sql");
     const hashPath = path.join(tmp, "baseline.sha256");

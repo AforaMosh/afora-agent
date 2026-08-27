@@ -1,7 +1,7 @@
 // Covers send validation for target/channel mismatches, configured channel
 // availability, and explicit target requirements.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createTestRegistry } from "../../test-utils/channel-plugins.js";
 import { MessageActionDeniedError } from "./message-action-denial.js";
@@ -12,7 +12,7 @@ import {
   workspaceTestPlugin,
 } from "./message-action-runner.test-support.js";
 
-const emptyConfig = {} as OpenClawConfig;
+const emptyConfig = {} as AforaConfig;
 describe("runMessageAction send validation", () => {
   beforeEach(() => {
     setActivePluginRegistry(
@@ -162,7 +162,7 @@ describe("runMessageAction send validation", () => {
 
   it("types disabled broadcast as an outcome-owning policy denial", async () => {
     const failure = runMessageAction({
-      cfg: { tools: { message: { broadcast: { enabled: false } } } } as OpenClawConfig,
+      cfg: { tools: { message: { broadcast: { enabled: false } } } } as AforaConfig,
       action: "broadcast",
       params: { targets: ["qa-channel:direct:one"], message: "hello" },
     });

@@ -1,4 +1,4 @@
-import { normalizeMessagePresentation } from "openclaw/plugin-sdk/interactive-runtime";
+import { normalizeMessagePresentation } from "afora-agent/plugin-sdk/interactive-runtime";
 import { describe, expect, it } from "vitest";
 import {
   buildFeishuPresentationCardElements,

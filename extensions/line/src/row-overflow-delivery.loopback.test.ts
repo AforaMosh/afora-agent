@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import { chunkMarkdownText } from "openclaw/plugin-sdk/reply-runtime";
+import { chunkMarkdownText } from "afora-agent/plugin-sdk/reply-runtime";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PluginRuntime } from "../api.js";
 import { lineOutboundAdapter } from "./outbound.js";
@@ -88,7 +88,7 @@ const {
   })),
 }));
 
-vi.mock("openclaw/plugin-sdk/plugin-config-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/plugin-config-runtime", () => ({
   requireRuntimeConfig: requireRuntimeConfigMock,
 }));
 
@@ -100,18 +100,18 @@ vi.mock("./channel-access-token.js", () => ({
   resolveLineChannelAccessToken: resolveLineChannelAccessTokenMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/channel-activity-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/channel-activity-runtime", () => ({
   recordChannelActivity: recordChannelActivityMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/runtime-env", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/runtime-env")>(
-    "openclaw/plugin-sdk/runtime-env",
+vi.mock("afora-agent/plugin-sdk/runtime-env", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/runtime-env")>(
+    "afora-agent/plugin-sdk/runtime-env",
   );
   return { ...actual, logVerbose: logVerboseMock };
 });
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ({
   resolvePinnedHostnameWithPolicy: resolvePinnedHostnameWithPolicyMock,
 }));
 
@@ -214,12 +214,12 @@ describe("Row-overflow table delivery through production outbound adapter over l
   });
 
   afterAll(() => {
-    vi.doUnmock("openclaw/plugin-sdk/plugin-config-runtime");
+    vi.doUnmock("afora-agent/plugin-sdk/plugin-config-runtime");
     vi.doUnmock("./accounts.js");
     vi.doUnmock("./channel-access-token.js");
-    vi.doUnmock("openclaw/plugin-sdk/channel-activity-runtime");
-    vi.doUnmock("openclaw/plugin-sdk/runtime-env");
-    vi.doUnmock("openclaw/plugin-sdk/ssrf-runtime");
+    vi.doUnmock("afora-agent/plugin-sdk/channel-activity-runtime");
+    vi.doUnmock("afora-agent/plugin-sdk/runtime-env");
+    vi.doUnmock("afora-agent/plugin-sdk/ssrf-runtime");
     vi.resetModules();
   });
 

@@ -13,10 +13,10 @@ import {
   type AgentDeletionJournalCleanupPath,
   type AgentDeletionJournalEntry,
 } from "../state/agent-deletion-journal.js";
-import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db-contract.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+import type { AforaStateDatabaseOptions } from "../state/afora-state-db-contract.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 
-const AGENT_LIFECYCLE_KEY = Symbol.for("openclaw.agentLifecycle");
+const AGENT_LIFECYCLE_KEY = Symbol.for("afora.agentLifecycle");
 const agentLifecycle = resolveGlobalMap<string, "deleting" | "deleted">(
   AGENT_LIFECYCLE_KEY,
   "close-and-restart",
@@ -30,9 +30,9 @@ export class AgentDeletionCommitUncertainError extends Error {
   }
 }
 
-function lifecycleKey(agentId: string, options: OpenClawStateDatabaseOptions): string {
+function lifecycleKey(agentId: string, options: AforaStateDatabaseOptions): string {
   const databasePath = path.resolve(
-    options.path ?? resolveOpenClawStateSqlitePath(options.env ?? process.env),
+    options.path ?? resolveAforaStateSqlitePath(options.env ?? process.env),
   );
   return `${databasePath}\0${agentId}`;
 }
@@ -52,7 +52,7 @@ export function beginAgentDeletion(
     cleanupPaths?: AgentDeletionJournalCleanupPath[];
     deleteFiles?: boolean;
   },
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): {
   entry: AgentDeletionJournalEntry;
   commit: () => void;
@@ -101,7 +101,7 @@ export function beginAgentDeletion(
 export function claimCompletedAgentDeletion(
   agentId: string,
   operationId: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): boolean {
   const id = normalizeAgentId(agentId);
   const removed = claimCompletedAgentDeletionJournal(id, operationId, options);
@@ -114,7 +114,7 @@ export function claimCompletedAgentDeletion(
 /** Return whether this process must refuse new authority for an agent id. */
 export function isAgentDeletionBlocked(
   agentId: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): boolean {
   const id = normalizeAgentId(agentId);
   const key = lifecycleKey(id, options);

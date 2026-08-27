@@ -1,7 +1,7 @@
 // Tlon plugin module implements history behavior.
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime";
-import { asNullableRecord as asRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime";
+import { asNullableRecord as asRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { extractMessageText } from "./utils.js";
 
 /**

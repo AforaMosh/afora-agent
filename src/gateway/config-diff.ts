@@ -1,6 +1,6 @@
 // Config path diff helper used by gateway mutation diagnostics.
 import { isDeepStrictEqual } from "node:util";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isPlainObject } from "../utils.js";
 
 /** Return dotted config paths whose values differ between two config snapshots. */
@@ -37,8 +37,8 @@ export function diffConfigPaths(prev: unknown, next: unknown, prefix = ""): stri
 
 /** Preserve startup-only restart boundaries hidden by whole-object config changes. */
 export function diffGatewayReloadPaths(
-  prevConfig: OpenClawConfig,
-  nextConfig: OpenClawConfig,
+  prevConfig: AforaConfig,
+  nextConfig: AforaConfig,
 ): string[] {
   const changedPaths = diffConfigPaths(prevConfig, nextConfig);
   if (!changedPaths.includes("mcp")) {

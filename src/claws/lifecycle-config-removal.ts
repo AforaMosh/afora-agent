@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import { listAgentEntries } from "../agents/agent-scope.js";
 import { getRuntimeConfig } from "../config/config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   AgentConfigPreconditionError,
   deleteAgentConfigEntry,
@@ -15,11 +15,11 @@ import {
   type ClawTrashPath,
 } from "./lifecycle-delete-support.js";
 
-export type ConfigCommit = (transform: (config: OpenClawConfig) => OpenClawConfig) => Promise<void>;
+export type ConfigCommit = (transform: (config: AforaConfig) => AforaConfig) => Promise<void>;
 
 export { digestClawAgentConfig } from "./agent-config-digest.js";
 
-export function digestClawAgentRemovalSurface(config: OpenClawConfig, agentId: string): string {
+export function digestClawAgentRemovalSurface(config: AforaConfig, agentId: string): string {
   const normalizedId = normalizeAgentId(agentId);
   const surface = {
     bindings: (config.bindings ?? []).filter(
@@ -38,23 +38,23 @@ export async function claimClawAgentConfigRemoval(params: {
   expectedRemovalSurfaceDigest: string;
   expectedState: "present" | "missing";
   fallbackWorkspace: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   commitConfig?: ConfigCommit;
   trashPath?: ClawTrashPath;
   onModified: () => Error;
 }): Promise<{
   agentRemoved: boolean;
   cleanupTargets?: ClawCleanupTargets;
-  configBeforeDelete: OpenClawConfig;
-  nextConfig: OpenClawConfig;
+  configBeforeDelete: AforaConfig;
+  nextConfig: AforaConfig;
 }> {
   if (params.commitConfig) {
     let result:
       | {
           agentRemoved: boolean;
           cleanupTargets?: ClawCleanupTargets;
-          configBeforeDelete: OpenClawConfig;
-          nextConfig: OpenClawConfig;
+          configBeforeDelete: AforaConfig;
+          nextConfig: AforaConfig;
         }
       | undefined;
     await params.commitConfig((config) => {

@@ -1,5 +1,5 @@
 // Google plugin module implements oauth token shared behavior.
-import { readStringValue } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { readStringValue } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 type GoogleOauthApiKeyCredential = {
   type?: string;

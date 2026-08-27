@@ -5,8 +5,8 @@ import path from "node:path";
 import {
   createPluginRuntimeMock,
   createStartAccountContext,
-} from "openclaw/plugin-sdk/channel-test-helpers";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+} from "afora-agent/plugin-sdk/channel-test-helpers";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readCachedTelegramBotInfo, writeCachedTelegramBotInfo } from "./bot-info-cache.js";
 import type { TelegramBotInfo } from "./bot-info.js";
@@ -29,8 +29,8 @@ const tempRoots: string[] = [];
 const startupBotInfo: TelegramBotInfo = {
   id: 123456,
   is_bot: true,
-  first_name: "OpenClaw",
-  username: "openclaw_bot",
+  first_name: "Afora",
+  username: "afora_bot",
   can_join_groups: true,
   can_read_all_group_messages: false,
   can_manage_bots: false,
@@ -43,9 +43,9 @@ const startupBotInfo: TelegramBotInfo = {
 };
 
 async function useTempStateDir(): Promise<string> {
-  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-tg-channel-"));
+  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-tg-channel-"));
   tempRoots.push(stateDir);
-  vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+  vi.stubEnv("AFORA_STATE_DIR", stateDir);
   return stateDir;
 }
 
@@ -160,7 +160,7 @@ function createRuntimeEnvMock() {
 function createTelegramConfig(
   accountId = "default",
   telegramOverrides: Record<string, unknown> = {},
-): OpenClawConfig {
+): AforaConfig {
   if (accountId === "default") {
     return {
       channels: {
@@ -169,7 +169,7 @@ function createTelegramConfig(
           ...telegramOverrides,
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
   }
 
   return {
@@ -183,7 +183,7 @@ function createTelegramConfig(
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function startTelegramAccount(
@@ -347,7 +347,7 @@ describe("telegramPlugin gateway startup", () => {
       },
       channels: { telegram: { botToken: "123456:bad-token" } },
       bindings: [{ agentId: "main", match: { channel: "telegram", accountId: "*" } }],
-    } as OpenClawConfig;
+    } as AforaConfig;
     const account = telegramPlugin.config.resolveAccount(cfg, "default");
     const startAccount = telegramPlugin.gateway?.startAccount;
     if (!startAccount) {
@@ -370,7 +370,7 @@ describe("telegramPlugin gateway startup", () => {
         entries: { main: {}, ops: {}, research: {} },
       },
       channels: { telegram: { botToken: "123456:bad-token" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const account = telegramPlugin.config.resolveAccount(cfg, "default");
     const startAccount = telegramPlugin.gateway?.startAccount;
     if (!startAccount) {
@@ -461,7 +461,7 @@ describe("telegramPlugin gateway startup", () => {
     installTelegramRuntime();
     const refreshedBotInfo = {
       ...startupBotInfo,
-      username: "fresh_openclaw_bot",
+      username: "fresh_afora_bot",
       has_topics_enabled: true,
     };
     await writeCachedTelegramBotInfo({

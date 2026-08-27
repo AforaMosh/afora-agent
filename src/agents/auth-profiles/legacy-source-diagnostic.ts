@@ -8,7 +8,7 @@ import { resolveSharedMainAuthAgentDir } from "./shared-main-dir.js";
 import { resolveAuthProfileDatabasePath } from "./sqlite.js";
 
 const AUTH_PROFILE_MIGRATION_REQUIRED_CODE = "AUTH_PROFILE_MIGRATION_REQUIRED" as const;
-export const AUTH_PROFILE_MIGRATION_COMMAND = "openclaw doctor --fix" as const;
+export const AUTH_PROFILE_MIGRATION_COMMAND = "afora doctor --fix" as const;
 const log = createSubsystemLogger("auth-profiles/persistence");
 
 type LegacyAuthProfileSourceKind = "auth-profiles" | "auth-state" | "legacy-auth" | "legacy-oauth";

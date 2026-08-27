@@ -1,5 +1,5 @@
 import { resolveBundledChannelGatewayAuthBypassPaths } from "../channels/plugins/gateway-auth-bypass.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { AuthorizedGatewayHttpRequest } from "./http-auth-utils.js";
 import type { PluginNodeCapabilitySurface } from "./plugin-node-capability.js";
 import {
@@ -19,12 +19,12 @@ export type ResolvePluginNodeCapabilityRoute = (
 ) => PluginNodeCapabilitySurface | undefined;
 
 const pluginGatewayAuthBypassPathsCache = new WeakMap<
-  OpenClawConfig,
+  AforaConfig,
   Promise<ReadonlySet<string>>
 >();
 
 async function resolvePluginGatewayAuthBypassPaths(
-  configSnapshot: OpenClawConfig,
+  configSnapshot: AforaConfig,
 ): Promise<Set<string>> {
   const paths = new Set<string>();
   const configuredChannels = configSnapshot.channels;
@@ -43,7 +43,7 @@ async function resolvePluginGatewayAuthBypassPaths(
 }
 
 export function getCachedPluginGatewayAuthBypassPaths(
-  configSnapshot: OpenClawConfig,
+  configSnapshot: AforaConfig,
 ): Promise<ReadonlySet<string>> {
   const cached = pluginGatewayAuthBypassPathsCache.get(configSnapshot);
   if (cached) {

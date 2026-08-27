@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { ManagedWorktreeService } from "./service.js";
 
 const execFileAsync = promisify(execFile);
@@ -21,23 +21,23 @@ describe("ManagedWorktreeService naming", () => {
 
   beforeEach(async () => {
     const tempRoot = await fs.realpath(os.tmpdir());
-    root = await fs.mkdtemp(path.join(tempRoot, "openclaw-worktree-naming-"));
+    root = await fs.mkdtemp(path.join(tempRoot, "afora-worktree-naming-"));
     repo = path.join(root, "repo");
     await fs.mkdir(repo);
     await git(repo, "init", "-b", "main");
-    await git(repo, "config", "user.name", "OpenClaw Test");
-    await git(repo, "config", "user.email", "openclaw-test@example.invalid");
+    await git(repo, "config", "user.name", "Afora Test");
+    await git(repo, "config", "user.email", "afora-test@example.invalid");
     await fs.writeFile(path.join(repo, "README.md"), "base\n");
     await git(repo, "add", "README.md");
     await git(repo, "commit", "-m", "initial");
     repo = await fs.realpath(repo);
     service = new ManagedWorktreeService({
-      env: { ...process.env, OPENCLAW_STATE_DIR: path.join(root, "state") },
+      env: { ...process.env, AFORA_STATE_DIR: path.join(root, "state") },
     });
   });
 
   afterEach(async () => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(root, { recursive: true, force: true });
   });
 
@@ -58,7 +58,7 @@ describe("ManagedWorktreeService naming", () => {
 
   it("numbers inferred names around unmanaged Git and filesystem collisions", async () => {
     const anchor = await service.create({ repoRoot: repo, name: "anchor", baseRef: "HEAD" });
-    await git(repo, "branch", "openclaw/release-planning");
+    await git(repo, "branch", "afora-agent/release-planning");
     await fs.mkdir(path.join(path.dirname(anchor.path), "release-planning-2"));
 
     const created = await service.create({

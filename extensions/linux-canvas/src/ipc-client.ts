@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import net from "node:net";
-import { isRecord } from "openclaw/plugin-sdk/channel-secret-basic-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/channel-secret-basic-runtime";
 
 // A2UI may stop a load, wait up to 6 seconds for the renderer, then evaluate.
 // Keep the outer IPC deadline above the app's complete 22-second phase budget.

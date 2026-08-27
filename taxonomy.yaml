@@ -1,7 +1,7 @@
 version: 1
 process_version: 3
 title: Maturity scorecard
-summary: Draft maturity scorecard model for OpenClaw subsystems, features, apps, and platforms.
+summary: Draft maturity scorecard model for Afora subsystems, features, apps, and platforms.
 snapshot:
   date: "2026-05-26"
   source_ref: origin/main@41eef4a7965
@@ -640,7 +640,7 @@ surfaces:
         features:
           - name: Foreground startup
             coverageIds: [gateway.foreground-startup]
-            description: Local foreground startup via `openclaw gateway`.
+            description: Local foreground startup via `afora gateway`.
           - name: Service installation
             coverageIds: [gateway.service-installation]
             description: Supervised lifecycle installation on macOS, Linux user/systemd, and native Windows task scheduling.
@@ -766,22 +766,22 @@ surfaces:
         features:
           - name: Installer scripts
             coverageIds: [cli.installer-scripts]
-            description: Hosted installer scripts set up Node, install OpenClaw, and optionally start onboarding.
+            description: Hosted installer scripts set up Node, install Afora, and optionally start onboarding.
           - name: Local prefix install
             coverageIds: [cli.local-prefix-install]
-            description: The local-prefix installer keeps Node and OpenClaw under a dedicated OpenClaw directory instead of relying on a system-wide runtime.
+            description: The local-prefix installer keeps Node and Afora under a dedicated Afora directory instead of relying on a system-wide runtime.
           - name: Package-manager installs
             coverageIds: [cli.package-manager-installs]
             description: npm, pnpm, and bun global installs are supported when the operator manages Node directly, including PATH wiring expectations.
           - name: Supported Node runtime
             coverageIds: [cli.supported-node-runtime]
-            description: OpenClaw documents the supported Node versions and recommended runtime before normal CLI workflows continue.
+            description: Afora documents the supported Node versions and recommended runtime before normal CLI workflows continue.
           - name: Source checkout install
             coverageIds: [cli.source-checkout-install]
-            description: Operators can run OpenClaw from a source checkout for development or recovery workflows, and update flows distinguish this path from package installs.
+            description: Operators can run Afora from a source checkout for development or recovery workflows, and update flows distinguish this path from package installs.
           - name: CLI entrypoint
             coverageIds: [cli.cli-entrypoint]
-            description: The packaged openclaw launcher, openclaw --help, openclaw --version, runtime preflight, and basic recovery expectations are documented.
+            description: The packaged afora launcher, afora --help, afora --version, runtime preflight, and basic recovery expectations are documented.
         docs:
           - docs/install/index.md
           - docs/install/installer.md
@@ -799,10 +799,10 @@ surfaces:
         features:
           - name: Guided onboarding
             coverageIds: [cli.guided-onboarding]
-            description: openclaw onboard walks through workspace, gateway, model auth, channels, skills, and health setup.
+            description: afora onboard walks through workspace, gateway, model auth, channels, skills, and health setup.
           - name: Targeted reconfiguration
             coverageIds: [cli.targeted-reconfiguration]
-            description: openclaw configure lets operators revisit only the sections they want to change after the initial setup.
+            description: afora configure lets operators revisit only the sections they want to change after the initial setup.
           - name: Auth choices
             coverageIds: [cli.auth-choices]
             description: Onboarding and configure support API-key, OAuth, and other provider-specific auth choices.
@@ -886,13 +886,13 @@ surfaces:
         features:
           - name: Status snapshots
             coverageIds: [cli.status-snapshots]
-            description: openclaw status and related flags summarize runtime state, config health, and update context.
+            description: afora status and related flags summarize runtime state, config health, and update context.
           - name: Health snapshots
             coverageIds: [cli.health-snapshots]
-            description: openclaw health gives a fast gateway health read and supports verbose or JSON output.
+            description: afora health gives a fast gateway health read and supports verbose or JSON output.
           - name: Remote log tailing
             coverageIds: [cli.remote-log-tailing]
-            description: openclaw logs tails gateway logs over RPC, including follow mode and JSON output.
+            description: afora logs tails gateway logs over RPC, including follow mode and JSON output.
           - name: Diagnostics export
             coverageIds: [cli.diagnostics-export]
             description: Gateway diagnostics bundles can be exported locally for bug reports and support workflows.
@@ -914,7 +914,7 @@ surfaces:
         features:
           - name: Interactive repair
             coverageIds: [cli.interactive-repair]
-            description: openclaw doctor supports inspect, repair, non-interactive, and forceful repair postures.
+            description: afora doctor supports inspect, repair, non-interactive, and forceful repair postures.
           - name: Config migration
             coverageIds: [cli.config-migration]
             description: Doctor rewrites legacy or damaged config and state into supported current formats.
@@ -926,7 +926,7 @@ surfaces:
             description: Doctor surfaces plugin-config issues and extension schema drift that block normal runtime operation.
           - name: Lint and JSON findings
             coverageIds: [cli.lint-and-json-findings]
-            description: openclaw doctor --lint --json provides stable machine-readable findings for automation.
+            description: afora doctor --lint --json provides stable machine-readable findings for automation.
           - name: Extra gateway discovery
             coverageIds: [cli.extra-gateway-discovery]
             description: Doctor can scan for unexpected gateway services and conflicting installs.
@@ -959,7 +959,7 @@ surfaces:
         features:
           - name: Update channels
             coverageIds: [cli.update-channels]
-            description: openclaw update supports stable, beta, and dev channel selection.
+            description: afora update supports stable, beta, and dev channel selection.
           - name: Install-kind switching
             coverageIds: [cli.install-kind-switching]
             description: Update flows can switch between package installs and git/source installs when supported.
@@ -1033,10 +1033,10 @@ surfaces:
             description: Deprecated or compatibility subpaths continue to resolve during author migrations.
           - name: Plugin manifest
             coverageIds: [plugins.plugin-manifest]
-            description: "`openclaw.plugin.json` declares plugin identity, capabilities, and config schema."
+            description: "`afora.plugin.json` declares plugin identity, capabilities, and config schema."
           - name: Package metadata
             coverageIds: [plugins.package-metadata]
-            description: "`package.json` carries the required `openclaw` metadata for discovery and release flows."
+            description: "`package.json` carries the required `afora` metadata for discovery and release flows."
           - name: Runtime compatibility
             coverageIds: [plugins.runtime-compatibility]
             description: Plugin packages declare supported runtime and plugin API compatibility.
@@ -1104,7 +1104,7 @@ surfaces:
             description: Assistant output can embed hosted Canvas document URLs in Control UI and WebChat sessions.
           - name: Canvas documents
             coverageIds: [plugins.canvas-documents]
-            description: Canvas plugin materializes hosted document files and `/__openclaw__/canvas/documents/...` URLs.
+            description: Canvas plugin materializes hosted document files and `/__afora__/canvas/documents/...` URLs.
           - name: A2UI transport and snapshots
             coverageIds: [plugins.a2ui-transport-and-snapshots]
             description: Canvas plugin groups A2UI push, reset, and JSONL transport with snapshot capture and node-rendered Canvas state.
@@ -1549,9 +1549,9 @@ surfaces:
       - name: External Runtimes and Subagents
         id: external-runtimes-and-subagents
         features:
-          - name: "External harness selection — Openclaw harness"
-            coverageIds: [agent-runtime.external-harness-selection-openclaw-harness]
-            description: "Exact coverage for openclaw harness within External harness selection."
+          - name: "External harness selection — Afora harness"
+            coverageIds: [agent-runtime.external-harness-selection-afora-harness]
+            description: "Exact coverage for afora harness within External harness selection."
           - name: "External harness selection — Planning"
             coverageIds: [agent-runtime.external-harness-selection-planning]
             description: "Exact coverage for planning within External harness selection."
@@ -1959,10 +1959,10 @@ surfaces:
         features:
           - name: CLI Session
             coverageIds: [session-memory.cli-session]
-            description: Covers CLI Session across `openclaw sessions`, `openclaw transcripts`, cleanup, show/list/path behavior, TUI session history actions, and Gateway-backed session management commands.
+            description: Covers CLI Session across `afora sessions`, `afora transcripts`, cleanup, show/list/path behavior, TUI session history actions, and Gateway-backed session management commands.
           - name: Transcript Management
             coverageIds: [session-memory.transcript-management]
-            description: Covers Transcript Management across `openclaw sessions`, `openclaw transcripts`, cleanup, show/list/path behavior, TUI session history actions, and Gateway-backed session management commands.
+            description: Covers Transcript Management across `afora sessions`, `afora transcripts`, cleanup, show/list/path behavior, TUI session history actions, and Gateway-backed session management commands.
         docs:
           - docs/concepts/session.md
           - docs/reference/session-management-compaction.md
@@ -2034,9 +2034,9 @@ surfaces:
           - name: "Context Engine — Repo discovery"
             coverageIds: [session-memory.context-engine-repo-discovery]
             description: "Exact coverage for repo discovery within Context Engine."
-          - name: "Runtime Assembly — Openclaw harness"
-            coverageIds: [session-memory.runtime-assembly-openclaw-harness]
-            description: "Exact coverage for openclaw harness within Runtime Assembly."
+          - name: "Runtime Assembly — Afora harness"
+            coverageIds: [session-memory.runtime-assembly-afora-harness]
+            description: "Exact coverage for afora harness within Runtime Assembly."
           - name: "Runtime Assembly — Codex CLI"
             coverageIds: [session-memory.runtime-assembly-codex-cli]
             description: "Exact coverage for codex cli within Runtime Assembly."
@@ -2855,13 +2855,13 @@ surfaces:
         features:
           - name: Channel Identity
             coverageIds: [security.channel-identity]
-            description: "Covers Channel Identity across who can talk to OpenClaw through message channels: DM pairing codes, pairing stores, `dmPolicy`, `allowFrom`, and related channel identity, allowlists, and sender pairing behavior."
+            description: "Covers Channel Identity across who can talk to Afora through message channels: DM pairing codes, pairing stores, `dmPolicy`, `allowFrom`, and related channel identity, allowlists, and sender pairing behavior."
           - name: Allowlists
             coverageIds: [security.allowlists]
-            description: "Covers Allowlists across who can talk to OpenClaw through message channels: DM pairing codes, pairing stores, `dmPolicy`, `allowFrom`, and related channel identity, allowlists, and sender pairing behavior."
+            description: "Covers Allowlists across who can talk to Afora through message channels: DM pairing codes, pairing stores, `dmPolicy`, `allowFrom`, and related channel identity, allowlists, and sender pairing behavior."
           - name: Sender Pairing
             coverageIds: [security.sender-pairing]
-            description: "Covers Sender Pairing across who can talk to OpenClaw through message channels: DM pairing codes, pairing stores, `dmPolicy`, `allowFrom`, and related channel identity, allowlists, and sender pairing behavior."
+            description: "Covers Sender Pairing across who can talk to Afora through message channels: DM pairing codes, pairing stores, `dmPolicy`, `allowFrom`, and related channel identity, allowlists, and sender pairing behavior."
         docs:
           - docs/channels/pairing.md
           - docs/channels/telegram.md
@@ -3030,15 +3030,15 @@ surfaces:
           - name: Restart logging
             coverageIds: [observability.restart-logging]
             description: Restart logging and runtime snapshot evaluation
-          - name: "openclaw doctor — Codex plugin auth"
+          - name: "afora doctor — Codex plugin auth"
             coverageIds: [observability.doctor-codex-plugin-auth]
-            description: "Exact coverage for codex plugin auth within openclaw doctor."
-          - name: "openclaw doctor — Codex plugin lifecycle"
+            description: "Exact coverage for codex plugin auth within afora doctor."
+          - name: "afora doctor — Codex plugin lifecycle"
             coverageIds: [observability.doctor-codex-plugin-lifecycle]
-            description: "Exact coverage for codex plugin lifecycle within openclaw doctor."
-          - name: "openclaw doctor — Doctor repair"
+            description: "Exact coverage for codex plugin lifecycle within afora doctor."
+          - name: "afora doctor — Doctor repair"
             coverageIds: [observability.doctor-repair]
-            description: "Exact coverage for doctor repair within openclaw doctor."
+            description: "Exact coverage for doctor repair within afora doctor."
           - name: Structured health checks
             coverageIds: [observability.structured-health-checks]
             description: Structured health checks, findings, repair results, check selection, JSON lint output, severity filtering, and exit behavior
@@ -3048,12 +3048,12 @@ surfaces:
           - name: Plugin SDK doctor/health contracts
             coverageIds: [observability.plugin-sdk-doctor-health-contracts]
             description: Plugin SDK doctor/health contracts behavior, status, and operator-visible verification.
-          - name: openclaw status
-            coverageIds: [observability.openclaw-status]
-            description: openclaw status, openclaw status --all, and openclaw status --deep
-          - name: openclaw health
-            coverageIds: [observability.openclaw-health]
-            description: openclaw health, openclaw health --verbose, and openclaw health --json
+          - name: afora status
+            coverageIds: [observability.afora-status]
+            description: afora status, afora status --all, and afora status --deep
+          - name: afora health
+            coverageIds: [observability.afora-health]
+            description: afora health, afora health --verbose, and afora health --json
           - name: Gateway RPC health
             coverageIds: [observability.gateway-rpc-health]
             description: Gateway RPC health and status
@@ -3084,10 +3084,10 @@ surfaces:
           - channel health monitor
           - restart cooldowns
           - stale transport activity
-          - openclaw doctor --fix
+          - afora doctor --fix
           - structured health checks
           - repair results
-          - openclaw health --json
+          - afora health --json
           - gateway RPC health
           - cached health snapshots
         category_note: health-status-probes.md
@@ -3098,9 +3098,9 @@ surfaces:
           - name: Rolling Gateway JSONL file logs
             coverageIds: [observability.rolling-gateway-jsonl-file-logs]
             description: Rolling Gateway JSONL file logs and console output
-          - name: openclaw logs
-            coverageIds: [observability.openclaw-logs]
-            description: openclaw logs, openclaw logs --follow, JSON/plain/color/timezone modes, and local fallback behavior
+          - name: afora logs
+            coverageIds: [observability.afora-logs]
+            description: afora logs, afora logs --follow, JSON/plain/color/timezone modes, and local fallback behavior
           - name: Gateway RPC logs.tail
             coverageIds: [observability.gateway-rpc-logs-tail]
             description: Gateway RPC logs.tail behavior, status, and operator-visible verification.
@@ -3115,7 +3115,7 @@ surfaces:
           - docs/gateway/logging.md
           - docs/cli/logs.md
         search_anchors:
-          - openclaw logs --follow
+          - afora logs --follow
           - logs.tail
           - redaction patterns
         category_note: logging-log-tail-and-redaction.md
@@ -3123,12 +3123,12 @@ surfaces:
       - name: Diagnostic Collection
         id: diagnostic-collection
         features:
-          - name: openclaw gateway diagnostics export
-            coverageIds: [observability.openclaw-gateway-diagnostics-export]
-            description: openclaw gateway diagnostics export and --json / --output / log-size options
-          - name: openclaw gateway stability --bundle
-            coverageIds: [observability.openclaw-gateway-stability-bundle]
-            description: openclaw gateway stability --bundle latest --export
+          - name: afora gateway diagnostics export
+            coverageIds: [observability.afora-gateway-diagnostics-export]
+            description: afora gateway diagnostics export and --json / --output / log-size options
+          - name: afora gateway stability --bundle
+            coverageIds: [observability.afora-gateway-stability-bundle]
+            description: afora gateway stability --bundle latest --export
           - name: Chat /diagnostics
             coverageIds: [observability.chat-diagnostics]
             description: Chat /diagnostics and /codex diagnostics approval flows
@@ -3144,9 +3144,9 @@ surfaces:
           - name: Bounded in-process stability recorder
             coverageIds: [observability.bounded-in-process-stability-recorder]
             description: Bounded in-process stability recorder and diagnostics.stability RPC
-          - name: openclaw gateway stability
-            coverageIds: [observability.openclaw-gateway-stability]
-            description: openclaw gateway stability, stability filtering, persisted stability bundles, and export-from-bundle
+          - name: afora gateway stability
+            coverageIds: [observability.afora-gateway-stability]
+            description: afora gateway stability, stability filtering, persisted stability bundles, and export-from-bundle
           - name: Memory pressure events
             coverageIds: [observability.memory-pressure-events]
             description: Memory pressure events, event-loop liveness warnings, oversized payload events, queue/session summaries, and fatal/shutdown/restart snapshots
@@ -3389,7 +3389,7 @@ surfaces:
           - Timezone and stagger
           - Cron RPCs
           - Agent cron tool
-          - openclaw cron
+          - afora cron
           - Manual cron runs
           - Isolated cron execution
           - Model/provider preflight
@@ -3424,19 +3424,19 @@ surfaces:
             description: Covers iMessage watch fallback across channel-level long polling and webhook modes, especially Telegram and Zalo; polling liveness, leases, watchdog thresholds, and related channel polling and webhooks behavior.
           - name: Gmail setup wizard
             coverageIds: [automation.gmail-setup-wizard]
-            description: Covers Gmail setup wizard across `openclaw webhooks gmail setup`, `hooks.gmail` config, `gog gmail watch start/serve`, watcher startup and renewal, and related gmail pub/sub watchers behavior.
+            description: Covers Gmail setup wizard across `afora webhooks gmail setup`, `hooks.gmail` config, `gog gmail watch start/serve`, watcher startup and renewal, and related gmail pub/sub watchers behavior.
           - name: Watcher start/serve
             coverageIds: [automation.watcher-start-serve]
-            description: Covers Watcher start/serve across `openclaw webhooks gmail setup`, `hooks.gmail` config, `gog gmail watch start/serve`, watcher startup and renewal, and related gmail pub/sub watchers behavior.
+            description: Covers Watcher start/serve across `afora webhooks gmail setup`, `hooks.gmail` config, `gog gmail watch start/serve`, watcher startup and renewal, and related gmail pub/sub watchers behavior.
           - name: Tailscale/public routing
             coverageIds: [automation.tailscale-public-routing]
-            description: Covers Tailscale/public routing across `openclaw webhooks gmail setup`, `hooks.gmail` config, `gog gmail watch start/serve`, watcher startup and renewal, and related gmail pub/sub watchers behavior.
+            description: Covers Tailscale/public routing across `afora webhooks gmail setup`, `hooks.gmail` config, `gog gmail watch start/serve`, watcher startup and renewal, and related gmail pub/sub watchers behavior.
           - name: Push token validation
             coverageIds: [automation.push-token-validation]
-            description: Covers Push token validation across `openclaw webhooks gmail setup`, `hooks.gmail` config, `gog gmail watch start/serve`, watcher startup and renewal, and related gmail pub/sub watchers behavior.
+            description: Covers Push token validation across `afora webhooks gmail setup`, `hooks.gmail` config, `gog gmail watch start/serve`, watcher startup and renewal, and related gmail pub/sub watchers behavior.
           - name: Gmail event routing
             coverageIds: [automation.gmail-event-routing]
-            description: Covers Gmail event routing across `openclaw webhooks gmail setup`, `hooks.gmail` config, `gog gmail watch start/serve`, watcher startup and renewal, and related gmail pub/sub watchers behavior.
+            description: Covers Gmail event routing across `afora webhooks gmail setup`, `hooks.gmail` config, `gog gmail watch start/serve`, watcher startup and renewal, and related gmail pub/sub watchers behavior.
           - name: POST /hooks/wake
             coverageIds: [automation.post-hooks-wake]
             description: Covers POST /hooks/wake across `/hooks/wake`, `/hooks/agent`, mapped hooks under `/hooks/<name>`, token extraction, and related http webhooks behavior.
@@ -3560,9 +3560,9 @@ surfaces:
           - name: Mirrored flows
             coverageIds: [automation.mirrored-flows]
             description: Covers Mirrored flows across managed and mirrored flow modes, flow registry persistence, revision tracking, owner-scoped access, and related task flow behavior.
-          - name: openclaw tasks flow
-            coverageIds: [automation.openclaw-tasks-flow]
-            description: Covers openclaw tasks flow across managed and mirrored flow modes, flow registry persistence, revision tracking, owner-scoped access, and related task flow behavior.
+          - name: afora tasks flow
+            coverageIds: [automation.afora-tasks-flow]
+            description: Covers afora tasks flow across managed and mirrored flow modes, flow registry persistence, revision tracking, owner-scoped access, and related task flow behavior.
           - name: Flow audit and maintenance
             coverageIds: [automation.flow-audit-and-maintenance]
             description: Covers Flow audit and maintenance across managed and mirrored flow modes, flow registry persistence, revision tracking, owner-scoped access, and related task flow behavior.
@@ -3583,7 +3583,7 @@ surfaces:
           - Task pressure status
           - Managed flows
           - Mirrored flows
-          - openclaw tasks flow
+          - afora tasks flow
           - Flow audit and maintenance
           - Plugin managedFlows
         category_note: background-task-ledger.md
@@ -3611,42 +3611,42 @@ surfaces:
           - Active hours
           - Wake and cooldown handling
           - Due-only heartbeat tasks
-          - openclaw cron
+          - afora cron
         category_note: heartbeat.md
         human_lts_override: false
       - name: Polling Controls
         id: polling-controls
         features:
-          - name: openclaw message poll
-            coverageIds: [automation.openclaw-message-poll]
-            description: Covers openclaw message poll across `openclaw message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
+          - name: afora message poll
+            coverageIds: [automation.afora-message-poll]
+            description: Covers afora message poll across `afora message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
           - name: Telegram polls
             coverageIds: [automation.telegram-polls]
-            description: Covers Telegram polls across `openclaw message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
+            description: Covers Telegram polls across `afora message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
           - name: Teams polls
             coverageIds: [automation.teams-polls]
-            description: Covers Teams polls across `openclaw message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
+            description: Covers Teams polls across `afora message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
           - name: Poll flags
             coverageIds: [automation.poll-flags]
-            description: Covers Poll flags across `openclaw message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
+            description: Covers Poll flags across `afora message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
           - name: Channel capability gates
             coverageIds: [automation.channel-capability-gates]
-            description: Covers Channel capability gates across `openclaw message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
+            description: Covers Channel capability gates across `afora message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
           - name: process poll
             coverageIds: [automation.process-poll]
-            description: Covers process poll across `openclaw message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
+            description: Covers process poll across `afora message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
           - name: process log
             coverageIds: [automation.process-log]
-            description: Covers process log across `openclaw message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
+            description: Covers process log across `afora message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
           - name: Background process status
             coverageIds: [automation.background-process-status]
-            description: Covers Background process status across `openclaw message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
+            description: Covers Background process status across `afora message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
           - name: No-progress loop detection
             coverageIds: [automation.no-progress-loop-detection]
-            description: Covers No-progress loop detection across `openclaw message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
+            description: Covers No-progress loop detection across `afora message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
           - name: Process input controls
             coverageIds: [automation.process-input-controls]
-            description: Covers Process input controls across `openclaw message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
+            description: Covers Process input controls across `afora message poll`, channel poll adapters, poll parameter normalization, Teams/Matrix/Telegram poll support, and related message polls and process polling behavior.
         docs:
           - docs/automation/poll.md
           - docs/cli/message.md
@@ -3654,7 +3654,7 @@ surfaces:
           - docs/channels/msteams.md
           - docs/gateway/background-process.md
         search_anchors:
-          - openclaw message poll
+          - afora message poll
           - Telegram polls
           - Teams polls
           - Poll flags
@@ -4514,19 +4514,19 @@ surfaces:
         features:
           - name: Gateway TUI launch
             coverageIds: [tui.gateway-tui-launch]
-            description: Covers Gateway TUI launch across `openclaw tui`, `openclaw chat`, `openclaw terminal`, local-vs-Gateway option validation, launch relaunching from setup/hatch paths, initial message and timeout flags, and launch docs.
+            description: Covers Gateway TUI launch across `afora tui`, `afora chat`, `afora terminal`, local-vs-Gateway option validation, launch relaunching from setup/hatch paths, initial message and timeout flags, and launch docs.
           - name: Local chat launch
             coverageIds: [tui.local-chat-launch]
-            description: Covers Local chat launch across `openclaw tui`, `openclaw chat`, `openclaw terminal`, local-vs-Gateway option validation, launch relaunching from setup/hatch paths, initial message and timeout flags, and launch docs.
+            description: Covers Local chat launch across `afora tui`, `afora chat`, `afora terminal`, local-vs-Gateway option validation, launch relaunching from setup/hatch paths, initial message and timeout flags, and launch docs.
           - name: Terminal alias launch
             coverageIds: [tui.terminal-alias-launch]
-            description: Covers Terminal alias launch across `openclaw tui`, `openclaw chat`, `openclaw terminal`, local-vs-Gateway option validation, launch relaunching from setup/hatch paths, initial message and timeout flags, and launch docs.
+            description: Covers Terminal alias launch across `afora tui`, `afora chat`, `afora terminal`, local-vs-Gateway option validation, launch relaunching from setup/hatch paths, initial message and timeout flags, and launch docs.
           - name: Initial message launch
             coverageIds: [tui.initial-message-launch]
-            description: Covers Initial message launch across `openclaw tui`, `openclaw chat`, `openclaw terminal`, local-vs-Gateway option validation, launch relaunching from setup/hatch paths, initial message and timeout flags, and launch docs.
+            description: Covers Initial message launch across `afora tui`, `afora chat`, `afora terminal`, local-vs-Gateway option validation, launch relaunching from setup/hatch paths, initial message and timeout flags, and launch docs.
           - name: Launch option validation
             coverageIds: [tui.launch-option-validation]
-            description: Covers Launch option validation across `openclaw tui`, `openclaw chat`, `openclaw terminal`, local-vs-Gateway option validation, launch relaunching from setup/hatch paths, initial message and timeout flags, and launch docs.
+            description: Covers Launch option validation across `afora tui`, `afora chat`, `afora terminal`, local-vs-Gateway option validation, launch relaunching from setup/hatch paths, initial message and timeout flags, and launch docs.
           - name: Gateway connection
             coverageIds: [tui.gateway-connection]
             description: Covers Gateway connection across Gateway connection resolution, token/password/SecretRef auth for TUI, `--url` auth requirements, client mode/capability registration, and related gateway transport, auth, and history behavior.
@@ -4726,9 +4726,9 @@ surfaces:
           - name: ClawHub package publishing owner
             coverageIds: [clawhub.clawhub-package-publishing-owner]
             description: ClawHub package publishing owner and scope rules
-          - name: OpenClaw-owned package release validation for ClawHub
+          - name: Afora-owned package release validation for ClawHub
             coverageIds: [clawhub.package-release-validation]
-            description: OpenClaw-owned package release validation for ClawHub and npm
+            description: Afora-owned package release validation for ClawHub and npm
           - name: Version bump gates
             coverageIds: [clawhub.version-bump-gates]
             description: Version bump gates for changed publishable plugins
@@ -4763,7 +4763,7 @@ surfaces:
         features:
           - name: Plugin catalog search
             coverageIds: [clawhub.plugin-catalog-search]
-            description: OpenClaw plugin search resolves ClawHub package lookup results.
+            description: Afora plugin search resolves ClawHub package lookup results.
           - name: Search result metadata
             coverageIds: [clawhub.search-result-metadata]
             description: Search results include package identity, channel, version, summary, compatibility, and source metadata.
@@ -4784,16 +4784,16 @@ surfaces:
           - docs/plugins/community.md
         search_anchors:
           - clawhub discovery, catalog metadata, and package lookup
-          - openclaw skills
+          - afora skills
           - ClawHub install and sync
         category_note: clawhub-discovery-catalog-metadata-and-package-lookup.md
         human_lts_override: false
       - name: Compatibility and Trust
         id: compatibility-and-trust
         features:
-          - name: openclaw.compat.pluginApi
-            coverageIds: [clawhub.openclaw-compat-pluginapi]
-            description: openclaw.compat.pluginApi, build metadata, and host/gateway minimums
+          - name: afora.compat.pluginApi
+            coverageIds: [clawhub.afora-compat-pluginapi]
+            description: afora.compat.pluginApi, build metadata, and host/gateway minimums
           - name: ClawHub package compatibility validation
             coverageIds: [clawhub.clawhub-package-compatibility-validation]
             description: Evidence scope for ClawHub package compatibility validation.
@@ -4900,10 +4900,10 @@ surfaces:
             description: npm-pack local release-candidate installs through npm semantics
           - name: Dependency ownership between plugin packages
             coverageIds: [clawhub.dependency-ownership-between-plugin-packages]
-            description: Dependency ownership between plugin packages and OpenClaw
+            description: Dependency ownership between plugin packages and Afora
           - name: Peer dependency relinking
             coverageIds: [clawhub.peer-dependency-relinking]
-            description: Peer dependency relinking for openclaw/plugin-sdk/*
+            description: Peer dependency relinking for afora/plugin-sdk/*
           - name: Legacy dependency root cleanup
             coverageIds: [clawhub.legacy-dependency-root-cleanup]
             description: Legacy dependency root cleanup and doctor repair
@@ -4960,12 +4960,12 @@ surfaces:
       source_ref: null
       process_version: 3
   - id: app-sdk
-    name: OpenClaw App SDK
+    name: Afora App SDK
     family: core
     level: alpha
     level_code: M2
-    rationale: OpenClaw App SDK is a distinct external app contract separate from Gateway runtime and Plugin SDK. Current scoring shows a real `@openclaw/sdk` path with gaps around public packaging, auto-discovery, approvals, helpers, and compatibility.
-    completeness_instructions: references/completeness/openclaw-app-sdk.md
+    rationale: Afora App SDK is a distinct external app contract separate from Gateway runtime and Plugin SDK. Current scoring shows a real `@afora/sdk` path with gaps around public packaging, auto-discovery, approvals, helpers, and compatibility.
+    completeness_instructions: references/completeness/afora-app-sdk.md
     categories:
       - name: Client API
         id: client-api
@@ -4983,10 +4983,10 @@ surfaces:
             coverageIds: [app-sdk.app-plugin-boundary]
             description: Clear distinction between external app integrations and in-process plugin authoring.
         docs:
-          - docs/concepts/openclaw-sdk.md
-          - docs/reference/openclaw-sdk-api-design.md
+          - docs/concepts/afora-sdk.md
+          - docs/reference/afora-sdk-api-design.md
         search_anchors:
-          - OpenClaw App SDK overview
+          - Afora App SDK overview
           - What ships today
           - Namespace design
           - Package structure
@@ -5012,8 +5012,8 @@ surfaces:
             coverageIds: [app-sdk.scopes-and-redaction]
             description: Token scopes, secret-forwarding defaults, and redaction boundaries.
         docs:
-          - docs/concepts/openclaw-sdk.md
-          - docs/reference/openclaw-sdk-api-design.md
+          - docs/concepts/afora-sdk.md
+          - docs/reference/afora-sdk-api-design.md
           - docs/gateway/protocol.md
           - docs/gateway/security/index.md
         search_anchors:
@@ -5047,8 +5047,8 @@ surfaces:
             coverageIds: [app-sdk.session-controls]
             description: Patch, abort, and compact operations.
         docs:
-          - docs/concepts/openclaw-sdk.md
-          - docs/reference/openclaw-sdk-api-design.md
+          - docs/concepts/afora-sdk.md
+          - docs/reference/afora-sdk-api-design.md
           - docs/gateway/protocol.md
         search_anchors:
           - Run an agent
@@ -5079,12 +5079,12 @@ surfaces:
             coverageIds: [app-sdk.questions]
             description: Question handling alongside approval flows.
         docs:
-          - docs/concepts/openclaw-sdk.md
-          - docs/reference/openclaw-sdk-api-design.md
+          - docs/concepts/afora-sdk.md
+          - docs/reference/afora-sdk-api-design.md
           - docs/gateway/protocol.md
         search_anchors:
           - Stream events
-          - OpenClawEvent
+          - AforaEvent
           - Event contract
           - replayable event families
           - stable cursors
@@ -5113,8 +5113,8 @@ surfaces:
             coverageIds: [app-sdk.environments]
             description: Managed environment provider lifecycle and metadata.
         docs:
-          - docs/concepts/openclaw-sdk.md
-          - docs/reference/openclaw-sdk-api-design.md
+          - docs/concepts/afora-sdk.md
+          - docs/reference/afora-sdk-api-design.md
         search_anchors:
           - Models, tools, artifacts, and approvals
           - ToolSpace model
@@ -5142,7 +5142,7 @@ surfaces:
             coverageIds: [app-sdk.public-package-contract]
             description: Package publication and reusable-client expectations tracked explicitly.
         docs:
-          - docs/reference/openclaw-sdk-api-design.md
+          - docs/reference/afora-sdk-api-design.md
           - docs/concepts/typebox.md
           - docs/gateway/protocol.md
         search_anchors:
@@ -5158,7 +5158,7 @@ surfaces:
       status: complete
       completed_at: "2026-06-01"
       by: codex
-      source_ref: openclaw@29dd7847fd
+      source_ref: afora@29dd7847fd
       process_version: 3
   - id: macos-host
     name: macOS Gateway host
@@ -5282,18 +5282,18 @@ surfaces:
           - name: App-managed LaunchAgent handoff
             coverageIds: [macos-host.app-managed-launchagent-handoff]
             description: macOS app integration that manages the Gateway LaunchAgent in local mode and avoids it in remote or attach-only modes.
-          - name: openclaw update package/git handoff
-            coverageIds: [macos-host.openclaw-update-package-git-handoff]
-            description: openclaw update package/git handoff on macOS
+          - name: afora update package/git handoff
+            coverageIds: [macos-host.afora-update-package-git-handoff]
+            description: afora update package/git handoff on macOS
           - name: Managed service refresh
             coverageIds: [macos-host.managed-service-refresh]
             description: Managed service refresh and LaunchAgent rebootstrap after updates
           - name: Stale updater launchd job detection
             coverageIds: [macos-host.stale-updater-launchd-job-detection]
             description: Stale updater launchd job detection and cleanup
-          - name: openclaw uninstall
-            coverageIds: [macos-host.openclaw-uninstall]
-            description: openclaw uninstall, service uninstall, state cleanup, and manual launchd removal
+          - name: afora uninstall
+            coverageIds: [macos-host.afora-uninstall]
+            description: afora uninstall, service uninstall, state cleanup, and manual launchd removal
           - name: Stranded service recovery
             coverageIds: [macos-host.stranded-service-recovery]
             description: Recovery after partially updated or stranded macOS Gateway services.
@@ -5319,9 +5319,9 @@ surfaces:
           - name: LaunchAgent log paths
             coverageIds: [macos-host.launchagent-log-paths]
             description: LaunchAgent log paths and app diagnostic log paths
-          - name: openclaw gateway status --deep
-            coverageIds: [macos-host.openclaw-gateway-status-deep]
-            description: openclaw gateway status --deep, gateway probe, doctor, health, and logs commands
+          - name: afora gateway status --deep
+            coverageIds: [macos-host.afora-gateway-status-deep]
+            description: afora gateway status --deep, gateway probe, doctor, health, and logs commands
           - name: Gateway silently stops responding
             coverageIds: [macos-host.gateway-silently-stops-responding]
             description: Gateway silently stops responding, ENETDOWN sleep/wake failure, port conflicts, invalid config, and memory pressure runbooks
@@ -5660,7 +5660,7 @@ surfaces:
           - Linux install
           - Node runtime prerequisites
           - package-manager policy
-          - updating OpenClaw
+          - updating Afora
         category_note: linux-cli-install-and-update-path.md
         human_lts_override: true
       - name: Gateway Runtime and Service Control
@@ -5753,7 +5753,7 @@ surfaces:
             description: Covers log viewing, log tailing, local fallback behavior, and operator-visible Gateway log status.
           - name: Doctor checks
             coverageIds: [linux-host.doctor-checks]
-            description: Covers `openclaw doctor` checks, Gateway health probes, and operator diagnostics for Linux Gateway deployments.
+            description: Covers `afora doctor` checks, Gateway health probes, and operator diagnostics for Linux Gateway deployments.
           - name: Operator repair guidance
             coverageIds: [linux-host.operator-repair-guidance]
             description: Covers failure handling, repair guidance, and recovery steps for Linux Gateway diagnostics and doctor findings.
@@ -5764,10 +5764,10 @@ surfaces:
           - docs/gateway/diagnostics.md
           - docs/gateway/index.md
         search_anchors:
-          - openclaw status
+          - afora status
           - gateway diagnostics
-          - openclaw logs
-          - openclaw doctor
+          - afora logs
+          - afora doctor
           - repair guidance
           - linux gateway host diagnostics, logs, doctor, and repair
           - diagnostics, logs, doctor, and repair
@@ -5960,11 +5960,11 @@ surfaces:
             description: Desktop-environment integration for GNOME/KDE/Wayland/X11 tray behavior
         docs:
           - docs/platforms/linux.md
-          - docs/start/openclaw.md
+          - docs/start/afora.md
           - docs/gateway/doctor.md
         search_anchors:
           - Gateway service install
-          - openclaw status
+          - afora status
           - Control UI
           - Linux app
           - status
@@ -6021,16 +6021,16 @@ surfaces:
         features:
           - name: WSL2 CLI entrypoints
             coverageIds: [wsl.wsl2-cli-entrypoints]
-            description: openclaw CLI install, version, onboard, doctor, status, and update commands run inside the WSL2 Linux environment.
-          - name: openclaw onboard
-            coverageIds: [wsl.openclaw-onboard]
-            description: openclaw onboard and non-interactive onboarding run inside the WSL2 Linux environment.
-          - name: openclaw doctor status and logs
-            coverageIds: [wsl.openclaw-doctor-status-and-logs]
-            description: openclaw doctor, status, and logs provide WSL2-specific repair and diagnostic feedback.
-          - name: openclaw update
-            coverageIds: [wsl.openclaw-update]
-            description: openclaw update, channel switching, dry-run/status diagnostics
+            description: afora CLI install, version, onboard, doctor, status, and update commands run inside the WSL2 Linux environment.
+          - name: afora onboard
+            coverageIds: [wsl.afora-onboard]
+            description: afora onboard and non-interactive onboarding run inside the WSL2 Linux environment.
+          - name: afora doctor status and logs
+            coverageIds: [wsl.afora-doctor-status-and-logs]
+            description: afora doctor, status, and logs provide WSL2-specific repair and diagnostic feedback.
+          - name: afora update
+            coverageIds: [wsl.afora-update]
+            description: afora update, channel switching, dry-run/status diagnostics
           - name: npm/pnpm/git package-root
             coverageIds: [wsl.npm-pnpm-git-package-root]
             description: npm/pnpm/git package-root and install-mode switching
@@ -6054,11 +6054,11 @@ surfaces:
         search_anchors:
           - windows via wsl2 cli
           - WSL2 CLI entrypoints
-          - openclaw onboard
-          - openclaw doctor
-          - openclaw status
-          - openclaw logs
-          - openclaw update
+          - afora onboard
+          - afora doctor
+          - afora status
+          - afora logs
+          - afora update
           - package manager
         category_note: wsl2-cli.md
         human_lts_override: true
@@ -6067,10 +6067,10 @@ surfaces:
         features:
           - name: Onboarded systemd install
             coverageIds: [wsl.onboarded-systemd-install]
-            description: openclaw onboard daemon installation inside WSL2.
+            description: afora onboard daemon installation inside WSL2.
           - name: Gateway service install
             coverageIds: [wsl.gateway-service-install]
-            description: openclaw gateway install behavior under WSL2 systemd.
+            description: afora gateway install behavior under WSL2 systemd.
           - name: systemd user unit rendering
             coverageIds: [wsl.systemd-user-unit-rendering]
             description: systemd user unit rendering and lifecycle metadata.
@@ -6162,21 +6162,21 @@ surfaces:
       - name: Diagnostics and Repair
         id: diagnostics-and-repair
         features:
-          - name: "openclaw doctor — Codex plugin auth"
-            coverageIds: [wsl.openclaw-doctor-codex-plugin-auth]
-            description: "Exact coverage for codex plugin auth within openclaw doctor."
-          - name: "openclaw doctor — Codex plugin lifecycle"
-            coverageIds: [wsl.openclaw-doctor-codex-plugin-lifecycle]
-            description: "Exact coverage for codex plugin lifecycle within openclaw doctor."
-          - name: "openclaw doctor — Doctor repair"
-            coverageIds: [wsl.openclaw-doctor-doctor-repair]
-            description: "Exact coverage for doctor repair within openclaw doctor."
-          - name: openclaw status
-            coverageIds: [wsl.openclaw-status]
-            description: openclaw status, status --all, and Gateway service/runtime summary
-          - name: openclaw logs
-            coverageIds: [wsl.openclaw-logs]
-            description: openclaw logs and Linux systemd journal fallback
+          - name: "afora doctor — Codex plugin auth"
+            coverageIds: [wsl.afora-doctor-codex-plugin-auth]
+            description: "Exact coverage for codex plugin auth within afora doctor."
+          - name: "afora doctor — Codex plugin lifecycle"
+            coverageIds: [wsl.afora-doctor-codex-plugin-lifecycle]
+            description: "Exact coverage for codex plugin lifecycle within afora doctor."
+          - name: "afora doctor — Doctor repair"
+            coverageIds: [wsl.afora-doctor-doctor-repair]
+            description: "Exact coverage for doctor repair within afora doctor."
+          - name: afora status
+            coverageIds: [wsl.afora-status]
+            description: afora status, status --all, and Gateway service/runtime summary
+          - name: afora logs
+            coverageIds: [wsl.afora-logs]
+            description: afora logs and Linux systemd journal fallback
           - name: SecretRef
             coverageIds: [wsl.secretref]
             description: SecretRef and auth diagnostics visible from status/doctor
@@ -6253,16 +6253,16 @@ surfaces:
             description: Node, Git, pnpm, npm, and PATH bootstrap for native Windows.
           - name: npm global install
             coverageIds: [windows.npm-global-install]
-            description: npm global install, git checkout install, and generated openclaw.cmd.
+            description: npm global install, git checkout install, and generated afora.cmd.
           - name: Packaged CLI launcher
             coverageIds: [windows.packaged-cli-launcher]
-            description: Packaged openclaw CLI launcher, version, and doctor entrypoints.
+            description: Packaged afora CLI launcher, version, and doctor entrypoints.
           - name: Windows command shims
             coverageIds: [windows.windows-command-shims]
             description: Windows .cmd launcher, PATHEXT, and package-manager shim compatibility.
-          - name: openclaw onboard
-            coverageIds: [windows.openclaw-onboard]
-            description: openclaw onboard and openclaw onboard --non-interactive on native Windows
+          - name: afora onboard
+            coverageIds: [windows.afora-onboard]
+            description: afora onboard and afora onboard --non-interactive on native Windows
           - name: Local Gateway config
             coverageIds: [windows.local-gateway-config]
             description: Local Gateway config, auth choice, gateway token/password SecretRef handling, and local endpoint defaults.
@@ -6282,9 +6282,9 @@ surfaces:
           - native windows cli setup
           - install.ps1
           - PowerShell
-          - openclaw.cmd
+          - afora.cmd
           - PATHEXT
-          - openclaw onboard
+          - afora onboard
           - Local Gateway config
           - daemon install
         category_note: native-powershell-install-and-cli-entrypoints.md
@@ -6292,9 +6292,9 @@ surfaces:
       - name: Gateway Management
         id: gateway-management
         features:
-          - name: openclaw gateway
-            coverageIds: [windows.openclaw-gateway]
-            description: openclaw gateway, openclaw gateway run, openclaw gateway status, and foreground process behavior.
+          - name: afora gateway
+            coverageIds: [windows.afora-gateway]
+            description: afora gateway, afora gateway run, afora gateway status, and foreground process behavior.
           - name: Foreground runtime health/readiness
             coverageIds: [windows.foreground-runtime-health-readiness]
             description: Foreground runtime health/readiness and local loopback Gateway targets
@@ -6304,9 +6304,9 @@ surfaces:
           - name: Unmanaged foreground mode
             coverageIds: [windows.unmanaged-foreground-mode]
             description: Operator expectations when running without a managed Scheduled Task.
-          - name: openclaw gateway install
-            coverageIds: [windows.openclaw-gateway-install]
-            description: openclaw gateway install, status, start, stop, restart, and managed startup behavior.
+          - name: afora gateway install
+            coverageIds: [windows.afora-gateway-install]
+            description: afora gateway install, status, start, stop, restart, and managed startup behavior.
           - name: Gateway launcher files
             coverageIds: [windows.gateway-launcher-files]
             description: Generated gateway.cmd and hidden launcher files for managed startup.
@@ -6316,9 +6316,9 @@ surfaces:
           - name: Startup-folder fallback
             coverageIds: [windows.startup-folder-fallback]
             description: Startup-folder fallback when Task Scheduler is unavailable.
-          - name: openclaw status
-            coverageIds: [windows.openclaw-status]
-            description: openclaw status, openclaw gateway status, gateway status --deep, and Windows repair guidance.
+          - name: afora status
+            coverageIds: [windows.afora-status]
+            description: afora status, afora gateway status, gateway status --deep, and Windows repair guidance.
           - name: Windows service inspection
             coverageIds: [windows.windows-service-inspection]
             description: Windows service inspection, Task Scheduler runtime parsing, Startup-folder
@@ -6331,14 +6331,14 @@ surfaces:
           - docs/cli/gateway.md
           - docs/cli/doctor.md
         search_anchors:
-          - openclaw gateway
+          - afora gateway
           - Foreground runtime
           - Windows signal handling
-          - openclaw gateway install
+          - afora gateway install
           - Scheduled Tasks
           - Startup-folder
-          - openclaw status
-          - openclaw doctor
+          - afora status
+          - afora doctor
           - Gateway diagnostics
         category_note: native-gateway-foreground-runtime-and-process-control.md
         human_lts_override: false
@@ -6371,9 +6371,9 @@ surfaces:
       - name: Updates
         id: updates
         features:
-          - name: openclaw update on native Windows package
-            coverageIds: [windows.openclaw-update-on-native-windows-package]
-            description: openclaw update on native Windows package installs
+          - name: afora update on native Windows package
+            coverageIds: [windows.afora-update-on-native-windows-package]
+            description: afora update on native Windows package installs
           - name: Managed Gateway stop/restart
             coverageIds: [windows.managed-gateway-stop-restart]
             description: Managed Gateway stop/restart and service metadata refresh during update
@@ -6387,7 +6387,7 @@ surfaces:
           - docs/install/updating.md
           - docs/ci.md
         search_anchors:
-          - openclaw update
+          - afora update
           - package locks
           - restart handoff
         category_note: windows-update-restart-handoff-and-package-locks.md
@@ -7020,9 +7020,9 @@ surfaces:
           - name: Node runtime setup
             coverageIds: [small-linux.node-runtime-setup]
             description: Defines Node runtime setup setup, credential, configuration, and operator verification behavior for ARM Linux Setup and Prerequisites.
-          - name: OpenClaw install and onboarding
-            coverageIds: [small-linux.openclaw-install-and-onboarding]
-            description: Defines OpenClaw install and onboarding setup, credential, configuration, and operator verification behavior for ARM Linux Setup and Prerequisites.
+          - name: Afora install and onboarding
+            coverageIds: [small-linux.afora-install-and-onboarding]
+            description: Defines Afora install and onboarding setup, credential, configuration, and operator verification behavior for ARM Linux Setup and Prerequisites.
           - name: First-run verification
             coverageIds: [small-linux.first-run-verification]
             description: Defines First-run verification setup, credential, configuration, and operator verification behavior for ARM Linux Setup and Prerequisites.
@@ -7060,7 +7060,7 @@ surfaces:
         search_anchors:
           - Hardware and 64-bit OS requirements
           - Node runtime setup
-          - OpenClaw install and onboarding
+          - Afora install and onboarding
           - First-run verification
           - Hardware compatibility
           - Install Node.js 24
@@ -7251,7 +7251,7 @@ surfaces:
             description: Docker-only first-run notes, excluding Podman rootless setup and general Gateway protocol internals
           - name: Podman setup scripts and Quadlet template
             coverageIds: [containers.podman-setup-scripts-and-quadlet-template]
-            description: Podman setup docs, scripts/podman/setup.sh, scripts/run-openclaw-podman.sh, and scripts/podman/openclaw.container.in
+            description: Podman setup docs, scripts/podman/setup.sh, scripts/run-afora-podman.sh, and scripts/podman/afora.container.in
           - name: Rootless Podman image setup
             coverageIds: [containers.rootless-podman-image-setup]
             description: Rootless Podman image setup, launch, setup/onboarding, host CLI routing, Quadlet autostart, and owner/permission checks
@@ -7273,7 +7273,7 @@ surfaces:
             description: Host CLI routing into running Docker/Podman containers
           - name: Container Targeting
             coverageIds: [containers.container-targeting]
-            description: Covers Container Targeting across Host CLI routing into running Docker/Podman containers. `--container` and `OPENCLAW_CONTAINER` behavior, env handling, ambiguous runtime detection, loopback proxy guard, and related host cli container targeting and update lifecycle behavior.
+            description: Covers Container Targeting across Host CLI routing into running Docker/Podman containers. `--container` and `AFORA_CONTAINER` behavior, env handling, ambiguous runtime detection, loopback proxy guard, and related host cli container targeting and update lifecycle behavior.
           - name: Container update/rebuild/restart guidance for Docker
             coverageIds: [containers.docker-update-guidance]
             description: Container update/rebuild/restart guidance for Docker and Podman hosts
@@ -7291,7 +7291,7 @@ surfaces:
             description: Docker Compose and Podman port publishing, bind mode, host local provider access, Bonjour, Tailscale, and Control UI origins
           - name: Container health endpoints
             coverageIds: [containers.container-health-endpoints]
-            description: Container health endpoints, Dockerfile/Compose healthchecks, openclaw health, logs, and metrics/OTel docs
+            description: Container health endpoints, Dockerfile/Compose healthchecks, afora health, logs, and metrics/OTel docs
           - name: Provider/VPS Docker hosting docs
             coverageIds: [containers.provider-vps-docker-hosting-docs]
             description: Provider/VPS Docker hosting docs and operational runbooks
@@ -7358,7 +7358,7 @@ surfaces:
         features:
           - name: Docker gateway setup
             coverageIds: [containers.docker-gateway-setup]
-            description: Docker gateway setup with OPENCLAW_SANDBOX, Docker CLI build arg, socket mount, sandbox config writes, and rollback behavior
+            description: Docker gateway setup with AFORA_SANDBOX, Docker CLI build arg, socket mount, sandbox config writes, and rollback behavior
           - name: Docker-backed agent sandbox support
             coverageIds: [containers.docker-backed-agent-sandbox-support]
             description: Docker-backed agent sandbox docs, source behavior, and tests that affect container-hosted Gateway operators.
@@ -7515,7 +7515,7 @@ surfaces:
       status: complete
       completed_at: "2026-06-01"
       by: codex
-      source_ref: openclaw@29dd7847fd
+      source_ref: afora@29dd7847fd
       process_version: 3
   - id: nix
     name: Nix install path
@@ -7530,23 +7530,23 @@ surfaces:
         features:
           - name: Nix install overview
             coverageIds: [nix.nix-install-overview]
-            description: Covers Nix install overview across public Nix install page, install index discoverability, docs navigation, and the handoff to the first-party `nix-openclaw` Home Manager module. It excludes the actual external `openclaw/nix-openclaw` repository implementation, and related public nix docs and nix-openclaw handoff behavior.
-          - name: nix-openclaw source-of-truth
-            coverageIds: [nix.nix-openclaw-source-of-truth]
-            description: Covers nix-openclaw source-of-truth across public Nix install page, install index discoverability, docs navigation, and the handoff to the first-party `nix-openclaw` Home Manager module. It excludes the actual external `openclaw/nix-openclaw` repository implementation, and related public nix docs and nix-openclaw handoff behavior.
+            description: Covers Nix install overview across public Nix install page, install index discoverability, docs navigation, and the handoff to the first-party `nix-afora` Home Manager module. It excludes the actual external `afora/nix-afora` repository implementation, and related public nix docs and nix-afora handoff behavior.
+          - name: nix-afora source-of-truth
+            coverageIds: [nix.nix-afora-source-of-truth]
+            description: Covers nix-afora source-of-truth across public Nix install page, install index discoverability, docs navigation, and the handoff to the first-party `nix-afora` Home Manager module. It excludes the actual external `afora/nix-afora` repository implementation, and related public nix docs and nix-afora handoff behavior.
           - name: Install discoverability
             coverageIds: [nix.install-discoverability]
-            description: Covers Install discoverability across public Nix install page, install index discoverability, docs navigation, and the handoff to the first-party `nix-openclaw` Home Manager module. It excludes the actual external `openclaw/nix-openclaw` repository implementation, and related public nix docs and nix-openclaw handoff behavior.
+            description: Covers Install discoverability across public Nix install page, install index discoverability, docs navigation, and the handoff to the first-party `nix-afora` Home Manager module. It excludes the actual external `afora/nix-afora` repository implementation, and related public nix docs and nix-afora handoff behavior.
           - name: Verification handoff
             coverageIds: [nix.verification-handoff]
-            description: Covers Verification handoff across public Nix install page, install index discoverability, docs navigation, and the handoff to the first-party `nix-openclaw` Home Manager module. It excludes the actual external `openclaw/nix-openclaw` repository implementation, and related public nix docs and nix-openclaw handoff behavior.
+            description: Covers Verification handoff across public Nix install page, install index discoverability, docs navigation, and the handoff to the first-party `nix-afora` Home Manager module. It excludes the actual external `afora/nix-afora` repository implementation, and related public nix docs and nix-afora handoff behavior.
         docs:
           - docs/install/nix.md
           - docs/install/index.md
           - docs/start/docs-directory.md
         search_anchors:
           - Nix install overview
-          - nix-openclaw source-of-truth
+          - nix-afora source-of-truth
           - Install discoverability
           - Verification handoff
         category_note: public-nix-docs-handoff.md
@@ -7591,16 +7591,16 @@ surfaces:
             description: Covers Runtime Nix-mode detection across Nix mode activation, environment-variable detection, macOS default detection, and the operator docs that explain how Nix mode is enabled.
           - name: Stable Nix defaults
             coverageIds: [nix.stable-nix-defaults]
-            description: Covers Stable Nix defaults across macOS app's `openclaw.nixMode` default handling, config read-only UX, settings banner, onboarding behavior, and local config write prevention.
+            description: Covers Stable Nix defaults across macOS app's `afora.nixMode` default handling, config read-only UX, settings banner, onboarding behavior, and local config write prevention.
           - name: Managed-by-Nix banner
             coverageIds: [nix.managed-by-nix-banner]
-            description: Covers Managed-by-Nix banner across macOS app's `openclaw.nixMode` default handling, config read-only UX, settings banner, onboarding behavior, and local config write prevention.
+            description: Covers Managed-by-Nix banner across macOS app's `afora.nixMode` default handling, config read-only UX, settings banner, onboarding behavior, and local config write prevention.
           - name: Read-only config controls
             coverageIds: [nix.read-only-config-controls]
-            description: Covers Read-only config controls across macOS app's `openclaw.nixMode` default handling, config read-only UX, settings banner, onboarding behavior, and local config write prevention.
+            description: Covers Read-only config controls across macOS app's `afora.nixMode` default handling, config read-only UX, settings banner, onboarding behavior, and local config write prevention.
           - name: Onboarding skip
             coverageIds: [nix.onboarding-skip]
-            description: Covers Onboarding skip across macOS app's `openclaw.nixMode` default handling, config read-only UX, settings banner, onboarding behavior, and local config write prevention.
+            description: Covers Onboarding skip across macOS app's `afora.nixMode` default handling, config read-only UX, settings banner, onboarding behavior, and local config write prevention.
         docs:
           - docs/install/nix.md
         search_anchors:
@@ -7618,13 +7618,13 @@ surfaces:
         features:
           - name: Immutable config guard
             coverageIds: [nix.immutable-config-guard]
-            description: Covers Immutable config guard across `OPENCLAW_NIX_MODE_CONFIG_IMMUTABLE` guard, source-edit guidance, config writer integration, and the agent-first Nix source instruction.
+            description: Covers Immutable config guard across `AFORA_NIX_MODE_CONFIG_IMMUTABLE` guard, source-edit guidance, config writer integration, and the agent-first Nix source instruction.
           - name: Config writer refusal
             coverageIds: [nix.config-writer-refusal]
-            description: Covers Config writer refusal across `OPENCLAW_NIX_MODE_CONFIG_IMMUTABLE` guard, source-edit guidance, config writer integration, and the agent-first Nix source instruction.
+            description: Covers Config writer refusal across `AFORA_NIX_MODE_CONFIG_IMMUTABLE` guard, source-edit guidance, config writer integration, and the agent-first Nix source instruction.
           - name: Agent-first Nix edits
             coverageIds: [nix.agent-first-nix-edits]
-            description: Covers Agent-first Nix edits across `OPENCLAW_NIX_MODE_CONFIG_IMMUTABLE` guard, source-edit guidance, config writer integration, and the agent-first Nix source instruction.
+            description: Covers Agent-first Nix edits across `AFORA_NIX_MODE_CONFIG_IMMUTABLE` guard, source-edit guidance, config writer integration, and the agent-first Nix source instruction.
           - name: Explicit config path
             coverageIds: [nix.explicit-config-path]
             description: Covers Explicit config path across config/state path environment variables, immutable store expectations, path resolution, state integrity checks around `/nix/store`, and runtime guidance that state should stay writable.
@@ -7668,16 +7668,16 @@ surfaces:
             description: Covers Trusted binary boundaries across `NIX_PROFILES` handling, `~/.nix-profile/bin` fallback, launchd/systemd service PATH generation, and adjacent safe binary resolution rules.
           - name: Setup write refusal
             coverageIds: [nix.setup-write-refusal]
-            description: Covers Setup write refusal across `openclaw setup`, `openclaw doctor` repair/token modes, `openclaw update`/startup auto-update behavior, and daemon service install/uninstall behavior under Nix mode.
+            description: Covers Setup write refusal across `afora setup`, `afora doctor` repair/token modes, `afora update`/startup auto-update behavior, and daemon service install/uninstall behavior under Nix mode.
           - name: Doctor repair refusal
             coverageIds: [nix.doctor-repair-refusal]
-            description: Covers Doctor repair refusal across `openclaw setup`, `openclaw doctor` repair/token modes, `openclaw update`/startup auto-update behavior, and daemon service install/uninstall behavior under Nix mode.
+            description: Covers Doctor repair refusal across `afora setup`, `afora doctor` repair/token modes, `afora update`/startup auto-update behavior, and daemon service install/uninstall behavior under Nix mode.
           - name: Update handoff
             coverageIds: [nix.update-handoff]
-            description: Covers Update handoff across `openclaw setup`, `openclaw doctor` repair/token modes, `openclaw update`/startup auto-update behavior, and daemon service install/uninstall behavior under Nix mode.
+            description: Covers Update handoff across `afora setup`, `afora doctor` repair/token modes, `afora update`/startup auto-update behavior, and daemon service install/uninstall behavior under Nix mode.
           - name: Service lifecycle handoff
             coverageIds: [nix.service-lifecycle-handoff]
-            description: Covers Service lifecycle handoff across `openclaw setup`, `openclaw doctor` repair/token modes, `openclaw update`/startup auto-update behavior, and daemon service install/uninstall behavior under Nix mode.
+            description: Covers Service lifecycle handoff across `afora setup`, `afora doctor` repair/token modes, `afora update`/startup auto-update behavior, and daemon service install/uninstall behavior under Nix mode.
         docs:
           - docs/install/nix.md
           - docs/cli/setup.md
@@ -8126,12 +8126,12 @@ surfaces:
       - name: Channel Setup and Operations
         id: channel-setup-and-operations
         features:
-          - name: Official @openclaw/whatsapp plugin metadata
-            coverageIds: [whatsapp.official-openclaw-whatsapp-plugin-metadata]
-            description: Official @openclaw/whatsapp plugin metadata, package entrypoints, and setup discovery.
-          - name: openclaw plugin install whatsapp
-            coverageIds: [whatsapp.openclaw-plugin-install-whatsapp]
-            description: openclaw plugin install whatsapp and config-first setup guidance
+          - name: Official @afora/whatsapp plugin metadata
+            coverageIds: [whatsapp.official-afora-whatsapp-plugin-metadata]
+            description: Official @afora/whatsapp plugin metadata, package entrypoints, and setup discovery.
+          - name: afora plugin install whatsapp
+            coverageIds: [whatsapp.afora-plugin-install-whatsapp]
+            description: afora plugin install whatsapp and config-first setup guidance
           - name: Channel config schema
             coverageIds: [whatsapp.channel-config-schema]
             description: Channel config schema, plugin hooks, setup finalization, default account, and secret handling.
@@ -8275,25 +8275,25 @@ surfaces:
         features:
           - name: App Install
             coverageIds: [slack.app-install]
-            description: Covers App Install across installing `@openclaw/slack`, creating the Slack app, choosing recommended/minimal manifests, bot/app/user/signing-secret credential handling, and related app install, auth, manifest, and scopes behavior.
+            description: Covers App Install across installing `@afora/slack`, creating the Slack app, choosing recommended/minimal manifests, bot/app/user/signing-secret credential handling, and related app install, auth, manifest, and scopes behavior.
           - name: Slack app credentials
             coverageIds: [slack.slack-app-credentials]
             description: Covers bot/app/user tokens, signing-secret handling, and Slack credential setup for app authentication.
           - name: Manifest
             coverageIds: [slack.manifest]
-            description: Covers Manifest across installing `@openclaw/slack`, creating the Slack app, choosing recommended/minimal manifests, bot/app/user/signing-secret credential handling, and related app install, auth, manifest, and scopes behavior.
+            description: Covers Manifest across installing `@afora/slack`, creating the Slack app, choosing recommended/minimal manifests, bot/app/user/signing-secret credential handling, and related app install, auth, manifest, and scopes behavior.
           - name: Scopes
             coverageIds: [slack.scopes]
-            description: Covers Scopes across installing `@openclaw/slack`, creating the Slack app, choosing recommended/minimal manifests, bot/app/user/signing-secret credential handling, and related app install, auth, manifest, and scopes behavior.
+            description: Covers Scopes across installing `@afora/slack`, creating the Slack app, choosing recommended/minimal manifests, bot/app/user/signing-secret credential handling, and related app install, auth, manifest, and scopes behavior.
           - name: Channel status diagnostics
             coverageIds: [slack.channel-status-diagnostics]
-            description: Covers `openclaw channels status --probe`, account snapshots, token source/status fields, capability and scope diagnostics, and Slack repair guidance.
+            description: Covers `afora channels status --probe`, account snapshots, token source/status fields, capability and scope diagnostics, and Slack repair guidance.
           - name: Slack account status
             coverageIds: [slack.slack-account-status]
             description: Covers account snapshots, token source/status fields, capability summaries, and Slack status output.
           - name: Operator Repair
             coverageIds: [slack.operator-repair]
-            description: Covers Operator Repair across `openclaw channels status --probe`, account snapshots, token source/status fields, capability and scope diagnostics, and related diagnostics, status, and operator repair behavior.
+            description: Covers Operator Repair across `afora channels status --probe`, account snapshots, token source/status fields, capability and scope diagnostics, and related diagnostics, status, and operator repair behavior.
           - name: Socket
             coverageIds: [slack.socket]
             description: Covers Socket across Socket Mode startup/reconnect/backoff, HTTP Request URL registration and signing-secret verification, transport mode selection, multi-account lifecycle, status/liveness, and runtime startup/skip behavior.
@@ -8317,7 +8317,7 @@ surfaces:
           - Scopes
           - recommended manifest
           - minimal manifest
-          - openclaw channels status --probe
+          - afora channels status --probe
           - capability and scope diagnostics
           - account snapshots
           - Operator Repair
@@ -9264,7 +9264,7 @@ surfaces:
             description: Covers Entra ID application registration, Azure Bot setup, Teams app manifest/RSC permissions, and Teams app package upload.
           - name: Credential configuration
             coverageIds: [microsoft-teams.credential-configuration]
-            description: Covers CLIENT_ID, CLIENT_SECRET, TENANT_ID, `MSTEAMS_*` environment variables, and OpenClaw `channels.msteams` credential configuration.
+            description: Covers CLIENT_ID, CLIENT_SECRET, TENANT_ID, `MSTEAMS_*` environment variables, and Afora `channels.msteams` credential configuration.
           - name: Teams app install verification
             coverageIds: [microsoft-teams.teams-app-install-verification]
             description: Covers Teams install links, app installation in Teams, and `teams app doctor` verification after setup.
@@ -9296,7 +9296,7 @@ surfaces:
           - Teams app manifest
           - RSC permissions
           - credential generation
-          - Configure OpenClaw
+          - Configure Afora
           - MSTEAMS_APP_ID
           - channels.msteams
           - Install the app in Teams
@@ -9766,7 +9766,7 @@ surfaces:
             description: "Exact coverage for fs read within Tool Context."
           - name: Capability Compatibility
             coverageIds: [openai.capability-compatibility]
-            description: Covers Capability Compatibility across provider-facing tools, context injection, media inputs, native-vs-client tool ownership, OpenAI Responses compatibility, and how OpenAI/Codex models receive OpenClaw runtime context.
+            description: Covers Capability Compatibility across provider-facing tools, context injection, media inputs, native-vs-client tool ownership, OpenAI Responses compatibility, and how OpenAI/Codex models receive Afora runtime context.
         docs:
           - docs/providers/openai.md
           - docs/gateway/openresponses-http-api.md
@@ -9962,19 +9962,19 @@ surfaces:
             description: "Covers Capability metadata across Anthropic model catalog and policy layer: bundled model rows, model aliases, current and future Claude model id normalization, runtime-provider selection, and related model catalog and policy behavior."
           - name: Runtime selection
             coverageIds: [anthropic.runtime-selection]
-            description: "Covers Runtime selection across OpenClaw's host-local Claude CLI path after auth is available: the `claude-cli` backend, its command/args/env defaults, MCP tool bridge, native tool mode, and related claude cli backend behavior."
+            description: "Covers Runtime selection across Afora's host-local Claude CLI path after auth is available: the `claude-cli` backend, its command/args/env defaults, MCP tool bridge, native tool mode, and related claude cli backend behavior."
           - name: Session continuity
             coverageIds: [anthropic.session-continuity]
-            description: "Covers Session continuity across OpenClaw's host-local Claude CLI path after auth is available: the `claude-cli` backend, its command/args/env defaults, MCP tool bridge, native tool mode, and related claude cli backend behavior."
+            description: "Covers Session continuity across Afora's host-local Claude CLI path after auth is available: the `claude-cli` backend, its command/args/env defaults, MCP tool bridge, native tool mode, and related claude cli backend behavior."
           - name: MCP/tool bridge
             coverageIds: [anthropic.mcp-tool-bridge]
-            description: "Covers MCP/tool bridge across OpenClaw's host-local Claude CLI path after auth is available: the `claude-cli` backend, its command/args/env defaults, MCP tool bridge, native tool mode, and related claude cli backend behavior."
+            description: "Covers MCP/tool bridge across Afora's host-local Claude CLI path after auth is available: the `claude-cli` backend, its command/args/env defaults, MCP tool bridge, native tool mode, and related claude cli backend behavior."
           - name: Permission-mode mapping
             coverageIds: [anthropic.permission-mode-mapping]
-            description: "Covers Permission-mode mapping across OpenClaw's host-local Claude CLI path after auth is available: the `claude-cli` backend, its command/args/env defaults, MCP tool bridge, native tool mode, and related claude cli backend behavior."
+            description: "Covers Permission-mode mapping across Afora's host-local Claude CLI path after auth is available: the `claude-cli` backend, its command/args/env defaults, MCP tool bridge, native tool mode, and related claude cli backend behavior."
           - name: Fallback prelude
             coverageIds: [anthropic.fallback-prelude]
-            description: "Covers Fallback prelude across OpenClaw's host-local Claude CLI path after auth is available: the `claude-cli` backend, its command/args/env defaults, MCP tool bridge, native tool mode, and related claude cli backend behavior."
+            description: "Covers Fallback prelude across Afora's host-local Claude CLI path after auth is available: the `claude-cli` backend, its command/args/env defaults, MCP tool bridge, native tool mode, and related claude cli backend behavior."
         docs:
           - docs/providers/anthropic.md
           - docs/gateway/config-agents.md
@@ -10267,19 +10267,19 @@ surfaces:
         features:
           - name: Bundled plugin distribution
             coverageIds: [google-ai.bundled-plugin-distribution]
-            description: Covers Bundled plugin distribution across bundled `@openclaw/google-plugin` package, plugin manifest distribution, auto-enable metadata, capability-provider registration, and related google plugin adapters behavior.
+            description: Covers Bundled plugin distribution across bundled `@afora/google-plugin` package, plugin manifest distribution, auto-enable metadata, capability-provider registration, and related google plugin adapters behavior.
           - name: Provider auto-enable metadata
             coverageIds: [google-ai.provider-auto-enable-metadata]
-            description: Covers Provider auto-enable metadata across bundled `@openclaw/google-plugin` package, plugin manifest distribution, auto-enable metadata, capability-provider registration, and related google plugin adapters behavior.
+            description: Covers Provider auto-enable metadata across bundled `@afora/google-plugin` package, plugin manifest distribution, auto-enable metadata, capability-provider registration, and related google plugin adapters behavior.
           - name: Image and media adapters
             coverageIds: [google-ai.image-and-media-adapters]
-            description: Covers Image and media adapters across bundled `@openclaw/google-plugin` package, plugin manifest distribution, auto-enable metadata, capability-provider registration, and related google plugin adapters behavior.
+            description: Covers Image and media adapters across bundled `@afora/google-plugin` package, plugin manifest distribution, auto-enable metadata, capability-provider registration, and related google plugin adapters behavior.
           - name: Speech and realtime adapters
             coverageIds: [google-ai.speech-and-realtime-adapters]
-            description: Covers Speech and realtime adapters across bundled `@openclaw/google-plugin` package, plugin manifest distribution, auto-enable metadata, capability-provider registration, and related google plugin adapters behavior.
+            description: Covers Speech and realtime adapters across bundled `@afora/google-plugin` package, plugin manifest distribution, auto-enable metadata, capability-provider registration, and related google plugin adapters behavior.
           - name: Search and generation tools
             coverageIds: [google-ai.search-and-generation-tools]
-            description: Covers Search and generation tools across bundled `@openclaw/google-plugin` package, plugin manifest distribution, auto-enable metadata, capability-provider registration, and related google plugin adapters behavior.
+            description: Covers Search and generation tools across bundled `@afora/google-plugin` package, plugin manifest distribution, auto-enable metadata, capability-provider registration, and related google plugin adapters behavior.
           - name: Realtime voice sessions
             coverageIds: [google-ai.realtime-voice-sessions]
             description: Covers Realtime voice sessions across Gemini Live realtime voice provider behavior, Talk relay integration, constrained browser websocket tokens, audio queueing, and related gemini live talk behavior.
@@ -10586,10 +10586,10 @@ surfaces:
         features:
           - name: Provider Selection
             coverageIds: [local-models.provider-selection]
-            description: Covers Provider Selection across provider choice, `openclaw onboard`, model-picker contributions, non-interactive setup, and related provider selection and onboarding behavior.
+            description: Covers Provider Selection across provider choice, `afora onboard`, model-picker contributions, non-interactive setup, and related provider selection and onboarding behavior.
           - name: Onboarding
             coverageIds: [local-models.onboarding]
-            description: Covers Onboarding across provider choice, `openclaw onboard`, model-picker contributions, non-interactive setup, and related provider selection and onboarding behavior.
+            description: Covers Onboarding across provider choice, `afora onboard`, model-picker contributions, non-interactive setup, and related provider selection and onboarding behavior.
           - name: localService configuration
             coverageIds: [local-models.localservice-configuration]
             description: Covers localService configuration across `localService` config contract, process startup, readiness probes, lease/release behavior during provider requests, and related local service lifecycle and readiness behavior.

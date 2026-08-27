@@ -84,7 +84,7 @@ directory=$2
 rm -f -- "$socket"
 rmdir -- "$directory" 2>/dev/null || true
 `;
-const WORKER_LAUNCH_SCRIPT = 'exec node "$HOME/.openclaw-worker/$1/worker.mjs"';
+const WORKER_LAUNCH_SCRIPT = 'exec node "$HOME/.afora-worker/$1/worker.mjs"';
 
 type WorkerTunnelStartRequest = WorkerTunnelRequest & {
   bundleHash: string;
@@ -275,7 +275,7 @@ export function createWorkerTunnelManager(options: WorkerTunnelManagerOptions = 
       launchTurn: (request) =>
         workspace.runWorkspaceCommand({
           transportRetry: "never",
-          argv: ["sh", "-c", WORKER_LAUNCH_SCRIPT, "openclaw-worker", entry.bundleHash],
+          argv: ["sh", "-c", WORKER_LAUNCH_SCRIPT, "afora-worker", entry.bundleHash],
           input: JSON.stringify(
             completeWorkerLaunchDescriptor(request.plan, {
               kind: "unix",
@@ -529,7 +529,7 @@ export function createWorkerTunnelManager(options: WorkerTunnelManagerOptions = 
         ssh: request.ssh,
         pinnedHostKey: request.ssh.hostKey,
         resolveIdentity: request.resolveIdentity,
-        temporaryDirectoryPrefix: "openclaw-worker-tunnel-",
+        temporaryDirectoryPrefix: "afora-worker-tunnel-",
       });
       if (!isCurrent(entry)) {
         await entry.prepared.dispose();

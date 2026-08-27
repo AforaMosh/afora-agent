@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   fingerprintSkillSnapshotConfig,
   resetSkillSnapshotConfigFingerprintCache,
@@ -9,7 +9,7 @@ describe("skill snapshot config fingerprint", () => {
   it("reuses one config identity until the runtime apply owner resets it", () => {
     let workspace = "/tmp/first";
     let reads = 0;
-    const config = {} as OpenClawConfig;
+    const config = {} as AforaConfig;
     Object.defineProperty(config, "agents", {
       enumerable: true,
       get: () => {

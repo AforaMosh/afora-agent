@@ -1,7 +1,7 @@
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 // Embedded run lifecycle tests cover drain/wait behavior, process-global
 // ownership, abandonment tracking, and snapshots.
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createReplyOperation } from "../../auto-reply/reply/reply-run-registry.js";
 import { testing as replyRunTesting } from "../../auto-reply/reply/reply-run-registry.test-support.js";
@@ -290,7 +290,7 @@ describe("embedded-agent runner run lifecycle", () => {
   it("tracks timeout abandonment by session id, key, and file until a new run starts", () => {
     // Abandonment markers must catch retries addressed by any durable identity,
     // then clear once a new run owns the same session key/file.
-    const sessionFile = "/tmp/openclaw-abandoned-session.jsonl";
+    const sessionFile = "/tmp/afora-abandoned-session.jsonl";
     const handle = createRunHandle();
 
     setActiveEmbeddedRun("session-timeout", handle, "agent:main:main", sessionFile);

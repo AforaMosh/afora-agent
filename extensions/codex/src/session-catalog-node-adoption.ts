@@ -1,15 +1,15 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
-import { parseAgentSessionKey } from "openclaw/plugin-sdk/routing";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
+import { parseAgentSessionKey } from "afora-agent/plugin-sdk/routing";
 import {
   listSessionCatalogEntries,
   sessionCatalogAdoptedSessionKey,
   sessionCatalogAdoptedSourceKey,
   type SessionCatalogEntrySnapshot,
-} from "openclaw/plugin-sdk/session-catalog";
-import { resolveStorePath } from "openclaw/plugin-sdk/session-store-runtime";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/session-catalog";
+import { resolveStorePath } from "afora-agent/plugin-sdk/session-store-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { CodexThread } from "./app-server/protocol.js";
 import { importCodexThreadHistoryToTranscript } from "./app-server/transcript-mirror.js";
 import { CatalogParamsError } from "./session-catalog-parsing.js";
@@ -106,7 +106,7 @@ function readNodeSessionMarker(entry: CatalogSessionEntry): CodexNodeSessionMark
 
 export function listNodeAdoptedSessionEntries(params: {
   agentId?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   runtime: PluginRuntime;
   includeInitializing?: boolean;
   sessionEntries?: SessionCatalogEntrySnapshot;
@@ -136,7 +136,7 @@ export function listNodeAdoptedSessionEntries(params: {
     const sourceKey = sessionCatalogAdoptedSourceKey(marker.sourceHostId, marker.sourceThreadId);
     if (adopted.has(sourceKey)) {
       throw new Error(
-        `multiple OpenClaw sessions adopt Codex thread ${marker.sourceThreadId} on ${marker.sourceHostId}`,
+        `multiple Afora sessions adopt Codex thread ${marker.sourceThreadId} on ${marker.sourceHostId}`,
       );
     }
     adopted.set(sourceKey, {
@@ -151,7 +151,7 @@ export function listNodeAdoptedSessionEntries(params: {
 
 export function findNodeAdoptedSessionEntry(params: {
   agentId?: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   runtime: PluginRuntime;
   hostId: string;
   threadId: string;
@@ -177,12 +177,12 @@ export function nodeSessionMarker(params: {
 }
 
 export async function finalizeNodeAdoptedSession(params: {
-  api: OpenClawPluginApi;
+  api: AforaPluginApi;
   adopted: AdoptedSessionEntry;
   marker: CodexNodeSessionMarker;
 }): Promise<void> {
   const changedError = () =>
-    new CatalogParamsError("Codex OpenClaw session changed before it could be bound. Retry.");
+    new CatalogParamsError("Codex Afora session changed before it could be bound. Retry.");
   let finalized: CatalogSessionEntry | null;
   try {
     finalized = await params.api.runtime.agent.session.patchSessionEntry({
@@ -240,8 +240,8 @@ export async function finalizeNodeAdoptedSession(params: {
 
 export async function createOrReuseNodeAdoptedSession(params: {
   agentId: string;
-  api: OpenClawPluginApi;
-  config: OpenClawConfig;
+  api: AforaPluginApi;
+  config: AforaConfig;
   hostId: string;
   nodeId: string;
   record: CodexSessionCatalogSession;

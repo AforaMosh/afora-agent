@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 // Outbound envelopes wrap payload projections, metadata, and delivery JSON for
 // tool responses while flattening simple delivery-only results.
 import type { ReplyPayload } from "../../auto-reply/types.js";

@@ -61,7 +61,7 @@ function listFindBuiltStatusMessageRuntimeFiles(distDir: string) {
 async function main() {
   const { packageRoot } = parsePackageRootArg(
     process.argv.slice(2),
-    "OPENCLAW_STATUS_MESSAGE_RUNTIME_ROOT",
+    "AFORA_STATUS_MESSAGE_RUNTIME_ROOT",
   );
   const runtimePath = findBuiltStatusMessageRuntimePath(path.join(packageRoot, "dist"));
   const runtimeModule = await import(pathToFileURL(runtimePath).href);

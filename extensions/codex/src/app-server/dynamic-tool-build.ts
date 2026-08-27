@@ -1,6 +1,6 @@
 /**
  * Builds the Codex app-server dynamic tool list for one turn, including
- * OpenClaw-owned tools, Codex native-tool fallback rules, sandbox shell shims,
+ * Afora-owned tools, Codex native-tool fallback rules, sandbox shell shims,
  * and provider allowlist normalization.
  */
 import {
@@ -17,10 +17,10 @@ import {
   supportsModelTools,
   type EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams,
   type RuntimeToolSchemaDiagnostic,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { resolveAgentDir } from "openclaw/plugin-sdk/agent-runtime";
-import { runWithCronCreatorAuthorityCapabilityResolver } from "openclaw/plugin-sdk/codex-mcp-projection";
-import { isToolAllowed } from "openclaw/plugin-sdk/sandbox";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { resolveAgentDir } from "afora-agent/plugin-sdk/agent-runtime";
+import { runWithCronCreatorAuthorityCapabilityResolver } from "afora-agent/plugin-sdk/codex-mcp-projection";
+import { isToolAllowed } from "afora-agent/plugin-sdk/sandbox";
 import {
   isCodexRemoteExecPlacementSandbox,
   readCodexPluginConfig,
@@ -52,15 +52,15 @@ import {
 import { filterCodexVisionTools } from "./vision-tools.js";
 import { resolveCodexWebSearchPlan, type CodexNativeWebSearchSupport } from "./web-search.js";
 
-type OpenClawCodingToolsOptions = NonNullable<
-  Parameters<(typeof import("openclaw/plugin-sdk/agent-harness"))["createOpenClawCodingTools"]>[0]
+type AforaCodingToolsOptions = NonNullable<
+  Parameters<(typeof import("afora-agent/plugin-sdk/agent-harness"))["createAforaCodingTools"]>[0]
 >;
 
-/** Factory seam for constructing OpenClaw runtime tools without eagerly loading agent-harness. */
-type OpenClawCodingToolsFactory =
-  (typeof import("openclaw/plugin-sdk/agent-harness"))["createOpenClawCodingTools"];
-type OpenClawDynamicTool = ReturnType<OpenClawCodingToolsFactory>[number];
-type OpenClawSandboxContext = Awaited<ReturnType<typeof resolveSandboxContext>>;
+/** Factory seam for constructing Afora runtime tools without eagerly loading agent-harness. */
+type AforaCodingToolsFactory =
+  (typeof import("afora-agent/plugin-sdk/agent-harness"))["createAforaCodingTools"];
+type AforaDynamicTool = ReturnType<AforaCodingToolsFactory>[number];
+type AforaSandboxContext = Awaited<ReturnType<typeof resolveSandboxContext>>;
 type CodexDynamicToolBuildEvent = Parameters<
   NonNullable<EmbeddedRunAttemptParams["onAgentEvent"]>
 >[0];
@@ -77,13 +77,13 @@ function preserveRingZeroSystemAgentTool<T extends { name: string; catalogMode?:
   allTools: T[],
   filteredTools: T[],
 ): T[] {
-  const openclaw = allTools.find(
-    (tool) => tool.name === "openclaw" && tool.catalogMode === "direct-only",
+  const afora = allTools.find(
+    (tool) => tool.name === "afora" && tool.catalogMode === "direct-only",
   );
-  if (!openclaw) {
+  if (!afora) {
     return filteredTools;
   }
-  return [openclaw, ...filteredTools.filter((tool) => tool.name !== "openclaw")];
+  return [afora, ...filteredTools.filter((tool) => tool.name !== "afora")];
 }
 /** Runtime inputs needed to derive the exact Codex dynamic tool surface for a turn. */
 type DynamicToolBuildParams = {
@@ -92,19 +92,19 @@ type DynamicToolBuildParams = {
   effectiveWorkspace: string;
   effectiveCwd?: string;
   sandboxSessionKey: string;
-  sandbox: OpenClawSandboxContext;
+  sandbox: AforaSandboxContext;
   nativeToolSurfaceEnabled?: boolean;
   nativeProviderWebSearchSupport?: CodexNativeWebSearchSupport;
   runAbortController: AbortController;
   sessionAgentId: string;
   pluginConfig: CodexPluginConfig;
   profilerEnabled?: boolean;
-  cronCreatorToolAllowlistRef?: OpenClawCodingToolsOptions["cronCreatorToolAllowlistRef"];
-  cronCreatorToolAllowlistCaptureRef?: OpenClawCodingToolsOptions["cronCreatorToolAllowlistCaptureRef"];
+  cronCreatorToolAllowlistRef?: AforaCodingToolsOptions["cronCreatorToolAllowlistRef"];
+  cronCreatorToolAllowlistCaptureRef?: AforaCodingToolsOptions["cronCreatorToolAllowlistCaptureRef"];
   resolveCronCreatorToolAuthority?: Parameters<
     typeof runWithCronCreatorAuthorityCapabilityResolver
   >[0]["resolve"];
-  cronCreatorAuthorityUnavailableReason?: OpenClawCodingToolsOptions["cronCreatorAuthorityUnavailableReason"];
+  cronCreatorAuthorityUnavailableReason?: AforaCodingToolsOptions["cronCreatorAuthorityUnavailableReason"];
   forceHeartbeatTool?: boolean;
   ignoreDisableMessageTool?: boolean;
   ignoreRuntimePlan?: boolean;
@@ -121,10 +121,10 @@ type DynamicToolBuildParams = {
   };
 };
 /** Splits sandbox and run session keys so tool calls can bind to both scopes when needed. */
-function resolveOpenClawCodingToolsSessionKeys(
+function resolveAforaCodingToolsSessionKeys(
   params: EmbeddedRunAttemptParams,
   sandboxSessionKey: string,
-): Pick<OpenClawCodingToolsOptions, "sessionKey" | "runSessionKey"> {
+): Pick<AforaCodingToolsOptions, "sessionKey" | "runSessionKey"> {
   return {
     sessionKey: sandboxSessionKey,
     runSessionKey:
@@ -237,19 +237,19 @@ export async function buildDynamicTools(input: DynamicToolBuildParams) {
   });
   const modelHasVision = params.model.input?.includes("image") ?? false;
   const agentDir = params.agentDir ?? resolveAgentDir(params.config ?? {}, input.sessionAgentId);
-  const injectedOpenClawCodingToolsFactory = dynamicToolBuildState.openClawCodingToolsFactory;
-  let agentHarnessModule: typeof import("openclaw/plugin-sdk/agent-harness") | undefined;
+  const injectedAforaCodingToolsFactory = dynamicToolBuildState.aforaCodingToolsFactory;
+  let agentHarnessModule: typeof import("afora-agent/plugin-sdk/agent-harness") | undefined;
   const loadAgentHarnessModule = async () =>
-    (agentHarnessModule ??= await import("openclaw/plugin-sdk/agent-harness"));
-  const createOpenClawCodingTools =
-    injectedOpenClawCodingToolsFactory ??
-    (await loadAgentHarnessModule()).createOpenClawCodingTools;
+    (agentHarnessModule ??= await import("afora-agent/plugin-sdk/agent-harness"));
+  const createAforaCodingTools =
+    injectedAforaCodingToolsFactory ??
+    (await loadAgentHarnessModule()).createAforaCodingTools;
   toolBuildStages.mark("load-agent-harness-tools");
-  const sessionKeys = resolveOpenClawCodingToolsSessionKeys(params, input.sandboxSessionKey);
+  const sessionKeys = resolveAforaCodingToolsSessionKeys(params, input.sandboxSessionKey);
   const nativeExecutionPolicy = resolveCodexNativeExecutionPolicyForDynamicTools(input);
-  const buildOpenClawCodingTools = () =>
+  const buildAforaCodingTools = () =>
     params.hostCapabilities.bindToolSurface(
-      createOpenClawCodingTools({
+      createAforaCodingTools({
         agentId: input.sessionAgentId,
         ...buildEmbeddedAttemptToolRunContext(params),
         exec: {
@@ -307,7 +307,7 @@ export async function buildDynamicTools(input: DynamicToolBuildParams) {
         modelId: params.modelId,
         modelCompat:
           params.model.compat && typeof params.model.compat === "object"
-            ? (params.model.compat as OpenClawCodingToolsOptions["modelCompat"])
+            ? (params.model.compat as AforaCodingToolsOptions["modelCompat"])
             : undefined,
         modelApi: params.model.api,
         modelContextWindowTokens: params.model.contextWindow,
@@ -364,10 +364,10 @@ export async function buildDynamicTools(input: DynamicToolBuildParams) {
         capability: params.cronCreatorAuthorityCapability,
         runId: params.runId,
         resolve: input.resolveCronCreatorToolAuthority,
-        run: buildOpenClawCodingTools,
+        run: buildAforaCodingTools,
       })
-    : buildOpenClawCodingTools();
-  toolBuildStages.mark("create-openclaw-coding-tools");
+    : buildAforaCodingTools();
+  toolBuildStages.mark("create-afora-coding-tools");
   const preNormalizationDiagnostics: RuntimeToolSchemaDiagnostic[] = [];
   const readableAllToolProjection = filterProviderNormalizableTools(allTools);
   preNormalizationDiagnostics.push(...readableAllToolProjection.diagnostics);
@@ -381,11 +381,11 @@ export async function buildDynamicTools(input: DynamicToolBuildParams) {
   const normallyProfiledTools =
     input.nativeToolSurfaceEnabled === false
       ? filterCodexDynamicToolsForDisabledNativeSurface(readableAllTools, input.pluginConfig, {
-          preserveShell: shouldKeepOpenClawShellDynamicTools(input, nativeExecutionPolicy),
+          preserveShell: shouldKeepAforaShellDynamicTools(input, nativeExecutionPolicy),
         })
       : filterCodexDynamicTools(readableAllTools, input.pluginConfig);
   const hostSystemAgentActive =
-    input.isHostScopedToolActive?.("openclaw") ?? isHostScopedAgentToolActive("openclaw");
+    input.isHostScopedToolActive?.("afora") ?? isHostScopedAgentToolActive("afora");
   const profileFilteredTools =
     hostSystemAgentActive && isSystemAgentOnlyCodexDynamicToolAllowlist(params.toolsAllow)
       ? preserveRingZeroSystemAgentTool(readableAllTools, normallyProfiledTools)
@@ -539,7 +539,7 @@ function includeForcedCodexDynamicToolAllow(
 /** Decides whether Codex native code mode can own shell/file tools for this turn. */
 export function shouldEnableCodexAppServerNativeToolSurface(
   params: EmbeddedRunAttemptParams,
-  sandbox?: OpenClawSandboxContext,
+  sandbox?: AforaSandboxContext,
   options: {
     agentId?: string;
     runtimeSessionKey?: string;
@@ -569,20 +569,20 @@ export function shouldEnableCodexAppServerNativeToolSurface(
     return canCodexAppServerNativeToolSurfaceHonorSandbox(sandbox, options);
   }
   // Codex native code mode exposes its shell/file surface as one app-server
-  // capability, so narrow OpenClaw allowlists must fail closed rather than
+  // capability, so narrow Afora allowlists must fail closed rather than
   // widening `message` or `web_search` into shell access.
   return (
     hasWildcardCodexToolsAllow(toolsAllow) &&
     canCodexAppServerNativeToolSurfaceHonorSandbox(sandbox, options)
   );
 }
-/** Returns true when OpenClaw policy requires the Node-owned exec/process tools instead. */
+/** Returns true when Afora policy requires the Node-owned exec/process tools instead. */
 function isCodexNativeExecutionBlockedByNodeExecHost(
   params: EmbeddedRunAttemptParams,
   options: {
     agentId?: string;
     runtimeSessionKey?: string;
-    sandbox?: OpenClawSandboxContext;
+    sandbox?: AforaSandboxContext;
   } = {},
 ): boolean {
   return !resolveCodexNativeExecutionPolicy({
@@ -607,7 +607,7 @@ function resolveCodexRuntimePolicySessionKey(
   );
 }
 function canCodexAppServerNativeToolSurfaceHonorSandbox(
-  sandbox: OpenClawSandboxContext | undefined,
+  sandbox: AforaSandboxContext | undefined,
   options: { sandboxExecServerEnabled?: boolean } = {},
 ): boolean {
   if (!sandbox?.enabled) {
@@ -622,7 +622,7 @@ function canCodexAppServerNativeToolSurfaceHonorSandbox(
   }
   // Codex app-server native shell, filesystem, and user MCP execution are owned
   // by the app-server process. Without the explicit exec-server integration,
-  // active OpenClaw sandboxing must disable the native surface and route shell
+  // active Afora sandboxing must disable the native surface and route shell
   // access through sandbox-backed dynamic tools instead.
   return false;
 }
@@ -643,9 +643,9 @@ function filterCodexMemoryFlushDynamicTools<T extends { name: string }>(tools: T
     CODEX_MEMORY_FLUSH_DYNAMIC_TOOL_ALLOW.has(normalizeCodexDynamicToolName(tool.name)),
   );
 }
-/** Requires a Codex sandbox environment only when native tools must run inside OpenClaw sandboxing. */
+/** Requires a Codex sandbox environment only when native tools must run inside Afora sandboxing. */
 export function shouldRequireCodexSandboxExecServerEnvironment(params: {
-  sandbox?: OpenClawSandboxContext;
+  sandbox?: AforaSandboxContext;
   nativeToolSurfaceEnabled: boolean;
   sandboxExecServerEnabled: boolean;
 }): boolean {
@@ -681,23 +681,23 @@ export function resolveCodexAppServerExecutionCwd(params: {
     remoteWorkspaceRoot: params.remoteWorkspaceRoot,
   });
 }
-/** Converts OpenClaw sandbox networking into Codex's external-sandbox policy shape. */
-export function resolveCodexExternalSandboxPolicyForOpenClawSandbox(
-  sandbox: OpenClawSandboxContext | undefined,
+/** Converts Afora sandbox networking into Codex's external-sandbox policy shape. */
+export function resolveCodexExternalSandboxPolicyForAforaSandbox(
+  sandbox: AforaSandboxContext | undefined,
 ): CodexSandboxPolicy {
   return {
     type: "externalSandbox",
-    networkAccess: codexNetworkAccessForOpenClawSandbox(sandbox) ? "enabled" : "restricted",
+    networkAccess: codexNetworkAccessForAforaSandbox(sandbox) ? "enabled" : "restricted",
   };
 }
 
-function usesDockerNetworkConfig(sandbox: OpenClawSandboxContext | undefined): boolean {
+function usesDockerNetworkConfig(sandbox: AforaSandboxContext | undefined): boolean {
   const backendId = sandbox?.backendId.trim().toLowerCase();
   return backendId === "docker" || backendId === "podman";
 }
 
-function codexNetworkAccessForOpenClawSandbox(
-  sandbox: OpenClawSandboxContext | undefined,
+function codexNetworkAccessForAforaSandbox(
+  sandbox: AforaSandboxContext | undefined,
 ): boolean {
   if (!usesDockerNetworkConfig(sandbox)) {
     return true;
@@ -718,10 +718,10 @@ export function disableCodexPluginThreadConfig(pluginConfig?: unknown): CodexPlu
 }
 /** Adds sandbox_exec/process aliases when native Code Mode cannot directly honor the sandbox. */
 function addSandboxShellDynamicToolsIfAvailable(
-  filteredTools: OpenClawDynamicTool[],
-  allTools: OpenClawDynamicTool[],
+  filteredTools: AforaDynamicTool[],
+  allTools: AforaDynamicTool[],
   input: DynamicToolBuildParams,
-): OpenClawDynamicTool[] {
+): AforaDynamicTool[] {
   if (
     !shouldExposeSandboxExecDynamicTool(input) ||
     isSandboxShellDynamicToolExcluded(input.pluginConfig)
@@ -735,11 +735,11 @@ function addSandboxShellDynamicToolsIfAvailable(
   if (!execTool || !processTool) {
     return filteredTools;
   }
-  const sandboxExecTool: OpenClawDynamicTool = {
+  const sandboxExecTool: AforaDynamicTool = {
     ...execTool,
     name: "sandbox_exec",
     description:
-      "Run a shell command through OpenClaw's configured sandbox backend for this session. Use when OpenClaw sandboxing is active or when a command must execute in the sandbox backend, such as an SSH-backed sandbox or Docker container-path bind layout. Use Codex's native shell only when no OpenClaw sandbox is active and native Code Mode is available.",
+      "Run a shell command through Afora's configured sandbox backend for this session. Use when Afora sandboxing is active or when a command must execute in the sandbox backend, such as an SSH-backed sandbox or Docker container-path bind layout. Use Codex's native shell only when no Afora sandbox is active and native Code Mode is available.",
     execute: async (toolCallId, args, signal, onUpdate) => {
       const result = await execTool.execute(toolCallId, args, signal, onUpdate);
       return {
@@ -757,11 +757,11 @@ function addSandboxShellDynamicToolsIfAvailable(
       };
     },
   };
-  const sandboxProcessTool: OpenClawDynamicTool = {
+  const sandboxProcessTool: AforaDynamicTool = {
     ...processTool,
     name: "sandbox_process",
     description:
-      "Manage background shell sessions through OpenClaw's configured sandbox backend for this session: list, poll, log, write, send-keys, submit, paste, kill, clear, or remove. Use only for sandbox follow-up; use Codex's native shell session handling only when no OpenClaw sandbox is active and native Code Mode is available.",
+      "Manage background shell sessions through Afora's configured sandbox backend for this session: list, poll, log, write, send-keys, submit, paste, kill, clear, or remove. Use only for sandbox follow-up; use Codex's native shell session handling only when no Afora sandbox is active and native Code Mode is available.",
   };
   return [...filteredTools, sandboxExecTool, sandboxProcessTool];
 }
@@ -785,11 +785,11 @@ function isSandboxShellDynamicToolExcluded(config: CodexPluginConfig): boolean {
   return isCodexDynamicToolExcluded(config, ["exec", "sandbox_exec", "process", "sandbox_process"]);
 }
 function addNodeShellDynamicToolsIfNeeded(
-  filteredTools: OpenClawDynamicTool[],
-  allTools: OpenClawDynamicTool[],
+  filteredTools: AforaDynamicTool[],
+  allTools: AforaDynamicTool[],
   input: DynamicToolBuildParams,
   nodePolicy: CodexNativeExecutionPolicy,
-): OpenClawDynamicTool[] {
+): AforaDynamicTool[] {
   if (isCodexMemoryFlushRun(input.params)) {
     return filteredTools;
   }
@@ -806,7 +806,7 @@ function addNodeShellDynamicToolsIfNeeded(
   if (!execTool || !processTool) {
     return filteredTools;
   }
-  const toolsToAppend: OpenClawDynamicTool[] = [];
+  const toolsToAppend: AforaDynamicTool[] = [];
   if (
     !isCodexDynamicToolExcluded(input.pluginConfig, ["exec", CODEX_NODE_EXEC_DYNAMIC_TOOL_NAME]) &&
     !filteredTools.some(
@@ -828,14 +828,14 @@ function addNodeShellDynamicToolsIfNeeded(
   }
   return toolsToAppend.length > 0 ? [...filteredTools, ...toolsToAppend] : filteredTools;
 }
-function shouldKeepOpenClawShellDynamicTools(
+function shouldKeepAforaShellDynamicTools(
   input: DynamicToolBuildParams,
   nodePolicy: CodexNativeExecutionPolicy,
 ): boolean {
   return (
     !isCodexMemoryFlushRun(input.params) &&
     // Disabled native Code Mode sends `environments: []`, so Codex cannot
-    // advertise a shell. Preserve OpenClaw's policy-filtered direct shell.
+    // advertise a shell. Preserve Afora's policy-filtered direct shell.
     input.nativeToolSurfaceEnabled === false &&
     input.sandbox?.enabled !== true &&
     nodePolicy.effectiveExecHost !== "node"

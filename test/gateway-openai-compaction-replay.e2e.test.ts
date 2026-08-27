@@ -4,12 +4,12 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { SessionManager } from "../src/agents/sessions/session-manager.js";
-import type { OpenClawConfig } from "../src/config/types.openclaw.js";
+import type { AforaConfig } from "../src/config/types.afora.js";
 import { connectGatewayClient, disconnectGatewayClient } from "../src/gateway/test-helpers.e2e.js";
 import {
-  createOpenClawTestInstance,
-  type OpenClawTestInstance,
-} from "./helpers/openclaw-test-instance.js";
+  createAforaTestInstance,
+  type AforaTestInstance,
+} from "./helpers/afora-test-instance.js";
 
 const TEST_TIMEOUT_MS = 180_000;
 const MODEL_REF = "replay-proof/replay-proof";
@@ -29,7 +29,7 @@ type MockModelServer = {
 
 type MockSseEvent = { type: string } & Record<string, unknown>;
 
-const instances: OpenClawTestInstance[] = [];
+const instances: AforaTestInstance[] = [];
 const modelServers: MockModelServer[] = [];
 
 afterEach(async () => {
@@ -44,12 +44,12 @@ describe("Gateway OpenAI Responses compaction replay", () => {
     async () => {
       const modelServer = await startMockModelServer();
       modelServers.push(modelServer);
-      const instance = await createOpenClawTestInstance({
+      const instance = await createAforaTestInstance({
         name: "gateway-openai-compaction-replay",
         config: createTestConfig(modelServer.baseUrl),
         env: {
-          OPENCLAW_DEBUG_MODEL_TRANSPORT: "1",
-          OPENCLAW_SKIP_PROVIDERS: undefined,
+          AFORA_DEBUG_MODEL_TRANSPORT: "1",
+          AFORA_SKIP_PROVIDERS: undefined,
         },
       });
       instances.push(instance);
@@ -78,7 +78,7 @@ describe("Gateway OpenAI Responses compaction replay", () => {
           agentId: "main",
           sessionId,
           sessionKey: SESSION_KEY,
-          storePath: path.join(instance.state.agentDir("main"), "openclaw-agent.sqlite"),
+          storePath: path.join(instance.state.agentDir("main"), "afora-agent.sqlite"),
         });
         const contextMessages = manager.buildSessionContext().messages;
         const persistedReplay = contextMessages.find(
@@ -134,14 +134,14 @@ describe("Gateway OpenAI Responses compaction replay", () => {
   );
 });
 
-function createTestConfig(baseUrl: string): OpenClawConfig {
+function createTestConfig(baseUrl: string): AforaConfig {
   return {
     plugins: { slots: { memory: "none" } },
     agents: {
       defaults: {
         heartbeat: { every: "0m" },
         model: { primary: MODEL_REF },
-        models: { [MODEL_REF]: { agentRuntime: { id: "openclaw" } } },
+        models: { [MODEL_REF]: { agentRuntime: { id: "afora" } } },
         skipBootstrap: true,
         skills: [],
       },

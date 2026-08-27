@@ -1,22 +1,22 @@
 {
-  "name": "@openclaw/logbook",
+  "name": "@afora/logbook",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw automatic work journal plugin",
+  "description": "Afora automatic work journal plugin",
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*",
-    "openclaw": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*",
+    "afora-agent": "workspace:*"
   },
   "peerDependencies": {
-    "openclaw": ">=2026.8.1"
+    "afora-agent": ">=2026.8.1"
   },
   "peerDependenciesMeta": {
-    "openclaw": {
+    "afora": {
       "optional": true
     }
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

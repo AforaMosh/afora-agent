@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import JSON5 from "json5";
 import { describe, expect, it } from "vitest";
-import { OpenClawSchema } from "../config/zod-schema.js";
+import { AforaSchema } from "../config/zod-schema.js";
 
 const CLOUD_WORKER_DOCS = [
   "docs/gateway/cloud-workers.md",
@@ -43,7 +43,7 @@ describe("Cloud Workers documentation contract", () => {
     const examples = cloudWorkerConfigExamples(filePath);
     expect(examples.length).toBeGreaterThan(0);
     for (const example of examples) {
-      expect(OpenClawSchema.safeParse(example).success).toBe(true);
+      expect(AforaSchema.safeParse(example).success).toBe(true);
     }
   });
 

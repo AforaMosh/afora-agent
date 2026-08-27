@@ -3,19 +3,19 @@ import { getChannelPlugin } from "../../channels/plugins/index.js";
 import { resolveChannelSetupExecutionAdapter } from "../../channels/plugins/setup-contract.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.plugin.js";
 import type { ChannelId } from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { normalizeAccountId } from "../../routing/session-key.js";
 
 type ChatChannel = ChannelId;
 
 /** Apply a display name to a channel account when the plugin supports account naming. */
 export function applyAccountName(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: ChatChannel;
   accountId: string;
   name?: string;
   plugin?: ChannelPlugin;
-}): OpenClawConfig {
+}): AforaConfig {
   const accountId = normalizeAccountId(params.accountId);
   const plugin = params.plugin ?? getChannelPlugin(params.channel);
   const apply = plugin ? resolveChannelSetupExecutionAdapter(plugin)?.applyAccountName : undefined;

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import type { CronPayload, CronSchedule } from "./types.js";
 
 const DEFAULT_CRON_STREAM_BATCH_MS = 250;

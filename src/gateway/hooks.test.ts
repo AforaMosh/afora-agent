@@ -2,7 +2,7 @@
 // normalization, allowed-agent checks, and channel alias handling.
 import type { IncomingMessage } from "node:http";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createChannelTestPluginBase, createTestRegistry } from "../test-utils/channel-plugins.js";
 import {
@@ -42,7 +42,7 @@ const createIMessageAliasPlugin = () => ({
 });
 
 describe("gateway hooks helpers", () => {
-  const resolveHooksConfigOrThrow = (cfg: OpenClawConfig) => {
+  const resolveHooksConfigOrThrow = (cfg: AforaConfig) => {
     const resolved = resolveHooksConfig(cfg);
     if (!resolved) {
       throw new Error("hooks config missing");
@@ -61,7 +61,7 @@ describe("gateway hooks helpers", () => {
       agents: {
         list: [{ id: "main", default: true }, { id: "hooks" }],
       },
-    }) as OpenClawConfig;
+    }) as AforaConfig;
 
   const buildStaticShadowingMappingConfig = (params: {
     firstMatch?: Partial<{ path: string; source: string }>;
@@ -87,7 +87,7 @@ describe("gateway hooks helpers", () => {
           },
         ],
       },
-    }) as OpenClawConfig;
+    }) as AforaConfig;
 
   beforeEach(() => {
     setActivePluginRegistry(emptyRegistry);
@@ -103,7 +103,7 @@ describe("gateway hooks helpers", () => {
         token: "secret",
         path: "hooks///",
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const resolved = resolveHooksConfig(base);
     expect(resolved?.basePath).toBe("/hooks");
     expect(resolved?.token).toBe("secret");
@@ -113,7 +113,7 @@ describe("gateway hooks helpers", () => {
   test("resolveHooksConfig rejects root path", () => {
     const cfg = {
       hooks: { enabled: true, token: "x", path: "/" },
-    } as OpenClawConfig;
+    } as AforaConfig;
     expect(() => resolveHooksConfig(cfg)).toThrow("hooks.path may not be '/'");
   });
 
@@ -121,14 +121,14 @@ describe("gateway hooks helpers", () => {
     const req = {
       headers: {
         authorization: "Bearer top",
-        "x-openclaw-token": "header",
+        "x-afora-token": "header",
       },
     } as unknown as IncomingMessage;
     const result1 = extractHookToken(req);
     expect(result1).toBe("top");
 
     const req2 = {
-      headers: { "x-openclaw-token": "header" },
+      headers: { "x-afora-token": "header" },
     } as unknown as IncomingMessage;
     const result2 = extractHookToken(req2);
     expect(result2).toBe("header");
@@ -348,7 +348,7 @@ describe("gateway hooks helpers", () => {
       agents: {
         list: [{ id: "main", default: true }, { id: "hooks" }],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const resolved = resolveHooksConfigOrThrow(cfg);
     expect(resolveHookTargetAgentId(resolved, "hooks")).toBe("hooks");
     expect(resolveHookTargetAgentId(resolved, "missing-agent")).toBe("main");
@@ -410,7 +410,7 @@ describe("gateway hooks helpers", () => {
   test("resolveHookSessionKey disables request sessionKey by default", () => {
     const cfg = {
       hooks: { enabled: true, token: "secret" },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const resolved = resolveHooksConfigOrThrow(cfg);
     const denied = resolveHookSessionKey({
       hooksConfig: resolved,
@@ -423,7 +423,7 @@ describe("gateway hooks helpers", () => {
   test("resolveHookSessionKey allows request sessionKey when explicitly enabled", () => {
     const cfg = {
       hooks: { enabled: true, token: "secret", allowRequestSessionKey: true },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const resolved = resolveHooksConfigOrThrow(cfg);
     const allowed = resolveHookSessionKey({
       hooksConfig: resolved,
@@ -441,7 +441,7 @@ describe("gateway hooks helpers", () => {
         allowRequestSessionKey: true,
         allowedSessionKeyPrefixes: ["hook:"],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const resolved = resolveHooksConfigOrThrow(cfg);
 
     const blocked = resolveHookSessionKey({
@@ -466,7 +466,7 @@ describe("gateway hooks helpers", () => {
         token: "secret",
         allowedSessionKeyPrefixes: ["hook:", "hook:gmail:"],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const resolved = resolveHooksConfigOrThrow(cfg);
 
     const denied = resolveHookSessionKey({
@@ -484,7 +484,7 @@ describe("gateway hooks helpers", () => {
         token: "secret",
         allowedSessionKeyPrefixes: ["hook:", "hook:gmail:"],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const resolved = resolveHooksConfigOrThrow(cfg);
 
     const allowed = resolveHookSessionKey({
@@ -502,7 +502,7 @@ describe("gateway hooks helpers", () => {
         token: "secret",
         defaultSessionKey: "hook:ingress",
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const resolved = resolveHooksConfigOrThrow(cfg);
 
     const resolvedKey = resolveHookSessionKey({
@@ -539,7 +539,7 @@ describe("gateway hooks helpers", () => {
           defaultSessionKey: "agent:main:main",
           allowedSessionKeyPrefixes: ["hook:"],
         },
-      } as OpenClawConfig),
+      } as AforaConfig),
     ).toThrow("hooks.defaultSessionKey must match hooks.allowedSessionKeyPrefixes");
 
     expect(() =>
@@ -549,7 +549,7 @@ describe("gateway hooks helpers", () => {
           token: "secret",
           allowedSessionKeyPrefixes: ["agent:"],
         },
-      } as OpenClawConfig),
+      } as AforaConfig),
     ).toThrow(
       "hooks.allowedSessionKeyPrefixes must include 'hook:' when hooks.defaultSessionKey is unset",
     );
@@ -571,7 +571,7 @@ describe("gateway hooks helpers", () => {
             },
           ],
         },
-      } as OpenClawConfig),
+      } as AforaConfig),
     ).toThrow(
       "hooks.allowedSessionKeyPrefixes is required when a hook mapping sessionKey uses templates, even if hooks.allowRequestSessionKey=true",
     );
@@ -593,7 +593,7 @@ describe("gateway hooks helpers", () => {
           },
         ],
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(resolved.mappings.map((mapping) => mapping.sessionKey)).toEqual([
       "hook:gmail:static",
@@ -627,7 +627,7 @@ describe("gateway hooks helpers", () => {
             },
           ],
         },
-      } as OpenClawConfig),
+      } as AforaConfig),
     ).toThrow("hooks.allowedSessionKeyPrefixes is required");
   });
 

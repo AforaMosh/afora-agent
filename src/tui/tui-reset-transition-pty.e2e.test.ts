@@ -20,19 +20,19 @@ describe("TUI reset transition PTY", () => {
   it(
     "preserves overlapping input while /reset owns the terminal session transition",
     async () => {
-      const tempDir = tempDirs.make("openclaw-tui-reset-pty-");
+      const tempDir = tempDirs.make("afora-tui-reset-pty-");
       const scriptPath = await writeTuiPtyFixtureScript(tempDir);
       const logPath = path.join(tempDir, "fixture-log.jsonl");
       const resetReleasePath = path.join(tempDir, "release-reset-session");
       const run = startPty(process.execPath, ["--import", "tsx", scriptPath], {
         cwd: process.cwd(),
         env: {
-          OPENCLAW_THEME: "dark",
-          OPENCLAW_TUI_PTY_LOG_PATH: logPath,
-          OPENCLAW_TUI_PTY_RESET_RELEASE_PATH: resetReleasePath,
-          OPENCLAW_TUI_PTY_SUBMIT_BURST_WINDOW_MS: "1000",
-          OPENCLAW_TUI_PTY_TYPE_CHUNK_SIZE: "1",
-          OPENCLAW_TUI_PTY_TYPE_DELAY_MS: "2",
+          AFORA_THEME: "dark",
+          AFORA_TUI_PTY_LOG_PATH: logPath,
+          AFORA_TUI_PTY_RESET_RELEASE_PATH: resetReleasePath,
+          AFORA_TUI_PTY_SUBMIT_BURST_WINDOW_MS: "1000",
+          AFORA_TUI_PTY_TYPE_CHUNK_SIZE: "1",
+          AFORA_TUI_PTY_TYPE_DELAY_MS: "2",
           TERM_PROGRAM: "Apple_Terminal",
           NO_COLOR: undefined,
         },

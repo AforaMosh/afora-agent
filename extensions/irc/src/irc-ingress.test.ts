@@ -2,11 +2,11 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
 import {
-  closeOpenClawStateDatabaseForTest,
+  closeAforaStateDatabaseForTest,
   createChannelIngressQueueForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createIrcIngressMonitor } from "./irc-ingress.js";
 
@@ -25,12 +25,12 @@ function createQueue(stateDir: string): IrcIngressQueue {
 }
 
 async function withQueue<T>(fn: (queue: IrcIngressQueue) => Promise<T>): Promise<T> {
-  const created = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-irc-ingress-"));
+  const created = await fs.mkdtemp(path.join(os.tmpdir(), "afora-irc-ingress-"));
   const stateDir = await fs.realpath(created);
   try {
     return await fn(createQueue(stateDir));
   } finally {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(stateDir, { recursive: true, force: true });
   }
 }
@@ -49,7 +49,7 @@ function startIngress(queue: IrcIngressQueue, dispatch: IrcIngressDispatch) {
 }
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   vi.restoreAllMocks();
 });
 
@@ -174,7 +174,7 @@ describe("IRC durable ingress", () => {
       try {
         await ingress
           .openConnection("connection-dm")
-          .accept(":Alice!ident@example.org PRIVMSG openclaw-bot :hello", "bot");
+          .accept(":Alice!ident@example.org PRIVMSG afora-bot :hello", "bot");
         expect(await queue.listPending({ limit: "all" })).toEqual([
           expect.objectContaining({ laneKey: "direct:alice" }),
         ]);

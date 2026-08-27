@@ -1,10 +1,10 @@
 // Mattermost plugin module implements reactions behavior.
-import type { ChannelMessageActionContext } from "openclaw/plugin-sdk/channel-contract";
+import type { ChannelMessageActionContext } from "afora-agent/plugin-sdk/channel-contract";
 import {
   asDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "openclaw/plugin-sdk/number-runtime";
-import { isPrivateNetworkOptInEnabled } from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/number-runtime";
+import { isPrivateNetworkOptInEnabled } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { normalizeMattermostMessagingTarget } from "../normalize.js";
 import { resolveMattermostAccount } from "./accounts.js";
 import {
@@ -15,14 +15,14 @@ import {
   type MattermostFetch,
   type MattermostPost,
 } from "./client.js";
-import type { OpenClawConfig } from "./runtime-api.js";
+import type { AforaConfig } from "./runtime-api.js";
 
 type ConversationReadInvocationOrigin = NonNullable<
   ChannelMessageActionContext["conversationReadOrigin"]
 >;
 type Result = { ok: true } | { ok: false; error: string };
 type ReactionParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   postId: string;
   emojiName: string;
   accountId?: string | null;
@@ -62,7 +62,7 @@ async function resolveBotUserId(
 }
 
 export async function addMattermostReaction(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   postId: string;
   emojiName: string;
   accountId?: string | null;
@@ -77,7 +77,7 @@ export async function addMattermostReaction(params: {
 }
 
 export async function removeMattermostReaction(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   postId: string;
   emojiName: string;
   accountId?: string | null;

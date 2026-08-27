@@ -21,7 +21,7 @@ type DefaultModelsViewProps = {
   onReset: () => void;
 };
 
-const AUTOMATIC_UTILITY_VALUE = "__openclaw_automatic_utility__";
+const AUTOMATIC_UTILITY_VALUE = "__afora_automatic_utility__";
 const UTILITY_MODEL_PICKER_ID = "model-providers-utility-model";
 const UTILITY_MODEL_HELP_ID = "model-providers-utility-help";
 const UTILITY_MODEL_HELP_POPOVER_ID = "model-providers-utility-help-popover";

@@ -58,8 +58,8 @@ describe("backupCreateCommand verify wrapper", () => {
 
   it("optionally verifies the archive after writing it", async () => {
     createBackupArchiveMock.mockResolvedValue({
-      archivePath: "/tmp/openclaw-backup.tar.gz",
-      archiveRoot: "openclaw-backup",
+      archivePath: "/tmp/afora-backup.tar.gz",
+      archiveRoot: "afora-backup",
       createdAt: "2026-04-07T00:00:00.000Z",
       runtimeVersion: "test",
       assetCount: 1,
@@ -72,7 +72,7 @@ describe("backupCreateCommand verify wrapper", () => {
     });
     backupVerifyCommandMock.mockResolvedValue({
       ok: true,
-      archivePath: "/tmp/openclaw-backup.tar.gz",
+      archivePath: "/tmp/afora-backup.tar.gz",
     });
 
     const runtime = createRuntime();
@@ -82,7 +82,7 @@ describe("backupCreateCommand verify wrapper", () => {
     expect(backupVerifyCommandMock).toHaveBeenCalledOnce();
     const [verifyRuntime, verifyOptions] = requireBackupVerifyCall();
     expect(verifyOptions).toStrictEqual({
-      archive: "/tmp/openclaw-backup.tar.gz",
+      archive: "/tmp/afora-backup.tar.gz",
       json: false,
     });
     const verifyLog = verifyRuntime?.log;

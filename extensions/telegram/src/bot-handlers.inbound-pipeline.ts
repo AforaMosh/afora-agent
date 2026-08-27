@@ -1,7 +1,7 @@
 import type { Context } from "grammy";
 import type { Message } from "grammy/types";
-import type { TelegramGroupConfig } from "openclaw/plugin-sdk/config-contracts";
-import { danger } from "openclaw/plugin-sdk/runtime-env";
+import type { TelegramGroupConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { danger } from "afora-agent/plugin-sdk/runtime-env";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import type { TelegramHandlerAuthorization } from "./bot-handlers.inbound-authorization.js";
 import { createTelegramInboundProcessing } from "./bot-handlers.inbound-processing.js";

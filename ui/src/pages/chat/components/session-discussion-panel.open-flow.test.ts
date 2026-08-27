@@ -13,7 +13,7 @@ import {
 afterEach(resetDiscussionPanelTestState);
 
 async function emptyStateText(panel: HTMLElement): Promise<string> {
-  const empty = panel.querySelector("openclaw-panel-empty-state");
+  const empty = panel.querySelector("afora-panel-empty-state");
   expect(empty).not.toBeNull();
   await empty!.updateComplete;
   return empty!.shadowRoot?.textContent ?? "";

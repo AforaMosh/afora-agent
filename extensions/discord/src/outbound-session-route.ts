@@ -1,11 +1,11 @@
 // Discord plugin module implements outbound session route behavior.
-import { buildThreadAwareOutboundSessionRoute } from "openclaw/plugin-sdk/channel-core";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { buildOutboundBaseSessionKey, type RoutePeer } from "openclaw/plugin-sdk/routing";
+import { buildThreadAwareOutboundSessionRoute } from "afora-agent/plugin-sdk/channel-core";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { buildOutboundBaseSessionKey, type RoutePeer } from "afora-agent/plugin-sdk/routing";
 import { parseDiscordTarget } from "./target-parsing.js";
 
 export type ResolveDiscordOutboundSessionRouteParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   accountId?: string | null;
   target: string;

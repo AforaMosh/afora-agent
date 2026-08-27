@@ -1,9 +1,9 @@
-import { recordChannelActivity } from "openclaw/plugin-sdk/channel-activity-runtime";
-import { createChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
+import { recordChannelActivity } from "afora-agent/plugin-sdk/channel-activity-runtime";
+import { createChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
 import {
   createMessageReceiptFromOutboundResults,
   type MessageReceiptPartKind,
-} from "openclaw/plugin-sdk/channel-outbound";
+} from "afora-agent/plugin-sdk/channel-outbound";
 import type { TelegramThreadSpec } from "./bot/helpers.js";
 import {
   recordOutboundMessageForPromptContext,

@@ -1,13 +1,13 @@
 import Foundation
-import OpenClawKit
+import AforaKit
 
-// Canonical transport leaf models live in OpenClawKit. The local envelope types
+// Canonical transport leaf models live in AforaKit. The local envelope types
 // below retain the existing Watch inbox persistence shape without `type`.
-typealias WatchPayloadType = OpenClawWatchPayloadType
-typealias WatchRiskLevel = OpenClawWatchRisk
-typealias WatchExecApprovalDecision = OpenClawWatchExecApprovalDecision
-typealias WatchExecApprovalTransportOutcome = OpenClawWatchExecApprovalOutcome
-typealias WatchExecApprovalCloseReason = OpenClawWatchExecApprovalCloseReason
+typealias WatchPayloadType = AforaWatchPayloadType
+typealias WatchRiskLevel = AforaWatchRisk
+typealias WatchExecApprovalDecision = AforaWatchExecApprovalDecision
+typealias WatchExecApprovalTransportOutcome = AforaWatchExecApprovalOutcome
+typealias WatchExecApprovalCloseReason = AforaWatchExecApprovalCloseReason
 typealias WatchOpaqueUTF8Key = ExactOpaqueIdentifierKey
 typealias WatchApprovalID = ExecApprovalIdentifier
 typealias WatchGatewayID = GatewayStableIdentifier
@@ -17,7 +17,7 @@ struct WatchExecApprovalIdentityKey: Hashable, Sendable {
     var approvalID: WatchApprovalID.Key
 }
 
-typealias WatchExecApprovalItem = OpenClawWatchExecApprovalItem
+typealias WatchExecApprovalItem = AforaWatchExecApprovalItem
 
 struct WatchExecApprovalPromptMessage: Codable, Equatable {
     var approval: WatchExecApprovalItem
@@ -72,10 +72,10 @@ struct WatchExecApprovalSnapshotMessage: Codable, Equatable {
     }
 }
 
-typealias WatchExecApprovalSnapshotRequestMessage = OpenClawWatchExecApprovalSnapshotRequestMessage
-typealias WatchExecApprovalSnapshotRequestItem = OpenClawWatchExecApprovalSnapshotRequestItem
-typealias WatchExecApprovalResolveMessage = OpenClawWatchExecApprovalResolveMessage
-typealias WatchAppCommand = OpenClawWatchAppCommand
+typealias WatchExecApprovalSnapshotRequestMessage = AforaWatchExecApprovalSnapshotRequestMessage
+typealias WatchExecApprovalSnapshotRequestItem = AforaWatchExecApprovalSnapshotRequestItem
+typealias WatchExecApprovalResolveMessage = AforaWatchExecApprovalResolveMessage
+typealias WatchAppCommand = AforaWatchAppCommand
 
 enum WatchStatusLocalizationKey: String {
     case connected
@@ -479,38 +479,38 @@ extension WatchExecApprovalDecision {
 }
 
 struct WatchAppSnapshotMessage: Codable, Equatable {
-    var gatewayStatus: OpenClawWatchAppStatus
+    var gatewayStatus: AforaWatchAppStatus
     var gatewayConnected: Bool
     var agentName: String
     var agentAvatarURL: String?
     var agentAvatarText: String?
     var sessionKey: String
     var gatewayStableID: String?
-    var talkStatus: OpenClawWatchAppStatus
+    var talkStatus: AforaWatchAppStatus
     var talkEnabled: Bool
     var talkListening: Bool
     var talkSpeaking: Bool
     var pendingApprovalCount: Int
     var chatItems: [WatchChatItem]?
-    var chatStatus: OpenClawWatchAppStatus?
+    var chatStatus: AforaWatchAppStatus?
     var sentAtMs: Int64?
     var snapshotId: String?
 
     init(
-        gatewayStatus: OpenClawWatchAppStatus,
+        gatewayStatus: AforaWatchAppStatus,
         gatewayConnected: Bool,
         agentName: String,
         agentAvatarURL: String?,
         agentAvatarText: String?,
         sessionKey: String,
         gatewayStableID: String?,
-        talkStatus: OpenClawWatchAppStatus,
+        talkStatus: AforaWatchAppStatus,
         talkEnabled: Bool,
         talkListening: Bool,
         talkSpeaking: Bool,
         pendingApprovalCount: Int,
         chatItems: [WatchChatItem]?,
-        chatStatus: OpenClawWatchAppStatus?,
+        chatStatus: AforaWatchAppStatus?,
         sentAtMs: Int64?,
         snapshotId: String?)
     {
@@ -595,7 +595,7 @@ struct WatchAppSnapshotMessage: Codable, Equatable {
     }
 
     static func localizedChatStatusText(
-        status: OpenClawWatchAppStatus?,
+        status: AforaWatchAppStatus?,
         chatCount: Int,
         hasAppSnapshot: Bool,
         localize: (WatchStatusLocalizationKey) -> String = { $0.localized }) -> String
@@ -655,7 +655,7 @@ struct WatchAppSnapshotMessage: Codable, Equatable {
         let chatStatusCode = try container.decodeIfPresent(String.self, forKey: .chatStatusCode)
         let chatStatusText = try container.decodeIfPresent(String.self, forKey: .chatStatusText)
         if let gatewayStatus = try? container.decode(
-            OpenClawWatchAppStatus.self,
+            AforaWatchAppStatus.self,
             forKey: .gatewayStatus)
         {
             self.gatewayStatus = gatewayStatus
@@ -663,7 +663,7 @@ struct WatchAppSnapshotMessage: Codable, Equatable {
                   let gatewayStatusText,
                   !gatewayStatusText.isEmpty
         {
-            self.gatewayStatus = OpenClawWatchAppStatus(
+            self.gatewayStatus = AforaWatchAppStatus(
                 code: .legacy,
                 verbatim: gatewayStatusText)
         } else {
@@ -672,7 +672,7 @@ struct WatchAppSnapshotMessage: Codable, Equatable {
                 connected: self.gatewayConnected)
         }
         if let talkStatus = try? container.decode(
-            OpenClawWatchAppStatus.self,
+            AforaWatchAppStatus.self,
             forKey: .talkStatus)
         {
             self.talkStatus = talkStatus
@@ -680,7 +680,7 @@ struct WatchAppSnapshotMessage: Codable, Equatable {
                   let talkStatusText,
                   !talkStatusText.isEmpty
         {
-            self.talkStatus = OpenClawWatchAppStatus(
+            self.talkStatus = AforaWatchAppStatus(
                 code: .legacy,
                 verbatim: talkStatusText)
         } else {
@@ -691,7 +691,7 @@ struct WatchAppSnapshotMessage: Codable, Equatable {
                 speaking: self.talkSpeaking)
         }
         self.chatStatus = (try? container.decode(
-            OpenClawWatchAppStatus.self,
+            AforaWatchAppStatus.self,
             forKey: .chatStatus)) ?? Self.decodeLegacyChatStatus(
             code: chatStatusCode,
             text: chatStatusText)
@@ -719,7 +719,7 @@ struct WatchAppSnapshotMessage: Codable, Equatable {
 
     private static func parseStatus(
         _ value: Any?,
-        fallbackText: String? = nil) -> OpenClawWatchAppStatus?
+        fallbackText: String? = nil) -> AforaWatchAppStatus?
     {
         guard let payload = value as? [String: Any],
               let rawCode = payload["code"] as? String
@@ -727,12 +727,12 @@ struct WatchAppSnapshotMessage: Codable, Equatable {
             return nil
         }
         let verbatim = payload["verbatim"] as? String
-        guard let code = OpenClawWatchAppStatusCode(rawValue: rawCode) else {
+        guard let code = AforaWatchAppStatusCode(rawValue: rawCode) else {
             let legacyText = verbatim?.isEmpty == false ? verbatim : fallbackText
             guard let legacyText, !legacyText.isEmpty else { return nil }
-            return OpenClawWatchAppStatus(code: .legacy, verbatim: legacyText)
+            return AforaWatchAppStatus(code: .legacy, verbatim: legacyText)
         }
-        return OpenClawWatchAppStatus(
+        return AforaWatchAppStatus(
             code: code,
             localizationKey: payload["localizationKey"] as? String,
             arguments: payload["arguments"] as? [String] ?? [],
@@ -741,57 +741,57 @@ struct WatchAppSnapshotMessage: Codable, Equatable {
 
     private static func decodeLegacyGatewayStatus(
         text: String?,
-        connected: Bool) -> OpenClawWatchAppStatus
+        connected: Bool) -> AforaWatchAppStatus
     {
         if connected {
-            return OpenClawWatchAppStatus(code: .gatewayConnected)
+            return AforaWatchAppStatus(code: .gatewayConnected)
         }
         guard let text, !text.isEmpty else {
-            return OpenClawWatchAppStatus(code: .gatewayOffline)
+            return AforaWatchAppStatus(code: .gatewayOffline)
         }
-        return OpenClawWatchAppStatus(code: .legacy, verbatim: text)
+        return AforaWatchAppStatus(code: .legacy, verbatim: text)
     }
 
     private static func decodeLegacyTalkStatus(
         text: String?,
         enabled: Bool,
         listening: Bool,
-        speaking: Bool) -> OpenClawWatchAppStatus
+        speaking: Bool) -> AforaWatchAppStatus
     {
         if speaking {
-            return OpenClawWatchAppStatus(code: .talkSpeaking)
+            return AforaWatchAppStatus(code: .talkSpeaking)
         }
         if listening {
-            return OpenClawWatchAppStatus(code: .talkListening)
+            return AforaWatchAppStatus(code: .talkListening)
         }
         if !enabled {
-            return OpenClawWatchAppStatus(code: .talkOff)
+            return AforaWatchAppStatus(code: .talkOff)
         }
         guard let text, !text.isEmpty else {
-            return OpenClawWatchAppStatus(code: .talkReady)
+            return AforaWatchAppStatus(code: .talkReady)
         }
-        return OpenClawWatchAppStatus(code: .legacy, verbatim: text)
+        return AforaWatchAppStatus(code: .legacy, verbatim: text)
     }
 
     private static func decodeLegacyChatStatus(
         code: String?,
-        text: String?) -> OpenClawWatchAppStatus?
+        text: String?) -> AforaWatchAppStatus?
     {
-        let statusCode: OpenClawWatchAppStatusCode? = switch code {
+        let statusCode: AforaWatchAppStatusCode? = switch code {
         case "connectIPhone":
-            OpenClawWatchAppStatusCode.chatConnectIPhone
+            AforaWatchAppStatusCode.chatConnectIPhone
         case "noMessages":
-            OpenClawWatchAppStatusCode.chatNoMessages
+            AforaWatchAppStatusCode.chatNoMessages
         case "unavailable":
-            OpenClawWatchAppStatusCode.chatUnavailable
+            AforaWatchAppStatusCode.chatUnavailable
         default:
             nil
         }
         if let statusCode {
-            return OpenClawWatchAppStatus(code: statusCode)
+            return AforaWatchAppStatus(code: statusCode)
         }
         guard let text, !text.isEmpty else { return nil }
-        return OpenClawWatchAppStatus(code: .legacy, verbatim: text)
+        return AforaWatchAppStatus(code: .legacy, verbatim: text)
     }
 
     private static func parseChatItem(_ item: Any) -> WatchChatItem? {
@@ -824,11 +824,11 @@ struct WatchAppSnapshotMessage: Codable, Equatable {
     }
 }
 
-typealias WatchChatCompletionMessage = OpenClawWatchChatCompletionMessage
-typealias WatchChatItem = OpenClawWatchChatItem
-typealias WatchAppSnapshotRequestMessage = OpenClawWatchAppSnapshotRequestMessage
-typealias WatchAppCommandMessage = OpenClawWatchAppCommandMessage
-typealias WatchPromptAction = OpenClawWatchAction
+typealias WatchChatCompletionMessage = AforaWatchChatCompletionMessage
+typealias WatchChatItem = AforaWatchChatItem
+typealias WatchAppSnapshotRequestMessage = AforaWatchAppSnapshotRequestMessage
+typealias WatchAppCommandMessage = AforaWatchAppCommandMessage
+typealias WatchPromptAction = AforaWatchAction
 
 struct WatchNotifyMessage: Codable {
     var id: String?
@@ -941,7 +941,7 @@ struct WatchExecApprovalRecord: Codable, Equatable, Identifiable {
     }
 }
 
-extension OpenClawWatchAppStatus {
+extension AforaWatchAppStatus {
     func localizedText(
         localize: (WatchStatusLocalizationKey) -> String = { $0.localized },
         localizePresentation: (String, [String]) -> String = { key, arguments in

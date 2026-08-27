@@ -7,7 +7,7 @@ read_when:
 title: "DuckDuckGo search"
 ---
 
-OpenClaw supports DuckDuckGo as a **key-free** `web_search` provider. No API key or account is required.
+Afora supports DuckDuckGo as a **key-free** `web_search` provider. No API key or account is required.
 
 <Warning>
   DuckDuckGo is an **experimental, unofficial** integration that scrapes DuckDuckGo's non-JavaScript HTML search pages -- not an official API. Expect occasional breakage from bot-challenge pages or HTML changes.
@@ -20,13 +20,13 @@ DuckDuckGo is never auto-selected, since auto-detection only considers providers
 <Steps>
   <Step title="Install the plugin">
     ```bash
-    openclaw plugins install @openclaw/duckduckgo-plugin
-    openclaw gateway restart
+    afora plugins install @afora/duckduckgo-plugin
+    afora gateway restart
     ```
   </Step>
   <Step title="Configure">
     ```bash
-    openclaw configure --section web
+    afora configure --section web
     # Select "duckduckgo" as the provider
     ```
   </Step>
@@ -92,7 +92,7 @@ SafeSearch level.
 - **No API key** -- works once DuckDuckGo is selected as the `web_search` provider.
 - **Experimental** -- scrapes DuckDuckGo's non-JavaScript HTML search pages, not an official API or SDK. Results depend on page structure, which can change without notice.
 - **Bot-challenge risk** -- DuckDuckGo may serve CAPTCHAs or block requests under heavy or automated use.
-- **Explicit selection only** -- OpenClaw's auto-detect only considers providers with usable credentials, so a key-free provider like DuckDuckGo is never chosen automatically; you must set `provider: "duckduckgo"`.
+- **Explicit selection only** -- Afora's auto-detect only considers providers with usable credentials, so a key-free provider like DuckDuckGo is never chosen automatically; you must set `provider: "duckduckgo"`.
 - **SafeSearch defaults to `moderate`** when not configured.
 
 <Tip>

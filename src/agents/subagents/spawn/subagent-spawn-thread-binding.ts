@@ -10,7 +10,7 @@ import {
   resolveThreadBindingIdleTimeoutMsForChannel,
   resolveThreadBindingMaxAgeMsForChannel,
 } from "../../../channels/thread-bindings-policy.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import type { DeliveryContext } from "../../../utils/delivery-context.types.js";
 import { summarizeSpawnError } from "../../spawn-pipeline.js";
 import { prepareSpawnThreadBinding } from "../../spawn-plan.js";
@@ -18,7 +18,7 @@ import { getSessionBindingService } from "./subagent-spawn.runtime.js";
 import type { SpawnSubagentMode } from "./subagent-spawn.types.js";
 
 export async function bindThreadForSubagentSpawn(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   childSessionKey: string;
   agentId: string;
   label?: string;

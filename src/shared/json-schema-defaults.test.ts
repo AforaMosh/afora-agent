@@ -2,7 +2,7 @@ import {
   isJsonSchemaValueValid,
   jsonSchemaValuesEqual,
   normalizeJsonSchemaForTypeBox,
-} from "@openclaw/normalization-core/json-schema";
+} from "@afora/normalization-core/json-schema";
 import { afterEach, describe, expect, it } from "vitest";
 import { applyJsonSchemaDefaults, findJsonSchemaShapeError } from "./json-schema-defaults.js";
 

@@ -1,7 +1,7 @@
 // Builds model picker choices and endpoint labels for model directives.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { findNormalizedProviderValue, normalizeProviderId } from "../../agents/model-selection.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
 /** Catalog entry shown by the model picker directive UI. */
 export type ModelPickerCatalogEntry = {
@@ -13,7 +13,7 @@ export type ModelPickerCatalogEntry = {
 /** Resolves optional endpoint/API labels for a provider in picker details. */
 export function resolveProviderEndpointLabel(
   provider: string,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): { endpoint?: string; api?: string } {
   const normalized = normalizeProviderId(provider);
   const providers = (cfg.models?.providers ?? {}) as Record<

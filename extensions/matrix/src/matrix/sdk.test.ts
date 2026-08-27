@@ -10,9 +10,9 @@ import { MatrixError } from "matrix-js-sdk/lib/http-api/errors.js";
 import { type MatrixEvent, MsgType } from "matrix-js-sdk/lib/matrix.js";
 import { EventStatus } from "matrix-js-sdk/lib/models/event-status.js";
 import { SyncApi, SyncState } from "matrix-js-sdk/lib/sync.js";
-import { resetPluginStateStoreForTests } from "openclaw/plugin-sdk/plugin-state-test-runtime";
+import { resetPluginStateStoreForTests } from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 // Matrix tests cover sdk plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installMatrixTestRuntime } from "../test-runtime.js";
 import { readMatrixRecoveryKeyStateForPath } from "./crypto-state-store.js";
@@ -69,7 +69,7 @@ function readStoredRecoveryKey(recoveryKeyPath: string) {
   return readMatrixRecoveryKeyStateForPath(recoveryKeyPath);
 }
 
-const TEST_UNDICI_RUNTIME_DEPS_KEY = "__OPENCLAW_TEST_UNDICI_RUNTIME_DEPS__";
+const TEST_UNDICI_RUNTIME_DEPS_KEY = "__AFORA_TEST_UNDICI_RUNTIME_DEPS__";
 
 function clearTestUndiciRuntimeDepsOverride(): void {
   Reflect.deleteProperty(globalThis as object, TEST_UNDICI_RUNTIME_DEPS_KEY);
@@ -343,7 +343,7 @@ function createMatrixJsClientStub(): MatrixJsClientStub {
   client.redactEvent = vi.fn(async () => ({ event_id: "$redact" }));
   client.getProfileInfo = vi.fn(async () => ({}));
   client.getDevices = vi.fn(async () => ({
-    devices: [{ device_id: "DEVICE123", display_name: "OpenClaw" }],
+    devices: [{ device_id: "DEVICE123", display_name: "Afora" }],
   }));
   client.joinRoom = vi.fn(async () => ({}));
   client.mxcUrlToHttp = vi.fn(() => null);
@@ -1366,7 +1366,7 @@ describe("MatrixClient request hardening", () => {
   });
 
   it("wires the sync store into the SDK and flushes it with one SDK stop", async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-matrix-sdk-store-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-matrix-sdk-store-"));
     clearMatrixSyncApiForNeverStartedClient();
 
     try {
@@ -1390,7 +1390,7 @@ describe("MatrixClient request hardening", () => {
   });
 
   it("persists crypto before marking and flushing the clean sync cursor", async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-matrix-sdk-store-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-matrix-sdk-store-"));
     clearMatrixSyncApiForNeverStartedClient();
     const cause = new Error("sync store flush failed");
     let resolveDatabases: ((databases: IDBDatabaseInfo[]) => void) | undefined;
@@ -1436,7 +1436,7 @@ describe("MatrixClient request hardening", () => {
   });
 
   it("does not mark or flush the sync cursor when strict crypto persistence fails", async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-matrix-sdk-store-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-matrix-sdk-store-"));
     clearMatrixSyncApiForNeverStartedClient();
     const cause = new Error("indexeddb unavailable");
     const databasesSpy = vi.spyOn(indexedDB, "databases").mockRejectedValue(cause);
@@ -1467,7 +1467,7 @@ describe("MatrixClient request hardening", () => {
   });
 
   it("falls back to one non-persisting SDK stop when public stop persistence fails", async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-matrix-sdk-stop-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-matrix-sdk-stop-"));
     clearMatrixSyncApiForNeverStartedClient();
     const cause = new Error("indexeddb unavailable");
     const databasesSpy = vi.spyOn(indexedDB, "databases").mockRejectedValue(cause);
@@ -1552,7 +1552,7 @@ describe("MatrixClient request hardening", () => {
 
   it("times out classic sync quiesce without public stop and removes its waiter", async () => {
     vi.useFakeTimers();
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-matrix-sync-timeout-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-matrix-sync-timeout-"));
     try {
       const client = new MatrixClient("https://matrix.example.org", "token", {
         storageRootDir: tempDir,
@@ -2403,13 +2403,13 @@ describe("MatrixClient crypto bootstrapping", () => {
 
     const client = new MatrixClient("https://matrix.example.org", "token", {
       encryption: true,
-      cryptoDatabasePrefix: "openclaw-matrix-test",
+      cryptoDatabasePrefix: "afora-matrix-test",
     });
 
     await client.start();
 
     expect(matrixJsClient.initRustCrypto).toHaveBeenCalledWith({
-      cryptoDatabasePrefix: "openclaw-matrix-test",
+      cryptoDatabasePrefix: "afora-matrix-test",
     });
   });
 
@@ -2763,7 +2763,7 @@ describe("MatrixClient crypto bootstrapping", () => {
     const client = new MatrixClient("https://matrix.example.org", "token", {
       encryption: true,
       idbSnapshotPath: path.join(os.tmpdir(), "matrix-idb-interval.json"),
-      cryptoDatabasePrefix: "openclaw-matrix-interval",
+      cryptoDatabasePrefix: "afora-matrix-interval",
     });
 
     await client.start();

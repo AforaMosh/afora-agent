@@ -1,10 +1,10 @@
 // Slack plugin module implements prepare content behavior.
 import type { WebClient as SlackWebClient } from "@slack/web-api";
-import { formatInboundMediaUnavailableText } from "openclaw/plugin-sdk/channel-inbound";
-import { runTasksWithConcurrency } from "openclaw/plugin-sdk/concurrency-runtime";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { formatInboundMediaUnavailableText } from "afora-agent/plugin-sdk/channel-inbound";
+import { runTasksWithConcurrency } from "afora-agent/plugin-sdk/concurrency-runtime";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { formatSlackFileReference } from "../../file-reference.js";
 import type { SlackFile, SlackMessageEvent } from "../../types.js";
 import { resolveSlackMessageText } from "../block-text.js";

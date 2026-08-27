@@ -1,14 +1,14 @@
 /**
  * Model-level auth diagnostics and request-header preparation.
  */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import {
   getRuntimeConfigSnapshot,
   getRuntimeConfigSourceSnapshot,
   selectApplicableRuntimeConfig,
 } from "../config/config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { coerceSecretRef } from "../config/types.secrets.js";
 import type { Model } from "../llm/types.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
@@ -47,7 +47,7 @@ export type ModelAuthMode = "api-key" | "oauth" | "token" | "mixed" | "aws-sdk" 
 /** Reports the strongest configured auth mode for provider-list UI and diagnostics. */
 export function resolveModelAuthMode(
   provider?: string,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
   store?: AuthProfileStore,
   options?: { workspaceDir?: string },
 ): ModelAuthMode | undefined {
@@ -113,7 +113,7 @@ export function resolveModelAuthMode(
 /** Checks provider auth availability, including profile fallback order. */
 export async function hasAvailableAuthForProvider(params: {
   provider: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   preferredProfile?: string;
   store?: AuthProfileStore;
   agentDir?: string;
@@ -234,7 +234,7 @@ export async function hasAvailableAuthForProvider(params: {
 /** Resolves request credentials from the provider attached to a model descriptor. */
 export async function getApiKeyForModelCore(params: {
   model: Model;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   profileId?: string;
   preferredProfile?: string;
   store?: AuthProfileStore;
@@ -289,7 +289,7 @@ export function applyLocalNoAuthHeaderOverride<T extends Model>(
 
 export function applySecretRefHeaderSentinels<T extends Model>(
   model: T,
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
 ): T {
   if (!model.headers) {
     return model;
@@ -438,7 +438,7 @@ export function applySecretRefHeaderSentinels<T extends Model>(
 export function applyAuthHeaderOverride<T extends Model>(
   model: T,
   auth: ResolvedProviderAuth | null | undefined,
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
 ): T {
   const sentinelModel = applySecretRefHeaderSentinels(model, cfg);
   if (!auth?.apiKey) {

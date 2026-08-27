@@ -101,7 +101,7 @@ rendered in `<iframe sandbox="allow-scripts">` (never `allow-same-origin`).
   approval (they are capless by construction — prompt sends are user-confirmed).
 - **Board widgets** are session state: bytes live in the owning agent's SQLite
   DB (`board_widgets`), served by a core gateway route
-  (`/__openclaw__/board/<agentId>/<sessionKey>/<name>/`) that reads the DB.
+  (`/__afora__/board/<agentId>/<sessionKey>/<name>/`) that reads the DB.
   Pinning a transcript widget copies the bytes. Caps: 256 KB per widget,
   48 widgets per board.
 - **Update in place:** re-emitting a widget with the same `name` replaces the
@@ -114,7 +114,7 @@ rendered in `<iframe sandbox="allow-scripts">` (never `allow-same-origin`).
 
 ### Widgets host content; MCP apps are one content kind
 
-The **widget is the OpenClaw primitive**: the named, pinned, sized,
+The **widget is the Afora primitive**: the named, pinned, sized,
 session-owned board cell with a grant record. What renders inside it is a
 content kind:
 
@@ -124,7 +124,7 @@ content kind:
 
 MCP apps do not define the widget model; widgets gained the ability to host
 them. Identity, placement, pinning, grants, and the author-facing API stay
-OpenClaw's — so `show_widget` code stays as short as it is today and never
+Afora's — so `show_widget` code stays as short as it is today and never
 needs to know the MCP Apps spec exists.
 
 Shared infrastructure underneath (this is where the simplification lands):
@@ -140,12 +140,12 @@ Shared infrastructure underneath (this is where the simplification lands):
   mechanism, made durable per widget instead of per-minting-run).
 - **Host tools for `html` widgets** (exposed over the widget bridge, checked
   against the grant):
-  - `openclaw.prompt.send` — tier 2; routed through the visible composer,
+  - `afora.prompt.send` — tier 2; routed through the visible composer,
     user-confirmed unless granted
-  - `openclaw.state.emit` — tier 1 session notices (coalesced, size-capped)
-  - `openclaw.data.read` — parameterized read-only bindings (existing
+  - `afora.state.emit` — tier 1 session notices (coalesced, size-capped)
+  - `afora.data.read` — parameterized read-only bindings (existing
     allowlisted read RPC set), resolved gateway-side
-  - `openclaw.cron.trigger` — tier 3 automation
+  - `afora.cron.trigger` — tier 3 automation
 - **`net` = CSP.** Network reach uses the already-shipped per-widget CSP
   declaration (`connect-src` origins) — the self-updating weather widget
   fetches its API directly from the sandbox, no gateway involvement.
@@ -156,8 +156,8 @@ Shared infrastructure underneath (this is where the simplification lands):
   one-tap **Allow**/**Reject**. Grants are per widget name; for `html` widgets
   they are byte-frozen (sha256), and changed bytes keep the grant only if the
   declaration shrank.
-- **Authoring shim.** The document wrapper injects `window.openclaw.prompt`,
-  `window.openclaw.state`, `window.openclaw.data`, and `window.openclaw.cron`
+- **Authoring shim.** The document wrapper injects `window.afora.prompt`,
+  `window.afora.state`, `window.afora.data`, and `window.afora.cron`
   as the stable author API. Dashboard calls share one view-ticket-bound
   request channel; size reporting and theme tokens remain separate host
   notifications.
@@ -165,11 +165,11 @@ Shared infrastructure underneath (this is where the simplification lands):
 ### Plugin capability declarations
 
 Enabled plugins can extend the widget host through `dashboard.dataBindings`
-and `dashboard.actionVerbs` in `openclaw.plugin.json`. Plugin-local ids become
+and `dashboard.actionVerbs` in `afora.plugin.json`. Plugin-local ids become
 grant names prefixed by the plugin id, such as `workboard.cards.list` and
 `workboard.dispatch`; `%` and `.` in the plugin-id segment are escaped so a
 different plugin/local-id split cannot inherit the same persisted grant. During
-plugin registration, OpenClaw verifies that every binding targets an RPC
+plugin registration, Afora verifies that every binding targets an RPC
 registered by the same plugin with `operator.read` and every action targets one
 with `operator.write`; invalid declarations fail the plugin load. The validated
 registry is rebuilt only with plugin lifecycle changes, while widget grants
@@ -183,8 +183,8 @@ does not implement it. Scriptable widgets can therefore use WebRTC data
 channels for egress in current Chromium. The same residual already ships for
 inline chat widgets and the MCP Apps host on `main`.
 
-**Accepted tradeoff:** OpenClaw does not gate scriptable widgets on this
-residual. Widget content gains access to sensitive OpenClaw data only through
+**Accepted tradeoff:** Afora does not gate scriptable widgets on this
+residual. Widget content gains access to sensitive Afora data only through
 an operator-granted, byte-frozen `data:read` capability, and the sandbox
 Permissions Policy blocks camera and microphone access. A DOM API guard is
 best-effort defense-in-depth, not a security boundary, and belongs in
@@ -246,7 +246,7 @@ order. Agent vocabulary:
 
 ## Data model (per-agent DB)
 
-New tables in `agents/<agentId>/agent/openclaw-agent.sqlite`
+New tables in `agents/<agentId>/agent/afora-agent.sqlite`
 (**requires an agent-DB schema-version bump — operator sign-off required
 before this lands**):
 
@@ -343,7 +343,7 @@ false`, never in a stable release (first appeared in 2026.7.2 betas). No
   store, document wrapper, HTTP serving, and the `show_widget` tool become core
   (`src/canvas/`); the plugin keeps the node-canvas control tool (`canvas`) and
   A2UI. The `pluginSurfaceUrls["canvas"]` advertisement and
-  `/__openclaw__/canvas` paths are shipped native-client contracts and stay
+  `/__afora__/canvas` paths are shipped native-client contracts and stay
   stable. Discord sessions keep the Discord-owned `show_widget` variant.
 
 ## Non-goals (this program)
@@ -364,7 +364,7 @@ Independent worktrees, Codex-built, review+land sequentially. Land-then-fix.
 | T2  | `claude/dashboard-canvas-core`       | Promote widget hosting + `show_widget` to core; canvas plugin keeps node tool; zero behavior change                                                                                | —                                |
 | T3  | `claude/dashboard-domain`            | Agent-DB tables (schema bump), `board.*` RPCs + events, `dashboard` tool, `show_widget` pin/name/manifest args, tier-1 notices, reset-keeps-board                                  | T2                               |
 | T4  | `claude/dashboard-ui`                | Board face + tab strip + fluid auto-compact grid + chat dock (left/right/bottom/hidden) + transcript pin affordance + sidebar board face + reset confirm                           | T3 (mock-first via dev fixtures) |
-| T5  | `claude/dashboard-capabilities`      | Grant store/UI + byte freezing; move `html` widgets onto the shared sandbox host; host tools (`openclaw.prompt.send/state.emit/data.read/cron.trigger`); `net` CSP; authoring shim | T3, T4                           |
+| T5  | `claude/dashboard-capabilities`      | Grant store/UI + byte freezing; move `html` widgets onto the shared sandbox host; host tools (`afora.prompt.send/state.emit/data.read/cron.trigger`); `net` CSP; authoring shim | T3, T4                           |
 | T7  | `claude/dashboard-mcp-apps`          | `mcp-app` content kind: pin affordance on inline app views, descriptor storage, lease re-mint/refresh, durable server-tool grants (reuses shipped MCP Apps host)                   | T3, T4                           |
 | T6  | polish                               | Live E2E on a scratch gateway (real keys), screenshots, fixes, user-focused `/web/dashboard` rewrite, enable-by-default review                                                     | all                              |
 

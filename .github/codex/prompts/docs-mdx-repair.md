@@ -1,6 +1,6 @@
-# OpenClaw Docs MDX Repair Agent
+# Afora Docs MDX Repair Agent
 
-You are repairing generated OpenClaw documentation after a fast MDX validation failure.
+You are repairing generated Afora documentation after a fast MDX validation failure.
 
 Goal: fix only the MDX syntax errors reported by the checker.
 
@@ -16,10 +16,10 @@ Hard limits:
 
 Required workflow:
 
-1. Read `.openclaw-sync/mdx/${LOCALE}.json` when it exists.
+1. Read `.afora-sync/mdx/${LOCALE}.json` when it exists.
 2. Inspect only the listed files and nearby lines.
 3. Fix the minimal syntax issue, such as broken JSX attribute quoting, mismatched component closing tags, raw `<` text, raw HTML comments, or accidental top-level `import`/`export` text.
-4. Run `node source/scripts/check-docs-mdx.mjs "docs/${LOCALE}" --json-out ".openclaw-sync/mdx/${LOCALE}.json"`.
+4. Run `node source/scripts/check-docs-mdx.mjs "docs/${LOCALE}" --json-out ".afora-sync/mdx/${LOCALE}.json"`.
 5. Leave no changes outside `docs/${LOCALE}`.
 
 When uncertain, prefer the smallest escaping fix: backticks for literal words, `&lt;` for literal `<`, double quotes around JSX attribute values, and balanced component tags.

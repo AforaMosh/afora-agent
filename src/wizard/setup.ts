@@ -1,5 +1,5 @@
 import { isDeepStrictEqual } from "node:util";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { listAgentEntries } from "../agents/agent-scope-config.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { resolveOnboardingAgentTarget } from "../commands/onboard-agent-target.js";
@@ -9,7 +9,7 @@ import { hasResolvedRosterBeforeMigrations } from "../config/agent-roster-proven
 import { ConfigMutationConflictError } from "../config/config.js";
 import { createMergePatch, applyMergePatch } from "../config/merge-patch.js";
 import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveGatewayProbeAuthSafeWithSecretInputs } from "../gateway/probe-auth.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import {
@@ -78,16 +78,16 @@ async function runSetupWizardOnce(
 
   const snapshot = await readSetupConfigFileSnapshot();
   let currentSetupSnapshot = snapshot;
-  let baseConfig: OpenClawConfig = snapshot.valid
+  let baseConfig: AforaConfig = snapshot.valid
     ? (snapshot.runtimeConfig ?? snapshot.config)
     : {};
   let setupConfigMergeBase = structuredClone(baseConfig);
   baseConfig = await requireRiskAcknowledgement({ opts, prompter, config: baseConfig });
   // Ordinary onboard reruns must preserve existing agents.list / bindings. Only
   // explicit reset or import flows are allowed to shrink the config — see issue
-  // openclaw#84692.
+  // afora#84692.
   const writeSetupConfigFile = async (
-    config: OpenClawConfig,
+    config: AforaConfig,
     optsLocal: { allowConfigSizeDrop?: boolean } = {},
   ) => {
     const committed = await writeWizardConfigFile(config, {
@@ -108,13 +108,13 @@ async function runSetupWizardOnce(
         [
           ...snapshot.issues.map((iss) => `- ${iss.path}: ${iss.message}`),
           "",
-          "Docs: https://docs.openclaw.ai/gateway/configuration",
+          "Docs: https://docs.afora.ai/gateway/configuration",
         ].join("\n"),
         "Config issues",
       );
     }
     await prompter.outro(
-      `Config invalid. Run \`${formatCliCommand("openclaw doctor")}\` to repair it, then re-run setup.`,
+      `Config invalid. Run \`${formatCliCommand("afora doctor")}\` to repair it, then re-run setup.`,
     );
     runtime.exit(1);
     return;
@@ -134,15 +134,15 @@ async function runSetupWizardOnce(
           ? [`- ... +${compatibilityNotices.length - 4} more`]
           : []),
         "",
-        `Review: ${formatCliCommand("openclaw doctor")}`,
-        `Inspect: ${formatCliCommand("openclaw plugins inspect --all")}`,
+        `Review: ${formatCliCommand("afora doctor")}`,
+        `Inspect: ${formatCliCommand("afora plugins inspect --all")}`,
       ].join("\n"),
       t("wizard.setup.pluginCompatibilityTitle"),
     );
   }
 
   const quickstartHint = t("wizard.setup.flowQuickstartHint", {
-    command: formatCliCommand("openclaw configure"),
+    command: formatCliCommand("afora configure"),
   });
   const manualHint = t("wizard.setup.flowAdvancedHint");
   const hasExistingModelConfig =
@@ -171,7 +171,7 @@ async function runSetupWizardOnce(
     normalizedExplicitFlow !== "import"
   ) {
     runtime.error(
-      "Invalid --flow. Use quickstart, manual, advanced, or import. Example: openclaw onboard --flow quickstart",
+      "Invalid --flow. Use quickstart, manual, advanced, or import. Example: afora onboard --flow quickstart",
     );
     runtime.exit(1);
     return;
@@ -248,7 +248,7 @@ async function runSetupWizardOnce(
         async commitConfigFile(cfg, expectedConfig) {
           const latest = await readSetupConfigFileSnapshot();
           if (!latest.valid) {
-            throw new Error("Migration target config became invalid. Run `openclaw doctor`.");
+            throw new Error("Migration target config became invalid. Run `afora doctor`.");
           }
           const latestConfig = latest.exists ? (latest.sourceConfig ?? latest.config) : {};
           if (!isDeepStrictEqual(latestConfig, expectedConfig)) {
@@ -277,7 +277,7 @@ async function runSetupWizardOnce(
     acknowledgeMigrationPromotion = migrationOutcome.acknowledgePromotion;
     const migratedSnapshot = await readSetupConfigFileSnapshot();
     if (!migratedSnapshot.valid) {
-      throw new Error("Migration produced an invalid OpenClaw config. Run `openclaw doctor`.");
+      throw new Error("Migration produced an invalid Afora config. Run `afora doctor`.");
     }
     currentSetupSnapshot = migratedSnapshot;
     baseConfig = migratedSnapshot.runtimeConfig ?? migratedSnapshot.config;
@@ -319,7 +319,7 @@ async function runSetupWizardOnce(
 
   const localPort = quickstartGateway.port;
   const localUrl = `ws://127.0.0.1:${localPort}`;
-  let localGatewayToken = process.env.OPENCLAW_GATEWAY_TOKEN;
+  let localGatewayToken = process.env.AFORA_GATEWAY_TOKEN;
   try {
     const resolvedGatewayToken = await resolveSetupSecretInputString({
       config: baseConfig,
@@ -339,7 +339,7 @@ async function runSetupWizardOnce(
       t("wizard.gateway.auth"),
     );
   }
-  let localGatewayPassword = process.env.OPENCLAW_GATEWAY_PASSWORD;
+  let localGatewayPassword = process.env.AFORA_GATEWAY_PASSWORD;
   try {
     const resolvedGatewayPassword = await resolveSetupSecretInputString({
       config: baseConfig,
@@ -369,7 +369,7 @@ async function runSetupWizardOnce(
   const optionRemoteUrl = normalizeOptionalString(opts.remoteUrl);
   const optionRemoteToken = normalizeOptionalString(opts.remoteToken);
   const remoteUrlChanged = opts.remoteUrl !== undefined && optionRemoteUrl !== storedRemoteUrl;
-  const remoteSeedConfig: OpenClawConfig =
+  const remoteSeedConfig: AforaConfig =
     opts.remoteUrl === undefined && opts.remoteToken === undefined
       ? baseConfig
       : {
@@ -497,7 +497,7 @@ async function runSetupWizardOnce(
     prompter,
     opts.nonInteractive,
   );
-  let nextConfig: OpenClawConfig = applyLocalSetupWorkspaceConfig(
+  let nextConfig: AforaConfig = applyLocalSetupWorkspaceConfig(
     baseConfig,
     requestedWorkspaceDir,
     { allowWorkspaceChange: allowWorkspaceChange || !hasAuthoredRoster },
@@ -578,7 +578,7 @@ async function runSetupWizardOnce(
       nextConfig = applyMergePatch(
         nextConfig,
         createMergePatch(stagedModelAuth.config, preModelAuthConfig),
-      ) as OpenClawConfig;
+      ) as AforaConfig;
     } else if (!verification.verified && stagedModelAuth) {
       // Declining an optional probe is not a failed verification; keep the
       // provider/model choice the user just made and persist it once here.

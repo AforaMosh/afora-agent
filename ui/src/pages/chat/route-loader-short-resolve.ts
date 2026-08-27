@@ -1,4 +1,4 @@
-import { ErrorCodes } from "@openclaw/gateway-client/browser";
+import { ErrorCodes } from "@afora/gateway-client/browser";
 import { GatewayRequestError } from "../../api/gateway.ts";
 import type { GatewaySessionRow } from "../../api/types.ts";
 import type { SessionPathTarget } from "../../app-session-route-paths.ts";

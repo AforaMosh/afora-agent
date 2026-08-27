@@ -13,7 +13,7 @@ searches them with embeddings, keywords, or both.
 
 ## Quick start
 
-OpenClaw uses OpenAI embeddings by default. To use another provider, set it
+Afora uses OpenAI embeddings by default. To use another provider, set it
 explicitly:
 
 ```json5
@@ -34,10 +34,10 @@ For local embeddings with no API key, install and configure the official
 llama.cpp provider, then set `provider: "local"`:
 
 ```bash
-openclaw plugins install @openclaw/llama-cpp-provider
+afora plugins install @afora/llama-cpp-provider
 ```
 
-Choose llama.cpp once in interactive setup. OpenClaw installs a verified
+Choose llama.cpp once in interactive setup. Afora installs a verified
 `llama-server`, downloads the embedding GGUF, and writes its managed service
 configuration.
 
@@ -64,7 +64,7 @@ chunks. Set these with `queryInputType` and `documentInputType`; see
 
 ## How search works
 
-OpenClaw runs two retrieval paths in parallel and merges the results:
+Afora runs two retrieval paths in parallel and merges the results:
 
 ```mermaid
 flowchart LR
@@ -80,7 +80,7 @@ flowchart LR
 ```
 
 - **Vector search** matches similar meaning ("gateway host" matches "the
-  machine running OpenClaw").
+  machine running Afora").
 - **BM25 keyword search** matches exact terms (IDs, error strings, config
   keys).
 - **Filename search** indexes paths separately from note bodies. Exact full
@@ -192,18 +192,18 @@ unrelated same-agent sessions.
 
 ## Troubleshooting
 
-**No results?** Run `openclaw memory status` to check the index. If empty, run
-`openclaw memory index --force`.
+**No results?** Run `afora memory status` to check the index. If empty, run
+`afora memory index --force`.
 
 **Only keyword matches?** Your embedding provider may not be configured. Check
-`openclaw memory status --deep`.
+`afora memory status --deep`.
 
 **Local embeddings time out?** `ollama`, `lmstudio`, and `local` use longer
-provider-owned batch deadlines. Run `openclaw memory status --deep` to inspect
+provider-owned batch deadlines. Run `afora memory status --deep` to inspect
 the managed server endpoints before rebuilding the index.
 
 **CJK text not found?** Rebuild the FTS index with
-`openclaw memory index --force`.
+`afora memory index --force`.
 
 ## Related
 

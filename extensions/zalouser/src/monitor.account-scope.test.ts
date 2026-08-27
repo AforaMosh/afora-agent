@@ -1,7 +1,7 @@
 // Zalouser tests cover monitor.account scope plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig, PluginRuntime } from "../runtime-api.js";
+import type { AforaConfig, PluginRuntime } from "../runtime-api.js";
 // Preserve module setup before modules that consume it.
 // oxfmt-ignore
 import { sendMessageZalouserMock } from "./monitor.send.test-mocks.js";
@@ -79,7 +79,7 @@ describe("zalouser monitor pairing account scoping", () => {
       },
     };
 
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       channels: {
         zalouser: {
           accounts: {

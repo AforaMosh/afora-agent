@@ -51,7 +51,7 @@ async function mountDebugPage(
     state: { selectedId: "main" },
     subscribe: () => () => undefined,
   } as unknown as ApplicationContext["agentSelection"];
-  const page = document.createElement("openclaw-debug-page") as TestDebugPage;
+  const page = document.createElement("afora-debug-page") as TestDebugPage;
   page.context = { agentSelection, basePath: "", gateway } as ApplicationContext;
   document.body.append(page);
   await vi.waitFor(() => expect(page.debugStatus).not.toBeNull());
@@ -146,7 +146,7 @@ describe("renderDebug", () => {
     const status = container.querySelector(".settings-status");
     expect(status?.className).toContain("settings-status--warn");
     expect(normalizedText(status)).toBe("1 个警告 · 2 条信息");
-    expect(command.textContent).toBe("openclaw security audit --deep");
+    expect(command.textContent).toBe("afora security audit --deep");
   });
 
   it("does not render Invalid Date for Date-invalid event timestamps", () => {

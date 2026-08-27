@@ -1,4 +1,4 @@
-import { MAX_DATE_TIMESTAMP_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_DATE_TIMESTAMP_MS } from "@afora/normalization-core/number-coercion";
 import { describe, expect, it } from "vitest";
 import { resolveCronJobConfigRevision } from "./config-revision.js";
 import { setupCronServiceSuite } from "./service.test-harness.js";

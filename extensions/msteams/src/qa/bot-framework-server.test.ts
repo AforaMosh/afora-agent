@@ -36,7 +36,7 @@ describe("Microsoft Teams QA Bot Framework server", () => {
           headers: {
             authorization: "Bearer bot-token",
             "content-type": "application/json",
-            "x-openclaw-msteams-qa-nonce": "qa-nonce",
+            "x-afora-msteams-qa-nonce": "qa-nonce",
           },
           body: JSON.stringify({ type: "message", text: "captured" }),
         },
@@ -66,7 +66,7 @@ describe("Microsoft Teams QA Bot Framework server", () => {
         headers: {
           authorization: "Bearer bot-token",
           "content-type": "application/json",
-          "x-openclaw-msteams-qa-nonce": "qa-nonce",
+          "x-afora-msteams-qa-nonce": "qa-nonce",
         },
         body: JSON.stringify({ type: "message", text: "QA-MSTEAMS-AMBIGUOUS-504" }),
       });

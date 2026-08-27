@@ -1,4 +1,4 @@
-// `openclaw transcripts`: SQLite-backed transcript inspector and artifact exporter.
+// `afora transcripts`: SQLite-backed transcript inspector and artifact exporter.
 import path from "node:path";
 import type { Command } from "commander";
 import { sanitizeTerminalText } from "../../../packages/terminal-core/src/safe-text.js";
@@ -22,7 +22,7 @@ type TranscriptsPathOptions = TranscriptsCliOptions & {
 function createStore(): TranscriptsStore {
   const stateDir = resolveStateDir();
   return new TranscriptsStore(path.join(stateDir, "transcripts"), {
-    env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+    env: { ...process.env, AFORA_STATE_DIR: stateDir },
   });
 }
 

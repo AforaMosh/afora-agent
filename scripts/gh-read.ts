@@ -1,4 +1,4 @@
-// Gh Read script supports OpenClaw repository automation.
+// Gh Read script supports Afora repository automation.
 import { spawnSync } from "node:child_process";
 import { createPrivateKey, createSign } from "node:crypto";
 import { pathToFileURL } from "node:url";
@@ -14,10 +14,10 @@ import {
 
 export { normalizeRepo };
 
-const APP_ID_ENV = "OPENCLAW_GH_READ_APP_ID";
-const KEY_FILE_ENV = "OPENCLAW_GH_READ_PRIVATE_KEY_FILE";
-const INSTALLATION_ID_ENV = "OPENCLAW_GH_READ_INSTALLATION_ID";
-const PERMISSIONS_ENV = "OPENCLAW_GH_READ_PERMISSIONS";
+const APP_ID_ENV = "AFORA_GH_READ_APP_ID";
+const KEY_FILE_ENV = "AFORA_GH_READ_PRIVATE_KEY_FILE";
+const INSTALLATION_ID_ENV = "AFORA_GH_READ_INSTALLATION_ID";
+const PERMISSIONS_ENV = "AFORA_GH_READ_PERMISSIONS";
 const API_VERSION = "2022-11-28";
 const DEFAULT_GITHUB_FETCH_TIMEOUT_MS = 30_000;
 const GITHUB_ERROR_BODY_MAX_CHARS = 4096;
@@ -99,10 +99,10 @@ export function buildReadPermissions(
   return permissions;
 }
 
-export function resolveGitHubFetchTimeoutMs(raw = process.env.OPENCLAW_GH_READ_FETCH_TIMEOUT_MS) {
+export function resolveGitHubFetchTimeoutMs(raw = process.env.AFORA_GH_READ_FETCH_TIMEOUT_MS) {
   return parseStrictIntegerOption({
     fallback: DEFAULT_GITHUB_FETCH_TIMEOUT_MS,
-    label: "OPENCLAW_GH_READ_FETCH_TIMEOUT_MS",
+    label: "AFORA_GH_READ_FETCH_TIMEOUT_MS",
     min: 1,
     raw,
   });
@@ -292,7 +292,7 @@ export async function githubJson<T>(
           Accept: "application/vnd.github+json",
           Authorization: `Bearer ${bearerToken}`,
           "Content-Type": "application/json",
-          "User-Agent": "openclaw-gh-read",
+          "User-Agent": "afora-gh-read",
           "X-GitHub-Api-Version": API_VERSION,
         },
         body: init?.body === undefined ? undefined : JSON.stringify(init.body),
@@ -364,7 +364,7 @@ export function readGitHubAppPrivateKey(filePath: string): string {
 async function main() {
   if (process.argv.length <= 2) {
     fail(
-      "usage: scripts/gh-read <gh args...>\nset OPENCLAW_GH_READ_APP_ID and OPENCLAW_GH_READ_PRIVATE_KEY_FILE first",
+      "usage: scripts/gh-read <gh args...>\nset AFORA_GH_READ_APP_ID and AFORA_GH_READ_PRIVATE_KEY_FILE first",
     );
   }
 

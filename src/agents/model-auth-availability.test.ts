@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type {
   ProviderModelRouteCandidate,
   ProviderModelRouteResolution,
@@ -19,7 +19,7 @@ const platformRoute = {
   baseUrl: "https://api.openai.com/v1",
   authRequirement: "api-key",
   requestTransportOverrides: "none",
-  runtimePolicy: { compatibleIds: ["openclaw", "codex"] },
+  runtimePolicy: { compatibleIds: ["afora", "codex"] },
 } satisfies ProviderModelRouteCandidate;
 
 const subscriptionRoute = {
@@ -27,7 +27,7 @@ const subscriptionRoute = {
   baseUrl: "https://chatgpt.com/backend-api/codex",
   authRequirement: "subscription",
   requestTransportOverrides: "none",
-  runtimePolicy: { compatibleIds: ["openclaw", "codex"] },
+  runtimePolicy: { compatibleIds: ["afora", "codex"] },
 } satisfies ProviderModelRouteCandidate;
 
 const dualRoutes = {
@@ -52,7 +52,7 @@ function authStore(
 }
 
 function evaluate(params: {
-  cfg?: OpenClawConfig | Record<string, unknown>;
+  cfg?: AforaConfig | Record<string, unknown>;
   env?: NodeJS.ProcessEnv;
   ref?: ModelAuthAvailabilityRef;
   resolution?: ProviderModelRouteResolution | null;
@@ -63,7 +63,7 @@ function evaluate(params: {
   preparedRuntimeAuthMaterializations?: readonly RuntimeAuthMaterialization[];
 }) {
   return createModelAuthAvailabilityResolver({
-    cfg: (params.cfg ?? {}) as OpenClawConfig,
+    cfg: (params.cfg ?? {}) as AforaConfig,
     authStore: params.store ?? authStore(),
     env: params.env ?? {},
     routeResolverFactory: routeResolverFactory(params.resolution ?? dualRoutes),
@@ -348,7 +348,7 @@ describe("createModelAuthAvailabilityResolver", () => {
       baseUrl: "https://openai-compatible.example/v1",
     } satisfies ProviderModelRouteCandidate;
     const result = evaluate({
-      resolution: { kind: "routes", defaultRuntimeId: "openclaw", routes: [customRoute] },
+      resolution: { kind: "routes", defaultRuntimeId: "afora", routes: [customRoute] },
       store: authStore({
         "openai:chatgpt": {
           type: "oauth",
@@ -387,7 +387,7 @@ describe("createModelAuthAvailabilityResolver", () => {
       const result = evaluate({
         cfg: {
           models: { providers: { openai: { auth, baseUrl: "", models: [] } } },
-        } as OpenClawConfig,
+        } as AforaConfig,
         store: authStore({ "openai:wrong-route": profile }),
       });
 
@@ -408,7 +408,7 @@ describe("createModelAuthAvailabilityResolver", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       evaluate({
@@ -448,7 +448,7 @@ describe("createModelAuthAvailabilityResolver", () => {
               openai: { apiKey: "openai:bound", baseUrl: "", models: [] },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         store: authStore({
           "openai:bound": {
             type: "api_key",
@@ -477,7 +477,7 @@ describe("createModelAuthAvailabilityResolver", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       evaluate({
@@ -626,7 +626,7 @@ describe("createModelAuthAvailabilityResolver", () => {
               openai: { apiKey: "configured-platform-key", baseUrl: "", models: [] },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: { OPENAI_API_KEY: "environment-key" },
       }),
     ).toMatchObject({
@@ -650,7 +650,7 @@ describe("createModelAuthAvailabilityResolver", () => {
       label: "OAuth environment after unavailable Platform auth",
       cfg: {
         models: { providers: { openai: { auth: "oauth", baseUrl: "", models: [] } } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: { OPENAI_API_KEY: "environment-token" },
       profileId: "openai:platform-missing",
       profile: { type: "api_key" as const, provider: "openai", key: "" },
@@ -704,7 +704,7 @@ describe("createModelAuthAvailabilityResolver", () => {
             refresh: "",
             expires: 0,
             oauthRef: {
-              source: "openclaw-credentials",
+              source: "afora-credentials",
               provider: "openai-codex",
               id: "00000000000000000000000000000000",
             },
@@ -834,23 +834,23 @@ describe("createModelAuthAvailabilityResolver", () => {
     });
   });
 
-  it("does not let Codex synthetic auth own an OpenClaw-only route", () => {
-    const openClawOnlyRoute = {
+  it("does not let Codex synthetic auth own an Afora-only route", () => {
+    const aforaOnlyRoute = {
       ...platformRoute,
-      runtimePolicy: { compatibleIds: ["openclaw"] },
+      runtimePolicy: { compatibleIds: ["afora"] },
     } satisfies ProviderModelRouteCandidate;
     expect(
       evaluate({
         resolution: {
           kind: "routes",
-          defaultRuntimeId: "openclaw",
-          routes: [openClawOnlyRoute],
+          defaultRuntimeId: "afora",
+          routes: [aforaOnlyRoute],
         },
         syntheticAuthProviderRefs: ["codex"],
       }),
     ).toMatchObject({
       availability: false,
-      selectedRoute: openClawOnlyRoute,
+      selectedRoute: aforaOnlyRoute,
     });
   });
 
@@ -868,7 +868,7 @@ describe("createModelAuthAvailabilityResolver", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     },
     { label: "implicit", cfg: {} },
   ])("keeps an $label Bedrock AWS SDK route ready", ({ cfg }) => {

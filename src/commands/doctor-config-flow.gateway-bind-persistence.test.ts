@@ -2,17 +2,17 @@
 import fs from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readConfigFileSnapshot } from "../config/config.js";
-import { withEnvOverride, withTempHome, writeOpenClawConfig } from "../config/test-helpers.js";
+import { withEnvOverride, withTempHome, writeAforaConfig } from "../config/test-helpers.js";
 import { runInitialConfigWriteHealth } from "../flows/doctor-health-contribution-runners.config.js";
 import type { DoctorHealthFlowContext } from "../flows/doctor-health-contribution-types.js";
 import type { RuntimeEnv } from "../runtime.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { loadAndMaybeMigrateDoctorConfig } from "./doctor-config-flow.js";
 import { createDoctorPrompter, type DoctorOptions } from "./doctor-prompter.js";
 
 describe("Doctor gateway bind persistence", () => {
   afterEach(() => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
   });
 
   it.each([
@@ -20,9 +20,9 @@ describe("Doctor gateway bind persistence", () => {
     ["0.0.0.0", "lan"],
   ] as const)("persists gateway bind %s as %s", async (legacyBind, canonicalBind) => {
     await withTempHome(async (home) => {
-      await withEnvOverride({ OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1" }, async () => {
+      await withEnvOverride({ AFORA_DISABLE_BUNDLED_PLUGINS: "1" }, async () => {
         // This core writer regression needs the authoritative empty bundled-plugin inventory.
-        const configPath = await writeOpenClawConfig(home, {
+        const configPath = await writeAforaConfig(home, {
           gateway: { mode: "local", bind: legacyBind },
         });
         const runtime: RuntimeEnv = {

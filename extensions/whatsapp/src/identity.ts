@@ -1,4 +1,4 @@
-import type { MediaPlaceholderTextFact } from "openclaw/plugin-sdk/channel-inbound";
+import type { MediaPlaceholderTextFact } from "afora-agent/plugin-sdk/channel-inbound";
 // Whatsapp plugin module implements identity behavior.
 import { jidToE164, normalizeE164 } from "./text-runtime.js";
 

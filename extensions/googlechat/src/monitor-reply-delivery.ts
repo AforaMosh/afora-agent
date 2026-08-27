@@ -1,8 +1,8 @@
 // Googlechat plugin module implements monitor reply delivery behavior.
-import { createChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
-import { PlatformMessageNotDispatchedError } from "openclaw/plugin-sdk/error-runtime";
-import { resolveSendableOutboundReplyParts } from "openclaw/plugin-sdk/reply-payload";
-import type { OpenClawConfig } from "../runtime-api.js";
+import { createChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
+import { PlatformMessageNotDispatchedError } from "afora-agent/plugin-sdk/error-runtime";
+import { resolveSendableOutboundReplyParts } from "afora-agent/plugin-sdk/reply-payload";
+import type { AforaConfig } from "../runtime-api.js";
 import type { ResolvedGoogleChatAccount } from "./accounts.js";
 import {
   deleteGoogleChatMessage,
@@ -53,7 +53,7 @@ export async function deliverGoogleChatReply(params: {
   spaceId: string;
   runtime: GoogleChatRuntimeEnv;
   core: GoogleChatCoreRuntime;
-  config: OpenClawConfig;
+  config: AforaConfig;
   statusSink?: (patch: { lastInboundAt?: number; lastOutboundAt?: number }) => void;
   typingMessage?: GoogleChatTypingMessage;
 }): Promise<void> {

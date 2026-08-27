@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createWizardPrompter } from "../../test/helpers/wizard-prompter.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createSuiteLogPathTracker } from "../logging/log-test-helpers.js";
 import { flushLogger, resetLogger, setLoggerOverride } from "../logging/logger.js";
 import { loggingState } from "../logging/state.js";
@@ -45,19 +45,19 @@ const readConfigFileSnapshot = vi.hoisted(() =>
   vi.fn(async () => ({
     exists: false,
     valid: true,
-    path: "/tmp/openclaw.json",
+    path: "/tmp/afora.json",
     issues: [] as Array<{ path?: string; message: string }>,
     config: {},
   })),
 );
 const localOnboarding = vi.hoisted(() => {
   const states = new Map<string, LocalOnboardingState>();
-  const persisted = { config: undefined as OpenClawConfig | undefined };
+  const persisted = { config: undefined as AforaConfig | undefined };
   return {
     states,
     persisted,
     read: vi.fn((configPath: string) => states.get(configPath)),
-    readForConfig: vi.fn((configPath: string, config: OpenClawConfig) => {
+    readForConfig: vi.fn((configPath: string, config: AforaConfig) => {
       const state = states.get(configPath);
       return state?.securityAcknowledgedAt === config.wizard?.securityAcknowledgedAt
         ? state
@@ -113,11 +113,11 @@ const localOnboarding = vi.hoisted(() => {
     }),
   };
 });
-const logPathTracker = createSuiteLogPathTracker("openclaw-guided-onboard-log-");
+const logPathTracker = createSuiteLogPathTracker("afora-guided-onboard-log-");
 
 vi.mock("../config/config.js", () => ({
   readConfigFileSnapshot,
-  withConfigMutationExclusive: (effect: (config: OpenClawConfig) => Promise<unknown>) =>
+  withConfigMutationExclusive: (effect: (config: AforaConfig) => Promise<unknown>) =>
     effect(localOnboarding.persisted.config ?? {}),
 }));
 vi.mock("../state/local-onboarding-state.js", () => ({
@@ -127,12 +127,12 @@ vi.mock("../state/local-onboarding-state.js", () => ({
   completeLocalOnboarding: localOnboarding.complete,
 }));
 vi.mock("./onboard-agent.js", () => ({
-  ensureOnboardingAgent: async ({ config }: { config: OpenClawConfig }) => ({ config }),
+  ensureOnboardingAgent: async ({ config }: { config: AforaConfig }) => ({ config }),
   validateFirstOnboardingAgentName: () => undefined,
 }));
 
 vi.mock("./onboard-helpers.js", () => ({
-  DEFAULT_WORKSPACE: "/tmp/openclaw-workspace",
+  DEFAULT_WORKSPACE: "/tmp/afora-workspace",
   printWizardHeader: vi.fn(),
 }));
 
@@ -175,7 +175,7 @@ function detection(
     manualProviders: [],
     authOptions: [],
     recommendedInstalls: [],
-    workspace: "/tmp/openclaw-workspace",
+    workspace: "/tmp/afora-workspace",
     setupComplete: false,
     ...overrides,
   };
@@ -183,7 +183,7 @@ function detection(
 
 function setupApplyResult() {
   return {
-    configPath: "/tmp/openclaw.json",
+    configPath: "/tmp/afora.json",
     configHashBefore: null,
     configHashAfter: null,
     bootstrapPending: false,
@@ -193,7 +193,7 @@ function setupApplyResult() {
   };
 }
 
-function recommendationOutcome(config: OpenClawConfig) {
+function recommendationOutcome(config: AforaConfig) {
   return { config, commitResult: vi.fn() };
 }
 
@@ -224,7 +224,7 @@ function setupDeps(params: {
     listManualOptions: vi.fn(async () => ({
       manualProviders: [],
       authOptions: [],
-      workspace: "/tmp/openclaw-workspace",
+      workspace: "/tmp/afora-workspace",
       setupComplete: false,
     })),
     detect: params.detect ?? vi.fn(async () => detection()),
@@ -241,7 +241,7 @@ function setupDeps(params: {
       }),
     persistRiskAcknowledgement:
       params.persistRiskAcknowledgement ??
-      vi.fn(async (config: OpenClawConfig) => {
+      vi.fn(async (config: AforaConfig) => {
         localOnboarding.persisted.config = config;
         return config.wizard?.securityAcknowledgedAt;
       }),
@@ -278,7 +278,7 @@ describe("runGuidedOnboarding", () => {
     readConfigFileSnapshot.mockReset().mockImplementation(async () => ({
       exists: localOnboarding.persisted.config !== undefined,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       issues: [],
       config: localOnboarding.persisted.config ?? {},
     }));
@@ -364,7 +364,7 @@ describe("runGuidedOnboarding", () => {
       .filter((message) => message.includes(repairReason));
     expect(repairNotes).toHaveLength(2);
     expect(repairNotes[0]).toBe(`Gateway service: ${repairReason}`);
-    expect(localOnboarding.states.get("/tmp/openclaw.json")?.status).toBe("pending");
+    expect(localOnboarding.states.get("/tmp/afora.json")?.status).toBe("pending");
     expect(localOnboarding.complete).not.toHaveBeenCalled();
     expect(deps.launchHatchTui).not.toHaveBeenCalled();
     expect(deps.runSystemAgentChat).toHaveBeenCalledOnce();
@@ -420,7 +420,7 @@ describe("runGuidedOnboarding", () => {
 
     expect(deps.runBrowserHandoff).not.toHaveBeenCalled();
     expect(deps.launchHatchTui).not.toHaveBeenCalled();
-    expect(prompter.outro).toHaveBeenCalledWith("OpenClaw is ready.");
+    expect(prompter.outro).toHaveBeenCalledWith("Afora is ready.");
   });
 
   it("never attempts browser handoff for remote chat onboarding", async () => {
@@ -444,7 +444,7 @@ describe("runGuidedOnboarding", () => {
 
   it("persists the one-time risk acknowledgement before inference detection", async () => {
     const prompter = createWizardPrompter();
-    const persistRiskAcknowledgement = vi.fn(async (config: OpenClawConfig) => {
+    const persistRiskAcknowledgement = vi.fn(async (config: AforaConfig) => {
       localOnboarding.persisted.config = config;
     });
     const detect = vi.fn(async () => detection());
@@ -460,11 +460,11 @@ describe("runGuidedOnboarding", () => {
     );
   });
 
-  it("uses the configured workspace only as inference and OpenClaw context", async () => {
+  it("uses the configured workspace only as inference and Afora context", async () => {
     readConfigFileSnapshot.mockResolvedValueOnce({
       exists: true,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       issues: [],
       config: { agents: { defaults: { workspace: "/tmp/configured" } } },
     });
@@ -492,9 +492,9 @@ describe("runGuidedOnboarding", () => {
 
     expect(text).not.toHaveBeenCalled();
     expect(deps.activate).toHaveBeenCalledWith(
-      expect.objectContaining({ workspace: "/tmp/openclaw-workspace" }),
+      expect.objectContaining({ workspace: "/tmp/afora-workspace" }),
     );
-    expect(deps.launchHatchTui).toHaveBeenCalledWith("/tmp/openclaw-workspace");
+    expect(deps.launchHatchTui).toHaveBeenCalledWith("/tmp/afora-workspace");
   });
 
   it("live-tests an unverified CLI before automatic setup", async () => {
@@ -933,7 +933,7 @@ describe("runGuidedOnboarding", () => {
     );
   });
 
-  it("keeps OpenClaw unavailable until a manual key passes", async () => {
+  it("keeps Afora unavailable until a manual key passes", async () => {
     promptAuthChoiceGrouped.mockResolvedValue("openai-api-key");
     const text = vi.fn().mockResolvedValueOnce("bad-key").mockResolvedValueOnce("good-key");
     const prompter = createWizardPrompter({
@@ -1010,7 +1010,7 @@ describe("runGuidedOnboarding", () => {
     readConfigFileSnapshot.mockResolvedValueOnce({
       exists: true,
       valid: false,
-      path: "/tmp/broken-openclaw.json",
+      path: "/tmp/broken-afora.json",
       issues: [{ path: "agents.defaults.model", message: "Expected a model reference" }],
       config: {},
     });
@@ -1021,11 +1021,11 @@ describe("runGuidedOnboarding", () => {
     await runGuidedOnboarding({ workspace: "/tmp/repair" }, runtime, deps);
 
     const notes = JSON.stringify((prompter.note as ReturnType<typeof vi.fn>).mock.calls);
-    expect(notes).toContain("/tmp/broken-openclaw.json");
+    expect(notes).toContain("/tmp/broken-afora.json");
     expect(notes).toContain("agents.defaults.model: Expected a model reference");
-    expect(prompter.outro).toHaveBeenCalledWith(expect.stringContaining("openclaw doctor --fix"));
+    expect(prompter.outro).toHaveBeenCalledWith(expect.stringContaining("afora doctor --fix"));
     expect(prompter.outro).toHaveBeenCalledWith(
-      expect.stringContaining("openclaw config validate"),
+      expect.stringContaining("afora config validate"),
     );
     expect(runtime.exit).toHaveBeenCalledWith(1);
     expect(deps.runSystemAgentChat).not.toHaveBeenCalled();

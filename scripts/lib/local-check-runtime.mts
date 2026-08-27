@@ -27,7 +27,7 @@ type RepoToolOptions = {
 
 /** Return whether local check safeguards are enabled for an environment. */
 export function isLocalCheckEnabled(env: Env) {
-  const raw = env.OPENCLAW_LOCAL_CHECK?.trim().toLowerCase();
+  const raw = env.AFORA_LOCAL_CHECK?.trim().toLowerCase();
   return raw !== "0" && raw !== "false";
 }
 
@@ -43,7 +43,7 @@ export function resolveLocalCheckEnv(env: Env = process.env) {
 
   return {
     ...env,
-    OPENCLAW_LOCAL_CHECK: "1",
+    AFORA_LOCAL_CHECK: "1",
   };
 }
 
@@ -164,7 +164,7 @@ export function applyLocalTsgoPolicy(args: string[], env: Env, hostResources: Re
     insertBeforeSeparator(
       nextArgs,
       "--tsBuildInfoFile",
-      nextEnv.OPENCLAW_TSGO_BUILD_INFO_FILE ?? DEFAULT_LOCAL_TSGO_BUILD_INFO_FILE,
+      nextEnv.AFORA_TSGO_BUILD_INFO_FILE ?? DEFAULT_LOCAL_TSGO_BUILD_INFO_FILE,
     );
   }
 
@@ -174,8 +174,8 @@ export function applyLocalTsgoPolicy(args: string[], env: Env, hostResources: Re
     insertBeforeSeparator(nextArgs, "--checkers", "1");
     applyThrottledGoRuntimeEnv(nextEnv, resolvedHostResources);
   }
-  if (nextEnv.OPENCLAW_TSGO_PPROF_DIR && !hasFlag(nextArgs, "--pprofDir")) {
-    insertBeforeSeparator(nextArgs, "--pprofDir", nextEnv.OPENCLAW_TSGO_PPROF_DIR);
+  if (nextEnv.AFORA_TSGO_PPROF_DIR && !hasFlag(nextArgs, "--pprofDir")) {
+    insertBeforeSeparator(nextArgs, "--pprofDir", nextEnv.AFORA_TSGO_PPROF_DIR);
   }
 
   return { env: nextEnv, args: nextArgs };
@@ -261,7 +261,7 @@ function insertBeforeSeparator(args: string[], ...items: [string, ...string[]]) 
 }
 
 function readLocalCheckMode(env: Env, defaultMode: LocalCheckMode) {
-  const raw = env.OPENCLAW_LOCAL_CHECK_MODE?.trim().toLowerCase();
+  const raw = env.AFORA_LOCAL_CHECK_MODE?.trim().toLowerCase();
   if (raw === "throttled" || raw === "low-memory") {
     return "throttled";
   }

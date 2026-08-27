@@ -1,10 +1,10 @@
 // Config provider model helpers discover image-capable custom providers for
 // media-understanding auto-registration.
 import { normalizeMediaProviderId } from "../../packages/media-understanding-common/src/provider-id.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 
 type ConfigProvider = NonNullable<
-  NonNullable<NonNullable<OpenClawConfig["models"]>["providers"]>[string]
+  NonNullable<NonNullable<AforaConfig["models"]>["providers"]>[string]
 >;
 
 type ConfigProviderModel = NonNullable<ConfigProvider["models"]>[number];
@@ -17,7 +17,7 @@ function hasImageCapableModel(providerCfg: ConfigProvider): boolean {
 }
 
 /** Finds configured model providers that can be auto-registered for image understanding. */
-export function resolveImageCapableConfigProviderIds(cfg?: OpenClawConfig): string[] {
+export function resolveImageCapableConfigProviderIds(cfg?: AforaConfig): string[] {
   const configProviders = cfg?.models?.providers;
   if (!configProviders || typeof configProviders !== "object") {
     return [];

@@ -1,4 +1,4 @@
-import { gatewayOriginScope } from "@openclaw/gateway-client/browser";
+import { gatewayOriginScope } from "@afora/gateway-client/browser";
 import type { BrowserContextOptions, Page } from "playwright";
 import { expect, it } from "vitest";
 import {
@@ -77,7 +77,7 @@ async function readMainPreference(page: Page): Promise<Record<string, unknown> |
   return page.evaluate(() => {
     const key = Array.from({ length: localStorage.length }, (_, index) =>
       localStorage.key(index),
-    ).find((candidate) => candidate?.startsWith("openclaw.new-session.preferences.v1:"));
+    ).find((candidate) => candidate?.startsWith("afora.new-session.preferences.v1:"));
     const value = key
       ? (JSON.parse(localStorage.getItem(key) ?? "null") as {
           agents?: Record<string, Record<string, unknown>>;
@@ -461,7 +461,7 @@ suite.define(() => {
       await page.evaluate((workspace) => {
         const key = Array.from({ length: localStorage.length }, (_, index) =>
           localStorage.key(index),
-        ).find((candidate) => candidate?.startsWith("openclaw.new-session.preferences.v1:"));
+        ).find((candidate) => candidate?.startsWith("afora.new-session.preferences.v1:"));
         if (!key) {
           throw new Error("missing new-session preference");
         }
@@ -578,7 +578,7 @@ suite.define(() => {
       async (page) => {
         const appUrl = new URL(suite.server.baseUrl);
         const gatewayUrl = `${appUrl.protocol === "https:" ? "wss:" : "ws:"}//${appUrl.host}`;
-        const storageKey = `openclaw.new-session.preferences.v1:${gatewayOriginScope(gatewayUrl)}`;
+        const storageKey = `afora.new-session.preferences.v1:${gatewayOriginScope(gatewayUrl)}`;
         await page.addInitScript(
           ({ key, folder, workspace }) => {
             localStorage.setItem(
@@ -685,7 +685,7 @@ suite.define(() => {
     await withNewSessionPage(BASE_CONTEXT, async (page) => {
       const appUrl = new URL(suite.server.baseUrl);
       const gatewayUrl = `${appUrl.protocol === "https:" ? "wss:" : "ws:"}//${appUrl.host}`;
-      const storageKey = `openclaw.new-session.preferences.v1:${gatewayOriginScope(gatewayUrl)}`;
+      const storageKey = `afora.new-session.preferences.v1:${gatewayOriginScope(gatewayUrl)}`;
       const agentIds = ["main", ...Array.from({ length: 32 }, (_, index) => `agent${index + 1}`)];
       const browserAgents = Object.fromEntries(
         agentIds.map((agentId) => [agentId, { workspace: WORKSPACE, folder: WORKSPACE }]),
@@ -831,7 +831,7 @@ suite.define(() => {
       await page.reload();
       await navigateInApp(page, "new-session");
       await pollLocatorText(placeTrigger.locator(".new-session-page__trigger-label")).toBe(
-        "openclaw-next",
+        "afora-next",
       );
 
       const modelSelect = page.locator('[data-chat-model-select="true"]');
@@ -889,7 +889,7 @@ suite.define(() => {
       });
       const placeTrigger = page.locator("#new-session-project-trigger");
       await pollLocatorText(placeTrigger.locator(".new-session-page__trigger-label")).toBe(
-        "openclaw",
+        "afora",
       );
 
       const pickedListRequests = (await gateway.getRequests("fs.listDir")).filter(
@@ -903,7 +903,7 @@ suite.define(() => {
       await waitForCommittedChatRoute(page);
       await navigateInApp(page, "new-session");
       await pollLocatorText(placeTrigger.locator(".new-session-page__trigger-label")).toBe(
-        "openclaw",
+        "afora",
       );
       await expect
         .poll(() => page.locator("#new-session-detail-trigger").getAttribute("data-worktree"))
@@ -967,7 +967,7 @@ suite.define(() => {
         entries: [],
       });
       await pollLocatorText(placeTrigger.locator(".new-session-page__trigger-label")).toBe(
-        "openclaw",
+        "afora",
       );
 
       await page.locator(".new-session-page__message").fill("keep the newer choice");

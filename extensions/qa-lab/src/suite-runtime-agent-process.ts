@@ -1,9 +1,9 @@
 // Qa Lab plugin module implements suite runtime agent process behavior.
 import { randomUUID } from "node:crypto";
 import { setTimeout as sleep } from "node:timers/promises";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { resolveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { resolveTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { QaSuiteInfraError } from "./errors.js";
 import { extractGatewayMessageText } from "./gateway-log-sentinel.js";
 import { runQaCli } from "./qa-cli-process.js";
@@ -50,7 +50,7 @@ type QaAgentWaitResult = {
 
 const MANAGED_DREAMING_CRON_MARKER = "[managed-by=memory-core.short-term-promotion]";
 const MANAGED_DREAMING_CRON_NAME = "Memory Dreaming Promotion";
-const MANAGED_DREAMING_PROMPT = "__openclaw_memory_core_short_term_promotion_dream__";
+const MANAGED_DREAMING_PROMPT = "__afora_memory_core_short_term_promotion_dream__";
 const QA_HISTORY_RETRY_DEFAULT_MS = 250;
 const QA_HISTORY_RETRY_MIN_MS = 100;
 const QA_HISTORY_RETRY_MAX_MS = 5_000;

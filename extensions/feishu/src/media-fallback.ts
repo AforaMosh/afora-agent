@@ -1,7 +1,7 @@
 import {
   isBlockedHostnameOrIp,
   resolvePinnedHostnameWithPolicy,
-} from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/ssrf-runtime";
 
 const FEISHU_MEDIA_UPLOAD_FAILURE_FALLBACK_TEXT = "Media upload failed. Please try again.";
 

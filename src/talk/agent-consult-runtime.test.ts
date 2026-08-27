@@ -12,10 +12,10 @@ import {
 import { MODEL_SELECTION_LOCKED_MESSAGE } from "../sessions/model-overrides.js";
 import { runExclusiveSessionLifecycleMutation } from "../sessions/session-lifecycle-admission.js";
 import {
-  closeOpenClawAgentDatabaseByPath,
-  closeOpenClawAgentDatabasesForTest,
-} from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+  closeAforaAgentDatabaseByPath,
+  closeAforaAgentDatabasesForTest,
+} from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { captureEnv, setTestEnvValue } from "../test-utils/env.js";
 import { normalizeSessionDeliveryState } from "../utils/delivery-context.shared.js";
 import {
@@ -57,7 +57,7 @@ vi.mock("../auto-reply/reply/session-fork.js", async (importOriginal) => {
 });
 
 let testTempDir: string | undefined;
-const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
+const envSnapshot = captureEnv(["AFORA_STATE_DIR"]);
 
 function testTempPath(name: string): string {
   if (!testTempDir) {
@@ -157,11 +157,11 @@ function requireEmbeddedAgentCall(runEmbeddedAgent: {
 }): RunEmbeddedAgentParams {
   const [call] = runEmbeddedAgent.mock.calls;
   if (!call) {
-    throw new Error("Expected embedded OpenClaw agent call");
+    throw new Error("Expected embedded Afora agent call");
   }
   const [params] = call;
   if (typeof params !== "object" || params === null || Array.isArray(params)) {
-    throw new Error("Expected embedded OpenClaw agent params to be an object");
+    throw new Error("Expected embedded Afora agent params to be an object");
   }
   return params as RunEmbeddedAgentParams;
 }
@@ -181,9 +181,9 @@ describe("realtime voice agent consult runtime", () => {
     // macOS aliases its temp directory through /var; canonical paths keep the
     // SQLite cache key and cleanup target aligned.
     testTempDir = await fs.realpath(
-      await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-talk-consult-")),
+      await fs.mkdtemp(path.join(os.tmpdir(), "afora-talk-consult-")),
     );
-    setTestEnvValue("OPENCLAW_STATE_DIR", testTempDir);
+    setTestEnvValue("AFORA_STATE_DIR", testTempDir);
   });
 
   afterEach(async () => {
@@ -198,10 +198,10 @@ describe("realtime voice agent consult runtime", () => {
     const tempDir = testTempDir;
     testTempDir = undefined;
     if (tempDir) {
-      closeOpenClawAgentDatabaseByPath(path.join(tempDir, "openclaw-agent.sqlite"));
+      closeAforaAgentDatabaseByPath(path.join(tempDir, "afora-agent.sqlite"));
       clientVoiceSessionTesting.reset();
-      closeOpenClawAgentDatabasesForTest();
-      closeOpenClawStateDatabaseForTest();
+      closeAforaAgentDatabasesForTest();
+      closeAforaStateDatabaseForTest();
       envSnapshot.restore();
       await fs.rm(tempDir, { recursive: true, force: true });
     }
@@ -383,7 +383,7 @@ describe("realtime voice agent consult runtime", () => {
     expect(call.prompt).toBe(
       [
         "Live voice request from the caller during a live phone call.",
-        "Act as the configured OpenClaw agent on behalf of this user. Use available tools when the request asks you to do work.",
+        "Act as the configured Afora agent on behalf of this user. Use available tools when the request asks you to do work.",
         "When finished, return only the concise result the realtime voice agent should speak back.",
         "Do not include markdown, tool logs, or private reasoning. Include citations only when the spoken answer needs them.",
         "Recent voice transcript for context:\nCaller: Can you check this?",
@@ -392,7 +392,7 @@ describe("realtime voice agent consult runtime", () => {
       ].join("\n\n"),
     );
     expect(call.extraSystemPrompt).toBe(
-      "You are the configured OpenClaw agent receiving delegated requests from a live voice bridge. Act on behalf of the user, use available tools when appropriate, and return a brief speakable result.",
+      "You are the configured Afora agent receiving delegated requests from a live voice bridge. Act on behalf of the user, use available tools when appropriate, and return a brief speakable result.",
     );
   });
 

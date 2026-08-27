@@ -1,5 +1,5 @@
-import { estimateStringChars } from "@openclaw/normalization-core/cjk-chars";
-import { sliceUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { estimateStringChars } from "@afora/normalization-core/cjk-chars";
+import { sliceUtf16Safe } from "@afora/normalization-core/utf16-slice";
 
 type ToolResultTextBudgetOptions = {
   minimumRawWeight?: number;

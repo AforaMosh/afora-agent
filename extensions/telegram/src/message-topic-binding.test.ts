@@ -1,11 +1,11 @@
 // Telegram tests cover provider-observed forum-topic message bindings.
 import type { Message } from "grammy/types";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   createPluginStateKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import { resolveStorePath } from "openclaw/plugin-sdk/session-store-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import { resolveStorePath } from "afora-agent/plugin-sdk/session-store-runtime";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resolveTelegramMessageCacheScope } from "./message-cache-persistence.js";
 import { createTelegramMessageCache } from "./message-cache.js";
@@ -21,8 +21,8 @@ import type { TelegramRuntime } from "./runtime.types.js";
 const cfg = {
   agents: { entries: { main: { default: true } } },
   channels: { telegram: { botToken: "tok" } },
-  session: { store: "/tmp/openclaw-telegram-topic-binding-test.json" },
-} as OpenClawConfig;
+  session: { store: "/tmp/afora-telegram-topic-binding-test.json" },
+} as AforaConfig;
 
 function installRuntimeStore() {
   setTelegramRuntime({
@@ -264,8 +264,8 @@ describe("Telegram message topic binding", () => {
         telegram: { accounts: { alerts: { botToken: "123456:alerts" } } },
       },
       bindings: [{ agentId: "ops", match: { channel: "telegram", accountId: "alerts" } }],
-      session: { store: "/tmp/openclaw-telegram-topic-owner/{agentId}/sessions.json" },
-    } as OpenClawConfig;
+      session: { store: "/tmp/afora-telegram-topic-owner/{agentId}/sessions.json" },
+    } as AforaConfig;
     await recordOutboundMessageForPromptContext({
       cfg: multiAgentCfg,
       account: { accountId: "alerts", name: "Alerts" },

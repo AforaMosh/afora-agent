@@ -2,11 +2,11 @@ import fs from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 import type { DecisionReceiptV1 } from "../../packages/gateway-protocol/src/index.js";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import { tableExists } from "../state/openclaw-state-db-schema-helpers.js";
+import { tableExists } from "../state/afora-state-db-schema-helpers.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { listAuditEvents, recordAuditEvent } from "./audit-event-store.js";
 import type { AuditEventInput } from "./audit-event-types.js";
 import { createAuditEventWriter } from "./audit-event-writer.js";
@@ -140,26 +140,26 @@ function captureWork(envelope: ExecutionIdentityAdmissionEnvelope) {
 }
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("audit event worker", () => {
   it("keeps progress absent while disabled and routes enabled progress off audit_events", async () => {
-    const stateDir = tempDirs.make("openclaw-audit-writer-");
-    const database = { env: { OPENCLAW_STATE_DIR: stateDir } };
+    const stateDir = tempDirs.make("afora-audit-writer-");
+    const database = { env: { AFORA_STATE_DIR: stateDir } };
     const disabledWriter = createAuditEventWriter({ stateDir });
     const disabledRecorder = createAuditEventRecorder({
       messageMode: "off",
       writer: disabledWriter,
     });
     await disabledWriter.ready;
-    expect(tableExists(openOpenClawStateDatabase(database).db, "outbound_message_progress")).toBe(
+    expect(tableExists(openAforaStateDatabase(database).db, "outbound_message_progress")).toBe(
       false,
     );
     disabledRecorder.recordMessage(messageEvent("message.outbound.queued"));
     await disabledWriter.stop();
-    expect(tableExists(openOpenClawStateDatabase(database).db, "outbound_message_progress")).toBe(
+    expect(tableExists(openAforaStateDatabase(database).db, "outbound_message_progress")).toBe(
       false,
     );
 
@@ -174,7 +174,7 @@ describe("audit event worker", () => {
     await enabledWriter.ready;
     await enabledWriter.stop();
 
-    const { db } = openOpenClawStateDatabase(database);
+    const { db } = openAforaStateDatabase(database);
     expect(
       (
         db.prepare("SELECT COUNT(*) AS count FROM outbound_message_progress").get() as {
@@ -195,14 +195,14 @@ describe("audit event worker", () => {
   });
 
   it("keeps fresh storage identity-free when recovery evidence is missing", async () => {
-    const stateDir = tempDirs.make("openclaw-audit-writer-");
-    const database = { env: { OPENCLAW_STATE_DIR: stateDir } };
+    const stateDir = tempDirs.make("afora-audit-writer-");
+    const database = { env: { AFORA_STATE_DIR: stateDir } };
     const errors: string[] = [];
     const writer = createAuditEventWriter({ stateDir, onError: (error) => errors.push(error) });
 
     await writer.ready;
     expect(
-      openOpenClawStateDatabase(database)
+      openAforaStateDatabase(database)
         .db.prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = ?")
         .get("execution_identity_contexts"),
     ).toBeUndefined();
@@ -223,20 +223,20 @@ describe("audit event worker", () => {
     expect(JSON.stringify(errors)).not.toContain(token.runId);
     expect(listAuditEvents({ database, limit: 10 }).events).toHaveLength(1);
     expect(
-      openOpenClawStateDatabase(database)
+      openAforaStateDatabase(database)
         .db.prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = ?")
         .get("execution_identity_contexts"),
     ).toBeUndefined();
     expect(
-      openOpenClawStateDatabase(database)
+      openAforaStateDatabase(database)
         .db.prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = ?")
         .get("execution_decision_facts"),
     ).toBeUndefined();
   });
 
   it("persists a generic decision through the bounded worker queue", async () => {
-    const stateDir = tempDirs.make("openclaw-audit-writer-");
-    const database = { env: { OPENCLAW_STATE_DIR: stateDir } };
+    const stateDir = tempDirs.make("afora-audit-writer-");
+    const database = { env: { AFORA_STATE_DIR: stateDir } };
     const errors: string[] = [];
     const writer = createAuditEventWriter({ stateDir, onError: (error) => errors.push(error) });
 
@@ -272,10 +272,10 @@ describe("audit event worker", () => {
   });
 
   it("keeps the shared queue nonblocking under a held write lock and flushes before stop", async () => {
-    const stateDir = tempDirs.make("openclaw-audit-writer-");
-    const database = { env: { OPENCLAW_STATE_DIR: stateDir } };
+    const stateDir = tempDirs.make("afora-audit-writer-");
+    const database = { env: { AFORA_STATE_DIR: stateDir } };
     recordAuditEvent(input(), database);
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const errors: string[] = [];
     const writer = createAuditEventWriter({
       stateDir,
@@ -283,7 +283,7 @@ describe("audit event worker", () => {
       onError: (error) => errors.push(error),
     });
     await writer.ready;
-    const { db } = openOpenClawStateDatabase(database);
+    const { db } = openAforaStateDatabase(database);
     expect(
       db
         .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = ?")
@@ -388,14 +388,14 @@ describe("audit event worker", () => {
   });
 
   it("stops without resetting the WAL owned by an active Gateway reader", async () => {
-    const stateDir = tempDirs.make("openclaw-audit-writer-");
-    const database = { env: { OPENCLAW_STATE_DIR: stateDir } };
+    const stateDir = tempDirs.make("afora-audit-writer-");
+    const database = { env: { AFORA_STATE_DIR: stateDir } };
     recordAuditEvent(input(), database);
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const errors: string[] = [];
     const writer = createAuditEventWriter({ stateDir, onError: (error) => errors.push(error) });
     await writer.ready;
-    const gateway = openOpenClawStateDatabase(database);
+    const gateway = openAforaStateDatabase(database);
     gateway.db.exec("BEGIN;");
     gateway.db.prepare("SELECT count(*) FROM audit_events").get();
 
@@ -423,8 +423,8 @@ describe("audit event worker", () => {
   });
 
   it("persists owned unknown and omits inherited evidence through the worker clone boundary", async () => {
-    const stateDir = tempDirs.make("openclaw-audit-writer-");
-    const database = { env: { OPENCLAW_STATE_DIR: stateDir } };
+    const stateDir = tempDirs.make("afora-audit-writer-");
+    const database = { env: { AFORA_STATE_DIR: stateDir } };
     const errors: string[] = [];
     const writer = createAuditEventWriter({ stateDir, onError: (error) => errors.push(error) });
     const clearSink = configureExecutionIdentityAdmissionSink(writer.recordExecutionIdentity);
@@ -578,7 +578,7 @@ describe("audit event worker", () => {
       },
       coverage: { state: "unknown", missingEvidence: ["invoker.principal"] },
     });
-    const persisted = openOpenClawStateDatabase(database)
+    const persisted = openAforaStateDatabase(database)
       .db.prepare(
         "SELECT context_json FROM execution_identity_contexts WHERE execution_id IN (?, ?) ORDER BY execution_id",
       )
@@ -599,8 +599,8 @@ describe("audit event worker", () => {
   });
 
   it("prunes expired identity contexts before preserving exact-envelope conflicts", async () => {
-    const stateDir = tempDirs.make("openclaw-audit-writer-");
-    const database = { env: { OPENCLAW_STATE_DIR: stateDir } };
+    const stateDir = tempDirs.make("afora-audit-writer-");
+    const database = { env: { AFORA_STATE_DIR: stateDir } };
     persistExecutionIdentityAdmissionEnvelope(
       captureExecutionIdentityAdmissionEnvelope(
         {
@@ -613,13 +613,13 @@ describe("audit event worker", () => {
       ),
       { ...database, now: 0 },
     );
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
 
     const errors: string[] = [];
     const writer = createAuditEventWriter({ stateDir, onError: (error) => errors.push(error) });
     await writer.ready;
     expect(
-      openOpenClawStateDatabase(database)
+      openAforaStateDatabase(database)
         .db.prepare("SELECT COUNT(*) AS count FROM execution_identity_contexts")
         .get(),
     ).toEqual({ count: 0 });
@@ -701,7 +701,7 @@ describe("audit event worker", () => {
         },
       },
     });
-    const persisted = openOpenClawStateDatabase(database)
+    const persisted = openAforaStateDatabase(database)
       .db.prepare("SELECT context_json FROM execution_identity_contexts WHERE run_id = ?")
       .get("ordered-run") as { context_json: string };
     for (const raw of ["raw-conflict-source", "raw-conflict-principal"]) {
@@ -733,14 +733,14 @@ describe("audit event worker", () => {
     await unavailableWriter.stop();
     expect(unavailableErrors).toContain("audit event writer is unavailable; dropping metadata");
 
-    const schemaStateDir = tempDirs.make("openclaw-audit-writer-");
-    const schemaDatabase = { env: { OPENCLAW_STATE_DIR: schemaStateDir } };
-    openOpenClawStateDatabase(schemaDatabase).db.exec(`
+    const schemaStateDir = tempDirs.make("afora-audit-writer-");
+    const schemaDatabase = { env: { AFORA_STATE_DIR: schemaStateDir } };
+    openAforaStateDatabase(schemaDatabase).db.exec(`
       CREATE VIEW execution_identity_contexts AS
       SELECT 'context' AS context_id, 'run' AS run_id, 0 AS created_at,
              'unattributed' AS coverage_state, 2 AS context_bytes, '{}' AS context_json;
     `);
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const schemaErrors: string[] = [];
     const schemaWriter = createAuditEventWriter({
       stateDir: schemaStateDir,
@@ -753,8 +753,8 @@ describe("audit event worker", () => {
     await schemaWriter.stop();
     expect(schemaErrors).toContain("audit execution identity persistence failed");
 
-    const insertStateDir = tempDirs.make("openclaw-audit-writer-");
-    const insertDatabase = { env: { OPENCLAW_STATE_DIR: insertStateDir } };
+    const insertStateDir = tempDirs.make("afora-audit-writer-");
+    const insertDatabase = { env: { AFORA_STATE_DIR: insertStateDir } };
     persistExecutionIdentityAdmissionEnvelope(
       captureExecutionIdentityAdmissionEnvelope(
         {
@@ -767,7 +767,7 @@ describe("audit event worker", () => {
       ),
       insertDatabase,
     );
-    const insertDb = openOpenClawStateDatabase(insertDatabase).db;
+    const insertDb = openAforaStateDatabase(insertDatabase).db;
     insertDb.exec(`
       CREATE TRIGGER reject_identity_insert
       BEFORE INSERT ON execution_identity_contexts
@@ -794,8 +794,8 @@ describe("audit event worker", () => {
   });
 
   it("keeps malformed, serialization, and key failures nonblocking and redaction-safe", async () => {
-    const stateDir = tempDirs.make("openclaw-audit-writer-");
-    const database = { env: { OPENCLAW_STATE_DIR: stateDir } };
+    const stateDir = tempDirs.make("afora-audit-writer-");
+    const database = { env: { AFORA_STATE_DIR: stateDir } };
     const rawSecret = "raw-worker-message-secret";
     persistExecutionIdentityAdmissionEnvelope(
       captureExecutionIdentityAdmissionEnvelope(
@@ -809,8 +809,8 @@ describe("audit event worker", () => {
       ),
       database,
     );
-    openOpenClawStateDatabase(database).db.exec("DELETE FROM audit_identity_keys;");
-    closeOpenClawStateDatabaseForTest();
+    openAforaStateDatabase(database).db.exec("DELETE FROM audit_identity_keys;");
+    closeAforaStateDatabaseForTest();
     const errors: string[] = [];
     const writer = createAuditEventWriter({
       stateDir,

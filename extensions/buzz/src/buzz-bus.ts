@@ -1,5 +1,5 @@
 import { type Relay, finalizeEvent, type Event } from "nostr-tools";
-import { createChannelReplayGuard } from "openclaw/plugin-sdk/persistent-dedupe";
+import { createChannelReplayGuard } from "afora-agent/plugin-sdk/persistent-dedupe";
 import {
   queryBuzzDirectoryProfiles,
   queryBuzzDirectoryRooms,
@@ -170,7 +170,7 @@ export async function sendBuzzTextOneShot(params: {
     try {
       const directory = new BuzzDirectoryState({
         publicKey,
-        fallbackProfileName: "OpenClaw",
+        fallbackProfileName: "Afora",
         channelIds: [params.channelId],
       });
       directory.replaceMemberships(
@@ -279,7 +279,7 @@ export async function startBuzzBus(options: {
   });
   const directory = new BuzzDirectoryState({
     publicKey,
-    fallbackProfileName: options.profileName ?? "OpenClaw",
+    fallbackProfileName: options.profileName ?? "Afora",
     channelIds: options.channelIds,
     profileLimit: subscriptionBudget.profileLimit,
   });

@@ -1,15 +1,15 @@
 // Telegram plugin module implements account inspect behavior.
-import { resolveAccountWithDefaultFallback } from "openclaw/plugin-sdk/account-core";
-import type { OpenClawConfig, TelegramAccountConfig } from "openclaw/plugin-sdk/config-contracts";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/routing";
-import { tryReadSecretFileSync } from "openclaw/plugin-sdk/secret-file-runtime";
+import { resolveAccountWithDefaultFallback } from "afora-agent/plugin-sdk/account-core";
+import type { AforaConfig, TelegramAccountConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "afora-agent/plugin-sdk/routing";
+import { tryReadSecretFileSync } from "afora-agent/plugin-sdk/secret-file-runtime";
 import {
   coerceSecretRef,
   hasConfiguredSecretInput,
   normalizeSecretInputString,
-} from "openclaw/plugin-sdk/secret-input";
-import { canResolveEnvSecretRefInReadOnlyPath } from "openclaw/plugin-sdk/secret-ref-readonly";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/secret-input";
+import { canResolveEnvSecretRefInReadOnlyPath } from "afora-agent/plugin-sdk/secret-ref-readonly";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   mergeTelegramAccountConfig,
   resolveDefaultTelegramAccountId,
@@ -69,7 +69,7 @@ function inspectTokenFile(
   };
 }
 
-function inspectTokenValue(params: { cfg: OpenClawConfig; value: unknown }): {
+function inspectTokenValue(params: { cfg: AforaConfig; value: unknown }): {
   token: string;
   tokenSource: "config" | "env" | "none";
   tokenStatus: TelegramCredentialStatus;
@@ -122,7 +122,7 @@ function inspectTokenValue(params: { cfg: OpenClawConfig; value: unknown }): {
   return null;
 }
 
-function hasConfiguredTelegramAccounts(cfg: OpenClawConfig): boolean {
+function hasConfiguredTelegramAccounts(cfg: AforaConfig): boolean {
   const accounts = cfg.channels?.telegram?.accounts;
   return (
     Boolean(accounts) &&
@@ -133,7 +133,7 @@ function hasConfiguredTelegramAccounts(cfg: OpenClawConfig): boolean {
 }
 
 function inspectTelegramAccountPrimary(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   envToken?: string | null;
 }): InspectedTelegramAccount {
@@ -251,7 +251,7 @@ function inspectTelegramAccountPrimary(params: {
 }
 
 export function inspectTelegramAccount(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   envToken?: string | null;
 }): InspectedTelegramAccount {

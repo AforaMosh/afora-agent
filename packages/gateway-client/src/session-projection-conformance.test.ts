@@ -25,7 +25,7 @@ function persistedUser(params: {
   media?: unknown[];
 }): Record<string, unknown> {
   return {
-    __openclaw: {
+    __afora: {
       id: params.id,
       idempotencyKey: `${params.runId ?? params.id}:user`,
       seq: params.sequence,

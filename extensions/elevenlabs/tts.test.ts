@@ -1,6 +1,6 @@
 // Elevenlabs tests cover tts plugin behavior.
-import { MAX_AUDIO_BYTES } from "openclaw/plugin-sdk/media-runtime";
-import { synthesizeElevenLabsLiveSpeech } from "openclaw/plugin-sdk/provider-test-contracts";
+import { MAX_AUDIO_BYTES } from "afora-agent/plugin-sdk/media-runtime";
+import { synthesizeElevenLabsLiveSpeech } from "afora-agent/plugin-sdk/provider-test-contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createStreamingErrorResponse } from "../test-support/streaming-error-response.js";
 import { elevenLabsTTS, elevenLabsTTSStream } from "./tts.js";
@@ -350,7 +350,7 @@ describe("elevenlabs live audio helper error-path body release", () => {
 
     await expect(
       synthesizeElevenLabsLiveSpeech({
-        text: "OpenClaw leak check.",
+        text: "Afora leak check.",
         apiKey: "x",
         outputFormat: "mp3_44100_128",
         timeoutMs: 1_000,

@@ -1,10 +1,10 @@
-import { err, ok, type Result } from "@openclaw/normalization-core/result";
+import { err, ok, type Result } from "@afora/normalization-core/result";
 import {
-  openOpenClawAgentDatabase,
-  resolveOpenClawAgentSqlitePath,
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  resolveAforaAgentSqlitePath,
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import { clearAllCliSessions } from "./cli-session-binding.js";
 import type {
   SessionTranscriptAccessScope,
@@ -114,7 +114,7 @@ export async function replaceTranscriptEvents(
 ): Promise<void> {
   const resolved = resolveSqliteTranscriptScope(scope);
   await runExclusiveSqliteSessionWrite(resolved, async () => {
-    runOpenClawAgentWriteTransaction((database) => {
+    runAforaAgentWriteTransaction((database) => {
       replaceSqliteTranscriptEventsInTransaction(database, resolved, events);
     }, toDatabaseOptions(resolved));
   });
@@ -135,7 +135,7 @@ export async function rewriteTranscriptEventRowsExact(
   const resolved = resolveSqliteTranscriptScope(scope);
   return await runExclusiveSqliteSessionWrite(resolved, async () => {
     let result: { generation: string } | null = null;
-    runOpenClawAgentWriteTransaction((database) => {
+    runAforaAgentWriteTransaction((database) => {
       const currentGeneration =
         readTranscriptGenerationInTransaction(database, resolved.sessionId) ?? null;
       const initialGenerationMaterialized =
@@ -162,7 +162,7 @@ export function replaceTranscriptEventsSync(
   const fencedScope = withOwnedSessionTranscriptWriterFence(scope);
   const resolved = resolveSqliteTranscriptScope(fencedScope);
   let replaced = false;
-  runOpenClawAgentWriteTransaction((database) => {
+  runAforaAgentWriteTransaction((database) => {
     const fresh = readSessionEntryRow(database, resolved.sessionKey);
     if (
       !fresh ||
@@ -190,7 +190,7 @@ export async function trimTranscriptForManualCompact(
 ): Promise<{ trimmed: false } | { kept: number; trimmed: true }> {
   const resolved = resolveSqliteTranscriptScope(scope);
   return await runExclusiveSqliteSessionWrite(resolved, async () => {
-    const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+    const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
     const snapshotRows = readTranscriptEventRows(database, resolved.sessionId);
     const sessionSnapshot = readSessionEntrySelectionSnapshot(database, resolved.sessionKey, true);
     const lines = snapshotRows.map((row) => row.eventJson);
@@ -206,7 +206,7 @@ export async function trimTranscriptForManualCompact(
     const retainedEvents = retainedLines.map((line) => JSON.parse(line) as TranscriptEvent);
     let previousIdentity = new Map<string, SessionEntry>();
     let currentIdentity = new Map<string, SessionEntry>();
-    runOpenClawAgentWriteTransaction((writeDatabase) => {
+    runAforaAgentWriteTransaction((writeDatabase) => {
       assertSqliteTranscriptSnapshotUnchanged(writeDatabase, resolved.sessionId, snapshotRows);
       const freshSessionSnapshot = readSessionEntrySelectionSnapshot(
         writeDatabase,
@@ -255,7 +255,7 @@ export async function appendTranscriptEvent(
   assertNonMessageTranscriptEvent(event);
   const resolved = resolveSqliteTranscriptScope(scope);
   await runExclusiveSqliteSessionWrite(resolved, async () => {
-    runOpenClawAgentWriteTransaction((database) => {
+    runAforaAgentWriteTransaction((database) => {
       appendTranscriptEventInTransaction(
         database,
         resolved,
@@ -276,7 +276,7 @@ export function appendTranscriptEventSync(
   const fencedScope = withOwnedSessionTranscriptWriterFence(scope);
   const resolved = resolveSqliteTranscriptScope(fencedScope);
   let result: Result<boolean, TranscriptEventAppendError> = ok(false);
-  runOpenClawAgentWriteTransaction((database) => {
+  runAforaAgentWriteTransaction((database) => {
     const fresh = readSessionEntryRow(database, resolved.sessionKey);
     if (!fresh) {
       result = err({
@@ -324,7 +324,7 @@ export function appendTranscriptEventSync(
 }
 
 function resolveTranscriptEventAppendParent(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionId: string,
   event: TranscriptEvent,
   options: TranscriptEventAppendOptions,
@@ -354,7 +354,7 @@ export async function appendExpectedSessionTranscriptTurn(
   scope: SessionTranscriptWriteScope,
   options: {
     atomicGroup?: boolean;
-    config?: import("../types.openclaw.js").OpenClawConfig;
+    config?: import("../types.afora.js").AforaConfig;
     cwd?: string;
     expectedLifecycleRevision?: string;
     expectedWriterRunId?: SessionTranscriptTurnExpectedState["expectedWriterRunId"];
@@ -371,7 +371,7 @@ export async function appendExpectedSessionTranscriptTurn(
     sessionId: options.expectedSessionId,
   });
   return await runExclusiveSqliteSessionWrite(resolved, async () => {
-    const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+    const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
     const preparedEntry = readSessionEntryRow(database, resolved.sessionKey);
     if (!sessionMatchesExpectedTranscriptTurn(preparedEntry, options)) {
       return sqliteSessionTranscriptTurnRebound(preparedEntry, options.sessionFile);
@@ -391,7 +391,7 @@ export async function appendExpectedSessionTranscriptTurn(
     );
     let previousIdentity = new Map<string, SessionEntry>();
     let currentIdentity = new Map<string, SessionEntry>();
-    runOpenClawAgentWriteTransaction((transactionDb) => {
+    runAforaAgentWriteTransaction((transactionDb) => {
       const fresh = readSessionEntryRow(transactionDb, resolved.sessionKey);
       if (!sessionMatchesExpectedTranscriptTurn(fresh, options)) {
         result = sqliteSessionTranscriptTurnRebound(fresh, options.sessionFile);
@@ -501,7 +501,7 @@ export async function appendTranscriptMessage<TMessage>(
   const resolved = resolveSqliteTranscriptScope(scope);
   return await runExclusiveSqliteSessionWrite(resolved, async () => {
     let result: TranscriptMessageAppendResult<TMessage> | undefined;
-    runOpenClawAgentWriteTransaction((database) => {
+    runAforaAgentWriteTransaction((database) => {
       result = appendTranscriptMessageInTransaction(database, resolved, options);
     }, toDatabaseOptions(resolved));
     return result;
@@ -517,7 +517,7 @@ export function appendTranscriptMessageSync<TMessage>(
   const fencedScope = withOwnedSessionTranscriptWriterFence(scope);
   const resolved = resolveSqliteTranscriptScope(fencedScope);
   let result: TranscriptMessageAppendResult<TMessage> | undefined;
-  runOpenClawAgentWriteTransaction((database) => {
+  runAforaAgentWriteTransaction((database) => {
     const fresh = readSessionEntryRow(database, resolved.sessionKey);
     if (
       !fresh ||
@@ -544,7 +544,7 @@ export async function withTranscriptWriteLock<T>(
 ): Promise<T> {
   const resolved = resolveSqliteTranscriptScope(scope);
   return await runExclusiveSqliteSessionWrite(resolved, async () => {
-    const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+    const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
     let transcriptSnapshot: SqliteTranscriptSnapshotState | undefined;
     return await run({
       readEvents: async () => {
@@ -558,7 +558,7 @@ export async function withTranscriptWriteLock<T>(
           throw new SqliteTranscriptMutationConflictError(resolved.sessionId);
         }
         const expectedSnapshot = transcriptSnapshot?.rows;
-        const nextSnapshot = runOpenClawAgentWriteTransaction((writeDatabase) => {
+        const nextSnapshot = runAforaAgentWriteTransaction((writeDatabase) => {
           if (expectedSnapshot !== undefined) {
             // The writer queue is process-local. Revalidate after BEGIN IMMEDIATE
             // so a committed cross-process append cannot be deleted by the rewrite.
@@ -577,7 +577,7 @@ export async function withTranscriptWriteLock<T>(
         let result: TranscriptMessageAppendResult<unknown> | undefined;
         const snapshotState = transcriptSnapshot;
         let nextSnapshotState = snapshotState;
-        runOpenClawAgentWriteTransaction((writeDatabase) => {
+        runAforaAgentWriteTransaction((writeDatabase) => {
           const snapshotStillCurrent =
             snapshotState?.kind === "current"
               ? isSqliteTranscriptSnapshotUnchanged(
@@ -602,7 +602,7 @@ export async function withTranscriptWriteLock<T>(
       appendMessageWithMessageSequence: async (options) => {
         let result: TranscriptMessageAppendResult<unknown> | undefined;
         let messageSeq: number | undefined;
-        runOpenClawAgentWriteTransaction((writeDatabase) => {
+        runAforaAgentWriteTransaction((writeDatabase) => {
           result = appendTranscriptMessageInTransaction(writeDatabase, resolved, options);
           if (result) {
             rememberCommittedTranscriptMessageSequencesInTransaction(
@@ -629,7 +629,7 @@ export async function withTranscriptWriteTransaction<T>(
 ): Promise<T> {
   const resolved = resolveSqliteTranscriptScope(scope);
   return await runExclusiveSqliteSessionWrite(resolved, async () =>
-    runOpenClawAgentWriteTransaction(
+    runAforaAgentWriteTransaction(
       () =>
         run({
           agentId: resolved.agentId,
@@ -638,7 +638,7 @@ export async function withTranscriptWriteTransaction<T>(
           storePath:
             resolved.path ??
             scope.storePath ??
-            resolveOpenClawAgentSqlitePath({ agentId: resolved.agentId, env: resolved.env }),
+            resolveAforaAgentSqlitePath({ agentId: resolved.agentId, env: resolved.env }),
         }),
       toDatabaseOptions(resolved),
       { operationLabel: "session.transcript.batch" },
@@ -647,7 +647,7 @@ export async function withTranscriptWriteTransaction<T>(
 }
 
 function isSqliteTranscriptSnapshotUnchanged(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionId: string,
   expected: readonly SqliteTranscriptSnapshotRow[],
 ): boolean {
@@ -662,7 +662,7 @@ function isSqliteTranscriptSnapshotUnchanged(
 }
 
 function assertSqliteTranscriptSnapshotUnchanged(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionId: string,
   expected: readonly SqliteTranscriptSnapshotRow[],
 ): void {

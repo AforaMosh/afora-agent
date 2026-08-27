@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { promisify } from "node:util";
-import { GatewayClient } from "openclaw/plugin-sdk/gateway-runtime";
+import { GatewayClient } from "afora-agent/plugin-sdk/gateway-runtime";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   NODE_WORKER_BUNDLE_INSTALL_COMMAND,
@@ -61,7 +61,7 @@ describe("node worker launch wire", () => {
     "transfers and reconciles a gateway-push workspace through a device runner",
     { timeout: TEST_TIMEOUT_MS },
     async () => {
-      const root = tempDirs.make("openclaw-node-worker-launch-wire-");
+      const root = tempDirs.make("afora-node-worker-launch-wire-");
       const provider = await startMidturnProvider();
       const published = await createPublishedWireWorkspace(root);
       let gateway: WireGateway | undefined;

@@ -4,8 +4,8 @@ import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { expectDefined } from "@openclaw/normalization-core";
-import { bundledPluginFile } from "openclaw/plugin-sdk/test-fixtures";
+import { expectDefined } from "@afora/normalization-core";
+import { bundledPluginFile } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it } from "vitest";
 
 const tempDirs: string[] = [];
@@ -16,7 +16,7 @@ function encodePayload(payload: Record<string, unknown>): string {
 }
 
 async function makeTempScript(name: string, content: string): Promise<string> {
-  const dir = await mkdtemp(path.join(os.tmpdir(), "openclaw-acpx-mcp-proxy-"));
+  const dir = await mkdtemp(path.join(os.tmpdir(), "afora-acpx-mcp-proxy-"));
   tempDirs.push(dir);
   const scriptPath = path.join(dir, name);
   await writeFile(scriptPath, content, "utf8");

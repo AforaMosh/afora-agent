@@ -1,6 +1,6 @@
-import { expectDefined } from "@openclaw/normalization-core";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { expectDefined } from "@afora/normalization-core";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveSecretInputRef, type SecretRef } from "../config/types.secrets.js";
 import { createLazyRuntimeNamedExport } from "../shared/lazy-runtime.js";
 import { setPathExistingStrict } from "./path-utils.js";
@@ -59,8 +59,8 @@ type RuntimeWebProviderSelectionParams<
   configuredProvider?: string;
   metadata: TMetadata;
   diagnostics: RuntimeWebDiagnostic[];
-  sourceConfig: OpenClawConfig;
-  resolvedConfig: OpenClawConfig;
+  sourceConfig: AforaConfig;
+  resolvedConfig: AforaConfig;
   context: ResolverContext;
   defaults: SecretDefaults | undefined;
   /** Allow keyless providers to be selected when no provider is explicitly configured. */
@@ -75,12 +75,12 @@ type RuntimeWebProviderSelectionParams<
   /** Reads the primary credential location for a provider from source config. */
   readConfiguredCredential: (params: {
     provider: TProvider;
-    config: OpenClawConfig;
+    config: AforaConfig;
     toolConfig: TToolConfig;
   }) => unknown;
   readConfiguredCredentialFallback?: (params: {
     provider: TProvider;
-    config: OpenClawConfig;
+    config: AforaConfig;
     toolConfig: TToolConfig;
   }) => { path: string; value: unknown } | undefined;
   /** Resolves inline/env/SecretRef credentials and reports the winning source. */
@@ -89,7 +89,7 @@ type RuntimeWebProviderSelectionParams<
   ) => Promise<SecretResolutionResult<TSource>>;
   /** Writes the selected credential into the resolved runtime config snapshot. */
   setResolvedCredential: (params: {
-    resolvedConfig: OpenClawConfig;
+    resolvedConfig: AforaConfig;
     provider: TProvider;
     value: string;
   }) => void;
@@ -169,7 +169,7 @@ function getProviderEnvVars(provider: object): string[] {
 }
 
 function setResolvedCredentialPath(params: {
-  resolvedConfig: OpenClawConfig;
+  resolvedConfig: AforaConfig;
   path: string;
   value: string;
 }): void {
@@ -218,7 +218,7 @@ type ResolveRuntimeWebProviderSurfaceParams<
   diagnostics: RuntimeWebDiagnostic[];
   metadataDiagnostics: RuntimeWebDiagnostic[];
   invalidAutoDetectCode: RuntimeWebWarningCode;
-  sourceConfig: OpenClawConfig;
+  sourceConfig: AforaConfig;
   context: ResolverContext;
   /** Bundled plugin id already known from caller context, avoiding duplicate manifest lookup. */
   configuredBundledPluginIdHint?: string;
@@ -226,12 +226,12 @@ type ResolveRuntimeWebProviderSurfaceParams<
   sortProviders: (providers: TProvider[]) => TProvider[];
   readConfiguredCredential: (params: {
     provider: TProvider;
-    config: OpenClawConfig;
+    config: AforaConfig;
     toolConfig: TToolConfig;
   }) => unknown;
   readConfiguredCredentialFallback?: (params: {
     provider: TProvider;
-    config: OpenClawConfig;
+    config: AforaConfig;
     toolConfig: TToolConfig;
   }) => { path: string; value: unknown } | undefined;
   ignoreKeylessProvidersForConfiguredSurface?: boolean;

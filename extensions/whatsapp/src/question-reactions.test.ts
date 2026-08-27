@@ -2,9 +2,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const hoisted = vi.hoisted(() => ({ resolve: vi.fn() }));
-vi.mock("openclaw/plugin-sdk/question-gateway-runtime", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/question-gateway-runtime", async (importOriginal) => {
   const original =
-    await importOriginal<typeof import("openclaw/plugin-sdk/question-gateway-runtime")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/question-gateway-runtime")>();
   return {
     ...original,
     questionGatewayRuntime: {
@@ -14,7 +14,7 @@ vi.mock("openclaw/plugin-sdk/question-gateway-runtime", async (importOriginal) =
   };
 });
 
-import { questionGatewayRuntime } from "openclaw/plugin-sdk/question-gateway-runtime";
+import { questionGatewayRuntime } from "afora-agent/plugin-sdk/question-gateway-runtime";
 import {
   maybeResolveWhatsAppQuestionReaction,
   registerWhatsAppQuestionReactionTargetForDeliveredPayload,

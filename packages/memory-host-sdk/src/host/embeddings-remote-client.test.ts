@@ -8,7 +8,7 @@ describe("resolveRemoteEmbeddingBearerClient", () => {
       provider: "openai",
       defaultBaseUrl: "https://api.openai.com/v1",
       options: {
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         config: {
           models: {
             providers: {
@@ -28,8 +28,8 @@ describe("resolveRemoteEmbeddingBearerClient", () => {
     expect(client.baseUrl).toBe("https://proxy.example.test/openai/v1");
   });
 
-  it("adds OpenClaw attribution to native OpenAI embedding requests", async () => {
-    vi.stubEnv("OPENCLAW_VERSION", "2026.3.22");
+  it("adds Afora attribution to native OpenAI embedding requests", async () => {
+    vi.stubEnv("AFORA_VERSION", "2026.3.22");
     const client = await resolveRemoteEmbeddingBearerClient({
       provider: "openai",
       defaultBaseUrl: "https://api.openai.com/v1",
@@ -39,8 +39,8 @@ describe("resolveRemoteEmbeddingBearerClient", () => {
         remote: {
           apiKey: "sk-test",
           headers: {
-            originator: "openclaw",
-            "User-Agent": "openclaw",
+            originator: "afora",
+            "User-Agent": "afora",
           },
         },
       },
@@ -49,9 +49,9 @@ describe("resolveRemoteEmbeddingBearerClient", () => {
     expect(client.headers).toEqual({
       Authorization: "Bearer sk-test",
       "Content-Type": "application/json",
-      originator: "openclaw",
+      originator: "afora",
       version: "2026.3.22",
-      "User-Agent": "openclaw/2026.3.22",
+      "User-Agent": "afora-agent/2026.3.22",
     });
   });
 });

@@ -33,9 +33,9 @@ export function createAuthAliasManifestRegistry(): PluginManifestRegistry {
         cliBackends: [],
         skills: [],
         hooks: [],
-        rootDir: "/tmp/openclaw-auth-contract-plugin",
+        rootDir: "/tmp/afora-auth-contract-plugin",
         source: "test",
-        manifestPath: "/tmp/openclaw-auth-contract-plugin/plugin.json",
+        manifestPath: "/tmp/afora-auth-contract-plugin/plugin.json",
         providerAuthAliases: {
           [AUTH_PROFILE_RUNTIME_CONTRACT.openAiCodexProvider]:
             AUTH_PROFILE_RUNTIME_CONTRACT.openAiProvider,

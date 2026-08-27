@@ -23,7 +23,7 @@ describe("AgentRuntimePlan tool diagnostics legacy fallback", () => {
       provider: "openai",
       modelId: "gpt-5.4",
       modelApi: "openai-responses",
-      workspaceDir: "/tmp/openclaw-runtime-plan-tools",
+      workspaceDir: "/tmp/afora-runtime-plan-tools",
     });
 
     expect(mocks.logProviderToolSchemaDiagnostics).toHaveBeenCalledTimes(1);
@@ -31,7 +31,7 @@ describe("AgentRuntimePlan tool diagnostics legacy fallback", () => {
       tools,
       provider: "openai",
       config: undefined,
-      workspaceDir: "/tmp/openclaw-runtime-plan-tools",
+      workspaceDir: "/tmp/afora-runtime-plan-tools",
       env: process.env,
       modelId: "gpt-5.4",
       modelApi: "openai-responses",

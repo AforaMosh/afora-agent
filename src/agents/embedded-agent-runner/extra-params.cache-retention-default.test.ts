@@ -1,5 +1,5 @@
 // Coverage for cache-retention defaults and overrides in extra params.
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { applyExtraParamsToAgent } from "./extra-params.js";
 import { testing as extraParamsTesting } from "./extra-params.test-support.js";

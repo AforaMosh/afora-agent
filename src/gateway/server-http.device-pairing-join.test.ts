@@ -4,8 +4,8 @@ import type { WebSocket } from "ws";
 import { getPairedDevice } from "../infra/device-pairing.js";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../infra/kysely-sync.js";
 import { decodePairingSetupCode } from "../pairing/setup-code.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
-import { runOpenClawStateWriteTransaction } from "../state/openclaw-state-db.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
+import { runAforaStateWriteTransaction } from "../state/afora-state-db.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
 import { loadDeviceIdentity } from "./device-authz.test-helpers.js";
 import {
@@ -86,10 +86,10 @@ describe("Gateway device join route", () => {
     const setup = await mintJoinUrl("/public-gateway");
     const originalShortcode = shortcodeFromUrl(setup.joinUrl);
     const jPrefixedShortcode = `j${"a".repeat(21)}`;
-    runOpenClawStateWriteTransaction(({ db }) => {
+    runAforaStateWriteTransaction(({ db }) => {
       executeSqliteQuerySync(
         db,
-        getNodeSqliteKysely<Pick<OpenClawStateKyselyDatabase, "device_pairing_join_codes">>(db)
+        getNodeSqliteKysely<Pick<AforaStateKyselyDatabase, "device_pairing_join_codes">>(db)
           .updateTable("device_pairing_join_codes")
           .set({ shortcode: jPrefixedShortcode })
           .where("shortcode", "=", originalShortcode),
@@ -159,10 +159,10 @@ describe("Gateway device join route", () => {
   it("burns once, expires opaquely, and rate-limits misses on the real HTTP server", async () => {
     const expired = await mintJoinUrl();
     const expiredShortcode = shortcodeFromUrl(expired.joinUrl);
-    runOpenClawStateWriteTransaction(({ db }) => {
+    runAforaStateWriteTransaction(({ db }) => {
       executeSqliteQuerySync(
         db,
-        getNodeSqliteKysely<Pick<OpenClawStateKyselyDatabase, "device_pairing_join_codes">>(db)
+        getNodeSqliteKysely<Pick<AforaStateKyselyDatabase, "device_pairing_join_codes">>(db)
           .updateTable("device_pairing_join_codes")
           .set({ expires_at_ms: 0 })
           .where("shortcode", "=", expiredShortcode),

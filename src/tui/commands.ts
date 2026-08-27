@@ -1,6 +1,6 @@
 // Defines TUI slash commands and their help metadata.
 import type { SlashCommand } from "@earendil-works/pi-tui";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import type { CommandEntry } from "../../packages/gateway-protocol/src/index.js";
 import {
   listChatCommands,
@@ -13,7 +13,7 @@ import {
   type ReasoningLevel,
   type VerboseLevel,
 } from "../auto-reply/thinking.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 
 const VERBOSE_LEVELS = ["on", "off", "full"] satisfies VerboseLevel[];
 const TRACE_LEVELS = ["on", "off"];
@@ -29,7 +29,7 @@ type ParsedCommand = {
 };
 
 type SlashCommandOptions = {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   provider?: string;
   model?: string;
   agentRuntime?: string;
@@ -96,9 +96,9 @@ const TUI_COMMAND_ROWS = [
   ["agent", "Switch agent (or open picker)", "/agent <id> (or /agents)"],
   ["agents", "Open agent picker"],
   [
-    "openclaw",
-    "Return to OpenClaw",
-    "/openclaw [request]",
+    "afora",
+    "Return to Afora",
+    "/afora [request]",
     undefined,
     { aliases: [{ name: "crestodian", hidden: true }] },
   ],

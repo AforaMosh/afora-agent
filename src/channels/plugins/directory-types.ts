@@ -3,7 +3,7 @@
  *
  * Defines config/account/query parameters shared by directory-capable plugins.
  */
-import type { OpenClawConfig } from "../../config/types.js";
+import type { AforaConfig } from "../../config/types.js";
 
 /**
  * Shared input for channel directory lookups.
@@ -12,7 +12,7 @@ import type { OpenClawConfig } from "../../config/types.js";
  * scope, search text, and result limit from setup or command surfaces.
  */
 export type DirectoryConfigParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   query?: string | null;
   limit?: number | null;

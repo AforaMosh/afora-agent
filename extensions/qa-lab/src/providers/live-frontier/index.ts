@@ -1,4 +1,4 @@
-// Qa Lab plugin entrypoint registers its OpenClaw integration.
+// Qa Lab plugin entrypoint registers its Afora integration.
 import type { QaProviderDefinition } from "../shared/types.js";
 
 function isOpenAiModel(modelRef: string) {

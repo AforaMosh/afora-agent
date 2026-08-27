@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { requireTlsFingerprint } from "../../../packages/gateway-client/src/client-address-utils.js";
 import type { NodeHostConfig, NodeHostGatewayConfig } from "../../node-host/config.js";
 import {

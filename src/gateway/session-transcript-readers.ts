@@ -1,5 +1,5 @@
 import path from "node:path";
-import { parseDateFirstTimestampMs } from "@openclaw/normalization-core/number-coercion";
+import { parseDateFirstTimestampMs } from "@afora/normalization-core/number-coercion";
 import {
   isSessionTranscriptProjectionUnavailableError,
   readRecentSessionTranscriptMessageEvents,
@@ -21,7 +21,7 @@ import {
 import { resolveAgentIdFromSessionKey } from "../routing/session-key.js";
 import { aggregateSqliteUsageSnapshots } from "./session-transcript-derived-readers.js";
 import {
-  attachOpenClawTranscriptMeta,
+  attachAforaTranscriptMeta,
   projectTranscriptEntryMessage,
 } from "./session-transcript-message.js";
 import type {
@@ -38,7 +38,7 @@ import type { SessionPreviewItem } from "./session-utils.types.js";
 
 export type { ReadSessionMessagesAsyncOptions };
 export { capArrayByJsonBytes } from "./session-utils.fs.js";
-export { attachOpenClawTranscriptMeta } from "./session-transcript-message.js";
+export { attachAforaTranscriptMeta } from "./session-transcript-message.js";
 export { readSessionTranscriptVisibleMessageDeltaCore } from "../config/sessions/session-accessor.js";
 
 export type { SessionTranscriptReadScope };
@@ -232,7 +232,7 @@ function sqliteRecordMessageWithSeq(record: {
     typeof rawIdempotencyKey === "string" && rawIdempotencyKey.trim()
       ? rawIdempotencyKey.trim()
       : undefined;
-  return attachOpenClawTranscriptMeta(record.message, {
+  return attachAforaTranscriptMeta(record.message, {
     ...(record.id ? { id: record.id } : {}),
     ...(idempotencyKey ? { idempotencyKey } : {}),
     ...(record.recordTimestampMs !== undefined

@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { collectConfigAssignments as collectRuntimeConfigAssignments } from "../secrets/runtime-config-collectors.js";
 import { withSecureTestNodeExecPath } from "../secrets/test-node-command.test-support.js";
 import { withEnvAsync } from "../test-utils/env.js";
@@ -56,7 +56,7 @@ afterEach(async () => {
 });
 
 describe("resolveCommandSecretRefsViaGateway", () => {
-  function makeTalkProviderApiKeySecretRefConfig(envKey: string): OpenClawConfig {
+  function makeTalkProviderApiKeySecretRefConfig(envKey: string): AforaConfig {
     return buildTalkTestProviderConfig({ source: "env", provider: "default", id: envKey });
   }
 
@@ -104,10 +104,10 @@ describe("resolveCommandSecretRefsViaGateway", () => {
   }
 
   async function createExecProviderConfig(refId: string): Promise<{
-    config: OpenClawConfig;
+    config: AforaConfig;
     markerPath: string;
   }> {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-command-secret-exec-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-command-secret-exec-"));
     tempRoots.add(root);
     const markerPath = path.join(root, "executed");
     const resolverScript = [
@@ -116,7 +116,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
       "process.stdin.on('data', (chunk) => { stdin += chunk; });",
       "process.stdin.on('end', () => {",
       "  const request = JSON.parse(stdin);",
-      "  fs.writeFileSync(process.env.OPENCLAW_EXEC_MARKER, 'executed');",
+      "  fs.writeFileSync(process.env.AFORA_EXEC_MARKER, 'executed');",
       "  const values = Object.fromEntries(request.ids.map((id) => [id, 'exec-local-key']));",
       "  process.stdout.write(JSON.stringify({ protocolVersion: 1, values }));",
       "});",
@@ -135,14 +135,14 @@ describe("resolveCommandSecretRefsViaGateway", () => {
               source: "exec",
               command: process.execPath,
               args: ["-e", resolverScript],
-              env: { OPENCLAW_EXEC_MARKER: markerPath },
+              env: { AFORA_EXEC_MARKER: markerPath },
               allowInsecurePath: true,
               allowSymlinkCommand: true,
               jsonOnly: true,
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     };
   }
 
@@ -264,7 +264,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
   it("returns config unchanged when no target SecretRefs are configured", async () => {
     const config = {
       ...buildTalkTestProviderConfig("plain"), // pragma: allowlist secret
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const result = await resolveCommandSecretRefsViaGateway({
       config,
       commandName: "memory status",
@@ -290,7 +290,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const result = await resolveCommandSecretRefsViaGateway({
       config,
@@ -364,7 +364,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
           botToken: { source: "env", provider: "default", id: "TELEGRAM_BOT_TOKEN" },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const restoreDeps = setSingleSecretTargetDeps({
       path: channelPath,
       pathSegments: channelPathSegments,
@@ -468,7 +468,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         commandName: "message",
         targetIds: new Set(["channels.discord.accounts.*.token"]),
         allowedPaths: new Set(["channels.discord.accounts.ops.token"]),
@@ -570,7 +570,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         commandName: "message",
         targetIds: new Set(["channels.discord.accounts.*.token"]),
         allowedPaths: new Set(["channels.discord.accounts.ops.token"]),
@@ -632,7 +632,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
                   },
                 },
               },
-            } as unknown as OpenClawConfig,
+            } as unknown as AforaConfig,
             commandName: "infer web search",
             targetIds: new Set(["plugins.entries.firecrawl.config.webSearch.apiKey"]),
             allowedPaths: new Set(["plugins.entries.firecrawl.config.webSearch.apiKey"]),
@@ -679,7 +679,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
               default: { source: "env" },
             },
           },
-        } as unknown as OpenClawConfig,
+        } as unknown as AforaConfig,
         commandName: "memory status",
         targetIds: new Set(["talk.providers.*.apiKey"]),
       });
@@ -775,8 +775,8 @@ describe("resolveCommandSecretRefsViaGateway", () => {
   it("skips gateway resolution when gateway credentials would execute exec SecretRefs", async () => {
     await withEnvAsync(
       {
-        OPENCLAW_GATEWAY_PASSWORD: undefined,
-        OPENCLAW_GATEWAY_TOKEN: undefined,
+        AFORA_GATEWAY_PASSWORD: undefined,
+        AFORA_GATEWAY_TOKEN: undefined,
         TALK_API_KEY: "local-fallback-key",
       },
       async () => {
@@ -806,7 +806,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
                 },
               },
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
           commandName: "doctor preview",
           targetIds: new Set(["talk.providers.*.apiKey"]),
           mode: "read_only_status",
@@ -853,7 +853,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
                 },
               },
             },
-          } as unknown as OpenClawConfig,
+          } as unknown as AforaConfig,
           commandName: "agent",
           targetIds: new Set(["plugins.entries.google.config.webSearch.apiKey"]),
         });
@@ -898,7 +898,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
                 },
               },
             },
-          } as unknown as OpenClawConfig,
+          } as unknown as AforaConfig,
           commandName: "agent",
           targetIds: new Set(["plugins.entries.firecrawl.config.webFetch.apiKey"]),
         });
@@ -948,7 +948,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
                 },
               },
             },
-          } as unknown as OpenClawConfig,
+          } as unknown as AforaConfig,
           commandName: "infer web fetch",
           targetIds: new Set(["plugins.entries.firecrawl.config.webSearch.apiKey"]),
           allowedPaths: new Set(["plugins.entries.firecrawl.config.webSearch.apiKey"]),
@@ -1006,7 +1006,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
                 },
               },
             },
-          } as unknown as OpenClawConfig,
+          } as unknown as AforaConfig,
           commandName: "infer web fetch",
           targetIds: new Set(["plugins.entries.firecrawl.config.webSearch.apiKey"]),
           allowedPaths: new Set(["plugins.entries.firecrawl.config.webSearch.apiKey"]),
@@ -1049,7 +1049,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
               },
             },
           },
-        } as unknown as OpenClawConfig,
+        } as unknown as AforaConfig,
         commandName: "infer web search",
         targetIds: new Set(["models.providers.*.apiKey"]),
         allowedPaths: new Set(["models.providers.google.apiKey"]),
@@ -1093,7 +1093,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         commandName: "agent",
         targetIds: new Set(["plugins.entries.google.config.webSearch.apiKey"]),
       });
@@ -1249,7 +1249,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const result = await resolveCommandSecretRefsViaGateway({
       config,
@@ -1365,7 +1365,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         commandName: "agent",
         targetIds: new Set([webPath]),
       });
@@ -1409,7 +1409,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         commandName: "reply",
         targetIds: new Set([webPath]),
         optionalActivePaths: new Set([webPath]),
@@ -1444,7 +1444,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     },
     {
       label: "fetch",
@@ -1467,7 +1467,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     },
   ])("fails closed when a configured web $label provider owner cannot be proven", async (test) => {
     const restoreDeps = test.setupDeps();
@@ -1546,7 +1546,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         commandName: "reply",
         targetIds: new Set(["talk.providers.*.apiKey"]),
       });
@@ -1580,7 +1580,7 @@ describe("resolveCommandSecretRefsViaGateway", () => {
               password: { source: "env", provider: "default", id: gatewayEnvKey },
             },
           },
-        } as unknown as OpenClawConfig,
+        } as unknown as AforaConfig,
         commandName: "status",
         targetIds: new Set(["talk.providers.*.apiKey"]),
         mode: "read_only_status",

@@ -2,8 +2,8 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { createPersistentDedupe } from "openclaw/plugin-sdk/persistent-dedupe";
-import { resetPluginStateStoreForTests } from "openclaw/plugin-sdk/plugin-state-test-runtime";
+import { createPersistentDedupe } from "afora-agent/plugin-sdk/persistent-dedupe";
+import { resetPluginStateStoreForTests } from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   NEXTCLOUD_TALK_PLUGIN_ID,
@@ -75,7 +75,7 @@ describe("nextcloud-talk doctor", () => {
       ok: false,
       code: "missing_response_feature",
       message:
-        'Nextcloud Talk bot "OpenClaw" (1) is missing the response feature (features=9); outbound replies will fail.',
+        'Nextcloud Talk bot "Afora" (1) is missing the response feature (features=9); outbound replies will fail.',
     });
 
     await expect(
@@ -91,15 +91,15 @@ describe("nextcloud-talk doctor", () => {
             },
           },
         } as never,
-        doctorFixCommand: "openclaw doctor --fix",
+        doctorFixCommand: "afora doctor --fix",
       }),
     ).resolves.toEqual([
-      '- channels.nextcloud-talk.default: Nextcloud Talk bot "OpenClaw" (1) is missing the response feature (features=9); outbound replies will fail.',
+      '- channels.nextcloud-talk.default: Nextcloud Talk bot "Afora" (1) is missing the response feature (features=9); outbound replies will fail.',
     ]);
   });
 
   it("migrates legacy replay dedupe JSON into SQLite during doctor repair", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-nextcloud-doctor-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-nextcloud-doctor-"));
     const canonicalStateDir = await fs.realpath(stateDir);
     const legacyDir = path.join(canonicalStateDir, "nextcloud-talk", "replay-dedupe");
     const legacyPath = path.join(legacyDir, "account-a.json");
@@ -111,7 +111,7 @@ describe("nextcloud-talk doctor", () => {
       }),
     );
 
-    const env = { ...process.env, OPENCLAW_STATE_DIR: canonicalStateDir };
+    const env = { ...process.env, AFORA_STATE_DIR: canonicalStateDir };
     const mutation = await nextcloudTalkDoctor.repairConfig?.({
       cfg: {
         channels: {
@@ -125,7 +125,7 @@ describe("nextcloud-talk doctor", () => {
           },
         },
       } as never,
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
       env,
     });
 

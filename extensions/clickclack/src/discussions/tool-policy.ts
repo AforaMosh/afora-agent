@@ -1,9 +1,9 @@
-import type { PluginRuntime } from "openclaw/plugin-sdk/core";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/core";
 import type {
   PluginHookBeforeToolCallEvent,
   PluginHookBeforeToolCallResult,
   PluginHookToolContext,
-} from "openclaw/plugin-sdk/types";
+} from "afora-agent/plugin-sdk/types";
 import type { CoreConfig } from "../types.js";
 import {
   bindingMatchesActiveSessionIncarnation,

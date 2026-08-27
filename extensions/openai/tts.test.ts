@@ -3,8 +3,8 @@ import {
   finalizeDebugProxyCapture,
   getDebugProxyCaptureStore,
   initializeDebugProxyCapture,
-} from "openclaw/plugin-sdk/proxy-capture";
-import { createOpenClawTestState, type OpenClawTestState } from "openclaw/plugin-sdk/test-state";
+} from "afora-agent/plugin-sdk/proxy-capture";
+import { createAforaTestState, type AforaTestState } from "afora-agent/plugin-sdk/test-state";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installDebugProxyTestResetHooks } from "../test-support/debug-proxy-env-test-helpers.js";
 import { createStreamingErrorResponse } from "../test-support/streaming-error-response.js";
@@ -16,7 +16,7 @@ import {
   openaiTTS,
 } from "./tts.js";
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ({
   fetchWithSsrFGuard: async ({
     url,
     init,
@@ -59,10 +59,10 @@ function firstFetchInit(fetchMock: ReturnType<typeof vi.fn>): RequestInit {
 
 describe("openai tts", () => {
   const originalFetch = globalThis.fetch;
-  let openClawState: OpenClawTestState;
+  let aforaState: AforaTestState;
 
   beforeEach(async () => {
-    openClawState = await createOpenClawTestState({
+    aforaState = await createAforaTestState({
       layout: "state-only",
       prefix: "openai-tts-capture-",
     });
@@ -72,7 +72,7 @@ describe("openai tts", () => {
     globalThis.fetch = originalFetch;
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
-    await openClawState.cleanup();
+    await aforaState.cleanup();
   });
 
   // Install after local teardown so the proxy snapshot is restored before the
@@ -132,8 +132,8 @@ describe("openai tts", () => {
   });
 
   describe("openaiTTS diagnostics", () => {
-    it("adds OpenClaw attribution headers to native OpenAI speech requests", async () => {
-      vi.stubEnv("OPENCLAW_VERSION", "2026.3.22");
+    it("adds Afora attribution headers to native OpenAI speech requests", async () => {
+      vi.stubEnv("AFORA_VERSION", "2026.3.22");
       const fetchMock = vi.fn(
         async (_url: string | URL, _init?: RequestInit) =>
           new Response(Buffer.from("audio-bytes"), { status: 200 }),
@@ -154,9 +154,9 @@ describe("openai tts", () => {
       const init = firstFetchInit(fetchMock);
       const headers = init?.headers as Record<string, string> | undefined;
       expect(url).toBe("https://api.openai.com/v1/audio/speech");
-      expect(headers?.originator).toBe("openclaw");
+      expect(headers?.originator).toBe("afora");
       expect(headers?.version).toBe("2026.3.22");
-      expect(headers?.["User-Agent"]).toBe("openclaw/2026.3.22");
+      expect(headers?.["User-Agent"]).toBe("afora-agent/2026.3.22");
     });
 
     it("sends instructions to custom OpenAI-compatible endpoints", async () => {
@@ -415,8 +415,8 @@ describe("openai tts", () => {
 
     it("records TTS exchanges in debug proxy capture mode", async () => {
       proxyReset.captureProxyEnv();
-      process.env.OPENCLAW_DEBUG_PROXY_ENABLED = "1";
-      process.env.OPENCLAW_DEBUG_PROXY_SESSION_ID = "tts-session";
+      process.env.AFORA_DEBUG_PROXY_ENABLED = "1";
+      process.env.AFORA_DEBUG_PROXY_SESSION_ID = "tts-session";
 
       globalThis.fetch = vi
         .fn()
@@ -429,8 +429,8 @@ describe("openai tts", () => {
         id: "tts-session",
         startedAt: Date.now(),
         mode: "test",
-        sourceScope: "openclaw",
-        sourceProcess: "openclaw",
+        sourceScope: "afora",
+        sourceProcess: "afora",
       });
 
       await openaiTTS({
@@ -456,8 +456,8 @@ describe("openai tts", () => {
 
     it("does not double-capture TTS exchanges when the global fetch patch is installed", async () => {
       proxyReset.captureProxyEnv();
-      process.env.OPENCLAW_DEBUG_PROXY_ENABLED = "1";
-      process.env.OPENCLAW_DEBUG_PROXY_SESSION_ID = "tts-patched-session";
+      process.env.AFORA_DEBUG_PROXY_ENABLED = "1";
+      process.env.AFORA_DEBUG_PROXY_SESSION_ID = "tts-patched-session";
 
       globalThis.fetch = vi
         .fn()

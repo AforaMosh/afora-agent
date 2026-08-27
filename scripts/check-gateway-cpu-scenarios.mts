@@ -10,7 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { stripLeadingPackageManagerSeparator } from "./lib/arg-utils.mts";
 import {
   parseNonNegativeInt,
@@ -362,15 +362,15 @@ function buildPrivateQaEnv(
       ? {
           HOME: qaState.home,
           USERPROFILE: qaState.home,
-          OPENCLAW_HOME: qaState.home,
-          OPENCLAW_STATE_DIR: qaState.stateDir,
-          OPENCLAW_CONFIG_PATH: qaState.configPath,
+          AFORA_HOME: qaState.home,
+          AFORA_STATE_DIR: qaState.stateDir,
+          AFORA_CONFIG_PATH: qaState.configPath,
         }
       : {}),
-    OPENCLAW_BUILD_PRIVATE_QA: "1",
-    OPENCLAW_ENABLE_PRIVATE_QA_CLI: "1",
-    OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: env.OPENCLAW_RUN_NODE_SKIP_DTS_BUILD ?? "1",
-    OPENCLAW_TEST_DISABLE_UPDATE_CHECK: env.OPENCLAW_TEST_DISABLE_UPDATE_CHECK ?? "1",
+    AFORA_BUILD_PRIVATE_QA: "1",
+    AFORA_ENABLE_PRIVATE_QA_CLI: "1",
+    AFORA_RUN_NODE_SKIP_DTS_BUILD: env.AFORA_RUN_NODE_SKIP_DTS_BUILD ?? "1",
+    AFORA_TEST_DISABLE_UPDATE_CHECK: env.AFORA_TEST_DISABLE_UPDATE_CHECK ?? "1",
     PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: "false",
   };
 }
@@ -380,7 +380,7 @@ function createQaState(outputDir: string) {
   const home = path.join(root, "home");
   const stateDir = path.join(root, "state");
   return {
-    configPath: path.join(stateDir, "openclaw.json"),
+    configPath: path.join(stateDir, "afora.json"),
     home,
     root,
     stateDir,
@@ -509,7 +509,7 @@ async function runGatewayCpuScenarios(
   if (!options.skipQa) {
     const qaCommand = pnpmCommand(
       [
-        "openclaw",
+        "afora",
         "qa",
         "suite",
         "--provider-mode",

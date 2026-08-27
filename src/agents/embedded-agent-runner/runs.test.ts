@@ -368,7 +368,7 @@ describe("embedded-agent runner run registry", () => {
 
   it("records active run session files in diagnostic state for heartbeat recovery", () => {
     setDiagnosticsEnabledForProcess(true);
-    const sessionFile = "/tmp/openclaw-run-registry-session.jsonl";
+    const sessionFile = "/tmp/afora-run-registry-session.jsonl";
     const handle = createEmbeddedRunHandle();
 
     setActiveEmbeddedRun("session-file-diagnostics", handle, "agent:main:visible", sessionFile);

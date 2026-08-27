@@ -1,9 +1,9 @@
 // Matrix plugin module implements credentials read behavior. Pure record
 // shapes/normalizers live in credentials-state.ts; this module owns the
 // heavy sync plugin-state store access.
-import { normalizeAccountId } from "openclaw/plugin-sdk/account-id";
-import type { PluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
-import { createPluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-store-runtime";
+import { normalizeAccountId } from "afora-agent/plugin-sdk/account-id";
+import type { PluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
+import { createPluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-store-runtime";
 import { getOptionalMatrixRuntime } from "../runtime.js";
 import {
   MATRIX_CREDENTIALS_MAX_ENTRIES,
@@ -21,9 +21,9 @@ export function openMatrixCredentialsStore(
 ): PluginStateSyncKeyedStore<MatrixCredentialStateRecord> {
   const runtime = getOptionalMatrixRuntime();
   const resolvedEnv =
-    env.OPENCLAW_STATE_DIR?.trim() || !runtime
+    env.AFORA_STATE_DIR?.trim() || !runtime
       ? env
-      : { ...env, OPENCLAW_STATE_DIR: runtime.state.resolveStateDir(env) };
+      : { ...env, AFORA_STATE_DIR: runtime.state.resolveStateDir(env) };
   return createPluginStateSyncKeyedStore<MatrixCredentialStateRecord>("matrix", {
     namespace: MATRIX_CREDENTIALS_NAMESPACE,
     maxEntries: MATRIX_CREDENTIALS_MAX_ENTRIES,

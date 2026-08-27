@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { createTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { updateAuthProfileStoreWithLock } from "../agents/auth-profiles/store.js";
 import type { MigrationPlan } from "../plugins/types.js";
-import { listOpenClawRegisteredAgentDatabases } from "../state/openclaw-agent-db-registry.js";
+import { listAforaRegisteredAgentDatabases } from "../state/afora-agent-db-registry.js";
 import type { SetupMigrationPromotionContinuation } from "./setup.migration-promotion.js";
 import {
   createSetupMigrationStage,
@@ -47,19 +47,19 @@ function continuation(): Omit<
 }
 
 afterEach(async () => {
-  const [{ closeOpenClawAgentDatabasesForTest }, { closeOpenClawStateDatabaseForTest }] =
+  const [{ closeAforaAgentDatabasesForTest }, { closeAforaStateDatabaseForTest }] =
     await Promise.all([
-      import("../state/openclaw-agent-db.js"),
-      import("../state/openclaw-state-db.js"),
+      import("../state/afora-agent-db.js"),
+      import("../state/afora-state-db.js"),
     ]);
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   tempRoots.cleanup();
 });
 
 describe("setup migration stage", () => {
   it("executes provider config mutations once and projects staged paths", async () => {
-    const root = tempRoots.make("openclaw-migration-stage-");
+    const root = tempRoots.make("afora-migration-stage-");
     const stateDir = path.join(root, "state");
     const workspaceDir = path.join(root, "workspace");
     const reportDir = path.join(stateDir, "migration", "claude", "attempt");
@@ -92,7 +92,7 @@ describe("setup migration stage", () => {
   });
 
   it("uses the most-specific path mapping when workspace lives under state", async () => {
-    const root = tempRoots.make("openclaw-migration-stage-");
+    const root = tempRoots.make("afora-migration-stage-");
     const stateDir = path.join(root, "state");
     const workspaceDir = path.join(stateDir, "workspace");
     const stage = await createSetupMigrationStage({
@@ -135,7 +135,7 @@ describe("setup migration stage", () => {
   });
 
   it("routes staged auth writes to the staged shared registry", async () => {
-    const root = tempRoots.make("openclaw-migration-stage-");
+    const root = tempRoots.make("afora-migration-stage-");
     const liveStateDir = path.join(root, "live-state");
     const stagedStateDir = path.join(root, "staged-state");
     const stagedAgentDir = path.join(stagedStateDir, "agents", "main", "agent");
@@ -155,25 +155,25 @@ describe("setup migration stage", () => {
 
     expect(updated?.profiles["openai:imported"]).toBeDefined();
     expect(
-      listOpenClawRegisteredAgentDatabases({
-        env: { ...process.env, OPENCLAW_STATE_DIR: stagedStateDir },
+      listAforaRegisteredAgentDatabases({
+        env: { ...process.env, AFORA_STATE_DIR: stagedStateDir },
       }),
     ).toEqual([
       expect.objectContaining({
         agentId: "main",
-        path: path.join(stagedAgentDir, "openclaw-agent.sqlite"),
+        path: path.join(stagedAgentDir, "afora-agent.sqlite"),
       }),
     ]);
     expect(
-      listOpenClawRegisteredAgentDatabases({
-        env: { ...process.env, OPENCLAW_STATE_DIR: liveStateDir },
+      listAforaRegisteredAgentDatabases({
+        env: { ...process.env, AFORA_STATE_DIR: liveStateDir },
       }),
     ).toEqual([]);
-    await expect(fs.access(path.join(liveStateDir, "state", "openclaw.sqlite"))).rejects.toThrow();
+    await expect(fs.access(path.join(liveStateDir, "state", "afora.sqlite"))).rejects.toThrow();
   });
 
   it("promotes the final agent registry path after verification closes the handle", async () => {
-    const root = tempRoots.make("openclaw-migration-stage-");
+    const root = tempRoots.make("afora-migration-stage-");
     const stateDir = path.join(root, "state");
     const workspaceDir = path.join(root, "workspace");
     const reportDir = path.join(stateDir, "migration", "claude", "attempt");
@@ -185,9 +185,9 @@ describe("setup migration stage", () => {
       reportDir,
       targetConfig,
     });
-    const { disposeOpenClawAgentDatabaseByPath } = await import("../state/openclaw-agent-db.js");
-    disposeOpenClawAgentDatabaseByPath(path.join(stage.staged.agentDir, "openclaw-agent.sqlite"), {
-      env: { ...process.env, OPENCLAW_STATE_DIR: stage.staged.stateDir },
+    const { disposeAforaAgentDatabaseByPath } = await import("../state/afora-agent-db.js");
+    disposeAforaAgentDatabaseByPath(path.join(stage.staged.agentDir, "afora-agent.sqlite"), {
+      env: { ...process.env, AFORA_STATE_DIR: stage.staged.stateDir },
     });
 
     const promoted = await stage.promote({
@@ -198,13 +198,13 @@ describe("setup migration stage", () => {
     });
 
     expect(
-      listOpenClawRegisteredAgentDatabases({
-        env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+      listAforaRegisteredAgentDatabases({
+        env: { ...process.env, AFORA_STATE_DIR: stateDir },
       }),
     ).toEqual([
       expect.objectContaining({
         agentId: "main",
-        path: path.join(stage.final.agentDir, "openclaw-agent.sqlite"),
+        path: path.join(stage.final.agentDir, "afora-agent.sqlite"),
       }),
     ]);
     await promoted.resume.complete();
@@ -213,7 +213,7 @@ describe("setup migration stage", () => {
   });
 
   it("rolls back promoted directories when the config commit fails", async () => {
-    const root = tempRoots.make("openclaw-migration-stage-");
+    const root = tempRoots.make("afora-migration-stage-");
     const stateDir = path.join(root, "state");
     const workspaceDir = path.join(root, "workspace");
     const reportDir = path.join(stateDir, "migration", "claude", "attempt");
@@ -248,7 +248,7 @@ describe("setup migration stage", () => {
   });
 
   it("journals pre-existing empty targets before promotion starts", async () => {
-    const root = tempRoots.make("openclaw-migration-stage-");
+    const root = tempRoots.make("afora-migration-stage-");
     const stateDir = path.join(root, "state");
     const workspaceDir = path.join(root, "workspace");
     const reportDir = path.join(stateDir, "migration", "claude", "attempt");
@@ -293,7 +293,7 @@ describe("setup migration stage", () => {
   });
 
   it("removes shared promotion parents after rollback", async () => {
-    const root = tempRoots.make("openclaw-migration-stage-");
+    const root = tempRoots.make("afora-migration-stage-");
     const stateDir = path.join(root, "state");
     const sharedRoot = path.join(stateDir, "shared");
     const workspaceDir = path.join(sharedRoot, "workspace");
@@ -330,7 +330,7 @@ describe("setup migration stage", () => {
   });
 
   it("rejects staged state that the promotion owner does not publish", async () => {
-    const root = tempRoots.make("openclaw-migration-stage-");
+    const root = tempRoots.make("afora-migration-stage-");
     const stateDir = path.join(root, "state");
     const workspaceDir = path.join(root, "workspace");
     const reportDir = path.join(stateDir, "migration", "claude", "attempt");
@@ -360,7 +360,7 @@ describe("setup migration stage", () => {
   });
 
   it("rejects overlapping workspace and agent promotion targets", async () => {
-    const root = tempRoots.make("openclaw-migration-stage-");
+    const root = tempRoots.make("afora-migration-stage-");
     const stateDir = path.join(root, "state");
     const workspaceDir = path.join(stateDir, "agents", "main", "agent", "workspace");
     const reportDir = path.join(stateDir, "migration", "claude", "attempt");
@@ -386,7 +386,7 @@ describe("setup migration stage", () => {
   });
 
   it("rejects overlap through a state-directory symlink", async () => {
-    const root = tempRoots.make("openclaw-migration-stage-");
+    const root = tempRoots.make("afora-migration-stage-");
     const stateDir = path.join(root, "state");
     const stateAlias = path.join(root, "state-alias");
     await fs.mkdir(stateDir, { recursive: true });
@@ -415,7 +415,7 @@ describe("setup migration stage", () => {
   });
 
   it("rejects a report path that resolves inside a promotion target", async () => {
-    const root = tempRoots.make("openclaw-migration-stage-");
+    const root = tempRoots.make("afora-migration-stage-");
     const stateDir = path.join(root, "state");
     const workspaceDir = path.join(root, "workspace");
     const reportDir = path.join(stateDir, "migration", "claude", "attempt");
@@ -444,7 +444,7 @@ describe("setup migration stage", () => {
   });
 
   it("fails closed when an interrupted promotion already published data", async () => {
-    const root = tempRoots.make("openclaw-migration-stage-");
+    const root = tempRoots.make("afora-migration-stage-");
     const stateDir = path.join(root, "state");
     const reportDir = path.join(stateDir, "migration", "claude", "2026-07-21T000000Z");
     const stagedWorkspace = path.join(root, "staged-workspace");
@@ -490,7 +490,7 @@ describe("setup migration stage", () => {
   });
 
   it("restores a pre-existing empty target when recovery starts before its rename", async () => {
-    const root = tempRoots.make("openclaw-migration-stage-");
+    const root = tempRoots.make("afora-migration-stage-");
     const stateDir = path.join(root, "state");
     const reportDir = path.join(stateDir, "migration", "claude", "2026-07-21T000000Z");
     const stagedRoot = path.join(root, "staged-root");
@@ -539,7 +539,7 @@ describe("setup migration stage", () => {
   });
 
   it("reconciles an interrupted promotion after config commit", async () => {
-    const root = tempRoots.make("openclaw-migration-stage-");
+    const root = tempRoots.make("afora-migration-stage-");
     const stateDir = path.join(root, "state");
     const reportDir = path.join(stateDir, "migration", "claude", "2026-07-21T000001Z");
     const finalWorkspace = path.join(root, "workspace");
@@ -587,7 +587,7 @@ describe("setup migration stage", () => {
   });
 
   it("allows committed recovery after legitimate config changes", async () => {
-    const root = tempRoots.make("openclaw-migration-stage-");
+    const root = tempRoots.make("afora-migration-stage-");
     const stateDir = path.join(root, "state");
     const reportDir = path.join(stateDir, "migration", "claude", "2026-07-21T000002Z");
     const finalWorkspace = path.join(root, "workspace");
@@ -631,7 +631,7 @@ describe("setup migration stage", () => {
   });
 
   it("rejects committed recovery after the promoted target was reset", async () => {
-    const root = tempRoots.make("openclaw-migration-stage-");
+    const root = tempRoots.make("afora-migration-stage-");
     const stateDir = path.join(root, "state");
     const reportDir = path.join(stateDir, "migration", "claude", "2026-07-21T000002Z");
     const finalWorkspace = path.join(root, "workspace");
@@ -674,7 +674,7 @@ describe("setup migration stage", () => {
   });
 
   it("reconciles a config writer that commits and then throws", async () => {
-    const root = tempRoots.make("openclaw-migration-stage-");
+    const root = tempRoots.make("afora-migration-stage-");
     const stateDir = path.join(root, "state");
     const workspaceDir = path.join(root, "workspace");
     const reportDir = path.join(stateDir, "migration", "claude", "attempt");

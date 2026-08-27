@@ -5,22 +5,22 @@ import {
   markMigrationItemConflict,
   markMigrationItemError,
   summarizeMigrationItems,
-} from "openclaw/plugin-sdk/migration";
+} from "afora-agent/plugin-sdk/migration";
 import {
   archiveMigrationItem,
   copyMemoryMigrationFileItem,
   copyMigrationFileItem,
   withCachedMigrationConfigRuntime,
   writeMigrationReport,
-} from "openclaw/plugin-sdk/migration-runtime";
+} from "afora-agent/plugin-sdk/migration-runtime";
 import type {
   MigrationApplyResult,
   MigrationItem,
   MigrationPlan,
   MigrationProviderContext,
-} from "openclaw/plugin-sdk/plugin-entry";
-import { openNodeSqliteDatabase } from "openclaw/plugin-sdk/sqlite-runtime";
-import { resolvePreferredOpenClawTmpDir, withTempWorkspace } from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/plugin-entry";
+import { openNodeSqliteDatabase } from "afora-agent/plugin-sdk/sqlite-runtime";
+import { resolvePreferredAforaTmpDir, withTempWorkspace } from "afora-agent/plugin-sdk/temp-path";
 import { applyAuthItem } from "./auth.js";
 import { applyConfigItem, applyManualItem } from "./config.js";
 import { appendItem } from "./helpers.js";
@@ -34,7 +34,7 @@ import { buildHermesPlan } from "./plan.js";
 import { applySecretItem } from "./secrets.js";
 import { resolveTargets } from "./targets.js";
 
-const HERMES_SQLITE_SNAPSHOT_PREFIX = "openclaw-migrate-hermes-sqlite-";
+const HERMES_SQLITE_SNAPSHOT_PREFIX = "afora-migrate-hermes-sqlite-";
 
 function isHermesMemoryOnlyCopyItem(item: MigrationItem): boolean {
   return (
@@ -75,7 +75,7 @@ async function archiveHermesItem(item: MigrationItem, reportDir: string): Promis
     // A raw state.db copy can omit committed rows that still live in state.db-wal.
     // Snapshot the live database into one self-contained archive artifact.
     return await withTempWorkspace(
-      { rootDir: resolvePreferredOpenClawTmpDir(), prefix: HERMES_SQLITE_SNAPSHOT_PREFIX },
+      { rootDir: resolvePreferredAforaTmpDir(), prefix: HERMES_SQLITE_SNAPSHOT_PREFIX },
       async ({ dir: tempDir }) => {
         const snapshotPath = path.join(tempDir, path.basename(sourcePath));
         const source = openNodeSqliteDatabase(sourcePath, { readOnly: true });
@@ -95,7 +95,7 @@ async function archiveHermesItem(item: MigrationItem, reportDir: string): Promis
     let recoveryArchive: MigrationItem;
     try {
       recoveryArchive = await withTempWorkspace(
-        { rootDir: resolvePreferredOpenClawTmpDir(), prefix: HERMES_SQLITE_SNAPSHOT_PREFIX },
+        { rootDir: resolvePreferredAforaTmpDir(), prefix: HERMES_SQLITE_SNAPSHOT_PREFIX },
         async ({ dir: tempDir }) => {
           const recoveryDir = path.join(tempDir, `${path.basename(sourcePath)}-recovery`);
           await fs.mkdir(recoveryDir, { recursive: true });

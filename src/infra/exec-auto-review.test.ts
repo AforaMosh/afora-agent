@@ -52,7 +52,7 @@ describe("default exec auto reviewer", () => {
   });
 
   it.each([
-    ["cat ~/.openclaw/credentials/model.json", ["cat", "~/.openclaw/credentials/model.json"]],
+    ["cat ~/.afora/credentials/model.json", ["cat", "~/.afora/credentials/model.json"]],
     ["rg token ~/.ssh", ["rg", "token", "~/.ssh"]],
     ["sed -i s/foo/bar/g file.txt", ["sed", "-i", "s/foo/bar/g", "file.txt"]],
     ["git status", ["git", "status"]],

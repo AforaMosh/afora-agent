@@ -1,12 +1,12 @@
 import { lstat, mkdir, readdir, realpath, rmdir, unlink, writeFile } from "node:fs/promises";
 import { basename, dirname, isAbsolute, parse, relative, resolve, sep } from "node:path";
-import { coerceErrorMessage } from "@openclaw/normalization-core/error-coercion";
+import { coerceErrorMessage } from "@afora/normalization-core/error-coercion";
 import { root as fsSafeRoot } from "../infra/fs-safe.js";
 import { readClawManifestFile } from "./reader.js";
 import { isCanonicalClawHubPackageName, portableClawPathKey } from "./schema-portability.js";
 import type { ClawDiagnostic, ClawReadResult } from "./types.js";
 
-export const CLAW_PROJECT_RESULT_SCHEMA_VERSION = "openclaw.clawProject.v1" as const;
+export const CLAW_PROJECT_RESULT_SCHEMA_VERSION = "afora.clawProject.v1" as const;
 
 const MAX_PACKAGE_JSON_BYTES = 256 * 1024;
 const MAX_PROJECT_ENTRIES = 4096;
@@ -16,7 +16,7 @@ type ClawProjectPackageJson = {
   name: string;
   version: string;
   type?: string;
-  openclaw: { claw: "CLAW.md" };
+  afora: { claw: "CLAW.md" };
 };
 
 type ClawProjectValidationResult =
@@ -234,7 +234,7 @@ export async function createClawProject(
   const packageJson: ClawProjectPackageJson = {
     name,
     version: "0.1.0",
-    openclaw: { claw: "CLAW.md" },
+    afora: { claw: "CLAW.md" },
   };
   const clawMarkdown = [
     "---",
@@ -243,7 +243,7 @@ export async function createClawProject(
     `  id: ${JSON.stringify(agentId)}`,
     `  name: ${JSON.stringify(displayName(agentId))}`,
     "---",
-    `You are ${displayName(agentId)}, a purpose-built OpenClaw agent.`,
+    `You are ${displayName(agentId)}, a purpose-built Afora agent.`,
     "",
   ].join("\n");
 
@@ -316,18 +316,18 @@ export async function validateClawProject(
     packageValue && typeof packageValue === "object" && !Array.isArray(packageValue)
       ? (packageValue as Record<string, unknown>)
       : undefined;
-  const openclaw =
-    record?.openclaw && typeof record.openclaw === "object" && !Array.isArray(record.openclaw)
-      ? (record.openclaw as Record<string, unknown>)
+  const afora =
+    record?.afora && typeof record.afora === "object" && !Array.isArray(record.afora)
+      ? (record.afora as Record<string, unknown>)
       : undefined;
   const scripts = record?.scripts;
   const diagnostics: ClawDiagnostic[] = [];
-  if (openclaw?.claw !== "CLAW.md") {
+  if (afora?.claw !== "CLAW.md") {
     diagnostics.push(
       diagnostic(
         "project_manifest_must_be_claw_markdown",
-        "package.json.openclaw.claw",
-        'A Claw project must set openclaw.claw to "CLAW.md".',
+        "package.json.afora.claw",
+        'A Claw project must set afora.claw to "CLAW.md".',
       ),
     );
   }
@@ -355,11 +355,11 @@ export async function validateClawProject(
     return { ok: false, root, diagnostics: claw.diagnostics };
   }
   const excludedSource = [
-    ...(claw.snapshot.openClawProfile
+    ...(claw.snapshot.aforaProfile
       ? [
           {
-            path: claw.snapshot.openClawProfile.sourcePath,
-            diagnosticPath: "$.metadata.openclaw.config",
+            path: claw.snapshot.aforaProfile.sourcePath,
+            diagnosticPath: "$.metadata.afora.config",
           },
         ]
       : []),
@@ -401,7 +401,7 @@ export async function validateClawProject(
     "package.json",
     "CLAW.md",
     ...(claw.packageBootstrap ? ["BOOTSTRAP.md"] : []),
-    ...(claw.snapshot.openClawProfile ? [claw.snapshot.openClawProfile.sourcePath] : []),
+    ...(claw.snapshot.aforaProfile ? [claw.snapshot.aforaProfile.sourcePath] : []),
     ...claw.snapshot.workspaceSources.map((source) => source.sourcePath),
   ];
   const portableSelectedPaths = new Map<string, string>();
@@ -447,7 +447,7 @@ export async function validateClawProject(
       name: claw.source.name,
       version: claw.source.version,
       ...(typeof record?.type === "string" ? { type: record.type } : {}),
-      openclaw: { claw: "CLAW.md" },
+      afora: { claw: "CLAW.md" },
     },
     claw,
     excludedPaths,

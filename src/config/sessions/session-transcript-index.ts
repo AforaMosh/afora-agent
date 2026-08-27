@@ -13,7 +13,7 @@ import {
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../../infra/kysely-sync.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
+import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.generated.js";
 import {
   buildSessionTranscriptProjection,
   extractTranscriptIndexEntry,
@@ -30,7 +30,7 @@ import {
 } from "./transcript-tree.js";
 type TranscriptIndexDatabase = Omit<
   Pick<
-    OpenClawAgentKyselyDatabase,
+    AforaAgentKyselyDatabase,
     | "session_windows"
     | "session_transcript_active_events"
     | "session_transcript_fts"
@@ -40,7 +40,7 @@ type TranscriptIndexDatabase = Omit<
   "session_transcript_fts"
 > & {
   session_transcript_fts: Omit<
-    OpenClawAgentKyselyDatabase["session_transcript_fts"],
+    AforaAgentKyselyDatabase["session_transcript_fts"],
     "timestamp"
   > & {
     timestamp: ColumnType<string | null, number | string | null, number | string | null>;

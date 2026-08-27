@@ -3,7 +3,7 @@ import {
   createAssistantMessageEventStream,
   type Context,
   type Model,
-} from "openclaw/plugin-sdk/llm";
+} from "afora-agent/plugin-sdk/llm";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
@@ -13,7 +13,7 @@ import {
   upsertSessionEntryCore,
 } from "../../config/sessions/session-accessor.js";
 import { resolveSqliteTargetFromSessionStorePath } from "../../config/sessions/session-sqlite-target.js";
-import { closeOpenClawAgentDatabaseByPath } from "../../state/openclaw-agent-db.js";
+import { closeAforaAgentDatabaseByPath } from "../../state/afora-agent-db.js";
 import { steerActiveSessionWithOptionalDeliveryWait } from "../embedded-agent-runner/run/attempt-queue-message.js";
 import { agentSessionAutomaticCompaction } from "./agent-session-compaction.js";
 import {
@@ -190,7 +190,7 @@ describe("AgentSession loop correctness", () => {
         expect(new Set(identities).size).toBe(waiterCount);
         for (const message of originalMessages) {
           const identitySymbol = Object.getOwnPropertySymbols(message).find(
-            (symbol) => symbol === Symbol.for("openclaw.steeringMessageIdentity"),
+            (symbol) => symbol === Symbol.for("afora.steeringMessageIdentity"),
           );
           expect(identitySymbol).toBeDefined();
           if (identitySymbol) {
@@ -371,7 +371,7 @@ describe("AgentSession loop correctness", () => {
   });
 
   it("does not append when a compaction extension rejects the finalized summary", async () => {
-    const dir = tempDirs.make("openclaw-rejected-compaction-");
+    const dir = tempDirs.make("afora-rejected-compaction-");
     const target = {
       agentId: "main",
       sessionId: "rejected-compaction-reopen",
@@ -416,14 +416,14 @@ describe("AgentSession loop correctness", () => {
     ).toBe(false);
 
     const databasePath = resolveSqliteTargetFromSessionStorePath(target.storePath).path;
-    expect(closeOpenClawAgentDatabaseByPath(databasePath)).toBe(true);
+    expect(closeAforaAgentDatabaseByPath(databasePath)).toBe(true);
     const reopened = SessionManager.open(target, dir);
     try {
       expect(reopened.getBranch()).toEqual(persistedBefore.slice(1));
       expect(reopened.getBranch().some((entry) => entry.type === "compaction")).toBe(false);
       expect(reopened.buildSessionContext()).toEqual(contextBefore);
     } finally {
-      closeOpenClawAgentDatabaseByPath(databasePath);
+      closeAforaAgentDatabaseByPath(databasePath);
     }
   });
 

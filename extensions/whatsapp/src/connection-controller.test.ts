@@ -43,7 +43,7 @@ const connectionOwnerMocks = vi.hoisted(() => ({
   release: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/channel-runtime-context", () => {
+vi.mock("afora-agent/plugin-sdk/channel-runtime-context", () => {
   return {
     getChannelRuntimeContext: vi.fn(),
     registerChannelRuntimeContext: runtimeContextMocks.register,
@@ -212,7 +212,7 @@ describe("WhatsAppConnectionController", () => {
     expect(sock.end).toHaveBeenCalledOnce();
     const closeError = sock.end.mock.calls[0]?.[0] as Error | undefined;
     expect(closeError).toBeInstanceOf(Error);
-    expect(closeError?.message).toBe("OpenClaw WhatsApp socket close");
+    expect(closeError?.message).toBe("Afora WhatsApp socket close");
     expect(sock.ws.close).not.toHaveBeenCalled();
     expect(controller.socketRef.current).toBeNull();
     expect(controller.getActiveListener()).toBeNull();

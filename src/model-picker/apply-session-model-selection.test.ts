@@ -375,20 +375,20 @@ describe("applySessionModelSelection", () => {
     {
       name: "set",
       initial: undefined,
-      runtime: { kind: "set", runtime: "openclaw" } as const,
-      expected: "openclaw",
-      runtimeChange: { kind: "set", runtime: "openclaw" },
+      runtime: { kind: "set", runtime: "afora" } as const,
+      expected: "afora",
+      runtimeChange: { kind: "set", runtime: "afora" },
     },
     {
       name: "set idempotently",
-      initial: "openclaw",
-      runtime: { kind: "set", runtime: "openclaw" } as const,
-      expected: "openclaw",
-      runtimeChange: { kind: "set", runtime: "openclaw" },
+      initial: "afora",
+      runtime: { kind: "set", runtime: "afora" } as const,
+      expected: "afora",
+      runtimeChange: { kind: "set", runtime: "afora" },
     },
     {
       name: "clear",
-      initial: "openclaw",
+      initial: "afora",
       runtime: { kind: "clear" } as const,
       expected: undefined,
       runtimeChange: { kind: "clear" },
@@ -402,9 +402,9 @@ describe("applySessionModelSelection", () => {
     },
     {
       name: "unchanged",
-      initial: "openclaw",
+      initial: "afora",
       runtime: { kind: "unchanged" } as const,
-      expected: "openclaw",
+      expected: "afora",
       runtimeChange: undefined,
     },
   ])("supports runtime $name", async ({ initial, runtime, expected, runtimeChange }) => {
@@ -483,7 +483,7 @@ describe("applySessionModelSelection", () => {
   });
 
   it("rejects when the authoritative persisted row became locked", async () => {
-    const tempRoot = tempDirs.make("openclaw-model-picker-lock-");
+    const tempRoot = tempDirs.make("afora-model-picker-lock-");
     const storePath = path.join(tempRoot, "sessions.json");
     const sessionKey = "agent:main:dm:locked-disk";
     const sessionEntry = createEntry();
@@ -593,7 +593,7 @@ describe("applySessionModelSelection", () => {
       }),
     },
   ])("returns conflict without a hybrid row after concurrent $name", async ({ concurrent }) => {
-    const tempRoot = tempDirs.make("openclaw-model-picker-service-");
+    const tempRoot = tempDirs.make("afora-model-picker-service-");
     const storePath = path.join(tempRoot, "sessions.json");
     const sessionEntry = createEntry({
       providerOverride: "anthropic",

@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import type { HealthCheck, HealthCheckContext } from "openclaw/plugin-sdk/health";
+import type { HealthCheck, HealthCheckContext } from "afora-agent/plugin-sdk/health";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   MEMORY_MANAGED_LOCAL_EMBEDDING_SETUP_CHECK_ID,
@@ -21,7 +21,7 @@ afterEach(async () => {
 });
 
 async function createSemanticIndex(stateDir: string, model = "embeddinggemma-300m") {
-  const databasePath = path.join(stateDir, "agents", "main", "agent", "openclaw-agent.sqlite");
+  const databasePath = path.join(stateDir, "agents", "main", "agent", "afora-agent.sqlite");
   await fs.mkdir(path.dirname(databasePath), { recursive: true });
   const db = new DatabaseSync(databasePath);
   db.exec("CREATE TABLE memory_index_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT");
@@ -65,7 +65,7 @@ function context(stateDir: string, provider: string): HealthCheckContext {
         },
       },
     },
-    env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+    env: { ...process.env, AFORA_STATE_DIR: stateDir },
   };
 }
 
@@ -143,7 +143,7 @@ describe("managed local embedding setup health check", () => {
       reason: "Local embeddings need the managed llama.cpp server config.",
       requirement: "managed-llama-cpp-setup",
       fixHint:
-        "Run `openclaw models --agent main auth login --provider llama-cpp --method local` in an interactive terminal, then rerun this check.",
+        "Run `afora models --agent main auth login --provider llama-cpp --method local` in an interactive terminal, then rerun this check.",
     }));
 
     await expect(check.detect(checkContext)).resolves.toEqual([
@@ -158,7 +158,7 @@ describe("managed local embedding setup health check", () => {
           'embedding provider "local" cannot initialize (Local embeddings need',
         ),
         fixHint:
-          "Run `openclaw models --agent main auth login --provider llama-cpp --method local` in an interactive terminal, then rerun this check.",
+          "Run `afora models --agent main auth login --provider llama-cpp --method local` in an interactive terminal, then rerun this check.",
       },
     ]);
     expect(JSON.stringify(checkContext.cfg)).toBe(configBefore);
@@ -189,7 +189,7 @@ describe("managed local embedding setup health check", () => {
         target: "main/local",
         requirement: "memory-embedding-provider-plugin",
         message: expect.stringContaining("official llama.cpp provider plugin"),
-        fixHint: expect.stringContaining("openclaw plugins install @openclaw/llama-cpp-provider"),
+        fixHint: expect.stringContaining("afora plugins install @afora/llama-cpp-provider"),
       }),
     ]);
   });
@@ -278,7 +278,7 @@ describe("managed local embedding setup health check", () => {
   it("reads an active WAL index without changing the live SQLite family", async () => {
     const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "memory-setup-live-wal-"));
     roots.add(stateDir);
-    const databasePath = path.join(stateDir, "agents", "main", "agent", "openclaw-agent.sqlite");
+    const databasePath = path.join(stateDir, "agents", "main", "agent", "afora-agent.sqlite");
     await fs.mkdir(path.dirname(databasePath), { recursive: true });
     const writer = new DatabaseSync(databasePath);
     try {
@@ -318,7 +318,7 @@ describe("managed local embedding setup health check", () => {
   it("returns a structured non-ready result when an agent database cannot be inspected", async () => {
     const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "memory-setup-unreadable-"));
     roots.add(stateDir);
-    const databasePath = path.join(stateDir, "agents", "main", "agent", "openclaw-agent.sqlite");
+    const databasePath = path.join(stateDir, "agents", "main", "agent", "afora-agent.sqlite");
     await fs.mkdir(path.dirname(databasePath), { recursive: true });
     await fs.writeFile(databasePath, "not a sqlite database");
     const check = captureCheck(async () => null);

@@ -40,11 +40,11 @@ it("runs from startup in automatic mode and surfaces unresolved warnings", async
 });
 
 it("runs the armed startup engine even when no legacy session directory remains", async () => {
-  const root = fs.realpathSync.native(tempDirs.make("openclaw-legacy-main-startup-"));
+  const root = fs.realpathSync.native(tempDirs.make("afora-legacy-main-startup-"));
   const stateDir = path.join(root, "state");
   fs.mkdirSync(stateDir, { recursive: true });
   const cfg = { agents: { entries: { ops: {} } } };
-  const env = { ...process.env, OPENCLAW_AGENT_DIR: undefined, OPENCLAW_STATE_DIR: stateDir };
+  const env = { ...process.env, AFORA_AGENT_DIR: undefined, AFORA_STATE_DIR: stateDir };
   const migrate = vi.fn(async () => ({
     armed: true,
     changes: [],

@@ -1,12 +1,12 @@
 ---
-summary: "CLI reference for `openclaw dashboard` (securely open the Control UI)"
+summary: "CLI reference for `afora dashboard` (securely open the Control UI)"
 read_when:
   - You want to open or re-pair the Control UI from the Gateway host
   - You want to print the URL without launching a browser
 title: "Dashboard"
 ---
 
-# `openclaw dashboard`
+# `afora dashboard`
 
 Open the Control UI with a short-lived, one-time owner pairing link. A successful handoff gives that
 signed browser a durable administrator device credential, so reopening the dashboard does not depend
@@ -14,10 +14,10 @@ on the shared Gateway token. Opening a fresh handoff in the same browser can als
 limited device credential.
 
 ```bash
-openclaw dashboard
-openclaw dashboard --no-open
-openclaw dashboard --json
-openclaw dashboard --yes
+afora dashboard
+afora dashboard --no-open
+afora dashboard --json
+afora dashboard --yes
 ```
 
 - `--no-open`: print the URL but do not launch a browser.
@@ -29,7 +29,7 @@ openclaw dashboard --yes
 Use `--json` for desktop integrations and scripts that need the resolved Control UI URL:
 
 ```bash
-openclaw dashboard --json
+afora dashboard --json
 ```
 
 The response includes the backward-compatible shared-auth `url`, plus `browserUrl`,
@@ -51,9 +51,9 @@ Notes:
 - The interactive command prints only the clean base URL; the clipboard/browser launch receives the
   one-time `browserUrl`, never the shared token. SecretRef-managed shared tokens therefore do not leak
   into terminal output, clipboard history, or browser-launch arguments.
-- If clipboard/browser delivery fails for a token-authenticated URL, the command logs a safe manual-auth hint naming `OPENCLAW_GATEWAY_TOKEN`, `gateway.auth.token`, and the URL fragment key `token`, without printing the token value.
+- If clipboard/browser delivery fails for a token-authenticated URL, the command logs a safe manual-auth hint naming `AFORA_GATEWAY_TOKEN`, `gateway.auth.token`, and the URL fragment key `token`, without printing the token value.
 - If the shared token cannot be placed in a URL and clipboard/browser delivery fails, run
-  `openclaw dashboard --json` and open its short-lived `browserUrl` within ten minutes.
+  `afora dashboard --json` and open its short-lived `browserUrl` within ten minutes.
 
 ## Related
 

@@ -25,7 +25,7 @@ export default async function setup(project: TestProject) {
   // Local full-suite runs can fan shards into separate processes in one checkout.
   // Keep every build out of canonical dist so those processes cannot clobber it.
   const tempDirs = createTempDirTracker();
-  const outDir = tempDirs.make("openclaw-ui-e2e-");
+  const outDir = tempDirs.make("afora-ui-e2e-");
   const server = await startBundledControlUiE2eServer(outDir).catch(async (error: unknown) => {
     try {
       tempDirs.cleanup();

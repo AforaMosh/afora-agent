@@ -8,13 +8,13 @@ import { backupGitCreateCommand } from "../commands/backup-git.js";
 import { readBackupFreshness } from "../commands/backup-health.js";
 import { createTestRuntime } from "../commands/test-runtime-config-helpers.js";
 import { executeGitCommand, requireGitCommand as requireGit } from "../infra/git-exec.js";
-import { OPENCLAW_AGENT_SCHEMA_VERSION } from "../state/openclaw-agent-db-contract.js";
-import { OPENCLAW_STATE_SCHEMA_VERSION } from "../state/openclaw-state-db-contract.js";
+import { AFORA_AGENT_SCHEMA_VERSION } from "../state/afora-agent-db-contract.js";
+import { AFORA_STATE_SCHEMA_VERSION } from "../state/afora-state-db-contract.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import { createPathResolutionEnv, withEnvAsync } from "../test-utils/env.js";
 import { dumpGitBackupDatabase, restoreGitBackupDirectory } from "./git-backup-codec.js";
 import { createGitBackup, initializeGitBackupRepository } from "./git-backup.js";
@@ -39,14 +39,14 @@ vi.mock("../infra/git-exec.js", async (importOriginal) => {
 const roots: string[] = [];
 
 async function tempRoot(): Promise<string> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-git-backup-test-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-git-backup-test-"));
   roots.push(root);
   return root;
 }
 
 afterEach(async () => {
   mocks.pushDiagnostic = undefined;
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   await Promise.all(
     roots.splice(0).map(async (root) => await fs.rm(root, { recursive: true, force: true })),
   );
@@ -57,7 +57,7 @@ async function createFormatFixture(databasePath: string): Promise<void> {
   try {
     await loadSqliteVecExtension({ db: database });
     database.exec(`
-      PRAGMA user_version = ${OPENCLAW_STATE_SCHEMA_VERSION};
+      PRAGMA user_version = ${AFORA_STATE_SCHEMA_VERSION};
       CREATE TABLE schema_meta (
         meta_key TEXT NOT NULL PRIMARY KEY,
         role TEXT NOT NULL,
@@ -112,7 +112,7 @@ async function createFormatFixture(databasePath: string): Promise<void> {
            (meta_key, role, schema_version, agent_id, app_version, created_at, updated_at)
          VALUES ('primary', 'global', ?, NULL, NULL, 1, 1)`,
       )
-      .run(OPENCLAW_STATE_SCHEMA_VERSION);
+      .run(AFORA_STATE_SCHEMA_VERSION);
     database
       .prepare("INSERT INTO content (id, body, huge, bytes, optional) VALUES (?, ?, ?, ?, ?)")
       .run(1, "hello lobster", 9_007_199_254_740_993n, Buffer.from([0, 1, 254, 255]), "");
@@ -155,7 +155,7 @@ function createAgentFixture(databasePath: string, agentId: string): void {
   const database = new DatabaseSync(databasePath);
   try {
     database.exec(`
-      PRAGMA user_version = ${OPENCLAW_AGENT_SCHEMA_VERSION};
+      PRAGMA user_version = ${AFORA_AGENT_SCHEMA_VERSION};
       CREATE TABLE schema_meta (
         meta_key TEXT NOT NULL PRIMARY KEY,
         role TEXT NOT NULL,
@@ -172,7 +172,7 @@ function createAgentFixture(databasePath: string, agentId: string): void {
            (meta_key, role, schema_version, agent_id, app_version, created_at, updated_at)
          VALUES ('primary', 'agent', ?, ?, NULL, 1, 1)`,
       )
-      .run(OPENCLAW_AGENT_SCHEMA_VERSION, agentId);
+      .run(AFORA_AGENT_SCHEMA_VERSION, agentId);
   } finally {
     database.close();
   }
@@ -216,13 +216,13 @@ function createStateDatabaseFixture(root: string): {
   database: { path: string; identity: { role: "global" } };
 } {
   const stateDir = path.join(root, "state");
-  const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
-  openOpenClawStateDatabase({ env });
-  closeOpenClawStateDatabaseForTest();
+  const env = { ...process.env, AFORA_STATE_DIR: stateDir };
+  openAforaStateDatabase({ env });
+  closeAforaStateDatabaseForTest();
   return {
     stateDir,
     database: {
-      path: resolveOpenClawStateSqlitePath(env),
+      path: resolveAforaStateSqlitePath(env),
       identity: { role: "global" },
     },
   };
@@ -242,7 +242,7 @@ describe("Git-backed SQLite snapshots", () => {
       path.join(stateAlias, "backup"),
     ]) {
       await expect(initializeGitBackupRepository({ repositoryPath, stateDir })).rejects.toThrow(
-        `Git backup repository must be outside the OpenClaw state directory: ${stateDir}`,
+        `Git backup repository must be outside the Afora state directory: ${stateDir}`,
       );
     }
   });
@@ -269,7 +269,7 @@ describe("Git-backed SQLite snapshots", () => {
     const { stateDir, database } = createStateDatabaseFixture(root);
     const repositoryPath = path.join(root, "repository");
     await initializeGitBackupRepository({ repositoryPath, stateDir });
-    await requireGit(repositoryPath, ["config", "user.name", "OpenClaw Backup Test"]);
+    await requireGit(repositoryPath, ["config", "user.name", "Afora Backup Test"]);
     await requireGit(repositoryPath, ["config", "user.email", "backup@example.invalid"]);
     const created = await createGitBackup({ repositoryPath, stateDir, databases: [database] });
     const unchanged = await createGitBackup({ repositoryPath, stateDir, databases: [database] });
@@ -284,7 +284,7 @@ describe("Git-backed SQLite snapshots", () => {
     const { stateDir, database } = createStateDatabaseFixture(root);
     const repositoryPath = path.join(root, "repository");
     await initializeGitBackupRepository({ repositoryPath, stateDir });
-    await requireGit(repositoryPath, ["config", "user.name", "OpenClaw Backup Test"]);
+    await requireGit(repositoryPath, ["config", "user.name", "Afora Backup Test"]);
     await requireGit(repositoryPath, ["config", "user.email", "backup@example.invalid"]);
     await fs.writeFile(path.join(repositoryPath, "unrelated.txt"), "operator-owned\n");
     await requireGit(repositoryPath, ["add", "unrelated.txt"]);
@@ -330,7 +330,7 @@ describe("Git-backed SQLite snapshots", () => {
 
     await expect(
       createGitBackup({ repositoryPath, stateDir, databases: [database] }),
-    ).rejects.toThrow(/repository must be dedicated to OpenClaw backups/u);
+    ).rejects.toThrow(/repository must be dedicated to Afora backups/u);
     await expect(fs.readFile(operatorFile, "utf8")).resolves.toBe("operator-owned\n");
   });
 
@@ -360,7 +360,7 @@ describe("Git-backed SQLite snapshots", () => {
 
     await expect(
       createGitBackup({ repositoryPath, stateDir, databases: [database], all: true }),
-    ).rejects.toThrow(/repository must be dedicated to OpenClaw backups/u);
+    ).rejects.toThrow(/repository must be dedicated to Afora backups/u);
     await expect(fs.readFile(unownedFile, "utf8")).resolves.toBe("operator-owned\n");
     await expect(
       fs.readFile(path.join(ownedAgentPath, "manifest.json"), "utf8"),
@@ -417,7 +417,7 @@ describe("Git-backed SQLite snapshots", () => {
     expect(result.commit).toMatch(/^[a-f0-9]{40}$/u);
     expect(
       await requireGit(repositoryPath, ["log", "-1", "--format=%an <%ae>"], { env: gitEnv }),
-    ).toBe("OpenClaw <backup@openclaw.local>");
+    ).toBe("Afora <backup@afora.local>");
     expect(
       await requireGit(repositoryPath, ["config", "--local", "--get", "user.email"], {
         env: gitEnv,
@@ -434,7 +434,7 @@ describe("Git-backed SQLite snapshots", () => {
     const remote = `https://${username}:${password}@example.invalid/repository`;
     mocks.pushDiagnostic = `fatal: unable to access '${remote}': ${"x".repeat(600)}`;
     await initializeGitBackupRepository({ repositoryPath, stateDir, remote });
-    await requireGit(repositoryPath, ["config", "user.name", "OpenClaw Backup Test"]);
+    await requireGit(repositoryPath, ["config", "user.name", "Afora Backup Test"]);
     await requireGit(repositoryPath, ["config", "user.email", "backup@example.invalid"]);
 
     const result = await createGitBackup({
@@ -457,7 +457,7 @@ describe("Git-backed SQLite snapshots", () => {
     const remotePath = path.join(root, "remote.git");
     await requireGit(root, ["init", "--bare", remotePath]);
     await initializeGitBackupRepository({ repositoryPath, stateDir, remote: remotePath });
-    await requireGit(repositoryPath, ["config", "user.name", "OpenClaw Backup Test"]);
+    await requireGit(repositoryPath, ["config", "user.name", "Afora Backup Test"]);
     await requireGit(repositoryPath, ["config", "user.email", "backup@example.invalid"]);
     await fs.writeFile(path.join(repositoryPath, "unrelated.txt"), "operator-owned\n");
     await requireGit(repositoryPath, ["add", "unrelated.txt"]);
@@ -465,7 +465,7 @@ describe("Git-backed SQLite snapshots", () => {
 
     const warning =
       "repository history contains non-backup commits; use a dedicated backup repository";
-    await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+    await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
       const result = await backupGitCreateCommand(createTestRuntime(), {
         repository: repositoryPath,
         global: true,
@@ -490,7 +490,7 @@ describe("Git-backed SQLite snapshots", () => {
     const remotePath = path.join(root, "remote.git");
     await requireGit(root, ["init", "--bare", remotePath]);
     await initializeGitBackupRepository({ repositoryPath, stateDir, remote: remotePath });
-    await requireGit(repositoryPath, ["config", "user.name", "OpenClaw Backup Test"]);
+    await requireGit(repositoryPath, ["config", "user.name", "Afora Backup Test"]);
     await requireGit(repositoryPath, ["config", "user.email", "backup@example.invalid"]);
 
     const result = await createGitBackup({

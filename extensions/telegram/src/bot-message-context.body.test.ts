@@ -19,9 +19,9 @@ vi.mock("./sticker-vision.runtime.js", () => ({
 vi.mock("./media-understanding.runtime.js", () => ({
   transcribeFirstAudio: (...args: unknown[]) => transcribeFirstAudioMock(...args),
 }));
-vi.mock("openclaw/plugin-sdk/hook-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/hook-runtime")>(
-    "openclaw/plugin-sdk/hook-runtime",
+vi.mock("afora-agent/plugin-sdk/hook-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/hook-runtime")>(
+    "afora-agent/plugin-sdk/hook-runtime",
   );
   return {
     ...actual,
@@ -298,12 +298,12 @@ describe("resolveTelegramInboundBody", () => {
           ],
         },
         { type: "mathematical_expression", expression: "a^2+b^2=c^2" },
-        { type: "photo", caption: { text: "Chart", credit: "OpenClaw" } },
+        { type: "photo", caption: { text: "Chart", credit: "Afora" } },
       ],
     }),
     (result) => {
-      expect(result?.rawBody).toBe("Run summary\n1.\nCI clean\na^2+b^2=c^2\nChart\nOpenClaw");
-      expect(result?.bodyText).toBe("Run summary\n1.\nCI clean\na^2+b^2=c^2\nChart\nOpenClaw");
+      expect(result?.rawBody).toBe("Run summary\n1.\nCI clean\na^2+b^2=c^2\nChart\nAfora");
+      expect(result?.bodyText).toBe("Run summary\n1.\nCI clean\na^2+b^2=c^2\nChart\nAfora");
     },
   );
 

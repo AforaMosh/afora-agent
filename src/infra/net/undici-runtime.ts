@@ -1,5 +1,5 @@
 // Undici runtime helpers lazily load dispatcher constructors and enforce
-// OpenClaw HTTP/1, timeout, proxy TLS, and IP-safe proxy policies.
+// Afora HTTP/1, timeout, proxy TLS, and IP-safe proxy policies.
 import {
   buildHttp1AgentOptions,
   buildHttp1EnvHttpProxyAgentOptions,
@@ -44,7 +44,7 @@ export function loadUndiciGlobalDispatcherDeps(): UndiciGlobalDispatcherDeps {
   ]);
 }
 
-/** Creates a direct undici Agent with OpenClaw's HTTP/1-only dispatcher policy. */
+/** Creates a direct undici Agent with Afora's HTTP/1-only dispatcher policy. */
 export function createHttp1Agent(
   options?: UndiciAgentOptions,
   timeoutMs?: number,
@@ -54,7 +54,7 @@ export function createHttp1Agent(
 }
 
 /**
- * Creates an EnvHttpProxyAgent with OpenClaw proxy TLS, IP-safe proxy pools,
+ * Creates an EnvHttpProxyAgent with Afora proxy TLS, IP-safe proxy pools,
  * timeout propagation, and HTTP/1-only dispatch.
  */
 export function createHttp1EnvHttpProxyAgent(

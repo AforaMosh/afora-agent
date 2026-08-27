@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { withTempHome } from "../config/home-env.test-harness.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import {
   cleanupMcpCliTestState,
   createWorkspace,
@@ -22,7 +22,7 @@ describe.runIf(process.platform === "win32")("MCP doctor Windows PATH casing", (
   });
 
   it("finds a real stdio command through an arbitrarily cased configured PATH", async () => {
-    await withTempHome("openclaw-cli-mcp-path-case-home-", async () => {
+    await withTempHome("afora-cli-mcp-path-case-home-", async () => {
       try {
         const workspaceDir = await createWorkspace();
         const binDir = path.join(workspaceDir, "Mixed Case Bin");
@@ -45,7 +45,7 @@ describe.runIf(process.platform === "win32")("MCP doctor Windows PATH casing", (
           servers: [{ name: "docs", ok: true, issues: [] }],
         });
       } finally {
-        closeOpenClawStateDatabaseForTest();
+        closeAforaStateDatabaseForTest();
       }
     });
   });

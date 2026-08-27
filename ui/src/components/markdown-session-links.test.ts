@@ -1,4 +1,4 @@
-import { buildControlUiSessionPath } from "@openclaw/session-url-contract";
+import { buildControlUiSessionPath } from "@afora/session-url-contract";
 import { describe, expect, it, vi } from "vitest";
 import { setSessionPathBuilder } from "../app-session-path-builder.ts";
 import type { ApplicationContext } from "../app/context.ts";
@@ -25,7 +25,7 @@ describe("markdown session links", () => {
 
     expect(navigate).toHaveBeenCalledWith("chat", {
       pathname: "/chat/roboclaw/dashboard/2139bddb-3211-4641-b993-10f619f124e6",
-      search: "?__openclawSessionFacePreference=1",
+      search: "?__aforaSessionFacePreference=1",
     });
   });
 });

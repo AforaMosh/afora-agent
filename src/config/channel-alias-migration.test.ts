@@ -1,9 +1,9 @@
 // Tests for the declarative channel doctor alias-migration DSL.
 import { describe, expect, it } from "vitest";
 import { defineChannelAliasMigration } from "./channel-alias-migration.js";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import type { AforaConfig } from "./types.afora.js";
 
-function cfgWith(channelId: string, entry: Record<string, unknown>): OpenClawConfig {
+function cfgWith(channelId: string, entry: Record<string, unknown>): AforaConfig {
   return { channels: { [channelId]: entry } } as never;
 }
 
@@ -15,8 +15,8 @@ describe("defineChannelAliasMigration message generation", () => {
     });
 
     expect(migration.legacyConfigRules.map((rule) => rule.message)).toEqual([
-      'channels.preview.streamMode, channels.preview.streaming (scalar), chunkMode, blockStreaming, draftChunk, and blockStreamingCoalesce are legacy; use channels.preview.streaming.{mode,chunkMode,preview.chunk,block.enabled,block.coalesce}. Run "openclaw doctor --fix".',
-      'channels.preview.accounts.<id>.streamMode, streaming (scalar), chunkMode, blockStreaming, draftChunk, and blockStreamingCoalesce are legacy; use channels.preview.accounts.<id>.streaming.{mode,chunkMode,preview.chunk,block.enabled,block.coalesce}. Run "openclaw doctor --fix".',
+      'channels.preview.streamMode, channels.preview.streaming (scalar), chunkMode, blockStreaming, draftChunk, and blockStreamingCoalesce are legacy; use channels.preview.streaming.{mode,chunkMode,preview.chunk,block.enabled,block.coalesce}. Run "afora doctor --fix".',
+      'channels.preview.accounts.<id>.streamMode, streaming (scalar), chunkMode, blockStreaming, draftChunk, and blockStreamingCoalesce are legacy; use channels.preview.accounts.<id>.streaming.{mode,chunkMode,preview.chunk,block.enabled,block.coalesce}. Run "afora doctor --fix".',
     ]);
     expect(migration.legacyConfigRules.map((rule) => rule.path)).toEqual([
       ["channels", "preview"],
@@ -31,8 +31,8 @@ describe("defineChannelAliasMigration message generation", () => {
     });
 
     expect(migration.legacyConfigRules.map((rule) => rule.message)).toEqual([
-      'channels.slack.streamMode, channels.slack.streaming (scalar), chunkMode, blockStreaming, blockStreamingCoalesce, and nativeStreaming are legacy; use channels.slack.streaming.{mode,chunkMode,block.enabled,block.coalesce,nativeTransport}. Run "openclaw doctor --fix".',
-      'channels.slack.accounts.<id>.streamMode, streaming (scalar), chunkMode, blockStreaming, blockStreamingCoalesce, and nativeStreaming are legacy; use channels.slack.accounts.<id>.streaming.{mode,chunkMode,block.enabled,block.coalesce,nativeTransport}. Run "openclaw doctor --fix".',
+      'channels.slack.streamMode, channels.slack.streaming (scalar), chunkMode, blockStreaming, blockStreamingCoalesce, and nativeStreaming are legacy; use channels.slack.streaming.{mode,chunkMode,block.enabled,block.coalesce,nativeTransport}. Run "afora doctor --fix".',
+      'channels.slack.accounts.<id>.streamMode, streaming (scalar), chunkMode, blockStreaming, blockStreamingCoalesce, and nativeStreaming are legacy; use channels.slack.accounts.<id>.streaming.{mode,chunkMode,block.enabled,block.coalesce,nativeTransport}. Run "afora doctor --fix".',
     ]);
   });
 
@@ -43,8 +43,8 @@ describe("defineChannelAliasMigration message generation", () => {
     });
 
     expect(migration.legacyConfigRules.map((rule) => rule.message)).toEqual([
-      'channels.imessage.chunkMode, blockStreaming, and blockStreamingCoalesce are legacy; use channels.imessage.streaming.{chunkMode,block.enabled,block.coalesce}. Run "openclaw doctor --fix".',
-      'channels.imessage.accounts.<id>.chunkMode, blockStreaming, and blockStreamingCoalesce are legacy; use channels.imessage.accounts.<id>.streaming.{chunkMode,block.enabled,block.coalesce}. Run "openclaw doctor --fix".',
+      'channels.imessage.chunkMode, blockStreaming, and blockStreamingCoalesce are legacy; use channels.imessage.streaming.{chunkMode,block.enabled,block.coalesce}. Run "afora doctor --fix".',
+      'channels.imessage.accounts.<id>.chunkMode, blockStreaming, and blockStreamingCoalesce are legacy; use channels.imessage.accounts.<id>.streaming.{chunkMode,block.enabled,block.coalesce}. Run "afora doctor --fix".',
     ]);
   });
 
@@ -55,7 +55,7 @@ describe("defineChannelAliasMigration message generation", () => {
     });
 
     expect(migration.legacyConfigRules[0]?.message).toBe(
-      'channels.msteams.streamMode, channels.msteams.streaming (scalar), chunkMode, blockStreaming, and blockStreamingCoalesce are legacy; use channels.msteams.streaming.{mode,chunkMode,block.enabled,block.coalesce}. Run "openclaw doctor --fix".',
+      'channels.msteams.streamMode, channels.msteams.streaming (scalar), chunkMode, blockStreaming, and blockStreamingCoalesce are legacy; use channels.msteams.streaming.{mode,chunkMode,block.enabled,block.coalesce}. Run "afora doctor --fix".',
     );
   });
 });

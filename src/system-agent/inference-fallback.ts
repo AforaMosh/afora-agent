@@ -1,9 +1,9 @@
-// Provider-neutral live inference ladder for OpenClaw sessions.
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+// Provider-neutral live inference ladder for Afora sessions.
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import { resolveSystemAgentTargetAgentId } from "../agents/agent-scope-config.js";
 import { listAgentIds, tryResolveDefaultAgentId } from "../agents/agent-scope.js";
 import { hasAvailableAuthForProvider } from "../agents/model-auth.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import {
@@ -27,9 +27,9 @@ const RETRYABLE_INFERENCE_STATUSES = new Set([
 const PROVIDER_WIDE_FAILURE_STATUSES = new Set(["timeout", "unavailable"]);
 
 type InferenceFallbackDeps = {
-  readConfig?: () => Promise<OpenClawConfig>;
+  readConfig?: () => Promise<AforaConfig>;
   resolveRoute?: (
-    config: OpenClawConfig,
+    config: AforaConfig,
     agentId: string,
   ) => Promise<SystemAgentConfiguredRoute | null>;
   hasAuth?: typeof hasAvailableAuthForProvider;
@@ -40,7 +40,7 @@ type InferenceFallbackDeps = {
   }) => Promise<BoundVerifySetupInferenceResult>;
 };
 
-async function readCurrentConfig(): Promise<OpenClawConfig> {
+async function readCurrentConfig(): Promise<AforaConfig> {
   const { readConfigFileSnapshot } = await import("../config/config.js");
   const snapshot = await readConfigFileSnapshot();
   if (!snapshot.exists || !snapshot.valid) {
@@ -143,7 +143,7 @@ export async function verifySystemAgentInferenceWithFallback(params: {
     lastFailure ?? {
       ok: false,
       status: "unknown",
-      error: "OpenClaw could not verify a usable inference route. Check model setup and try again.",
+      error: "Afora could not verify a usable inference route. Check model setup and try again.",
     }
   );
 }

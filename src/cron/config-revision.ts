@@ -1,5 +1,5 @@
 /** Opaque revision token for cron configuration, excluding scheduler-maintained state. */
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import { sha256Base64Url } from "../infra/crypto-digest.js";
 import { projectCronJobThroughStorageCodec } from "./store/row-codec.js";
 import type { CronJob } from "./types.js";

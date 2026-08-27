@@ -1,5 +1,5 @@
 /** Builds deterministic plugin load plans for selected harness, memory, and context-engine owners. */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { withActivatedPluginIds } from "../../plugins/activation-context.js";
 import { resolveManifestActivationPlan } from "../../plugins/activation-planner.js";
 import {
@@ -19,7 +19,7 @@ import {
 } from "../../plugins/providers.js";
 import {
   isDefaultAgentRuntimeId,
-  OPENCLAW_AGENT_RUNTIME_ID,
+  AFORA_AGENT_RUNTIME_ID,
   normalizeOptionalAgentRuntimeId,
 } from "../agent-runtime-id.js";
 import { isCliRuntimeAliasForProvider } from "../model-runtime-aliases.js";
@@ -43,13 +43,13 @@ function dedupePluginIds(values: readonly string[]): string[] {
   return result;
 }
 
-function restrictiveAllowlistOmitsPlugin(config: OpenClawConfig | undefined, pluginId: string) {
+function restrictiveAllowlistOmitsPlugin(config: AforaConfig | undefined, pluginId: string) {
   const allow = config?.plugins?.allow ?? [];
   return allow.length > 0 && !allow.includes(pluginId);
 }
 
 function resolveSelectedMemoryPluginIds(params: {
-  config: OpenClawConfig | undefined;
+  config: AforaConfig | undefined;
   workspaceDir: string;
 }): string[] {
   // Honor config-owned test defaults before discovery forces an implicit memory owner.
@@ -84,7 +84,7 @@ function resolveSelectedMemoryPluginIds(params: {
 // request-time hooks resolve; late provider loading is intentionally forbidden.
 function resolveSelectedProviderOwnerPluginIds(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir: string;
 }): string[] {
   const providerOwnerPluginIds = dedupePluginIds(
@@ -112,7 +112,7 @@ function resolveSelectedProviderOwnerPluginIds(params: {
 export function resolveAgentHarnessOwnerPluginIds(params: {
   runtime: string;
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir: string;
   providerOwnerPluginIds?: readonly string[];
 }): string[] {
@@ -142,10 +142,10 @@ export function resolveAgentHarnessOwnerPluginIds(params: {
 }
 
 function withRuntimePluginIdsAllowed(
-  config: OpenClawConfig | undefined,
+  config: AforaConfig | undefined,
   pluginIds: readonly string[],
   materializeAllowlist: boolean,
-): OpenClawConfig | undefined {
+): AforaConfig | undefined {
   const existingAllowlist = config?.plugins?.allow ?? [];
   if (pluginIds.length === 0 || (!materializeAllowlist && existingAllowlist.length === 0)) {
     return config;
@@ -161,7 +161,7 @@ function withRuntimePluginIdsAllowed(
 
 export function resolveSelectedAgentHarnessRuntime(
   selection: AgentHarnessPluginSelection,
-  config?: OpenClawConfig,
+  config?: AforaConfig,
 ) {
   const requestedRuntime = normalizeOptionalAgentRuntimeId(selection.runtime);
   return requestedRuntime && !isDefaultAgentRuntimeId(requestedRuntime)
@@ -177,10 +177,10 @@ export function resolveSelectedAgentHarnessRuntime(
 // Returns whether a selection needs a plugin-owned harness in its prepared generation.
 function requiresAgentHarnessPluginSelection(
   selection: AgentHarnessPluginSelection,
-  config?: OpenClawConfig,
+  config?: AforaConfig,
 ): boolean {
   const runtime = resolveSelectedAgentHarnessRuntime(selection, config);
-  if (isDefaultAgentRuntimeId(runtime) || runtime === OPENCLAW_AGENT_RUNTIME_ID) {
+  if (isDefaultAgentRuntimeId(runtime) || runtime === AFORA_AGENT_RUNTIME_ID) {
     return false;
   }
   // Codex is a native plugin harness, never a CLI backend alias. Keep this hot-path decision
@@ -193,11 +193,11 @@ function requiresAgentHarnessPluginSelection(
 
 /** Folds selected harness, memory, and context-engine owners into one deterministic load plan. */
 export function resolveAgentRuntimePluginLoadPlan(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir: string;
   basePluginIds?: readonly string[];
   selections: readonly AgentHarnessPluginSelection[];
-}): { config?: OpenClawConfig; pluginIds?: string[] } {
+}): { config?: AforaConfig; pluginIds?: string[] } {
   let config = params.config;
   const memoryPluginIds = resolveSelectedMemoryPluginIds({
     config: params.config,

@@ -2,8 +2,8 @@
 import {
   normalizeOptionalString,
   normalizeStringifiedOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.js";
+} from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.js";
 import { isValidEnvSecretRefId, type SecretRef } from "../config/types.secrets.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { encodeJsonPointerToken } from "../secrets/json-pointer.js";
@@ -51,7 +51,7 @@ export function extractEnvVarFromSourceLabel(source: string): string | undefined
 
 function resolveDefaultProviderEnvVar(
   provider: string,
-  config?: OpenClawConfig,
+  config?: AforaConfig,
 ): string | undefined {
   const envVars = getProviderEnvVars(provider, {
     ...(config ? { config } : {}),
@@ -65,7 +65,7 @@ function resolveDefaultFilePointerId(provider: string): string {
 }
 
 export function resolveRefFallbackInput(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   provider: string;
   preferredEnvVar?: string;
   env?: NodeJS.ProcessEnv;
@@ -102,7 +102,7 @@ export function resolveRefFallbackInput(params: {
 
 async function promptEnvSecretRefForSetup(params: {
   provider: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   prompter: WizardPrompter;
   defaultEnvVar: string;
   copy?: SecretRefSetupPromptCopy;
@@ -151,7 +151,7 @@ async function promptEnvSecretRefForSetup(params: {
   };
   await params.prompter.note(
     params.copy?.envValidatedMessage?.(envVar) ??
-      `Validated environment variable ${envVar}. OpenClaw will store a reference, not the key value.`,
+      `Validated environment variable ${envVar}. Afora will store a reference, not the key value.`,
     "Reference validated",
   );
   return { ref, resolvedValue };
@@ -159,7 +159,7 @@ async function promptEnvSecretRefForSetup(params: {
 
 async function promptProviderSecretRefForSetup(params: {
   provider: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   prompter: WizardPrompter;
   defaultFilePointer: string;
   copy?: SecretRefSetupPromptCopy;
@@ -277,7 +277,7 @@ async function promptProviderSecretRefForSetup(params: {
     });
     await params.prompter.note(
       params.copy?.providerValidatedMessage?.(selectedProvider, id, providerEntry.source) ??
-        `Validated ${providerEntry.source} reference ${selectedProvider}:${id}. OpenClaw will store a reference, not the key value.`,
+        `Validated ${providerEntry.source} reference ${selectedProvider}:${id}. Afora will store a reference, not the key value.`,
       "Reference validated",
     );
     return { ref, resolvedValue };
@@ -296,7 +296,7 @@ async function promptProviderSecretRefForSetup(params: {
 
 export async function promptSecretRefForSetup(params: {
   provider: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   prompter: WizardPrompter;
   preferredEnvVar?: string;
   copy?: SecretRefSetupPromptCopy;
@@ -319,7 +319,7 @@ export async function promptSecretRefForSetup(params: {
         },
         {
           value: "store",
-          label: "OpenClaw secret store",
+          label: "Afora secret store",
           hint: "Reference a team-scoped value in the shared state database",
         },
         {
@@ -368,7 +368,7 @@ export async function promptSecretRefForSetup(params: {
         env: params.env ?? process.env,
       });
       await params.prompter.note(
-        `Validated store reference ${ref.provider}:${id}. OpenClaw will store a reference, not the value.`,
+        `Validated store reference ${ref.provider}:${id}. Afora will store a reference, not the value.`,
         "Reference validated",
       );
       return { ref, resolvedValue };

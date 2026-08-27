@@ -20,11 +20,11 @@ describe("terminal ansi helpers", () => {
   it("strips ANSI and OSC8 sequences", () => {
     expect(stripAnsi("\u001B[31mred\u001B[0m")).toBe("red");
     expect(stripAnsi("\u001B[2K\u001B[1Ared")).toBe("red");
-    expect(stripAnsi("\u001B]8;;https://openclaw.ai\u001B\\link\u001B]8;;\u001B\\")).toBe("link");
-    expect(stripAnsi("\u001B]8;;https://openclaw.ai\u0007link\u001B]8;;\u0007")).toBe("link");
+    expect(stripAnsi("\u001B]8;;https://afora.ai\u001B\\link\u001B]8;;\u001B\\")).toBe("link");
+    expect(stripAnsi("\u001B]8;;https://afora.ai\u0007link\u001B]8;;\u0007")).toBe("link");
     expect(stripAnsi("copy\u001B]52;c;YWJj\u0007safe")).toBe("copysafe");
     expect(stripAnsi("\u009B31mred\u009B0m")).toBe("red");
-    expect(stripAnsi("\u009D8;;https://openclaw.ai\u009Clink\u009D8;;\u009C")).toBe("link");
+    expect(stripAnsi("\u009D8;;https://afora.ai\u009Clink\u009D8;;\u009C")).toBe("link");
     expect(stripAnsi("\u001B]unterminated")).toBe("\u001B]unterminated");
   });
 
@@ -235,7 +235,7 @@ describe("terminal ansi helpers", () => {
     expect(visibleWidth("a\u009B31\tmb")).toBe(3);
   });
 
-  it("keeps malformed ANSI ownership with OpenClaw's canonical scanner", () => {
+  it("keeps malformed ANSI ownership with Afora's canonical scanner", () => {
     expect(visibleWidth("\u001B")).toBe(0);
     expect(visibleWidth("\u009B")).toBe(0);
     expect(visibleWidth("\u009D")).toBe(0);
@@ -332,8 +332,8 @@ describe("terminal ansi helpers", () => {
     expect(truncateToVisibleWidth("\u001B[31mabc\u001B[0m", 2)).toBe("\u001B[31mab\u001B[0m");
     expect(truncateToVisibleWidth("plain", 3)).toBe("pla");
     expect(
-      truncateToVisibleWidth("\u001B]8;;https://openclaw.ai\u001B\\link\u001B]8;;\u001B\\", 2),
-    ).toBe("\u001B]8;;https://openclaw.ai\u001B\\li\u001B]8;;\u001B\\");
+      truncateToVisibleWidth("\u001B]8;;https://afora.ai\u001B\\link\u001B]8;;\u001B\\", 2),
+    ).toBe("\u001B]8;;https://afora.ai\u001B\\li\u001B]8;;\u001B\\");
     expect(truncateToVisibleWidth("\u001B[32mxy\u001B[0m", 1)).toBe("\u001B[32mx\u001B[0m");
   });
 });

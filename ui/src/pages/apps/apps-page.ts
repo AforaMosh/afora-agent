@@ -5,11 +5,11 @@ import type { RouteId } from "../../app-route-paths.ts";
 import { applicationContext, type ApplicationContext } from "../../app/context.ts";
 import { hasOperatorAdminAccess } from "../../app/operator-access.ts";
 import { renderSettingsWorkspace } from "../../components/settings-workspace.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import { renderApps } from "./view.ts";
 
-class AppsPage extends OpenClawLightDomElement {
+class AppsPage extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context!: ApplicationContext;
 
@@ -46,6 +46,6 @@ class AppsPage extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-apps-page")) {
-  customElements.define("openclaw-apps-page", AppsPage);
+if (!customElements.get("afora-apps-page")) {
+  customElements.define("afora-apps-page", AppsPage);
 }

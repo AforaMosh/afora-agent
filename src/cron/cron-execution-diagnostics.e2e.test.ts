@@ -6,10 +6,10 @@ import {
   createAgentRunRestartAbortError,
   createAgentRunSupersededAbortError,
 } from "../agents/run-termination.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { createAgentRunStaleLifecycleError } from "../infra/agent-lifecycle-error.js";
 import { resetTaskRegistryForTests } from "../tasks/task-runtime.test-helpers.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import {
   loadRunCronIsolatedAgentTurn,
   mockRunCronFallbackPassthrough,
@@ -57,7 +57,7 @@ async function closeServer(server: Server): Promise<void> {
   });
 }
 
-function configFor(modelRef: ModelRef, localBaseUrl?: string): OpenClawConfig {
+function configFor(modelRef: ModelRef, localBaseUrl?: string): AforaConfig {
   return {
     agents: {
       defaults: {
@@ -81,12 +81,12 @@ function configFor(modelRef: ModelRef, localBaseUrl?: string): OpenClawConfig {
 }
 
 async function runPersistedDiagnosticCase(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   modelRef: ModelRef;
   name: string;
 }) {
-  return await withOpenClawTestState(
-    { layout: "state-only", prefix: "openclaw-cron-execution-diagnostics-" },
+  return await withAforaTestState(
+    { layout: "state-only", prefix: "afora-cron-execution-diagnostics-" },
     async (state) => {
       resetTaskRegistryForTests();
       const events: CronEvent[] = [];

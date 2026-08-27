@@ -1,4 +1,4 @@
-import type { Model } from "openclaw/plugin-sdk/llm";
+import type { Model } from "afora-agent/plugin-sdk/llm";
 /**
  * Routes compaction through selected native agent harnesses when supported.
  */
@@ -50,7 +50,7 @@ import type { AgentHarness, AgentHarnessNativeCompactionRequest } from "./types.
 /**
  * Delegates session compaction to the selected agent harness when that runtime owns compaction.
  *
- * CLI runtimes and OpenClaw-native compaction stay on the embedded runner path; plugin harnesses
+ * CLI runtimes and Afora-native compaction stay on the embedded runner path; plugin harnesses
  * can opt in through their `compact` hook.
  */
 type InternalAgentHarnessCompactionOptions = {
@@ -437,7 +437,7 @@ export async function maybeCompactAgentHarnessSession(
     return undefined;
   }
   if (!options.nativeCompactionRequest && !harness.compact) {
-    if (harness.id !== "openclaw") {
+    if (harness.id !== "afora") {
       return {
         ok: false,
         compacted: false,
@@ -489,7 +489,7 @@ export async function maybeCompactAgentHarnessSession(
     return undefined;
   }
   if (!options.nativeCompactionRequest && !harness.compact) {
-    if (harness.id !== "openclaw") {
+    if (harness.id !== "afora") {
       return {
         ok: false,
         compacted: false,
@@ -501,7 +501,7 @@ export async function maybeCompactAgentHarnessSession(
   }
   if (
     nativeToolPolicyRestricted &&
-    harness.id !== "openclaw" &&
+    harness.id !== "afora" &&
     harness.conversationToolPolicySupport !== "exact"
   ) {
     throw new Error(

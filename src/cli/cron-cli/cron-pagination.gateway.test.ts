@@ -1,5 +1,5 @@
 // Cron CLI pagination exercises real Gateway handlers and canonical cron snapshots.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { Command } from "commander";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createMockCronStateForJobs } from "../../cron/service.test-harness.js";
@@ -134,7 +134,7 @@ async function runCron(args: string[]): Promise<void> {
 
 async function runCronWithJsonOwner(args: string[]): Promise<void> {
   const originalArgv = process.argv;
-  process.argv = ["node", "openclaw", "cron", ...args];
+  process.argv = ["node", "afora", "cron", ...args];
   try {
     await withConsoleLogsRoutedToStderrForJson(process.argv, () => runCron(args));
   } finally {

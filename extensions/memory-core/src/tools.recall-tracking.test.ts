@@ -1,10 +1,10 @@
 // Memory Core tests cover tools.recall tracking plugin behavior.
-import type { MemorySearchResult } from "openclaw/plugin-sdk/memory-core-host-runtime-files";
+import type { MemorySearchResult } from "afora-agent/plugin-sdk/memory-core-host-runtime-files";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../api.js";
+import type { AforaConfig } from "../api.js";
 import { resetMemoryToolMockState, setMemorySearchImpl } from "./memory-tool-manager.test-mocks.js";
 import { createMemorySearchTool } from "./tools.js";
-import { asOpenClawConfig } from "./tools.test-helpers.js";
+import { asAforaConfig } from "./tools.test-helpers.js";
 
 type RecordShortTermRecallsFn = (params: {
   workspaceDir?: string;
@@ -22,7 +22,7 @@ vi.mock("./short-term-promotion.js", () => ({
   recordShortTermRecalls: recallTrackingMock.recordShortTermRecalls,
 }));
 
-function createSearchTool(config: OpenClawConfig) {
+function createSearchTool(config: AforaConfig) {
   const tool = createMemorySearchTool({ config });
   if (!tool) {
     throw new Error("memory_search tool missing");
@@ -47,7 +47,7 @@ describe("memory_search recall tracking", () => {
     );
 
     const tool = createSearchTool(
-      asOpenClawConfig({
+      asAforaConfig({
         agents: { list: [{ id: "main", default: true }] },
         plugins: {
           entries: {
@@ -109,7 +109,7 @@ describe("memory_search recall tracking", () => {
     ]);
 
     const tool = createSearchTool(
-      asOpenClawConfig({
+      asAforaConfig({
         agents: {
           defaults: {
             userTimezone: "America/Los_Angeles",
@@ -151,7 +151,7 @@ describe("memory_search recall tracking", () => {
     ]);
 
     const tool = createSearchTool(
-      asOpenClawConfig({
+      asAforaConfig({
         agents: { list: [{ id: "main", default: true }] },
         plugins: {
           entries: {

@@ -4,13 +4,13 @@
  * Converts raw requester session keys into the canonical registry key shape.
  */
 import { resolveAgentMainSessionKey } from "../../../config/sessions/main-session.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { normalizeMainKey } from "../../../routing/session-key.js";
 import { resolveSessionAgentId } from "../../agent-scope.js";
 
 /** Resolve the canonical store key for a subagent requester session. */
 export function resolveRequesterStoreKey(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   requesterSessionKey: string,
   explicitAgentId?: string,
 ): string {

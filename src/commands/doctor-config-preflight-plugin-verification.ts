@@ -1,7 +1,7 @@
 import { note } from "../../packages/terminal-core/src/note.js";
 import type { PluginPayloadSmokeFailure } from "../cli/update-cli/plugin-payload-validation.js";
 import type { ConfigSnapshotReadMeasure } from "../config/io.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizePluginsConfig, resolveEffectiveEnableState } from "../plugins/config-state.js";
 import {
   buildDegradedPluginsFromVerificationFailures,
@@ -22,7 +22,7 @@ type StartupPluginConvergenceResult = {
 };
 
 async function planStartupPluginVerification(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   measure?: ConfigSnapshotReadMeasure;
 }) {
@@ -43,7 +43,7 @@ async function planStartupPluginVerification(params: {
 }
 
 function isStartupPluginVerificationFailureActive(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   failure: PluginPayloadSmokeFailure;
 }): boolean {
   return resolveEffectiveEnableState({
@@ -55,7 +55,7 @@ function isStartupPluginVerificationFailureActive(params: {
 }
 
 function buildStartupPluginQuarantine(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   failures: readonly PluginPayloadSmokeFailure[];
 }): DegradedPlugin[] {
   return buildDegradedPluginsFromVerificationFailures(
@@ -73,11 +73,11 @@ function formatStartupPluginSmokeFailure(failure: PluginPayloadSmokeFailure): st
     reason: failure.reason,
     detail: failure.detail,
     ...(failure.installPath ? { installPath: failure.installPath } : {}),
-  })}. Run \`openclaw update repair\` to retry plugin repair.`;
+  })}. Run \`afora update repair\` to retry plugin repair.`;
 }
 
 export async function runStartupUpgradeConvergence(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   measure?: ConfigSnapshotReadMeasure;
 }): Promise<StartupPluginConvergenceResult> {
@@ -146,7 +146,7 @@ export async function runStartupUpgradeConvergence(params: {
 }
 
 export async function refreshStartupPluginQuarantine(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   measure?: ConfigSnapshotReadMeasure;
 }): Promise<StartupPluginConvergenceResult> {
@@ -195,7 +195,7 @@ export async function refreshStartupPluginQuarantine(params: {
 }
 
 function mapStartupPluginQuarantineRefresh(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   failures: readonly PluginPayloadSmokeFailure[];
 }): StartupPluginConvergenceResult {
   const quarantinedPlugins = buildStartupPluginQuarantine(params);
@@ -220,7 +220,7 @@ export function formatStartupPluginVerificationFailure(
   diagnostic: StartupPluginVerificationDiagnostic,
 ): string {
   return [
-    "OpenClaw plugin verification failed; refusing to report the gateway ready.",
+    "Afora plugin verification failed; refusing to report the gateway ready.",
     ...diagnostic.messages.map((message) => `- ${message}`),
     "Resolve the plugin verification errors above, then restart the Gateway.",
   ].join("\n");

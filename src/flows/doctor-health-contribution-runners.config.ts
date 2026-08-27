@@ -22,7 +22,7 @@ function isExplicitOptOutEnvValue(value: string | undefined): boolean {
 
 function shouldSkipLegacyUpdateDoctorConfigWrite(env: NodeJS.ProcessEnv): boolean {
   return (
-    isExplicitOptOutEnvValue(env.OPENCLAW_UPDATE_IN_PROGRESS) &&
+    isExplicitOptOutEnvValue(env.AFORA_UPDATE_IN_PROGRESS) &&
     !isExplicitOptOutEnvValue(env[UPDATE_PARENT_SUPPORTS_DOCTOR_CONFIG_WRITE_ENV])
   );
 }
@@ -96,7 +96,7 @@ export async function runWriteConfigHealth(
           [
             "Doctor could not apply config fixes: the repaired config still fails validation.",
             ...issueLines,
-            `${unpersistedLine} Fix the value(s) above in ${shortenHomePath(ctx.configPath)} by hand, then rerun "openclaw doctor --fix".`,
+            `${unpersistedLine} Fix the value(s) above in ${shortenHomePath(ctx.configPath)} by hand, then rerun "afora doctor --fix".`,
           ].join("\n"),
           "Doctor warnings",
         );
@@ -112,7 +112,7 @@ export async function runWriteConfigHealth(
         [
           error.message,
           "Doctor left the config unchanged, preserving any retained legacy owner for a later repair.",
-          'Resolve the reported Gateway or cron-store condition, then rerun "openclaw doctor --fix".',
+          'Resolve the reported Gateway or cron-store condition, then rerun "afora doctor --fix".',
         ].join("\n"),
         "Doctor warnings",
       );
@@ -202,7 +202,7 @@ export async function collectWriteConfigHealthFindings(
     findings.push({
       checkId: "core/doctor/write-config",
       severity: "warning",
-      message: "Doctor config writes are disabled because OpenClaw is running in Nix mode.",
+      message: "Doctor config writes are disabled because Afora is running in Nix mode.",
       ...(configPath ? { path: configPath } : {}),
       requirement: "mutable-config-write-path",
       fixHint:

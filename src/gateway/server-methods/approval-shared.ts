@@ -1,7 +1,7 @@
 // Approval shared helpers normalize pending exec/plugin approval lookups,
 // decision payloads, turn-source routing, and gateway error responses.
-import { isPromiseLike } from "@openclaw/normalization-core/promise-like";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { isPromiseLike } from "@afora/normalization-core/promise-like";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { ErrorCodes, errorShape } from "../../../packages/gateway-protocol/src/index.js";
 import type {
   ApprovalChannelReviewer,
@@ -214,7 +214,7 @@ export function broadcastApprovalResolvedEvent<TPayload>(params: {
 }): void {
   const eventName =
     params.approvalKind === "system-agent"
-      ? "openclaw.approval.resolved"
+      ? "afora.approval.resolved"
       : `${params.approvalKind}.approval.resolved`;
   const recipientConnIds = resolveApprovalRequestRecipientConnIds({
     approvalKind: params.approvalKind,

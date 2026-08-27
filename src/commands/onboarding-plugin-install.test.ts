@@ -1,9 +1,9 @@
 // Onboarding plugin install tests cover install sources, trust checks, and install records.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveRegistryUpdateChannel } from "../infra/update-channels.js";
 import type { PluginEnableResult } from "../plugins/enable.js";
 import { resolveNpmInstallSpecsForUpdateChannel } from "../plugins/install-channel-specs.js";
@@ -59,7 +59,7 @@ vi.mock("../plugins/clawhub.js", () => ({
 }));
 
 const enablePluginInConfig = vi.hoisted(() =>
-  vi.fn<(cfg: OpenClawConfig, pluginId: string) => PluginEnableResult>((cfg, pluginId) => ({
+  vi.fn<(cfg: AforaConfig, pluginId: string) => PluginEnableResult>((cfg, pluginId) => ({
     config: cfg,
     enabled: true,
     pluginId,
@@ -71,7 +71,7 @@ vi.mock("../plugins/enable.js", () => ({
 }));
 
 const recordPluginInstall = vi.hoisted(() =>
-  vi.fn((cfg: OpenClawConfig, update: { pluginId: string }) => ({
+  vi.fn((cfg: AforaConfig, update: { pluginId: string }) => ({
     ...cfg,
     plugins: {
       ...cfg.plugins,
@@ -150,13 +150,13 @@ function readFirstMockCall(mock: unknown, label: string): unknown[] {
 
 type NpmPackInstallCall = {
   archivePath?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   expectedPluginId?: string;
   trustedSourceLinkedOfficialInstall?: boolean;
 };
 
 type NpmSpecInstallCall = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   expectedIntegrity?: string;
   expectedPluginId?: string;
   mode?: string;
@@ -166,7 +166,7 @@ type NpmSpecInstallCall = {
 };
 
 type ClawHubInstallCall = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   expectedPluginId?: string;
   logger?: {
     info?: (message: string) => void;
@@ -209,15 +209,15 @@ type PluginInstallRecord = {
 describe("ensureOnboardingPluginInstalled", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    delete process.env.OPENCLAW_ALLOW_PLUGIN_INSTALL_OVERRIDES;
-    delete process.env.OPENCLAW_PLUGIN_INSTALL_OVERRIDES;
+    delete process.env.AFORA_ALLOW_PLUGIN_INSTALL_OVERRIDES;
+    delete process.env.AFORA_PLUGIN_INSTALL_OVERRIDES;
     withTimeout.mockImplementation(async <T>(promise: Promise<T>) => await promise);
     invalidatePluginRuntimeDiscoveryAfterConfigMutation.mockResolvedValue(undefined);
   });
 
   it("localizes plugin install choices", async () => {
-    const previousLocale = process.env.OPENCLAW_LOCALE;
-    process.env.OPENCLAW_LOCALE = "zh-CN";
+    const previousLocale = process.env.AFORA_LOCALE;
+    process.env.AFORA_LOCALE = "zh-CN";
     let captured:
       | {
           message: string;
@@ -233,10 +233,10 @@ describe("ensureOnboardingPluginInstalled", () => {
       await ensureOnboardingPluginInstalled({
         cfg: {},
         entry: {
-          pluginId: "openclaw-qqbot",
+          pluginId: "afora-qqbot",
           label: "QQ Bot",
           install: {
-            npmSpec: "@tencent-connect/openclaw-qqbot@2.0.1",
+            npmSpec: "@tencent-connect/afora-qqbot@2.0.1",
           },
         },
         prompter: {
@@ -250,21 +250,21 @@ describe("ensureOnboardingPluginInstalled", () => {
 
       expect(captured?.message).toBe("安装 QQ Bot 插件？");
       expect(captured?.options).toEqual([
-        { value: "npm", label: "从 npm 下载（@tencent-connect/openclaw-qqbot@2.0.1）" },
+        { value: "npm", label: "从 npm 下载（@tencent-connect/afora-qqbot@2.0.1）" },
         { value: "skip", label: "暂时跳过" },
       ]);
     } finally {
       if (previousLocale === undefined) {
-        delete process.env.OPENCLAW_LOCALE;
+        delete process.env.AFORA_LOCALE;
       } else {
-        process.env.OPENCLAW_LOCALE = previousLocale;
+        process.env.AFORA_LOCALE = previousLocale;
       }
     }
   });
 
   it("localizes plugin install progress and enablement failures", async () => {
-    const previousLocale = process.env.OPENCLAW_LOCALE;
-    process.env.OPENCLAW_LOCALE = "zh-CN";
+    const previousLocale = process.env.AFORA_LOCALE;
+    process.env.AFORA_LOCALE = "zh-CN";
     enablePluginInConfig.mockReturnValueOnce({
       config: {},
       enabled: false,
@@ -303,16 +303,16 @@ describe("ensureOnboardingPluginInstalled", () => {
       expect(withPluginLifecycleLease).toHaveBeenCalledOnce();
     } finally {
       if (previousLocale === undefined) {
-        delete process.env.OPENCLAW_LOCALE;
+        delete process.env.AFORA_LOCALE;
       } else {
-        process.env.OPENCLAW_LOCALE = previousLocale;
+        process.env.AFORA_LOCALE = previousLocale;
       }
     }
   });
 
   it("refuses non-skipped installs in Nix mode before package work", async () => {
-    const previous = process.env.OPENCLAW_NIX_MODE;
-    process.env.OPENCLAW_NIX_MODE = "1";
+    const previous = process.env.AFORA_NIX_MODE;
+    process.env.AFORA_NIX_MODE = "1";
     try {
       await expect(
         ensureOnboardingPluginInstalled({
@@ -321,7 +321,7 @@ describe("ensureOnboardingPluginInstalled", () => {
             pluginId: "demo-plugin",
             label: "Demo Provider",
             install: {
-              npmSpec: "@openclaw/demo-plugin@1.2.3",
+              npmSpec: "@afora/demo-plugin@1.2.3",
             },
           },
           promptInstall: false,
@@ -331,12 +331,12 @@ describe("ensureOnboardingPluginInstalled", () => {
           } as never,
           runtime: {} as never,
         }),
-      ).rejects.toThrow("OPENCLAW_NIX_MODE=1");
+      ).rejects.toThrow("AFORA_NIX_MODE=1");
     } finally {
       if (previous === undefined) {
-        delete process.env.OPENCLAW_NIX_MODE;
+        delete process.env.AFORA_NIX_MODE;
       } else {
-        process.env.OPENCLAW_NIX_MODE = previous;
+        process.env.AFORA_NIX_MODE = previous;
       }
     }
 
@@ -347,7 +347,7 @@ describe("ensureOnboardingPluginInstalled", () => {
 
   it("uses a guarded npm-pack install override for the matching plugin id", async () => {
     const archivePath = path.resolve("tmp/demo-plugin.tgz");
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       security: {
         installPolicy: {
           enabled: true,
@@ -359,15 +359,15 @@ describe("ensureOnboardingPluginInstalled", () => {
         },
       },
     };
-    process.env.OPENCLAW_ALLOW_PLUGIN_INSTALL_OVERRIDES = "1";
-    process.env.OPENCLAW_PLUGIN_INSTALL_OVERRIDES = JSON.stringify({
+    process.env.AFORA_ALLOW_PLUGIN_INSTALL_OVERRIDES = "1";
+    process.env.AFORA_PLUGIN_INSTALL_OVERRIDES = JSON.stringify({
       "other-plugin": "npm:@demo/other@1.0.0",
       "demo-plugin": `npm-pack:${archivePath}`,
     });
     installPluginFromNpmPackArchive.mockResolvedValue({
       ok: true,
       pluginId: "demo-plugin",
-      targetDir: "/tmp/openclaw/extensions/demo-plugin",
+      targetDir: "/tmp/afora/extensions/demo-plugin",
       version: "1.2.3",
       manifestName: "@demo/plugin",
       npmTarballName: "demo-plugin-1.2.3.tgz",
@@ -412,7 +412,7 @@ describe("ensureOnboardingPluginInstalled", () => {
     expect(packCall.expectedPluginId).toBe("demo-plugin");
     expect(packCall).not.toHaveProperty("trustedSourceLinkedOfficialInstall");
     const [, recordUpdate] = readFirstMockCall(recordPluginInstall, "recordPluginInstall") as [
-      OpenClawConfig,
+      AforaConfig,
       PluginInstallRecord,
     ];
     expect(recordUpdate).toEqual({
@@ -420,7 +420,7 @@ describe("ensureOnboardingPluginInstalled", () => {
       source: "npm",
       spec: "file:demo-plugin-1.2.3.tgz",
       sourcePath: archivePath,
-      installPath: "/tmp/openclaw/extensions/demo-plugin",
+      installPath: "/tmp/afora/extensions/demo-plugin",
       version: "1.2.3",
       artifactKind: "npm-pack",
       artifactFormat: "tgz",
@@ -439,20 +439,20 @@ describe("ensureOnboardingPluginInstalled", () => {
   });
 
   it("uses a guarded npm install override without official-trust flags", async () => {
-    process.env.OPENCLAW_ALLOW_PLUGIN_INSTALL_OVERRIDES = "1";
-    process.env.OPENCLAW_PLUGIN_INSTALL_OVERRIDES = JSON.stringify({
-      codex: "npm:@openclaw/codex@2026.5.8",
+    process.env.AFORA_ALLOW_PLUGIN_INSTALL_OVERRIDES = "1";
+    process.env.AFORA_PLUGIN_INSTALL_OVERRIDES = JSON.stringify({
+      codex: "npm:@afora/codex@2026.5.8",
       "other-plugin": "npm-pack:/tmp/other.tgz",
     });
     installPluginFromNpmSpec.mockResolvedValue({
       ok: true,
       pluginId: "codex",
-      targetDir: "/tmp/openclaw/extensions/codex",
+      targetDir: "/tmp/afora/extensions/codex",
       version: "2026.5.8",
       npmResolution: {
-        name: "@openclaw/codex",
+        name: "@afora/codex",
         version: "2026.5.8",
-        resolvedSpec: "@openclaw/codex@2026.5.8",
+        resolvedSpec: "@afora/codex@2026.5.8",
       },
     });
 
@@ -462,7 +462,7 @@ describe("ensureOnboardingPluginInstalled", () => {
         pluginId: "codex",
         label: "Codex",
         install: {
-          npmSpec: "@openclaw/codex",
+          npmSpec: "@afora/codex",
         },
         trustedSourceLinkedOfficialInstall: true,
       },
@@ -478,12 +478,12 @@ describe("ensureOnboardingPluginInstalled", () => {
       NpmSpecInstallCall,
     ];
     expect(npmCall.trustedSourceLinkedOfficialInstall).toBeUndefined();
-    expect(npmCall.spec).toBe("@openclaw/codex@2026.5.8");
+    expect(npmCall.spec).toBe("@afora/codex@2026.5.8");
     expect(npmCall.expectedPluginId).toBe("codex");
   });
 
   it("installs and records ClawHub provider plugins with source facts", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       security: {
         installPolicy: {
           enabled: true,
@@ -530,7 +530,7 @@ describe("ensureOnboardingPluginInstalled", () => {
         label: "Demo Provider",
         install: {
           clawhubSpec: "clawhub:demo-plugin@2026.5.2",
-          npmSpec: "@openclaw/demo-plugin@2026.5.2",
+          npmSpec: "@afora/demo-plugin@2026.5.2",
           defaultChoice: "clawhub",
         },
       },
@@ -554,7 +554,7 @@ describe("ensureOnboardingPluginInstalled", () => {
     expect(update).toHaveBeenCalledWith("Downloading");
     expect(stop).toHaveBeenCalledWith("Installed Demo Provider plugin");
     const [, recordUpdate] = readFirstMockCall(recordPluginInstall, "recordPluginInstall") as [
-      OpenClawConfig,
+      AforaConfig,
       PluginInstallRecord,
     ];
     expect(recordUpdate.pluginId).toBe("demo-plugin");
@@ -640,7 +640,7 @@ describe("ensureOnboardingPluginInstalled", () => {
   });
 
   it("passes npm specs and optional expected integrity to npm installs with progress", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       security: {
         installPolicy: {
           enabled: true,
@@ -653,9 +653,9 @@ describe("ensureOnboardingPluginInstalled", () => {
       },
     };
     const npmResolution = {
-      name: "@wecom/wecom-openclaw-plugin",
+      name: "@wecom/wecom-afora-plugin",
       version: "1.2.3",
-      resolvedSpec: "@wecom/wecom-openclaw-plugin@1.2.3",
+      resolvedSpec: "@wecom/wecom-afora-plugin@1.2.3",
       integrity: "sha512-wecom",
       shasum: "deadbeef",
       resolvedAt: "2026-04-24T00:00:00.000Z",
@@ -688,7 +688,7 @@ describe("ensureOnboardingPluginInstalled", () => {
         pluginId: "demo-plugin",
         label: "WeCom",
         install: {
-          npmSpec: "@wecom/wecom-openclaw-plugin@1.2.3",
+          npmSpec: "@wecom/wecom-afora-plugin@1.2.3",
           expectedIntegrity: "sha512-wecom",
         },
         trustedSourceLinkedOfficialInstall: true,
@@ -703,7 +703,7 @@ describe("ensureOnboardingPluginInstalled", () => {
     const [npmCall] = readFirstMockCall(installPluginFromNpmSpec, "installPluginFromNpmSpec") as [
       NpmSpecInstallCall,
     ];
-    expect(npmCall.spec).toBe("@wecom/wecom-openclaw-plugin@1.2.3");
+    expect(npmCall.spec).toBe("@wecom/wecom-afora-plugin@1.2.3");
     expect(npmCall.config).toBe(cfg);
     expect(npmCall.mode).toBe("update");
     expect(npmCall.expectedPluginId).toBe("demo-plugin");
@@ -714,12 +714,12 @@ describe("ensureOnboardingPluginInstalled", () => {
     expect(stop).toHaveBeenCalledWith("Installed WeCom plugin");
     expect(buildNpmResolutionInstallFields).toHaveBeenCalledWith(npmResolution);
     const [, recordUpdate] = readFirstMockCall(recordPluginInstall, "recordPluginInstall") as [
-      OpenClawConfig,
+      AforaConfig,
       PluginInstallRecord,
     ];
     expect(recordUpdate.pluginId).toBe("demo-plugin");
     expect(recordUpdate.source).toBe("npm");
-    expect(recordUpdate.spec).toBe("@wecom/wecom-openclaw-plugin@1.2.3");
+    expect(recordUpdate.spec).toBe("@wecom/wecom-afora-plugin@1.2.3");
     expect(recordUpdate.installPath).toBe("/tmp/demo-plugin");
     expect(recordUpdate.version).toBe("1.2.3");
     expect(recordUpdate.resolvedName).toBe(installFields.resolvedName);
@@ -735,7 +735,7 @@ describe("ensureOnboardingPluginInstalled", () => {
       | undefined;
     expect(installed?.pluginId).toBe("demo-plugin");
     expect(installed?.source).toBe("npm");
-    expect(installed?.spec).toBe("@wecom/wecom-openclaw-plugin@1.2.3");
+    expect(installed?.spec).toBe("@wecom/wecom-afora-plugin@1.2.3");
     expect(clearLoadInstalledPluginIndexInstallRecordsCache).toHaveBeenCalledOnce();
     expect(clearPluginMetadataLifecycleCaches).toHaveBeenCalledOnce();
     expect(invalidatePluginRuntimeDiscoveryAfterConfigMutation).toHaveBeenCalledWith(
@@ -752,9 +752,9 @@ describe("ensureOnboardingPluginInstalled", () => {
       targetDir: "/tmp/discord",
       version: VERSION,
       npmResolution: {
-        name: "@openclaw/discord",
+        name: "@afora/discord",
         version: VERSION,
-        resolvedSpec: `@openclaw/discord@${VERSION}`,
+        resolvedSpec: `@afora/discord@${VERSION}`,
       },
     });
 
@@ -763,7 +763,7 @@ describe("ensureOnboardingPluginInstalled", () => {
       entry: {
         pluginId: "discord",
         label: "Discord",
-        install: { npmSpec: "@openclaw/discord" },
+        install: { npmSpec: "@afora/discord" },
         trustedSourceLinkedOfficialInstall: true,
       },
       prompter: {
@@ -777,12 +777,12 @@ describe("ensureOnboardingPluginInstalled", () => {
     const [npmCall] = readFirstMockCall(installPluginFromNpmSpec, "installPluginFromNpmSpec") as [
       NpmSpecInstallCall,
     ];
-    expect(npmCall.spec).toBe(`@openclaw/discord@${VERSION}`);
+    expect(npmCall.spec).toBe(`@afora/discord@${VERSION}`);
     const [, recordUpdate] = readFirstMockCall(recordPluginInstall, "recordPluginInstall") as [
-      OpenClawConfig,
+      AforaConfig,
       PluginInstallRecord,
     ];
-    expect(recordUpdate.spec).toBe("@openclaw/discord");
+    expect(recordUpdate.spec).toBe("@afora/discord");
     expect(resolveNpmInstallRecordSpec).toHaveBeenCalledWith(
       expect.objectContaining({ pinResolvedRegistrySpec: false }),
     );
@@ -795,9 +795,9 @@ describe("ensureOnboardingPluginInstalled", () => {
       targetDir: "/tmp/discord",
       version: "2026.7.21",
       npmResolution: {
-        name: "@openclaw/discord",
+        name: "@afora/discord",
         version: "2026.7.21",
-        resolvedSpec: "@openclaw/discord@2026.7.21",
+        resolvedSpec: "@afora/discord@2026.7.21",
       },
     });
 
@@ -806,7 +806,7 @@ describe("ensureOnboardingPluginInstalled", () => {
       entry: {
         pluginId: "discord",
         label: "Discord",
-        install: { npmSpec: "@openclaw/discord" },
+        install: { npmSpec: "@afora/discord" },
         trustedSourceLinkedOfficialInstall: true,
       },
       prompter: {
@@ -818,10 +818,10 @@ describe("ensureOnboardingPluginInstalled", () => {
     });
 
     const [, recordUpdate] = readFirstMockCall(recordPluginInstall, "recordPluginInstall") as [
-      OpenClawConfig,
+      AforaConfig,
       PluginInstallRecord,
     ];
-    expect(recordUpdate.spec).toBe("@openclaw/discord");
+    expect(recordUpdate.spec).toBe("@afora/discord");
     expect(resolveNpmInstallRecordSpec).toHaveBeenCalledWith(
       expect.objectContaining({ pinResolvedRegistrySpec: false }),
     );
@@ -835,7 +835,7 @@ describe("ensureOnboardingPluginInstalled", () => {
       return {
         ok: true,
         pluginId: "codex",
-        targetDir: "/tmp/openclaw/extensions/codex",
+        targetDir: "/tmp/afora/extensions/codex",
         version: "2026.5.10-beta.5",
       };
     });
@@ -849,7 +849,7 @@ describe("ensureOnboardingPluginInstalled", () => {
         pluginId: "codex",
         label: "Codex",
         install: {
-          npmSpec: "@openclaw/codex@beta",
+          npmSpec: "@afora/codex@beta",
         },
       },
       prompter: {
@@ -1010,7 +1010,7 @@ describe("ensureOnboardingPluginInstalled", () => {
         label: "Demo Plugin",
         install: {
           clawhubSpec: "clawhub:demo-plugin@2026.5.2",
-          npmSpec: "@openclaw/demo-plugin@2026.5.2",
+          npmSpec: "@afora/demo-plugin@2026.5.2",
         },
       },
       prompter: {
@@ -1024,7 +1024,7 @@ describe("ensureOnboardingPluginInstalled", () => {
 
     expect(captured?.options).toEqual([
       { value: "clawhub", label: "Download from ClawHub (clawhub:demo-plugin@2026.5.2)" },
-      { value: "npm", label: "Download from npm (@openclaw/demo-plugin@2026.5.2)" },
+      { value: "npm", label: "Download from npm (@afora/demo-plugin@2026.5.2)" },
       { value: "skip", label: "Skip for now" },
     ]);
     expect(captured?.initialValue).toBe("npm");
@@ -1046,7 +1046,7 @@ describe("ensureOnboardingPluginInstalled", () => {
         label: "Demo Plugin",
         install: {
           clawhubSpec: "clawhub:demo-plugin@2026.5.2",
-          npmSpec: "@openclaw/demo-plugin@2026.5.2",
+          npmSpec: "@afora/demo-plugin@2026.5.2",
           defaultChoice: "clawhub",
         },
       },
@@ -1074,9 +1074,9 @@ describe("ensureOnboardingPluginInstalled", () => {
       targetDir: "/tmp/demo-plugin",
       version: "2026.5.2",
       npmResolution: {
-        name: "@openclaw/demo-plugin",
+        name: "@afora/demo-plugin",
         version: "2026.5.2",
-        resolvedSpec: "@openclaw/demo-plugin@2026.5.2",
+        resolvedSpec: "@afora/demo-plugin@2026.5.2",
         resolvedAt: "2026-05-01T00:00:00.000Z",
       },
     });
@@ -1088,7 +1088,7 @@ describe("ensureOnboardingPluginInstalled", () => {
         label: "Demo Plugin",
         install: {
           clawhubSpec: "clawhub:demo-plugin@2026.5.2",
-          npmSpec: "@openclaw/demo-plugin@2026.5.2",
+          npmSpec: "@afora/demo-plugin@2026.5.2",
           defaultChoice: "clawhub",
         },
       },
@@ -1105,12 +1105,12 @@ describe("ensureOnboardingPluginInstalled", () => {
     const [npmCall] = readFirstMockCall(installPluginFromNpmSpec, "installPluginFromNpmSpec") as [
       NpmSpecInstallCall,
     ];
-    expect(npmCall.spec).toBe("@openclaw/demo-plugin@2026.5.2");
+    expect(npmCall.spec).toBe("@afora/demo-plugin@2026.5.2");
     expect(npmCall.expectedPluginId).toBe("demo-plugin");
     expect(result.installed).toBe(true);
   });
 
-  it("does not fall back from ClawHub to non-OpenClaw npm packages", async () => {
+  it("does not fall back from ClawHub to non-Afora npm packages", async () => {
     const confirm = vi.fn(async () => true);
     const runtimeError = vi.fn();
     installPluginFromClawHub.mockResolvedValueOnce({
@@ -1170,7 +1170,7 @@ describe("ensureOnboardingPluginInstalled", () => {
         label: "Demo Plugin",
         install: {
           clawhubSpec: "clawhub:demo-plugin@2026.5.2",
-          npmSpec: "@openclaw/demo-plugin@2026.5.2",
+          npmSpec: "@afora/demo-plugin@2026.5.2",
           defaultChoice: "clawhub",
         },
       },
@@ -1214,7 +1214,7 @@ describe("ensureOnboardingPluginInstalled", () => {
         label: "Demo Plugin",
         install: {
           clawhubSpec: "clawhub:demo-plugin@2026.5.2",
-          npmSpec: "@openclaw/demo-plugin@2026.5.2",
+          npmSpec: "@afora/demo-plugin@2026.5.2",
           defaultChoice: "clawhub",
         },
       },
@@ -1240,7 +1240,7 @@ describe("ensureOnboardingPluginInstalled", () => {
   });
 
   it("does not offer local installs when the workspace only has a spoofed .git marker", async () => {
-    await withTestDir({ prefix: "openclaw-onboarding-install-spoofed-git-" }, async (temp) => {
+    await withTestDir({ prefix: "afora-onboarding-install-spoofed-git-" }, async (temp) => {
       const workspaceDir = path.join(temp, "workspace");
       const cwdDir = path.join(temp, "cwd");
       const pluginDir = path.join(workspaceDir, "plugins", "demo");
@@ -1298,7 +1298,7 @@ describe("ensureOnboardingPluginInstalled", () => {
   });
 
   it("allows local installs for real gitdir checkouts and sanitizes prompt text", async () => {
-    await withTestDir({ prefix: "openclaw-onboarding-install-gitdir-" }, async (temp) => {
+    await withTestDir({ prefix: "afora-onboarding-install-gitdir-" }, async (temp) => {
       const workspaceDir = path.join(temp, "workspace");
       const pluginDir = path.join(workspaceDir, "plugins", "demo");
       await fs.mkdir(pluginDir, { recursive: true });
@@ -1356,7 +1356,7 @@ describe("ensureOnboardingPluginInstalled", () => {
   });
 
   it("does not add local plugin paths when enablement is blocked by policy", async () => {
-    await withTestDir({ prefix: "openclaw-onboarding-install-blocked-enable-" }, async (temp) => {
+    await withTestDir({ prefix: "afora-onboarding-install-blocked-enable-" }, async (temp) => {
       const workspaceDir = path.join(temp, "workspace");
       const pluginDir = path.join(workspaceDir, "plugins", "demo");
       await fs.mkdir(pluginDir, { recursive: true });
@@ -1404,7 +1404,7 @@ describe("ensureOnboardingPluginInstalled", () => {
   });
 
   it("allows local installs for linked git worktrees", async () => {
-    await withTestDir({ prefix: "openclaw-onboarding-install-worktree-" }, async (temp) => {
+    await withTestDir({ prefix: "afora-onboarding-install-worktree-" }, async (temp) => {
       const workspaceDir = path.join(temp, "workspace");
       const pluginDir = path.join(workspaceDir, "plugins", "demo");
       const commonGitDir = path.join(temp, "repo.git");
@@ -1458,7 +1458,7 @@ describe("ensureOnboardingPluginInstalled", () => {
   });
 
   it("records local install source metadata when a local path is selected", async () => {
-    await withTestDir({ prefix: "openclaw-onboarding-install-local-record-" }, async (temp) => {
+    await withTestDir({ prefix: "afora-onboarding-install-local-record-" }, async (temp) => {
       const workspaceDir = path.join(temp, "workspace");
       const pluginDir = path.join(workspaceDir, "plugins", "demo");
       await fs.mkdir(path.join(workspaceDir, ".git"), { recursive: true });
@@ -1485,7 +1485,7 @@ describe("ensureOnboardingPluginInstalled", () => {
       const [recordCfg, recordUpdate] = readFirstMockCall(
         recordPluginInstall,
         "recordPluginInstall",
-      ) as [OpenClawConfig, PluginInstallRecord];
+      ) as [AforaConfig, PluginInstallRecord];
       expect(recordCfg.plugins?.load?.paths).toEqual([realPluginDir]);
       expect(recordUpdate).toEqual({
         pluginId: "demo-plugin",
@@ -1514,7 +1514,7 @@ describe("ensureOnboardingPluginInstalled", () => {
   });
 
   it("hides the npm download option for bundled plugins so the menu matches non-npm channels", async () => {
-    await withTestDir({ prefix: "openclaw-onboarding-install-bundled-prompt-" }, async (temp) => {
+    await withTestDir({ prefix: "afora-onboarding-install-bundled-prompt-" }, async (temp) => {
       const bundledDir = path.join(temp, "dist", "extensions", "tlon");
       await fs.mkdir(bundledDir, { recursive: true });
       const realBundledDir = await fs.realpath(bundledDir);
@@ -1545,7 +1545,7 @@ describe("ensureOnboardingPluginInstalled", () => {
           pluginId: "tlon",
           label: "Tlon",
           install: {
-            npmSpec: "@openclaw/tlon",
+            npmSpec: "@afora/tlon",
             defaultChoice: "npm",
           },
         },
@@ -1559,7 +1559,7 @@ describe("ensureOnboardingPluginInstalled", () => {
       });
 
       const prompt = requireCapturedPrompt(captured);
-      // "Download from npm (@openclaw/tlon)" must NOT appear: the bundled
+      // "Download from npm (@afora/tlon)" must NOT appear: the bundled
       // copy is what gets enabled, so the npm hint would only confuse
       // users into thinking the plugin is missing.
       expect(prompt.options).toEqual([
@@ -1577,7 +1577,7 @@ describe("ensureOnboardingPluginInstalled", () => {
   });
 
   it("enables bundled plugins without adding their bundled directory as a local install", async () => {
-    await withTestDir({ prefix: "openclaw-onboarding-install-bundled-record-" }, async (temp) => {
+    await withTestDir({ prefix: "afora-onboarding-install-bundled-record-" }, async (temp) => {
       const bundledDir = path.join(temp, "dist", "extensions", "discord");
       await fs.mkdir(bundledDir, { recursive: true });
       const realBundledDir = await fs.realpath(bundledDir);
@@ -1604,7 +1604,7 @@ describe("ensureOnboardingPluginInstalled", () => {
           pluginId: "discord",
           label: "Discord",
           install: {
-            npmSpec: "@openclaw/discord",
+            npmSpec: "@afora/discord",
           },
         },
         prompter: {
@@ -1624,7 +1624,7 @@ describe("ensureOnboardingPluginInstalled", () => {
 
   it("records local install source metadata when npm install falls back to local", async () => {
     await withTestDir(
-      { prefix: "openclaw-onboarding-install-npm-fallback-record-" },
+      { prefix: "afora-onboarding-install-npm-fallback-record-" },
       async (temp) => {
         const workspaceDir = path.join(temp, "workspace");
         const pluginDir = path.join(workspaceDir, "plugins", "demo");
@@ -1664,7 +1664,7 @@ describe("ensureOnboardingPluginInstalled", () => {
         const [recordCfg, recordUpdate] = readFirstMockCall(
           recordPluginInstall,
           "recordPluginInstall",
-        ) as [OpenClawConfig, PluginInstallRecord];
+        ) as [AforaConfig, PluginInstallRecord];
         expect(recordCfg.plugins?.load?.paths).toEqual([realPluginDir]);
         expect(recordUpdate).toEqual({
           pluginId: "demo-plugin",
@@ -1687,7 +1687,7 @@ describe("ensureOnboardingPluginInstalled", () => {
   });
 
   it("records absolute local catalog paths as workspace-relative source metadata", async () => {
-    await withTestDir({ prefix: "openclaw-onboarding-install-portable-record-" }, async (temp) => {
+    await withTestDir({ prefix: "afora-onboarding-install-portable-record-" }, async (temp) => {
       const workspaceDir = path.join(temp, "workspace");
       const pluginDir = path.join(workspaceDir, "plugins", "demo");
       await fs.mkdir(path.join(workspaceDir, ".git"), { recursive: true });
@@ -1713,7 +1713,7 @@ describe("ensureOnboardingPluginInstalled", () => {
       const [recordCfg, recordUpdate] = readFirstMockCall(
         recordPluginInstall,
         "recordPluginInstall",
-      ) as [OpenClawConfig, PluginInstallRecord];
+      ) as [AforaConfig, PluginInstallRecord];
       expect(recordCfg).toEqual({
         plugins: {
           load: {
@@ -1730,7 +1730,7 @@ describe("ensureOnboardingPluginInstalled", () => {
   });
 
   it("keeps local installs available when cwd is a git repo but workspaceDir is not", async () => {
-    await withTestDir({ prefix: "openclaw-onboarding-install-cwd-git-" }, async (temp) => {
+    await withTestDir({ prefix: "afora-onboarding-install-cwd-git-" }, async (temp) => {
       const repoDir = path.join(temp, "repo");
       const workspaceDir = path.join(temp, "workspace");
       const pluginDir = path.join(repoDir, "demo-plugin");
@@ -1784,7 +1784,7 @@ describe("ensureOnboardingPluginInstalled", () => {
   });
 
   it("rejects local install paths outside the trusted workspace roots", async () => {
-    await withTestDir({ prefix: "openclaw-onboarding-install-outside-root-" }, async (temp) => {
+    await withTestDir({ prefix: "afora-onboarding-install-outside-root-" }, async (temp) => {
       const workspaceDir = path.join(temp, "workspace");
       const pluginDir = path.join(temp, "external-plugin");
       await fs.mkdir(path.join(workspaceDir, ".git"), { recursive: true });

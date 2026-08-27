@@ -3,7 +3,7 @@
  *
  * Resolves loaded or bundled setup plugins for onboarding flows.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   getActivePluginChannelRegistry,
   requireActivePluginRegistry,

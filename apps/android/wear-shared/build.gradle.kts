@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-  namespace = "ai.openclaw.wear.shared"
+  namespace = "ai.afora.wear.shared"
   compileSdk = 37
 
   defaultConfig {

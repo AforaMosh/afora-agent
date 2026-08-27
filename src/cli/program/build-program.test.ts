@@ -66,7 +66,7 @@ describe("buildProgram", () => {
   });
 
   it("wires context/help/preaction/command registration with shared context", () => {
-    const argv = ["node", "openclaw", "status"];
+    const argv = ["node", "afora", "status"];
     const originalArgv = process.argv;
     process.argv = argv;
     try {
@@ -152,7 +152,7 @@ describe("buildProgram", () => {
       outputError,
     });
     program.command("probe").action(() => {});
-    process.argv = ["node", "openclaw", "probe", "--wat"];
+    process.argv = ["node", "afora", "probe", "--wat"];
     try {
       await expectCommanderExit(program.parseAsync(process.argv), 1);
     } finally {

@@ -3,7 +3,7 @@ import {
   resolveScopeToolsPolicy,
   scopeKey,
   type ScopeTree,
-} from "openclaw/plugin-sdk/channel-policy";
+} from "afora-agent/plugin-sdk/channel-policy";
 import type {
   AllowlistMatch,
   ChannelGroupContext,

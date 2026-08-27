@@ -2,10 +2,10 @@ import {
   createChannelProgressWorkCounter,
   formatChannelProgressDraftText,
   type ChannelProgressDraftCompositorSnapshot,
-} from "openclaw/plugin-sdk/channel-outbound";
-import { resolveGatewayPublicOrigin } from "openclaw/plugin-sdk/config-contracts";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { buildControlUiSessionPath } from "openclaw/plugin-sdk/session-discussion";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import { resolveGatewayPublicOrigin } from "afora-agent/plugin-sdk/config-contracts";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { buildControlUiSessionPath } from "afora-agent/plugin-sdk/session-discussion";
 import { createSlackDraftStream } from "../../draft-stream.js";
 import { formatSlackError } from "../../errors.js";
 import { buildSlackProgressCardBlocks } from "../../progress-blocks.js";

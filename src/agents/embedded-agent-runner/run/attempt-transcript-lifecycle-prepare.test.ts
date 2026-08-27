@@ -25,8 +25,8 @@ describe("prepareEmbeddedAttemptTranscriptLifecycle", () => {
           sessionId: "session-a",
           sessionKey: "agent:main:test",
           storePath: path.join(
-            tempDirs.make("openclaw-attempt-transcript-lifecycle-"),
-            "openclaw.sqlite",
+            tempDirs.make("afora-attempt-transcript-lifecycle-"),
+            "afora.sqlite",
           ),
         },
       },

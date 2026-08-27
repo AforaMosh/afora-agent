@@ -1,20 +1,20 @@
 import type { DatabaseSync } from "node:sqlite";
-import { err, ok, type Result } from "@openclaw/normalization-core/result";
+import { err, ok, type Result } from "@afora/normalization-core/result";
 import {
   USER_PREFS_ENTRY_LIMIT,
   USER_PREFS_PROFILE_KEY_LIMIT,
   USER_PREFS_VALUE_BYTES,
 } from "../../packages/gateway-protocol/src/schema/users.js";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../infra/kysely-sync.js";
-import { tableExists } from "./openclaw-state-db-schema-helpers.js";
-import type { DB as OpenClawStateKyselyDatabase } from "./openclaw-state-db.generated.js";
+import { tableExists } from "./afora-state-db-schema-helpers.js";
+import type { DB as AforaStateKyselyDatabase } from "./afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "./openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "./afora-state-db.js";
 
-type UserPreferencesDatabase = Pick<OpenClawStateKyselyDatabase, "user_preferences">;
+type UserPreferencesDatabase = Pick<AforaStateKyselyDatabase, "user_preferences">;
 
 const ensuredDatabases = new WeakSet<DatabaseSync>();
 const USER_PREFERENCES_SCHEMA_SQL = `
@@ -36,12 +36,12 @@ type UserPreferenceError =
       currentCount: number;
     };
 
-function ensureUserPreferencesSchema(options: OpenClawStateDatabaseOptions = {}): void {
-  const database = openOpenClawStateDatabase(options);
+function ensureUserPreferencesSchema(options: AforaStateDatabaseOptions = {}): void {
+  const database = openAforaStateDatabase(options);
   if (ensuredDatabases.has(database.db)) {
     return;
   }
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       // sqlite-allow-raw -- feature-local additive schema DDL; preference rows use Kysely below.
       db.exec(USER_PREFERENCES_SCHEMA_SQL);
@@ -52,9 +52,9 @@ function ensureUserPreferencesSchema(options: OpenClawStateDatabaseOptions = {})
   ensuredDatabases.add(database.db);
 }
 
-function openUserPreferencesDatabase(options: OpenClawStateDatabaseOptions = {}) {
+function openUserPreferencesDatabase(options: AforaStateDatabaseOptions = {}) {
   ensureUserPreferencesSchema(options);
-  const state = openOpenClawStateDatabase(options);
+  const state = openAforaStateDatabase(options);
   return { sqlite: state.db, kysely: getNodeSqliteKysely<UserPreferencesDatabase>(state.db) };
 }
 
@@ -112,7 +112,7 @@ export function mergeUserPreferences(
 export function getUserPreferences(
   profileId: string,
   keys?: readonly string[],
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): Record<string, unknown> {
   if (keys?.length === 0) {
     return {};
@@ -137,7 +137,7 @@ export function getUserPreferences(
 export function setUserPreferences(
   profileId: string,
   entries: Record<string, unknown>,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): Result<void, UserPreferenceError> {
   const rawEntries = Object.entries(entries);
   if (rawEntries.length > USER_PREFS_ENTRY_LIMIT) {
@@ -172,7 +172,7 @@ export function setUserPreferences(
     return ok(undefined);
   }
   ensureUserPreferencesSchema(options);
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db: sqlite }) => {
       const db = getNodeSqliteKysely<UserPreferencesDatabase>(sqlite);
       const currentKeys = readPreferenceKeys(sqlite, profileId);

@@ -1,6 +1,6 @@
 /** Command-list assembly and config filtering for chat command registries. */
 import { isCommandFlagEnabled } from "../config/commands.flags.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { SkillCommandSpec } from "../skills/types.js";
 import { getChatCommands } from "./commands-registry.data.js";
 import type { ChatCommandDefinition } from "./commands-registry.types.js";
@@ -40,7 +40,7 @@ export function listChatCommands(params?: {
 }
 
 /** Applies config feature flags to command keys that can be operator-disabled. */
-export function isCommandEnabled(cfg: OpenClawConfig, commandKey: string): boolean {
+export function isCommandEnabled(cfg: AforaConfig, commandKey: string): boolean {
   return commandKey === "config" ||
     commandKey === "mcp" ||
     commandKey === "plugins" ||
@@ -52,7 +52,7 @@ export function isCommandEnabled(cfg: OpenClawConfig, commandKey: string): boole
 
 /** Lists commands visible for a specific config, preserving dynamic skill commands. */
 export function listChatCommandsForConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   params?: { skillCommands?: SkillCommandSpec[] },
 ): ChatCommandDefinition[] {
   return listChatCommands(params).filter((command) => isCommandEnabled(cfg, command.key));

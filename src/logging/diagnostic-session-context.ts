@@ -1,5 +1,5 @@
 // Diagnostic session context helpers capture session metadata for support bundles.
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import {
   loadSessionEntryReadOnly,
   readLatestTranscriptAssistantText,

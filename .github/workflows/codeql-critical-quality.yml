@@ -78,7 +78,7 @@ on:
       - "src/agents/*completion*.ts"
       - "src/agents/*transport*.ts"
       - "src/agents/model-*.ts"
-      - "src/agents/openclaw-tools*.ts"
+      - "src/agents/afora-tools*.ts"
       - "src/agents/provider-*.ts"
       - "src/agents/session*.ts"
       - "src/agents/tool-call*.ts"
@@ -208,7 +208,7 @@ jobs:
           else
             while IFS= read -r file; do
               case "${file}" in
-                .github/codeql/codeql-network-runtime-boundary-critical-quality.yml|.github/codeql/openclaw-boundary/queries/raw-socket-callsite-classification.ql|.github/codeql/openclaw-boundary/queries/managed-proxy-runtime-mutation.ql)
+                .github/codeql/codeql-network-runtime-boundary-critical-quality.yml|.github/codeql/afora-boundary/queries/raw-socket-callsite-classification.ql|.github/codeql/afora-boundary/queries/managed-proxy-runtime-mutation.ql)
                   network_runtime=true
                   ;;
                 .github/codeql/*|.github/workflows/codeql-critical-quality.yml)
@@ -233,7 +233,7 @@ jobs:
                   agent=true
                   core_auth_secrets=true
                   ;;
-                src/acp/control-plane/*|src/agents/cli-runner/*|src/agents/command/*|src/agents/embedded-agent-runner/*|src/agents/sessions/*|src/agents/tools/*|src/agents/*completion*.ts|src/agents/*transport*.ts|src/agents/model-*.ts|src/agents/openclaw-tools*.ts|src/agents/provider-*.ts|src/agents/session*.ts|src/agents/tool-call*.ts|src/auto-reply/reply/agent-runner*.ts|src/auto-reply/reply/commands*.ts|src/auto-reply/reply/directive-handling*.ts|src/auto-reply/reply/dispatch-*.ts|src/auto-reply/reply/get-reply-run*.ts|src/auto-reply/reply/provider-dispatcher*.ts|src/auto-reply/reply/queue*.ts|src/auto-reply/reply/reply-run-registry*.ts|src/auto-reply/reply/session*.ts)
+                src/acp/control-plane/*|src/agents/cli-runner/*|src/agents/command/*|src/agents/embedded-agent-runner/*|src/agents/sessions/*|src/agents/tools/*|src/agents/*completion*.ts|src/agents/*transport*.ts|src/agents/model-*.ts|src/agents/afora-tools*.ts|src/agents/provider-*.ts|src/agents/session*.ts|src/agents/tool-call*.ts|src/auto-reply/reply/agent-runner*.ts|src/auto-reply/reply/commands*.ts|src/auto-reply/reply/directive-handling*.ts|src/auto-reply/reply/dispatch-*.ts|src/auto-reply/reply/get-reply-run*.ts|src/auto-reply/reply/provider-dispatcher*.ts|src/auto-reply/reply/queue*.ts|src/auto-reply/reply/reply-run-registry*.ts|src/auto-reply/reply/session*.ts)
                   agent=true
                   ;;
                 src/auto-reply/reply/post-compaction-context.ts|src/auto-reply/reply/queue/*|src/auto-reply/reply/startup-context.ts|src/commands/doctor-session-*.ts|src/commands/session-store-targets.ts|src/commands/sessions*.ts|src/infra/diagnostic-*.ts|src/infra/diagnostics-timeline.ts|src/infra/session-delivery-queue*.ts|src/logging/diagnostic*.ts)
@@ -445,7 +445,7 @@ jobs:
           added_lines="$(mktemp)"
           raw_socket_scan_lines="$(mktemp)"
           codex_transport="extensions/codex/src/app-server/transport-websocket.ts"
-          network_codeql_contract_pattern='^\.github/codeql/(codeql-network-runtime-boundary-critical-quality\.yml|openclaw-boundary/queries/(raw-socket-callsite-classification|managed-proxy-runtime-mutation)\.ql)$'
+          network_codeql_contract_pattern='^\.github/codeql/(codeql-network-runtime-boundary-critical-quality\.yml|afora-boundary/queries/(raw-socket-callsite-classification|managed-proxy-runtime-mutation)\.ql)$'
 
           gh api --paginate "repos/${REPOSITORY}/pulls/${PR_NUMBER}/files" --jq '.[].filename' > "$changed_files"
           gh api --paginate "repos/${REPOSITORY}/pulls/${PR_NUMBER}/files" --jq '
@@ -480,7 +480,7 @@ jobs:
             echo "full_codeql=false" >> "$GITHUB_OUTPUT"
           fi
 
-          if grep -En 'HTTP_PROXY|HTTPS_PROXY|NO_PROXY|GLOBAL_AGENT_|OPENCLAW_PROXY_' "$added_lines" || \
+          if grep -En 'HTTP_PROXY|HTTPS_PROXY|NO_PROXY|GLOBAL_AGENT_|AFORA_PROXY_' "$added_lines" || \
              grep -En '(from|require\().*["'\''](node:)?(net|tls|http2)["'\'']|\b(net|tls|http2)\.(connect|createConnection)\b|new Socket\(' "$raw_socket_scan_lines"; then
             echo "Network runtime boundary-sensitive added lines require full CodeQL review." >&2
             exit 1

@@ -1,5 +1,5 @@
 // Feishu helper module supports wiki schema behavior.
-import { optionalPositiveIntegerSchema } from "openclaw/plugin-sdk/channel-actions";
+import { optionalPositiveIntegerSchema } from "afora-agent/plugin-sdk/channel-actions";
 import { Type, type Static } from "typebox";
 
 const WIKI_SPACE_ID_DESCRIPTION =

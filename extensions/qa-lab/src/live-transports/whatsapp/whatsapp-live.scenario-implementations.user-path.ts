@@ -104,7 +104,7 @@ export const whatsappQaGroupAgentMessageActionReactScenario: WhatsAppQaScenarioI
       configMode: "allowlist",
       expectReply: false,
       input:
-        `openclawqa react to this WhatsApp group message with thumbs up for QA action check ${token}. ` +
+        `aforaqa react to this WhatsApp group message with thumbs up for QA action check ${token}. ` +
         "Do not send any visible text reply after the reaction.",
       matchText: token,
       quietWindowMs: 8_000,
@@ -143,7 +143,7 @@ export const whatsappQaGroupAgentMessageActionUploadFileScenario: WhatsAppQaScen
         configMode: "allowlist",
         expectReply: false,
         input:
-          `openclawqa use the WhatsApp message tool upload-file action to send a PNG with caption ${token}. ` +
+          `aforaqa use the WhatsApp message tool upload-file action to send a PNG with caption ${token}. ` +
           "Do not send any visible text reply after the upload.",
         matchText: token,
         quietWindowMs: 8_000,

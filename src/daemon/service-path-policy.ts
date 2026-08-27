@@ -1,6 +1,6 @@
 /** Classifies service PATH entries that should not be frozen into daemons. */
 import path from "node:path";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 
 // Service PATH policy keeps managed services away from user shell package-manager paths.
 function getPathModule(platform: NodeJS.Platform) {

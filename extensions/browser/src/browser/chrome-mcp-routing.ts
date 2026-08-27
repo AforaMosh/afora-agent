@@ -1,8 +1,8 @@
 // Serializes Chrome MCP operations and maps opaque targets/snapshot refs.
 import { randomUUID } from "node:crypto";
 import { McpError } from "@modelcontextprotocol/sdk/types.js";
-import { createAsyncLock } from "openclaw/plugin-sdk/async-lock-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { createAsyncLock } from "afora-agent/plugin-sdk/async-lock-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { toErrorObject } from "../infra/errors.js";
 import {
   CHROME_MCP_SESSION_TARGET_PREFIX,

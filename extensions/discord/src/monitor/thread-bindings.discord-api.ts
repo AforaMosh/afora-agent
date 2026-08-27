@@ -1,9 +1,9 @@
 // Discord API module exposes the plugin public contract.
 import { ChannelType } from "discord-api-types/v10";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { parseStrictNonNegativeInteger } from "openclaw/plugin-sdk/number-runtime";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { parseStrictNonNegativeInteger } from "afora-agent/plugin-sdk/number-runtime";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { createDiscordRestClient } from "../client.js";
 import { createChannelWebhook, getChannel } from "../internal/discord.js";
 import { sendMessageDiscord, sendWebhookMessageDiscord } from "../send.js";
@@ -135,7 +135,7 @@ export function isDiscordThreadGoneError(err: unknown): boolean {
 }
 
 export async function maybeSendBindingMessage(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   record: ThreadBindingRecord;
   text: string;
   preferWebhook?: boolean;
@@ -171,7 +171,7 @@ export async function maybeSendBindingMessage(params: {
 }
 
 export async function createWebhookForChannel(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   token?: string;
   channelId: string;
@@ -184,7 +184,7 @@ export async function createWebhookForChannel(params: {
     }).rest;
     const created = await createChannelWebhook(rest, params.channelId, {
       body: {
-        name: "OpenClaw Agents",
+        name: "Afora Agents",
       },
     });
     const webhookId = normalizeOptionalString(created?.id) ?? "";
@@ -236,7 +236,7 @@ export function findReusableWebhook(params: { accountId: string; channelId: stri
 }
 
 export async function resolveChannelIdForBinding(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   token?: string;
   threadId: string;
@@ -276,7 +276,7 @@ export async function resolveChannelIdForBinding(params: {
 }
 
 export async function createThreadForBinding(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   token?: string;
   channelId: string;

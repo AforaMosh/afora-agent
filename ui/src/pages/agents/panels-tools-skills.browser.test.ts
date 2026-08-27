@@ -489,7 +489,7 @@ describe("agents skills panel (browser)", () => {
     const skill: SkillStatusEntry = {
       name: "Coding Agent",
       description: "Delegate coding work to an available coding CLI.",
-      source: "openclaw-bundled",
+      source: "afora-bundled",
       bundled: true,
       filePath: "/tmp/skills/coding-agent/SKILL.md",
       baseDir: "/tmp/skills/coding-agent",

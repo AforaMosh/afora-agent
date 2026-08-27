@@ -3,7 +3,7 @@ import type { AuthProfileStore } from "../agents/auth-profiles/types.js";
 // Resolves Gateway-visible tools for MCP clients with short-lived schema caching.
 import { applyEmbeddedAttemptToolsAllow } from "../agents/embedded-agent-runner/run/attempt-tool-construction-plan.js";
 import { normalizeToolPolicyName } from "../agents/tool-policy.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { DirectoryCache } from "../infra/outbound/directory-cache.js";
 import { getPluginToolMeta } from "../plugins/tools.js";
 import type { McpLoopbackRequestContext } from "./mcp-grant-store.js";
@@ -33,7 +33,7 @@ type CachedScopedTools = {
 };
 
 type McpLoopbackScopeParams = Omit<McpLoopbackRequestContext, "senderIsOwner"> & {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   authProfileStore?: AuthProfileStore;
   authProfileStoreAgentDir?: string;
   grantToken?: string;
@@ -78,7 +78,7 @@ function resolveMcpLoopbackTools(
   tools: McpLoopbackTool[];
 } {
   const excludeToolNames = new Set(NATIVE_TOOL_EXCLUDE);
-  // Restricted CLI grants use OpenClaw's implementations for coding tools;
+  // Restricted CLI grants use Afora's implementations for coding tools;
   // native CLI tools bypass path, approval, sandbox, and exec policy.
   const mediatedNativeTools = resolveMediatedNativeTools(params.toolsAllow, mode);
   for (const toolName of mediatedNativeTools) {
@@ -172,7 +172,7 @@ function applyPolicyToolsAllow(
 export class McpLoopbackToolCache {
   #entries = new DirectoryCache<CachedScopedTools>(TOOL_CACHE_TTL_MS, TOOL_CACHE_MAX_ENTRIES);
   // Revocation needs the config scopes where one grant may have cached tools.
-  #grantConfigScopes = new Map<string, Set<OpenClawConfig>>();
+  #grantConfigScopes = new Map<string, Set<AforaConfig>>();
 
   resolve(params: McpLoopbackScopeParams): CachedScopedTools {
     // Callers differing only in capabilities must not share cached tool lists.
@@ -258,7 +258,7 @@ export class McpLoopbackToolCache {
     };
     this.#entries.set(cacheKey, nextEntry, params.cfg);
     if (params.grantToken) {
-      const scopes = this.#grantConfigScopes.get(params.grantToken) ?? new Set<OpenClawConfig>();
+      const scopes = this.#grantConfigScopes.get(params.grantToken) ?? new Set<AforaConfig>();
       scopes.add(params.cfg);
       this.#grantConfigScopes.set(params.grantToken, scopes);
     }

@@ -1,6 +1,6 @@
 // Builds plugin activation context from config, discovery, and manifests.
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { withBundledPluginEnablementCompat } from "./bundled-compat.js";
 import {
   createPluginActivationSource,
@@ -13,17 +13,17 @@ import type { PluginDiscoveryResult } from "./discovery.js";
 import type { PluginManifestRegistry } from "./manifest-registry.js";
 
 type PluginActivationInputs = {
-  rawConfig?: OpenClawConfig;
-  config?: OpenClawConfig;
+  rawConfig?: AforaConfig;
+  config?: AforaConfig;
   normalized: NormalizedPluginsConfig;
-  activationSourceConfig?: OpenClawConfig;
+  activationSourceConfig?: AforaConfig;
   activationSource: PluginActivationConfigSource;
   autoEnabledReasons: Record<string, string[]>;
 };
 
 type PluginActivationParams = {
-  rawConfig?: OpenClawConfig;
-  resolvedConfig?: OpenClawConfig;
+  rawConfig?: AforaConfig;
+  resolvedConfig?: AforaConfig;
   autoEnabledReasons?: Record<string, string[]>;
   env?: NodeJS.ProcessEnv;
   workspaceDir?: string;
@@ -35,7 +35,7 @@ type PluginActivationParams = {
 type BundledCompatActivationParams = PluginActivationParams & {
   onlyPluginIds?: readonly string[];
   resolveBundledPluginIds: (params: {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     workspaceDir?: string;
     env?: NodeJS.ProcessEnv;
     onlyPluginIds?: readonly string[];
@@ -43,11 +43,11 @@ type BundledCompatActivationParams = PluginActivationParams & {
 };
 
 export function withActivatedPluginIds(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   pluginIds: readonly string[];
   overrideGlobalDisable?: boolean;
   overrideExplicitDisable?: boolean;
-}): OpenClawConfig | undefined {
+}): AforaConfig | undefined {
   if (params.pluginIds.length === 0) {
     return params.config;
   }
@@ -87,7 +87,7 @@ export function withActivatedPluginIds(params: {
 }
 
 function applyPluginAutoEnableForActivation(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
   workspaceDir?: string;
   discovery?: PluginDiscoveryResult;

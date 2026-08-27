@@ -5,7 +5,7 @@ import "../components/modal-dialog.ts";
 import { showToast } from "./toast.ts";
 
 async function mountHost() {
-  const host = document.createElement("openclaw-toast-host");
+  const host = document.createElement("afora-toast-host");
   document.body.append(host);
   await host.updateComplete;
   return host;
@@ -37,7 +37,7 @@ describe("shared toast", () => {
 
   it("uses the active modal's toast layer before the app layer", async () => {
     const appHost = await mountHost();
-    const modal = document.createElement("openclaw-modal-dialog");
+    const modal = document.createElement("afora-modal-dialog");
     modal.open = true;
     document.body.append(modal);
     await modal.updateComplete;
@@ -55,7 +55,7 @@ describe("shared toast", () => {
     const appHost = await mountHost();
     const shadowOwner = document.createElement("div");
     const shadowRoot = shadowOwner.attachShadow({ mode: "open" });
-    const modal = document.createElement("openclaw-modal-dialog");
+    const modal = document.createElement("afora-modal-dialog");
     modal.open = true;
     shadowRoot.append(modal);
     document.body.append(shadowOwner);

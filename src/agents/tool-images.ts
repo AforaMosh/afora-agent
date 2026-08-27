@@ -3,8 +3,8 @@
  *
  * Downscales and recompresses oversized base64 image blocks before provider replay.
  */
-import { canonicalizeBase64, estimateBase64DecodedBytes } from "@openclaw/media-core/base64";
-import { formatByteSize, resolveIntegerOption } from "@openclaw/normalization-core";
+import { canonicalizeBase64, estimateBase64DecodedBytes } from "@afora/media-core/base64";
+import { formatByteSize, resolveIntegerOption } from "@afora/normalization-core";
 import { toErrorObject } from "../infra/errors.js";
 import type { ImageContent } from "../llm/types.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";

@@ -1,7 +1,7 @@
 /** Tests configured model aliases through parser and reply-routing boundaries. */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ModelAliasIndex } from "../../agents/model-selection.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import type { FinalizedTemplateContext as TemplateContext } from "../templating.js";
 import { parseInlineSessionDirectives } from "./directive-handling.parse.js";
@@ -32,7 +32,7 @@ type DirectiveApplyParams = Parameters<
   typeof import("./get-reply-directives-apply.js").applyInlineDirectiveOverrides
 >[0];
 
-function configWithModelAlias(alias: string): OpenClawConfig {
+function configWithModelAlias(alias: string): AforaConfig {
   return {
     commands: { text: true },
     agents: {
@@ -42,7 +42,7 @@ function configWithModelAlias(alias: string): OpenClawConfig {
         },
       },
     },
-  } as unknown as OpenClawConfig;
+  } as unknown as AforaConfig;
 }
 
 function createAliasIndex(): ModelAliasIndex {
@@ -81,7 +81,7 @@ async function resolveModelDirective(params: {
   body: string;
   agentText?: string;
   authorized?: boolean;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   surface?: string;
 }) {
   const authorized = params.authorized ?? true;
@@ -138,9 +138,9 @@ async function resolveModelDirective(params: {
 describe("reply directive aliases", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+    vi.stubEnv("AFORA_TEST_FAST", "1");
     textRoutingMocks.shouldHandle.mockImplementation(
-      (params: { cfg: OpenClawConfig }) => params.cfg.commands?.text !== false,
+      (params: { cfg: AforaConfig }) => params.cfg.commands?.text !== false,
     );
     directiveApplyMocks.apply.mockImplementation(async (params: DirectiveApplyParams) => ({
       kind: "continue",
@@ -252,7 +252,7 @@ describe("reply directive aliases", () => {
       cfg: {
         ...configWithModelAlias("fable"),
         commands: { text: false },
-      } as OpenClawConfig,
+      } as AforaConfig,
       surface: "discord",
     });
 

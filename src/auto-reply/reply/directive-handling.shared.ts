@@ -1,5 +1,5 @@
 // Shared directive parsing helpers used by model and auth directive handlers.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { StickyModelSelectionDispatchOutcome } from "../../agents/sticky-model-selection.js";
 import { formatCliCommand } from "../../cli/command-format.js";
 import {
@@ -421,7 +421,7 @@ export function formatElevatedUnavailableText(params: {
   }
   if (params.sessionKey) {
     lines.push(
-      `See: ${formatCliCommand(`openclaw sandbox explain --session ${params.sessionKey}`)}`,
+      `See: ${formatCliCommand(`afora sandbox explain --session ${params.sessionKey}`)}`,
     );
   }
   return lines.join("\n");

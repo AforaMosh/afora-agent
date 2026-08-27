@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { createDesktopSessionRegistry } from "./desktop/session-registry.js";
 import {
@@ -19,18 +19,18 @@ const DEVICE_ID = "revoked-device";
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 describe("gateway worker environment startup", () => {
   it("cleans transfer scratch before serving and removes it on shutdown", async () => {
-    const stateDir = tempDirs.make("openclaw-worker-transfer-startup-");
+    const stateDir = tempDirs.make("afora-worker-transfer-startup-");
     const transferRoot = path.join(stateDir, "tmp", "node-workspace-transfer");
     const staleRoot = path.join(transferRoot, "context-stale");
     await fs.mkdir(staleRoot, { recursive: true });
     await fs.writeFile(path.join(staleRoot, "base.pack"), "stale");
 
-    await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+    await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
       const startup = await loadGatewayWorkerEnvironmentStartupState();
       const runtime = await createGatewayWorkerEnvironmentRuntime({
         getPluginRegistry: () => ({ workerProviders: new Map() }),
@@ -53,9 +53,9 @@ describe("gateway worker environment startup", () => {
   });
 
   it("binds device revocation to the persisted profile settings", async () => {
-    const stateDir = tempDirs.make("openclaw-worker-startup-");
+    const stateDir = tempDirs.make("afora-worker-startup-");
     try {
-      await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+      await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
         const startup = await loadGatewayWorkerEnvironmentStartupState();
         startup.store.createIntent({
           environmentId: "device-environment",
@@ -79,7 +79,7 @@ describe("gateway worker environment startup", () => {
             sharedHost: true,
             bootstrapReceipt: {
               bundleHash: "a".repeat(64),
-              openclawVersion: "2026.8.14",
+              aforaVersion: "2026.8.14",
               protocolFeatures: ["worker-heartbeat-v1"],
               installKind: "bundle",
             },
@@ -114,7 +114,7 @@ describe("gateway worker environment startup", () => {
         }
       });
     } finally {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
     }
   });
 });

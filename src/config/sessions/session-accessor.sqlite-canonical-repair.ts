@@ -1,13 +1,13 @@
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
 } from "../../infra/kysely-sync.js";
 import {
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import { listSqliteSessionEntriesWithCanonicalOwnerEvidence } from "./session-accessor.sqlite-canonical-inventory.js";
 import type { SessionEntrySummary } from "./session-accessor.sqlite-contract.js";
 import { publishSessionEntryCacheInvalidation } from "./session-accessor.sqlite-entry-cache.js";
@@ -59,7 +59,7 @@ function resolveSqliteCanonicalRepairLookupKeys(
 
 /** Doctor probes only the exact staged target and may replace a malformed partial row. */
 export function readExactSessionEntryRowForCanonicalRepair(
-  database: Pick<OpenClawAgentDatabase, "db">,
+  database: Pick<AforaAgentDatabase, "db">,
   sessionKey: string,
   options: { allowMalformedRowRepair?: boolean } = {},
 ) {
@@ -102,7 +102,7 @@ export function readExactSessionEntryRowForCanonicalRepair(
 /** Doctor-only cross-store copy; the source node remains until lifecycle archival succeeds. */
 export function copySqliteSessionOwnedStateForCanonicalRepair(params: {
   canonicalKey: string;
-  destinationDatabase: OpenClawAgentDatabase;
+  destinationDatabase: AforaAgentDatabase;
   preferredEntry?: SessionEntry;
   preferredSessionKey?: string;
   source: { agentId: string; storePath: string };
@@ -112,7 +112,7 @@ export function copySqliteSessionOwnedStateForCanonicalRepair(params: {
   const source = resolveSqliteStoreScope(params.source.storePath, {
     agentId: params.source.agentId,
   });
-  const sourceDatabase = openOpenClawAgentDatabase(toDatabaseOptions(source));
+  const sourceDatabase = openAforaAgentDatabase(toDatabaseOptions(source));
   copySqliteSessionOwnedStateForRepair({
     canonicalKey: params.canonicalKey,
     destination: params.destinationDatabase,
@@ -132,7 +132,7 @@ export function listSqliteSessionGenerationIdsForCanonicalRepair(params: {
   storePath: string;
 }): string[] {
   const source = resolveSqliteStoreScope(params.storePath, { agentId: params.agentId });
-  const database = openOpenClawAgentDatabase(toDatabaseOptions(source));
+  const database = openAforaAgentDatabase(toDatabaseOptions(source));
   return readSessionGenerationIdsForKeys(database, uniqueStrings(params.sourceKeys), {
     exactStoredKeys: true,
   });
@@ -159,7 +159,7 @@ export async function ensureSqliteTranscriptGenerationsForCanonicalRepair(
   }
   for (const group of byDatabase.values()) {
     await runExclusiveSqliteSessionWrite(group.resolved, async () => {
-      runOpenClawAgentWriteTransaction((database) => {
+      runAforaAgentWriteTransaction((database) => {
         // Inventory and generation creation share one snapshot so copied rows and later archive
         // plans observe the same immutable identity for each imported transcript.
         const sessionIds = uniqueStrings([
@@ -189,7 +189,7 @@ export async function ensureSqliteTranscriptGenerationsForCanonicalRepair(
 
 /** Doctor-only same-store rewrite for delivery attribution owned by removed aliases. */
 export function rehomeSqliteSessionDeliveryReferencesForCanonicalRepair(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   canonicalKey: string,
   previousKeys: readonly string[],
 ): void {
@@ -200,7 +200,7 @@ export function rehomeSqliteSessionDeliveryReferencesForCanonicalRepair(
 
 /** Doctor-only batched delivery rewrite with one session identity inventory per database. */
 export function rehomeSqliteSessionDeliveryReferencesForCanonicalRepairBatch(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   repairs: readonly { canonicalKey: string; previousKeys: readonly string[] }[],
 ): void {
   if (repairs.length === 0) {
@@ -255,10 +255,10 @@ export function rehomeSqliteSessionDeliveryReferencesForCanonicalRepairBatch(
 
 function copySqliteSessionOwnedStateForRepair(params: {
   canonicalKey: string;
-  destination: OpenClawAgentDatabase;
+  destination: AforaAgentDatabase;
   preferredEntry?: SessionEntry;
   preferredSessionKey?: string;
-  source: OpenClawAgentDatabase;
+  source: AforaAgentDatabase;
   sourceEntries: readonly SessionEntry[];
   sourceKeys: readonly string[];
 }): void {
@@ -502,9 +502,9 @@ function copySqliteSessionOwnedStateForRepair(params: {
 }
 
 function copySqliteSessionGenerationRows(params: {
-  destination: OpenClawAgentDatabase;
+  destination: AforaAgentDatabase;
   sessionId: string;
-  source: OpenClawAgentDatabase;
+  source: AforaAgentDatabase;
   sourceWindowPresent: boolean;
 }): boolean {
   const sourceDb = getSessionKysely(params.source.db);

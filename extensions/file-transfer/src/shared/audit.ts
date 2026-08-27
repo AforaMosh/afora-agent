@@ -1,7 +1,7 @@
 // Append-only audit log for file-transfer operations.
 //
 // Records every decision (allow/deny/error) at the gateway-side tool
-// layer. Lands at ~/.openclaw/audit/file-transfer.jsonl. Rotation is
+// layer. Lands at ~/.afora/audit/file-transfer.jsonl. Rotation is
 // caller's responsibility — the file grows unbounded.
 //
 // Log records do NOT include file contents or hashes of secrets. They do
@@ -11,7 +11,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { appendRegularFile } from "openclaw/plugin-sdk/security-runtime";
+import { appendRegularFile } from "afora-agent/plugin-sdk/security-runtime";
 
 export type FileTransferAuditOp = "file.fetch" | "dir.list" | "dir.fetch" | "file.write";
 
@@ -53,7 +53,7 @@ async function ensureAuditDir(): Promise<string> {
     return auditDirPromise;
   }
   const promise = (async () => {
-    const dir = path.join(os.homedir(), ".openclaw", "audit");
+    const dir = path.join(os.homedir(), ".afora", "audit");
     await fs.mkdir(dir, { recursive: true, mode: 0o700 });
     return dir;
   })();

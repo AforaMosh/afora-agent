@@ -1,6 +1,6 @@
 /** Tests ACP manager backend failover across initialization and turn execution. */
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import type { SessionAcpMeta } from "../../config/sessions/types.js";
 import {
   AcpRuntimeError,
@@ -86,7 +86,7 @@ describe("AcpSessionManager backend failover", () => {
         backend: "primary-backend",
         fallbacks: ["fallback-backend"],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     return {
       cfg,
       fallbackRuntime,

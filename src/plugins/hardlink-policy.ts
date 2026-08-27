@@ -12,8 +12,8 @@ const NIX_STORE_ROOT = "/nix/store";
 // before loading plugin code.
 //
 // Two roots are allowed:
-// - bundled: plugins shipped with OpenClaw itself, not user-installed code.
-// - /nix/store in OPENCLAW_NIX_MODE: immutable Nix package outputs, where
+// - bundled: plugins shipped with Afora itself, not user-installed code.
+// - /nix/store in AFORA_NIX_MODE: immutable Nix package outputs, where
 //   hardlinked files are normal package-store layout rather than user mutation.
 /** Returns true when a plugin root resolves inside the immutable Nix store. */
 function isNixStorePluginRoot(rootDir: string, realpathCache?: Map<string, string>): boolean {

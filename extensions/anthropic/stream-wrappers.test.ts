@@ -1,7 +1,7 @@
-import { configureAiTransportHost, getAiTransportHost } from "@openclaw/ai";
+import { configureAiTransportHost, getAiTransportHost } from "@afora/ai";
 // Anthropic tests cover stream wrappers plugin behavior.
-import { expectDefined } from "@openclaw/normalization-core";
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
+import { expectDefined } from "@afora/normalization-core";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   createAnthropicBetaHeadersWrapper,

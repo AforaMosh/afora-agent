@@ -1,7 +1,7 @@
 // Compares CLI startup benchmark reports against checked-in budgets.
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { z } from "zod";
 import { booleanFlag, intFlag, parseFlagArgs, stringFlag } from "./lib/arg-utils.mts";
 import { budgetFloatFlag, readBudgetEnvNumber } from "./lib/budget-number-args.mts";
@@ -78,7 +78,7 @@ if (process.argv.slice(2).includes("--help")) {
       "",
       "Non-x64 runs skip fixture regression checks by default because the",
       "checked-in startup fixture is a canonical x64 budget. Response contracts still run. Set",
-      "OPENCLAW_STARTUP_BENCH_ENFORCE_NONCANONICAL_ARCH=1 to force them.",
+      "AFORA_STARTUP_BENCH_ENFORCE_NONCANONICAL_ARCH=1 to force them.",
       "  --help                        Show this help text",
       "",
       "Example:",
@@ -95,17 +95,17 @@ function parseOptions() {
       {
         baseline: CLI_STARTUP_BENCH_FIXTURE_PATH,
         report: "",
-        entry: "openclaw.mjs",
+        entry: "afora.mjs",
         preset: "all",
         runs: 1,
         warmup: 0,
         timeoutMs: 30_000,
         maxDurationRegressionPct:
-          readBudgetEnvNumber("OPENCLAW_STARTUP_BENCH_MAX_DURATION_REGRESSION_PCT") ?? 20,
+          readBudgetEnvNumber("AFORA_STARTUP_BENCH_MAX_DURATION_REGRESSION_PCT") ?? 20,
         maxFirstOutputRegressionPct:
-          readBudgetEnvNumber("OPENCLAW_STARTUP_BENCH_MAX_FIRST_OUTPUT_REGRESSION_PCT") ?? 20,
+          readBudgetEnvNumber("AFORA_STARTUP_BENCH_MAX_FIRST_OUTPUT_REGRESSION_PCT") ?? 20,
         maxRssRegressionPct:
-          readBudgetEnvNumber("OPENCLAW_STARTUP_BENCH_MAX_RSS_REGRESSION_PCT") ?? 20,
+          readBudgetEnvNumber("AFORA_STARTUP_BENCH_MAX_RSS_REGRESSION_PCT") ?? 20,
         skipBaseline: false,
         skipResponseBudgets: false,
       },
@@ -132,10 +132,10 @@ function parseOptions() {
 let opts = parseOptions();
 
 const shouldAutoSkipNonCanonicalBaselineChecks =
-  process.arch !== "x64" && process.env.OPENCLAW_STARTUP_BENCH_ENFORCE_NONCANONICAL_ARCH !== "1";
+  process.arch !== "x64" && process.env.AFORA_STARTUP_BENCH_ENFORCE_NONCANONICAL_ARCH !== "1";
 if (shouldAutoSkipNonCanonicalBaselineChecks && !opts.skipBaseline) {
   console.warn(
-    `[test-cli-startup-bench-budget] skipping x64 startup fixture budgets on ${process.arch}; response contracts and sample output validation still ran. Set OPENCLAW_STARTUP_BENCH_ENFORCE_NONCANONICAL_ARCH=1 to force fixture checks.`,
+    `[test-cli-startup-bench-budget] skipping x64 startup fixture budgets on ${process.arch}; response contracts and sample output validation still ran. Set AFORA_STARTUP_BENCH_ENFORCE_NONCANONICAL_ARCH=1 to force fixture checks.`,
   );
   opts = {
     ...opts,

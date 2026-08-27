@@ -127,7 +127,7 @@ suite.define(() => {
       const storedQueueOrder = () =>
         page.evaluate(() =>
           Object.entries(sessionStorage)
-            .filter(([key]) => key.startsWith("openclaw.control.chatComposer.v2:"))
+            .filter(([key]) => key.startsWith("afora.control.chatComposer.v2:"))
             .flatMap(([, value]) => {
               try {
                 const parsed = JSON.parse(value) as {
@@ -155,7 +155,7 @@ suite.define(() => {
       // Bringing the Gateway back lets the app mount its session UI so the same
       // order can be confirmed rendered, not just stored.
       await gateway.setOnline(true);
-      await page.locator("openclaw-chat-pane").waitFor({ state: "attached", timeout: 15_000 });
+      await page.locator("afora-chat-pane").waitFor({ state: "attached", timeout: 15_000 });
       await page.locator(".chat-queue__item", { hasText: QUEUED[0] }).waitFor({ timeout: 10_000 });
       expect(await queueText()).toEqual([...QUEUED]);
       if (captureUiProofEnabled) {

@@ -13,13 +13,13 @@ const geometry = {
   scale_factor: 1,
 };
 
-const CUA_DRIVER_ENDPOINT_ENV = "OPENCLAW_CUA_DRIVER_ENDPOINT";
+const CUA_DRIVER_ENDPOINT_ENV = "AFORA_CUA_DRIVER_ENDPOINT";
 
 export function macOsEndpoint(overrides: Record<string, unknown> = {}): NodeJS.ProcessEnv {
   return {
     [CUA_DRIVER_ENDPOINT_ENV]: JSON.stringify({
       v: 1,
-      socketPath: "/tmp/openclaw-cua-test/driver.sock",
+      socketPath: "/tmp/afora-cua-test/driver.sock",
       binaryPath: process.execPath,
       ...overrides,
     }),
@@ -35,7 +35,7 @@ export function invalidMacOsEndpoints(): Array<[string, NodeJS.ProcessEnv]> {
       {
         [CUA_DRIVER_ENDPOINT_ENV]: JSON.stringify({
           v: 1,
-          socketPath: "/tmp/openclaw-cua-test/driver.sock",
+          socketPath: "/tmp/afora-cua-test/driver.sock",
         }),
       },
     ],
@@ -89,7 +89,7 @@ export function driver(
   const callTool = vi.fn<CuaDriverSession["callTool"]>(async () => result({}));
   const callDesktopTool = vi.fn<CuaDriverSession["callDesktopTool"]>(async () => result({}));
   const escalateScope = vi.fn(async () => ({
-    session: "openclaw-test",
+    session: "afora-test",
     captureScope: 2,
     effectiveScope: 1,
     desktopUnlocked: true,

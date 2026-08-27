@@ -25,7 +25,7 @@
  * 2. Map each `DeliveryTraceInStep` onto that wiring in the `setup` callback
  *    passed to `runDeliveryTraceScenario` (unsupported steps map to no-ops).
  * 3. Assert with `expectDeliveryTraceMatchesGolden`. Record or refresh goldens
- *    with `OPENCLAW_TRACE_UPDATE=1 pnpm test <test-file>`; CI runs in verify
+ *    with `AFORA_TRACE_UPDATE=1 pnpm test <test-file>`; CI runs in verify
  *    mode and fails on any ordering/payload drift.
  *
  * Determinism contract: the runner installs fake timers at a fixed epoch and
@@ -295,11 +295,11 @@ export function serializeDeliveryTrace(events: readonly TraceEvent[]): string {
   return `${lines.join("\n")}\n`;
 }
 
-const TRACE_UPDATE_ENV = "OPENCLAW_TRACE_UPDATE";
+const TRACE_UPDATE_ENV = "AFORA_TRACE_UPDATE";
 
 /**
  * Verify mode (default, CI): asserts the full ordered event sequence equals the
- * committed golden. Update mode (`OPENCLAW_TRACE_UPDATE=1`): rewrites the golden.
+ * committed golden. Update mode (`AFORA_TRACE_UPDATE=1`): rewrites the golden.
  */
 export function expectDeliveryTraceMatchesGolden(params: {
   goldenUrl: URL;

@@ -1,5 +1,5 @@
 import type { ContentBlock, SessionUpdate } from "@agentclientprotocol/sdk";
-import { resolveIntegerOption } from "@openclaw/normalization-core/number-coercion";
+import { resolveIntegerOption } from "@afora/normalization-core/number-coercion";
 import { isRecord } from "../utils.js";
 
 const DEFAULT_MAX_SESSIONS = 200;

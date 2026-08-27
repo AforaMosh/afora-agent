@@ -1,5 +1,5 @@
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { normalizeNullableString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { normalizeNullableString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { loadMatrixCryptoRuntime } from "./client-base.js";
 import { MatrixClientCore } from "./client-core.js";
 import {

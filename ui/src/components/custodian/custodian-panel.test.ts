@@ -25,7 +25,7 @@ async function mountPanel() {
   const { context } = createContext(request);
   const provider = createApplicationContextProvider(context);
   const store = new CustodianSessionStore();
-  const panel = document.createElement("openclaw-custodian-panel") as TestCustodianPanel;
+  const panel = document.createElement("afora-custodian-panel") as TestCustodianPanel;
   panel.store = store;
   panel.available = true;
   panel.suppressed = true;
@@ -149,7 +149,7 @@ describe("custodian panel", () => {
     panel.minimizeRequestId = 1;
     await panel.updateComplete;
     const surface = panel.querySelector<HTMLElement & { updateComplete: Promise<boolean> }>(
-      "openclaw-custodian-surface",
+      "afora-custodian-surface",
     );
     await surface?.updateComplete;
 
@@ -172,7 +172,7 @@ describe("custodian panel", () => {
     await panel.updateComplete;
 
     expect(
-      (panel.querySelector(".cp-title openclaw-mascot") as HTMLElement & { mood: string }).mood,
+      (panel.querySelector(".cp-title afora-mascot") as HTMLElement & { mood: string }).mood,
     ).toBe("thinking");
   });
 });

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createStorageMock } from "../test-helpers/storage.ts";
 import { fireFirstReplyConfetti } from "./confetti.ts";
 
-const FLAG_KEY = "openclaw.confetti.firstReply";
+const FLAG_KEY = "afora.confetti.firstReply";
 
 function stubMatchMedia(reducedMotion: boolean): void {
   vi.stubGlobal(

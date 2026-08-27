@@ -2,28 +2,28 @@
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { QaProviderMode } from "./index.js";
 import { getQaProvider } from "./index.js";
 
 const QA_LIVE_ENV_ALIASES = Object.freeze([
   {
-    liveVar: "OPENCLAW_LIVE_OPENAI_KEY",
+    liveVar: "AFORA_LIVE_OPENAI_KEY",
     providerVar: "OPENAI_API_KEY",
   },
   {
-    liveVar: "OPENCLAW_LIVE_ANTHROPIC_KEY",
+    liveVar: "AFORA_LIVE_ANTHROPIC_KEY",
     providerVar: "ANTHROPIC_API_KEY",
   },
   {
-    liveVar: "OPENCLAW_LIVE_GEMINI_KEY",
+    liveVar: "AFORA_LIVE_GEMINI_KEY",
     providerVar: "GEMINI_API_KEY",
   },
 ]);
 
-export const QA_LIVE_PROVIDER_CONFIG_PATH_ENV = "OPENCLAW_QA_LIVE_PROVIDER_CONFIG_PATH";
-const QA_LIVE_CLI_BACKEND_PRESERVE_ENV = "OPENCLAW_LIVE_CLI_BACKEND_PRESERVE_ENV";
-const QA_LIVE_CLI_BACKEND_AUTH_MODE_ENV = "OPENCLAW_LIVE_CLI_BACKEND_AUTH_MODE";
+export const QA_LIVE_PROVIDER_CONFIG_PATH_ENV = "AFORA_QA_LIVE_PROVIDER_CONFIG_PATH";
+const QA_LIVE_CLI_BACKEND_PRESERVE_ENV = "AFORA_LIVE_CLI_BACKEND_PRESERVE_ENV";
+const QA_LIVE_CLI_BACKEND_AUTH_MODE_ENV = "AFORA_LIVE_CLI_BACKEND_AUTH_MODE";
 export type QaCliBackendAuthMode = "auto" | "api-key" | "subscription";
 
 export const QA_PROVIDER_SECRET_ENV_VARS = Object.freeze([
@@ -41,16 +41,16 @@ export const QA_PROVIDER_SECRET_ENV_VARS = Object.freeze([
   "MISTRAL_API_KEY",
   "OPENAI_API_KEY",
   "OPENAI_API_KEYS",
-  "OPENCLAW_LIVE_ANTHROPIC_KEY",
-  "OPENCLAW_LIVE_ANTHROPIC_KEYS",
-  "OPENCLAW_LIVE_GEMINI_KEY",
-  "OPENCLAW_LIVE_OPENAI_KEY",
-  "OPENCLAW_QA_CONVEX_SECRET_CI",
-  "OPENCLAW_QA_CONVEX_SECRET_MAINTAINER",
+  "AFORA_LIVE_ANTHROPIC_KEY",
+  "AFORA_LIVE_ANTHROPIC_KEYS",
+  "AFORA_LIVE_GEMINI_KEY",
+  "AFORA_LIVE_OPENAI_KEY",
+  "AFORA_QA_CONVEX_SECRET_CI",
+  "AFORA_QA_CONVEX_SECRET_MAINTAINER",
   "VOYAGE_API_KEY",
 ]);
 export const QA_PROVIDER_SECRET_ENV_KEY_PATTERNS = Object.freeze([
-  /^OPENCLAW_LIVE_[A-Z0-9_]+_KEYS?$/u,
+  /^AFORA_LIVE_[A-Z0-9_]+_KEYS?$/u,
 ]);
 
 const QA_MOCK_BLOCKED_ENV_VARS = Object.freeze([
@@ -80,14 +80,14 @@ const QA_LIVE_ALLOWED_ENV_VARS = Object.freeze([
   "AWS_REGION",
   "OPENAI_BASE_URL",
   QA_LIVE_PROVIDER_CONFIG_PATH_ENV,
-  "OPENCLAW_CONFIG_PATH",
+  "AFORA_CONFIG_PATH",
 ]);
 
 const QA_LIVE_ALLOWED_ENV_PATTERNS = Object.freeze([
   /^[A-Z0-9_]+_API_KEYS$/u,
   /^[A-Z0-9_]+_API_KEY_[0-9]+$/u,
-  /^OPENCLAW_LIVE_[A-Z0-9_]+_KEY$/u,
-  /^OPENCLAW_LIVE_[A-Z0-9_]+_KEYS$/u,
+  /^AFORA_LIVE_[A-Z0-9_]+_KEY$/u,
+  /^AFORA_LIVE_[A-Z0-9_]+_KEYS$/u,
 ]);
 
 function resolveUserPath(value: string, env: NodeJS.ProcessEnv = process.env) {
@@ -159,11 +159,11 @@ export function resolveQaLiveCliAuthEnv(
 ) {
   const authMode = opts?.claudeCliAuthMode ?? "auto";
   const hasAnthropicKey = Boolean(
-    baseEnv.ANTHROPIC_API_KEY?.trim() || baseEnv.OPENCLAW_LIVE_ANTHROPIC_KEY?.trim(),
+    baseEnv.ANTHROPIC_API_KEY?.trim() || baseEnv.AFORA_LIVE_ANTHROPIC_KEY?.trim(),
   );
   if (opts?.forwardHostHomeForClaudeCli && authMode === "api-key" && !hasAnthropicKey) {
     throw new Error(
-      "Claude CLI API-key QA mode requires ANTHROPIC_API_KEY or OPENCLAW_LIVE_ANTHROPIC_KEY",
+      "Claude CLI API-key QA mode requires ANTHROPIC_API_KEY or AFORA_LIVE_ANTHROPIC_KEY",
     );
   }
   const preserveEnvValues = (() => {
@@ -206,10 +206,10 @@ export function resolveQaLiveCliAuthEnv(
 
 export function resolveQaLiveProviderConfigPath(env: NodeJS.ProcessEnv = process.env) {
   const explicit =
-    env[QA_LIVE_PROVIDER_CONFIG_PATH_ENV]?.trim() || env.OPENCLAW_CONFIG_PATH?.trim();
+    env[QA_LIVE_PROVIDER_CONFIG_PATH_ENV]?.trim() || env.AFORA_CONFIG_PATH?.trim();
   return explicit
     ? { path: resolveUserPath(explicit, env), explicit: true }
-    : { path: path.join(os.homedir(), ".openclaw", "openclaw.json"), explicit: false };
+    : { path: path.join(os.homedir(), ".afora", "afora.json"), explicit: false };
 }
 
 export function resolveQaForwardedLiveEnv(baseEnv: NodeJS.ProcessEnv = process.env) {

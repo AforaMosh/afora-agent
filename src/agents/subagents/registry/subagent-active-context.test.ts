@@ -1,7 +1,7 @@
 // Active subagent prompt tests cover the compact system prompt block that tells
 // a parent session which child runs are still in flight.
 import { beforeEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { buildActiveSubagentSystemPromptAddition } from "./subagent-active-context.js";
 import {
   addSubagentRunForTests,
@@ -17,7 +17,7 @@ describe("buildActiveSubagentSystemPromptAddition", () => {
   it("returns nothing without active children", () => {
     expect(
       buildActiveSubagentSystemPromptAddition({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         controllerSessionKey: "agent:main:main",
       }),
     ).toBeUndefined();
@@ -40,7 +40,7 @@ describe("buildActiveSubagentSystemPromptAddition", () => {
     addSubagentRunForTests(run);
 
     const prompt = buildActiveSubagentSystemPromptAddition({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       controllerSessionKey: "agent:main:main",
       hasSessionsYield: true,
     });
@@ -68,7 +68,7 @@ describe("buildActiveSubagentSystemPromptAddition", () => {
     addSubagentRunForTests(run);
 
     const prompt = buildActiveSubagentSystemPromptAddition({
-      cfg: { session: { mainKey: "agent:main:main" } } as OpenClawConfig,
+      cfg: { session: { mainKey: "agent:main:main" } } as AforaConfig,
       controllerSessionKey: "main",
       hasSessionsYield: true,
     });
@@ -93,7 +93,7 @@ describe("buildActiveSubagentSystemPromptAddition", () => {
     addSubagentRunForTests(run);
 
     const prompt = buildActiveSubagentSystemPromptAddition({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       controllerSessionKey: "agent:main:main",
       hasSessionsYield: true,
     });
@@ -122,7 +122,7 @@ describe("buildActiveSubagentSystemPromptAddition", () => {
     addSubagentRunForTests(run);
 
     const prompt = buildActiveSubagentSystemPromptAddition({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       controllerSessionKey: "agent:main:main",
       hasSessionsYield: false,
     });

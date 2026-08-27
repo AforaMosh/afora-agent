@@ -1,10 +1,10 @@
 import path from "node:path";
-import { mimeTypeFromFilePath } from "@openclaw/media-core/mime";
+import { mimeTypeFromFilePath } from "@afora/media-core/mime";
 import {
   asFiniteNumberInRange,
   asPositiveSafeInteger,
-} from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { MediaFactInput } from "../media/media-facts.js";
 import type { PersistedUserTurnMediaInput } from "./user-turn-transcript.types.js";
 

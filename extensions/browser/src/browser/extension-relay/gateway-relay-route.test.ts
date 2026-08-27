@@ -85,13 +85,13 @@ function relayReq(
   headers: Record<string, string> = {},
 ): IncomingMessage {
   return req(url, {
-    "sec-websocket-protocol": `openclaw-extension-relay, openclaw-extension-token.${token}`,
+    "sec-websocket-protocol": `afora-extension-relay, afora-extension-token.${token}`,
     ...headers,
   });
 }
 
 function v2Req(url = "/browser/extension"): IncomingMessage {
-  return req(url, { "sec-websocket-protocol": "openclaw-extension-relay.v2" });
+  return req(url, { "sec-websocket-protocol": "afora-extension-relay.v2" });
 }
 
 function stateWithExtensionProfile() {
@@ -307,7 +307,7 @@ describe("handleGatewayExtensionUpgrade", () => {
         "Upgrade: websocket",
         "Sec-WebSocket-Version: 13",
         "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==",
-        "Sec-WebSocket-Protocol: openclaw-extension-relay.v2",
+        "Sec-WebSocket-Protocol: afora-extension-relay.v2",
         "Origin: chrome-extension://relay-auth-v2-test",
         "",
         "",
@@ -351,7 +351,7 @@ describe("handleGatewayExtensionUpgrade", () => {
     const mixed = fakeSocket();
     await handleGatewayExtensionUpgrade(
       req("/browser/extension", {
-        "sec-websocket-protocol": `openclaw-extension-relay.v2, openclaw-extension-relay, openclaw-extension-token.${TOKEN}`,
+        "sec-websocket-protocol": `afora-extension-relay.v2, afora-extension-relay, afora-extension-token.${TOKEN}`,
       }),
       mixed.socket,
       Buffer.alloc(0),

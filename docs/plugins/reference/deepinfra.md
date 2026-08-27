@@ -1,5 +1,5 @@
 ---
-summary: "Adds DeepInfra model provider support to OpenClaw."
+summary: "Adds DeepInfra model provider support to Afora."
 read_when:
   - You are installing, configuring, or auditing the deepinfra plugin
 title: "DeepInfra plugin"
@@ -7,12 +7,12 @@ title: "DeepInfra plugin"
 
 # DeepInfra plugin
 
-Adds DeepInfra model provider support to OpenClaw.
+Adds DeepInfra model provider support to Afora.
 
 ## Distribution
 
-- Package: `@openclaw/deepinfra-provider`
-- Install route: npm; ClawHub: `clawhub:@openclaw/deepinfra-provider`
+- Package: `@afora/deepinfra-provider`
+- Install route: npm; ClawHub: `clawhub:@afora/deepinfra-provider`
 
 ## Surface
 

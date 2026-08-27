@@ -949,7 +949,7 @@ describe("Claude live turn output bounds and result projection", () => {
       name: "FailoverError",
       message:
         "Claude CLI stopped after reaching the maximum number of turns (limit: 1). " +
-        "OpenClaw run: run-live-max-turns. OpenClaw session: s1. " +
+        "Afora run: run-live-max-turns. Afora session: s1. " +
         "Claude session: live-max-turns. Tool actions may already have run; verify their effects before retrying. " +
         "Retry with a higher --max-turns value or a narrower task.",
       sessionId: "s1",

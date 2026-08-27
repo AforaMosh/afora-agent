@@ -4,7 +4,7 @@
  * Builds reply-to-mode resolvers from static, top-level, or account-scoped config.
  */
 import type { ReplyToMode } from "../../config/types.base.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ChannelThreadingAdapter } from "./types.core.js";
 
 type ReplyToModeResolver = NonNullable<ChannelThreadingAdapter["resolveReplyToMode"]>;
@@ -32,7 +32,7 @@ export function createTopLevelChannelReplyToModeResolver(channelId: string): Rep
  * Creates a resolver that reads reply-to mode from account-scoped config.
  */
 export function createScopedAccountReplyToModeResolver<TAccount>(params: {
-  resolveAccount: (cfg: OpenClawConfig, accountId?: string | null) => TAccount;
+  resolveAccount: (cfg: AforaConfig, accountId?: string | null) => TAccount;
   resolveReplyToMode: (
     account: TAccount,
     chatType?: string | null,

@@ -1,6 +1,6 @@
 /** Request-isolated registry views forked from lifecycle-owned model generations. */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { Model } from "../llm/types.js";
 import { normalizeDiscoveredAgentModel } from "./agent-model-discovery.js";
 import {
@@ -36,7 +36,7 @@ function usesCredentialFreeRegistry(options: LoadPreparedAgentModelRegistryOptio
 function createRegistryView(params: {
   registry: ModelRegistry;
   agentDir: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   providerFilter?: string;
   normalizeModels?: boolean;
   workspaceDir?: string;
@@ -118,7 +118,7 @@ async function loadReadSnapshot(
 }
 
 function resolveInput(
-  config: OpenClawConfig,
+  config: AforaConfig,
   options: LoadPreparedAgentModelRegistryOptions = {},
 ): PreparedModelRuntimeInput {
   const agentId =
@@ -139,9 +139,9 @@ function resolveInput(
 
 /** Loads and forks one registry from the owning command lifecycle generation. */
 export async function loadPreparedAgentModelRegistry(
-  config: OpenClawConfig,
+  config: AforaConfig,
   options: LoadPreparedAgentModelRegistryOptions = {},
-): Promise<{ agentDir: string; config: OpenClawConfig; registry: ModelRegistry }> {
+): Promise<{ agentDir: string; config: AforaConfig; registry: ModelRegistry }> {
   const input = resolveInput(config, options);
   const lease = await loadReadSnapshot(input, options.workspaceDir === undefined);
   try {

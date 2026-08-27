@@ -20,7 +20,7 @@ import {
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
 
 let server: ControlUiE2eServer;
@@ -29,7 +29,7 @@ let browser: Browser;
 const openContexts = new Set<BrowserContext>();
 
 async function panelActionIds(page: import("playwright").Page): Promise<string[]> {
-  return page.locator("openclaw-chat-header-session-menu").evaluate((element) =>
+  return page.locator("afora-chat-header-session-menu").evaluate((element) =>
     (
       element as HTMLElement & {
         panelActions: Array<{ id: string }>;
@@ -382,8 +382,8 @@ describeControlUiE2e("session diff panel", () => {
         [watchedKey]: {
           pullRequests: [],
           branch: {
-            owner: "openclaw",
-            repo: "openclaw",
+            owner: "afora",
+            repo: "afora",
             branch: "feature/panel",
             additions: 142,
             deletions: 198,
@@ -632,7 +632,7 @@ describeControlUiE2e("session diff panel", () => {
     // The section-title button opens the same scope menu as the footer.
     await panel.locator(".session-diff__section-title").click();
     await page
-      .locator('openclaw-session-diff-menu wa-dropdown-item[value="scope:uncommitted"]')
+      .locator('afora-session-diff-menu wa-dropdown-item[value="scope:uncommitted"]')
       .click();
     await expect
       .poll(() => panel.locator(".session-diff__section-title span").textContent())
@@ -644,7 +644,7 @@ describeControlUiE2e("session diff panel", () => {
 
     await panel.locator(".session-diff__footer").click();
     await page
-      .locator('openclaw-session-diff-menu wa-dropdown-item[value="scope:commit:abc1234"]')
+      .locator('afora-session-diff-menu wa-dropdown-item[value="scope:commit:abc1234"]')
       .click();
     await expect
       .poll(() => panel.locator(".session-diff__section-title span").textContent())

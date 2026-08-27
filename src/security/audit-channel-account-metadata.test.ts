@@ -1,7 +1,7 @@
 // Covers channel account metadata security audit findings.
 import { describe, expect, it } from "vitest";
 import type { ChannelPlugin } from "../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { collectChannelSecurityFindingsCore } from "./audit-channel.js";
 
 function stubChannelPlugin(): ChannelPlugin {
@@ -53,7 +53,7 @@ function requireDangerousMatchingFinding(
 
 describe("security audit channel account metadata", () => {
   it("does not treat prototype properties as explicit account config paths", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         discord: {
           enabled: true,

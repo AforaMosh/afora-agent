@@ -1,7 +1,7 @@
 // Shared owner-qualified ClawHub security verdict resolution.
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
-import { asOptionalRecord as readObject } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { asFiniteNumber } from "@afora/normalization-core/number-coercion";
+import { asOptionalRecord as readObject } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import pLimit from "p-limit";
 import {
   fetchClawHubSkillSecurityVerdicts,

@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ModelProviderConfig } from "../config/types.models.js";
 import { resolveDirectBundledProviderPolicySurface } from "./provider-policy-surface.js";
@@ -12,7 +12,7 @@ import {
 } from "./provider-public-artifacts.js";
 
 function writeExternalPolicyFixture(): string {
-  const pluginRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-provider-policy-external-"));
+  const pluginRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-provider-policy-external-"));
   fs.writeFileSync(
     path.join(pluginRoot, "provider-policy-api.js"),
     [
@@ -35,19 +35,19 @@ function writeExternalPolicyFixture(): string {
 }
 
 describe("provider public artifacts", () => {
-  const originalBundledPluginsDir = process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
-  const originalTrustBundledPluginsDir = process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR;
+  const originalBundledPluginsDir = process.env.AFORA_BUNDLED_PLUGINS_DIR;
+  const originalTrustBundledPluginsDir = process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR;
 
   function restoreBundledPluginEnv() {
     if (originalBundledPluginsDir === undefined) {
-      delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+      delete process.env.AFORA_BUNDLED_PLUGINS_DIR;
     } else {
-      process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = originalBundledPluginsDir;
+      process.env.AFORA_BUNDLED_PLUGINS_DIR = originalBundledPluginsDir;
     }
     if (originalTrustBundledPluginsDir === undefined) {
-      delete process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR;
+      delete process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR;
     } else {
-      process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR = originalTrustBundledPluginsDir;
+      process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR = originalTrustBundledPluginsDir;
     }
   }
 
@@ -98,14 +98,14 @@ describe("provider public artifacts", () => {
           baseUrl: "https://api.openai.com/v1",
           authRequirement: "api-key",
           requestTransportOverrides: "none",
-          runtimePolicy: { compatibleIds: ["openclaw", "codex"] },
+          runtimePolicy: { compatibleIds: ["afora", "codex"] },
         },
         {
           api: "openai-chatgpt-responses",
           baseUrl: "https://chatgpt.com/backend-api/codex",
           authRequirement: "subscription",
           requestTransportOverrides: "none",
-          runtimePolicy: { compatibleIds: ["openclaw", "codex"] },
+          runtimePolicy: { compatibleIds: ["afora", "codex"] },
         },
       ],
     });
@@ -192,13 +192,13 @@ describe("provider public artifacts", () => {
 
   it("loads trusted official external provider policy before runtime registration", () => {
     const bundledPluginsDir = fs.mkdtempSync(
-      path.join(os.tmpdir(), "openclaw-empty-bundled-plugins-"),
+      path.join(os.tmpdir(), "afora-empty-bundled-plugins-"),
     );
     const pluginRoot = writeExternalPolicyFixture();
 
     try {
-      process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
-      process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
+      process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
+      process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
       const fixturePlugin = {
         id: "fixture-provider",
         origin: "external",
@@ -248,7 +248,7 @@ describe("provider public artifacts", () => {
     "rejects trusted official provider policy artifacts hardlinked outside the installed root",
     () => {
       const tempRoot = fs.realpathSync(
-        fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-provider-policy-hardlink-")),
+        fs.mkdtempSync(path.join(os.tmpdir(), "afora-provider-policy-hardlink-")),
       );
       const pluginRoot = path.join(tempRoot, "installed-provider");
       const outsidePath = path.join(tempRoot, "outside-policy.js");
@@ -286,13 +286,13 @@ describe("provider public artifacts", () => {
 
   it("resolves namespaced provider policies from their trusted external plugin root", () => {
     const bundledPluginsDir = fs.mkdtempSync(
-      path.join(os.tmpdir(), "openclaw-empty-bundled-plugins-"),
+      path.join(os.tmpdir(), "afora-empty-bundled-plugins-"),
     );
     const pluginRoot = writeExternalPolicyFixture();
 
     try {
-      process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
-      process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
+      process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
+      process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
       const fixturePlugin = {
         id: "fixture-provider",
         origin: "external",
@@ -342,11 +342,11 @@ describe("provider public artifacts", () => {
   });
 
   it("resolves multi-provider policy artifacts by manifest-owned provider id", async () => {
-    const bundledPluginsDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-provider-policy-"));
+    const bundledPluginsDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-provider-policy-"));
     const pluginDir = path.join(bundledPluginsDir, "openai");
     fs.mkdirSync(pluginDir, { recursive: true });
     fs.writeFileSync(
-      path.join(pluginDir, "openclaw.plugin.json"),
+      path.join(pluginDir, "afora.plugin.json"),
       JSON.stringify({
         id: "openai",
         configSchema: { type: "object" },
@@ -376,8 +376,8 @@ describe("provider public artifacts", () => {
         resolveBundledPluginsDir: () => bundledPluginsDir,
       };
     });
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
-    process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
+    process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
     vi.doMock("./public-surface-loader.js", () => ({
       loadBundledPluginPublicArtifactModuleSync,
     }));
@@ -458,7 +458,7 @@ describe("provider public artifacts", () => {
             cliBackends: [],
             hooks: [],
             origin: "bundled",
-            manifestPath: "/tmp/xai/openclaw.plugin.json",
+            manifestPath: "/tmp/xai/afora.plugin.json",
             providers: ["xai"],
             providerAuthAliases: { "x-ai": "xai" },
             rootDir: "/tmp/xai",
@@ -521,7 +521,7 @@ describe("provider public artifacts", () => {
             cliBackends: ["claude-cli"],
             hooks: [],
             origin: "bundled",
-            manifestPath: "/tmp/anthropic/openclaw.plugin.json",
+            manifestPath: "/tmp/anthropic/afora.plugin.json",
             providers: ["anthropic"],
             rootDir: "/tmp/anthropic",
             skills: [],
@@ -545,13 +545,13 @@ describe("provider public artifacts", () => {
 
   it("does not cache manifest-owned provider policy aliases across bundled metadata changes", async () => {
     const bundledPluginsDir = fs.mkdtempSync(
-      path.join(os.tmpdir(), "openclaw-provider-policy-refresh-"),
+      path.join(os.tmpdir(), "afora-provider-policy-refresh-"),
     );
     const writePlugin = (pluginId: string, providers: string[], version: number) => {
       const pluginDir = path.join(bundledPluginsDir, pluginId);
       fs.mkdirSync(pluginDir, { recursive: true });
       fs.writeFileSync(
-        path.join(pluginDir, "openclaw.plugin.json"),
+        path.join(pluginDir, "afora.plugin.json"),
         JSON.stringify({
           id: pluginId,
           name: `${pluginId} ${version}`,
@@ -578,8 +578,8 @@ describe("provider public artifacts", () => {
     vi.doMock("./public-surface-loader.js", () => ({
       loadBundledPluginPublicArtifactModuleSync,
     }));
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
-    process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
+    process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
 
     try {
       writePlugin("first", ["fixture-provider"], 1);
@@ -644,7 +644,7 @@ describe("provider public artifacts", () => {
             cliBackends: [],
             hooks: [],
             origin: "bundled",
-            manifestPath: "/tmp/owner/openclaw.plugin.json",
+            manifestPath: "/tmp/owner/afora.plugin.json",
             providers: ["alias"],
             rootDir: "/tmp/owner",
             skills: [],

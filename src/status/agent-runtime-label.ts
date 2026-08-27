@@ -1,18 +1,18 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 // Agent runtime label helpers format provider, model, and runtime labels.
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { sanitizeTerminalText } from "../../packages/terminal-core/src/safe-text.js";
 import { isCliProvider, type CliProviderClassifier } from "../agents/model-selection.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 // Status runtime labels turn harness/provider/session state into a short
 // operator-facing name, sanitizing any persisted ACP/backend text.
 const AGENT_RUNTIME_LABELS: Readonly<Record<string, string>> = {
-  openclaw: "OpenClaw Default",
+  afora: "Afora Default",
   codex: "OpenAI Codex",
   "codex-cli": "OpenAI Codex",
   "claude-cli": "Claude CLI",
@@ -20,7 +20,7 @@ const AGENT_RUNTIME_LABELS: Readonly<Record<string, string>> = {
 };
 
 export function resolveAgentRuntimeLabel(args: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   sessionEntry?: Pick<
     SessionEntry,
     "acp" | "agentRuntimeOverride" | "agentHarnessId" | "modelProvider" | "providerOverride"
@@ -57,5 +57,5 @@ export function resolveAgentRuntimeLabel(args: {
     );
   }
 
-  return expectDefined(AGENT_RUNTIME_LABELS.openclaw, "OpenClaw runtime label");
+  return expectDefined(AGENT_RUNTIME_LABELS.afora, "Afora runtime label");
 }

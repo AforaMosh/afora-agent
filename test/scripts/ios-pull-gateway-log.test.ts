@@ -22,7 +22,7 @@ function runWithFakeXcrun(
   );
   chmodSync(xcrunPath, 0o755);
 
-  return spawnSync("bash", [scriptPath, "device-udid", "ai.openclaw.ios.dev", destPath], {
+  return spawnSync("bash", [scriptPath, "device-udid", "ai.afora.ios.dev", destPath], {
     cwd: process.cwd(),
     encoding: "utf8",
     env: {
@@ -34,8 +34,8 @@ function runWithFakeXcrun(
 
 describe("scripts/dev/ios-pull-gateway-log.sh", () => {
   it("fails when the copied gateway log is empty", () => {
-    const root = tempDirs.make("openclaw-ios-log-pull-");
-    const destPath = path.join(root, "openclaw-gateway.log");
+    const root = tempDirs.make("afora-ios-log-pull-");
+    const destPath = path.join(root, "afora-gateway.log");
     const result = runWithFakeXcrun(
       root,
       'while [[ "$#" -gt 0 ]]; do if [[ "$1" == "--destination" ]]; then shift; : > "$1"; fi; shift || break; done',
@@ -48,8 +48,8 @@ describe("scripts/dev/ios-pull-gateway-log.sh", () => {
   });
 
   it("prints the pulled gateway log tail when the copied file has content", () => {
-    const root = tempDirs.make("openclaw-ios-log-pull-");
-    const destPath = path.join(root, "openclaw-gateway.log");
+    const root = tempDirs.make("afora-ios-log-pull-");
+    const destPath = path.join(root, "afora-gateway.log");
     const result = runWithFakeXcrun(
       root,
       'while [[ "$#" -gt 0 ]]; do if [[ "$1" == "--destination" ]]; then shift; printf "gateway ready\\n" > "$1"; fi; shift || break; done',

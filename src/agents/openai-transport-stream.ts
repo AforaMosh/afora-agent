@@ -1,6 +1,6 @@
-import { buildOpenAICompletionsParams as buildOpenAICompletionsParamsImpl } from "@openclaw/ai/transports";
+import { buildOpenAICompletionsParams as buildOpenAICompletionsParamsImpl } from "@afora/ai/transports";
 import "./ai-transport-runtime-host.js";
-import type { OpenAICompletionsOptions, OpenAIModeModel } from "@openclaw/ai/transports";
+import type { OpenAICompletionsOptions, OpenAIModeModel } from "@afora/ai/transports";
 /**
  * Public OpenAI transport surface.
  *
@@ -9,7 +9,7 @@ import type { OpenAICompletionsOptions, OpenAIModeModel } from "@openclaw/ai/tra
  */
 import type { Context } from "../llm/types.js";
 
-export { createOpenAIResponsesTransportStreamFn } from "@openclaw/ai/transports";
+export { createOpenAIResponsesTransportStreamFn } from "@afora/ai/transports";
 
 // Keep this SDK-exported declaration anchored to the long-lived facade while the
 // completions implementation remains independently owned.

@@ -1,6 +1,6 @@
 /** Verifies MCP connection resolver registration ownership is fail-closed. */
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createPluginRegistry } from "./registry.js";
 import type { PluginRuntime } from "./runtime/types.js";
 import { createPluginRecord } from "./status.test-fixtures.js";
@@ -17,7 +17,7 @@ function createRegistryHarness(allowProcessHomeSessionCatalogs = true) {
     allowProcessHomeSessionCatalogs,
     activateGlobalSideEffects: false,
   });
-  const config = {} as OpenClawConfig;
+  const config = {} as AforaConfig;
   const apiFor = (id: string) => {
     const record = createPluginRecord({ id, source: `/plugins/${id}/index.ts` });
     pluginRegistry.registry.plugins.push(record);

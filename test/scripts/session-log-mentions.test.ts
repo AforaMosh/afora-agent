@@ -13,7 +13,7 @@ const tempRoots = useAutoCleanupTempDirTracker(afterEach);
 
 describe("session log mention scanner", () => {
   it("counts mentions across bounded session logs", async () => {
-    const root = tempRoots.make("openclaw-session-log-mentions-");
+    const root = tempRoots.make("afora-session-log-mentions-");
     await fs.writeFile(path.join(root, "one.jsonl"), "API.read MCP.fixture API.read\n");
     await fs.writeFile(path.join(root, "two.jsonl"), "MCP.fixture\n");
     await fs.writeFile(path.join(root, "ignored.txt"), "API.read\n");
@@ -33,7 +33,7 @@ describe("session log mention scanner", () => {
   });
 
   it("does not count user prompt lines as runtime mention proof", async () => {
-    const root = tempRoots.make("openclaw-session-log-mentions-");
+    const root = tempRoots.make("afora-session-log-mentions-");
     await fs.writeFile(
       path.join(root, "prompts.jsonl"),
       [
@@ -75,9 +75,9 @@ describe("session log mention scanner", () => {
   });
 
   it("counts mentions from SQLite transcript rows", async () => {
-    const root = tempRoots.make("openclaw-session-log-mentions-");
+    const root = tempRoots.make("afora-session-log-mentions-");
     const sessionsDir = path.join(root, "agents", "main", "sessions");
-    const sqlitePath = path.join(root, "agents", "main", "agent", "openclaw-agent.sqlite");
+    const sqlitePath = path.join(root, "agents", "main", "agent", "afora-agent.sqlite");
     await fs.mkdir(path.dirname(sqlitePath), { recursive: true });
     const db = new DatabaseSync(sqlitePath);
     try {
@@ -138,9 +138,9 @@ describe("session log mention scanner", () => {
   });
 
   it("rejects oversized SQLite transcript rows before counting them", async () => {
-    const root = tempRoots.make("openclaw-session-log-mentions-");
+    const root = tempRoots.make("afora-session-log-mentions-");
     const sessionsDir = path.join(root, "agents", "main", "sessions");
-    const sqlitePath = path.join(root, "agents", "main", "agent", "openclaw-agent.sqlite");
+    const sqlitePath = path.join(root, "agents", "main", "agent", "afora-agent.sqlite");
     await fs.mkdir(path.dirname(sqlitePath), { recursive: true });
     const db = new DatabaseSync(sqlitePath);
     try {
@@ -177,7 +177,7 @@ describe("session log mention scanner", () => {
   it("returns zero counts when the sessions directory is absent", async () => {
     await expect(
       countSessionLogMentions({
-        sessionsDir: path.join(tempRoots.make("openclaw-session-log-mentions-"), "missing"),
+        sessionsDir: path.join(tempRoots.make("afora-session-log-mentions-"), "missing"),
         needles: {
           apiFileRead: "API.read",
         },
@@ -188,7 +188,7 @@ describe("session log mention scanner", () => {
   });
 
   it("rejects oversized session log files before loading them", async () => {
-    const root = tempRoots.make("openclaw-session-log-mentions-");
+    const root = tempRoots.make("afora-session-log-mentions-");
     await fs.writeFile(path.join(root, "huge.jsonl"), "x".repeat(64));
 
     await expect(
@@ -206,7 +206,7 @@ describe("session log mention scanner", () => {
   });
 
   it("rejects aggregate session log scans that exceed the total ceiling", async () => {
-    const root = tempRoots.make("openclaw-session-log-mentions-");
+    const root = tempRoots.make("afora-session-log-mentions-");
     await fs.writeFile(path.join(root, "one.jsonl"), "x".repeat(24));
     await fs.writeFile(path.join(root, "two.jsonl"), "x".repeat(24));
 
@@ -227,13 +227,13 @@ describe("session log mention scanner", () => {
   it("rejects loose numeric env limits instead of parsing prefixes", () => {
     expect(() =>
       readSessionLogMentionLimits({
-        OPENCLAW_SESSION_LOG_MENTION_FILE_MAX_BYTES: "1e3",
+        AFORA_SESSION_LOG_MENTION_FILE_MAX_BYTES: "1e3",
       }),
-    ).toThrow("invalid OPENCLAW_SESSION_LOG_MENTION_FILE_MAX_BYTES: 1e3");
+    ).toThrow("invalid AFORA_SESSION_LOG_MENTION_FILE_MAX_BYTES: 1e3");
     expect(() =>
       readSessionLogMentionLimits({
-        OPENCLAW_SESSION_LOG_MENTION_TOTAL_MAX_BYTES: "1000ms",
+        AFORA_SESSION_LOG_MENTION_TOTAL_MAX_BYTES: "1000ms",
       }),
-    ).toThrow("invalid OPENCLAW_SESSION_LOG_MENTION_TOTAL_MAX_BYTES: 1000ms");
+    ).toThrow("invalid AFORA_SESSION_LOG_MENTION_TOTAL_MAX_BYTES: 1000ms");
   });
 });

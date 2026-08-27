@@ -1,29 +1,29 @@
-import type { WorkboardWorkspace, WorkboardWorkspaceAccess } from "@openclaw/workboard-contract";
+import type { WorkboardWorkspace, WorkboardWorkspaceAccess } from "@afora/workboard-contract";
 // Workboard workspace access follows the caller's canonical filesystem boundary.
 import {
   listAgentIds,
   resolveAgentConfig,
   resolveAgentWorkspaceDir,
   resolveDefaultAgentId,
-} from "openclaw/plugin-sdk/agent-runtime";
+} from "afora-agent/plugin-sdk/agent-runtime";
 import type {
   AnyAgentTool,
-  OpenClawPluginApi,
-  OpenClawPluginToolContext,
-} from "openclaw/plugin-sdk/plugin-entry";
+  AforaPluginApi,
+  AforaPluginToolContext,
+} from "afora-agent/plugin-sdk/plugin-entry";
 import {
   canonicalPathFromExistingAncestor,
   isPathInside,
-} from "openclaw/plugin-sdk/security-runtime";
-import { asOptionalRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/security-runtime";
+import { asOptionalRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
-export type { WorkboardWorkspaceAccess } from "@openclaw/workboard-contract";
+export type { WorkboardWorkspaceAccess } from "@afora/workboard-contract";
 
-type WorkboardConfig = NonNullable<OpenClawPluginToolContext["config"]>;
+type WorkboardConfig = NonNullable<AforaPluginToolContext["config"]>;
 type ResolveSandboxWorkspaceAuthority =
-  OpenClawPluginApi["runtime"]["sandbox"]["resolveWorkspaceAuthority"];
+  AforaPluginApi["runtime"]["sandbox"]["resolveWorkspaceAuthority"];
 type PrepareSandboxWorkspaceAuthority =
-  OpenClawPluginApi["runtime"]["sandbox"]["prepareWorkspaceAuthority"];
+  AforaPluginApi["runtime"]["sandbox"]["prepareWorkspaceAuthority"];
 
 export const WORKBOARD_TOOL_NAMES = [
   "workboard_list",
@@ -172,7 +172,7 @@ export function resolveCommandWorkboardWorkspaceAccess(params: {
 }
 
 function resolveToolWorkboardWorkspaceAccess(
-  context: OpenClawPluginToolContext | undefined,
+  context: AforaPluginToolContext | undefined,
   resolveSandboxWorkspaceAuthority?: ResolveSandboxWorkspaceAuthority,
 ): WorkboardWorkspaceAccess {
   if (!context?.sandboxed && context?.fsPolicy?.workspaceOnly !== true) {
@@ -388,7 +388,7 @@ export async function assertWorkboardWorkspaceSourceAccess(
 
 export function guardWorkboardToolsForWorkspaceAccess(
   tools: AnyAgentTool[],
-  context: OpenClawPluginToolContext | undefined,
+  context: AforaPluginToolContext | undefined,
   resolveSandboxWorkspaceAuthority?: ResolveSandboxWorkspaceAuthority,
 ): AnyAgentTool[] {
   const workspaceAccess = resolveToolWorkboardWorkspaceAccess(

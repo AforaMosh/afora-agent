@@ -2,25 +2,25 @@
 import { chmodSync, existsSync, rmSync, statSync } from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { MAX_DATE_TIMESTAMP_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_DATE_TIMESTAMP_MS } from "@afora/normalization-core/number-coercion";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  clearOpenClawDatabaseQuarantine,
-  recordOpenClawDatabaseQuarantine,
-} from "../state/openclaw-quarantine-store.js";
+  clearAforaDatabaseQuarantine,
+  recordAforaDatabaseQuarantine,
+} from "../state/afora-quarantine-store.js";
 import {
-  clearOpenClawStateDatabaseOpenFailure,
-  isOpenClawStateDatabaseOpen,
-  OPENCLAW_STATE_SCHEMA_VERSION,
-  openOpenClawStateDatabase,
-  recordOpenClawStateDatabaseOpenFailure,
-} from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+  clearAforaStateDatabaseOpenFailure,
+  isAforaStateDatabaseOpen,
+  AFORA_STATE_SCHEMA_VERSION,
+  openAforaStateDatabase,
+  recordAforaStateDatabaseOpenFailure,
+} from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import {
-  createOpenClawTestState,
-  withOpenClawTestState,
-  type OpenClawTestState,
-} from "../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  withAforaTestState,
+  type AforaTestState,
+} from "../test-utils/afora-test-state.js";
 import {
   closePluginStateDatabase,
   countPluginStateLiveEntries,
@@ -40,11 +40,11 @@ import {
 } from "./plugin-state-store.test-helpers.js";
 import { PluginStateStoreError } from "./plugin-state-store.types.js";
 
-let testState: OpenClawTestState | undefined;
+let testState: AforaTestState | undefined;
 
 beforeAll(async () => {
-  testState = await createOpenClawTestState({ label: "plugin-state-store" });
-  rmSync(path.dirname(resolveOpenClawStateSqlitePath()), { recursive: true, force: true });
+  testState = await createAforaTestState({ label: "plugin-state-store" });
+  rmSync(path.dirname(resolveAforaStateSqlitePath()), { recursive: true, force: true });
 });
 
 beforeEach(() => {
@@ -178,10 +178,10 @@ describe("plugin state keyed store", () => {
   });
 
   it("honors explicit store env without mutating process state", async () => {
-    await withOpenClawTestState(
+    await withAforaTestState(
       { label: "plugin-state-explicit-env-a", applyEnv: false },
       async (stateA) => {
-        await withOpenClawTestState(
+        await withAforaTestState(
           { label: "plugin-state-explicit-env-b", applyEnv: false },
           async (stateB) => {
             const storeA = createPluginStateKeyedStore<{ owner: string }>("discord", {
@@ -200,8 +200,8 @@ describe("plugin state keyed store", () => {
 
             await expect(storeA.lookup("shared")).resolves.toEqual({ owner: "a" });
             await expect(storeB.lookup("shared")).resolves.toEqual({ owner: "b" });
-            expect(resolveOpenClawStateSqlitePath(stateA.env)).not.toBe(
-              resolveOpenClawStateSqlitePath(stateB.env),
+            expect(resolveAforaStateSqlitePath(stateA.env)).not.toBe(
+              resolveAforaStateSqlitePath(stateB.env),
             );
           },
         );
@@ -873,7 +873,7 @@ describe("plugin state keyed store", () => {
     await withPluginStateTestState(async () => {
       const store = createPluginStateKeyedStore("discord", { namespace: "close", maxEntries: 10 });
       await store.register("k", { ok: true });
-      const database = openOpenClawStateDatabase();
+      const database = openAforaStateDatabase();
       closePluginStateDatabase();
       expect(() => database.db.exec("SELECT 1")).toThrow();
       await expect(store.lookup("k")).resolves.toEqual({ ok: true });
@@ -889,7 +889,7 @@ describe("plugin state keyed store", () => {
       await store.register("k", { ok: true });
       resetPluginStateStoreForTests();
 
-      expect(isOpenClawStateDatabaseOpen()).toBe(false);
+      expect(isAforaStateDatabaseOpen()).toBe(false);
       await expect(store.lookup("k")).resolves.toEqual({ ok: true });
       await expect(store.entries()).resolves.toMatchObject([{ key: "k", value: { ok: true } }]);
       expect(
@@ -902,12 +902,12 @@ describe("plugin state keyed store", () => {
         }),
       ).toMatchObject([{ key: "k", value: { ok: true } }]);
       expect(countPluginStateLiveEntries("discord")).toBe(1);
-      expect(isOpenClawStateDatabaseOpen()).toBe(false);
+      expect(isAforaStateDatabaseOpen()).toBe(false);
     });
   });
 
   it("treats a missing plugin-state database as empty without creating it", async () => {
-    await withOpenClawTestState(
+    await withAforaTestState(
       { label: "plugin-state-read-only-missing", applyEnv: false },
       async (state) => {
         const store = createPluginStateKeyedStore("discord", {
@@ -915,7 +915,7 @@ describe("plugin state keyed store", () => {
           maxEntries: 10,
           env: state.env,
         });
-        const databasePath = resolveOpenClawStateSqlitePath(state.env);
+        const databasePath = resolveAforaStateSqlitePath(state.env);
 
         expect(existsSync(databasePath)).toBe(false);
         await expect(store.lookup("k")).resolves.toBeUndefined();
@@ -933,18 +933,18 @@ describe("plugin state keyed store", () => {
         maxEntries: 10,
       });
       await store.register("k", { ok: true });
-      const databasePath = resolveOpenClawStateSqlitePath(testState?.env);
+      const databasePath = resolveAforaStateSqlitePath(testState?.env);
       closePluginStateDatabase();
 
-      recordOpenClawStateDatabaseOpenFailure(databasePath, new Error("latched failure"));
+      recordAforaStateDatabaseOpenFailure(databasePath, new Error("latched failure"));
       await expect(store.lookup("k")).rejects.toMatchObject({
         code: "PLUGIN_STATE_OPEN_FAILED",
         path: databasePath,
       });
-      clearOpenClawStateDatabaseOpenFailure(databasePath);
+      clearAforaStateDatabaseOpenFailure(databasePath);
 
       expect(
-        recordOpenClawDatabaseQuarantine({
+        recordAforaDatabaseQuarantine({
           env: testState?.env,
           kind: "state",
           path: databasePath,
@@ -955,7 +955,7 @@ describe("plugin state keyed store", () => {
         code: "PLUGIN_STATE_OPEN_FAILED",
         path: databasePath,
       });
-      expect(clearOpenClawDatabaseQuarantine(databasePath, { env: testState?.env })).toBe(true);
+      expect(clearAforaDatabaseQuarantine(databasePath, { env: testState?.env })).toBe(true);
     });
   });
 
@@ -966,9 +966,9 @@ describe("plugin state keyed store", () => {
         maxEntries: 10,
       });
       await store.register("k", { ok: true });
-      const databasePath = resolveOpenClawStateSqlitePath(testState?.env);
-      openOpenClawStateDatabase().db.exec(
-        `PRAGMA user_version = ${OPENCLAW_STATE_SCHEMA_VERSION + 1};`,
+      const databasePath = resolveAforaStateSqlitePath(testState?.env);
+      openAforaStateDatabase().db.exec(
+        `PRAGMA user_version = ${AFORA_STATE_SCHEMA_VERSION + 1};`,
       );
       closePluginStateDatabase();
 
@@ -980,7 +980,7 @@ describe("plugin state keyed store", () => {
       } finally {
         const database = new DatabaseSync(databasePath);
         try {
-          database.exec(`PRAGMA user_version = ${OPENCLAW_STATE_SCHEMA_VERSION};`);
+          database.exec(`PRAGMA user_version = ${AFORA_STATE_SCHEMA_VERSION};`);
         } finally {
           database.close();
         }
@@ -997,7 +997,7 @@ describe("plugin state keyed store", () => {
           maxEntries: 10,
         });
         await store.register("k", { ok: true });
-        const databasePath = resolveOpenClawStateSqlitePath(testState?.env);
+        const databasePath = resolveAforaStateSqlitePath(testState?.env);
         closePluginStateDatabase();
         chmodSync(testState?.stateDir ?? "", 0o000);
         try {
@@ -1021,7 +1021,7 @@ describe("plugin state keyed store", () => {
           maxEntries: 10,
         });
         await store.register("k", { ok: true });
-        const database = openOpenClawStateDatabase();
+        const database = openAforaStateDatabase();
         chmodSync(testState?.stateDir ?? "", 0o000);
         try {
           await expect(store.lookup("k")).resolves.toEqual({ ok: true });
@@ -1035,7 +1035,7 @@ describe("plugin state keyed store", () => {
 
   it("does not close a shared state database opened before the plugin-state probe", async () => {
     await withPluginStateTestState(async () => {
-      const database = openOpenClawStateDatabase();
+      const database = openAforaStateDatabase();
       const result = probePluginStateStore();
 
       expect(result.ok).toBe(true);
@@ -1051,12 +1051,12 @@ describe("plugin state keyed store", () => {
       });
       await store.register("k", { ok: true });
 
-      const secondary = await createOpenClawTestState({
+      const secondary = await createAforaTestState({
         label: "plugin-state-cache-secondary",
         applyEnv: false,
       });
       try {
-        openOpenClawStateDatabase({ env: secondary.env });
+        openAforaStateDatabase({ env: secondary.env });
         testState?.applyEnv();
         await expect(store.lookup("k")).resolves.toEqual({ ok: true });
       } finally {
@@ -1070,7 +1070,7 @@ describe("plugin state keyed store", () => {
       const store = createPluginStateKeyedStore("discord", { namespace: "perms", maxEntries: 10 });
       await store.register("k", { ok: true });
 
-      const databasePath = resolveOpenClawStateSqlitePath();
+      const databasePath = resolveAforaStateSqlitePath();
       expect(statSync(path.dirname(databasePath)).mode & 0o777).toBe(0o700);
       expect(statSync(databasePath).mode & 0o777).toBe(0o600);
     });

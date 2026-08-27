@@ -288,7 +288,7 @@ export async function runFleetDoctor(params: {
           );
         }
         findings.push(
-          inspection.environment.OPENCLAW_GATEWAY_TOKEN
+          inspection.environment.AFORA_GATEWAY_TOKEN
             ? finding("gateway-token-env", "pass", "Gateway token environment is present.")
             : finding(
                 "gateway-token-env",

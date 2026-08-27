@@ -216,7 +216,7 @@ describe("renderDreamingSettings", () => {
 });
 
 describe("numeric field bounds", () => {
-  // extensions/memory-core/openclaw.plugin.json: counts are integers with a
+  // extensions/memory-core/afora.plugin.json: counts are integers with a
   // minimum, similarity/score fields are numbers in 0..1.
   it("rejects values the memory-core manifest would refuse instead of patching them", () => {
     const onPatch = vi.fn();

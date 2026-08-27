@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { ensureMeetingAudioBackend, resolveMeetingAudioRuntimeForFormat } from "./audio-backend.js";
 
-const PIPEWIRE_SINK_NAME = "openclaw_meeting_audio";
+const PIPEWIRE_SINK_NAME = "afora_meeting_audio";
 const PIPEWIRE_MONITOR_NAME = `${PIPEWIRE_SINK_NAME}.monitor`;
 const PIPEWIRE_SOURCE_NAME = PIPEWIRE_SINK_NAME;
 
@@ -42,7 +42,7 @@ describe("meeting audio backend", () => {
     });
     expect(runtime).toMatchObject({
       backend: "pipewire-pulse",
-      deviceLabel: "OpenClaw Meeting Audio",
+      deviceLabel: "Afora Meeting Audio",
     });
     expect(runtime.inputCommand).toEqual([
       "parec",
@@ -122,7 +122,7 @@ describe("meeting audio backend", () => {
       "rate=48000",
       "channels=2",
       "channel_map=front-left,front-right",
-      `sink_properties='device.description="OpenClaw Meeting Audio"'`,
+      `sink_properties='device.description="Afora Meeting Audio"'`,
     ]);
     expect(calls).toContainEqual([
       "pactl",
@@ -134,7 +134,7 @@ describe("meeting audio backend", () => {
       "master_channel_map=front-left,front-right",
       "channel_map=front-left,front-right",
       "remix=no",
-      `source_properties='device.description="OpenClaw Meeting Audio"'`,
+      `source_properties='device.description="Afora Meeting Audio"'`,
     ]);
   });
 

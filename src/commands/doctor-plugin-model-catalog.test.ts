@@ -9,10 +9,10 @@ import {
   PLUGIN_MODEL_CATALOG_GENERATED_BY,
   replacePersistedPluginModelCatalogs,
 } from "../agents/plugin-model-catalog.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { RuntimeEnv } from "../runtime.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { maybeMigrateLegacyPluginModelCatalogs } from "./doctor-plugin-model-catalog.js";
 import type { DoctorPrompter } from "./doctor-prompter.js";
 
@@ -23,7 +23,7 @@ function listPersistedPluginModelCatalogs(agentDir: string) {
 const tempDirs: string[] = [];
 
 function createAgentDir(): string {
-  const agentDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-doctor-model-catalog-"));
+  const agentDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-doctor-model-catalog-"));
   tempDirs.push(agentDir);
   return agentDir;
 }
@@ -62,7 +62,7 @@ function prompter(shouldRepair: boolean): DoctorPrompter {
 
 function migrationParams(agentDirs: string[], shouldRepair = true) {
   return {
-    cfg: {} as OpenClawConfig,
+    cfg: {} as AforaConfig,
     agentDirs,
     prompter: prompter(shouldRepair),
     runtime: { log: vi.fn(), error: vi.fn(), exit: vi.fn() } as unknown as RuntimeEnv,
@@ -71,8 +71,8 @@ function migrationParams(agentDirs: string[], shouldRepair = true) {
 }
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   for (const agentDir of tempDirs.splice(0)) {
     fs.rmSync(agentDir, { recursive: true, force: true });
   }
@@ -85,7 +85,7 @@ describe("doctor generated plugin model catalog migration", () => {
     await expect(
       maybeMigrateLegacyPluginModelCatalogs(migrationParams([agentDir])),
     ).resolves.toEqual({ detected: 0, migrated: 0, warnings: [] });
-    expect(fs.existsSync(path.join(agentDir, "openclaw-agent.sqlite"))).toBe(false);
+    expect(fs.existsSync(path.join(agentDir, "afora-agent.sqlite"))).toBe(false);
   });
 
   it("verifies a shipped sidecar and preserves its provider credential in SQLite", async () => {
@@ -136,7 +136,7 @@ describe("doctor generated plugin model catalog migration", () => {
     );
     expect(fs.existsSync(firstPath)).toBe(true);
     expect(fs.existsSync(secondPath)).toBe(true);
-    expect(fs.existsSync(path.join(agentDir, "openclaw-agent.sqlite"))).toBe(false);
+    expect(fs.existsSync(path.join(agentDir, "afora-agent.sqlite"))).toBe(false);
   });
 
   it("does not migrate a provider while one of its retained claims is unreadable", async () => {
@@ -162,7 +162,7 @@ describe("doctor generated plugin model catalog migration", () => {
       });
       expect(fs.existsSync(claimPath)).toBe(true);
       expect(fs.existsSync(sourcePath)).toBe(true);
-      expect(fs.existsSync(path.join(agentDir, "openclaw-agent.sqlite"))).toBe(false);
+      expect(fs.existsSync(path.join(agentDir, "afora-agent.sqlite"))).toBe(false);
     } finally {
       fs.chmodSync(claimPath, 0o600);
     }
@@ -211,7 +211,7 @@ describe("doctor generated plugin model catalog migration", () => {
             third: { agentDir: thirdDir },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
     };
 
     await expect(maybeMigrateLegacyPluginModelCatalogs(params)).resolves.toEqual({
@@ -241,7 +241,7 @@ describe("doctor generated plugin model catalog migration", () => {
 
     expect(params.prompter.confirmAutoFix).toHaveBeenCalledOnce();
     expect(fs.readFileSync(sourcePath, "utf8")).toBe(contents);
-    expect(fs.existsSync(path.join(agentDir, "openclaw-agent.sqlite"))).toBe(false);
+    expect(fs.existsSync(path.join(agentDir, "afora-agent.sqlite"))).toBe(false);
   });
 
   it("ignores user-authored and malformed catalog lookalikes", async () => {
@@ -259,7 +259,7 @@ describe("doctor generated plugin model catalog migration", () => {
 
     expect(fs.existsSync(authoredPath)).toBe(true);
     expect(fs.existsSync(malformedPath)).toBe(true);
-    expect(fs.existsSync(path.join(agentDir, "openclaw-agent.sqlite"))).toBe(false);
+    expect(fs.existsSync(path.join(agentDir, "afora-agent.sqlite"))).toBe(false);
   });
 
   it("migrates readable providers when another legacy catalog is unreadable", async () => {

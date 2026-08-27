@@ -62,7 +62,7 @@ async function postInvoke(params: {
     headers: {
       ...(params.token ? { authorization: `Bearer ${params.token}` } : {}),
       "content-type": "application/json",
-      ...(params.scopes ? { "x-openclaw-scopes": params.scopes } : {}),
+      ...(params.scopes ? { "x-afora-scopes": params.scopes } : {}),
     },
     body: typeof params.body === "string" ? params.body : JSON.stringify(params.body),
   });

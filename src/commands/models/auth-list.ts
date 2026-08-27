@@ -1,5 +1,5 @@
 /** Command helpers for listing saved model auth profiles. */
-import { timestampMsToIsoString } from "@openclaw/normalization-core/number-coercion";
+import { timestampMsToIsoString } from "@afora/normalization-core/number-coercion";
 import {
   ensureAuthProfileStore,
   externalCliDiscoveryForProviderAuth,

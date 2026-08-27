@@ -1,4 +1,4 @@
-const REPLY_SYSTEM_EVENT_SESSION_KEY = Symbol("openclaw.reply.systemEventSessionKey");
+const REPLY_SYSTEM_EVENT_SESSION_KEY = Symbol("afora.reply.systemEventSessionKey");
 
 /** Attach route-owned system-event state without widening public reply option contracts. */
 export function withReplySystemEventSessionKey<T extends object>(

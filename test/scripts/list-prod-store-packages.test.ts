@@ -30,7 +30,7 @@ describe("list-prod-store-packages", () => {
   });
 
   it("accepts pnpm list array output", () => {
-    const cwd = makeTempRepoRoot(tempDirs, "openclaw-prod-store-packages-");
+    const cwd = makeTempRepoRoot(tempDirs, "afora-prod-store-packages-");
     const result = runListProdStorePackages(
       [
         {
@@ -51,7 +51,7 @@ describe("list-prod-store-packages", () => {
   });
 
   it("accepts pnpm list object output", () => {
-    const cwd = makeTempRepoRoot(tempDirs, "openclaw-prod-store-packages-");
+    const cwd = makeTempRepoRoot(tempDirs, "afora-prod-store-packages-");
     const result = runListProdStorePackages(
       {
         dependencies: {
@@ -70,7 +70,7 @@ describe("list-prod-store-packages", () => {
   });
 
   it("adds lockfile snapshot dependencies missing from pnpm list output", () => {
-    const cwd = makeTempRepoRoot(tempDirs, "openclaw-prod-store-packages-");
+    const cwd = makeTempRepoRoot(tempDirs, "afora-prod-store-packages-");
     mkdirSync(join(cwd, "scripts"));
     writeFileSync(
       join(cwd, "pnpm-lock.yaml"),
@@ -110,7 +110,7 @@ describe("list-prod-store-packages", () => {
   });
 
   it("adds production importer dependency closures without pnpm list input", () => {
-    const cwd = makeTempRepoRoot(tempDirs, "openclaw-prod-store-packages-");
+    const cwd = makeTempRepoRoot(tempDirs, "afora-prod-store-packages-");
     writeFileSync(
       join(cwd, "pnpm-lock.yaml"),
       [
@@ -168,7 +168,7 @@ describe("list-prod-store-packages", () => {
   });
 
   it("adds target optional dependencies from peer-resolved lockfile snapshots", () => {
-    const cwd = makeTempRepoRoot(tempDirs, "openclaw-prod-store-packages-");
+    const cwd = makeTempRepoRoot(tempDirs, "afora-prod-store-packages-");
     const platformPackages = [
       ["darwin", "arm64"],
       ["darwin", "x64"],
@@ -227,7 +227,7 @@ describe("list-prod-store-packages", () => {
   });
 
   it("does not add unrelated lockfile packages missing from pnpm list output", () => {
-    const cwd = makeTempRepoRoot(tempDirs, "openclaw-prod-store-packages-");
+    const cwd = makeTempRepoRoot(tempDirs, "afora-prod-store-packages-");
     writeFileSync(
       join(cwd, "pnpm-lock.yaml"),
       [
@@ -248,7 +248,7 @@ describe("list-prod-store-packages", () => {
   });
 
   it("only adds optional platform packages matching the current target", () => {
-    const cwd = makeTempRepoRoot(tempDirs, "openclaw-prod-store-packages-");
+    const cwd = makeTempRepoRoot(tempDirs, "afora-prod-store-packages-");
     const platformPackages = [
       ["darwin", "arm64"],
       ["darwin", "x64"],

@@ -32,11 +32,11 @@ describe("project GitHub search", () => {
       json({
         total_count: 1,
         incomplete_results: false,
-        items: [repository("openclaw/openclaw", "2026-08-10T00:00:00Z")],
+        items: [repository("AforaMosh/afora-agent", "2026-08-10T00:00:00Z")],
       }),
     );
 
-    const result = await searchRemoteProjects("anonymous-openclaw", {
+    const result = await searchRemoteProjects("anonymous-afora", {
       env: {},
       fetchImpl,
       now: 100,
@@ -44,7 +44,7 @@ describe("project GitHub search", () => {
 
     expect(result).toMatchObject({
       credential: "missing",
-      projects: [{ fullName: "openclaw/openclaw" }],
+      projects: [{ fullName: "AforaMosh/afora-agent" }],
     });
     expect(fetchImpl).toHaveBeenCalledOnce();
     expect(fetchImpl.mock.calls[0]?.[0]).toContain("/search/repositories?");

@@ -1,5 +1,5 @@
 import { listAgentEntries } from "../agents/agent-scope-config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 // Non-interactive onboarding test helpers build runtime stubs that throw instead of exiting.
 import type { RuntimeEnv } from "../runtime.js";
 
@@ -33,7 +33,7 @@ export function createThrowingRuntime(): NonInteractiveRuntime {
   };
 }
 
-export async function mockOnboardingAgent(params: { config: OpenClawConfig; workspace: string }) {
+export async function mockOnboardingAgent(params: { config: AforaConfig; workspace: string }) {
   const roster = listAgentEntries(params.config);
   const existing = roster.find((entry) => entry.default === true) ?? roster[0];
   if (existing) {

@@ -1,4 +1,4 @@
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import {
   type ChannelDmAllowFromMode,
   resolveChannelDmAllowFrom,
@@ -7,7 +7,7 @@ import {
 import { validateJsonSchemaValue } from "../plugins/schema-validator.js";
 import { isRecord } from "../utils.js";
 import { GENERATED_BUNDLED_CHANNEL_CONFIG_METADATA } from "./bundled-channel-config-metadata.generated.js";
-import type { ConfigValidationIssue, OpenClawConfig } from "./types.js";
+import type { ConfigValidationIssue, AforaConfig } from "./types.js";
 import {
   type DmPolicyAllowFromViolation,
   evaluateDmPolicyAllowFromDependency,
@@ -106,7 +106,7 @@ function isConfigRecordEnabled(record: Record<string, unknown>): boolean {
   return record.enabled !== false;
 }
 
-export function hasChannelDmPolicyDependencyWarningCandidates(config: OpenClawConfig): boolean {
+export function hasChannelDmPolicyDependencyWarningCandidates(config: AforaConfig): boolean {
   if (!config.channels || !isRecord(config.channels)) {
     return false;
   }
@@ -131,7 +131,7 @@ export function hasChannelDmPolicyDependencyWarningCandidates(config: OpenClawCo
  * are skipped because their config shape does not match this warning's top-level paths.
  */
 export function collectChannelDmPolicyDependencyWarnings(
-  config: OpenClawConfig,
+  config: AforaConfig,
   options: { dmAllowFromModes?: ReadonlyMap<string, ChannelDmAllowFromMode> } = {},
 ): ConfigValidationIssue[] {
   if (!config.channels || !isRecord(config.channels)) {
@@ -187,7 +187,7 @@ export function collectChannelDmPolicyDependencyWarnings(
 }
 
 export function collectRawBundledChannelConfigIssues(
-  config: OpenClawConfig,
+  config: AforaConfig,
 ): ConfigValidationIssue[] {
   if (!config.channels || !isRecord(config.channels)) {
     return [];

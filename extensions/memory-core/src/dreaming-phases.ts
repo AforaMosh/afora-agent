@@ -3,19 +3,19 @@ import { createHash } from "node:crypto";
 import type { Dirent } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { extractErrorCode } from "openclaw/plugin-sdk/error-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
-import { listSessionTranscriptCorpusEntriesForAgent } from "openclaw/plugin-sdk/memory-core-host-engine-sessions";
-import type { MemorySearchResult } from "openclaw/plugin-sdk/memory-core-host-runtime-files";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { extractErrorCode } from "afora-agent/plugin-sdk/error-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/memory-core-host-engine-foundation";
+import { listSessionTranscriptCorpusEntriesForAgent } from "afora-agent/plugin-sdk/memory-core-host-engine-sessions";
+import type { MemorySearchResult } from "afora-agent/plugin-sdk/memory-core-host-runtime-files";
 import {
   formatMemoryDreamingDay,
   resolveMemoryDreamingWorkspaces,
   resolveMemoryLightDreamingConfig,
   resolveMemoryRemDreamingConfig,
-} from "openclaw/plugin-sdk/memory-core-host-status";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
-import { normalizeStringEntries, uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/memory-core-host-status";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
+import { normalizeStringEntries, uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { appendFailedDreamingEvent } from "./dreaming-events.js";
 import {
   normalizeDailyIngestionState,
@@ -68,7 +68,7 @@ import {
   type ShortTermRecallEntry,
 } from "./short-term-promotion.js";
 
-type Logger = Pick<OpenClawPluginApi["logger"], "info" | "warn" | "error">;
+type Logger = Pick<AforaPluginApi["logger"], "info" | "warn" | "error">;
 type DreamingPhaseStorageConfig = {
   timezone?: string;
   storage: { mode: "inline" | "separate" | "both"; separateReports: boolean };
@@ -99,13 +99,13 @@ const GENERIC_DAY_HEADING_RE =
 const MANAGED_DAILY_DREAMING_BLOCKS = [
   {
     heading: "## Light Sleep",
-    startMarker: "<!-- openclaw:dreaming:light:start -->",
-    endMarker: "<!-- openclaw:dreaming:light:end -->",
+    startMarker: "<!-- afora:dreaming:light:start -->",
+    endMarker: "<!-- afora:dreaming:light:end -->",
   },
   {
     heading: "## REM Sleep",
-    startMarker: "<!-- openclaw:dreaming:rem:start -->",
-    endMarker: "<!-- openclaw:dreaming:rem:end -->",
+    startMarker: "<!-- afora:dreaming:rem:start -->",
+    endMarker: "<!-- afora:dreaming:rem:end -->",
   },
 ] as const;
 
@@ -558,7 +558,7 @@ function isCheckpointSessionTranscriptPath(absolutePath: string): boolean {
 }
 
 function resolveSessionAgentsForWorkspace(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   workspaceDir: string;
   primaryWorkspaceDir?: string;
 }): string[] {
@@ -579,7 +579,7 @@ function resolveSessionAgentsForWorkspace(params: {
 
 async function collectSessionIngestionBatches(params: {
   workspaceDir: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   primaryWorkspaceDir?: string;
   lookbackDays: number;
   nowMs: number;
@@ -714,7 +714,7 @@ async function collectSessionIngestionBatches(params: {
 
 async function ingestSessionTranscriptSignals(params: {
   workspaceDir: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   primaryWorkspaceDir?: string;
   lookbackDays: number;
   nowMs: number;
@@ -1281,7 +1281,7 @@ export function previewRemDreaming(params: {
 async function runLightDreaming(params: {
   agentId?: string;
   workspaceDir: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   primaryWorkspaceDir?: string;
   config: LightDreamingConfig;
   logger: Logger;
@@ -1382,7 +1382,7 @@ async function runLightDreaming(params: {
 async function runRemDreaming(params: {
   agentId?: string;
   workspaceDir: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   primaryWorkspaceDir?: string;
   config: RemDreamingConfig;
   logger: Logger;
@@ -1501,7 +1501,7 @@ export async function runDreamingSweepPhases(params: {
   agentId?: string;
   workspaceDir: string;
   pluginConfig?: Record<string, unknown>;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   logger: Logger;
   subagent?: DreamNarrativeRequest["subagent"];
   detachNarratives?: boolean;

@@ -1,5 +1,5 @@
 // Verifies ClawHub skill icons, telemetry, metadata, verification, and cards.
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { reportClawHubPluginInstallTelemetry } from "./clawhub-packages.js";
 import {
@@ -119,18 +119,18 @@ describe("clawhub skills", () => {
             {
               score: 1,
               slug: "weather",
-              ownerHandle: "openclaw",
+              ownerHandle: "afora",
               displayName: "Weather",
               source: "skills-sh",
-              install: { kind: "skills-sh", reference: "skills-sh:openclaw/skills/weather" },
+              install: { kind: "skills-sh", reference: "skills-sh:afora/skills/weather" },
             },
             {
               score: 1,
               slug: "github-backed",
-              ownerHandle: "openclaw",
+              ownerHandle: "afora",
               displayName: "GitHub backed",
               source: "clawhub",
-              install: { kind: "github", reference: "openclaw/github-backed" },
+              install: { kind: "github", reference: "afora-agent/github-backed" },
             },
           ],
         }),
@@ -150,13 +150,13 @@ describe("clawhub skills", () => {
       { installRef: "@alice/email", installOnly: undefined, trustState: undefined },
       { installRef: "@bob/email", installOnly: undefined, trustState: undefined },
       // The external row keeps its own reference and stays out of detail; rewriting it to
-      // `@openclaw/weather` would install a different publisher's skill.
+      // `@afora/weather` would install a different publisher's skill.
       {
-        installRef: "skills-sh:openclaw/skills/weather",
+        installRef: "skills-sh:afora/skills/weather",
         installOnly: true,
         trustState: "not-scanned-by-clawhub",
       },
-      { installRef: "@openclaw/github-backed", installOnly: undefined, trustState: undefined },
+      { installRef: "@afora/github-backed", installOnly: undefined, trustState: undefined },
     ]);
   });
 
@@ -249,14 +249,14 @@ describe("clawhub skills", () => {
 
     await reportClawHubPluginInstallTelemetry({
       token: "test-token",
-      packageName: "@openclaw/voice-call",
+      packageName: "@afora/voice-call",
       version: "2026.7.23",
       fetchImpl,
     });
 
     expect(requestBody).toEqual({
       event: "plugin_install",
-      packageName: "@openclaw/voice-call",
+      packageName: "@afora/voice-call",
       version: "2026.7.23",
     });
   });
@@ -267,7 +267,7 @@ describe("clawhub skills", () => {
 
     await reportClawHubPluginInstallTelemetry({
       token: "test-token",
-      packageName: "@openclaw/voice-call",
+      packageName: "@afora/voice-call",
       fetchImpl,
     });
 
@@ -281,7 +281,7 @@ describe("clawhub skills", () => {
       token: "test-token",
       slug: "weather",
       version: "a".repeat(40),
-      requestedReference: "skills-sh:openclaw/skills/weather",
+      requestedReference: "skills-sh:afora/skills/weather",
       trustState: "not-scanned-by-clawhub",
       fetchImpl: async (_input, init) => {
         expect(typeof init?.body).toBe("string");
@@ -294,7 +294,7 @@ describe("clawhub skills", () => {
       event: "install",
       slug: "weather",
       version: "a".repeat(40),
-      reference: "skills-sh:openclaw/skills/weather",
+      reference: "skills-sh:afora/skills/weather",
       trustState: "not-scanned-by-clawhub",
     });
   });
@@ -394,7 +394,7 @@ describe("clawhub skills", () => {
 
   it("sends skills-sh references to the ClawHub install resolver", async () => {
     let requestedUrl = "";
-    const reference = "skills-sh:openclaw/skills/weather";
+    const reference = "skills-sh:afora/skills/weather";
 
     await fetchClawHubSkillInstallResolution({
       slug: "weather",
@@ -408,11 +408,11 @@ describe("clawhub skills", () => {
             installKind: "github",
             trust: { state: "not-scanned-by-clawhub" },
             github: {
-              repo: "openclaw/skills",
+              repo: "afora-agent/skills",
               path: "skills/weather",
               commit: "a".repeat(40),
               contentHash: "sha256:approved",
-              sourceUrl: "https://github.com/openclaw/skills",
+              sourceUrl: "https://github.com/afora/skills",
             },
           }),
           { headers: { "content-type": "application/json" } },
@@ -433,7 +433,7 @@ describe("clawhub skills", () => {
       decision: "pass",
       reasons: [],
       skill: { slug: "agentreceipt", displayName: "Agent Receipt" },
-      publisher: { handle: "openclaw" },
+      publisher: { handle: "afora" },
       version: { version: "1.2.3", tag: "stable" },
       card: {
         available: true,
@@ -532,7 +532,7 @@ describe("clawhub skills", () => {
 
     await expect(
       fetchClawHubSkillSecurityVerdicts({
-        items: [{ slug: "agentreceipt", ownerHandle: "openclaw", version: "1.2.3" }],
+        items: [{ slug: "agentreceipt", ownerHandle: "afora", version: "1.2.3" }],
         fetchImpl: async (input, init) => {
           requestedUrl = input instanceof Request ? input.url : String(input);
           requestedInit = init;
@@ -550,7 +550,7 @@ describe("clawhub skills", () => {
     expect(requestedInit?.headers).toMatchObject({ "Content-Type": "application/json" });
     expect(requestedInit?.body).toBe(
       JSON.stringify({
-        items: [{ slug: "agentreceipt", ownerHandle: "openclaw", version: "1.2.3" }],
+        items: [{ slug: "agentreceipt", ownerHandle: "afora", version: "1.2.3" }],
       }),
     );
   });

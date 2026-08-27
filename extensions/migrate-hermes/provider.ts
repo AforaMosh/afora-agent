@@ -3,7 +3,7 @@ import type {
   MigrationPlan,
   MigrationProviderContext,
   MigrationProviderPlugin,
-} from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/plugin-entry";
 import { applyHermesPlan } from "./apply.js";
 import { isMemoryOnlyMigration } from "./memory.js";
 import { buildHermesPlan } from "./plan.js";

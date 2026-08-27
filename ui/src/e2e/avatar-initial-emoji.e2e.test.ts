@@ -14,7 +14,7 @@ const suite = createControlUiE2eSuite({
     `Playwright Chromium is not available at ${executablePath}`,
 });
 
-const captureUiProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+const captureUiProof = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 const proofDir = path.join(process.cwd(), ".artifacts", "control-ui-e2e", "avatar-initial-emoji");
 
 const emojiAgent = { id: "emoji", identity: { name: "🚀Rocket" }, name: "🚀Rocket" };
@@ -85,7 +85,7 @@ suite.define(() => {
         const response = await page.goto(`${suite.server.baseUrl}usage`);
         expect(response?.status()).toBe(200);
         await gateway.waitForRequest("agents.list");
-        const sidebar = page.locator("openclaw-app-sidebar");
+        const sidebar = page.locator("afora-app-sidebar");
 
         await sidebar.getByRole("button", { name: /Switch agent/ }).click();
         const emojiRow = sidebar
@@ -137,7 +137,7 @@ suite.define(() => {
         const response = await page.goto(`${suite.server.baseUrl}agents`);
         expect(response?.status()).toBe(200);
         await gateway.waitForRequest("agents.list");
-        const agentSelect = page.locator("openclaw-agents-page openclaw-agent-select");
+        const agentSelect = page.locator("afora-agents-page afora-agent-select");
         await agentSelect.locator(".agent-select__trigger").click();
         const emojiItem = agentSelect.getByRole("menuitemradio", {
           name: "🚀Rocket",
@@ -184,7 +184,7 @@ suite.define(() => {
         expect(response?.status()).toBe(200);
         await gateway.waitForRequest("agents.list");
         await gateway.waitForRequest("config.get");
-        const agentSelect = page.locator("openclaw-agents-page openclaw-agent-select");
+        const agentSelect = page.locator("afora-agents-page afora-agent-select");
         await agentSelect.locator(".agent-select__trigger").click();
         await agentSelect.getByRole("menuitemradio", { name: "🚀Rocket", exact: true }).click();
         await expect.poll(() => new URL(page.url()).pathname).toBe("/settings/agents/emoji/tools");

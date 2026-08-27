@@ -7,7 +7,7 @@ import {
 import { PROTOCOL_VERSION } from "../../packages/gateway-protocol/src/version.js";
 import { upsertSessionEntryCore } from "../config/sessions/session-accessor.js";
 import { withPluginRuntimeGatewayRequestScope } from "../plugins/runtime/gateway-request-scope.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import type { GatewayRequestContext, GatewayRequestOptions } from "./server-methods/types.js";
 import { dispatchGatewayMethodInProcess } from "./server-plugin-in-process-dispatch.js";
 
@@ -115,7 +115,7 @@ describe("typed in-process agent authorization", () => {
   });
 
   it("rejects a nonparticipant agent turn before preflight", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const sessionKey = "agent:main:private-draft";
       await upsertSessionEntryCore(
         { agentId: "main", sessionKey },

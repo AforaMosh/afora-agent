@@ -1,4 +1,4 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   PROJECTS_LIST_MAX_CHECKOUTS_PER_PROJECT,
@@ -31,7 +31,7 @@ function authenticatedClient(user: string, scopes = ["operator.write"]): Gateway
       minProtocol: 1,
       maxProtocol: 1,
       client: {
-        id: "openclaw-control-ui",
+        id: "afora-control-ui",
         version: "test",
         platform: "test",
         mode: "webchat",
@@ -118,7 +118,7 @@ describe("projects.list observed projects", () => {
       const resolveRepositoryIdentity = vi.fn(async (checkoutPath: string) => ({
         checkoutRoot: checkoutPath.replace("/links/", "/physical/"),
         repoRoot: "/physical/alpha",
-        originUrl: "https://github.com/openclaw/alpha.git",
+        originUrl: "https://github.com/afora/alpha.git",
         fingerprint: "alpha-fingerprint",
       }));
 
@@ -130,7 +130,7 @@ describe("projects.list observed projects", () => {
       ).resolves.toEqual([
         {
           name: "alpha-new",
-          originUrl: "https://github.com/openclaw/alpha.git",
+          originUrl: "https://github.com/afora/alpha.git",
           checkouts: [
             { runnerId: "gateway", path: "/physical/alpha-new" },
             { runnerId: "gateway", path: "/physical/alpha-old" },
@@ -163,7 +163,7 @@ describe("projects.list observed projects", () => {
       repoFingerprint: name,
       repoRoot: `/repos/${name}`,
       path: `/worktrees/${name}`,
-      branch: `openclaw/${name}`,
+      branch: `afora/${name}`,
       baseRef: "main",
       ownerKind: "session",
       ownerId,
@@ -251,7 +251,7 @@ describe("projects.list observed projects", () => {
         repoFingerprint: "alpha-fingerprint",
         repoRoot: "/repos/alpha",
         path: `/worktrees/${String(index).padStart(2, "0")}`,
-        branch: `openclaw/worktree-${index}`,
+        branch: `afora/worktree-${index}`,
         baseRef: "main",
         ownerKind: "manual",
         createdAt: 1,
@@ -265,7 +265,7 @@ describe("projects.list observed projects", () => {
         resolveRepositoryIdentity: async (checkoutPath: string) => ({
           checkoutRoot: checkoutPath,
           repoRoot: checkoutPath,
-          originUrl: "https://github.com/openclaw/alpha.git",
+          originUrl: "https://github.com/afora/alpha.git",
           fingerprint: "alpha-fingerprint",
         }),
       },

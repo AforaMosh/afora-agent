@@ -6,7 +6,7 @@ import {
   resolveAgentRunAbortLifecycleFields,
   resolveFastModeForElapsed,
   type EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import { reportCodexExecutionNotification } from "./attempt-notification-state.js";
 import {
   resolveTerminalDynamicToolBatchAction,
@@ -35,7 +35,7 @@ export function createCodexAttemptLifecycleController(
     fastModeAutoStartedAtMs,
     fastModeAutoProgressState,
   } = connection;
-  const { state, activeTurnItemIds, pendingOpenClawDynamicToolCompletionIds } = turnRuntime;
+  const { state, activeTurnItemIds, pendingAforaDynamicToolCompletionIds } = turnRuntime;
   const releaseTurnAfterTerminalDynamicTool = (value: {
     call: CodexDynamicToolCallParams;
     response: CodexDynamicToolCallResponse;
@@ -50,7 +50,7 @@ export function createCodexAttemptLifecycleController(
           state.currentTurnHadNonTerminalDynamicToolResult,
         activeAppServerTurnRequests: state.activeAppServerTurnRequests,
         activeTurnItemIdsCount: activeTurnItemIds.size,
-        pendingOpenClawDynamicToolCompletionIdsCount: pendingOpenClawDynamicToolCompletionIds.size,
+        pendingAforaDynamicToolCompletionIdsCount: pendingAforaDynamicToolCompletionIds.size,
       })
     ) {
       return;
@@ -92,7 +92,7 @@ export function createCodexAttemptLifecycleController(
         state.pendingTerminalDynamicToolRelease?.response.success === true &&
         !state.currentTurnHadNonTerminalDynamicToolResult &&
         state.activeAppServerTurnRequests === 0 &&
-        pendingOpenClawDynamicToolCompletionIds.size === 0
+        pendingAforaDynamicToolCompletionIds.size === 0
       ) {
         // Tool response flush plus sibling classification commits terminal release.
         // Fence steering now; active Codex items may delay the actual interrupt.
@@ -101,7 +101,7 @@ export function createCodexAttemptLifecycleController(
       const action = resolveTerminalDynamicToolBatchAction({
         activeAppServerTurnRequests: state.activeAppServerTurnRequests,
         activeTurnItemIdsCount: activeTurnItemIds.size,
-        pendingOpenClawDynamicToolCompletionIdsCount: pendingOpenClawDynamicToolCompletionIds.size,
+        pendingAforaDynamicToolCompletionIdsCount: pendingAforaDynamicToolCompletionIds.size,
         currentTurnHadNonTerminalDynamicToolResult:
           state.currentTurnHadNonTerminalDynamicToolResult,
         hasPendingTerminalDynamicToolRelease: state.pendingTerminalDynamicToolRelease !== undefined,
@@ -190,7 +190,7 @@ export function createCodexAttemptLifecycleController(
     try {
       await params.onToolResult?.({
         text: summary,
-        channelData: { openclawProgressKind: FAST_MODE_AUTO_PROGRESS_KIND },
+        channelData: { aforaProgressKind: FAST_MODE_AUTO_PROGRESS_KIND },
       });
     } catch (error) {
       embeddedAgentLog.debug("codex app-server fast mode auto progress delivery failed", { error });

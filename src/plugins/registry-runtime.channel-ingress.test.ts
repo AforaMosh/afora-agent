@@ -8,7 +8,7 @@ import {
 } from "../channels/message-access/admission-evidence.js";
 import type { ResolvedChannelMessageIngress } from "../channels/message-access/runtime-types.js";
 import { resolveStableChannelMessageIngress } from "../channels/message-access/runtime.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginOrigin } from "./plugin-origin.types.js";
 import { markPluginRegistryActive, markPluginRegistryRetired } from "./registry-lifecycle.js";
 import { createPluginRegistry } from "./registry.js";
@@ -28,7 +28,7 @@ function createRuntimeBuilder(params: { origin: PluginOrigin; id?: string }) {
     origin: params.origin,
   });
   const api = registryBuilder.createApi(record, {
-    config: {} as OpenClawConfig,
+    config: {} as AforaConfig,
     registrationMode: "full",
   });
   api.registerChannel({
@@ -151,7 +151,7 @@ describe("bundled channel ingress runtime ownership", () => {
     });
     const record = createPluginRecord({ id: "deferred-channel", origin: "bundled" });
     const api = registryBuilder.createApi(record, {
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       registrationMode: "full",
     });
 
@@ -181,7 +181,7 @@ describe("bundled channel ingress runtime ownership", () => {
       origin: "bundled",
     });
     registryBuilder.createApi(inactivePreparedRecord, {
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       registrationMode: "setup-only",
     });
 
@@ -606,7 +606,7 @@ describe("bundled channel ingress runtime ownership", () => {
       markPluginRegistryRetired(stale.registryBuilder.registry);
       const replacementRecord = createPluginRecord({ id: replaced.record.id, origin: "bundled" });
       replaced.registryBuilder.createApi(replacementRecord, {
-        config: {} as OpenClawConfig,
+        config: {} as AforaConfig,
         registrationMode: "full",
       });
       rollback.registryBuilder.rollbackPluginGlobalSideEffects(rollback.record.id, rollback.record);

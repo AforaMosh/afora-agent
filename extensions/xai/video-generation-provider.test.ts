@@ -4,9 +4,9 @@ import {
   installProviderHttpMockCleanup,
   oversizedJsonResponse,
   streamedJsonResponse,
-} from "openclaw/plugin-sdk/provider-http-test-mocks";
-import { expectExplicitVideoGenerationCapabilities } from "openclaw/plugin-sdk/provider-test-contracts";
-import type { VideoGenerationRequest } from "openclaw/plugin-sdk/video-generation";
+} from "afora-agent/plugin-sdk/provider-http-test-mocks";
+import { expectExplicitVideoGenerationCapabilities } from "afora-agent/plugin-sdk/provider-test-contracts";
+import type { VideoGenerationRequest } from "afora-agent/plugin-sdk/video-generation";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {

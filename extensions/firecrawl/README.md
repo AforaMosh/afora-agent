@@ -1,12 +1,12 @@
-# OpenClaw Firecrawl Plugin
+# Afora Firecrawl Plugin
 
-Official OpenClaw plugin for Firecrawl.
+Official Afora plugin for Firecrawl.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/firecrawl-plugin
-openclaw gateway restart
+afora plugins install @afora/firecrawl-plugin
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/tools/firecrawl> for setup and configuration.
+See <https://docs.afora.ai/tools/firecrawl> for setup and configuration.

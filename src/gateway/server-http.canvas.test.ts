@@ -5,7 +5,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { resolveCanvasNodeCapability } from "../canvas/constants.js";
 import { createCanvasDocument } from "../canvas/documents.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import type { ResolvedGatewayAuth } from "./auth.js";
 import {
@@ -30,7 +30,7 @@ afterEach(async () => {
 });
 
 async function requestHostedDocument(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   skipHost?: string;
 }): Promise<Response> {
   return await withHostedDocumentServer(
@@ -44,7 +44,7 @@ async function requestHostedDocument(params: {
 
 async function withHostedDocumentServer<T>(
   params: {
-    config: OpenClawConfig;
+    config: AforaConfig;
     skipHost?: string;
   },
   run: (context: {
@@ -53,7 +53,7 @@ async function withHostedDocumentServer<T>(
     origin: string;
   }) => Promise<T>,
 ): Promise<T> {
-  const stateDir = await mkdtemp(path.join(tmpdir(), "openclaw-canvas-gateway-"));
+  const stateDir = await mkdtemp(path.join(tmpdir(), "afora-canvas-gateway-"));
   tempDirs.push(stateDir);
   const document = await createCanvasDocument(
     {
@@ -67,8 +67,8 @@ async function withHostedDocumentServer<T>(
 
   return await withEnvAsync(
     {
-      OPENCLAW_SKIP_CANVAS_HOST: params.skipHost,
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_SKIP_CANVAS_HOST: params.skipHost,
+      AFORA_STATE_DIR: stateDir,
     },
     async () => {
       const server = createGatewayHttpServer({
@@ -163,7 +163,7 @@ describe("core Canvas Gateway host switches", () => {
         plugins: { entries: { canvas: { config: { host: { enabled: false } } } } },
       },
     },
-    { label: "OPENCLAW_SKIP_CANVAS_HOST", config: {}, skipHost: "1" },
+    { label: "AFORA_SKIP_CANVAS_HOST", config: {}, skipHost: "1" },
   ])("does not register the core widget route for $label", async ({ config, skipHost }) => {
     const response = await requestHostedDocument({ config, skipHost });
     expect(response.status).toBe(404);

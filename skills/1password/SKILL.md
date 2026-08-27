@@ -4,7 +4,7 @@ description: "Set up and use 1Password CLI for sign-in, desktop integration, and
 homepage: https://developer.1password.com/docs/cli/get-started/
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "emoji": "🔐",
         "requires": { "bins": ["op"] },
@@ -73,10 +73,10 @@ This is the only mode where tmux helps. `op signin` prints an `eval`-style expor
 The tmux flow is only actionable on macOS/Linux hosts where the `tmux` skill is available. The example intentionally opens `/bin/sh` so the POSIX `eval "$(op signin ...)"` output is valid even when the user's normal shell is fish. On Windows, prefer desktop app integration or service account auth. If the user only has standalone interactive signin on Windows, stop and ask them to provide a persistent PowerShell session mechanism or switch to desktop integration/service account auth; do not translate the tmux commands directly.
 
 ```bash
-SOCKET_DIR="${OPENCLAW_TMUX_SOCKET_DIR:-${TMPDIR:-/tmp}/openclaw-tmux-sockets}"
+SOCKET_DIR="${AFORA_TMUX_SOCKET_DIR:-${TMPDIR:-/tmp}/afora-tmux-sockets}"
 mkdir -p "$SOCKET_DIR"
 chmod 700 "$SOCKET_DIR"
-SOCKET="$SOCKET_DIR/openclaw-op.sock"
+SOCKET="$SOCKET_DIR/afora-op.sock"
 SESSION="op-auth-$(date +%Y%m%d-%H%M%S)"
 
 tmux -S "$SOCKET" new -d -s "$SESSION" -n shell /bin/sh

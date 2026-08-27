@@ -1,6 +1,6 @@
 // Media fetch tests cover remote media download limits and validation.
 import fs from "node:fs/promises";
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createTempHomeEnv, type TempHomeEnv } from "../test-utils/temp-home.js";
 
@@ -240,13 +240,13 @@ describe("readRemoteMediaBuffer", () => {
 
   beforeAll(async () => {
     vi.resetModules();
-    tempHome = await createTempHomeEnv("openclaw-test-home-");
+    tempHome = await createTempHomeEnv("afora-test-home-");
     const fetchModule = await import("./fetch.js");
     readRemoteMediaBuffer = fetchModule.readRemoteMediaBuffer;
     saveRemoteMedia = fetchModule.saveRemoteMedia;
     saveResponseMedia = fetchModule.saveResponseMedia;
     // Default cap mirrors the module-private DEFAULT_FETCH_MEDIA_MAX_BYTES.
-    defaultFetchMediaMaxBytes = (await import("@openclaw/media-core/constants")).MAX_DOCUMENT_BYTES;
+    defaultFetchMediaMaxBytes = (await import("@afora/media-core/constants")).MAX_DOCUMENT_BYTES;
   });
 
   beforeEach(() => {
@@ -889,7 +889,7 @@ describe("readRemoteMediaBuffer", () => {
   });
 
   it("preserves content-disposition CSV detection for streamed downloads", async () => {
-    const csv = Buffer.from("name,value\nopenclaw,1\n");
+    const csv = Buffer.from("name,value\nafora,1\n");
     const fetchImpl = vi.fn(
       async () =>
         new Response(makeStream([csv.subarray(0, 8), csv.subarray(8)]), {
@@ -916,7 +916,7 @@ describe("readRemoteMediaBuffer", () => {
   });
 
   it("preserves content-disposition CSV detection for provided response streams", async () => {
-    const csv = Buffer.from("name,value\nopenclaw,1\n");
+    const csv = Buffer.from("name,value\nafora,1\n");
     const response = new Response(makeStream([csv.subarray(0, 8), csv.subarray(8)]), {
       status: 200,
       headers: {
@@ -937,7 +937,7 @@ describe("readRemoteMediaBuffer", () => {
   });
 
   it("preserves content-disposition CSV detection for buffered downloads", async () => {
-    const csv = Buffer.from("name,value\nopenclaw,1\n");
+    const csv = Buffer.from("name,value\nafora,1\n");
     const fetchImpl = vi.fn(
       async () =>
         new Response(makeStream([csv.subarray(0, 8), csv.subarray(8)]), {

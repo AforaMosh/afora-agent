@@ -13,7 +13,7 @@ import {
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
 
 let server: ControlUiE2eServer;
@@ -40,7 +40,7 @@ async function expectText(locator: Locator, text: string): Promise<void> {
 }
 
 async function captureArtifact(page: Page, name: string): Promise<void> {
-  const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+  const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
   if (!artifactDir) {
     return;
   }
@@ -61,8 +61,8 @@ const pullPreviewResponse = {
   login: "steipete",
   mergedAt: "2026-07-04T09:53:52Z",
   number: 99816,
-  owner: "openclaw",
-  repo: "openclaw",
+  owner: "afora",
+  repo: "afora",
   state: "closed",
   title: "fix(agents): derive conversation scope from trusted group facts",
   updatedAt: "2026-07-04T09:53:55Z",
@@ -93,7 +93,7 @@ async function openPullPreviewPage(): Promise<{
     historyMessages: [
       {
         content: [
-          { type: "text", text: "Review https://github.com/openclaw/openclaw/pull/99816." },
+          { type: "text", text: "Review https://github.com/AforaMosh/afora-agent/pull/99816." },
         ],
         role: "assistant",
         timestamp: Date.now(),
@@ -102,7 +102,7 @@ async function openPullPreviewPage(): Promise<{
   });
   await page.goto(`${server.baseUrl}chat`);
 
-  const pullLink = page.getByRole("link", { name: "openclaw/openclaw#99816" });
+  const pullLink = page.getByRole("link", { name: "AforaMosh/afora-agent#99816" });
   const card = page.locator(".github-link-hovercard");
   await pullLink.waitFor({ state: "visible" });
   return { card, page, pullLink };
@@ -153,8 +153,8 @@ describeControlUiE2e("GitHub link hover cards", () => {
                 login: "steipete",
                 mergedAt: "2026-07-04T09:53:52Z",
                 number: 99816,
-                owner: "openclaw",
-                repo: "openclaw",
+                owner: "afora",
+                repo: "afora",
                 state: "closed",
                 title: "fix(agents): derive conversation scope from trusted group facts",
                 updatedAt: "2026-07-04T09:53:55Z",
@@ -170,8 +170,8 @@ describeControlUiE2e("GitHub link hover cards", () => {
                 kind: "issue",
                 login: "octocat",
                 number: 99815,
-                owner: "openclaw",
-                repo: "openclaw",
+                owner: "afora",
+                repo: "afora",
                 state: "open",
                 title: "Keep hover previews compact",
                 updatedAt: new Date().toISOString(),
@@ -190,11 +190,11 @@ describeControlUiE2e("GitHub link hover cards", () => {
             {
               type: "text",
               text: [
-                "Review https://github.com/openclaw/openclaw/pull/99816,",
-                "then https://github.com/openclaw/openclaw/issues/99815.",
-                "A [missing item](https://github.com/openclaw/openclaw/issues/999999) stays usable.",
-                "The [repository](https://github.com/openclaw/openclaw) has no item preview.",
-                "Styling notes live in [the docs](https://docs.openclaw.ai/web/control-ui).",
+                "Review https://github.com/AforaMosh/afora-agent/pull/99816,",
+                "then https://github.com/AforaMosh/afora-agent/issues/99815.",
+                "A [missing item](https://github.com/AforaMosh/afora-agent/issues/999999) stays usable.",
+                "The [repository](https://github.com/AforaMosh/afora-agent) has no item preview.",
+                "Styling notes live in [the docs](https://docs.afora.ai/web/control-ui).",
               ].join(" "),
             },
           ],
@@ -216,7 +216,7 @@ describeControlUiE2e("GitHub link hover cards", () => {
     await page.goto(`${server.baseUrl}chat`);
 
     const message = page.locator(".chat-text").filter({ hasText: "Review" });
-    const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+    const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
     if (artifactDir) {
       await mkdir(artifactDir, { recursive: true });
       await message.screenshot({ path: path.join(artifactDir, "github-references-light.png") });
@@ -246,7 +246,7 @@ describeControlUiE2e("GitHub link hover cards", () => {
     );
     await page.setViewportSize({ height: 800, width: 1180 });
 
-    const pullLink = page.getByRole("link", { name: "openclaw/openclaw#99816" });
+    const pullLink = page.getByRole("link", { name: "AforaMosh/afora-agent#99816" });
 
     // The mark carries the link signal at rest, so the underline only returns on
     // hover. Non-GitHub links keep the base underline, which keeps the rule scoped.
@@ -259,7 +259,7 @@ describeControlUiE2e("GitHub link hover cards", () => {
     await expect.poll(() => decorationLine(pullLink)).toBe("underline");
     const card = page.locator(".github-link-hovercard");
     await expectText(card, "Merged");
-    await expectText(card, "openclaw/openclaw #99816");
+    await expectText(card, "AforaMosh/afora-agent #99816");
     await expectText(card, "+101");
     await expectText(card, "−12");
     await expectText(card, "3 files");
@@ -272,7 +272,7 @@ describeControlUiE2e("GitHub link hover cards", () => {
     expect(pullBox!.x + pullBox!.width).toBeLessThanOrEqual(1180);
     expect(pullBox!.y + pullBox!.height).toBeLessThanOrEqual(800);
 
-    const issueLink = page.getByRole("link", { name: "openclaw/openclaw#99815" });
+    const issueLink = page.getByRole("link", { name: "AforaMosh/afora-agent#99815" });
     await issueLink.hover();
     await expectText(card, "Keep hover previews compact");
     await expectText(card, "octocat");
@@ -296,7 +296,7 @@ describeControlUiE2e("GitHub link hover cards", () => {
     await expectText(card, "GitHub preview unavailable");
     expect((await gateway.getRequests("controlUi.githubPreview")).length).toBe(3);
     expect(await missingLink.getAttribute("href")).toBe(
-      "https://github.com/openclaw/openclaw/issues/999999",
+      "https://github.com/AforaMosh/afora-agent/issues/999999",
     );
     await page.mouse.move(1, 1);
 
@@ -319,14 +319,14 @@ describeControlUiE2e("GitHub link hover cards", () => {
     await pullLink.click();
     const popup = await popupPromise;
     await popup.waitForLoadState("domcontentloaded");
-    expect(popup.url()).toBe("https://github.com/openclaw/openclaw/pull/99816");
+    expect(popup.url()).toBe("https://github.com/AforaMosh/afora-agent/pull/99816");
   });
 
   it("keeps the card open while the pointer crosses the gap onto it, then closes once it leaves both", async () => {
     const { card, page, pullLink } = await openPullPreviewPage();
 
     await pullLink.hover();
-    await expectText(card, "openclaw/openclaw #99816");
+    await expectText(card, "AforaMosh/afora-agent #99816");
     const linkBox = await pullLink.boundingBox();
     expect(linkBox).not.toBeNull();
 
@@ -348,7 +348,7 @@ describeControlUiE2e("GitHub link hover cards", () => {
     // the unit test's ten-grace-window persistence check.
     await page.waitForTimeout(300);
     expect(await card.count()).toBe(1);
-    await expectText(card, "openclaw/openclaw #99816");
+    await expectText(card, "AforaMosh/afora-agent #99816");
 
     // Leaving both surfaces, with no click, still dismisses the card after the
     // traversal grace period.
@@ -360,7 +360,7 @@ describeControlUiE2e("GitHub link hover cards", () => {
     const { card, page, pullLink } = await openPullPreviewPage();
 
     await pullLink.focus();
-    await expectText(card, "openclaw/openclaw #99816");
+    await expectText(card, "AforaMosh/afora-agent #99816");
     // The real accessibility tree has to report a dialog, not a tooltip: the card
     // owns a link, which tooltip semantics may not contain.
     await expect.poll(() => page.getByRole("dialog").count()).toBe(1);
@@ -393,7 +393,7 @@ describeControlUiE2e("GitHub link hover cards", () => {
     const { card, page, pullLink } = await openPullPreviewPage();
 
     await pullLink.hover();
-    await expectText(card, "openclaw/openclaw #99816");
+    await expectText(card, "AforaMosh/afora-agent #99816");
     const titleLink = card.locator(".github-link-hovercard__title");
     await expectText(titleLink, pullPreviewResponse.title);
 
@@ -415,14 +415,14 @@ describeControlUiE2e("GitHub link hover cards", () => {
     await titleLink.click();
     const popup = await popupPromise;
     await popup.waitForLoadState("domcontentloaded");
-    expect(popup.url()).toBe("https://github.com/openclaw/openclaw/pull/99816");
+    expect(popup.url()).toBe("https://github.com/AforaMosh/afora-agent/pull/99816");
 
     // The diff-size chip is the card's deep link into the files-changed view.
     const filesPopupPromise = page.waitForEvent("popup");
     await card.locator(".github-link-hovercard__metric--files").click();
     const filesPopup = await filesPopupPromise;
     await filesPopup.waitForLoadState("domcontentloaded");
-    expect(filesPopup.url()).toBe("https://github.com/openclaw/openclaw/pull/99816/files");
+    expect(filesPopup.url()).toBe("https://github.com/AforaMosh/afora-agent/pull/99816/files");
     await filesPopup.close();
 
     // The click focused the title link inside the card; leaving the card still

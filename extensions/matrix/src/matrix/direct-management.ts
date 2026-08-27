@@ -1,6 +1,6 @@
 // Matrix plugin module implements direct management behavior.
-import { KeyedAsyncQueue } from "openclaw/plugin-sdk/keyed-async-queue";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { KeyedAsyncQueue } from "afora-agent/plugin-sdk/keyed-async-queue";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { inspectMatrixDirectRoomEvidence } from "./direct-room.js";
 import type { MatrixClient } from "./sdk.js";
 import { EventType, type MatrixDirectAccountData } from "./send/types.js";

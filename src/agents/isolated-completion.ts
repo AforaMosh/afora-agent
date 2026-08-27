@@ -9,9 +9,9 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import type { ThinkLevel } from "../auto-reply/thinking.js";
 import { getRuntimeConfig } from "../config/config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { withTempWorkspace } from "../infra/private-temp-workspace.js";
-import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import { resolvePreferredAforaTmpDir } from "../infra/tmp-afora-dir.js";
 import type { AssistantMessage } from "../llm/types.js";
 import { withPluginRuntimeGenerationScope } from "../plugins/runtime/generation-scope.js";
 import { prepareSystemAgentRunAdmission } from "./admitted-run-context.js";
@@ -50,7 +50,7 @@ import { resolveEffectiveAgentRuntime } from "./thinking-runtime.js";
 import type { UsageLike } from "./usage.js";
 
 type RunIsolatedCompletionParams = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   provider: string;
   model: string;
   /** Explicit credential owner. CLI and harness paths must not replace it with another profile. */
@@ -185,7 +185,7 @@ async function runCliIsolatedCompletion(params: {
   workspaceDir: string;
 }): Promise<{ model: string; text: string; usage?: UsageLike }> {
   return await withTempWorkspace(
-    { rootDir: resolvePreferredOpenClawTmpDir(), prefix: "openclaw-isolated-completion-" },
+    { rootDir: resolvePreferredAforaTmpDir(), prefix: "afora-isolated-completion-" },
     async ({ dir }) => {
       const { runCliAgent } = await import("./cli-runner.runtime.js");
       const sessionId = `isolated-completion-${randomUUID()}`;
@@ -220,7 +220,7 @@ async function runCliIsolatedCompletion(params: {
           streamParams: params.request.streamParams,
           abortSignal: params.request.abortSignal,
           executionMode: "side-question",
-          cliToolAvailability: { native: [], openClaw: [] },
+          cliToolAvailability: { native: [], afora: [] },
           disableTools: true,
           disableCliLiveSession: true,
           cleanupCliLiveSessionOnRunEnd: true,
@@ -326,9 +326,9 @@ function resolveCliOwner(params: {
 }
 
 async function resolveHarness(runtime: string): Promise<AgentHarness> {
-  if (runtime === "openclaw") {
-    const { createOpenClawAgentHarness } = await import("./harness/builtin-openclaw.js");
-    return createOpenClawAgentHarness();
+  if (runtime === "afora") {
+    const { createAforaAgentHarness } = await import("./harness/builtin-afora.js");
+    return createAforaAgentHarness();
   }
   const harness = getRegisteredAgentHarness(runtime)?.harness;
   if (!harness) {
@@ -344,7 +344,7 @@ function prepareIsolatedHarnessParams(
   harness: AgentHarness,
   params: AgentHarnessIsolatedCompletionParams,
 ): AgentHarnessIsolatedCompletionParams {
-  if (harness.id === "openclaw") {
+  if (harness.id === "afora") {
     return params;
   }
   // External harnesses are the provider egress boundary. Keep credentials
@@ -368,7 +368,7 @@ function prepareIsolatedHarnessParamsV2(
   harness: AgentHarness,
   params: AgentHarnessIsolatedCompletionParamsV2,
 ): AgentHarnessIsolatedCompletionParamsV2 {
-  if (harness.id === "openclaw" || params.authorization.owner === "harness") {
+  if (harness.id === "afora" || params.authorization.owner === "harness") {
     return params;
   }
   const boundary = "plugin harness isolated completion handoff";
@@ -390,7 +390,7 @@ function prepareIsolatedHarnessParamsV2(
 }
 
 async function prepareHostAuthorization(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentId: string;
   agentDir: string;
   provider: string;

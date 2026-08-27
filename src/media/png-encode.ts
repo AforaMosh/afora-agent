@@ -1,6 +1,6 @@
 // PNG encode helpers build small PNG files without external image dependencies.
 import { deflateSync } from "node:zlib";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 
 const CRC_TABLE = (() => {
   const table = new Uint32Array(256);

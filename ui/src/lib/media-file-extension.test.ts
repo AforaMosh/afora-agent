@@ -8,7 +8,7 @@ describe("getMediaFileExtension", () => {
     { value: "https://cdn.example/render%2Emp4?download=1#preview", expected: "mp4" },
     { value: "https://cdn.example/render%2Em%70%34", expected: "mp4" },
     { value: "/media/inbound/photo.png?mediaTicket=signed#preview", expected: "png" },
-    { value: "/__openclaw__/media/voice%2Eogg?mediaTicket=signed", expected: "ogg" },
+    { value: "/__afora__/media/voice%2Eogg?mediaTicket=signed", expected: "ogg" },
     { value: "/media/inbound/photo.png?preview=.jpg", expected: "png" },
     { value: "/tmp/recording?download=.mp3", expected: "mp3" },
     { value: "/tmp/clip#final.mp4", expected: "mp4" },

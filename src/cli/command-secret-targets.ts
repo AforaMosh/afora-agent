@@ -1,10 +1,10 @@
 // Command-specific secret target policy. Each exported helper returns the config secret IDs
 // a command may inspect, with optional concrete-path filters for selected providers/accounts.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { sortUniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { sortUniqueStrings } from "@afora/normalization-core/string-normalization";
 import { resolveChannelDefaultAccountId } from "../channels/plugins/helpers.js";
 import { listReadOnlyChannelPluginsForConfig } from "../channels/plugins/read-only.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveSecretInputRef } from "../config/types.secrets.js";
 import type {
   PluginWebFetchProviderEntry,
@@ -157,14 +157,14 @@ function isConfiguredSecretCandidate(value: unknown): boolean {
   return value !== undefined && value !== null;
 }
 
-function resolveFetchConfig(config: OpenClawConfig): Record<string, unknown> | undefined {
+function resolveFetchConfig(config: AforaConfig): Record<string, unknown> | undefined {
   const fetch = config.tools?.web?.fetch;
   return fetch && typeof fetch === "object" && !Array.isArray(fetch)
     ? (fetch as Record<string, unknown>)
     : undefined;
 }
 
-function resolveSearchConfig(config: OpenClawConfig): Record<string, unknown> | undefined {
+function resolveSearchConfig(config: AforaConfig): Record<string, unknown> | undefined {
   const search = config.tools?.web?.search;
   return search && typeof search === "object" && !Array.isArray(search)
     ? (search as Record<string, unknown>)
@@ -228,7 +228,7 @@ function addConfigPathTargets(params: {
 }
 
 function addConfiguredConfigPathTargets(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   path: string;
   targetIds: Set<string>;
   targetPaths: Set<string>;
@@ -263,7 +263,7 @@ function modelProviderCredentialFallbackPathForWebSearchProvider(
 }
 
 function discoverForcedActivePaths(
-  config: OpenClawConfig,
+  config: AforaConfig,
   targetIds: ReadonlySet<string>,
   allowedPaths?: ReadonlySet<string>,
 ): Set<string> | undefined {
@@ -278,7 +278,7 @@ function discoverForcedActivePaths(
 }
 
 function discoverConfiguredAllowedPaths(
-  config: OpenClawConfig,
+  config: AforaConfig,
   targetIds: ReadonlySet<string>,
 ): Set<string> | undefined {
   const allowedPaths = new Set<string>();
@@ -289,7 +289,7 @@ function discoverConfiguredAllowedPaths(
 }
 
 function mergeConfiguredAllowedPaths(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   baseTargetIds: ReadonlySet<string>;
   concreteFallbackPaths: ReadonlySet<string>;
 }): Set<string> | undefined {
@@ -304,7 +304,7 @@ function mergeConfiguredAllowedPaths(params: {
 }
 
 function resolveSelectedWebFetchProviderId(
-  config: OpenClawConfig,
+  config: AforaConfig,
   providerId?: string | null,
 ): string | undefined {
   return (
@@ -313,7 +313,7 @@ function resolveSelectedWebFetchProviderId(
 }
 
 function resolveSelectedWebSearchProviderId(
-  config: OpenClawConfig,
+  config: AforaConfig,
   providerId?: string | null,
 ): string | undefined {
   return (
@@ -322,10 +322,10 @@ function resolveSelectedWebSearchProviderId(
 }
 
 function withSelectedWebProviderForDiscovery(
-  config: OpenClawConfig,
+  config: AforaConfig,
   kind: "search" | "fetch",
   providerId: string | undefined,
-): OpenClawConfig {
+): AforaConfig {
   if (!providerId) {
     return config;
   }
@@ -342,14 +342,14 @@ function withSelectedWebProviderForDiscovery(
 
 function hasConfiguredFetchCredential(params: {
   provider: PluginWebFetchProviderEntry;
-  config: OpenClawConfig;
+  config: AforaConfig;
 }): boolean {
   return isConfiguredSecretCandidate(params.provider.getConfiguredCredentialValue?.(params.config));
 }
 
 function hasConfiguredSearchCredential(params: {
   provider: PluginWebSearchProviderEntry;
-  config: OpenClawConfig;
+  config: AforaConfig;
 }): boolean {
   return isConfiguredSecretCandidate(params.provider.getConfiguredCredentialValue?.(params.config));
 }
@@ -434,7 +434,7 @@ function addFallbackPathTargets(
 function addSelectedProviderCredentialTargets<
   Provider extends CapabilityWebCredentialProvider,
 >(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   provider: Provider;
   state: SelectedProviderTargetState;
   hasConfiguredCredential: (provider: Provider) => boolean;
@@ -469,7 +469,7 @@ function addSelectedProviderCredentialTargets<
 }
 
 function getCapabilityWebSearchSelectedProviderTargetIds(
-  config: OpenClawConfig,
+  config: AforaConfig,
   providerId?: string | null,
 ): SelectedProviderTargetIds {
   const selectedProviderId = resolveSelectedWebSearchProviderId(config, providerId);
@@ -515,7 +515,7 @@ function getCapabilityWebSearchSelectedProviderTargetIds(
 }
 
 function getCapabilityWebFetchSelectedProviderTargetIds(
-  config: OpenClawConfig,
+  config: AforaConfig,
   providerId?: string | null,
 ): SelectedProviderTargetIds {
   const selectedProviderId = resolveSelectedWebFetchProviderId(config, providerId);
@@ -545,7 +545,7 @@ function getCapabilityWebFetchSelectedProviderTargetIds(
 function getCapabilityWebProviderAutoDetectTargets<
   Provider extends CapabilityWebCredentialProvider,
 >(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   baseTargetIds: ReadonlySet<string>;
   providers: readonly Provider[];
   hasConfiguredCredential: (provider: Provider) => boolean;
@@ -591,7 +591,7 @@ function getCapabilityWebProviderAutoDetectTargets<
   };
 }
 
-function getCapabilityWebSearchAutoDetectTargets(config: OpenClawConfig): CommandSecretTargetScope {
+function getCapabilityWebSearchAutoDetectTargets(config: AforaConfig): CommandSecretTargetScope {
   return getCapabilityWebProviderAutoDetectTargets({
     config,
     baseTargetIds: getCapabilityWebSearchCommandSecretTargetIds(),
@@ -604,7 +604,7 @@ function getCapabilityWebSearchAutoDetectTargets(config: OpenClawConfig): Comman
   });
 }
 
-function getCapabilityWebFetchAutoDetectTargets(config: OpenClawConfig): CommandSecretTargetScope {
+function getCapabilityWebFetchAutoDetectTargets(config: AforaConfig): CommandSecretTargetScope {
   return getCapabilityWebProviderAutoDetectTargets({
     config,
     baseTargetIds: getCapabilityWebFetchCommandSecretTargetIds(),
@@ -644,7 +644,7 @@ function isScopedChannelSecretTargetEntry(params: {
   const allowedPrefix = `channels.${channelId}.`;
   return (
     params.entry.id.startsWith(allowedPrefix) &&
-    params.entry.configFile === "openclaw.json" &&
+    params.entry.configFile === "afora.json" &&
     typeof params.entry.pathPattern === "string" &&
     params.entry.pathPattern.startsWith(allowedPrefix) &&
     (params.entry.refPathPattern === undefined ||
@@ -653,7 +653,7 @@ function isScopedChannelSecretTargetEntry(params: {
 }
 
 function getConfiguredChannelSecretTargetIds(
-  config: OpenClawConfig,
+  config: AforaConfig,
   env: NodeJS.ProcessEnv = process.env,
 ): string[] {
   const targetIds = new Set<string>();
@@ -730,7 +730,7 @@ function pathTargetsScopedChannelAccount(params: {
 
 /** Return channel secret targets, optionally narrowed to one channel account subtree. */
 export function getScopedChannelsCommandSecretTargets(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   channel?: string | null;
   channels?: readonly string[];
   accountId?: string | null;
@@ -801,7 +801,7 @@ export function getChannelsCommandSecretTargetIds(): Set<string> {
 
 /** Channel secret targets contributed by channels currently present in config/read-only plugins. */
 export function getConfiguredChannelsCommandSecretTargetIds(
-  config: OpenClawConfig,
+  config: AforaConfig,
   env?: NodeJS.ProcessEnv,
 ): Set<string> {
   return toTargetIdSet(getConfiguredChannelSecretTargetIds(config, env));
@@ -836,7 +836,7 @@ export function getAgentRuntimeCommandSecretTargetIds(params?: {
  * Web credentials are needed only if the model invokes the corresponding tool.
  * Keep them materializable for agent runs without making tool-owner outages block turn startup.
  */
-export function getAgentRuntimeOptionalCommandSecretPaths(config: OpenClawConfig): Set<string> {
+export function getAgentRuntimeOptionalCommandSecretPaths(config: AforaConfig): Set<string> {
   const targetIds = new Set([
     ...getCapabilityWebSearchTargetIds(),
     ...getCapabilityWebFetchTargetIds(),
@@ -863,17 +863,17 @@ export function getCapabilityWebFetchCommandSecretTargetIds(): Set<string> {
 }
 
 type CapabilityWebCommandSecretTargetParams = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   providerId?: string | null;
   disabled: boolean;
   baseTargetIds: () => Set<string>;
   resolveSelectedProviderId: (
-    config: OpenClawConfig,
+    config: AforaConfig,
     providerId?: string | null,
   ) => string | undefined;
-  autoDetectTargets: (config: OpenClawConfig) => CommandSecretTargetScope;
+  autoDetectTargets: (config: AforaConfig) => CommandSecretTargetScope;
   selectedProviderTargetIds: (
-    config: OpenClawConfig,
+    config: AforaConfig,
     providerId?: string | null,
   ) => SelectedProviderTargetIds;
 };
@@ -911,7 +911,7 @@ function getCapabilityWebCommandSecretTargets(
 
 /** Web-fetch target scope for selected/auto-detected providers and configured fallback paths. */
 export function getCapabilityWebFetchCommandSecretTargets(
-  config: OpenClawConfig,
+  config: AforaConfig,
   options?: {
     providerId?: string | null;
   },
@@ -934,7 +934,7 @@ export function getCapabilityWebSearchCommandSecretTargetIds(): Set<string> {
 
 /** Web-search target scope for selected/auto-detected providers and configured fallback paths. */
 export function getCapabilityWebSearchCommandSecretTargets(
-  config: OpenClawConfig,
+  config: AforaConfig,
   options?: {
     providerId?: string | null;
   },
@@ -952,7 +952,7 @@ export function getCapabilityWebSearchCommandSecretTargets(
 
 /** Status command targets; channel targets can be limited to configured channel plugins. */
 export function getStatusCommandSecretTargetIds(
-  config?: OpenClawConfig,
+  config?: AforaConfig,
   env?: NodeJS.ProcessEnv,
   options?: { includeChannelTargets?: boolean },
 ): Set<string> {

@@ -2,8 +2,8 @@ import { spawnSync } from "node:child_process";
 // Qa Lab plugin module implements web runtime behavior.
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
-import { resolvePositiveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { resolvePositiveTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright-core";
 
 type QaWebSession = {

@@ -7,7 +7,7 @@ read_when:
 title: "Streaming and chunking"
 ---
 
-OpenClaw has two independent streaming layers, and there is **no true
+Afora has two independent streaming layers, and there is **no true
 token-delta streaming** to channel messages today:
 
 - **Block streaming (channels):** emit completed **blocks** as the assistant
@@ -68,7 +68,7 @@ exceeds the limit.
 Bundled channels spell these overrides as
 `channels.<id>.streaming.{chunkMode,block.enabled,block.coalesce}`. The flat
 `*.chunkMode` / `*.blockStreaming` / `*.blockStreamingCoalesce` spellings are
-rejected everywhere. `openclaw doctor --fix` migrates legacy configs into the
+rejected everywhere. `afora doctor --fix` migrates legacy configs into the
 nested shape.
 
 **Boundary semantics** for `blockStreamingBreak`:
@@ -82,12 +82,12 @@ nested shape.
 
 Streaming media must use structured payload fields such as `mediaUrl` or
 `mediaUrls`; streamed text is not parsed as an attachment command. When block
-streaming sends media early, OpenClaw remembers that delivery for the turn. If
+streaming sends media early, Afora remembers that delivery for the turn. If
 the final assistant payload repeats the same media URL, final delivery strips
 the duplicate media instead of sending the attachment again.
 
 Exact duplicate final payloads are suppressed. If the final payload adds
-distinct text around media that was already streamed, OpenClaw still sends the
+distinct text around media that was already streamed, Afora still sends the
 new text while keeping the media single-delivery. This prevents duplicate voice
 notes or files on channels such as Telegram.
 
@@ -107,7 +107,7 @@ per-channel caps.
 
 ## Coalescing (merge streamed blocks)
 
-When block streaming is enabled, OpenClaw can **merge consecutive block
+When block streaming is enabled, Afora can **merge consecutive block
 chunks** before sending them, reducing single-line spam while still providing
 progressive output.
 
@@ -161,7 +161,7 @@ delivery still applies.
 ## Preview streaming modes
 
 Canonical key: `channels.<channel>.streaming` (nested `{ mode, ... }`; legacy
-top-level boolean/string spellings are rewritten by `openclaw doctor --fix`).
+top-level boolean/string spellings are rewritten by `afora doctor --fix`).
 
 | Mode       | Behavior                                                              |
 | ---------- | --------------------------------------------------------------------- |
@@ -212,12 +212,12 @@ Slack-only:
 
 | Channel  | Legacy keys                                                 | Status                                                                                                                                               |
 | -------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Telegram | `streamMode`, scalar/boolean `streaming`                    | Rewritten to `streaming.mode` by `openclaw doctor --fix`; not read at runtime                                                                        |
-| Discord  | `streamMode`, boolean `streaming`                           | Rewritten to `streaming.mode` by `openclaw doctor --fix`; not read at runtime                                                                        |
-| Slack    | `streamMode`; boolean `streaming`; legacy `nativeStreaming` | Rewritten to `streaming.mode` (and `streaming.nativeTransport` for the boolean/legacy forms) by `openclaw doctor --fix`; not read at runtime         |
-| Matrix   | scalar/boolean `streaming`                                  | Rewritten to `streaming.mode` (including Matrix's `"quiet"` mode) by `openclaw doctor --fix`; not read at runtime                                    |
-| Feishu   | boolean `streaming`                                         | Rewritten to `streaming.mode` by `openclaw doctor --fix`; not read at runtime                                                                        |
-| QQ Bot   | boolean `streaming`; `streaming.c2cStreamApi`               | Rewritten to `streaming.mode` (and `streaming.nativeTransport` for the boolean/`c2cStreamApi` forms) by `openclaw doctor --fix`; not read at runtime |
+| Telegram | `streamMode`, scalar/boolean `streaming`                    | Rewritten to `streaming.mode` by `afora doctor --fix`; not read at runtime                                                                        |
+| Discord  | `streamMode`, boolean `streaming`                           | Rewritten to `streaming.mode` by `afora doctor --fix`; not read at runtime                                                                        |
+| Slack    | `streamMode`; boolean `streaming`; legacy `nativeStreaming` | Rewritten to `streaming.mode` (and `streaming.nativeTransport` for the boolean/legacy forms) by `afora doctor --fix`; not read at runtime         |
+| Matrix   | scalar/boolean `streaming`                                  | Rewritten to `streaming.mode` (including Matrix's `"quiet"` mode) by `afora doctor --fix`; not read at runtime                                    |
+| Feishu   | boolean `streaming`                                         | Rewritten to `streaming.mode` by `afora doctor --fix`; not read at runtime                                                                        |
+| QQ Bot   | boolean `streaming`; `streaming.c2cStreamApi`               | Rewritten to `streaming.mode` (and `streaming.nativeTransport` for the boolean/`c2cStreamApi` forms) by `afora doctor --fix`; not read at runtime |
 
 ## Runtime behavior
 
@@ -238,14 +238,14 @@ Slack-only:
   the status label when answer streaming is active but no tool line is
   available yet, clears the draft at completion, and sends the final answer
   through normal delivery.
-- If the final edit fails before the completed text is confirmed, OpenClaw uses
+- If the final edit fails before the completed text is confirmed, Afora uses
   normal final delivery and cleans up the stale preview.
 - Preview streaming is skipped when Telegram block streaming is explicitly
   enabled, to avoid double-streaming.
 - `/reasoning stream` can write reasoning to a transient preview that is
   deleted after final delivery.
 - Telegram selected quote replies are an exception: when `replyToMode` is not
-  `"off"` and selected quote text is present, OpenClaw skips the answer preview
+  `"off"` and selected quote text is present, Afora skips the answer preview
   stream for that turn (the final answer must go through the native quote-reply
   path) so tool-progress preview lines cannot render. Current-message replies
   without selected quote text still keep preview streaming. See
@@ -274,7 +274,7 @@ Slack-only:
   `streaming.progress.nativeTaskCards: false` falls back to the Block Kit
   session card, which finalizes to success or error and posts the assistant's
   final text as a separate message.
-- Cards include **Open in OpenClaw** only when the session is actually openable:
+- Cards include **Open in Afora** only when the session is actually openable:
   `gateway.publicOrigin` is set and `gateway.controlUi.enabled` is not `false`.
 - Top-level DMs without a reply thread use draft preview posts and edits
   instead of Slack native streaming.
@@ -344,7 +344,7 @@ Supported surfaces:
   set `streaming.preview.commandText` or `streaming.progress.commandText` to
   `"status"` (the default). Set either option to `"raw"` to opt into command
   text. This policy is shared by draft/progress channels
-  that use OpenClaw's compact progress renderer, including Discord, Matrix,
+  that use Afora's compact progress renderer, including Discord, Matrix,
   Microsoft Teams, Mattermost, Slack session cards, and Telegram. To disable
   preview edits entirely, set `streaming.mode` to `off`.
 

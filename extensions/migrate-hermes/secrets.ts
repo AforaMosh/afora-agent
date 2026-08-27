@@ -2,10 +2,10 @@
 import {
   loadAuthProfileStoreWithoutExternalProfiles,
   resolveAuthStorePathForDisplay,
-} from "openclaw/plugin-sdk/agent-runtime";
-import type { MigrationItem, MigrationProviderContext } from "openclaw/plugin-sdk/plugin-entry";
-import { updateAuthProfileStoreWithLock } from "openclaw/plugin-sdk/provider-auth";
-import { isRecord, normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/agent-runtime";
+import type { MigrationItem, MigrationProviderContext } from "afora-agent/plugin-sdk/plugin-entry";
+import { updateAuthProfileStoreWithLock } from "afora-agent/plugin-sdk/provider-auth";
+import { isRecord, normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   applyAuthProfileConfigWithConflictCheck,
   hasAuthProfileConfigConflict,
@@ -168,7 +168,7 @@ async function buildOpenCodeSecretCandidates(
       secretField: "key",
     });
   }
-  // OpenClaw's Copilot token profile cannot preserve OpenCode enterprise routing yet.
+  // Afora's Copilot token profile cannot preserve OpenCode enterprise routing yet.
   if (normalizeOptionalString(githubCopilot.refresh) && !githubCopilotEnterpriseUrl) {
     candidates.push({
       id: "secret:github-copilot:opencode-auth-json",

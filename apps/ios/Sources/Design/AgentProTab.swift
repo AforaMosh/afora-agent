@@ -1,12 +1,12 @@
-import OpenClawKit
-import OpenClawProtocol
+import AforaKit
+import AforaProtocol
 import SwiftUI
 
 struct AgentProTab: View {
     @Environment(NodeAppModel.self) var appModel
     @Environment(\.scenePhase) var scenePhase
     let directRoute: AgentRoute?
-    let headerSidebarAction: OpenClawSidebarHeaderAction?
+    let headerSidebarAction: AforaSidebarHeaderAction?
     let headerTitle: String
     let openSettings: (() -> Void)?
     @State var overview: AgentOverviewSnapshot?
@@ -114,7 +114,7 @@ struct AgentProTab: View {
     }
 
     enum AgentLayout {
-        static let cardRadius: CGFloat = OpenClawProMetric.cardRadius
+        static let cardRadius: CGFloat = AforaProMetric.cardRadius
         static let filterHeight: CGFloat = 34
         static let metricTileHeight: CGFloat = 94
     }
@@ -125,8 +125,8 @@ struct AgentProTab: View {
 
         var color: Color {
             switch self {
-            case .online: OpenClawBrand.ok
-            case .ready: OpenClawBrand.info
+            case .online: AforaBrand.ok
+            case .ready: AforaBrand.info
             }
         }
     }
@@ -156,7 +156,7 @@ struct AgentProTab: View {
 
     init(
         directRoute: AgentRoute? = nil,
-        headerSidebarAction: OpenClawSidebarHeaderAction? = nil,
+        headerSidebarAction: AforaSidebarHeaderAction? = nil,
         headerTitle: String = "Agents",
         openSettings: (() -> Void)? = nil)
     {
@@ -205,7 +205,7 @@ struct AgentProTab: View {
     private var overviewNavigation: some View {
         NavigationStack {
             ZStack {
-                OpenClawProBackground()
+                AforaProBackground()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
                         self.rosterHeader

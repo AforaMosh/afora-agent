@@ -9,7 +9,7 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("getQueuedFileWriter", () => {
   it("creates log files with restrictive permissions", async () => {
-    const tmpDir = tempDirs.make("openclaw-queued-writer-");
+    const tmpDir = tempDirs.make("afora-queued-writer-");
     const filePath = path.join(tmpDir, "trace.jsonl");
     const writer = getQueuedFileWriter(new Map(), filePath);
 
@@ -21,7 +21,7 @@ describe("getQueuedFileWriter", () => {
   });
 
   it("refuses to append through a symlink", async () => {
-    const tmpDir = tempDirs.make("openclaw-queued-writer-");
+    const tmpDir = tempDirs.make("afora-queued-writer-");
     const targetPath = path.join(tmpDir, "target.txt");
     const filePath = path.join(tmpDir, "trace.jsonl");
     fs.writeFileSync(targetPath, "before\n", "utf8");
@@ -36,7 +36,7 @@ describe("getQueuedFileWriter", () => {
 
   it("refuses to append through a symlinked parent directory", async () => {
     // Parent directory symlinks are as dangerous as leaf-file symlinks.
-    const tmpDir = tempDirs.make("openclaw-queued-writer-");
+    const tmpDir = tempDirs.make("afora-queued-writer-");
     const targetDir = path.join(tmpDir, "target");
     const linkDir = path.join(tmpDir, "link");
     fs.mkdirSync(targetDir);
@@ -50,7 +50,7 @@ describe("getQueuedFileWriter", () => {
   });
 
   it("stops appending when the configured file cap is reached", async () => {
-    const tmpDir = tempDirs.make("openclaw-queued-writer-");
+    const tmpDir = tempDirs.make("afora-queued-writer-");
     const filePath = path.join(tmpDir, "trace.jsonl");
     const writer = getQueuedFileWriter(new Map(), filePath, { maxFileBytes: 6 });
 
@@ -62,7 +62,7 @@ describe("getQueuedFileWriter", () => {
   });
 
   it("drops writes that would exceed the pending queue cap", async () => {
-    const tmpDir = tempDirs.make("openclaw-queued-writer-");
+    const tmpDir = tempDirs.make("afora-queued-writer-");
     const filePath = path.join(tmpDir, "trace.jsonl");
     const writer = getQueuedFileWriter(new Map(), filePath, { maxQueuedBytes: 6 });
 
@@ -74,7 +74,7 @@ describe("getQueuedFileWriter", () => {
   });
 
   it("reports pending queue diagnostics before flush drains writes", async () => {
-    const tmpDir = tempDirs.make("openclaw-queued-writer-");
+    const tmpDir = tempDirs.make("afora-queued-writer-");
     const filePath = path.join(tmpDir, "trace.jsonl");
     const writer = getQueuedFileWriter(new Map(), filePath, {
       maxFileBytes: 1024,

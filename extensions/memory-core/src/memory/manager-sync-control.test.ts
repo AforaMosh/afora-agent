@@ -2,7 +2,7 @@
 import type {
   MemorySessionSyncTarget,
   MemorySyncParams,
-} from "openclaw/plugin-sdk/memory-core-host-engine-storage";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
 import { describe, expect, it, vi } from "vitest";
 import { enqueueMemoryTargetedSessionSync } from "./manager-sync-control.js";
 

@@ -19,8 +19,8 @@ describe("resolveWorkspaceBootstrapRouting", () => {
   it("resolves bootstrap pending from the canonical workspace instead of a copied sandbox", async () => {
     // Sandbox copies are execution roots; bootstrap state belongs to the
     // canonical workspace.
-    const sandboxWorkspace = "/tmp/openclaw-sandbox-copy";
-    const canonicalWorkspace = "/tmp/openclaw-canonical-workspace";
+    const sandboxWorkspace = "/tmp/afora-sandbox-copy";
+    const canonicalWorkspace = "/tmp/afora-canonical-workspace";
     const isWorkspaceBootstrapPending = vi.fn(async (workspaceDir: string) => {
       return workspaceDir === sandboxWorkspace;
     });
@@ -49,8 +49,8 @@ describe("resolveWorkspaceBootstrapRouting", () => {
       trigger: "user",
       isPrimaryRun: true,
       isCanonicalWorkspace: true,
-      effectiveWorkspace: "/tmp/openclaw-workspace",
-      resolvedWorkspace: "/tmp/openclaw-workspace",
+      effectiveWorkspace: "/tmp/afora-workspace",
+      resolvedWorkspace: "/tmp/afora-workspace",
       hasBootstrapFileAccess: false,
     });
 
@@ -67,7 +67,7 @@ describe("resolveWorkspaceBootstrapRouting", () => {
       bootstrapFiles: [
         {
           name: "BOOTSTRAP.md",
-          path: "/tmp/openclaw-workspace/BOOTSTRAP.md",
+          path: "/tmp/afora-workspace/BOOTSTRAP.md",
           content: "Ask who I am before continuing.",
           missing: false,
         },
@@ -75,8 +75,8 @@ describe("resolveWorkspaceBootstrapRouting", () => {
       trigger: "user",
       isPrimaryRun: true,
       isCanonicalWorkspace: true,
-      effectiveWorkspace: "/tmp/openclaw-workspace",
-      resolvedWorkspace: "/tmp/openclaw-workspace",
+      effectiveWorkspace: "/tmp/afora-workspace",
+      resolvedWorkspace: "/tmp/afora-workspace",
       hasBootstrapFileAccess: true,
     });
 
@@ -91,7 +91,7 @@ describe("resolveWorkspaceBootstrapRouting", () => {
       bootstrapFiles: [
         {
           name: "BOOTSTRAP.md",
-          path: "/tmp/openclaw-workspace/BOOTSTRAP.md",
+          path: "/tmp/afora-workspace/BOOTSTRAP.md",
           content: "Ask who I am before continuing.",
           missing: false,
         },
@@ -99,8 +99,8 @@ describe("resolveWorkspaceBootstrapRouting", () => {
       trigger: "user",
       isPrimaryRun: true,
       isCanonicalWorkspace: true,
-      effectiveWorkspace: "/tmp/openclaw-workspace",
-      resolvedWorkspace: "/tmp/openclaw-workspace",
+      effectiveWorkspace: "/tmp/afora-workspace",
+      resolvedWorkspace: "/tmp/afora-workspace",
       hasBootstrapFileAccess: false,
     });
 
@@ -115,7 +115,7 @@ describe("resolveWorkspaceBootstrapRouting", () => {
       bootstrapFiles: [
         {
           name: "BOOTSTRAP.md",
-          path: "/tmp/openclaw-workspace/BOOTSTRAP.md",
+          path: "/tmp/afora-workspace/BOOTSTRAP.md",
           content: "Ask who I am before continuing.",
           missing: false,
         },
@@ -124,8 +124,8 @@ describe("resolveWorkspaceBootstrapRouting", () => {
       trigger: "user",
       isPrimaryRun: true,
       isCanonicalWorkspace: true,
-      effectiveWorkspace: "/tmp/openclaw-workspace",
-      resolvedWorkspace: "/tmp/openclaw-workspace",
+      effectiveWorkspace: "/tmp/afora-workspace",
+      resolvedWorkspace: "/tmp/afora-workspace",
       hasBootstrapFileAccess: false,
     });
 
@@ -140,7 +140,7 @@ describe("resolveWorkspaceBootstrapRouting", () => {
       bootstrapFiles: [
         {
           name: "BOOTSTRAP.md",
-          path: "/tmp/openclaw-workspace/BOOTSTRAP.md",
+          path: "/tmp/afora-workspace/BOOTSTRAP.md",
           content: "   ",
           missing: false,
         },
@@ -148,8 +148,8 @@ describe("resolveWorkspaceBootstrapRouting", () => {
       trigger: "user",
       isPrimaryRun: true,
       isCanonicalWorkspace: true,
-      effectiveWorkspace: "/tmp/openclaw-workspace",
-      resolvedWorkspace: "/tmp/openclaw-workspace",
+      effectiveWorkspace: "/tmp/afora-workspace",
+      resolvedWorkspace: "/tmp/afora-workspace",
       hasBootstrapFileAccess: true,
     });
 

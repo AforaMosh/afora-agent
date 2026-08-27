@@ -10,7 +10,7 @@ type StructuredOutputToolTestApi = {
 
 function getTestApi(): StructuredOutputToolTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.structuredOutputToolTestApi")
+    Symbol.for("afora.structuredOutputToolTestApi")
   ] as StructuredOutputToolTestApi;
 }
 

@@ -8,7 +8,7 @@ import {
   loadSessionEntry,
   type SessionTranscriptRuntimeTarget,
 } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { CompactResult } from "../../context-engine/types.js";
 import { resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
 import { resolvePreferredSessionKeyForSessionIdMatches } from "../../sessions/session-id-resolution.js";
@@ -16,7 +16,7 @@ import { resolveAgentRunSessionTarget } from "../run-session-target.js";
 
 /** Resolve a context engine's successor without letting it cross the active store binding. */
 export async function resolveContextEngineCompactionSuccessor(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   currentSessionFile: string;
   currentTarget: SessionTranscriptRuntimeTarget;
   result: CompactResult;

@@ -1,5 +1,5 @@
 // Matrix tests cover account selection plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import {
   findMatrixAccountEntry,
@@ -11,7 +11,7 @@ import { getMatrixScopedEnvVarNames } from "./env-vars.js";
 
 describe("matrix account selection", () => {
   it("resolves configured account ids from non-canonical account keys", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         matrix: {
           accounts: {
@@ -26,7 +26,7 @@ describe("matrix account selection", () => {
   });
 
   it("matches the default account against normalized Matrix account keys", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         matrix: {
           defaultAccount: "Team Ops",
@@ -43,7 +43,7 @@ describe("matrix account selection", () => {
   });
 
   it("requires an explicit default when multiple Matrix accounts exist without one", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         matrix: {
           accounts: {
@@ -58,7 +58,7 @@ describe("matrix account selection", () => {
   });
 
   it('uses a named "default" Matrix account when defaultAccount is unset', () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         matrix: {
           accounts: {
@@ -74,7 +74,7 @@ describe("matrix account selection", () => {
   });
 
   it("finds the raw Matrix account entry by normalized account id", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         matrix: {
           accounts: {
@@ -95,7 +95,7 @@ describe("matrix account selection", () => {
 
   it("discovers env-backed named Matrix accounts during enumeration", () => {
     const keys = getMatrixScopedEnvVarNames("team-ops");
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         matrix: {},
       },
@@ -112,7 +112,7 @@ describe("matrix account selection", () => {
 
   it('uses the "default" Matrix account when mixed default and named env-backed accounts exist', () => {
     const keys = getMatrixScopedEnvVarNames("team-ops");
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         matrix: {},
       },
@@ -130,7 +130,7 @@ describe("matrix account selection", () => {
   });
 
   it("discovers default Matrix accounts backed only by global env vars", () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: AforaConfig = {};
     const env = {
       MATRIX_HOMESERVER: "https://matrix.example.org",
       MATRIX_ACCESS_TOKEN: "default-secret",

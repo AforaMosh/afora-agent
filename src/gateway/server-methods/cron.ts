@@ -1,6 +1,6 @@
 // Gateway RPC handlers for cron job CRUD, run logs, wake, and delivery previews.
-import { parseBoolean } from "@openclaw/normalization-core/boolean-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { parseBoolean } from "@afora/normalization-core/boolean-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   ErrorCodes,
   errorShape,
@@ -17,7 +17,7 @@ import {
   validateCronUpdateParams,
   validateWakeParams,
 } from "../../../packages/gateway-protocol/src/index.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveCronJobConfigRevision } from "../../cron/config-revision.js";
 import {
   assertValidCronAnnounceDelivery,
@@ -215,7 +215,7 @@ function compactCronListJob(job: CronJob) {
 }
 
 async function assertValidCronUpdatePatch(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   defaultAgentId?: string;
   currentJob: CronJob;
   patch: CronJobPatch;

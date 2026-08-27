@@ -21,9 +21,9 @@ export async function exerciseTuiCommandSurface(
 ) {
   const fixture = await startFixture({
     env: {
-      OPENCLAW_TUI_PTY_COLS: "100",
-      OPENCLAW_TUI_PTY_ROWS: "24",
-      ...(surface === "pickers" ? { OPENCLAW_TUI_PTY_PICKER_FIXTURE: "1" } : {}),
+      AFORA_TUI_PTY_COLS: "100",
+      AFORA_TUI_PTY_ROWS: "24",
+      ...(surface === "pickers" ? { AFORA_TUI_PTY_PICKER_FIXTURE: "1" } : {}),
     },
   });
   try {

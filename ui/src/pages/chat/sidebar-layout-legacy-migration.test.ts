@@ -10,8 +10,8 @@ describe("legacy dock visibility migration", () => {
   afterEach(() => localStorage.clear());
 
   it("moves shipped open docks into only the current session", () => {
-    localStorage.setItem("openclaw.browser.panel.v1", JSON.stringify({ open: true }));
-    localStorage.setItem("openclaw.desktopPanel", JSON.stringify({ open: true }));
+    localStorage.setItem("afora.browser.panel.v1", JSON.stringify({ open: true }));
+    localStorage.setItem("afora.desktopPanel", JSON.stringify({ open: true }));
 
     const migrated = migrateLegacyDockVisibility({
       settings: loadSettings(),
@@ -41,7 +41,7 @@ describe("legacy dock visibility migration", () => {
         "agent:main:current": openSlot({ columns: [] }, "workspace"),
       },
     };
-    localStorage.setItem("openclaw.browser.panel.v1", JSON.stringify({ open: true }));
+    localStorage.setItem("afora.browser.panel.v1", JSON.stringify({ open: true }));
 
     const migrated = migrateLegacyDockVisibility({
       settings,
@@ -66,8 +66,8 @@ describe("legacy dock visibility migration", () => {
   });
 
   it("does not seed a tab from shipped closed docks", () => {
-    localStorage.setItem("openclaw.browser.panel.v1", JSON.stringify({ open: false }));
-    localStorage.setItem("openclaw.desktopPanel", JSON.stringify({ open: false }));
+    localStorage.setItem("afora.browser.panel.v1", JSON.stringify({ open: false }));
+    localStorage.setItem("afora.desktopPanel", JSON.stringify({ open: false }));
 
     const migrated = migrateLegacyDockVisibility({
       settings: loadSettings(),

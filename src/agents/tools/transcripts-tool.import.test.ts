@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { TranscriptsStore } from "../../transcripts/store.js";
 import { createTranscriptsTool } from "./transcripts-tool.js";
 
@@ -14,7 +14,7 @@ function currentDateDir(): string {
 
 function storeFor(stateDir: string): TranscriptsStore {
   return new TranscriptsStore(path.join(stateDir, "transcripts"), {
-    env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+    env: { ...process.env, AFORA_STATE_DIR: stateDir },
   });
 }
 
@@ -24,11 +24,11 @@ function createTool(stateDir: string) {
 
 describe("transcripts tool imports", () => {
   afterEach(() => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
   });
 
   it("imports a speaker transcript and writes summary artifacts", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-");
+    const stateDir = tempDirs.make("afora-transcripts-");
     const result = await createTool(stateDir).execute(
       "call-1",
       {
@@ -67,7 +67,7 @@ describe("transcripts tool imports", () => {
   });
 
   it("bounds summary input while retaining the full transcript", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-");
+    const stateDir = tempDirs.make("afora-transcripts-");
     const transcript = Array.from(
       { length: 2_001 },
       (_, index) => `Alex: transcript line ${index}`,
@@ -100,7 +100,7 @@ describe("transcripts tool imports", () => {
   });
 
   it("requires date-qualified selectors for repeated stored session ids", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-");
+    const stateDir = tempDirs.make("afora-transcripts-");
     const store = storeFor(stateDir);
     await store.writeSession({
       sessionId: "standup",

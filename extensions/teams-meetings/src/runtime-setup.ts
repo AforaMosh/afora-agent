@@ -1,4 +1,4 @@
-import { MeetingPlatformAdapter } from "openclaw/plugin-sdk/meeting-runtime";
+import { MeetingPlatformAdapter } from "afora-agent/plugin-sdk/meeting-runtime";
 import type { TeamsMeetingsConfig, TeamsMeetingsMode } from "./config.js";
 import { assertTeamsMeetingsAudioAvailable } from "./transports/chrome.js";
 import { TEAMS_MEETINGS_BROWSER_NODE_ADAPTER } from "./transports/teams-meetings-platform-constants.js";

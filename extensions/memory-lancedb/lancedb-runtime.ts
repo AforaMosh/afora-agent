@@ -15,7 +15,7 @@ type LanceDbRuntimeLoaderDeps = {
 function buildLoadFailureMessage(error: unknown): string {
   return [
     "memory-lancedb: bundled @lancedb/lancedb dependency is unavailable.",
-    "Install or repair the memory-lancedb plugin package dependencies, then restart OpenClaw.",
+    "Install or repair the memory-lancedb plugin package dependencies, then restart Afora.",
     String(error),
   ].join(" ");
 }
@@ -72,7 +72,7 @@ function createLanceDbRuntimeLoader(overrides: Partial<LanceDbRuntimeLoaderDeps>
 }
 
 if (process.env.VITEST === "true") {
-  Reflect.set(globalThis, Symbol.for("openclaw.memoryLanceDbRuntimeTestApi"), {
+  Reflect.set(globalThis, Symbol.for("afora.memoryLanceDbRuntimeTestApi"), {
     createRuntimeLoader: createLanceDbRuntimeLoader,
   });
 }

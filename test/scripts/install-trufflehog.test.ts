@@ -17,7 +17,7 @@ function runBash(command: string, env: NodeJS.ProcessEnv = {}): string {
     encoding: "utf8",
     env: {
       ...process.env,
-      OPENCLAW_TRUFFLEHOG_SOURCE_ONLY: "1",
+      AFORA_TRUFFLEHOG_SOURCE_ONLY: "1",
       ...env,
     },
     stdio: ["ignore", "pipe", "pipe"],
@@ -65,7 +65,7 @@ describe("scripts/install-trufflehog.sh", () => {
   });
 
   it("does not download TruffleHog again when the pinned version is installed", () => {
-    const root = makeTempDir(tempDirs, "openclaw-trufflehog-install-");
+    const root = makeTempDir(tempDirs, "afora-trufflehog-install-");
     const binDir = join(root, "bin");
     const downloadMarker = join(root, "downloaded");
     mkdirSync(binDir);
@@ -86,7 +86,7 @@ describe("scripts/install-trufflehog.sh", () => {
     chmodSync(fakeUname, 0o755);
 
     runBash(`source ${SCRIPT}\ninstall_trufflehog`, {
-      OPENCLAW_TRUFFLEHOG_BIN_DIR: binDir,
+      AFORA_TRUFFLEHOG_BIN_DIR: binDir,
       PATH: `${binDir}:${process.env.PATH ?? ""}`,
     });
 
@@ -95,7 +95,7 @@ describe("scripts/install-trufflehog.sh", () => {
   });
 
   it("creates a missing user-writable install directory without sudo", () => {
-    const root = makeTempDir(tempDirs, "openclaw-trufflehog-user-bin-");
+    const root = makeTempDir(tempDirs, "afora-trufflehog-user-bin-");
     const binDir = join(root, "nested", "bin");
     const fakeBin = join(root, "fake-bin");
     const sudoMarker = join(root, "sudo-used");
@@ -104,8 +104,8 @@ describe("scripts/install-trufflehog.sh", () => {
     writeFileSync(fakeSudo, `#!/bin/sh\nprintf used >${JSON.stringify(sudoMarker)}\nexit 99\n`);
     chmodSync(fakeSudo, 0o755);
 
-    runBash(`source ${SCRIPT}\nrun_as_root mkdir -p "$OPENCLAW_TRUFFLEHOG_BIN_DIR"`, {
-      OPENCLAW_TRUFFLEHOG_BIN_DIR: binDir,
+    runBash(`source ${SCRIPT}\nrun_as_root mkdir -p "$AFORA_TRUFFLEHOG_BIN_DIR"`, {
+      AFORA_TRUFFLEHOG_BIN_DIR: binDir,
       PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
     });
 
@@ -114,7 +114,7 @@ describe("scripts/install-trufflehog.sh", () => {
   });
 
   it("does not change permissions on an existing writable install directory", () => {
-    const root = makeTempDir(tempDirs, "openclaw-trufflehog-existing-bin-");
+    const root = makeTempDir(tempDirs, "afora-trufflehog-existing-bin-");
     const binDir = join(root, "bin");
     const fakeBin = join(root, "fake-bin");
     const installMarker = join(root, "install-used");
@@ -128,7 +128,7 @@ describe("scripts/install-trufflehog.sh", () => {
     chmodSync(fakeInstall, 0o755);
 
     runBash(`source ${SCRIPT}\nensure_trufflehog_bin_dir`, {
-      OPENCLAW_TRUFFLEHOG_BIN_DIR: binDir,
+      AFORA_TRUFFLEHOG_BIN_DIR: binDir,
       PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
     });
 

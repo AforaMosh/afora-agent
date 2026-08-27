@@ -3,7 +3,7 @@ import type {
   MemorySessionSyncTarget,
   MemorySyncParams,
   MemorySyncProgressUpdate,
-} from "openclaw/plugin-sdk/memory-core-host-engine-storage";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
 
 export function enqueueMemoryTargetedSessionSync(
   state: {

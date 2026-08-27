@@ -1,7 +1,7 @@
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { buildConversationIdentity } from "../../config/sessions/conversation-identity.js";
 import {
   registerConversationAddresses,
@@ -11,7 +11,7 @@ import {
   loadExactSessionEntry,
   upsertSessionEntryCore,
 } from "../../config/sessions/session-accessor.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
+import { closeAforaAgentDatabasesForTest } from "../../state/afora-agent-db.js";
 import {
   normalizeSessionDeliveryState,
   sessionDeliveryOrigin,
@@ -24,11 +24,11 @@ describe("outbound session persistence", () => {
   const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
   beforeEach(() => {
-    storePath = path.join(tempDirs.make("openclaw-outbound-session-"), "sessions.json");
+    storePath = path.join(tempDirs.make("afora-outbound-session-"), "sessions.json");
   });
 
   afterEach(() => {
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
   });
 
   it("binds a discovered canonical peer through a different delivery alias", async () => {
@@ -60,7 +60,7 @@ describe("outbound session persistence", () => {
     ).not.toMatchObject({ sessionId: expect.any(String) });
 
     await bindOutboundSessionEntry({
-      cfg: { session: { store: storePath } } as OpenClawConfig,
+      cfg: { session: { store: storePath } } as AforaConfig,
       channel: "reef",
       accountId: "default",
       route: {
@@ -100,7 +100,7 @@ describe("outbound session persistence", () => {
     ).not.toMatchObject({ sessionId: expect.any(String) });
 
     await bindOutboundSessionEntry({
-      cfg: { session: { store: storePath } } as OpenClawConfig,
+      cfg: { session: { store: storePath } } as AforaConfig,
       channel: "reef",
       accountId: "default",
       route: {
@@ -140,7 +140,7 @@ describe("outbound session persistence", () => {
     registerConversationAddresses({ agentId: "main", storePath }, [identity!], 200);
 
     await bindOutboundSessionEntry({
-      cfg: { session: { store: storePath } } as OpenClawConfig,
+      cfg: { session: { store: storePath } } as AforaConfig,
       channel: "reef",
       accountId: "default",
       route: {

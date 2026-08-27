@@ -1,6 +1,6 @@
 // Resolves provider auth tokens from plugin-owned auth configuration.
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 
 const ANTHROPIC_SETUP_TOKEN_PREFIX = "sk-ant-oat01-";
 const ANTHROPIC_SETUP_TOKEN_MIN_LENGTH = 80;

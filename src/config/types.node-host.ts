@@ -15,7 +15,7 @@ export type NodeHostConfig = {
       enabled?: boolean;
     };
   };
-  /** Full OpenClaw session hosting from Gateway-managed worker bundles. */
+  /** Full Afora session hosting from Gateway-managed worker bundles. */
   workerRuns?: {
     /** Allow this paired node to host worker sessions (default: false). */
     enabled?: boolean;
@@ -28,7 +28,7 @@ export type NodeHostConfig = {
   };
   /** Skills published by the headless node host. */
   skills?: {
-    /** Scan and publish ~/.openclaw/skills (default: true). */
+    /** Scan and publish ~/.afora/skills (default: true). */
     enabled?: boolean;
   };
 };

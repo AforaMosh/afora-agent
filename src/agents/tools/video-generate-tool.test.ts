@@ -1,9 +1,9 @@
 // video_generate tool tests cover provider/model selection, plugin metadata,
 // background task handling, input media, and saved video output.
-import { MAX_VIDEO_BYTES } from "@openclaw/media-core/constants";
+import { MAX_VIDEO_BYTES } from "@afora/media-core/constants";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { parseReplyDirectives } from "../../auto-reply/reply/reply-directives.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import * as mediaStore from "../../media/store.js";
 import * as webMedia from "../../media/web-media.js";
 import {
@@ -127,8 +127,8 @@ const GENERATION_PROVIDER_ENV_VARS = [
   "XAI_API_KEY",
 ];
 
-function asConfig(value: unknown): OpenClawConfig {
-  return value as OpenClawConfig;
+function asConfig(value: unknown): AforaConfig {
+  return value as AforaConfig;
 }
 
 function expectVideoGenerateTool(
@@ -158,7 +158,7 @@ function createAuthStore(providers: string[]): AuthProfileStore {
 }
 
 function createVideoProviderSnapshot(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   id: string;
   origin: PluginManifestRecord["origin"];
   referenceAudioInputs?: boolean;
@@ -172,7 +172,7 @@ function createVideoProviderSnapshot(params: {
     origin: params.origin,
     rootDir: `/plugins/${params.id}`,
     source: `/plugins/${params.id}/index.js`,
-    manifestPath: `/plugins/${params.id}/openclaw.plugin.json`,
+    manifestPath: `/plugins/${params.id}/afora.plugin.json`,
     channels: [],
     providers: [],
     cliBackends: [],

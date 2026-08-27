@@ -2,15 +2,15 @@
 import http from "node:http";
 import net from "node:net";
 import type { Duplex } from "node:stream";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDiscordRestClient } from "./client.js";
 import { createDiscordRequestClient } from "./proxy-request-client.js";
 
 const makeProxyFetchMock = vi.hoisted(() => vi.fn());
-vi.mock("openclaw/plugin-sdk/fetch-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/fetch-runtime")>(
-    "openclaw/plugin-sdk/fetch-runtime",
+vi.mock("afora-agent/plugin-sdk/fetch-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/fetch-runtime")>(
+    "afora-agent/plugin-sdk/fetch-runtime",
   );
   makeProxyFetchMock.mockImplementation((proxyUrl: string) => {
     if (proxyUrl === "bad-proxy") {
@@ -42,7 +42,7 @@ describe("createDiscordRestClient proxy support", () => {
           proxy: "http://127.0.0.1:8080",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const { rest } = createDiscordRestClient({ cfg });
     const requestClient = rest as unknown as {
@@ -63,7 +63,7 @@ describe("createDiscordRestClient proxy support", () => {
           proxy: "http://mitm-proxy:8080",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const { rest } = createDiscordRestClient({ cfg });
     const requestClient = rest as unknown as {
@@ -84,7 +84,7 @@ describe("createDiscordRestClient proxy support", () => {
           proxy: "https://proxy.example:8443",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const { rest } = createDiscordRestClient({ cfg });
     const requestClient = rest as unknown as {
@@ -105,7 +105,7 @@ describe("createDiscordRestClient proxy support", () => {
           proxy: "http://user:secret@mitm-proxy:8080",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const { rest } = createDiscordRestClient({ cfg });
     const requestClient = rest as unknown as {
@@ -124,7 +124,7 @@ describe("createDiscordRestClient proxy support", () => {
           proxy: "http://proxy.test:8080",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const { rest } = createDiscordRestClient({ cfg });
     const requestClient = rest as unknown as {
@@ -142,7 +142,7 @@ describe("createDiscordRestClient proxy support", () => {
           token: "Bot test-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const { rest } = createDiscordRestClient({ cfg });
     const requestClient = rest as unknown as {
@@ -160,7 +160,7 @@ describe("createDiscordRestClient proxy support", () => {
           proxy: "bad-proxy",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const { rest } = createDiscordRestClient({ cfg });
     const requestClient = rest as unknown as {
@@ -179,7 +179,7 @@ describe("createDiscordRestClient proxy support", () => {
           proxy: "http://10.0.0.10:8080",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const { rest } = createDiscordRestClient({ cfg });
     const requestClient = rest as unknown as {
@@ -198,7 +198,7 @@ describe("createDiscordRestClient proxy support", () => {
           proxy: "http://[::1]:8080",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const { rest } = createDiscordRestClient({ cfg });
     const requestClient = rest as unknown as {
@@ -270,7 +270,7 @@ describe("createDiscordRestClient proxy support", () => {
             proxy: `http://127.0.0.1:${proxyPort}`,
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const proxyRest = createDiscordRestClient({ cfg }).rest as unknown as {
         options?: { fetch?: typeof fetch };
       };

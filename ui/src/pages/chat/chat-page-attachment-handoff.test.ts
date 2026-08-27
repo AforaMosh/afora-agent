@@ -90,7 +90,7 @@ describe("chat page staged attachment rebound", () => {
     page.requestUpdate();
     await page.updateComplete;
 
-    const closingPane = page.querySelectorAll<RenderedPane>("openclaw-chat-pane")[1]!;
+    const closingPane = page.querySelectorAll<RenderedPane>("afora-chat-pane")[1]!;
     const discard = vi.fn();
     const resume = vi.fn();
     closingPane.discardStagedAttachments = discard;
@@ -114,6 +114,6 @@ describe("chat page staged attachment rebound", () => {
 
     teardown.resolve();
     await expect.poll(() => restartAfterTeardown).toHaveBeenCalledOnce();
-    expect(page.querySelectorAll<RenderedPane>("openclaw-chat-pane")[1]).toBe(closingPane);
+    expect(page.querySelectorAll<RenderedPane>("afora-chat-pane")[1]).toBe(closingPane);
   });
 });

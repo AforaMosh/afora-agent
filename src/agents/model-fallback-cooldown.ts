@@ -1,5 +1,5 @@
 /** Decides when cooldowned model candidates may be skipped, probed, or suspended. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { AuthProfileStore } from "./auth-profiles/types.js";
 import { isActiveUnusableWindow } from "./auth-profiles/usage-state.js";
 import { shouldUseTransientCooldownProbeSlot } from "./failover-policy.js";

@@ -8,7 +8,7 @@ type AuthProfileStoreTestApi = {
 
 function getTestApi(): AuthProfileStoreTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.authProfileStoreTestApi")
+    Symbol.for("afora.authProfileStoreTestApi")
   ] as AuthProfileStoreTestApi;
 }
 

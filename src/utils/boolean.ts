@@ -1,5 +1,5 @@
 // Boolean utility helpers normalize string-like boolean inputs.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 
 /**
  * Shared boolean coercion helpers for config, env, and plugin SDK runtime inputs.

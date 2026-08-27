@@ -18,7 +18,7 @@ import { copyToClipboard } from "../lib/clipboard.ts";
 import type { MarkdownRenderEnv } from "./markdown-render-options.ts";
 import { escapeMarkdownHtml, isMarkdownBlockArtText } from "./markdown-text.ts";
 
-const blockArtCopyPayloadPrefix = "openclaw:block-art-code:";
+const blockArtCopyPayloadPrefix = "afora:block-art-code:";
 const blockArtCodeBlockCopyPayloadEncoding = "block-art-json";
 // Keep typical replies visible; disclosure is reserved for JSON that dominates the transcript.
 const JSON_COLLAPSE_LINE_THRESHOLD = 40;

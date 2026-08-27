@@ -17,9 +17,9 @@ vi.mock("../../runtime.js", () => ({
   }),
 }));
 
-vi.mock("openclaw/plugin-sdk/plugin-config-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/plugin-config-runtime")>(
-    "openclaw/plugin-sdk/plugin-config-runtime",
+vi.mock("afora-agent/plugin-sdk/plugin-config-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/plugin-config-runtime")>(
+    "afora-agent/plugin-sdk/plugin-config-runtime",
   );
   return {
     ...actual,
@@ -498,7 +498,7 @@ describe("matrix verification actions", () => {
     expect(getOwnDeviceVerificationStatus).toHaveBeenCalledTimes(1);
   });
 
-  it("does not complete self-verification until the OpenClaw device has full Matrix identity trust", async () => {
+  it("does not complete self-verification until the Afora device has full Matrix identity trust", async () => {
     const requested = {
       completed: false,
       hasSas: false,
@@ -779,7 +779,7 @@ describe("matrix verification actions", () => {
     expect(crypto.startVerification).not.toHaveBeenCalled();
     expect(crypto.cancelVerification).toHaveBeenCalledWith("verification-1", {
       code: "m.user",
-      reason: "OpenClaw self-verification did not complete",
+      reason: "Afora self-verification did not complete",
     });
   });
 
@@ -953,7 +953,7 @@ describe("matrix verification actions", () => {
 
     expect(crypto.cancelVerification).toHaveBeenCalledWith("verification-1", {
       code: "m.user",
-      reason: "OpenClaw self-verification did not complete",
+      reason: "Afora self-verification did not complete",
     });
   });
 
@@ -987,7 +987,7 @@ describe("matrix verification actions", () => {
     expect(crypto.listVerifications).toHaveBeenCalledTimes(1);
     expect(crypto.cancelVerification).toHaveBeenCalledWith("verification-1", {
       code: "m.user",
-      reason: "OpenClaw self-verification did not complete",
+      reason: "Afora self-verification did not complete",
     });
   });
 
@@ -1020,7 +1020,7 @@ describe("matrix verification actions", () => {
 
     expect(crypto.cancelVerification).toHaveBeenCalledWith("verification-1", {
       code: "m.user",
-      reason: "OpenClaw self-verification did not complete",
+      reason: "Afora self-verification did not complete",
     });
   });
 

@@ -1,7 +1,7 @@
 // Session snapshot tests cover runtime skill state captured for agent sessions.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { WORKSPACE_SKILLS_PROMPT_FORMAT_VERSION } from "../types.js";
 import type { SkillSnapshot } from "../types.js";
 
@@ -200,7 +200,7 @@ describe("resolveReusableWorkspaceSkillSnapshot", () => {
 
     const first = resolveReusableWorkspaceSkillSnapshot({
       workspaceDir: TEST_WORKSPACE_DIR,
-      config: { channels: { discord: { token: "enabled" } } } as OpenClawConfig,
+      config: { channels: { discord: { token: "enabled" } } } as AforaConfig,
       existingSnapshot: snapshot,
     });
 
@@ -209,7 +209,7 @@ describe("resolveReusableWorkspaceSkillSnapshot", () => {
 
     const second = resolveReusableWorkspaceSkillSnapshot({
       workspaceDir: TEST_WORKSPACE_DIR,
-      config: { channels: { discord: {} } } as OpenClawConfig,
+      config: { channels: { discord: {} } } as AforaConfig,
       existingSnapshot: { ...snapshot },
     });
 
@@ -228,13 +228,13 @@ describe("resolveReusableWorkspaceSkillSnapshot", () => {
 
     resolveReusableWorkspaceSkillSnapshot({
       workspaceDir: TEST_WORKSPACE_DIR,
-      config: { channels: { discord: { token: "first-secret" } } } as OpenClawConfig,
+      config: { channels: { discord: { token: "first-secret" } } } as AforaConfig,
       existingSnapshot: snapshot,
     });
 
     resolveReusableWorkspaceSkillSnapshot({
       workspaceDir: TEST_WORKSPACE_DIR,
-      config: { channels: { discord: { token: "rotated-secret" } } } as OpenClawConfig,
+      config: { channels: { discord: { token: "rotated-secret" } } } as AforaConfig,
       existingSnapshot: { ...snapshot },
     });
 

@@ -52,7 +52,7 @@ describe("Codex app-server steering queue", () => {
     await vi.advanceTimersByTimeAsync(0);
 
     const requestParams = request.mock.calls[0]?.[1] as { clientUserMessageId?: string };
-    expect(requestParams.clientUserMessageId).toBe("openclaw:turn-1:steer:1");
+    expect(requestParams.clientUserMessageId).toBe("afora:turn-1:steer:1");
     expect(onQueueAccepted).toHaveBeenCalledWith(true);
     expect(settled).toBe(false);
     expect(queue.confirmConsumed("unrelated-user-message")).toBe(false);
@@ -64,7 +64,7 @@ describe("Codex app-server steering queue", () => {
         threadId: "thread-1",
         expectedTurnId: "turn-1",
         input: [{ type: "text", text: "accepted", text_elements: [] }],
-        clientUserMessageId: "openclaw:turn-1:steer:1",
+        clientUserMessageId: "afora:turn-1:steer:1",
       },
       steerRequestOptions,
     );
@@ -144,7 +144,7 @@ describe("Codex app-server steering queue", () => {
 
     const queued = queue.queue("consumed first", { debounceMs: 0, onQueueAccepted });
     await vi.advanceTimersByTimeAsync(0);
-    expect(queue.confirmConsumed("openclaw:turn-1:steer:1")).toBe(true);
+    expect(queue.confirmConsumed("afora:turn-1:steer:1")).toBe(true);
     expect(onQueueAccepted).toHaveBeenCalledWith(true);
     await queued;
 
@@ -166,7 +166,7 @@ describe("Codex app-server steering queue", () => {
     });
     await vi.advanceTimersByTimeAsync(5);
 
-    expect(queue.confirmConsumed("openclaw:turn-1:steer:1")).toBe(true);
+    expect(queue.confirmConsumed("afora:turn-1:steer:1")).toBe(true);
     await Promise.all([first, second]);
     expect(request).toHaveBeenCalledWith(
       "turn/steer",
@@ -179,7 +179,7 @@ describe("Codex app-server steering queue", () => {
           { type: "text", text: "second", text_elements: [] },
           { type: "image", url: `data:image/png;base64,${PNG_1X1}` },
         ],
-        clientUserMessageId: "openclaw:turn-1:steer:1",
+        clientUserMessageId: "afora:turn-1:steer:1",
       },
       steerRequestOptions,
     );
@@ -239,7 +239,7 @@ describe("Codex app-server steering queue", () => {
 
     queue.cancel();
     await rejected;
-    expect(queue.confirmConsumed("openclaw:turn-1:steer:1")).toBe(false);
+    expect(queue.confirmConsumed("afora:turn-1:steer:1")).toBe(false);
     await expect(queue.queue("too late", { debounceMs: 0 })).rejects.toThrow(
       "steering queue cancelled",
     );
@@ -257,7 +257,7 @@ describe("Codex app-server steering queue", () => {
 
     controller.abort();
     await rejected;
-    expect(queue.confirmConsumed("openclaw:turn-1:steer:1")).toBe(false);
+    expect(queue.confirmConsumed("afora:turn-1:steer:1")).toBe(false);
     await expect(queue.queue("too late", { debounceMs: 0 })).rejects.toThrow(
       "steering queue aborted",
     );
@@ -347,7 +347,7 @@ describe("Codex app-server steering queue", () => {
     expect(onLateAccepted).toHaveBeenCalledWith(false);
     expect(onDispatchedAccepted).not.toHaveBeenCalled();
 
-    expect(queue.confirmConsumed("openclaw:turn-1:steer:1")).toBe(true);
+    expect(queue.confirmConsumed("afora:turn-1:steer:1")).toBe(true);
     await dispatched;
     expect(onDispatchedAccepted).toHaveBeenCalledWith(true);
 
@@ -382,7 +382,7 @@ describe("Codex app-server steering queue", () => {
 
     await rejected;
     expect(onQueueAccepted).toHaveBeenCalledWith(true);
-    expect(queue.confirmConsumed("openclaw:turn-1:steer:1")).toBe(false);
+    expect(queue.confirmConsumed("afora:turn-1:steer:1")).toBe(false);
     acceptSteer?.();
     await vi.advanceTimersByTimeAsync(0);
   });
@@ -427,7 +427,7 @@ describe("Codex app-server steering queue", () => {
       }),
       steerRequestOptions,
     );
-    expect(queue.confirmConsumed("openclaw:turn-1:steer:1")).toBe(true);
+    expect(queue.confirmConsumed("afora:turn-1:steer:1")).toBe(true);
     await queued;
   });
 
@@ -485,7 +485,7 @@ describe("Codex app-server steering queue", () => {
           { type: "image", url: `data:image/png;base64,${PNG_1X1}` },
           { type: "image", url: `data:image/png;base64,${PNG_1X1}` },
         ],
-        clientUserMessageId: "openclaw:turn-1:steer:1",
+        clientUserMessageId: "afora:turn-1:steer:1",
       },
       steerRequestOptions,
     );
@@ -493,7 +493,7 @@ describe("Codex app-server steering queue", () => {
     expect(request.mock.invocationCallOrder[0]!).toBeLessThan(
       cancelPendingUserInput.mock.invocationCallOrder[0]!,
     );
-    expect(queue.confirmConsumed("openclaw:turn-1:steer:1")).toBe(true);
+    expect(queue.confirmConsumed("afora:turn-1:steer:1")).toBe(true);
     await queued;
   });
 
@@ -533,8 +533,8 @@ describe("Codex app-server steering queue", () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(request).toHaveBeenCalledTimes(2);
     expect(cancelPendingUserInput).toHaveBeenCalledOnce();
-    expect(queue.confirmConsumed("openclaw:turn-1:steer:1")).toBe(true);
-    expect(queue.confirmConsumed("openclaw:turn-1:steer:2")).toBe(true);
+    expect(queue.confirmConsumed("afora:turn-1:steer:1")).toBe(true);
+    expect(queue.confirmConsumed("afora:turn-1:steer:2")).toBe(true);
     await Promise.all([imageQueued, laterQueued]);
     expect(request.mock.calls[0]?.[1]).toMatchObject({
       input: [

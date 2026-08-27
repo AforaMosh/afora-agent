@@ -1,5 +1,5 @@
 import { vi, type Mock } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 
 export const EMPTY_CONFIG_SNAPSHOT = {
   exists: false,
@@ -28,7 +28,7 @@ type WizardStateMocks = {
   createClackPrompter: Mock;
 };
 
-export function setupBaseWizardTestState(mocks: WizardStateMocks, config: OpenClawConfig = {}) {
+export function setupBaseWizardTestState(mocks: WizardStateMocks, config: AforaConfig = {}) {
   mocks.readConfigFileSnapshot.mockResolvedValue({ ...EMPTY_CONFIG_SNAPSHOT, config });
   mocks.resolveGatewayPort.mockReturnValue(18789);
   mocks.probeGatewayReachable.mockResolvedValue({ ok: false });
@@ -88,7 +88,7 @@ export function createEnabledWebSearchConfig(
   provider: string,
   pluginEntry: Record<string, unknown>,
 ) {
-  return (cfg: OpenClawConfig) => ({
+  return (cfg: AforaConfig) => ({
     ...cfg,
     tools: {
       ...cfg.tools,

@@ -488,7 +488,7 @@ describe("session organizer destructive confirmations", () => {
 
     const pending = deleteSessionsBatch(harness.host, rows, harness.scope);
     const actions = await waitForConfirmDialogActions();
-    expect(document.body.querySelector("openclaw-modal-dialog")?.textContent).toContain(
+    expect(document.body.querySelector("afora-modal-dialog")?.textContent).toContain(
       "Delete 2 sessions and their transcripts?",
     );
     answerConfirmDialog(actions, "confirm");
@@ -538,7 +538,7 @@ describe("session organizer destructive confirmations", () => {
 
       expect(operation.mutation(harness)).not.toHaveBeenCalled();
       // The stale dialog must dismiss itself, not merely stop sending its request.
-      expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull();
+      expect(document.body.querySelector("afora-modal-dialog")).toBeNull();
       // The abort resolves the dialog to `false`, same as a user cancel, so the
       // operator needs a distinct, visible outcome or their lost intent reads
       // as a click that simply did nothing.
@@ -618,7 +618,7 @@ describe("session organizer destructive confirmations", () => {
 
     await deleteSession(harness.host, sessionRow(0), harness.scope, { offerSkip: true });
 
-    expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull();
+    expect(document.body.querySelector("afora-modal-dialog")).toBeNull();
     expect(harness.deleteOne).toHaveBeenCalledWith(sessionRow(0).key, {
       agentId: "main",
       deleteTranscript: true,
@@ -679,7 +679,7 @@ describe("session organizer destructive confirmations", () => {
     });
     const actions = await waitForConfirmDialogActions();
     const skip = actions
-      .closest("openclaw-modal-dialog")
+      .closest("afora-modal-dialog")
       ?.querySelector<HTMLInputElement>('.exec-approval-skip input[type="checkbox"]');
     if (!skip) {
       throw new Error("expected the skip checkbox");
@@ -714,7 +714,7 @@ describe("session organizer destructive confirmations", () => {
 
     await stopCloudWorker(harness.host, cloudWorkerRow(true), harness.scope);
 
-    expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull();
+    expect(document.body.querySelector("afora-modal-dialog")).toBeNull();
     expect(harness.request).not.toHaveBeenCalled();
   });
 });

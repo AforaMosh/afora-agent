@@ -1,6 +1,6 @@
 import type { OnboardOptions } from "../commands/onboard-types.js";
 import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import {
   listAvailableManifestContractPlugins,
@@ -65,7 +65,7 @@ const loadMigrationContextModule = createLazyRuntimeModule(
 const loadConfigPathsModule = createLazyRuntimeModule(() => import("../config/paths.js"));
 
 export async function detectSetupMigrationSources(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   runtime: RuntimeEnv;
 }): Promise<SetupMigrationDetection[]> {
   const [
@@ -140,7 +140,7 @@ function resolveManifestMigrationProviderLabel(params: {
 }
 
 function resolveManifestSetupMigrationProviders(
-  baseConfig: OpenClawConfig,
+  baseConfig: AforaConfig,
 ): ManifestSetupMigrationProvider[] {
   const snapshot = loadManifestContractSnapshot({ config: baseConfig });
   return listAvailableManifestContractPlugins({
@@ -162,7 +162,7 @@ function resolveManifestSetupMigrationProviders(
 }
 
 export async function listSetupMigrationOptions(params: {
-  baseConfig: OpenClawConfig;
+  baseConfig: AforaConfig;
   detections: readonly SetupMigrationDetection[];
 }): Promise<SetupMigrationOption[]> {
   const { resolvePluginMigrationProviders } = await loadMigrationProviderRuntimeModule();
@@ -206,7 +206,7 @@ export async function listSetupMigrationOptions(params: {
 
 async function selectSetupMigrationProvider(params: {
   opts: OnboardOptions;
-  baseConfig: OpenClawConfig;
+  baseConfig: AforaConfig;
   detections: readonly SetupMigrationDetection[];
   prompter: WizardPrompter;
 }): Promise<string> {
@@ -244,8 +244,8 @@ async function selectSetupMigrationProvider(params: {
 
 async function resolveSetupMigrationProvider(params: {
   providerId: string;
-  baseConfig: OpenClawConfig;
-}): Promise<{ provider: MigrationProviderPlugin; baseConfig: OpenClawConfig }> {
+  baseConfig: AforaConfig;
+}): Promise<{ provider: MigrationProviderPlugin; baseConfig: AforaConfig }> {
   const { ensureStandaloneMigrationProviderRegistryLoaded, resolvePluginMigrationProvider } =
     await loadMigrationProviderRuntimeModule();
   ensureStandaloneMigrationProviderRegistryLoaded({
@@ -294,15 +294,15 @@ async function createSetupMigrationPlan(params: {
 
 export async function runSetupMigrationImport(params: {
   opts: OnboardOptions;
-  baseConfig: OpenClawConfig;
+  baseConfig: AforaConfig;
   detections: readonly SetupMigrationDetection[];
   prompter: WizardPrompter;
   runtime: RuntimeEnv;
-  readConfigFile: () => Promise<OpenClawConfig>;
+  readConfigFile: () => Promise<AforaConfig>;
   commitConfigFile: (
-    config: OpenClawConfig,
-    expectedConfig: OpenClawConfig,
-  ) => Promise<OpenClawConfig>;
+    config: AforaConfig,
+    expectedConfig: AforaConfig,
+  ) => Promise<AforaConfig>;
   continueOnboarding?: boolean;
 }): Promise<Awaited<ReturnType<typeof finalizeSetupMigrationPromotion>>> {
   const [

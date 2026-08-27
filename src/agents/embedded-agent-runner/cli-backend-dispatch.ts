@@ -2,8 +2,8 @@
  * Opt-in CLI-backend dispatch for one-shot embedded runs.
  *
  * Embedded runs targeting a CLI runtime provider normally fall through to the
- * openclaw harness and call the provider API directly with that runtime's
- * credentials (`cli_runtime_passthrough_openclaw`). Anthropic routes direct
+ * afora harness and call the provider API directly with that runtime's
+ * credentials (`cli_runtime_passthrough_afora`). Anthropic routes direct
  * anthropic-messages calls on subscription OAuth tokens to metered "extra
  * usage" billing: without extra-usage balance the passthrough fails closed
  * with a billing error, and with it the run silently draws paid usage instead
@@ -11,11 +11,11 @@
  * tolerate CLI latency opt in via `cliBackendDispatch: "subscription-auth"`
  * to run through the CLI backend on plan limits instead.
  */
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { onAgentEvent } from "../../infra/agent-events.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { resolvePreparedRunAdmission } from "../admitted-run-context.js";
-import { stripOpenClawMcpToolPrefix } from "../cli-runner/tool-policy.js";
+import { stripAforaMcpToolPrefix } from "../cli-runner/tool-policy.js";
 import { normalizeToolPolicyName } from "../tool-policy.js";
 import { isToolResultError } from "../tool-result-error.js";
 import { resolveEmbeddedCliBackendDispatchEligibility } from "./cli-backend-dispatch-eligibility.js";
@@ -111,10 +111,10 @@ async function runEmbeddedAgentViaCliBackend(
   // unreachable, matching disableMessageTool intent.
   const cliToolAvailability = {
     native: [] as [],
-    openClaw: dispatch.toolsAllow,
+    afora: dispatch.toolsAllow,
   };
   const onAgentToolResult = params.onAgentToolResult;
-  // The CLI backend writes no OpenClaw session records; mirror the run into
+  // The CLI backend writes no Afora session records; mirror the run into
   // the caller-owned session file so transcript consumers (persistTranscripts,
   // timeout partial-text salvage, the live terminal-search watcher) keep
   // working at parity with embedded runs.
@@ -159,7 +159,7 @@ async function runEmbeddedAgentViaCliBackend(
     if (!rawName) {
       return;
     }
-    const toolName = normalizeToolPolicyName(stripOpenClawMcpToolPrefix(rawName));
+    const toolName = normalizeToolPolicyName(stripAforaMcpToolPrefix(rawName));
     const toolCallId = typeof evt.data.toolCallId === "string" ? evt.data.toolCallId : undefined;
     if (phase === "start") {
       transcript.noteToolEvent({

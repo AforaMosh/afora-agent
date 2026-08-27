@@ -1,4 +1,4 @@
-import { createWebSearchProviderContractFields } from "openclaw/plugin-sdk/provider-web-search-contract";
+import { createWebSearchProviderContractFields } from "afora-agent/plugin-sdk/provider-web-search-contract";
 
 const PARALLEL_FREE_ONBOARDING_SCOPES: Array<"text-inference"> = ["text-inference"];
 
@@ -16,7 +16,7 @@ export function createParallelFreeWebSearchProviderBase() {
     envVars: [],
     placeholder: "(no key needed)",
     signupUrl: "https://parallel.ai",
-    docsUrl: "https://docs.openclaw.ai/tools/parallel-search",
+    docsUrl: "https://docs.afora.ai/tools/parallel-search",
     credentialPath: "",
     ...createWebSearchProviderContractFields({
       credentialPath: "",

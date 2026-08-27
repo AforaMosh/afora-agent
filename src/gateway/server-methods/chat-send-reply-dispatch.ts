@@ -1,5 +1,5 @@
-import { isAudioFileName } from "@openclaw/media-core/mime";
-import { resolveSendableOutboundReplyParts } from "openclaw/plugin-sdk/reply-payload";
+import { isAudioFileName } from "@afora/media-core/mime";
+import { resolveSendableOutboundReplyParts } from "afora-agent/plugin-sdk/reply-payload";
 import { getReplyPayloadMetadata, type ReplyPayload } from "../../auto-reply/reply-payload.js";
 import type { ReplyDispatcherOptions } from "../../auto-reply/reply/reply-dispatcher.js";
 import { readSessionTranscriptWatermark } from "../../config/sessions/session-accessor.js";

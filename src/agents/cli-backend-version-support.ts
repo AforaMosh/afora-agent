@@ -33,5 +33,5 @@ export function formatCliBackendVersionAdvisory(params: {
   requirement: CliBackendLiveSessionRequirement;
   version: string;
 }): string {
-  return `${params.label} ${params.requirement.minimumVersion} is the first published build known to advertise ${params.requirement.capability}; found ${params.version}. OpenClaw verifies this capability at runtime. If this build is rejected, run \`${params.requirement.updateCommand}\`, restart OpenClaw, and retry.`;
+  return `${params.label} ${params.requirement.minimumVersion} is the first published build known to advertise ${params.requirement.capability}; found ${params.version}. Afora verifies this capability at runtime. If this build is rejected, run \`${params.requirement.updateCommand}\`, restart Afora, and retry.`;
 }

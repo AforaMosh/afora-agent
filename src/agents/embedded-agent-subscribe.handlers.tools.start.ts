@@ -1,9 +1,9 @@
-import { isPromiseLike } from "@openclaw/normalization-core/promise-like";
+import { isPromiseLike } from "@afora/normalization-core/promise-like";
 import {
   normalizeOptionalLowercaseString,
   readStringValue,
-} from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+} from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { parseSessionThreadInfoFast } from "../config/sessions/thread-info.js";
 import { emitAgentActivityEvent, type AgentItemEventData } from "../infra/agent-activity-events.js";
 import { emitAgentEvent } from "../infra/agent-events.js";

@@ -1,12 +1,12 @@
 // Discord plugin module implements thread session close behavior.
-import { listAgentIds } from "openclaw/plugin-sdk/agent-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import { listAgentIds } from "afora-agent/plugin-sdk/agent-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   deleteSessionEntry,
   listSessionEntries,
   resolveStorePath,
-} from "openclaw/plugin-sdk/session-store-runtime";
-import { normalizeOptionalLowercaseString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/session-store-runtime";
+import { normalizeOptionalLowercaseString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 /**
  * Closes every session entry in the store whose key contains {@link threadId}.
@@ -14,7 +14,7 @@ import { normalizeOptionalLowercaseString } from "openclaw/plugin-sdk/string-coe
  * that a later inbound message starts a fresh session in every reset mode.
  */
 export async function closeDiscordThreadSessions(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   threadId: string;
 }): Promise<number> {
   const { cfg, threadId } = params;

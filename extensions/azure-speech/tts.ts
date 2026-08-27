@@ -6,14 +6,14 @@ import {
   assertOkOrThrowProviderError,
   readProviderBinaryResponse,
   readProviderJsonResponse,
-} from "openclaw/plugin-sdk/provider-http";
-import type { SpeechVoiceOption } from "openclaw/plugin-sdk/speech-core";
-import { trimToUndefined } from "openclaw/plugin-sdk/speech-core";
+} from "afora-agent/plugin-sdk/provider-http";
+import type { SpeechVoiceOption } from "afora-agent/plugin-sdk/speech-core";
+import { trimToUndefined } from "afora-agent/plugin-sdk/speech-core";
 import {
   fetchWithSsrFGuard,
   ssrfPolicyFromHttpBaseUrlAllowedHostname,
-} from "openclaw/plugin-sdk/ssrf-runtime";
-import { asOptionalRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/ssrf-runtime";
+import { asOptionalRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 /** Default Azure Speech neural voice. */
 export const DEFAULT_AZURE_SPEECH_VOICE = "en-US-JennyNeural";
@@ -207,7 +207,7 @@ export async function azureSpeechTTS(params: {
         "Content-Type": "application/ssml+xml",
         "Ocp-Apim-Subscription-Key": params.apiKey,
         "X-Microsoft-OutputFormat": outputFormat,
-        "User-Agent": "OpenClaw",
+        "User-Agent": "Afora",
       },
       body: buildAzureSpeechSsml({
         text: params.text,

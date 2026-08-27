@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"OpenClaw"</string>
+    <string name="app_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Afora"</string>
     <string name="chat" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Чат"</string>
     <string name="session" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Сеанс"</string>
     <string name="model" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Модель"</string>
@@ -39,7 +39,7 @@
     <string name="agent" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Агент"</string>
     <string name="system" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Система"</string>
     <string name="start_conversation" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Почати розмову"</string>
-    <string name="start_conversation_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Говоріть або вводьте текст на годиннику. Спарений телефон надсилає повідомлення через автентифікований сеанс OpenClaw."</string>
+    <string name="start_conversation_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Говоріть або вводьте текст на годиннику. Спарений телефон надсилає повідомлення через автентифікований сеанс Afora."</string>
     <string name="current_session" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Поточний сеанс"</string>
     <string name="appearance" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Вигляд"</string>
     <string name="theme_dark" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Темна"</string>
@@ -61,28 +61,28 @@
     <string name="phone_ready" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Телефон готовий"</string>
     <string name="gateway_connected" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Gateway підключено"</string>
     <string name="gateway_offline" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Gateway офлайн"</string>
-    <string name="gateway_offline_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Повторно підключіть Gateway в OpenClaw на спареному телефоні."</string>
-    <string name="open_phone_app" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Відкрийте OpenClaw на телефоні"</string>
+    <string name="gateway_offline_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Повторно підключіть Gateway в Afora на спареному телефоні."</string>
+    <string name="open_phone_app" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Відкрийте Afora на телефоні"</string>
     <string name="phone_not_ready_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Годинник ніколи не запускає та не автентифікує Gateway самостійно."</string>
     <string name="phone_unavailable" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Телефон недоступний"</string>
-    <string name="phone_unavailable_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Тримайте спарений телефон поруч і встановіть відповідний застосунок OpenClaw."</string>
+    <string name="phone_unavailable_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Тримайте спарений телефон поруч і встановіть відповідний застосунок Afora."</string>
     <string name="selection_not_found" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Вибраний елемент більше недоступний"</string>
     <string name="message_not_sent" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Дію не прийнято"</string>
     <string name="something_went_wrong" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Щось пішло не так"</string>
     <string name="refresh_and_try_again" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Оновіть списки та спробуйте ще раз."</string>
     <string name="try_again" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Спробуйте ще раз із годинника."</string>
     <string name="update_required" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Потрібне оновлення"</string>
-    <string name="update_required_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Оновіть OpenClaw на телефоні та годиннику."</string>
+    <string name="update_required_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Оновіть Afora на телефоні та годиннику."</string>
     <string name="refresh" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Оновити"</string>
     <string name="retry" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Повторити"</string>
-    <string name="notification_channel_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Відповіді OpenClaw"</string>
+    <string name="notification_channel_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Відповіді Afora"</string>
     <string name="notification_reply" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Відповісти"</string>
-    <string name="notification_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Відповідь OpenClaw"</string>
+    <string name="notification_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Відповідь Afora"</string>
     <string name="notification_reply_failed_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Відповідь не надіслано"</string>
     <string name="notification_reply_failed_text" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Телефон недоступний. Натисніть «Відповісти», щоб повторити спробу."</string>
-    <string name="notification_phone_changed_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Відкрийте OpenClaw, щоб відповісти"</string>
+    <string name="notification_phone_changed_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Відкрийте Afora, щоб відповісти"</string>
     <string name="notification_phone_changed_text" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Ваш бажаний телефон змінено. Відкрийте застосунок, щоб перезавантажити сеанс перед відповіддю."</string>
-    <string name="tile_label" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"OpenClaw"</string>
+    <string name="tile_label" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Afora"</string>
     <string name="tile_description" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Відкривайте сеанси та відповідайте через спарений телефон"</string>
     <string name="tile_open" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ВІДКРИТИ"</string>
     <string name="tile_phone_proxy" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ПРОКСІ ТЕЛЕФОНУ"</string>

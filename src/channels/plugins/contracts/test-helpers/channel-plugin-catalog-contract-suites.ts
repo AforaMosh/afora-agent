@@ -6,7 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { resolvePreferredOpenClawTmpDir } from "../../../../infra/tmp-openclaw-dir.js";
+import { resolvePreferredAforaTmpDir } from "../../../../infra/tmp-afora-dir.js";
 import { listRawChannelPluginCatalogEntries } from "../../catalog.js";
 
 type CatalogQuery = {
@@ -39,7 +39,7 @@ function createCatalogEntry(params: {
 }) {
   return {
     name: params.packageName,
-    openclaw: {
+    afora: {
       channel: {
         id: params.channelId,
         label: params.label,
@@ -66,7 +66,7 @@ function writeCatalogFile(
             $schema: "./manifest.schema.json",
             schemaVersion: 1,
             description:
-              "Extension manifest. Declares plugin packages that OpenClaw can discover during onboarding and install on demand via `openclaw plugins install`.",
+              "Extension manifest. Declares plugin packages that Afora can discover during onboarding and install on demand via `afora plugins install`.",
           }
         : {}),
       entries: [entry],
@@ -79,7 +79,7 @@ function createTemporaryCatalogFile(
   entry: Record<string, unknown>,
   richManifest = false,
 ) {
-  const directory = fs.mkdtempSync(path.join(resolvePreferredOpenClawTmpDir(), prefix));
+  const directory = fs.mkdtempSync(path.join(resolvePreferredAforaTmpDir(), prefix));
   const catalogPath = path.join(directory, "catalog.json");
   writeCatalogFile(catalogPath, entry, richManifest);
   return catalogPath;
@@ -98,7 +98,7 @@ function writeDiscoveredChannelPlugin(params: {
     path.join(pluginDir, "package.json"),
     JSON.stringify({
       name: params.packageName,
-      openclaw: {
+      afora: {
         extensions: ["./index.js"],
         channel: {
           id: "demo-channel",
@@ -113,7 +113,7 @@ function writeDiscoveredChannelPlugin(params: {
     "utf8",
   );
   fs.writeFileSync(
-    path.join(pluginDir, "openclaw.plugin.json"),
+    path.join(pluginDir, "afora.plugin.json"),
     JSON.stringify({ id: params.pluginId, configSchema: {} }),
     "utf8",
   );
@@ -136,15 +136,15 @@ function createRichExternalCatalogCase(
 const [richNpmCatalogFixture, clawhubCatalogFixture, yuanbaoCatalogFixture] = [
   {
     name: "accepts rich external manifest entries with pinned npm metadata",
-    prefix: "openclaw-catalog-rich-",
+    prefix: "afora-catalog-rich-",
     channelId: "wecom",
     entry: {
-      name: "@wecom/wecom-openclaw-plugin",
+      name: "@wecom/wecom-afora-plugin",
       description:
-        "OpenClaw WeCom (企业微信) channel plugin — community maintained, published on npm.",
+        "Afora WeCom (企业微信) channel plugin — community maintained, published on npm.",
       source: "external",
       kind: "channel",
-      openclaw: {
+      afora: {
         channel: {
           id: "wecom",
           label: "WeCom",
@@ -157,7 +157,7 @@ const [richNpmCatalogFixture, clawhubCatalogFixture, yuanbaoCatalogFixture] = [
           order: 45,
         },
         install: {
-          npmSpec: "@wecom/wecom-openclaw-plugin@1.2.3",
+          npmSpec: "@wecom/wecom-afora-plugin@1.2.3",
           defaultChoice: "npm",
           minHostVersion: ">=2026.4.10",
           expectedIntegrity: "sha512-wecom",
@@ -175,7 +175,7 @@ const [richNpmCatalogFixture, clawhubCatalogFixture, yuanbaoCatalogFixture] = [
         blurb: "企业微信 (WeCom) bot & conversation channel.",
       },
       install: {
-        npmSpec: "@wecom/wecom-openclaw-plugin@1.2.3",
+        npmSpec: "@wecom/wecom-afora-plugin@1.2.3",
         defaultChoice: "npm",
         minHostVersion: ">=2026.4.10",
         expectedIntegrity: "sha512-wecom",
@@ -183,8 +183,8 @@ const [richNpmCatalogFixture, clawhubCatalogFixture, yuanbaoCatalogFixture] = [
       installSource: {
         defaultChoice: "npm",
         npm: {
-          spec: "@wecom/wecom-openclaw-plugin@1.2.3",
-          packageName: "@wecom/wecom-openclaw-plugin",
+          spec: "@wecom/wecom-afora-plugin@1.2.3",
+          packageName: "@wecom/wecom-afora-plugin",
           selector: "1.2.3",
           selectorKind: "exact-version",
           exactVersion: true,
@@ -197,12 +197,12 @@ const [richNpmCatalogFixture, clawhubCatalogFixture, yuanbaoCatalogFixture] = [
   },
   {
     name: "accepts external manifest entries with ClawHub-only install metadata",
-    prefix: "openclaw-catalog-clawhub-",
+    prefix: "afora-catalog-clawhub-",
     channelId: "clawhub-chat",
     entry: {
       source: "external",
       kind: "channel",
-      openclaw: {
+      afora: {
         channel: {
           id: "clawhub-chat",
           label: "ClawHub Chat",
@@ -215,7 +215,7 @@ const [richNpmCatalogFixture, clawhubCatalogFixture, yuanbaoCatalogFixture] = [
           order: 47,
         },
         install: {
-          clawhubSpec: "clawhub:openclaw/clawhub-chat@2026.5.2",
+          clawhubSpec: "clawhub:afora/clawhub-chat@2026.5.2",
           defaultChoice: "clawhub",
           minHostVersion: ">=2026.5.1",
         },
@@ -232,15 +232,15 @@ const [richNpmCatalogFixture, clawhubCatalogFixture, yuanbaoCatalogFixture] = [
         blurb: "ClawHub-backed chat channel.",
       },
       install: {
-        clawhubSpec: "clawhub:openclaw/clawhub-chat@2026.5.2",
+        clawhubSpec: "clawhub:afora/clawhub-chat@2026.5.2",
         defaultChoice: "clawhub",
         minHostVersion: ">=2026.5.1",
       },
       installSource: {
         defaultChoice: "clawhub",
         clawhub: {
-          spec: "clawhub:openclaw/clawhub-chat@2026.5.2",
-          packageName: "openclaw/clawhub-chat",
+          spec: "clawhub:afora/clawhub-chat@2026.5.2",
+          packageName: "afora-agent/clawhub-chat",
           version: "2026.5.2",
           exactVersion: true,
         },
@@ -250,17 +250,17 @@ const [richNpmCatalogFixture, clawhubCatalogFixture, yuanbaoCatalogFixture] = [
   },
   {
     name: "accepts rich external manifest entries for yuanbao with pinned npm metadata",
-    prefix: "openclaw-catalog-yuanbao-",
-    channelId: "openclaw-plugin-yuanbao",
+    prefix: "afora-catalog-yuanbao-",
+    channelId: "afora-plugin-yuanbao",
     entry: {
-      name: "openclaw-plugin-yuanbao",
+      name: "afora-plugin-yuanbao",
       description:
-        "OpenClaw Yuanbao (元宝) channel plugin — community maintained, published on npm.",
+        "Afora Yuanbao (元宝) channel plugin — community maintained, published on npm.",
       source: "external",
       kind: "channel",
-      openclaw: {
+      afora: {
         channel: {
-          id: "openclaw-plugin-yuanbao",
+          id: "afora-plugin-yuanbao",
           label: "Yuanbao",
           selectionLabel: "Yuanbao (Tencent Yuanbao)",
           detailLabel: "Yuanbao",
@@ -271,7 +271,7 @@ const [richNpmCatalogFixture, clawhubCatalogFixture, yuanbaoCatalogFixture] = [
           order: 78,
         },
         install: {
-          npmSpec: "openclaw-plugin-yuanbao@1.0.0",
+          npmSpec: "afora-plugin-yuanbao@1.0.0",
           defaultChoice: "npm",
           minHostVersion: ">=2026.4.10",
           expectedIntegrity: "sha512-yuanbao",
@@ -279,7 +279,7 @@ const [richNpmCatalogFixture, clawhubCatalogFixture, yuanbaoCatalogFixture] = [
       },
     },
     expected: {
-      id: "openclaw-plugin-yuanbao",
+      id: "afora-plugin-yuanbao",
       meta: {
         label: "Yuanbao",
         selectionLabel: "Yuanbao (Tencent Yuanbao)",
@@ -289,7 +289,7 @@ const [richNpmCatalogFixture, clawhubCatalogFixture, yuanbaoCatalogFixture] = [
         blurb: "Tencent Yuanbao AI assistant conversation channel.",
       },
       install: {
-        npmSpec: "openclaw-plugin-yuanbao@1.0.0",
+        npmSpec: "afora-plugin-yuanbao@1.0.0",
         defaultChoice: "npm",
         minHostVersion: ">=2026.4.10",
         expectedIntegrity: "sha512-yuanbao",
@@ -307,9 +307,9 @@ export function describeChannelPluginCatalogEntriesContract() {
         channelId: "demo-channel",
         catalogPaths: [
           createTemporaryCatalogFile(
-            "openclaw-catalog-",
+            "afora-catalog-",
             createCatalogEntry({
-              packageName: "@openclaw/demo-channel",
+              packageName: "@afora/demo-channel",
               channelId: "demo-channel",
               label: "Demo Channel",
               blurb: "Demo entry",
@@ -324,7 +324,7 @@ export function describeChannelPluginCatalogEntriesContract() {
       name: "preserves plugin ids when they differ from channel ids",
       setup: () => {
         const stateDir = fs.mkdtempSync(
-          path.join(resolvePreferredOpenClawTmpDir(), "openclaw-channel-catalog-state-"),
+          path.join(resolvePreferredAforaTmpDir(), "afora-channel-catalog-state-"),
         );
         writeDiscoveredChannelPlugin({
           stateDir,
@@ -337,8 +337,8 @@ export function describeChannelPluginCatalogEntriesContract() {
           channelId: "demo-channel",
           env: {
             ...process.env,
-            OPENCLAW_STATE_DIR: stateDir,
-            OPENCLAW_BUNDLED_PLUGINS_DIR: "/nonexistent/bundled/plugins",
+            AFORA_STATE_DIR: stateDir,
+            AFORA_BUNDLED_PLUGINS_DIR: "/nonexistent/bundled/plugins",
           },
           expected: { pluginId: "@vendor/demo-runtime" },
         };
@@ -348,7 +348,7 @@ export function describeChannelPluginCatalogEntriesContract() {
       name: "keeps discovered plugins ahead of external catalog overrides",
       setup: () => {
         const stateDir = fs.mkdtempSync(
-          path.join(resolvePreferredOpenClawTmpDir(), "openclaw-catalog-state-"),
+          path.join(resolvePreferredAforaTmpDir(), "afora-catalog-state-"),
         );
         const catalogPath = path.join(stateDir, "catalog.json");
         writeDiscoveredChannelPlugin({
@@ -372,9 +372,9 @@ export function describeChannelPluginCatalogEntriesContract() {
           catalogPaths: [catalogPath],
           env: {
             ...process.env,
-            OPENCLAW_STATE_DIR: stateDir,
+            AFORA_STATE_DIR: stateDir,
             CLAWDBOT_STATE_DIR: undefined,
-            OPENCLAW_BUNDLED_PLUGINS_DIR: "/nonexistent/bundled/plugins",
+            AFORA_BUNDLED_PLUGINS_DIR: "/nonexistent/bundled/plugins",
           },
           expected: {
             install: { npmSpec: "@vendor/demo-channel-plugin" },
@@ -390,9 +390,9 @@ export function describeChannelPluginCatalogEntriesContract() {
       setup: () => ({
         channelId: "prerelease-demo",
         catalogPaths: [
-          createTemporaryCatalogFile("openclaw-catalog-prerelease-", {
+          createTemporaryCatalogFile("afora-catalog-prerelease-", {
             ...createCatalogEntry({
-              packageName: "@openclaw/prerelease-demo-channel",
+              packageName: "@afora/prerelease-demo-channel",
               channelId: "prerelease-demo",
               label: "Prerelease Demo",
               blurb: "Prerelease package pinning fixture",
@@ -401,11 +401,11 @@ export function describeChannelPluginCatalogEntriesContract() {
           }),
         ],
         expected: {
-          install: { npmSpec: "@openclaw/prerelease-demo-channel@2026.5.3-beta.1" },
+          install: { npmSpec: "@afora/prerelease-demo-channel@2026.5.3-beta.1" },
           installSource: {
             npm: {
-              spec: "@openclaw/prerelease-demo-channel@2026.5.3-beta.1",
-              packageName: "@openclaw/prerelease-demo-channel",
+              spec: "@afora/prerelease-demo-channel@2026.5.3-beta.1",
+              packageName: "@afora/prerelease-demo-channel",
               selector: "2026.5.3-beta.1",
               selectorKind: "exact-version",
               exactVersion: true,
@@ -436,12 +436,12 @@ export function describeChannelPluginCatalogPathResolutionContract() {
         name: "uses the provided env for external catalog path resolution",
         setup: () => {
           const home = fs.mkdtempSync(
-            path.join(resolvePreferredOpenClawTmpDir(), "openclaw-catalog-home-"),
+            path.join(resolvePreferredAforaTmpDir(), "afora-catalog-home-"),
           );
           writeCatalogFile(
             path.join(home, "catalog.json"),
             createCatalogEntry({
-              packageName: "@openclaw/env-demo-channel",
+              packageName: "@afora/env-demo-channel",
               channelId: "env-demo-channel",
               label: "Env Demo Channel",
               blurb: "Env demo entry",
@@ -451,8 +451,8 @@ export function describeChannelPluginCatalogPathResolutionContract() {
           return {
             env: {
               ...process.env,
-              OPENCLAW_PLUGIN_CATALOG_PATHS: "~/catalog.json",
-              OPENCLAW_HOME: home,
+              AFORA_PLUGIN_CATALOG_PATHS: "~/catalog.json",
+              AFORA_HOME: home,
               HOME: home,
             },
             expectedId: "env-demo-channel",
@@ -463,21 +463,21 @@ export function describeChannelPluginCatalogPathResolutionContract() {
         name: "uses the provided env for default catalog paths",
         setup: () => {
           const stateDir = fs.mkdtempSync(
-            path.join(resolvePreferredOpenClawTmpDir(), "openclaw-catalog-state-"),
+            path.join(resolvePreferredAforaTmpDir(), "afora-catalog-state-"),
           );
           const catalogPath = path.join(stateDir, "plugins", "catalog.json");
           fs.mkdirSync(path.dirname(catalogPath), { recursive: true });
           writeCatalogFile(
             catalogPath,
             createCatalogEntry({
-              packageName: "@openclaw/default-env-demo",
+              packageName: "@afora/default-env-demo",
               channelId: "default-env-demo",
               label: "Default Env Demo",
               blurb: "Default env demo entry",
             }),
           );
           return {
-            env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+            env: { ...process.env, AFORA_STATE_DIR: stateDir },
             expectedId: "default-env-demo",
           };
         },

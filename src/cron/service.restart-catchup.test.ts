@@ -9,7 +9,7 @@ import { loadCronStore, saveCronStore } from "./store.js";
 import type { CronJob } from "./types.js";
 
 const { logger: noopLogger, makeStorePath } = setupCronServiceSuite({
-  prefix: "openclaw-cron-",
+  prefix: "afora-cron-",
   baseTimeIso: "2025-12-13T17:00:00.000Z",
 });
 

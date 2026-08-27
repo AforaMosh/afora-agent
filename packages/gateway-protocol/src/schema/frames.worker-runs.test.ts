@@ -14,7 +14,7 @@ describe("legacy node worker-runs connect manifest", () => {
         ...connect,
         workerRuns: {
           bundleHash: "a".repeat(64),
-          openclawVersion: "2026.8.12",
+          aforaVersion: "2026.8.12",
           protocolFeatures: ["worker-heartbeat-v1"],
         },
       }),
@@ -24,7 +24,7 @@ describe("legacy node worker-runs connect manifest", () => {
         ...connect,
         workerRuns: {
           bundleHash: "a".repeat(64),
-          openclawVersion: "2026.8.12",
+          aforaVersion: "2026.8.12",
           protocolFeatures: ["worker-heartbeat-v1"],
           bundlePrewarm: 2,
         },
@@ -36,7 +36,7 @@ describe("legacy node worker-runs connect manifest", () => {
         ...connect,
         workerRuns: {
           bundleHash: "a".repeat(64),
-          openclawVersion: "2026.8.12",
+          aforaVersion: "2026.8.12",
           protocolFeatures: ["worker-heartbeat-v1"],
           bundlePrewarm: 0,
         },

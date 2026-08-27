@@ -1,5 +1,5 @@
 // Memory Wiki tests cover the shared guarded vault page write helper.
-import { FsSafeError } from "openclaw/plugin-sdk/security-runtime";
+import { FsSafeError } from "afora-agent/plugin-sdk/security-runtime";
 import { describe, expect, it, vi } from "vitest";
 import { writeGuardedVaultPage } from "./vault-page-write.js";
 

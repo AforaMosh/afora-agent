@@ -6,12 +6,12 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   asDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "@openclaw/normalization-core/number-coercion";
-import { asNullableObjectRecord as readRecord } from "@openclaw/normalization-core/record-coerce";
+} from "@afora/normalization-core/number-coercion";
+import { asNullableObjectRecord as readRecord } from "@afora/normalization-core/record-coerce";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { runExec } from "../process/exec.js";
 import { signalProcessTree } from "../process/kill-tree.js";
 import { isVitestRuntimeEnv } from "./env.js";
@@ -196,7 +196,7 @@ function getTestTailscaleBinaryOverride(env: NodeJS.ProcessEnv = process.env): s
   if (!isVitestRuntimeEnv(env)) {
     return null;
   }
-  const forcedBinary = env.OPENCLAW_TEST_TAILSCALE_BINARY?.trim();
+  const forcedBinary = env.AFORA_TEST_TAILSCALE_BINARY?.trim();
   return forcedBinary || null;
 }
 

@@ -1,4 +1,4 @@
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
 import { expect, it } from "vitest";
 import {
   describeTelegramDispatch,

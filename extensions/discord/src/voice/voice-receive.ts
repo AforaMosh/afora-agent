@@ -1,7 +1,7 @@
-import type { OpenClawConfig, DiscordAccountConfig } from "openclaw/plugin-sdk/config-contracts";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import { formatErrorMessage } from "openclaw/plugin-sdk/ssrf-runtime";
+import type { AforaConfig, DiscordAccountConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/ssrf-runtime";
 import type { Client } from "../internal/discord.js";
 import { decodeOpusStream, decodeOpusStreamChunks, writeVoiceWavFile } from "./audio.js";
 import {
@@ -51,7 +51,7 @@ export class DiscordVoiceReceive {
       accountId: string;
       admissionAllowFrom?: string[];
       botUserId: () => string | undefined;
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       client: Client;
       discordConfig: DiscordAccountConfig;
       getSession: (guildId: string) => VoiceSessionEntry | undefined;

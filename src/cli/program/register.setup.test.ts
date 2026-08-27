@@ -94,7 +94,7 @@ describe("registerSetupCommand", () => {
     readConfigFileSnapshotMock.mockResolvedValue({
       exists: false,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       sourceConfig: {},
     });
   });
@@ -158,14 +158,14 @@ describe("registerSetupCommand", () => {
     readConfigFileSnapshotMock.mockResolvedValue({
       exists: true,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       sourceConfig,
     });
     readLocalOnboardingStateMock.mockReturnValue({ status: "pending" });
 
     await runInteractiveBareSetup();
 
-    expect(readLocalOnboardingStateMock).toHaveBeenCalledWith("/tmp/openclaw.json", sourceConfig);
+    expect(readLocalOnboardingStateMock).toHaveBeenCalledWith("/tmp/afora.json", sourceConfig);
     expect(setupWizardCommandMock).toHaveBeenCalledWith(lastWizardOptions(), runtime);
     expect(runSystemAgentMock).not.toHaveBeenCalled();
   });
@@ -176,9 +176,9 @@ describe("registerSetupCommand", () => {
       readConfigFileSnapshotMock.mockResolvedValue({
         exists: true,
         valid: true,
-        path: "/tmp/openclaw.json",
+        path: "/tmp/afora.json",
         sourceConfig: {
-          $schema: "https://openclaw.ai/config.json",
+          $schema: "https://afora.ai/config.json",
           meta: { updatedBy: "fixture" },
           wizard: { securityAcknowledgedAt: "2026-08-02T00:00:00.000Z", accessMode },
         },
@@ -196,7 +196,7 @@ describe("registerSetupCommand", () => {
     readConfigFileSnapshotMock.mockResolvedValue({
       exists: true,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       sourceConfig: {
         wizard: {
           securityAcknowledgedAt: "2026-08-02T00:00:00.000Z",
@@ -219,7 +219,7 @@ describe("registerSetupCommand", () => {
     readConfigFileSnapshotMock.mockResolvedValue({
       exists: true,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       sourceConfig: { agents: { defaults: { model: "acme/verified" } } },
     });
     readLocalOnboardingStateMock.mockReturnValue(onboardingState);
@@ -241,7 +241,7 @@ describe("registerSetupCommand", () => {
     readConfigFileSnapshotMock.mockResolvedValue({
       exists: true,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       sourceConfig,
     });
     readLocalOnboardingStateMock.mockImplementation((_configPath, config) =>
@@ -252,7 +252,7 @@ describe("registerSetupCommand", () => {
 
     await runInteractiveBareSetup();
 
-    expect(readLocalOnboardingStateMock).toHaveBeenCalledWith("/tmp/openclaw.json", sourceConfig);
+    expect(readLocalOnboardingStateMock).toHaveBeenCalledWith("/tmp/afora.json", sourceConfig);
     expect(runSystemAgentMock).toHaveBeenCalledOnce();
     expect(setupWizardCommandMock).not.toHaveBeenCalled();
   });
@@ -263,7 +263,7 @@ describe("registerSetupCommand", () => {
   ])("does not let a stale local receipt reroute %s", async (_description, config) => {
     readConfigFileSnapshotMock.mockResolvedValue({
       exists: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       ...config,
     });
     readLocalOnboardingStateMock.mockReturnValue({ status: "pending" });
@@ -279,7 +279,7 @@ describe("registerSetupCommand", () => {
     readConfigFileSnapshotMock.mockResolvedValue({
       exists: true,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       sourceConfig: { gateway: {} },
     });
 

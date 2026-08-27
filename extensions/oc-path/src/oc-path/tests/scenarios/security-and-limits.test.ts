@@ -190,14 +190,14 @@ describe("path-string and traversal caps", () => {
 
 describe("sentinel literal at format boundary", () => {
   it("formatOcPath rejects a struct carrying the redaction sentinel", () => {
-    expect(() => formatOcPath({ file: "AGENTS.md", section: "__OPENCLAW_REDACTED__" })).toThrow(
+    expect(() => formatOcPath({ file: "AGENTS.md", section: "__AFORA_REDACTED__" })).toThrow(
       /sentinel literal/,
     );
   });
 });
 
 describe("numeric segments dispatch by node kind", () => {
-  it("negative numeric key on object resolves as literal key (openclaw#59934)", () => {
+  it("negative numeric key on object resolves as literal key (afora#59934)", () => {
     // Telegram supergroup IDs are negative numbers used as map keys.
     const ast = parseJsonc(
       '{"channels":{"telegram":{"groups":{"-5028303500":{"requireMention":false}}}}}',

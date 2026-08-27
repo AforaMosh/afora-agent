@@ -2,9 +2,9 @@ import { randomUUID } from "node:crypto";
 import { type Static, type TSchema, Type } from "typebox";
 import { Compile } from "typebox/compile";
 import type {
-  OpenClawPluginNodeHostCommand,
-  OpenClawPluginNodeHostCommandAvailabilityContext,
-  OpenClawPluginNodeHostCommandContext,
+  AforaPluginNodeHostCommand,
+  AforaPluginNodeHostCommandAvailabilityContext,
+  AforaPluginNodeHostCommandContext,
 } from "./types.node-host.js";
 
 export const COMPUTER_USE_V2_ACTION_NAMES = [
@@ -69,7 +69,7 @@ const ESCALATION_REASONS = [
   "other",
 ] as const;
 const COMPUTER_RESOURCE_HANDLE_PATTERN =
-  "^openclaw:computer-resource:v1:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$";
+  "^afora:computer-resource:v1:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$";
 const COMPUTER_EXECUTION_ID_PATTERN =
   "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$";
 
@@ -546,7 +546,7 @@ export type ComputerUseProvider = {
   capabilities(): ComputerUseCapabilityDescriptor;
   isAvailable(): boolean;
   watchAvailability?: (
-    context: OpenClawPluginNodeHostCommandAvailabilityContext,
+    context: AforaPluginNodeHostCommandAvailabilityContext,
     onChange: () => void,
   ) => (() => void) | void;
   openExecution(context: {
@@ -559,7 +559,7 @@ export type ComputerUseProvider = {
 // the full plugin API type here creates an import cycle through the gateway
 // server-method types that consume this contract.
 type ComputerUseRegistrationApi = {
-  registerNodeHostCommand(command: OpenClawPluginNodeHostCommand): void;
+  registerNodeHostCommand(command: AforaPluginNodeHostCommand): void;
 };
 
 /** Register the canonical node-host command pair for one node-local provider. */
@@ -594,7 +594,7 @@ export function registerComputerUseProvider(
   };
   const getExecution = async (
     paramsJSON: string | null | undefined,
-    context?: OpenClawPluginNodeHostCommandContext,
+    context?: AforaPluginNodeHostCommandContext,
   ) => {
     const { executionId } = executionEnvelopeFromParams(paramsJSON);
     if (!executionId) {

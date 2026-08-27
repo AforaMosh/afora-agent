@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ConfigFileSnapshot, OpenClawConfig } from "../config/types.openclaw.js";
+import type { ConfigFileSnapshot, AforaConfig } from "../config/types.afora.js";
 
 const mocks = vi.hoisted(() => ({
   appliedConfigHash: "applied-1" as string | null,
@@ -34,9 +34,9 @@ const { invalidateConfigGetResponseCache, readConfigGetResponse } =
 const activeWatcher = () => "active" as const;
 const disabledWatcher = () => "disabled" as const;
 
-function configSnapshot(sourceConfig: OpenClawConfig): ConfigFileSnapshot {
+function configSnapshot(sourceConfig: AforaConfig): ConfigFileSnapshot {
   return {
-    path: "/tmp/openclaw.json",
+    path: "/tmp/afora.json",
     exists: true,
     raw: JSON.stringify(sourceConfig),
     parsed: sourceConfig,

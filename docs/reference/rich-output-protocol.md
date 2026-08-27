@@ -60,7 +60,7 @@ Plain Markdown image syntax stays text by default. Channels that intentionally
 map Markdown image replies to media attachments opt in at their outbound
 adapter; Telegram does this so `![alt](url)` can still become a media reply.
 
-When block streaming is enabled, media must ride on structured payload fields. If the same media URL appears in a streamed block and again in the final assistant payload, OpenClaw delivers it once and strips the duplicate from the final payload.
+When block streaming is enabled, media must ride on structured payload fields. If the same media URL appears in a streamed block and again in the final assistant payload, Afora delivers it once and strips the duplicate from the final payload.
 
 ## `[embed ...]`
 
@@ -90,7 +90,7 @@ The normalized/stored assistant content block is a structured `canvas` item:
     "surface": "assistant_message",
     "render": "url",
     "viewId": "cv_123",
-    "url": "/__openclaw__/canvas/documents/cv_123/index.html",
+    "url": "/__afora__/canvas/documents/cv_123/index.html",
     "title": "Status",
     "preferredHeight": 320
   }

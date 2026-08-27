@@ -1,8 +1,8 @@
 import Foundation
-import OpenClawKit
-import OpenClawProtocol
+import AforaKit
+import AforaProtocol
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 @MainActor
 private final class UnusedPCMStreamingAudioPlayer: PCMStreamingAudioPlaying {

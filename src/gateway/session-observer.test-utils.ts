@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 import type { SessionObserverDigest } from "../../packages/gateway-protocol/src/schema/sessions.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { AgentEventPayload } from "../infra/agent-events.js";
 import {
   createSessionEventSubscriberRegistry,
@@ -12,7 +12,7 @@ import { createSessionObserver } from "./session-observer.js";
 const cfg = {
   gateway: { controlUi: { sessionObserver: true } },
   agents: { defaults: { utilityModel: "openai/gpt-test" } },
-} satisfies OpenClawConfig;
+} satisfies AforaConfig;
 
 let eventSequence = 0;
 
@@ -86,7 +86,7 @@ export function createHarness(options?: {
   prepareModel?: ReturnType<typeof vi.fn>;
   persistDigest?: ReturnType<typeof vi.fn>;
   readSession?: ReturnType<typeof vi.fn>;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   utilityModelRef?: string | null;
   resolveUtilityModelRef?: ReturnType<typeof vi.fn>;
 }) {

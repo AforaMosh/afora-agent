@@ -3,7 +3,7 @@ import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { AforaConfig } from "../../../config/config.js";
 import {
   collectExecSafeBinCoverageWarnings,
   collectExecSafeBinTrustedDirHintWarnings,
@@ -27,7 +27,7 @@ describe("doctor exec safe bin helpers", () => {
           safeBinProfiles: { jq: {} },
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(hits).toEqual([
       { scopePath: "tools.exec", bin: "node", kind: "missingProfile", isInterpreter: true },
@@ -59,14 +59,14 @@ describe("doctor exec safe bin helpers", () => {
           isInterpreter: false,
         },
       ],
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     expect(warnings).toEqual([
       "- tools.exec.safeBins includes interpreter/runtime 'node' without profile.",
       "- tools.exec.safeBins entry 'myfilter' is missing safeBinProfiles.myfilter.",
       "- agents.list.runner.tools.exec.safeBins includes 'jq': jq can read environment data and load jq code from modules or startup files, so prefer explicit allowlist entries or approval-gated runs instead of safeBins.",
-      '- Run "openclaw doctor --fix" to scaffold missing custom safeBinProfiles entries.',
+      '- Run "afora doctor --fix" to scaffold missing custom safeBinProfiles entries.',
     ]);
   });
 
@@ -81,7 +81,7 @@ describe("doctor exec safe bin helpers", () => {
             "jq can read environment data and load jq code from modules or startup files, so prefer explicit allowlist entries or approval-gated runs instead of safeBins.",
         },
       ],
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     expect(warnings).toEqual([
@@ -96,7 +96,7 @@ describe("doctor exec safe bin helpers", () => {
           safeBins: ["node", "jq", "myfilter"],
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(result.changes).toEqual([
       "- tools.exec.safeBinProfiles.myfilter: added scaffold profile {} (review and tighten flags/positionals).",
@@ -115,7 +115,7 @@ describe("doctor exec safe bin helpers", () => {
           safeBins: ["/usr/local/bin/jq", "sed.exe", "myfilter"],
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(hits).toEqual([
       { scopePath: "tools.exec", bin: "myfilter", kind: "missingProfile", isInterpreter: false },
@@ -141,7 +141,7 @@ describe("doctor exec safe bin helpers", () => {
           safeBins: ["/usr/local/bin/jq", "sed.exe", "myfilter"],
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(result.changes).toEqual([
       "- tools.exec.safeBinProfiles.myfilter: added scaffold profile {} (review and tighten flags/positionals).",
@@ -160,7 +160,7 @@ describe("doctor exec safe bin helpers", () => {
           safeBins: ["awk", "sed"],
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(result.changes).toStrictEqual([]);
     expect(result.warnings).toEqual([
@@ -177,7 +177,7 @@ describe("doctor exec safe bin helpers", () => {
           safeBins: ["busybox", "toybox"],
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(result.changes).toStrictEqual([]);
     expect(result.warnings).toEqual([
@@ -188,7 +188,7 @@ describe("doctor exec safe bin helpers", () => {
   });
 
   it("flags safeBins that resolve outside trusted directories", () => {
-    const tempDir = mkdtempSync(join(tmpdir(), "openclaw-safe-bin-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "afora-safe-bin-"));
     try {
       const binPath = join(tempDir, "custom-safe-bin");
       writeFileSync(binPath, "#!/bin/sh\nexit 0\n");
@@ -204,7 +204,7 @@ describe("doctor exec safe bin helpers", () => {
             safeBinProfiles: { "custom-safe-bin": {} },
           },
         },
-      } as OpenClawConfig);
+      } as AforaConfig);
 
       expect(hits).toStrictEqual([
         {

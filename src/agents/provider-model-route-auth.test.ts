@@ -18,14 +18,14 @@ const routes = {
       baseUrl: "https://api.openai.com/v1",
       authRequirement: "api-key",
       requestTransportOverrides: "none",
-      runtimePolicy: { compatibleIds: ["openclaw", "codex"] },
+      runtimePolicy: { compatibleIds: ["afora", "codex"] },
     },
     {
       api: "openai-chatgpt-responses",
       baseUrl: "https://chatgpt.com/backend-api/codex",
       authRequirement: "subscription",
       requestTransportOverrides: "none",
-      runtimePolicy: { compatibleIds: ["openclaw", "codex"] },
+      runtimePolicy: { compatibleIds: ["afora", "codex"] },
     },
   ],
 } as const;
@@ -331,7 +331,7 @@ describe("provider model route auth", () => {
       reason: "runtime-auth-owner",
       routeSupport: {
         requestTransportOverrides: "none",
-        runtimePolicy: { compatibleIds: ["openclaw", "codex"] },
+        runtimePolicy: { compatibleIds: ["afora", "codex"] },
       },
     });
   });
@@ -362,7 +362,7 @@ describe("provider model route auth", () => {
       ...routes,
       routes: [
         routes.routes[0],
-        { ...routes.routes[1], runtimePolicy: { compatibleIds: ["openclaw"] } },
+        { ...routes.routes[1], runtimePolicy: { compatibleIds: ["afora"] } },
       ],
     } as const;
     expect(
@@ -399,14 +399,14 @@ describe("provider model route auth", () => {
       selectProviderModelRouteAuth({
         provider: "openai",
         resolution: overrideRoutes,
-        runtimeAuthOwner: { id: "openclaw" },
+        runtimeAuthOwner: { id: "afora" },
         sourcePlan: buildProviderModelAuthSourcePlan({ profiles: [] }),
       }),
     ).toMatchObject({
       kind: "deferred",
       routeSupport: {
         requestTransportOverrides: "present",
-        runtimePolicy: { compatibleIds: ["openclaw", "codex"] },
+        runtimePolicy: { compatibleIds: ["afora", "codex"] },
       },
     });
   });

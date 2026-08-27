@@ -1,9 +1,9 @@
 import Foundation
 import Network
-import OpenClawKit
+import AforaKit
 import os
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 @Suite(.serialized) struct GatewayConnectionSecurityTests {
     @MainActor
@@ -19,7 +19,7 @@ import Testing
         fingerprint: String?,
         tlsEnabled: Bool = true) -> GatewayDiscoveryModel.DiscoveredGateway
     {
-        let endpoint: NWEndpoint = .service(name: "Test", type: "_openclaw-gw._tcp", domain: "local.", interface: nil)
+        let endpoint: NWEndpoint = .service(name: "Test", type: "_afora-gw._tcp", domain: "local.", interface: nil)
         return GatewayDiscoveryModel.DiscoveredGateway(
             name: "Test",
             endpoint: endpoint,
@@ -265,7 +265,7 @@ import Testing
     @Test @MainActor func `manual connections allow private lan plaintext`() {
         let controller = self.makeController()
 
-        #expect(controller._test_resolveManualUseTLS(host: "openclaw.local", useTLS: false) == false)
+        #expect(controller._test_resolveManualUseTLS(host: "afora.local", useTLS: false) == false)
         #expect(controller._test_resolveManualUseTLS(host: "192.168.1.20", useTLS: false) == false)
         #expect(controller._test_resolveManualUseTLS(host: "10.0.0.5", useTLS: false) == false)
         #expect(controller._test_resolveManualUseTLS(host: "172.16.1.5", useTLS: false) == false)
@@ -578,7 +578,7 @@ import Testing
 
     @Test func `ASCII legacy TLS fingerprint migrates to encoded account`() {
         let stableID = "legacy-tls-owner-\(UUID().uuidString)"
-        let service = "ai.openclaw.tls-pinning"
+        let service = "ai.afora.tls-pinning"
         defer {
             GatewayTLSStore.clearFingerprint(stableID: stableID)
             GenericPasswordKeychainStore.delete(service: service, account: stableID)
@@ -597,7 +597,7 @@ import Testing
         let suffix = UUID().uuidString
         let composedOwner = "legacy-gateway-\u{00E9}-\(suffix)"
         let decomposedOwner = "legacy-gateway-e\u{0301}-\(suffix)"
-        let service = "ai.openclaw.tls-pinning"
+        let service = "ai.afora.tls-pinning"
         defer {
             GatewayTLSStore.clearFingerprint(stableID: composedOwner)
             GatewayTLSStore.clearFingerprint(stableID: decomposedOwner)

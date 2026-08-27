@@ -10,7 +10,7 @@
     }
   },
   "metadata": {
-    "openclaw.config": "profiles/incident-response.openclaw.yml"
+    "afora.config": "profiles/incident-response.afora.yml"
   },
   "workspace": {
     "bootstrapFiles": {
@@ -32,7 +32,7 @@
     {
       "kind": "plugin",
       "source": "clawhub",
-      "ref": "@openclaw/plugin-pager-duty",
+      "ref": "@afora/plugin-pager-duty",
       "version": "2.4.0"
     }
   ],

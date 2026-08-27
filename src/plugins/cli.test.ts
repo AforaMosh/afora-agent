@@ -1,14 +1,14 @@
 /** CLI integration coverage for plugin commands, setup, status, and registry flows. */
 import { Command } from "commander";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 
 const mocks = vi.hoisted(() => ({
   memoryRegister: vi.fn(),
   otherRegister: vi.fn(),
   memoryListAction: vi.fn(),
-  loadOpenClawPluginCliRegistry: vi.fn(),
-  loadOpenClawPlugins: vi.fn(),
+  loadAforaPluginCliRegistry: vi.fn(),
+  loadAforaPlugins: vi.fn(),
   resolveManifestActivationPluginIds: vi.fn(),
   applyPluginAutoEnable: vi.fn(),
   resolvePluginMetadataSnapshot: vi.fn(),
@@ -18,11 +18,11 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./loader.js", () => ({
-  loadOpenClawPluginCliRegistry: (...args: unknown[]) =>
-    mocks.loadOpenClawPluginCliRegistry(...args),
-  loadOpenClawPlugins: (...args: unknown[]) => mocks.loadOpenClawPlugins(...args),
+  loadAforaPluginCliRegistry: (...args: unknown[]) =>
+    mocks.loadAforaPluginCliRegistry(...args),
+  loadAforaPlugins: (...args: unknown[]) => mocks.loadAforaPlugins(...args),
   loadPluginRegistryHandle: (options: Record<string, unknown> = {}) =>
-    mocks.loadOpenClawPlugins({ ...options, activate: false }),
+    mocks.loadAforaPlugins({ ...options, activate: false }),
 }));
 
 vi.mock("./activation-planner.js", () => ({
@@ -106,7 +106,7 @@ function createAutoEnabledCliFixture() {
   const rawConfig = {
     plugins: {},
     channels: { demo: { enabled: true } },
-  } as OpenClawConfig;
+  } as AforaConfig;
   const autoEnabledConfig = {
     ...rawConfig,
     plugins: {
@@ -114,7 +114,7 @@ function createAutoEnabledCliFixture() {
         demo: { enabled: true },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
   return { rawConfig, autoEnabledConfig };
 }
 
@@ -122,7 +122,7 @@ function createCliMetadataSnapshot() {
   const plugin = {
     id: "matrix",
     origin: "bundled",
-    format: "openclaw",
+    format: "afora",
     cliCommands: [
       {
         name: "matrix",
@@ -149,7 +149,7 @@ function createLegacyExternalCliMetadataSnapshot() {
   const plugin = {
     id: "legacy-cli",
     origin: "config",
-    format: "openclaw",
+    format: "afora",
   };
   return {
     policyHash: "test",
@@ -174,8 +174,8 @@ function getMockCallObject(mock: ReturnType<typeof vi.fn>, callIndex = 0, argInd
 }
 
 function expectAutoEnabledCliLoad(params: {
-  rawConfig: OpenClawConfig;
-  autoEnabledConfig: OpenClawConfig;
+  rawConfig: AforaConfig;
+  autoEnabledConfig: AforaConfig;
   autoEnabledReasons?: Record<string, string[]>;
 }) {
   expect(mocks.applyPluginAutoEnable).toHaveBeenCalledWith(
@@ -184,7 +184,7 @@ function expectAutoEnabledCliLoad(params: {
       env: process.env,
     }),
   );
-  const loadOptions = getMockCallObject(mocks.loadOpenClawPlugins);
+  const loadOptions = getMockCallObject(mocks.loadAforaPlugins);
   expect(loadOptions.config).toBe(params.autoEnabledConfig);
   expect(loadOptions.activationSourceConfig).toBe(params.rawConfig);
   expect(loadOptions.autoEnabledReasons).toEqual(params.autoEnabledReasons ?? {});
@@ -211,10 +211,10 @@ describe("registerPluginCliCommands", () => {
       program.command("other").description("Other commands");
     });
     mocks.memoryListAction.mockReset();
-    mocks.loadOpenClawPluginCliRegistry.mockReset();
-    mocks.loadOpenClawPluginCliRegistry.mockResolvedValue(createCliRegistry());
-    mocks.loadOpenClawPlugins.mockReset();
-    mocks.loadOpenClawPlugins.mockReturnValue({
+    mocks.loadAforaPluginCliRegistry.mockReset();
+    mocks.loadAforaPluginCliRegistry.mockResolvedValue(createCliRegistry());
+    mocks.loadAforaPlugins.mockReset();
+    mocks.loadAforaPlugins.mockReturnValue({
       ...createCliRegistry(),
       diagnostics: [],
     });
@@ -229,7 +229,7 @@ describe("registerPluginCliCommands", () => {
       autoEnabledReasons: {},
     }));
     mocks.loadConfig.mockReset();
-    mocks.loadConfig.mockReturnValue({} as OpenClawConfig);
+    mocks.loadConfig.mockReturnValue({} as AforaConfig);
     mocks.getRuntimeConfigSnapshot.mockReset();
     mocks.getRuntimeConfigSnapshot.mockReturnValue(null);
     mocks.readConfigFileSnapshot.mockReset();
@@ -243,7 +243,7 @@ describe("registerPluginCliCommands", () => {
   it("skips plugin CLI registrars when commands already exist", async () => {
     const program = createProgram("memory");
 
-    await registerPluginCliCommands(program, {} as OpenClawConfig);
+    await registerPluginCliCommands(program, {} as AforaConfig);
 
     expect(mocks.memoryRegister).not.toHaveBeenCalled();
     expect(mocks.otherRegister).toHaveBeenCalledTimes(1);
@@ -254,25 +254,25 @@ describe("registerPluginCliCommands", () => {
     // Alias-only root names (e.g. cron|automations) are owned commands too.
     program.command("mem-core").alias("memory");
 
-    await registerPluginCliCommands(program, {} as OpenClawConfig);
+    await registerPluginCliCommands(program, {} as AforaConfig);
 
     expect(mocks.memoryRegister).not.toHaveBeenCalled();
     expect(mocks.otherRegister).toHaveBeenCalledTimes(1);
   });
 
   it("forwards an explicit env to plugin loading", async () => {
-    const env = { OPENCLAW_HOME: "/srv/openclaw-home" } as NodeJS.ProcessEnv;
+    const env = { AFORA_HOME: "/srv/afora-home" } as NodeJS.ProcessEnv;
 
-    await registerPluginCliCommands(createProgram(), {} as OpenClawConfig, env);
+    await registerPluginCliCommands(createProgram(), {} as AforaConfig, env);
 
-    const loadOptions = getMockCallObject(mocks.loadOpenClawPlugins);
+    const loadOptions = getMockCallObject(mocks.loadAforaPlugins);
     expect(loadOptions.env).toBe(env);
   });
 
   it("injects gateway-backed node runtime into plugin CLI commands", async () => {
-    await registerPluginCliCommands(createProgram(), {} as OpenClawConfig);
+    await registerPluginCliCommands(createProgram(), {} as AforaConfig);
 
-    const loadOptions = getMockCallObject(mocks.loadOpenClawPlugins) as {
+    const loadOptions = getMockCallObject(mocks.loadAforaPlugins) as {
       runtimeOptions?: { nodes?: { list?: unknown; invoke?: unknown } };
     };
     expect(typeof loadOptions.runtimeOptions?.nodes?.list).toBe("function");
@@ -282,35 +282,35 @@ describe("registerPluginCliCommands", () => {
   it("reuses loaded plugin CLI entries on repeat calls for the same program", async () => {
     const program = createProgram();
 
-    await registerPluginCliCommands(program, {} as OpenClawConfig);
-    await registerPluginCliCommands(program, {} as OpenClawConfig);
+    await registerPluginCliCommands(program, {} as AforaConfig);
+    await registerPluginCliCommands(program, {} as AforaConfig);
 
-    expect(mocks.loadOpenClawPlugins).toHaveBeenCalledTimes(1);
+    expect(mocks.loadAforaPlugins).toHaveBeenCalledTimes(1);
   });
 
   it("reloads plugin CLI entries when the requested primary command changes", async () => {
     const program = createProgram();
 
-    await registerPluginCliCommands(program, {} as OpenClawConfig, undefined, undefined, {
+    await registerPluginCliCommands(program, {} as AforaConfig, undefined, undefined, {
       primary: "memory",
     });
-    await registerPluginCliCommands(program, {} as OpenClawConfig);
+    await registerPluginCliCommands(program, {} as AforaConfig);
 
-    expect(mocks.loadOpenClawPlugins).toHaveBeenCalledTimes(2);
+    expect(mocks.loadAforaPlugins).toHaveBeenCalledTimes(2);
   });
 
   it("reloads plugin CLI entries when config or environment identity changes", async () => {
     const program = createProgram();
-    const configA = {} as OpenClawConfig;
-    const configB = { plugins: {} } as OpenClawConfig;
-    const envA = { OPENCLAW_HOME: "/tmp/a" } as NodeJS.ProcessEnv;
-    const envB = { OPENCLAW_HOME: "/tmp/b" } as NodeJS.ProcessEnv;
+    const configA = {} as AforaConfig;
+    const configB = { plugins: {} } as AforaConfig;
+    const envA = { AFORA_HOME: "/tmp/a" } as NodeJS.ProcessEnv;
+    const envB = { AFORA_HOME: "/tmp/b" } as NodeJS.ProcessEnv;
 
     await registerPluginCliCommands(program, configA, envA);
     await registerPluginCliCommands(program, configA, envB);
     await registerPluginCliCommands(program, configB, envB);
 
-    expect(mocks.loadOpenClawPlugins).toHaveBeenCalledTimes(3);
+    expect(mocks.loadAforaPlugins).toHaveBeenCalledTimes(3);
   });
 
   it("loads plugin CLI commands from the auto-enabled config snapshot", async () => {
@@ -358,7 +358,7 @@ describe("registerPluginCliCommands", () => {
     const help = await renderRootHelpText({ config: rawConfig });
     expect(help).toContain("matrix *");
     expect(help).toContain("Matrix channel utilities");
-    expect(mocks.loadOpenClawPluginCliRegistry).not.toHaveBeenCalled();
+    expect(mocks.loadAforaPluginCliRegistry).not.toHaveBeenCalled();
     expect(mocks.applyPluginAutoEnable).toHaveBeenCalledWith(
       expect.objectContaining({ config: rawConfig }),
     );
@@ -369,7 +369,7 @@ describe("registerPluginCliCommands", () => {
     const stderrWrite = vi
       .spyOn(process.stderr, "write")
       .mockImplementation((() => true) as unknown as typeof process.stderr.write);
-    mocks.loadOpenClawPluginCliRegistry.mockImplementationOnce((options: { logger?: unknown }) => {
+    mocks.loadAforaPluginCliRegistry.mockImplementationOnce((options: { logger?: unknown }) => {
       const logger = options.logger as { error?: (message: string) => void };
       logger.error?.("[plugins] stale failed to load from /tmp/stale: boom");
       throw new Error("boom");
@@ -379,7 +379,7 @@ describe("registerPluginCliCommands", () => {
     await expect(
       getPluginCliCommandDescriptors({
         plugins: { entries: { "legacy-cli": { enabled: true } } },
-      } as OpenClawConfig),
+      } as AforaConfig),
     ).resolves.toEqual([]);
 
     expect(stderrWrite).not.toHaveBeenCalled();
@@ -390,9 +390,9 @@ describe("registerPluginCliCommands", () => {
       plugins: {
         entries: { "legacy-cli": { enabled: true } },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     mocks.resolvePluginMetadataSnapshot.mockReturnValue(createLegacyExternalCliMetadataSnapshot());
-    mocks.loadOpenClawPluginCliRegistry.mockResolvedValue({
+    mocks.loadAforaPluginCliRegistry.mockResolvedValue({
       cliRegistrars: [
         {
           pluginId: "legacy-cli",
@@ -418,7 +418,7 @@ describe("registerPluginCliCommands", () => {
         hasSubcommands: true,
       },
     ]);
-    expect(getMockCallObject(mocks.loadOpenClawPluginCliRegistry).onlyPluginIds).toEqual([
+    expect(getMockCallObject(mocks.loadAforaPluginCliRegistry).onlyPluginIds).toEqual([
       "legacy-cli",
     ]);
   });
@@ -432,7 +432,7 @@ describe("registerPluginCliCommands", () => {
         demo: ["demo configured"],
       },
     });
-    mocks.loadOpenClawPlugins.mockReturnValue(
+    mocks.loadAforaPlugins.mockReturnValue(
       createCliRegistry({
         memoryCommands: ["legacy-channel"],
         memoryDescriptors: [
@@ -449,7 +449,7 @@ describe("registerPluginCliCommands", () => {
       mode: "lazy",
     });
 
-    const loadOptions = getMockCallObject(mocks.loadOpenClawPlugins);
+    const loadOptions = getMockCallObject(mocks.loadAforaPlugins);
     expect(loadOptions.config).toBe(autoEnabledConfig);
     expect(loadOptions.activationSourceConfig).toBe(rawConfig);
     expect(loadOptions.autoEnabledReasons).toEqual({
@@ -457,14 +457,14 @@ describe("registerPluginCliCommands", () => {
     });
     expect(loadOptions.cache).toBe(false);
     expect(loadOptions.channelPluginLoadIntent).toBe("full");
-    expect(mocks.loadOpenClawPluginCliRegistry).not.toHaveBeenCalled();
+    expect(mocks.loadAforaPluginCliRegistry).not.toHaveBeenCalled();
   });
 
   it("lazy-registers descriptor-backed plugin commands on first invocation", async () => {
     const program = createProgram();
     program.exitOverride();
 
-    await registerPluginCliCommands(program, {} as OpenClawConfig, undefined, undefined, {
+    await registerPluginCliCommands(program, {} as AforaConfig, undefined, undefined, {
       mode: "lazy",
     });
 
@@ -479,7 +479,7 @@ describe("registerPluginCliCommands", () => {
   });
 
   it("falls back to eager registration when descriptors do not cover every command root", async () => {
-    mocks.loadOpenClawPlugins.mockReturnValue(
+    mocks.loadAforaPlugins.mockReturnValue(
       createCliRegistry({
         memoryCommands: ["memory", "memory-admin"],
         memoryDescriptors: [
@@ -496,7 +496,7 @@ describe("registerPluginCliCommands", () => {
       program.command("memory-admin");
     });
 
-    await registerPluginCliCommands(createProgram(), {} as OpenClawConfig, undefined, undefined, {
+    await registerPluginCliCommands(createProgram(), {} as AforaConfig, undefined, undefined, {
       mode: "lazy",
     });
 
@@ -508,7 +508,7 @@ describe("registerPluginCliCommands", () => {
     program.exitOverride();
     mocks.resolveManifestActivationPluginIds.mockReturnValue(["memory-core"]);
 
-    await registerPluginCliCommands(program, {} as OpenClawConfig, undefined, undefined, {
+    await registerPluginCliCommands(program, {} as AforaConfig, undefined, undefined, {
       mode: "lazy",
       primary: "memory",
     });
@@ -516,7 +516,7 @@ describe("registerPluginCliCommands", () => {
     expect(
       program.commands.reduce((count, command) => count + (command.name() === "memory" ? 1 : 0), 0),
     ).toBe(1);
-    const loadOptions = getMockCallObject(mocks.loadOpenClawPlugins);
+    const loadOptions = getMockCallObject(mocks.loadAforaPlugins);
     expect(loadOptions.onlyPluginIds).toEqual(["memory-core"]);
 
     await program.parseAsync(["memory", "list"], { from: "user" });
@@ -529,7 +529,7 @@ describe("registerPluginCliCommands", () => {
     const program = createProgram("nodes");
     program.exitOverride();
     mocks.resolveManifestActivationPluginIds.mockReturnValue(["memory-core"]);
-    mocks.loadOpenClawPlugins.mockReturnValue(
+    mocks.loadAforaPlugins.mockReturnValue(
       createCliRegistry({
         memoryParentPath: ["nodes"],
         memoryCommands: ["canvas"],
@@ -547,7 +547,7 @@ describe("registerPluginCliCommands", () => {
       canvas.command("snapshot").action(mocks.memoryListAction);
     });
 
-    await registerPluginCliCommands(program, {} as OpenClawConfig, undefined, undefined, {
+    await registerPluginCliCommands(program, {} as AforaConfig, undefined, undefined, {
       mode: "lazy",
       primary: "nodes",
     });
@@ -566,13 +566,13 @@ describe("registerPluginCliCommands", () => {
     const program = createProgram();
     program.exitOverride();
 
-    await registerPluginCliCommands(program, {} as OpenClawConfig, undefined, undefined, {
+    await registerPluginCliCommands(program, {} as AforaConfig, undefined, undefined, {
       mode: "lazy",
       primary: "memory",
     });
 
-    expect(mocks.loadOpenClawPluginCliRegistry).toHaveBeenCalled();
-    const loadOptions = getMockCallObject(mocks.loadOpenClawPlugins);
+    expect(mocks.loadAforaPluginCliRegistry).toHaveBeenCalled();
+    const loadOptions = getMockCallObject(mocks.loadAforaPlugins);
     expect(loadOptions.onlyPluginIds).toEqual(["memory-core"]);
   });
 
@@ -588,17 +588,17 @@ describe("registerPluginCliCommands", () => {
         },
       ],
     });
-    mocks.loadOpenClawPluginCliRegistry.mockResolvedValue(nestedRegistry);
-    mocks.loadOpenClawPlugins.mockReturnValue(nestedRegistry);
+    mocks.loadAforaPluginCliRegistry.mockResolvedValue(nestedRegistry);
+    mocks.loadAforaPlugins.mockReturnValue(nestedRegistry);
     const program = createProgram("nodes");
     program.exitOverride();
 
-    await registerPluginCliCommands(program, {} as OpenClawConfig, undefined, undefined, {
+    await registerPluginCliCommands(program, {} as AforaConfig, undefined, undefined, {
       mode: "lazy",
       primary: "nodes",
     });
 
-    const loadOptions = getMockCallObject(mocks.loadOpenClawPlugins);
+    const loadOptions = getMockCallObject(mocks.loadAforaPlugins);
     expect(loadOptions.onlyPluginIds).toEqual(["memory-core"]);
   });
 
@@ -606,18 +606,18 @@ describe("registerPluginCliCommands", () => {
     const program = createProgram();
     program.exitOverride();
 
-    await registerPluginCliCommands(program, {} as OpenClawConfig, undefined, undefined, {
+    await registerPluginCliCommands(program, {} as AforaConfig, undefined, undefined, {
       mode: "lazy",
       primary: "missing-command",
     });
 
-    expect(mocks.loadOpenClawPluginCliRegistry).toHaveBeenCalled();
-    expect(mocks.loadOpenClawPlugins).not.toHaveBeenCalled();
+    expect(mocks.loadAforaPluginCliRegistry).toHaveBeenCalled();
+    expect(mocks.loadAforaPlugins).not.toHaveBeenCalled();
     expect(program.commands.map((command) => command.name())).not.toContain("missing-command");
   });
 
   it("reuses the validated cold snapshot runtime config without a second config read", async () => {
-    const snapshotConfig = { plugins: { enabled: true } } as OpenClawConfig;
+    const snapshotConfig = { plugins: { enabled: true } } as AforaConfig;
     mocks.readConfigFileSnapshot.mockResolvedValueOnce({
       valid: true,
       config: {},
@@ -630,7 +630,7 @@ describe("registerPluginCliCommands", () => {
   });
 
   it("skips unrelated plugin validation for cold plugin-owned CLI commands", async () => {
-    const snapshotConfig = { plugins: { enabled: true } } as OpenClawConfig;
+    const snapshotConfig = { plugins: { enabled: true } } as AforaConfig;
     mocks.readConfigFileSnapshot.mockResolvedValueOnce({
       valid: true,
       config: {},
@@ -644,8 +644,8 @@ describe("registerPluginCliCommands", () => {
   });
 
   it("preserves an already-active runtime config snapshot", async () => {
-    const snapshotConfig = { plugins: { enabled: true } } as OpenClawConfig;
-    const activeConfig = { plugins: { enabled: false } } as OpenClawConfig;
+    const snapshotConfig = { plugins: { enabled: true } } as AforaConfig;
+    const activeConfig = { plugins: { enabled: false } } as AforaConfig;
     mocks.readConfigFileSnapshot.mockResolvedValueOnce({
       valid: true,
       config: {},
@@ -676,6 +676,6 @@ describe("registerPluginCliCommands", () => {
 
     await expect(registerPluginCliCommandsFromValidatedConfig(createProgram())).resolves.toBeNull();
     expect(mocks.getRuntimeConfigSnapshot).not.toHaveBeenCalled();
-    expect(mocks.loadOpenClawPlugins).not.toHaveBeenCalled();
+    expect(mocks.loadAforaPlugins).not.toHaveBeenCalled();
   });
 });

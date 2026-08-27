@@ -5,11 +5,11 @@ import {
   asPositiveSafeInteger,
   isFutureDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import { safeEqualSecret } from "../security/secret-equal.js";
 
 /** Path marker used to scope plugin-hosted node URLs with one-time capabilities. */
-export const PLUGIN_NODE_CAPABILITY_PATH_PREFIX = "/__openclaw__/cap";
+export const PLUGIN_NODE_CAPABILITY_PATH_PREFIX = "/__afora__/cap";
 const PLUGIN_NODE_CAPABILITY_QUERY_PARAM = "oc_cap";
 /** Default lifetime for plugin-node capability tokens. */
 export const DEFAULT_PLUGIN_NODE_CAPABILITY_TTL_MS = 10 * 60_000;

@@ -1,20 +1,20 @@
-import { resolveAgentDir } from "openclaw/plugin-sdk/agent-runtime";
+import { resolveAgentDir } from "afora-agent/plugin-sdk/agent-runtime";
 import {
   isProviderAuthProfileConfigured,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/provider-auth";
+  type AforaConfig,
+} from "afora-agent/plugin-sdk/provider-auth";
 import type {
   RealtimeVoiceBridgeCreateRequest,
   RealtimeVoiceProviderConfig,
-} from "openclaw/plugin-sdk/realtime-voice";
-import { normalizeResolvedSecretInputString } from "openclaw/plugin-sdk/secret-input";
+} from "afora-agent/plugin-sdk/realtime-voice";
+import { normalizeResolvedSecretInputString } from "afora-agent/plugin-sdk/secret-input";
 import {
   asFiniteNumberInRange,
   asOptionalObjectRecord as readXaiObjectRecord,
   asSafeIntegerInRange,
   normalizeOptionalString,
   parseBooleanValue,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { XAI_BASE_URL } from "./model-definitions.js";
 
 type XaiRealtimeVoice = "eve" | "ara" | "rex" | "sal" | "leo";
@@ -237,7 +237,7 @@ export function toXaiRealtimeWsUrl(
 
 export function hasXaiRealtimeApiKeyInput(
   configApiKey: string | undefined,
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
   agentId?: string,
 ): boolean {
   if (normalizeOptionalString(configApiKey) || normalizeOptionalString(process.env.XAI_API_KEY)) {

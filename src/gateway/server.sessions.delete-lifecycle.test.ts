@@ -18,7 +18,7 @@ import {
   beginSessionWorkAdmission,
   runExclusiveSessionLifecycleMutation,
 } from "../sessions/session-lifecycle-admission.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import type { SessionMutationAuthorization } from "./server-methods/shared-types.js";
 import { embeddedRunMock, rpcReq, writeSessionStore } from "./test-helpers.js";
 import {
@@ -64,7 +64,7 @@ const {
 
 afterEach(() => {
   sessionArchiveMaterializationHook.afterMaterialize = undefined;
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 function expectObject(value: unknown) {

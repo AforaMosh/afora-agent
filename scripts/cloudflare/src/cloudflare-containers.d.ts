@@ -1,5 +1,5 @@
 // Keep this deployment template type-checkable without adding Cloudflare packages
-// to the OpenClaw workspace. The isolated package.json supplies the runtime module.
+// to the Afora workspace. The isolated package.json supplies the runtime module.
 declare module "@cloudflare/containers" {
   export class Container<Env = unknown> {
     constructor(ctx: unknown, env: Env);

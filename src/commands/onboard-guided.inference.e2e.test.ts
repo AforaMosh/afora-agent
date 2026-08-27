@@ -35,9 +35,9 @@ describe("guided onboarding inference composition", () => {
     { timeout: 300_000 },
     async () => {
       const env = captureFullEnv();
-      const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-guided-inference-e2e-"));
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-guided-inference-e2e-"));
       const workspace = path.join(root, "workspace");
-      const configPath = path.join(root, "openclaw.json");
+      const configPath = path.join(root, "afora.json");
       const mockOpenAi = await startMockOpenAiServer();
       cleanupTasks.push(async () => {
         env.restore();
@@ -52,8 +52,8 @@ describe("guided onboarding inference composition", () => {
       setTestEnvValue("USERPROFILE", root);
       setTestEnvValue("CODEX_HOME", path.join(root, "codex"));
       setTestEnvValue("CLAUDE_CONFIG_DIR", path.join(root, "claude"));
-      setTestEnvValue("OPENCLAW_STATE_DIR", root);
-      setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
+      setTestEnvValue("AFORA_STATE_DIR", root);
+      setTestEnvValue("AFORA_CONFIG_PATH", configPath);
       setTestEnvValue("OPENAI_API_KEY", "test-openai-key");
       setTestEnvValue("PATH", path.dirname(process.execPath));
 
@@ -68,7 +68,7 @@ describe("guided onboarding inference composition", () => {
               workspace,
               skipBootstrap: true,
               skills: [],
-              models: { "openai/gpt-5.6": { agentRuntime: { id: "openclaw" } } },
+              models: { "openai/gpt-5.6": { agentRuntime: { id: "afora" } } },
             },
           },
           models: {

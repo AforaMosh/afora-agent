@@ -7,23 +7,23 @@ import { resolveGatewayNativeServiceIdentityConflict } from "../daemon/constants
 import { resolveHomeRelativePath, resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { parseTcpPort } from "../infra/tcp-port.js";
 import { isFastTestRuntimeEnv } from "../infra/test-runtime-env.js";
-import type { OpenClawConfig } from "./types.js";
+import type { AforaConfig } from "./types.js";
 
 /**
- * Nix mode detection: When OPENCLAW_NIX_MODE=1, the gateway is running under Nix.
+ * Nix mode detection: When AFORA_NIX_MODE=1, the gateway is running under Nix.
  * In this mode:
  * - No auto-install flows should be attempted
  * - Missing dependencies should produce actionable Nix-specific error messages
  * - Config is managed externally (read-only from Nix perspective)
  */
 export function resolveIsNixMode(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env.OPENCLAW_NIX_MODE === "1";
+  return env.AFORA_NIX_MODE === "1";
 }
 
 export let isNixMode = resolveIsNixMode();
 
 // Support the legacy pre-rebrand state dirs. Live tenants still have
-// ~/.openclaw on disk; resolveStateDir migrates it to ~/.afora once.
+// ~/.afora on disk; resolveStateDir migrates it to ~/.afora once.
 const LEGACY_STATE_DIRNAMES = [".openclaw", ".clawdbot"] as const; // afora-compat: legacy dir names
 const MIGRATABLE_STATE_DIRNAME = ".openclaw"; // afora-compat: only this one auto-migrates
 const MIGRATED_MARKER = ".migrated-to-afora";
@@ -44,7 +44,7 @@ const MIGRATED_BASENAMES: ReadonlyArray<[string, string]> = [
 
 /** True when the root CLI selected a non-default isolated profile. */
 export function isNamedProfile(env: NodeJS.ProcessEnv = process.env): boolean {
-  const profile = env.OPENCLAW_PROFILE?.trim();
+  const profile = env.AFORA_PROFILE?.trim();
   return Boolean(profile && profile.toLowerCase() !== "default");
 }
 
@@ -56,7 +56,7 @@ function resolveSystemAccountHomeDir(): string {
   return os.userInfo().homedir;
 }
 
-/** Build a homedir thunk that respects OPENCLAW_HOME for the given env. */
+/** Build a homedir thunk that respects AFORA_HOME for the given env. */
 function envHomedir(env: NodeJS.ProcessEnv): () => string {
   return () => resolveRequiredHomeDir(env, os.homedir);
 }
@@ -79,15 +79,15 @@ export function resolveNewStateDir(homedir: () => string = resolveDefaultHomeDir
 
 /**
  * State directory for mutable data (sessions, logs, caches).
- * Can be overridden via OPENCLAW_STATE_DIR.
- * Default: ~/.openclaw
+ * Can be overridden via AFORA_STATE_DIR.
+ * Default: ~/.afora
  */
 export function resolveStateDir(
   env: NodeJS.ProcessEnv = process.env,
   homedir: () => string = envHomedir(env),
 ): string {
   const effectiveHomedir = () => resolveRequiredHomeDir(env, homedir);
-  const override = env.OPENCLAW_STATE_DIR?.trim();
+  const override = env.AFORA_STATE_DIR?.trim();
   if (override) {
     return resolveUserPath(override, env, effectiveHomedir);
   }
@@ -171,7 +171,7 @@ export function isDefaultStateDir(
   env: NodeJS.ProcessEnv = process.env,
   homedir: () => string = envHomedir(env),
 ): boolean {
-  const override = env.OPENCLAW_STATE_DIR?.trim();
+  const override = env.AFORA_STATE_DIR?.trim();
   if (!override) {
     // Preserve the default install path, including automatic legacy-state discovery.
     return true;
@@ -190,7 +190,7 @@ export function resolveNativeServiceProfileConflict(
   if (platform !== "darwin" && platform !== "win32") {
     return null;
   }
-  const profile = env.OPENCLAW_PROFILE?.trim();
+  const profile = env.AFORA_PROFILE?.trim();
   if (!profile || profile.toLowerCase() === "default") {
     return null;
   }
@@ -216,8 +216,8 @@ export function isDefaultInstallIdentity(
 ): boolean {
   const accountHome = resolveRequiredHomeDir({}, homedir);
   // Profiles have distinct host-service names; relocated homes do not. Keep
-  // OPENCLAW_HOME isolated so an alternate state tree cannot adopt that service.
-  if (env.OPENCLAW_HOME?.trim()) {
+  // AFORA_HOME isolated so an alternate state tree cannot adopt that service.
+  if (env.AFORA_HOME?.trim()) {
     return false;
   }
   if (
@@ -234,7 +234,7 @@ export function isDefaultInstallIdentity(
   }
   let canonicalStateDir: string;
   try {
-    canonicalStateDir = resolveProfileStateDir(env.OPENCLAW_PROFILE ?? "default", env, homedir);
+    canonicalStateDir = resolveProfileStateDir(env.AFORA_PROFILE ?? "default", env, homedir);
   } catch {
     // Environment profiles can bypass root CLI parsing. Reject invalid names
     // before path construction so separators cannot authorize a host service.
@@ -248,7 +248,7 @@ export function isDefaultInstallIdentity(
   }
   // Default installs historically allow implicit legacy config discovery.
   // Named profiles must resolve their own config so they cannot inherit the default profile.
-  if (!isNamedProfile(env) && !env.OPENCLAW_CONFIG_PATH?.trim()) {
+  if (!isNamedProfile(env) && !env.AFORA_CONFIG_PATH?.trim()) {
     return true;
   }
   return (
@@ -268,9 +268,9 @@ export function allowsProcessHomeSessionScan(
 
 export function normalizeStateDirEnv(env: NodeJS.ProcessEnv = process.env): void {
   const effectiveHomedir = () => resolveRequiredHomeDir(env, envHomedir(env));
-  const openclawOverride = env.OPENCLAW_STATE_DIR?.trim();
-  if (openclawOverride) {
-    env.OPENCLAW_STATE_DIR = resolveUserPath(openclawOverride, env, effectiveHomedir);
+  const aforaOverride = env.AFORA_STATE_DIR?.trim();
+  if (aforaOverride) {
+    env.AFORA_STATE_DIR = resolveUserPath(aforaOverride, env, effectiveHomedir);
   }
 }
 
@@ -284,7 +284,7 @@ function resolveUserPath(
 
 /**
  * Optional allowlist of directories that `$include` directives may resolve
- * outside the config directory. Set via `OPENCLAW_INCLUDE_ROOTS` as a
+ * outside the config directory. Set via `AFORA_INCLUDE_ROOTS` as a
  * platform-delimited path list (`:` on POSIX, `;` on Windows).
  *
  * Each entry is tilde-expanded and resolved to an absolute path. Entries that
@@ -292,13 +292,13 @@ function resolveUserPath(
  *
  * Returns an empty array when the var is unset or contains no usable entries,
  * preserving the historical behavior where `$include` is confined to the
- * directory containing `openclaw.json`.
+ * directory containing `afora.json`.
  */
 export function resolveIncludeRoots(
   env: NodeJS.ProcessEnv = process.env,
   homedir: () => string = envHomedir(env),
 ): string[] {
-  const raw = env.OPENCLAW_INCLUDE_ROOTS?.trim();
+  const raw = env.AFORA_INCLUDE_ROOTS?.trim();
   if (!raw) {
     return [];
   }
@@ -326,14 +326,14 @@ export let STATE_DIR = resolveStateDir();
 
 /**
  * Config file path (JSON or JSON5).
- * Can be overridden via OPENCLAW_CONFIG_PATH.
- * Default: ~/.openclaw/openclaw.json (or $OPENCLAW_STATE_DIR/openclaw.json)
+ * Can be overridden via AFORA_CONFIG_PATH.
+ * Default: ~/.AforaMosh/afora-agent.json (or $AFORA_STATE_DIR/afora.json)
  */
 export function resolveCanonicalConfigPath(
   env: NodeJS.ProcessEnv = process.env,
   stateDir: string = resolveStateDir(env, envHomedir(env)),
 ): string {
-  const override = env.OPENCLAW_CONFIG_PATH?.trim();
+  const override = env.AFORA_CONFIG_PATH?.trim();
   if (override) {
     return resolveUserPath(override, env, envHomedir(env));
   }
@@ -373,14 +373,14 @@ export function resolveConfigPath(
   stateDir: string = resolveStateDir(env, envHomedir(env)),
   homedir: () => string = envHomedir(env),
 ): string {
-  const override = env.OPENCLAW_CONFIG_PATH?.trim();
+  const override = env.AFORA_CONFIG_PATH?.trim();
   if (override) {
     return resolveUserPath(override, env, homedir);
   }
   if (isFastTestRuntimeEnv(env)) {
     return path.join(stateDir, CONFIG_FILENAME);
   }
-  const stateOverride = env.OPENCLAW_STATE_DIR?.trim();
+  const stateOverride = env.AFORA_STATE_DIR?.trim();
   const candidates = [
     path.join(stateDir, CONFIG_FILENAME),
     ...LEGACY_CONFIG_FILENAMES.map((name) => path.join(stateDir, name)),
@@ -433,15 +433,15 @@ export function resolveDefaultConfigCandidates(
   homedir: () => string = envHomedir(env),
 ): string[] {
   const effectiveHomedir = () => resolveRequiredHomeDir(env, homedir);
-  const explicit = env.OPENCLAW_CONFIG_PATH?.trim();
+  const explicit = env.AFORA_CONFIG_PATH?.trim();
   if (explicit) {
     return [resolveUserPath(explicit, env, effectiveHomedir)];
   }
 
   const candidates: string[] = [];
-  const openclawStateDir = env.OPENCLAW_STATE_DIR?.trim();
-  if (openclawStateDir) {
-    const resolved = resolveUserPath(openclawStateDir, env, effectiveHomedir);
+  const aforaStateDir = env.AFORA_STATE_DIR?.trim();
+  if (aforaStateDir) {
+    const resolved = resolveUserPath(aforaStateDir, env, effectiveHomedir);
     candidates.push(path.join(resolved, CONFIG_FILENAME));
     candidates.push(...LEGACY_CONFIG_FILENAMES.map((name) => path.join(resolved, name)));
   }
@@ -458,13 +458,13 @@ export const DEFAULT_GATEWAY_PORT = 18789;
 
 /**
  * Gateway lock directory inside the selected state tree.
- * Default: $OPENCLAW_STATE_DIR/tmp/openclaw-<uid> (uid suffix when available).
+ * Default: $AFORA_STATE_DIR/tmp/afora-<uid> (uid suffix when available).
  */
 export function resolveGatewayLockDir(
   stateDir: string = resolveStateDir(),
   uid: number | undefined = typeof process.getuid === "function" ? process.getuid() : undefined,
 ): string {
-  const suffix = uid != null ? `openclaw-${uid}` : "openclaw";
+  const suffix = uid != null ? `afora-${uid}` : "afora";
   // Clean break: older binaries still use process temp and do not exclude a
   // state-local binary during a mixed-version upgrade.
   return path.join(normalizePathForComparison(stateDir), "tmp", suffix);
@@ -484,7 +484,7 @@ export function resolveOAuthDir(
   env: NodeJS.ProcessEnv = process.env,
   stateDir: string = resolveStateDir(env, envHomedir(env)),
 ): string {
-  const override = env.OPENCLAW_OAUTH_DIR?.trim();
+  const override = env.AFORA_OAUTH_DIR?.trim();
   if (override) {
     return resolveUserPath(override, env, envHomedir(env));
   }
@@ -520,10 +520,10 @@ function parseGatewayPortEnvValue(raw: string | undefined): number | null {
 }
 
 export function resolveGatewayPort(
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
   env: NodeJS.ProcessEnv = process.env,
 ): number {
-  const envRaw = env.OPENCLAW_GATEWAY_PORT?.trim();
+  const envRaw = env.AFORA_GATEWAY_PORT?.trim();
   const envPort = parseGatewayPortEnvValue(envRaw);
   if (envPort !== null) {
     return envPort;
@@ -534,12 +534,12 @@ export function resolveGatewayPort(
       return configPort;
     }
   }
-  const profile = normalizeProfileName(env.OPENCLAW_PROFILE);
+  const profile = normalizeProfileName(env.AFORA_PROFILE);
   if (!profile) {
     return DEFAULT_GATEWAY_PORT;
   }
   // Keep byte-for-byte aligned with AppProfile.defaultGatewayPort in
-  // apps/macos/Sources/OpenClaw/AppProfile.swift so both surfaces connect to the same Gateway.
+  // apps/macos/Sources/Afora/AppProfile.swift so both surfaces connect to the same Gateway.
   let hash = 2_166_136_261;
   for (const byte of Buffer.from(profile, "utf8")) {
     hash = Math.imul(hash ^ byte, 16_777_619) >>> 0;

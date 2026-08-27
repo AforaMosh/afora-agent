@@ -13,7 +13,7 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("SessionManager stale-parent rebase", () => {
   it("rebases a stale active append onto the out-of-band transcript tail", async () => {
-    const dir = tempDirs.make("openclaw-session-manager-");
+    const dir = tempDirs.make("afora-session-manager-");
     const target = {
       agentId: "main",
       sessionId: "stale-active-parent",
@@ -63,7 +63,7 @@ describe("SessionManager stale-parent rebase", () => {
   });
 
   it("preserves a deliberate manager branch from an ancestor", async () => {
-    const dir = tempDirs.make("openclaw-session-manager-");
+    const dir = tempDirs.make("afora-session-manager-");
     const target = {
       agentId: "main",
       sessionId: "deliberate-manager-branch",
@@ -94,7 +94,7 @@ describe("SessionManager stale-parent rebase", () => {
   });
 
   it("honors an explicit active parent when the tail is not its descendant", async () => {
-    const dir = tempDirs.make("openclaw-session-manager-");
+    const dir = tempDirs.make("afora-session-manager-");
     const target = {
       agentId: "main",
       sessionId: "unrelated-explicit-parent",

@@ -97,7 +97,7 @@ describe("buildCompactAnnounceStatsLine", () => {
         totalTokens: 999_999,
       })) as ReadSessionEntry,
       resolveAgentIdFromSessionKey: (() => "main") as ResolveAgentIdFromSessionKey,
-      resolveSessionStorePathCore: (() => "/tmp/openclaw-session-store") as ResolveStorePath,
+      resolveSessionStorePathCore: (() => "/tmp/afora-session-store") as ResolveStorePath,
     });
 
     await expect(
@@ -211,7 +211,7 @@ describe("readSubagentOutput", () => {
         {
           role: "system",
           content: [{ type: "text", text: "Compaction" }],
-          __openclaw: { kind: "compaction" },
+          __afora: { kind: "compaction" },
         },
         {
           role: "assistant",
@@ -383,7 +383,7 @@ describe("readSubagentOutput", () => {
           agentId: "main",
           sessionId: "child-session",
           sessionKey: "agent:main:subagent:child",
-          storePath: "/tmp/openclaw/agents/main/sessions/sessions.json",
+          storePath: "/tmp/afora/agents/main/sessions/sessions.json",
         },
       }),
     ).resolves.toBe("fresh recovered output");
@@ -392,7 +392,7 @@ describe("readSubagentOutput", () => {
         agentId: "main",
         sessionId: "child-session",
         sessionKey: "agent:main:subagent:child",
-        storePath: "/tmp/openclaw/agents/main/sessions/sessions.json",
+        storePath: "/tmp/afora/agents/main/sessions/sessions.json",
       },
       { mode: "recent", maxMessages: 100, maxBytes: 1024 * 1024 },
     );
@@ -416,7 +416,7 @@ describe("readSubagentOutput", () => {
           agentId: "main",
           sessionId: "child-session",
           sessionKey: "agent:main:subagent:child",
-          storePath: "/tmp/openclaw/agents/main/sessions/sessions.json",
+          storePath: "/tmp/afora/agents/main/sessions/sessions.json",
         },
       }),
     ).resolves.toBeUndefined();

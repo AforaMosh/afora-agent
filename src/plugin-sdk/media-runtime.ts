@@ -4,16 +4,16 @@
  */
 
 export { isVoiceCompatibleAudio, isVoiceMessageCompatibleAudio } from "../media/audio.js";
-export { canonicalizeBase64, estimateBase64DecodedBytes } from "@openclaw/media-core/base64";
-export { parseMediaContentLength } from "@openclaw/media-core/content-length";
-export { MAX_AUDIO_BYTES } from "@openclaw/media-core/constants";
+export { canonicalizeBase64, estimateBase64DecodedBytes } from "@afora/media-core/base64";
+export { parseMediaContentLength } from "@afora/media-core/content-length";
+export { MAX_AUDIO_BYTES } from "@afora/media-core/constants";
 export { readRemoteMediaBuffer, saveResponseMedia, MediaFetchError } from "../media/fetch.js";
 export type { FetchLike, SavedRemoteMedia } from "../media/fetch.js";
 export { MEDIA_FFMPEG_MAX_AUDIO_DURATION_SECS } from "../media/ffmpeg-limits.js";
 export {
   isInboundPathAllowed,
   normalizeInboundPathRoots,
-} from "@openclaw/media-core/inbound-path-policy";
+} from "@afora/media-core/inbound-path-policy";
 
 export {
   IMAGE_REDUCE_QUALITY_STEPS,
@@ -34,7 +34,7 @@ export {
   extensionForMime,
   getFileExtension,
   isGifMedia,
-} from "@openclaw/media-core/mime";
+} from "@afora/media-core/mime";
 export { resolveOutboundAttachmentFromUrl } from "../media/outbound-attachment.js";
 export { encodePngRgba, fillPixel } from "../media/png-encode.ts";
 export { renderQrPngBase64, renderQrPngDataUrl, writeQrPngTempFile } from "../media/qr-image.ts";
@@ -67,10 +67,10 @@ export type { OutboundMediaAccess, OutboundMediaReadFile } from "../media/load-o
 export { fetchRemoteMedia, saveRemoteMedia } from "../media/fetch.js";
 export { getAgentScopedMediaLocalRoots } from "../media/local-roots.js";
 export { getMediaDir, saveMediaBuffer } from "../media/store.js";
-export { kindFromMime } from "@openclaw/media-core/mime";
+export { kindFromMime } from "@afora/media-core/mime";
 export {
   MAX_IMAGE_BYTES,
   maxBytesForKind,
   mediaKindFromMime,
-} from "@openclaw/media-core/constants";
-export type { MediaKind } from "@openclaw/media-core/constants";
+} from "@afora/media-core/constants";
+export type { MediaKind } from "@afora/media-core/constants";

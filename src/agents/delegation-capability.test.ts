@@ -69,7 +69,7 @@ describe("delegation capability", () => {
     { label: "session launch", toolsAllow: ["sessions_spawn"] },
     { label: "session glob", toolsAllow: ["sessions_*"] },
     { label: "session group", toolsAllow: ["group:sessions"] },
-    { label: "OpenClaw delegation", toolsAllow: ["openclaw"] },
+    { label: "Afora delegation", toolsAllow: ["afora"] },
   ])("preserves $label delegation for completion reports", ({ toolsAllow }) => {
     expect(
       resolveDelegationCapability({
@@ -113,7 +113,7 @@ describe("delegation capability", () => {
     const tools = [
       createTool("sessions_spawn"),
       createTool("sessions_send"),
-      createTool("openclaw"),
+      createTool("afora"),
       createTool("llm-task"),
       createTool("codex_session_send"),
       createTool("message"),

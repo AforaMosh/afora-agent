@@ -4,21 +4,21 @@ import {
   sanitizeForPlainText,
   type OutboundDeliveryFormattingOptions,
   type OutboundSendDeps,
-} from "openclaw/plugin-sdk/channel-outbound";
+} from "afora-agent/plugin-sdk/channel-outbound";
 import {
   attachChannelToResult,
   createAttachedChannelResultAdapter,
   type ChannelOutboundAdapter,
-} from "openclaw/plugin-sdk/channel-send-result";
-import { questionGatewayRuntime } from "openclaw/plugin-sdk/question-gateway-runtime";
-import { chunkMarkdownTextWithMode } from "openclaw/plugin-sdk/reply-chunking";
+} from "afora-agent/plugin-sdk/channel-send-result";
+import { questionGatewayRuntime } from "afora-agent/plugin-sdk/question-gateway-runtime";
+import { chunkMarkdownTextWithMode } from "afora-agent/plugin-sdk/reply-chunking";
 import {
   resolveSendableOutboundReplyParts,
   sendPayloadMediaSequenceOrFallback,
-} from "openclaw/plugin-sdk/reply-payload";
-import { isSingleUseReplyToMode } from "openclaw/plugin-sdk/reply-reference";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
-import { sanitizeAssistantVisibleText } from "openclaw/plugin-sdk/text-chunking";
+} from "afora-agent/plugin-sdk/reply-payload";
+import { isSingleUseReplyToMode } from "afora-agent/plugin-sdk/reply-reference";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-runtime";
+import { sanitizeAssistantVisibleText } from "afora-agent/plugin-sdk/text-chunking";
 import { mergeTelegramAccountConfig, resolveDefaultTelegramAccountId } from "./accounts.js";
 import { resolveTelegramInlineButtons, type TelegramInlineButtons } from "./button-types.js";
 import { splitTelegramHtmlChunks } from "./format.js";

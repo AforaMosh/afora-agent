@@ -223,7 +223,7 @@ describe("subagent registry restart recovery", () => {
   it("resumes a collector with transcript context and its output contract", async () => {
     mocks.readSessionMessages.mockResolvedValue([
       { role: "user", content: "latest user direction" },
-      { role: "assistant", content: "I updated openclaw.json" },
+      { role: "assistant", content: "I updated afora.json" },
     ]);
     const entry = run({ collect: true, outputSchema: { type: "object" } });
 

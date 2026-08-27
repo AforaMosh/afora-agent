@@ -1,13 +1,13 @@
-# OpenClaw Volcengine Provider
+# Afora Volcengine Provider
 
-Official OpenClaw provider plugin for Volcengine models, the Volcengine coding
+Official Afora provider plugin for Volcengine models, the Volcengine coding
 plan, and Volcengine Speech text-to-speech.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/volcengine-provider
-openclaw gateway restart
+afora plugins install @afora/volcengine-provider
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/providers/volcengine> for model and speech setup.
+See <https://docs.afora.ai/providers/volcengine> for model and speech setup.

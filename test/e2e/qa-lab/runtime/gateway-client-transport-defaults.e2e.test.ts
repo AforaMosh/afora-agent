@@ -1,6 +1,6 @@
 import { setImmediate as waitForImmediate } from "node:timers/promises";
-import { rawDataToString } from "@openclaw/gateway-client/websocket-data";
-import { PROTOCOL_VERSION } from "@openclaw/gateway-protocol/version";
+import { rawDataToString } from "@afora/gateway-client/websocket-data";
+import { PROTOCOL_VERSION } from "@afora/gateway-protocol/version";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { type RawData, type WebSocket, WebSocketServer } from "ws";
 import {

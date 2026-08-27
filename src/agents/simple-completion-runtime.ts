@@ -1,17 +1,17 @@
-import { supportsOpenAIReasoningEffort } from "@openclaw/ai/internal/openai";
-import { defaultApiRegistry } from "@openclaw/ai/internal/runtime";
-import { prepareModelForSimpleCompletion } from "@openclaw/ai/transports";
+import { supportsOpenAIReasoningEffort } from "@afora/ai/internal/openai";
+import { defaultApiRegistry } from "@afora/ai/internal/runtime";
+import { prepareModelForSimpleCompletion } from "@afora/ai/transports";
 import {
   resolveClaudeOpus5ModelIdentity,
   resolveClaudeSonnet5ModelIdentity,
-} from "@openclaw/llm-core";
+} from "@afora/llm-core";
 /**
  * Simple completion runtime preparation.
  *
  * Resolves agent model selection, auth, runtime policy, and missing-auth errors before simple completions run.
  */
 import type { ThinkLevel } from "../auto-reply/thinking.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { bindModelLlmRuntime, getModelLlmRuntime } from "../llm/model-runtime-binding.js";
 import { completeSimple } from "../llm/stream.js";
@@ -113,7 +113,7 @@ type PreparedSimpleCompletionModelForAgent =
     };
 
 export function resolveSimpleCompletionSelectionForAgent(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   agentDir?: string;
   modelRef?: string;
@@ -171,7 +171,7 @@ export function resolveSimpleCompletionSelectionForAgent(params: {
 }
 
 function resolveSimpleCompletionRuntimeProvider(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   provider: string;
   modelId: string;
@@ -193,7 +193,7 @@ async function setRuntimeApiKeyForCompletion(params: {
   model: Model;
   apiKey: string;
   authMode: ResolvedProviderAuth["mode"];
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   workspaceDir?: string;
   profileId?: string;
 }): Promise<CompletionRuntimeCredential> {
@@ -233,7 +233,7 @@ function hasMissingApiKeyAllowance(params: {
 }
 
 export async function prepareSimpleCompletionModel(params: {
-  cfg: OpenClawConfig | undefined;
+  cfg: AforaConfig | undefined;
   agentId?: string;
   provider: string;
   modelId: string;
@@ -471,7 +471,7 @@ export async function prepareSimpleCompletionModel(params: {
 }
 
 export async function prepareSimpleCompletionModelForAgent(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   agentDir?: string;
   modelRef?: string;
@@ -533,7 +533,7 @@ export async function completeWithPreparedSimpleCompletionModel(params: {
   model: Model;
   auth: ResolvedProviderAuth;
   context: Parameters<typeof completeSimple>[1];
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   options?: SimpleCompletionModelOptions;
 }): Promise<AssistantMessage> {
   const runtime = getModelLlmRuntime(params.model);

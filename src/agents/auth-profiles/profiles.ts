@@ -3,8 +3,8 @@
  * Updates profile order, last-good state, usage stats, and provider profile
  * records through locked or immediate store writes.
  */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { resolveProviderIdForAuth } from "../provider-auth-aliases.js";
 import { normalizeAuthProfileCredential } from "./credential-normalize.js";

@@ -210,7 +210,7 @@ function createIndexSql(
 }
 
 function findUnusedProbeIndexName(db: DatabaseSync, canonicalName: string): string {
-  const prefix = `openclaw_probe_${canonicalName}`;
+  const prefix = `afora_probe_${canonicalName}`;
   for (let suffix = 0; suffix < 100; suffix += 1) {
     const candidate = suffix === 0 ? prefix : `${prefix}_${suffix}`;
     const row = db

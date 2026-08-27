@@ -1,7 +1,7 @@
 // Verifies WhatsApp runtime imports respect plugin boundary rules.
 import fs from "node:fs";
 import path from "node:path";
-import { bundledDistPluginFile } from "openclaw/plugin-sdk/test-fixtures";
+import { bundledDistPluginFile } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it } from "vitest";
 import { stageBundledPluginRuntime } from "../../scripts/stage-bundled-plugin-runtime.mts";
 import type { PluginModuleLoaderCache } from "./plugin-module-loader-cache.js";
@@ -27,14 +27,14 @@ function writeRuntimeFixtureText(rootDir: string, relativePath: string, value: s
 }
 
 function createBundledWhatsAppRuntimeFixture() {
-  const rootDir = makeTrackedTempDir("openclaw-whatsapp-boundary", tempDirs);
+  const rootDir = makeTrackedTempDir("afora-whatsapp-boundary", tempDirs);
   for (const [relativePath, value] of Object.entries({
     "package.json": JSON.stringify(
       {
-        name: "openclaw",
+        name: "afora",
         type: "module",
         bin: {
-          openclaw: "openclaw.mjs",
+          afora: "afora.mjs",
         },
         exports: {
           "./plugin-sdk/core": {
@@ -45,7 +45,7 @@ function createBundledWhatsAppRuntimeFixture() {
       null,
       2,
     ),
-    "openclaw.mjs": "export {};\n",
+    "afora.mjs": "export {};\n",
     "dist/plugin-sdk/core.js": "export {};\n",
     [bundledDistPluginFile("whatsapp", "index.js")]: "export default {};\n",
     [bundledDistPluginFile("whatsapp", "light-runtime-api.js")]:
@@ -53,7 +53,7 @@ function createBundledWhatsAppRuntimeFixture() {
     [bundledDistPluginFile("whatsapp", "runtime-api.js")]:
       'export { registerControllerForTest } from "../../connection-controller-registry.js";\n',
     "dist/connection-controller-registry.js": [
-      'const key = Symbol.for("openclaw.whatsapp.connectionControllerRegistry");',
+      'const key = Symbol.for("afora.whatsapp.connectionControllerRegistry");',
       "const g = globalThis;",
       "if (!g[key]) {",
       "  g[key] = { controllers: new Map() };",
@@ -92,13 +92,13 @@ function createBundledWhatsAppRuntimeFixture() {
 }
 
 function createExternalTypeScriptRuntimePackageFixture() {
-  const rootDir = makeTrackedTempDir("openclaw-external-boundary-ts", tempDirs);
+  const rootDir = makeTrackedTempDir("afora-external-boundary-ts", tempDirs);
   writeRuntimeFixtureText(
     rootDir,
     "package.json",
     JSON.stringify(
       {
-        name: "openclaw-external-ts-runtime",
+        name: "afora-external-ts-runtime",
         type: "module",
       },
       null,
@@ -164,7 +164,7 @@ describe("runtime plugin boundary whatsapp seam", () => {
   });
 
   it("rejects bundled TypeScript runtime modules instead of using the source loader", () => {
-    const rootDir = makeTrackedTempDir("openclaw-bundled-boundary-ts", tempDirs);
+    const rootDir = makeTrackedTempDir("afora-bundled-boundary-ts", tempDirs);
     const modulePath = path.join(rootDir, "runtime-api.ts");
     writeRuntimeFixtureText(rootDir, "runtime-api.ts", "export const ok = true;\n");
     const loaders: PluginModuleLoaderCache = new Map();

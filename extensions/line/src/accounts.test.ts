@@ -2,8 +2,8 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/account-id";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import { DEFAULT_ACCOUNT_ID } from "afora-agent/plugin-sdk/account-id";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   listLineAccountIds,
@@ -16,7 +16,7 @@ describe("LINE accounts", () => {
   const tempDirs: string[] = [];
 
   const createSecretFile = (fileName: string, contents: string) => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-line-account-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-line-account-"));
     tempDirs.push(dir);
     const filePath = path.join(dir, fileName);
     fs.writeFileSync(filePath, contents, "utf8");
@@ -37,7 +37,7 @@ describe("LINE accounts", () => {
 
   describe("resolveLineAccount", () => {
     it("resolves account from config", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         channels: {
           line: {
             enabled: true,
@@ -62,7 +62,7 @@ describe("LINE accounts", () => {
       vi.stubEnv("LINE_CHANNEL_ACCESS_TOKEN", "env-token");
       vi.stubEnv("LINE_CHANNEL_SECRET", "env-secret");
 
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         channels: {
           line: {
             enabled: true,
@@ -78,7 +78,7 @@ describe("LINE accounts", () => {
     });
 
     it("resolves named account", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         channels: {
           line: {
             enabled: true,
@@ -104,7 +104,7 @@ describe("LINE accounts", () => {
     });
 
     it("uses configured defaultAccount when accountId is omitted", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         channels: {
           line: {
             defaultAccount: "business",
@@ -130,7 +130,7 @@ describe("LINE accounts", () => {
     });
 
     it("returns empty token when not configured", () => {
-      const cfg: OpenClawConfig = {};
+      const cfg: AforaConfig = {};
 
       const account = resolveLineAccount({ cfg });
 
@@ -140,7 +140,7 @@ describe("LINE accounts", () => {
     });
 
     it("resolves default account credentials from files", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         channels: {
           line: {
             tokenFile: createSecretFile("token.txt", "file-token\n"),
@@ -157,7 +157,7 @@ describe("LINE accounts", () => {
     });
 
     it("resolves named account credentials from account-level files", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         channels: {
           line: {
             accounts: {
@@ -180,7 +180,7 @@ describe("LINE accounts", () => {
     it.runIf(process.platform !== "win32")(
       "marks symlinked token and secret files configured-unavailable",
       () => {
-        const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-line-account-"));
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-line-account-"));
         tempDirs.push(dir);
         const tokenFile = path.join(dir, "token.txt");
         const tokenLink = path.join(dir, "token-link.txt");
@@ -191,7 +191,7 @@ describe("LINE accounts", () => {
         fs.symlinkSync(tokenFile, tokenLink);
         fs.symlinkSync(secretFile, secretLink);
 
-        const cfg: OpenClawConfig = {
+        const cfg: AforaConfig = {
           channels: {
             line: {
               tokenFile: tokenLink,
@@ -224,7 +224,7 @@ describe("LINE accounts", () => {
       vi.stubEnv("LINE_CHANNEL_SECRET", "env-secret");
       const tokenFile = createSecretFile("missing-token.txt", "unused");
       fs.rmSync(tokenFile);
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         channels: {
           line: {
             tokenFile,
@@ -241,7 +241,7 @@ describe("LINE accounts", () => {
     });
 
     it("resolves default account credentials from accounts.default", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         channels: {
           line: {
             enabled: true,
@@ -267,7 +267,7 @@ describe("LINE accounts", () => {
     });
 
     it("prefers accounts.default credentials over top-level base credentials", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         channels: {
           line: {
             enabled: true,
@@ -290,7 +290,7 @@ describe("LINE accounts", () => {
     });
 
     it("treats named accounts without explicit enabled as enabled", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         channels: {
           line: {
             enabled: true,
@@ -312,7 +312,7 @@ describe("LINE accounts", () => {
     });
 
     it("disables a named account when channels.line.enabled is false", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         channels: {
           line: {
             enabled: false,
@@ -333,7 +333,7 @@ describe("LINE accounts", () => {
     });
 
     it("disables accounts.default when channels.line.enabled is false", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         channels: {
           line: {
             enabled: false,
@@ -353,7 +353,7 @@ describe("LINE accounts", () => {
     });
 
     it("respects explicit enabled:false on a named account", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         channels: {
           line: {
             enabled: true,
@@ -374,7 +374,7 @@ describe("LINE accounts", () => {
     });
 
     it("prefers accounts.default name over top-level channels.line.name", () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         channels: {
           line: {
             enabled: true,
@@ -428,7 +428,7 @@ describe("LINE accounts", () => {
               },
             },
           },
-        } satisfies OpenClawConfig,
+        } satisfies AforaConfig,
         expected: "business",
       },
       {
@@ -442,7 +442,7 @@ describe("LINE accounts", () => {
               },
             },
           },
-        } satisfies OpenClawConfig,
+        } satisfies AforaConfig,
         expected: "business-ops",
       },
       {
@@ -455,7 +455,7 @@ describe("LINE accounts", () => {
               },
             },
           },
-        } satisfies OpenClawConfig,
+        } satisfies AforaConfig,
         expected: "business",
       },
       {
@@ -469,7 +469,7 @@ describe("LINE accounts", () => {
               },
             },
           },
-        } satisfies OpenClawConfig,
+        } satisfies AforaConfig,
         expected: "business",
       },
       {
@@ -483,7 +483,7 @@ describe("LINE accounts", () => {
               },
             },
           },
-        } satisfies OpenClawConfig,
+        } satisfies AforaConfig,
         expected: DEFAULT_ACCOUNT_ID,
       },
     ])("$name", ({ cfg, expected }) => {

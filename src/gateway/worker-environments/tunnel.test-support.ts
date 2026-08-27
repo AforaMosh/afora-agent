@@ -77,11 +77,11 @@ function rsyncReceiverInvocation(argv: readonly string[]) {
   ];
   const target =
     mode === "git-pack"
-      ? path.join(workspace, ".openclaw-base.pack")
+      ? path.join(workspace, ".afora-base.pack")
       : mode === "accepted-next"
         ? path.join(
             path.dirname(workspace),
-            `.openclaw-accepted-${createHash("sha256").update(workspace).digest("hex")}-${nonce}`,
+            `.afora-accepted-${createHash("sha256").update(workspace).digest("hex")}-${nonce}`,
             "next",
           )
         : workspace;
@@ -104,10 +104,10 @@ export async function prepareLocalWorkspaceRsyncBoundary(
     receiverEntry,
     `import { tsImport } from ${JSON.stringify(tsxApi)};\nawait tsImport(${JSON.stringify(sourceEntry)}, import.meta.url);\n`,
   );
-  const fakeSsh = path.join(remoteHome, ".openclaw-test-ssh");
+  const fakeSsh = path.join(remoteHome, ".afora-test-ssh");
   await fs.writeFile(
     fakeSsh,
-    '#!/bin/sh\nset -eu\nwhile [ "$#" -gt 0 ]; do\n  case "$1" in -l|-p) shift 2 ;; -*) shift ;; *) shift; break ;; esac\ndone\ncd "$HOME"\nif [ -n "${OPENCLAW_TEST_RECEIVER_PATH:-}" ]; then PATH=$OPENCLAW_TEST_RECEIVER_PATH; export PATH; fi\nexec sh -c "$*"\n',
+    '#!/bin/sh\nset -eu\nwhile [ "$#" -gt 0 ]; do\n  case "$1" in -l|-p) shift 2 ;; -*) shift ;; *) shift; break ;; esac\ndone\ncd "$HOME"\nif [ -n "${AFORA_TEST_RECEIVER_PATH:-}" ]; then PATH=$AFORA_TEST_RECEIVER_PATH; export PATH; fi\nexec sh -c "$*"\n',
     { mode: 0o755 },
   );
   const localArgv = [...argv];
@@ -149,7 +149,7 @@ export function workspaceSetup(
 ) {
   const remoteWorkspaceDir = path.posix.join(
     canonicalHome,
-    ".openclaw-worker/workspaces",
+    ".afora-worker/workspaces",
     stableWorkerPathComponent(environmentId, 16),
     stableWorkerPathComponent(sessionId, 32),
     String(generation),
@@ -157,7 +157,7 @@ export function workspaceSetup(
   return {
     remoteWorkspaceDir,
     stdout: `${JSON.stringify({
-      tag: "openclaw-workspace-setup-v1",
+      tag: "afora-workspace-setup-v1",
       canonicalHome,
       canonicalWorkspace: remoteWorkspaceDir,
     })}\n`,

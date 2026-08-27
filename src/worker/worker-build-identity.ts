@@ -2,7 +2,7 @@ import type { WorkerAdmissionHandshake } from "../../packages/gateway-protocol/s
 
 export type ExpectedWorkerBuild = {
   bundleHash: WorkerAdmissionHandshake["bundleHash"];
-  openclawVersion: WorkerAdmissionHandshake["openclawVersion"];
+  aforaVersion: WorkerAdmissionHandshake["aforaVersion"];
   protocolFeatures: readonly string[];
 };
 
@@ -22,7 +22,7 @@ export function sameWorkerProtocolFeatures(
 export function sameWorkerBuild(left: ExpectedWorkerBuild, right: ExpectedWorkerBuild): boolean {
   return (
     left.bundleHash === right.bundleHash &&
-    left.openclawVersion === right.openclawVersion &&
+    left.aforaVersion === right.aforaVersion &&
     sameWorkerProtocolFeatures(left.protocolFeatures, right.protocolFeatures)
   );
 }

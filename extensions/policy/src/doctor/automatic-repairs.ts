@@ -1,19 +1,19 @@
 // Policy automatic repairs apply only deterministic narrowing config changes.
-import { isRecord } from "openclaw/plugin-sdk/channel-secret-basic-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/channel-secret-basic-runtime";
 import type {
   HealthFinding,
   HealthRepairContext,
   HealthRepairResult,
-  OpenClawConfig,
-} from "openclaw/plugin-sdk/health";
-import { uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+  AforaConfig,
+} from "afora-agent/plugin-sdk/health";
+import { uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { CHECK_IDS, type POLICY_CHECK_IDS } from "./check-ids.js";
 import { POLICY_FIX_METADATA_BY_CHECK_ID } from "./fix-metadata.js";
 
 type PolicyCheckId = (typeof POLICY_CHECK_IDS)[number];
 type ConfigRecord = Record<string, unknown>;
 type RepairPatch = {
-  readonly config: OpenClawConfig;
+  readonly config: AforaConfig;
   readonly changes: readonly string[];
   readonly warnings?: readonly string[];
 };
@@ -78,7 +78,7 @@ export function repairPolicyAutomaticNarrower(
 }
 
 function applyAutomaticPatch(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   findings: readonly HealthFinding[],
   checkId: PolicyCheckId,
 ): RepairPatch {
@@ -119,7 +119,7 @@ function applyAutomaticPatch(
 }
 
 function mergeRequiredDenyTools(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   findings: readonly HealthFinding[],
 ): RepairPatch {
   const next = cloneConfig(cfg);
@@ -132,7 +132,7 @@ function mergeRequiredDenyTools(
     }
     if (
       hasScopedPolicyRequirement([finding]) &&
-      finding.ocPath === "oc://openclaw.config/tools/deny"
+      finding.ocPath === "oc://afora.config/tools/deny"
     ) {
       warnings.push(
         `Skipped scoped deny repair for ${tool}. The finding reports inherited root tools.deny, so changing it would affect more than the scoped policy target.`,
@@ -144,16 +144,16 @@ function mergeRequiredDenyTools(
     }
   }
   return changes.length > 0
-    ? { config: next as OpenClawConfig, changes: uniqueStrings(changes), warnings }
+    ? { config: next as AforaConfig, changes: uniqueStrings(changes), warnings }
     : { config: cfg, changes, warnings: uniqueStrings(warnings) };
 }
 
 function disableElevatedTools(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   findings: readonly HealthFinding[],
 ): RepairPatch {
   if (
-    !findings.some((finding) => finding.ocPath === "oc://openclaw.config/tools/elevated/enabled")
+    !findings.some((finding) => finding.ocPath === "oc://afora.config/tools/elevated/enabled")
   ) {
     return { config: cfg, changes: [] };
   }
@@ -165,13 +165,13 @@ function disableElevatedTools(
   }
   elevated.enabled = false;
   return {
-    config: next as OpenClawConfig,
+    config: next as AforaConfig,
     changes: ["Set tools.elevated.enabled=false for policy conformance."],
   };
 }
 
 function disableInsecureControlUi(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   findings: readonly HealthFinding[],
 ): RepairPatch {
   const next = cloneConfig(cfg);
@@ -181,11 +181,11 @@ function disableInsecureControlUi(
   const fields = [
     [
       "dangerouslyDisableDeviceAuth",
-      "oc://openclaw.config/gateway/controlUi/dangerouslyDisableDeviceAuth",
+      "oc://afora.config/gateway/controlUi/dangerouslyDisableDeviceAuth",
     ],
     [
       "dangerouslyAllowHostHeaderOriginFallback",
-      "oc://openclaw.config/gateway/controlUi/dangerouslyAllowHostHeaderOriginFallback",
+      "oc://afora.config/gateway/controlUi/dangerouslyAllowHostHeaderOriginFallback",
     ],
   ] as const;
   const findingPaths = new Set(findings.map((finding) => finding.ocPath));
@@ -196,15 +196,15 @@ function disableInsecureControlUi(
     }
   }
   return changes.length > 0
-    ? { config: next as OpenClawConfig, changes }
+    ? { config: next as AforaConfig, changes }
     : { config: cfg, changes };
 }
 
 function disableRemoteGatewayMode(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   findings: readonly HealthFinding[],
 ): RepairPatch {
-  if (!findings.some((finding) => finding.ocPath === "oc://openclaw.config/gateway/mode")) {
+  if (!findings.some((finding) => finding.ocPath === "oc://afora.config/gateway/mode")) {
     return { config: cfg, changes: [] };
   }
   const next = cloneConfig(cfg);
@@ -215,11 +215,11 @@ function disableRemoteGatewayMode(
     changes.push("Set gateway.mode=local for policy conformance.");
   }
   return changes.length > 0
-    ? { config: next as OpenClawConfig, changes }
+    ? { config: next as AforaConfig, changes }
     : { config: cfg, changes };
 }
 
-function disableTelemetryContentCapture(cfg: OpenClawConfig): RepairPatch {
+function disableTelemetryContentCapture(cfg: AforaConfig): RepairPatch {
   const next = cloneConfig(cfg);
   const diagnostics = ensureRecord(next, "diagnostics");
   const otel = ensureRecord(diagnostics, "otel");
@@ -228,13 +228,13 @@ function disableTelemetryContentCapture(cfg: OpenClawConfig): RepairPatch {
   }
   otel.captureContent = false;
   return {
-    config: next as OpenClawConfig,
+    config: next as AforaConfig,
     changes: ["Set diagnostics.otel.captureContent=false for policy conformance."],
   };
 }
 
 function setFindingConfigValues(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   findings: readonly HealthFinding[],
   fieldName: string,
   value: unknown,
@@ -259,11 +259,11 @@ function setFindingConfigValues(
     changes.push(`Set ${configPathLabel(finding.ocPath)}=${String(value)} for policy conformance.`);
   }
   return changes.length > 0
-    ? { config: next as OpenClawConfig, changes: uniqueStrings(changes), warnings }
+    ? { config: next as AforaConfig, changes: uniqueStrings(changes), warnings }
     : { config: cfg, changes, warnings: uniqueStrings(warnings) };
 }
 
-function cloneConfig(cfg: OpenClawConfig): ConfigRecord {
+function cloneConfig(cfg: AforaConfig): ConfigRecord {
   return structuredClone(cfg) as ConfigRecord;
 }
 
@@ -312,7 +312,7 @@ function mergeStringArrayAtOcPath(cfg: ConfigRecord, ocPath: string, entry: stri
 }
 
 function configPathSegments(ocPath: string): readonly string[] {
-  const prefix = "oc://openclaw.config/";
+  const prefix = "oc://afora.config/";
   if (!ocPath.startsWith(prefix)) {
     return [];
   }
@@ -426,14 +426,14 @@ function hasScopedPolicyRequirement(findings: readonly HealthFinding[]): boolean
   return findings.some((finding) => finding.requirement?.includes("/scopes/") === true);
 }
 
-function skippedUnsafeScopedRepair(cfg: OpenClawConfig, warning: string): RepairPatch {
+function skippedUnsafeScopedRepair(cfg: AforaConfig, warning: string): RepairPatch {
   return { config: cfg, changes: [], warnings: [warning] };
 }
 
 function isScopedInheritedChannelDefaultFinding(finding: HealthFinding): boolean {
   return (
     hasScopedPolicyRequirement([finding]) &&
-    finding.ocPath?.startsWith("oc://openclaw.config/channels/defaults/") === true
+    finding.ocPath?.startsWith("oc://afora.config/channels/defaults/") === true
   );
 }
 

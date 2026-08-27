@@ -1,5 +1,5 @@
 // Runtime bridge for plugin-provided memory embedding providers.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { getEmbeddingProvider, listEmbeddingProviders } from "./embedding-provider-runtime.js";
 import type {
   EmbeddingProvider,
@@ -13,7 +13,7 @@ import type {
   MemoryEmbeddingProviderCreateOptions,
 } from "./memory-embedding-providers.js";
 
-const LOCAL_EMBEDDING_RUNTIME_FACTS = Symbol.for("openclaw.localEmbeddingRuntimeFacts");
+const LOCAL_EMBEDDING_RUNTIME_FACTS = Symbol.for("afora.localEmbeddingRuntimeFacts");
 
 /** Lists registered memory embedding provider adapters without registry metadata. */
 export function listRegisteredMemoryEmbeddingProviderAdapters(): MemoryEmbeddingProviderAdapter[] {
@@ -24,7 +24,7 @@ export function listRegisteredMemoryEmbeddingProviderAdapters(): MemoryEmbedding
 
 /** Lists memory embedding providers from runtime config and registered adapters. */
 export function listMemoryEmbeddingProviders(
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): MemoryEmbeddingProviderAdapter[] {
   return listEmbeddingProviders(cfg).map(adaptEmbeddingProviderAdapter);
 }
@@ -82,7 +82,7 @@ function adaptEmbeddingProviderAdapter(
 /** Resolves one memory embedding provider by id, alias, or configured API owner. */
 export function getMemoryEmbeddingProvider(
   id: string,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): MemoryEmbeddingProviderAdapter | undefined {
   const embeddingAdapter = getEmbeddingProvider(id, cfg);
   return embeddingAdapter ? adaptEmbeddingProviderAdapter(embeddingAdapter) : undefined;

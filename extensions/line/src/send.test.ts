@@ -1,7 +1,7 @@
 import { HTTPFetchError } from "@line/bot-sdk";
 // Line tests cover send plugin behavior.
-import { expectDefined } from "@openclaw/normalization-core";
-import { isChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
+import { expectDefined } from "@afora/normalization-core";
+import { isChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
@@ -61,7 +61,7 @@ vi.mock("@line/bot-sdk", async (importOriginal) => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/plugin-config-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/plugin-config-runtime", () => ({
   requireRuntimeConfig: requireRuntimeConfigMock,
 }));
 
@@ -73,13 +73,13 @@ vi.mock("./channel-access-token.js", () => ({
   resolveLineChannelAccessToken: resolveLineChannelAccessTokenMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/channel-activity-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/channel-activity-runtime", () => ({
   recordChannelActivity: recordChannelActivityMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/runtime-env", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/runtime-env")>(
-    "openclaw/plugin-sdk/runtime-env",
+vi.mock("afora-agent/plugin-sdk/runtime-env", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/runtime-env")>(
+    "afora-agent/plugin-sdk/runtime-env",
   );
   return {
     ...actual,
@@ -87,7 +87,7 @@ vi.mock("openclaw/plugin-sdk/runtime-env", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ({
   resolvePinnedHostnameWithPolicy: resolvePinnedHostnameWithPolicyMock,
 }));
 
@@ -120,12 +120,12 @@ describe("LINE send helpers", () => {
 
   afterAll(() => {
     vi.doUnmock("@line/bot-sdk");
-    vi.doUnmock("openclaw/plugin-sdk/plugin-config-runtime");
+    vi.doUnmock("afora-agent/plugin-sdk/plugin-config-runtime");
     vi.doUnmock("./accounts.js");
     vi.doUnmock("./channel-access-token.js");
-    vi.doUnmock("openclaw/plugin-sdk/channel-activity-runtime");
-    vi.doUnmock("openclaw/plugin-sdk/runtime-env");
-    vi.doUnmock("openclaw/plugin-sdk/ssrf-runtime");
+    vi.doUnmock("afora-agent/plugin-sdk/channel-activity-runtime");
+    vi.doUnmock("afora-agent/plugin-sdk/runtime-env");
+    vi.doUnmock("afora-agent/plugin-sdk/ssrf-runtime");
     vi.resetModules();
   });
 

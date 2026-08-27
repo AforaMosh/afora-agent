@@ -1,6 +1,6 @@
 // Node list parsing tests cover normalized node inventory records.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import { parseNodeList, parsePairingList } from "./node-list-parse.js";
 

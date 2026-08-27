@@ -1,5 +1,5 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { clampNumber } from "../../../utils.js";
 import { resolveAgentConfig } from "../../agent-scope-config.js";
 
@@ -36,7 +36,7 @@ function readPositiveInteger(value: unknown, fallback: number): number {
 }
 
 /** Resolve global and per-agent Swarm configuration into bounded runtime values. */
-export function resolveSwarmConfig(config?: OpenClawConfig, agentId?: string): ResolvedSwarmConfig {
+export function resolveSwarmConfig(config?: AforaConfig, agentId?: string): ResolvedSwarmConfig {
   const globalRaw = normalizeRawConfig(config?.tools?.swarm) ?? {};
   const agentRaw =
     config && agentId

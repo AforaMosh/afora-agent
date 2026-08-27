@@ -1,12 +1,12 @@
-# OpenClaw DuckDuckGo Plugin
+# Afora DuckDuckGo Plugin
 
-Official OpenClaw plugin for DuckDuckGo web search.
+Official Afora plugin for DuckDuckGo web search.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/duckduckgo-plugin
-openclaw gateway restart
+afora plugins install @afora/duckduckgo-plugin
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/tools/duckduckgo-search> for setup and configuration.
+See <https://docs.afora.ai/tools/duckduckgo-search> for setup and configuration.

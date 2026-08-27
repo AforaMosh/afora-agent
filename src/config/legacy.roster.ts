@@ -1,11 +1,11 @@
-import { normalizeAgentId } from "@openclaw/normalization-core/agent-id";
+import { normalizeAgentId } from "@afora/normalization-core/agent-id";
 import { readAgentRosterProperty } from "../agents/agent-scope-config.js";
 import {
   retainLegacyDefaultAgentId,
   tryGetLegacyDefaultAgentId,
 } from "./legacy.default-agent-owner.js";
 import { materializeLegacyDefaultAgentRoles } from "./legacy.default-agent-roles.js";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import type { AforaConfig } from "./types.afora.js";
 
 type MigrationResult = {
   config: unknown;
@@ -117,7 +117,7 @@ export function migratePersistedImplicitMainRoster(
   );
   const hasValidLegacyMarker = agents.ownership !== "explicit" && markedIds.length === 1;
   const legacyDefaultAgentId =
-    tryGetLegacyDefaultAgentId(raw as OpenClawConfig) ??
+    tryGetLegacyDefaultAgentId(raw as AforaConfig) ??
     (validIds.length > 1 && hasValidLegacyMarker ? markedIds[0] : undefined);
   let nextRoot: Record<string, unknown> = { ...root, agents };
   let insertedPaths: string[][] = [];
@@ -125,7 +125,7 @@ export function migratePersistedImplicitMainRoster(
   let changed = convertedLegacyList;
   if (legacyDefaultAgentId) {
     const materialized = materializeLegacyDefaultAgentRoles(
-      nextRoot as OpenClawConfig,
+      nextRoot as AforaConfig,
       legacyDefaultAgentId,
       options,
     );
@@ -158,7 +158,7 @@ export function migratePersistedImplicitMainRoster(
     changed = true;
   }
 
-  const config = (changed ? nextRoot : raw) as OpenClawConfig;
+  const config = (changed ? nextRoot : raw) as AforaConfig;
   retainLegacyDefaultAgentId(config, legacyDefaultAgentId);
   return {
     config,

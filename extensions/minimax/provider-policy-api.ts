@@ -1,5 +1,5 @@
 // MiniMax policy module exposes static provider policy before runtime registration.
-import type { ProviderDefaultThinkingPolicyContext } from "openclaw/plugin-sdk/core";
+import type { ProviderDefaultThinkingPolicyContext } from "afora-agent/plugin-sdk/core";
 import { resolveMinimaxThinkingProfile } from "./thinking.js";
 
 export function resolveThinkingProfile(context: ProviderDefaultThinkingPolicyContext) {

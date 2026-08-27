@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getLogger } from "../../logging/logger.js";
-import type { OpenClawConfig } from "../types.openclaw.js";
+import type { AforaConfig } from "../types.afora.js";
 import { purgeAgentSessionStoreEntries } from "./cleanup-service.js";
 
 const sessionAccessorMocks = vi.hoisted(() => ({
@@ -33,14 +33,14 @@ describe("purgeAgentSessionStoreEntries", () => {
 
   it("purges deleted-agent entries through the storage boundary", async () => {
     const cfg = {
-      session: { store: "/tmp/openclaw-agent-purge-sessions.json" },
+      session: { store: "/tmp/afora-agent-purge-sessions.json" },
       agents: {
         list: [
           { id: "main", workspace: "/workspace/main" },
           { id: "ops", workspace: "/workspace/ops" },
         ],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     await expect(purgeAgentSessionStoreEntries(cfg, "ops")).resolves.toBe(false);
 
@@ -48,7 +48,7 @@ describe("purgeAgentSessionStoreEntries", () => {
       cfg,
       agentId: "ops",
       storeAgentId: "main",
-      storePath: "/tmp/openclaw-agent-purge-sessions.json",
+      storePath: "/tmp/afora-agent-purge-sessions.json",
     });
     expect(sessionAccessorMocks.applySessionEntryLifecycleMutation).not.toHaveBeenCalled();
   });
@@ -61,8 +61,8 @@ describe("purgeAgentSessionStoreEntries", () => {
   });
 
   it("records a bounded warning and failure fact when storage purge fails", async () => {
-    const storePath = "/tmp/openclaw-agent-purge-failure-sessions.json";
-    const cfg = { session: { store: storePath } } satisfies OpenClawConfig;
+    const storePath = "/tmp/afora-agent-purge-failure-sessions.json";
+    const cfg = { session: { store: storePath } } satisfies AforaConfig;
     const error = new Error("injected purge failure");
     sessionAccessorMocks.purgeDeletedAgentSessionEntries.mockRejectedValueOnce(error);
     const warn = vi.spyOn(getLogger(), "warn").mockImplementation(() => {});

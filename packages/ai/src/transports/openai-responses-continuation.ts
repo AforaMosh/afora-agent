@@ -1,12 +1,12 @@
-import { stableStringify } from "@openclaw/normalization-core";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { stableStringify } from "@afora/normalization-core";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import type { ResponseInput, ResponseOutputItem } from "openai/resources/responses/responses.js";
 import { getAiTransportHost, resolveAiTransportHeaderSentinels } from "../host.js";
 import { registerSessionResourceCleanup } from "../session-resources.js";
 import { sha256Hex } from "./transport-utils.js";
 
 const HTTP_CONTINUATION_IDLE_TTL_MS = 5 * 60 * 1000;
-const TURN_HEADERS = new Set(["traceparent", "x-openclaw-turn-id", "x-openclaw-turn-attempt"]);
+const TURN_HEADERS = new Set(["traceparent", "x-afora-turn-id", "x-afora-turn-attempt"]);
 
 export type ResponsesContinuationRequest = Record<string, unknown> & {
   input?: ResponseInput;
@@ -40,7 +40,7 @@ function requestWithoutInput(request: ResponsesContinuationRequest): ResponsesCo
   }
   const metadata = Object.fromEntries(
     Object.entries(rest.metadata).filter(
-      ([key]) => key !== "openclaw_turn_id" && key !== "openclaw_turn_attempt",
+      ([key]) => key !== "afora_turn_id" && key !== "afora_turn_attempt",
     ),
   );
   return { ...rest, metadata };

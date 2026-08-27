@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createOpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+import { createAforaTestState } from "../../test-utils/afora-test-state.js";
 import { createTrackedTempDirs } from "../../test-utils/tracked-temp-dirs.js";
 import { createSkillWorkshopTool } from "./skill-workshop-tool.js";
 
@@ -17,12 +17,12 @@ const tempDirs = createTrackedTempDirs();
 const cleanups: Array<() => Promise<void>> = [];
 
 async function createEvaluationFixture(name: string) {
-  const testState = await createOpenClawTestState({
+  const testState = await createAforaTestState({
     layout: "state-only",
-    prefix: "openclaw-skill-workshop-evaluation-state-",
+    prefix: "afora-skill-workshop-evaluation-state-",
   });
   cleanups.push(async () => await testState.cleanup());
-  const workspaceDir = await tempDirs.make("openclaw-skill-workshop-evaluation-");
+  const workspaceDir = await tempDirs.make("afora-skill-workshop-evaluation-");
   const tool = createSkillWorkshopTool({ workspaceDir, agentId: "main", env: testState.env });
   const created = await tool.execute("create", {
     action: "create",

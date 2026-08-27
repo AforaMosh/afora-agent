@@ -1,5 +1,5 @@
 // Qa Lab plugin module implements live gateway behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   startQaGatewayChild,
   type QaCliBackendAuthMode,
@@ -48,7 +48,7 @@ function omitMemoryCoreEntry<T extends Record<string, unknown> | undefined>(entr
   return rest as T;
 }
 
-function prepareLiveTransportGatewayConfig(cfg: OpenClawConfig): OpenClawConfig {
+function prepareLiveTransportGatewayConfig(cfg: AforaConfig): AforaConfig {
   return {
     ...cfg,
     plugins: cfg.plugins
@@ -83,7 +83,7 @@ export async function startQaLiveLaneGateway(params: {
     requiredPluginIds: readonly string[];
     createGatewayConfig: (params: {
       baseUrl: string;
-    }) => Pick<OpenClawConfig, "channels" | "messages">;
+    }) => Pick<AforaConfig, "channels" | "messages">;
   };
   transportBaseUrl: string;
   controlUiAllowedOrigins?: string[];
@@ -96,7 +96,7 @@ export async function startQaLiveLaneGateway(params: {
   claudeCliAuthMode?: QaCliBackendAuthMode;
   controlUiEnabled?: boolean;
   mockAuthAgentIds?: readonly string[];
-  mutateConfig?: (cfg: OpenClawConfig) => OpenClawConfig;
+  mutateConfig?: (cfg: AforaConfig) => AforaConfig;
 }) {
   const mock = await startQaProviderServer(params.providerMode, {
     modelRefs: [params.primaryModel, params.alternateModel],

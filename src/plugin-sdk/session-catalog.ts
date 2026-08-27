@@ -1,5 +1,5 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeBoundedOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeBoundedOptionalString } from "@afora/normalization-core/string-coerce";
 import type { SessionCatalogTranscriptItem } from "../../packages/gateway-protocol/src/schema/sessions-catalog.js";
 
 export type {

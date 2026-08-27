@@ -1,6 +1,6 @@
 // Gateway option normalization hides transport URL details for backend/managed
 // gateway clients and clamps timeout values.
-import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
+import { resolveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
 import {
   GATEWAY_CLIENT_MODES,
   GATEWAY_CLIENT_NAMES,

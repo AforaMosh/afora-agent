@@ -5,7 +5,7 @@ import {
   readLatestSuccessfulBackupRun,
   type BackupRunRecord,
 } from "../state/backup-run-records.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../state/openclaw-state-db-readonly.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../state/afora-state-db-readonly.js";
 
 // Backups older than two weeks no longer provide a useful routine recovery point.
 const BACKUP_STALE_AFTER_MS = 14 * 24 * 60 * 60 * 1_000;
@@ -18,7 +18,7 @@ type BackupFreshness = {
 /** Read backup freshness without creating or repairing an absent state database. */
 export function readBackupFreshness(env: NodeJS.ProcessEnv): BackupFreshness {
   return (
-    withExistingOpenClawStateDatabaseReadOnly(
+    withExistingAforaStateDatabaseReadOnly(
       ({ db }) => ({
         latest: readLatestBackupRun(db),
         latestOk: readLatestSuccessfulBackupRun(db),
@@ -65,8 +65,8 @@ function buildBackupDoctorHint(params: {
     latestOk
       ? "The newest successful backup is more than 14 days old."
       : "No successful backup is recorded.",
-    `Create one now with ${formatCliCommand("openclaw backup create")}.`,
-    `Schedule versioned backups with ${formatCliCommand("openclaw backup enable --repository <dir>")}.`,
+    `Create one now with ${formatCliCommand("afora backup create")}.`,
+    `Schedule versioned backups with ${formatCliCommand("afora backup enable --repository <dir>")}.`,
   ].join("\n");
 }
 

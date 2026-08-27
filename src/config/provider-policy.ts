@@ -1,7 +1,7 @@
 // Resolves provider policy settings from config and plugin metadata.
 import type { PluginManifestRegistry } from "../plugins/manifest-registry.js";
 import { resolveBundledProviderPolicySurface } from "../plugins/provider-public-artifacts.js";
-import type { ModelProviderConfig, OpenClawConfig } from "./types.js";
+import type { ModelProviderConfig, AforaConfig } from "./types.js";
 
 /** Applies bundled provider-owned normalization to one provider config during config defaults. */
 export function normalizeProviderConfigForConfigDefaults(params: {
@@ -23,10 +23,10 @@ export function normalizeProviderConfigForConfigDefaults(params: {
 /** Applies bundled provider-owned defaults to the full config when that provider has policy. */
 export function applyProviderConfigDefaultsForConfig(params: {
   provider: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
   manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
-}): OpenClawConfig {
+}): AforaConfig {
   return (
     resolveBundledProviderPolicySurface(params.provider, {
       manifestRegistry: params.manifestRegistry,

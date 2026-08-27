@@ -93,7 +93,7 @@
   background: linear-gradient(to bottom, var(--chat-surface), transparent);
 }
 
-openclaw-chat-sidebar-region,
+afora-chat-sidebar-region,
 .sidebar-region__right-runtime,
 .sidebar-region__panels-runtime {
   display: contents;
@@ -612,12 +612,12 @@ openclaw-chat-sidebar-region,
     .chat,
     .chat-workspace-rail,
     .chat-tasks-rail,
-    openclaw-chat-detail-panel,
-    openclaw-chat-session-rail,
-    openclaw-session-discussion,
-    openclaw-terminal-panel,
-    openclaw-browser-panel,
-    openclaw-desktop-panel
+    afora-chat-detail-panel,
+    afora-chat-session-rail,
+    afora-session-discussion,
+    afora-terminal-panel,
+    afora-browser-panel,
+    afora-desktop-panel
   ) {
   display: flex;
   width: 100%;
@@ -1214,7 +1214,7 @@ openclaw-chat-sidebar-region,
   cursor: var(--cursor-action);
 }
 
-/* openclaw-tooltip is display:contents, so the title span itself is the flex
+/* afora-tooltip is display:contents, so the title span itself is the flex
    item; growing it pins the stop button to the card's right edge even for
    short titles. */
 .chat-tasks-rail__task-title {
@@ -1544,7 +1544,7 @@ openclaw-chat-sidebar-region,
   min-height: 0;
 }
 
-openclaw-session-discussion {
+afora-session-discussion {
   display: flex;
   flex: 1 1 0;
   height: 100%;
@@ -2469,7 +2469,7 @@ openclaw-session-discussion {
   tab-size: 4;
 }
 
-openclaw-session-diff-menu[popover] {
+afora-session-diff-menu[popover] {
   width: 0;
   height: 0;
   margin: 0;

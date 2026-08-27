@@ -237,7 +237,7 @@ export async function persistCliRunBlock(
     content: [{ type: "text" as const, text: block.message }],
     timestamp: nowMs,
     idempotencyKey: `hook-block:before_agent_run:user:${params.runId}`,
-    __openclaw: {
+    __afora: {
       beforeAgentRunBlocked: {
         blockedBy: block.pluginId,
         blockedAt: nowMs,

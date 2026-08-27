@@ -1,7 +1,7 @@
 import path from "node:path";
 // Bash tool helper tests cover conversion from model-facing timeout seconds to
 // timer-safe millisecond values.
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { describe, expect, it, vi } from "vitest";
 import { buildShellCommandInvocation } from "../../shell-utils.js";
 import type { BashOperations } from "./bash-operations.js";

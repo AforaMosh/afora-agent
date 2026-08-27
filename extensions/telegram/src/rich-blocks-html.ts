@@ -3,7 +3,7 @@
 // of HTML islands (see agentPrompt.inboundFormattingHints "markdown_telegram_rich");
 // this module owns the tolerant parser and inline (RichText-level) mapping,
 // while rich-blocks-html-map.ts owns block-level island mapping.
-import { tokenizeHtmlTags } from "openclaw/plugin-sdk/text-chunking";
+import { tokenizeHtmlTags } from "afora-agent/plugin-sdk/text-chunking";
 import { decodeTelegramHtmlEntities } from "./format-html.js";
 import type { RichText } from "./rich-block-model.js";
 

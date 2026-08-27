@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import { z } from "zod";
 import type { QaSeedScenarioWithSource } from "./scenario-catalog.js";
 import { shellQuote } from "./shell-quote.js";
@@ -8,7 +8,7 @@ import { runQaScenarioCommandLifecycle } from "./test-file-scenario-command-life
 
 const QA_DOCKER_E2E_LANE_SCRIPT = "test/e2e/qa-lab/runtime/docker-e2e-lane.ts";
 const DOCKER_CANDIDATE_ENV_KEY =
-  /^(?:OPENCLAW_DOCKER_E2E_SELECTED_SHA|OPENCLAW_CURRENT_PACKAGE_(?:TGZ|VERSION|SHA256)|OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_(?:DIR|CANDIDATE_VERSION|MANIFEST_SHA256))$/u;
+  /^(?:AFORA_DOCKER_E2E_SELECTED_SHA|AFORA_CURRENT_PACKAGE_(?:TGZ|VERSION|SHA256)|AFORA_PREPUBLISH_PLUGIN_REGISTRY_(?:DIR|CANDIDATE_VERSION|MANIFEST_SHA256))$/u;
 const dockerRegistrySchema = z.strictObject({
   dir: z.string(),
   candidateVersion: z.string(),
@@ -16,12 +16,12 @@ const dockerRegistrySchema = z.strictObject({
 });
 const dockerPackageSchema = z.strictObject({
   path: z.string(),
-  name: z.literal("openclaw"),
+  name: z.literal("afora"),
   version: z.string(),
   sha256: z.string(),
 });
 const dockerCandidateManifestSchema = z.strictObject({
-  schema: z.literal("openclaw.qa-docker-candidate/v1"),
+  schema: z.literal("afora.qa-docker-candidate/v1"),
   schemaVersion: z.literal(1),
   sourceSha: z.string(),
   candidate: z
@@ -82,7 +82,7 @@ export async function prepareDockerE2eEnvironment(params: {
   const env = { ...params.env };
   for (const key of Object.keys(env)) {
     if (
-      key.startsWith("OPENCLAW_DOCKER_ALL_") ||
+      key.startsWith("AFORA_DOCKER_ALL_") ||
       DOCKER_CANDIDATE_ENV_KEY.test(key) ||
       key === "DOCKER_E2E_LANES"
     ) {
@@ -97,9 +97,9 @@ export async function prepareDockerE2eEnvironment(params: {
     cwd: params.repoRoot,
     env: {
       ...env,
-      OPENCLAW_DOCKER_ALL_LANES: laneNames.join(","),
-      OPENCLAW_DOCKER_ALL_LOG_DIR: prepDir,
-      OPENCLAW_DOCKER_E2E_REPO_ROOT: params.repoRoot,
+      AFORA_DOCKER_ALL_LANES: laneNames.join(","),
+      AFORA_DOCKER_ALL_LOG_DIR: prepDir,
+      AFORA_DOCKER_E2E_REPO_ROOT: params.repoRoot,
     },
   });
   if (result.exitCode !== 0) {
@@ -110,22 +110,22 @@ export async function prepareDockerE2eEnvironment(params: {
   const manifest = dockerCandidateManifestSchema.parse(
     JSON.parse(await fs.readFile(manifestPath, "utf8")),
   );
-  env.OPENCLAW_DOCKER_E2E_REPO_ROOT = params.repoRoot;
+  env.AFORA_DOCKER_E2E_REPO_ROOT = params.repoRoot;
   if (manifest.candidate === null) {
     return Object.freeze(env);
   }
   const { package: packageCandidate, registry } = manifest.candidate;
   return Object.freeze(
     Object.assign(env, {
-      OPENCLAW_DOCKER_E2E_SELECTED_SHA: manifest.sourceSha,
-      OPENCLAW_CURRENT_PACKAGE_TGZ: packageCandidate.path,
-      OPENCLAW_CURRENT_PACKAGE_VERSION: packageCandidate.version,
-      OPENCLAW_CURRENT_PACKAGE_SHA256: packageCandidate.sha256,
+      AFORA_DOCKER_E2E_SELECTED_SHA: manifest.sourceSha,
+      AFORA_CURRENT_PACKAGE_TGZ: packageCandidate.path,
+      AFORA_CURRENT_PACKAGE_VERSION: packageCandidate.version,
+      AFORA_CURRENT_PACKAGE_SHA256: packageCandidate.sha256,
       ...(registry
         ? {
-            OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_DIR: registry.dir,
-            OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_CANDIDATE_VERSION: registry.candidateVersion,
-            OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_MANIFEST_SHA256: registry.manifestSha256,
+            AFORA_PREPUBLISH_PLUGIN_REGISTRY_DIR: registry.dir,
+            AFORA_PREPUBLISH_PLUGIN_REGISTRY_CANDIDATE_VERSION: registry.candidateVersion,
+            AFORA_PREPUBLISH_PLUGIN_REGISTRY_MANIFEST_SHA256: registry.manifestSha256,
           }
         : {}),
     }),
@@ -175,13 +175,13 @@ export async function runDockerE2eBatch(params: {
       cwd: params.repoRoot,
       env: {
         ...params.env,
-        OPENCLAW_DOCKER_ALL_BUILD: "1",
-        OPENCLAW_DOCKER_ALL_FAIL_FAST: "0",
-        OPENCLAW_DOCKER_ALL_LANES: laneNames.join(","),
-        OPENCLAW_DOCKER_ALL_LANE_TIMEOUT_MS: String(params.commandTimeoutMs),
-        OPENCLAW_DOCKER_ALL_LOG_DIR: dockerOutputDir,
-        OPENCLAW_DOCKER_ALL_PROFILE: "all",
-        OPENCLAW_DOCKER_ALL_TIMINGS_FILE: path.join(dockerOutputDir, "lane-timings.json"),
+        AFORA_DOCKER_ALL_BUILD: "1",
+        AFORA_DOCKER_ALL_FAIL_FAST: "0",
+        AFORA_DOCKER_ALL_LANES: laneNames.join(","),
+        AFORA_DOCKER_ALL_LANE_TIMEOUT_MS: String(params.commandTimeoutMs),
+        AFORA_DOCKER_ALL_LOG_DIR: dockerOutputDir,
+        AFORA_DOCKER_ALL_PROFILE: "all",
+        AFORA_DOCKER_ALL_TIMINGS_FILE: path.join(dockerOutputDir, "lane-timings.json"),
       },
       // The scheduler owns each resolved lane deadline. Parent signals and the
       // enclosing QA workflow bound the aggregate run without alias-count guesses.

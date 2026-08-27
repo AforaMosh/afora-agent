@@ -1,7 +1,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import type { ActionResult } from "@trycua/cua-driver";
-import { asOptionalRecord as record } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { asOptionalRecord as record } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   ClickButton,
   EscalationReason,
@@ -275,7 +275,7 @@ class CuaMcpProxyClient {
         {
           protocolVersion: MCP_PROTOCOL_VERSION,
           capabilities: {},
-          clientInfo: { name: "openclaw-cua-computer", version: "1" },
+          clientInfo: { name: "afora-cua-computer", version: "1" },
         },
         MCP_STARTUP_TIMEOUT_MS,
       ),
@@ -479,8 +479,8 @@ function sessionState(value: CuaToolResult): import("@trycua/cua-driver").Sessio
 
 class McpCuaDriverSession implements CuaDriverSession {
   readonly generation = randomUUID();
-  private readonly windowPublicSession = `openclaw-window-${randomUUID()}`;
-  private readonly desktopPublicSession = `openclaw-desktop-${randomUUID()}`;
+  private readonly windowPublicSession = `afora-window-${randomUUID()}`;
+  private readonly desktopPublicSession = `afora-desktop-${randomUUID()}`;
   private windowStartPromise: Promise<void> | undefined;
   private desktopStartPromise: Promise<void> | undefined;
   private windowStarted = false;

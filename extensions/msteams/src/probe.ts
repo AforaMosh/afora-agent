@@ -1,5 +1,5 @@
 // Msteams plugin module implements probe behavior.
-import { isFutureDateTimestampMs } from "openclaw/plugin-sdk/number-runtime";
+import { isFutureDateTimestampMs } from "afora-agent/plugin-sdk/number-runtime";
 import {
   normalizeStringEntries,
   type BaseProbeResult,

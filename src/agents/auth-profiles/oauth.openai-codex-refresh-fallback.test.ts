@@ -6,10 +6,10 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { FILE_LOCK_TIMEOUT_ERROR_CODE, resetFileLockStateForTest } from "../../infra/file-lock.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
+import { closeAforaAgentDatabasesForTest } from "../../state/afora-agent-db.js";
 import { captureEnv, deleteTestEnvValue, setTestEnvValue } from "../../test-utils/env.js";
 import { OAuthRefreshFailureError } from "./oauth-refresh-failure.js";
 import { buildRefreshContentionError } from "./oauth-refresh-lock-errors.js";
@@ -157,7 +157,7 @@ describe("resolveApiKeyForProfile openai refresh fallback", () => {
   let caseIndex = 0;
 
   beforeAll(async () => {
-    tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-refresh-fallback-"));
+    tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-refresh-fallback-"));
     ({ resolveApiKeyForProfile } = await import("./oauth.js"));
     ({ hasAvailableAuthForProvider, resolveApiKeyForProviderCore } =
       await import("../model-auth.js"));
@@ -182,20 +182,20 @@ describe("resolveApiKeyForProfile openai refresh fallback", () => {
     const caseRoot = path.join(tempRoot, `case-${++caseIndex}`);
     agentDir = path.join(caseRoot, "agents", "main", "agent");
     await fs.mkdir(agentDir, { recursive: true });
-    setTestEnvValue("OPENCLAW_STATE_DIR", caseRoot);
-    setTestEnvValue("OPENCLAW_AGENT_DIR", agentDir);
+    setTestEnvValue("AFORA_STATE_DIR", caseRoot);
+    setTestEnvValue("AFORA_AGENT_DIR", agentDir);
     deleteTestEnvValue("OPENAI_API_KEY");
   });
 
   afterEach(async () => {
     resetFileLockStateForTest();
     clearRuntimeAuthProfileStoreSnapshots();
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
     envSnapshot.restore();
   });
 
   afterAll(async () => {
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
     await fs.rm(tempRoot, { recursive: true, force: true });
   });
 

@@ -13,7 +13,7 @@ import {
   type SessionStoreTarget,
 } from "../config/sessions.js";
 import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/session-sqlite-target.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { openNodeSqliteDatabase } from "../infra/node-sqlite.js";
 import { type RuntimeEnv, writeRuntimeJson } from "../runtime.js";
@@ -84,7 +84,7 @@ function validateExplicitSessionStorePath(params: {
       applicationTables.length > 0 &&
       !applicationTables.some((row) => row.name === "schema_meta")
     ) {
-      throw new Error("the SQLite file has application tables but no OpenClaw schema metadata");
+      throw new Error("the SQLite file has application tables but no Afora schema metadata");
     }
   } catch (error) {
     databaseFailure = { error };
@@ -93,7 +93,7 @@ function validateExplicitSessionStorePath(params: {
   }
   if (databaseFailure) {
     throw new Error(
-      `Session store target is not a session store: ${displayTarget}. ${formatErrorMessage(databaseFailure.error)}. Pass a legacy store selector or SQLite target reported by openclaw sessions or openclaw status.`,
+      `Session store target is not a session store: ${displayTarget}. ${formatErrorMessage(databaseFailure.error)}. Pass a legacy store selector or SQLite target reported by afora sessions or afora status.`,
     );
   }
   return storePath;
@@ -134,7 +134,7 @@ function exitSessionStoreError(
 
 /** Resolves session store targets or exits the current command on validation errors. */
 export function resolveSessionStoreTargetsOrExit(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   opts: SessionStoreSelectionOptions;
   runtime: RuntimeEnv;
   json?: boolean;

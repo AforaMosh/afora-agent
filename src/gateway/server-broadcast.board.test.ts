@@ -3,7 +3,7 @@ import {
   GATEWAY_CLIENT_CAPS,
   GATEWAY_CLIENT_IDS,
 } from "../../packages/gateway-protocol/src/client-info.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createGatewayBroadcaster } from "./server-broadcast.js";
 import {
   createSessionEventSubscriberRegistry,
@@ -216,7 +216,7 @@ describe("collaboration event scope guards", () => {
       subscribers,
       isVisible: () => true,
       getConfig: () =>
-        ({ agents: { list: [{ id: "main", default: true }, { id: "work" }] } }) as OpenClawConfig,
+        ({ agents: { list: [{ id: "main", default: true }, { id: "work" }] } }) as AforaConfig,
     });
     const { broadcastToConnIds } = createGatewayBroadcaster({
       clients: new Set([main.client, legacy.client, both.client, work.client, workRaw.client]),
@@ -255,7 +255,7 @@ describe("collaboration event scope guards", () => {
       sessionEventSubscribers,
       isVisible: () => true,
       getConfig: () =>
-        ({ agents: { list: [{ id: "main", default: true }, { id: "work" }] } }) as OpenClawConfig,
+        ({ agents: { list: [{ id: "main", default: true }, { id: "work" }] } }) as AforaConfig,
     });
     const { broadcastToConnIds } = createGatewayBroadcaster({
       clients: new Set([message.client, eventOnly.client, unrelated.client]),

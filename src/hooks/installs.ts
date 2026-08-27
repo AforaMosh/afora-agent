@@ -1,16 +1,16 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 // Hook install record helpers read and write installed hook metadata.
 import type { HookInstallRecord } from "../config/types.hooks.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { readConfigMachineState, updateConfigMachineState } from "../state/config-machine-state.js";
-import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
+import type { AforaStateDatabaseOptions } from "../state/afora-state-db.js";
 
 /** Install record plus the hook pack id being updated in config. */
 export type HookInstallUpdate = HookInstallRecord & { hookId: string };
 
 /** Read canonical hook install records from machine state. */
 export function readHookInstalls(
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): Record<string, HookInstallRecord> {
   return (
     readConfigMachineState<Record<string, HookInstallRecord>>("hooks.internal.installs", options) ??
@@ -20,10 +20,10 @@ export function readHookInstalls(
 
 /** Persist one hook install record in machine state. */
 export function recordHookInstall(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   update: HookInstallUpdate,
-  options: OpenClawStateDatabaseOptions = {},
-): OpenClawConfig {
+  options: AforaStateDatabaseOptions = {},
+): AforaConfig {
   const { hookId, ...record } = update;
   updateConfigMachineState<Record<string, HookInstallRecord>>(
     "hooks.internal.installs",

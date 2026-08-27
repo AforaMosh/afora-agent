@@ -9,7 +9,7 @@ import path from "node:path";
 import {
   asDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import { resolveOsHomeRelativePath } from "../infra/home-dir.js";
 import { loadJsonFileThroughSymlink } from "../infra/json-file.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
@@ -178,8 +178,8 @@ function parseClaudeCliOauthCredential(claudeOauth: unknown): ClaudeCliCredentia
 
 export function resolveCodexCliHomePath(codexHome?: string, env: NodeJS.ProcessEnv = process.env) {
   const configured = codexHome ?? env.CODEX_HOME;
-  // External CLI state belongs to the OS user, not OpenClaw's relocatable
-  // home. Otherwise an isolated OPENCLAW_HOME hides an already logged-in CLI.
+  // External CLI state belongs to the OS user, not Afora's relocatable
+  // home. Otherwise an isolated AFORA_HOME hides an already logged-in CLI.
   const home = resolveOsHomeRelativePath(configured || "~/.codex", { env });
   try {
     return fs.realpathSync.native(home);
@@ -785,7 +785,7 @@ export function readGeminiCliCredentialsCached(options?: {
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.cliCredentialsTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.cliCredentialsTestApi")] = {
     readCodexAuth: readCodexCliCredentials,
     resetCaches: resetCliCredentialCachesForTest,
   };

@@ -1,13 +1,13 @@
-import { createRuntimeEnv } from "openclaw/plugin-sdk/plugin-test-runtime";
+import { createRuntimeEnv } from "afora-agent/plugin-sdk/plugin-test-runtime";
 // Slack tests cover channel plugin behavior.
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { slackPlugin } from "./channel.js";
 import { registerSlackInstallationState } from "./installation-identity-state.js";
 import { slackOutbound } from "./outbound-adapter.js";
 import * as probeModule from "./probe.js";
-import type { OpenClawConfig } from "./runtime-api.js";
+import type { AforaConfig } from "./runtime-api.js";
 import { setSlackRuntime } from "./runtime.js";
 
 const { handleSlackActionMock } = vi.hoisted(() => ({
@@ -82,7 +82,7 @@ beforeEach(async () => {
   } as never);
 });
 
-async function getSlackConfiguredState(cfg: OpenClawConfig) {
+async function getSlackConfiguredState(cfg: AforaConfig) {
   const account = slackPlugin.config.resolveAccount(cfg, "default");
   const inspectedAccount = slackPlugin.config.inspectAccount?.(cfg, "default") ?? account;
   return {
@@ -276,7 +276,7 @@ describe("slackPlugin actions", () => {
   });
 
   it("honors the selected Slack account during message tool discovery", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         slack: {
           botToken: "xoxb-root",
@@ -355,7 +355,7 @@ describe("slackPlugin actions", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     setSlackRuntime({
       config: {
         loadConfig: () => cfg,
@@ -401,7 +401,7 @@ describe("slackPlugin actions", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     await pairing.notifyApproval({
       cfg,
       id: "team:T12345678:user:U12345678",
@@ -428,7 +428,7 @@ describe("slackPlugin actions", () => {
             appToken: "xapp-test",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
     const downloadFile = findSchemaEntry(discovery?.schema, ["download-file"], "Slack schema");
     const downloadProperties = requireRecord(downloadFile.properties, "download-file properties");
@@ -640,7 +640,7 @@ describe("slackPlugin status", () => {
           appToken: "test-app-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const account = slackPlugin.config.resolveAccount(cfg, "default");
 
     const result = await slackPlugin.status!.probeAccount!({
@@ -664,8 +664,8 @@ describe("slackPlugin status", () => {
     const probeSpy = vi.spyOn(probeModule, "probeSlack").mockResolvedValueOnce({
       ok: true,
       status: 200,
-      bot: { id: "B1", name: "openclaw-bot" },
-      team: { id: "T1", name: "OpenClaw" },
+      bot: { id: "B1", name: "afora-bot" },
+      team: { id: "T1", name: "Afora" },
     });
     const cfg = {
       channels: {
@@ -678,7 +678,7 @@ describe("slackPlugin status", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const account = slackPlugin.config.resolveAccount(cfg, "work");
 
     const result = await slackPlugin.status!.probeAccount!({
@@ -691,8 +691,8 @@ describe("slackPlugin status", () => {
     expect(result).toEqual({
       ok: true,
       status: 200,
-      bot: { id: "B1", name: "openclaw-bot" },
-      team: { id: "T1", name: "OpenClaw" },
+      bot: { id: "B1", name: "afora-bot" },
+      team: { id: "T1", name: "Afora" },
     });
   });
 
@@ -702,7 +702,7 @@ describe("slackPlugin status", () => {
         ok: true,
         warning: "Slack bot token is a user token",
         bot: { id: "UUSER", name: "human-installer" },
-        team: { id: "T1", name: "OpenClaw" },
+        team: { id: "T1", name: "Afora" },
       },
     });
 
@@ -712,7 +712,7 @@ describe("slackPlugin status", () => {
         tone: "warn",
       },
       { text: "Bot: @human-installer" },
-      { text: "Team: OpenClaw (T1)" },
+      { text: "Team: Afora (T1)" },
     ]);
   });
 
@@ -738,7 +738,7 @@ describe("slackPlugin status", () => {
     }
 
     const route = await resolveRoute({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       agentId: "main",
       target: "channel:C1",
       currentSessionKey: "agent:main:slack:channel:C1:thread:1712345678.123456",
@@ -758,12 +758,12 @@ describe("slackPlugin status", () => {
     }
 
     const channelRoute = await resolveRoute({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       agentId: "main",
       target: "team:T123:channel:C456",
     });
     const dmRoute = await resolveRoute({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       agentId: "main",
       accountId: "default",
       target: "team:T123:user:U456",
@@ -786,7 +786,7 @@ describe("slackPlugin status", () => {
     }
 
     const route = await resolveRoute({
-      cfg: { session: { dmScope: "per-channel-peer" } } as OpenClawConfig,
+      cfg: { session: { dmScope: "per-channel-peer" } } as AforaConfig,
       agentId: "main",
       target: "w09g2dj0275",
     });
@@ -822,7 +822,7 @@ describe("slackPlugin status", () => {
             appToken: "xapp-test",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       agentId: "main",
       target: "d0aewsdhaqh",
       threadId: "1778110574.653649",
@@ -869,7 +869,7 @@ describe("slackPlugin status", () => {
             appToken: "xapp-test",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       agentId: "main",
       target: "channel:D123",
     });
@@ -904,7 +904,7 @@ describe("slackPlugin status", () => {
               botToken: "test",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         agentId: "main",
         target: "D0NOUSER001",
         threadId: "1778110574.653649",
@@ -924,7 +924,7 @@ describe("slackPlugin status", () => {
     });
 
     const route = await resolveRoute({
-      cfg: { channels: { slack: { botToken: "xoxb-test" } } } as OpenClawConfig,
+      cfg: { channels: { slack: { botToken: "xoxb-test" } } } as AforaConfig,
       agentId: "main",
       target: "g08gqh53ejm",
     });
@@ -1009,7 +1009,7 @@ describe("slackPlugin security", () => {
             allowFrom: ["  slack:U123  "],
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       account: slackPlugin.config.resolveAccount(
         {
           channels: {
@@ -1020,7 +1020,7 @@ describe("slackPlugin security", () => {
               allowFrom: ["  slack:U123  "],
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         "default",
       ),
     });
@@ -1711,7 +1711,7 @@ describe("slackPlugin agentPrompt", () => {
       "- Use `presentation` buttons/selects for discrete choices or parameter picks instead of asking the user to type one.",
     );
     expect(hints).toContain(
-      "- Slack plain text sends: write standard Markdown; OpenClaw converts it to Slack mrkdwn, including `**bold**`, headings, lists, and `[label](url)` links.",
+      "- Slack plain text sends: write standard Markdown; Afora converts it to Slack mrkdwn, including `**bold**`, headings, lists, and `[label](url)` links.",
     );
     expect(hints).toContain(
       "- For row-and-column data, use an explicit `presentation` table block; Slack renders it as a native table and retains a linear text summary for accessibility. Markdown pipe tables are not auto-promoted.",
@@ -1892,7 +1892,7 @@ describe("slackPlugin config", () => {
     async ({ slack, expectedTransportSource }) => {
       const { configured, snapshot } = await getSlackConfiguredState({
         channels: { slack },
-      } as OpenClawConfig);
+      } as AforaConfig);
 
       expect(configured).toBe(true);
       expect(snapshot).toMatchObject({
@@ -1906,7 +1906,7 @@ describe("slackPlugin config", () => {
   );
 
   it("treats HTTP mode accounts with bot token + signing secret as configured", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         slack: {
           mode: "http",
@@ -1923,7 +1923,7 @@ describe("slackPlugin config", () => {
   });
 
   it("keeps socket mode requiring app token", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         slack: {
           mode: "socket",
@@ -1951,7 +1951,7 @@ describe("slackPlugin config", () => {
         appTokenSource: "none",
         config: {},
       } as never,
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       runtime: undefined,
     });
 
@@ -1978,7 +1978,7 @@ describe("slackPlugin config", () => {
           signingSecret: { source: "env", provider: "default", id: "SLACK_SIGNING_SECRET" },
         },
       } as never,
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       runtime: undefined,
     });
 

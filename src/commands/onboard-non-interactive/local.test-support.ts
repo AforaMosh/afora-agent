@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import "./local.js";
 
 type GatewayHealthProbeAuth = {
@@ -8,7 +8,7 @@ type GatewayHealthProbeAuth = {
 };
 
 type TestApi = {
-  resolveGatewayHealthProbeToken(nextConfig: OpenClawConfig): Promise<GatewayHealthProbeAuth>;
+  resolveGatewayHealthProbeToken(nextConfig: AforaConfig): Promise<GatewayHealthProbeAuth>;
   resolveInstallDaemonGatewayHealthTiming(platform?: NodeJS.Platform): {
     deadlineMs: number;
     probeTimeoutMs: number;
@@ -18,7 +18,7 @@ type TestApi = {
 
 function getTestApi(): TestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.onboardNonInteractiveLocalTestApi")
+    Symbol.for("afora.onboardNonInteractiveLocalTestApi")
   ] as TestApi;
 }
 

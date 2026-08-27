@@ -1,17 +1,17 @@
 // Memory Wiki plugin module implements compile behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { runTasksWithConcurrency } from "openclaw/plugin-sdk/concurrency-runtime";
-import { retryTransientMemoryRead } from "openclaw/plugin-sdk/memory-core-host-engine-storage";
+import { runTasksWithConcurrency } from "afora-agent/plugin-sdk/concurrency-runtime";
+import { retryTransientMemoryRead } from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
 import {
   replaceManagedMarkdownBlock,
   withTrailingNewline,
-} from "openclaw/plugin-sdk/memory-host-markdown";
-import { root as fsRoot } from "openclaw/plugin-sdk/security-runtime";
+} from "afora-agent/plugin-sdk/memory-host-markdown";
+import { root as fsRoot } from "afora-agent/plugin-sdk/security-runtime";
 import {
   normalizeLowercaseStringOrEmpty,
   uniqueStrings,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { walkMemoryWikiDirectory } from "./bounded-walk.js";
 import {
   assessClaimFreshness,
@@ -969,8 +969,8 @@ async function writeDashboardPage(params: {
   const updatedBody = replaceManagedMarkdownBlock({
     original: originalBody,
     heading: "## Generated",
-    startMarker: `<!-- openclaw:wiki:${path.basename(params.definition.relativePath, ".md")}:start -->`,
-    endMarker: `<!-- openclaw:wiki:${path.basename(params.definition.relativePath, ".md")}:end -->`,
+    startMarker: `<!-- afora:wiki:${path.basename(params.definition.relativePath, ".md")}:start -->`,
+    endMarker: `<!-- afora:wiki:${path.basename(params.definition.relativePath, ".md")}:end -->`,
     body: params.definition.buildBody({
       config: params.config,
       managedImportedSourcePagePaths: params.managedImportedSourcePagePaths,
@@ -1289,8 +1289,8 @@ async function compileMemoryWikiVaultUnlocked(
       rootDir,
       relativePath: "index.md",
       title: "Wiki Index",
-      startMarker: "<!-- openclaw:wiki:index:start -->",
-      endMarker: "<!-- openclaw:wiki:index:end -->",
+      startMarker: "<!-- afora:wiki:index:start -->",
+      endMarker: "<!-- afora:wiki:index:end -->",
       body: buildRootIndexBody({ config, pages, counts }),
     })
   ) {
@@ -1305,8 +1305,8 @@ async function compileMemoryWikiVaultUnlocked(
         rootDir,
         relativePath,
         title: group.heading,
-        startMarker: `<!-- openclaw:wiki:${group.dir}:index:start -->`,
-        endMarker: `<!-- openclaw:wiki:${group.dir}:index:end -->`,
+        startMarker: `<!-- afora:wiki:${group.dir}:index:start -->`,
+        endMarker: `<!-- afora:wiki:${group.dir}:index:end -->`,
         body: buildDirectoryIndexBody({ config, pages, group }),
       })
     ) {

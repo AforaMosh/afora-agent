@@ -1,5 +1,5 @@
 // Mattermost tests cover real REST client timeout behavior.
-import { withServer } from "openclaw/plugin-sdk/test-env";
+import { withServer } from "afora-agent/plugin-sdk/test-env";
 import { describe, expect, it } from "vitest";
 import {
   createMattermostClient,

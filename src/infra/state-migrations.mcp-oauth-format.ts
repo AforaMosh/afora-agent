@@ -5,7 +5,7 @@ import {
   OAuthTokensSchema,
   OpenIdProviderDiscoveryMetadataSchema,
 } from "@modelcontextprotocol/sdk/shared/auth.js";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 
 const MAX_TIMESTAMP_MS = 8_640_000_000_000_000;
 const STORE_KEYS = new Set([

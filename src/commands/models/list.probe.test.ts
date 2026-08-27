@@ -3,10 +3,10 @@ import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { AgentRunResultView } from "../../agents/agent-run-result.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { acquireGatewayLock, type GatewayLockOptions } from "../../infra/gateway-lock.js";
 
 let probeModule: typeof import("./list.probe.js");
@@ -16,8 +16,8 @@ function createGatewayLockOptions(stateDir: string): GatewayLockOptions {
     allowInTests: true,
     env: {
       ...process.env,
-      OPENCLAW_CONFIG_PATH: path.join(stateDir, "openclaw.json"),
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_CONFIG_PATH: path.join(stateDir, "afora.json"),
+      AFORA_STATE_DIR: stateDir,
     },
     lockDir: path.join(stateDir, "gateway-locks"),
     readProcessStartTime: () => 123_456,
@@ -51,7 +51,7 @@ function createSignalProcess() {
 }
 
 async function withTempState<T>(run: (stateDir: string) => Promise<T>): Promise<T> {
-  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-model-probe-lock-"));
+  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-model-probe-lock-"));
   try {
     return await run(stateDir);
   } finally {
@@ -115,7 +115,7 @@ describe("runAuthProbes", () => {
             async () => undefined,
           ),
         ).rejects.toThrow(
-          `A Gateway is running for this state directory (pid ${process.pid}, port 28789). Stop the Gateway first (openclaw gateway stop), then rerun models status --probe.`,
+          `A Gateway is running for this state directory (pid ${process.pid}, port 28789). Stop the Gateway first (afora gateway stop), then rerun models status --probe.`,
         );
       } finally {
         await gatewayLock.release();
@@ -171,16 +171,16 @@ describe("runAuthProbes", () => {
     });
   });
 
-  it("runs Codex-pinned auth probes through raw OpenClaw model-run mode", async () => {
+  it("runs Codex-pinned auth probes through raw Afora model-run mode", async () => {
     const runEmbeddedAgent = vi.fn(
       async (params: {
         agentDir?: string;
         agentHarnessRuntimeOverride?: string;
         authProfileId?: string;
         authProfileIdSource?: string;
-        config?: OpenClawConfig;
+        config?: AforaConfig;
       }): Promise<AgentRunResultView> => {
-        if (params.agentHarnessRuntimeOverride !== "openclaw") {
+        if (params.agentHarnessRuntimeOverride !== "afora") {
           throw new Error(
             'Requested agent harness "codex" does not support openai/gpt-5.5 (Codex cannot reproduce authored request transport overrides).',
           );
@@ -236,10 +236,10 @@ describe("runAuthProbes", () => {
               },
             },
           },
-        } satisfies OpenClawConfig,
+        } satisfies AforaConfig,
         agentId: "probe-agent",
-        agentDir: "/tmp/openclaw-probe-agent",
-        workspaceDir: "/tmp/openclaw-probe-workspace",
+        agentDir: "/tmp/afora-probe-agent",
+        workspaceDir: "/tmp/afora-probe-workspace",
         providers: ["openai"],
         modelCandidates: ["openai/gpt-5.5"],
         options: {
@@ -254,7 +254,7 @@ describe("runAuthProbes", () => {
       expect(result.results[0]?.status).toBe("ok");
       expect(runEmbeddedAgent).toHaveBeenCalledWith(
         expect.objectContaining({
-          agentHarnessRuntimeOverride: "openclaw",
+          agentHarnessRuntimeOverride: "afora",
           modelRun: true,
           disableTools: true,
           modelFallbacksOverride: [],
@@ -278,10 +278,10 @@ describe("runAuthProbes", () => {
               },
             },
           },
-        } satisfies OpenClawConfig,
+        } satisfies AforaConfig,
         agentId: "probe-agent",
-        agentDir: "/tmp/openclaw-probe-agent",
-        workspaceDir: "/tmp/openclaw-probe-workspace",
+        agentDir: "/tmp/afora-probe-agent",
+        workspaceDir: "/tmp/afora-probe-workspace",
         providers: ["openai"],
         modelCandidates: ["openai/gpt-5.5"],
         options: {
@@ -307,7 +307,7 @@ describe("runAuthProbes", () => {
         agentDir?: string;
         authProfileId?: string;
         authProfileIdSource?: string;
-        config?: OpenClawConfig;
+        config?: AforaConfig;
       }) => ({ payloads: [{ text: "OK" }] }),
     );
     vi.doMock("../../agents/embedded-agent.js", () => ({ runEmbeddedAgent }));
@@ -368,8 +368,8 @@ describe("runAuthProbes", () => {
       await module.runAuthProbes({
         cfg: { models: { providers: { openai: providerConfig } } },
         agentId: "probe-agent",
-        agentDir: "/tmp/openclaw-probe-agent",
-        workspaceDir: "/tmp/openclaw-probe-workspace",
+        agentDir: "/tmp/afora-probe-agent",
+        workspaceDir: "/tmp/afora-probe-workspace",
         providers: ["openai"],
         modelCandidates: ["openai/gpt-5.5"],
         options: {
@@ -384,7 +384,7 @@ describe("runAuthProbes", () => {
       const configKeyCall = runEmbeddedAgent.mock.calls.find(([params]) =>
         params.authProfileId?.startsWith("openai:probe-"),
       );
-      expect(configKeyCall?.[0].agentDir).not.toBe("/tmp/openclaw-probe-agent");
+      expect(configKeyCall?.[0].agentDir).not.toBe("/tmp/afora-probe-agent");
       expect(configKeyCall?.[0].authProfileIdSource).toBe("user");
       expect(configKeyCall?.[0].config).toMatchObject({
         models: {
@@ -421,7 +421,7 @@ describe("runAuthProbes", () => {
 
   it("isolates marker credentials from stored profiles without pinning a synthetic one", async () => {
     const runEmbeddedAgent = vi.fn(
-      async (_params: { agentDir?: string; authProfileId?: string; config?: OpenClawConfig }) => ({
+      async (_params: { agentDir?: string; authProfileId?: string; config?: AforaConfig }) => ({
         payloads: [{ text: "OK" }],
       }),
     );
@@ -471,8 +471,8 @@ describe("runAuthProbes", () => {
       await module.runAuthProbes({
         cfg,
         agentId: "probe-agent",
-        agentDir: "/tmp/openclaw-probe-agent",
-        workspaceDir: "/tmp/openclaw-probe-workspace",
+        agentDir: "/tmp/afora-probe-agent",
+        workspaceDir: "/tmp/afora-probe-workspace",
         providers: ["openai"],
         modelCandidates: ["openai/gpt-5.5"],
         options: {
@@ -488,8 +488,8 @@ describe("runAuthProbes", () => {
       // auth order cleared, so only the marker credential is exercised — and no
       // synthetic profile is pinned, letting the runtime resolve the marker.
       const call = runEmbeddedAgent.mock.calls[0]?.[0];
-      expect(call?.agentDir).not.toBe("/tmp/openclaw-probe-agent");
-      expect(call?.agentDir).toContain("openclaw-auth-probe-");
+      expect(call?.agentDir).not.toBe("/tmp/afora-probe-agent");
+      expect(call?.agentDir).toContain("afora-auth-probe-");
       expect(call?.config?.auth?.order?.openai).toEqual([]);
       expect(call?.config?.models?.providers?.openai?.apiKey).toBe(
         cfg.models.providers.openai.apiKey,

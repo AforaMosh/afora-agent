@@ -21,13 +21,13 @@ vi.mock("../../logging/subsystem.js", async () => {
 import { executeSqliteQuerySync } from "../../infra/kysely-sync.js";
 import { beginSessionWorkAdmission } from "../../sessions/session-lifecycle-admission.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../../test-utils/afora-test-state.js";
 import { appendSqliteTrajectoryRuntimeEvents } from "../../trajectory/runtime-store.sqlite.js";
 import type { TrajectoryEvent } from "../../trajectory/types.js";
 import { measureSessionPhysicalDiskUsage } from "./disk-budget.js";
@@ -46,13 +46,13 @@ import {
 import { resolveSqliteTargetFromSessionStorePath } from "./session-sqlite-target.js";
 
 describe("SQLite historical session disk budget", () => {
-  let testState: OpenClawTestState;
+  let testState: AforaTestState;
   let tempDir: string;
   let storePath: string;
 
   beforeEach(async () => {
-    testState = await createOpenClawTestState({
-      prefix: "openclaw-session-history-budget-",
+    testState = await createAforaTestState({
+      prefix: "afora-session-history-budget-",
       layout: "state-only",
     });
     tempDir = testState.sessionsDir();
@@ -66,7 +66,7 @@ describe("SQLite historical session disk budget", () => {
       mode: "warn",
       maintenance: { maxDiskBytes: null, highWaterBytes: null },
     });
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
     await testState.cleanup();
   });
 
@@ -450,7 +450,7 @@ describe("SQLite historical session disk budget", () => {
     if (!target.path) {
       throw new Error("expected SQLite database path");
     }
-    return openOpenClawAgentDatabase({ agentId: target.agentId ?? "main", path: target.path });
+    return openAforaAgentDatabase({ agentId: target.agentId ?? "main", path: target.path });
   }
 
   function settlePhysicalUsage(): void {
@@ -510,7 +510,7 @@ describe("SQLite historical session disk budget", () => {
 
 function createTrajectoryEvent(sessionId: string, sessionKey: string): TrajectoryEvent {
   return {
-    traceSchema: "openclaw-trajectory",
+    traceSchema: "afora-trajectory",
     schemaVersion: 1,
     traceId: sessionId,
     source: "runtime",

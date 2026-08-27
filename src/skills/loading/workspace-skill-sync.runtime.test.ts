@@ -68,7 +68,7 @@ async function expectSyncedSkillConfinement(params: {
 
 beforeAll(async () => {
   fixtureRoot = await fs.realpath(
-    await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-skills-sync-suite-")),
+    await fs.mkdtemp(path.join(os.tmpdir(), "afora-skills-sync-suite-")),
   );
   syncSourceTemplateDir = await createCaseDir("source-template");
   await writeSkill({
@@ -238,7 +238,7 @@ describe("syncWorkspaceSkills", () => {
     await syncWorkspaceSkills(syncParams);
 
     const targetSkillsDir = path.join(targetWorkspace, "skills");
-    const manifestPath = path.join(targetSkillsDir, ".openclaw-sync.json");
+    const manifestPath = path.join(targetSkillsDir, ".afora-sync.json");
     const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8")) as {
       skillsVersion: number;
       entryKeys: string[];
@@ -399,7 +399,7 @@ describe("syncWorkspaceSkills", () => {
     await syncWorkspaceSkills({ ...syncParams, skillsSnapshot: secondSnapshot });
     copy.mockRestore();
 
-    const manifestPath = path.join(targetWorkspace, "skills", ".openclaw-sync.json");
+    const manifestPath = path.join(targetWorkspace, "skills", ".afora-sync.json");
     expect(await pathExists(manifestPath)).toBe(false);
     await syncWorkspaceSkills({ ...syncParams, skillsSnapshot: secondSnapshot });
     expect(await pathExists(manifestPath)).toBe(true);
@@ -407,7 +407,7 @@ describe("syncWorkspaceSkills", () => {
       await fs.readFile(path.join(targetWorkspace, "skills", "alpha", "asset.txt"), "utf8"),
     ).toBe("after");
 
-    const interruptedTemp = path.join(targetWorkspace, "skills", ".openclaw-sync.interrupted.tmp");
+    const interruptedTemp = path.join(targetWorkspace, "skills", ".afora-sync.interrupted.tmp");
     await fs.rm(manifestPath);
     await fs.writeFile(interruptedTemp, "partial");
     await syncWorkspaceSkills({ ...syncParams, skillsSnapshot: secondSnapshot });
@@ -562,7 +562,7 @@ describe("syncWorkspaceSkills", () => {
       name: "image-lab",
       description: "Generates images",
       metadata:
-        '{"openclaw":{"requires":{"env":["GEMINI_API_KEY"]},"primaryEnv":"GEMINI_API_KEY"}}',
+        '{"afora":{"requires":{"env":["GEMINI_API_KEY"]},"primaryEnv":"GEMINI_API_KEY"}}',
       body: "# Image Lab\n",
     });
 
@@ -616,7 +616,7 @@ describe("syncWorkspaceSkills", () => {
       dir: path.join(sourceWorkspace, "skills", "remote-only"),
       name: "remote-only",
       description: "Sandbox-only bin",
-      metadata: '{"openclaw":{"requires":{"anyBins":["missingbin","sandboxbin"]}}}',
+      metadata: '{"afora":{"requires":{"anyBins":["missingbin","sandboxbin"]}}}',
     });
 
     await syncWorkspaceSkills({
@@ -702,7 +702,7 @@ describe("syncWorkspaceSkills for plugin skills", () => {
       description: "Wiki maintenance skill for sandboxed agents",
     });
 
-    const pluginSkillsDir = path.join(sourceWorkspace, ".openclaw", "plugin-skills");
+    const pluginSkillsDir = path.join(sourceWorkspace, ".afora", "plugin-skills");
     await fs.mkdir(pluginSkillsDir, { recursive: true });
     const symlinkPath = path.join(pluginSkillsDir, "wiki-maintainer");
 
@@ -767,7 +767,7 @@ describe("syncWorkspaceSkills for plugin skills", () => {
     });
 
     // Create plugin-skills directory with symlinks
-    const pluginSkillsDir = path.join(sourceWorkspace, ".openclaw", "plugin-skills");
+    const pluginSkillsDir = path.join(sourceWorkspace, ".afora", "plugin-skills");
     await fs.mkdir(pluginSkillsDir, { recursive: true });
 
     await fs.symlink(
@@ -814,7 +814,7 @@ describe("syncWorkspaceSkills for plugin skills", () => {
     });
 
     // Create plugin-skills with symlink to escaped skill
-    const pluginSkillsDir = path.join(sourceWorkspace, ".openclaw", "plugin-skills");
+    const pluginSkillsDir = path.join(sourceWorkspace, ".afora", "plugin-skills");
     await fs.mkdir(pluginSkillsDir, { recursive: true });
     await fs.symlink(
       escapedSkillDir,

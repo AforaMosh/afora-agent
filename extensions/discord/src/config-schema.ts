@@ -14,12 +14,12 @@ import {
   requireAllowlistAllowFrom,
   requireOpenAllowFrom,
   TtsConfigSchema,
-} from "openclaw/plugin-sdk/channel-config-schema";
+} from "afora-agent/plugin-sdk/channel-config-schema";
 import {
   buildSecretInputSchema,
   registerSensitiveConfigSchema,
-} from "openclaw/plugin-sdk/secret-input";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/secret-input";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { z } from "zod";
 import { discordChannelConfigUiHints } from "./config-ui-hints.js";
 

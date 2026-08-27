@@ -1,5 +1,5 @@
 /** Runs image model candidates through the shared fallback attempt machinery. */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import {
   type ModelFallbackErrorHandler,
@@ -14,7 +14,7 @@ import {
 import type { FallbackAttempt } from "./model-fallback.types.js";
 
 export async function runWithImageModelFallback<T>(params: {
-  cfg: OpenClawConfig | undefined;
+  cfg: AforaConfig | undefined;
   modelOverride?: string;
   run: (provider: string, model: string) => Promise<T>;
   onError?: ModelFallbackErrorHandler;

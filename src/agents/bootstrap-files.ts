@@ -3,11 +3,11 @@
  * bounded context files.
  */
 import path from "node:path";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { ChatType } from "../channels/chat-type.js";
 import { readRecentSessionTranscriptActiveEvents } from "../config/sessions/session-accessor.js";
 import type { AgentContextInjection } from "../config/types.agent-defaults.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveUserPath } from "../utils.js";
 import { resolveAgentConfig } from "./agent-scope.js";
 import { getOrLoadBootstrapFiles } from "./bootstrap-cache.js";
@@ -33,7 +33,7 @@ import {
 export type BootstrapContextMode = "full" | "lightweight";
 
 const CONTINUATION_SCAN_MAX_RECORDS = 500;
-export const FULL_BOOTSTRAP_COMPLETED_CUSTOM_TYPE = "openclaw:bootstrap-context:full";
+export const FULL_BOOTSTRAP_COMPLETED_CUSTOM_TYPE = "afora:bootstrap-context:full";
 const BOOTSTRAP_WARNING_DEDUPE_LIMIT = 1024;
 const seenBootstrapWarnings = new Set<string>();
 const bootstrapWarningOrder: string[] = [];
@@ -57,7 +57,7 @@ function rememberBootstrapWarning(key: string): boolean {
 
 /** Resolves the effective bootstrap injection mode for a session agent. */
 export function resolveContextInjectionMode(
-  config?: OpenClawConfig,
+  config?: AforaConfig,
   agentId?: string | null,
 ): AgentContextInjection {
   const agentMode =
@@ -222,7 +222,7 @@ function filterBootstrapFilesAfterHooks(params: {
 /** Resolves hook-adjusted, session-filtered bootstrap files for a run. */
 export async function resolveBootstrapFilesForRun(params: {
   workspaceDir: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   sessionKey?: string;
   sessionId?: string;
   chatType?: ChatType;
@@ -288,7 +288,7 @@ export async function resolveBootstrapFilesForRun(params: {
 /** Resolves both raw bootstrap metadata and bounded context files for a run. */
 export async function resolveBootstrapContextForRun(params: {
   workspaceDir: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   sessionKey?: string;
   sessionId?: string;
   chatType?: ChatType;
@@ -310,7 +310,7 @@ export async function resolveBootstrapContextForRun(params: {
 export function buildBootstrapContextForFiles(
   bootstrapFiles: WorkspaceBootstrapFile[],
   params: {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     agentId?: string | null;
     warn?: (message: string) => void;
   },

@@ -1,7 +1,7 @@
 // Discord plugin module implements runtime behavior.
-import type { AgentToolResult } from "openclaw/plugin-sdk/agent-core";
+import type { AgentToolResult } from "afora-agent/plugin-sdk/agent-core";
 import { createDiscordActionGate } from "../accounts.js";
-import { readStringParam, type OpenClawConfig } from "../runtime-api.js";
+import { readStringParam, type AforaConfig } from "../runtime-api.js";
 import { handleDiscordGuildAction } from "./runtime.guild.js";
 import { handleDiscordMessagingAction } from "./runtime.messaging.js";
 import type { DiscordMessagingActionOptions } from "./runtime.messaging.shared.js";
@@ -58,7 +58,7 @@ const presenceActions = new Set(["setPresence"]);
 
 export async function handleDiscordAction(
   params: Record<string, unknown>,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   options?: DiscordMessagingActionOptions,
 ): Promise<AgentToolResult<unknown>> {
   const action = readStringParam(params, "action", { required: true });

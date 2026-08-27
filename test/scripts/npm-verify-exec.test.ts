@@ -8,7 +8,7 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("npm verifier command execution", () => {
   it("trims successful command output", () => {
-    const root = tempDirs.make("openclaw-npm-verify-exec-");
+    const root = tempDirs.make("afora-npm-verify-exec-");
 
     expect(
       runNpmVerifyCommand(
@@ -23,7 +23,7 @@ describe("npm verifier command execution", () => {
   });
 
   it("bounds hung commands even when they ignore SIGTERM", () => {
-    const root = tempDirs.make("openclaw-npm-verify-exec-");
+    const root = tempDirs.make("afora-npm-verify-exec-");
     const startedAt = Date.now();
 
     expect(() =>
@@ -40,7 +40,7 @@ describe("npm verifier command execution", () => {
   });
 
   it("bounds buffered command output", () => {
-    const root = tempDirs.make("openclaw-npm-verify-exec-");
+    const root = tempDirs.make("afora-npm-verify-exec-");
 
     expect(() =>
       runNpmVerifyCommand(
@@ -55,24 +55,24 @@ describe("npm verifier command execution", () => {
   });
 
   it("rejects malformed command limit environment values", () => {
-    const root = tempDirs.make("openclaw-npm-verify-exec-");
+    const root = tempDirs.make("afora-npm-verify-exec-");
 
-    withEnv({ OPENCLAW_NPM_VERIFY_COMMAND_TIMEOUT_MS: "5m" }, () => {
+    withEnv({ AFORA_NPM_VERIFY_COMMAND_TIMEOUT_MS: "5m" }, () => {
       expect(() =>
         runNpmVerifyCommand(
           { command: process.execPath, args: ["-e", "process.stdout.write('ok')"] },
           root,
         ),
-      ).toThrow("invalid OPENCLAW_NPM_VERIFY_COMMAND_TIMEOUT_MS: 5m");
+      ).toThrow("invalid AFORA_NPM_VERIFY_COMMAND_TIMEOUT_MS: 5m");
     });
 
-    withEnv({ OPENCLAW_NPM_VERIFY_COMMAND_MAX_BUFFER_BYTES: "16mb" }, () => {
+    withEnv({ AFORA_NPM_VERIFY_COMMAND_MAX_BUFFER_BYTES: "16mb" }, () => {
       expect(() =>
         runNpmVerifyCommand(
           { command: process.execPath, args: ["-e", "process.stdout.write('ok')"] },
           root,
         ),
-      ).toThrow("invalid OPENCLAW_NPM_VERIFY_COMMAND_MAX_BUFFER_BYTES: 16mb");
+      ).toThrow("invalid AFORA_NPM_VERIFY_COMMAND_MAX_BUFFER_BYTES: 16mb");
     });
   });
 });

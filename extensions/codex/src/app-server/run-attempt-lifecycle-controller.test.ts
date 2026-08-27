@@ -48,7 +48,7 @@ function createTerminalReleaseHarness() {
     {
       state,
       activeTurnItemIds: new Set(),
-      pendingOpenClawDynamicToolCompletionIds: new Set(),
+      pendingAforaDynamicToolCompletionIds: new Set(),
       steeringQueueRef: { current: { cancel } },
       interruptTurn: (turnId: string) =>
         interruptCodexTurnAndWaitBestEffort(client as never, {

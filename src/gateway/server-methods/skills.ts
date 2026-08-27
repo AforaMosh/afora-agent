@@ -1,5 +1,5 @@
 // Gateway RPC handlers for skill discovery, install/update, and proposal workflows.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   buildClawHubTrustErrorDetails,
   ErrorCodes,
@@ -47,7 +47,7 @@ import { loadWorkspaceSkills } from "../../skills/loading/workspace-skill-loader
 import { getRemoteSkillEligibility } from "../../skills/runtime/remote.js";
 import {
   collectClawHubVerdictTargets,
-  fetchOpenClawSkillSecurityVerdicts,
+  fetchAforaSkillSecurityVerdicts,
 } from "../../skills/security/clawhub-verdicts.js";
 import {
   getSkillCuratorStatus,
@@ -213,11 +213,11 @@ export const skillsHandlers: GatewayRequestHandlers = {
       const report = buildRemoteAwareWorkspaceSkillStatus(resolved);
       const targets = collectClawHubVerdictTargets(report);
       if (targets.length === 0) {
-        respond(true, { schema: "openclaw.skills.security-verdicts.v1", items: [] }, undefined);
+        respond(true, { schema: "afora.skills.security-verdicts.v1", items: [] }, undefined);
         return;
       }
-      const items = await fetchOpenClawSkillSecurityVerdicts(targets);
-      respond(true, { schema: "openclaw.skills.security-verdicts.v1", items }, undefined);
+      const items = await fetchAforaSkillSecurityVerdicts(targets);
+      respond(true, { schema: "afora.skills.security-verdicts.v1", items }, undefined);
     } catch (err) {
       respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, formatErrorMessage(err)));
     }
@@ -256,7 +256,7 @@ export const skillsHandlers: GatewayRequestHandlers = {
     respond(
       true,
       {
-        schema: "openclaw.skills.skill-card.v1",
+        schema: "afora.skills.skill-card.v1",
         skillKey: skill.skillKey,
         path: skill.skillCard.path,
         sizeBytes: skill.skillCard.sizeBytes,
@@ -311,7 +311,7 @@ export const skillsHandlers: GatewayRequestHandlers = {
           undefined,
           errorShape(
             ErrorCodes.INVALID_REQUEST,
-            `ClawHub cannot return details for ${requested.requestedReference}; external skill sources are install-only. Install it directly, or run "openclaw skills install ${requested.requestedReference}".`,
+            `ClawHub cannot return details for ${requested.requestedReference}; external skill sources are install-only. Install it directly, or run "afora skills install ${requested.requestedReference}".`,
           ),
         );
         return;

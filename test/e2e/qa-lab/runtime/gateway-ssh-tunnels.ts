@@ -24,7 +24,7 @@ const SOURCE_PATH = "test/e2e/qa-lab/runtime/gateway-ssh-tunnels.ts";
 const STATUS_TIMEOUT_MS = 8_000;
 const PROCESS_TIMEOUT_MS = 10_000;
 const TEST_TOKEN = "qa-gateway-ssh-token";
-const SSH_NAMESPACE_MARKER = "OPENCLAW_QA_SSH_NAMESPACE";
+const SSH_NAMESPACE_MARKER = "AFORA_QA_SSH_NAMESPACE";
 
 type ProducerOptions = {
   artifactBase: string;
@@ -359,9 +359,9 @@ async function runInSshNamespace(options: ProducerOptions): Promise<QaEvidenceSu
     wrapperPath,
     [
       "#!/bin/sh",
-      ': "${OPENCLAW_QA_REAL_SSH:?missing system SSH path}"',
-      ': "${OPENCLAW_QA_SSH_KNOWN_HOSTS:?missing isolated known-hosts path}"',
-      'exec "$OPENCLAW_QA_REAL_SSH" -F /dev/null -o "UserKnownHostsFile=$OPENCLAW_QA_SSH_KNOWN_HOSTS" -o GlobalKnownHostsFile=/dev/null -o UpdateHostKeys=no "$@"',
+      ': "${AFORA_QA_REAL_SSH:?missing system SSH path}"',
+      ': "${AFORA_QA_SSH_KNOWN_HOSTS:?missing isolated known-hosts path}"',
+      'exec "$AFORA_QA_REAL_SSH" -F /dev/null -o "UserKnownHostsFile=$AFORA_QA_SSH_KNOWN_HOSTS" -o GlobalKnownHostsFile=/dev/null -o UpdateHostKeys=no "$@"',
       "",
     ].join("\n"),
     { mode: 0o700 },
@@ -369,8 +369,8 @@ async function runInSshNamespace(options: ProducerOptions): Promise<QaEvidenceSu
 
   const childSource = `
 import { pathToFileURL } from "node:url";
-const modulePath = process.env.OPENCLAW_QA_PRODUCER_PATH;
-const rawOptions = process.env.OPENCLAW_QA_PRODUCER_OPTIONS;
+const modulePath = process.env.AFORA_QA_PRODUCER_PATH;
+const rawOptions = process.env.AFORA_QA_PRODUCER_OPTIONS;
 if (!modulePath || !rawOptions) {
   throw new Error("missing namespaced producer configuration");
 }
@@ -383,10 +383,10 @@ set -eu
 ${mount} --bind "$1" "$2"
 ${mount} --bind "$3" "$1"
 export ${SSH_NAMESPACE_MARKER}=1
-export OPENCLAW_TESTBOX=1
-export OPENCLAW_QA_REAL_SSH="$2"
-export OPENCLAW_QA_PRODUCER_PATH="$4"
-export OPENCLAW_QA_PRODUCER_OPTIONS="$5"
+export AFORA_TESTBOX=1
+export AFORA_QA_REAL_SSH="$2"
+export AFORA_QA_PRODUCER_PATH="$4"
+export AFORA_QA_PRODUCER_OPTIONS="$5"
 shift 5
 exec "$@"
 `;
@@ -397,7 +397,7 @@ exec "$@"
     "/bin/sh",
     "-c",
     shellScript,
-    "openclaw-qa-ssh-namespace",
+    "afora-qa-ssh-namespace",
     ssh,
     realSshPath,
     wrapperPath,
@@ -533,9 +533,9 @@ export async function runGatewaySshTunnels(
       ],
     },
   });
-  if (process.env.OPENCLAW_TESTBOX !== "1") {
+  if (process.env.AFORA_TESTBOX !== "1") {
     return await writer.write({
-      details: "Gateway SSH tunnel QA requires OPENCLAW_TESTBOX=1 before privileged setup",
+      details: "Gateway SSH tunnel QA requires AFORA_TESTBOX=1 before privileged setup",
       durationMs: 1,
       status: "blocked",
     });
@@ -544,12 +544,12 @@ export async function runGatewaySshTunnels(
     return await runInSshNamespace(options);
   }
   const startedAt = Date.now();
-  // openclaw-temp-dir: normal runs remove the fixture root; the SIGKILL test tracks its injected root
+  // afora-temp-dir: normal runs remove the fixture root; the SIGKILL test tracks its injected root
   const root =
-    options.fixtureRoot ?? (await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gateway-ssh-")));
+    options.fixtureRoot ?? (await fs.mkdtemp(path.join(os.tmpdir(), "afora-gateway-ssh-")));
   const homeDir = path.join(root, "home");
   const stateDir = path.join(root, "state");
-  const configPath = path.join(root, "openclaw.json");
+  const configPath = path.join(root, "afora.json");
   const summaryPath = path.join(options.artifactBase, "gateway-ssh-tunnels-summary.json");
   let sshd: IsolatedSshd | undefined;
   let gateway: Awaited<ReturnType<typeof startGatewayServer>> | undefined;
@@ -590,18 +590,18 @@ export async function runGatewaySshTunnels(
       {
         ...snapshotGatewayStartupEnv(),
         HOME: homeDir,
-        OPENCLAW_CONFIG_PATH: configPath,
-        OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-        OPENCLAW_HOME: homeDir,
-        OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-        OPENCLAW_SKIP_CANVAS_HOST: "1",
-        OPENCLAW_SKIP_CHANNELS: "1",
-        OPENCLAW_SKIP_CRON: "1",
-        OPENCLAW_SKIP_GMAIL_WATCHER: "1",
-        OPENCLAW_SKIP_PROVIDERS: "1",
-        OPENCLAW_QA_SSH_KNOWN_HOSTS: isolatedSshd.knownHostsPath,
-        OPENCLAW_STATE_DIR: stateDir,
-        OPENCLAW_TEST_MINIMAL_GATEWAY: "1",
+        AFORA_CONFIG_PATH: configPath,
+        AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+        AFORA_HOME: homeDir,
+        AFORA_SKIP_BROWSER_CONTROL_SERVER: "1",
+        AFORA_SKIP_CANVAS_HOST: "1",
+        AFORA_SKIP_CHANNELS: "1",
+        AFORA_SKIP_CRON: "1",
+        AFORA_SKIP_GMAIL_WATCHER: "1",
+        AFORA_SKIP_PROVIDERS: "1",
+        AFORA_QA_SSH_KNOWN_HOSTS: isolatedSshd.knownHostsPath,
+        AFORA_STATE_DIR: stateDir,
+        AFORA_TEST_MINIMAL_GATEWAY: "1",
       },
       async () => {
         clearRuntimeConfigSnapshot();

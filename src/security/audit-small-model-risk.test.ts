@@ -1,6 +1,6 @@
 // Covers small-model risk audit findings.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { collectSmallModelRiskFindings } from "./audit-extra.summary.js";
 import { collectAuditModelRefs } from "./audit-model-refs.js";
 
@@ -30,7 +30,7 @@ describe("security audit small-model risk findings", () => {
             },
           },
         },
-      } satisfies OpenClawConfig),
+      } satisfies AforaConfig),
     ).toEqual([
       { id: "ollama/mistral-8b", source: "agents.entries.simple.model" },
       { id: "ollama/gemma-4b", source: "agents.entries.structured.model.primary" },
@@ -53,7 +53,7 @@ describe("security audit small-model risk findings", () => {
           },
           tools: { web: { search: { enabled: true }, fetch: { enabled: true } } },
           browser: { enabled: true },
-        } satisfies OpenClawConfig,
+        } satisfies AforaConfig,
         env: {},
       }),
       "agent policy context",
@@ -67,7 +67,7 @@ describe("security audit small-model risk findings", () => {
   it("scores small-model risk by tool/sandbox exposure", () => {
     const cases: Array<{
       name: string;
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       expectedSeverity: "info" | "critical";
       detailIncludes: string[];
     }> = [
@@ -124,7 +124,7 @@ describe("security audit small-model risk findings", () => {
           },
           tools: { web: { search: { enabled: true }, fetch: { enabled: true } } },
           browser: { enabled: true },
-        } satisfies OpenClawConfig,
+        } satisfies AforaConfig,
         env: {},
       }),
       "configured alias",
@@ -156,7 +156,7 @@ describe("security audit small-model risk findings", () => {
             },
           },
           browser: { enabled: true },
-        } satisfies OpenClawConfig,
+        } satisfies AforaConfig,
         env: {},
       }),
       "provider/model deny",

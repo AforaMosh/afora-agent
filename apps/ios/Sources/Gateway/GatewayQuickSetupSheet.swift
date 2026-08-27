@@ -1,5 +1,5 @@
-import OpenClawChatUI
-import OpenClawKit
+import AforaChatUI
+import AforaKit
 import SwiftUI
 
 #if DEBUG
@@ -74,26 +74,26 @@ struct GatewayQuickSetupSheet: View {
                                         HStack(spacing: 8) {
                                             ProgressView().progressViewStyle(.circular)
                                             Text("Connecting…")
-                                                .font(OpenClawType.subheadSemiBold)
+                                                .font(AforaType.subheadSemiBold)
                                         }
                                     } else {
                                         Text("Connect to this Gateway")
-                                            .font(OpenClawType.subheadSemiBold)
+                                            .font(AforaType.subheadSemiBold)
                                     }
                                 }
                                 .frame(maxWidth: .infinity)
                             }
-                            .buttonStyle(OpenClawPrimaryActionButtonStyle())
+                            .buttonStyle(AforaPrimaryActionButtonStyle())
                             .disabled(self.connecting)
                         } else if let guidanceText = availability.guidanceText {
                             HStack(alignment: .top, spacing: 10) {
                                 Image(systemName: "lock.shield.fill")
-                                    .foregroundStyle(OpenClawBrand.warn)
+                                    .foregroundStyle(AforaBrand.warn)
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(LocalizedStringKey(availability.actionTitle))
-                                        .font(OpenClawType.subheadSemiBold)
+                                        .font(AforaType.subheadSemiBold)
                                     Text(guidanceText)
-                                        .font(OpenClawType.caption)
+                                        .font(AforaType.caption)
                                         .foregroundStyle(.secondary)
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
@@ -104,10 +104,10 @@ struct GatewayQuickSetupSheet: View {
                                 self.onUseManualSetup()
                             } label: {
                                 Text("Use Manual Setup")
-                                    .font(OpenClawType.subheadSemiBold)
+                                    .font(AforaType.subheadSemiBold)
                                     .frame(maxWidth: .infinity)
                             }
-                            .buttonStyle(OpenClawSecondaryActionButtonStyle())
+                            .buttonStyle(AforaSecondaryActionButtonStyle())
                         }
 
                         if let connectError {
@@ -118,10 +118,10 @@ struct GatewayQuickSetupSheet: View {
                             self.dismiss()
                         } label: {
                             Text("Not now")
-                                .font(OpenClawType.subheadSemiBold)
+                                .font(AforaType.subheadSemiBold)
                                 .frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(OpenClawSecondaryActionButtonStyle())
+                        .buttonStyle(AforaSecondaryActionButtonStyle())
                         .disabled(self.connecting)
 
                         self.fullRowToggle("Don't show this again", isOn: self.$quickSetupDismissed)
@@ -133,7 +133,7 @@ struct GatewayQuickSetupSheet: View {
                 }
                 .padding(20)
             }
-            .background(OpenClawBrand.activationCanvasGradient)
+            .background(AforaBrand.activationCanvasGradient)
             .navigationTitle("Quick Setup")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -143,9 +143,9 @@ struct GatewayQuickSetupSheet: View {
                         self.dismiss()
                     } label: {
                         Text("Close")
-                            .font(OpenClawType.subheadSemiBold)
+                            .font(AforaType.subheadSemiBold)
                     }
-                    .buttonStyle(OpenClawCloseButtonStyle())
+                    .buttonStyle(AforaCloseButtonStyle())
                 }
             }
         }
@@ -174,7 +174,7 @@ struct GatewayQuickSetupSheet: View {
     static func headerMood(
         connecting: Bool,
         hasError: Bool,
-        hasCandidate: Bool) -> OpenClawMascotMood
+        hasCandidate: Bool) -> AforaMascotMood
     {
         if connecting {
             .working
@@ -190,7 +190,7 @@ struct GatewayQuickSetupSheet: View {
     private func fullRowToggle(_ title: LocalizedStringKey, isOn: Binding<Bool>) -> some View {
         Toggle(isOn: isOn) {
             Text(title)
-                .font(OpenClawType.subhead)
+                .font(AforaType.subhead)
         }
         .contentShape(Rectangle())
         .overlay {
@@ -235,34 +235,34 @@ struct GatewayQuickSetupSheet: View {
 
 private struct GatewayQuickSetupHeader: View {
     let hasCandidate: Bool
-    let mood: OpenClawMascotMood
+    let mood: AforaMascotMood
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             ZStack(alignment: .bottomTrailing) {
-                OpenClawActivationGlyph(size: 70, mood: self.mood, interactive: true)
-                    .shadow(color: OpenClawBrand.activationGlow.opacity(0.18), radius: 10, x: 0, y: 5)
+                AforaActivationGlyph(size: 70, mood: self.mood, interactive: true)
+                    .shadow(color: AforaBrand.activationGlow.opacity(0.18), radius: 10, x: 0, y: 5)
 
                 Image(systemName: "antenna.radiowaves.left.and.right")
-                    .font(OpenClawType.caption2SemiBold)
-                    .foregroundStyle(OpenClawBrand.activationPrimaryActionText)
+                    .font(AforaType.caption2SemiBold)
+                    .foregroundStyle(AforaBrand.activationPrimaryActionText)
                     .frame(width: 28, height: 28)
                     .background {
                         Circle()
-                            .fill(OpenClawBrand.activationPrimaryGradient)
+                            .fill(AforaBrand.activationPrimaryGradient)
                     }
                     .overlay {
                         Circle()
-                            .stroke(OpenClawBrand.activationCanvas, lineWidth: 3)
+                            .stroke(AforaBrand.activationCanvas, lineWidth: 3)
                     }
                     .offset(x: 4, y: 4)
             }
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Connect a nearby Gateway")
-                    .font(OpenClawType.title2SemiBold)
+                    .font(AforaType.title2SemiBold)
                 Text(self.subtitle)
-                    .font(OpenClawType.subhead)
+                    .font(AforaType.subhead)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -272,9 +272,9 @@ private struct GatewayQuickSetupHeader: View {
 
     private var subtitle: LocalizedStringKey {
         if self.hasCandidate {
-            return "OpenClaw found a gateway on this network. Review it, then pair this iPhone as a secure node."
+            return "Afora found a gateway on this network. Review it, then pair this iPhone as a secure node."
         }
-        return "OpenClaw is searching the local network and tailnet for a Gateway you can trust."
+        return "Afora is searching the local network and tailnet for a Gateway you can trust."
     }
 }
 
@@ -292,19 +292,19 @@ private struct GatewayQuickSetupCandidatePanel: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: "network")
-                    .font(OpenClawType.headline)
-                    .foregroundStyle(OpenClawBrand.activationPrimaryActionText)
+                    .font(AforaType.headline)
+                    .foregroundStyle(AforaBrand.activationPrimaryActionText)
                     .frame(width: 36, height: 36)
                     .background {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(OpenClawBrand.activationPrimaryGradient)
+                            .fill(AforaBrand.activationPrimaryGradient)
                     }
-                    .shadow(color: OpenClawBrand.activationGlow.opacity(0.18), radius: 6, x: 0, y: 3)
+                    .shadow(color: AforaBrand.activationGlow.opacity(0.18), radius: 6, x: 0, y: 3)
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text(verbatim: self.name)
-                            .font(OpenClawType.headline)
+                            .font(AforaType.headline)
                             .foregroundStyle(.primary)
                             .lineLimit(1)
                             .truncationMode(.middle)
@@ -313,7 +313,7 @@ private struct GatewayQuickSetupCandidatePanel: View {
                     }
 
                     Text(verbatim: self.endpointSummary)
-                        .font(OpenClawType.footnote)
+                        .font(AforaType.footnote)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
@@ -332,7 +332,7 @@ private struct GatewayQuickSetupCandidatePanel: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .textSelection(.enabled)
-        .openClawCraftSurface(cornerRadius: 22)
+        .aforaCraftSurface(cornerRadius: 22)
         .accessibilityElement(children: .combine)
     }
 
@@ -345,7 +345,7 @@ private struct GatewayQuickSetupCandidatePanel: View {
 private struct GatewayQuickSetupHairlineDivider: View {
     var body: some View {
         Rectangle()
-            .fill(OpenClawBrand.activationNeutralDivider)
+            .fill(AforaBrand.activationNeutralDivider)
             .frame(height: 0.5)
             .frame(maxWidth: .infinity)
     }
@@ -356,17 +356,17 @@ private struct GatewayQuickSetupChip: View {
 
     var body: some View {
         Text(self.text)
-            .font(OpenClawType.caption2SemiBold)
-            .foregroundStyle(OpenClawBrand.activationPrimaryAction)
+            .font(AforaType.caption2SemiBold)
+            .foregroundStyle(AforaBrand.activationPrimaryAction)
             .padding(.vertical, 4)
             .padding(.horizontal, 8)
             .background {
                 Capsule(style: .continuous)
-                    .fill(OpenClawBrand.activationGlow.opacity(0.10))
+                    .fill(AforaBrand.activationGlow.opacity(0.10))
             }
             .overlay {
                 Capsule(style: .continuous)
-                    .stroke(OpenClawBrand.activationHairline, lineWidth: 0.6)
+                    .stroke(AforaBrand.activationHairline, lineWidth: 0.6)
             }
     }
 }
@@ -378,11 +378,11 @@ private struct GatewayQuickSetupStatusRow: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(self.title)
-                .font(OpenClawType.captionMedium)
+                .font(AforaType.captionMedium)
                 .foregroundStyle(.secondary)
                 .frame(width: 70, alignment: .leading)
             Text(verbatim: self.value)
-                .font(OpenClawType.footnote)
+                .font(AforaType.footnote)
                 .foregroundStyle(.primary)
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -396,10 +396,10 @@ private struct GatewayQuickSetupErrorView: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(OpenClawBrand.warn)
+                .foregroundStyle(AforaBrand.warn)
                 .padding(.top, 1)
             Text(verbatim: self.message)
-                .font(OpenClawType.footnote)
+                .font(AforaType.footnote)
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
@@ -408,11 +408,11 @@ private struct GatewayQuickSetupErrorView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(OpenClawBrand.activationInsetGradient)
+                .fill(AforaBrand.activationInsetGradient)
         }
         .overlay {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(OpenClawBrand.activationHairline, lineWidth: 0.7)
+                .stroke(AforaBrand.activationHairline, lineWidth: 0.7)
         }
     }
 }
@@ -423,38 +423,38 @@ private struct GatewayQuickSetupEmptyState: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Image(systemName: "magnifyingglass")
-                .font(OpenClawType.title2SemiBold)
-                .foregroundStyle(OpenClawBrand.activationPrimaryAction)
+                .font(AforaType.title2SemiBold)
+                .foregroundStyle(AforaBrand.activationPrimaryAction)
                 .frame(width: 42, height: 42)
                 .background {
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(OpenClawBrand.activationInsetGradient)
+                        .fill(AforaBrand.activationInsetGradient)
                 }
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Looking for a Gateway")
-                    .font(OpenClawType.headline)
+                    .font(AforaType.headline)
                 Text("Keep your iPhone on the same LAN or tailnet, then start the Gateway on your host machine.")
-                    .font(OpenClawType.subhead)
+                    .font(AforaType.subhead)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                GatewayQuickSetupInstructionRow(text: "Run openclaw gateway --port 18789.")
+                GatewayQuickSetupInstructionRow(text: "Run afora gateway --port 18789.")
                 GatewayQuickSetupInstructionRow(text: "Check that Bonjour discovery is enabled.")
                 GatewayQuickSetupInstructionRow(text: "Open Settings if you need a manual host.")
             }
             .padding(.top, 2)
 
             Text(verbatim: "Discovery: \(self.discoveryStatusText)")
-                .font(OpenClawType.footnote)
+                .font(AforaType.footnote)
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .openClawCraftSurface(cornerRadius: 22)
+        .aforaCraftSurface(cornerRadius: 22)
     }
 }
 
@@ -464,10 +464,10 @@ private struct GatewayQuickSetupInstructionRow: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Image(systemName: "arrow.right.circle.fill")
-                .font(OpenClawType.captionSemiBold)
+                .font(AforaType.captionSemiBold)
                 .foregroundStyle(.secondary)
             Text(self.text)
-                .font(OpenClawType.footnote)
+                .font(AforaType.footnote)
                 .foregroundStyle(.secondary)
         }
     }
@@ -501,7 +501,7 @@ private struct GatewayQuickSetupPreviewHost: View {
         GatewayQuickSetupSheet()
             .environment(self.appModel)
             .environment(self.gatewayController)
-            .openClawSheetChrome()
+            .aforaSheetChrome()
     }
 }
 
@@ -509,16 +509,16 @@ extension GatewayDiscoveryModel.DiscoveredGateway {
     fileprivate static let previewGateway = GatewayDiscoveryModel.DiscoveredGateway(
         name: "Studio Gateway",
         endpoint: .hostPort(
-            host: .name("openclaw.local", nil),
+            host: .name("afora.local", nil),
             port: 18789),
         stableID: "preview-gateway",
-        debugID: "openclaw.local",
-        lanHost: "openclaw.local",
+        debugID: "afora.local",
+        lanHost: "afora.local",
         tailnetDns: nil,
         gatewayPort: 18789,
         canvasPort: 18789,
         tlsEnabled: true,
         tlsFingerprintSha256: "preview",
-        cliPath: "/opt/homebrew/bin/openclaw")
+        cliPath: "/opt/homebrew/bin/afora")
 }
 #endif

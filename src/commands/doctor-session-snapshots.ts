@@ -1,17 +1,17 @@
 /** Doctor repair for stale runtime snapshot paths cached in session stores. */
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { note } from "../../packages/terminal-core/src/note.js";
 import { resolveStateDir } from "../config/paths.js";
 import { hydrateSessionStoreSkillPromptRefs } from "../config/sessions/skill-prompt-blobs.js";
 import { resolveAllAgentSessionStoreTargetsSync } from "../config/sessions/targets.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { HealthFinding, HealthRepairEffect } from "../flows/health-checks.js";
 import { expandHomePrefix, resolveOsHomeDir } from "../infra/home-dir.js";
 import { writeTextAtomic } from "../infra/json-files.js";
-import { resolveOpenClawPackageRootSync } from "../infra/openclaw-root.js";
+import { resolveAforaPackageRootSync } from "../infra/afora-root.js";
 import { updateLegacySessionStore } from "../infra/state-migrations.legacy-session-store.js";
 import { resolveBundledSkillsDir } from "../skills/loading/bundled-dir.js";
 import { resolveConfigDir, shortenHomePath } from "../utils.js";
@@ -59,7 +59,7 @@ function resolveSessionSnapshotBundledSkillsDir(params?: {
   if (resolved) {
     return resolved;
   }
-  const packageRoot = resolveOpenClawPackageRootSync({
+  const packageRoot = resolveAforaPackageRootSync({
     argv1: params?.argv1 ?? process.argv[1],
     moduleUrl: params?.moduleUrl ?? import.meta.url,
     cwd: params?.cwd ?? process.cwd(),
@@ -161,13 +161,13 @@ function isWindowsAbsolutePath(value: string): boolean {
     (/^[a-z]:/i.test(value) && ["/", "\\"].includes(value.slice(2, 3))) || value.startsWith("\\\\")
   );
 }
-function isTempBackedOpenClawRoot(segments: readonly string[]): boolean {
+function isTempBackedAforaRoot(segments: readonly string[]): boolean {
   const lower = segments.map((segment) => segment.toLowerCase());
-  const openclawIndex = lower.lastIndexOf("openclaw");
-  if (openclawIndex < 1) {
+  const aforaIndex = lower.lastIndexOf("afora");
+  if (aforaIndex < 1) {
     return false;
   }
-  return lower[openclawIndex - 1] === "tmp" || lower[openclawIndex - 1] === "temp";
+  return lower[aforaIndex - 1] === "tmp" || lower[aforaIndex - 1] === "temp";
 }
 
 function isBundledRuntimeSkillsPath(cachedPath: string, skillRootIndex: number): boolean {
@@ -176,8 +176,8 @@ function isBundledRuntimeSkillsPath(cachedPath: string, skillRootIndex: number):
   return (
     lower.some(
       (segment) =>
-        segment === "dist-runtime" || segment === "node_modules" || segment.startsWith("openclaw@"),
-    ) || isTempBackedOpenClawRoot(beforeSkillRoot)
+        segment === "dist-runtime" || segment === "node_modules" || segment.startsWith("afora@"),
+    ) || isTempBackedAforaRoot(beforeSkillRoot)
   );
 }
 function extractBundledSkillRelativeSegments(cachedPath: string): string[] | undefined {
@@ -216,7 +216,7 @@ function resolveExpectedBundledSkillPath(params: {
   pathExists: (filePath: string) => boolean;
   env?: NodeJS.ProcessEnv;
 }): string | undefined {
-  // Snapshot paths use shell `~` semantics. OPENCLAW_HOME may point at an isolated
+  // Snapshot paths use shell `~` semantics. AFORA_HOME may point at an isolated
   // runtime profile, so expanding against it would make the active runtime look stale.
   const osHomeDir = resolveOsHomeDir(params.env);
   const expandedCachedPath = osHomeDir
@@ -319,7 +319,7 @@ async function listSessionStorePaths(stateDir: string): Promise<string[]> {
 }
 
 function resolveSessionStorePaths(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   env?: NodeJS.ProcessEnv;
 }): string[] | undefined {
   if (!params.cfg) {
@@ -344,7 +344,7 @@ function loadSessionStoreForSnapshotScan(storePath: string): Record<string, Sess
 export async function detectSessionSnapshotHealthIssues(params?: {
   storePaths?: string[];
   bundledSkillsDir?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   env?: NodeJS.ProcessEnv;
 }): Promise<SessionSnapshotHealthIssue[]> {
   const bundledSkillsDir = resolveSessionSnapshotBundledSkillsDir({
@@ -394,7 +394,7 @@ export function sessionSnapshotIssueToHealthFinding(
     target: issue.cachedPath,
     requirement: `Current bundled skill path: ${issue.expectedPath}`,
     fixHint:
-      "To clean up the advisory artifact, run `openclaw doctor --fix` to rewrite stale cached session metadata paths, or start a fresh session after confirming history can be retired.",
+      "To clean up the advisory artifact, run `afora doctor --fix` to rewrite stale cached session metadata paths, or start a fresh session after confirming history can be retired.",
   };
 }
 
@@ -508,7 +508,7 @@ function repairFreshSessionSnapshotPaths(params: {
 export async function noteSessionSnapshotHealth(params?: {
   storePaths?: string[];
   bundledSkillsDir?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   shouldRepair?: boolean;
 }) {
@@ -657,7 +657,7 @@ export async function noteSessionSnapshotHealth(params?: {
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
   (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.doctorSessionSnapshotsTestApi")
+    Symbol.for("afora.doctorSessionSnapshotsTestApi")
   ] = {
     resolveSessionSnapshotBundledSkillsDir,
     scanSessionStoreForStaleRuntimeSnapshotPaths,

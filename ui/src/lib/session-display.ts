@@ -1,9 +1,9 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 // Control UI module implements session display behavior.
-import { sliceUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { sliceUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { t } from "../i18n/index.ts";
 
 const CHANNEL_LABELS: Record<string, string> = {
@@ -35,7 +35,7 @@ function shortenOpaqueIdRuns(text: string): string {
   return text.replace(OPAQUE_ID_RUN_RE, (match) => `…${match.slice(-4)}`);
 }
 
-const WORKTREE_BRANCH_PREFIX = "openclaw/";
+const WORKTREE_BRANCH_PREFIX = "afora-agent/";
 
 // `dm` is the pre-#11881 spelling of `direct`; those keys still persist and the
 // canonical parser still accepts both (src/sessions/session-key-utils.ts).

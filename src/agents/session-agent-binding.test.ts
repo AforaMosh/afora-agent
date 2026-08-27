@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveBoundAgentIdForSession } from "./session-agent-binding.js";
 
 describe("resolveBoundAgentIdForSession", () => {
   const multiAgentConfig = {
     agents: { entries: { main: {}, research: {} } },
-  } satisfies OpenClawConfig;
+  } satisfies AforaConfig;
   const singleAgentConfig = {
     agents: { entries: { main: {} } },
-  } satisfies OpenClawConfig;
+  } satisfies AforaConfig;
 
   it.each([
     {
@@ -45,8 +45,8 @@ describe("resolveBoundAgentIdForSession", () => {
         defaults: { sessionStore: { agentId: "ops" } },
         entries: { ops: {}, research: {} },
       },
-      session: { scope: "global", store: "/tmp/openclaw-shared-sessions.sqlite" },
-    } satisfies OpenClawConfig;
+      session: { scope: "global", store: "/tmp/afora-shared-sessions.sqlite" },
+    } satisfies AforaConfig;
 
     expect(resolveBoundAgentIdForSession({ config, sessionKey: "global" })).toBe("ops");
   });

@@ -1,5 +1,5 @@
-import type { EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams } from "openclaw/plugin-sdk/agent-harness-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import type { EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams } from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { isSystemAgentOnlyCodexDynamicToolAllowlist } from "./dynamic-tool-profile.js";
 import type { CodexDynamicToolRuntimeResponse } from "./dynamic-tool-response-state.js";
 import type { CodexDynamicToolCallParams, CodexDynamicToolCallResponse } from "./protocol.js";
@@ -80,16 +80,16 @@ export function resolveCodexDynamicToolDirectNames(
   // Tools with catalogMode=direct-only use the model-only namespace. This list
   // remains for control tools that intentionally live at the dynamic-tool root.
   const names: string[] = [];
-  // OpenClaw is the run's only tool and must stay callable when Codex tool
+  // Afora is the run's only tool and must stay callable when Codex tool
   // search is unavailable. Exact toolsAllow is the public harness contract.
   if (hostSystemAgentActive && isSystemAgentOnlyCodexDynamicToolAllowlist(params.toolsAllow)) {
-    names.push("openclaw");
+    names.push("afora");
   }
   if (params.sourceReplyDeliveryMode === "message_tool_only") {
     names.push("message");
   }
   // Restricted plugin runs replace Codex's native tool surface with an exact
-  // OpenClaw policy-filtered catalog. Keep the replacement planner visible in
+  // Afora policy-filtered catalog. Keep the replacement planner visible in
   // the initial context so Codex can maintain the same user-facing plan stream.
   if (params.pluginHarnessToolPolicyRestricted === true) {
     names.push("progress_card");

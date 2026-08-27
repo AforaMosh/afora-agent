@@ -1,7 +1,7 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import type { ModelCatalogEntry } from "../agents/model-catalog.js";
 import { resolveSessionModelIdentityRef } from "../agents/session-model-ref.js";
 import { getSessionDisplaySubagentRunByChildSessionKey } from "../agents/subagents/registry/subagent-registry-read.js";
@@ -10,7 +10,7 @@ import {
   type InternalSessionEntry,
   type SessionEntry,
 } from "../config/sessions.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
 import { sessionDeliveryChannel, sessionDeliveryOrigin } from "../utils/delivery-context.shared.js";
 import { resolveSessionStoreAgentId } from "./session-store-key.js";
@@ -101,7 +101,7 @@ export function resolveSessionListRowContext(params: {
 
 export function resolveSessionListSearchModelFields(params: {
   agentId?: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   key: string;
   entry?: SessionEntry;
   rowContext?: SessionListRowContext;
@@ -212,7 +212,7 @@ export function loadGatewaySessionRow(
 }
 
 export function buildGatewaySessionInfo(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   storePath: string;
   store: Record<string, SessionEntry>;
   key: string;

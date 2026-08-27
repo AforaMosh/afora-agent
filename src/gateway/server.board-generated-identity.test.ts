@@ -5,10 +5,10 @@ import type {
 } from "../../packages/gateway-protocol/src/index.js";
 import { replaceSessionEntrySync } from "../config/sessions/session-accessor.entry.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { READ_SCOPE, WRITE_SCOPE } from "./method-scopes.js";
 import { connectGatewayClient, disconnectGatewayClient } from "./test-helpers.e2e.js";
 import {
@@ -43,7 +43,7 @@ it(
   { timeout: 120_000 },
   async () => {
     const env = { ...process.env };
-    const database = openOpenClawAgentDatabase({ agentId: "main", env });
+    const database = openAforaAgentDatabase({ agentId: "main", env });
     replaceSessionEntrySync(
       { agentId: "main", sessionKey: SESSION_KEY, storePath: database.path },
       { sessionId: "generated-identity-restart", updatedAt: Date.now() },
@@ -116,8 +116,8 @@ it(
       secondClient = undefined;
       await firstServer.close();
       firstServer = undefined;
-      closeOpenClawAgentDatabasesForTest();
-      closeOpenClawStateDatabaseForTest();
+      closeAforaAgentDatabasesForTest();
+      closeAforaStateDatabaseForTest();
 
       const restarted = await start();
       restartedServer = restarted.server;
@@ -161,8 +161,8 @@ it(
       if (restartedServer) {
         await restartedServer.close().catch(() => undefined);
       }
-      closeOpenClawAgentDatabasesForTest();
-      closeOpenClawStateDatabaseForTest();
+      closeAforaAgentDatabasesForTest();
+      closeAforaStateDatabaseForTest();
     }
   },
 );

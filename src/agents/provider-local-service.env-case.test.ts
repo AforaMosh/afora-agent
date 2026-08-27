@@ -34,7 +34,7 @@ async function readSpawnedLocalServiceEnv(
       command: process.execPath,
       args: [
         "-e",
-        `const http=require("node:http");const payload=JSON.stringify({pathUpper:process.env.PATH,pathLower:process.env.path,caseUpper:process.env.OPENCLAW_LOCAL_SERVICE_CASE_TEST,caseLower:process.env.openclaw_local_service_case_test,exact:process.env.OPENCLAW_LOCAL_SERVICE_EXACT_TEST});const server=http.createServer((req,res)=>{res.writeHead(200,{"content-type":"application/json"});res.end(payload);});server.listen(${port},"127.0.0.1");process.on("SIGTERM",()=>server.close(()=>process.exit(0)));`,
+        `const http=require("node:http");const payload=JSON.stringify({pathUpper:process.env.PATH,pathLower:process.env.path,caseUpper:process.env.AFORA_LOCAL_SERVICE_CASE_TEST,caseLower:process.env.afora_local_service_case_test,exact:process.env.AFORA_LOCAL_SERVICE_EXACT_TEST});const server=http.createServer((req,res)=>{res.writeHead(200,{"content-type":"application/json"});res.end(payload);});server.listen(${port},"127.0.0.1");process.on("SIGTERM",()=>server.close(()=>process.exit(0)));`,
       ],
       env,
       healthUrl,
@@ -59,12 +59,12 @@ describe("provider local service environment", () => {
   it.runIf(process.platform === "win32")(
     "lets configured env override inherited keys case-insensitively on Windows",
     async () => {
-      vi.stubEnv("OPENCLAW_LOCAL_SERVICE_CASE_TEST", "inherited");
+      vi.stubEnv("AFORA_LOCAL_SERVICE_CASE_TEST", "inherited");
       try {
         const observed = await readSpawnedLocalServiceEnv({
           path: "C:\\operator-bin",
-          openclaw_local_service_case_test: "configured",
-          OPENCLAW_LOCAL_SERVICE_EXACT_TEST: "exact",
+          afora_local_service_case_test: "configured",
+          AFORA_LOCAL_SERVICE_EXACT_TEST: "exact",
         });
 
         expect(observed).toEqual({
@@ -83,12 +83,12 @@ describe("provider local service environment", () => {
   it.runIf(process.platform !== "win32")(
     "keeps configured env keys byte-exact on POSIX",
     async () => {
-      vi.stubEnv("OPENCLAW_LOCAL_SERVICE_CASE_TEST", "inherited");
+      vi.stubEnv("AFORA_LOCAL_SERVICE_CASE_TEST", "inherited");
       try {
         const observed = await readSpawnedLocalServiceEnv({
           path: "/operator-bin",
-          openclaw_local_service_case_test: "configured",
-          OPENCLAW_LOCAL_SERVICE_EXACT_TEST: "exact",
+          afora_local_service_case_test: "configured",
+          AFORA_LOCAL_SERVICE_EXACT_TEST: "exact",
         });
 
         expect(observed).toEqual({

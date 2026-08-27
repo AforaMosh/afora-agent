@@ -55,7 +55,7 @@ describe("scripts/bench-model", () => {
     const result = runBenchModel(["--help"]);
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("OpenClaw model latency benchmark");
+    expect(result.stdout).toContain("Afora model latency benchmark");
     expect(result.stderr).toBe("");
   });
 });

@@ -32,7 +32,7 @@ export async function loadRootHelpRenderOptionsForConfigSensitivePlugins(
       hasEntries(plugins.entries) ||
       hasEntries(plugins.installs));
   const envAffectsPluginHelp = Boolean(
-    env.OPENCLAW_BUNDLED_PLUGINS_DIR?.trim() || env.OPENCLAW_DISABLE_BUNDLED_PLUGINS?.trim(),
+    env.AFORA_BUNDLED_PLUGINS_DIR?.trim() || env.AFORA_DISABLE_BUNDLED_PLUGINS?.trim(),
   );
   if (!envAffectsPluginHelp && !configAffectsPluginHelp) {
     return null;

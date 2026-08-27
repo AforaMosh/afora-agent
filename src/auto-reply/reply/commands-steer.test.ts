@@ -1,6 +1,6 @@
 // Tests steer command persistence and retrieval for session guidance.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { buildCommandTestParams } from "./commands.test-harness.js";
 
 const steerRuntimeMocks = vi.hoisted(() => ({
@@ -18,7 +18,7 @@ const { handleSteerCommand } = await import("./commands-steer.js");
 const baseCfg = {
   commands: { text: true },
   session: { mainKey: "main", scope: "per-sender" },
-} as OpenClawConfig;
+} as AforaConfig;
 
 function buildParams(commandBody: string) {
   return buildCommandTestParams(commandBody, baseCfg);

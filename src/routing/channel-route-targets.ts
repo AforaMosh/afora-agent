@@ -1,10 +1,10 @@
 // Channel route target helpers normalize channel route targets for delivery.
-import { isRecord as hasRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { isRecord as hasRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { AgentSelectionRequiredError } from "../agents/agent-scope-config.js";
 import { normalizeChatChannelId } from "../channels/ids.js";
 import { listRouteBindings } from "../config/bindings.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveAgentRoute } from "./resolve-route.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId, normalizeAgentId } from "./session-key.js";
 
@@ -25,7 +25,7 @@ function normalizeRouteBindingChannelKey(raw?: string | null): string {
   return normalizeLowercaseStringOrEmpty(raw);
 }
 
-function listConfiguredChannelIds(cfg: OpenClawConfig): string[] {
+function listConfiguredChannelIds(cfg: AforaConfig): string[] {
   if (!hasRecord(cfg.channels)) {
     return [];
   }
@@ -41,7 +41,7 @@ function listConfiguredChannelIds(cfg: OpenClawConfig): string[] {
     .toSorted();
 }
 
-function listConfiguredChannelAccountIds(cfg: OpenClawConfig, channelId: string): string[] {
+function listConfiguredChannelAccountIds(cfg: AforaConfig, channelId: string): string[] {
   if (!hasRecord(cfg.channels)) {
     return [];
   }
@@ -69,7 +69,7 @@ function addTarget(byAgent: Map<string, Set<string>>, agentId: string, channel: 
   byAgent.set(normalizedAgentId, channels);
 }
 
-export function collectChannelRouteTargets(cfg: OpenClawConfig): ChannelRouteTarget[] {
+export function collectChannelRouteTargets(cfg: AforaConfig): ChannelRouteTarget[] {
   const byAgent = new Map<string, Set<string>>();
 
   for (const binding of listRouteBindings(cfg)) {

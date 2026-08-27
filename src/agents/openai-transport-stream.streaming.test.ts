@@ -3,8 +3,8 @@ import {
   createAzureOpenAIResponsesTransportStreamFn,
   createOpenAICompletionsTransportStreamFn,
   createOpenAIResponsesTransportStreamFn,
-} from "@openclaw/ai/transports";
-import type { Model } from "openclaw/plugin-sdk/llm";
+} from "@afora/ai/transports";
+import type { Model } from "afora-agent/plugin-sdk/llm";
 import { describe, expect, it, vi } from "vitest";
 import {
   classifyAssistantFailoverReason,

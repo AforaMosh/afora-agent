@@ -6,8 +6,8 @@ import {
   DEFAULT_INGRESS_ADOPTION_STALL_MS,
   type ChannelIngressMonitorLifecycle,
   type ChannelIngressQueue,
-} from "openclaw/plugin-sdk/channel-outbound";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import {
   inspectNostrIngressEvent,
   isNostrIngressRecord,

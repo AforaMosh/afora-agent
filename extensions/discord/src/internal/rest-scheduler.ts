@@ -1,5 +1,5 @@
 // Discord plugin module implements rest scheduler behavior.
-import { resolveIntegerOption, resolveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
+import { resolveIntegerOption, resolveTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
 import { RateLimitError, readDiscordRateLimitBucket, readRetryAfter } from "./rest-errors.js";
 import {
   createBucketKey,

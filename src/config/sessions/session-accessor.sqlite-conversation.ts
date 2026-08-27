@@ -1,5 +1,5 @@
 import { executeSqliteQuerySync } from "../../infra/kysely-sync.js";
-import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
+import type { AforaAgentDatabase } from "../../state/afora-agent-db.js";
 import {
   conversationIdentityFromSessionEntry,
   type ConversationIdentity,
@@ -34,7 +34,7 @@ export function prepareSessionConversation(params: {
 
 /** Upserts the address before the session row so its primary-conversation FK is always valid. */
 export function upsertConversationIdentity(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   identity: ConversationIdentity,
   updatedAt: number,
 ): void {
@@ -80,7 +80,7 @@ export function upsertConversationIdentity(
 
 /** Links one external address to its local context without conflating the two identities. */
 export function linkSessionConversation(params: {
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   sessionId: string;
   conversation: PreparedSessionConversation;
   updatedAt: number;

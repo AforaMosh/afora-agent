@@ -4,7 +4,7 @@ description: "Notion CLI/API for pages, Markdown content, data sources, files, c
 homepage: https://developers.notion.com/cli/get-started/overview
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "emoji": "📝",
         "requires": { "anyBins": ["ntn", "curl"] },

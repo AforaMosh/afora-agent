@@ -44,7 +44,7 @@ describe("resolveNonInteractiveApiKey", () => {
   it("resolves provider environment auth against the staged config and agent workspace", async () => {
     const runtime = createRuntime();
     const cfg = { plugins: { entries: { example: { enabled: true } } } };
-    const workspaceDir = "/tmp/openclaw-example-workspace";
+    const workspaceDir = "/tmp/afora-example-workspace";
     resolveEnvApiKey.mockReturnValue({
       apiKey: "example-manifest-key",
       source: "env: EXAMPLE_WORKSPACE_API_KEY",
@@ -101,7 +101,7 @@ describe("resolveNonInteractiveApiKey", () => {
       provider: "zai",
       cfg: {},
       flagValue:
-        "openclaw onboard --non-interactive --auth-choice=zai-coding-global --zai-api-key $ZAI_API_KEY",
+        "afora onboard --non-interactive --auth-choice=zai-coding-global --zai-api-key $ZAI_API_KEY",
       flagName: "--zai-api-key",
       envVar: "ZAI_API_KEY",
       runtime: runtime as never,
@@ -110,7 +110,7 @@ describe("resolveNonInteractiveApiKey", () => {
     expect(result).toBeNull();
     expect(resolveEnvApiKey).not.toHaveBeenCalled();
     expect(runtime.error).toHaveBeenCalledWith(
-      "Paste the API key value, not an OpenClaw onboarding command.",
+      "Paste the API key value, not an Afora onboarding command.",
     );
     expect(runtime.exit).toHaveBeenCalledWith(1);
   });

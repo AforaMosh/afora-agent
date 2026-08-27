@@ -8,7 +8,7 @@ scenario:
     primary:
       - automation.managed-flows
       - automation.mirrored-flows
-      - automation.openclaw-tasks-flow
+      - automation.afora-tasks-flow
       - automation.flow-audit-and-maintenance
   objective: Verify managed and mirrored TaskFlows cross the durable registry, operator CLI, audit, and maintenance boundaries.
   successCriteria:

@@ -1,7 +1,7 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { theme } from "../../../packages/terminal-core/src/theme.js";
 import { readConfigFileSnapshot } from "../../config/config.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { readGatewayServiceState, resolveGatewayService } from "../../daemon/service.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import type { UpdateChannel } from "../../infra/update-channels.js";
@@ -157,18 +157,18 @@ export async function finishUpdate(params: {
         ),
       );
       defaultRuntime.log(
-        theme.muted("Commit, stash, or discard the local changes, then rerun `openclaw update`."),
+        theme.muted("Commit, stash, or discard the local changes, then rerun `afora update`."),
       );
     }
     if (params.result.reason === "not-git-install") {
       defaultRuntime.log(
         theme.warn(
-          `Skipped: this OpenClaw install isn't a git checkout, and the package manager couldn't be detected. Update via your package manager, then run \`${replaceCliName(formatCliCommand("openclaw doctor"), CLI_NAME)}\` and \`${replaceCliName(formatCliCommand("openclaw gateway restart"), CLI_NAME)}\`.`,
+          `Skipped: this Afora install isn't a git checkout, and the package manager couldn't be detected. Update via your package manager, then run \`${replaceCliName(formatCliCommand("afora doctor"), CLI_NAME)}\` and \`${replaceCliName(formatCliCommand("afora gateway restart"), CLI_NAME)}\`.`,
         ),
       );
       defaultRuntime.log(
         theme.muted(
-          `Examples: \`${replaceCliName("npm i -g openclaw@latest", CLI_NAME)}\` or \`${replaceCliName("pnpm add -g openclaw@latest", CLI_NAME)}\``,
+          `Examples: \`${replaceCliName("npm i -g afora-agent@latest", CLI_NAME)}\` or \`${replaceCliName("pnpm add -g afora-agent@latest", CLI_NAME)}\``,
         ),
       );
     }
@@ -221,7 +221,7 @@ export async function finishUpdate(params: {
             ? {
                 sourceConfig: params.configSnapshot.sourceConfig,
                 authoredConfig: isRecord(params.configSnapshot.parsed)
-                  ? (params.configSnapshot.parsed as OpenClawConfig)
+                  ? (params.configSnapshot.parsed as AforaConfig)
                   : params.configSnapshot.sourceConfig,
               }
             : undefined,
@@ -255,7 +255,7 @@ export async function finishUpdate(params: {
             ? {
                 sourceConfig: params.configSnapshot.sourceConfig,
                 authoredConfig: isRecord(params.configSnapshot.parsed)
-                  ? (params.configSnapshot.parsed as OpenClawConfig)
+                  ? (params.configSnapshot.parsed as AforaConfig)
                   : params.configSnapshot.sourceConfig,
               }
             : undefined,
@@ -271,9 +271,9 @@ export async function finishUpdate(params: {
             : null;
         const compatibilityDowngradeTarget =
           versionComparison != null && versionComparison > 0 ? postUpdateInstalledVersion : null;
-        const previousCompatibilityHostVersion = process.env.OPENCLAW_COMPATIBILITY_HOST_VERSION;
+        const previousCompatibilityHostVersion = process.env.AFORA_COMPATIBILITY_HOST_VERSION;
         if (compatibilityDowngradeTarget) {
-          process.env.OPENCLAW_COMPATIBILITY_HOST_VERSION = compatibilityDowngradeTarget;
+          process.env.AFORA_COMPATIBILITY_HOST_VERSION = compatibilityDowngradeTarget;
         }
         try {
           const initialPluginUpdate = await updatePluginsAfterCoreUpdate({
@@ -304,9 +304,9 @@ export async function finishUpdate(params: {
         } finally {
           if (compatibilityDowngradeTarget) {
             if (previousCompatibilityHostVersion === undefined) {
-              delete process.env.OPENCLAW_COMPATIBILITY_HOST_VERSION;
+              delete process.env.AFORA_COMPATIBILITY_HOST_VERSION;
             } else {
-              process.env.OPENCLAW_COMPATIBILITY_HOST_VERSION = previousCompatibilityHostVersion;
+              process.env.AFORA_COMPATIBILITY_HOST_VERSION = previousCompatibilityHostVersion;
             }
           }
         }

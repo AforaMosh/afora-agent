@@ -1,5 +1,5 @@
 /** Resolves whether the metadata-only audit ledger records new events. */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 export type AuditMessageMode = "off" | "direct" | "all";
 
@@ -8,16 +8,16 @@ export type AuditMessageMode = "off" | "direct" | "all";
  * cannot explain the incident. `logging.audit.enabled: false` stops new event inserts after
  * restart; audit queries still serve retained rows until they expire.
  */
-export function isAuditLedgerEnabled(cfg: OpenClawConfig | undefined): boolean {
+export function isAuditLedgerEnabled(cfg: AforaConfig | undefined): boolean {
   return cfg?.logging?.audit?.enabled !== false;
 }
 
 /** Execution identity is retained only after an explicit startup-scoped opt-in. */
-export function isExecutionIdentityCollectionEnabled(cfg: OpenClawConfig | undefined): boolean {
+export function isExecutionIdentityCollectionEnabled(cfg: AforaConfig | undefined): boolean {
   return isAuditLedgerEnabled(cfg) && cfg?.logging?.audit?.executionIdentity === true;
 }
 
 /** Message metadata remains an explicit opt-in inside the default-on ledger. */
-export function resolveAuditMessageMode(cfg: OpenClawConfig | undefined): AuditMessageMode {
+export function resolveAuditMessageMode(cfg: AforaConfig | undefined): AuditMessageMode {
   return cfg?.logging?.audit?.messages ?? "off";
 }

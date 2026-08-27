@@ -18,8 +18,8 @@ import {
 
 type ComposerState = Parameters<typeof persistChatComposerState>[0];
 
-const LEGACY_STORAGE_KEY_PREFIX = "openclaw.control.chatComposer.v1:";
-const STORAGE_KEY_PREFIX = "openclaw.control.chatComposer.v2:";
+const LEGACY_STORAGE_KEY_PREFIX = "afora.control.chatComposer.v1:";
+const STORAGE_KEY_PREFIX = "afora.control.chatComposer.v2:";
 
 function gatewayOwner(gatewayUrl: string | null | undefined): string {
   return gatewayUrl?.trim() || "default";

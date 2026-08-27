@@ -1,4 +1,4 @@
-import type { SessionObserverDigest } from "@openclaw/gateway-protocol";
+import type { SessionObserverDigest } from "@afora/gateway-protocol";
 import type { GatewaySessionRow } from "../../api/types.ts";
 import { t } from "../../i18n/index.ts";
 import { isCriticalObserverHealth } from "../../lib/observer-digest.ts";

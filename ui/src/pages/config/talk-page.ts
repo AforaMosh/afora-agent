@@ -2,11 +2,11 @@ import { consume } from "@lit/context";
 // Controller for the curated Talk settings page. Owns the talk.catalog read
 // that feeds the provider/model/voice pickers; all writes go through the shared
 // config form draft so the embedded schema editor below stays in sync.
-import type { TalkCatalogResult } from "@openclaw/gateway-protocol";
+import type { TalkCatalogResult } from "@afora/gateway-protocol";
 import { html, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
 import { applicationContext, type ApplicationContext } from "../../app/context.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import { isTalkGptLiveModel, resolveTalkRealtimeSelection } from "./talk-schema.ts";
 import {
@@ -54,7 +54,7 @@ function toProviderOption(
 /** Transports whose sessions are client-owned (`talk.client.create`). */
 const TALK_CLIENT_OWNED_TRANSPORTS = new Set(["webrtc", "provider-websocket"]);
 
-class TalkSettingsPage extends OpenClawLightDomElement {
+class TalkSettingsPage extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context!: ApplicationContext;
 
@@ -82,7 +82,7 @@ class TalkSettingsPage extends OpenClawLightDomElement {
     );
 
   /**
-   * The GPT-Live setup this page advertises runs `openclaw models auth login`
+   * The GPT-Live setup this page advertises runs `afora models auth login`
    * in a terminal; that changes credential readiness without advancing the
    * config hash, so returning focus to the window re-reads the catalog.
    */
@@ -304,16 +304,16 @@ class TalkSettingsPage extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-talk-settings")) {
-  customElements.define("openclaw-talk-settings", TalkSettingsPage);
+if (!customElements.get("afora-talk-settings")) {
+  customElements.define("afora-talk-settings", TalkSettingsPage);
 }
 
 export function renderTalkPage(props: TalkPageProps) {
   return html`
-    <openclaw-talk-settings
+    <afora-talk-settings
       .configObject=${props.configObject}
       .mutationDisabled=${props.mutationDisabled}
       .buildEditor=${props.buildEditor}
-    ></openclaw-talk-settings>
+    ></afora-talk-settings>
   `;
 }

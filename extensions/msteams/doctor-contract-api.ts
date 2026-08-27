@@ -6,14 +6,14 @@ import path from "node:path";
 import type {
   ChannelDoctorConfigMutation,
   ChannelDoctorLegacyConfigRule,
-} from "openclaw/plugin-sdk/channel-contract";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+} from "afora-agent/plugin-sdk/channel-contract";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   archiveLegacyStateSource,
   defineChannelAliasMigration,
   type PluginDoctorStateMigration,
-} from "openclaw/plugin-sdk/runtime-doctor-migrations";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/runtime-doctor-migrations";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { normalizeStoredConversationId } from "./src/conversation-store-helpers.js";
 import {
   buildMSTeamsConversationStateKey,
@@ -73,7 +73,7 @@ export const legacyConfigRules: ChannelDoctorLegacyConfigRule[] =
 export function normalizeCompatibilityConfig({
   cfg,
 }: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }): ChannelDoctorConfigMutation {
   return streamingAliasMigration.normalizeChannelConfig({ cfg });
 }
@@ -146,7 +146,7 @@ function resolveLegacySanitizedSessionKey(
   return matches.length === 1 && match ? match : null;
 }
 
-function listAgentIds(config: OpenClawConfig): string[] {
+function listAgentIds(config: AforaConfig): string[] {
   const ids = new Set<string>(["main"]);
   if (isRecord(config.agents?.entries)) {
     for (const agentId of Object.keys(config.agents.entries)) {
@@ -169,7 +169,7 @@ async function listCandidateStorePaths(params: {
 }): Promise<string[]> {
   // Doctor enumeration cold-loads this closure; session-store-runtime pulls the
   // session-accessor/kysely graph, so it stays behind a lazy import here.
-  const { resolveStorePath } = await import("openclaw/plugin-sdk/session-store-runtime");
+  const { resolveStorePath } = await import("afora-agent/plugin-sdk/session-store-runtime");
   const paths = new Set<string>();
   for (const agentId of listAgentIds(params.config)) {
     paths.add(resolveStorePath(params.config.session?.store, { agentId, env: params.env }));

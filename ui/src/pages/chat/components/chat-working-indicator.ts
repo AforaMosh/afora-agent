@@ -66,10 +66,10 @@ export function renderCloudStartupStatus(
       <div class="chat-bubble chat-reading-indicator" aria-hidden="true">${icons.claw}</div>
       <span class="chat-working-indicator__status">
         <span>${cloudStartupStatusLabel(status)}</span>
-        <openclaw-elapsed-time
+        <afora-elapsed-time
           class="chat-working-indicator__elapsed"
           .startMs=${status.startedAt}
-        ></openclaw-elapsed-time>
+        ></afora-elapsed-time>
       </span>
     </div>
   `;
@@ -156,26 +156,26 @@ export function renderChatWorkingIndicator(
           : options.startupPhase
             ? html`
                 <span>${startupStatusLabel(options.startupPhase)}</span>
-                <openclaw-elapsed-time
+                <afora-elapsed-time
                   class="chat-working-indicator__elapsed"
                   .startMs=${part.startedAt}
-                ></openclaw-elapsed-time>
+                ></afora-elapsed-time>
                 ${renderLiveOutputTokens(options.outputTokens)}
               `
             : html`
                 <span class=${continuation ? "" : "sr-only"}>${t("common.working")}</span>
-                <openclaw-elapsed-time
+                <afora-elapsed-time
                   class="chat-working-indicator__elapsed"
                   .startMs=${part.startedAt}
-                ></openclaw-elapsed-time>
+                ></afora-elapsed-time>
                 ${hasTokens
                   ? renderLiveOutputTokens(options.outputTokens)
                   : html`
-                      <openclaw-working-phrase
+                      <afora-working-phrase
                         aria-hidden="true"
                         .startMs=${part.startedAt}
                         .seed=${part.key}
-                      ></openclaw-working-phrase>
+                      ></afora-working-phrase>
                     `}
               `}
       </span>

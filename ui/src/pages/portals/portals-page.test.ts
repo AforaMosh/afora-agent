@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import type { PortalListResult, PortalSummary } from "@openclaw/gateway-protocol";
+import type { PortalListResult, PortalSummary } from "@afora/gateway-protocol";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GatewayBrowserClient, GatewayEventFrame } from "../../api/gateway.ts";
 import type { ApplicationContext, ApplicationGatewaySnapshot } from "../../app/context.ts";
@@ -24,8 +24,8 @@ const portal = {
   title: "Seeded app",
   port: 3000,
   listenPort: 43_123,
-  tokenQuery: "openclaw_portal=secret-token",
-  url: "http://127.0.0.1:43123/app?openclaw_portal=secret-token",
+  tokenQuery: "afora_portal=secret-token",
+  url: "http://127.0.0.1:43123/app?afora_portal=secret-token",
   publicUrl: "http://127.0.0.1:43123/app",
   path: "/app",
   description: "Use the seeded test account.",
@@ -76,7 +76,7 @@ function createContext(
 }
 
 async function mountPage(context: ApplicationContext) {
-  const page = document.createElement("openclaw-portals-page") as PortalsPageTestElement;
+  const page = document.createElement("afora-portals-page") as PortalsPageTestElement;
   page.context = context;
   document.body.append(page);
   await page.updateComplete;
@@ -111,14 +111,14 @@ describe("PortalsPage", () => {
     );
     const frame = page.querySelector("iframe");
     expect(frame?.getAttribute("src")).toBe(
-      "https://gateway.example.test:43123/app?openclaw_portal=secret-token",
+      "https://gateway.example.test:43123/app?afora_portal=secret-token",
     );
     expect(frame?.getAttribute("referrerpolicy")).toBe("no-referrer");
     expect(frame?.getAttribute("sandbox")).toBe(
       "allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts",
     );
     expect(probePortalReachable).toHaveBeenCalledWith(
-      "https://gateway.example.test:43123/app?openclaw_portal=secret-token",
+      "https://gateway.example.test:43123/app?afora_portal=secret-token",
     );
 
     source.emitPortals([]);
@@ -209,6 +209,6 @@ describe("resolvePortalUrl", () => {
         "wss://gateway.example.test:18789/control",
         "http://control-ui.example.test",
       ),
-    ).toBe("https://gateway.example.test:43123/app?openclaw_portal=secret-token");
+    ).toBe("https://gateway.example.test:43123/app?afora_portal=secret-token");
   });
 });

@@ -1,10 +1,10 @@
 // Nextcloud Talk plugin module implements doctor contract behavior.
-import type { ChannelDoctorConfigMutation } from "openclaw/plugin-sdk/channel-contract";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { ChannelDoctorConfigMutation } from "afora-agent/plugin-sdk/channel-contract";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   createLegacyPrivateNetworkDoctorContract,
   defineChannelAliasMigration,
-} from "openclaw/plugin-sdk/runtime-doctor-migrations";
+} from "afora-agent/plugin-sdk/runtime-doctor-migrations";
 
 const networkContract = createLegacyPrivateNetworkDoctorContract({
   channelKey: "nextcloud-talk",
@@ -29,7 +29,7 @@ export const legacyConfigRules = [
 export function normalizeCompatibilityConfig({
   cfg,
 }: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }): ChannelDoctorConfigMutation {
   const network = networkContract.normalizeCompatibilityConfig({ cfg });
   return streamingAliasMigration.normalizeChannelConfig({

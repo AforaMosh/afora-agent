@@ -18,7 +18,7 @@ const suite = createControlUiE2eSuite({
   unavailableMessage: (executablePath) =>
     `Playwright Chromium is not installed or cannot start at ${executablePath}.`,
 });
-const captureProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+const captureProof = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 const artifactDir = path.join(
   process.cwd(),
   ".artifacts",
@@ -124,7 +124,7 @@ suite.define(() => {
         await actionRow.waitFor({ state: "visible", timeout: 10_000 });
         await actionRow.getByRole("button", { name: "Open session menu" }).click();
         await activateSelfRemovingControl(
-          page.locator("openclaw-session-menu").getByRole("menuitem", {
+          page.locator("afora-session-menu").getByRole("menuitem", {
             name: "Archive session",
           }),
         );
@@ -137,7 +137,7 @@ suite.define(() => {
           key: research.key,
         });
         const toast = page
-          .locator("openclaw-toast-host .app-toast")
+          .locator("afora-toast-host .app-toast")
           .filter({ hasText: "Session archived" });
         await toast.waitFor({ state: "visible", timeout: 10_000 });
         await toast.getByRole("button", { name: "Undo" }).waitFor({ state: "visible" });

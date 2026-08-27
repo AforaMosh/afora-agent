@@ -297,7 +297,7 @@ export function renderChatEffortPicker(params: ChatEffortPickerParams) {
                       ${t("chat.modelControls.fastHelp")}
                     </span>
                   </span>
-                  <openclaw-tooltip .content=${speedTooltip}>
+                  <afora-tooltip .content=${speedTooltip}>
                     <button
                       class="chat-controls__speed-toggle ${params.fastMode.active
                         ? "chat-controls__speed-toggle--active"
@@ -321,7 +321,7 @@ export function renderChatEffortPicker(params: ChatEffortPickerParams) {
                     >
                       <span class="chat-controls__speed-toggle-thumb"></span>
                     </button>
-                  </openclaw-tooltip>
+                  </afora-tooltip>
                 </div>
               `
             : nothing}

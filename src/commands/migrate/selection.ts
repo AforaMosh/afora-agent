@@ -1,18 +1,18 @@
 /** Selection helpers for filtering migration plan items before apply. */
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { expectDefined } from "@afora/normalization-core";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { markMigrationItemSkipped, summarizeMigrationItems } from "../../plugin-sdk/migration.js";
 import type { MigrationItem, MigrationPlan } from "../../plugins/types.js";
 import { MIGRATION_CONFLICT_REASON_PHRASES } from "./output.js";
 
 // Selection tokens are shared with the command and prompt implementations.
 const MIGRATION_NOT_SELECTED_REASON = "not selected for migration";
-export const MIGRATION_SELECTION_ACCEPT = "__openclaw_migrate_accept_recommended__";
-export const MIGRATION_SELECTION_TOGGLE_ALL_ON = "__openclaw_migrate_toggle_all_on__";
-export const MIGRATION_SELECTION_TOGGLE_ALL_OFF = "__openclaw_migrate_toggle_all_off__";
+export const MIGRATION_SELECTION_ACCEPT = "__afora_migrate_accept_recommended__";
+export const MIGRATION_SELECTION_TOGGLE_ALL_ON = "__afora_migrate_toggle_all_on__";
+export const MIGRATION_SELECTION_TOGGLE_ALL_OFF = "__afora_migrate_toggle_all_off__";
 
 type InteractiveMigrationSelection = { action: "select"; selectedItemIds: Set<string> };
 /** Interactive skill selection result consumed by the apply flow. */

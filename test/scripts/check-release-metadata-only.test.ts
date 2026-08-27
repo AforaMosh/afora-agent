@@ -53,7 +53,7 @@ describe("check-release-metadata-only", () => {
   });
 
   itUnix("fails with an actionable timeout when git diff hangs", () => {
-    const tempDir = tempDirs.make("openclaw-release-metadata-git-");
+    const tempDir = tempDirs.make("afora-release-metadata-git-");
     const gitPath = path.join(tempDir, "git");
     writeFileSync(
       gitPath,
@@ -72,7 +72,7 @@ if (process.argv.includes("diff")) {
       cwd: path.resolve(import.meta.dirname, "../.."),
       env: {
         ...process.env,
-        OPENCLAW_RELEASE_METADATA_GIT_TIMEOUT_MS: "500",
+        AFORA_RELEASE_METADATA_GIT_TIMEOUT_MS: "500",
         PATH: `${tempDir}${path.delimiter}${process.env.PATH ?? ""}`,
       },
       encoding: "utf8",
@@ -88,7 +88,7 @@ if (process.argv.includes("diff")) {
       cwd: path.resolve(import.meta.dirname, "../.."),
       env: {
         ...process.env,
-        OPENCLAW_RELEASE_METADATA_GIT_TIMEOUT_MS: "0.5",
+        AFORA_RELEASE_METADATA_GIT_TIMEOUT_MS: "0.5",
         PATH: `${tempDir}${path.delimiter}${process.env.PATH ?? ""}`,
       },
       encoding: "utf8",

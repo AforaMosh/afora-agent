@@ -1,4 +1,4 @@
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { transitionMainSessionRecovery } from "../agents/main-session-recovery/main-session-recovery-state.js";
 import type { InternalSessionEntry } from "../config/sessions.js";
 import {
@@ -43,7 +43,7 @@ export async function noteMainSessionRecoveryIntegrity(
   params.warnings.push(
     [
       `- Found ${wedgedCount} with automatic restart recovery tombstoned.`,
-      "  OpenClaw will not auto-resume these sessions again; inspect the failed turn, then use /new or reset to replace the session.",
+      "  Afora will not auto-resume these sessions again; inspect the failed turn, then use /new or reset to replace the session.",
       `  Examples: ${wedged
         .slice(0, 3)
         .map(({ key }) => key)

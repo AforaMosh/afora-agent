@@ -1,24 +1,24 @@
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { acquireGatewayLock } from "./gateway-lock.js";
 import { withLegacyMigrationStateLock } from "./state-migrations.lock.js";
 
 describe("legacy state migration ownership", () => {
   const tempDirs = useAutoCleanupTempDirTracker((cleanup) => {
     afterEach(() => {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       cleanup();
     });
   });
 
   function migrationOptions() {
-    const stateDir = tempDirs.make("openclaw-state-migration-lock-");
+    const stateDir = tempDirs.make("afora-state-migration-lock-");
     const env = {
       ...process.env,
-      OPENCLAW_CONFIG_PATH: path.join(stateDir, "openclaw.json"),
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_CONFIG_PATH: path.join(stateDir, "afora.json"),
+      AFORA_STATE_DIR: stateDir,
     };
     return {
       env,
@@ -50,7 +50,7 @@ describe("legacy state migration ownership", () => {
       },
       run: async (env) => {
         events.push("migrate");
-        expect(env.OPENCLAW_STATE_DIR).toBe(options.stateDir);
+        expect(env.AFORA_STATE_DIR).toBe(options.stateDir);
         return { changes: ["imported"], warnings: [], notices: ["verified"] };
       },
     });

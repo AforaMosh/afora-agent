@@ -1,5 +1,5 @@
 // ClawHub promotion APIs and hosted feed validation.
-import { isRecord as isJsonObject } from "@openclaw/normalization-core/record-coerce";
+import { isRecord as isJsonObject } from "@afora/normalization-core/record-coerce";
 import { hasValidIsoCalendarComponents } from "../shared/iso-time.js";
 import {
   CLAWHUB_JSON_MAX_BYTES,

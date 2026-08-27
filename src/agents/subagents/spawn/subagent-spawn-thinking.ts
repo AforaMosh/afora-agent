@@ -2,14 +2,14 @@
  * Resolves subagent thinking-level inheritance and overrides. Spawning uses
  * this helper to patch the child session without leaking invalid caller input.
  */
-import { asOptionalObjectRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { asOptionalObjectRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { normalizeThinkLevel } from "../../../auto-reply/thinking.shared.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 
 /** Resolves subagent thinking override and initial session patch from caller/agent config. */
 export function resolveSubagentThinkingOverride(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   requesterAgentConfig?: unknown;
   targetAgentConfig?: unknown;
   thinkingOverrideRaw?: string;

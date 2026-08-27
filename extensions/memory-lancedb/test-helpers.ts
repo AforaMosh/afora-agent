@@ -1,7 +1,7 @@
 // Memory Lancedb helper module supports test helpers behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
 import { afterEach, beforeEach } from "vitest";
 
 export function installTmpDirHarness(params: { prefix: string }) {
@@ -9,7 +9,7 @@ export function installTmpDirHarness(params: { prefix: string }) {
   let dbPath = "";
 
   beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(resolvePreferredOpenClawTmpDir(), params.prefix));
+    tmpDir = await fs.mkdtemp(path.join(resolvePreferredAforaTmpDir(), params.prefix));
     dbPath = path.join(tmpDir, "lancedb");
   });
 

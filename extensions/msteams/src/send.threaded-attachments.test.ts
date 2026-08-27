@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client as TeamsApiClient } from "@microsoft/teams.api";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 import { sendAdaptiveCardMSTeams, sendMessageMSTeams, sendPollMSTeams } from "./send.js";
 
 const serviceUrl = "https://smba.trafficmanager.net/amer";
@@ -22,16 +22,16 @@ const mockState = vi.hoisted(() => ({
   sendMSTeamsMessages: vi.fn(async () => ["text-message-1"]),
 }));
 
-vi.mock("openclaw/plugin-sdk/outbound-media", () => ({
+vi.mock("afora-agent/plugin-sdk/outbound-media", () => ({
   loadOutboundMediaFromUrl: mockState.loadOutboundMediaFromUrl,
 }));
 
-vi.mock("openclaw/plugin-sdk/markdown-table-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/markdown-table-runtime", () => ({
   resolveMarkdownTableMode: vi.fn(() => "off"),
 }));
 
-vi.mock("openclaw/plugin-sdk/text-chunking", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/text-chunking")>();
+vi.mock("afora-agent/plugin-sdk/text-chunking", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/text-chunking")>();
   return {
     ...actual,
     convertMarkdownTables: (text: string) => text,
@@ -112,7 +112,7 @@ async function withRealTeamsSdkHttp<T>(
   try {
     const port = (server.address() as AddressInfo).port;
     const api = new TeamsApiClient(serviceUrl);
-    // OpenClaw's minimal SDK ambient declaration omits the real client's public HTTP transport.
+    // Afora's minimal SDK ambient declaration omits the real client's public HTTP transport.
     const transport = (api as unknown as { http: TeamsSdkHttpTransport }).http;
     vi.spyOn(transport, "post").mockImplementation(async (destination, data) => {
       const destinationUrl = new URL(destination);
@@ -251,7 +251,7 @@ const structuredRoutingCases: StructuredRoutingCase[] = [
 
 type StructuredSender = {
   label: string;
-  send: (cfg: OpenClawConfig) => Promise<unknown>;
+  send: (cfg: AforaConfig) => Promise<unknown>;
 };
 
 const structuredSenders: StructuredSender[] = [
@@ -298,7 +298,7 @@ describe("Microsoft Teams SharePoint attachment thread routing", () => {
           conversationId,
           ref: {
             serviceUrl,
-            agent: { id: "28:bot", name: "OpenClaw", role: "bot" },
+            agent: { id: "28:bot", name: "Afora", role: "bot" },
             user: { id: "29:user" },
             conversation: { id: conversationId, conversationType },
             ...(threadId ? { threadId } : {}),
@@ -316,7 +316,7 @@ describe("Microsoft Teams SharePoint attachment thread routing", () => {
         });
 
         const result = await sendMessageMSTeams({
-          cfg: {} as OpenClawConfig,
+          cfg: {} as AforaConfig,
           to: conversationId,
           text: "Here is the report",
           mediaUrl: "https://media.example.com/report.pdf",
@@ -347,7 +347,7 @@ describe("Microsoft Teams SharePoint attachment thread routing", () => {
 
   it("delivers a workspace-relative attachment through the real Teams SDK and Bot Framework", async () => {
     const workspaceDir = await realpath(
-      await mkdtemp(join(tmpdir(), "openclaw-msteams-sdk-media-")),
+      await mkdtemp(join(tmpdir(), "afora-msteams-sdk-media-")),
     );
     const filePath = join(workspaceDir, "report.pdf");
     const fileContents = Buffer.from("%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF\n");
@@ -357,8 +357,8 @@ describe("Microsoft Teams SharePoint attachment thread routing", () => {
 
     try {
       await writeFile(filePath, fileContents);
-      const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/outbound-media")>(
-        "openclaw/plugin-sdk/outbound-media",
+      const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/outbound-media")>(
+        "afora-agent/plugin-sdk/outbound-media",
       );
       mockState.loadOutboundMediaFromUrl.mockImplementation(actual.loadOutboundMediaFromUrl);
 
@@ -369,7 +369,7 @@ describe("Microsoft Teams SharePoint attachment thread routing", () => {
           conversationId,
           ref: {
             serviceUrl,
-            agent: { id: "28:bot", name: "OpenClaw", role: "bot" },
+            agent: { id: "28:bot", name: "Afora", role: "bot" },
             user: { id: "29:user" },
             conversation: { id: conversationId, conversationType: "channel" },
             threadId: "workspace-thread-root",
@@ -384,7 +384,7 @@ describe("Microsoft Teams SharePoint attachment thread routing", () => {
         });
 
         await sendMessageMSTeams({
-          cfg: {} as OpenClawConfig,
+          cfg: {} as AforaConfig,
           to: conversationId,
           text: "Workspace report",
           mediaUrl: "report.pdf",
@@ -431,7 +431,7 @@ describe("Microsoft Teams SharePoint attachment thread routing", () => {
         conversationId,
         ref: {
           serviceUrl,
-          agent: { id: "28:bot", name: "OpenClaw", role: "bot" },
+          agent: { id: "28:bot", name: "Afora", role: "bot" },
           user: { id: "29:user" },
           conversation: { id: conversationId, conversationType: "personal" },
         },
@@ -444,7 +444,7 @@ describe("Microsoft Teams SharePoint attachment thread routing", () => {
       });
 
       const result = await sendMessageMSTeams({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         to: conversationId,
         text: "Here is the image",
         mediaUrl: "https://media.example.com/image.png",
@@ -479,7 +479,7 @@ describe.each(structuredSenders)("Microsoft Teams $label thread routing", ({ sen
           conversationId,
           ref: {
             serviceUrl,
-            agent: { id: "28:bot", name: "OpenClaw", role: "bot" },
+            agent: { id: "28:bot", name: "Afora", role: "bot" },
             user: { id: "29:user" },
             conversation: { id: conversationId, conversationType },
             activityId: "incoming-activity-1",
@@ -493,7 +493,7 @@ describe.each(structuredSenders)("Microsoft Teams $label thread routing", ({ sen
           log: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
         });
 
-        await send({} as OpenClawConfig);
+        await send({} as AforaConfig);
 
         expect(requests).toHaveLength(1);
         expect(requests[0]).toMatchObject({

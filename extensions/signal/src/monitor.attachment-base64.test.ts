@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SignalEventHandlerDeps } from "./monitor/event-handler.types.js";
 
@@ -7,9 +7,9 @@ const saveMediaBufferMock = vi.hoisted(() => vi.fn());
 
 let capturedFetchAttachment: SignalEventHandlerDeps["fetchAttachment"] | undefined;
 
-vi.mock("openclaw/plugin-sdk/media-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/media-runtime")>(
-    "openclaw/plugin-sdk/media-runtime",
+vi.mock("afora-agent/plugin-sdk/media-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/media-runtime")>(
+    "afora-agent/plugin-sdk/media-runtime",
   );
   return {
     ...actual,
@@ -53,7 +53,7 @@ const config = {
       allowFrom: ["*"],
     },
   },
-} satisfies OpenClawConfig;
+} satisfies AforaConfig;
 
 function requireCapturedFetchAttachment(): SignalEventHandlerDeps["fetchAttachment"] {
   if (!capturedFetchAttachment) {

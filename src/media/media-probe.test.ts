@@ -24,7 +24,7 @@ beforeAll(async () => {
   vi.resetModules();
   ({ probeMediaFilesWithinBudget, probePlaybackMediaFileDescriptor, probeVideoDimensions } =
     await import("./media-probe.js"));
-  testDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-media-probe-"));
+  testDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-media-probe-"));
   songPath = path.join(testDir, "song.mp3");
   clipPath = path.join(testDir, "clip.mp4");
   voicePath = path.join(testDir, "voice.ogg");

@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { shouldHandleTextCommands } from "../commands-text-routing.js";
 import type { ReplyPayload } from "../reply-payload.js";
 import type { FinalizedRuntimeMsgContext } from "../templating.js";
@@ -11,7 +11,7 @@ type FastApproveResult = { handled: false } | { handled: true; reply?: ReplyPayl
 /** Resolve /approve before session admission so it can release the active run it reviews. */
 export async function tryFastApproveFromMessage(params: {
   ctx: FinalizedRuntimeMsgContext;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
   sessionKey?: string;
 }): Promise<FastApproveResult> {

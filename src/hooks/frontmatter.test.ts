@@ -1,12 +1,12 @@
 // Hook frontmatter tests cover hook metadata parsing from hook files.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import {
   parseHookFrontmatter,
   resolveHookManifestMetadata,
   resolveHookInvocationPolicy,
 } from "./frontmatter.js";
-import type { OpenClawHookMetadata } from "./types.js";
+import type { AforaHookMetadata } from "./types.js";
 
 function requireString(value: string | undefined, label: string): string {
   if (typeof value !== "string") {
@@ -15,9 +15,9 @@ function requireString(value: string | undefined, label: string): string {
   return value;
 }
 
-function requireOpenClawMetadata(metadata: OpenClawHookMetadata | undefined): OpenClawHookMetadata {
+function requireAforaMetadata(metadata: AforaHookMetadata | undefined): AforaHookMetadata {
   if (!metadata) {
-    throw new Error("expected openclaw metadata");
+    throw new Error("expected afora metadata");
   }
   return metadata;
 }
@@ -58,7 +58,7 @@ name: session-memory
 description: "Save session context"
 metadata:
   {
-    "openclaw": {
+    "afora": {
       "emoji": "💾",
       "events": ["command:new"]
     }
@@ -74,8 +74,8 @@ metadata:
 
     // Verify the metadata is valid JSON
     const parsed = JSON.parse(metadata);
-    expect(parsed.openclaw.emoji).toBe("💾");
-    expect(parsed.openclaw.events).toEqual(["command:new"]);
+    expect(parsed.afora.emoji).toBe("💾");
+    expect(parsed.afora.events).toEqual(["command:new"]);
   });
 
   it("parses multi-line metadata with complex nested structure", () => {
@@ -84,7 +84,7 @@ name: command-logger
 description: "Log all command events"
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "emoji": "📝",
         "events": ["command"],
@@ -98,21 +98,21 @@ metadata:
     expect(result.name).toBe("command-logger");
 
     const parsed = JSON.parse(requireString(result.metadata, "command-logger metadata"));
-    expect(parsed.openclaw.emoji).toBe("📝");
-    expect(parsed.openclaw.events).toEqual(["command"]);
-    expect(parsed.openclaw.requires.config).toEqual(["workspace.dir"]);
-    expect(parsed.openclaw.install[0].kind).toBe("bundled");
+    expect(parsed.afora.emoji).toBe("📝");
+    expect(parsed.afora.events).toEqual(["command"]);
+    expect(parsed.afora.requires.config).toEqual(["workspace.dir"]);
+    expect(parsed.afora.install[0].kind).toBe("bundled");
   });
 
   it("handles single-line metadata (inline JSON)", () => {
     const content = `---
 name: simple-hook
-metadata: {"openclaw": {"events": ["test"]}}
+metadata: {"afora": {"events": ["test"]}}
 ---
 `;
     const result = parseHookFrontmatter(content);
     expect(result.name).toBe("simple-hook");
-    expect(result.metadata).toBe('{"openclaw": {"events": ["test"]}}');
+    expect(result.metadata).toBe('{"afora": {"events": ["test"]}}');
   });
 
   it("handles mixed single-line and multi-line values", () => {
@@ -122,7 +122,7 @@ description: "A hook with mixed values"
 homepage: https://example.com
 metadata:
   {
-    "openclaw": {
+    "afora": {
       "events": ["command:new"]
     }
   }
@@ -164,11 +164,11 @@ description: 'single-quoted'
 });
 
 describe("resolveHookManifestMetadata", () => {
-  it("extracts openclaw metadata from parsed frontmatter", () => {
+  it("extracts afora metadata from parsed frontmatter", () => {
     const frontmatter = {
       name: "test-hook",
       metadata: JSON.stringify({
-        openclaw: {
+        afora: {
           emoji: "🔥",
           events: ["command:new", "command:reset"],
           requires: {
@@ -180,11 +180,11 @@ describe("resolveHookManifestMetadata", () => {
     };
 
     const result = resolveHookManifestMetadata(frontmatter);
-    const openclaw = requireOpenClawMetadata(result);
-    expect(openclaw.emoji).toBe("🔥");
-    expect(openclaw.events).toEqual(["command:new", "command:reset"]);
-    expect(openclaw.requires?.config).toEqual(["workspace.dir"]);
-    expect(openclaw.requires?.bins).toEqual(["git"]);
+    const afora = requireAforaMetadata(result);
+    expect(afora.emoji).toBe("🔥");
+    expect(afora.events).toEqual(["command:new", "command:reset"]);
+    expect(afora.requires?.config).toEqual(["workspace.dir"]);
+    expect(afora.requires?.bins).toEqual(["git"]);
   });
 
   it("returns undefined when metadata is missing", () => {
@@ -193,7 +193,7 @@ describe("resolveHookManifestMetadata", () => {
     expect(result).toBeUndefined();
   });
 
-  it("returns undefined when openclaw key is missing", () => {
+  it("returns undefined when afora key is missing", () => {
     const frontmatter = {
       metadata: JSON.stringify({ other: "data" }),
     };
@@ -212,11 +212,11 @@ describe("resolveHookManifestMetadata", () => {
   it("handles install specs", () => {
     const frontmatter = {
       metadata: JSON.stringify({
-        openclaw: {
+        afora: {
           events: ["command"],
           install: [
-            { id: "bundled", kind: "bundled", label: "Bundled with OpenClaw" },
-            { id: "npm", kind: "npm", package: "@openclaw/hook" },
+            { id: "bundled", kind: "bundled", label: "Bundled with Afora" },
+            { id: "npm", kind: "npm", package: "@afora/hook" },
           ],
         },
       }),
@@ -231,14 +231,14 @@ describe("resolveHookManifestMetadata", () => {
       "npm",
     );
     expect(expectDefined(result?.install?.[1], "result?.install?.[1] test invariant").package).toBe(
-      "@openclaw/hook",
+      "@afora/hook",
     );
   });
 
   it("handles os restrictions", () => {
     const frontmatter = {
       metadata: JSON.stringify({
-        openclaw: {
+        afora: {
           events: ["command"],
           os: ["darwin", "linux"],
         },
@@ -254,15 +254,15 @@ describe("resolveHookManifestMetadata", () => {
     const content = `---
 name: session-memory
 description: "Save session context to memory when a session is reset"
-homepage: https://docs.openclaw.ai/automation/hooks#session-memory
+homepage: https://docs.afora.ai/automation/hooks#session-memory
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "emoji": "💾",
         "events": ["command:new", "command:reset", "session:auto-reset"],
         "requires": { "config": ["workspace.dir"] },
-        "install": [{ "id": "bundled", "kind": "bundled", "label": "Bundled with OpenClaw" }],
+        "install": [{ "id": "bundled", "kind": "bundled", "label": "Bundled with Afora" }],
       },
   }
 ---
@@ -276,11 +276,11 @@ metadata:
       '"command:reset"',
     );
 
-    const openclaw = requireOpenClawMetadata(resolveHookManifestMetadata(frontmatter));
-    expect(openclaw.emoji).toBe("💾");
-    expect(openclaw.events).toEqual(["command:new", "command:reset", "session:auto-reset"]);
-    expect(openclaw.requires?.config).toEqual(["workspace.dir"]);
-    expect(expectDefined(openclaw.install?.[0], "openclaw.install?.[0] test invariant").kind).toBe(
+    const afora = requireAforaMetadata(resolveHookManifestMetadata(frontmatter));
+    expect(afora.emoji).toBe("💾");
+    expect(afora.events).toEqual(["command:new", "command:reset", "session:auto-reset"]);
+    expect(afora.requires?.config).toEqual(["workspace.dir"]);
+    expect(expectDefined(afora.install?.[0], "afora.install?.[0] test invariant").kind).toBe(
       "bundled",
     );
   });
@@ -289,16 +289,16 @@ metadata:
     const content = `---
 name: yaml-metadata
 metadata:
-  openclaw:
+  afora:
     emoji: disk
     events:
       - command:new
 ---
 `;
     const frontmatter = parseHookFrontmatter(content);
-    const openclaw = resolveHookManifestMetadata(frontmatter);
-    expect(openclaw?.emoji).toBe("disk");
-    expect(openclaw?.events).toEqual(["command:new"]);
+    const afora = resolveHookManifestMetadata(frontmatter);
+    expect(afora?.emoji).toBe("disk");
+    expect(afora?.events).toEqual(["command:new"]);
   });
 });
 

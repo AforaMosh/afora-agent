@@ -3,12 +3,12 @@ import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { __setFsSafeTestHooksForTest } from "@openclaw/fs-safe/test-hooks";
-import { KeyedAsyncQueue } from "openclaw/plugin-sdk/keyed-async-queue";
-import type { OpenKeyedStoreOptions } from "openclaw/plugin-sdk/plugin-state-runtime";
+import { KeyedAsyncQueue } from "afora-agent/plugin-sdk/keyed-async-queue";
+import type { OpenKeyedStoreOptions } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { rollbackChatGptImportRun } from "./chatgpt-import.js";
 import { configureMemoryWikiCompiledCacheStore } from "./compiled-cache.js";
@@ -62,7 +62,7 @@ function configureDurableImportRunStore(
     afterWrite?: (record: ChatGptImportRunRecord) => Promise<void>;
   },
 ): void {
-  const env = { ...process.env, HOME: stateDir, OPENCLAW_STATE_DIR: stateDir };
+  const env = { ...process.env, HOME: stateDir, AFORA_STATE_DIR: stateDir };
   const store = createMemoryWikiImportRunStateStore(<T>(options: OpenKeyedStoreOptions) =>
     createPluginStateKeyedStoreForTests<T>("memory-wiki", { ...options, env }),
   );
@@ -147,7 +147,7 @@ describe("ChatGPT import rollback recovery", () => {
     ).resolves.toMatchObject({
       alreadyRolledBack: true,
     });
-    await expect(fs.stat(path.join(rootDir, ".openclaw-wiki"))).rejects.toMatchObject({
+    await expect(fs.stat(path.join(rootDir, ".afora-wiki"))).rejects.toMatchObject({
       code: "ENOENT",
     });
     expect(compileControl.calls).toBe(0);
@@ -223,7 +223,7 @@ describe("ChatGPT import rollback recovery", () => {
     ).rejects.toThrow("simulated process crash");
     renameSpy.mockRestore();
     await expect(fs.readFile(targetPath, "utf8")).resolves.toBe("# Recreated before fence\n");
-    await expect(fs.stat(path.join(stateDir, "state", "openclaw.sqlite"))).resolves.toBeDefined();
+    await expect(fs.stat(path.join(stateDir, "state", "afora.sqlite"))).resolves.toBeDefined();
 
     resetPluginStateStoreForTests();
     configureDurableImportRunStore(stateDir);
@@ -475,7 +475,7 @@ describe("ChatGPT import rollback recovery", () => {
     const relativePath = "sources/updated-whitespace.md";
     const snapshotRelativePath = "snapshots/updated-whitespace.md";
     const targetPath = path.join(rootDir, relativePath);
-    const runDir = path.join(rootDir, ".openclaw-wiki", "import-runs", runId);
+    const runDir = path.join(rootDir, ".afora-wiki", "import-runs", runId);
     const snapshotPath = path.join(runDir, snapshotRelativePath);
     const imported = "# Imported\n";
     const snapshot = "# Before import\n";
@@ -669,7 +669,7 @@ describe("ChatGPT import rollback recovery", () => {
       const relativePath = "sources/existing.md";
       const snapshotRelativePath = "snapshots/existing.md";
       const imported = "# Imported\n";
-      const runDir = path.join(rootDir, ".openclaw-wiki", "import-runs", runId);
+      const runDir = path.join(rootDir, ".afora-wiki", "import-runs", runId);
       const snapshotPath = path.join(runDir, snapshotRelativePath);
       const targetPath = path.join(rootDir, relativePath);
       await fs.mkdir(path.dirname(snapshotPath), { recursive: true });

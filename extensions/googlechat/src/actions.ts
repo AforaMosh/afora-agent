@@ -3,9 +3,9 @@ import {
   jsonResult,
   readStringArrayParam,
   readStringParam,
-} from "openclaw/plugin-sdk/channel-actions";
-import type { ChannelMessageActionAdapter } from "openclaw/plugin-sdk/channel-contract";
-import { extractToolSend } from "openclaw/plugin-sdk/tool-send";
+} from "afora-agent/plugin-sdk/channel-actions";
+import type { ChannelMessageActionAdapter } from "afora-agent/plugin-sdk/channel-contract";
+import { extractToolSend } from "afora-agent/plugin-sdk/tool-send";
 import { resolveGoogleChatAccount } from "./accounts.js";
 import { sendGoogleChatMessage } from "./api.js";
 import { describeGoogleChatMessageTool } from "./message-tool-api.js";

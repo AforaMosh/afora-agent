@@ -4,14 +4,14 @@ import path from "node:path";
 import { Command } from "commander";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../test-utils/afora-test-state.js";
 import { createTrackedTempDirs } from "../test-utils/tracked-temp-dirs.js";
 import { registerSkillsCli } from "./skills-cli.js";
 
 const tempDirs = createTrackedTempDirs();
-let testState: OpenClawTestState;
+let testState: AforaTestState;
 let stateDir = "";
 
 const mocks = vi.hoisted(() => {
@@ -63,7 +63,7 @@ vi.mock("../infra/gateway-lock.js", () => ({
 }));
 
 vi.mock("../terminal/links.js", () => ({
-  formatDocsLink: () => "docs.openclaw.ai/cli/skills",
+  formatDocsLink: () => "docs.afora.ai/cli/skills",
 }));
 
 vi.mock("../terminal/theme.js", () => ({
@@ -111,11 +111,11 @@ describe("skills workshop cli", () => {
   };
 
   beforeEach(async () => {
-    testState = await createOpenClawTestState({
+    testState = await createAforaTestState({
       layout: "state-only",
-      prefix: "openclaw-skills-cli-workshop-state-",
+      prefix: "afora-skills-cli-workshop-state-",
     });
-    mocks.workspaceDir = await tempDirs.make("openclaw-skills-cli-workshop-");
+    mocks.workspaceDir = await tempDirs.make("afora-skills-cli-workshop-");
     mocks.resolvedAgentIds.length = 0;
     stateDir = testState.stateDir;
     mocks.runtimeStdout.length = 0;
@@ -283,7 +283,7 @@ describe("skills workshop cli", () => {
     const proposalId = mocks.runtimeStdout.at(-1);
     expect(proposalId).toMatch(/^first-cli-skill-/);
 
-    mocks.workspaceDir = await tempDirs.make("openclaw-skills-cli-workshop-second-");
+    mocks.workspaceDir = await tempDirs.make("afora-skills-cli-workshop-second-");
     await runCommand(["skills", "workshop", "list"]);
     expect(mocks.runtimeStdout.at(-1)).toContain(`${proposalId}  pending  create`);
     expect(mocks.runtimeStdout.at(-1)).toContain("[previous workspace]");

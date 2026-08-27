@@ -1,6 +1,6 @@
 // Hermes provider config contract parsing and normalization.
-import { asPositiveFiniteNumber as readPositiveNumber } from "openclaw/plugin-sdk/number-runtime";
-import { isRecord, normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { asPositiveFiniteNumber as readPositiveNumber } from "afora-agent/plugin-sdk/number-runtime";
+import { isRecord, normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   MCP_ENV_REFERENCE_RE,
   mcpValueHasEnvReferences,
@@ -9,7 +9,7 @@ import {
 import { childRecord, readStringArray } from "./helpers.js";
 import { normalizeHermesCustomProviderId, normalizeHermesProviderId } from "./model.js";
 
-type OpenClawModelApi =
+type AforaModelApi =
   | "anthropic-messages"
   | "openai-completions"
   | "openai-responses"
@@ -25,14 +25,14 @@ type HermesModelConfig = {
 export type HermesProviderConfig = {
   id: string;
   baseUrl: string;
-  api: OpenClawModelApi;
+  api: AforaModelApi;
   apiKeyEnv?: string;
   headers?: Record<string, unknown>;
   models: HermesModelConfig[];
   sensitive?: boolean;
 };
 
-export const HERMES_TRANSPORTS: Record<string, OpenClawModelApi> = {
+export const HERMES_TRANSPORTS: Record<string, AforaModelApi> = {
   anthropic_messages: "anthropic-messages",
   chat_completions: "openai-completions",
   codex_responses: "openai-responses",
@@ -155,7 +155,7 @@ export function resolveHermesImplicitBaseUrl(providerId: string | undefined): st
   if (provider && ["alibaba", "alibaba-cloud", "aliyun", "dashscope"].includes(provider)) {
     return HERMES_ALIBABA_BASE_URL;
   }
-  // OpenClaw's qwen default is already Hermes' coding-plan endpoint; no override needed.
+  // Afora's qwen default is already Hermes' coding-plan endpoint; no override needed.
   if (provider && ["kimi-coding-cn", "kimi-cn", "moonshot-cn"].includes(provider)) {
     return HERMES_MOONSHOT_CN_BASE_URL;
   }
@@ -169,7 +169,7 @@ export { readPositiveNumber };
 export function resolveProviderApi(
   raw: Record<string, unknown>,
   providerId?: string,
-): OpenClawModelApi | undefined {
+): AforaModelApi | undefined {
   const transport = normalizeOptionalString(raw.transport) ?? normalizeOptionalString(raw.api_mode);
   const sourceProvider = providerId?.trim().toLowerCase() ?? "";
   if (sourceProvider === "openai-codex") {
@@ -222,7 +222,7 @@ export function resolveProviderApi(
   return "openai-completions";
 }
 
-function normalizeProviderBaseUrl(baseUrl: string, api: OpenClawModelApi): string {
+function normalizeProviderBaseUrl(baseUrl: string, api: AforaModelApi): string {
   if (api !== "anthropic-messages") {
     return baseUrl;
   }

@@ -58,7 +58,7 @@ export async function runEmbeddedAttemptBeforeAgentRun(input: {
       content: [{ type: "text" as const, text: block.message }],
       timestamp: nowMs,
       idempotencyKey,
-      __openclaw: {
+      __afora: {
         beforeAgentRunBlocked: {
           blockedBy: block.pluginId,
           blockedAt: nowMs,

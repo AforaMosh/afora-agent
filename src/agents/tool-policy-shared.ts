@@ -3,8 +3,8 @@
  *
  * Keeps aliases, groups, profile expansion, and prefix matching consistent across allow/deny paths.
  */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import {
   CORE_TOOL_GROUPS,
   resolveCoreToolProfilePolicy,
@@ -23,7 +23,7 @@ const TOOL_NAME_ALIASES: Record<string, string> = {
   cron: "automations",
 };
 
-const TOOL_ALLOWLIST_INTERSECTION = Symbol.for("openclaw.toolAllowlistIntersection");
+const TOOL_ALLOWLIST_INTERSECTION = Symbol.for("afora.toolAllowlistIntersection");
 type ToolAllowlistWithIntersection = string[] & {
   [TOOL_ALLOWLIST_INTERSECTION]?: readonly string[][];
 };

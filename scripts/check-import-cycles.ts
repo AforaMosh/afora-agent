@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Check Import Cycles script supports OpenClaw repository automation.
+// Check Import Cycles script supports Afora repository automation.
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

@@ -1,6 +1,6 @@
 // Command config resolver that combines secret materialization with optional plugin auto-enable.
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import type { RuntimeEnv } from "../runtime.js";
 import {
   type CommandSecretResolutionMode,
@@ -8,7 +8,7 @@ import {
 } from "./command-secret-gateway.js";
 
 /** Resolve command-scoped secrets and return both raw resolved and effective config views. */
-export async function resolveCommandConfigWithSecrets<TConfig extends OpenClawConfig>(params: {
+export async function resolveCommandConfigWithSecrets<TConfig extends AforaConfig>(params: {
   config: TConfig;
   commandName: string;
   targetIds: Set<string>;

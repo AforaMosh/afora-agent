@@ -1,5 +1,5 @@
 // Shared policy doctor value readers.
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 export { readBooleanPath as readPolicyBoolean } from "../policy-state-helpers.js";
 
 export function readPolicyStringArray(

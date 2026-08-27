@@ -1,14 +1,14 @@
 /** Compatibility helper that auto-enables bundled plugins for legacy flows. */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginEntryConfig } from "../config/types.plugins.js";
 import { readBundledDiscoveryMode } from "./bundled-discovery-state.js";
 import { normalizePluginId } from "./config-state.js";
 
 /** Returns config with selected bundled plugins explicitly enabled when compat rules require it. */
 export function withBundledPluginEnablementCompat(params: {
-  config: OpenClawConfig | undefined;
+  config: AforaConfig | undefined;
   pluginIds: readonly string[];
-}): OpenClawConfig | undefined {
+}): AforaConfig | undefined {
   if (params.pluginIds.length === 0) {
     return params.config;
   }

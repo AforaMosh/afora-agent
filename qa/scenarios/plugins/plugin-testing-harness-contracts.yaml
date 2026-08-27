@@ -12,7 +12,7 @@ scenario:
       - plugins.unit-and-integration-scaffolds
   objective: Verify the repo-local plugin test helpers provide isolated state, typed fixtures, real registry registration, tool execution, and contract diagnostics.
   successCriteria:
-    - The temporary-home helper creates isolated OpenClaw state and restores the caller environment.
+    - The temporary-home helper creates isolated Afora state and restores the caller environment.
     - Typed fixture cases drive an actual tool registered through the plugin registry harness.
     - A virtual plugin with a declared tools contract registers and executes its tool.
     - A virtual plugin without a tools contract records the canonical diagnostic and registers no tool.

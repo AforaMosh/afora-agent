@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginRuntime, RuntimeLogger } from "../plugins/runtime/types.js";
 import type { MeetingAudioBackend } from "./audio-backend.js";
 import type {
@@ -26,7 +26,7 @@ import type {
 
 export type MeetingRuntimeParams<Config extends MeetingPluginConfig> = {
   config: Config;
-  fullConfig: OpenClawConfig;
+  fullConfig: AforaConfig;
   runtime: PluginRuntime;
   logger: RuntimeLogger;
 };
@@ -60,7 +60,7 @@ type MeetingRuntimeLaunchResult<Health extends MeetingBrowserHealth> = {
 type MeetingRuntimeLaunchParams<Config extends MeetingPluginConfig, Mode extends string> = {
   runtime: PluginRuntime;
   config: Config;
-  fullConfig: OpenClawConfig;
+  fullConfig: AforaConfig;
   meetingSessionId: string;
   requesterSessionKey?: string;
   mode: Mode;
@@ -100,7 +100,7 @@ type MeetingRuntimeTransport<
   recoverCurrentTab(params: {
     runtime: PluginRuntime;
     config: Config;
-    fullConfig?: OpenClawConfig;
+    fullConfig?: AforaConfig;
     meetingSessionId?: string;
     mode: Mode;
     nodeId?: string;

@@ -11,8 +11,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { CreateSandboxBackendParams } from "openclaw/plugin-sdk/sandbox";
-import { isPathInside } from "openclaw/plugin-sdk/security-runtime";
+import type { CreateSandboxBackendParams } from "afora-agent/plugin-sdk/sandbox";
+import { isPathInside } from "afora-agent/plugin-sdk/security-runtime";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { resolveConfig, type MxcConfig } from "../src/config.js";
 import { createMxcSandboxBackendFactory } from "../src/mxc-backend-factory.js";
@@ -36,7 +36,7 @@ vi.mock("node:child_process", () => ({
   execFileSync: execFileSyncMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/process-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/process-runtime", () => ({
   runCommandBuffered: spawnCommandMock,
 }));
 
@@ -54,7 +54,7 @@ const baseConfig: MxcConfig = {
 
 const baseParams = {
   config: baseConfig,
-  runtimeId: "openclaw-mxc-test-abc12345",
+  runtimeId: "afora-mxc-test-abc12345",
   workdir: "/workspace",
 };
 
@@ -132,7 +132,7 @@ function createSandboxBackendTestConfig(
     docker: {
       binds: [],
       capDrop: [],
-      containerPrefix: "openclaw-sbx-",
+      containerPrefix: "afora-sbx-",
       env: {},
       image: "unused",
       network: "none",
@@ -173,8 +173,8 @@ const MXC_TEST_ENV_KEYS = [
   "ComSpec",
   "LOCALAPPDATA",
   "NUMBER_OF_PROCESSORS",
-  "OPENCLAW_MXC_HOST_SECRET_TEST",
-  "OPENCLAW_MXC_SECRET_TEST",
+  "AFORA_MXC_HOST_SECRET_TEST",
+  "AFORA_MXC_SECRET_TEST",
   "ProgramData",
   "ProgramFiles",
   "ProgramFiles(x86)",
@@ -216,7 +216,7 @@ describe("createMxcSandboxBackendFactory", () => {
       cfg: createSandboxBackendTestConfig({ workspaceAccess: "rw" }),
     });
 
-    expect(handle.runtimeId).toMatch(/^openclaw-mxc-workspace-[a-f0-9]{32}$/u);
+    expect(handle.runtimeId).toMatch(/^afora-mxc-workspace-[a-f0-9]{32}$/u);
   });
 });
 
@@ -271,7 +271,7 @@ describeOnWindows("createMxcSandboxBackendHandle (Windows-only MXC backend tests
     expect(cfg.containment).toBe("process");
     expect(cfg.lxc).toBeUndefined();
     expect(processContainer).toEqual({
-      name: "openclaw-mxc-test-abc12345",
+      name: "afora-mxc-test-abc12345",
       leastPrivilege: true,
       capabilities: [],
       ui: {
@@ -323,7 +323,7 @@ describeOnWindows("createMxcSandboxBackendHandle (Windows-only MXC backend tests
   });
 
   test("buildExecSpec keeps command and env payload out of process argv", async () => {
-    await withProcessEnv({ OPENCLAW_MXC_HOST_SECRET_TEST: "host-secret" }, async () => {
+    await withProcessEnv({ AFORA_MXC_HOST_SECRET_TEST: "host-secret" }, async () => {
       const handle = createMxcSandboxBackendHandle(baseParams);
       const spec = await handle.buildExecSpec({
         command: "printf secret-command",
@@ -335,7 +335,7 @@ describeOnWindows("createMxcSandboxBackendHandle (Windows-only MXC backend tests
       expect(serializedArgv).not.toContain("secret-command");
       expect(serializedArgv).not.toContain("SECRET_TOKEN");
       expect(serializedArgv).not.toContain("secret-env-value");
-      expect(spec.env.OPENCLAW_MXC_HOST_SECRET_TEST).toBeUndefined();
+      expect(spec.env.AFORA_MXC_HOST_SECRET_TEST).toBeUndefined();
       expect(spec.argv[2]).toBe("--payload-file");
 
       const payloadFile = spec.argv[3];
@@ -363,13 +363,13 @@ describeOnWindows("createMxcSandboxBackendHandle (Windows-only MXC backend tests
         SystemRoot: "C:\\Windows",
         SystemDrive: "C:",
         ComSpec: "C:\\Windows\\System32\\cmd.exe",
-        USERPROFILE: "C:\\Users\\openclaw",
-        APPDATA: "C:\\Users\\openclaw\\AppData\\Roaming",
-        LOCALAPPDATA: "C:\\Users\\openclaw\\AppData\\Local",
+        USERPROFILE: "C:\\Users\\afora",
+        APPDATA: "C:\\Users\\afora\\AppData\\Roaming",
+        LOCALAPPDATA: "C:\\Users\\afora\\AppData\\Local",
         ProgramData: "C:\\ProgramData",
         "ProgramFiles(x86)": "C:\\Program Files (x86)",
         NUMBER_OF_PROCESSORS: "8",
-        OPENCLAW_MXC_SECRET_TEST: "do-not-leak",
+        AFORA_MXC_SECRET_TEST: "do-not-leak",
       },
       async () => {
         const handle = createMxcSandboxBackendHandle({
@@ -394,16 +394,16 @@ describeOnWindows("createMxcSandboxBackendHandle (Windows-only MXC backend tests
         expect(network.enforcementMode).toBe("capabilities");
         expect(env).toContain("SystemRoot=C:\\Windows");
         expect(env).toContain("SystemDrive=C:");
-        expect(env).toContain("USERPROFILE=C:\\Users\\openclaw");
-        expect(env).toContain("APPDATA=C:\\Users\\openclaw\\AppData\\Roaming");
-        expect(env).toContain("LOCALAPPDATA=C:\\Users\\openclaw\\AppData\\Local");
+        expect(env).toContain("USERPROFILE=C:\\Users\\afora");
+        expect(env).toContain("APPDATA=C:\\Users\\afora\\AppData\\Roaming");
+        expect(env).toContain("LOCALAPPDATA=C:\\Users\\afora\\AppData\\Local");
         expect(env).toContain("ProgramData=C:\\ProgramData");
         expect(env).toContain("ProgramFiles(x86)=C:\\Program Files (x86)");
         expect(env).toContain("NUMBER_OF_PROCESSORS=8");
         expect(env).toContain("CUSTOM_ENV=caller");
         expect(env).toContain("comspec=C:\\Tools\\custom-cmd.exe");
         expect(env.filter((entry) => entry.toLowerCase().startsWith("comspec="))).toHaveLength(1);
-        expect(env.some((entry) => entry.startsWith("OPENCLAW_MXC_SECRET_TEST="))).toBe(false);
+        expect(env.some((entry) => entry.startsWith("AFORA_MXC_SECRET_TEST="))).toBe(false);
         const envKeys = env.map((entry) => entry.slice(0, entry.indexOf("=")));
         expect(envKeys).toEqual([...envKeys].toSorted((a, b) => a.localeCompare(b)));
       },
@@ -449,7 +449,7 @@ describeOnWindows("createMxcSandboxBackendHandle (Windows-only MXC backend tests
   test("Windows process containment caps long AppContainer names", async () => {
     const handle = createMxcSandboxBackendHandle({
       ...baseParams,
-      runtimeId: `openclaw-mxc-${"a".repeat(80)}-12345678`,
+      runtimeId: `afora-mxc-${"a".repeat(80)}-12345678`,
     });
     const spec = await handle.buildExecSpec({ command: "echo hello", env: {}, usePty: false });
 
@@ -629,7 +629,7 @@ describeOnWindows("createMxcSandboxBackendHandle (Windows-only MXC backend tests
     try {
       mkdirSync(path.join(workdir, "skills", "demo"), { recursive: true });
       mkdirSync(path.join(workdir, ".agents", "skills", "demo"), { recursive: true });
-      mkdirSync(path.join(workdir, ".openclaw", "sandbox-skills", "skills", "demo"), {
+      mkdirSync(path.join(workdir, ".afora", "sandbox-skills", "skills", "demo"), {
         recursive: true,
       });
       mkdirSync(path.join(skillsWorkspaceDir, "skills", "demo"), { recursive: true });
@@ -906,7 +906,7 @@ describeOnWindows("createMxcSandboxBackendHandle (Windows-only MXC backend tests
       const materializedSkillFile = path.join(skillsWorkspaceDir, "skills", "demo", "SKILL.md");
       const shadowSkillFile = path.join(
         workdir,
-        ".openclaw",
+        ".afora",
         "sandbox-skills",
         "skills",
         "demo",
@@ -944,7 +944,7 @@ describeOnWindows("createMxcSandboxBackendHandle (Windows-only MXC backend tests
       expect(existsSync(path.join(workdir, "normal.txt"))).toBe(false);
       await expect(
         bridge?.readFile({
-          filePath: ".openclaw/sandbox-skills/skills/demo/SKILL.md",
+          filePath: ".afora/sandbox-skills/skills/demo/SKILL.md",
           cwd: workdir,
         }),
       ).resolves.toEqual(Buffer.from("# Materialized skill\n"));
@@ -960,7 +960,7 @@ describeOnWindows("createMxcSandboxBackendHandle (Windows-only MXC backend tests
       await expect(
         bridge?.rename({
           from: "normal.txt",
-          to: ".openclaw/sandbox-skills/skills/demo/new.md",
+          to: ".afora/sandbox-skills/skills/demo/new.md",
           cwd: workdir,
         }),
       ).rejects.toThrow(/read-only/u);
@@ -1292,7 +1292,7 @@ describeOnWindows("createMxcSandboxBackendHandle (Windows-only MXC backend tests
 
     const expectedShell = process.env.ComSpec?.trim() || "cmd.exe";
     expect(processConfig?.commandLine).toBe(`${expectedShell} /d /s /c "echo hello"`);
-    expect(String(processConfig?.commandLine)).not.toContain(".openclaw-mxc-cmd-");
+    expect(String(processConfig?.commandLine)).not.toContain(".afora-mxc-cmd-");
   });
 
   test("runShellCommand timeout is capped by sandbox policy", async () => {
@@ -1332,8 +1332,8 @@ describeOnWindows("createMxcSandboxBackendHandle (Windows-only MXC backend tests
       {
         SystemRoot: "C:\\Windows",
         SystemDrive: "C:",
-        USERPROFILE: "C:\\Users\\openclaw",
-        OPENCLAW_MXC_SECRET_TEST: "do-not-leak",
+        USERPROFILE: "C:\\Users\\afora",
+        AFORA_MXC_SECRET_TEST: "do-not-leak",
       },
       async () => {
         let bridgeScript: string | undefined;
@@ -1380,15 +1380,15 @@ describeOnWindows("createMxcSandboxBackendHandle (Windows-only MXC backend tests
         const env = stringArrayField(processConfig, "env");
         const commandLine = String(processConfig.commandLine);
         expect(bridgeScript?.startsWith("@echo off\r\ntype con")).toBe(true);
-        expect(commandLine).toMatch(/ \/c ""[^"]*\.openclaw-mxc-cmd-[^"]+\.cmd" /u);
+        expect(commandLine).toMatch(/ \/c ""[^"]*\.afora-mxc-cmd-[^"]+\.cmd" /u);
         expect(commandLine).toContain(".cmd");
         expect(commandLine).toContain('"C:\\workspace\\%%USERPROFILE%%\\file.txt" "0"');
         expect(env).toContain("SystemRoot=C:\\Windows");
         expect(env).toContain("SystemDrive=C:");
-        expect(env).toContain("USERPROFILE=C:\\Users\\openclaw");
-        expect(env.some((entry) => entry.startsWith("OPENCLAW_MXC_SECRET_TEST="))).toBe(false);
+        expect(env).toContain("USERPROFILE=C:\\Users\\afora");
+        expect(env.some((entry) => entry.startsWith("AFORA_MXC_SECRET_TEST="))).toBe(false);
         expect(launcherEnv?.SystemRoot).toBe("C:\\Windows");
-        expect(launcherEnv?.OPENCLAW_MXC_SECRET_TEST).toBeUndefined();
+        expect(launcherEnv?.AFORA_MXC_SECRET_TEST).toBeUndefined();
         expect(launcherInput).toEqual(Buffer.from("shell-input", "utf-8"));
         expect(commandFile ? existsSync(path.dirname(commandFile)) : true).toBe(false);
       },
@@ -1534,7 +1534,7 @@ describeOnWindows("createMxcSandboxBackendHandle (Windows-only MXC backend tests
     const skillsWorkspaceDir = mkdtempSync(path.join(tmpdir(), "mxc-factory-skills-"));
     try {
       mkdirSync(path.join(skillsWorkspaceDir, "skills", "demo"), { recursive: true });
-      mkdirSync(path.join(workdir, ".openclaw", "sandbox-skills", "skills", "demo"), {
+      mkdirSync(path.join(workdir, ".afora", "sandbox-skills", "skills", "demo"), {
         recursive: true,
       });
       const createBackend = createMxcSandboxBackendFactory(baseConfig);

@@ -3,7 +3,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 import { resolveOriginMessageTo } from "../auto-reply/reply/origin-routing.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { resolveImplicitMessageActionTarget } from "../infra/outbound/message-action-normalization.js";
 import {
   createDirectDmPreCryptoGuardPolicy,
@@ -15,7 +15,7 @@ import { resolveStableChannelMessageIngress } from "./channel-ingress-runtime.js
 
 const baseCfg = {
   commands: { useAccessGroups: true },
-} as unknown as OpenClawConfig;
+} as unknown as AforaConfig;
 
 function createDirectDmRuntime() {
   const recordInboundSessionMock = vi.fn(async (_params: unknown) => {});
@@ -140,7 +140,7 @@ describe("channel-inbound direct-message helpers", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       channel: "nostr",
       accountId: "default",
       dmPolicy: "allowlist",

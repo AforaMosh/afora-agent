@@ -7,10 +7,10 @@ import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { CONTROL_PLANE_UPDATE_SENTINEL_META_ENV } from "../infra/update-control-plane-sentinel.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
-import { claimOpenClawStateOwnership } from "../state/openclaw-state-ownership-operations.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
+import { claimAforaStateOwnership } from "../state/afora-state-ownership-operations.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
@@ -49,7 +49,7 @@ function snapshotDatabaseArtifacts(snapshot: string[]): string[] {
 }
 
 function runUpdateProcess(root: string, args: string[], env: NodeJS.ProcessEnv = {}) {
-  const configPath = path.join(root, "config", "openclaw.json");
+  const configPath = path.join(root, "config", "afora.json");
   const stateDir = path.join(root, "state");
   const entryPath = fileURLToPath(new URL("../entry.ts", import.meta.url));
   return spawnSync(process.execPath, ["--import", "tsx", entryPath, ...args], {
@@ -66,14 +66,14 @@ function runUpdateProcess(root: string, args: string[], env: NodeJS.ProcessEnv =
       NODE_ENV: undefined,
       NODE_OPTIONS: undefined,
       NO_COLOR: "1",
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_DEBUG_PROXY_ENABLED: undefined,
-      OPENCLAW_DEBUG_PROXY_REQUIRE: undefined,
-      OPENCLAW_HIDE_BANNER: "1",
-      OPENCLAW_HOME: root,
-      OPENCLAW_NO_RESPAWN: "1",
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_SUPERVISOR_MODE: undefined,
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_DEBUG_PROXY_ENABLED: undefined,
+      AFORA_DEBUG_PROXY_REQUIRE: undefined,
+      AFORA_HIDE_BANNER: "1",
+      AFORA_HOME: root,
+      AFORA_NO_RESPAWN: "1",
+      AFORA_STATE_DIR: stateDir,
+      AFORA_SUPERVISOR_MODE: undefined,
       VITEST: undefined,
       VITEST_POOL_ID: undefined,
       VITEST_WORKER_ID: undefined,
@@ -89,8 +89,8 @@ function runUpdateProcess(root: string, args: string[], env: NodeJS.ProcessEnv =
 
 describe("update process state", () => {
   it("keeps malformed config immutable while producing a best-effort preview", async () => {
-    const root = tempDirs.make("openclaw-update-dry-run-malformed-");
-    const configPath = path.join(root, "config", "openclaw.json");
+    const root = tempDirs.make("afora-update-dry-run-malformed-");
+    const configPath = path.join(root, "config", "afora.json");
     await fs.mkdir(path.dirname(configPath), { recursive: true });
     await fs.mkdir(path.join(root, "state"), { recursive: true });
     await fs.writeFile(configPath, "{ definitely-not-json\n");
@@ -110,8 +110,8 @@ describe("update process state", () => {
   });
 
   it("keeps migration-pending config and SQLite markers immutable for the shorthand", async () => {
-    const root = tempDirs.make("openclaw-update-dry-run-migration-");
-    const configPath = path.join(root, "config", "openclaw.json");
+    const root = tempDirs.make("afora-update-dry-run-migration-");
+    const configPath = path.join(root, "config", "afora.json");
     const tasksDir = path.join(root, "state", "tasks");
     const migrationMarkerPath = path.join(tasksDir, "runs.sqlite.migrated");
     const walPath = path.join(tasksDir, "runs.sqlite-wal");
@@ -146,8 +146,8 @@ describe("update process state", () => {
   });
 
   it("defers legacy-state migration until the updated runtime", async () => {
-    const root = tempDirs.make("openclaw-update-legacy-state-");
-    const configPath = path.join(root, "config", "openclaw.json");
+    const root = tempDirs.make("afora-update-legacy-state-");
+    const configPath = path.join(root, "config", "afora.json");
     const sessionsDir = path.join(root, "state", "sessions");
     const sessionId = "legacy-会議-session";
     await fs.mkdir(path.dirname(configPath), { recursive: true });
@@ -184,14 +184,14 @@ describe("update process state", () => {
   });
 
   it("keeps an orphaned SQLite journal immutable when a managed handoff is refused", async () => {
-    const root = tempDirs.make("openclaw-update-refused-handoff-");
-    const configPath = path.join(root, "config", "openclaw.json");
+    const root = tempDirs.make("afora-update-refused-handoff-");
+    const configPath = path.join(root, "config", "afora.json");
     const stateDir = path.join(root, "state");
     const metaPath = path.join(root, "handoff.json");
     await fs.mkdir(path.dirname(configPath), { recursive: true });
     await fs.mkdir(path.join(stateDir, "state"), { recursive: true });
     await fs.writeFile(configPath, '{ "gateway": { "mode": "local" } }\n');
-    await fs.writeFile(path.join(stateDir, "state", "openclaw.sqlite-journal"), "orphan journal\n");
+    await fs.writeFile(path.join(stateDir, "state", "afora.sqlite-journal"), "orphan journal\n");
     await fs.writeFile(
       metaPath,
       `${JSON.stringify({ version: 1, meta: { root: path.join(root, "wrong-install") } })}\n`,
@@ -209,22 +209,22 @@ describe("update process state", () => {
   });
 
   it("fences the full mutable update path before observation or action", async () => {
-    const root = tempDirs.make("openclaw-update-owned-state-");
-    const configPath = path.join(root, "config", "openclaw.json");
+    const root = tempDirs.make("afora-update-owned-state-");
+    const configPath = path.join(root, "config", "afora.json");
     const stateDir = path.join(root, "state");
     await fs.mkdir(path.dirname(configPath), { recursive: true });
     await fs.writeFile(configPath, '{ "gateway": { "mode": "local" } }\n');
     const externalEnv = {
       ...process.env,
       HOME: root,
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_HOME: root,
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_SUPERVISOR_MODE: "external",
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_HOME: root,
+      AFORA_STATE_DIR: stateDir,
+      AFORA_SUPERVISOR_MODE: "external",
     };
-    claimOpenClawStateOwnership("gateway-supervisor", { env: externalEnv });
-    const databasePath = openOpenClawStateDatabase({ env: externalEnv }).path;
-    closeOpenClawStateDatabaseForTest();
+    claimAforaStateOwnership("gateway-supervisor", { env: externalEnv });
+    const databasePath = openAforaStateDatabase({ env: externalEnv }).path;
+    closeAforaStateDatabaseForTest();
     const before = await snapshotTree(root);
     const beforeDatabaseHash = await sha256File(databasePath);
 
@@ -233,7 +233,7 @@ describe("update process state", () => {
     expect(refused.error).toBeUndefined();
     expect(refused.status).not.toBe(0);
     expect(`${refused.stdout}\n${refused.stderr}`).toMatch(/gateway-supervisor/u);
-    expect(`${refused.stdout}\n${refused.stderr}`).toMatch(/OPENCLAW_SUPERVISOR_MODE=external/u);
+    expect(`${refused.stdout}\n${refused.stderr}`).toMatch(/AFORA_SUPERVISOR_MODE=external/u);
     expect(await snapshotTree(root)).toEqual(before);
     expect(await sha256File(databasePath)).toBe(beforeDatabaseHash);
   });

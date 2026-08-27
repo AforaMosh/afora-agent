@@ -8,17 +8,17 @@ import {
 } from "../config/sessions/session-accessor.js";
 import { readTranscriptStorageRows } from "../config/sessions/session-accessor.sqlite-read.js";
 import { CURRENT_SESSION_VERSION } from "../config/sessions/version.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-} from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+} from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../test-utils/afora-test-state.js";
 
 const note = vi.hoisted(() => vi.fn());
 
@@ -32,8 +32,8 @@ const SESSION_KEY = "agent:main:headerless-session";
 const SPAWNED_CWD = "/workspace/headerless-child";
 
 describe("doctor SQLite session transcript header repair", () => {
-  let state: OpenClawTestState;
-  let cfg: OpenClawConfig;
+  let state: AforaTestState;
+  let cfg: AforaConfig;
   let scope: {
     agentId: string;
     env: NodeJS.ProcessEnv;
@@ -44,9 +44,9 @@ describe("doctor SQLite session transcript header repair", () => {
 
   beforeEach(async () => {
     note.mockClear();
-    state = await createOpenClawTestState({
+    state = await createAforaTestState({
       layout: "state-only",
-      prefix: "openclaw-doctor-transcript-headers-",
+      prefix: "afora-doctor-transcript-headers-",
     });
     cfg = {
       agents: { list: [{ id: AGENT_ID, workspace: state.workspaceDir }] },
@@ -61,8 +61,8 @@ describe("doctor SQLite session transcript header repair", () => {
   });
 
   afterEach(async () => {
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     await state.cleanup();
   });
 
@@ -104,9 +104,9 @@ describe("doctor SQLite session transcript header repair", () => {
       },
     ]);
     const databaseOptions = { agentId: AGENT_ID, env: state.env };
-    const database = openOpenClawAgentDatabase(databaseOptions);
+    const database = openAforaAgentDatabase(databaseOptions);
     const beforeRows = readTranscriptStorageRows(database, SESSION_ID);
-    runOpenClawAgentWriteTransaction((transactionDatabase) => {
+    runAforaAgentWriteTransaction((transactionDatabase) => {
       transactionDatabase.db
         .prepare(
           "UPDATE session_windows SET transcript_updated_at = ?, transcript_observed_at = ? WHERE session_id = ?",
@@ -123,7 +123,7 @@ describe("doctor SQLite session transcript header repair", () => {
     ).resolves.toEqual({ found: 1, repaired: 0 });
     expect(readTranscriptStorageRows(database, SESSION_ID)).toEqual(beforeRows);
     expect(note).toHaveBeenCalledWith(
-      '- Found 1 canonical session transcript without a header.\n- Run "openclaw doctor --fix" to repair it before resuming the session.',
+      '- Found 1 canonical session transcript without a header.\n- Run "afora doctor --fix" to repair it before resuming the session.',
       "Session transcript headers",
     );
 
@@ -204,7 +204,7 @@ describe("doctor SQLite session transcript header repair", () => {
       { type: "message", message: { role: "user", content: "legacy message" } },
       { type: "message", message: { role: "hookMessage", content: "legacy hook" } },
     ]);
-    const database = openOpenClawAgentDatabase({ agentId: AGENT_ID, env: state.env });
+    const database = openAforaAgentDatabase({ agentId: AGENT_ID, env: state.env });
     const before = readTranscriptStorageRows(database, SESSION_ID);
 
     await expect(
@@ -251,7 +251,7 @@ describe("doctor SQLite session transcript header repair", () => {
     },
   ])("does not repair $name", async ({ events }) => {
     await seedHeaderlessTranscript(events);
-    const database = openOpenClawAgentDatabase({ agentId: AGENT_ID, env: state.env });
+    const database = openAforaAgentDatabase({ agentId: AGENT_ID, env: state.env });
     const before = readTranscriptStorageRows(database, SESSION_ID);
 
     await expect(
@@ -283,8 +283,8 @@ describe("doctor SQLite session transcript header repair", () => {
       },
     ]);
     const databaseOptions = { agentId: AGENT_ID, env: state.env };
-    const database = openOpenClawAgentDatabase(databaseOptions);
-    runOpenClawAgentWriteTransaction((transactionDatabase) => {
+    const database = openAforaAgentDatabase(databaseOptions);
+    runAforaAgentWriteTransaction((transactionDatabase) => {
       const duplicate = {
         type: "message",
         id: "user-1",
@@ -324,7 +324,7 @@ describe("doctor SQLite session transcript header repair", () => {
       noteSessionTranscriptHeaderHealth({ cfg, env: state.env, shouldRepair: true }),
     ).resolves.toEqual({ found: 1, repaired: 1 });
 
-    const database = openOpenClawAgentDatabase({ agentId: AGENT_ID, env: state.env });
+    const database = openAforaAgentDatabase({ agentId: AGENT_ID, env: state.env });
     const header = JSON.parse(readTranscriptStorageRows(database, SESSION_ID)[0]!.eventJson);
     expect(header).toMatchObject({ type: "session", cwd: state.workspaceDir });
   });
@@ -340,7 +340,7 @@ describe("doctor SQLite session transcript header repair", () => {
       },
     ]);
     const databaseOptions = { agentId: AGENT_ID, env: state.env };
-    runOpenClawAgentWriteTransaction((database) => {
+    runAforaAgentWriteTransaction((database) => {
       database.db
         .prepare(
           "UPDATE session_nodes SET current_session_id = ?, entry_json = ? WHERE session_key = ?",
@@ -356,7 +356,7 @@ describe("doctor SQLite session transcript header repair", () => {
       noteSessionTranscriptHeaderHealth({ cfg, env: state.env, shouldRepair: true }),
     ).resolves.toEqual({ found: 1, repaired: 1 });
 
-    const database = openOpenClawAgentDatabase(databaseOptions);
+    const database = openAforaAgentDatabase(databaseOptions);
     const header = JSON.parse(readTranscriptStorageRows(database, SESSION_ID)[0]!.eventJson);
     expect(header).toMatchObject({ type: "session", cwd: state.workspaceDir });
   });

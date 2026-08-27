@@ -173,7 +173,7 @@ describe("Skill Workshop history scan", () => {
     }));
     const messages = [
       ...interactive,
-      { role: "user", content: "[OpenClaw heartbeat poll]" },
+      { role: "user", content: "[Afora heartbeat poll]" },
       ...Array.from({ length: 100 }, (_, index) => ({
         role: index % 2 === 0 ? "assistant" : "toolResult",
         content: `scheduled heartbeat work ${index}`,
@@ -513,14 +513,14 @@ describe("Skill Workshop history scan", () => {
   });
 
   it("rejects an opposite-direction scan while one is active", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-history-scan-test-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-history-scan-test-"));
     try {
       const workspaceDir = path.join(tempDir, "workspace");
       await fs.mkdir(workspaceDir, { recursive: true });
       const params = {
         agentId: "main",
         config: { session: { store: path.join(tempDir, "sessions.json") } },
-        env: { ...process.env, OPENCLAW_STATE_DIR: path.join(tempDir, "state") },
+        env: { ...process.env, AFORA_STATE_DIR: path.join(tempDir, "state") },
         workspaceDir,
       };
       const older = runSkillHistoryScan({ ...params, direction: "older" });
@@ -535,10 +535,10 @@ describe("Skill Workshop history scan", () => {
   });
 
   it("keeps scan cursors separate when the transcript store changes", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-history-store-scope-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-history-store-scope-"));
     try {
       const workspaceDir = path.join(tempDir, "workspace");
-      const env = { ...process.env, OPENCLAW_STATE_DIR: path.join(tempDir, "state") };
+      const env = { ...process.env, AFORA_STATE_DIR: path.join(tempDir, "state") };
       const firstConfig = { session: { store: path.join(tempDir, "first", "sessions.json") } };
       const secondConfig = { session: { store: path.join(tempDir, "second", "sessions.json") } };
       await fs.mkdir(workspaceDir, { recursive: true });
@@ -573,7 +573,7 @@ describe("Skill Workshop history scan", () => {
 
   it("keeps the wire result free of transcript content", () => {
     const result: SkillHistoryScanResult = {
-      schema: "openclaw.skill-workshop.history-scan.v1",
+      schema: "afora.skill-workshop.history-scan.v1",
       hasScanned: true,
       reviewedSessions: 20,
       ideasFound: 2,

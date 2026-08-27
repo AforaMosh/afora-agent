@@ -185,7 +185,7 @@ function createQueueOutcomeSequenceMock(
 const longChildCompletionOutput = [
   "34/34 tests pass, clean build. Now docker repro:",
   "Root cause: the requester's announce delivery accepted a prefix-only assistant payload as delivered.",
-  "PR: https://github.com/openclaw/openclaw/pull/12345",
+  "PR: https://github.com/AforaMosh/afora-agent/pull/12345",
   "Verification: pnpm test src/agents/subagents/announce/subagent-announce-delivery.test.ts passed with the regression enabled.",
 ].join("\n");
 
@@ -1123,8 +1123,8 @@ describe("deliverSubagentAnnouncement active requester steering", () => {
       retryWindowMs: 500,
     },
   ] as const)("$name", async ({ outcomes, announceTimeoutMs, retryWindowMs }) => {
-    const previousTestFast = process.env.OPENCLAW_TEST_FAST;
-    process.env.OPENCLAW_TEST_FAST = "1";
+    const previousTestFast = process.env.AFORA_TEST_FAST;
+    process.env.AFORA_TEST_FAST = "1";
     try {
       // Compaction remains retryable beyond the backoff schedule, but each
       // attempt must receive only the remaining delivery-timeout window.
@@ -1149,9 +1149,9 @@ describe("deliverSubagentAnnouncement active requester steering", () => {
       }
     } finally {
       if (previousTestFast === undefined) {
-        delete process.env.OPENCLAW_TEST_FAST;
+        delete process.env.AFORA_TEST_FAST;
       } else {
-        process.env.OPENCLAW_TEST_FAST = previousTestFast;
+        process.env.AFORA_TEST_FAST = previousTestFast;
       }
     }
   });
@@ -1344,8 +1344,8 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
   });
 
   it("waits through compaction on the completion handoff wake (86566)", async () => {
-    const previousTestFast = process.env.OPENCLAW_TEST_FAST;
-    process.env.OPENCLAW_TEST_FAST = "1";
+    const previousTestFast = process.env.AFORA_TEST_FAST;
+    process.env.AFORA_TEST_FAST = "1";
     try {
       // The generated-completion active wake (expectsCompletionMessage) must also
       // wait through a compacting run and re-steer the same wake instead of
@@ -1368,9 +1368,9 @@ describe("deliverSubagentAnnouncement completion delivery", () => {
       expect(callGateway).not.toHaveBeenCalled();
     } finally {
       if (previousTestFast === undefined) {
-        delete process.env.OPENCLAW_TEST_FAST;
+        delete process.env.AFORA_TEST_FAST;
       } else {
-        process.env.OPENCLAW_TEST_FAST = previousTestFast;
+        process.env.AFORA_TEST_FAST = previousTestFast;
       }
     }
   });

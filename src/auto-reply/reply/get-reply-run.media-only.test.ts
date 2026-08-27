@@ -1,5 +1,5 @@
 // Tests media-only get-reply runs and sandboxed media attachment handling.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionEntry } from "../../config/sessions.js";
 import { withSystemEventOwner } from "../../infra/system-event-ownership.js";
@@ -61,7 +61,7 @@ vi.mock("../../agents/harness/hook-helpers.js", () => ({
 }));
 
 // Harness selection and built-in execution are owned by their focused suites. These tests keep
-// the real visible-reply policy resolver while supplying its default OpenClaw harness leaf.
+// the real visible-reply policy resolver while supplying its default Afora harness leaf.
 const preparedReplyMockState = vi.hoisted(() => ({
   unexpectedCalls: [] as string[],
 }));
@@ -128,7 +128,7 @@ const selectAgentHarnessMock = vi.hoisted(() =>
       ) {
         preparedReplyMockState.unexpectedCalls.push("selectAgentHarness");
       }
-      return { id: "openclaw", deliveryDefaults: {} };
+      return { id: "afora", deliveryDefaults: {} };
     },
   ),
 );
@@ -719,7 +719,7 @@ describe("runPreparedReply media-only handling", () => {
       resolvedThinkLevel: "high",
       sessionEntry,
       sessionStore,
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       modelState: {
         resolveDefaultThinkingLevel: async () => "high",
         resolveThinkingCatalog: async () => [
@@ -1050,7 +1050,7 @@ describe("runPreparedReply media-only handling", () => {
     expect(call.followupRun.userTurnTranscriptRecorder?.message).toMatchObject({
       role: "user",
       content: "",
-      __openclaw: { media: [expect.objectContaining({ path: "/tmp/input.png" })] },
+      __afora: { media: [expect.objectContaining({ path: "/tmp/input.png" })] },
     });
   });
 
@@ -1650,7 +1650,7 @@ describe("runPreparedReply media-only handling", () => {
     expect(call.followupRun.userTurnTranscriptRecorder?.message).toMatchObject({
       role: "user",
       content: "describe this",
-      __openclaw: {
+      __afora: {
         media: [expect.objectContaining({ path: imagePath, contentType: "image/png" })],
       },
     });
@@ -1733,16 +1733,16 @@ describe("runPreparedReply media-only handling", () => {
     const message = requireRunReplyAgentCall().followupRun.userTurnTranscriptRecorder?.message;
     if (shouldPersist) {
       expect(message).toMatchObject({
-        __openclaw: {
+        __afora: {
           senderId: "user-42",
           senderName: "Ada",
           senderUsername: "ada",
         },
       });
     } else {
-      expect(message).not.toHaveProperty("__openclaw.senderId");
-      expect(message).not.toHaveProperty("__openclaw.senderName");
-      expect(message).not.toHaveProperty("__openclaw.senderUsername");
+      expect(message).not.toHaveProperty("__afora.senderId");
+      expect(message).not.toHaveProperty("__afora.senderName");
+      expect(message).not.toHaveProperty("__afora.senderUsername");
     }
   });
 
@@ -1825,7 +1825,7 @@ describe("runPreparedReply media-only handling", () => {
     expect(
       (
         call.followupRun.userTurnTranscriptRecorder?.message as unknown as Record<string, unknown>
-      )?.["__openclaw"],
+      )?.["__afora"],
     ).toMatchObject({
       mediaImageLayout: { slots: [], suppressedFactIndexes: [0, 1] },
     });
@@ -1893,7 +1893,7 @@ describe("runPreparedReply media-only handling", () => {
     expect(
       (
         call.followupRun.userTurnTranscriptRecorder?.message as unknown as Record<string, unknown>
-      )?.["__openclaw"],
+      )?.["__afora"],
     ).toMatchObject({
       mediaImageLayout: {
         slots: [{ kind: "inline", factIndex: 1 }],
@@ -1962,7 +1962,7 @@ describe("runPreparedReply media-only handling", () => {
     expect(
       (
         call.followupRun.userTurnTranscriptRecorder?.message as unknown as Record<string, unknown>
-      )?.["__openclaw"],
+      )?.["__afora"],
     ).toMatchObject({
       mediaImageLayout: { slots: [{ kind: "inline", factIndex: 1 }] },
     });
@@ -2291,7 +2291,7 @@ describe("runPreparedReply media-only handling", () => {
         sessionId: "session-goal-interrupt",
         sessionEntry: activeEntry,
         sessionStore: { "session-key": activeEntry },
-        storePath: "/tmp/openclaw-session-store.json",
+        storePath: "/tmp/afora-session-store.json",
       }),
     );
     while (!activeRun.abortSignal.aborted) {
@@ -2303,7 +2303,7 @@ describe("runPreparedReply media-only handling", () => {
 
     await expect(runPromise).resolves.toEqual({ text: "ok" });
     expect(loadSessionEntryMock).toHaveBeenCalledWith({
-      storePath: "/tmp/openclaw-session-store.json",
+      storePath: "/tmp/afora-session-store.json",
       sessionKey: "session-key",
       readConsistency: "latest",
     });
@@ -3068,7 +3068,7 @@ describe("runPreparedReply media-only handling", () => {
           AmbientTranscriptMessageId: "35676",
           AmbientTranscriptTimestampMs: 1_710_000_000_000,
         },
-        storePath: "/tmp/openclaw-session-store.json",
+        storePath: "/tmp/afora-session-store.json",
       }),
     );
 
@@ -3091,7 +3091,7 @@ describe("runPreparedReply media-only handling", () => {
         messageId: "35676",
       }),
       timestamp: expect.any(Number),
-      __openclaw: {
+      __afora: {
         senderIsOwner: false,
         senderName: "Keśava",
         transport: {
@@ -3107,7 +3107,7 @@ describe("runPreparedReply media-only handling", () => {
       timestamp: 1_710_000_000_000,
     });
     expect(updateAmbientTranscriptWatermarkMock).toHaveBeenCalledWith({
-      storePath: "/tmp/openclaw-session-store.json",
+      storePath: "/tmp/afora-session-store.json",
       sessionKey: "session-key",
       key: '["telegram","","-100123",""]',
       messageId: "35676",
@@ -3117,7 +3117,7 @@ describe("runPreparedReply media-only handling", () => {
     expect(call?.followupRun.currentInboundContext?.text).toContain(
       "#35675 obviyus ->#35674: Are you fr fr",
     );
-    expect(call?.followupRun.currentInboundContext?.text).toContain("[OpenClaw room event]");
+    expect(call?.followupRun.currentInboundContext?.text).toContain("[Afora room event]");
     expect(call?.followupRun.currentInboundContext?.text).toContain(
       ROOM_EVENT_MESSAGE_TOOL_DIRECTIVE,
     );
@@ -3421,8 +3421,8 @@ describe("runPreparedReply media-only handling", () => {
         OriginatingChannel: "discord",
         OriginatingTo: "discord:channel-123",
       });
-      expect(call?.transcriptCommandBody).toBe("[OpenClaw heartbeat poll]");
-      expect(call?.followupRun.transcriptPrompt).toBe("[OpenClaw heartbeat poll]");
+      expect(call?.transcriptCommandBody).toBe("[Afora heartbeat poll]");
+      expect(call?.followupRun.transcriptPrompt).toBe("[Afora heartbeat poll]");
       expect(call?.followupRun.userTurnTranscriptRecorder?.message).toMatchObject({
         provenance: { kind: "internal_system", sourceTool: "heartbeat" },
       });
@@ -3970,8 +3970,8 @@ describe("runPreparedReply media-only handling", () => {
       expect(call?.commandBody).toContain("telegram-user-1");
       expect(call?.followupRun.prompt).toContain("A new session was started via /new or /reset.");
       expect(call?.followupRun.prompt).toContain("Sender:");
-      expect(call?.transcriptCommandBody).toBe(`[OpenClaw session ${startupAction}]`);
-      expect(call?.followupRun.transcriptPrompt).toBe(`[OpenClaw session ${startupAction}]`);
+      expect(call?.transcriptCommandBody).toBe(`[Afora session ${startupAction}]`);
+      expect(call?.followupRun.transcriptPrompt).toBe(`[Afora session ${startupAction}]`);
       expect(call?.followupRun.transcriptPrompt).not.toContain("Sender:");
     },
   );
@@ -4028,7 +4028,7 @@ describe("runPreparedReply media-only handling", () => {
     const call = requireRunReplyAgentCall();
     expect(call?.followupRun.run.messageProvider).toBe("webchat");
     expect(call?.followupRun.userTurnTranscriptRecorder?.message).toMatchObject({
-      __openclaw: {
+      __afora: {
         transport: {
           channel: "telegram",
           conversationRef: expect.stringMatching(/^conv_[a-f0-9]{32}$/u),
@@ -4277,7 +4277,7 @@ describe("runPreparedReply media-only handling", () => {
     const call = requireRunReplyAgentCall();
     expect(call?.followupRun.run.senderIsOwner).toBe(true);
     expect(call?.followupRun.userTurnTranscriptRecorder?.message).toMatchObject({
-      __openclaw: { senderIsOwner: true },
+      __afora: { senderIsOwner: true },
     });
   });
 

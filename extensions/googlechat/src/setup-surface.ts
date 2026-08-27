@@ -1,4 +1,4 @@
-import { createChannelDmPolicy } from "openclaw/plugin-sdk/channel-dm-policy";
+import { createChannelDmPolicy } from "afora-agent/plugin-sdk/channel-dm-policy";
 // Googlechat plugin module implements setup surface behavior.
 import {
   applySetupAccountConfigPatch,
@@ -11,11 +11,11 @@ import {
   splitSetupEntries,
   createSetupTranslator,
   type ChannelSetupWizard,
-} from "openclaw/plugin-sdk/setup";
+} from "afora-agent/plugin-sdk/setup";
 import {
   normalizeOptionalString,
   normalizeStringifiedOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveDefaultGoogleChatAccountId, resolveGoogleChatAccount } from "./accounts.js";
 
 const t = createSetupTranslator();

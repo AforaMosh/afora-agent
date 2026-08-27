@@ -1,5 +1,5 @@
-import { normalizeUsage, type AgentHarnessV2 } from "openclaw/plugin-sdk/agent-harness-runtime";
-import type { Model } from "openclaw/plugin-sdk/llm";
+import { normalizeUsage, type AgentHarnessV2 } from "afora-agent/plugin-sdk/agent-harness-runtime";
+import type { Model } from "afora-agent/plugin-sdk/llm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { EmbeddedRunAttemptResult } from "./attempt-terminal.js";
 import {
@@ -67,7 +67,7 @@ function createSettledAttempt(): EmbeddedRunAttemptResult {
       } as never,
     ],
     settledTurnFinalizationContext: {
-      source: "openclaw-transcript",
+      source: "afora-transcript",
       messages: [
         { role: "user", content: "Send the update to Alice." } as never,
         {

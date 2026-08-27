@@ -3,7 +3,7 @@ import path from "node:path";
 import {
   normalizeOptionalString,
   readStringValue,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { getRetainedLegacyDefaultAgentId } from "../config/legacy.default-agent-owner-state.js";
 import { hasExplicitModelPolicyAllow } from "../config/model-policy-allowlist-migration.js";
 import { resolveStateDir } from "../config/paths.js";
@@ -11,14 +11,14 @@ import type {
   AgentContextLimitsConfig,
   AgentDefaultsConfig,
 } from "../config/types.agent-defaults.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { LEGACY_IMPLICIT_AGENT_ID, normalizeAgentId } from "../routing/session-key.js";
 import { resolveUserPath } from "../utils.js";
 import { registerResolvedAgentDir } from "./agent-dir-registry.js";
 import { resolveDefaultAgentWorkspaceDir } from "./workspace-default.js";
 
-type AgentEntry = NonNullable<NonNullable<OpenClawConfig["agents"]>["list"]>[number];
-type AgentEntriesConfig = NonNullable<NonNullable<OpenClawConfig["agents"]>["entries"]>;
+type AgentEntry = NonNullable<NonNullable<AforaConfig["agents"]>["list"]>[number];
+type AgentEntriesConfig = NonNullable<NonNullable<AforaConfig["agents"]>["entries"]>;
 type AgentRosterProperty = { kind: "entries" | "list"; value: unknown };
 export type ListedAgentEntry = {
   entry: AgentEntry;
@@ -90,7 +90,7 @@ function stripNullBytes(s: string): string {
 }
 
 /** Lists valid configured agent entries from config. */
-export function listAgentEntriesWithSource(cfg: OpenClawConfig): ListedAgentEntry[] {
+export function listAgentEntriesWithSource(cfg: AforaConfig): ListedAgentEntry[] {
   const roster = readAgentRosterProperty(cfg);
   if (
     roster?.kind === "entries" &&
@@ -120,7 +120,7 @@ export function listAgentEntriesWithSource(cfg: OpenClawConfig): ListedAgentEntr
 }
 
 /** Lists valid configured agent entries from either supported representation. */
-export function listAgentEntries(cfg: OpenClawConfig): AgentEntry[] {
+export function listAgentEntries(cfg: AforaConfig): AgentEntry[] {
   return listAgentEntriesWithSource(cfg).map(({ entry }) => entry);
 }
 
@@ -160,7 +160,7 @@ export function hasAgentRosterProperty(raw: unknown): boolean {
 }
 
 /** Lists unique configured agent ids. */
-export function listAgentIds(cfg: OpenClawConfig): string[] {
+export function listAgentIds(cfg: AforaConfig): string[] {
   const agents = listAgentEntries(cfg);
   if (agents.length === 0 && !hasAgentRosterProperty(cfg)) {
     // Match resolveDefaultAgentId's Plugin SDK compatibility for raw pre-roster configs.
@@ -179,7 +179,7 @@ export function listAgentIds(cfg: OpenClawConfig): string[] {
   return ids;
 }
 
-export function tryResolveSoleAgentId(cfg: OpenClawConfig): string | undefined {
+export function tryResolveSoleAgentId(cfg: AforaConfig): string | undefined {
   const agents = listAgentEntries(cfg);
   if (agents.length === 0) {
     if (!hasAgentRosterProperty(cfg)) {
@@ -190,19 +190,19 @@ export function tryResolveSoleAgentId(cfg: OpenClawConfig): string | undefined {
   return agents.length === 1 ? normalizeAgentId(agents[0]!.id) : undefined;
 }
 
-export function resolveSoleAgentId(cfg: OpenClawConfig, context?: AgentSelectionContext): string {
+export function resolveSoleAgentId(cfg: AforaConfig, context?: AgentSelectionContext): string {
   const sole = tryResolveSoleAgentId(cfg);
   if (sole) {
     return sole;
   }
   const agentIds = listAgentIds(cfg);
   if (agentIds.length === 0) {
-    throw new Error("No agents configured. Run `openclaw onboard` or `openclaw agents add` first.");
+    throw new Error("No agents configured. Run `afora onboard` or `afora agents add` first.");
   }
   throw new AgentSelectionRequiredError(agentIds, context);
 }
 
-function tryResolveRawLegacyDefaultAgentId(cfg: OpenClawConfig): string | undefined {
+function tryResolveRawLegacyDefaultAgentId(cfg: AforaConfig): string | undefined {
   if (cfg.agents?.ownership === "explicit") {
     return undefined;
   }
@@ -211,7 +211,7 @@ function tryResolveRawLegacyDefaultAgentId(cfg: OpenClawConfig): string | undefi
 }
 
 /** Resolves sole/raw legacy owners plus the retained in-process migration owner. */
-export function tryResolveLegacyCompatibilityAgentId(cfg: OpenClawConfig): string | undefined {
+export function tryResolveLegacyCompatibilityAgentId(cfg: AforaConfig): string | undefined {
   const retainedAgentId = getRetainedLegacyDefaultAgentId(cfg);
   return retainedAgentId && listAgentIds(cfg).includes(retainedAgentId)
     ? retainedAgentId
@@ -220,7 +220,7 @@ export function tryResolveLegacyCompatibilityAgentId(cfg: OpenClawConfig): strin
 
 /** Resolves the configured owner for ambient system work and explicit consults. */
 export function tryResolveSystemAgentTargetAgentId(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   requestedAgentId?: string,
 ): string | undefined {
   const configuredAgentId =
@@ -230,7 +230,7 @@ export function tryResolveSystemAgentTargetAgentId(
 }
 
 export function resolveSystemAgentTargetAgentId(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   requestedAgentId?: string,
   context?: AgentSelectionContext,
 ): string {
@@ -251,25 +251,25 @@ export function resolveSystemAgentTargetAgentId(
 
 /** @deprecated Use resolveSoleAgentId; accepts raw shipped markers only for input compatibility. */
 export function resolveDefaultAgentId(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   context?: AgentSelectionContext,
 ): string {
   return tryResolveRawLegacyDefaultAgentId(cfg) ?? resolveSoleAgentId(cfg, context);
 }
 
 /** @deprecated Use tryResolveSoleAgentId; accepts raw shipped markers only for input compatibility. */
-export function tryResolveDefaultAgentId(cfg: OpenClawConfig): string | undefined {
+export function tryResolveDefaultAgentId(cfg: AforaConfig): string | undefined {
   return tryResolveRawLegacyDefaultAgentId(cfg) ?? tryResolveSoleAgentId(cfg);
 }
 
-export function resolveAgentEntry(cfg: OpenClawConfig, agentId: string): AgentEntry | undefined {
+export function resolveAgentEntry(cfg: AforaConfig, agentId: string): AgentEntry | undefined {
   const id = normalizeAgentId(agentId);
   return listAgentEntries(cfg).find((entry) => normalizeAgentId(entry.id) === id);
 }
 
 /** Resolves the authored entry object for in-place canonical config mutations. */
 export function resolveMutableAgentEntry(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
 ): Pick<AgentEntry, "model"> | undefined {
   const id = normalizeAgentId(agentId);
@@ -287,7 +287,7 @@ export function resolveMutableAgentEntry(
 
 /** Resolves merged config for one agent id. */
 export function resolveAgentConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
 ): ResolvedAgentConfig | undefined {
   const id = normalizeAgentId(agentId);
@@ -346,7 +346,7 @@ export function resolveAgentConfig(
 }
 
 export function resolveAgentContextLimits(
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
   agentId?: string | null,
 ): AgentContextLimitsConfig | undefined {
   const defaults = cfg?.agents?.defaults?.contextLimits;
@@ -356,12 +356,12 @@ export function resolveAgentContextLimits(
   return resolveAgentConfig(cfg, agentId)?.contextLimits ?? defaults;
 }
 
-function tryResolveInheritedWorkspaceAgentId(cfg: OpenClawConfig): string | undefined {
+function tryResolveInheritedWorkspaceAgentId(cfg: AforaConfig): string | undefined {
   return tryResolveLegacyCompatibilityAgentId(cfg);
 }
 
 export function resolveAgentWorkspaceDir(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
   env: NodeJS.ProcessEnv = process.env,
 ) {
@@ -387,7 +387,7 @@ export function resolveAgentWorkspaceDir(
 }
 
 export function tryResolveConfiguredAgentWorkspaceDir(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   env: NodeJS.ProcessEnv = process.env,
 ): string | undefined {
   const inheritedWorkspaceAgentId = tryResolveInheritedWorkspaceAgentId(cfg);
@@ -399,7 +399,7 @@ export function tryResolveConfiguredAgentWorkspaceDir(
 }
 
 export function resolveAgentDir(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
   env: NodeJS.ProcessEnv = process.env,
 ) {
@@ -417,7 +417,7 @@ export function resolveAgentDir(
 }
 
 export function resolveDefaultAgentDir(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   env: NodeJS.ProcessEnv = process.env,
 ): string {
   return resolveAgentDir(

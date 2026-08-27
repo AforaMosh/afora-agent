@@ -26,7 +26,7 @@ vi.mock("./paths.js", async (importOriginal) => {
 });
 vi.mock("./pw-session.js", () => sessionMocks);
 
-const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-browser-trace-test-"));
+const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-browser-trace-test-"));
 traceTestState.rootDir = await fs.realpath(tempRoot);
 const { traceStopViaPlaywright } = await import("./pw-tools-core.trace.js");
 

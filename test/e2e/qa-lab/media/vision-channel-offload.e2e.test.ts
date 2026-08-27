@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   createQaBusState,
@@ -24,7 +24,7 @@ const SPLIT_COLOR_PNG_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAHElEQVR4nGP4z8DwnxLMMGrAsDCAQv2jBgwPAwAxtf4Q24P5oAAAAABJRU5ErkJggg==";
 const CONVERSATION = { id: "vision-channel-offload", kind: "direct" as const };
 
-function configureVisionOffload(config: OpenClawConfig): OpenClawConfig {
+function configureVisionOffload(config: AforaConfig): AforaConfig {
   const provider = config.models?.providers?.["mock-openai"];
   if (!provider) {
     throw new Error("mock-openai provider is missing from QA gateway config");

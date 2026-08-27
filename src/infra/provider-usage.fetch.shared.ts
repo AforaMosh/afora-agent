@@ -2,7 +2,7 @@
 import {
   parseDateStringTimestampMs,
   resolveTimerTimeoutMs,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import { readProviderJsonResponse } from "../agents/provider-http-errors.js";
 import { cancelUnreadResponseBody } from "./http-body.js";
 import { providerUsageLabel } from "./provider-usage.shared.js";
@@ -23,7 +23,7 @@ export async function fetchJson(
   return await fetchFn(url, { ...init, signal });
 }
 
-export { parseFiniteNumber } from "@openclaw/normalization-core/number-coercion";
+export { parseFiniteNumber } from "@afora/normalization-core/number-coercion";
 
 /** Parses a provider reset-time string without leaking an invalid Date timestamp. */
 export function parseUsageResetAt(value: unknown): number | undefined {

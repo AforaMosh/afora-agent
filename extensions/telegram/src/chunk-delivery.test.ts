@@ -1,5 +1,5 @@
-import { isChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
-import { PlatformMessageNotDispatchedError } from "openclaw/plugin-sdk/error-runtime";
+import { isChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
+import { PlatformMessageNotDispatchedError } from "afora-agent/plugin-sdk/error-runtime";
 import { describe, expect, it, vi } from "vitest";
 import { createTelegramChunkDeliveryTracker } from "./chunk-delivery.js";
 

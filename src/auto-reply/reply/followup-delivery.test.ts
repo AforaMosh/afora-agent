@@ -1,6 +1,6 @@
 // Tests follow-up reply delivery and route preservation.
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { getReplyPayloadMetadata, setReplyPayloadMetadata } from "../reply-payload.js";
 import type { ReplyPayload } from "../types.js";
 import type { AgentTurnExecutionResult } from "./agent-runner-execution.types.js";
@@ -35,7 +35,7 @@ vi.mock("./route-reply.js", () => ({
   routeReply: (...args: unknown[]) => deliveryState.routeReply(...args),
 }));
 
-const baseConfig = {} as OpenClawConfig;
+const baseConfig = {} as AforaConfig;
 
 describe("resolveFollowupDeliveryPayloads", () => {
   it("drops payloads without visible content", () => {
@@ -132,7 +132,7 @@ describe("resolveFollowupDeliveryPayloads", () => {
             replyToMode: "all",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       payloads: [{ text: "queued reply" }],
       originatingChannel: "slack",
       originatingChatType: "channel",

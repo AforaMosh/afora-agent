@@ -5,13 +5,13 @@ import {
   runFakeCodexAppServer,
 } from "../../../../scripts/e2e/lib/codex-app-server-fixture.mjs";
 
-const requestLog = process.env.OPENCLAW_QA_CODEX_AUTH_APP_SERVER_LOG;
+const requestLog = process.env.AFORA_QA_CODEX_AUTH_APP_SERVER_LOG;
 if (!requestLog) {
-  throw new Error("missing OPENCLAW_QA_CODEX_AUTH_APP_SERVER_LOG");
+  throw new Error("missing AFORA_QA_CODEX_AUTH_APP_SERVER_LOG");
 }
-const appServerVersion = process.env.OPENCLAW_QA_CODEX_APP_SERVER_VERSION;
+const appServerVersion = process.env.AFORA_QA_CODEX_APP_SERVER_VERSION;
 if (!appServerVersion) {
-  throw new Error("missing OPENCLAW_QA_CODEX_APP_SERVER_VERSION");
+  throw new Error("missing AFORA_QA_CODEX_APP_SERVER_VERSION");
 }
 
 runFakeCodexAppServer({
@@ -21,9 +21,9 @@ runFakeCodexAppServer({
     initialize: ({ sendResult }) =>
       sendResult(
         createFakeInitializeResponse({
-          name: "openclaw-qa-codex-auth",
+          name: "afora-qa-codex-auth",
           version: appServerVersion,
-          userAgent: `openclaw/${appServerVersion} (test)`,
+          userAgent: `afora/${appServerVersion} (test)`,
         }),
       ),
     "account/login/start": ({ params, sendResult }) => sendResult({ type: params?.type }),

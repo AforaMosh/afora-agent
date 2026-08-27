@@ -1,14 +1,14 @@
-import { listNativeCommandSpecsForConfig as listRealNativeCommandSpecsForConfig } from "openclaw/plugin-sdk/command-auth-native";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { NativeCommandSpec } from "openclaw/plugin-sdk/native-command-registry";
-import { registerPluginCommand } from "openclaw/plugin-sdk/plugin-runtime";
+import { listNativeCommandSpecsForConfig as listRealNativeCommandSpecsForConfig } from "afora-agent/plugin-sdk/command-auth-native";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { NativeCommandSpec } from "afora-agent/plugin-sdk/native-command-registry";
+import { registerPluginCommand } from "afora-agent/plugin-sdk/plugin-runtime";
 import {
   createTestRegistry,
   resetPluginRuntimeStateForTest,
   setActivePluginRegistry,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
-import { danger, warn, type RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { danger, warn, type RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { discordSetupPlugin } from "../channel.setup.js";
 import { DISCORD_VOICE_COMMAND_SPEC } from "../voice/command.js";
@@ -16,9 +16,9 @@ import { resolveDiscordProviderCommandSpecs } from "./provider.commands.js";
 
 const retainNativeCatalog = vi.hoisted(() => vi.fn());
 
-vi.mock("openclaw/plugin-sdk/plugin-command-runtime", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/plugin-command-runtime", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("openclaw/plugin-sdk/plugin-command-runtime")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/plugin-command-runtime")>();
   return {
     ...actual,
     createPluginCommandRuntime: () => {
@@ -37,7 +37,7 @@ vi.mock("openclaw/plugin-sdk/plugin-command-runtime", async (importOriginal) => 
 type ResolverParams = Parameters<typeof resolveDiscordProviderCommandSpecs>[0];
 type SkillCommands = ReturnType<NonNullable<ResolverParams["listSkillCommandsForAgents"]>>;
 
-const cfg: OpenClawConfig = {};
+const cfg: AforaConfig = {};
 const skillCommands = [
   { name: "skill-only", skillName: "Skill Only", description: "Skill only" },
   { name: "extra-skill", skillName: "Extra Skill", description: "Extra skill" },
@@ -63,7 +63,7 @@ function createResolverHarness(
   const listSkillCommandsForAgents = vi.fn(() => configuredSkillCommands);
   const listNativeCommandSpecsForConfig = vi.fn(
     (
-      _config: OpenClawConfig,
+      _config: AforaConfig,
       listOptions?: Parameters<NonNullable<ResolverParams["listNativeCommandSpecsForConfig"]>>[1],
     ): NativeCommandSpec[] => [
       ...nativeCommandSpecs,
@@ -251,7 +251,7 @@ describe("resolveDiscordProviderCommandSpecs", () => {
       skillName: "Voice Skill",
       description: "Skill voice",
     };
-    const config: OpenClawConfig = { commands: { native: true, nativeSkills: true } };
+    const config: AforaConfig = { commands: { native: true, nativeSkills: true } };
     const rawPrimary = listRealNativeCommandSpecsForConfig(config, {
       provider: "discord",
       skillCommands: [voiceSkill],

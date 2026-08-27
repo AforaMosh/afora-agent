@@ -102,7 +102,7 @@ describe("gateway log sentinels", () => {
     expect(findings[0]).toMatchObject({
       kind: "direct-reply-self-message",
       verdict: "product-bug",
-      owner: "openclaw-routing",
+      owner: "afora-routing",
     });
   });
 

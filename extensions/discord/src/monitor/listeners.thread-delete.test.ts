@@ -1,5 +1,5 @@
 import { ChannelType, type GatewayThreadDeleteDispatchData } from "discord-api-types/v10";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const lifecycleMocks = vi.hoisted(() => {
@@ -27,13 +27,13 @@ async function createThreadDeleteListener() {
   const Listener = (
     listeners as unknown as {
       DiscordThreadDeleteListener: new (
-        cfg: OpenClawConfig,
+        cfg: AforaConfig,
         accountId: string,
         logger: { info: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> },
       ) => { handle: (event: GatewayThreadDeleteDispatchData) => Promise<void> };
     }
   ).DiscordThreadDeleteListener;
-  const cfg = {} as OpenClawConfig;
+  const cfg = {} as AforaConfig;
   const logger = { info: vi.fn(), error: vi.fn() };
   const listener = new Listener(cfg, "account-2", logger);
   const deletedThread: GatewayThreadDeleteDispatchData = {

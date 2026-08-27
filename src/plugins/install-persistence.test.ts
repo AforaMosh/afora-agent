@@ -20,7 +20,7 @@ import {
   writePersistedInstalledPluginIndexInstallRecordsWithLeaseMock,
   applyPluginUninstallDirectoryRemovalMock,
 } from "../cli/plugins-cli-test-helpers.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { hasRetainedManagedNpmInstallMarker } from "./managed-npm-retention.js";
 import { recordPluginManifestInstallOwner } from "./manifest-install-owner.js";
 import type { PluginManifestRecord } from "./manifest-registry.js";
@@ -46,7 +46,7 @@ function createManifestRecord(
   overrides: Partial<PluginManifestRecord> = {},
   owner = id,
 ): PluginManifestRecord {
-  const rootDir = path.join(os.tmpdir(), "openclaw-plugin-fixtures", id);
+  const rootDir = path.join(os.tmpdir(), "afora-plugin-fixtures", id);
   return recordPluginManifestInstallOwner(
     {
       id,
@@ -58,7 +58,7 @@ function createManifestRecord(
       origin: "config",
       rootDir,
       source: path.join(rootDir, "index.ts"),
-      manifestPath: path.join(rootDir, "openclaw.plugin.json"),
+      manifestPath: path.join(rootDir, "afora.plugin.json"),
       ...overrides,
     },
     owner,
@@ -67,8 +67,8 @@ function createManifestRecord(
 
 const installWriteOptions = {
   assertConfigPathForWrite: () => {},
-  expectedConfigPath: "/tmp/openclaw.json",
-  ownedConfigPathForWrite: "/tmp/openclaw.json",
+  expectedConfigPath: "/tmp/afora.json",
+  ownedConfigPathForWrite: "/tmp/afora.json",
 };
 
 describe("persistPluginInstall", () => {
@@ -81,13 +81,13 @@ describe("persistPluginInstall", () => {
 
     expect(
       selectInstallMutationWriteOptions({
-        expectedConfigPath: "/tmp/openclaw.json",
-        ownedConfigPathForWrite: "/tmp/openclaw.json",
+        expectedConfigPath: "/tmp/afora.json",
+        ownedConfigPathForWrite: "/tmp/afora.json",
       }),
     ).toMatchObject({
       auditOrigin: "plugin-install",
-      expectedConfigPath: "/tmp/openclaw.json",
-      ownedConfigPathForWrite: "/tmp/openclaw.json",
+      expectedConfigPath: "/tmp/afora.json",
+      ownedConfigPathForWrite: "/tmp/afora.json",
     });
   });
 
@@ -97,7 +97,7 @@ describe("persistPluginInstall", () => {
       plugins: {
         allow: ["memory-core"],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const enabledConfig = {
       plugins: {
         allow: ["memory-core", "alpha"],
@@ -105,9 +105,9 @@ describe("persistPluginInstall", () => {
           alpha: { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     enablePluginInConfigMock.mockImplementation((...args: unknown[]) => {
-      const [cfg, pluginId] = args as [OpenClawConfig, string];
+      const [cfg, pluginId] = args as [AforaConfig, string];
       expect(pluginId).toBe("alpha");
       expect(cfg.plugins?.allow).toEqual(["memory-core", "alpha"]);
       return { config: enabledConfig, enabled: true };
@@ -119,8 +119,8 @@ describe("persistPluginInstall", () => {
         baseHash: "config-1",
         writeOptions: {
           assertConfigPathForWrite: installWriteOptions.assertConfigPathForWrite,
-          expectedConfigPath: "/tmp/openclaw.json",
-          ownedConfigPathForWrite: "/tmp/openclaw.json",
+          expectedConfigPath: "/tmp/afora.json",
+          ownedConfigPathForWrite: "/tmp/afora.json",
           includeFileHashesForWrite: { "/tmp/plugins.json5": "include-1" },
           includeFileTargetsForWrite: { "/tmp/plugins.json5": "/tmp/plugins.json5" },
         },
@@ -150,8 +150,8 @@ describe("persistPluginInstall", () => {
       baseHash: "config-1",
       writeOptions: {
         assertConfigPathForWrite: installWriteOptions.assertConfigPathForWrite,
-        expectedConfigPath: "/tmp/openclaw.json",
-        ownedConfigPathForWrite: "/tmp/openclaw.json",
+        expectedConfigPath: "/tmp/afora.json",
+        ownedConfigPathForWrite: "/tmp/afora.json",
         includeFileHashesForWrite: { "/tmp/plugins.json5": "include-1" },
         includeFileTargetsForWrite: { "/tmp/plugins.json5": "/tmp/plugins.json5" },
         afterWrite: { mode: "restart", reason: "plugin source changed" },
@@ -179,14 +179,14 @@ describe("persistPluginInstall", () => {
       plugins: {
         entries: {},
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const enabledConfig = {
       plugins: {
         entries: {
           alpha: { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     enablePluginInConfigMock.mockReturnValue({ config: enabledConfig, enabled: true });
     clearPluginRegistryLoadCacheMock.mockImplementation(() => {
       throw new Error("cache unavailable");
@@ -217,25 +217,25 @@ describe("persistPluginInstall", () => {
       plugins: {
         entries: {},
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const enabledConfig = {
       plugins: {
         entries: {
           codex: { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     enablePluginInConfigMock.mockReturnValue({ config: enabledConfig, enabled: true });
     setInstalledPluginIndexInstallRecords({
       codex: {
         source: "clawhub",
-        spec: "clawhub:@openclaw/codex",
-        installPath: "/tmp/openclaw/extensions/codex",
+        spec: "clawhub:@afora/codex",
+        installPath: "/tmp/afora/extensions/codex",
       },
     });
     planPluginUninstallMock.mockReturnValueOnce({
       ok: true,
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       pluginId: "codex",
       actions: {
         entry: false,
@@ -249,7 +249,7 @@ describe("persistPluginInstall", () => {
         directory: false,
       },
       directoryRemoval: {
-        target: "/tmp/openclaw/extensions/codex",
+        target: "/tmp/afora/extensions/codex",
       },
     });
     applyPluginUninstallDirectoryRemovalMock.mockResolvedValueOnce({
@@ -266,8 +266,8 @@ describe("persistPluginInstall", () => {
       pluginId: "codex",
       install: {
         source: "npm",
-        spec: "@openclaw/codex",
-        installPath: "/tmp/openclaw/npm/node_modules/@openclaw/codex",
+        spec: "@afora/codex",
+        installPath: "/tmp/afora/npm/node_modules/@afora/codex",
       },
     });
 
@@ -278,8 +278,8 @@ describe("persistPluginInstall", () => {
             installs: {
               codex: {
                 source: "clawhub",
-                spec: "clawhub:@openclaw/codex",
-                installPath: "/tmp/openclaw/extensions/codex",
+                spec: "clawhub:@afora/codex",
+                installPath: "/tmp/afora/extensions/codex",
               },
             },
           },
@@ -289,7 +289,7 @@ describe("persistPluginInstall", () => {
       }),
     );
     expect(applyPluginUninstallDirectoryRemovalMock).toHaveBeenCalledWith({
-      target: "/tmp/openclaw/extensions/codex",
+      target: "/tmp/afora/extensions/codex",
     });
     const cleanupOrder =
       applyPluginUninstallDirectoryRemovalMock.mock.invocationCallOrder[0] ??
@@ -297,7 +297,7 @@ describe("persistPluginInstall", () => {
     const refreshOrder = refreshPluginRegistryMock.mock.invocationCallOrder[0] ?? 0;
     expect(cleanupOrder).toBeLessThan(refreshOrder);
     expect(pluginsCliRuntimeLogs.join("\n")).toContain(
-      "Removed previous plugin install directory: /tmp/openclaw/extensions/codex",
+      "Removed previous plugin install directory: /tmp/afora/extensions/codex",
     );
   });
 
@@ -307,20 +307,20 @@ describe("persistPluginInstall", () => {
       plugins: {
         entries: {},
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const enabledConfig = {
       plugins: {
         entries: {
           codex: { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     enablePluginInConfigMock.mockReturnValue({ config: enabledConfig, enabled: true });
     setInstalledPluginIndexInstallRecords({
       codex: {
         source: "npm",
-        spec: "@openclaw/codex",
-        installPath: "/tmp/openclaw/npm/node_modules/@openclaw/codex",
+        spec: "@afora/codex",
+        installPath: "/tmp/afora/npm/node_modules/@afora/codex",
       },
     });
 
@@ -333,8 +333,8 @@ describe("persistPluginInstall", () => {
       pluginId: "codex",
       install: {
         source: "npm",
-        spec: "@openclaw/codex@latest",
-        installPath: "/tmp/openclaw/npm/node_modules/@openclaw/codex",
+        spec: "@afora/codex@latest",
+        installPath: "/tmp/afora/npm/node_modules/@afora/codex",
       },
     });
 
@@ -348,21 +348,21 @@ describe("persistPluginInstall", () => {
       plugins: {
         entries: {},
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const enabledConfig = {
       plugins: {
         entries: {
           codex: { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     enablePluginInConfigMock.mockReturnValue({ config: enabledConfig, enabled: true });
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-persist-"));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-persist-"));
     const previousProjectRoot = path.join(tempRoot, "npm", "projects", "codex-v1");
     const previousInstallPath = path.join(
       previousProjectRoot,
       "node_modules",
-      "@openclaw",
+      "@afora",
       "codex",
     );
     const nextInstallPath = path.join(
@@ -371,20 +371,20 @@ describe("persistPluginInstall", () => {
       "projects",
       "codex-v2",
       "node_modules",
-      "@openclaw",
+      "@afora",
       "codex",
     );
     fs.mkdirSync(previousInstallPath, { recursive: true });
     setInstalledPluginIndexInstallRecords({
       codex: {
         source: "npm",
-        spec: "@openclaw/codex@1.0.0",
+        spec: "@afora/codex@1.0.0",
         installPath: previousInstallPath,
       },
     });
     planPluginUninstallMock.mockReturnValueOnce({
       ok: true,
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       pluginId: "codex",
       actions: {
         entry: false,
@@ -402,7 +402,7 @@ describe("persistPluginInstall", () => {
         cleanup: {
           kind: "npm",
           npmRoot: previousProjectRoot,
-          packageName: "@openclaw/codex",
+          packageName: "@afora/codex",
           rootKind: "isolated-project",
         },
       },
@@ -418,7 +418,7 @@ describe("persistPluginInstall", () => {
         pluginId: "codex",
         install: {
           source: "npm",
-          spec: "@openclaw/codex@2.0.0",
+          spec: "@afora/codex@2.0.0",
           installPath: nextInstallPath,
         },
       });
@@ -430,7 +430,7 @@ describe("persistPluginInstall", () => {
               installs: {
                 codex: {
                   source: "npm",
-                  spec: "@openclaw/codex@1.0.0",
+                  spec: "@afora/codex@1.0.0",
                   installPath: previousInstallPath,
                 },
               },
@@ -453,21 +453,21 @@ describe("persistPluginInstall", () => {
       plugins: {
         entries: {},
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const enabledConfig = {
       plugins: {
         entries: {
           discord: { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     enablePluginInConfigMock.mockReturnValue({ config: enabledConfig, enabled: true });
     buildPluginSnapshotReportMock.mockReturnValue({
       plugins: [
         {
           id: "discord",
           origin: "config",
-          source: "/tmp/openclaw-upstream/extensions/discord/index.ts",
+          source: "/tmp/afora-upstream/extensions/discord/index.ts",
           status: "error",
         },
       ],
@@ -483,8 +483,8 @@ describe("persistPluginInstall", () => {
       pluginId: "discord",
       install: {
         source: "npm",
-        spec: "@openclaw/discord",
-        installPath: "/tmp/openclaw/npm/node_modules/@openclaw/discord/index.ts",
+        spec: "@afora/discord",
+        installPath: "/tmp/afora/npm/node_modules/@afora/discord/index.ts",
       },
     });
 
@@ -498,12 +498,12 @@ describe("persistPluginInstall", () => {
       'Warning: installed plugin "discord" is not the active source',
     );
     expect(pluginsCliRuntimeLogs.join("\n")).toContain(
-      "active config source: /tmp/openclaw-upstream/extensions/discord/index.ts",
+      "active config source: /tmp/afora-upstream/extensions/discord/index.ts",
     );
     expect(pluginsCliRuntimeLogs.join("\n")).toContain(
-      "installed npm source: /tmp/openclaw/npm/node_modules/@openclaw/discord/index.ts",
+      "installed npm source: /tmp/afora/npm/node_modules/@afora/discord/index.ts",
     );
-    expect(pluginsCliRuntimeLogs.join("\n")).toContain("openclaw plugins doctor");
+    expect(pluginsCliRuntimeLogs.join("\n")).toContain("afora plugins doctor");
   });
 
   it("does not warn when the config-selected source is inside the npm install path", async () => {
@@ -512,21 +512,21 @@ describe("persistPluginInstall", () => {
       plugins: {
         entries: {},
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const enabledConfig = {
       plugins: {
         entries: {
           discord: { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     enablePluginInConfigMock.mockReturnValue({ config: enabledConfig, enabled: true });
     buildPluginSnapshotReportMock.mockReturnValue({
       plugins: [
         {
           id: "discord",
           origin: "config",
-          source: "/tmp/openclaw/npm/node_modules/@openclaw/discord/dist/index.js",
+          source: "/tmp/afora/npm/node_modules/@afora/discord/dist/index.js",
           status: "loaded",
         },
       ],
@@ -542,8 +542,8 @@ describe("persistPluginInstall", () => {
       pluginId: "discord",
       install: {
         source: "npm",
-        spec: "@openclaw/discord",
-        installPath: "/tmp/openclaw/npm/node_modules/@openclaw/discord",
+        spec: "@afora/discord",
+        installPath: "/tmp/afora/npm/node_modules/@afora/discord",
       },
     });
 
@@ -556,14 +556,14 @@ describe("persistPluginInstall", () => {
       plugins: {
         entries: {},
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const enabledConfig = {
       plugins: {
         entries: {
           alpha: { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     enablePluginInConfigMock.mockReturnValue({ config: enabledConfig, enabled: true });
     refreshPluginRegistryMock.mockRejectedValueOnce(new Error("registry unavailable"));
 
@@ -593,14 +593,14 @@ describe("persistPluginInstall", () => {
       plugins: {
         entries: {},
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const enabledConfig = {
       plugins: {
         entries: {
           alpha: { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     enablePluginInConfigMock.mockReturnValue({ config: enabledConfig, enabled: true });
 
     const next = await persistPluginInstall({
@@ -630,9 +630,9 @@ describe("persistPluginInstall", () => {
         allow: ["memory-core"],
         deny: ["demo-plugin-npm", "other"],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     setInstalledPluginIndexInstallRecords({
-      "demo-package": { source: "npm", spec: "@openclaw/demo-package@0.0.1" },
+      "demo-package": { source: "npm", spec: "@afora/demo-package@0.0.1" },
     });
     loadPluginManifestRegistryMock.mockReturnValue({
       plugins: [createManifestRecord("demo-plugin-npm", {}, "demo-package")],
@@ -648,7 +648,7 @@ describe("persistPluginInstall", () => {
       pluginId: "demo-package",
       install: {
         source: "npm",
-        spec: "@openclaw/demo-package@0.0.1",
+        spec: "@afora/demo-package@0.0.1",
         installPath: "/tmp/demo-package",
       },
     });
@@ -666,7 +666,7 @@ describe("persistPluginInstall", () => {
           "legacy-memory-a": { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const enabledConfig = {
       plugins: {
         entries: {
@@ -674,7 +674,7 @@ describe("persistPluginInstall", () => {
           "legacy-memory": { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     enablePluginInConfigMock.mockReturnValue({ config: enabledConfig, enabled: true });
     loadPluginManifestRegistryMock.mockReturnValue({
       plugins: [createManifestRecord("legacy-memory")],
@@ -685,7 +685,7 @@ describe("persistPluginInstall", () => {
       diagnostics: [],
     });
     applyExclusiveSlotSelectionMock.mockImplementation(((params: {
-      config: OpenClawConfig;
+      config: AforaConfig;
       selectedId: string;
       selectedKind?: string;
       registry?: { plugins: Array<{ id: string; kind?: string }> };
@@ -744,7 +744,7 @@ describe("persistPluginInstall", () => {
           "legacy-memory-a": { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const enabledConfig = {
       plugins: {
         entries: {
@@ -752,14 +752,14 @@ describe("persistPluginInstall", () => {
           "memory-b": { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     enablePluginInConfigMock.mockReturnValue({ config: enabledConfig, enabled: true });
     loadPluginManifestRegistryMock.mockReturnValue({
       plugins: [createManifestRecord("memory-b", { kind: "memory" })],
       diagnostics: [],
     });
     applyExclusiveSlotSelectionMock.mockImplementation(((params: {
-      config: OpenClawConfig;
+      config: AforaConfig;
       selectedId: string;
       selectedKind?: string;
       registry?: { plugins: Array<{ id: string; kind?: string }> };
@@ -812,14 +812,14 @@ describe("persistPluginInstall", () => {
       plugins: {
         entries: {},
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const enabledConfig = {
       plugins: {
         entries: {
           plain: { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     enablePluginInConfigMock.mockReturnValue({ config: enabledConfig, enabled: true });
     loadPluginManifestRegistryMock.mockReturnValue({
       plugins: [createManifestRecord("plain")],
@@ -871,13 +871,13 @@ describe("persistPluginInstall", () => {
           "needs-config": { hooks: { timeoutMs: 5_000 } },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     loadPluginManifestRegistryMock.mockReturnValue({
       plugins: [
         recordPluginManifestInstallOwner(
           {
             id: "needs-config",
-            manifestPath: "/tmp/needs-config/openclaw.plugin.json",
+            manifestPath: "/tmp/needs-config/afora.plugin.json",
             configSchema: {
               type: "object",
               required: ["token"],
@@ -940,13 +940,13 @@ describe("persistPluginInstall", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     loadPluginManifestRegistryMock.mockReturnValue({
       plugins: [
         recordPluginManifestInstallOwner(
           {
             id: "needs-config",
-            manifestPath: "/tmp/needs-config/openclaw.plugin.json",
+            manifestPath: "/tmp/needs-config/afora.plugin.json",
             configSchema: {
               type: "object",
               required: ["token"],
@@ -987,7 +987,7 @@ describe("persistPluginInstall", () => {
       plugins: {
         entries: {},
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const next = await persistPluginInstall({
       snapshot: {
@@ -1029,7 +1029,7 @@ describe("persistPluginInstall", () => {
         allow: ["memory-core"],
         deny: ["memory-lancedb"],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const next = await persistPluginInstall({
       snapshot: {

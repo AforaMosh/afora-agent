@@ -64,7 +64,7 @@ async function seedEntry(params: {
   entry: InternalSessionEntry;
   sessionKey?: string;
 }): Promise<{ entry: InternalSessionEntry; sessionKey: string; storePath: string }> {
-  const dir = tempDirs.make("openclaw-session-diff-owner-");
+  const dir = tempDirs.make("afora-session-diff-owner-");
   const storePath = path.join(dir, "sessions.json");
   const sessionKey = params.sessionKey ?? "agent:main:diff-owner";
   await replaceSessionEntry({ sessionKey, storePath }, params.entry);
@@ -443,7 +443,7 @@ describe("ensureSessionDiffBaseline", () => {
       sessionId: "deleted-before-arm",
       updatedAt: Date.now(),
     };
-    const storePath = path.join(tempDirs.make("openclaw-session-diff-missing-"), "sessions.json");
+    const storePath = path.join(tempDirs.make("afora-session-diff-missing-"), "sessions.json");
 
     const result = await Promise.allSettled([
       ensureSessionDiffBaseline({

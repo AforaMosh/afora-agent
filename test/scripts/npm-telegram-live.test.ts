@@ -17,7 +17,7 @@ const PREPARE_PACKAGE_PATH = path.resolve(
 const tempRoots: string[] = [];
 
 function mkTempRoot() {
-  const root = mkdtempSync(path.join(tmpdir(), "openclaw-npm-telegram-live-"));
+  const root = mkdtempSync(path.join(tmpdir(), "afora-npm-telegram-live-"));
   tempRoots.push(root);
   return root;
 }
@@ -32,20 +32,20 @@ describe("package Telegram live Docker E2E", () => {
   it("supports npm-specific Convex credential aliases", () => {
     const script = readFileSync(DOCKER_SCRIPT_PATH, "utf8");
 
-    expect(script).toContain("OPENCLAW_NPM_TELEGRAM_CREDENTIAL_SOURCE");
-    expect(script).toContain("OPENCLAW_NPM_TELEGRAM_CREDENTIAL_ROLE");
-    expect(script).toContain('docker_env+=(-e OPENCLAW_QA_CREDENTIAL_SOURCE="$credential_source")');
-    expect(script).toContain('docker_env+=(-e OPENCLAW_QA_CREDENTIAL_ROLE="$credential_role")');
+    expect(script).toContain("AFORA_NPM_TELEGRAM_CREDENTIAL_SOURCE");
+    expect(script).toContain("AFORA_NPM_TELEGRAM_CREDENTIAL_ROLE");
+    expect(script).toContain('docker_env+=(-e AFORA_QA_CREDENTIAL_SOURCE="$credential_source")');
+    expect(script).toContain('docker_env+=(-e AFORA_QA_CREDENTIAL_ROLE="$credential_role")');
   });
 
   it("defaults CI runs to Convex when broker credentials are present", () => {
     const script = readFileSync(DOCKER_SCRIPT_PATH, "utf8");
 
     expect(script).toContain(
-      'if [ -n "${CI:-}" ] && [ -n "${OPENCLAW_QA_CONVEX_SITE_URL:-}" ]; then',
+      'if [ -n "${CI:-}" ] && [ -n "${AFORA_QA_CONVEX_SITE_URL:-}" ]; then',
     );
-    expect(script).toContain("OPENCLAW_QA_CONVEX_SECRET_CI");
-    expect(script).toContain("OPENCLAW_QA_CONVEX_SECRET_MAINTAINER");
+    expect(script).toContain("AFORA_QA_CONVEX_SECRET_CI");
+    expect(script).toContain("AFORA_QA_CONVEX_SECRET_MAINTAINER");
     expect(script).toContain('printf "convex"');
   });
 
@@ -58,7 +58,7 @@ describe("package Telegram live Docker E2E", () => {
     expect(installRunStart).toBeGreaterThanOrEqual(0);
     expect(installRunEnd).toBeGreaterThan(installRunStart);
     expect(installRun).toContain(
-      '-e OPENCLAW_E2E_NPM_INSTALL_TIMEOUT="${OPENCLAW_E2E_NPM_INSTALL_TIMEOUT:-600s}"',
+      '-e AFORA_E2E_NPM_INSTALL_TIMEOUT="${AFORA_E2E_NPM_INSTALL_TIMEOUT:-600s}"',
     );
     expect(installRun).toContain(
       '"$timeout_bin" --kill-after=30s "$npm_install_timeout" npm install -g "$install_source" --no-fund --no-audit',
@@ -66,7 +66,7 @@ describe("package Telegram live Docker E2E", () => {
     expect(installRun).toContain("elif command -v gtimeout >/dev/null 2>&1; then");
     expect(installRun).toContain('timeout_bin="gtimeout"');
     expect(installRun).toContain(
-      'echo "timeout or gtimeout is required for OPENCLAW_E2E_NPM_INSTALL_TIMEOUT=$npm_install_timeout" >&2',
+      'echo "timeout or gtimeout is required for AFORA_E2E_NPM_INSTALL_TIMEOUT=$npm_install_timeout" >&2',
     );
     expect(installRun).toContain('"$timeout_bin" --kill-after=1s 1s true >/dev/null 2>&1');
     expect(installRun).toContain(
@@ -74,7 +74,7 @@ describe("package Telegram live Docker E2E", () => {
     );
     expect(installRun).toContain('npm install -g "$install_source" --no-fund --no-audit');
     expect(installRun).not.toContain(
-      "running package install without OPENCLAW_E2E_NPM_INSTALL_TIMEOUT",
+      "running package install without AFORA_E2E_NPM_INSTALL_TIMEOUT",
     );
     expect(installRun).toContain('"${package_mount_args[@]}"');
     expect(installRun).not.toContain('"${docker_env[@]}"');
@@ -94,42 +94,42 @@ describe("package Telegram live Docker E2E", () => {
     expect(script).toContain('credential_role="maintainer"');
   });
 
-  it("bounds installed-package hot path OpenClaw commands", () => {
+  it("bounds installed-package hot path Afora commands", () => {
     const script = readFileSync(DOCKER_SCRIPT_PATH, "utf8");
     const runtimeRunStart = script.indexOf("# Mount the trusted current-source QA harness");
     const runtimeRun = script.slice(runtimeRunStart);
 
     expect(runtimeRunStart).toBeGreaterThanOrEqual(0);
     expect(script).toContain(
-      '-e OPENCLAW_E2E_COMMAND_TIMEOUT="${OPENCLAW_E2E_COMMAND_TIMEOUT:-300s}"',
+      '-e AFORA_E2E_COMMAND_TIMEOUT="${AFORA_E2E_COMMAND_TIMEOUT:-300s}"',
     );
-    expect(runtimeRun).toContain("source scripts/lib/openclaw-e2e-instance.sh");
-    expect(runtimeRun).toContain('sut_command="/npm-global/bin/openclaw"');
-    expect(runtimeRun).toContain('openclaw_e2e_run_command "$sut_command" --version');
-    expect(runtimeRun).toContain('openclaw_e2e_run_command "$sut_command" onboard');
+    expect(runtimeRun).toContain("source scripts/lib/afora-e2e-instance.sh");
+    expect(runtimeRun).toContain('sut_command="/npm-global/bin/afora"');
+    expect(runtimeRun).toContain('afora_e2e_run_command "$sut_command" --version');
+    expect(runtimeRun).toContain('afora_e2e_run_command "$sut_command" onboard');
     expect(runtimeRun).toContain(
-      'OPENAI_API_KEY="$hotpath_model_value" openclaw_e2e_run_command "$sut_command" onboard',
+      'OPENAI_API_KEY="$hotpath_model_value" afora_e2e_run_command "$sut_command" onboard',
     );
     expect(runtimeRun).not.toContain("export OPENAI_API_KEY=");
-    expect(runtimeRun).toContain('openclaw_e2e_run_command "$sut_command" channels add');
-    expect(runtimeRun).toContain('openclaw_e2e_run_command "$sut_command" doctor --fix');
+    expect(runtimeRun).toContain('afora_e2e_run_command "$sut_command" channels add');
+    expect(runtimeRun).toContain('afora_e2e_run_command "$sut_command" doctor --fix');
     expect(runtimeRun).toContain(
-      'openclaw_e2e_run_command "$sut_command" doctor --non-interactive',
+      'afora_e2e_run_command "$sut_command" doctor --non-interactive',
     );
-    expect(runtimeRun).toContain('export OPENCLAW_NPM_TELEGRAM_SUT_COMMAND="$sut_command"');
-    expect(runtimeRun).toContain('openclaw_e2e_print_log "$file"');
+    expect(runtimeRun).toContain('export AFORA_NPM_TELEGRAM_SUT_COMMAND="$sut_command"');
+    expect(runtimeRun).toContain('afora_e2e_print_log "$file"');
     expect(runtimeRun).not.toContain("sed -n '1,220p'");
-    expect(runtimeRun).not.toMatch(/^\s*openclaw (onboard|channels add|doctor )/mu);
+    expect(runtimeRun).not.toMatch(/^\s*afora (onboard|channels add|doctor )/mu);
   });
 
   it("isolates onboarding hot-path config from the live suite", () => {
     const script = readFileSync(DOCKER_SCRIPT_PATH, "utf8");
 
     expect(script).toContain(
-      'runtime_home="$(mktemp -d "/tmp/openclaw-npm-telegram-runtime.XXXXXX")"',
+      'runtime_home="$(mktemp -d "/tmp/afora-npm-telegram-runtime.XXXXXX")"',
     );
     expect(script).toContain(
-      'hotpath_home="$(mktemp -d "/tmp/openclaw-npm-telegram-hotpath.XXXXXX")"',
+      'hotpath_home="$(mktemp -d "/tmp/afora-npm-telegram-hotpath.XXXXXX")"',
     );
     expect(script).toContain('export HOME="$hotpath_home"');
     expect(script).toContain('export HOME="$runtime_home"');
@@ -147,36 +147,36 @@ describe("package Telegram live Docker E2E", () => {
   it("can install a resolved package tarball instead of a registry spec", () => {
     const script = readFileSync(DOCKER_SCRIPT_PATH, "utf8");
 
-    expect(script).toContain("OPENCLAW_NPM_TELEGRAM_PACKAGE_TGZ");
-    expect(script).toContain("OPENCLAW_CURRENT_PACKAGE_TGZ");
-    expect(script).toContain('-e OPENCLAW_QA_PACKAGE_SOURCE="$package_install_source"');
-    expect(script).toContain('-e OPENCLAW_QA_PACKAGE_SOURCE_KIND="$package_source_kind"');
-    expect(script).toContain("OPENCLAW_QA_PACKAGE_SOURCE_SHA");
+    expect(script).toContain("AFORA_NPM_TELEGRAM_PACKAGE_TGZ");
+    expect(script).toContain("AFORA_CURRENT_PACKAGE_TGZ");
+    expect(script).toContain('-e AFORA_QA_PACKAGE_SOURCE="$package_install_source"');
+    expect(script).toContain('-e AFORA_QA_PACKAGE_SOURCE_KIND="$package_source_kind"');
+    expect(script).toContain("AFORA_QA_PACKAGE_SOURCE_SHA");
     expect(script).toContain(
       'package_mount_args=(-v "$resolved_package_tgz:$package_install_source:ro")',
     );
-    expect(script).toContain('validate_openclaw_package_spec "$PACKAGE_SPEC"');
+    expect(script).toContain('validate_afora_package_spec "$PACKAGE_SPEC"');
     expect(script.indexOf('if [ -n "$resolved_package_tgz" ]; then')).toBeLessThan(
-      script.indexOf('validate_openclaw_package_spec "$PACKAGE_SPEC"'),
+      script.indexOf('validate_afora_package_spec "$PACKAGE_SPEC"'),
     );
   });
 
   it("installs prepared root and companion tarballs through an exact local registry", () => {
     const script = readFileSync(DOCKER_SCRIPT_PATH, "utf8");
 
-    expect(script).toContain("OPENCLAW_NPM_TELEGRAM_PACKAGE_DIR");
+    expect(script).toContain("AFORA_NPM_TELEGRAM_PACKAGE_DIR");
     expect(script).toContain('package_source_kind="prepared-package-set"');
-    expect(script).toContain('package_install_source="openclaw@$(read_package_version');
+    expect(script).toContain('package_install_source="afora@$(read_package_version');
     expect(script).toContain('-v "$resolved_package_dir:/package-under-test:ro"');
     expect(script).toContain(
       '-v "$ROOT_DIR/scripts/lib/bounded-response.mjs:/tmp/lib/bounded-response.mjs:ro"',
     );
     expect(script).toContain(
-      '-v "$ROOT_DIR/scripts/e2e/lib/plugins/npm-registry-server.mjs:/tmp/openclaw-e2e/lib/plugins/npm-registry-server.mjs:ro"',
+      '-v "$ROOT_DIR/scripts/e2e/lib/plugins/npm-registry-server.mjs:/tmp/afora-e2e/lib/plugins/npm-registry-server.mjs:ro"',
     );
-    expect(script).toContain("OPENCLAW_NPM_TELEGRAM_PACKAGE_SET");
-    expect(script).toContain("node /tmp/openclaw-e2e/lib/plugins/npm-registry-server.mjs");
-    expect(script).toContain("OPENCLAW_NPM_REGISTRY_UPSTREAM=https://registry.npmjs.org");
+    expect(script).toContain("AFORA_NPM_TELEGRAM_PACKAGE_SET");
+    expect(script).toContain("node /tmp/afora-e2e/lib/plugins/npm-registry-server.mjs");
+    expect(script).toContain("AFORA_NPM_REGISTRY_UPSTREAM=https://registry.npmjs.org");
     expect(script).toContain('export NPM_CONFIG_REGISTRY="$registry_url"');
   });
 
@@ -184,20 +184,20 @@ describe("package Telegram live Docker E2E", () => {
     const script = readFileSync(DOCKER_SCRIPT_PATH, "utf8");
 
     expect(script).toContain(
-      'RUN_ID="${OPENCLAW_NPM_TELEGRAM_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)-$$}"',
+      'RUN_ID="${AFORA_NPM_TELEGRAM_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)-$$}"',
     );
     expect(script).toContain(
-      'OUTPUT_DIR="${OPENCLAW_NPM_TELEGRAM_OUTPUT_DIR:-.artifacts/qa-e2e/npm-telegram-live/$RUN_ID}"',
+      'OUTPUT_DIR="${AFORA_NPM_TELEGRAM_OUTPUT_DIR:-.artifacts/qa-e2e/npm-telegram-live/$RUN_ID}"',
     );
     expect(script).toContain(
       'OUTPUT_DIR_CONTAINER_RELATIVE=".artifacts/qa-e2e/npm-telegram-live-output"',
     );
     expect(script).toContain('OUTPUT_DIR_CONTAINER="/app/$OUTPUT_DIR_CONTAINER_RELATIVE"');
     expect(script).toContain(
-      '-e OPENCLAW_NPM_TELEGRAM_OUTPUT_DIR="$OUTPUT_DIR_CONTAINER_RELATIVE"',
+      '-e AFORA_NPM_TELEGRAM_OUTPUT_DIR="$OUTPUT_DIR_CONTAINER_RELATIVE"',
     );
     expect(script).not.toContain(
-      'OUTPUT_DIR="${OPENCLAW_NPM_TELEGRAM_OUTPUT_DIR:-.artifacts/qa-e2e/npm-telegram-live}"',
+      'OUTPUT_DIR="${AFORA_NPM_TELEGRAM_OUTPUT_DIR:-.artifacts/qa-e2e/npm-telegram-live}"',
     );
   });
 
@@ -211,23 +211,23 @@ describe("package Telegram live Docker E2E", () => {
     expect(secondDir).not.toBe(firstDir);
     expect(
       testing.resolvePackageTelegramOutputDir(
-        { OPENCLAW_NPM_TELEGRAM_OUTPUT_DIR: ".artifacts/custom" },
+        { AFORA_NPM_TELEGRAM_OUTPUT_DIR: ".artifacts/custom" },
         repoRoot,
       ),
     ).toBe(".artifacts/custom");
   });
 
-  it("keeps the installed OpenClaw command as the package SUT", async () => {
+  it("keeps the installed Afora command as the package SUT", async () => {
     const prefix = mkTempRoot();
-    const command = path.join(prefix, "bin", "openclaw");
-    const harnessCommand = path.join(mkTempRoot(), "bin", "openclaw");
+    const command = path.join(prefix, "bin", "afora");
+    const harnessCommand = path.join(mkTempRoot(), "bin", "afora");
     mkdirSync(path.dirname(command), { recursive: true });
     mkdirSync(path.dirname(harnessCommand), { recursive: true });
     writeFileSync(command, "#!/bin/sh\n", { mode: 0o755 });
     writeFileSync(harnessCommand, "#!/bin/sh\n", { mode: 0o755 });
 
     await expect(
-      testing.resolveTrustedOpenClawCommand(command, {
+      testing.resolveTrustedAforaCommand(command, {
         NPM_CONFIG_PREFIX: prefix,
       }),
     ).resolves.toEqual({
@@ -235,10 +235,10 @@ describe("package Telegram live Docker E2E", () => {
       usePackagedPlugins: true,
     });
     await expect(
-      testing.resolveTrustedOpenClawCommand(harnessCommand, {
+      testing.resolveTrustedAforaCommand(harnessCommand, {
         NPM_CONFIG_PREFIX: prefix,
       }),
-    ).rejects.toThrow("OPENCLAW_NPM_TELEGRAM_SUT_COMMAND must resolve inside NPM_CONFIG_PREFIX.");
+    ).rejects.toThrow("AFORA_NPM_TELEGRAM_SUT_COMMAND must resolve inside NPM_CONFIG_PREFIX.");
   });
 
   it("mounts the QA taxonomy without exposing the repository root", () => {
@@ -261,14 +261,14 @@ describe("package Telegram live Docker E2E", () => {
     );
     expect(script).toContain("trap cleanup EXIT");
     expect(dockerEnv).toContain(
-      '-e OPENCLAW_NPM_TELEGRAM_OUTPUT_DIR="$OUTPUT_DIR_CONTAINER_RELATIVE"',
+      '-e AFORA_NPM_TELEGRAM_OUTPUT_DIR="$OUTPUT_DIR_CONTAINER_RELATIVE"',
     );
-    expect(dockerEnv).not.toContain('-e OPENCLAW_NPM_TELEGRAM_OUTPUT_DIR="$OUTPUT_DIR_CONTAINER"');
-    expect(dockerEnv).not.toContain('-e OPENCLAW_NPM_TELEGRAM_OUTPUT_DIR="$OUTPUT_DIR"');
+    expect(dockerEnv).not.toContain('-e AFORA_NPM_TELEGRAM_OUTPUT_DIR="$OUTPUT_DIR_CONTAINER"');
+    expect(dockerEnv).not.toContain('-e AFORA_NPM_TELEGRAM_OUTPUT_DIR="$OUTPUT_DIR"');
     expect(script).toContain('-v "$OUTPUT_DIR_HOST:$OUTPUT_DIR_CONTAINER"');
   });
 
-  it("uses the container temp root for OpenClaw runtime scratch files", () => {
+  it("uses the container temp root for Afora runtime scratch files", () => {
     const script = readFileSync(DOCKER_SCRIPT_PATH, "utf8");
     const dockerEnvStart = script.indexOf("docker_env=(");
     const dockerEnvEnd = script.indexOf(")\n\nforward_env_if_set", dockerEnvStart);
@@ -282,10 +282,10 @@ describe("package Telegram live Docker E2E", () => {
   it("forwards repeated RTT controls to the package Telegram live lane", () => {
     const script = readFileSync(DOCKER_SCRIPT_PATH, "utf8");
 
-    expect(script).toContain("OPENCLAW_NPM_TELEGRAM_RTT_SAMPLES");
-    expect(script).toContain("OPENCLAW_NPM_TELEGRAM_RTT_TIMEOUT_MS");
-    expect(script).toContain("OPENCLAW_NPM_TELEGRAM_RTT_MAX_FAILURES");
-    expect(script).toContain("OPENCLAW_NPM_TELEGRAM_RTT_CHECKS");
+    expect(script).toContain("AFORA_NPM_TELEGRAM_RTT_SAMPLES");
+    expect(script).toContain("AFORA_NPM_TELEGRAM_RTT_TIMEOUT_MS");
+    expect(script).toContain("AFORA_NPM_TELEGRAM_RTT_MAX_FAILURES");
+    expect(script).toContain("AFORA_NPM_TELEGRAM_RTT_CHECKS");
   });
 
   it("isolates the trusted private QA harness from the installed package candidate", () => {
@@ -304,10 +304,10 @@ describe("package Telegram live Docker E2E", () => {
     expect(script).toContain("for dependency_dir in /trusted-harness/node_modules/*");
     expect(script).toContain("for workspace_dir in /app/packages/* /app/extensions/*");
     expect(script).toContain('link_harness_dependency "$workspace_dir" "$workspace_name"');
-    expect(script).toContain("link_harness_dependency /app openclaw");
-    expect(script).not.toContain('openclaw_package_dir="/npm-global/lib/node_modules/openclaw"');
-    expect(script).not.toContain('cp "$openclaw_package_dir/package.json" /app/package.json');
-    expect(script).not.toContain("/app/node_modules/openclaw/package.json");
+    expect(script).toContain("link_harness_dependency /app afora");
+    expect(script).not.toContain('afora_package_dir="/npm-global/lib/node_modules/afora"');
+    expect(script).not.toContain('cp "$afora_package_dir/package.json" /app/package.json');
+    expect(script).not.toContain("/app/node_modules/afora/package.json");
     expect(script).not.toContain("link_installed_package_dependency");
   });
 
@@ -322,7 +322,7 @@ describe("package Telegram live Docker E2E", () => {
     writeFileSync(
       harnessManifestPath,
       `${JSON.stringify({
-        name: "openclaw",
+        name: "afora",
         exports: {
           "./kept": "./dist/kept.js",
           "./plugin-sdk/gateway-runtime": existingGatewayExport,
@@ -356,14 +356,14 @@ describe("package Telegram live Docker E2E", () => {
   it("lets npm-specific credential aliases override shared QA env", () => {
     expect(
       testing.resolveCredentialSource({
-        OPENCLAW_NPM_TELEGRAM_CREDENTIAL_SOURCE: "convex",
-        OPENCLAW_QA_CREDENTIAL_SOURCE: "env",
+        AFORA_NPM_TELEGRAM_CREDENTIAL_SOURCE: "convex",
+        AFORA_QA_CREDENTIAL_SOURCE: "env",
       }),
     ).toBe("convex");
     expect(
       testing.resolveCredentialRole({
-        OPENCLAW_NPM_TELEGRAM_CREDENTIAL_ROLE: "ci",
-        OPENCLAW_QA_CREDENTIAL_ROLE: "maintainer",
+        AFORA_NPM_TELEGRAM_CREDENTIAL_ROLE: "ci",
+        AFORA_QA_CREDENTIAL_ROLE: "maintainer",
       }),
     ).toBe("ci");
   });
@@ -384,10 +384,10 @@ describe("package Telegram live Docker E2E", () => {
   it("maps repeated RTT env onto package Telegram live options", () => {
     expect(
       testing.resolveRttOptions({
-        OPENCLAW_NPM_TELEGRAM_RTT_SAMPLES: "7",
-        OPENCLAW_NPM_TELEGRAM_RTT_TIMEOUT_MS: "45000",
-        OPENCLAW_NPM_TELEGRAM_RTT_MAX_FAILURES: "2",
-        OPENCLAW_NPM_TELEGRAM_RTT_CHECKS: "channel-canary",
+        AFORA_NPM_TELEGRAM_RTT_SAMPLES: "7",
+        AFORA_NPM_TELEGRAM_RTT_TIMEOUT_MS: "45000",
+        AFORA_NPM_TELEGRAM_RTT_MAX_FAILURES: "2",
+        AFORA_NPM_TELEGRAM_RTT_CHECKS: "channel-canary",
       }),
     ).toEqual({
       scenarioId: "channel-canary",
@@ -405,7 +405,7 @@ describe("package Telegram live Docker E2E", () => {
       count: 20,
       timeoutMs: 30_000,
       markerPrefix: "QA-TELEGRAM-RTT",
-      textPrefix: "@openclaw Telegram RTT check. Reply exactly: ",
+      textPrefix: "@afora Telegram RTT check. Reply exactly: ",
       chainReplies: true,
       input: {
         conversation: { id: "telegram-rtt-room", kind: "group" },
@@ -430,7 +430,7 @@ describe("package Telegram live Docker E2E", () => {
     },
     {
       name: "promotes an explicitly requested RTT canary",
-      env: { OPENCLAW_NPM_TELEGRAM_RTT_CHECKS: "channel-canary" },
+      env: { AFORA_NPM_TELEGRAM_RTT_CHECKS: "channel-canary" },
       requested: ["telegram-status-command"],
       resolved: ["telegram-status-command"],
       expected: ["channel-canary", "telegram-status-command"],
@@ -451,7 +451,7 @@ describe("package Telegram live Docker E2E", () => {
   it("rejects retired RTT scenario ids", () => {
     expect(() =>
       testing.resolveRttOptions({
-        OPENCLAW_NPM_TELEGRAM_RTT_CHECKS: "telegram-mentioned-message-reply",
+        AFORA_NPM_TELEGRAM_RTT_CHECKS: "telegram-mentioned-message-reply",
       }),
     ).toThrow("unknown Telegram QA RTT check: telegram-mentioned-message-reply");
   });
@@ -459,9 +459,9 @@ describe("package Telegram live Docker E2E", () => {
   it("rejects invalid repeated RTT env", () => {
     expect(() =>
       testing.resolveRttOptions({
-        OPENCLAW_NPM_TELEGRAM_RTT_SAMPLES: "7samples",
+        AFORA_NPM_TELEGRAM_RTT_SAMPLES: "7samples",
       }),
-    ).toThrow("invalid OPENCLAW_NPM_TELEGRAM_RTT_SAMPLES: 7samples");
+    ).toThrow("invalid AFORA_NPM_TELEGRAM_RTT_SAMPLES: 7samples");
   });
 
   it.each(["fail", "skip", "skipped", "timeout"])(
@@ -471,7 +471,7 @@ describe("package Telegram live Docker E2E", () => {
       writeFileSync(
         summaryPath,
         JSON.stringify({
-          kind: "openclaw.qa.evidence-summary",
+          kind: "afora.qa.evidence-summary",
           schemaVersion: 2,
           generatedAt: "2026-05-01T00:00:00.000Z",
           entries: [{ result: { status } }],
@@ -482,7 +482,7 @@ describe("package Telegram live Docker E2E", () => {
       await expect(
         testing.shouldFailPackageTelegramRun(
           { summaryPath },
-          { OPENCLAW_NPM_TELEGRAM_ALLOW_FAILURES: "" },
+          { AFORA_NPM_TELEGRAM_ALLOW_FAILURES: "" },
         ),
       ).resolves.toBe(true);
     },
@@ -493,7 +493,7 @@ describe("package Telegram live Docker E2E", () => {
     writeFileSync(
       summaryPath,
       JSON.stringify({
-        kind: "openclaw.qa.evidence-summary",
+        kind: "afora.qa.evidence-summary",
         schemaVersion: 2,
         generatedAt: "2026-05-01T00:00:00.000Z",
         entries: [{ result: { status: "pass" } }],
@@ -504,7 +504,7 @@ describe("package Telegram live Docker E2E", () => {
     await expect(
       testing.shouldFailPackageTelegramRun(
         { summaryPath },
-        { OPENCLAW_NPM_TELEGRAM_ALLOW_FAILURES: "" },
+        { AFORA_NPM_TELEGRAM_ALLOW_FAILURES: "" },
       ),
     ).resolves.toBe(false);
   });
@@ -513,7 +513,7 @@ describe("package Telegram live Docker E2E", () => {
     await expect(
       testing.shouldFailPackageTelegramRun(
         { summaryPath: path.join(mkTempRoot(), "missing-summary.json") },
-        { OPENCLAW_NPM_TELEGRAM_ALLOW_FAILURES: "1" },
+        { AFORA_NPM_TELEGRAM_ALLOW_FAILURES: "1" },
       ),
     ).resolves.toBe(false);
   });

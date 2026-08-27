@@ -1,7 +1,7 @@
 // Line plugin module implements probe behavior.
 import { messagingApi } from "@line/bot-sdk";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { runChannelProbe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { runChannelProbe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import type { LineProbeResult } from "./types.js";
 
 export async function probeLineBot(

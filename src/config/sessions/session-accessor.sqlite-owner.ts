@@ -1,11 +1,11 @@
 import type { DatabaseSync } from "node:sqlite";
 import { executeSqliteQuerySync } from "../../infra/kysely-sync.js";
-import { FIRST_USE_ADDITIVE_AGENT_COLUMN_DEFINITIONS } from "../../state/openclaw-agent-db-additive-columns.js";
+import { FIRST_USE_ADDITIVE_AGENT_COLUMN_DEFINITIONS } from "../../state/afora-agent-db-additive-columns.js";
 import {
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-} from "../../state/openclaw-agent-db.js";
-import { ensureColumn } from "../../state/openclaw-state-db-schema-helpers.js";
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+} from "../../state/afora-agent-db.js";
+import { ensureColumn } from "../../state/afora-state-db-schema-helpers.js";
 import type { SessionAccessScope } from "./session-accessor.sqlite-contract.js";
 import { publishSessionEntryCacheInvalidation } from "./session-accessor.sqlite-entry-cache.js";
 import {
@@ -36,7 +36,7 @@ export function assignSessionOwner(
 ): SessionOwnerAssignment | null {
   const resolved = resolveSqliteScope(scope);
   const options = toDatabaseOptions(resolved);
-  const opened = openOpenClawAgentDatabase(options);
+  const opened = openAforaAgentDatabase(options);
   const assignedAt = params.assignedAt ?? Date.now();
   const owner: SessionOwnerAssignment = {
     actor: params.owner,
@@ -44,7 +44,7 @@ export function assignSessionOwner(
     assignedAt,
   };
   let ensured = false;
-  const updated = runOpenClawAgentWriteTransaction(
+  const updated = runAforaAgentWriteTransaction(
     (database) => {
       if (!ensuredOwnerDatabases.has(database.db)) {
         ensureSessionOwnerColumns(database.db);

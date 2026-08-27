@@ -1,4 +1,4 @@
-const EXPERIMENTAL_CLAWS_ENV = "OPENCLAW_EXPERIMENTAL_CLAWS";
+const EXPERIMENTAL_CLAWS_ENV = "AFORA_EXPERIMENTAL_CLAWS";
 
 export function isExperimentalClawsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
   const value = env[EXPERIMENTAL_CLAWS_ENV]?.trim().toLowerCase();

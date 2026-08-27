@@ -1,9 +1,9 @@
 import { createRequire } from "node:module";
-import { readPluginPackageVersion } from "openclaw/plugin-sdk/extension-shared";
+import { readPluginPackageVersion } from "afora-agent/plugin-sdk/extension-shared";
 import {
   readProviderJsonResponse,
   readResponseTextLimited,
-} from "openclaw/plugin-sdk/provider-http";
+} from "afora-agent/plugin-sdk/provider-http";
 import {
   mergeScopedSearchConfig,
   readCachedSearchPayload,
@@ -15,8 +15,8 @@ import {
   type SearchConfigRecord,
   withTrustedWebSearchEndpoint,
   writeCachedSearchPayload,
-} from "openclaw/plugin-sdk/provider-web-search";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/provider-web-search";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   buildParallelCacheKey,
   buildParallelSearchPayload,
@@ -44,7 +44,7 @@ const PARALLEL_SEARCH_RESPONSE_LIMIT_BYTES = 16 * 1024 * 1024;
 
 const require = createRequire(import.meta.url);
 const PLUGIN_VERSION = readPluginPackageVersion({ require });
-const USER_AGENT = `openclaw-parallel/${PLUGIN_VERSION} (${process.platform})`;
+const USER_AGENT = `afora-parallel/${PLUGIN_VERSION} (${process.platform})`;
 
 type ParallelConfig = {
   apiKey?: string;
@@ -71,7 +71,7 @@ function invalidBaseUrlPayload(value: string) {
   return {
     error: "invalid_base_url",
     message: `plugins.entries.parallel.config.webSearch.baseUrl must be a valid http(s) URL. Got: ${value}`,
-    docs: "https://docs.openclaw.ai/tools/parallel-search",
+    docs: "https://docs.afora.ai/tools/parallel-search",
   };
 }
 
@@ -108,7 +108,7 @@ function missingParallelKeyPayload() {
     error: "missing_parallel_api_key",
     message:
       "web_search (parallel) needs a Parallel API key. Set PARALLEL_API_KEY in the Gateway environment, or configure plugins.entries.parallel.config.webSearch.apiKey.",
-    docs: "https://docs.openclaw.ai/tools/parallel-search",
+    docs: "https://docs.afora.ai/tools/parallel-search",
   };
 }
 
@@ -197,7 +197,7 @@ export async function executeParallelWebSearchProviderTool(
     return request.error;
   }
   const { objective, searchQueries, count, sessionId, clientModel } = request;
-  // Always pass max_results so Parallel matches the openclaw web_search default
+  // Always pass max_results so Parallel matches the afora web_search default
   // of 5 instead of Parallel's own default of 10.
   const cacheKey = buildParallelCacheKey({
     endpoint,

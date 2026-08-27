@@ -1,5 +1,5 @@
 // Mattermost tests cover draft stream plugin behavior.
-import { isChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
+import { isChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
 import { describe, expect, it, vi } from "vitest";
 import type { MattermostClient } from "./client.js";
 import {

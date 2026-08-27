@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-OPENCLAW_DOCKER_LIVE_AUTH_ALL=(.factory .gemini .minimax)
-OPENCLAW_DOCKER_LIVE_AUTH_FILES_ALL=(
+AFORA_DOCKER_LIVE_AUTH_ALL=(.factory .gemini .minimax)
+AFORA_DOCKER_LIVE_AUTH_FILES_ALL=(
   .codex/auth.json
   .codex/config.toml
   .claude.json
@@ -11,14 +11,14 @@ OPENCLAW_DOCKER_LIVE_AUTH_FILES_ALL=(
   .gemini/settings.json
 )
 
-openclaw_live_trim() {
+afora_live_trim() {
   local value="${1:-}"
   value="${value#"${value%%[![:space:]]*}"}"
   value="${value%"${value##*[![:space:]]}"}"
   printf '%s' "$value"
 }
 
-openclaw_live_truthy() {
+afora_live_truthy() {
   case "${1:-}" in
     1 | true | TRUE | yes | YES | on | ON)
       return 0
@@ -29,7 +29,7 @@ openclaw_live_truthy() {
   esac
 }
 
-openclaw_live_read_positive_int_env() {
+afora_live_read_positive_int_env() {
   local name="${1:?missing environment variable name}"
   local fallback="${2:?missing fallback value}"
   local value="${!name-}"
@@ -43,24 +43,24 @@ openclaw_live_read_positive_int_env() {
   printf '%s\n' "$value"
 }
 
-openclaw_live_is_ci() {
-  openclaw_live_truthy "${CI:-}" \
-    || openclaw_live_truthy "${GITHUB_ACTIONS:-}" \
-    || openclaw_live_truthy "${OPENCLAW_TESTBOX:-}"
+afora_live_is_ci() {
+  afora_live_truthy "${CI:-}" \
+    || afora_live_truthy "${GITHUB_ACTIONS:-}" \
+    || afora_live_truthy "${AFORA_TESTBOX:-}"
 }
 
-openclaw_live_uses_managed_bind_dirs() {
-  openclaw_live_is_ci \
-    || [[ -n "${OPENCLAW_DOCKER_CACHE_HOME_DIR:-}" ]] \
-    || [[ -n "${OPENCLAW_DOCKER_CLI_TOOLS_DIR:-}" ]]
+afora_live_uses_managed_bind_dirs() {
+  afora_live_is_ci \
+    || [[ -n "${AFORA_DOCKER_CACHE_HOME_DIR:-}" ]] \
+    || [[ -n "${AFORA_DOCKER_CLI_TOOLS_DIR:-}" ]]
 }
 
-openclaw_live_default_profile_file() {
-  if [[ -n "${OPENCLAW_PROFILE_FILE:-}" ]]; then
-    printf '%s\n' "$OPENCLAW_PROFILE_FILE"
+afora_live_default_profile_file() {
+  if [[ -n "${AFORA_PROFILE_FILE:-}" ]]; then
+    printf '%s\n' "$AFORA_PROFILE_FILE"
     return 0
   fi
-  local testbox_profile="$HOME/.openclaw-testbox-live.profile"
+  local testbox_profile="$HOME/.afora-testbox-live.profile"
   if [[ -f "$testbox_profile" ]]; then
     printf '%s\n' "$testbox_profile"
     return 0
@@ -70,7 +70,7 @@ openclaw_live_default_profile_file() {
 
 # Live Docker wrappers share these host-side directories. Keep their lifecycle
 # here so every lane uses the same CI ownership and cleanup rules.
-openclaw_live_init_temp_dirs() {
+afora_live_init_temp_dirs() {
   TEMP_DIRS=()
   cleanup_temp_dirs() {
     if ((${#TEMP_DIRS[@]} > 0)); then
@@ -80,49 +80,49 @@ openclaw_live_init_temp_dirs() {
   trap cleanup_temp_dirs EXIT
 }
 
-openclaw_live_init_cli_tools_dir() {
-  if [[ -n "${OPENCLAW_DOCKER_CLI_TOOLS_DIR:-}" ]]; then
-    CLI_TOOLS_DIR="$OPENCLAW_DOCKER_CLI_TOOLS_DIR"
-  elif openclaw_live_is_ci; then
-    CLI_TOOLS_DIR="$(mktemp -d "${RUNNER_TEMP:-/tmp}/openclaw-docker-cli-tools.XXXXXX")"
+afora_live_init_cli_tools_dir() {
+  if [[ -n "${AFORA_DOCKER_CLI_TOOLS_DIR:-}" ]]; then
+    CLI_TOOLS_DIR="$AFORA_DOCKER_CLI_TOOLS_DIR"
+  elif afora_live_is_ci; then
+    CLI_TOOLS_DIR="$(mktemp -d "${RUNNER_TEMP:-/tmp}/afora-docker-cli-tools.XXXXXX")"
     TEMP_DIRS+=("$CLI_TOOLS_DIR")
   else
-    CLI_TOOLS_DIR="$HOME/.cache/openclaw/docker-cli-tools"
+    CLI_TOOLS_DIR="$HOME/.cache/afora/docker-cli-tools"
   fi
-  openclaw_live_prepare_bind_dir_for_container_user "$CLI_TOOLS_DIR"
+  afora_live_prepare_bind_dir_for_container_user "$CLI_TOOLS_DIR"
 }
 
-openclaw_live_init_cache_home_dir() {
-  if [[ -n "${OPENCLAW_DOCKER_CACHE_HOME_DIR:-}" ]]; then
-    CACHE_HOME_DIR="$OPENCLAW_DOCKER_CACHE_HOME_DIR"
-  elif openclaw_live_is_ci; then
-    CACHE_HOME_DIR="$(mktemp -d "${RUNNER_TEMP:-/tmp}/openclaw-docker-cache.XXXXXX")"
+afora_live_init_cache_home_dir() {
+  if [[ -n "${AFORA_DOCKER_CACHE_HOME_DIR:-}" ]]; then
+    CACHE_HOME_DIR="$AFORA_DOCKER_CACHE_HOME_DIR"
+  elif afora_live_is_ci; then
+    CACHE_HOME_DIR="$(mktemp -d "${RUNNER_TEMP:-/tmp}/afora-docker-cache.XXXXXX")"
     TEMP_DIRS+=("$CACHE_HOME_DIR")
   else
-    CACHE_HOME_DIR="$HOME/.cache/openclaw/docker-cache"
+    CACHE_HOME_DIR="$HOME/.cache/afora/docker-cache"
   fi
-  openclaw_live_prepare_bind_dir_for_container_user "$CACHE_HOME_DIR"
+  afora_live_prepare_bind_dir_for_container_user "$CACHE_HOME_DIR"
 }
 
-openclaw_live_init_managed_home() {
-  DOCKER_USER="${OPENCLAW_DOCKER_USER:-node}"
+afora_live_init_managed_home() {
+  DOCKER_USER="${AFORA_DOCKER_USER:-node}"
   DOCKER_HOME_MOUNT=()
   unset DOCKER_HOME_DIR
-  if openclaw_live_uses_managed_bind_dirs; then
+  if afora_live_uses_managed_bind_dirs; then
     DOCKER_USER="$(id -u):$(id -g)"
-    DOCKER_HOME_DIR="$(mktemp -d "${RUNNER_TEMP:-/tmp}/openclaw-docker-home.XXXXXX")"
+    DOCKER_HOME_DIR="$(mktemp -d "${RUNNER_TEMP:-/tmp}/afora-docker-home.XXXXXX")"
     TEMP_DIRS+=("$DOCKER_HOME_DIR")
-    openclaw_live_prepare_bind_dir_for_container_user "$DOCKER_HOME_DIR"
+    afora_live_prepare_bind_dir_for_container_user "$DOCKER_HOME_DIR"
     DOCKER_HOME_MOUNT=(-v "$DOCKER_HOME_DIR:/home/node")
   fi
 }
 
-openclaw_live_init_profile_mount() {
+afora_live_init_profile_mount() {
   PROFILE_MOUNT=()
   PROFILE_STATUS="none"
   if [[ -f "$PROFILE_FILE" && -r "$PROFILE_FILE" ]]; then
     if [[ -n "${DOCKER_HOME_DIR:-}" ]]; then
-      openclaw_live_stage_profile_into_home "$DOCKER_HOME_DIR" "$PROFILE_FILE"
+      afora_live_stage_profile_into_home "$DOCKER_HOME_DIR" "$PROFILE_FILE"
     else
       PROFILE_MOUNT=(-v "$PROFILE_FILE:/home/node/.profile:ro")
     fi
@@ -130,9 +130,9 @@ openclaw_live_init_profile_mount() {
   fi
 }
 
-openclaw_live_validate_relative_home_path() {
+afora_live_validate_relative_home_path() {
   local value
-  value="$(openclaw_live_trim "${1:-}")"
+  value="$(afora_live_trim "${1:-}")"
   [[ -n "$value" ]] || {
     echo "ERROR: empty auth path." >&2
     return 1
@@ -146,20 +146,20 @@ openclaw_live_validate_relative_home_path() {
   printf '%s' "$value"
 }
 
-openclaw_live_normalize_auth_dir() {
+afora_live_normalize_auth_dir() {
   local value
-  value="$(openclaw_live_trim "${1:-}")"
+  value="$(afora_live_trim "${1:-}")"
   [[ -n "$value" ]] || return 1
   if [[ "$value" != .* ]]; then
     value=".$value"
   fi
-  value="$(openclaw_live_validate_relative_home_path "$value")" || return 1
+  value="$(afora_live_validate_relative_home_path "$value")" || return 1
   printf '%s' "$value"
 }
 
-openclaw_live_should_include_auth_dir_for_provider() {
+afora_live_should_include_auth_dir_for_provider() {
   local provider
-  provider="$(openclaw_live_trim "${1:-}")"
+  provider="$(afora_live_trim "${1:-}")"
   case "$provider" in
     droid | factory | factory-droid)
       printf '%s\n' ".factory"
@@ -173,9 +173,9 @@ openclaw_live_should_include_auth_dir_for_provider() {
   esac
 }
 
-openclaw_live_should_include_auth_file_for_provider() {
+afora_live_should_include_auth_file_for_provider() {
   local provider
-  provider="$(openclaw_live_trim "${1:-}")"
+  provider="$(afora_live_trim "${1:-}")"
   case "$provider" in
     codex-cli | openai)
       printf '%s\n' ".codex/auth.json"
@@ -190,25 +190,25 @@ openclaw_live_should_include_auth_file_for_provider() {
   esac
 }
 
-openclaw_live_collect_auth_dirs_from_csv() {
+afora_live_collect_auth_dirs_from_csv() {
   local raw="${1:-}"
   local token normalized
-  [[ -n "$(openclaw_live_trim "$raw")" ]] || return 0
+  [[ -n "$(afora_live_trim "$raw")" ]] || return 0
   IFS=',' read -r -a tokens <<<"$raw"
   for token in "${tokens[@]}"; do
     while IFS= read -r normalized; do
       printf '%s\n' "$normalized"
-    done < <(openclaw_live_should_include_auth_dir_for_provider "$token")
+    done < <(afora_live_should_include_auth_dir_for_provider "$token")
   done | awk 'NF && !seen[$0]++'
 }
 
-openclaw_live_collect_auth_dirs_from_override() {
+afora_live_collect_auth_dirs_from_override() {
   local raw token normalized
-  raw="$(openclaw_live_trim "${OPENCLAW_DOCKER_AUTH_DIRS:-}")"
+  raw="$(afora_live_trim "${AFORA_DOCKER_AUTH_DIRS:-}")"
   [[ -n "$raw" ]] || return 1
   case "$raw" in
     all)
-      printf '%s\n' "${OPENCLAW_DOCKER_LIVE_AUTH_ALL[@]}"
+      printf '%s\n' "${AFORA_DOCKER_LIVE_AUTH_ALL[@]}"
       return 0
       ;;
     none)
@@ -217,38 +217,38 @@ openclaw_live_collect_auth_dirs_from_override() {
   esac
   IFS=',' read -r -a tokens <<<"$raw"
   for token in "${tokens[@]}"; do
-    normalized="$(openclaw_live_normalize_auth_dir "$token")" || continue
+    normalized="$(afora_live_normalize_auth_dir "$token")" || continue
     printf '%s\n' "$normalized"
   done | awk '!seen[$0]++'
   return 0
 }
 
-openclaw_live_collect_auth_dirs() {
-  if openclaw_live_collect_auth_dirs_from_override; then
+afora_live_collect_auth_dirs() {
+  if afora_live_collect_auth_dirs_from_override; then
     return 0
   fi
-  printf '%s\n' "${OPENCLAW_DOCKER_LIVE_AUTH_ALL[@]}"
+  printf '%s\n' "${AFORA_DOCKER_LIVE_AUTH_ALL[@]}"
 }
 
-openclaw_live_collect_auth_files_from_csv() {
+afora_live_collect_auth_files_from_csv() {
   local raw="${1:-}"
   local token normalized
-  [[ -n "$(openclaw_live_trim "$raw")" ]] || return 0
+  [[ -n "$(afora_live_trim "$raw")" ]] || return 0
   IFS=',' read -r -a tokens <<<"$raw"
   for token in "${tokens[@]}"; do
     while IFS= read -r normalized; do
       printf '%s\n' "$normalized"
-    done < <(openclaw_live_should_include_auth_file_for_provider "$token")
+    done < <(afora_live_should_include_auth_file_for_provider "$token")
   done | awk 'NF && !seen[$0]++'
 }
 
-openclaw_live_collect_auth_files_from_override() {
+afora_live_collect_auth_files_from_override() {
   local raw
-  raw="$(openclaw_live_trim "${OPENCLAW_DOCKER_AUTH_DIRS:-}")"
+  raw="$(afora_live_trim "${AFORA_DOCKER_AUTH_DIRS:-}")"
   [[ -n "$raw" ]] || return 1
   case "$raw" in
     all)
-      printf '%s\n' "${OPENCLAW_DOCKER_LIVE_AUTH_FILES_ALL[@]}"
+      printf '%s\n' "${AFORA_DOCKER_LIVE_AUTH_FILES_ALL[@]}"
       return 0
       ;;
     none)
@@ -258,14 +258,14 @@ openclaw_live_collect_auth_files_from_override() {
   return 0
 }
 
-openclaw_live_collect_auth_files() {
-  if openclaw_live_collect_auth_files_from_override; then
+afora_live_collect_auth_files() {
+  if afora_live_collect_auth_files_from_override; then
     return 0
   fi
-  printf '%s\n' "${OPENCLAW_DOCKER_LIVE_AUTH_FILES_ALL[@]}"
+  printf '%s\n' "${AFORA_DOCKER_LIVE_AUTH_FILES_ALL[@]}"
 }
 
-openclaw_live_join_csv() {
+afora_live_join_csv() {
   local first=1 value
   for value in "$@"; do
     [[ -n "$value" ]] || continue
@@ -278,45 +278,45 @@ openclaw_live_join_csv() {
   done
 }
 
-openclaw_live_collect_auth_for_providers() {
+afora_live_collect_auth_for_providers() {
   local providers="${1:-}"
   local provider_names
-  provider_names="$(openclaw_live_trim "${providers//,/}")"
+  provider_names="$(afora_live_trim "${providers//,/}")"
   AUTH_DIRS=()
   AUTH_FILES=()
   local auth_path
-  if [[ -n "${OPENCLAW_DOCKER_AUTH_DIRS:-}" || -z "$provider_names" ]]; then
+  if [[ -n "${AFORA_DOCKER_AUTH_DIRS:-}" || -z "$provider_names" ]]; then
     while IFS= read -r auth_path; do
       [[ -n "$auth_path" ]] && AUTH_DIRS+=("$auth_path")
-    done < <(openclaw_live_collect_auth_dirs)
+    done < <(afora_live_collect_auth_dirs)
     while IFS= read -r auth_path; do
       [[ -n "$auth_path" ]] && AUTH_FILES+=("$auth_path")
-    done < <(openclaw_live_collect_auth_files)
+    done < <(afora_live_collect_auth_files)
     return
   fi
   while IFS= read -r auth_path; do
     [[ -n "$auth_path" ]] && AUTH_DIRS+=("$auth_path")
-  done < <(openclaw_live_collect_auth_dirs_from_csv "$providers")
+  done < <(afora_live_collect_auth_dirs_from_csv "$providers")
   while IFS= read -r auth_path; do
     [[ -n "$auth_path" ]] && AUTH_FILES+=("$auth_path")
-  done < <(openclaw_live_collect_auth_files_from_csv "$providers")
+  done < <(afora_live_collect_auth_files_from_csv "$providers")
 }
 
-openclaw_live_finalize_auth_mounts() {
+afora_live_finalize_auth_mounts() {
   AUTH_DIRS_CSV=""
   if ((${#AUTH_DIRS[@]} > 0)); then
-    AUTH_DIRS_CSV="$(openclaw_live_join_csv "${AUTH_DIRS[@]}")"
+    AUTH_DIRS_CSV="$(afora_live_join_csv "${AUTH_DIRS[@]}")"
   fi
   AUTH_FILES_CSV=""
   if ((${#AUTH_FILES[@]} > 0)); then
-    AUTH_FILES_CSV="$(openclaw_live_join_csv "${AUTH_FILES[@]}")"
+    AUTH_FILES_CSV="$(afora_live_join_csv "${AUTH_FILES[@]}")"
   fi
   if [[ -n "${DOCKER_HOME_DIR:-}" ]]; then
     if ((${#AUTH_DIRS[@]} > 0)); then
-      openclaw_live_stage_auth_into_home "$DOCKER_HOME_DIR" "${AUTH_DIRS[@]}"
+      afora_live_stage_auth_into_home "$DOCKER_HOME_DIR" "${AUTH_DIRS[@]}"
     fi
     if ((${#AUTH_FILES[@]} > 0)); then
-      openclaw_live_stage_auth_into_home "$DOCKER_HOME_DIR" --files "${AUTH_FILES[@]}"
+      afora_live_stage_auth_into_home "$DOCKER_HOME_DIR" --files "${AUTH_FILES[@]}"
     fi
     DOCKER_AUTH_PRESTAGED=1
   fi
@@ -325,14 +325,14 @@ openclaw_live_finalize_auth_mounts() {
   local auth_path host_path
   if ((${#AUTH_DIRS[@]} > 0)); then
     for auth_path in "${AUTH_DIRS[@]}"; do
-      auth_path="$(openclaw_live_validate_relative_home_path "$auth_path")" || return 1
+      auth_path="$(afora_live_validate_relative_home_path "$auth_path")" || return 1
       host_path="$HOME/$auth_path"
       [[ -d "$host_path" ]] && EXTERNAL_AUTH_MOUNTS+=(-v "$host_path:/host-auth/$auth_path:ro")
     done
   fi
   if ((${#AUTH_FILES[@]} > 0)); then
     for auth_path in "${AUTH_FILES[@]}"; do
-      auth_path="$(openclaw_live_validate_relative_home_path "$auth_path")" || return 1
+      auth_path="$(afora_live_validate_relative_home_path "$auth_path")" || return 1
       host_path="$HOME/$auth_path"
       [[ -f "$host_path" ]] && EXTERNAL_AUTH_MOUNTS+=(-v "$host_path:/host-auth-files/$auth_path:ro")
     done
@@ -340,7 +340,7 @@ openclaw_live_finalize_auth_mounts() {
   return 0
 }
 
-openclaw_live_append_array() {
+afora_live_append_array() {
   local target_array="${1:?target array required}"
   local source_array="${2:?source array required}"
   local count
@@ -352,7 +352,7 @@ openclaw_live_append_array() {
   eval "${target_array}+=(\"\${${source_array}[@]}\")"
 }
 
-openclaw_live_timeout_bin() {
+afora_live_timeout_bin() {
   if command -v timeout >/dev/null 2>&1; then
     printf '%s\n' timeout
   elif command -v gtimeout >/dev/null 2>&1; then
@@ -362,13 +362,13 @@ openclaw_live_timeout_bin() {
   fi
 }
 
-openclaw_live_timeout_supports_kill_after() {
+afora_live_timeout_supports_kill_after() {
   local timeout_bin="${1:?timeout binary required}"
   "$timeout_bin" --kill-after=1s 1s true >/dev/null 2>&1
 }
 
-openclaw_live_resource_limits_disabled() {
-  case "${OPENCLAW_LIVE_DOCKER_DISABLE_RESOURCE_LIMITS:-${OPENCLAW_DOCKER_E2E_DISABLE_RESOURCE_LIMITS:-}}" in
+afora_live_resource_limits_disabled() {
+  case "${AFORA_LIVE_DOCKER_DISABLE_RESOURCE_LIMITS:-${AFORA_DOCKER_E2E_DISABLE_RESOURCE_LIMITS:-}}" in
     1 | true | TRUE | yes | YES | on | ON)
       return 0
       ;;
@@ -376,7 +376,7 @@ openclaw_live_resource_limits_disabled() {
   return 1
 }
 
-openclaw_live_resource_value_disabled() {
+afora_live_resource_value_disabled() {
   case "${1:-}" in
     "" | 0 | none | NONE | off | OFF | false | FALSE)
       return 0
@@ -385,7 +385,7 @@ openclaw_live_resource_value_disabled() {
   return 1
 }
 
-openclaw_live_resolve_pids_limit() {
+afora_live_resolve_pids_limit() {
   local env_name="$1"
   local pids_limit="$2"
   if [[ ! "$pids_limit" =~ ^[0-9]+$ ]] || (( 10#$pids_limit < 1 )); then
@@ -395,9 +395,9 @@ openclaw_live_resolve_pids_limit() {
   printf '%s\n' "$((10#$pids_limit))"
 }
 
-openclaw_live_detect_available_cpus() {
-  if [ -n "${OPENCLAW_LIVE_DOCKER_AVAILABLE_CPUS:-${OPENCLAW_DOCKER_E2E_AVAILABLE_CPUS:-}}" ]; then
-    printf '%s\n' "${OPENCLAW_LIVE_DOCKER_AVAILABLE_CPUS:-${OPENCLAW_DOCKER_E2E_AVAILABLE_CPUS:-}}"
+afora_live_detect_available_cpus() {
+  if [ -n "${AFORA_LIVE_DOCKER_AVAILABLE_CPUS:-${AFORA_DOCKER_E2E_AVAILABLE_CPUS:-}}" ]; then
+    printf '%s\n' "${AFORA_LIVE_DOCKER_AVAILABLE_CPUS:-${AFORA_DOCKER_E2E_AVAILABLE_CPUS:-}}"
     return 0
   fi
   if command -v nproc >/dev/null 2>&1; then
@@ -411,10 +411,10 @@ openclaw_live_detect_available_cpus() {
   return 1
 }
 
-openclaw_live_resolve_cpus() {
+afora_live_resolve_cpus() {
   local requested="$1"
   local available=""
-  available="$(openclaw_live_detect_available_cpus 2>/dev/null || true)"
+  available="$(afora_live_detect_available_cpus 2>/dev/null || true)"
   if [[ "$requested" =~ ^[0-9]+$ ]] && [[ "$available" =~ ^[0-9]+$ ]] && [ "$requested" -gt "$available" ]; then
     printf '%s\n' "$available"
     return 0
@@ -422,60 +422,60 @@ openclaw_live_resolve_cpus() {
   printf '%s\n' "$requested"
 }
 
-openclaw_live_docker_run_resource_args() {
+afora_live_docker_run_resource_args() {
   local target_array="${1:?target array required}"
   eval "${target_array}=()"
-  if openclaw_live_resource_limits_disabled; then
+  if afora_live_resource_limits_disabled; then
     return 0
   fi
 
-  local memory="${OPENCLAW_LIVE_DOCKER_MEMORY:-${OPENCLAW_DOCKER_E2E_MEMORY:-8g}}"
-  local cpus="${OPENCLAW_LIVE_DOCKER_CPUS:-${OPENCLAW_DOCKER_E2E_CPUS:-16}}"
-  local pids_limit="${OPENCLAW_LIVE_DOCKER_PIDS_LIMIT:-${OPENCLAW_DOCKER_E2E_PIDS_LIMIT:-2048}}"
-  local pids_limit_env="OPENCLAW_LIVE_DOCKER_PIDS_LIMIT"
-  if [ -z "${OPENCLAW_LIVE_DOCKER_PIDS_LIMIT:-}" ]; then
-    pids_limit_env="OPENCLAW_DOCKER_E2E_PIDS_LIMIT"
+  local memory="${AFORA_LIVE_DOCKER_MEMORY:-${AFORA_DOCKER_E2E_MEMORY:-8g}}"
+  local cpus="${AFORA_LIVE_DOCKER_CPUS:-${AFORA_DOCKER_E2E_CPUS:-16}}"
+  local pids_limit="${AFORA_LIVE_DOCKER_PIDS_LIMIT:-${AFORA_DOCKER_E2E_PIDS_LIMIT:-2048}}"
+  local pids_limit_env="AFORA_LIVE_DOCKER_PIDS_LIMIT"
+  if [ -z "${AFORA_LIVE_DOCKER_PIDS_LIMIT:-}" ]; then
+    pids_limit_env="AFORA_DOCKER_E2E_PIDS_LIMIT"
   fi
-  cpus="$(openclaw_live_resolve_cpus "$cpus")"
+  cpus="$(afora_live_resolve_cpus "$cpus")"
 
-  if ! openclaw_live_resource_value_disabled "$memory"; then
+  if ! afora_live_resource_value_disabled "$memory"; then
     eval "${target_array}+=(--memory \"\$memory\")"
   fi
-  if ! openclaw_live_resource_value_disabled "$cpus"; then
+  if ! afora_live_resource_value_disabled "$cpus"; then
     eval "${target_array}+=(--cpus \"\$cpus\")"
   fi
-  if ! openclaw_live_resource_value_disabled "$pids_limit"; then
-    pids_limit="$(openclaw_live_resolve_pids_limit "$pids_limit_env" "$pids_limit")" || return $?
+  if ! afora_live_resource_value_disabled "$pids_limit"; then
+    pids_limit="$(afora_live_resolve_pids_limit "$pids_limit_env" "$pids_limit")" || return $?
     eval "${target_array}+=(--pids-limit \"\$pids_limit\")"
   fi
 }
 
-openclaw_live_init_docker_run_args() {
+afora_live_init_docker_run_args() {
   local target_array="${1:?target array required}"
-  local timeout_value="${2:-${OPENCLAW_LIVE_DOCKER_RUN_TIMEOUT:-2700s}}"
+  local timeout_value="${2:-${AFORA_LIVE_DOCKER_RUN_TIMEOUT:-2700s}}"
   local resource_args=()
   local timeout_bin
   local quoted_timeout
 
-  if ! timeout_bin="$(openclaw_live_timeout_bin)"; then
+  if ! timeout_bin="$(afora_live_timeout_bin)"; then
     echo "timeout command not found; cannot bound live Docker run after ${timeout_value}" >&2
     return 127
   fi
   quoted_timeout="$(printf '%q' "$timeout_value")"
   # Provider CLIs can leave orphaned tooling grandchildren; Docker init reaps
   # them so sequential Vitest process groups can join after teardown.
-  if openclaw_live_timeout_supports_kill_after "$timeout_bin"; then
+  if afora_live_timeout_supports_kill_after "$timeout_bin"; then
     eval "${target_array}=(${timeout_bin} --kill-after=30s ${quoted_timeout} docker run --init)"
   else
     eval "${target_array}=(${timeout_bin} ${quoted_timeout} docker run --init)"
   fi
-  openclaw_live_docker_run_resource_args resource_args || return $?
-  openclaw_live_append_array "$target_array" resource_args
+  afora_live_docker_run_resource_args resource_args || return $?
+  afora_live_append_array "$target_array" resource_args
 }
 
-openclaw_live_container_node_options() {
+afora_live_container_node_options() {
   local value
-  value="$(openclaw_live_trim "${OPENCLAW_DOCKER_NODE_OPTIONS:-${NODE_OPTIONS:-}}")"
+  value="$(afora_live_trim "${AFORA_DOCKER_NODE_OPTIONS:-${NODE_OPTIONS:-}}")"
   if [[ -z "$value" ]]; then
     value="--max-old-space-size=4096"
   fi
@@ -499,7 +499,7 @@ openclaw_live_container_node_options() {
   printf '%s\n' "$value"
 }
 
-openclaw_live_stage_auth_into_home() {
+afora_live_stage_auth_into_home() {
   local dest_home="${1:?destination home directory required}"
   shift
 
@@ -518,7 +518,7 @@ openclaw_live_stage_auth_into_home() {
         ;;
     esac
 
-    relative_path="$(openclaw_live_validate_relative_home_path "$1")" || return 1
+    relative_path="$(afora_live_validate_relative_home_path "$1")" || return 1
     source_path="$HOME/$relative_path"
     dest_path="$dest_home/$relative_path"
 
@@ -540,14 +540,14 @@ openclaw_live_stage_auth_into_home() {
   done
 }
 
-openclaw_live_prepare_bind_dir_for_container_user() {
+afora_live_prepare_bind_dir_for_container_user() {
   local dir="${1:?directory required}"
 
   mkdir -p "$dir"
   chmod u+rwx "$dir" || true
 }
 
-openclaw_live_stage_profile_into_home() {
+afora_live_stage_profile_into_home() {
   local dest_home="${1:?destination home directory required}"
   local profile_file="${2:?profile file required}"
 
@@ -557,7 +557,7 @@ openclaw_live_stage_profile_into_home() {
   chmod u+rw "$dest_home/.profile" || true
 }
 
-openclaw_live_chown_bind_dirs_for_container_user() {
+afora_live_chown_bind_dirs_for_container_user() {
   local image_name="${1:?image name required}"
   local container_user="${2:?container user required}"
   shift 2
@@ -568,20 +568,20 @@ openclaw_live_chown_bind_dirs_for_container_user() {
   for dir in "$@"; do
     [[ -n "$dir" ]] || continue
     mkdir -p "$dir"
-    mount_args+=(-v "$dir:/openclaw-bind-dir-$index")
+    mount_args+=(-v "$dir:/afora-bind-dir-$index")
     index=$((index + 1))
   done
   ((index > 0)) || return 0
 
   local resource_args=()
-  openclaw_live_docker_run_resource_args resource_args || return $?
+  afora_live_docker_run_resource_args resource_args || return $?
 
   docker run --rm \
     "${resource_args[@]}" \
     -u 0:0 \
     --entrypoint sh \
-    -e OPENCLAW_BIND_DIR_USER="$container_user" \
+    -e AFORA_BIND_DIR_USER="$container_user" \
     "${mount_args[@]}" \
     "$image_name" \
-    -c 'for dir in /openclaw-bind-dir-*; do chown -R "$OPENCLAW_BIND_DIR_USER" "$dir"; done'
+    -c 'for dir in /afora-bind-dir-*; do chown -R "$AFORA_BIND_DIR_USER" "$dir"; done'
 }

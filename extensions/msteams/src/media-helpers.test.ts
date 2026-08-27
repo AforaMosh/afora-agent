@@ -186,7 +186,7 @@ describe("msteams media-helpers", () => {
     });
 
     it("returns true for Windows rooted paths", () => {
-      expect(isLocalPath("\\tmp\\openclaw\\file.txt")).toBe(true);
+      expect(isLocalPath("\\tmp\\afora\\file.txt")).toBe(true);
     });
 
     it("returns false for http URLs", () => {

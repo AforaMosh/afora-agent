@@ -6,21 +6,21 @@
  */
 import path from "node:path";
 import { isDefaultStateDir, resolveStateDir } from "../../../config/paths.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { resolveUserPath } from "../../../utils.js";
 import type { OnboardOptions } from "../../onboard-types.js";
 
 /** Resolves the workspace directory used by local non-interactive setup. */
 export function resolveNonInteractiveWorkspaceDir(params: {
   opts: OnboardOptions;
-  baseConfig: OpenClawConfig;
+  baseConfig: AforaConfig;
   defaultWorkspaceDir: string;
   env?: NodeJS.ProcessEnv;
 }) {
   const env = params.env ?? process.env;
   const requestedWorkspace = params.opts.workspace?.trim() || undefined;
   const configuredWorkspace = params.baseConfig.agents?.defaults?.workspace?.trim() || undefined;
-  const workspaceOverride = env.OPENCLAW_WORKSPACE_DIR?.trim() || undefined;
+  const workspaceOverride = env.AFORA_WORKSPACE_DIR?.trim() || undefined;
   const implicitWorkspaceDir = isDefaultStateDir(env)
     ? params.defaultWorkspaceDir
     : path.join(resolveStateDir(env), "workspace");

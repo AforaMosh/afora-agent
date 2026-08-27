@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.types.js";
 import { resolveOAuthApiKeyMarker } from "./model-auth-markers.js";
 import {
@@ -66,7 +66,7 @@ function registry(entries: ModelCatalogEntry[]): ModelRegistry {
 }
 
 async function build(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   entries?: ModelCatalogEntry[];
   metadataSnapshot?: PluginMetadataSnapshot;
   readOnly?: boolean;
@@ -125,7 +125,7 @@ describe("prepared model catalog builder", () => {
   });
 
   it("keeps account-denied runtime models out of the prepared catalog", async () => {
-    const config: OpenClawConfig = { plugins: { enabled: false } };
+    const config: AforaConfig = { plugins: { enabled: false } };
     const runtimeManifest = providerManifestSnapshot({
       provider: "openai",
       discovery: "runtime",
@@ -414,7 +414,7 @@ describe("prepared model catalog builder", () => {
   });
 
   it("overlays configured metadata onto discovered rows", async () => {
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       plugins: { enabled: false },
       models: {
         providers: {

@@ -13,7 +13,7 @@ import { recordReplyOperationAgentTurn } from "../auto-reply/reply/reply-operati
 import { resolveReplyOperationRunState } from "../auto-reply/reply/reply-operation-run-state.js";
 import { createReplyOperation } from "../auto-reply/reply/reply-run-registry.js";
 import { testing as replyRunRegistryTesting } from "../auto-reply/reply/reply-run-registry.test-support.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { markCronJobActive, resetCronActiveJobs } from "../cron/active-jobs.js";
 import { getActivePluginRegistry, setActivePluginRegistry } from "../plugins/runtime.js";
 import { CommandLane } from "../process/lanes.js";
@@ -59,7 +59,7 @@ beforeEach(() => {
   replyRunRegistryTesting.resetReplyRunRegistry();
 });
 
-function createHeartbeatTelegramConfig(storePath: string): OpenClawConfig {
+function createHeartbeatTelegramConfig(storePath: string): AforaConfig {
   return {
     session: { store: storePath },
     agents: {
@@ -75,12 +75,12 @@ function createHeartbeatTelegramConfig(storePath: string): OpenClawConfig {
         allowFrom: ["123"],
       },
     },
-  } as unknown as OpenClawConfig;
+  } as unknown as AforaConfig;
 }
 
 async function seedHeartbeatTelegramSession(
   storePath: string,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   entry: Partial<Parameters<typeof seedMainSessionStore>[2]> = {},
 ) {
   return seedMainSessionStore(storePath, cfg, {
@@ -94,7 +94,7 @@ async function seedHeartbeatTelegramSession(
 type HeartbeatRunOverrides = Omit<Parameters<typeof runHeartbeatOnce>[0], "cfg" | "deps">;
 
 function runHeartbeat(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   replySpy: HeartbeatDeps["getReplyFromConfig"],
   overrides: HeartbeatRunOverrides = {},
   deps: Partial<HeartbeatDeps> = {},

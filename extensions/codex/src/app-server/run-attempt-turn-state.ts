@@ -1,5 +1,5 @@
-import { emitTrustedDiagnosticEvent } from "openclaw/plugin-sdk/diagnostic-runtime";
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
+import { emitTrustedDiagnosticEvent } from "afora-agent/plugin-sdk/diagnostic-runtime";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
 import {
   CODEX_APP_SERVER_INTERRUPT_TIMEOUT_MS,
   closeCodexStartupClientBestEffort,
@@ -100,10 +100,10 @@ export function createCodexAttemptTurnState(resources: CodexAttemptResources) {
     params.runTimeoutOverrideMs,
   );
   const turnAttemptIdleTimeoutMs = Math.max(100, Math.floor(params.timeoutMs));
-  const pendingOpenClawDynamicToolCompletionIds = new Set<string>();
+  const pendingAforaDynamicToolCompletionIds = new Set<string>();
   // One execution promise per call id prevents duplicate delivery from
   // repeating non-idempotent computer input while the attempt remains active.
-  const openClawDynamicToolExecutions = createCodexDynamicToolExecutionRegistry();
+  const aforaDynamicToolExecutions = createCodexDynamicToolExecutionRegistry();
   const activeTurnItemIds = new Set<string>();
   const activeCompletionBlockerItemIds = new Set<string>();
   const activeFinalizationHookRunIds = new Set<string>();
@@ -222,8 +222,8 @@ export function createCodexAttemptTurnState(resources: CodexAttemptResources) {
     postToolRawAssistantCompletionIdleTimeoutMs,
     turnTerminalIdleTimeoutMs,
     turnAttemptIdleTimeoutMs,
-    pendingOpenClawDynamicToolCompletionIds,
-    openClawDynamicToolExecutions,
+    pendingAforaDynamicToolCompletionIds,
+    aforaDynamicToolExecutions,
     activeTurnItemIds,
     activeCompletionBlockerItemIds,
     activeFinalizationHookRunIds,

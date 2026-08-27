@@ -54,7 +54,7 @@ const getSessionDefaultsMock = vi.fn(() => ({
   contextTokens: null,
 }));
 const loadCombinedSessionStoreForGatewayMock = vi.fn((_options?: unknown) => ({
-  storePath: "/tmp/openclaw-sessions.json",
+  storePath: "/tmp/afora-sessions.json",
   store: {},
 }));
 const getRuntimeConfigMock = vi.fn(() => ({}));
@@ -77,7 +77,7 @@ const loadSessionEntryMock = vi.fn(
   (sessionKey: string, _opts?: { agentId?: string }): LoadSessionEntryMockResult => ({
     cfg: {},
     canonicalKey: sessionKey,
-    storePath: "/tmp/openclaw-sessions.json",
+    storePath: "/tmp/afora-sessions.json",
     store: {},
     entry: {},
   }),
@@ -125,7 +125,7 @@ vi.mock("../config/sessions.js", () => ({
     goal ? `Goal: ${goal.objective ?? ""}` : "No goal for this session.",
   getSessionGoal: (...args: unknown[]) => getSessionGoalMock(...args),
   resolveAgentMainSessionKey: () => "agent:main:main",
-  resolveSessionStorePathCore: () => "/tmp/openclaw-sessions.json",
+  resolveSessionStorePathCore: () => "/tmp/afora-sessions.json",
   updateSessionGoalObjective: (...args: unknown[]) => updateSessionGoalObjectiveMock(...args),
   updateSessionGoalStatus: (...args: unknown[]) => updateSessionGoalStatusMock(...args),
   updateSessionStore: (...args: unknown[]) => updateSessionStoreMock(...args),
@@ -136,8 +136,8 @@ vi.mock("../config/sessions/session-accessor.js", () => ({
 }));
 
 vi.mock("../agents/agent-scope.js", () => ({
-  resolveAgentDir: (_cfg: unknown, agentId: string) => `/tmp/openclaw-agent-${agentId}/agent`,
-  resolveAgentWorkspaceDir: (_cfg: unknown, agentId: string) => `/tmp/openclaw-agent-${agentId}`,
+  resolveAgentDir: (_cfg: unknown, agentId: string) => `/tmp/afora-agent-${agentId}/agent`,
+  resolveAgentWorkspaceDir: (_cfg: unknown, agentId: string) => `/tmp/afora-agent-${agentId}`,
   resolveDefaultAgentId: (cfg?: {
     agents?: { list?: Array<{ id?: string; default?: boolean }> };
   }) =>
@@ -240,7 +240,7 @@ vi.mock("../gateway/session-utils.js", () => ({
   resolveGatewaySessionStoreTargetWithStore: ({ key }: { key: string }) => ({
     canonicalKey: key,
     storeKeys: [key],
-    storePath: "/tmp/openclaw-sessions.json",
+    storePath: "/tmp/afora-sessions.json",
   }),
   resolveSessionModelRef: () => ({ provider: "openai", model: "gpt-5.4" }),
 }));
@@ -358,7 +358,7 @@ describe("EmbeddedTuiBackend", () => {
     listSessionsFromStoreAsyncMock.mockResolvedValue({ sessions: [] });
     loadCombinedSessionStoreForGatewayMock.mockReset();
     loadCombinedSessionStoreForGatewayMock.mockReturnValue({
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       store: {},
     });
     applySessionPatchProjectionMock.mockReset();
@@ -391,7 +391,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockImplementation((sessionKey: string) => ({
       cfg: {},
       canonicalKey: sessionKey,
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       store: {},
       entry: {},
     }));
@@ -853,7 +853,7 @@ describe("EmbeddedTuiBackend", () => {
     );
     expect(listSessionsFromStoreAsyncMock).toHaveBeenCalledWith({
       cfg: {},
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       store: {},
       opts: { agentId: "work", includeGlobal: true, search: "global" },
     });
@@ -997,7 +997,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockImplementation((sessionKey: string) => ({
       cfg: { messages: { queue: { mode: "followup" } } },
       canonicalKey: sessionKey,
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       store: {},
       entry: { queueDebounceMs: 0 },
     }));
@@ -1035,7 +1035,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockReturnValueOnce({
       cfg: {},
       canonicalKey: "agent:main:main",
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
     });
 
     const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
@@ -1052,7 +1052,7 @@ describe("EmbeddedTuiBackend", () => {
     });
     expect(createSessionGoalMock).toHaveBeenCalledWith({
       sessionKey: "agent:main:main",
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       objective: "Ship Goal",
       actor: { type: "human" },
       fallbackEntry: {
@@ -1066,7 +1066,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockReturnValueOnce({
       cfg: {},
       canonicalKey: "global",
-      storePath: "/tmp/openclaw-work-sessions.json",
+      storePath: "/tmp/afora-work-sessions.json",
       entry: { sessionId: "session-work", updatedAt: embeddedEventTimestamp },
     });
 
@@ -1084,7 +1084,7 @@ describe("EmbeddedTuiBackend", () => {
     expect(loadSessionEntryMock).toHaveBeenCalledWith("global", { agentId: "work" });
     expect(getSessionGoalMock).toHaveBeenCalledWith({
       sessionKey: "global",
-      storePath: "/tmp/openclaw-work-sessions.json",
+      storePath: "/tmp/afora-work-sessions.json",
     });
   });
 
@@ -1119,7 +1119,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockReturnValue({
       cfg: {},
       canonicalKey: "global",
-      storePath: "/tmp/openclaw-work-sessions.json",
+      storePath: "/tmp/afora-work-sessions.json",
       entry: { sessionId: "session-work-global" },
     });
 
@@ -1146,7 +1146,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockReturnValue({
       cfg: {},
       canonicalKey: "global",
-      storePath: "/tmp/openclaw-btw-sessions.json",
+      storePath: "/tmp/afora-btw-sessions.json",
       store: {},
       entry: { sessionId: "session-btw-local" },
     });
@@ -1172,7 +1172,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockImplementation((sessionKey: string) => ({
       cfg: {},
       canonicalKey: sessionKey,
-      storePath: "/tmp/openclaw-work-sessions.json",
+      storePath: "/tmp/afora-work-sessions.json",
       store: {},
       entry: { sessionId: "session-work-global" },
     }));
@@ -1224,7 +1224,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockReturnValue({
       cfg: {},
       canonicalKey: "agent:main:main",
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       entry: { sessionId: "sess-main" },
     });
 
@@ -1237,7 +1237,7 @@ describe("EmbeddedTuiBackend", () => {
       entry: { sessionId: "sess-main" },
       provider: "openai",
       sessionId: "sess-main",
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       sessionAgentId: "main",
       canonicalKey: "agent:main:main",
       max: 200,
@@ -1253,8 +1253,8 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockReturnValue({
       cfg,
       canonicalKey: "agent:main:main",
-      storePath: "/tmp/openclaw-sessions.json",
-      entry: { spawnedWorkspaceDir: "/tmp/openclaw-custom-workspace" },
+      storePath: "/tmp/afora-sessions.json",
+      entry: { spawnedWorkspaceDir: "/tmp/afora-custom-workspace" },
     });
 
     const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
@@ -1265,7 +1265,7 @@ describe("EmbeddedTuiBackend", () => {
     });
     expect(loadAgentRuntimePluginRegistryHandleMock).toHaveBeenCalledWith({
       config: cfg,
-      workspaceDir: "/tmp/openclaw-agent-main",
+      workspaceDir: "/tmp/afora-agent-main",
     });
   });
 
@@ -1276,7 +1276,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockReturnValue({
       cfg: {},
       canonicalKey: "agent:main:main",
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       entry: {},
     });
 
@@ -1377,7 +1377,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockImplementation((sessionKey: string) => ({
       cfg: {},
       canonicalKey: sessionKey,
-      storePath: "/tmp/openclaw-work-sessions.json",
+      storePath: "/tmp/afora-work-sessions.json",
       store: {},
       entry: { sessionId: "session-work-global" },
     }));
@@ -1530,7 +1530,7 @@ describe("EmbeddedTuiBackend", () => {
   });
 
   it("aborts local post-turn maintenance when stop grace elapses", async () => {
-    await withEnvAsync({ OPENCLAW_TUI_LOCAL_RUN_SHUTDOWN_GRACE_MS: "5" }, async () => {
+    await withEnvAsync({ AFORA_TUI_LOCAL_RUN_SHUTDOWN_GRACE_MS: "5" }, async () => {
       const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
       const pending = deferred<{
         payloads: Array<{ text: string }>;
@@ -1628,7 +1628,7 @@ describe("EmbeddedTuiBackend", () => {
   });
 
   it("queues same-session sends behind active local runs", async () => {
-    await withEnvAsync({ OPENCLAW_TUI_LOCAL_RUN_SHUTDOWN_GRACE_MS: "5" }, async () => {
+    await withEnvAsync({ AFORA_TUI_LOCAL_RUN_SHUTDOWN_GRACE_MS: "5" }, async () => {
       const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
       const first = deferred<{
         payloads: Array<{ text: string }>;
@@ -1692,7 +1692,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockImplementation((sessionKey: string) => ({
       cfg: { messages: { queue: { mode: "followup" } } },
       canonicalKey: sessionKey,
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       store: {},
       entry: { queueDebounceMs: 0 },
     }));
@@ -1744,7 +1744,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockImplementation((sessionKey: string) => ({
       cfg: { messages: { queue: { mode: "followup" } } },
       canonicalKey: sessionKey,
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       store: {},
       entry: { queueDebounceMs: 0 },
     }));
@@ -1822,7 +1822,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockImplementation((sessionKey: string) => ({
       cfg: {},
       canonicalKey: sessionKey,
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       store: {},
       entry: {},
     }));
@@ -1876,7 +1876,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockImplementation((sessionKey: string) => ({
       cfg: {},
       canonicalKey: sessionKey,
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       store: {},
       entry: {},
     }));
@@ -1925,7 +1925,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockImplementation((sessionKey: string) => ({
       cfg: { messages: { queue: { mode: "steer" } } },
       canonicalKey: sessionKey,
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       store: {},
       entry: { queueMode: "followup", queueDebounceMs: 0 },
     }));
@@ -1971,7 +1971,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockImplementation((sessionKey: string) => ({
       cfg: { messages: { queue: { mode: "collect" } } },
       canonicalKey: sessionKey,
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       store: {},
       entry: {},
     }));
@@ -2033,7 +2033,7 @@ describe("EmbeddedTuiBackend", () => {
       loadSessionEntryMock.mockImplementation((sessionKey: string) => ({
         cfg: { messages: { queue: { mode: "collect", cap, drop: dropPolicy } } },
         canonicalKey: sessionKey,
-        storePath: "/tmp/openclaw-sessions.json",
+        storePath: "/tmp/afora-sessions.json",
         store: {},
         entry: { queueDebounceMs: 0 },
       }));
@@ -2106,7 +2106,7 @@ describe("EmbeddedTuiBackend", () => {
         messages: { queue: { mode: "followup", cap: 1, drop: "new" } },
       },
       canonicalKey: sessionKey,
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       store: {},
       entry: {},
     }));
@@ -2159,7 +2159,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockImplementation((sessionKey: string) => ({
       cfg: { messages: { queue: { mode: "interrupt" } } },
       canonicalKey: sessionKey,
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       store: {},
       entry: {},
     }));
@@ -2199,7 +2199,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockImplementation((sessionKey: string) => ({
       cfg: {},
       canonicalKey: sessionKey,
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       store: {},
       entry: { queueMode: "interrupt" },
     }));
@@ -3102,7 +3102,7 @@ describe("EmbeddedTuiBackend", () => {
   });
 
   it("fails a queued local send when the previous finishing run does not settle", async () => {
-    await withEnvAsync({ OPENCLAW_TUI_LOCAL_RUN_SHUTDOWN_GRACE_MS: "5" }, async () => {
+    await withEnvAsync({ AFORA_TUI_LOCAL_RUN_SHUTDOWN_GRACE_MS: "5" }, async () => {
       const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
       const first = deferred<{
         payloads: Array<{ text: string }>;
@@ -3159,7 +3159,7 @@ describe("EmbeddedTuiBackend", () => {
   });
 
   it("keeps the bounded post-turn timeout visible through canceled queue predecessors", async () => {
-    await withEnvAsync({ OPENCLAW_TUI_LOCAL_RUN_SHUTDOWN_GRACE_MS: "5" }, async () => {
+    await withEnvAsync({ AFORA_TUI_LOCAL_RUN_SHUTDOWN_GRACE_MS: "5" }, async () => {
       const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
       const active = deferred<{
         payloads: Array<{ text: string }>;
@@ -3169,7 +3169,7 @@ describe("EmbeddedTuiBackend", () => {
       loadSessionEntryMock.mockImplementation((sessionKey: string) => ({
         cfg: { messages: { queue: { mode: "followup" } } },
         canonicalKey: sessionKey,
-        storePath: "/tmp/openclaw-sessions.json",
+        storePath: "/tmp/afora-sessions.json",
         store: {},
         entry: { queueDebounceMs: 0 },
       }));
@@ -3216,7 +3216,7 @@ describe("EmbeddedTuiBackend", () => {
   });
 
   it("fails a queued local send immediately when shutdown grace is zero", async () => {
-    await withEnvAsync({ OPENCLAW_TUI_LOCAL_RUN_SHUTDOWN_GRACE_MS: "0" }, async () => {
+    await withEnvAsync({ AFORA_TUI_LOCAL_RUN_SHUTDOWN_GRACE_MS: "0" }, async () => {
       const { EmbeddedTuiBackend } = await import("./embedded-backend.js");
       const first = deferred<{
         payloads: Array<{ text: string }>;
@@ -3634,7 +3634,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockReturnValueOnce({
       cfg: {},
       canonicalKey: "agent:main:main",
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       store: {
         "agent:main:main": {
           sessionId: "session-main",
@@ -3708,7 +3708,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockReturnValueOnce({
       cfg: {},
       canonicalKey: "agent:main:main",
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       store: {
         "agent:main:main": {
           sessionId: "session-main",
@@ -3877,7 +3877,7 @@ describe("EmbeddedTuiBackend", () => {
     loadSessionEntryMock.mockReturnValue({
       cfg: {},
       canonicalKey: "agent:main:main",
-      storePath: "/tmp/openclaw-sessions.json",
+      storePath: "/tmp/afora-sessions.json",
       store: {},
       entry: { sessionId: "session-main" },
     });

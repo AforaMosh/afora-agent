@@ -1,4 +1,4 @@
-// Host Server script supports OpenClaw repository automation.
+// Host Server script supports Afora repository automation.
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { rm } from "node:fs/promises";
@@ -103,7 +103,7 @@ export async function startNpmRegistryServer(input: {
     die("npm registry server requires at least one package");
   }
   const port = allocateHostPort();
-  const portFile = path.join(tmpdir(), `openclaw-npm-registry-${randomUUID()}.port`);
+  const portFile = path.join(tmpdir(), `afora-npm-registry-${randomUUID()}.port`);
   const packageArgs = input.packages.flatMap((pkg) => [pkg.name, pkg.version, pkg.tarballPath]);
   const child = spawn(
     process.execPath,
@@ -111,9 +111,9 @@ export async function startNpmRegistryServer(input: {
     {
       env: {
         ...process.env,
-        OPENCLAW_NPM_REGISTRY_BIND_HOST: "0.0.0.0",
-        OPENCLAW_NPM_REGISTRY_PORT: String(port),
-        OPENCLAW_NPM_REGISTRY_UPSTREAM: "https://registry.npmjs.org",
+        AFORA_NPM_REGISTRY_BIND_HOST: "0.0.0.0",
+        AFORA_NPM_REGISTRY_PORT: String(port),
+        AFORA_NPM_REGISTRY_UPSTREAM: "https://registry.npmjs.org",
       },
       stdio: ["ignore", "pipe", "pipe"],
     },

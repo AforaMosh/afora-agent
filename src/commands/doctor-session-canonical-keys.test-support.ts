@@ -1,6 +1,6 @@
 import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/session-sqlite-target.js";
 import type { InternalSessionEntry as SessionEntry } from "../config/sessions/types.js";
-import { openOpenClawAgentDatabase } from "../state/openclaw-agent-db.js";
+import { openAforaAgentDatabase } from "../state/afora-agent-db.js";
 
 export function insertLegacySession(params: {
   agentId: string;
@@ -10,7 +10,7 @@ export function insertLegacySession(params: {
   sessionKey: string;
   storePath: string;
 }): void {
-  const database = openOpenClawAgentDatabase({
+  const database = openAforaAgentDatabase({
     agentId: params.agentId,
     env: params.env,
     path: resolveSqliteTargetFromSessionStorePath(params.storePath, {

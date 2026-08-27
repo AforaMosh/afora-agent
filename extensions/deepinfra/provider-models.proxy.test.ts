@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const fetchWithSsrFGuardMock = vi.hoisted(() => vi.fn());
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/ssrf-runtime")>()),
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/ssrf-runtime")>()),
   fetchWithSsrFGuard: fetchWithSsrFGuardMock,
 }));
 
@@ -43,7 +43,7 @@ describe("DeepInfra model discovery proxy policy", () => {
     expect(fetchWithSsrFGuardMock).toHaveBeenCalledWith(
       expect.objectContaining({
         mode: "trusted_env_proxy",
-        url: "https://api.deepinfra.com/v1/openai/models?sort_by=openclaw&filter=with_meta",
+        url: "https://api.deepinfra.com/v1/openai/models?sort_by=afora&filter=with_meta",
       }),
     );
     expect(release).toHaveBeenCalledOnce();

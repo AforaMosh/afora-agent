@@ -1,7 +1,7 @@
 // Tests heartbeat runner typing indicator behavior.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChannelPlugin } from "../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../test-utils/channel-plugins.js";
 import { runHeartbeatOnce } from "./heartbeat-runner.js";
@@ -34,10 +34,10 @@ function installHeartbeatTypingPlugin(params: {
 function createHeartbeatConfig(params: {
   tmpDir: string;
   storePath: string;
-  agents?: OpenClawConfig["agents"];
-  session?: OpenClawConfig["session"];
+  agents?: AforaConfig["agents"];
+  session?: AforaConfig["session"];
   channelHeartbeatVisibility?: Record<string, unknown>;
-}): OpenClawConfig {
+}): AforaConfig {
   return {
     agents: {
       ...params.agents,
@@ -59,10 +59,10 @@ function createHeartbeatConfig(params: {
       store: params.storePath,
       ...params.session,
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
-async function seedTelegramSession(storePath: string, cfg: OpenClawConfig) {
+async function seedTelegramSession(storePath: string, cfg: AforaConfig) {
   await seedMainSessionStore(storePath, cfg, {
     lastChannel: "telegram",
     lastProvider: "telegram",
@@ -72,7 +72,7 @@ async function seedTelegramSession(storePath: string, cfg: OpenClawConfig) {
 
 function expectTypingCall(
   mock: ReturnType<typeof vi.fn>,
-  expected: { cfg: OpenClawConfig; to: string },
+  expected: { cfg: AforaConfig; to: string },
 ) {
   const call = mock.mock.calls[0];
   if (!call) {

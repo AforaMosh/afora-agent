@@ -7,7 +7,7 @@ import { detectAmbientInferenceBackends } from "./onboard-inference-ambient.js";
 const tempHomes = new Set<string>();
 
 async function createTempHome(): Promise<string> {
-  const home = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-ambient-")));
+  const home = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), "afora-ambient-")));
   tempHomes.add(home);
   return home;
 }

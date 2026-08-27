@@ -10,9 +10,9 @@ import type { Context, Model } from "../../llm/types.js";
 export const LIVE_MODEL_FILE_PROBE_TOKEN = "opal";
 
 /** Environment toggle for live file-label probes. */
-export const LIVE_MODEL_FILE_PROBE_ENV = "OPENCLAW_LIVE_MODEL_FILE_PROBE";
+export const LIVE_MODEL_FILE_PROBE_ENV = "AFORA_LIVE_MODEL_FILE_PROBE";
 /** Environment toggle for live image probes. */
-export const LIVE_MODEL_IMAGE_PROBE_ENV = "OPENCLAW_LIVE_MODEL_IMAGE_PROBE";
+export const LIVE_MODEL_IMAGE_PROBE_ENV = "AFORA_LIVE_MODEL_IMAGE_PROBE";
 
 const PROBE_PNG_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAALUlEQVR4nO3OIQEAAAwCMPrnod8fAzMxv7S9pQgICAgICAgICAgICAgICKwDD+yWbLXSniMNAAAAAElFTkSuQmCC";

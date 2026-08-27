@@ -1,13 +1,13 @@
 // Claude CLI session history importer.
-// Converts Claude project JSONL into OpenClaw transcript-compatible messages.
+// Converts Claude project JSONL into Afora transcript-compatible messages.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {
   asFiniteNumber,
   parseDateStringTimestampMs,
-} from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { hashCliReseedPrompt, parseCliReseedPrompt } from "../agents/cli-runner/reseed-envelope.js";
 import type { AgentMessage } from "../agents/runtime/index.js";
 import { redactTranscriptMessage } from "../agents/transcript-redact.js";
@@ -22,7 +22,7 @@ import {
   getCliSessionBinding,
   normalizeCliSessionReseedReceipt,
 } from "../config/sessions/cli-session-binding.js";
-import { attachOpenClawTranscriptMeta } from "./session-transcript-readers.js";
+import { attachAforaTranscriptMeta } from "./session-transcript-readers.js";
 
 export const CLAUDE_CLI_PROVIDER = "claude-cli";
 const CLAUDE_PROJECTS_RELATIVE_DIR = path.join(".claude", "projects");
@@ -170,7 +170,7 @@ function normalizeClaudeCliContent(
     const block = cloneJsonValue(item as ToolContentBlock);
     const type = typeof block.type === "string" ? block.type : "";
     if (type === "tool_use") {
-      // Claude stores tool calls as `tool_use` with `input`; OpenClaw history
+      // Claude stores tool calls as `tool_use` with `input`; Afora history
       // expects `toolcall` plus `arguments` so replay remains provider-neutral.
       const id = normalizeOptionalString(block.id) ?? "";
       const name = normalizeOptionalString(block.name) ?? "";
@@ -396,7 +396,7 @@ export function parseClaudeCliHistoryEntry(
         }
       }
     }
-    return attachOpenClawTranscriptMeta(
+    return attachAforaTranscriptMeta(
       {
         role: "user",
         content,
@@ -406,7 +406,7 @@ export function parseClaudeCliHistoryEntry(
     ) as TranscriptLikeMessage;
   }
 
-  return attachOpenClawTranscriptMeta(
+  return attachAforaTranscriptMeta(
     {
       role: "assistant",
       content,

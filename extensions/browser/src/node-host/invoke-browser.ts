@@ -3,8 +3,8 @@
  * requests.
  */
 import fsPromises from "node:fs/promises";
-import { resolveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
-import { normalizeStringEntries } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { resolveTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
+import { normalizeStringEntries } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { BROWSER_PROXY_COMMAND, BROWSER_PROXY_UPLOAD_COMMAND } from "../browser-node-commands.js";
 import {
   assertBrowserProxyFileCountWithinLimit,

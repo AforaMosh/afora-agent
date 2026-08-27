@@ -1,5 +1,5 @@
 // Voice Call tests cover gateway continue operation plugin behavior.
-import { MAX_TIMER_TIMEOUT_MS } from "openclaw/plugin-sdk/number-runtime";
+import { MAX_TIMER_TIMEOUT_MS } from "afora-agent/plugin-sdk/number-runtime";
 import { describe, expect, it } from "vitest";
 import { createVoiceCallContinueOperationStore } from "./gateway-continue-operation.js";
 

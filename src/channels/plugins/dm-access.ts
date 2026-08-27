@@ -3,8 +3,8 @@
  *
  * Reads, writes, migrates, and normalizes direct-message policy and allowFrom fields.
  */
-import { asNullableRecord as asObjectRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { asNullableRecord as asObjectRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 
 /**
  * Selects whether canonical DM fields live at the top level or under `dm`.

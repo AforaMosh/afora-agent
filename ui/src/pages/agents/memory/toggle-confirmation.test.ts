@@ -55,7 +55,7 @@ describe("renderDreamingToggleConfirmation", () => {
   it("ignores backdrop cancel while saving", () => {
     const onCancel = vi.fn();
     const host = renderToggle({ loading: true, onCancel });
-    host.querySelector("openclaw-modal-dialog")?.dispatchEvent(new CustomEvent("modal-cancel"));
+    host.querySelector("afora-modal-dialog")?.dispatchEvent(new CustomEvent("modal-cancel"));
     expect(onCancel).not.toHaveBeenCalled();
   });
 });

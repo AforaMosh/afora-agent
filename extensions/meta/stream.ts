@@ -1,8 +1,8 @@
 // Meta plugin module implements stream behavior.
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import type { ProviderWrapStreamFnContext } from "openclaw/plugin-sdk/plugin-entry";
-import { createPayloadPatchStreamWrapper } from "openclaw/plugin-sdk/provider-stream-shared";
-import { filterStringEntries } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import type { ProviderWrapStreamFnContext } from "afora-agent/plugin-sdk/plugin-entry";
+import { createPayloadPatchStreamWrapper } from "afora-agent/plugin-sdk/provider-stream-shared";
+import { filterStringEntries } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 const META_REASONING_ENCRYPTED_CONTENT_INCLUDE = "reasoning.encrypted_content";
 

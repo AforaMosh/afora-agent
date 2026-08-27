@@ -1,9 +1,9 @@
 /** Resolves SecretRef values from env, file, exec, and store secret providers. */
 import fs from "node:fs/promises";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { expectDefined } from "@afora/normalization-core";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
+import type { AforaConfig } from "../config/types.afora.js";
 import type {
   FileSecretProviderConfig,
   ManualExecSecretProviderConfig,
@@ -70,7 +70,7 @@ const WINDOWS_UNC_PATH_PATTERN = /^\\\\[^\\]+\\[^\\]+/;
 export type { SecretRefResolveCache } from "./resolve-types.js";
 
 type ResolveSecretRefOptions = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
   cache?: SecretRefResolveCache;
   manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
@@ -151,7 +151,7 @@ function toProviderKey(source: SecretRefSource, provider: string): string {
 
 function resolveConfiguredProvider(params: {
   ref: SecretRef;
-  config: OpenClawConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
   manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
 }): SecretProviderConfig {
@@ -262,7 +262,7 @@ async function assertSecurePath(params: {
   if (process.platform === "win32" && perms.source === "unknown") {
     throw new FsSafeError(
       "permission-unverified",
-      `${params.label} ACL verification unavailable on Windows for ${effectivePath}. Move the command to a path whose ACLs OpenClaw can verify; there is no provider-level bypass.`,
+      `${params.label} ACL verification unavailable on Windows for ${effectivePath}. Move the command to a path whose ACLs Afora can verify; there is no provider-level bypass.`,
     );
   }
 

@@ -4,11 +4,11 @@
 // telling the operator exactly what to fix by hand.
 import fs from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { withEnvOverride, withTempHome, writeOpenClawConfig } from "../config/test-helpers.js";
+import { withEnvOverride, withTempHome, writeAforaConfig } from "../config/test-helpers.js";
 import { runWriteConfigHealth } from "../flows/doctor-health-contribution-runners.config.js";
 import type { DoctorHealthFlowContext } from "../flows/doctor-health-contribution-types.js";
 import type { RuntimeEnv } from "../runtime.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { loadAndMaybeMigrateDoctorConfig } from "./doctor-config-flow.js";
 import { createDoctorPrompter, type DoctorOptions } from "./doctor-prompter.js";
 
@@ -21,13 +21,13 @@ vi.mock("../../packages/terminal-core/src/note.js", () => ({
 describe("doctor --fix with a validation-blocked candidate", () => {
   afterEach(() => {
     noteMock.mockClear();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
   });
 
   it("never reports unpersisted fixes and leaves the config untouched", async () => {
     await withTempHome(async (home) => {
-      await withEnvOverride({ OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1" }, async () => {
-        const configPath = await writeOpenClawConfig(home, {
+      await withEnvOverride({ AFORA_DISABLE_BUNDLED_PLUGINS: "1" }, async () => {
+        const configPath = await writeAforaConfig(home, {
           gatway: { port: 12345 },
           agents: { defaults: { heartbeat: { every: 5 } } },
         });

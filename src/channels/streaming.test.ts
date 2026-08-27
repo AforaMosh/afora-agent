@@ -174,7 +174,7 @@ describe("backend tool-name casing", () => {
     { name: "Bash", args: { command: "echo alpha", description: "print text" } },
     { name: "Read", args: { file_path: "/tmp/x.ts" } },
     { name: "Edit", args: { file_path: "/tmp/x.ts", old_string: "a", new_string: "b" } },
-    { name: "mcp__openclaw__exec", args: { command: "echo alpha" } },
+    { name: "mcp__afora__exec", args: { command: "echo alpha" } },
   ] as const;
 
   it.each(CLI_TOOL_CALLS)("renders $name as one line", ({ name, args }) => {

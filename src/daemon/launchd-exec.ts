@@ -1,6 +1,6 @@
 /** Shared launchctl execution and result classification for macOS service owners. */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { sanitizeForLog } from "../../packages/terminal-core/src/ansi.js";
 import { getWindowsCmdExePath } from "../infra/windows-install-roots.js";
 import { execFileUtf8 } from "./exec-file.js";

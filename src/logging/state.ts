@@ -1,5 +1,5 @@
 // Process-local logging state shared by logger, console capture, and test reset helpers.
-const LOGGING_STATE_KEY = Symbol.for("openclaw.loggingState");
+const LOGGING_STATE_KEY = Symbol.for("afora.loggingState");
 
 function createLoggingState() {
   return {

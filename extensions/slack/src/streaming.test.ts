@@ -386,7 +386,7 @@ describe("stopSlackStream finalize error handling", () => {
       delivered: false,
       pendingText: "",
     };
-    const metadata = { event_type: "openclaw.reply", event_payload: { turn: "qa" } };
+    const metadata = { event_type: "afora.reply", event_payload: { turn: "qa" } };
 
     await appendSlackStream({ session, text: "short buffered reply" });
     await expect(stopSlackStream({ session, metadata })).rejects.toBeInstanceOf(

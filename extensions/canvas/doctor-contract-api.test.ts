@@ -1,19 +1,19 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { PluginDoctorStateMigration } from "openclaw/plugin-sdk/runtime-doctor-migrations";
-import { resolvePreferredOpenClawTmpDir, tempWorkspace } from "openclaw/plugin-sdk/temp-path";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { PluginDoctorStateMigration } from "afora-agent/plugin-sdk/runtime-doctor-migrations";
+import { resolvePreferredAforaTmpDir, tempWorkspace } from "afora-agent/plugin-sdk/temp-path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { stateMigrations } from "./doctor-contract-api.js";
 
 const migration = stateMigrations[0];
-const canvasDoctorWorkspaceRoot = resolvePreferredOpenClawTmpDir();
+const canvasDoctorWorkspaceRoot = resolvePreferredAforaTmpDir();
 
 function createCanvasDoctorWorkspace(kind: "state" | "custom") {
   return tempWorkspace({
     rootDir: canvasDoctorWorkspaceRoot,
-    prefix: `openclaw-canvas-doctor-${kind}-`,
+    prefix: `afora-canvas-doctor-${kind}-`,
   });
 }
 
@@ -32,8 +32,8 @@ function migrationParams(params: {
             canvas: { config: { host: { root: params.customRoot } } },
           },
         },
-      } as OpenClawConfig)
-    : ({} as OpenClawConfig);
+      } as AforaConfig)
+    : ({} as AforaConfig);
   return {
     config,
     env: process.env,

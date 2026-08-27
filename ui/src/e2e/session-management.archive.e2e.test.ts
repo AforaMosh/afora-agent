@@ -170,7 +170,7 @@ suite.define(() => {
       await row.waitFor({ state: "visible", timeout: 10_000 });
 
       await row.click({ button: "right" });
-      const menuHost = page.locator("openclaw-session-menu");
+      const menuHost = page.locator("afora-session-menu");
       await menuHost
         .getByRole("menuitem", { name: "Archive session" })
         .waitFor({ state: "visible" });
@@ -231,7 +231,7 @@ suite.define(() => {
 
     try {
       await page.goto(`${suite.server.baseUrl}chat`);
-      const sidebar = page.locator("openclaw-app-sidebar");
+      const sidebar = page.locator("afora-app-sidebar");
       const rowFor = (key: string) =>
         sidebar.locator(`.sidebar-recent-session[data-session-key="${key}"]`);
       await rowFor(batchKeys[0]).waitFor({ state: "visible", timeout: 10_000 });
@@ -244,7 +244,7 @@ suite.define(() => {
         await rowFor(key).click({ modifiers: ["Meta"] });
       }
       await rowFor(batchKeys[0]).click({ button: "right" });
-      const batchMenu = page.locator("openclaw-session-menu");
+      const batchMenu = page.locator("afora-session-menu");
       const archiveItem = batchMenu.getByRole("menuitem", { name: `Archive ${batchKeys.length}` });
       await archiveItem.waitFor({ state: "visible", timeout: 10_000 });
       expect(await archiveItem.isDisabled()).toBe(false);
@@ -341,8 +341,8 @@ suite.define(() => {
 
     try {
       await page.goto(`${suite.server.baseUrl}chat`);
-      const activePane = page.locator("openclaw-chat-pane.chat-pane-cache__pane--active");
-      const sidebar = page.locator("openclaw-app-sidebar");
+      const activePane = page.locator("afora-chat-pane.chat-pane-cache__pane--active");
+      const sidebar = page.locator("afora-app-sidebar");
       const rowFor = (key: string) =>
         sidebar.locator(`.sidebar-recent-session[data-session-key="${key}"]`);
       await rowFor(selected.key).waitFor({ state: "visible", timeout: 10_000 });
@@ -400,7 +400,7 @@ suite.define(() => {
             archiveSessionStateHistory?: typeof sessionStateHistory;
           }
         ).archiveDocumentTitleHistory = documentTitleHistory;
-        const shell = document.querySelector("openclaw-app-shell") as HTMLElement & {
+        const shell = document.querySelector("afora-app-shell") as HTMLElement & {
           runtime?: {
             context?: {
               gateway?: { snapshot?: { sessionKey?: string } };
@@ -434,7 +434,7 @@ suite.define(() => {
         await rowFor(row.key).click({ modifiers: ["Meta"] });
       }
       await rowFor(batchRows[0]!.key).click({ button: "right" });
-      const batchMenu = page.locator("openclaw-session-menu");
+      const batchMenu = page.locator("afora-session-menu");
       await activateSelfRemovingControl(
         batchMenu.getByRole("menuitem", { name: `Archive ${batchRows.length}` }),
       );
@@ -456,7 +456,7 @@ suite.define(() => {
       await selectedRow.hover();
       await selectedRow.getByRole("button", { name: "Open session menu" }).click();
       await activateSelfRemovingControl(
-        page.locator("openclaw-session-menu").getByRole("menuitem", {
+        page.locator("afora-session-menu").getByRole("menuitem", {
           name: "Archive session",
         }),
       );
@@ -464,7 +464,7 @@ suite.define(() => {
         gateway,
         (params) => params.key === selected.key && params.archived === true,
       );
-      const archiveToast = page.locator("openclaw-toast-host .app-toast");
+      const archiveToast = page.locator("afora-toast-host .app-toast");
       await expect.poll(() => archiveToast.textContent()).toContain("Session archived");
       await gateway.emitGatewayEvent("sessions.changed", {
         ...selected,
@@ -519,7 +519,7 @@ suite.define(() => {
               }
             ).archiveDocumentTitleHistory ?? [],
         ),
-      ).not.toContain("New session — OpenClaw");
+      ).not.toContain("New session — Afora");
       const archivedNotice = activePane.locator(".agent-chat__disabled-banner");
       await archivedNotice.waitFor({ state: "visible", timeout: 10_000 });
       await expect.poll(() => archivedNotice.textContent()).toContain("This session is archived.");
@@ -591,7 +591,7 @@ suite.define(() => {
 
     try {
       await page.goto(controlUiSessionUrl(suite.server.baseUrl, archived.key));
-      const sidebar = page.locator("openclaw-app-sidebar");
+      const sidebar = page.locator("afora-app-sidebar");
       const rowFor = (key: string) =>
         sidebar.locator(`.sidebar-recent-session[data-session-key="${key}"]`);
       const archivedRow = rowFor(archived.key);
@@ -599,7 +599,7 @@ suite.define(() => {
       await archivedRow.hover();
       await archivedRow.getByRole("button", { name: "Open session menu" }).click();
       await activateSelfRemovingControl(
-        page.locator("openclaw-session-menu").getByRole("menuitem", {
+        page.locator("afora-session-menu").getByRole("menuitem", {
           name: "Archive session",
         }),
       );
@@ -608,7 +608,7 @@ suite.define(() => {
         (params) => params.key === archived.key && params.archived === true,
       );
       const archivedNotice = page
-        .locator("openclaw-chat-pane.chat-pane-cache__pane--active")
+        .locator("afora-chat-pane.chat-pane-cache__pane--active")
         .locator(".agent-chat__disabled-banner");
       await archivedNotice.waitFor({ state: "visible", timeout: 10_000 });
 
@@ -686,7 +686,7 @@ suite.define(() => {
 
     try {
       await page.goto(`${suite.server.baseUrl}chat?session=${encodeURIComponent(archived.key)}`);
-      const activePane = page.locator("openclaw-chat-pane.chat-pane-cache__pane--active");
+      const activePane = page.locator("afora-chat-pane.chat-pane-cache__pane--active");
 
       const selectedRow = page.locator(
         `.sidebar-recent-session[data-session-key="${archived.key}"]`,
@@ -761,7 +761,7 @@ suite.define(() => {
 
     try {
       await page.goto(controlUiSessionUrl(suite.server.baseUrl, deletedKey));
-      const activePane = page.locator("openclaw-chat-pane.chat-pane-cache__pane--active");
+      const activePane = page.locator("afora-chat-pane.chat-pane-cache__pane--active");
       await activePane
         .locator(".agent-chat__input textarea")
         .waitFor({ state: "visible", timeout: 10_000 });
@@ -839,7 +839,7 @@ suite.define(() => {
 
       await row.getByRole("button", { name: "Open session menu" }).click();
       await activateSelfRemovingControl(
-        page.locator("openclaw-session-menu").getByRole("menuitem", { name: "Delete…" }),
+        page.locator("afora-session-menu").getByRole("menuitem", { name: "Delete…" }),
       );
       await confirmDelete(page);
 

@@ -2,7 +2,7 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 
 type ShardTimingSpec = {
   config: string;
@@ -11,9 +11,9 @@ type ShardTimingSpec = {
   watchMode?: boolean;
 };
 
-const TIMINGS_FILE_ENV_KEY = "OPENCLAW_TEST_PROJECTS_TIMINGS_PATH";
-const TIMINGS_DISABLE_ENV_KEY = "OPENCLAW_TEST_PROJECTS_TIMINGS";
-const SHARD_NAME_ENV_KEY = "OPENCLAW_VITEST_SHARD_NAME";
+const TIMINGS_FILE_ENV_KEY = "AFORA_TEST_PROJECTS_TIMINGS_PATH";
+const TIMINGS_DISABLE_ENV_KEY = "AFORA_TEST_PROJECTS_TIMINGS";
+const SHARD_NAME_ENV_KEY = "AFORA_VITEST_SHARD_NAME";
 
 function sanitizeTimingLabel(value: unknown): string {
   return String(value)

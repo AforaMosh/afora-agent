@@ -15,13 +15,13 @@ import type {
   MatrixVerificationMethod,
   MatrixVerificationSummary,
   MessageEventContent,
-} from "@openclaw/matrix/test-api.js";
+} from "@afora/matrix/test-api.js";
 import type {
   OpenKeyedStoreOptions,
   PluginStateEntry,
   PluginStateKeyedStore,
   PluginStateSyncKeyedStore,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-runtime";
 import { buildMatrixQaMessageContent } from "./client-message-content.js";
 import {
   MATRIX_QA_E2EE_SYNC_FILTER,
@@ -34,7 +34,7 @@ import { findMatrixQaObservedEventMatch, normalizeMatrixQaObservedEvent } from "
 import type { MatrixQaObservedEvent } from "./events.js";
 import type { MatrixQaRoomEventWaitResult } from "./sync.js";
 
-type MatrixQaE2eeRuntime = typeof import("@openclaw/matrix/test-api.js");
+type MatrixQaE2eeRuntime = typeof import("@afora/matrix/test-api.js");
 
 type MatrixQaE2eeClientParams = {
   accessToken: string;
@@ -57,7 +57,7 @@ type MatrixQaPluginStateValue = {
 const matrixQaPluginStateNamespaces = new Map<string, Map<string, MatrixQaPluginStateValue>>();
 
 function resolveMatrixQaPluginStateNamespaceKey(options: OpenKeyedStoreOptions): string {
-  return `${options.env?.OPENCLAW_STATE_DIR ?? ""}\0${options.namespace}`;
+  return `${options.env?.AFORA_STATE_DIR ?? ""}\0${options.namespace}`;
 }
 
 function resolveMatrixQaPluginStateRows(
@@ -267,7 +267,7 @@ export type MatrixQaE2eeScenarioClient = {
 
 export async function loadMatrixQaE2eeRuntime(): Promise<MatrixQaE2eeRuntime> {
   const { loadQaRunnerBundledPluginTestApi } =
-    await import("openclaw/plugin-sdk/qa-runner-runtime");
+    await import("afora-agent/plugin-sdk/qa-runner-runtime");
   return loadQaRunnerBundledPluginTestApi<MatrixQaE2eeRuntime>("matrix");
 }
 

@@ -2,11 +2,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearAgentHarnesses, registerAgentHarness } from "../agents/harness/registry.js";
 import { selectAgentHarness } from "../agents/harness/selection.js";
 import { resolveRunWorkspaceDir } from "../agents/workspace-run.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { SYSTEM_AGENT_ID } from "./agent-id.js";
 import { resolveSystemAgentConfiguredRouteFromConfig } from "./inference-route.js";
 
-function devConfig(agentRuntime?: string): OpenClawConfig {
+function devConfig(agentRuntime?: string): AforaConfig {
   return {
     agents: {
       defaults: { model: "openai/gpt-5.5" },
@@ -87,7 +87,7 @@ describe("resolveSystemAgentConfiguredRouteFromConfig", () => {
             ? implicitRoute!.agentHarnessRuntimeOverride
             : undefined,
       }).id,
-    ).toBe("openclaw");
+    ).toBe("afora");
 
     const explicitRoute = await resolveSystemAgentConfiguredRouteFromConfig(devConfig("codex"));
     expect(explicitRoute).toMatchObject({

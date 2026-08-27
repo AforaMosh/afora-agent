@@ -85,7 +85,7 @@ describe("worker tunnel manager", () => {
         rpcSetVersion: WORKER_RPC_SET_VERSION,
         handshake: {
           bundleHash: BUNDLE_HASH,
-          openclawVersion: "2026.8.13",
+          aforaVersion: "2026.8.13",
           protocolFeatures: [...WORKER_PROTOCOL_FEATURES],
         },
       },
@@ -129,7 +129,7 @@ describe("worker tunnel manager", () => {
     const launch = fake.runs.at(-1);
     const remoteLaunchCommand = launch?.argv.at(-1) ?? "";
     expect(remoteLaunchCommand).toContain("'sh' '-c'");
-    expect(remoteLaunchCommand).toContain('exec node "$HOME/.openclaw-worker/$1/worker.mjs"');
+    expect(remoteLaunchCommand).toContain('exec node "$HOME/.afora-worker/$1/worker.mjs"');
     expect(remoteLaunchCommand).toContain(`'${BUNDLE_HASH}'`);
     expect(launch?.options.input).toContain('"connectionEndpoint":{"kind":"unix"');
     expect(launch?.options.timeoutMs).toBeGreaterThan(0);

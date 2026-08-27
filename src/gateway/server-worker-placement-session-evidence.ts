@@ -1,6 +1,6 @@
 import { getRuntimeConfig } from "../config/config.js";
 import type { SessionStoreTargetsReadCache } from "../config/sessions/targets-read-availability.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
   isIncognitoSessionKey,
@@ -8,7 +8,7 @@ import {
   parseAgentSessionKey,
 } from "../routing/session-key.js";
 import { createLazyRuntimeModule } from "../shared/lazy-runtime.js";
-import { resolveIncognitoOpenClawAgentSqlitePath } from "../state/openclaw-agent-db.js";
+import { resolveIncognitoAforaAgentSqlitePath } from "../state/afora-agent-db.js";
 import { resolveSessionStoreAgentId, resolveSessionStoreKey } from "./session-store-key.js";
 import type { WorkerSessionPlacementRecord } from "./worker-environments/placement-record.js";
 import type {
@@ -37,7 +37,7 @@ type PlacementSessionIdentity = {
 };
 
 function resolvePlacementSessionIdentities(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   placement: WorkerSessionPlacementRecord,
 ): PlacementSessionIdentity[] {
   const requestedAgentId = normalizeAgentId(placement.agentId);
@@ -98,7 +98,7 @@ export async function createWorkerPlacementSessionEvidenceResolver(
             identity,
             target: {
               agentId: identity.agentId,
-              storePath: resolveIncognitoOpenClawAgentSqlitePath({ agentId: identity.agentId }),
+              storePath: resolveIncognitoAforaAgentSqlitePath({ agentId: identity.agentId }),
             },
           },
         ];

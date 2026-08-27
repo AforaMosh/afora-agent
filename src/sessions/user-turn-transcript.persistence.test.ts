@@ -4,9 +4,9 @@ import path from "node:path";
 import {
   initializeGlobalHookRunner,
   resetGlobalHookRunner,
-} from "openclaw/plugin-sdk/hook-runtime";
-import { createMockPluginRegistry } from "openclaw/plugin-sdk/plugin-test-runtime";
-import { castAgentMessage } from "openclaw/plugin-sdk/test-fixtures";
+} from "afora-agent/plugin-sdk/hook-runtime";
+import { createMockPluginRegistry } from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { castAgentMessage } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { runAgentHarnessBeforeMessageWriteHook } from "../agents/harness/hook-helpers.js";
@@ -68,7 +68,7 @@ describe("persistUserTurnTranscript", () => {
   }
 
   it("appends a structured user turn through the shared transcript writer", async () => {
-    const dir = tempDirs.make("openclaw-user-turn-append-");
+    const dir = tempDirs.make("afora-user-turn-append-");
     const target = createSqliteTranscriptTarget({ dir });
     const provenance = {
       kind: "inter_session" as const,
@@ -92,7 +92,7 @@ describe("persistUserTurnTranscript", () => {
       role: "user",
       content: "What is in this image?",
       timestamp: 123,
-      __openclaw: {
+      __afora: {
         senderIsOwner: false,
         media: [{ path: "/tmp/image.png", contentType: "image/png" }],
       },
@@ -106,13 +106,13 @@ describe("persistUserTurnTranscript", () => {
   });
 
   it("round-trips a multi-attachment SQLite row byte-identically", async () => {
-    const dir = tempDirs.make("openclaw-user-turn-append-media-");
+    const dir = tempDirs.make("afora-user-turn-append-media-");
     const target = createSqliteTranscriptTarget({ dir });
     const expected = {
       role: "user",
       content: "Inspect both",
       timestamp: 456,
-      __openclaw: {
+      __afora: {
         media: [
           { path: "/tmp/image.png", contentType: "image/png" },
           { url: "https://example.test/report.pdf", contentType: "application/pdf" },
@@ -140,8 +140,8 @@ describe("persistUserTurnTranscript", () => {
     expect(JSON.stringify(messages[0])).toBe(JSON.stringify(expected));
   });
 
-  it("persists sender metadata as __openclaw envelope", async () => {
-    const dir = tempDirs.make("openclaw-user-turn-append-sender-");
+  it("persists sender metadata as __afora envelope", async () => {
+    const dir = tempDirs.make("afora-user-turn-append-sender-");
     const target = createSqliteTranscriptTarget({ dir });
     // Deliberately attach runtime-only profile fields to prove durable sender
     // attribution is a whitelist, not a copy of the inbound sender object.
@@ -161,7 +161,7 @@ describe("persistUserTurnTranscript", () => {
       role: "user",
       content: "hello from group",
       timestamp: 1_700_000_000_000,
-      __openclaw: {
+      __afora: {
         senderId: "8489979671",
         senderName: "Ram Shenoy",
         senderUsername: "ram_s",
@@ -190,8 +190,8 @@ describe("persistUserTurnTranscript", () => {
     }
   });
 
-  it("omits __openclaw when no sender metadata is provided", async () => {
-    const dir = tempDirs.make("openclaw-user-turn-append-nosender-");
+  it("omits __afora when no sender metadata is provided", async () => {
+    const dir = tempDirs.make("afora-user-turn-append-nosender-");
     const target = createSqliteTranscriptTarget({ dir });
 
     const appended = await persistUserTurnTranscript({
@@ -203,11 +203,11 @@ describe("persistUserTurnTranscript", () => {
       updateMode: "none",
     });
 
-    expect(appended?.message).not.toHaveProperty("__openclaw");
+    expect(appended?.message).not.toHaveProperty("__afora");
   });
 
   it("uses inline update mode by default", async () => {
-    const dir = tempDirs.make("openclaw-user-turn-append-inline-");
+    const dir = tempDirs.make("afora-user-turn-append-inline-");
     const target = createSqliteTranscriptTarget({ dir });
 
     const appended = await persistUserTurnTranscript({
@@ -232,7 +232,7 @@ describe("persistUserTurnTranscript", () => {
   });
 
   it("returns the existing user turn when the idempotency key was already persisted", async () => {
-    const dir = tempDirs.make("openclaw-user-turn-append-idempotent-");
+    const dir = tempDirs.make("afora-user-turn-append-idempotent-");
     const target = createSqliteTranscriptTarget({ dir });
 
     const first = await persistUserTurnTranscript({
@@ -285,7 +285,7 @@ describe("persistUserTurnTranscript", () => {
           handler: (event) => {
             hookCalls += 1;
             const message = (event as { message: Record<string, unknown> }).message;
-            const meta = message["__openclaw"] as {
+            const meta = message["__afora"] as {
               transport?: { conversationRef?: string; messageId?: string };
             };
             if (meta.transport) {
@@ -296,14 +296,14 @@ describe("persistUserTurnTranscript", () => {
               message: castAgentMessage({
                 role: "user",
                 content: "[redacted by hook]",
-                __openclaw: { hookOwned: true },
+                __afora: { hookOwned: true },
               }),
             };
           },
         },
       ]),
     );
-    const dir = tempDirs.make("openclaw-user-turn-redacted-idempotent-");
+    const dir = tempDirs.make("afora-user-turn-redacted-idempotent-");
     const target = createSqliteTranscriptTarget({ dir });
 
     await persistUserTurnTranscript({
@@ -351,7 +351,7 @@ describe("persistUserTurnTranscript", () => {
         content: "[redacted by hook]",
         idempotencyKey: "chat-run-1:user",
         provenance,
-        __openclaw: {
+        __afora: {
           hookOwned: true,
           replyToId: "transcript-reply-1",
           replyToPreview: { text: "Original reply", senderLabel: "Molty" },
@@ -397,13 +397,13 @@ describe("persistUserTurnTranscript", () => {
             handler: (event) => {
               const message = (event as { message: Record<string, unknown> }).message;
               const metadata = {
-                ...(message["__openclaw"] as Record<string, unknown> | undefined),
+                ...(message["__afora"] as Record<string, unknown> | undefined),
               };
               delete metadata.steerTargetRunId;
               return {
                 message: castAgentMessage({
                   ...message,
-                  __openclaw: {
+                  __afora: {
                     ...metadata,
                     ...(hookTarget ? { steerTargetRunId: hookTarget } : {}),
                   },
@@ -413,7 +413,7 @@ describe("persistUserTurnTranscript", () => {
           },
         ]),
       );
-      const dir = tempDirs.make("openclaw-user-turn-steer-target-hook-");
+      const dir = tempDirs.make("afora-user-turn-steer-target-hook-");
       const target = createSqliteTranscriptTarget({ dir });
 
       const recorder = createUserTurnTranscriptRecorder({
@@ -430,7 +430,7 @@ describe("persistUserTurnTranscript", () => {
       await recorder.persistApproved();
 
       const [message] = await readTranscriptMessages(target);
-      const metadata = message?.["__openclaw"] as Record<string, unknown> | undefined;
+      const metadata = message?.["__afora"] as Record<string, unknown> | undefined;
       expect(metadata?.steerTargetRunId).toBe(expectedTarget);
     },
   );

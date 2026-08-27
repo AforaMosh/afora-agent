@@ -1,12 +1,12 @@
-# OpenClaw Groq Provider
+# Afora Groq Provider
 
-Official OpenClaw provider plugin for Groq.
+Official Afora provider plugin for Groq.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/groq-provider
-openclaw gateway restart
+afora plugins install @afora/groq-provider
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/providers/groq> for setup and configuration.
+See <https://docs.afora.ai/providers/groq> for setup and configuration.

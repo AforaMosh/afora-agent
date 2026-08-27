@@ -1,4 +1,4 @@
-import { buildChannelInboundEventContext } from "openclaw/plugin-sdk/channel-inbound";
+import { buildChannelInboundEventContext } from "afora-agent/plugin-sdk/channel-inbound";
 // Whatsapp tests cover inbound context plugin behavior.
 import { afterEach, describe, expect, it } from "vitest";
 import { createTestWebInboundMessage } from "../../inbound/test-message.test-helper.js";

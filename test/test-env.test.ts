@@ -1,7 +1,7 @@
 // Test environment tests validate shared env setup helpers.
 import fs from "node:fs";
 import path from "node:path";
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   inspectPersistedAuthProfileStateRaw,
@@ -11,9 +11,9 @@ import {
   writePersistedAuthProfileStateRaw,
   writePersistedAuthProfileStoreRaw,
 } from "../src/agents/auth-profiles/sqlite.js";
-import { closeOpenClawAgentDatabaseByPath } from "../src/state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseByPath } from "../src/state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../src/state/openclaw-state-db.paths.js";
+import { closeAforaAgentDatabaseByPath } from "../src/state/afora-agent-db.js";
+import { closeAforaStateDatabaseByPath } from "../src/state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../src/state/afora-state-db.paths.js";
 import { deleteTestEnvValue, setTestEnvValue } from "../src/test-utils/env.js";
 import { cleanupTempDirs, makeTempDir } from "./helpers/temp-dir.js";
 import { installTestEnv } from "./test-env.js";
@@ -44,7 +44,7 @@ function writeFile(targetPath: string, content: string): void {
 }
 
 function createTempHome(): string {
-  return makeTempDir(tempDirs, "openclaw-test-env-real-home-");
+  return makeTempDir(tempDirs, "afora-test-env-real-home-");
 }
 
 function requireRecord(
@@ -84,23 +84,23 @@ afterEach(() => {
 describe("installTestEnv", () => {
   it("keeps live tests on a temp HOME while copying config and auth state", () => {
     const realHome = createTempHome();
-    const openClawHome = createTempHome();
+    const aforaHome = createTempHome();
     const priorIsolatedHome = createTempHome();
     writeFile(path.join(realHome, ".profile"), "export TEST_PROFILE_ONLY=from-profile\n");
     writeFile(
-      path.join(openClawHome, "custom-openclaw.json5"),
+      path.join(aforaHome, "custom-afora.json5"),
       `{
         // Preserve provider config, strip host-bound paths.
         agents: {
           defaults: {
             workspace: "/Users/peter/Projects",
-            agentDir: "/Users/peter/.openclaw/agents/main/agent",
+            agentDir: "/Users/peter/.afora/agents/main/agent",
           },
           list: [
             {
               id: "dev",
               workspace: "/Users/peter/dev-workspace",
-              agentDir: "/Users/peter/.openclaw/agents/dev/agent",
+              agentDir: "/Users/peter/.afora/agents/dev/agent",
             },
           ],
         },
@@ -127,12 +127,12 @@ describe("installTestEnv", () => {
         },
       }`,
     );
-    writeFile(path.join(openClawHome, ".openclaw", "credentials", "token.txt"), "secret\n");
+    writeFile(path.join(aforaHome, ".afora", "credentials", "token.txt"), "secret\n");
     writeFile(
-      path.join(openClawHome, ".openclaw", "external-plugins", "glueclaw", "openclaw.plugin.json"),
+      path.join(aforaHome, ".afora", "external-plugins", "glueclaw", "afora.plugin.json"),
       '{"id":"glueclaw"}\n',
     );
-    const realStateDir = path.join(openClawHome, ".openclaw");
+    const realStateDir = path.join(aforaHome, ".afora");
     const realAgentDir = path.join(realStateDir, "agents", "main", "agent");
     const liveAuthStore = {
       version: 1,
@@ -143,7 +143,7 @@ describe("installTestEnv", () => {
           keyRef: {
             source: "env",
             provider: "default",
-            id: "OPENCLAW_LIVE_OPENAI_KEY",
+            id: "AFORA_LIVE_OPENAI_KEY",
           },
         },
       },
@@ -161,11 +161,11 @@ describe("installTestEnv", () => {
       { stateDir: realStateDir },
     );
     cleanupFns.push(() => {
-      closeOpenClawAgentDatabaseByPath(resolveAuthProfileDatabasePath(realAgentDir));
-      closeOpenClawStateDatabaseByPath(
-        resolveOpenClawStateSqlitePath({
+      closeAforaAgentDatabaseByPath(resolveAuthProfileDatabasePath(realAgentDir));
+      closeAforaStateDatabaseByPath(
+        resolveAforaStateSqlitePath({
           ...process.env,
-          OPENCLAW_STATE_DIR: realStateDir,
+          AFORA_STATE_DIR: realStateDir,
         }),
       );
     });
@@ -210,23 +210,23 @@ describe("installTestEnv", () => {
 
     setTestEnvValue("HOME", realHome);
     setTestEnvValue("USERPROFILE", realHome);
-    setTestEnvValue("OPENCLAW_HOME", openClawHome);
-    setTestEnvValue("OPENCLAW_LIVE_TEST", "1");
-    setTestEnvValue("OPENCLAW_LIVE_TEST_QUIET", "1");
-    setTestEnvValue("OPENCLAW_CONFIG_PATH", "~/custom-openclaw.json5");
-    setTestEnvValue("OPENCLAW_TEST_HOME", priorIsolatedHome);
-    setTestEnvValue("OPENCLAW_STATE_DIR", path.join(priorIsolatedHome, ".openclaw"));
+    setTestEnvValue("AFORA_HOME", aforaHome);
+    setTestEnvValue("AFORA_LIVE_TEST", "1");
+    setTestEnvValue("AFORA_LIVE_TEST_QUIET", "1");
+    setTestEnvValue("AFORA_CONFIG_PATH", "~/custom-afora.json5");
+    setTestEnvValue("AFORA_TEST_HOME", priorIsolatedHome);
+    setTestEnvValue("AFORA_STATE_DIR", path.join(priorIsolatedHome, ".afora"));
 
     const testEnv = installTestEnv();
     cleanupFns.push(testEnv.cleanup);
 
     expect(testEnv.tempHome).not.toBe(realHome);
     expect(process.env.HOME).toBe(testEnv.tempHome);
-    expect(process.env.OPENCLAW_HOME).toBeUndefined();
-    expect(process.env.OPENCLAW_TEST_HOME).toBe(testEnv.tempHome);
+    expect(process.env.AFORA_HOME).toBeUndefined();
+    expect(process.env.AFORA_TEST_HOME).toBe(testEnv.tempHome);
     expect(process.env.TEST_PROFILE_ONLY).toBe("from-profile");
 
-    const copiedConfigPath = path.join(testEnv.tempHome, ".openclaw", "openclaw.json");
+    const copiedConfigPath = path.join(testEnv.tempHome, ".afora", "afora.json");
     const copiedConfig = JSON.parse(fs.readFileSync(copiedConfigPath, "utf8")) as {
       agents?: {
         defaults?: Record<string, unknown>;
@@ -263,20 +263,20 @@ describe("installTestEnv", () => {
     });
 
     expect(
-      fs.existsSync(path.join(testEnv.tempHome, ".openclaw", "credentials", "token.txt")),
+      fs.existsSync(path.join(testEnv.tempHome, ".afora", "credentials", "token.txt")),
     ).toBe(true);
     expect(
       fs.existsSync(
         path.join(
           testEnv.tempHome,
-          ".openclaw",
+          ".afora",
           "external-plugins",
           "glueclaw",
-          "openclaw.plugin.json",
+          "afora.plugin.json",
         ),
       ),
     ).toBe(true);
-    const stagedAgentDir = path.join(testEnv.tempHome, ".openclaw", "agents", "main", "agent");
+    const stagedAgentDir = path.join(testEnv.tempHome, ".afora", "agents", "main", "agent");
     expect(inspectPersistedAuthProfileStoreRaw(stagedAgentDir)).toEqual({
       status: "readable",
       raw: liveAuthStore,
@@ -323,9 +323,9 @@ describe("installTestEnv", () => {
 
     setTestEnvValue("HOME", realHome);
     setTestEnvValue("USERPROFILE", realHome);
-    setTestEnvValue("OPENCLAW_LIVE_TEST", "1");
-    setTestEnvValue("OPENCLAW_LIVE_USE_REAL_HOME", "1");
-    setTestEnvValue("OPENCLAW_LIVE_TEST_QUIET", "1");
+    setTestEnvValue("AFORA_LIVE_TEST", "1");
+    setTestEnvValue("AFORA_LIVE_USE_REAL_HOME", "1");
+    setTestEnvValue("AFORA_LIVE_TEST_QUIET", "1");
 
     const testEnv = installTestEnv();
 
@@ -337,20 +337,20 @@ describe("installTestEnv", () => {
   it("keeps hermetic mode isolated when live flags request the real HOME", () => {
     const realHome = createTempHome();
     writeFile(path.join(realHome, ".profile"), "export TEST_PROFILE_ONLY=from-profile\n");
-    writeFile(path.join(realHome, ".openclaw", "openclaw.json"), '{"live":true}\n');
-    writeFile(path.join(realHome, ".openclaw", "credentials", "token.txt"), "secret\n");
+    writeFile(path.join(realHome, ".afora", "afora.json"), '{"live":true}\n');
+    writeFile(path.join(realHome, ".afora", "credentials", "token.txt"), "secret\n");
 
     setTestEnvValue("HOME", realHome);
     setTestEnvValue("USERPROFILE", realHome);
     setTestEnvValue("LIVE", "1");
-    setTestEnvValue("OPENCLAW_LIVE_TEST", "1");
-    setTestEnvValue("OPENCLAW_LIVE_GATEWAY", "1");
-    setTestEnvValue("OPENCLAW_LIVE_USE_REAL_HOME", "1");
+    setTestEnvValue("AFORA_LIVE_TEST", "1");
+    setTestEnvValue("AFORA_LIVE_GATEWAY", "1");
+    setTestEnvValue("AFORA_LIVE_USE_REAL_HOME", "1");
     const callerPluginDir = path.join(realHome, "caller-plugins");
-    setTestEnvValue("OPENCLAW_BUNDLED_PLUGINS_DIR", callerPluginDir);
-    setTestEnvValue("OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR", "1");
-    setTestEnvValue("OPENCLAW_DISABLE_BUNDLED_PLUGINS", "1");
-    setTestEnvValue("OPENCLAW_HOME", realHome);
+    setTestEnvValue("AFORA_BUNDLED_PLUGINS_DIR", callerPluginDir);
+    setTestEnvValue("AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR", "1");
+    setTestEnvValue("AFORA_DISABLE_BUNDLED_PLUGINS", "1");
+    setTestEnvValue("AFORA_HOME", realHome);
 
     const testEnv = installTestEnv({ mode: "hermetic" });
     cleanupFns.push(testEnv.cleanup);
@@ -359,34 +359,34 @@ describe("installTestEnv", () => {
     expect(process.env.HOME).toBe(testEnv.tempHome);
     expect(process.env.TEST_PROFILE_ONLY).toBeUndefined();
     expect(process.env.LIVE).toBeUndefined();
-    expect(process.env.OPENCLAW_LIVE_TEST).toBeUndefined();
-    expect(process.env.OPENCLAW_LIVE_GATEWAY).toBeUndefined();
-    expect(process.env.OPENCLAW_LIVE_USE_REAL_HOME).toBeUndefined();
-    expect(process.env.OPENCLAW_BUNDLED_PLUGINS_DIR).not.toBe(callerPluginDir);
-    expect(path.basename(process.env.OPENCLAW_BUNDLED_PLUGINS_DIR ?? "")).toBe("extensions");
-    expect(process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR).toBe("1");
-    expect(process.env.OPENCLAW_DISABLE_BUNDLED_PLUGINS).toBeUndefined();
-    expect(process.env.OPENCLAW_HOME).toBeUndefined();
-    expect(fs.existsSync(path.join(testEnv.tempHome, ".openclaw", "openclaw.json"))).toBe(false);
+    expect(process.env.AFORA_LIVE_TEST).toBeUndefined();
+    expect(process.env.AFORA_LIVE_GATEWAY).toBeUndefined();
+    expect(process.env.AFORA_LIVE_USE_REAL_HOME).toBeUndefined();
+    expect(process.env.AFORA_BUNDLED_PLUGINS_DIR).not.toBe(callerPluginDir);
+    expect(path.basename(process.env.AFORA_BUNDLED_PLUGINS_DIR ?? "")).toBe("extensions");
+    expect(process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR).toBe("1");
+    expect(process.env.AFORA_DISABLE_BUNDLED_PLUGINS).toBeUndefined();
+    expect(process.env.AFORA_HOME).toBeUndefined();
+    expect(fs.existsSync(path.join(testEnv.tempHome, ".afora", "afora.json"))).toBe(false);
     expect(
-      fs.existsSync(path.join(testEnv.tempHome, ".openclaw", "credentials", "token.txt")),
+      fs.existsSync(path.join(testEnv.tempHome, ".afora", "credentials", "token.txt")),
     ).toBe(false);
   });
 
-  it("clears and restores OPENCLAW_HOME for normal isolated test runs", () => {
+  it("clears and restores AFORA_HOME for normal isolated test runs", () => {
     const realHome = createTempHome();
-    const configuredOpenClawHome = path.join(realHome, "custom-openclaw-home");
+    const configuredAforaHome = path.join(realHome, "custom-afora-home");
     setTestEnvValue("HOME", realHome);
     setTestEnvValue("USERPROFILE", realHome);
-    setTestEnvValue("OPENCLAW_HOME", configuredOpenClawHome);
+    setTestEnvValue("AFORA_HOME", configuredAforaHome);
 
     const testEnv = installTestEnv();
 
     expect(testEnv.tempHome).not.toBe(realHome);
-    expect(process.env.OPENCLAW_HOME).toBeUndefined();
+    expect(process.env.AFORA_HOME).toBeUndefined();
 
     testEnv.cleanup();
-    expect(process.env.OPENCLAW_HOME).toBe(configuredOpenClawHome);
+    expect(process.env.AFORA_HOME).toBe(configuredAforaHome);
   });
 
   it("does not load ~/.profile for normal isolated test runs", () => {
@@ -396,10 +396,10 @@ describe("installTestEnv", () => {
     setTestEnvValue("HOME", realHome);
     setTestEnvValue("USERPROFILE", realHome);
     deleteTestEnvValue("LIVE");
-    deleteTestEnvValue("OPENCLAW_LIVE_TEST");
-    deleteTestEnvValue("OPENCLAW_LIVE_GATEWAY");
-    deleteTestEnvValue("OPENCLAW_LIVE_USE_REAL_HOME");
-    deleteTestEnvValue("OPENCLAW_LIVE_TEST_QUIET");
+    deleteTestEnvValue("AFORA_LIVE_TEST");
+    deleteTestEnvValue("AFORA_LIVE_GATEWAY");
+    deleteTestEnvValue("AFORA_LIVE_USE_REAL_HOME");
+    deleteTestEnvValue("AFORA_LIVE_TEST_QUIET");
 
     const testEnv = installTestEnv();
     cleanupFns.push(testEnv.cleanup);
@@ -414,9 +414,9 @@ describe("installTestEnv", () => {
 
     setTestEnvValue("HOME", realHome);
     setTestEnvValue("USERPROFILE", realHome);
-    setTestEnvValue("OPENCLAW_LIVE_TEST", "1");
-    setTestEnvValue("OPENCLAW_LIVE_USE_REAL_HOME", "1");
-    setTestEnvValue("OPENCLAW_LIVE_TEST_QUIET", "1");
+    setTestEnvValue("AFORA_LIVE_TEST", "1");
+    setTestEnvValue("AFORA_LIVE_USE_REAL_HOME", "1");
+    setTestEnvValue("AFORA_LIVE_TEST_QUIET", "1");
 
     vi.doMock("node:child_process", () => ({
       execFileSync: () => {

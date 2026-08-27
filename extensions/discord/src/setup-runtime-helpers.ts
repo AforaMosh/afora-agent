@@ -9,4 +9,4 @@ export {
   resolveSetupAccountId,
   setSetupChannelEnabled,
   splitSetupEntries,
-} from "openclaw/plugin-sdk/setup-runtime";
+} from "afora-agent/plugin-sdk/setup-runtime";

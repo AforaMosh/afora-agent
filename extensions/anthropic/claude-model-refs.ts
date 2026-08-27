@@ -2,7 +2,7 @@
  * Claude CLI model-ref normalization. It maps family aliases and retired model
  * ids to current Anthropic runtime refs while preserving auth-profile suffixes.
  */
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { CLAUDE_CLI_BACKEND_ID, CLAUDE_CLI_MODEL_ALIASES } from "./cli-constants.js";
 
 const DEFAULT_CLAUDE_MODEL_BY_FAMILY: Record<string, string> = {

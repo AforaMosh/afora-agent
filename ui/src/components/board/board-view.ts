@@ -23,7 +23,7 @@ import type {
   BoardViewCallbacks,
   BoardWidgetFrameUrl,
 } from "../../lib/board/view-types.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import "../../styles/board.css";
 import "../web-awesome-tabs.ts";
 import "../web-awesome.ts";
@@ -69,7 +69,7 @@ function itemsForWidgets(
   }));
 }
 
-class OpenClawBoardView extends OpenClawLightDomElement {
+class AforaBoardView extends AforaLightDomElement {
   @property({ attribute: false }) snapshot?: BoardSnapshot;
   @property({ attribute: false }) activeTabId = "";
   @property({ attribute: false }) widgetFrameUrl?: BoardWidgetFrameUrl;
@@ -354,7 +354,7 @@ class OpenClawBoardView extends OpenClawLightDomElement {
         .elementFromPoint(event.clientX, event.clientY)
         ?.closest<HTMLElement>("[data-board-tab-id]");
       const candidateTabId =
-        tabTarget?.closest("openclaw-board-view") === this
+        tabTarget?.closest("afora-board-view") === this
           ? (tabTarget.dataset.boardTabId ?? "")
           : "";
       const candidateIsValid =
@@ -512,7 +512,7 @@ class OpenClawBoardView extends OpenClawLightDomElement {
     }
     this.focusName = target.name;
     void this.updateComplete.then(() => {
-      const cell = [...this.querySelectorAll("openclaw-board-widget-cell")].find(
+      const cell = [...this.querySelectorAll("afora-board-widget-cell")].find(
         (entry) => entry.widget?.name === target.name,
       );
       cell?.querySelector<HTMLElement>(".board-widget")?.focus();
@@ -655,7 +655,7 @@ class OpenClawBoardView extends OpenClawLightDomElement {
               return nothing;
             }
             return html`
-              <openclaw-board-widget-cell
+              <afora-board-widget-cell
                 .widget=${widget}
                 .rect=${rect}
                 .contentHeightPx=${this.contentHeights.get(widget.name)}
@@ -671,7 +671,7 @@ class OpenClawBoardView extends OpenClawLightDomElement {
                 .busy=${this.mutationPending}
                 .canMutate=${this.canMutate}
                 .canGrant=${this.canGrant}
-              ></openclaw-board-widget-cell>
+              ></afora-board-widget-cell>
             `;
           },
         )}
@@ -712,12 +712,12 @@ class OpenClawBoardView extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-board-view")) {
-  customElements.define("openclaw-board-view", OpenClawBoardView);
+if (!customElements.get("afora-board-view")) {
+  customElements.define("afora-board-view", AforaBoardView);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "openclaw-board-view": OpenClawBoardView;
+    "afora-board-view": AforaBoardView;
   }
 }

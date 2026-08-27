@@ -1,5 +1,5 @@
 import { getChannelPlugin } from "../channels/plugins/index.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { requireActivePluginChannelRegistry } from "../plugins/runtime.js";
 import { withPluginRuntimeRegistryScope } from "../plugins/runtime/gateway-request-scope.js";
@@ -26,7 +26,7 @@ export function startGatewayChannelFromActiveRegistry(
 export async function restartGatewayChannels(options: {
   params: GatewayReloadHandlerParams;
   plan: GatewayReloadPlan;
-  nextConfig: OpenClawConfig;
+  nextConfig: AforaConfig;
   channelsToRestart: Set<ChannelKind>;
   restartChannelAccounts: ReadonlyMap<ChannelKind, Set<string>>;
   activePluginChannelsAfterReload: ReadonlySet<ChannelKind> | null;

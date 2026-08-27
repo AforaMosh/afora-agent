@@ -3,9 +3,9 @@ import { property } from "lit/decorators.js";
 import { t } from "../i18n/index.ts";
 import type { BoardViewCallbacks } from "../lib/board/provider.ts";
 import type { BoardSnapshot, BoardWidget } from "../lib/board/types.ts";
-import { OpenClawLitElement } from "../lit/openclaw-element.ts";
+import { AforaLitElement } from "../lit/afora-element.ts";
 
-class OpenClawBoardViewPlaceholder extends OpenClawLitElement {
+class AforaBoardViewPlaceholder extends AforaLitElement {
   @property({ attribute: false }) snapshot!: BoardSnapshot;
   @property({ attribute: false }) activeTabId = "";
   @property({ attribute: false }) widgetFrameUrl!: (name: string, revision: number) => string;
@@ -50,6 +50,6 @@ class OpenClawBoardViewPlaceholder extends OpenClawLitElement {
   }
 }
 
-if (!customElements.get("openclaw-board-view")) {
-  customElements.define("openclaw-board-view", OpenClawBoardViewPlaceholder);
+if (!customElements.get("afora-board-view")) {
+  customElements.define("afora-board-view", AforaBoardViewPlaceholder);
 }

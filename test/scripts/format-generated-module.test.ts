@@ -12,7 +12,7 @@ import {
 const tempDirs: string[] = [];
 
 function makeRepoRoot() {
-  const repoRoot = mkdtempSync(path.join(os.tmpdir(), "openclaw-format-generated-module-"));
+  const repoRoot = mkdtempSync(path.join(os.tmpdir(), "afora-format-generated-module-"));
   tempDirs.push(repoRoot);
   return repoRoot;
 }

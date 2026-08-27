@@ -1,6 +1,6 @@
 // Tavily plugin module implements tavily client behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { readProviderJsonResponse } from "openclaw/plugin-sdk/provider-http";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { readProviderJsonResponse } from "afora-agent/plugin-sdk/provider-http";
 import {
   DEFAULT_CACHE_TTL_MINUTES,
   normalizeCacheKey,
@@ -8,13 +8,13 @@ import {
   readCache,
   resolveCacheTtlMs,
   writeCache,
-} from "openclaw/plugin-sdk/provider-web-search";
+} from "afora-agent/plugin-sdk/provider-web-search";
 import {
   truncateSanitizedExternalContent,
   wrapExternalContent,
   wrapWebContent,
-} from "openclaw/plugin-sdk/security-runtime";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/security-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   DEFAULT_TAVILY_BASE_URL,
   resolveTavilyApiKey,
@@ -41,7 +41,7 @@ const TAVILY_RESULT_URL_MAX_CHARS = 2_048;
 const TAVILY_PUBLISHED_DATE_RE = /^\d{4}-\d{2}-\d{2}(?:[T ][\d:.+Z-]{0,20})?$/u;
 
 export type TavilySearchParams = {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   query: string;
   searchDepth?: string;
   topic?: string;
@@ -55,7 +55,7 @@ export type TavilySearchParams = {
 };
 
 export type TavilyExtractParams = {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   urls: string[];
   query?: string;
   extractDepth?: string;
@@ -116,7 +116,7 @@ async function postTavilyJson(params: {
       apiKey: params.apiKey,
       body: params.body,
       errorLabel: params.errorLabel,
-      extraHeaders: { "X-Client-Source": "openclaw" },
+      extraHeaders: { "X-Client-Source": "afora" },
       ...(params.signal ? { signal: params.signal } : {}),
     },
     async (response) =>

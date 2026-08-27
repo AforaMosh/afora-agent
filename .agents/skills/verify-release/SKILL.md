@@ -1,13 +1,13 @@
 ---
 name: verify-release
-description: "Verify regular or extended-stable OpenClaw releases against the exact publication surfaces, workflow identities, package provenance, smoke tests, and live Gateway behavior expected for that release track."
+description: "Verify regular or extended-stable Afora releases against the exact publication surfaces, workflow identities, package provenance, smoke tests, and live Gateway behavior expected for that release track."
 ---
 
 # Verify Release
 
-Use this when asked whether an OpenClaw release is fully released, published,
+Use this when asked whether an Afora release is fully released, published,
 promoted, smoke-tested, or live-verified. This is a verification skill, not a
-publish skill; use `$release-openclaw-maintainer` before changing release state.
+publish skill; use `$release-afora-maintainer` before changing release state.
 
 ## Rules
 
@@ -29,7 +29,7 @@ publish skill; use `$release-openclaw-maintainer` before changing release state.
 Use these checks only for the regular orchestrated release track.
 
 1. GitHub release:
-   - `gh release view v<VERSION> --repo openclaw/openclaw --json tagName,name,publishedAt,isDraft,isPrerelease,targetCommitish,url,body,assets`
+   - `gh release view v<VERSION> --repo AforaMosh/afora-agent --json tagName,name,publishedAt,isDraft,isPrerelease,targetCommitish,url,body,assets`
    - Confirm stable releases are not draft/prerelease.
    - Confirm release body has npm, CI, plugin npm, ClawHub, mac/appcast evidence
      links when expected.
@@ -39,7 +39,7 @@ Use these checks only for the regular orchestrated release track.
    - Download each immutable evidence asset and its `.sha256` companion, then
      verify the checksum before trusting the release record.
 2. Root npm:
-   - `npm view openclaw@<VERSION> version dist-tags.latest dist.tarball dist.integrity time.<VERSION> --json`
+   - `npm view afora@<VERSION> version dist-tags.latest dist.tarball dist.integrity time.<VERSION> --json`
    - `latest` must equal `<VERSION>` for stable.
    - Record tarball, integrity, publish time.
    - Confirm the release postpublish evidence records
@@ -47,28 +47,28 @@ Use these checks only for the regular orchestrated release track.
      `npmProvenanceAttestationMatched: true`.
 3. Plugin publish set:
    - Get exact tag metadata from GitHub, not the local checkout when dirty:
-     download `https://api.github.com/repos/openclaw/openclaw/tarball/v<VERSION>`
-     into `/tmp/openclaw-v<VERSION>-src`.
+     download `https://api.github.com/repos/AforaMosh/afora-agent/tarball/v<VERSION>`
+     into `/tmp/afora-v<VERSION>-src`.
    - Count `extensions/*/package.json` with
-     `openclaw.release.publishToNpm === true` and
-     `openclaw.release.publishToClawHub === true`.
+     `afora.release.publishToNpm === true` and
+     `afora.release.publishToClawHub === true`.
    - Compare expected counts to workflow job counts:
-     `gh api repos/openclaw/openclaw/actions/runs/<RUN>/jobs --paginate`.
+     `gh api repos/AforaMosh/afora-agent/actions/runs/<RUN>/jobs --paginate`.
    - Each expected npm plugin must have version `<VERSION>` and
      `dist-tags.latest === <VERSION>`.
 4. ClawHub:
    - Check the Plugin ClawHub Release workflow conclusion and publish job count.
-   - Use OpenClaw itself for live registry proof:
-     `openclaw plugins search <known-plugin> --json`.
+   - Use Afora itself for live registry proof:
+     `afora plugins search <known-plugin> --json`.
    - Install one official plugin from ClawHub in an isolated HOME:
-     `openclaw plugins install clawhub:@openclaw/matrix --pin`.
+     `afora plugins install clawhub:@afora/matrix --pin`.
      Prefer `matrix` unless that plugin is not in the expected set.
 5. Release workflows:
    - Verify conclusions for release notes evidence links:
-     Full Release Validation, OpenClaw Release Checks, OpenClaw NPM Release,
+     Full Release Validation, Afora Release Checks, Afora NPM Release,
      Plugin NPM Release, Plugin ClawHub Release, mac preflight/validation/publish
      when stable mac assets are expected.
-   - For stable, verify `OpenClaw Stable Main Closeout` succeeded and its
+   - For stable, verify `Afora Stable Main Closeout` succeeded and its
      manifest records the matching release tag, current rollback drill, stable
      soak, and blocking performance evidence.
    - Summarize only relevant successful/failed jobs; ignore routine skipped
@@ -93,7 +93,7 @@ registry, provenance, and image state directly.
    `publishToNpm === true` official plugin derived from the tag. Compare the
    plugin plan, jobs, and complete readback; never infer inventory from diffs.
 4. **Provenance:** from trusted current tooling, run
-   `node --import tsx scripts/openclaw-npm-postpublish-verify.ts <VERSION>`.
+   `node --import tsx scripts/afora-npm-postpublish-verify.ts <VERSION>`.
    Require signatures, canonical-branch provenance, and publish/preflight
    digest binding to the release SHA. Preserve output and workflow URLs.
 5. **Docker:** verify exact default, slim, browser, and architecture images and
@@ -111,13 +111,13 @@ After the track-specific publication checks pass:
 
 1. Published package smoke:
    - In `/tmp`, isolated HOME:
-     `npm exec --yes --package openclaw@<VERSION> -- openclaw --version`.
+     `npm exec --yes --package afora@<VERSION> -- afora --version`.
    - Run at least one harmless command that touches the published CLI surface,
      for example `plugins --help` or `gateway --help`.
 2. Dev Gateway live model smoke:
    - Use temp HOME/workspace, not the user's normal state:
-     `HOME=/tmp/openclaw-release-smoke/home OPENCLAW_WORKSPACE=/tmp/openclaw-release-smoke/work pnpm openclaw --dev gateway run --auth none --force --verbose`.
-   - Health check via CLI: `openclaw --dev gateway health --json`.
+     `HOME=/tmp/afora-release-smoke/home AFORA_WORKSPACE=/tmp/afora-release-smoke/work pnpm afora --dev gateway run --auth none --force --verbose`.
+   - Health check via CLI: `afora --dev gateway health --json`.
    - Run one Gateway-backed agent turn with inherited `OPENAI_API_KEY`, short
      prompt, explicit session key, JSON output, and a known-available model.
    - If the configured default model fails as unavailable, record that caveat

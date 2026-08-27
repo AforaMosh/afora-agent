@@ -182,7 +182,7 @@ describe("config form integrity", () => {
     expect(addCode.disabled).toBe(false);
     addCode.click();
     const codeDraftHost = expectElement(
-      codes.querySelector<ConfigFormCollectionDraft>("openclaw-config-form-collection-draft"),
+      codes.querySelector<ConfigFormCollectionDraft>("afora-config-form-collection-draft"),
       "patterned string array draft host",
     );
     await codeDraftHost.updateComplete;
@@ -388,7 +388,7 @@ describe("config form integrity", () => {
     );
     addEntry.click();
     const draftHost = expectElement(
-      container.querySelector<ConfigFormCollectionDraft>("openclaw-config-form-collection-draft"),
+      container.querySelector<ConfigFormCollectionDraft>("afora-config-form-collection-draft"),
       "typed map draft host",
     );
     await draftHost.updateComplete;
@@ -473,7 +473,7 @@ describe("config form integrity", () => {
 
   it("validates tuple collection drafts by position and additional-item policy", async () => {
     const host = document.createElement(
-      "openclaw-config-form-collection-draft",
+      "afora-config-form-collection-draft",
     ) as ConfigFormCollectionDraft;
     const commits = vi.fn();
     host.id = "tuple-draft";
@@ -894,7 +894,7 @@ describe("config form integrity", () => {
       "unset codes array",
     );
     const draftHost = expectElement(
-      codes.querySelector<ConfigFormCollectionDraft>("openclaw-config-form-collection-draft"),
+      codes.querySelector<ConfigFormCollectionDraft>("afora-config-form-collection-draft"),
       "unset codes draft host",
     );
     await draftHost.updateComplete;

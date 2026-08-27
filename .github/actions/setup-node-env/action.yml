@@ -105,26 +105,26 @@ runs:
       continue-on-error: true
       uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
       with:
-        path: ${{ runner.temp }}/openclaw-node-toolchain/node
-        key: openclaw-node-toolchain-v1-${{ runner.os }}-${{ runner.arch }}-${{ inputs.node-version }}-
+        path: ${{ runner.temp }}/afora-node-toolchain/node
+        key: afora-node-toolchain-v1-${{ runner.os }}-${{ runner.arch }}-${{ inputs.node-version }}-
         restore-keys: |
-          openclaw-node-toolchain-v1-${{ runner.os }}-${{ runner.arch }}-${{ inputs.node-version }}-
+          afora-node-toolchain-v1-${{ runner.os }}-${{ runner.arch }}-${{ inputs.node-version }}-
 
     - name: Setup Node.js
       id: setup-node
       shell: bash
       env:
         REQUESTED_NODE_VERSION: ${{ inputs.node-version }}
-        OPENCLAW_NODE_TOOLCHAIN_ROOT: ${{ runner.os != 'Windows' && format('{0}/openclaw-node-toolchain/node', runner.temp) || '' }}
+        AFORA_NODE_TOOLCHAIN_ROOT: ${{ runner.os != 'Windows' && format('{0}/afora-node-toolchain/node', runner.temp) || '' }}
       run: |
         set -euo pipefail
         source "$GITHUB_ACTION_PATH/../setup-pnpm-store-cache/ensure-node.sh"
-        openclaw_ensure_node "$REQUESTED_NODE_VERSION"
+        afora_ensure_node "$REQUESTED_NODE_VERSION"
         echo "resolved-version=$(node -p 'process.versions.node')" >> "$GITHUB_OUTPUT"
         # Only a download populates the cached root. An image whose toolcache
         # already clears the floor leaves it absent, and saving a missing path
         # warns without producing an entry.
-        if [ -n "${OPENCLAW_NODE_TOOLCHAIN_ROOT:-}" ] && [ -d "${OPENCLAW_NODE_TOOLCHAIN_ROOT}" ]; then
+        if [ -n "${AFORA_NODE_TOOLCHAIN_ROOT:-}" ] && [ -d "${AFORA_NODE_TOOLCHAIN_ROOT}" ]; then
           echo "toolchain-populated=true" >> "$GITHUB_OUTPUT"
         fi
 
@@ -132,12 +132,12 @@ runs:
     # warm run uploads nothing. On a version change the 46-way fanout races here;
     # the losers log a benign "cache already exists" and continue.
     - name: Save Node toolchain cache
-      if: ${{ runner.os != 'Windows' && runner.environment != 'github-hosted' && steps.setup-node.outputs.toolchain-populated == 'true' && steps.node-toolchain-restore.outputs.cache-matched-key != format('openclaw-node-toolchain-v1-{0}-{1}-{2}-{3}', runner.os, runner.arch, inputs.node-version, steps.setup-node.outputs.resolved-version) }}
+      if: ${{ runner.os != 'Windows' && runner.environment != 'github-hosted' && steps.setup-node.outputs.toolchain-populated == 'true' && steps.node-toolchain-restore.outputs.cache-matched-key != format('afora-node-toolchain-v1-{0}-{1}-{2}-{3}', runner.os, runner.arch, inputs.node-version, steps.setup-node.outputs.resolved-version) }}
       continue-on-error: true
       uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
       with:
-        path: ${{ runner.temp }}/openclaw-node-toolchain/node
-        key: openclaw-node-toolchain-v1-${{ runner.os }}-${{ runner.arch }}-${{ inputs.node-version }}-${{ steps.setup-node.outputs.resolved-version }}
+        path: ${{ runner.temp }}/afora-node-toolchain/node
+        key: afora-node-toolchain-v1-${{ runner.os }}-${{ runner.arch }}-${{ inputs.node-version }}-${{ steps.setup-node.outputs.resolved-version }}
 
     - name: Configure dependency cache store
       if: inputs.dependency-cache == 'true'
@@ -146,7 +146,7 @@ runs:
         set -euo pipefail
         # Keep both sides of pnpm's hard links below the workspace so one tar
         # archive preserves them without relying on runner-home path depth.
-        echo "PNPM_CONFIG_STORE_DIR=$GITHUB_WORKSPACE/.cache/openclaw-pnpm-store" >> "$GITHUB_ENV"
+        echo "PNPM_CONFIG_STORE_DIR=$GITHUB_WORKSPACE/.cache/afora-pnpm-store" >> "$GITHUB_ENV"
 
     - name: Resolve dependency cache key
       id: dependency-cache-key
@@ -165,7 +165,7 @@ runs:
       if: inputs.dependency-cache == 'true'
       shell: bash
       run: |
-        rm -rf "$GITHUB_WORKSPACE/node_modules" "$GITHUB_WORKSPACE/.cache/openclaw-pnpm-store"
+        rm -rf "$GITHUB_WORKSPACE/node_modules" "$GITHUB_WORKSPACE/.cache/afora-pnpm-store"
         find \
           "$GITHUB_WORKSPACE/ui" \
           "$GITHUB_WORKSPACE/packages" \
@@ -185,7 +185,7 @@ runs:
           ui/node_modules
           packages/*/node_modules
           examples/*/node_modules
-          .cache/openclaw-pnpm-store
+          .cache/afora-pnpm-store
         key: ${{ steps.dependency-cache-key.outputs.key }}
 
     - name: Prepare dependency cache miss fallback
@@ -194,7 +194,7 @@ runs:
       run: |
         # actions/cache treats service, download, and extraction failures as
         # misses. Clear any partial extraction before restoring the pnpm store.
-        rm -rf "$GITHUB_WORKSPACE/node_modules" "$GITHUB_WORKSPACE/.cache/openclaw-pnpm-store"
+        rm -rf "$GITHUB_WORKSPACE/node_modules" "$GITHUB_WORKSPACE/.cache/afora-pnpm-store"
         find \
           "$GITHUB_WORKSPACE/ui" \
           "$GITHUB_WORKSPACE/packages" \
@@ -222,7 +222,7 @@ runs:
       if: inputs.vitest-fs-cache == 'true' && inputs.save-vitest-fs-cache == 'true' && runner.os != 'Windows'
       uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
       with:
-        path: /var/tmp/openclaw-vitest-fs-cache
+        path: /var/tmp/afora-vitest-fs-cache
         # Blacksmith transparently accelerates the upstream Actions cache API.
         # The scheduled/dispatch warmer writes one immutable protected archive;
         # all CI shards restore it into isolated runner-local directories.
@@ -234,7 +234,7 @@ runs:
       if: (inputs.vitest-fs-cache == 'true' || inputs.restore-test-caches == 'true') && inputs.save-vitest-fs-cache != 'true' && runner.os != 'Windows'
       uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
       with:
-        path: /var/tmp/openclaw-vitest-fs-cache
+        path: /var/tmp/afora-vitest-fs-cache
         key: ${{ github.repository }}-vitest-fs-v3-protected-${{ runner.os }}-${{ runner.arch }}-node-${{ inputs.node-version }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', '**/package.json', '**/tsconfig*.json', 'vitest.config.*', 'test/vitest/**', 'src/state/*.sql', '!**/node_modules/**') }}-${{ github.run_id }}-${{ github.run_attempt }}
         restore-keys: |
           ${{ github.repository }}-vitest-fs-v3-protected-${{ runner.os }}-${{ runner.arch }}-node-${{ inputs.node-version }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', '**/package.json', '**/tsconfig*.json', 'vitest.config.*', 'test/vitest/**', 'src/state/*.sql', '!**/node_modules/**') }}-
@@ -247,8 +247,8 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        cache_root=/var/tmp/openclaw-vitest-fs-cache
-        generation_file="$cache_root/.openclaw-transform-generation"
+        cache_root=/var/tmp/afora-vitest-fs-cache
+        generation_file="$cache_root/.afora-transform-generation"
         mkdir -p "$cache_root"
         cache_generation=""
         if [[ -f "$generation_file" ]]; then
@@ -264,8 +264,8 @@ runs:
         printf '%s\n' "$CACHE_GENERATION" > "$generation_file"
         # The shard runner treats this as a persistent root and assigns one
         # isolated subdirectory per concurrent Vitest worker.
-        echo "OPENCLAW_VITEST_FS_MODULE_CACHE_PATH=$cache_root" >> "$GITHUB_ENV"
-        echo "OPENCLAW_VITEST_FS_MODULE_CACHE_WRITER=$CACHE_WRITER" >> "$GITHUB_ENV"
+        echo "AFORA_VITEST_FS_MODULE_CACHE_PATH=$cache_root" >> "$GITHUB_ENV"
+        echo "AFORA_VITEST_FS_MODULE_CACHE_WRITER=$CACHE_WRITER" >> "$GITHUB_ENV"
 
     - name: Select Node compile cache epoch
       id: node-compile-cache-epoch
@@ -285,7 +285,7 @@ runs:
       if: inputs.node-compile-cache == 'true' && inputs.save-node-compile-cache == 'true' && runner.os != 'Windows'
       uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
       with:
-        path: /var/tmp/openclaw-node-compile-cache
+        path: /var/tmp/afora-node-compile-cache
         key: ${{ github.repository }}-node-compile-v3-${{ inputs.node-compile-cache-scope }}-protected-${{ runner.os }}-${{ runner.arch }}-node-${{ inputs.node-version }}-${{ steps.node-compile-cache-epoch.outputs.value }}
         restore-keys: |
           ${{ github.repository }}-node-compile-v3-${{ inputs.node-compile-cache-scope }}-protected-${{ runner.os }}-${{ runner.arch }}-node-${{ inputs.node-version }}-
@@ -294,7 +294,7 @@ runs:
       if: (inputs.node-compile-cache == 'true' || inputs.restore-test-caches == 'true') && inputs.save-node-compile-cache != 'true' && runner.os != 'Windows'
       uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
       with:
-        path: /var/tmp/openclaw-node-compile-cache
+        path: /var/tmp/afora-node-compile-cache
         key: ${{ github.repository }}-node-compile-v3-${{ inputs.node-compile-cache-scope }}-protected-${{ runner.os }}-${{ runner.arch }}-node-${{ inputs.node-version }}-${{ steps.node-compile-cache-epoch.outputs.value }}
         restore-keys: |
           ${{ github.repository }}-node-compile-v3-${{ inputs.node-compile-cache-scope }}-protected-${{ runner.os }}-${{ runner.arch }}-node-${{ inputs.node-version }}-
@@ -306,11 +306,11 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        cache_root=/var/tmp/openclaw-node-compile-cache
+        cache_root=/var/tmp/afora-node-compile-cache
         mkdir -p "$cache_root"
         echo "NODE_COMPILE_CACHE=$cache_root" >> "$GITHUB_ENV"
         echo "NODE_COMPILE_CACHE_PORTABLE=1" >> "$GITHUB_ENV"
-        echo "OPENCLAW_NODE_COMPILE_CACHE_WRITER=$CACHE_WRITER" >> "$GITHUB_ENV"
+        echo "AFORA_NODE_COMPILE_CACHE_WRITER=$CACHE_WRITER" >> "$GITHUB_ENV"
 
     - name: Setup Bun
       if: inputs.install-bun == 'true'
@@ -442,7 +442,7 @@ runs:
           # The exact archive includes importer links, and frozen offline
           # reconciliation validates them without reaching the registry. Later
           # build wrappers can use installed Node entrypoints directly.
-          echo "OPENCLAW_BUILD_ALL_NO_PNPM=1" >> "$GITHUB_ENV"
+          echo "AFORA_BUILD_ALL_NO_PNPM=1" >> "$GITHUB_ENV"
           # Postinstall intentionally prunes plugin-local node_modules. Pnpm's
           # redundant pre-run check treats that as stale and can launch unsafe
           # concurrent implicit installs after CI fans out.
@@ -460,7 +460,7 @@ runs:
           ui/node_modules
           packages/*/node_modules
           examples/*/node_modules
-          .cache/openclaw-pnpm-store
+          .cache/afora-pnpm-store
         key: ${{ steps.dependency-cache-key.outputs.key }}
 
     - name: Restore and save build-all cache

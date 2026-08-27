@@ -1,4 +1,4 @@
-import { uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 type MatrixQaAuthStage = "m.login.dummy" | "m.login.registration_token";
 

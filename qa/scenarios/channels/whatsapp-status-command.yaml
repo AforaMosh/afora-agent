@@ -10,7 +10,7 @@ scenario:
   objective: Verify WhatsApp status returns the active session summary.
   successCriteria:
     - The status command succeeds in a WhatsApp DM.
-    - The reply includes OpenClaw and session information.
+    - The reply includes Afora and session information.
   codeRefs:
     - src/auto-reply/reply/commands-status.ts
     - extensions/qa-lab/src/live-transports/whatsapp/adapter.runtime.ts
@@ -31,7 +31,7 @@ flow:
             text: /status
         - waitForOutbound:
             conversation: { id: whatsapp-command-dm, kind: direct }
-            textIncludes: OpenClaw
+            textIncludes: Afora
             timeoutMs: 60000
           saveAs: reply
         - assert:

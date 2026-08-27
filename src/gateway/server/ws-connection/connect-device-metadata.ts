@@ -1,4 +1,4 @@
-import { normalizeSortedUniqueTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+import { normalizeSortedUniqueTrimmedStringList } from "@afora/normalization-core/string-normalization";
 import {
   GATEWAY_CLIENT_IDS,
   GATEWAY_CLIENT_MODES,

@@ -1,18 +1,18 @@
 {
-  "name": "@openclaw/moonshot-provider",
+  "name": "@afora/moonshot-provider",
   "version": "2026.8.1",
-  "description": "OpenClaw Moonshot provider plugin",
+  "description": "Afora Moonshot provider plugin",
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
     "install": {
-      "clawhubSpec": "clawhub:@openclaw/moonshot-provider",
-      "npmSpec": "@openclaw/moonshot-provider",
+      "clawhubSpec": "clawhub:@afora/moonshot-provider",
+      "npmSpec": "@afora/moonshot-provider",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.6.9"
     },
@@ -20,7 +20,7 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1",
+      "aforaVersion": "2026.8.1",
       "bundledDist": false
     },
     "release": {
@@ -30,6 +30,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   }
 }

@@ -1,8 +1,8 @@
 // Plugin-provided node.invoke policy adapter.
 // Lets plugin policies gate dangerous node commands before transport dispatch.
 import { randomUUID } from "node:crypto";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import {
   sanitizeExecApprovalDisplayText,
   sanitizeExecApprovalWarningText,
@@ -12,9 +12,9 @@ import { resolvePluginApprovalTimeoutMs } from "../infra/plugin-approvals.js";
 import type { PluginRegistry } from "../plugins/registry-types.js";
 import { getActivePluginGatewayNodePolicyRegistry } from "../plugins/runtime.js";
 import type {
-  OpenClawPluginNodeInvokePolicyContext,
-  OpenClawPluginNodeInvokePolicyResult,
-  OpenClawPluginNodeInvokeTransportResult,
+  AforaPluginNodeInvokePolicyContext,
+  AforaPluginNodeInvokePolicyResult,
+  AforaPluginNodeInvokeTransportResult,
 } from "../plugins/types.js";
 import { isNodeCommandAllowed, resolveNodeCommandAllowlist } from "./node-command-policy.js";
 import type { NodeSession } from "./node-registry.js";
@@ -94,8 +94,8 @@ function findDangerousPluginNodeCommand(registry: PluginRegistry | null, command
 }
 
 function validateRiskClassification(
-  value: NonNullable<OpenClawPluginNodeInvokePolicyContext["risk"]>,
-): NonNullable<OpenClawPluginNodeInvokePolicyContext["risk"]> | null {
+  value: NonNullable<AforaPluginNodeInvokePolicyContext["risk"]>,
+): NonNullable<AforaPluginNodeInvokePolicyContext["risk"]> | null {
   const family = normalizeOptionalString(value?.family);
   if (
     (value?.level !== "ordinary" && value?.level !== "high") ||
@@ -112,7 +112,7 @@ function createApprovalRuntime(params: {
   client: GatewayClient | null;
   pluginId: string;
   turnSource: Parameters<typeof resolveNodeInvokeTurnSourceFields>[0];
-}): OpenClawPluginNodeInvokePolicyContext["approvals"] | undefined {
+}): AforaPluginNodeInvokePolicyContext["approvals"] | undefined {
   const manager = params.context.pluginApprovalManager;
   if (!manager) {
     return undefined;
@@ -244,7 +244,7 @@ export async function applyPluginNodeInvokePolicy(params: {
   idempotencyKey?: string;
   isInvocationCurrent?: () => boolean | Promise<boolean>;
   isApprovalAuthorityActive?: () => boolean;
-}): Promise<OpenClawPluginNodeInvokePolicyResult | null> {
+}): Promise<AforaPluginNodeInvokePolicyResult | null> {
   const registry = getActivePluginGatewayNodePolicyRegistry();
   // Route metadata is authority-bearing: only a signed agent-runtime caller may nominate it.
   const trustedTurnSource = params.client?.internal?.agentRuntimeIdentity
@@ -266,7 +266,7 @@ export async function applyPluginNodeInvokePolicy(params: {
     return null;
   }
 
-  let risk: OpenClawPluginNodeInvokePolicyContext["risk"];
+  let risk: AforaPluginNodeInvokePolicyContext["risk"];
   if (entry.policy.classifyRisk) {
     try {
       risk =
@@ -288,9 +288,9 @@ export async function applyPluginNodeInvokePolicy(params: {
   }
 
   let nodeCommandDispatched = false;
-  const invokeNode: OpenClawPluginNodeInvokePolicyContext["invokeNode"] = async (
+  const invokeNode: AforaPluginNodeInvokePolicyContext["invokeNode"] = async (
     override = {},
-  ): Promise<OpenClawPluginNodeInvokeTransportResult> => {
+  ): Promise<AforaPluginNodeInvokeTransportResult> => {
     const callerIdentity = params.client?.internal?.agentRuntimeIdentity;
     if (
       callerIdentity &&

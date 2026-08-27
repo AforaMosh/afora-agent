@@ -1,6 +1,6 @@
 // Discord plugin module implements receive recovery behavior.
 import { OpusError } from "libopus-wasm";
-import { formatErrorMessage } from "openclaw/plugin-sdk/ssrf-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/ssrf-runtime";
 
 export const DECRYPT_FAILURE_WINDOW_MS = 30_000;
 const DECRYPT_FAILURE_RECONNECT_THRESHOLD = 3;

@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { applyAgentBindings, parseBindingSpecs } from "../commands/agents.bindings.js";
 import {
   applyAgentConfig,
@@ -16,7 +16,7 @@ import type { LegacyMainSessionMigrationOutcome } from "../config/sessions/legac
 import { migrateLegacyMainSessionKeys } from "../config/sessions/legacy-main-session-migration.js";
 import { resolveSessionTranscriptsDirForAgent } from "../config/sessions/paths.js";
 import type { OptionalBootstrapFileName } from "../config/types.agent-defaults.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { FsSafeError, root } from "../infra/fs-safe.js";
 import { normalizeAgentId, normalizeAgentIdStrict } from "../routing/session-key.js";
 import { readAgentDeletionJournal } from "../state/agent-deletion-journal.js";
@@ -64,7 +64,7 @@ type CreateAgentResult =
     };
 
 type CreateError = Extract<CreateAgentResult, { status: "error" }>;
-type AgentEntryConfig = NonNullable<NonNullable<OpenClawConfig["agents"]>["entries"]>[string];
+type AgentEntryConfig = NonNullable<NonNullable<AforaConfig["agents"]>["entries"]>[string];
 type CreateAgentEntry = AgentEntryConfig & { id: string };
 
 type CreateAgentParams = {
@@ -77,7 +77,7 @@ type CreateAgentParams = {
   /** Config revision that must still own first-agent creation under the write lock. */
   expectedConfigHash?: string | null;
   /** Full guided-flow staging based on expectedConfigHash; creation still publishes it once. */
-  stagedConfig?: OpenClawConfig;
+  stagedConfig?: AforaConfig;
   workspace?: string;
   model?: string;
   emoji?: unknown;
@@ -155,7 +155,7 @@ function describeLegacySessionOutcome(outcome: LegacyMainSessionMigrationOutcome
 }
 
 async function evaluateMainCreationGate(
-  config: OpenClawConfig,
+  config: AforaConfig,
   agentId: string,
 ): Promise<CreateError | undefined> {
   const roster = listAgentEntries(config).map((entry) => normalizeAgentId(entry.id));
@@ -177,7 +177,7 @@ async function evaluateMainCreationGate(
     const details = migration.outcomes.map(describeLegacySessionOutcome).join("; ");
     return createError(
       "legacy-session-migration-required",
-      `Cannot create agent "main": ${details}. Run openclaw doctor --fix, then retry.`,
+      `Cannot create agent "main": ${details}. Run afora doctor --fix, then retry.`,
       agentId,
     );
   }
@@ -185,7 +185,7 @@ async function evaluateMainCreationGate(
   if (resolveSharedAuthStoreOwnership().location !== "state-db") {
     return createError(
       "shared-auth-store-owned-by-main",
-      'Cannot create agent "main" while agents/main/agent owns the shared auth store. Run openclaw doctor --fix to relocate shared auth, then retry.',
+      'Cannot create agent "main" while agents/main/agent owns the shared auth store. Run afora doctor --fix to relocate shared auth, then retry.',
       agentId,
     );
   }

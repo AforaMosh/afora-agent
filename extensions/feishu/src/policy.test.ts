@@ -1,5 +1,5 @@
 // Feishu tests cover policy plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/core";
+import type { AforaConfig } from "afora-agent/plugin-sdk/core";
 import { describe, expect, it } from "vitest";
 import { FeishuConfigSchema } from "./config-schema.js";
 import {
@@ -11,12 +11,12 @@ import {
 } from "./policy.js";
 import type { FeishuConfig } from "./types.js";
 
-function createCfg(feishu: Record<string, unknown>): OpenClawConfig {
+function createCfg(feishu: Record<string, unknown>): AforaConfig {
   return {
     channels: {
       feishu,
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function createFeishuConfig(overrides: Partial<FeishuConfig>): FeishuConfig {

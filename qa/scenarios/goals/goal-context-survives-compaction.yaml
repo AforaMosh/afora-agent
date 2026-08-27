@@ -127,7 +127,7 @@ flow:
               ref: config.senderId
             senderName: QA Goal Operator
             text:
-              expr: "`@openclaw reply exactly: ${config.otherConversationMarker}`"
+              expr: "`@afora reply exactly: ${config.otherConversationMarker}`"
         - waitForOutbound:
             conversation:
               id:

@@ -4,11 +4,11 @@ import {
   materializeRequesterScopedMcpToolsForHarnessRun,
   resolveAgentDir,
   type EmbeddedRunAttemptParams,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   captureFinalCodexCronCreatorToolAllowlist,
   materializeStaticMcpToolsForScheduledHarnessRun,
-} from "openclaw/plugin-sdk/codex-mcp-projection";
+} from "afora-agent/plugin-sdk/codex-mcp-projection";
 import { resolveCodexPluginsPolicy, shouldAutoApproveCodexAppServerApprovals } from "./config.js";
 import {
   buildDynamicTools,
@@ -413,7 +413,7 @@ export async function prepareCodexAttemptTools(runtime: CodexAttemptRuntime) {
       }),
       directToolNames: resolveCodexDynamicToolDirectNames(
         params,
-        isHostScopedAgentToolActive("openclaw"),
+        isHostScopedAgentToolActive("afora"),
       ),
       hookContext,
     });
@@ -432,7 +432,7 @@ export async function prepareCodexAttemptTools(runtime: CodexAttemptRuntime) {
       delete cronCreatorToolAllowlistCaptureRef.value;
     }
     if (requiresScheduledCodexAppAuthority) {
-      // Native apps are not represented in the OpenClaw dynamic-tool list.
+      // Native apps are not represented in the Afora dynamic-tool list.
       // Require the exact-thread resolver before certifying a default cap.
       delete cronCreatorToolAllowlistCaptureRef.value;
     }

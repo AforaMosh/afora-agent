@@ -111,7 +111,7 @@ export function createDiagnosticsLogExporter(params: {
         resource,
         processors: [logProcessor],
       });
-      otelLogger = logProvider.getLogger("openclaw");
+      otelLogger = logProvider.getLogger("afora");
     }
 
     const reportLogExportFailure = (
@@ -187,12 +187,12 @@ export function createDiagnosticsLogExporter(params: {
         ? normalizeOtelLogString(evt.message || "log", MAX_OTEL_LOG_BODY_CHARS)
         : "log";
       const attributes = Object.create(null) as Record<string, string | number | boolean>;
-      assignOtelLogAttribute(attributes, "openclaw.log.level", logLevelName);
+      assignOtelLogAttribute(attributes, "afora.log.level", logLevelName);
       if (evt.loggerName) {
-        assignOtelLogAttribute(attributes, "openclaw.logger", evt.loggerName);
+        assignOtelLogAttribute(attributes, "afora.logger", evt.loggerName);
       }
       if (evt.loggerParents?.length) {
-        assignOtelLogAttribute(attributes, "openclaw.logger.parents", evt.loggerParents.join("."));
+        assignOtelLogAttribute(attributes, "afora.logger.parents", evt.loggerParents.join("."));
       }
       assignOtelLogEventAttributes(attributes, evt.attributes);
       if (evt.code?.line) {
@@ -228,7 +228,7 @@ export function createDiagnosticsLogExporter(params: {
 
       const traceContext = normalizedTrustedTraceContext(evt, metadata);
       const logRecord: LogRecord = {
-        body: "openclaw.security.event",
+        body: "afora.security.event",
         severityText,
         severityNumber: logSeverityMap[severityText] ?? (9 as SeverityNumber),
         attributes: redactOtelAttributes(attributes),

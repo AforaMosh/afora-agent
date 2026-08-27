@@ -1,6 +1,6 @@
 // Codex CLI metadata tests cover lightweight discovery and lazy registration.
 import { Command } from "commander";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import { describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({

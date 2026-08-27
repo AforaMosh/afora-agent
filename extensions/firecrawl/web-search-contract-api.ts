@@ -1,5 +1,5 @@
 // Firecrawl API module exposes the plugin public contract.
-import type { WebSearchProviderPlugin } from "openclaw/plugin-sdk/provider-web-search-contract";
+import type { WebSearchProviderPlugin } from "afora-agent/plugin-sdk/provider-web-search-contract";
 import {
   buildFirecrawlFreeWebSearchProviderBase,
   buildFirecrawlWebSearchProviderBase,

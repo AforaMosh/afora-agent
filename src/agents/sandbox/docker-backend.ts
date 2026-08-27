@@ -27,7 +27,7 @@ import {
 import type { SandboxRegistryEntry } from "./registry.js";
 
 function resolveConfiguredDockerRuntimeImage(params: {
-  config: CreateSandboxBackendParams["cfg"] | import("../../config/config.js").OpenClawConfig;
+  config: CreateSandboxBackendParams["cfg"] | import("../../config/config.js").AforaConfig;
   agentId?: string;
   configLabelKind?: string;
 }): string {
@@ -149,7 +149,7 @@ async function runContainerSandboxShellCommand(
     "sh",
     "-c",
     params.script,
-    "openclaw-sandbox-fs",
+    "afora-sandbox-fs",
   ];
   if (params.args?.length) {
     dockerArgs.push(...params.args);

@@ -28,7 +28,7 @@ export function tryHandleRootVersionFastPath(
     deps.onError ??
     (async (error: unknown) => {
       const detail = error instanceof Error ? (error.stack ?? error.message) : String(error);
-      const message = `[openclaw] Failed to resolve version: ${detail}\n`;
+      const message = `[afora] Failed to resolve version: ${detail}\n`;
       try {
         const [{ loadCliDotEnv }, { formatConsoleDiagnosticBlock }] = await Promise.all([
           import("./cli/dotenv.js"),
@@ -55,7 +55,7 @@ export function tryHandleRootVersionFastPath(
   resolveVersion()
     .then(({ VERSION, resolveCommitHash }) => {
       const commit = resolveCommitHash({ moduleUrl: deps.moduleUrl ?? import.meta.url });
-      output(commit ? `OpenClaw ${VERSION} (${commit})` : `OpenClaw ${VERSION}`);
+      output(commit ? `Afora ${VERSION} (${commit})` : `Afora ${VERSION}`);
       exit(0);
     })
     .catch(onError);

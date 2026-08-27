@@ -1,8 +1,8 @@
 // Imessage tests cover monitor.media policy plugin behavior.
-import * as channelInbound from "openclaw/plugin-sdk/channel-inbound";
-import { createTestInboundDebounceFlush } from "openclaw/plugin-sdk/channel-test-helpers";
-import type { dispatchReplyWithBufferedBlockDispatcher } from "openclaw/plugin-sdk/reply-runtime";
-import type { waitForTransportReady } from "openclaw/plugin-sdk/transport-ready-runtime";
+import * as channelInbound from "afora-agent/plugin-sdk/channel-inbound";
+import { createTestInboundDebounceFlush } from "afora-agent/plugin-sdk/channel-test-helpers";
+import type { dispatchReplyWithBufferedBlockDispatcher } from "afora-agent/plugin-sdk/reply-runtime";
+import type { waitForTransportReady } from "afora-agent/plugin-sdk/transport-ready-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { createIMessageRpcClient } from "./client.js";
 import { monitorIMessageProvider } from "./monitor.js";
@@ -22,12 +22,12 @@ const dispatchReplyWithBufferedBlockDispatcherMock = vi.hoisted(() =>
   })),
 );
 
-vi.mock("openclaw/plugin-sdk/transport-ready-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/transport-ready-runtime", () => ({
   waitForTransportReady: waitForTransportReadyMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/conversation-runtime")>();
+vi.mock("afora-agent/plugin-sdk/conversation-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/conversation-runtime")>();
   return {
     ...actual,
     readChannelAllowFromStore: readChannelAllowFromStoreMock,
@@ -36,8 +36,8 @@ vi.mock("openclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/channel-inbound")>();
+vi.mock("afora-agent/plugin-sdk/channel-inbound", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/channel-inbound")>();
   return {
     ...actual,
     createChannelInboundDebouncer: vi.fn((opts) => ({
@@ -143,7 +143,7 @@ describe("iMessage monitor attachment policy", () => {
     stageIMessageAttachmentsMock.mockResolvedValue({ attachments: [], unavailableCount: 0 });
     readChannelAllowFromStoreMock.mockResolvedValue([]);
 
-    const attachmentPath = "/Users/openclaw/Library/Messages/Attachments/AA/BB/photo.heic";
+    const attachmentPath = "/Users/afora/Library/Messages/Attachments/AA/BB/photo.heic";
     let onNotification:
       | ((message: { method: string; params: unknown }) => void | Promise<void>)
       | undefined;
@@ -196,7 +196,7 @@ describe("iMessage monitor attachment policy", () => {
             groups: { "*": { requireMention: true } },
           },
         },
-        messages: { groupChat: { mentionPatterns: ["@openclaw"] } },
+        messages: { groupChat: { mentionPatterns: ["@afora"] } },
         session: { mainKey: "main" },
       } as never,
     });
@@ -210,7 +210,7 @@ describe("iMessage monitor attachment policy", () => {
       name: "admits an attachment-only message when the image is unavailable",
       attachments: [
         {
-          original_path: "/Users/openclaw/Library/Messages/Attachments/missing.heic",
+          original_path: "/Users/afora/Library/Messages/Attachments/missing.heic",
           mime_type: "image/heic",
           missing: true,
         },
@@ -227,12 +227,12 @@ describe("iMessage monitor attachment policy", () => {
       name: "uses the first materialized attachment type when earlier media is unavailable",
       attachments: [
         {
-          original_path: "/Users/openclaw/Library/Messages/Attachments/missing.heic",
+          original_path: "/Users/afora/Library/Messages/Attachments/missing.heic",
           mime_type: "image/heic",
           missing: true,
         },
         {
-          original_path: "/Users/openclaw/Library/Messages/Attachments/report.pdf",
+          original_path: "/Users/afora/Library/Messages/Attachments/report.pdf",
           mime_type: "application/pdf",
           missing: false,
         },
@@ -241,7 +241,7 @@ describe("iMessage monitor attachment policy", () => {
         attachments: [
           { contentType: "image/heic", kind: "image" as const },
           {
-            path: "/Users/openclaw/Library/Messages/Attachments/report.pdf",
+            path: "/Users/afora/Library/Messages/Attachments/report.pdf",
             contentType: "application/pdf",
             kind: "document" as const,
           },
@@ -250,7 +250,7 @@ describe("iMessage monitor attachment policy", () => {
       },
       expectedBody: "[imessage attachment unavailable]",
       expectedMediaTypes: ["image/heic", "application/pdf"],
-      expectedMediaUrls: ["", "/Users/openclaw/Library/Messages/Attachments/report.pdf"],
+      expectedMediaUrls: ["", "/Users/afora/Library/Messages/Attachments/report.pdf"],
     },
   ])(
     "$name",
@@ -296,7 +296,7 @@ describe("iMessage monitor attachment policy", () => {
           channels: {
             imessage: {
               includeAttachments: true,
-              attachmentRoots: ["/Users/openclaw/Library/Messages/Attachments"],
+              attachmentRoots: ["/Users/afora/Library/Messages/Attachments"],
               dmPolicy: "allowlist",
               allowFrom: ["+15550001111"],
               groupPolicy: "open",

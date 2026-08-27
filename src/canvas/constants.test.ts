@@ -7,12 +7,12 @@ import {
 
 describe("core canvas contracts", () => {
   it("keeps document auth scoped to the stable Canvas path", () => {
-    expect(isCanvasDocumentHttpPath("/__openclaw__/canvas/documents/cv_1/index.html")).toBe(true);
-    expect(isCanvasDocumentHttpPath("/__openclaw__/canvas/index.html")).toBe(false);
+    expect(isCanvasDocumentHttpPath("/__afora__/canvas/documents/cv_1/index.html")).toBe(true);
+    expect(isCanvasDocumentHttpPath("/__afora__/canvas/index.html")).toBe(false);
     expect(
       resolveCanvasNodeCapability([
         "/encoded-path",
-        "/__openclaw__/canvas/documents/cv_1/index.html",
+        "/__afora__/canvas/documents/cv_1/index.html",
       ]),
     ).toEqual({ surface: "canvas", scopeKey: "canvas:canvas" });
   });

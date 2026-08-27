@@ -2,8 +2,8 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
-} from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-coerce";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { resolveDefaultAgentDir } from "../agents/agent-scope-config.js";
 import { hasAuthProfileForProvider } from "../agents/tools/model-config.helpers.js";
 import {
@@ -11,7 +11,7 @@ import {
   getRuntimeConfigSourceSnapshot,
   selectApplicableRuntimeConfig,
 } from "../config/runtime-snapshot.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { logVerbose } from "../globals.js";
 import { resolveManifestContractOwnerPluginId } from "../plugins/plugin-registry-contributions.js";
 import type { PluginWebSearchProviderEntry } from "../plugins/types.js";
@@ -36,14 +36,14 @@ import type {
   RuntimeWebSearchConfig as WebSearchConfig,
 } from "./runtime-types.js";
 
-function resolveSearchConfig(cfg?: OpenClawConfig): WebSearchConfig {
+function resolveSearchConfig(cfg?: AforaConfig): WebSearchConfig {
   return resolveWebProviderConfig(cfg, "search") as NonNullable<WebSearchConfig> | undefined;
 }
 
 function resolveWebSearchRuntimeConfig(params?: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   preferInputConfig?: boolean;
-}): OpenClawConfig | undefined {
+}): AforaConfig | undefined {
   if (params?.preferInputConfig && params.config) {
     return params.config;
   }
@@ -79,7 +79,7 @@ function hasEntryCredential(
     | "getConfiguredCredentialFallback"
     | "requiresCredential"
   >,
-  config: OpenClawConfig | undefined,
+  config: AforaConfig | undefined,
   search: WebSearchConfig | undefined,
   agentDir?: string,
 ): boolean {
@@ -113,7 +113,7 @@ function hasImplicitProviderSelectionSignal(
     | "getConfiguredCredentialFallback"
     | "requiresCredential"
   >,
-  config: OpenClawConfig | undefined,
+  config: AforaConfig | undefined,
   search: WebSearchConfig | undefined,
   agentDir?: string,
 ): boolean {
@@ -136,7 +136,7 @@ export function isWebSearchProviderConfigured(params: {
     | "getCredentialValue"
     | "requiresCredential"
   >;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentDir?: string;
 }): boolean {
   const config = resolveWebSearchRuntimeConfig({ config: params.config });
@@ -145,7 +145,7 @@ export function isWebSearchProviderConfigured(params: {
 
 /** Lists runtime web_search providers after applying runtime config snapshots. */
 export function listWebSearchProviders(params?: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): PluginWebSearchProviderEntry[] {
   const config = resolveWebSearchRuntimeConfig({ config: params?.config });
   return resolveRuntimeWebSearchProviders({
@@ -155,7 +155,7 @@ export function listWebSearchProviders(params?: {
 
 /** Lists plugin-configured web_search providers without runtime-only providers. */
 export function listConfiguredWebSearchProviders(params?: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): PluginWebSearchProviderEntry[] {
   const config = resolveWebSearchRuntimeConfig({ config: params?.config });
   return resolvePluginWebSearchProviders({
@@ -166,7 +166,7 @@ export function listConfiguredWebSearchProviders(params?: {
 /** Resolves configured or auto-detected web_search provider id. */
 export function resolveWebSearchProviderId(params: {
   search?: WebSearchConfig;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentDir?: string;
   providers?: PluginWebSearchProviderEntry[];
 }): string {
@@ -205,7 +205,7 @@ export function resolveWebSearchProviderId(params: {
 }
 
 function resolveRuntimePreferredWebSearchProviderId(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   search?: WebSearchConfig;
   runtimeWebSearch?: RuntimeWebSearchMetadata;
   providers?: PluginWebSearchProviderEntry[];
@@ -266,7 +266,7 @@ function resolveExplicitWebSearchProviderId(params: {
 }
 
 function resolveExplicitWebSearchProviderPluginIds(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   search?: WebSearchConfig;
   runtimeWebSearch?: RuntimeWebSearchMetadata;
   providerId?: string;
@@ -285,7 +285,7 @@ function resolveExplicitWebSearchProviderPluginIds(params: {
 }
 
 function resolveWebSearchProviderLoadScope(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   search?: WebSearchConfig;
   runtimeWebSearch?: RuntimeWebSearchMetadata;
   providerId?: string;
@@ -296,7 +296,7 @@ function resolveWebSearchProviderLoadScope(params: {
 }
 
 type WebSearchRequestContext = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   search?: WebSearchConfig;
   runtimeWebSearch?: RuntimeWebSearchMetadata;
 };

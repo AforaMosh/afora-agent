@@ -77,7 +77,7 @@ describe("SessionDiffPanel", () => {
     const second = deferred<SessionsDiffResult>();
     const firstLoader = vi.fn(() => first.promise);
     const secondLoader = vi.fn(() => second.promise);
-    const panel = document.createElement("openclaw-session-diff") as SessionDiffElement;
+    const panel = document.createElement("afora-session-diff") as SessionDiffElement;
     panel.loader = firstLoader;
     document.body.append(panel);
 
@@ -103,7 +103,7 @@ describe("SessionDiffPanel", () => {
     const loadFileText = vi
       .fn<SessionDiffFileTextLoader>()
       .mockResolvedValue(["expanded current file line", "context", "snapshot line"].join("\n"));
-    const panel = document.createElement("openclaw-session-diff") as SessionDiffElement;
+    const panel = document.createElement("afora-session-diff") as SessionDiffElement;
     panel.loader = loader;
     panel.loadFileText = loadFileText;
     document.body.append(panel);

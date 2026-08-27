@@ -3,7 +3,7 @@ import {
   createQaDockerRuntime,
   type QaDockerFetchLike as FetchLike,
   type QaDockerRunCommand as RunCommand,
-} from "openclaw/plugin-sdk/qa-runtime";
+} from "afora-agent/plugin-sdk/qa-runtime";
 
 export type { FetchLike, RunCommand };
 

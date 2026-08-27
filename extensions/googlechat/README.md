@@ -1,11 +1,11 @@
-# OpenClaw Google Chat
+# Afora Google Chat
 
-Official OpenClaw channel plugin for Google Chat spaces and direct messages.
+Official Afora channel plugin for Google Chat spaces and direct messages.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/googlechat
+afora plugins install @afora/googlechat
 ```
 
-Configure the Google Chat app credentials and allowed spaces in OpenClaw. The plugin lets agents receive Google Chat events and reply through the configured app.
+Configure the Google Chat app credentials and allowed spaces in Afora. The plugin lets agents receive Google Chat events and reply through the configured app.

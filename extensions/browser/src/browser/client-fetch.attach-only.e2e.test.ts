@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import net from "node:net";
 import path from "node:path";
-import { clearRuntimeConfigSnapshot } from "openclaw/plugin-sdk/runtime-config-snapshot";
+import { clearRuntimeConfigSnapshot } from "afora-agent/plugin-sdk/runtime-config-snapshot";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createTempHomeEnv } from "../../test-support.js";
 import { stopBrowserControlService } from "../control-service.js";
@@ -31,7 +31,7 @@ describe("browser client fetch attachOnly diagnostics", () => {
   });
 
   it("does not suggest gateway restart when an attachOnly CDP endpoint hangs", async () => {
-    tempHome = await createTempHomeEnv("openclaw-browser-client-fetch-live-");
+    tempHome = await createTempHomeEnv("afora-browser-client-fetch-live-");
     const sockets = new Set<net.Socket>();
     const server = net.createServer((socket) => {
       sockets.add(socket);
@@ -42,7 +42,7 @@ describe("browser client fetch attachOnly diagnostics", () => {
       server.listen(0, "127.0.0.1", resolve);
     });
     const port = (server.address() as { port: number }).port;
-    const configPath = path.join(tempHome.home, ".openclaw", "openclaw.json");
+    const configPath = path.join(tempHome.home, ".afora", "afora.json");
     await fs.writeFile(
       configPath,
       JSON.stringify(
@@ -63,7 +63,7 @@ describe("browser client fetch attachOnly diagnostics", () => {
         2,
       ),
     );
-    process.env.OPENCLAW_CONFIG_PATH = configPath;
+    process.env.AFORA_CONFIG_PATH = configPath;
     clearRuntimeConfigSnapshot();
 
     try {
@@ -72,11 +72,11 @@ describe("browser client fetch attachOnly diagnostics", () => {
       );
       expect(thrown).toBeInstanceOf(Error);
       const message = thrown instanceof Error ? thrown.message : String(thrown);
-      expect(message).toContain("browser profile is external to OpenClaw");
-      expect(message).toContain("Restarting the OpenClaw gateway will not launch it");
+      expect(message).toContain("browser profile is external to Afora");
+      expect(message).toContain("Restarting the Afora gateway will not launch it");
       expect(message).toContain("Retry the browser tool once");
       expect(message).toContain("If the same error persists");
-      expect(message).not.toContain("Restart the OpenClaw gateway");
+      expect(message).not.toContain("Restart the Afora gateway");
       expect(message).not.toContain("Do NOT retry the browser tool");
     } finally {
       for (const socket of sockets) {

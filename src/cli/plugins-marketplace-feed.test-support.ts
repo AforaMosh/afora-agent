@@ -12,7 +12,7 @@ export function createHostedMarketplaceFeedFixture(
 ) {
   const source = options.source ?? "hosted";
   const metadata = {
-    url: options.url ?? "https://packages.acme.example/openclaw/feed",
+    url: options.url ?? "https://packages.acme.example/afora/feed",
     status: 200,
     checksum: options.checksum ?? "feed-sha",
     ...(options.etag ? { etag: options.etag } : {}),

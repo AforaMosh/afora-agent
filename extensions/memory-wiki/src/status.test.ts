@@ -1,9 +1,9 @@
 // Memory Wiki tests cover status plugin behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { MemoryPluginPublicArtifact } from "openclaw/plugin-sdk/memory-host-core";
+import type { MemoryPluginPublicArtifact } from "afora-agent/plugin-sdk/memory-host-core";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../api.js";
+import type { AforaConfig } from "../api.js";
 import { resolveMemoryWikiConfig } from "./config.js";
 import { renderWikiMarkdown } from "./markdown.js";
 import {
@@ -33,7 +33,7 @@ async function resolveBridgeMissingArtifactsStatus() {
       agents: {
         list: [{ id: "main", default: true, workspace: "/tmp/workspace" }],
       },
-    } as OpenClawConfig,
+    } as AforaConfig,
     listPublicArtifacts: async () => [],
     pathExists: async () => true,
     resolveCommand: async () => null,
@@ -113,7 +113,7 @@ describe("resolveMemoryWikiStatus", () => {
         agents: {
           list: [{ id: "main", default: true, workspace: "/tmp/workspace" }],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       listPublicArtifacts: async () => {
         listCalls += 1;
         return [];
@@ -231,7 +231,7 @@ describe("resolveMemoryWikiStatus", () => {
       },
     ];
     const deps = {
-      appConfig: {} as OpenClawConfig,
+      appConfig: {} as AforaConfig,
       listPublicArtifacts: async () => artifacts,
       pathExists: async () => true,
       resolveCommand: async () => null,
@@ -480,7 +480,7 @@ describe("memory wiki doctor", () => {
     expect(report.warningCount).toBe(2);
     expect(report.fixes.map((fix) => fix.code)).toEqual(["vault-missing", "obsidian-cli-missing"]);
     expect(rendered).toContain("Suggested fixes:");
-    expect(rendered).toContain("openclaw wiki init");
+    expect(rendered).toContain("afora wiki init");
   });
 
   it("suggests bridge fixes when no public artifacts are exported", async () => {

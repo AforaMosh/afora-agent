@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveAgentWorkspaceDir } from "../../../agents/agent-scope.js";
 import type { CliDeps } from "../../../cli/deps.js";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { AforaConfig } from "../../../config/config.js";
 
 const runBootOnce = vi.fn();
 
@@ -25,7 +25,7 @@ const { clearInternalHooks, createInternalHookEvent, registerInternalHook, trigg
 
 function expectBootCall(
   index: number,
-  expected: { cfg: OpenClawConfig; deps: CliDeps; workspaceDir: string; agentId: string },
+  expected: { cfg: AforaConfig; deps: CliDeps; workspaceDir: string; agentId: string },
 ) {
   const params = runBootOnce.mock.calls[index]?.[0] as
     | { cfg?: unknown; deps?: unknown; workspaceDir?: unknown; agentId?: unknown }
@@ -58,7 +58,7 @@ describe("boot-md startup hook integration", () => {
           { id: "ops", workspace: "/ws/ops" },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const deps = {} as CliDeps;
     runBootOnce.mockResolvedValue({ status: "ran" });
 

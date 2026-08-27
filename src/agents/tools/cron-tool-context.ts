@@ -1,4 +1,4 @@
-import { truncateWithMarker } from "@openclaw/normalization-core/utf16-slice";
+import { truncateWithMarker } from "@afora/normalization-core/utf16-slice";
 /** Reminder-context projection for cron tool job creation. */
 import { getRuntimeConfig } from "../../config/config.js";
 import { extractTextFromChatContent } from "../../shared/chat-content.js";

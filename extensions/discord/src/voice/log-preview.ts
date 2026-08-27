@@ -1,4 +1,4 @@
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 
 const DISCORD_VOICE_LOG_PREVIEW_CHARS = 500;
 

@@ -1,4 +1,4 @@
-// Cron Mcp Cleanup Docker Client script supports OpenClaw repository automation.
+// Cron Mcp Cleanup Docker Client script supports Afora repository automation.
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
@@ -26,7 +26,7 @@ async function loadMcpChannelsHarness(): Promise<McpChannelsHarness> {
 }
 
 export function readCronMcpCleanupProbePidWaitMs(env: NodeJS.ProcessEnv = process.env): number {
-  return readPositiveIntEnv("OPENCLAW_CRON_MCP_CLEANUP_PID_WAIT_MS", 120_000, env);
+  return readPositiveIntEnv("AFORA_CRON_MCP_CLEANUP_PID_WAIT_MS", 120_000, env);
 }
 
 export function assertCronFinishedOk(finished: CronFinishedPayload | undefined): void {
@@ -107,7 +107,7 @@ async function waitForProbeExit(params: {
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
     const args = await describeProbePid(pid);
-    if (!args || !args.includes("openclaw-cron-mcp-cleanup-probe")) {
+    if (!args || !args.includes("afora-cron-mcp-cleanup-probe")) {
       return;
     }
     await delay(100);
@@ -129,7 +129,7 @@ async function waitForAllProbeExits(params: {
       let allExited = true;
       for (const pid of observed) {
         const args = await describeProbePid(pid);
-        if (args?.includes("openclaw-cron-mcp-cleanup-probe")) {
+        if (args?.includes("afora-cron-mcp-cleanup-probe")) {
           allExited = false;
           break;
         }
@@ -214,7 +214,7 @@ async function runCronCleanupScenario(params: {
   );
   const initialArgs = await describeProbePid(pid);
   assert(
-    initialArgs === undefined || initialArgs.includes("openclaw-cron-mcp-cleanup-probe"),
+    initialArgs === undefined || initialArgs.includes("afora-cron-mcp-cleanup-probe"),
     `cron MCP probe pid did not look like the test server: pid=${pid} args=${initialArgs}`,
   );
 
@@ -303,7 +303,7 @@ async function main() {
   const { connectGateway } = harness;
   const gatewayUrl = process.env.GW_URL?.trim();
   const gatewayToken = process.env.GW_TOKEN?.trim();
-  const stateDir = process.env.OPENCLAW_STATE_DIR?.trim() || path.join(os.homedir(), ".openclaw");
+  const stateDir = process.env.AFORA_STATE_DIR?.trim() || path.join(os.homedir(), ".afora");
   const pidPath = path.join(stateDir, "cron-mcp-cleanup", "probe.pid");
   const pidsPath = path.join(stateDir, "cron-mcp-cleanup", "probe.pids");
   const exitPath = path.join(stateDir, "cron-mcp-cleanup", "probe.exit");

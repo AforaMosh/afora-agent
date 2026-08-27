@@ -1,5 +1,5 @@
 // Control UI chat module implements realtime talk conversation behavior.
-import { sliceUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { sliceUtf16Safe } from "@afora/normalization-core/utf16-slice";
 
 type RealtimeTalkConversationRole = "user" | "assistant";
 

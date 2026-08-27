@@ -8,10 +8,10 @@ import {
   type MarkdownStyleSpan,
   type MarkdownTableCell,
   type MarkdownTableMeta,
-} from "openclaw/plugin-sdk/text-chunking";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/text-chunking";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { createReceiptCard, toFlexMessage, type FlexBubble } from "./flex-templates.js";
-export { stripMarkdown } from "openclaw/plugin-sdk/text-chunking";
+export { stripMarkdown } from "afora-agent/plugin-sdk/text-chunking";
 
 type FlexMessage = messagingApi.FlexMessage;
 type FlexComponent = messagingApi.FlexComponent;

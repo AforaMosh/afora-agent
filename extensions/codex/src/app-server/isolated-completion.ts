@@ -1,4 +1,4 @@
-import type { AgentHarnessV2 } from "openclaw/plugin-sdk/agent-harness-runtime";
+import type { AgentHarnessV2 } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import { resolveCodexAppServerPreparedAuthHandoff } from "./auth-bridge.js";
 import { runBoundedCodexAppServerTurn, type CodexBoundedTurnOptions } from "./bounded-turn.js";
 import { readCodexPluginConfig, resolveCodexAppServerHomeScope } from "./config.js";

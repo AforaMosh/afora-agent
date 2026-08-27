@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { getUserProfileDisplay } from "../state/user-profiles.js";
 import { formatUserProfileAvatarPath } from "./user-profiles-http-path.js";
 

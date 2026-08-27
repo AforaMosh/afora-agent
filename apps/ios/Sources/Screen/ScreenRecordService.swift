@@ -1,5 +1,5 @@
 import AVFoundation
-import OpenClawKit
+import AforaKit
 import ReplayKit
 
 final class ScreenRecordService: @unchecked Sendable {
@@ -212,7 +212,7 @@ final class ScreenRecordService: @unchecked Sendable {
     private let recordQueue: DispatchQueue
 
     init(
-        recordQueue: DispatchQueue = DispatchQueue(label: "ai.openclawfoundation.app.screenrecord"),
+        recordQueue: DispatchQueue = DispatchQueue(label: "ai.aforafoundation.app.screenrecord"),
         startReplayKitCaptureAction: @escaping StartCaptureAction = { includeAudio, handler, completion in
             startReplayKitCapture(
                 includeAudio: includeAudio,
@@ -316,7 +316,7 @@ final class ScreenRecordService: @unchecked Sendable {
             return URL(fileURLWithPath: outPath)
         }
         return FileManager().temporaryDirectory
-            .appendingPathComponent("openclaw-screen-record-\(UUID().uuidString).mp4")
+            .appendingPathComponent("afora-screen-record-\(UUID().uuidString).mp4")
     }
 
     @MainActor

@@ -1,5 +1,5 @@
-const CLOUD_RECOVERY_LEGACY_STORAGE_PREFIX = "openclaw.new-session.cloud-recovery.v1:";
-const CLOUD_RECOVERY_STORAGE_PREFIX = "openclaw.new-session.cloud-recovery.v2:";
+const CLOUD_RECOVERY_LEGACY_STORAGE_PREFIX = "afora.new-session.cloud-recovery.v1:";
+const CLOUD_RECOVERY_STORAGE_PREFIX = "afora.new-session.cloud-recovery.v2:";
 
 // Web Storage keys are JS strings, so frame UTF-16 code units directly.
 // This keeps every component unambiguous without rejecting lone surrogates.

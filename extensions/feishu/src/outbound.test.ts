@@ -2,14 +2,14 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { createChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
-import { verifyChannelMessageAdapterCapabilityProofs } from "openclaw/plugin-sdk/channel-outbound";
+import { createChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
+import { verifyChannelMessageAdapterCapabilityProofs } from "afora-agent/plugin-sdk/channel-outbound";
 import {
   adaptMessagePresentationForChannel,
   renderMessagePresentationFallbackText,
   type MessagePresentation,
   type MessagePresentationAction,
-} from "openclaw/plugin-sdk/interactive-runtime";
+} from "afora-agent/plugin-sdk/interactive-runtime";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClawdbotConfig } from "../runtime-api.js";
 
@@ -44,7 +44,7 @@ const resolvePinnedHostnameWithPolicyMock = vi.hoisted(() =>
   }),
 );
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
@@ -214,7 +214,7 @@ afterAll(() => {
   vi.doUnmock("./client.js");
   vi.doUnmock("./drive.js");
   vi.doUnmock("./comment-reaction.js");
-  vi.doUnmock("openclaw/plugin-sdk/ssrf-runtime");
+  vi.doUnmock("afora-agent/plugin-sdk/ssrf-runtime");
   vi.resetModules();
 });
 
@@ -389,7 +389,7 @@ describe("feishuOutbound.sendText local-image auto-convert", () => {
   });
 
   async function createTmpImage(ext = ".png"): Promise<{ dir: string; file: string }> {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-feishu-outbound-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-feishu-outbound-"));
     const file = path.join(dir, `sample${ext}`);
     await fs.writeFile(file, "image-data");
     return { dir, file };
@@ -702,7 +702,7 @@ describe("feishuOutbound.sendPayload native cards", () => {
   });
 
   async function createTmpImage(ext = ".png"): Promise<{ dir: string; file: string }> {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-feishu-payload-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-feishu-payload-"));
     const file = path.join(dir, `sample${ext}`);
     await fs.writeFile(file, "image-data");
     return { dir, file };
@@ -2260,8 +2260,8 @@ describe("feishuOutbound comment-thread routing", () => {
   });
 
   it.each([
-    ["local path", path.join(os.tmpdir(), "openclaw-feishu-comment-local-voice.mp3")],
-    ["loopback URL", "http://127.0.0.1:3000/tmp/openclaw-voice.mp3"],
+    ["local path", path.join(os.tmpdir(), "afora-feishu-comment-local-voice.mp3")],
+    ["loopback URL", "http://127.0.0.1:3000/tmp/afora-voice.mp3"],
   ])("does not leak a %s in comment-thread media fallbacks", async (_label, mediaUrl) => {
     const result = await feishuOutbound.sendMedia?.({
       cfg: emptyConfig,
@@ -3043,13 +3043,13 @@ describe("feishuOutbound.sendMedia replyToId forwarding", () => {
   });
 
   it.each([
-    ["local path", path.join(os.tmpdir(), "openclaw-feishu-local-voice.mp3")],
-    ["file URL", "file:///tmp/openclaw-feishu-local-voice.mp3"],
-    ["relative path", "./outbound/openclaw-feishu-local-voice.mp3"],
-    ["loopback URL", "http://127.0.0.1:3000/tmp/openclaw-voice.mp3"],
-    ["localhost URL", "https://localhost/tmp/openclaw-voice.mp3"],
-    ["private-DNS URL", "https://files.example.test/openclaw-voice.mp3"],
-    ["credentialed URL", "https://user@example.com/openclaw-voice.mp3"],
+    ["local path", path.join(os.tmpdir(), "afora-feishu-local-voice.mp3")],
+    ["file URL", "file:///tmp/afora-feishu-local-voice.mp3"],
+    ["relative path", "./outbound/afora-feishu-local-voice.mp3"],
+    ["loopback URL", "http://127.0.0.1:3000/tmp/afora-voice.mp3"],
+    ["localhost URL", "https://localhost/tmp/afora-voice.mp3"],
+    ["private-DNS URL", "https://files.example.test/afora-voice.mp3"],
+    ["credentialed URL", "https://user@example.com/afora-voice.mp3"],
     ["control-character URL", "https://example.com/\nhttp://127.0.0.1/private"],
   ])("does not leak a %s in the upload failure fallback", async (_label, mediaUrl) => {
     sendMediaFeishuMock.mockRejectedValueOnce(new Error("upload failed"));

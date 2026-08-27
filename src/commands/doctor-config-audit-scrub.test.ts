@@ -11,7 +11,7 @@ import {
 let tempRoot: string | null = null;
 
 async function makeHome(): Promise<string> {
-  tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-doctor-config-audit-"));
+  tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-doctor-config-audit-"));
   return tempRoot;
 }
 
@@ -25,11 +25,11 @@ afterEach(async () => {
 describe("detectConfigAuditScrubIssue", () => {
   it("detects config-audit scrub work without rewriting the log", async () => {
     const home = await makeHome();
-    const auditPath = path.join(home, ".openclaw", "logs", "config-audit.jsonl");
+    const auditPath = path.join(home, ".afora", "logs", "config-audit.jsonl");
     await fs.mkdir(path.dirname(auditPath), { recursive: true, mode: 0o700 });
     const record = {
       ts: "2026-05-02T00:03:48.471Z",
-      argv: ["node", "openclaw.mjs", "config", "set", "x", "xoxb-bad-token-1234567890abcdef"],
+      argv: ["node", "afora.mjs", "config", "set", "x", "xoxb-bad-token-1234567890abcdef"],
       execArgv: [],
     };
     await fs.writeFile(auditPath, `${JSON.stringify(record)}\n`, { encoding: "utf8", mode: 0o600 });
@@ -51,7 +51,7 @@ describe("detectConfigAuditScrubIssue", () => {
 
   it("maps scrub work to structured findings and dry-run effects", async () => {
     const home = await makeHome();
-    const auditPath = path.join(home, ".openclaw", "logs", "config-audit.jsonl");
+    const auditPath = path.join(home, ".afora", "logs", "config-audit.jsonl");
     const result = { scanned: 2, rewritten: 1, skipped: 0, aborted: false, auditPath };
 
     expect(configAuditScrubToHealthFinding(result)).toEqual(

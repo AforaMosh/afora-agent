@@ -2,18 +2,18 @@
 import { createHash } from "node:crypto";
 import { realpath } from "node:fs/promises";
 import { isAbsolute, relative, resolve, sep } from "node:path";
-import { coerceErrorMessage } from "@openclaw/normalization-core/error-coercion";
+import { coerceErrorMessage } from "@afora/normalization-core/error-coercion";
 import { root as fsSafeRoot, FsSafeError, type Root } from "../infra/fs-safe.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
 import { parseClawMarkdown } from "./reader.js";
 import type { ClawAddPlan, ClawAddPlanAction, ClawDiagnostic } from "./types.js";
 
 export const CLAW_WORKSPACE_FILE_RECORD_SCHEMA_VERSION =
-  "openclaw.clawWorkspaceFileRecord.v1" as const;
+  "afora.clawWorkspaceFileRecord.v1" as const;
 
 const MAX_CLAW_WORKSPACE_FILE_BYTES = 1024 * 1024;
 
@@ -124,9 +124,9 @@ export async function readClawWorkspaceActionSource(params: {
 
 function persistWorkspaceFile(
   record: PersistedClawWorkspaceFile,
-  options: OpenClawStateDatabaseOptions,
+  options: AforaStateDatabaseOptions,
 ): void {
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     // sqlite-allow-raw: this Claw prototype state-table write is scoped to one owned row.
     db /* sqlite-allow-raw: Claw workspace-file provenance write. */
       .prepare(
@@ -167,9 +167,9 @@ type PersistedClawWorkspaceFileRow = {
 function readWorkspaceFile(
   agentId: string,
   targetPath: string,
-  options: OpenClawStateDatabaseOptions,
+  options: AforaStateDatabaseOptions,
 ): PersistedClawWorkspaceFile | undefined {
-  return runOpenClawStateWriteTransaction(({ db }) => {
+  return runAforaStateWriteTransaction(({ db }) => {
     const statement = db /* sqlite-allow-raw: one owned Claw state-table row */
       .prepare(
         `SELECT schema_version, agent_id, workspace, target_path, source_path,
@@ -220,9 +220,9 @@ function sameWorkspaceFileOwner(
 function updateWorkspaceFileStatus(
   record: PersistedClawWorkspaceFile,
   expectedStatuses: PersistedClawWorkspaceFile["status"][],
-  options: OpenClawStateDatabaseOptions,
+  options: AforaStateDatabaseOptions,
 ): void {
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     const expectedPlaceholders = expectedStatuses.map(() => "?").join(", ");
     const statement = db /* sqlite-allow-raw: one owned Claw state-table row */
       .prepare(
@@ -248,9 +248,9 @@ function updateWorkspaceFileStatus(
 
 export function upsertClawWorkspaceFile(
   record: PersistedClawWorkspaceFile,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): void {
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     db /* sqlite-allow-raw: Claw workspace-file provenance write. */
       .prepare(
         `INSERT INTO claw_workspace_files (
@@ -286,9 +286,9 @@ export function upsertClawWorkspaceFile(
 export function deleteClawWorkspaceFileRecord(
   agentId: string,
   path: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): void {
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     db /* sqlite-allow-raw: Claw workspace-file provenance write. */
       .prepare("DELETE FROM claw_workspace_files WHERE agent_id = ? AND target_path = ?")
       .run(agentId, path);
@@ -301,9 +301,9 @@ function workspaceFileActions(plan: ClawAddPlan): ClawAddPlanAction[] {
 
 export function readClawWorkspaceFiles(
   agentId: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): PersistedClawWorkspaceFile[] {
-  const database = openOpenClawStateDatabase(options);
+  const database = openAforaStateDatabase(options);
   if (
     options.readOnly &&
     !database.db /* sqlite-allow-raw: read-only Claw workspace-file table-existence probe. */
@@ -328,7 +328,7 @@ export function readClawWorkspaceFiles(
 
 export async function createClawWorkspaceFiles(
   plan: ClawAddPlan,
-  options: OpenClawStateDatabaseOptions & { nowMs?: number } = {},
+  options: AforaStateDatabaseOptions & { nowMs?: number } = {},
 ): Promise<PersistedClawWorkspaceFile[]> {
   const actions = workspaceFileActions(plan);
   if (actions.length === 0) {

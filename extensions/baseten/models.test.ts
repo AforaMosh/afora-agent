@@ -2,7 +2,7 @@ import {
   buildOpenAICompatibleLiveModelProviderConfig,
   clearLiveCatalogCacheForTests,
   type LiveModelCatalogFetchGuard,
-} from "openclaw/plugin-sdk/provider-catalog-live-runtime";
+} from "afora-agent/plugin-sdk/provider-catalog-live-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   BASETEN_DEFAULT_MODEL_REF,

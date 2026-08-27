@@ -11,11 +11,11 @@ import {
 
 // Environment contract for debug proxy capture. These vars are passed to child
 // processes and provider transports so capture sessions share one store/proxy.
-const OPENCLAW_DEBUG_PROXY_ENABLED = "OPENCLAW_DEBUG_PROXY_ENABLED";
-const OPENCLAW_DEBUG_PROXY_URL = "OPENCLAW_DEBUG_PROXY_URL";
-const OPENCLAW_DEBUG_PROXY_CERT_DIR = "OPENCLAW_DEBUG_PROXY_CERT_DIR";
-const OPENCLAW_DEBUG_PROXY_SESSION_ID = "OPENCLAW_DEBUG_PROXY_SESSION_ID";
-const OPENCLAW_DEBUG_PROXY_REQUIRE = "OPENCLAW_DEBUG_PROXY_REQUIRE";
+const AFORA_DEBUG_PROXY_ENABLED = "AFORA_DEBUG_PROXY_ENABLED";
+const AFORA_DEBUG_PROXY_URL = "AFORA_DEBUG_PROXY_URL";
+const AFORA_DEBUG_PROXY_CERT_DIR = "AFORA_DEBUG_PROXY_CERT_DIR";
+const AFORA_DEBUG_PROXY_SESSION_ID = "AFORA_DEBUG_PROXY_SESSION_ID";
+const AFORA_DEBUG_PROXY_REQUIRE = "AFORA_DEBUG_PROXY_REQUIRE";
 
 export type DebugProxySettings = {
   enabled: boolean;
@@ -39,20 +39,20 @@ function isTruthy(value: string | undefined): boolean {
 export function resolveDebugProxySettings(
   env: NodeJS.ProcessEnv = process.env,
 ): DebugProxySettings {
-  const enabled = isTruthy(env[OPENCLAW_DEBUG_PROXY_ENABLED]);
-  const explicitSessionId = env[OPENCLAW_DEBUG_PROXY_SESSION_ID]?.trim() || undefined;
+  const enabled = isTruthy(env[AFORA_DEBUG_PROXY_ENABLED]);
+  const explicitSessionId = env[AFORA_DEBUG_PROXY_SESSION_ID]?.trim() || undefined;
   // Local implicit sessions stay stable within one process so repeated callers
   // write to the same capture session until an explicit id overrides it.
   const sessionId = explicitSessionId ?? (cachedImplicitSessionId ??= randomUUID());
   return {
     enabled,
-    required: isTruthy(env[OPENCLAW_DEBUG_PROXY_REQUIRE]),
-    proxyUrl: env[OPENCLAW_DEBUG_PROXY_URL]?.trim() || undefined,
+    required: isTruthy(env[AFORA_DEBUG_PROXY_REQUIRE]),
+    proxyUrl: env[AFORA_DEBUG_PROXY_URL]?.trim() || undefined,
     dbPath: resolveDebugProxyDbPath(env),
     blobDir: resolveDebugProxyBlobDir(env),
-    certDir: env[OPENCLAW_DEBUG_PROXY_CERT_DIR]?.trim() || resolveDebugProxyCertDir(env),
+    certDir: env[AFORA_DEBUG_PROXY_CERT_DIR]?.trim() || resolveDebugProxyCertDir(env),
     sessionId,
-    sourceProcess: "openclaw",
+    sourceProcess: "afora",
   };
 }
 
@@ -68,11 +68,11 @@ export function applyDebugProxyEnv(
   // preserving unrelated environment values.
   return {
     ...env,
-    [OPENCLAW_DEBUG_PROXY_ENABLED]: "1",
-    [OPENCLAW_DEBUG_PROXY_REQUIRE]: "1",
-    [OPENCLAW_DEBUG_PROXY_URL]: params.proxyUrl,
-    [OPENCLAW_DEBUG_PROXY_CERT_DIR]: params.certDir ?? resolveDebugProxyCertDir(env),
-    [OPENCLAW_DEBUG_PROXY_SESSION_ID]: params.sessionId,
+    [AFORA_DEBUG_PROXY_ENABLED]: "1",
+    [AFORA_DEBUG_PROXY_REQUIRE]: "1",
+    [AFORA_DEBUG_PROXY_URL]: params.proxyUrl,
+    [AFORA_DEBUG_PROXY_CERT_DIR]: params.certDir ?? resolveDebugProxyCertDir(env),
+    [AFORA_DEBUG_PROXY_SESSION_ID]: params.sessionId,
     HTTP_PROXY: params.proxyUrl,
     HTTPS_PROXY: params.proxyUrl,
     ALL_PROXY: params.proxyUrl,

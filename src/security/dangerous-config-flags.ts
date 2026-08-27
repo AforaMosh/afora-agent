@@ -6,7 +6,7 @@ import {
   tryResolveDefaultAgentId,
 } from "../agents/agent-scope.js";
 import { resolveDefaultAgentWorkspaceDir } from "../agents/workspace-default.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { collectPluginConfigContractMatches } from "../plugins/config-contract-matches.js";
 import { resolvePluginConfigContractsById } from "../plugins/config-contracts.js";
 import { isRecord, resolveUserPath } from "../utils.js";
@@ -18,7 +18,7 @@ import { collectEnabledInsecureOrDangerousFlagsFromCurrentSnapshot } from "./dan
  * Plugin flags use current metadata when requested, then fall back to resolving manifest contracts.
  */
 export function collectEnabledInsecureOrDangerousFlags(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   options: { preferCurrentPluginMetadataSnapshot?: boolean } = {},
 ): string[] {
   const pluginEntries = cfg.plugins?.entries;

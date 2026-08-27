@@ -1,5 +1,5 @@
 /**
- * Strips OpenClaw-injected inbound metadata blocks from a user-role message
+ * Strips Afora-injected inbound metadata blocks from a user-role message
  * text before it is displayed in any UI surface (TUI, webchat, macOS app) or
  * replayed as historical context to the model.
  *
@@ -13,15 +13,15 @@
  * Also strips the timestamp prefix injected by `injectTimestamp` so UI surfaces
  * do not show AI-facing envelope metadata as user text.
  *
- * Detection: every OpenClaw-injected context header is stamped with a fixed
- * provenance marker `⟦openclaw:ctx⟧`. Strippers key on this marker rather than
+ * Detection: every Afora-injected context header is stamped with a fixed
+ * provenance marker `⟦afora:ctx⟧`. Strippers key on this marker rather than
  * on label text, making detection label-agnostic (arbitrary structured labels
  * are supported) and collision-free (user text never carries the marker). This
  * fixes both label collision risks (e.g., `Sender:` in natural prose) and the
  * structured-context over-strip (arbitrary plugin labels are now recognized).
  */
 
-import { safeParseJsonRecord } from "@openclaw/normalization-core";
+import { safeParseJsonRecord } from "@afora/normalization-core";
 import { MESSAGE_TOOL_DELIVERY_HINTS } from "./delivery-hints.js";
 import { INBOUND_CONTEXT_MARKER } from "./inbound-context-marker.js";
 
@@ -227,7 +227,7 @@ export function stripInboundMetadata(text: string): string {
     if (line === undefined) {
       break;
     }
-    // Channel context is appended by OpenClaw as a terminal metadata suffix.
+    // Channel context is appended by Afora as a terminal metadata suffix.
     // When this structured header appears, drop it and everything that follows.
     if (!inMetaBlock && shouldStripTrailingContextBlock(strippedLeadingPrefixLines, i)) {
       break;

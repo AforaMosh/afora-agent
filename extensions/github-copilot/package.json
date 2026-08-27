@@ -1,13 +1,13 @@
 {
-  "name": "@openclaw/github-copilot-provider",
+  "name": "@afora/github-copilot-provider",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw GitHub Copilot provider plugin",
+  "description": "Afora GitHub Copilot provider plugin",
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

@@ -4,7 +4,7 @@
  * It is intentionally in-memory and process-local; callers that need distributed
  * limits must layer their own persistence before invoking request work.
  */
-import { resolveIntegerOption } from "@openclaw/normalization-core/number-coercion";
+import { resolveIntegerOption } from "@afora/normalization-core/number-coercion";
 
 /** Minimal fixed-window limiter interface used by memory and request guard helpers. */
 export type FixedWindowRateLimiter = {

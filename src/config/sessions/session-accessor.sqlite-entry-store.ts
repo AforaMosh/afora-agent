@@ -1,11 +1,11 @@
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import type { Selectable } from "kysely";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
 } from "../../infra/kysely-sync.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
-import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
+import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.generated.js";
+import type { AforaAgentDatabase } from "../../state/afora-agent-db.js";
 import {
   linkSessionConversation,
   prepareSessionConversation,
@@ -64,8 +64,8 @@ import {
 import type { SessionEntry } from "./types.js";
 export { collectSessionEntryLookupKeys } from "./store-entry.js";
 
-type OpenClawAgentDatabaseReader = Pick<OpenClawAgentDatabase, "agentId" | "db">;
-type SessionEntryRow = Selectable<OpenClawAgentKyselyDatabase["session_nodes"]>;
+type AforaAgentDatabaseReader = Pick<AforaAgentDatabase, "agentId" | "db">;
+type SessionEntryRow = Selectable<AforaAgentKyselyDatabase["session_nodes"]>;
 export type ResolvedSessionEntryRow = {
   entry: SessionEntry;
   legacyKeys: string[];
@@ -81,7 +81,7 @@ type SqliteLifecycleTargetSnapshot = {
 };
 
 export function parseReadableSqliteSessionEntryRow(
-  database: Pick<OpenClawAgentDatabase, "db">,
+  database: Pick<AforaAgentDatabase, "db">,
   row: Pick<SessionEntryRow, "current_session_id" | "entry_json" | "session_key" | "updated_at"> &
     SqliteSessionOwnerRow,
 ): SessionEntry | null {
@@ -126,7 +126,7 @@ class SqliteSessionMutationConflictError extends Error {
 }
 
 export function readSessionIdentitySnapshot(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionKeys: Iterable<string>,
 ): Map<string, SessionEntry> {
   const snapshot = new Map<string, SessionEntry>();
@@ -146,7 +146,7 @@ export function createSessionIdentitySnapshot(
 }
 
 export function readSessionEntryRow(
-  database: OpenClawAgentDatabaseReader,
+  database: AforaAgentDatabaseReader,
   sessionKey: string,
 ): ResolvedSessionEntryRow | undefined {
   assertCanonicalSqliteSessionKeysCurrent(database);
@@ -154,7 +154,7 @@ export function readSessionEntryRow(
 }
 
 function readSessionEntryRowUnchecked(
-  database: OpenClawAgentDatabaseReader,
+  database: AforaAgentDatabaseReader,
   sessionKey: string,
 ): ResolvedSessionEntryRow | undefined {
   const db = getSessionKysely(database.db);
@@ -184,7 +184,7 @@ function readSessionEntryRowUnchecked(
 // Async updaters prepare against this complete selection. Capturing alias rows
 // prevents the commit phase from deleting a concurrently changed legacy key.
 export function readSessionEntrySelectionSnapshot(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionKey: string,
   exact: boolean,
 ): SqliteSessionEntrySelectionSnapshot {
@@ -218,7 +218,7 @@ export function assertSessionEntrySelectionUnchanged(
 }
 
 export function readExactSessionEntryRow(
-  database: OpenClawAgentDatabaseReader,
+  database: AforaAgentDatabaseReader,
   sessionKey: string,
 ): ResolvedSessionEntryRow | undefined {
   const db = getSessionKysely(database.db);
@@ -234,7 +234,7 @@ export function readExactSessionEntryRow(
 }
 
 export function readExactSessionEntryJsonForCanonicalRepair(
-  database: Pick<OpenClawAgentDatabase, "db">,
+  database: Pick<AforaAgentDatabase, "db">,
   sessionKey: string,
 ): string | undefined {
   const db = getSessionKysely(database.db);
@@ -245,7 +245,7 @@ export function readExactSessionEntryJsonForCanonicalRepair(
 }
 
 export function readExactSessionEntryRowValidated(
-  database: OpenClawAgentDatabaseReader,
+  database: AforaAgentDatabaseReader,
   sessionKey: string,
 ): ResolvedSessionEntryRow | undefined {
   assertCanonicalSqliteSessionKeysCurrent(database);
@@ -253,7 +253,7 @@ export function readExactSessionEntryRowValidated(
 }
 
 export function readSessionEntryStore(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   options: { allowCanonicalRepair?: boolean } = {},
 ): Record<string, SessionEntry> {
   if (options.allowCanonicalRepair !== true) {
@@ -279,7 +279,7 @@ export function readSessionEntryStore(
   return store;
 }
 
-export function readSessionEntryCount(database: OpenClawAgentDatabase): number {
+export function readSessionEntryCount(database: AforaAgentDatabase): number {
   const db = getSessionKysely(database.db);
   const rows = executeSqliteQuerySync(
     database.db,
@@ -288,7 +288,7 @@ export function readSessionEntryCount(database: OpenClawAgentDatabase): number {
   return rows.reduce((count, row) => count + (parseSessionEntryRow(row) ? 1 : 0), 0);
 }
 
-export function readSessionEntryKeys(database: OpenClawAgentDatabaseReader): string[] {
+export function readSessionEntryKeys(database: AforaAgentDatabaseReader): string[] {
   const db = getSessionKysely(database.db);
   return executeSqliteQuerySync(
     database.db,
@@ -300,7 +300,7 @@ export function readSessionEntryKeys(database: OpenClawAgentDatabaseReader): str
 }
 
 export function resolveLifecyclePrimaryEntry(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   target: { canonicalKey: string; storeKeys: string[] },
   options: { allowCanonicalMove?: boolean } = {},
 ): { key: string; entry: SessionEntry } | undefined {
@@ -324,7 +324,7 @@ export function resolveLifecyclePrimaryEntry(
 }
 
 export function readLifecycleTargetSnapshot(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   target: { canonicalKey: string; storeKeys: string[] },
   options: { allowCanonicalMove?: boolean } = {},
 ): SqliteLifecycleTargetSnapshot {
@@ -361,7 +361,7 @@ export function normalizeLifecycleTarget(target: { canonicalKey: string; storeKe
 }
 
 export function deleteSessionEntryRows(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionKey: string,
   options: { deleteOwnedWindows?: boolean; deliveryCleanupKeys?: readonly string[] } = {},
 ): void {
@@ -435,7 +435,7 @@ export function deleteSessionEntryRows(
 
 /** Remove the logical entry while retaining its node-owned transcript windows. */
 function clearSqliteSessionEntryPreservingWindows(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   params: { sessionId: string; sessionKey: string; updatedAt: number },
 ): void {
   const db = getSessionKysely(database.db);
@@ -491,7 +491,7 @@ function clearSqliteSessionEntryPreservingWindows(
 }
 
 export function deleteLifecycleTargetRows(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   target: { canonicalKey: string; storeKeys: string[] },
 ): void {
   for (const sessionKey of uniqueStrings([target.canonicalKey, ...target.storeKeys])) {
@@ -503,7 +503,7 @@ export function deleteLifecycleTargetRows(
 }
 
 function sqliteLifecycleTargetMatchesExpectedEntry(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   target: { canonicalKey: string; storeKeys: string[] },
   expectedEntry: SessionEntry | undefined,
 ): boolean {
@@ -515,7 +515,7 @@ function sqliteLifecycleTargetMatchesExpectedEntry(
 }
 
 export function assertLifecycleTargetUnchanged(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   target: { canonicalKey: string; storeKeys: string[] },
   expectedEntry: SessionEntry | undefined,
   operation: "deleted" | "reset",
@@ -527,7 +527,7 @@ export function assertLifecycleTargetUnchanged(
 }
 
 export function deleteLegacySessionEntryRows(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   legacyKeys: string[],
   sessionKey: string,
   options: { rehomeMembers?: boolean } = {},
@@ -552,7 +552,7 @@ export function deleteLegacySessionEntryRows(
 
 /** Move retained generations to the canonical node before removing key aliases. */
 export function rehomeSessionWindows(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   canonicalKey: string,
   previousKeys: Iterable<string>,
 ): void {
@@ -573,7 +573,7 @@ export function rehomeSessionWindows(
 }
 
 export function writeSessionEntry(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionKey: string,
   entry: SessionEntry,
   options: {

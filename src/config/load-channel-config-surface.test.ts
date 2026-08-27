@@ -11,7 +11,7 @@ function createDemoModule(repoRoot: string, filename: string, source: string): s
   fs.mkdirSync(path.dirname(modulePath), { recursive: true });
   fs.writeFileSync(
     path.join(packageRoot, "package.json"),
-    JSON.stringify({ name: "@openclaw/demo", type: "module" }),
+    JSON.stringify({ name: "@afora/demo", type: "module" }),
     "utf8",
   );
   fs.writeFileSync(modulePath, source, "utf8");
@@ -20,12 +20,12 @@ function createDemoModule(repoRoot: string, filename: string, source: string): s
 
 describe("loadChannelConfigSurfaceModule", () => {
   it("loads TypeScript through plugin SDK aliases", async () => {
-    await withTestDir({ prefix: "openclaw-config-surface-" }, async (repoRoot) => {
+    await withTestDir({ prefix: "afora-config-surface-" }, async (repoRoot) => {
       const modulePath = createDemoModule(
         repoRoot,
         "config-schema.ts",
         `
-          import { buildJsonChannelConfigSchema } from "openclaw/plugin-sdk/channel-config-schema";
+          import { buildJsonChannelConfigSchema } from "afora-agent/plugin-sdk/channel-config-schema";
 
           const label: string = "OK";
           export const DemoChannelConfigSchema = buildJsonChannelConfigSchema(
@@ -43,7 +43,7 @@ describe("loadChannelConfigSurfaceModule", () => {
   });
 
   it("wraps a raw config schema loaded natively", async () => {
-    await withTestDir({ prefix: "openclaw-config-surface-" }, async (repoRoot) => {
+    await withTestDir({ prefix: "afora-config-surface-" }, async (repoRoot) => {
       const modulePath = createDemoModule(
         repoRoot,
         "config-schema.mjs",
@@ -65,7 +65,7 @@ describe("loadChannelConfigSurfaceModule", () => {
   });
 
   it("returns null without a config schema export", async () => {
-    await withTestDir({ prefix: "openclaw-config-surface-" }, async (repoRoot) => {
+    await withTestDir({ prefix: "afora-config-surface-" }, async (repoRoot) => {
       const modulePath = createDemoModule(
         repoRoot,
         "config-schema.mjs",
@@ -77,7 +77,7 @@ describe("loadChannelConfigSurfaceModule", () => {
   });
 
   it("rejects invalid module source", async () => {
-    await withTestDir({ prefix: "openclaw-config-surface-" }, async (repoRoot) => {
+    await withTestDir({ prefix: "afora-config-surface-" }, async (repoRoot) => {
       const modulePath = createDemoModule(repoRoot, "config-schema.ts", "export const = ;");
 
       await expect(loadChannelConfigSurfaceModule(modulePath)).rejects.toThrow();

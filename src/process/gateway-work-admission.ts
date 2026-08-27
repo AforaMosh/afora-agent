@@ -37,7 +37,7 @@ type GatewayWorkAdmissionState = {
 const admissionLog = createSubsystemLogger("gateway/admission");
 
 const GATEWAY_WORK_ADMISSION_STATE = resolveGlobalSingleton(
-  Symbol.for("openclaw.gatewayWorkAdmissionState"),
+  Symbol.for("afora.gatewayWorkAdmissionState"),
   (): GatewayWorkAdmissionState => ({
     restartDraining: false,
     restartSignalPending: false,

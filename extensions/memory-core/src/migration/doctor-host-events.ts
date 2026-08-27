@@ -2,11 +2,11 @@ import crypto from "node:crypto";
 import path from "node:path";
 // Doctor enumeration cold-loads this closure; memory-host-events pulls the
 // event-store/kysely graph, so values load lazily inside the async migration.
-import type { normalizeMemoryHostEventRecordForStorage } from "openclaw/plugin-sdk/memory-host-events";
+import type { normalizeMemoryHostEventRecordForStorage } from "afora-agent/plugin-sdk/memory-host-events";
 import type {
   PluginDoctorStateMigration,
   PluginDoctorStateMigrationContext,
-} from "openclaw/plugin-sdk/runtime-doctor-migrations";
+} from "afora-agent/plugin-sdk/runtime-doctor-migrations";
 import {
   collectLegacyMemoryHostEventSources,
   memoryHostWorkspacePrefix,
@@ -157,7 +157,7 @@ async function migrateLegacyMemoryHostEventSource(params: {
   warnings: string[];
 }): Promise<"completed" | "blocked"> {
   const { normalizeMemoryHostEventRecordForStorage, resolveMemoryHostEventLogPath } =
-    await import("openclaw/plugin-sdk/memory-host-events");
+    await import("afora-agent/plugin-sdk/memory-host-events");
   const activeRelativePath = path.relative(
     params.source.workspaceDir,
     resolveMemoryHostEventLogPath(params.source.workspaceDir),
@@ -524,7 +524,7 @@ async function migrateLegacyMemoryHostEventSource(params: {
     }
     if (source.storage !== "archive" && (await source.root.exists(activeRelativePath))) {
       params.warnings.push(
-        "An old writer recreated the Memory Core host event source; rerun openclaw doctor --fix to import the retained rows",
+        "An old writer recreated the Memory Core host event source; rerun afora doctor --fix to import the retained rows",
       );
     }
     return "completed";

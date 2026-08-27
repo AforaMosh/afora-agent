@@ -12,13 +12,13 @@ import {
   nativeApprovalTargetsMatch,
   shouldSuppressLocalNativeExecApprovalPrompt,
 } from "./approval-native-helpers.js";
-import type { OpenClawConfig } from "./config-runtime.js";
+import type { AforaConfig } from "./config-runtime.js";
 
 const EMPTY_SESSION_CFG = {
   session: {
     store: ".artifacts/test/approval-native-helpers-empty-sessions.json",
   },
-} satisfies OpenClawConfig;
+} satisfies AforaConfig;
 
 function createMatrixRouteGates(options?: {
   enabledAccounts?: readonly string[];
@@ -157,7 +157,7 @@ describe("createNativeApprovalChannelRouteGates", () => {
   it("reports each eligible account as a raw candidate for unbound session routes", () => {
     const cfg = {
       approvals: { exec: { enabled: true, mode: "session" } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const request = {
       ...matrixExecRequest,
       request: { ...matrixExecRequest.request, turnSourceAccountId: undefined },
@@ -193,7 +193,7 @@ describe("createNativeApprovalChannelRouteGates", () => {
           mode: "session",
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(
       gates.canApprovalPotentiallyRouteToChannel({
@@ -249,7 +249,7 @@ describe("createNativeApprovalChannelRouteGates", () => {
           sessionFilter: ["matrix:room"],
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(
       gates.isSessionApprovalEligible({
@@ -283,7 +283,7 @@ describe("createNativeApprovalChannelRouteGates", () => {
           targets: [{ channel: "matrix", to: "room-1" }],
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const target = { channel: "matrix", to: "room-1", source: "target" } as const;
 
     expect(

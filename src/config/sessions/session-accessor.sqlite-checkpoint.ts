@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { executeSqliteQuerySync } from "../../infra/kysely-sync.js";
 import {
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import type { TranscriptEvent } from "./session-accessor.sqlite-contract.js";
 import {
   collectSessionEntryLookupKeys,
@@ -107,7 +107,7 @@ export async function branchCompactionCheckpointSession(
     let result: SqliteCompactionCheckpointSessionMutationResult | undefined;
     let previousIdentity = new Map<string, SessionEntry>();
     let currentIdentity = new Map<string, SessionEntry>();
-    runOpenClawAgentWriteTransaction((database) => {
+    runAforaAgentWriteTransaction((database) => {
       const identityKeys = uniqueStrings([
         ...collectSessionEntryLookupKeys(database, sourceKey),
         ...collectSessionEntryLookupKeys(database, targetKey),
@@ -145,7 +145,7 @@ export async function restoreCompactionCheckpointSession(
     let result: SqliteCompactionCheckpointSessionMutationResult | undefined;
     let previousIdentity = new Map<string, SessionEntry>();
     let currentIdentity = new Map<string, SessionEntry>();
-    runOpenClawAgentWriteTransaction((database) => {
+    runAforaAgentWriteTransaction((database) => {
       const identityKeys = uniqueStrings([
         ...collectSessionEntryLookupKeys(database, sessionKey),
         ...collectSessionEntryLookupKeys(database, targetKey),
@@ -169,7 +169,7 @@ export async function restoreCompactionCheckpointSession(
 /** Publishes a transcript update using the SQLite transcript scope target. */
 
 function branchSqliteCompactionCheckpointSessionInTransaction(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   params: {
     checkpointId: string;
     expectedState: SessionEntryExpectedState;
@@ -226,7 +226,7 @@ function branchSqliteCompactionCheckpointSessionInTransaction(
 }
 
 function restoreSqliteCompactionCheckpointSessionInTransaction(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   params: {
     checkpointId: string;
     expectedState: SessionEntryExpectedState;
@@ -278,7 +278,7 @@ function restoreSqliteCompactionCheckpointSessionInTransaction(
 }
 
 function forkSqliteCheckpointTranscriptInTransaction(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   resolved: ResolvedSqliteScope,
   params: {
     checkpoint: SessionCompactionCheckpoint;
@@ -392,7 +392,7 @@ function resolveSqliteCheckpointTranscriptForkSources(
 }
 
 function readSqliteTranscriptRowsForFork(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   source: { sessionId: string; leafId?: string },
 ): { status: "created"; events: TranscriptEvent[] } | { status: "missing-boundary" | "failed" } {
   const boundarySeq = source.leafId

@@ -6,7 +6,7 @@ describe("memory-lancedb durable tool metadata", () => {
     "declares %s as owner-backed side effect",
     async (toolName) => {
       const manifest = JSON.parse(
-        await readFile(new URL("./openclaw.plugin.json", import.meta.url), "utf8"),
+        await readFile(new URL("./afora.plugin.json", import.meta.url), "utf8"),
       ) as { toolMetadata?: Record<string, { sideEffecting?: boolean }> };
 
       expect(manifest.toolMetadata?.[toolName]?.sideEffecting).toBe(true);

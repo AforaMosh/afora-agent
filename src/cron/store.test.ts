@@ -1,16 +1,16 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 // Cron store tests cover persisted scheduled job state and run metadata.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { loadLegacyCronQuarantineForMigration } from "../commands/doctor/cron/legacy-quarantine-migration.js";
 import {
   archiveLegacyCronStoreForMigration,
   loadLegacyCronStoreForMigration,
 } from "../commands/doctor/cron/legacy-store-migration.js";
-import { openOpenClawStateDatabase } from "../state/openclaw-state-db.js";
+import { openAforaStateDatabase } from "../state/afora-state-db.js";
 import { captureEnv, setTestEnvValue } from "../test-utils/env.js";
 import {
   loadCronJobsStoreWithConfigJobs,
@@ -30,7 +30,7 @@ let fixtureRoot = "";
 let caseId = 0;
 
 beforeAll(async () => {
-  fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-cron-store-"));
+  fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-cron-store-"));
 });
 
 afterAll(async () => {
@@ -116,18 +116,18 @@ async function expectPathMissing(targetPath: string): Promise<void> {
 const requireRecord = createRequireRecord("record", "expected-label");
 
 describe("resolveCronStorePath", () => {
-  const envSnapshot = captureEnv(["OPENCLAW_HOME", "HOME"]);
+  const envSnapshot = captureEnv(["AFORA_HOME", "HOME"]);
 
   afterEach(() => {
     envSnapshot.restore();
   });
 
-  it("uses OPENCLAW_HOME for tilde expansion", () => {
-    setTestEnvValue("OPENCLAW_HOME", "/srv/openclaw-home");
+  it("uses AFORA_HOME for tilde expansion", () => {
+    setTestEnvValue("AFORA_HOME", "/srv/afora-home");
     setTestEnvValue("HOME", "/home/other");
 
     const result = resolveCronStorePath("~/cron/jobs.json");
-    expect(result).toBe(path.resolve("/srv/openclaw-home", "cron", "jobs.json"));
+    expect(result).toBe(path.resolve("/srv/afora-home", "cron", "jobs.json"));
   });
 });
 
@@ -360,7 +360,7 @@ describe("cron store", () => {
     const { storePath } = await makeStorePath();
     const store = makeStore("atomic-quarantine-job", true);
     await saveCronStore(storePath, store);
-    const database = openOpenClawStateDatabase().db;
+    const database = openAforaStateDatabase().db;
     database.exec(
       "CREATE TEMP TRIGGER fail_cron_quarantine_update BEFORE UPDATE ON cron_jobs BEGIN SELECT RAISE(ABORT, 'cron update rejected'); END",
     );
@@ -389,7 +389,7 @@ describe("cron store", () => {
     await saveCronJobsStoreWithTransactionHooks(storePath, store, undefined, { afterCommit });
     expect(afterCommit).toHaveBeenCalledOnce();
 
-    const database = openOpenClawStateDatabase().db;
+    const database = openAforaStateDatabase().db;
     database.exec(
       "CREATE TEMP TRIGGER reject_cron_post_commit BEFORE UPDATE ON cron_jobs BEGIN SELECT RAISE(ABORT, 'cron update rejected'); END",
     );
@@ -415,7 +415,7 @@ describe("cron store", () => {
     );
     surviving.state = { nextRunAtMs: 987_654 };
     await saveCronStore(storePath, { version: 1, jobs: [malformed, surviving] });
-    openOpenClawStateDatabase()
+    openAforaStateDatabase()
       .db.prepare("UPDATE cron_jobs SET schedule_kind = ? WHERE store_key = ? AND job_id = ?")
       .run("unsupported", path.resolve(storePath), malformed.id);
 
@@ -634,7 +634,7 @@ describe("cron store", () => {
 
     await saveCronStore(store.storePath, payload);
 
-    const queuedRow = openOpenClawStateDatabase()
+    const queuedRow = openAforaStateDatabase()
       .db.prepare("SELECT running_at_ms, state_json FROM cron_jobs WHERE job_id = ?")
       .get(job.id) as { running_at_ms: number | null; state_json: string };
     expect(queuedRow.running_at_ms).toBeNull();
@@ -741,7 +741,7 @@ describe("cron store", () => {
 
     await saveCronStore(storePath, authorityStore);
 
-    const database = openOpenClawStateDatabase().db;
+    const database = openAforaStateDatabase().db;
     const row = database.prepare("SELECT job_json FROM cron_jobs WHERE job_id = ?").get(job.id) as {
       job_json: string;
     };
@@ -766,7 +766,7 @@ describe("cron store", () => {
 
     await saveCronStore(storePath, authorityStore);
 
-    const database = openOpenClawStateDatabase().db;
+    const database = openAforaStateDatabase().db;
     const parent = database
       .prepare("SELECT job_json FROM cron_jobs WHERE job_id = ?")
       .get(job.id) as { job_json: string };
@@ -799,7 +799,7 @@ describe("cron store", () => {
     const job = expectDefined(authorityStore.jobs[0], "authority job test invariant");
     await saveCronStore(storePath, authorityStore);
 
-    const database = openOpenClawStateDatabase().db;
+    const database = openAforaStateDatabase().db;
     database
       .prepare(
         "UPDATE cron_jobs SET payload_tools_allow_json = ?, payload_tools_allow_is_default = 0 WHERE job_id = ?",
@@ -832,7 +832,7 @@ describe("cron store", () => {
     const job = expectDefined(authorityStore.jobs[0], "authority job test invariant");
     await saveCronStore(storePath, authorityStore);
 
-    const database = openOpenClawStateDatabase().db;
+    const database = openAforaStateDatabase().db;
     database
       .prepare("UPDATE cron_job_runtime_authorities SET authority_json = ? WHERE job_id = ?")
       .run("{not-json", job.id);
@@ -859,7 +859,7 @@ describe("cron store", () => {
     const job = expectDefined(authorityStore.jobs[0], "authority job test invariant");
     await saveCronStore(storePath, authorityStore);
 
-    const database = openOpenClawStateDatabase().db;
+    const database = openAforaStateDatabase().db;
     database.exec(`
       CREATE TRIGGER reject_cron_runtime_authority_update
       BEFORE UPDATE ON cron_job_runtime_authorities
@@ -909,7 +909,7 @@ describe("cron store", () => {
 
     await saveCronStore(storePath, { version: 1, jobs: [] });
     expect(
-      openOpenClawStateDatabase()
+      openAforaStateDatabase()
         .db.prepare("SELECT job_id FROM cron_job_runtime_authorities WHERE job_id = ?")
         .get(job.id),
     ).toBeUndefined();
@@ -1106,7 +1106,7 @@ describe("cron store", () => {
     };
 
     await saveCronStore(storePath, { version: 1, jobs: [job] });
-    openOpenClawStateDatabase()
+    openAforaStateDatabase()
       .db.prepare("UPDATE cron_jobs SET delivery_thread_id = NULL WHERE job_id = ?")
       .run(job.id);
 
@@ -1128,7 +1128,7 @@ describe("cron store", () => {
     };
 
     await saveCronStore(storePath, { version: 1, jobs: [job] });
-    openOpenClawStateDatabase()
+    openAforaStateDatabase()
       .db.prepare("UPDATE cron_jobs SET delivery_thread_id = ? WHERE job_id = ?")
       .run("replacement", job.id);
 

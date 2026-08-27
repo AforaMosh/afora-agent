@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 export class WorkerDispatchTargetChangedError extends Error {
   readonly code = "invalid_state";
@@ -27,7 +27,7 @@ export function resolveWorkerPlacementSessionTarget<
 >(params: {
   sessionRuntime: {
     resolveGatewaySessionStoreTargetWithStore: (input: {
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       key: string;
       agentId: string;
       clone: false;
@@ -40,7 +40,7 @@ export function resolveWorkerPlacementSessionTarget<
       findLiveByOwner: (ownerKind: "session", ownerId: string) => Worktree | undefined;
     };
   };
-  config: OpenClawConfig;
+  config: AforaConfig;
   sessionId: string;
   sessionKey: string;
   agentId: string;

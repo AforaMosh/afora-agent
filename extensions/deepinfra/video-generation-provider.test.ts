@@ -1,11 +1,11 @@
 // Deepinfra tests cover video generation provider plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   getProviderHttpMocks,
   installProviderHttpMockCleanup,
   requireFirstPostJsonRequest,
-} from "openclaw/plugin-sdk/provider-http-test-mocks";
-import { expectExplicitVideoGenerationCapabilities } from "openclaw/plugin-sdk/provider-test-contracts";
+} from "afora-agent/plugin-sdk/provider-http-test-mocks";
+import { expectExplicitVideoGenerationCapabilities } from "afora-agent/plugin-sdk/provider-test-contracts";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 
 const {
@@ -189,7 +189,7 @@ describe("deepinfra video generation provider", () => {
             deepinfra: { baseUrl: "https://video.example.com/v1/openai" },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
     });
 
     expect(
@@ -225,7 +225,7 @@ describe("deepinfra video generation provider", () => {
             deepinfra: { nativeBaseUrl: "https://gw.example.com/v1/inference" },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
     });
 
     expect(resolveProviderHttpRequestConfigMock.mock.calls[0]?.[0]).toMatchObject({
@@ -252,7 +252,7 @@ describe("deepinfra video generation provider", () => {
               },
             },
           },
-        } as unknown as OpenClawConfig,
+        } as unknown as AforaConfig,
       })
       .then(
         () => undefined,
@@ -260,7 +260,7 @@ describe("deepinfra video generation provider", () => {
       );
 
     expect(error?.message).toMatch(/retired native \/v1\/inference surface/u);
-    expect(error?.message).toContain("openclaw doctor --fix");
+    expect(error?.message).toContain("afora doctor --fix");
     // Fail-closed means no submit request and no configured-URL echo (it may
     // carry credentials).
     expect(postJsonRequestMock).not.toHaveBeenCalled();

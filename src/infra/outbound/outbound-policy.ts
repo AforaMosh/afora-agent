@@ -1,6 +1,6 @@
 // Outbound policy enforces message-tool allowlists and cross-context delivery
 // markers/decorations before channel dispatch.
-import { normalizeUniqueStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeUniqueStringEntries } from "@afora/normalization-core/string-normalization";
 import { resolveAgentConfig } from "../../agents/agent-scope-config.js";
 import { getChannelPlugin } from "../../channels/plugins/index.js";
 import type {
@@ -8,7 +8,7 @@ import type {
   ChannelMessageActionName,
   ChannelThreadingToolContext,
 } from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { MessageToolsConfig } from "../../config/types.tools.js";
 import type { MessagePresentation } from "../../interactive/payload.js";
 import { MessageActionDeniedError } from "./message-action-denial.js";
@@ -122,7 +122,7 @@ function isCrossContextTarget(params: {
 }
 
 function resolveAgentMessageToolsConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId?: string | null,
 ): MessageToolsConfig | undefined {
   const trimmedAgentId = agentId?.trim();
@@ -173,7 +173,7 @@ function resolveAgentMessageToolsConfig(
  * Resolves the message-tool policy after applying any agent-specific overrides.
  */
 export function resolveEffectiveMessageToolsConfig(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string | null;
 }): MessageToolsConfig | undefined {
   return resolveAgentMessageToolsConfig(params.cfg, params.agentId);
@@ -183,7 +183,7 @@ export function resolveEffectiveMessageToolsConfig(params: {
  * Returns the normalized allowed message actions for an agent or the global policy.
  */
 export function resolveAllowedMessageActions(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string | null;
 }): string[] | undefined {
   const allow = resolveEffectiveMessageToolsConfig(params)?.actions?.allow;
@@ -198,7 +198,7 @@ export function resolveAllowedMessageActions(params: {
  * Rejects disabled message actions before channel-specific send handling runs.
  */
 export function enforceMessageActionAllowlist(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string | null;
   action: ChannelMessageActionName;
 }): void {
@@ -221,7 +221,7 @@ export function enforceCrossContextPolicy(params: {
   action: ChannelMessageActionName;
   args: Record<string, unknown>;
   toolContext?: ChannelThreadingToolContext;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string | null;
 }): void {
   const currentTarget =
@@ -280,7 +280,7 @@ export function enforceCrossContextPolicy(params: {
  * Builds cross-context marker text or a channel-native presentation for forwarded sends.
  */
 export async function buildCrossContextDecoration(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: ChannelId;
   target: string;
   toolContext?: ChannelThreadingToolContext;

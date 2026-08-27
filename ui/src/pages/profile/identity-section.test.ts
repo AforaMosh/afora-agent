@@ -44,7 +44,7 @@ describe("renderIdentitySection", () => {
     const container = document.createElement("div");
     document.body.append(container);
     render(renderIdentitySection(createProps()), container);
-    const avatar = container.querySelector<HTMLElement>("openclaw-viewer-avatar");
+    const avatar = container.querySelector<HTMLElement>("afora-viewer-avatar");
     await vi.waitFor(async () => {
       await (avatar as (HTMLElement & { updateComplete?: Promise<unknown> }) | null)
         ?.updateComplete;
@@ -74,7 +74,7 @@ describe("renderIdentitySection", () => {
       ),
       container,
     );
-    const avatar = container.querySelector<HTMLElement>("openclaw-viewer-avatar") as
+    const avatar = container.querySelector<HTMLElement>("afora-viewer-avatar") as
       | (HTMLElement & { updateComplete?: Promise<unknown> })
       | null;
     await avatar?.updateComplete;

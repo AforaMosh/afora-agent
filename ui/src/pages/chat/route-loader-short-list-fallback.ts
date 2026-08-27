@@ -1,4 +1,4 @@
-import { controlUiSessionSlug } from "@openclaw/session-url-contract";
+import { controlUiSessionSlug } from "@afora/session-url-contract";
 import type { GatewaySessionRow } from "../../api/types.ts";
 import type { SessionPathTarget } from "../../app-session-route-paths.ts";
 import type { ApplicationContext } from "../../app/context.ts";

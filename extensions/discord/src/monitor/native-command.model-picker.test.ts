@@ -3,16 +3,16 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { ChannelType } from "discord-api-types/v10";
-import * as commandRegistryModule from "openclaw/plugin-sdk/command-auth-native";
+import * as commandRegistryModule from "afora-agent/plugin-sdk/command-auth-native";
 import type {
   ChatCommandDefinition,
   CommandArgsParsing,
   ModelsProviderData,
-} from "openclaw/plugin-sdk/command-auth-native";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { ResolvedAgentRoute } from "openclaw/plugin-sdk/routing";
-import * as runtimeConfigSnapshotModule from "openclaw/plugin-sdk/runtime-config-snapshot";
-import * as commandTextModule from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/command-auth-native";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { ResolvedAgentRoute } from "afora-agent/plugin-sdk/routing";
+import * as runtimeConfigSnapshotModule from "afora-agent/plugin-sdk/runtime-config-snapshot";
+import * as commandTextModule from "afora-agent/plugin-sdk/text-utility-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defineThrowingDiscordChannelGetter } from "../test-support/partial-channel.js";
 import { resolveDiscordChannelContext } from "./agent-components-context.js";
@@ -28,7 +28,7 @@ import {
 } from "./native-command-ui.js";
 import { createNoopThreadBindingManager, type ThreadBindingManager } from "./thread-bindings.js";
 
-vi.mock("openclaw/plugin-sdk/runtime-env", { spy: true });
+vi.mock("afora-agent/plugin-sdk/runtime-env", { spy: true });
 
 type ModelPickerContext = Parameters<typeof createDiscordModelPickerFallbackButton>[0]["ctx"];
 type PickerButton = ReturnType<typeof createDiscordModelPickerFallbackButton>;
@@ -85,7 +85,7 @@ function createModelPickerContext(): ModelPickerContext {
         },
       },
     },
-  } as unknown as OpenClawConfig;
+  } as unknown as AforaConfig;
 
   return {
     cfg,
@@ -303,7 +303,7 @@ function createBoundThreadBindingManager(params: {
 
 describe("Discord model picker interactions", () => {
   beforeEach(async () => {
-    tempDir = await mkdtemp(path.join(os.tmpdir(), "openclaw-discord-model-picker-"));
+    tempDir = await mkdtemp(path.join(os.tmpdir(), "afora-discord-model-picker-"));
     vi.useRealTimers();
     vi.restoreAllMocks();
     vi.spyOn(runtimeConfigSnapshotModule, "getRuntimeConfigSnapshot").mockReturnValue(null);
@@ -419,7 +419,7 @@ describe("Discord model picker interactions", () => {
 
   it("uses the hot-reloaded runtime config when old components reset to default", async () => {
     const context = createModelPickerContext();
-    (context.cfg as { agents?: OpenClawConfig["agents"] }).agents = {
+    (context.cfg as { agents?: AforaConfig["agents"] }).agents = {
       defaults: {
         model: { primary: "openai/gpt-5.5" },
         models: {
@@ -438,7 +438,7 @@ describe("Discord model picker interactions", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     vi.spyOn(runtimeConfigSnapshotModule, "getRuntimeConfigSnapshot").mockReturnValue(runtimeCfg);
     vi.spyOn(runtimeConfigSnapshotModule, "getRuntimeConfigSourceSnapshot").mockReturnValue(
       runtimeCfg,
@@ -667,7 +667,7 @@ describe("Discord model picker interactions", () => {
 
   it("keeps a pending model stable when hot reload reorders the catalog", async () => {
     const context = createModelPickerContext();
-    const runtimeCfg = { ...context.cfg } as OpenClawConfig;
+    const runtimeCfg = { ...context.cfg } as AforaConfig;
     vi.spyOn(runtimeConfigSnapshotModule, "getRuntimeConfigSnapshot").mockReturnValue(runtimeCfg);
     vi.spyOn(runtimeConfigSnapshotModule, "getRuntimeConfigSourceSnapshot").mockReturnValue(
       runtimeCfg,
@@ -782,7 +782,7 @@ describe("Discord model picker interactions", () => {
           "openai",
           [
             { id: "codex", label: "Codex", description: "Use Codex." },
-            { id: "openclaw", label: "OpenClaw Default", description: "Use OpenClaw." },
+            { id: "afora", label: "Afora Default", description: "Use Afora." },
           ],
         ],
       ]);
@@ -819,7 +819,7 @@ describe("Discord model picker interactions", () => {
         "openai",
         [
           { id: "codex", label: "Codex", description: "Use Codex." },
-          { id: "openclaw", label: "OpenClaw Default", description: "Use OpenClaw." },
+          { id: "afora", label: "Afora Default", description: "Use Afora." },
         ],
       ],
     ]);
@@ -876,7 +876,7 @@ describe("Discord model picker interactions", () => {
       [
         "anthropic",
         [
-          { id: "openclaw", label: "OpenClaw Default", description: "Use OpenClaw." },
+          { id: "afora", label: "Afora Default", description: "Use Afora." },
           { id: "claude-cli", label: "Claude CLI", description: "Use Claude CLI." },
         ],
       ],
@@ -1065,7 +1065,7 @@ describe("Discord model picker interactions", () => {
 
   it("keeps a recent model stable when hot reload shifts its slot", async () => {
     const context = createModelPickerContext();
-    const runtimeCfg = { ...context.cfg } as OpenClawConfig;
+    const runtimeCfg = { ...context.cfg } as AforaConfig;
     vi.spyOn(runtimeConfigSnapshotModule, "getRuntimeConfigSnapshot").mockReturnValue(runtimeCfg);
     vi.spyOn(runtimeConfigSnapshotModule, "getRuntimeConfigSourceSnapshot").mockReturnValue(
       runtimeCfg,
@@ -1296,7 +1296,7 @@ describe("Discord model picker interactions", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await replyWithDiscordModelPickerProviders({
       interaction: interaction as never,

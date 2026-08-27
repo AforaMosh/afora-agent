@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
 import {
   type DiagnosticEventMetadata,
   type DiagnosticEventPayload,
@@ -16,7 +16,7 @@ import {
   parseDiagnosticTraceparent,
   resetDiagnosticEventsForTest,
   waitForDiagnosticEventsDrained,
-} from "openclaw/plugin-sdk/diagnostic-runtime";
+} from "afora-agent/plugin-sdk/diagnostic-runtime";
 import { wrapStreamFnWithDiagnosticModelCallEvents } from "../../../../src/agents/embedded-agent-runner/run/attempt.model-diagnostic-events.js";
 import { onTrustedInternalDiagnosticEvent } from "../../../../src/infra/diagnostic-events.js";
 import { formatErrorMessage } from "../../../../src/infra/errors.js";

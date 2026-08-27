@@ -4,7 +4,7 @@ import path from "node:path";
 import type {
   MemoryEntryProvenance,
   MemorySource,
-} from "openclaw/plugin-sdk/memory-core-host-engine-storage";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
 import {
   DREAMING_DAILY_PROVENANCE_NAMESPACE,
   readMemoryCoreWorkspaceEntry,

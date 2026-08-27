@@ -64,7 +64,7 @@ describe("SessionManager user idempotency", () => {
   });
 
   it("rejects a keyed user collision outside the current SQLite append parent", async () => {
-    const dir = tempDirs.make("openclaw-session-manager-user-idempotency-");
+    const dir = tempDirs.make("afora-session-manager-user-idempotency-");
     const scope = {
       agentId: "main",
       sessionId: "sqlite-runtime-user-ancestor",
@@ -112,7 +112,7 @@ describe("SessionManager user idempotency", () => {
   });
 
   it("adopts a keyed user persisted after the manager loaded", async () => {
-    const dir = tempDirs.make("openclaw-session-manager-user-idempotency-");
+    const dir = tempDirs.make("afora-session-manager-user-idempotency-");
     const scope = {
       agentId: "main",
       sessionId: "sqlite-runtime-user-concurrent-ingress",
@@ -181,7 +181,7 @@ describe("SessionManager user idempotency", () => {
   });
 
   it("adopts a persisted user across context-free session setup metadata", async () => {
-    const dir = tempDirs.make("openclaw-session-manager-user-idempotency-");
+    const dir = tempDirs.make("afora-session-manager-user-idempotency-");
     const scope = {
       agentId: "main",
       sessionId: "sqlite-runtime-user-setup-metadata",

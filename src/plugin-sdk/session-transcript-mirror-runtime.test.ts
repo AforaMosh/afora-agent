@@ -9,7 +9,7 @@ import {
 } from "../config/sessions/session-accessor.sqlite-scope.js";
 import { SessionTranscriptReadFenceError } from "../config/sessions/session-transcript-read-fence.js";
 import { waitForSessionTranscriptProjection } from "../config/sessions/session-transcript-reconcile.js";
-import { runOpenClawAgentWriteTransaction } from "../state/openclaw-agent-db.js";
+import { runAforaAgentWriteTransaction } from "../state/afora-agent-db.js";
 import {
   readCodexSessionTranscriptEventsBeforeAdmission,
   withCodexSessionTranscriptMirrorWriteLock,
@@ -25,7 +25,7 @@ describe("private session transcript mirror runtime", () => {
   let storePath: string;
 
   beforeEach(() => {
-    const tempDir = tempDirs.make("openclaw-sdk-transcript-mirror-");
+    const tempDir = tempDirs.make("afora-sdk-transcript-mirror-");
     storePath = path.join(tempDir, "sessions.json");
   });
 
@@ -132,7 +132,7 @@ describe("private session transcript mirror runtime", () => {
     await waitForSessionTranscriptProjection(scope);
 
     await runExclusiveSqliteSessionWrite(resolvedScope, async () => {
-      runOpenClawAgentWriteTransaction((database) => {
+      runAforaAgentWriteTransaction((database) => {
         database.db
           .prepare(
             "UPDATE session_transcript_index_state SET needs_rebuild = 1 WHERE session_id = ?",

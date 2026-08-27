@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { Page } from "playwright-core";
 import { formatErrorMessage } from "../infra/errors.js";
 import type { BrowserDownloadCandidate, BrowserDownloadResult } from "./download-types.js";

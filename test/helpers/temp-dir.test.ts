@@ -18,7 +18,7 @@ afterEach(() => {
 describe("temp-dir test helpers", () => {
   it("tracks created temp dirs and removes populated dirs", () => {
     const tracker = createTempDirTracker();
-    const dir = tracker.make("openclaw-temp-dir-helper-");
+    const dir = tracker.make("afora-temp-dir-helper-");
     tempDirs.add(dir);
     fs.writeFileSync(path.join(dir, "artifact.txt"), "artifact\n", "utf8");
 
@@ -30,7 +30,7 @@ describe("temp-dir test helpers", () => {
   });
 
   it("supports existing caller-owned temp dir collections", () => {
-    const dir = makeTempDir(tempDirs, "openclaw-temp-dir-existing-");
+    const dir = makeTempDir(tempDirs, "afora-temp-dir-existing-");
     fs.mkdirSync(path.join(dir, "nested"), { recursive: true });
 
     cleanupTempDirs(tempDirs);
@@ -40,14 +40,14 @@ describe("temp-dir test helpers", () => {
   });
 
   it("creates default temp dirs under the canonical system temp path", () => {
-    const dir = makeTempDir(tempDirs, "openclaw-temp-dir-canonical-");
+    const dir = makeTempDir(tempDirs, "afora-temp-dir-canonical-");
 
     expect(dir.startsWith(`${fs.realpathSync(os.tmpdir())}${path.sep}`)).toBe(true);
   });
 
   it("caches canonical system temp roots by their raw path", () => {
-    const firstRoot = makeTempDir(tempDirs, "openclaw-temp-dir-cache-first-");
-    const secondRoot = makeTempDir(tempDirs, "openclaw-temp-dir-cache-second-");
+    const firstRoot = makeTempDir(tempDirs, "afora-temp-dir-cache-first-");
+    const secondRoot = makeTempDir(tempDirs, "afora-temp-dir-cache-second-");
     const tmpdir = vi.spyOn(os, "tmpdir");
     const realpath = vi.spyOn(fs, "realpathSync");
     realpath.mockClear();
@@ -69,7 +69,7 @@ describe("temp-dir test helpers", () => {
   });
 
   it("preserves the spelling of explicit custom roots", () => {
-    const parent = makeTempDir(tempDirs, "openclaw-temp-dir-explicit-root-");
+    const parent = makeTempDir(tempDirs, "afora-temp-dir-explicit-root-");
     const realRoot = path.join(parent, "real");
     const aliasRoot = path.join(parent, "alias");
     fs.mkdirSync(realRoot);
@@ -94,7 +94,7 @@ describe("temp-dir test helpers", () => {
     const autoCleanupTracker = useAutoCleanupTempDirTracker(afterEach);
 
     it("tracks temp dirs with Vitest cleanup", () => {
-      const autoCleanedDir = autoCleanupTracker.make("openclaw-temp-dir-auto-");
+      const autoCleanedDir = autoCleanupTracker.make("afora-temp-dir-auto-");
       createdDirs.push(autoCleanedDir);
       fs.writeFileSync(path.join(autoCleanedDir, "artifact.txt"), "artifact\n", "utf8");
 

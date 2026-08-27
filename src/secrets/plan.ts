@@ -1,6 +1,6 @@
 /** Validates and normalizes serialized secrets apply plans before config mutation. */
-import { isRecord as isObjectRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { isRecord as isObjectRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 import type { SecretProviderConfig, SecretRef } from "../config/types.secrets.js";
 import { SecretProviderSchema } from "../config/zod-schema.core.js";
 import { isBlockedObjectKey } from "../infra/prototype-keys.js";
@@ -46,12 +46,12 @@ export type SecretsPlanTarget = {
   authProfileProvider?: string;
 };
 
-/** Serialized plan produced by `openclaw secrets configure` or supplied manually. */
+/** Serialized plan produced by `afora secrets configure` or supplied manually. */
 export type SecretsApplyPlan = {
   version: 1;
   protocolVersion: 1;
   generatedAt: string;
-  generatedBy: "openclaw secrets configure" | "manual";
+  generatedBy: "afora secrets configure" | "manual";
   providerUpserts?: Record<string, SecretProviderConfig>;
   providerDeletes?: string[];
   targets: SecretsPlanTarget[];

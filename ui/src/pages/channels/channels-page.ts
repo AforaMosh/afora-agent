@@ -21,7 +21,7 @@ import {
   GatewayPageController,
   type GatewayPageChange,
 } from "../../lit/gateway-page-controller.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { PollController } from "../../lit/poll-controller.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import { importNostrProfile, parseValidationErrors, putNostrProfile } from "./nostr-profile-ops.ts";
@@ -34,7 +34,7 @@ import { ChannelWizardHost } from "./wizard-host.ts";
 type NostrProfileFormState = ReturnType<typeof createNostrProfileFormState> | null;
 
 const CHANNEL_PAIRING_POLL_INTERVAL_MS = 30_000;
-const CHANNELS_DOCS_URL = "https://docs.openclaw.ai/channels";
+const CHANNELS_DOCS_URL = "https://docs.afora.ai/channels";
 
 type NostrOperation = {
   scope: GatewayConnectionScope;
@@ -51,7 +51,7 @@ function formatNostrProfileOperationError(error: unknown, prefix: string): strin
     : t("channels.nostr.notices.operationFailed", { prefix, error: formatUiError(error) });
 }
 
-class ChannelsPage extends OpenClawLightDomElement {
+class ChannelsPage extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context!: ApplicationContext;
 
@@ -744,6 +744,6 @@ class ChannelsPage extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-channels-page")) {
-  customElements.define("openclaw-channels-page", ChannelsPage);
+if (!customElements.get("afora-channels-page")) {
+  customElements.define("afora-channels-page", ChannelsPage);
 }

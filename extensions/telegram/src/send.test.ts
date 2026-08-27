@@ -1,15 +1,15 @@
 // Telegram tests cover send plugin behavior.
 import fs from "node:fs";
 import type { Bot } from "grammy";
-import { isChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { PluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
+import { isChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { PluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateKeyedStoreForTests,
   createPluginStateSyncKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import { createRequireRecord, importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import { createRequireRecord, importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { markdownToTelegramHtml, telegramHtmlToPlainTextFallback } from "./format.js";
 import {
@@ -137,10 +137,10 @@ const {
   probeVideoDimensions,
 } = getTelegramSendTestMocks();
 const telegramSendModule = await importTelegramSendModule();
-const { PlatformMessageNotDispatchedError } = await import("openclaw/plugin-sdk/error-runtime");
+const { PlatformMessageNotDispatchedError } = await import("afora-agent/plugin-sdk/error-runtime");
 const { TelegramRequestNotStartedError } = await import("./network-errors.js");
 const { getChildLogger, resetLogger, setLoggerOverride } =
-  await import("openclaw/plugin-sdk/runtime-env");
+  await import("afora-agent/plugin-sdk/runtime-env");
 const {
   buildInlineKeyboard,
   createForumTopicTelegram,
@@ -498,7 +498,7 @@ let logCaptureCounter = 0;
 
 function captureInfoLogs(): string {
   logCaptureCounter += 1;
-  const logFile = `/tmp/openclaw-telegram-send-log-${process.pid}-${logCaptureCounter}.jsonl`;
+  const logFile = `/tmp/afora-telegram-send-log-${process.pid}-${logCaptureCounter}.jsonl`;
   fs.rmSync(logFile, { force: true });
   setLoggerOverride({ level: "info", consoleLevel: "silent", file: logFile });
   return logFile;
@@ -603,7 +603,7 @@ describe("sent-message-cache", () => {
   });
 
   it("keeps sent-message ownership across restart", async () => {
-    const persistedStorePath = `/tmp/openclaw-telegram-send-tests-${process.pid}-restart.json`;
+    const persistedStorePath = `/tmp/afora-telegram-send-tests-${process.pid}-restart.json`;
     const sentMessageCfg = { session: { store: persistedStorePath } };
 
     recordSentMessage(123, 1, sentMessageCfg);
@@ -619,7 +619,7 @@ describe("sent-message-cache", () => {
   });
 
   it("keeps expired custom-store cleanup away from the default store", () => {
-    const customStorePath = `/tmp/openclaw-telegram-send-tests-${process.pid}-custom-cleanup.json`;
+    const customStorePath = `/tmp/afora-telegram-send-tests-${process.pid}-custom-cleanup.json`;
     const customCfg = { session: { store: customStorePath } };
     const startedAt = new Date("2026-01-01T00:00:00.000Z");
     vi.useFakeTimers();
@@ -640,7 +640,7 @@ describe("sent-message-cache", () => {
   });
 
   it("keeps default and custom stores isolated while both are loaded", () => {
-    const customStorePath = `/tmp/openclaw-telegram-send-tests-${process.pid}-custom-isolated.json`;
+    const customStorePath = `/tmp/afora-telegram-send-tests-${process.pid}-custom-isolated.json`;
     const customCfg = { session: { store: customStorePath } };
 
     try {
@@ -676,9 +676,9 @@ describe("sent-message-cache", () => {
         { agentId: "ops", match: { channel: "telegram", accountId: "alerts" } },
       ],
       session: {
-        store: "/tmp/openclaw-telegram-sent-owner/{agentId}/sessions.json",
+        store: "/tmp/afora-telegram-sent-owner/{agentId}/sessions.json",
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     recordSentMessage(123, 1, multiAgentCfg, { accountId: "primary" });
 
@@ -1089,7 +1089,7 @@ describe("sendMessageTelegram", () => {
   });
 
   it("records sent text messages into the Telegram prompt context cache", async () => {
-    const storePath = `/tmp/openclaw-telegram-send-context-${process.pid}-${Date.now()}.json`;
+    const storePath = `/tmp/afora-telegram-send-context-${process.pid}-${Date.now()}.json`;
     const cfg = { session: { store: storePath } };
     botApi.sendMessage.mockResolvedValueOnce({
       message_id: 1497,
@@ -1149,13 +1149,13 @@ describe("sendMessageTelegram", () => {
   });
 
   it("records a successful General-topic send when the response omits the thread id", async () => {
-    const storePath = `/tmp/openclaw-telegram-general-context-${process.pid}-${Date.now()}.json`;
+    const storePath = `/tmp/afora-telegram-general-context-${process.pid}-${Date.now()}.json`;
     const chatId = "-1003966283270";
     botApi.sendMessage.mockResolvedValueOnce({
       message_id: 1498,
       date: 1_779_394_741,
       chat: { id: chatId, type: "supergroup", title: "QA forum" },
-      from: { id: 42, is_bot: true, first_name: "OpenClaw" },
+      from: { id: 42, is_bot: true, first_name: "Afora" },
       text: "Reply in General",
     });
 
@@ -1178,7 +1178,7 @@ describe("sendMessageTelegram", () => {
   });
 
   it("records transcript projection metadata without replacing Telegram time", async () => {
-    const storePath = `/tmp/openclaw-telegram-send-context-override-${process.pid}-${Date.now()}.json`;
+    const storePath = `/tmp/afora-telegram-send-context-override-${process.pid}-${Date.now()}.json`;
     const cfg = { session: { store: storePath } };
     const cursor = createTelegramPromptContextProjectionCursor({
       transcriptMessageId: "assistant-final",
@@ -1215,7 +1215,7 @@ describe("sendMessageTelegram", () => {
   });
 
   it("invalidates the projection cursor when a later chunk fails terminally", async () => {
-    const storePath = `/tmp/openclaw-telegram-projection-terminal-${process.pid}-${Date.now()}.json`;
+    const storePath = `/tmp/afora-telegram-projection-terminal-${process.pid}-${Date.now()}.json`;
     const cfg = { session: { store: storePath } };
     const cursor = createTelegramPromptContextProjectionCursor({
       transcriptMessageId: "assistant-final",
@@ -1243,7 +1243,7 @@ describe("sendMessageTelegram", () => {
   });
 
   it("records transcript projection metadata for native locations", async () => {
-    const storePath = `/tmp/openclaw-telegram-location-context-${process.pid}-${Date.now()}.json`;
+    const storePath = `/tmp/afora-telegram-location-context-${process.pid}-${Date.now()}.json`;
     const cfg = { session: { store: storePath } };
     const cursor = createTelegramPromptContextProjectionCursor({
       transcriptMessageId: "assistant-location",
@@ -1468,7 +1468,7 @@ describe("sendMessageTelegram", () => {
 
   it("continues rich plain-fallback chunks after a middle rejection", async () => {
     const text = `Status includes openai:owner@example.com ${"A".repeat(8500)}`;
-    const storePath = `/tmp/openclaw-telegram-projection-rich-fallback-${process.pid}-${Date.now()}.json`;
+    const storePath = `/tmp/afora-telegram-projection-rich-fallback-${process.pid}-${Date.now()}.json`;
     const cursor = createTelegramPromptContextProjectionCursor({
       transcriptMessageId: "assistant-rich",
     });
@@ -1653,11 +1653,11 @@ describe("sendMessageTelegram", () => {
     {
       name: "local path",
       markdown:
-        "See [scripts/yougile.py](/home/user/.openclaw/workspace/scripts/yougile.py#L41) and [docs](https://example.com/docs)",
+        "See [scripts/yougile.py](/home/user/.afora/workspace/scripts/yougile.py#L41) and [docs](https://example.com/docs)",
     },
     {
       name: "relative path",
-      markdown: "Edit [config](./openclaw.json) or see [docs](https://example.com/docs)",
+      markdown: "Edit [config](./afora.json) or see [docs](https://example.com/docs)",
     },
   ])("keeps rich delivery when a markdown link targets a $name", async (testCase) => {
     botApi.sendMessage.mockResolvedValue({ message_id: 48, chat: { id: "123" } });
@@ -1845,7 +1845,7 @@ describe("sendMessageTelegram", () => {
   });
 
   it("indexes every successful text chunk and marks only the last one final", async () => {
-    const storePath = `/tmp/openclaw-telegram-projection-chunks-${process.pid}-${Date.now()}.json`;
+    const storePath = `/tmp/afora-telegram-projection-chunks-${process.pid}-${Date.now()}.json`;
     const cfg = { session: { store: storePath } };
     const cursor = createTelegramPromptContextProjectionCursor({
       transcriptMessageId: "assistant-chunks",
@@ -1876,7 +1876,7 @@ describe("sendMessageTelegram", () => {
   });
 
   it("records each HTML chunk using that message's visible text", async () => {
-    const storePath = `/tmp/openclaw-telegram-projection-html-chunks-${process.pid}-${Date.now()}.json`;
+    const storePath = `/tmp/afora-telegram-projection-html-chunks-${process.pid}-${Date.now()}.json`;
     const cfg = { session: { store: storePath } };
     const cursor = createTelegramPromptContextProjectionCursor({
       transcriptMessageId: "assistant-html-chunks",
@@ -1918,7 +1918,7 @@ describe("sendMessageTelegram", () => {
   });
 
   it("does not consume a projection part for a rejected HTML attempt", async () => {
-    const storePath = `/tmp/openclaw-telegram-projection-html-fallback-${process.pid}-${Date.now()}.json`;
+    const storePath = `/tmp/afora-telegram-projection-html-fallback-${process.pid}-${Date.now()}.json`;
     const cfg = { session: { store: storePath } };
     const cursor = createTelegramPromptContextProjectionCursor({
       transcriptMessageId: "assistant-html",
@@ -1969,7 +1969,7 @@ describe("sendMessageTelegram", () => {
   });
 
   it("continues after a rejected middle chunk and reports incomplete delivery", async () => {
-    const storePath = `/tmp/openclaw-telegram-projection-partial-${process.pid}-${Date.now()}.json`;
+    const storePath = `/tmp/afora-telegram-projection-partial-${process.pid}-${Date.now()}.json`;
     const cursor = createTelegramPromptContextProjectionCursor({
       transcriptMessageId: "assistant-partial",
     });
@@ -2023,7 +2023,7 @@ describe("sendMessageTelegram", () => {
   });
 
   it("finalizes the visible chunk when Telegram rejects an invisible tail", async () => {
-    const storePath = `/tmp/openclaw-telegram-empty-tail-${process.pid}-${Date.now()}.json`;
+    const storePath = `/tmp/afora-telegram-empty-tail-${process.pid}-${Date.now()}.json`;
     const cursor = createTelegramPromptContextProjectionCursor({
       transcriptMessageId: "assistant-empty-tail",
     });
@@ -2061,7 +2061,7 @@ describe("sendMessageTelegram", () => {
   });
 
   it("reports partial delivery when the final keyboard retrofit fails", async () => {
-    const storePath = `/tmp/openclaw-telegram-empty-tail-keyboard-failure-${process.pid}-${Date.now()}.json`;
+    const storePath = `/tmp/afora-telegram-empty-tail-keyboard-failure-${process.pid}-${Date.now()}.json`;
     const cursor = createTelegramPromptContextProjectionCursor({
       transcriptMessageId: "assistant-empty-tail-keyboard-failure",
     });
@@ -2631,7 +2631,7 @@ describe("sendMessageTelegram", () => {
   });
 
   it("finalizes media when its separate text renders empty", async () => {
-    const storePath = `/tmp/openclaw-telegram-empty-media-follow-up-${process.pid}-${Date.now()}.json`;
+    const storePath = `/tmp/afora-telegram-empty-media-follow-up-${process.pid}-${Date.now()}.json`;
     const cursor = createTelegramPromptContextProjectionCursor({
       transcriptMessageId: "assistant-empty-media-follow-up",
     });
@@ -2773,7 +2773,7 @@ describe("sendMessageTelegram", () => {
   it("chunks long default markdown media follow-up text", async () => {
     const chatId = "123";
     const longText = `**${"A".repeat(5000)}**`;
-    const storePath = `/tmp/openclaw-telegram-projection-media-${process.pid}-${Date.now()}.json`;
+    const storePath = `/tmp/afora-telegram-projection-media-${process.pid}-${Date.now()}.json`;
     const cfg = { session: { store: storePath } };
     const cursor = createTelegramPromptContextProjectionCursor({
       transcriptMessageId: "assistant-media",
@@ -3661,7 +3661,7 @@ describe("sendMessageTelegram", () => {
     "preserves delivery context for voice privacy fallback with rich messages %s",
     async (richMessages) => {
       const chatId = "-1001234567890";
-      const storePath = `/tmp/openclaw-telegram-voice-fallback-${process.pid}-${richMessages}.json`;
+      const storePath = `/tmp/afora-telegram-voice-fallback-${process.pid}-${richMessages}.json`;
       const onDeliveryResult = vi.fn();
       const cursor = createTelegramPromptContextProjectionCursor({
         transcriptMessageId: "assistant-voice-fallback",
@@ -4852,7 +4852,7 @@ describe("sendStickerTelegram", () => {
   }
 
   it("records a successful topic sticker for later message mutations", async () => {
-    const storePath = `/tmp/openclaw-telegram-sticker-context-${process.pid}-${Date.now()}.json`;
+    const storePath = `/tmp/afora-telegram-sticker-context-${process.pid}-${Date.now()}.json`;
     const chatId = "-100123";
     const sendSticker = vi.fn().mockResolvedValue({
       message_id: 107,
@@ -5093,7 +5093,7 @@ describe("shared send behaviors", () => {
 
   it("retries media native quotes with a legacy reply before recording projection", async () => {
     const chatId = "123";
-    const storePath = `/tmp/openclaw-telegram-media-quote-${process.pid}-${Date.now()}.json`;
+    const storePath = `/tmp/afora-telegram-media-quote-${process.pid}-${Date.now()}.json`;
     const cursor = createTelegramPromptContextProjectionCursor({
       transcriptMessageId: "assistant-media-quote",
     });
@@ -5563,7 +5563,7 @@ describe("editMessageTelegram", () => {
     { name: "text", editMode: "text" as const, field: "text" as const },
     { name: "caption", editMode: "caption" as const, field: "caption" as const },
   ])("refreshes cached $name from Telegram's authoritative edit response", async (testCase) => {
-    const storePath = `/tmp/openclaw-telegram-edited-context-${process.pid}-${Date.now()}-${testCase.name}.json`;
+    const storePath = `/tmp/afora-telegram-edited-context-${process.pid}-${Date.now()}-${testCase.name}.json`;
     const cfg = { session: { store: storePath } };
     const chat = {
       id: -100123,
@@ -5583,7 +5583,7 @@ describe("editMessageTelegram", () => {
         message_id: 902,
         message_thread_id: 77,
         date: 1_779_394_740,
-        from: { id: 42, is_bot: true, first_name: "OpenClaw" },
+        from: { id: 42, is_bot: true, first_name: "Afora" },
         [testCase.field]: "outdated content",
       },
     });
@@ -5593,7 +5593,7 @@ describe("editMessageTelegram", () => {
       message_thread_id: 77,
       date: 1_779_394_740,
       edit_date: 1_779_394_750,
-      from: { id: 42, is_bot: true, first_name: "OpenClaw" },
+      from: { id: 42, is_bot: true, first_name: "Afora" },
       [testCase.field]: "authoritative edited content",
     };
     if (testCase.editMode === "caption") {
@@ -5618,7 +5618,7 @@ describe("editMessageTelegram", () => {
   });
 
   it("refreshes edited group messages without duplicating self history or hiding later replies", async () => {
-    const storePath = `/tmp/openclaw-telegram-edit-history-${process.pid}-${Date.now()}.json`;
+    const storePath = `/tmp/afora-telegram-edit-history-${process.pid}-${Date.now()}.json`;
     const cfg = { session: { store: storePath } };
     const chat = { id: -100123, type: "supergroup" as const, title: "Ops" };
     const historyKey = `${chat.id}:topic:77`;
@@ -5631,7 +5631,7 @@ describe("editMessageTelegram", () => {
       historyKey,
       limit: 50,
       entry: {
-        sender: "OpenClaw (you)",
+        sender: "Afora (you)",
         body: "original response",
         messageId: "902",
         timestamp: 1_779_394_740_000,
@@ -5656,7 +5656,7 @@ describe("editMessageTelegram", () => {
           historyKey,
           limit: 50,
           entry: {
-            sender: "OpenClaw (you)",
+            sender: "Afora (you)",
             body: record.text ?? "<media>",
             messageId: String(record.messageId),
             timestamp: record.timestamp ?? 0,
@@ -5668,7 +5668,7 @@ describe("editMessageTelegram", () => {
       message_id: 902,
       message_thread_id: 77,
       date: 1_779_394_740,
-      from: { id: 42, is_bot: true, first_name: "OpenClaw" },
+      from: { id: 42, is_bot: true, first_name: "Afora" },
       text: "authoritative edited response",
     });
 
@@ -5725,7 +5725,7 @@ describe("sendPollTelegram", () => {
   });
 
   it("records a successful General-topic poll for later message mutations", async () => {
-    const storePath = `/tmp/openclaw-telegram-poll-context-${process.pid}-${Date.now()}.json`;
+    const storePath = `/tmp/afora-telegram-poll-context-${process.pid}-${Date.now()}.json`;
     const chatId = "-100123";
     const sendPoll = vi.fn<Bot["api"]["sendPoll"]>().mockResolvedValue(
       makeTelegramPollMessage({

@@ -4,7 +4,7 @@ type ContextWindowCacheState = {
   contextWindowCache: Map<string, number>;
 };
 
-const CONTEXT_WINDOW_CACHE_STATE_KEY = Symbol.for("openclaw.contextWindowCacheState");
+const CONTEXT_WINDOW_CACHE_STATE_KEY = Symbol.for("afora.contextWindowCacheState");
 const contextWindowCacheGlobal = globalThis as typeof globalThis & {
   [CONTEXT_WINDOW_CACHE_STATE_KEY]?: ContextWindowCacheState;
 };

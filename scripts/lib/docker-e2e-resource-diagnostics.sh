@@ -24,7 +24,7 @@ docker_e2e_resource_limit_error_file() {
 }
 
 docker_e2e_resource_limit_temp_dir() {
-  local template="${TMPDIR:-/tmp}/openclaw-docker-resource-limits.XXXXXX"
+  local template="${TMPDIR:-/tmp}/afora-docker-resource-limits.XXXXXX"
   if command -v mktemp >/dev/null 2>&1; then
     mktemp -d "$template"
     return
@@ -70,7 +70,7 @@ docker_e2e_remove_diagnostic_dir() {
 }
 
 docker_e2e_print_resource_limit_error() {
-  echo "Docker E2E resource limits are incompatible with this Docker runtime. Fix its cgroup support or explicitly opt out with OPENCLAW_DOCKER_E2E_DISABLE_RESOURCE_LIMITS=1." >&2
+  echo "Docker E2E resource limits are incompatible with this Docker runtime. Fix its cgroup support or explicitly opt out with AFORA_DOCKER_E2E_DISABLE_RESOURCE_LIMITS=1." >&2
 }
 
 docker_e2e_docker_run_with_resource_diagnostics() {

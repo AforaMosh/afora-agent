@@ -1,4 +1,4 @@
-openclaw-custodian-panel {
+afora-custodian-panel {
   position: fixed;
   z-index: 60;
   color: var(--text);
@@ -106,7 +106,7 @@ openclaw-custodian-panel {
   flex: 0 0 auto;
 }
 
-.cp > openclaw-custodian-surface {
+.cp > afora-custodian-surface {
   display: flex;
   min-height: 0;
   flex: 1 1 0;

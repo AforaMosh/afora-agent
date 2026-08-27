@@ -8,7 +8,7 @@ import {
   listSessionEntriesReadOnly,
   type SessionEntrySummary,
 } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { SessionCatalogEntrySnapshot } from "../../plugins/session-catalog.js";
 import { normalizeAgentId, resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
 import { tryResolveSessionCompatibilityOwnerAgentId } from "../session-request-agent.js";
@@ -21,7 +21,7 @@ type SessionCatalogRequestEntrySnapshot = {
 };
 
 export function createSessionCatalogRequestEntrySnapshot(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   fallbackAgentId: string;
 }): SessionCatalogRequestEntrySnapshot {
   const entriesByAgentId = new Map<string, readonly SessionEntrySummary[]>();

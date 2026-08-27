@@ -1,16 +1,16 @@
 // Memory Host SDK module implements embeddings debug behavior.
-import { parseBoolean } from "@openclaw/normalization-core/boolean-coercion";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { parseBoolean } from "@afora/normalization-core/boolean-coercion";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 
 // Lightweight debug logging for memory embedding internals.
 
 const normalizedDebugEmbeddings = normalizeLowercaseStringOrEmpty(
-  process.env.OPENCLAW_DEBUG_MEMORY_EMBEDDINGS,
+  process.env.AFORA_DEBUG_MEMORY_EMBEDDINGS,
 );
 const debugEmbeddings =
   parseBoolean(normalizedDebugEmbeddings) ?? ["1", "on", "yes"].includes(normalizedDebugEmbeddings);
 
-/** Write embedding debug metadata when OPENCLAW_DEBUG_MEMORY_EMBEDDINGS is enabled. */
+/** Write embedding debug metadata when AFORA_DEBUG_MEMORY_EMBEDDINGS is enabled. */
 export function debugEmbeddingsLog(message: string, meta?: Record<string, unknown>): void {
   if (!debugEmbeddings) {
     return;

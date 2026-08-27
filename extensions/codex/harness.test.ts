@@ -2,13 +2,13 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
+import { upsertSessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
 import { describe, expect, it, vi } from "vitest";
 
 const completeWithPreparedSimpleCompletionModel = vi.hoisted(() => vi.fn());
 const runCodexIsolatedCompletion = vi.hoisted(() => vi.fn());
 
-vi.mock("openclaw/plugin-sdk/simple-completion-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/simple-completion-runtime", () => ({
   completeWithPreparedSimpleCompletionModel,
 }));
 vi.mock("./src/app-server/isolated-completion.js", () => ({
@@ -176,7 +176,7 @@ describe("Codex agent harness supports()", () => {
     expect(harness.delegatedExecutionPluginIds).toEqual(["voice-call"]);
   });
 
-  it("supports openai as the primary OpenClaw routing id", () => {
+  it("supports openai as the primary Afora routing id", () => {
     expect(harness.supports({ provider: "openai", requestedRuntime: "codex" })).toEqual({
       supported: true,
       priority: 100,
@@ -192,7 +192,7 @@ describe("Codex agent harness supports()", () => {
           api: "openai-responses",
           baseUrl: "https://api.openai.com/v1",
           requestTransportOverrides: "none",
-          runtimePolicy: { compatibleIds: ["openclaw", "codex"] },
+          runtimePolicy: { compatibleIds: ["afora", "codex"] },
         },
       }),
     ).toEqual({ supported: true, priority: 100 });
@@ -259,7 +259,7 @@ describe("Codex agent harness supports()", () => {
             ? "https://api.openai.com/v1"
             : "https://chatgpt.com/backend-api/codex",
         requestTransportOverrides: "none",
-        runtimePolicy: { compatibleIds: ["openclaw", "codex"] },
+        runtimePolicy: { compatibleIds: ["afora", "codex"] },
         preparedAuth,
       },
     });
@@ -277,7 +277,7 @@ describe("Codex agent harness supports()", () => {
         api: "openai-responses",
         baseUrl: "https://relay.example.test/v1",
         requestTransportOverrides: "none" as const,
-        runtimePolicy: { compatibleIds: ["openclaw"] },
+        runtimePolicy: { compatibleIds: ["afora"] },
       },
     },
     {
@@ -286,7 +286,7 @@ describe("Codex agent harness supports()", () => {
         api: "openai-completions",
         baseUrl: "https://api.openai.com/v1",
         requestTransportOverrides: "none" as const,
-        runtimePolicy: { compatibleIds: ["openclaw"] },
+        runtimePolicy: { compatibleIds: ["afora"] },
       },
     },
     {
@@ -295,7 +295,7 @@ describe("Codex agent harness supports()", () => {
         api: "openai-responses",
         baseUrl: "http://api.openai.com/v1",
         requestTransportOverrides: "none" as const,
-        runtimePolicy: { compatibleIds: ["openclaw"] },
+        runtimePolicy: { compatibleIds: ["afora"] },
       },
     },
   ])("rejects a $name that Codex cannot reproduce", ({ modelProvider }) => {
@@ -316,14 +316,14 @@ describe("Codex agent harness supports()", () => {
         api: "openai-responses",
         baseUrl: "https://api.openai.com/v1",
         requestTransportOverrides: "present",
-        runtimePolicy: { compatibleIds: ["openclaw", "codex"] },
+        runtimePolicy: { compatibleIds: ["afora", "codex"] },
         preparedAuth: { source: "harness" },
       },
     });
     expect(result).toEqual({
       supported: false,
       reason: "Codex cannot reproduce authored request transport overrides",
-      fallbackRuntime: "openclaw",
+      fallbackRuntime: "afora",
     });
   });
 
@@ -438,7 +438,7 @@ describe("Codex agent harness reset()", () => {
   });
 
   it("repairs a retirement fence left by an earlier in-place reset", async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-codex-harness-reset-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-codex-harness-reset-"));
     const storePath = path.join(root, "sessions.json");
     const bindingStore = createCodexTestBindingStore();
     const sessionKey = "agent:worker:main";
@@ -513,7 +513,7 @@ describe("Codex agent harness reset()", () => {
 
 describe("Codex agent harness dispose()", () => {
   it("uses the preloaded shared-client lifecycle seam", async () => {
-    const sharedDisposer = Symbol.for("openclaw.codexAppServerClientDisposer");
+    const sharedDisposer = Symbol.for("afora.codexAppServerClientDisposer");
     const state = globalThis as typeof globalThis & {
       [sharedDisposer]?: () => Promise<void>;
     };

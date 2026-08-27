@@ -1,19 +1,19 @@
 // Memory Core plugin module implements dreaming command behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { resolveMemoryDreamingConfig } from "openclaw/plugin-sdk/memory-core-host-status";
-import type { OpenClawPluginApi, PluginCommandContext } from "openclaw/plugin-sdk/plugin-entry";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { resolveMemoryDreamingConfig } from "afora-agent/plugin-sdk/memory-core-host-status";
+import type { AforaPluginApi, PluginCommandContext } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   asNullableRecord,
   normalizeLowercaseStringOrEmpty,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveShortTermPromotionDreamingConfig } from "./dreaming.js";
 
-function resolveDreamingPluginConfig(cfg: OpenClawConfig): Record<string, unknown> {
+function resolveDreamingPluginConfig(cfg: AforaConfig): Record<string, unknown> {
   const entry = asNullableRecord(cfg.plugins?.entries?.["memory-core"]);
   return asNullableRecord(entry?.config) ?? {};
 }
 
-function updateDreamingEnabledInConfig(cfg: OpenClawConfig, enabled: boolean): OpenClawConfig {
+function updateDreamingEnabledInConfig(cfg: AforaConfig, enabled: boolean): AforaConfig {
   const entries = { ...cfg.plugins?.entries };
   const existingEntry = asNullableRecord(entries["memory-core"]) ?? {};
   const existingConfig = asNullableRecord(existingEntry.config) ?? {};
@@ -50,7 +50,7 @@ function formatPhaseGuide(): string {
   ].join("\n");
 }
 
-function formatStatus(cfg: OpenClawConfig): string {
+function formatStatus(cfg: AforaConfig): string {
   const pluginConfig = resolveDreamingPluginConfig(cfg);
   const dreaming = resolveMemoryDreamingConfig({
     pluginConfig,
@@ -89,7 +89,7 @@ function lacksAdminOrOwnerForDreamingMutation(params: {
   return params.senderIsOwner !== true;
 }
 
-export async function handleDreamingCommand(api: OpenClawPluginApi, ctx: PluginCommandContext) {
+export async function handleDreamingCommand(api: AforaPluginApi, ctx: PluginCommandContext) {
   const args = ctx.args?.trim() ?? "";
   const [firstToken = ""] = args
     .split(/\s+/)

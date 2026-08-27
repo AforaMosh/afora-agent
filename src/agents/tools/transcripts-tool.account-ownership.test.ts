@@ -1,7 +1,7 @@
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import type { TranscriptSourceProvider } from "../../transcripts/provider-types.js";
 import { TranscriptsStore } from "../../transcripts/store.js";
 import { activeSessions } from "./transcripts-tool-runtime.js";
@@ -45,7 +45,7 @@ function createTool(
 
 function storeFor(stateDir: string): TranscriptsStore {
   return new TranscriptsStore(path.join(stateDir, "transcripts"), {
-    env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+    env: { ...process.env, AFORA_STATE_DIR: stateDir },
   });
 }
 
@@ -69,7 +69,7 @@ describe("transcripts tool account ownership", () => {
   afterEach(() => {
     vi.useRealTimers();
     activeSessions.clear();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
   });
 
   beforeEach(() => {
@@ -78,7 +78,7 @@ describe("transcripts tool account ownership", () => {
   });
 
   it("binds account-bound imports to the trusted turn account", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-account-import-");
+    const stateDir = tempDirs.make("afora-transcripts-account-import-");
     const resolveAccountId = vi.fn(({ source }: { source: { accountId?: string } }) => ({
       ok: true as const,
       value: source.accountId,
@@ -128,7 +128,7 @@ describe("transcripts tool account ownership", () => {
   });
 
   it("binds same-channel capture and lifecycle access to the trusted turn account", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-account-");
+    const stateDir = tempDirs.make("afora-transcripts-account-");
     const start = vi.fn(async (request) => ({ ok: true as const, session: request.session }));
     const stop = vi.fn(async () => ({ ok: true as const, sessionId: "account-bound" }));
     const resolveAccountId = vi.fn(({ source }: { source: { accountId?: string } }) => ({
@@ -288,7 +288,7 @@ describe("transcripts tool account ownership", () => {
       error: 'transcripts provider discord-voice could not use trusted account "account-a"',
     },
   ])("$name before persistence", async ({ resolve, error }) => {
-    const stateDir = tempDirs.make("openclaw-transcripts-account-");
+    const stateDir = tempDirs.make("afora-transcripts-account-");
     const start = vi.fn(async (request) => ({ ok: true as const, session: request.session }));
     const resolveAccountId = vi.fn(({ source }: { source: { accountId?: string } }) => {
       expect(source.accountId).toBe("account-a");
@@ -324,7 +324,7 @@ describe("transcripts tool account ownership", () => {
   });
 
   it("preserves explicit accounts for providers outside the turn channel namespace", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-account-");
+    const stateDir = tempDirs.make("afora-transcripts-account-");
     const start = vi.fn(async (request) => ({ ok: true as const, session: request.session }));
     getTranscriptSourceProviderMock.mockReturnValue({
       id: "google-meet",
@@ -360,7 +360,7 @@ describe("transcripts tool account ownership", () => {
   });
 
   it("starts account-bound providers only from a binding channel or local tool", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-account-");
+    const stateDir = tempDirs.make("afora-transcripts-account-");
     const start = vi.fn(async (request) => ({ ok: true as const, session: request.session }));
     getTranscriptSourceProviderMock.mockReturnValue({
       id: "discord-voice",
@@ -420,7 +420,7 @@ describe("transcripts tool account ownership", () => {
   });
 
   it("does not treat provider lookup aliases as account binding channels", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-account-");
+    const stateDir = tempDirs.make("afora-transcripts-account-");
     const meetingAccountId = `meeting\n${"x".repeat(200)}`;
     const start = vi.fn(async (request) => ({ ok: true as const, session: request.session }));
     getTranscriptSourceProviderMock.mockReturnValue({
@@ -462,7 +462,7 @@ describe("transcripts tool account ownership", () => {
   });
 
   it("applies provider access to historical rows after the agent boundary", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-account-");
+    const stateDir = tempDirs.make("afora-transcripts-account-");
     const store = storeFor(stateDir);
     getTranscriptSourceProviderMock.mockReturnValue({
       id: "discord-voice",
@@ -666,7 +666,7 @@ describe("transcripts tool account ownership", () => {
   });
 
   it("preserves main-agent access to ownerless non-binding sessions", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-account-");
+    const stateDir = tempDirs.make("afora-transcripts-account-");
     const store = storeFor(stateDir);
     const legacySession = {
       sessionId: "legacy-ownerless",
@@ -704,7 +704,7 @@ describe("transcripts tool account ownership", () => {
   });
 
   it("recovers shipped agent-owned account-less sessions only off-channel", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-account-");
+    const stateDir = tempDirs.make("afora-transcripts-account-");
     const store = storeFor(stateDir);
     getTranscriptSourceProviderMock.mockReturnValue({
       id: "discord-voice",
@@ -749,7 +749,7 @@ describe("transcripts tool account ownership", () => {
   });
 
   it("keeps named-agent ownership authoritative for non-binding sources", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-account-");
+    const stateDir = tempDirs.make("afora-transcripts-account-");
     const store = storeFor(stateDir);
     getTranscriptSourceProviderMock.mockReturnValue({
       id: "meeting-provider",
@@ -795,7 +795,7 @@ describe("transcripts tool account ownership", () => {
   });
 
   it("uses provider access for a recorded agent's historical session", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-account-");
+    const stateDir = tempDirs.make("afora-transcripts-account-");
     getTranscriptSourceProviderMock.mockReturnValue({
       id: "discord-voice",
       accessControl: discordAccountOwnership(),
@@ -840,7 +840,7 @@ describe("transcripts tool account ownership", () => {
   });
 
   it("does not stop a same-millisecond replacement owned by another account", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-account-");
+    const stateDir = tempDirs.make("afora-transcripts-account-");
     const start = vi.fn(async (request) => ({ ok: true as const, session: request.session }));
     const stop = vi.fn(async (request) => ({ ok: true as const, sessionId: request.sessionId }));
     getTranscriptSourceProviderMock.mockReturnValue({

@@ -293,7 +293,7 @@ describe("channel detail", () => {
     );
 
     const docs = container.querySelector<HTMLAnchorElement>(".channels-detail__header-actions a");
-    expect(docs?.href).toBe("https://docs.openclaw.ai/channels/telegram");
+    expect(docs?.href).toBe("https://docs.afora.ai/channels/telegram");
     expect(docs?.textContent?.trim()).toBe("Docs");
   });
 

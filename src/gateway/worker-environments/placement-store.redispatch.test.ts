@@ -3,10 +3,10 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-  type OpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+  type AforaStateDatabase,
+} from "../../state/afora-state-db.js";
 import type { WorkerSessionPlacementIdentity } from "./placement-record.js";
 import {
   createWorkerSessionPlacementStore,
@@ -21,17 +21,17 @@ const SESSION: WorkerSessionPlacementIdentity = {
 
 describe("failed worker placement redispatch", () => {
   let root: string;
-  let database: OpenClawStateDatabase;
+  let database: AforaStateDatabase;
   let store: WorkerSessionPlacementStore;
 
   beforeEach(async () => {
-    root = await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()), "openclaw-redispatch-"));
-    database = openOpenClawStateDatabase({ env: { OPENCLAW_STATE_DIR: root } });
+    root = await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()), "afora-redispatch-"));
+    database = openAforaStateDatabase({ env: { AFORA_STATE_DIR: root } });
     store = createWorkerSessionPlacementStore({ database, now: () => 1_000 });
   });
 
   afterEach(async () => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(root, { recursive: true, force: true });
   });
 

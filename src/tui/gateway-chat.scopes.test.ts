@@ -143,7 +143,7 @@ describe("GatewayChatClient operator scopes", () => {
           throw new Error("expected real TUI Gateway connect frame");
         }
         expect(connect.params).toMatchObject({
-          client: { id: "openclaw-tui" },
+          client: { id: "afora-tui" },
           role: "operator",
           scopes: requestedScopes,
           device: { id: deviceIdentity.deviceId, nonce },

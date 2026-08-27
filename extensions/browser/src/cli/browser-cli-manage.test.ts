@@ -189,7 +189,7 @@ describe("browser manage output", () => {
             profiles: [
               {
                 name: "remote",
-                driver: "openclaw",
+                driver: "afora",
                 transport: "cdp",
                 running: true,
                 tabCount: 1,
@@ -327,7 +327,7 @@ describe("browser manage output", () => {
         ? {
             enabled: true,
             profile: "remote",
-            driver: "openclaw",
+            driver: "afora",
             transport: "cdp",
             running: true,
             cdpReady: true,
@@ -364,8 +364,8 @@ describe("browser manage output", () => {
       req.path === "/"
         ? {
             enabled: true,
-            profile: "openclaw",
-            driver: "openclaw",
+            profile: "afora",
+            driver: "afora",
             transport: "cdp",
             running: true,
             cdpReady: true,
@@ -485,7 +485,7 @@ describe("browser manage output", () => {
     ).rejects.toThrow("__exit__:1");
 
     expect(getBrowserCliRuntimeCapture().runtimeErrors.at(-1)).toContain(
-      "--driver must be openclaw or existing-session",
+      "--driver must be afora or existing-session",
     );
     expect(getBrowserManageCallBrowserRequestMock()).not.toHaveBeenCalled();
   });
@@ -495,8 +495,8 @@ describe("browser manage output", () => {
       if (req.path === "/") {
         return {
           enabled: true,
-          profile: "openclaw",
-          driver: "openclaw",
+          profile: "afora",
+          driver: "afora",
           transport: "cdp",
           running: true,
           cdpReady: true,
@@ -529,7 +529,7 @@ describe("browser manage output", () => {
         };
       }
       if (req.path === "/profiles") {
-        return { profiles: [{ name: "openclaw", running: true }] };
+        return { profiles: [{ name: "afora", running: true }] };
       }
       if (req.path === "/tabs") {
         return {
@@ -565,7 +565,7 @@ describe("browser manage output", () => {
       if (req.path === "/") {
         return {
           enabled: false,
-          profile: "openclaw",
+          profile: "afora",
           transport: "cdp",
           running: false,
         };
@@ -599,13 +599,13 @@ describe("browser manage output", () => {
       if (req.path === "/") {
         return {
           enabled: true,
-          profile: "openclaw",
+          profile: "afora",
           transport: "cdp",
           running: true,
         };
       }
       if (req.path === "/profiles") {
-        return { profiles: [{ name: "openclaw", running: true }] };
+        return { profiles: [{ name: "afora", running: true }] };
       }
       if (req.path === "/tabs") {
         return { running: true, tabs: [] };
@@ -637,7 +637,7 @@ describe("browser manage output", () => {
     expect(output).toContain(
       "FAIL gateway: Gateway auth SecretRef is unavailable in this command path",
     );
-    expect(output).toContain("OPENCLAW_GATEWAY_TOKEN");
+    expect(output).toContain("AFORA_GATEWAY_TOKEN");
     expect(output).not.toContain("GatewaySecretRefUnavailableError");
     expect(getBrowserCliRuntime().writeJson).not.toHaveBeenCalled();
     expect(getBrowserCliRuntime().exit).not.toHaveBeenCalled();

@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { constants as osConstants, tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-coercion";
+import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
 import type { Command } from "commander";
 import { getRuntimeConfig } from "../config/io.js";
 import { defaultRuntime } from "../runtime.js";
@@ -24,7 +24,7 @@ export function writeClaudeMcpConfig(mcpConfig: AttachGrant["mcpConfig"]): {
   path: string;
   cleanup: () => void;
 } {
-  const dir = mkdtempSync(join(tmpdir(), "openclaw-attach-"));
+  const dir = mkdtempSync(join(tmpdir(), "afora-attach-"));
   const path = join(dir, ".mcp.json");
   writeFileSync(path, JSON.stringify(mcpConfig, null, 2), { encoding: "utf8", mode: 0o600 });
   return { path, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
@@ -52,7 +52,7 @@ export async function registerAttachCli(program: Command, _argv: string[] = proc
     )
     .addHelpText(
       "after",
-      "\nExamples:\n  openclaw attach                       Attach Claude Code to the main session\n  openclaw attach movies-a1166b81       Attach to a short session reference\n  openclaw attach --session agent:main:telegram:123 --ttl 600000\n  openclaw attach --print-config        Set up the grant + config and print how to launch it yourself\n",
+      "\nExamples:\n  afora attach                       Attach Claude Code to the main session\n  afora attach movies-a1166b81       Attach to a short session reference\n  afora attach --session agent:main:telegram:123 --ttl 600000\n  afora attach --print-config        Set up the grant + config and print how to launch it yourself\n",
     )
     .action(
       async (

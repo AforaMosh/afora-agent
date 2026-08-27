@@ -1,7 +1,7 @@
 /**
  * Browser tab listing, opening, labeling, and alias management for one profile.
  */
-import { sleepWithAbort } from "openclaw/plugin-sdk/runtime-env";
+import { sleepWithAbort } from "afora-agent/plugin-sdk/runtime-env";
 import { resolveBrowserNavigationProxyMode } from "./browser-proxy-mode.js";
 import {
   assertChromeMcpCdpTransportAllowed,

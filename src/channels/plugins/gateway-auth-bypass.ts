@@ -3,14 +3,14 @@
  *
  * Reads optional public artifacts that declare unauthenticated Gateway callback paths.
  */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { tryLoadActivatedBundledPluginPublicSurfaceModule } from "../../plugin-sdk/facade-runtime.js";
 
 /**
  * Lightweight public artifact contract for channel gateway auth bypass paths.
  */
 type GatewayAuthBypassApi = {
-  resolveGatewayAuthBypassPaths?: (params: { cfg: OpenClawConfig }) => readonly unknown[];
+  resolveGatewayAuthBypassPaths?: (params: { cfg: AforaConfig }) => readonly unknown[];
 };
 
 const GATEWAY_AUTH_API_ARTIFACT_BASENAME = "gateway-auth-api.js";
@@ -41,7 +41,7 @@ async function loadChannelGatewayAuthApi(channelId: string): Promise<GatewayAuth
  */
 export async function resolveBundledChannelGatewayAuthBypassPaths(params: {
   channelId: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }): Promise<string[]> {
   const api = await loadChannelGatewayAuthApi(params.channelId);
   const paths = api?.resolveGatewayAuthBypassPaths?.({ cfg: params.cfg }) ?? [];

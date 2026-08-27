@@ -14,9 +14,9 @@ describe("Reef legacy key guard", () => {
   });
 
   it("blocks identity generation while a legacy keys file awaits Doctor", async () => {
-    const stateRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-reef-keys-"));
+    const stateRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-reef-keys-"));
     tempDirs.push(stateRoot);
-    const legacyDir = path.join(stateRoot, ".openclaw", "data", "reef");
+    const legacyDir = path.join(stateRoot, ".afora", "data", "reef");
     fs.mkdirSync(legacyDir, { recursive: true });
     fs.writeFileSync(path.join(legacyDir, "keys.json"), "{}");
 
@@ -26,8 +26,8 @@ describe("Reef legacy key guard", () => {
   });
 
   it("uses the configured legacy directory when one is present", async () => {
-    const stateRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-reef-keys-"));
-    const legacyDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-reef-custom-"));
+    const stateRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-reef-keys-"));
+    const legacyDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-reef-custom-"));
     tempDirs.push(stateRoot, legacyDir);
     fs.writeFileSync(path.join(legacyDir, "keys.json"), "{}");
 
@@ -37,9 +37,9 @@ describe("Reef legacy key guard", () => {
   });
 
   it("blocks when the legacy keys path exists but is not a regular file", async () => {
-    const stateRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-reef-keys-"));
+    const stateRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-reef-keys-"));
     tempDirs.push(stateRoot);
-    fs.mkdirSync(path.join(stateRoot, ".openclaw", "data", "reef", "keys.json"), {
+    fs.mkdirSync(path.join(stateRoot, ".afora", "data", "reef", "keys.json"), {
       recursive: true,
     });
 
@@ -49,35 +49,35 @@ describe("Reef legacy key guard", () => {
   });
 
   it("allows a new identity when no legacy key file exists", async () => {
-    const stateRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-reef-keys-"));
+    const stateRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-reef-keys-"));
     tempDirs.push(stateRoot);
 
     await expect(assertLegacyReefKeysMigrated(undefined, {}, stateRoot)).resolves.toBeUndefined();
   });
 
   it("ignores default-home keys for an isolated active state", async () => {
-    const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-reef-home-"));
-    const isolatedStateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-reef-isolated-"));
+    const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-reef-home-"));
+    const isolatedStateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-reef-isolated-"));
     tempDirs.push(homeDir, isolatedStateDir);
-    const legacyDir = path.join(homeDir, ".openclaw", "data", "reef");
+    const legacyDir = path.join(homeDir, ".afora", "data", "reef");
     fs.mkdirSync(legacyDir, { recursive: true });
     fs.writeFileSync(path.join(legacyDir, "keys.json"), "{}");
 
     await expect(
-      assertLegacyReefKeysMigrated(undefined, { OPENCLAW_STATE_DIR: isolatedStateDir }, homeDir),
+      assertLegacyReefKeysMigrated(undefined, { AFORA_STATE_DIR: isolatedStateDir }, homeDir),
     ).resolves.toBeUndefined();
   });
 
   it("honors explicitly configured default-home keys for an isolated active state", async () => {
-    const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-reef-home-"));
-    const isolatedStateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-reef-isolated-"));
+    const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-reef-home-"));
+    const isolatedStateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-reef-isolated-"));
     tempDirs.push(homeDir, isolatedStateDir);
-    const legacyDir = path.join(homeDir, ".openclaw", "data", "reef");
+    const legacyDir = path.join(homeDir, ".afora", "data", "reef");
     fs.mkdirSync(legacyDir, { recursive: true });
     fs.writeFileSync(path.join(legacyDir, "keys.json"), "{}");
 
     await expect(
-      assertLegacyReefKeysMigrated(legacyDir, { OPENCLAW_STATE_DIR: isolatedStateDir }, homeDir),
+      assertLegacyReefKeysMigrated(legacyDir, { AFORA_STATE_DIR: isolatedStateDir }, homeDir),
     ).rejects.toThrow("Legacy Reef identity keys must be imported");
   });
 });

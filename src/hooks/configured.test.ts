@@ -1,6 +1,6 @@
 // Configured hook tests cover the closed allowlist and open discovery decisions.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveConfiguredInternalHookNames } from "./configured.js";
 
 const readConfigMachineStateMock = vi.hoisted(() => vi.fn());
@@ -57,7 +57,7 @@ describe("resolveConfiguredInternalHookNames", () => {
           internal: {
             enabled: true,
             entries: { named: { enabled: true } },
-            load: { extraDirs: ["/opt/openclaw/hooks"] },
+            load: { extraDirs: ["/opt/afora/hooks"] },
           },
         },
       }),
@@ -87,10 +87,10 @@ describe("resolveConfiguredInternalHookNames", () => {
         internal: {
           enabled: false,
           entries: { named: { enabled: true } },
-          load: { extraDirs: ["/opt/openclaw/hooks"] },
+          load: { extraDirs: ["/opt/afora/hooks"] },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveConfiguredInternalHookNames(config)).toEqual(new Set());
   });

@@ -5,8 +5,8 @@ import {
   FILE_LOCK_STALE_ERROR_CODE,
   FILE_LOCK_TIMEOUT_ERROR_CODE,
   type FileLockHandle,
-} from "openclaw/plugin-sdk/file-lock";
-import { resolveUserPath } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/file-lock";
+import { resolveUserPath } from "afora-agent/plugin-sdk/text-utility-runtime";
 
 const WHATSAPP_CONNECTION_OWNER_BUSY_CODE = "whatsapp_connection_owner_busy";
 

@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import * as capabilityProviderRuntime from "../plugins/capability-provider-runtime.js";
 import {
   buildCapabilityProviderMaps,
@@ -21,7 +21,7 @@ export function createMediaProviderRegistry<TKey extends MediaProviderRegistryKe
   key: TKey,
   options: { directLookup?: boolean } = {},
 ) {
-  const buildProviderMaps = (cfg?: OpenClawConfig) =>
+  const buildProviderMaps = (cfg?: AforaConfig) =>
     buildCapabilityProviderMaps(
       // The capability runtime's private provider type uses this same registry mapping.
       capabilityProviderRuntime.resolvePluginCapabilityProviders({
@@ -31,8 +31,8 @@ export function createMediaProviderRegistry<TKey extends MediaProviderRegistryKe
     );
 
   return {
-    listProviders: (cfg?: OpenClawConfig) => [...buildProviderMaps(cfg).canonical.values()],
-    getProvider: (providerId: string | undefined, cfg?: OpenClawConfig) => {
+    listProviders: (cfg?: AforaConfig) => [...buildProviderMaps(cfg).canonical.values()],
+    getProvider: (providerId: string | undefined, cfg?: AforaConfig) => {
       const normalized = normalizeCapabilityProviderId(providerId);
       if (!normalized) {
         return undefined;

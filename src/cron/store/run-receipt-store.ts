@@ -7,12 +7,12 @@ import {
   getNodeSqliteKysely,
 } from "../../infra/kysely-sync.js";
 import { getFileLockProcessStartTime, isPidDefinitelyDead } from "../../shared/pid-alive.js";
-import type { DB as OpenClawStateDatabase } from "../../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateDatabase } from "../../state/afora-state-db.generated.js";
 import {
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../../state/openclaw-state-db.js";
-import { OPENCLAW_STATE_SCHEMA_SQL } from "../../state/openclaw-state-schema.js";
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../../state/afora-state-db.js";
+import { AFORA_STATE_SCHEMA_SQL } from "../../state/afora-state-schema.js";
 import { resolveCronJobConfigRevision } from "../config-revision.js";
 import type { CronJob } from "../types.js";
 import { cronStoreKey } from "./key.js";
@@ -34,7 +34,7 @@ import { loadedCronStoreFromRows, loadCronRows } from "./row-codec.js";
  * I4: Finalization applies outcomes to the authoritative row, never an admitted snapshot.
  */
 
-type CronRunReceiptDatabase = Pick<OpenClawStateDatabase, "cron_run_receipts">;
+type CronRunReceiptDatabase = Pick<AforaStateDatabase, "cron_run_receipts">;
 type CronRunReceiptRow = Selectable<CronRunReceiptDatabase["cron_run_receipts"]>;
 
 export type CronRunReceiptStatus =
@@ -138,14 +138,14 @@ export class CronRunReceiptRevisionError extends Error {
 }
 
 function ensureCronRunReceiptSchema(database: DatabaseSync): void {
-  const start = OPENCLAW_STATE_SCHEMA_SQL.indexOf(CRON_RUN_RECEIPT_SCHEMA_START);
-  const endMarker = OPENCLAW_STATE_SCHEMA_SQL.indexOf(CRON_RUN_RECEIPT_SCHEMA_END, start);
+  const start = AFORA_STATE_SCHEMA_SQL.indexOf(CRON_RUN_RECEIPT_SCHEMA_START);
+  const endMarker = AFORA_STATE_SCHEMA_SQL.indexOf(CRON_RUN_RECEIPT_SCHEMA_END, start);
   if (start < 0 || endMarker < start) {
-    throw new Error("OpenClaw cron run receipt schema marker is missing.");
+    throw new Error("Afora cron run receipt schema marker is missing.");
   }
   // sqlite-allow-raw -- Canonical feature-local additive DDL only.
   database.exec(
-    OPENCLAW_STATE_SCHEMA_SQL.slice(start, endMarker + CRON_RUN_RECEIPT_SCHEMA_END.length),
+    AFORA_STATE_SCHEMA_SQL.slice(start, endMarker + CRON_RUN_RECEIPT_SCHEMA_END.length),
   );
 }
 
@@ -155,11 +155,11 @@ function query(database: DatabaseSync) {
 
 function withReceiptWrite<T>(
   operationLabel: string,
-  options: OpenClawStateDatabaseOptions,
+  options: AforaStateDatabaseOptions,
   operation: (database: DatabaseSync) => T,
 ): T {
   let initializedDatabase: DatabaseSync | undefined;
-  const result = runOpenClawStateWriteTransaction(
+  const result = runAforaStateWriteTransaction(
     ({ db }) => {
       if (!initializedDatabases.has(db)) {
         ensureCronRunReceiptSchema(db);

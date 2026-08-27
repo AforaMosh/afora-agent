@@ -17,7 +17,7 @@ import {
 import { resetConfigOverrides, setConfigOverride } from "../config/runtime-overrides.js";
 import { clearSessionStoreCacheForTest } from "../config/sessions/store-writer-state.js";
 import type { GatewayAuthConfig, GatewayTailscaleConfig } from "../config/types.gateway.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resetAgentEventsForTest } from "../infra/agent-events.js";
 import { loadDeviceAuthToken } from "../infra/device-auth-store.js";
 import { loadOrCreateDeviceIdentity } from "../infra/device-identity.js";
@@ -42,19 +42,19 @@ let gatewayTestSeq = 0;
 const GATEWAY_TEST_ENV_KEYS = [
   "HOME",
   ...GATEWAY_STARTUP_MUTATED_ENV_KEYS,
-  "OPENCLAW_STATE_DIR",
-  "OPENCLAW_CONFIG_PATH",
-  "OPENCLAW_GATEWAY_TOKEN",
-  "OPENCLAW_TEST_GATEWAY_OVERRIDE_TOKEN",
-  "OPENCLAW_TEST_RUNTIME_OVERRIDE_TOKEN",
-  "OPENCLAW_SKIP_CHANNELS",
-  "OPENCLAW_SKIP_GMAIL_WATCHER",
-  "OPENCLAW_SKIP_CRON",
-  "OPENCLAW_SKIP_CANVAS_HOST",
-  "OPENCLAW_SKIP_BROWSER_CONTROL_SERVER",
-  "OPENCLAW_SKIP_PROVIDERS",
-  "OPENCLAW_BUNDLED_PLUGINS_DIR",
-  "OPENCLAW_DISABLE_BUNDLED_PLUGINS",
+  "AFORA_STATE_DIR",
+  "AFORA_CONFIG_PATH",
+  "AFORA_GATEWAY_TOKEN",
+  "AFORA_TEST_GATEWAY_OVERRIDE_TOKEN",
+  "AFORA_TEST_RUNTIME_OVERRIDE_TOKEN",
+  "AFORA_SKIP_CHANNELS",
+  "AFORA_SKIP_GMAIL_WATCHER",
+  "AFORA_SKIP_CRON",
+  "AFORA_SKIP_CANVAS_HOST",
+  "AFORA_SKIP_BROWSER_CONTROL_SERVER",
+  "AFORA_SKIP_PROVIDERS",
+  "AFORA_BUNDLED_PLUGINS_DIR",
+  "AFORA_DISABLE_BUNDLED_PLUGINS",
 ] as const;
 
 function nextGatewayId(prefix: string): string {
@@ -62,13 +62,13 @@ function nextGatewayId(prefix: string): string {
 }
 
 async function createEmptyBundledPluginsDir(tempHome: string): Promise<string> {
-  const bundledPluginsDir = path.join(tempHome, "openclaw-test-empty-bundled-plugins");
+  const bundledPluginsDir = path.join(tempHome, "afora-test-empty-bundled-plugins");
   await fs.mkdir(bundledPluginsDir, { recursive: true });
   return bundledPluginsDir;
 }
 
 async function createGatewayConfigPath(tempHome: string): Promise<string> {
-  const configPath = path.join(tempHome, ".openclaw", "openclaw.json");
+  const configPath = path.join(tempHome, ".afora", "afora.json");
   await fs.mkdir(path.dirname(configPath), { recursive: true });
   return configPath;
 }
@@ -99,10 +99,10 @@ async function writeWorkspacePlugin(params: {
   body: string;
   activation?: { onStartup?: boolean };
 }): Promise<void> {
-  const pluginDir = path.join(params.workspaceDir, ".openclaw", "extensions", params.id);
+  const pluginDir = path.join(params.workspaceDir, ".afora", "extensions", params.id);
   await fs.mkdir(pluginDir, { recursive: true });
   await fs.writeFile(
-    path.join(pluginDir, "openclaw.plugin.json"),
+    path.join(pluginDir, "afora.plugin.json"),
     `${JSON.stringify(
       {
         id: params.id,
@@ -150,29 +150,29 @@ async function readCounterWithRetry(filePath: string): Promise<number> {
 async function setupGatewayTempHome(params: { prefix: string; minimalGateway?: boolean }) {
   const envSnapshot = captureEnv([
     ...GATEWAY_TEST_ENV_KEYS,
-    ...(params.minimalGateway ? (["OPENCLAW_TEST_MINIMAL_GATEWAY"] as const) : []),
+    ...(params.minimalGateway ? (["AFORA_TEST_MINIMAL_GATEWAY"] as const) : []),
   ]);
 
   const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), params.prefix));
   setTestEnvValue("HOME", tempHome);
-  setTestEnvValue("OPENCLAW_STATE_DIR", path.join(tempHome, ".openclaw"));
-  deleteTestEnvValue("OPENCLAW_CONFIG_PATH");
-  setTestEnvValue("OPENCLAW_SKIP_CHANNELS", "1");
-  setTestEnvValue("OPENCLAW_SKIP_GMAIL_WATCHER", "1");
-  setTestEnvValue("OPENCLAW_SKIP_CRON", "1");
-  setTestEnvValue("OPENCLAW_SKIP_CANVAS_HOST", "1");
-  setTestEnvValue("OPENCLAW_SKIP_BROWSER_CONTROL_SERVER", "1");
-  setTestEnvValue("OPENCLAW_SKIP_PROVIDERS", "1");
+  setTestEnvValue("AFORA_STATE_DIR", path.join(tempHome, ".afora"));
+  deleteTestEnvValue("AFORA_CONFIG_PATH");
+  setTestEnvValue("AFORA_SKIP_CHANNELS", "1");
+  setTestEnvValue("AFORA_SKIP_GMAIL_WATCHER", "1");
+  setTestEnvValue("AFORA_SKIP_CRON", "1");
+  setTestEnvValue("AFORA_SKIP_CANVAS_HOST", "1");
+  setTestEnvValue("AFORA_SKIP_BROWSER_CONTROL_SERVER", "1");
+  setTestEnvValue("AFORA_SKIP_PROVIDERS", "1");
   if (params.minimalGateway) {
-    setTestEnvValue("OPENCLAW_TEST_MINIMAL_GATEWAY", "1");
+    setTestEnvValue("AFORA_TEST_MINIMAL_GATEWAY", "1");
   } else {
-    deleteTestEnvValue("OPENCLAW_TEST_MINIMAL_GATEWAY");
+    deleteTestEnvValue("AFORA_TEST_MINIMAL_GATEWAY");
   }
 
-  const workspaceDir = path.join(tempHome, "openclaw");
+  const workspaceDir = path.join(tempHome, "afora");
   await fs.mkdir(workspaceDir, { recursive: true });
-  setTestEnvValue("OPENCLAW_BUNDLED_PLUGINS_DIR", await createEmptyBundledPluginsDir(tempHome));
-  setTestEnvValue("OPENCLAW_DISABLE_BUNDLED_PLUGINS", "1");
+  setTestEnvValue("AFORA_BUNDLED_PLUGINS_DIR", await createEmptyBundledPluginsDir(tempHome));
+  setTestEnvValue("AFORA_DISABLE_BUNDLED_PLUGINS", "1");
   return { envSnapshot, tempHome, workspaceDir };
 }
 
@@ -195,15 +195,15 @@ describe("gateway e2e", () => {
 
   it("pairs the local CLI before a runtime-token loopback gateway becomes ready", async () => {
     const { envSnapshot, tempHome } = await setupGatewayTempHome({
-      prefix: "openclaw-gw-runtime-token-cli-pairing-",
+      prefix: "afora-gw-runtime-token-cli-pairing-",
       minimalGateway: true,
     });
     let server: Awaited<ReturnType<typeof startGatewayServer>> | undefined;
     try {
-      deleteTestEnvValue("OPENCLAW_GATEWAY_TOKEN");
+      deleteTestEnvValue("AFORA_GATEWAY_TOKEN");
       const configPath = await createGatewayConfigPath(tempHome);
-      setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
-      const initialConfig: OpenClawConfig = {
+      setTestEnvValue("AFORA_CONFIG_PATH", configPath);
+      const initialConfig: AforaConfig = {
         gateway: { mode: "local", bind: "loopback" },
         logging: { level: "info" },
       };
@@ -224,7 +224,7 @@ describe("gateway e2e", () => {
         }),
       ).resolves.toEqual(expect.any(Object));
 
-      const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as OpenClawConfig;
+      const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as AforaConfig;
       expect(persisted.gateway?.auth?.token).toBeUndefined();
       const identity = loadOrCreateDeviceIdentity();
       expect(loadDeviceAuthToken({ deviceId: identity.deviceId, role: "operator" })).toMatchObject({
@@ -247,15 +247,15 @@ describe("gateway e2e", () => {
     "preserves %s auth across a safe direct gateway reload",
     async (authSource) => {
       const { envSnapshot, tempHome } = await setupGatewayTempHome({
-        prefix: "openclaw-gw-direct-reload-",
+        prefix: "afora-gw-direct-reload-",
       });
       let server: Awaited<ReturnType<typeof startGatewayServer>> | undefined;
       let client: Awaited<ReturnType<typeof connectGatewayClient>> | undefined;
       try {
-        deleteTestEnvValue("OPENCLAW_GATEWAY_TOKEN");
+        deleteTestEnvValue("AFORA_GATEWAY_TOKEN");
         const fileToken = nextGatewayId("direct-file-token");
         const overrideToken = nextGatewayId("direct-override-token");
-        const initialConfig: OpenClawConfig = {
+        const initialConfig: AforaConfig = {
           ...(authSource !== "generated"
             ? {
                 gateway: {
@@ -266,7 +266,7 @@ describe("gateway e2e", () => {
                         ? {
                             source: "env" as const,
                             provider: "default",
-                            id: "OPENCLAW_TEST_MISSING_DISK_TOKEN",
+                            id: "AFORA_TEST_MISSING_DISK_TOKEN",
                           }
                         : fileToken,
                   },
@@ -279,21 +279,21 @@ describe("gateway e2e", () => {
           logging: { level: "info" },
         };
         const configPath = await createGatewayConfigPath(tempHome);
-        setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
+        setTestEnvValue("AFORA_CONFIG_PATH", configPath);
         const configIO = createConfigIO({ configPath });
         await configIO.writeConfigFile(initialConfig);
         if (authSource === "secret-ref-override") {
-          setTestEnvValue("OPENCLAW_TEST_GATEWAY_OVERRIDE_TOKEN", overrideToken);
+          setTestEnvValue("AFORA_TEST_GATEWAY_OVERRIDE_TOKEN", overrideToken);
         }
         if (authSource === "runtime-overrides") {
-          deleteTestEnvValue("OPENCLAW_SKIP_CHANNELS");
-          deleteTestEnvValue("OPENCLAW_SKIP_PROVIDERS");
-          setTestEnvValue("OPENCLAW_TEST_RUNTIME_OVERRIDE_TOKEN", overrideToken);
+          deleteTestEnvValue("AFORA_SKIP_CHANNELS");
+          deleteTestEnvValue("AFORA_SKIP_PROVIDERS");
+          setTestEnvValue("AFORA_TEST_RUNTIME_OVERRIDE_TOKEN", overrideToken);
           expect(
             setConfigOverride("gateway.auth.token", {
               source: "env",
               provider: "default",
-              id: "OPENCLAW_TEST_RUNTIME_OVERRIDE_TOKEN",
+              id: "AFORA_TEST_RUNTIME_OVERRIDE_TOKEN",
             }).ok,
           ).toBe(true);
           expect(
@@ -313,7 +313,7 @@ describe("gateway e2e", () => {
                   token: {
                     source: "env",
                     provider: "default",
-                    id: "OPENCLAW_TEST_GATEWAY_OVERRIDE_TOKEN",
+                    id: "AFORA_TEST_GATEWAY_OVERRIDE_TOKEN",
                   },
                 }
               : undefined;
@@ -352,7 +352,7 @@ describe("gateway e2e", () => {
         const nextLoggingSource = {
           ...initialConfig,
           logging: { level: "debug" },
-        } satisfies OpenClawConfig;
+        } satisfies AforaConfig;
         await writeConfigFile(nextLoggingSource);
         await expect
           .poll(() => getRuntimeConfig().logging?.level, { timeout: 5_000, interval: 50 })
@@ -376,11 +376,11 @@ describe("gateway e2e", () => {
                 dmPolicy: "disabled",
               },
             },
-          } satisfies OpenClawConfig;
+          } satisfies AforaConfig;
           await writeConfigFile(nextPolicySource);
           const persistedPolicyEdit = JSON.parse(
             await fs.readFile(configPath, "utf-8"),
-          ) as OpenClawConfig;
+          ) as AforaConfig;
           expect(persistedPolicyEdit.channels?.whatsapp?.dmPolicy).toBe("disabled");
           expect(getRuntimeConfig().channels?.whatsapp?.dmPolicy).toBe("open");
 
@@ -388,11 +388,11 @@ describe("gateway e2e", () => {
           const nextUnrelatedSource = {
             ...sourceBeforeUnrelatedWrite,
             ui: { assistant: { name: "unrelated-managed-write" } },
-          } satisfies OpenClawConfig;
+          } satisfies AforaConfig;
           await writeConfigFile(nextUnrelatedSource);
           const persistedAfterUnrelatedWrite = JSON.parse(
             await fs.readFile(configPath, "utf-8"),
-          ) as OpenClawConfig;
+          ) as AforaConfig;
           expect(persistedAfterUnrelatedWrite.channels?.whatsapp?.dmPolicy).toBe("disabled");
           expect(persistedAfterUnrelatedWrite.ui?.assistant?.name).toBe("unrelated-managed-write");
         }
@@ -421,13 +421,13 @@ describe("gateway e2e", () => {
     { timeout: GATEWAY_E2E_TIMEOUT_MS },
     async () => {
       const { envSnapshot, tempHome } = await setupGatewayTempHome({
-        prefix: "openclaw-gw-startup-auth-ref-",
+        prefix: "afora-gw-startup-auth-ref-",
       });
       let server: Awaited<ReturnType<typeof startGatewayServer>> | undefined;
       let oldClient: Awaited<ReturnType<typeof connectGatewayClient>> | undefined;
       try {
         const configPath = await createGatewayConfigPath(tempHome);
-        setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
+        setTestEnvValue("AFORA_CONFIG_PATH", configPath);
         const configIO = createConfigIO({ configPath });
         const fileToken = nextGatewayId("startup-auth-file-token");
         const oldToken = nextGatewayId("startup-auth-ref-old");
@@ -436,7 +436,7 @@ describe("gateway e2e", () => {
           gateway: { auth: { mode: "token", token: fileToken } },
           logging: { level: "info" },
         });
-        setTestEnvValue("OPENCLAW_TEST_GATEWAY_OVERRIDE_TOKEN", oldToken);
+        setTestEnvValue("AFORA_TEST_GATEWAY_OVERRIDE_TOKEN", oldToken);
         const port = await getGatewayE2ePortBlock();
         server = await startGatewayServer(port, {
           bind: "loopback",
@@ -445,7 +445,7 @@ describe("gateway e2e", () => {
             token: {
               source: "env",
               provider: "default",
-              id: "OPENCLAW_TEST_GATEWAY_OVERRIDE_TOKEN",
+              id: "AFORA_TEST_GATEWAY_OVERRIDE_TOKEN",
             },
           },
           controlUiEnabled: false,
@@ -456,7 +456,7 @@ describe("gateway e2e", () => {
           clientDisplayName: "vitest-startup-auth-ref-old",
         });
 
-        setTestEnvValue("OPENCLAW_TEST_GATEWAY_OVERRIDE_TOKEN", newToken);
+        setTestEnvValue("AFORA_TEST_GATEWAY_OVERRIDE_TOKEN", newToken);
         const reload = await oldClient
           .request<{ ok?: boolean }>("secrets.reload", {})
           .catch((error: unknown) => (error instanceof Error ? error : new Error(String(error))));
@@ -493,13 +493,13 @@ describe("gateway e2e", () => {
 
   it("preserves runtime-seeded Control UI origins across a safe direct reload", async () => {
     const { envSnapshot, tempHome } = await setupGatewayTempHome({
-      prefix: "openclaw-gw-direct-origins-",
+      prefix: "afora-gw-direct-origins-",
     });
     const token = nextGatewayId("direct-origins-token");
     const configPath = await createGatewayConfigPath(tempHome);
-    setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
+    setTestEnvValue("AFORA_CONFIG_PATH", configPath);
     const configIO = createConfigIO({ configPath });
-    const initialConfig: OpenClawConfig = {
+    const initialConfig: AforaConfig = {
       gateway: { auth: { mode: "token", token } },
       logging: { level: "info" },
     };
@@ -556,12 +556,12 @@ describe("gateway e2e", () => {
     async () => {
       const { baseUrl: openaiBaseUrl, restore } = installOpenAiResponsesMock();
       const { envSnapshot, tempHome, workspaceDir } = await setupGatewayTempHome({
-        prefix: "openclaw-gw-mock-home-",
+        prefix: "afora-gw-mock-home-",
         minimalGateway: true,
       });
 
       const token = nextGatewayId("test-token");
-      setTestEnvValue("OPENCLAW_GATEWAY_TOKEN", token);
+      setTestEnvValue("AFORA_GATEWAY_TOKEN", token);
 
       const configPath = await createGatewayConfigPath(tempHome);
       const mockProvider = buildMockOpenAiResponsesProvider(openaiBaseUrl);
@@ -639,11 +639,11 @@ describe("gateway e2e", () => {
     { timeout: GATEWAY_E2E_TIMEOUT_MS },
     async () => {
       const { envSnapshot, tempHome, workspaceDir } = await setupGatewayTempHome({
-        prefix: "openclaw-gw-http-tools-home-",
+        prefix: "afora-gw-http-tools-home-",
       });
 
       const token = nextGatewayId("http-tools-token");
-      setTestEnvValue("OPENCLAW_GATEWAY_TOKEN", token);
+      setTestEnvValue("AFORA_GATEWAY_TOKEN", token);
       const registerCountPath = path.join(tempHome, "workspace-plugin-register-count.txt");
       await writeWorkspacePlugin({
         workspaceDir,
@@ -676,7 +676,7 @@ module.exports = {
         gateway: { auth: { token } },
       };
       await fs.writeFile(configPath, `${JSON.stringify(cfg, null, 2)}\n`);
-      setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
+      setTestEnvValue("AFORA_CONFIG_PATH", configPath);
 
       const { port, server } = await startLoopbackTokenGateway(token);
 
@@ -718,13 +718,13 @@ module.exports = {
     { timeout: GATEWAY_E2E_TIMEOUT_MS },
     async () => {
       const { envSnapshot, tempHome } = await setupGatewayTempHome({
-        prefix: "openclaw-wizard-home-",
+        prefix: "afora-wizard-home-",
         minimalGateway: true,
       });
-      deleteTestEnvValue("OPENCLAW_GATEWAY_TOKEN");
+      deleteTestEnvValue("AFORA_GATEWAY_TOKEN");
 
       const configPath = await createGatewayConfigPath(tempHome);
-      setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
+      setTestEnvValue("AFORA_CONFIG_PATH", configPath);
       clearRuntimeConfigSnapshot();
       clearConfigCache();
 
@@ -837,7 +837,7 @@ module.exports = {
 
   it("contains hosted wizard exits", { timeout: GATEWAY_E2E_TIMEOUT_MS }, async () => {
     const { envSnapshot, tempHome } = await setupGatewayTempHome({
-      prefix: "openclaw-wizard-contained-exit-home-",
+      prefix: "afora-wizard-contained-exit-home-",
       minimalGateway: true,
     });
     const wizardToken = nextGatewayId("wiz-contained-exit");
@@ -904,7 +904,7 @@ module.exports = {
     { timeout: GATEWAY_E2E_TIMEOUT_MS },
     async () => {
       const { envSnapshot, tempHome } = await setupGatewayTempHome({
-        prefix: "openclaw-wizard-channels-home-",
+        prefix: "afora-wizard-channels-home-",
         minimalGateway: true,
       });
       const wizAuth = nextGatewayId("wiz-chan");
@@ -991,7 +991,7 @@ module.exports = {
     { timeout: GATEWAY_E2E_TIMEOUT_MS },
     async () => {
       const { envSnapshot, tempHome } = await setupGatewayTempHome({
-        prefix: "openclaw-wizard-channel-target-home-",
+        prefix: "afora-wizard-channel-target-home-",
         minimalGateway: true,
       });
       const configPath = await createGatewayConfigPath(tempHome);
@@ -1011,7 +1011,7 @@ module.exports = {
           expect(result).toMatchObject({
             done: true,
             status: "error",
-            error: `Error: Unknown channel "${expectedChannel}". Run \`openclaw channels list --all\` to see configured and installable channels.`,
+            error: `Error: Unknown channel "${expectedChannel}". Run \`afora channels list --all\` to see configured and installable channels.`,
           });
           expect(result.step).toBeUndefined();
         }
@@ -1033,28 +1033,28 @@ module.exports = {
     async () => {
       const envSnapshot = captureEnv([
         ...GATEWAY_TEST_ENV_KEYS,
-        "OPENCLAW_TEST_MINIMAL_GATEWAY",
+        "AFORA_TEST_MINIMAL_GATEWAY",
         "DISCORD_BOT_TOKEN",
       ]);
 
-      const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-minimal-gateway-home-"));
+      const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "afora-minimal-gateway-home-"));
       const configPath = await createGatewayConfigPath(tempHome);
-      const bundledPluginsDir = path.join(tempHome, "openclaw-test-no-bundled-extensions");
+      const bundledPluginsDir = path.join(tempHome, "afora-test-no-bundled-extensions");
       setTestEnvValue("HOME", tempHome);
-      setTestEnvValue("OPENCLAW_STATE_DIR", path.join(tempHome, ".openclaw"));
-      setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
-      setTestEnvValue("OPENCLAW_SKIP_CHANNELS", "1");
-      setTestEnvValue("OPENCLAW_SKIP_GMAIL_WATCHER", "1");
-      setTestEnvValue("OPENCLAW_SKIP_CRON", "1");
-      setTestEnvValue("OPENCLAW_SKIP_CANVAS_HOST", "1");
-      setTestEnvValue("OPENCLAW_SKIP_BROWSER_CONTROL_SERVER", "1");
-      setTestEnvValue("OPENCLAW_SKIP_PROVIDERS", "1");
-      setTestEnvValue("OPENCLAW_BUNDLED_PLUGINS_DIR", bundledPluginsDir);
-      setTestEnvValue("OPENCLAW_TEST_MINIMAL_GATEWAY", "1");
+      setTestEnvValue("AFORA_STATE_DIR", path.join(tempHome, ".afora"));
+      setTestEnvValue("AFORA_CONFIG_PATH", configPath);
+      setTestEnvValue("AFORA_SKIP_CHANNELS", "1");
+      setTestEnvValue("AFORA_SKIP_GMAIL_WATCHER", "1");
+      setTestEnvValue("AFORA_SKIP_CRON", "1");
+      setTestEnvValue("AFORA_SKIP_CANVAS_HOST", "1");
+      setTestEnvValue("AFORA_SKIP_BROWSER_CONTROL_SERVER", "1");
+      setTestEnvValue("AFORA_SKIP_PROVIDERS", "1");
+      setTestEnvValue("AFORA_BUNDLED_PLUGINS_DIR", bundledPluginsDir);
+      setTestEnvValue("AFORA_TEST_MINIMAL_GATEWAY", "1");
       setTestEnvValue("DISCORD_BOT_TOKEN", "discord-test-token");
 
       const token = nextGatewayId("minimal-token");
-      setTestEnvValue("OPENCLAW_GATEWAY_TOKEN", token);
+      setTestEnvValue("AFORA_GATEWAY_TOKEN", token);
       await fs.mkdir(bundledPluginsDir, { recursive: true });
       await fs.writeFile(
         configPath,

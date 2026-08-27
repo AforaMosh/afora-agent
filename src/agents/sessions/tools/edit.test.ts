@@ -3,7 +3,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { applyPatch } from "diff";
 import { Value } from "typebox/value";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -28,7 +28,7 @@ describe("edit tool", () => {
   });
 
   async function createTempFile(content: string | Buffer) {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-edit-tool-"));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-edit-tool-"));
     const filePath = path.join(tmpDir, "demo.txt");
     await fs.writeFile(filePath, content, "utf-8");
     return filePath;

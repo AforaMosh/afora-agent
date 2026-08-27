@@ -94,7 +94,7 @@ function listAllToolingTestFiles(): string[] {
     return listMatchedTestFiles(
       createToolingVitestConfig({
         ...process.env,
-        OPENCLAW_VITEST_INCLUDE_FILE: undefined,
+        AFORA_VITEST_INCLUDE_FILE: undefined,
       }),
     );
   } finally {
@@ -175,7 +175,7 @@ describe("scripts/lib/ci-node-test-plan.mts", () => {
     );
     expect(embeddedGroups).toHaveLength(4);
     expect(
-      embeddedGroups.every((group) => group.env?.OPENCLAW_VITEST_NO_OUTPUT_TIMEOUT_MS === "660000"),
+      embeddedGroups.every((group) => group.env?.AFORA_VITEST_NO_OUTPUT_TIMEOUT_MS === "660000"),
     ).toBe(true);
 
     const gatewayGroups = groups.filter((group) =>
@@ -249,7 +249,7 @@ describe("scripts/lib/ci-node-test-plan.mts", () => {
     expect(
       bundled.find((shard) => shard.shardName === "agentic-control-plane-startup-health-runtime")
         ?.env,
-    ).toEqual({ OPENCLAW_VITEST_NO_OUTPUT_TIMEOUT_MS: "60000" });
+    ).toEqual({ AFORA_VITEST_NO_OUTPUT_TIMEOUT_MS: "60000" });
     expect(
       bundled.find((shard) => shard.shardName === "agentic-control-plane-startup-core")?.runner,
     ).toBe(DEFAULT_NODE_TEST_RUNNER);
@@ -536,17 +536,17 @@ describe("scripts/lib/ci-node-test-plan.mts", () => {
         .flatMap((shard) => shard.groups)
         .find((group) => group.shard_name === "core-runtime-tui-pty")?.env,
     ).toEqual({
-      OPENCLAW_TUI_PTY_INCLUDE_LOCAL: "1",
-      OPENCLAW_TUI_PTY_USE_BUILT_CLI: "1",
+      AFORA_TUI_PTY_INCLUDE_LOCAL: "1",
+      AFORA_TUI_PTY_USE_BUILT_CLI: "1",
       // Timing-sensitive groups pin the worker budget while the job-level
       // default scales with the runner class.
-      OPENCLAW_VITEST_MAX_WORKERS: "2",
+      AFORA_VITEST_MAX_WORKERS: "2",
     });
     expect(
       compact.flatMap((shard) => shard.groups).find((group) => group.shard_name === "agentic-cli")
         ?.env,
     ).toEqual({
-      OPENCLAW_VITEST_MAX_WORKERS: "2",
+      AFORA_VITEST_MAX_WORKERS: "2",
     });
     for (const prefix of ["agentic-gateway-core", "core-runtime-media-ui"]) {
       for (const suffix of ["1", "2", "3"]) {
@@ -554,14 +554,14 @@ describe("scripts/lib/ci-node-test-plan.mts", () => {
           compact
             .flatMap((shard) => shard.groups)
             .find((group) => group.shard_name === `${prefix}-${suffix}`)?.env,
-        ).toEqual({ OPENCLAW_VITEST_MAX_WORKERS: "2" });
+        ).toEqual({ AFORA_VITEST_MAX_WORKERS: "2" });
       }
     }
     expect(
       compact
         .flatMap((shard) => shard.groups)
         .find((group) => group.shard_name === "core-runtime-media-ui-support")?.env,
-    ).toEqual({ OPENCLAW_VITEST_MAX_WORKERS: "2" });
+    ).toEqual({ AFORA_VITEST_MAX_WORKERS: "2" });
     const startupCoreJob = compact.find((shard) =>
       shard.groups.some((group) => group.shard_name === "agentic-control-plane-startup-core"),
     );
@@ -575,7 +575,7 @@ describe("scripts/lib/ci-node-test-plan.mts", () => {
       compact
         .flatMap((shard) => shard.groups)
         .find((group) => group.shard_name === "agentic-control-plane-startup-health-runtime")?.env,
-    ).toEqual({ OPENCLAW_VITEST_NO_OUTPUT_TIMEOUT_MS: "60000" });
+    ).toEqual({ AFORA_VITEST_NO_OUTPUT_TIMEOUT_MS: "60000" });
     const largeJobs = compact.filter(
       (shard) => !shard.requiresDist && shard.checkName.startsWith("checks-node-compact-large-"),
     );
@@ -649,7 +649,7 @@ describe("scripts/lib/ci-node-test-plan.mts", () => {
     );
     expect(
       embeddedAgentGroups.every(
-        (group) => group.env?.OPENCLAW_VITEST_NO_OUTPUT_TIMEOUT_MS === "660000",
+        (group) => group.env?.AFORA_VITEST_NO_OUTPUT_TIMEOUT_MS === "660000",
       ),
     ).toBe(true);
     expect(
@@ -753,7 +753,7 @@ describe("scripts/lib/ci-node-test-plan.mts", () => {
   });
 
   it("partitions each giant compact group across three deterministic stripes", () => {
-    const env = { ...process.env, OPENCLAW_VITEST_INCLUDE_FILE: undefined };
+    const env = { ...process.env, AFORA_VITEST_INCLUDE_FILE: undefined };
     const cases = [
       {
         stripeConfigs: [createUiVitestConfig(env)],
@@ -1165,8 +1165,8 @@ describe("scripts/lib/ci-node-test-plan.mts", () => {
       checkName: "checks-node-core-runtime-tui-pty",
       configs: ["test/vitest/vitest.tui-pty.config.ts"],
       env: {
-        OPENCLAW_TUI_PTY_INCLUDE_LOCAL: "1",
-        OPENCLAW_TUI_PTY_USE_BUILT_CLI: "1",
+        AFORA_TUI_PTY_INCLUDE_LOCAL: "1",
+        AFORA_TUI_PTY_USE_BUILT_CLI: "1",
       },
       requiresDist: true,
     });
@@ -1277,7 +1277,7 @@ describe("scripts/lib/ci-node-test-plan.mts", () => {
         checkName: `checks-node-${shard.shardName}`,
         configs: ["test/vitest/vitest.gateway-server.config.ts"],
         ...(shard.shardName === "agentic-control-plane-startup-health-runtime"
-          ? { env: { OPENCLAW_VITEST_NO_OUTPUT_TIMEOUT_MS: "60000" } }
+          ? { env: { AFORA_VITEST_NO_OUTPUT_TIMEOUT_MS: "60000" } }
           : {}),
         includePatterns: shard.includePatterns,
         requiresDist: false,
@@ -1294,7 +1294,7 @@ describe("scripts/lib/ci-node-test-plan.mts", () => {
     const expectedControlPlaneFiles = listMatchedTestFiles(
       createGatewayServerVitestConfig({
         ...process.env,
-        OPENCLAW_VITEST_INCLUDE_FILE: undefined,
+        AFORA_VITEST_INCLUDE_FILE: undefined,
       }),
     );
     expect(
@@ -1474,7 +1474,7 @@ describe("scripts/lib/ci-node-test-plan.mts", () => {
           "test/vitest/vitest.agents-embedded-agent-overflow-compaction.config.ts",
           "test/vitest/vitest.agents-embedded-agent-run.config.ts",
         ],
-        env: { OPENCLAW_VITEST_NO_OUTPUT_TIMEOUT_MS: "660000" },
+        env: { AFORA_VITEST_NO_OUTPUT_TIMEOUT_MS: "660000" },
         requiresDist: false,
         runner: DEFAULT_NODE_TEST_RUNNER,
         shardName: "agentic-agents-embedded",

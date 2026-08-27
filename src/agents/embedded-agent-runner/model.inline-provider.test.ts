@@ -1,6 +1,6 @@
 // Coverage for inline provider model normalization and inheritance.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import { buildInlineProviderModels, resolveProviderModelInput } from "./model.inline-provider.js";
 import { makeModel } from "./model.test-harness.js";

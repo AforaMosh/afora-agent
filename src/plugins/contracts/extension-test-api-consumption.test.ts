@@ -176,14 +176,14 @@ describe("extension test API consumption", () => {
   it("collects real module edges and literal plugin loaders", () => {
     expect(
       collectTestApiSourceReferences(`
-        import { testing } from "@openclaw/example/test-api.js";
+        import { testing } from "@afora/example/test-api.js";
         export { helper } from "../test-api.js";
         type TestApi = typeof import("./test-api.js");
         loadQaRunnerBundledPluginTestApi("matrix");
         loadBundledPluginPublicSurface({ pluginId: "codex", artifactBasename: "test-api.js" });
       `),
     ).toStrictEqual({
-      moduleSpecifiers: ["../test-api.js", "./test-api.js", "@openclaw/example/test-api.js"],
+      moduleSpecifiers: ["../test-api.js", "./test-api.js", "@afora/example/test-api.js"],
       pluginIds: ["codex", "matrix"],
     });
   });

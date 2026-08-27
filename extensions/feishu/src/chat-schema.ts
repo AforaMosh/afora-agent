@@ -1,5 +1,5 @@
 // Feishu helper module supports chat schema behavior.
-import { optionalPositiveIntegerSchema } from "openclaw/plugin-sdk/channel-actions";
+import { optionalPositiveIntegerSchema } from "afora-agent/plugin-sdk/channel-actions";
 import { Type, type Static } from "typebox";
 
 const CHAT_ACTION_VALUES = ["members", "info", "member_info"] as const;

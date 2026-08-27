@@ -1,6 +1,6 @@
-# @openclaw/buzz
+# @afora/buzz
 
-Official Buzz channel plugin for OpenClaw. It connects an OpenClaw agent to approved Buzz rooms for text conversations and threaded replies.
+Official Buzz channel plugin for Afora. It connects an Afora agent to approved Buzz rooms for text conversations and threaded replies.
 
 ## Requirements
 
@@ -15,10 +15,10 @@ Use `wss://` outside local development.
 ## Set up
 
 ```bash
-openclaw channels add --channel buzz
+afora channels add --channel buzz
 ```
 
-OpenClaw installs the plugin if needed, asks for the relay URL, and generates a dedicated bot identity.
+Afora installs the plugin if needed, asks for the relay URL, and generates a dedicated bot identity.
 
 Give the displayed **public key only** to a Buzz owner or admin:
 
@@ -36,16 +36,16 @@ Restart the Gateway if it was already running.
 ## Verify
 
 ```bash
-openclaw channels status --probe
+afora channels status --probe
 ```
 
 Inspect the current bot, approved rooms, and room members:
 
 ```bash
-openclaw directory self --channel buzz
-openclaw directory peers list --channel buzz
-openclaw directory groups list --channel buzz
-openclaw directory groups members --channel buzz --group-id buzz:<ROOM_UUID>
+afora directory self --channel buzz
+afora directory peers list --channel buzz
+afora directory groups list --channel buzz
+afora directory groups members --channel buzz --group-id buzz:<ROOM_UUID>
 ```
 
 Buzz profile and room names are used as display labels, while public keys and
@@ -56,21 +56,21 @@ subscriptions and does not stop the Gateway.
 Send a test message:
 
 ```bash
-openclaw message send \
+afora message send \
   --channel buzz \
   --target <ROOM_UUID> \
-  --message "Hello from OpenClaw"
+  --message "Hello from Afora"
 ```
 
 ## Security and scope
 
-- Never give OpenClaw a human owner's private key.
-- The generated bot private key is stored in OpenClaw configuration; only its public key is displayed.
+- Never give Afora a human owner's private key.
+- The generated bot private key is stored in Afora configuration; only its public key is displayed.
 - Treat Buzz messages as untrusted agent input.
 - Currently supported: text conversations, threads, typing, and directory
   lookup in group rooms.
-- Not yet supported: DMs, media, reactions, or creating rooms from OpenClaw.
+- Not yet supported: DMs, media, reactions, or creating rooms from Afora.
 
-Full documentation: https://docs.openclaw.ai/channels/buzz
+Full documentation: https://docs.afora.ai/channels/buzz
 
-Package: `@openclaw/buzz` · Plugin ID: `buzz`
+Package: `@afora/buzz` · Plugin ID: `buzz`

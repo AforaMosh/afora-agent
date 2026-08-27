@@ -43,7 +43,7 @@ export function createCommandWithTimeoutResult() {
 
 export function createLegacyConfigSnapshot() {
   return {
-    path: "/tmp/openclaw.json",
+    path: "/tmp/afora.json",
     exists: false,
     raw: null,
     parsed: {},

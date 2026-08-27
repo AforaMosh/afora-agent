@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 function runSummary(report: unknown, extraArgs: string[] = []) {
-  const root = mkdtempSync(join(tmpdir(), "openclaw-kova-summary-"));
+  const root = mkdtempSync(join(tmpdir(), "afora-kova-summary-"));
   const reportPath = join(root, "report.json");
   const outputPath = join(root, "summary.md");
   writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");

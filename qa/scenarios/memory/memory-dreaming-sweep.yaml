@@ -160,7 +160,7 @@ flow:
             expr: "path.join(env.gateway.workspaceDir, 'MEMORY.md')"
         - set: homeDir
           value:
-            expr: "env.gateway.runtimeEnv.HOME ?? env.gateway.runtimeEnv.OPENCLAW_HOME ?? env.gateway.tempRoot"
+            expr: "env.gateway.runtimeEnv.HOME ?? env.gateway.runtimeEnv.AFORA_HOME ?? env.gateway.tempRoot"
         - set: sessionsDir
           value:
             expr: "resolveSessionTranscriptsDirForAgent('qa', env.gateway.runtimeEnv, () => homeDir)"
@@ -264,7 +264,7 @@ flow:
                 args:
                   - lambda:
                       async: true
-                      expr: "(async () => { const status = await readDoctorMemoryStatus(env); const lightReport = await fs.readFile(lightReportPath, 'utf8').catch(() => ''); const remReport = await fs.readFile(remReportPath, 'utf8').catch(() => ''); const promotedMemory = await fs.readFile(memoryPath, 'utf8').catch(() => ''); const promotedEntry = status.dreaming?.promotedEntries?.find((entry) => entry.snippet?.includes(config.expectedNeedle)); const promotionMarker = promotedEntry?.key ? `<!-- openclaw-memory-promotion:${promotedEntry.key} -->` : ''; if (!lightReport.includes('# Light Sleep')) return undefined; if (!remReport.includes('# REM Sleep')) return undefined; if (!promotedMemory.includes(config.expectedNeedle)) return undefined; if (!promotionMarker || !promotedMemory.includes(promotionMarker)) return undefined; if (status.dreaming?.phases?.deep?.managedCronPresent !== true) return undefined; if ((status.dreaming?.promotedTotal ?? 0) < 1) return undefined; return { status, lightReport, remReport, promotedMemory, promotionMarker }; })()"
+                      expr: "(async () => { const status = await readDoctorMemoryStatus(env); const lightReport = await fs.readFile(lightReportPath, 'utf8').catch(() => ''); const remReport = await fs.readFile(remReportPath, 'utf8').catch(() => ''); const promotedMemory = await fs.readFile(memoryPath, 'utf8').catch(() => ''); const promotedEntry = status.dreaming?.promotedEntries?.find((entry) => entry.snippet?.includes(config.expectedNeedle)); const promotionMarker = promotedEntry?.key ? `<!-- afora-memory-promotion:${promotedEntry.key} -->` : ''; if (!lightReport.includes('# Light Sleep')) return undefined; if (!remReport.includes('# REM Sleep')) return undefined; if (!promotedMemory.includes(config.expectedNeedle)) return undefined; if (!promotionMarker || !promotedMemory.includes(promotionMarker)) return undefined; if (status.dreaming?.phases?.deep?.managedCronPresent !== true) return undefined; if ((status.dreaming?.promotedTotal ?? 0) < 1) return undefined; return { status, lightReport, remReport, promotedMemory, promotionMarker }; })()"
                   - expr: liveTurnTimeoutMs(env, 180000)
                   - 1000
             finally:

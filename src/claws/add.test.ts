@@ -1,11 +1,11 @@
 import { mkdir } from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { applyClawAddPlan } from "./add.js";
 import { persistClawInstallRecord, readClawInstallRecord } from "./provenance.js";
 import { makeProvenancePlan, stateEnv } from "./provenance.test-helpers.js";
@@ -13,12 +13,12 @@ import { makeProvenancePlan, stateEnv } from "./provenance.test-helpers.js";
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 describe("Claw add legacy plan resume", () => {
   it("replaces committed legacy config before upgrading v1 plan identity", async () => {
-    const root = tempDirs.make("openclaw-claw-add-v1-resume-");
+    const root = tempDirs.make("afora-claw-add-v1-resume-");
     const env = stateEnv(root);
     const { plan } = await makeProvenancePlan(root, {
       schemaVersion: 1,
@@ -48,15 +48,15 @@ describe("Claw add legacy plan resume", () => {
     };
     await mkdir(boundedPlan.agent.workspace, { recursive: true });
     persistClawInstallRecord(legacyPlan, { env, status: "workspace_ready", nowMs: 1 });
-    openOpenClawStateDatabase({ env })
+    openAforaStateDatabase({ env })
       .db /* sqlite-allow-raw: test-only downgrade simulates an interrupted v1 add. */
       .prepare("UPDATE claw_installs SET schema_version = ? WHERE agent_id = ?")
-      .run("openclaw.clawInstallRecord.v1", "worker");
+      .run("afora.clawInstallRecord.v1", "worker");
     const legacyRecord = readClawInstallRecord("worker", { env });
     if (!legacyRecord) {
       throw new Error("expected legacy install record");
     }
-    let config: OpenClawConfig = {
+    let config: AforaConfig = {
       agents: {
         entries: {
           worker: Object.fromEntries(
@@ -86,14 +86,14 @@ describe("Claw add legacy plan resume", () => {
       tools: { profile: "full", allow: ["read"] },
     });
     expect(readClawInstallRecord("worker", { env })).toMatchObject({
-      schemaVersion: "openclaw.clawInstallRecord.v2",
+      schemaVersion: "afora.clawInstallRecord.v2",
       planIntegrity: boundedPlan.planIntegrity,
       status: "complete",
     });
   });
 
   it("retries after v1 promotion fails behind the bounded config commit", async () => {
-    const root = tempDirs.make("openclaw-claw-add-v1-promotion-retry-");
+    const root = tempDirs.make("afora-claw-add-v1-promotion-retry-");
     const env = stateEnv(root);
     const { plan } = await makeProvenancePlan(root, {
       schemaVersion: 1,
@@ -123,15 +123,15 @@ describe("Claw add legacy plan resume", () => {
     };
     await mkdir(boundedPlan.agent.workspace, { recursive: true });
     persistClawInstallRecord(legacyPlan, { env, status: "workspace_ready", nowMs: 1 });
-    openOpenClawStateDatabase({ env })
+    openAforaStateDatabase({ env })
       .db /* sqlite-allow-raw: test-only downgrade simulates an interrupted v1 add. */
       .prepare("UPDATE claw_installs SET schema_version = ? WHERE agent_id = ?")
-      .run("openclaw.clawInstallRecord.v1", "worker");
+      .run("afora.clawInstallRecord.v1", "worker");
     const legacyRecord = readClawInstallRecord("worker", { env });
     if (!legacyRecord) {
       throw new Error("expected legacy install record");
     }
-    let config: OpenClawConfig = {
+    let config: AforaConfig = {
       agents: {
         entries: {
           worker: Object.fromEntries(
@@ -140,7 +140,7 @@ describe("Claw add legacy plan resume", () => {
         },
       },
     };
-    const commitConfig = async (transform: (config: OpenClawConfig) => OpenClawConfig) => {
+    const commitConfig = async (transform: (config: AforaConfig) => AforaConfig) => {
       config = transform(config);
     };
     const dependencies = {
@@ -173,7 +173,7 @@ describe("Claw add legacy plan resume", () => {
       tools: { profile: "full", allow: ["read"] },
     });
     expect(readClawInstallRecord("worker", { env })).toMatchObject({
-      schemaVersion: "openclaw.clawInstallRecord.v1",
+      schemaVersion: "afora.clawInstallRecord.v1",
       planIntegrity: legacyPlan.planIntegrity,
       status: "workspace_ready",
     });
@@ -182,7 +182,7 @@ describe("Claw add legacy plan resume", () => {
 
     expect(second.status).toBe("complete");
     expect(readClawInstallRecord("worker", { env })).toMatchObject({
-      schemaVersion: "openclaw.clawInstallRecord.v2",
+      schemaVersion: "afora.clawInstallRecord.v2",
       planIntegrity: boundedPlan.planIntegrity,
       status: "complete",
     });

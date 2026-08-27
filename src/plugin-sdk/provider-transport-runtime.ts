@@ -6,12 +6,12 @@ export { buildOpenAICompletionsParams } from "../agents/openai-transport-stream.
 export {
   sortPromptCacheToolsByName,
   stripSystemPromptCacheBoundary,
-} from "@openclaw/ai/internal/shared";
+} from "@afora/ai/internal/shared";
 export { transformTransportMessages } from "../agents/transport-message-transform.js";
 export {
   describeToolResultMediaPlaceholder,
   extractToolResultText,
-} from "@openclaw/ai/internal/shared";
+} from "@afora/ai/internal/shared";
 export {
   coerceTransportToolCallArguments,
   createEmptyTransportUsage,
@@ -21,4 +21,4 @@ export {
   mergeTransportHeaders,
   sanitizeTransportPayloadText,
   type WritableTransportStream,
-} from "@openclaw/ai/transports";
+} from "@afora/ai/transports";

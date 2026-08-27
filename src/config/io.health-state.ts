@@ -1,12 +1,12 @@
 import { formatErrorMessage } from "../infra/errors.js";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../infra/kysely-sync.js";
 // Stores config health fingerprints in shared SQLite state.
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../state/openclaw-state-db.js";
-import { OpenClawStateOwnershipError } from "../state/openclaw-state-ownership.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../state/afora-state-db.js";
+import { AforaStateOwnershipError } from "../state/afora-state-ownership.js";
 
 export type ConfigHealthFingerprint = {
   hash: string;
@@ -34,7 +34,7 @@ export type ConfigHealthState = {
   entries?: Record<string, ConfigHealthEntry>;
 };
 
-type ConfigHealthDatabase = Pick<OpenClawStateKyselyDatabase, "config_health_entries">;
+type ConfigHealthDatabase = Pick<AforaStateKyselyDatabase, "config_health_entries">;
 
 type ConfigHealthStateDeps = {
   env: NodeJS.ProcessEnv;
@@ -43,7 +43,7 @@ type ConfigHealthStateDeps = {
 };
 
 function resolveConfigHealthStateEnv(deps: ConfigHealthStateDeps): NodeJS.ProcessEnv {
-  if (deps.env.OPENCLAW_HOME || deps.env.HOME || deps.env.USERPROFILE || deps.env.PREFIX) {
+  if (deps.env.AFORA_HOME || deps.env.HOME || deps.env.USERPROFILE || deps.env.PREFIX) {
     return deps.env;
   }
   return { ...deps.env, HOME: deps.homedir() };
@@ -69,7 +69,7 @@ function stringifyConfigHealthFingerprint(
 
 export function readConfigHealthStateFromStore(deps: ConfigHealthStateDeps): ConfigHealthState {
   try {
-    const database = openOpenClawStateDatabase({ env: resolveConfigHealthStateEnv(deps) });
+    const database = openAforaStateDatabase({ env: resolveConfigHealthStateEnv(deps) });
     const healthDb = getNodeSqliteKysely<ConfigHealthDatabase>(database.db);
     const rows = executeSqliteQuerySync(
       database.db,
@@ -96,7 +96,7 @@ export function readConfigHealthStateFromStore(deps: ConfigHealthStateDeps): Con
       ),
     };
   } catch (error) {
-    if (error instanceof OpenClawStateOwnershipError) {
+    if (error instanceof AforaStateOwnershipError) {
       throw error;
     }
     return {};
@@ -113,7 +113,7 @@ export function writeConfigHealthStateToStore(
       return;
     }
     const updatedAtMs = Date.now();
-    runOpenClawStateWriteTransaction(
+    runAforaStateWriteTransaction(
       ({ db }) => {
         const healthDb = getNodeSqliteKysely<ConfigHealthDatabase>(db);
         executeSqliteQuerySync(
@@ -143,7 +143,7 @@ export function writeConfigHealthStateToStore(
       { env: resolveConfigHealthStateEnv(deps) },
     );
   } catch (error) {
-    if (error instanceof OpenClawStateOwnershipError) {
+    if (error instanceof AforaStateOwnershipError) {
       throw error;
     }
     deps.logger.warn(`Config health-state write failed: ${formatErrorMessage(error)}`);

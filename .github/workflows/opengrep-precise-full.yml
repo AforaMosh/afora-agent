@@ -21,7 +21,7 @@ permissions:
 jobs:
   scan:
     name: Scan full repository (precise)
-    runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || 'blacksmith-16vcpu-ubuntu-2404' }}
+    runs-on: ${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || 'blacksmith-16vcpu-ubuntu-2404' }}
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -45,7 +45,7 @@ jobs:
             -o "$binary" \
             "https://github.com/opengrep/opengrep/releases/download/${OPENGREP_VERSION}/opengrep_manylinux_x86"
           printf '%s  %s\n' "$OPENGREP_LINUX_X64_SHA256" "$binary" | sha256sum --check
-          install_dir="${RUNNER_TEMP}/openclaw-opengrep"
+          install_dir="${RUNNER_TEMP}/afora-opengrep"
           mkdir -p "$install_dir"
           install -m 0755 "$binary" "$install_dir/opengrep"
           echo "$install_dir" >> "$GITHUB_PATH"

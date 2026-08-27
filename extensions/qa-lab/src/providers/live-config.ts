@@ -1,14 +1,14 @@
 // Qa Lab plugin module owns host live-provider config projection.
 import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-shared";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-model-shared";
 import {
   isRecord,
   normalizeOptionalString,
   normalizeStringEntries,
   uniqueStrings,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { QA_LIVE_PROVIDER_CONFIG_PATH_ENV, resolveQaLiveProviderConfigPath } from "./env.js";
 
 function isQaModelProviderConfig(value: unknown): value is ModelProviderConfig {

@@ -6,9 +6,9 @@ import {
   tryBeginGatewayRootWorkAdmission,
 } from "../../process/gateway-work-admission.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../../test-utils/afora-test-state.js";
 import { createTrackedTempDirs } from "../../test-utils/tracked-temp-dirs.js";
 import { runSkillExperienceReview, type ExperienceReviewCandidate } from "./experience-review.js";
 import { inspectSkillProposal, listSkillProposals, proposeCreateSkill } from "./service.js";
@@ -18,12 +18,12 @@ const runEmbeddedAgent = vi.hoisted(() => vi.fn());
 vi.mock("../../agents/embedded-agent.js", () => ({ runEmbeddedAgent }));
 
 const tempDirs = createTrackedTempDirs();
-let testState: OpenClawTestState;
+let testState: AforaTestState;
 
 beforeEach(async () => {
-  testState = await createOpenClawTestState({
+  testState = await createAforaTestState({
     layout: "state-only",
-    prefix: "openclaw-experience-auto-apply-state-",
+    prefix: "afora-experience-auto-apply-state-",
   });
 });
 
@@ -35,7 +35,7 @@ afterEach(async () => {
 
 describe("experience review auto apply", () => {
   it("applies the isolated reviewer proposal after the reviewer completes", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-experience-auto-apply-workspace-");
+    const workspaceDir = await tempDirs.make("afora-experience-auto-apply-workspace-");
     runEmbeddedAgent.mockImplementation(async (params) => {
       const tool = createSkillWorkshopTool({
         workspaceDir: params.workspaceDir,
@@ -92,7 +92,7 @@ describe("experience review auto apply", () => {
   });
 
   it("auto-applies reviewer full-body updates after an authoritative read", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-experience-auto-apply-update-");
+    const workspaceDir = await tempDirs.make("afora-experience-auto-apply-update-");
     const seedTool = createSkillWorkshopTool({
       workspaceDir,
       config: { skills: { workshop: { approvalPolicy: "auto" } } },
@@ -162,7 +162,7 @@ describe("experience review auto apply", () => {
   });
 
   it("auto-applies reviewer patch proposals composed from the live body", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-experience-auto-apply-extend-");
+    const workspaceDir = await tempDirs.make("afora-experience-auto-apply-extend-");
     const seedTool = createSkillWorkshopTool({
       workspaceDir,
       config: { skills: { workshop: { approvalPolicy: "auto" } } },
@@ -232,7 +232,7 @@ describe("experience review auto apply", () => {
   });
 
   it("re-enters gateway admission when fired from a released request root", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-experience-admission-workspace-");
+    const workspaceDir = await tempDirs.make("afora-experience-admission-workspace-");
     let subordinateClosedInsideRun: boolean | undefined;
     runEmbeddedAgent.mockImplementation(async () => {
       subordinateClosedInsideRun = isGatewaySubordinateWorkAdmissionClosed();
@@ -269,7 +269,7 @@ describe("experience review auto apply", () => {
   });
 
   it("leaves the capture pending when auto mode is disabled during review", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-experience-mode-change-workspace-");
+    const workspaceDir = await tempDirs.make("afora-experience-mode-change-workspace-");
     runEmbeddedAgent.mockImplementation(async (params) => {
       const tool = createSkillWorkshopTool({
         workspaceDir: params.workspaceDir,
@@ -314,7 +314,7 @@ describe("experience review auto apply", () => {
   });
 
   it("does not auto-apply a manual proposal revised by the reviewer", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-experience-manual-workspace-");
+    const workspaceDir = await tempDirs.make("afora-experience-manual-workspace-");
     const manual = await proposeCreateSkill({
       workspaceDir,
       name: "deployment-preflight",

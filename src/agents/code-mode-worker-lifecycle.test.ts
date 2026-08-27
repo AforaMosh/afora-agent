@@ -36,7 +36,7 @@ function parkExpiringRun(
   const pending: PendingBridgeState = {
     id: `bridge:${method}:1`,
     method,
-    args: method === "agentWait" ? ["collector-1"] : ["openclaw:core:slow", {}],
+    args: method === "agentWait" ? ["collector-1"] : ["afora:core:slow", {}],
     promise: new Promise(() => {}),
     cancel,
   };

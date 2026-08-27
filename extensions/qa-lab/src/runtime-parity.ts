@@ -1,18 +1,18 @@
 import {
   loadTranscriptEventsSync,
   resolveStorePath,
-} from "openclaw/plugin-sdk/session-store-runtime";
+} from "afora-agent/plugin-sdk/session-store-runtime";
 import {
   loadSqliteTrajectoryRuntimeEvents,
   type SqliteTrajectoryRuntimeEventForTest,
-} from "openclaw/plugin-sdk/sqlite-runtime-testing";
+} from "afora-agent/plugin-sdk/sqlite-runtime-testing";
 // Qa Lab plugin module implements runtime parity behavior.
-import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
+import { fetchWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime";
 import {
   asFiniteNumber as readFiniteNumber,
   isRecord as isMessageRecord,
   normalizeOptionalString as readNonEmptyString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   scanDirectReplyTranscriptSentinels,
   scanGatewayLogSentinels,
@@ -31,11 +31,11 @@ export type { RuntimeParityUsage } from "./runtime-parity-usage.js";
 
 // These are the canonical QA comparison cells, not the extensible product
 // AgentHarness registry. Broader harness coverage needs its own explicit lane.
-export type RuntimeId = "openclaw" | "codex";
+export type RuntimeId = "afora" | "codex";
 
 type RuntimeParityStatus = "pass" | "fail" | "skip";
 
-const CANONICAL_RUNTIME_IDS = ["openclaw", "codex"] as const satisfies readonly RuntimeId[];
+const CANONICAL_RUNTIME_IDS = ["afora", "codex"] as const satisfies readonly RuntimeId[];
 
 export type RuntimeParityToolCall = {
   tool: string;
@@ -218,7 +218,7 @@ type RuntimeParityCaptureSources = {
 
 const DEFAULT_AGENT_ID = "qa";
 const HEARTBEAT_RESPONSE_TOOL_NAME = "heartbeat_respond";
-const HEARTBEAT_TRANSCRIPT_PROMPT = "[OpenClaw heartbeat poll]";
+const HEARTBEAT_TRANSCRIPT_PROMPT = "[Afora heartbeat poll]";
 const HEARTBEAT_TASK_PROMPT_PREFIX =
   "Run the following periodic tasks (only those due based on their intervals):";
 const TOOL_RESULT_MISSING_ERROR_CLASS = "tool-result-missing";
@@ -1155,30 +1155,30 @@ function summarizeSentinelErrorClass(findings: readonly GatewayLogSentinelFindin
 }
 
 function classifyRuntimeParityCells(params: {
-  openclaw: RuntimeParityCell;
+  afora: RuntimeParityCell;
   codex: RuntimeParityCell;
-  openclawStatus: RuntimeParityStatus;
+  aforaStatus: RuntimeParityStatus;
   codexStatus: RuntimeParityStatus;
-  openclawDetails?: string;
+  aforaDetails?: string;
   codexDetails?: string;
 }): Pick<RuntimeParityResult, "drift" | "driftDetails"> {
   if (
-    isHardFailureRuntimeError(params.openclaw.runtimeErrorClass) ||
+    isHardFailureRuntimeError(params.afora.runtimeErrorClass) ||
     isHardFailureRuntimeError(params.codex.runtimeErrorClass) ||
-    params.openclaw.transportErrorClass ||
+    params.afora.transportErrorClass ||
     params.codex.transportErrorClass
   ) {
     return {
       drift: "failure-mode",
       driftDetails:
-        params.openclaw.transportErrorClass || params.codex.transportErrorClass
+        params.afora.transportErrorClass || params.codex.transportErrorClass
           ? "at least one runtime hit a transport failure"
           : "at least one runtime hit a hard runtime failure",
     };
   }
 
   if (
-    hasMissingToolResult(params.openclaw.toolCalls) ||
+    hasMissingToolResult(params.afora.toolCalls) ||
     hasMissingToolResult(params.codex.toolCalls)
   ) {
     return {
@@ -1187,21 +1187,21 @@ function classifyRuntimeParityCells(params: {
     };
   }
 
-  const openclawKnownHarnessGap = isKnownHarnessGapSkip({
-    status: params.openclawStatus,
-    details: params.openclawDetails,
+  const aforaKnownHarnessGap = isKnownHarnessGapSkip({
+    status: params.aforaStatus,
+    details: params.aforaDetails,
   });
   const codexKnownHarnessGap = isKnownHarnessGapSkip({
     status: params.codexStatus,
     details: params.codexDetails,
   });
   if (
-    openclawKnownHarnessGap !== codexKnownHarnessGap &&
-    (openclawKnownHarnessGap ? params.codexStatus : params.openclawStatus) === "pass" &&
-    isRuntimeParityCellPassable(params.openclaw) &&
+    aforaKnownHarnessGap !== codexKnownHarnessGap &&
+    (aforaKnownHarnessGap ? params.codexStatus : params.aforaStatus) === "pass" &&
+    isRuntimeParityCellPassable(params.afora) &&
     isRuntimeParityCellPassable(params.codex)
   ) {
-    const skippedRuntime = openclawKnownHarnessGap ? "openclaw" : "codex";
+    const skippedRuntime = aforaKnownHarnessGap ? "afora" : "codex";
     return {
       drift: "structural",
       driftDetails: `known harness gap in ${skippedRuntime} runtime; paired runtime passed`,
@@ -1209,26 +1209,26 @@ function classifyRuntimeParityCells(params: {
   }
 
   if (
-    params.openclawStatus !== "pass" ||
+    params.aforaStatus !== "pass" ||
     params.codexStatus !== "pass" ||
-    !isRuntimeParityCellPassable(params.openclaw) ||
+    !isRuntimeParityCellPassable(params.afora) ||
     !isRuntimeParityCellPassable(params.codex)
   ) {
     return {
       drift: "failure-mode",
       driftDetails:
-        params.openclawStatus === params.codexStatus
-          ? params.openclawStatus === "skip"
+        params.aforaStatus === params.codexStatus
+          ? params.aforaStatus === "skip"
             ? "both canonical runtime-pair cells skipped"
-            : params.openclawStatus === "fail"
+            : params.aforaStatus === "fail"
               ? "both canonical runtime-pair cells failed"
               : "at least one runtime failed"
-          : `runtime-pair cell status differs (${params.openclawStatus} vs ${params.codexStatus})`,
+          : `runtime-pair cell status differs (${params.aforaStatus} vs ${params.codexStatus})`,
     };
   }
 
   const toolCallShapeDetails = parity.compareToolCallShape(
-    params.openclaw.toolCalls,
+    params.afora.toolCalls,
     params.codex.toolCalls,
   );
   if (toolCallShapeDetails) {
@@ -1236,32 +1236,32 @@ function classifyRuntimeParityCells(params: {
   }
 
   const toolResultShapeDetails = compareToolResultShape(
-    params.openclaw.toolCalls,
+    params.afora.toolCalls,
     params.codex.toolCalls,
   );
   if (toolResultShapeDetails) {
     return { drift: "tool-result-shape", driftDetails: toolResultShapeDetails };
   }
 
-  const openclawTranscriptLines = params.openclaw.transcriptBytes.trim().length
-    ? params.openclaw.transcriptBytes.trim().split(/\r?\n/u).length
+  const aforaTranscriptLines = params.afora.transcriptBytes.trim().length
+    ? params.afora.transcriptBytes.trim().split(/\r?\n/u).length
     : 0;
   const codexTranscriptLines = params.codex.transcriptBytes.trim().length
     ? params.codex.transcriptBytes.trim().split(/\r?\n/u).length
     : 0;
   if (
-    openclawTranscriptLines !== codexTranscriptLines ||
-    (!params.openclaw.finalText && Boolean(params.codex.finalText)) ||
-    (Boolean(params.openclaw.finalText) && !params.codex.finalText)
+    aforaTranscriptLines !== codexTranscriptLines ||
+    (!params.afora.finalText && Boolean(params.codex.finalText)) ||
+    (Boolean(params.afora.finalText) && !params.codex.finalText)
   ) {
     return {
       drift: "structural",
-      driftDetails: `transcript/final-text structure differs (${openclawTranscriptLines} lines vs ${codexTranscriptLines})`,
+      driftDetails: `transcript/final-text structure differs (${aforaTranscriptLines} lines vs ${codexTranscriptLines})`,
     };
   }
 
   if (
-    normalizeTextForParity(params.openclaw.finalText) ===
+    normalizeTextForParity(params.afora.finalText) ===
     normalizeTextForParity(params.codex.finalText)
   ) {
     return { drift: "none" };
@@ -1284,7 +1284,7 @@ function isRuntimeParityRootSession(entry: RuntimeParitySessionEntry) {
 }
 
 function runtimeParitySessionEnv(stateDir: string): NodeJS.ProcessEnv {
-  return { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+  return { ...process.env, AFORA_STATE_DIR: stateDir };
 }
 
 async function readRuntimeParitySessionEntries(params: {
@@ -1530,23 +1530,23 @@ export async function runRuntimeParityScenario(params: {
   }
   const first = await params.runCell(firstRuntime);
   const second = await params.runCell(secondRuntime);
-  const [openclaw, codex] = firstRuntime === "openclaw" ? [first, second] : [second, first];
+  const [afora, codex] = firstRuntime === "afora" ? [first, second] : [second, first];
   const drift = classifyRuntimeParityCells({
-    openclaw: openclaw.cell,
+    afora: afora.cell,
     codex: codex.cell,
-    openclawStatus: openclaw.status,
+    aforaStatus: afora.status,
     codexStatus: codex.status,
-    openclawDetails: openclaw.details,
+    aforaDetails: afora.details,
     codexDetails: codex.details,
   });
   return {
     scenarioId: params.scenarioId,
     runtimeParityUsage: resolveRuntimeParityUsagePolicy(params.runtimeParityUsage),
     cells: {
-      openclaw: {
-        ...openclaw.cell,
-        status: openclaw.status,
-        ...(openclaw.details ? { details: openclaw.details } : {}),
+      afora: {
+        ...afora.cell,
+        status: afora.status,
+        ...(afora.details ? { details: afora.details } : {}),
       },
       codex: {
         ...codex.cell,

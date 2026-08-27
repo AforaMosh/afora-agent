@@ -2,13 +2,13 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { runFfmpeg } from "openclaw/plugin-sdk/media-runtime";
-import { withTempDir } from "openclaw/plugin-sdk/test-env";
+import { runFfmpeg } from "afora-agent/plugin-sdk/media-runtime";
+import { withTempDir } from "afora-agent/plugin-sdk/test-env";
 import { describe, expect, it } from "vitest";
 import { senseaudioMediaUnderstandingProvider } from "./media-understanding-provider.js";
 
 const apiKey = process.env.SENSEAUDIO_API_KEY ?? "";
-const liveEnabled = process.env.OPENCLAW_LIVE_TEST === "1" && apiKey.length > 0;
+const liveEnabled = process.env.AFORA_LIVE_TEST === "1" && apiKey.length > 0;
 const hasSay =
   liveEnabled &&
   spawnSync("sh", ["-lc", "command -v say"], { encoding: "utf8", timeout: 5_000 }).status === 0;
@@ -21,10 +21,10 @@ if (!transcribeSenseAudioAudio) {
 
 describeLive("SenseAudio live", () => {
   it("transcribes generated speech", async () => {
-    await withTempDir("openclaw-senseaudio-live-", async (tempDir) => {
+    await withTempDir("afora-senseaudio-live-", async (tempDir) => {
       const aiffPath = path.join(tempDir, "speech.aiff");
       const mp3Path = path.join(tempDir, "speech.mp3");
-      const sayResult = spawnSync("say", ["-o", aiffPath, "open claw live transcription test"], {
+      const sayResult = spawnSync("say", ["-o", aiffPath, "afora live transcription test"], {
         encoding: "utf8",
       });
       expect(sayResult.status).toBe(0);

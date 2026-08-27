@@ -95,7 +95,7 @@ flow:
             message:
               expr: "`expected ${config.requiredProvider}/${config.requiredModel}, got ${env.primaryModel}`"
         - assert:
-            expr: "Boolean(env.gateway.runtimeEnv.OPENAI_API_KEY?.trim() || env.gateway.runtimeEnv.OPENCLAW_LIVE_OPENAI_KEY?.trim())"
+            expr: "Boolean(env.gateway.runtimeEnv.OPENAI_API_KEY?.trim() || env.gateway.runtimeEnv.AFORA_LIVE_OPENAI_KEY?.trim())"
             message: live OpenAI API key did not reach the Gateway child
       detailsExpr: "`provider=${selected?.provider} model=${selected?.model} auth=env-api-key`"
 

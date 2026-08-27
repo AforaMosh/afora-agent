@@ -1,7 +1,7 @@
 // Telegram plugin module implements bot native commands.menu test support behavior.
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
 import { expect, vi, type Mock } from "vitest";
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 import type { TelegramNativeCommandDeps } from "./bot-native-command-deps.runtime.js";
 import {
   createNativeCommandTestParams as createBaseNativeCommandTestParams,
@@ -91,7 +91,7 @@ export function createCommandBot(params: CreateCommandBotParams = {}): CreateCom
 }
 
 export function createNativeCommandTestParams(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   params: Partial<RegisterTelegramNativeCommandsParams> = {},
 ): RegisterTelegramNativeCommandsParams {
   const telegramDeps: TelegramNativeCommandDeps = {

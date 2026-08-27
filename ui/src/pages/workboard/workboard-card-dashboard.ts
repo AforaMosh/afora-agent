@@ -13,16 +13,16 @@ import {
   type BoardProviderLease,
   type BoardViewCallbacks,
 } from "../../lib/board/provider.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 
 function ensureBoardViewElement(): Promise<void> {
   return ensureCustomElementDefined(
-    "openclaw-board-view",
+    "afora-board-view",
     () => import("../../components/board/board-view.ts"),
   );
 }
 
-class WorkboardCardDashboard extends OpenClawLightDomElement {
+class WorkboardCardDashboard extends AforaLightDomElement {
   @property({ attribute: false }) sessionKey = "";
   @property({ attribute: false }) client: GatewayBrowserClient | null = null;
   @property({ attribute: false }) connected = false;
@@ -146,7 +146,7 @@ class WorkboardCardDashboard extends OpenClawLightDomElement {
         <div class="workboard-card-dashboard__body" ?hidden=${!this.expanded}>
           ${hasBoard && provider && snapshot && callbacks
             ? html`
-                <openclaw-board-view
+                <afora-board-view
                   .active=${this.expanded}
                   .snapshot=${snapshot}
                   .activeTabId=${this.activeTabId}
@@ -156,7 +156,7 @@ class WorkboardCardDashboard extends OpenClawLightDomElement {
                   .sessions=${[]}
                   .canMutate=${this.canMutate}
                   .canGrant=${this.canGrant}
-                ></openclaw-board-view>
+                ></afora-board-view>
               `
             : html`<p class="workboard-card-dashboard__empty">${t("workboard.dashboardEmpty")}</p>`}
         </div>
@@ -170,12 +170,12 @@ class WorkboardCardDashboard extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-workboard-card-dashboard")) {
-  customElements.define("openclaw-workboard-card-dashboard", WorkboardCardDashboard);
+if (!customElements.get("afora-workboard-card-dashboard")) {
+  customElements.define("afora-workboard-card-dashboard", WorkboardCardDashboard);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "openclaw-workboard-card-dashboard": WorkboardCardDashboard;
+    "afora-workboard-card-dashboard": WorkboardCardDashboard;
   }
 }

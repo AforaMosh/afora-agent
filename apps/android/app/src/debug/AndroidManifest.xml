@@ -11,7 +11,7 @@
         <activity
             android:name="androidx.activity.ComponentActivity"
             android:exported="false"
-            android:theme="@style/Theme.OpenClawNode" />
+            android:theme="@style/Theme.AforaNode" />
         <activity
             android:name=".ui.CanvasLifecycleTestActivity"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|keyboard|keyboardHidden|navigation"

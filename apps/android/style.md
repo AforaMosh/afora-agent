@@ -1,4 +1,4 @@
-# OpenClaw Android UI Style Guide
+# Afora Android UI Style Guide
 
 Scope: all native Android UI in `apps/android` (Jetpack Compose).
 Goal: one coherent visual system across onboarding, settings, and future screens.
@@ -104,10 +104,10 @@ Hard rule: avoid ultra-thin weights on light backgrounds.
 
 ## 11. Source Of Truth
 
-- `app/src/main/java/ai/openclaw/app/ui/OpenClawTheme.kt`
-- `app/src/main/java/ai/openclaw/app/ui/OnboardingFlow.kt`
-- `app/src/main/java/ai/openclaw/app/ui/RootScreen.kt`
-- `app/src/main/java/ai/openclaw/app/ui/SettingsScreens.kt`
-- `app/src/main/java/ai/openclaw/app/MainViewModel.kt`
+- `app/src/main/java/ai/afora/app/ui/AforaTheme.kt`
+- `app/src/main/java/ai/afora/app/ui/OnboardingFlow.kt`
+- `app/src/main/java/ai/afora/app/ui/RootScreen.kt`
+- `app/src/main/java/ai/afora/app/ui/SettingsScreens.kt`
+- `app/src/main/java/ai/afora/app/MainViewModel.kt`
 
 If style and implementation diverge, update both in the same change.

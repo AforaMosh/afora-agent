@@ -2,7 +2,7 @@ import type {
   ChannelSetupWizardCredential,
   ChannelSetupWizardTextInput,
 } from "../channels/plugins/setup-wizard-types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { hasConfiguredSecretInput } from "../config/types.secrets.js";
 
 type ResolvedCredentialAccount = {
@@ -10,7 +10,7 @@ type ResolvedCredentialAccount = {
 };
 
 type CredentialPatchParams<TAccount extends ResolvedCredentialAccount> = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   account: TAccount;
   mode: "set" | "env";
@@ -24,14 +24,14 @@ type TokenCredentialParams<TAccount extends ResolvedCredentialAccount> = Omit<
 > & {
   configKey: string;
   configuredFields?: string[];
-  resolveAccount: (params: { cfg: OpenClawConfig; accountId: string }) => TAccount;
+  resolveAccount: (params: { cfg: AforaConfig; accountId: string }) => TAccount;
   accountConfigured?: (account: TAccount) => boolean;
   hasConfiguredValue?: (account: TAccount) => boolean;
   resolvedValue?: (account: TAccount) => string | undefined;
   envValue?: (params: { accountId: string }) => string | undefined;
   patchAccount?: (
     params: CredentialPatchParams<TAccount>,
-  ) => OpenClawConfig | Promise<OpenClawConfig>;
+  ) => AforaConfig | Promise<AforaConfig>;
   set?: {
     clearFields?: string[];
     value?: "input" | "resolved";
@@ -121,16 +121,16 @@ type BaseUrlTextInputParams<TAccount> = Omit<
   "currentValue" | "initialValue" | "validate" | "normalizeValue" | "applySet"
 > & {
   configKey: string;
-  resolveAccount: (params: { cfg: OpenClawConfig; accountId: string }) => TAccount;
+  resolveAccount: (params: { cfg: AforaConfig; accountId: string }) => TAccount;
   currentValue: (account: TAccount) => string | undefined;
   includeInitialValue?: boolean;
   validate: (value: string) => string | undefined;
   normalize: (value: string) => string;
   patchAccount: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     patch: Record<string, unknown>;
-  }) => OpenClawConfig | Promise<OpenClawConfig>;
+  }) => AforaConfig | Promise<AforaConfig>;
 };
 
 /** Build a base-URL setup input with shared read, validation, normalization, and patch wiring. */
@@ -147,7 +147,7 @@ export function baseUrlTextInput<TAccount>(
     patchAccount,
     ...input
   } = params;
-  const readCurrentValue = ({ cfg, accountId }: { cfg: OpenClawConfig; accountId: string }) =>
+  const readCurrentValue = ({ cfg, accountId }: { cfg: AforaConfig; accountId: string }) =>
     currentValue(resolveAccount({ cfg, accountId }));
 
   return {

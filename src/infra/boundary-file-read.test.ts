@@ -53,7 +53,7 @@ describe("root file open shim", () => {
   });
 
   it("preserves the existing overflow error for fs-safe descriptor reads", async () => {
-    const dir = tempDirs.make("openclaw-boundary-file-read-");
+    const dir = tempDirs.make("afora-boundary-file-read-");
     const filePath = path.join(dir, "oversized.txt");
     fs.writeFileSync(filePath, "oversized");
 

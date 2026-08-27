@@ -1,13 +1,13 @@
 // Plugin API lifecycle guard: registration-only methods stop working once
 // register() returns, while runtime methods remain callable from hooks and tools.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { buildPluginApi } from "./api-builder.js";
 import { runPluginRegisterSyncInRegistry } from "./loader-module-runtime.js";
 import { createEmptyPluginRegistry } from "./registry-empty.js";
 import type { PluginRuntime } from "./runtime/types.js";
-import type { OpenClawPluginApi } from "./types.js";
+import type { AforaPluginApi } from "./types.js";
 
 function captureRegisteredPluginApi(handlers: Parameters<typeof buildPluginApi>[0]["handlers"]) {
   const api = buildPluginApi({
@@ -15,13 +15,13 @@ function captureRegisteredPluginApi(handlers: Parameters<typeof buildPluginApi>[
     name: "Late Call Fixture",
     source: "test",
     registrationMode: "full",
-    config: {} as OpenClawConfig,
+    config: {} as AforaConfig,
     runtime: {} as PluginRuntime,
     logger: { info() {}, warn() {}, error() {}, debug() {} },
     resolvePath: (input) => input,
     handlers,
   });
-  let captured: OpenClawPluginApi | undefined;
+  let captured: AforaPluginApi | undefined;
   runPluginRegisterSyncInRegistry(
     (pluginApi) => {
       captured = pluginApi;

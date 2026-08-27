@@ -26,7 +26,7 @@ const entry = (to: string, updatedAt: number): SessionEntry => ({
 });
 
 // Regression matrix for the generic opt-in case-preservation registry
-// (openclaw/openclaw#75670 — Matrix room ids; #82853 — Signal groups).
+// (AforaMosh/afora-agent#75670 — Matrix room ids; #82853 — Signal groups).
 // Synthetic mixed-case opaque IDs: a room id with an embedded ":server" and a
 // case-sensitive thread event id, mirroring the Matrix spec.
 const ROOM_A = "!MixedRoomAbCdEf:example.org";

@@ -3,13 +3,13 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { gunzip, gzip } from "node:zlib";
-import { MAX_DATE_TIMESTAMP_MS, timestampMsToIsoString } from "openclaw/plugin-sdk/number-runtime";
+import { MAX_DATE_TIMESTAMP_MS, timestampMsToIsoString } from "afora-agent/plugin-sdk/number-runtime";
 import type {
   PluginBlobEntry,
   PluginBlobEntryInfo,
   PluginBlobStore,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
-import { safeEqualSecret } from "openclaw/plugin-sdk/security-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-runtime";
+import { safeEqualSecret } from "afora-agent/plugin-sdk/security-runtime";
 import type { PluginLogger } from "../api.js";
 import {
   DIFF_ARTIFACT_ID_PATTERN,

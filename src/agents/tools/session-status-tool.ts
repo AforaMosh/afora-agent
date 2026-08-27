@@ -4,7 +4,7 @@
  * Reports and updates session runtime state, model overrides, visibility, task status, and delivery context.
  */
 import { randomUUID } from "node:crypto";
-import { readStringValue } from "@openclaw/normalization-core/string-coerce";
+import { readStringValue } from "@afora/normalization-core/string-coerce";
 import { Type } from "typebox";
 import type {
   ElevatedLevel,
@@ -18,7 +18,7 @@ import {
   resolveSessionStorePathCore,
   type SessionEntry,
 } from "../../config/sessions.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { triggerSessionPatchHook } from "../../gateway/session-patch-hooks.js";
 import {
   isPluginMetadataSnapshotCompatible,
@@ -438,7 +438,7 @@ function formatSessionTaskLine(params: {
   relatedSessionKey: string;
   callerOwnerKey: string;
   callerAgentId: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
 }): string | undefined {
   const snapshot = buildTaskStatusSnapshotForRelatedSessionKeyForOwner({
     relatedSessionKey: params.relatedSessionKey,
@@ -463,7 +463,7 @@ function formatSessionTaskLine(params: {
 }
 
 async function resolveModelOverride(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   raw: string;
   sessionEntry?: SessionEntry;
   agentId: string;
@@ -569,7 +569,7 @@ export function createSessionStatusTool(opts?: {
    * "current"})` to resolve to the live run session instead of the stale sandbox key.
    */
   runSessionKey?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   sandboxed?: boolean;
   activeModelProvider?: string;
   activeModelId?: string;

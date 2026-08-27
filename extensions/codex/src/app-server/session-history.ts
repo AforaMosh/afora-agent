@@ -1,27 +1,27 @@
 /**
- * Reads OpenClaw session history for Codex transcript mirroring and sanitizes
+ * Reads Afora session history for Codex transcript mirroring and sanitizes
  * image payloads before replaying messages into the app-server projector.
  */
 import fs from "node:fs/promises";
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-harness-runtime";
-import type { SessionEntry } from "openclaw/plugin-sdk/agent-sessions";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-harness-runtime";
+import type { SessionEntry } from "afora-agent/plugin-sdk/agent-sessions";
 import {
   buildSessionContext,
   migrateSessionEntries,
   parseSessionEntries,
-} from "openclaw/plugin-sdk/agent-sessions";
-import { readCodexSessionTranscriptEventsBeforeAdmission } from "openclaw/plugin-sdk/codex-session-transcript-runtime";
+} from "afora-agent/plugin-sdk/agent-sessions";
+import { readCodexSessionTranscriptEventsBeforeAdmission } from "afora-agent/plugin-sdk/codex-session-transcript-runtime";
 import {
   getSessionEntry,
   parseSqliteSessionFileMarker,
   resolveTranscriptSessionKeyBySessionId,
   type SqliteSessionFileMarker,
-} from "openclaw/plugin-sdk/session-store-runtime";
+} from "afora-agent/plugin-sdk/session-store-runtime";
 import {
   readSessionTranscriptEvents,
   type TranscriptTurnAdmission,
   type SessionTranscriptTargetParams,
-} from "openclaw/plugin-sdk/session-transcript-runtime";
+} from "afora-agent/plugin-sdk/session-transcript-runtime";
 import { sanitizeCodexHistoryImagePayloads } from "./image-payload-sanitizer.js";
 
 function isMissingFileError(error: unknown): boolean {

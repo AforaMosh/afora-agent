@@ -1,6 +1,6 @@
 import AVFoundation
 import Foundation
-import OpenClawKit
+import AforaKit
 import os
 
 actor CameraController {
@@ -38,8 +38,8 @@ actor CameraController {
     }
 
     func snap(
-        params: OpenClawCameraSnapParams,
-        defaultFacing: OpenClawCameraFacing = .front) async throws -> (
+        params: AforaCameraSnapParams,
+        defaultFacing: AforaCameraFacing = .front) async throws -> (
         format: String,
         base64: String,
         width: Int,
@@ -105,8 +105,8 @@ actor CameraController {
     }
 
     func clip(
-        params: OpenClawCameraClipParams,
-        defaultFacing: OpenClawCameraFacing = .front) async throws -> (
+        params: AforaCameraClipParams,
+        defaultFacing: AforaCameraFacing = .front) async throws -> (
         format: String,
         base64: String,
         durationMs: Int,
@@ -126,9 +126,9 @@ actor CameraController {
         }
 
         let movURL = FileManager().temporaryDirectory
-            .appendingPathComponent("openclaw-camera-\(UUID().uuidString).mov")
+            .appendingPathComponent("afora-camera-\(UUID().uuidString).mov")
         let mp4URL = FileManager().temporaryDirectory
-            .appendingPathComponent("openclaw-camera-\(UUID().uuidString).mp4")
+            .appendingPathComponent("afora-camera-\(UUID().uuidString).mp4")
         defer {
             try? FileManager().removeItem(at: movURL)
             try? FileManager().removeItem(at: mp4URL)
@@ -195,7 +195,7 @@ actor CameraController {
     }
 
     private nonisolated static func pickCamera(
-        facing: OpenClawCameraFacing,
+        facing: AforaCameraFacing,
         deviceId: String?) -> AVCaptureDevice?
     {
         if let deviceId, !deviceId.isEmpty {
@@ -252,8 +252,8 @@ actor CameraController {
     }
 
     nonisolated static func resolveFacing(
-        _ explicitFacing: OpenClawCameraFacing?,
-        defaultFacing: OpenClawCameraFacing) -> OpenClawCameraFacing
+        _ explicitFacing: AforaCameraFacing?,
+        defaultFacing: AforaCameraFacing) -> AforaCameraFacing
     {
         explicitFacing ?? defaultFacing
     }

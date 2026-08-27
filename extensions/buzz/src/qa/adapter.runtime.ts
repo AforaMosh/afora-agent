@@ -1,7 +1,7 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { QaBusConversationKind } from "openclaw/plugin-sdk/qa-channel-protocol";
-import type { QaRunnerCliRegistration } from "openclaw/plugin-sdk/qa-runner-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { QaBusConversationKind } from "afora-agent/plugin-sdk/qa-channel-protocol";
+import type { QaRunnerCliRegistration } from "afora-agent/plugin-sdk/qa-runner-runtime";
 import type { BuzzInboundMessage } from "../message-event.js";
 import { buildBuzzTarget } from "../target.js";
 import { parseBuzzQaCredentialPayload, readBuzzQaCredentialFile } from "./credentials.js";
@@ -17,7 +17,7 @@ const BUZZ_GATEWAY_ACCOUNT_ID = "default";
 const BUZZ_MESSAGE_ID_MAPPING_TIMEOUT_MS = 5_000;
 
 function isBuzzMention(text: string) {
-  return /(^|\s)@openclaw\b/iu.test(text);
+  return /(^|\s)@afora\b/iu.test(text);
 }
 
 async function waitForBuzzChannelRunning(params: {
@@ -200,7 +200,7 @@ export async function createBuzzQaTransportAdapter(
             defaultTo: buildBuzzTarget(credentials.roomId),
           },
         },
-      }) as Pick<OpenClawConfig, "channels" | "messages">,
+      }) as Pick<AforaConfig, "channels" | "messages">,
     waitReady: async ({ gateway, timeoutMs, pollIntervalMs }) =>
       await waitForBuzzChannelRunning({
         // Buzz is currently single-account; the QA bus keeps its portable SUT

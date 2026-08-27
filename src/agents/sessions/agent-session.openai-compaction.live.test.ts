@@ -2,7 +2,7 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Model } from "openclaw/plugin-sdk/llm";
+import type { Model } from "afora-agent/plugin-sdk/llm";
 import { afterEach, describe, expect, it } from "vitest";
 import { isTruthyEnvValue } from "../../infra/env.js";
 import { AgentSession } from "./agent-session.js";
@@ -16,10 +16,10 @@ import { SessionManager } from "./session-manager.js";
 import { SettingsManager } from "./settings-manager.js";
 
 const API_KEY = process.env.OPENAI_API_KEY?.trim() ?? "";
-const LIVE = isTruthyEnvValue(process.env.OPENCLAW_LIVE_OPENAI_COMPACTION) && API_KEY.length > 0;
-const FULL_CONTEXT = isTruthyEnvValue(process.env.OPENCLAW_LIVE_OPENAI_COMPACTION_FULL);
+const LIVE = isTruthyEnvValue(process.env.AFORA_LIVE_OPENAI_COMPACTION) && API_KEY.length > 0;
+const FULL_CONTEXT = isTruthyEnvValue(process.env.AFORA_LIVE_OPENAI_COMPACTION_FULL);
 const describeLive = LIVE ? describe : describe.skip;
-const MODEL_ID = process.env.OPENCLAW_LIVE_OPENAI_COMPACTION_MODEL?.trim() || "gpt-5.6-luna";
+const MODEL_ID = process.env.AFORA_LIVE_OPENAI_COMPACTION_MODEL?.trim() || "gpt-5.6-luna";
 const STRESS_PROFILE = FULL_CONTEXT
   ? {
       contextTokens: 922_000,
@@ -82,7 +82,7 @@ function countCompactions(sessionManager: SessionManager): number {
 }
 
 async function createLiveSession() {
-  const root = await mkdtemp(join(tmpdir(), "openclaw-openai-compaction-live-"));
+  const root = await mkdtemp(join(tmpdir(), "afora-openai-compaction-live-"));
   tempRoots.push(root);
   const cwd = join(root, "workspace");
   const agentDir = join(root, "agent");

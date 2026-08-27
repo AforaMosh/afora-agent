@@ -1,6 +1,6 @@
-import { resolveInboundMentionDecision } from "openclaw/plugin-sdk/channel-inbound";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { buildInboundHistoryFromEntries } from "openclaw/plugin-sdk/reply-history";
+import { resolveInboundMentionDecision } from "afora-agent/plugin-sdk/channel-inbound";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { buildInboundHistoryFromEntries } from "afora-agent/plugin-sdk/reply-history";
 import { isMatrixMediaSizeLimitError } from "../media-errors.js";
 import { isLikelyBareFilename } from "../media-text.js";
 import { fetchMatrixPollSnapshot, type MatrixPollSnapshot } from "../poll-summary.js";

@@ -358,7 +358,7 @@ export function installModelPromptTransform(params: {
  * Turns with attachments (image / document blocks) must remain as arrays and
  * are NOT collapsed.
  *
- * @see https://github.com/openclaw/openclaw/issues/3658
+ * @see https://github.com/AforaMosh/afora-agent/issues/3658
  */
 function canonicalizeTextOnlyUserContent(content: unknown): unknown {
   if (!Array.isArray(content)) {
@@ -581,11 +581,11 @@ function stripHistoricalInboundMetadataFromUserMessages(
 function stripUnsafeBlockedRunMetadata(messages: AgentMessage[]): AgentMessage[] {
   let changed = false;
   const nextMessages = messages.map((message) => {
-    const openclaw = Reflect.get(message, "__openclaw");
-    if (!openclaw || typeof openclaw !== "object") {
+    const afora = Reflect.get(message, "__afora");
+    if (!afora || typeof afora !== "object") {
       return message;
     }
-    const beforeAgentRunBlocked = (openclaw as { beforeAgentRunBlocked?: unknown })
+    const beforeAgentRunBlocked = (afora as { beforeAgentRunBlocked?: unknown })
       .beforeAgentRunBlocked;
     if (!beforeAgentRunBlocked || typeof beforeAgentRunBlocked !== "object") {
       return message;
@@ -598,13 +598,13 @@ function stripUnsafeBlockedRunMetadata(messages: AgentMessage[]): AgentMessage[]
     if (typeof blocked.blockedAt === "number") {
       safeBlocked.blockedAt = blocked.blockedAt;
     }
-    const nextOpenClaw = {
-      ...(openclaw as Record<string, unknown>),
+    const nextAfora = {
+      ...(afora as Record<string, unknown>),
       beforeAgentRunBlocked: safeBlocked,
     };
     changed = true;
     return Object.assign({}, message, {
-      __openclaw: nextOpenClaw,
+      __afora: nextAfora,
     });
   });
   return changed ? nextMessages : messages;

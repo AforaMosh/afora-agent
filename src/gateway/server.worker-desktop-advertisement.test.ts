@@ -10,7 +10,7 @@ describe("cloud worker desktop method advertisement", () => {
     { desktop: undefined, advertised: false },
     { desktop: true, advertised: true },
   ])("advertises desktop methods only when the Labs gate is $desktop", async (testCase) => {
-    process.env.OPENCLAW_TEST_MINIMAL_GATEWAY = "0";
+    process.env.AFORA_TEST_MINIMAL_GATEWAY = "0";
     await writeConfigFile({
       cloudWorkers: {
         ...(testCase.desktop === undefined ? {} : { desktop: testCase.desktop }),
@@ -39,7 +39,7 @@ describe("cloud worker desktop method advertisement", () => {
   });
 
   it("advertises host observe without worker-only desktop methods", async () => {
-    process.env.OPENCLAW_TEST_MINIMAL_GATEWAY = "0";
+    process.env.AFORA_TEST_MINIMAL_GATEWAY = "0";
     await writeConfigFile({ desktop: { host: { enabled: true } } });
     const { server, ws } = await startServerWithClient(undefined, { auth: { mode: "none" } });
     try {

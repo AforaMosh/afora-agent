@@ -1,7 +1,7 @@
 import {
   sanitizeInlineImageBase64,
   sanitizeInlineImageDataUrlForStorage,
-} from "@openclaw/media-core/inline-image-data-url";
+} from "@afora/media-core/inline-image-data-url";
 
 const isImageMimeType = (value: unknown): value is string =>
   typeof value === "string" && /^image\//iu.test(value.trim());

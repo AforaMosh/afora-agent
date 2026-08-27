@@ -1,6 +1,6 @@
 # Dated TODO Sweep
 
-You are auditing the current OpenClaw repository for genuine date-carrying commitments.
+You are auditing the current Afora repository for genuine date-carrying commitments.
 
 Read `.artifacts/dated-todo-candidates.json`. Use `DATED_TODO_SWEEP_DATE` as today's UTC date; it is captured once by the workflow so analysis and publication use the same boundary even across midnight. For every candidate, open enough surrounding repository code or documentation to understand what the date means.
 

@@ -1,7 +1,7 @@
 /**
  * Caps compaction retry waits against the aggregate run timeout.
  */
-import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
+import { resolveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
 
 export function hasActiveCompactionRetryWork(params: {
   isCompactionInFlight: boolean;

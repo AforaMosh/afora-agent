@@ -1,4 +1,4 @@
-import { sleep, type RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+import { sleep, type RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
 
 const GATEWAY_RELOAD_WAIT_MS = 15_000;
 const GATEWAY_RELOAD_POLL_MS = 500;
@@ -56,7 +56,7 @@ export async function verifyBuzzAfterSetup(params: {
   runtime: RuntimeEnv;
 }): Promise<void> {
   try {
-    const { callGatewayFromCli } = await import("openclaw/plugin-sdk/gateway-runtime");
+    const { callGatewayFromCli } = await import("afora-agent/plugin-sdk/gateway-runtime");
     const reloadDeadline = Date.now() + GATEWAY_RELOAD_WAIT_MS;
     let reloadPending = false;
     while (true) {
@@ -100,7 +100,7 @@ export async function verifyBuzzAfterSetup(params: {
     );
     if (!hasSuccessfulBuzzProbe(status, params.accountId, params.target)) {
       params.runtime.log(
-        `Buzz config was saved and applied, but the Gateway did not confirm authenticated membership in ${params.target}. Run \`openclaw channels status --probe\` before sending.`,
+        `Buzz config was saved and applied, but the Gateway did not confirm authenticated membership in ${params.target}. Run \`afora channels status --probe\` before sending.`,
       );
       return;
     }
@@ -109,12 +109,12 @@ export async function verifyBuzzAfterSetup(params: {
     );
   } catch (error) {
     if (isGatewayNotRunningError(error)) {
-      params.runtime.log("Buzz config was saved. Start OpenClaw to connect: openclaw gateway");
+      params.runtime.log("Buzz config was saved. Start Afora to connect: afora gateway");
       return;
     }
     const message = error instanceof Error ? error.message : String(error);
     params.runtime.log(
-      `Buzz config was saved, but post-setup verification did not complete: ${message}. Run \`openclaw channels status --probe\` after the Gateway reloads.`,
+      `Buzz config was saved, but post-setup verification did not complete: ${message}. Run \`afora channels status --probe\` after the Gateway reloads.`,
     );
   }
 }

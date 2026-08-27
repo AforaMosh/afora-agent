@@ -1,5 +1,5 @@
 // Defines task control runtime contracts exposed to command surfaces.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { DetachedTaskTerminalState } from "./detached-task-runtime-contract.js";
 
 type KillSubagentTargetState =
@@ -8,7 +8,7 @@ type KillSubagentTargetState =
 
 /** Admin cancellation hook for ACP sessions owned by task records. */
 type CancelAcpSessionAdmin = (params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   reason: string;
 }) => Promise<void>;
@@ -26,7 +26,7 @@ type KillSubagentRunAdminResult =
     };
 
 type KillSubagentRunAdmin = (params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
 }) => Promise<KillSubagentRunAdminResult>;
 

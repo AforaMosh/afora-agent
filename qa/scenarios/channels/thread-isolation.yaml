@@ -69,7 +69,7 @@ flow:
                   senderId:
                     ref: senderId
                   senderName: QA Driver
-                  text: "@openclaw Reply exactly: QA-THREAD-ISOLATION-ROOT-OK"
+                  text: "@afora Reply exactly: QA-THREAD-ISOLATION-ROOT-OK"
                 saveAs: rootInbound
               - waitForOutbound:
                   conversation:
@@ -93,7 +93,7 @@ flow:
               ref: senderId
             senderName: QA Driver
             text:
-              expr: "`${transport.id === 'qa-channel' ? '' : '@openclaw '}Reply exactly: ${config.threadMarker}`"
+              expr: "`${transport.id === 'qa-channel' ? '' : '@afora '}Reply exactly: ${config.threadMarker}`"
             threadId:
               ref: threadId
         - waitForOutbound:
@@ -121,7 +121,7 @@ flow:
               ref: senderId
             senderName: QA Driver
             text:
-              expr: "`${transport.id === 'qa-channel' ? '' : '@openclaw '}Reply exactly: ${config.topLevelMarker}`"
+              expr: "`${transport.id === 'qa-channel' ? '' : '@afora '}Reply exactly: ${config.topLevelMarker}`"
         - waitForOutbound:
             conversation:
               id:

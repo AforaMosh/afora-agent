@@ -1,5 +1,5 @@
 // Control UI chat module implements bounded visible-message caching.
-import { readSessionMessageSequence } from "@openclaw/gateway-client/browser";
+import { readSessionMessageSequence } from "@afora/gateway-client/browser";
 import type { UiSessionDefaultsHost } from "../../lib/sessions/session-key.ts";
 import type { ChatHistoryPagination } from "./chat-history-pagination.ts";
 import { getSessionCacheValue, setSessionCacheValue } from "./session-cache.ts";

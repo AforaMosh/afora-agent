@@ -1,5 +1,5 @@
 import { Worker } from "node:worker_threads";
-import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
+import { resolveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
 import { toErrorObject } from "../infra/errors.js";
 import { resolveRuntimeWorkerUrl } from "../infra/runtime-worker-url.js";
 import type {

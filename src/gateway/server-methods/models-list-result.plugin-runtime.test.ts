@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ModelCatalogEntry, ModelCatalogSnapshot } from "../../agents/model-catalog.types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
-import { withOpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+import type { AforaConfig } from "../../config/types.afora.js";
+import { withAforaTestState } from "../../test-utils/afora-test-state.js";
 import {
   buildModelsListResult,
   createGatewayAgentModelCatalogProjector,
@@ -40,10 +40,10 @@ function preparedMetadataSnapshot() {
 
 describe("models.list plugin metadata handoff", () => {
   it("reuses one Gateway-owned metadata snapshot across startup projection and browse", async () => {
-    await withOpenClawTestState(
+    await withAforaTestState(
       {
         layout: "state-only",
-        prefix: "openclaw-models-list-plugin-runtime-",
+        prefix: "afora-models-list-plugin-runtime-",
         agentEnv: "main",
       },
       async (state) => {
@@ -58,7 +58,7 @@ describe("models.list plugin metadata handoff", () => {
               },
             },
           },
-        } as OpenClawConfig;
+        } as AforaConfig;
         const snapshot: ModelCatalogSnapshot = {
           entries: [catalogEntry("modern"), catalogEntry("another")],
           routeVariants: [],
@@ -92,7 +92,7 @@ describe("models.list plugin metadata handoff", () => {
   it("keeps prepared owner facts when preloaded-only browse requires full discovery", async () => {
     const cfg = {
       agents: { defaults: { models: { "custom/*": {} } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const snapshot: ModelCatalogSnapshot = { entries: [], routeVariants: [] };
     const loadGatewayModelCatalogSnapshot = vi.fn();
     const context = {

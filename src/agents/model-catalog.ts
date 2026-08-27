@@ -1,13 +1,13 @@
 /**
  * Loads bundled, manifest, and discovered model catalog entries.
  */
-import { resolveClaudeFable5ModelIdentity } from "@openclaw/llm-core";
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { resolveClaudeFable5ModelIdentity } from "@afora/llm-core";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+} from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isDiagnosticFlagEnabled } from "../infra/diagnostic-flags.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { planEffectiveModelCatalogRows } from "../model-catalog/index.js";
@@ -66,7 +66,7 @@ type DiscoveredModel = {
 export type BuildPreparedModelCatalogParams = {
   agentDir: string;
   authCredentials: Readonly<AuthStorageData>;
-  config: OpenClawConfig;
+  config: AforaConfig;
   modelRegistry: ModelRegistry;
   readOnly?: boolean;
   includeProviderPluginAugmentation?: boolean;
@@ -80,7 +80,7 @@ type ManifestModelCatalogCacheEntry = {
   snapshot: PluginMetadataSnapshot;
   rows: ModelCatalogEntry[];
 };
-let manifestModelCatalogCache = new WeakMap<OpenClawConfig, ManifestModelCatalogCacheEntry>();
+let manifestModelCatalogCache = new WeakMap<AforaConfig, ManifestModelCatalogCacheEntry>();
 const modelSuppressionLoader = createLazyImportLoader(
   () => import("./model-suppression.runtime.js"),
 );
@@ -332,7 +332,7 @@ function createModelCatalogSnapshot(
 
 function resolveEligibleManifestCatalogPlugins(
   snapshot: PluginMetadataSnapshot,
-  config: OpenClawConfig,
+  config: AforaConfig,
 ): PluginMetadataSnapshot["plugins"] {
   return snapshot.plugins.filter(
     (plugin) =>
@@ -346,7 +346,7 @@ function resolveEligibleManifestCatalogPlugins(
 }
 
 export function loadManifestModelCatalog(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   fallbackToMetadataScan?: boolean;

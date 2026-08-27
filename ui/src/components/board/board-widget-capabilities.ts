@@ -83,12 +83,12 @@ export function renderBoardGrantedCapabilities(
     return nothing;
   }
   return html`
-    <openclaw-tooltip
+    <afora-tooltip
       .content=${`${t("board.widget.activeCapabilities")}\n${capabilities.join("\n")}`}
     >
       <span class="board-widget__capabilities" data-test-id="board-capabilities-granted">
         ${t("board.widget.granted")}
       </span>
-    </openclaw-tooltip>
+    </afora-tooltip>
   `;
 }

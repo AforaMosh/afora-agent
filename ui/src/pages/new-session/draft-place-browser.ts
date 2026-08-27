@@ -1,5 +1,5 @@
 import { initialState, Task, TaskStatus } from "@lit/task";
-import { readMissingScopeError } from "@openclaw/gateway-client/browser";
+import { readMissingScopeError } from "@afora/gateway-client/browser";
 import type { ReactiveControllerHost } from "lit";
 import type {
   FsListDirResult,

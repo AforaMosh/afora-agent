@@ -4,9 +4,9 @@
  * Sends messages to visible sessions, starts embedded runs, and optionally announces replies.
  */
 import crypto from "node:crypto";
-import { isRequesterParentOfBackgroundAcpSession } from "@openclaw/acp-core/session-interaction-mode";
-import { finiteSecondsToTimerSafeMilliseconds } from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { isRequesterParentOfBackgroundAcpSession } from "@afora/acp-core/session-interaction-mode";
+import { finiteSecondsToTimerSafeMilliseconds } from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { Type } from "typebox";
 import { readAcpSessionMeta } from "../../acp/runtime/session-meta.js";
 import { tryResolveLegacyCompatibilityAgentId } from "../../config/legacy.default-agent-owner.js";
@@ -16,7 +16,7 @@ import { parseSessionThreadInfo } from "../../config/sessions/thread-info.js";
 import { runWithoutOwnedSessionTranscriptWrites } from "../../config/sessions/transcript-write-context.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
 import type { AgentRouteBinding } from "../../config/types.agents.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import {
@@ -104,7 +104,7 @@ const SessionsSendToolSchema = Type.Object({
 const log = createSubsystemLogger("agents/sessions-send");
 
 function recordSessionsSendParticipant(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   requesterAgentId: string;
   sessionKey: string;
   targetAgentId: string;
@@ -203,7 +203,7 @@ function normalizeSessionsSendArguments(args: unknown): Record<string, unknown> 
 }
 
 function resolveConfiguredAgentMainSessionKey(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   mainKey: string;
 }): string | undefined {
@@ -219,7 +219,7 @@ function resolveConfiguredAgentMainSessionKey(params: {
 }
 
 function isConfiguredAgentMainSessionKey(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
   sessionKey: string;
   mainKey: string;
@@ -242,7 +242,7 @@ function isConfiguredAgentMainSessionKey(params: {
 }
 
 async function createConfiguredAgentMainSession(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   callGateway: GatewayCaller;
   agentId?: string;
   sessionKey: string;
@@ -475,7 +475,7 @@ export function createSessionsSendTool(opts?: {
   agentSessionKey?: string;
   agentChannel?: string;
   sandboxed?: boolean;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   callGateway?: GatewayCaller;
   /** Backend-derived target incarnation; never sourced from model arguments. */
   expectedTargetSessionId?: string;
@@ -528,7 +528,7 @@ export function createSessionsSendTool(opts?: {
         return jsonResult({
           runId: crypto.randomUUID(),
           status: "error",
-          error: `Agent "${labelAgentIdInput}" not found. Run openclaw agents list to see configured agents.`,
+          error: `Agent "${labelAgentIdInput}" not found. Run afora agents list to see configured agents.`,
         });
       }
       const explicitTargetAgentId = normalizedLabelAgentId?.value;
@@ -546,7 +546,7 @@ export function createSessionsSendTool(opts?: {
           return jsonResult({
             runId: crypto.randomUUID(),
             status: "error",
-            error: `Agent "${labelAgentIdInput}" not found. Run openclaw agents list to see configured agents.`,
+            error: `Agent "${labelAgentIdInput}" not found. Run afora agents list to see configured agents.`,
           });
         }
         sessionKey = agentMainKey;

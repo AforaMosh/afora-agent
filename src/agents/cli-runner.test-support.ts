@@ -37,7 +37,7 @@ const hoisted = vi.hoisted(
 setCliRunnerPrepareTestDeps({
   makeBootstrapWarn: () => () => {},
   resolveBootstrapContextForRun: hoisted.resolveBootstrapContextForRunMock,
-  resolveOpenClawReferencePaths: async () => ({ docsPath: null, sourcePath: null }),
+  resolveAforaReferencePaths: async () => ({ docsPath: null, sourcePath: null }),
 });
 
 /** Restore prepare-time CLI runner test dependencies after a test overrides them. */
@@ -45,7 +45,7 @@ export function restoreCliRunnerPrepareTestDeps() {
   setCliRunnerPrepareTestDeps({
     makeBootstrapWarn: () => () => {},
     resolveBootstrapContextForRun: hoisted.resolveBootstrapContextForRunMock,
-    resolveOpenClawReferencePaths: async () => ({ docsPath: null, sourcePath: null }),
+    resolveAforaReferencePaths: async () => ({ docsPath: null, sourcePath: null }),
     getClaudeGeneration,
   });
 }

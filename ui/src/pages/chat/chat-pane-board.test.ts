@@ -60,7 +60,7 @@ function nullBoardProvider(sessionKey: string): BoardProvider {
 }
 
 function createTestPane(sessions: SessionCapability = {} as SessionCapability) {
-  const pane = document.createElement("openclaw-chat-pane") as unknown as TestChatPane;
+  const pane = document.createElement("afora-chat-pane") as unknown as TestChatPane;
   const client = {} as GatewayBrowserClient;
   Object.defineProperty(pane, "isConnected", { configurable: true, value: true });
   pane.context = {

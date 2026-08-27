@@ -1,5 +1,5 @@
 // Shared test helpers for provider usage loaders.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createProviderUsageFetch } from "../test-utils/provider-usage-fetch.js";
 import type { ProviderAuth } from "./provider-usage.auth.js";
 import type { UsageSummary } from "./provider-usage.types.js";
@@ -10,7 +10,7 @@ type ProviderUsageLoader = (params: {
   now: number;
   auth?: ProviderAuth[];
   fetch?: typeof fetch;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }) => Promise<UsageSummary>;
 
 export type ProviderUsageAuth<T extends ProviderUsageLoader> = NonNullable<
@@ -27,6 +27,6 @@ export async function loadUsageWithAuth<T extends ProviderUsageLoader>(
     auth,
     fetch: mockFetch as unknown as typeof fetch,
     // Keep config minimal; bundled provider usage hooks own the provider-specific fetchers now.
-    config: {} as OpenClawConfig,
+    config: {} as AforaConfig,
   });
 }

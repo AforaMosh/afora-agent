@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { normalizeTalkSection } from "../config/talk.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createPluginRuntime } from "../plugins/runtime/index.js";
 import { BoundedSerialQueue } from "../shared/bounded-serial-queue.js";
 import { createLazyRuntimeModule } from "../shared/lazy-runtime.js";
@@ -74,7 +74,7 @@ function createRealtimeControlQueue(): BoundedSerialQueue {
 }
 
 function createTalkClientAgentRuntime(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentId: string;
   rawSourceRef?: string;
 }) {
@@ -208,7 +208,7 @@ export function boundTalkClientRealtimeInitialItems(
 }
 
 export function createTalkClientAgentConsultRunner(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   context: Pick<GatewayRequestContext, "chatAbortControllers" | "logGateway">;
   agentId: string;
   sessionKey: string;

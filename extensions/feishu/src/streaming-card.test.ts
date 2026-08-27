@@ -1,7 +1,7 @@
 // Feishu tests cover streaming card plugin behavior.
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import type { LookupFn } from "openclaw/plugin-sdk/ssrf-runtime";
-import { withFetchPreconnect } from "openclaw/plugin-sdk/test-env";
+import type { LookupFn } from "afora-agent/plugin-sdk/ssrf-runtime";
+import { withFetchPreconnect } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveStreamingCardSendMode } from "./streaming-card-send-mode.js";
 import {

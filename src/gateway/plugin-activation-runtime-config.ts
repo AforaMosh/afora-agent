@@ -2,7 +2,7 @@
 // Carries activation enablement into runtime config without copying stale state.
 import type { AmbientEnvTriggerPolicy } from "../channels/config-presence.js";
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginDiscoveryResult } from "../plugins/discovery.js";
 import type { PluginManifestRegistry } from "../plugins/manifest-registry.js";
 import { isRecord } from "../utils.js";
@@ -12,9 +12,9 @@ import { isRecord } from "../utils.js";
 // state overriding live config reloads.
 
 function mergeChannelActivationSections(params: {
-  runtimeConfig: OpenClawConfig;
-  activationConfig: OpenClawConfig;
-}): OpenClawConfig {
+  runtimeConfig: AforaConfig;
+  activationConfig: AforaConfig;
+}): AforaConfig {
   const activationChannels = params.activationConfig.channels;
   if (!isRecord(activationChannels)) {
     return params.runtimeConfig;
@@ -43,14 +43,14 @@ function mergeChannelActivationSections(params: {
   }
   return {
     ...params.runtimeConfig,
-    channels: nextChannels as OpenClawConfig["channels"],
+    channels: nextChannels as AforaConfig["channels"],
   };
 }
 
 function mergePluginActivationSections(params: {
-  runtimeConfig: OpenClawConfig;
-  activationConfig: OpenClawConfig;
-}): OpenClawConfig {
+  runtimeConfig: AforaConfig;
+  activationConfig: AforaConfig;
+}): AforaConfig {
   const activationPlugins = params.activationConfig.plugins;
   if (!isRecord(activationPlugins)) {
     return params.runtimeConfig;
@@ -96,15 +96,15 @@ function mergePluginActivationSections(params: {
   }
   return {
     ...params.runtimeConfig,
-    plugins: nextPlugins as OpenClawConfig["plugins"],
+    plugins: nextPlugins as AforaConfig["plugins"],
   };
 }
 
 /** Merges plugin/channel activation enablement into the runtime config shape. */
 export function mergeActivationSectionsIntoRuntimeConfig(params: {
-  runtimeConfig: OpenClawConfig;
-  activationConfig: OpenClawConfig;
-}): OpenClawConfig {
+  runtimeConfig: AforaConfig;
+  activationConfig: AforaConfig;
+}): AforaConfig {
   return mergePluginActivationSections({
     ...params,
     runtimeConfig: mergeChannelActivationSections(params),
@@ -118,13 +118,13 @@ export function mergeActivationSectionsIntoRuntimeConfig(params: {
 // that recomputes the startup plan — notably the `/status plugins` should-run drift check —
 // from drifting away from real gateway boot. Behavior-preserving extraction only.
 export function resolveGatewayStartupPluginActivationConfig(params: {
-  runtimeConfig: OpenClawConfig;
-  activationSourceConfig: OpenClawConfig;
+  runtimeConfig: AforaConfig;
+  activationSourceConfig: AforaConfig;
   env: NodeJS.ProcessEnv;
   manifestRegistry?: PluginManifestRegistry;
   discovery?: PluginDiscoveryResult;
   ambientEnvTriggers?: AmbientEnvTriggerPolicy;
-}): OpenClawConfig {
+}): AforaConfig {
   return mergeActivationSectionsIntoRuntimeConfig({
     runtimeConfig: params.runtimeConfig,
     activationConfig: applyPluginAutoEnable({
@@ -139,13 +139,13 @@ export function resolveGatewayStartupPluginActivationConfig(params: {
 
 /** Re-derives source-owned plugin activation and carries it into one reload candidate. */
 export function resolveGatewayReloadPluginActivationCandidate(params: {
-  runtimeConfig: OpenClawConfig;
-  sourceConfig: OpenClawConfig;
+  runtimeConfig: AforaConfig;
+  sourceConfig: AforaConfig;
   env: NodeJS.ProcessEnv;
   manifestRegistry?: PluginManifestRegistry;
   discovery?: PluginDiscoveryResult;
   ambientEnvTriggers?: AmbientEnvTriggerPolicy;
-}): { runtimeConfig: OpenClawConfig; compareConfig: OpenClawConfig } {
+}): { runtimeConfig: AforaConfig; compareConfig: AforaConfig } {
   const activationConfig = applyPluginAutoEnable({
     config: params.sourceConfig,
     env: params.env,

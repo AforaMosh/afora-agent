@@ -3,7 +3,7 @@ import path from "node:path";
 import {
   normalizeStringEntries,
   normalizeUniqueStringEntries,
-} from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-normalization";
 
 /**
  * Find the actual key used for PATH in the env object.

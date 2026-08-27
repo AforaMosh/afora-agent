@@ -2,7 +2,7 @@
 import { normalizeOptionalString } from "../../packages/normalization-core/src/string-coerce.js";
 import type { ChannelApprovalKind } from "../infra/approval-types.js";
 import { resolveApprovalApprovers } from "./approval-approvers.js";
-import type { OpenClawConfig } from "./config-runtime.js";
+import type { AforaConfig } from "./config-runtime.js";
 
 type ApproverInput = string | number;
 type ApprovalApproverInputs = {
@@ -12,7 +12,7 @@ type ApprovalApproverInputs = {
   defaultTo?: string | null;
 };
 type ApprovalContext = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 };
 type ApprovalActorContext = ApprovalContext & {
@@ -30,7 +30,7 @@ type ApprovalAuthorizationResult = {
   reason?: string;
 };
 const IMPLICIT_SAME_CHAT_APPROVAL_AUTHORIZATION = Symbol(
-  "openclaw.implicitSameChatApprovalAuthorization",
+  "afora.implicitSameChatApprovalAuthorization",
 );
 
 /**
@@ -78,7 +78,7 @@ export function createResolvedApproverActionAuthAdapter(params: {
   /** Human-readable channel label used in denial messages. */
   channelLabel: string;
   /** Resolves normalized approver ids from config and optional account scope. */
-  resolveApprovers: (params: { cfg: OpenClawConfig; accountId?: string | null }) => string[];
+  resolveApprovers: (params: { cfg: AforaConfig; accountId?: string | null }) => string[];
   /** Optional sender normalizer; defaults to trimmed string normalization. */
   normalizeSenderId?: (value: string) => string | undefined;
 }) {
@@ -92,7 +92,7 @@ export function createResolvedApproverActionAuthAdapter(params: {
       approvalKind,
     }: {
       /** Full config used to resolve account-scoped approvers. */
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       /** Optional channel account id for account-scoped approver config. */
       accountId?: string | null;
       /** Actor attempting the approval action. */
@@ -163,7 +163,7 @@ export function createChannelApprovalAuth(params: {
     isAuthorizedSender,
     approvalAuth: {
       authorizeActorAction(input: {
-        cfg: OpenClawConfig;
+        cfg: AforaConfig;
         accountId?: string | null;
         senderId?: string | null;
         action: "approve";

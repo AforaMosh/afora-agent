@@ -1,17 +1,17 @@
 // Persists gateway boot outcomes for supervisor crash-loop decisions.
 import { randomUUID } from "node:crypto";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { createSubsystemLogger } from "../logging/subsystem.js";
-import { OPENCLAW_AGENT_SCHEMA_VERSION } from "../state/openclaw-agent-db-contract.js";
+import { AFORA_AGENT_SCHEMA_VERSION } from "../state/afora-agent-db-contract.js";
 import {
   formatLegacyAgentMediaMigrationRequiredMessage,
   GATEWAY_AGENT_MEDIA_MIGRATION_REQUIRED_REASON,
-} from "../state/openclaw-agent-db-migration-required.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+} from "../state/afora-agent-db-migration-required.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../state/afora-state-db.js";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
@@ -44,12 +44,12 @@ export function formatGatewayCrashLoopManualChannelStartHint(target?: {
         ...(target.accountId ? { accountId: target.accountId } : {}),
       })
     : `{"channel":"<id>"}`;
-  return `Start a channel manually with: openclaw gateway call channels.start --params '${params}'`;
+  return `Start a channel manually with: afora gateway call channels.start --params '${params}'`;
 }
 
 const gatewayLifecycleLog = createSubsystemLogger("gateway/lifecycle");
 
-type GatewayBootLifecycleDatabase = Pick<OpenClawStateKyselyDatabase, "gateway_boot_lifecycle">;
+type GatewayBootLifecycleDatabase = Pick<AforaStateKyselyDatabase, "gateway_boot_lifecycle">;
 
 type GatewayBootLifecycleOutcome =
   | "clean_stop"
@@ -101,7 +101,7 @@ export function inspectGatewayCrashLoopBreaker(
   nowMs = Date.now(),
 ): GatewayCrashLoopBreakerDecision {
   try {
-    const { db } = openOpenClawStateDatabase({ env });
+    const { db } = openAforaStateDatabase({ env });
     const kysely = getNodeSqliteKysely<GatewayBootLifecycleDatabase>(db);
     const windowStartMs = nowMs - GATEWAY_BOOT_LOOP_WINDOW_MS;
     // Unclean means startup_failed by completion time, or an open boot row
@@ -158,7 +158,7 @@ export function recordGatewayBootStart(
 ): string | undefined {
   const bootId = randomUUID();
   try {
-    runOpenClawStateWriteTransaction(
+    runAforaStateWriteTransaction(
       ({ db }) => {
         const kysely = getNodeSqliteKysely<GatewayBootLifecycleDatabase>(db);
         executeSqliteQuerySync(
@@ -201,7 +201,7 @@ export function recordGatewayCrashLoopRecovery(
 ): string | undefined {
   const recoveredBootId = randomUUID();
   try {
-    runOpenClawStateWriteTransaction(
+    runAforaStateWriteTransaction(
       ({ db }) => {
         const kysely = getNodeSqliteKysely<GatewayBootLifecycleDatabase>(db);
         if (bootId) {
@@ -251,7 +251,7 @@ export function completeGatewayBootLifecycle(
     return;
   }
   try {
-    runOpenClawStateWriteTransaction(
+    runAforaStateWriteTransaction(
       ({ db }) => {
         const kysely = getNodeSqliteKysely<GatewayBootLifecycleDatabase>(db);
         executeSqliteQuerySync(
@@ -282,13 +282,13 @@ export function repairGatewayAgentMediaMigrationStartupFailures(params: {
     return 0;
   }
   try {
-    return runOpenClawStateWriteTransaction(
+    return runAforaStateWriteTransaction(
       ({ db }) => {
         const kysely = getNodeSqliteKysely<GatewayBootLifecycleDatabase>(db);
         const legacyMessages = [
           ...new Set(
             params.databasePaths.flatMap((pathname) =>
-              Array.from({ length: OPENCLAW_AGENT_SCHEMA_VERSION }, (_, schemaVersion) => {
+              Array.from({ length: AFORA_AGENT_SCHEMA_VERSION }, (_, schemaVersion) => {
                 const message = formatLegacyAgentMediaMigrationRequiredMessage(
                   pathname,
                   schemaVersion,

@@ -97,7 +97,7 @@ suite.define(() => {
         await page.goto(controlUiSessionUrl(suite.server.baseUrl, sessionKey));
         await expect.poll(() => gateway.getRequests("progressCard.get")).toHaveLength(1);
 
-        const visiblePane = page.locator("openclaw-chat-pane.chat-pane-cache__pane--visible");
+        const visiblePane = page.locator("afora-chat-pane.chat-pane-cache__pane--visible");
         await openChatSidePanelType(page, "Side chat");
         await expect
           .poll(() => visiblePane.locator('[data-progress-card-placement="rail"]').count())

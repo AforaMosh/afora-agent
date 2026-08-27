@@ -20,7 +20,7 @@ const SHA512_INTEGRITY_PATTERN = /^sha512-[A-Za-z0-9+/]{86}==$/u;
 const COMMIT_PATTERN = /^[a-f0-9]{40}$/u;
 const POSITIVE_INTEGER_PATTERN = /^[1-9][0-9]*$/u;
 const REPOSITORY_PATTERN = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u;
-const PACKAGE_NAME_PATTERN = /^@openclaw\/[a-z0-9][a-z0-9._-]*$/u;
+const PACKAGE_NAME_PATTERN = /^@afora\/[a-z0-9][a-z0-9._-]*$/u;
 const PACKAGE_DIR_PATTERN = /^extensions\/[a-z0-9][a-z0-9._-]*$/u;
 const TAG_PATTERN = /^[a-z0-9][a-z0-9._-]*$/u;
 const PROTECTED_WORKFLOW_TAG_PATTERN =
@@ -82,7 +82,7 @@ function parsePlugins(value) {
 }
 
 function packageSlug(packageName) {
-  return packageName.slice("@openclaw/".length);
+  return packageName.slice("@afora/".length);
 }
 
 function normalizePlanEntry(value, index) {

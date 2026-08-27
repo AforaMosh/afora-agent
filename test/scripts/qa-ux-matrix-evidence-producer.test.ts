@@ -91,7 +91,7 @@ describe("QA UX Matrix evidence producer CLI", () => {
     const artifactBaseResult = await runCli("--artifact-base", "-h");
     const repoRootResult = await runCli(
       "--artifact-base",
-      "/tmp/openclaw-ux-test",
+      "/tmp/afora-ux-test",
       "--repo-root",
       "-h",
     );
@@ -107,8 +107,8 @@ describe("QA UX Matrix evidence producer CLI", () => {
   });
 
   it("sanitizes local checkout paths from generated evidence artifacts", async () => {
-    const artifactBase = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-ux-evidence-test-"));
-    const fakeRepoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-ux-repo-test-"));
+    const artifactBase = fs.mkdtempSync(path.join(os.tmpdir(), "afora-ux-evidence-test-"));
+    const fakeRepoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-ux-repo-test-"));
     try {
       const result = await runCli(
         "--artifact-base",

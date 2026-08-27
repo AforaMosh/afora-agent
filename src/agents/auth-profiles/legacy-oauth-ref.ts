@@ -1,12 +1,12 @@
 /**
  * Legacy OAuth reference recognizer.
- * Used by migration/health code to detect older Codex/OpenClaw credential
+ * Used by migration/health code to detect older Codex/Afora credential
  * sidecar references without accepting arbitrary ref-like objects.
  */
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 
 /** Legacy OAuth ref source persisted by older credential stores. */
-const LEGACY_OAUTH_REF_SOURCE = "openclaw-credentials";
+const LEGACY_OAUTH_REF_SOURCE = "afora-credentials";
 /** Legacy OAuth ref provider persisted by older credential stores. */
 export const LEGACY_OAUTH_REF_PROVIDER = "openai-codex";
 

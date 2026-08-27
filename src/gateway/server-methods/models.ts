@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 // Models gateway methods expose prepared, cached, and explicitly refreshed catalog views.
 import { validateModelsListParams } from "../../../packages/gateway-protocol/src/index.js";
 import { resolveAgentIdOrRespondError } from "./agent-id-shared.js";

@@ -3,8 +3,8 @@ import "fake-indexeddb/auto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { resetFileLockStateForTest } from "openclaw/plugin-sdk/file-lock";
-import { resetPluginStateStoreForTests } from "openclaw/plugin-sdk/plugin-state-test-runtime";
+import { resetFileLockStateForTest } from "afora-agent/plugin-sdk/file-lock";
+import { resetPluginStateStoreForTests } from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getMatrixRuntime } from "../../runtime.js";
 import { installMatrixTestRuntime } from "../../test-runtime.js";
@@ -17,8 +17,8 @@ import {
 } from "./idb-persistence.test-helpers.js";
 import { LogService } from "./logger.js";
 
-const DATABASE_PREFIX = "openclaw-matrix-persistence-test";
-const OTHER_DATABASE_PREFIX = "openclaw-matrix-persistence-other-test";
+const DATABASE_PREFIX = "afora-matrix-persistence-test";
+const OTHER_DATABASE_PREFIX = "afora-matrix-persistence-other-test";
 const cryptoDatabaseName = `${DATABASE_PREFIX}::matrix-sdk-crypto`;
 const otherCryptoDatabaseName = `${OTHER_DATABASE_PREFIX}::matrix-sdk-crypto`;
 
@@ -89,13 +89,13 @@ describe("Matrix IndexedDB persistence", () => {
     await expect(restoreIdbFromDisk(snapshotPath)).rejects.toMatchObject({
       name: "MatrixIdbSnapshotMigrationRequiredError",
       code: "matrix-idb-snapshot-requires-doctor",
-      remediation: "openclaw doctor --fix",
+      remediation: "afora doctor --fix",
     });
     expect(warnSpy).toHaveBeenCalledWith(
       "IdbPersistence",
       expect.objectContaining({
         code: "matrix-idb-snapshot-requires-doctor",
-        remediation: "openclaw doctor --fix",
+        remediation: "afora doctor --fix",
       }),
     );
     expect(JSON.stringify(warnSpy.mock.calls)).not.toContain(snapshotPath);

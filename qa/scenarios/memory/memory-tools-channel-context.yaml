@@ -36,7 +36,7 @@ scenario:
       memoryQuery: "hidden project codename"
       expectedCorpus: null
       expectedNeedle: ORBIT-9
-      prompt: "@openclaw Memory tools check: what is the hidden project codename stored only in memory? Use memory tools first."
+      prompt: "@afora Memory tools check: what is the hidden project codename stored only in memory? Use memory tools first."
       promptSnippet: "Memory tools check"
 
 flow:

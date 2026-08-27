@@ -66,9 +66,9 @@ const responsesTesting = {
 };
 
 declare global {
-  var openclawOpenAIResponsesTransportTestApi: typeof responsesTesting | undefined;
+  var aforaOpenAIResponsesTransportTestApi: typeof responsesTesting | undefined;
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  globalThis.openclawOpenAIResponsesTransportTestApi = responsesTesting;
+  globalThis.aforaOpenAIResponsesTransportTestApi = responsesTesting;
 }

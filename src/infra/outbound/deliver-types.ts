@@ -47,7 +47,7 @@ export type OutboundPayloadDeliverySuppressionReason =
 export type OutboundDeliveryFailureStage = "platform_send" | "queue" | "unknown";
 export type OutboundPayloadDeliveryKind = "text" | "media" | "other";
 
-const PLATFORM_MESSAGE_NOT_DISPATCHED_ERROR_CODE = "OPENCLAW_PLATFORM_MESSAGE_NOT_DISPATCHED";
+const PLATFORM_MESSAGE_NOT_DISPATCHED_ERROR_CODE = "AFORA_PLATFORM_MESSAGE_NOT_DISPATCHED";
 
 /**
  * Provider assertion that no recipient-visible send began. Set retryable=false

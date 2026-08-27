@@ -1,5 +1,5 @@
 import Foundation
-import OpenClawChatUI
+import AforaChatUI
 import Testing
 
 struct ChatSessionsCodingTests {
@@ -17,7 +17,7 @@ struct ChatSessionsCodingTests {
         }
         """#.utf8)
 
-        let entry = try JSONDecoder().decode(OpenClawChatSessionEntry.self, from: data)
+        let entry = try JSONDecoder().decode(AforaChatSessionEntry.self, from: data)
 
         #expect(entry.label == "Release room")
         #expect(entry.category == "Operations")

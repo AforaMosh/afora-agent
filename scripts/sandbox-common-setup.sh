@@ -4,8 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/scripts/lib/docker-build.sh"
 
-BASE_IMAGE="${BASE_IMAGE:-openclaw-sandbox:bookworm-slim}"
-TARGET_IMAGE="${TARGET_IMAGE:-openclaw-sandbox-common:bookworm-slim}"
+BASE_IMAGE="${BASE_IMAGE:-afora-sandbox:bookworm-slim}"
+TARGET_IMAGE="${TARGET_IMAGE:-afora-sandbox-common:bookworm-slim}"
 PACKAGES="${PACKAGES:-curl wget jq coreutils grep python3 git ca-certificates golang-go rustc cargo unzip pkg-config libasound2-dev build-essential file}"
 INSTALL_NODE="${INSTALL_NODE:-1}"
 NODE_MAJOR="${NODE_MAJOR:-24}"
@@ -15,9 +15,9 @@ BUN_INSTALL_DIR="${BUN_INSTALL_DIR:-/opt/bun}"
 INSTALL_BREW="${INSTALL_BREW:-1}"
 BREW_INSTALL_DIR="${BREW_INSTALL_DIR:-/home/linuxbrew/.linuxbrew}"
 FINAL_USER="${FINAL_USER:-sandbox}"
-OPENCLAW_DOCKER_BUILD_USE_BUILDX="${OPENCLAW_DOCKER_BUILD_USE_BUILDX:-0}"
-OPENCLAW_DOCKER_BUILD_CACHE_FROM="${OPENCLAW_DOCKER_BUILD_CACHE_FROM:-}"
-OPENCLAW_DOCKER_BUILD_CACHE_TO="${OPENCLAW_DOCKER_BUILD_CACHE_TO:-}"
+AFORA_DOCKER_BUILD_USE_BUILDX="${AFORA_DOCKER_BUILD_USE_BUILDX:-0}"
+AFORA_DOCKER_BUILD_CACHE_FROM="${AFORA_DOCKER_BUILD_CACHE_FROM:-}"
+AFORA_DOCKER_BUILD_CACHE_TO="${AFORA_DOCKER_BUILD_CACHE_TO:-}"
 
 if ! docker image inspect "${BASE_IMAGE}" >/dev/null 2>&1; then
   echo "Base image missing: ${BASE_IMAGE}"
@@ -46,5 +46,5 @@ cat <<NOTE
 Built ${TARGET_IMAGE}.
 To use it, set agents.defaults.sandbox.docker.image to "${TARGET_IMAGE}" and restart.
 If you want a clean re-create, remove old sandbox containers:
-  docker rm -f \$(docker ps -aq --filter label=openclaw.sandbox=1)
+  docker rm -f \$(docker ps -aq --filter label=afora.sandbox=1)
 NOTE

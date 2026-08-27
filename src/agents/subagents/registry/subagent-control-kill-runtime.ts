@@ -5,7 +5,7 @@ import {
   patchSessionEntryCore,
 } from "../../../config/sessions/session-accessor.js";
 import type { SessionEntry } from "../../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { logVerbose } from "../../../globals.js";
 import { isAgentEventLifecycleGenerationCurrent } from "../../../infra/agent-events.js";
 import { formatErrorMessage } from "../../../infra/errors.js";
@@ -188,7 +188,7 @@ function markSubagentRunTerminatedBestEffort(
 }
 
 async function killSubagentRun(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   entry: SubagentRunRecord;
   cache: Map<string, Record<string, SessionEntry>>;
   suppressTaskDelivery?: boolean;
@@ -435,7 +435,7 @@ async function killSubagentRun(params: {
 }
 
 export async function killLatestSubagentRun(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   entry: SubagentRunRecord;
   cache: Map<string, Record<string, SessionEntry>>;
   suppressTaskDelivery?: boolean;

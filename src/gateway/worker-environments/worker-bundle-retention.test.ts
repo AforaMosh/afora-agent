@@ -10,7 +10,7 @@ function environment(state: WorkerEnvironmentRecord["state"], bundleHash: string
     state,
     bootstrapReceipt: {
       bundleHash,
-      openclawVersion: "1.2.3",
+      aforaVersion: "1.2.3",
       protocolFeatures: [],
     },
   } as Pick<WorkerEnvironmentRecord, "bootstrapReceipt" | "state">;

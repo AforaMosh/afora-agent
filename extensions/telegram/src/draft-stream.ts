@@ -3,10 +3,10 @@ import type { Message } from "grammy/types";
 import {
   createFinalizableDraftStreamControlsForState,
   takeMessageIdAfterStop,
-} from "openclaw/plugin-sdk/channel-outbound";
-import type { MarkdownTableMode, ReplyToMode } from "openclaw/plugin-sdk/config-contracts";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { isSingleUseReplyToMode } from "openclaw/plugin-sdk/reply-reference";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import type { MarkdownTableMode, ReplyToMode } from "afora-agent/plugin-sdk/config-contracts";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { isSingleUseReplyToMode } from "afora-agent/plugin-sdk/reply-reference";
 import { buildTelegramThreadParams, type TelegramThreadSpec } from "./bot/helpers.js";
 import { escapeTelegramHtml, telegramHtmlToPlainTextFallback } from "./format.js";
 import {

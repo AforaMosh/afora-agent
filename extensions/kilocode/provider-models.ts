@@ -1,11 +1,11 @@
 // Kilocode provider module implements model/runtime integration.
-import { buildLiveModelProviderConfig } from "openclaw/plugin-sdk/provider-catalog-live-runtime";
-import type { ModelDefinitionConfig } from "openclaw/plugin-sdk/provider-model-shared";
-import { ssrfPolicyFromHttpBaseUrlAllowedHostname } from "openclaw/plugin-sdk/ssrf-runtime";
+import { buildLiveModelProviderConfig } from "afora-agent/plugin-sdk/provider-catalog-live-runtime";
+import type { ModelDefinitionConfig } from "afora-agent/plugin-sdk/provider-model-shared";
+import { ssrfPolicyFromHttpBaseUrlAllowedHostname } from "afora-agent/plugin-sdk/ssrf-runtime";
 import {
   asPositiveSafeInteger,
   normalizeLowercaseStringOrEmpty,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export const KILOCODE_BASE_URL = "https://api.kilo.ai/api/gateway/";
 export const KILOCODE_DEFAULT_MODEL_ID = "kilo-auto/balanced";

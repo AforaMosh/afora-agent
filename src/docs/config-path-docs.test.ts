@@ -1,7 +1,7 @@
 // Config path docs tests validate documented config path references.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 
 const DOCS_WITH_CONFIG_PATH_EXAMPLES = [
@@ -14,7 +14,7 @@ function findUnquotedBracketPathExamples(markdown: string, docPath: string): str
   const failures: string[] = [];
 
   for (const [index, line] of markdown.split(/\r?\n/).entries()) {
-    const match = line.match(/\bopenclaw\s+config\s+(?:get|set|unset)\s+(\S+)/);
+    const match = line.match(/\bafora\s+config\s+(?:get|set|unset)\s+(\S+)/);
     if (!match) {
       continue;
     }

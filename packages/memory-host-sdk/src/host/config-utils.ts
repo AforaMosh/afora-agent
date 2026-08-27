@@ -2,15 +2,15 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { normalizeAgentId } from "@openclaw/normalization-core/agent-id";
+import { normalizeAgentId } from "@afora/normalization-core/agent-id";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import type { MemoryExtraPath } from "./types.js";
 export { normalizeAgentId };
 
-// Shared OpenClaw config helpers used by memory host and agent context code.
+// Shared Afora config helpers used by memory host and agent context code.
 
 type DmScope = "main" | "per-peer" | "per-channel-peer" | "per-account-channel-peer";
 /** Citation injection behavior for memory search results. */
@@ -72,8 +72,8 @@ type AgentConfig = {
   contextLimits?: AgentContextLimitsConfig;
 };
 
-/** Narrow OpenClaw config shape consumed by memory host utilities. */
-export type OpenClawConfig = {
+/** Narrow Afora config shape consumed by memory host utilities. */
+export type AforaConfig = {
   agents?: {
     defaults?: {
       workspace?: string;
@@ -99,7 +99,7 @@ export type OpenClawConfig = {
   };
 };
 
-export function resolveRememberAcrossConversations(cfg: OpenClawConfig, agentId: string): boolean {
+export function resolveRememberAcrossConversations(cfg: AforaConfig, agentId: string): boolean {
   const defaults = cfg.memory?.search;
   const overrides = resolveAgentConfig(cfg, agentId)?.memory?.search;
   const explicit = overrides?.rememberAcrossConversations ?? defaults?.rememberAcrossConversations;
@@ -129,7 +129,7 @@ export const MEMORY_HOST_ROOT_FILENAME = "MEMORY.md";
 
 const DEFAULT_AGENT_ID = "main";
 const LEGACY_STATE_DIRNAMES = [".clawdbot"] as const;
-const NEW_STATE_DIRNAME = ".openclaw";
+const NEW_STATE_DIRNAME = ".afora";
 /** Treat shell-placeholder home values as absent. */
 function normalizeHomeValue(value: string | undefined): string | undefined {
   const trimmed = normalizeOptionalString(value);
@@ -139,7 +139,7 @@ function normalizeHomeValue(value: string | undefined): string | undefined {
   return trimmed;
 }
 
-/** Resolve the underlying OS home before applying OpenClaw-specific overrides. */
+/** Resolve the underlying OS home before applying Afora-specific overrides. */
 function resolveRawOsHomeDir(env: NodeJS.ProcessEnv, homedir: () => string): string | undefined {
   return (
     normalizeHomeValue(env.HOME) ??
@@ -148,12 +148,12 @@ function resolveRawOsHomeDir(env: NodeJS.ProcessEnv, homedir: () => string): str
   );
 }
 
-/** Resolve OPENCLAW_HOME or the OS home, falling back to cwd for hermetic tests. */
+/** Resolve AFORA_HOME or the OS home, falling back to cwd for hermetic tests. */
 function resolveRequiredHomeDir(
   env: NodeJS.ProcessEnv = process.env,
   homedir: () => string = os.homedir,
 ): string {
-  const explicitHome = normalizeHomeValue(env.OPENCLAW_HOME);
+  const explicitHome = normalizeHomeValue(env.AFORA_HOME);
   const rawHome = explicitHome
     ? explicitHome.replace(/^~(?=$|[\\/])/, resolveRawOsHomeDir(env, homedir) ?? "")
     : resolveRawOsHomeDir(env, homedir);
@@ -194,7 +194,7 @@ function isFastTestRuntimeEnv(env: NodeJS.ProcessEnv): boolean {
         process.env.VITEST_POOL_ID !== undefined ||
         process.env.VITEST_WORKER_ID !== undefined ||
         process.env.NODE_ENV === "test"));
-  return isTestRuntime && env.OPENCLAW_TEST_FAST === "1";
+  return isTestRuntime && env.AFORA_TEST_FAST === "1";
 }
 
 /** Resolve the current state root while preserving shipped legacy installs when present. */
@@ -202,7 +202,7 @@ function resolveStateDir(
   env: NodeJS.ProcessEnv = process.env,
   homedir: () => string = os.homedir,
 ): string {
-  const override = env.OPENCLAW_STATE_DIR?.trim();
+  const override = env.AFORA_STATE_DIR?.trim();
   if (override) {
     return resolveMemoryHostUserPath(override, env, homedir);
   }
@@ -211,7 +211,7 @@ function resolveStateDir(
   if (isFastTestRuntimeEnv(env) || fs.existsSync(nextDir)) {
     return nextDir;
   }
-  // Remove after 2026-10-01: drop legacy state-dir precedence once an explicit migration creates .openclaw.
+  // Remove after 2026-10-01: drop legacy state-dir precedence once an explicit migration creates .afora.
   const existingLegacy = legacyStateDirs(effectiveHome).find((dir) => {
     try {
       return fs.existsSync(dir);
@@ -222,25 +222,25 @@ function resolveStateDir(
   return existingLegacy ?? nextDir;
 }
 
-/** Resolve the default agent workspace, partitioned by OPENCLAW_PROFILE when set. */
+/** Resolve the default agent workspace, partitioned by AFORA_PROFILE when set. */
 function resolveDefaultAgentWorkspaceDir(env: NodeJS.ProcessEnv = process.env): string {
-  const workspaceDir = env.OPENCLAW_WORKSPACE_DIR?.trim();
+  const workspaceDir = env.AFORA_WORKSPACE_DIR?.trim();
   if (workspaceDir) {
     return resolveMemoryHostUserPath(workspaceDir, env);
   }
-  if (env.OPENCLAW_STATE_DIR?.trim()) {
+  if (env.AFORA_STATE_DIR?.trim()) {
     return path.join(resolveStateDir(env), "workspace");
   }
   const home = resolveRequiredHomeDir(env, os.homedir);
-  const profile = env.OPENCLAW_PROFILE?.trim();
+  const profile = env.AFORA_PROFILE?.trim();
   if (profile && normalizeLowercaseStringOrEmpty(profile) !== "default") {
     return path.join(resolveStateDir(env), "workspace");
   }
-  return path.join(home, ".openclaw", "workspace");
+  return path.join(home, ".afora", "workspace");
 }
 
 /** Return configured agent entries after dropping nullish placeholders. */
-function listAgentEntries(cfg: OpenClawConfig): AgentConfig[] {
+function listAgentEntries(cfg: AforaConfig): AgentConfig[] {
   if (cfg.agents?.entries) {
     return Object.entries(cfg.agents.entries).map(([id, entry]) => Object.assign({ id }, entry));
   }
@@ -250,7 +250,7 @@ function listAgentEntries(cfg: OpenClawConfig): AgentConfig[] {
 }
 
 /** Resolve the default agent id from explicit default marker or first agent entry. */
-function resolveDefaultAgentId(cfg: OpenClawConfig): string {
+function resolveDefaultAgentId(cfg: AforaConfig): string {
   const agents = listAgentEntries(cfg);
   if (agents.length === 0) {
     return DEFAULT_AGENT_ID;
@@ -260,7 +260,7 @@ function resolveDefaultAgentId(cfg: OpenClawConfig): string {
 }
 
 /** Find one agent config by canonical id. */
-function resolveAgentConfig(cfg: OpenClawConfig, agentId: string): AgentConfig | undefined {
+function resolveAgentConfig(cfg: AforaConfig, agentId: string): AgentConfig | undefined {
   const id = normalizeAgentId(agentId);
   return listAgentEntries(cfg).find((entry) => normalizeAgentId(entry.id) === id);
 }
@@ -272,7 +272,7 @@ function stripNullBytes(value: string): string {
 
 /** Resolve the workspace directory for an agent id and config defaults. */
 export function resolveMemoryHostAgentWorkspaceDir(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
   env: NodeJS.ProcessEnv = process.env,
 ): string {
@@ -295,7 +295,7 @@ export function resolveMemoryHostAgentWorkspaceDir(
 
 /** Resolve context limits for an agent with defaults fallback. */
 export function resolveMemoryHostAgentContextLimits(
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
   agentId?: string | null,
 ): AgentContextLimitsConfig | undefined {
   const defaults = cfg?.agents?.defaults?.contextLimits;
@@ -307,7 +307,7 @@ export function resolveMemoryHostAgentContextLimits(
 
 /** Resolve enabled memory search config plus deduplicated extra paths for an agent. */
 export function resolveMemoryHostSearchPathConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
 ): {
   enabled: boolean;

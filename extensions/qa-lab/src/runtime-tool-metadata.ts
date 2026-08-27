@@ -3,23 +3,23 @@ import {
   asBoolean as readBoolean,
   isRecord,
   normalizeOptionalString as readString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { QaSeedScenarioWithSource } from "./scenario-catalog.js";
 
 export type QaRuntimeToolBucket =
   | "codex-native-workspace"
-  | "openclaw-dynamic-integration"
+  | "afora-dynamic-integration"
   | "optional-profile-or-plugin";
 
 export type QaRuntimeToolExpectedLayer =
   | "codex-native-workspace"
-  | "openclaw-dynamic"
+  | "afora-dynamic"
   | "profile-or-plugin";
 
 export type QaRuntimeCapabilityLayer =
   | "codex-native-workspace"
-  | "openclaw-dynamic-direct"
-  | "openclaw-dynamic-searchable"
+  | "afora-dynamic-direct"
+  | "afora-dynamic-searchable"
   | "optional-profile-or-plugin"
   | "structural-text";
 
@@ -39,33 +39,33 @@ export type QaRuntimeToolCoverageMetadata = {
 
 const QA_RUNTIME_TOOL_BUCKETS: readonly QaRuntimeToolBucket[] = [
   "codex-native-workspace",
-  "openclaw-dynamic-integration",
+  "afora-dynamic-integration",
   "optional-profile-or-plugin",
 ] as const;
 
 const QA_RUNTIME_TOOL_EXPECTED_LAYERS: readonly QaRuntimeToolExpectedLayer[] = [
   "codex-native-workspace",
-  "openclaw-dynamic",
+  "afora-dynamic",
   "profile-or-plugin",
 ] as const;
 
 const QA_RUNTIME_CAPABILITY_LAYERS: readonly QaRuntimeCapabilityLayer[] = [
   "codex-native-workspace",
-  "openclaw-dynamic-direct",
-  "openclaw-dynamic-searchable",
+  "afora-dynamic-direct",
+  "afora-dynamic-searchable",
   "optional-profile-or-plugin",
   "structural-text",
 ] as const;
 
 const DEFAULT_LAYER_BY_BUCKET: Record<QaRuntimeToolBucket, QaRuntimeToolExpectedLayer> = {
   "codex-native-workspace": "codex-native-workspace",
-  "openclaw-dynamic-integration": "openclaw-dynamic",
+  "afora-dynamic-integration": "afora-dynamic",
   "optional-profile-or-plugin": "profile-or-plugin",
 };
 
 const DEFAULT_CAPABILITY_LAYER_BY_BUCKET: Record<QaRuntimeToolBucket, QaRuntimeCapabilityLayer> = {
   "codex-native-workspace": "codex-native-workspace",
-  "openclaw-dynamic-integration": "openclaw-dynamic-searchable",
+  "afora-dynamic-integration": "afora-dynamic-searchable",
   "optional-profile-or-plugin": "optional-profile-or-plugin",
 };
 
@@ -103,7 +103,7 @@ function inferRuntimeToolBucket(params: { config?: Record<string, unknown> }): Q
   if (params.config?.expectedAvailable === false) {
     return "optional-profile-or-plugin";
   }
-  return "openclaw-dynamic-integration";
+  return "afora-dynamic-integration";
 }
 
 export function readRuntimeToolCoverageMetadata(params: {
@@ -133,7 +133,7 @@ export function readRuntimeToolCoverageMetadata(params: {
   const capabilityLayer = capabilityLayerInput
     ? (capabilityLayerInput as QaRuntimeCapabilityLayer)
     : DEFAULT_CAPABILITY_LAYER_BY_BUCKET[bucket];
-  const explicitSearchableDynamic = capabilityLayerInput === "openclaw-dynamic-searchable";
+  const explicitSearchableDynamic = capabilityLayerInput === "afora-dynamic-searchable";
   const required =
     readBoolean(toolCoverage?.required) ??
     (bucket !== "optional-profile-or-plugin" && !explicitSearchableDynamic);

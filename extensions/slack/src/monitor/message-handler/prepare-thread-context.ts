@@ -2,15 +2,15 @@
 import {
   formatInboundEnvelope,
   resolveInboundSupplementalSenderAllowed,
-} from "openclaw/plugin-sdk/channel-inbound";
-import { runTasksWithConcurrency } from "openclaw/plugin-sdk/concurrency-runtime";
-import type { ContextVisibilityMode, OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/channel-inbound";
+import { runTasksWithConcurrency } from "afora-agent/plugin-sdk/concurrency-runtime";
+import type { ContextVisibilityMode, AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
 import {
   filterSupplementalContextItems,
   shouldIncludeSupplementalContext,
-} from "openclaw/plugin-sdk/security-runtime";
+} from "afora-agent/plugin-sdk/security-runtime";
 import type { ResolvedSlackAccount } from "../../accounts.js";
 import type { SlackMessageEvent } from "../../types.js";
 import { resolveSlackAllowListMatch } from "../allow-list.js";
@@ -61,7 +61,7 @@ type SlackSessionFreshnessRuntime = {
       agentId: string;
       storePath?: string;
       sessionKey: string;
-      sessionCfg?: OpenClawConfig["session"];
+      sessionCfg?: AforaConfig["session"];
       resetType: "thread";
       resetOverride?: ReturnType<typeof resolveChannelResetConfig>;
     }) => SlackSessionResetFreshness;
@@ -168,7 +168,7 @@ export async function resolveSlackThreadContextData(params: {
   allowNameMatching: boolean;
   contextVisibilityMode: ContextVisibilityMode;
   envelopeOptions: ReturnType<
-    typeof import("openclaw/plugin-sdk/channel-inbound").resolveEnvelopeFormatOptions
+    typeof import("afora-agent/plugin-sdk/channel-inbound").resolveEnvelopeFormatOptions
   >;
   effectiveDirectMedia: SlackMediaResult[] | null;
   eventScope?: SlackEventScope;

@@ -5,7 +5,7 @@ import {
   QUEUED_USER_MESSAGE_MARKER,
   structuredOrphanLeaf,
   textOrphanLeaf,
-} from "openclaw/plugin-sdk/agent-runtime-test-contracts";
+} from "afora-agent/plugin-sdk/agent-runtime-test-contracts";
 import { describe, expect, it } from "vitest";
 import { mergeOrphanedTrailingUserPrompt } from "./attempt-prompt-helpers.js";
 import { resolveMessageMergeStrategy } from "./message-merge-strategy.js";

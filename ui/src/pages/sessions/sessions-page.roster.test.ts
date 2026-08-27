@@ -27,7 +27,7 @@ function deferred<T>() {
 }
 
 async function createPage(context: ApplicationContext): Promise<TestSessionsPage> {
-  const page = document.createElement("openclaw-sessions-page") as TestSessionsPage;
+  const page = document.createElement("afora-sessions-page") as TestSessionsPage;
   page.context = context;
   page.render = () => nothing;
   document.body.append(page);
@@ -50,7 +50,7 @@ describe("sessions page managed roster", () => {
     const refreshList = vi.fn(() => refresh.promise);
     const managed = createManagedSessions({ refreshList });
     const context = createContext(mutableGateway.gateway, managed.sessions);
-    const page = document.createElement("openclaw-sessions-page") as TestSessionsPage;
+    const page = document.createElement("afora-sessions-page") as TestSessionsPage;
     page.context = context;
     page.render = () => nothing;
     page.routeData = {

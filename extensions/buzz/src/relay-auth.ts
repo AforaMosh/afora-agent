@@ -2,7 +2,7 @@ import { type EventTemplate, finalizeEvent, Relay, type VerifiedEvent } from "no
 import {
   fetchWithSsrFGuard,
   ssrfPolicyFromHttpBaseUrlAllowedOrigin,
-} from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/ssrf-runtime";
 
 const AUTH_CHALLENGE_TIMEOUT_MS = 20_000;
 const AUTH_CHALLENGE_POLL_MS = 25;

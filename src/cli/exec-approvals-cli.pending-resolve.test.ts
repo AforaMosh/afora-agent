@@ -1,6 +1,6 @@
 import { Command } from "commander";
 // Pending and resolve CLI tests stay separate from policy-management coverage.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { registerExecApprovalsCli } from "./exec-approvals-cli.js";
 
@@ -78,7 +78,7 @@ function pendingApprovalSnapshot(params: {
             }
           : {
               kind,
-              title: kind === "plugin" ? "Plugin action" : "OpenClaw change",
+              title: kind === "plugin" ? "Plugin action" : "Afora change",
               description: "Apply the requested change",
               ...(kind === "plugin" ? { severity: "warning" } : { proposalHash: "a".repeat(64) }),
               allowedDecisions: params.allowedDecisions ?? ["allow-once", "deny"],
@@ -181,12 +181,12 @@ describe("exec approvals pending and resolve CLI", () => {
           },
         ];
       }
-      if (method === "openclaw.approval.list") {
+      if (method === "afora.approval.list") {
         return [
           {
             id: "system-agent:1",
             request: {
-              title: "OpenClaw change",
+              title: "Afora change",
               description: "Change the system configuration",
               command: "apply-system-change --force",
               agentId: "main",
@@ -206,7 +206,7 @@ describe("exec approvals pending and resolve CLI", () => {
     expect(callGatewayFromCli.mock.calls.map((call) => call[0])).toEqual([
       "exec.approval.list",
       "plugin.approval.list",
-      "openclaw.approval.list",
+      "afora.approval.list",
     ]);
     for (const call of callGatewayFromCli.mock.calls) {
       expect(call[3]).toEqual({ scopes: ["operator.admin"] });
@@ -223,7 +223,7 @@ describe("exec approvals pending and resolve CLI", () => {
     // System-agent approvals show only their reviewer-safe presentation; the
     // raw host-local operation must never reach the terminal.
     expect(output).not.toContain("apply-system-change");
-    expect(output).toContain("OpenClaw change: Change the system configuration");
+    expect(output).toContain("Afora change: Change the system configuration");
     expect(output).toContain("\\u{9}");
     expect(output).toContain("Full request text");
     expect(output).toContain("--osc-hidden-action");

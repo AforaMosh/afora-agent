@@ -1,7 +1,7 @@
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import type { VerboseLevel } from "../../../auto-reply/thinking.js";
 import { formatToolAggregate } from "../../../auto-reply/tool-meta.js";
 import { formatInlineCodeSpan } from "../../../shared/markdown-code.js";
@@ -132,7 +132,7 @@ const LITERAL_RUN_SUMMARY_PREFIXES = new Set([
   "pnpm",
   "yarn",
   "bun",
-  "openclaw",
+  "afora",
   "make",
   "cargo",
   "go",

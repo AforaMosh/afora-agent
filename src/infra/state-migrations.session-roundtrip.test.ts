@@ -10,7 +10,7 @@
  * "agent:ops:work". Without canonicalization, writes and reads diverge.
  */
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import {
   canonicalizeMainSessionAlias,
   resolveMainSessionKey,
@@ -20,12 +20,12 @@ import { resolveCronAgentSessionKey } from "../cron/isolated-agent/session-key.j
 import { resolveSessionStoreKey } from "../gateway/session-store-key.js";
 import { normalizeMainKey } from "../routing/session-key.js";
 
-function makeNonDefaultAgentCfg(overrides?: Partial<OpenClawConfig>): OpenClawConfig {
+function makeNonDefaultAgentCfg(overrides?: Partial<AforaConfig>): AforaConfig {
   return {
     session: { mainKey: "work", scope: "per-sender" },
     agents: { list: [{ id: "ops", default: true }] },
     ...overrides,
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 describe("session key write/read round-trip (#29683)", () => {
@@ -132,7 +132,7 @@ describe("session key write/read round-trip (#29683)", () => {
       const cfg = {
         agents: { entries: { main: { default: true } } },
         session: { scope: "per-sender" },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const mainKey = normalizeMainKey(cfg.session?.mainKey);
 
       const rawWriteKey = resolveSessionKey("per-sender", { From: "+1234567890" }, mainKey, "main");

@@ -47,7 +47,7 @@ describe("executeAgentTurn: authentication failures", () => {
     expect(result.kind).toBe("final");
     if (result.kind === "final") {
       expect(result.payload.text).toBe(
-        "⚠️ Model login expired on the gateway for openai. Send `/login codex` from a private chat or Web UI session to pair a new Codex login, or re-auth with `openclaw models auth login --provider openai` in a terminal, then try again.",
+        "⚠️ Model login expired on the gateway for openai. Send `/login codex` from a private chat or Web UI session to pair a new Codex login, or re-auth with `afora models auth login --provider openai` in a terminal, then try again.",
       );
     }
   });
@@ -67,7 +67,7 @@ describe("executeAgentTurn: authentication failures", () => {
     expect(result.kind).toBe("final");
     if (result.kind === "final") {
       expect(result.payload.text).toBe(
-        "⚠️ Model login expired on the gateway for openai. Send `/login codex` from a private chat or Web UI session to pair a new Codex login, or re-auth with `openclaw models auth login --provider openai --profile-id 'openai:user@example.com'` in a terminal, then try again.",
+        "⚠️ Model login expired on the gateway for openai. Send `/login codex` from a private chat or Web UI session to pair a new Codex login, or re-auth with `afora models auth login --provider openai --profile-id 'openai:user@example.com'` in a terminal, then try again.",
       );
     }
   });
@@ -161,7 +161,7 @@ describe("executeAgentTurn: authentication failures", () => {
     expect(result.kind).toBe("final");
     if (result.kind === "final") {
       expect(result.payload.text).toContain(
-        "openclaw models auth login --provider openai` in a terminal",
+        "afora models auth login --provider openai` in a terminal",
       );
       expect(result.payload.text).not.toContain("user@example.com");
     }
@@ -181,7 +181,7 @@ describe("executeAgentTurn: authentication failures", () => {
     expect(result.kind).toBe("final");
     if (result.kind === "final") {
       expect(result.payload.text).toBe(
-        "⚠️ Model login expired on the gateway for anthropic. Re-auth with `openclaw models auth login --provider anthropic` in a terminal, then try again.",
+        "⚠️ Model login expired on the gateway for anthropic. Re-auth with `afora models auth login --provider anthropic` in a terminal, then try again.",
       );
       expect(result.payload.text).not.toContain("/login codex");
     }
@@ -212,7 +212,7 @@ describe("executeAgentTurn: authentication failures", () => {
     expect(result.kind).toBe("final");
     if (result.kind === "final") {
       expect(result.payload.text).toBe(
-        "⚠️ Model login expired on the gateway for claude-cli. Re-auth with `claude auth login && openclaw models auth login --provider anthropic --method cli` in a terminal, then try again.",
+        "⚠️ Model login expired on the gateway for claude-cli. Re-auth with `claude auth login && afora models auth login --provider anthropic --method cli` in a terminal, then try again.",
       );
     }
   });
@@ -236,7 +236,7 @@ describe("executeAgentTurn: authentication failures", () => {
     expect(result.kind).toBe("final");
     if (result.kind === "final") {
       expect(result.payload.text).toBe(
-        "⚠️ Model login expired on the gateway for claude-cli. Re-auth with `claude auth login && openclaw models auth login --provider anthropic --method cli` in a terminal, then try again.",
+        "⚠️ Model login expired on the gateway for claude-cli. Re-auth with `claude auth login && afora models auth login --provider anthropic --method cli` in a terminal, then try again.",
       );
     }
   });
@@ -257,7 +257,7 @@ describe("executeAgentTurn: authentication failures", () => {
     expect(result.kind).toBe("final");
     if (result.kind === "final") {
       expect(result.payload.text).toBe(
-        "⚠️ Model login expired on the gateway for claude-cli. Re-auth with `claude auth login && openclaw models auth login --provider anthropic --method cli` in a terminal, then try again.",
+        "⚠️ Model login expired on the gateway for claude-cli. Re-auth with `claude auth login && afora models auth login --provider anthropic --method cli` in a terminal, then try again.",
       );
     }
   });
@@ -318,7 +318,7 @@ describe("executeAgentTurn: authentication failures", () => {
     expect(result.kind).toBe("final");
     if (result.kind === "final") {
       expect(result.payload.text).toBe(
-        '⚠️ Missing API key for provider "openai". Run `openclaw doctor --fix` to repair stale OpenAI model/session routes, restart the gateway if doctor asks, then try again. If doctor has nothing to repair or the error persists, re-auth with `openclaw models auth login --provider openai` or run `openclaw configure`.',
+        '⚠️ Missing API key for provider "openai". Run `afora doctor --fix` to repair stale OpenAI model/session routes, restart the gateway if doctor asks, then try again. If doctor has nothing to repair or the error persists, re-auth with `afora models auth login --provider openai` or run `afora configure`.',
       );
     }
   });
@@ -340,7 +340,7 @@ describe("executeAgentTurn: authentication failures", () => {
     expect(result.kind).toBe("final");
     if (result.kind === "final") {
       expect(result.payload.text).toContain("Couldn't sign in to openai.");
-      expect(result.payload.text).toContain("openclaw configure");
+      expect(result.payload.text).toContain("afora configure");
       expect(result.payload.text).toContain("(invalid_grant)");
       expect(result.payload.text).not.toContain("Auth profile failover exhausted");
     }
@@ -364,7 +364,7 @@ describe("executeAgentTurn: authentication failures", () => {
       expect(result.payload.text).toContain("Couldn't reach openai");
       expect(result.payload.text).toContain("messages must alternate roles");
       expect(result.payload.text).not.toContain("models auth login");
-      expect(result.payload.text).not.toContain("openclaw configure");
+      expect(result.payload.text).not.toContain("afora configure");
     }
   });
 
@@ -383,7 +383,7 @@ describe("executeAgentTurn: authentication failures", () => {
     expect(result.kind).toBe("final");
     if (result.kind === "final") {
       expect(result.payload.text).toBe(
-        '⚠️ Missing API key for provider "openai". Run `openclaw doctor --fix` to repair stale OpenAI model/session routes, restart the gateway if doctor asks, then try again. If doctor has nothing to repair or the error persists, re-auth with `openclaw models auth login --provider openai` or run `openclaw configure`.',
+        '⚠️ Missing API key for provider "openai". Run `afora doctor --fix` to repair stale OpenAI model/session routes, restart the gateway if doctor asks, then try again. If doctor has nothing to repair or the error persists, re-auth with `afora models auth login --provider openai` or run `afora configure`.',
       );
     }
   });
@@ -461,7 +461,7 @@ describe("executeAgentTurn: authentication failures", () => {
     expect(result.kind).toBe("final");
     if (result.kind === "final") {
       expect(result.payload.text).toBe(
-        "⚠️ Model login expired on the gateway. Re-auth with `openclaw models auth login` in a terminal, then try again.",
+        "⚠️ Model login expired on the gateway. Re-auth with `afora models auth login` in a terminal, then try again.",
       );
     }
   });

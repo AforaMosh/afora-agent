@@ -1,4 +1,4 @@
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 import { mergeDmAllowFromSources, resolveGroupAllowFromSources } from "../allow-from.js";
 
 /**

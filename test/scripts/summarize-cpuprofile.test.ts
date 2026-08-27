@@ -78,7 +78,7 @@ describe("scripts/perf/summarize-cpuprofile.mjs", () => {
   });
 
   it("rejects empty CPU profiles instead of printing zero-sample summaries", () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-cpuprofile-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-cpuprofile-"));
     const profilePath = path.join(tempDir, "empty.cpuprofile");
     fs.writeFileSync(
       profilePath,
@@ -104,7 +104,7 @@ describe("scripts/perf/summarize-cpuprofile.mjs", () => {
   });
 
   it("summarizes profiles with real samples", () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-cpuprofile-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-cpuprofile-"));
     const profilePath = path.join(tempDir, "sample.cpuprofile");
     fs.writeFileSync(
       profilePath,

@@ -1,5 +1,5 @@
-# Tlon (OpenClaw plugin)
+# Tlon (Afora plugin)
 
-Tlon/Urbit channel plugin for OpenClaw. Supports DMs, group mentions, and thread replies.
+Tlon/Urbit channel plugin for Afora. Supports DMs, group mentions, and thread replies.
 
-Docs: https://docs.openclaw.ai/channels/tlon
+Docs: https://docs.afora.ai/channels/tlon

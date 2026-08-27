@@ -176,7 +176,7 @@ describe("runEmbeddedAgent incomplete-turn safety", () => {
             ? {
                 ...attempt,
                 settledTurnFinalizationContext: {
-                  source: "openclaw-transcript",
+                  source: "afora-transcript",
                   messages: attempt.messagesSnapshot,
                 },
               }

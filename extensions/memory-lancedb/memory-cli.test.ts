@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawPluginApi } from "./api.js";
+import type { AforaPluginApi } from "./api.js";
 import type { Embeddings } from "./embeddings.js";
 import type { MemoryDB } from "./lancedb-store.js";
 import { registerMemoryCli } from "./memory-cli.js";
@@ -25,7 +25,7 @@ function createHarness(params?: { embedError?: unknown; closeError?: Error }) {
   };
   const search = vi.fn(async () => []);
   registerMemoryCli(
-    { registerCli } as unknown as OpenClawPluginApi,
+    { registerCli } as unknown as AforaPluginApi,
     { search } as unknown as MemoryDB,
     embeddings,
     (rawAgentId) => (typeof rawAgentId === "string" ? rawAgentId : "main"),
@@ -47,7 +47,7 @@ describe("memory-lancedb CLI embedding lifecycle", () => {
     const harness = createHarness();
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
     try {
-      await harness.program.parseAsync(["node", "openclaw", "ltm", "search", "hello"]);
+      await harness.program.parseAsync(["node", "afora", "ltm", "search", "hello"]);
     } finally {
       log.mockRestore();
     }
@@ -63,7 +63,7 @@ describe("memory-lancedb CLI embedding lifecycle", () => {
     try {
       await harness.program.parseAsync([
         "node",
-        "openclaw",
+        "afora",
         "ltm",
         "search",
         "private account memory",
@@ -86,7 +86,7 @@ describe("memory-lancedb CLI embedding lifecycle", () => {
     });
 
     await expect(
-      harness.program.parseAsync(["node", "openclaw", "ltm", "search", "hello"]),
+      harness.program.parseAsync(["node", "afora", "ltm", "search", "hello"]),
     ).rejects.toThrow("embedding failed");
     expect(harness.close).toHaveBeenCalledTimes(1);
   });
@@ -97,7 +97,7 @@ describe("memory-lancedb CLI embedding lifecycle", () => {
     await expect(
       harness.program.parseAsync([
         "node",
-        "openclaw",
+        "afora",
         "ltm",
         "search",
         "hello",
@@ -118,7 +118,7 @@ describe("memory-lancedb CLI embedding lifecycle", () => {
     });
 
     const rejection = await harness.program
-      .parseAsync(["node", "openclaw", "ltm", "search", "hello"])
+      .parseAsync(["node", "afora", "ltm", "search", "hello"])
       .then(
         () => "resolved",
         (err: unknown) => err,

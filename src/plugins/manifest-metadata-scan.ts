@@ -1,11 +1,11 @@
 // Scans plugin manifest metadata without importing runtime entrypoints.
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString as normalizeTrimmedString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString as normalizeTrimmedString } from "@afora/normalization-core/string-coerce";
 import { resolveRealpathOrAbsolute } from "../infra/boundary-path.js";
 import { resolveHomeRelativePath } from "../infra/home-dir.js";
-import { resolveOpenClawPackageRootSync } from "../infra/openclaw-root.js";
+import { resolveAforaPackageRootSync } from "../infra/afora-root.js";
 import { readRegularFileSync } from "../infra/regular-file.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { parseJsonWithJson5Fallback } from "../utils/parse-json-compat.js";
@@ -33,7 +33,7 @@ type CandidateDir = {
   origin?: string;
 };
 
-const PLUGIN_MANIFEST_FILENAME = "openclaw.plugin.json";
+const PLUGIN_MANIFEST_FILENAME = "afora.plugin.json";
 let manifestMetadataCache = new WeakMap<NodeJS.ProcessEnv, PluginManifestMetadataRecord[]>();
 
 function clearManifestMetadataCache(): void {
@@ -132,7 +132,7 @@ function resolvePackageRootsForSourceManifestMetadata(): string[] {
     { argv1: process.argv[1] },
     { moduleUrl: import.meta.url },
   ] satisfies Array<{ argv1?: string; moduleUrl?: string }>) {
-    const root = resolveOpenClawPackageRootSync(params);
+    const root = resolveAforaPackageRootSync(params);
     if (root && !roots.includes(root)) {
       roots.push(root);
     }
@@ -168,7 +168,7 @@ function uniqueCandidateDirs(candidates: CandidateDir[]): CandidateDir[] {
 }
 
 /** Lists plugin manifest metadata from installed, bundled, and global plugin roots. */
-export function listOpenClawPluginManifestMetadata(
+export function listAforaPluginManifestMetadata(
   env: NodeJS.ProcessEnv = process.env,
 ): PluginManifestMetadataRecord[] {
   const cached = manifestMetadataCache.get(env);

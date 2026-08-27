@@ -18,8 +18,8 @@ jobs:
   warm:
     # Dependency snapshots are serialized before main CI fanout. This workflow
     # writes only the transform and compile caches from scheduled/trusted runs.
-    if: github.repository == 'openclaw/openclaw'
-    runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || 'blacksmith-8vcpu-ubuntu-2404' }}
+    if: github.repository == 'AforaMosh/afora-agent'
+    runs-on: ${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || 'blacksmith-8vcpu-ubuntu-2404' }}
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -51,8 +51,8 @@ jobs:
           appendFileSync(
             process.env.GITHUB_ENV,
             [
-              `OPENCLAW_NODE_TEST_GROUPS_JSON=${JSON.stringify(groups)}`,
-              "OPENCLAW_NODE_TEST_PLAN_CONCURRENCY=1",
+              `AFORA_NODE_TEST_GROUPS_JSON=${JSON.stringify(groups)}`,
+              "AFORA_NODE_TEST_PLAN_CONCURRENCY=1",
             ].join("\n") + "\n",
           );
           EOF

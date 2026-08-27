@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import "../../../styles.css";
 import "./chat-sidebar.ts";
@@ -45,7 +45,7 @@ type DetailPanel = HTMLElement & {
 const mounted: DetailPanel[] = [];
 
 async function mountFile(content: FileSidebarContent): Promise<DetailPanel> {
-  const panel = document.createElement("openclaw-chat-detail-panel") as DetailPanel;
+  const panel = document.createElement("afora-chat-detail-panel") as DetailPanel;
   panel.content = content;
   document.body.append(panel);
   mounted.push(panel);

@@ -1,9 +1,9 @@
 // Nextcloud Talk plugin module implements room info behavior.
-import { pruneMapToMaxSize } from "openclaw/plugin-sdk/collection-runtime";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { parseStrictPositiveInteger } from "openclaw/plugin-sdk/number-runtime";
-import { readProviderJsonResponse } from "openclaw/plugin-sdk/provider-http";
-import { ssrfPolicyFromPrivateNetworkOptIn } from "openclaw/plugin-sdk/ssrf-runtime";
+import { pruneMapToMaxSize } from "afora-agent/plugin-sdk/collection-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { parseStrictPositiveInteger } from "afora-agent/plugin-sdk/number-runtime";
+import { readProviderJsonResponse } from "afora-agent/plugin-sdk/provider-http";
+import { ssrfPolicyFromPrivateNetworkOptIn } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { fetchWithSsrFGuard, type RuntimeEnv } from "../runtime-api.js";
 import type { ResolvedNextcloudTalkAccount } from "./accounts.js";
 import { resolveNextcloudTalkApiCredentials } from "./api-credentials.js";

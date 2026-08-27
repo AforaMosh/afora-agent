@@ -1,6 +1,6 @@
-import { clampPositiveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
-import { isPromiseLike } from "@openclaw/normalization-core/promise-like";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { clampPositiveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
+import { isPromiseLike } from "@afora/normalization-core/promise-like";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 // Model-backed image understanding runtime for providers without a native media
 // provider hook.
 import { normalizeMediaProviderId } from "../../packages/media-understanding-common/src/provider-id.js";

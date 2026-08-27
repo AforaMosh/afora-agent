@@ -12,7 +12,7 @@ type ClawHubVerdictTarget = {
   version: string;
 };
 
-type OpenClawSkillSecurityVerdictItem = Omit<
+type AforaSkillSecurityVerdictItem = Omit<
   ClawHubSkillSecurityVerdictItem,
   "decision" | "error" | "security"
 > & {
@@ -46,8 +46,8 @@ function readSecurityPassed(security: unknown): boolean | null | undefined {
 function projectClawHubVerdictItem(
   item: ClawHubSkillSecurityVerdictItem,
   target: ClawHubVerdictTarget,
-): OpenClawSkillSecurityVerdictItem {
-  const projected: OpenClawSkillSecurityVerdictItem = {
+): AforaSkillSecurityVerdictItem {
+  const projected: AforaSkillSecurityVerdictItem = {
     registry: target.registry,
     ok: item.ok,
     decision: item.decision,
@@ -92,7 +92,7 @@ function projectClawHubVerdictItem(
     projected.securityPassed = securityPassed;
   }
   if (item.error) {
-    const error: OpenClawSkillSecurityVerdictItem["error"] = {};
+    const error: AforaSkillSecurityVerdictItem["error"] = {};
     if (typeof item.error.code === "string") {
       error.code = item.error.code;
     }
@@ -145,9 +145,9 @@ export function collectClawHubVerdictTargets(
   return [...targets.values()];
 }
 
-export async function fetchOpenClawSkillSecurityVerdicts(
+export async function fetchAforaSkillSecurityVerdicts(
   targets: ClawHubVerdictTarget[],
-): Promise<OpenClawSkillSecurityVerdictItem[]> {
+): Promise<AforaSkillSecurityVerdictItem[]> {
   const byRegistry = new Map<string, ClawHubVerdictTarget[]>();
   for (const target of targets) {
     const registryTargets = byRegistry.get(target.registry) ?? [];
@@ -155,7 +155,7 @@ export async function fetchOpenClawSkillSecurityVerdicts(
     byRegistry.set(target.registry, registryTargets);
   }
 
-  const items: OpenClawSkillSecurityVerdictItem[] = [];
+  const items: AforaSkillSecurityVerdictItem[] = [];
   for (const [registry, registryTargets] of byRegistry) {
     const verdicts = await fetchExactClawHubSkillSecurityVerdicts({
       baseUrl: registry,

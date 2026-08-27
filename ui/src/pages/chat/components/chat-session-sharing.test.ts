@@ -115,10 +115,10 @@ describe("chat session sharing menu", () => {
     ];
 
     for (const human of humans) {
-      expect(human?.querySelector("openclaw-session-owner-chip")).not.toBeNull();
+      expect(human?.querySelector("afora-session-owner-chip")).not.toBeNull();
     }
     for (const nonHuman of nonHumans) {
-      expect(nonHuman?.querySelector("openclaw-session-owner-chip")).toBeNull();
+      expect(nonHuman?.querySelector("afora-session-owner-chip")).toBeNull();
       expect(nonHuman?.querySelector(".chat-pane__sharing-member-icon svg")).not.toBeNull();
     }
   });

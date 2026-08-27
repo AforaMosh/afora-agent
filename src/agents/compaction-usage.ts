@@ -1,4 +1,4 @@
-import { parseDateFirstTimestampMs } from "@openclaw/normalization-core/number-coercion";
+import { parseDateFirstTimestampMs } from "@afora/normalization-core/number-coercion";
 /**
  * Shared helpers for clearing assistant usage snapshots invalidated by
  * transcript compaction.

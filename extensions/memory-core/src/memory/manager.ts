@@ -1,13 +1,13 @@
 // Memory Core plugin module implements the concrete memory index manager.
 import type { DatabaseSync } from "node:sqlite";
-import { formatErrorMessage, toErrorObject } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage, toErrorObject } from "afora-agent/plugin-sdk/error-runtime";
 import {
   createSubsystemLogger,
   resolveAgentWorkspaceDir,
   resolveMemorySearchConfig,
-  type OpenClawConfig,
+  type AforaConfig,
   type ResolvedMemorySearchConfig,
-} from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-foundation";
 import {
   readMemoryFile,
   MEMORY_EMBEDDING_CACHE_TABLE,
@@ -17,8 +17,8 @@ import {
   type MemorySessionSyncTarget,
   type MemorySource,
   type MemorySyncParams,
-} from "openclaw/plugin-sdk/memory-core-host-engine-storage";
-import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
+import { normalizeAgentId } from "afora-agent/plugin-sdk/routing";
 import type { MemoryCoreAcquireLocalService } from "./embedding-local-service.js";
 import type { EmbeddingProvider, EmbeddingProviderRequest } from "./embeddings.js";
 import { awaitPendingManagerWork } from "./manager-async-state.js";
@@ -50,7 +50,7 @@ import {
 import { enqueueMemoryTargetedSessionSync } from "./manager-sync-control.js";
 import { resolvePersistedMemoryVectorIndexState } from "./manager-vector-rebuild-state.js";
 
-const LOCAL_EMBEDDING_RUNTIME_FACTS = Symbol.for("openclaw.localEmbeddingRuntimeFacts");
+const LOCAL_EMBEDDING_RUNTIME_FACTS = Symbol.for("afora.localEmbeddingRuntimeFacts");
 
 function getLocalEmbeddingRuntimeFacts(provider: EmbeddingProvider | null): unknown {
   if (!provider) {
@@ -80,7 +80,7 @@ export class MemoryIndexManager extends MemorySearchOrchestration implements Mem
   protected readonly cacheKey: string;
   protected readonly purpose: MemoryIndexManagerPurpose;
   protected override readonly acquireLocalService?: MemoryCoreAcquireLocalService;
-  protected readonly cfg: OpenClawConfig;
+  protected readonly cfg: AforaConfig;
   protected readonly agentId: string;
   protected readonly workspaceDir: string;
   protected readonly settings: ResolvedMemorySearchConfig;
@@ -133,7 +133,7 @@ export class MemoryIndexManager extends MemorySearchOrchestration implements Mem
   };
 
   static async get(params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     agentId: string;
     purpose?: MemoryIndexManagerPurpose;
     acquireLocalService?: MemoryCoreAcquireLocalService;
@@ -196,7 +196,7 @@ export class MemoryIndexManager extends MemorySearchOrchestration implements Mem
 
   private constructor(params: {
     cacheKey: string;
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     agentId: string;
     workspaceDir: string;
     settings: ResolvedMemorySearchConfig;

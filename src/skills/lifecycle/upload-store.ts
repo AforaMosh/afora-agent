@@ -6,7 +6,7 @@ import {
   asDateTimestampMs,
   isFutureDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import { DEFAULT_MAX_ARCHIVE_BYTES_ZIP } from "../../infra/archive.js";
 import { sha256Hex } from "../../infra/crypto-digest.js";
 import { formatErrorMessage } from "../../infra/errors.js";
@@ -17,12 +17,12 @@ import {
   getNodeSqliteKysely,
 } from "../../infra/kysely-sync.js";
 import { withTempWorkspace } from "../../infra/private-temp-workspace.js";
-import { resolvePreferredOpenClawTmpDir } from "../../infra/tmp-openclaw-dir.js";
+import { resolvePreferredAforaTmpDir } from "../../infra/tmp-afora-dir.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../../state/afora-state-db.js";
 import { validateRequestedSkillSlug } from "./archive-install.js";
 import {
   deleteOwnedSkillUpload,
@@ -52,7 +52,7 @@ const SHA256_PATTERN = /^[a-f0-9]{64}$/i;
 const UPLOAD_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-type SkillUploadStoreOptions = OpenClawStateDatabaseOptions & {
+type SkillUploadStoreOptions = AforaStateDatabaseOptions & {
   installLeaseHeartbeatMs?: number;
   installLeaseMs?: number;
   now?: () => number;
@@ -217,7 +217,7 @@ function decodeBase64Chunk(dataBase64: string): Buffer {
   return decoded;
 }
 
-function requireUploadRow(uploadId: string, options: OpenClawStateDatabaseOptions): SkillUploadRow {
+function requireUploadRow(uploadId: string, options: AforaStateDatabaseOptions): SkillUploadRow {
   const row = readSkillUploadRow(uploadId, options);
   if (!row) {
     throw new SkillUploadRequestError(`upload not found: ${uploadId}`);
@@ -228,7 +228,7 @@ function requireUploadRow(uploadId: string, options: OpenClawStateDatabaseOption
 function assertNotExpired(
   row: SkillUploadRow,
   nowMs: number,
-  options: OpenClawStateDatabaseOptions,
+  options: AforaStateDatabaseOptions,
 ): void {
   const validNow = asDateTimestampMs(nowMs);
   if (validNow === undefined) {
@@ -260,7 +260,7 @@ function matchesBegin(
 }
 
 async function cleanupExpiredUploads(params: {
-  options: OpenClawStateDatabaseOptions;
+  options: AforaStateDatabaseOptions;
   nowMs: number;
   lockRoot: string;
   excludeUploadId?: string;
@@ -279,7 +279,7 @@ async function cleanupExpiredUploads(params: {
       continue;
     }
     await withLock(`${params.lockRoot}:upload:${row.upload_id}`, async () => {
-      runOpenClawStateWriteTransaction(({ db }) => {
+      runAforaStateWriteTransaction(({ db }) => {
         const transactionDb = getNodeSqliteKysely<SkillUploadDatabase>(db);
         if (hasLiveSkillUploadInstallLease(db, transactionDb, row.upload_id, validNow)) {
           return;
@@ -369,7 +369,7 @@ function createSkillUploadStore(options?: SkillUploadStoreOptions) {
   );
 
   function lockRoot(): string {
-    return openOpenClawStateDatabase(stateOptions).path;
+    return openAforaStateDatabase(stateOptions).path;
   }
 
   return {
@@ -393,7 +393,7 @@ function createSkillUploadStore(options?: SkillUploadStoreOptions) {
           throw new SkillUploadRequestError("invalid upload expiry");
         }
 
-        return runOpenClawStateWriteTransaction(({ db }) => {
+        return runAforaStateWriteTransaction(({ db }) => {
           const kysely = getNodeSqliteKysely<SkillUploadDatabase>(db);
           if (keyHash) {
             const existing = executeSqliteQueryTakeFirstSync(
@@ -474,7 +474,7 @@ function createSkillUploadStore(options?: SkillUploadStoreOptions) {
       return await withLock(`${root}:upload:${uploadId}`, async () => {
         const currentTime = now();
         assertNotExpired(requireUploadRow(uploadId, stateOptions), currentTime, stateOptions);
-        return runOpenClawStateWriteTransaction(({ db }) => {
+        return runAforaStateWriteTransaction(({ db }) => {
           const kysely = getNodeSqliteKysely<SkillUploadDatabase>(db);
           const row = executeSqliteQueryTakeFirstSync(
             db,
@@ -565,7 +565,7 @@ function createSkillUploadStore(options?: SkillUploadStoreOptions) {
         const committedAt = now();
         assertNotExpired(requireUploadRow(uploadId, stateOptions), committedAt, stateOptions);
 
-        return runOpenClawStateWriteTransaction(({ db }) => {
+        return runAforaStateWriteTransaction(({ db }) => {
           const kysely = getNodeSqliteKysely<SkillUploadDatabase>(db);
           const current = executeSqliteQueryTakeFirstSync(
             db,
@@ -622,7 +622,7 @@ function createSkillUploadStore(options?: SkillUploadStoreOptions) {
         const leaseOwner = randomUUID();
         const currentTime = now();
         assertNotExpired(requireUploadRow(uploadId, stateOptions), currentTime, stateOptions);
-        const row = runOpenClawStateWriteTransaction(({ db }) => {
+        const row = runAforaStateWriteTransaction(({ db }) => {
           const kysely = getNodeSqliteKysely<SkillUploadDatabase>(db);
           const current = executeSqliteQueryTakeFirstSync(
             db,
@@ -698,8 +698,8 @@ function createSkillUploadStore(options?: SkillUploadStoreOptions) {
         try {
           return await withTempWorkspace(
             {
-              rootDir: tempRootDir ?? resolvePreferredOpenClawTmpDir(),
-              prefix: "openclaw-skill-upload-",
+              rootDir: tempRootDir ?? resolvePreferredAforaTmpDir(),
+              prefix: "afora-skill-upload-",
             },
             async (tmp) => {
               const archivePath = path.join(tmp.dir, "archive.zip");
@@ -720,7 +720,7 @@ function createSkillUploadStore(options?: SkillUploadStoreOptions) {
           );
         } finally {
           clearInterval(heartbeat);
-          runOpenClawStateWriteTransaction(({ db }) => {
+          runAforaStateWriteTransaction(({ db }) => {
             const kysely = getNodeSqliteKysely<SkillUploadDatabase>(db);
             executeSqliteQuerySync(
               db,
@@ -740,7 +740,7 @@ function createSkillUploadStore(options?: SkillUploadStoreOptions) {
 export const defaultSkillUploadStore = createSkillUploadStore();
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.skillUploadStoreTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.skillUploadStoreTestApi")] = {
     createSkillUploadStore,
   };
 }

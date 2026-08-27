@@ -8,7 +8,7 @@ describe("shouldRunIosScreenshots", () => {
     for (const changedPath of [
       "apps/ios/Sources/RootTabs.swift",
       "apps/ios/fastlane/Fastfile",
-      "apps/shared/OpenClawKit/Sources/OpenClawChatUI/ChatView.swift",
+      "apps/shared/AforaKit/Sources/AforaChatUI/ChatView.swift",
       "apps/swabble/Sources/SwabbleKit/WakeWordGate.swift",
       "scripts/ios-screenshots.sh",
       "scripts/lib/ios-fastlane.sh",
@@ -19,7 +19,7 @@ describe("shouldRunIosScreenshots", () => {
     }
 
     for (const changedPath of [
-      "apps/android/app/src/main/java/ai/openclaw/app/MainActivity.kt",
+      "apps/android/app/src/main/java/ai/afora/app/MainActivity.kt",
       "docs/ci.md",
       "ui/src/pages/activity/activity-page.ts",
     ]) {

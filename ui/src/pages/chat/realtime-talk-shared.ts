@@ -258,7 +258,7 @@ function getTerminalAgentWaitError(result: AgentWaitResult | undefined): Error |
   }
   const message = result.error?.trim();
   if (result.status === "error") {
-    return new Error(message || "OpenClaw tool call failed");
+    return new Error(message || "Afora tool call failed");
   }
   if (result.status !== "timeout" || result.pendingError) {
     return undefined;
@@ -278,7 +278,7 @@ function getTerminalAgentWaitError(result: AgentWaitResult | undefined): Error |
     timeoutPhase === "post_turn" ||
     result.providerStarted === true;
   if (hasTerminalTimeoutMetadata) {
-    return new Error(message || "OpenClaw tool call timed out");
+    return new Error(message || "Afora tool call timed out");
   }
   return undefined;
 }
@@ -292,17 +292,17 @@ function waitForChatResult(params: {
 }): Promise<string> {
   return new Promise((resolve, reject) => {
     if (params.signal?.aborted) {
-      reject(new DOMException("OpenClaw tool call aborted", "AbortError"));
+      reject(new DOMException("Afora tool call aborted", "AbortError"));
       return;
     }
     const timer = window.setTimeout(() => {
-      settleReject(new Error("OpenClaw tool call timed out"));
+      settleReject(new Error("Afora tool call timed out"));
     }, params.timeoutMs);
     let settled = false;
     let emptyFinalWaitStarted = false;
     let emptyFinalFallbackTimer: number | undefined;
     const onAbort = () => {
-      settleReject(new DOMException("OpenClaw tool call aborted", "AbortError"));
+      settleReject(new DOMException("Afora tool call aborted", "AbortError"));
     };
     params.signal?.addEventListener("abort", onAbort, { once: true });
     let unsubscribe: () => void = () => undefined;
@@ -345,7 +345,7 @@ function waitForChatResult(params: {
             return;
           }
           emptyFinalFallbackTimer = window.setTimeout(() => {
-            settleResolve("OpenClaw finished with no text.");
+            settleResolve("Afora finished with no text.");
           }, EMPTY_FINAL_FALLBACK_GRACE_MS);
         })
         .catch((error: unknown) => {
@@ -370,10 +370,10 @@ function waitForChatResult(params: {
         waitForEmptyFinalFallback();
       } else if (payload.state === "aborted") {
         settleReject(
-          new DOMException(payload.errorMessage ?? "OpenClaw tool call aborted", "AbortError"),
+          new DOMException(payload.errorMessage ?? "Afora tool call aborted", "AbortError"),
         );
       } else if (payload.state === "error") {
-        settleReject(new Error(payload.errorMessage ?? "OpenClaw tool call failed"));
+        settleReject(new Error(payload.errorMessage ?? "Afora tool call failed"));
       }
     });
     function cleanup() {
@@ -448,7 +448,7 @@ export async function steerRealtimeTalkActiveConsult(params: {
     params.emitTalkEvent?.({
       type: "tool.progress",
       payload: {
-        name: "openclaw_agent_control",
+        name: "afora_agent_control",
         result,
       },
       final:
@@ -501,7 +501,7 @@ export async function submitRealtimeTalkAgentControl(params: {
       type: "tool.progress",
       callId: params.callId,
       payload: {
-        name: "openclaw_agent_control",
+        name: "afora_agent_control",
         result,
       },
       final:
@@ -615,7 +615,7 @@ export async function submitRealtimeTalkConsult(params: {
     );
     runId = response.runId ?? response.idempotencyKey;
     if (!runId) {
-      throw new Error("OpenClaw realtime tool call did not return a run id");
+      throw new Error("Afora realtime tool call did not return a run id");
     }
     if (params.signal?.aborted) {
       abortRun();

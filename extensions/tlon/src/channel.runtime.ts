@@ -1,13 +1,13 @@
 // Tlon plugin module implements channel behavior.
 import crypto from "node:crypto";
-import type { ChannelAccountSnapshot } from "openclaw/plugin-sdk/channel-contract";
-import type { ChannelOutboundAdapter } from "openclaw/plugin-sdk/channel-send-result";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { ChannelPlugin } from "openclaw/plugin-sdk/core";
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
-import { readResponseTextLimited } from "openclaw/plugin-sdk/provider-http";
-import { chunkTextForOutbound } from "openclaw/plugin-sdk/text-chunking";
-import { runChannelProbe } from "openclaw/plugin-sdk/text-utility-runtime";
+import type { ChannelAccountSnapshot } from "afora-agent/plugin-sdk/channel-contract";
+import type { ChannelOutboundAdapter } from "afora-agent/plugin-sdk/channel-send-result";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { ChannelPlugin } from "afora-agent/plugin-sdk/core";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
+import { readResponseTextLimited } from "afora-agent/plugin-sdk/provider-http";
+import { chunkTextForOutbound } from "afora-agent/plugin-sdk/text-chunking";
+import { runChannelProbe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { monitorTlonProvider } from "./monitor/index.js";
 import { tlonSetupWizard } from "./setup-surface.js";
 import {
@@ -96,7 +96,7 @@ async function createHttpPokeApi(params: {
 }
 
 function resolveOutboundContext(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   to: string;
 }) {

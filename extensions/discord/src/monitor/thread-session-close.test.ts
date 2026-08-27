@@ -1,18 +1,18 @@
 // Discord tests cover thread session close plugin behavior.
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-type ResolveStorePath = typeof import("openclaw/plugin-sdk/session-store-runtime").resolveStorePath;
+type ResolveStorePath = typeof import("afora-agent/plugin-sdk/session-store-runtime").resolveStorePath;
 
 const hoisted = vi.hoisted(() => {
   const deleteSessionEntry = vi.fn();
   const listSessionEntries = vi.fn();
-  const resolveStorePath = vi.fn<ResolveStorePath>(() => "/tmp/openclaw-sessions.json");
+  const resolveStorePath = vi.fn<ResolveStorePath>(() => "/tmp/afora-sessions.json");
   return { deleteSessionEntry, listSessionEntries, resolveStorePath };
 });
 
-vi.mock("openclaw/plugin-sdk/session-store-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/session-store-runtime")>(
-    "openclaw/plugin-sdk/session-store-runtime",
+vi.mock("afora-agent/plugin-sdk/session-store-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/session-store-runtime")>(
+    "afora-agent/plugin-sdk/session-store-runtime",
   );
   return {
     ...actual,
@@ -65,7 +65,7 @@ describe("closeDiscordThreadSessions", () => {
     hoisted.deleteSessionEntry.mockReset();
     hoisted.listSessionEntries.mockReset();
     hoisted.resolveStorePath.mockClear();
-    hoisted.resolveStorePath.mockReturnValue("/tmp/openclaw-sessions.json");
+    hoisted.resolveStorePath.mockReturnValue("/tmp/afora-sessions.json");
   });
 
   it("deletes sessions whose key contains the threadId", async () => {

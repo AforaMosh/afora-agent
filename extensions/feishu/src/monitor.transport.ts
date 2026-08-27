@@ -2,9 +2,9 @@
 import crypto from "node:crypto";
 import * as http from "node:http";
 import * as Lark from "@larksuiteoapi/node-sdk";
-import { channelBlockedPatch, channelReadyPatch } from "openclaw/plugin-sdk/gateway-runtime";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { channelBlockedPatch, channelReadyPatch } from "afora-agent/plugin-sdk/gateway-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { waitForAbortableDelay } from "./async.js";
 import { createFeishuWSClient } from "./client.js";
 import type { FeishuWebhookInvoker } from "./feishu-ingress.js";
@@ -47,7 +47,7 @@ type MonitorTransportParams = {
   statusSink?: FeishuStatusSink;
 };
 
-const FEISHU_WEBHOOK_ACCEPTED_HEADER = "x-openclaw-delivery-accepted";
+const FEISHU_WEBHOOK_ACCEPTED_HEADER = "x-afora-delivery-accepted";
 const FEISHU_WEBHOOK_ACCEPTED_VALUE = "durable";
 const FEISHU_WS_RECONNECT_INITIAL_DELAY_MS = 1_000;
 const FEISHU_WS_RECONNECT_MAX_DELAY_MS = 30_000;
@@ -376,7 +376,7 @@ export async function monitorWebhook({
   if (normalizeFeishuWebhookPath(path) !== path) {
     throw new Error(
       `Feishu account "${accountId}" webhookPath must be a canonical HTTP request path; ` +
-        'run "openclaw doctor --fix" to repair it',
+        'run "afora doctor --fix" to repair it',
     );
   }
   const host = account.config.webhookHost ?? "127.0.0.1";

@@ -6,7 +6,7 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("logging file boundary runtime", () => {
   it("rotates valid JSONL and preserves linked trace fields", async () => {
-    const root = tempDirs.make("openclaw-logging-boundary-");
+    const root = tempDirs.make("afora-logging-boundary-");
     const result = await runLoggingFileBoundary(root);
 
     expect(result.currentRecords).toBeGreaterThan(0);

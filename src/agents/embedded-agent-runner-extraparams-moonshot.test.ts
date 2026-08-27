@@ -1,6 +1,6 @@
 // Covers Moonshot-specific extra-params thinking payload behavior.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createMoonshotThinkingWrapper,

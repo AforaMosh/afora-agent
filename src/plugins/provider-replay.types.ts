@@ -1,6 +1,6 @@
 import type { AgentMessage } from "../agents/runtime/index.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { ProviderRuntimeModel } from "./provider-runtime-model.types.js";
 
 type ProviderReplaySanitizeMode = "full" | "images-only";
@@ -43,7 +43,7 @@ export type ProviderReplayPolicy = {
  * behavior and should stay with the provider plugin instead of core tables.
  */
 export type ProviderReplayPolicyContext = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentDir?: string;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;

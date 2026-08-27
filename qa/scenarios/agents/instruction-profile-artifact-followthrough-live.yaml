@@ -224,7 +224,7 @@ flow:
                     const hasToolItem = (message) => message?.role === 'toolResult' || (Array.isArray(message?.content) && message.content.some((item) => ['toolCall', 'toolUse', 'tool_use', 'toolResult', 'tool_result'].includes(item?.type)));
                     const textOfMessage = (message) => textOf(message?.content) || String(message?.text ?? '');
                     const historyMarkerLeak = JSON.stringify(history).includes(config.contextMarker);
-                    const visibleAssistant = messages.flatMap((message, messageIndex) => message?.role === 'assistant' && message.phase !== 'commentary' && !message.openclawMessageToolMirror && !message.openclawDeliveryMirror && !(message.provider === 'openclaw' && ['delivery-mirror', 'gateway-injected'].includes(message.model)) && !hasToolItem(message) && textOfMessage(message).trim()
+                    const visibleAssistant = messages.flatMap((message, messageIndex) => message?.role === 'assistant' && message.phase !== 'commentary' && !message.aforaMessageToolMirror && !message.aforaDeliveryMirror && !(message.provider === 'afora' && ['delivery-mirror', 'gateway-injected'].includes(message.model)) && !hasToolItem(message) && textOfMessage(message).trim()
                       ? [{ messageIndex, text: textOfMessage(message).trim() }]
                       : []);
                     const visibleMarkerLeak = visibleAssistant.some((message) => message.text.includes(config.contextMarker));

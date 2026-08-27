@@ -62,7 +62,7 @@ const promisesImport = 'import fs from "node:fs/promises";';
 const writeFileImport = 'import { writeFile } from "node:fs/promises";';
 const requireImport = 'import { createRequire } from "node:module";';
 const privateStoreImport =
-  'import { privateFileStore } from "openclaw/plugin-sdk/security-runtime";';
+  'import { privateFileStore } from "afora-agent/plugin-sdk/security-runtime";';
 const jsonImport = 'import { writeJson } from "../infra/json-files.js";';
 
 const fsCase = importedSourceCase(filesystemImport);
@@ -109,7 +109,7 @@ function namedCases(cases: Record<string, UnnamedViolationCase>) {
 
 describe("check-database-first-legacy-stores", () => {
   it("collects JavaScript runtime source files", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-db-first-guard-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-db-first-guard-"));
     try {
       await fs.mkdir(path.join(root, "src"), { recursive: true });
       await fs.writeFile(path.join(root, "src", "runtime.js"), "export {};\n");
@@ -132,7 +132,7 @@ describe("check-database-first-legacy-stores", () => {
   });
 
   it("skips generated extension asset and dist bundles", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-db-first-guard-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-db-first-guard-"));
     try {
       await fs.mkdir(path.join(root, "extensions", "diffs", "assets"), { recursive: true });
       await fs.mkdir(path.join(root, "extensions", "diffs", "dist", "assets"), {
@@ -316,7 +316,7 @@ describe("check-database-first-legacy-stores", () => {
         await fs.writeFile(path.join(root, id, "file-meta.json"), metadata);
       `("extensions/diffs/src/legacy-store.ts", filesystemWriteViolations(4, 5, 6)),
       "flags retired QMD file-lock sidecars": sourceCase`
-        import { withFileLock } from "openclaw/plugin-sdk/file-lock";
+        import { withFileLock } from "afora-agent/plugin-sdk/file-lock";
         import path from "node:path";
         await withFileLock(path.join(stateDir, "qmd", "embed.lock"), options, task);
         await withFileLock(path.join(agentDir, "qmd-write.lock"), options, task);
@@ -360,13 +360,13 @@ describe("check-database-first-legacy-stores", () => {
         await fs.writeFile(path.join(stateDir, "node.json"), "{}\n");
       `("src/node-host/config-file-store.ts", filesystemWriteViolations(4)),
       "flags runtime writes to retired workspace setup and attestation sidecars": fsPathCase`
-        await fs.writeFile(path.join(workspaceDir, "openclaw-workspace-state.json"), "{}\\n");
-        await fs.writeFile(path.join(workspaceDir, ".openclaw", "workspace-state.json"), "{}\\n");
+        await fs.writeFile(path.join(workspaceDir, "afora-workspace-state.json"), "{}\\n");
+        await fs.writeFile(path.join(workspaceDir, ".afora", "workspace-state.json"), "{}\\n");
         await fs.writeFile(path.join(stateDir, "workspace-attestations", \`\${workspaceKey}.attested\`), "ok\\n");
         await fs.writeFile(\`\${workspaceDir}.attested\`, "ok\\n");
       `("src/agents/workspace-sidecar-store.ts", filesystemWriteViolations(4, 5, 6, 7)),
       "flags runtime writes to the retired native hook relay JSON registry": fsPathCase`
-        await fs.writeFile(path.join("/tmp", "openclaw-native-hook-relays-501", "relay.json"), "{}\n");
+        await fs.writeFile(path.join("/tmp", "afora-native-hook-relays-501", "relay.json"), "{}\n");
       `("src/agents/harness/native-hook-relay-file-store.ts", filesystemWriteViolations(4)),
       "flags runtime writes to the retired subagent JSON registry": fsPathCase`
         await fs.writeFile(path.join(stateDir, "subagents", "runs.json"), "{}\n");
@@ -375,7 +375,7 @@ describe("check-database-first-legacy-stores", () => {
         await fs.writeFile(path.join(stateDir, "tmp", "skill-uploads", uploadId, "metadata.json"), "{}\n");
       `("src/skills/lifecycle/upload-file-store.ts", filesystemWriteViolations(4)),
       "flags runtime writes to retired system-agent rescue approval stores": fsPathCase`
-        await fs.writeFile(path.join(stateDir, "openclaw", "rescue-pending", \`\${key}.json\`), "{}\\n");
+        await fs.writeFile(path.join(stateDir, "afora", "rescue-pending", \`\${key}.json\`), "{}\\n");
         await fs.writeFile(path.join(stateDir, "crestodian", "rescue-pending", "old.json"), "{}\\n");
       `("src/system-agent/rescue-writer.ts", filesystemWriteViolations(4, 5)),
       "flags legacy paths with dynamic agent id segments": fsPathCase`
@@ -468,7 +468,7 @@ describe("check-database-first-legacy-stores", () => {
         await privateFileStore(stateDir).writeJson("thread-bindings.json", {});
       `("private-file-store-write.ts", filesystemWriteViolations(3)),
       "flags fs-safe factory aliases writing legacy paths": privateStoreCase`
-        import * as fsSafe from "openclaw/plugin-sdk/security-runtime";
+        import * as fsSafe from "afora-agent/plugin-sdk/security-runtime";
         const makePrivateStore = privateFileStore;
         const makeRoot = fsSafe.root;
         const { privateFileStore: makeFromNamespace } = fsSafe;
@@ -477,7 +477,7 @@ describe("check-database-first-legacy-stores", () => {
         await makeFromNamespace(stateDir).writeJson("gateway-restart-intent.json", {});
       `("fs-safe-factory-alias-write.ts", filesystemWriteViolations(7, 8, 9)),
       "flags fs-safe root writes to legacy paths": sourceCase`
-        import { root } from "openclaw/plugin-sdk/security-runtime";
+        import { root } from "afora-agent/plugin-sdk/security-runtime";
         const state = await root(stateDir);
         await state.writeJson("plugin-binding-approvals.json", {});
         await (await root(stateDir)).writeJson("thread-bindings.json", {});
@@ -488,7 +488,7 @@ describe("check-database-first-legacy-stores", () => {
         await state.writeJson("thread-bindings.json", {});
       `("bare-fs-safe-root-write.ts", filesystemWriteViolations(4)),
       "flags file access runtime root writes to legacy paths": sourceCase`
-        import { root } from "openclaw/plugin-sdk/file-access-runtime";
+        import { root } from "afora-agent/plugin-sdk/file-access-runtime";
         const state = await root(stateDir);
         await state.writeJson("thread-bindings.json", {});
       `("extensions/example/src/runtime/file-access-root-write.ts", filesystemWriteViolations(4)),
@@ -610,7 +610,7 @@ describe("check-database-first-legacy-stores", () => {
         await store.writeJson("thread-bindings.json", {});
       `("exhaustive-fs-safe-store-partial-reassignment.ts", filesystemWriteViolations(9)),
       "clears fs-safe namespace factory aliases after shadowing": sourceCase`
-        import * as fsSafe from "openclaw/plugin-sdk/security-runtime";
+        import * as fsSafe from "afora-agent/plugin-sdk/security-runtime";
         async function save(fsSafe: { root(dir: string): Promise<{ writeJson(path: string): void }> }) {
           await (await fsSafe.root(stateDir)).writeJson("thread-bindings.json");
         }
@@ -643,10 +643,10 @@ describe("check-database-first-legacy-stores", () => {
       `("fs-copy-legacy-store.ts", filesystemWriteViolations(4, 5)),
       "allows fs copy calls reading from legacy store paths": fsPromisesCase`
         import syncFs from "node:fs";
-        await fs.copyFile("sessions.json", "state/openclaw.sqlite.import");
-        await fs.cp("cron/jobs.json", "state/openclaw.sqlite.import");
-        syncFs.copyFileSync("auth-profiles.json", "state/openclaw.sqlite.import");
-        syncFs.cpSync("cache/models.json", "state/openclaw.sqlite.import");
+        await fs.copyFile("sessions.json", "state/afora.sqlite.import");
+        await fs.cp("cron/jobs.json", "state/afora.sqlite.import");
+        syncFs.copyFileSync("auth-profiles.json", "state/afora.sqlite.import");
+        syncFs.cpSync("cache/models.json", "state/afora.sqlite.import");
       `("fs-copy-legacy-store-source.ts", []),
       "flags fs removal calls targeting legacy store paths": fsPromisesCase`
         import syncFs from "node:fs";
@@ -655,8 +655,8 @@ describe("check-database-first-legacy-stores", () => {
       `("fs-remove-legacy-store.ts", filesystemWriteViolations(4, 5)),
       "flags legacy paths destructured from for-of tuple entries": sourceCase`
         import path from "node:path";
-        import { root as fsRoot } from "openclaw/plugin-sdk/security-runtime";
-        const CLAIMS_DIGEST_PATH = ".openclaw-wiki/cache/claims.jsonl";
+        import { root as fsRoot } from "afora-agent/plugin-sdk/security-runtime";
+        const CLAIMS_DIGEST_PATH = ".afora-wiki/cache/claims.jsonl";
         const claimsDigestPath = path.join(rootDir, CLAIMS_DIGEST_PATH);
         for (const [filePath, content] of [[claimsDigestPath, claimsDigest]]) {
           const relativePath = path.relative(rootDir, filePath);
@@ -975,14 +975,14 @@ describe("check-database-first-legacy-stores", () => {
         }
       `("local-fs-module-alias-scope.ts", []),
       "flags legacy paths written through regular-file helpers": sourceCase`
-        import { appendRegularFile as appendSafe } from "openclaw/plugin-sdk/security-runtime";
+        import { appendRegularFile as appendSafe } from "afora-agent/plugin-sdk/security-runtime";
         const filePath = "session.trajectory.jsonl";
         await appendSafe({ filePath, content: "{}\\n" });
       `("regular-file-helper.ts", filesystemWriteViolations(4)),
       "flags legacy paths written through JSON and atomic helpers": sourceCase`
         import { writeJson, writeTextAtomic } from "../infra/json-files.js";
         import { replaceFileAtomicSync } from "../infra/replace-file.js";
-        import { saveJsonFile, writeJsonFileAtomically } from "openclaw/plugin-sdk/json-store";
+        import { saveJsonFile, writeJsonFileAtomically } from "afora-agent/plugin-sdk/json-store";
         await writeJson("restart-sentinel.json", {});
         await writeTextAtomic("gateway-restart-intent.json", "{}\\n");
         replaceFileAtomicSync({ filePath: "plugin-state/state.sqlite", content: "" });
@@ -1595,7 +1595,7 @@ describe("check-database-first-legacy-stores", () => {
           return fs.writeFile(path, "{}\\n");
         }
         await writePath({
-          currentPath: "state/openclaw.sqlite",
+          currentPath: "state/afora.sqlite",
           legacyPath: "sessions.json",
         });
       `("top-level-helper-property-default-unrelated-legacy-property.ts", []),
@@ -1607,7 +1607,7 @@ describe("check-database-first-legacy-stores", () => {
           return fs.writeFile(path, "{}\\n");
         }
         await writePath({
-          currentPath: "state/openclaw.sqlite",
+          currentPath: "state/afora.sqlite",
           legacyPath: "sessions.json",
         });
       `("top-level-helper-bracket-default-unrelated-legacy-property.ts", []),
@@ -3166,7 +3166,7 @@ describe("check-database-first-legacy-stores", () => {
         save({ filePath: "sessions.json" });
       `("aliased-wrapper-variable.ts", filesystemWriteViolations(7)),
       "does not treat aliased top-level helpers as closing over wrapper parameters": atomicCase`
-        const filePath = "not-openclaw-state.txt";
+        const filePath = "not-afora-state.txt";
         function helper() {
           return writeTextAtomic(filePath, "{}\\n");
         }
@@ -3675,7 +3675,7 @@ describe("check-database-first-legacy-stores", () => {
         function persist(params: { currentPath: string }) {
           return writeFile(params[key], "{}\\n");
         }
-        persist({ currentPath: "state/openclaw.sqlite" });
+        persist({ currentPath: "state/afora.sqlite" });
       `("unknown-computed-safe-wrapper-property.ts", []),
       "tracks unknown computed property definitions": writeFileCase`
         declare const key: string;
@@ -3712,7 +3712,7 @@ describe("check-database-first-legacy-stores", () => {
         function persist(params: Record<string, string>) {
           return writeFile(params.currentPath, "{}\\n");
         }
-        persist({ [key]: "sessions.json", currentPath: "state/openclaw.sqlite" });
+        persist({ [key]: "sessions.json", currentPath: "state/afora.sqlite" });
       `("unknown-computed-property-safe-sibling.ts", []),
       "retains a conservative fallback when computed key candidates exceed the cap": {
         source: [
@@ -3751,7 +3751,7 @@ describe("check-database-first-legacy-stores", () => {
         declare const key: string;
         function persist(params: { filePath: string }, key: string) {
           if (ready) {
-            params.currentPath = "state/openclaw.sqlite";
+            params.currentPath = "state/afora.sqlite";
             return writeFile(params[key], "{}\\n");
           }
         }
@@ -3761,7 +3761,7 @@ describe("check-database-first-legacy-stores", () => {
         declare const key: string;
         function persist(params: { filePath: string }, key: string) {
           while (ready) {
-            params.currentPath = "state/openclaw.sqlite";
+            params.currentPath = "state/afora.sqlite";
             return writeFile(params[key], "{}\\n");
           }
         }
@@ -3771,7 +3771,7 @@ describe("check-database-first-legacy-stores", () => {
         declare const key: string;
         function persist(params: { filePath: string }, key: string) {
           try {
-            params.currentPath = "state/openclaw.sqlite";
+            params.currentPath = "state/afora.sqlite";
             return writeFile(params[key], "{}\\n");
           } catch {}
         }
@@ -3781,7 +3781,7 @@ describe("check-database-first-legacy-stores", () => {
         declare const key: string;
         function persist(params: { paths: { filePath: string } }, key: string) {
           if (ready) {
-            params.paths.currentPath = "state/openclaw.sqlite";
+            params.paths.currentPath = "state/afora.sqlite";
             return writeFile(params.paths[key], "{}\\n");
           }
         }
@@ -4111,7 +4111,7 @@ describe("check-database-first-legacy-stores", () => {
         function persist({ paths: { filePath = "sessions.json" } }: { paths: { filePath?: string } }) {
           return fs.writeFile(filePath, "{}\\n");
         }
-        const options = { paths: { filePath: "state/openclaw.sqlite" } };
+        const options = { paths: { filePath: "state/afora.sqlite" } };
         if (Math.random() > 0.5) {
           options.paths = {};
         }
@@ -4368,7 +4368,7 @@ describe("check-database-first-legacy-stores", () => {
         }
         const options = {
           paths: {
-            filePath: "state/openclaw.sqlite",
+            filePath: "state/afora.sqlite",
             legacyPath: "sessions.json",
           },
         };
@@ -4644,11 +4644,11 @@ describe("check-database-first-legacy-stores", () => {
   it("keeps legacy PortGuardian filenames inside the native migration owner", () => {
     const runtimeViolations = collectDatabaseFirstNativeLegacyStoreViolations(
       'let path = root.appendingPathComponent("port-guard.json")\n',
-      "apps/macos/Sources/OpenClaw/PortGuardian.swift",
+      "apps/macos/Sources/Afora/PortGuardian.swift",
     );
     const migrationViolations = collectDatabaseFirstNativeLegacyStoreViolations(
       'let path = root.appendingPathComponent("port-guard.json")\n',
-      "apps/macos/Sources/OpenClaw/PortGuardianRecordStore.swift",
+      "apps/macos/Sources/Afora/PortGuardianRecordStore.swift",
     );
 
     expect(runtimeViolations).toEqual([{ kind: "legacy PortGuardian file reference", line: 1 }]);
@@ -4659,7 +4659,7 @@ describe("check-database-first-legacy-stores", () => {
   it.each(
     namedCases({
       "allows the workspace Doctor migration owner to claim legacy sidecars": fsCase`
-        await fs.rename("openclaw-workspace-state.json", "openclaw-workspace-state.json.doctor-importing");
+        await fs.rename("afora-workspace-state.json", "afora-workspace-state.json.doctor-importing");
         await fs.rename("workspace.attested", "workspace.attested.doctor-importing");
       `("src/infra/state-migrations.workspace-setup.ts", []),
       "allows plugin doctor migration owners to archive legacy files": fsCase`

@@ -4,12 +4,12 @@ import { afterEach, describe, expect, it } from "vitest";
 import { createTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { listSessionEntriesCore } from "../config/sessions/session-accessor.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-  resolveOpenClawAgentSqlitePath,
-  runOpenClawAgentWriteTransaction,
-} from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+  resolveAforaAgentSqlitePath,
+  runAforaAgentWriteTransaction,
+} from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { repairCanonicalSessionDeliveryStates } from "./doctor-session-delivery-state.js";
 import { writeValidatedDoctorSessionEntryJson } from "./doctor-session-entry-rewrite.js";
 import { repairReservedIncognitoSessionKeys } from "./doctor-session-incognito-key-repair.js";
@@ -17,8 +17,8 @@ import { repairReservedIncognitoSessionKeys } from "./doctor-session-incognito-k
 const tempDirs = createTempDirTracker();
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   tempDirs.cleanup();
 });
 
@@ -28,7 +28,7 @@ function insertSessionRow(
   entry: Record<string, unknown>,
   agentId = "main",
 ): void {
-  const database = openOpenClawAgentDatabase({ agentId, env });
+  const database = openAforaAgentDatabase({ agentId, env });
   database.db
     .prepare(
       "INSERT INTO session_nodes (session_key, current_session_id, entry_json, updated_at, parent_session_key, spawned_by) VALUES (?, ?, ?, ?, ?, ?)",
@@ -68,7 +68,7 @@ function insertSessionRow(
 }
 
 function readEntryJson(env: NodeJS.ProcessEnv, sessionKey: string): string {
-  const database = openOpenClawAgentDatabase({ agentId: "main", env });
+  const database = openAforaAgentDatabase({ agentId: "main", env });
   const row = database.db
     .prepare("SELECT entry_json FROM session_nodes WHERE session_key = ?")
     .get(sessionKey) as { entry_json: string };
@@ -76,7 +76,7 @@ function readEntryJson(env: NodeJS.ProcessEnv, sessionKey: string): string {
 }
 
 function readEntryValidity(env: NodeJS.ProcessEnv, sessionKey: string): number {
-  const database = openOpenClawAgentDatabase({ agentId: "main", env });
+  const database = openAforaAgentDatabase({ agentId: "main", env });
   const row = database.db
     .prepare("SELECT entry_valid FROM session_nodes WHERE session_key = ?")
     .get(sessionKey) as { entry_valid: number };
@@ -85,11 +85,11 @@ function readEntryValidity(env: NodeJS.ProcessEnv, sessionKey: string): number {
 
 describe("doctor canonical session delivery state", () => {
   it("warns and skips an unmigrated agent database", () => {
-    const stateDir = fs.realpathSync(tempDirs.make("openclaw-delivery-legacy-schema-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
-    const database = openOpenClawAgentDatabase({ agentId: "main", env });
+    const stateDir = fs.realpathSync(tempDirs.make("afora-delivery-legacy-schema-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
+    const database = openAforaAgentDatabase({ agentId: "main", env });
     database.db.exec("PRAGMA user_version = 8;");
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
 
     expect(repairCanonicalSessionDeliveryStates({ apply: true, cfg: {}, env })).toEqual({
       found: 0,
@@ -99,8 +99,8 @@ describe("doctor canonical session delivery state", () => {
   });
 
   it("keeps bare channel and origin metadata below explicit delivery context", () => {
-    const stateDir = fs.realpathSync(tempDirs.make("openclaw-delivery-fallback-order-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = fs.realpathSync(tempDirs.make("afora-delivery-fallback-order-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
     insertSessionRow(env, "agent:main:explicit", {
       sessionId: "explicit-session",
       updatedAt: 10,
@@ -153,15 +153,15 @@ describe("doctor canonical session delivery state", () => {
   });
 
   it("keeps rewritten delivery rows valid for normal session reads", () => {
-    const stateDir = fs.realpathSync(tempDirs.make("openclaw-delivery-validity-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = fs.realpathSync(tempDirs.make("afora-delivery-validity-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
     const sessionKey = "agent:main:delivery-validity";
     insertSessionRow(env, sessionKey, {
       sessionId: "delivery-validity-session",
       updatedAt: 10,
       deliveryContext: { channel: "telegram", to: "recipient" },
     });
-    const database = openOpenClawAgentDatabase({ agentId: "main", env });
+    const database = openAforaAgentDatabase({ agentId: "main", env });
     database.db
       .prepare("UPDATE session_nodes SET entry_valid = 1 WHERE session_key = ?")
       .run(sessionKey);
@@ -172,7 +172,7 @@ describe("doctor canonical session delivery state", () => {
       scannedStores: 1,
     });
     expect(readEntryValidity(env, sessionKey)).toBe(1);
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
     expect(listSessionEntriesCore({ agentId: "main", env })).toMatchObject([
       { sessionKey, entry: { sessionId: "delivery-validity-session", updatedAt: 10 } },
     ]);
@@ -184,8 +184,8 @@ describe("doctor canonical session delivery state", () => {
   });
 
   it("publishes repaired delivery accounts to the existing SQLite connection without aging sessions", () => {
-    const stateDir = fs.realpathSync(tempDirs.make("openclaw-delivery-warm-cache-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = fs.realpathSync(tempDirs.make("afora-delivery-warm-cache-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
     const sessionKey = "agent:main:delivery-warm-cache";
     insertSessionRow(env, sessionKey, {
       sessionId: "delivery-warm-cache-session",
@@ -218,8 +218,8 @@ describe("doctor canonical session delivery state", () => {
   });
 
   it("discards a Doctor session cache publication when its owner transaction rolls back", () => {
-    const stateDir = fs.realpathSync(tempDirs.make("openclaw-delivery-cache-rollback-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = fs.realpathSync(tempDirs.make("afora-delivery-cache-rollback-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
     const sessionKey = "agent:main:delivery-cache-rollback";
     insertSessionRow(env, sessionKey, {
       sessionId: "delivery-cache-rollback-session",
@@ -231,7 +231,7 @@ describe("doctor canonical session delivery state", () => {
     expect(cached?.label).toBe("committed");
 
     expect(() =>
-      runOpenClawAgentWriteTransaction(
+      runAforaAgentWriteTransaction(
         (database) => {
           writeValidatedDoctorSessionEntryJson(
             database,
@@ -254,8 +254,8 @@ describe("doctor canonical session delivery state", () => {
   });
 
   it("publishes cross-agent incognito parent rewrites to each existing SQLite connection", () => {
-    const stateDir = fs.realpathSync(tempDirs.make("openclaw-incognito-warm-cache-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = fs.realpathSync(tempDirs.make("afora-incognito-warm-cache-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
     const oldParentKey = "agent:main:dashboard:incognito-warm-cache";
     const newParentKey = "agent:main:dashboard:legacy-incognito-warm-cache";
     const childKey = "agent:work:dashboard:child";
@@ -292,8 +292,8 @@ describe("doctor canonical session delivery state", () => {
   });
 
   it("preserves shipped last-route precedence over stale explicit context", () => {
-    const stateDir = fs.realpathSync(tempDirs.make("openclaw-delivery-precedence-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = fs.realpathSync(tempDirs.make("afora-delivery-precedence-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
     insertSessionRow(env, "agent:main:precedence", {
       sessionId: "precedence-session",
       updatedAt: 10,
@@ -330,8 +330,8 @@ describe("doctor canonical session delivery state", () => {
   });
 
   it("recovers a legacy route after an unrelated runtime write stamps delivery none", () => {
-    const stateDir = fs.realpathSync(tempDirs.make("openclaw-delivery-none-stamp-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = fs.realpathSync(tempDirs.make("afora-delivery-none-stamp-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
     insertSessionRow(env, "agent:main:stamped-none", {
       sessionId: "stamped-none-session",
       updatedAt: 10,
@@ -353,8 +353,8 @@ describe("doctor canonical session delivery state", () => {
   });
 
   it("preserves explicit legacy channel ownership without a recipient", () => {
-    const stateDir = fs.realpathSync(tempDirs.make("openclaw-delivery-channel-only-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = fs.realpathSync(tempDirs.make("afora-delivery-channel-only-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
     insertSessionRow(env, "agent:main:channel-only", {
       sessionId: "channel-only-session",
       updatedAt: 10,
@@ -374,8 +374,8 @@ describe("doctor canonical session delivery state", () => {
   });
 
   it("recovers an external legacy route after an internal transition stamp", () => {
-    const stateDir = fs.realpathSync(tempDirs.make("openclaw-delivery-internal-stamp-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = fs.realpathSync(tempDirs.make("afora-delivery-internal-stamp-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
     insertSessionRow(env, "agent:main:stamped-internal", {
       sessionId: "stamped-internal-session",
       updatedAt: 10,
@@ -397,8 +397,8 @@ describe("doctor canonical session delivery state", () => {
   });
 
   it("promotes legacy internal origin chat type before removing origin", () => {
-    const stateDir = fs.realpathSync(tempDirs.make("openclaw-delivery-internal-chat-type-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = fs.realpathSync(tempDirs.make("afora-delivery-internal-chat-type-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
     insertSessionRow(env, "agent:main:internal-chat", {
       sessionId: "internal-chat-session",
       updatedAt: 10,
@@ -418,14 +418,14 @@ describe("doctor canonical session delivery state", () => {
   });
 
   it("skips structurally invalid row JSON while repairing valid sessions", () => {
-    const stateDir = fs.realpathSync(tempDirs.make("openclaw-delivery-invalid-row-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = fs.realpathSync(tempDirs.make("afora-delivery-invalid-row-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
     insertSessionRow(env, "agent:main:legacy", {
       sessionId: "legacy-session",
       updatedAt: 10,
       deliveryContext: { channel: "telegram", to: "-1001" },
     });
-    const database = openOpenClawAgentDatabase({ agentId: "main", env });
+    const database = openAforaAgentDatabase({ agentId: "main", env });
     const insertInvalid = database.db.prepare(
       "INSERT INTO session_nodes (session_key, current_session_id, entry_json, updated_at) VALUES (?, ?, ?, ?)",
     );
@@ -443,15 +443,15 @@ describe("doctor canonical session delivery state", () => {
     expect(readEntryJson(env, "agent:main:invalid")).toBe("null");
     expect(readEntryJson(env, "agent:main:invalid-object")).toBe(invalidObjectJson);
     expect(readEntryValidity(env, "agent:main:invalid-object")).toBe(0);
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
     expect(() => listSessionEntriesCore({ agentId: "main", env })).toThrow(
       /invalid persisted session row requires repair/u,
     );
   });
 
   it("migrates a copied realistic store without touching the source or canonical row bytes", () => {
-    const sourceStateDir = fs.realpathSync(tempDirs.make("openclaw-delivery-source-"));
-    const sourceEnv = { ...process.env, OPENCLAW_STATE_DIR: sourceStateDir };
+    const sourceStateDir = fs.realpathSync(tempDirs.make("afora-delivery-source-"));
+    const sourceEnv = { ...process.env, AFORA_STATE_DIR: sourceStateDir };
     const canonicalEntry = {
       sessionId: "canonical-session",
       updatedAt: 30,
@@ -504,12 +504,12 @@ describe("doctor canonical session delivery state", () => {
     insertSessionRow(sourceEnv, "agent:main:canonical", canonicalEntry);
     const canonicalJson = JSON.stringify(canonicalEntry);
     const sourceLegacyJson = readEntryJson(sourceEnv, "agent:main:legacy");
-    const sourcePath = resolveOpenClawAgentSqlitePath({ agentId: "main", env: sourceEnv });
-    closeOpenClawAgentDatabasesForTest();
+    const sourcePath = resolveAforaAgentSqlitePath({ agentId: "main", env: sourceEnv });
+    closeAforaAgentDatabasesForTest();
 
-    const copiedStateDir = fs.realpathSync(tempDirs.make("openclaw-delivery-copy-"));
-    const copiedEnv = { ...process.env, OPENCLAW_STATE_DIR: copiedStateDir };
-    const copiedPath = resolveOpenClawAgentSqlitePath({ agentId: "main", env: copiedEnv });
+    const copiedStateDir = fs.realpathSync(tempDirs.make("afora-delivery-copy-"));
+    const copiedEnv = { ...process.env, AFORA_STATE_DIR: copiedStateDir };
+    const copiedPath = resolveAforaAgentSqlitePath({ agentId: "main", env: copiedEnv });
     fs.mkdirSync(path.dirname(copiedPath), { recursive: true });
     fs.copyFileSync(sourcePath, copiedPath);
 
@@ -525,7 +525,7 @@ describe("doctor canonical session delivery state", () => {
       repaired: 3,
       scannedStores: 1,
     });
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
     expect(listSessionEntriesCore({ agentId: "main", env: copiedEnv })).toHaveLength(4);
     expect(repairCanonicalSessionDeliveryStates({ apply: true, cfg: {}, env: copiedEnv })).toEqual({
       found: 0,
@@ -584,12 +584,12 @@ describe("doctor canonical session delivery state", () => {
     });
     expect(readEntryJson(copiedEnv, "agent:main:canonical")).toBe(canonicalJson);
     expect(
-      openOpenClawAgentDatabase({ agentId: "main", env: copiedEnv })
+      openAforaAgentDatabase({ agentId: "main", env: copiedEnv })
         .db.prepare("SELECT channel, account_id FROM session_windows WHERE session_id = ?")
         .get("legacy-session"),
     ).toEqual({ channel: "telegram", account_id: "work" });
 
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
     expect(readEntryJson(sourceEnv, "agent:main:legacy")).toBe(sourceLegacyJson);
   });
 });

@@ -37,7 +37,7 @@ function gatewayTransportError(params: {
 describe("session target parsing", () => {
   beforeEach(() => {
     callGatewayMock.mockReset();
-    delete process.env.OPENCLAW_ALLOW_INSECURE_PRIVATE_WS;
+    delete process.env.AFORA_ALLOW_INSECURE_PRIVATE_WS;
   });
 
   it.each([
@@ -175,7 +175,7 @@ describe("session target parsing", () => {
 
 describe("bare-root session URL options", () => {
   const target = "https://gateway.example/dashboard/main/movies-a1166b81";
-  const argv = (...args: string[]) => ["node", "openclaw", ...args];
+  const argv = (...args: string[]) => ["node", "afora", ...args];
 
   it.each([
     ["--token", "token"],
@@ -414,7 +414,7 @@ describe("session target resolution", () => {
     );
 
     await expect(resolveSessionTarget({ raw: "a1166b81" })).rejects.toThrow(
-      /No session found: a1166b81[\s\S]*openclaw sessions list/u,
+      /No session found: a1166b81[\s\S]*afora sessions list/u,
     );
   });
 
@@ -445,7 +445,7 @@ describe("session target resolution", () => {
       }),
     );
     await expect(resolveSessionTarget({ raw: "gateway.example/main/a1166b81" })).rejects.toThrow(
-      "openclaw devices approve --latest",
+      "afora devices approve --latest",
     );
 
     callGatewayMock.mockRejectedValueOnce(
@@ -456,7 +456,7 @@ describe("session target resolution", () => {
       }),
     );
     await expect(resolveSessionTarget({ raw: "gateway.example/main/a1166b81" })).rejects.toThrow(
-      "openclaw devices rotate --device <deviceId> --role operator",
+      "afora devices rotate --device <deviceId> --role operator",
     );
   });
 
@@ -474,7 +474,7 @@ describe("session target resolution", () => {
     } catch (caught) {
       pairingError = caught;
     }
-    expect(String(pairingError)).toContain("openclaw devices approve --latest");
+    expect(String(pairingError)).toContain("afora devices approve --latest");
     expect(String(pairingError)).not.toContain("Could not reach gateway");
 
     callGatewayMock.mockRejectedValueOnce(
@@ -491,7 +491,7 @@ describe("session target resolution", () => {
       tokenError = caught;
     }
     expect(String(tokenError)).toContain(
-      "openclaw devices rotate --device <deviceId> --role operator",
+      "afora devices rotate --device <deviceId> --role operator",
     );
     expect(String(tokenError)).not.toContain("Could not reach gateway");
   });

@@ -1,14 +1,14 @@
 import { randomUUID } from "node:crypto";
-import { asOptionalRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { asOptionalRecord as asRecord } from "@afora/normalization-core/record-coerce";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { executeSqliteQueryTakeFirstSync } from "../../infra/kysely-sync.js";
 import { pruneMapToMaxSize } from "../../infra/map-size.js";
 import { extractAssistantPhaseText } from "../../shared/chat-message-content.js";
 import {
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import type { TranscriptEvent } from "./session-accessor.sqlite-contract.js";
 import {
   collectSessionEntryLookupKeys,
@@ -87,7 +87,7 @@ function cloneSessionBranchSummaries(branches: readonly SessionBranchSummary[]) 
 }
 
 function readSessionBranchWatermark(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionId: string,
 ): Pick<SessionBranchCacheEntry, "generation" | "maxSeq"> {
   const db = getSessionKysely(database.db);
@@ -109,7 +109,7 @@ function readSessionBranchWatermark(
 }
 
 function loadSessionBranchSummaries(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionId: string,
 ): SessionBranchSummary[] {
   const cacheKey = sessionBranchCacheKey(database.path, sessionId);
@@ -145,7 +145,7 @@ export async function listSessionBranches(
     ...(params.storePath ? { storePath: params.storePath } : {}),
   });
   try {
-    const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+    const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
     const currentEntry = readSessionEntryRow(database, sourceKey)?.entry;
     if (!currentEntry?.sessionId) {
       return { status: "missing-session" };
@@ -218,7 +218,7 @@ async function mutateSqliteSessionAtMessage(
     ...(params.storePath ? { storePath: params.storePath } : {}),
   });
   const preparedEntry = readSessionEntryRow(
-    openOpenClawAgentDatabase(toDatabaseOptions(resolved)),
+    openAforaAgentDatabase(toDatabaseOptions(resolved)),
     sourceKey,
   )?.entry;
   const preparedExpectedState =
@@ -233,7 +233,7 @@ async function mutateSqliteSessionAtMessage(
     let previousIdentity = new Map<string, SessionEntry>();
     let currentIdentity = new Map<string, SessionEntry>();
     let databasePath: string | undefined;
-    const result = runOpenClawAgentWriteTransaction((database) => {
+    const result = runAforaAgentWriteTransaction((database) => {
       databasePath = database.path;
       const identityKeys = uniqueStrings([
         ...collectSessionEntryLookupKeys(database, sourceKey),
@@ -266,7 +266,7 @@ async function mutateSqliteSessionAtMessage(
 }
 
 function mutateSqliteSessionAtMessageInTransaction(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   resolved: ResolvedSqliteScope,
   params: {
     canonicalSourceKey: string;
@@ -592,7 +592,7 @@ function extractEditorAttachments(
 function extractEditorMediaRefs(
   message: Record<string, unknown>,
 ): Array<{ path: string; contentType: string }> | undefined {
-  const media = asRecord(message["__openclaw"])?.media;
+  const media = asRecord(message["__afora"])?.media;
   if (!Array.isArray(media)) {
     return undefined;
   }

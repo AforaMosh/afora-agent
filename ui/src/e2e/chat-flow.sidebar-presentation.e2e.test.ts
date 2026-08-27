@@ -493,13 +493,13 @@ suite.define(() => {
       await page.goto(`${suite.server.baseUrl}chat`);
       const documentMarker = await page.evaluate(() => {
         const marker = crypto.randomUUID();
-        (window as Window & { __openclawAvatarTestDocument?: string })[
-          "__openclawAvatarTestDocument"
+        (window as Window & { __aforaAvatarTestDocument?: string })[
+          "__aforaAvatarTestDocument"
         ] = marker;
         return marker;
       });
       const avatar = page.locator(
-        'openclaw-chat-pane[aria-hidden="false"] img.agent-chat__welcome-avatar',
+        'afora-chat-pane[aria-hidden="false"] img.agent-chat__welcome-avatar',
       );
       await avatar.waitFor({ state: "visible" });
       await expect.poll(() => avatar.getAttribute("src")).toMatch(/^blob:/);
@@ -525,8 +525,8 @@ suite.define(() => {
       expect(
         await page.evaluate(
           () =>
-            (window as Window & { __openclawAvatarTestDocument?: string })[
-              "__openclawAvatarTestDocument"
+            (window as Window & { __aforaAvatarTestDocument?: string })[
+              "__aforaAvatarTestDocument"
             ],
         ),
       ).toBe(documentMarker);

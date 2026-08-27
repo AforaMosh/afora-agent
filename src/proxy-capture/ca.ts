@@ -2,7 +2,7 @@
 import { createHash, createPrivateKey, randomBytes, X509Certificate } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { parseCanonicalIpAddress } from "@openclaw/net-policy/ip";
+import { parseCanonicalIpAddress } from "@afora/net-policy/ip";
 import { type FileLockOptions, withFileLock } from "../infra/file-lock.js";
 import { resolveSystemBin } from "../infra/resolve-system-bin.js";
 import { KeyedAsyncQueue } from "../plugin-sdk/keyed-async-queue.js";
@@ -129,7 +129,7 @@ async function ensureLocalProxyCa(
         }
         fs.chmodSync(stagedKeyPath, LOCAL_PROXY_PRIVATE_KEY_MODE);
         fs.chmodSync(stagedCertPath, 0o644);
-        // All OpenClaw writers hold this lock. Same-directory renames replace each
+        // All Afora writers hold this lock. Same-directory renames replace each
         // file atomically; validation repairs a pair interrupted between renames.
         fs.renameSync(stagedKeyPath, keyPath);
         fs.renameSync(stagedCertPath, certPath);
@@ -148,7 +148,7 @@ export async function ensureDebugProxyCa(certDir: string): Promise<{
   keyPath: string;
 }> {
   return await ensureLocalProxyCa(certDir, {
-    commonName: "OpenClaw Debug Proxy",
+    commonName: "Afora Debug Proxy",
     purpose: "debug proxy",
     validityDays: 7,
   });
@@ -157,7 +157,7 @@ export async function ensureDebugProxyCa(certDir: string): Promise<{
 /** Generates the root CA for one Gateway-lifetime secret egress proxy. */
 export async function ensureSecretEgressProxyCa(certDir: string): Promise<LocalProxyCaPair> {
   return await ensureLocalProxyCa(certDir, {
-    commonName: "OpenClaw Secret Egress Proxy",
+    commonName: "Afora Secret Egress Proxy",
     purpose: "secret egress proxy",
     validityDays: 1,
   });

@@ -1,16 +1,16 @@
 {
-  "name": "@openclaw/synology-chat",
+  "name": "@afora/synology-chat",
   "version": "2026.8.1",
-  "description": "Synology Chat channel plugin for OpenClaw channels and direct messages.",
+  "description": "Synology Chat channel plugin for Afora channels and direct messages.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   },
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
@@ -25,7 +25,7 @@
             "SYNOLOGY_NAS_HOST",
             "SYNOLOGY_ALLOWED_USER_IDS",
             "SYNOLOGY_RATE_LIMIT",
-            "OPENCLAW_BOT_NAME"
+            "AFORA_BOT_NAME"
           ]
         }
       },
@@ -33,7 +33,7 @@
       "selectionLabel": "Synology Chat (Webhook)",
       "docsPath": "/channels/synology-chat",
       "docsLabel": "synology-chat",
-      "blurb": "Connect your Synology NAS Chat to OpenClaw with full agent capabilities.",
+      "blurb": "Connect your Synology NAS Chat to Afora with full agent capabilities.",
       "order": 90,
       "setup": {
         "fields": [
@@ -85,7 +85,7 @@
       }
     },
     "install": {
-      "npmSpec": "@openclaw/synology-chat",
+      "npmSpec": "@afora/synology-chat",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.4.10"
     },
@@ -93,7 +93,7 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1"
+      "aforaVersion": "2026.8.1"
     },
     "release": {
       "publishToClawHub": true,

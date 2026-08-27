@@ -1,6 +1,6 @@
 /** Host fallback secret contracts for external channels without contract artifacts. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   getOfficialExternalChannelSecretContract,
   getOfficialExternalPluginCatalogManifest,
@@ -22,7 +22,7 @@ import type { SecretTargetRegistryEntry } from "./target-registry-types.js";
 
 type OfficialExternalChannelSecretContractApi = {
   collectRuntimeConfigAssignments: (params: {
-    config: OpenClawConfig;
+    config: AforaConfig;
     defaults: SecretDefaults | undefined;
     context: ResolverContext;
   }) => void;

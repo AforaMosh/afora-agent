@@ -14,12 +14,12 @@ plain_gh_env() {
 }
 
 resolve_plain_gh_bin() {
-  if [ -n "${OPENCLAW_GH_BIN:-}" ]; then
-    if [ -x "$OPENCLAW_GH_BIN" ]; then
-      printf '%s\n' "$OPENCLAW_GH_BIN"
+  if [ -n "${AFORA_GH_BIN:-}" ]; then
+    if [ -x "$AFORA_GH_BIN" ]; then
+      printf '%s\n' "$AFORA_GH_BIN"
       return 0
     fi
-    printf 'OPENCLAW_GH_BIN is not executable: %s\n' "$OPENCLAW_GH_BIN" >&2
+    printf 'AFORA_GH_BIN is not executable: %s\n' "$AFORA_GH_BIN" >&2
     return 1
   fi
 
@@ -87,7 +87,7 @@ plain_gh_auth_token() {
   if [ -n "${GH_HOST:-}" ]; then
     args+=(--hostname "$GH_HOST")
   fi
-  OPENCLAW_GH_BIN= plain_gh_env "$path_gh" "${args[@]}"
+  AFORA_GH_BIN= plain_gh_env "$path_gh" "${args[@]}"
 }
 
 gh_plain() {

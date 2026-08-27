@@ -1,5 +1,5 @@
 /** Shared bounded pagination for MCP list operations. */
-import { clampPositiveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
+import { clampPositiveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
 import { boundedJsonUtf8Bytes } from "../infra/json-utf8-bytes.js";
 
 type McpPaginationPage<T> = {

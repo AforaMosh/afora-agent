@@ -1,6 +1,6 @@
 /** Resolves root CLI help from process-stable manifests before plugin code loads. */
 import { collectUniqueCommandDescriptors } from "../cli/program/command-descriptor-utils.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginCliLoaderOptions } from "./cli-registry-loader.js";
 import { normalizePluginsConfig, resolveMemorySlotDecision } from "./config-state.js";
 import { isInstalledPluginEnabled } from "./installed-plugin-index.js";
@@ -11,7 +11,7 @@ import {
   resolvePluginRuntimeLoadContext,
 } from "./runtime/load-context.js";
 import { hasKind } from "./slots.js";
-import type { OpenClawPluginCliRootCommandDescriptor, PluginLogger } from "./types.js";
+import type { AforaPluginCliRootCommandDescriptor, PluginLogger } from "./types.js";
 
 const quietLogger = {
   info: () => {},
@@ -21,10 +21,10 @@ const quietLogger = {
 } satisfies PluginLogger;
 
 export async function getPluginCliCommandDescriptors(
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
   env?: NodeJS.ProcessEnv,
   loaderOptions?: PluginCliLoaderOptions,
-): Promise<OpenClawPluginCliRootCommandDescriptor[]> {
+): Promise<AforaPluginCliRootCommandDescriptor[]> {
   try {
     const context = resolvePluginRuntimeLoadContext({ config: cfg, env, logger: quietLogger });
     const snapshot = context.metadataSnapshot;
@@ -32,7 +32,7 @@ export async function getPluginCliCommandDescriptors(
       return [];
     }
     const legacyExternalPluginIds: string[] = [];
-    const descriptorGroups: OpenClawPluginCliRootCommandDescriptor[][] = [];
+    const descriptorGroups: AforaPluginCliRootCommandDescriptor[][] = [];
     const seenPluginIds = new Set<string>();
     let selectedMemoryPluginId: string | null = null;
     const memorySlot = context.config.plugins?.slots?.memory;
@@ -76,8 +76,8 @@ export async function getPluginCliCommandDescriptors(
     }
 
     if (legacyExternalPluginIds.length > 0) {
-      const { loadOpenClawPluginCliRegistry } = await import("./loader.js");
-      const registry = await loadOpenClawPluginCliRegistry(
+      const { loadAforaPluginCliRegistry } = await import("./loader.js");
+      const registry = await loadAforaPluginCliRegistry(
         buildPluginRuntimeLoadOptions(context, {
           ...loaderOptions,
           onlyPluginIds: legacyExternalPluginIds,

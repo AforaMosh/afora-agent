@@ -2,9 +2,9 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { redactSensitiveUrlLikeString } from "@openclaw/net-policy/redact-sensitive-url";
-import { hasHttpUrlPrefix } from "@openclaw/net-policy/url-protocol";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { redactSensitiveUrlLikeString } from "@afora/net-policy/redact-sensitive-url";
+import { hasHttpUrlPrefix } from "@afora/net-policy/url-protocol";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { sanitizeForLog } from "../../packages/terminal-core/src/ansi.js";
 import { resolveArchiveKind } from "../infra/archive.js";
 import { formatErrorMessage, toErrorObject } from "../infra/errors.js";
@@ -535,7 +535,7 @@ async function cloneMarketplaceRepo(params: {
     return { ok: false, error: `unsupported marketplace source: ${params.source}` };
   }
 
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-marketplace-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-marketplace-"));
   const repoDir = path.join(tmpDir, "repo");
   const refIsCommit = isImmutableGitCommitRef(normalized.ref);
   const argv = ["git", "clone"];
@@ -954,7 +954,7 @@ async function downloadUrlToTempFile(
 
       const finalFileName = resolveSafeMarketplaceDownloadFileName(finalUrl, sourceFileName);
       const fileName = resolveArchiveKind(finalFileName) ? finalFileName : sourceFileName;
-      tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-marketplace-download-"));
+      tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-marketplace-download-"));
       const createdTmpDir = tmpDir;
       const targetPath = path.resolve(createdTmpDir, fileName);
       if (!isPathInside(createdTmpDir, targetPath)) {

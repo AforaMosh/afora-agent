@@ -229,7 +229,7 @@ export function describeAnthropicProviderRuntimeContract(
       });
 
       expect(hint).toContain("suggested profile: anthropic:oauth-user@example.com");
-      expect(hint).toContain("openclaw doctor --yes");
+      expect(hint).toContain("afora doctor --yes");
     });
 
     it("owns usage snapshot fetching", async () => {
@@ -557,7 +557,7 @@ export function describeOpenAIProviderRuntimeContract(
       });
     });
 
-    it("keeps OpenClaw cost metadata but applies Codex context metadata for gpt-5.5 models", () => {
+    it("keeps Afora cost metadata but applies Codex context metadata for gpt-5.5 models", () => {
       const provider = requireProviderContractProvider("openai");
       const manifestModel = createManifestModel("gpt-5.5", {
         api: "openai-chatgpt-responses",

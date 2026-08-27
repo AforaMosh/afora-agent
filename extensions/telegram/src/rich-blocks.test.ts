@@ -360,7 +360,7 @@ describe("markdownToTelegramRichBlocks", () => {
 
   it("keeps unsupported local links as visible text and wraps file refs as code", () => {
     const { blocks } = markdownToTelegramRichBlocks(
-      "[scripts/yougile.py](/home/user/scripts/yougile.py#L41) and [config](./openclaw.json)",
+      "[scripts/yougile.py](/home/user/scripts/yougile.py#L41) and [config](./afora.json)",
     );
     const plain = inputRichBlocksToPlainText(blocks);
     expect(plain).toContain("scripts/yougile.py");

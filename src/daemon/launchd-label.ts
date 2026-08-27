@@ -11,8 +11,8 @@ export function assertValidLaunchAgentLabel(label: string): string {
 }
 
 export function resolveLaunchAgentLabel(env?: Record<string, string | undefined>): string {
-  const override = env?.OPENCLAW_LAUNCHD_LABEL?.trim();
+  const override = env?.AFORA_LAUNCHD_LABEL?.trim();
   return assertValidLaunchAgentLabel(
-    override || resolveGatewayLaunchAgentLabel(env?.OPENCLAW_PROFILE),
+    override || resolveGatewayLaunchAgentLabel(env?.AFORA_PROFILE),
   );
 }

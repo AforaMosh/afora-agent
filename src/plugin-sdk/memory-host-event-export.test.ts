@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { root as createFsSafeRoot } from "../infra/fs-safe.js";
 import { resetPluginStateStoreForTests } from "../plugin-state/plugin-state-store.js";
 import { clearMemoryPluginState } from "../plugins/memory-state.test-fixtures.js";
-import { createOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { createAforaTestState } from "../test-utils/afora-test-state.js";
 import { listMemoryHostPublicArtifacts } from "./memory-host-core.js";
 import {
   memoryHostEventExportOwnerContent,
@@ -26,7 +26,7 @@ describe("memory host event export recovery", () => {
     const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "memory-host-publish-race-"));
     const workspaceDir = path.join(fixtureRoot, "workspace");
     const relativePath = "memory/events/state/memory-host-events.jsonl";
-    const ownerRelativePath = "memory/events/state/.openclaw-memory-host-events-owner.json";
+    const ownerRelativePath = "memory/events/state/.afora-memory-host-events-owner.json";
     const absolutePath = path.join(workspaceDir, relativePath);
     const owner = {
       queueKey: "state\0workspace",
@@ -104,11 +104,11 @@ describe("memory host event export recovery", () => {
   });
 
   it("finishes an inode-owned empty event export after interruption", async () => {
-    const openClawState = await createOpenClawTestState({
+    const aforaState = await createAforaTestState({
       layout: "state-only",
       prefix: "memory-host-inode-owner-",
     });
-    const { stateDir, workspaceDir } = openClawState;
+    const { stateDir, workspaceDir } = aforaState;
     const event = {
       type: "memory.recall.recorded" as const,
       timestamp: "2026-05-18T12:00:00.000Z",
@@ -128,7 +128,7 @@ describe("memory host event export recovery", () => {
         .slice(0, 32);
       const exportDir = path.join(workspaceDir, "memory", "events", stateHash);
       const exportPath = path.join(exportDir, "memory-host-events.jsonl");
-      const ownerPath = path.join(exportDir, ".openclaw-memory-host-events-owner.json");
+      const ownerPath = path.join(exportDir, ".afora-memory-host-events-owner.json");
       const expectedContent = `${JSON.stringify(event)}\n`;
       await fs.mkdir(exportDir, { recursive: true });
       await fs.writeFile(exportPath, "", { mode: 0o600 });
@@ -137,7 +137,7 @@ describe("memory host event export recovery", () => {
         ownerPath,
         `${JSON.stringify({
           schemaVersion: 3,
-          kind: "openclaw-memory-host-events-export",
+          kind: "afora-memory-host-events-export",
           stateHash,
           workspaceHash,
           pendingContentSha256: createHash("sha256").update(expectedContent).digest("hex"),
@@ -166,16 +166,16 @@ describe("memory host event export recovery", () => {
       });
       expect(owner.pendingContentSha256).toBeUndefined();
     } finally {
-      await openClawState.cleanup();
+      await aforaState.cleanup();
     }
   });
 
   it("does not claim an empty export after exclusive-create interruption", async () => {
-    const openClawState = await createOpenClawTestState({
+    const aforaState = await createAforaTestState({
       layout: "state-only",
       prefix: "memory-host-empty-export-",
     });
-    const { stateDir, workspaceDir } = openClawState;
+    const { stateDir, workspaceDir } = aforaState;
     const event = {
       type: "memory.recall.recorded" as const,
       timestamp: "2026-05-18T12:00:00.000Z",
@@ -195,7 +195,7 @@ describe("memory host event export recovery", () => {
         .slice(0, 32);
       const exportDir = path.join(workspaceDir, "memory", "events", stateHash);
       const exportPath = path.join(exportDir, "memory-host-events.jsonl");
-      const ownerPath = path.join(exportDir, ".openclaw-memory-host-events-owner.json");
+      const ownerPath = path.join(exportDir, ".afora-memory-host-events-owner.json");
       const expectedContent = `${JSON.stringify(event)}\n`;
       await fs.mkdir(exportDir, { recursive: true });
       await fs.writeFile(exportPath, "", { mode: 0o600 });
@@ -203,7 +203,7 @@ describe("memory host event export recovery", () => {
         ownerPath,
         `${JSON.stringify({
           schemaVersion: 3,
-          kind: "openclaw-memory-host-events-export",
+          kind: "afora-memory-host-events-export",
           stateHash,
           workspaceHash,
           pendingContentSha256: createHash("sha256").update(expectedContent).digest("hex"),
@@ -218,7 +218,7 @@ describe("memory host event export recovery", () => {
       expect(listed.some((artifact) => artifact.kind === "event-log")).toBe(false);
       await expect(fs.readFile(exportPath, "utf8")).resolves.toBe("");
     } finally {
-      await openClawState.cleanup();
+      await aforaState.cleanup();
     }
   });
 });

@@ -4,7 +4,7 @@
  * Auto-reply heartbeat turns use this tool to accept the agent's outcome,
  * notification decision, and next-check metadata exactly once per turn.
  */
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { Type } from "typebox";
 import {
   HEARTBEAT_RESPONSE_TOOL_NAME,

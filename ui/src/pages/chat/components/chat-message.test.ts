@@ -218,7 +218,7 @@ function renderTestMessageGroup(
   return renderMessageGroup(group, {
     showReasoning: true,
     showToolCalls: true,
-    assistantName: "OpenClaw",
+    assistantName: "Afora",
     assistantAvatar: null,
     ...opts,
   });
@@ -320,7 +320,7 @@ describe("cloud workspace conflict transcript messages", () => {
             "src/five.ts",
             "src/six.ts",
           ],
-          stagedResultRef: "refs/openclaw/worker-results/claim-456",
+          stagedResultRef: "refs/afora/worker-results/claim-456",
           totalCount: 7,
         },
         timestamp: 1,
@@ -333,7 +333,7 @@ describe("cloud workspace conflict transcript messages", () => {
     expect(card.textContent).toContain("Cloud result applied with 7 conflicts");
     expect(card.querySelectorAll(".chat-workspace-conflict-paths li")).toHaveLength(5);
     expect(card.textContent).toContain("+2 more paths");
-    expect(card.textContent).toContain("refs/openclaw/worker-results/claim-456");
+    expect(card.textContent).toContain("refs/afora/worker-results/claim-456");
     expect(card.querySelector(".chat-text")).toBeNull();
     expect(container.querySelector(".chat-sender-name")?.textContent).toBe("Cloud workspace");
   });
@@ -348,7 +348,7 @@ describe("cloud workspace conflict transcript messages", () => {
         content: "fallback summary",
         details: {
           paths: ["src/line\nbreak.ts"],
-          stagedResultRef: "refs/openclaw/worker-results/claim-control",
+          stagedResultRef: "refs/afora/worker-results/claim-control",
         },
         timestamp: 1,
       },
@@ -358,7 +358,7 @@ describe("cloud workspace conflict transcript messages", () => {
     expect(container.querySelector(".chat-workspace-conflict-paths code")?.textContent).toBe(
       "src/line\\u{000a}break.ts",
     );
-    expect(container.textContent).toContain("refs/openclaw/worker-results/claim-control");
+    expect(container.textContent).toContain("refs/afora/worker-results/claim-control");
   });
 });
 
@@ -374,7 +374,7 @@ function createCanvasPreview(params: {
     render: "url",
     viewId: params.viewId,
     title: params.title ?? "Inline demo",
-    url: params.url ?? `/__openclaw__/canvas/documents/${params.viewId}/index.html`,
+    url: params.url ?? `/__afora__/canvas/documents/${params.viewId}/index.html`,
     preferredHeight: params.preferredHeight ?? 360,
   };
 }
@@ -416,7 +416,7 @@ function renderMessageGroups(
 }
 
 function clearConfirmedActionSkip() {
-  localStorageValues.delete("openclaw:skip-rewind-confirm");
+  localStorageValues.delete("afora:skip-rewind-confirm");
 }
 
 function stubAnimationFrameQueue() {
@@ -655,7 +655,7 @@ function mediaTicketPayload(mediaTicket: string, ttlMs = 5 * 60 * 1000) {
 async function requireAudioPlayer(container: HTMLElement) {
   const player = expectElement(
     container,
-    "openclaw-chat-audio-player",
+    "afora-chat-audio-player",
     HTMLElement,
   ) as HTMLElement & { updateComplete: Promise<unknown> };
   await player.updateComplete;
@@ -665,7 +665,7 @@ async function requireAudioPlayer(container: HTMLElement) {
 async function requireVideoPlayer(container: HTMLElement) {
   const player = expectElement(
     container,
-    "openclaw-chat-video-player",
+    "afora-chat-video-player",
     HTMLElement,
   ) as HTMLElement & { updateComplete: Promise<unknown> };
   await player.updateComplete;
@@ -786,7 +786,7 @@ describe("grouped chat rendering", () => {
       container,
       createAssistantMessage("Reply with this context.", {
         timestamp: 1000,
-        __openclaw: { id: "assistant-entry-1" },
+        __afora: { id: "assistant-entry-1" },
       }),
       { onReply },
     );
@@ -803,7 +803,7 @@ describe("grouped chat rendering", () => {
 
     expect(onReply).toHaveBeenCalledWith({
       messageId: "assistant-message",
-      senderLabel: "OpenClaw",
+      senderLabel: "Afora",
       sourceMessageId: "assistant-entry-1",
       text: "Reply with this context.",
     });
@@ -813,7 +813,7 @@ describe("grouped chat rendering", () => {
       userContainer,
       createUserMessage("User reply context.", {
         timestamp: 1001,
-        __openclaw: { id: "user-entry-1" },
+        __afora: { id: "user-entry-1" },
       }),
       "user",
       { onReply, userName: "Jason" },
@@ -1027,7 +1027,7 @@ describe("grouped chat rendering", () => {
   it("renders a confirmed rewind action only for user groups", () => {
     const container = document.createElement("div");
     const onRewind = vi.fn();
-    localStorageValues.delete("openclaw:skip-rewind-confirm");
+    localStorageValues.delete("afora:skip-rewind-confirm");
     renderMessageGroups(
       container,
       [
@@ -1056,7 +1056,7 @@ describe("grouped chat rendering", () => {
     );
 
     const button = container.querySelector<HTMLButtonElement>(".chat-group-rewind");
-    const tooltip = button?.closest("openclaw-tooltip");
+    const tooltip = button?.closest("afora-tooltip");
     expect(button?.disabled).toBe(true);
     expect(tooltip?.content).toBe("Rewind is unavailable while the agent is working");
   });
@@ -1507,7 +1507,7 @@ describe("grouped chat rendering", () => {
     const container = document.createElement("div");
     renderAssistantMessage(container, createAssistantMessage("Done", { timestamp }));
 
-    expect(container.querySelector("openclaw-tooltip")?.getAttribute("content")).toBe(
+    expect(container.querySelector("afora-tooltip")?.getAttribute("content")).toBe(
       new Date(timestamp).toLocaleString([], {
         month: "short",
         day: "numeric",
@@ -1688,7 +1688,7 @@ describe("grouped chat rendering", () => {
       "5.5k tokens",
     );
     // Streaming tokens replace the whimsical phrase: one liveness signal at a time.
-    expect(container.querySelector("openclaw-working-phrase")).toBeNull();
+    expect(container.querySelector("afora-working-phrase")).toBeNull();
   });
 
   it("relabels the working indicator while the run waits for approval", () => {
@@ -1771,7 +1771,7 @@ describe("grouped chat rendering", () => {
         visibleLabels: status?.querySelectorAll("span:not(.sr-only)").length,
         // The whimsical long-wait phrase rides in its own aria-hidden element,
         // never as a plain status span screen readers would announce.
-        decorativePhrases: status?.querySelectorAll("openclaw-working-phrase[aria-hidden]").length,
+        decorativePhrases: status?.querySelectorAll("afora-working-phrase[aria-hidden]").length,
       };
     };
 
@@ -2032,7 +2032,7 @@ describe("grouped chat rendering", () => {
         {
           showReasoning: true,
           showToolCalls: true,
-          assistantName: "OpenClaw",
+          assistantName: "Afora",
           userId: "profile-1",
           userName: "Fuller Stack",
           showAvatarGutter: true,
@@ -2069,7 +2069,7 @@ describe("grouped chat rendering", () => {
         {
           showReasoning: true,
           showToolCalls: true,
-          assistantName: "OpenClaw",
+          assistantName: "Afora",
           showAvatarGutter: false,
         },
       ),
@@ -2103,7 +2103,7 @@ describe("grouped chat rendering", () => {
       renderMessageGroup(group, {
         showReasoning: true,
         showToolCalls: true,
-        assistantName: "OpenClaw",
+        assistantName: "Afora",
         showAvatarGutter: false,
       }),
       container,
@@ -2141,7 +2141,7 @@ describe("grouped chat rendering", () => {
       renderMessageGroup(group, {
         showReasoning: true,
         showToolCalls: true,
-        assistantName: "OpenClaw",
+        assistantName: "Afora",
       }),
       container,
     );
@@ -2169,12 +2169,12 @@ describe("grouped chat rendering", () => {
       container,
       createAssistantMessage("hello", { timestamp: 1000 }),
       "assistant",
-      { assistantName: "OpenClaw", userName: "Fuller Stack" },
+      { assistantName: "Afora", userName: "Fuller Stack" },
     );
 
     expect(
       container.querySelector<HTMLElement>(".chat-group.assistant .chat-sender-name")?.textContent,
-    ).toBe("OpenClaw");
+    ).toBe("Afora");
   });
 
   it("collapses consecutive tool results into an activity group", () => {
@@ -2257,7 +2257,7 @@ describe("grouped chat rendering", () => {
       renderActivityGroup(groups, {
         showReasoning: true,
         showToolCalls: true,
-        assistantName: "OpenClaw",
+        assistantName: "Afora",
         isToolMessageExpanded: (id) => id === "activity:tool-group-1",
       }),
       container,
@@ -2336,8 +2336,8 @@ describe("grouped chat rendering", () => {
         [
           createMessageEntry("running-edit", {
             role: "assistant",
-            __openclawToolStreamLive: true,
-            __openclawToolStreamResultReceived: false,
+            __aforaToolStreamLive: true,
+            __aforaToolStreamResultReceived: false,
             content: [
               {
                 type: "tool_use",
@@ -2458,8 +2458,8 @@ describe("grouped chat rendering", () => {
         }),
         createMessageEntry("running-edit", {
           role: "assistant",
-          __openclawToolStreamLive: true,
-          __openclawToolStreamResultReceived: false,
+          __aforaToolStreamLive: true,
+          __aforaToolStreamResultReceived: false,
           content: [
             {
               type: "tool_use",
@@ -3016,7 +3016,7 @@ describe("grouped chat rendering", () => {
         "Here is the image.\nMEDIA:https://example.com/photo.png\nMEDIA:https://example.com/voice.ogg",
         {
           id: "assistant-media-inline",
-          openclawDelivery: { audioAsVoice: true, replyToCurrent: true },
+          aforaDelivery: { audioAsVoice: true, replyToCurrent: true },
         },
       ),
       { showToolCalls: false, onOpenImage },
@@ -3049,7 +3049,7 @@ describe("grouped chat rendering", () => {
     renderGroupedMessage(
       container,
       createUserMessage("Follow up", {
-        __openclaw: { replyToId: "transcript-123" },
+        __afora: { replyToId: "transcript-123" },
       }),
       "user",
       {
@@ -3077,7 +3077,7 @@ describe("grouped chat rendering", () => {
     renderGroupedMessage(
       container,
       createUserMessage("Follow up", {
-        __openclaw: {
+        __afora: {
           replyToId: "unloaded-message",
           replyToPreview: { senderLabel: "Marie", text: "The original answer" },
         },
@@ -3099,7 +3099,7 @@ describe("grouped chat rendering", () => {
     renderGroupedMessage(
       container,
       createUserMessage("Follow up", {
-        __openclaw: {
+        __afora: {
           replyToId: "unloaded-message",
           replyToPreview: { senderLabel: "Marie", text: "The original answer" },
         },
@@ -3177,7 +3177,7 @@ describe("grouped chat rendering", () => {
   });
 
   it("checks local assistant audio against server metadata while preview roots load", async () => {
-    const source = `/home/node/.openclaw/media/outbound/${crypto.randomUUID()}.mp3`;
+    const source = `/home/node/.afora/media/outbound/${crypto.randomUUID()}.mp3`;
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       expect(url).toContain("meta=1");
       expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer session-token");
@@ -3198,7 +3198,7 @@ describe("grouped chat rendering", () => {
         }),
         {
           showToolCalls: false,
-          basePath: "/openclaw",
+          basePath: "/afora",
           assistantAttachmentAuthToken: "session-token",
           localMediaPreviewRoots: [],
           onRequestUpdate: renderMessage,
@@ -3213,7 +3213,7 @@ describe("grouped chat rendering", () => {
     const audioPlayer = await requireAudioPlayer(container);
     const audio = expectElement(audioPlayer, "audio", HTMLAudioElement);
     expect(audio.getAttribute("src")).toBe(
-      `/openclaw/__openclaw__/assistant-media?source=${encodeURIComponent(source)}&mediaTicket=ticket-bootstrap-audio`,
+      `/afora/__afora__/assistant-media?source=${encodeURIComponent(source)}&mediaTicket=ticket-bootstrap-audio`,
     );
     expect((audioPlayer as unknown as { serverDurationMs?: number }).serverDurationMs).toBe(2_345);
   });
@@ -3367,18 +3367,18 @@ describe("grouped chat rendering", () => {
     rerender();
     await flushAssistantAttachmentAvailabilityChecks();
     expect(resolveArtifactDownload).toHaveBeenCalledTimes(1);
-    expect(container.querySelector("openclaw-chat-audio-player")).not.toBeNull();
+    expect(container.querySelector("afora-chat-audio-player")).not.toBeNull();
 
     await vi.advanceTimersByTimeAsync(4_999);
     expect(resolveArtifactDownload).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(1);
     await flushAssistantAttachmentAvailabilityChecks();
     expect(resolveArtifactDownload).toHaveBeenCalledTimes(2);
-    expect(container.querySelector("openclaw-chat-audio-player")).not.toBeNull();
+    expect(container.querySelector("afora-chat-audio-player")).not.toBeNull();
 
     await vi.advanceTimersByTimeAsync(1_000);
     expect(resolveArtifactDownload).toHaveBeenCalledTimes(2);
-    expect(container.querySelector("openclaw-chat-audio-player")).toBeNull();
+    expect(container.querySelector("afora-chat-audio-player")).toBeNull();
     finishSecondRequest?.();
     await flushAssistantAttachmentAvailabilityChecks();
     await vi.advanceTimersByTimeAsync(9_999);
@@ -3434,12 +3434,12 @@ describe("grouped chat rendering", () => {
 
     expect(resolveArtifactDownload).toHaveBeenCalledTimes(3);
     expect(
-      container.querySelector("openclaw-chat-audio-player audio")?.getAttribute("src"),
+      container.querySelector("afora-chat-audio-player audio")?.getAttribute("src"),
     ).toContain("mediaTicket=short-2");
     expect(container.querySelector(".chat-assistant-attachment-card--blocked")).toBeNull();
 
     await vi.advanceTimersByTimeAsync(4_999);
-    expect(container.querySelector("openclaw-chat-audio-player")).not.toBeNull();
+    expect(container.querySelector("afora-chat-audio-player")).not.toBeNull();
     await vi.advanceTimersByTimeAsync(1);
     await flushAssistantAttachmentAvailabilityChecks();
 
@@ -3491,12 +3491,12 @@ describe("grouped chat rendering", () => {
 
     expect(resolveArtifactDownload).toHaveBeenCalledTimes(3);
     expect(
-      container.querySelector("openclaw-chat-audio-player audio")?.getAttribute("src"),
+      container.querySelector("afora-chat-audio-player audio")?.getAttribute("src"),
     ).toContain("mediaTicket=short-3");
 
     await vi.advanceTimersByTimeAsync(5_000);
     await flushAssistantAttachmentAvailabilityChecks();
-    expect(container.querySelector("openclaw-chat-audio-player")).not.toBeNull();
+    expect(container.querySelector("afora-chat-audio-player")).not.toBeNull();
     await vi.advanceTimersByTimeAsync(15_000);
     await flushAssistantAttachmentAvailabilityChecks();
     expect(container.querySelector(".chat-assistant-attachment-card--blocked")).not.toBeNull();
@@ -3568,14 +3568,14 @@ describe("grouped chat rendering", () => {
       { showToolCalls: false },
     );
 
-    expect(container.querySelector("openclaw-chat-audio-player")).toBeNull();
+    expect(container.querySelector("afora-chat-audio-player")).toBeNull();
     expect(
       container.querySelector(".chat-assistant-attachment-card--blocked")?.textContent,
     ).toContain("Unavailable");
   });
 
   it("checks local assistant images against server metadata while preview roots load", async () => {
-    const source = `/home/node/.openclaw/media/outbound/${crypto.randomUUID()}.png`;
+    const source = `/home/node/.afora/media/outbound/${crypto.randomUUID()}.png`;
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       expect(url).toContain("meta=1");
       expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer session-token");
@@ -3597,7 +3597,7 @@ describe("grouped chat rendering", () => {
         ),
         {
           showToolCalls: false,
-          basePath: "/openclaw",
+          basePath: "/afora",
           assistantAttachmentAuthToken: "session-token",
           localMediaPreviewRoots: [],
           onRequestUpdate: renderMessage,
@@ -3610,7 +3610,7 @@ describe("grouped chat rendering", () => {
 
     const image = expectElement(container, ".chat-message-image", HTMLImageElement);
     expect(image.getAttribute("src")).toBe(
-      `/openclaw/__openclaw__/assistant-media?source=${encodeURIComponent(source)}&mediaTicket=ticket-bootstrap-image`,
+      `/afora/__afora__/assistant-media?source=${encodeURIComponent(source)}&mediaTicket=ticket-bootstrap-image`,
     );
   });
 
@@ -3623,7 +3623,7 @@ describe("grouped chat rendering", () => {
     {
       code: "file-not-found",
       reason: "File not found",
-      source: "/home/node/.openclaw/media/outbound/bootstrap-missing.mp3",
+      source: "/home/node/.afora/media/outbound/bootstrap-missing.mp3",
     },
   ] as const)(
     "keeps server-rejected $code media blocked while preview roots load",
@@ -3644,7 +3644,7 @@ describe("grouped chat rendering", () => {
           }),
           {
             showToolCalls: false,
-            basePath: "/openclaw",
+            basePath: "/afora",
             assistantAttachmentAuthToken: "session-token",
             localMediaPreviewRoots: [],
             onRequestUpdate: renderMessage,
@@ -3953,7 +3953,7 @@ describe("grouped chat rendering", () => {
   });
 
   it("renders verified local assistant attachments through the authenticated media route", async () => {
-    const source = `/tmp/openclaw/${crypto.randomUUID()} test image.png`;
+    const source = `/tmp/afora/${crypto.randomUUID()} test image.png`;
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.includes("meta=1")) {
         const headers = init?.headers as Headers;
@@ -3972,9 +3972,9 @@ describe("grouped chat rendering", () => {
         }),
         {
           showToolCalls: false,
-          basePath: "/openclaw",
+          basePath: "/afora",
           assistantAttachmentAuthToken: "session-token",
-          localMediaPreviewRoots: ["/tmp/openclaw"],
+          localMediaPreviewRoots: ["/tmp/afora"],
           onRequestUpdate: renderMessage,
         },
       );
@@ -3985,7 +3985,7 @@ describe("grouped chat rendering", () => {
     );
     await flushAssistantAttachmentAvailabilityChecks();
 
-    const expectedMetaUrl = `/openclaw/__openclaw__/assistant-media?source=${encodeURIComponent(source).replaceAll("%20", "+")}&meta=1`;
+    const expectedMetaUrl = `/afora/__afora__/assistant-media?source=${encodeURIComponent(source).replaceAll("%20", "+")}&meta=1`;
     const [, fetchInit] = requireFetchCallForUrl(fetchMock, expectedMetaUrl);
     expectSameOriginGet(fetchInit);
     expect(
@@ -3995,7 +3995,7 @@ describe("grouped chat rendering", () => {
 
   it("stops checking when local assistant attachment metadata fetch stalls", async () => {
     vi.useFakeTimers();
-    const source = `/tmp/openclaw/${crypto.randomUUID()}-stalled.txt`;
+    const source = `/tmp/afora/${crypto.randomUUID()}-stalled.txt`;
     const fetchMock = vi.fn(
       (_url: string, init?: RequestInit) =>
         new Promise<Response>((_resolve, reject) => {
@@ -4022,8 +4022,8 @@ describe("grouped chat rendering", () => {
         }),
         {
           showToolCalls: false,
-          basePath: "/openclaw",
-          localMediaPreviewRoots: ["/tmp/openclaw"],
+          basePath: "/afora",
+          localMediaPreviewRoots: ["/tmp/afora"],
           onRequestUpdate: rerender,
         },
       );
@@ -4033,7 +4033,7 @@ describe("grouped chat rendering", () => {
       "Checking...",
     );
 
-    const expectedMetaUrl = `/openclaw/__openclaw__/assistant-media?source=${encodeURIComponent(source)}&meta=1`;
+    const expectedMetaUrl = `/afora/__afora__/assistant-media?source=${encodeURIComponent(source)}&meta=1`;
     const [, fetchInit] = requireFetchCallForUrl(fetchMock, expectedMetaUrl);
     await vi.advanceTimersByTimeAsync(30_001);
     await flushAssistantAttachmentAvailabilityChecks();
@@ -4048,7 +4048,7 @@ describe("grouped chat rendering", () => {
   it("refreshes local assistant media tickets before expiry without another render", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-30T00:00:00Z"));
-    const source = `/tmp/openclaw/${crypto.randomUUID()}-refresh.png`;
+    const source = `/tmp/afora/${crypto.randomUUID()}-refresh.png`;
     const fetchMock = vi
       .fn<
         (url: string, init?: RequestInit) => Promise<{ ok: true; json: () => Promise<unknown> }>
@@ -4074,9 +4074,9 @@ describe("grouped chat rendering", () => {
         },
         {
           showToolCalls: false,
-          basePath: "/openclaw",
+          basePath: "/afora",
           assistantAttachmentAuthToken: "test-auth-token",
-          localMediaPreviewRoots: ["/tmp/openclaw"],
+          localMediaPreviewRoots: ["/tmp/afora"],
           onRequestUpdate: rerender,
         },
       );
@@ -4101,7 +4101,7 @@ describe("grouped chat rendering", () => {
   it("queues refreshed audio tickets until playback needs a new source", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-30T00:00:00Z"));
-    const source = `/tmp/openclaw/${crypto.randomUUID()}-refresh.mp3`;
+    const source = `/tmp/afora/${crypto.randomUUID()}-refresh.mp3`;
     const fetchMock = vi
       .fn<
         (url: string, init?: RequestInit) => Promise<{ ok: true; json: () => Promise<unknown> }>
@@ -4128,8 +4128,8 @@ describe("grouped chat rendering", () => {
         },
         {
           showToolCalls: false,
-          basePath: "/openclaw",
-          localMediaPreviewRoots: ["/tmp/openclaw"],
+          basePath: "/afora",
+          localMediaPreviewRoots: ["/tmp/afora"],
           onRequestUpdate: rerender,
         },
       );
@@ -4162,7 +4162,7 @@ describe("grouped chat rendering", () => {
   });
 
   it("rechecks local assistant media when its auth token changes", async () => {
-    const source = `/tmp/openclaw/${crypto.randomUUID()}-auth.png`;
+    const source = `/tmp/afora/${crypto.randomUUID()}-auth.png`;
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (!url.includes("meta=1")) {
         throw new Error(`Unexpected fetch: ${url}`);
@@ -4190,9 +4190,9 @@ describe("grouped chat rendering", () => {
         },
         {
           showToolCalls: false,
-          basePath: "/openclaw",
+          basePath: "/afora",
           assistantAttachmentAuthToken: token,
-          localMediaPreviewRoots: ["/tmp/openclaw"],
+          localMediaPreviewRoots: ["/tmp/afora"],
           onRequestUpdate: () => renderWithToken(token),
         },
       );
@@ -4213,7 +4213,7 @@ describe("grouped chat rendering", () => {
 
   it("automatically retries unavailable local assistant media after the retry window", async () => {
     vi.useFakeTimers();
-    const source = `/tmp/openclaw/${crypto.randomUUID()}-retry.png`;
+    const source = `/tmp/afora/${crypto.randomUUID()}-retry.png`;
     const fetchMock = vi
       .fn<(url: string) => Promise<{ ok: true; json: () => Promise<unknown> }>>()
       .mockResolvedValueOnce({ ok: true, json: async () => ({ available: false }) })
@@ -4234,8 +4234,8 @@ describe("grouped chat rendering", () => {
         },
         {
           showToolCalls: false,
-          basePath: "/openclaw",
-          localMediaPreviewRoots: ["/tmp/openclaw"],
+          basePath: "/afora",
+          localMediaPreviewRoots: ["/tmp/afora"],
           onRequestUpdate: rerender,
         },
       );
@@ -4257,7 +4257,7 @@ describe("grouped chat rendering", () => {
 
   it("stops automatically retrying permanently unavailable local assistant media", async () => {
     vi.useFakeTimers();
-    const source = `/tmp/openclaw/${crypto.randomUUID()}-permanently-unavailable.png`;
+    const source = `/tmp/afora/${crypto.randomUUID()}-permanently-unavailable.png`;
     const fetchMock = vi.fn(async () => ({
       ok: true,
       json: async () => ({ available: false }),
@@ -4275,8 +4275,8 @@ describe("grouped chat rendering", () => {
         },
         {
           showToolCalls: false,
-          basePath: "/openclaw",
-          localMediaPreviewRoots: ["/tmp/openclaw"],
+          basePath: "/afora",
+          localMediaPreviewRoots: ["/tmp/afora"],
           onRequestUpdate: rerender,
         },
       );
@@ -4307,15 +4307,15 @@ describe("grouped chat rendering", () => {
     renderAssistantMessage(
       container,
       createAssistantMessage(
-        "Inline\nMEDIA:/media/inbound/test-image.png\nMEDIA:/__openclaw__/media/test-doc.pdf",
+        "Inline\nMEDIA:/media/inbound/test-image.png\nMEDIA:/__afora__/media/test-doc.pdf",
         {
           id: "assistant-same-origin-media-inline",
         },
       ),
       {
         showToolCalls: false,
-        basePath: "/openclaw",
-        localMediaPreviewRoots: ["/tmp/openclaw"],
+        basePath: "/afora",
+        localMediaPreviewRoots: ["/tmp/afora"],
       },
     );
 
@@ -4326,7 +4326,7 @@ describe("grouped chat rendering", () => {
       container
         .querySelector<HTMLAnchorElement>(".chat-assistant-attachment-card__link")
         ?.getAttribute("href"),
-    ).toBe("/__openclaw__/media/test-doc.pdf");
+    ).toBe("/__afora__/media/test-doc.pdf");
     expect(container.querySelector(".chat-assistant-attachment-card--blocked")).toBeNull();
   });
 
@@ -4339,8 +4339,8 @@ describe("grouped chat rendering", () => {
       }),
       {
         showToolCalls: false,
-        basePath: "/openclaw",
-        localMediaPreviewRoots: ["/tmp/openclaw"],
+        basePath: "/afora",
+        localMediaPreviewRoots: ["/tmp/afora"],
       },
     );
 
@@ -4364,7 +4364,7 @@ describe("grouped chat rendering", () => {
       container,
       createUserMessage("", {
         id: "user-encoded-video",
-        __openclaw: { media: [{ url: mediaUrl, contentType: "video/mp4" }] },
+        __afora: { media: [{ url: mediaUrl, contentType: "video/mp4" }] },
       }),
       "user",
       { showToolCalls: false },
@@ -4375,11 +4375,11 @@ describe("grouped chat rendering", () => {
   });
 
   it("renders transcript image variants and structured image blocks", async () => {
-    const firstSource = `/tmp/openclaw/${crypto.randomUUID()}-first.png`;
-    const secondSource = `/tmp/openclaw/${crypto.randomUUID()}-second.jpg`;
+    const firstSource = `/tmp/afora/${crypto.randomUUID()}-first.png`;
+    const secondSource = `/tmp/afora/${crypto.randomUUID()}-second.jpg`;
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       const mediaUrl = new URL(url, "http://control.test");
-      expect(mediaUrl.pathname).toBe("/openclaw/__openclaw__/assistant-media");
+      expect(mediaUrl.pathname).toBe("/afora/__afora__/assistant-media");
       expect(mediaUrl.searchParams.get("meta")).toBe("1");
       expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer test-auth-token");
       return { ok: true, json: async () => mediaTicketPayload("ticket-transcript") };
@@ -4391,9 +4391,9 @@ describe("grouped chat rendering", () => {
       const rerender = () =>
         renderGroupedMessage(container, message, "user", {
           showToolCalls: false,
-          basePath: "/openclaw",
+          basePath: "/afora",
           assistantAttachmentAuthToken: "test-auth-token",
-          localMediaPreviewRoots: ["/tmp/openclaw"],
+          localMediaPreviewRoots: ["/tmp/afora"],
           onRequestUpdate: rerender,
         });
       rerender();
@@ -4402,7 +4402,7 @@ describe("grouped chat rendering", () => {
     renderUserMedia(
       createUserMessage("", {
         id: "user-history-image-octet-stream",
-        __openclaw: {
+        __afora: {
           media: [{ path: firstSource, contentType: "application/octet-stream" }],
         },
       }),
@@ -4415,7 +4415,7 @@ describe("grouped chat rendering", () => {
     renderUserMedia(
       createUserMessage("", {
         id: "user-history-images",
-        __openclaw: {
+        __afora: {
           media: [
             { path: firstSource, contentType: "image/png" },
             { path: secondSource, contentType: "application/octet-stream" },
@@ -4458,12 +4458,12 @@ describe("grouped chat rendering", () => {
         container,
         createUserMessage("", {
           id: "user-inbound-media-ref",
-          __openclaw: { media: [{ path: source, contentType: "image/png" }] },
+          __afora: { media: [{ path: source, contentType: "image/png" }] },
         }),
         "user",
         {
           showToolCalls: false,
-          basePath: "/openclaw",
+          basePath: "/afora",
           assistantAttachmentAuthToken: "test-auth-token",
           localMediaPreviewRoots: [],
           onRequestUpdate: rerender,
@@ -4477,7 +4477,7 @@ describe("grouped chat rendering", () => {
     expect(
       container.querySelector<HTMLImageElement>(".chat-message-image")?.getAttribute("src"),
     ).toBe(
-      `/openclaw/__openclaw__/assistant-media?source=${encodeURIComponent(source)}&mediaTicket=ticket-inbound`,
+      `/afora/__afora__/assistant-media?source=${encodeURIComponent(source)}&mediaTicket=ticket-inbound`,
     );
   });
 
@@ -4491,9 +4491,9 @@ describe("grouped chat rendering", () => {
       container,
       createAssistantMessage([
         {
-          type: "openclaw_pairing_qr",
+          type: "afora_pairing_qr",
           image_url: "data:image/png;base64,cXJwbmc=",
-          alt: "OpenClaw pairing QR code",
+          alt: "Afora pairing QR code",
           expiresAtMs: Date.now() + 1_000,
         },
       ]),
@@ -4502,7 +4502,7 @@ describe("grouped chat rendering", () => {
 
     const image = container.querySelector<HTMLImageElement>(".chat-message-image");
     expect(image?.getAttribute("src")).toBe("data:image/png;base64,cXJwbmc=");
-    expect(image?.getAttribute("alt")).toBe("OpenClaw pairing QR code");
+    expect(image?.getAttribute("alt")).toBe("Afora pairing QR code");
     await vi.advanceTimersByTimeAsync(999);
     expect(onRequestUpdate).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
@@ -4512,9 +4512,9 @@ describe("grouped chat rendering", () => {
       container,
       createAssistantMessage([
         {
-          type: "openclaw_pairing_qr",
+          type: "afora_pairing_qr",
           image_url: "data:image/png;base64,ZXhwaXJlZA==",
-          alt: "OpenClaw pairing QR code",
+          alt: "Afora pairing QR code",
           expiresAtMs: Date.now() - 1,
         },
       ]),
@@ -4542,7 +4542,7 @@ describe("grouped chat rendering", () => {
       container,
       createUserMessage("", {
         id: "user-invalid-inbound-media-ref",
-        __openclaw: { media: [{ path: source, contentType: "image/png" }] },
+        __afora: { media: [{ path: source, contentType: "image/png" }] },
       }),
       "user",
       {
@@ -4570,7 +4570,7 @@ describe("grouped chat rendering", () => {
     const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
       const headers = new Headers(init?.headers);
       expect(headers.get("Authorization")).toBe("Bearer test-auth-token");
-      expect(headers.get("x-openclaw-requester-session-key")).toBe("agent:main:main");
+      expect(headers.get("x-afora-requester-session-key")).toBe("agent:main:main");
       return { ok: true, blob: async () => new Blob(["png"], { type: "image/png" }) };
     });
     vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch);
@@ -4621,7 +4621,7 @@ describe("grouped chat rendering", () => {
       expect(url).toBe(`/rosita${ticketedUrl.replace(/\/full(?=\?)/u, "/thumbnail")}`);
       const headers = new Headers(init?.headers);
       expect(headers.get("Authorization")).toBeNull();
-      expect(headers.get("x-openclaw-requester-session-key")).toBeNull();
+      expect(headers.get("x-afora-requester-session-key")).toBeNull();
       return { ok: true, blob: async () => new Blob(["png"], { type: "image/png" }) };
     });
     vi.stubGlobal("fetch", fetchMock as unknown as typeof fetch);
@@ -4683,7 +4683,7 @@ describe("grouped chat rendering", () => {
       .mockImplementation(function (this: HTMLAnchorElement) {
         clickedDownloads.push(this.download);
       });
-    const toastHost = document.body.appendChild(document.createElement("openclaw-toast-host"));
+    const toastHost = document.body.appendChild(document.createElement("afora-toast-host"));
     const container = document.body.appendChild(document.createElement("div"));
     renderAssistantMessage(
       container,
@@ -5050,13 +5050,13 @@ describe("grouped chat rendering", () => {
         { id: "assistant-scoped-canvas" },
       ),
       {
-        canvasPluginSurfaceUrl: "http://127.0.0.1:19003/__openclaw__/cap/cap_123",
+        canvasPluginSurfaceUrl: "http://127.0.0.1:19003/__afora__/cap/cap_123",
       },
     );
 
     const iframe = container.querySelector(".chat-tool-card__preview-frame");
     expect(iframe?.getAttribute("src")).toBe(
-      "http://127.0.0.1:19003/__openclaw__/cap/cap_123/__openclaw__/canvas/documents/cv_inline_scoped/index.html",
+      "http://127.0.0.1:19003/__afora__/cap/cap_123/__afora__/canvas/documents/cv_inline_scoped/index.html",
     );
   });
 
@@ -5080,7 +5080,7 @@ describe("grouped chat rendering", () => {
               view: {
                 backend: "canvas",
                 id: "cv_canvas_live_history",
-                url: "/__openclaw__/canvas/documents/cv_canvas_live_history/index.html",
+                url: "/__afora__/canvas/documents/cv_canvas_live_history/index.html",
               },
               presentation: {
                 target: "assistant_message",
@@ -5098,7 +5098,7 @@ describe("grouped chat rendering", () => {
     const bubble = expectElement(container, ".chat-group.assistant .chat-bubble", HTMLElement);
     const iframe = expectElement(bubble, ".chat-tool-card__preview-frame", HTMLIFrameElement);
     expect(iframe.getAttribute("src")).toBe(
-      "/__openclaw__/canvas/documents/cv_canvas_live_history/index.html",
+      "/__afora__/canvas/documents/cv_canvas_live_history/index.html",
     );
     expect(iframe.getAttribute("title")).toBe("Live history preview");
     expect(bubble.querySelector(".chat-text")?.textContent?.trim()).toBe("This item is ready.");
@@ -5126,7 +5126,7 @@ describe("grouped chat rendering", () => {
     expectElement(container, ".chat-bubble--tool-shell", HTMLElement);
     const iframe = expectElement(container, ".chat-tool-card__preview-frame", HTMLIFrameElement);
     expect(iframe.getAttribute("src")).toBe(
-      "/__openclaw__/canvas/documents/cv_inline_tool_canvas/index.html",
+      "/__afora__/canvas/documents/cv_inline_tool_canvas/index.html",
     );
     expect(container.querySelector(".chat-tool-msg-summary")).not.toBeNull();
   });
@@ -5173,7 +5173,7 @@ describe("grouped chat rendering", () => {
     let iframe = expectElement(container, ".chat-tool-card__preview-frame", HTMLIFrameElement);
     expect(iframe.getAttribute("sandbox")).toBe("allow-scripts");
     expect(iframe.getAttribute("src")).toBe(
-      "/__openclaw__/canvas/documents/cv_inline_default/index.html",
+      "/__afora__/canvas/documents/cv_inline_default/index.html",
     );
     expect(iframe.getAttribute("title")).toBe("Inline demo");
     expect(container.querySelector(".chat-text")?.textContent?.trim()).toBe(
@@ -5250,7 +5250,7 @@ describe("grouped chat rendering", () => {
               view: {
                 backend: "canvas",
                 id: "cv_inline_visible",
-                url: "/__openclaw__/canvas/documents/cv_inline_visible/index.html",
+                url: "/__afora__/canvas/documents/cv_inline_visible/index.html",
                 title: "Inline demo",
                 preferred_height: 360,
               },
@@ -5277,7 +5277,7 @@ describe("grouped chat rendering", () => {
     const bubble = expectElement(container, ".chat-group.assistant .chat-bubble", HTMLElement);
     const iframe = expectElement(bubble, ".chat-tool-card__preview-frame", HTMLIFrameElement);
     expect(iframe.getAttribute("src")).toBe(
-      "/__openclaw__/canvas/documents/cv_inline_visible/index.html",
+      "/__afora__/canvas/documents/cv_inline_visible/index.html",
     );
     expect(iframe.getAttribute("title")).toBe("Inline demo");
     expect(bubble.querySelector(".chat-text")?.textContent?.trim()).toBe("Inline canvas result.");
@@ -5350,7 +5350,7 @@ describe("grouped chat rendering", () => {
       {
         role: "assistant",
         content: [{ type: "text", text: preview }],
-        __openclaw: { id: "assistant-disclosure-actions", seq: 1 },
+        __afora: { id: "assistant-disclosure-actions", seq: 1 },
       },
       {
         sessionKey: "agent:main:main",
@@ -5483,7 +5483,7 @@ describe("grouped chat rendering", () => {
       message: {
         role: "assistant",
         content: [{ type: "text", text: "abcde\n...(truncated)..." }],
-        __openclaw: { id: "msg-truncated-marker", seq: 1 },
+        __afora: { id: "msg-truncated-marker", seq: 1 },
       },
       messageId: "msg-truncated-marker",
     },
@@ -5492,7 +5492,7 @@ describe("grouped chat rendering", () => {
       message: {
         role: "assistant",
         content: [{ type: "text", text: "abcde" }],
-        __openclaw: { id: "msg-truncated-metadata", seq: 2, truncated: true },
+        __afora: { id: "msg-truncated-metadata", seq: 2, truncated: true },
       },
       messageId: "msg-truncated-metadata",
     },
@@ -5528,7 +5528,7 @@ describe("grouped chat rendering", () => {
         {
           role: "assistant",
           content: [{ type: "text", text: "abcde\n...(truncated)..." }],
-          __openclaw: { id: "msg-retry-error", seq: 1 },
+          __afora: { id: "msg-retry-error", seq: 1 },
         },
         {
           sessionKey: "global",
@@ -5554,7 +5554,7 @@ describe("grouped chat rendering", () => {
       {
         role: "assistant",
         content: [{ type: "text", text: "abcde\n...(truncated)..." }],
-        __openclaw: { id: "msg-retry-exhausted", seq: 1 },
+        __afora: { id: "msg-retry-exhausted", seq: 1 },
       },
       {
         sessionKey: "global",
@@ -5580,7 +5580,7 @@ describe("grouped chat rendering", () => {
       {
         role: "assistant",
         content: [{ type: "text", text: "full visible message" }],
-        __openclaw: { id: "msg-visible-1", seq: 1 },
+        __afora: { id: "msg-visible-1", seq: 1 },
       },
       {
         sessionKey: "global",
@@ -5598,7 +5598,7 @@ describe("grouped chat rendering", () => {
     renderAssistantMessage(container, {
       role: "assistant",
       content: [{ type: "text", text: "abcde\n...(truncated)..." }],
-      __openclaw: { id: "msg-no-loader", seq: 1 },
+      __afora: { id: "msg-no-loader", seq: 1 },
     });
 
     expect(container.querySelector(".chat-message-disclosure__toggle")).toBeNull();
@@ -5611,8 +5611,8 @@ describe("grouped chat rendering", () => {
       {
         role: "assistant",
         content: [{ type: "text", text: "mirrored text\n...(truncated)..." }],
-        openclawMessageToolMirror: { toolName: "message", toolCallId: "call-1" },
-        __openclaw: { id: "msg-tool-result", seq: 2, truncated: true },
+        aforaMessageToolMirror: { toolName: "message", toolCallId: "call-1" },
+        __afora: { id: "msg-tool-result", seq: 2, truncated: true },
       },
       {
         sessionKey: "global",

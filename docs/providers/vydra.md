@@ -1,7 +1,7 @@
 ---
-summary: "Use Vydra image, video, and speech in OpenClaw"
+summary: "Use Vydra image, video, and speech in Afora"
 read_when:
-  - You want Vydra media generation in OpenClaw
+  - You want Vydra media generation in Afora
   - You need Vydra API key setup guidance
 title: "Vydra"
 ---
@@ -12,12 +12,12 @@ The official Vydra plugin adds:
 - Video generation via `vydra/veo3` (text-to-video) and `vydra/kling` (image-to-video)
 - Speech synthesis via Vydra's ElevenLabs-backed TTS route
 
-OpenClaw uses the same `VYDRA_API_KEY` for all three capabilities.
+Afora uses the same `VYDRA_API_KEY` for all three capabilities.
 
 | Property        | Value                                                                     |
 | --------------- | ------------------------------------------------------------------------- |
 | Provider id     | `vydra`                                                                   |
-| Plugin          | `@openclaw/vydra-provider`                                                |
+| Plugin          | `@afora/vydra-provider`                                                |
 | Auth env var    | `VYDRA_API_KEY`                                                           |
 | Onboarding flag | `--auth-choice vydra-api-key`                                             |
 | Direct CLI flag | `--vydra-api-key <key>`                                                   |
@@ -33,14 +33,14 @@ Use `https://www.vydra.ai/api/v1` as the base URL. Vydra's apex host (`https://v
 <Steps>
   <Step title="Install the plugin">
     ```bash
-    openclaw plugins install @openclaw/vydra-provider
-    openclaw gateway restart
+    afora plugins install @afora/vydra-provider
+    afora gateway restart
     ```
 
   </Step>
   <Step title="Run interactive onboarding">
     ```bash
-    openclaw onboard --auth-choice vydra-api-key
+    afora onboard --auth-choice vydra-api-key
     ```
 
     Or set the env var directly:
@@ -125,8 +125,8 @@ Use `https://www.vydra.ai/api/v1` as the base URL. Vydra's apex host (`https://v
     Provider-specific live coverage:
 
     ```bash
-    OPENCLAW_LIVE_TEST=1 \
-    OPENCLAW_LIVE_VYDRA_VIDEO=1 \
+    AFORA_LIVE_TEST=1 \
+    AFORA_LIVE_VYDRA_VIDEO=1 \
     pnpm test:live -- extensions/vydra/vydra.live.test.ts
     ```
 
@@ -138,7 +138,7 @@ Use `https://www.vydra.ai/api/v1` as the base URL. Vydra's apex host (`https://v
     Override the remote image fixture when needed:
 
     ```bash
-    export OPENCLAW_LIVE_VYDRA_KLING_IMAGE_URL="https://example.com/reference.png"
+    export AFORA_LIVE_VYDRA_KLING_IMAGE_URL="https://example.com/reference.png"
     ```
 
   </Accordion>

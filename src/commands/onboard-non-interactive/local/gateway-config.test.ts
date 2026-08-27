@@ -1,6 +1,6 @@
 // Non-interactive gateway config tests cover port, bind, auth token, and SecretRef preservation behavior.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { withEnv } from "../../../test-utils/env.js";
 import type { OnboardOptions } from "../../onboard-types.js";
 import { applyNonInteractiveGatewayConfig } from "./gateway-config.js";
@@ -32,30 +32,30 @@ const baseOpts = {} as OnboardOptions;
 const SAMPLE_SECRET_REF = {
   source: "env" as const,
   provider: "default",
-  id: "OPENCLAW_GATEWAY_TOKEN_REF",
+  id: "AFORA_GATEWAY_TOKEN_REF",
 };
 
-function createTokenConfig(token: unknown): OpenClawConfig {
+function createTokenConfig(token: unknown): AforaConfig {
   return {
     gateway: { auth: { mode: "token", token } },
-  } as unknown as OpenClawConfig;
+  } as unknown as AforaConfig;
 }
 
 function applyGatewayConfig({
-  nextConfig = {} as OpenClawConfig,
+  nextConfig = {} as AforaConfig,
   opts = baseOpts,
   runtime = createRuntime(),
   env = {},
 }: {
-  nextConfig?: OpenClawConfig;
+  nextConfig?: AforaConfig;
   opts?: OnboardOptions;
   runtime?: ReturnType<typeof createRuntime>;
   env?: Record<string, string | undefined>;
 } = {}) {
   return withEnv(
     {
-      OPENCLAW_GATEWAY_TOKEN: undefined,
-      OPENCLAW_GATEWAY_PASSWORD: undefined,
+      AFORA_GATEWAY_TOKEN: undefined,
+      AFORA_GATEWAY_PASSWORD: undefined,
       [SAMPLE_SECRET_REF.id]: undefined,
       ...env,
     },
@@ -86,14 +86,14 @@ describe("applyNonInteractiveGatewayConfig auth resolution", () => {
     expect(randomToken).not.toHaveBeenCalled();
   });
 
-  it("prefers existing plaintext token over ambient OPENCLAW_GATEWAY_TOKEN on re-onboard", () => {
-    // A stale shell/launchd OPENCLAW_GATEWAY_TOKEN must not rotate a
+  it("prefers existing plaintext token over ambient AFORA_GATEWAY_TOKEN on re-onboard", () => {
+    // A stale shell/launchd AFORA_GATEWAY_TOKEN must not rotate a
     // persisted token — that would break already-paired clients.
     const nextConfig = createTokenConfig("existing-user-token");
 
     const result = applyGatewayConfig({
       nextConfig,
-      env: { OPENCLAW_GATEWAY_TOKEN: "stale-env-token" },
+      env: { AFORA_GATEWAY_TOKEN: "stale-env-token" },
     });
 
     expect(result?.nextConfig.gateway?.auth?.token).toBe("existing-user-token");
@@ -138,8 +138,8 @@ describe("applyNonInteractiveGatewayConfig auth resolution", () => {
     });
   });
 
-  it("uses OPENCLAW_GATEWAY_TOKEN to fill an empty config on first-run", () => {
-    const result = applyGatewayConfig({ env: { OPENCLAW_GATEWAY_TOKEN: "env-token" } });
+  it("uses AFORA_GATEWAY_TOKEN to fill an empty config on first-run", () => {
+    const result = applyGatewayConfig({ env: { AFORA_GATEWAY_TOKEN: "env-token" } });
 
     expect(result?.nextConfig.gateway?.auth?.token).toBe("env-token");
     expect(randomToken).not.toHaveBeenCalled();
@@ -182,13 +182,13 @@ describe("applyNonInteractiveGatewayConfig auth resolution", () => {
     expect(randomToken).not.toHaveBeenCalled();
   });
 
-  it("preserves an existing SecretRef even when ambient OPENCLAW_GATEWAY_TOKEN is set", () => {
+  it("preserves an existing SecretRef even when ambient AFORA_GATEWAY_TOKEN is set", () => {
     // A stale ambient env must not declassify a configured SecretRef.
     const nextConfig = createTokenConfig(SAMPLE_SECRET_REF);
 
     const result = applyGatewayConfig({
       nextConfig,
-      env: { OPENCLAW_GATEWAY_TOKEN: "stale-env-token" },
+      env: { AFORA_GATEWAY_TOKEN: "stale-env-token" },
     });
 
     expect(result?.nextConfig.gateway?.auth?.token).toEqual(SAMPLE_SECRET_REF);
@@ -220,7 +220,7 @@ describe("applyNonInteractiveGatewayConfig auth resolution", () => {
   });
 
   it("overrides an existing SecretRef when --gateway-token-ref-env is provided", () => {
-    const newRefId = "OPENCLAW_GATEWAY_TOKEN_NEW_REF";
+    const newRefId = "AFORA_GATEWAY_TOKEN_NEW_REF";
     const nextConfig = createTokenConfig(SAMPLE_SECRET_REF);
 
     const result = applyGatewayConfig({
@@ -239,7 +239,7 @@ describe("applyNonInteractiveGatewayConfig auth resolution", () => {
   });
 
   it("selects token auth when --gateway-token-ref-env overrides password auth", () => {
-    const newRefId = "OPENCLAW_GATEWAY_TOKEN_NEW_REF";
+    const newRefId = "AFORA_GATEWAY_TOKEN_NEW_REF";
     const result = applyGatewayConfig({
       nextConfig: { gateway: { auth: { mode: "password", password: "test-password" } } },
       opts: { gatewayTokenRefEnv: newRefId } as OnboardOptions,
@@ -264,7 +264,7 @@ describe("applyNonInteractiveGatewayConfig auth resolution", () => {
 
     expect(result).toBeNull();
     expect(runtime.error).toHaveBeenCalledWith(
-      'Environment variable "MISSING_GATEWAY_TOKEN_ENV" is missing or empty. Export it first, then rerun openclaw onboard --non-interactive.',
+      'Environment variable "MISSING_GATEWAY_TOKEN_ENV" is missing or empty. Export it first, then rerun afora onboard --non-interactive.',
     );
     expect(runtime.exit).toHaveBeenCalledWith(1);
     expect(randomToken).not.toHaveBeenCalled();
@@ -286,7 +286,7 @@ describe("applyNonInteractiveGatewayConfig auth resolution", () => {
   it("preserves environment-backed password auth without persisting the password", () => {
     const result = applyGatewayConfig({
       nextConfig: { gateway: { auth: { mode: "password" } } },
-      env: { OPENCLAW_GATEWAY_PASSWORD: "environment-password" },
+      env: { AFORA_GATEWAY_PASSWORD: "environment-password" },
     });
 
     expect(result?.nextConfig.gateway?.auth).toEqual({ mode: "password" });

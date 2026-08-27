@@ -4,15 +4,15 @@ import {
   implicitMentionKindWhen,
   matchesMentionWithExplicit,
   resolveInboundMentionDecision,
-} from "openclaw/plugin-sdk/channel-inbound";
-import { hasControlCommand } from "openclaw/plugin-sdk/command-detection";
+} from "afora-agent/plugin-sdk/channel-inbound";
+import { hasControlCommand } from "afora-agent/plugin-sdk/command-detection";
 import type {
-  OpenClawConfig,
+  AforaConfig,
   TelegramGroupConfig,
   TelegramTopicConfig,
-} from "openclaw/plugin-sdk/config-contracts";
-import { KeyedAsyncQueue } from "openclaw/plugin-sdk/keyed-async-queue";
-import { danger, warn } from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/config-contracts";
+import { KeyedAsyncQueue } from "afora-agent/plugin-sdk/keyed-async-queue";
+import { danger, warn } from "afora-agent/plugin-sdk/runtime-env";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import { firstDefined, type NormalizedAllowFrom } from "./bot-access.js";
 import {
@@ -45,7 +45,7 @@ import { resolveTelegramCommandIngressAuthorization } from "./ingress.js";
 import type { TelegramMessageDispatchReplayClaim } from "./message-dispatch-dedupe.js";
 
 type MediaAuthorization = {
-  authorizationCfg: OpenClawConfig;
+  authorizationCfg: AforaConfig;
   chatId: number;
   isGroup: boolean;
   isForum: boolean;

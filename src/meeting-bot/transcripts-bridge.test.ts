@@ -24,7 +24,7 @@ function session(): MeetingSessionRecord<"chrome", "agent"> {
     state: "active",
     createdAt: "2026-07-23T12:00:00.000Z",
     updatedAt: "2026-07-23T12:00:00.000Z",
-    participantIdentity: "OpenClaw browser guest",
+    participantIdentity: "Afora browser guest",
     realtime: { enabled: true, toolPolicy: "safe-read-only" },
     notes: [],
   };
@@ -32,7 +32,7 @@ function session(): MeetingSessionRecord<"chrome", "agent"> {
 
 describe("MeetingDurableTranscriptBridge", () => {
   it("replays stored lines to an attached provider and streams new lines in order", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-transcript-bridge-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-transcript-bridge-"));
     tempDirs.push(stateDir);
     const current = session();
     const onUtterance = vi.fn();
@@ -85,7 +85,7 @@ describe("MeetingDurableTranscriptBridge", () => {
       onUtterance.mock.calls.map(([utterance]) => utterance.id),
     );
     const store = new TranscriptsStore(path.join(stateDir, "transcripts"), {
-      env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+      env: { ...process.env, AFORA_STATE_DIR: stateDir },
     });
     const stored = await store.readSession(current.id);
     expect(await store.readSummary(stored!)).toMatchObject({
@@ -94,7 +94,7 @@ describe("MeetingDurableTranscriptBridge", () => {
   });
 
   it("honors the existing global transcripts opt-out", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-transcript-bridge-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-transcript-bridge-"));
     tempDirs.push(stateDir);
     const bridge = createMeetingDurableTranscriptBridge({
       logger: { warn: vi.fn() },
@@ -122,7 +122,7 @@ describe("MeetingDurableTranscriptBridge", () => {
   });
 
   it("rolls back an attachment when its start status callback fails", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-transcript-bridge-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-transcript-bridge-"));
     tempDirs.push(stateDir);
     const current = session();
     const bridge = createMeetingDurableTranscriptBridge({
@@ -161,7 +161,7 @@ describe("MeetingDurableTranscriptBridge", () => {
 
   it("drains an in-flight periodic capture before the final capture", async () => {
     vi.useFakeTimers();
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-transcript-bridge-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-transcript-bridge-"));
     tempDirs.push(stateDir);
     const current = session();
     let releasePeriodic!: () => void;
@@ -192,7 +192,7 @@ describe("MeetingDurableTranscriptBridge", () => {
   });
 
   it("retries final durable delivery before completing the capture", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-transcript-bridge-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-transcript-bridge-"));
     tempDirs.push(stateDir);
     const current = session();
     const finalCapture = vi
@@ -212,7 +212,7 @@ describe("MeetingDurableTranscriptBridge", () => {
   });
 
   it("detaches a failing subscriber without blocking durable rows", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-transcript-bridge-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-transcript-bridge-"));
     tempDirs.push(stateDir);
     const current = session();
     const onUtterance = vi.fn(async () => {
@@ -236,7 +236,7 @@ describe("MeetingDurableTranscriptBridge", () => {
     await expect(bridge.ingest(current, [{ text: "second" }])).resolves.toBeUndefined();
 
     const store = new TranscriptsStore(path.join(stateDir, "transcripts"), {
-      env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+      env: { ...process.env, AFORA_STATE_DIR: stateDir },
     });
     const stored = await store.readSession(current.id);
     expect(await store.readUtterancesForSession(stored!)).toHaveLength(2);
@@ -245,7 +245,7 @@ describe("MeetingDurableTranscriptBridge", () => {
   });
 
   it("rejects attachments once finalization begins", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-transcript-bridge-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-transcript-bridge-"));
     tempDirs.push(stateDir);
     const current = session();
     let releaseFinal!: () => void;
@@ -274,7 +274,7 @@ describe("MeetingDurableTranscriptBridge", () => {
   });
 
   it("drains subscriber delivery before detaching", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-transcript-bridge-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-transcript-bridge-"));
     tempDirs.push(stateDir);
     const current = session();
     let releaseDelivery!: () => void;
@@ -313,7 +313,7 @@ describe("MeetingDurableTranscriptBridge", () => {
   });
 
   it("does not let terminal subscriber notification block finalization", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-transcript-bridge-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-transcript-bridge-"));
     tempDirs.push(stateDir);
     const current = session();
     let statusCalls = 0;
@@ -344,7 +344,7 @@ describe("MeetingDurableTranscriptBridge", () => {
   });
 
   it("queues detach behind a pending attachment replay", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-transcript-bridge-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-transcript-bridge-"));
     tempDirs.push(stateDir);
     const current = session();
     let releaseReplay!: () => void;
@@ -379,7 +379,7 @@ describe("MeetingDurableTranscriptBridge", () => {
   });
 
   it("records a non-blocking final browser snapshot failure", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-transcript-bridge-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-transcript-bridge-"));
     tempDirs.push(stateDir);
     const current = session();
     const bridge = createMeetingDurableTranscriptBridge({
@@ -395,7 +395,7 @@ describe("MeetingDurableTranscriptBridge", () => {
     ).resolves.toBe(true);
 
     const store = new TranscriptsStore(path.join(stateDir, "transcripts"), {
-      env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+      env: { ...process.env, AFORA_STATE_DIR: stateDir },
     });
     await expect(store.readSession(current.id)).resolves.toMatchObject({
       metadata: {

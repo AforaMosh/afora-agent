@@ -97,7 +97,7 @@ describe("managed llama-server", () => {
   it("reports a missing local GGUF with the setup repair path", async () => {
     await expect(
       ensureLlamaCppModel({
-        source: path.join(os.tmpdir(), "missing-openclaw-model.gguf"),
+        source: path.join(os.tmpdir(), "missing-afora-model.gguf"),
         cacheDir: os.tmpdir(),
         download: false,
       }),

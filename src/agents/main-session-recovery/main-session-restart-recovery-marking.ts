@@ -7,7 +7,7 @@ import {
   resolveAllAgentSessionStoreTargetsSync,
 } from "../../config/sessions.js";
 import { applySessionEntryReplacements } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveGatewaySessionStoreTarget } from "../../gateway/session-utils.js";
 import { getAgentEventLifecycleGeneration } from "../../infra/agent-events.js";
 import { listAgentRunsForSession } from "../../infra/agent-run-registry.js";
@@ -71,8 +71,8 @@ async function markRecoveryStore(params: {
 }
 
 export async function markRestartAbortedMainSessions(params: {
-  cfg?: OpenClawConfig;
-  additionalCfgs?: Iterable<OpenClawConfig | undefined>;
+  cfg?: AforaConfig;
+  additionalCfgs?: Iterable<AforaConfig | undefined>;
   stateDir?: string;
   sessionKeys?: Iterable<string>;
   sessionIds?: Iterable<string>;
@@ -114,10 +114,10 @@ export async function markRestartAbortedMainSessions(params: {
   const env =
     params.stateDir === undefined
       ? process.env
-      : { ...process.env, OPENCLAW_STATE_DIR: params.stateDir };
+      : { ...process.env, AFORA_STATE_DIR: params.stateDir };
   const stateDir = resolveStateDir(env);
   const configs = [params.cfg, ...(params.additionalCfgs ?? [])].filter(
-    (cfg): cfg is OpenClawConfig => Boolean(cfg),
+    (cfg): cfg is AforaConfig => Boolean(cfg),
   );
   for (const cfg of configs) {
     try {
@@ -215,7 +215,7 @@ export async function markRestartAbortedMainSessions(params: {
 }
 
 export async function markStartupOrphanedMainSessionsForRecovery(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   stateDir?: string;
   activeSessionIds?: Iterable<string>;
   activeSessionKeys?: Iterable<string>;

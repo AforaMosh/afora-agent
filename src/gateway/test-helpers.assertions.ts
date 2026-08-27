@@ -1,6 +1,6 @@
 // Gateway test assertion helpers narrow unknown protocol payloads to records
 // and assert selected fields with useful labels.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { expect } from "vitest";
 
 export { isRecord };

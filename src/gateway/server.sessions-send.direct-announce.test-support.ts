@@ -12,7 +12,7 @@ export async function runDirectSessionAnnounceScenario(params: {
   expectedAccountId: string | undefined;
 }): Promise<void> {
   const { sessionKey, expectedAccountId } = params;
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-direct-announce-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-direct-announce-"));
   const sendCalls: Array<{
     to?: string;
     text?: string;

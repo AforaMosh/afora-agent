@@ -5,12 +5,12 @@ import {
   resolveNonNegativeIntegerOption,
   resolveOptionalIntegerOption,
   timestampMsToIsoString,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import { formatFastModeCurrentStatus, resolveFastModeState } from "../../agents/fast-mode.js";
 import {
@@ -34,7 +34,7 @@ import {
   type RestartSentinelPayload,
   writeRestartSentinel,
 } from "../../infra/restart-sentinel.js";
-import { scheduleGatewaySigusr1Restart, triggerOpenClawRestart } from "../../infra/restart.js";
+import { scheduleGatewaySigusr1Restart, triggerAforaRestart } from "../../infra/restart.js";
 import { loadCostUsageSummary, loadSessionCostSummary } from "../../infra/session-cost-usage.js";
 import { DEFAULT_AGENT_ID, isUnscopedSessionKeySentinel } from "../../routing/session-key.js";
 import { formatTokenCount, formatUsd } from "../../utils/usage-format.js";
@@ -694,7 +694,7 @@ export const handleRestartCommand: CommandHandler = async (params, allowTextComm
         : undefined,
     });
     return sessionCommandReply(
-      "⚙️ Restarting OpenClaw in-process (SIGUSR1); back in a few seconds.",
+      "⚙️ Restarting Afora in-process (SIGUSR1); back in a few seconds.",
     );
   }
   let sentinelWritten = false;
@@ -709,7 +709,7 @@ export const handleRestartCommand: CommandHandler = async (params, allowTextComm
       "⚠️ Restart failed: could not persist the post-restart acknowledgement.",
     );
   }
-  const restartMethod = triggerOpenClawRestart();
+  const restartMethod = triggerAforaRestart();
   if (!restartMethod.ok) {
     if (sentinelWritten) {
       await clearRestartSentinel();
@@ -718,7 +718,7 @@ export const handleRestartCommand: CommandHandler = async (params, allowTextComm
     return sessionCommandReply(`⚠️ Restart failed (${restartMethod.method}).${detail}`);
   }
   return sessionCommandReply(
-    `⚙️ Restarting OpenClaw via ${restartMethod.method}; give me a few seconds to come back online.`,
+    `⚙️ Restarting Afora via ${restartMethod.method}; give me a few seconds to come back online.`,
   );
 };
 

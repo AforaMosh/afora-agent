@@ -339,20 +339,20 @@ describe("provider attribution", () => {
     expect(loadPluginMetadataSnapshot).not.toHaveBeenCalled();
   });
 
-  it("resolves the canonical OpenClaw product and runtime version", () => {
+  it("resolves the canonical Afora product and runtime version", () => {
     const identity = resolveProviderAttributionIdentity({
-      OPENCLAW_VERSION: "2026.3.99",
+      AFORA_VERSION: "2026.3.99",
     });
 
     expect(identity).toEqual({
-      product: "OpenClaw",
+      product: "Afora",
       version: "2026.3.99",
     });
   });
 
   it("returns a documented OpenRouter attribution policy", () => {
     const policy = resolveProviderAttributionPolicy("openrouter", {
-      OPENCLAW_VERSION: "2026.3.22",
+      AFORA_VERSION: "2026.3.22",
     });
 
     expect(policy).toEqual({
@@ -361,12 +361,12 @@ describe("provider attribution", () => {
       verification: "vendor-documented",
       hook: "request-headers",
       docsUrl: "https://openrouter.ai/docs/app-attribution",
-      reviewNote: "Documented app attribution headers. Verified in OpenClaw runtime wrapper.",
-      product: "OpenClaw",
+      reviewNote: "Documented app attribution headers. Verified in Afora runtime wrapper.",
+      product: "Afora",
       version: "2026.3.22",
       headers: {
-        "HTTP-Referer": "https://openclaw.ai",
-        "X-OpenRouter-Title": "OpenClaw",
+        "HTTP-Referer": "https://afora.ai",
+        "X-OpenRouter-Title": "Afora",
         "X-OpenRouter-Categories":
           "cli-agent,cloud-agent,programming-app,creative-writing,writing-assistant,general-chat,personal-agent",
       },
@@ -375,7 +375,7 @@ describe("provider attribution", () => {
 
   it("returns a documented NVIDIA attribution policy", () => {
     const policy = resolveProviderAttributionPolicy("nvidia", {
-      OPENCLAW_VERSION: "2026.3.22",
+      AFORA_VERSION: "2026.3.22",
     });
 
     expect(policy).toBeDefined();
@@ -386,17 +386,17 @@ describe("provider attribution", () => {
       hook: "request-headers",
       reviewNote:
         "NVIDIA NIM billing invoke-origin attribution header. Applied only on verified NVIDIA routes.",
-      product: "OpenClaw",
+      product: "Afora",
       version: "2026.3.22",
       headers: {
-        "X-BILLING-INVOKE-ORIGIN": "OpenClaw",
+        "X-BILLING-INVOKE-ORIGIN": "Afora",
       },
     });
   });
 
   it("returns a documented Google Gemini attribution policy", () => {
     const policy = resolveProviderAttributionPolicy("google", {
-      OPENCLAW_VERSION: "2026.3.22",
+      AFORA_VERSION: "2026.3.22",
     });
 
     expect(policy).toEqual({
@@ -407,10 +407,10 @@ describe("provider attribution", () => {
       docsUrl: "https://ai.google.dev/gemini-api/docs/partner-integration",
       reviewNote:
         "Gemini API partner integration guidance requires x-goog-api-client on partner and library traffic.",
-      product: "OpenClaw",
+      product: "Afora",
       version: "2026.3.22",
       headers: {
-        "x-goog-api-client": "openclaw/2026.3.22",
+        "x-goog-api-client": "afora-agent/2026.3.22",
       },
     });
   });
@@ -418,88 +418,88 @@ describe("provider attribution", () => {
   it("normalizes aliases when resolving provider policy headers", () => {
     expect(
       resolveProviderAttributionPolicy("OpenRouter", {
-        OPENCLAW_VERSION: "2026.3.22",
+        AFORA_VERSION: "2026.3.22",
       })?.headers,
     ).toEqual({
-      "HTTP-Referer": "https://openclaw.ai",
-      "X-OpenRouter-Title": "OpenClaw",
+      "HTTP-Referer": "https://afora.ai",
+      "X-OpenRouter-Title": "Afora",
       "X-OpenRouter-Categories":
         "cli-agent,cloud-agent,programming-app,creative-writing,writing-assistant,general-chat,personal-agent",
     });
   });
 
   it("returns a hidden-spec OpenAI attribution policy", () => {
-    expect(resolveProviderAttributionPolicy("openai", { OPENCLAW_VERSION: "2026.3.22" })).toEqual({
+    expect(resolveProviderAttributionPolicy("openai", { AFORA_VERSION: "2026.3.22" })).toEqual({
       provider: "openai",
       enabledByDefault: true,
       verification: "vendor-hidden-api-spec",
       hook: "request-headers",
       reviewNote:
         "OpenAI native traffic supports hidden originator/User-Agent attribution. Verified against the Codex wire contract.",
-      product: "OpenClaw",
+      product: "Afora",
       version: "2026.3.22",
       headers: {
-        originator: "openclaw",
+        originator: "afora",
         version: "2026.3.22",
-        "User-Agent": "openclaw/2026.3.22",
+        "User-Agent": "afora-agent/2026.3.22",
       },
     });
     expect(
-      resolveProviderAttributionPolicy("openai", { OPENCLAW_VERSION: "2026.3.22" })?.headers,
+      resolveProviderAttributionPolicy("openai", { AFORA_VERSION: "2026.3.22" })?.headers,
     ).toEqual({
-      originator: "openclaw",
+      originator: "afora",
       version: "2026.3.22",
-      "User-Agent": "openclaw/2026.3.22",
+      "User-Agent": "afora-agent/2026.3.22",
     });
   });
 
   it("maps legacy OpenAI Codex attribution to canonical OpenAI policy", () => {
-    expect(resolveProviderAttributionPolicy("openai", { OPENCLAW_VERSION: "2026.3.22" })).toEqual({
+    expect(resolveProviderAttributionPolicy("openai", { AFORA_VERSION: "2026.3.22" })).toEqual({
       provider: "openai",
       enabledByDefault: true,
       verification: "vendor-hidden-api-spec",
       hook: "request-headers",
       reviewNote:
         "OpenAI native traffic supports hidden originator/User-Agent attribution. Verified against the Codex wire contract.",
-      product: "OpenClaw",
+      product: "Afora",
       version: "2026.3.22",
       headers: {
-        originator: "openclaw",
+        originator: "afora",
         version: "2026.3.22",
-        "User-Agent": "openclaw/2026.3.22",
+        "User-Agent": "afora-agent/2026.3.22",
       },
     });
   });
 
   it("returns a hidden-spec xAI attribution policy", () => {
-    expect(resolveProviderAttributionPolicy("xai", { OPENCLAW_VERSION: "2026.3.22" })).toEqual({
+    expect(resolveProviderAttributionPolicy("xai", { AFORA_VERSION: "2026.3.22" })).toEqual({
       provider: "xai",
       enabledByDefault: true,
       verification: "vendor-hidden-api-spec",
       hook: "request-headers",
       reviewNote:
-        "xAI api.x.ai accepts a standard openclaw User-Agent. Companion originator/version headers mirror the OpenAI attribution shape for consistency; they are not validated against an xAI-specific spec and are expected to be ignored by xAI's OpenAI-compatible surface.",
-      product: "OpenClaw",
+        "xAI api.x.ai accepts a standard afora User-Agent. Companion originator/version headers mirror the OpenAI attribution shape for consistency; they are not validated against an xAI-specific spec and are expected to be ignored by xAI's OpenAI-compatible surface.",
+      product: "Afora",
       version: "2026.3.22",
       headers: {
-        originator: "openclaw",
+        originator: "afora",
         version: "2026.3.22",
-        "User-Agent": "openclaw/2026.3.22",
+        "User-Agent": "afora-agent/2026.3.22",
       },
     });
     expect(
-      resolveProviderAttributionPolicy("xai", { OPENCLAW_VERSION: "2026.3.22" })?.headers,
+      resolveProviderAttributionPolicy("xai", { AFORA_VERSION: "2026.3.22" })?.headers,
     ).toEqual({
-      originator: "openclaw",
+      originator: "afora",
       version: "2026.3.22",
-      "User-Agent": "openclaw/2026.3.22",
+      "User-Agent": "afora-agent/2026.3.22",
     });
   });
 
   it("lists the current attribution support matrix", () => {
     // Resolve every supported provider through the production request-policy path.
     expect(
-      listProviderAttributionPolicies({ OPENCLAW_VERSION: "2026.3.22" }).map((policy) => [
+      listProviderAttributionPolicies({ AFORA_VERSION: "2026.3.22" }).map((policy) => [
         policy.provider,
         policy.enabledByDefault,
         policy.verification,
@@ -528,7 +528,7 @@ describe("provider attribution", () => {
           transport: "stream",
           capability: "llm",
         },
-        { OPENCLAW_VERSION: "2026.3.22" },
+        { AFORA_VERSION: "2026.3.22" },
       ),
       {
         endpointClass: "xai-native",
@@ -545,12 +545,12 @@ describe("provider attribution", () => {
           transport: "stream",
           capability: "llm",
         },
-        { OPENCLAW_VERSION: "2026.3.22" },
+        { AFORA_VERSION: "2026.3.22" },
       ).attributionHeaders,
     ).toEqual({
-      originator: "openclaw",
+      originator: "afora",
       version: "2026.3.22",
-      "User-Agent": "openclaw/2026.3.22",
+      "User-Agent": "afora-agent/2026.3.22",
     });
 
     expectRecordFields(
@@ -561,7 +561,7 @@ describe("provider attribution", () => {
           transport: "stream",
           capability: "llm",
         },
-        { OPENCLAW_VERSION: "2026.3.22" },
+        { AFORA_VERSION: "2026.3.22" },
       ),
       {
         endpointClass: "default",
@@ -579,7 +579,7 @@ describe("provider attribution", () => {
           transport: "stream",
           capability: "llm",
         },
-        { OPENCLAW_VERSION: "2026.3.22" },
+        { AFORA_VERSION: "2026.3.22" },
       ),
       {
         endpointClass: "custom",
@@ -599,7 +599,7 @@ describe("provider attribution", () => {
           transport: "stream",
           capability: "llm",
         },
-        { OPENCLAW_VERSION: "2026.3.22" },
+        { AFORA_VERSION: "2026.3.22" },
       ),
       {
         endpointClass: "openai-public",
@@ -620,7 +620,7 @@ describe("provider attribution", () => {
           transport: "stream",
           capability: "llm",
         },
-        { OPENCLAW_VERSION: "2026.3.22" },
+        { AFORA_VERSION: "2026.3.22" },
       ),
       {
         endpointClass: "custom",
@@ -848,7 +848,7 @@ describe("provider attribution", () => {
         capability: "llm",
       }).attributionHeaders,
     ).toEqual({
-      "X-BILLING-INVOKE-ORIGIN": "OpenClaw",
+      "X-BILLING-INVOKE-ORIGIN": "Afora",
     });
 
     expect(
@@ -872,7 +872,7 @@ describe("provider attribution", () => {
           transport: "stream",
           capability: "llm",
         },
-        { OPENCLAW_VERSION: "2026.3.22" },
+        { AFORA_VERSION: "2026.3.22" },
       ),
       {
         endpointClass: "google-generative-ai",
@@ -891,10 +891,10 @@ describe("provider attribution", () => {
           transport: "stream",
           capability: "llm",
         },
-        { OPENCLAW_VERSION: "2026.3.22" },
+        { AFORA_VERSION: "2026.3.22" },
       ).attributionHeaders,
     ).toEqual({
-      "x-goog-api-client": "openclaw/2026.3.22",
+      "x-goog-api-client": "afora-agent/2026.3.22",
     });
 
     expect(

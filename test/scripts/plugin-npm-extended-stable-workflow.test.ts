@@ -4,7 +4,7 @@ import { parse } from "yaml";
 
 const workflowPath = ".github/workflows/plugin-npm-release.yml";
 const metaPackagePath = "extensions/meta/package.json";
-const metaManifestPath = "extensions/meta/openclaw.plugin.json";
+const metaManifestPath = "extensions/meta/afora.plugin.json";
 
 type Step = {
   env?: Record<string, string>;
@@ -109,7 +109,7 @@ describe("plugin npm extended-stable workflow", () => {
           ],
           name,
         ).env,
-      ).toMatchObject({ OPENCLAW_PLUGIN_NPM_PUBLISH_TAG: expectedOverride });
+      ).toMatchObject({ AFORA_PLUGIN_NPM_PUBLISH_TAG: expectedOverride });
     }
   });
 
@@ -226,7 +226,7 @@ describe("plugin npm extended-stable workflow", () => {
       "fs.writeFileSync(process.argv[3], `${JSON.stringify(pack, null, 2)}\\n`)",
     );
     expect(prepare.run).toContain('path.join(process.env.ARTIFACT_DIR, "preflight-manifest.json")');
-    expect(prepare.run).toContain('kind: "openclaw-plugin-npm-preflight"');
+    expect(prepare.run).toContain('kind: "afora-plugin-npm-preflight"');
     expect(prepare.run).toContain('mode: "preflight-only"');
     expect(prepare.run).toContain("source_package_json_sha256=");
     expect(prepare.run).toContain("packed_package_json_sha256=");
@@ -391,15 +391,15 @@ describe("plugin npm extended-stable workflow", () => {
   it("attests the canonical Meta provider package and install route", () => {
     const packageJson = JSON.parse(readFileSync(metaPackagePath, "utf8")) as {
       name?: string;
-      openclaw?: {
+      afora?: {
         install?: { npmSpec?: string };
         release?: { publishToClawHub?: boolean; publishToNpm?: boolean };
       };
     };
     const pluginManifest = JSON.parse(readFileSync(metaManifestPath, "utf8")) as { id?: string };
-    expect(packageJson.name).toBe("@openclaw/meta-provider");
-    expect(packageJson.openclaw?.install?.npmSpec).toBe("@openclaw/meta-provider");
-    expect(packageJson.openclaw?.release).toEqual({
+    expect(packageJson.name).toBe("@afora/meta-provider");
+    expect(packageJson.afora?.install?.npmSpec).toBe("@afora/meta-provider");
+    expect(packageJson.afora?.release).toEqual({
       publishToClawHub: true,
       publishToNpm: true,
     });
@@ -426,7 +426,7 @@ describe("plugin npm extended-stable workflow", () => {
     const parsed = workflow();
     const publish = step(parsed.jobs?.publish_plugins_npm, "Publish with trusted publisher");
     expect(publish.env).toMatchObject({
-      OPENCLAW_NPM_PUBLISH_AUTH_MODE: "trusted-publisher",
+      AFORA_NPM_PUBLISH_AUTH_MODE: "trusted-publisher",
     });
     expect(publish.env?.NODE_AUTH_TOKEN).toBeUndefined();
     expect(publish.env?.NPM_TOKEN).toBeUndefined();
@@ -445,7 +445,7 @@ describe("plugin npm extended-stable workflow", () => {
     );
     expect(bootstrap.env?.NPM_TOKEN).toBe("${{ secrets.NPM_TOKEN }}");
     expect(bootstrap.env?.PACKAGE_NAME).toContain("publication_evidence.outputs.package_name");
-    expect(bootstrap.run).not.toContain("@openclaw/meta-provider");
+    expect(bootstrap.run).not.toContain("@afora/meta-provider");
     expect(bootstrap.run).toContain("NPM_CONFIG_USERCONFIG");
     expect(bootstrap.run).toContain("unset NODE_AUTH_TOKEN NPM_TOKEN NODE_OPTIONS");
     expect(bootstrap.run).toContain('npm publish "$TARBALL_PATH"');

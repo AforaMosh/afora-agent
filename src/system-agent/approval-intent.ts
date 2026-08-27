@@ -1,4 +1,4 @@
-// Classifies whether a user's chat message approves a pending OpenClaw proposal.
+// Classifies whether a user's chat message approves a pending Afora proposal.
 import { extractEmbeddedAssistantText } from "../agents/embedded-agent-utils.js";
 import {
   completeWithPreparedSimpleCompletionModel,
@@ -27,7 +27,7 @@ export type SystemAgentApprovalClassifier = (params: {
   message: string;
   /** Human-readable proposal description when the host knows it. */
   proposal?: string;
-  /** Exact execution owner that completed the live OpenClaw inference gate. */
+  /** Exact execution owner that completed the live Afora inference gate. */
   verifiedInference: SystemAgentVerifiedInferenceBinding;
 }) => Promise<SystemAgentApprovalIntent>;
 
@@ -74,7 +74,7 @@ export async function classifySystemAgentApprovalIntent(
     const route = await resolveVerifiedRoute(params.verifiedInference);
     // A second direct completion would bypass CLI and plugin-harness execution
     // ownership. Those routes require an exact closed-list approval instead.
-    if (!route || route.runner !== "embedded" || route.agentHarnessRuntimeOverride !== "openclaw") {
+    if (!route || route.runner !== "embedded" || route.agentHarnessRuntimeOverride !== "afora") {
       return "other";
     }
     const modelRef = route.authProfileId

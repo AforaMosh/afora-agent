@@ -7,7 +7,7 @@ import type { SessionEntry } from "../../config/sessions/types.js";
 import { persistAbortTargetEntry, persistCommandSession } from "./commands-session-store.js";
 
 async function withTempStore<T>(run: (storePath: string) => Promise<T>): Promise<T> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-command-session-store-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-command-session-store-"));
   try {
     return await run(path.join(dir, "sessions.json"));
   } finally {

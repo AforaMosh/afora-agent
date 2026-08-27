@@ -1,5 +1,5 @@
 ---
-summary: "Move one OpenClaw session's reply route between linked chat channels"
+summary: "Move one Afora session's reply route between linked chat channels"
 title: "Channel docking"
 read_when:
   - You want replies for one active session to move from Telegram to Discord, Slack, Mattermost, or another linked channel
@@ -7,14 +7,14 @@ read_when:
   - A /dock command says the sender is not linked or no active session exists
 ---
 
-Channel docking is call forwarding for one OpenClaw session. It keeps the same
+Channel docking is call forwarding for one Afora session. It keeps the same
 conversation context, but changes where future replies for that session are
 delivered. Docking only works from a direct chat; it does not run from a group
 chat.
 
 ## Example
 
-Alice can message OpenClaw on Telegram and Discord:
+Alice can message Afora on Telegram and Discord:
 
 ```json5
 {
@@ -32,7 +32,7 @@ If Alice sends this from a Telegram direct chat:
 /dock_discord
 ```
 
-OpenClaw keeps the current session context and changes the reply route:
+Afora keeps the current session context and changes the reply route:
 
 | Before docking               | After `/dock_discord`       |
 | ---------------------------- | --------------------------- |
@@ -51,7 +51,7 @@ Common flow:
 1. Start an agent task from Telegram.
 2. Move to Discord where you are coordinating work.
 3. Send `/dock_discord` from the Telegram direct chat.
-4. Keep the same OpenClaw session, but receive future replies in Discord.
+4. Keep the same Afora session, but receive future replies in Discord.
 
 ## Required config
 
@@ -82,7 +82,7 @@ target peer are the same person.
 
 ## Commands
 
-OpenClaw generates one `/dock-<channel>` command for every loaded channel plugin
+Afora generates one `/dock-<channel>` command for every loaded channel plugin
 that supports native commands, so the list grows as plugins are added. Bundled
 plugins that currently support it:
 
@@ -132,7 +132,7 @@ to Discord peer `456`, include both `telegram:123` and `discord:456`.
 
 **The command says docking is only available from direct chats.**
 
-Send the dock command from a direct chat with OpenClaw, not from a group chat.
+Send the dock command from a direct chat with Afora, not from a group chat.
 
 **The command says no active session exists.**
 

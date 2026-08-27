@@ -1,5 +1,5 @@
 /** JSON Pointer token helpers for file-backed secret refs. */
-import { isRecord as isJsonObject } from "@openclaw/normalization-core/record-coerce";
+import { isRecord as isJsonObject } from "@afora/normalization-core/record-coerce";
 import { parseConfigPathArrayIndex } from "../shared/path-array-index.js";
 
 function failOrUndefined(params: { onMissing: "throw" | "undefined"; message: string }): undefined {

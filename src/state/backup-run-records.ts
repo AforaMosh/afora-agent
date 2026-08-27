@@ -6,12 +6,12 @@ import {
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../infra/kysely-sync.js";
-import { tableExists } from "./openclaw-state-db-schema-helpers.js";
-import type { DB as OpenClawStateDatabase } from "./openclaw-state-db.generated.js";
-import { runOpenClawStateWriteTransaction } from "./openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "./openclaw-state-db.paths.js";
+import { tableExists } from "./afora-state-db-schema-helpers.js";
+import type { DB as AforaStateDatabase } from "./afora-state-db.generated.js";
+import { runAforaStateWriteTransaction } from "./afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "./afora-state-db.paths.js";
 
-type BackupRunDatabase = Pick<OpenClawStateDatabase, "backup_runs">;
+type BackupRunDatabase = Pick<AforaStateDatabase, "backup_runs">;
 
 type BackupRunKind = "archive" | "sqlite-snapshot" | "git";
 
@@ -80,7 +80,7 @@ export function recordBackupRunOutcome(params: {
   // Best-effort log only: never bootstrap an absent state database to record an
   // outcome, or a failed backup on a fresh host would create a blank DB that a
   // retry then treats as real backup input.
-  if (!existsSync(resolveOpenClawStateSqlitePath(params.env ?? process.env))) {
+  if (!existsSync(resolveAforaStateSqlitePath(params.env ?? process.env))) {
     return;
   }
   const manifest = JSON.stringify({
@@ -89,7 +89,7 @@ export function recordBackupRunOutcome(params: {
     ...(boundedText(params.error, 1_200) ? { error: boundedText(params.error, 1_200) } : {}),
     ...(params.pushFailed === true ? { pushFailed: true } : {}),
   });
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       const kysely = getNodeSqliteKysely<BackupRunDatabase>(db);
       executeSqliteQuerySync(

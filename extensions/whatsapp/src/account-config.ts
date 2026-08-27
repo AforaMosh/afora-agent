@@ -4,12 +4,12 @@ import {
   mergeAccountConfig,
   resolveAccountEntry,
   resolveMergedAccountConfig,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/account-core";
+  type AforaConfig,
+} from "afora-agent/plugin-sdk/account-core";
 import type { WhatsAppAccountConfig } from "./account-types.js";
 
 function resolveWhatsAppDefaultAccountSharedConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): Partial<WhatsAppAccountConfig> | undefined {
   const defaultAccount = resolveAccountEntry(cfg.channels?.whatsapp?.accounts, DEFAULT_ACCOUNT_ID);
   if (!defaultAccount) {
@@ -26,14 +26,14 @@ function resolveWhatsAppDefaultAccountSharedConfig(
 }
 
 function resolveWhatsAppAccountConfigForTest(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   accountId: string,
 ): WhatsAppAccountConfig | undefined {
   return resolveAccountEntry(cfg.channels?.whatsapp?.accounts, accountId);
 }
 
 function resolveMergedNamedWhatsAppAccountConfig(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
 }): WhatsAppAccountConfig {
   const rootCfg = params.cfg.channels?.whatsapp;
@@ -50,7 +50,7 @@ function resolveMergedNamedWhatsAppAccountConfig(params: {
 }
 
 export function resolveMergedWhatsAppAccountConfig(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): WhatsAppAccountConfig & { accountId: string } {
   const rootCfg = params.cfg.channels?.whatsapp;

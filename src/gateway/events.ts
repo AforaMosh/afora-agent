@@ -9,7 +9,7 @@ import { READ_SCOPE } from "./operator-scopes.js";
 /** Event name emitted when a node's private runner declaration changes. */
 export const GATEWAY_EVENT_NODE_RUNNER_INVENTORY_CHANGED = "node.runnerInventory.changed" as const;
 
-/** Event name emitted when a newer OpenClaw version is available. */
+/** Event name emitted when a newer Afora version is available. */
 export const GATEWAY_EVENT_UPDATE_AVAILABLE = "update.available" as const;
 
 /** Returns whether this authenticated client may receive detailed update metadata. */

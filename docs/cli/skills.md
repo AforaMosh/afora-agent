@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `openclaw skills` (search/install/update/verify/list/info/check/workshop)"
+summary: "CLI reference for `afora skills` (search/install/update/verify/list/info/check/workshop)"
 read_when:
   - You want to see which skills are available and ready to run
   - You want to search ClawHub or install skills from ClawHub, Git, or local directories
@@ -9,7 +9,7 @@ read_when:
 title: "Skills"
 ---
 
-# `openclaw skills`
+# `afora skills`
 
 Inspect local skills, search ClawHub, install skills from ClawHub/Git/local
 directories, verify ClawHub skills, and update ClawHub-tracked installs.
@@ -24,61 +24,61 @@ Related:
 ## Commands
 
 ```bash
-openclaw skills search "calendar"
-openclaw skills search --limit 20 --json
-openclaw skills install @owner/<slug>
-openclaw skills install @owner/<slug> --version <version>
-openclaw skills install skills-sh:<owner>/<repo>/<slug>
-openclaw skills install git:owner/repo
-openclaw skills install git:owner/repo@main
-openclaw skills install ./path/to/skill --as custom-name
-openclaw skills install @owner/<slug> --force
-openclaw skills install @owner/<slug> --force-install
-openclaw skills install @owner/<slug> --acknowledge-clawhub-risk
-openclaw skills install @owner/<slug> --acknowledge-install-policy-warning
-openclaw skills install @owner/<slug> --agent <id>
-openclaw skills install @owner/<slug> --global
-openclaw skills update @owner/<slug>
-openclaw skills update @owner/<slug> --force-install
-openclaw skills update @owner/<slug> --acknowledge-clawhub-risk
-openclaw skills update @owner/<slug> --acknowledge-install-policy-warning
-openclaw skills update @owner/<slug> --global
-openclaw skills update --all
-openclaw skills update --all --agent <id>
-openclaw skills update --all --global
-openclaw skills verify @owner/<slug>
-openclaw skills verify @owner/<slug> --json
-openclaw skills verify @owner/<slug> --version <version>
-openclaw skills verify @owner/<slug> --tag <tag>
-openclaw skills verify @owner/<slug> --card
-openclaw skills verify @owner/<slug> --global
-openclaw skills list
-openclaw skills list --eligible
-openclaw skills list --json
-openclaw skills list --verbose
-openclaw skills list --agent <id>
-openclaw skills info <name>
-openclaw skills info <name> --json
-openclaw skills info <name> --agent <id>
-openclaw skills check
-openclaw skills check --agent <id>
-openclaw skills check --json
-openclaw skills curator status
-openclaw skills curator status --json
-openclaw skills workshop propose-create --name "qa-check" --description "QA checklist" --proposal ./PROPOSAL.md
-openclaw skills workshop propose-update qa-check --proposal ./PROPOSAL.md
-openclaw skills workshop list
-openclaw skills workshop inspect <proposal-id>
-openclaw skills workshop revise <proposal-id> --proposal ./PROPOSAL.md
-openclaw skills workshop apply <proposal-id>
-openclaw skills workshop reject <proposal-id> --reason "Not reusable"
-openclaw skills workshop quarantine <proposal-id> --reason "Needs security review"
+afora skills search "calendar"
+afora skills search --limit 20 --json
+afora skills install @owner/<slug>
+afora skills install @owner/<slug> --version <version>
+afora skills install skills-sh:<owner>/<repo>/<slug>
+afora skills install git:owner/repo
+afora skills install git:owner/repo@main
+afora skills install ./path/to/skill --as custom-name
+afora skills install @owner/<slug> --force
+afora skills install @owner/<slug> --force-install
+afora skills install @owner/<slug> --acknowledge-clawhub-risk
+afora skills install @owner/<slug> --acknowledge-install-policy-warning
+afora skills install @owner/<slug> --agent <id>
+afora skills install @owner/<slug> --global
+afora skills update @owner/<slug>
+afora skills update @owner/<slug> --force-install
+afora skills update @owner/<slug> --acknowledge-clawhub-risk
+afora skills update @owner/<slug> --acknowledge-install-policy-warning
+afora skills update @owner/<slug> --global
+afora skills update --all
+afora skills update --all --agent <id>
+afora skills update --all --global
+afora skills verify @owner/<slug>
+afora skills verify @owner/<slug> --json
+afora skills verify @owner/<slug> --version <version>
+afora skills verify @owner/<slug> --tag <tag>
+afora skills verify @owner/<slug> --card
+afora skills verify @owner/<slug> --global
+afora skills list
+afora skills list --eligible
+afora skills list --json
+afora skills list --verbose
+afora skills list --agent <id>
+afora skills info <name>
+afora skills info <name> --json
+afora skills info <name> --agent <id>
+afora skills check
+afora skills check --agent <id>
+afora skills check --json
+afora skills curator status
+afora skills curator status --json
+afora skills workshop propose-create --name "qa-check" --description "QA checklist" --proposal ./PROPOSAL.md
+afora skills workshop propose-update qa-check --proposal ./PROPOSAL.md
+afora skills workshop list
+afora skills workshop inspect <proposal-id>
+afora skills workshop revise <proposal-id> --proposal ./PROPOSAL.md
+afora skills workshop apply <proposal-id>
+afora skills workshop reject <proposal-id> --reason "Not reusable"
+afora skills workshop quarantine <proposal-id> --reason "Needs security review"
 ```
 
 `search`, `update`, and `verify` use ClawHub directly. `install @owner/<slug>`
 installs a native ClawHub skill. `install skills-sh:<owner>/<repo>/<slug>` asks
 ClawHub to resolve an external listing to its exact synchronized GitHub commit;
-OpenClaw does not download from skills.sh. These entries are shown as
+Afora does not download from skills.sh. These entries are shown as
 **Not scanned by ClawHub**, and that trust state is preserved through updates
 and verification. Claimed or ClawHub-scanned skills use `@owner/<slug>`.
 `install git:owner/repo[@ref]` clones an unmanaged Git skill, and `install
@@ -94,16 +94,16 @@ Git and local directory installs expect `SKILL.md` at the source root. The
 install slug comes from `SKILL.md` frontmatter `name` when it is valid, then
 the source directory or repository name; use `--as <slug>` to override it.
 `--version` is ClawHub-only. Skill installs do not support npm package specs
-or zip/archive paths, and `openclaw skills update` updates ClawHub-tracked
+or zip/archive paths, and `afora skills update` updates ClawHub-tracked
 installs only.
 
 Gateway-backed skill dependency installs triggered from onboarding or Skills
 settings use the separate `skills.install` request path instead.
 
 When `security.installPolicy` returns `warn` in an interactive terminal,
-OpenClaw prints the reason and findings, then asks `type: '<skill>' to install
+Afora prints the reason and findings, then asks `type: '<skill>' to install
 anyway` (or `update anyway`). If the fully rendered review exceeds 4,000
-characters, OpenClaw fails closed before prompting; reduce or coalesce the
+characters, Afora fails closed before prompting; reduce or coalesce the
 policy output first. A matching answer evaluates the staged skill
 again before continuing. Declined and non-interactive direct CLI commands stop
 before commit; after review, `--acknowledge-install-policy-warning` is the
@@ -131,10 +131,10 @@ Notes:
 | `update @owner/<slug>`           | Updates a single tracked skill. Add `--global` to target the shared managed skills directory instead of the workspace.                                                                                                                                                           |
 | `update --all`                   | Updates tracked ClawHub installs in the selected workspace, or the shared managed skills directory with `--global`.                                                                                                                                                              |
 | `verify @owner/<slug>`           | Prints ClawHub's `clawhub.skill.verify.v1` JSON envelope by default. `--json` is accepted as the explicit machine-output spelling. Bare slugs are accepted for compatibility when the skill is already installed or unambiguous; owner-qualified refs avoid publisher ambiguity. |
-| `verify` provenance              | When ClawHub returns server-resolved source provenance, verify JSON also includes a commit-pinned `openclaw.verifiedSourceUrl`. Unavailable or self-declared source URLs stay only in the raw provenance envelope and are not promoted.                                          |
+| `verify` provenance              | When ClawHub returns server-resolved source provenance, verify JSON also includes a commit-pinned `afora.verifiedSourceUrl`. Unavailable or self-declared source URLs stay only in the raw provenance envelope and are not promoted.                                          |
 | `verify` version selector        | `verify` uses `.clawhub/origin.json` for installed ClawHub skills, so it verifies the installed version against the registry it came from. `--version` and `--tag` override the version selector but keep that installed registry when origin metadata exists.                   |
 | `verify --card`                  | Prints the generated Skill Card Markdown instead of JSON. Exits non-zero when ClawHub returns `ok: false` or `decision: "fail"`; unsigned signatures are informational unless ClawHub policy changes.                                                                            |
-| Skill Card fingerprint           | Installed ClawHub bundles can include a generated `skill-card.md`. OpenClaw treats verification as a ClawHub server decision and does not reject an installed skill just because that generated card changes the bundle fingerprint.                                             |
+| Skill Card fingerprint           | Installed ClawHub bundles can include a generated `skill-card.md`. Afora treats verification as a ClawHub server decision and does not reject an installed skill just because that generated card changes the bundle fingerprint.                                             |
 | `check --agent <id>`             | Checks the selected agent's workspace and reports which ready skills are actually visible to that agent's prompt or command surface.                                                                                                                                             |
 | `workshop --agent <id>`          | Accepted before or after a Workshop leaf command, for example `workshop --agent <id> list` or `workshop list --agent <id>`. If both are provided, the leaf value wins.                                                                                                           |
 | `curator --json`                 | Accepted before or after a Curator leaf command, for example `curator --json status` or `curator status --json`.                                                                                                                                                                 |
@@ -150,7 +150,7 @@ scan and force-install policy before it returns a pinned commit; use
 completes. Malicious or blocked community releases are refused. Risky
 community releases require review and `--acknowledge-clawhub-risk` when a
 non-interactive command should continue after that review. Official ClawHub
-skill publishers and bundled OpenClaw skill sources bypass this release-trust
+skill publishers and bundled Afora skill sources bypass this release-trust
 prompt.
 
 ## Remove a ClawHub skill
@@ -168,19 +168,19 @@ The CLI asks for confirmation before deleting the skill directory and its
 bare slug, not its original `skills-sh:` reference.
 
 Select the same root where the skill was installed: the agent workspace for an
-agent-specific skill, or the OpenClaw state directory for a shared skill
+agent-specific skill, or the Afora state directory for a shared skill
 installed with `--global`:
 
 ```bash
 clawhub --workdir /path/to/agent-workspace uninstall @owner/my-skill
-clawhub --workdir ~/.openclaw uninstall @owner/my-skill
+clawhub --workdir ~/.afora uninstall @owner/my-skill
 ```
 
-If `OPENCLAW_STATE_DIR` is set, use that configured state directory for shared
+If `AFORA_STATE_DIR` is set, use that configured state directory for shared
 skills instead:
 
 ```bash
-clawhub --workdir "$OPENCLAW_STATE_DIR" uninstall @owner/my-skill
+clawhub --workdir "$AFORA_STATE_DIR" uninstall @owner/my-skill
 ```
 
 The default [skills watcher](/tools/skills#snapshots-and-refresh) picks up the
@@ -188,27 +188,27 @@ removal on the next agent turn. If watching is disabled, start a new session.
 
 ## Skill Workshop
 
-`openclaw skills workshop` manages pending skill proposals in the selected
+`afora skills workshop` manages pending skill proposals in the selected
 workspace. Proposals are not active skills until applied. For proposal
 storage, support-file safeguards, Gateway methods, and approval policy, see
 [Skill Workshop](/tools/skill-workshop).
 
 ```bash
-openclaw skills workshop propose-create \
+afora skills workshop propose-create \
   --name "qa-check" \
   --description "Repeatable QA checklist" \
   --proposal ./PROPOSAL.md
-openclaw skills workshop propose-create \
+afora skills workshop propose-create \
   --name "qa-check" \
   --description "Repeatable QA checklist" \
   --proposal-dir ./qa-check-proposal
-openclaw skills workshop propose-update qa-check --proposal ./PROPOSAL.md
-openclaw skills workshop list
-openclaw skills workshop inspect <proposal-id>
-openclaw skills workshop revise <proposal-id> --proposal ./PROPOSAL.md
-openclaw skills workshop apply <proposal-id>
-openclaw skills workshop reject <proposal-id> --reason "Duplicate"
-openclaw skills workshop quarantine <proposal-id> --reason "Needs security review"
+afora skills workshop propose-update qa-check --proposal ./PROPOSAL.md
+afora skills workshop list
+afora skills workshop inspect <proposal-id>
+afora skills workshop revise <proposal-id> --proposal ./PROPOSAL.md
+afora skills workshop apply <proposal-id>
+afora skills workshop reject <proposal-id> --reason "Duplicate"
+afora skills workshop quarantine <proposal-id> --reason "Needs security review"
 ```
 
 `propose-create`, `propose-update`, and `revise` also accept `--goal <text>`

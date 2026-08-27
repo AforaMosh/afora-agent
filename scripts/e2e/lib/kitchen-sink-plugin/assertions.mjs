@@ -140,7 +140,7 @@ function formatFindingLine(line, pattern, info = {}) {
 }
 
 function shouldScanLogFile(entry) {
-  if (!(/\.(?:log|jsonl)$/u.test(entry) || /openclaw-kitchen-sink-/u.test(path.basename(entry)))) {
+  if (!(/\.(?:log|jsonl)$/u.test(entry) || /afora-kitchen-sink-/u.test(path.basename(entry)))) {
     return false;
   }
   return !normalizedPath(entry).includes("/.npm/_logs/");
@@ -210,7 +210,7 @@ function scanLogs() {
   if (!process.env.KITCHEN_SINK_TMP_DIR) {
     throw new Error("KITCHEN_SINK_TMP_DIR is required for kitchen-sink log scans");
   }
-  const roots = [scratchRoot, path.join(process.env.HOME, ".openclaw")];
+  const roots = [scratchRoot, path.join(process.env.HOME, ".afora")];
   const deny = [
     /\buncaught exception\b/iu,
     /\bunhandled rejection\b/iu,
@@ -248,7 +248,7 @@ function scanLogs() {
   });
   if (scannedFiles === 0) {
     throw new Error(
-      "kitchen-sink log scan found no files under the isolated scratch root or OpenClaw home",
+      "kitchen-sink log scan found no files under the isolated scratch root or Afora home",
     );
   }
   if (findings.length > 0) {
@@ -259,7 +259,7 @@ function scanLogs() {
 }
 
 function readConfig() {
-  const configPath = path.join(process.env.HOME, ".openclaw", "openclaw.json");
+  const configPath = path.join(process.env.HOME, ".afora", "afora.json");
   return {
     configPath,
     exists: fs.existsSync(configPath),
@@ -402,17 +402,17 @@ function assertRealPathInside(parentPath, childPath, label) {
 }
 
 function assertClawHubExternalInstallContract(installPath) {
-  const openclawPeerPath = path.join(installPath, "node_modules", "openclaw");
-  if (!fs.existsSync(openclawPeerPath)) {
-    throw new Error(`missing kitchen-sink openclaw peer symlink: ${openclawPeerPath}`);
+  const aforaPeerPath = path.join(installPath, "node_modules", "afora");
+  if (!fs.existsSync(aforaPeerPath)) {
+    throw new Error(`missing kitchen-sink afora peer symlink: ${aforaPeerPath}`);
   }
-  if (!fs.lstatSync(openclawPeerPath).isSymbolicLink()) {
-    throw new Error(`kitchen-sink openclaw peer is not a symlink: ${openclawPeerPath}`);
+  if (!fs.lstatSync(aforaPeerPath).isSymbolicLink()) {
+    throw new Error(`kitchen-sink afora peer is not a symlink: ${aforaPeerPath}`);
   }
   const hostRoot = fs.realpathSync(process.cwd());
-  const linkedHostRoot = fs.realpathSync(openclawPeerPath);
+  const linkedHostRoot = fs.realpathSync(aforaPeerPath);
   if (linkedHostRoot !== hostRoot) {
-    throw new Error(`expected kitchen-sink openclaw peer ${linkedHostRoot} to target ${hostRoot}`);
+    throw new Error(`expected kitchen-sink afora peer ${linkedHostRoot} to target ${hostRoot}`);
   }
 
   const dependencyPackagePath = path.join(installPath, "node_modules", "is-number", "package.json");
@@ -645,7 +645,7 @@ function assertInstalled() {
     throw new Error(`kitchen-sink install path missing: ${record.installPath}`);
   }
   if (source === "clawhub") {
-    const extensionsRoot = path.join(process.env.HOME, ".openclaw", "extensions");
+    const extensionsRoot = path.join(process.env.HOME, ".afora", "extensions");
     assertRealPathInside(extensionsRoot, installPath, "kitchen-sink ClawHub install path");
   }
   if (source === "clawhub" && record.artifactKind === "npm-pack") {

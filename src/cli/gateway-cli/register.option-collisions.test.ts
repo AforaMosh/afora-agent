@@ -106,7 +106,7 @@ vi.mock("../../../packages/terminal-core/src/health-style.js", () => ({
 }));
 
 vi.mock("../../../packages/terminal-core/src/links.js", () => ({
-  formatDocsLink: () => "docs.openclaw.ai/cli/gateway",
+  formatDocsLink: () => "docs.afora.ai/cli/gateway",
 }));
 
 vi.mock("../../../packages/terminal-core/src/theme.js", () => ({
@@ -217,10 +217,10 @@ describe("gateway register option collisions", () => {
     },
     {
       name: "gives setup detection enough transport grace",
-      argv: ["gateway", "call", "openclaw.setup.detect", "--json"],
+      argv: ["gateway", "call", "afora.setup.detect", "--json"],
       assert: () => {
         const [method, opts] = firstGatewayCall();
-        expect(method).toBe("openclaw.setup.detect");
+        expect(method).toBe("afora.setup.detect");
         expect((opts as { timeout?: string } | undefined)?.timeout).toBe("40000");
       },
     },
@@ -383,7 +383,7 @@ describe("gateway register option collisions", () => {
       loadHealthStyleModule: loadHealthStyleModule as never,
     });
 
-    await program.parseAsync(["node", "openclaw", "gateway", "health", "--json"]);
+    await program.parseAsync(["node", "afora", "gateway", "health", "--json"]);
 
     expect(callGatewayCli).toHaveBeenCalledWith(
       "health",

@@ -1,6 +1,6 @@
 // Covers plugin status reporting from config, discovery, and registry state.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createCompatibilityNotice,
@@ -13,7 +13,7 @@ import {
 } from "./status.test-fixtures.js";
 
 const loadConfigMock = vi.fn();
-const loadOpenClawPluginsMock = vi.fn();
+const loadAforaPluginsMock = vi.fn();
 const resolveCompatibleRuntimePluginRegistryMock = vi.fn();
 const loadPluginMetadataRegistrySnapshotMock = vi.fn();
 const loadPluginManifestRegistryForPluginRegistryMock = vi.fn();
@@ -66,9 +66,9 @@ vi.mock("../config/plugin-auto-enable.js", () => ({
 }));
 
 vi.mock("./loader.js", () => ({
-  loadOpenClawPlugins: (...args: unknown[]) => loadOpenClawPluginsMock(...args),
+  loadAforaPlugins: (...args: unknown[]) => loadAforaPluginsMock(...args),
   loadPluginRegistryHandle: (options: Record<string, unknown> = {}) =>
-    loadOpenClawPluginsMock({ ...options, activate: false }),
+    loadAforaPluginsMock({ ...options, activate: false }),
   resolveCompatibleRuntimePluginRegistry: (...args: unknown[]) =>
     resolveCompatibleRuntimePluginRegistryMock(...args),
 }));
@@ -135,7 +135,7 @@ function setPluginLoadResult(overrides: Partial<ReturnType<typeof createPluginLo
     plugins: [],
     ...overrides,
   });
-  loadOpenClawPluginsMock.mockReturnValue(result);
+  loadAforaPluginsMock.mockReturnValue(result);
   loadPluginMetadataRegistrySnapshotMock.mockReturnValue(result);
 }
 
@@ -187,7 +187,7 @@ function expectPluginLoaderCall(params: {
   logger?: unknown;
   loadModules?: boolean;
 }) {
-  expectMockCalledWithFields(loadOpenClawPluginsMock, {
+  expectMockCalledWithFields(loadAforaPluginsMock, {
     ...(params.config !== undefined ? { config: params.config } : {}),
     ...(params.activationSourceConfig !== undefined
       ? { activationSourceConfig: params.activationSourceConfig }
@@ -396,7 +396,7 @@ describe("plugin status reports", () => {
 
   beforeEach(() => {
     loadConfigMock.mockReset();
-    loadOpenClawPluginsMock.mockReset();
+    loadAforaPluginsMock.mockReset();
     resolveCompatibleRuntimePluginRegistryMock.mockReset();
     loadPluginMetadataRegistrySnapshotMock.mockReset();
     loadPluginManifestRegistryForPluginRegistryMock.mockReset();
@@ -439,7 +439,7 @@ describe("plugin status reports", () => {
   });
 
   it("forwards an explicit env to plugin loading", () => {
-    const env = { HOME: "/tmp/openclaw-home" } as NodeJS.ProcessEnv;
+    const env = { HOME: "/tmp/afora-home" } as NodeJS.ProcessEnv;
 
     buildPluginSnapshotReport({
       config: {},
@@ -480,7 +480,7 @@ describe("plugin status reports", () => {
     buildPluginSnapshotReport({ config: {}, workspaceDir: "/workspace" });
 
     expect(mockInput(loadPluginMetadataRegistrySnapshotMock).loadModules).toBe(false);
-    expect(loadOpenClawPluginsMock).not.toHaveBeenCalled();
+    expect(loadAforaPluginsMock).not.toHaveBeenCalled();
   });
 
   it("reuses a supplied metadata snapshot for scoped diagnostics", () => {
@@ -497,8 +497,8 @@ describe("plugin status reports", () => {
     });
 
     expect(loadPluginMetadataSnapshotMock).not.toHaveBeenCalled();
-    expect(loadOpenClawPluginsMock).toHaveBeenCalledTimes(1);
-    expect(mockInput(loadOpenClawPluginsMock)).toMatchObject({
+    expect(loadAforaPluginsMock).toHaveBeenCalledTimes(1);
+    expect(mockInput(loadAforaPluginsMock)).toMatchObject({
       manifestRegistry: metadataSnapshot.manifestRegistry,
       installRecords: {},
       onlyPluginIds: ["demo"],
@@ -614,7 +614,7 @@ describe("plugin status reports", () => {
     const report = buildPluginDiagnosticsReport({
       config: {},
       env: {
-        OPENCLAW_VERSION: "2026.3.23-1",
+        AFORA_VERSION: "2026.3.23-1",
       } as NodeJS.ProcessEnv,
     });
 
@@ -838,7 +838,7 @@ describe("plugin status reports", () => {
       createCompatibilityNotice({ pluginId: runtimePlugin.id, code: "hook-only" }),
     ]);
     expect(loadPluginMetadataRegistrySnapshotMock).toHaveBeenCalledOnce();
-    expect(loadOpenClawPluginsMock).not.toHaveBeenCalled();
+    expect(loadAforaPluginsMock).not.toHaveBeenCalled();
   });
 
   it("does not claim hook-only warnings from an unloaded metadata-only plugin", () => {
@@ -848,7 +848,7 @@ describe("plugin status reports", () => {
     resolveCompatibleRuntimePluginRegistryMock.mockReturnValue(undefined);
 
     expect(buildPluginCompatibilitySnapshotNotices({ config: {} })).toStrictEqual([]);
-    expect(loadOpenClawPluginsMock).not.toHaveBeenCalled();
+    expect(loadAforaPluginsMock).not.toHaveBeenCalled();
   });
 
   it("warns external plugins when load diagnostics reference removed session file APIs", () => {

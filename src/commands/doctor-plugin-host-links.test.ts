@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { note } from "../../packages/terminal-core/src/note.js";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
@@ -32,26 +32,26 @@ function createRegisteredExtensionPlugin(params: {
 }) {
   const pluginId = params.pluginId ?? "email";
   const packageDir = params.packageDir ?? path.join(params.stateDir, "extensions", pluginId);
-  const staleHostDir = path.join(packageDir, "node_modules", "openclaw");
+  const staleHostDir = path.join(packageDir, "node_modules", "afora");
   fs.mkdirSync(staleHostDir, { recursive: true });
   fs.writeFileSync(
     path.join(packageDir, "package.json"),
     JSON.stringify({
       name: `@clawemail/${pluginId}`,
       version: "2026.7.1",
-      [params.dependencyField ?? "peerDependencies"]: { openclaw: ">=2026.7.1" },
-      openclaw: { extensions: ["./index.js"] },
+      [params.dependencyField ?? "peerDependencies"]: { afora: ">=2026.7.1" },
+      afora: { extensions: ["./index.js"] },
     }),
   );
   fs.writeFileSync(path.join(packageDir, "index.js"), "export default {};\n");
   fs.writeFileSync(
-    path.join(packageDir, "openclaw.plugin.json"),
+    path.join(packageDir, "afora.plugin.json"),
     JSON.stringify({ id: pluginId, configSchema: { type: "object" } }),
   );
   fs.writeFileSync(
     path.join(staleHostDir, "package.json"),
     JSON.stringify({
-      name: params.nestedPackageName ?? "openclaw",
+      name: params.nestedPackageName ?? "afora",
       version: "2026.7.1-beta.2",
     }),
   );
@@ -85,9 +85,9 @@ function createDoctorParams(stateDir: string, shouldRepair: boolean) {
   return {
     stateDir,
     env: {
-      OPENCLAW_BUNDLED_PLUGINS_DIR: undefined,
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_VERSION: "2026.4.25",
+      AFORA_BUNDLED_PLUGINS_DIR: undefined,
+      AFORA_STATE_DIR: stateDir,
+      AFORA_VERSION: "2026.4.25",
       VITEST: "true",
     },
     config: {},
@@ -99,7 +99,7 @@ describe("doctor registered npm plugin host links", () => {
   it.each(["peerDependencies", "dependencies"] as const)(
     "repairs a stale copied host for a registered extensions-root %s plugin",
     async (dependencyField) => {
-      const stateDir = tempDirs.make("openclaw-doctor-plugin-host-links-");
+      const stateDir = tempDirs.make("afora-doctor-plugin-host-links-");
       const { packageDir, staleHostDir } = createRegisteredExtensionPlugin({
         stateDir,
         dependencyField,
@@ -112,12 +112,12 @@ describe("doctor registered npm plugin host links", () => {
 
       expect(fs.lstatSync(staleHostDir).isSymbolicLink()).toBe(true);
       expect(fs.realpathSync(staleHostDir)).toBe(fs.realpathSync(process.cwd()));
-      expect(vi.mocked(note).mock.calls.join("\n")).toContain("OpenClaw host peer link");
+      expect(vi.mocked(note).mock.calls.join("\n")).toContain("Afora host peer link");
     },
   );
 
   it("reports a stale registered extensions-root host without changing it in read-only doctor", async () => {
-    const stateDir = tempDirs.make("openclaw-doctor-plugin-host-links-");
+    const stateDir = tempDirs.make("afora-doctor-plugin-host-links-");
     const { packageDir, staleHostDir } = createRegisteredExtensionPlugin({ stateDir });
     await writeInstallRecords(stateDir, {
       email: createNpmInstallRecord("email", packageDir),
@@ -128,7 +128,7 @@ describe("doctor registered npm plugin host links", () => {
     await maybeRepairPluginRegistryState(params);
 
     const issue = expectDefined(
-      issues.find((entry) => entry.kind === "registered-npm-openclaw-host-link"),
+      issues.find((entry) => entry.kind === "registered-npm-afora-host-link"),
       "registered npm host-link issue",
     );
     expect(issue).toMatchObject({ packageDir, packageName: "email" });
@@ -139,7 +139,7 @@ describe("doctor registered npm plugin host links", () => {
     });
     expect(pluginRegistryIssueToRepairEffect(issue)).toEqual({
       kind: "package",
-      action: "would-relink-registered-npm-openclaw-host",
+      action: "would-relink-registered-npm-afora-host",
       target: packageDir,
       dryRunSafe: false,
     });
@@ -148,7 +148,7 @@ describe("doctor registered npm plugin host links", () => {
   });
 
   it("does not repair a developer-controlled path install under the extensions root", async () => {
-    const stateDir = tempDirs.make("openclaw-doctor-plugin-host-links-");
+    const stateDir = tempDirs.make("afora-doctor-plugin-host-links-");
     const { packageDir, staleHostDir } = createRegisteredExtensionPlugin({ stateDir });
     await writeInstallRecords(stateDir, {
       email: { source: "path", installPath: packageDir },
@@ -158,13 +158,13 @@ describe("doctor registered npm plugin host links", () => {
 
     expect(fs.lstatSync(staleHostDir).isDirectory()).toBe(true);
     expect(JSON.parse(fs.readFileSync(path.join(staleHostDir, "package.json"), "utf8"))).toEqual({
-      name: "openclaw",
+      name: "afora",
       version: "2026.7.1-beta.2",
     });
   });
 
   it("does not repair an npm install recorded outside the operator-owned plugin roots", async () => {
-    const stateDir = tempDirs.make("openclaw-doctor-plugin-host-links-");
+    const stateDir = tempDirs.make("afora-doctor-plugin-host-links-");
     const { packageDir, staleHostDir } = createRegisteredExtensionPlugin({
       stateDir,
       packageDir: path.join(stateDir, "external-owner", "email"),
@@ -181,7 +181,7 @@ describe("doctor registered npm plugin host links", () => {
   it.runIf(process.platform !== "win32")(
     "does not follow a registered extensions-root package symlink outside its owner root",
     async () => {
-      const stateDir = tempDirs.make("openclaw-doctor-plugin-host-links-");
+      const stateDir = tempDirs.make("afora-doctor-plugin-host-links-");
       const outsideDir = path.join(stateDir, "external-owner", "email");
       const { staleHostDir } = createRegisteredExtensionPlugin({
         stateDir,
@@ -203,7 +203,7 @@ describe("doctor registered npm plugin host links", () => {
   it.runIf(process.platform !== "win32")(
     "does not mutate a developer-owned sibling through a registered in-root package alias",
     async () => {
-      const stateDir = tempDirs.make("openclaw-doctor-plugin-host-links-");
+      const stateDir = tempDirs.make("afora-doctor-plugin-host-links-");
       const developerPackageDir = path.join(stateDir, "extensions", "local-project");
       const developerPlugin = createRegisteredExtensionPlugin({
         stateDir,
@@ -222,10 +222,10 @@ describe("doctor registered npm plugin host links", () => {
   );
 
   it("does not delete an unrelated copied package while repairing a registered install", async () => {
-    const stateDir = tempDirs.make("openclaw-doctor-plugin-host-links-");
+    const stateDir = tempDirs.make("afora-doctor-plugin-host-links-");
     const { packageDir, staleHostDir } = createRegisteredExtensionPlugin({
       stateDir,
-      nestedPackageName: "not-openclaw",
+      nestedPackageName: "not-afora",
     });
     await writeInstallRecords(stateDir, {
       email: createNpmInstallRecord("email", packageDir),
@@ -234,13 +234,13 @@ describe("doctor registered npm plugin host links", () => {
     await maybeRepairPluginRegistryState(createDoctorParams(stateDir, true));
 
     expect(JSON.parse(fs.readFileSync(path.join(staleHostDir, "package.json"), "utf8"))).toEqual({
-      name: "not-openclaw",
+      name: "not-afora",
       version: "2026.7.1-beta.2",
     });
   });
 
   it("reports a malformed registered package and still repairs its valid sibling", async () => {
-    const stateDir = tempDirs.make("openclaw-doctor-plugin-host-links-");
+    const stateDir = tempDirs.make("afora-doctor-plugin-host-links-");
     const broken = createRegisteredExtensionPlugin({ stateDir, pluginId: "broken" });
     const email = createRegisteredExtensionPlugin({ stateDir });
     fs.writeFileSync(path.join(broken.packageDir, "package.json"), "{", "utf8");
@@ -259,7 +259,7 @@ describe("doctor registered npm plugin host links", () => {
           packageDir: broken.packageDir,
         }),
         expect.objectContaining({
-          kind: "registered-npm-openclaw-host-link",
+          kind: "registered-npm-afora-host-link",
           packageDir: email.packageDir,
         }),
       ]),

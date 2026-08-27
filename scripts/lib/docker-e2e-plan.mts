@@ -25,8 +25,8 @@ import officialExternalChannelCatalog from "./official-external-channel-catalog.
 export { DEFAULT_LIVE_RETRIES };
 export { normalizeReleaseProfile };
 
-export const DEFAULT_E2E_BARE_IMAGE = "openclaw-docker-e2e-bare:local";
-export const DEFAULT_E2E_FUNCTIONAL_IMAGE = "openclaw-docker-e2e-functional:local";
+export const DEFAULT_E2E_BARE_IMAGE = "afora-docker-e2e-bare:local";
+export const DEFAULT_E2E_FUNCTIONAL_IMAGE = "afora-docker-e2e-functional:local";
 export const DEFAULT_PARALLELISM = 10;
 export const DEFAULT_PROFILE = "all";
 export const DEFAULT_RESOURCE_LIMITS = {
@@ -98,7 +98,7 @@ function shellQuote(value: string): string {
 function sanitizeLaneNameSuffix(value: string): string {
   return (
     value
-      .replace(/^openclaw@/u, "")
+      .replace(/^afora@/u, "")
       .replace(/[^A-Za-z0-9._-]+/g, "-")
       .replace(/^-+|-+$/g, "") || "baseline"
   );
@@ -106,7 +106,7 @@ function sanitizeLaneNameSuffix(value: string): string {
 
 const UPGRADE_SURVIVOR_SCENARIOS = [
   "base",
-  "acpx-openclaw-tools-bridge",
+  "acpx-afora-tools-bridge",
   "feishu-channel",
   "bootstrap-persona",
   "channel-post-core-restore",
@@ -126,22 +126,22 @@ const UPGRADE_SURVIVOR_SCENARIO_ALIASES = new Map([
 
 // Upgrade recipes select an OpenAI model whose runtime is supplied by the
 // version-matched Codex companion after the candidate replaces the baseline.
-const UPGRADE_SURVIVOR_RUNTIME_COMPANION_PACKAGES = ["@openclaw/codex"];
+const UPGRADE_SURVIVOR_RUNTIME_COMPANION_PACKAGES = ["@afora/codex"];
 
 // Pre-protocol catalogs are content-addressed. Unknown legacy blocks fail
 // closed instead of requiring a dependency or reimplementing a JavaScript parser.
 const LEGACY_UPGRADE_SURVIVOR_SCENARIO_CATALOGS = new Map([
   [
     "837ab1c89821d52519f385e0f3d2067e0b923f730e3a4791e67f578bf5d29f8e",
-    "base acpx-openclaw-tools-bridge feishu-channel bootstrap-persona channel-post-core-restore codex-allowlist-survival plugin-deps-cleanup configured-plugin-installs stale-source-plugin-shadow tilde-log-path meeting-transcripts-sqlite versioned-runtime-deps cron-scheduled-authority auth-profile-v2026-7-2-beta-5",
+    "base acpx-afora-tools-bridge feishu-channel bootstrap-persona channel-post-core-restore codex-allowlist-survival plugin-deps-cleanup configured-plugin-installs stale-source-plugin-shadow tilde-log-path meeting-transcripts-sqlite versioned-runtime-deps cron-scheduled-authority auth-profile-v2026-7-2-beta-5",
   ],
   [
     "10ea475027d8b320d6a704cd6e4dd0f7e984c57a93b327048db229a7e0132c8a",
-    "base acpx-openclaw-tools-bridge feishu-channel bootstrap-persona channel-post-core-restore codex-allowlist-survival plugin-deps-cleanup configured-plugin-installs stale-source-plugin-shadow tilde-log-path meeting-transcripts-sqlite versioned-runtime-deps cron-scheduled-authority",
+    "base acpx-afora-tools-bridge feishu-channel bootstrap-persona channel-post-core-restore codex-allowlist-survival plugin-deps-cleanup configured-plugin-installs stale-source-plugin-shadow tilde-log-path meeting-transcripts-sqlite versioned-runtime-deps cron-scheduled-authority",
   ],
   [
     "213e004a28814fe0f7bb33018ae59a709c2e6d6e13b273df82a0e7935fbaf5af",
-    "base acpx-openclaw-tools-bridge feishu-channel bootstrap-persona channel-post-core-restore codex-allowlist-survival plugin-deps-cleanup configured-plugin-installs stale-source-plugin-shadow tilde-log-path meeting-transcripts-sqlite versioned-runtime-deps",
+    "base acpx-afora-tools-bridge feishu-channel bootstrap-persona channel-post-core-restore codex-allowlist-survival plugin-deps-cleanup configured-plugin-installs stale-source-plugin-shadow tilde-log-path meeting-transcripts-sqlite versioned-runtime-deps",
   ],
   [
     "755557a6ea609e5b9d9fe9d61beb7e75651641e26a3f0ef2fe1fc3a973b398c8",
@@ -161,11 +161,11 @@ const LEGACY_UPGRADE_SURVIVOR_SCENARIO_CATALOGS = new Map([
   ],
   [
     "f226c05636dfb4e759558b5127d1c684d28a609292f4e110ff656c0e4f95ad06",
-    "base acpx-openclaw-tools-bridge feishu-channel bootstrap-persona channel-post-core-restore plugin-deps-cleanup configured-plugin-installs stale-source-plugin-shadow tilde-log-path versioned-runtime-deps",
+    "base acpx-afora-tools-bridge feishu-channel bootstrap-persona channel-post-core-restore plugin-deps-cleanup configured-plugin-installs stale-source-plugin-shadow tilde-log-path versioned-runtime-deps",
   ],
   [
     "d9c9edcb27aca88a0b11c72e85592001cba732cf0f96bb8a73c1c0243c8f3678",
-    "base acpx-openclaw-tools-bridge feishu-channel bootstrap-persona channel-post-core-restore codex-allowlist-survival plugin-deps-cleanup configured-plugin-installs stale-source-plugin-shadow tilde-log-path versioned-runtime-deps",
+    "base acpx-afora-tools-bridge feishu-channel bootstrap-persona channel-post-core-restore codex-allowlist-survival plugin-deps-cleanup configured-plugin-installs stale-source-plugin-shadow tilde-log-path versioned-runtime-deps",
   ],
   [
     "8ac0113158bfe1ebde77272fb1ffb740c281378a170fbc1e9e281d4e44677f02",
@@ -274,16 +274,16 @@ export function normalizeUpgradeSurvivorBaselineSpec(raw: string | undefined): s
   if (!value) {
     return undefined;
   }
-  const spec = value.startsWith("openclaw@") ? value : `openclaw@${value}`;
+  const spec = value.startsWith("afora@") ? value : `afora@${value}`;
   if (
-    !/^openclaw@(?:alpha|beta|latest|[0-9]{4}\.[0-9]+\.[0-9]+(?:-(?:[0-9]+|alpha\.[0-9]+|beta\.[0-9]+))?)$/u.test(
+    !/^afora@(?:alpha|beta|latest|[0-9]{4}\.[0-9]+\.[0-9]+(?:-(?:[0-9]+|alpha\.[0-9]+|beta\.[0-9]+))?)$/u.test(
       spec,
     )
   ) {
     throw new Error(
       `invalid published upgrade survivor baseline: ${JSON.stringify(
         value,
-      )}. Expected openclaw@latest, openclaw@beta, openclaw@alpha, or openclaw@YYYY.M.PATCH.`,
+      )}. Expected afora-agent@latest, afora@beta, afora@alpha, or afora@YYYY.M.PATCH.`,
     );
   }
   return spec;
@@ -336,7 +336,7 @@ function parseUpgradeSurvivorScenarios(raw: string | undefined): string[] {
 }
 
 function parsePublishedReleaseVersion(spec: string | undefined): PublishedReleaseVersion | null {
-  const match = /^openclaw@([0-9]{4})\.([0-9]+)\.([0-9]+)/u.exec(spec ?? "");
+  const match = /^afora@([0-9]{4})\.([0-9]+)\.([0-9]+)/u.exec(spec ?? "");
   if (!match) {
     return null;
   }
@@ -380,7 +380,7 @@ function supportsUpgradeSurvivorScenarioAtBaseline(
   return (
     (scenario !== "plugin-deps-cleanup" ||
       supportsUpgradeSurvivorPluginDependencyCleanup(baselineSpec)) &&
-    (scenario !== "acpx-openclaw-tools-bridge" ||
+    (scenario !== "acpx-afora-tools-bridge" ||
       supportsUpgradeSurvivorAcpToolsBridge(baselineSpec))
   );
 }
@@ -465,11 +465,11 @@ function expandUpgradeSurvivorBaselineLanes(
             const name = expandedUpgradeSurvivorLaneName(poolLane.name, baselineSpec, scenario);
             const suffix = name.slice(poolLane.name.length + 1);
             const commandPrefix = [
-              `OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_DIR="$PWD/.artifacts/upgrade-survivor/${name}"`,
+              `AFORA_UPGRADE_SURVIVOR_ARTIFACT_DIR="$PWD/.artifacts/upgrade-survivor/${name}"`,
               baselineSpec
-                ? `OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC=${shellQuote(baselineSpec)}`
+                ? `AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC=${shellQuote(baselineSpec)}`
                 : "",
-              scenario ? `OPENCLAW_UPGRADE_SURVIVOR_SCENARIO=${shellQuote(scenario)}` : "",
+              scenario ? `AFORA_UPGRADE_SURVIVOR_SCENARIO=${shellQuote(scenario)}` : "",
             ]
               .filter(Boolean)
               .join(" ");
@@ -522,7 +522,7 @@ export function parseLiveMode(raw: unknown): LiveMode {
     return mode;
   }
   throw new Error(
-    `OPENCLAW_DOCKER_ALL_LIVE_MODE must be one of: all, skip, only. Got: ${JSON.stringify(raw)}`,
+    `AFORA_DOCKER_ALL_LIVE_MODE must be one of: all, skip, only. Got: ${JSON.stringify(raw)}`,
   );
 }
 
@@ -532,7 +532,7 @@ export function parseProfile(raw: unknown): DockerProfile {
     return profile;
   }
   throw new Error(
-    `OPENCLAW_DOCKER_ALL_PROFILE must be one of: ${DEFAULT_PROFILE}, ${RELEASE_PATH_PROFILE}. Got: ${JSON.stringify(raw)}`,
+    `AFORA_DOCKER_ALL_PROFILE must be one of: ${DEFAULT_PROFILE}, ${RELEASE_PATH_PROFILE}. Got: ${JSON.stringify(raw)}`,
   );
 }
 
@@ -638,7 +638,7 @@ export function lanesNeedE2eImageKind(
   return poolLanes.some((poolLane) => poolLane.e2eImageKind === kind);
 }
 
-export function lanesNeedOpenClawPackage(poolLanes: DockerE2eLane[]): boolean {
+export function lanesNeedAforaPackage(poolLanes: DockerE2eLane[]): boolean {
   return poolLanes.some((poolLane) => poolLane.e2eImageKind);
 }
 
@@ -651,9 +651,9 @@ export function findLaneByName(name: string): DockerE2eLane | undefined {
         ...mainLanes,
         ...tailLanes,
       ],
-      process.env.OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPECS,
+      process.env.AFORA_UPGRADE_SURVIVOR_BASELINE_SPECS,
       undefined,
-      process.env.OPENCLAW_UPGRADE_SURVIVOR_SCENARIOS,
+      process.env.AFORA_UPGRADE_SURVIVOR_SCENARIOS,
     ).lanes,
   ).find((poolLane) => poolLane.name === name);
 }
@@ -699,7 +699,7 @@ function upgradeSurvivorScenarioForLane(poolLane: DockerE2eLane): string | undef
   if (!poolLane.upgradeSurvivorScenario) {
     return undefined;
   }
-  const match = /(?:^|\s)OPENCLAW_UPGRADE_SURVIVOR_SCENARIO=(?:'([^']+)'|"([^"]+)"|([^\s]+))/u.exec(
+  const match = /(?:^|\s)AFORA_UPGRADE_SURVIVOR_SCENARIO=(?:'([^']+)'|"([^"]+)"|([^\s]+))/u.exec(
     poolLane.command,
   );
   return match?.[1] ?? match?.[2] ?? match?.[3] ?? poolLane.upgradeSurvivorScenario;
@@ -707,7 +707,7 @@ function upgradeSurvivorScenarioForLane(poolLane: DockerE2eLane): string | undef
 
 function upgradeSurvivorBaselineVersionForLane(poolLane: DockerE2eLane): string | null {
   const match =
-    /(?:^|\s)OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC=(?:'([^']+)'|"([^"]+)"|([^\s]+))/u.exec(
+    /(?:^|\s)AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC=(?:'([^']+)'|"([^"]+)"|([^\s]+))/u.exec(
       poolLane.command,
     );
   const spec = match?.[1] ?? match?.[2] ?? match?.[3];
@@ -751,8 +751,8 @@ export function requiredPrepublishPluginPackagesForLanes(poolLanes: DockerE2eLan
   }
   for (const packageName of (officialExternalChannelCatalog.entries ?? [])
     .filter((entry) => {
-      const channelId = entry.openclaw?.channel?.id;
-      const install = entry.openclaw?.install;
+      const channelId = entry.afora?.channel?.id;
+      const install = entry.afora?.install;
       return (
         typeof entry.name === "string" &&
         configuredChannelIds.has(channelId) &&
@@ -806,7 +806,7 @@ function buildPlanJson(params: {
       e2eImage: imageKinds.length > 0,
       functionalImage: imageKinds.includes("functional"),
       liveImage: scheduledLanes.some((poolLane) => poolLane.needsLiveImage),
-      package: lanesNeedOpenClawPackage(scheduledLanes),
+      package: lanesNeedAforaPackage(scheduledLanes),
       prepublishPluginRegistry: requiredPrepublishPluginPackages.length > 0,
     },
     profile: params.profile,
@@ -907,7 +907,7 @@ export function resolveDockerE2ePlan(options: DockerE2ePlanOptions) {
             omittedUnsupportedLaneNames.add(selectedName);
             return [];
           }
-          selectNamedLanes(unfilteredSelectableLanes, [selectedName], "OPENCLAW_DOCKER_ALL_LANES");
+          selectNamedLanes(unfilteredSelectableLanes, [selectedName], "AFORA_DOCKER_ALL_LANES");
           return [];
         })
       : undefined;

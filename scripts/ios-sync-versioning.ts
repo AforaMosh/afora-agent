@@ -1,4 +1,4 @@
-// Ios Sync Versioning script supports OpenClaw repository automation.
+// Ios Sync Versioning script supports Afora repository automation.
 import path from "node:path";
 import { syncIosVersioning } from "./lib/ios-version.ts";
 import { parseVersionSyncArgs } from "./lib/version-script-args.ts";

@@ -25,7 +25,7 @@ import {
 } from "./memory-schema-migration.js";
 import * as provenanceSchema from "./memory-schema-provenance.js";
 import { ensureMemoryRecallMetadataSchema } from "./memory-schema-recall.js";
-import { migrateSqliteSchemaToStrict } from "./openclaw-runtime-sqlite.js";
+import { migrateSqliteSchemaToStrict } from "./afora-runtime-sqlite.js";
 export {
   ensureMemoryRecallMetadataSchema,
   hasLegacyMemoryRecallMetadataColumns,

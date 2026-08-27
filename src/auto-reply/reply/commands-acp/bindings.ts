@@ -2,8 +2,8 @@
 import {
   resolveAcpSessionCwd,
   resolveAcpThreadSessionDetailLines,
-} from "@openclaw/acp-core/runtime/session-identifiers";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+} from "@afora/acp-core/runtime/session-identifiers";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { getChannelPlugin, normalizeChannelId } from "../../../channels/plugins/index.js";
 import {
   resolveThreadBindingIntroText,
@@ -19,7 +19,7 @@ import {
   resolveThreadBindingSpawnPolicy,
 } from "../../../channels/thread-bindings-policy.js";
 import type { SessionAcpMeta } from "../../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { formatErrorMessage } from "../../../infra/errors.js";
 import { normalizeConversationRef } from "../../../infra/outbound/session-binding-normalization.js";
 import {
@@ -69,7 +69,7 @@ export async function resolveBoundReplyPayload(params: {
 }
 
 function buildSpawnedAcpBindingMetadata(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   accountId: string;
   sessionKey: string;
@@ -113,7 +113,7 @@ async function bindSpawnedAcpSession(params: {
   sessionKey: string;
   conversationRef: ConversationRef;
   placement: SessionBindingPlacement;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   accountId: string;
   agentId: string;

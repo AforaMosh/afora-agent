@@ -1,5 +1,5 @@
 // Normalizes channel config compatibility fields during config loading.
-import { asNullableRecord as asObjectRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord as asObjectRecord } from "@afora/normalization-core/record-coerce";
 import {
   normalizeLegacyDmAliases,
   type CompatMutationResult,

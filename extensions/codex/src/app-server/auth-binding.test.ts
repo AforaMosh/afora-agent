@@ -2,7 +2,7 @@ import {
   clearRuntimeAuthProfileStoreSnapshots,
   replaceRuntimeAuthProfileStoreSnapshots,
   type AuthProfileStore,
-} from "openclaw/plugin-sdk/agent-runtime";
+} from "afora-agent/plugin-sdk/agent-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   fingerprintCodexAppServerAuthBinding,
@@ -30,7 +30,7 @@ describe("Codex app-server auth binding", () => {
     const params = {
       authProfileId: profileId,
       authProfileStore: store,
-      agentDir: "/tmp/openclaw-codex-auth-binding",
+      agentDir: "/tmp/afora-codex-auth-binding",
       config: {
         auth: { profiles: { [profileId]: { provider: "openai", mode: "api_key" as const } } },
       },

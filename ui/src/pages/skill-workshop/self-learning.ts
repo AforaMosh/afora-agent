@@ -1,6 +1,6 @@
 // Self-learning (skills.workshop.autonomous.mode) surface for the Workshop
 // tab: config read/patch plumbing plus the toggle, pitch, and error renderers.
-import { asNullableRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord as asRecord } from "@afora/normalization-core/record-coerce";
 import { html, nothing } from "lit";
 import { t } from "../../i18n/index.ts";
 import { resolveEditableSnapshotConfig } from "../../lib/config/config-state-model.ts";

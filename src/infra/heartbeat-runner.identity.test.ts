@@ -1,7 +1,7 @@
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { resolveSessionStorePathCore } from "../config/sessions.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveIsolatedHeartbeatSessionKey } from "./heartbeat-runner-session.js";
 import { runHeartbeatOnce } from "./heartbeat-runner.js";
 import { installHeartbeatRunnerTestRuntime } from "./heartbeat-runner.test-harness.js";
@@ -56,7 +56,7 @@ describe("runHeartbeatOnce identity", () => {
     async ({ isolatedSession, expectedSessionKey }) => {
       await withTempHeartbeatSandbox(async ({ tmpDir, replySpy }) => {
         const storeTemplate = path.join(tmpDir, "agents", "{agentId}", "sessions.json");
-        const cfg: OpenClawConfig = {
+        const cfg: AforaConfig = {
           agents: {
             defaults: {
               workspace: tmpDir,
@@ -117,7 +117,7 @@ describe("runHeartbeatOnce identity", () => {
   it("runs a global hook wake for an agent without a heartbeat schedule", async () => {
     await withTempHeartbeatSandbox(async ({ tmpDir, replySpy }) => {
       const storeTemplate = path.join(tmpDir, "agents", "{agentId}", "sessions.json");
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           defaults: { workspace: tmpDir },
           entries: { main: { default: true }, hooks: {} },
@@ -159,7 +159,7 @@ describe("runHeartbeatOnce identity", () => {
   it("keeps a global hook event owned by another agent queued for its owner", async () => {
     await withTempHeartbeatSandbox(async ({ tmpDir, replySpy }) => {
       const storeTemplate = path.join(tmpDir, "agents", "{agentId}", "sessions.json");
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           defaults: { workspace: tmpDir },
           entries: { main: { default: true }, alpha: {}, beta: {} },
@@ -231,7 +231,7 @@ describe("runHeartbeatOnce identity", () => {
     { name: "heartbeat ok", replyText: "HEARTBEAT_OK", showOk: true },
   ])("forwards agent identity on $name delivery", async ({ replyText, showOk }) => {
     await withTempHeartbeatSandbox(async ({ tmpDir, storePath, replySpy }) => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           defaults: {
             workspace: tmpDir,

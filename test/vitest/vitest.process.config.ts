@@ -8,7 +8,7 @@ export function createProcessVitestConfig(
   const config = createScopedVitestConfig(["src/process/**/*.test.ts"], {
     dir: "src",
     env,
-    includeOpenClawRuntimeSetup: false,
+    includeAforaRuntimeSetup: false,
     name: "process",
     passWithNoTests: true,
   });

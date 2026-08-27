@@ -2,11 +2,11 @@
 // prefixed to the next prompt. We intentionally avoid persistence to keep
 // events ephemeral. Events are session-scoped and require an explicit key.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { channelRouteDedupeKey } from "../plugin-sdk/channel-route.js";
 import { resolveGlobalMap } from "../shared/global-singleton.js";
 import {
@@ -24,7 +24,7 @@ import {
 
 export type SystemEvent = {
   /**
-   * OpenClaw-assigned opaque identity for one queued occurrence. Preserve it when returning a
+   * Afora-assigned opaque identity for one queued occurrence. Preserve it when returning a
    * snapshot to consume. It changes on replacement or re-enqueue; optional only for legacy
    * ID-less compatibility.
    */
@@ -42,7 +42,7 @@ type SessionQueue = {
   lastContextKey: string | null;
 };
 
-const SYSTEM_EVENT_QUEUES_KEY = Symbol.for("openclaw.systemEvents.queues");
+const SYSTEM_EVENT_QUEUES_KEY = Symbol.for("afora.systemEvents.queues");
 
 const queues = resolveGlobalMap<string, SessionQueue>(SYSTEM_EVENT_QUEUES_KEY, "close-and-restart");
 

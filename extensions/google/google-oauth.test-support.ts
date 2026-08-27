@@ -11,5 +11,5 @@ function requireTestApi(key: string): unknown {
 }
 
 export function resetGoogleVertexAdcState(): void {
-  (requireTestApi("openclaw.google.vertexAdcTestApi") as VertexAdcTestApi).reset();
+  (requireTestApi("afora.google.vertexAdcTestApi") as VertexAdcTestApi).reset();
 }

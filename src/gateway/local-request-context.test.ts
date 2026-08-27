@@ -9,9 +9,9 @@ import * as preparedModelCatalog from "../agents/prepared-model-catalog.js";
 import type { PublishedModelCatalogOwnerCandidate } from "../agents/prepared-model-catalog.types.js";
 import { setPreparedModelRuntimeAuthLoader } from "../agents/prepared-model-runtime-auth.js";
 import type { CliDeps } from "../cli/deps.types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { getPluginRuntimeGatewayRequestScope } from "../plugins/runtime/gateway-request-scope.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { withLocalGatewayRequestScope } from "./local-request-context.js";
 import { dispatchGatewayMethodInProcessRaw } from "./server-plugins.js";
 
@@ -30,7 +30,7 @@ describe("local gateway request context", () => {
       agents: {
         defaults: {},
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     response = await withLocalGatewayRequestScope(
       {
@@ -61,7 +61,7 @@ describe("local gateway request context", () => {
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const loadOwner = vi
       .spyOn(preparedModelCatalog, "loadPublishedPreparedModelCatalogOwnerSnapshot")
       .mockResolvedValue(
@@ -111,7 +111,7 @@ describe("local gateway request context", () => {
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const model = {
       provider: "local-auth-provider",
       id: "local-auth-model",
@@ -185,7 +185,7 @@ describe("local gateway request context", () => {
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const candidate = {
       agentId: "main",
       agentDir: "/tmp/local-model-timeout-agent",
@@ -216,12 +216,12 @@ describe("local gateway request context", () => {
   });
 
   it("commits agent deletion through the canonical cron store", async () => {
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-local-cron-delete-"));
-    vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-local-cron-delete-"));
+    vi.stubEnv("AFORA_STATE_DIR", stateDir);
     const cfg = {
       cron: { store: path.join(stateDir, "cron", "jobs.json") },
       agents: { list: [{ id: "main", default: true }, { id: "worker" }] },
-    } as OpenClawConfig;
+    } as AforaConfig;
     try {
       await withLocalGatewayRequestScope(
         { deps: {} as CliDeps, getRuntimeConfig: () => cfg },
@@ -236,7 +236,7 @@ describe("local gateway request context", () => {
         },
       );
     } finally {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       vi.unstubAllEnvs();
       fs.rmSync(stateDir, { recursive: true, force: true });
     }

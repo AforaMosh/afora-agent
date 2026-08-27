@@ -1,7 +1,7 @@
 // Matrix plugin module implements verification behavior.
 import { setTimeout as sleep } from "node:timers/promises";
-import { requireRuntimeConfig } from "openclaw/plugin-sdk/plugin-config-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { requireRuntimeConfig } from "afora-agent/plugin-sdk/plugin-config-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { CoreConfig } from "../../types.js";
 import { formatMatrixEncryptionUnavailableError } from "../encryption-guidance.js";
 import type { MatrixDeviceVerificationStatus, MatrixOwnDeviceVerificationStatus } from "../sdk.js";
@@ -204,7 +204,7 @@ async function cancelMatrixSelfVerificationOnFailure(params: {
   }
   await params.crypto
     .cancelVerification(params.request.id, {
-      reason: "OpenClaw self-verification did not complete",
+      reason: "Afora self-verification did not complete",
       code: "m.user",
     })
     .catch(() => undefined);

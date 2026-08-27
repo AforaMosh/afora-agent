@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# Installs an OpenClaw package candidate in Docker, performs Telegram
+# Installs an Afora package candidate in Docker, performs Telegram
 # onboarding/doctor recovery, then runs the Telegram QA live harness.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$ROOT_DIR/scripts/lib/docker-e2e-image.sh"
 
-IMAGE_NAME="$(docker_e2e_resolve_image "openclaw-npm-telegram-live-e2e" OPENCLAW_NPM_TELEGRAM_LIVE_E2E_IMAGE)"
-DOCKER_TARGET="${OPENCLAW_NPM_TELEGRAM_DOCKER_TARGET:-build}"
-PACKAGE_SPEC="${OPENCLAW_NPM_TELEGRAM_PACKAGE_SPEC:-openclaw@beta}"
-PACKAGE_TGZ="${OPENCLAW_NPM_TELEGRAM_PACKAGE_TGZ:-${OPENCLAW_CURRENT_PACKAGE_TGZ:-}}"
-PACKAGE_DIR="${OPENCLAW_NPM_TELEGRAM_PACKAGE_DIR:-}"
-PACKAGE_LABEL="${OPENCLAW_NPM_TELEGRAM_PACKAGE_LABEL:-}"
-RUN_ID="${OPENCLAW_NPM_TELEGRAM_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)-$$}"
-OUTPUT_DIR="${OPENCLAW_NPM_TELEGRAM_OUTPUT_DIR:-.artifacts/qa-e2e/npm-telegram-live/$RUN_ID}"
+IMAGE_NAME="$(docker_e2e_resolve_image "afora-npm-telegram-live-e2e" AFORA_NPM_TELEGRAM_LIVE_E2E_IMAGE)"
+DOCKER_TARGET="${AFORA_NPM_TELEGRAM_DOCKER_TARGET:-build}"
+PACKAGE_SPEC="${AFORA_NPM_TELEGRAM_PACKAGE_SPEC:-afora@beta}"
+PACKAGE_TGZ="${AFORA_NPM_TELEGRAM_PACKAGE_TGZ:-${AFORA_CURRENT_PACKAGE_TGZ:-}}"
+PACKAGE_DIR="${AFORA_NPM_TELEGRAM_PACKAGE_DIR:-}"
+PACKAGE_LABEL="${AFORA_NPM_TELEGRAM_PACKAGE_LABEL:-}"
+RUN_ID="${AFORA_NPM_TELEGRAM_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)-$$}"
+OUTPUT_DIR="${AFORA_NPM_TELEGRAM_OUTPUT_DIR:-.artifacts/qa-e2e/npm-telegram-live/$RUN_ID}"
 case "$OUTPUT_DIR" in
   /*) OUTPUT_DIR_HOST="$OUTPUT_DIR" ;;
   *) OUTPUT_DIR_HOST="$ROOT_DIR/$OUTPUT_DIR" ;;
@@ -22,37 +22,37 @@ OUTPUT_DIR_CONTAINER_RELATIVE=".artifacts/qa-e2e/npm-telegram-live-output"
 OUTPUT_DIR_CONTAINER="/app/$OUTPUT_DIR_CONTAINER_RELATIVE"
 
 resolve_credential_source() {
-  if [ -n "${OPENCLAW_NPM_TELEGRAM_CREDENTIAL_SOURCE:-}" ]; then
-    printf "%s" "$OPENCLAW_NPM_TELEGRAM_CREDENTIAL_SOURCE"
+  if [ -n "${AFORA_NPM_TELEGRAM_CREDENTIAL_SOURCE:-}" ]; then
+    printf "%s" "$AFORA_NPM_TELEGRAM_CREDENTIAL_SOURCE"
     return 0
   fi
-  if [ -n "${OPENCLAW_QA_CREDENTIAL_SOURCE:-}" ]; then
-    printf "%s" "$OPENCLAW_QA_CREDENTIAL_SOURCE"
+  if [ -n "${AFORA_QA_CREDENTIAL_SOURCE:-}" ]; then
+    printf "%s" "$AFORA_QA_CREDENTIAL_SOURCE"
     return 0
   fi
-  if [ -n "${CI:-}" ] && [ -n "${OPENCLAW_QA_CONVEX_SITE_URL:-}" ]; then
-    if [ -n "${OPENCLAW_QA_CONVEX_SECRET_CI:-}" ] || [ -n "${OPENCLAW_QA_CONVEX_SECRET_MAINTAINER:-}" ]; then
+  if [ -n "${CI:-}" ] && [ -n "${AFORA_QA_CONVEX_SITE_URL:-}" ]; then
+    if [ -n "${AFORA_QA_CONVEX_SECRET_CI:-}" ] || [ -n "${AFORA_QA_CONVEX_SECRET_MAINTAINER:-}" ]; then
       printf "convex"
     fi
   fi
 }
 
 resolve_credential_role() {
-  if [ -n "${OPENCLAW_NPM_TELEGRAM_CREDENTIAL_ROLE:-}" ]; then
-    printf "%s" "$OPENCLAW_NPM_TELEGRAM_CREDENTIAL_ROLE"
+  if [ -n "${AFORA_NPM_TELEGRAM_CREDENTIAL_ROLE:-}" ]; then
+    printf "%s" "$AFORA_NPM_TELEGRAM_CREDENTIAL_ROLE"
     return 0
   fi
-  if [ -n "${OPENCLAW_QA_CREDENTIAL_ROLE:-}" ]; then
-    printf "%s" "$OPENCLAW_QA_CREDENTIAL_ROLE"
+  if [ -n "${AFORA_QA_CREDENTIAL_ROLE:-}" ]; then
+    printf "%s" "$AFORA_QA_CREDENTIAL_ROLE"
   fi
 }
 
-validate_openclaw_package_spec() {
+validate_afora_package_spec() {
   local spec="$1"
-  if [[ "$spec" =~ ^openclaw@(alpha|beta|latest|[0-9]{4}\.[1-9][0-9]*\.[1-9][0-9]*(-[1-9][0-9]*|-(alpha|beta)\.[1-9][0-9]*)?)$ ]]; then
+  if [[ "$spec" =~ ^afora@(alpha|beta|latest|[0-9]{4}\.[1-9][0-9]*\.[1-9][0-9]*(-[1-9][0-9]*|-(alpha|beta)\.[1-9][0-9]*)?)$ ]]; then
     return 0
   fi
-  echo "OPENCLAW_NPM_TELEGRAM_PACKAGE_SPEC must be openclaw@alpha, openclaw@beta, openclaw@latest, or an exact OpenClaw release version; got: $spec" >&2
+  echo "AFORA_NPM_TELEGRAM_PACKAGE_SPEC must be afora@alpha, afora@beta, afora-agent@latest, or an exact Afora release version; got: $spec" >&2
   exit 1
 }
 
@@ -62,13 +62,13 @@ resolve_package_tgz() {
     return 0
   fi
   if [ ! -f "$candidate" ]; then
-    echo "OPENCLAW_NPM_TELEGRAM_PACKAGE_TGZ must point to an existing .tgz file; got: $candidate" >&2
+    echo "AFORA_NPM_TELEGRAM_PACKAGE_TGZ must point to an existing .tgz file; got: $candidate" >&2
     exit 1
   fi
   case "$candidate" in
     *.tgz) ;;
     *)
-      echo "OPENCLAW_NPM_TELEGRAM_PACKAGE_TGZ must point to a .tgz file; got: $candidate" >&2
+      echo "AFORA_NPM_TELEGRAM_PACKAGE_TGZ must point to a .tgz file; got: $candidate" >&2
       exit 1
       ;;
   esac
@@ -85,7 +85,7 @@ resolve_package_dir() {
     return 0
   fi
   if [ ! -d "$candidate" ]; then
-    echo "OPENCLAW_NPM_TELEGRAM_PACKAGE_DIR must point to an existing directory; got: $candidate" >&2
+    echo "AFORA_NPM_TELEGRAM_PACKAGE_DIR must point to an existing directory; got: $candidate" >&2
     exit 1
   fi
   (cd "$candidate" && pwd)
@@ -114,29 +114,29 @@ resolved_package_tgz="$(resolve_package_tgz "$PACKAGE_TGZ")"
 resolved_package_dir="$(resolve_package_dir "$PACKAGE_DIR")"
 if [ -n "$resolved_package_dir" ]; then
   if [ -z "$resolved_package_tgz" ]; then
-    echo "OPENCLAW_NPM_TELEGRAM_PACKAGE_DIR requires OPENCLAW_NPM_TELEGRAM_PACKAGE_TGZ" >&2
+    echo "AFORA_NPM_TELEGRAM_PACKAGE_DIR requires AFORA_NPM_TELEGRAM_PACKAGE_TGZ" >&2
     exit 1
   fi
   case "$resolved_package_tgz" in
     "$resolved_package_dir"/*) ;;
     *)
-      echo "OPENCLAW_NPM_TELEGRAM_PACKAGE_TGZ must be inside OPENCLAW_NPM_TELEGRAM_PACKAGE_DIR" >&2
+      echo "AFORA_NPM_TELEGRAM_PACKAGE_TGZ must be inside AFORA_NPM_TELEGRAM_PACKAGE_DIR" >&2
       exit 1
       ;;
   esac
-  package_install_source="openclaw@$(read_package_version "$resolved_package_tgz")"
+  package_install_source="afora@$(read_package_version "$resolved_package_tgz")"
   package_source_kind="prepared-package-set"
   package_mount_args=(-v "$resolved_package_dir:/package-under-test:ro")
   registry_helper_mount_args=(
     -v "$ROOT_DIR/scripts/lib/bounded-response.mjs:/tmp/lib/bounded-response.mjs:ro"
-    -v "$ROOT_DIR/scripts/e2e/lib/plugins/npm-registry-server.mjs:/tmp/openclaw-e2e/lib/plugins/npm-registry-server.mjs:ro"
+    -v "$ROOT_DIR/scripts/e2e/lib/plugins/npm-registry-server.mjs:/tmp/afora-e2e/lib/plugins/npm-registry-server.mjs:ro"
   )
 elif [ -n "$resolved_package_tgz" ]; then
   package_install_source="/package-under-test/$(basename "$resolved_package_tgz")"
   package_source_kind="packed-tarball"
   package_mount_args=(-v "$resolved_package_tgz:$package_install_source:ro")
 else
-  validate_openclaw_package_spec "$PACKAGE_SPEC"
+  validate_afora_package_spec "$PACKAGE_SPEC"
 fi
 if [ -z "$PACKAGE_LABEL" ]; then
   if [ -n "$resolved_package_tgz" ]; then
@@ -157,30 +157,30 @@ if [ -z "$credential_role" ] && [ "$credential_source" = "convex" ]; then
 fi
 
 validate_credential_preflight() {
-  if [ "${OPENCLAW_NPM_TELEGRAM_SKIP_CREDENTIAL_PREFLIGHT:-0}" = "1" ]; then
+  if [ "${AFORA_NPM_TELEGRAM_SKIP_CREDENTIAL_PREFLIGHT:-0}" = "1" ]; then
     return 0
   fi
   if [ "$credential_source" = "convex" ]; then
-    if [ -z "${OPENCLAW_QA_CONVEX_SITE_URL:-}" ]; then
-      echo "Missing required env for Convex credential mode: OPENCLAW_QA_CONVEX_SITE_URL" >&2
+    if [ -z "${AFORA_QA_CONVEX_SITE_URL:-}" ]; then
+      echo "Missing required env for Convex credential mode: AFORA_QA_CONVEX_SITE_URL" >&2
       exit 1
     fi
     if [ "$credential_role" = "ci" ]; then
-      if [ -z "${OPENCLAW_QA_CONVEX_SECRET_CI:-}" ]; then
-        echo "Missing required env for Convex ci credential mode: OPENCLAW_QA_CONVEX_SECRET_CI" >&2
+      if [ -z "${AFORA_QA_CONVEX_SECRET_CI:-}" ]; then
+        echo "Missing required env for Convex ci credential mode: AFORA_QA_CONVEX_SECRET_CI" >&2
         exit 1
       fi
       return 0
     fi
     if [ "$credential_role" = "maintainer" ]; then
-      if [ -z "${OPENCLAW_QA_CONVEX_SECRET_MAINTAINER:-}" ]; then
-        echo "Missing required env for Convex maintainer credential mode: OPENCLAW_QA_CONVEX_SECRET_MAINTAINER" >&2
+      if [ -z "${AFORA_QA_CONVEX_SECRET_MAINTAINER:-}" ]; then
+        echo "Missing required env for Convex maintainer credential mode: AFORA_QA_CONVEX_SECRET_MAINTAINER" >&2
         exit 1
       fi
       return 0
     fi
-    if [ -z "${OPENCLAW_QA_CONVEX_SECRET_CI:-}" ] && [ -z "${OPENCLAW_QA_CONVEX_SECRET_MAINTAINER:-}" ]; then
-      echo "Missing required env for Convex credential mode: OPENCLAW_QA_CONVEX_SECRET_CI or OPENCLAW_QA_CONVEX_SECRET_MAINTAINER" >&2
+    if [ -z "${AFORA_QA_CONVEX_SECRET_CI:-}" ] && [ -z "${AFORA_QA_CONVEX_SECRET_MAINTAINER:-}" ]; then
+      echo "Missing required env for Convex credential mode: AFORA_QA_CONVEX_SECRET_CI or AFORA_QA_CONVEX_SECRET_MAINTAINER" >&2
       exit 1
     fi
     return 0
@@ -188,9 +188,9 @@ validate_credential_preflight() {
 
   local missing=()
   for key in \
-    OPENCLAW_QA_TELEGRAM_GROUP_ID \
-    OPENCLAW_QA_TELEGRAM_DRIVER_BOT_TOKEN \
-    OPENCLAW_QA_TELEGRAM_SUT_BOT_TOKEN; do
+    AFORA_QA_TELEGRAM_GROUP_ID \
+    AFORA_QA_TELEGRAM_DRIVER_BOT_TOKEN \
+    AFORA_QA_TELEGRAM_SUT_BOT_TOKEN; do
     if [ -z "${!key:-}" ]; then
       missing+=("$key")
     fi
@@ -199,8 +199,8 @@ validate_credential_preflight() {
     {
       echo "Missing required Telegram QA credential env before Docker work: ${missing[*]}"
       echo "Use one of:"
-      echo "  direct Telegram env: OPENCLAW_QA_TELEGRAM_GROUP_ID, OPENCLAW_QA_TELEGRAM_DRIVER_BOT_TOKEN, OPENCLAW_QA_TELEGRAM_SUT_BOT_TOKEN"
-      echo "  Convex env: OPENCLAW_NPM_TELEGRAM_CREDENTIAL_SOURCE=convex plus OPENCLAW_QA_CONVEX_SITE_URL and a role secret"
+      echo "  direct Telegram env: AFORA_QA_TELEGRAM_GROUP_ID, AFORA_QA_TELEGRAM_DRIVER_BOT_TOKEN, AFORA_QA_TELEGRAM_SUT_BOT_TOKEN"
+      echo "  Convex env: AFORA_NPM_TELEGRAM_CREDENTIAL_SOURCE=convex plus AFORA_QA_CONVEX_SITE_URL and a role secret"
     } >&2
     exit 1
   fi
@@ -229,15 +229,15 @@ trap cleanup EXIT
 
 docker_env=(
   -e COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-  -e OPENCLAW_E2E_COMMAND_TIMEOUT="${OPENCLAW_E2E_COMMAND_TIMEOUT:-300s}"
+  -e AFORA_E2E_COMMAND_TIMEOUT="${AFORA_E2E_COMMAND_TIMEOUT:-300s}"
   -e TMPDIR=/tmp
-  -e OPENCLAW_NPM_TELEGRAM_PACKAGE_SPEC="$PACKAGE_SPEC"
-  -e OPENCLAW_NPM_TELEGRAM_PACKAGE_LABEL="$PACKAGE_LABEL"
-  -e OPENCLAW_NPM_TELEGRAM_OUTPUT_DIR="$OUTPUT_DIR_CONTAINER_RELATIVE"
-  -e OPENCLAW_QA_PACKAGE_SOURCE="$package_install_source"
-  -e OPENCLAW_QA_PACKAGE_SOURCE_KIND="$package_source_kind"
-  -e OPENCLAW_QA_RUNNER="${OPENCLAW_QA_RUNNER:-docker}"
-  -e OPENCLAW_NPM_TELEGRAM_FAST="${OPENCLAW_NPM_TELEGRAM_FAST:-1}"
+  -e AFORA_NPM_TELEGRAM_PACKAGE_SPEC="$PACKAGE_SPEC"
+  -e AFORA_NPM_TELEGRAM_PACKAGE_LABEL="$PACKAGE_LABEL"
+  -e AFORA_NPM_TELEGRAM_OUTPUT_DIR="$OUTPUT_DIR_CONTAINER_RELATIVE"
+  -e AFORA_QA_PACKAGE_SOURCE="$package_install_source"
+  -e AFORA_QA_PACKAGE_SOURCE_KIND="$package_source_kind"
+  -e AFORA_QA_RUNNER="${AFORA_QA_RUNNER:-docker}"
+  -e AFORA_NPM_TELEGRAM_FAST="${AFORA_NPM_TELEGRAM_FAST:-1}"
 )
 
 forward_env_if_set() {
@@ -248,10 +248,10 @@ forward_env_if_set() {
 }
 
 if [ -n "$credential_source" ]; then
-  docker_env+=(-e OPENCLAW_QA_CREDENTIAL_SOURCE="$credential_source")
+  docker_env+=(-e AFORA_QA_CREDENTIAL_SOURCE="$credential_source")
 fi
 if [ -n "$credential_role" ]; then
-  docker_env+=(-e OPENCLAW_QA_CREDENTIAL_ROLE="$credential_role")
+  docker_env+=(-e AFORA_QA_CREDENTIAL_ROLE="$credential_role")
 fi
 
 for key in \
@@ -259,60 +259,60 @@ for key in \
   ANTHROPIC_API_KEY \
   GEMINI_API_KEY \
   GOOGLE_API_KEY \
-  OPENCLAW_LIVE_OPENAI_KEY \
-  OPENCLAW_LIVE_ANTHROPIC_KEY \
-  OPENCLAW_LIVE_GEMINI_KEY \
-  OPENCLAW_QA_TELEGRAM_GROUP_ID \
-  OPENCLAW_QA_TELEGRAM_DRIVER_BOT_TOKEN \
-  OPENCLAW_QA_TELEGRAM_SUT_BOT_TOKEN \
-  OPENCLAW_QA_CONVEX_SITE_URL \
-  OPENCLAW_QA_CONVEX_SECRET_CI \
-  OPENCLAW_QA_CONVEX_SECRET_MAINTAINER \
-  OPENCLAW_QA_CREDENTIAL_LEASE_TTL_MS \
-  OPENCLAW_QA_CREDENTIAL_HEARTBEAT_INTERVAL_MS \
-  OPENCLAW_QA_CREDENTIAL_ACQUIRE_TIMEOUT_MS \
-  OPENCLAW_QA_CREDENTIAL_HTTP_TIMEOUT_MS \
-  OPENCLAW_QA_CONVEX_ENDPOINT_PREFIX \
-  OPENCLAW_QA_CREDENTIAL_OWNER_ID \
-  OPENCLAW_QA_ALLOW_INSECURE_HTTP \
-  OPENCLAW_QA_REDACT_PUBLIC_METADATA \
-  OPENCLAW_QA_PACKAGE_SOURCE_SHA \
-  OPENCLAW_QA_TELEGRAM_CANARY_TIMEOUT_MS \
-  OPENCLAW_QA_TELEGRAM_SCENARIO_TIMEOUT_MS \
-  OPENCLAW_QA_SUITE_PROGRESS \
-  OPENCLAW_NPM_TELEGRAM_PROVIDER_MODE \
-  OPENCLAW_NPM_TELEGRAM_MODEL \
-  OPENCLAW_NPM_TELEGRAM_ALT_MODEL \
-  OPENCLAW_NPM_TELEGRAM_SCENARIOS \
-  OPENCLAW_NPM_TELEGRAM_RTT_SAMPLES \
-  OPENCLAW_NPM_TELEGRAM_RTT_CHECKS \
-  OPENCLAW_NPM_TELEGRAM_RTT_TIMEOUT_MS \
-  OPENCLAW_NPM_TELEGRAM_RTT_MAX_FAILURES \
-  OPENCLAW_NPM_TELEGRAM_SKIP_HOTPATH \
-  OPENCLAW_NPM_TELEGRAM_SUT_ACCOUNT \
-  OPENCLAW_NPM_TELEGRAM_ALLOW_FAILURES; do
+  AFORA_LIVE_OPENAI_KEY \
+  AFORA_LIVE_ANTHROPIC_KEY \
+  AFORA_LIVE_GEMINI_KEY \
+  AFORA_QA_TELEGRAM_GROUP_ID \
+  AFORA_QA_TELEGRAM_DRIVER_BOT_TOKEN \
+  AFORA_QA_TELEGRAM_SUT_BOT_TOKEN \
+  AFORA_QA_CONVEX_SITE_URL \
+  AFORA_QA_CONVEX_SECRET_CI \
+  AFORA_QA_CONVEX_SECRET_MAINTAINER \
+  AFORA_QA_CREDENTIAL_LEASE_TTL_MS \
+  AFORA_QA_CREDENTIAL_HEARTBEAT_INTERVAL_MS \
+  AFORA_QA_CREDENTIAL_ACQUIRE_TIMEOUT_MS \
+  AFORA_QA_CREDENTIAL_HTTP_TIMEOUT_MS \
+  AFORA_QA_CONVEX_ENDPOINT_PREFIX \
+  AFORA_QA_CREDENTIAL_OWNER_ID \
+  AFORA_QA_ALLOW_INSECURE_HTTP \
+  AFORA_QA_REDACT_PUBLIC_METADATA \
+  AFORA_QA_PACKAGE_SOURCE_SHA \
+  AFORA_QA_TELEGRAM_CANARY_TIMEOUT_MS \
+  AFORA_QA_TELEGRAM_SCENARIO_TIMEOUT_MS \
+  AFORA_QA_SUITE_PROGRESS \
+  AFORA_NPM_TELEGRAM_PROVIDER_MODE \
+  AFORA_NPM_TELEGRAM_MODEL \
+  AFORA_NPM_TELEGRAM_ALT_MODEL \
+  AFORA_NPM_TELEGRAM_SCENARIOS \
+  AFORA_NPM_TELEGRAM_RTT_SAMPLES \
+  AFORA_NPM_TELEGRAM_RTT_CHECKS \
+  AFORA_NPM_TELEGRAM_RTT_TIMEOUT_MS \
+  AFORA_NPM_TELEGRAM_RTT_MAX_FAILURES \
+  AFORA_NPM_TELEGRAM_SKIP_HOTPATH \
+  AFORA_NPM_TELEGRAM_SUT_ACCOUNT \
+  AFORA_NPM_TELEGRAM_ALLOW_FAILURES; do
   forward_env_if_set "$key"
 done
 
 echo "Running package Telegram live Docker E2E ($PACKAGE_LABEL)..."
 run_logged_print_heartbeat "npm-telegram-package-install" 60 docker_e2e_docker_run_cmd run --rm \
   -e COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
-  -e OPENCLAW_E2E_NPM_INSTALL_TIMEOUT="${OPENCLAW_E2E_NPM_INSTALL_TIMEOUT:-600s}" \
-  -e OPENCLAW_NPM_TELEGRAM_INSTALL_SOURCE="$package_install_source" \
-  -e OPENCLAW_NPM_TELEGRAM_PACKAGE_LABEL="$PACKAGE_LABEL" \
-  -e OPENCLAW_NPM_TELEGRAM_PACKAGE_SET="$([ -n "$resolved_package_dir" ] && printf 1 || printf 0)" \
+  -e AFORA_E2E_NPM_INSTALL_TIMEOUT="${AFORA_E2E_NPM_INSTALL_TIMEOUT:-600s}" \
+  -e AFORA_NPM_TELEGRAM_INSTALL_SOURCE="$package_install_source" \
+  -e AFORA_NPM_TELEGRAM_PACKAGE_LABEL="$PACKAGE_LABEL" \
+  -e AFORA_NPM_TELEGRAM_PACKAGE_SET="$([ -n "$resolved_package_dir" ] && printf 1 || printf 0)" \
   ${package_mount_args[@]+"${package_mount_args[@]}"} \
   ${registry_helper_mount_args[@]+"${registry_helper_mount_args[@]}"} \
   -v "$npm_prefix_host:/npm-global" \
   -i "$IMAGE_NAME" bash -s <<'EOF'
 set -euo pipefail
 
-export HOME="$(mktemp -d "/tmp/openclaw-npm-telegram-install.XXXXXX")"
+export HOME="$(mktemp -d "/tmp/afora-npm-telegram-install.XXXXXX")"
 export NPM_CONFIG_PREFIX="/npm-global"
 export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
 
-install_source="${OPENCLAW_NPM_TELEGRAM_INSTALL_SOURCE:?missing OPENCLAW_NPM_TELEGRAM_INSTALL_SOURCE}"
-package_label="${OPENCLAW_NPM_TELEGRAM_PACKAGE_LABEL:-$install_source}"
+install_source="${AFORA_NPM_TELEGRAM_INSTALL_SOURCE:?missing AFORA_NPM_TELEGRAM_INSTALL_SOURCE}"
+package_label="${AFORA_NPM_TELEGRAM_PACKAGE_LABEL:-$install_source}"
 echo "Installing ${package_label} from ${install_source}..."
 
 registry_pid=""
@@ -328,7 +328,7 @@ cleanup_registry() {
 }
 trap cleanup_registry EXIT
 
-if [ "${OPENCLAW_NPM_TELEGRAM_PACKAGE_SET:-0}" = "1" ]; then
+if [ "${AFORA_NPM_TELEGRAM_PACKAGE_SET:-0}" = "1" ]; then
   shopt -s nullglob
   package_tgzs=(/package-under-test/*.tgz)
   shopt -u nullglob
@@ -357,8 +357,8 @@ process.stdin.on("end", () => {
   done
   registry_port_file="$(mktemp)"
   registry_log="$(mktemp)"
-  OPENCLAW_NPM_REGISTRY_UPSTREAM=https://registry.npmjs.org \
-    node /tmp/openclaw-e2e/lib/plugins/npm-registry-server.mjs \
+  AFORA_NPM_REGISTRY_UPSTREAM=https://registry.npmjs.org \
+    node /tmp/afora-e2e/lib/plugins/npm-registry-server.mjs \
     "$registry_port_file" \
     "${registry_args[@]}" >"$registry_log" 2>&1 &
   registry_pid=$!
@@ -383,7 +383,7 @@ process.stdin.on("end", () => {
   export npm_config_registry="$registry_url"
 fi
 
-npm_install_timeout="${OPENCLAW_E2E_NPM_INSTALL_TIMEOUT:-600s}"
+npm_install_timeout="${AFORA_E2E_NPM_INSTALL_TIMEOUT:-600s}"
 run_npm_install() {
   if [ -z "$npm_install_timeout" ] || [ "$npm_install_timeout" = "0" ]; then
     npm install -g "$install_source" --no-fund --no-audit
@@ -397,7 +397,7 @@ run_npm_install() {
     timeout_bin="gtimeout"
   fi
   if [ -z "$timeout_bin" ]; then
-    echo "timeout or gtimeout is required for OPENCLAW_E2E_NPM_INSTALL_TIMEOUT=$npm_install_timeout" >&2
+    echo "timeout or gtimeout is required for AFORA_E2E_NPM_INSTALL_TIMEOUT=$npm_install_timeout" >&2
     return 127
   fi
 
@@ -409,8 +409,8 @@ run_npm_install() {
 }
 run_npm_install
 
-command -v openclaw
-openclaw --version
+command -v afora
+afora --version
 EOF
 
 # Mount the trusted current-source QA harness separately from the installed
@@ -430,34 +430,34 @@ run_logged_print_heartbeat "npm-telegram-live-suite" 60 docker_e2e_run_with_harn
   -v "$npm_prefix_host:/npm-global" \
   -i "$IMAGE_NAME" bash -s <<'EOF'
 set -euo pipefail
-source scripts/lib/openclaw-e2e-instance.sh
+source scripts/lib/afora-e2e-instance.sh
 
-runtime_home="$(mktemp -d "/tmp/openclaw-npm-telegram-runtime.XXXXXX")"
+runtime_home="$(mktemp -d "/tmp/afora-npm-telegram-runtime.XXXXXX")"
 export HOME="$runtime_home"
 export NPM_CONFIG_PREFIX="/npm-global"
 export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
-export OPENCLAW_NPM_TELEGRAM_REPO_ROOT="/app"
-export OPENCLAW_NPM_TELEGRAM_PACKAGE_VERSION="$(node -e 'const pkg = require("/npm-global/lib/node_modules/openclaw/package.json"); process.stdout.write(pkg.version)')"
-sut_command="/npm-global/bin/openclaw"
+export AFORA_NPM_TELEGRAM_REPO_ROOT="/app"
+export AFORA_NPM_TELEGRAM_PACKAGE_VERSION="$(node -e 'const pkg = require("/npm-global/lib/node_modules/afora/package.json"); process.stdout.write(pkg.version)')"
+sut_command="/npm-global/bin/afora"
 
 dump_hotpath_logs() {
   local status="$1"
   echo "installed-package onboarding recovery hot path failed with exit code $status" >&2
   for file in \
-    /tmp/openclaw-npm-telegram-onboard.json \
-    /tmp/openclaw-npm-telegram-channel-add.log \
-    /tmp/openclaw-npm-telegram-doctor-fix.log \
-    /tmp/openclaw-npm-telegram-doctor-check.log; do
+    /tmp/afora-npm-telegram-onboard.json \
+    /tmp/afora-npm-telegram-channel-add.log \
+    /tmp/afora-npm-telegram-doctor-fix.log \
+    /tmp/afora-npm-telegram-doctor-check.log; do
     if [ -f "$file" ]; then
       echo "--- $file ---" >&2
-      openclaw_e2e_print_log "$file" >&2
+      afora_e2e_print_log "$file" >&2
     fi
   done
 }
 trap 'status=$?; dump_hotpath_logs "$status"; exit "$status"' ERR
 
 test -x "$sut_command"
-openclaw_e2e_run_command "$sut_command" --version
+afora_e2e_run_command "$sut_command" --version
 mkdir -p /app/node_modules
 link_harness_dependency() {
   local source="$1"
@@ -472,7 +472,7 @@ for dependency_dir in /trusted-harness/node_modules/* /trusted-harness/node_modu
   [ -e "$dependency_dir" ] || continue
   dependency_name="$(basename "$dependency_dir")"
   case "$dependency_name" in
-    .bin | openclaw)
+    .bin | afora)
       continue
       ;;
     @*)
@@ -501,19 +501,19 @@ for workspace_dir in /app/packages/* /app/extensions/*; do
   [ -n "$workspace_name" ] || continue
   link_harness_dependency "$workspace_dir" "$workspace_name"
 done
-link_harness_dependency /app openclaw
+link_harness_dependency /app afora
 
-if [ "${OPENCLAW_NPM_TELEGRAM_SKIP_HOTPATH:-0}" != "1" ]; then
-  hotpath_home="$(mktemp -d "/tmp/openclaw-npm-telegram-hotpath.XXXXXX")"
+if [ "${AFORA_NPM_TELEGRAM_SKIP_HOTPATH:-0}" != "1" ]; then
+  hotpath_home="$(mktemp -d "/tmp/afora-npm-telegram-hotpath.XXXXXX")"
   export HOME="$hotpath_home"
   echo "Running installed-package onboarding recovery hot path..."
-  hotpath_placeholder="openclaw-npm-telegram-hotpath"
+  hotpath_placeholder="afora-npm-telegram-hotpath"
   hotpath_model_value="$(printf '%s%s' s "k-$hotpath_placeholder")"
   if [ -n "${OPENAI_API_KEY:-}" ]; then
     hotpath_model_value="$OPENAI_API_KEY"
   fi
   hotpath_channel_value="$(printf '%s:%s' 123456 "$hotpath_placeholder")"
-  OPENAI_API_KEY="$hotpath_model_value" openclaw_e2e_run_command "$sut_command" onboard \
+  OPENAI_API_KEY="$hotpath_model_value" afora_e2e_run_command "$sut_command" onboard \
     --non-interactive --accept-risk \
     --mode local \
     --auth-choice openai-api-key \
@@ -524,15 +524,15 @@ if [ "${OPENCLAW_NPM_TELEGRAM_SKIP_HOTPATH:-0}" != "1" ]; then
     --skip-ui \
     --skip-skills \
     --skip-health \
-    --json >/tmp/openclaw-npm-telegram-onboard.json </dev/null
+    --json >/tmp/afora-npm-telegram-onboard.json </dev/null
 
-  openclaw_e2e_run_command "$sut_command" channels add --channel telegram --token "$hotpath_channel_value" >/tmp/openclaw-npm-telegram-channel-add.log 2>&1 </dev/null
-  openclaw_e2e_run_command "$sut_command" doctor --fix --non-interactive >/tmp/openclaw-npm-telegram-doctor-fix.log 2>&1 </dev/null
-  openclaw_e2e_run_command "$sut_command" doctor --non-interactive >/tmp/openclaw-npm-telegram-doctor-check.log 2>&1 </dev/null
+  afora_e2e_run_command "$sut_command" channels add --channel telegram --token "$hotpath_channel_value" >/tmp/afora-npm-telegram-channel-add.log 2>&1 </dev/null
+  afora_e2e_run_command "$sut_command" doctor --fix --non-interactive >/tmp/afora-npm-telegram-doctor-fix.log 2>&1 </dev/null
+  afora_e2e_run_command "$sut_command" doctor --non-interactive >/tmp/afora-npm-telegram-doctor-check.log 2>&1 </dev/null
   export HOME="$runtime_home"
 fi
 
-export OPENCLAW_NPM_TELEGRAM_SUT_COMMAND="$sut_command"
+export AFORA_NPM_TELEGRAM_SUT_COMMAND="$sut_command"
 trap - ERR
 tsx scripts/e2e/npm-telegram-live-runner.ts
 EOF

@@ -1,5 +1,5 @@
 // Discord tests cover client plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createDiscordClient, createDiscordRestClient } from "./client.js";
 import type { RequestClient } from "./internal/discord.js";
@@ -49,7 +49,7 @@ describe("createDiscordRestClient", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = createDiscordRestClient({ cfg, token: "Bot explicit-token", rest: fakeRest });
 
@@ -59,7 +59,7 @@ describe("createDiscordRestClient", () => {
   });
 
   it("applies a caller timeout to a dedicated REST client", () => {
-    const cfg = { channels: { discord: { token: "discord-token" } } } as OpenClawConfig;
+    const cfg = { channels: { discord: { token: "discord-token" } } } as AforaConfig;
 
     const result = createDiscordRestClient({ cfg, timeoutMs: 250 });
 
@@ -78,7 +78,7 @@ describe("createDiscordRestClient", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(() => createDiscordRestClient({ cfg, rest: fakeRest })).toThrow(
       /configured for account "default" is unavailable/i,

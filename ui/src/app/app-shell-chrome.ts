@@ -9,7 +9,7 @@ import {
   type CommandPaletteTargetDetail,
   type ShellNavDrawerToggleDetail,
 } from "../components/command-palette-contract.ts";
-import type { OpenClawModalDialog } from "../components/modal-dialog.ts";
+import type { AforaModalDialog } from "../components/modal-dialog.ts";
 import {
   BROWSER_PANEL_TOGGLE_EVENT,
   DESKTOP_PANEL_TOGGLE_EVENT,
@@ -116,11 +116,11 @@ export class ShellChromeOwner {
     window.addEventListener("drop", this.handleUnhandledFileDrag);
     window.addEventListener(NATIVE_HISTORY_STATE_EVENT, this.handleNativeHistoryState);
     // Shipped Mac hosts use these same events even when native web chrome is absent.
-    window.addEventListener("openclaw:native-toggle-sidebar", this.handleNativeToggleSidebar);
-    window.addEventListener("openclaw:native-open-search", this.handleNativeOpenSearch);
-    window.addEventListener("openclaw:native-toggle-search", this.handleNativeToggleSearch);
-    window.addEventListener("openclaw:native-new-session", this.handleNativeNewSession);
-    window.addEventListener("openclaw:native-navigate", this.handleNativeNavigate);
+    window.addEventListener("afora:native-toggle-sidebar", this.handleNativeToggleSidebar);
+    window.addEventListener("afora:native-open-search", this.handleNativeOpenSearch);
+    window.addEventListener("afora:native-toggle-search", this.handleNativeToggleSearch);
+    window.addEventListener("afora:native-new-session", this.handleNativeNewSession);
+    window.addEventListener("afora:native-navigate", this.handleNativeNavigate);
     window.addEventListener(TERMINAL_PANEL_TOGGLE_EVENT, this.handleDeferredTerminalToggle);
     window.addEventListener(BROWSER_PANEL_TOGGLE_EVENT, this.handleDeferredBrowserToggle);
     window.addEventListener(DESKTOP_PANEL_TOGGLE_EVENT, this.handleDeferredDesktopToggle);
@@ -136,11 +136,11 @@ export class ShellChromeOwner {
     window.removeEventListener("dragover", this.handleUnhandledFileDrag);
     window.removeEventListener("drop", this.handleUnhandledFileDrag);
     window.removeEventListener(NATIVE_HISTORY_STATE_EVENT, this.handleNativeHistoryState);
-    window.removeEventListener("openclaw:native-toggle-sidebar", this.handleNativeToggleSidebar);
-    window.removeEventListener("openclaw:native-open-search", this.handleNativeOpenSearch);
-    window.removeEventListener("openclaw:native-toggle-search", this.handleNativeToggleSearch);
-    window.removeEventListener("openclaw:native-new-session", this.handleNativeNewSession);
-    window.removeEventListener("openclaw:native-navigate", this.handleNativeNavigate);
+    window.removeEventListener("afora:native-toggle-sidebar", this.handleNativeToggleSidebar);
+    window.removeEventListener("afora:native-open-search", this.handleNativeOpenSearch);
+    window.removeEventListener("afora:native-toggle-search", this.handleNativeToggleSearch);
+    window.removeEventListener("afora:native-new-session", this.handleNativeNewSession);
+    window.removeEventListener("afora:native-navigate", this.handleNativeNavigate);
     window.removeEventListener(TERMINAL_PANEL_TOGGLE_EVENT, this.handleDeferredTerminalToggle);
     window.removeEventListener(BROWSER_PANEL_TOGGLE_EVENT, this.handleDeferredBrowserToggle);
     window.removeEventListener(DESKTOP_PANEL_TOGGLE_EVENT, this.handleDeferredDesktopToggle);
@@ -207,7 +207,7 @@ export class ShellChromeOwner {
           ? host.querySelector<HTMLElement>(".content")
           : null;
     host
-      .querySelector<OpenClawModalDialog>("openclaw-modal-dialog.nav-drawer")
+      .querySelector<AforaModalDialog>("afora-modal-dialog.nav-drawer")
       ?.setReturnFocusTarget(returnFocusTarget ?? null);
     host.navDrawerOpen = false;
     host.navDrawerTrigger = null;
@@ -349,7 +349,7 @@ export class ShellChromeOwner {
 
   dismissSidebarTransientMenus(): boolean {
     return (
-      this.host.querySelector<AppSidebarElement>("openclaw-app-sidebar")?.dismissTransientMenus() ??
+      this.host.querySelector<AppSidebarElement>("afora-app-sidebar")?.dismissTransientMenus() ??
       false
     );
   }

@@ -4,13 +4,13 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   INTERNAL_RUNTIME_CONTEXT_BEGIN,
   INTERNAL_RUNTIME_CONTEXT_END,
 } from "../../agents/internal-runtime-context.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { emitAgentEvent } from "../../infra/agent-events.js";
 import {
   createTaskRecord as createTaskRecordOrNull,
@@ -31,7 +31,7 @@ import { captureEnv, setTestEnvValue } from "../../test-utils/env.js";
 import { tasksHandlers } from "./tasks.js";
 import type { RespondFn } from "./types.js";
 
-const stateDirEnvSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
+const stateDirEnvSnapshot = captureEnv(["AFORA_STATE_DIR"]);
 const cancelSessionMock = vi.fn();
 const killSubagentRunAdminMock = vi.fn();
 type TaskResponsePayload = {
@@ -54,8 +54,8 @@ function createTaskRecord(params: Parameters<typeof createTaskRecordOrNull>[0]):
 }
 
 beforeEach(async () => {
-  stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gateway-tasks-"));
-  setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+  stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-gateway-tasks-"));
+  setTestEnvValue("AFORA_STATE_DIR", stateDir);
   resetTaskRegistryForTests();
   cancelSessionMock.mockReset();
   killSubagentRunAdminMock.mockReset();
@@ -241,7 +241,7 @@ describe("tasks gateway handlers", () => {
         defaults: { sessionStore: { agentId: "ops" } },
         entries: { ops: {}, research: {} },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(
       listTaskRecordPage({
@@ -507,7 +507,7 @@ describe("tasks gateway handlers", () => {
       scopeKind: "session",
       runId: "run-sanitized",
       label:
-        "Compile artifact\nOpenClaw runtime context (internal): Keep internal details private.",
+        "Compile artifact\nAfora runtime context (internal): Keep internal details private.",
       task: "Compile artifact",
       status: "running",
       deliveryStatus: "pending",
@@ -515,20 +515,20 @@ describe("tasks gateway handlers", () => {
     recordTaskProgressByRunId({
       runId: "run-sanitized",
       progressSummary:
-        "Bundling output\nOpenClaw runtime context (internal): Keep internal details private.",
+        "Bundling output\nAfora runtime context (internal): Keep internal details private.",
     });
     emitAgentEvent({
       runId: "run-sanitized",
       stream: "assistant",
-      data: { text: "OpenClaw runtime context (internal): Keep internal details private." },
+      data: { text: "Afora runtime context (internal): Keep internal details private." },
     });
     markTaskTerminalById({
       taskId: task.taskId,
       status: "failed",
       endedAt: Date.now(),
       terminalSummary:
-        "Failed after build\nOpenClaw runtime context (internal): Keep internal details private.",
-      error: "Tool failed\nOpenClaw runtime context (internal): Keep internal details private.",
+        "Failed after build\nAfora runtime context (internal): Keep internal details private.",
+      error: "Tool failed\nAfora runtime context (internal): Keep internal details private.",
     });
 
     const { calls, payload } = await getTaskPayload(task.taskId);
@@ -538,7 +538,7 @@ describe("tasks gateway handlers", () => {
     expect(payload?.task?.error).toBe("Tool failed");
     expect(payload?.task).not.toHaveProperty("lastActivity");
     expect(payload?.task?.prompt).toBe("Compile artifact");
-    expect(JSON.stringify(calls[0]?.[1])).not.toContain("OpenClaw runtime context");
+    expect(JSON.stringify(calls[0]?.[1])).not.toContain("Afora runtime context");
   });
 
   it("exposes tool activity in task summaries", async () => {

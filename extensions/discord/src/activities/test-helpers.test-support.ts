@@ -1,8 +1,8 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import type {
   PluginStateEntry,
   PluginStateKeyedStore,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-runtime";
 import { DiscordActivitiesRuntime } from "./runtime.js";
 import { DiscordActivityStore } from "./store.js";
 
@@ -75,7 +75,7 @@ export function createActivityTestConfig(params?: {
   userId?: string;
   clientSecret?: string;
   applicationId?: string;
-}): OpenClawConfig {
+}): AforaConfig {
   return {
     channels: {
       discord: {

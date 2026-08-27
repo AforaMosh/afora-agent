@@ -1,7 +1,7 @@
 // Line plugin module implements outbound media behavior.
 import type { messagingApi } from "@line/bot-sdk";
-import { resolvePinnedHostnameWithPolicy, type SsrFPolicy } from "openclaw/plugin-sdk/ssrf-runtime";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { resolvePinnedHostnameWithPolicy, type SsrFPolicy } from "afora-agent/plugin-sdk/ssrf-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { LineChannelData, LineOutboundMediaKind } from "./types.js";
 
 type LineOutboundMediaResolved = {

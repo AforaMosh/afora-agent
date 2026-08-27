@@ -1,11 +1,11 @@
 // Mattermost tests cover reply delivery plugin behavior.
 import path from "node:path";
-import { isChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
-import { createMessageReceiptFromOutboundResults } from "openclaw/plugin-sdk/channel-outbound";
-import type { ChunkMode } from "openclaw/plugin-sdk/reply-runtime";
-import { createOpenClawTestState } from "openclaw/plugin-sdk/test-state";
+import { isChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
+import { createMessageReceiptFromOutboundResults } from "afora-agent/plugin-sdk/channel-outbound";
+import type { ChunkMode } from "afora-agent/plugin-sdk/reply-runtime";
+import { createAforaTestState } from "afora-agent/plugin-sdk/test-state";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig, PluginRuntime } from "../../runtime-api.js";
+import type { AforaConfig, PluginRuntime } from "../../runtime-api.js";
 import {
   createMattermostReplyDeliveryBarrier,
   deliverMattermostReplyPayload,
@@ -30,7 +30,7 @@ function createReplyDeliveryCore(): DeliverMattermostReplyPayloadParams["core"] 
         resolveChunkMode: vi.fn<() => ChunkMode>(() => "length"),
         resolveTextChunkLimit: vi.fn(
           (
-            _cfg?: OpenClawConfig,
+            _cfg?: AforaConfig,
             _provider?: string,
             _accountId?: string | null,
             opts?: { fallbackLimit?: number },
@@ -124,7 +124,7 @@ describe("createMattermostReplyDeliveryBarrier", () => {
 describe("deliverMattermostReplyPayload", () => {
   it("suppresses payloads flagged as reasoning", async () => {
     const sendMessage = createSendMessageMock();
-    const cfg = {} satisfies OpenClawConfig;
+    const cfg = {} satisfies AforaConfig;
     const core = createReplyDeliveryCore();
 
     const outcome = await deliverMattermostReplyPayload({
@@ -150,7 +150,7 @@ describe("deliverMattermostReplyPayload", () => {
 
   it("returns 'empty' for substantive text that produced no send (regression: #80501)", async () => {
     const sendMessage = createSendMessageMock();
-    const cfg = {} satisfies OpenClawConfig;
+    const cfg = {} satisfies AforaConfig;
     const core = createReplyDeliveryCore();
     // Make the markdown table converter strip the text to empty so
     // deliverTextOrMediaReply sees an empty chunked text and returns "empty".
@@ -180,7 +180,7 @@ describe("deliverMattermostReplyPayload", () => {
 
   it("suppresses reasoning-prefixed payloads even without an explicit flag", async () => {
     const sendMessage = createSendMessageMock();
-    const cfg = {} satisfies OpenClawConfig;
+    const cfg = {} satisfies AforaConfig;
     const core = createReplyDeliveryCore();
 
     await deliverMattermostReplyPayload({
@@ -201,7 +201,7 @@ describe("deliverMattermostReplyPayload", () => {
 
   it("suppresses reasoning payloads formatted as a Mattermost blockquote", async () => {
     const sendMessage = createSendMessageMock();
-    const cfg = {} satisfies OpenClawConfig;
+    const cfg = {} satisfies AforaConfig;
     const core = createReplyDeliveryCore();
 
     await deliverMattermostReplyPayload({
@@ -222,7 +222,7 @@ describe("deliverMattermostReplyPayload", () => {
 
   it("does not suppress messages that mention Reasoning: mid-text", async () => {
     const sendMessage = createSendMessageMock();
-    const cfg = {} satisfies OpenClawConfig;
+    const cfg = {} satisfies AforaConfig;
     const core = createReplyDeliveryCore();
 
     await deliverMattermostReplyPayload({
@@ -251,11 +251,11 @@ describe("deliverMattermostReplyPayload", () => {
   });
 
   it("passes agent-scoped mediaLocalRoots when sending media paths", async () => {
-    const openClawState = await createOpenClawTestState({
+    const aforaState = await createAforaTestState({
       layout: "state-only",
-      prefix: "openclaw-mm-state-",
+      prefix: "afora-mm-state-",
     });
-    const stateDir = openClawState.stateDir;
+    const stateDir = aforaState.stateDir;
 
     try {
       const sendMessage = createSendMessageMock();
@@ -263,7 +263,7 @@ describe("deliverMattermostReplyPayload", () => {
 
       const agentId = "agent-1";
       const mediaUrl = `file://${path.join(stateDir, `workspace-${agentId}`, "photo.png")}`;
-      const cfg = {} satisfies OpenClawConfig;
+      const cfg = {} satisfies AforaConfig;
 
       await deliverMattermostReplyPayload({
         core,
@@ -297,13 +297,13 @@ describe("deliverMattermostReplyPayload", () => {
         }),
       );
     } finally {
-      await openClawState.cleanup();
+      await aforaState.cleanup();
     }
   });
 
   it("forwards replyToId for text-only chunked replies", async () => {
     const sendMessage = createSendMessageMock();
-    const cfg = {} satisfies OpenClawConfig;
+    const cfg = {} satisfies AforaConfig;
     const core = createReplyDeliveryCore();
     core.channel.text.chunkMarkdownTextWithMode = vi.fn(() => ["hello"]);
 
@@ -341,7 +341,7 @@ describe("deliverMattermostReplyPayload", () => {
 
   it("aggregates every provider post behind one chunked logical payload", async () => {
     const sendMessage = createSendMessageMock();
-    const cfg = {} satisfies OpenClawConfig;
+    const cfg = {} satisfies AforaConfig;
     const core = createReplyDeliveryCore();
     core.channel.text.chunkMarkdownTextWithMode = vi.fn(() => ["alpha", "beta"]);
 
@@ -406,7 +406,7 @@ describe("deliverMattermostReplyPayload", () => {
       .fn<DeliverMattermostReplyPayloadParams["sendMessage"]>()
       .mockImplementationOnce(firstResult)
       .mockRejectedValueOnce(new Error("second chunk failed"));
-    const cfg = {} satisfies OpenClawConfig;
+    const cfg = {} satisfies AforaConfig;
     const core = createReplyDeliveryCore();
     core.channel.text.chunkMarkdownTextWithMode = vi.fn(() => ["alpha", "beta"]);
 

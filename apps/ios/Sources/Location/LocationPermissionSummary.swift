@@ -1,6 +1,6 @@
 import CoreLocation
 import Foundation
-import OpenClawKit
+import AforaKit
 
 struct LocationAuthorizationSnapshot: Equatable, Sendable {
     var authorizationStatus: CLAuthorizationStatus
@@ -12,12 +12,12 @@ struct LocationAuthorizationSnapshot: Equatable, Sendable {
 }
 
 struct LocationPermissionSummary: Equatable {
-    var desiredMode: OpenClawLocationMode
+    var desiredMode: AforaLocationMode
     var locationServicesEnabled: Bool
     var authorizationStatus: CLAuthorizationStatus
     var accuracyAuthorization: CLAccuracyAuthorization
 
-    var effectiveMode: OpenClawLocationMode {
+    var effectiveMode: AforaLocationMode {
         guard self.desiredMode != .off else { return .off }
         guard self.locationServicesEnabled else { return .off }
         switch self.authorizationStatus {
@@ -65,11 +65,11 @@ struct LocationPermissionSummary: Equatable {
             self.accuracyAuthorization)
         {
         case (.off, false, _, _):
-            "Location sharing is disabled in OpenClaw. Location Services are off in iOS Settings."
+            "Location sharing is disabled in Afora. Location Services are off in iOS Settings."
         case (.off, true, .authorizedAlways, _):
-            "Location sharing is disabled in OpenClaw. iOS currently allows Always."
+            "Location sharing is disabled in Afora. iOS currently allows Always."
         case (.off, true, .authorizedWhenInUse, _):
-            "Location sharing is disabled in OpenClaw. iOS currently allows While Using."
+            "Location sharing is disabled in Afora. iOS currently allows While Using."
         case (.off, _, _, _):
             "Location sharing is disabled."
         case (_, false, _, _):
@@ -105,7 +105,7 @@ struct LocationPermissionSummary: Equatable {
         case (_, true, .notDetermined, _):
             "Choose a location mode to request iOS permission."
         @unknown default:
-            "OpenClaw cannot determine the current iOS location permission."
+            "Afora cannot determine the current iOS location permission."
         }
     }
 }

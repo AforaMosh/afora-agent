@@ -73,7 +73,7 @@ describe("resetCommand", () => {
 
     expect(
       cleanupCommandLogMessages(runtime).some((message) =>
-        message.includes("openclaw backup create"),
+        message.includes("afora backup create"),
       ),
     ).toBe(true);
   });
@@ -88,7 +88,7 @@ describe("resetCommand", () => {
 
     expect(
       cleanupCommandLogMessages(runtime).some((message) =>
-        message.includes("openclaw backup create"),
+        message.includes("afora backup create"),
       ),
     ).toBe(false);
   });
@@ -101,7 +101,7 @@ describe("resetCommand", () => {
       dryRun: true,
     });
 
-    expect(removeWorkspaceDirs).toHaveBeenCalledWith(["/tmp/.openclaw/workspace"], runtime, {
+    expect(removeWorkspaceDirs).toHaveBeenCalledWith(["/tmp/.afora/workspace"], runtime, {
       dryRun: true,
       removeStateRows: false,
     });
@@ -116,7 +116,7 @@ describe("resetCommand", () => {
       nonInteractive: true,
     });
 
-    expect(removeWorkspaceDirs).toHaveBeenCalledWith(["/tmp/.openclaw/workspace"], runtime, {
+    expect(removeWorkspaceDirs).toHaveBeenCalledWith(["/tmp/.afora/workspace"], runtime, {
       dryRun: false,
       removeStateRows: true,
     });

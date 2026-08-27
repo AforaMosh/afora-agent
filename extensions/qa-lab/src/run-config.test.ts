@@ -282,7 +282,7 @@ describe("qa run config", () => {
           evidenceMode: "slim",
           providerMode: "live-frontier",
           primaryModel: "openai/gpt-5.6-luna",
-          runtimePair: ["openclaw", "codex"],
+          runtimePair: ["afora", "codex"],
           runtimePairLane: "extended",
           scenarioIds: ["dm-chat-baseline"],
         },
@@ -295,7 +295,7 @@ describe("qa run config", () => {
       channelDriver: "crabline",
       evidenceMode: "slim",
       providerMode: "live-frontier",
-      runtimePair: ["openclaw", "codex"],
+      runtimePair: ["afora", "codex"],
       runtimePairLane: "extended",
       scenarioIds: ["dm-chat-baseline"],
     });
@@ -305,12 +305,12 @@ describe("qa run config", () => {
     expect(() =>
       normalizeQaRunSelection(
         {
-          runtimePair: ["codex", "openclaw"],
+          runtimePair: ["codex", "afora"],
         },
         scenarios,
         profiles,
       ),
-    ).toThrow('runtimePair must be ["openclaw", "codex"]');
+    ).toThrow('runtimePair must be ["afora", "codex"]');
   });
 
   it("shares implicit profile membership and eligibility with the canonical profile planner", () => {
@@ -466,7 +466,7 @@ describe("qa run config", () => {
         profile: "all",
         channelDriver: "qa-channel",
         providerMode: "mock-openai",
-        runtimePair: ["openclaw", "codex"],
+        runtimePair: ["afora", "codex"],
         runtimePairLane: "core",
       },
       catalog.scenarios,
@@ -500,7 +500,7 @@ describe("qa run config", () => {
         profile: "all",
         channelDriver: "qa-channel",
         providerMode: "mock-openai",
-        runtimePair: ["openclaw", "codex"],
+        runtimePair: ["afora", "codex"],
         runtimePairLane: "core",
         scenarioIds: [selectedId],
       },
@@ -782,7 +782,7 @@ describe("qa run config", () => {
   });
 
   it("anchors generated run output dirs under the provided repo root", () => {
-    const repoRoot = path.resolve("/tmp/openclaw-repo");
+    const repoRoot = path.resolve("/tmp/afora-repo");
     const outputDir = createQaRunOutputDir(repoRoot);
     expect(outputDir.startsWith(path.join(repoRoot, ".artifacts", "qa-e2e", "lab-"))).toBe(true);
   });
@@ -791,7 +791,7 @@ describe("qa run config", () => {
     vi.useFakeTimers();
     try {
       vi.setSystemTime(new Date("2026-06-23T07:30:00.000Z"));
-      const repoRoot = path.resolve("/tmp/openclaw-repo");
+      const repoRoot = path.resolve("/tmp/afora-repo");
       const first = createQaRunOutputDir(repoRoot);
       const second = createQaRunOutputDir(repoRoot);
 

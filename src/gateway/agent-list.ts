@@ -2,12 +2,12 @@
 // Combines configured agents and existing on-disk agent state for lightweight UI use.
 import fs from "node:fs";
 import path from "node:path";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { listAgentEntries, tryResolveDefaultAgentId } from "../agents/agent-scope.js";
 import { tryResolveLegacyCompatibilityAgentId } from "../config/legacy.default-agent-owner.js";
 import { resolveStateDir } from "../config/paths.js";
 import type { SessionScope } from "../config/sessions.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizeAgentId, normalizeMainKey } from "../routing/session-key.js";
 import type { GatewayAgentKind } from "../shared/session-types.js";
 import { SYSTEM_AGENT_ROSTER_ENTRIES } from "../system-agent/agent-id.js";
@@ -44,7 +44,7 @@ function listExistingAgentIdsFromDisk(): string[] {
   }
 }
 
-export function resolveGatewayAgentSelectionState(cfg: OpenClawConfig): GatewayAgentSelectionState {
+export function resolveGatewayAgentSelectionState(cfg: AforaConfig): GatewayAgentSelectionState {
   const configuredIds = listAgentEntries(cfg).map((entry) => normalizeAgentId(entry.id));
   const soleAgentId = tryResolveDefaultAgentId(cfg);
   if (soleAgentId) {
@@ -68,7 +68,7 @@ export function resolveGatewayAgentSelectionState(cfg: OpenClawConfig): GatewayA
 }
 
 /** Lists gateway-visible agents with canonical membership, ordering, and semantic kind. */
-export function listGatewayAgentsBasic(cfg: OpenClawConfig): {
+export function listGatewayAgentsBasic(cfg: AforaConfig): {
   defaultId: string;
   ownership?: GatewayAgentOwnership;
   selectionRequired?: boolean;

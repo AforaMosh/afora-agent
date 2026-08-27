@@ -1,8 +1,8 @@
 // Msteams plugin module implements oauth.token behavior.
-import { resolveExpiresAtMsFromDurationSeconds } from "openclaw/plugin-sdk/number-runtime";
-import { readProviderJsonResponse } from "openclaw/plugin-sdk/provider-http";
-import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { resolveExpiresAtMsFromDurationSeconds } from "afora-agent/plugin-sdk/number-runtime";
+import { readProviderJsonResponse } from "afora-agent/plugin-sdk/provider-http";
+import { fetchWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { createMSTeamsHttpError } from "./http-error.js";
 import {
   MSTEAMS_DEFAULT_DELEGATED_SCOPES,

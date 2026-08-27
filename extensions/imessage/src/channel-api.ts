@@ -1,15 +1,15 @@
 // Imessage API module exposes the plugin public contract.
-import { formatTrimmedAllowFromEntries } from "openclaw/plugin-sdk/channel-config-helpers";
-import { PAIRING_APPROVED_MESSAGE } from "openclaw/plugin-sdk/channel-status";
+import { formatTrimmedAllowFromEntries } from "afora-agent/plugin-sdk/channel-config-helpers";
+import { PAIRING_APPROVED_MESSAGE } from "afora-agent/plugin-sdk/channel-status";
 import {
   DEFAULT_ACCOUNT_ID,
   getChatChannelMeta,
   type ChannelPlugin,
-} from "openclaw/plugin-sdk/core";
-import { resolveChannelMediaMaxBytes } from "openclaw/plugin-sdk/media-runtime";
-import { collectStatusIssuesFromLastError } from "openclaw/plugin-sdk/status-helpers";
+} from "afora-agent/plugin-sdk/core";
+import { resolveChannelMediaMaxBytes } from "afora-agent/plugin-sdk/media-runtime";
+import { collectStatusIssuesFromLastError } from "afora-agent/plugin-sdk/status-helpers";
 import { normalizeIMessageMessagingTarget } from "./normalize.js";
-export { chunkTextForOutbound } from "openclaw/plugin-sdk/text-chunking";
+export { chunkTextForOutbound } from "afora-agent/plugin-sdk/text-chunking";
 
 export {
   collectStatusIssuesFromLastError,

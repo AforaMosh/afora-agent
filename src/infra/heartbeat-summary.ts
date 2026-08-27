@@ -1,5 +1,5 @@
 // Summarizes heartbeat config for CLI and UI display.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   listAgentEntries,
   resolveAgentConfig,
@@ -13,7 +13,7 @@ import {
 import { parseDurationMs } from "../cli/parse-duration.js";
 import { tryResolveLegacyCompatibilityAgentId } from "../config/legacy.default-agent-owner.js";
 import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { resolveAmbientHeartbeatAgentId } from "./heartbeat-agent-resolution.js";
 
@@ -35,13 +35,13 @@ export type HeartbeatSummary = {
 
 const DEFAULT_HEARTBEAT_TARGET = "owner";
 
-function hasExplicitHeartbeatAgents(cfg: OpenClawConfig) {
+function hasExplicitHeartbeatAgents(cfg: AforaConfig) {
   const list = listAgentEntries(cfg);
   return list.some((entry) => Boolean(entry?.heartbeat));
 }
 
 /** Return whether heartbeat scheduling applies to an agent. */
-export function isHeartbeatEnabledForAgent(cfg: OpenClawConfig, agentId?: string): boolean {
+export function isHeartbeatEnabledForAgent(cfg: AforaConfig, agentId?: string): boolean {
   const ambientAgentId =
     agentId === undefined
       ? resolveAmbientHeartbeatAgentId(cfg)
@@ -66,7 +66,7 @@ export function isHeartbeatEnabledForAgent(cfg: OpenClawConfig, agentId?: string
 
 /** Resolve a heartbeat interval string to milliseconds. */
 export function resolveHeartbeatIntervalMs(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   overrideEvery?: string,
   heartbeat?: HeartbeatConfig,
 ) {
@@ -96,7 +96,7 @@ export function resolveHeartbeatIntervalMs(
 
 /** Resolve display-ready heartbeat settings for an agent. */
 export function resolveHeartbeatSummaryForAgent(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId?: string,
 ): HeartbeatSummary {
   const defaults = cfg.agents?.defaults?.heartbeat;

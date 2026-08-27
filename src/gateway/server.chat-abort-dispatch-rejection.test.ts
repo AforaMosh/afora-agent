@@ -1,6 +1,6 @@
 // Real WebSocket coverage for abort ownership when an in-flight dispatch rejects.
 import path from "node:path";
-import { rawDataToString } from "@openclaw/gateway-client/websocket-data";
+import { rawDataToString } from "@afora/gateway-client/websocket-data";
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import { createDeferred } from "../../test/helpers/promise.js";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
@@ -66,7 +66,7 @@ afterEach(() => {
 
 describe("gateway WebSocket chat abort ownership", () => {
   test("does not replace an acknowledged abort with a later dispatch rejection", async () => {
-    const sessionDirectory = temporaryDirectories.make("openclaw-chat-abort-dispatch-");
+    const sessionDirectory = temporaryDirectories.make("afora-chat-abort-dispatch-");
     testState.sessionStorePath = path.join(sessionDirectory, "sessions.json");
     await writeSessionStore({
       entries: {
@@ -142,7 +142,7 @@ describe("gateway WebSocket chat abort ownership", () => {
   });
 
   test("does not let a late abort replace an established dispatch error", async () => {
-    const sessionDirectory = temporaryDirectories.make("openclaw-chat-error-late-abort-");
+    const sessionDirectory = temporaryDirectories.make("afora-chat-error-late-abort-");
     testState.sessionStorePath = path.join(sessionDirectory, "sessions.json");
     await writeSessionStore({
       entries: {
@@ -210,7 +210,7 @@ describe("gateway WebSocket chat abort ownership", () => {
   });
 
   test("keeps a real signal-only lifecycle terminal as the only chat terminal", async () => {
-    const sessionDirectory = temporaryDirectories.make("openclaw-chat-lifecycle-interrupt-");
+    const sessionDirectory = temporaryDirectories.make("afora-chat-lifecycle-interrupt-");
     const storePath = path.join(sessionDirectory, "sessions.json");
     testState.sessionStorePath = storePath;
     await writeSessionStore({

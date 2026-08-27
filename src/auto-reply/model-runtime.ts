@@ -2,7 +2,7 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import type { SessionEntry } from "../config/sessions.js";
 
 /** Format a provider/model pair without duplicating provider prefixes already in the model id. */

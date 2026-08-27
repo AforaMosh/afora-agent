@@ -68,7 +68,7 @@ describe("createCliJsonlStreamingParser events", () => {
         JSON.stringify({
           type: "tool_use",
           timestamp: "2026-06-16T19:36:48.000Z",
-          tool_name: "mcp_openclaw_create_goal",
+          tool_name: "mcp_afora_create_goal",
           tool_id: "tool-1",
           parameters: { objective: "Update files" },
         }),
@@ -113,13 +113,13 @@ describe("createCliJsonlStreamingParser events", () => {
     expect(starts).toEqual([
       {
         toolCallId: "tool-1",
-        name: "mcp_openclaw_create_goal",
+        name: "mcp_afora_create_goal",
         kind: "tool_use",
         args: { objective: "Update files" },
       },
     ]);
     expect(results).toEqual([
-      { toolCallId: "tool-1", name: "mcp_openclaw_create_goal", isError: false, result: "created" },
+      { toolCallId: "tool-1", name: "mcp_afora_create_goal", isError: false, result: "created" },
     ]);
     expect(parser.getOutput()).toEqual({
       text: "Checking tools. Done.",
@@ -410,7 +410,7 @@ describe("createCliJsonlStreamingParser events", () => {
           event: {
             type: "content_block_delta",
             index: 0,
-            delta: { type: "input_json_delta", partial_json: '{"query":"openclaw"}' },
+            delta: { type: "input_json_delta", partial_json: '{"query":"afora"}' },
           },
         }),
         JSON.stringify({
@@ -426,7 +426,7 @@ describe("createCliJsonlStreamingParser events", () => {
         toolCallId: "toolu_hosted",
         name: "web_search",
         kind: type,
-        args: { query: "openclaw" },
+        args: { query: "afora" },
       },
     ]);
   });
@@ -437,8 +437,8 @@ describe("createCliJsonlStreamingParser events", () => {
       resultType: "web_search_tool_result",
       toolCallId: "srvtoolu_1",
       name: "web_search",
-      input: { query: "openclaw" },
-      result: [{ type: "web_search_result", title: "OpenClaw", url: "https://example.com" }],
+      input: { query: "afora" },
+      result: [{ type: "web_search_result", title: "Afora", url: "https://example.com" }],
       isError: false,
     },
     {

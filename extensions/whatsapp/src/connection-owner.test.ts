@@ -9,7 +9,7 @@ import {
 } from "./connection-owner.js";
 
 async function createTempParent(): Promise<string> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-wa-owner-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-wa-owner-"));
   onTestFinished(async () => {
     await fs.rm(dir, { recursive: true, force: true });
   });

@@ -93,7 +93,7 @@ async function writeRawWorkspaceTree(params: {
     blobs.push({ entry, mark, content });
     mark += 1;
   }
-  const ref = `refs/heads/openclaw-snapshot-${randomBytes(16).toString("hex")}`;
+  const ref = `refs/heads/afora-snapshot-${randomBytes(16).toString("hex")}`;
   const chunks: Uint8Array[] = [];
   for (const blob of blobs) {
     chunks.push(Buffer.from(`blob\nmark :${blob.mark}\ndata ${blob.content.byteLength}\n`));
@@ -101,7 +101,7 @@ async function writeRawWorkspaceTree(params: {
   }
   chunks.push(
     Buffer.from(
-      `commit ${ref}\ncommitter OpenClaw <noreply@openclaw.ai> 0 +0000\ndata 0\ndeleteall\n`,
+      `commit ${ref}\ncommitter Afora <noreply@afora.ai> 0 +0000\ndata 0\ndeleteall\n`,
     ),
   );
   for (const blob of blobs) {
@@ -134,7 +134,7 @@ export async function createWorkspacePatch(params: {
   baseEntries: WorkerWorkspaceManifestEntry[];
   appliedEntries: WorkerWorkspaceManifestEntry[];
 }): Promise<{ patch: Uint8Array; baseTree: string; basePack: Uint8Array }> {
-  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-workspace-patch-"));
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "afora-workspace-patch-"));
   try {
     // Rollback journals have a fixed SHA-1 object-id contract. Do not inherit
     // user or process defaults that can switch temporary repositories to SHA-256.
@@ -234,7 +234,7 @@ export async function applyWorkspacePatch(params: {
   }
   // Run no-index with discovery disabled so workspace .gitattributes and
   // repository filter config cannot reinterpret authenticated patch bytes.
-  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-no-git-"));
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "afora-no-git-"));
   try {
     await requireGit(
       params.root,
@@ -267,7 +267,7 @@ async function createWorkspaceRecoveryPatch(params: {
   root: string;
   journal: WorkerWorkspaceReconciliationJournal;
 }): Promise<Uint8Array> {
-  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-workspace-recovery-"));
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "afora-workspace-recovery-"));
   try {
     await requireGit(temporary, ["init", "--quiet", "--object-format=sha1"]);
     await requireGit(temporary, ["index-pack", "--stdin"], params.journal.basePack);

@@ -1,6 +1,6 @@
 // Installs fatal and transient unhandled rejection/exception handlers.
 import process from "node:process";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { restoreRuntimeTerminalState } from "../runtime.js";
 import { isAbortError } from "./abort-signal.js";
 import { collectNestedErrorCandidates, extractErrorCodeOrErrno } from "./error-graph-internal.js";
@@ -13,11 +13,11 @@ export { isTransientNetworkError } from "./retryable-network-errors.js";
 type UnhandledRejectionHandler = (reason: unknown) => boolean;
 type UncaughtExceptionHandler = (error: unknown) => boolean;
 
-// Plugins resolve `openclaw/plugin-sdk/runtime` through their own staged
+// Plugins resolve `afora/plugin-sdk/runtime` through their own staged
 // `node_modules`, which loads a separate copy of this module. To keep registry
 // state shared across instances, anchor the handlers Set on globalThis.
-const HANDLERS_GLOBAL_KEY = Symbol.for("openclaw.unhandledRejection.handlers");
-const EXCEPTION_HANDLERS_GLOBAL_KEY = Symbol.for("openclaw.uncaughtException.handlers");
+const HANDLERS_GLOBAL_KEY = Symbol.for("afora.unhandledRejection.handlers");
+const EXCEPTION_HANDLERS_GLOBAL_KEY = Symbol.for("afora.uncaughtException.handlers");
 const handlers: Set<UnhandledRejectionHandler> = (() => {
   const g = globalThis as unknown as Record<symbol, Set<UnhandledRejectionHandler>>;
   const existing = g[HANDLERS_GLOBAL_KEY];
@@ -344,7 +344,7 @@ function isUnhandledRejectionHandled(reason: unknown): boolean {
       }
     } catch (err) {
       console.error(
-        "[openclaw] Unhandled rejection handler failed:",
+        "[afora] Unhandled rejection handler failed:",
         err instanceof Error ? (err.stack ?? err.message) : err,
       );
     }
@@ -367,7 +367,7 @@ export function isUncaughtExceptionHandled(error: unknown): boolean {
       }
     } catch (err) {
       console.error(
-        "[openclaw] Uncaught exception handler failed:",
+        "[afora] Uncaught exception handler failed:",
         err instanceof Error ? (err.stack ?? err.message) : err,
       );
     }
@@ -383,7 +383,7 @@ export function installUnhandledRejectionHandler(): void {
     exitCode = 1,
   ) => {
     for (const message of runFatalErrorHooks({ reason: hookReason, error })) {
-      console.error("[openclaw]", message);
+      console.error("[afora]", message);
     }
     restoreRuntimeTerminalState(reason, { resumeStdinIfPaused: false });
     process.exit(exitCode);
@@ -397,18 +397,18 @@ export function installUnhandledRejectionHandler(): void {
     // AbortError is typically an intentional cancellation (e.g., during shutdown)
     // Log it but don't crash - these are expected during graceful shutdown
     if (isAbortError(reason)) {
-      console.warn("[openclaw] Suppressed AbortError:", formatUncaughtError(reason));
+      console.warn("[afora] Suppressed AbortError:", formatUncaughtError(reason));
       return;
     }
 
     if (isFatalError(reason)) {
-      console.error("[openclaw] FATAL unhandled rejection:", formatUncaughtError(reason));
+      console.error("[afora] FATAL unhandled rejection:", formatUncaughtError(reason));
       exitWithTerminalRestore("fatal unhandled rejection", reason, "fatal_unhandled_rejection");
       return;
     }
 
     if (isConfigError(reason)) {
-      console.error("[openclaw] CONFIGURATION ERROR - requires fix:", formatUncaughtError(reason));
+      console.error("[afora] CONFIGURATION ERROR - requires fix:", formatUncaughtError(reason));
       const exitCode =
         extractErrorCodeWithCause(reason) === INVALID_CONFIG_ERROR_CODE ? EXIT_CONFIG_ERROR : 1;
       exitWithTerminalRestore("configuration error", reason, "configuration_error", exitCode);
@@ -417,13 +417,13 @@ export function installUnhandledRejectionHandler(): void {
 
     if (isTransientUnhandledRejectionError(reason)) {
       console.warn(
-        "[openclaw] Non-fatal unhandled rejection (continuing):",
+        "[afora] Non-fatal unhandled rejection (continuing):",
         formatUncaughtError(reason),
       );
       return;
     }
 
-    console.error("[openclaw] Unhandled promise rejection:", formatUncaughtError(reason));
+    console.error("[afora] Unhandled promise rejection:", formatUncaughtError(reason));
     exitWithTerminalRestore("unhandled rejection", reason, "unhandled_rejection");
   });
 }

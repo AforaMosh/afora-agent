@@ -43,7 +43,7 @@ describe("migration config patches", () => {
     const config: MigrationProviderContext["config"] = {};
     const ctx = {
       config,
-      stateDir: "/tmp/openclaw-migration-test",
+      stateDir: "/tmp/afora-migration-test",
       logger: {},
       runtime: {
         config: {

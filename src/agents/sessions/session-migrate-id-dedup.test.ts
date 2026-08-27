@@ -1,7 +1,7 @@
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it, vi } from "vitest";
 import { openFileBackedSessionManagerForTest } from "../../../test/helpers/session-manager-file-fixture.js";
 

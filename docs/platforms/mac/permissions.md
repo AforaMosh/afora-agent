@@ -12,8 +12,8 @@ macOS permission grants are fragile. TCC associates a permission grant with the 
 
 ## Requirements for stable permissions
 
-- Same path: run a release app from `/Applications/OpenClaw.app`; keep development builds at one fixed path such as `dist/OpenClaw.app`.
-- Same bundle identifier: OpenClaw's bundle ID is `ai.openclaw.mac`; changing it creates a new permission identity.
+- Same path: run a release app from `/Applications/Afora.app`; keep development builds at one fixed path such as `dist/Afora.app`.
+- Same bundle identifier: Afora's bundle ID is `ai.afora.mac`; changing it creates a new permission identity.
 - Signed app: unsigned or ad-hoc signed builds do not persist permissions.
 - Consistent signature: use a real Apple Development or Developer ID certificate so the signature stays stable across rebuilds.
 
@@ -21,7 +21,7 @@ Ad-hoc signatures generate a new identity every build. macOS forgets previous gr
 
 ## Accessibility grants for Node and CLI runtimes
 
-Prefer granting Accessibility to OpenClaw.app, Peekaboo.app, or another signed helper with its own bundle identifier instead of a generic `node` binary.
+Prefer granting Accessibility to Afora.app, Peekaboo.app, or another signed helper with its own bundle identifier instead of a generic `node` binary.
 
 macOS TCC grants Accessibility to the code identity of the process it sees. If a Homebrew, nvm, pnpm, or npm workflow causes a shared `node` executable to receive Accessibility, any JavaScript package launched through that same executable may inherit GUI automation privileges.
 
@@ -33,9 +33,9 @@ If you accidentally granted Accessibility to `node`, remove that entry from Syst
 
 ## Separate Computer Control grants
 
-macOS keeps Accessibility, Event Posting, input listening, and Screen Recording in separate TCC buckets. One successful grant does not prove the others are usable. OpenClaw's Computer Control status checks Accessibility, Event Posting, and Screen Recording separately; this is why screenshots can succeed while clicks and typing fail.
+macOS keeps Accessibility, Event Posting, input listening, and Screen Recording in separate TCC buckets. One successful grant does not prove the others are usable. Afora's Computer Control status checks Accessibility, Event Posting, and Screen Recording separately; this is why screenshots can succeed while clicks and typing fail.
 
-An Accessibility row can also remain visibly enabled while its code requirement is pinned to an older build. When OpenClaw reports **Accessibility grant may be stale**, select OpenClaw under **System Settings -> Privacy & Security -> Accessibility**, remove it with **-**, then re-add `/Applications/OpenClaw.app`. Quit and reopen OpenClaw afterward because Accessibility trust can remain cached in the running process.
+An Accessibility row can also remain visibly enabled while its code requirement is pinned to an older build. When Afora reports **Accessibility grant may be stale**, select Afora under **System Settings -> Privacy & Security -> Accessibility**, remove it with **-**, then re-add `/Applications/Afora.app`. Quit and reopen Afora afterward because Accessibility trust can remain cached in the running process.
 
 ## Recovery checklist when prompts disappear
 
@@ -45,11 +45,11 @@ An Accessibility row can also remain visibly enabled while its code requirement 
 4. If the prompt still does not appear, reset TCC entries with `tccutil` and try again.
 5. Some permissions only reappear after a full macOS restart.
 
-Example resets (using OpenClaw's bundle ID, `ai.openclaw.mac`):
+Example resets (using Afora's bundle ID, `ai.afora.mac`):
 
 ```bash
-sudo tccutil reset Accessibility ai.openclaw.mac
-sudo tccutil reset ScreenCapture ai.openclaw.mac
+sudo tccutil reset Accessibility ai.afora.mac
+sudo tccutil reset ScreenCapture ai.afora.mac
 sudo tccutil reset AppleEvents
 ```
 
@@ -57,7 +57,7 @@ sudo tccutil reset AppleEvents
 
 macOS may also gate Desktop, Documents, and Downloads for terminal/background processes. If file reads or directory listings hang, grant access to the same process context that performs file operations (for example Terminal/iTerm, LaunchAgent-launched app, or SSH process).
 
-Workaround: move files into the OpenClaw workspace (`~/.openclaw/workspace`) if you want to avoid per-folder grants.
+Workaround: move files into the Afora workspace (`~/.afora/workspace`) if you want to avoid per-folder grants.
 
 If you are testing permissions, always sign with a real certificate. Ad-hoc builds are only acceptable for quick local runs where permissions do not matter.
 

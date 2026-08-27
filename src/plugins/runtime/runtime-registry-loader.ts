@@ -1,5 +1,5 @@
 // Runtime registry loader assembles process-root plugin runtimes from config metadata.
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { withActivatedPluginIds } from "../activation-context.js";
 import {
   resolveChannelPluginIds,
@@ -9,7 +9,7 @@ import { normalizePluginsConfig } from "../config-state.js";
 import { resolveEffectivePluginIds } from "../effective-plugin-ids.js";
 import { collectConfiguredMemoryEmbeddingProviderIds } from "../gateway-startup-plugin-ids.js";
 import { createInstalledPluginIndexScopeLookup } from "../installed-plugin-index-scope-lookup.js";
-import { loadOpenClawPlugins } from "../loader.js";
+import { loadAforaPlugins } from "../loader.js";
 import { hasNonEmptyPluginIdScope } from "../plugin-scope.js";
 import {
   buildPluginRuntimeLoadOptionsFromValues,
@@ -74,8 +74,8 @@ function resolveScopePluginIds(params: {
 
 export function ensurePluginRegistryLoaded(options?: {
   scope?: PluginRegistryScope;
-  config?: OpenClawConfig;
-  activationSourceConfig?: OpenClawConfig;
+  config?: AforaConfig;
+  activationSourceConfig?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   workspaceDir?: string;
 }): void {
@@ -92,7 +92,7 @@ export function ensurePluginRegistryLoaded(options?: {
         pluginIds,
       }) ?? context.activationSourceConfig)
     : context.activationSourceConfig;
-  loadOpenClawPlugins(
+  loadAforaPlugins(
     buildPluginRuntimeLoadOptionsFromValues(
       { ...context, config, activationSourceConfig },
       {

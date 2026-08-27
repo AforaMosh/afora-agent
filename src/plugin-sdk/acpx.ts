@@ -35,7 +35,7 @@ export type {
   AcpRuntimeTurnResult,
   AcpRuntimeTurnResultError,
   AcpSessionUpdateTag,
-} from "@openclaw/acp-core/runtime/types";
+} from "@afora/acp-core/runtime/types";
 
 // ACP dispatch pulls in session/media/manager code; keep it lazy so
 // startup-loaded plugin surfaces stay light and concurrent hooks share one load.

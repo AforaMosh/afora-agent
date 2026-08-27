@@ -2,7 +2,7 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { isRecord, readStringField } from "@openclaw/normalization-core/record-coerce";
+import { isRecord, readStringField } from "@afora/normalization-core/record-coerce";
 import { minimatch } from "minimatch";
 import { parse } from "yaml";
 import { booleanFlag, parseFlagArgs, stringFlag } from "./lib/arg-utils.mts";
@@ -437,10 +437,10 @@ function findPatchIdenticalCiReuse({
 
 type PatchIdenticalReuse = NonNullable<ReturnType<typeof findPatchIdenticalCiReuse>>;
 
-const CI_GATE_CHECK_NAME = "openclaw/ci-gate";
+const CI_GATE_CHECK_NAME = "afora-agent/ci-gate";
 
 /**
- * True when this run's own openclaw/ci-gate job already succeeded on the
+ * True when this run's own afora/ci-gate job already succeeded on the
  * run's CURRENT attempt. The gate job needs every selected lane and fails on
  * any non-success result, so a successful gate proves the merge-relevant
  * outcome minutes before post-gate stragglers (timing summaries, artifact

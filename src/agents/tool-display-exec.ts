@@ -3,8 +3,8 @@
  *
  * Turns common shell commands into short redacted labels for tool timelines and transcripts.
  */
-import { asOptionalObjectRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
-import { sliceUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { asOptionalObjectRecord as asRecord } from "@afora/normalization-core/record-coerce";
+import { sliceUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { redactToolPayloadText } from "../logging/redact.js";
 import { formatInlineCodeSpan } from "../shared/markdown-code.js";
 import {
@@ -281,9 +281,9 @@ function summarizeKnownExec(words: string[]): string {
     return `run ${bin} ${script}`;
   }
 
-  if (bin === "openclaw") {
+  if (bin === "afora") {
     const sub = firstPositional(words, 1);
-    return sub ? `run openclaw ${sub}` : "run openclaw";
+    return sub ? `run afora ${sub}` : "run afora";
   }
 
   const arg = firstPositional(words, 1);
@@ -463,10 +463,10 @@ function classifyWorkspacePath(
     if (!segment) {
       continue;
     }
-    if (segment === ".openclaw" && segments[index + 1] === "workspace") {
+    if (segment === ".afora" && segments[index + 1] === "workspace") {
       return "agent";
     }
-    if (segment === ".openclaw" && segments[index + 1] === "sandboxes") {
+    if (segment === ".afora" && segments[index + 1] === "sandboxes") {
       return "sandbox";
     }
     if (/[-_]workspace$/i.test(segment) && segment.toLowerCase() !== "workspace") {
@@ -552,7 +552,7 @@ const KNOWN_SUMMARY_PREFIXES = [
   "run build",
   "start app",
   "run lint",
-  "run openclaw",
+  "run afora",
   "run node script",
   "run node ",
   "run python",

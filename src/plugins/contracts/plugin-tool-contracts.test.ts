@@ -73,7 +73,7 @@ function listGitPluginManifestPaths(extensionsDir: string): string[] | null {
     return null;
   }
   return files
-    .filter((line) => /^extensions\/[^/]+\/openclaw\.plugin\.json$/u.test(line))
+    .filter((line) => /^extensions\/[^/]+\/afora\.plugin\.json$/u.test(line))
     .map((line) => path.join(process.cwd(), ...line.split("/")))
     .filter((filePath) => fs.existsSync(filePath))
     .toSorted();
@@ -88,7 +88,7 @@ function listPluginManifestPaths(extensionsDir: string): string[] {
   return fs
     .readdirSync(extensionsDir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
-    .map((entry) => path.join(extensionsDir, entry.name, "openclaw.plugin.json"))
+    .map((entry) => path.join(extensionsDir, entry.name, "afora.plugin.json"))
     .filter((manifestPath) => fs.existsSync(manifestPath));
 }
 

@@ -5,8 +5,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { URL } from "node:url";
-import { detectMime } from "@openclaw/media-core/mime";
-import { formatByteSize } from "@openclaw/normalization-core";
+import { detectMime } from "@afora/media-core/mime";
+import { formatByteSize } from "@afora/normalization-core";
 import type { Static, TSchema } from "typebox";
 import { Value } from "typebox/value";
 import { isWindowsDrivePath } from "../infra/archive-path.js";
@@ -65,7 +65,7 @@ const ADAPTIVE_READ_CONTEXT_SHARE = 0.1;
 const CHARS_PER_TOKEN_ESTIMATE = 4;
 const MAX_ADAPTIVE_READ_PAGES = 4;
 
-type OpenClawReadToolOptions = {
+type AforaReadToolOptions = {
   modelContextWindowTokens?: number;
   imageSanitization?: ImageSanitizationLimits;
 };
@@ -107,7 +107,7 @@ const READ_CONTINUATION_NOTICE_RE =
   /\n\n\[(?:Showing lines [^\]]*?Use offset=\d+ to continue\.|\d+ more lines in file\. Use offset=\d+ to continue\.)\]\s*$/;
 const DAILY_MEMORY_PATH_RE = /^memory\/\d{4}-\d{2}-\d{2}\.md$/;
 
-function resolveAdaptiveReadMaxBytes(options?: OpenClawReadToolOptions): number {
+function resolveAdaptiveReadMaxBytes(options?: AforaReadToolOptions): number {
   const contextWindowTokens = options?.modelContextWindowTokens;
   if (
     typeof contextWindowTokens !== "number" ||
@@ -772,9 +772,9 @@ function withWorkspaceSafeTempHint(error: unknown): unknown {
   if (!isSandboxRootEscapeError(error)) {
     return error;
   }
-  const message = error.message.includes(".openclaw/tmp/")
+  const message = error.message.includes(".afora/tmp/")
     ? error.message
-    : `${error.message}. Use a relative path under \`.openclaw/tmp/\` inside the workspace for scratch/temp/meta files that file tools need to read or write later.`;
+    : `${error.message}. Use a relative path under \`.afora/tmp/\` inside the workspace for scratch/temp/meta files that file tools need to read or write later.`;
   return new Error(message, { cause: error });
 }
 
@@ -910,7 +910,7 @@ type SandboxToolParams = {
   imageSanitization?: ImageSanitizationLimits;
 };
 
-/** Create a sandbox-backed read tool with OpenClaw result normalization. */
+/** Create a sandbox-backed read tool with Afora result normalization. */
 export function createSandboxedReadTool(
   params: SandboxToolParams & { createTool?: typeof createReadTool },
 ) {
@@ -919,7 +919,7 @@ export function createSandboxedReadTool(
       operations: createSandboxReadOperations(params),
     }),
   );
-  return createOpenClawReadTool(base, {
+  return createAforaReadTool(base, {
     modelContextWindowTokens: params.modelContextWindowTokens,
     imageSanitization: params.imageSanitization,
   });
@@ -985,10 +985,10 @@ export function createHostWorkspaceEditTool(
   return wrapToolParamValidation(base, REQUIRED_PARAM_GROUPS.edit);
 }
 
-/** Wrap the base read tool with OpenClaw paging, MIME, and image handling. */
-export function createOpenClawReadTool(
+/** Wrap the base read tool with Afora paging, MIME, and image handling. */
+export function createAforaReadTool(
   base: AnyAgentTool,
-  options?: OpenClawReadToolOptions,
+  options?: AforaReadToolOptions,
 ): AnyAgentTool {
   return {
     ...base,
@@ -1023,7 +1023,7 @@ export function createOpenClawReadTool(
 export function wrapReadToolWithSkillContent(
   tool: AnyAgentTool,
   skills: readonly SkillReadContent[] | undefined,
-  options?: OpenClawReadToolOptions,
+  options?: AforaReadToolOptions,
 ): AnyAgentTool {
   const contentByPath = new Map(
     (skills ?? []).flatMap((skill) =>
@@ -1053,7 +1053,7 @@ export function wrapReadToolWithSkillContent(
       },
     }),
   );
-  const virtualRead = createOpenClawReadTool(virtualBase, options);
+  const virtualRead = createAforaReadTool(virtualBase, options);
   return {
     ...tool,
     execute: async (toolCallId, args, signal, onUpdate) => {

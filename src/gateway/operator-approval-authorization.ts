@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { ADMIN_SCOPE, APPROVALS_SCOPE } from "./method-scopes.js";
 import type { GatewayClient } from "./server-methods/types.js";
 

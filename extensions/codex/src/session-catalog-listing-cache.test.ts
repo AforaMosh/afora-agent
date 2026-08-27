@@ -6,7 +6,7 @@ import {
   idleThread,
   resolveDefaultAgentDir,
   requireCatalogEligibleThread,
-  type OpenClawConfig,
+  type AforaConfig,
   originalPath,
   tempDirs,
   fs,
@@ -109,7 +109,7 @@ afterEach(async () => {
 
 describe("Codex supervision catalog", () => {
   it("memoizes cloned request options until runtime config identity changes", async () => {
-    let runtimeConfig = { agents: { defaults: { workspace: "/workspace/a" } } } as OpenClawConfig;
+    let runtimeConfig = { agents: { defaults: { workspace: "/workspace/a" } } } as AforaConfig;
     commandRpcMocks.codexControlRequest.mockResolvedValue({ thread: idleThread() });
     const control = createCodexSessionCatalogControl({
       getPluginConfig: () => ({ supervision: { enabled: true } }),
@@ -121,14 +121,14 @@ describe("Codex supervision catalog", () => {
     await control.readThread("thread-1");
     expect(cloneSpy).toHaveBeenCalledTimes(2);
 
-    runtimeConfig = { agents: { defaults: { workspace: "/workspace/b" } } } as OpenClawConfig;
+    runtimeConfig = { agents: { defaults: { workspace: "/workspace/b" } } } as AforaConfig;
     await control.readThread("thread-1");
     expect(cloneSpy).toHaveBeenCalledTimes(4);
   });
 
   it("serves an expired page while one background refresh updates the next poll", async () => {
     let now = 1_000;
-    let runtimeConfig = {} as OpenClawConfig;
+    let runtimeConfig = {} as AforaConfig;
     commandRpcMocks.codexControlRequest.mockResolvedValue({
       data: [idleThread({ id: "thread-stale", source: "cli" })],
     });
@@ -178,7 +178,7 @@ describe("Codex supervision catalog", () => {
     });
     expect(commandRpcMocks.codexControlRequest).toHaveBeenCalledTimes(2);
 
-    runtimeConfig = { agents: {} } as OpenClawConfig;
+    runtimeConfig = { agents: {} } as AforaConfig;
     await control.listPage({ limit: 25 });
     expect(commandRpcMocks.codexControlRequest).toHaveBeenCalledTimes(3);
   });
@@ -589,7 +589,7 @@ describe("Codex supervision catalog", () => {
 
   it("keeps catalog reads and writes available when supervision is disabled live", async () => {
     let pluginConfig: unknown = { supervision: { enabled: true } };
-    let runtimeConfig = {} as OpenClawConfig;
+    let runtimeConfig = {} as AforaConfig;
     commandRpcMocks.codexControlRequest.mockResolvedValue({ data: [] });
     const control = createCodexSessionCatalogControl({
       getPluginConfig: () => pluginConfig,
@@ -598,7 +598,7 @@ describe("Codex supervision catalog", () => {
 
     await expect(control.listPage({})).resolves.toEqual({ sessions: [] });
     pluginConfig = { supervision: { enabled: false } };
-    runtimeConfig = { plugins: {} } as OpenClawConfig;
+    runtimeConfig = { plugins: {} } as AforaConfig;
 
     await expect(control.listPage({})).resolves.toEqual({ sessions: [] });
     expect(commandRpcMocks.codexControlRequest).toHaveBeenCalledTimes(2);

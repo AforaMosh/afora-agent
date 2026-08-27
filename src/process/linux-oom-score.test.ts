@@ -36,12 +36,12 @@ describe("prepareOomScoreAdjustedSpawn", () => {
   });
 
   it.each(["0", "false", "FALSE", "no", "off"])(
-    "respects the OPENCLAW_CHILD_OOM_SCORE_ADJ=%s opt-out",
+    "respects the AFORA_CHILD_OOM_SCORE_ADJ=%s opt-out",
     (value) => {
       expect(
         prepareOomScoreAdjustedSpawn("/usr/bin/node", ["run.js"], {
           ...linux,
-          env: { OPENCLAW_CHILD_OOM_SCORE_ADJ: value },
+          env: { AFORA_CHILD_OOM_SCORE_ADJ: value },
         }),
       ).toMatchObject({ command: "/usr/bin/node", args: ["run.js"], wrapped: false });
     },

@@ -1,7 +1,7 @@
 // Tests compact command behavior for session compaction and reply status.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { testing as cliBackendsTesting } from "../../agents/cli-backends.test-support.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import {
   resolveAgentDirMock,
   resolveSessionAgentIdMock,
@@ -30,7 +30,7 @@ describe("handleCompactCommand", () => {
       buildCompactParams("/status", {
         commands: { text: true },
         channels: { whatsapp: { allowFrom: ["*"] } },
-      } as OpenClawConfig),
+      } as AforaConfig),
       true,
     );
 
@@ -42,7 +42,7 @@ describe("handleCompactCommand", () => {
     const params = buildCompactParams("/compact", {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     const result = await handleCompactCommand(
       {
@@ -72,8 +72,8 @@ describe("handleCompactCommand", () => {
         ...buildCompactParams("/compact", {
           commands: { text: true },
           channels: { whatsapp: { allowFrom: ["*"] } },
-          session: { store: "/tmp/openclaw-session-store.json" },
-        } as OpenClawConfig),
+          session: { store: "/tmp/afora-session-store.json" },
+        } as AforaConfig),
         ctx: {
           Provider: "whatsapp",
           Surface: "whatsapp",
@@ -86,7 +86,7 @@ describe("handleCompactCommand", () => {
           SenderUsername: "alice_u",
           SenderE164: "+15551234567",
         },
-        agentDir: "/tmp/openclaw-agent-compact",
+        agentDir: "/tmp/afora-agent-compact",
         opts: { abortSignal: abortController.signal },
         sessionEntry: {
           sessionId: "session-1",
@@ -120,7 +120,7 @@ describe("handleCompactCommand", () => {
     expect(call.senderName).toBe("Alice");
     expect(call.senderUsername).toBe("alice_u");
     expect(call.senderE164).toBe("+15551234567");
-    expect(call.agentDir).toBe("/tmp/openclaw-agent-compact");
+    expect(call.agentDir).toBe("/tmp/afora-agent-compact");
     expect(call.authProfileId).toBe("github-copilot:work");
     expect(call.authProfileIdSource).toBe("user");
     expect(vi.mocked(abortEmbeddedAgentRun)).not.toHaveBeenCalled();
@@ -136,7 +136,7 @@ describe("handleCompactCommand", () => {
     const params = buildCompactParams("/compact", {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
-    } as OpenClawConfig);
+    } as AforaConfig);
     params.command = {
       ...params.command,
       ownerList: ownerIds,
@@ -169,7 +169,7 @@ describe("handleCompactCommand", () => {
         ...buildCompactParams("/compact", {
           commands: { text: true },
           channels: { whatsapp: { allowFrom: ["*"] } },
-        } as OpenClawConfig),
+        } as AforaConfig),
         sessionEntry: {
           sessionId: "session-1",
           updatedAt: Date.now(),
@@ -197,7 +197,7 @@ describe("handleCompactCommand", () => {
         ...buildCompactParams("/compact", {
           commands: { text: true },
           channels: { whatsapp: { allowFrom: ["*"] } },
-        } as OpenClawConfig),
+        } as AforaConfig),
         sessionEntry: {
           sessionId: "session-1",
           updatedAt: Date.now(),
@@ -224,7 +224,7 @@ describe("handleCompactCommand", () => {
         ...buildCompactParams("/compact", {
           commands: { text: true },
           channels: { whatsapp: { allowFrom: ["*"] } },
-        } as OpenClawConfig),
+        } as AforaConfig),
         sessionEntry: {
           sessionId: "session-1",
           updatedAt: Date.now(),
@@ -248,8 +248,8 @@ describe("handleCompactCommand", () => {
     const cfg = {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
-      session: { store: "/tmp/openclaw-session-store.json" },
-    } as OpenClawConfig;
+      session: { store: "/tmp/afora-session-store.json" },
+    } as AforaConfig;
 
     await handleCompactCommand(
       {
@@ -274,7 +274,7 @@ describe("handleCompactCommand", () => {
           agentId: "target",
           sessionId: "session-1",
           sessionKey: "agent:target:whatsapp:direct:12345",
-          storePath: "/tmp/openclaw-session-store.json",
+          storePath: "/tmp/afora-session-store.json",
         },
       }),
     );
@@ -293,7 +293,7 @@ describe("handleCompactCommand", () => {
           "marie-clawndo": {},
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await handleCompactCommand(
       {
@@ -327,7 +327,7 @@ describe("handleCompactCommand", () => {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
       session: { store: "/tmp/default-sessions.json" },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await handleCompactCommand(
       {
@@ -360,7 +360,7 @@ describe("handleCompactCommand", () => {
     const cfg = {
       commands: { text: true },
       channels: { whatsapp: { allowFrom: ["*"] } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await handleCompactCommand(
       {
@@ -394,7 +394,7 @@ describe("handleCompactCommand", () => {
         ...buildCompactParams("/compact", {
           commands: { text: true },
           channels: { whatsapp: { allowFrom: ["*"] } },
-        } as OpenClawConfig),
+        } as AforaConfig),
         sessionKey: "agent:target:whatsapp:direct:12345",
         sessionEntry: {
           sessionId: "wrapper-session",
@@ -443,12 +443,12 @@ describe("handleCompactCommand", () => {
         ...buildCompactParams("/compact", {
           commands: { text: true },
           channels: { whatsapp: { allowFrom: ["*"] } },
-        } as OpenClawConfig),
+        } as AforaConfig),
         sessionEntry: {
           sessionId: "locked-session",
           updatedAt: Date.now(),
           agentHarnessId: "codex",
-          agentRuntimeOverride: "openclaw",
+          agentRuntimeOverride: "afora",
           modelSelectionLocked: true,
         },
       } as HandleCommandsParams,
@@ -485,7 +485,7 @@ describe("handleCompactCommand", () => {
           ...buildCompactParams("/compact", {
             commands: { text: true },
             channels: { whatsapp: { allowFrom: ["*"] } },
-          } as OpenClawConfig),
+          } as AforaConfig),
           provider: "anthropic",
           sessionEntry: {
             sessionId: "cli-session",
@@ -551,7 +551,7 @@ describe("handleCompactCommand", () => {
             ...buildCompactParams("/compact", {
               commands: { text: true },
               channels: { whatsapp: { allowFrom: ["*"] } },
-            } as OpenClawConfig),
+            } as AforaConfig),
             provider,
             sessionEntry: {
               sessionId: "picker-session",
@@ -589,7 +589,7 @@ describe("handleCompactCommand", () => {
         ...buildCompactParams("/compact", {
           commands: { text: true },
           channels: { whatsapp: { allowFrom: ["*"] } },
-        } as OpenClawConfig),
+        } as AforaConfig),
         sessionKey: "agent:target:whatsapp:direct:12345",
         sessionEntry: {
           sessionId: "wrapper-session",
@@ -625,7 +625,7 @@ describe("handleCompactCommand", () => {
         ...buildCompactParams("/compact", {
           commands: { text: true },
           channels: { whatsapp: { allowFrom: ["*"] } },
-        } as OpenClawConfig),
+        } as AforaConfig),
         sessionEntry: {
           sessionId: "target-session",
           updatedAt: Date.now(),
@@ -657,7 +657,7 @@ describe("handleCompactCommand", () => {
         ...buildCompactParams("/compact", {
           commands: { text: true },
           channels: { whatsapp: { allowFrom: ["*"] } },
-        } as OpenClawConfig),
+        } as AforaConfig),
         sessionEntry: { sessionId: "server-session", updatedAt: Date.now() },
       } as HandleCommandsParams,
       true,
@@ -699,7 +699,7 @@ describe("handleCompactCommand", () => {
         ...buildCompactParams("/compact", {
           commands: { text: true },
           channels: { whatsapp: { allowFrom: ["*"] } },
-        } as OpenClawConfig),
+        } as AforaConfig),
         sessionEntry: {
           sessionId: "native-session",
           updatedAt: Date.now(),

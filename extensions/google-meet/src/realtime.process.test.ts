@@ -9,9 +9,9 @@ import {
   startMeetingAgentRealtimeEngine,
   startMeetingRealtimeEngine,
   type MeetingRealtimeAudioTransport,
-} from "openclaw/plugin-sdk/meeting-runtime";
-import type { RealtimeTranscriptionProviderPlugin } from "openclaw/plugin-sdk/realtime-transcription";
-import type { RealtimeVoiceProviderPlugin } from "openclaw/plugin-sdk/realtime-voice";
+} from "afora-agent/plugin-sdk/meeting-runtime";
+import type { RealtimeTranscriptionProviderPlugin } from "afora-agent/plugin-sdk/realtime-transcription";
+import type { RealtimeVoiceProviderPlugin } from "afora-agent/plugin-sdk/realtime-voice";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { resolveGoogleMeetConfig } from "./config.js";
 
@@ -34,7 +34,7 @@ const GOOGLE_MEET_ENGINE_BINDINGS = {
 };
 
 function writeBridgeCommand(): string {
-  const dir = mkdtempSync(path.join(tmpdir(), "openclaw-google-meet-bridge-"));
+  const dir = mkdtempSync(path.join(tmpdir(), "afora-google-meet-bridge-"));
   tempDirs.push(dir);
   const scriptPath = path.join(dir, "bridge-command.mjs");
   writeFileSync(
@@ -53,7 +53,7 @@ function writeBridgeCommand(): string {
 }
 
 function writeSigtermResistantBridgeCommand(): string {
-  const dir = mkdtempSync(path.join(tmpdir(), "openclaw-google-meet-resistant-bridge-"));
+  const dir = mkdtempSync(path.join(tmpdir(), "afora-google-meet-resistant-bridge-"));
   tempDirs.push(dir);
   const scriptPath = path.join(dir, "bridge-command.mjs");
   writeFileSync(

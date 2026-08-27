@@ -4,10 +4,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanupTempDirs, makeTempDir } from "../../test/helpers/temp-dir.js";
 import { openNodeSqliteDatabase } from "../infra/node-sqlite.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { noteDoctorAgentMemorySchemaHealth } from "./doctor-agent-memory-schema.js";
 
 const tempDirs: string[] = [];
@@ -17,10 +17,10 @@ function createRegisteredAgentDatabase(): {
   env: NodeJS.ProcessEnv;
 } {
   const stateDir = makeTempDir(tempDirs, "doctor-agent-memory-schema-");
-  const env = { OPENCLAW_STATE_DIR: stateDir };
-  const databasePath = openOpenClawAgentDatabase({ agentId: "worker-1", env }).path;
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  const env = { AFORA_STATE_DIR: stateDir };
+  const databasePath = openAforaAgentDatabase({ agentId: "worker-1", env }).path;
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   return { databasePath, env };
 }
 
@@ -83,8 +83,8 @@ function readMemoryChunkTableSql(databasePath: string): string {
 }
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   cleanupTempDirs(tempDirs);
 });
 

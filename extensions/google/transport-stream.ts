@@ -1,5 +1,5 @@
 // Google plugin module implements transport stream behavior.
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
 import {
   calculateCost,
   getEnvApiKey,
@@ -13,17 +13,17 @@ import {
   type SimpleStreamOptions,
   type ThinkingLevel,
   type VideoContent,
-} from "openclaw/plugin-sdk/llm";
-import { parseStrictNonNegativeInteger } from "openclaw/plugin-sdk/number-runtime";
+} from "afora-agent/plugin-sdk/llm";
+import { parseStrictNonNegativeInteger } from "afora-agent/plugin-sdk/number-runtime";
 import {
   collectProviderApiKeysForExecution,
   executeWithApiKeyRotation,
-} from "openclaw/plugin-sdk/provider-auth-runtime";
+} from "afora-agent/plugin-sdk/provider-auth-runtime";
 import {
   createProviderHttpError,
   providerOperationRetryConfig,
   resolveProviderRequestHeaders,
-} from "openclaw/plugin-sdk/provider-http";
+} from "afora-agent/plugin-sdk/provider-http";
 import {
   buildGuardedModelFetch,
   coerceTransportToolCallArguments,
@@ -39,12 +39,12 @@ import {
   stripSystemPromptCacheBoundary,
   transformTransportMessages,
   type WritableTransportStream,
-} from "openclaw/plugin-sdk/provider-transport-runtime";
+} from "afora-agent/plugin-sdk/provider-transport-runtime";
 import {
   isRecord,
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { parseGeminiAuth } from "./gemini-auth.js";
 import { stripGoogleProviderPrefix } from "./model-id.js";
 import { isGoogleNativeVideoModelId } from "./provider-models.js";
@@ -64,7 +64,7 @@ import {
 } from "./vertex-adc.js";
 
 type CanonicalGoogleTransportApi = "google-generative-ai" | "google-vertex";
-type GoogleTransportApi = CanonicalGoogleTransportApi | "openclaw-google-generative-ai-transport";
+type GoogleTransportApi = CanonicalGoogleTransportApi | "afora-google-generative-ai-transport";
 
 type GoogleTransportModel = ProviderModel<GoogleTransportApi> & {
   headers?: Record<string, string>;
@@ -118,7 +118,7 @@ const GOOGLE_REQUEST_BYTES_EXCLUSIVE = 20_000_000;
 type GoogleVideoSlots = Map<Record<string, unknown>, VideoContent>;
 
 const GOOGLE_GEMINI3_FIRST_RESPONSE_RETRY_DEFAULT_MS = 45_000;
-const GOOGLE_GEMINI3_FIRST_RESPONSE_RETRY_ENV = "OPENCLAW_GOOGLE_GEMINI_FIRST_RESPONSE_RETRY_MS";
+const GOOGLE_GEMINI3_FIRST_RESPONSE_RETRY_ENV = "AFORA_GOOGLE_GEMINI_FIRST_RESPONSE_RETRY_MS";
 const GOOGLE_SSE_EVENT_BOUNDARY_RE = /(?:\r\n|\r(?!\n)|\n){2}/u;
 
 type GoogleTransportContentBlock =
@@ -277,7 +277,7 @@ function normalizeGoogleTransportRouteApi(
 ): CanonicalGoogleTransportApi | undefined {
   switch (api) {
     case "google-generative-ai":
-    case "openclaw-google-generative-ai-transport":
+    case "afora-google-generative-ai-transport":
       return "google-generative-ai";
     case "google-vertex":
       return "google-vertex";

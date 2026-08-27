@@ -4,7 +4,7 @@ description: "Search GIF providers with CLI/TUI, download results, and extract s
 homepage: https://gifgrep.com
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "emoji": "🧲",
         "requires": { "bins": ["gifgrep"] },

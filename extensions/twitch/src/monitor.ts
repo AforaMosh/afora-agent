@@ -5,12 +5,12 @@
  * resolves agent routes, and handles replies.
  */
 
-import type { ChannelAccountSnapshot } from "openclaw/plugin-sdk/channel-contract";
-import { createChannelInboundEnvelopeBuilder } from "openclaw/plugin-sdk/channel-inbound";
-import type { MarkdownTableMode, OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { ChannelAccountSnapshot } from "afora-agent/plugin-sdk/channel-contract";
+import { createChannelInboundEnvelopeBuilder } from "afora-agent/plugin-sdk/channel-inbound";
+import type { MarkdownTableMode, AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { checkTwitchAccessControl } from "./access-control.js";
 import { getOrCreateClientManager } from "./client-manager-registry.js";
 import { getTwitchRuntime } from "./runtime.js";
@@ -26,7 +26,7 @@ type TwitchRuntimeEnv = {
 type TwitchMonitorOptions = {
   account: TwitchAccountConfig;
   accountId: string;
-  config: unknown; // OpenClawConfig
+  config: unknown; // AforaConfig
   runtime: TwitchRuntimeEnv;
   abortSignal: AbortSignal;
   statusSink?: (patch: Omit<ChannelAccountSnapshot, "accountId">) => void;
@@ -54,7 +54,7 @@ async function processTwitchMessage(params: {
 }): Promise<void> {
   const { message, account, accountId, config, runtime, core, turnAdoptionLifecycle, statusSink } =
     params;
-  const cfg = config as OpenClawConfig;
+  const cfg = config as AforaConfig;
   const route = core.channel.routing.resolveAgentRoute({
     cfg,
     channel: "twitch",

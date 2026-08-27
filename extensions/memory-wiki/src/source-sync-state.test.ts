@@ -4,11 +4,11 @@ import path from "node:path";
 import type {
   OpenKeyedStoreOptions,
   PluginStateKeyedStore,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   assertMemoryWikiSourceSyncStateCapacity,
@@ -125,7 +125,7 @@ describe("memory wiki source sync state", () => {
   it("persists source sync entries in plugin state", async () => {
     const stateDir = await tempDirs.createTempDir("memory-wiki-source-sync-");
     const vaultRoot = path.join(stateDir, "vault");
-    const store = openStore({ ...process.env, OPENCLAW_STATE_DIR: stateDir });
+    const store = openStore({ ...process.env, AFORA_STATE_DIR: stateDir });
 
     await writeMemoryWikiSourceSyncState(
       vaultRoot,
@@ -306,7 +306,7 @@ describe("memory wiki source sync state", () => {
   it("rejects writes beyond the source-sync state row cap", async () => {
     const stateDir = await tempDirs.createTempDir("memory-wiki-source-sync-");
     const vaultRoot = path.join(stateDir, "vault");
-    const store = openStore({ ...process.env, OPENCLAW_STATE_DIR: stateDir });
+    const store = openStore({ ...process.env, AFORA_STATE_DIR: stateDir });
     const entries = Object.fromEntries(
       Array.from({ length: MEMORY_WIKI_SOURCE_SYNC_STATE_MAX_ENTRIES + 1 }, (_, index) => [
         `source-${index}`,
@@ -341,9 +341,9 @@ describe("memory wiki source sync state", () => {
         "generated content",
         "```",
         "## Notes",
-        "<!-- openclaw:human:start -->",
+        "<!-- afora:human:start -->",
         "my durable annotations",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:end -->",
         "",
       ].join("\n"),
       "utf-8",
@@ -377,9 +377,9 @@ describe("memory wiki source sync state", () => {
       `${pagePath.replace(/\//g, "_")}.notes.md`,
     );
     const salvaged = await fs.readFile(salvagePath, "utf-8");
-    expect(salvaged).toContain("<!-- openclaw:human:start -->");
+    expect(salvaged).toContain("<!-- afora:human:start -->");
     expect(salvaged).toContain("my durable annotations");
-    expect(salvaged).toContain("<!-- openclaw:human:end -->");
+    expect(salvaged).toContain("<!-- afora:human:end -->");
   });
 
   it("preserves previous Notes when a long source page is pruned again", async () => {
@@ -400,9 +400,9 @@ describe("memory wiki source sync state", () => {
           "generated content",
           "```",
           "## Notes",
-          "<!-- openclaw:human:start -->",
+          "<!-- afora:human:start -->",
           annotation,
-          "<!-- openclaw:human:end -->",
+          "<!-- afora:human:end -->",
           "",
         ].join("\n"),
         "utf-8",
@@ -482,15 +482,15 @@ describe("memory wiki source sync state", () => {
         "## Content",
         "```markdown",
         "## Notes",
-        "<!-- openclaw:human:start -->",
+        "<!-- afora:human:start -->",
         "generated content, not durable annotations",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:end -->",
         "x".repeat(16 * 1024 * 1024),
         "```",
         "## Notes",
-        "<!-- openclaw:human:start -->",
+        "<!-- afora:human:start -->",
         "oversized annotations must survive",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:end -->",
         "",
       ].join("\n"),
       "utf-8",
@@ -531,8 +531,8 @@ describe("memory wiki source sync state", () => {
         "x".repeat(16 * 1024 * 1024),
         "```",
         "## Notes",
-        "<!-- openclaw:human:start -->",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:start -->",
+        "<!-- afora:human:end -->",
         "",
       ].join("\n"),
       "utf8",
@@ -568,9 +568,9 @@ describe("memory wiki source sync state", () => {
         "generated content",
         "```",
         "## Notes",
-        "<!-- openclaw:human:start -->",
+        "<!-- afora:human:start -->",
         "x".repeat(16 * 1024 * 1024),
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:end -->",
         "",
       ].join("\n"),
       "utf8",
@@ -606,14 +606,14 @@ describe("memory wiki source sync state", () => {
         "s".repeat(1024 * 1024),
         "```",
         "## Notes",
-        "<!-- openclaw:human:start -->",
+        "<!-- afora:human:start -->",
         "n".repeat(16 * 1024 * 1024),
         "```",
         "## Notes",
-        "<!-- openclaw:human:start -->",
+        "<!-- afora:human:start -->",
         "this boundary-shaped fence belongs to the human annotation",
-        "<!-- openclaw:human:end -->",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:end -->",
+        "<!-- afora:human:end -->",
         "",
       ].join("\n"),
       "utf8",
@@ -679,9 +679,9 @@ describe("memory wiki source sync state", () => {
           "generated content",
           "```",
           "## Notes",
-          "<!-- openclaw:human:start -->",
+          "<!-- afora:human:start -->",
           "recovery must remain idempotent",
-          "<!-- openclaw:human:end -->",
+          "<!-- afora:human:end -->",
           "",
         ].join("\n"),
         "utf-8",
@@ -759,9 +759,9 @@ describe("memory wiki source sync state", () => {
         "generated content",
         "```",
         "## Notes",
-        "<!-- openclaw:human:start -->",
+        "<!-- afora:human:start -->",
         notes,
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:end -->",
         "",
       ].join("\n"),
       "utf-8",
@@ -824,7 +824,7 @@ describe("memory wiki source sync state", () => {
   it("prunes inactive state when the entire vault is already missing", async () => {
     const stateDir = await tempDirs.createTempDir("memory-wiki-source-sync-");
     const vaultRoot = path.join(stateDir, "removed-vault");
-    const store = openStore({ ...process.env, OPENCLAW_STATE_DIR: stateDir });
+    const store = openStore({ ...process.env, AFORA_STATE_DIR: stateDir });
     await writeMemoryWikiSourceSyncState(
       vaultRoot,
       {
@@ -871,14 +871,14 @@ describe("memory wiki source sync state", () => {
         "## Unsafe Local Source",
         "## Content",
         "```",
-        "<!-- openclaw:human:start -->",
+        "<!-- afora:human:start -->",
         "this is inside the source fence, not Notes",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:end -->",
         "```",
         "## Notes",
-        "<!-- openclaw:human:start -->",
+        "<!-- afora:human:start -->",
         "real human annotation",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:end -->",
         "",
       ].join("\n"),
       "utf-8",
@@ -928,9 +928,9 @@ describe("memory wiki source sync state", () => {
         "generated",
         "```",
         "## Notes",
-        "<!-- openclaw:human:start -->",
+        "<!-- afora:human:start -->",
         "must survive",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:end -->",
         "",
       ].join("\n"),
       "utf-8",
@@ -978,9 +978,9 @@ describe("memory wiki source sync state", () => {
         "generated",
         "```",
         "## Notes",
-        "<!-- openclaw:human:start -->",
+        "<!-- afora:human:start -->",
         "should survive read failure",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:end -->",
       ].join("\n"),
       "utf-8",
     );

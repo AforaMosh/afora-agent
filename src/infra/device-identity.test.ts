@@ -5,9 +5,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  closeOpenClawStateDatabaseForTest,
-  OPENCLAW_STATE_SCHEMA_VERSION,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  AFORA_STATE_SCHEMA_VERSION,
+} from "../state/afora-state-db.js";
 import { withTempDir } from "../test-utils/temp-dir.js";
 import { resolveDeviceIdentityCoordinatorPaths } from "./device-identity-coordinator-paths.js";
 import { acquireDeviceIdentityCoordinator } from "./device-identity-coordinator.js";
@@ -31,14 +31,14 @@ const SWIFT_RAW_PRIVATE_KEY = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="; //
 const MISMATCHED_SWIFT_RAW_PRIVATE_KEY = "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="; // pragma: allowlist secret
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   vi.restoreAllMocks();
 });
 
 function storeOptions(rootDir: string, identityKey?: string): DeviceIdentityStoreOptions {
   return {
-    env: { ...process.env, OPENCLAW_STATE_DIR: rootDir },
-    path: path.join(rootDir, "state", "openclaw.sqlite"),
+    env: { ...process.env, AFORA_STATE_DIR: rootDir },
+    path: path.join(rootDir, "state", "afora.sqlite"),
     ...(identityKey ? { identityKey } : {}),
   };
 }
@@ -83,10 +83,10 @@ async function runConcurrentIdentityLoads(rootDir: string): Promise<DeviceIdenti
   const moduleUrl = new URL("./device-identity.ts", import.meta.url).href;
   const workerSource = `
     import fs from "node:fs";
-    const { loadOrCreateDeviceIdentity } = await import(process.env.OPENCLAW_IDENTITY_MODULE);
-    fs.writeFileSync(process.env.OPENCLAW_IDENTITY_READY_PATH, "ready");
+    const { loadOrCreateDeviceIdentity } = await import(process.env.AFORA_IDENTITY_MODULE);
+    fs.writeFileSync(process.env.AFORA_IDENTITY_READY_PATH, "ready");
     const deadline = Date.now() + 15_000;
-    while (!fs.existsSync(process.env.OPENCLAW_IDENTITY_START_PATH)) {
+    while (!fs.existsSync(process.env.AFORA_IDENTITY_START_PATH)) {
       if (Date.now() >= deadline) {
         throw new Error("timed out waiting for concurrent identity start");
       }
@@ -95,8 +95,8 @@ async function runConcurrentIdentityLoads(rootDir: string): Promise<DeviceIdenti
       });
     }
     const identity = loadOrCreateDeviceIdentity({
-      env: { ...process.env, OPENCLAW_STATE_DIR: process.env.OPENCLAW_IDENTITY_STATE_DIR },
-      path: process.env.OPENCLAW_IDENTITY_DATABASE_PATH,
+      env: { ...process.env, AFORA_STATE_DIR: process.env.AFORA_IDENTITY_STATE_DIR },
+      path: process.env.AFORA_IDENTITY_DATABASE_PATH,
     });
     console.log(JSON.stringify(identity));
   `;
@@ -108,11 +108,11 @@ async function runConcurrentIdentityLoads(rootDir: string): Promise<DeviceIdenti
       {
         env: {
           ...process.env,
-          OPENCLAW_IDENTITY_DATABASE_PATH: path.join(rootDir, "state", "openclaw.sqlite"),
-          OPENCLAW_IDENTITY_MODULE: moduleUrl,
-          OPENCLAW_IDENTITY_READY_PATH: readyPath,
-          OPENCLAW_IDENTITY_START_PATH: startPath,
-          OPENCLAW_IDENTITY_STATE_DIR: rootDir,
+          AFORA_IDENTITY_DATABASE_PATH: path.join(rootDir, "state", "afora.sqlite"),
+          AFORA_IDENTITY_MODULE: moduleUrl,
+          AFORA_IDENTITY_READY_PATH: readyPath,
+          AFORA_IDENTITY_START_PATH: startPath,
+          AFORA_IDENTITY_STATE_DIR: rootDir,
         },
         stdio: ["ignore", "pipe", "pipe"],
       },
@@ -151,7 +151,7 @@ async function startPausedBootstrapCreator(rootDir: string): Promise<{
   outcome: Promise<DeviceIdentity>;
   child: ChildProcess;
 }> {
-  const databasePath = path.join(rootDir, "state", "openclaw.sqlite");
+  const databasePath = path.join(rootDir, "state", "afora.sqlite");
   const readyPath = path.join(rootDir, "bootstrap-ready");
   const committedPath = path.join(rootDir, "bootstrap-committed");
   const continuePath = path.join(rootDir, "bootstrap-continue");
@@ -161,28 +161,28 @@ async function startPausedBootstrapCreator(rootDir: string): Promise<{
     import fs from "node:fs";
     import path from "node:path";
     import { DatabaseSync } from "node:sqlite";
-    const { acquireDeviceIdentityCoordinator } = await import(process.env.OPENCLAW_COORDINATOR_MODULE);
+    const { acquireDeviceIdentityCoordinator } = await import(process.env.AFORA_COORDINATOR_MODULE);
     const { generateStoredDeviceIdentity, insertStoredDeviceIdentityIfAbsent } =
-      await import(process.env.OPENCLAW_IDENTITY_STORE_MODULE);
+      await import(process.env.AFORA_IDENTITY_STORE_MODULE);
     const options = {
-      env: { ...process.env, OPENCLAW_STATE_DIR: process.env.OPENCLAW_IDENTITY_STATE_DIR },
-      path: process.env.OPENCLAW_IDENTITY_DATABASE_PATH,
+      env: { ...process.env, AFORA_STATE_DIR: process.env.AFORA_IDENTITY_STATE_DIR },
+      path: process.env.AFORA_IDENTITY_DATABASE_PATH,
     };
     const coordinator = acquireDeviceIdentityCoordinator({
       databasePath: options.path,
-      stateDir: process.env.OPENCLAW_IDENTITY_STATE_DIR,
+      stateDir: process.env.AFORA_IDENTITY_STATE_DIR,
     });
     try {
       fs.mkdirSync(path.dirname(options.path), { recursive: true });
       new DatabaseSync(options.path).close();
-      fs.writeFileSync(process.env.OPENCLAW_IDENTITY_READY_PATH, "ready");
+      fs.writeFileSync(process.env.AFORA_IDENTITY_READY_PATH, "ready");
       const deadline = Date.now() + 15_000;
-      while (!fs.existsSync(process.env.OPENCLAW_IDENTITY_CONTINUE_PATH)) {
+      while (!fs.existsSync(process.env.AFORA_IDENTITY_CONTINUE_PATH)) {
         if (Date.now() >= deadline) throw new Error("timed out waiting to continue bootstrap");
         await new Promise((resolve) => setTimeout(resolve, 2));
       }
       const stored = insertStoredDeviceIdentityIfAbsent(generateStoredDeviceIdentity(), options);
-      fs.writeFileSync(process.env.OPENCLAW_IDENTITY_COMMITTED_PATH, "committed");
+      fs.writeFileSync(process.env.AFORA_IDENTITY_COMMITTED_PATH, "committed");
       console.log(JSON.stringify({
         deviceId: stored.deviceId,
         publicKeyPem: stored.publicKeyPem,
@@ -198,13 +198,13 @@ async function startPausedBootstrapCreator(rootDir: string): Promise<{
     {
       env: {
         ...process.env,
-        OPENCLAW_IDENTITY_COMMITTED_PATH: committedPath,
-        OPENCLAW_COORDINATOR_MODULE: coordinatorModuleUrl,
-        OPENCLAW_IDENTITY_CONTINUE_PATH: continuePath,
-        OPENCLAW_IDENTITY_DATABASE_PATH: databasePath,
-        OPENCLAW_IDENTITY_READY_PATH: readyPath,
-        OPENCLAW_IDENTITY_STATE_DIR: rootDir,
-        OPENCLAW_IDENTITY_STORE_MODULE: storeModuleUrl,
+        AFORA_IDENTITY_COMMITTED_PATH: committedPath,
+        AFORA_COORDINATOR_MODULE: coordinatorModuleUrl,
+        AFORA_IDENTITY_CONTINUE_PATH: continuePath,
+        AFORA_IDENTITY_DATABASE_PATH: databasePath,
+        AFORA_IDENTITY_READY_PATH: readyPath,
+        AFORA_IDENTITY_STATE_DIR: rootDir,
+        AFORA_IDENTITY_STORE_MODULE: storeModuleUrl,
       },
       stdio: ["ignore", "pipe", "pipe"],
     },
@@ -239,8 +239,8 @@ function waitForFileSync(filePath: string): void {
 
 describe("device identity SQLite store", () => {
   it("serializes identity ownership with the shared SQLite coordinator", async () => {
-    await withTempDir("openclaw-device-identity-coordinator-", async (rootDir) => {
-      const databasePath = path.join(rootDir, "state", "openclaw.sqlite");
+    await withTempDir("afora-device-identity-coordinator-", async (rootDir) => {
+      const databasePath = path.join(rootDir, "state", "afora.sqlite");
       const lockDir = path.join(rootDir, "locks");
       const first = acquireDeviceIdentityCoordinator({ databasePath, lockDir, busyTimeoutMs: 0 });
       try {
@@ -275,7 +275,7 @@ describe("device identity SQLite store", () => {
   });
 
   it("reads a missing database without creating identity state or coordinator locks", async () => {
-    await withTempDir("openclaw-device-identity-readonly-", async (rootDir) => {
+    await withTempDir("afora-device-identity-readonly-", async (rootDir) => {
       const options = storeOptions(rootDir);
       const coordinatorPaths = resolveDeviceIdentityCoordinatorPaths({
         databasePath: options.path!,
@@ -294,10 +294,10 @@ describe("device identity SQLite store", () => {
   });
 
   it("reads an existing identity without changing canonical SQLite artifacts", async () => {
-    await withTempDir("openclaw-device-identity-artifact-preserving-", async (rootDir) => {
+    await withTempDir("afora-device-identity-artifact-preserving-", async (rootDir) => {
       const options = storeOptions(rootDir);
       const created = loadOrCreateDeviceIdentity(options);
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       const databaseDirectory = path.dirname(options.path!);
       const artifactsBeforeRead = fs.readdirSync(databaseDirectory).toSorted();
 
@@ -307,7 +307,7 @@ describe("device identity SQLite store", () => {
   });
 
   it("creates and reuses the primary identity in SQLite", async () => {
-    await withTempDir("openclaw-device-identity-create-", async (rootDir) => {
+    await withTempDir("afora-device-identity-create-", async (rootDir) => {
       const options = storeOptions(rootDir);
       const created = loadOrCreateDeviceIdentity(options);
       const loaded = loadOrCreateDeviceIdentity(options);
@@ -320,7 +320,7 @@ describe("device identity SQLite store", () => {
   });
 
   it("keeps empty-bootstrap classification on the pre-commit read snapshot", async () => {
-    await withTempDir("openclaw-device-identity-bootstrap-read-", async (rootDir) => {
+    await withTempDir("afora-device-identity-bootstrap-read-", async (rootDir) => {
       const creator = await startPausedBootstrapCreator(rootDir);
       try {
         const sqlite = await import("node:sqlite");
@@ -358,7 +358,7 @@ describe("device identity SQLite store", () => {
   }, 30_000);
 
   it("does not classify a partial schema as an identity bootstrap miss", async () => {
-    await withTempDir("openclaw-device-identity-partial-schema-", async (rootDir) => {
+    await withTempDir("afora-device-identity-partial-schema-", async (rootDir) => {
       const options = storeOptions(rootDir);
       fs.mkdirSync(path.dirname(options.path!), { recursive: true });
       const sqlite = await import("node:sqlite");
@@ -373,7 +373,7 @@ describe("device identity SQLite store", () => {
   });
 
   it("adopts a Swift-created version-zero identity database and completes the shared schema", async () => {
-    await withTempDir("openclaw-device-identity-swift-db-", async (rootDir) => {
+    await withTempDir("afora-device-identity-swift-db-", async (rootDir) => {
       const options = storeOptions(rootDir);
       const expected = normalizeLegacyDeviceIdentity({
         deviceId: SWIFT_RAW_DEVICE_ID,
@@ -420,22 +420,22 @@ describe("device identity SQLite store", () => {
         publicKeyPem: expected.publicKeyPem,
         privateKeyPem: expected.privateKeyPem,
       });
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       const verified = new sqlite.DatabaseSync(options.path!, { readOnly: true });
       expect(verified.prepare("PRAGMA user_version").get()).toEqual({
-        user_version: OPENCLAW_STATE_SCHEMA_VERSION,
+        user_version: AFORA_STATE_SCHEMA_VERSION,
       });
       expect(
         verified
           .prepare("SELECT role, schema_version FROM schema_meta WHERE meta_key = 'primary'")
           .get(),
-      ).toEqual({ role: "global", schema_version: OPENCLAW_STATE_SCHEMA_VERSION });
+      ).toEqual({ role: "global", schema_version: AFORA_STATE_SCHEMA_VERSION });
       verified.close();
     });
   });
 
   it("keeps process identities cached by database path and identity key", async () => {
-    await withTempDir("openclaw-device-identity-cache-", async (rootDir) => {
+    await withTempDir("afora-device-identity-cache-", async (rootDir) => {
       const primaryOptions = storeOptions(rootDir);
       const secondaryOptions = storeOptions(rootDir, "secondary");
       const primary = loadOrCreateProcessDeviceIdentity(primaryOptions);
@@ -455,11 +455,11 @@ describe("device identity SQLite store", () => {
   it.each(["device.json", "device.json.doctor-importing", "device.json.native-importing"])(
     "keeps canonical SQLite authoritative when retired %s reappears",
     async (legacyName) => {
-      await withTempDir("openclaw-device-identity-canonical-", async (rootDir) => {
+      await withTempDir("afora-device-identity-canonical-", async (rootDir) => {
         const options = storeOptions(rootDir);
         const canonical = loadOrCreateDeviceIdentity(options);
         expect(canonical.deviceId).not.toBe(SWIFT_RAW_DEVICE_ID);
-        closeOpenClawStateDatabaseForTest();
+        closeAforaStateDatabaseForTest();
 
         const legacyPath = path.join(rootDir, "identity", legacyName);
         writeRetiredIdentity(legacyPath);
@@ -472,7 +472,7 @@ describe("device identity SQLite store", () => {
   );
 
   it("returns one authoritative winner to concurrent creators", async () => {
-    await withTempDir("openclaw-device-identity-concurrent-", async (rootDir) => {
+    await withTempDir("afora-device-identity-concurrent-", async (rootDir) => {
       const [first, second] = await runConcurrentIdentityLoads(rootDir);
 
       expect(second).toEqual(first);
@@ -481,10 +481,10 @@ describe("device identity SQLite store", () => {
   }, 30_000);
 
   it("fails closed for a corrupt persisted row", async () => {
-    await withTempDir("openclaw-device-identity-corrupt-", async (rootDir) => {
+    await withTempDir("afora-device-identity-corrupt-", async (rootDir) => {
       const options = storeOptions(rootDir);
       loadOrCreateDeviceIdentity(options);
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
 
       const sqlite = await import("node:sqlite");
       const database = new sqlite.DatabaseSync(options.path!);
@@ -505,7 +505,7 @@ describe("device identity SQLite store", () => {
   it.each(["device.json", "device.json.doctor-importing", "device.json.native-importing"])(
     "blocks SQLite access while legacy %s may exist",
     async (legacyName) => {
-      await withTempDir("openclaw-device-identity-legacy-", async (rootDir) => {
+      await withTempDir("afora-device-identity-legacy-", async (rootDir) => {
         const options = storeOptions(rootDir);
         const legacyPath = path.join(rootDir, "identity", legacyName);
         fs.mkdirSync(path.dirname(legacyPath), { recursive: true });
@@ -519,10 +519,10 @@ describe("device identity SQLite store", () => {
   );
 
   it.each([
-    ["canonical", (rootDir: string) => path.join(rootDir, "state", "openclaw.sqlite")],
+    ["canonical", (rootDir: string) => path.join(rootDir, "state", "afora.sqlite")],
     ["arbitrary", (rootDir: string) => path.join(rootDir, "identity-state.sqlite")],
   ])("derives the legacy root from an explicit %s database path", async (_label, dbPath) => {
-    await withTempDir("openclaw-device-identity-explicit-path-", async (rootDir) => {
+    await withTempDir("afora-device-identity-explicit-path-", async (rootDir) => {
       const legacyPath = path.join(rootDir, "identity", "device.json");
       fs.mkdirSync(path.dirname(legacyPath), { recursive: true });
       fs.writeFileSync(legacyPath, "{}\n");

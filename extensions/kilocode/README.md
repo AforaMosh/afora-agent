@@ -1,12 +1,12 @@
-# OpenClaw Kilo Gateway Provider
+# Afora Kilo Gateway Provider
 
-Official OpenClaw provider plugin for Kilo Gateway.
+Official Afora provider plugin for Kilo Gateway.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/kilocode-provider
-openclaw gateway restart
+afora plugins install @afora/kilocode-provider
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/providers/kilocode> for setup and configuration.
+See <https://docs.afora.ai/providers/kilocode> for setup and configuration.

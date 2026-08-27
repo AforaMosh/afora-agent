@@ -1,6 +1,6 @@
 // Openai tests cover realtime voice provider plugin behavior.
-import { REALTIME_VOICE_AUDIO_FORMAT_PCM16_24KHZ } from "openclaw/plugin-sdk/realtime-voice";
-import type { RealtimeVoiceBridge } from "openclaw/plugin-sdk/realtime-voice";
+import { REALTIME_VOICE_AUDIO_FORMAT_PCM16_24KHZ } from "afora-agent/plugin-sdk/realtime-voice";
+import type { RealtimeVoiceBridge } from "afora-agent/plugin-sdk/realtime-voice";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildOpenAIRealtimeVoiceProvider } from "./realtime-voice-provider.js";
 
@@ -22,11 +22,11 @@ vi.mock("ws", () => ({
   default: mocks.FakeWebSocket,
 }));
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ({
   fetchWithSsrFGuard: mocks.fetchWithSsrFGuardMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/provider-auth", () => ({
+vi.mock("afora-agent/plugin-sdk/provider-auth", () => ({
   isProviderAuthProfileConfigured: mocks.isProviderAuthProfileConfiguredMock,
   resolveProviderAuthProfileApiKey: mocks.resolveProviderAuthProfileApiKeyMock,
 }));
@@ -64,8 +64,8 @@ describe("OpenAI realtime voice bridge connection", () => {
     restoreTestEnvironment();
   });
 
-  it("adds OpenClaw attribution headers to native realtime websocket requests", () => {
-    vi.stubEnv("OPENCLAW_VERSION", "2026.3.22");
+  it("adds Afora attribution headers to native realtime websocket requests", () => {
+    vi.stubEnv("AFORA_VERSION", "2026.3.22");
     const provider = buildOpenAIRealtimeVoiceProvider();
     const bridge = provider.createBridge({
       providerConfig: { apiKey: "test-api-key-test" },
@@ -81,9 +81,9 @@ describe("OpenAI realtime voice bridge connection", () => {
       | { headers?: Record<string, string>; maxPayload?: number }
       | undefined;
     expectRecordFields(options?.headers, "websocket headers", {
-      originator: "openclaw",
+      originator: "afora",
       version: "2026.3.22",
-      "User-Agent": "openclaw/2026.3.22",
+      "User-Agent": "afora-agent/2026.3.22",
     });
     expect(options?.headers).not.toHaveProperty("OpenAI-Beta");
     expect(options?.maxPayload).toBe(16 * 1024 * 1024);
@@ -117,7 +117,7 @@ describe("OpenAI realtime voice bridge connection", () => {
         prefixPaddingMs: 420,
         reasoningEffort: "medium",
         silenceDurationMs: 650,
-        tools: [createRealtimeTool("openclaw_agent_consult")],
+        tools: [createRealtimeTool("afora_agent_consult")],
         vadThreshold: 0.7,
         voice: "marin",
         gatewayControl: { bindBridge, onEvent, onReady },

@@ -291,13 +291,13 @@ describe("Plugin ClawHub New workflow", () => {
       "verify_release_tag_target",
     );
     expect(step(publish, "Publish exact ClawHub bootstrap artifacts").run).toContain(
-      "OPENCLAW_CLAWHUB_RELEASE_GIT_DIR",
+      "AFORA_CLAWHUB_RELEASE_GIT_DIR",
     );
     expect(step(publish, "Publish exact ClawHub bootstrap artifacts").run).toContain(
-      "OPENCLAW_CLAWHUB_RELEASE_TAG",
+      "AFORA_CLAWHUB_RELEASE_TAG",
     );
     expect(step(publish, "Publish exact ClawHub bootstrap artifacts").run).toContain(
-      "OPENCLAW_CLAWHUB_TARGET_SHA",
+      "AFORA_CLAWHUB_TARGET_SHA",
     );
   });
 
@@ -307,9 +307,9 @@ describe("Plugin ClawHub New workflow", () => {
     expect(publishRun).toContain('mode}" == "publish"');
     expect(publishRun).toContain("GitHub Actions immutable bootstrap retry");
     expect(publishRun).toContain("GitHub Actions trusted publisher repair before OIDC migration");
-    expect(publishRun).toContain('"${OPENCLAW_CLAWHUB_CLI}" package trusted-publisher set');
+    expect(publishRun).toContain('"${AFORA_CLAWHUB_CLI}" package trusted-publisher set');
     expect(publishRun).toContain("timeout --signal=TERM --kill-after=10s 300s");
-    expect(publishRun).toContain("--repository openclaw/openclaw");
+    expect(publishRun).toContain("--repository AforaMosh/afora-agent");
     expect(publishRun).toContain("--workflow-filename plugin-clawhub-release.yml");
     expect(publishRun).not.toContain("--environment");
     expect(step(publish, "Verify exact ClawHub registry artifact bytes").run).toContain(
@@ -347,8 +347,8 @@ describe("Plugin ClawHub New workflow", () => {
     expect(source).not.toContain("npm exec");
     expect(source).not.toContain("npm install");
     expect(source).not.toContain("CLAWHUB_CLI_PACKAGE");
-    expect(source).toContain("OPENCLAW_CLAWHUB_CLI: ${{ steps.clawhub_cli.outputs.cli }}");
-    expect(source).toContain('"${OPENCLAW_CLAWHUB_CLI}" package trusted-publisher set');
+    expect(source).toContain("AFORA_CLAWHUB_CLI: ${{ steps.clawhub_cli.outputs.cli }}");
+    expect(source).toContain('"${AFORA_CLAWHUB_CLI}" package trusted-publisher set');
   });
 
   it("bounds every job and keeps secretless validation active in dry-run mode", () => {

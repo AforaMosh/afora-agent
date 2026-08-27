@@ -15,7 +15,7 @@ type Testing = {
 
 function getTesting(): Testing {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.subagentControlTestApi")
+    Symbol.for("afora.subagentControlTestApi")
   ] as Testing;
 }
 

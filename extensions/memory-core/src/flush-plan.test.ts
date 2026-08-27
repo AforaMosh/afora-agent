@@ -25,7 +25,7 @@ describe("buildMemoryFlushPlan", () => {
   });
 
   it("records mixed trusted and untrusted writes as untrusted for the whole file", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-flush-provenance-");
+    const workspaceDir = await createTempWorkspace("afora-flush-provenance-");
     const plan = buildMemoryFlushPlan({ nowMs: Date.UTC(2026, 6, 28, 12, 0, 0) });
     if (!plan?.recordWriteProvenance) {
       throw new Error("expected memory flush provenance writer");

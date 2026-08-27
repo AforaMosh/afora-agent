@@ -13,7 +13,7 @@ import {
   requireRelayCrypto,
 } from "./relay-auth-v2-crypto.js";
 
-export const EXTENSION_RELAY_V2_PROTOCOL = "openclaw-extension-relay.v2";
+export const EXTENSION_RELAY_V2_PROTOCOL = "afora-extension-relay.v2";
 
 const CHALLENGE_LIFETIME_MS = 10_000;
 const MAX_CLOCK_SKEW_MS = 30_000;

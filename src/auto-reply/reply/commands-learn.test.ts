@@ -1,13 +1,13 @@
 // Tests /learn prompt rewriting, defaults, standards, and availability gating.
 import { describe, expect, it } from "vitest";
 import { migratePersistedImplicitMainRoster } from "../../config/legacy.roster.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { DEFAULT_LEARN_REQUEST } from "../../skills/workshop/learn-prompt.js";
 import { INTERNAL_MESSAGE_CHANNEL } from "../../utils/message-channel.js";
 import { handleLearnCommand } from "./commands-learn.js";
 import type { HandleCommandsParams } from "./commands-types.js";
 
-const DEFAULT_TEST_MODELS: NonNullable<OpenClawConfig["models"]> = {
+const DEFAULT_TEST_MODELS: NonNullable<AforaConfig["models"]> = {
   providers: {
     openai: {
       baseUrl: "https://api.openai.com/v1",
@@ -29,9 +29,9 @@ const DEFAULT_TEST_MODELS: NonNullable<OpenClawConfig["models"]> = {
 
 function buildLearnParams(
   commandBodyNormalized: string,
-  cfg: OpenClawConfig = {},
+  cfg: AforaConfig = {},
 ): HandleCommandsParams {
-  const loadedConfig = migratePersistedImplicitMainRoster(cfg).config as OpenClawConfig;
+  const loadedConfig = migratePersistedImplicitMainRoster(cfg).config as AforaConfig;
   return {
     cfg: { ...loadedConfig, models: loadedConfig.models ?? DEFAULT_TEST_MODELS },
     ctx: {

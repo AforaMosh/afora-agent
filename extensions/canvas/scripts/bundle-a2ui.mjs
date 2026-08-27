@@ -16,10 +16,10 @@ const pluginDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..
 const rootDir = path.resolve(pluginDir, "../..");
 const require = createRequire(import.meta.url);
 const hashFile =
-  process.env.OPENCLAW_A2UI_BUNDLE_HASH_FILE ??
+  process.env.AFORA_A2UI_BUNDLE_HASH_FILE ??
   path.join(pluginDir, "src", "host", "a2ui", ".bundle.hash");
 const outputFile =
-  process.env.OPENCLAW_A2UI_BUNDLE_OUT ??
+  process.env.AFORA_A2UI_BUNDLE_OUT ??
   path.join(pluginDir, "src", "host", "a2ui", "a2ui.bundle.js");
 const a2uiAppDir = path.join(pluginDir, "src", "host", "a2ui-app");
 const GIT_INPUT_DISCOVERY_TIMEOUT_MS = 5_000;
@@ -188,9 +188,9 @@ async function main() {
       console.log("A2UI package missing; keeping prebuilt bundle.");
       return;
     }
-    if (process.env.OPENCLAW_SPARSE_PROFILE || process.env.OPENCLAW_A2UI_SKIP_MISSING === "1") {
+    if (process.env.AFORA_SPARSE_PROFILE || process.env.AFORA_A2UI_SKIP_MISSING === "1") {
       console.error(
-        "A2UI package missing; skipping bundle because OPENCLAW_A2UI_SKIP_MISSING=1 or OPENCLAW_SPARSE_PROFILE is set.",
+        "A2UI package missing; skipping bundle because AFORA_A2UI_SKIP_MISSING=1 or AFORA_SPARSE_PROFILE is set.",
       );
       return;
     }

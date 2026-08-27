@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { sortUniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { sortUniqueStrings } from "@afora/normalization-core/string-normalization";
 import { writeJson } from "../../src/infra/json-files.ts";
 import {
   collectPackageDistInventory,
@@ -10,9 +10,9 @@ import {
 export { LOCAL_BUILD_METADATA_DIST_PATHS } from "./local-build-metadata-paths.mts";
 export { PACKAGE_DIST_INVENTORY_RELATIVE_PATH };
 
-export const PACKAGE_INSTALL_GUARD_RELATIVE_PATH = "dist/openclaw-install-guard";
+export const PACKAGE_INSTALL_GUARD_RELATIVE_PATH = "dist/afora-install-guard";
 
-const INSTALL_STAGE_DEBRIS_DIR_PATTERN = /^\.openclaw-install-stage(?:-[^/]+)?$/iu;
+const INSTALL_STAGE_DEBRIS_DIR_PATTERN = /^\.afora-install-stage(?:-[^/]+)?$/iu;
 
 function normalizeRelativePath(value: string): string {
   return value.replace(/\\/g, "/");
@@ -140,7 +140,7 @@ export async function writePackageDistInventory(packageRoot: string): Promise<st
 async function writePackageInstallGuardMarker(packageRoot: string): Promise<void> {
   const markerPath = path.join(packageRoot, PACKAGE_INSTALL_GUARD_RELATIVE_PATH);
   await fs.mkdir(path.dirname(markerPath), { recursive: true });
-  await fs.writeFile(markerPath, "OpenClaw package preinstall has not completed.\n", "utf8");
+  await fs.writeFile(markerPath, "Afora package preinstall has not completed.\n", "utf8");
 }
 
 export async function writePackageDistInventoryForPublish(packageRoot: string): Promise<string[]> {

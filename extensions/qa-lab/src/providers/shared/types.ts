@@ -1,5 +1,5 @@
 // Qa Lab type declarations define plugin contracts.
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-shared";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-model-shared";
 import type { QaThinkingLevel } from "../../qa-thinking.js";
 
 export type QaProviderMode = "mock-openai" | "aimock" | "live-frontier";

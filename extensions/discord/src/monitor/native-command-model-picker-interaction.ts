@@ -5,10 +5,10 @@ import {
   listChatCommands,
   type ChatCommandDefinition,
   type CommandArgs,
-} from "openclaw/plugin-sdk/command-auth-native";
-import type { ModelsProviderData } from "openclaw/plugin-sdk/models-provider-runtime";
-import { getRuntimeConfigSnapshot } from "openclaw/plugin-sdk/runtime-config-snapshot";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/command-auth-native";
+import type { ModelsProviderData } from "afora-agent/plugin-sdk/models-provider-runtime";
+import { getRuntimeConfigSnapshot } from "afora-agent/plugin-sdk/runtime-config-snapshot";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   Button,
   StringSelectMenu,
@@ -278,7 +278,7 @@ function resolveDiscordModelPickerRuntimeForProvider(params: {
   }
   const choices = params.data.runtimeChoicesByProvider?.get(params.provider);
   if (!choices?.length) {
-    return runtime === "openclaw" ? runtime : undefined;
+    return runtime === "afora" ? runtime : undefined;
   }
   return choices.some((choice) => choice.id === runtime) ? runtime : undefined;
 }

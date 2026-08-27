@@ -41,7 +41,7 @@ function makeSnapshot() {
     issues: [] as ConfigIssue[],
     warnings: [] as ConfigIssue[],
     legacyIssues: [] as ConfigIssue[],
-    path: "/tmp/openclaw.json",
+    path: "/tmp/afora.json",
   };
 }
 
@@ -104,31 +104,31 @@ describe("ensureConfigReady", () => {
     return snapshot;
   }
 
-  function useTempOpenClawHome(): string {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-config-guard-"));
+  function useTempAforaHome(): string {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-config-guard-"));
     tempRoots.push(root);
-    setTestEnvValue("OPENCLAW_HOME", root);
-    deleteTestEnvValue("OPENCLAW_NIX_MODE");
-    deleteTestEnvValue("OPENCLAW_PROFILE");
-    deleteTestEnvValue("OPENCLAW_STATE_DIR");
+    setTestEnvValue("AFORA_HOME", root);
+    deleteTestEnvValue("AFORA_NIX_MODE");
+    deleteTestEnvValue("AFORA_PROFILE");
+    deleteTestEnvValue("AFORA_STATE_DIR");
     return root;
   }
 
   function writeLegacyTaskSidecarMarker(root: string): void {
-    const markerPath = path.join(root, ".openclaw", "tasks", "runs.sqlite");
+    const markerPath = path.join(root, ".afora", "tasks", "runs.sqlite");
     fs.mkdirSync(path.dirname(markerPath), { recursive: true });
     fs.writeFileSync(markerPath, "");
   }
 
   function writePendingTaskSidecarArchiveMarker(root: string): void {
-    const markerPath = path.join(root, ".openclaw", "tasks", "runs.sqlite");
+    const markerPath = path.join(root, ".afora", "tasks", "runs.sqlite");
     fs.mkdirSync(path.dirname(markerPath), { recursive: true });
     fs.writeFileSync(`${markerPath}.migrated`, "");
     fs.writeFileSync(`${markerPath}-wal`, "");
   }
 
   function writeStateMarker(root: string, relativePath: string): void {
-    const markerPath = path.join(root, ".openclaw", relativePath);
+    const markerPath = path.join(root, ".afora", relativePath);
     fs.mkdirSync(path.dirname(markerPath), { recursive: true });
     fs.writeFileSync(markerPath, "{}");
   }
@@ -136,17 +136,17 @@ describe("ensureConfigReady", () => {
   beforeEach(() => {
     envSnapshot = captureEnv([
       "HOME",
-      "OPENCLAW_HOME",
-      "OPENCLAW_NIX_MODE",
-      "OPENCLAW_PROFILE",
-      "OPENCLAW_STATE_DIR",
+      "AFORA_HOME",
+      "AFORA_NIX_MODE",
+      "AFORA_PROFILE",
+      "AFORA_STATE_DIR",
     ]);
     vi.clearAllMocks();
     resetConfigGuardStateForTests();
     for (const root of tempRoots.splice(0)) {
       fs.rmSync(root, { recursive: true, force: true });
     }
-    useTempOpenClawHome();
+    useTempAforaHome();
     readConfigFileSnapshotMock.mockResolvedValue(makeSnapshot());
     loadAndMaybeMigrateDoctorConfigMock.mockImplementation(async () => ({
       snapshot: makeSnapshot(),
@@ -297,7 +297,7 @@ describe("ensureConfigReady", () => {
   });
 
   it("runs doctor flow when lightweight startup detection finds legacy state", async () => {
-    const root = useTempOpenClawHome();
+    const root = useTempAforaHome();
     writeLegacyTaskSidecarMarker(root);
 
     await runEnsureConfigReady(["status"]);
@@ -312,7 +312,7 @@ describe("ensureConfigReady", () => {
   });
 
   it("keeps remote gateway calls from migrating existing local legacy state", async () => {
-    const root = useTempOpenClawHome();
+    const root = useTempAforaHome();
     writeLegacyTaskSidecarMarker(root);
 
     await runEnsureConfigReady(["gateway", "call"]);
@@ -324,7 +324,7 @@ describe("ensureConfigReady", () => {
     ["gateway", "restart"],
     ["daemon", "restart"],
   ])("keeps %s control from migrating existing local legacy state", async (command, action) => {
-    const root = useTempOpenClawHome();
+    const root = useTempAforaHome();
     writeLegacyTaskSidecarMarker(root);
 
     await runEnsureConfigReady([command, action]);
@@ -334,19 +334,19 @@ describe("ensureConfigReady", () => {
   });
 
   it("keeps logs from migrating existing local legacy state", async () => {
-    const root = useTempOpenClawHome();
+    const root = useTempAforaHome();
     writeStateMarker(root, "cron/runs/legacy-job.jsonl");
 
     await runEnsureConfigReady(["logs"]);
 
     expect(loadAndMaybeMigrateDoctorConfigMock).not.toHaveBeenCalled();
-    expect(fs.existsSync(path.join(root, ".openclaw", "cron/runs/legacy-job.jsonl"))).toBe(true);
+    expect(fs.existsSync(path.join(root, ".afora", "cron/runs/legacy-job.jsonl"))).toBe(true);
   });
 
   it.each(["restart-sentinel.json", "restart-sentinel.json.doctor-importing"])(
     "runs doctor flow when lightweight startup detection finds %s",
     async (relativePath) => {
-      const root = useTempOpenClawHome();
+      const root = useTempAforaHome();
       writeStateMarker(root, relativePath);
 
       await runEnsureConfigReady(["status"]);
@@ -362,7 +362,7 @@ describe("ensureConfigReady", () => {
   );
 
   it("runs doctor flow when lightweight startup detection finds a pending SQLite archive", async () => {
-    const root = useTempOpenClawHome();
+    const root = useTempAforaHome();
     writePendingTaskSidecarArchiveMarker(root);
 
     await runEnsureConfigReady(["status"]);
@@ -420,8 +420,8 @@ describe("ensureConfigReady", () => {
   });
 
   it("runs doctor flow for legacy sessions without task sidecars", async () => {
-    const root = useTempOpenClawHome();
-    fs.mkdirSync(path.join(root, ".openclaw", "sessions"), { recursive: true });
+    const root = useTempAforaHome();
+    fs.mkdirSync(path.join(root, ".afora", "sessions"), { recursive: true });
 
     await runEnsureConfigReady(["status"]);
 
@@ -429,7 +429,7 @@ describe("ensureConfigReady", () => {
   });
 
   it("runs doctor flow before agent commands when the legacy plugin install index exists", async () => {
-    const root = useTempOpenClawHome();
+    const root = useTempAforaHome();
     writeStateMarker(root, "plugins/installs.json");
 
     await runEnsureConfigReady(["agent"]);
@@ -444,7 +444,7 @@ describe("ensureConfigReady", () => {
   });
 
   it("checkpoints migration discovery for established canonical agent state", async () => {
-    const root = useTempOpenClawHome();
+    const root = useTempAforaHome();
     writeStateMarker(root, "agents/main/sessions/sessions.json");
 
     await runEnsureConfigReady(["agent"]);
@@ -458,7 +458,7 @@ describe("ensureConfigReady", () => {
   });
 
   it("preserves plugin listing migrations when the legacy plugin install index exists", async () => {
-    const root = useTempOpenClawHome();
+    const root = useTempAforaHome();
     writeStateMarker(root, "plugins/installs.json");
     const migratedSnapshot = {
       ...makeSnapshot(),
@@ -487,8 +487,8 @@ describe("ensureConfigReady", () => {
   });
 
   it("preserves plugin listing migrations when the shared state database exists", async () => {
-    const root = useTempOpenClawHome();
-    writeStateMarker(root, "state/openclaw.sqlite");
+    const root = useTempAforaHome();
+    writeStateMarker(root, "state/afora.sqlite");
 
     await runEnsureConfigReady(["plugins", "list"]);
 
@@ -503,11 +503,11 @@ describe("ensureConfigReady", () => {
   ])(
     "ignores default-state $source while $commandPath uses custom state",
     async ({ commandPath, source }) => {
-      const root = useTempOpenClawHome();
+      const root = useTempAforaHome();
       const stateDir = path.join(root, "custom-state");
-      setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+      setTestEnvValue("AFORA_STATE_DIR", stateDir);
       writeStateMarker(root, source);
-      const sourcePath = path.join(root, ".openclaw", source);
+      const sourcePath = path.join(root, ".afora", source);
       const sourceRaw = fs.readFileSync(sourcePath, "utf8");
 
       await runEnsureConfigReady(commandPath);
@@ -520,9 +520,9 @@ describe("ensureConfigReady", () => {
   );
 
   it("keeps named profiles isolated from default-profile approval migrations", async () => {
-    const root = useTempOpenClawHome();
-    setTestEnvValue("OPENCLAW_PROFILE", "work");
-    setTestEnvValue("OPENCLAW_STATE_DIR", path.join(root, ".openclaw-work"));
+    const root = useTempAforaHome();
+    setTestEnvValue("AFORA_PROFILE", "work");
+    setTestEnvValue("AFORA_STATE_DIR", path.join(root, ".afora-work"));
     writeStateMarker(root, "exec-approvals.json");
     writeStateMarker(root, "plugin-binding-approvals.json");
 
@@ -544,7 +544,7 @@ describe("ensureConfigReady", () => {
     ["iMessage catchup cursor", "imessage/catchup/default__37a8eec1ce19.json"],
     ["WhatsApp root auth", "credentials/creds.json"],
   ])("runs doctor flow for bundled channel legacy state: %s", async (_label, relativePath) => {
-    const root = useTempOpenClawHome();
+    const root = useTempAforaHome();
     writeStateMarker(root, relativePath);
 
     await runEnsureConfigReady(["status"]);
@@ -552,12 +552,12 @@ describe("ensureConfigReady", () => {
     expect(loadAndMaybeMigrateDoctorConfigMock).toHaveBeenCalledOnce();
   });
 
-  it("uses shared tilde expansion for OPENCLAW_HOME in the startup detector", async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-config-guard-home-"));
+  it("uses shared tilde expansion for AFORA_HOME in the startup detector", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-config-guard-home-"));
     tempRoots.push(root);
     setTestEnvValue("HOME", root);
-    setTestEnvValue("OPENCLAW_HOME", "~/svc");
-    deleteTestEnvValue("OPENCLAW_STATE_DIR");
+    setTestEnvValue("AFORA_HOME", "~/svc");
+    deleteTestEnvValue("AFORA_STATE_DIR");
     writeLegacyTaskSidecarMarker(path.join(root, "svc"));
 
     await runEnsureConfigReady(["status"]);
@@ -571,7 +571,7 @@ describe("ensureConfigReady", () => {
   ])(
     "runs doctor flow for $name with configured custom session stores",
     async ({ commandPath }) => {
-      const root = useTempOpenClawHome();
+      const root = useTempAforaHome();
       const customStore = path.join(root, "sessions", "sessions.json");
       const snapshot = {
         ...makeSnapshot(),
@@ -631,7 +631,7 @@ describe("ensureConfigReady", () => {
   });
 
   it("forwards config snapshot phase measurement through doctor preflight", async () => {
-    const root = useTempOpenClawHome();
+    const root = useTempAforaHome();
     writeStateMarker(root, "plugins/installs.json");
     const measuredStages: string[] = [];
     const measure: ConfigSnapshotReadMeasure = async (stage, run) => {
@@ -702,14 +702,14 @@ describe("ensureConfigReady", () => {
     const runtime = await runEnsureConfigReady(["message"]);
 
     expect(plainErrorCalls(runtime)).toEqual([
-      "OpenClaw config is invalid",
-      "File: /tmp/openclaw.json",
+      "Afora config is invalid",
+      "File: /tmp/afora.json",
       "Problem:",
       "  - channels.quietchat: invalid",
       "",
-      `Inspect: ${formatCliCommand("openclaw config validate")}`,
+      `Inspect: ${formatCliCommand("afora config validate")}`,
       "Audit, status, health, logs, tasks list/audit, and doctor commands still run with invalid config.",
-      `Run "${formatCliCommand("openclaw doctor --fix")}" to repair the config, then retry.`,
+      `Run "${formatCliCommand("afora doctor --fix")}" to repair the config, then retry.`,
     ]);
     expect(runtime.exit).toHaveBeenCalledWith(1);
   });
@@ -742,9 +742,9 @@ describe("ensureConfigReady", () => {
     const runtime = await runEnsureConfigReady(["message"]);
     const output = plainErrorCalls(runtime).join("\n");
 
-    expect(output).toContain('  - openclaw.json:2 — meta: Unrecognized key: "migrations"');
+    expect(output).toContain('  - afora.json:2 — meta: Unrecognized key: "migrations"');
     expect(output).toContain(
-      '  - openclaw.json:3 — gateway.port: Invalid input: expected number, got: "nope"',
+      '  - afora.json:3 — gateway.port: Invalid input: expected number, got: "nope"',
     );
   });
 
@@ -758,14 +758,14 @@ describe("ensureConfigReady", () => {
 
       const runtime = await runEnsureConfigReady(["message"]);
       const output = plainErrorCalls(runtime).join("\n");
-      const hint = `Config was last written by OpenClaw ${touchedVersion}, but you are running ${VERSION} — upgrade or re-run setup.`;
+      const hint = `Config was last written by Afora ${touchedVersion}, but you are running ${VERSION} — upgrade or re-run setup.`;
 
       expect(output.includes(hint)).toBe(expected);
     },
   );
 
   it("runs doctor and retries the config guard once after consent", async () => {
-    writeLegacyTaskSidecarMarker(useTempOpenClawHome());
+    writeLegacyTaskSidecarMarker(useTempAforaHome());
     const invalidSnapshot = setInvalidSnapshot();
     const validSnapshot = {
       ...makeSnapshot(),
@@ -786,7 +786,7 @@ describe("ensureConfigReady", () => {
     );
 
     expect(confirm).toHaveBeenCalledWith(
-      `Run "${formatCliCommand("openclaw doctor --fix")}" now?`,
+      `Run "${formatCliCommand("afora doctor --fix")}" now?`,
       true,
     );
     expect(runDoctor).toHaveBeenCalledOnce();
@@ -824,7 +824,7 @@ describe("ensureConfigReady", () => {
 
   it("keeps invalid Nix-managed config on the manual recovery path", async () => {
     setInvalidSnapshot();
-    setTestEnvValue("OPENCLAW_NIX_MODE", "1");
+    setTestEnvValue("AFORA_NIX_MODE", "1");
     const runtime = makeRuntime();
     const confirm = vi.fn(async () => true);
 
@@ -858,7 +858,7 @@ describe("ensureConfigReady", () => {
     const calls = plainErrorCalls(runtime);
 
     expect(calls).toContain(`Fix: ${pluginPackagingRecoveryHint}`);
-    expect(calls).not.toContain(`Fix: ${formatCliCommand("openclaw doctor --fix")}`);
+    expect(calls).not.toContain(`Fix: ${formatCliCommand("afora doctor --fix")}`);
     expect(runtime.exit).toHaveBeenCalledWith(1);
 
     const gatewayRuntime = await runEnsureConfigReady(["gateway", "start"]);
@@ -937,7 +937,7 @@ describe("ensureConfigReady", () => {
   });
 
   it("runs doctor migration flow only once per module instance", async () => {
-    writeLegacyTaskSidecarMarker(useTempOpenClawHome());
+    writeLegacyTaskSidecarMarker(useTempAforaHome());
     const runtimeA = makeRuntime();
     const runtimeB = makeRuntime();
 
@@ -947,13 +947,13 @@ describe("ensureConfigReady", () => {
   });
 
   it("still runs doctor flow when stdout suppression is enabled", async () => {
-    writeLegacyTaskSidecarMarker(useTempOpenClawHome());
+    writeLegacyTaskSidecarMarker(useTempAforaHome());
     await runEnsureConfigReady(["message"], true);
     expect(loadAndMaybeMigrateDoctorConfigMock).toHaveBeenCalledTimes(1);
   });
 
   it("prevents preflight note noise when suppression is enabled", async () => {
-    writeLegacyTaskSidecarMarker(useTempOpenClawHome());
+    writeLegacyTaskSidecarMarker(useTempAforaHome());
     loadAndMaybeMigrateDoctorConfigMock.mockImplementation(async () => {
       note("Doctor warnings", "Config warnings");
       return {
@@ -968,7 +968,7 @@ describe("ensureConfigReady", () => {
   });
 
   it("allows preflight note noise when suppression is not enabled", async () => {
-    writeLegacyTaskSidecarMarker(useTempOpenClawHome());
+    writeLegacyTaskSidecarMarker(useTempAforaHome());
     loadAndMaybeMigrateDoctorConfigMock.mockImplementation(async () => {
       note("Doctor warnings", "Config warnings");
       return {
@@ -983,7 +983,7 @@ describe("ensureConfigReady", () => {
   });
 
   it("does not suppress unrelated concurrent stdout writes while suppressing preflight notes", async () => {
-    writeLegacyTaskSidecarMarker(useTempOpenClawHome());
+    writeLegacyTaskSidecarMarker(useTempAforaHome());
     let releasePreflight: (() => void) | undefined;
     let preflightStarted: (() => void) | undefined;
     const preflightStartedPromise = new Promise<void>((resolve) => {

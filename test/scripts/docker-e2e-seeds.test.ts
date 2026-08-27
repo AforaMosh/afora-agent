@@ -35,7 +35,7 @@ describe("Docker E2E seed scripts", () => {
   it("keeps cron MCP cleanup config wired to its probe server artifacts", () => {
     const source = readScript("scripts/e2e/cron-mcp-cleanup-seed.ts");
 
-    expect(source).toContain('process.title = "openclaw-cron-mcp-cleanup-probe"');
+    expect(source).toContain('process.title = "afora-cron-mcp-cleanup-probe"');
     expect(source).toContain('const probeDir = path.join(stateDir, "cron-mcp-cleanup")');
     expect(source).toContain('const serverPath = path.join(probeDir, "probe-server.mjs")');
     expect(source).toContain("await fs.rm(pidsPath, { force: true })");

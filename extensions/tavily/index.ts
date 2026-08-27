@@ -1,5 +1,5 @@
-// Tavily plugin entrypoint registers its OpenClaw integration.
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+// Tavily plugin entrypoint registers its Afora integration.
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import { createTavilyExtractTool } from "./src/tavily-extract-tool.js";
 import { createTavilyWebSearchProvider } from "./src/tavily-search-provider.js";
 import { createTavilySearchTool } from "./src/tavily-search-tool.js";

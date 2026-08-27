@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
-import { buildPluginConfigSchema } from "openclaw/plugin-sdk/plugin-entry";
+import { buildPluginConfigSchema } from "afora-agent/plugin-sdk/plugin-entry";
 import { describe, expect, it } from "vitest";
 import { AcpxPluginConfigSchema } from "./config-schema.js";
 import { resolveAcpxPluginConfig, resolveAcpxPluginRoot } from "./config.js";
@@ -20,7 +20,7 @@ function expectedMcpServerArgs(params: { sourceEntry: string; distEntry: string 
 
 describe("embedded acpx plugin config", () => {
   it("resolves workspace stateDir and cwd by default", () => {
-    const workspaceDir = path.resolve("/tmp/openclaw-acpx");
+    const workspaceDir = path.resolve("/tmp/afora-acpx");
     const resolved = resolveAcpxPluginConfig({
       rawConfig: undefined,
       workspaceDir,
@@ -40,7 +40,7 @@ describe("embedded acpx plugin config", () => {
       rawConfig: {
         timeoutSeconds: 300,
       },
-      workspaceDir: "/tmp/openclaw-acpx",
+      workspaceDir: "/tmp/afora-acpx",
     });
 
     expect(resolved.timeoutSeconds).toBe(300);
@@ -54,7 +54,7 @@ describe("embedded acpx plugin config", () => {
           codex: { command: "codex custom-acp" },
         },
       },
-      workspaceDir: "/tmp/openclaw-acpx",
+      workspaceDir: "/tmp/afora-acpx",
     });
 
     expect(resolved.agents).toEqual({
@@ -77,7 +77,7 @@ describe("embedded acpx plugin config", () => {
           },
         },
       },
-      workspaceDir: "/tmp/openclaw-acpx",
+      workspaceDir: "/tmp/afora-acpx",
     });
 
     expect(resolved.agents).toEqual({
@@ -96,7 +96,7 @@ describe("embedded acpx plugin config", () => {
           },
         },
       },
-      workspaceDir: "/tmp/openclaw-acpx",
+      workspaceDir: "/tmp/afora-acpx",
     });
 
     expect(resolved.agents).toEqual({
@@ -111,7 +111,7 @@ describe("embedded acpx plugin config", () => {
           simple: { command: "simple-acp" },
         },
       },
-      workspaceDir: "/tmp/openclaw-acpx",
+      workspaceDir: "/tmp/afora-acpx",
     });
 
     expect(resolved.agents).toEqual({
@@ -124,7 +124,7 @@ describe("embedded acpx plugin config", () => {
       rawConfig: {
         probeAgent: "  OpenCode  ",
       },
-      workspaceDir: "/tmp/openclaw-acpx",
+      workspaceDir: "/tmp/afora-acpx",
     });
 
     expect(resolved.probeAgent).toBe("OpenCode");
@@ -136,7 +136,7 @@ describe("embedded acpx plugin config", () => {
         rawConfig: {
           probeAgent: "",
         },
-        workspaceDir: "/tmp/openclaw-acpx",
+        workspaceDir: "/tmp/afora-acpx",
       }),
     ).toThrow(/probeAgent must be a non-empty string/);
   });
@@ -146,10 +146,10 @@ describe("embedded acpx plugin config", () => {
       rawConfig: {
         pluginToolsMcpBridge: true,
       },
-      workspaceDir: "/tmp/openclaw-acpx",
+      workspaceDir: "/tmp/afora-acpx",
     });
 
-    const server = resolved.mcpServers["openclaw-plugin-tools"];
+    const server = resolved.mcpServers["afora-plugin-tools"];
     expect(server).toEqual({
       command: process.execPath,
       args: expectedMcpServerArgs({
@@ -159,20 +159,20 @@ describe("embedded acpx plugin config", () => {
     });
   });
 
-  it("injects the built-in OpenClaw tools MCP server only when explicitly enabled", () => {
+  it("injects the built-in Afora tools MCP server only when explicitly enabled", () => {
     const resolved = resolveAcpxPluginConfig({
       rawConfig: {
-        openClawToolsMcpBridge: true,
+        aforaToolsMcpBridge: true,
       },
-      workspaceDir: "/tmp/openclaw-acpx",
+      workspaceDir: "/tmp/afora-acpx",
     });
 
-    const server = resolved.mcpServers["openclaw-tools"];
+    const server = resolved.mcpServers["afora-tools"];
     expect(server).toEqual({
       command: process.execPath,
       args: expectedMcpServerArgs({
-        sourceEntry: "src/mcp/openclaw-tools-serve.ts",
-        distEntry: "dist/mcp/openclaw-tools-serve.js",
+        sourceEntry: "src/mcp/afora-tools-serve.ts",
+        distEntry: "dist/mcp/afora-tools-serve.js",
       }),
     });
   });
@@ -187,7 +187,7 @@ describe("embedded acpx plugin config", () => {
   it("keeps the runtime json schema in sync with the manifest config schema", () => {
     const pluginRoot = resolveAcpxPluginRoot();
     const manifest = JSON.parse(
-      fs.readFileSync(path.join(pluginRoot, "openclaw.plugin.json"), "utf8"),
+      fs.readFileSync(path.join(pluginRoot, "afora.plugin.json"), "utf8"),
     ) as { configSchema?: unknown };
 
     expect(buildPluginConfigSchema(AcpxPluginConfigSchema).jsonSchema).toEqual(

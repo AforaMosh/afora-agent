@@ -57,7 +57,7 @@ function createPage(
     basePath: "",
     gateway,
   } as unknown as ApplicationContext);
-  const page = document.createElement("openclaw-approvals-page") as TestApprovalsPage;
+  const page = document.createElement("afora-approvals-page") as TestApprovalsPage;
   provider.append(page);
   document.body.append(provider);
   return {
@@ -99,7 +99,7 @@ describe("ApprovalsPage", () => {
     expect(request).toHaveBeenNthCalledWith(1, "approval.history", { limit: 50 });
     const docsLink = page.querySelector<HTMLAnchorElement>(".settings-page__intro a");
     expect(docsLink?.textContent?.trim()).toBe("Learn more");
-    expect(docsLink?.href).toBe("https://docs.openclaw.ai/tools/exec-approvals");
+    expect(docsLink?.href).toBe("https://docs.afora.ai/tools/exec-approvals");
     expect(page.querySelectorAll(".approval-history-table tbody tr")).toHaveLength(1);
     expect(page.querySelector(".approval-history-table")?.textContent).toContain("agent:main:test");
     expect(page.querySelector(".approval-history-table")?.textContent).toContain("echo first");

@@ -2,11 +2,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import {
-  closeOpenClawStateDatabaseForTest,
+  closeAforaStateDatabaseForTest,
   createChannelIngressQueueForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import { closeOpenClawAgentDatabasesForTest } from "openclaw/plugin-sdk/sqlite-runtime-testing";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import { closeAforaAgentDatabasesForTest } from "afora-agent/plugin-sdk/sqlite-runtime-testing";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
 import { expect, vi } from "vitest";
 import type { createZalouserIngressMonitor } from "./ingress.js";
 import type { ZaloInboundMessage } from "./types.js";
@@ -63,11 +63,11 @@ export async function withZalouserIngressTestQueue<T>(
   fn: (queue: ZalouserTestQueue) => Promise<T>,
 ): Promise<T> {
   const createdDir = await fs.mkdtemp(
-    path.join(resolvePreferredOpenClawTmpDir(), "openclaw-zalouser-ingress-"),
+    path.join(resolvePreferredAforaTmpDir(), "afora-zalouser-ingress-"),
   );
   const stateDir = await fs.realpath(createdDir);
-  const previousStateDir = process.env.OPENCLAW_STATE_DIR;
-  process.env.OPENCLAW_STATE_DIR = stateDir;
+  const previousStateDir = process.env.AFORA_STATE_DIR;
+  process.env.AFORA_STATE_DIR = stateDir;
   const queue = createChannelIngressQueueForTests<ZalouserTestIngressPayload>({
     channelId: "zalouser",
     accountId: "default",
@@ -78,16 +78,16 @@ export async function withZalouserIngressTestQueue<T>(
   } finally {
     // Agent close releases leases through shared state; closing shared state first
     // can reopen it during teardown and leave Windows handles under the state dir.
-    // Both closes must run before OPENCLAW_STATE_DIR is restored: cached agent
+    // Both closes must run before AFORA_STATE_DIR is restored: cached agent
     // databases captured the child env, and lease release after restoration would
     // write through the parent fixture's shared state instead.
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(stateDir, { recursive: true, force: true, maxRetries: 20, retryDelay: 25 });
     if (previousStateDir === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.AFORA_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = previousStateDir;
+      process.env.AFORA_STATE_DIR = previousStateDir;
     }
   }
 }

@@ -1,5 +1,5 @@
 import Foundation
-import OpenClawKit
+import AforaKit
 import Photos
 import UIKit
 
@@ -27,7 +27,7 @@ final class PhotoLibraryService: PhotosServicing {
     private static let maxTotalBase64Chars = 340 * 1024
     private static let maxPerPhotoBase64Chars = 300 * 1024
 
-    func latest(params: OpenClawPhotosLatestParams) async throws -> OpenClawPhotosLatestPayload {
+    func latest(params: AforaPhotosLatestParams) async throws -> AforaPhotosLatestPayload {
         let status = await Self.ensureAuthorization()
         guard PhotoLibraryAccess.canRead(status) else {
             throw NSError(domain: "Photos", code: 1, userInfo: [
@@ -41,7 +41,7 @@ final class PhotoLibraryService: PhotosServicing {
         fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
         let assets = PHAsset.fetchAssets(with: .image, options: fetchOptions)
 
-        var results: [OpenClawPhotoPayload] = []
+        var results: [AforaPhotoPayload] = []
         var remainingBudget = Self.maxTotalBase64Chars
         let maxWidth = params.maxWidth.flatMap { $0 > 0 ? $0 : nil } ?? 1600
         let quality = params.quality.map { max(0.1, min(1.0, $0)) } ?? 0.85
@@ -68,7 +68,7 @@ final class PhotoLibraryService: PhotosServicing {
             }
         }
 
-        return OpenClawPhotosLatestPayload(photos: results)
+        return AforaPhotosLatestPayload(photos: results)
     }
 
     private static func ensureAuthorization() async -> PHAuthorizationStatus {
@@ -80,7 +80,7 @@ final class PhotoLibraryService: PhotosServicing {
         _ asset: PHAsset,
         maxWidth: Int,
         quality: Double,
-        formatter: ISO8601DateFormatter) throws -> OpenClawPhotoPayload
+        formatter: ISO8601DateFormatter) throws -> AforaPhotoPayload
     {
         let manager = PHImageManager.default()
         let options = PHImageRequestOptions()
@@ -117,7 +117,7 @@ final class PhotoLibraryService: PhotosServicing {
             maxBase64Chars: maxPerPhotoBase64Chars)
 
         let created = asset.creationDate.map { formatter.string(from: $0) }
-        return OpenClawPhotoPayload(
+        return AforaPhotoPayload(
             format: "jpeg",
             base64: data.base64EncodedString(),
             width: Int(finalImage.size.width),

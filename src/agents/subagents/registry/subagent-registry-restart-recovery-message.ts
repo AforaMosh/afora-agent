@@ -1,5 +1,5 @@
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
-import { readStringValue } from "@openclaw/normalization-core/string-coerce";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
+import { readStringValue } from "@afora/normalization-core/string-coerce";
 
 export function readSubagentRecoveryTranscriptMessage(
   message: unknown,

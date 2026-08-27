@@ -168,7 +168,7 @@ describe("realtime Talk live QA producer", () => {
   it("builds catalog-compatible evidence for the live scenario", async () => {
     const options = await makeOptions();
     const evidence = buildRealtimeTalkLiveEvidence({
-      env: { OPENCLAW_QA_REF: "test-ref" },
+      env: { AFORA_QA_REF: "test-ref" },
       options,
       result: {
         details: "proof passed",
@@ -195,13 +195,13 @@ describe("realtime Talk live QA options", () => {
     expect(
       parseRealtimeTalkLiveOptions([
         "--repo-root",
-        "/tmp/openclaw",
+        "/tmp/afora",
         "--artifact-base",
         ".artifacts/qa-e2e/realtime-talk",
       ]),
     ).toEqual({
-      artifactBase: "/tmp/openclaw/.artifacts/qa-e2e/realtime-talk",
-      repoRoot: "/tmp/openclaw",
+      artifactBase: "/tmp/afora/.artifacts/qa-e2e/realtime-talk",
+      repoRoot: "/tmp/afora",
     });
   });
 

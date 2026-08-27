@@ -35,7 +35,7 @@ async function writeInstallableSkill(workspaceDir: string, name: string): Promis
     `---
 name: ${name}
 description: test skill
-metadata: {"openclaw":{"install":[{"id":"deps","kind":"node","package":"example-package"}]}}
+metadata: {"afora":{"install":[{"id":"deps","kind":"node","package":"example-package"}]}}
 ---
 
 # ${name}
@@ -59,7 +59,7 @@ async function writeDangerousInstallableSkill(workspaceDir: string, name: string
 function loadTestWorkspaceSkillEntries(workspaceDir: string): SkillEntry[] {
   const skills = loadSkillsFromDirSafe({
     dir: path.join(workspaceDir, "skills"),
-    source: "openclaw-workspace",
+    source: "afora-workspace",
   }).skills;
   return skills.map((skill) => {
     const frontmatter =
@@ -87,7 +87,7 @@ function lastRunCommandCall(): unknown[] | undefined {
   return calls[calls.length - 1];
 }
 
-const workspaceSuite = createFixtureSuite("openclaw-skills-install-");
+const workspaceSuite = createFixtureSuite("afora-skills-install-");
 
 beforeAll(async () => {
   await workspaceSuite.setup();
@@ -104,9 +104,9 @@ async function withWorkspaceCase(
 ): Promise<void> {
   const workspaceDir = await workspaceSuite.createCaseDir("case");
   const stateDir = path.join(workspaceDir, "state");
-  const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
+  const envSnapshot = captureEnv(["AFORA_STATE_DIR"]);
   try {
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+    process.env.AFORA_STATE_DIR = stateDir;
     await run({ workspaceDir, stateDir });
   } finally {
     envSnapshot.restore();
@@ -120,9 +120,9 @@ describe("installSkill before_install hooks", () => {
     skillsInstallTesting.setDepsForTest({
       loadWorkspaceSkills: loadTestWorkspaceSkillEntries,
       resolveNodeInstallStateDir: () => {
-        const stateDir = process.env.OPENCLAW_STATE_DIR;
+        const stateDir = process.env.AFORA_STATE_DIR;
         if (!stateDir) {
-          throw new Error("OPENCLAW_STATE_DIR missing in skills install test");
+          throw new Error("AFORA_STATE_DIR missing in skills install test");
         }
         return stateDir;
       },
@@ -136,7 +136,7 @@ describe("installSkill before_install hooks", () => {
     });
   });
 
-  it("runs npm node installs with an OpenClaw-managed user prefix", async () => {
+  it("runs npm node installs with an Afora-managed user prefix", async () => {
     await withWorkspaceCase(async ({ workspaceDir, stateDir }) => {
       await writeInstallableSkill(workspaceDir, "node-prefix-skill");
 
@@ -160,10 +160,10 @@ describe("installSkill before_install hooks", () => {
   });
 
   it("keeps the default npm prefix out of env-overridden state paths", () => {
-    const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR", "OPENCLAW_CONFIG_PATH"]);
+    const envSnapshot = captureEnv(["AFORA_STATE_DIR", "AFORA_CONFIG_PATH"]);
     try {
-      process.env.OPENCLAW_STATE_DIR = "/tmp/untrusted-state";
-      process.env.OPENCLAW_CONFIG_PATH = "/tmp/untrusted-config/openclaw.json";
+      process.env.AFORA_STATE_DIR = "/tmp/untrusted-state";
+      process.env.AFORA_CONFIG_PATH = "/tmp/untrusted-config/afora.json";
 
       expect(
         skillsInstallTesting.resolveDefaultNodeInstallStateDir({
@@ -171,7 +171,7 @@ describe("installSkill before_install hooks", () => {
           homedir: () => "/Users/tester",
           platform: "darwin",
         }),
-      ).toBe("/Users/tester/.openclaw");
+      ).toBe("/Users/tester/.afora");
     } finally {
       envSnapshot.restore();
     }
@@ -180,12 +180,12 @@ describe("installSkill before_install hooks", () => {
   it("uses a fixed system state root for root npm installs", () => {
     expect(
       skillsInstallTesting.resolveDefaultNodeInstallStateDir({
-        cwd: "/workspace/openclaw",
+        cwd: "/workspace/afora",
         getuid: () => 0,
         homedir: () => "/root",
         platform: "linux",
       }),
-    ).toBe("/var/lib/openclaw");
+    ).toBe("/var/lib/afora");
   });
 
   it("surfaces plugin hook findings from before_install", async () => {
@@ -231,7 +231,7 @@ describe("installSkill before_install hooks", () => {
         | undefined;
       expect(payload?.targetName).toBe("policy-skill");
       expect(payload?.targetType).toBe("skill");
-      expect(payload?.origin).toBe("openclaw-workspace");
+      expect(payload?.origin).toBe("afora-workspace");
       expect(payload?.sourcePath).toContain("policy-skill");
       expect(payload?.sourcePathKind).toBe("directory");
       expect(payload?.request).toEqual({
@@ -245,7 +245,7 @@ describe("installSkill before_install hooks", () => {
       expect(payload?.skill?.installSpec?.kind).toBe("node");
       expect(payload?.skill?.installSpec?.package).toBe("example-package");
       expect(handlerCall?.[1]).toEqual({
-        origin: "openclaw-workspace",
+        origin: "afora-workspace",
         targetType: "skill",
         requestKind: "skill-install",
       });

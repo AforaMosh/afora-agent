@@ -1,7 +1,7 @@
 // Persists runtime tool-schema quarantines in the shared SQLite-backed core
 // plugin-state store so health surfaces can see failures from any live
 // runtime process.
-import { hasNonEmptyString as isNonEmptyString } from "@openclaw/normalization-core/string-coerce";
+import { hasNonEmptyString as isNonEmptyString } from "@afora/normalization-core/string-coerce";
 import {
   createRuntimeHealthRecordEnvelope,
   createRuntimeHealthStore,

@@ -4,16 +4,16 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../src/config/types.openclaw.js";
+import type { AforaConfig } from "../src/config/types.afora.js";
 import {
   connectGatewayClient,
   disconnectGatewayClient,
   getGatewayE2ePortBlock,
 } from "../src/gateway/test-helpers.e2e.js";
 import {
-  createOpenClawTestInstance,
-  type OpenClawTestInstance,
-} from "./helpers/openclaw-test-instance.js";
+  createAforaTestInstance,
+  type AforaTestInstance,
+} from "./helpers/afora-test-instance.js";
 
 const PLUGIN_ID = "cron-registry-owner-proof";
 const SCHEDULE_METHOD = `${PLUGIN_ID}.schedule`;
@@ -68,7 +68,7 @@ type CronListPage = {
   jobs: CronJobView[];
 };
 
-const instances: OpenClawTestInstance[] = [];
+const instances: AforaTestInstance[] = [];
 const cleanupDirs: string[] = [];
 const modelServers: MockModelServer[] = [];
 
@@ -186,7 +186,7 @@ async function writeBundledSchedulerPlugin(bundledRoot: string): Promise<void> {
   const pluginDir = path.join(bundledRoot, PLUGIN_ID);
   await mkdir(pluginDir, { recursive: true });
   await writeFile(
-    path.join(pluginDir, "openclaw.plugin.json"),
+    path.join(pluginDir, "afora.plugin.json"),
     `${JSON.stringify(
       {
         id: PLUGIN_ID,
@@ -267,7 +267,7 @@ describe("plugin cron registry ownership e2e", () => {
     "keeps recurring startup-plugin jobs through workspace registry churn",
     { timeout: E2E_TIMEOUT_MS },
     async () => {
-      const fixtureDir = await mkdtemp(path.join(tmpdir(), "openclaw-cron-owner-e2e-"));
+      const fixtureDir = await mkdtemp(path.join(tmpdir(), "afora-cron-owner-e2e-"));
       cleanupDirs.push(fixtureDir);
       const bundledRoot = path.join(fixtureDir, "bundled");
       const mainWorkspace = path.join(fixtureDir, "workspace-main");
@@ -296,7 +296,7 @@ describe("plugin cron registry ownership e2e", () => {
           defaults: {
             workspace: mainWorkspace,
             model: { primary: modelRef },
-            models: { [modelRef]: { agentRuntime: { id: "openclaw" } } },
+            models: { [modelRef]: { agentRuntime: { id: "afora" } } },
             skills: [],
           },
           list: [
@@ -339,19 +339,19 @@ describe("plugin cron registry ownership e2e", () => {
             },
           },
         },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       const customPort = await getGatewayE2ePortBlock();
-      const instance = await createOpenClawTestInstance({
+      const instance = await createAforaTestInstance({
         name: "plugin-cron-registry-owner",
         port: customPort,
         config,
         env: {
-          OPENCLAW_BUNDLED_PLUGINS_DIR: bundledRoot,
-          OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
-          OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
-          OPENCLAW_SKIP_CRON: undefined,
-          OPENCLAW_SKIP_PROVIDERS: undefined,
-          OPENCLAW_TEST_MINIMAL_GATEWAY: undefined,
+          AFORA_BUNDLED_PLUGINS_DIR: bundledRoot,
+          AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
+          AFORA_DISABLE_BUNDLED_PLUGINS: undefined,
+          AFORA_SKIP_CRON: undefined,
+          AFORA_SKIP_PROVIDERS: undefined,
+          AFORA_TEST_MINIMAL_GATEWAY: undefined,
         },
       });
       instances.push(instance);
@@ -374,7 +374,7 @@ describe("plugin cron registry ownership e2e", () => {
         }>("cron.status", {});
         expect(cronStatus).toMatchObject({ enabled: true, storage: "sqlite" });
         expect(cronStatus.sqlitePath).toBe(
-          path.join(instance.stateDir, "state", "openclaw.sqlite"),
+          path.join(instance.stateDir, "state", "afora.sqlite"),
         );
 
         const ownerResult = await client.request<ScheduleResult>(SCHEDULE_METHOD, {

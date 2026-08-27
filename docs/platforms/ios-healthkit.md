@@ -9,7 +9,7 @@ title: "HealthKit summaries"
 
 # HealthKit summaries
 
-OpenClaw can request a read-only summary of the current calendar day from a
+Afora can request a read-only summary of the current calendar day from a
 connected iPhone or iPad node. The device computes the aggregate on-device and returns
 only steps, sleep duration, average resting heart rate, and workout
 count/duration. Individual HealthKit samples, sources, metadata, clinical
@@ -20,12 +20,12 @@ authorization on the Gateway.
 
 ## Requirements
 
-- An iPhone or iPad running the OpenClaw iOS app where HealthKit reports health data as
+- An iPhone or iPad running the Afora iOS app where HealthKit reports health data as
   available.
 - A connected and approved iOS node. See [iOS app setup](/platforms/ios).
 - A current Gateway that can reach the iOS node.
 - Readable Health data for any metrics you expect to see. An Apple Watch can
-  contribute data to the Apple Health store, but the OpenClaw watchOS app is
+  contribute data to the Apple Health store, but the Afora watchOS app is
   not required for HealthKit summaries.
 
 ## Enable access
@@ -33,7 +33,7 @@ authorization on the Gateway.
 ### 1. Authorize the Gateway command
 
 Add `health.summary` to the existing `gateway.nodes.commands.allow` array in
-`openclaw.json`. Preserve any commands already present:
+`afora.json`. Preserve any commands already present:
 
 ```json5
 {
@@ -56,25 +56,25 @@ In the iOS app:
 1. Open **Settings -> Permissions** and find **Apple Health Summaries** in the
    always-visible **Apple Health** section.
 2. Tap **Enable Apple Health Summaries**.
-3. Read the disclosure, then choose which Health categories OpenClaw may read
+3. Read the disclosure, then choose which Health categories Afora may read
    in Apple's permission sheet.
 
-The switch records your explicit OpenClaw sharing choice. It does not claim
+The switch records your explicit Afora sharing choice. It does not claim
 that Apple granted every requested category.
 
 Enabling Health summaries adds `health.summary` to the node's declared command
 surface. Approve the resulting node pairing update:
 
 ```bash
-openclaw nodes pending
-openclaw nodes approve <requestId>
+afora nodes pending
+afora nodes approve <requestId>
 ```
 
 Then verify that the connected iOS device exposes an effective `health.summary`
 command:
 
 ```bash
-openclaw nodes describe --node "<iOS device name>"
+afora nodes describe --node "<iOS device name>"
 ```
 
 ## Request today's summary
@@ -83,7 +83,7 @@ Only `today` is supported. It covers local midnight through the request time,
 using the iOS device's current calendar and time zone.
 
 ```bash
-openclaw nodes invoke \
+afora nodes invoke \
   --node "<iOS device name>" \
   --command health.summary \
   --params '{"period":"today"}' \
@@ -125,12 +125,12 @@ calculated, so the same minute is not counted twice.
 - The requested aggregate leaves the device through your Gateway. When an agent
   requests it, the aggregate reaches the configured AI provider and may remain
   in chat history. A direct CLI invocation returns it to the CLI operator.
-- OpenClaw requests read access only. It cannot add or modify Health data.
-- OpenClaw reads HealthKit only when `health.summary` is invoked. There is no
+- Afora requests read access only. It cannot add or modify Health data.
+- Afora reads HealthKit only when `health.summary` is invoked. There is no
   background health ingestion.
 - HealthKit deliberately does not reveal whether read access was denied. A
   missing metric can mean denied access, no matching samples, or an unavailable
-  data type. OpenClaw cannot distinguish those cases.
+  data type. Afora cannot distinguish those cases.
 - The summary is for personal health and fitness context, not diagnosis or
   medical advice.
 
@@ -144,8 +144,8 @@ surface. You can also remove `health.summary` from
 ### Command is not declared by the node
 
 Confirm Apple Health summaries are enabled in the iOS app and the device is connected.
-Run `openclaw nodes pending` and approve any capability update, then inspect
-`openclaw nodes describe --node "<iOS device name>"` again.
+Run `afora nodes pending` and approve any capability update, then inspect
+`afora nodes describe --node "<iOS device name>"` again.
 
 ### Command requires explicit opt-in
 
@@ -160,7 +160,7 @@ The app-side sharing switch is off. Enable **Apple Health Summaries** under
 ### Summary succeeds but metrics are missing
 
 Open Apple's Health app and confirm that data exists for today. Review
-OpenClaw's access in Apple's Health settings, but do not treat an empty result
+Afora's access in Apple's Health settings, but do not treat an empty result
 as proof that access was denied: HealthKit intentionally hides that distinction.
 
 ### Older ranges fail

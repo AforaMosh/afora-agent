@@ -1,7 +1,7 @@
 /**
  * Identifies messaging tools and send actions during embedded-agent runs.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { getChannelPlugin, normalizeChannelId } from "../channels/plugins/index.js";
 import {
   CHANNEL_MESSAGE_ACTION_NAMES,

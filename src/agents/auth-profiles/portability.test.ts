@@ -80,7 +80,7 @@ describe("auth profile portability", () => {
       expires: Date.now() + 60_000,
       copyToAgents: true,
       oauthRef: {
-        source: "openclaw-credentials",
+        source: "afora-credentials",
         provider: "openai",
         id: "0123456789abcdef0123456789abcdef",
       },

@@ -17,29 +17,29 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("claws inspect extensions", () => {
   beforeEach(() => {
-    vi.stubEnv("OPENCLAW_EXPERIMENTAL_CLAWS", "1");
+    vi.stubEnv("AFORA_EXPERIMENTAL_CLAWS", "1");
     mocks.preflightClawPackage.mockReset();
   });
 
   it("reports canonical profile extension mappings", async () => {
-    const root = tempDirs.make("openclaw-claws-inspect-extension-");
+    const root = tempDirs.make("afora-claws-inspect-extension-");
     await mkdir(join(root, "profiles"));
     await writeFile(
       join(root, "package.json"),
       JSON.stringify({
         name: "@acme/demo-agent",
         version: "1.2.3",
-        openclaw: { claw: "openclaw.claw.json" },
+        afora: { claw: "afora.claw.json" },
       }),
       "utf8",
     );
     await writeFile(
-      join(root, "openclaw.claw.json"),
+      join(root, "afora.claw.json"),
       JSON.stringify({ schemaVersion: 1, agent: { id: "demo-agent" } }),
       "utf8",
     );
     await writeFile(
-      join(root, "profiles", "openclaw.yml"),
+      join(root, "profiles", "afora.yml"),
       [
         "schemaVersion: 1",
         "agent: {}",
@@ -62,7 +62,7 @@ describe("claws inspect extensions", () => {
       detectedFormat: "claude",
       mapped: ["commands", "skills"],
       unavailable: ["agents"],
-      adapterIdentity: "openclaw/test",
+      adapterIdentity: "afora-agent/test",
     });
     const values: unknown[] = [];
     const runtime = {
@@ -83,7 +83,7 @@ describe("claws inspect extensions", () => {
           detectedFormat: "claude",
           mapped: ["commands", "skills"],
           unavailable: ["agents"],
-          adapterIdentity: "openclaw/test",
+          adapterIdentity: "afora-agent/test",
         },
       ],
     });
@@ -94,20 +94,20 @@ describe("claws inspect extensions", () => {
     expect(runtime.exit).not.toHaveBeenCalled();
   });
 
-  it("rejects a plugin declared by both the portable manifest and OpenClaw profile", async () => {
-    const root = tempDirs.make("openclaw-claws-inspect-extension-collision-");
+  it("rejects a plugin declared by both the portable manifest and Afora profile", async () => {
+    const root = tempDirs.make("afora-claws-inspect-extension-collision-");
     await mkdir(join(root, "profiles"));
     await writeFile(
       join(root, "package.json"),
       JSON.stringify({
         name: "@acme/demo-agent",
         version: "1.2.3",
-        openclaw: { claw: "openclaw.claw.json" },
+        afora: { claw: "afora.claw.json" },
       }),
       "utf8",
     );
     await writeFile(
-      join(root, "openclaw.claw.json"),
+      join(root, "afora.claw.json"),
       JSON.stringify({
         schemaVersion: 1,
         agent: { id: "demo-agent" },
@@ -123,14 +123,14 @@ describe("claws inspect extensions", () => {
       "utf8",
     );
     await writeFile(
-      join(root, "profiles", "openclaw.yml"),
+      join(root, "profiles", "afora.yml"),
       [
         "schemaVersion: 1",
         "agent: {}",
         "extensions:",
         "  - id: audit-tools",
         "    kind: plugin",
-        "    format: openclaw",
+        "    format: afora",
         "    source: clawhub",
         "    ref: '@owner/audit'",
         "    version: 2.0.1",
@@ -143,10 +143,10 @@ describe("claws inspect extensions", () => {
       action: "install",
       integrity: `sha256:${"a".repeat(64)}`,
       installId: "audit",
-      detectedFormat: "openclaw",
+      detectedFormat: "afora",
       mapped: ["skills"],
       unavailable: [],
-      adapterIdentity: "openclaw/test",
+      adapterIdentity: "afora-agent/test",
     });
     const values: unknown[] = [];
     const runtime = {

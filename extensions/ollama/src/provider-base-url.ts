@@ -2,7 +2,7 @@
 import type {
   ModelProviderConfig,
   ModelDefinitionConfig,
-} from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/provider-model-shared";
 
 /** Provider config input type — partial config without required `models`. */
 type OllamaProviderConfigInput = Omit<Partial<ModelProviderConfig>, "models"> & {

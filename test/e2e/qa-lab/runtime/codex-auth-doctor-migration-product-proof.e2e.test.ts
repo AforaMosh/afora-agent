@@ -1,10 +1,10 @@
 // QA Lab product proof for the legacy Codex auth doctor migration matrix.
 import { afterEach, describe, it } from "vitest";
-import { closeOpenClawAgentDatabasesForTest } from "../../../../src/state/openclaw-agent-db.js";
+import { closeAforaAgentDatabasesForTest } from "../../../../src/state/afora-agent-db.js";
 import {
-  createOpenClawTestInstance,
-  type OpenClawTestInstance,
-} from "../../../helpers/openclaw-test-instance.js";
+  createAforaTestInstance,
+  type AforaTestInstance,
+} from "../../../helpers/afora-test-instance.js";
 import {
   type CodexAuthMigrationShape,
   runCodexAuthDoctorMigrationProof,
@@ -26,10 +26,10 @@ const cells: MigrationCell[] = [
   },
 ];
 
-let instance: OpenClawTestInstance | undefined;
+let instance: AforaTestInstance | undefined;
 
 afterEach(async () => {
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
   await instance?.cleanup();
   instance = undefined;
 });
@@ -39,7 +39,7 @@ describe("Codex doctor migration product proof", () => {
     "repairs the $name legacy store into canonical per-agent SQLite",
     { timeout: 180_000 },
     async ({ name, shape }) => {
-      instance = await createOpenClawTestInstance({
+      instance = await createAforaTestInstance({
         name: `qa-codex-doctor-${name}`,
       });
 

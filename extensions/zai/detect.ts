@@ -1,10 +1,10 @@
 // Zai plugin module implements detect behavior.
-import { resolveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
+import { resolveTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
 import {
   createProviderOperationDeadline,
   createProviderOperationTimeoutResolver,
-} from "openclaw/plugin-sdk/provider-http";
-import { readResponseWithLimit } from "openclaw/plugin-sdk/response-limit-runtime";
+} from "afora-agent/plugin-sdk/provider-http";
+import { readResponseWithLimit } from "afora-agent/plugin-sdk/response-limit-runtime";
 import {
   ZAI_CN_BASE_URL,
   ZAI_CODING_CN_BASE_URL,

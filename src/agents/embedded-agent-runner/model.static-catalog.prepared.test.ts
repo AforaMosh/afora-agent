@@ -17,7 +17,7 @@ vi.mock("../../plugins/current-plugin-metadata-snapshot.js", () => ({
 }));
 
 vi.mock("../../plugins/manifest-metadata-scan.js", () => ({
-  listOpenClawPluginManifestMetadata: () => [],
+  listAforaPluginManifestMetadata: () => [],
 }));
 
 vi.mock("../../plugins/manifest-owner-policy.js", () => ({

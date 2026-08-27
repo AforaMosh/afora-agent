@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildInboundMediaNoteProjection } from "../../../../src/auto-reply/media-note.js";
 import { resolveCurrentTurnImages } from "../../../../src/auto-reply/reply/current-turn-images.js";
 import type { MsgContext } from "../../../../src/auto-reply/templating.js";
-import type { OpenClawConfig } from "../../../../src/config/types.js";
+import type { AforaConfig } from "../../../../src/config/types.js";
 import { applyMediaUnderstanding } from "../../../../src/media-understanding/apply.js";
 import type { MediaUnderstandingProvider } from "../../../../src/media-understanding/types.js";
 import { createSolidPngBuffer } from "../../../helpers/image-fixtures.js";
@@ -87,7 +87,7 @@ describe("core vision routing product proof", () => {
   const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
   it("bypasses summarization and sends the real image to an active vision model", async () => {
-    const workspaceDir = tempDirs.make("openclaw-vision-native-");
+    const workspaceDir = tempDirs.make("afora-vision-native-");
     const imagePath = path.join(workspaceDir, "native.png");
     const imageBytes = createSolidPngBuffer(2, 2, { r: 24, g: 96, b: 208 });
     await fs.writeFile(imagePath, imageBytes);
@@ -107,7 +107,7 @@ describe("core vision routing product proof", () => {
           [FALLBACK_PROVIDER]: configuredProvider(FALLBACK_MODEL),
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const providers = {
       [FALLBACK_PROVIDER]: {
         id: FALLBACK_PROVIDER,
@@ -175,7 +175,7 @@ describe("core vision routing product proof", () => {
   });
 
   it("falls back in order, inserts one summary, and suppresses the described raw image", async () => {
-    const workspaceDir = tempDirs.make("openclaw-vision-fallback-");
+    const workspaceDir = tempDirs.make("afora-vision-fallback-");
     const imagePath = path.join(workspaceDir, "fallback.png");
     await fs.writeFile(imagePath, createSolidPngBuffer(2, 2, { r: 208, g: 64, b: 24 }));
     const ctx = createImageContext(imagePath, workspaceDir);
@@ -203,7 +203,7 @@ describe("core vision routing product proof", () => {
           [FALLBACK_PROVIDER]: configuredProvider(FALLBACK_MODEL),
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const providers = {
       [PRIMARY_PROVIDER]: {
         id: PRIMARY_PROVIDER,

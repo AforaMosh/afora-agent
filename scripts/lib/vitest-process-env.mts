@@ -12,7 +12,7 @@ function parseExplicitVitestWorkerBudget(value: string | undefined): number | nu
 
 function resolveExplicitVitestWorkerBudget(env: NodeJS.ProcessEnv): number | null {
   return parseExplicitVitestWorkerBudget(
-    env.OPENCLAW_VITEST_MAX_WORKERS ?? env.OPENCLAW_TEST_WORKERS,
+    env.AFORA_VITEST_MAX_WORKERS ?? env.AFORA_TEST_WORKERS,
   );
 }
 
@@ -21,7 +21,7 @@ function shouldApplyNativeWorkerBudget(env: NodeJS.ProcessEnv): boolean {
     return false;
   }
   return (
-    env.OPENCLAW_TEST_PROJECTS_SERIAL === "1" || resolveExplicitVitestWorkerBudget(env) !== null
+    env.AFORA_TEST_PROJECTS_SERIAL === "1" || resolveExplicitVitestWorkerBudget(env) !== null
   );
 }
 

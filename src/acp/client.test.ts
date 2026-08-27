@@ -83,22 +83,22 @@ function makePermissionRequest(
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("resolveAcpClientSpawnEnv", () => {
-  it("sets OPENCLAW_SHELL marker and preserves existing env values", () => {
+  it("sets AFORA_SHELL marker and preserves existing env values", () => {
     const env = resolveAcpClientSpawnEnv({
       PATH: "/usr/bin",
-      USER: "openclaw",
+      USER: "afora",
     });
 
-    expect(env.OPENCLAW_SHELL).toBe("acp-client");
+    expect(env.AFORA_SHELL).toBe("acp-client");
     expect(env.PATH).toBe("/usr/bin");
-    expect(env.USER).toBe("openclaw");
+    expect(env.USER).toBe("afora");
   });
 
-  it("overrides pre-existing OPENCLAW_SHELL to acp-client", () => {
+  it("overrides pre-existing AFORA_SHELL to acp-client", () => {
     const env = resolveAcpClientSpawnEnv({
-      OPENCLAW_SHELL: "wrong",
+      AFORA_SHELL: "wrong",
     });
-    expect(env.OPENCLAW_SHELL).toBe("acp-client");
+    expect(env.AFORA_SHELL).toBe("acp-client");
   });
 
   it("strips skill-injected env keys when stripKeys is provided", () => {
@@ -117,7 +117,7 @@ describe("resolveAcpClientSpawnEnv", () => {
     );
 
     expect(env.PATH).toBe("/usr/bin");
-    expect(env.OPENCLAW_SHELL).toBe("acp-client");
+    expect(env.AFORA_SHELL).toBe("acp-client");
     expect(env.ANTHROPIC_API_KEY).toBe("anthropic-test-value");
     expect(env.OPENAI_API_KEY).toBeUndefined();
     expect(env.ELEVENLABS_API_KEY).toBeUndefined();
@@ -135,28 +135,28 @@ describe("resolveAcpClientSpawnEnv", () => {
     expect(baseEnv.OPENAI_API_KEY).toBe("openai-original");
   });
 
-  it("preserves OPENCLAW_SHELL even when stripKeys contains it", () => {
+  it("preserves AFORA_SHELL even when stripKeys contains it", () => {
     const openAiApiKeyEnv = envVar("OPENAI", "API", "KEY");
     const env = resolveAcpClientSpawnEnv(
       {
-        OPENCLAW_SHELL: "skill-overridden",
+        AFORA_SHELL: "skill-overridden",
         [openAiApiKeyEnv]: "openai-leaked", // pragma: allowlist secret
       },
-      { stripKeys: new Set(["OPENCLAW_SHELL", openAiApiKeyEnv]) },
+      { stripKeys: new Set(["AFORA_SHELL", openAiApiKeyEnv]) },
     );
 
-    expect(env.OPENCLAW_SHELL).toBe("acp-client");
+    expect(env.AFORA_SHELL).toBe("acp-client");
     expect(env.OPENAI_API_KEY).toBeUndefined();
   });
 
-  it("strips provider auth env vars for the default OpenClaw bridge", () => {
+  it("strips provider auth env vars for the default Afora bridge", () => {
     const stripKeys = new Set(["OPENAI_API_KEY", "GITHUB_TOKEN", "HF_TOKEN"]);
     const env = resolveAcpClientSpawnEnv(
       {
         OPENAI_API_KEY: "openai-secret", // pragma: allowlist secret
         GITHUB_TOKEN: "gh-secret", // pragma: allowlist secret
         HF_TOKEN: "hf-secret", // pragma: allowlist secret
-        OPENCLAW_API_KEY: "keep-me",
+        AFORA_API_KEY: "keep-me",
         PATH: "/usr/bin",
       },
       { stripKeys },
@@ -165,9 +165,9 @@ describe("resolveAcpClientSpawnEnv", () => {
     expect(env.OPENAI_API_KEY).toBeUndefined();
     expect(env.GITHUB_TOKEN).toBeUndefined();
     expect(env.HF_TOKEN).toBeUndefined();
-    expect(env.OPENCLAW_API_KEY).toBe("keep-me");
+    expect(env.AFORA_API_KEY).toBe("keep-me");
     expect(env.PATH).toBe("/usr/bin");
-    expect(env.OPENCLAW_SHELL).toBe("acp-client");
+    expect(env.AFORA_SHELL).toBe("acp-client");
   });
 
   it("strips provider auth env vars case-insensitively", () => {
@@ -175,15 +175,15 @@ describe("resolveAcpClientSpawnEnv", () => {
       {
         OpenAI_Api_Key: "openai-secret", // pragma: allowlist secret
         Github_Token: "gh-secret", // pragma: allowlist secret
-        OPENCLAW_API_KEY: "keep-me",
+        AFORA_API_KEY: "keep-me",
       },
       { stripKeys: new Set(["OPENAI_API_KEY", "GITHUB_TOKEN"]) },
     );
 
     expect(env.OpenAI_Api_Key).toBeUndefined();
     expect(env.Github_Token).toBeUndefined();
-    expect(env.OPENCLAW_API_KEY).toBe("keep-me");
-    expect(env.OPENCLAW_SHELL).toBe("acp-client");
+    expect(env.AFORA_API_KEY).toBe("keep-me");
+    expect(env.AFORA_SHELL).toBe("acp-client");
   });
 
   it("preserves provider auth env vars when no strip keys are provided", () => {
@@ -191,14 +191,14 @@ describe("resolveAcpClientSpawnEnv", () => {
       OPENAI_API_KEY: "openai-secret", // pragma: allowlist secret
       GITHUB_TOKEN: "gh-secret", // pragma: allowlist secret
       HF_TOKEN: "hf-secret", // pragma: allowlist secret
-      OPENCLAW_API_KEY: "keep-me",
+      AFORA_API_KEY: "keep-me",
     });
 
     expect(env.OPENAI_API_KEY).toBe("openai-secret");
     expect(env.GITHUB_TOKEN).toBe("gh-secret");
     expect(env.HF_TOKEN).toBe("hf-secret");
-    expect(env.OPENCLAW_API_KEY).toBe("keep-me");
-    expect(env.OPENCLAW_SHELL).toBe("acp-client");
+    expect(env.AFORA_API_KEY).toBe("keep-me");
+    expect(env.AFORA_SHELL).toBe("acp-client");
   });
 });
 
@@ -207,9 +207,9 @@ describe("shouldStripProviderAuthEnvVarsForAcpServer", () => {
     expect(shouldStripProviderAuthEnvVarsForAcpServer()).toBe(true);
     expect(
       shouldStripProviderAuthEnvVarsForAcpServer({
-        serverCommand: "openclaw",
+        serverCommand: "afora",
         serverArgs: ["acp"],
-        defaultServerCommand: "openclaw",
+        defaultServerCommand: "afora",
         defaultServerArgs: ["acp"],
       }),
     ).toBe(true);
@@ -220,7 +220,7 @@ describe("shouldStripProviderAuthEnvVarsForAcpServer", () => {
       shouldStripProviderAuthEnvVarsForAcpServer({
         serverCommand: "custom-acp-server",
         serverArgs: ["serve"],
-        defaultServerCommand: "openclaw",
+        defaultServerCommand: "afora",
         defaultServerArgs: ["acp"],
       }),
     ).toBe(false);
@@ -263,14 +263,14 @@ describe("buildAcpClientStripKeys", () => {
     expect(stripKeys.has("ANTHROPIC_ADMIN_API_KEY")).toBe(true);
     expect(stripKeys.has("GITHUB_TOKEN")).toBe(true);
     expect(stripKeys.has("HF_TOKEN")).toBe(true);
-    expect(stripKeys.has("OPENCLAW_API_KEY")).toBe(false);
+    expect(stripKeys.has("AFORA_API_KEY")).toBe(false);
   });
 });
 
 describe("resolveAcpClientSpawnInvocation", () => {
   it("keeps non-windows invocation unchanged", () => {
     const resolved = resolveAcpClientSpawnInvocation(
-      { serverCommand: "openclaw", serverArgs: ["acp", "--verbose"] },
+      { serverCommand: "afora", serverArgs: ["acp", "--verbose"] },
       {
         platform: "darwin",
         env: {},
@@ -278,7 +278,7 @@ describe("resolveAcpClientSpawnInvocation", () => {
       },
     );
     expect(resolved).toEqual({
-      command: "openclaw",
+      command: "afora",
       args: ["acp", "--verbose"],
       shell: undefined,
       windowsHide: undefined,
@@ -286,12 +286,12 @@ describe("resolveAcpClientSpawnInvocation", () => {
   });
 
   it("unwraps .cmd shim entrypoint on windows", async () => {
-    const dir = tempDirs.make("openclaw-acp-client-test-");
-    const scriptPath = path.join(dir, "openclaw", "dist", "entry.js");
-    const shimPath = path.join(dir, "openclaw.cmd");
+    const dir = tempDirs.make("afora-acp-client-test-");
+    const scriptPath = path.join(dir, "afora", "dist", "entry.js");
+    const shimPath = path.join(dir, "afora.cmd");
     await mkdir(path.dirname(scriptPath), { recursive: true });
     await writeFile(scriptPath, "console.log('ok')\n", "utf8");
-    await writeFile(shimPath, `@ECHO off\r\n"%~dp0\\openclaw\\dist\\entry.js" %*\r\n`, "utf8");
+    await writeFile(shimPath, `@ECHO off\r\n"%~dp0\\afora\\dist\\entry.js" %*\r\n`, "utf8");
 
     const resolved = resolveAcpClientSpawnInvocation(
       { serverCommand: shimPath, serverArgs: ["acp", "--verbose"] },
@@ -308,8 +308,8 @@ describe("resolveAcpClientSpawnInvocation", () => {
   });
 
   it("fails closed for unresolved wrappers on windows", async () => {
-    const dir = tempDirs.make("openclaw-acp-client-test-");
-    const shimPath = path.join(dir, "openclaw.cmd");
+    const dir = tempDirs.make("afora-acp-client-test-");
+    const shimPath = path.join(dir, "afora.cmd");
     await writeFile(shimPath, "@ECHO off\r\necho wrapper\r\n", "utf8");
 
     expect(() =>
@@ -510,7 +510,7 @@ describe("resolvePermissionRequest", () => {
           rawInput: { name: "search", query: "TODO", path: "src" },
         },
       },
-      cwd: "/tmp/openclaw-acp-cwd",
+      cwd: "/tmp/afora-acp-cwd",
     });
   });
 
@@ -525,7 +525,7 @@ describe("resolvePermissionRequest", () => {
           rawInput: { name: "search", query: "key", path: "../.ssh" },
         },
       }),
-      { prompt, log: () => {}, cwd: "/tmp/openclaw-acp-cwd/workspace" },
+      { prompt, log: () => {}, cwd: "/tmp/afora-acp-cwd/workspace" },
     );
     expect(prompt).toHaveBeenCalledTimes(1);
     expect(prompt).toHaveBeenCalledWith("search", "search: ignored-by-raw-input");
@@ -542,7 +542,7 @@ describe("resolvePermissionRequest", () => {
           rawInput: { name: "search", query: "literal text, path: ~/.ssh" },
         },
       },
-      cwd: "/tmp/openclaw-acp-cwd/workspace",
+      cwd: "/tmp/afora-acp-cwd/workspace",
     });
   });
 
@@ -557,7 +557,7 @@ describe("resolvePermissionRequest", () => {
           rawInput: { name: "search", query: "key" },
         },
       }),
-      { prompt, log: () => {}, cwd: "/tmp/openclaw-acp-cwd/workspace" },
+      { prompt, log: () => {}, cwd: "/tmp/afora-acp-cwd/workspace" },
     );
     expect(prompt).toHaveBeenCalledTimes(1);
     expect(prompt).toHaveBeenCalledWith("search", "search: path: ~/.ssh");
@@ -575,7 +575,7 @@ describe("resolvePermissionRequest", () => {
           locations: [{ path: "src/index.ts" }],
         },
       },
-      cwd: "/tmp/openclaw-acp-cwd",
+      cwd: "/tmp/afora-acp-cwd",
     });
   });
 
@@ -591,7 +591,7 @@ describe("resolvePermissionRequest", () => {
           locations: [{ path: "/etc/passwd" }],
         },
       }),
-      { prompt, log: () => {}, cwd: "/tmp/openclaw-acp-cwd/workspace" },
+      { prompt, log: () => {}, cwd: "/tmp/afora-acp-cwd/workspace" },
     );
     expect(prompt).toHaveBeenCalledTimes(1);
     expect(prompt).toHaveBeenCalledWith("search", "search: TODO");
@@ -642,7 +642,7 @@ describe("resolvePermissionRequest", () => {
           rawInput: { path: "docs/security.md" },
         },
       },
-      cwd: "/tmp/openclaw-acp-cwd",
+      cwd: "/tmp/afora-acp-cwd",
     });
   });
 
@@ -653,10 +653,10 @@ describe("resolvePermissionRequest", () => {
           toolCallId: "tool-read-inside-cwd-file-url",
           title: "read: ignored-by-raw-input",
           status: "pending",
-          rawInput: { path: "file:///tmp/openclaw-acp-cwd/docs/security.md" },
+          rawInput: { path: "file:///tmp/afora-acp-cwd/docs/security.md" },
         },
       },
-      cwd: "/tmp/openclaw-acp-cwd",
+      cwd: "/tmp/afora-acp-cwd",
     });
   });
 
@@ -671,7 +671,7 @@ describe("resolvePermissionRequest", () => {
           rawInput: { path: "../.ssh/id_rsa" },
         },
       }),
-      { prompt, log: () => {}, cwd: "/tmp/openclaw-acp-cwd/workspace" },
+      { prompt, log: () => {}, cwd: "/tmp/afora-acp-cwd/workspace" },
     );
     expect(prompt).toHaveBeenCalledTimes(1);
     expect(prompt).toHaveBeenCalledWith("read", "read: ignored-by-raw-input");

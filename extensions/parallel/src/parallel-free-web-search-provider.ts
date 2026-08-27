@@ -1,5 +1,5 @@
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
-import type { WebSearchProviderPlugin } from "openclaw/plugin-sdk/provider-web-search-contract";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
+import type { WebSearchProviderPlugin } from "afora-agent/plugin-sdk/provider-web-search-contract";
 import { createParallelFreeWebSearchProviderBase } from "./parallel-free-web-search-provider.shared.js";
 import { PARALLEL_FREE_SESSION_ID_MAX_LENGTH } from "./parallel-search-normalize.js";
 // Reuse the paid provider's tool schema — both transports accept the same

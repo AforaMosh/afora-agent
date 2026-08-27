@@ -182,7 +182,7 @@ describe("loginOpenAICodexDeviceCode", () => {
 
   it("requests a device code, polls for authorization, and exchanges OAuth tokens", async () => {
     vi.useFakeTimers();
-    vi.stubEnv("OPENCLAW_VERSION", "2026.3.22");
+    vi.stubEnv("AFORA_VERSION", "2026.3.22");
     try {
       const fetchMock = vi
         .fn<typeof fetch>()
@@ -242,9 +242,9 @@ describe("loginOpenAICodexDeviceCode", () => {
       expect(userCodeRequest[1]?.signal).toBeInstanceOf(AbortSignal);
       expect(userCodeRequest[1]?.headers).toEqual({
         "Content-Type": "application/json",
-        originator: "openclaw",
+        originator: "afora",
         version: "2026.3.22",
-        "User-Agent": "openclaw/2026.3.22",
+        "User-Agent": "afora-agent/2026.3.22",
       });
 
       const deviceTokenRequest = fetchCall(fetchMock, 1);
@@ -253,9 +253,9 @@ describe("loginOpenAICodexDeviceCode", () => {
       expect(deviceTokenRequest[1]?.signal).toBeInstanceOf(AbortSignal);
       expect(deviceTokenRequest[1]?.headers).toEqual({
         "Content-Type": "application/json",
-        originator: "openclaw",
+        originator: "afora",
         version: "2026.3.22",
-        "User-Agent": "openclaw/2026.3.22",
+        "User-Agent": "afora-agent/2026.3.22",
       });
 
       const oauthTokenRequest = fetchCall(fetchMock, 3);
@@ -264,9 +264,9 @@ describe("loginOpenAICodexDeviceCode", () => {
       expect(oauthTokenRequest[1]?.signal).toBeInstanceOf(AbortSignal);
       expect(oauthTokenRequest[1]?.headers).toEqual({
         "Content-Type": "application/x-www-form-urlencoded",
-        originator: "openclaw",
+        originator: "afora",
         version: "2026.3.22",
-        "User-Agent": "openclaw/2026.3.22",
+        "User-Agent": "afora-agent/2026.3.22",
       });
       expect(onVerification).toHaveBeenCalledWith({
         verificationUrl: "https://auth.openai.com/codex/device",

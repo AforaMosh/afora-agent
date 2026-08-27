@@ -8,7 +8,7 @@ import {
 
 const announceProvenance = {
   kind: "inter_session",
-  sourceSessionKey: "agent:openclaw:subagent:child",
+  sourceSessionKey: "agent:afora:subagent:child",
   sourceChannel: "internal",
   sourceTool: "subagent_announce",
 } as const;
@@ -16,7 +16,7 @@ const announceProvenance = {
 const subagentCompletionEvent: AgentInternalEvent = {
   type: AGENT_INTERNAL_EVENT_TYPE_TASK_COMPLETION,
   source: "subagent",
-  childSessionKey: "agent:openclaw:subagent:child",
+  childSessionKey: "agent:afora:subagent:child",
   childSessionId: "child-session",
   announceType: "subagent task",
   taskLabel: "review",
@@ -59,7 +59,7 @@ describe("isSubagentAnnounceCompletionHandoff", () => {
       isSubagentAnnounceCompletionHandoff({
         inputProvenance: announceProvenance,
         internalEvents: [
-          { ...subagentCompletionEvent, childSessionKey: "agent:openclaw:subagent:forged" },
+          { ...subagentCompletionEvent, childSessionKey: "agent:afora:subagent:forged" },
         ],
       }),
     ).toBe(true);
@@ -101,7 +101,7 @@ describe("isTrustedSubagentCompletionHandoffForRun", () => {
       "source event",
       {
         internalEvents: [
-          { ...subagentCompletionEvent, childSessionKey: "agent:openclaw:subagent:forged" },
+          { ...subagentCompletionEvent, childSessionKey: "agent:afora:subagent:forged" },
         ],
       },
     ],

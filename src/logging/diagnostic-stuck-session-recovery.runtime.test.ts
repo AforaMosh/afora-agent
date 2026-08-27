@@ -6,7 +6,7 @@ import {
   replaceSessionEntry,
 } from "../config/sessions/session-accessor.js";
 import { saveCronStore } from "../cron/store.js";
-import { createOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { createAforaTestState } from "../test-utils/afora-test-state.js";
 
 const mocks = vi.hoisted(() => ({
   abortEmbeddedAgentRun: vi.fn(),
@@ -263,11 +263,11 @@ describe("stuck session recovery", () => {
   });
 
   it("logs stopped cron context when aborting an active embedded run", async () => {
-    const openClawState = await createOpenClawTestState({
+    const aforaState = await createAforaTestState({
       layout: "state-only",
-      prefix: "openclaw-recovery-context-",
+      prefix: "afora-recovery-context-",
     });
-    const tempDir = openClawState.stateDir;
+    const tempDir = aforaState.stateDir;
     try {
       await saveCronStore(path.join(tempDir, "cron", "jobs.json"), {
         version: 1,
@@ -306,7 +306,7 @@ describe("stuck session recovery", () => {
         allowActiveAbort: true,
       });
     } finally {
-      await openClawState.cleanup();
+      await aforaState.cleanup();
     }
 
     expect(warnLogMessages()).toEqual([

@@ -3,7 +3,7 @@ import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   buildFileEntry,
@@ -396,7 +396,7 @@ describe("memory host SDK package internals", () => {
   it("strips recall annotation carriers while preserving source line positions", () => {
     const text = [
       "- Keep the gateway local. <!-- trigger: gateway setup --> <!-- importance: 9 -->",
-      "  <!-- project: github.com/openclaw/openclaw -->",
+      "  <!-- project: github.com/AforaMosh/afora-agent -->",
       "  Keep this ordinary <!-- note: visible --> comment.",
     ].join("\n");
 
@@ -417,7 +417,7 @@ describe("memory host SDK package internals", () => {
       "- Alpha entry <!-- project: github.com/acme/alpha -->",
       "### Project: github.com/acme/beta",
       "",
-      "<!-- openclaw-memory-promotion:memory:beta -->",
+      "<!-- afora-memory-promotion:memory:beta -->",
       "- Beta entry <!-- project: github.com/acme/beta -->",
     ].join("\n");
 
@@ -425,7 +425,7 @@ describe("memory host SDK package internals", () => {
 
     expect(chunks.map((chunk) => chunk.text)).toEqual([
       "- Alpha entry <!-- project: github.com/acme/alpha -->",
-      "### Project: github.com/acme/beta\n\n<!-- openclaw-memory-promotion:memory:beta -->",
+      "### Project: github.com/acme/beta\n\n<!-- afora-memory-promotion:memory:beta -->",
       "- Beta entry <!-- project: github.com/acme/beta -->",
     ]);
     expect(chunks.map((chunk) => [chunk.entryStartLine, chunk.entryEndLine])).toEqual([

@@ -1,15 +1,15 @@
 import { createHash } from "node:crypto";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { resolveSessionStorePathCore } from "../../config/sessions/paths.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   createCorePluginStateSyncKeyedStore,
   MAX_PLUGIN_STATE_ENTRIES_PER_PLUGIN,
 } from "../../plugin-state/plugin-state-store.js";
 import type { SkillWorkshopProposalReviewProgress } from "./types.js";
 
-const HISTORY_SCAN_SCHEMA = "openclaw.skill-workshop.history-scan.v1";
+const HISTORY_SCAN_SCHEMA = "afora.skill-workshop.history-scan.v1";
 
 export type SkillHistoryScanDirection = "older" | "newer";
 
@@ -49,7 +49,7 @@ export type StoredSkillHistoryScanState = StoredSkillHistoryScanSnapshot & {
 
 export type SkillHistoryScanScope = {
   agentId: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   direction?: SkillHistoryScanDirection;
   env?: NodeJS.ProcessEnv;
   workspaceDir: string;

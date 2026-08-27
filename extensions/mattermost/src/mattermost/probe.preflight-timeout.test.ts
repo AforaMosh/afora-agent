@@ -1,5 +1,5 @@
 // Exercise the real guard: its timeout owns DNS/proxy preflight as well as fetch.
-import type { LookupFn } from "openclaw/plugin-sdk/ssrf-runtime";
+import type { LookupFn } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { probeMattermost } from "./probe.js";
 
@@ -9,7 +9,7 @@ describe("probeMattermost preflight timeout", () => {
   });
 
   it("times out when preflight lookup stalls before HTTP dispatch", async () => {
-    vi.stubEnv("OPENCLAW_PROXY_ACTIVE", "0");
+    vi.stubEnv("AFORA_PROXY_ACTIVE", "0");
     const stalledLookup: LookupFn = (() => new Promise<never>(() => {})) as LookupFn;
     const fetchSpy = vi.fn(async () => new Response("should not run"));
 

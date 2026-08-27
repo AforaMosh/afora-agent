@@ -1,6 +1,6 @@
 // WhatsApp web auto-reply routing behavior.
 import "./test-helpers.js";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { installWebAutoReplyUnitTestHooks, makeSessionStore } from "./auto-reply.test-harness.js";
 import { buildMentionConfig } from "./auto-reply/mentions.js";
@@ -12,9 +12,9 @@ const runChannelInboundEventMock = vi.hoisted(() =>
   vi.fn(async () => ({ dispatched: false }) as never),
 );
 
-vi.mock("openclaw/plugin-sdk/channel-inbound", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/channel-inbound")>(
-    "openclaw/plugin-sdk/channel-inbound",
+vi.mock("afora-agent/plugin-sdk/channel-inbound", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/channel-inbound")>(
+    "afora-agent/plugin-sdk/channel-inbound",
   );
   return {
     ...actual,
@@ -32,7 +32,7 @@ vi.mock("./auto-reply/monitor/last-route.js", async () => {
   };
 });
 
-function makeCfg(storePath: string): OpenClawConfig {
+function makeCfg(storePath: string): AforaConfig {
   return {
     channels: { whatsapp: { allowFrom: ["*"] } },
     session: { store: storePath },
@@ -48,7 +48,7 @@ function makeReplyLogger() {
   } as unknown as Parameters<typeof createWebOnMessageHandler>[0]["replyLogger"];
 }
 
-function createHandlerForTest(opts: { cfg: OpenClawConfig; replyResolver: unknown }) {
+function createHandlerForTest(opts: { cfg: AforaConfig; replyResolver: unknown }) {
   const backgroundTasks = new Set<Promise<unknown>>();
   const replyLogger = makeReplyLogger();
   const handler = createWebOnMessageHandler({

@@ -1,4 +1,4 @@
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
 /**
  * Wraps stream functions with pre-call message transforms.
  */

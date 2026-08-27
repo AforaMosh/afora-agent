@@ -1,19 +1,19 @@
 // ClickClack plugin module implements non-interactive setup behavior.
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "afora-agent/plugin-sdk/account-id";
 import {
   defineChannelSetupContract,
   type ChannelSetupAdapter,
   type ChannelSetupInput,
-} from "openclaw/plugin-sdk/channel-setup";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+} from "afora-agent/plugin-sdk/channel-setup";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import {
   applyAccountNameToChannelSection,
   moveSingleAccountChannelSectionToDefaultAccount,
   patchScopedAccountConfig,
   prepareScopedSetupConfig,
-} from "openclaw/plugin-sdk/setup";
-import { createSetupInputPresenceValidator } from "openclaw/plugin-sdk/setup-runtime";
+} from "afora-agent/plugin-sdk/setup";
+import { createSetupInputPresenceValidator } from "afora-agent/plugin-sdk/setup-runtime";
 import { resolveClickClackAccountConfig } from "./accounts.js";
 import {
   buildClickClackSetupClaimUrl,
@@ -156,12 +156,12 @@ function formatClickClackSetupCodeClaimError(error: unknown): Error {
 }
 
 export function applyClickClackSetupConfigPatch(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   name?: string;
   patch: Record<string, unknown>;
   clearFields?: readonly string[];
-}): OpenClawConfig {
+}): AforaConfig {
   const accountId = normalizeAccountId(params.accountId);
   const scopedConfig =
     accountId === DEFAULT_ACCOUNT_ID
@@ -187,12 +187,12 @@ export function applyClickClackSetupConfigPatch(params: {
 }
 
 export function applyClickClackCredentialConfig(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   token?: unknown;
   tokenFile?: string;
   useEnv?: boolean;
-}): OpenClawConfig {
+}): AforaConfig {
   const fieldsToClear = params.useEnv
     ? ["token", "tokenFile"]
     : params.tokenFile

@@ -5,7 +5,7 @@ import type {
   RenderedMessageBatchPlan,
 } from "../../channels/message/types.js";
 import type { ReplyToMode } from "../../config/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { formatErrorMessage } from "../errors.js";
 import { resolveOutboundChannelMessageAdapter } from "./channel-resolution.js";
 
@@ -29,7 +29,7 @@ type UnknownSendQueueEntry = {
 export function buildUnknownSendContext(params: {
   entry: UnknownSendQueueEntry;
   payloads: readonly ReplyPayload[];
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }): ChannelMessageUnknownSendContext {
   const { entry } = params;
   return {
@@ -59,7 +59,7 @@ export function buildUnknownSendContext(params: {
 export async function reconcileUnknownQueuedDelivery(params: {
   entry: UnknownSendQueueEntry;
   payloads: readonly ReplyPayload[];
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   warn: (message: string) => void;
 }): Promise<ChannelMessageUnknownSendReconciliationResult | null> {
   const adapter = resolveOutboundChannelMessageAdapter({

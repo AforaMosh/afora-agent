@@ -1,5 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
-import { MEMORY_INDEX_META_TABLE } from "openclaw/plugin-sdk/memory-core-host-engine-storage";
+import { MEMORY_INDEX_META_TABLE } from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resolvePersistedMemoryVectorIndexState } from "./manager-vector-rebuild-state.js";
 

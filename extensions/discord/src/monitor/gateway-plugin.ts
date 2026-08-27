@@ -2,17 +2,17 @@
 import { randomUUID } from "node:crypto";
 import type { Agent as HttpAgent } from "node:http";
 import { Agent as HttpsAgent } from "node:https";
-import type { DiscordAccountConfig } from "openclaw/plugin-sdk/config-contracts";
-import { createNodeProxyAgent } from "openclaw/plugin-sdk/fetch-runtime";
+import type { DiscordAccountConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { createNodeProxyAgent } from "afora-agent/plugin-sdk/fetch-runtime";
 import {
   captureWsEvent,
   resolveEffectiveDebugProxyUrl,
   resolveDebugProxySettings,
-} from "openclaw/plugin-sdk/proxy-capture";
-import { danger, warn } from "openclaw/plugin-sdk/runtime-env";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import { asFiniteNumber } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/proxy-capture";
+import { danger, warn } from "afora-agent/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+import { asFiniteNumber } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import * as ws from "ws";
 import * as discordGateway from "../internal/gateway.js";
 import { createDiscordDnsLookup } from "../network-config.js";
@@ -161,7 +161,7 @@ function shouldLogDiscordGatewayTransportClose(params: {
 }
 
 type ResolveDiscordGatewayIntentsParams = {
-  intentsConfig?: import("openclaw/plugin-sdk/config-contracts").DiscordIntentsConfig;
+  intentsConfig?: import("afora-agent/plugin-sdk/config-contracts").DiscordIntentsConfig;
   voiceEnabled?: boolean;
 };
 
@@ -203,7 +203,7 @@ function createGatewayPlugin(params: {
   runtime?: RuntimeEnv;
   testing?: GatewayPluginTestingOptions;
 }): discordGateway.GatewayPlugin {
-  class OpenClawGatewayPlugin extends discordGateway.GatewayPlugin {
+  class AforaGatewayPlugin extends discordGateway.GatewayPlugin {
     private gatewayInfoUsedFallback = false;
 
     constructor() {
@@ -349,7 +349,7 @@ function createGatewayPlugin(params: {
     }
   }
 
-  return new OpenClawGatewayPlugin();
+  return new AforaGatewayPlugin();
 }
 
 function createDiscordGatewayMetadataFetch(
@@ -417,7 +417,7 @@ export function createDiscordGatewayPlugin(params: {
     options: {
       reconnect: { maxAttempts: 50 },
       intents,
-      // OpenClaw registers its own async interaction listener.
+      // Afora registers its own async interaction listener.
       autoInteractions: false,
     },
     gatewayInfoTimeoutMs,

@@ -4,7 +4,7 @@ import type { JsonSchemaObject } from "../shared/json-schema.types.js";
 import { parseConfigPathArrayIndex } from "../shared/path-array-index.js";
 import type { PluginConfigUiHint } from "./manifest-types.js";
 import { validateJsonSchemaValue } from "./schema-validator.js";
-import type { OpenClawPluginConfigSchema } from "./types.js";
+import type { AforaPluginConfigSchema } from "./types.js";
 
 type Issue = { path: Array<string | number>; message: string };
 
@@ -17,16 +17,16 @@ type ZodSchemaWithToJsonSchema = ZodTypeAny & {
 };
 
 type BuildPluginConfigSchemaOptions = {
-  /** @deprecated Declare top-level `uiHints` in `openclaw.plugin.json`. */
+  /** @deprecated Declare top-level `uiHints` in `afora.plugin.json`. */
   uiHints?: Record<string, PluginConfigUiHint>;
-  safeParse?: OpenClawPluginConfigSchema["safeParse"];
+  safeParse?: AforaPluginConfigSchema["safeParse"];
 };
 
 type BuildJsonPluginConfigSchemaOptions = {
   cacheKey?: string;
-  /** @deprecated Declare top-level `uiHints` in `openclaw.plugin.json`. */
+  /** @deprecated Declare top-level `uiHints` in `afora.plugin.json`. */
   uiHints?: Record<string, PluginConfigUiHint>;
-  safeParse?: OpenClawPluginConfigSchema["safeParse"];
+  safeParse?: AforaPluginConfigSchema["safeParse"];
 };
 
 function error(message: string): SafeParseResult {
@@ -126,7 +126,7 @@ function safeParseJsonSchema(
 export function buildJsonPluginConfigSchema(
   schema: JsonSchemaObject,
   options?: BuildJsonPluginConfigSchemaOptions,
-): OpenClawPluginConfigSchema {
+): AforaPluginConfigSchema {
   const safeParse =
     options?.safeParse ??
     ((value: unknown) =>
@@ -142,7 +142,7 @@ export function buildJsonPluginConfigSchema(
 export function buildPluginConfigSchema(
   schema: ZodTypeAny,
   options?: BuildPluginConfigSchemaOptions,
-): OpenClawPluginConfigSchema {
+): AforaPluginConfigSchema {
   const schemaWithJson = schema as ZodSchemaWithToJsonSchema;
   const safeParse = options?.safeParse ?? ((value) => safeParseRuntimeSchema(schema, value));
   if (typeof schemaWithJson.toJSONSchema === "function") {
@@ -171,7 +171,7 @@ export function buildPluginConfigSchema(
 }
 
 /** Return a schema for plugins that intentionally accept no config keys. */
-export function emptyPluginConfigSchema(): OpenClawPluginConfigSchema {
+export function emptyPluginConfigSchema(): AforaPluginConfigSchema {
   return {
     safeParse(value: unknown): SafeParseResult {
       if (value === undefined) {

@@ -2,18 +2,18 @@
 import type { Stats } from "node:fs";
 import { lstat, mkdir, rmdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { coerceErrorMessage } from "@openclaw/normalization-core";
+import { coerceErrorMessage } from "@afora/normalization-core";
 import { findOverlappingWorkspaceAgentIds } from "../agents/agent-delete-safety.js";
 import { listAgentEntries } from "../agents/agent-scope.js";
 import { transformConfigFileWithRetry } from "../config/config.js";
 import type { AgentConfig } from "../config/types.agents.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolvePathViaExistingAncestorSync } from "../infra/boundary-path.js";
 import { normalizeWindowsPathForComparison } from "../infra/path-guards.js";
 import { DEFAULT_AGENT_ID, normalizeAgentId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { recordAgentProvenance } from "../state/agent-provenance.js";
-import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
+import type { AforaStateDatabaseOptions } from "../state/afora-state-db.js";
 import { resolveUserPath } from "../utils.js";
 import {
   hasUnsupportedMutationActions,
@@ -50,10 +50,10 @@ import {
   type PersistedClawWorkspaceFile,
 } from "./workspace.js";
 
-export const CLAW_ADD_RESULT_SCHEMA_VERSION = "openclaw.clawAddResult.v1" as const;
+export const CLAW_ADD_RESULT_SCHEMA_VERSION = "afora.clawAddResult.v1" as const;
 
-type ConfigCommit = (transform: (config: OpenClawConfig) => OpenClawConfig) => Promise<void>;
-type ClawAddApplyOptions = OpenClawStateDatabaseOptions & {
+type ConfigCommit = (transform: (config: AforaConfig) => AforaConfig) => Promise<void>;
+type ClawAddApplyOptions = AforaStateDatabaseOptions & {
   consentPlanIntegrity?: string;
   resumeRecord?: PersistedClawInstall;
   resumePlan?: ClawAddPlan;
@@ -430,7 +430,7 @@ export async function applyClawAddPlan(
       const existingAgents = listAgentEntries(config);
       const agentsToPreserve: AgentConfig[] =
         existingAgents.length > 0 ? existingAgents : [{ id: DEFAULT_AGENT_ID, default: true }];
-      const configWithPreservedAgents: OpenClawConfig = {
+      const configWithPreservedAgents: AforaConfig = {
         ...config,
         agents: {
           ...config.agents,
@@ -473,7 +473,7 @@ export async function applyClawAddPlan(
           "Workspace " + JSON.stringify(workspace) + " is already assigned to an agent.",
         );
       }
-      const nextConfig: OpenClawConfig = {
+      const nextConfig: AforaConfig = {
         ...config,
         agents: {
           ...config.agents,
@@ -490,7 +490,7 @@ export async function applyClawAddPlan(
     } catch (error) {
       throw new ClawAddMutationError("provenance_failed", coerceErrorMessage(error));
     }
-    if (options.resumePlan && installRecord.schemaVersion === "openclaw.clawInstallRecord.v1") {
+    if (options.resumePlan && installRecord.schemaVersion === "afora.clawInstallRecord.v1") {
       installRecord = persistRecord(plan, {
         ...options,
         status: "pending",

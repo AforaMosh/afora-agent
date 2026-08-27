@@ -2,7 +2,7 @@
 import {
   normalizeTrimmedStringList,
   uniqueStrings,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   QA_BASE_RUNTIME_PLUGIN_IDS,
   QA_CODEX_OPENAI_CATALOG_BASE_URL,

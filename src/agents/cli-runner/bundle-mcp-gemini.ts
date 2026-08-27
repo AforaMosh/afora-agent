@@ -10,7 +10,7 @@ import {
   normalizeBundleMcpServerConfig,
   normalizeMcpStringRecord,
 } from "../bundle-mcp-adapter.js";
-import { withOpenClawMcpCaptureHeader, writeTemporaryBundleMcpJson } from "./bundle-mcp-runtime.js";
+import { withAforaMcpCaptureHeader, writeTemporaryBundleMcpJson } from "./bundle-mcp-runtime.js";
 
 const GEMINI_MCP_SERVER_FIELDS = { strings: ["type"], booleans: ["trust"] } as const;
 
@@ -45,7 +45,7 @@ async function writeGeminiSettings(
   settings: Record<string, unknown>,
   inheritedEnv: Record<string, string> | undefined,
 ): Promise<{ env: Record<string, string>; cleanup: () => Promise<void> }> {
-  const temporary = await writeTemporaryBundleMcpJson("openclaw-gemini-mcp-", settings);
+  const temporary = await writeTemporaryBundleMcpJson("afora-gemini-mcp-", settings);
   return {
     env: { ...inheritedEnv, GEMINI_CLI_SYSTEM_SETTINGS_PATH: temporary.filePath },
     cleanup: temporary.cleanup,
@@ -145,8 +145,8 @@ export async function writeGeminiMcpCaptureSettings(params: {
   }
   const settings = await readJsonObject(existingSettingsPath);
   const temporary = await writeTemporaryBundleMcpJson(
-    "openclaw-gemini-mcp-attempt-",
-    withOpenClawMcpCaptureHeader(settings, params.captureKey),
+    "afora-gemini-mcp-attempt-",
+    withAforaMcpCaptureHeader(settings, params.captureKey),
   );
   return {
     env: {

@@ -4,11 +4,11 @@ import {
   createAliasOnlyPresetAppliers,
   OPENCODE_ZEN_DEFAULT_MODEL,
   resolveAgentModelPrimaryValue,
-  type OpenClawConfig,
+  type AforaConfig,
 } from "./provider-onboard.js";
 
 function expectPrimaryModelChanged(
-  applied: { changed: boolean; next: OpenClawConfig },
+  applied: { changed: boolean; next: AforaConfig },
   primary: string,
 ) {
   expect(applied.changed).toBe(true);
@@ -16,8 +16,8 @@ function expectPrimaryModelChanged(
 }
 
 function expectConfigUnchanged(
-  applied: { changed: boolean; next: OpenClawConfig },
-  cfg: OpenClawConfig,
+  applied: { changed: boolean; next: AforaConfig },
+  cfg: AforaConfig,
 ) {
   expect(applied.changed).toBe(false);
   expect(applied.next).toEqual(cfg);
@@ -28,7 +28,7 @@ describe("createAliasOnlyPresetAppliers", () => {
   const appliers = createAliasOnlyPresetAppliers({ modelRef, alias: "Example" });
 
   it("adds only the alias entry in provider-only mode", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       models: { mode: "merge", providers: {} },
       agents: { defaults: { models: { "other/model": { alias: "Other" } } } },
     };
@@ -44,7 +44,7 @@ describe("createAliasOnlyPresetAppliers", () => {
   });
 
   it("preserves entry fields and alias while replacing the primary", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           model: { primary: "old/model", fallbacks: ["fallback/model"] },
@@ -69,7 +69,7 @@ describe("createAliasOnlyPresetAppliers", () => {
 
 describe("applyOpencodeZenModelDefault", () => {
   it("sets defaults when model is unset", () => {
-    const cfg: OpenClawConfig = { agents: { defaults: {} } };
+    const cfg: AforaConfig = { agents: { defaults: {} } };
     const applied = applyOpencodeZenModelDefault(cfg);
     expectPrimaryModelChanged(applied, OPENCODE_ZEN_DEFAULT_MODEL);
   });
@@ -77,7 +77,7 @@ describe("applyOpencodeZenModelDefault", () => {
   it("overrides existing models", () => {
     const cfg = {
       agents: { defaults: { model: "anthropic/claude-opus-4-6" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const applied = applyOpencodeZenModelDefault(cfg);
     expectPrimaryModelChanged(applied, OPENCODE_ZEN_DEFAULT_MODEL);
   });
@@ -85,13 +85,13 @@ describe("applyOpencodeZenModelDefault", () => {
   it("no-ops when already legacy opencode-zen default", () => {
     const cfg = {
       agents: { defaults: { model: "opencode-zen/claude-opus-4-5" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const applied = applyOpencodeZenModelDefault(cfg);
     expectConfigUnchanged(applied, cfg);
   });
 
   it("preserves fallbacks when setting primary", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           model: {
@@ -112,7 +112,7 @@ describe("applyOpencodeZenModelDefault", () => {
   it("no-ops when already on the current default", () => {
     const cfg = {
       agents: { defaults: { model: OPENCODE_ZEN_DEFAULT_MODEL } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const applied = applyOpencodeZenModelDefault(cfg);
     expectConfigUnchanged(applied, cfg);
   });

@@ -1,4 +1,4 @@
-import type { StreamFn } from "@openclaw/llm-core";
+import type { StreamFn } from "@afora/llm-core";
 /**
  * Anthropic Vertex stream facade.
  * Keeps Vertex-specific provider implementation in the bundled provider plugin

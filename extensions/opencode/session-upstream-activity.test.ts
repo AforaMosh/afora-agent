@@ -43,7 +43,7 @@ afterEach(async () => {
 });
 
 async function installStatefulOpenCode(initialSessions: StatefulOpenCodeSession[]) {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-opencode-activity-"));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "afora-opencode-activity-"));
   temporaryDirectories.push(directory);
   const executable = path.join(directory, "opencode");
   const stateFile = path.join(directory, "state.json");
@@ -532,7 +532,7 @@ describe("OpenCode session upstream activity", () => {
   });
 
   it.runIf(process.platform !== "win32")(
-    "keeps real text mixed with ignored text and suppresses OpenClaw self-echo",
+    "keeps real text mixed with ignored text and suppresses Afora self-echo",
     async () => {
       const session: StatefulOpenCodeSession = {
         id: "ses_a",

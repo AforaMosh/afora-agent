@@ -2,16 +2,16 @@
 // previews, session pull request chips): pinned origin, manual redirects,
 // bounded bodies, and normalized upstream error statuses.
 import { createHash } from "node:crypto";
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
-import { readNonBlankString } from "@openclaw/normalization-core/string-coerce";
+import { asFiniteNumber } from "@afora/normalization-core/number-coercion";
+import { readNonBlankString } from "@afora/normalization-core/string-coerce";
 import { getRuntimeConfigSnapshot } from "../config/runtime-snapshot.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { readResponseWithLimit } from "../infra/http-body.js";
 import {
   assertSecretOwnerAvailable,
   SecretSurfaceUnavailableError,
 } from "../secrets/runtime-degraded-state.js";
-export { isRecord } from "@openclaw/normalization-core/record-coerce";
+export { isRecord } from "@afora/normalization-core/record-coerce";
 
 export const GITHUB_API_ORIGIN = "https://api.github.com";
 export const CONTROL_UI_GITHUB_CREDENTIAL_UNAVAILABLE_MESSAGE =
@@ -52,7 +52,7 @@ export function optionalNumber(record: Record<string, unknown>, key: string): nu
 
 export function githubApiToken(
   env: NodeJS.ProcessEnv = process.env,
-  config: OpenClawConfig | null = getRuntimeConfigSnapshot(),
+  config: AforaConfig | null = getRuntimeConfigSnapshot(),
 ): string | undefined {
   const configured = config?.gateway?.controlUi?.github?.token;
   if (configured !== undefined) {
@@ -76,7 +76,7 @@ export function githubApiToken(
 /** Raw-config inspection for doctor; it never consults process-global runtime degradation state. */
 export function hasConfiguredGitHubApiCredential(
   env: NodeJS.ProcessEnv,
-  config: OpenClawConfig,
+  config: AforaConfig,
 ): boolean {
   return (
     config.gateway?.controlUi?.github?.token !== undefined ||
@@ -99,7 +99,7 @@ export function resolveGitHubApiCredentialScope(env: NodeJS.ProcessEnv = process
 function githubApiHeaders(token?: string): Record<string, string> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
-    "User-Agent": "OpenClaw-Control-UI",
+    "User-Agent": "Afora-Control-UI",
     "X-GitHub-Api-Version": GITHUB_API_VERSION,
   };
   if (token) {

@@ -151,7 +151,7 @@ describe("connection view rendering", () => {
             memoryFreeBytes: 17_179_869_184,
             diskTotalBytes: 994_662_584_320,
             diskAvailableBytes: 497_331_292_160,
-            diskPath: "/Users/operator/.openclaw",
+            diskPath: "/Users/operator/.afora",
           },
         }),
       ),
@@ -203,7 +203,7 @@ describe("connection view rendering", () => {
     expect(disk.querySelector(".config-host__stat-detail")?.textContent?.trim()).toBe(
       "463 GB free of 926 GB",
     );
-    expect(disk.getAttribute("title")).toBe("/Users/operator/.openclaw");
+    expect(disk.getAttribute("title")).toBe("/Users/operator/.afora");
     expect(container.textContent).not.toContain("Uptime");
   });
 

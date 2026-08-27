@@ -1,5 +1,5 @@
 // Post-selection model/auth sanity checks shown during onboarding and agent setup.
-import { normalizeProviderIdForAuth } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderIdForAuth } from "@afora/model-catalog-core/provider-id";
 import {
   resolveAgentDir,
   resolveAgentWorkspaceDir,
@@ -14,7 +14,7 @@ import { publishPreparedModelRuntimeSnapshot } from "../agents/prepared-model-ru
 import { buildProviderAuthRecoveryHint } from "../agents/provider-auth-recovery-hint.js";
 import { canonicalizeProviderModelId } from "../agents/provider-model-route.js";
 import type { ModelApi } from "../config/types.models.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { ProviderModelRouteAuthRequirement } from "../plugin-sdk/provider-model-types.js";
 import type { ProviderAuthResult } from "../plugins/types.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
@@ -53,7 +53,7 @@ type DefaultModelAuthStatus = {
  * onboarding model check and the finalize hatch gating.
  */
 export function resolveDefaultModelAuthStatus(
-  config: OpenClawConfig,
+  config: AforaConfig,
   options?: DefaultModelAuthOptions,
 ): DefaultModelAuthStatus {
   const ref = resolveDefaultModelForAgent({
@@ -139,7 +139,7 @@ type DefaultModelCatalogFacts = {
 
 /** Resolve logical model identity and every physical route represented by a catalog. */
 export function resolveDefaultModelCatalogFacts(
-  config: OpenClawConfig,
+  config: AforaConfig,
   catalog: readonly ModelCatalogEntry[],
   options?: { agentId?: string; routeVariants?: readonly ModelCatalogEntry[] },
 ): DefaultModelCatalogFacts {
@@ -162,7 +162,7 @@ export function resolveDefaultModelCatalogFacts(
 
 /** Warn when the selected default model is unknown or has no usable credentials. */
 export async function warnIfModelConfigLooksOff(
-  config: OpenClawConfig,
+  config: AforaConfig,
   prompter: WizardPrompter,
   options?: DefaultModelAuthOptions & { validateCatalog?: boolean },
 ) {

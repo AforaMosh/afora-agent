@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { HealthCheck, OpenClawConfig } from "openclaw/plugin-sdk/health";
+import type { HealthCheck, AforaConfig } from "afora-agent/plugin-sdk/health";
 import { describe, expect, it, vi } from "vitest";
 import { CODEX_APP_SERVER_VERSION } from "./app-server/version.js";
 import {
@@ -9,7 +9,7 @@ import {
   registerCodexManagedAppServerDoctorChecks,
 } from "./doctor.js";
 
-function config(appServer: Record<string, unknown> = {}): OpenClawConfig {
+function config(appServer: Record<string, unknown> = {}): AforaConfig {
   return {
     agents: {
       defaults: {
@@ -45,7 +45,7 @@ function config(appServer: Record<string, unknown> = {}): OpenClawConfig {
   };
 }
 
-function context(cfg: OpenClawConfig) {
+function context(cfg: AforaConfig) {
   return {
     mode: "lint" as const,
     runtime: {} as never,
@@ -187,7 +187,7 @@ describe("managed Codex doctor check", () => {
   });
 
   it("uses persisted per-agent Computer Use state before selecting the managed command", async () => {
-    const agentDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-doctor-agent-"));
+    const agentDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-doctor-agent-"));
     try {
       await fs.mkdir(path.join(agentDir, "codex-home"));
       await fs.writeFile(
@@ -216,10 +216,10 @@ describe("managed Codex doctor check", () => {
 
   it("still validates the package when any configured agent can select it", async () => {
     const desktopAgentDir = await fs.mkdtemp(
-      path.join(os.tmpdir(), "openclaw-codex-doctor-desktop-agent-"),
+      path.join(os.tmpdir(), "afora-codex-doctor-desktop-agent-"),
     );
     const packageAgentDir = await fs.mkdtemp(
-      path.join(os.tmpdir(), "openclaw-codex-doctor-package-agent-"),
+      path.join(os.tmpdir(), "afora-codex-doctor-package-agent-"),
     );
     try {
       await fs.mkdir(path.join(desktopAgentDir, "codex-home"));
@@ -266,7 +266,7 @@ describe("managed Codex doctor check", () => {
 
   it("ignores managed commands for agents whose effective runtime is not Codex", async () => {
     const desktopAgentDir = await fs.mkdtemp(
-      path.join(os.tmpdir(), "openclaw-codex-doctor-desktop-agent-"),
+      path.join(os.tmpdir(), "afora-codex-doctor-desktop-agent-"),
     );
     try {
       await fs.mkdir(path.join(desktopAgentDir, "codex-home"));
@@ -280,10 +280,10 @@ describe("managed Codex doctor check", () => {
         list: [
           { id: "desktop", agentDir: desktopAgentDir },
           {
-            id: "openclaw",
+            id: "afora",
             model: "anthropic/claude-opus-4-7",
             models: {
-              "anthropic/claude-opus-4-7": { agentRuntime: { id: "openclaw" } },
+              "anthropic/claude-opus-4-7": { agentRuntime: { id: "afora" } },
             },
           },
         ],

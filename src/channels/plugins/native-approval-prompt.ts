@@ -3,7 +3,7 @@
  *
  * Detects loaded or known channels that can render approval prompts natively.
  */
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { listBundledChannelCatalogEntries } from "../bundled-channel-catalog-read.js";
 import { resolveChannelApprovalCapability } from "./approvals.js";
 import type { ChannelPlugin } from "./types.plugin.js";

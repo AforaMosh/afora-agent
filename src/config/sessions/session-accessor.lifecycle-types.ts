@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../types.openclaw.js";
+import type { AforaConfig } from "../types.afora.js";
 import type { SessionStateDeleteSnapshot } from "./session-accessor.sqlite-delete-snapshot.types.js";
 import type { SessionResetBoundaryReason } from "./session-reset-boundary-event.js";
 import type { InternalSessionEntry as SessionEntry } from "./types.js";
@@ -166,7 +166,7 @@ export type SessionEntryLifecycleMutationResult = {
 };
 
 export type DeletedAgentSessionEntryPurgeParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   storeAgentId: string;
   storePath: string;

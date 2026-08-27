@@ -1,5 +1,5 @@
 // Covers OpenRouter-specific extra-params payload and header behavior.
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createOpenRouterSystemCacheWrapper,

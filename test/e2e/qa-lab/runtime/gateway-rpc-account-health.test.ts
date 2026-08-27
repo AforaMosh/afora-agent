@@ -24,8 +24,8 @@ describe("Gateway RPC account health producer", () => {
     expect(config.channels?.["qa-channel"]).toEqual({
       enabled: true,
       baseUrl: "http://127.0.0.1:43125",
-      botUserId: "openclaw",
-      botDisplayName: "OpenClaw QA",
+      botUserId: "afora",
+      botDisplayName: "Afora QA",
       allowFrom: ["*"],
       pollTimeoutMs: 250,
       accounts: {
@@ -49,7 +49,7 @@ describe("Gateway RPC account health producer", () => {
     expect(statusSummaryMentions(status, "qa-channel")).toBe(false);
   });
 
-  it.runIf(process.env.OPENCLAW_QA_REAL_GATEWAY === "1")(
+  it.runIf(process.env.AFORA_QA_REAL_GATEWAY === "1")(
     "proves authenticated health/status RPC and a targeted account config reload",
     async () => {
       const proof = await runGatewayRpcAccountHealthProof(

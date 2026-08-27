@@ -12,7 +12,7 @@ import {
   resetAutoMigrateLegacyStateForTest,
 } from "../infra/state-migrations.doctor.js";
 import { resetAutoMigrateLegacyStateDirForTest } from "../infra/state-migrations.state-dir.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { clearPluginDoctorContractRegistryCache } from "./doctor-contract-registry.test-fixtures.js";
 import { writePersistedInstalledPluginIndexSync } from "./installed-plugin-index-store.js";
 import { clearPluginMetadataLifecycleCaches } from "./plugin-metadata-lifecycle.js";
@@ -30,12 +30,12 @@ afterEach(() => {
   clearPluginMetadataLifecycleCaches();
   resetAutoMigrateLegacyStateForTest();
   resetAutoMigrateLegacyStateDirForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   cleanupTrackedTempDirs(tempDirs);
 });
 
 function makeTempDir(): string {
-  return makeTrackedTempDir("openclaw-plugin-registry-migration", tempDirs);
+  return makeTrackedTempDir("afora-plugin-registry-migration", tempDirs);
 }
 
 function checkpointIdentity(snapshot: PluginMetadataSnapshot): MigrationCheckpointIdentity {
@@ -64,16 +64,16 @@ describe("persisted plugin registry Doctor contract freshness", () => {
     const stateDir = path.join(rootDir, "state");
     const env = {
       HOME: rootDir,
-      OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(rootDir, "bundled"),
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_VERSION: "2026.7.1",
+      AFORA_BUNDLED_PLUGINS_DIR: path.join(rootDir, "bundled"),
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_STATE_DIR: stateDir,
+      AFORA_VERSION: "2026.7.1",
       VITEST: "true",
     };
     const pluginId = "doctor-replay";
     const pluginDir = writeManagedNpmPlugin({
       stateDir,
-      packageName: "@openclaw/doctor-replay",
+      packageName: "@afora/doctor-replay",
       pluginId,
       version: "1.0.0",
     });

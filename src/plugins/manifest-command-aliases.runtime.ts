@@ -1,6 +1,6 @@
 /** Resolves manifest-declared command and tool ownership at runtime. */
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveManifestActivationPluginIds } from "./activation-planner.js";
 import {
   resolveManifestCommandAliasOwnerInRegistry,
@@ -19,7 +19,7 @@ import { hasManifestToolAvailability } from "./manifest-tool-availability.js";
 /** Resolves the manifest owner for a CLI command alias when one is declared. */
 export function resolveManifestCommandAliasOwner(params: {
   command: string | undefined;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   registry?: PluginManifestCommandAliasRegistry;
@@ -40,7 +40,7 @@ export function resolveManifestCommandAliasOwner(params: {
 /** Resolves the plugin id that should be activated for a CLI command surface. */
 export function resolveManifestCliCommandSurfaceOwner(params: {
   command: string | undefined;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   registry?: PluginManifestCommandAliasRegistry;
@@ -87,7 +87,7 @@ export function resolveManifestCliCommandSurfaceOwner(params: {
  */
 export function resolveManifestToolOwner(params: {
   toolName: string | undefined;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   registry?: PluginManifestCommandAliasRegistry;

@@ -1,8 +1,8 @@
 // Memory Core tests cover index plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { OpenClawPluginApi, OpenClawPluginCommandDefinition } from "openclaw/plugin-sdk/core";
-import type { MemoryPluginRuntime } from "openclaw/plugin-sdk/memory-core-host-runtime-core";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { AforaPluginApi, AforaPluginCommandDefinition } from "afora-agent/plugin-sdk/core";
+import type { MemoryPluginRuntime } from "afora-agent/plugin-sdk/memory-core-host-runtime-core";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildMemoryFlushPlan } from "./src/flush-plan.js";
 import type { MemoryCoreRuntimeHost } from "./src/memory/runtime-host.js";
@@ -43,7 +43,7 @@ const hostRuntime = {
       list: vi.fn(),
     })),
   },
-} as unknown as OpenClawPluginApi["runtime"];
+} as unknown as AforaPluginApi["runtime"];
 
 function registerMemoryCoreRuntime(): MemoryPluginRuntime {
   let runtime: MemoryPluginRuntime | undefined;
@@ -112,7 +112,7 @@ describe("memory-core plugin runtime registration", () => {
   });
 
   it("registers the dreaming runtime slash command", () => {
-    let command: OpenClawPluginCommandDefinition | undefined;
+    let command: AforaPluginCommandDefinition | undefined;
     plugin.register(
       createTestPluginApi({
         runtime: hostRuntime,
@@ -135,7 +135,7 @@ describe("memory-core plugin runtime registration", () => {
     plugin.register(
       createTestPluginApi({
         runtime: { ...hostRuntime, subagent: { run: subagentRun } } as never,
-        registerTool(_factory, options?: Parameters<OpenClawPluginApi["registerTool"]>[1]) {
+        registerTool(_factory, options?: Parameters<AforaPluginApi["registerTool"]>[1]) {
           toolNames.push(...(options?.names ?? []));
         },
         on(hookName) {
@@ -173,7 +173,7 @@ describe("memory-core plugin runtime registration", () => {
   it("hides intent create, list, and cancel from non-owner turns", () => {
     const warn = vi.fn();
     let intentFactory:
-      | ((ctx: { config?: OpenClawConfig; senderIsOwner?: boolean }) => unknown)
+      | ((ctx: { config?: AforaConfig; senderIsOwner?: boolean }) => unknown)
       | undefined;
     plugin.register(
       createTestPluginApi({
@@ -219,7 +219,7 @@ describe("memory-core plugin runtime registration", () => {
 
   it("wires scoped memory search cleanup through the lazy runtime", async () => {
     const runtime = registerMemoryCoreRuntime();
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
 
     await runtime.closeMemorySearchManager?.({ cfg, agentId: "main" });
 
@@ -228,7 +228,7 @@ describe("memory-core plugin runtime registration", () => {
 
   it("binds the host local-service hook to the registered memory runtime", async () => {
     const runtime = registerMemoryCoreRuntime();
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
 
     await runtime.getMemorySearchManager({ cfg, agentId: "main" });
 
@@ -249,7 +249,7 @@ describe("memory-core plugin runtime registration", () => {
         llm: { configurable: true, enumerable: true, get: llmGetter },
         state: { configurable: true, enumerable: true, get: stateGetter },
       },
-    ) as OpenClawPluginApi["runtime"];
+    ) as AforaPluginApi["runtime"];
     let runtime: MemoryPluginRuntime | undefined;
 
     plugin.register(
@@ -282,7 +282,7 @@ describe("memory-core plugin runtime registration", () => {
 
   it("forwards search-hit authorization through the registered memory runtime", async () => {
     const runtime = registerMemoryCoreRuntime();
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
     const hits = [
       {
         source: "sessions" as const,
@@ -318,7 +318,7 @@ describe("memory-core plugin runtime registration", () => {
 
   it("binds the host SQLite state hook to tools and CLI runtime", async () => {
     const runtime = registerMemoryCoreRuntime();
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
 
     await runtime.getMemorySearchManager({ cfg, agentId: "main" });
 
@@ -337,7 +337,7 @@ describe("buildMemoryFlushPlan", () => {
         timeFormat: "12",
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 
   it("replaces YYYY-MM-DD using user timezone and appends current time", () => {
     const plan = buildMemoryFlushPlan({

@@ -1,10 +1,10 @@
 {
-  "name": "@openclaw/diffs",
+  "name": "@afora/diffs",
   "version": "2026.8.1",
-  "description": "OpenClaw read-only diff viewer plugin and file renderer for agents.",
+  "description": "Afora read-only diff viewer plugin and file renderer for agents.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   },
   "type": "module",
   "dependencies": {
@@ -15,14 +15,14 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
     "install": {
-      "npmSpec": "@openclaw/diffs",
+      "npmSpec": "@afora/diffs",
       "localPath": "extensions/diffs",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.4.30"
@@ -34,7 +34,7 @@
       "build": "node --import tsx ../../scripts/build-diffs-viewer-runtime.mts curated"
     },
     "build": {
-      "openclawVersion": "2026.8.1",
+      "aforaVersion": "2026.8.1",
       "staticAssets": [
         {
           "source": "./assets/viewer-runtime.js",

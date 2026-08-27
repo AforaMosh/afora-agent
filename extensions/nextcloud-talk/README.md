@@ -1,11 +1,11 @@
-# OpenClaw Nextcloud Talk
+# Afora Nextcloud Talk
 
-Official OpenClaw channel plugin for Nextcloud Talk conversations.
+Official Afora channel plugin for Nextcloud Talk conversations.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/nextcloud-talk
+afora plugins install @afora/nextcloud-talk
 ```
 
-Configure the Nextcloud server and Talk credentials in OpenClaw, then enable the conversations where agents should receive and send messages.
+Configure the Nextcloud server and Talk credentials in Afora, then enable the conversations where agents should receive and send messages.

@@ -243,7 +243,7 @@ suite.define(() => {
       const detailSelect = page.locator("wa-popover.new-session-page__detail-popover");
       const detailTrigger = page.locator("#new-session-detail-trigger");
       await pollLocatorText(projectTrigger.locator(".new-session-page__trigger-label")).toBe(
-        "openclaw",
+        "afora",
       );
 
       // Browse from the workspace, descend one level, then adopt the folder.
@@ -347,15 +347,15 @@ suite.define(() => {
           projects: [
             {
               id: "workspace:main",
-              displayName: "openclaw",
+              displayName: "afora",
               repoRoot: WORKSPACE,
               source: "workspace",
               agentId: "main",
             },
             {
-              id: "recorded-openclaw",
-              displayName: "Recorded OpenClaw",
-              repoRoot: "/recorded/openclaw",
+              id: "recorded-afora",
+              displayName: "Recorded Afora",
+              repoRoot: "/recorded/afora",
               source: "registered",
             },
           ],
@@ -404,14 +404,14 @@ suite.define(() => {
       const trigger = page.locator("#new-session-project-trigger");
       const place = page.locator("wa-popover.new-session-page__project-popover");
       await trigger.click();
-      await place.getByRole("button", { name: "Recorded OpenClaw", exact: true }).click();
+      await place.getByRole("button", { name: "Recorded Afora", exact: true }).click();
       await pollLocatorText(trigger.locator(".new-session-page__trigger-label")).toBe(
-        "Recorded OpenClaw",
+        "Recorded Afora",
       );
-      expect(await trigger.getAttribute("data-project-id")).toBe("recorded-openclaw");
+      expect(await trigger.getAttribute("data-project-id")).toBe("recorded-afora");
       await expect
         .poll(async () => (await gateway.getRequests("worktrees.branches")).at(-1)?.params)
-        .toEqual({ repoRoot: "/recorded/openclaw", includeRepositoryStatus: true });
+        .toEqual({ repoRoot: "/recorded/afora", includeRepositoryStatus: true });
 
       await page.locator("#new-session-detail-trigger").click();
       await page
@@ -427,7 +427,7 @@ suite.define(() => {
       expect(create.params).toMatchObject({
         agentId: "main",
         message: "inspect the project",
-        projectId: "recorded-openclaw",
+        projectId: "recorded-afora",
         worktree: true,
         worktreeBaseRef: "main",
       });
@@ -628,7 +628,7 @@ suite.define(() => {
 
       // A node cwd belongs to the selected agent's draft and must not leak
       // across an agent change, even though the execution node stays selected.
-      const agentPicker = page.locator(".new-session-page__select--agent openclaw-agent-select");
+      const agentPicker = page.locator(".new-session-page__select--agent afora-agent-select");
       await agentPicker.locator(".agent-select__trigger").click();
       await agentPicker
         .locator("wa-dropdown-item[data-agent-option]")

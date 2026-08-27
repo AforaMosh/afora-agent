@@ -1,9 +1,9 @@
 /** Formats model-fallback notice state for UI/status messages and persisted transition tracking. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { formatRawAssistantErrorForUi } from "../agents/embedded-agent-helpers.js";
 import { areRuntimeModelRefsEquivalent } from "../agents/model-runtime-aliases.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { FallbackNoticeState } from "../status/fallback-notice-state.js";
 import { formatProviderModelRef } from "./model-runtime.js";
 import type { RuntimeFallbackAttempt } from "./reply/agent-runner-execution.types.js";
@@ -95,7 +95,7 @@ export function buildFallbackNotice(params: {
   activeProvider: string;
   activeModel: string;
   attempts: RuntimeFallbackAttempt[];
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): string | null {
   const selected = formatProviderModelRef(params.selectedProvider, params.selectedModel);
   const active = formatProviderModelRef(params.activeProvider, params.activeModel);
@@ -149,7 +149,7 @@ export function resolveFallbackTransition(params: {
   activeModel: string;
   attempts: RuntimeFallbackAttempt[];
   state?: FallbackNoticeState;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): ResolvedFallbackTransition {
   const selectedModelRef = formatProviderModelRef(params.selectedProvider, params.selectedModel);
   const activeModelRef = formatProviderModelRef(params.activeProvider, params.activeModel);

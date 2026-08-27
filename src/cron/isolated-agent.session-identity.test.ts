@@ -156,7 +156,7 @@ describe("runCronIsolatedAgentTurn session identity", () => {
 
       expect(res.status).toBe("ok");
       const call = lastEmbeddedAgentCall();
-      expect(call.agentDir).toBe(path.join(home, ".openclaw", "agents", "main", "agent"));
+      expect(call.agentDir).toBe(path.join(home, ".afora", "agents", "main", "agent"));
     });
   });
 
@@ -198,7 +198,7 @@ describe("runCronIsolatedAgentTurn session identity", () => {
 
       const cfg = makeCfg(
         home,
-        path.join(home, ".openclaw", "agents", "{agentId}", "sessions", "sessions.json"),
+        path.join(home, ".afora", "agents", "{agentId}", "sessions", "sessions.json"),
         {
           agents: {
             defaults: { workspace: path.join(home, "default-workspace") },
@@ -230,7 +230,7 @@ describe("runCronIsolatedAgentTurn session identity", () => {
         agentId,
         sessionId: call.sessionId,
         sessionKey: call.sessionKey,
-        storePath: path.join(home, ".openclaw", "agents", agentId, "sessions", "sessions.json"),
+        storePath: path.join(home, ".afora", "agents", agentId, "sessions", "sessions.json"),
       });
     });
   });
@@ -342,7 +342,7 @@ describe("runCronIsolatedAgentTurn session identity", () => {
       await runCronTurn(home, {
         jobPayload: {
           kind: "agentTurn",
-          message: "cd /srv/openclaw && ./scripts/nightly-report.sh",
+          message: "cd /srv/afora && ./scripts/nightly-report.sh",
         },
       });
 

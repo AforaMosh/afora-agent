@@ -6,7 +6,7 @@ import {
   addTimerTimeoutGraceMs,
   MAX_DATE_TIMESTAMP_MS,
   MAX_TIMER_TIMEOUT_MS,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const callGatewayMock = vi.fn();
@@ -113,7 +113,7 @@ describe("readLatestAssistantReply", () => {
     expect(result).toBe("older output");
   });
 
-  it("skips trailing transcript-only OpenClaw assistant mirrors for normal latest-reply reads", async () => {
+  it("skips trailing transcript-only Afora assistant mirrors for normal latest-reply reads", async () => {
     callGatewayMock.mockResolvedValue({
       messages: [
         {
@@ -124,7 +124,7 @@ describe("readLatestAssistantReply", () => {
         {
           role: "assistant",
           content: [{ type: "text", text: "already delivered through message tool" }],
-          openclawMessageToolMirror: {
+          aforaMessageToolMirror: {
             toolName: "message",
             toolCallId: "call-message-send",
           },
@@ -132,7 +132,7 @@ describe("readLatestAssistantReply", () => {
         },
         {
           role: "assistant",
-          provider: "openclaw",
+          provider: "afora",
           model: "gateway-injected",
           content: [{ type: "text", text: "gateway notice" }],
           timestamp: 12,
@@ -181,7 +181,7 @@ describe("readLatestAssistantReply", () => {
         },
         {
           role: "assistant",
-          provider: "openclaw",
+          provider: "afora",
           model: "gateway-injected",
           content: [{ type: "text", text: "gateway notice" }],
           timestamp: 11,
@@ -503,14 +503,14 @@ describe("waitForAgentRunAndReadUpdatedAssistantReply", () => {
     metadata: TranscriptMessage = {},
   ): TranscriptMessage =>
     assistant(text, {
-      openclawMessageToolMirror: { toolName: "message", ...mirror },
+      aforaMessageToolMirror: { toolName: "message", ...mirror },
       ...metadata,
     });
 
   const sameReply = assistant("same reply", { timestamp: 42 });
   const previousReply = assistant("previous real reply", { timestamp: 41 });
   const forwardedRequest = interSession("forwarded request", {
-    __openclaw: { seq: 41 },
+    __afora: { seq: 41 },
     timestamp: 41,
   });
   const pendingSourceReply = messageToolMirror(
@@ -545,7 +545,7 @@ describe("waitForAgentRunAndReadUpdatedAssistantReply", () => {
       messages: [
         previousReply,
         assistant("already delivered source reply", {
-          provider: "openclaw",
+          provider: "afora",
           model: "delivery-mirror",
           timestamp: 42,
         }),
@@ -586,7 +586,7 @@ describe("waitForAgentRunAndReadUpdatedAssistantReply", () => {
       runId: "run-after-late-internal-source-reply",
       sessionKey: "agent:worker:main",
       messages: [
-        interSession("new forwarded request", { __openclaw: { seq: 42 }, timestamp: 42 }),
+        interSession("new forwarded request", { __afora: { seq: 42 }, timestamp: 42 }),
         messageToolMirror(
           "stale source reply",
           {
@@ -634,7 +634,7 @@ describe("waitForAgentRunAndReadUpdatedAssistantReply", () => {
       messages: [
         assistant("stale previous reply", { timestamp: 41 }),
         assistant("already delivered source reply", {
-          provider: "openclaw",
+          provider: "afora",
           model: "delivery-mirror",
           timestamp: 42,
         }),

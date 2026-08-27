@@ -30,7 +30,7 @@ function catalogProbeTools() {
 }
 
 function requireAttemptCatalogRef(): ToolSearchCatalogRef {
-  const options = hoisted.createOpenClawCodingToolsMock.mock.calls.at(-1)?.[0] as
+  const options = hoisted.createAforaCodingToolsMock.mock.calls.at(-1)?.[0] as
     | { toolSearchCatalogRef?: ToolSearchCatalogRef }
     | undefined;
   if (!options?.toolSearchCatalogRef) {
@@ -79,7 +79,7 @@ describe("runEmbeddedAttempt tool-search catalog cleanup", () => {
         );
         throw diagnosticsError;
       });
-      hoisted.createOpenClawCodingToolsMock.mockImplementation(() => catalogProbeTools());
+      hoisted.createAforaCodingToolsMock.mockImplementation(() => catalogProbeTools());
 
       const attempt = createContextEngineAttemptRunner({
         contextEngine: createContextEngineBootstrapAndAssemble(),

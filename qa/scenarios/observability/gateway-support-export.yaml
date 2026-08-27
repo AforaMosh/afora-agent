@@ -8,7 +8,7 @@ scenario:
     primary:
       - cli.diagnostics-export
       - cli.support-safe-redaction
-      - observability.openclaw-gateway-diagnostics-export
+      - observability.afora-gateway-diagnostics-export
       - observability.support-zip-redaction
       - observability.support-zip-artifact-safety
   objective: Prove the real Gateway diagnostics CLI writes a private, payload-free support zip with bounded log collection and sanitized runtime snapshots.

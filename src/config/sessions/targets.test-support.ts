@@ -1,11 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { expect } from "vitest";
-import type { OpenClawConfig } from "../config.js";
+import type { AforaConfig } from "../config.js";
 import { replaceSessionEntry } from "./session-accessor.js";
 import { resolveAllAgentSessionStoreTargetsSync } from "./targets.js";
 
-export const EXPLICIT_MAIN_CONFIG: OpenClawConfig = {
+export const EXPLICIT_MAIN_CONFIG: AforaConfig = {
   agents: { list: [{ id: "main", default: true }] },
 };
 
@@ -31,7 +31,7 @@ export async function createAgentSessionStores(
   return storePaths;
 }
 
-export function createCustomRootCfg(customRoot: string, defaultAgentId = "ops"): OpenClawConfig {
+export function createCustomRootCfg(customRoot: string, defaultAgentId = "ops"): AforaConfig {
   return {
     session: { store: path.join(customRoot, "agents", "{agentId}", "sessions", "sessions.json") },
     agents: { list: [{ id: defaultAgentId, default: true }] },

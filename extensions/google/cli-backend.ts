@@ -1,9 +1,9 @@
 import crypto from "node:crypto";
-import type { CliBackendPlugin } from "openclaw/plugin-sdk/cli-backend";
+import type { CliBackendPlugin } from "afora-agent/plugin-sdk/cli-backend";
 import {
   CLI_FRESH_WATCHDOG_DEFAULTS,
   CLI_RESUME_WATCHDOG_DEFAULTS,
-} from "openclaw/plugin-sdk/cli-backend";
+} from "afora-agent/plugin-sdk/cli-backend";
 
 const GEMINI_MODEL_ALIASES: Record<string, string> = {
   pro: "gemini-3.1-pro-preview",
@@ -90,7 +90,7 @@ function resolveGeminiCliExecutionArgs(
 
   // Gemini intersects file-based allowlists, where an empty intersection means
   // unrestricted. The argv override bypasses that merge and prevents MCP startup.
-  const allowedServer = ctx.toolAvailability.openClaw.length > 0 ? "openclaw" : crypto.randomUUID();
+  const allowedServer = ctx.toolAvailability.afora.length > 0 ? "afora" : crypto.randomUUID();
   return [...args, GEMINI_ALLOWED_MCP_SERVERS_ARG, allowedServer, ...positionalArgs];
 }
 

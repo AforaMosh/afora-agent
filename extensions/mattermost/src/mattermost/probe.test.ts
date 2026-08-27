@@ -1,5 +1,5 @@
 // Mattermost tests cover probe plugin behavior.
-import { MAX_TIMER_TIMEOUT_MS } from "openclaw/plugin-sdk/number-runtime";
+import { MAX_TIMER_TIMEOUT_MS } from "afora-agent/plugin-sdk/number-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { probeMattermost } from "./probe.js";
 
@@ -8,8 +8,8 @@ const { mockFetchGuard, mockRelease } = vi.hoisted(() => ({
   mockRelease: vi.fn(async () => {}),
 }));
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", async () => {
-  const original = (await vi.importActual("openclaw/plugin-sdk/ssrf-runtime")) as Record<
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", async () => {
+  const original = (await vi.importActual("afora-agent/plugin-sdk/ssrf-runtime")) as Record<
     string,
     unknown
   >;

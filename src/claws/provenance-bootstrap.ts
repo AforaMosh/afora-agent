@@ -1,5 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
-import { tableHasColumn } from "../state/openclaw-state-db-schema-helpers.js";
+import { tableHasColumn } from "../state/afora-state-db-schema-helpers.js";
 
 export function selectClawBootstrapProvenanceColumns(db: DatabaseSync): string {
   const sourcePath = tableHasColumn(db, "claw_installs", "bootstrap_source_path")

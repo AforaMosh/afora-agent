@@ -1,6 +1,6 @@
 /** Normalizes accepted child-session spawn results from loose tool payloads. */
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 
 // Helpers for recognizing accepted session-spawn tool results.
 export type AcceptedSessionSpawn = {

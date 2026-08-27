@@ -8,17 +8,17 @@ import {
   resolveAgentDir,
   resolveDefaultAgentDir,
   resolveSessionAgentIds,
-} from "openclaw/plugin-sdk/agent-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+} from "afora-agent/plugin-sdk/agent-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   validateJsonSchemaValue,
   type JsonSchemaObject,
-} from "openclaw/plugin-sdk/json-schema-runtime";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
-import type { SessionCatalogProvider as RegisteredSessionCatalogProvider } from "openclaw/plugin-sdk/session-catalog";
-import { resolveStorePath } from "openclaw/plugin-sdk/session-store-runtime";
-import { withEnvAsync } from "openclaw/plugin-sdk/test-env";
+} from "afora-agent/plugin-sdk/json-schema-runtime";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
+import type { SessionCatalogProvider as RegisteredSessionCatalogProvider } from "afora-agent/plugin-sdk/session-catalog";
+import { resolveStorePath } from "afora-agent/plugin-sdk/session-store-runtime";
+import { withEnvAsync } from "afora-agent/plugin-sdk/test-env";
 import { vi } from "vitest";
 import {
   resolveCodexAppServerHomeDir,
@@ -147,7 +147,7 @@ export function registerCodexSessionCatalog(
       ? baseControl
       : (() => {
           const resolver = createCodexCatalogHomeResolver({
-            config: params.getRuntimeConfig() ?? (params.api.config as OpenClawConfig),
+            config: params.getRuntimeConfig() ?? (params.api.config as AforaConfig),
             getRuntimeConfig: params.getRuntimeConfig,
             getPluginConfig,
           });
@@ -240,21 +240,21 @@ function bindTestCatalogOwner(provider: RegisteredSessionCatalogProvider): Sessi
   } as SessionCatalogProvider;
 }
 
-export const config = {} as OpenClawConfig;
+export const config = {} as AforaConfig;
 
-export function compatibilityOwnerConfig(owner = "alpha"): OpenClawConfig {
+export function compatibilityOwnerConfig(owner = "alpha"): AforaConfig {
   return {
     agents: {
       list: ["alpha", "beta"].map((id) => (id === owner ? { id, default: true } : { id })),
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 export async function normalizeCodexManifestConfig(
   value: unknown,
 ): Promise<Record<string, unknown>> {
   const manifest = JSON.parse(
-    await fs.readFile(new URL("../openclaw.plugin.json", import.meta.url), "utf8"),
+    await fs.readFile(new URL("../afora.plugin.json", import.meta.url), "utf8"),
   ) as { configSchema: JsonSchemaObject };
   const result = validateJsonSchemaValue({
     cacheKey: "codex.session-catalog.manifest-config",
@@ -312,7 +312,7 @@ export function adoptedEntry(params: {
   sessionId?: string;
 }) {
   return {
-    sessionId: params.sessionId ?? "openclaw-session-existing",
+    sessionId: params.sessionId ?? "afora-session-existing",
     updatedAt: 1,
     agentHarnessId: "codex",
     modelSelectionLocked: true,
@@ -431,7 +431,7 @@ export function createRuntime(
       summary = existing;
     } else {
       sessionSequence += 1;
-      const sessionId = `openclaw-session-${sessionSequence}`;
+      const sessionId = `afora-session-${sessionSequence}`;
       const entry = {
         sessionId,
         sessionFile: `/tmp/${sessionId}.jsonl`,
@@ -508,7 +508,7 @@ export function createRuntime(
 export function archiveTestSession(params: {
   control: CodexSessionCatalogControl;
   agentId?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   bindingStore?: CodexAppServerBindingStore;
   runtime?: PluginRuntime;
   threadId?: string;
@@ -524,7 +524,7 @@ export function archiveTestSession(params: {
   });
 }
 
-export function createGatewayApi(runtime: PluginRuntime, apiConfig: OpenClawConfig = {}) {
+export function createGatewayApi(runtime: PluginRuntime, apiConfig: AforaConfig = {}) {
   let provider: SessionCatalogProvider | undefined;
   const registerSessionCatalog = vi.fn((candidate: RegisteredSessionCatalogProvider) => {
     provider = bindTestCatalogOwner(candidate);
@@ -533,7 +533,7 @@ export function createGatewayApi(runtime: PluginRuntime, apiConfig: OpenClawConf
     config: apiConfig,
     runtime,
     registerSessionCatalog,
-  } as unknown as OpenClawPluginApi;
+  } as unknown as AforaPluginApi;
   return { api, getProvider: () => provider, registerSessionCatalog };
 }
 
@@ -568,6 +568,6 @@ export type {
   CodexAppServerThreadBinding,
   CodexCatalogHome,
   CodexThread,
-  OpenClawConfig,
+  AforaConfig,
   PluginRuntime,
 };

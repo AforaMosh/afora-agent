@@ -1,6 +1,6 @@
 // Tests system command version probing for presence checks.
 import os from "node:os";
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { withEnvAsync } from "../test-utils/env.js";
 import { VERSION as runtimeVersion } from "../version.js";
@@ -10,7 +10,7 @@ vi.unmock("../version.js");
 const spawnSyncMock = vi.hoisted(() => vi.fn());
 
 vi.mock("node:child_process", async () => {
-  const { mockNodeChildProcessSpawnSync } = await import("openclaw/plugin-sdk/test-node-mocks");
+  const { mockNodeChildProcessSpawnSync } = await import("afora-agent/plugin-sdk/test-node-mocks");
   return mockNodeChildProcessSpawnSync(spawnSyncMock, () =>
     vi.importActual<typeof import("node:child_process")>("node:child_process"),
   );
@@ -22,7 +22,7 @@ async function withPresenceModule<T>(
 ): Promise<T> {
   return withEnvAsync(
     {
-      OPENCLAW_VERSION: undefined,
+      AFORA_VERSION: undefined,
       npm_package_version: undefined,
       ...env,
     },
@@ -68,27 +68,27 @@ describe("system-presence version fallback", () => {
   it("ignores legacy service metadata and uses runtime VERSION", async () => {
     await expectSelfVersion(
       {
-        OPENCLAW_SERVICE_VERSION: "2.4.6-service",
+        AFORA_SERVICE_VERSION: "2.4.6-service",
         npm_package_version: "1.0.0-package",
       },
       runtimeVersion,
     );
   });
 
-  it("prefers OPENCLAW_VERSION over runtime VERSION", async () => {
+  it("prefers AFORA_VERSION over runtime VERSION", async () => {
     await expectSelfVersion(
       {
-        OPENCLAW_VERSION: "9.9.9-cli",
+        AFORA_VERSION: "9.9.9-cli",
         npm_package_version: "1.0.0-package",
       },
       "9.9.9-cli",
     );
   });
 
-  it("uses runtime VERSION when OPENCLAW_VERSION is blank despite npm_package_version", async () => {
+  it("uses runtime VERSION when AFORA_VERSION is blank despite npm_package_version", async () => {
     await expectSelfVersion(
       {
-        OPENCLAW_VERSION: " ",
+        AFORA_VERSION: " ",
         npm_package_version: "1.0.0-package",
       },
       runtimeVersion,

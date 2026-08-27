@@ -1,7 +1,7 @@
 // Covers managed task-flow audit summaries and stale-flow classification.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { captureEnv } from "../test-utils/env.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import { SUBAGENT_KILL_TASK_ERROR } from "./detached-task-runtime-contract.js";
 import {
   createRunningTaskRunCore as createRunningTaskRunOrNull,
@@ -23,7 +23,7 @@ import {
   resetTaskFlowRegistryForTests,
 } from "./task-runtime.test-helpers.js";
 
-const ORIGINAL_ENV = captureEnv(["OPENCLAW_STATE_DIR"]);
+const ORIGINAL_ENV = captureEnv(["AFORA_STATE_DIR"]);
 
 function createManagedTaskFlow(
   params: Parameters<typeof createManagedTaskFlowOrNull>[0],
@@ -61,10 +61,10 @@ function requireFinding(
 }
 
 async function withTaskFlowAuditStateDir(run: (root: string) => Promise<void>): Promise<void> {
-  await withOpenClawTestState(
+  await withAforaTestState(
     {
       layout: "state-only",
-      prefix: "openclaw-task-flow-audit-",
+      prefix: "afora-task-flow-audit-",
     },
     async (state) => {
       resetTaskRegistryDeliveryRuntimeForTests();

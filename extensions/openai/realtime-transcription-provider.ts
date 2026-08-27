@@ -1,10 +1,10 @@
 // Openai provider module implements model/runtime integration.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   isProviderAuthProfileConfigured,
   resolveProviderAuthProfileApiKey,
-} from "openclaw/plugin-sdk/provider-auth";
-import { resolveProviderRequestHeaders } from "openclaw/plugin-sdk/provider-http";
+} from "afora-agent/plugin-sdk/provider-auth";
+import { resolveProviderRequestHeaders } from "afora-agent/plugin-sdk/provider-http";
 import {
   createRealtimeTranscriptionWebSocketSession,
   type RealtimeTranscriptionProviderConfig,
@@ -12,13 +12,13 @@ import {
   type RealtimeTranscriptionSession,
   type RealtimeTranscriptionSessionCreateRequest,
   type RealtimeTranscriptionWebSocketTransport,
-} from "openclaw/plugin-sdk/realtime-transcription";
-import { normalizeResolvedSecretInputString } from "openclaw/plugin-sdk/secret-input";
+} from "afora-agent/plugin-sdk/realtime-transcription";
+import { normalizeResolvedSecretInputString } from "afora-agent/plugin-sdk/secret-input";
 import {
   asFiniteNumberInRange,
   asSafeIntegerInRange,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   createOpenAIRealtimeTranscriptionClientSecret,
   readRealtimeErrorDetail,
@@ -36,7 +36,7 @@ type OpenAIRealtimeTranscriptionProviderConfig = {
 
 type OpenAIRealtimeTranscriptionSessionConfig = RealtimeTranscriptionSessionCreateRequest & {
   apiKey?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   language?: string;
   model: string;
   prompt?: string;
@@ -204,7 +204,7 @@ function createOpenAIRealtimeTranscriptionSession(
   const completedTranscripts = new Map<string, string | undefined>();
   const trackedItemIds = new Set<string>();
   const settledItemIds = new Set<string>();
-  const unkeyedTranscript = "__openclaw_unkeyed_transcript__";
+  const unkeyedTranscript = "__afora_unkeyed_transcript__";
   let retainedTranscriptBytes = 0;
   let settledItemIdBytes = 0;
   let appendedAudioBytes = 0;

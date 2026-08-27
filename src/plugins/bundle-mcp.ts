@@ -1,10 +1,10 @@
 // Bundles MCP metadata exposed by plugins for package output.
 import fs from "node:fs";
 import path from "node:path";
-import { isStringRecord } from "@openclaw/normalization-core/record-coerce";
+import { isStringRecord } from "@afora/normalization-core/record-coerce";
 import { resolveMcpTransportConfig } from "../agents/mcp-transport-config.js";
 import { applyMergePatch } from "../config/merge-patch.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { readRootJsonObjectSync } from "../infra/json-files.js";
 import { isPathInside } from "../infra/path-guards.js";
 import { isRecord } from "../utils.js";
@@ -599,7 +599,7 @@ function inspectMcpServerRuntimeSupport(loaded: {
 
 export function loadEnabledBundleMcpConfig(params: {
   workspaceDir: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
 }): EnabledBundleMcpConfigResult {
   const loaded = loadEnabledBundleConfig({

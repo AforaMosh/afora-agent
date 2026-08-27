@@ -1,5 +1,5 @@
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
-import { readNonBlankString } from "@openclaw/normalization-core/string-coerce";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
+import { readNonBlankString } from "@afora/normalization-core/string-coerce";
 import { formatErrorMessage } from "../infra/errors.js";
 import type { PluginRuntime, RuntimeLogger } from "../plugins/runtime/types.js";
 import { decodeMeetingAudioBase64 } from "./audio-base64.js";
@@ -8,7 +8,7 @@ import type { MeetingRealtimeAudioFormat } from "./realtime-audio-format.js";
 import type { MeetingRealtimeAudioTransport } from "./realtime-audio-transport.js";
 
 const NODE_OUTPUT_GENERATION_CAPABILITY = Symbol.for(
-  "openclaw.internal.meeting-node-output-generation.v1",
+  "afora.internal.meeting-node-output-generation.v1",
 );
 
 export function createNodeMeetingRealtimeAudioTransport(params: {

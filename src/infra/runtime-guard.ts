@@ -1,10 +1,10 @@
-// Validates the current runtime against OpenClaw's Node engine floor.
+// Validates the current runtime against Afora's Node engine floor.
 import process from "node:process";
 import { format } from "node:util";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import {
   isNodeVersionAtLeast,
-  isSupportedOpenClawNodeVersion,
+  isSupportedAforaNodeVersion,
   parseNodeReleaseVersion,
 } from "../../node-version.mjs";
 import { formatConsoleDiagnosticBlock } from "../logging/json-console-line.js";
@@ -101,7 +101,7 @@ function currentRuntimeProvidesNodeSqlite(): boolean {
   }
 }
 
-/** Returns whether a detected runtime meets OpenClaw's minimum runtime contract. */
+/** Returns whether a detected runtime meets Afora's minimum runtime contract. */
 function runtimeSatisfies(details: RuntimeDetails): boolean {
   if (details.kind === "node") {
     return isSupportedNodeVersion(details.version);
@@ -112,14 +112,14 @@ function runtimeSatisfies(details: RuntimeDetails): boolean {
   return false;
 }
 
-/** Returns whether the current process runtime satisfies OpenClaw's engine contract. */
+/** Returns whether the current process runtime satisfies Afora's engine contract. */
 export function isCurrentRuntimeSupported(): boolean {
   return runtimeSatisfies(detectRuntime());
 }
 
-/** Checks a Node version label against OpenClaw's supported Node version range. */
+/** Checks a Node version label against Afora's supported Node version range. */
 export function isSupportedNodeVersion(version: string | null): boolean {
-  return isSupportedOpenClawNodeVersion(version);
+  return isSupportedAforaNodeVersion(version);
 }
 
 /** Parses simple package `engines.node` ranges of the form `>=x.y.z`. */
@@ -189,12 +189,12 @@ export function assertSupportedRuntime(
   const execLabel = details.execPath ?? "unknown";
   const requirement =
     details.kind === "bun"
-      ? "openclaw cannot run under Bun because the runtime does not provide node:sqlite."
-      : "openclaw requires Node >=22.22.3 <23, >=24.15.0 <25, or >=25.9.0.";
+      ? "afora cannot run under Bun because the runtime does not provide node:sqlite."
+      : "afora requires Node >=22.22.3 <23, >=24.15.0 <25, or >=25.9.0.";
   const retryHint =
     details.kind === "bun"
-      ? "Run OpenClaw with Node; Bun remains supported for installs and package scripts."
-      : "Upgrade Node and re-run openclaw.";
+      ? "Run Afora with Node; Bun remains supported for installs and package scripts."
+      : "Upgrade Node and re-run afora.";
 
   runtime.error(
     [

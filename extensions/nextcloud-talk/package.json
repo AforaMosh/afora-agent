@@ -1,25 +1,25 @@
 {
-  "name": "@openclaw/nextcloud-talk",
+  "name": "@afora/nextcloud-talk",
   "version": "2026.8.1",
-  "description": "OpenClaw Nextcloud Talk channel plugin for conversations.",
+  "description": "Afora Nextcloud Talk channel plugin for conversations.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   },
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*",
-    "openclaw": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*",
+    "afora-agent": "workspace:*"
   },
   "peerDependencies": {
-    "openclaw": ">=2026.8.1"
+    "afora-agent": ">=2026.8.1"
   },
   "peerDependenciesMeta": {
-    "openclaw": {
+    "afora": {
       "optional": true
     }
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
@@ -124,7 +124,7 @@
       }
     },
     "install": {
-      "npmSpec": "@openclaw/nextcloud-talk",
+      "npmSpec": "@afora/nextcloud-talk",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.4.10"
     },
@@ -132,7 +132,7 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1"
+      "aforaVersion": "2026.8.1"
     },
     "release": {
       "publishToClawHub": true,

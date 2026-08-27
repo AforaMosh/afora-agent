@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
 const writeWizardConfigFile = vi.hoisted(() => vi.fn());
 
@@ -10,11 +10,11 @@ import { commitNonInteractiveOnboardConfig } from "./config-write.js";
 describe("commitNonInteractiveOnboardConfig", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    writeWizardConfigFile.mockImplementation(async (config: OpenClawConfig) => config);
+    writeWizardConfigFile.mockImplementation(async (config: AforaConfig) => config);
   });
 
   it("keeps the verified config hash on the canonical writer", async () => {
-    const nextConfig: OpenClawConfig = {
+    const nextConfig: AforaConfig = {
       gateway: { port: 19_001 },
     };
 
@@ -32,7 +32,7 @@ describe("commitNonInteractiveOnboardConfig", () => {
   });
 
   it("permits config size reduction only for an explicitly requested reset", async () => {
-    const nextConfig: OpenClawConfig = {};
+    const nextConfig: AforaConfig = {};
 
     await commitNonInteractiveOnboardConfig({
       nextConfig,

@@ -13,7 +13,7 @@ function loadSkillsFromPath(dir: string) {
 
 describe("loadSkills", () => {
   it("reports directory scan failures as diagnostics", async () => {
-    const tempDir = tempDirs.make("openclaw-skill-scan-");
+    const tempDir = tempDirs.make("afora-skill-scan-");
     const regularFile = path.join(tempDir, "not-a-directory");
     await fs.writeFile(regularFile, "not a skill directory");
 
@@ -26,7 +26,7 @@ describe("loadSkills", () => {
   });
 
   it("does not load dash-prefixed Markdown as frontmatter", async () => {
-    const tempDir = tempDirs.make("openclaw-skill-scan-");
+    const tempDir = tempDirs.make("afora-skill-scan-");
     const skillDir = path.join(tempDir, "dash-prefix");
     await fs.mkdir(skillDir);
     const skillFile = path.join(skillDir, "SKILL.md");
@@ -47,7 +47,7 @@ describe("loadSkills", () => {
   });
 
   it("loads skills with JSON5-style trailing commas in metadata frontmatter", async () => {
-    const tempDir = tempDirs.make("openclaw-skill-scan-");
+    const tempDir = tempDirs.make("afora-skill-scan-");
     const skillDir = path.join(tempDir, "json5-metadata");
     await fs.mkdir(skillDir);
     const skillFile = path.join(skillDir, "SKILL.md");
@@ -58,7 +58,7 @@ name: json5-metadata
 description: Skill with JSON5-style metadata.
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "requires":
           {
@@ -90,7 +90,7 @@ disable-model-invocation: true
   });
 
   it("reports malformed frontmatter by file and keeps loading sibling skills", async () => {
-    const tempDir = tempDirs.make("openclaw-skill-scan-");
+    const tempDir = tempDirs.make("afora-skill-scan-");
     const brokenDir = path.join(tempDir, "broken");
     const validDir = path.join(tempDir, "valid");
     await fs.mkdir(brokenDir);

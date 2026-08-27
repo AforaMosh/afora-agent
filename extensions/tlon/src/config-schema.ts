@@ -2,8 +2,8 @@
 import {
   ChannelImplicitMentionsSchema,
   buildChannelConfigSchema,
-} from "openclaw/plugin-sdk/channel-config-schema";
-import { createChannelConfigUiHints } from "openclaw/plugin-sdk/channel-core";
+} from "afora-agent/plugin-sdk/channel-config-schema";
+import { createChannelConfigUiHints } from "afora-agent/plugin-sdk/channel-core";
 import { z } from "zod";
 
 const ShipSchema = z.string().min(1);

@@ -218,7 +218,7 @@ private final class PushRelayReceiptProvider {
 private final class PushRelaySimulatorProofProvider {
     func createProof(signedPayload: Data) throws -> PushRelaySimulatorProofPayload {
         #if targetEnvironment(simulator)
-        guard let secret = ProcessInfo.processInfo.environment["OPENCLAW_SIMULATOR_PUSH_PROOF_SECRET"]?
+        guard let secret = ProcessInfo.processInfo.environment["AFORA_SIMULATOR_PUSH_PROOF_SECRET"]?
             .trimmingCharacters(in: .whitespacesAndNewlines),
             !secret.isEmpty
         else {

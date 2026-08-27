@@ -2,13 +2,13 @@
 import type {
   ChannelDoctorConfigMutation,
   ChannelDoctorLegacyConfigRule,
-} from "openclaw/plugin-sdk/channel-contract";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+} from "afora-agent/plugin-sdk/channel-contract";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   asObjectRecord,
   hasLegacyAccountStreamingAliases,
   normalizeChannelConfigEntries,
-} from "openclaw/plugin-sdk/runtime-doctor-migrations";
+} from "afora-agent/plugin-sdk/runtime-doctor-migrations";
 
 function hasLegacyZalouserGroupAllowAlias(value: unknown): boolean {
   const group = asObjectRecord(value);
@@ -71,13 +71,13 @@ export const legacyConfigRules: ChannelDoctorLegacyConfigRule[] = [
   {
     path: ["channels", "zalouser", "groups"],
     message:
-      'channels.zalouser.groups.<id>.allow is legacy; use channels.zalouser.groups.<id>.enabled instead. Run "openclaw doctor --fix".',
+      'channels.zalouser.groups.<id>.allow is legacy; use channels.zalouser.groups.<id>.enabled instead. Run "afora doctor --fix".',
     match: hasLegacyZalouserGroupAllowAliases,
   },
   {
     path: ["channels", "zalouser", "accounts"],
     message:
-      'channels.zalouser.accounts.<id>.groups.<id>.allow is legacy; use channels.zalouser.accounts.<id>.groups.<id>.enabled instead. Run "openclaw doctor --fix".',
+      'channels.zalouser.accounts.<id>.groups.<id>.allow is legacy; use channels.zalouser.accounts.<id>.groups.<id>.enabled instead. Run "afora doctor --fix".',
     match: (value) =>
       hasLegacyAccountStreamingAliases(value, (account) =>
         hasLegacyZalouserGroupAllowAliases(asObjectRecord(account)?.groups),
@@ -86,7 +86,7 @@ export const legacyConfigRules: ChannelDoctorLegacyConfigRule[] = [
 ];
 
 export function normalizeCompatibilityConfig(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }): ChannelDoctorConfigMutation {
   return normalizeChannelConfigEntries({
     cfg: params.cfg,

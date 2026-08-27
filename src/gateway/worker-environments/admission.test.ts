@@ -13,7 +13,7 @@ const CREDENTIAL = ["worker", "credential", "fixture"].join("-");
 const OTHER_CREDENTIAL = ["other", "credential", "fixture"].join("-");
 const RECEIPT = {
   bundleHash: BUNDLE_HASH,
-  openclawVersion: "2026.7.11",
+  aforaVersion: "2026.7.11",
   protocolFeatures: ["worker-heartbeat-v1"],
 };
 
@@ -94,7 +94,7 @@ describe("worker admission", () => {
     ["environment-mismatch", () => admission({ environmentId: "worker-other" })],
     ["environment-mismatch", () => admission({ environmentId: " worker-1 " })],
     ["bundle-mismatch", () => admission({ handshake: { ...RECEIPT, bundleHash: "b".repeat(64) } })],
-    ["version-mismatch", () => admission({ handshake: { ...RECEIPT, openclawVersion: "other" } })],
+    ["version-mismatch", () => admission({ handshake: { ...RECEIPT, aforaVersion: "other" } })],
     ["placement-mismatch", () => admission({ sessionId: "session-other", runId: "run-other" })],
     ["owner-epoch-mismatch", () => admission({ ownerEpoch: 2 })],
     ["rpc-set-mismatch", () => admission({ rpcSetVersion: 2 })],

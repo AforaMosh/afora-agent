@@ -1,6 +1,6 @@
 // @vitest-environment node
 // One Gateway client owns question outcomes across chat panes and sidebar projections.
-import type { QuestionResolveResult } from "@openclaw/gateway-protocol";
+import type { QuestionResolveResult } from "@afora/gateway-protocol";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   cancelQuestionPrompt,

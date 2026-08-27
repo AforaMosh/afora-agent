@@ -1,10 +1,10 @@
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import {
   canonicalizeMainSessionAlias,
   resolveMainSessionKey,
 } from "../../config/sessions/main-session.js";
 import type { SessionAcpMeta } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { toErrorObject } from "../../infra/errors.js";
 import {
   normalizeAgentId,
@@ -59,7 +59,7 @@ function normalizeSessionKey(sessionKey: string): string {
 
 /** Canonicalizes aliases and main-session keys before ACP metadata lookup. */
 export function canonicalizeAcpSessionKey(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
 }): string {
   const normalized = normalizeSessionKey(params.sessionKey);

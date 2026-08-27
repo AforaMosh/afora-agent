@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import { createCodexCatalogHomeResolver } from "../session-catalog-homes.js";
 import { resolveCodexAppServerHomeDir } from "./auth-start-options.js";
@@ -59,7 +59,7 @@ describe("Codex binding app-server connection", () => {
 
   it("recovers the exact secondary Codex home recorded by a supervised binding", async () => {
     const root = await fs.realpath(
-      await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-binding-home-")),
+      await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-binding-home-")),
     );
     try {
       const alphaAgentDir = path.join(root, "agents", "alpha", "agent");
@@ -79,7 +79,7 @@ describe("Codex binding app-server connection", () => {
             { id: "beta", agentDir: betaAgentDir },
           ],
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const env = { ...process.env, CODEX_HOME: processCodexHome };
       const source = createCodexCatalogHomeResolver({
         config,
@@ -131,10 +131,10 @@ describe("Codex binding app-server connection", () => {
   });
 
   it("preserves an explicit supervised WebSocket endpoint while selecting native auth", () => {
-    const agentDir = path.join(os.tmpdir(), "openclaw-websocket-agent");
+    const agentDir = path.join(os.tmpdir(), "afora-websocket-agent");
     const config = {
       agents: { list: [{ id: "main", agentDir, default: true }] },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const pluginConfig = {
       supervision: { enabled: true },
       appServer: { transport: "websocket", url: "ws://127.0.0.1:4500" },

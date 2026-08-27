@@ -1,22 +1,22 @@
 // Ollama setup runtime handles plugin onboarding behavior.
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
 import type {
-  OpenClawConfig,
+  AforaConfig,
   SecretInput,
   SecretInputMode,
-} from "openclaw/plugin-sdk/provider-auth";
+} from "afora-agent/plugin-sdk/provider-auth";
 import {
   ensureApiKeyFromOptionEnvOrPrompt,
   isNonSecretApiKeyMarker,
   normalizeApiKeyInput,
   normalizeOptionalSecretInput,
   validateApiKeyInput,
-} from "openclaw/plugin-sdk/provider-auth";
-import { readProviderJsonResponse } from "openclaw/plugin-sdk/provider-http";
-import { applyAgentDefaultModelPrimary } from "openclaw/plugin-sdk/provider-onboard";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime";
-import { WizardCancelledError, type WizardPrompter } from "openclaw/plugin-sdk/setup";
-import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/provider-auth";
+import { readProviderJsonResponse } from "afora-agent/plugin-sdk/provider-http";
+import { applyAgentDefaultModelPrimary } from "afora-agent/plugin-sdk/provider-onboard";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime";
+import { WizardCancelledError, type WizardPrompter } from "afora-agent/plugin-sdk/setup";
+import { fetchWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime";
 import {
   OLLAMA_CLOUD_BASE_URL,
   OLLAMA_CLOUD_DEFAULT_MODELS,
@@ -65,7 +65,7 @@ type OllamaSetupOptions = {
 };
 
 type OllamaSetupResult = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   credential?: SecretInput;
   credentialMode?: SecretInputMode;
   defaultModel?: string;
@@ -93,7 +93,7 @@ function buildOllamaUnreachableLines(baseUrl: string, retry: boolean): string[] 
     `Ollama could not be reached at ${baseUrl}.`,
     "Start or restart the Ollama server for this address.",
     "If Ollama is not installed on that machine, download it at https://ollama.com/download",
-    ...(retry ? ["", "Continue when it is running. OpenClaw will retry this address."] : []),
+    ...(retry ? ["", "Continue when it is running. Afora will retry this address."] : []),
   ];
 }
 
@@ -145,7 +145,7 @@ export async function checkOllamaCloudAuth(
 }
 
 async function promptForOllamaCloudCredential(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   opts?: Record<string, unknown>;
   prompter: WizardPrompter;
@@ -198,13 +198,13 @@ async function promptForOllamaCloudCredential(params: {
 }
 
 function applyOllamaProviderConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   baseUrl: string,
   modelNames: string[],
   discoveredModelsByName?: Map<string, OllamaModelWithContext>,
   apiKey: SecretInput = OLLAMA_DEFAULT_API_KEY,
   defaultModels: readonly OllamaCloudDefaultModel[] = [],
-): OpenClawConfig {
+): AforaConfig {
   return {
     ...cfg,
     models: {
@@ -263,7 +263,7 @@ async function resolveHostBackedSuggestedModelNames(params: {
 }
 
 async function promptAndConfigureHostBackedOllama(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   mode: HostBackedOllamaInteractiveMode;
   prompter: WizardPrompter;
   env?: NodeJS.ProcessEnv;
@@ -381,7 +381,7 @@ async function promptAndConfigureHostBackedOllama(params: {
 }
 
 export async function promptAndConfigureOllama(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   opts?: Record<string, unknown>;
   prompter: WizardPrompter;
@@ -444,11 +444,11 @@ export async function promptAndConfigureOllama(params: {
 }
 
 export async function configureOllamaNonInteractive(params: {
-  nextConfig: OpenClawConfig;
+  nextConfig: AforaConfig;
   opts: OllamaSetupOptions;
   runtime: RuntimeEnv;
   agentDir?: string;
-}): Promise<OpenClawConfig> {
+}): Promise<AforaConfig> {
   const baseUrl = resolveOllamaApiBase(
     (params.opts.customBaseUrl?.trim() || resolveOllamaSetupDefaultBaseUrl()).replace(/\/+$/, ""),
   );
@@ -551,7 +551,7 @@ export async function configureOllamaNonInteractive(params: {
 }
 
 export async function ensureOllamaModelPulled(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   model: string;
   prompter: WizardPrompter;
 }): Promise<void> {

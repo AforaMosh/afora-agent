@@ -1,5 +1,5 @@
 /** Builds doctor/install repair hints for missing official external plugin owners. */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveConfiguredChannelPresencePolicy } from "./channel-plugin-ids.js";
 import type { PluginManifestRecord } from "./manifest-registry.js";
 import {
@@ -45,8 +45,8 @@ export function resolveOfficialExternalPluginRepairHint(
   const pluginId = resolveOfficialExternalPluginId(entry) ?? pluginIdOrChannelId.trim();
   const channelId = manifest?.channel?.id?.trim();
   const label = resolveOfficialExternalPluginLabel(entry);
-  const installCommand = `openclaw plugins install ${installSpec}`;
-  const doctorFixCommand = "openclaw doctor --fix";
+  const installCommand = `afora plugins install ${installSpec}`;
+  const doctorFixCommand = "afora doctor --fix";
   return {
     pluginId,
     ...(channelId ? { channelId } : {}),
@@ -59,8 +59,8 @@ export function resolveOfficialExternalPluginRepairHint(
 }
 
 type MissingOfficialExternalChannelPluginRepairHintParams = {
-  config: OpenClawConfig;
-  activationSourceConfig?: OpenClawConfig;
+  config: AforaConfig;
+  activationSourceConfig?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   /** Prepared manifest facts avoid rebuilding the registry for this resolution. */

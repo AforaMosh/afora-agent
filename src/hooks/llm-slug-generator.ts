@@ -3,14 +3,14 @@
  */
 
 import { randomUUID } from "node:crypto";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { prepareSystemAgentRunAdmission } from "../agents/admitted-run-context.js";
 import { resolveAgentWorkspaceDir, resolveAgentDir } from "../agents/agent-scope.js";
 import { runEmbeddedAgent } from "../agents/embedded-agent.js";
 import { SessionManager } from "../agents/sessions/index.js";
 import { resolveAgentTimeoutMs } from "../agents/timeout.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
   extractLeadingHttpStatus,
@@ -24,7 +24,7 @@ const PROVIDER_ERROR_PREFIX_RE =
 const PROVIDER_ERROR_DETAIL_RE =
   /\b(?:insufficient[_ -]?quota|quota (?:exceeded|exhausted)|exceeded your current quota|payment required|insufficient credits|credit balance|insufficient[_ -]?(?:balance|funds)|rate[_ -]?limit(?:ed)?|too many requests|invalid[_ -]?api[_ -]?key|incorrect api key|authentication failed|oauth token refresh failed|missing (?:token|projectid|credentials)|google cloud credentials|re-?authenticate|unauthorized|forbidden|permission_error|billing hard limit|spend(?:ing)? limit)\b/i;
 
-function resolveSlugGeneratorTimeoutMs(cfg: OpenClawConfig): number {
+function resolveSlugGeneratorTimeoutMs(cfg: AforaConfig): number {
   const configuredTimeoutSeconds = cfg.agents?.defaults?.timeoutSeconds;
   if (typeof configuredTimeoutSeconds !== "number" || !Number.isFinite(configuredTimeoutSeconds)) {
     return DEFAULT_SLUG_GENERATOR_TIMEOUT_MS;
@@ -68,7 +68,7 @@ function isErrorSlugPayload(payload: { text?: string; isError?: boolean } | unde
  */
 export async function generateSlugViaLLM(params: {
   sessionContent: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   /** Optional hook-level override; the embedded runner owns model resolution. */
   model?: string;

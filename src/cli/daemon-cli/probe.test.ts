@@ -292,7 +292,7 @@ describe("probeGatewayStatus", () => {
       timeoutMs: 5_000,
       json: true,
       requireRpc: true,
-      configPath: "/tmp/openclaw-daemon/openclaw.json",
+      configPath: "/tmp/afora-daemon/afora.json",
     });
 
     expect(result).toEqual({
@@ -323,7 +323,7 @@ describe("probeGatewayStatus", () => {
       method: "status",
       timeoutMs: 5_000,
       sharedStateMode: "read-only",
-      configPath: "/tmp/openclaw-daemon/openclaw.json",
+      configPath: "/tmp/afora-daemon/afora.json",
     });
   });
 

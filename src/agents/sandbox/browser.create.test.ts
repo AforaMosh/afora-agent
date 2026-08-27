@@ -76,8 +76,8 @@ vi.mock("../../runtime.js", () => ({
 vi.mock("../../plugin-sdk/browser-profiles.js", () => ({
   DEFAULT_BROWSER_ACTION_TIMEOUT_MS: 60_000,
   DEFAULT_BROWSER_EVALUATE_ENABLED: true,
-  DEFAULT_OPENCLAW_BROWSER_COLOR: "#FF4500",
-  DEFAULT_OPENCLAW_BROWSER_PROFILE_NAME: "openclaw",
+  DEFAULT_AFORA_BROWSER_COLOR: "#FF4500",
+  DEFAULT_AFORA_BROWSER_PROFILE_NAME: "afora",
   resolveProfile: (
     resolved: { cdpHost: string; cdpIsLoopback: boolean; profiles?: Record<string, unknown> },
     profileName: string,
@@ -97,7 +97,7 @@ vi.mock("../../plugin-sdk/browser-profiles.js", () => ({
       cdpHost: resolved.cdpHost,
       cdpIsLoopback: resolved.cdpIsLoopback,
       color: profile.color ?? "#FF4500",
-      driver: "openclaw",
+      driver: "afora",
       attachOnly: true,
     };
   },
@@ -115,11 +115,11 @@ function buildConfig(noVncEnabled: boolean): SandboxConfig {
     backend: "docker",
     scope: "session",
     workspaceAccess: "none",
-    workspaceRoot: "/tmp/openclaw-sandboxes",
+    workspaceRoot: "/tmp/afora-sandboxes",
     dockerTmpfsSource: "default",
     docker: {
-      image: "openclaw-sandbox:bookworm-slim",
-      containerPrefix: "openclaw-sbx-",
+      image: "afora-sandbox:bookworm-slim",
+      containerPrefix: "afora-sbx-",
       workdir: "/workspace",
       readOnlyRoot: true,
       tmpfs: ["/tmp", "/var/tmp", "/run"],
@@ -129,15 +129,15 @@ function buildConfig(noVncEnabled: boolean): SandboxConfig {
     },
     ssh: {
       command: "ssh",
-      workspaceRoot: "/tmp/openclaw-sandboxes",
+      workspaceRoot: "/tmp/afora-sandboxes",
       strictHostKeyChecking: true,
       updateHostKeys: true,
     },
     browser: {
       enabled: true,
-      image: "openclaw-sandbox-browser:bookworm-slim",
-      containerPrefix: "openclaw-sbx-browser-",
-      network: "openclaw-sandbox-browser",
+      image: "afora-sandbox-browser:bookworm-slim",
+      containerPrefix: "afora-sbx-browser-",
+      network: "afora-sandbox-browser",
       cdpPort: 9222,
       vncPort: 5900,
       noVncPort: 6080,
@@ -298,7 +298,7 @@ describe("ensureSandboxBrowser create args", () => {
         cfg: buildConfig(false),
       }),
     ).rejects.toThrow(
-      "Sandbox browser image openclaw-sandbox-browser:bookworm-slim is stale or incompatible",
+      "Sandbox browser image afora-sandbox-browser:bookworm-slim is stale or incompatible",
     );
 
     expect(findDockerArgsCall(dockerMocks.execDocker.mock.calls, "create")).toBeUndefined();
@@ -310,7 +310,7 @@ describe("ensureSandboxBrowser create args", () => {
       "utf8",
     );
     const label = dockerfile.match(
-      /^LABEL org\.openclaw\.sandbox-browser\.contract="([^"]+)"$/m,
+      /^LABEL org\.afora\.sandbox-browser\.contract="([^"]+)"$/m,
     )?.[1];
 
     expect(label).toBe(SANDBOX_BROWSER_IMAGE_CONTRACT_EPOCH);
@@ -330,11 +330,11 @@ describe("ensureSandboxBrowser create args", () => {
 
     expect(createArgs).toContain("127.0.0.1::6080");
     const envEntries = collectDockerFlagValues(createArgs, "-e");
-    expect(envEntries).toContain("OPENCLAW_BROWSER_NO_SANDBOX=1");
+    expect(envEntries).toContain("AFORA_BROWSER_NO_SANDBOX=1");
     const passwordEntry = envEntries.find((entry) =>
-      entry.startsWith("OPENCLAW_BROWSER_NOVNC_PASSWORD="),
+      entry.startsWith("AFORA_BROWSER_NOVNC_PASSWORD="),
     );
-    expect(passwordEntry).toMatch(/^OPENCLAW_BROWSER_NOVNC_PASSWORD=[A-Za-z0-9]{8}$/);
+    expect(passwordEntry).toMatch(/^AFORA_BROWSER_NOVNC_PASSWORD=[A-Za-z0-9]{8}$/);
     expect(result?.noVncUrl).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/sandbox\/novnc\?token=/);
     expect(result?.noVncUrl).not.toContain("password=");
   });
@@ -349,7 +349,7 @@ describe("ensureSandboxBrowser create args", () => {
 
     const createArgs = requireDockerCreateArgs();
     expect(createArgs.filter((arg) => arg === "--init")).toHaveLength(1);
-    expect(createArgs).toContain(`openclaw.createArgsEpoch=${SANDBOX_DOCKER_CREATE_ARGS_EPOCH}`);
+    expect(createArgs).toContain(`afora.createArgsEpoch=${SANDBOX_DOCKER_CREATE_ARGS_EPOCH}`);
   });
 
   it("serializes concurrent provisioning for the same browser container", async () => {
@@ -361,7 +361,7 @@ describe("ensureSandboxBrowser create args", () => {
       running: created,
     }));
     dockerMocks.readDockerContainerEnvVar.mockImplementation(async (_containerName, key) =>
-      key === "OPENCLAW_BROWSER_CDP_AUTH_TOKEN" ? (cdpAuthToken ?? null) : null,
+      key === "AFORA_BROWSER_CDP_AUTH_TOKEN" ? (cdpAuthToken ?? null) : null,
     );
     dockerMocks.readDockerContainerLabel.mockImplementation(async () => configHash ?? null);
     dockerMocks.execDocker.mockImplementation(async (args: string[]) => {
@@ -374,11 +374,11 @@ describe("ensureSandboxBrowser create args", () => {
         }
         created = true;
         cdpAuthToken = collectDockerFlagValues(args, "-e")
-          .find((entry) => entry.startsWith("OPENCLAW_BROWSER_CDP_AUTH_TOKEN="))
-          ?.slice("OPENCLAW_BROWSER_CDP_AUTH_TOKEN=".length);
+          .find((entry) => entry.startsWith("AFORA_BROWSER_CDP_AUTH_TOKEN="))
+          ?.slice("AFORA_BROWSER_CDP_AUTH_TOKEN=".length);
         configHash = collectDockerFlagValues(args, "--label")
-          .find((entry) => entry.startsWith("openclaw.configHash="))
-          ?.slice("openclaw.configHash=".length);
+          .find((entry) => entry.startsWith("afora.configHash="))
+          ?.slice("afora.configHash=".length);
       }
       return { stdout: "", stderr: "", code: 0 };
     });
@@ -413,7 +413,7 @@ describe("ensureSandboxBrowser create args", () => {
     registryMocks.readBrowserRegistry.mockResolvedValue({
       entries: [
         {
-          containerName: "openclaw-sbx-browser-session-test-0661d10a",
+          containerName: "afora-sbx-browser-session-test-0661d10a",
           sessionKey: "session:test",
           createdAtMs: 1,
           lastUsedAtMs: 0,
@@ -424,7 +424,7 @@ describe("ensureSandboxBrowser create args", () => {
       ],
     });
     BROWSER_BRIDGES.set("session:test", {
-      containerName: "openclaw-sbx-browser-session-test-0661d10a",
+      containerName: "afora-sbx-browser-session-test-0661d10a",
       bridge: { server: { listening: true } },
     });
 
@@ -436,7 +436,7 @@ describe("ensureSandboxBrowser create args", () => {
     });
 
     expect(dockerMocks.execDocker).toHaveBeenCalledWith(
-      ["rm", "-f", "openclaw-sbx-browser-session-test-0661d10a"],
+      ["rm", "-f", "afora-sbx-browser-session-test-0661d10a"],
       { allowFailure: true },
     );
     const rmCallIndex = dockerMocks.execDocker.mock.calls.findIndex(([args]) => args[0] === "rm");
@@ -458,7 +458,7 @@ describe("ensureSandboxBrowser create args", () => {
     registryMocks.readBrowserRegistry.mockResolvedValue({
       entries: [
         {
-          containerName: "openclaw-sbx-browser-session-test-0661d10a",
+          containerName: "afora-sbx-browser-session-test-0661d10a",
           sessionKey: "session:test",
           createdAtMs: 1,
           lastUsedAtMs: Date.now(),
@@ -480,7 +480,7 @@ describe("ensureSandboxBrowser create args", () => {
     expect(findDockerArgsCall(dockerMocks.execDocker.mock.calls, "create")).toBeUndefined();
     expect(runtimeMocks.log).toHaveBeenCalledWith(
       expect.stringContaining(
-        "Recreate to apply: openclaw sandbox recreate --browser --session session:test",
+        "Recreate to apply: afora sandbox recreate --browser --session session:test",
       ),
     );
     expect(registryMocks.updateBrowserRegistry.mock.calls.at(-1)?.[0]?.configHash).toBe(oldHash);
@@ -497,7 +497,7 @@ describe("ensureSandboxBrowser create args", () => {
     const createArgs = findDockerArgsCall(dockerMocks.execDocker.mock.calls, "create");
     const envEntries = collectDockerFlagValues(createArgs ?? [], "-e");
     expect(
-      envEntries.filter((entry) => entry.startsWith("OPENCLAW_BROWSER_NOVNC_PASSWORD=")),
+      envEntries.filter((entry) => entry.startsWith("AFORA_BROWSER_NOVNC_PASSWORD=")),
     ).toStrictEqual([]);
     expect(result?.noVncUrl).toBeUndefined();
   });
@@ -506,8 +506,8 @@ describe("ensureSandboxBrowser create args", () => {
     // Protected skill overlays are authoritative; a browser bind targeting the same
     // container path is skipped so the read-only skill overlay wins and Docker does
     // not reject the container with a "Duplicate mount point" error.
-    const workspaceDir = tempDirs.make("openclaw-browser-mounts-");
-    const customRoot = tempDirs.make("openclaw-browser-mounts-");
+    const workspaceDir = tempDirs.make("afora-browser-mounts-");
+    const customRoot = tempDirs.make("afora-browser-mounts-");
     mkdirSync(path.join(workspaceDir, "skills", "demo"), { recursive: true });
     const cfg = buildConfig(false);
     cfg.workspaceAccess = "rw";
@@ -563,7 +563,7 @@ describe("ensureSandboxBrowser create args", () => {
     });
 
     const createArgs = requireDockerCreateArgs();
-    expect(createArgs).toContain(`openclaw.configHash=${expectedHash}`);
+    expect(createArgs).toContain(`afora.configHash=${expectedHash}`);
     expect(collectDockerFlagValues(createArgs, "--env")).toContain("GEMINI_API_KEY=dummy-gemini");
   });
 
@@ -634,7 +634,7 @@ describe("ensureSandboxBrowser create args", () => {
           headless: false,
           noSandbox: false,
           attachOnly: true,
-          defaultProfile: "openclaw",
+          defaultProfile: "afora",
           extraArgs: [],
           tabCleanup: {
             enabled: true,
@@ -643,7 +643,7 @@ describe("ensureSandboxBrowser create args", () => {
             sweepMinutes: 5,
           },
           profiles: {
-            openclaw: {
+            afora: {
               cdpPort: 49100,
               color: "#FF4500",
             },
@@ -654,7 +654,7 @@ describe("ensureSandboxBrowser create args", () => {
     };
     BROWSER_BRIDGES.set("session:test", {
       bridge: existingBridge,
-      containerName: "openclaw-sbx-browser-session-test-0661d10a",
+      containerName: "afora-sbx-browser-session-test-0661d10a",
       authToken: "test-bridge-token",
     });
     dockerMocks.dockerContainerState.mockResolvedValue({ exists: true, running: true });
@@ -698,7 +698,7 @@ describe("ensureSandboxBrowser create args", () => {
           headless: false,
           noSandbox: false,
           attachOnly: true,
-          defaultProfile: "openclaw",
+          defaultProfile: "afora",
           extraArgs: [],
           tabCleanup: {
             enabled: true,
@@ -707,7 +707,7 @@ describe("ensureSandboxBrowser create args", () => {
             sweepMinutes: 5,
           },
           profiles: {
-            openclaw: {
+            afora: {
               cdpPort: 49100,
               color: "#FF4500",
             },
@@ -717,7 +717,7 @@ describe("ensureSandboxBrowser create args", () => {
     };
     BROWSER_BRIDGES.set("session:test", {
       bridge: existingBridge,
-      containerName: "openclaw-sbx-browser-session-test-0661d10a",
+      containerName: "afora-sbx-browser-session-test-0661d10a",
       authToken: "test-bridge-token",
     });
     dockerMocks.dockerContainerState.mockResolvedValue({ exists: true, running: true });
@@ -777,7 +777,7 @@ describe("ensureSandboxBrowser create args", () => {
 
     const createArgs = findDockerArgsCall(dockerMocks.execDocker.mock.calls, "create");
     const labels = collectDockerFlagValues(createArgs ?? [], "--label");
-    expect(labels).toContain(`openclaw.mountFormatVersion=${SANDBOX_MOUNT_FORMAT_VERSION}`);
+    expect(labels).toContain(`afora.mountFormatVersion=${SANDBOX_MOUNT_FORMAT_VERSION}`);
   });
 
   it("force-removes the browser container when CDP never becomes reachable", async () => {
@@ -812,7 +812,7 @@ describe("ensureSandboxBrowser create args", () => {
     ).rejects.toThrow("hung container has been forcefully removed");
 
     expect(dockerMocks.execDocker).toHaveBeenCalledWith(
-      ["rm", "-f", "openclaw-sbx-browser-session-test-0661d10a"],
+      ["rm", "-f", "afora-sbx-browser-session-test-0661d10a"],
       { allowFailure: true },
     );
   });
@@ -958,20 +958,20 @@ describe("ensureSandboxBrowser create args", () => {
     const createArgs = findDockerArgsCall(dockerMocks.execDocker.mock.calls, "create");
     const envEntries = collectDockerFlagValues(createArgs ?? [], "-e");
     const authEntry = envEntries.find((entry) =>
-      entry.startsWith("OPENCLAW_BROWSER_CDP_AUTH_TOKEN="),
+      entry.startsWith("AFORA_BROWSER_CDP_AUTH_TOKEN="),
     );
-    expect(authEntry).toMatch(/^OPENCLAW_BROWSER_CDP_AUTH_TOKEN=[0-9a-f]{48}$/);
-    expect(envEntries).not.toContain("OPENCLAW_BROWSER_CDP_SOURCE_RANGE=172.21.0.1/32");
+    expect(authEntry).toMatch(/^AFORA_BROWSER_CDP_AUTH_TOKEN=[0-9a-f]{48}$/);
+    expect(envEntries).not.toContain("AFORA_BROWSER_CDP_SOURCE_RANGE=172.21.0.1/32");
 
     const token = requireValue(authEntry, "CDP auth env").slice(
-      "OPENCLAW_BROWSER_CDP_AUTH_TOKEN=".length,
+      "AFORA_BROWSER_CDP_AUTH_TOKEN=".length,
     );
     const profiles = latestBridgeResolved().profiles as Record<
       string,
       { cdpPort?: number; cdpUrl?: string }
     >;
-    expect(profiles.openclaw?.cdpPort).toBe(49100);
-    expect(profiles.openclaw?.cdpUrl).toBe(`http://openclaw:${token}@127.0.0.1:49100`);
+    expect(profiles.afora?.cdpPort).toBe(49100);
+    expect(profiles.afora?.cdpUrl).toBe(`http://afora:${token}@127.0.0.1:49100`);
   });
 
   it("passes explicit cdpSourceRange as an additional relay filter", async () => {
@@ -987,7 +987,7 @@ describe("ensureSandboxBrowser create args", () => {
 
     const createArgs = findDockerArgsCall(dockerMocks.execDocker.mock.calls, "create");
     const envEntries = collectDockerFlagValues(createArgs ?? [], "-e");
-    expect(envEntries).toContain("OPENCLAW_BROWSER_CDP_SOURCE_RANGE=10.0.0.0/24");
+    expect(envEntries).toContain("AFORA_BROWSER_CDP_SOURCE_RANGE=10.0.0.0/24");
   });
 
   it("recreates existing browser containers that do not expose relay auth", async () => {
@@ -1002,14 +1002,14 @@ describe("ensureSandboxBrowser create args", () => {
     });
 
     expect(dockerMocks.execDocker).toHaveBeenCalledWith(
-      ["rm", "-f", "openclaw-sbx-browser-session-test-0661d10a"],
+      ["rm", "-f", "afora-sbx-browser-session-test-0661d10a"],
       { allowFailure: true },
     );
     requireDockerCreateArgs();
   });
 
   it("retains a stale container and cached bridge until bridge cleanup can retry", async () => {
-    const containerName = "openclaw-sbx-browser-session-test-0661d10a";
+    const containerName = "afora-sbx-browser-session-test-0661d10a";
     const cached = {
       containerName,
       bridge: { server: { listening: true } },

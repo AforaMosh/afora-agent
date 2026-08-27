@@ -9,12 +9,12 @@ Status: text + DM attachments are supported; channel/group file sending requires
 
 ## Bundled plugin
 
-Microsoft Teams ships as a bundled plugin in current OpenClaw releases; no separate install is required in the normal packaged build.
+Microsoft Teams ships as a bundled plugin in current Afora releases; no separate install is required in the normal packaged build.
 
 On an older build or a custom install that excludes bundled Teams, install the npm package directly:
 
 ```bash
-openclaw plugins install @openclaw/msteams
+afora plugins install @afora/msteams
 ```
 
 Use the bare package to follow the current official release tag. Pin an exact version only when you need a reproducible install.
@@ -22,7 +22,7 @@ Use the bare package to follow the current official release tag. Pin an exact ve
 Local checkout (running from a git repo):
 
 ```bash
-openclaw plugins install ./path/to/local/msteams-plugin
+afora plugins install ./path/to/local/msteams-plugin
 ```
 
 Details: [Plugins](/tools/plugin)
@@ -49,11 +49,11 @@ Install and authenticate the devtunnel CLI if needed ([getting started guide](ht
 
 ```bash
 # One-time setup (persistent URL across sessions):
-devtunnel create my-openclaw-bot --allow-anonymous
-devtunnel port create my-openclaw-bot -p 3978 --protocol auto
+devtunnel create my-afora-bot --allow-anonymous
+devtunnel port create my-afora-bot -p 3978 --protocol auto
 
 # Each dev session:
-devtunnel host my-openclaw-bot
+devtunnel host my-afora-bot
 # Your endpoint: https://<tunnel-id>.devtunnels.ms/api/messages
 ```
 
@@ -67,13 +67,13 @@ Alternatives: `ngrok http 3978` or `tailscale funnel 3978` (URLs may change each
 
 ```bash
 teams app create \
-  --name "OpenClaw" \
+  --name "Afora" \
   --endpoint "https://<your-tunnel-url>/api/messages"
 ```
 
 This creates an Entra ID (Azure AD) application, generates a client secret, builds and uploads a Teams app manifest (with icons), and registers a Teams-managed bot (no Azure subscription needed). The output includes `CLIENT_ID`, `CLIENT_SECRET`, `TENANT_ID`, and a **Teams App ID**; it also offers to install the app in Teams directly.
 
-**4. Configure OpenClaw** using the credentials from the output:
+**4. Configure Afora** using the credentials from the output:
 
 ```json5
 {
@@ -115,7 +115,7 @@ Group chats are blocked by default (`channels.msteams.groupPolicy: "allowlist"`)
 
 ## Goals
 
-- Talk to OpenClaw via Teams DMs, group chats, or channels.
+- Talk to Afora via Teams DMs, group chats, or channels.
 - Keep routing deterministic: replies always go back to the channel they arrived on.
 - Default to safe channel behavior (mentions required unless configured otherwise).
 
@@ -137,13 +137,13 @@ Disable with:
 
 - Default: `channels.msteams.dmPolicy = "pairing"`. Unknown senders are ignored until approved.
 - `channels.msteams.allowFrom` should use stable AAD object IDs or static sender access groups such as `accessGroup:core-team`.
-- Do not rely on UPN/display-name matching for allowlists; they can change. OpenClaw disables direct name matching by default; opt in with `channels.msteams.dangerouslyAllowNameMatching: true`.
+- Do not rely on UPN/display-name matching for allowlists; they can change. Afora disables direct name matching by default; opt in with `channels.msteams.dangerouslyAllowNameMatching: true`.
 - The wizard can resolve names to IDs via Microsoft Graph when credentials allow.
 
 **Group access**
 
 - Default: `channels.msteams.groupPolicy = "allowlist"` (blocked unless you add `groupAllowFrom`). `channels.defaults.groupPolicy` can override the shared default when `channels.msteams.groupPolicy` is unset.
-- `channels.msteams.groupAllowFrom` controls which senders, static sender access groups, or group/channel conversation IDs can trigger in group chats/channels (falls back to `channels.msteams.allowFrom`). Conversation IDs can use `19:...@thread.tacv2`, `19:...@thread.v2`, or `19:...@thread.skype`; preserve the exact ID casing. OpenClaw ignores `;messageid=...` suffixes. Conversation IDs never grant personal-DM access.
+- `channels.msteams.groupAllowFrom` controls which senders, static sender access groups, or group/channel conversation IDs can trigger in group chats/channels (falls back to `channels.msteams.allowFrom`). Conversation IDs can use `19:...@thread.tacv2`, `19:...@thread.v2`, or `19:...@thread.skype`; preserve the exact ID casing. Afora ignores `;messageid=...` suffixes. Conversation IDs never grant personal-DM access.
 - Set `groupPolicy: "open"` to allow any member (still mention-gated by default).
 - To block **all** channels, set `channels.msteams.groupPolicy: "disabled"`.
 
@@ -169,7 +169,7 @@ Example:
 - Alternatively, deliberately set `groupPolicy: "open"` for broader delegated reads. This also admits **any group sender** (still mention-gated by default), so it is less restrictive than a scoped team/channel route.
 - Direct-operator reads and reads in the current conversation do not require an additional team/channel route.
 - The configure wizard accepts `Team/Channel` entries and stores them for you.
-- On startup, OpenClaw resolves team/channel and user allowlist names to IDs (when Graph permissions allow) and logs the mapping. Unresolved names are kept as typed but ignored for routing unless `channels.msteams.dangerouslyAllowNameMatching: true` is set.
+- On startup, Afora resolves team/channel and user allowlist names to IDs (when Graph permissions allow) and logs the mapping. Unresolved names are kept as typed but ignored for routing unless `channels.msteams.dangerouslyAllowNameMatching: true` is set.
 
 Example:
 
@@ -200,7 +200,7 @@ Example:
 2. Create an **Azure Bot** (App ID + secret + tenant ID).
 3. Build a **Teams app package** referencing the bot, including the RSC permissions below.
 4. Upload/install the Teams app into a team (or personal scope for DMs).
-5. Configure `msteams` in `~/.openclaw/openclaw.json` (or env vars) and start the gateway.
+5. Configure `msteams` in `~/.AforaMosh/afora-agent.json` (or env vars) and start the gateway.
 6. The gateway listens for Bot Framework webhook traffic on `/api/messages` by default.
 
 ### Step 1: Create Azure Bot
@@ -210,7 +210,7 @@ Example:
 
    | Field              | Value                                                    |
    | ------------------ | -------------------------------------------------------- |
-   | **Bot handle**     | Your bot name, e.g., `openclaw-msteams` (must be unique) |
+   | **Bot handle**     | Your bot name, e.g., `afora-msteams` (must be unique) |
    | **Subscription**   | Select your Azure subscription                           |
    | **Resource group** | Create new or use existing                               |
    | **Pricing tier**   | **Free** for dev/testing                                 |
@@ -251,7 +251,7 @@ Creation of new multi-tenant bots was deprecated after 2025-07-31. Use **Single 
 - Create icons: `outline.png` (32x32) and `color.png` (192x192).
 - Zip `manifest.json`, `outline.png`, and `color.png` together.
 
-### Step 6: Configure OpenClaw
+### Step 6: Configure Afora
 
 ```json5
 {
@@ -277,7 +277,7 @@ The Teams channel starts automatically when the plugin is available and `msteams
 
 ## Federated authentication (certificate plus managed identity)
 
-For production, OpenClaw supports **federated authentication** as an alternative to client secrets, via `channels.msteams.authType: "federated"`. Two methods:
+For production, Afora supports **federated authentication** as an alternative to client secrets, via `channels.msteams.authType: "federated"`. Two methods:
 
 ### Option A: Certificate-based authentication
 
@@ -318,7 +318,7 @@ Use Azure Managed Identity for passwordless authentication on Azure infrastructu
 
 1. The bot pod/VM has a managed identity (system- or user-assigned).
 2. A federated identity credential links the managed identity to the Entra ID app registration.
-3. At runtime, OpenClaw uses `@azure/identity` to acquire tokens from the Azure IMDS endpoint.
+3. At runtime, Afora uses `@azure/identity` to acquire tokens from the Azure IMDS endpoint.
 4. The token is passed to the Teams SDK for bot authentication.
 
 **Prerequisites:**
@@ -399,7 +399,7 @@ For AKS deployments using workload identity:
 
 `certificateThumbprint` can be set alongside `certificatePath` but is not read by the auth path today; it is accepted for forward compatibility only.
 
-**Default:** when `authType` is unset, OpenClaw uses client-secret authentication (`appPassword`). Existing configs keep working unchanged.
+**Default:** when `authType` is unset, Afora uses client-secret authentication (`appPassword`). Existing configs keep working unchanged.
 
 ## Local development (tunneling)
 
@@ -407,11 +407,11 @@ Teams cannot reach `localhost`. Use a persistent dev tunnel so the URL stays sta
 
 ```bash
 # One-time setup:
-devtunnel create my-openclaw-bot --allow-anonymous
-devtunnel port create my-openclaw-bot -p 3978 --protocol auto
+devtunnel create my-afora-bot --allow-anonymous
+devtunnel port create my-afora-bot -p 3978 --protocol auto
 
 # Each dev session:
-devtunnel host my-openclaw-bot
+devtunnel host my-afora-bot
 ```
 
 Alternatives: `ngrok http 3978` or `tailscale funnel 3978` (URLs may change each session).
@@ -440,7 +440,7 @@ Checks bot registration, AAD app, manifest, and SSO configuration in one pass.
 
 ## Environment variables
 
-These auth-related config keys can be set via environment variables instead of `openclaw.json` (other config keys, such as `groupPolicy` or `historyLimit`, are config-only):
+These auth-related config keys can be set via environment variables instead of `afora.json` (other config keys, such as `groupPolicy` or `historyLimit`, are config-only):
 
 | Env var                              | Config key                | Notes                               |
 | ------------------------------------ | ------------------------- | ----------------------------------- |
@@ -455,7 +455,7 @@ These auth-related config keys can be set via environment variables instead of `
 
 ## Member info action
 
-OpenClaw exposes a Graph-backed `member-info` action for Microsoft Teams so agents and automations can resolve verified roster details for a configured conversation.
+Afora exposes a Graph-backed `member-info` action for Microsoft Teams so agents and automations can resolve verified roster details for a configured conversation.
 
 Requirements:
 
@@ -508,14 +508,14 @@ Minimal, valid example with the required fields. Replace IDs and URLs.
   manifestVersion: "1.23",
   version: "1.0.0",
   id: "00000000-0000-0000-0000-000000000000",
-  name: { short: "OpenClaw" },
+  name: { short: "Afora" },
   developer: {
     name: "Your Org",
     websiteUrl: "https://example.com",
     privacyUrl: "https://example.com/privacy",
     termsOfUseUrl: "https://example.com/terms",
   },
-  description: { short: "OpenClaw in Teams", full: "OpenClaw in Teams" },
+  description: { short: "Afora in Teams", full: "Afora in Teams" },
   icons: { outline: "outline.png", color: "color.png" },
   accentColor: "#5B6DEF",
   bots: [
@@ -651,7 +651,7 @@ This applies to channels and group chats only. It adds one Graph message lookup 
 
 ### Webhook timeouts
 
-Teams delivers messages via HTTP webhook. OpenClaw applies fixed HTTP server
+Teams delivers messages via HTTP webhook. Afora applies fixed HTTP server
 timeouts to that webhook listener: 30s inactivity, 30s total request, and 15s
 to receive headers. Optional inbound media and context enrichment has a shared
 10-second budget. The SDK returns after the raw activity is durably appended;
@@ -670,11 +670,11 @@ Public cloud is the default. You do not need to set `channels.msteams.cloud` or 
 For non-public Teams clouds, set `cloud` and the matching proactive boundary when Microsoft publishes one:
 
 - `channels.msteams.cloud` selects the Teams SDK cloud preset for authentication, JWT validation, token services, and Graph scope.
-- `channels.msteams.serviceUrl` selects the Bot Connector endpoint boundary used to validate stored conversation references before proactive sends, edits, deletes, cards, polls, file-consent messages, and queued long-running replies. It is required for USGov and DoD SDK clouds. For China/21Vianet, OpenClaw uses the SDK `China` preset and accepts stored/configured service URLs only on Azure China Bot Framework channel hosts.
+- `channels.msteams.serviceUrl` selects the Bot Connector endpoint boundary used to validate stored conversation references before proactive sends, edits, deletes, cards, polls, file-consent messages, and queued long-running replies. It is required for USGov and DoD SDK clouds. For China/21Vianet, Afora uses the SDK `China` preset and accepts stored/configured service URLs only on Azure China Bot Framework channel hosts.
 
 Microsoft publishes the global proactive Bot Connector endpoints in the [Create the conversation](https://learn.microsoft.com/en-us/microsoftteams/platform/bots/how-to/conversations/send-proactive-messages?tabs=dotnet#create-the-conversation) section of the Teams proactive messaging docs. Use the incoming activity's `serviceUrl` when available; otherwise use Microsoft's table below.
 
-| Teams environment | OpenClaw config                                             | Proactive `serviceUrl`                             |
+| Teams environment | Afora config                                             | Proactive `serviceUrl`                             |
 | ----------------- | ----------------------------------------------------------- | -------------------------------------------------- |
 | Public            | no cloud/serviceUrl config needed                           | `https://smba.trafficmanager.net/teams`            |
 | GCC               | set `serviceUrl`; no separate Teams SDK cloud preset exists | `https://smba.infra.gcc.teams.microsoft.com/teams` |
@@ -707,9 +707,9 @@ Example for GCC High:
 }
 ```
 
-`channels.msteams.serviceUrl` is restricted to supported Microsoft Teams Bot Connector hosts. When a service URL is configured, OpenClaw checks that the stored conversation `serviceUrl` uses the same host before proactive sends, edits, deletes, cards, polls, or queued long-running replies run. With the default public-cloud config, OpenClaw fails closed if a stored conversation points outside the public Teams Connector host. Receive a fresh message from the conversation after changing cloud/service URL settings so the stored conversation reference is current.
+`channels.msteams.serviceUrl` is restricted to supported Microsoft Teams Bot Connector hosts. When a service URL is configured, Afora checks that the stored conversation `serviceUrl` uses the same host before proactive sends, edits, deletes, cards, polls, or queued long-running replies run. With the default public-cloud config, Afora fails closed if a stored conversation points outside the public Teams Connector host. Receive a fresh message from the conversation after changing cloud/service URL settings so the stored conversation reference is current.
 
-China/21Vianet has no separate global proactive `smba` URL in Microsoft's Teams proactive endpoint table. Configure `cloud: "China"` so the Teams SDK uses Azure China auth, token, and JWT endpoints. Proactive sends then require a stored conversation reference from an incoming China Teams activity, or an explicitly configured service URL, on the Azure China Bot Framework channel boundary (`*.botframework.azure.cn`). Graph-backed Teams helpers are disabled for `cloud: "China"` until OpenClaw routes Graph requests through the Azure China Graph endpoint.
+China/21Vianet has no separate global proactive `smba` URL in Microsoft's Teams proactive endpoint table. Configure `cloud: "China"` so the Teams SDK uses Azure China auth, token, and JWT endpoints. Proactive sends then require a stored conversation reference from an incoming China Teams activity, or an explicitly configured service URL, on the Azure China Bot Framework channel boundary (`*.botframework.azure.cn`). Graph-backed Teams helpers are disabled for `cloud: "China"` until Afora routes Graph requests through the Azure China Graph endpoint.
 
 ### Formatting
 
@@ -820,7 +820,7 @@ For proactive sends into a stored channel conversation (queued tool-call replies
 
 ### Thread context preservation
 
-When `replyStyle: "thread"` is in effect and the bot was @mentioned from inside a channel thread, OpenClaw re-attaches the original thread root to the outbound conversation reference (`19:...@thread.tacv2;messageid=<root>`) so the reply lands inside the same thread. This holds for both live (in-turn) sends and proactive sends made after the Bot Framework turn context has expired (e.g., long-running agents, queued tool-call replies via `mcp__openclaw__message`).
+When `replyStyle: "thread"` is in effect and the bot was @mentioned from inside a channel thread, Afora re-attaches the original thread root to the outbound conversation reference (`19:...@thread.tacv2;messageid=<root>`) so the reply lands inside the same thread. This holds for both live (in-turn) sends and proactive sends made after the Bot Framework turn context has expired (e.g., long-running agents, queued tool-call replies via `mcp__afora__message`).
 
 The thread root is taken from the stored `threadId` on the conversation reference. Older stored references that predate `threadId` fall back to `activityId` (whatever inbound activity last seeded the conversation), so existing deployments keep working without a re-seed.
 
@@ -835,7 +835,7 @@ When `replyStyle: "top-level"` is in effect, channel-thread inbounds are intenti
 - For explicit file-first sends, use `action=upload-file` with `media` / `filePath` / `path`; optional `message` becomes the accompanying text/comment, and `filename` (or `title`) overrides the uploaded name.
 
 Without Graph permissions, channel messages with images arrive as text-only (the image content is not accessible to the bot).
-By default, OpenClaw only downloads media from Microsoft/Teams hostnames. Override with `channels.msteams.mediaAllowHosts` (use `["*"]` to allow any host).
+By default, Afora only downloads media from Microsoft/Teams hostnames. Override with `channels.msteams.mediaAllowHosts` (use `["*"]` to allow any host).
 Authorization headers are only attached for hosts in `channels.msteams.mediaAuthAllowHosts` (defaults to Graph + Bot Framework hosts). Keep this list strict (avoid multi-tenant suffixes).
 
 ## Sending files in group chats
@@ -872,7 +872,7 @@ Bots use an application identity, while Microsoft Graph's `/me` resource [requir
    # Response includes: "id": "contoso.sharepoint.com,guid1,guid2"
    ```
 
-4. **Configure OpenClaw:**
+4. **Configure Afora:**
 
    ```json5
    {
@@ -893,7 +893,7 @@ Bots use an application identity, while Microsoft Graph's `/me` resource [requir
 | Group chat + `Sites.ReadWrite.All` + a supported chat-member read grant | Per-user sharing link (only chat members can access)      |
 | Group chat without a supported chat-member read grant                   | Send fails closed                                         |
 
-Per-user sharing is more secure since only chat participants can access the file. OpenClaw requires a successful member lookup for group chats; timeouts, transport failures, empty results, and Graph API denials fail the send instead of widening access to the organization.
+Per-user sharing is more secure since only chat participants can access the file. Afora requires a successful member lookup for group chats; timeouts, transport failures, empty results, and Graph API denials fail the send instead of widening access to the organization.
 
 ### Fallback behavior
 
@@ -907,23 +907,23 @@ Per-user sharing is more secure since only chat participants can access the file
 
 ### Files stored location
 
-Uploaded files are stored in a `/OpenClawShared/` folder in the configured SharePoint site's default document library.
+Uploaded files are stored in a `/AforaShared/` folder in the configured SharePoint site's default document library.
 
 ## Polls (Adaptive Cards)
 
-OpenClaw sends Teams polls as Adaptive Cards (there is no native Teams poll API).
+Afora sends Teams polls as Adaptive Cards (there is no native Teams poll API).
 
-- CLI: `openclaw message poll --channel msteams --target conversation:<id> --poll-question "..." --poll-option "..." --poll-option "..."`.
-- Votes are recorded by the gateway in OpenClaw plugin-state SQLite under `state/openclaw.sqlite`.
-- Existing `msteams-polls.json` files are imported by `openclaw doctor --fix`, not by the running plugin.
+- CLI: `afora message poll --channel msteams --target conversation:<id> --poll-question "..." --poll-option "..." --poll-option "..."`.
+- Votes are recorded by the gateway in Afora plugin-state SQLite under `state/afora.sqlite`.
+- Existing `msteams-polls.json` files are imported by `afora doctor --fix`, not by the running plugin.
 - The gateway must stay online to record votes.
 - Polls do not auto-post result summaries, and there is no poll-results CLI yet.
 
 ## Presentation cards
 
-Send semantic presentation payloads to Teams users or conversations using the `message` tool, CLI, or normal reply delivery. OpenClaw renders them as Teams Adaptive Cards from the generic presentation contract.
+Send semantic presentation payloads to Teams users or conversations using the `message` tool, CLI, or normal reply delivery. Afora renders them as Teams Adaptive Cards from the generic presentation contract.
 
-The `presentation` parameter accepts semantic blocks. When `presentation` is provided, the message text is optional. Buttons render as Adaptive Card submit or URL actions. Select menus are not native in the Teams renderer, so OpenClaw downgrades them to readable text before delivery.
+The `presentation` parameter accepts semantic blocks. When `presentation` is provided, the message text is optional. Buttons render as Adaptive Card submit or URL actions. Select menus are not native in the Teams renderer, so Afora downgrades them to readable text before delivery.
 
 **Agent tool:**
 
@@ -942,7 +942,7 @@ The `presentation` parameter accepts semantic blocks. When `presentation` is pro
 **CLI:**
 
 ```bash
-openclaw message send --channel msteams \
+afora message send --channel msteams \
   --target "conversation:19:abc...@thread.tacv2" \
   --presentation '{"title":"Hello","blocks":[{"type":"text","text":"Hello!"}]}'
 ```
@@ -964,16 +964,16 @@ MSTeams targets use prefixes to distinguish between users and conversations:
 
 ```bash
 # Send to a user by ID
-openclaw message send --channel msteams --target "user:40a1a0ed-..." --message "Hello"
+afora message send --channel msteams --target "user:40a1a0ed-..." --message "Hello"
 
 # Send to a user by display name (triggers Graph API lookup)
-openclaw message send --channel msteams --target "user:John Smith" --message "Hello"
+afora message send --channel msteams --target "user:John Smith" --message "Hello"
 
 # Send to a group chat or channel
-openclaw message send --channel msteams --target "conversation:19:abc...@thread.tacv2" --message "Hello"
+afora message send --channel msteams --target "conversation:19:abc...@thread.tacv2" --message "Hello"
 
 # Send a presentation card to a conversation
-openclaw message send --channel msteams --target "conversation:19:abc...@thread.tacv2" \
+afora message send --channel msteams --target "conversation:19:abc...@thread.tacv2" \
   --presentation '{"title":"Hello","blocks":[{"type":"text","text":"Hello"}]}'
 ```
 
@@ -1006,7 +1006,7 @@ Without the `user:` prefix, names default to group or team resolution. Always us
 
 ## Proactive messaging
 
-- Proactive messages are only possible **after** a user has interacted, because OpenClaw stores conversation references at that point.
+- Proactive messages are only possible **after** a user has interacted, because Afora stores conversation references at that point.
 - See [/gateway/configuration](/gateway/configuration) for `dmPolicy` and allowlist gating.
 
 ## Team and Channel IDs (Common Gotcha)
@@ -1033,7 +1033,7 @@ https://teams.microsoft.com/l/channel/19%3A15bc...%40thread.tacv2/ChannelName?gr
 
 - Team key = path segment after `/team/` (URL-decoded, e.g., `19:Bk4j...@thread.tacv2`; older tenants may show `@thread.skype`, which is also valid).
 - Channel key = path segment after `/channel/` (URL-decoded).
-- **Ignore** the `groupId` query parameter for OpenClaw routing. It is the Microsoft Entra group ID, not the Bot Framework conversation ID used in incoming Teams activities.
+- **Ignore** the `groupId` query parameter for Afora routing. It is the Microsoft Entra group ID, not the Bot Framework conversation ID used in incoming Teams activities.
 
 ## Private channels
 

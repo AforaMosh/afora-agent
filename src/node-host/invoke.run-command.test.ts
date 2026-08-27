@@ -110,7 +110,7 @@ describe("runCommand", () => {
 
   it("preserves child launch errors", async () => {
     const result = await testing.runCommand(
-      [`openclaw-missing-${process.pid}-${Date.now()}`],
+      [`afora-missing-${process.pid}-${Date.now()}`],
       undefined,
       undefined,
       undefined,

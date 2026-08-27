@@ -18,8 +18,8 @@ import type { ResolvedSmsAccount } from "./types.js";
 
 const fetchWithSsrFGuardMock = vi.hoisted(() => vi.fn());
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/ssrf-runtime")>();
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/ssrf-runtime")>();
   return {
     ...actual,
     fetchWithSsrFGuard: (...args: unknown[]) => fetchWithSsrFGuardMock(...args),
@@ -396,7 +396,7 @@ describe("Twilio SMS helpers", () => {
     expect(resolveTwilioStatusCallbackUrl("   ")).toBe("");
   });
 
-  it("enforces OpenClaw's defensive 4,000-character status callback cap", () => {
+  it("enforces Afora's defensive 4,000-character status callback cap", () => {
     const prefix = "https://gateway.example.com/webhooks/sms?x=";
     const suffix = "#rp=ct,rt,5xx&rt=5000&rc=1";
     const paddingLength = 4_000 - prefix.length - suffix.length;

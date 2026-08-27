@@ -14,7 +14,7 @@ function createContext(): BrowserRouteContext {
 }
 
 function cacheScope(documentIdentity: string) {
-  return { profile: "openclaw", targetId: "tab-1", documentIdentity, family };
+  return { profile: "afora", targetId: "tab-1", documentIdentity, family };
 }
 
 describe("snapshot delta cache", () => {

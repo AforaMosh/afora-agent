@@ -1,9 +1,9 @@
-import { err as resultError, ok, type Result } from "@openclaw/normalization-core/result";
+import { err as resultError, ok, type Result } from "@afora/normalization-core/result";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+} from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import { activateContextEngineRegistrations } from "../context-engine/registry.js";
 import { resolveRealpathOrAbsolute } from "../infra/boundary-path.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
@@ -68,7 +68,7 @@ export type AuthorizedDreamingSidecar = {
 };
 
 function resolveDreamingSidecarEngineId(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   memorySlot: string | null | undefined;
 }): string | null {
   const normalizedMemorySlot = normalizeLowercaseStringOrEmpty(params.memorySlot);
@@ -87,7 +87,7 @@ function resolveDreamingSidecarEngineId(params: {
 }
 
 export function resolveAuthorizedDreamingSidecar(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   normalized: NormalizedPluginsConfig;
   activationSource: PluginActivationConfigSource;
   manifestRegistry: PluginManifestRegistry;
@@ -302,8 +302,8 @@ export function createManifestPluginRecord(params: {
     description: manifestRecord.description,
     packageVersion: manifestRecord.packageVersion,
     version: manifestRecord.version,
-    builtWithOpenClawVersion: normalizeOptionalString(
-      candidate.packageManifest?.build?.openclawVersion,
+    builtWithAforaVersion: normalizeOptionalString(
+      candidate.packageManifest?.build?.aforaVersion,
     ),
     packageName: manifestRecord.packageName,
     format: manifestRecord.format,

@@ -1,7 +1,7 @@
 // QA Lab plugin module implements suite launch behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { formatErrorMessage, toErrorObject } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage, toErrorObject } from "afora-agent/plugin-sdk/error-runtime";
 import { isRepoRootRelativeRef, toRepoRelativePath } from "./cli-paths.js";
 import { QaSuiteArtifactError, QaSuiteInfraError } from "./errors.js";
 import {
@@ -294,8 +294,8 @@ async function resolveQaFlowChannelGroups(
   // Crabline only for Crabline-owned runs so unrelated transports stay isolated.
   const {
     isCrablineServerChannel,
-    OPENCLAW_CRABLINE_DEFAULT_CHANNEL,
-    resolveOpenClawCrablineChannelDriverSelection,
+    AFORA_CRABLINE_DEFAULT_CHANNEL,
+    resolveAforaCrablineChannelDriverSelection,
   } = await import("@openclaw/crabline");
   if (runParams.expandScenarioChannels) {
     const groups = groupQaScenariosByExecutionCell(
@@ -304,7 +304,7 @@ async function resolveQaFlowChannelGroups(
         scenarios,
         channelDriver: "crabline",
         channel: runParams.channelDriverSelection?.channel,
-        defaultChannel: OPENCLAW_CRABLINE_DEFAULT_CHANNEL,
+        defaultChannel: AFORA_CRABLINE_DEFAULT_CHANNEL,
         supportsChannel: isCrablineServerChannel,
         expandChannels: true,
       }),
@@ -313,13 +313,13 @@ async function resolveQaFlowChannelGroups(
       channel,
       channelId: undefined,
       channelDriverSelection: channel
-        ? resolveOpenClawCrablineChannelDriverSelection({ channel })
+        ? resolveAforaCrablineChannelDriverSelection({ channel })
         : undefined,
       scenarios: groupedScenarios,
     }));
   }
   const channels = resolveQaSuiteScenarioChannels({
-    defaultChannel: OPENCLAW_CRABLINE_DEFAULT_CHANNEL,
+    defaultChannel: AFORA_CRABLINE_DEFAULT_CHANNEL,
     explicitChannel: runParams.channelDriverSelection?.channel,
     scenarios: [...scenarios],
   });
@@ -331,7 +331,7 @@ async function resolveQaFlowChannelGroups(
         channelId: undefined,
         channelDriverSelection:
           runParams.channelDriverSelection ??
-          resolveOpenClawCrablineChannelDriverSelection({ channel: singleChannel }),
+          resolveAforaCrablineChannelDriverSelection({ channel: singleChannel }),
         scenarios: [...scenarios],
       },
     ];
@@ -341,10 +341,10 @@ async function resolveQaFlowChannelGroups(
   return channels.map((channel) => ({
     channel,
     channelId: undefined,
-    channelDriverSelection: resolveOpenClawCrablineChannelDriverSelection({ channel }),
+    channelDriverSelection: resolveAforaCrablineChannelDriverSelection({ channel }),
     scenarios: scenarios.filter(
       (scenario) =>
-        (normalizeQaSuiteScenarioChannel(scenario) ?? OPENCLAW_CRABLINE_DEFAULT_CHANNEL) ===
+        (normalizeQaSuiteScenarioChannel(scenario) ?? AFORA_CRABLINE_DEFAULT_CHANNEL) ===
         channel,
     ),
   }));
@@ -651,7 +651,7 @@ function renderUnifiedQaSuiteReport(params: {
   startedAt: Date;
 }) {
   return renderQaMarkdownReport({
-    title: "OpenClaw QA Scenario Suite",
+    title: "Afora QA Scenario Suite",
     startedAt: params.startedAt,
     finishedAt: params.finishedAt,
     checks: [],

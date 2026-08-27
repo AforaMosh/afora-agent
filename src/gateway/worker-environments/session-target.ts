@@ -1,5 +1,5 @@
 import type { SessionTranscriptWriteScope } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveSessionIdMatchSelection } from "../../sessions/session-id-resolution.js";
 import {
   loadCombinedSessionStoreForGatewayCore,
@@ -22,7 +22,7 @@ export type ResolvedWorkerSessionTarget = Omit<
 };
 
 export function resolveWorkerSessionTarget(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   sessionId: string,
 ): ResolvedWorkerSessionTarget | undefined {
   const { store } = loadCombinedSessionStoreForGatewayCore(cfg);

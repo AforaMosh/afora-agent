@@ -11,8 +11,8 @@ Extract readable article content from local HTML web fetch responses.
 
 ## Distribution
 
-- Package: `@openclaw/web-readability-plugin`
-- Install route: included in OpenClaw
+- Package: `@afora/web-readability-plugin`
+- Install route: included in Afora
 
 ## Surface
 

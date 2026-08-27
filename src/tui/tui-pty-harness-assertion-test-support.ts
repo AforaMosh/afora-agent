@@ -445,16 +445,16 @@ async function exerciseSelectorOutputSafety(
   const selectedSessionKey = `agent:main:${sessionKey.text}`;
   const fixture = await startFixture({
     env: {
-      OPENCLAW_TUI_PTY_COLS: "240",
-      OPENCLAW_TUI_PTY_ROWS: "24",
-      OPENCLAW_TUI_PTY_MODEL: "fixture-provider/fixture-model",
-      OPENCLAW_TUI_PTY_PICKER_FIXTURE: "1",
-      OPENCLAW_TUI_PTY_PICKER_MODEL_VALUE: selectedModel,
-      OPENCLAW_TUI_PTY_PICKER_MODEL_NAME: modelName.text,
-      OPENCLAW_TUI_PTY_PICKER_SESSION_KEY: selectedSessionKey,
-      OPENCLAW_TUI_PTY_PICKER_SESSION_TITLE: sessionTitle.text,
-      OPENCLAW_TUI_PTY_PICKER_SESSION_PREVIEW: sessionPreview.text,
-      OPENCLAW_TUI_PTY_PICKER_SESSION_DISPLAY_NAME: sessionDisplay.text,
+      AFORA_TUI_PTY_COLS: "240",
+      AFORA_TUI_PTY_ROWS: "24",
+      AFORA_TUI_PTY_MODEL: "fixture-provider/fixture-model",
+      AFORA_TUI_PTY_PICKER_FIXTURE: "1",
+      AFORA_TUI_PTY_PICKER_MODEL_VALUE: selectedModel,
+      AFORA_TUI_PTY_PICKER_MODEL_NAME: modelName.text,
+      AFORA_TUI_PTY_PICKER_SESSION_KEY: selectedSessionKey,
+      AFORA_TUI_PTY_PICKER_SESSION_TITLE: sessionTitle.text,
+      AFORA_TUI_PTY_PICKER_SESSION_PREVIEW: sessionPreview.text,
+      AFORA_TUI_PTY_PICKER_SESSION_DISPLAY_NAME: sessionDisplay.text,
     },
   });
 
@@ -503,7 +503,7 @@ async function exerciseSelectorOutputSafety(
     const expectedSessionLabel = `${sessionKey.text} (${sessionDisplay.text})`;
     await fixture.run.waitForOutput(
       sanitizeRenderableLine(
-        `openclaw tui pty fixture - pty-fixture://local - agent ${expectedAgentLabel} - session ${sessionKey.text}`,
+        `afora tui pty fixture - pty-fixture://local - agent ${expectedAgentLabel} - session ${sessionKey.text}`,
       ),
       5_000,
     );
@@ -534,9 +534,9 @@ export async function exerciseNarrowTerminalRendering(
     `losing text. Unicode stays intact: café 東京 👩🏽‍💻. Copy this URL exactly: ${url}`;
   const fixture = await startFixture({
     env: {
-      OPENCLAW_TUI_PTY_COLS: "28",
-      OPENCLAW_TUI_PTY_ROWS: "18",
-      OPENCLAW_TUI_PTY_INITIAL_MESSAGE: message,
+      AFORA_TUI_PTY_COLS: "28",
+      AFORA_TUI_PTY_ROWS: "18",
+      AFORA_TUI_PTY_INITIAL_MESSAGE: message,
     },
   });
 
@@ -570,10 +570,10 @@ async function exerciseGatewayOutputSafety(
   const idlePayload = buildCompactTerminalAttackPayload("T08I", "\x1b[?7775h");
   const fixture = await startFixture({
     env: {
-      OPENCLAW_TUI_PTY_COLS: "120",
-      OPENCLAW_TUI_PTY_ROWS: "18",
-      OPENCLAW_TUI_PTY_GATEWAY_STATUS: systemAttacks.join(""),
-      OPENCLAW_TUI_PTY_DISCONNECT_REASON: idlePayload.text,
+      AFORA_TUI_PTY_COLS: "120",
+      AFORA_TUI_PTY_ROWS: "18",
+      AFORA_TUI_PTY_GATEWAY_STATUS: systemAttacks.join(""),
+      AFORA_TUI_PTY_DISCONNECT_REASON: idlePayload.text,
     },
   });
 
@@ -613,12 +613,12 @@ async function exerciseMarkdownAndAutocompleteOutputSafety(
   const thinking = buildCompactTerminalAttackPayload("T08L", "\x1b[777;886H");
   const fixture = await startFixture({
     env: {
-      OPENCLAW_TUI_PTY_COLS: "140",
-      OPENCLAW_TUI_PTY_DYNAMIC_COMMAND_DESCRIPTION: command.text,
-      OPENCLAW_TUI_PTY_IN_FLIGHT_TEXT: `**${inFlight.text}** [copy-safe](https://example.test/t08-inflight)`,
-      OPENCLAW_TUI_PTY_ROWS: "22",
-      OPENCLAW_TUI_PTY_SAFE_THINKING_LABEL: "T08_SAFE_THINKING",
-      OPENCLAW_TUI_PTY_THINKING_LABEL: thinking.text,
+      AFORA_TUI_PTY_COLS: "140",
+      AFORA_TUI_PTY_DYNAMIC_COMMAND_DESCRIPTION: command.text,
+      AFORA_TUI_PTY_IN_FLIGHT_TEXT: `**${inFlight.text}** [copy-safe](https://example.test/t08-inflight)`,
+      AFORA_TUI_PTY_ROWS: "22",
+      AFORA_TUI_PTY_SAFE_THINKING_LABEL: "T08_SAFE_THINKING",
+      AFORA_TUI_PTY_THINKING_LABEL: thinking.text,
     },
   });
 
@@ -672,12 +672,12 @@ async function exerciseInteractiveOutputSafety(
   };
   const fixture = await startFixture({
     env: {
-      OPENCLAW_TUI_PTY_BTW_QUESTION: btwPayload.text,
-      OPENCLAW_TUI_PTY_COLS: "120",
-      OPENCLAW_TUI_PTY_MODEL: "fixture-provider/fixture-model",
-      OPENCLAW_TUI_PTY_ROWS: "20",
-      OPENCLAW_TUI_PTY_TOOL_NAME: toolPayload.text,
-      OPENCLAW_TUI_PTY_VERBOSE_LEVEL: "on",
+      AFORA_TUI_PTY_BTW_QUESTION: btwPayload.text,
+      AFORA_TUI_PTY_COLS: "120",
+      AFORA_TUI_PTY_MODEL: "fixture-provider/fixture-model",
+      AFORA_TUI_PTY_ROWS: "20",
+      AFORA_TUI_PTY_TOOL_NAME: toolPayload.text,
+      AFORA_TUI_PTY_VERBOSE_LEVEL: "on",
     },
   });
 
@@ -716,7 +716,7 @@ export async function exerciseFragmentedUnicodePrompt(
   startupTimeoutMs: number,
 ) {
   const fixture = await startFixture({
-    env: { OPENCLAW_TUI_PTY_TYPE_CHUNK_SIZE: "1", OPENCLAW_TUI_PTY_TYPE_DELAY_MS: "1" },
+    env: { AFORA_TUI_PTY_TYPE_CHUNK_SIZE: "1", AFORA_TUI_PTY_TYPE_DELAY_MS: "1" },
   });
   const message = "hello 👋 from pty";
 

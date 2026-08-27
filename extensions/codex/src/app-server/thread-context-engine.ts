@@ -1,8 +1,8 @@
 import {
   isActiveHarnessContextEngine,
   type EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   resolveCodexContextEngineProjectionMaxChars,
   resolveCodexContextEngineProjectionReserveTokens,

@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { FIELD_HELP } from "./schema.help.js";
 import { FIELD_LABELS } from "./schema.labels.js";
-import { OpenClawSchema } from "./zod-schema.js";
+import { AforaSchema } from "./zod-schema.js";
 
 function hasLegacyPluginsRuntimeKeys(keys: string[]): boolean {
   return keys.some((key) => key === "plugins.runtime" || key.startsWith("plugins.runtime."));
@@ -15,7 +15,7 @@ describe("plugins runtime boundary config", () => {
   });
 
   it("omits plugins.runtime from the generated config schema", () => {
-    const schema = OpenClawSchema.toJSONSchema({
+    const schema = AforaSchema.toJSONSchema({
       target: "draft-7",
       io: "input",
       reused: "ref",
@@ -27,7 +27,7 @@ describe("plugins runtime boundary config", () => {
   });
 
   it("rejects legacy plugins.runtime config entries", () => {
-    const result = OpenClawSchema.safeParse({
+    const result = AforaSchema.safeParse({
       plugins: {
         runtime: {
           allowLegacyExec: true,

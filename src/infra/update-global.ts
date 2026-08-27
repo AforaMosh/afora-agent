@@ -3,7 +3,7 @@ import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { valid as validSemver } from "semver";
 import { BUNDLED_RUNTIME_SIDECAR_PATHS } from "../plugins/runtime-sidecar-paths.js";
 import { pathExists } from "../utils.js";
@@ -21,7 +21,7 @@ import { readPackageVersion } from "./package-json.js";
 import { applyPathPrepend } from "./path-prepend.js";
 import { parseSemver } from "./runtime-guard.js";
 
-/** Supported package managers for OpenClaw global install and update flows. */
+/** Supported package managers for Afora global install and update flows. */
 export type GlobalInstallManager = "npm" | "pnpm" | "bun";
 
 /** Runs package-manager commands with timeout and environment control. */
@@ -61,15 +61,15 @@ export type ResolvedGlobalInstallTarget = ResolvedGlobalInstallCommand & {
   };
 };
 
-const PRIMARY_PACKAGE_NAME = "openclaw";
+const PRIMARY_PACKAGE_NAME = "afora";
 const ALL_PACKAGE_NAMES = [PRIMARY_PACKAGE_NAME] as const;
 const GLOBAL_RENAME_PREFIX = ".";
 /** npm-compatible spec used when the user asks to install the moving main branch. */
-const OPENCLAW_MAIN_PACKAGE_SPEC = "github:openclaw/openclaw#main";
+const AFORA_MAIN_PACKAGE_SPEC = "github:AforaMosh/afora-agent#main";
 const COREPACK_ENABLE_DOWNLOAD_PROMPT_DEFAULT = "0";
 const NPM_GLOBAL_INSTALL_QUIET_FLAGS = ["--no-fund", "--no-audit", "--loglevel=error"] as const;
-const PNPM_OPENCLAW_BUILD_ALLOWLIST_FLAG = `--allow-build=${PRIMARY_PACKAGE_NAME}`;
-const BUN_OPENCLAW_TRUST_FLAG = "--trust";
+const PNPM_AFORA_BUILD_ALLOWLIST_FLAG = `--allow-build=${PRIMARY_PACKAGE_NAME}`;
+const BUN_AFORA_TRUST_FLAG = "--trust";
 const FIRST_PACKAGED_DIST_INVENTORY_VERSION = { major: 2026, minor: 4, patch: 15 };
 const OMITTED_PRIVATE_QA_BUNDLED_PLUGIN_ROOTS = new Set([
   "dist/extensions/qa-channel",
@@ -121,7 +121,7 @@ export function resolveNpmLifecyclePolicyGate(
   if (policy === "unsupported-transition") {
     return {
       policy: null,
-      error: `npm ${version} cannot safely approve OpenClaw lifecycle scripts. Upgrade the owning npm to 11.16 or newer before updating; no package changes were made.`,
+      error: `npm ${version} cannot safely approve Afora lifecycle scripts. Upgrade the owning npm to 11.16 or newer before updating; no package changes were made.`,
     };
   }
   return {
@@ -259,7 +259,7 @@ function stripPrimaryPackageAlias(spec: string): string {
 }
 
 /**
- * Extracts a pinned installed version from package specs like `openclaw@1.2.3`.
+ * Extracts a pinned installed version from package specs like `afora@1.2.3`.
  * Moving tags, URLs, git refs, and aliases return null because they cannot be
  * compared reliably after install.
  */
@@ -279,7 +279,7 @@ export function resolveExpectedInstalledVersionFromSpec(
 }
 
 /**
- * Verifies that a global package root looks like a packaged OpenClaw install
+ * Verifies that a global package root looks like a packaged Afora install
  * and, when supplied, matches the expected concrete version.
  */
 export async function collectInstalledGlobalPackageErrors(params: {
@@ -411,7 +411,7 @@ async function collectCriticalInstalledPackageDistPaths(packageRoot: string): Pr
       }
       if (
         (await pathExists(path.join(packageRoot, pluginRoot, "package.json"))) ||
-        (await pathExists(path.join(packageRoot, pluginRoot, "openclaw.plugin.json")))
+        (await pathExists(path.join(packageRoot, pluginRoot, "afora.plugin.json")))
       ) {
         expectedFiles.add(relativePath);
       }
@@ -474,7 +474,7 @@ async function resolvePortableGitPathPrepend(): Promise<string[]> {
   if (!localAppData) {
     return [];
   }
-  const portableGitRoot = path.join(localAppData, "OpenClaw", "deps", "portable-git");
+  const portableGitRoot = path.join(localAppData, "Afora", "deps", "portable-git");
   const candidates = [
     path.join(portableGitRoot, "mingw64", "bin"),
     path.join(portableGitRoot, "usr", "bin"),
@@ -516,14 +516,14 @@ export function resolveGlobalInstallSpec(params: {
   env?: NodeJS.ProcessEnv;
 }): string {
   const override =
-    params.env?.OPENCLAW_UPDATE_PACKAGE_SPEC?.trim() ||
-    process.env.OPENCLAW_UPDATE_PACKAGE_SPEC?.trim();
+    params.env?.AFORA_UPDATE_PACKAGE_SPEC?.trim() ||
+    process.env.AFORA_UPDATE_PACKAGE_SPEC?.trim();
   if (override) {
     return override;
   }
   const target = normalizePackageTarget(params.tag);
   if (isMainPackageTarget(target)) {
-    return OPENCLAW_MAIN_PACKAGE_SPEC;
+    return AFORA_MAIN_PACKAGE_SPEC;
   }
   if (isExplicitPackageInstallSpec(target)) {
     return target;
@@ -629,7 +629,7 @@ export function resolveNpmGlobalPrefixLayoutFromGlobalRoot(
 
 /**
  * Derives npm's global package and bin directories from a prefix root.
- * Used for staged installs where OpenClaw creates the prefix itself.
+ * Used for staged installs where Afora creates the prefix itself.
  */
 export function resolveNpmGlobalPrefixLayoutFromPrefix(prefix: string): NpmGlobalPrefixLayout {
   const resolvedPrefix = path.resolve(prefix);
@@ -1027,7 +1027,7 @@ function resolveBunGlobalInstallSpec(spec: string): string {
   const hasScheme = /^[a-z][a-z0-9+.-]*:/iu.test(trimmed) && !isWindowsAbsolutePath;
   const target = /\.(?:tgz|tar\.gz)$/iu.test(trimmed) && !hasScheme ? `file:${trimmed}` : trimmed;
   // Bun needs an alias to replace the existing global dependency. A bare
-  // tarball is added beside it and can form an openclaw dependency loop.
+  // tarball is added beside it and can form an afora dependency loop.
   return `${PRIMARY_PACKAGE_NAME}@${target}`;
 }
 
@@ -1258,7 +1258,7 @@ export async function detectGlobalInstallManagerForRoot(
 }
 
 /**
- * Detects an installed global OpenClaw package by probing package-manager roots
+ * Detects an installed global Afora package by probing package-manager roots
  * when no trusted package root is already available.
  */
 export async function detectGlobalInstallManagerByPresence(
@@ -1287,8 +1287,8 @@ export async function detectGlobalInstallManagerByPresence(
 }
 
 /**
- * Builds the primary package-manager argv for a global OpenClaw install.
- * npm receives quiet/freshness-bypass flags; pnpm and Bun approve OpenClaw's lifecycle.
+ * Builds the primary package-manager argv for a global Afora install.
+ * npm receives quiet/freshness-bypass flags; pnpm and Bun approve Afora's lifecycle.
  */
 export function globalInstallArgs(
   managerOrCommand: GlobalInstallManager | ResolvedGlobalInstallCommand,
@@ -1308,7 +1308,7 @@ export function globalInstallArgs(
       ...(resolved.pnpmIsolated?.globalBinDir
         ? ["--global-bin-dir", resolved.pnpmIsolated.globalBinDir]
         : []),
-      PNPM_OPENCLAW_BUILD_ALLOWLIST_FLAG,
+      PNPM_AFORA_BUILD_ALLOWLIST_FLAG,
       spec,
     ];
   }
@@ -1317,7 +1317,7 @@ export function globalInstallArgs(
       resolved.command,
       "add",
       "-g",
-      BUN_OPENCLAW_TRUST_FLAG,
+      BUN_AFORA_TRUST_FLAG,
       resolveBunGlobalInstallSpec(spec),
     ];
   }

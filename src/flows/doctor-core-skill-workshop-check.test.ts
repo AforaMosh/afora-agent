@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createCoreHealthChecks } from "./doctor-core-checks.js";
 import { runDoctorLintChecks } from "./doctor-lint-flow.js";
 import type { HealthCheck } from "./health-checks.js";
@@ -38,7 +38,7 @@ describe("core/doctor/skill-workshop-tool-policy", () => {
   });
 
   it("checks every explicit-roster agent without turning selection into a health error", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       skills: { workshop: { autonomous: { mode: "propose" } } },
       agents: {
         ownership: "explicit",
@@ -73,7 +73,7 @@ describe("core/doctor/skill-workshop-tool-policy", () => {
       label: "sole-agent roster",
       cfg: {
         agents: { entries: { solo: { tools: { profile: "messaging" } } } },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       target: "solo",
     },
     {
@@ -85,7 +85,7 @@ describe("core/doctor/skill-workshop-tool-policy", () => {
             { id: "helper", tools: { profile: "coding" } },
           ],
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       target: "owner",
     },
   ])("preserves normal diagnostics for a $label", async ({ cfg, target }) => {

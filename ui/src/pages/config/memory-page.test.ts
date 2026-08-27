@@ -31,10 +31,10 @@ function visibleTab(element: HTMLElement): "overview" | "memories" | "dreams" | 
   if (!panel) {
     return null;
   }
-  if (panel.querySelector("openclaw-memory-dreaming")) {
+  if (panel.querySelector("afora-memory-dreaming")) {
     return "dreams";
   }
-  if (panel.querySelector("openclaw-memory-memories")) {
+  if (panel.querySelector("afora-memory-memories")) {
     return "memories";
   }
   return panel.querySelector(".memory-overview") ? "overview" : "settings";
@@ -79,7 +79,7 @@ describe("MemorySettingsPage engine slot", () => {
             .querySelector("wa-radio-group.settings-segmented")
             ?.querySelectorAll("wa-radio") ?? []),
         ].map((radio) => radio.textContent?.trim()),
-      ).toEqual(["OpenClaw Memory", "Memory LanceDB", "Off"]);
+      ).toEqual(["Afora Memory", "Memory LanceDB", "Off"]);
     } finally {
       element.remove();
     }
@@ -771,10 +771,10 @@ describe("MemorySettingsPage tab routing", () => {
         request.mock.calls.filter(([method]) => method === "doctor.memory.status"),
       ).toHaveLength(1);
 
-      expect(element.querySelectorAll("openclaw-agent-select")).toHaveLength(1);
+      expect(element.querySelectorAll("afora-agent-select")).toHaveLength(1);
       expect(element.textContent).not.toContain("Agent view");
       const select = element.querySelector(
-        ".hub-page-header__actions openclaw-agent-select",
+        ".hub-page-header__actions afora-agent-select",
       ) as HTMLElement & {
         onSelect?: (value: string) => void;
       };
@@ -840,16 +840,16 @@ describe("MemorySettingsPage dreaming support", () => {
       await waitForFast(() =>
         expect(
           element.querySelector(
-            '.settings-page__intro a[href="https://docs.openclaw.ai/concepts/dreaming"]',
+            '.settings-page__intro a[href="https://docs.afora.ai/concepts/dreaming"]',
           ),
         ).not.toBeNull(),
       );
       const link = element.querySelector<HTMLAnchorElement>(
-        '.settings-page__intro a[href="https://docs.openclaw.ai/concepts/dreaming"]',
+        '.settings-page__intro a[href="https://docs.afora.ai/concepts/dreaming"]',
       );
 
       expect(link?.textContent?.trim()).toBe("Learn more");
-      expect(link?.href).toBe("https://docs.openclaw.ai/concepts/dreaming");
+      expect(link?.href).toBe("https://docs.afora.ai/concepts/dreaming");
     } finally {
       element.remove();
     }

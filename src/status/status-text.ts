@@ -1,5 +1,5 @@
 import path from "node:path";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import {
   resolveAgentConfig,
   resolveAgentDir,
@@ -32,7 +32,7 @@ import type { ThinkLevel } from "../auto-reply/thinking.js";
 import { toAgentModelListLike } from "../config/model-input.js";
 import type { SessionEntry } from "../config/sessions.js";
 import { hasSessionAutoModelFallbackProvenance } from "../config/sessions/model-override-provenance.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   formatUsageWindowSummary,
   loadProviderUsageSummary,
@@ -78,7 +78,7 @@ const USAGE_OAUTH_ONLY_PROVIDERS = new Set([
 const CODEX_APP_SERVER_HOME_DIRNAME = "codex-home";
 
 function resolveStatusChannelFeatureLine(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   statusChannel: string;
   statusAccountId?: string;
   sessionEntry?: SessionEntry;
@@ -130,7 +130,7 @@ const loadStatusPluginHealthRuntime = createLazyRuntimeModule(
 // Context lookup stays synchronous/non-refreshing so status output does not
 // trigger provider/catalog IO while rendering a command response.
 function resolveStatusRuntimeContextTokens(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: string;
   model: string;
 }): number | undefined {
@@ -166,7 +166,7 @@ function shouldLoadUsageSummary(params: {
 
 function resolveCodexSyntheticUsageAuthProfileId(params: {
   profileId: string | undefined;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentDir?: string;
 }): string | undefined {
   const normalizedProfileId = params.profileId?.trim();
@@ -211,7 +211,7 @@ function formatSessionTaskLine(sessionKey: string): string | undefined {
 }
 
 async function resolveStatusHarnessId(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: string;
   model: string;
   agentId: string;
@@ -243,7 +243,7 @@ async function resolveStatusHarnessId(params: {
           undefined,
       )
     ) {
-      return "openclaw";
+      return "afora";
     }
     const { resolveEffectiveAgentRuntime } = await loadAgentThinkingRuntime();
     const id = resolveEffectiveAgentRuntime({

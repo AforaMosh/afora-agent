@@ -1,4 +1,4 @@
-import type { WorkboardExecution, WorkboardStatus } from "@openclaw/workboard-contract";
+import type { WorkboardExecution, WorkboardStatus } from "@afora/workboard-contract";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createWorkboardAutomationNudgeService } from "./automation-nudge.js";
 import {

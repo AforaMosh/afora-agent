@@ -7,7 +7,7 @@ import {
   ensureDurableDirectory,
   syncDirectory,
   type DirectorySyncOutcome,
-} from "openclaw/plugin-sdk/file-access-runtime";
+} from "afora-agent/plugin-sdk/file-access-runtime";
 import { createAuditEntry, verifyChain, type AuditEntry, type AuditStore } from "./audit.js";
 import { canonicalBytes } from "./canonical.js";
 import { base64, decodeUtf8, fromBase64 } from "./encoding.js";

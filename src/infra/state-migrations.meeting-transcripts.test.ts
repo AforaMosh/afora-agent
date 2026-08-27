@@ -4,9 +4,9 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { TranscriptsStore } from "../transcripts/store.js";
 import { summarizeTranscripts } from "../transcripts/summary.js";
 import { restoreCanonicalMeetingTranscriptExports } from "./state-migrations.meeting-transcripts-files.js";
@@ -17,7 +17,7 @@ import {
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
-afterEach(() => closeOpenClawStateDatabaseForTest());
+afterEach(() => closeAforaStateDatabaseForTest());
 
 async function seedLegacySession(params: {
   stateDir: string;
@@ -81,12 +81,12 @@ async function seedLegacySession(params: {
 }
 
 function databaseEnv(stateDir: string): NodeJS.ProcessEnv {
-  return { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+  return { ...process.env, AFORA_STATE_DIR: stateDir };
 }
 
 describe("meeting transcript Doctor migration", () => {
   it("is doctor-only", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     await seedLegacySession({ stateDir, sessionId: "design-review" });
 
     expect(detectLegacyMeetingTranscripts({ stateDir })).toMatchObject({ hasLegacy: false });
@@ -96,7 +96,7 @@ describe("meeting transcript Doctor migration", () => {
   });
 
   it("surfaces filesystem errors during detection", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     await fs.writeFile(path.join(stateDir, "transcripts"), "not a directory");
 
     expect(() =>
@@ -110,8 +110,8 @@ describe("meeting transcript Doctor migration", () => {
   it.runIf(process.platform !== "win32")(
     "rejects a symlinked transcript root before migration",
     async () => {
-      const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
-      const externalRoot = tempDirs.make("openclaw-meeting-transcripts-external-");
+      const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
+      const externalRoot = tempDirs.make("afora-meeting-transcripts-external-");
       await fs.symlink(externalRoot, path.join(stateDir, "transcripts"), "dir");
 
       expect(() =>
@@ -127,8 +127,8 @@ describe("meeting transcript Doctor migration", () => {
     "rejects symlinked date and session directories during detection",
     async () => {
       for (const target of ["date", "session"] as const) {
-        const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
-        const externalRoot = tempDirs.make("openclaw-meeting-transcripts-external-");
+        const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
+        const externalRoot = tempDirs.make("afora-meeting-transcripts-external-");
         const transcriptsDir = path.join(stateDir, "transcripts");
         await fs.mkdir(transcriptsDir, { recursive: true });
         if (target === "date") {
@@ -150,7 +150,7 @@ describe("meeting transcript Doctor migration", () => {
   );
 
   it("imports, verifies, receipts, archives, and reopens SQLite-only", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     const sourceDir = await seedLegacySession({ stateDir, sessionId: "design-review" });
     const detected = detectLegacyMeetingTranscripts({
       stateDir,
@@ -172,7 +172,7 @@ describe("meeting transcript Doctor migration", () => {
     );
     expect(archives).toHaveLength(1);
 
-    const database = openOpenClawStateDatabase({ env: databaseEnv(stateDir) }).db;
+    const database = openAforaStateDatabase({ env: databaseEnv(stateDir) }).db;
     expect(
       database
         .prepare(
@@ -181,7 +181,7 @@ describe("meeting transcript Doctor migration", () => {
         .get("meeting-transcripts-files-v1"),
     ).toEqual({ status: "archived", removed_source: 1, source_record_count: 2 });
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const store = new TranscriptsStore(path.join(stateDir, "transcripts"), {
       env: databaseEnv(stateDir),
     });
@@ -197,7 +197,7 @@ describe("meeting transcript Doctor migration", () => {
   });
 
   it("imports shipped dot-only session layouts into reserved SQLite selectors", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     for (const sessionId of [".", "..", "session"]) {
       await seedLegacySession({ stateDir, sessionId });
     }
@@ -237,7 +237,7 @@ describe("meeting transcript Doctor migration", () => {
   it.runIf(process.platform !== "win32" && process.platform !== "darwin")(
     "imports case-distinct sessions from a case-sensitive legacy tree",
     async () => {
-      const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+      const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
       await seedLegacySession({ stateDir, sessionId: "Capital" });
       await seedLegacySession({ stateDir, sessionId: "capital" });
       const detected = detectLegacyMeetingTranscripts({
@@ -282,7 +282,7 @@ describe("meeting transcript Doctor migration", () => {
   it.runIf(process.platform !== "win32" && process.platform !== "darwin")(
     "does not assign a case-distinct legacy directory to an existing SQLite session",
     async () => {
-      const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+      const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
       const store = new TranscriptsStore(path.join(stateDir, "transcripts"), {
         env: databaseEnv(stateDir),
       });
@@ -315,7 +315,7 @@ describe("meeting transcript Doctor migration", () => {
   );
 
   it("preflights the whole tree before importing anything", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     const validDir = await seedLegacySession({ stateDir, sessionId: "valid" });
     const invalidDir = await seedLegacySession({
       stateDir,
@@ -337,14 +337,14 @@ describe("meeting transcript Doctor migration", () => {
     expect(result.warnings.join("\n")).toContain("Failed migrating meeting transcripts");
     await expect(fs.stat(validDir)).resolves.toBeDefined();
     await expect(fs.stat(invalidDir)).resolves.toBeDefined();
-    const database = openOpenClawStateDatabase({ env: databaseEnv(stateDir) }).db;
+    const database = openAforaStateDatabase({ env: databaseEnv(stateDir) }).db;
     expect(
       database.prepare("SELECT COUNT(*) AS count FROM meeting_transcript_sessions").get(),
     ).toEqual({ count: 0 });
   });
 
   it("archives metadata-less interrupted session directories without blocking import", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     await seedLegacySession({ stateDir, sessionId: "complete-session" });
     const incompleteRelativeDir = path.join("2026-07-01", "incomplete-session");
     await fs.mkdir(path.join(stateDir, "transcripts", incompleteRelativeDir));
@@ -369,7 +369,7 @@ describe("meeting transcript Doctor migration", () => {
   });
 
   it("detects and recovers a partial-only legacy transcript tree", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     const partialDir = path.join(stateDir, "transcripts", "2026-07-01", "partial-only");
     await fs.mkdir(partialDir, { recursive: true });
     await fs.writeFile(path.join(partialDir, "transcript.jsonl"), '{"text":"partial"}\n');
@@ -407,8 +407,8 @@ describe("meeting transcript Doctor migration", () => {
   it.runIf(process.platform !== "win32")(
     "preflights every partial artifact before moving any source",
     async () => {
-      const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
-      const externalDir = tempDirs.make("openclaw-meeting-transcripts-external-");
+      const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
+      const externalDir = tempDirs.make("afora-meeting-transcripts-external-");
       const partialDir = path.join(stateDir, "transcripts", "2026-07-01", "partial-invalid");
       await fs.mkdir(partialDir, { recursive: true });
       await fs.writeFile(path.join(partialDir, "summary.md"), "keep me\n");
@@ -430,7 +430,7 @@ describe("meeting transcript Doctor migration", () => {
   );
 
   it("rolls back when a session appears between verification and archive", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     const sourceDir = await seedLegacySession({ stateDir, sessionId: "verified" });
     const detected = detectLegacyMeetingTranscripts({
       stateDir,
@@ -463,14 +463,14 @@ describe("meeting transcript Doctor migration", () => {
     await expect(
       fs.stat(path.join(stateDir, "transcripts", "2026-07-03", "late-session")),
     ).resolves.toBeDefined();
-    const database = openOpenClawStateDatabase({ env: databaseEnv(stateDir) }).db;
+    const database = openAforaStateDatabase({ env: databaseEnv(stateDir) }).db;
     expect(
       database.prepare("SELECT COUNT(*) AS count FROM meeting_transcript_sessions").get(),
     ).toEqual({ count: 0 });
   });
 
   it("does not mistake a colliding archive destination for a completed move", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     const sourceDir = await seedLegacySession({ stateDir, sessionId: "archive-collision" });
     const detected = detectLegacyMeetingTranscripts({
       stateDir,
@@ -495,16 +495,16 @@ describe("meeting transcript Doctor migration", () => {
     expect(result.warnings.join("\n")).toContain("Failed archiving verified legacy");
     await expect(fs.stat(sourceDir)).resolves.toBeDefined();
     await expect(fs.stat(archiveRoot)).resolves.toBeDefined();
-    const database = openOpenClawStateDatabase({ env: databaseEnv(stateDir) }).db;
+    const database = openAforaStateDatabase({ env: databaseEnv(stateDir) }).db;
     expect(database.prepare("SELECT COUNT(*) AS count FROM migration_sources").get()).toEqual({
       count: 0,
     });
   });
 
   it("restores idempotently when a canonical exporter recreated the destination", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     const sourceRoot = path.join(stateDir, "transcripts");
-    const archivedStateDir = tempDirs.make("openclaw-meeting-transcripts-archive-");
+    const archivedStateDir = tempDirs.make("afora-meeting-transcripts-archive-");
     const archivedSessionDir = await seedLegacySession({
       stateDir: archivedStateDir,
       sessionId: "recreated-export",
@@ -527,7 +527,7 @@ describe("meeting transcript Doctor migration", () => {
   });
 
   it("rejects canonical restore paths that normalize outside their roots", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     const sourceRoot = path.join(stateDir, "transcripts");
     const archiveRoot = path.join(stateDir, "transcripts.migrated-test");
     await fs.mkdir(archiveRoot, { recursive: true });
@@ -545,9 +545,9 @@ describe("meeting transcript Doctor migration", () => {
   it.runIf(process.platform !== "win32")(
     "rejects symlinked ancestors during canonical export restore",
     async () => {
-      const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+      const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
       const archiveRoot = path.join(stateDir, "transcripts.migrated-test");
-      const externalRoot = tempDirs.make("openclaw-meeting-transcripts-external-");
+      const externalRoot = tempDirs.make("afora-meeting-transcripts-external-");
       await fs.mkdir(path.join(archiveRoot), { recursive: true });
       await seedLegacySession({ stateDir: externalRoot, sessionId: "linked-export" });
       await fs.symlink(
@@ -568,7 +568,7 @@ describe("meeting transcript Doctor migration", () => {
   );
 
   it("chunks large transcript imports while preserving exact order", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     await seedLegacySession({
       stateDir,
       sessionId: "long-meeting",
@@ -597,7 +597,7 @@ describe("meeting transcript Doctor migration", () => {
   });
 
   it("preserves an existing empty markdown summary", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     await seedLegacySession({
       stateDir,
       sessionId: "empty-summary",
@@ -624,7 +624,7 @@ describe("meeting transcript Doctor migration", () => {
   });
 
   it("resumes an interruption after the import commit", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     const store = new TranscriptsStore(path.join(stateDir, "transcripts"), {
       env: databaseEnv(stateDir),
     });
@@ -672,7 +672,7 @@ describe("meeting transcript Doctor migration", () => {
   });
 
   it("refuses to archive a new legacy session added after a pending import", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     await seedLegacySession({ stateDir, sessionId: "pending-original" });
     const detected = detectLegacyMeetingTranscripts({
       stateDir,
@@ -707,7 +707,7 @@ describe("meeting transcript Doctor migration", () => {
   });
 
   it("finalizes receipts after interruption following the archive move", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     const store = new TranscriptsStore(path.join(stateDir, "transcripts"), {
       env: databaseEnv(stateDir),
     });
@@ -751,7 +751,7 @@ describe("meeting transcript Doctor migration", () => {
     expect(resumed.warnings).toEqual([]);
     expect(resumed.changes.join("\n")).toContain("Finalized interrupted");
     await expect(fs.stat(store.sessionDir(nativeSession))).resolves.toBeDefined();
-    const database = openOpenClawStateDatabase({ env: databaseEnv(stateDir) }).db;
+    const database = openAforaStateDatabase({ env: databaseEnv(stateDir) }).db;
     expect(
       database
         .prepare("SELECT status, removed_source FROM migration_sources WHERE migration_kind = ?")
@@ -760,7 +760,7 @@ describe("meeting transcript Doctor migration", () => {
   });
 
   it("does not reimport or archive explicit canonical exports", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     await seedLegacySession({ stateDir, sessionId: "design-review" });
     const detected = detectLegacyMeetingTranscripts({
       stateDir,
@@ -790,7 +790,7 @@ describe("meeting transcript Doctor migration", () => {
   });
 
   it("does not classify an interrupted export of an advancing transcript as legacy", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     const store = new TranscriptsStore(path.join(stateDir, "transcripts"), {
       env: databaseEnv(stateDir),
     });
@@ -804,7 +804,7 @@ describe("meeting transcript Doctor migration", () => {
     await store.materializeSessionArtifacts(session, "transcript");
     await store.appendUtteranceForSession(session, { text: "second" });
 
-    const database = openOpenClawStateDatabase({ env: databaseEnv(stateDir) }).db;
+    const database = openAforaStateDatabase({ env: databaseEnv(stateDir) }).db;
     database
       .prepare(
         "UPDATE meeting_transcript_sessions SET export_pending_json = ? WHERE session_id = ?",
@@ -836,7 +836,7 @@ describe("meeting transcript Doctor migration", () => {
   });
 
   it("migrates legacy sessions while preserving coexisting SQLite exports", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     const store = new TranscriptsStore(path.join(stateDir, "transcripts"), {
       env: databaseEnv(stateDir),
     });
@@ -896,7 +896,7 @@ describe("meeting transcript Doctor migration", () => {
   });
 
   it("does not trust a DB selector when exported bytes diverge", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     const store = new TranscriptsStore(path.join(stateDir, "transcripts"), {
       env: databaseEnv(stateDir),
     });
@@ -940,7 +940,7 @@ describe("meeting transcript Doctor migration", () => {
   });
 
   it("resolves a case-renamed export directory by metadata identity", async () => {
-    const stateDir = tempDirs.make("openclaw-meeting-transcripts-doctor-");
+    const stateDir = tempDirs.make("afora-meeting-transcripts-doctor-");
     const store = new TranscriptsStore(path.join(stateDir, "transcripts"), {
       env: databaseEnv(stateDir),
     });

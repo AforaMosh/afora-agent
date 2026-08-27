@@ -3,7 +3,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createBundledBrowserPluginFixture } from "../../test/helpers/browser-bundled-plugin-fixture.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { clearPluginLoaderCache } from "../plugins/loader.test-fixtures.js";
 import { resetPluginRuntimeStateForTest } from "../plugins/runtime.js";
 import { loadGatewayStartupPlugins } from "./server-plugin-bootstrap.js";
@@ -27,7 +27,7 @@ describe("loadGatewayStartupPlugins browser plugin integration", () => {
 
   beforeEach(() => {
     bundledFixture = createBundledBrowserPluginFixture();
-    vi.stubEnv("OPENCLAW_BUNDLED_PLUGINS_DIR", bundledFixture.rootDir);
+    vi.stubEnv("AFORA_BUNDLED_PLUGINS_DIR", bundledFixture.rootDir);
     resetPluginState();
   });
 
@@ -44,7 +44,7 @@ describe("loadGatewayStartupPlugins browser plugin integration", () => {
         plugins: {
           allow: ["browser"],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       workspaceDir: process.cwd(),
       log: createTestLog(),
       coreGatewayHandlers: {},

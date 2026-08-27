@@ -1,4 +1,4 @@
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { CodexCommandExecParams, CodexCommandExecResponse } from "./command-exec-protocol.js";
 import type {
   CodexAppInfo,
@@ -145,7 +145,7 @@ export type CodexDynamicToolFunctionSpec = JsonObject & {
 };
 
 /** Namespace Codex keeps directly model-visible without exposing it to Code Mode guests. */
-export const CODEX_OPENCLAW_DIRECT_DYNAMIC_TOOL_NAMESPACE = "openclaw_direct";
+export const CODEX_AFORA_DIRECT_DYNAMIC_TOOL_NAMESPACE = "afora_direct";
 
 type CodexDynamicToolNamespaceSpec = JsonObject & {
   type: "namespace";

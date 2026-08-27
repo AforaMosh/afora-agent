@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import { resolveClickClackMentionFacts } from "./mention-facts.js";
 
@@ -121,7 +121,7 @@ describe("resolveClickClackMentionFacts", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const result = resolveClickClackMentionFacts({
       isDirect: false,
       body: "hey @service please help",
@@ -158,7 +158,7 @@ describe("resolveClickClackMentionFacts", () => {
           mentionPatterns: ["(a+)+$"],
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const result = resolveClickClackMentionFacts({
       isDirect: false,
       body: `${"a".repeat(20_000)}!`,

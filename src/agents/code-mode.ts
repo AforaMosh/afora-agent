@@ -4,7 +4,7 @@
  */
 import { Type } from "typebox";
 import { getAgentToolExecutionContext } from "../../packages/agent-core/src/tool-execution-context.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { HookContext } from "./agent-tools.before-tool-call.js";
 import { CODE_MODE_NODES_TOOL_ID } from "./code-mode-bridge.js";
 import {
@@ -62,7 +62,7 @@ type CodeModeToolContext = ToolSearchToolContext;
 const MAX_CODE_MODE_CATALOG_INDEX_CHARS = 8_000;
 
 const CODE_MODE_CATALOG_INDEX_HEADING = [
-  "OpenClaw/plugin tool quick index (exact ids; descriptions are intentionally deferred):",
+  "Afora/plugin tool quick index (exact ids; descriptions are intentionally deferred):",
   "Each line is `id input -> output`; `-> ?` means unknown.",
   "OUTPUT DECLARED RULE: use declared fields for dependent calls in the first exec.",
   "OUTPUT UNKNOWN RULE: return the raw tool value unchanged; inspect or map it only in a later exec.",
@@ -71,7 +71,7 @@ const CODE_MODE_CATALOG_INDEX_HEADING = [
 function codeModeCatalogIndexFooter(included: number, total: number): string {
   const omitted = total - included;
   return omitted > 0
-    ? `${omitted} additional OpenClaw/plugin tools omitted from this prompt index. Use ALL_TOOLS or tools.search inside exec to find them.`
+    ? `${omitted} additional Afora/plugin tools omitted from this prompt index. Use ALL_TOOLS or tools.search inside exec to find them.`
     : "Use these exact ids with tools.callValue; use ALL_TOOLS or tools.search inside exec when lookup is ambiguous.";
 }
 
@@ -86,7 +86,7 @@ function renderCodeModeCatalogIndex(lines: readonly string[], total: number): st
 
 function formatCodeModeCatalogIndex(catalog: readonly ToolSearchCatalogEntry[]): string {
   const lines = catalog
-    .filter((entry) => entry.source === "openclaw")
+    .filter((entry) => entry.source === "afora")
     .map((entry) => compactToolSearchCatalogEntry(entry))
     // Declared-output entries sort first so byte truncation drops `-> ?`
     // lines, which stay fully discoverable through ALL_TOOLS, before it drops
@@ -162,7 +162,7 @@ function createCodeModeExecDescription(
   ).maxOutputBytes;
   const catalogIndex = catalog ? formatCodeModeCatalogIndex(catalog) : "";
   return (
-    `Run JavaScript or TypeScript in OpenClaw code mode. Use \`return\` to pass the final value back; otherwise the result is \`null\`. Quick-index arrows show trusted declared output hints; \`-> ?\` means never guess result field names. For declared fields, process them in the first exec; do not spend another exec inspecting them. Perform dependent reads, checks, and follow-up calls in order; parallelize independent work only. \`setTimeout\` and \`clearTimeout\` work. For an unknown output, including a final dependent call after declared-output calls, return the raw tool value unchanged; do not wrap it in the requested answer shape or guess fields; filter or map it only in a later exec. Nested calls enforce normal tool policy and approvals. Nested results, output, and final value share ${maxOutputBytes} bytes; truncation reports omitted bytes and asks you to rerun with narrower args. \`ALL_TOOLS\` is the complete compact catalog. Select exact ids with \`tools.search(query: string, options?)\`; use \`tools.describe(id: string)\` only when needed. Never invent or transform a tool id. \`tools.callValue(id: string, args?)\` returns its JSON value directly; \`tools.call(id: string, args?)\` preserves \`{ tool, result }\`. \`const hit = ALL_TOOLS.find((entry) => entry.description.includes('weather')) ?? (await tools.search('weather'))[0]; return await tools.callValue(hit.id, {});\`. Node.js modules and \`require\`/\`import\` are NOT available; use enabled catalog tools allowed by policy for shell, file, network, or external actions.` +
+    `Run JavaScript or TypeScript in Afora code mode. Use \`return\` to pass the final value back; otherwise the result is \`null\`. Quick-index arrows show trusted declared output hints; \`-> ?\` means never guess result field names. For declared fields, process them in the first exec; do not spend another exec inspecting them. Perform dependent reads, checks, and follow-up calls in order; parallelize independent work only. \`setTimeout\` and \`clearTimeout\` work. For an unknown output, including a final dependent call after declared-output calls, return the raw tool value unchanged; do not wrap it in the requested answer shape or guess fields; filter or map it only in a later exec. Nested calls enforce normal tool policy and approvals. Nested results, output, and final value share ${maxOutputBytes} bytes; truncation reports omitted bytes and asks you to rerun with narrower args. \`ALL_TOOLS\` is the complete compact catalog. Select exact ids with \`tools.search(query: string, options?)\`; use \`tools.describe(id: string)\` only when needed. Never invent or transform a tool id. \`tools.callValue(id: string, args?)\` returns its JSON value directly; \`tools.call(id: string, args?)\` preserves \`{ tool, result }\`. \`const hit = ALL_TOOLS.find((entry) => entry.description.includes('weather')) ?? (await tools.search('weather'))[0]; return await tools.callValue(hit.id, {});\`. Node.js modules and \`require\`/\`import\` are NOT available; use enabled catalog tools allowed by policy for shell, file, network, or external actions.` +
     apiGuidance +
     mcpGuidance +
     swarmGuidance +
@@ -186,7 +186,7 @@ export function createCodeModeTools(ctx: CodeModeToolContext): AnyAgentTool[] {
       // model-facing field prevents schema-valid empty calls from constrained models.
       code: Type.String({
         description:
-          'Required JS/TS; no Python, shell, `require`, `import`. Use explicit `return value`; a trailing expression is discarded and yields `null`. Use `callValue`, not `call`, for data; `call` wraps it under `.result`. Core text reads: `{kind:"text",content:string}`; use `.content`. Unknown format: return it first, then parse it in a later exec; never guess separators. Example: `const file=await tools.callValue("openclaw:core:read", { path: "notes.txt" }); if(file.kind!=="text") return file; return file.content;`. Use exact ids from `ALL_TOOLS` or `tools.search(query)`; never invent ids or parallelize dependent calls.',
+          'Required JS/TS; no Python, shell, `require`, `import`. Use explicit `return value`; a trailing expression is discarded and yields `null`. Use `callValue`, not `call`, for data; `call` wraps it under `.result`. Core text reads: `{kind:"text",content:string}`; use `.content`. Unknown format: return it first, then parse it in a later exec; never guess separators. Example: `const file=await tools.callValue("afora:core:read", { path: "notes.txt" }); if(file.kind!=="text") return file; return file.content;`. Use exact ids from `ALL_TOOLS` or `tools.search(query)`; never invent ids or parallelize dependent calls.',
       }),
       language: optionalStringEnum(["javascript", "typescript"] as const, {
         description:
@@ -195,7 +195,7 @@ export function createCodeModeTools(ctx: CodeModeToolContext): AnyAgentTool[] {
       restartSafe: Type.Optional(
         Type.Boolean({
           description:
-            "Set true only when every catalog call is explicitly replay-safe and OpenClaw may reconstruct the work after a gateway restart. Leave unset for ordinary calls; true rejects unmarked or namespace tool surfaces not proven replay-safe.",
+            "Set true only when every catalog call is explicitly replay-safe and Afora may reconstruct the work after a gateway restart. Leave unset for ordinary calls; true rejects unmarked or namespace tool surfaces not proven replay-safe.",
         }),
       ),
     }),
@@ -232,7 +232,7 @@ export function createCodeModeTools(ctx: CodeModeToolContext): AnyAgentTool[] {
     name: CODE_MODE_WAIT_TOOL_NAME,
     label: "wait",
     hideFromChannelProgress: true,
-    description: "Resume a suspended OpenClaw code mode run returned by exec.",
+    description: "Resume a suspended Afora code mode run returned by exec.",
     parameters: Type.Object({
       runId: Type.String({ description: "Code mode run id returned by exec." }),
     }),
@@ -264,7 +264,7 @@ export function createCodeModeTools(ctx: CodeModeToolContext): AnyAgentTool[] {
 /** Compact normal tools behind Code Mode exec/wait controls. */
 export function applyCodeModeCatalog(params: {
   tools: AnyAgentTool[];
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   sessionId?: string;
   sessionKey?: string;
   agentId?: string;
@@ -333,7 +333,7 @@ export function applyCodeModeCatalog(params: {
 /** Move client-side tool definitions into the active Code Mode catalog. */
 export function addClientToolsToCodeModeCatalog(params: {
   tools: ToolDefinition[];
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   sessionId?: string;
   sessionKey?: string;
   agentId?: string;

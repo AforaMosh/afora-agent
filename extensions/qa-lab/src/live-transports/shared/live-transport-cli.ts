@@ -1,6 +1,6 @@
 // Qa Lab plugin module implements live transport cli behavior.
 import type { Command } from "commander";
-import type { QaRunnerCliRegistration } from "openclaw/plugin-sdk/qa-runner-runtime";
+import type { QaRunnerCliRegistration } from "afora-agent/plugin-sdk/qa-runner-runtime";
 import { DEFAULT_QA_LIVE_PROVIDER_MODE, formatQaProviderModeHelp } from "../../providers/index.js";
 
 export type LiveTransportQaCommandOptions = {

@@ -1,4 +1,4 @@
-import { readMissingScopeError } from "@openclaw/gateway-client/browser";
+import { readMissingScopeError } from "@afora/gateway-client/browser";
 import { html, nothing, render } from "lit";
 import type { FsListDirResult } from "../../../packages/gateway-protocol/src/index.js";
 import { t } from "../i18n/index.ts";
@@ -148,7 +148,7 @@ export function showSessionGroupDefaultsDialog(options: Options): Promise<void> 
         : null;
       render(
         html`
-          <openclaw-modal-dialog
+          <afora-modal-dialog
             label=${t("sessionsView.groupDefaultsTitle", { group: options.group })}
             @modal-cancel=${(event: Event) => {
               if (submitting) {
@@ -267,7 +267,7 @@ export function showSessionGroupDefaultsDialog(options: Options): Promise<void> 
                 </button>
               </div>
             </form>
-          </openclaw-modal-dialog>
+          </afora-modal-dialog>
         `,
         host,
       );

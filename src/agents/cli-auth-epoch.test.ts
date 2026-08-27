@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { AuthProfileStore } from "./auth-profiles/types.js";
 import {
   resolveCliAuthBindingFingerprint,
@@ -983,7 +983,7 @@ describe("resolveCliAuthEpoch", () => {
     });
   });
 
-  function cliConfig(command: string): OpenClawConfig {
+  function cliConfig(command: string): AforaConfig {
     cliBackendsTesting.setDepsForTest({
       resolvePluginSetupCliBackend: () => undefined,
       resolveRuntimeCliBackends: () => [
@@ -1024,7 +1024,7 @@ describe("resolveCliAuthEpoch", () => {
       ensureAuthProfileStore: () => ({ version: 1, profiles: {} }),
     });
 
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-cli-owner-native-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-cli-owner-native-"));
     const executable = path.join(dir, "claude");
     copyNativeExecutable(executable);
     try {
@@ -1032,7 +1032,7 @@ describe("resolveCliAuthEpoch", () => {
       const fingerprint = await resolveCliRuntimeOwnerFingerprint({
         provider: "claude-cli",
         config,
-        agentId: "openclaw",
+        agentId: "afora",
       });
 
       expectCliAuthEpoch(fingerprint);
@@ -1040,7 +1040,7 @@ describe("resolveCliAuthEpoch", () => {
         resolveCliRuntimeOwnerFingerprint({
           provider: "claude-cli",
           config,
-          agentId: "openclaw",
+          agentId: "afora",
           runtimeOwnerId: "replacement-backend",
         }),
       ).resolves.toBeUndefined();
@@ -1050,7 +1050,7 @@ describe("resolveCliAuthEpoch", () => {
   });
 
   it("changes an opaque owner when PATH selects a different executable", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-cli-owner-path-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-cli-owner-path-"));
     const firstBin = path.join(dir, "first");
     const secondBin = path.join(dir, "second");
     copyNativeExecutable(path.join(firstBin, "claude"), nativeUtility("true"));
@@ -1060,13 +1060,13 @@ describe("resolveCliAuthEpoch", () => {
       const first = await resolveCliRuntimeOwnerFingerprint({
         provider: "claude-cli",
         config,
-        agentId: "openclaw",
+        agentId: "afora",
         env: { PATH: firstBin },
       });
       const second = await resolveCliRuntimeOwnerFingerprint({
         provider: "claude-cli",
         config,
-        agentId: "openclaw",
+        agentId: "afora",
         env: { PATH: secondBin },
       });
 
@@ -1079,7 +1079,7 @@ describe("resolveCliAuthEpoch", () => {
   });
 
   it("changes an opaque owner when the executable is replaced in place", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-cli-owner-replace-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-cli-owner-replace-"));
     const executable = path.join(dir, "claude");
     copyNativeExecutable(executable, nativeUtility("true"));
     try {
@@ -1087,7 +1087,7 @@ describe("resolveCliAuthEpoch", () => {
       const first = await resolveCliRuntimeOwnerFingerprint({
         provider: "claude-cli",
         config,
-        agentId: "openclaw",
+        agentId: "afora",
       });
       copyNativeExecutable(executable, nativeUtility("false"));
       if (nativeUtility("true") === nativeUtility("false")) {
@@ -1096,7 +1096,7 @@ describe("resolveCliAuthEpoch", () => {
       const second = await resolveCliRuntimeOwnerFingerprint({
         provider: "claude-cli",
         config,
-        agentId: "openclaw",
+        agentId: "afora",
       });
 
       expectCliAuthEpoch(first);
@@ -1111,7 +1111,7 @@ describe("resolveCliAuthEpoch", () => {
     if (process.platform === "win32") {
       return;
     }
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-cli-owner-symlink-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-cli-owner-symlink-"));
     const target = nativeUtility("true");
     const link = path.join(dir, "bin", "claude");
     fs.mkdirSync(path.dirname(link), { recursive: true });
@@ -1134,14 +1134,14 @@ describe("resolveCliAuthEpoch", () => {
   });
 
   it("refuses a cwd-relative executable as a persistent opaque owner", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-cli-owner-relative-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-cli-owner-relative-"));
     copyNativeExecutable(path.join(dir, "claude"), nativeUtility("true"));
     try {
       await expect(
         resolveCliRuntimeOwnerFingerprint({
           provider: "claude-cli",
           config: cliConfig("./claude"),
-          agentId: "openclaw",
+          agentId: "afora",
           cwd: dir,
         }),
       ).resolves.toBeUndefined();
@@ -1159,7 +1159,7 @@ describe("resolveCliAuthEpoch", () => {
       resolveCliRuntimeOwnerFingerprint({
         provider: "claude-cli",
         config: cliConfig(process.execPath),
-        agentId: "openclaw",
+        agentId: "afora",
         authProfileId: "anthropic:missing",
       }),
     ).resolves.toBeUndefined();

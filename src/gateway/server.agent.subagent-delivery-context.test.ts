@@ -16,7 +16,7 @@ import { installGatewayTestHooks, rpcReq, testState, writeSessionStore } from ".
 
 installGatewayTestHooks({ scope: "suite" });
 
-const gatewaySuite = installConnectedSessionStoreGatewaySuite("openclaw-gw-subagent-delivery-ctx-");
+const gatewaySuite = installConnectedSessionStoreGatewaySuite("afora-gw-subagent-delivery-ctx-");
 
 const createStubChannelPlugin = (params: {
   id: ChannelPlugin["id"];

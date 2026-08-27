@@ -1,6 +1,6 @@
 // Feishu plugin module implements provider-verified bot identity cache behavior.
-import { normalizeAccountId } from "openclaw/plugin-sdk/account-resolution";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeAccountId } from "afora-agent/plugin-sdk/account-resolution";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { getFeishuRuntime } from "./runtime.js";
 
 const FEISHU_BOT_IDENTITY_CACHE_NAMESPACE = "feishu.bot-identity-cache";

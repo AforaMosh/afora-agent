@@ -48,12 +48,12 @@ function pasteEventWithFiles(files: File[]): ClipboardEvent {
 }
 
 describe("chat attachment read failures", () => {
-  let toastHost: HTMLElementTagNameMap["openclaw-toast-host"];
+  let toastHost: HTMLElementTagNameMap["afora-toast-host"];
 
   beforeEach(() => {
     vi.stubGlobal("FileReader", StubFileReader as unknown as typeof FileReader);
     StubFileReader.failNames = new Set();
-    toastHost = document.createElement("openclaw-toast-host");
+    toastHost = document.createElement("afora-toast-host");
     document.body.append(toastHost);
   });
 

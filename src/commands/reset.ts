@@ -24,7 +24,7 @@ import {
 
 type ResetScope = "config" | "config+creds+sessions" | "full";
 
-/** CLI options accepted by `openclaw reset`. */
+/** CLI options accepted by `afora reset`. */
 type ResetOptions = {
   scope?: ResetScope;
   yes?: boolean;
@@ -34,7 +34,7 @@ type ResetOptions = {
 
 async function stopGatewayIfRunning(runtime: RuntimeEnv): Promise<boolean> {
   if (isNixMode) {
-    // Nix mode owns service lifecycle outside OpenClaw-managed launchd/systemd
+    // Nix mode owns service lifecycle outside Afora-managed launchd/systemd
     // installs, so reset should not try to stop a service it did not create.
     return true;
   }
@@ -59,7 +59,7 @@ async function stopGatewayIfRunning(runtime: RuntimeEnv): Promise<boolean> {
 }
 
 function logBackupRecommendation(runtime: RuntimeEnv) {
-  runtime.log(`Recommended first: ${formatCliCommand("openclaw backup create")}`);
+  runtime.log(`Recommended first: ${formatCliCommand("afora backup create")}`);
 }
 
 /** Runs the reset command for config, credential/session, or full state scopes. */
@@ -84,7 +84,7 @@ export async function resetCommand(runtime: RuntimeEnv, opts: ResetOptions) {
         {
           value: "config",
           label: "Config only",
-          hint: "openclaw.json",
+          hint: "afora.json",
         },
         {
           value: "config+creds+sessions",
@@ -160,7 +160,7 @@ export async function resetCommand(runtime: RuntimeEnv, opts: ResetOptions) {
     for (const dir of sessionDirs) {
       await removePath(dir, runtime, { dryRun, label: dir });
     }
-    runtime.log(`Next: ${formatCliCommand("openclaw onboard --install-daemon")}`);
+    runtime.log(`Next: ${formatCliCommand("afora onboard --install-daemon")}`);
     return;
   }
 
@@ -174,6 +174,6 @@ export async function resetCommand(runtime: RuntimeEnv, opts: ResetOptions) {
       dryRun,
       removeStateRows: !stateRemoved,
     });
-    runtime.log(`Next: ${formatCliCommand("openclaw onboard --install-daemon")}`);
+    runtime.log(`Next: ${formatCliCommand("afora onboard --install-daemon")}`);
   }
 }

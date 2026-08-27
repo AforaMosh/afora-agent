@@ -37,7 +37,7 @@ function renderBadges(
 function expectTooltipText(badge: Element | null | undefined, text: string) {
   expect(badge?.hasAttribute("title")).toBe(false);
   expect(
-    (badge?.closest("openclaw-tooltip") as (HTMLElement & { content?: string }) | null)?.content,
+    (badge?.closest("afora-tooltip") as (HTMLElement & { content?: string }) | null)?.content,
   ).toBe(text);
 }
 

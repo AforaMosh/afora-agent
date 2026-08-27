@@ -1,13 +1,13 @@
-import { listAgentIds, resolveSessionAgentIds } from "openclaw/plugin-sdk/agent-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { OpenClawPluginNodeHostCommand } from "openclaw/plugin-sdk/plugin-entry";
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
+import { listAgentIds, resolveSessionAgentIds } from "afora-agent/plugin-sdk/agent-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { AforaPluginNodeHostCommand } from "afora-agent/plugin-sdk/plugin-entry";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
 import {
   sessionCatalogAdoptedSourceKey,
   type SessionCatalogEntrySnapshot,
   type SessionCatalogProvider,
-} from "openclaw/plugin-sdk/session-catalog";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/session-catalog";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { CodexThreadTurnsListResponse } from "./app-server/protocol.js";
 import type { CodexAppServerBindingStore } from "./app-server/session-binding.js";
 import { listAdoptedSessionEntries } from "./session-catalog-adoption.js";
@@ -60,7 +60,7 @@ import type {
 async function listGatewayHost(params: {
   agentId: string;
   bindingStore: CodexAppServerBindingStore;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   control: CodexSessionCatalogControl;
   query: CodexSessionCatalogParams;
   runtime: PluginRuntime;
@@ -121,7 +121,7 @@ async function listGatewayHost(params: {
 export async function listCodexSessionCatalog(params: {
   agentId?: string;
   bindingStore: CodexAppServerBindingStore;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   runtime: PluginRuntime;
   control: CodexSessionCatalogControlFactory;
   query?: CodexSessionCatalogParams;
@@ -216,7 +216,7 @@ export async function listCodexSessionCatalog(params: {
 export function createCodexSessionCatalogNodeHostCommands(
   controlFactory: CodexSessionCatalogControlFactory,
   configSources: CodexTerminalConfigSources,
-): OpenClawPluginNodeHostCommand[] {
+): AforaPluginNodeHostCommand[] {
   // Node commands register before an agent request exists. Bind from the invoke payload so
   // explicit multi-agent Codex homes never collapse to an ambient default.
   const bindRequest = (paramsJSON?: string | null) => {

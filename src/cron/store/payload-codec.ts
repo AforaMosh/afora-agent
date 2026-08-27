@@ -1,5 +1,5 @@
 /** SQLite column codec for cron payload variants. */
-import { safeParseJson } from "@openclaw/normalization-core";
+import { safeParseJson } from "@afora/normalization-core";
 import type { CronPayload } from "../types.js";
 import {
   booleanToInteger,

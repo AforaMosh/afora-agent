@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { captureEnv } from "../test-utils/env.js";
 import {
   resolveConfiguredTtsMode,
@@ -20,7 +20,7 @@ describe("shouldAttemptTtsPayload", () => {
   let caseId = 0;
 
   beforeAll(() => {
-    root = mkdtempSync(path.join(tmpdir(), "openclaw-tts-config-"));
+    root = mkdtempSync(path.join(tmpdir(), "afora-tts-config-"));
   });
 
   afterAll(() => {
@@ -30,11 +30,11 @@ describe("shouldAttemptTtsPayload", () => {
   });
 
   beforeEach(() => {
-    envSnapshot = captureEnv(["OPENCLAW_TTS_PREFS"]);
+    envSnapshot = captureEnv(["AFORA_TTS_PREFS"]);
     dir = path.join(root, `case-${caseId++}`);
     mkdirSync(dir, { recursive: true });
     prefsPath = path.join(dir, "tts.json");
-    process.env.OPENCLAW_TTS_PREFS = prefsPath;
+    process.env.AFORA_TTS_PREFS = prefsPath;
   });
 
   afterEach(() => {
@@ -43,13 +43,13 @@ describe("shouldAttemptTtsPayload", () => {
   });
 
   it("skips TTS when config, prefs, and session state leave auto mode off", () => {
-    expect(shouldAttemptTtsPayload({ cfg: {} as OpenClawConfig })).toBe(false);
+    expect(shouldAttemptTtsPayload({ cfg: {} as AforaConfig })).toBe(false);
   });
 
   it("does not infer automatic TTS from a dashboard text turn without opt-in state", () => {
     expect(
       shouldAttemptTtsPayload({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         agentId: "main",
         channelId: "webchat",
         accountId: "dashboard",
@@ -59,20 +59,20 @@ describe("shouldAttemptTtsPayload", () => {
 
   it("honors session auto state before prefs and config", () => {
     writeFileSync(prefsPath, JSON.stringify({ tts: { auto: "off" } }));
-    const cfg = { tts: { auto: "off" } } as OpenClawConfig;
+    const cfg = { tts: { auto: "off" } } as AforaConfig;
 
     expect(shouldAttemptTtsPayload({ cfg, ttsAuto: "always" })).toBe(true);
     expect(shouldAttemptTtsPayload({ cfg, ttsAuto: "off" })).toBe(false);
   });
 
   it("uses local prefs before config auto mode", () => {
-    const cfg = { tts: { auto: "off" } } as OpenClawConfig;
+    const cfg = { tts: { auto: "off" } } as AforaConfig;
 
     writeFileSync(prefsPath, JSON.stringify({ tts: { enabled: true } }));
     expect(shouldAttemptTtsPayload({ cfg })).toBe(true);
 
     writeFileSync(prefsPath, JSON.stringify({ tts: { auto: "off" } }));
-    expect(shouldAttemptTtsPayload({ cfg: { tts: { enabled: true } } as OpenClawConfig })).toBe(
+    expect(shouldAttemptTtsPayload({ cfg: { tts: { enabled: true } } as AforaConfig })).toBe(
       false,
     );
   });
@@ -86,7 +86,7 @@ describe("shouldAttemptTtsPayload", () => {
           reader: { provider: "google" },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveTtsSettingsSnapshot({ cfg }).providerPreference).toEqual({
       provider: "google",
@@ -122,7 +122,7 @@ describe("shouldAttemptTtsPayload", () => {
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(shouldAttemptTtsPayload({ cfg, agentId: "voice" })).toBe(true);
     expect(resolveConfiguredTtsMode(cfg, "voice")).toBe("all");
@@ -138,7 +138,7 @@ describe("shouldAttemptTtsPayload", () => {
       agents: {
         list: [{ id: "voice", tts: { prefsPath: voicePrefsPath } }],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(shouldAttemptTtsPayload({ cfg, agentId: "voice" })).toBe(true);
     expect(shouldAttemptTtsPayload({ cfg, agentId: "main" })).toBe(false);
@@ -190,7 +190,7 @@ describe("shouldAttemptTtsPayload", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const resolved = resolveEffectiveTtsConfig(cfg, {
       agentId: "reader",
@@ -220,7 +220,7 @@ describe("shouldAttemptTtsPayload", () => {
         },
       },
       agents: { list: [{ id: "reader", tts: agentTts }] },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveEffectiveTtsConfig(cfg, "reader").providers?.custom).toEqual({
       model: "base",

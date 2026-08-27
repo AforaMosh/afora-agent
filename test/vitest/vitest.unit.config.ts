@@ -27,13 +27,13 @@ const exclude = sharedTest.exclude ?? [];
 export function loadIncludePatternsFromEnv(
   env: Record<string, string | undefined> = process.env,
 ): string[] | null {
-  return loadPatternListFromEnv("OPENCLAW_VITEST_INCLUDE_FILE", env);
+  return loadPatternListFromEnv("AFORA_VITEST_INCLUDE_FILE", env);
 }
 
 export function loadExtraExcludePatternsFromEnv(
   env: Record<string, string | undefined> = process.env,
 ): string[] {
-  return loadPatternListFromEnv("OPENCLAW_VITEST_EXTRA_EXCLUDE_FILE", env) ?? [];
+  return loadPatternListFromEnv("AFORA_VITEST_EXTRA_EXCLUDE_FILE", env) ?? [];
 }
 
 const defaultUnitCoverageRoots = ["src", "packages", "test"] as const;
@@ -153,7 +153,7 @@ export function createUnitVitestConfigWithOptions(
       ...(isolate ? { runner: undefined } : { runner: nonIsolatedRunnerPath }),
       setupFiles: [
         ...new Set(
-          [...(sharedTest.setupFiles ?? []), "test/setup-openclaw-runtime.ts"].map(
+          [...(sharedTest.setupFiles ?? []), "test/setup-afora-runtime.ts"].map(
             resolveRepoRootPath,
           ),
         ),

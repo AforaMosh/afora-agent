@@ -1,6 +1,6 @@
 /** Tests Code Mode guest execution. */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { prepareSource, resolveCodeModeConfig } from "./code-mode-runtime.js";
 import { applyCodeModeCatalog, createCodeModeTools } from "./code-mode.js";
@@ -250,7 +250,7 @@ describe("Code Mode guest execution", () => {
       execTool: expectDefined(codeModeTools[0], "codeModeTools[0] test invariant"),
       waitTool: expectDefined(codeModeTools[1], "codeModeTools[1] test invariant"),
       code: `
-        const id = "openclaw:fake-code-mode:fake_create_ticket";
+        const id = "afora:fake-code-mode:fake_create_ticket";
         const input = { value: "ship" };
         return {
           named: await tools.fake_create_ticket(input),
@@ -270,7 +270,7 @@ describe("Code Mode guest execution", () => {
       value: expectedValue,
       envelope: {
         tool: expect.objectContaining({
-          id: "openclaw:fake-code-mode:fake_create_ticket",
+          id: "afora:fake-code-mode:fake_create_ticket",
           name: "fake_create_ticket",
         }),
         result: expect.objectContaining({ details: expectedValue }),
@@ -683,7 +683,7 @@ describe("Code Mode guest execution", () => {
     expect(details.status).toBe("failed");
     const error = String(details.error);
     // Regression guard: QuickJS stacks are frames only, so the error used to
-    // collapse to a bare "at openclaw-code-mode:user.js:..." location with the
+    // collapse to a bare "at afora-code-mode:user.js:..." location with the
     // actual cause dropped. The model now sees the name and message.
     expect(error).toContain("SyntaxError");
     expect(error).toContain("unexpected token");
@@ -729,7 +729,7 @@ describe("Code Mode guest execution", () => {
     const details = resultDetails(
       await expectDefined(codeModeTools[0], "codeModeTools[0] test invariant").execute(
         "code-hidden-host-request",
-        { code: "return typeof globalThis.__openclawHostRequest;" },
+        { code: "return typeof globalThis.__aforaHostRequest;" },
       ),
     );
 

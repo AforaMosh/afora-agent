@@ -2,7 +2,7 @@
  * Gateway channels.status method tests.
  */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { requireGatewayRecord } from "../test-helpers.assertions.js";
 import type { GatewayRequestHandlerOptions } from "./types.js";
@@ -34,7 +34,7 @@ vi.mock("../../config/config.js", () => ({
   getRuntimeConfig: mocks.getRuntimeConfig,
   readConfigFileSnapshot: vi.fn(async () => ({
     config: {},
-    path: "openclaw.config.json",
+    path: "afora.config.json",
     raw: "{}",
   })),
 }));

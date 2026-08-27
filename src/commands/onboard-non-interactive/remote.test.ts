@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { RuntimeEnv } from "../../runtime.js";
 
 const commitNonInteractiveOnboardConfigMock = vi.hoisted(() =>
-  vi.fn(async (_params: { nextConfig: OpenClawConfig }) => undefined),
+  vi.fn(async (_params: { nextConfig: AforaConfig }) => undefined),
 );
 
 vi.mock("./config-write.js", () => ({

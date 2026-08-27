@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { reconcileNodePairingOnConnect } from "../gateway/node-connect-reconcile.js";
 import { resetPluginLoaderTestStateForTest } from "../plugins/loader.test-fixtures.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
@@ -29,7 +29,7 @@ function resetPluginState(): void {
 const tempBundledRoots: string[] = [];
 
 function createLinuxNodeBundledRoot(): string {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-linux-node-plugin-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-linux-node-plugin-"));
   try {
     fs.symlinkSync(
       path.resolve("extensions/linux-node"),
@@ -72,11 +72,11 @@ describe("linux-node node-host integration", () => {
       return originalAccessSync(candidate, mode);
     });
     vi.stubEnv("PATH", `${fakeBinDir}${path.delimiter}${process.env.PATH ?? ""}`);
-    vi.stubEnv("OPENCLAW_BUNDLED_PLUGINS_DIR", bundledRoot);
-    vi.stubEnv("OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR", "1");
-    vi.stubEnv("OPENCLAW_DISABLE_BUNDLED_PLUGINS", undefined);
+    vi.stubEnv("AFORA_BUNDLED_PLUGINS_DIR", bundledRoot);
+    vi.stubEnv("AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR", "1");
+    vi.stubEnv("AFORA_DISABLE_BUNDLED_PLUGINS", undefined);
 
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       gateway: {
         nodes: {
           commands: { allow: ["camera.snap", "camera.clip"] },

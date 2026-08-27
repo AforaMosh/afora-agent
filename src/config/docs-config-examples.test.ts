@@ -8,7 +8,7 @@ import { auditDocsConfigExamples } from "./docs-config-examples.js";
 type SkipStat = "skippedFragment" | "skippedNonObject" | "skippedOptOut" | "skippedParseFailure";
 
 function auditMarkdown(markdown: string): ReturnType<typeof auditDocsConfigExamples> {
-  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-docs-config-"));
+  const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-docs-config-"));
   const docsRoot = path.join(repoRoot, "docs");
   fs.mkdirSync(docsRoot);
   fs.writeFileSync(path.join(docsRoot, "fixture.md"), markdown);

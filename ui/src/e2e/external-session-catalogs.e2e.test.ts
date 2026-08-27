@@ -116,7 +116,7 @@ suite.define(() => {
     await expect.poll(() => page.getByText("OpenCode transcript loaded").count()).toBe(1);
     await page.getByText("Pi architecture notes", { exact: true }).click();
     const piPane = page
-      .locator("openclaw-chat-pane.chat-pane-cache__pane--visible")
+      .locator("afora-chat-pane.chat-pane-cache__pane--visible")
       .filter({ hasText: "Pi transcript loaded" });
     await piPane.getByText("Pi transcript loaded").waitFor();
     expect(await piPane.locator(".agent-chat__composer-combobox > textarea").isDisabled()).toBe(
@@ -124,7 +124,7 @@ suite.define(() => {
     );
     expect(await gateway.getRequests("sessions.catalog.read")).toHaveLength(2);
 
-    const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+    const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
     if (artifactDir) {
       await fs.mkdir(artifactDir, { recursive: true });
       await page.screenshot({

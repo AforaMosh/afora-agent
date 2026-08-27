@@ -31,8 +31,8 @@ suite.define(() => {
       await composer.waitFor({ state: "visible" });
 
       for (const [label, selector] of [
-        ["Browser", "openclaw-browser-panel"],
-        ["Desktop", "openclaw-desktop-panel"],
+        ["Browser", "afora-browser-panel"],
+        ["Desktop", "afora-desktop-panel"],
       ] as const) {
         await openChatSidePanelType(page, label);
         const panel = page.locator(selector);

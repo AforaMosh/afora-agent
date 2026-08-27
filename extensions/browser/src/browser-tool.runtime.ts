@@ -1,4 +1,4 @@
-import { resolveOptionalIntegerOption } from "openclaw/plugin-sdk/number-runtime";
+import { resolveOptionalIntegerOption } from "afora-agent/plugin-sdk/number-runtime";
 /**
  * Runtime dependency barrel for the Browser agent tool.
  *
@@ -34,7 +34,7 @@ export { wrapExternalContent } from "./sdk-security-runtime.js";
 export {
   normalizeOptionalString,
   readStringValue,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 export { BrowserToolOutputSchema, BrowserToolSchema } from "./browser-tool.schema.js";
 export {
   browserAct,

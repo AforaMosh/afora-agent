@@ -1,5 +1,5 @@
 // Msteams plugin module implements oauth.flow behavior.
-import { isWSL2Sync } from "openclaw/plugin-sdk/runtime-env";
+import { isWSL2Sync } from "afora-agent/plugin-sdk/runtime-env";
 import {
   MSTEAMS_DEFAULT_DELEGATED_SCOPES,
   MSTEAMS_OAUTH_REDIRECT_URI,

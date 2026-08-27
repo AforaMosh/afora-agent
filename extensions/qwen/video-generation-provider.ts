@@ -1,5 +1,5 @@
 // Qwen provider module implements model/runtime integration.
-import { buildDashscopeVideoGenerationProvider } from "openclaw/plugin-sdk/video-generation";
+import { buildDashscopeVideoGenerationProvider } from "afora-agent/plugin-sdk/video-generation";
 import { isQwenCodingPlanBaseUrl } from "./models.js";
 
 const DEFAULT_QWEN_VIDEO_BASE_URL = "https://dashscope-intl.aliyuncs.com";

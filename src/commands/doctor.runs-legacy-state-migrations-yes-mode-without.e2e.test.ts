@@ -77,18 +77,18 @@ describe("doctor command", () => {
   }, 30_000);
 
   it("refuses doctor repair mode in Nix before repair side effects", async () => {
-    const previous = process.env.OPENCLAW_NIX_MODE;
-    process.env.OPENCLAW_NIX_MODE = "1";
+    const previous = process.env.AFORA_NIX_MODE;
+    process.env.AFORA_NIX_MODE = "1";
     try {
       mockDoctorConfigSnapshot();
       await expect(doctorCommand(createDoctorRuntime(), { repair: true })).rejects.toThrow(
-        "OPENCLAW_NIX_MODE=1",
+        "AFORA_NIX_MODE=1",
       );
     } finally {
       if (previous === undefined) {
-        delete process.env.OPENCLAW_NIX_MODE;
+        delete process.env.AFORA_NIX_MODE;
       } else {
-        process.env.OPENCLAW_NIX_MODE = previous;
+        process.env.AFORA_NIX_MODE = previous;
       }
     }
 
@@ -96,18 +96,18 @@ describe("doctor command", () => {
   });
 
   it("refuses doctor gateway token generation in Nix before config writes", async () => {
-    const previous = process.env.OPENCLAW_NIX_MODE;
-    process.env.OPENCLAW_NIX_MODE = "1";
+    const previous = process.env.AFORA_NIX_MODE;
+    process.env.AFORA_NIX_MODE = "1";
     try {
       mockDoctorConfigSnapshot();
       await expect(
         doctorCommand(createDoctorRuntime(), { generateGatewayToken: true }),
-      ).rejects.toThrow("OPENCLAW_NIX_MODE=1");
+      ).rejects.toThrow("AFORA_NIX_MODE=1");
     } finally {
       if (previous === undefined) {
-        delete process.env.OPENCLAW_NIX_MODE;
+        delete process.env.AFORA_NIX_MODE;
       } else {
-        process.env.OPENCLAW_NIX_MODE = previous;
+        process.env.AFORA_NIX_MODE = previous;
       }
     }
 
@@ -164,15 +164,15 @@ describe("doctor command", () => {
     ]);
 
     const previousConfigWriteSupport =
-      process.env.OPENCLAW_UPDATE_PARENT_SUPPORTS_DOCTOR_CONFIG_WRITE;
-    process.env.OPENCLAW_UPDATE_PARENT_SUPPORTS_DOCTOR_CONFIG_WRITE = "1";
+      process.env.AFORA_UPDATE_PARENT_SUPPORTS_DOCTOR_CONFIG_WRITE;
+    process.env.AFORA_UPDATE_PARENT_SUPPORTS_DOCTOR_CONFIG_WRITE = "1";
     try {
       await doctorCommand(createDoctorRuntime(), { yes: true });
     } finally {
       if (previousConfigWriteSupport === undefined) {
-        delete process.env.OPENCLAW_UPDATE_PARENT_SUPPORTS_DOCTOR_CONFIG_WRITE;
+        delete process.env.AFORA_UPDATE_PARENT_SUPPORTS_DOCTOR_CONFIG_WRITE;
       } else {
-        process.env.OPENCLAW_UPDATE_PARENT_SUPPORTS_DOCTOR_CONFIG_WRITE =
+        process.env.AFORA_UPDATE_PARENT_SUPPORTS_DOCTOR_CONFIG_WRITE =
           previousConfigWriteSupport;
       }
     }

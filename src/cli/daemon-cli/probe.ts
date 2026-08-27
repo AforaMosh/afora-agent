@@ -1,11 +1,11 @@
 // Gateway status probe helper used by `gateway status` service diagnostics.
-import { redactSensitiveUrlLikeString } from "@openclaw/net-policy/redact-sensitive-url";
+import { redactSensitiveUrlLikeString } from "@afora/net-policy/redact-sensitive-url";
 import {
   classifyGatewayConnectFailure,
   ConnectErrorDetailCodes,
   readConnectErrorDetailCode,
 } from "../../../packages/gateway-protocol/src/connect-error-details.js";
-import type { OpenClawConfig } from "../../config/types.js";
+import type { AforaConfig } from "../../config/types.js";
 import type { GatewayProbeResult } from "../../gateway/probe.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { createLazyImportLoader } from "../../shared/lazy-promise.js";
@@ -74,7 +74,7 @@ export async function probeGatewayStatus(opts: {
   url: string;
   token?: string;
   password?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   tlsFingerprint?: string;
   timeoutMs: number;
   preauthHandshakeTimeoutMs?: number;

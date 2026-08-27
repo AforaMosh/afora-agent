@@ -1,4 +1,4 @@
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 // Zalouser plugin module implements zca client behavior.
 import { TextStyle } from "./zca-constants.js";
 

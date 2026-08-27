@@ -3,7 +3,7 @@ import { property } from "lit/decorators.js";
 import type { PresenceEntry } from "../api/types.ts";
 import { CONTROL_UI_BUILD_INFO, type ControlUiBuildInfo } from "../build-info.ts";
 import { t } from "../i18n/index.ts";
-import { OpenClawLightDomContentsElement } from "../lit/openclaw-element.ts";
+import { AforaLightDomContentsElement } from "../lit/afora-element.ts";
 import {
   identityAvatarClass,
   renderIdentityAvatarImage,
@@ -147,7 +147,7 @@ function renderViewerAvatar(view: IdentityAvatarView) {
 
 export type ViewerAvatarVariant = "session" | "footer" | "profile";
 
-class ViewerAvatar extends OpenClawLightDomContentsElement {
+class ViewerAvatar extends AforaLightDomContentsElement {
   @property({ attribute: false }) user: PresenceViewer | null = null;
   @property() variant: ViewerAvatarVariant = "session";
   // Presence selectors use this marker; owner and menu chrome must opt out.
@@ -181,7 +181,7 @@ function renderPresenceCardRow(user: PresenceViewer) {
   // as a subtitle would just echo the same line.
   const subtitle = user.email && user.email !== label ? user.email : undefined;
   return html`<div class="sidebar-hover-card__person" data-viewer-id=${user.id}>
-    <openclaw-viewer-avatar .user=${user} variant="footer"></openclaw-viewer-avatar>
+    <afora-viewer-avatar .user=${user} variant="footer"></afora-viewer-avatar>
     <span class="sidebar-hover-card__person-text">
       <span class="sidebar-hover-card__person-name">${label}</span>
       ${subtitle
@@ -191,7 +191,7 @@ function renderPresenceCardRow(user: PresenceViewer) {
   </div>`;
 }
 
-class ViewerFacepile extends OpenClawLightDomContentsElement {
+class ViewerFacepile extends AforaLightDomContentsElement {
   @property({ attribute: false }) presencePayload: unknown;
   @property({ attribute: false }) selfUserId?: string;
   @property({ attribute: false }) selfInstanceId?: string;
@@ -236,12 +236,12 @@ class ViewerFacepile extends OpenClawLightDomContentsElement {
     >
       ${visible.map((user) =>
         this.variant === "footer"
-          ? html`<openclaw-viewer-avatar .user=${user} variant="footer"></openclaw-viewer-avatar>`
-          : html`<openclaw-tooltip .content=${presenceViewerLabel(user)}>
+          ? html`<afora-viewer-avatar .user=${user} variant="footer"></afora-viewer-avatar>`
+          : html`<afora-tooltip .content=${presenceViewerLabel(user)}>
               <span class="viewer-facepile__tooltip-anchor">
-                <openclaw-viewer-avatar .user=${user} variant="session"></openclaw-viewer-avatar>
+                <afora-viewer-avatar .user=${user} variant="session"></afora-viewer-avatar>
               </span>
-            </openclaw-tooltip>`,
+            </afora-tooltip>`,
       )}
       ${overflow.length > 0
         ? this.variant === "footer"
@@ -250,13 +250,13 @@ class ViewerFacepile extends OpenClawLightDomContentsElement {
               aria-label=${overflow.map(presenceViewerLabel).join(", ")}
               >+${overflow.length}</span
             >`
-          : html`<openclaw-tooltip .content=${overflow.map(presenceViewerLabel).join("\n")}>
+          : html`<afora-tooltip .content=${overflow.map(presenceViewerLabel).join("\n")}>
               <span
                 class="viewer-avatar viewer-avatar--overflow"
                 aria-label=${overflow.map(presenceViewerLabel).join(", ")}
                 >+${overflow.length}</span
               >
-            </openclaw-tooltip>`
+            </afora-tooltip>`
         : nothing}
     </span>`;
     if (this.variant !== "footer") {
@@ -264,7 +264,7 @@ class ViewerFacepile extends OpenClawLightDomContentsElement {
     }
     const roster = projection.users.filter((user) => user.id !== projection.selfUserId);
     return html`
-      <openclaw-tooltip class="sidebar-hover-tooltip">
+      <afora-tooltip class="sidebar-hover-tooltip">
         <span
           class="viewer-facepile-trigger"
           role="group"
@@ -292,23 +292,23 @@ class ViewerFacepile extends OpenClawLightDomContentsElement {
             ${renderSidebarServerDetails(this.buildInfo, this.gatewayVersion)}
           </section>
         </div>
-      </openclaw-tooltip>
+      </afora-tooltip>
     `;
   }
 }
 
 if (globalThis.customElements) {
-  if (!customElements.get("openclaw-viewer-avatar")) {
-    customElements.define("openclaw-viewer-avatar", ViewerAvatar);
+  if (!customElements.get("afora-viewer-avatar")) {
+    customElements.define("afora-viewer-avatar", ViewerAvatar);
   }
-  if (!customElements.get("openclaw-viewer-facepile")) {
-    customElements.define("openclaw-viewer-facepile", ViewerFacepile);
+  if (!customElements.get("afora-viewer-facepile")) {
+    customElements.define("afora-viewer-facepile", ViewerFacepile);
   }
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "openclaw-viewer-avatar": ViewerAvatar;
-    "openclaw-viewer-facepile": ViewerFacepile;
+    "afora-viewer-avatar": ViewerAvatar;
+    "afora-viewer-facepile": ViewerFacepile;
   }
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 import { createMattermostTestConfig, requestUrl } from "./reactions.test-helpers.js";
 import { readMattermostMessages } from "./read.js";
 
@@ -64,7 +64,7 @@ describe("readMattermostMessages", () => {
   });
 
   it("allows a configured delegated cross-channel read", async () => {
-    const cfg = createMattermostTestConfig("read-configured") as OpenClawConfig;
+    const cfg = createMattermostTestConfig("read-configured") as AforaConfig;
     cfg.channels!.mattermost!.groupPolicy = "allowlist";
     cfg.channels!.mattermost!.groups = { OTHER: { requireMention: false } };
     const fetchImpl = createReadFetch();
@@ -82,7 +82,7 @@ describe("readMattermostMessages", () => {
   });
 
   it("allows an unlisted member channel only when groupPolicy is open", async () => {
-    const cfg = createMattermostTestConfig("read-open") as OpenClawConfig;
+    const cfg = createMattermostTestConfig("read-open") as AforaConfig;
     cfg.channels!.mattermost!.groupPolicy = "open";
     const fetchImpl = createReadFetch();
 
@@ -110,7 +110,7 @@ describe("readMattermostMessages", () => {
       },
     },
   ])("inherits provider-level $label for a named account", async ({ providerConfig }) => {
-    const cfg = createMattermostTestConfig("read-named-inheritance") as OpenClawConfig;
+    const cfg = createMattermostTestConfig("read-named-inheritance") as AforaConfig;
     Object.assign(cfg.channels!.mattermost!, providerConfig, {
       accounts: { work: { enabled: true } },
     });
@@ -225,7 +225,7 @@ describe("readMattermostMessages", () => {
   });
 
   it("rejects disabled accounts before provider access", async () => {
-    const cfg = createMattermostTestConfig("read-disabled") as OpenClawConfig;
+    const cfg = createMattermostTestConfig("read-disabled") as AforaConfig;
     cfg.channels!.mattermost!.enabled = false;
     const fetchImpl = createReadFetch();
 

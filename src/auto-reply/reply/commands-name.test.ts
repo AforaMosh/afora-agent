@@ -6,7 +6,7 @@ import {
   loadSessionEntry,
   upsertSessionEntryCore,
 } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { buildBuiltinChatCommands } from "../commands-registry.shared.js";
 import { takeCommandSessionMetadataChanges } from "./command-session-metadata.js";
 import { handleNameCommand } from "./commands-name.js";
@@ -21,7 +21,7 @@ afterEach(async () => {
 });
 
 async function createStorePath(): Promise<string> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-name-command-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-name-command-"));
   tempRoots.push(root);
   return path.join(root, "sessions.json");
 }
@@ -33,7 +33,7 @@ function buildNameParams(
 ): HandleCommandsParams {
   const activeSessionKey = overrides.sessionKey ?? sessionKey;
   return {
-    cfg: {} as OpenClawConfig,
+    cfg: {} as AforaConfig,
     ctx: {
       Provider: "web",
       Surface: "web",

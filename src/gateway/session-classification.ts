@@ -2,14 +2,14 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import type {
   SessionClassification,
   SessionPeerKind,
 } from "../../packages/gateway-protocol/src/index.js";
 import type { SessionEntry } from "../config/sessions.js";
 import { resolveAgentMainSessionKey } from "../config/sessions.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { parseAgentSessionKey, parseSessionDeliveryRoute } from "../routing/session-key.js";
 import {
   isAcpSessionKey,
@@ -78,7 +78,7 @@ function classifyRest(rest: string): SessionClassification {
  * paths, or other data that is not already a session-list field.
  */
 export function sessionClassificationForRow(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   key: string,
   agentId: string,
   entry?: SessionEntry,

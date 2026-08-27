@@ -42,7 +42,7 @@ function initializeInChild(dbPath: string): Promise<void> {
 
 describe("memory-lancedb concurrent initialization", () => {
   test("atomically creates the memories table across processes", async () => {
-    const dbPath = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-memory-lancedb-race-"));
+    const dbPath = await fs.mkdtemp(path.join(os.tmpdir(), "afora-memory-lancedb-race-"));
     tempDirs.push(dbPath);
 
     await Promise.all(Array.from({ length: 6 }, () => initializeInChild(dbPath)));

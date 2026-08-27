@@ -1,5 +1,5 @@
 {
-  "name": "@openclaw/session-url-contract",
+  "name": "@afora/session-url-contract",
   "version": "0.0.0-private",
   "private": true,
   "type": "module",
@@ -8,6 +8,6 @@
     "./parse": "./src/parse.ts"
   },
   "dependencies": {
-    "@openclaw/normalization-core": "workspace:*"
+    "@afora/normalization-core": "workspace:*"
   }
 }

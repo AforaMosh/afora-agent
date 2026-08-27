@@ -1,4 +1,4 @@
-import type { SessionCatalogPullRequestSummary } from "openclaw/plugin-sdk/session-catalog";
+import type { SessionCatalogPullRequestSummary } from "afora-agent/plugin-sdk/session-catalog";
 import type { ClaudeTranscriptItem } from "./session-catalog-transcript.js";
 
 type ClaudeSessionSource = "claude-cli" | "claude-desktop";

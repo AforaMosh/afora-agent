@@ -6,7 +6,7 @@
 import {
   asDateTimestampMs,
   finiteSecondsToTimerSafeMilliseconds,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
 type SubagentRunDeadlineRecord = Pick<

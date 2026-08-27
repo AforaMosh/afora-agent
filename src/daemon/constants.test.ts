@@ -15,36 +15,36 @@ describe("resolveGatewayLaunchAgentLabel", () => {
   it("returns default label when no profile is set", () => {
     const result = resolveGatewayLaunchAgentLabel();
     expect(result).toBe(GATEWAY_LAUNCH_AGENT_LABEL);
-    expect(result).toBe("ai.openclaw.gateway");
+    expect(result).toBe("ai.afora.gateway");
   });
 
   it("returns profile-specific label when profile is set", () => {
     const result = resolveGatewayLaunchAgentLabel("dev");
-    expect(result).toBe("ai.openclaw.dev");
+    expect(result).toBe("ai.afora.dev");
   });
 });
 
 describe("resolveGatewaySystemdServiceName", () => {
   it("returns default service name when no profile is set", () => {
     const result = resolveGatewaySystemdServiceName();
-    expect(result).toBe("openclaw-gateway");
+    expect(result).toBe("afora-gateway");
   });
 
   it("returns profile-specific service name when profile is set", () => {
     const result = resolveGatewaySystemdServiceName("dev");
-    expect(result).toBe("openclaw-gateway-dev");
+    expect(result).toBe("afora-gateway-dev");
   });
 });
 
 describe("resolveGatewayWindowsTaskName", () => {
   it("returns default task name when no profile is set", () => {
     const result = resolveGatewayWindowsTaskName();
-    expect(result).toBe("OpenClaw Gateway");
+    expect(result).toBe("Afora Gateway");
   });
 
   it("returns profile-specific task name when profile is set", () => {
     const result = resolveGatewayWindowsTaskName("dev");
-    expect(result).toBe("OpenClaw Gateway (dev)");
+    expect(result).toBe("Afora Gateway (dev)");
   });
 });
 
@@ -52,23 +52,23 @@ describe("resolveGatewayNativeServiceIdentityConflict", () => {
   it.each([
     {
       platform: "darwin" as const,
-      envKey: "OPENCLAW_LAUNCHD_LABEL",
-      value: "ai.openclaw.gateway",
+      envKey: "AFORA_LAUNCHD_LABEL",
+      value: "ai.afora.gateway",
     },
     {
       platform: "linux" as const,
-      envKey: "OPENCLAW_SYSTEMD_UNIT",
-      value: "openclaw-gateway.service",
+      envKey: "AFORA_SYSTEMD_UNIT",
+      value: "afora-gateway.service",
     },
     {
       platform: "win32" as const,
-      envKey: "OPENCLAW_WINDOWS_TASK_NAME",
-      value: "OpenClaw Gateway",
+      envKey: "AFORA_WINDOWS_TASK_NAME",
+      value: "Afora Gateway",
     },
   ])("rejects $envKey overrides for named profiles on $platform", ({ platform, envKey, value }) => {
     expect(
       resolveGatewayNativeServiceIdentityConflict(
-        { OPENCLAW_PROFILE: "work", [envKey]: value },
+        { AFORA_PROFILE: "work", [envKey]: value },
         platform,
       ),
     ).toMatchObject({ envKey });
@@ -77,13 +77,13 @@ describe("resolveGatewayNativeServiceIdentityConflict", () => {
   it("accepts canonical named-profile identities and default-profile overrides", () => {
     expect(
       resolveGatewayNativeServiceIdentityConflict(
-        { OPENCLAW_PROFILE: "work", OPENCLAW_SYSTEMD_UNIT: "openclaw-gateway-work" },
+        { AFORA_PROFILE: "work", AFORA_SYSTEMD_UNIT: "afora-gateway-work" },
         "linux",
       ),
     ).toBeNull();
     expect(
       resolveGatewayNativeServiceIdentityConflict(
-        { OPENCLAW_SYSTEMD_UNIT: "custom-gateway.service" },
+        { AFORA_SYSTEMD_UNIT: "custom-gateway.service" },
         "linux",
       ),
     ).toBeNull();
@@ -111,25 +111,25 @@ describe("resolveGatewayProfileSuffix", () => {
 
 describe("resolveGatewayServiceDescription", () => {
   it("returns default description when no profile", () => {
-    expect(resolveGatewayServiceDescription({ env: {} })).toBe("OpenClaw Gateway");
+    expect(resolveGatewayServiceDescription({ env: {} })).toBe("Afora Gateway");
   });
 
   it("includes profile when set", () => {
-    expect(resolveGatewayServiceDescription({ env: { OPENCLAW_PROFILE: "work" } })).toBe(
-      "OpenClaw Gateway (profile: work)",
+    expect(resolveGatewayServiceDescription({ env: { AFORA_PROFILE: "work" } })).toBe(
+      "Afora Gateway (profile: work)",
     );
   });
 
   it("ignores legacy install-time version metadata", () => {
     expect(
-      resolveGatewayServiceDescription({ env: { OPENCLAW_SERVICE_VERSION: "2026.1.10" } }),
-    ).toBe("OpenClaw Gateway");
+      resolveGatewayServiceDescription({ env: { AFORA_SERVICE_VERSION: "2026.1.10" } }),
+    ).toBe("Afora Gateway");
   });
 
   it("prefers explicit description override", () => {
     expect(
       resolveGatewayServiceDescription({
-        env: { OPENCLAW_PROFILE: "work" },
+        env: { AFORA_PROFILE: "work" },
         description: "Custom",
       }),
     ).toBe("Custom");

@@ -1,4 +1,4 @@
-import { asDateTimestampMs } from "@openclaw/normalization-core/number-coercion";
+import { asDateTimestampMs } from "@afora/normalization-core/number-coercion";
 import { parseDurationMs } from "../cli/parse-duration.js";
 import type { CronPacing } from "./types.js";
 

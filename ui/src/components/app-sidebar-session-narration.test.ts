@@ -311,9 +311,9 @@ describe("SidebarSessionNarrationController", () => {
         data: {
           text: [
             "Visible work is complete.",
-            "<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>",
+            "<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>",
             "private runtime details",
-            "<<<END_OPENCLAW_INTERNAL_CONTEXT>>>",
+            "<<<END_AFORA_INTERNAL_CONTEXT>>>",
             "[[audio_as_voice]]",
             "REPLY_SKIP",
           ].join("\n"),
@@ -380,7 +380,7 @@ describe("SidebarSessionNarrationController", () => {
         runId: "run-1",
         stream: "assistant",
         data: {
-          text: `Visible setup.\n<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>\n${"private runtime detail ".repeat(1_000)}`,
+          text: `Visible setup.\n<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>\n${"private runtime detail ".repeat(1_000)}`,
         },
       }),
     );
@@ -391,7 +391,7 @@ describe("SidebarSessionNarrationController", () => {
         sessionKey: "agent:main:run",
         runId: "run-1",
         stream: "assistant",
-        data: { delta: "\n<<<END_OPENCLAW_INTERNAL_CONTEXT>>>\nFinal bounded line." },
+        data: { delta: "\n<<<END_AFORA_INTERNAL_CONTEXT>>>\nFinal bounded line." },
       }),
     );
     await vi.advanceTimersByTimeAsync(SIDEBAR_NARRATION_THROTTLE_MS);
@@ -421,7 +421,7 @@ describe("SidebarSessionNarrationController", () => {
         sessionKey: "agent:main:run",
         runId: "run-1",
         stream: "assistant",
-        data: { text: "Visible setup.\n<<<BEGIN_OPENCLAW_INTERNAL_CONT" },
+        data: { text: "Visible setup.\n<<<BEGIN_AFORA_INTERNAL_CONT" },
       }),
     );
     expect(updates.at(-1)?.get("agent:main:run")).toBe("Visible setup.");
@@ -459,7 +459,7 @@ describe("SidebarSessionNarrationController", () => {
         sessionKey: "agent:main:run",
         runId: "run-1",
         state: "delta",
-        deltaText: "<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>\nprivate runtime text",
+        deltaText: "<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>\nprivate runtime text",
       }),
     );
     controller.handleEvent(
@@ -509,11 +509,11 @@ describe("SidebarSessionNarrationController", () => {
         data: {
           text: [
             "Visible setup.",
-            "<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>",
+            "<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>",
             "private outer runtime detail ".repeat(1_000),
-            "<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>",
+            "<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>",
             "private nested runtime detail ".repeat(1_000),
-            "<<<END_OPENCLAW_INTERNAL_CONTEXT>>>",
+            "<<<END_AFORA_INTERNAL_CONTEXT>>>",
           ].join("\n"),
         },
       }),
@@ -536,7 +536,7 @@ describe("SidebarSessionNarrationController", () => {
         sessionKey: "agent:main:run",
         runId: "run-1",
         stream: "assistant",
-        data: { delta: "\n<<<END_OPENCLAW_INTERNAL_CONTEXT>>>\nFinal public line." },
+        data: { delta: "\n<<<END_AFORA_INTERNAL_CONTEXT>>>\nFinal public line." },
       }),
     );
     await vi.advanceTimersByTimeAsync(SIDEBAR_NARRATION_THROTTLE_MS);

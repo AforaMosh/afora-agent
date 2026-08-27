@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { prepareApprovalChannelCustody } from "./approval-channel-custody.js";
 
 const mocks = vi.hoisted(() => ({
@@ -60,7 +60,7 @@ describe("prepareApprovalChannelCustody", () => {
   });
 
   it("unions explicit scoped targets with the documented default account", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       approvals: {
         exec: {
           enabled: true,

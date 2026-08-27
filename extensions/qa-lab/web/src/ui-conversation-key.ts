@@ -2,7 +2,7 @@ import type {
   QaBusMessage,
   QaBusSnapshotConversation,
   QaBusThread,
-} from "openclaw/plugin-sdk/qa-channel-protocol";
+} from "afora-agent/plugin-sdk/qa-channel-protocol";
 
 type ConversationIdentity = Pick<QaBusSnapshotConversation, "accountId" | "id" | "kind">;
 

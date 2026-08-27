@@ -11,7 +11,7 @@ describe("MSTeams SQLite mutation lock", () => {
 
   beforeEach(() => {
     setMSTeamsRuntime(msteamsRuntimeStub);
-    stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-msteams-lock-"));
+    stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-msteams-lock-"));
   });
 
   afterEach(() => {

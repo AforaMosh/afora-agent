@@ -7,14 +7,14 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it, type TestFunction } from "vitest";
 import {
-  createOpenClawTestInstance,
-  type OpenClawTestInstance,
-} from "../../test/helpers/openclaw-test-instance.js";
+  createAforaTestInstance,
+  type AforaTestInstance,
+} from "../../test/helpers/afora-test-instance.js";
 import { createDeferred } from "../../test/helpers/promise.js";
 import { loadPersistedAuthProfileStore } from "../agents/auth-profiles/persisted.js";
 import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
 import type { ModelProviderConfig } from "../config/types.models.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { connectGatewayClient } from "../gateway/test-helpers.e2e.js";
 import { runExec } from "../process/exec.js";
 import { sleep } from "../utils/sleep.js";
@@ -64,9 +64,9 @@ type GatewayScenario = MockModelBehavior & {
 };
 
 const SHARED_GATEWAY_AGENT_ID = "tui-pty-gateway";
-// These cases spawn openclaw.mjs outside the source TUI runner. CI opts in only
+// These cases spawn afora.mjs outside the source TUI runner. CI opts in only
 // after the exact head has a complete build, so source-mode PTY smoke must skip them.
-const itWithBuiltCli = process.env.OPENCLAW_TUI_PTY_USE_BUILT_CLI === "1" ? it : it.skip;
+const itWithBuiltCli = process.env.AFORA_TUI_PTY_USE_BUILT_CLI === "1" ? it : it.skip;
 
 const GATEWAY_SCENARIOS = {
   validation: {
@@ -428,7 +428,7 @@ function buildTuiCliScript(args: string[]) {
     `const program = new Command();`,
     `program.exitOverride();`,
     `registerTuiCli(program);`,
-    `program.parseAsync([process.execPath, "openclaw", ...${JSON.stringify(args)}], { from: "node" }).catch((error) => {`,
+    `program.parseAsync([process.execPath, "afora", ...${JSON.stringify(args)}], { from: "node" }).catch((error) => {`,
     `  console.error(error);`,
     `  process.exit(1);`,
     `});`,
@@ -436,8 +436,8 @@ function buildTuiCliScript(args: string[]) {
 }
 
 function buildTuiProcessArgs(args: string[]) {
-  if (process.env.OPENCLAW_TUI_PTY_USE_BUILT_CLI === "1") {
-    return [path.join(process.cwd(), "openclaw.mjs"), ...args];
+  if (process.env.AFORA_TUI_PTY_USE_BUILT_CLI === "1") {
+    return [path.join(process.cwd(), "afora.mjs"), ...args];
   }
   return ["--import", "tsx", "--eval", buildTuiCliScript(args)];
 }
@@ -478,7 +478,7 @@ function buildLocalModeConfig(params: {
         workspace: params.workspaceDir,
         model: { primary: "tui-pty-mock/gpt-5.5" },
         models: {
-          "tui-pty-mock/gpt-5.5": { agentRuntime: { id: "openclaw" } },
+          "tui-pty-mock/gpt-5.5": { agentRuntime: { id: "afora" } },
         },
         skills: [],
         skipBootstrap: true,
@@ -505,7 +505,7 @@ function buildLocalModeConfig(params: {
       auth: { mode: "token", token: "tui-pty-local" },
     },
     discovery: { mdns: { mode: "off" } },
-  } satisfies OpenClawConfig;
+  } satisfies AforaConfig;
 }
 
 async function cleanupLocalModeResources(params: {
@@ -539,34 +539,34 @@ async function startLocalModeTui(
     followupReplyText?: string;
     replyText?: string;
     prepareConfig?: (params: {
-      config: OpenClawConfig;
+      config: AforaConfig;
       tempDir: string;
       stateDir: string;
-    }) => Promise<OpenClawConfig> | OpenClawConfig;
+    }) => Promise<AforaConfig> | AforaConfig;
   } = {},
 ) {
   const replyText = opts.replyText ?? "LOCAL_PTY_RESPONSE";
-  const tempDir = await mkdtemp(path.join(tmpdir(), "openclaw-tui-pty-local-"));
+  const tempDir = await mkdtemp(path.join(tmpdir(), "afora-tui-pty-local-"));
   const workspaceDir = path.join(tempDir, "workspace");
   const homeDir = path.join(tempDir, "home");
   const stateDir = path.join(tempDir, "state");
   const xdgConfigHome = path.join(tempDir, "xdg-config");
   const xdgDataHome = path.join(tempDir, "xdg-data");
   const xdgCacheHome = path.join(tempDir, "xdg-cache");
-  const configPath = path.join(tempDir, "openclaw.json");
+  const configPath = path.join(tempDir, "afora.json");
   const env: NodeJS.ProcessEnv = {
     HOME: homeDir,
-    OPENCLAW_HOME: homeDir,
-    OPENCLAW_CONFIG_PATH: configPath,
-    OPENCLAW_STATE_DIR: stateDir,
-    OPENCLAW_TUI_LOCAL_RUN_SHUTDOWN_GRACE_MS: "500",
-    OPENCLAW_AGENT_DIR: undefined,
-    OPENCLAW_SKIP_PROVIDERS: undefined,
+    AFORA_HOME: homeDir,
+    AFORA_CONFIG_PATH: configPath,
+    AFORA_STATE_DIR: stateDir,
+    AFORA_TUI_LOCAL_RUN_SHUTDOWN_GRACE_MS: "500",
+    AFORA_AGENT_DIR: undefined,
+    AFORA_SKIP_PROVIDERS: undefined,
     XDG_CONFIG_HOME: xdgConfigHome,
     XDG_DATA_HOME: xdgDataHome,
     XDG_CACHE_HOME: xdgCacheHome,
-    OPENCLAW_THEME: "dark",
-    OPENCLAW_CODEX_DISCOVERY_LIVE: "0",
+    AFORA_THEME: "dark",
+    AFORA_CODEX_DISCOVERY_LIVE: "0",
     NO_COLOR: undefined,
   };
   const mockModel = await startMockModelServer(replyText, {
@@ -574,7 +574,7 @@ async function startLocalModeTui(
     holdFirstResponse: opts.holdFirstResponse,
     followupReplyText: opts.followupReplyText,
   });
-  let config: OpenClawConfig = buildLocalModeConfig({
+  let config: AforaConfig = buildLocalModeConfig({
     workspaceDir,
     providerBaseUrl: mockModel.baseUrl,
     toolsProfile: opts.invalidEditLoop ? "coding" : "minimal",
@@ -640,7 +640,7 @@ async function startLocalModeTui(
 }
 
 type SharedGatewayFixture = {
-  gateway: OpenClawTestInstance;
+  gateway: AforaTestInstance;
   controlClient: GatewayChatClient;
   mockModel: MockModelServer;
   run: PtyRun;
@@ -671,7 +671,7 @@ function buildGatewayModeConfig(params: { tempDir: string; providerBaseUrl: stri
         workspace: path.join(params.tempDir, defaultScenario.agentId),
         model: { primary: defaultModelRef },
         models: Object.fromEntries(
-          modelRefs.map((modelRef) => [modelRef, { agentRuntime: { id: "openclaw" } }]),
+          modelRefs.map((modelRef) => [modelRef, { agentRuntime: { id: "afora" } }]),
         ),
         skills: [],
         skipBootstrap: true,
@@ -703,13 +703,13 @@ function buildGatewayModeConfig(params: { tempDir: string; providerBaseUrl: stri
         mode: "followup",
       },
     },
-  } satisfies OpenClawConfig;
+  } satisfies AforaConfig;
 }
 
 async function startSharedGatewayFixture(): Promise<SharedGatewayFixture> {
-  const tempDir = await mkdtemp(path.join(tmpdir(), "openclaw-tui-pty-gateway-"));
+  const tempDir = await mkdtemp(path.join(tmpdir(), "afora-tui-pty-gateway-"));
   let mockModel: MockModelServer | undefined;
-  let gateway: OpenClawTestInstance | undefined;
+  let gateway: AforaTestInstance | undefined;
   let controlClient: GatewayChatClient | undefined;
   let run: PtyRun | undefined;
   try {
@@ -732,13 +732,13 @@ async function startSharedGatewayFixture(): Promise<SharedGatewayFixture> {
         ]),
       ),
     );
-    gateway = await createOpenClawTestInstance({
+    gateway = await createAforaTestInstance({
       name: "tui-pty-shared-gateway",
       gatewayToken: "tui-pty-local",
       config: buildGatewayModeConfig({ tempDir, providerBaseUrl: mockModel.baseUrl }),
       env: {
-        OPENCLAW_CODEX_DISCOVERY_LIVE: "0",
-        OPENCLAW_SKIP_PROVIDERS: undefined,
+        AFORA_CODEX_DISCOVERY_LIVE: "0",
+        AFORA_SKIP_PROVIDERS: undefined,
       },
     });
     await gateway.startGateway();
@@ -779,7 +779,7 @@ async function startSharedGatewayFixture(): Promise<SharedGatewayFixture> {
         cwd: process.cwd(),
         env: {
           ...gateway.env,
-          OPENCLAW_THEME: "dark",
+          AFORA_THEME: "dark",
           NO_COLOR: undefined,
         },
         exitTimeoutMs: LOCAL_EXIT_TIMEOUT_MS,
@@ -931,7 +931,7 @@ async function startGatewayModeTui(
 }
 
 async function startIsolatedGatewayPty(params: {
-  gateway: OpenClawTestInstance;
+  gateway: AforaTestInstance;
   registerCleanup: CleanupRegistrar;
   sessionKey?: string;
   token?: string;
@@ -941,10 +941,10 @@ async function startIsolatedGatewayPty(params: {
   const ownsClientStateDir = !params.clientStateDir;
   const tempDir =
     params.clientStateDir ??
-    (await mkdtemp(path.join(tmpdir(), "openclaw-tui-pty-gateway-client-")));
+    (await mkdtemp(path.join(tmpdir(), "afora-tui-pty-gateway-client-")));
   let run: PtyRun;
   try {
-    await writeFile(path.join(tempDir, "openclaw.json"), "{}\n", "utf8");
+    await writeFile(path.join(tempDir, "afora.json"), "{}\n", "utf8");
     const cliArgs = ["tui", "--url", gateway.url, "--token", token];
     if (sessionKey) {
       cliArgs.push("--session", sessionKey);
@@ -954,13 +954,13 @@ async function startIsolatedGatewayPty(params: {
       env: {
         ...gateway.env,
         HOME: tempDir,
-        OPENCLAW_HOME: tempDir,
-        OPENCLAW_CONFIG_PATH: path.join(tempDir, "openclaw.json"),
-        OPENCLAW_STATE_DIR: tempDir,
-        OPENCLAW_AGENT_DIR: undefined,
-        OPENCLAW_GATEWAY_TOKEN: undefined,
-        OPENCLAW_GATEWAY_PASSWORD: undefined,
-        OPENCLAW_THEME: "dark",
+        AFORA_HOME: tempDir,
+        AFORA_CONFIG_PATH: path.join(tempDir, "afora.json"),
+        AFORA_STATE_DIR: tempDir,
+        AFORA_AGENT_DIR: undefined,
+        AFORA_GATEWAY_TOKEN: undefined,
+        AFORA_GATEWAY_PASSWORD: undefined,
+        AFORA_THEME: "dark",
         NO_COLOR: undefined,
       },
       exitTimeoutMs: LOCAL_EXIT_TIMEOUT_MS,
@@ -1013,7 +1013,7 @@ async function waitForHistoryMessages(
 describe("TUI PTY real backends", () => {
   for (const alias of ["chat", "terminal"] as const) {
     it(
-      `launches openclaw ${alias} as local mode through a real PTY`,
+      `launches afora ${alias} as local mode through a real PTY`,
       async ({ onTestFinished }) => {
         const replyText = `${alias.toUpperCase()}_ALIAS_RESPONSE`;
         const prompt = `message through ${alias} alias`;
@@ -1043,7 +1043,7 @@ describe("TUI PTY real backends", () => {
   }
 
   it(
-    "sends the initial message supplied to openclaw tui through a real local PTY",
+    "sends the initial message supplied to afora tui through a real local PTY",
     async ({ onTestFinished }) => {
       const initialMessage = "initial message from CLI launch";
       const replyText = "INITIAL_MESSAGE_RESPONSE";
@@ -1079,7 +1079,7 @@ describe("TUI PTY real backends", () => {
         {
           cwd: process.cwd(),
           env: {
-            OPENCLAW_THEME: "dark",
+            AFORA_THEME: "dark",
             NO_COLOR: undefined,
           },
           exitTimeoutMs: LOCAL_EXIT_TIMEOUT_MS,
@@ -1157,7 +1157,7 @@ describe("TUI PTY real backends", () => {
           "steer the active local turn",
         );
         await fixture.run.waitForOutput("LOCAL_STEER_COMPLETE");
-        if (process.env.OPENCLAW_BEHAVIOR_EVIDENCE === "1") {
+        if (process.env.AFORA_BEHAVIOR_EVIDENCE === "1") {
           console.info(
             "[behavior-evidence] local-steer",
             JSON.stringify({
@@ -1330,7 +1330,7 @@ describe("TUI PTY real backends", () => {
       try {
         await fixture.run.waitForOutput("local ready", LOCAL_STARTUP_TIMEOUT_MS);
         await fixture.run.write(
-          "!node -e \"console.log('T06_STDOUT'); console.error('T06_STDERR'); console.log('T06_ENV='+process.env.OPENCLAW_SHELL); process.exitCode=7\"\r",
+          "!node -e \"console.log('T06_STDOUT'); console.error('T06_STDERR'); console.log('T06_ENV='+process.env.AFORA_SHELL); process.exitCode=7\"\r",
         );
         await fixture.run.waitForOutput("Allow local shell commands for this session?");
         await fixture.run.waitForOutput("Select Yes/No (arrows + Enter), Esc to cancel.");
@@ -1364,7 +1364,7 @@ describe("TUI PTY real backends", () => {
       });
       try {
         await fixture.run.waitForOutput("local ready", LOCAL_STARTUP_TIMEOUT_MS);
-        const cliPath = path.join(process.cwd(), "openclaw.mjs");
+        const cliPath = path.join(process.cwd(), "afora.mjs");
         const cli = `${JSON.stringify(process.execPath)} ${JSON.stringify(cliPath)}`;
         await fixture.run.write(`!${cli} config set tools.profile minimal\r`);
         await fixture.run.waitForOutput("Allow local shell commands for this session?");
@@ -1372,7 +1372,7 @@ describe("TUI PTY real backends", () => {
         await fixture.run.waitForOutput("local shell: enabled for this session");
         await fixture.run.waitForOutput("[local] exit 0");
 
-        const repaired = JSON.parse(await readFile(fixture.configPath, "utf8")) as OpenClawConfig;
+        const repaired = JSON.parse(await readFile(fixture.configPath, "utf8")) as AforaConfig;
         expect(repaired.tools?.profile).toBe("minimal");
 
         const { stdout } = await runExec(
@@ -1380,7 +1380,7 @@ describe("TUI PTY real backends", () => {
           [cliPath, "config", "validate", "--json"],
           {
             cwd: process.cwd(),
-            env: { ...fixture.env, OPENCLAW_TEST_RUNTIME_LOG: "1" },
+            env: { ...fixture.env, AFORA_TEST_RUNTIME_LOG: "1" },
             logOutput: false,
             timeoutMs: LOCAL_OUTPUT_TIMEOUT_MS,
           },
@@ -1425,10 +1425,10 @@ describe("TUI PTY real backends", () => {
               path.join(pluginDir, "package.json"),
               `${JSON.stringify(
                 {
-                  name: "@openclaw/t05-local-auth-fixture",
+                  name: "@afora/t05-local-auth-fixture",
                   version: "0.0.0",
                   type: "module",
-                  openclaw: { extensions: ["./index.js"] },
+                  afora: { extensions: ["./index.js"] },
                 },
                 null,
                 2,
@@ -1436,7 +1436,7 @@ describe("TUI PTY real backends", () => {
               "utf8",
             ),
             writeFile(
-              path.join(pluginDir, "openclaw.plugin.json"),
+              path.join(pluginDir, "afora.plugin.json"),
               `${JSON.stringify(
                 {
                   id: pluginId,
@@ -1527,7 +1527,7 @@ export default {
         expect(fixture.run.output().includes(sentinel)).toBe(false);
 
         const agentDir = path.join(fixture.stateDir, "agents", "main", "agent");
-        const sqlitePath = path.join(agentDir, "openclaw-agent.sqlite");
+        const sqlitePath = path.join(agentDir, "afora-agent.sqlite");
         expect(await stat(sqlitePath).then((entry) => entry.isFile())).toBe(true);
         const store = loadPersistedAuthProfileStore(agentDir);
         const profile = store?.profiles[profileId];
@@ -1539,7 +1539,7 @@ export default {
             : "";
         expect(persistedDigest).toBe(expectedDigest);
 
-        const config = JSON.parse(await readFile(fixture.configPath, "utf8")) as OpenClawConfig;
+        const config = JSON.parse(await readFile(fixture.configPath, "utf8")) as AforaConfig;
         expect(resolveAgentModelPrimaryValue(config.agents?.defaults?.model)).toBe(
           "tui-pty-mock/gpt-5.5",
         );
@@ -1808,7 +1808,7 @@ export default {
       const next: [string, string] = ["T03_RESUME_FOLLOWUP_PROMPT", scenario.followupReplyText!];
       const restoredMarkers = [`session ${sessionLabel}`, initial[0], scenario.replyText];
       const requestOffset = shared.mockModel.requests(scenario.modelId).length;
-      const clientStateDir = await mkdtemp(path.join(tmpdir(), "openclaw-tui-pty-resume-client-"));
+      const clientStateDir = await mkdtemp(path.join(tmpdir(), "afora-tui-pty-resume-client-"));
       onTestFinished(() => rm(clientStateDir, { recursive: true, force: true }));
       const controlClient = new GatewayChatClient({
         url: shared.gateway.url,
@@ -2378,7 +2378,7 @@ export default {
       await cleanupStartedFixture(startup);
     }, LOCAL_TEST_TIMEOUT_MS);
 
-    it("launches openclaw tui against a real Gateway through a real PTY", async () => {
+    it("launches afora tui against a real Gateway through a real PTY", async () => {
       const fixture = await requireSharedGatewayFixture();
       expect(fixture.run.visibleOutput()).toContain("gateway connected");
     });

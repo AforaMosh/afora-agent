@@ -7,7 +7,7 @@ import {
 
 describe("session panel toggle buffer", () => {
   it("keeps an early route-startup intent until the pane claims it", () => {
-    const event = new CustomEvent("openclaw:desktop-toggle", {
+    const event = new CustomEvent("afora:desktop-toggle", {
       detail: { open: true, environmentId: "worker-desktop-1" },
     });
     rememberSessionPanelToggle("desktop", event);
@@ -17,8 +17,8 @@ describe("session panel toggle buffer", () => {
   });
 
   it("does not let an older direct delivery clear a newer intent", () => {
-    const older = new Event("openclaw:browser-toggle");
-    const newer = new Event("openclaw:browser-toggle");
+    const older = new Event("afora:browser-toggle");
+    const newer = new Event("afora:browser-toggle");
     rememberSessionPanelToggle("browser", older);
     rememberSessionPanelToggle("browser", newer);
 

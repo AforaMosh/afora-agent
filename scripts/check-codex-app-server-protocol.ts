@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-// Check Codex App Server Protocol script supports OpenClaw repository automation.
+// Check Codex App Server Protocol script supports Afora repository automation.
 import fs from "node:fs/promises";
 import path from "node:path";
 import {
@@ -269,14 +269,14 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `Codex app-server generated protocol matches OpenClaw bridge assumptions: ${source.codexRepo}`,
+    `Codex app-server generated protocol matches Afora bridge assumptions: ${source.codexRepo}`,
   );
 }
 
 async function checkMaintainedProtocolTypes(sourceRoot: string): Promise<void> {
-  // Raw requests go to Codex; raw responses flow into OpenClaw. Keep the
+  // Raw requests go to Codex; raw responses flow into Afora. Keep the
   // assignability direction explicit so the probe permits deliberate projections.
-  const probePath = path.join(sourceRoot, "openclaw-protocol-compatibility.ts");
+  const probePath = path.join(sourceRoot, "afora-protocol-compatibility.ts");
   const protocolPath = path.resolve(process.cwd(), "extensions/codex/src/app-server/protocol.ts");
   const protocolImport = relativeTypeScriptImport(probePath, protocolPath);
   const generatedImport = (file: string) =>
@@ -340,117 +340,117 @@ import type { TurnEnvironmentParams } from ${JSON.stringify(generatedImport("v2/
 import type { TurnInterruptParams } from ${JSON.stringify(generatedImport("v2/TurnInterruptParams.ts"))};
 import type { TurnStartParams } from ${JSON.stringify(generatedImport("v2/TurnStartParams.ts"))};
 
-declare const openClawAppsInstalledParams: CodexAppServerRequestParams<"app/installed">;
-const generatedAppsInstalledParams: AppsInstalledParams = openClawAppsInstalledParams;
-declare const openClawAppsListParams: CodexAppServerRequestParams<"app/list">;
-const generatedAppsListParams: AppsListParams = openClawAppsListParams;
-declare const openClawAppsReadParams: CodexAppServerRequestParams<"app/read">;
-const generatedAppsReadParams: AppsReadParams = openClawAppsReadParams;
-declare const openClawAppSummary: v2.AppSummary;
-const generatedAppSummary: AppSummary = openClawAppSummary;
-declare const openClawCommandExecParams: CodexAppServerRequestParams<"command/exec">;
-const generatedCommandExecParams: CommandExecParams = openClawCommandExecParams;
+declare const aforaAppsInstalledParams: CodexAppServerRequestParams<"app/installed">;
+const generatedAppsInstalledParams: AppsInstalledParams = aforaAppsInstalledParams;
+declare const aforaAppsListParams: CodexAppServerRequestParams<"app/list">;
+const generatedAppsListParams: AppsListParams = aforaAppsListParams;
+declare const aforaAppsReadParams: CodexAppServerRequestParams<"app/read">;
+const generatedAppsReadParams: AppsReadParams = aforaAppsReadParams;
+declare const aforaAppSummary: v2.AppSummary;
+const generatedAppSummary: AppSummary = aforaAppSummary;
+declare const aforaCommandExecParams: CodexAppServerRequestParams<"command/exec">;
+const generatedCommandExecParams: CommandExecParams = aforaCommandExecParams;
 declare const generatedNullableCommandExecParams: CommandExecParams;
-const openClawNullableCommandExecParams: CodexAppServerRequestParams<"command/exec"> =
+const aforaNullableCommandExecParams: CodexAppServerRequestParams<"command/exec"> =
   generatedNullableCommandExecParams;
-declare const openClawConfigBatchWriteParams: CodexAppServerRequestParams<"config/batchWrite">;
-const generatedConfigBatchWriteParams: ConfigBatchWriteParams = openClawConfigBatchWriteParams;
-declare const openClawConfigEdit: CodexConfigEdit;
-const generatedConfigEdit: ConfigEdit = openClawConfigEdit;
-declare const openClawConfigValueWriteParams: CodexAppServerRequestParams<"config/value/write">;
-const generatedConfigValueWriteParams: ConfigValueWriteParams = openClawConfigValueWriteParams;
-declare const openClawPluginInstalledParams: CodexAppServerRequestParams<"plugin/installed">;
-const generatedPluginInstalledParams: PluginInstalledParams = openClawPluginInstalledParams;
-declare const openClawPluginInstallParams: CodexAppServerRequestParams<"plugin/install">;
-const generatedPluginInstallParams: PluginInstallParams = openClawPluginInstallParams;
-declare const openClawPluginListParams: CodexAppServerRequestParams<"plugin/list">;
-const generatedPluginListParams: PluginListParams = openClawPluginListParams;
-declare const openClawPluginReadParams: CodexAppServerRequestParams<"plugin/read">;
-const generatedPluginReadParams: PluginReadParams = openClawPluginReadParams;
-declare const openClawDynamicToolSpec: CodexDynamicToolSpec;
-const generatedDynamicToolSpec: DynamicToolSpec = openClawDynamicToolSpec;
-declare const openClawTurnEnvironmentParams: CodexTurnEnvironmentParams;
-const generatedTurnEnvironmentParams: TurnEnvironmentParams = openClawTurnEnvironmentParams;
-declare const openClawThreadStartParams: CodexThreadStartParams;
-const generatedThreadStartParams: ThreadStartParams = openClawThreadStartParams;
-declare const openClawThreadResumeParams: CodexThreadResumeParams;
-const generatedThreadResumeParams: ThreadResumeParams = openClawThreadResumeParams;
-declare const openClawThreadForkParams: CodexThreadForkParams;
-const generatedThreadForkParams: ThreadForkParams = openClawThreadForkParams;
-declare const openClawThreadDeleteParams: CodexAppServerRequestParams<"thread/delete">;
-const generatedThreadDeleteParams: ThreadDeleteParams = openClawThreadDeleteParams;
-declare const openClawTurnInterruptParams: CodexAppServerRequestParams<"turn/interrupt">;
-const generatedTurnInterruptParams: TurnInterruptParams = openClawTurnInterruptParams;
-declare const openClawTurnStartParams: CodexTurnStartParams;
-const generatedTurnStartParams: TurnStartParams = openClawTurnStartParams;
+declare const aforaConfigBatchWriteParams: CodexAppServerRequestParams<"config/batchWrite">;
+const generatedConfigBatchWriteParams: ConfigBatchWriteParams = aforaConfigBatchWriteParams;
+declare const aforaConfigEdit: CodexConfigEdit;
+const generatedConfigEdit: ConfigEdit = aforaConfigEdit;
+declare const aforaConfigValueWriteParams: CodexAppServerRequestParams<"config/value/write">;
+const generatedConfigValueWriteParams: ConfigValueWriteParams = aforaConfigValueWriteParams;
+declare const aforaPluginInstalledParams: CodexAppServerRequestParams<"plugin/installed">;
+const generatedPluginInstalledParams: PluginInstalledParams = aforaPluginInstalledParams;
+declare const aforaPluginInstallParams: CodexAppServerRequestParams<"plugin/install">;
+const generatedPluginInstallParams: PluginInstallParams = aforaPluginInstallParams;
+declare const aforaPluginListParams: CodexAppServerRequestParams<"plugin/list">;
+const generatedPluginListParams: PluginListParams = aforaPluginListParams;
+declare const aforaPluginReadParams: CodexAppServerRequestParams<"plugin/read">;
+const generatedPluginReadParams: PluginReadParams = aforaPluginReadParams;
+declare const aforaDynamicToolSpec: CodexDynamicToolSpec;
+const generatedDynamicToolSpec: DynamicToolSpec = aforaDynamicToolSpec;
+declare const aforaTurnEnvironmentParams: CodexTurnEnvironmentParams;
+const generatedTurnEnvironmentParams: TurnEnvironmentParams = aforaTurnEnvironmentParams;
+declare const aforaThreadStartParams: CodexThreadStartParams;
+const generatedThreadStartParams: ThreadStartParams = aforaThreadStartParams;
+declare const aforaThreadResumeParams: CodexThreadResumeParams;
+const generatedThreadResumeParams: ThreadResumeParams = aforaThreadResumeParams;
+declare const aforaThreadForkParams: CodexThreadForkParams;
+const generatedThreadForkParams: ThreadForkParams = aforaThreadForkParams;
+declare const aforaThreadDeleteParams: CodexAppServerRequestParams<"thread/delete">;
+const generatedThreadDeleteParams: ThreadDeleteParams = aforaThreadDeleteParams;
+declare const aforaTurnInterruptParams: CodexAppServerRequestParams<"turn/interrupt">;
+const generatedTurnInterruptParams: TurnInterruptParams = aforaTurnInterruptParams;
+declare const aforaTurnStartParams: CodexTurnStartParams;
+const generatedTurnStartParams: TurnStartParams = aforaTurnStartParams;
 
 declare const generatedAppsInstalledResponse: AppsInstalledResponse;
-const openClawAppsInstalledResponse: CodexAppServerRequestResult<"app/installed"> =
+const aforaAppsInstalledResponse: CodexAppServerRequestResult<"app/installed"> =
   generatedAppsInstalledResponse;
 declare const generatedAppsListResponse: AppsListResponse;
-const openClawAppsListResponse: CodexAppServerRequestResult<"app/list"> =
+const aforaAppsListResponse: CodexAppServerRequestResult<"app/list"> =
   generatedAppsListResponse;
 declare const generatedAppsReadResponse: AppsReadResponse;
-const openClawAppsReadResponse: CodexAppServerRequestResult<"app/read"> =
+const aforaAppsReadResponse: CodexAppServerRequestResult<"app/read"> =
   generatedAppsReadResponse;
 declare const generatedAppSummaryResponse: AppSummary;
-const openClawAppSummaryResponse: v2.AppSummary = generatedAppSummaryResponse;
+const aforaAppSummaryResponse: v2.AppSummary = generatedAppSummaryResponse;
 declare const generatedCommandExecResponse: CommandExecResponse;
-const openClawCommandExecResponse: CodexAppServerRequestResult<"command/exec"> =
+const aforaCommandExecResponse: CodexAppServerRequestResult<"command/exec"> =
   generatedCommandExecResponse;
 declare const generatedConfigWriteResponse: ConfigWriteResponse;
-const openClawConfigBatchWriteResponse: CodexAppServerRequestResult<"config/batchWrite"> =
+const aforaConfigBatchWriteResponse: CodexAppServerRequestResult<"config/batchWrite"> =
   generatedConfigWriteResponse;
-const openClawConfigValueWriteResponse: CodexAppServerRequestResult<"config/value/write"> =
+const aforaConfigValueWriteResponse: CodexAppServerRequestResult<"config/value/write"> =
   generatedConfigWriteResponse;
 const generatedExactConfigBatchWriteResponse: ConfigWriteResponse =
-  openClawConfigBatchWriteResponse;
+  aforaConfigBatchWriteResponse;
 const generatedExactConfigValueWriteResponse: ConfigWriteResponse =
-  openClawConfigValueWriteResponse;
+  aforaConfigValueWriteResponse;
 declare const generatedPluginInstalledResponse: PluginInstalledResponse;
-const openClawPluginInstalledResponse: CodexAppServerRequestResult<"plugin/installed"> =
+const aforaPluginInstalledResponse: CodexAppServerRequestResult<"plugin/installed"> =
   generatedPluginInstalledResponse;
 const generatedPluginInstalledMarketplaceLoadErrors: MarketplaceLoadErrorInfo[] =
-  openClawPluginInstalledResponse.marketplaceLoadErrors;
+  aforaPluginInstalledResponse.marketplaceLoadErrors;
 type InstalledPluginResponseHasNoFeaturedCatalog =
   "featuredPluginIds" extends keyof v2.PluginInstalledResponse ? never : true;
 const installedPluginResponseHasNoFeaturedCatalog: InstalledPluginResponseHasNoFeaturedCatalog =
   true;
 declare const generatedPluginInstallResponse: PluginInstallResponse;
-const openClawPluginInstallResponse: CodexAppServerRequestResult<"plugin/install"> =
+const aforaPluginInstallResponse: CodexAppServerRequestResult<"plugin/install"> =
   generatedPluginInstallResponse;
 declare const generatedPluginListResponse: PluginListResponse;
-const openClawPluginListResponse: CodexAppServerRequestResult<"plugin/list"> =
+const aforaPluginListResponse: CodexAppServerRequestResult<"plugin/list"> =
   generatedPluginListResponse;
 const generatedPluginListMarketplaceLoadErrors: MarketplaceLoadErrorInfo[] =
-  openClawPluginListResponse.marketplaceLoadErrors;
-const generatedPluginListFeaturedPluginIds: string[] = openClawPluginListResponse.featuredPluginIds;
+  aforaPluginListResponse.marketplaceLoadErrors;
+const generatedPluginListFeaturedPluginIds: string[] = aforaPluginListResponse.featuredPluginIds;
 declare const generatedPluginReadResponse: PluginReadResponse;
-const openClawPluginReadResponse: CodexAppServerRequestResult<"plugin/read"> =
+const aforaPluginReadResponse: CodexAppServerRequestResult<"plugin/read"> =
   generatedPluginReadResponse;
 declare const generatedDynamicToolCallParams: Omit<DynamicToolCallParams, "arguments">;
-const openClawDynamicToolCallParams: Omit<CodexDynamicToolCallParams, "arguments"> =
+const aforaDynamicToolCallParams: Omit<CodexDynamicToolCallParams, "arguments"> =
   generatedDynamicToolCallParams;
 declare const generatedErrorNotification: ErrorNotification;
-const openClawErrorNotification: CodexErrorNotification = generatedErrorNotification;
+const aforaErrorNotification: CodexErrorNotification = generatedErrorNotification;
 declare const generatedGetAccountResponse: GetAccountResponse;
-const openClawGetAccountResponse: CodexGetAccountResponse = generatedGetAccountResponse;
+const aforaGetAccountResponse: CodexGetAccountResponse = generatedGetAccountResponse;
 declare const generatedModelListResponse: ModelListResponse;
-const openClawModelListResponse: CodexModelListResponse = generatedModelListResponse;
+const aforaModelListResponse: CodexModelListResponse = generatedModelListResponse;
 declare const generatedThreadDeleteResponse: ThreadDeleteResponse;
-const openClawThreadDeleteResponse: CodexAppServerRequestResult<"thread/delete"> =
+const aforaThreadDeleteResponse: CodexAppServerRequestResult<"thread/delete"> =
   generatedThreadDeleteResponse;
 
 // Thread and turn bodies are normalized behind checked-in JSON schemas. Their
 // raw generated shapes must not be confused with the projector-facing types.
 declare const generatedThreadForkResponse: Omit<ThreadForkResponse, "thread">;
-const openClawThreadForkResponse: Omit<CodexThreadForkResponse, "thread"> =
+const aforaThreadForkResponse: Omit<CodexThreadForkResponse, "thread"> =
   generatedThreadForkResponse;
 declare const generatedThreadResumeResponse: Omit<ThreadResumeResponse, "thread">;
-const openClawThreadResumeResponse: Omit<CodexThreadResumeResponse, "thread"> =
+const aforaThreadResumeResponse: Omit<CodexThreadResumeResponse, "thread"> =
   generatedThreadResumeResponse;
 declare const generatedThreadStartResponse: Omit<ThreadStartResponse, "thread">;
-const openClawThreadStartResponse: Omit<CodexThreadStartResponse, "thread"> =
+const aforaThreadStartResponse: Omit<CodexThreadStartResponse, "thread"> =
   generatedThreadStartResponse;
 
 export {};

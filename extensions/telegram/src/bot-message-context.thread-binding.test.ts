@@ -116,7 +116,7 @@ describe("buildTelegramMessageContext thread binding override", () => {
     resolveTelegramConversationRouteMock.mockReturnValue(
       createBoundRoute({
         accountId: "default",
-        sessionKey: "plugin-binding:openclaw-codex-app-server:session-1",
+        sessionKey: "plugin-binding:afora-codex-app-server:session-1",
         agentId: "main",
         bindingMode: { kind: "plugin-owned-runtime" },
       }),
@@ -133,7 +133,7 @@ describe("buildTelegramMessageContext thread binding override", () => {
       }),
     });
 
-    expect(ctx?.ctxPayload?.SessionKey).toBe("plugin-binding:openclaw-codex-app-server:session-1");
+    expect(ctx?.ctxPayload?.SessionKey).toBe("plugin-binding:afora-codex-app-server:session-1");
     expect(ctx?.ctxPayload?.GroupRequireMention).toBe(true);
   });
 

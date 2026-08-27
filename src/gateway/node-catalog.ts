@@ -3,8 +3,8 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import { normalizeSortedUniqueTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-coerce";
+import { normalizeSortedUniqueTrimmedStringList } from "@afora/normalization-core/string-normalization";
 import type { NodePairingPendingRequest, PairedDeviceNode } from "../infra/device-pairing-node.js";
 import { hasEffectivePairedDeviceRole, type PairedDevice } from "../infra/device-pairing.js";
 import { filterPublicNodeCommands } from "../infra/node-commands.js";

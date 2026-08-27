@@ -1,0 +1,4 @@
+interface:
+  display_name: "Afora Testing"
+  short_description: "Choose cheap, targeted Afora validation"
+  default_prompt: "Use $afora-testing to choose the cheapest safe test or CI verification path, inspect failures, and rerun only the relevant Afora lane."

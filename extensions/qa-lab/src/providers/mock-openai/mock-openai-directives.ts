@@ -1,5 +1,5 @@
 // QA Lab mock provider prompt directives and tool declarations.
-import { escapeRegExp } from "openclaw/plugin-sdk/text-utility-runtime";
+import { escapeRegExp } from "afora-agent/plugin-sdk/text-utility-runtime";
 import {
   type ResponsesInputItem,
   QA_A2A_MESSAGE_TOOL_MIRROR_PROMPT_RE,

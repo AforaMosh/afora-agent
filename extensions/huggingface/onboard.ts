@@ -1,5 +1,5 @@
 // Huggingface setup module handles plugin onboarding behavior.
-import { createModelCatalogPresetAppliers } from "openclaw/plugin-sdk/provider-onboard";
+import { createModelCatalogPresetAppliers } from "afora-agent/plugin-sdk/provider-onboard";
 import { HUGGINGFACE_BASE_URL, HUGGINGFACE_MODEL_CATALOG } from "./models.js";
 
 export const HUGGINGFACE_DEFAULT_MODEL_REF = "huggingface/deepseek-ai/DeepSeek-R1";

@@ -1,14 +1,14 @@
 import crypto from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "afora-agent/plugin-sdk/account-id";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   BOOTSTRAP_HANDOFF_OPERATOR_SCOPES,
   issueDeviceBootstrapToken,
-} from "openclaw/plugin-sdk/device-bootstrap";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { readJsonWebhookBodyOrReject } from "openclaw/plugin-sdk/webhook-request-guards";
+} from "afora-agent/plugin-sdk/device-bootstrap";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { readJsonWebhookBodyOrReject } from "afora-agent/plugin-sdk/webhook-request-guards";
 import { resolveTelegramAccount } from "../accounts.js";
 import { validateTelegramMiniAppInitData } from "./init-data.js";
 import type { TelegramMiniAppLaunchTickets } from "./launch-ticket.js";
@@ -29,7 +29,7 @@ const replayCache = new Map<string, number>();
 const rateLimit = new Map<string, { count: number; resetAtMs: number }>();
 
 export function registerTelegramMiniAppRoutes(
-  api: OpenClawPluginApi,
+  api: AforaPluginApi,
   launchTickets: TelegramMiniAppLaunchTickets,
 ): void {
   api.registerHttpRoute({
@@ -37,7 +37,7 @@ export function registerTelegramMiniAppRoutes(
     match: "prefix",
     auth: "plugin",
     handler: async (req, res) => {
-      const url = new URL(req.url ?? "", "http://openclaw.local");
+      const url = new URL(req.url ?? "", "http://afora.local");
       if (url.pathname === TELEGRAM_MINIAPP_PATH_PREFIX) {
         await handlePage(req, res, url);
         return true;
@@ -71,7 +71,7 @@ async function handlePage(req: IncomingMessage, res: ServerResponse, url: URL): 
 }
 
 async function handleAuth(
-  api: OpenClawPluginApi,
+  api: AforaPluginApi,
   launchTickets: TelegramMiniAppLaunchTickets,
   req: IncomingMessage,
   res: ServerResponse,
@@ -159,8 +159,8 @@ async function handleAuth(
   });
 }
 
-function currentConfig(api: OpenClawPluginApi): OpenClawConfig {
-  return (api.runtime.config?.current?.() ?? api.config) as OpenClawConfig;
+function currentConfig(api: AforaPluginApi): AforaConfig {
+  return (api.runtime.config?.current?.() ?? api.config) as AforaConfig;
 }
 
 function parseAuthBody(

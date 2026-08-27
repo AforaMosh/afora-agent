@@ -1,8 +1,8 @@
 // Regresses legacy provider config shapes accepted by config loading.
 import { describe, expect, it } from "vitest";
 import { normalizeLegacyTalkConfig } from "../commands/doctor/shared/legacy-talk-config-normalizer.js";
-import type { OpenClawConfig } from "./types.js";
-import { OpenClawSchema } from "./zod-schema.js";
+import type { AforaConfig } from "./types.js";
+import { AforaSchema } from "./zod-schema.js";
 
 describe("legacy provider-shaped config snapshots", () => {
   it("accepts a string map of voice aliases while still flagging legacy talk config", () => {
@@ -15,7 +15,7 @@ describe("legacy provider-shaped config snapshots", () => {
       },
     };
     const changes: string[] = [];
-    const migrated = normalizeLegacyTalkConfig(raw as unknown as OpenClawConfig, changes);
+    const migrated = normalizeLegacyTalkConfig(raw as unknown as AforaConfig, changes);
 
     expect(changes).toContain(
       "Normalized talk.provider/providers shape (trimmed provider ids and merged missing compatibility fields).",
@@ -36,7 +36,7 @@ describe("legacy provider-shaped config snapshots", () => {
   });
 
   it("rejects non-string voice alias values", () => {
-    const res = OpenClawSchema.safeParse({
+    const res = AforaSchema.safeParse({
       talk: {
         voiceAliases: {
           Clawd: 123,

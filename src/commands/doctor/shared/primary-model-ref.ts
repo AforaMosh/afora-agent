@@ -2,10 +2,10 @@ import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../../agents/defaults.js";
 import { parseModelRef } from "../../../agents/model-selection-normalize.js";
 import { resolveAgentModelPrimaryValue } from "../../../config/model-input.js";
 import type { AgentModelConfig } from "../../../config/types.agents-shared.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 
 export function resolveDoctorPrimaryModelRef(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentModel?: AgentModelConfig,
 ): { provider: string; model: string } {
   const raw =

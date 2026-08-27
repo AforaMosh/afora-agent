@@ -7,7 +7,7 @@ import type { AddressInfo } from "node:net";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
-import { isLoopbackIpAddress, isPrivateOrLoopbackIpAddress } from "@openclaw/net-policy/ip";
+import { isLoopbackIpAddress, isPrivateOrLoopbackIpAddress } from "@afora/net-policy/ip";
 import { afterEach, describe, expect, it } from "vitest";
 import { WebSocketServer } from "ws";
 import { gatewayOriginScope } from "../../packages/gateway-client/src/gateway-origin-scope.js";
@@ -28,7 +28,7 @@ import {
   pickMatchingExternalInterfaceAddress,
   readNetworkInterfaces,
 } from "../infra/network-interfaces.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { getFreePort } from "../test-utils/ports.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
@@ -296,9 +296,9 @@ async function prepareUnreachableGatewayCliFixture(params: {
   label: string;
   seeded: boolean;
 }): Promise<{ root: string; stateDir: string; configPath: string }> {
-  const root = tempDirs.make(`openclaw-${params.label}-${params.seeded ? "seeded" : "absent"}-`);
+  const root = tempDirs.make(`afora-${params.label}-${params.seeded ? "seeded" : "absent"}-`);
   const stateDir = path.join(root, "state");
-  const configPath = path.join(stateDir, "openclaw.json");
+  const configPath = path.join(stateDir, "afora.json");
   await fs.mkdir(stateDir, { recursive: true });
   await fs.writeFile(
     configPath,
@@ -314,8 +314,8 @@ async function prepareUnreachableGatewayCliFixture(params: {
     const stateEnv = {
       ...process.env,
       HOME: root,
-      OPENCLAW_HOME: root,
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_HOME: root,
+      AFORA_STATE_DIR: stateDir,
     };
     const identity = loadOrCreateDeviceIdentity({ env: stateEnv });
     storeOriginDeviceToken({
@@ -326,7 +326,7 @@ async function prepareUnreachableGatewayCliFixture(params: {
       scopes: ["operator.admin"],
       env: stateEnv,
     });
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
   }
   return { root, stateDir, configPath };
 }
@@ -379,14 +379,14 @@ async function runIsolatedGatewayCli(params: {
           NODE_DISABLE_COMPILE_CACHE: "1",
           NODE_ENV: undefined,
           NODE_OPTIONS: undefined,
-          OPENCLAW_CONFIG_PATH: params.configPath,
-          OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-          OPENCLAW_GATEWAY_PASSWORD: undefined,
-          OPENCLAW_GATEWAY_TOKEN: undefined,
-          OPENCLAW_GATEWAY_URL: undefined,
-          OPENCLAW_HOME: params.root,
-          OPENCLAW_NO_RESPAWN: "1",
-          OPENCLAW_STATE_DIR: params.stateDir,
+          AFORA_CONFIG_PATH: params.configPath,
+          AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+          AFORA_GATEWAY_PASSWORD: undefined,
+          AFORA_GATEWAY_TOKEN: undefined,
+          AFORA_GATEWAY_URL: undefined,
+          AFORA_HOME: params.root,
+          AFORA_NO_RESPAWN: "1",
+          AFORA_STATE_DIR: params.stateDir,
           VITEST: undefined,
           ...params.env,
         },
@@ -455,7 +455,7 @@ describe("gateway-backed CLI process exit", () => {
 
       const seeded = await prepareUnreachableGatewayCliFixture({ label, seeded: true });
       const before = await snapshotSharedStateArtifacts(seeded.stateDir);
-      expect(Object.keys(before)).toContain("openclaw.sqlite");
+      expect(Object.keys(before)).toContain("afora.sqlite");
 
       const seededResult = await runIsolatedGatewayCli({ ...seeded, args });
 
@@ -466,9 +466,9 @@ describe("gateway-backed CLI process exit", () => {
   );
 
   it("dispatches node pairing mutations without opening the writable state database", async () => {
-    const root = tempDirs.make("openclaw-node-pairing-cli-");
+    const root = tempDirs.make("afora-node-pairing-cli-");
     const stateDir = path.join(root, "state");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const token = "test-token";
     const gateway = await startNodePairingGateway(token);
     await fs.mkdir(stateDir, { recursive: true });
@@ -489,22 +489,22 @@ describe("gateway-backed CLI process exit", () => {
     expect(result, result.stderr).toMatchObject({ code: 0, signal: null, stderr: "" });
     expect(JSON.parse(result.stdout)).toEqual({ approved: true });
     expect(gateway.calls).toEqual(["node.pair.list", "node.pair.approve"]);
-    await expect(fs.stat(path.join(stateDir, "state", "openclaw.sqlite"))).rejects.toMatchObject({
+    await expect(fs.stat(path.join(stateDir, "state", "afora.sqlite"))).rejects.toMatchObject({
       code: "ENOENT",
     });
   }, 30_000);
 
   it("uses existing device auth without persisting a hello-issued token or coordinator state", async () => {
-    const root = tempDirs.make("openclaw-node-pairing-stored-auth-");
+    const root = tempDirs.make("afora-node-pairing-stored-auth-");
     const stateDir = path.join(root, "state");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const storedToken = "stored-device-token";
     const gateway = await startNodePairingGateway(storedToken, "issued-device-token");
     const stateEnv = {
       ...process.env,
       HOME: root,
-      OPENCLAW_HOME: root,
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_HOME: root,
+      AFORA_STATE_DIR: stateDir,
     };
     await fs.mkdir(stateDir, { recursive: true });
     await fs.writeFile(
@@ -520,7 +520,7 @@ describe("gateway-backed CLI process exit", () => {
       scopes: ["operator.admin"],
       env: stateEnv,
     });
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const before = await snapshotDirectoryContents(stateDir);
 
     const result = await runIsolatedGatewayCli({
@@ -545,9 +545,9 @@ describe("gateway-backed CLI process exit", () => {
   }, 30_000);
 
   it("calls a reachable Gateway with explicit auth without creating shared state", async () => {
-    const root = tempDirs.make("openclaw-gateway-call-explicit-auth-");
+    const root = tempDirs.make("afora-gateway-call-explicit-auth-");
     const stateDir = path.join(root, "state");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const token = "configured-token";
     const gateway = await startGatewayStabilityRpcServer(token, "issued-device-token");
     await fs.mkdir(stateDir, { recursive: true });
@@ -572,16 +572,16 @@ describe("gateway-backed CLI process exit", () => {
   }, 30_000);
 
   it("calls a reachable Gateway with stored auth without changing shared state", async () => {
-    const root = tempDirs.make("openclaw-gateway-call-stored-auth-");
+    const root = tempDirs.make("afora-gateway-call-stored-auth-");
     const stateDir = path.join(root, "state");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const storedToken = "stored-device-token";
     const gateway = await startGatewayStabilityRpcServer(storedToken, "issued-device-token");
     const stateEnv = {
       ...process.env,
       HOME: root,
-      OPENCLAW_HOME: root,
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_HOME: root,
+      AFORA_STATE_DIR: stateDir,
     };
     await fs.mkdir(stateDir, { recursive: true });
     await fs.writeFile(
@@ -597,7 +597,7 @@ describe("gateway-backed CLI process exit", () => {
       scopes: ["operator.admin"],
       env: stateEnv,
     });
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const before = await snapshotSharedStateArtifacts(stateDir);
 
     const result = await runIsolatedGatewayCli({
@@ -628,16 +628,16 @@ describe("gateway-backed CLI process exit", () => {
   ])(
     "requires a reachable status RPC without changing $label shared state",
     async ({ label, seeded }) => {
-      const root = tempDirs.make(`openclaw-gateway-status-${label}-`);
+      const root = tempDirs.make(`afora-gateway-status-${label}-`);
       const stateDir = path.join(root, "state");
-      const configPath = path.join(stateDir, "openclaw.json");
+      const configPath = path.join(stateDir, "afora.json");
       const token = "configured-token";
       const gateway = await startGatewayStabilityRpcServer(token, "issued-device-token");
       const stateEnv = {
         ...process.env,
         HOME: root,
-        OPENCLAW_HOME: root,
-        OPENCLAW_STATE_DIR: stateDir,
+        AFORA_HOME: root,
+        AFORA_STATE_DIR: stateDir,
       };
       await fs.mkdir(stateDir, { recursive: true });
       await fs.writeFile(
@@ -654,10 +654,10 @@ describe("gateway-backed CLI process exit", () => {
           scopes: ["operator.admin"],
           env: stateEnv,
         });
-        closeOpenClawStateDatabaseForTest();
+        closeAforaStateDatabaseForTest();
       }
       const before = await snapshotSharedStateArtifacts(stateDir);
-      expect(Object.keys(before).includes("openclaw.sqlite")).toBe(seeded);
+      expect(Object.keys(before).includes("afora.sqlite")).toBe(seeded);
 
       const result = await runIsolatedGatewayCli({
         args: [
@@ -727,9 +727,9 @@ describe("gateway-backed CLI process exit", () => {
   );
 
   it("rejects invalid remote config before a node pairing mutation without opening state", async () => {
-    const root = tempDirs.make("openclaw-node-pairing-invalid-config-");
+    const root = tempDirs.make("afora-node-pairing-invalid-config-");
     const stateDir = path.join(root, "state");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const gateway = await startNodePairingGateway("test-token");
     await fs.mkdir(stateDir, { recursive: true });
     await fs.writeFile(
@@ -750,25 +750,25 @@ describe("gateway-backed CLI process exit", () => {
     });
 
     expect(result).toMatchObject({ code: 1, signal: null, stdout: "" });
-    expect(result.stderr).toContain("OpenClaw config is invalid");
+    expect(result.stderr).toContain("Afora config is invalid");
     expect(result.stderr).toContain("gateway.mode");
     expect(gateway.calls).toEqual([]);
-    await expect(fs.stat(path.join(stateDir, "state", "openclaw.sqlite"))).rejects.toMatchObject({
+    await expect(fs.stat(path.join(stateDir, "state", "afora.sqlite"))).rejects.toMatchObject({
       code: "ENOENT",
     });
   }, 30_000);
 
   it("exits promptly after cron list emits complete output", async () => {
-    const root = tempDirs.make("openclaw-gateway-cli-exit-");
+    const root = tempDirs.make("afora-gateway-cli-exit-");
     const stateDir = path.join(root, "state");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const caTriggerPath = path.join(root, "load-default-ca.mjs");
     const token = "test-token";
     const gateway = await startCronListGateway(token);
     await fs.mkdir(stateDir, { recursive: true });
     await fs.writeFile(
       caTriggerPath,
-      `if (process.env.OPENCLAW_NODE_OPTIONS_READY === "1") {
+      `if (process.env.AFORA_NODE_OPTIONS_READY === "1") {
   const { getCACertificates } = await import("node:tls");
   getCACertificates("default");
 }
@@ -801,10 +801,10 @@ describe("gateway-backed CLI process exit", () => {
           NODE_ENV: undefined,
           NODE_OPTIONS: undefined,
           NODE_USE_SYSTEM_CA: "1",
-          OPENCLAW_CONFIG_PATH: configPath,
-          OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-          OPENCLAW_NODE_OPTIONS_READY: undefined,
-          OPENCLAW_STATE_DIR: stateDir,
+          AFORA_CONFIG_PATH: configPath,
+          AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+          AFORA_NODE_OPTIONS_READY: undefined,
+          AFORA_STATE_DIR: stateDir,
           VITEST: undefined,
         },
         stdio: ["pipe", "pipe", "pipe"],
@@ -846,9 +846,9 @@ describe("gateway-backed CLI process exit", () => {
   }, 20_000);
 
   it("keeps gateway auth failures machine-readable through the real health entry point", async () => {
-    const root = tempDirs.make("openclaw-gateway-auth-json-");
+    const root = tempDirs.make("afora-gateway-auth-json-");
     const stateDir = path.join(root, "state");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const port = await getFreePort();
     await fs.mkdir(stateDir, { recursive: true });
 
@@ -857,7 +857,7 @@ describe("gateway-backed CLI process exit", () => {
       root,
       stateDir,
       configPath,
-      env: { OPENCLAW_GATEWAY_PORT: String(port) },
+      env: { AFORA_GATEWAY_PORT: String(port) },
     });
 
     expect(result, result.stderr).toMatchObject({ code: 1, signal: null, stderr: "" });
@@ -871,9 +871,9 @@ describe("gateway-backed CLI process exit", () => {
   }, 30_000);
 
   it("preserves pre-hello rate-limit details through the real health entry point", async () => {
-    const root = tempDirs.make("openclaw-gateway-rate-limit-json-");
+    const root = tempDirs.make("afora-gateway-rate-limit-json-");
     const stateDir = path.join(root, "state");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const gateway = await startRateLimitedGateway();
     await fs.mkdir(stateDir, { recursive: true });
     await fs.writeFile(

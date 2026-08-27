@@ -13,9 +13,9 @@ import { openChatSidePanelType } from "./chat-side-panel.test-support.ts";
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
-const captureUiProofEnabled = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+const captureUiProofEnabled = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 const proofDir = path.join(process.cwd(), ".artifacts", "control-ui-e2e", "image-lightbox");
 
 let server: ControlUiE2eServer;
@@ -53,7 +53,7 @@ describeControlUiE2e("Control UI image lightbox", () => {
   });
 
   it("opens transcript and sidebar images in one accessible modal", async () => {
-    const banner = await readFile(path.join(process.cwd(), "docs/assets/openclaw-banner-dark.png"));
+    const banner = await readFile(path.join(process.cwd(), "docs/assets/afora-banner-dark.png"));
     const bannerBase64 = banner.toString("base64");
     const dataUrl = `data:image/png;base64,${bannerBase64}`;
     if (captureUiProofEnabled) {
@@ -76,7 +76,7 @@ describeControlUiE2e("Control UI image lightbox", () => {
             {
               type: "image",
               url: dataUrl,
-              alt: "OpenClaw banner",
+              alt: "Afora banner",
             },
           ],
           timestamp: Date.now(),
@@ -90,7 +90,7 @@ describeControlUiE2e("Control UI image lightbox", () => {
               id: "artifact-image-lightbox",
               mimeType: "image/png",
               sizeBytes: banner.byteLength,
-              title: "openclaw-banner.png",
+              title: "afora-banner.png",
               type: "image",
             },
           ],
@@ -100,7 +100,7 @@ describeControlUiE2e("Control UI image lightbox", () => {
             id: "artifact-image-lightbox",
             mimeType: "image/png",
             sizeBytes: banner.byteLength,
-            title: "openclaw-banner.png",
+            title: "afora-banner.png",
             type: "image",
           },
           data: bannerBase64,
@@ -119,18 +119,18 @@ describeControlUiE2e("Control UI image lightbox", () => {
       await page.goto(`${server.baseUrl}chat`);
       await gateway.waitForRequest("chat.startup");
 
-      const transcriptTrigger = page.getByRole("button", { name: "Open image OpenClaw banner" });
+      const transcriptTrigger = page.getByRole("button", { name: "Open image Afora banner" });
       await transcriptTrigger.waitFor({ state: "visible", timeout: 10_000 });
       await transcriptTrigger.click();
 
-      const dialog = page.getByRole("dialog", { name: "Image preview: OpenClaw banner" });
+      const dialog = page.getByRole("dialog", { name: "Image preview: Afora banner" });
       await dialog.waitFor({ state: "visible" });
       const closeButton = page.getByRole("button", { name: "Close image preview" });
       const openOriginal = page.getByRole("link", { name: "Open original" });
       await openOriginal.waitFor({ state: "visible" });
       await expect.poll(() => openOriginal.getAttribute("href")).toMatch(/^blob:/);
       const focusIsInsideLightbox = () =>
-        page.locator("openclaw-image-lightbox").evaluate((lightbox) => {
+        page.locator("afora-image-lightbox").evaluate((lightbox) => {
           let active: Element | null = document.activeElement;
           while (active instanceof HTMLElement && active.shadowRoot?.activeElement) {
             active = active.shadowRoot.activeElement;
@@ -148,7 +148,7 @@ describeControlUiE2e("Control UI image lightbox", () => {
       await expect
         .poll(() => closeButton.evaluate((element) => element.matches(":focus")))
         .toBe(true);
-      const displayedImage = page.getByAltText("OpenClaw banner").last();
+      const displayedImage = page.getByAltText("Afora banner").last();
       await expect
         .poll(() =>
           displayedImage.evaluate((image) =>
@@ -156,7 +156,7 @@ describeControlUiE2e("Control UI image lightbox", () => {
           ),
         )
         .toBeGreaterThan(0);
-      const desktopBox = await page.locator("openclaw-image-lightbox .lightbox").boundingBox();
+      const desktopBox = await page.locator("afora-image-lightbox .lightbox").boundingBox();
       expect(desktopBox?.width ?? 0).toBeGreaterThan(1000);
       expect(desktopBox?.height ?? 0).toBeGreaterThan(700);
       const originalPopup = page.waitForEvent("popup");
@@ -177,12 +177,12 @@ describeControlUiE2e("Control UI image lightbox", () => {
 
       await openChatSidePanelType(page, "Files");
       const artifactRow = page.locator(".chat-workspace-rail__file-open", {
-        hasText: "openclaw-banner.png",
+        hasText: "afora-banner.png",
       });
       await artifactRow.waitFor({ state: "visible", timeout: 10_000 });
       await artifactRow.click();
       const sidebarTrigger = page.getByRole("button", {
-        name: "Open image openclaw-banner.png",
+        name: "Open image afora-banner.png",
       });
       await sidebarTrigger.waitFor({ state: "visible", timeout: 10_000 });
 
@@ -195,7 +195,7 @@ describeControlUiE2e("Control UI image lightbox", () => {
 
       await sidebarTrigger.click();
       const sidebarDialog = page.getByRole("dialog", {
-        name: "Image preview: openclaw-banner.png",
+        name: "Image preview: afora-banner.png",
       });
       await sidebarDialog.waitFor({ state: "visible" });
       if (captureUiProofEnabled) {
@@ -213,7 +213,7 @@ describeControlUiE2e("Control UI image lightbox", () => {
       await page.setViewportSize({ height: 844, width: 390 });
       await sidebarTrigger.click();
       await sidebarDialog.waitFor({ state: "visible" });
-      await page.locator("openclaw-image-lightbox wa-dialog").evaluate(async (dialogAdapter) => {
+      await page.locator("afora-image-lightbox wa-dialog").evaluate(async (dialogAdapter) => {
         const nativeDialog = dialogAdapter.shadowRoot?.querySelector("dialog");
         await Promise.all(
           (nativeDialog?.getAnimations({ subtree: true }) ?? []).map(
@@ -221,9 +221,9 @@ describeControlUiE2e("Control UI image lightbox", () => {
           ),
         );
       });
-      const mobileBox = await page.locator("openclaw-image-lightbox .lightbox").boundingBox();
+      const mobileBox = await page.locator("afora-image-lightbox .lightbox").boundingBox();
       const mobileImageLayout = await page
-        .locator("openclaw-image-lightbox .stage")
+        .locator("afora-image-lightbox .stage")
         .evaluate((stage) => {
           const image = stage.querySelector("img");
           if (!image) {

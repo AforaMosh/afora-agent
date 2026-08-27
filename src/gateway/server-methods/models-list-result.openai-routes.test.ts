@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ModelCatalogEntry, ModelCatalogSnapshot } from "../../agents/model-catalog.types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { loadManifestMetadataSnapshot } from "../../plugins/manifest-contract-eligibility.js";
 import { withEnvAsync } from "../../test-utils/env.js";
-import { withOpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../../test-utils/afora-test-state.js";
 import { buildModelsListResult } from "./models-list-result.js";
 import {
   catalogEntry,
@@ -19,20 +19,20 @@ const IMPLICIT_CODEX_RUNTIME = {
   cloudPlacementSupported: false,
   source: "implicit",
 } as const;
-const IMPLICIT_OPENCLAW_RUNTIME = {
-  id: "openclaw",
+const IMPLICIT_AFORA_RUNTIME = {
+  id: "afora",
   cloudPlacementSupported: true,
   source: "implicit",
 } as const;
 
-function preparedOwnerFacts(config: OpenClawConfig) {
+function preparedOwnerFacts(config: AforaConfig) {
   return {
     authStore: { version: 1, profiles: {} },
     metadataSnapshot: loadManifestMetadataSnapshot({ config, env: process.env }),
   } as const;
 }
 
-function emptyPreparedOwner(config: OpenClawConfig) {
+function emptyPreparedOwner(config: AforaConfig) {
   return {
     agentId: "main",
     agentDir: "/tmp/models-list-openai-agent",
@@ -50,7 +50,7 @@ describe("models.list OpenAI routes", () => {
         defaults: {},
         list: [{ id: "main", default: true }, { id: "worker" }],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const loadGatewayModelCatalogSnapshot = vi.fn(() =>
       Promise.resolve({
         agentDir: "/tmp/models-list-openai-agent",
@@ -85,7 +85,7 @@ describe("models.list OpenAI routes", () => {
   });
 
   it("does not reuse a preloaded catalog from another config generation", async () => {
-    const config = { agents: { defaults: { model: "openai/current" } } } as OpenClawConfig;
+    const config = { agents: { defaults: { model: "openai/current" } } } as AforaConfig;
     const loadGatewayModelCatalogSnapshot = vi.fn(() =>
       Promise.resolve({
         agentDir: "/tmp/models-list-openai-agent",
@@ -108,7 +108,7 @@ describe("models.list OpenAI routes", () => {
         params: { view: "default" },
         preloadedCatalog: {
           agentId: "main",
-          config: { agents: { defaults: { model: "openai/stale" } } } as OpenClawConfig,
+          config: { agents: { defaults: { model: "openai/stale" } } } as AforaConfig,
           snapshot: { entries: [catalogEntry("stale", "openai-responses")], routeVariants: [] },
         },
       }),
@@ -117,8 +117,8 @@ describe("models.list OpenAI routes", () => {
   });
 
   it("does not reuse a preloaded projector after a full replacement-owner load", async () => {
-    const config = {} as OpenClawConfig;
-    const replacementConfig = {} as OpenClawConfig;
+    const config = {} as AforaConfig;
+    const replacementConfig = {} as AforaConfig;
     const loadGatewayModelCatalogSnapshot = vi.fn(() =>
       Promise.resolve({
         agentDir: "/tmp/models-list-openai-agent",
@@ -155,7 +155,7 @@ describe("models.list OpenAI routes", () => {
   });
 
   it("does not start full discovery when restricted to a preloaded catalog", async () => {
-    const config = {} as OpenClawConfig;
+    const config = {} as AforaConfig;
     const loadGatewayModelCatalogSnapshot = vi.fn();
     const context = {
       getRuntimeConfig: () => config,
@@ -191,11 +191,11 @@ describe("models.list OpenAI routes", () => {
           {
             id: "worker",
             default: true,
-            models: { "openai/gpt-owner": { agentRuntime: { id: "openclaw" } } },
+            models: { "openai/gpt-owner": { agentRuntime: { id: "afora" } } },
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const ownerEntry = catalogEntry("gpt-owner", "openai-responses");
     const context = {
       getRuntimeConfig: () => config,
@@ -235,13 +235,13 @@ describe("models.list OpenAI routes", () => {
   it("escalates full discovery using the replacement owner's agent", async () => {
     const initialConfig = {
       agents: { defaults: {}, list: [{ id: "main" }, { id: "worker", default: true }] },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const replacementConfig = {
       agents: {
         defaults: { models: { "openai/*": {} } },
         list: [{ id: "main", default: true }, { id: "worker" }],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const entry = catalogEntry("gpt-owner", "openai-responses");
     const loadGatewayModelCatalogSnapshot = vi
       .fn<GatewayRequestContext["loadGatewayModelCatalogSnapshot"]>()
@@ -283,13 +283,13 @@ describe("models.list OpenAI routes", () => {
   it("rejects a full-discovery snapshot from a different owner", async () => {
     const initialConfig = {
       agents: { defaults: {}, list: [{ id: "main" }, { id: "worker", default: true }] },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const replacementConfig = {
       agents: {
         defaults: { models: { "openai/*": {} } },
         list: [{ id: "main", default: true }, { id: "worker" }],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const entry = catalogEntry("gpt-owner", "openai-responses");
     const loadGatewayModelCatalogSnapshot = vi
       .fn<GatewayRequestContext["loadGatewayModelCatalogSnapshot"]>()
@@ -328,7 +328,7 @@ describe("models.list OpenAI routes", () => {
   it("passes the resolved default agent to catalog loads", async () => {
     const config = {
       agents: { defaults: {}, list: [{ id: "main", default: true }] },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const loadGatewayModelCatalogSnapshot = vi.fn(
       (params: { agentId?: string; readOnly?: boolean }) =>
         Promise.resolve({
@@ -364,11 +364,11 @@ describe("models.list OpenAI routes", () => {
           { id: "main", default: true },
           {
             id: "worker",
-            models: { "openai/gpt-ownerless": { agentRuntime: { id: "openclaw" } } },
+            models: { "openai/gpt-ownerless": { agentRuntime: { id: "afora" } } },
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const ownerlessEntry = catalogEntry("gpt-ownerless", "openai-responses");
     const context = {
       getRuntimeConfig: () => config,
@@ -400,7 +400,7 @@ describe("models.list OpenAI routes", () => {
         defaults: {},
         list: [{ id: "main", default: true }, { id: "worker" }],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const mainEntry = catalogEntry("gpt-main", "openai-responses");
     const context = {
       getRuntimeConfig: () => config,
@@ -435,11 +435,11 @@ describe("models.list OpenAI routes", () => {
           { id: "main", default: true },
           {
             id: "worker",
-            models: { "openai/gpt-worker": { agentRuntime: { id: "openclaw" } } },
+            models: { "openai/gpt-worker": { agentRuntime: { id: "afora" } } },
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const workerEntry = catalogEntry("gpt-worker", "openai-responses");
     const context = {
       getRuntimeConfig: () => config,
@@ -468,7 +468,7 @@ describe("models.list OpenAI routes", () => {
         expect.objectContaining({
           id: "gpt-worker",
           provider: "openai",
-          agentRuntime: { id: "openclaw", cloudPlacementSupported: true, source: "model" },
+          agentRuntime: { id: "afora", cloudPlacementSupported: true, source: "model" },
         }),
       ],
     });
@@ -497,10 +497,10 @@ describe("models.list OpenAI routes", () => {
   });
   it("keeps exhaustive Codex rows visible but unavailable when the route artifact is missing", async () => {
     await withEnvAsync(WITHOUT_OPENAI_ENV_AUTH, async () => {
-      await withOpenClawTestState(
+      await withAforaTestState(
         {
           layout: "state-only",
-          prefix: "openclaw-models-list-openai-null-artifact-oauth-",
+          prefix: "afora-models-list-openai-null-artifact-oauth-",
           agentEnv: "main",
         },
         async (state) => {
@@ -607,7 +607,7 @@ describe("models.list OpenAI routes", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const row = {
       ...catalogEntry("gpt-5.4-nano", "openai-completions"),
       baseUrl: "https://api.openai.com",
@@ -627,7 +627,7 @@ describe("models.list OpenAI routes", () => {
             id: "gpt-5.4-nano",
             name: "GPT-5.4 Nano",
             provider: "openai",
-            agentRuntime: IMPLICIT_OPENCLAW_RUNTIME,
+            agentRuntime: IMPLICIT_AFORA_RUNTIME,
             contextWindow: 1_000_000,
             reasoning: true,
             available: true,
@@ -648,7 +648,7 @@ describe("models.list OpenAI routes", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const incompatibleRow = {
       ...catalogEntry("chat-latest", "openai-chatgpt-responses"),
@@ -666,14 +666,14 @@ describe("models.list OpenAI routes", () => {
           id: "chat-latest",
           name: "chat-latest",
           provider: "openai",
-          agentRuntime: IMPLICIT_OPENCLAW_RUNTIME,
+          agentRuntime: IMPLICIT_AFORA_RUNTIME,
           available: false,
         },
         {
           id: "gpt-5.6",
           name: "GPT-5.6",
           provider: "openai",
-          agentRuntime: IMPLICIT_OPENCLAW_RUNTIME,
+          agentRuntime: IMPLICIT_AFORA_RUNTIME,
           available: false,
         },
       ],
@@ -691,7 +691,7 @@ describe("models.list OpenAI routes", () => {
           id: "gpt-5.6",
           name: "GPT-5.6",
           provider: "openai",
-          agentRuntime: IMPLICIT_OPENCLAW_RUNTIME,
+          agentRuntime: IMPLICIT_AFORA_RUNTIME,
           available: false,
         },
       ],
@@ -699,10 +699,10 @@ describe("models.list OpenAI routes", () => {
   });
   it("uses auth.order to project one logical route and its capabilities", async () => {
     await withEnvAsync(WITHOUT_OPENAI_ENV_AUTH, async () => {
-      await withOpenClawTestState(
+      await withAforaTestState(
         {
           layout: "state-only",
-          prefix: "openclaw-models-list-openai-auth-order-",
+          prefix: "afora-models-list-openai-auth-order-",
           agentEnv: "main",
         },
         async (state) => {
@@ -725,7 +725,7 @@ describe("models.list OpenAI routes", () => {
           });
           const cfg = {
             auth: { order: { openai: ["openai:chatgpt", "openai:key"] } },
-          } as unknown as OpenClawConfig;
+          } as unknown as AforaConfig;
           const row = {
             ...catalogEntry("gpt-5.5", "openai-responses"),
             baseUrl: "https://api.openai.com/v1",
@@ -783,7 +783,7 @@ describe("models.list OpenAI routes", () => {
                 },
               },
             },
-          } as unknown as OpenClawConfig;
+          } as unknown as AforaConfig;
           await expect(
             listModels({
               catalog: [
@@ -814,7 +814,7 @@ describe("models.list OpenAI routes", () => {
 
           const apiKeyFirst = {
             auth: { order: { openai: ["openai:key", "openai:chatgpt"] } },
-          } as unknown as OpenClawConfig;
+          } as unknown as AforaConfig;
           await expect(listModels({ catalog: [row], cfg: apiKeyFirst })).resolves.toEqual({
             models: [
               expect.objectContaining({
@@ -844,7 +844,7 @@ describe("models.list OpenAI routes", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       await expect(
         listModels({
@@ -858,7 +858,7 @@ describe("models.list OpenAI routes", () => {
             id: "gpt-5.6",
             name: "GPT-5.6",
             provider: "openai",
-            agentRuntime: IMPLICIT_OPENCLAW_RUNTIME,
+            agentRuntime: IMPLICIT_AFORA_RUNTIME,
             available: false,
           },
         ],
@@ -877,7 +877,7 @@ describe("models.list OpenAI routes", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       await expect(
         listModels({
@@ -909,7 +909,7 @@ describe("models.list OpenAI routes", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       await expect(
         listModels({
@@ -924,10 +924,10 @@ describe("models.list OpenAI routes", () => {
 
   it("keeps configured fallback rows visible when their route is unavailable", async () => {
     await withEnvAsync(WITHOUT_OPENAI_ENV_AUTH, async () => {
-      await withOpenClawTestState(
+      await withAforaTestState(
         {
           layout: "state-only",
-          prefix: "openclaw-models-list-openai-fallback-",
+          prefix: "afora-models-list-openai-fallback-",
           agentEnv: "main",
         },
         async () => {
@@ -949,7 +949,7 @@ describe("models.list OpenAI routes", () => {
                 },
               },
             },
-          } as unknown as OpenClawConfig;
+          } as unknown as AforaConfig;
           const result = await listModels({
             cfg,
             view: "configured",
@@ -960,7 +960,7 @@ describe("models.list OpenAI routes", () => {
             id: "chat-latest",
             name: "chat-latest",
             provider: "openai",
-            agentRuntime: IMPLICIT_OPENCLAW_RUNTIME,
+            agentRuntime: IMPLICIT_AFORA_RUNTIME,
             available: false,
           });
         },
@@ -991,7 +991,7 @@ describe("models.list OpenAI routes", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       await expect(
         listModels({
@@ -1006,7 +1006,7 @@ describe("models.list OpenAI routes", () => {
             name: "chat-latest",
             provider: "openai",
             alias: "fast",
-            agentRuntime: IMPLICIT_OPENCLAW_RUNTIME,
+            agentRuntime: IMPLICIT_AFORA_RUNTIME,
             available: false,
           },
         ],
@@ -1025,7 +1025,7 @@ describe("models.list OpenAI routes", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     await withEnvAsync(
       { ...WITHOUT_OPENAI_ENV_AUTH, OPENAI_API_KEY: "test-token-placeholder" },

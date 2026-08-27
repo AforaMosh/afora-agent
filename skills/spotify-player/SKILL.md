@@ -4,7 +4,7 @@ description: "Terminal Spotify playback/search via spogo (preferred) or spotify_
 homepage: https://www.spotify.com
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "emoji": "🎵",
         "requires": { "anyBins": ["spogo", "spotify_player"] },

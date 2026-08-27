@@ -2,7 +2,7 @@
   "name": "golden-claw",
   "version": "1.0.0",
   "type": "module",
-  "openclaw": {
+  "afora": {
     "claw": "CLAW.md"
   }
 }

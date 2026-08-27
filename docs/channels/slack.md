@@ -32,8 +32,8 @@ Socket Mode and HTTP Request URLs reach feature parity for messaging, slash comm
 | Horizontal scaling           | One Socket Mode session per app per host; multiple Gateways need separate Slack apps                                                                   | Stateless POST handler; multiple Gateway replicas can share one app behind a load balancer                     |
 | Multi-account on one Gateway | Supported; each account opens its own WS                                                                                                               | Supported; each account needs a unique `webhookPath` (default `/slack/events`) so registrations do not collide |
 | Slash command transport      | Delivered over the WS connection; `slash_commands[].url` is ignored                                                                                    | Slack POSTs to `slash_commands[].url`; field is required for the command to dispatch                           |
-| Request signing              | Not used (auth is the App-Level Token)                                                                                                                 | Slack signs every request; OpenClaw verifies with `signingSecret`                                              |
-| Recovery on connection drop  | Slack SDK auto-reconnect is enabled; OpenClaw also restarts failed Socket Mode sessions with bounded backoff. A fixed 15s client pong timeout applies. | No persistent connection to drop; retries are per-request from Slack                                           |
+| Request signing              | Not used (auth is the App-Level Token)                                                                                                                 | Slack signs every request; Afora verifies with `signingSecret`                                              |
+| Recovery on connection drop  | Slack SDK auto-reconnect is enabled; Afora also restarts failed Socket Mode sessions with bounded backoff. A fixed 15s client pong timeout applies. | No persistent connection to drop; retries are per-request from Slack                                           |
 
 <Note>
   **Pick Socket Mode** for single-Gateway hosts, dev laptops, and on-prem networks that can reach `*.slack.com` outbound but cannot accept inbound HTTPS.
@@ -42,12 +42,12 @@ Socket Mode and HTTP Request URLs reach feature parity for messaging, slash comm
 </Note>
 
 <Warning>
-  Slack can maintain multiple Socket Mode connections for one app and may deliver each payload to any connection. Separate OpenClaw gateways that share a Slack app therefore need equivalent routing and authorization configuration. Otherwise, use a separate Slack app per gateway, a single relay ingress, or HTTP Request URLs behind a load balancer. See [Using Socket Mode](https://docs.slack.dev/apis/events-api/using-socket-mode#using-multiple-connections).
+  Slack can maintain multiple Socket Mode connections for one app and may deliver each payload to any connection. Separate Afora gateways that share a Slack app therefore need equivalent routing and authorization configuration. Otherwise, use a separate Slack app per gateway, a single relay ingress, or HTTP Request URLs behind a load balancer. See [Using Socket Mode](https://docs.slack.dev/apis/events-api/using-socket-mode#using-multiple-connections).
 </Warning>
 
 ### Relay mode
 
-Relay mode separates Slack ingress from the OpenClaw gateway. A trusted router owns the single Slack Socket Mode connection, chooses a destination gateway, and forwards a typed event over an authenticated websocket. The gateway still uses its own bot token for outbound Slack Web API calls.
+Relay mode separates Slack ingress from the Afora gateway. A trusted router owns the single Slack Socket Mode connection, chooses a destination gateway, and forwards a typed event over an authenticated websocket. The gateway still uses its own bot token for outbound Slack Web API calls.
 
 ```json5
 {
@@ -75,22 +75,22 @@ or HTTP Request URLs; relay mode is not supported for enterprise accounts. Both
 least-privilege manifests below enable the Enterprise message, mention,
 reaction, pin, channel-created, and channel-renamed event paths, immediate
 replies, listener-owned status reactions, Slack interactivity for Block Kit
-actions and modal submissions, and the single `/openclaw` slash command.
+actions and modal submissions, and the single `/afora` slash command.
 
 #### Socket Mode
 
 ```json
 {
   "display_information": {
-    "name": "OpenClaw",
-    "description": "Slack connector for OpenClaw"
+    "name": "Afora",
+    "description": "Slack connector for Afora"
   },
   "features": {
-    "bot_user": { "display_name": "OpenClaw", "always_online": true },
+    "bot_user": { "display_name": "Afora", "always_online": true },
     "slash_commands": [
       {
-        "command": "/openclaw",
-        "description": "Send a message to OpenClaw",
+        "command": "/afora",
+        "description": "Send a message to Afora",
         "should_escape": false
       }
     ]
@@ -146,7 +146,7 @@ actions and modal submissions, and the single `/openclaw` slash command.
 Have an Enterprise Grid Org Admin or Org Owner approve the app, install it at
 the organization level, and choose the workspaces the installation covers.
 Confirm that the app is available in every intended workspace before starting
-OpenClaw. Generate an app-level token with `connections:write` for Socket Mode,
+Afora. Generate an app-level token with `connections:write` for Socket Mode,
 then copy the bot token from the org installation. Configure the account that
 uses the org-installed bot token:
 
@@ -158,7 +158,7 @@ uses the org-installed bot token:
       mode: "socket",
       appToken: { source: "env", provider: "default", id: "SLACK_APP_TOKEN" },
       botToken: { source: "env", provider: "default", id: "SLACK_BOT_TOKEN" },
-      slashCommand: { enabled: true, name: "openclaw" },
+      slashCommand: { enabled: true, name: "afora" },
       dmPolicy: "open",
       allowFrom: ["*"],
       groupPolicy: "allowlist",
@@ -179,15 +179,15 @@ Socket Mode connection. Replace the example URL with the Gateway's public
 ```json
 {
   "display_information": {
-    "name": "OpenClaw",
-    "description": "Slack connector for OpenClaw"
+    "name": "Afora",
+    "description": "Slack connector for Afora"
   },
   "features": {
-    "bot_user": { "display_name": "OpenClaw", "always_online": true },
+    "bot_user": { "display_name": "Afora", "always_online": true },
     "slash_commands": [
       {
-        "command": "/openclaw",
-        "description": "Send a message to OpenClaw",
+        "command": "/afora",
+        "description": "Send a message to Afora",
         "should_escape": false,
         "url": "https://gateway-host.example.com/slack/events"
       }
@@ -262,7 +262,7 @@ the enterprise account with the same Request URL path:
         provider: "default",
         id: "SLACK_SIGNING_SECRET",
       },
-      slashCommand: { enabled: true, name: "openclaw" },
+      slashCommand: { enabled: true, name: "afora" },
       webhookPath: "/slack/events",
       dmPolicy: "open",
       allowFrom: ["*"],
@@ -279,22 +279,22 @@ For each selected workspace, open it in Slack's web app and copy the `T...`
 workspace ID from `https://app.slack.com/client/T.../...`. Use that workspace ID
 with the channel's `C...` ID in every qualified policy key, as shown above.
 
-At startup, OpenClaw uses Slack `auth.test` to detect whether the token belongs
+At startup, Afora uses Slack `auth.test` to detect whether the token belongs
 to a workspace installation or an Enterprise Grid org-wide installation. No
 installation-mode setting is required. Slack remains the source of truth for
-which workspaces have granted the installation; OpenClaw then applies the
+which workspaces have granted the installation; Afora then applies the
 configured channel, user, DM, and mention policies to each delivered event.
 Enterprise installs reject bot-authored `message` and `app_mention` events by
 default. Set `allowBots` on the account or channel to admit them under the same
-loop-prevention rules used by workspace installs. OpenClaw retains the org
+loop-prevention rules used by workspace installs. Afora retains the org
 installation's `auth.test` `user_id` and `bot_id` for that check.
 
 Enterprise support accepts direct Socket Mode or HTTP message, mention,
 membership, reaction, pin, channel-created, channel-renamed, Block Kit action,
 modal, and configured shortcut and slash-command payloads plus
 workspace-qualified outbound messages and presence polling. Add any shortcuts to the app manifest's
-`features.shortcuts` list; OpenClaw accepts their callback IDs through the same
-interaction path. The manifest examples register the single `/openclaw`
+`features.shortcuts` list; Afora accepts their callback IDs through the same
+interaction path. The manifest examples register the single `/afora`
 command; native command mode still requires the administrator-managed command
 entries described below. Relay mode, channel-ID-change events, App Home, Agent
 and Assistant lifecycle events, configured ACP bindings, and runtime
@@ -314,7 +314,7 @@ use validated listener-owned, workspace-scoped event routing. Outbound
 acknowledgment, typing, and status reactions are also supported through that
 client and require `reactions:write`.
 
-OpenClaw records Enterprise Grid destinations as
+Afora records Enterprise Grid destinations as
 `team:<team-id>:channel:<channel-id>` or `team:<team-id>:user:<user-id>`.
 Current-conversation Slack tool actions inherit that workspace. Detached or
 proactive calls must provide a workspace-qualified target; bare channel and
@@ -367,7 +367,7 @@ sender policy continues to apply to channel messages.
 ## Install
 
 ```bash
-openclaw plugins install @openclaw/slack
+afora plugins install @afora/slack
 ```
 
 `plugins install` registers and enables the plugin. It does nothing until you configure the Slack app and channel settings below. See [Plugins](/tools/plugin) for general plugin install rules.
@@ -389,18 +389,18 @@ Enterprise Grid organization installation, use the dedicated
 ```json Recommended
 {
   "display_information": {
-    "name": "OpenClaw",
-    "description": "Slack connector for OpenClaw"
+    "name": "Afora",
+    "description": "Slack connector for Afora"
   },
   "features": {
-    "bot_user": { "display_name": "OpenClaw", "always_online": true },
+    "bot_user": { "display_name": "Afora", "always_online": true },
     "app_home": {
       "home_tab_enabled": true,
       "messages_tab_enabled": true,
       "messages_tab_read_only_enabled": false
     },
     "agent_view": {
-      "agent_description": "OpenClaw connects Slack Agent View conversations to OpenClaw agents.",
+      "agent_description": "Afora connects Slack Agent View conversations to Afora agents.",
       "suggested_prompts": [
         { "title": "What can you do?", "message": "What can you help me with?" },
         {
@@ -412,8 +412,8 @@ Enterprise Grid organization installation, use the dedicated
     },
     "slash_commands": [
       {
-        "command": "/openclaw",
-        "description": "Send a message to OpenClaw",
+        "command": "/afora",
+        "description": "Send a message to Afora",
         "should_escape": false
       }
     ]
@@ -474,18 +474,18 @@ Enterprise Grid organization installation, use the dedicated
 ```json Minimal
 {
   "display_information": {
-    "name": "OpenClaw",
-    "description": "Slack connector for OpenClaw"
+    "name": "Afora",
+    "description": "Slack connector for Afora"
   },
   "features": {
-    "bot_user": { "display_name": "OpenClaw", "always_online": true },
+    "bot_user": { "display_name": "Afora", "always_online": true },
     "app_home": {
       "home_tab_enabled": true,
       "messages_tab_enabled": true,
       "messages_tab_read_only_enabled": false
     },
     "agent_view": {
-      "agent_description": "OpenClaw connects Slack Agent View conversations to OpenClaw agents.",
+      "agent_description": "Afora connects Slack Agent View conversations to Afora agents.",
       "suggested_prompts": [
         { "title": "What can you do?", "message": "What can you help me with?" },
         {
@@ -497,8 +497,8 @@ Enterprise Grid organization installation, use the dedicated
     },
     "slash_commands": [
       {
-        "command": "/openclaw",
-        "description": "Send a message to OpenClaw",
+        "command": "/afora",
+        "description": "Send a message to Afora",
         "should_escape": false
       }
     ]
@@ -550,7 +550,7 @@ Enterprise Grid organization installation, use the dedicated
 
       </Step>
 
-      <Step title="Configure OpenClaw">
+      <Step title="Configure Afora">
 
         Recommended SecretRef setup:
 
@@ -569,8 +569,8 @@ cat > slack.socket.patch.json5 <<'JSON5'
   },
 }
 JSON5
-openclaw config patch --file ./slack.socket.patch.json5 --dry-run
-openclaw config patch --file ./slack.socket.patch.json5
+afora config patch --file ./slack.socket.patch.json5 --dry-run
+afora config patch --file ./slack.socket.patch.json5
 ```
 
         Default-account credential fallback after `channels.slack` is configured:
@@ -585,7 +585,7 @@ SLACK_BOT_TOKEN=slack-bot-token-example
       <Step title="Start gateway">
 
 ```bash
-openclaw gateway
+afora gateway
 ```
 
       </Step>
@@ -603,18 +603,18 @@ openclaw gateway
 ```json Recommended
 {
   "display_information": {
-    "name": "OpenClaw",
-    "description": "Slack connector for OpenClaw"
+    "name": "Afora",
+    "description": "Slack connector for Afora"
   },
   "features": {
-    "bot_user": { "display_name": "OpenClaw", "always_online": true },
+    "bot_user": { "display_name": "Afora", "always_online": true },
     "app_home": {
       "home_tab_enabled": true,
       "messages_tab_enabled": true,
       "messages_tab_read_only_enabled": false
     },
     "agent_view": {
-      "agent_description": "OpenClaw connects Slack Agent View conversations to OpenClaw agents.",
+      "agent_description": "Afora connects Slack Agent View conversations to Afora agents.",
       "suggested_prompts": [
         { "title": "What can you do?", "message": "What can you help me with?" },
         {
@@ -626,8 +626,8 @@ openclaw gateway
     },
     "slash_commands": [
       {
-        "command": "/openclaw",
-        "description": "Send a message to OpenClaw",
+        "command": "/afora",
+        "description": "Send a message to Afora",
         "should_escape": false,
         "url": "https://gateway-host.example.com/slack/events"
       }
@@ -694,18 +694,18 @@ openclaw gateway
 ```json Minimal
 {
   "display_information": {
-    "name": "OpenClaw",
-    "description": "Slack connector for OpenClaw"
+    "name": "Afora",
+    "description": "Slack connector for Afora"
   },
   "features": {
-    "bot_user": { "display_name": "OpenClaw", "always_online": true },
+    "bot_user": { "display_name": "Afora", "always_online": true },
     "app_home": {
       "home_tab_enabled": true,
       "messages_tab_enabled": true,
       "messages_tab_read_only_enabled": false
     },
     "agent_view": {
-      "agent_description": "OpenClaw connects Slack Agent View conversations to OpenClaw agents.",
+      "agent_description": "Afora connects Slack Agent View conversations to Afora agents.",
       "suggested_prompts": [
         { "title": "What can you do?", "message": "What can you help me with?" },
         {
@@ -717,8 +717,8 @@ openclaw gateway
     },
     "slash_commands": [
       {
-        "command": "/openclaw",
-        "description": "Send a message to OpenClaw",
+        "command": "/afora",
+        "description": "Send a message to Afora",
         "should_escape": false,
         "url": "https://gateway-host.example.com/slack/events"
       }
@@ -770,7 +770,7 @@ openclaw gateway
         </Note>
 
         <Info>
-          The three URL fields (`slash_commands[].url`, `event_subscriptions.request_url`, and `interactivity.request_url` / `message_menu_options_url`) all point at the same OpenClaw endpoint. Slack's manifest schema requires them named separately, but OpenClaw routes by payload type so a single `webhookPath` (default `/slack/events`) is enough. Slash commands without `slash_commands[].url` silently no-op in HTTP mode.
+          The three URL fields (`slash_commands[].url`, `event_subscriptions.request_url`, and `interactivity.request_url` / `message_menu_options_url`) all point at the same Afora endpoint. Slack's manifest schema requires them named separately, but Afora routes by payload type so a single `webhookPath` (default `/slack/events`) is enough. Slash commands without `slash_commands[].url` silently no-op in HTTP mode.
         </Info>
 
         After Slack creates the app:
@@ -780,7 +780,7 @@ openclaw gateway
 
       </Step>
 
-      <Step title="Configure OpenClaw">
+      <Step title="Configure Afora">
 
         Recommended SecretRef setup:
 
@@ -800,8 +800,8 @@ cat > slack.http.patch.json5 <<'JSON5'
   },
 }
 JSON5
-openclaw config patch --file ./slack.http.patch.json5 --dry-run
-openclaw config patch --file ./slack.http.patch.json5
+afora config patch --file ./slack.http.patch.json5 --dry-run
+afora config patch --file ./slack.http.patch.json5
 ```
 
         <Note>
@@ -815,7 +815,7 @@ openclaw config patch --file ./slack.http.patch.json5
       <Step title="Start gateway">
 
 ```bash
-openclaw gateway
+afora gateway
 ```
 
       </Step>
@@ -826,7 +826,7 @@ openclaw gateway
 
 ## User identity (post as a real person)
 
-User identity lets OpenClaw read and post as the human who authorizes the Slack app. The `userToken` is the acting identity; a companion Slack app carries Events API traffic over Socket Mode or an HTTP Request URL. The companion app does not need a bot user or bot token.
+User identity lets Afora read and post as the human who authorizes the Slack app. The `userToken` is the acting identity; a companion Slack app carries Events API traffic over Socket Mode or an HTTP Request URL. The companion app does not need a bot user or bot token.
 
 Set up the companion app as follows:
 
@@ -848,7 +848,7 @@ Set up the companion app as follows:
 3. Choose one event transport:
 
    - **Socket Mode:** enable Socket Mode and create an app-level token with `connections:write`. Configure it as `appToken`.
-   - **HTTP Request URL:** point Event Subscriptions at the public OpenClaw Slack endpoint and copy **Basic Information -> App Credentials -> Signing Secret**. Configure it as `signingSecret`.
+   - **HTTP Request URL:** point Event Subscriptions at the public Afora Slack endpoint and copy **Basic Information -> App Credentials -> Signing Secret**. Configure it as `signingSecret`.
 
 4. Install or reinstall the app, authorize it as the intended human, and copy the resulting user OAuth token into `userToken`.
 
@@ -883,18 +883,18 @@ HTTP Request URL configuration:
 ```
 
 <Warning>
-  DMs and group DMs work only through the user-scope event subscription above. A bot cannot join a human 1:1 DM or be inserted into an existing group DM. The companion app is invisible plumbing: other Slack members see messages from the authorizing human, not from an OpenClaw bot.
+  DMs and group DMs work only through the user-scope event subscription above. A bot cannot join a human 1:1 DM or be inserted into an existing group DM. The companion app is invisible plumbing: other Slack members see messages from the authorizing human, not from an Afora bot.
 </Warning>
 
-OpenClaw automatically drops user-scope message events authored by the resolved human identity, so messages it sends do not trigger self-replies.
+Afora automatically drops user-scope message events authored by the resolved human identity, so messages it sends do not trigger self-replies.
 
 ## Socket Mode transport tuning
 
-OpenClaw sets the Slack SDK client pong timeout to 15 seconds for Socket Mode. This is a fixed internal default and is not operator-configurable.
+Afora sets the Slack SDK client pong timeout to 15 seconds for Socket Mode. This is a fixed internal default and is not operator-configurable.
 
 Notes:
 
-- The `channels.slack.socketMode` object, including `clientPingTimeout`, `serverPingTimeout`, and `pingPongLoggingEnabled`, is retired and is no longer read at runtime. `openclaw doctor` flags retired layout tuning knobs with a general notice rather than a per-key path. `openclaw doctor --fix` removes those three fields wherever they appear, at the channel root and under `accounts.<accountId>`, and drops the `socketMode` object once it is empty. Any other key you added inside it is left alone, so delete it by hand.
+- The `channels.slack.socketMode` object, including `clientPingTimeout`, `serverPingTimeout`, and `pingPongLoggingEnabled`, is retired and is no longer read at runtime. `afora doctor` flags retired layout tuning knobs with a general notice rather than a per-key path. `afora doctor --fix` removes those three fields wherever they appear, at the channel root and under `accounts.<accountId>`, and drops the `socketMode` object once it is empty. Any other key you added inside it is left alone, so delete it by hand.
 - App messages and events remain application state, not transport liveness signals.
 - Socket Mode restart backoff starts around 2 seconds and caps around 30 seconds. Recoverable start, start-wait, and disconnect failures retry until the channel stops. Permanent account and credential errors such as invalid auth, revoked tokens, or missing scopes fail fast instead of retrying forever.
 
@@ -907,18 +907,18 @@ Base manifest (Socket Mode default):
 ```json
 {
   "display_information": {
-    "name": "OpenClaw",
-    "description": "Slack connector for OpenClaw"
+    "name": "Afora",
+    "description": "Slack connector for Afora"
   },
   "features": {
-    "bot_user": { "display_name": "OpenClaw", "always_online": true },
+    "bot_user": { "display_name": "Afora", "always_online": true },
     "app_home": {
       "home_tab_enabled": true,
       "messages_tab_enabled": true,
       "messages_tab_read_only_enabled": false
     },
     "agent_view": {
-      "agent_description": "OpenClaw connects Slack Agent View conversations to OpenClaw agents.",
+      "agent_description": "Afora connects Slack Agent View conversations to Afora agents.",
       "suggested_prompts": [
         { "title": "What can you do?", "message": "What can you help me with?" },
         {
@@ -930,8 +930,8 @@ Base manifest (Socket Mode default):
     },
     "slash_commands": [
       {
-        "command": "/openclaw",
-        "description": "Send a message to OpenClaw",
+        "command": "/afora",
+        "description": "Send a message to Afora",
         "should_escape": false
       }
     ]
@@ -996,8 +996,8 @@ For **HTTP Request URLs mode**, replace `settings` with the HTTP variant and add
   "features": {
     "slash_commands": [
       {
-        "command": "/openclaw",
-        "description": "Send a message to OpenClaw",
+        "command": "/afora",
+        "description": "Send a message to Afora",
         "should_escape": false,
         "url": "https://gateway-host.example.com/slack/events"
       }
@@ -1036,9 +1036,9 @@ For **HTTP Request URLs mode**, replace `settings` with the HTTP variant and add
 
 Surface different features that extend the above defaults.
 
-The default manifest enables the Slack App Home **Home** tab and subscribes to `app_home_opened`. When a workspace member opens the Home tab, OpenClaw publishes a safe default Home view with `views.publish`; no conversation payload or private configuration is included. When single slash command mode is enabled, the command hint uses `channels.slack.slashCommand.name`; installations using native commands or no slash commands omit that hint. The **Messages** tab remains enabled for Slack DMs. New apps use Slack Agent View through `features.agent_view`, `assistant:write`, and `app_context_changed`. Each visible Agent View root routes to its own OpenClaw thread session, and Slack's ordered active-view entities reach the agent only as untrusted context.
+The default manifest enables the Slack App Home **Home** tab and subscribes to `app_home_opened`. When a workspace member opens the Home tab, Afora publishes a safe default Home view with `views.publish`; no conversation payload or private configuration is included. When single slash command mode is enabled, the command hint uses `channels.slack.slashCommand.name`; installations using native commands or no slash commands omit that hint. The **Messages** tab remains enabled for Slack DMs. New apps use Slack Agent View through `features.agent_view`, `assistant:write`, and `app_context_changed`. Each visible Agent View root routes to its own Afora thread session, and Slack's ordered active-view entities reach the agent only as untrusted context.
 
-Existing apps that already use `features.assistant_view` can keep their current manifest. OpenClaw continues to handle `assistant_thread_started` and `assistant_thread_context_changed` for those installs. Slack makes migration from Assistant View to Agent View irreversible and requires users to hard refresh afterward, so do not replace `assistant_view` on an existing app until you intend to migrate the whole workspace.
+Existing apps that already use `features.assistant_view` can keep their current manifest. Afora continues to handle `assistant_thread_started` and `assistant_thread_context_changed` for those installs. Slack makes migration from Assistant View to Agent View irreversible and requires users to hard refresh afterward, so do not replace `assistant_view` on an existing app until you intend to migrate the whole workspace.
 
 <AccordionGroup>
   <Accordion title="Optional native slash commands">
@@ -1048,7 +1048,7 @@ Existing apps that already use `features.assistant_view` can keep their current 
     - Use `/agentstatus` instead of `/status` because the `/status` command is reserved.
     - No more than 25 slash commands can be registered on a Slack app at once (Slack platform limit).
 
-    OpenClaw registers handlers for enabled native commands, but Slack manifest entries remain administrator-managed and are not synchronized at runtime. Add `/login` to the manifest manually; the example below includes it instead of the optional `/side` alias to remain at 25 commands. `/login` can be surfaced anywhere, but it issues pairing codes only in private chats or the Web UI.
+    Afora registers handlers for enabled native commands, but Slack manifest entries remain administrator-managed and are not synchronized at runtime. Add `/login` to the manifest manually; the example below includes it instead of the optional `/side` alias to remain at 25 commands. `/login` can be surfaced anywhere, but it issues pairing codes only in private chats or the Web UI.
 
     Replace your existing `features.slash_commands` section with a subset of [available commands](/tools/slash-commands#command-list):
 
@@ -1300,9 +1300,9 @@ Current Slack message actions include `send`, `upload-file`, `download-file`, `r
     - Named accounts inherit `channels.slack.allowFrom` when their own `allowFrom` is unset.
     - Named accounts do not inherit `channels.slack.accounts.default.allowFrom`.
 
-    Legacy `channels.slack.dm.policy` and `channels.slack.dm.allowFrom` still read for compatibility. `openclaw doctor --fix` migrates them to `dmPolicy` and `allowFrom` when it can do so without changing access.
+    Legacy `channels.slack.dm.policy` and `channels.slack.dm.allowFrom` still read for compatibility. `afora doctor --fix` migrates them to `dmPolicy` and `allowFrom` when it can do so without changing access.
 
-    Pairing in DMs uses `openclaw pairing approve slack <code>`.
+    Pairing in DMs uses `afora pairing approve slack <code>`.
 
   </Tab>
 
@@ -1387,7 +1387,7 @@ Current Slack message actions include `send`, `upload-file`, `download-file`, `r
 
     `ignoreOtherMentions` (default `false`) drops channel messages that mention another user or user group but not this bot. DMs and group DMs (MPIMs) are unaffected. The filter requires a resolved bot user ID from `auth.test`; if that identity is unavailable (for example a user-token-only identity), the gate fails open and messages pass through unchanged.
 
-    `allowBots` is conservative for channels and private channels: bot-authored room messages are accepted only when the sending bot is explicitly listed in that room's `users` allowlist, or when at least one explicit Slack owner ID from `channels.slack.allowFrom` is currently a room member. Wildcards and display-name owner entries do not satisfy owner presence. Owner presence uses Slack `conversations.members`; make sure the app has the matching read scope for the room type (`channels:read` for public channels, `groups:read` for private channels). If the member lookup fails, OpenClaw drops the bot-authored room message.
+    `allowBots` is conservative for channels and private channels: bot-authored room messages are accepted only when the sending bot is explicitly listed in that room's `users` allowlist, or when at least one explicit Slack owner ID from `channels.slack.allowFrom` is currently a room member. Wildcards and display-name owner entries do not satisfy owner presence. Owner presence uses Slack `conversations.members`; make sure the app has the matching read scope for the room type (`channels:read` for public channels, `groups:read` for private channels). If the member lookup fails, Afora drops the bot-authored room message.
 
     Accepted bot-authored Slack messages use shared [bot loop protection](/channels/bot-loop-protection). Configure `channels.defaults.botLoopProtection` for the default budget, then override with `channels.slack.botLoopProtection` or `channels.slack.channels.<id>.botLoopProtection` when a workspace or channel needs a different limit.
 
@@ -1398,10 +1398,10 @@ Current Slack message actions include `send`, `upload-file`, `download-file`, `r
 
 Slack group DMs, also called multi-person direct messages or MPDMs, are not channels an app can join by being mentioned. Typing `@YourBot` in an existing group DM does not add the app or make the conversation visible to it.
 
-- If the app was included when the group DM was created, Slack delivers `message.mpim` events and OpenClaw can respond when DM policy allows it.
-- If the app is mentioned in an existing group DM where it is not a member, the bot token cannot see the conversation at all. Slack Web API calls such as `conversations.info`, `conversations.members`, and `conversations.history` fail with method- and context-dependent access or not-found errors, the MPDM does not appear in `conversations.list?types=mpim`, and no event is delivered to OpenClaw.
-- OpenClaw wakes in MPDMs through delivered `message.mpim` events. `app_mention` events do not add the app to DM or MPDM contexts.
-- `dm.groupEnabled` and `dm.groupChannels` only filter MPDMs Slack already delivers to the app. They cannot grant membership or visibility into a group DM the app was never part of. There is no OpenClaw config setting that makes the app see a group DM it never joined.
+- If the app was included when the group DM was created, Slack delivers `message.mpim` events and Afora can respond when DM policy allows it.
+- If the app is mentioned in an existing group DM where it is not a member, the bot token cannot see the conversation at all. Slack Web API calls such as `conversations.info`, `conversations.members`, and `conversations.history` fail with method- and context-dependent access or not-found errors, the MPDM does not appear in `conversations.list?types=mpim`, and no event is delivered to Afora.
+- Afora wakes in MPDMs through delivered `message.mpim` events. `app_mention` events do not add the app to DM or MPDM contexts.
+- `dm.groupEnabled` and `dm.groupChannels` only filter MPDMs Slack already delivers to the app. They cannot grant membership or visibility into a group DM the app was never part of. There is no Afora config setting that makes the app see a group DM it never joined.
 
 To bring the app into a group DM, use one of these Slack-supported paths:
 
@@ -1416,11 +1416,11 @@ To bring the app into a group DM, use one of these Slack-supported paths:
 - Channel sessions: `agent:<agentId>:slack:channel:<channelId>`.
 - Ordinary top-level channel messages stay on the per-channel session, even when `replyToMode` is non-`off`.
 - Slack channel, MPIM, Agent View, and Assistant View thread replies use the parent Slack `thread_ts` for session suffixes (`:thread:<threadTs>`). Ordinary DM reply threads remain a UI affordance on the base DM session.
-- OpenClaw seeds an eligible top-level channel root into `agent:<agentId>:slack:channel:<channelId>:thread:<rootTs>` when that root is expected to start a visible Slack thread, so the root and later thread replies share one OpenClaw session. This applies to `app_mention` events, explicit bot or configured mention-pattern matches, and `requireMention: false` channels with non-`off` `replyToMode`.
+- Afora seeds an eligible top-level channel root into `agent:<agentId>:slack:channel:<channelId>:thread:<rootTs>` when that root is expected to start a visible Slack thread, so the root and later thread replies share one Afora session. This applies to `app_mention` events, explicit bot or configured mention-pattern matches, and `requireMention: false` channels with non-`off` `replyToMode`.
 - `channels.slack.thread.historyScope` default is `thread`; `thread.inheritParent` default is `false`.
 - `channels.slack.thread.initialHistoryLimit` controls how many existing thread messages are fetched when a new thread session starts (default `20`; set `0` to disable).
 - `channels.slack.implicitMentions.replyToBot` controls whether a reply to the bot's own message bypasses mention gating (default `true`).
-- `channels.slack.implicitMentions.threadParticipation` controls whether follow-ups in a thread where the bot has replied bypass mention gating (default `true`). Set it to `false` to require a new explicit mention in those follow-ups. `openclaw doctor --fix` migrates the former `channels.slack.thread.requireExplicitMention` key to this positive canonical flag.
+- `channels.slack.implicitMentions.threadParticipation` controls whether follow-ups in a thread where the bot has replied bypass mention gating (default `true`). Set it to `false` to require a new explicit mention in those follow-ups. `afora doctor --fix` migrates the former `channels.slack.thread.requireExplicitMention` key to this positive canonical flag.
 - Account overrides live at `channels.slack.accounts.<id>.implicitMentions`; shared defaults live at `channels.defaults.implicitMentions`.
 
 Reply threading controls:
@@ -1437,7 +1437,7 @@ Manual reply tags are supported:
 
 For explicit Slack thread replies from the `message` tool, set `replyBroadcast: true` with `action: "send"` and `threadId` or `replyTo` to ask Slack to also broadcast the thread reply to the parent channel. This maps to Slack's `chat.postMessage` `reply_broadcast` flag and is only supported for text or Block Kit sends, not media uploads.
 
-When a `message` tool call runs inside a Slack thread and targets the same channel, OpenClaw normally inherits the current Slack thread according to the effective account, chat-type, or per-channel `replyToMode`. Automatic replies and same-channel `send` or `upload-file` calls use the same per-channel override. Set `topLevel: true` on `action: "send"` or `action: "upload-file"` to force a new parent-channel message instead. `threadId: null` is accepted as the same top-level opt-out.
+When a `message` tool call runs inside a Slack thread and targets the same channel, Afora normally inherits the current Slack thread according to the effective account, chat-type, or per-channel `replyToMode`. Automatic replies and same-channel `send` or `upload-file` calls use the same per-channel override. Set `topLevel: true` on `action: "send"` or `action: "upload-file"` to force a new parent-channel message instead. `threadId: null` is accepted as the same top-level opt-out.
 
 <Note>
 `replyToMode="off"` disables optional outbound Slack reply threading, including explicit `[[reply_to_*]]` tags. Agent View and Assistant View are Slack-managed threaded experiences, so their replies and status remain on the visible root regardless of this setting. It does not flatten other inbound Slack thread sessions. This differs from Telegram, where explicit tags are still honored in `"off"` mode. Slack threads hide messages from the channel while Telegram replies stay visible inline.
@@ -1445,7 +1445,7 @@ When a `message` tool call runs inside a Slack thread and targets the same chann
 
 ## Ack reactions
 
-`ackReaction` sends an acknowledgement emoji while OpenClaw is processing an inbound message. `ackReactionScope` decides _when_ that emoji is actually sent.
+`ackReaction` sends an acknowledgement emoji while Afora is processing an inbound message. `ackReactionScope` decides _when_ that emoji is actually sent.
 
 By default, the acknowledgement stays static while Slack's native agent/assistant thread status shows progress with rotating loading messages. Set `messages.statusReactions.enabled: true` to opt into the queued/thinking/tool/done/error reaction lifecycle instead.
 
@@ -1523,15 +1523,15 @@ In `progress` mode, Slack's native agent card is the default: the whole turn is 
 
 Set `channels.slack.streaming.progress.nativeTaskCards` to `false` to fall back to the Block Kit session card, which posts a separate message showing title, narration, plan checklist, recent activity, tool/file totals, and elapsed time, and finalizes to success or error.
 
-Both surfaces link the session with **Open in OpenClaw**, but only when that link can work: `gateway.publicOrigin` must be set (the externally reachable Gateway origin) and the Control UI must not be disabled via `gateway.controlUi.enabled: false`. Installations that leave `publicOrigin` unset — where there is no way to reach OpenClaw from Slack — get no link rather than a dead one. If the Control UI is served below a path prefix, also set `gateway.controlUi.basePath`.
+Both surfaces link the session with **Open in Afora**, but only when that link can work: `gateway.publicOrigin` must be set (the externally reachable Gateway origin) and the Control UI must not be disabled via `gateway.controlUi.enabled: false`. Installations that leave `publicOrigin` unset — where there is no way to reach Afora from Slack — get no link rather than a dead one. If the Control UI is served below a path prefix, also set `gateway.controlUi.basePath`.
 
 - A reply thread must be available for native text streaming and Slack assistant thread status to appear. Thread selection still follows `replyToMode`.
 - Channel, group-chat, and top-level DM roots can still use the normal draft preview when native streaming is unavailable or no reply thread exists.
-- Top-level Slack DMs stay off-thread by default, so they do not show Slack's thread-style native stream/status preview; OpenClaw posts and edits a draft preview in the DM instead.
-- Custom outbound username/icon settings keep portable previews enabled. OpenClaw keeps the preview or session card app-authored and delivers the customized final separately. Slack does not allow impersonated messages to be deleted.
+- Top-level Slack DMs stay off-thread by default, so they do not show Slack's thread-style native stream/status preview; Afora posts and edits a draft preview in the DM instead.
+- Custom outbound username/icon settings keep portable previews enabled. Afora keeps the preview or session card app-authored and delivers the customized final separately. Slack does not allow impersonated messages to be deleted.
 - Media and non-text payloads fall back to normal delivery.
 - Media/error finals cancel pending preview edits; eligible text/block finals flush only when they can edit the preview in place.
-- If streaming fails mid-reply, OpenClaw falls back to normal delivery for remaining payloads.
+- If streaming fails mid-reply, Afora falls back to normal delivery for remaining payloads.
 
 Use draft preview instead of Slack native text streaming:
 
@@ -1570,11 +1570,11 @@ Legacy keys:
 - `channels.slack.streamMode` (`replace | status_final | append`) is a legacy alias for `channels.slack.streaming.mode`.
 - boolean `channels.slack.streaming` is a legacy alias for `channels.slack.streaming.mode` and `channels.slack.streaming.nativeTransport`.
 - top-level `channels.slack.chunkMode` and `channels.slack.nativeStreaming` are legacy aliases for `channels.slack.streaming.chunkMode` and `channels.slack.streaming.nativeTransport`.
-- Legacy aliases are not read at runtime; run `openclaw doctor --fix` to rewrite persisted Slack streaming config to the canonical keys.
+- Legacy aliases are not read at runtime; run `afora doctor --fix` to rewrite persisted Slack streaming config to the canonical keys.
 
 ## Typing reaction fallback
 
-`typingReaction` adds a temporary reaction to the inbound Slack message while OpenClaw is processing a reply, then removes it when the run finishes. This is most useful outside of thread replies, which use a default "is typing..." status indicator.
+`typingReaction` adds a temporary reaction to the inbound Slack message while Afora is processing a reply, then removes it when the run finishes. This is most useful outside of thread replies, which use a default "is typing..." status indicator.
 
 Resolution order:
 
@@ -1588,14 +1588,14 @@ Notes:
 
 ## Voice input
 
-To speak to OpenClaw in Slack today, send a Slack audio clip to the OpenClaw app. Slackbot's dictation microphone is a separate Slack-owned feature, not an app API.
+To speak to Afora in Slack today, send a Slack audio clip to the Afora app. Slackbot's dictation microphone is a separate Slack-owned feature, not an app API.
 
-- **[Slackbot voice dictation](https://slack.com/help/articles/202026038-How-to-use-Slackbot)** lives inside the user's private Slackbot conversation. Slack turns the recording into a Slackbot prompt but does not emit an audio file, dictation event, prompt, or input-source marker to third-party Slack apps through the Events API. The OpenClaw Slack plugin cannot enable or receive it.
-- **[Slack audio clips](https://slack.com/help/articles/4406235165587-Record-audio-and-video-clips-in-Slack)** are stored Slack files that can be posted in an OpenClaw DM, channel, or thread. OpenClaw downloads an accessible clip with the bot token, normalizes Slack's clip MIME metadata, and sends it through the shared [audio transcription pipeline](/nodes/audio). The recommended app manifest includes the required `files:read` scope.
+- **[Slackbot voice dictation](https://slack.com/help/articles/202026038-How-to-use-Slackbot)** lives inside the user's private Slackbot conversation. Slack turns the recording into a Slackbot prompt but does not emit an audio file, dictation event, prompt, or input-source marker to third-party Slack apps through the Events API. The Afora Slack plugin cannot enable or receive it.
+- **[Slack audio clips](https://slack.com/help/articles/4406235165587-Record-audio-and-video-clips-in-Slack)** are stored Slack files that can be posted in an Afora DM, channel, or thread. Afora downloads an accessible clip with the bot token, normalizes Slack's clip MIME metadata, and sends it through the shared [audio transcription pipeline](/nodes/audio). The recommended app manifest includes the required `files:read` scope.
 
-Audio clips and Slackbot dictation have different privacy semantics: clips follow Slack file-retention policy and OpenClaw downloads them for transcription, while Slack says dictation audio is not stored.
+Audio clips and Slackbot dictation have different privacy semantics: clips follow Slack file-retention policy and Afora downloads them for transcription, while Slack says dictation audio is not stored.
 
-In a channel with `requireMention: true`, a captionless audio clip can satisfy the gate by speaking a configured mention pattern (`agents.entries.*.groupChat.mentionPatterns`, falling back to `messages.groupChat.mentionPatterns`). OpenClaw authorizes the sender before downloading or transcribing the clip, then admits it only when the transcript matches. A failed or nonmatching speculative transcript is discarded with the downloaded clip; it is not retained in channel history. Native Slack `@bot` identity cannot be inferred from speech, so configure a spoken-name pattern or include a typed mention. If transcript echoing is enabled, the echo is sent only after admission.
+In a channel with `requireMention: true`, a captionless audio clip can satisfy the gate by speaking a configured mention pattern (`agents.entries.*.groupChat.mentionPatterns`, falling back to `messages.groupChat.mentionPatterns`). Afora authorizes the sender before downloading or transcribing the clip, then admits it only when the transcript matches. A failed or nonmatching speculative transcript is discarded with the downloaded clip; it is not retained in channel history. Native Slack `@bot` identity cannot be inferred from speech, so configure a spoken-name pattern or include a typed mention. If transcript echoing is enabled, the echo is sent only after admission.
 
 ## Media, chunking, and delivery
 
@@ -1603,7 +1603,7 @@ In a channel with `requireMention: true`, a captionless audio clip can satisfy t
   <Accordion title="Inbound attachments">
     Slack file attachments are downloaded from Slack-hosted private URLs (token-authenticated request flow) and written to the media store when fetch succeeds and size limits permit. File placeholders include the Slack `fileId` so agents can fetch the original file with `download-file`.
 
-    Downloads use bounded idle and total timeouts. If Slack file retrieval stalls or fails, OpenClaw keeps processing the message and falls back to the file placeholder.
+    Downloads use bounded idle and total timeouts. If Slack file retrieval stalls or fails, Afora keeps processing the message and falls back to the file placeholder.
 
     Runtime inbound size cap defaults to `20MB` unless overridden by `channels.slack.mediaMaxMb`.
 
@@ -1634,12 +1634,12 @@ In a channel with `requireMention: true`, a captionless audio clip can satisfy t
 Slash commands appear in Slack as either a single configured command or multiple native commands. Configure `channels.slack.slashCommand` to change command defaults:
 
 - `enabled: false`
-- `name: "openclaw"`
+- `name: "afora"`
 - `sessionPrefix: "slack:slash"`
 - `ephemeral: true`
 
 ```txt
-/openclaw /help
+/afora /help
 ```
 
 Native commands require [additional manifest settings](#additional-manifest-settings) in your Slack app and are enabled with `channels.slack.commands.native: true` or `commands.native: true` in global configurations instead.
@@ -1666,7 +1666,7 @@ Slash sessions use isolated keys like `agent:<agentId>:slack:slash:<userId>` and
 ## Native charts
 
 Slack's public [`data_visualization` Block Kit block](https://docs.slack.dev/reference/block-kit/blocks/data-visualization-block/)
-renders line, bar, area, and pie charts in messages. OpenClaw maps the portable
+renders line, bar, area, and pie charts in messages. Afora maps the portable
 `presentation` `chart` block to that native shape; no additional OAuth scope,
 file upload, image renderer, or Slack configuration is required beyond normal
 `chat:write` message access.
@@ -1697,14 +1697,14 @@ Slack's limits are enforced before native rendering:
 
 Every native chart also carries a top-level text representation for screen
 readers, notifications, session mirroring, and clients that cannot render the
-block. Standard presentation sends to other OpenClaw channels receive that same
+block. Standard presentation sends to other Afora channels receive that same
 deterministic chart data as text unless they advertise native chart support. If
-Slack rejects the chart with `invalid_blocks` during a phased rollout, OpenClaw
+Slack rejects the chart with `invalid_blocks` during a phased rollout, Afora
 removes the rejected native data blocks, keeps any sibling controls, and sends
 the complete chart representation as visible text.
 
 Slack currently accepts up to two `data_visualization` blocks per message. When
-a presentation contains more than two valid charts, OpenClaw keeps their order
+a presentation contains more than two valid charts, Afora keeps their order
 and continues native rendering in follow-up messages, with no more than two
 charts in each message.
 
@@ -1718,7 +1718,7 @@ Home, modal, or Canvas content.
 ## Native tables
 
 Slack's current [`data_table` Block Kit block](https://docs.slack.dev/reference/block-kit/blocks/data-table-block/)
-renders structured rows and columns in messages. OpenClaw maps an explicit
+renders structured rows and columns in messages. Afora maps an explicit
 portable `presentation` `table` block to `data_table`; it does not use Slack's
 legacy [`table` block](https://docs.slack.dev/reference/block-kit/blocks/table-block/).
 No additional OAuth scope or Slack configuration is required beyond normal
@@ -1741,7 +1741,7 @@ No additional OAuth scope or Slack configuration is required beyond normal
 }
 ```
 
-OpenClaw maps header and string cells to Slack `raw_text` cells. Numeric cells
+Afora maps header and string cells to Slack `raw_text` cells. Numeric cells
 map to `raw_number`, with the finite numeric value preserved for native sorting
 and filtering. `rowHeaderColumnIndex`, when present, marks that zero-based
 column as Slack row headers.
@@ -1764,7 +1764,7 @@ Every native table produced from portable presentation also carries a top-level
 text representation for screen readers, notifications, session mirroring, and
 clients that cannot render the block. Raw chart and table values stay literal
 in the fallback, so cell data such as `<@U123>` does not become a Slack mention.
-If Slack rejects native chart or table blocks with `invalid_blocks`, OpenClaw
+If Slack rejects native chart or table blocks with `invalid_blocks`, Afora
 removes every native data block in one bounded recovery step, retains valid
 sibling blocks such as buttons and selects, and sends complete visible chart
 and table text with Slack formatting disabled. Slash-command delivery
@@ -1773,15 +1773,15 @@ reply batch, it selects a complete plan that fits the remaining calls or fails
 before posting that batch.
 
 Only explicit `presentation` table blocks are promoted to native tables.
-Markdown pipe tables remain authored text; OpenClaw does not guess at table
+Markdown pipe tables remain authored text; Afora does not guess at table
 structure or cell types. Existing trusted Slack-native producers can continue
-to pass raw blocks through `channelData.slack.blocks`; OpenClaw derives fallback
+to pass raw blocks through `channelData.slack.blocks`; Afora derives fallback
 text from valid raw `data_table` cells, while malformed custom blocks may
 degrade to their caption or general Block Kit fallback. Portable agent, CLI,
 and plugin output should use `presentation`.
 
 Slack clients can also deliver pasted spreadsheet content as a legacy `table`
-block in the message's top-level blocks or attachments. OpenClaw renders those
+block in the message's top-level blocks or attachments. Afora renders those
 inbound cells as delimiter-safe TSV for live agent input, thread context, and
 Slack `read` actions. Only native table blocks are admitted from ordinary
 attachments; link-unfurl and other non-forwarded attachment text remains
@@ -1790,11 +1790,11 @@ excluded.
 ## Plugin-owned modal submissions
 
 Slack plugins that register an interactive handler can also receive modal
-`view_submission` and `view_closed` lifecycle events before OpenClaw compacts
+`view_submission` and `view_closed` lifecycle events before Afora compacts
 the payload for the agent-visible system event. Use one of these routing
 patterns when opening a Slack modal:
 
-- Set `callback_id` to `openclaw:<namespace>:<payload>`.
+- Set `callback_id` to `afora:<namespace>:<payload>`.
 - Or keep an existing `callback_id` and put `pluginInteractiveData:
 "<namespace>:<payload>"` in the modal `private_metadata`.
 
@@ -1825,7 +1825,7 @@ message update. Approval delivery fails closed when an org-installed account
 does not have that event-owned workspace scope.
 
 This uses the same shared approval button surface as other channels. When `interactivity` is enabled in your Slack app settings, approval prompts render as Block Kit buttons directly in the conversation.
-When those buttons are present, they are the primary approval UX; OpenClaw
+When those buttons are present, they are the primary approval UX; Afora
 should only include a manual `/approve` command when the tool result says chat
 approvals are unavailable or manual approval is the only path.
 
@@ -1889,18 +1889,18 @@ Same-chat `/approve` also works in Slack channels and DMs that already support c
 - Channel topic/purpose metadata is treated as untrusted context and can be injected into routing context.
 - Agent View `app_context` entities are validated in Slack relevance order and exposed only as structured untrusted context; an omitted context clears the turn rather than reusing stale entities.
 - Thread starter and initial thread-history context seeding are filtered by configured sender allowlists when applicable.
-- Dedicated Web API reads used for probes, scope discovery, conversation classification, and delivery reconciliation have a 30-second deadline per request attempt. Transient failures can still retry, so the full operation may take longer. Shared Bolt and mutation-capable clients do not receive this default deadline because Slack may commit a mutation before a late response reaches OpenClaw.
+- Dedicated Web API reads used for probes, scope discovery, conversation classification, and delivery reconciliation have a 30-second deadline per request attempt. Transient failures can still retry, so the full operation may take longer. Shared Bolt and mutation-capable clients do not receive this default deadline because Slack may commit a mutation before a late response reaches Afora.
 - Block actions, shortcuts, and modal interactions emit structured `Slack interaction: ...` system events with rich payload fields:
   - block actions: selected values, labels, picker values, and `workflow_*` metadata
   - global shortcuts: callback and actor metadata, routed to the actor's direct session
   - message shortcuts: callback, actor, channel, thread, and selected-message context
   - modal `view_submission` and `view_closed` events with routed channel metadata and form inputs
 
-Define global or message shortcuts in your Slack app configuration and use any non-empty callback ID. OpenClaw acknowledges matching shortcut payloads, applies the same DM/channel sender policy as other Slack interactions, and queues the sanitized event for the routed agent session. Trigger IDs and response URLs are redacted from agent context.
+Define global or message shortcuts in your Slack app configuration and use any non-empty callback ID. Afora acknowledges matching shortcut payloads, applies the same DM/channel sender policy as other Slack interactions, and queues the sanitized event for the routed agent session. Trigger IDs and response URLs are redacted from agent context.
 
 ### Presence events
 
-Slack does not send presence changes through the Events API or Socket Mode. OpenClaw can instead poll [`users.getPresence`](https://docs.slack.dev/reference/methods/users.getPresence/) for human participants whose messages passed normal Slack access and routing checks.
+Slack does not send presence changes through the Events API or Socket Mode. Afora can instead poll [`users.getPresence`](https://docs.slack.dev/reference/methods/users.getPresence/) for human participants whose messages passed normal Slack access and routing checks.
 
 ```json5
 {
@@ -1923,7 +1923,7 @@ Slack does not send presence changes through the Events API or Socket Mode. Open
 - `auto`: monitor DMs, MPIMs, and Slack threads active in the last 24 hours with at most 8 observed human participants. Top-level channel sessions are excluded.
 - `on`: monitor the same conversations without the participant cap and include top-level channel sessions. Use a per-channel override to force or suppress one channel.
 
-OpenClaw polls at most 45 unique workspace-user pairs per minute per Slack account, seeds the first result without waking the agent, and only wakes on an observed `away` to `active` transition. A durable 8-hour cooldown applies per Slack account, workspace, and user, even if that person participates in several threads. The event routes only to that person's most recently active eligible conversation and tells the agent to consult memory/wiki and known timezone context before deciding whether to send one short greeting. The agent may stay silent.
+Afora polls at most 45 unique workspace-user pairs per minute per Slack account, seeds the first result without waking the agent, and only wakes on an observed `away` to `active` transition. A durable 8-hour cooldown applies per Slack account, workspace, and user, even if that person participates in several threads. The event routes only to that person's most recently active eligible conversation and tells the agent to consult memory/wiki and known timezone context before deciding whether to send one short greeting. The agent may stay silent.
 
 The event includes `observed_away_at_ms`, `observed_active_at_ms`, and `observed_away_duration_ms`. The duration is the elapsed time between the first sampled `away` state in the current monitor run and the later sampled `active` state. It is not exact time away because presence can change between polls, and the observation starts fresh after the monitor restarts or the target expires. The event records what Slack reported, not whether the person was at their keyboard; Slack can mark someone away automatically or manually, and `users.getPresence` does not distinguish those cases for another user.
 
@@ -1975,9 +1975,9 @@ Primary reference: [Configuration reference - Slack](/gateway/config-channels#sl
     Useful commands:
 
 ```bash
-openclaw channels status --probe
-openclaw logs --follow
-openclaw doctor
+afora channels status --probe
+afora logs --follow
+afora doctor
 ```
 
   </Accordion>
@@ -1994,7 +1994,7 @@ openclaw doctor
       recoverable human sender in message metadata
 
 ```bash
-openclaw pairing list slack
+afora pairing list slack
 ```
 
   </Accordion>
@@ -2004,7 +2004,7 @@ openclaw pairing list slack
     The App-Level Token needs `connections:write`, and the Bot User OAuth Token
     bot token must belong to the same Slack app/workspace as the app token.
 
-    If `openclaw channels status --probe --json` shows `botTokenStatus` or
+    If `afora channels status --probe --json` shows `botTokenStatus` or
     `appTokenStatus: "configured_unavailable"`, the Slack account is
     configured but the current runtime could not resolve the SecretRef-backed
     value.
@@ -2074,7 +2074,7 @@ Slack can attach downloaded media to the agent turn when Slack file downloads su
 
 When a Slack message with file attachments arrives:
 
-1. OpenClaw downloads the file from Slack's private URL using the bot token.
+1. Afora downloads the file from Slack's private URL using the bot token.
 2. The file is written to the media store on success.
 3. Downloaded media paths and content types are added to the inbound context.
 4. Audio clips are routed to the shared transcription pipeline; image-capable model/tool paths can use image attachments from the same context.
@@ -2114,7 +2114,7 @@ When a single Slack message contains multiple file attachments:
 | Captionless clip does not pass a mention gate | Dropped after private speculative transcription; transcript and download discarded | Configure a spoken-name mention pattern, add a typed bot mention, or use a DM |
 | Vision model not configured                   | Image attachments are stored as media references, but not analyzed as images       | Configure `agents.defaults.imageModel` or use a vision-capable reply model    |
 | Very large images (> 20 MB by default)        | Skipped per size cap                                                               | Increase `channels.slack.mediaMaxMb` if Slack allows                          |
-| Forwarded/shared attachments                  | Text and Slack-hosted image/file media are best-effort                             | Re-share directly in the OpenClaw thread                                      |
+| Forwarded/shared attachments                  | Text and Slack-hosted image/file media are best-effort                             | Re-share directly in the Afora thread                                      |
 | PDF attachments                               | Stored as file/media context, not automatically routed through image vision        | Use `download-file` for file metadata or the `pdf` tool for PDF analysis      |
 
 ### Related documentation

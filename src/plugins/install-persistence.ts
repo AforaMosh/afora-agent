@@ -1,7 +1,7 @@
 // Persistence helpers for plugin installs plus related config mutation.
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { theme } from "../../packages/terminal-core/src/theme.js";
 import {
   hashConfigIncludeRaw,
@@ -10,7 +10,7 @@ import {
 } from "../config/includes.js";
 import type { ConfigWriteOptions } from "../config/io.js";
 import { containsConfigIncludeDirective } from "../config/io.read-helpers.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { isPathInside } from "../infra/path-guards.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
@@ -20,7 +20,7 @@ import {
   isPluginCandidateInstallOwnerAmbiguous,
   resolvePluginCandidateInstallOwner,
 } from "./candidate-install-owner.js";
-import { discoverOpenClawPlugins } from "./discovery.js";
+import { discoverAforaPlugins } from "./discovery.js";
 import { enablePluginInConfig } from "./enable.js";
 import { commitPluginInstallRecordsWithConfig } from "./install-record-commit.js";
 import type { PluginInstallLogger } from "./install-types.js";
@@ -48,7 +48,7 @@ import {
   type PluginUninstallDirectoryRemoval,
 } from "./uninstall.js";
 
-function addInstalledPluginToAllowlist(cfg: OpenClawConfig, pluginId: string): OpenClawConfig {
+function addInstalledPluginToAllowlist(cfg: AforaConfig, pluginId: string): AforaConfig {
   const allow = cfg.plugins?.allow;
   if (!Array.isArray(allow) || allow.length === 0 || allow.includes(pluginId)) {
     return cfg;
@@ -64,7 +64,7 @@ function addInstalledPluginToAllowlist(cfg: OpenClawConfig, pluginId: string): O
   };
 }
 
-function removeInstalledPluginFromDenylist(cfg: OpenClawConfig, pluginId: string): OpenClawConfig {
+function removeInstalledPluginFromDenylist(cfg: AforaConfig, pluginId: string): AforaConfig {
   const deny = cfg.plugins?.deny;
   if (!Array.isArray(deny) || !deny.includes(pluginId)) {
     return cfg;
@@ -84,7 +84,7 @@ function removeInstalledPluginFromDenylist(cfg: OpenClawConfig, pluginId: string
 }
 
 export type ConfigSnapshotForInstallPersist = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   baseHash: string | undefined;
   writeOptions: Pick<
     ConfigWriteOptions,
@@ -316,7 +316,7 @@ function sourceMatchesInstalledPath(params: {
 }
 
 function logShadowedNpmInstallWarning(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   pluginId: string;
   install: Omit<PluginInstallUpdate, "pluginId">;
   warn: (message: string, managementMessage: string) => void;
@@ -348,9 +348,9 @@ function logShadowedNpmInstallWarning(params: {
       `Warning: installed plugin "${params.pluginId}" is not the active source because a config-selected plugin with the same id is currently selected:`,
       `  active config source: ${shortenHomePath(active.source)}`,
       `  installed npm source: ${shortenHomePath(installedSource)}`,
-      "Run `openclaw plugins doctor` for repair options.",
+      "Run `afora plugins doctor` for repair options.",
     ].join("\n"),
-    `Installed plugin "${params.pluginId}" is shadowed by a configured plugin source. Run \`openclaw plugins doctor\`.`,
+    `Installed plugin "${params.pluginId}" is shadowed by a configured plugin source. Run \`afora plugins doctor\`.`,
   );
 }
 
@@ -406,7 +406,7 @@ function resolveReplacedManagedInstallRemoval(params: {
               [params.pluginId]: params.previousInstall,
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         pluginId: params.pluginId,
         deleteFiles: true,
       },
@@ -427,7 +427,7 @@ function resolveReplacedManagedInstallRemoval(params: {
   return plan.directoryRemoval;
 }
 
-function prepareConfigForDisabledInstall(config: OpenClawConfig, pluginId: string): OpenClawConfig {
+function prepareConfigForDisabledInstall(config: AforaConfig, pluginId: string): AforaConfig {
   const entry = config.plugins?.entries?.[pluginId];
   const policy = isRecord(entry) ? { ...entry } : {};
   delete policy.config;
@@ -449,7 +449,7 @@ type PluginConfigEnablement =
   | { mode: "invalid"; error: string };
 
 function resolvePluginConfigEnablement(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   pluginId: string;
   manifest?: PluginManifestRecord;
 }): PluginConfigEnablement {
@@ -484,7 +484,7 @@ export async function persistPluginInstall(params: {
   warningMessage?: string;
   runtime?: RuntimeEnv;
   persistenceLogger?: PluginInstallLogger;
-}): Promise<OpenClawConfig> {
+}): Promise<AforaConfig> {
   const runtime = params.runtime ?? defaultRuntime;
   // Terminal diagnostics may contain paths/errors; management receives only producer-authored summaries.
   const warn = (message: string, managementMessage: string): void => {
@@ -511,7 +511,7 @@ export async function persistPluginInstall(params: {
     previousInstall,
     nextInstall: params.install,
   });
-  const installedDiscovery = discoverOpenClawPlugins({ installRecords: nextInstallRecords });
+  const installedDiscovery = discoverAforaPlugins({ installRecords: nextInstallRecords });
   const realpathCache = new Map<string, string>();
   const targetPathKeys = new Set(
     [params.install.installPath, params.install.sourcePath]
@@ -551,7 +551,7 @@ export async function persistPluginInstall(params: {
   );
   if (manifests.length === 0) {
     throw new Error(
-      `Plugin package "${params.pluginId}" has no authoritative runtime child list. Refresh the plugin registry, then reinstall the package or run openclaw doctor before retrying.`,
+      `Plugin package "${params.pluginId}" has no authoritative runtime child list. Refresh the plugin registry, then reinstall the package or run afora doctor before retrying.`,
     );
   }
   const ownedPluginIds = manifests.map((plugin) => plugin.id).toSorted();
@@ -633,7 +633,7 @@ export async function persistPluginInstall(params: {
     for (const warning of removalResult.warnings) {
       warn(
         warning,
-        "A previous plugin installation could not be fully cleaned up. Run `openclaw plugins doctor`.",
+        "A previous plugin installation could not be fully cleaned up. Run `afora plugins doctor`.",
       );
     }
     if (removalResult.directoryRemoved) {
@@ -667,14 +667,14 @@ export async function persistPluginInstall(params: {
   const configWarning =
     params.enable !== false && configurationRequiredPluginIds.length > 0
       ? configurationRequiredPluginIds.length === 1
-        ? `Installed plugin "${configurationRequiredPluginIds[0]}" without enabling it because it requires configuration first. Configure it, then run \`openclaw plugins enable ${configurationRequiredPluginIds[0]}\`.`
-        : `Installed plugin entries ${configurationRequiredPluginIds.join(", ")} without enabling them because they require configuration first. Configure each entry, then run \`openclaw plugins enable <plugin-id>\`.`
+        ? `Installed plugin "${configurationRequiredPluginIds[0]}" without enabling it because it requires configuration first. Configure it, then run \`afora plugins enable ${configurationRequiredPluginIds[0]}\`.`
+        : `Installed plugin entries ${configurationRequiredPluginIds.join(", ")} without enabling them because they require configuration first. Configure each entry, then run \`afora plugins enable <plugin-id>\`.`
       : undefined;
   const warningMessage = [params.warningMessage, configWarning].filter(Boolean).join("\n");
   if (warningMessage) {
     warn(
       warningMessage,
-      configWarning ?? "Plugin installation reported a warning. Run `openclaw plugins doctor`.",
+      configWarning ?? "Plugin installation reported a warning. Run `afora plugins doctor`.",
     );
   }
   runtime.log(

@@ -20,7 +20,7 @@ type SynologyChatConfigFields = {
 
 export type SynologyWebhookPathSource = "default" | "inherited-base" | "explicit";
 
-/** Raw channel config from openclaw.json channels.synology-chat */
+/** Raw channel config from afora.json channels.synology-chat */
 export interface SynologyChatChannelConfig extends SynologyChatConfigFields {
   accounts?: Record<string, SynologyChatAccountRaw>;
 }

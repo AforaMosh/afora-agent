@@ -5,7 +5,7 @@
  * handling before checking aliases, allowlists, catalogs, and plugin manifests.
  */
 import { resolveAgentModelFallbackValues } from "../config/model-input.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveAgentModelFallbacksOverride } from "./agent-scope.js";
 import type { ModelCatalogEntry } from "./model-catalog.types.js";
 import type { ModelManifestNormalizationContext, ModelRef } from "./model-ref-shared.js";
@@ -27,7 +27,7 @@ export {
 
 /** Resolve agent-owned fallback overrides without loading the full selection facade. */
 export function resolveConfiguredModelFallbacks(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
 }): string[] {
   if (params.agentId) {
@@ -42,7 +42,7 @@ export function resolveConfiguredModelFallbacks(params: {
 /** Returns whether a normalized model ref is available, allowed, or fallback-backed. */
 export function getModelRefStatus(
   params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     catalog: ModelCatalogEntry[];
     ref: ModelRef;
     defaultProvider: string;
@@ -66,7 +66,7 @@ export function getModelRefStatus(
 /** Resolves a raw model string into an allowed model ref or an explanatory error. */
 export function resolveAllowedModelRefCore(
   params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     catalog: ModelCatalogEntry[];
     raw: string;
     defaultProvider: string;

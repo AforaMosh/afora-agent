@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 struct WatchSessionActivationGateTests {
     @Test func `reachable delivery requires an accepted acknowledgment`() throws {

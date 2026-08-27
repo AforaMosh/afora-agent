@@ -603,7 +603,7 @@ describe("gateway agent handler", () => {
   });
 
   it("uses the selected session target for bare /reset delivery when to is an agent session key", async () => {
-    const sessionKey = "agent:main:openclaw-weixin:direct:o9cq802hhmfc@im.wechat";
+    const sessionKey = "agent:main:afora-weixin:direct:o9cq802hhmfc@im.wechat";
     mockSessionResetSuccess({ reason: "reset", key: sessionKey, sessionId: "wechat-session-id" });
     mocks.loadSessionEntry.mockImplementation((key: string) => ({
       cfg: {},
@@ -612,15 +612,15 @@ describe("gateway agent handler", () => {
         sessionId: key === sessionKey ? "wechat-session-id" : "main-session-id",
         updatedAt: Date.now(),
         delivery: normalizeSessionDeliveryState({
-          context: { channel: "openclaw-weixin", to: "o9cq802hhmfc@im.wechat" },
+          context: { channel: "afora-weixin", to: "o9cq802hhmfc@im.wechat" },
         }),
       },
       canonicalKey: key,
     }));
     mocks.getChannelPlugin.mockImplementation((channel: string) =>
-      channel === "openclaw-weixin"
+      channel === "afora-weixin"
         ? {
-            id: "openclaw-weixin",
+            id: "afora-weixin",
             meta: { label: "WeChat" },
             capabilities: { chatTypes: ["direct"] },
             config: {},
@@ -670,7 +670,7 @@ describe("gateway agent handler", () => {
     });
     expect(mocks.sendDurableMessageBatch).toHaveBeenCalledWith(
       expect.objectContaining({
-        channel: "openclaw-weixin",
+        channel: "afora-weixin",
         to: "o9cq802hhmfc@im.wechat",
       }),
     );
@@ -889,7 +889,7 @@ describe("gateway agent handler", () => {
   });
 
   it("returns workspace-relative avatars as data URLs in agent.identity.get", async () => {
-    await withTestDir({ prefix: "openclaw-agent-avatar-" }, async (workspace) => {
+    await withTestDir({ prefix: "afora-agent-avatar-" }, async (workspace) => {
       await fs.mkdir(path.join(workspace, "avatars"), { recursive: true });
       await fs.writeFile(path.join(workspace, "avatars", "main.png"), "avatar", "utf8");
       mocks.loadConfigReturn = {
@@ -930,7 +930,7 @@ describe("gateway agent handler", () => {
 
   it("prefixes same-origin avatar routes in agent.identity.get when Control UI has a base path", async () => {
     mocks.loadConfigReturn = {
-      gateway: { controlUi: { basePath: "/openclaw" } },
+      gateway: { controlUi: { basePath: "/afora" } },
       ui: { assistant: { avatar: "/avatar/main" } },
     };
 
@@ -940,12 +940,12 @@ describe("gateway agent handler", () => {
     );
 
     expect((mockCallArg(respond, 0, 1) as { avatar?: unknown }).avatar).toBe(
-      "/openclaw/avatar/main",
+      "/afora/avatar/main",
     );
   });
 
   it("replaces rejected local avatar paths with the default instead of a protected route", async () => {
-    await withTestDir({ prefix: "openclaw-agent-avatar-missing-" }, async (workspace) => {
+    await withTestDir({ prefix: "afora-agent-avatar-missing-" }, async (workspace) => {
       mocks.loadConfigReturn = {
         agents: {
           defaults: { workspace },
@@ -968,7 +968,7 @@ describe("gateway agent handler", () => {
   });
 
   it("inlines a workspace-local avatar in agent.identity.get (#97602)", async () => {
-    await withTestDir({ prefix: "openclaw-agent-identity-avatar-" }, async (workspace) => {
+    await withTestDir({ prefix: "afora-agent-identity-avatar-" }, async (workspace) => {
       await fs.writeFile(`${workspace}/avatar.png`, REAL_PNG);
       mocks.loadConfigReturn = {
         agents: {
@@ -994,7 +994,7 @@ describe("gateway agent handler", () => {
   });
 
   it("reports a hardlinked avatar as unreadable in agent.identity.get", async () => {
-    await withTestDir({ prefix: "openclaw-agent-identity-hardlink-" }, async (workspace) => {
+    await withTestDir({ prefix: "afora-agent-identity-hardlink-" }, async (workspace) => {
       await fs.writeFile(`${workspace}/original.png`, REAL_PNG);
       await fs.link(`${workspace}/original.png`, `${workspace}/avatar.png`);
       mocks.loadConfigReturn = {
@@ -1021,7 +1021,7 @@ describe("gateway agent handler", () => {
   });
 
   it("bounds an agent.identity.get avatar that grows after its descriptor is pinned", async () => {
-    await withTestDir({ prefix: "openclaw-agent-identity-growth-" }, async (workspace) => {
+    await withTestDir({ prefix: "afora-agent-identity-growth-" }, async (workspace) => {
       const avatarPath = `${workspace}/avatar.png`;
       await fs.writeFile(avatarPath, REAL_PNG);
       mocks.loadConfigReturn = {
@@ -1058,7 +1058,7 @@ describe("gateway agent handler", () => {
   });
 
   it("keeps configured emoji precedence free of file metadata in agent.identity.get", async () => {
-    await withTestDir({ prefix: "openclaw-agent-identity-emoji-" }, async (workspace) => {
+    await withTestDir({ prefix: "afora-agent-identity-emoji-" }, async (workspace) => {
       await fs.writeFile(`${workspace}/identity.png`, REAL_PNG);
       await fs.writeFile(`${workspace}/IDENTITY.md`, "- Avatar: identity.png\n");
       mocks.loadConfigReturn = {

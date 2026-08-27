@@ -29,7 +29,7 @@ import type {
   SimpleStreamOptions,
   TextContent,
   ToolResultMessage,
-} from "openclaw/plugin-sdk/llm";
+} from "afora-agent/plugin-sdk/llm";
 import type { Static, TSchema } from "typebox";
 import type { Theme } from "../../modes/interactive/theme/theme.js";
 import type {
@@ -277,12 +277,12 @@ export interface ExtensionUIContext {
    * - `keybindings`: KeybindingsManager for app-level keybindings
    *
    * For full app keybinding support (escape, ctrl+d, model switching, etc.),
-   * extend `CustomEditor` from `openclaw/plugin-sdk/agent-sessions` and call
+   * extend `CustomEditor` from `afora/plugin-sdk/agent-sessions` and call
    * `super.handleInput(data)` for keys you don't handle.
    *
    * @example
    * ```ts
-   * import { CustomEditor } from "openclaw/plugin-sdk/agent-sessions";
+   * import { CustomEditor } from "afora-agent/plugin-sdk/agent-sessions";
    *
    * class VimEditor extends CustomEditor {
    *   private mode: "normal" | "insert" = "insert";
@@ -367,7 +367,7 @@ export interface ExtensionContext {
   abort(): void;
   /** Whether there are queued messages waiting */
   hasPendingMessages(): boolean;
-  /** Gracefully shut down OpenClaw and exit. Available in all contexts. */
+  /** Gracefully shut down Afora and exit. Available in all contexts. */
   shutdown(): void;
   /** Get current context usage for the active model. */
   getContextUsage(): ContextUsage | undefined;
@@ -1484,7 +1484,7 @@ interface ProviderModelConfig {
   baseUrl?: string;
   /** Whether the model supports extended thinking. */
   reasoning: boolean;
-  /** Maps OpenClaw thinking levels to provider/model-specific values; null marks a level unsupported. */
+  /** Maps Afora thinking levels to provider/model-specific values; null marks a level unsupported. */
   thinkingLevelMap?: Model["thinkingLevelMap"];
   /** Supported input types. */
   input: ("text" | "image")[];

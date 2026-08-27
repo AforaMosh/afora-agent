@@ -3,7 +3,7 @@ summary: "FAQ: quick-start and first-run setup — install, onboard, auth, subsc
 read_when:
   - New install, onboarding stuck, or first-run errors
   - Choosing auth and provider subscriptions
-  - Cannot access docs.openclaw.ai, cannot open dashboard, install stuck
+  - Cannot access docs.afora.ai, cannot open dashboard, install stuck
 title: "FAQ: first-run setup"
 sidebarTitle: "First-run FAQ"
 ---
@@ -26,7 +26,7 @@ and troubleshooting see the main [FAQ](/help/faq).
     code + docs and reason about the exact version you run:
 
     ```bash
-    curl -fsSL --proto '=https' --tlsv1.2 https://openclaw.ai/install.sh | bash -s -- --install-method git
+    curl -fsSL --proto '=https' --tlsv1.2 https://afora.ai/install.sh | bash -s -- --install-method git
     ```
 
     Ask the agent to plan and supervise the fix step-by-step, then execute only the
@@ -36,17 +36,17 @@ and troubleshooting see the main [FAQ](/help/faq).
 
     | Command | Shows |
     | --- | --- |
-    | `openclaw status` | Gateway/agent health + basic config snapshot |
-    | `openclaw status --all` | Full read-only diagnosis, pasteable |
-    | `openclaw models status` | Provider auth + model availability |
-    | `openclaw doctor` | Validates and repairs common config/state issues |
-    | `openclaw logs --follow` | Live log tail |
-    | `openclaw gateway status --deep` | Deep gateway/config/plugin health check |
-    | `openclaw health --verbose` | Detailed health report |
+    | `afora status` | Gateway/agent health + basic config snapshot |
+    | `afora status --all` | Full read-only diagnosis, pasteable |
+    | `afora models status` | Provider auth + model availability |
+    | `afora doctor` | Validates and repairs common config/state issues |
+    | `afora logs --follow` | Live log tail |
+    | `afora gateway status --deep` | Deep gateway/config/plugin health check |
+    | `afora health --verbose` | Detailed health report |
 
     Found a real bug or fix? File an issue or send a PR:
-    [Issues](https://github.com/openclaw/openclaw/issues) /
-    [Pull requests](https://github.com/openclaw/openclaw/pulls).
+    [Issues](https://github.com/AforaMosh/afora-agent/issues) /
+    [Pull requests](https://github.com/AforaMosh/afora-agent/pulls).
 
     Quick debug loop: [First 60 seconds if something is broken](/help/faq#first-60-seconds-if-something-is-broken).
     Install docs: [Install](/install), [Installer flags](/install/installer), [Updating](/install/updating).
@@ -60,30 +60,30 @@ and troubleshooting see the main [FAQ](/help/faq).
     | `empty-heartbeat-file` | Heartbeat monitor scratch exists but only has blank, comment, header, fence, or empty-checklist scaffolding |
     | `alerts-disabled` | All heartbeat visibility is off (`showOk`, `showAlerts`, and `useIndicator` all disabled) |
 
-    Older heartbeat `tasks:` blocks migrate to independently scheduled cron jobs with `openclaw doctor --fix`.
+    Older heartbeat `tasks:` blocks migrate to independently scheduled cron jobs with `afora doctor --fix`.
 
     Docs: [Heartbeat](/gateway/heartbeat), [Automation](/automation).
 
   </Accordion>
 
-  <Accordion title="Recommended way to install and set up OpenClaw">
+  <Accordion title="Recommended way to install and set up Afora">
     ```bash
-    curl -fsSL --proto '=https' --tlsv1.2 https://openclaw.ai/install.sh | bash
-    openclaw onboard --install-daemon
+    curl -fsSL --proto '=https' --tlsv1.2 https://afora.ai/install.sh | bash
+    afora onboard --install-daemon
     ```
 
     From source (contributors/dev):
 
     ```bash
-    git clone https://github.com/openclaw/openclaw.git
-    cd openclaw
+    git clone https://github.com/AforaMosh/afora-agent.git
+    cd afora
     pnpm install
     pnpm build
     pnpm ui:build
-    openclaw onboard
+    afora onboard
     ```
 
-    No global install yet? Run `pnpm openclaw onboard` instead. If Control UI assets are
+    No global install yet? Run `pnpm afora onboard` instead. If Control UI assets are
     missing, onboarding tries to build them itself, falling back to `pnpm ui:build`.
 
   </Accordion>
@@ -99,13 +99,13 @@ and troubleshooting see the main [FAQ](/help/faq).
 
     - Open `http://127.0.0.1:18789/`.
     - If it asks for shared-secret auth, paste the configured token or password into Control UI settings.
-    - Token source: `gateway.auth.token` (or `OPENCLAW_GATEWAY_TOKEN`).
-    - Password source: `gateway.auth.password` (or `OPENCLAW_GATEWAY_PASSWORD`).
-    - No shared secret configured yet? Run `openclaw doctor --generate-gateway-token` (or `openclaw doctor --fix --generate-gateway-token`).
+    - Token source: `gateway.auth.token` (or `AFORA_GATEWAY_TOKEN`).
+    - Password source: `gateway.auth.password` (or `AFORA_GATEWAY_PASSWORD`).
+    - No shared secret configured yet? Run `afora doctor --generate-gateway-token` (or `afora doctor --fix --generate-gateway-token`).
 
     **Not on localhost:**
 
-    - **Tailscale Serve** (recommended): keep bind loopback, run `openclaw gateway --tailscale serve`, open `https://<magicdns>/`. With `gateway.auth.allowTailscale: true`, identity headers satisfy Control UI/WebSocket auth (no pasted shared secret, assumes a trusted gateway host); HTTP APIs still need shared-secret auth unless you deliberately use private-ingress `none` or trusted-proxy HTTP auth.
+    - **Tailscale Serve** (recommended): keep bind loopback, run `afora gateway --tailscale serve`, open `https://<magicdns>/`. With `gateway.auth.allowTailscale: true`, identity headers satisfy Control UI/WebSocket auth (no pasted shared secret, assumes a trusted gateway host); HTTP APIs still need shared-secret auth unless you deliberately use private-ingress `none` or trusted-proxy HTTP auth.
       Concurrent bad-auth Serve attempts from the same client are serialized before the failed-auth limiter records them, so a second bad retry can already show `retry later`.
     - **Identity-aware reverse proxy**: keep the Gateway behind a trusted proxy, set `gateway.auth.mode: "trusted-proxy"`, open the proxy URL. Same-host loopback proxies need explicit `gateway.auth.trustedProxy.allowLoopback: true`.
     - **SSH tunnel**: `ssh -N -L 18789:127.0.0.1:18789 user@gateway-host`, then open `http://127.0.0.1:18789/`. Shared-secret auth still applies over the tunnel; paste the configured token or password if prompted.
@@ -126,7 +126,7 @@ and troubleshooting see the main [FAQ](/help/faq).
     You rarely need both:
 
     - If the chat already supports commands and replies, same-chat `/approve` works through the shared path.
-    - When a supported native channel can infer approvers safely, OpenClaw auto-enables DM-first native approvals if `channels.<channel>.execApprovals.enabled` is unset or `"auto"`.
+    - When a supported native channel can infer approvers safely, Afora auto-enables DM-first native approvals if `channels.<channel>.execApprovals.enabled` is unset or `"auto"`.
     - When native approval cards/buttons are available, that UI is primary; only mention a manual `/approve` command if the tool result says chat approvals are unavailable.
     - Use `approvals.exec` only when prompts must also reach other chats or explicit ops rooms.
     - Use `channels.<channel>.execApprovals.target: "channel"` or `"both"` only when you want approval prompts posted back into the originating room/topic.
@@ -139,7 +139,7 @@ and troubleshooting see the main [FAQ](/help/faq).
 
   <Accordion title="What runtime do I need?">
     Node **22.22.3+**, **24.15+**, or **25.9+** is required (Node 26 recommended). `pnpm` is the repo package manager.
-    Bun can install dependencies and run package scripts, but it cannot run the OpenClaw CLI or Gateway because it lacks `node:sqlite`.
+    Bun can install dependencies and run package scripts, but it cannot run the Afora CLI or Gateway because it lacks `node:sqlite`.
   </Accordion>
 
   <Accordion title="Does it run on Raspberry Pi?">
@@ -180,27 +180,27 @@ and troubleshooting see the main [FAQ](/help/faq).
     That screen depends on the Gateway being reachable and authenticated. The TUI also sends
     "Wake up, my friend!" automatically on first hatch when a model provider is configured. If
     you skipped model/auth setup, onboarding shows a "Model auth missing" note and opens the
-    TUI without sending anything — add a provider with `openclaw configure --section model`.
+    TUI without sending anything — add a provider with `afora configure --section model`.
     If you see the wake-up line with **no reply** and tokens stay at 0, the agent never ran.
 
     1. Restart the Gateway:
 
     ```bash
-    openclaw gateway restart
+    afora gateway restart
     ```
 
     2. Check status + auth:
 
     ```bash
-    openclaw status
-    openclaw models status
-    openclaw logs --follow
+    afora status
+    afora models status
+    afora logs --follow
     ```
 
     3. Still hanging? Run:
 
     ```bash
-    openclaw doctor
+    afora doctor
     ```
 
     If the Gateway is remote, confirm the tunnel/Tailscale connection is up and the UI
@@ -211,10 +211,10 @@ and troubleshooting see the main [FAQ](/help/faq).
   <Accordion title="Can I migrate my setup to a new machine without redoing onboarding?">
     Yes. Copy the **state directory** and **workspace**, then run Doctor once:
 
-    1. Install OpenClaw on the new machine.
-    2. Copy `$OPENCLAW_STATE_DIR` (default: `~/.openclaw`) from the old machine.
-    3. Copy your workspace (default: `~/.openclaw/workspace`).
-    4. Run `openclaw doctor` and restart the Gateway service.
+    1. Install Afora on the new machine.
+    2. Copy `$AFORA_STATE_DIR` (default: `~/.afora`) from the old machine.
+    3. Copy your workspace (default: `~/.afora/workspace`).
+    4. Run `afora doctor` and restart the Gateway service.
 
     This preserves config, auth profiles, WhatsApp creds, sessions, and memory - it keeps
     your bot exactly the same, as long as you copy **both** locations. In remote mode, the
@@ -222,7 +222,7 @@ and troubleshooting see the main [FAQ](/help/faq).
 
     **Important:** if you only commit/push your workspace to GitHub, you back up
     **memory + bootstrap files**, but not session history or auth. Those live under
-    `~/.openclaw/` (for example `~/.openclaw/agents/<agentId>/agent/openclaw-agent.sqlite`).
+    `~/.afora/` (for example `~/.afora/agents/<agentId>/agent/afora-agent.sqlite`).
 
     Related: [Migrating](/install/migrating), [Where things live on disk](/help/faq#where-things-live-on-disk),
     [Agent workspace](/concepts/agent-workspace), [Doctor](/gateway/doctor),
@@ -232,7 +232,7 @@ and troubleshooting see the main [FAQ](/help/faq).
 
   <Accordion title="Where do I see what is new in the latest version?">
     Check the GitHub changelog:
-    [https://github.com/openclaw/openclaw/blob/main/CHANGELOG.md](https://github.com/openclaw/openclaw/blob/main/CHANGELOG.md)
+    [https://github.com/AforaMosh/afora-agent/blob/main/CHANGELOG.md](https://github.com/AforaMosh/afora-agent/blob/main/CHANGELOG.md)
 
     Newest entries are at the top. If the top section is **Unreleased**, the next dated
     section is the latest shipped version. Entries group under **Highlights**, **Changes**,
@@ -240,13 +240,13 @@ and troubleshooting see the main [FAQ](/help/faq).
 
   </Accordion>
 
-  <Accordion title="Cannot access docs.openclaw.ai (SSL error)">
-    Some Comcast/Xfinity connections incorrectly block `docs.openclaw.ai` via Xfinity
-    Advanced Security. Disable it or allowlist `docs.openclaw.ai`, then retry. Help us
+  <Accordion title="Cannot access docs.afora.ai (SSL error)">
+    Some Comcast/Xfinity connections incorrectly block `docs.afora.ai` via Xfinity
+    Advanced Security. Disable it or allowlist `docs.afora.ai`, then retry. Help us
     get it unblocked: [https://spa.xfinity.com/check_url_status](https://spa.xfinity.com/check_url_status).
 
     Still blocked? Docs are mirrored on GitHub:
-    [https://github.com/openclaw/openclaw/tree/main/docs](https://github.com/openclaw/openclaw/tree/main/docs)
+    [https://github.com/AforaMosh/afora-agent/tree/main/docs](https://github.com/AforaMosh/afora-agent/tree/main/docs)
 
   </Accordion>
 
@@ -261,7 +261,7 @@ and troubleshooting see the main [FAQ](/help/faq).
     can also publish straight to `latest`. That is why beta and stable can point at the
     **same version** after promotion.
 
-    See what changed: [CHANGELOG.md](https://github.com/openclaw/openclaw/blob/main/CHANGELOG.md).
+    See what changed: [CHANGELOG.md](https://github.com/AforaMosh/afora-agent/blob/main/CHANGELOG.md).
 
     For install one-liners and the difference between beta and dev, see the next accordion.
 
@@ -274,14 +274,14 @@ and troubleshooting see the main [FAQ](/help/faq).
     One-liners (macOS/Linux):
 
     ```bash
-    curl -fsSL --proto '=https' --tlsv1.2 https://openclaw.ai/install.sh | bash -s -- --beta
+    curl -fsSL --proto '=https' --tlsv1.2 https://afora.ai/install.sh | bash -s -- --beta
     ```
 
     ```bash
-    curl -fsSL --proto '=https' --tlsv1.2 https://openclaw.ai/install.sh | bash -s -- --install-method git
+    curl -fsSL --proto '=https' --tlsv1.2 https://afora.ai/install.sh | bash -s -- --install-method git
     ```
 
-    Windows installer (PowerShell): `iwr -useb https://openclaw.ai/install.ps1 | iex`
+    Windows installer (PowerShell): `iwr -useb https://afora.ai/install.ps1 | iex`
 
     More detail: [Development channels](/install/development-channels) and [Installer flags](/install/installer).
 
@@ -293,7 +293,7 @@ and troubleshooting see the main [FAQ](/help/faq).
     1. **Dev channel (existing install):**
 
     ```bash
-    openclaw update --channel dev
+    afora update --channel dev
     ```
 
     This switches to a git checkout of `main`, rebases on upstream, builds, and installs
@@ -302,14 +302,14 @@ and troubleshooting see the main [FAQ](/help/faq).
     2. **Hackable (git) install (fresh machine):**
 
     ```bash
-    curl -fsSL --proto '=https' --tlsv1.2 https://openclaw.ai/install.sh | bash -s -- --install-method git
+    curl -fsSL --proto '=https' --tlsv1.2 https://afora.ai/install.sh | bash -s -- --install-method git
     ```
 
     Prefer a manual clone:
 
     ```bash
-    git clone https://github.com/openclaw/openclaw.git
-    cd openclaw
+    git clone https://github.com/AforaMosh/afora-agent.git
+    cd afora
     pnpm install
     pnpm build
     ```
@@ -326,7 +326,7 @@ and troubleshooting see the main [FAQ](/help/faq).
     - **Advanced/full onboarding:** longer when provider sign-in, channel pairing, daemon install, network downloads, or skills need extra setup.
 
     The wizard shows this timeline up front. Skip optional steps and return later with
-    `openclaw configure`.
+    `afora configure`.
 
     Hanging? See [I am stuck](#quick-start-and-first-run-setup) above.
 
@@ -336,9 +336,9 @@ and troubleshooting see the main [FAQ](/help/faq).
     Re-run with `--verbose`:
 
     ```bash
-    curl -fsSL --proto '=https' --tlsv1.2 https://openclaw.ai/install.sh | bash -s -- --verbose
-    curl -fsSL --proto '=https' --tlsv1.2 https://openclaw.ai/install.sh | bash -s -- --beta --verbose
-    curl -fsSL --proto '=https' --tlsv1.2 https://openclaw.ai/install.sh | bash -s -- --install-method git --verbose
+    curl -fsSL --proto '=https' --tlsv1.2 https://afora.ai/install.sh | bash -s -- --verbose
+    curl -fsSL --proto '=https' --tlsv1.2 https://afora.ai/install.sh | bash -s -- --beta --verbose
+    curl -fsSL --proto '=https' --tlsv1.2 https://afora.ai/install.sh | bash -s -- --install-method git --verbose
     ```
 
     `install.ps1` has no dedicated verbose switch; wrap it in `Set-PSDebug -Trace 1` /
@@ -346,7 +346,7 @@ and troubleshooting see the main [FAQ](/help/faq).
 
   </Accordion>
 
-  <Accordion title="Windows install says git not found or openclaw not recognized">
+  <Accordion title="Windows install says git not found or afora not recognized">
     Two common Windows issues:
 
     **1) npm error spawn git / git not found**
@@ -354,7 +354,7 @@ and troubleshooting see the main [FAQ](/help/faq).
     - Install **Git for Windows**, make sure `git` is on PATH.
     - Close and reopen PowerShell, then re-run the installer.
 
-    **2) openclaw is not recognized after install**
+    **2) afora is not recognized after install**
 
     - Your npm global bin folder is not on PATH.
     - Check it: `npm config get prefix`.
@@ -384,10 +384,10 @@ and troubleshooting see the main [FAQ](/help/faq).
     Then restart the Gateway and retry:
 
     ```powershell
-    openclaw gateway restart
+    afora gateway restart
     ```
 
-    Still reproducing this on latest OpenClaw? Track/report it: [Issue #30640](https://github.com/openclaw/openclaw/issues/30640).
+    Still reproducing this on latest Afora? Track/report it: [Issue #30640](https://github.com/AforaMosh/afora-agent/issues/30640).
 
   </Accordion>
 
@@ -396,21 +396,21 @@ and troubleshooting see the main [FAQ](/help/faq).
     your bot (or Claude/Codex) **from that folder** so it can read the repo and answer precisely.
 
     ```bash
-    curl -fsSL --proto '=https' --tlsv1.2 https://openclaw.ai/install.sh | bash -s -- --install-method git
+    curl -fsSL --proto '=https' --tlsv1.2 https://afora.ai/install.sh | bash -s -- --install-method git
     ```
 
     More detail: [Install](/install) and [Installer flags](/install/installer).
 
   </Accordion>
 
-  <Accordion title="How do I install OpenClaw on Linux?">
+  <Accordion title="How do I install Afora on Linux?">
     - Linux quick path + service install: [Linux](/platforms/linux).
     - Full walkthrough: [Getting Started](/start/getting-started).
     - Installer + updates: [Install & updates](/install/updating).
 
   </Accordion>
 
-  <Accordion title="How do I install OpenClaw on a VPS?">
+  <Accordion title="How do I install Afora on a VPS?">
     Any Linux VPS works. Install on the server, then reach the Gateway over SSH/Tailscale.
 
     Guides: [exe.dev](/install/exe-dev), [Hetzner](/install/hetzner), [Fly.io](/install/fly).
@@ -439,24 +439,24 @@ and troubleshooting see the main [FAQ](/help/faq).
 
   </Accordion>
 
-  <Accordion title="Can I ask OpenClaw to update itself?">
+  <Accordion title="Can I ask Afora to update itself?">
     Possible, not recommended. The update flow can restart the Gateway (dropping the
     active session), may need a clean git checkout, and can prompt for confirmation.
     Safer to run updates from a shell as the operator.
 
     ```bash
-    openclaw update
-    openclaw update status
-    openclaw update --channel stable|extended-stable|beta|dev
-    openclaw update --tag <dist-tag|version>
-    openclaw update --no-restart
+    afora update
+    afora update status
+    afora update --channel stable|extended-stable|beta|dev
+    afora update --tag <dist-tag|version>
+    afora update --no-restart
     ```
 
     Automating from an agent:
 
     ```bash
-    openclaw update --yes --no-restart
-    openclaw gateway restart
+    afora update --yes --no-restart
+    afora gateway restart
     ```
 
     Docs: [Update](/cli/update), [Updating](/install/updating).
@@ -464,7 +464,7 @@ and troubleshooting see the main [FAQ](/help/faq).
   </Accordion>
 
   <Accordion title="What does onboarding actually do?">
-    `openclaw onboard` is the recommended setup path. In **local mode** it walks through:
+    `afora onboard` is the recommended setup path. In **local mode** it walks through:
 
     1. **Model/Auth** - provider OAuth, API keys, or manual auth (including local options like LM Studio); pick a default model.
     2. **Workspace** - location + bootstrap files.
@@ -480,7 +480,7 @@ and troubleshooting see the main [FAQ](/help/faq).
   </Accordion>
 
   <Accordion title="Do I need a Claude or OpenAI subscription to run this?">
-    No. Run OpenClaw with **API keys** (Anthropic/OpenAI/others) or **local-only models**
+    No. Run Afora with **API keys** (Anthropic/OpenAI/others) or **local-only models**
     so your data stays on your device. Subscriptions (Claude Pro/Max, ChatGPT/Codex) are
     optional ways to authenticate those providers.
 
@@ -492,7 +492,7 @@ and troubleshooting see the main [FAQ](/help/faq).
     automation, an Anthropic API key is the more predictable choice.
 
     OpenAI Codex OAuth (ChatGPT/Codex subscription) is fully supported for agent models.
-    OpenClaw also supports hosted subscription-style options including **Qwen Cloud
+    Afora also supports hosted subscription-style options including **Qwen Cloud
     Coding Plan**, **MiniMax Coding Plan**, and **Z.AI / GLM Coding Plan**.
 
     Docs: [Anthropic](/providers/anthropic), [OpenAI](/providers/openai),
@@ -502,8 +502,8 @@ and troubleshooting see the main [FAQ](/help/faq).
   </Accordion>
 
   <Accordion title="Can I use Claude Max subscription without an API key?">
-    Yes. OpenClaw supports Claude CLI reuse for Pro/Max/Team/Enterprise plans. Anthropic
-    currently treats the `claude -p` path OpenClaw uses as subscription-plan usage subject
+    Yes. Afora supports Claude CLI reuse for Pro/Max/Team/Enterprise plans. Anthropic
+    currently treats the `claude -p` path Afora uses as subscription-plan usage subject
     to your plan's limits, not a separate free allowance - see
     [Anthropic](/providers/anthropic) for the current billing detail and links to
     Anthropic's own support articles. For the most predictable server-side setup, use an
@@ -516,7 +516,7 @@ and troubleshooting see the main [FAQ](/help/faq).
     dated links to Anthropic's support articles before relying on specific billing
     behavior.
 
-    Anthropic setup-token auth is also still a supported token path, but OpenClaw prefers
+    Anthropic setup-token auth is also still a supported token path, but Afora prefers
     Claude CLI reuse and `claude -p` when available. For production or multi-user
     workloads, an Anthropic API key remains the safer, more predictable choice. Other
     subscription-style hosted options: [OpenAI](/providers/openai), [Qwen Cloud](/providers/qwen),
@@ -539,48 +539,48 @@ and troubleshooting see the main [FAQ](/help/faq).
     model, or legacy `params.context1m: true` config), and your current credential is not
     eligible for long-context billing.
 
-    Set a **fallback model** so OpenClaw keeps replying while a provider is rate-limited.
+    Set a **fallback model** so Afora keeps replying while a provider is rate-limited.
     See [Models](/cli/models), [OAuth](/concepts/oauth), and
     [Anthropic 429 extra usage required for long context](/gateway/troubleshooting#anthropic-429-extra-usage-required-for-long-context).
 
   </Accordion>
 
   <Accordion title="Is AWS Bedrock supported?">
-    Yes. OpenClaw has a bundled **Amazon Bedrock (Converse)** provider. With AWS env
+    Yes. Afora has a bundled **Amazon Bedrock (Converse)** provider. With AWS env
     markers present (`AWS_ACCESS_KEY_ID`, `AWS_PROFILE`, `AWS_BEARER_TOKEN_BEDROCK`),
-    OpenClaw auto-enables the implicit Bedrock provider for model discovery; otherwise
+    Afora auto-enables the implicit Bedrock provider for model discovery; otherwise
     set `plugins.entries.amazon-bedrock.config.discovery.enabled: true` or add a manual
     provider entry. See [Amazon Bedrock](/providers/bedrock) and [Model providers](/providers/models).
     An OpenAI-compatible proxy in front of Bedrock is still a valid option if you prefer a managed key flow.
   </Accordion>
 
   <Accordion title="How does Codex auth work?">
-    OpenClaw supports **OpenAI Codex** via OAuth (ChatGPT sign-in). A fresh
+    Afora supports **OpenAI Codex** via OAuth (ChatGPT sign-in). A fresh
     setup with no primary model uses exact `openai/gpt-5.6-sol` for
     ChatGPT/Codex subscription auth plus native Codex app-server execution.
     Reauthentication preserves an existing explicit model, including
     `openai/gpt-5.5`. If the Codex workspace does not expose GPT-5.6, select
-    `openai/gpt-5.5` explicitly; OpenClaw does not silently downgrade. Legacy
-    Codex-prefixed model refs are legacy config repaired by `openclaw doctor
+    `openai/gpt-5.5` explicitly; Afora does not silently downgrade. Legacy
+    Codex-prefixed model refs are legacy config repaired by `afora doctor
     --fix`. Direct OpenAI API-key access remains available for non-agent OpenAI
     API surfaces and, through an ordered `openai` API-key profile, for agent
     models too. See [Model providers](/concepts/model-providers) and
     [Onboarding (CLI)](/start/wizard).
   </Accordion>
 
-  <Accordion title="Why does OpenClaw still mention legacy OpenAI Codex prefix?">
+  <Accordion title="Why does Afora still mention legacy OpenAI Codex prefix?">
     `openai` is the current provider and auth-profile id for both OpenAI API keys and
     ChatGPT/Codex OAuth - OpenAI Codex is folded into it. You may still see a legacy
     `openai-codex` prefix in older config and migration warnings:
 
     - `openai/gpt-5.6-sol` = fresh ChatGPT/Codex subscription setup with the native Codex runtime for agent turns.
     - `openai/gpt-5.5` = explicit supported selection for existing config or accounts without GPT-5.6 access.
-    - Legacy `openai-codex/*` model refs = legacy route repaired by `openclaw doctor --fix`.
+    - Legacy `openai-codex/*` model refs = legacy route repaired by `afora doctor --fix`.
     - `openai/gpt-5.5` plus an ordered `openai` API-key profile = API-key auth for an OpenAI agent model.
-    - Legacy `openai-codex` auth profile ids = legacy ids migrated by `openclaw doctor --fix`.
+    - Legacy `openai-codex` auth profile ids = legacy ids migrated by `afora doctor --fix`.
 
     Want direct OpenAI Platform billing? Set `OPENAI_API_KEY`. Want ChatGPT/Codex
-    subscription auth? Run `openclaw models auth login --provider openai`. Keep
+    subscription auth? Run `afora models auth login --provider openai`. Keep
     model refs under the canonical `openai/*` provider. Fresh subscription
     setup uses exact `openai/gpt-5.6-sol`; doctor repairs legacy Codex-prefixed
     refs without upgrading an explicit `openai/gpt-5.5` selection.
@@ -591,7 +591,7 @@ and troubleshooting see the main [FAQ](/help/faq).
     Codex OAuth uses OpenAI-managed, plan-dependent quota windows that can differ from the
     ChatGPT website/app experience, even on the same account.
 
-    `openclaw models status` shows the currently visible provider usage/quota windows, but
+    `afora models status` shows the currently visible provider usage/quota windows, but
     does not invent or normalize ChatGPT-web entitlements into direct API access. For the
     direct OpenAI Platform billing/limit path, use `openai/*` with an API key.
 
@@ -599,19 +599,19 @@ and troubleshooting see the main [FAQ](/help/faq).
 
   <Accordion title="Do you support OpenAI subscription auth (Codex OAuth)?">
     Yes, fully. OpenAI explicitly allows subscription OAuth usage in external
-    tools/workflows like OpenClaw. Onboarding can run the OAuth flow for you.
+    tools/workflows like Afora. Onboarding can run the OAuth flow for you.
 
     See [OAuth](/concepts/oauth), [Model providers](/concepts/model-providers), and [Onboarding (CLI)](/start/wizard).
 
   </Accordion>
 
   <Accordion title="Can I use Gemini CLI or Antigravity OAuth?">
-    OpenClaw does not offer new Gemini CLI OAuth or Antigravity OAuth setup.
+    Afora does not offer new Gemini CLI OAuth or Antigravity OAuth setup.
     Connect Google with an AI Studio API key or Vertex AI instead.
 
     The optional `google-gemini-cli` runtime remains available for advanced
     setups using a supported Google API-key profile. Existing valid legacy
-    Gemini CLI OAuth profiles remain executable for compatibility, but OpenClaw
+    Gemini CLI OAuth profiles remain executable for compatibility, but Afora
     cannot create or repair them.
 
     Details: [Google](/providers/google), [Model providers](/concepts/model-providers).
@@ -619,7 +619,7 @@ and troubleshooting see the main [FAQ](/help/faq).
   </Accordion>
 
   <Accordion title="Is a local model OK for casual chats?">
-    Usually no. OpenClaw needs large context + strong safety; small cards truncate context
+    Usually no. Afora needs large context + strong safety; small cards truncate context
     and skip provider-side safety filters. If you must, run the **largest** model build you
     can locally (LM Studio) - see [Local models](/gateway/local-models). Smaller/quantized
     models raise prompt-injection risk - see [Security](/gateway/security).
@@ -633,7 +633,7 @@ and troubleshooting see the main [FAQ](/help/faq).
   </Accordion>
 
   <Accordion title="Do I have to buy a Mac Mini to install this?">
-    No. OpenClaw runs on macOS or Linux (Windows via WSL2). A Mac mini is a popular
+    No. Afora runs on macOS or Linux (Windows via WSL2). A Mac mini is a popular
     always-on host choice, but a small VPS, home server, or Raspberry Pi-class box works too.
 
     You only need a Mac **for macOS-only tools**. For iMessage, use [iMessage](/channels/imessage)
@@ -659,30 +659,30 @@ and troubleshooting see the main [FAQ](/help/faq).
 
   </Accordion>
 
-  <Accordion title="If I buy a Mac mini to run OpenClaw, can I connect it to my MacBook Pro?">
+  <Accordion title="If I buy a Mac mini to run Afora, can I connect it to my MacBook Pro?">
     Yes. The **Mac mini can run the Gateway**, and your MacBook Pro connects as a **node**
     (companion device). Nodes do not run the Gateway - they add capabilities like
     screen/camera/canvas and `system.run` on that device.
 
     Common pattern: Gateway on the always-on Mac mini; MacBook Pro runs the macOS app or a
-    node host and pairs to the Gateway. Check with `openclaw nodes status` / `openclaw nodes list`.
+    node host and pairs to the Gateway. Check with `afora nodes status` / `afora nodes list`.
 
     Docs: [Nodes](/nodes), [Nodes CLI](/cli/nodes).
 
   </Accordion>
 
   <Accordion title="Can I use Bun?">
-    You can use Bun to install dependencies or run package scripts. The OpenClaw CLI and
+    You can use Bun to install dependencies or run package scripts. The Afora CLI and
     Gateway require **Node** because the canonical state store uses `node:sqlite`; Bun does
     not provide that API.
   </Accordion>
 
   <Accordion title="Telegram: what goes in allowFrom?">
     `channels.telegram.allowFrom` is the **human sender's Telegram user ID** (numeric),
-    not the bot username. Setup asks for numeric user IDs only; `openclaw doctor --fix`
+    not the bot username. Setup asks for numeric user IDs only; `afora doctor --fix`
     can try to resolve legacy `@username` entries.
 
-    Safer (no third-party bot): DM your bot, run `openclaw logs --follow`, read `from.id`.
+    Safer (no third-party bot): DM your bot, run `afora logs --follow`, read `from.id`.
 
     Official Bot API: DM your bot, call `https://api.telegram.org/bot<bot_token>/getUpdates`, read `message.from.id`.
 
@@ -692,7 +692,7 @@ and troubleshooting see the main [FAQ](/help/faq).
 
   </Accordion>
 
-  <Accordion title="Can multiple people use one WhatsApp number with different OpenClaw instances?">
+  <Accordion title="Can multiple people use one WhatsApp number with different Afora instances?">
     Yes, via **multi-agent routing**. Bind each sender's WhatsApp DM (`peer: { kind: "direct", id: "+15551234567" }`) to a different `agentId`, giving each person their own workspace and session store. Replies still come from the **same WhatsApp account**; DM access control (`channels.whatsapp.dmPolicy` / `channels.whatsapp.allowFrom`) is global per account. See [Multi-Agent Routing](/concepts/multi-agent) and [WhatsApp](/channels/whatsapp).
   </Accordion>
 
@@ -713,7 +713,7 @@ and troubleshooting see the main [FAQ](/help/faq).
     brew install <formula>
     ```
 
-    Running OpenClaw via systemd: make sure the service PATH includes
+    Running Afora via systemd: make sure the service PATH includes
     `/home/linuxbrew/.linuxbrew/bin` (or your brew prefix) so `brew`-installed tools
     resolve in non-login shells. Recent builds also prepend common user bin dirs on Linux
     systemd services (for example `~/.local/bin`, `~/.npm-global/bin`,
@@ -731,20 +731,20 @@ and troubleshooting see the main [FAQ](/help/faq).
   </Accordion>
 
   <Accordion title="Can I switch between npm and git installs later?">
-    Yes, with `openclaw update --channel ...` on an existing install. This does **not
-    delete your data** - only the OpenClaw code install changes. State (`~/.openclaw`) and
-    workspace (`~/.openclaw/workspace`) stay untouched.
+    Yes, with `afora update --channel ...` on an existing install. This does **not
+    delete your data** - only the Afora code install changes. State (`~/.afora`) and
+    workspace (`~/.afora/workspace`) stay untouched.
 
     npm to git:
 
     ```bash
-    openclaw update --channel dev
+    afora update --channel dev
     ```
 
     git to npm:
 
     ```bash
-    openclaw update --channel stable
+    afora update --channel stable
     ```
 
     Add `--dry-run` to preview the planned mode switch first. The updater runs Doctor
@@ -754,8 +754,8 @@ and troubleshooting see the main [FAQ](/help/faq).
     The installer can force either mode too:
 
     ```bash
-    curl -fsSL --proto '=https' --tlsv1.2 https://openclaw.ai/install.sh | bash -s -- --install-method git
-    curl -fsSL --proto '=https' --tlsv1.2 https://openclaw.ai/install.sh | bash -s -- --install-method npm
+    curl -fsSL --proto '=https' --tlsv1.2 https://afora.ai/install.sh | bash -s -- --install-method git
+    curl -fsSL --proto '=https' --tlsv1.2 https://afora.ai/install.sh | bash -s -- --install-method npm
     ```
 
     Backup tips: [Where things live on disk](/help/faq#where-things-live-on-disk).
@@ -785,7 +785,7 @@ and troubleshooting see the main [FAQ](/help/faq).
 
   </Accordion>
 
-  <Accordion title="How important is it to run OpenClaw on a dedicated machine?">
+  <Accordion title="How important is it to run Afora on a dedicated machine?">
     Not required, but recommended for reliability and isolation.
 
     - **Dedicated host (VPS/Mac mini/Raspberry Pi):** always-on, fewer sleep/reboot interruptions, cleaner permissions, easier to keep running.
@@ -806,7 +806,7 @@ and troubleshooting see the main [FAQ](/help/faq).
 
   </Accordion>
 
-  <Accordion title="Can I run OpenClaw in a VM and what are the requirements?">
+  <Accordion title="Can I run Afora in a VM and what are the requirements?">
     Yes. Treat a VM like a VPS: it needs to be always on, reachable, and have enough RAM
     for the Gateway and any channels you enable.
 

@@ -7,11 +7,11 @@ import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 async function createTempHome(): Promise<string> {
-  return tempDirs.make("openclaw-mcp-probe-process-");
+  return tempDirs.make("afora-mcp-probe-process-");
 }
 
 async function writeConfig(home: string, servers: Record<string, unknown>): Promise<string> {
-  const configPath = path.join(home, "openclaw.json");
+  const configPath = path.join(home, "afora.json");
   await fs.writeFile(configPath, `${JSON.stringify({ mcp: { servers } })}\n`, "utf8");
   return configPath;
 }
@@ -21,9 +21,9 @@ function runProbe(home: string, args: string[]) {
     ...process.env,
     HOME: home,
     USERPROFILE: home,
-    OPENCLAW_CONFIG_PATH: path.join(home, "openclaw.json"),
-    OPENCLAW_STATE_DIR: path.join(home, "state"),
-    OPENCLAW_TEST_FAST: "1",
+    AFORA_CONFIG_PATH: path.join(home, "afora.json"),
+    AFORA_STATE_DIR: path.join(home, "state"),
+    AFORA_TEST_FAST: "1",
     MCP_TEST_ARGS_JSON: JSON.stringify(args),
   };
   delete env.VITEST;

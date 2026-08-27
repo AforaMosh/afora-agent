@@ -1,2 +1,2 @@
 // Tavily helper module supports tavily tool schema behavior.
-export { optionalStringEnum } from "openclaw/plugin-sdk/channel-actions";
+export { optionalStringEnum } from "afora-agent/plugin-sdk/channel-actions";

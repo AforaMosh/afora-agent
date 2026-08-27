@@ -10,7 +10,7 @@ type EmbeddedSubscribeToolsTestApi = {
 
 function getTestApi(): EmbeddedSubscribeToolsTestApi {
   const api = (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.embeddedSubscribeToolsTestApi")
+    Symbol.for("afora.embeddedSubscribeToolsTestApi")
   ];
   if (!api) {
     throw new Error("embedded subscribe tools test API is unavailable");

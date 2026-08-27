@@ -1,13 +1,13 @@
 // Private runtime barrel for the bundled Signal extension.
 // Prefer narrower SDK subpaths plus local extension seams over the legacy signal barrel.
 
-import type { OpenClawConfig as RuntimeOpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-export type { ChannelMessageActionAdapter } from "openclaw/plugin-sdk/channel-contract";
+import type { AforaConfig as RuntimeAforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+export type { ChannelMessageActionAdapter } from "afora-agent/plugin-sdk/channel-contract";
 export { buildChannelConfigSchema, SignalConfigSchema } from "../config-api.js";
-export { PAIRING_APPROVED_MESSAGE } from "openclaw/plugin-sdk/channel-status";
-export type { RuntimeOpenClawConfig as OpenClawConfig };
-export type { OpenClawPluginApi, PluginRuntime } from "openclaw/plugin-sdk/core";
-export type { ChannelPlugin } from "openclaw/plugin-sdk/core";
+export { PAIRING_APPROVED_MESSAGE } from "afora-agent/plugin-sdk/channel-status";
+export type { RuntimeAforaConfig as AforaConfig };
+export type { AforaPluginApi, PluginRuntime } from "afora-agent/plugin-sdk/core";
+export type { ChannelPlugin } from "afora-agent/plugin-sdk/core";
 export {
   DEFAULT_ACCOUNT_ID,
   applyAccountNameToChannelSection,
@@ -18,22 +18,22 @@ export {
   migrateBaseNameToDefaultAccount,
   normalizeAccountId,
   setAccountEnabledInConfigSection,
-} from "openclaw/plugin-sdk/core";
-export { resolveChannelMediaMaxBytes } from "openclaw/plugin-sdk/media-runtime";
-export { formatCliCommand, formatDocsLink } from "openclaw/plugin-sdk/setup-tools";
-export { chunkText } from "openclaw/plugin-sdk/reply-runtime";
-export { detectBinary } from "openclaw/plugin-sdk/setup-tools";
+} from "afora-agent/plugin-sdk/core";
+export { resolveChannelMediaMaxBytes } from "afora-agent/plugin-sdk/media-runtime";
+export { formatCliCommand, formatDocsLink } from "afora-agent/plugin-sdk/setup-tools";
+export { chunkText } from "afora-agent/plugin-sdk/reply-runtime";
+export { detectBinary } from "afora-agent/plugin-sdk/setup-tools";
 export {
   resolveAllowlistProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
-} from "openclaw/plugin-sdk/runtime-group-policy";
+} from "afora-agent/plugin-sdk/runtime-group-policy";
 export {
   buildBaseAccountStatusSnapshot,
   buildBaseChannelStatusSummary,
   collectStatusIssuesFromLastError,
   createDefaultChannelRuntimeState,
-} from "openclaw/plugin-sdk/status-helpers";
-export { normalizeE164 } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/status-helpers";
+export { normalizeE164 } from "afora-agent/plugin-sdk/text-utility-runtime";
 export { looksLikeSignalTargetId, normalizeSignalMessagingTarget } from "./normalize.js";
 export {
   listEnabledSignalAccounts,

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { listAgentIds, listAgentEntries, resolveAgentConfig } from "../agents/agent-scope.js";
 import { resolveModelRefFromString, type ModelRef } from "../agents/model-selection.js";
 import { resolveEffectiveAgentRuntime } from "../agents/thinking-runtime.js";
@@ -13,7 +13,7 @@ import { getChannelPlugin } from "../channels/plugins/index.js";
 import type { ChannelId, ChannelPlugin } from "../channels/plugins/types.public.js";
 import type { SessionEntry } from "../config/sessions/types.js";
 import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { getActivePluginChannelRegistry } from "../plugins/runtime.js";
 import { normalizeAgentId } from "../routing/session-key.js";
@@ -36,7 +36,7 @@ export function resolveHeartbeatChannelPlugin(channel: string): ChannelPlugin | 
 }
 
 export function resolveHeartbeatTimeoutOverrideSeconds(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   heartbeat?: HeartbeatConfig,
 ) {
   if (typeof heartbeat?.timeoutSeconds === "number") {
@@ -74,7 +74,7 @@ type ActiveHoursSchedule = {
 };
 
 export function resolveActiveHoursSchedule(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   heartbeat?: HeartbeatConfig,
 ): ActiveHoursSchedule | undefined {
   const activeHours = heartbeat?.activeHours;
@@ -125,13 +125,13 @@ export function resolveHeartbeatSchedulerSeed(
     .digest("hex");
 }
 
-function hasExplicitHeartbeatAgents(cfg: OpenClawConfig) {
+function hasExplicitHeartbeatAgents(cfg: AforaConfig) {
   const list = listAgentEntries(cfg);
   return list.some((entry) => Boolean(entry?.heartbeat));
 }
 
 function resolveHeartbeatConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId?: string,
 ): HeartbeatConfig | undefined {
   const defaults = cfg.agents?.defaults?.heartbeat;
@@ -156,7 +156,7 @@ function omitExplicitHeartbeatDestination(heartbeat: HeartbeatConfig | undefined
 }
 
 export function resolveHeartbeatForWake(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   configuredHeartbeat?: HeartbeatConfig;
   requestedHeartbeat?: HeartbeatConfig;
@@ -173,7 +173,7 @@ export function resolveHeartbeatForWake(params: {
     : heartbeat;
 }
 
-export function resolveHeartbeatAgents(cfg: OpenClawConfig): HeartbeatAgent[] {
+export function resolveHeartbeatAgents(cfg: AforaConfig): HeartbeatAgent[] {
   const list = listAgentEntries(cfg);
   if (hasExplicitHeartbeatAgents(cfg)) {
     return list
@@ -199,23 +199,23 @@ export function resolveHeartbeatAgents(cfg: OpenClawConfig): HeartbeatAgent[] {
   return [{ agentId: fallbackId, heartbeat: resolveHeartbeatConfig(cfg, fallbackId) }];
 }
 
-function resolveHeartbeatPromptRaw(cfg: OpenClawConfig, heartbeat?: HeartbeatConfig) {
+function resolveHeartbeatPromptRaw(cfg: AforaConfig, heartbeat?: HeartbeatConfig) {
   return heartbeat?.prompt ?? cfg.agents?.defaults?.heartbeat?.prompt;
 }
 
-export function resolveConfiguredHeartbeatPrompt(cfg: OpenClawConfig, heartbeat?: HeartbeatConfig) {
+export function resolveConfiguredHeartbeatPrompt(cfg: AforaConfig, heartbeat?: HeartbeatConfig) {
   return resolveHeartbeatPromptText(resolveHeartbeatPromptRaw(cfg, heartbeat));
 }
 
 export function resolveHeartbeatResponseToolPrompt(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   heartbeat?: HeartbeatConfig,
 ) {
   return resolveHeartbeatPromptForResponseTool(resolveHeartbeatPromptRaw(cfg, heartbeat));
 }
 
 function resolveHeartbeatModelRef(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   heartbeat?: HeartbeatConfig;
   entry?: SessionEntry;
@@ -251,7 +251,7 @@ function resolveHeartbeatModelRef(params: {
 }
 
 function usesCodexHarness(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   heartbeat?: HeartbeatConfig;
   entry?: SessionEntry;
@@ -271,7 +271,7 @@ function usesCodexHarness(params: {
 }
 
 export function shouldUseHeartbeatResponseToolPrompt(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   heartbeat?: HeartbeatConfig;
   entry?: SessionEntry;
@@ -293,7 +293,7 @@ export function shouldUseHeartbeatResponseToolPrompt(params: {
 }
 
 export function isHeartbeatTypingEnabled(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   hasChatDelivery: boolean;
 }) {
@@ -306,7 +306,7 @@ export function isHeartbeatTypingEnabled(params: {
   return typingMode !== "never";
 }
 
-export function resolveHeartbeatTypingIntervalSeconds(cfg: OpenClawConfig) {
+export function resolveHeartbeatTypingIntervalSeconds(cfg: AforaConfig) {
   const configured = cfg.agents?.defaults?.typingIntervalSeconds;
   return typeof configured === "number" && configured > 0 ? configured : undefined;
 }

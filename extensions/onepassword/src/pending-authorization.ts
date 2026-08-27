@@ -1,4 +1,4 @@
-import type { PluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { PluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
 
 // Correlates hook authorization with execute: session fields differ across
 // that boundary in production and provider tool-call ids are not globally

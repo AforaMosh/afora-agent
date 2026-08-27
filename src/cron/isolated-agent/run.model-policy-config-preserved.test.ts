@@ -2,17 +2,17 @@
 import { describe, expect, it } from "vitest";
 import { resolveAgentConfig } from "../../agents/agent-scope.js";
 import { resolveAllowedModelRefCore } from "../../agents/model-selection-resolve.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveCronAgentConfig } from "./run-config.js";
 
-function buildCronConfig(cfg: OpenClawConfig, agentId: string): OpenClawConfig {
+function buildCronConfig(cfg: AforaConfig, agentId: string): AforaConfig {
   return resolveCronAgentConfig({
     config: cfg,
     agentConfigOverride: resolveAgentConfig(cfg, agentId),
   }).cfgWithAgentDefaults;
 }
 
-function resolveCronPayloadModel(cfg: OpenClawConfig, raw: string) {
+function resolveCronPayloadModel(cfg: AforaConfig, raw: string) {
   return resolveAllowedModelRefCore({
     cfg,
     catalog: [
@@ -28,7 +28,7 @@ function resolveCronPayloadModel(cfg: OpenClawConfig, raw: string) {
 
 describe("resolveCronAgentConfig model policy preservation", () => {
   it("keeps the inherited default restriction when the per-agent policy is empty", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: { modelPolicy: { allow: ["openai/gpt-5.5"] } },
         list: [{ id: "worker", modelPolicy: {} }],
@@ -44,7 +44,7 @@ describe("resolveCronAgentConfig model policy preservation", () => {
   });
 
   it("applies an explicit per-agent allowlist to cron model resolution", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: { modelPolicy: { allow: ["openai/gpt-5.5"] } },
         list: [{ id: "worker", modelPolicy: { allow: ["openai/gpt-5.6-sol"] } }],

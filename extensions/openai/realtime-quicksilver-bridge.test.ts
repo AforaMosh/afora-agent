@@ -379,7 +379,7 @@ describe("OpenAIQuicksilverVoiceBridge", () => {
     expect(harness.onToolCall).toHaveBeenCalledWith({
       itemId: "delegation-1",
       callId: "delegation-1",
-      name: "openclaw_agent_consult",
+      name: "afora_agent_consult",
       args: { question: "check the repository" },
     });
 

@@ -1,5 +1,5 @@
 /**
- * Standalone MCP server that exposes OpenClaw plugin-registered tools
+ * Standalone MCP server that exposes Afora plugin-registered tools
  * (e.g. memory-lancedb's memory_recall, memory_store, memory_forget)
  * so ACP sessions running Claude Code can use them.
  *
@@ -17,18 +17,18 @@ import {
 } from "../agents/tool-policy.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";
 import { getRuntimeConfig } from "../config/config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { routeLogsToStderr } from "../logging/console.js";
 import { ensureStandalonePluginToolRegistryLoaded, resolvePluginTools } from "../plugins/tools.js";
 import { parseAgentSessionKey } from "../routing/session-key.js";
 import {
-  OPENCLAW_TOOLS_MCP_AGENT_SESSION_KEY_ENV,
+  AFORA_TOOLS_MCP_AGENT_SESSION_KEY_ENV,
   resolveToolsMcpAgentSessionKey,
 } from "./agent-session-env.js";
 import { connectToolsMcpServerToStdio, createToolsMcpServer } from "./tools-stdio-server.js";
 
-function resolvePluginToolPolicy(config: OpenClawConfig): {
+function resolvePluginToolPolicy(config: AforaConfig): {
   toolAllowlist?: string[];
   toolDenylist?: string[];
 } {
@@ -46,14 +46,14 @@ function resolvePluginToolPolicy(config: OpenClawConfig): {
 }
 
 export function resolvePluginToolsForMcp(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentSessionKey?: string;
 }): AnyAgentTool[] {
   const agentSessionKey = (params.agentSessionKey ?? resolveToolsMcpAgentSessionKey())?.trim();
   const parsedSession = agentSessionKey ? parseAgentSessionKey(agentSessionKey) : undefined;
   if (agentSessionKey && !parsedSession) {
     throw new Error(
-      `${OPENCLAW_TOOLS_MCP_AGENT_SESSION_KEY_ENV} must be a canonical agent session key`,
+      `${AFORA_TOOLS_MCP_AGENT_SESSION_KEY_ENV} must be a canonical agent session key`,
     );
   }
   const context = {
@@ -75,7 +75,7 @@ export function resolvePluginToolsForMcp(params: {
 
 export function createPluginToolsMcpServer(
   params: {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     tools?: AnyAgentTool[];
     agentSessionKey?: string;
   } = {},
@@ -84,7 +84,7 @@ export function createPluginToolsMcpServer(
   const tools =
     params.tools ??
     resolvePluginToolsForMcp({ config: cfg, agentSessionKey: params.agentSessionKey });
-  return createToolsMcpServer({ name: "openclaw-plugin-tools", tools });
+  return createToolsMcpServer({ name: "afora-plugin-tools", tools });
 }
 
 export async function servePluginToolsMcp(): Promise<void> {

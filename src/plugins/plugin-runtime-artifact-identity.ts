@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { openRootFileSync } from "../infra/boundary-file-read.js";
 import { walkDirectorySync } from "../infra/fs-safe.js";
-import type { OpenClawPackageBuild } from "./manifest.js";
+import type { AforaPackageBuild } from "./manifest.js";
 import { safeRealpathSync } from "./path-safety.js";
 import type { PluginOrigin } from "./plugin-origin.types.js";
 import { resolvePluginRuntimeArtifact } from "./plugin-runtime-artifact-resolution.js";
@@ -21,7 +21,7 @@ export type PluginRuntimeArtifactIdentitySource = Readonly<{
   origin: PluginOrigin;
   rootDir: string;
   source?: string;
-  packageBuild?: OpenClawPackageBuild;
+  packageBuild?: AforaPackageBuild;
 }>;
 
 function normalizeRelativePath(filePath: string): string {
@@ -159,7 +159,7 @@ export function fingerprintPluginRuntimeArtifact(
     throw new Error(`plugin runtime entry is unavailable: ${record.pluginId}`);
   }
   const hash = crypto.createHash("sha256");
-  hash.update("openclaw-plugin-runtime-artifact-v1\0");
+  hash.update("afora-plugin-runtime-artifact-v1\0");
   hash.update(sourceRelativePath ? normalizeRelativePath(sourceRelativePath) : "<no-source>");
   hash.update("\0");
   let totalBytes = 0;

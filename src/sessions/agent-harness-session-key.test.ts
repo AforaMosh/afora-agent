@@ -124,7 +124,7 @@ describe("agent harness session keys", () => {
   it("keeps pre-existing unlocked harness-prefixed sessions ordinary", () => {
     const key = "agent:main:harness:notes";
     const entry = {
-      agentHarnessId: "openclaw",
+      agentHarnessId: "afora",
       sessionId: "legacy-session",
     };
 

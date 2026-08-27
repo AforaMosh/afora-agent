@@ -16,7 +16,7 @@ import {
   expectDefined,
   SystemAgentInferenceUnavailableError,
   verifyConfigAfterSystemAgentWrite,
-  type OpenClawConfig,
+  type AforaConfig,
   type WizardPrompter,
 } from "./chat-engine.test-support.js";
 import { ChatTurnRouter } from "./chat-turn-router.js";
@@ -54,7 +54,7 @@ function createRouterHarness(
     "shared verified inference test fixture",
   );
   const session = {
-    sessionId: "openclaw-operations-router-test",
+    sessionId: "afora-operations-router-test",
     verifiedInference,
     proposalRef: {},
   };
@@ -166,7 +166,7 @@ describe("SystemAgentChatEngine operations", () => {
     expect(reply.action).toBe("none");
     expect(reply.handoff).toBeUndefined();
     expect(reply.text).toContain("Opening the menu wizard");
-    expect(reply.text).toContain("run `openclaw onboard`");
+    expect(reply.text).toContain("run `afora onboard`");
   });
 
   it("starts the channel wizard from an agent-loop directive", async () => {
@@ -199,10 +199,10 @@ describe("SystemAgentChatEngine operations", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const changedConfig = {
       agents: { defaults: { model: "anthropic/claude-opus-4-8" } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const verifiedInference = await createAmbientVerifiedBinding(baseConfig);
     const readConfigFileSnapshot = vi
       .fn()
@@ -233,7 +233,7 @@ describe("SystemAgentChatEngine operations", () => {
     const config = {
       agents: { defaults: { model: "anthropic/claude-opus-4-8@anthropic:oauth" } },
       auth: { profiles: { "anthropic:oauth": { provider: "anthropic", mode: "oauth" } } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     let credential = {
       type: "oauth" as const,
       provider: "anthropic",
@@ -280,7 +280,7 @@ describe("SystemAgentChatEngine operations", () => {
     const config = {
       agents: { defaults: { model: "anthropic/claude-opus-4-8@anthropic:oauth" } },
       auth: { profiles: { "anthropic:oauth": { provider: "anthropic", mode: "oauth" } } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     let credential = {
       type: "oauth" as const,
       provider: "anthropic",
@@ -317,7 +317,7 @@ describe("SystemAgentChatEngine operations", () => {
     const reply = await engine.handle("yes, apply that exact port change");
 
     expect(runConfigSet).toHaveBeenCalledOnce();
-    expect(reply.text).toContain("[openclaw] done: config.set");
+    expect(reply.text).toContain("[afora] done: config.set");
   });
 
   it("prefers the real agent loop for fuzzy messages", async () => {
@@ -351,7 +351,7 @@ describe("SystemAgentChatEngine operations", () => {
     expect(call.surface).toBe("gateway");
     // A question is not consent: mutations stay locked for this turn.
     expect(call.approvalArmed).toBe(false);
-    expect(call.session.sessionId).toMatch(/^openclaw-/);
+    expect(call.session.sessionId).toMatch(/^afora-/);
     // The same session flows into every turn for real multi-turn memory.
     await router.resolveTurn("and the gateway?");
     expect(runAgentTurn.mock.calls[1]?.[0]).toMatchObject({
@@ -449,10 +449,10 @@ describe("SystemAgentChatEngine operations", () => {
         ...baseConfig.agents,
         list: baseConfig.agents.list.map((agent) => ({ ...agent, model: "openai/gpt-5.6-sol" })),
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const verifiedInference = await createAmbientVerifiedBinding(baseConfig);
     const reboundInference = await createAmbientVerifiedBinding(changedConfig);
-    let currentConfig: OpenClawConfig = baseConfig;
+    let currentConfig: AforaConfig = baseConfig;
     const executeOperation = vi.fn(async (_operation, runtime, options) => {
       currentConfig = changedConfig;
       options.onVerifiedInferenceChanged?.(reboundInference);
@@ -505,7 +505,7 @@ describe("SystemAgentChatEngine operations", () => {
       mocks.readConfigFileSnapshot.mockResolvedValue({
         exists: true,
         valid: false,
-        path: "/tmp/openclaw.json",
+        path: "/tmp/afora.json",
         hash: "h",
         config: {},
         sourceConfig: {},
@@ -534,7 +534,7 @@ describe("SystemAgentChatEngine operations", () => {
     mocks.readConfigFileSnapshot.mockResolvedValue({
       exists: true,
       valid: false,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       hash: "h",
       config: {},
       sourceConfig: {},
@@ -547,14 +547,14 @@ describe("SystemAgentChatEngine operations", () => {
 
     expect(reply).toContain("failed validation");
     expect(reply).toContain("The write was applied");
-    expect(reply).toContain("openclaw doctor --fix");
+    expect(reply).toContain("afora doctor --fix");
   });
 
-  it("keeps doctor repair outside OpenClaw when no post-write repair is proposed", async () => {
+  it("keeps doctor repair outside Afora when no post-write repair is proposed", async () => {
     mocks.readConfigFileSnapshot.mockResolvedValue({
       exists: true,
       valid: false,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       hash: "h",
       config: {},
       sourceConfig: {},
@@ -563,8 +563,8 @@ describe("SystemAgentChatEngine operations", () => {
 
     const reply = await verifyConfigAfterSystemAgentWrite(async () => ({ text: "" }));
 
-    expect(reply).toContain("with OpenClaw stopped");
-    expect(reply).toContain("openclaw doctor --fix");
+    expect(reply).toContain("with Afora stopped");
+    expect(reply).toContain("afora doctor --fix");
     expect(reply).toContain("machine running it");
   });
 
@@ -572,7 +572,7 @@ describe("SystemAgentChatEngine operations", () => {
     mocks.readConfigFileSnapshot.mockResolvedValue({
       exists: false,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       hash: null,
       config: {},
       sourceConfig: {},
@@ -585,8 +585,8 @@ describe("SystemAgentChatEngine operations", () => {
     expect(resolveRepair).not.toHaveBeenCalled();
     expect(reply).toContain("The write was applied");
     expect(reply).toContain("post-write verification is unavailable");
-    expect(reply).toContain("openclaw.json was not found");
-    expect(reply).toContain("openclaw doctor --fix");
+    expect(reply).toContain("afora.json was not found");
+    expect(reply).toContain("afora doctor --fix");
   });
 
   it("warns when the applied write cannot be read back for verification", async () => {
@@ -598,8 +598,8 @@ describe("SystemAgentChatEngine operations", () => {
     expect(resolveRepair).not.toHaveBeenCalled();
     expect(reply).toContain("The write was applied");
     expect(reply).toContain("post-write verification is unavailable");
-    expect(reply).toContain("openclaw.json could not be read");
-    expect(reply).toContain("openclaw doctor --fix");
+    expect(reply).toContain("afora.json could not be read");
+    expect(reply).toContain("afora doctor --fix");
   });
 
   it("stays quiet when the post-write validation passes", async () => {
@@ -619,7 +619,7 @@ describe("SystemAgentChatEngine operations", () => {
           model: { primary: "claude-cli/claude-opus-4-8" },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const snapshot = configSnapshot(config);
     const inference = await createCliVerifiedBinding(config);
     const inferenceDeps = {
@@ -682,7 +682,7 @@ describe("SystemAgentChatEngine operations", () => {
           model: { primary: "claude-cli/claude-opus-4-8" },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const snapshot = configSnapshot(config);
     const inference = await createCliVerifiedBinding(config);
     const inferenceDeps = {

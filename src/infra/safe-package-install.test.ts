@@ -43,7 +43,7 @@ describe("safe npm install helpers", () => {
         npm_config_workspaces: "true",
       },
       {
-        cacheDir: "/tmp/openclaw-npm-cache",
+        cacheDir: "/tmp/afora-npm-cache",
         ignoreWorkspaces: true,
         legacyPeerDeps: true,
         packageLock: false,
@@ -57,7 +57,7 @@ describe("safe npm install helpers", () => {
     expect(env.NPM_CONFIG_IGNORE_SCRIPTS).toBe("true");
     expect(env.npm_config_audit).toBe("false");
     expect(env.npm_config_before).toBe("");
-    expect(env.npm_config_cache).toBe("/tmp/openclaw-npm-cache");
+    expect(env.npm_config_cache).toBe("/tmp/afora-npm-cache");
     expect(env.npm_config_dry_run).toBe("false");
     expect(env.npm_config_fetch_retries).toBe("5");
     expect(env.npm_config_fetch_retry_maxtimeout).toBe("120000");

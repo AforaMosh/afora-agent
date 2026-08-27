@@ -1,5 +1,5 @@
 ---
-summary: "CLI reference for `openclaw approvals` and `openclaw exec-policy`"
+summary: "CLI reference for `afora approvals` and `afora exec-policy`"
 read_when:
   - You want to edit exec approvals from the CLI
   - You need to manage allowlists on gateway or node hosts
@@ -7,26 +7,26 @@ read_when:
 title: "Approvals"
 ---
 
-# `openclaw approvals`
+# `afora approvals`
 
 Manage exec approvals for the **local host**, **gateway host**, or a **node host**. With no target flag, commands read/write the local approvals document in shared SQLite state. Use `--gateway` to target the gateway, or `--node <id|name|ip>` to target a specific node.
 
-Alias: `openclaw exec-approvals`
+Alias: `afora exec-approvals`
 
 Related: [Exec approvals](/tools/exec-approvals), [Nodes](/nodes)
 
-## `openclaw exec-policy`
+## `afora exec-policy`
 
-`openclaw exec-policy` is the **local-only** convenience command that keeps requested `tools.exec.*` config and the local host approvals document in sync in one step:
+`afora exec-policy` is the **local-only** convenience command that keeps requested `tools.exec.*` config and the local host approvals document in sync in one step:
 
 ```bash
-openclaw exec-policy show
-openclaw exec-policy show --json
+afora exec-policy show
+afora exec-policy show --json
 
-openclaw exec-policy preset yolo
-openclaw exec-policy preset cautious --json
+afora exec-policy preset yolo
+afora exec-policy preset cautious --json
 
-openclaw exec-policy set --host gateway --security full --ask off --ask-fallback full --json
+afora exec-policy set --host gateway --security full --ask off --ask-fallback full --json
 ```
 
 Presets (`yolo`, `cautious`, `deny-all`) apply `host`, `security`, `ask`, and `askFallback` together. `set` applies only the flags you pass; each accepted value is validated (`--host auto|sandbox|gateway|node`, `--security deny|allowlist|full`, `--ask off|on-miss|always`, `--ask-fallback deny|allowlist|full`).
@@ -37,22 +37,22 @@ host, and effective policy facts as one JSON object.
 Scope:
 
 - Updates the local config file and local approvals document together; does not push policy to the gateway or a node host.
-- `--host node` is rejected: node exec approvals are fetched from the node at runtime, so local `exec-policy` cannot synchronize them. Use `openclaw approvals set --node <id|name|ip>` instead.
+- `--host node` is rejected: node exec approvals are fetched from the node at runtime, so local `exec-policy` cannot synchronize them. Use `afora approvals set --node <id|name|ip>` instead.
 - `exec-policy show` marks `host=node` scopes as node-managed at runtime instead of deriving an effective policy from the local approvals document.
 
-For remote host approvals, use `openclaw approvals set --gateway` or `openclaw approvals set --node <id|name|ip>` directly.
+For remote host approvals, use `afora approvals set --gateway` or `afora approvals set --node <id|name|ip>` directly.
 
 ## Common commands
 
 ```bash
-openclaw approvals get
-openclaw approvals get --node <id|name|ip>
-openclaw approvals get --gateway
-openclaw approvals pending
-openclaw approvals resolve <id> <allow-once|allow-always|deny>
+afora approvals get
+afora approvals get --node <id|name|ip>
+afora approvals get --gateway
+afora approvals pending
+afora approvals resolve <id> <allow-once|allow-always|deny>
 ```
 
-`get` shows the effective exec policy for the target: the requested `tools.exec` policy, the host approvals-file policy, and the merged effective result. Nodes with a host-native policy, such as the Windows companion, show that policy directly instead of applying OpenClaw approvals-file policy math.
+`get` shows the effective exec policy for the target: the requested `tools.exec` policy, the host approvals-file policy, and the merged effective result. Nodes with a host-native policy, such as the Windows companion, show that policy directly instead of applying Afora approvals-file policy math.
 
 For file-backed nodes, the merged view requires a host-resolved policy snapshot. Older nodes show the effective policy as unavailable instead of assuming the Gateway's requested policy also applies on the host.
 
@@ -69,11 +69,11 @@ Precedence:
 
 ## Pending approvals
 
-List pending exec, plugin, and OpenClaw system-agent approvals from the Gateway:
+List pending exec, plugin, and Afora system-agent approvals from the Gateway:
 
 ```bash
-openclaw approvals pending
-openclaw approvals pending --json
+afora approvals pending
+afora approvals pending --json
 ```
 
 Complete enumeration and the matching operator-wide `resolve` flow use `operator.admin` because approval records otherwise retain requester/reviewer filtering. Resolution also requests the dedicated `operator.approvals` scope. The standard CLI operator grant includes both scopes; a restricted third-party client should not request admin merely to emulate this command.
@@ -85,9 +85,9 @@ If a supplied `id64_` value matches both a literal raw id and the decoded displa
 Resolve one approval by its full id:
 
 ```bash
-openclaw approvals resolve <id> allow-once
-openclaw approvals resolve <id> allow-always
-openclaw approvals resolve <id> deny --reason "Not expected during maintenance"
+afora approvals resolve <id> allow-once
+afora approvals resolve <id> allow-always
+afora approvals resolve <id> deny --reason "Not expected during maintenance"
 ```
 
 The CLI reads the unified approval record to select its kind, checks the requested decision against the record's allowed decisions, and then calls the unified resolver. A first successful decision exits `0`. Repeating the recorded decision also exits `0` and reports `already resolved (same decision)`. A conflicting decision, missing approval, expired approval, or decision unavailable for that approval kind prints a clear error and exits non-zero.
@@ -97,12 +97,12 @@ The CLI reads the unified approval record to select its kind, checks the request
 ## Replace approvals from a file
 
 ```bash
-openclaw approvals set --file ./exec-approvals.json
-openclaw approvals set --stdin <<'EOF'
+afora approvals set --file ./exec-approvals.json
+afora approvals set --stdin <<'EOF'
 { version: 1, defaults: { security: "full", ask: "off", askFallback: "full" } }
 EOF
-openclaw approvals set --node <id|name|ip> --file ./exec-approvals.json
-openclaw approvals set --gateway --file ./exec-approvals.json
+afora approvals set --node <id|name|ip> --file ./exec-approvals.json
+afora approvals set --gateway --file ./exec-approvals.json
 ```
 
 `set` accepts JSON5, not only strict JSON. Use either `--file` or `--stdin`, not both.
@@ -110,7 +110,7 @@ openclaw approvals set --gateway --file ./exec-approvals.json
 Host-native Windows nodes use their own policy shape:
 
 ```bash
-openclaw approvals set --node <id|name|ip> --stdin <<'EOF'
+afora approvals set --node <id|name|ip> --stdin <<'EOF'
 {
   defaultAction: "deny",
   rules: [{ pattern: "hostname", action: "allow" }]
@@ -125,7 +125,7 @@ The CLI reads the node's current hash first and sends it with the update, so con
 Set the host approvals defaults to `full` + `off` for a host that should never stop on exec approvals:
 
 ```bash
-openclaw approvals set --stdin <<'EOF'
+afora approvals set --stdin <<'EOF'
 {
   version: 1,
   defaults: {
@@ -137,13 +137,13 @@ openclaw approvals set --stdin <<'EOF'
 EOF
 ```
 
-For nodes that expose an OpenClaw approvals document, use the same body with `openclaw approvals set --node <id|name|ip> --stdin`. Host-native nodes require their owner-specific shape shown above.
+For nodes that expose an Afora approvals document, use the same body with `afora approvals set --node <id|name|ip> --stdin`. Host-native nodes require their owner-specific shape shown above.
 
-This changes the **host approvals document** only. To keep the requested OpenClaw policy aligned, also set:
+This changes the **host approvals document** only. To keep the requested Afora policy aligned, also set:
 
 ```bash
-openclaw config set tools.exec.host gateway
-openclaw config set tools.exec.mode full
+afora config set tools.exec.host gateway
+afora config set tools.exec.mode full
 ```
 
 `tools.exec.host=gateway` is explicit here because `host=auto` still means "sandbox when available, otherwise gateway": YOLO is about approvals, not routing. Use `gateway` (or `/exec host=gateway`) when you want host exec even with a sandbox configured.
@@ -153,24 +153,24 @@ Omitted `askFallback` defaults to `deny`. Set `askFallback: "full"` explicitly w
 Local shortcut for the same intent, on the local machine only:
 
 ```bash
-openclaw exec-policy preset yolo
+afora exec-policy preset yolo
 ```
 
 ## Allowlist helpers
 
 ```bash
-openclaw approvals allowlist add "~/Projects/**/bin/rg"
-openclaw approvals allowlist add --agent main --node <id|name|ip> "/usr/bin/uptime"
-openclaw approvals allowlist add --agent "*" "/usr/bin/uname"
+afora approvals allowlist add "~/Projects/**/bin/rg"
+afora approvals allowlist add --agent main --node <id|name|ip> "/usr/bin/uptime"
+afora approvals allowlist add --agent "*" "/usr/bin/uname"
 
-openclaw approvals allowlist remove "~/Projects/**/bin/rg"
+afora approvals allowlist remove "~/Projects/**/bin/rg"
 ```
 
 ## Common options
 
 `get`, `set`, and `allowlist add|remove` all support:
 
-- `--node <id|name|ip>` (resolves id, name, IP, or id prefix; same resolver as `openclaw nodes`)
+- `--node <id|name|ip>` (resolves id, name, IP, or id prefix; same resolver as `afora nodes`)
 - `--gateway`
 - shared node RPC options: `--url`, `--token`, `--timeout`, `--json`
 
@@ -184,8 +184,8 @@ No target flag means the local approvals row in the shared state database.
 
 - The node host must advertise `system.execApprovals.get/set` (macOS app, headless node host, or Windows companion).
 - Approvals are stored per host in
-  `$OPENCLAW_STATE_DIR/state/openclaw.sqlite#exec_approvals_config`, or
-  `~/.openclaw/state/openclaw.sqlite#exec_approvals_config` when the variable is
+  `$AFORA_STATE_DIR/state/afora.sqlite#exec_approvals_config`, or
+  `~/.afora/state/afora.sqlite#exec_approvals_config` when the variable is
   unset. The suffix identifies the singleton SQLite row.
 
 ## Related

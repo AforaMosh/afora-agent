@@ -1,12 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { OpenKeyedStoreOptions } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { OpenKeyedStoreOptions } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateSyncKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import { createPluginRuntimeMock } from "openclaw/plugin-sdk/plugin-test-runtime";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import { createPluginRuntimeMock } from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
 import { vi } from "vitest";
 import {
   base64url,
@@ -35,13 +35,13 @@ export function resetFlowStoresForTests(): void {
 }
 
 export function flowStores() {
-  const stateDir = fs.mkdtempSync(path.join(resolvePreferredOpenClawTmpDir(), "reef-flow-"));
+  const stateDir = fs.mkdtempSync(path.join(resolvePreferredAforaTmpDir(), "reef-flow-"));
   stateDirs.push(stateDir);
   const runtime = createPluginRuntimeMock();
   runtime.state.openSyncKeyedStore = <T>(options: OpenKeyedStoreOptions) =>
     createPluginStateSyncKeyedStoreForTests<T>("reef", {
       ...options,
-      env: { OPENCLAW_STATE_DIR: stateDir },
+      env: { AFORA_STATE_DIR: stateDir },
     });
   return {
     reviews: new ReviewApprovalStore(runtime),

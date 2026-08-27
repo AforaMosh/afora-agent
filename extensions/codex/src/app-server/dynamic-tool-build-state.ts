@@ -1,7 +1,7 @@
-type OpenClawCodingToolsFactory =
-  (typeof import("openclaw/plugin-sdk/agent-harness"))["createOpenClawCodingTools"];
+type AforaCodingToolsFactory =
+  (typeof import("afora-agent/plugin-sdk/agent-harness"))["createAforaCodingTools"];
 
 /** Mutable dependency seam shared by dynamic-tool construction and its behavioral tests. */
 export const dynamicToolBuildState: {
-  openClawCodingToolsFactory?: OpenClawCodingToolsFactory;
+  aforaCodingToolsFactory?: AforaCodingToolsFactory;
 } = {};

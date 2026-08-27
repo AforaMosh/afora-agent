@@ -66,8 +66,8 @@ describe("test-shell-completion script", () => {
   });
 
   it("uses --shell for check-only status instead of the detected shell", async () => {
-    const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-shell-home-"));
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-shell-state-"));
+    const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-shell-home-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-shell-state-"));
     tempDirs.push(homeDir, stateDir);
 
     const result = spawnSync(
@@ -80,7 +80,7 @@ describe("test-shell-completion script", () => {
           ...process.env,
           HOME: homeDir,
           NO_COLOR: "1",
-          OPENCLAW_STATE_DIR: stateDir,
+          AFORA_STATE_DIR: stateDir,
           SHELL: "/bin/zsh",
         },
       },

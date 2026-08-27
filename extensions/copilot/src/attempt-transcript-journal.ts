@@ -1,9 +1,9 @@
 import { isDeepStrictEqual } from "node:util";
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-harness-runtime";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   projectAgentHarnessTranscriptMessageForDisplay,
   runAgentHarnessBeforeMessageWriteHook,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   appendSessionTranscriptMessageByIdentityStrict,
   appendSessionTranscriptMessagesByIdentity,
@@ -11,8 +11,8 @@ import {
   readVisibleSessionTranscriptMessageEntries,
   type SessionTranscriptTargetParams,
   type TranscriptEntryAnchor,
-} from "openclaw/plugin-sdk/session-transcript-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/session-transcript-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { AttemptParamsLike } from "./attempt-types.js";
 
 type TranscriptMessage = Extract<AgentMessage, { role: "user" | "assistant" | "toolResult" }>;
@@ -40,7 +40,7 @@ type PersistenceReceipt = {
 type TurnTaintMetadata = { resultContentSource?: "network"; turnTainted?: true };
 
 function readTurnTaintMetadata(message: AgentMessage): TurnTaintMetadata | undefined {
-  const metadata = (message as unknown as Record<string, unknown>)["__openclaw"];
+  const metadata = (message as unknown as Record<string, unknown>)["__afora"];
   return metadata && typeof metadata === "object" && !Array.isArray(metadata)
     ? (metadata as TurnTaintMetadata)
     : undefined;
@@ -66,7 +66,7 @@ function withAssistantTurnTaint(
   return tainted
     ? ({
         ...message,
-        __openclaw: { ...readTurnTaintMetadata(message), turnTainted: true },
+        __afora: { ...readTurnTaintMetadata(message), turnTainted: true },
       } as typeof message)
     : message;
 }
@@ -201,7 +201,7 @@ export function createAttemptTranscriptJournal(params: {
       ...hooked,
       ...toolIdentity,
       ...(taintMetadata
-        ? { __openclaw: { ...readTurnTaintMetadata(hooked), ...taintMetadata } }
+        ? { __afora: { ...readTurnTaintMetadata(hooked), ...taintMetadata } }
         : {}),
       ...(idempotencyKey ? { idempotencyKey } : {}),
       ...((message as { display?: boolean }).display === false ? { display: false } : {}),

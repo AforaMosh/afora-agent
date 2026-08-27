@@ -19,7 +19,7 @@ async function runLocalShellCommand(
   return await new Promise<SandboxBackendCommandResult>((resolve, reject) => {
     const child = spawn(
       "sh",
-      ["-c", params.script, "openclaw-sandbox-fs", ...(params.args ?? [])],
+      ["-c", params.script, "afora-sandbox-fs", ...(params.args ?? [])],
       {
         stdio: ["pipe", "pipe", "pipe"],
       },
@@ -77,7 +77,7 @@ describe("sandbox fs bridge local backend e2e", () => {
   it.runIf(process.platform !== "win32")(
     "writes through backend shell commands using the pinned mutation helper",
     async () => {
-      const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-fsbridge-e2e-"));
+      const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-fsbridge-e2e-"));
       const workspacePath = path.join(stateDir, "workspace");
       await fs.mkdir(workspacePath, { recursive: true });
       const workspaceDir = await fs.realpath(workspacePath);
@@ -130,7 +130,7 @@ describe("sandbox fs bridge local backend e2e", () => {
   it.runIf(process.platform !== "win32")(
     "streams a large file through the pinned copy helper",
     async () => {
-      const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-fsbridge-copy-e2e-"));
+      const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-fsbridge-copy-e2e-"));
       const workspacePath = path.join(stateDir, "workspace");
       await fs.mkdir(workspacePath, { recursive: true });
       const workspaceDir = await fs.realpath(workspacePath);

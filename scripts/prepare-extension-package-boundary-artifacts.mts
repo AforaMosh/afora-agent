@@ -45,7 +45,7 @@ const TYPE_INPUT_EXTENSIONS = new Set([
 const VALID_MODES = new Set(["all", "package-boundary"]);
 const ROOT_BOUNDARY_TIMEOUT_MS = resolveBoundaryRootShimsTimeoutMs(process.env);
 const ROOT_SHIMS_MAX_OLD_SPACE_SIZE =
-  process.env.OPENCLAW_ROOT_SHIMS_MAX_OLD_SPACE_SIZE?.trim() || "8192";
+  process.env.AFORA_ROOT_SHIMS_MAX_OLD_SPACE_SIZE?.trim() || "8192";
 const ROOT_SHIMS_NODE_OPTIONS =
   `${process.env.NODE_OPTIONS ?? ""} --max-old-space-size=${ROOT_SHIMS_MAX_OLD_SPACE_SIZE}`.trim();
 const DEFAULT_NODE_STEP_ABORT_KILL_GRACE_MS = 1_000;
@@ -457,7 +457,7 @@ const ENTRY_SHIMS_INPUTS = [
  */
 export function resolveBoundaryEntryShimRequiredOutputs(env: NodeJS.ProcessEnv = process.env) {
   const entries =
-    env.OPENCLAW_BUILD_PRIVATE_QA === "1" ? pluginSdkEntrypoints : productionPluginSdkEntrypoints;
+    env.AFORA_BUILD_PRIVATE_QA === "1" ? pluginSdkEntrypoints : productionPluginSdkEntrypoints;
   return [
     ...listPluginSdkDeclarationOutputs(entries),
     ...entries.map((entry) => `packages/plugin-sdk/dist/src/plugin-sdk/${entry}.d.ts`),
@@ -488,11 +488,11 @@ export function parseMode(argv: string[] = process.argv.slice(2)) {
  * Reads the root boundary timeout override for long declaration and shim builds.
  */
 export function resolveBoundaryRootShimsTimeoutMs(env: NodeJS.ProcessEnv = process.env) {
-  const raw = env.OPENCLAW_PLUGIN_SDK_BOUNDARY_ROOT_SHIMS_TIMEOUT_MS?.trim();
+  const raw = env.AFORA_PLUGIN_SDK_BOUNDARY_ROOT_SHIMS_TIMEOUT_MS?.trim();
   if (!raw) {
     return 300_000;
   }
-  return parsePositiveInt(raw, "OPENCLAW_PLUGIN_SDK_BOUNDARY_ROOT_SHIMS_TIMEOUT_MS");
+  return parsePositiveInt(raw, "AFORA_PLUGIN_SDK_BOUNDARY_ROOT_SHIMS_TIMEOUT_MS");
 }
 
 function collectInputFiles(
@@ -1044,7 +1044,7 @@ async function main(argv: string[] = process.argv.slice(2)) {
         entryShimsStamp.path,
         ...resolveBoundaryEntryShimRequiredOutputs({
           ...process.env,
-          OPENCLAW_BUILD_PRIVATE_QA: "1",
+          AFORA_BUILD_PRIVATE_QA: "1",
         }),
       ],
       hashStampPath: entryShimsStamp.path,
@@ -1392,7 +1392,7 @@ async function main(argv: string[] = process.argv.slice(2)) {
         {
           env: {
             NODE_OPTIONS: ROOT_SHIMS_NODE_OPTIONS,
-            OPENCLAW_BUILD_PRIVATE_QA: "1",
+            AFORA_BUILD_PRIVATE_QA: "1",
           },
         },
       );

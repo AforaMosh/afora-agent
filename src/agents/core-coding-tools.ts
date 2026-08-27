@@ -3,7 +3,7 @@ import type { SkillSnapshot } from "../skills/types.js";
 import {
   createHostWorkspaceEditTool,
   createHostWorkspaceWriteTool,
-  createOpenClawReadTool,
+  createAforaReadTool,
   createSandboxedEditTool,
   createSandboxedReadTool,
   createSandboxedWriteTool,
@@ -140,7 +140,7 @@ export function createCoreCodingTools(options: CoreCodingToolsOptions): AnyAgent
             imageSanitization: options.imageSanitization,
             createTool: options.baseToolFactories?.createReadTool,
           })
-        : createOpenClawReadTool(
+        : createAforaReadTool(
             options.baseToolFactories?.createReadTool(options.codingRoot) ??
               createReadTool(options.codingRoot),
             {

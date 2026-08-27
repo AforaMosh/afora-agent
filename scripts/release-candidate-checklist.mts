@@ -17,7 +17,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve as resolvePath } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
   booleanFlag,
   parseFlagArgs,
@@ -74,7 +74,7 @@ type LocalCheckResult =
   | { status: "passed"; command: string; reason?: never }
   | { status: "skipped"; reason: string; command?: never };
 type PreflightTarballs = Partial<Record<"corePackageTarballs" | "dependencyTarballs", unknown>>;
-const DEFAULT_REPO = "openclaw/openclaw";
+const DEFAULT_REPO = "AforaMosh/afora-agent";
 const DEFAULT_PROVIDER = "openai";
 const DEFAULT_MODE = "both";
 const DEFAULT_NPM_DIST_TAG = "beta";
@@ -87,16 +87,16 @@ const TOOLING_ROOT = fileURLToPath(new URL("../", import.meta.url));
 const TIDECLAW_ALPHA_WORKFLOW_REF_PATTERN =
   /^tideclaw\/alpha\/[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{4}Z$/u;
 const WINDOWS_NODE_TAG_PATTERN = /^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$/u;
-const WINDOWS_NODE_REPO = "openclaw/openclaw-windows-node";
+const WINDOWS_NODE_REPO = "AforaMosh/afora-agent-windows-node";
 const WINDOWS_NODE_REQUIRED_ASSETS = [
-  "OpenClawCompanion-Setup-x64.exe",
-  "OpenClawCompanion-Setup-arm64.exe",
+  "AforaCompanion-Setup-x64.exe",
+  "AforaCompanion-Setup-arm64.exe",
 ];
 const SHA256_DIGEST_PATTERN = /^sha256:[a-f0-9]{64}$/u;
 const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/u;
 const RELEASE_CANDIDATE_STATE_VERSION = 2;
 const RELEASE_CANDIDATE_STATE_FILE = "release-candidate-state.json";
-const TRUSTED_TOOLING_SHA_ENV = "OPENCLAW_RELEASE_CANDIDATE_TRUSTED_TOOLING_SHA";
+const TRUSTED_TOOLING_SHA_ENV = "AFORA_RELEASE_CANDIDATE_TRUSTED_TOOLING_SHA";
 const RELEASE_CANDIDATE_STATE_KEYS = [
   "repo",
   "tag",
@@ -134,7 +134,7 @@ function usage() {
 
 Dispatches or consumes release validation runs, validates the prepared npm tarball,
 builds plugin publish plans, writes a green evidence bundle, then prints the exact
-OpenClaw Release Publish command only after everything is green.
+Afora Release Publish command only after everything is green.
 
 Options:
   --tag <tag>                         Planned release tag. The tag must not exist yet.
@@ -142,7 +142,7 @@ Options:
   --workflow-ref <ref>                Trusted workflow ref. Default: main; matching Tideclaw branch required for alpha.
   --repo <owner/repo>                 GitHub repo. Default: ${DEFAULT_REPO}
   --full-release-run <id>             Reuse successful Full Release Validation run.
-  --npm-preflight-run <id>            Reuse successful OpenClaw NPM Release preflight run.
+  --npm-preflight-run <id>            Reuse successful Afora NPM Release preflight run.
   --plugin-sdk-api-acknowledgement <digest>
                                       8-character digest from the Plugin SDK API diff report.
   --windows-node-tag <tag>            Exact Windows Node release tag. Required for stable.
@@ -306,7 +306,7 @@ export function parseArgs(argv: string[]) {
   }
   if (options.pluginPublishScope === "selected") {
     throw new Error(
-      "--plugin-publish-scope selected is only for plugin-only repair publishes; release candidates publish OpenClaw with --plugin-publish-scope all-publishable",
+      "--plugin-publish-scope selected is only for plugin-only repair publishes; release candidates publish Afora with --plugin-publish-scope all-publishable",
     );
   }
   if (options.pluginPublishScope === "all-publishable" && options.plugins.trim()) {
@@ -378,7 +378,7 @@ export function validateParallelsRegistryPackageArtifact(
   const packageName = packageInfo?.name;
   const packageVersion = packageInfo?.version;
   if (
-    manifest.schema !== "openclaw.plugin-publication-artifact/v1" ||
+    manifest.schema !== "afora.plugin-publication-artifact/v1" ||
     manifest.schemaVersion !== 1 ||
     manifest.targetSha !== params.targetSha ||
     typeof artifactName !== "string" ||
@@ -512,16 +512,16 @@ function updateReleaseCandidateState(
 }
 
 function githubApiTimeoutMs() {
-  const raw = process.env.OPENCLAW_RELEASE_CANDIDATE_GITHUB_API_TIMEOUT_MS;
+  const raw = process.env.AFORA_RELEASE_CANDIDATE_GITHUB_API_TIMEOUT_MS;
   if (!raw) {
     return DEFAULT_GITHUB_API_TIMEOUT_MS;
   }
   if (!/^[1-9]\d*$/u.test(raw)) {
-    throw new Error("OPENCLAW_RELEASE_CANDIDATE_GITHUB_API_TIMEOUT_MS must be a positive integer");
+    throw new Error("AFORA_RELEASE_CANDIDATE_GITHUB_API_TIMEOUT_MS must be a positive integer");
   }
   const value = Number(raw);
   if (!Number.isSafeInteger(value)) {
-    throw new Error("OPENCLAW_RELEASE_CANDIDATE_GITHUB_API_TIMEOUT_MS must be a positive integer");
+    throw new Error("AFORA_RELEASE_CANDIDATE_GITHUB_API_TIMEOUT_MS must be a positive integer");
   }
   return value;
 }
@@ -666,7 +666,7 @@ function runFromTrustedTooling(
   { targetRoot, workflowRef }: { targetRoot: string; workflowRef: string },
 ) {
   const trustedToolingSha = fetchTrustedWorkflowSha(workflowRef, targetRoot);
-  const tempRoot = mkdtempSync(join(tmpdir(), "openclaw-release-tooling-"));
+  const tempRoot = mkdtempSync(join(tmpdir(), "afora-release-tooling-"));
   const toolingRoot = join(tempRoot, "checkout");
   let worktreeAdded = false;
   try {
@@ -1423,7 +1423,7 @@ export function buildPublishCommand(
     ["full_release_validation_run_attempt", options.fullReleaseRunAttempt],
     ["npm_dist_tag", options.npmDistTag],
     ["plugin_publish_scope", options.pluginPublishScope],
-    ["publish_openclaw_npm", "true"],
+    ["publish_afora_npm", "true"],
     ["release_profile", "from-validation"],
     ["wait_for_clawhub", "false"],
   ];
@@ -1443,7 +1443,7 @@ export function buildPublishCommand(
     "gh",
     "workflow",
     "run",
-    "openclaw-release-publish.yml",
+    "afora-release-publish.yml",
     "--repo",
     options.repo,
     "--ref",
@@ -1641,11 +1641,11 @@ async function runParallelsIfNeeded(
     timeoutBin,
     dependencyTarballPaths,
     registryPackageTarballPaths,
-    process.env.OPENCLAW_PARALLELS_MACOS_SNAPSHOT_HINT?.trim() ?? "",
+    process.env.AFORA_PARALLELS_MACOS_SNAPSHOT_HINT?.trim() ?? "",
   );
   run("bash", ["-lc", command], {
     env: {
-      OPENCLAW_PARALLELS_ARTIFACT_ROOT: join(process.cwd(), ".artifacts", "parallels"),
+      AFORA_PARALLELS_ARTIFACT_ROOT: join(process.cwd(), ".artifacts", "parallels"),
     },
   });
   return {
@@ -1718,7 +1718,7 @@ async function runTelegramIfNeeded(
     sourceSha,
   });
   const runId = dispatchWorkflow(options.repo, workflowFile, options.workflowRef, {
-    package_spec: `openclaw@${options.tag.replace(/^v/u, "")}`,
+    package_spec: `afora@${options.tag.replace(/^v/u, "")}`,
     package_label: options.tag,
     ...artifactInputs,
     harness_ref: options.workflowRef,
@@ -1835,7 +1835,7 @@ async function main() {
   }
 
   if (!options.npmPreflightRunId && !options.skipDispatch) {
-    const workflowFile = "openclaw-npm-release.yml";
+    const workflowFile = "afora-npm-release.yml";
     options.npmPreflightRunId = dispatchWorkflow(options.repo, workflowFile, options.workflowRef, {
       tag: targetSha,
       preflight_only: "true",
@@ -1857,7 +1857,7 @@ async function main() {
     allowShaPinnedWorkflowRef: true,
   });
   const npmRun = await waitForSuccessfulRun(options.repo, options.npmPreflightRunId, {
-    workflowName: "OpenClaw NPM Release",
+    workflowName: "Afora NPM Release",
     workflowRef: options.workflowRef,
   });
   const npmPreflightSource = validateNpmPreflightRunSource({
@@ -1871,13 +1871,13 @@ async function main() {
   const npmArtifact = await downloadResolvedArtifact(
     options.repo,
     options.npmPreflightRunId,
-    `openclaw-npm-preflight-${options.tag}`,
-    "openclaw-npm-preflight-",
+    `afora-npm-preflight-${options.tag}`,
+    "afora-npm-preflight-",
     npmDir,
   );
   const npmArtifactName = npmArtifact.name;
   if (!Number.isInteger(npmRun.runAttempt) || npmRun.runAttempt < 1) {
-    throw new Error(`OpenClaw npm preflight run ${options.npmPreflightRunId} has invalid attempt.`);
+    throw new Error(`Afora npm preflight run ${options.npmPreflightRunId} has invalid attempt.`);
   }
   downloadArtifact(
     options.repo,

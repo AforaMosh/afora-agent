@@ -1,4 +1,4 @@
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord } from "@afora/normalization-core/record-coerce";
 import { canonicalizePath } from "../../agents/utils/paths.js";
 import {
   executeSqliteQuerySync,
@@ -6,12 +6,12 @@ import {
   getNodeSqliteKysely,
 } from "../../infra/kysely-sync.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
-import type { DB as OpenClawStateDatabase } from "../../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateDatabase } from "../../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../../state/afora-state-db.js";
 import { normalizeSkillIndexName } from "../discovery/skill-index.js";
 import { bumpSkillsSnapshotVersion } from "../runtime/refresh-state.js";
 
@@ -21,7 +21,7 @@ let loggedArchivedSkillReadFailure = false;
 
 type SkillLifecycleState = "active" | "archived" | "stale";
 type CuratorDatabase = Pick<
-  OpenClawStateDatabase,
+  AforaStateDatabase,
   "skill_curator_state" | "skill_lifecycle" | "skill_usage"
 >;
 type SkillOverlapCandidate = { left: string; right: string; score: number };
@@ -46,10 +46,10 @@ export type SkillCuratorStatus = {
   overlaps: SkillOverlapCandidate[];
 };
 
-type CuratorOptions = OpenClawStateDatabaseOptions & { nowMs?: number };
+type CuratorOptions = AforaStateDatabaseOptions & { nowMs?: number };
 
-function curatorDb(options: OpenClawStateDatabaseOptions = {}) {
-  const database = openOpenClawStateDatabase(options);
+function curatorDb(options: AforaStateDatabaseOptions = {}) {
+  const database = openAforaStateDatabase(options);
   return { database, kysely: getNodeSqliteKysely<CuratorDatabase>(database.db) };
 }
 
@@ -92,7 +92,7 @@ function parseOverlapCandidates(value: string | null | undefined): SkillOverlapC
 }
 
 export function getSkillCuratorStatus(
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): SkillCuratorStatus {
   const { database, kysely } = curatorDb(options);
   const state = executeSqliteQueryTakeFirstSync(
@@ -141,9 +141,9 @@ export function getSkillCuratorStatus(
   };
 }
 
-function updateLifecyclePin(skill: string, pinned: boolean, options: OpenClawStateDatabaseOptions) {
+function updateLifecyclePin(skill: string, pinned: boolean, options: AforaStateDatabaseOptions) {
   const skillKey = canonicalSkillKey(skill);
-  const firstSkillFile = runOpenClawStateWriteTransaction(({ db }) => {
+  const firstSkillFile = runAforaStateWriteTransaction(({ db }) => {
     const kysely = getNodeSqliteKysely<CuratorDatabase>(db);
     const first = executeSqliteQueryTakeFirstSync(
       db,
@@ -171,18 +171,18 @@ function updateLifecyclePin(skill: string, pinned: boolean, options: OpenClawSta
   return getSkillCuratorStatus(options).skills.find((entry) => entry.skillFile === firstSkillFile)!;
 }
 
-export function pinCuratedSkill(skill: string, options: OpenClawStateDatabaseOptions = {}) {
+export function pinCuratedSkill(skill: string, options: AforaStateDatabaseOptions = {}) {
   return updateLifecyclePin(skill, true, options);
 }
 
-export function unpinCuratedSkill(skill: string, options: OpenClawStateDatabaseOptions = {}) {
+export function unpinCuratedSkill(skill: string, options: AforaStateDatabaseOptions = {}) {
   return updateLifecyclePin(skill, false, options);
 }
 
 export function restoreCuratedSkill(skill: string, options: CuratorOptions = {}) {
   const skillKey = canonicalSkillKey(skill);
   const nowMs = options.nowMs ?? Date.now();
-  const firstSkillFile = runOpenClawStateWriteTransaction(({ db }) => {
+  const firstSkillFile = runAforaStateWriteTransaction(({ db }) => {
     const kysely = getNodeSqliteKysely<CuratorDatabase>(db);
     const first = executeSqliteQueryTakeFirstSync(
       db,
@@ -214,7 +214,7 @@ export function restoreCuratedSkill(skill: string, options: CuratorOptions = {})
 }
 
 export function getArchivedSkillFiles(
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): ReadonlySet<string> {
   try {
     const { database, kysely } = curatorDb(options);
@@ -241,12 +241,12 @@ export function getArchivedSkillFiles(
 /** Clears age-based state after the collection model has made a content decision. */
 export function clearCuratedSkillLifecycle(
   skillFiles: readonly string[],
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): void {
   if (skillFiles.length === 0) {
     return;
   }
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     const kysely = getNodeSqliteKysely<CuratorDatabase>(db);
     executeSqliteQuerySync(
       db,

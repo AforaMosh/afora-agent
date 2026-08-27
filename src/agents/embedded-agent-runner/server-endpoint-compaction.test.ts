@@ -1,14 +1,14 @@
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
-import { SessionManager } from "openclaw/plugin-sdk/agent-sessions";
-import type { Model } from "openclaw/plugin-sdk/llm";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
+import { SessionManager } from "afora-agent/plugin-sdk/agent-sessions";
+import type { Model } from "afora-agent/plugin-sdk/llm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { requestPreparedCompactionMock } = vi.hoisted(() => ({
   requestPreparedCompactionMock: vi.fn(),
 }));
 
-vi.mock("@openclaw/ai/transports", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@openclaw/ai/transports")>()),
+vi.mock("@afora/ai/transports", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@afora/ai/transports")>()),
   requestPreparedOpenAIResponsesCompaction: requestPreparedCompactionMock,
 }));
 

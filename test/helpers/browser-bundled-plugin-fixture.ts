@@ -57,11 +57,11 @@ const BROWSER_FIXTURE_ENTRY = `module.exports = {
 
 /** Create a temporary bundled browser plugin fixture and cleanup callback. */
 export function createBundledBrowserPluginFixture(): { rootDir: string; cleanup: () => void } {
-  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-browser-bundled-"));
+  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-browser-bundled-"));
   const pluginDir = path.join(rootDir, "browser");
   fs.mkdirSync(pluginDir, { recursive: true });
   fs.writeFileSync(
-    path.join(pluginDir, "openclaw.plugin.json"),
+    path.join(pluginDir, "afora.plugin.json"),
     JSON.stringify(BROWSER_FIXTURE_MANIFEST, null, 2),
     "utf8",
   );

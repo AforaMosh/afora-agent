@@ -32,7 +32,7 @@ describe("diagnostic stability bundles", () => {
   }
 
   beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-stability-bundle-"));
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-stability-bundle-"));
     resetStabilityBundleTestState();
   });
 

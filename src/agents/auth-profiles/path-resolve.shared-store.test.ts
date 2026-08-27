@@ -2,14 +2,14 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import { writeConfigMachineState } from "../../state/config-machine-state.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../../state/openclaw-state-db.paths.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../../state/afora-state-db.paths.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 function makeStateEnv(): NodeJS.ProcessEnv {
-  const stateDir = tempDirs.make("openclaw-shared-auth-store-");
-  return { ...process.env, OPENCLAW_STATE_DIR: stateDir, OPENCLAW_AGENT_DIR: undefined };
+  const stateDir = tempDirs.make("afora-shared-auth-store-");
+  return { ...process.env, AFORA_STATE_DIR: stateDir, AFORA_AGENT_DIR: undefined };
 }
 
 describe("shared auth store path resolution", () => {
@@ -18,7 +18,7 @@ describe("shared auth store path resolution", () => {
   });
 
   afterEach(() => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
   });
 
   it("keeps the absent ownership record pinned to the shipped legacy-main path", async () => {
@@ -27,16 +27,16 @@ describe("shared auth store path resolution", () => {
     const { resolveSharedMainAuthAgentDir } = await import("./shared-main-dir.js");
     const legacyDir = resolveSharedMainAuthAgentDir(env);
 
-    expect(resolveSharedAuthStorePath(env)).toBe(path.join(legacyDir, "openclaw-agent.sqlite"));
+    expect(resolveSharedAuthStorePath(env)).toBe(path.join(legacyDir, "afora-agent.sqlite"));
 
     writeConfigMachineState("auth.sharedStore", { location: "state-db" }, { env });
     const aliasEnv = {
       ...env,
-      OPENCLAW_STATE_DIR: path.join(env.OPENCLAW_STATE_DIR ?? "", "."),
+      AFORA_STATE_DIR: path.join(env.AFORA_STATE_DIR ?? "", "."),
     };
 
     expect(resolveSharedAuthStorePath(aliasEnv)).toBe(
-      path.join(legacyDir, "openclaw-agent.sqlite"),
+      path.join(legacyDir, "afora-agent.sqlite"),
     );
   });
 
@@ -47,7 +47,7 @@ describe("shared auth store path resolution", () => {
       await import("./path-resolve.js");
 
     expect(resolveSharedAuthStoreOwnership(env)).toEqual({ location: "state-db" });
-    expect(resolveSharedAuthStorePath(env)).toBe(resolveOpenClawStateSqlitePath(env));
+    expect(resolveSharedAuthStorePath(env)).toBe(resolveAforaStateSqlitePath(env));
   });
 
   it("caches ownership independently for each canonical state root", async () => {
@@ -66,7 +66,7 @@ describe("shared auth store path resolution", () => {
       expect.objectContaining({
         name: "InvalidSharedAuthStoreOwnershipError",
         code: "INVALID_SHARED_AUTH_STORE_OWNERSHIP",
-        action: "openclaw doctor --fix",
+        action: "afora doctor --fix",
       }),
     );
     expect(resolveSharedAuthStoreOwnership(firstEnv)).toEqual({ location: "legacy-main" });

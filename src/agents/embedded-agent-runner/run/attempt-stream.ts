@@ -1,7 +1,7 @@
 /**
  * Installs replay, tool-call, timeout, and diagnostic guards around an embedded stream.
  */
-import type { OpenAIResponsesCompactionRejection } from "@openclaw/ai/transports";
+import type { OpenAIResponsesCompactionRejection } from "@afora/ai/transports";
 import { resolveDiagnosticModelContentCapturePolicy } from "../../../infra/diagnostic-llm-content.js";
 import type { DiagnosticTraceContext } from "../../../infra/diagnostic-trace-context.js";
 import type { DiagnosticEmbeddedRunOwner } from "../../../logging/diagnostic-run-activity.js";

@@ -1,12 +1,12 @@
 // Telegram provider-owned authorization for message mutations in forum topics.
-import { normalizeAccountId, normalizeOptionalAccountId } from "openclaw/plugin-sdk/account-core";
+import { normalizeAccountId, normalizeOptionalAccountId } from "afora-agent/plugin-sdk/account-core";
 import type {
   ChannelMessageActionContext,
   ChannelThreadingToolContext,
-} from "openclaw/plugin-sdk/channel-contract";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { parseStrictPositiveInteger } from "openclaw/plugin-sdk/number-runtime";
-import { resolveStorePath } from "openclaw/plugin-sdk/session-store-runtime";
+} from "afora-agent/plugin-sdk/channel-contract";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { parseStrictPositiveInteger } from "afora-agent/plugin-sdk/number-runtime";
+import { resolveStorePath } from "afora-agent/plugin-sdk/session-store-runtime";
 import { resolveTelegramAccountOwnerAgentId } from "./account-owner.js";
 import { resolveDefaultTelegramAccountId } from "./accounts.js";
 import { resolveTelegramMessageCacheScope } from "./message-cache-persistence.js";
@@ -69,7 +69,7 @@ function resolveCurrentTelegramConversation(
 export async function resolveTelegramMessageMutationChatId(params: {
   chatId: string | number;
   messageId: number;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   context?: TelegramMessageMutationContext;
 }): Promise<string | number> {

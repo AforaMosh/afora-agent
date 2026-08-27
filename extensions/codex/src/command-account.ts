@@ -8,12 +8,12 @@ import {
   type AuthProfileCredential,
   type AuthProfileFailureReason,
   type AuthProfileStore,
-} from "openclaw/plugin-sdk/agent-runtime";
-import type { PluginCommandContext } from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/agent-runtime";
+import type { PluginCommandContext } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   normalizeOptionalString,
   normalizeUniqueStringEntries,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { CODEX_CONTROL_METHODS, type CodexControlMethod } from "./app-server/capabilities.js";
 import { isJsonObject, type JsonValue } from "./app-server/protocol.js";
 import {

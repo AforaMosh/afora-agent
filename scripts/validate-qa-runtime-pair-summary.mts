@@ -4,9 +4,9 @@
 import fs from "node:fs";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 
-const RUNTIME_IDS = ["openclaw", "codex"];
+const RUNTIME_IDS = ["afora", "codex"];
 const HARD_RUNTIME_ERROR_CLASSES = new Set([
   "missing-api-key",
   "failover",
@@ -117,26 +117,26 @@ function requireRuntimePairScenario(scenario: unknown, index: number) {
   if (!isRecord(parity) || !isRecord(parity.cells)) {
     throw new Error(`${label} is missing runtimeParity cells`);
   }
-  const openclaw = parity.cells.openclaw;
+  const afora = parity.cells.afora;
   const codex = parity.cells.codex;
-  if (!isRecord(openclaw) || !isRecord(codex)) {
+  if (!isRecord(afora) || !isRecord(codex)) {
     throw new Error(`${label} is missing a canonical runtime cell`);
   }
-  if (openclaw.runtime !== "openclaw" || codex.runtime !== "codex") {
+  if (afora.runtime !== "afora" || codex.runtime !== "codex") {
     throw new Error(`${label} has mismatched canonical runtime cells`);
   }
 
   if (scenario.status === "pass") {
     const hasTwoPassingCells =
-      hasPassingRuntimeCellStatus(openclaw) && hasPassingRuntimeCellStatus(codex);
+      hasPassingRuntimeCellStatus(afora) && hasPassingRuntimeCellStatus(codex);
     const hasAdvisoryCodexGap =
       parity.drift === "structural" &&
-      hasPassingRuntimeCellStatus(openclaw) &&
+      hasPassingRuntimeCellStatus(afora) &&
       isExplicitCodexGap(codex);
     if (
       parity.drift === "failure-mode" ||
       (!hasTwoPassingCells && !hasAdvisoryCodexGap) ||
-      !isPassableCell(openclaw) ||
+      !isPassableCell(afora) ||
       !isPassableCell(codex)
     ) {
       throw new Error(`${label} reports pass without two passing, passable runtime cells`);
@@ -148,10 +148,10 @@ function requireRuntimePairScenario(scenario: unknown, index: number) {
   // before the trusted classifier learned to keep the paired result advisory.
   if (
     scenario.status === "skip" &&
-    openclaw.status === "pass" &&
+    afora.status === "pass" &&
     codex.status === "skip" &&
     isExplicitCodexGap(codex) &&
-    isPassableCell(openclaw) &&
+    isPassableCell(afora) &&
     isPassableCell(codex)
   ) {
     return true;
@@ -176,7 +176,7 @@ export function validateQaRuntimePairSummary(
     throw new Error("runtime-pair summary is missing run or scenario evidence");
   }
   if (!requireCanonicalRuntimePair(summary.run.runtimePair)) {
-    throw new Error("runtime-pair summary must compare openclaw and codex in canonical order");
+    throw new Error("runtime-pair summary must compare afora and codex in canonical order");
   }
   if (summary.scenarios.length === 0) {
     throw new Error("runtime-pair summary contains no scenarios");
@@ -290,8 +290,8 @@ export function validateQaRuntimePairReport(
         scenario.status !== expectedStatus ||
         scenario.drift !== source.runtimeParity.drift ||
         scenario.driftDetails !== source.runtimeParity.driftDetails ||
-        scenario.openclawStatus !==
-          projectedReportCellStatus(source.runtimeParity.cells.openclaw) ||
+        scenario.aforaStatus !==
+          projectedReportCellStatus(source.runtimeParity.cells.afora) ||
         scenario.codexStatus !== projectedReportCellStatus(source.runtimeParity.cells.codex)
       );
     })
@@ -313,7 +313,7 @@ export function validateQaRuntimePairReport(
   }
   if (
     typeof reportMarkdown !== "string" ||
-    !reportMarkdown.startsWith("# OpenClaw Runtime Parity Report") ||
+    !reportMarkdown.startsWith("# Afora Runtime Parity Report") ||
     !reportMarkdown.includes(`- Verdict: ${counts.skipped === 0 ? "pass" : "fail"}`) ||
     scenarios.some((scenario) => {
       const heading = `\n### ${scenario.name}\n`;
@@ -331,7 +331,7 @@ export function validateQaRuntimePairReport(
         !sectionLines.has(`- drift: ${scenario.runtimeParity.drift}`) ||
         ![...sectionLines].some((line) =>
           line.startsWith(
-            `- openclaw: ${projectedReportCellStatus(scenario.runtimeParity.cells.openclaw)} `,
+            `- afora: ${projectedReportCellStatus(scenario.runtimeParity.cells.afora)} `,
           ),
         ) ||
         ![...sectionLines].some((line) =>
@@ -421,7 +421,7 @@ type RuntimePairScenario = {
     drift: unknown;
     driftDetails?: unknown;
     cells: {
-      openclaw: Record<string, unknown>;
+      afora: Record<string, unknown>;
       codex: Record<string, unknown>;
     };
   };
@@ -432,7 +432,7 @@ function isRuntimePairScenario(value: unknown): value is RuntimePairScenario {
     return false;
   }
   const cells = value.runtimeParity.cells;
-  return isRecord(cells) && isRecord(cells.openclaw) && isRecord(cells.codex);
+  return isRecord(cells) && isRecord(cells.afora) && isRecord(cells.codex);
 }
 
 async function main() {

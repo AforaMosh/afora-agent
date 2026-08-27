@@ -1,7 +1,7 @@
 /**
  * Sanitizes historical embedded-agent message images and empty content blocks.
  */
-import { replaceCompactionReplayOwnerContent } from "@openclaw/ai/transports";
+import { replaceCompactionReplayOwnerContent } from "@afora/ai/transports";
 import type { ImageSanitizationLimits } from "../image-sanitization.js";
 import type { AgentMessage, AgentToolResult } from "../runtime/index.js";
 import type { ToolCallIdMode } from "../tool-call-id.js";

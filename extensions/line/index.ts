@@ -1,14 +1,14 @@
-// Line plugin entrypoint registers its OpenClaw integration.
+// Line plugin entrypoint registers its Afora integration.
 import {
   defineBundledChannelEntry,
-  type OpenClawPluginCommandDefinition,
-  type OpenClawPluginApi,
-} from "openclaw/plugin-sdk/channel-entry-contract";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+  type AforaPluginCommandDefinition,
+  type AforaPluginApi,
+} from "afora-agent/plugin-sdk/channel-entry-contract";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 
-type RegisteredLineCardCommand = OpenClawPluginCommandDefinition;
+type RegisteredLineCardCommand = AforaPluginCommandDefinition;
 
-function createLineCardCommandLoader(api: OpenClawPluginApi) {
+function createLineCardCommandLoader(api: AforaPluginApi) {
   return createLazyRuntimeModule<RegisteredLineCardCommand>(async () => {
     let registered: RegisteredLineCardCommand | null = null;
     const { registerLineCardCommand } = await import("./src/card-command.js");

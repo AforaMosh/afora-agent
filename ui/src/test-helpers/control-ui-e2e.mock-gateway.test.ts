@@ -63,9 +63,9 @@ describe("mock gateway stateful config", () => {
 
       const controls = (
         window as Window & {
-          openclawControlUiE2eGateway?: { setOnline: (online: boolean) => void };
+          aforaControlUiE2eGateway?: { setOnline: (online: boolean) => void };
         }
-      ).openclawControlUiE2eGateway;
+      ).aforaControlUiE2eGateway;
       expect(controls).toBeDefined();
       controls?.setOnline(false);
 
@@ -216,7 +216,7 @@ describe("mock gateway stateful config", () => {
     });
     window.sessionStorage.clear();
     window.sessionStorage.setItem(
-      "openclaw.control-ui-e2e.configState",
+      "afora.control-ui-e2e.configState",
       JSON.stringify({ raw, revision: 2 }),
     );
     // oxlint-disable-next-line typescript/no-implied-eval -- Executes the generated init script standalone, proving it captures no module closures.
@@ -345,11 +345,11 @@ describe("mock gateway stateful sessions", () => {
 
     const gateway = (
       window as unknown as {
-        openclawControlUiE2eGateway?: {
+        aforaControlUiE2eGateway?: {
           resolveDeferred: (method: string, payload?: unknown) => void;
         };
       }
-    ).openclawControlUiE2eGateway;
+    ).aforaControlUiE2eGateway;
     if (!gateway) {
       throw new Error("Mock Gateway was not installed");
     }

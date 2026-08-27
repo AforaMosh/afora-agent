@@ -1,12 +1,12 @@
 ---
-summary: "Use Qianfan's unified API to access many models in OpenClaw"
+summary: "Use Qianfan's unified API to access many models in Afora"
 read_when:
   - You want a single API key for many LLMs
   - You need Baidu Qianfan setup guidance
 title: "Qianfan"
 ---
 
-Qianfan is Baidu's MaaS platform: a unified, OpenAI-compatible API that routes requests to many models behind a single endpoint and API key. OpenClaw ships it as the official external plugin `@openclaw/qianfan-provider`.
+Qianfan is Baidu's MaaS platform: a unified, OpenAI-compatible API that routes requests to many models behind a single endpoint and API key. Afora ships it as the official external plugin `@afora/qianfan-provider`.
 
 | Property      | Value                                    |
 | ------------- | ---------------------------------------- |
@@ -21,8 +21,8 @@ Qianfan is Baidu's MaaS platform: a unified, OpenAI-compatible API that routes r
 Install the official plugin, then restart Gateway:
 
 ```bash
-openclaw plugins install @openclaw/qianfan-provider
-openclaw gateway restart
+afora plugins install @afora/qianfan-provider
+afora gateway restart
 ```
 
 ## Getting started
@@ -36,7 +36,7 @@ openclaw gateway restart
   </Step>
   <Step title="Run onboarding">
     ```bash
-    openclaw onboard --auth-choice qianfan-api-key
+    afora onboard --auth-choice qianfan-api-key
     ```
 
     Non-interactive runs read the key from `--qianfan-api-key <key>` or
@@ -47,7 +47,7 @@ openclaw gateway restart
   </Step>
   <Step title="Verify the model is available">
     ```bash
-    openclaw models list --provider qianfan
+    afora models list --provider qianfan
     ```
   </Step>
 </Steps>
@@ -134,7 +134,7 @@ Model refs use the `qianfan/` prefix (for example `qianfan/deepseek-v4-pro`).
     Choosing providers, model refs, and failover behavior.
   </Card>
   <Card title="Configuration reference" href="/gateway/configuration-reference" icon="gear">
-    Full OpenClaw configuration reference.
+    Full Afora configuration reference.
   </Card>
   <Card title="Agent setup" href="/concepts/agent" icon="robot">
     Configuring agent defaults and model assignments.

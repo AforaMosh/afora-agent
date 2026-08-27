@@ -8,7 +8,7 @@ import {
 import { ConnectErrorDetailCodes } from "../../packages/gateway-protocol/src/connect-error-details.js";
 import { GATEWAY_SERVER_CAPS } from "../../packages/gateway-protocol/src/schema/frames.js";
 import { WORKER_BUNDLE_PREWARM_VERSION } from "../../packages/gateway-protocol/src/schema/worker-admission.js";
-import { getRuntimeConfig, type OpenClawConfig } from "../config/config.js";
+import { getRuntimeConfig, type AforaConfig } from "../config/config.js";
 import { startGatewayClientWhenEventLoopReady } from "../gateway/client-start-readiness.js";
 import { GatewayClientRequestError, type GatewayReconnectPausedInfo } from "../gateway/client.js";
 import { resolveGatewayCredentialsWithSecretInputs } from "../gateway/credentials-secret-inputs.js";
@@ -46,7 +46,7 @@ type NodeHostRunOptions = {
   preferGatewayBootstrapToken?: boolean;
   /** Stop cleanly after the first authenticated hello (used before service install). */
   stopAfterFirstConnect?: boolean;
-  /** Optional WebSocket context path (e.g. "/openclaw-gw"). */
+  /** Optional WebSocket context path (e.g. "/afora-gw"). */
   gatewayContextPath?: string;
   nodeId?: string;
   displayName?: string;
@@ -194,7 +194,7 @@ type NodeOptionalPublicationState = {
 };
 
 async function resolveNodeHostGatewayCredentials(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
 }): Promise<{ token?: string; password?: string }> {
   const mode = params.config.gateway?.mode === "remote" ? "remote" : "local";
@@ -209,7 +209,7 @@ async function resolveNodeHostGatewayCredentials(params: {
   });
 }
 
-function buildNodeHostLocalAuthConfig(config: OpenClawConfig): OpenClawConfig {
+function buildNodeHostLocalAuthConfig(config: AforaConfig): AforaConfig {
   if (!config.gateway?.remote?.token && !config.gateway?.remote?.password) {
     return config;
   }

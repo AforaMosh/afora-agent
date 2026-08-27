@@ -13,7 +13,7 @@ import { listManifestInstalledChannelIds } from "./channel-setup/discovery.js";
 const tempDirs: string[] = [];
 
 function makeTempDir() {
-  return makeTrackedTempDir("openclaw-command-cold-imports", tempDirs);
+  return makeTrackedTempDir("afora-command-cold-imports", tempDirs);
 }
 
 afterEach(() => {

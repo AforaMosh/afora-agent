@@ -1,5 +1,5 @@
 // Memory Core tests cover manager embedding policy plugin behavior.
-import { sleepWithAbort } from "openclaw/plugin-sdk/runtime-env";
+import { sleepWithAbort } from "afora-agent/plugin-sdk/runtime-env";
 import { describe, expect, it, vi } from "vitest";
 import {
   buildMemoryEmbeddingBatches,

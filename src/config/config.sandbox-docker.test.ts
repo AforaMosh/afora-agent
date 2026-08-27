@@ -68,7 +68,7 @@ describe("sandbox docker config", () => {
         defaults: {
           sandbox: {
             docker: {
-              binds: ["D:/data/openclaw/src:/src:ro", "D:\\data\\openclaw\\output:/output:rw"],
+              binds: ["D:/data/afora/src:/src:ro", "D:\\data\\afora\\output:/output:rw"],
             },
           },
         },
@@ -77,8 +77,8 @@ describe("sandbox docker config", () => {
     expect(res.ok).toBe(true);
     if (res.ok) {
       expect(res.config.agents?.defaults?.sandbox?.docker?.binds).toEqual([
-        "D:/data/openclaw/src:/src:ro",
-        "D:\\data\\openclaw\\output:/output:rw",
+        "D:/data/afora/src:/src:ro",
+        "D:\\data\\afora\\output:/output:rw",
       ]);
     }
   });
@@ -257,7 +257,7 @@ describe("sandbox browser binds config", () => {
             browser: {
               binds: [
                 "/home/user/.chrome-profile:/data/chrome:rw",
-                "D:/data/openclaw/chrome:/data/chrome-windows:rw",
+                "D:/data/afora/chrome:/data/chrome-windows:rw",
               ],
             },
           },
@@ -268,7 +268,7 @@ describe("sandbox browser binds config", () => {
     if (res.ok) {
       expect(res.config.agents?.defaults?.sandbox?.browser?.binds).toEqual([
         "/home/user/.chrome-profile:/data/chrome:rw",
-        "D:/data/openclaw/chrome:/data/chrome-windows:rw",
+        "D:/data/afora/chrome:/data/chrome-windows:rw",
       ]);
     }
   });
@@ -357,16 +357,16 @@ describe("sandbox browser binds config", () => {
       globalBrowser: {},
       agentBrowser: {},
     });
-    expect(resolved.network).toBe("openclaw-sandbox-browser");
+    expect(resolved.network).toBe("afora-sandbox-browser");
   });
 
   it("prefers agent browser network over global browser network", () => {
     const resolved = resolveSandboxBrowserConfig({
       scope: "agent",
-      globalBrowser: { network: "openclaw-sandbox-browser-global" },
-      agentBrowser: { network: "openclaw-sandbox-browser-agent" },
+      globalBrowser: { network: "afora-sandbox-browser-global" },
+      agentBrowser: { network: "afora-sandbox-browser-agent" },
     });
-    expect(resolved.network).toBe("openclaw-sandbox-browser-agent");
+    expect(resolved.network).toBe("afora-sandbox-browser-agent");
   });
 
   it("merges cdpSourceRange with agent override", () => {

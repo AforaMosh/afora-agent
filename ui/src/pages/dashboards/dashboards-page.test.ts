@@ -90,7 +90,7 @@ describe("DashboardsPage", () => {
       },
       agents: { state: { agentsList: null } },
     } as unknown as ApplicationContext;
-    const element = document.createElement("openclaw-dashboards-page") as DashboardsPageElement;
+    const element = document.createElement("afora-dashboards-page") as DashboardsPageElement;
     element.routeData = routeData(row("agent:main:before", "Before"));
     const provider = createApplicationContextProvider(context);
     provider.append(element);

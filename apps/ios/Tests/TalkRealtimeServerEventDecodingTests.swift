@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 struct TalkRealtimeServerEventDecodingTests {
     @Test func `decodes frameless realtime transcript and turn events`() throws {

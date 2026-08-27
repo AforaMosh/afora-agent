@@ -8,7 +8,7 @@ describe("prepareCliBundleMcpConfig codex", () => {
       enabled: false,
       mode: "codex-config-overrides",
       backend: { command: "codex", args: ["exec"] },
-      workspaceDir: "/tmp/openclaw-cli-codex-web-search-disabled",
+      workspaceDir: "/tmp/afora-cli-codex-web-search-disabled",
       toolOverrides: { webSearch: false },
     });
 
@@ -21,7 +21,7 @@ describe("prepareCliBundleMcpConfig codex", () => {
       enabled: true,
       mode: "codex-config-overrides",
       backend: { command: "codex", args: ["exec"] },
-      workspaceDir: "/tmp/openclaw-bundle-mcp-codex-deny",
+      workspaceDir: "/tmp/afora-bundle-mcp-codex-deny",
       config: {
         plugins: { enabled: false },
         mcp: {
@@ -48,17 +48,17 @@ describe("prepareCliBundleMcpConfig codex", () => {
         args: ["exec", "--json"],
         resumeArgs: ["exec", "resume", "{sessionId}"],
       },
-      workspaceDir: "/tmp/openclaw-bundle-mcp-codex",
+      workspaceDir: "/tmp/afora-bundle-mcp-codex",
       config: { plugins: { enabled: false } },
       additionalConfig: {
         mcpServers: {
-          openclaw: {
+          afora: {
             type: "http",
             url: "http://127.0.0.1:23119/mcp",
             headers: {
-              Authorization: "Bearer ${OPENCLAW_MCP_TOKEN}",
-              "x-session-key": "${OPENCLAW_MCP_SESSION_KEY}",
-              "x-openclaw-cli-capture-key": "${OPENCLAW_MCP_CLI_CAPTURE_KEY}",
+              Authorization: "Bearer ${AFORA_MCP_TOKEN}",
+              "x-session-key": "${AFORA_MCP_SESSION_KEY}",
+              "x-afora-cli-capture-key": "${AFORA_MCP_CLI_CAPTURE_KEY}",
             },
           },
         },
@@ -71,14 +71,14 @@ describe("prepareCliBundleMcpConfig codex", () => {
       "exec",
       "--json",
       "-c",
-      'mcp_servers={ openclaw = { url = "http://127.0.0.1:23119/mcp", default_tools_approval_mode = "approve", bearer_token_env_var = "OPENCLAW_MCP_TOKEN", env_http_headers = { x-session-key = "OPENCLAW_MCP_SESSION_KEY", x-openclaw-cli-capture-key = "OPENCLAW_MCP_CLI_CAPTURE_KEY" } } }',
+      'mcp_servers={ afora = { url = "http://127.0.0.1:23119/mcp", default_tools_approval_mode = "approve", bearer_token_env_var = "AFORA_MCP_TOKEN", env_http_headers = { x-session-key = "AFORA_MCP_SESSION_KEY", x-afora-cli-capture-key = "AFORA_MCP_CLI_CAPTURE_KEY" } } }',
     ]);
     expect(prepared.backend.resumeArgs).toEqual([
       "exec",
       "resume",
       "{sessionId}",
       "-c",
-      'mcp_servers={ openclaw = { url = "http://127.0.0.1:23119/mcp", default_tools_approval_mode = "approve", bearer_token_env_var = "OPENCLAW_MCP_TOKEN", env_http_headers = { x-session-key = "OPENCLAW_MCP_SESSION_KEY", x-openclaw-cli-capture-key = "OPENCLAW_MCP_CLI_CAPTURE_KEY" } } }',
+      'mcp_servers={ afora = { url = "http://127.0.0.1:23119/mcp", default_tools_approval_mode = "approve", bearer_token_env_var = "AFORA_MCP_TOKEN", env_http_headers = { x-session-key = "AFORA_MCP_SESSION_KEY", x-afora-cli-capture-key = "AFORA_MCP_CLI_CAPTURE_KEY" } } }',
     ]);
     expect(prepared.cleanup).toBeUndefined();
   });

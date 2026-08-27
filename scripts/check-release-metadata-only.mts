@@ -3,18 +3,18 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { stableStringify } from "../packages/normalization-core/src/stable-stringify.ts";
 import { RELEASE_METADATA_PATHS } from "./changed-lanes.mts";
 
 const DEFAULT_GIT_TIMEOUT_MS = 60_000;
 const MAX_GIT_TIMEOUT_MS = 10 * 60_000;
-const GIT_TIMEOUT_ENV = "OPENCLAW_RELEASE_METADATA_GIT_TIMEOUT_MS";
+const GIT_TIMEOUT_ENV = "AFORA_RELEASE_METADATA_GIT_TIMEOUT_MS";
 
 const VERSION_ONLY_TEXT_PATHS = new Set([
   "apps/android/Config/Version.properties",
   "apps/android/version.json",
-  "apps/macos/Sources/OpenClaw/Resources/Info.plist",
+  "apps/macos/Sources/Afora/Resources/Info.plist",
 ]);
 
 function normalizePath(input: string) {
@@ -156,8 +156,8 @@ function stripPackageVersion(raw: string) {
 
 function normalizeVersionText(raw: string) {
   return raw
-    .replace(/\b20\d{2}\.\d{1,2}\.\d{1,2}(?:-beta\.\d+|-\d+)?\b/gu, "<OPENCLAW_VERSION>")
-    .replace(/\b20\d{6}(?:\d{2})?\b/gu, "<OPENCLAW_BUILD>");
+    .replace(/\b20\d{2}\.\d{1,2}\.\d{1,2}(?:-beta\.\d+|-\d+)?\b/gu, "<AFORA_VERSION>")
+    .replace(/\b20\d{6}(?:\d{2})?\b/gu, "<AFORA_BUILD>");
 }
 
 function fail(message: string) {

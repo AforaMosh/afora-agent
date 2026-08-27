@@ -130,7 +130,7 @@ extension RootTabsSourceGuardTests {
         #expect(controllerSource.contains("await self.tcpReachabilityProbe("))
         #expect(controllerSource.contains("Check Tailscale or LAN."))
         #expect(actionsSource.contains("Tailscale is off on this device. Turn it on, then try again."))
-        #expect(actionsSource.contains("Run /pair approve in your OpenClaw chat"))
+        #expect(actionsSource.contains("Run /pair approve in your Afora chat"))
         #expect(settingsSource.contains("self.resetOnboarding()"))
         #expect(settingsSource.contains(".onChange(of: self.onboardingRequestID)"))
         #expect(settingsSource.contains("self.syncAfterOnboardingReset()"))
@@ -250,7 +250,7 @@ extension RootTabsSourceGuardTests {
         #expect(connectionFailure.contains("self.statusLine = message"))
         #expect(onboardingSource.contains(".failedStatus(message: localFailure, allowsRetry: false)"))
         #expect(onboardingSource.contains(
-            "primaryActionTitle: allowsRetry ? OpenClawTextValue.localized(\"Retry\") : nil"))
+            "primaryActionTitle: allowsRetry ? AforaTextValue.localized(\"Retry\") : nil"))
         #expect(onboardingSource.contains("onPrimaryAction: allowsRetry ? self.onRetry : nil"))
         #expect(stagedSetupClear.contains("self.localConnectionFailure = nil"))
         #expect(onboardingRetry.contains("self.localConnectionFailure = nil"))

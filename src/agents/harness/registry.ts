@@ -30,8 +30,8 @@ export function registerAgentHarness(
   const id = harness.id.trim();
   const harnesses = getAgentHarnesses();
   const pluginId = resolveDirectPluginRegistrationOwner(options?.ownerPluginId) ?? "core";
-  if (id === "openclaw") {
-    throw new Error('agent harness id "openclaw" is reserved for the built-in runtime');
+  if (id === "afora") {
+    throw new Error('agent harness id "afora" is reserved for the built-in runtime');
   }
   if (
     options?.nativeCompaction &&

@@ -1,4 +1,4 @@
-import { isPromiseLike } from "@openclaw/normalization-core/promise-like";
+import { isPromiseLike } from "@afora/normalization-core/promise-like";
 import { toSafeImportPath } from "../shared/import-specifier.js";
 import { attachPluginApiFacades } from "./api-facades.js";
 import { isLateCallablePluginApiMethod } from "./api-lifecycle.js";
@@ -9,7 +9,7 @@ import {
   getCachedPluginModuleLoader,
   type PluginModuleLoaderCache,
 } from "./plugin-module-loader-cache.js";
-import { installOpenClawPluginSdkNativeResolver } from "./plugin-sdk-native-resolver.js";
+import { installAforaPluginSdkNativeResolver } from "./plugin-sdk-native-resolver.js";
 import type { PluginRegistry } from "./registry-types.js";
 import { withPluginRegistrationContext } from "./runtime.js";
 import type { CreatePluginRuntimeOptions, PluginRuntime } from "./runtime/types.js";
@@ -19,7 +19,7 @@ import {
   type PluginSdkResolutionPreference,
   resolvePluginRuntimeModulePathWithDiagnostics,
 } from "./sdk-alias.js";
-import type { OpenClawPluginApi, OpenClawPluginDefinition } from "./types.js";
+import type { AforaPluginApi, AforaPluginDefinition } from "./types.js";
 
 const LAZY_RUNTIME_REFLECTION_KEYS = [
   "version",
@@ -42,8 +42,8 @@ const LAZY_RUNTIME_REFLECTION_KEYS = [
   "llm",
 ] as const satisfies readonly (keyof PluginRuntime)[];
 
-function createGuardedPluginRegistrationApi(api: OpenClawPluginApi): {
-  api: OpenClawPluginApi;
+function createGuardedPluginRegistrationApi(api: AforaPluginApi): {
+  api: AforaPluginApi;
   close: () => void;
 } {
   let closed = false;
@@ -75,8 +75,8 @@ function createGuardedPluginRegistrationApi(api: OpenClawPluginApi): {
 }
 
 function runPluginRegisterSync(
-  register: NonNullable<OpenClawPluginDefinition["register"]>,
-  api: Parameters<NonNullable<OpenClawPluginDefinition["register"]>>[0],
+  register: NonNullable<AforaPluginDefinition["register"]>,
+  api: Parameters<NonNullable<AforaPluginDefinition["register"]>>[0],
 ): void {
   const guarded = createGuardedPluginRegistrationApi(api);
   try {
@@ -91,8 +91,8 @@ function runPluginRegisterSync(
 }
 
 export function runPluginRegisterSyncInRegistry(
-  register: NonNullable<OpenClawPluginDefinition["register"]>,
-  api: Parameters<NonNullable<OpenClawPluginDefinition["register"]>>[0],
+  register: NonNullable<AforaPluginDefinition["register"]>,
+  api: Parameters<NonNullable<AforaPluginDefinition["register"]>>[0],
   registry: PluginRegistry,
   pluginId: string,
 ): void {
@@ -109,7 +109,7 @@ export function createPluginModuleLoader(options: {
   const moduleLoaders: PluginModuleLoaderCache = createPluginModuleLoaderCache();
   const createLoaderForModule = (modulePath: string) => {
     if (options.installNativeSdkResolver !== false && options.tryNative !== false) {
-      installOpenClawPluginSdkNativeResolver({
+      installAforaPluginSdkNativeResolver({
         argv1: process.argv[1],
         moduleUrl: import.meta.url,
         pluginModulePath: modulePath,
@@ -250,8 +250,8 @@ export function createLazyPluginRuntime(params: {
 }
 
 export function resolvePluginModuleExport(moduleExport: unknown): {
-  definition?: OpenClawPluginDefinition;
-  register?: OpenClawPluginDefinition["register"];
+  definition?: AforaPluginDefinition;
+  register?: AforaPluginDefinition["register"];
 } {
   const seen = new Set<unknown>();
   const candidates: unknown[] = [unwrapDefaultModuleExport(moduleExport), moduleExport];
@@ -262,10 +262,10 @@ export function resolvePluginModuleExport(moduleExport: unknown): {
     }
     seen.add(resolved);
     if (typeof resolved === "function") {
-      return { register: resolved as OpenClawPluginDefinition["register"] };
+      return { register: resolved as AforaPluginDefinition["register"] };
     }
     if (resolved && typeof resolved === "object") {
-      const definition = resolved as OpenClawPluginDefinition;
+      const definition = resolved as AforaPluginDefinition;
       const register = definition.register;
       if (typeof register === "function") {
         return { definition, register };
@@ -279,10 +279,10 @@ export function resolvePluginModuleExport(moduleExport: unknown): {
   }
   const resolved = candidates[0];
   if (typeof resolved === "function") {
-    return { register: resolved as OpenClawPluginDefinition["register"] };
+    return { register: resolved as AforaPluginDefinition["register"] };
   }
   if (resolved && typeof resolved === "object") {
-    const definition = resolved as OpenClawPluginDefinition;
+    const definition = resolved as AforaPluginDefinition;
     return { definition, register: definition.register };
   }
   return {};

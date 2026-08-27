@@ -3,7 +3,7 @@ import {
   asFiniteNumber,
   asOptionalRecord,
   readStringField,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 /** Merge legacy provider-specific values into the canonical providers map. */
 function mergeProviderConfig(

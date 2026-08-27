@@ -9,7 +9,7 @@ describe("Docker healthcheck", () => {
 
     await expect(
       probeDockerGatewayHealth({
-        env: { OPENCLAW_GATEWAY_PORT: "19001" },
+        env: { AFORA_GATEWAY_PORT: "19001" },
         fetch,
         getRuntimeConfig,
         readActiveGatewayLockPort: vi.fn(async () => 19000),
@@ -24,7 +24,7 @@ describe("Docker healthcheck", () => {
   it.each([
     {
       name: "environment",
-      env: { OPENCLAW_GATEWAY_PORT: "19001" },
+      env: { AFORA_GATEWAY_PORT: "19001" },
       config: { gateway: { port: 19002 } },
       expected: 19001,
     },

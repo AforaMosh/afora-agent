@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { hostname as readHostName } from "node:os";
-import { isLoopbackHost } from "openclaw/plugin-sdk/ssrf-runtime";
+import { isLoopbackHost } from "afora-agent/plugin-sdk/ssrf-runtime";
 import type {
   CodexAppServerConnectionClass,
   CodexAppServerDefaultPolicy,
@@ -10,7 +10,7 @@ import type {
   CodexAppServerRuntimeOptions,
   CodexAppServerSandboxMode,
   CodexAppServerTransportMode,
-  OpenClawExecMode,
+  AforaExecMode,
   ResolvedCodexAppServerNetworkProxyConfig,
 } from "./config-contracts.js";
 import { selectGuardianSandbox } from "./config-exec-policy.js";
@@ -252,8 +252,8 @@ export function resolveDefaultCodexAppServerPolicy(params: {
   transport: CodexAppServerTransportMode;
   forceGuardian?: boolean;
   forceUserReviewer?: boolean;
-  execModeRequiringPromptingApprovals?: Extract<OpenClawExecMode, "auto" | "ask">;
-  execModeRequiringUserReviewer?: OpenClawExecMode;
+  execModeRequiringPromptingApprovals?: Extract<AforaExecMode, "auto" | "ask">;
+  execModeRequiringUserReviewer?: AforaExecMode;
   env?: NodeJS.ProcessEnv;
   requirementsToml?: string | null;
   requirementsPath?: string;

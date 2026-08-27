@@ -1,12 +1,12 @@
-# OpenClaw StepFun Provider
+# Afora StepFun Provider
 
-Official OpenClaw provider plugin for StepFun.
+Official Afora provider plugin for StepFun.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/stepfun-provider
-openclaw gateway restart
+afora plugins install @afora/stepfun-provider
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/providers/stepfun> for setup and configuration.
+See <https://docs.afora.ai/providers/stepfun> for setup and configuration.

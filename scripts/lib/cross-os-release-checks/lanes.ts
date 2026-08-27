@@ -73,7 +73,7 @@ import {
   runDashboardSmoke,
   runModelsSet,
   runOnboard,
-  runOpenClaw,
+  runAfora,
   startGateway,
   waitForGateway,
 } from "./runtime.ts";
@@ -107,7 +107,7 @@ async function installLaneCompanions(
         });
         continue;
       }
-      await runOpenClaw({
+      await runAfora({
         lane: params.lane,
         args,
         env: params.env,
@@ -287,7 +287,7 @@ export async function runUpgradeLane(
     let usedWindowsPackagedUpgradeTimeoutFallback = false;
     await runTimedLanePhase(lane, "update", async () => {
       try {
-        updateResult = await runOpenClaw({
+        updateResult = await runAfora({
           lane,
           env: updateEnv,
           args: updateArgs,
@@ -349,7 +349,7 @@ export async function runUpgradeLane(
       })
     ) {
       await runTimedLanePhase(lane, "update-status", async () => {
-        await runOpenClaw({
+        await runAfora({
           lane,
           env: updateEnv,
           args: ["update", "status", "--json"],
@@ -778,7 +778,7 @@ export async function runDevUpdateSuite(
       args: ["update", "--channel", "dev", "--yes", "--json"],
       env: {
         ...buildRealUpdateEnv(env),
-        OPENCLAW_UPDATE_DEV_TARGET_REF: verificationRef,
+        AFORA_UPDATE_DEV_TARGET_REF: verificationRef,
       },
       cwd: lane.homeDir,
       logPath: join(params.logsDir, "dev-update.log"),
@@ -789,7 +789,7 @@ export async function runDevUpdateSuite(
     const updatedShell = await verifyFreshShellCommand({
       lane,
       env,
-      expectedNeedle: "OpenClaw",
+      expectedNeedle: "Afora",
       logPath: join(params.logsDir, "dev-update-shell.log"),
     });
 
@@ -903,10 +903,10 @@ export async function runDevUpdateSuite(
 }
 
 function createLaneState(name: string): LaneState {
-  const rootDir = mkdtempSync(join(tmpdir(), `openclaw-${name}-`));
+  const rootDir = mkdtempSync(join(tmpdir(), `afora-${name}-`));
   const prefixDir = join(rootDir, "prefix");
   const homeDir = join(rootDir, "home");
-  const stateDir = join(homeDir, ".openclaw");
+  const stateDir = join(homeDir, ".afora");
   const appDataDir = process.platform === "win32" ? join(homeDir, "AppData", "Roaming") : stateDir;
   mkdirSync(prefixDir, { recursive: true });
   mkdirSync(homeDir, { recursive: true });
@@ -940,11 +940,11 @@ function buildLaneEnv(
     USERPROFILE: lane.homeDir,
     APPDATA: lane.appDataDir,
     LOCALAPPDATA: join(lane.homeDir, "AppData", "Local"),
-    OPENCLAW_HOME: lane.homeDir,
-    OPENCLAW_STATE_DIR: lane.stateDir,
-    OPENCLAW_CONFIG_PATH: join(lane.stateDir, "openclaw.json"),
-    OPENCLAW_DISABLE_BONJOUR: "1",
-    OPENCLAW_DISABLE_BUNDLED_PLUGIN_POSTINSTALL: "1",
+    AFORA_HOME: lane.homeDir,
+    AFORA_STATE_DIR: lane.stateDir,
+    AFORA_CONFIG_PATH: join(lane.stateDir, "afora.json"),
+    AFORA_DISABLE_BONJOUR: "1",
+    AFORA_DISABLE_BUNDLED_PLUGIN_POSTINSTALL: "1",
     NPM_CONFIG_PREFIX: lane.prefixDir,
     PATH: `${binDirForPrefix(lane.prefixDir)}${process.platform === "win32" ? ";" : ":"}${process.env.PATH ?? ""}`,
     [providerMeta.secretEnv]: providerSecretValue,
@@ -964,12 +964,12 @@ function buildInstallerEnv(
     USERPROFILE: lane.homeDir,
     APPDATA: lane.appDataDir,
     LOCALAPPDATA: localAppData,
-    OPENCLAW_HOME: lane.homeDir,
-    OPENCLAW_STATE_DIR: lane.stateDir,
-    OPENCLAW_CONFIG_PATH: join(lane.stateDir, "openclaw.json"),
-    OPENCLAW_DISABLE_BONJOUR: "1",
-    OPENCLAW_NO_ONBOARD: "1",
-    OPENCLAW_NO_PROMPT: "1",
+    AFORA_HOME: lane.homeDir,
+    AFORA_STATE_DIR: lane.stateDir,
+    AFORA_CONFIG_PATH: join(lane.stateDir, "afora.json"),
+    AFORA_DISABLE_BONJOUR: "1",
+    AFORA_NO_ONBOARD: "1",
+    AFORA_NO_PROMPT: "1",
     CI: "1",
     NODE_OPTIONS: "--max-old-space-size=8192",
     [providerMeta.secretEnv]: providerSecretValue,
@@ -996,14 +996,14 @@ export function resolveManagedGatewayInstallerEnv(params: {
   };
   const isolatedIdentityKeys = new Set(
     [
-      "OPENCLAW_HOME",
-      "OPENCLAW_PROFILE",
-      "OPENCLAW_STATE_DIR",
-      "OPENCLAW_CONFIG_PATH",
-      "OPENCLAW_WINDOWS_TASK_NAME",
-      "OPENCLAW_TASK_SCRIPT_NAME",
-      "OPENCLAW_TASK_SCRIPT",
-      "OPENCLAW_SERVICE_KIND",
+      "AFORA_HOME",
+      "AFORA_PROFILE",
+      "AFORA_STATE_DIR",
+      "AFORA_CONFIG_PATH",
+      "AFORA_WINDOWS_TASK_NAME",
+      "AFORA_TASK_SCRIPT_NAME",
+      "AFORA_TASK_SCRIPT",
+      "AFORA_SERVICE_KIND",
     ].map((key) => key.toUpperCase()),
   );
   // Windows environment keys are case-insensitive. Remove every casing variant
@@ -1044,12 +1044,12 @@ export function assertManagedGatewayInstallerHostAvailable(params: {
   pathExists?: (path: string) => boolean;
 }): void {
   const pathExists = params.pathExists ?? existsSync;
-  const occupiedStateDirs = [".openclaw", ".clawdbot"]
+  const occupiedStateDirs = [".afora", ".clawdbot"]
     .map((name) => join(params.accountHome, name))
     .filter((path) => pathExists(path));
   if (params.serviceInstalled || occupiedStateDirs.length > 0) {
     throw new Error(
-      "Managed installer service checks require a pristine host account with no OpenClaw service or state.",
+      "Managed installer service checks require a pristine host account with no Afora service or state.",
     );
   }
 }
@@ -1062,7 +1062,7 @@ type ManagedGatewayInstallerHostLease = {
 export function acquireManagedGatewayInstallerHostLease(
   accountHome: string,
 ): ManagedGatewayInstallerHostLease {
-  const lockDir = join(accountHome, ".openclaw-release-check.lock");
+  const lockDir = join(accountHome, ".afora-release-check.lock");
   try {
     mkdirSync(lockDir);
   } catch (error) {
@@ -1148,7 +1148,7 @@ async function cleanupManagedGatewayInstallerHost(params: {
 
   if (serviceRemoved) {
     try {
-      rmSync(join(params.accountHome, ".openclaw"), { recursive: true, force: true });
+      rmSync(join(params.accountHome, ".afora"), { recursive: true, force: true });
       rmSync(join(params.accountHome, ".clawdbot"), { recursive: true, force: true });
     } catch (error) {
       cleanupErrors.push(error instanceof Error ? error : new Error(formatError(error)));

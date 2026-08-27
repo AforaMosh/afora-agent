@@ -1,12 +1,12 @@
 // Feishu plugin module implements monitor.comment behavior.
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import {
   asBoolean as readBoolean,
   isRecord,
   normalizeOptionalString as normalizeString,
   readStringValue as readString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
-import { sliceUtf16Safe, truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { sliceUtf16Safe, truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import type { ClawdbotConfig } from "../runtime-api.js";
 import { raceWithTimeoutAndAbort, waitForAbortableDelay } from "./async.js";
 import { createFeishuClient } from "./client.js";

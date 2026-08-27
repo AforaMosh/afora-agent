@@ -5,7 +5,7 @@ import { stylePromptMessage } from "../../../packages/terminal-core/src/prompt-s
 import { sanitizeTerminalText } from "../../../packages/terminal-core/src/safe-text.js";
 import { theme } from "../../../packages/terminal-core/src/theme.js";
 import { readConfigFileSnapshot } from "../../config/config.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { PluginInstallRecord } from "../../config/types.plugins.js";
 import type { ClawHubRiskAcknowledgementRequest } from "../../infra/clawhub-install-trust.js";
 import type { UpdateChannel } from "../../infra/update-channels.js";
@@ -41,7 +41,7 @@ import {
 export type { PostCorePluginUpdateResult } from "./update-command-plugins-internals.js";
 
 const POST_UPDATE_PLUGIN_REPAIR_GUIDANCE =
-  "Run openclaw update repair to retry post-update plugin repair.";
+  "Run afora update repair to retry post-update plugin repair.";
 
 type PostUpdatePluginWarning = NonNullable<PostCorePluginUpdateResult["warnings"]>[number];
 
@@ -116,7 +116,7 @@ function formatMissingPluginPayloadReason(entry: MissingPluginInstallPayload): s
 }
 
 function formatPostUpdatePluginInspectGuidance(pluginId: string): string {
-  return `Run openclaw plugins inspect ${pluginId} --runtime --json for details.`;
+  return `Run afora plugins inspect ${pluginId} --runtime --json for details.`;
 }
 
 function createPostUpdatePluginWarning(params: {
@@ -473,7 +473,7 @@ export async function updatePluginsAfterCoreUpdate(params: {
     if (params.restoredAuthoredChannels !== undefined) {
       nextConfig = {
         ...nextConfig,
-        channels: structuredClone(params.restoredAuthoredChannels) as OpenClawConfig["channels"],
+        channels: structuredClone(params.restoredAuthoredChannels) as AforaConfig["channels"],
       };
     }
     // Installed plugin metadata can own migrations that this process has not loaded yet.

@@ -2,10 +2,10 @@
  * Stream wrapper for Cloudflare AI Gateway's Anthropic Messages compatibility
  * quirks.
  */
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import type { ProviderWrapStreamFnContext } from "openclaw/plugin-sdk/plugin-entry";
-import { createAnthropicThinkingPrefillPayloadWrapper } from "openclaw/plugin-sdk/provider-stream-shared";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import type { ProviderWrapStreamFnContext } from "afora-agent/plugin-sdk/plugin-entry";
+import { createAnthropicThinkingPrefillPayloadWrapper } from "afora-agent/plugin-sdk/provider-stream-shared";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/runtime-env";
 
 const log = createSubsystemLogger("cloudflare-ai-gateway-stream");
 

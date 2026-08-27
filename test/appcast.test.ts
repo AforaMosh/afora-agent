@@ -1,6 +1,6 @@
 // Appcast tests validate generated update appcast metadata.
 import { readFileSync } from "node:fs";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import { canonicalSparkleBuildFromVersion } from "../scripts/sparkle-build.ts";
 

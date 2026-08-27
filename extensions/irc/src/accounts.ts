@@ -1,13 +1,13 @@
 // Irc plugin module implements accounts behavior.
-import { resolveAccountWithDefaultFallback } from "openclaw/plugin-sdk/account-core";
-import { createAccountListHelpers } from "openclaw/plugin-sdk/account-helpers";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
-import { parseOptionalDelimitedEntries } from "openclaw/plugin-sdk/channel-core";
-import { parseStrictPositiveInteger } from "openclaw/plugin-sdk/number-runtime";
-import { isTruthyEnvValue } from "openclaw/plugin-sdk/runtime-env";
-import { tryReadSecretFileSync } from "openclaw/plugin-sdk/secret-file-runtime";
-import { normalizeResolvedSecretInputString } from "openclaw/plugin-sdk/secret-input";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { resolveAccountWithDefaultFallback } from "afora-agent/plugin-sdk/account-core";
+import { createAccountListHelpers } from "afora-agent/plugin-sdk/account-helpers";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "afora-agent/plugin-sdk/account-id";
+import { parseOptionalDelimitedEntries } from "afora-agent/plugin-sdk/channel-core";
+import { parseStrictPositiveInteger } from "afora-agent/plugin-sdk/number-runtime";
+import { isTruthyEnvValue } from "afora-agent/plugin-sdk/runtime-env";
+import { tryReadSecretFileSync } from "afora-agent/plugin-sdk/secret-file-runtime";
+import { normalizeResolvedSecretInputString } from "afora-agent/plugin-sdk/secret-input";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { CoreConfig, IrcAccountConfig, IrcNickServConfig } from "./types.js";
 
 type CredentialUnavailableDiagnostic = Extract<
@@ -181,12 +181,12 @@ export function resolveIrcAccount(params: {
       merged.username?.trim() ||
       (accountId === DEFAULT_ACCOUNT_ID ? process.env.IRC_USERNAME?.trim() : "") ||
       nick ||
-      "openclaw"
+      "afora"
     ).trim();
     const realname = (
       merged.realname?.trim() ||
       (accountId === DEFAULT_ACCOUNT_ID ? process.env.IRC_REALNAME?.trim() : "") ||
-      "OpenClaw"
+      "Afora"
     ).trim();
 
     const passwordResolution = resolvePassword(accountId, merged);

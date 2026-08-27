@@ -1,5 +1,5 @@
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { AssistantMessage } from "../../llm/types.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import {
@@ -44,7 +44,7 @@ const TOOL_CALL_INPUT_MISSING_RE =
 const TOOL_CALL_INPUT_PATH_RE =
   /messages\.\d+\.content\.\d+\.tool_(?:use|call)\.(?:input|arguments)/i;
 type AssistantErrorTextOptions = {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   sessionKey?: string;
   provider?: string;
   providerOwner?: PreparedProviderFailoverOwner;

@@ -37,9 +37,9 @@ describe("scripts/dev/test-device-pair-telegram.ts", () => {
     });
   });
 
-  it("rejects unknown args before loading OpenClaw plugins", async () => {
+  it("rejects unknown args before loading Afora plugins", async () => {
     const cfg = { channels: { telegram: { enabled: true } } };
-    const loadOpenClawPlugins = vi.fn();
+    const loadAforaPlugins = vi.fn();
     const executePluginCommand = vi.fn();
     const sendMessageTelegram = vi.fn();
 
@@ -47,19 +47,19 @@ describe("scripts/dev/test-device-pair-telegram.ts", () => {
       runDevicePairTelegram(["--chat", "chat-123", "--wat"], {
         executePluginCommand,
         getRuntimeConfig: () => cfg,
-        loadOpenClawPlugins,
+        loadAforaPlugins,
         matchPluginCommand: () => ({ args: "from-match", command: { name: "pair" } as never }),
         sendMessageTelegram,
       }),
     ).rejects.toThrow("Unknown argument: --wat");
-    expect(loadOpenClawPlugins).not.toHaveBeenCalled();
+    expect(loadAforaPlugins).not.toHaveBeenCalled();
     expect(executePluginCommand).not.toHaveBeenCalled();
     expect(sendMessageTelegram).not.toHaveBeenCalled();
   });
 
   it("sends the generated /pair reply through the injected Telegram runtime", async () => {
     const cfg = { channels: { telegram: { enabled: true } } };
-    const loadOpenClawPlugins = vi.fn();
+    const loadAforaPlugins = vi.fn();
     const executePluginCommand = vi.fn(async () => ({ text: "pair this device" }));
     const sendMessageTelegram = vi.fn(async () => ({
       chatId: "chat-123",
@@ -69,12 +69,12 @@ describe("scripts/dev/test-device-pair-telegram.ts", () => {
     const result = await runDevicePairTelegram(["--chat", "chat-123", "--account", "main"], {
       executePluginCommand,
       getRuntimeConfig: () => cfg,
-      loadOpenClawPlugins,
+      loadAforaPlugins,
       matchPluginCommand: () => ({ args: "from-match", command: { name: "pair" } as never }),
       sendMessageTelegram,
     });
 
-    expect(loadOpenClawPlugins).toHaveBeenCalledWith({ config: cfg });
+    expect(loadAforaPlugins).toHaveBeenCalledWith({ config: cfg });
     expect(executePluginCommand).toHaveBeenCalledWith(
       expect.objectContaining({
         accountId: "main",

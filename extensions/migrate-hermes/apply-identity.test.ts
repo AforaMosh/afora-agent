@@ -1,11 +1,11 @@
 // Migrate Hermes tests cover apply result identity.
 import path from "node:path";
-import type { MigrationPlan } from "openclaw/plugin-sdk/plugin-entry";
+import type { MigrationPlan } from "afora-agent/plugin-sdk/plugin-entry";
 import {
-  resolvePreferredOpenClawTmpDir,
+  resolvePreferredAforaTmpDir,
   tempWorkspace,
   type TempWorkspace,
-} from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/temp-path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { applyHermesPlan } from "./apply.js";
 import { makeContext } from "./test/provider-helpers.js";
@@ -15,8 +15,8 @@ let testWorkspace: TempWorkspace;
 describe("Hermes migration apply identity", () => {
   beforeEach(async () => {
     testWorkspace = await tempWorkspace({
-      rootDir: resolvePreferredOpenClawTmpDir(),
-      prefix: "openclaw-migrate-hermes-",
+      rootDir: resolvePreferredAforaTmpDir(),
+      prefix: "afora-migrate-hermes-",
     });
   });
 

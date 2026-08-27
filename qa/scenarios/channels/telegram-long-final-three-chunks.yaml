@@ -8,7 +8,7 @@ scenario:
     primary:
       - telegram.conversation-routing-and-delivery
   regressionRefs:
-    - openclaw/openclaw#39905
+    - AforaMosh/afora-agent#39905
   objective: Verify a three-chunk Telegram final removes previews and keeps only final chunks.
   successCriteria:
     - The joined final contains both scripted three-chunk boundary markers.
@@ -35,7 +35,7 @@ flow:
             conversation: { id: telegram-stream-room, kind: channel }
             senderId: qa-stream-operator
             senderName: QA Stream Operator
-            text: "@openclaw Telegram long final three chunk QA check. Use the scripted three chunk final response."
+            text: "@afora Telegram long final three chunk QA check. Use the scripted three chunk final response."
         - waitForOutbound:
             conversation: { id: telegram-stream-room, kind: channel }
             sinceIndex: { ref: outboundStartIndex }

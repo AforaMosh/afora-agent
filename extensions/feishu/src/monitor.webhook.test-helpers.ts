@@ -4,7 +4,7 @@ import type { AddressInfo } from "node:net";
 import {
   fetchWithSsrFGuard,
   ssrfPolicyFromDangerouslyAllowPrivateNetwork,
-} from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/ssrf-runtime";
 import { vi } from "vitest";
 import type { ClawdbotConfig } from "../runtime-api.js";
 import type { monitorFeishuProvider } from "./monitor.js";

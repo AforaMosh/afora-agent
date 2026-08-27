@@ -1,4 +1,4 @@
-import { parseBrowserHttpUrl } from "openclaw/plugin-sdk/browser-config";
+import { parseBrowserHttpUrl } from "afora-agent/plugin-sdk/browser-config";
 /**
  * Browser profile allocation helpers.
  *

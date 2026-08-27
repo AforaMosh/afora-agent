@@ -21,7 +21,7 @@ beforeEach(async () => {
   ({ rememberIMessageReplyCache, resolveIMessageCachedResourceBinding } =
     await loadFreshIMessageReplyCacheForTest());
   ({ authorizeIMessageResourceReference } = await import("./message-resource.js"));
-  tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-imessage-resource-"));
+  tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-imessage-resource-"));
   dbPath = path.join(tempDir, "chat.db");
   const binDir = path.join(tempDir, "bin");
   const libexecDir = path.join(tempDir, "libexec");

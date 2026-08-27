@@ -1,7 +1,7 @@
-import { expectDefined } from "@openclaw/normalization-core";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { expectDefined } from "@afora/normalization-core";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 // Fetches Gemini provider usage windows.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { fetchUsageJson } from "./provider-usage.fetch.shared.js";
 import { clampPercent, providerUsageLabel } from "./provider-usage.shared.js";
 import type {

@@ -2,7 +2,7 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 
 // Name sanitizers for tools exposed by bundle MCP servers. Provider/tool names
 // must fit model-facing schema limits while remaining stable and collision-free.

@@ -1,5 +1,5 @@
 // Synthetic provider module implements model/runtime integration.
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-shared";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-model-shared";
 import {
   buildSyntheticModelDefinition,
   SYNTHETIC_BASE_URL,

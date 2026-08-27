@@ -5,9 +5,9 @@ import { pathToFileURL } from "node:url";
 import { formatErrorMessage } from "../../../../src/infra/errors.js";
 import { loadQaRuntimeModule } from "../../../../src/plugin-sdk/qa-runtime.js";
 import {
-  createOpenClawTestInstance,
-  type OpenClawTestInstance,
-} from "../../../helpers/openclaw-test-instance.js";
+  createAforaTestInstance,
+  type AforaTestInstance,
+} from "../../../helpers/afora-test-instance.js";
 import { createQaScriptEvidenceWriter } from "./script-evidence.js";
 
 const STARTUP_TIMEOUT_MS = 30_000;
@@ -15,7 +15,7 @@ const LIVE_ACCOUNT_ID = "qa-live";
 const PRODUCT_STARTUP_LOG = `[${LIVE_ACCOUNT_ID}] starting provider (@`;
 const POLLING_STARTUP_LOGS = ["isolated polling ingress started", "polling cycle started"] as const;
 const TOKEN_ENV_KEYS = [
-  "OPENCLAW_QA_TELEGRAM_SUT_BOT_TOKEN",
+  "AFORA_QA_TELEGRAM_SUT_BOT_TOKEN",
   "TELEGRAM_E2E_SUT_BOT_TOKEN",
 ] as const;
 
@@ -26,14 +26,14 @@ type TelegramRuntimeOptions = {
 };
 
 type TelegramProductStartupInstance = Pick<
-  OpenClawTestInstance,
+  AforaTestInstance,
   "child" | "cleanup" | "logs" | "startGateway"
 >;
 
 type TelegramRuntimeDependencies = {
   acquireCredential: (env: NodeJS.ProcessEnv) => Promise<TelegramCredentialLease>;
   createInstance: (
-    options: Parameters<typeof createOpenClawTestInstance>[0],
+    options: Parameters<typeof createAforaTestInstance>[0],
   ) => Promise<TelegramProductStartupInstance>;
   startCredentialHeartbeat: (lease: TelegramCredentialLease) => TelegramCredentialLeaseHeartbeat;
 };
@@ -58,7 +58,7 @@ const defaultDependencies: TelegramRuntimeDependencies = {
     return await loadQaRuntimeModule().acquireQaCredentialLease({
       env,
       kind: "telegram",
-      source: directCredential ? "env" : env.OPENCLAW_QA_CREDENTIAL_SOURCE,
+      source: directCredential ? "env" : env.AFORA_QA_CREDENTIAL_SOURCE,
       resolveEnvPayload: () => {
         if (!directCredential) {
           throw new Error(`none of ${TOKEN_ENV_KEYS.join(", ")} is set`);
@@ -68,7 +68,7 @@ const defaultDependencies: TelegramRuntimeDependencies = {
       parsePayload: parseTelegramCredentialPayload,
     });
   },
-  createInstance: createOpenClawTestInstance,
+  createInstance: createAforaTestInstance,
   startCredentialHeartbeat: (lease) => loadQaRuntimeModule().startQaCredentialLeaseHeartbeat(lease),
 };
 
@@ -191,7 +191,7 @@ export async function runTelegramBotTokenRuntime(
   const writer = createWriter(options);
   const startedAt = Date.now();
   const directCredential = resolveLeasedToken(env);
-  const configuredSource = env.OPENCLAW_QA_CREDENTIAL_SOURCE?.trim().toLowerCase();
+  const configuredSource = env.AFORA_QA_CREDENTIAL_SOURCE?.trim().toLowerCase();
   if (!directCredential && configuredSource !== "convex") {
     writer.appendLog(
       `telegram-startup-getme: blocked; none of ${TOKEN_ENV_KEYS.join(", ")} is set\n`,
@@ -238,9 +238,9 @@ export async function runTelegramBotTokenRuntime(
         },
       },
       env: {
-        OPENCLAW_SKIP_CHANNELS: undefined,
-        OPENCLAW_SKIP_PROVIDERS: undefined,
-        OPENCLAW_TEST_MINIMAL_GATEWAY: undefined,
+        AFORA_SKIP_CHANNELS: undefined,
+        AFORA_SKIP_PROVIDERS: undefined,
+        AFORA_TEST_MINIMAL_GATEWAY: undefined,
         TELEGRAM_BOT_TOKEN: "qa-invalid-precedence-decoy",
       },
       startTimeoutMs: options.startupTimeoutMs,

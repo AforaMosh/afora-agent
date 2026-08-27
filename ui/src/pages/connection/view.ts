@@ -91,7 +91,7 @@ export function renderConnection(props: ConnectionProps) {
           ${renderSecretRow({
             label: t("connection.access.token"),
             value: props.settings.token,
-            placeholder: "OPENCLAW_GATEWAY_TOKEN",
+            placeholder: "AFORA_GATEWAY_TOKEN",
             visible: props.showGatewayToken,
             showLabel: t("connection.access.showToken"),
             hideLabel: t("connection.access.hideToken"),

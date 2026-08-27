@@ -3,18 +3,18 @@ import { existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  OPENCLAW_STATE_SCHEMA_VERSION,
-  runOpenClawStateWriteTransaction,
-  withOpenClawStateStartupMigrationCheckpointDatabase,
-} from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+  closeAforaStateDatabaseForTest,
+  AFORA_STATE_SCHEMA_VERSION,
+  runAforaStateWriteTransaction,
+  withAforaStateStartupMigrationCheckpointDatabase,
+} from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import {
-  OpenClawStateOwnershipError,
+  AforaStateOwnershipError,
   STATE_SUPERVISION_KEY,
-} from "../state/openclaw-state-ownership.js";
+} from "../state/afora-state-ownership.js";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
@@ -34,14 +34,14 @@ import {
 } from "./startup-migration-checkpoint.js";
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   vi.restoreAllMocks();
 });
 
 const startupMigrationTempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 type StartupMigrationLeaseTestDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "schema_meta" | "state_leases"
 >;
 
@@ -56,7 +56,7 @@ function overwriteStartupMigrationLeaseOwnerStartedAt(
   env: NodeJS.ProcessEnv,
   startedAt: number,
 ): void {
-  withOpenClawStateStartupMigrationCheckpointDatabase(
+  withAforaStateStartupMigrationCheckpointDatabase(
     (db) => {
       const kysely = getNodeSqliteKysely<StartupMigrationLeaseTestDatabase>(db);
       const row = executeSqliteQueryTakeFirstSync(
@@ -78,17 +78,17 @@ function overwriteStartupMigrationLeaseOwnerStartedAt(
 describe("startup migration checkpoint", () => {
   it("checks migration activity without creating shared state", () => {
     const env = {
-      OPENCLAW_STATE_DIR: startupMigrationTempDirs.make("openclaw-startup-migration-"),
+      AFORA_STATE_DIR: startupMigrationTempDirs.make("afora-startup-migration-"),
     };
-    const dbPath = resolveOpenClawStateSqlitePath(env);
+    const dbPath = resolveAforaStateSqlitePath(env);
 
     expect(hasActiveStartupMigrationLease({ env })).toBe(false);
     expect(existsSync(dbPath)).toBe(false);
   });
 
-  it("records the migrated OpenClaw version in shared state", () => {
+  it("records the migrated Afora version in shared state", () => {
     const env = {
-      OPENCLAW_STATE_DIR: startupMigrationTempDirs.make("openclaw-startup-migration-"),
+      AFORA_STATE_DIR: startupMigrationTempDirs.make("afora-startup-migration-"),
     };
 
     expect(readStartupMigrationVersion(env)).toBeNull();
@@ -168,7 +168,7 @@ describe("startup migration checkpoint", () => {
 
   it("keeps state-only completion narrower than gateway startup", () => {
     const env = {
-      OPENCLAW_STATE_DIR: startupMigrationTempDirs.make("openclaw-startup-migration-"),
+      AFORA_STATE_DIR: startupMigrationTempDirs.make("afora-startup-migration-"),
     };
     const checkpoint = {
       env,
@@ -186,7 +186,7 @@ describe("startup migration checkpoint", () => {
 
   it("keeps the fast path disabled without immutable build provenance", () => {
     const env = {
-      OPENCLAW_STATE_DIR: startupMigrationTempDirs.make("openclaw-startup-migration-"),
+      AFORA_STATE_DIR: startupMigrationTempDirs.make("afora-startup-migration-"),
     };
 
     recordSuccessfulStartupMigrations({
@@ -225,7 +225,7 @@ describe("startup migration checkpoint", () => {
 
   it("treats legacy build-only checkpoints as stale once", () => {
     const env = {
-      OPENCLAW_STATE_DIR: startupMigrationTempDirs.make("openclaw-startup-migration-"),
+      AFORA_STATE_DIR: startupMigrationTempDirs.make("afora-startup-migration-"),
     };
     const checkpoint = {
       env,
@@ -234,7 +234,7 @@ describe("startup migration checkpoint", () => {
       identity: migrationIdentity,
     };
     recordSuccessfulStartupMigrations({ ...checkpoint, nowMs: 1234 });
-    withOpenClawStateStartupMigrationCheckpointDatabase(
+    withAforaStateStartupMigrationCheckpointDatabase(
       (db) => {
         const kysely = getNodeSqliteKysely<StartupMigrationLeaseTestDatabase>(db);
         executeSqliteQuerySync(
@@ -255,14 +255,14 @@ describe("startup migration checkpoint", () => {
 
   it("serializes startup migrations with an expiring shared-state lease", () => {
     const env = {
-      OPENCLAW_STATE_DIR: startupMigrationTempDirs.make("openclaw-startup-migration-"),
+      AFORA_STATE_DIR: startupMigrationTempDirs.make("afora-startup-migration-"),
     };
     const lease = acquireStartupMigrationLease({ env, nowMs: 1000, owner: "first" });
 
     expect(hasActiveStartupMigrationLease({ env, nowMs: 1001 })).toBe(true);
 
     expect(() => acquireStartupMigrationLease({ env, nowMs: 1001, owner: "second" })).toThrow(
-      `OpenClaw startup migrations are already running for this state directory; retry after the other OpenClaw process finishes or after 1970-01-01T00:05:01.000Z. (held by pid ${process.pid})`,
+      `Afora startup migrations are already running for this state directory; retry after the other Afora process finishes or after 1970-01-01T00:05:01.000Z. (held by pid ${process.pid})`,
     );
 
     lease.release();
@@ -275,11 +275,11 @@ describe("startup migration checkpoint", () => {
 
   it("rechecks external ownership inside the final lease write transaction", () => {
     const env = {
-      OPENCLAW_STATE_DIR: startupMigrationTempDirs.make("openclaw-startup-migration-"),
+      AFORA_STATE_DIR: startupMigrationTempDirs.make("afora-startup-migration-"),
     };
-    runOpenClawStateWriteTransaction(() => undefined, { env });
-    closeOpenClawStateDatabaseForTest();
-    const databasePath = resolveOpenClawStateSqlitePath(env);
+    runAforaStateWriteTransaction(() => undefined, { env });
+    closeAforaStateDatabaseForTest();
+    const databasePath = resolveAforaStateSqlitePath(env);
     const { DatabaseSync } = requireNodeSqlite();
     const originalExec = Object.getOwnPropertyDescriptor(DatabaseSync.prototype, "exec")?.value as
       | ((this: import("node:sqlite").DatabaseSync, sql: string) => void)
@@ -321,7 +321,7 @@ describe("startup migration checkpoint", () => {
 
     try {
       expect(() => acquireStartupMigrationLease({ env, owner: "unmarked", nowMs: 1 })).toThrow(
-        OpenClawStateOwnershipError,
+        AforaStateOwnershipError,
       );
     } finally {
       exec.mockRestore();
@@ -354,7 +354,7 @@ describe("startup migration checkpoint", () => {
 
   it("waits for a live same-host startup migration lease to be released", async () => {
     const env = {
-      OPENCLAW_STATE_DIR: startupMigrationTempDirs.make("openclaw-startup-migration-"),
+      AFORA_STATE_DIR: startupMigrationTempDirs.make("afora-startup-migration-"),
     };
     let nowMs = 1001;
     let elapsedMs = 0;
@@ -393,7 +393,7 @@ describe("startup migration checkpoint", () => {
 
   it("preserves the existing lease error when the wait bound expires", async () => {
     const env = {
-      OPENCLAW_STATE_DIR: startupMigrationTempDirs.make("openclaw-startup-migration-"),
+      AFORA_STATE_DIR: startupMigrationTempDirs.make("afora-startup-migration-"),
     };
     let nowMs = 1001;
     let elapsedMs = 0;
@@ -413,7 +413,7 @@ describe("startup migration checkpoint", () => {
         },
       }),
     ).rejects.toThrow(
-      `OpenClaw startup migrations are already running for this state directory; retry after the other OpenClaw process finishes or after 1970-01-01T00:05:01.000Z. (held by pid ${process.pid})`,
+      `Afora startup migrations are already running for this state directory; retry after the other Afora process finishes or after 1970-01-01T00:05:01.000Z. (held by pid ${process.pid})`,
     );
 
     lease.release();
@@ -421,7 +421,7 @@ describe("startup migration checkpoint", () => {
 
   it("reclaims an active startup migration lease whose owner process is gone", async () => {
     const env = {
-      OPENCLAW_STATE_DIR: startupMigrationTempDirs.make("openclaw-startup-migration-"),
+      AFORA_STATE_DIR: startupMigrationTempDirs.make("afora-startup-migration-"),
     };
     const deadPid = 2_147_483_647;
     const stale = acquireStartupMigrationLease({
@@ -449,7 +449,7 @@ describe("startup migration checkpoint", () => {
     "reclaims a startup migration lease whose owner PID was recycled",
     () => {
       const env = {
-        OPENCLAW_STATE_DIR: startupMigrationTempDirs.make("openclaw-startup-migration-"),
+        AFORA_STATE_DIR: startupMigrationTempDirs.make("afora-startup-migration-"),
       };
       const stale = acquireStartupMigrationLease({ env, nowMs: 1000, owner: "stale" });
 
@@ -467,7 +467,7 @@ describe("startup migration checkpoint", () => {
 
   it("does not report an expired startup migration lease as active", () => {
     const env = {
-      OPENCLAW_STATE_DIR: startupMigrationTempDirs.make("openclaw-startup-migration-"),
+      AFORA_STATE_DIR: startupMigrationTempDirs.make("afora-startup-migration-"),
     };
     const lease = acquireStartupMigrationLease({ env, nowMs: 1000, owner: "first" });
 
@@ -478,14 +478,14 @@ describe("startup migration checkpoint", () => {
 
   it("renews startup migration leases while the owner is still running", () => {
     const env = {
-      OPENCLAW_STATE_DIR: startupMigrationTempDirs.make("openclaw-startup-migration-"),
+      AFORA_STATE_DIR: startupMigrationTempDirs.make("afora-startup-migration-"),
     };
     const lease = acquireStartupMigrationLease({ env, nowMs: 1000, owner: "first" });
 
     lease.heartbeat({ nowMs: 300_000 });
 
     expect(() => acquireStartupMigrationLease({ env, nowMs: 301_001, owner: "second" })).toThrow(
-      "OpenClaw startup migrations are already running",
+      "Afora startup migrations are already running",
     );
 
     lease.release();
@@ -493,7 +493,7 @@ describe("startup migration checkpoint", () => {
 
   it("does not checkpoint startup migrations after the lease is lost", () => {
     const env = {
-      OPENCLAW_STATE_DIR: startupMigrationTempDirs.make("openclaw-startup-migration-"),
+      AFORA_STATE_DIR: startupMigrationTempDirs.make("afora-startup-migration-"),
     };
     const first = acquireStartupMigrationLease({ env, nowMs: 1000, owner: "first" });
     const second = acquireStartupMigrationLease({ env, nowMs: 400_000, owner: "second" });
@@ -515,7 +515,7 @@ describe("startup migration checkpoint", () => {
 
   it("checks exact lease ownership inside the caller write transaction", () => {
     const env = {
-      OPENCLAW_STATE_DIR: startupMigrationTempDirs.make("openclaw-startup-migration-"),
+      AFORA_STATE_DIR: startupMigrationTempDirs.make("afora-startup-migration-"),
     };
     const nowMs = Date.now();
     const first = acquireStartupMigrationLease({ env, nowMs, owner: "first" });
@@ -525,7 +525,7 @@ describe("startup migration checkpoint", () => {
       owner: "second",
     });
 
-    runOpenClawStateWriteTransaction(
+    runAforaStateWriteTransaction(
       ({ db }) => {
         expect(() => first.assertOwnedInTransaction(db)).toThrow(
           "startup migration lease was lost",
@@ -541,10 +541,10 @@ describe("startup migration checkpoint", () => {
 
   it("reads the checkpoint without requiring the full state schema to be canonical", () => {
     const env = {
-      OPENCLAW_STATE_DIR: startupMigrationTempDirs.make("openclaw-startup-migration-"),
+      AFORA_STATE_DIR: startupMigrationTempDirs.make("afora-startup-migration-"),
     };
     const sqlite = requireNodeSqlite();
-    const dbPath = resolveOpenClawStateSqlitePath(env);
+    const dbPath = resolveAforaStateSqlitePath(env);
     mkdirSync(path.dirname(dbPath), { recursive: true });
     const db = new sqlite.DatabaseSync(dbPath);
     db.exec(`
@@ -565,17 +565,17 @@ describe("startup migration checkpoint", () => {
 
   it("refuses future-version state databases before creating checkpoint tables", () => {
     const env = {
-      OPENCLAW_STATE_DIR: startupMigrationTempDirs.make("openclaw-startup-migration-"),
+      AFORA_STATE_DIR: startupMigrationTempDirs.make("afora-startup-migration-"),
     };
     const sqlite = requireNodeSqlite();
-    const dbPath = resolveOpenClawStateSqlitePath(env);
+    const dbPath = resolveAforaStateSqlitePath(env);
     mkdirSync(path.dirname(dbPath), { recursive: true });
     const db = new sqlite.DatabaseSync(dbPath);
-    db.exec(`PRAGMA user_version = ${OPENCLAW_STATE_SCHEMA_VERSION + 1};`);
+    db.exec(`PRAGMA user_version = ${AFORA_STATE_SCHEMA_VERSION + 1};`);
     db.close();
 
     expect(() => acquireStartupMigrationLease({ env, nowMs: 1000, owner: "first" })).toThrow(
-      `newer schema version ${OPENCLAW_STATE_SCHEMA_VERSION + 1}`,
+      `newer schema version ${AFORA_STATE_SCHEMA_VERSION + 1}`,
     );
 
     const verify = new sqlite.DatabaseSync(dbPath, { readOnly: true });

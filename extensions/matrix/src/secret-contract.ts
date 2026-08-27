@@ -1,5 +1,5 @@
 // Matrix plugin module implements secret contract behavior.
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "afora-agent/plugin-sdk/account-id";
 import {
   collectSecretInputAssignment,
   createChannelSecretTargetRegistryEntries,
@@ -9,7 +9,7 @@ import {
   normalizeSecretStringValue,
   type ResolverContext,
   type SecretDefaults,
-} from "openclaw/plugin-sdk/channel-secret-basic-runtime";
+} from "afora-agent/plugin-sdk/channel-secret-basic-runtime";
 import { getMatrixScopedEnvVarNames } from "./env-vars.js";
 
 function accountSecretOwner(accountId: string) {

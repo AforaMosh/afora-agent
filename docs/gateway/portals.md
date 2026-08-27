@@ -20,7 +20,7 @@ The agent opens a portal for the application's port, then starts the development
 
 ## Declare development servers
 
-Optionally commit `.openclaw/portals.json` to the workspace repository so the agent can discover the available development servers:
+Optionally commit `.afora/portals.json` to the workspace repository so the agent can discover the available development servers:
 
 ```json
 {

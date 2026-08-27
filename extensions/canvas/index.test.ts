@@ -1,12 +1,12 @@
 // Canvas tests cover index plugin behavior.
-import type { AgentMessage, StreamFn } from "openclaw/plugin-sdk/agent-core";
-import type { AssistantMessage, Model } from "openclaw/plugin-sdk/llm";
+import type { AgentMessage, StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import type { AssistantMessage, Model } from "afora-agent/plugin-sdk/llm";
 import type {
   AnyAgentTool,
-  OpenClawPluginApi,
-  OpenClawPluginNodeInvokePolicyContext,
-} from "openclaw/plugin-sdk/plugin-entry";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+  AforaPluginApi,
+  AforaPluginNodeInvokePolicyContext,
+} from "afora-agent/plugin-sdk/plugin-entry";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import canvasPlugin from "./index.js";
 
@@ -62,18 +62,18 @@ vi.mock("./src/tool.js", () => ({
 }));
 
 function registerCanvas() {
-  const routes: Array<Parameters<OpenClawPluginApi["registerHttpRoute"]>[0]> = [];
-  const services: Array<Parameters<OpenClawPluginApi["registerService"]>[0]> = [];
-  const resolvers: Array<Parameters<OpenClawPluginApi["registerHostedMediaResolver"]>[0]> = [];
+  const routes: Array<Parameters<AforaPluginApi["registerHttpRoute"]>[0]> = [];
+  const services: Array<Parameters<AforaPluginApi["registerService"]>[0]> = [];
+  const resolvers: Array<Parameters<AforaPluginApi["registerHostedMediaResolver"]>[0]> = [];
   const tools: Array<{
-    tool: Parameters<OpenClawPluginApi["registerTool"]>[0];
-    opts: Parameters<OpenClawPluginApi["registerTool"]>[1];
+    tool: Parameters<AforaPluginApi["registerTool"]>[0];
+    opts: Parameters<AforaPluginApi["registerTool"]>[1];
   }> = [];
   const cliFeatures: Array<{
-    registrar: Parameters<OpenClawPluginApi["registerNodeCliFeature"]>[0];
-    opts: Parameters<OpenClawPluginApi["registerNodeCliFeature"]>[1];
+    registrar: Parameters<AforaPluginApi["registerNodeCliFeature"]>[0];
+    opts: Parameters<AforaPluginApi["registerNodeCliFeature"]>[1];
   }> = [];
-  const nodeInvokePolicies: Array<Parameters<OpenClawPluginApi["registerNodeInvokePolicy"]>[0]> =
+  const nodeInvokePolicies: Array<Parameters<AforaPluginApi["registerNodeInvokePolicy"]>[0]> =
     [];
   canvasPlugin.register?.(
     createTestPluginApi({
@@ -92,8 +92,8 @@ function registerCanvas() {
 }
 
 function createNodeInvokeContext(
-  params: Partial<OpenClawPluginNodeInvokePolicyContext>,
-): OpenClawPluginNodeInvokePolicyContext {
+  params: Partial<AforaPluginNodeInvokePolicyContext>,
+): AforaPluginNodeInvokePolicyContext {
   return {
     nodeId: "node-1",
     command: "canvas.a2ui.pushJSONL",
@@ -132,7 +132,7 @@ describe("Canvas plugin entry", () => {
     await services[0]?.stop?.({} as never);
     expect(mocks.createCanvasHttpRouteHandler).not.toHaveBeenCalled();
 
-    await routes[0]?.handler({ url: "/__openclaw__/canvas" } as never, {} as never);
+    await routes[0]?.handler({ url: "/__afora__/canvas" } as never, {} as never);
     expect(mocks.createCanvasHttpRouteHandler).toHaveBeenCalledTimes(1);
     expect(mocks.httpHandler.handleHttpRequest).toHaveBeenCalledTimes(1);
 
@@ -188,10 +188,10 @@ describe("Canvas plugin entry", () => {
 
   it("preserves registered Canvas network provenance through the real agent loop", async () => {
     const [{ runAgentLoop }, { createAssistantMessageEventStream }] = await Promise.all([
-      vi.importActual<typeof import("openclaw/plugin-sdk/agent-core")>(
-        "openclaw/plugin-sdk/agent-core",
+      vi.importActual<typeof import("afora-agent/plugin-sdk/agent-core")>(
+        "afora-agent/plugin-sdk/agent-core",
       ),
-      vi.importActual<typeof import("openclaw/plugin-sdk/llm")>("openclaw/plugin-sdk/llm"),
+      vi.importActual<typeof import("afora-agent/plugin-sdk/llm")>("afora-agent/plugin-sdk/llm"),
     ]);
     const registeredTool = registerCanvas().tools[0]?.tool;
     if (typeof registeredTool !== "function") {
@@ -264,7 +264,7 @@ describe("Canvas plugin entry", () => {
       streamFn,
     );
     const metadata = (message: AgentMessage | undefined) =>
-      message ? (message as unknown as Record<string, unknown>)["__openclaw"] : undefined;
+      message ? (message as unknown as Record<string, unknown>)["__afora"] : undefined;
 
     expect(metadata(messages.find((message) => message.role === "toolResult"))).toEqual({
       resultContentSource: "network",

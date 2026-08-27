@@ -12,12 +12,12 @@ import {
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../../infra/kysely-sync.js";
-import { ensureContextEngineTurnOutboxSchema } from "../../state/openclaw-agent-context-engine-turn-outbox-schema.js";
-import type { DB as OpenClawAgentDatabaseSchema } from "../../state/openclaw-agent-db.generated.js";
-import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
+import { ensureContextEngineTurnOutboxSchema } from "../../state/afora-agent-context-engine-turn-outbox-schema.js";
+import type { DB as AforaAgentDatabaseSchema } from "../../state/afora-agent-db.generated.js";
+import type { AforaAgentDatabase } from "../../state/afora-agent-db.js";
 
 type ContextEngineTurnOutboxDatabase = Pick<
-  OpenClawAgentDatabaseSchema,
+  AforaAgentDatabaseSchema,
   "context_engine_turn_outbox"
 >;
 
@@ -81,7 +81,7 @@ export function isRetryableContextEngineTurnReadFailure(
   return kind === "projection-unavailable";
 }
 
-function outboxDb(database: OpenClawAgentDatabase) {
+function outboxDb(database: AforaAgentDatabase) {
   ensureContextEngineTurnOutboxSchema(database.db);
   return getNodeSqliteKysely<ContextEngineTurnOutboxDatabase>(database.db);
 }
@@ -100,7 +100,7 @@ function assertMatchingOutboxOwner(
 }
 
 function writeContextEngineTurnOutboxPayload(params: {
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   engineId: string;
   ownerPluginId?: string;
   payload: ContextEngineTurnOutboxPayload;
@@ -174,7 +174,7 @@ function writeContextEngineTurnOutboxPayload(params: {
 
 export function enqueueContextEngineTurnIntent(params: {
   admission: TranscriptTurnAdmission;
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   engineId: string;
   isHeartbeat: boolean;
   ownerPluginId?: string;
@@ -191,7 +191,7 @@ export function enqueueContextEngineTurnIntent(params: {
 
 export function acceptContextEngineTurnIntent(params: {
   boundary: TranscriptTurnBoundary;
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   engineId: string;
   isHeartbeat: boolean;
   ownerPluginId?: string;
@@ -207,7 +207,7 @@ export function acceptContextEngineTurnIntent(params: {
 }
 
 export function enqueueContextEngineTurnCommit(params: {
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   engineId: string;
   ownerPluginId?: string;
   payload: Omit<ReadyContextEngineTurnOutboxPayload, "state">;
@@ -220,7 +220,7 @@ export function enqueueContextEngineTurnCommit(params: {
 
 export function blockContextEngineTurnIntent(params: {
   boundary: TranscriptTurnBoundary;
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   engineId: string;
   failure: BlockedContextEngineTurnOutboxPayload["failure"];
   isHeartbeat: boolean;
@@ -239,7 +239,7 @@ export function blockContextEngineTurnIntent(params: {
 
 export function discardContextEngineTurnIntent(params: {
   admission: TranscriptTurnAdmission;
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   engineId: string;
   ownerPluginId?: string;
 }): void {
@@ -255,7 +255,7 @@ export function discardContextEngineTurnIntent(params: {
 }
 
 export function recoverContextEngineTurnOutbox(params: {
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   engineId: string;
   ownerPluginId?: string;
   sessionId: string;
@@ -333,7 +333,7 @@ export function recoverContextEngineTurnOutbox(params: {
 }
 
 export async function drainContextEngineTurnOutbox(params: {
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   engine: ContextEngine;
   engineId: string;
   ownerPluginId?: string;

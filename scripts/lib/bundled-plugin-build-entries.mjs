@@ -13,9 +13,9 @@ const TOP_LEVEL_PUBLIC_SURFACE_EXTENSIONS = new Set([".ts", ".js", ".mts", ".cts
 /** Bundled plugin directories built with core but not packaged as standalone npm plugins. */
 export const NON_PACKAGED_BUNDLED_PLUGIN_DIRS = new Set(["qa-channel", "qa-lab"]);
 const EXCLUDED_CORE_BUNDLED_PLUGIN_DIRS = new Set(["qqbot", "whatsapp"]);
-const BUNDLED_PLUGIN_BUILD_IDS_ENV = "OPENCLAW_BUNDLED_PLUGIN_BUILD_IDS";
+const BUNDLED_PLUGIN_BUILD_IDS_ENV = "AFORA_BUNDLED_PLUGIN_BUILD_IDS";
 /** @internal Shared repository-script contract. */
-export const DOCKER_SELECTED_PLUGIN_BUILD_IDS_ENV = "OPENCLAW_INTERNAL_DOCKER_BUILD_PLUGIN_IDS";
+export const DOCKER_SELECTED_PLUGIN_BUILD_IDS_ENV = "AFORA_INTERNAL_DOCKER_BUILD_PLUGIN_IDS";
 const PLUGIN_ID_RE = /^[a-z0-9][a-z0-9-]*$/u;
 const TOP_LEVEL_PRIVATE_TEST_SURFACE_RE =
   /(?:^|[._-])(?:test|spec|test-support|test-helpers|test-fixtures|test-harness|mock-setup)(?:[._-]|$)/u;
@@ -68,18 +68,18 @@ function readBundledPluginPackageJson(packageJsonPath, options = {}) {
 }
 
 function isManifestlessBundledRuntimeSupportPackage(params) {
-  if (params.packageJson?.openclaw?.release?.publishToNpm === true) {
+  if (params.packageJson?.afora?.release?.publishToNpm === true) {
     return false;
   }
   const packageName = typeof params.packageJson?.name === "string" ? params.packageJson.name : "";
-  if (packageName !== `@openclaw/${params.dirName}`) {
+  if (packageName !== `@afora/${params.dirName}`) {
     return false;
   }
   return params.topLevelPublicSurfaceEntries.length > 0;
 }
 
 function shouldBuildBundledDistEntry(packageJson) {
-  return packageJson?.openclaw?.build?.bundledDist !== false;
+  return packageJson?.afora?.build?.bundledDist !== false;
 }
 
 function isExcludedTopLevelPublicSurfaceFile(fileName) {
@@ -95,15 +95,15 @@ function isExcludedTopLevelPublicSurfaceFile(fileName) {
 
 /** Collect plugin source entry files declared by package export metadata. */
 export function collectPluginSourceEntries(packageJson) {
-  let packageEntries = Array.isArray(packageJson?.openclaw?.extensions)
-    ? packageJson.openclaw.extensions.filter(
+  let packageEntries = Array.isArray(packageJson?.afora?.extensions)
+    ? packageJson.afora.extensions.filter(
         (entry) => typeof entry === "string" && entry.trim().length > 0,
       )
     : [];
   const setupEntry =
-    typeof packageJson?.openclaw?.setupEntry === "string" &&
-    packageJson.openclaw.setupEntry.trim().length > 0
-      ? packageJson.openclaw.setupEntry
+    typeof packageJson?.afora?.setupEntry === "string" &&
+    packageJson.afora.setupEntry.trim().length > 0
+      ? packageJson.afora.setupEntry
       : undefined;
   if (setupEntry) {
     packageEntries = Array.from(new Set([...packageEntries, setupEntry]));
@@ -226,9 +226,9 @@ export function collectBundledPluginBuildEntries(params = {}) {
 
   for (const candidate of candidates) {
     const { dirName, pluginDir, relativeFiles, topLevelPublicSurfaceEntries } = candidate;
-    const manifestPath = path.join(pluginDir, "openclaw.plugin.json");
+    const manifestPath = path.join(pluginDir, "afora.plugin.json");
     const hasManifest =
-      relativeFiles?.includes("openclaw.plugin.json") ?? fs.existsSync(manifestPath);
+      relativeFiles?.includes("afora.plugin.json") ?? fs.existsSync(manifestPath);
     const packageJsonPath = path.join(pluginDir, "package.json");
     const packageJson = readBundledPluginPackageJson(packageJsonPath, {
       hasPackageJson: relativeFiles?.includes("package.json"),
@@ -352,7 +352,7 @@ export function listBundledPluginPackArtifacts(params = {}) {
 
   for (const { id, hasManifest, hasPackageJson, sourceEntries } of entries) {
     if (hasManifest) {
-      artifacts.add(bundledDistPluginFile(id, "openclaw.plugin.json"));
+      artifacts.add(bundledDistPluginFile(id, "afora.plugin.json"));
     }
     if (hasPackageJson) {
       artifacts.add(bundledDistPluginFile(id, "package.json"));

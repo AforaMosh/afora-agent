@@ -15,7 +15,7 @@ import {
 } from "../../agents/legacy-inherited-auth-dir.js";
 import { resolveEnvApiKey } from "../../agents/model-auth-env.js";
 import { resolveUsableCustomProviderApiKey } from "../../agents/model-auth.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { loadProviderUsageSummary } from "../../infra/provider-usage.load.js";
 import type {
   ProviderUsageSnapshot,
@@ -36,7 +36,7 @@ export type ProviderUsageStatus = Pick<
 
 type ProviderUsageCacheEntry = {
   agentDir: string;
-  configRef: OpenClawConfig;
+  configRef: AforaConfig;
   credentialKey: string;
   providerKey: string;
   refreshedAt: number;
@@ -46,7 +46,7 @@ type ProviderUsageCacheEntry = {
 
 type ProviderUsageRefresh = {
   agentDir: string;
-  configRef: OpenClawConfig;
+  configRef: AforaConfig;
   credentialKey: string;
   providerKey: string;
   promise: Promise<UsageSummary>;
@@ -61,7 +61,7 @@ function sortedRecordEntries<T>(value: Record<string, T> | undefined) {
 }
 
 export function fingerprintProviderUsageCredentials(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   directApiKeys: ReadonlyMap<string, { source: "config" | "env"; envVar?: string } | undefined>;
   store: AuthProfileStore;
 }): string {
@@ -158,7 +158,7 @@ function mapProviderUsage(usage: Awaited<ReturnType<typeof loadProviderUsageSumm
 function scheduleProviderUsageRefresh(params: {
   agentId: string;
   agentDir: string;
-  configRef: OpenClawConfig;
+  configRef: AforaConfig;
   credentialKey: string;
   providerIds: UsageProviderId[];
   providerKey: string;
@@ -223,7 +223,7 @@ function scheduleProviderUsageRefresh(params: {
 type ProviderUsageCacheParams = {
   agentId: string;
   agentDir: string;
-  configRef: OpenClawConfig;
+  configRef: AforaConfig;
   credentialKey: string;
   forceRefresh?: boolean;
   providerIds: UsageProviderId[];
@@ -303,7 +303,7 @@ async function loadProviderUsageSummaryStaleWhileRevalidate(
 
 /** Shares the models.authStatus cache contract with the unscoped usage.status RPC. */
 export async function loadUsageStatusStaleWhileRevalidate(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   now?: number;
 }): Promise<UsageSummary> {
   const agentId = resolveLegacyInheritedAuthAgentId(params.config);

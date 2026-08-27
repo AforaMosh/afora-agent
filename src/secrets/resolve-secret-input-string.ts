@@ -1,5 +1,5 @@
 /** Resolves inline string or SecretRef inputs into normalized secret strings. */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   normalizeSecretInputString,
   resolveSecretInputRef,
@@ -7,7 +7,7 @@ import {
 } from "../config/types.secrets.js";
 import { resolveSecretRefString } from "./resolve.js";
 
-type SecretDefaults = NonNullable<OpenClawConfig["secrets"]>["defaults"];
+type SecretDefaults = NonNullable<AforaConfig["secrets"]>["defaults"];
 
 /**
  * Resolves a config value that may be either an inline string or a SecretRef object.
@@ -16,7 +16,7 @@ type SecretDefaults = NonNullable<OpenClawConfig["secrets"]>["defaults"];
  * into surface-specific failures without duplicating provider lookup behavior.
  */
 export async function materializeSecretInput(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   /** Inline string, SecretInput object, or SecretRef object from config/plugin settings. */
   value: unknown;
   env: NodeJS.ProcessEnv;

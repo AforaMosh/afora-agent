@@ -3,15 +3,15 @@ import type {
   ImageGenerationProvider,
   ImageGenerationRequest,
   ImageGenerationSourceImage,
-} from "openclaw/plugin-sdk/image-generation";
+} from "afora-agent/plugin-sdk/image-generation";
 import {
   createOpenAiCompatibleImageGenerationProvider,
   toImageDataUrl,
-} from "openclaw/plugin-sdk/image-generation";
+} from "afora-agent/plugin-sdk/image-generation";
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   XAI_IMAGE_DEFAULT_TIMEOUT_MS,
   XAI_SUPPORTED_IMAGE_ASPECT_RATIOS,

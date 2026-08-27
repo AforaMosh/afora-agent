@@ -7,7 +7,7 @@ import {
   type SlackSystemEventTestOverrides,
 } from "./system-event-test-harness.js";
 
-const SLACK_INGRESS_LIFECYCLE_CONTEXT_KEY = "openclawIngressLifecycle";
+const SLACK_INGRESS_LIFECYCLE_CONTEXT_KEY = "aforaIngressLifecycle";
 
 const { messageQueueMock, messageAllowMock, inboundInfoSpy, noteConversationMessageMock } =
   vi.hoisted(() => ({
@@ -21,8 +21,8 @@ vi.mock("../../draft-message-boundaries.js", () => ({
   noteSlackDraftConversationMessage: (...args: unknown[]) => noteConversationMessageMock(...args),
 }));
 
-vi.mock("openclaw/plugin-sdk/runtime-env", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/runtime-env")>();
+vi.mock("afora-agent/plugin-sdk/runtime-env", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/runtime-env")>();
   const makeLogger = () => {
     const logger = {
       subsystem: "test",
@@ -41,21 +41,21 @@ vi.mock("openclaw/plugin-sdk/runtime-env", async (importOriginal) => {
   return { ...actual, createSubsystemLogger: () => makeLogger() };
 });
 
-vi.mock("openclaw/plugin-sdk/system-event-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/system-event-runtime", () => ({
   enqueueRoutedSystemEvent: (
     text: unknown,
     route: { sessionKey: unknown },
     options: Record<string, unknown>,
   ) => messageQueueMock(text, { ...options, sessionKey: route.sessionKey }),
 }));
-vi.mock("openclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/conversation-runtime")>();
+vi.mock("afora-agent/plugin-sdk/conversation-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/conversation-runtime")>();
   return {
     ...actual,
     readChannelAllowFromStore: (...args: unknown[]) => messageAllowMock(...args),
   };
 });
-vi.mock("openclaw/plugin-sdk/text-chunking", () => ({
+vi.mock("afora-agent/plugin-sdk/text-chunking", () => ({
   chunkItems: <T>(items: T[]) => [items],
   markdownToIR: (text: string) => text,
   renderMarkdownIRChunksWithinLimit: (text: string) => [text],

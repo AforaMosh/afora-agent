@@ -2,7 +2,7 @@
 // envelope fields consumed by inbound-meta reply context blocks.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MsgContext } from "../../auto-reply/templating.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   applyChatSendReplyContextFields,
   resolveChatSendReplyContext,
@@ -22,7 +22,7 @@ vi.mock("../assistant-identity.js", () => ({
   resolveAssistantIdentity: (...args: unknown[]) => resolveAssistantIdentityMock(...args),
 }));
 
-const cfg = {} as OpenClawConfig;
+const cfg = {} as AforaConfig;
 
 function baseParams(overrides: Partial<Parameters<typeof resolveChatSendReplyContext>[0]> = {}) {
   return {
@@ -53,7 +53,7 @@ describe("resolveChatSendReplyContext", () => {
       message: {
         role: "assistant",
         content: [{ type: "text", text: "the replied-to answer" }],
-        __openclaw: { id: "msg-1" },
+        __afora: { id: "msg-1" },
       },
     });
 
@@ -124,7 +124,7 @@ describe("resolveChatSendReplyContext", () => {
           { type: "text", text: "visible answer" },
           { type: "text", text: '<tool_call>{"name":"exec","arguments":{}}</tool_call>' },
         ],
-        __openclaw: { id: "msg-1" },
+        __afora: { id: "msg-1" },
       },
     });
 
@@ -154,7 +154,7 @@ describe("resolveChatSendReplyContext", () => {
       message: {
         role: "assistant",
         content: [{ type: "text", text: "NO_REPLY" }],
-        __openclaw: { id: "msg-1" },
+        __afora: { id: "msg-1" },
       },
     });
 

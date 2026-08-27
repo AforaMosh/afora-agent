@@ -1,4 +1,4 @@
-import OpenClawKit
+import AforaKit
 import SwiftUI
 
 struct GatewaySetupRequest {
@@ -20,7 +20,7 @@ struct SettingsProTab: View {
     @AppStorage("node.displayName") var displayName: String = "iOS Node"
     @AppStorage("node.instanceId") var instanceId: String = UUID().uuidString
     @AppStorage("camera.enabled") var cameraEnabled: Bool = true
-    @AppStorage("location.enabledMode") var locationModeRaw: String = OpenClawLocationMode.off.rawValue
+    @AppStorage("location.enabledMode") var locationModeRaw: String = AforaLocationMode.off.rawValue
     @AppStorage("screen.preventSleep") var preventSleep: Bool = true
     @AppStorage("talk.enabled") var talkEnabled: Bool = false
     @AppStorage(TalkModeProviderSelection.storageKey) var talkProviderSelectionRaw: String =
@@ -67,7 +67,7 @@ struct SettingsProTab: View {
     @State var defaultShareInstruction = ""
     @State var showQRScanner = false
     @State var scannerError: String?
-    @State var pendingLocationMode: OpenClawLocationMode?
+    @State var pendingLocationMode: AforaLocationMode?
     @State var showResetOnboardingAlert = false
     @State var suppressCredentialPersist = false
     @State var locationStatusText: String?
@@ -79,7 +79,7 @@ struct SettingsProTab: View {
         authorizationStatus: .notDetermined,
         accuracyAuthorization: .fullAccuracy)
     @State var locationPermissionRefreshID = 0
-    @State var previousLocationModeRaw: String = OpenClawLocationMode.off.rawValue
+    @State var previousLocationModeRaw: String = AforaLocationMode.off.rawValue
     @State var notificationStatus: SettingsNotificationStatus = .checking
     @State var isRequestingNotificationAuthorization = false
     @State var showNotificationRelayDisclosure = false
@@ -91,7 +91,7 @@ struct SettingsProTab: View {
     let initialRoute: SettingsRoute?
     let directRoute: SettingsRoute?
     let acceptsGatewaySetupRequests: Bool
-    let headerSidebarAction: OpenClawSidebarHeaderAction?
+    let headerSidebarAction: AforaSidebarHeaderAction?
     let ownsNavigationStack: Bool
     let navigateToRoute: ((SettingsRoute) -> Void)?
     let onRouteChange: ((SettingsRoute?) -> Void)?
@@ -103,7 +103,7 @@ struct SettingsProTab: View {
         initialRoute: SettingsRoute? = nil,
         directRoute: SettingsRoute? = nil,
         acceptsGatewaySetupRequests: Bool = false,
-        headerSidebarAction: OpenClawSidebarHeaderAction? = nil,
+        headerSidebarAction: AforaSidebarHeaderAction? = nil,
         ownsNavigationStack: Bool = true,
         navigateToRoute: ((SettingsRoute) -> Void)? = nil,
         onRouteChange: ((SettingsRoute?) -> Void)? = nil,
@@ -153,14 +153,14 @@ struct SettingsProTab: View {
             self.gatewaySection
             self.settingsListSection
         }
-        .font(OpenClawType.body)
+        .font(AforaType.body)
         .navigationTitle("Settings")
         .navigationDestination(for: SettingsRoute.self) { route in
             self.destination(for: route)
         }
         .toolbar {
             if let headerSidebarAction {
-                OpenClawSidebarToolbarItem(
+                AforaSidebarToolbarItem(
                     action: headerSidebarAction,
                     placement: .topBarLeading)
             }
@@ -264,7 +264,7 @@ struct SettingsProTab: View {
                             .ignoresSafeArea()
                             .navigationTitle("Scan QR Code")
                             .navigationBarTitleDisplayMode(.inline)
-                            .font(OpenClawType.body)
+                            .font(AforaType.body)
                             .toolbar {
                                 ToolbarItem(placement: .topBarLeading) {
                                     Button {
@@ -272,9 +272,9 @@ struct SettingsProTab: View {
                                         self.showQRScanner = false
                                     } label: {
                                         Text("Cancel")
-                                            .font(OpenClawType.subheadSemiBold)
+                                            .font(AforaType.subheadSemiBold)
                                     }
-                                    .font(OpenClawType.subheadSemiBold)
+                                    .font(AforaType.subheadSemiBold)
                                 }
                             }
                     }
@@ -289,15 +289,15 @@ struct SettingsProTab: View {
                     Task { await self.resetOnboarding() }
                 } label: {
                     Text("Reset")
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                 }
                 Button(role: .cancel) {} label: {
                     Text("Cancel")
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                 }
             } message: {
                 Text("This disconnects, clears saved gateway credentials, and reopens onboarding.")
-                    .font(OpenClawType.subhead)
+                    .font(AforaType.subhead)
             }
             .alert(
                 "QR Scanner Unavailable",
@@ -310,11 +310,11 @@ struct SettingsProTab: View {
                     })) {
                 Button(role: .cancel) {} label: {
                     Text("OK")
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                 }
             } message: {
                 Text(self.scannerError ?? "")
-                    .font(OpenClawType.subhead)
+                    .font(AforaType.subhead)
             }
             .confirmationDialog(
                 String(
@@ -335,13 +335,13 @@ struct SettingsProTab: View {
                     Task { await self.forgetGateway(entry) }
                 } label: {
                     Text("Forget Gateway")
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                 }
                 Button(role: .cancel) {
                     self.pendingForgetGateway = nil
                 } label: {
                     Text("Cancel")
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                 }
             } message: { _ in
                 // Keep the extraction key contiguous for the native localization inventory.
@@ -349,7 +349,7 @@ struct SettingsProTab: View {
                     String(
                         localized:
                         "This removes saved credentials, device access, TLS trust, and cached chats for this gateway."))
-                    .font(OpenClawType.subhead)
+                    .font(AforaType.subhead)
             }
     }
 
@@ -400,16 +400,16 @@ struct HostedPushRelayDisclosureSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Image(systemName: "network")
-                        .font(OpenClawType.title2SemiBold)
-                        .foregroundStyle(OpenClawBrand.accentForeground)
-                    Text("Enable OpenClaw Hosted Push Relay?")
-                        .font(OpenClawType.title3SemiBold)
+                        .font(AforaType.title2SemiBold)
+                        .foregroundStyle(AforaBrand.accentForeground)
+                    Text("Enable Afora Hosted Push Relay?")
+                        .font(AforaType.title3SemiBold)
                     Text(self.message)
-                        .font(OpenClawType.body)
+                        .font(AforaType.body)
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .font(OpenClawType.body)
+                .font(AforaType.body)
             }
             VStack(spacing: 10) {
                 Button {
@@ -417,7 +417,7 @@ struct HostedPushRelayDisclosureSheet: View {
                     self.onContinue()
                 } label: {
                     Text("Continue")
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
@@ -425,13 +425,13 @@ struct HostedPushRelayDisclosureSheet: View {
                     self.dismiss()
                 } label: {
                     Text("Not Now")
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                 }
                 .buttonStyle(.bordered)
                 .frame(maxWidth: .infinity)
             }
         }
-        .tint(OpenClawBrand.accent)
+        .tint(AforaBrand.accent)
         .padding(24)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)

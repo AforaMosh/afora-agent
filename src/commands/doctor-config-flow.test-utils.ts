@@ -1,5 +1,5 @@
 // Doctor config-flow test utilities share mock input symbols and config fixtures across repair suites.
-const DOCTOR_CONFIG_TEST_INPUT = Symbol.for("openclaw.doctorConfigFlow.testInput");
+const DOCTOR_CONFIG_TEST_INPUT = Symbol.for("afora.doctorConfigFlow.testInput");
 
 type DoctorConfigTestInput = {
   config: Record<string, unknown>;
@@ -157,7 +157,7 @@ export async function runDoctorConfigWithInput<T>(params: {
       ? { agentRosterIncludeOwned: params.agentRosterIncludeOwned }
       : {}),
     exists: params.exists ?? true,
-    path: "/virtual/.openclaw/openclaw.json",
+    path: "/virtual/.AforaMosh/afora-agent.json",
     preflightMode: params.preflightMode ?? inferredPreflightMode,
   });
   try {

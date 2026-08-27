@@ -1,4 +1,4 @@
-// Load Channel Config Surface script supports OpenClaw repository automation.
+// Load Channel Config Surface script supports Afora repository automation.
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { createJiti } from "jiti";

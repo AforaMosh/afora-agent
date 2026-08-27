@@ -3,7 +3,7 @@
  *
  * Decides when text events can be delayed/merged before agent dispatch.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { isControlCommandMessage } from "../auto-reply/command-detection.js";
 import type { CommandNormalizeOptions } from "../auto-reply/commands-registry.js";
 import {
@@ -11,12 +11,12 @@ import {
   resolveInboundDebounceMs,
   type InboundDebounceCreateParams,
 } from "../auto-reply/inbound-debounce.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 
 /** Returns true when an inbound text event is safe to debounce before dispatch. */
 export function shouldDebounceTextInbound(params: {
   text: string | null | undefined;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   hasMedia?: boolean;
   commandOptions?: CommandNormalizeOptions;
   allowDebounce?: boolean;
@@ -41,7 +41,7 @@ export function shouldDebounceTextInbound(params: {
 /** Creates a channel-scoped inbound debouncer using config/default debounce timing. */
 export function createChannelInboundDebouncer<T>(
   params: Omit<InboundDebounceCreateParams<T>, "debounceMs"> & {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     channel: string;
     debounceMsOverride?: number;
   },

@@ -1,11 +1,11 @@
 // Googlechat tests cover channel plugin behavior.
-import { verifyChannelMessageAdapterCapabilityProofs } from "openclaw/plugin-sdk/channel-outbound";
+import { verifyChannelMessageAdapterCapabilityProofs } from "afora-agent/plugin-sdk/channel-outbound";
 import {
   createDirectoryTestRuntime,
   expectDirectorySurface,
-} from "openclaw/plugin-sdk/channel-test-helpers";
+} from "afora-agent/plugin-sdk/channel-test-helpers";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 import {
   googlechatDirectoryAdapter,
   googlechatMessageAdapter,
@@ -45,7 +45,7 @@ function normalizeGoogleChatTarget(raw?: string | null): string | undefined {
   return normalized;
 }
 
-function resolveGoogleChatAccountImpl(params: { cfg: OpenClawConfig; accountId?: string | null }) {
+function resolveGoogleChatAccountImpl(params: { cfg: AforaConfig; accountId?: string | null }) {
   const accountId = params.accountId?.trim() || DEFAULT_ACCOUNT_ID;
   const channelConfig = (params.cfg.channels?.googlechat ?? {}) as Record<string, unknown>;
   const accounts =
@@ -114,7 +114,7 @@ vi.mock("./channel.deps.runtime.js", () => {
     getChatChannelMeta: (id: string) => ({ id, name: id }),
     isGoogleChatSpaceTarget: (value: string) => value.toLowerCase().startsWith("spaces/"),
     isGoogleChatUserTarget: (value: string) => value.toLowerCase().startsWith("users/"),
-    listGoogleChatAccountIds: (cfg: OpenClawConfig) => {
+    listGoogleChatAccountIds: (cfg: AforaConfig) => {
       const ids = Object.keys(cfg.channels?.googlechat?.accounts ?? {});
       return ids.length > 0 ? ids : ["default"];
     },
@@ -147,7 +147,7 @@ afterAll(() => {
   vi.resetModules();
 });
 
-function createGoogleChatCfg(): OpenClawConfig {
+function createGoogleChatCfg(): AforaConfig {
   return {
     channels: {
       googlechat: {
@@ -294,7 +294,7 @@ describe("googlechatPlugin threading", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const workAccount = googlechatThreadingAdapter.scopedAccountReplyToMode.resolveAccount(
       cfg,
@@ -320,7 +320,7 @@ describe("googlechatPlugin threading", () => {
           replyToMode: "all",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const hasRepliedRef = { value: false };
 
     const context = googlechatThreadingAdapter.buildToolContext({
@@ -350,7 +350,7 @@ describe("googlechatPlugin threading", () => {
           replyToMode: "all",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const context = googlechatThreadingAdapter.buildToolContext({
       cfg,
@@ -532,7 +532,7 @@ describe("googlechat directory", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const directory = expectDirectorySurface(googlechatDirectoryAdapter);
 
@@ -569,7 +569,7 @@ describe("googlechat directory", () => {
           allowFrom: [" users/alice ", " googlechat:user:Bob@Example.com "],
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const directory = expectDirectorySurface(googlechatDirectoryAdapter);
 
@@ -597,7 +597,7 @@ describe("googlechatPlugin security", () => {
           allowFrom: ["  googlechat:user:Bob@Example.com  "],
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const account = resolveGoogleChatAccountImpl({ cfg, accountId: "default" });
 
@@ -619,7 +619,7 @@ describe("googlechatPlugin outbound sanitizeText", () => {
 
   it("strips internal tool-trace failure banners from outbound text (#90684)", () => {
     const text =
-      "Visible answer.\n⚠️ 🛠️ `run openclaw definitely-not-a-real-subcommand (agent)` failed";
+      "Visible answer.\n⚠️ 🛠️ `run afora definitely-not-a-real-subcommand (agent)` failed";
     const out = sanitizeText({ text });
     expect(out).toBe("Visible answer.");
     expect(out).not.toContain("failed");

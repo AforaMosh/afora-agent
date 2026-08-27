@@ -2,7 +2,7 @@
 import {
   isRecord,
   normalizeOptionalString as readNonEmptyString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 type GatewayLogSentinelKind =
   | "plugin-hook-failure"
@@ -21,9 +21,9 @@ type GatewayLogSentinelVerdict =
 
 type GatewayLogSentinelOwner =
   | "plugin"
-  | "openclaw-routing"
+  | "afora-routing"
   | "codex-runtime"
-  | "openclaw-cron"
+  | "afora-cron"
   | "environment";
 
 export type GatewayLogSentinelFinding = {
@@ -101,7 +101,7 @@ const GATEWAY_LOG_SENTINEL_RULES: GatewayLogSentinelRule[] = [
   {
     kind: "cron-model-allowlist",
     verdict: "product-bug",
-    owner: "openclaw-cron",
+    owner: "afora-cron",
     productImpact: "P2",
     qaImpact: "P0",
     test: (line) =>
@@ -262,7 +262,7 @@ function createDirectReplyFinding(): GatewayLogSentinelFinding {
   return {
     kind: "direct-reply-self-message",
     verdict: "product-bug",
-    owner: "openclaw-routing",
+    owner: "afora-routing",
     productImpact: "P1",
     qaImpact: "P0",
     line: 1,

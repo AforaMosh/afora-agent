@@ -1,18 +1,18 @@
 // Tts Local Cli live tests cover the real process and ffmpeg integration.
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { runFfmpeg } from "openclaw/plugin-sdk/media-runtime";
-import type { SpeechProviderConfig } from "openclaw/plugin-sdk/speech-core";
-import { withTempDir } from "openclaw/plugin-sdk/test-env";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { runFfmpeg } from "afora-agent/plugin-sdk/media-runtime";
+import type { SpeechProviderConfig } from "afora-agent/plugin-sdk/speech-core";
+import { withTempDir } from "afora-agent/plugin-sdk/test-env";
 import { describe, expect, it } from "vitest";
 import { buildCliSpeechProvider } from "./speech-provider.js";
 
-const describeLive = process.env.OPENCLAW_LIVE_TEST === "1" ? describe : describe.skip;
+const describeLive = process.env.AFORA_LIVE_TEST === "1" ? describe : describe.skip;
 
 describeLive("buildCliSpeechProvider live", () => {
   it("synthesizes through a real local CLI fixture and ffmpeg", async () => {
-    await withTempDir("openclaw-cli-tts-live-", async (dir) => {
+    await withTempDir("afora-cli-tts-live-", async (dir) => {
       const script = path.join(dir, "copy-audio.mjs");
       const wavPath = path.join(dir, "source.wav");
       await runFfmpeg([
@@ -42,7 +42,7 @@ copyFileSync(${JSON.stringify(wavPath)}, process.argv[outIndex + 1]);
 
       const result = await buildCliSpeechProvider().synthesize({
         text: "hello world",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         providerConfig,
         providerOverrides: {},
         timeoutMs: 30_000,

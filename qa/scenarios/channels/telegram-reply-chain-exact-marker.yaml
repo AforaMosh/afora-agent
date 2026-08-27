@@ -35,7 +35,7 @@ flow:
             senderId: qa-command-operator
             senderName: QA Command Operator
             text:
-              expr: "`@openclaw Telegram reply-chain marker QA. Reply exactly: ${config.marker}`"
+              expr: "`@afora Telegram reply-chain marker QA. Reply exactly: ${config.marker}`"
         - waitForOutbound:
             conversation: { id: telegram-command-room, kind: channel }
             sinceIndex: { ref: startIndex }

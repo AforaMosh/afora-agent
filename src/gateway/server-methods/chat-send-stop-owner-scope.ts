@@ -1,8 +1,8 @@
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { tryResolveSessionCompatibilityOwnerAgentId } from "../session-request-agent.js";
 
 export function resolveChatSendStopOwnerScope(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   selectedAgentId?: string;
   sessionKey: string;
 }): { agentId?: string; defaultAgentId?: string } {

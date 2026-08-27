@@ -1,6 +1,6 @@
 import { Command } from "commander";
 // Google Meet tests cover index.create plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import plugin, { testing as googleMeetPluginTesting } from "./index.js";
 import { registerGoogleMeetCli } from "./src/cli.js";
@@ -40,8 +40,8 @@ const fetchGuardMocks = vi.hoisted(() => ({
   ),
 }));
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/ssrf-runtime")>();
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/ssrf-runtime")>();
   return {
     ...actual,
     fetchWithSsrFGuard: fetchGuardMocks.fetchWithSsrFGuard,
@@ -305,7 +305,7 @@ describe("google-meet create flow", () => {
   });
 
   afterAll(() => {
-    vi.doUnmock("openclaw/plugin-sdk/ssrf-runtime");
+    vi.doUnmock("afora-agent/plugin-sdk/ssrf-runtime");
     vi.doUnmock("./src/voice-call-gateway.js");
     vi.resetModules();
   });
@@ -442,7 +442,7 @@ describe("google-meet create flow", () => {
             manualAction: {
               reason: "google-login-required",
               message:
-                "Sign in to Google in the OpenClaw browser profile, then retry meeting creation.",
+                "Sign in to Google in the Afora browser profile, then retry meeting creation.",
             },
             browserUrl: "https://accounts.google.com/signin",
             browserTitle: "Sign in - Google Accounts",
@@ -464,11 +464,11 @@ describe("google-meet create flow", () => {
     const payload = responseErrorPayload(respond);
     expect(payload.source).toBe("browser");
     expect(payload.error).toBe(
-      "google-login-required: Sign in to Google in the OpenClaw browser profile, then retry meeting creation.",
+      "google-login-required: Sign in to Google in the Afora browser profile, then retry meeting creation.",
     );
     expect(payload.manualAction).toEqual({
       reason: "google-login-required",
-      message: "Sign in to Google in the OpenClaw browser profile, then retry meeting creation.",
+      message: "Sign in to Google in the Afora browser profile, then retry meeting creation.",
     });
     const browser = requireRecord(payload.browser, "browser payload");
     expect(browser.nodeId).toBe("node-1");
@@ -548,7 +548,7 @@ describe("google-meet create flow", () => {
             manualAction: {
               reason: "meet-permission-required",
               message:
-                "Allow microphone/camera permissions for Meet in the OpenClaw browser profile, then retry meeting creation.",
+                "Allow microphone/camera permissions for Meet in the Afora browser profile, then retry meeting creation.",
             },
             browserUrl: "https://meet.google.com/new",
             browserTitle: "Meet",
@@ -566,7 +566,7 @@ describe("google-meet create flow", () => {
     expect(result.details.manualAction).toEqual({
       reason: "meet-permission-required",
       message:
-        "Allow microphone/camera permissions for Meet in the OpenClaw browser profile, then retry meeting creation.",
+        "Allow microphone/camera permissions for Meet in the Afora browser profile, then retry meeting creation.",
     });
     const browser = requireRecord(result.details.browser, "browser details");
     expect(browser.nodeId).toBe("node-1");

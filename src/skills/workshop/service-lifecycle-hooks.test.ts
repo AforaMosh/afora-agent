@@ -3,9 +3,9 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDeferred } from "../../../test/helpers/promise.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../../test-utils/afora-test-state.js";
 import { createTrackedTempDirs } from "../../test-utils/tracked-temp-dirs.js";
 import { writeSkill } from "../test-support/e2e-test-helpers.js";
 
@@ -34,12 +34,12 @@ import {
 } from "./service.js";
 
 const tempDirs = createTrackedTempDirs();
-let testState: OpenClawTestState;
+let testState: AforaTestState;
 
 beforeEach(async () => {
-  testState = await createOpenClawTestState({
+  testState = await createAforaTestState({
     layout: "state-only",
-    prefix: "openclaw-skill-lifecycle-hooks-state-",
+    prefix: "afora-skill-lifecycle-hooks-state-",
   });
   hookMocks.proposalChanged.mockReset();
   hookMocks.skillChanged.mockReset();
@@ -52,7 +52,7 @@ afterEach(async () => {
 
 describe("Skill Workshop lifecycle hooks", () => {
   it("emits a committed live-skill artifact after apply", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-lifecycle-hooks-");
+    const workspaceDir = await tempDirs.make("afora-skill-lifecycle-hooks-");
     const proposal = await proposeCreateSkill({
       workspaceDir,
       agentId: "main",
@@ -96,7 +96,7 @@ describe("Skill Workshop lifecycle hooks", () => {
   });
 
   it("records and dispatches stale transitions detected during apply", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-lifecycle-stale-");
+    const workspaceDir = await tempDirs.make("afora-skill-lifecycle-stale-");
     const skillDir = path.join(workspaceDir, "skills", "existing");
     await writeSkill({
       dir: skillDir,
@@ -139,7 +139,7 @@ describe("Skill Workshop lifecycle hooks", () => {
   });
 
   it("marks a create proposal stale when its target appears before evaluation", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-lifecycle-create-stale-");
+    const workspaceDir = await tempDirs.make("afora-skill-lifecycle-create-stale-");
     const proposal = await proposeCreateSkill({
       workspaceDir,
       agentId: "main",
@@ -186,7 +186,7 @@ describe("Skill Workshop lifecycle hooks", () => {
   });
 
   it("releases the target lease before dispatching a reconciliation hook", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-lifecycle-reconcile-lock-");
+    const workspaceDir = await tempDirs.make("afora-skill-lifecycle-reconcile-lock-");
     const first = await proposeCreateSkill({
       workspaceDir,
       agentId: "main",
@@ -237,7 +237,7 @@ describe("Skill Workshop lifecycle hooks", () => {
   });
 
   it("rejects apply when an untouched target asset changes after evaluation", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-lifecycle-evaluation-race-");
+    const workspaceDir = await tempDirs.make("afora-skill-lifecycle-evaluation-race-");
     const skillDir = path.join(workspaceDir, "skills", "existing");
     await writeSkill({
       dir: skillDir,
@@ -275,7 +275,7 @@ describe("Skill Workshop lifecycle hooks", () => {
   });
 
   it("records and dispatches scanner quarantine transitions", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-lifecycle-quarantine-");
+    const workspaceDir = await tempDirs.make("afora-skill-lifecycle-quarantine-");
     const proposal = await proposeCreateSkill({
       workspaceDir,
       agentId: "main",

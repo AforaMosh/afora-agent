@@ -3,7 +3,7 @@ import {
   executeSqliteQueryTakeFirstSync,
 } from "../../infra/kysely-sync.js";
 import { runSqliteDeferredTransactionSync } from "../../infra/sqlite-transaction.js";
-import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
+import type { AforaAgentDatabase } from "../../state/afora-agent-db.js";
 import type { TranscriptEvent } from "./session-accessor.sqlite-contract.js";
 import {
   loadTranscriptEventsFromDatabase,
@@ -25,7 +25,7 @@ type TranscriptMirrorFacts = {
 
 /** Returns raw events only when the transcript identity projection is not current. */
 function loadTranscriptEventsForMirrorFallback(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionId: string,
 ): TranscriptEvent[] | undefined {
   const db = getSessionKysely(database.db);
@@ -57,7 +57,7 @@ function loadTranscriptEventsForMirrorFallback(
 
 /** Reads the bounded identity facts needed by transcript mirrors. */
 export function readTranscriptMirrorFacts(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   resolved: ResolvedTranscriptScope,
   params: {
     idempotencyKeys: readonly string[];
@@ -75,7 +75,7 @@ export function readTranscriptMirrorFacts(
 
 /** Reads mirror facts after the caller has established one SQLite snapshot. */
 function readTranscriptMirrorFactsInSnapshot(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   resolved: ResolvedTranscriptScope,
   params: {
     idempotencyKeys: readonly string[];

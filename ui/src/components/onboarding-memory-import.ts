@@ -11,12 +11,12 @@ import type { ApplicationContext } from "../app/context.ts";
 import { hasOperatorAdminAccess } from "../app/operator-access.ts";
 import { t } from "../i18n/index.ts";
 import { formatUiError, formatUiExternalText } from "../lib/format-error.ts";
-import { OpenClawLightDomElement } from "../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../lit/afora-element.ts";
 import { SubscriptionsController } from "../lit/subscriptions-controller.ts";
 import "../styles/onboarding-memory-import.css";
 import "./modal-dialog.ts";
 
-const ONBOARDING_MEMORY_IMPORT_KEY = "openclaw.onboarding.memory-import";
+const ONBOARDING_MEMORY_IMPORT_KEY = "afora.onboarding.memory-import";
 
 type ProviderResult =
   | { kind: "success"; result: MigrationsMemoryApplyResult }
@@ -64,7 +64,7 @@ function setGuardDone() {
   }
 }
 
-class OnboardingMemoryImport extends OpenClawLightDomElement {
+class OnboardingMemoryImport extends AforaLightDomElement {
   @property({ attribute: false }) context?: ApplicationContext<RouteId>;
   @property({ type: Boolean }) active = false;
 
@@ -390,7 +390,7 @@ class OnboardingMemoryImport extends OpenClawLightDomElement {
     const title = t("onboarding.memoryImport.title");
     const body = t("onboarding.memoryImport.body");
     return html`
-      <openclaw-modal-dialog
+      <afora-modal-dialog
         class="onboarding-memory-import-dialog"
         label=${title}
         description=${body}
@@ -453,17 +453,17 @@ class OnboardingMemoryImport extends OpenClawLightDomElement {
                 `}
           </footer>
         </section>
-      </openclaw-modal-dialog>
+      </afora-modal-dialog>
     `;
   }
 }
 
-if (!customElements.get("openclaw-onboarding-memory-import")) {
-  customElements.define("openclaw-onboarding-memory-import", OnboardingMemoryImport);
+if (!customElements.get("afora-onboarding-memory-import")) {
+  customElements.define("afora-onboarding-memory-import", OnboardingMemoryImport);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "openclaw-onboarding-memory-import": OnboardingMemoryImport;
+    "afora-onboarding-memory-import": OnboardingMemoryImport;
   }
 }

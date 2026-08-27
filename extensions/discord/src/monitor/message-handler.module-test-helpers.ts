@@ -1,5 +1,5 @@
 // Discord helper module supports message handler.module test helpers behavior.
-import type { MockFn } from "openclaw/plugin-sdk/plugin-test-runtime";
+import type { MockFn } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { vi } from "vitest";
 import { createDiscordMessageDispatcher as createRealDiscordMessageHandler } from "./message-dispatcher.js";
 import type { DiscordMessageRunQueueTestingHooks } from "./message-run-queue.js";

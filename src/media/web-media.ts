@@ -2,8 +2,8 @@
 import { createHash } from "node:crypto";
 import { lstat, realpath } from "node:fs/promises";
 import path from "node:path";
-import { maxBytesForKind, type MediaKind } from "@openclaw/media-core/constants";
-import { basenameFromAnyPath, extnameFromAnyPath } from "@openclaw/media-core/file-name";
+import { maxBytesForKind, type MediaKind } from "@afora/media-core/constants";
+import { basenameFromAnyPath, extnameFromAnyPath } from "@afora/media-core/file-name";
 import {
   detectMime,
   extensionForMime,
@@ -11,9 +11,9 @@ import {
   kindFromMime,
   mimeTypeFromFilePath,
   normalizeMimeType,
-} from "@openclaw/media-core/mime";
-import { hasHttpUrlPrefix } from "@openclaw/net-policy/url-protocol";
-import { uniqueValues } from "@openclaw/normalization-core/string-normalization";
+} from "@afora/media-core/mime";
+import { hasHttpUrlPrefix } from "@afora/net-policy/url-protocol";
+import { uniqueValues } from "@afora/normalization-core/string-normalization";
 import { resolveCanvasHttpPathToLocalPath } from "../canvas/documents.js";
 import { logVerbose, shouldLogVerbose } from "../globals.js";
 import { formatErrorMessage } from "../infra/errors.js";
@@ -26,13 +26,13 @@ import {
 import { assertNoWindowsNetworkPath, safeFileURLToPath } from "../infra/local-file-access.js";
 import type { PinnedDispatcherPolicy, SsrFPolicy } from "../infra/net/ssrf.js";
 import { isNotFoundPathError, isPathInside } from "../infra/path-guards.js";
-import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import { resolvePreferredAforaTmpDir } from "../infra/tmp-afora-dir.js";
 import { getActivePluginHttpRouteRegistry } from "../plugins/runtime.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../state/afora-state-db.js";
 import { resolveUserPath } from "../utils.js";
 import { chunkItems } from "../utils/chunk-items.js";
 import { readOutboundMediaFile } from "./bounded-read-file.js";
@@ -318,13 +318,13 @@ type HostReadHtmlTrust =
 
 const TRUSTED_GENERATED_HTML_MARKER_VERSION = 1;
 const TRUSTED_GENERATED_HTML_MARKER_KIND = "trusted-generated-html";
-type OutboundProvenanceDatabase = Pick<OpenClawStateKyselyDatabase, "outbound_media_provenance">;
+type OutboundProvenanceDatabase = Pick<AforaStateKyselyDatabase, "outbound_media_provenance">;
 
 async function getTrustedGeneratedHtmlMarker(
   resolvedFilePath: string,
 ): Promise<{ sha256: string; size: number } | undefined> {
   try {
-    const { db } = openOpenClawStateDatabase();
+    const { db } = openAforaStateDatabase();
     const row = executeSqliteQueryTakeFirstSync(
       db,
       getNodeSqliteKysely<OutboundProvenanceDatabase>(db)
@@ -357,7 +357,7 @@ async function resolveTrustedGeneratedHostReadHtml(
   }
   const [resolvedFilePath, tmpRoot, outboundRoot] = await Promise.all([
     realpath(filePath).catch(() => undefined),
-    realpath(resolvePreferredOpenClawTmpDir()).catch(() => undefined),
+    realpath(resolvePreferredAforaTmpDir()).catch(() => undefined),
     realpath(path.join(getMediaDir(), "outbound")).catch(() => undefined),
   ]);
   if (!resolvedFilePath) {
@@ -389,7 +389,7 @@ export async function markTrustedGeneratedHtmlPath(
   const sha256 = createHash("sha256").update(contents).digest("hex");
   const sizeBytes = contents.length;
   const createdAtMs = Date.now();
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     executeSqliteQuerySync(
       db,
       getNodeSqliteKysely<OutboundProvenanceDatabase>(db)
@@ -417,7 +417,7 @@ export async function markTrustedGeneratedHtmlPath(
 
 /** Removes provenance whose staged regular file no longer exists. */
 export async function pruneStaleTrustedGeneratedHtmlMarkers(): Promise<void> {
-  const { db } = openOpenClawStateDatabase();
+  const { db } = openAforaStateDatabase();
   const rows = executeSqliteQuerySync(
     db,
     getNodeSqliteKysely<OutboundProvenanceDatabase>(db)
@@ -446,7 +446,7 @@ export async function pruneStaleTrustedGeneratedHtmlMarkers(): Promise<void> {
   if (stale.length === 0) {
     return;
   }
-  runOpenClawStateWriteTransaction(({ db: writeDb }) => {
+  runAforaStateWriteTransaction(({ db: writeDb }) => {
     for (const batch of chunkItems(stale, 500)) {
       executeSqliteQuerySync(
         writeDb,

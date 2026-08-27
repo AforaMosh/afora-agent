@@ -1,4 +1,4 @@
-import { addTimerTimeoutGraceMs } from "@openclaw/normalization-core/number-coercion";
+import { addTimerTimeoutGraceMs } from "@afora/normalization-core/number-coercion";
 import { callGatewayFromCli } from "../cli/gateway-rpc.js";
 import type { PluginRuntime } from "../plugins/runtime/types.js";
 import type {

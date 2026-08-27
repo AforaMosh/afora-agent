@@ -1,7 +1,7 @@
 // Outbound session routing maps send targets back into route/session metadata
 // so outbound-only messages can be mirrored into conversation state.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import type { MsgContext } from "../../auto-reply/templating.js";
 import type { ChatType } from "../../channels/chat-type.js";
 import { getChannelPlugin } from "../../channels/plugins/index.js";
@@ -12,7 +12,7 @@ import {
   updateSessionLastRoute,
 } from "../../config/sessions/inbound.runtime.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveAgentRoute, type RoutePeer } from "../../routing/resolve-route.js";
 import { normalizeAgentId, resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
 import { buildOutboundBaseSessionKey } from "./base-session-key.js";
@@ -35,7 +35,7 @@ export type OutboundSessionRoute = {
 
 /** Inputs required to resolve an outbound target into a session route. */
 export type ResolveOutboundSessionRouteParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: ChannelId;
   plugin?: ChannelPlugin;
   agentId: string;
@@ -246,7 +246,7 @@ export async function resolveOutboundSessionRoute(
 }
 
 type OutboundSessionEntryParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: ChannelId;
   accountId?: string | null;
   route: OutboundSessionRoute;

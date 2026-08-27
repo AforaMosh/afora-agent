@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { afterEach, describe, expect, it } from "vitest";
 import { startQaGatewayChild } from "../../../../extensions/qa-lab/api.js";
 import type { McpServerConfig } from "../../../../src/config/types.mcp.js";
-import type { OpenClawConfig } from "../../../../src/config/types.openclaw.js";
+import type { AforaConfig } from "../../../../src/config/types.afora.js";
 import { useAutoCleanupTempDirTracker } from "../../../helpers/temp-dir.js";
 import {
   NODE_MCP_COMMAND,
@@ -16,8 +16,8 @@ import {
   waitForNode,
 } from "./gateway-node-mcp.test-support.js";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY?.trim() ?? "";
-const LIVE_ENABLED = process.env.OPENCLAW_LIVE_TEST === "1" && Boolean(OPENAI_API_KEY);
-const MODEL_ID = process.env.OPENCLAW_MCP_LIVE_MODEL?.trim() || "gpt-5.6-luna";
+const LIVE_ENABLED = process.env.AFORA_LIVE_TEST === "1" && Boolean(OPENAI_API_KEY);
+const MODEL_ID = process.env.AFORA_MCP_LIVE_MODEL?.trim() || "gpt-5.6-luna";
 const MODEL_REF = `openai/${MODEL_ID}`;
 const REQUEST_TIMEOUT_MS = 120_000;
 const LIVE_TEST_TIMEOUT_MS = 5 * 60_000;
@@ -43,7 +43,7 @@ function stdioServer(
     },
   };
 }
-function modelConfig(workspace: string): OpenClawConfig {
+function modelConfig(workspace: string): AforaConfig {
   return {
     secrets: { providers: { default: { source: "env" } } },
     models: {
@@ -123,12 +123,12 @@ describe.skipIf(!LIVE_ENABLED)("OpenAI cross-placement MCP model proof", () => {
     { timeout: LIVE_TEST_TIMEOUT_MS },
     async () => {
       const repoRoot = process.cwd();
-      const taskRoot = tempDirs.make("openclaw-gateway-node-mcp-live-");
+      const taskRoot = tempDirs.make("afora-gateway-node-mcp-live-");
       const gatewayParent = path.join(taskRoot, "gateway");
       const nodeRoot = path.join(taskRoot, "node");
       const nodeHome = path.join(nodeRoot, "home");
       const nodeStateDir = path.join(nodeRoot, "state");
-      const nodeConfigPath = path.join(nodeRoot, "openclaw.json");
+      const nodeConfigPath = path.join(nodeRoot, "afora.json");
       const nodeWorkspace = path.join(nodeRoot, "workspace");
       const nodeTempDir = path.join(nodeRoot, "tmp");
       const fixturePath = path.join(
@@ -159,7 +159,7 @@ describe.skipIf(!LIVE_ENABLED)("OpenAI cross-placement MCP model proof", () => {
           repoRoot,
           createChildEnv({ home: nodeHome, tempDir: nodeTempDir }),
         );
-        const nodeConfig: OpenClawConfig = {
+        const nodeConfig: AforaConfig = {
           gateway: { mode: "local" },
           agents: { defaults: { workspace: nodeWorkspace } },
           plugins: { enabled: false },
@@ -182,8 +182,8 @@ describe.skipIf(!LIVE_ENABLED)("OpenAI cross-placement MCP model proof", () => {
           controlUiEnabled: false,
           runtimeEnvPatch: {
             OPENAI_API_KEY,
-            OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-            OPENCLAW_SKIP_CHANNELS: "1",
+            AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+            AFORA_SKIP_CHANNELS: "1",
           },
           mutateConfig: (cfg) => {
             const live = modelConfig(cfg.agents?.defaults?.workspace ?? gatewayParent);
@@ -216,11 +216,11 @@ describe.skipIf(!LIVE_ENABLED)("OpenAI cross-placement MCP model proof", () => {
           home: nodeHome,
           tempDir: nodeTempDir,
           extra: {
-            OPENCLAW_HOME: nodeHome,
-            OPENCLAW_STATE_DIR: nodeStateDir,
-            OPENCLAW_CONFIG_PATH: nodeConfigPath,
-            OPENCLAW_GATEWAY_TOKEN: gateway.token,
-            OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: "1",
+            AFORA_HOME: nodeHome,
+            AFORA_STATE_DIR: nodeStateDir,
+            AFORA_CONFIG_PATH: nodeConfigPath,
+            AFORA_GATEWAY_TOKEN: gateway.token,
+            AFORA_ALLOW_INSECURE_PRIVATE_WS: "1",
           },
         });
         expect(nodeEnv).not.toHaveProperty("OPENAI_API_KEY");

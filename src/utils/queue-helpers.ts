@@ -1,11 +1,11 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 /**
  * Shared queue overflow, debounce, and collection helpers.
  *
  * Queue owners use these helpers to cap pending work, summarize dropped items,
  * debounce drains, and force individual collection when cross-channel ordering matters.
  */
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { isFastTestRuntimeEnv } from "../infra/env.js";
 
 /** Pending overflow summary state produced by the summarize drop policy. */

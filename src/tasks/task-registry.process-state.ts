@@ -31,7 +31,7 @@ type TaskRegistryProcessState = {
   listenerStop?: (() => void) | null;
 };
 
-const TASK_REGISTRY_PROCESS_STATE_KEY = Symbol.for("openclaw.taskRegistry.state");
+const TASK_REGISTRY_PROCESS_STATE_KEY = Symbol.for("afora.taskRegistry.state");
 
 /** Returns the singleton in-process task registry state. */
 export function getTaskRegistryProcessState(): TaskRegistryProcessState {

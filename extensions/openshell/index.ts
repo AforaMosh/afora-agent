@@ -1,6 +1,6 @@
-// Openshell plugin entrypoint registers its OpenClaw integration.
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
-import { registerSandboxBackend } from "openclaw/plugin-sdk/sandbox";
+// Openshell plugin entrypoint registers its Afora integration.
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
+import { registerSandboxBackend } from "afora-agent/plugin-sdk/sandbox";
 import {
   createOpenShellSandboxBackendFactory,
   createOpenShellSandboxBackendManager,

@@ -29,9 +29,9 @@ describe("project memory bootstrap", () => {
       endLine: 2,
       score: 0.8,
       snippet:
-        "Use the release helper. <!-- trigger: release helper --> <!-- importance: 8 --> <!-- project: github.com/OpenClaw/OpenClaw -->",
+        "Use the release helper. <!-- trigger: release helper --> <!-- importance: 8 --> <!-- project: github.com/AforaMosh/afora-agent -->",
       source: "memory" as const,
-      projectKey: "github.com/OpenClaw/OpenClaw",
+      projectKey: "github.com/AforaMosh/afora-agent",
       importance: 8,
     },
     {
@@ -48,7 +48,7 @@ describe("project memory bootstrap", () => {
 
   async function prepareEntries(
     candidates: typeof entries,
-    activeProjectKeys: string[] = ["github.com/OpenClaw/OpenClaw"],
+    activeProjectKeys: string[] = ["github.com/AforaMosh/afora-agent"],
   ): Promise<string[]> {
     runtimeMocks.listCurated.mockResolvedValue(candidates);
     runtimeMocks.getManager.mockResolvedValue({
@@ -68,7 +68,7 @@ describe("project memory bootstrap", () => {
 
   it("includes entries from every project retained in the session active set", async () => {
     const rendered = (
-      await prepareEntries(entries, ["github.com/example/other", "github.com/OpenClaw/OpenClaw"])
+      await prepareEntries(entries, ["github.com/example/other", "github.com/AforaMosh/afora-agent"])
     ).join("\n");
     expect(rendered).toContain("Use the release helper.");
     expect(rendered).toContain("Foreign fact.");
@@ -165,20 +165,20 @@ describe("project memory bootstrap", () => {
       await prepareProjectMemoryBootstrap({
         cfg: {},
         agentId: "main",
-        activeProjectKeys: ["github.com/OpenClaw/OpenClaw"],
+        activeProjectKeys: ["github.com/AforaMosh/afora-agent"],
       })
     ).join("\n");
     expect(rendered).toContain("Use the release helper.");
     expect(runtimeMocks.search).not.toHaveBeenCalled();
     expect(runtimeMocks.listCurated).toHaveBeenCalledWith({
-      activeProjectKeys: ["github.com/OpenClaw/OpenClaw"],
+      activeProjectKeys: ["github.com/AforaMosh/afora-agent"],
       limit: 48,
     });
   });
 
   it("builds scoped write guidance without capturing global memory", () => {
-    const instruction = buildProjectMemoryWriteInstruction("github.com/OpenClaw/OpenClaw");
-    expect(instruction).toContain("<!-- project: github.com/OpenClaw/OpenClaw -->");
+    const instruction = buildProjectMemoryWriteInstruction("github.com/AforaMosh/afora-agent");
+    expect(instruction).toContain("<!-- project: github.com/AforaMosh/afora-agent -->");
     expect(instruction).toContain("Do not project-scope user-level preferences");
     expect(buildProjectMemoryWriteInstruction("path:/tmp/unsafe-->note")).toBe("");
   });

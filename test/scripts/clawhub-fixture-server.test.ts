@@ -10,7 +10,7 @@ import { ensureClawHubPackageTrustAcknowledged } from "../../src/infra/clawhub-i
 import { useAutoCleanupTempDirTracker } from "../helpers/temp-dir.js";
 
 const SCRIPT_PATH = path.resolve("scripts/e2e/lib/clawhub-fixture-server.cjs");
-const PACKAGE_NAME = "@openclaw/kitchen-sink";
+const PACKAGE_NAME = "@afora/kitchen-sink";
 const PACKAGE_PATH = `/api/v1/packages/${encodeURIComponent(PACKAGE_NAME)}`;
 const KITCHEN_SINK_VERSION = "0.2.5";
 type FixtureServerChild = ChildProcessByStdio<null, Readable, Readable>;
@@ -47,7 +47,7 @@ async function stopServer(child: FixtureServerChild) {
 }
 
 async function startFixtureServer(profile: string, args: string[] = [], cwd = process.cwd()) {
-  const root = tempDirs.make("openclaw-clawhub-fixture-server-");
+  const root = tempDirs.make("afora-clawhub-fixture-server-");
   const portFile = path.join(root, "port");
   const child = spawn(process.execPath, [SCRIPT_PATH, profile, portFile, ...args], {
     cwd,
@@ -166,9 +166,9 @@ describe("ClawHub fixture server", () => {
   });
 
   it("parks WhatsApp startup config and restores the authored bytes exactly", () => {
-    const root = tempDirs.make("openclaw-clawhub-auth-config-");
-    const configPath = path.join(root, "openclaw.json");
-    const snapshotPath = path.join(root, "openclaw.authored.json");
+    const root = tempDirs.make("afora-clawhub-auth-config-");
+    const configPath = path.join(root, "afora.json");
+    const snapshotPath = path.join(root, "afora.authored.json");
     const authoredConfig = `{
   "gateway": { "mode": "local", "reload": { "mode": "hybrid" } },
   "plugins": {
@@ -206,9 +206,9 @@ describe("ClawHub fixture server", () => {
   });
 
   it("rejects malformed probe config without changing authored bytes", () => {
-    const root = tempDirs.make("openclaw-clawhub-invalid-auth-config-");
-    const configPath = path.join(root, "openclaw.json");
-    const snapshotPath = path.join(root, "openclaw.authored.json");
+    const root = tempDirs.make("afora-clawhub-invalid-auth-config-");
+    const configPath = path.join(root, "afora.json");
+    const snapshotPath = path.join(root, "afora.authored.json");
     const authoredConfig = '{"plugins":{"allow":"whatsapp"}}\n';
     writeFileSync(configPath, authoredConfig);
 
@@ -224,19 +224,19 @@ describe("ClawHub fixture server", () => {
   });
 
   it("serves exact prepublish tarballs through the ClawHub artifact contract", async () => {
-    const root = tempDirs.make("openclaw-clawhub-prepublish-");
-    const isolatedCwd = tempDirs.make("openclaw-clawhub-isolated-");
+    const root = tempDirs.make("afora-clawhub-prepublish-");
+    const isolatedCwd = tempDirs.make("afora-clawhub-isolated-");
     const packageDir = path.join(root, "package");
-    const tarball = "openclaw-whatsapp-2026.8.1-beta.1.tgz";
+    const tarball = "afora-whatsapp-2026.8.1-beta.1.tgz";
     const tarballPath = path.join(root, tarball);
     const version = "2026.8.1-beta.1";
     mkdirSync(packageDir);
     writeFileSync(
       path.join(packageDir, "package.json"),
-      `${JSON.stringify({ name: "@openclaw/whatsapp", version })}\n`,
+      `${JSON.stringify({ name: "@afora/whatsapp", version })}\n`,
     );
     writeFileSync(
-      path.join(packageDir, "openclaw.plugin.json"),
+      path.join(packageDir, "afora.plugin.json"),
       `${JSON.stringify({ id: "whatsapp", configSchema: { type: "object" } })}\n`,
     );
     execFileSync("tar", ["-czf", tarballPath, "-C", root, "package"]);
@@ -248,7 +248,7 @@ describe("ClawHub fixture server", () => {
     writeFileSync(
       manifestPath,
       `${JSON.stringify({
-        packages: [{ name: "@openclaw/whatsapp", version, tarball, sha256 }],
+        packages: [{ name: "@afora/whatsapp", version, tarball, sha256 }],
       })}\n`,
     );
 
@@ -258,7 +258,7 @@ describe("ClawHub fixture server", () => {
       isolatedCwd,
     );
     expect(runNoRequestsAssertion(baseUrl, isolatedCwd).status).toBe(0);
-    const whatsappPath = `/api/v1/packages/${encodeURIComponent("@openclaw/whatsapp")}`;
+    const whatsappPath = `/api/v1/packages/${encodeURIComponent("@afora/whatsapp")}`;
     const detail = await fetchJson(baseUrl, whatsappPath);
     expect(detail.package).toMatchObject({
       latestVersion: version,
@@ -283,19 +283,19 @@ describe("ClawHub fixture server", () => {
       return response;
     });
     const trust = await ensureClawHubPackageTrustAcknowledged({
-      subject: { kind: "plugin", packageName: "@openclaw/whatsapp" },
+      subject: { kind: "plugin", packageName: "@afora/whatsapp" },
       version,
       baseUrl,
       mode: "update",
     });
     expect(security).toEqual({
       package: {
-        name: "@openclaw/whatsapp",
-        displayName: "@openclaw/whatsapp",
+        name: "@afora/whatsapp",
+        displayName: "@afora/whatsapp",
         family: "code-plugin",
       },
       release: {
-        releaseId: `fixture:@openclaw/whatsapp@${version}`,
+        releaseId: `fixture:@afora/whatsapp@${version}`,
         version,
         artifactKind: "npm-pack",
         artifactSha256: sha256,
@@ -331,13 +331,13 @@ describe("ClawHub fixture server", () => {
       `GET ${whatsappPath}/versions/${version}/artifact/download`,
     ]);
     expect(
-      runPrepublishAssertion(baseUrl, "@openclaw/whatsapp", version, undefined, isolatedCwd).status,
+      runPrepublishAssertion(baseUrl, "@afora/whatsapp", version, undefined, isolatedCwd).status,
     ).toBe(0);
     const unexpectedStartupRequest = runNoRequestsAssertion(baseUrl, isolatedCwd);
     expect(unexpectedStartupRequest.status).toBe(1);
     expect(unexpectedStartupRequest.stderr).toContain("unexpected ClawHub fixture requests");
     expect((await fetch(`${baseUrl}${whatsappPath}/versions/0.0.0/artifact`)).status).toBe(404);
-    const mismatch = runPrepublishAssertion(baseUrl, "@openclaw/whatsapp", version);
+    const mismatch = runPrepublishAssertion(baseUrl, "@afora/whatsapp", version);
     expect(mismatch.status).toBe(1);
     expect(mismatch.stderr).toContain("unexpected ClawHub fixture requests");
   });

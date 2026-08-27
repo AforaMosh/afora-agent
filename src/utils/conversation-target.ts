@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { normalizeMessageChannel } from "./message-channel.js";
 
 export type ConversationTargetParams = {

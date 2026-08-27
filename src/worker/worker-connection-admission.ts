@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { rawDataToString } from "@openclaw/gateway-client/websocket-data";
+import { rawDataToString } from "@afora/gateway-client/websocket-data";
 import { Value } from "typebox/value";
 import { WebSocket, type RawData } from "ws";
 import {

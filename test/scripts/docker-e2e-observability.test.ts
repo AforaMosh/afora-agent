@@ -17,7 +17,7 @@ function successTail(scriptPath: string): string {
 }
 
 function runSuccessTail(scriptPath: string) {
-  const tempDir = tempDirs.make("openclaw-docker-e2e-observability-");
+  const tempDir = tempDirs.make("afora-docker-e2e-observability-");
   const clientLog = path.join(tempDir, "client.log");
   writeFileSync(clientLog, "client proof log\n", "utf8");
   const harness = [

@@ -5,10 +5,10 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeEach, expect, it, vi } from "vitest";
 import type { ChannelPluginCatalogEntry } from "../channels/plugins/catalog.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 const testState = vi.hoisted(() => ({
-  config: {} as OpenClawConfig,
+  config: {} as AforaConfig,
   json: [] as unknown[],
   catalogEntries: [] as ChannelPluginCatalogEntry[],
   manifestRegistryRebuilds: 0,
@@ -67,7 +67,7 @@ vi.mock("../runtime.js", () => ({
 
 import { tryRouteCli } from "./route.js";
 
-const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-channels-list-catalog-rows-"));
+const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-channels-list-catalog-rows-"));
 
 // Official external channels whose owner plugin is not installed. Each one is
 // configured, so `channels list` renders it as a catalog-only row and resolves a
@@ -78,7 +78,7 @@ function officialExternalCatalogEntry(channelId: string): ChannelPluginCatalogEn
   return {
     id: channelId,
     meta: { label: channelId },
-    install: { npmSpec: `@openclaw/${channelId}` },
+    install: { npmSpec: `@afora/${channelId}` },
   } as ChannelPluginCatalogEntry;
 }
 
@@ -89,10 +89,10 @@ async function runChannelsListJson(channelIds: readonly string[]): Promise<{
   testState.catalogEntries = channelIds.map(officialExternalCatalogEntry);
   testState.config = {
     channels: Object.fromEntries(channelIds.map((channelId) => [channelId, { enabled: true }])),
-  } as OpenClawConfig;
+  } as AforaConfig;
   testState.json = [];
   testState.manifestRegistryRebuilds = 0;
-  await expect(tryRouteCli(["node", "openclaw", "channels", "list", "--json"])).resolves.toBe(true);
+  await expect(tryRouteCli(["node", "afora", "channels", "list", "--json"])).resolves.toBe(true);
   return {
     rebuilds: testState.manifestRegistryRebuilds,
     chat: (testState.json[0] as { chat: unknown }).chat,
@@ -100,9 +100,9 @@ async function runChannelsListJson(channelIds: readonly string[]): Promise<{
 }
 
 beforeEach(() => {
-  vi.stubEnv("OPENCLAW_DISABLE_BUNDLED_PLUGINS", "1");
-  vi.stubEnv("OPENCLAW_HOME", path.join(tempRoot, "home"));
-  vi.stubEnv("OPENCLAW_STATE_DIR", path.join(tempRoot, "state"));
+  vi.stubEnv("AFORA_DISABLE_BUNDLED_PLUGINS", "1");
+  vi.stubEnv("AFORA_HOME", path.join(tempRoot, "home"));
+  vi.stubEnv("AFORA_STATE_DIR", path.join(tempRoot, "state"));
 });
 
 afterAll(() => {

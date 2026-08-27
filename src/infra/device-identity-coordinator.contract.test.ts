@@ -41,7 +41,7 @@ describe.skipIf(process.platform === "win32")("device identity coordinator contr
   });
 
   it("canonicalizes database and state paths through existing symlink ancestors", async () => {
-    await withTempDir("openclaw-device-identity-path-contract-", async (rawRootDir) => {
+    await withTempDir("afora-device-identity-path-contract-", async (rawRootDir) => {
       const rootDir = fs.realpathSync.native(rawRootDir);
       const canonicalStateDir = path.join(rootDir, "canonical-state");
       const aliasedStateDir = path.join(rootDir, "aliased-state");
@@ -54,26 +54,26 @@ describe.skipIf(process.platform === "win32")("device identity coordinator contr
       expect(
         resolveStateDatabaseCoordinatorPath({
           ...common,
-          databasePath: path.join(aliasedStateDir, "state", "openclaw.sqlite"),
+          databasePath: path.join(aliasedStateDir, "state", "afora.sqlite"),
           runtimeDirectory,
         }),
       ).toBe(
         resolveStateDatabaseCoordinatorPath({
           ...common,
-          databasePath: path.join(canonicalStateDir, "state", "openclaw.sqlite"),
+          databasePath: path.join(canonicalStateDir, "state", "afora.sqlite"),
           runtimeDirectory,
         }),
       );
       expect(
         resolveDeviceIdentityCoordinatorPaths({
           ...common,
-          databasePath: path.join(aliasedStateDir, "state", "openclaw.sqlite"),
+          databasePath: path.join(aliasedStateDir, "state", "afora.sqlite"),
           stateDir: aliasedStateDir,
         }),
       ).toEqual(
         resolveDeviceIdentityCoordinatorPaths({
           ...common,
-          databasePath: path.join(canonicalStateDir, "state", "openclaw.sqlite"),
+          databasePath: path.join(canonicalStateDir, "state", "afora.sqlite"),
           stateDir: canonicalStateDir,
         }),
       );

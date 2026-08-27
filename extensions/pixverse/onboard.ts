@@ -3,20 +3,20 @@ import type {
   ProviderAuthContext,
   ProviderAuthMethod,
   ProviderAuthMethodNonInteractiveContext,
-} from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/plugin-entry";
 import {
   applyAuthProfileConfig,
   buildApiKeyCredential,
   ensureApiKeyFromOptionEnvOrPrompt,
   normalizeApiKeyInput,
   normalizeOptionalSecretInput,
-  type OpenClawConfig,
+  type AforaConfig,
   type SecretInput,
   upsertAuthProfileWithLockOrThrow,
   validateApiKeyInput,
-} from "openclaw/plugin-sdk/provider-auth-api-key";
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-onboard";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/provider-auth-api-key";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-onboard";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   DEFAULT_PIXVERSE_REGION,
   PIXVERSE_BASE_URL_BY_REGION,
@@ -29,7 +29,7 @@ const PROFILE_ID = `${PIXVERSE_PROVIDER_ID}:default`;
 
 type PixVerseAuthResult = {
   profiles: Array<{ profileId: string; credential: ReturnType<typeof buildApiKeyCredential> }>;
-  configPatch: OpenClawConfig;
+  configPatch: AforaConfig;
   notes: string[];
 };
 
@@ -56,10 +56,10 @@ function pixVerseRegionNote(region: PixVerseApiRegion): string {
 }
 
 function applyPixVerseProviderConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   region: PixVerseApiRegion,
   options?: { resetBaseUrl?: boolean },
-): OpenClawConfig {
+): AforaConfig {
   const existingProvider: Partial<ModelProviderConfig> =
     cfg.models?.providers?.[PIXVERSE_PROVIDER_ID] ?? {};
   const selectedBaseUrl = PIXVERSE_BASE_URL_BY_REGION[region];
@@ -84,10 +84,10 @@ function applyPixVerseProviderConfig(
 }
 
 function applyPixVerseConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   region: PixVerseApiRegion,
   options?: { resetBaseUrl?: boolean },
-): OpenClawConfig {
+): AforaConfig {
   const next = applyPixVerseProviderConfig(cfg, region, options);
   if (next.agents?.defaults?.mediaModels?.video) {
     return next;

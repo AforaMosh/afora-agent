@@ -43,7 +43,7 @@ type PackageJson = {
   devDependencies?: Record<string, string>;
   name?: string;
   private?: boolean;
-  openclaw?: { install?: { npmSpec?: string } };
+  afora?: { install?: { npmSpec?: string } };
 };
 
 const repoRoot = resolveRepoRoot(import.meta.url);
@@ -416,7 +416,7 @@ function packageClusterMeta(relativePackagePath: string) {
   if (relativePackagePath === "ui/package.json") {
     return {
       cluster: "ui",
-      packageName: "openclaw-control-ui",
+      packageName: "afora-control-ui",
       packagePath: relativePackagePath,
       reachability: "workspace-ui",
     };
@@ -508,7 +508,7 @@ async function buildMissingPackages(params: { staticLeakClusters?: Set<string> }
       continue;
     }
     const missing = Object.keys(pkg.dependencies ?? {})
-      .filter((dep) => dep !== "openclaw" && !rootDeps.has(dep))
+      .filter((dep) => dep !== "afora" && !rootDeps.has(dep))
       .toSorted(compareStrings);
     if (missing.length === 0) {
       continue;
@@ -528,7 +528,7 @@ async function buildMissingPackages(params: { staticLeakClusters?: Set<string> }
       decisionReason: classification.reason,
       packageName: pkg.name ?? meta.packageName,
       packagePath: relativePackagePath,
-      npmSpec: redactNpmSpec(pkg.openclaw?.install?.npmSpec),
+      npmSpec: redactNpmSpec(pkg.afora?.install?.npmSpec),
       private: pkg.private === true,
       pluginSdkReachability:
         pluginSdkEntries.length > 0 ? { staticEntryPoints: pluginSdkEntries } : undefined,

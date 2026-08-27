@@ -20,7 +20,7 @@ type CommandSecretGatewayTestApi = {
 
 function getTestApi(): CommandSecretGatewayTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.commandSecretGatewayTestApi")
+    Symbol.for("afora.commandSecretGatewayTestApi")
   ] as CommandSecretGatewayTestApi;
 }
 

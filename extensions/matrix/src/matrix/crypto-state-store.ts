@@ -5,8 +5,8 @@ import path from "node:path";
 import type {
   PluginStateKeyedStore,
   PluginStateSyncKeyedStore,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { getMatrixRuntime } from "../runtime.js";
 import type { MatrixStoredRecoveryKey } from "./sdk/types.js";
 import { resolveMatrixSqliteStateEnv } from "./sqlite-state.js";
@@ -330,7 +330,7 @@ export function scoreMatrixCryptoStateInStore(storageRootDir: string): number {
 }
 
 function matrixCryptoStateDatabaseExists(storageRootDir: string): boolean {
-  return fs.existsSync(path.join(storageRootDir, "state", "openclaw.sqlite"));
+  return fs.existsSync(path.join(storageRootDir, "state", "afora.sqlite"));
 }
 
 function resolveRecoveryKeyStateKeyForPath(recoveryKeyPath: string): string {

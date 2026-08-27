@@ -90,7 +90,7 @@ function metric(value: number) {
 
 function commandResult() {
   return {
-    command: "ocm @env -- openclaw agent --local",
+    command: "ocm @env -- afora agent --local",
     status: 0,
     stderr: "",
     stdout: "",
@@ -234,7 +234,7 @@ function partialReport(): JsonObject {
     ],
     schemaVersion: "kova.report.v1",
     summary: { statuses: { PASS: 1 }, total: 1 },
-    target: "local-build:/workspace/openclaw",
+    target: "local-build:/workspace/afora",
     targetCleanup: targetCleanup(),
   };
 }
@@ -259,7 +259,7 @@ function profiledResourceReport(): JsonObject {
         infoCard(),
         {
           failedCommand: null,
-          kind: "openclaw-failure",
+          kind: "afora-failure",
           measurements: { cpuPercentMax: 156.2, peakRssMb: 923.7 },
           scenario: SCENARIO,
           severity: "blocking",
@@ -355,7 +355,7 @@ function profiledResourceReport(): JsonObject {
     ],
     schemaVersion: "kova.report.v1",
     summary: { statuses: { FAIL: 1 }, total: 1 },
-    target: "local-build:/workspace/openclaw",
+    target: "local-build:/workspace/afora",
     targetCleanup: targetCleanup(),
   };
 }
@@ -568,7 +568,7 @@ function addProfiledPassRecord(report: JsonObject): JsonObject {
 }
 
 function writeReport(report: unknown): string {
-  const root = mkdtempSync(join(tmpdir(), "openclaw-kova-report-"));
+  const root = mkdtempSync(join(tmpdir(), "afora-kova-report-"));
   tempRoots.push(root);
   const reportPath = join(root, "report.json");
   writeFileSync(reportPath, `${JSON.stringify(report)}\n`);
@@ -996,7 +996,7 @@ describe("scripts/lib/kova-report-gate.mts", () => {
     ],
     [
       "rejects blocking cards with failed commands",
-      (report) => (blockingCard(report).failedCommand = "openclaw agent"),
+      (report) => (blockingCard(report).failedCommand = "afora agent"),
     ],
     [
       "rejects blocking cards with rewritten violation messages",
@@ -1029,7 +1029,7 @@ describe("scripts/lib/kova-report-gate.mts", () => {
       "rejects unexpected info gate cards",
       (report) => {
         const cards = arrayAt(objectAt(report.gate).cards);
-        cards.push({ ...infoCard(), kind: "openclaw-failure", status: "FAIL" });
+        cards.push({ ...infoCard(), kind: "afora-failure", status: "FAIL" });
         setAt(report, ["gate", "infoCount"], 2);
         setAt(report, ["gate", "missingRequiredCount"], 2);
       },
@@ -1040,7 +1040,7 @@ describe("scripts/lib/kova-report-gate.mts", () => {
         const cards = arrayAt(objectAt(report.gate).cards);
         cards.push({
           ...infoCard(),
-          kind: "openclaw-failure",
+          kind: "afora-failure",
           severity: "warning",
           status: "FAIL",
         });
@@ -1377,7 +1377,7 @@ describe("scripts/lib/kova-report-gate.mts", () => {
   });
 
   it("runs the CLI guard from paths that need file URL escaping", () => {
-    const root = mkdtempSync(join(tmpdir(), "openclaw-kova report-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-kova report-"));
     tempRoots.push(root);
     const scriptDir = join(root, "script dir");
     mkdirSync(scriptDir);

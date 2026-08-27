@@ -1,9 +1,9 @@
-import type { ChannelAccountSnapshot } from "openclaw/plugin-sdk/channel-contract";
+import type { ChannelAccountSnapshot } from "afora-agent/plugin-sdk/channel-contract";
 import {
   channelBlockedPatch,
   channelReadyPatch,
   channelStoppedPatch,
-} from "openclaw/plugin-sdk/gateway-runtime";
+} from "afora-agent/plugin-sdk/gateway-runtime";
 
 export type MSTeamsStatusSink = (patch: Omit<ChannelAccountSnapshot, "accountId">) => void;
 

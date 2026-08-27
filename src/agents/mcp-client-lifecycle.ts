@@ -5,8 +5,8 @@ import {
 } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { ErrorCode } from "@modelcontextprotocol/sdk/types.js";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { OpenClawStdioClientTransport } from "./mcp-stdio-transport.js";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { AforaStdioClientTransport } from "./mcp-stdio-transport.js";
 
 type LifecycleSession = {
   client: Pick<Client, "close">;
@@ -65,7 +65,7 @@ export async function connectMcpClient(params: {
           client: params.client,
           transport: params.transport,
           transportType:
-            params.transport instanceof OpenClawStdioClientTransport
+            params.transport instanceof AforaStdioClientTransport
               ? "stdio"
               : params.transport instanceof StreamableHTTPClientTransport
                 ? "streamable-http"
@@ -131,7 +131,7 @@ export async function disposeMcpClient(
   // group, so force it dead before disposal can report completion.
   const { transport } = session;
   const closeTransport =
-    session.transportType === "stdio" && transport instanceof OpenClawStdioClientTransport
+    session.transportType === "stdio" && transport instanceof AforaStdioClientTransport
       ? () => transport.forceClose()
       : () => transport.close();
   await settleWithin(

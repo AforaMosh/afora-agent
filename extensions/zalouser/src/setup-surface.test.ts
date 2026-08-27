@@ -1,12 +1,12 @@
 // Zalouser tests cover setup surface plugin behavior.
-import { installChannelDmPolicyContractSuite } from "openclaw/plugin-sdk/channel-test-helpers";
+import { installChannelDmPolicyContractSuite } from "afora-agent/plugin-sdk/channel-test-helpers";
 import {
   createPluginSetupWizardConfigure,
   createTestWizardPrompter,
   runSetupWizardConfigure,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 // Preserve module setup before modules that consume it.
 // oxfmt-ignore
 import {
@@ -22,7 +22,7 @@ import { zalouserSetupPlugin } from "./setup-test-helpers.js";
 const zalouserConfigure = createPluginSetupWizardConfigure(zalouserSetupPlugin);
 
 async function runSetup(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   prompter: ReturnType<typeof createTestWizardPrompter>;
   options?: Record<string, unknown>;
   forceAllowFrom?: boolean;
@@ -128,7 +128,7 @@ describe("zalouser setup wizard", () => {
     checkZaloAuthenticatedMock.mockResolvedValueOnce(true);
 
     await expect(
-      zalouserSetupWizard.status.resolveConfigured({ cfg: {} as OpenClawConfig }),
+      zalouserSetupWizard.status.resolveConfigured({ cfg: {} as AforaConfig }),
     ).resolves.toBe(true);
 
     expect(checkZaloAuthenticatedMock).toHaveBeenCalledWith("default", {
@@ -368,7 +368,7 @@ describe("zalouser setup wizard", () => {
         plugins: {
           allow: ["telegram"],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       prompter,
     });
 
@@ -409,7 +409,7 @@ describe("zalouser setup wizard", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       prompter,
       options: { quickstartDefaults: true },
       accountOverrides: { zalouser: "work" },

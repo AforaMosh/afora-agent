@@ -1,7 +1,7 @@
 // Discord plugin module owns sender provenance for its in-memory history window.
-import type { ContextVisibilityMode } from "openclaw/plugin-sdk/config-contracts";
-import type { HistoryEntry } from "openclaw/plugin-sdk/reply-history";
-import { filterSupplementalContextItems } from "openclaw/plugin-sdk/security-runtime";
+import type { ContextVisibilityMode } from "afora-agent/plugin-sdk/config-contracts";
+import type { HistoryEntry } from "afora-agent/plugin-sdk/reply-history";
+import { filterSupplementalContextItems } from "afora-agent/plugin-sdk/security-runtime";
 import type { DiscordSenderIdentity } from "./sender-identity.js";
 
 type DiscordHistorySenderProvenance = Readonly<{

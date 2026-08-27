@@ -1,6 +1,6 @@
 import type { Event } from "nostr-tools";
-import type { ChannelDirectoryEntry } from "openclaw/plugin-sdk/directory-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import type { ChannelDirectoryEntry } from "afora-agent/plugin-sdk/directory-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import type { BuzzMentionMember } from "./mentions.js";
 import type { BuzzRoomMembership } from "./room-membership.js";
 import { buildBuzzTarget, parseBuzzTarget } from "./target.js";
@@ -179,7 +179,7 @@ export class BuzzDirectoryState {
     profileLimit?: number;
   }) {
     this.#publicKey = params.publicKey.trim().toLowerCase();
-    this.#fallbackProfileName = params.fallbackProfileName.trim() || "OpenClaw";
+    this.#fallbackProfileName = params.fallbackProfileName.trim() || "Afora";
     this.#configuredRoomIds = new Set(params.channelIds.map(parseBuzzTarget));
     const requestedProfileLimit = params.profileLimit ?? DEFAULT_BUZZ_DIRECTORY_PROFILE_LIMIT;
     this.#profileLimit =

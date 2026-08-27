@@ -7,7 +7,7 @@ describe("tryOutputPrecomputedCommandHelp", () => {
     const outputBrowserHelp = vi.fn(() => true);
 
     await expect(
-      tryOutputPrecomputedCommandHelp(["node", "openclaw", "browser", "--help"], {
+      tryOutputPrecomputedCommandHelp(["node", "afora", "browser", "--help"], {
         outputPrecomputedBrowserHelpText: outputBrowserHelp,
         env: {},
       }),
@@ -19,7 +19,7 @@ describe("tryOutputPrecomputedCommandHelp", () => {
     const outputBrowserHelp = vi.fn(() => true);
 
     await expect(
-      tryOutputPrecomputedCommandHelp(["node", "openclaw", "browser", "--target", "--help"], {
+      tryOutputPrecomputedCommandHelp(["node", "afora", "browser", "--target", "--help"], {
         outputPrecomputedBrowserHelpText: outputBrowserHelp,
         env: {},
       }),
@@ -32,7 +32,7 @@ describe("tryOutputPrecomputedCommandHelp", () => {
 
     await expect(
       tryOutputPrecomputedCommandHelp(
-        ["node", "openclaw", "secrets", "apply", "--from", "--help"],
+        ["node", "afora", "secrets", "apply", "--from", "--help"],
         {
           outputPrecomputedSecretsHelpText: outputSecretsHelp,
           env: {},

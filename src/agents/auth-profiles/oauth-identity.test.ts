@@ -3,7 +3,7 @@
  * Includes direct and fuzz coverage for account/email comparison so refreshed
  * credentials cannot poison another auth store.
  */
-import { MAX_DATE_TIMESTAMP_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_DATE_TIMESTAMP_MS } from "@afora/normalization-core/number-coercion";
 import { describe, expect, it } from "vitest";
 import {
   isSafeToCopyOAuthIdentity,

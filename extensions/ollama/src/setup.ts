@@ -1,4 +1,4 @@
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 
 export { resolveOllamaSetupDefaultBaseUrl } from "./defaults.js";
 export { buildOllamaProvider } from "./provider-models.js";

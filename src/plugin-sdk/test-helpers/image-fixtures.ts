@@ -1,6 +1,6 @@
 // Deterministic image buffers for plugin SDK media tests.
 import { deflateSync } from "node:zlib";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { encodePngRgb, encodePngRgba } from "../../media/png-encode.js";
 
 type Rgba = {

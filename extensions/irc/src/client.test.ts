@@ -91,7 +91,7 @@ async function connectAndCollectRegistration(params: {
     tls: false,
     nick: "bot",
     username: "bot",
-    realname: "OpenClaw Bot",
+    realname: "Afora Bot",
     nickserv: params.nickserv,
     onError: (error) => errors.push(error),
   });
@@ -115,7 +115,7 @@ async function connectAfterNickCollision(nick: string): Promise<string> {
     tls: false,
     nick,
     username: "bot",
-    realname: "OpenClaw Bot",
+    realname: "Afora Bot",
   });
   try {
     const nickLines = server.lines.filter((line) => line.startsWith("NICK "));
@@ -252,7 +252,7 @@ describe("irc client readiness timeout", () => {
           tls: false,
           nick: "bot",
           username: "bot",
-          realname: "OpenClaw Bot",
+          realname: "Afora Bot",
           connectTimeoutMs: 50,
         }),
       ).rejects.toThrow(/IRC connect/);
@@ -284,9 +284,9 @@ describe("irc client fallback nick", () => {
     expect(nick).toMatch(/^mybot_\d*$/);
   });
 
-  it("falls back to openclaw when a colliding nick is entirely special characters", async () => {
+  it("falls back to afora when a colliding nick is entirely special characters", async () => {
     const nick = await connectAfterNickCollision("!!!");
-    expect(nick).toMatch(/^openclaw_\d*$/);
+    expect(nick).toMatch(/^afora_\d*$/);
   });
 
   it("truncates a long fallback nick to 30 characters", async () => {
@@ -308,7 +308,7 @@ async function collectPrivmsgBodies(
     tls: false,
     nick: "bot",
     username: "bot",
-    realname: "OpenClaw Bot",
+    realname: "Afora Bot",
     connectTimeoutMs: 5000,
     messageChunkMaxChars,
   });

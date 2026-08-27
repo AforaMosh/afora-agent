@@ -1,6 +1,6 @@
 // Legacy web tool migration tests cover provider-owned search and fetch config repair.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { AforaConfig } from "../../../config/config.js";
 import {
   listLegacyWebSearchConfigPaths,
   migrateLegacyWebFetchConfig,
@@ -8,7 +8,7 @@ import {
   migrateLegacyXSearchConfig,
 } from "./legacy-web-tools-migrate.js";
 
-type LegacyWebSearchConfig = Omit<OpenClawConfig, "tools"> & {
+type LegacyWebSearchConfig = Omit<AforaConfig, "tools"> & {
   tools?: { web?: { search?: Record<string, unknown> } };
 };
 
@@ -150,7 +150,7 @@ describe("legacy web fetch config", () => {
           },
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(result.config.tools?.web?.fetch).toEqual({
       provider: "firecrawl",
@@ -187,7 +187,7 @@ describe("legacy x_search config", () => {
           x_search: { apiKey: "fake", enabled: true, model: "grok-4-1-fast" },
         } as Record<string, unknown>,
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     const web = result.config.tools?.web as Record<string, unknown> | undefined;
     expect(web?.x_search).toEqual({
@@ -219,7 +219,7 @@ describe("legacy x_search config", () => {
     const apiKey = { source: "env", provider: "default", id: "X_SEARCH_KEY_REF" };
     const result = migrateLegacyXSearchConfig({
       tools: { web: { x_search: { apiKey, enabled: true } } },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(result.config.plugins?.entries?.xai?.config?.webSearch).toEqual({ apiKey });
   });

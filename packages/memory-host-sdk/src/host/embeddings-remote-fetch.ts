@@ -1,6 +1,6 @@
 // Memory Host SDK module implements embeddings remote fetch behavior.
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
-import type { SsrFPolicy } from "./openclaw-runtime-network.js";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
+import type { SsrFPolicy } from "./afora-runtime-network.js";
 import { postJson } from "./post-json.js";
 
 // Fetches and validates OpenAI-compatible embedding responses.

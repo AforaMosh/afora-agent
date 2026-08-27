@@ -27,16 +27,16 @@ import type { ExecApprovalFollowupOutcome } from "./bash-tools.exec-types.js";
 const TEST_ENV_KEYS = [
   "HOME",
   ...GATEWAY_STARTUP_MUTATED_ENV_KEYS,
-  "OPENCLAW_STATE_DIR",
-  "OPENCLAW_CONFIG_PATH",
-  "OPENCLAW_GATEWAY_TOKEN",
-  "OPENCLAW_SKIP_CHANNELS",
-  "OPENCLAW_SKIP_GMAIL_WATCHER",
-  "OPENCLAW_SKIP_CRON",
-  "OPENCLAW_SKIP_CANVAS_HOST",
-  "OPENCLAW_SKIP_BROWSER_CONTROL_SERVER",
-  "OPENCLAW_SKIP_PROVIDERS",
-  "OPENCLAW_TEST_MINIMAL_GATEWAY",
+  "AFORA_STATE_DIR",
+  "AFORA_CONFIG_PATH",
+  "AFORA_GATEWAY_TOKEN",
+  "AFORA_SKIP_CHANNELS",
+  "AFORA_SKIP_GMAIL_WATCHER",
+  "AFORA_SKIP_CRON",
+  "AFORA_SKIP_CANVAS_HOST",
+  "AFORA_SKIP_BROWSER_CONTROL_SERVER",
+  "AFORA_SKIP_PROVIDERS",
+  "AFORA_TEST_MINIMAL_GATEWAY",
 ];
 const GATEWAY_CONNECT_TIMEOUT_MS = 120_000;
 const EXEC_APPROVAL_E2E_TIMEOUT_MS = 180_000;
@@ -56,21 +56,21 @@ describe("gateway-hosted exec approvals", () => {
   });
 
   it(
-    "lets OpenClaw-style gateway tool calls request and wait for approval over separate connections",
+    "lets Afora-style gateway tool calls request and wait for approval over separate connections",
     async () => {
       const envSnapshot = captureEnv(TEST_ENV_KEYS);
       cleanup.push(() => envSnapshot.restore());
 
-      const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-exec-approval-e2e-"));
+      const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "afora-exec-approval-e2e-"));
       cleanup.push(() => fs.rm(tempHome, { recursive: true, force: true, maxRetries: 5 }));
 
-      const stateDir = path.join(tempHome, ".openclaw");
+      const stateDir = path.join(tempHome, ".afora");
       const workspaceDir = path.join(tempHome, "workspace");
       await fs.mkdir(workspaceDir, { recursive: true });
 
       const port = await getGatewayE2ePortBlock();
       const token = "exec-approval-e2e-token";
-      const configPath = path.join(stateDir, "openclaw.json");
+      const configPath = path.join(stateDir, "afora.json");
       await fs.mkdir(stateDir, { recursive: true });
       await fs.writeFile(
         configPath,
@@ -95,17 +95,17 @@ describe("gateway-hosted exec approvals", () => {
       );
 
       setTestEnvValue("HOME", tempHome);
-      setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
-      setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
-      setTestEnvValue("OPENCLAW_GATEWAY_TOKEN", token);
-      setTestEnvValue("OPENCLAW_GATEWAY_PORT", String(port));
-      setTestEnvValue("OPENCLAW_SKIP_CHANNELS", "1");
-      setTestEnvValue("OPENCLAW_SKIP_GMAIL_WATCHER", "1");
-      setTestEnvValue("OPENCLAW_SKIP_CRON", "1");
-      setTestEnvValue("OPENCLAW_SKIP_CANVAS_HOST", "1");
-      setTestEnvValue("OPENCLAW_SKIP_BROWSER_CONTROL_SERVER", "1");
-      setTestEnvValue("OPENCLAW_SKIP_PROVIDERS", "1");
-      setTestEnvValue("OPENCLAW_TEST_MINIMAL_GATEWAY", "1");
+      setTestEnvValue("AFORA_STATE_DIR", stateDir);
+      setTestEnvValue("AFORA_CONFIG_PATH", configPath);
+      setTestEnvValue("AFORA_GATEWAY_TOKEN", token);
+      setTestEnvValue("AFORA_GATEWAY_PORT", String(port));
+      setTestEnvValue("AFORA_SKIP_CHANNELS", "1");
+      setTestEnvValue("AFORA_SKIP_GMAIL_WATCHER", "1");
+      setTestEnvValue("AFORA_SKIP_CRON", "1");
+      setTestEnvValue("AFORA_SKIP_CANVAS_HOST", "1");
+      setTestEnvValue("AFORA_SKIP_BROWSER_CONTROL_SERVER", "1");
+      setTestEnvValue("AFORA_SKIP_PROVIDERS", "1");
+      setTestEnvValue("AFORA_TEST_MINIMAL_GATEWAY", "1");
       clearRuntimeConfigSnapshot();
       clearConfigCache();
       clearSessionStoreCacheForTest();

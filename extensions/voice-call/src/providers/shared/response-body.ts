@@ -2,8 +2,8 @@
 import {
   readResponseTextPrefix,
   readResponseWithLimit,
-} from "openclaw/plugin-sdk/response-limit-runtime";
-import { redactSensitiveText } from "openclaw/plugin-sdk/security-runtime";
+} from "afora-agent/plugin-sdk/response-limit-runtime";
+import { redactSensitiveText } from "afora-agent/plugin-sdk/security-runtime";
 
 const PROVIDER_JSON_RESPONSE_MAX_BYTES = 1 * 1024 * 1024;
 const PROVIDER_ERROR_RESPONSE_MAX_BYTES = 8 * 1024;

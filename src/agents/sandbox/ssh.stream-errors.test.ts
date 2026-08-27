@@ -62,7 +62,7 @@ describe("SSH sandbox stream errors", () => {
   it.each(["tar.stdout", "tar.stderr", "ssh.stdin", "ssh.stdout", "ssh.stderr"] as const)(
     "rejects and terminates both upload children once when %s fails",
     async (stream) => {
-      const localDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-ssh-stream-test-"));
+      const localDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-ssh-stream-test-"));
       tempDirs.push(localDir);
       const tar = createMockChildProcess();
       const ssh = createMockChildProcess();

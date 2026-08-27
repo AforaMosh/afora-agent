@@ -1,5 +1,5 @@
 // Routes Gateway and embedded events to the exact selected TUI conversation.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import {
   readSessionMessageIdentity,
   readSessionMessageSequence,

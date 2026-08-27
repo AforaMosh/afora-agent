@@ -1,4 +1,4 @@
-import type { OpenClawPluginToolContext } from "openclaw/plugin-sdk/plugin-entry";
+import type { AforaPluginToolContext } from "afora-agent/plugin-sdk/plugin-entry";
 import { describe, expect, it, vi } from "vitest";
 import { CODEX_CONTROL_METHODS } from "./app-server/capabilities.js";
 import type { v2 } from "./app-server/protocol.js";
@@ -37,7 +37,7 @@ function toolFixture(params?: {
 }) {
   const read = vi.fn(async () => (params?.bindingCwd ? { cwd: params.bindingCwd } : undefined));
   const bindingStore = { read } as unknown as CodexAppServerBindingStore;
-  const context: OpenClawPluginToolContext = {
+  const context: AforaPluginToolContext = {
     config: {},
     agentId: "main",
     agentDir: "/agent",

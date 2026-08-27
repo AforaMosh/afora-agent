@@ -2,7 +2,7 @@ import {
   getHealthCheck,
   registerHealthCheck as registerPluginHealthCheck,
   type HealthCheck,
-} from "openclaw/plugin-sdk/health";
+} from "afora-agent/plugin-sdk/health";
 import { createPolicyDoctorChecks } from "./checks.js";
 import { evaluatePolicy, findingsForCheck } from "./evaluation.js";
 import {

@@ -29,7 +29,7 @@ import {
   CLAW_SCHEMA_VERSION,
   type ClawDiagnostic,
   type ClawManifest,
-  type ClawOpenClawProfile,
+  type ClawAforaProfile,
 } from "./types.js";
 
 const nonEmptyString = z
@@ -112,18 +112,18 @@ const agentSchema = z
   })
   .strict();
 
-const openClawExtensionSchema = z
+const aforaExtensionSchema = z
   .object({
     id: agentId,
     kind: z.literal("plugin"),
-    format: z.enum(["openclaw", "claude", "codex", "cursor"]),
+    format: z.enum(["afora", "claude", "codex", "cursor"]),
     source: z.literal("clawhub"),
     ref: clawHubPackageName,
     version: exactVersion,
   })
   .strict();
 
-const openClawProfileSchema = z
+const aforaProfileSchema = z
   .object({
     schemaVersion: z.literal(1),
     agent: z
@@ -145,7 +145,7 @@ const openClawProfileSchema = z
             profile: nonEmptyString
               .refine(
                 (value) => resolveToolProfilePolicy(value) !== undefined,
-                "Tool profile must name a registered OpenClaw built-in profile.",
+                "Tool profile must name a registered Afora built-in profile.",
               )
               .optional(),
             allow: z
@@ -238,7 +238,7 @@ const openClawProfileSchema = z
                     code: "custom",
                     path: ["rememberAcrossConversations"],
                     message:
-                      "The sessions source requires rememberAcrossConversations: true in the OpenClaw profile.",
+                      "The sessions source requires rememberAcrossConversations: true in the Afora profile.",
                   });
                 }
               })
@@ -284,7 +284,7 @@ const openClawProfileSchema = z
           .optional(),
       })
       .strict(),
-    extensions: z.array(openClawExtensionSchema).optional().default([]),
+    extensions: z.array(aforaExtensionSchema).optional().default([]),
   })
   .strict()
   .superRefine((profile, ctx) => {
@@ -613,20 +613,20 @@ export function parseClawManifest(
   return { ok: true, manifest: parsed.data as ClawManifest, diagnostics: [] };
 }
 
-export function parseClawOpenClawProfile(value: unknown):
+export function parseClawAforaProfile(value: unknown):
   | {
       ok: true;
-      profile: ClawOpenClawProfile;
+      profile: ClawAforaProfile;
       diagnostics: ClawDiagnostic[];
     }
   | { ok: false; diagnostics: ClawDiagnostic[] } {
-  const parsed = openClawProfileSchema.safeParse(value);
+  const parsed = aforaProfileSchema.safeParse(value);
   if (!parsed.success) {
     return { ok: false, diagnostics: diagnosticsFromZodError(parsed.error) };
   }
   return {
     ok: true,
-    profile: parsed.data as ClawOpenClawProfile,
+    profile: parsed.data as ClawAforaProfile,
     diagnostics: [],
   };
 }

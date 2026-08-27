@@ -23,16 +23,16 @@ const SESSION_KEY = "agent:main:main";
 
 describe("managed image actions Gateway E2E", () => {
   test("issues one transcript ticket for full and thumbnail image bytes", async () => {
-    const stateDir = process.env.OPENCLAW_STATE_DIR;
+    const stateDir = process.env.AFORA_STATE_DIR;
     if (!stateDir) {
-      throw new Error("OPENCLAW_STATE_DIR is required for managed image E2E fixtures");
+      throw new Error("AFORA_STATE_DIR is required for managed image E2E fixtures");
     }
     testState.gatewayAuth = { mode: "token", token: GATEWAY_TOKEN };
     testState.gatewayControlUi = { basePath: "/rosita" };
     testState.sessionStorePath = path.join(stateDir, "sessions.sqlite");
 
     const source = await fs.readFile(
-      path.join(process.cwd(), "docs/assets/openclaw-banner-dark.png"),
+      path.join(process.cwd(), "docs/assets/afora-banner-dark.png"),
     );
     const messageId = "managed-image-actions-message";
     const blocks = await createManagedOutgoingMediaBlocks({
@@ -69,7 +69,7 @@ describe("managed image actions Gateway E2E", () => {
             role: "assistant",
             content: blocks,
             timestamp: Date.now(),
-            __openclaw: { id: messageId },
+            __afora: { id: messageId },
           },
         },
       ]

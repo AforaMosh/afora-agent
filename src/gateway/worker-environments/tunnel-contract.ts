@@ -1,4 +1,4 @@
-import type { WorkerTunnelStatus } from "@openclaw/gateway-protocol";
+import type { WorkerTunnelStatus } from "@afora/gateway-protocol";
 import { NODE_WORKER_CAPACITY_EXHAUSTED_ERROR_CODE } from "../../infra/node-commands.js";
 import type { SpawnResult } from "../../process/exec.js";
 import type { WorkerLaunchPlan } from "../../worker/launch-descriptor.js";

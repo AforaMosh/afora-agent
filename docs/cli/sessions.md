@@ -6,25 +6,25 @@ read_when:
 title: "Sessions"
 ---
 
-# `openclaw sessions`
+# `afora sessions`
 
 List stored conversation sessions.
 
 Session lists are not channel/provider liveness checks. They show persisted
 conversation rows from session stores. A quiet Discord, Slack, Telegram, or
 other channel can reconnect successfully without creating a new session row
-until a message is processed. Use `openclaw channels status --probe`,
-`openclaw status --deep`, or `openclaw health --verbose` when you need live
+until a message is processed. Use `afora channels status --probe`,
+`afora status --deep`, or `afora health --verbose` when you need live
 channel connectivity.
 
 ```bash
-openclaw sessions
-openclaw sessions --agent work
-openclaw sessions --all-agents
-openclaw sessions --active 120
-openclaw sessions --limit 25
-openclaw sessions --store ./tmp/sessions.json
-openclaw sessions --json
+afora sessions
+afora sessions --agent work
+afora sessions --all-agents
+afora sessions --active 120
+afora sessions --limit 25
+afora sessions --store ./tmp/sessions.json
+afora sessions --json
 ```
 
 Flags:
@@ -40,11 +40,11 @@ Flags:
 | `--verbose`          | Verbose logging.                                                              |
 
 `--store` accepts the documented legacy selector form, including `sessions.json`
-and suffixless custom selectors. OpenClaw resolves that selector to its physical
+and suffixless custom selectors. Afora resolves that selector to its physical
 SQLite target, verifies the target exists and is usable, and reports the physical
 path it actually read.
 
-`openclaw sessions` and the Gateway `sessions.list` RPC are bounded by default
+`afora sessions` and the Gateway `sessions.list` RPC are bounded by default
 so large long-lived stores cannot monopolize the CLI process or Gateway event
 loop. The CLI returns the newest 100 sessions by default; pass `--limit <n>`
 for a smaller/larger window or `--limit all` when you intentionally need the
@@ -62,14 +62,14 @@ configured agent roots or a templated `session.store` root. Legacy selector
 paths must resolve inside the agent root; symlinks and out-of-root paths are
 skipped.
 
-`openclaw sessions --all-agents --json`:
+`afora sessions --all-agents --json`:
 
 ```json
 {
   "path": null,
   "stores": [
-    { "agentId": "main", "path": "/home/user/.openclaw/agents/main/agent/openclaw-agent.sqlite" },
-    { "agentId": "work", "path": "/home/user/.openclaw/agents/work/agent/openclaw-agent.sqlite" }
+    { "agentId": "main", "path": "/home/user/.afora/agents/main/agent/afora-agent.sqlite" },
+    { "agentId": "work", "path": "/home/user/.afora/agents/work/agent/afora-agent.sqlite" }
   ],
   "allAgents": true,
   "count": 2,
@@ -89,11 +89,11 @@ skipped.
 Archive one or more sessions through the running Gateway:
 
 ```bash
-openclaw sessions archive "agent:main:scratch-1"
-openclaw sessions archive "agent:main:scratch-1" "agent:main:scratch-2"
-openclaw sessions archive "agent:work:scratch-1" --agent work
-openclaw sessions archive "agent:main:scratch-1" --dry-run
-openclaw sessions archive "agent:main:scratch-1" --json
+afora sessions archive "agent:main:scratch-1"
+afora sessions archive "agent:main:scratch-1" "agent:main:scratch-2"
+afora sessions archive "agent:work:scratch-1" --agent work
+afora sessions archive "agent:main:scratch-1" --dry-run
+afora sessions archive "agent:main:scratch-1" --json
 ```
 
 Archive uses the same `sessions.patch` lifecycle operation as the Control UI.
@@ -111,11 +111,11 @@ validate every key and preview the result without changing session state.
 Delete one or more sessions through the running Gateway:
 
 ```bash
-openclaw sessions delete "agent:main:scratch-1"
-openclaw sessions delete "agent:main:scratch-1" "agent:main:scratch-2" --yes
-openclaw sessions delete "agent:work:scratch-1" --agent work --yes
-openclaw sessions delete "agent:main:scratch-1" --dry-run
-openclaw sessions delete "agent:main:scratch-1" --yes --json
+afora sessions delete "agent:main:scratch-1"
+afora sessions delete "agent:main:scratch-1" "agent:main:scratch-2" --yes
+afora sessions delete "agent:work:scratch-1" --agent work --yes
+afora sessions delete "agent:main:scratch-1" --dry-run
+afora sessions delete "agent:main:scratch-1" --yes --json
 ```
 
 <Warning>
@@ -157,7 +157,7 @@ Example mixed-result JSON:
       "key": "agent:main:missing",
       "ok": false,
       "status": "not_found",
-      "error": "Session not found. Run openclaw sessions list --json to choose a valid key."
+      "error": "Session not found. Run afora sessions list --json to choose a valid key."
     }
   ]
 }
@@ -166,14 +166,14 @@ Example mixed-result JSON:
 ## Tail trajectory progress
 
 ```bash
-openclaw sessions tail
-openclaw sessions tail --follow
-openclaw sessions tail --session-key "agent:main:telegram:direct:123" --tail 25
-openclaw sessions --agent work tail --follow
-openclaw sessions --all-agents tail --follow
+afora sessions tail
+afora sessions tail --follow
+afora sessions tail --session-key "agent:main:telegram:direct:123" --tail 25
+afora sessions --agent work tail --follow
+afora sessions --all-agents tail --follow
 ```
 
-`openclaw sessions tail` renders recent runtime trajectory events as compact
+`afora sessions tail` renders recent runtime trajectory events as compact
 progress lines. Without `--session-key`, it tails running sessions first, then
 the latest stored session. `--tail <count>` controls how many existing events
 print before follow mode; default `80`, and `0` starts at the current end.
@@ -188,32 +188,32 @@ model completion lines show provider/model and terminal status.
 ## Export a trajectory bundle
 
 ```bash
-openclaw sessions export-trajectory --session-key "agent:main:telegram:direct:123" --workspace .
-openclaw sessions export-trajectory --session-key "agent:main:telegram:direct:123" --output bug-123 --json
+afora sessions export-trajectory --session-key "agent:main:telegram:direct:123" --workspace .
+afora sessions export-trajectory --session-key "agent:main:telegram:direct:123" --output bug-123 --json
 ```
 
 This is the command path used by the `/export-trajectory` slash command after
 the owner approves the exec request. The output directory is always resolved
-inside `.openclaw/trajectory-exports/` under the selected workspace.
+inside `.afora/trajectory-exports/` under the selected workspace.
 
 ## Cleanup maintenance
 
 Run maintenance now instead of waiting for the next write cycle:
 
 ```bash
-openclaw sessions cleanup --dry-run
-openclaw sessions cleanup --agent work --dry-run
-openclaw sessions cleanup --all-agents --dry-run
-openclaw sessions cleanup --enforce
-openclaw sessions cleanup --enforce --active-key "agent:main:telegram:direct:123"
-openclaw sessions cleanup --dry-run --fix-dm-scope
-openclaw sessions cleanup --json
+afora sessions cleanup --dry-run
+afora sessions cleanup --agent work --dry-run
+afora sessions cleanup --all-agents --dry-run
+afora sessions cleanup --enforce
+afora sessions cleanup --enforce --active-key "agent:main:telegram:direct:123"
+afora sessions cleanup --dry-run --fix-dm-scope
+afora sessions cleanup --json
 ```
 
-`openclaw sessions cleanup` uses `session.maintenance` settings from config
+`afora sessions cleanup` uses `session.maintenance` settings from config
 ([Configuration reference](/gateway/config-agents#session)):
 
-- Scope note: `openclaw sessions cleanup` maintains session stores,
+- Scope note: `afora sessions cleanup` maintains session stores,
   transcripts, trajectory rows, and legacy trajectory sidecars. It does not
   prune cron run history, which automatically keeps the newest 2000 rows per job
   ([Cron configuration](/automation/cron-jobs#configuration)).
@@ -253,7 +253,7 @@ sent through the Gateway so it shares the same session-store writer as runtime
 traffic. Use `--store <path>` for explicit offline repair of a legacy store
 selector.
 
-`openclaw sessions cleanup --all-agents --dry-run --json`:
+`afora sessions cleanup --all-agents --dry-run --json`:
 
 ```json
 {
@@ -263,7 +263,7 @@ selector.
   "stores": [
     {
       "agentId": "main",
-      "storePath": "/home/user/.openclaw/agents/main/sessions/sessions.json",
+      "storePath": "/home/user/.afora/agents/main/sessions/sessions.json",
       "beforeCount": 120,
       "afterCount": 80,
       "missing": 0,
@@ -273,7 +273,7 @@ selector.
     },
     {
       "agentId": "work",
-      "storePath": "/home/user/.openclaw/agents/work/sessions/sessions.json",
+      "storePath": "/home/user/.afora/agents/work/sessions/sessions.json",
       "beforeCount": 18,
       "afterCount": 18,
       "missing": 0,
@@ -287,14 +287,14 @@ selector.
 
 ## Compact a session
 
-Reclaim context budget for a wedged or oversized session. `openclaw sessions
+Reclaim context budget for a wedged or oversized session. `afora sessions
 compact <key>` is the first-class wrapper around the `sessions.compact`
 Gateway RPC and requires a running Gateway.
 
 ```bash
-openclaw sessions compact "agent:main:main"
-openclaw sessions compact "agent:main:main" --max-lines 200
-openclaw sessions compact "agent:work:main" --agent work --json
+afora sessions compact "agent:main:main"
+afora sessions compact "agent:main:main" --max-lines 200
+afora sessions compact "agent:work:main" --agent work --json
 ```
 
 - Without `--max-lines`, the Gateway LLM-summarizes the transcript. The CLI
@@ -311,7 +311,7 @@ The command exits non-zero when the Gateway reports a failed compaction or is
 unreachable, so crons and scripts never mistake a silent no-op for success.
 
 <Note>
-`openclaw agent --message '/compact ...'` is **not** a compaction path. Slash
+`afora agent --message '/compact ...'` is **not** a compaction path. Slash
 commands from the CLI are rejected by the authorized-sender check; that
 invocation exits non-zero with guidance pointing here instead of silently
 no-opping.
@@ -319,7 +319,7 @@ no-opping.
 
 ### sessions.compact RPC
 
-`openclaw gateway call sessions.compact --params '<json>'` accepts:
+`afora gateway call sessions.compact --params '<json>'` accepts:
 
 | Field      | Type        | Required | Description                                                |
 | ---------- | ----------- | -------- | ---------------------------------------------------------- |

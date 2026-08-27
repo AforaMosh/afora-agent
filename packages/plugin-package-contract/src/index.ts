@@ -8,7 +8,7 @@ export type JsonObject = Record<string, unknown>;
 /** Compatibility metadata extracted from an external plugin package. */
 export type ExternalPluginCompatibility = {
   pluginApiRange?: string;
-  builtWithOpenClawVersion?: string;
+  builtWithAforaVersion?: string;
   pluginSdkVersion?: string;
   minGatewayVersion?: string;
 };
@@ -27,25 +27,25 @@ export type ExternalCodePluginValidationResult = {
 
 /** Required package.json field paths for external code plugin packages. */
 export const EXTERNAL_CODE_PLUGIN_REQUIRED_FIELD_PATHS = [
-  "openclaw.compat.pluginApi",
-  "openclaw.build.openclawVersion",
+  "afora.compat.pluginApi",
+  "afora.build.aforaVersion",
 ] as const;
 
-/** Read OpenClaw package.json blocks without trusting caller input shape. */
-function readOpenClawBlock(packageJson: unknown) {
+/** Read Afora package.json blocks without trusting caller input shape. */
+function readAforaBlock(packageJson: unknown) {
   const root = isRecord(packageJson) ? packageJson : undefined;
-  const openclaw = isRecord(root?.openclaw) ? root.openclaw : undefined;
-  const compat = isRecord(openclaw?.compat) ? openclaw.compat : undefined;
-  const build = isRecord(openclaw?.build) ? openclaw.build : undefined;
-  const install = isRecord(openclaw?.install) ? openclaw.install : undefined;
-  return { root, openclaw, compat, build, install };
+  const afora = isRecord(root?.afora) ? root.afora : undefined;
+  const compat = isRecord(afora?.compat) ? afora.compat : undefined;
+  const build = isRecord(afora?.build) ? afora.build : undefined;
+  const install = isRecord(afora?.install) ? afora.install : undefined;
+  return { root, afora, compat, build, install };
 }
 
 /** Normalize compatibility metadata from an external plugin package.json. */
 export function normalizeExternalPluginCompatibility(
   packageJson: unknown,
 ): ExternalPluginCompatibility | undefined {
-  const { root, compat, build, install } = readOpenClawBlock(packageJson);
+  const { root, compat, build, install } = readAforaBlock(packageJson);
   const version = normalizeOptionalString(root?.version);
   const minHostVersion = normalizeOptionalString(install?.minHostVersion);
   const compatibility: ExternalPluginCompatibility = {};
@@ -60,9 +60,9 @@ export function normalizeExternalPluginCompatibility(
     compatibility.minGatewayVersion = minGatewayVersion;
   }
 
-  const builtWithOpenClawVersion = normalizeOptionalString(build?.openclawVersion) ?? version;
-  if (builtWithOpenClawVersion) {
-    compatibility.builtWithOpenClawVersion = builtWithOpenClawVersion;
+  const builtWithAforaVersion = normalizeOptionalString(build?.aforaVersion) ?? version;
+  if (builtWithAforaVersion) {
+    compatibility.builtWithAforaVersion = builtWithAforaVersion;
   }
 
   const pluginSdkVersion = normalizeOptionalString(build?.pluginSdkVersion);
@@ -75,13 +75,13 @@ export function normalizeExternalPluginCompatibility(
 
 /** List missing required field paths for an external code plugin package.json. */
 export function listMissingExternalCodePluginFieldPaths(packageJson: unknown): string[] {
-  const { compat, build } = readOpenClawBlock(packageJson);
+  const { compat, build } = readAforaBlock(packageJson);
   const missing: string[] = [];
   if (!normalizeOptionalString(compat?.pluginApi)) {
-    missing.push("openclaw.compat.pluginApi");
+    missing.push("afora.compat.pluginApi");
   }
-  if (!normalizeOptionalString(build?.openclawVersion)) {
-    missing.push("openclaw.build.openclawVersion");
+  if (!normalizeOptionalString(build?.aforaVersion)) {
+    missing.push("afora.build.aforaVersion");
   }
   return missing;
 }

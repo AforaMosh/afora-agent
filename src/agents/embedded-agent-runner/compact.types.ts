@@ -1,4 +1,4 @@
-import type { Model } from "openclaw/plugin-sdk/llm";
+import type { Model } from "afora-agent/plugin-sdk/llm";
 /**
  * Shared parameter and metric types for embedded-agent compaction.
  */
@@ -7,7 +7,7 @@ import type { ReasoningLevel, ThinkLevel } from "../../auto-reply/thinking.js";
 import type { ChatType } from "../../channels/chat-type.js";
 import type { CliSessionBinding, SessionEntry } from "../../config/sessions.js";
 import type { SessionToolOverrides } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { GroupToolPolicyConfig } from "../../config/types.tools.js";
 import type { ContextEngine, ContextEngineRuntimeContext } from "../../context-engine/types.js";
 import type { RuntimePluginToolGrant } from "../../plugins/runtime/tool-grant.js";
@@ -76,7 +76,7 @@ export type CompactEmbeddedAgentSessionParams = {
   /** Optional task working directory; workspaceDir remains the agent bootstrap workspace. */
   cwd?: string;
   agentDir?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   toolOverrides?: SessionToolOverrides;
   skillsSnapshot?: SkillSnapshot;
   senderIsOwner?: boolean;
@@ -102,7 +102,7 @@ export type CompactEmbeddedAgentSessionParams = {
   sessionEntry?: SessionEntry;
   /** Prevent compaction from changing the persisted session runtime or model. */
   modelSelectionLocked?: boolean;
-  /** OpenClaw-owned runtime policy prepared for this compaction path. */
+  /** Afora-owned runtime policy prepared for this compaction path. */
   runtimePlan?: AgentRuntimePlan;
   /** Host-prepared route and credential selection for native harness compaction. */
   runtimeAuthPlan?: AgentRuntimeAuthPlan;

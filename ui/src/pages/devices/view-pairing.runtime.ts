@@ -12,8 +12,8 @@ import { buildExternalLinkRel, EXTERNAL_LINK_TARGET } from "../../lib/external-l
 import { formatCountdown } from "../../lib/format.ts";
 
 const MOBILE_PAIRING_DOCS_URL =
-  "https://docs.openclaw.ai/channels/pairing#pair-from-the-control-ui-recommended";
-const NODE_PAIRING_DOCS_URL = "https://docs.openclaw.ai/gateway/pairing#one-paste-node-pairing";
+  "https://docs.afora.ai/channels/pairing#pair-from-the-control-ui-recommended";
+const NODE_PAIRING_DOCS_URL = "https://docs.afora.ai/gateway/pairing#one-paste-node-pairing";
 const PAIRING_ACCESS_OPTIONS = [
   ["full", "devices.pairing.fullAccess", "devices.pairing.fullAccessHint"],
   ["limited", "devices.pairing.limitedAccess", "devices.pairing.limitedAccessHint"],
@@ -63,7 +63,7 @@ export function renderDevicePairSetup(props: DevicePairSetupProps) {
   const gatewayUrls = setup?.gatewayUrls ?? (setup ? [setup.gatewayUrl] : []);
   const isNodeSetup = lifecycle.access === "node";
   const pairingDocsUrl = isNodeSetup ? NODE_PAIRING_DOCS_URL : MOBILE_PAIRING_DOCS_URL;
-  const nodeCommand = setup ? `openclaw node run --pair "oc-pair://${setup.setupCode}"` : "";
+  const nodeCommand = setup ? `afora node run --pair "oc-pair://${setup.setupCode}"` : "";
   const setupExpired = Boolean(setup && setup.expiresAtMs <= props.nowMs);
   const showAccessChoices =
     lifecycle.phase !== "success" &&
@@ -75,7 +75,7 @@ export function renderDevicePairSetup(props: DevicePairSetupProps) {
     (lifecycle.phase === "error" && lifecycle.source === "create");
 
   return html`
-    <openclaw-modal-dialog label=${title} description=${description} @modal-cancel=${props.onClose}>
+    <afora-modal-dialog label=${title} description=${description} @modal-cancel=${props.onClose}>
       <section class="device-pair-setup">
         <header class="device-pair-setup__header">
           <div class="device-pair-setup__phone" aria-hidden="true">
@@ -320,6 +320,6 @@ export function renderDevicePairSetup(props: DevicePairSetupProps) {
           </button>
         </footer>
       </section>
-    </openclaw-modal-dialog>
+    </afora-modal-dialog>
   `;
 }

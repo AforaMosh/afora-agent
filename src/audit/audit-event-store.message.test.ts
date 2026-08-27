@@ -1,9 +1,9 @@
 import { afterAll, afterEach, describe, expect, it } from "vitest";
 import { cleanupTempDirs, makeTempDir } from "../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { listAuditEvents, recordAuditEvent } from "./audit-event-store.js";
 import type { AuditEventInput, MessageAuditEventInput } from "./audit-event-types.js";
 
@@ -32,7 +32,7 @@ type OutboundMessageAuditTerminal = {
 }[OutboundMessageAuditTerminalInput["status"]];
 
 function createDatabaseOptions() {
-  return { env: { OPENCLAW_STATE_DIR: makeTempDir(tempDirs, "openclaw-message-audit-") } };
+  return { env: { AFORA_STATE_DIR: makeTempDir(tempDirs, "afora-message-audit-") } };
 }
 
 type InboundMessageOverrides = Partial<
@@ -147,7 +147,7 @@ function runInput(
 }
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 afterAll(() => {
@@ -192,7 +192,7 @@ describe("message audit persistence", () => {
     expect(new Set(refs).size).toBe(refs.length);
     expect(JSON.stringify(first)).not.toContain(rawIdentity);
 
-    const { db } = openOpenClawStateDatabase(database);
+    const { db } = openAforaStateDatabase(database);
     const stored = db
       .prepare(
         `SELECT actor_id, account_ref, conversation_ref, message_ref, target_ref,
@@ -211,7 +211,7 @@ describe("message audit persistence", () => {
     expect(keyRow.key_id).toMatch(/^[a-f0-9]{32}$/u);
     expect(keyRow.key.byteLength).toBe(32);
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const second = recordAuditEvent(
       messageInput({
         sourceId: "message-source-2",
@@ -234,7 +234,7 @@ describe("message audit persistence", () => {
 
   it("fails closed instead of replacing corrupt identity key material", () => {
     const database = createDatabaseOptions();
-    const { db } = openOpenClawStateDatabase(database);
+    const { db } = openAforaStateDatabase(database);
     db.prepare(
       "INSERT INTO audit_identity_keys (id, key_id, key, created_at) VALUES (?, ?, ?, ?)",
     ).run(1, "a".repeat(32), Buffer.alloc(31), Date.now());
@@ -260,15 +260,15 @@ describe("message audit persistence", () => {
     const first = recordAuditEvent(messageInput(), database);
     expect(first?.messageRef).toMatch(AUDIT_REF_RE);
 
-    closeOpenClawStateDatabaseForTest();
-    const { db } = openOpenClawStateDatabase(database);
+    closeAforaStateDatabaseForTest();
+    const { db } = openAforaStateDatabase(database);
     db.prepare("DELETE FROM audit_identity_keys WHERE id = 1").run();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
 
     expect(() =>
       recordAuditEvent(messageInput({ sourceId: "message-after-key-loss" }), database),
     ).toThrow("audit identity key is missing");
-    const reopened = openOpenClawStateDatabase(database).db;
+    const reopened = openAforaStateDatabase(database).db;
     expect(
       (
         reopened.prepare("SELECT COUNT(*) AS count FROM audit_identity_keys").get() as {
@@ -280,7 +280,7 @@ describe("message audit persistence", () => {
 
   it("forgets a transaction-local identity key after a rolled-back event insert", () => {
     const database = createDatabaseOptions();
-    const { db } = openOpenClawStateDatabase(database);
+    const { db } = openAforaStateDatabase(database);
     db.exec(`
       CREATE TABLE audit_rollback_parent (id INTEGER PRIMARY KEY);
       CREATE TABLE audit_rollback_child (
@@ -316,7 +316,7 @@ describe("message audit persistence", () => {
         .count,
     ).toBe(1);
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const reopened = recordAuditEvent(
       messageInput({ sourceId: "message-after-reopen", messageId: "stable-message" }),
       database,
@@ -384,7 +384,7 @@ describe("message audit persistence", () => {
   it("rejects persisted message terminal combinations outside the closed contract", () => {
     const database = createDatabaseOptions();
     recordAuditEvent(messageInput(), database);
-    const { db } = openOpenClawStateDatabase(database);
+    const { db } = openAforaStateDatabase(database);
     db.prepare("UPDATE audit_events SET error_code = ? WHERE kind = 'message'").run(
       "message_processing_failed",
     );
@@ -404,7 +404,7 @@ describe("message audit persistence", () => {
       }),
       database,
     );
-    const { db } = openOpenClawStateDatabase(database);
+    const { db } = openAforaStateDatabase(database);
     db.prepare("UPDATE audit_events SET delivery_kind = 'text' WHERE kind = 'message'").run();
 
     expect(() =>
@@ -415,7 +415,7 @@ describe("message audit persistence", () => {
   it("rejects a persisted channel-sender actor without a keyed reference", () => {
     const database = createDatabaseOptions();
     recordAuditEvent(messageInput(), database);
-    const { db } = openOpenClawStateDatabase(database);
+    const { db } = openAforaStateDatabase(database);
     db.prepare("UPDATE audit_events SET actor_id = ? WHERE kind = 'message'").run("raw-sender");
 
     expect(() =>

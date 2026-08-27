@@ -1,5 +1,5 @@
 ---
-summary: "Pre-flight and rollback checklist before exposing an OpenClaw Gateway beyond loopback"
+summary: "Pre-flight and rollback checklist before exposing an Afora Gateway beyond loopback"
 title: "Gateway exposure runbook"
 sidebarTitle: "Exposure runbook"
 read_when:
@@ -37,14 +37,14 @@ only network path to the Gateway.
 
 Record these before changing bind, proxy, Tailscale, or channel policy:
 
-- Gateway host, OS user, and state directory (default `~/.openclaw`).
+- Gateway host, OS user, and state directory (default `~/.afora`).
 - Gateway URL and bind mode (`gateway.bind`; default port `18789`).
 - Auth mode, token/password source, or trusted proxy identity source.
 - Every enabled channel and whether it accepts DMs, groups, or webhooks.
 - Agents reachable from non-local senders.
 - Tool profile, sandbox mode, and elevated tool policy for each reachable agent.
 - External credentials available to those agents.
-- Backup location for `~/.openclaw/openclaw.json` and credentials.
+- Backup location for `~/.AforaMosh/afora-agent.json` and credentials.
 
 If more than one person can message the bot, treat this as shared delegated
 tool authority, not per-user host isolation.
@@ -54,10 +54,10 @@ tool authority, not per-user host isolation.
 Run before opening access:
 
 ```bash
-openclaw doctor
-openclaw security audit
-openclaw security audit --deep
-openclaw health
+afora doctor
+afora security audit
+afora security audit --deep
+afora health
 ```
 
 Resolve critical findings first. Accept warnings only when intentional and
@@ -67,7 +67,7 @@ for what each `checkId` means and its fix key.
 For remote CLI validation, pass credentials explicitly:
 
 ```bash
-openclaw gateway probe --url ws://127.0.0.1:18789 --token "$OPENCLAW_GATEWAY_TOKEN"
+afora gateway probe --url ws://127.0.0.1:18789 --token "$AFORA_GATEWAY_TOKEN"
 ```
 
 Do not assume local config credentials apply to an explicit remote URL.
@@ -141,7 +141,7 @@ For identity-aware proxies:
 - Use `gateway.auth.trustedProxy.allowLoopback` only for a same-host proxy
   where local processes are trusted and the proxy owns the identity headers.
 
-Run `openclaw security audit --deep` after proxy changes. Trusted-proxy
+Run `afora security audit --deep` after proxy changes. Trusted-proxy
 findings are high-signal because the proxy becomes the authentication
 boundary.
 
@@ -166,7 +166,7 @@ deployments, not only from prompts or session labels.
 
 After each exposure change:
 
-1. Re-run `openclaw security audit --deep`.
+1. Re-run `afora security audit --deep`.
 2. Confirm a successful authorized connection succeeds.
 3. Confirm an unauthorized sender or browser session is denied.
 4. Confirm logs redact secrets.
@@ -205,7 +205,7 @@ Then:
 2. Rotate Gateway tokens/passwords and affected integration credentials.
 3. Remove `"*"` and unexpected senders from allowlists.
 4. Review recent audit logs, run history, tool calls, and config changes.
-5. Re-run `openclaw security audit --deep`.
+5. Re-run `afora security audit --deep`.
 6. Re-enable access with the narrowest pattern that satisfies the workflow.
 
 ## Review checklist

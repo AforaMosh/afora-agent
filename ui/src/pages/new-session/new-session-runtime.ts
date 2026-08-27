@@ -1,6 +1,6 @@
 import type { ReactiveController, ReactiveControllerHost } from "lit";
 import type { PresenceEntry } from "../../api/types.ts";
-import type { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import type { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { clearChatModelSearchOnEscape } from "../chat/components/chat-model-picker.ts";
 
 const PLACE_TOPOLOGY_EVENTS = new Set([
@@ -34,7 +34,7 @@ export function presenceStateSignature(entries: PresenceEntry[]): string {
   return JSON.stringify([...states].toSorted(([left], [right]) => left.localeCompare(right)));
 }
 
-export function createControllerHost(element: OpenClawLightDomElement): ReactiveControllerHost {
+export function createControllerHost(element: AforaLightDomElement): ReactiveControllerHost {
   return {
     addController: (controller: ReactiveController) => element.addController(controller),
     removeController: (controller: ReactiveController) => element.removeController(controller),

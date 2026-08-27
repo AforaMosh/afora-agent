@@ -1,12 +1,12 @@
 // Release-era repair for configs that imply official plugin installs before install records existed.
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeNullableString as normalizeId } from "@openclaw/normalization-core/string-coerce";
+import { asNullableRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeNullableString as normalizeId } from "@afora/normalization-core/string-coerce";
 import { collectConfiguredAgentHarnessRuntimes } from "../../../agents/harness-runtimes.js";
 import { normalizeChatChannelId } from "../../../channels/registry.js";
 import { isChannelConfigured } from "../../../config/channel-configured.js";
 import { detectPluginAutoEnableCandidates } from "../../../config/plugin-auto-enable.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
-import { compareOpenClawVersions } from "../../../config/version.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
+import { compareAforaVersions } from "../../../config/version.js";
 import {
   createDeferredConfiguredPluginRepairDoctorResult,
   type UpdatePostInstallDoctorResult,
@@ -39,16 +39,16 @@ type ReleaseConfiguredPluginIds = {
   channelIds: string[];
 };
 
-function isPluginsGloballyDisabled(cfg: OpenClawConfig): boolean {
+function isPluginsGloballyDisabled(cfg: AforaConfig): boolean {
   return cfg.plugins?.enabled === false;
 }
 
-function isDenied(cfg: OpenClawConfig, pluginId: string): boolean {
+function isDenied(cfg: AforaConfig, pluginId: string): boolean {
   const deny = cfg.plugins?.deny;
   return Array.isArray(deny) && deny.includes(pluginId);
 }
 
-function collectBlockedPluginIds(cfg: OpenClawConfig): string[] {
+function collectBlockedPluginIds(cfg: AforaConfig): string[] {
   const ids = new Set<string>();
   const deny = cfg.plugins?.deny;
   if (Array.isArray(deny)) {
@@ -68,17 +68,17 @@ function collectBlockedPluginIds(cfg: OpenClawConfig): string[] {
   return [...ids].toSorted((left, right) => left.localeCompare(right));
 }
 
-function isPluginEntryDisabled(cfg: OpenClawConfig, pluginId: string): boolean {
+function isPluginEntryDisabled(cfg: AforaConfig, pluginId: string): boolean {
   return cfg.plugins?.entries?.[pluginId]?.enabled === false;
 }
 
-function isChannelDisabled(cfg: OpenClawConfig, channelId: string): boolean {
+function isChannelDisabled(cfg: AforaConfig, channelId: string): boolean {
   const channels = asNullableRecord(cfg.channels);
   const entry = asNullableRecord(channels?.[channelId]);
   return entry?.enabled === false;
 }
 
-function isDisabled(cfg: OpenClawConfig, pluginId: string): boolean {
+function isDisabled(cfg: AforaConfig, pluginId: string): boolean {
   if (isPluginEntryDisabled(cfg, pluginId)) {
     return true;
   }
@@ -101,7 +101,7 @@ function hasMaterialPluginEntry(entry: unknown): boolean {
   );
 }
 
-function collectMaterialPluginEntryIds(cfg: OpenClawConfig): string[] {
+function collectMaterialPluginEntryIds(cfg: AforaConfig): string[] {
   const entries = asNullableRecord(cfg.plugins?.entries);
   if (!entries) {
     return [];
@@ -112,7 +112,7 @@ function collectMaterialPluginEntryIds(cfg: OpenClawConfig): string[] {
     .filter((pluginId) => pluginId);
 }
 
-function collectSlotPluginIds(cfg: OpenClawConfig): string[] {
+function collectSlotPluginIds(cfg: AforaConfig): string[] {
   const slots = asNullableRecord(cfg.plugins?.slots);
   return ["memory", "contextEngine"]
     .map((key) => normalizeId(slots?.[key]))
@@ -122,7 +122,7 @@ function collectSlotPluginIds(cfg: OpenClawConfig): string[] {
     );
 }
 
-function collectConfiguredChannelIds(cfg: OpenClawConfig, env: NodeJS.ProcessEnv): string[] {
+function collectConfiguredChannelIds(cfg: AforaConfig, env: NodeJS.ProcessEnv): string[] {
   return listDoctorConfiguredChannelIds(cfg, {
     configEntryPolicy: "enabled-or-meaningful",
     env,
@@ -136,7 +136,7 @@ function collectConfiguredChannelIds(cfg: OpenClawConfig, env: NodeJS.ProcessEnv
 }
 
 function collectAgentHarnessRuntimePluginIds(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   _env: NodeJS.ProcessEnv,
 ): string[] {
   return collectConfiguredAgentHarnessRuntimes(cfg)
@@ -145,7 +145,7 @@ function collectAgentHarnessRuntimePluginIds(
     .toSorted((left, right) => left.localeCompare(right));
 }
 
-function collectWebSearchPluginIds(cfg: OpenClawConfig): string[] {
+function collectWebSearchPluginIds(cfg: AforaConfig): string[] {
   if (cfg.tools?.web?.search?.enabled === false) {
     return [];
   }
@@ -157,14 +157,14 @@ function collectWebSearchPluginIds(cfg: OpenClawConfig): string[] {
   return entry?.pluginId ? [entry.pluginId] : [];
 }
 
-function collectEnvWebSearchPluginIds(cfg: OpenClawConfig, env: NodeJS.ProcessEnv): string[] {
+function collectEnvWebSearchPluginIds(cfg: AforaConfig, env: NodeJS.ProcessEnv): string[] {
   if (cfg.tools?.web?.search?.enabled === false) {
     return [];
   }
   return resolveWebSearchInstallCatalogEntriesForEnv(env).map((entry) => entry.pluginId);
 }
 
-function collectWebFetchPluginIds(cfg: OpenClawConfig): string[] {
+function collectWebFetchPluginIds(cfg: AforaConfig): string[] {
   const webFetch = cfg.tools?.web?.fetch;
   if (webFetch?.enabled === false) {
     return [];
@@ -179,7 +179,7 @@ function collectWebFetchPluginIds(cfg: OpenClawConfig): string[] {
   });
 }
 
-function collectEnvWebFetchPluginIds(cfg: OpenClawConfig, env: NodeJS.ProcessEnv): string[] {
+function collectEnvWebFetchPluginIds(cfg: AforaConfig, env: NodeJS.ProcessEnv): string[] {
   if (cfg.tools?.web?.fetch?.enabled === false) {
     return [];
   }
@@ -189,14 +189,14 @@ function collectEnvWebFetchPluginIds(cfg: OpenClawConfig, env: NodeJS.ProcessEnv
   });
 }
 
-function collectSpeechPluginIds(cfg: OpenClawConfig): string[] {
+function collectSpeechPluginIds(cfg: AforaConfig): string[] {
   return resolveOfficialExternalProviderContractPluginIds({
     contract: "speechProviders",
     providerIds: collectConfiguredSpeechProviderIds(cfg),
   });
 }
 
-function collectAcpRuntimePluginIds(cfg: OpenClawConfig): string[] {
+function collectAcpRuntimePluginIds(cfg: AforaConfig): string[] {
   const acp = asNullableRecord(cfg.acp);
   if (!acp) {
     return [];
@@ -210,7 +210,7 @@ function collectAcpRuntimePluginIds(cfg: OpenClawConfig): string[] {
   return ["acpx"];
 }
 
-function collectAllowOnlyOfficialPluginIds(cfg: OpenClawConfig): string[] {
+function collectAllowOnlyOfficialPluginIds(cfg: AforaConfig): string[] {
   const allow = cfg.plugins?.allow;
   if (!Array.isArray(allow) || allow.length === 0) {
     return [];
@@ -231,7 +231,7 @@ function collectAllowOnlyOfficialPluginIds(cfg: OpenClawConfig): string[] {
   return ids;
 }
 
-function addEligiblePluginId(cfg: OpenClawConfig, pluginIds: Set<string>, pluginId: string): void {
+function addEligiblePluginId(cfg: AforaConfig, pluginIds: Set<string>, pluginId: string): void {
   const normalized = pluginId.trim();
   if (!normalized || isDenied(cfg, normalized) || isDisabled(cfg, normalized)) {
     return;
@@ -246,20 +246,20 @@ function shouldRunConfiguredPluginInstallReleaseStep(params: {
   releaseVersion?: string;
 }): boolean {
   const releaseVersion = params.releaseVersion ?? CONFIGURED_PLUGIN_INSTALL_RELEASE_VERSION;
-  const currentComparedToRelease = compareOpenClawVersions(
+  const currentComparedToRelease = compareAforaVersions(
     params.currentVersion ?? VERSION,
     releaseVersion,
   );
   if (currentComparedToRelease === null || currentComparedToRelease < 0) {
     return false;
   }
-  const touchedComparedToRelease = compareOpenClawVersions(params.touchedVersion, releaseVersion);
+  const touchedComparedToRelease = compareAforaVersions(params.touchedVersion, releaseVersion);
   return touchedComparedToRelease === null || touchedComparedToRelease < 0;
 }
 
 /** Collect plugin/channel ids implied by config for the release install backfill step. */
 function collectReleaseConfiguredPluginIds(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
 }): ReleaseConfiguredPluginIds {
   const env = params.env ?? process.env;
@@ -326,7 +326,7 @@ function collectReleaseConfiguredPluginIds(params: {
 
 /** Run the configured-plugin install release backfill when the config still needs it. */
 export async function maybeRunConfiguredPluginInstallReleaseStep(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   touchedVersion?: string | null;
   currentVersion?: string | null;

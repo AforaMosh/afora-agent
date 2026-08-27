@@ -303,7 +303,7 @@ export function renderWorkboard(props: WorkboardProps) {
               : nothing}
             ${props.showAgentFilter !== false
               ? html`
-                  <openclaw-agent-select
+                  <afora-agent-select
                     class="workboard-agent-select workboard-agent-select--toolbar"
                     .options=${agentSelectOptions}
                     .value=${state.agentFilter}
@@ -315,7 +315,7 @@ export function renderWorkboard(props: WorkboardProps) {
                         props.onRequestUpdate?.();
                       }
                     }}
-                  ></openclaw-agent-select>
+                  ></afora-agent-select>
                 `
               : nothing}
             <button
@@ -336,7 +336,7 @@ export function renderWorkboard(props: WorkboardProps) {
               <div class="workboard-layout-toggle" role="group" aria-label=${t("workboard.layout")}>
                 ${layoutOptions.map(
                   ([layout, labelKey, icon]) => html`
-                    <openclaw-tooltip .content=${t(labelKey)}>
+                    <afora-tooltip .content=${t(labelKey)}>
                       <button
                         class="btn btn--icon ${state.layout === layout ? "active" : ""}"
                         type="button"
@@ -349,7 +349,7 @@ export function renderWorkboard(props: WorkboardProps) {
                       >
                         ${icon}
                       </button>
-                    </openclaw-tooltip>
+                    </afora-tooltip>
                   `,
                 )}
               </div>

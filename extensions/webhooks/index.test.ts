@@ -1,14 +1,14 @@
 // Webhooks tests cover index plugin behavior.
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawPluginApi } from "./api.js";
+import type { AforaPluginApi } from "./api.js";
 import plugin from "./index.js";
 
 function createApi(params?: {
-  pluginConfig?: OpenClawPluginApi["pluginConfig"];
-  registerHttpRoute?: OpenClawPluginApi["registerHttpRoute"];
-  logger?: OpenClawPluginApi["logger"];
-}): OpenClawPluginApi {
+  pluginConfig?: AforaPluginApi["pluginConfig"];
+  registerHttpRoute?: AforaPluginApi["registerHttpRoute"];
+  logger?: AforaPluginApi["logger"];
+}): AforaPluginApi {
   return createTestPluginApi({
     id: "webhooks",
     name: "Webhooks",
@@ -20,7 +20,7 @@ function createApi(params?: {
           bindSession: vi.fn(({ sessionKey }: { sessionKey: string }) => ({ sessionKey })),
         },
       },
-    } as unknown as OpenClawPluginApi["runtime"],
+    } as unknown as AforaPluginApi["runtime"],
     registerHttpRoute: params?.registerHttpRoute ?? vi.fn(),
     logger:
       params?.logger ??
@@ -29,7 +29,7 @@ function createApi(params?: {
         warn: vi.fn(),
         error: vi.fn(),
         debug: vi.fn(),
-      } as OpenClawPluginApi["logger"]),
+      } as AforaPluginApi["logger"]),
   });
 }
 
@@ -38,7 +38,7 @@ function requireFirstRouteRegistration(mock: ReturnType<typeof vi.fn>) {
   if (!call) {
     throw new Error("expected webhook route registration");
   }
-  return call[0] as Parameters<OpenClawPluginApi["registerHttpRoute"]>[0];
+  return call[0] as Parameters<AforaPluginApi["registerHttpRoute"]>[0];
 }
 
 describe("webhooks plugin registration", () => {
@@ -54,7 +54,7 @@ describe("webhooks plugin registration", () => {
               secret: {
                 source: "env",
                 provider: "default",
-                id: "OPENCLAW_WEBHOOK_SECRET",
+                id: "AFORA_WEBHOOK_SECRET",
               },
             },
           },

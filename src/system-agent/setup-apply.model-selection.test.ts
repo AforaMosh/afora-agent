@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { applySystemAgentModelSelection } from "./setup-model-selection.js";
 
 describe("applySystemAgentModelSelection", () => {
@@ -8,7 +8,7 @@ describe("applySystemAgentModelSelection", () => {
       agents: {
         entries: { main: { default: true }, ops: {} },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     await expect(
       applySystemAgentModelSelection({
@@ -39,7 +39,7 @@ describe("applySystemAgentModelSelection", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const result = await applySystemAgentModelSelection({ config, model: "openai/gpt-5.5" });
 

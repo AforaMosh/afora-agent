@@ -3,7 +3,7 @@
  *
  * Resolves which session controls spawn state, thread binding, and completion delivery.
  */
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import {
   resolveDisplaySessionKey,
   resolveInternalSessionKey,
@@ -19,7 +19,7 @@ type SubagentSpawnOwnership = {
 
 /** Normalizes requester/completion owner aliases into internal and display session keys. */
 export function resolveSubagentSpawnOwnership(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentSessionKey?: string;
   completionOwnerKey?: string;
 }): SubagentSpawnOwnership {

@@ -7,7 +7,7 @@ const suite = createControlUiE2eSuite({
   startServer: () => startControlUiE2eServer(undefined, { source: true }),
   startServerBeforeBrowser: true,
   unavailableMessage: (executablePath) =>
-    `Playwright Chromium is not installed or cannot start at ${executablePath}. Run \`pnpm --dir ui exec playwright install --with-deps chromium\`, or set OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
+    `Playwright Chromium is not installed or cannot start at ${executablePath}. Run \`pnpm --dir ui exec playwright install --with-deps chromium\`, or set AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
 });
 
 type BrowserTerminalController = {
@@ -37,13 +37,13 @@ suite.define(() => {
       // addScriptTag resolves before the module body runs, so the global is not
       // observable yet; wait for the assignment instead of racing page.evaluate.
       await page.addScriptTag({
-        content: `globalThis.openclawTerminalRuntimeModule = import(${JSON.stringify(moduleUrl)});`,
+        content: `globalThis.aforaTerminalRuntimeModule = import(${JSON.stringify(moduleUrl)});`,
         type: "module",
       });
       await page.waitForFunction(() =>
         Boolean(
-          (globalThis as unknown as { openclawTerminalRuntimeModule?: unknown })
-            .openclawTerminalRuntimeModule,
+          (globalThis as unknown as { aforaTerminalRuntimeModule?: unknown })
+            .aforaTerminalRuntimeModule,
         ),
       );
       const sentinel = "CLOSE_RESET_SENTINEL";
@@ -51,11 +51,11 @@ suite.define(() => {
         async ({ staleText }) => {
           const runtimeModule = await (
             window as unknown as Window & {
-              openclawTerminalRuntimeModule: Promise<{
+              aforaTerminalRuntimeModule: Promise<{
                 createIsolatedGhosttyTerminal: BrowserTerminalFactory;
               }>;
             }
-          ).openclawTerminalRuntimeModule;
+          ).aforaTerminalRuntimeModule;
           const createTerminal = async () => {
             const host = document.createElement("div");
             host.style.height = "400px";

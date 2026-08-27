@@ -16,8 +16,8 @@ import {
 const port =
   process.env.MOCK_PORT != null
     ? readTcpPortEnv("MOCK_PORT")
-    : readTcpPortEnv("OPENCLAW_MOCK_OPENAI_PORT");
-const successMarker = process.env.SUCCESS_MARKER ?? "OPENCLAW_E2E_OK";
+    : readTcpPortEnv("AFORA_MOCK_OPENAI_PORT");
+const successMarker = process.env.SUCCESS_MARKER ?? "AFORA_E2E_OK";
 const requestLog = process.env.MOCK_REQUEST_LOG;
 const responseChunkDelayMs = process.env.MOCK_RESPONSE_CHUNK_DELAY_MS
   ? readPositiveIntEnv("MOCK_RESPONSE_CHUNK_DELAY_MS", undefined)
@@ -233,7 +233,7 @@ function preambleThenToolCallEvents(preamble, name, args) {
 /** Two-turn draft scenario: preamble + shell call, then a final answer. */
 function progressDraftEvents(body, bodyText) {
   const allText = collectText(body).join("\n");
-  if (!allText.includes("OPENCLAW_E2E_DRAFTPROOF")) {
+  if (!allText.includes("AFORA_E2E_DRAFTPROOF")) {
     return null;
   }
   if (!collectFunctionCallOutputText(body)) {
@@ -241,10 +241,10 @@ function progressDraftEvents(body, bodyText) {
       return null;
     }
     return preambleThenToolCallEvents("Checking the workspace before answering.", "exec", {
-      command: ["bash", "-lc", "sleep 3 && echo openclaw-draft-proof"],
+      command: ["bash", "-lc", "sleep 3 && echo afora-draft-proof"],
     });
   }
-  return responseEvents("OPENCLAW_E2E_DRAFTPROOF");
+  return responseEvents("AFORA_E2E_DRAFTPROOF");
 }
 
 function toolCallEvents(name, args) {
@@ -280,7 +280,7 @@ function toolCallEvents(name, args) {
 }
 
 function editRecoveryFixtureError(reason) {
-  return responseEvents(`OPENCLAW_E2E_EDIT_FAILURE_FIXTURE_ERROR reason=${reason}`);
+  return responseEvents(`AFORA_E2E_EDIT_FAILURE_FIXTURE_ERROR reason=${reason}`);
 }
 
 function collectEditRecoveryOutputs(body) {
@@ -342,20 +342,20 @@ const editRecoveryRetryStep = editRecoveryToolStep(
 
 const editRecoveryScenarios = Object.freeze([
   {
-    trigger: "OPENCLAW_E2E_EDIT_FAILURE_UNRESOLVED",
+    trigger: "AFORA_E2E_EDIT_FAILURE_UNRESOLVED",
     steps: [
       editRecoverySeedStep,
       editRecoveryFailureStep,
-      { kind: "final", text: "OPENCLAW_E2E_EDIT_FAILURE_UNRESOLVED_FINAL" },
+      { kind: "final", text: "AFORA_E2E_EDIT_FAILURE_UNRESOLVED_FINAL" },
     ],
   },
   {
-    trigger: "OPENCLAW_E2E_EDIT_FAILURE_MATCHED_RETRY",
+    trigger: "AFORA_E2E_EDIT_FAILURE_MATCHED_RETRY",
     steps: [
       editRecoverySeedStep,
       editRecoveryFailureStep,
       editRecoveryRetryStep,
-      { kind: "final", text: "OPENCLAW_E2E_EDIT_FAILURE_MATCHED_RETRY_FINAL" },
+      { kind: "final", text: "AFORA_E2E_EDIT_FAILURE_MATCHED_RETRY_FINAL" },
     ],
   },
 ]);
@@ -392,7 +392,7 @@ function resolveEditRecoveryPrefix(scenario, outputs) {
 }
 
 function editRecoveryEvents(body, bodyText) {
-  if (!bodyText.includes("OPENCLAW_E2E_EDIT_FAILURE_")) {
+  if (!bodyText.includes("AFORA_E2E_EDIT_FAILURE_")) {
     return null;
   }
   const scenario = resolveEditRecoveryScenario(bodyText);
@@ -524,14 +524,14 @@ function writeImageGeneration(res) {
         b64_json:
           "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+yf7kAAAAASUVORK5CYII=",
         mime_type: "image/png",
-        revised_prompt: "openclaw mock image",
+        revised_prompt: "afora mock image",
       },
     ],
   });
 }
 
 function resolveResponseText(bodyText) {
-  const matches = Array.from(bodyText.matchAll(/\bOPENCLAW_E2E_[A-Z0-9]+(?:_[A-Z0-9]+)*\b/gu));
+  const matches = Array.from(bodyText.matchAll(/\bAFORA_E2E_[A-Z0-9]+(?:_[A-Z0-9]+)*\b/gu));
   return matches.at(-1)?.[0] ?? successMarker;
 }
 
@@ -669,7 +669,7 @@ const server = http.createServer((req, res) => {
     if (req.method === "GET" && url.pathname === "/v1/models") {
       writeJson(res, 200, {
         object: "list",
-        data: [{ id: "gpt-5.6-luna", object: "model", owned_by: "openclaw-e2e" }],
+        data: [{ id: "gpt-5.6-luna", object: "model", owned_by: "afora-e2e" }],
       });
       return;
     }
@@ -756,7 +756,7 @@ const server = http.createServer((req, res) => {
       // Progress-draft proof needs assistant content followed by a tool call in
       // one streamed turn: the completions transport tags that leading text as
       // commentary, which channels render as the draft status headline.
-      if (bodyText.includes("OPENCLAW_E2E_DRAFTPROOF")) {
+      if (bodyText.includes("AFORA_E2E_DRAFTPROOF")) {
         const messages = Array.isArray(body.messages) ? body.messages : [];
         const toolTurnDone = messages.some((message) => message?.role === "tool");
         if (!toolTurnDone) {
@@ -765,7 +765,7 @@ const server = http.createServer((req, res) => {
             body.stream !== false,
             "Checking the workspace before answering.",
             "exec",
-            { command: ["bash", "-lc", "sleep 3 && echo openclaw-draft-proof"] },
+            { command: ["bash", "-lc", "sleep 3 && echo afora-draft-proof"] },
           );
           return;
         }
@@ -773,7 +773,7 @@ const server = http.createServer((req, res) => {
         // gate. Without this the whole turn finishes in well under a second and
         // no draft is created, which is correct behavior but proves nothing.
         await delay(readPositiveIntEnv("MOCK_DRAFTPROOF_FINAL_DELAY_MS", 6000));
-        writeChatCompletion(res, body.stream !== false, "OPENCLAW_E2E_DRAFTPROOF");
+        writeChatCompletion(res, body.stream !== false, "AFORA_E2E_DRAFTPROOF");
         return;
       }
       const responseText = resolveResponseText(bodyText);

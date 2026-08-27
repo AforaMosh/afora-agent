@@ -8,13 +8,13 @@ import {
   normalizeSessionDeliveryState,
   type SessionEntry,
   upsertSessionEntry,
-} from "openclaw/plugin-sdk/session-store-runtime";
+} from "afora-agent/plugin-sdk/session-store-runtime";
 import {
   appendSessionTranscriptMessageByIdentity,
   readSessionTranscriptEvents,
-} from "openclaw/plugin-sdk/session-transcript-runtime";
+} from "afora-agent/plugin-sdk/session-transcript-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 import { feishuDoctor } from "./doctor.js";
 
 const runFeishuDoctorSequence = feishuDoctor.runConfigSequence!;
@@ -22,7 +22,7 @@ const defaultAgentId = "main";
 const defaultFeishuSessionKey = "agent:main:feishu:direct:ou_user";
 const blankUserMessages = ["", "", ""];
 
-function feishuConfig(): OpenClawConfig {
+function feishuConfig(): AforaConfig {
   return {
     channels: {
       feishu: {
@@ -30,11 +30,11 @@ function feishuConfig(): OpenClawConfig {
         appSecret: "secret_xxx",
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function stateDir(): string {
-  return process.env.OPENCLAW_STATE_DIR!;
+  return process.env.AFORA_STATE_DIR!;
 }
 
 function sessionsDir(agentId = "main"): string {
@@ -46,7 +46,7 @@ function storePath(agentId = "main"): string {
 }
 
 function sqliteStorePath(agentId = "main"): string {
-  return path.join(stateDir(), "agents", agentId, "agent", "openclaw-agent.sqlite");
+  return path.join(stateDir(), "agents", agentId, "agent", "afora-agent.sqlite");
 }
 
 type SeedSessionParams = {
@@ -159,7 +159,7 @@ function writeFeishuDedupState(contents: string): void {
   fs.writeFileSync(target, contents);
 }
 
-async function runDoctor(shouldRepair: boolean, cfg: OpenClawConfig = feishuConfig()) {
+async function runDoctor(shouldRepair: boolean, cfg: AforaConfig = feishuConfig()) {
   return await runFeishuDoctorSequence({ cfg, env: process.env, shouldRepair });
 }
 
@@ -167,10 +167,10 @@ describe("Feishu doctor state repair", () => {
   let tempHome = "";
 
   beforeEach(() => {
-    tempHome = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-feishu-doctor-"));
+    tempHome = fs.mkdtempSync(path.join(os.tmpdir(), "afora-feishu-doctor-"));
     vi.stubEnv("HOME", tempHome);
-    vi.stubEnv("OPENCLAW_HOME", tempHome);
-    vi.stubEnv("OPENCLAW_STATE_DIR", path.join(tempHome, ".openclaw"));
+    vi.stubEnv("AFORA_HOME", tempHome);
+    vi.stubEnv("AFORA_STATE_DIR", path.join(tempHome, ".afora"));
     fs.mkdirSync(stateDir(), { recursive: true, mode: 0o700 });
   });
 
@@ -200,7 +200,7 @@ describe("Feishu doctor state repair", () => {
         return {
           ...feishuConfig(),
           session: { store: customStorePath },
-        } as OpenClawConfig;
+        } as AforaConfig;
       },
     },
     {
@@ -277,7 +277,7 @@ describe("Feishu doctor state repair", () => {
     expect(result.changeNotes).toEqual([]);
     expect(result.warningNotes.join("\n")).toContain("Feishu local channel state may need repair");
     expect(result.warningNotes.join("\n")).toContain("preserving Feishu App ID/secret config");
-    expect(result.warningNotes.join("\n")).toContain("openclaw doctor --fix");
+    expect(result.warningNotes.join("\n")).toContain("afora doctor --fix");
   });
 
   it("rebuilds corrupt Feishu state without deleting healthy Feishu sessions", async () => {
@@ -362,7 +362,7 @@ describe("Feishu doctor state repair", () => {
       true,
     );
     expect(
-      fs.existsSync(path.join(backupDir, "session-stores", "main", "openclaw-agent.sqlite")),
+      fs.existsSync(path.join(backupDir, "session-stores", "main", "afora-agent.sqlite")),
     ).toBe(true);
 
     const store = readStoreEntries(targetStorePath);
@@ -440,9 +440,9 @@ describe("Feishu doctor state repair", () => {
             ...feishuConfig(),
             agents: { list: [{ id: agentId, default: true }] },
             session: { store: customStorePath },
-          } as OpenClawConfig,
+          } as AforaConfig,
           session,
-          sqlitePath: path.join(path.dirname(customStorePath), "openclaw-agent.support.sqlite"),
+          sqlitePath: path.join(path.dirname(customStorePath), "afora-agent.support.sqlite"),
           verifyTranscript: true,
         };
       },

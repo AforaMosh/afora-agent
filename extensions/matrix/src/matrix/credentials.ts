@@ -1,5 +1,5 @@
 // Matrix plugin module implements credentials behavior.
-import { normalizeAccountId } from "openclaw/plugin-sdk/account-id";
+import { normalizeAccountId } from "afora-agent/plugin-sdk/account-id";
 import { openMatrixCredentialsStore } from "./credentials-read.js";
 import {
   isMatrixCredentialRevocation,

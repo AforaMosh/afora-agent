@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createWizardPrompter } from "../../test/helpers/wizard-prompter.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createSuiteLogPathTracker } from "../logging/log-test-helpers.js";
 import { resetLogger } from "../logging/logger.js";
 import { loggingState } from "../logging/state.js";
@@ -42,19 +42,19 @@ const readConfigFileSnapshot = vi.hoisted(() =>
   vi.fn(async () => ({
     exists: false,
     valid: true,
-    path: "/tmp/openclaw.json",
+    path: "/tmp/afora.json",
     issues: [] as Array<{ path?: string; message: string }>,
     config: {},
   })),
 );
 const localOnboarding = vi.hoisted(() => {
   const states = new Map<string, LocalOnboardingState>();
-  const persisted = { config: undefined as OpenClawConfig | undefined };
+  const persisted = { config: undefined as AforaConfig | undefined };
   return {
     states,
     persisted,
     read: vi.fn((configPath: string) => states.get(configPath)),
-    readForConfig: vi.fn((configPath: string, config: OpenClawConfig) => {
+    readForConfig: vi.fn((configPath: string, config: AforaConfig) => {
       const state = states.get(configPath);
       return state?.securityAcknowledgedAt === config.wizard?.securityAcknowledgedAt
         ? state
@@ -109,12 +109,12 @@ const localOnboarding = vi.hoisted(() => {
 });
 const withConfigMutationExclusive = vi.hoisted(() =>
   vi.fn(
-    async (effect: (config: OpenClawConfig) => Promise<unknown>) =>
+    async (effect: (config: AforaConfig) => Promise<unknown>) =>
       await effect(localOnboarding.persisted.config ?? {}),
   ),
 );
 
-const logPathTracker = createSuiteLogPathTracker("openclaw-guided-onboard-log-");
+const logPathTracker = createSuiteLogPathTracker("afora-guided-onboard-log-");
 
 vi.mock("../config/config.js", () => ({ readConfigFileSnapshot, withConfigMutationExclusive }));
 vi.mock("../state/local-onboarding-state.js", () => ({
@@ -124,7 +124,7 @@ vi.mock("../state/local-onboarding-state.js", () => ({
   completeLocalOnboarding: localOnboarding.complete,
 }));
 vi.mock("./onboard-agent.js", () => ({
-  ensureOnboardingAgent: async ({ config }: { config: OpenClawConfig }) => ({
+  ensureOnboardingAgent: async ({ config }: { config: AforaConfig }) => ({
     config: {
       ...config,
       agents: { ...config.agents, list: [{ id: "main", default: true }] },
@@ -136,7 +136,7 @@ vi.mock("./onboard-agent.js", () => ({
 }));
 
 vi.mock("./onboard-helpers.js", () => ({
-  DEFAULT_WORKSPACE: "/tmp/openclaw-workspace",
+  DEFAULT_WORKSPACE: "/tmp/afora-workspace",
   printWizardHeader: vi.fn(),
 }));
 
@@ -179,7 +179,7 @@ function detection(
     manualProviders: [],
     authOptions: [],
     recommendedInstalls: [],
-    workspace: "/tmp/openclaw-workspace",
+    workspace: "/tmp/afora-workspace",
     setupComplete: false,
     ...overrides,
   };
@@ -187,7 +187,7 @@ function detection(
 
 function setupApplyResult() {
   return {
-    configPath: "/tmp/openclaw.json",
+    configPath: "/tmp/afora.json",
     configHashBefore: null,
     configHashAfter: null,
     bootstrapPending: false,
@@ -205,7 +205,7 @@ function pendingLocalSetup(params: {
   const pending: LocalOnboardingState = {
     version: 1,
     status: "pending",
-    configPath: "/tmp/openclaw.json",
+    configPath: "/tmp/afora.json",
     runId: params.runId,
     workspace: params.workspace,
     securityAcknowledgedAt: params.securityAcknowledgedAt ?? "2026-01-01T00:00:00.000Z",
@@ -241,7 +241,7 @@ function setupDeps(params: {
     listManualOptions: vi.fn(async () => ({
       manualProviders: [],
       authOptions: [],
-      workspace: "/tmp/openclaw-workspace",
+      workspace: "/tmp/afora-workspace",
       setupComplete: false,
     })),
     detect: params.detect ?? vi.fn(async () => detection()),
@@ -258,7 +258,7 @@ function setupDeps(params: {
       }),
     persistRiskAcknowledgement:
       params.persistRiskAcknowledgement ??
-      vi.fn(async (config: OpenClawConfig) => {
+      vi.fn(async (config: AforaConfig) => {
         localOnboarding.persisted.config = config;
         return config.wizard?.securityAcknowledgedAt;
       }),
@@ -303,7 +303,7 @@ describe("runGuidedOnboarding custodian flow", () => {
       return {
         exists: localOnboarding.persisted.config !== undefined,
         valid: true,
-        path: "/tmp/openclaw.json",
+        path: "/tmp/afora.json",
         issues: [],
         config: localOnboarding.persisted.config ?? {},
       };
@@ -324,7 +324,7 @@ describe("runGuidedOnboarding custodian flow", () => {
     const activate = vi.fn<NonNullable<GuidedOnboardingDeps["activate"]>>(async (params) => {
       expect(localOnboarding.begin).not.toHaveBeenCalled();
       params.onCommitStarted?.(localOnboarding.persisted.config ?? {});
-      expect(localOnboarding.states.get("/tmp/openclaw.json")?.status).toBe("pending");
+      expect(localOnboarding.states.get("/tmp/afora.json")?.status).toBe("pending");
       return {
         ok: true,
         modelRef: "claude-cli/opus",
@@ -335,7 +335,7 @@ describe("runGuidedOnboarding custodian flow", () => {
     const runSetupMemoryImportStep = vi.fn<
       NonNullable<GuidedOnboardingDeps["runSetupMemoryImportStep"]>
     >(async () => {
-      expect(localOnboarding.states.get("/tmp/openclaw.json")?.status).toBe("completed");
+      expect(localOnboarding.states.get("/tmp/afora.json")?.status).toBe("completed");
       return { status: "skipped", providers: [] };
     });
     const deps = setupDeps({ prompter, activate, runSetupMemoryImportStep });
@@ -364,14 +364,14 @@ describe("runGuidedOnboarding custodian flow", () => {
       first,
     );
 
-    const pending = localOnboarding.states.get("/tmp/openclaw.json");
+    const pending = localOnboarding.states.get("/tmp/afora.json");
     expect(pending).toMatchObject({ status: "pending", workspace: "/tmp/approved-workspace" });
     expect(first.runSystemAgentChat).toHaveBeenCalledOnce();
 
     readConfigFileSnapshot.mockResolvedValue({
       exists: true,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       issues: [],
       config: {
         agents: {
@@ -400,7 +400,7 @@ describe("runGuidedOnboarding custodian flow", () => {
     expect(retry.applySetup).toHaveBeenCalledWith(
       expect.objectContaining({ workspace: "/tmp/approved-workspace", resume: true }),
     );
-    expect(localOnboarding.states.get("/tmp/openclaw.json")).toMatchObject({
+    expect(localOnboarding.states.get("/tmp/afora.json")).toMatchObject({
       status: "completed",
       runId: pending?.runId,
     });
@@ -415,7 +415,7 @@ describe("runGuidedOnboarding custodian flow", () => {
 
     await runGuidedOnboarding({ acceptRisk: true, workspace: "/tmp/work" }, makeRuntime(), deps);
 
-    expect(localOnboarding.states.get("/tmp/openclaw.json")?.status).toBe("pending");
+    expect(localOnboarding.states.get("/tmp/afora.json")?.status).toBe("pending");
     expect(localOnboarding.complete).not.toHaveBeenCalled();
     expect(deps.runSystemAgentChat).toHaveBeenCalledOnce();
   });
@@ -431,7 +431,7 @@ describe("runGuidedOnboarding custodian flow", () => {
 
     await runGuidedOnboarding({ acceptRisk: true, workspace: "/tmp/work" }, makeRuntime(), deps);
 
-    expect(localOnboarding.states.get("/tmp/openclaw.json")?.status).toBe("completed");
+    expect(localOnboarding.states.get("/tmp/afora.json")?.status).toBe("completed");
   });
 
   it.each(["pending", "completed"] as const)(
@@ -463,7 +463,7 @@ describe("runGuidedOnboarding custodian flow", () => {
           workspace: "/tmp/new-workspace",
         }),
       );
-      expect(localOnboarding.states.get("/tmp/openclaw.json")).toMatchObject({
+      expect(localOnboarding.states.get("/tmp/afora.json")).toMatchObject({
         status: "completed",
         workspace: "/tmp/new-workspace",
       });
@@ -590,14 +590,14 @@ describe("runGuidedOnboarding custodian flow", () => {
     expect(localOnboarding.begin).toHaveBeenCalledWith(
       expect.objectContaining({ securityAcknowledgedAt: committedAcknowledgement }),
     );
-    expect(localOnboarding.states.get("/tmp/openclaw.json")).toMatchObject({
+    expect(localOnboarding.states.get("/tmp/afora.json")).toMatchObject({
       status: "completed",
       securityAcknowledgedAt: committedAcknowledgement,
     });
   });
 
   it("rejects a replaced config before recording inference setup ownership", async () => {
-    const replacementConfig: OpenClawConfig = {
+    const replacementConfig: AforaConfig = {
       wizard: { securityAcknowledgedAt: "2026-08-03T00:00:00.000Z" },
     };
     const activate = vi.fn<NonNullable<GuidedOnboardingDeps["activate"]>>(async (params) => {
@@ -696,7 +696,7 @@ describe("runGuidedOnboarding custodian flow", () => {
   it("rejects replacement config identity at the setup config-write boundary", async () => {
     const setupEffects = vi.fn();
     const applySetup = vi.fn<NonNullable<GuidedOnboardingDeps["applySetup"]>>(async (params) => {
-      const replacementConfig: OpenClawConfig = {
+      const replacementConfig: AforaConfig = {
         agents: { defaults: { workspace: params.workspace } },
         wizard: { securityAcknowledgedAt: "2026-08-03T00:00:00.000Z" },
       };
@@ -726,7 +726,7 @@ describe("runGuidedOnboarding custodian flow", () => {
 
     await runGuidedOnboarding({ acceptRisk: true, workspace: "/tmp/work" }, makeRuntime(), deps);
 
-    expect(localOnboarding.states.get("/tmp/openclaw.json")?.status).toBe("pending");
+    expect(localOnboarding.states.get("/tmp/afora.json")?.status).toBe("pending");
     expect(localOnboarding.complete).not.toHaveBeenCalled();
     expect(deps.runSystemAgentChat).toHaveBeenCalledOnce();
   });
@@ -735,7 +735,7 @@ describe("runGuidedOnboarding custodian flow", () => {
     const deps = setupDeps({
       prompter: createWizardPrompter(),
       applySetup: vi.fn(async () => {
-        const owner = localOnboarding.states.get("/tmp/openclaw.json");
+        const owner = localOnboarding.states.get("/tmp/afora.json");
         localOnboarding.persisted.config = {
           agents: { defaults: { workspace: "/tmp/different-workspace" } },
           wizard: { securityAcknowledgedAt: owner?.securityAcknowledgedAt },
@@ -753,14 +753,14 @@ describe("runGuidedOnboarding custodian flow", () => {
   it.each([
     {
       label: "installation identity",
-      replace: (config: OpenClawConfig): OpenClawConfig => ({
+      replace: (config: AforaConfig): AforaConfig => ({
         ...config,
         wizard: { ...config.wizard, securityAcknowledgedAt: "2026-08-03T00:00:00.000Z" },
       }),
     },
     {
       label: "effective workspace",
-      replace: (config: OpenClawConfig): OpenClawConfig => ({
+      replace: (config: AforaConfig): AforaConfig => ({
         ...config,
         agents: {
           ...config.agents,
@@ -780,7 +780,7 @@ describe("runGuidedOnboarding custodian flow", () => {
       await runGuidedOnboarding({ acceptRisk: true, workspace: "/tmp/work" }, makeRuntime(), deps);
 
       expect(withConfigMutationExclusive).toHaveBeenCalledOnce();
-      expect(localOnboarding.states.get("/tmp/openclaw.json")?.status).toBe("pending");
+      expect(localOnboarding.states.get("/tmp/afora.json")?.status).toBe("pending");
       expect(localOnboarding.complete).not.toHaveBeenCalled();
       expect(deps.runSystemAgentChat).toHaveBeenCalledOnce();
     },
@@ -796,7 +796,7 @@ describe("runGuidedOnboarding custodian flow", () => {
       prompter: createWizardPrompter(),
       persistRiskAcknowledgement: async (config) => {
         localOnboarding.persisted.config = config;
-        localOnboarding.states.set("/tmp/openclaw.json", competing);
+        localOnboarding.states.set("/tmp/afora.json", competing);
       },
     });
 
@@ -804,7 +804,7 @@ describe("runGuidedOnboarding custodian flow", () => {
       runGuidedOnboarding({ acceptRisk: true, workspace: "/tmp/work" }, makeRuntime(), deps),
     ).rejects.toThrow("already owns this installation");
 
-    expect(localOnboarding.states.get("/tmp/openclaw.json")).toEqual(competing);
+    expect(localOnboarding.states.get("/tmp/afora.json")).toEqual(competing);
     expect(localOnboarding.complete).not.toHaveBeenCalled();
     expect(deps.applySetup).not.toHaveBeenCalled();
   });
@@ -820,7 +820,7 @@ describe("runGuidedOnboarding custodian flow", () => {
 
     await runGuidedOnboarding({ acceptRisk: true, workspace: "/tmp/work" }, runtime, deps);
 
-    expect(localOnboarding.states.get("/tmp/openclaw.json")?.status).toBe("completed");
+    expect(localOnboarding.states.get("/tmp/afora.json")?.status).toBe("completed");
     expect(runtime.exit).toHaveBeenCalledWith(1);
     expect(deps.launchHatchTui).not.toHaveBeenCalled();
   });
@@ -833,7 +833,7 @@ describe("runGuidedOnboarding custodian flow", () => {
       listManualOptions: vi.fn(async () => ({
         manualProviders: [{ id: "openai-api-key", label: "OpenAI" }],
         authOptions: [],
-        workspace: "/tmp/openclaw-workspace",
+        workspace: "/tmp/afora-workspace",
         setupComplete: false,
       })),
     };
@@ -858,7 +858,7 @@ describe("runGuidedOnboarding custodian flow", () => {
       listManualOptions: vi.fn(async () => ({
         manualProviders: [{ id: "openai-api-key", label: "OpenAI" }],
         authOptions: [],
-        workspace: "/tmp/openclaw-workspace",
+        workspace: "/tmp/afora-workspace",
         setupComplete: false,
       })),
     };
@@ -1030,7 +1030,7 @@ describe("runGuidedOnboarding custodian flow", () => {
     readConfigFileSnapshot.mockResolvedValue({
       exists: true,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       issues: [],
       config: {
         gateway: { mode: "local" },
@@ -1044,7 +1044,7 @@ describe("runGuidedOnboarding custodian flow", () => {
 
     expect(deps.applySetup).not.toHaveBeenCalled();
     // Configured reruns hatch the persisted default workspace, not the probe context.
-    expect(deps.launchHatchTui).toHaveBeenCalledWith("/tmp/openclaw-workspace");
+    expect(deps.launchHatchTui).toHaveBeenCalledWith("/tmp/afora-workspace");
     expect(prompter.note).toHaveBeenCalledWith(
       expect.stringContaining("already set up"),
       expect.anything(),
@@ -1055,7 +1055,7 @@ describe("runGuidedOnboarding custodian flow", () => {
     readConfigFileSnapshot.mockResolvedValue({
       exists: true,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       issues: [],
       config: {
         agents: { defaults: { workspace: "/tmp/authored" } },
@@ -1080,7 +1080,7 @@ describe("runGuidedOnboarding custodian flow", () => {
     expect(deps.launchHatchTui).toHaveBeenCalledWith("/tmp/authored");
   });
 
-  it("falls back to the OpenClaw chat when applying setup fails", async () => {
+  it("falls back to the Afora chat when applying setup fails", async () => {
     const prompter = createWizardPrompter();
     const applySetup = vi.fn(async () => {
       throw new Error("config write raced");

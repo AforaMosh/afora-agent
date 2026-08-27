@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import type {
   WorkerTranscriptCommitParams,
   WorkerTranscriptMessage,
@@ -13,7 +13,7 @@ import {
   replaceSessionEntrySync,
   withTranscriptWriteTransaction,
 } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { KeyedAsyncQueue } from "../../plugin-sdk/keyed-async-queue.js";
 import type { WorkerConnectionIdentity } from "./connection-identity.js";
 import { resolveWorkerSessionTarget, type ResolvedWorkerSessionTarget } from "./session-target.js";
@@ -25,7 +25,7 @@ import {
 } from "./transcript-commit-store.js";
 
 type WorkerTranscriptCommitterOptions = {
-  getConfig: () => OpenClawConfig;
+  getConfig: () => AforaConfig;
   store?: WorkerTranscriptCommitStore;
 };
 
@@ -312,7 +312,7 @@ function resolvePersistedCommitAcrossDag(params: {
 }
 
 async function applyWorkerTranscriptCommit(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   messages: readonly CommittedAgentMessage[];
   recoverPersistedBatch: boolean;
   requestedBaseLeafId: string | null;

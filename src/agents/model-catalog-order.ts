@@ -1,4 +1,4 @@
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import type { ModelCatalogEntry } from "./model-catalog.types.js";
 
 /**

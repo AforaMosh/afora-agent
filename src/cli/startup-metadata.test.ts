@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 function createModuleLayout(): { moduleDir: string; moduleUrl: string; parentDir: string } {
-  const parentDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-cli-metadata-"));
+  const parentDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-cli-metadata-"));
   tempDirs.push(parentDir);
   const moduleDir = path.join(parentDir, "chunks");
   fs.mkdirSync(moduleDir);

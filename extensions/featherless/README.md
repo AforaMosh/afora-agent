@@ -1,12 +1,12 @@
-# OpenClaw Featherless AI Provider
+# Afora Featherless AI Provider
 
-Official OpenClaw provider plugin for Featherless AI's OpenAI-compatible API.
+Official Afora provider plugin for Featherless AI's OpenAI-compatible API.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/featherless-provider
-openclaw gateway restart
+afora plugins install @afora/featherless-provider
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/providers/featherless> for setup and configuration.
+See <https://docs.afora.ai/providers/featherless> for setup and configuration.

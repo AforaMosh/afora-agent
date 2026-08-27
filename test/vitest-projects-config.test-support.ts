@@ -31,21 +31,21 @@ function findVitestConfigFactory(mod: Record<string, unknown>): VitestConfigFact
 
 async function loadRawVitestConfig(configPath: string): Promise<VitestConfig> {
   const previousArgv = process.argv;
-  const previousIncludeFile = process.env.OPENCLAW_VITEST_INCLUDE_FILE;
+  const previousIncludeFile = process.env.AFORA_VITEST_INCLUDE_FILE;
   process.argv = [previousArgv[0] ?? "node", previousArgv[1] ?? "vitest"];
-  delete process.env.OPENCLAW_VITEST_INCLUDE_FILE;
+  delete process.env.AFORA_VITEST_INCLUDE_FILE;
   try {
     const configUrl = pathToFileURL(path.resolve(process.cwd(), configPath));
     // Focused runs may have cached a CLI-narrowed default config before the audit clears argv.
-    configUrl.searchParams.set("openclaw-vitest-ownership-audit", "1");
+    configUrl.searchParams.set("afora-vitest-ownership-audit", "1");
     const mod = (await import(configUrl.href)) as Record<string, unknown>;
     return findVitestConfigFactory(mod)?.(process.env) ?? ((mod.default ?? {}) as VitestConfig);
   } finally {
     process.argv = previousArgv;
     if (previousIncludeFile === undefined) {
-      delete process.env.OPENCLAW_VITEST_INCLUDE_FILE;
+      delete process.env.AFORA_VITEST_INCLUDE_FILE;
     } else {
-      process.env.OPENCLAW_VITEST_INCLUDE_FILE = previousIncludeFile;
+      process.env.AFORA_VITEST_INCLUDE_FILE = previousIncludeFile;
     }
   }
 }

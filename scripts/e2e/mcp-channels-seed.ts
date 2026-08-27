@@ -1,13 +1,13 @@
-// Mcp Channels Seed script supports OpenClaw repository automation.
+// Mcp Channels Seed script supports Afora repository automation.
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { applyDockerOpenAiProviderConfig, type OpenClawConfig } from "./docker-openai-seed.ts";
+import { applyDockerOpenAiProviderConfig, type AforaConfig } from "./docker-openai-seed.ts";
 
 async function main() {
-  const stateDir = process.env.OPENCLAW_STATE_DIR?.trim() || path.join(os.homedir(), ".openclaw");
+  const stateDir = process.env.AFORA_STATE_DIR?.trim() || path.join(os.homedir(), ".afora");
   const configPath =
-    process.env.OPENCLAW_CONFIG_PATH?.trim() || path.join(stateDir, "openclaw.json");
+    process.env.AFORA_CONFIG_PATH?.trim() || path.join(stateDir, "afora.json");
   const sessionsDir = path.join(stateDir, "agents", "main", "sessions");
   const sessionFile = path.join(sessionsDir, "sess-main.jsonl");
   const storePath = path.join(sessionsDir, "sessions.json");
@@ -33,7 +33,7 @@ async function main() {
       plugins: {
         enabled: false,
       },
-    } satisfies OpenClawConfig,
+    } satisfies AforaConfig,
     "sk-docker-smoke-test",
   );
 

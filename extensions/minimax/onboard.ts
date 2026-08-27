@@ -1,12 +1,12 @@
 // Minimax setup module handles plugin onboarding behavior.
 
-import { normalizeProviderId } from "openclaw/plugin-sdk/provider-model-shared";
+import { normalizeProviderId } from "afora-agent/plugin-sdk/provider-model-shared";
 import {
   applyAgentDefaultModelPrimary,
   applyOnboardAuthAgentModelsAndProviders,
   type ModelProviderConfig,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/provider-onboard";
+  type AforaConfig,
+} from "afora-agent/plugin-sdk/provider-onboard";
 import {
   buildMinimaxApiModelDefinition,
   MINIMAX_API_BASE_URL,
@@ -21,9 +21,9 @@ type MinimaxApiProviderConfigParams = {
 };
 
 function applyMinimaxApiProviderConfigWithBaseUrl(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   params: MinimaxApiProviderConfigParams,
-): OpenClawConfig {
+): AforaConfig {
   const providers = { ...cfg.models?.providers } as Record<string, ModelProviderConfig>;
   const normalizedProviderId = normalizeProviderId(params.providerId);
   const existingProvider =
@@ -65,17 +65,17 @@ function applyMinimaxApiProviderConfigWithBaseUrl(
 }
 
 function applyMinimaxApiConfigWithBaseUrl(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   params: MinimaxApiProviderConfigParams,
-): OpenClawConfig {
+): AforaConfig {
   const next = applyMinimaxApiProviderConfigWithBaseUrl(cfg, params);
   return applyAgentDefaultModelPrimary(next, `${params.providerId}/${params.modelId}`);
 }
 
 export function applyMinimaxApiProviderConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   modelId = MINIMAX_DEFAULT_MODEL_ID,
-): OpenClawConfig {
+): AforaConfig {
   return applyMinimaxApiProviderConfigWithBaseUrl(cfg, {
     providerId: "minimax",
     modelId,
@@ -84,9 +84,9 @@ export function applyMinimaxApiProviderConfig(
 }
 
 export function applyMinimaxApiConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   modelId = MINIMAX_DEFAULT_MODEL_ID,
-): OpenClawConfig {
+): AforaConfig {
   return applyMinimaxApiConfigWithBaseUrl(cfg, {
     providerId: "minimax",
     modelId,
@@ -95,9 +95,9 @@ export function applyMinimaxApiConfig(
 }
 
 export function applyMinimaxApiProviderConfigCn(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   modelId = MINIMAX_DEFAULT_MODEL_ID,
-): OpenClawConfig {
+): AforaConfig {
   return applyMinimaxApiProviderConfigWithBaseUrl(cfg, {
     providerId: "minimax",
     modelId,
@@ -106,9 +106,9 @@ export function applyMinimaxApiProviderConfigCn(
 }
 
 export function applyMinimaxApiConfigCn(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   modelId = MINIMAX_DEFAULT_MODEL_ID,
-): OpenClawConfig {
+): AforaConfig {
   return applyMinimaxApiConfigWithBaseUrl(cfg, {
     providerId: "minimax",
     modelId,

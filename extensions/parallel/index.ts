@@ -1,4 +1,4 @@
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import { createParallelFreeWebSearchProvider } from "./src/parallel-free-web-search-provider.js";
 import { createParallelWebSearchProvider } from "./src/parallel-web-search-provider.js";
 

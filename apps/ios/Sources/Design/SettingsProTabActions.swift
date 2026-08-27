@@ -1,5 +1,5 @@
 import CoreLocation
-import OpenClawKit
+import AforaKit
 import SwiftUI
 import UIKit
 import UserNotifications
@@ -7,9 +7,9 @@ import UserNotifications
 extension SettingsProTab {
     func detailStatusCard(
         icon: String,
-        title: OpenClawTextValue,
-        detail: OpenClawTextValue,
-        value: OpenClawTextValue,
+        title: AforaTextValue,
+        detail: AforaTextValue,
+        value: AforaTextValue,
         color: Color,
         actionTitle: LocalizedStringKey? = nil,
         actionSystemImage: String = "arrow.right",
@@ -20,25 +20,25 @@ extension SettingsProTab {
                 SettingsIcon(systemName: icon, color: color)
                 VStack(alignment: .leading, spacing: 2) {
                     title.text
-                        .font(OpenClawType.headline)
+                        .font(AforaType.headline)
                     detail.text
-                        .font(OpenClawType.caption)
+                        .font(AforaType.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
                 value.text
-                    .font(OpenClawType.subheadMedium)
+                    .font(AforaType.subheadMedium)
                     .foregroundStyle(color)
             }
             if let action, let actionTitle {
                 Button(action: action) {
                     Label(actionTitle, systemImage: actionSystemImage)
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(OpenClawBrand.accent)
+                .tint(AforaBrand.accent)
             }
         }
     }
@@ -62,7 +62,7 @@ extension SettingsProTab {
                 title: "Discovery",
                 detail: .verbatim(self.gatewayController.discoveryStatusText),
                 value: .verbatim(self.gatewayController.gateways.count.formatted()),
-                color: self.gatewayController.gateways.isEmpty ? .secondary : OpenClawBrand.accent)
+                color: self.gatewayController.gateways.isEmpty ? .secondary : AforaBrand.accent)
             self.diagnosticCheckRow(
                 icon: "waveform",
                 title: "Talk Config",
@@ -82,7 +82,7 @@ extension SettingsProTab {
                 value: .verbatim(self.appModel.screenRecordActive
                     ? String(localized: "live")
                     : String(localized: "idle")),
-                color: self.appModel.screenRecordActive ? OpenClawBrand.ok : .secondary)
+                color: self.appModel.screenRecordActive ? AforaBrand.ok : .secondary)
             self.diagnosticCheckRow(
                 icon: "mic",
                 title: "Voice Wake",
@@ -90,30 +90,30 @@ extension SettingsProTab {
                 value: .verbatim(self.voiceWakeEnabled
                     ? String(localized: "on")
                     : String(localized: "off")),
-                color: self.voiceWakeEnabled ? OpenClawBrand.ok : .secondary)
+                color: self.voiceWakeEnabled ? AforaBrand.ok : .secondary)
         }
     }
 
     func diagnosticCheckRow(
         icon: String,
-        title: OpenClawTextValue,
-        detail: OpenClawTextValue,
-        value: OpenClawTextValue,
+        title: AforaTextValue,
+        detail: AforaTextValue,
+        value: AforaTextValue,
         color: Color) -> some View
     {
         HStack(spacing: 12) {
             SettingsIcon(systemName: icon, color: color)
             VStack(alignment: .leading, spacing: 2) {
                 title.text
-                    .font(OpenClawType.subheadSemiBold)
+                    .font(AforaType.subheadSemiBold)
                 detail.text
-                    .font(OpenClawType.caption)
+                    .font(AforaType.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
             Spacer(minLength: 8)
             value.text
-                .font(OpenClawType.subhead)
+                .font(AforaType.subhead)
                 .foregroundStyle(.secondary)
         }
     }
@@ -247,8 +247,8 @@ extension SettingsProTab {
             targetStableID: stableID)
     }
 
-    func refreshLocationPermissionSummary(desiredMode modeOverride: OpenClawLocationMode? = nil) {
-        let mode = modeOverride ?? OpenClawLocationMode(rawValue: self.locationModeRaw) ?? .off
+    func refreshLocationPermissionSummary(desiredMode modeOverride: AforaLocationMode? = nil) {
+        let mode = modeOverride ?? AforaLocationMode(rawValue: self.locationModeRaw) ?? .off
         let authorization = self.appModel.locationAuthorizationSnapshot
         self.locationPermissionRefreshID &+= 1
         let refreshID = self.locationPermissionRefreshID
@@ -262,7 +262,7 @@ extension SettingsProTab {
             let locationServicesEnabled = await Self.locationServicesEnabled()
             guard refreshID == self.locationPermissionRefreshID else { return }
             let latestAuthorization = self.appModel.locationAuthorizationSnapshot
-            let latestMode = modeOverride ?? OpenClawLocationMode(rawValue: self.locationModeRaw) ?? .off
+            let latestMode = modeOverride ?? AforaLocationMode(rawValue: self.locationModeRaw) ?? .off
             self.locationPermissionSummary = LocationPermissionSummary(
                 desiredMode: latestMode,
                 locationServicesEnabled: locationServicesEnabled,
@@ -612,7 +612,7 @@ extension SettingsProTab {
     func handleLocationModeChange(_ newValue: String) {
         guard !self.isChangingLocationMode else { return }
         guard newValue != self.previousLocationModeRaw else { return }
-        guard let mode = OpenClawLocationMode(rawValue: newValue) else { return }
+        guard let mode = AforaLocationMode(rawValue: newValue) else { return }
         let previous = self.previousLocationModeRaw
         Task {
             await self.applyLocationMode(mode, rawValue: newValue, previous: previous)
@@ -621,7 +621,7 @@ extension SettingsProTab {
 
     @MainActor
     func applyLocationMode(
-        _ mode: OpenClawLocationMode,
+        _ mode: AforaLocationMode,
         rawValue: String,
         previous: String) async
     {
@@ -651,17 +651,17 @@ extension SettingsProTab {
             self.locationModeRaw = previous
             self.previousLocationModeRaw = previous
             self.refreshLocationPermissionSummary(
-                desiredMode: OpenClawLocationMode(rawValue: previous) ?? .off)
+                desiredMode: AforaLocationMode(rawValue: previous) ?? .off)
             let presentation = self.locationSettingsPresentation(selectedMode: mode)
             self.locationStatusText = presentation.statusText
         }
     }
 
-    var selectedLocationMode: OpenClawLocationMode {
-        OpenClawLocationMode(rawValue: self.locationModeRaw) ?? .off
+    var selectedLocationMode: AforaLocationMode {
+        AforaLocationMode(rawValue: self.locationModeRaw) ?? .off
     }
 
-    var displayedLocationMode: OpenClawLocationMode {
+    var displayedLocationMode: AforaLocationMode {
         self.pendingLocationMode ?? self.selectedLocationMode
     }
 
@@ -669,7 +669,7 @@ extension SettingsProTab {
         self.locationSettingsPresentation(selectedMode: self.displayedLocationMode)
     }
 
-    func locationSettingsPresentation(selectedMode: OpenClawLocationMode) -> LocationSettingsPresentation {
+    func locationSettingsPresentation(selectedMode: AforaLocationMode) -> LocationSettingsPresentation {
         var summary = self.locationPermissionSummary
         summary.desiredMode = selectedMode
         return LocationSettingsPresentation(selectedMode: selectedMode, summary: summary)
@@ -680,7 +680,7 @@ extension SettingsProTab {
         self.performLocationSettingsAction(self.locationSettingsPresentation.toggleAction())
     }
 
-    func selectLocationAccessLevel(_ mode: OpenClawLocationMode) {
+    func selectLocationAccessLevel(_ mode: AforaLocationMode) {
         guard mode != .off else { return }
         guard !self.isChangingLocationMode else { return }
         let presentation = self.locationSettingsPresentation(selectedMode: mode)
@@ -698,7 +698,7 @@ extension SettingsProTab {
         }
     }
 
-    func setLocationMode(_ mode: OpenClawLocationMode) {
+    func setLocationMode(_ mode: AforaLocationMode) {
         let rawValue = mode.rawValue
         let previous = self.previousLocationModeRaw
         if self.locationModeRaw != rawValue {
@@ -770,7 +770,7 @@ extension SettingsProTab {
     }
 
     private func prepareNotificationEnrollment() -> Bool {
-        if PushBuildConfig.current.usesOpenClawHostedRelay,
+        if PushBuildConfig.current.usesAforaHostedRelay,
            !PushEnrollmentConsent.disclosureAccepted
         {
             self.showNotificationRelayDisclosure = true
@@ -824,7 +824,7 @@ extension SettingsProTab {
     @MainActor
     func registerForRemoteNotificationsIfEnrollmentReady() {
         guard self.notificationServingEnabled else { return }
-        guard !PushBuildConfig.current.usesOpenClawHostedRelay
+        guard !PushBuildConfig.current.usesAforaHostedRelay
             || PushEnrollmentConsent.disclosureAccepted
         else { return }
         guard self.notificationStatus.allowsNotifications else { return }
@@ -945,7 +945,7 @@ extension SettingsProTab {
     func title(for route: SettingsRoute) -> String {
         switch route {
         case .gateway: String(localized: "Gateway")
-        case .systemAgent: String(localized: "OpenClaw")
+        case .systemAgent: String(localized: "Afora")
         case .appleWatch: String(localized: "Apple Watch")
         case .approvals: String(localized: "Approvals")
         case .permissions: String(localized: "Permissions")
@@ -968,9 +968,9 @@ extension SettingsProTab {
         do {
             let result = try await self.appModel.sendDirectWatchSetup()
             self.watchDirectSetupStatusText = result.deliveredImmediately
-                ? String(localized: "Setup sent. Open OpenClaw on the watch to connect.")
+                ? String(localized: "Setup sent. Open Afora on the watch to connect.")
                 : String(
-                    localized: "Setup queued for the watch. Open OpenClaw before the code expires.")
+                    localized: "Setup queued for the watch. Open Afora before the code expires.")
         } catch {
             self.watchDirectSetupStatusText = error.localizedDescription
         }
@@ -1068,7 +1068,7 @@ extension SettingsProTab {
         let lower = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         if lower.contains("pairing required") {
             return String(
-                localized: "Pairing required. Run /pair approve in your OpenClaw chat, then connect again.")
+                localized: "Pairing required. Run /pair approve in your Afora chat, then connect again.")
         }
         if lower.contains("device nonce required") || lower.contains("device nonce mismatch") {
             return String(localized: "Secure handshake failed. Check Tailscale, then connect again.")
@@ -1216,8 +1216,8 @@ extension SettingsProTab {
     }
 
     var gatewayStatusColor: Color {
-        if self.appModel.isAppleReviewDemoModeEnabled { return OpenClawBrand.accent }
-        return self.gatewayConnected ? OpenClawBrand.ok : .secondary
+        if self.appModel.isAppleReviewDemoModeEnabled { return AforaBrand.accent }
+        return self.gatewayConnected ? AforaBrand.ok : .secondary
     }
 
     var gatewayDiagnosticConnected: Bool {
@@ -1234,7 +1234,7 @@ extension SettingsProTab {
         }
         if self.notificationsNeedAttention {
             return String(
-                localized: "Foreground approvals still appear while OpenClaw is connected.")
+                localized: "Foreground approvals still appear while Afora is connected.")
         }
         return self.gatewayConnected
             ? String(localized: "Gateway requests will appear here.")
@@ -1255,7 +1255,7 @@ extension SettingsProTab {
 
     var gatewayTalkConfigColor: Color {
         if self.appModel.isAppleReviewDemoModeEnabled { return .secondary }
-        return self.appModel.talkMode.gatewayTalkConfigLoaded ? OpenClawBrand.ok : .secondary
+        return self.appModel.talkMode.gatewayTalkConfigLoaded ? AforaBrand.ok : .secondary
     }
 
     var gatewayAddress: String {
@@ -1263,7 +1263,7 @@ extension SettingsProTab {
     }
 
     var gatewayServer: String {
-        self.appModel.gatewayServerName ?? "OpenClaw Gateway"
+        self.appModel.gatewayServerName ?? "Afora Gateway"
     }
 
     var pendingApproval: NodeAppModel.ExecApprovalPrompt? {
@@ -1289,8 +1289,8 @@ extension SettingsProTab {
 
     var approvalItems: [SettingsApprovalItem] {
         guard let pendingApproval else { return [] }
-        let pendingTitle = pendingApproval.commandPreview.map(OpenClawTextValue.verbatim)
-            ?? OpenClawTextValue.localized("Review gateway action")
+        let pendingTitle = pendingApproval.commandPreview.map(AforaTextValue.verbatim)
+            ?? AforaTextValue.localized("Review gateway action")
         let agentDetail = String(
             format: String(localized: "Agent: %@"),
             self.appModel.activeAgentName)
@@ -1303,7 +1303,7 @@ extension SettingsProTab {
                 priority: self.appModel.pendingExecApprovalPromptResolving
                     ? .localized("Resolving")
                     : .localized("High"),
-                color: OpenClawBrand.danger),
+                color: AforaBrand.danger),
             SettingsApprovalItem(
                 id: "pending-context",
                 icon: "doc.text.fill",
@@ -1314,7 +1314,7 @@ extension SettingsProTab {
                 priority: pendingApproval.allowsAllowAlways
                     ? .localized("Medium")
                     : .localized("Review"),
-                color: OpenClawBrand.warn),
+                color: AforaBrand.warn),
         ]
     }
 
@@ -1341,7 +1341,7 @@ extension SettingsProTab {
 
     var diagnosticsRunColor: Color {
         guard let diagnosticsIssueCount else { return .secondary }
-        return diagnosticsIssueCount == 0 ? OpenClawBrand.ok : OpenClawBrand.warn
+        return diagnosticsIssueCount == 0 ? AforaBrand.ok : AforaBrand.warn
     }
 
     var locationPermissionDetailText: String? {
@@ -1370,7 +1370,7 @@ extension SettingsProTab {
     }
 
     var notificationDisclosureAccepted: Bool {
-        !PushBuildConfig.current.usesOpenClawHostedRelay
+        !PushBuildConfig.current.usesAforaHostedRelay
             || PushEnrollmentConsent.disclosureAccepted
     }
 
@@ -1406,21 +1406,21 @@ extension SettingsProTab {
     }
 
     var notificationRelayDetail: String {
-        if PushBuildConfig.current.usesOpenClawHostedRelay {
+        if PushBuildConfig.current.usesAforaHostedRelay {
             let host = PushBuildConfig.current.relayBaseURL.flatMap {
                 URLComponents(url: $0, resolvingAgainstBaseURL: false)?.host
-            } ?? "ios-push-relay.openclaw.ai"
+            } ?? "ios-push-relay.afora.ai"
             return String(
                 format: String(
-                    localized: "This build uses OpenClaw's hosted push relay at %@ for notification delivery data."),
+                    localized: "This build uses Afora's hosted push relay at %@ for notification delivery data."),
                 host)
         }
         return String(
-            localized: "This build is not configured to use OpenClaw's hosted push relay.")
+            localized: "This build is not configured to use Afora's hosted push relay.")
     }
 
     var notificationRelayDisclosureMessage: String {
         String(
-            localized: "Enabling this sends delivery data through OpenClaw's hosted push relay.")
+            localized: "Enabling this sends delivery data through Afora's hosted push relay.")
     }
 }

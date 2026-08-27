@@ -1,9 +1,9 @@
 // Active-session shutdown tracker tests protect the in-memory drain list used
 // when gateway shutdown, restart, or lifecycle cleanup must emit one session_end.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   forgetActiveSessionForShutdown,
   listActiveSessionsForShutdown,
@@ -16,7 +16,7 @@ import {
 // already been finalized through replace / reset / delete / compaction so
 // the shutdown drain never double-fires `session_end` for them.
 
-const cfg: OpenClawConfig = {};
+const cfg: AforaConfig = {};
 
 afterEach(() => {
   for (const entry of listActiveSessionsForShutdown()) {

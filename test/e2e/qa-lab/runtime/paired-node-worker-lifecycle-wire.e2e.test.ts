@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import { GatewayClient } from "openclaw/plugin-sdk/gateway-runtime";
+import { GatewayClient } from "afora-agent/plugin-sdk/gateway-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NODE_WORKER_WORKSPACE_RETAIN_COMMAND } from "../../../../src/infra/node-commands.js";
 import { useAutoCleanupTempDirTracker } from "../../../helpers/temp-dir.js";
@@ -174,7 +174,7 @@ describe("paired node worker lifecycle wire", () => {
     "keeps local control usable across bundle loss, disconnect, capacity, and role removal",
     { timeout: TEST_TIMEOUT_MS },
     async () => {
-      const root = tempDirs.make("openclaw-paired-node-worker-lifecycle-");
+      const root = tempDirs.make("afora-paired-node-worker-lifecycle-");
       const provider = await startPairedNodeWorkerLifecycleProvider([HOLD_A, HOLD_B]);
       const published = await createPublishedWireWorkspace(root);
       let gateway: WireGateway | undefined;

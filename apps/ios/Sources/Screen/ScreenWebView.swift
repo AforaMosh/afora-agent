@@ -1,4 +1,4 @@
-import OpenClawKit
+import AforaKit
 import SwiftUI
 import WebKit
 
@@ -125,7 +125,7 @@ final class ScreenWebViewCoordinator: NSObject {
 
 // MARK: - Navigation Delegate
 
-/// Handles navigation policy to intercept OpenClaw deep links from canvas.
+/// Handles navigation policy to intercept Afora deep links from canvas.
 @MainActor
 private final class ScreenNavigationDelegate: NSObject, WKNavigationDelegate {
     weak var controller: ScreenController?
@@ -141,7 +141,7 @@ private final class ScreenNavigationDelegate: NSObject, WKNavigationDelegate {
         }
 
         let scheme = url.scheme?.lowercased()
-        if scheme == "openclaw" || scheme == "openclaw-debug" {
+        if scheme == "afora" || scheme == "afora-debug" {
             decisionHandler(.cancel)
             self.controller?.onDeepLink?(url)
             return
@@ -170,7 +170,7 @@ private final class ScreenNavigationDelegate: NSObject, WKNavigationDelegate {
 }
 
 private final class CanvasA2UIActionMessageHandler: NSObject, WKScriptMessageHandler {
-    static let messageName = "openclawCanvasA2UIAction"
+    static let messageName = "aforaCanvasA2UIAction"
     static let handlerNames = [messageName]
 
     weak var controller: ScreenController?

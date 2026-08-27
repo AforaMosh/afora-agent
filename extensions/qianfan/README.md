@@ -1,12 +1,12 @@
-# OpenClaw Qianfan Provider
+# Afora Qianfan Provider
 
-Official OpenClaw provider plugin for Qianfan.
+Official Afora provider plugin for Qianfan.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/qianfan-provider
-openclaw gateway restart
+afora plugins install @afora/qianfan-provider
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/providers/qianfan> for setup and configuration.
+See <https://docs.afora.ai/providers/qianfan> for setup and configuration.

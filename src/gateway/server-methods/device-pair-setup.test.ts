@@ -3,7 +3,7 @@
  * code + QR for non-terminal clients and never leaks the gateway credential.
  */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as devicePairingJoinCode from "../../infra/device-pairing-join-code.js";
 import type { GatewayRequestHandlerOptions } from "./types.js";
@@ -251,9 +251,9 @@ describe("device.pair.setupCode", () => {
     const resolution = {
       ...okResolution,
       payload: {
-        url: "ws://192.168.1.20:18789/openclaw-gw",
+        url: "ws://192.168.1.20:18789/afora-gw",
         urls: [
-          "ws://192.168.1.20:18789/openclaw-gw",
+          "ws://192.168.1.20:18789/afora-gw",
           "wss://gateway.tailnet.example/public-gateway",
         ],
         bootstrapToken: "boot-123",

@@ -51,7 +51,7 @@ allowed-tools:
   - gh
 metadata: |
   {
-    "owners": ["team-openclaw"]
+    "owners": ["team-afora"]
   }
 ---
 # Skill
@@ -111,7 +111,7 @@ metadata: |
         self.assertFalse(valid)
         self.assertEqual(message, "Description must not be empty")
 
-    def test_accepts_openclaw_invocation_frontmatter(self):
+    def test_accepts_afora_invocation_frontmatter(self):
         skill_dir = self.temp_dir / "invocable-skill"
         skill_dir.mkdir(parents=True, exist_ok=True)
         content = """---

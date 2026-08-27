@@ -27,7 +27,7 @@ scenario:
   execution:
     kind: flow
     runtime: codex
-    summary: Run with `pnpm openclaw qa suite --provider-mode live-frontier --model openai/gpt-5.6-luna --alt-model openai/gpt-5.6-luna --fast --thinking medium --scenario codex-harness-no-meta-leak`.
+    summary: Run with `pnpm afora qa suite --provider-mode live-frontier --model openai/gpt-5.6-luna --alt-model openai/gpt-5.6-luna --fast --thinking medium --scenario codex-harness-no-meta-leak`.
     config:
       requiredProviderMode: live-frontier
       requiredProvider: openai

@@ -3,7 +3,7 @@
  *
  * Parses idle-timeout values shared by server and config surfaces.
  */
-import { parseStrictNonNegativeInteger } from "@openclaw/normalization-core/number-coercion";
+import { parseStrictNonNegativeInteger } from "@afora/normalization-core/number-coercion";
 
 export const DEFAULT_HTTP_IDLE_TIMEOUT_MS = 300_000;
 

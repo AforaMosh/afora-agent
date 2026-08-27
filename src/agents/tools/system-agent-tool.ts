@@ -1,11 +1,11 @@
 /**
- * openclaw built-in tool: ring-zero setup/repair actions for the OpenClaw
+ * afora built-in tool: ring-zero setup/repair actions for the Afora
  * agent. Never exposed to normal agents — construction is bound to a host-owned
- * per-run scope, and every action funnels through OpenClaw's typed operation
+ * per-run scope, and every action funnels through Afora's typed operation
  * union with approval assertions and the audit log.
  */
 import { createHash } from "node:crypto";
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import { Type } from "typebox";
 import type { RuntimeEnv } from "../../runtime.js";
 import {
@@ -218,7 +218,7 @@ const SystemAgentToolSchema = Type.Object({
   target: Type.Optional(
     stringEnum(["guided", "classic", "channels", "search", "gateway"], {
       description:
-        "Setup target for open_setup. channels/search/gateway open masked terminal flows; guided/classic require exiting OpenClaw and running openclaw onboard.",
+        "Setup target for open_setup. channels/search/gateway open masked terminal flows; guided/classic require exiting Afora and running afora onboard.",
     }),
   ),
   query: Type.Optional(Type.String({ description: "Search query for plugin_search" })),
@@ -238,7 +238,7 @@ function createCaptureRuntime(): RuntimeEnv & { read: () => string } {
     log: (...args) => lines.push(args.join(" ")),
     error: (...args) => lines.push(args.join(" ")),
     exit: (code) => {
-      throw new Error(`openclaw operation exited with code ${String(code)}`);
+      throw new Error(`afora operation exited with code ${String(code)}`);
     },
     read: () => lines.join("\n").trim(),
   };
@@ -247,7 +247,7 @@ function createCaptureRuntime(): RuntimeEnv & { read: () => string } {
 function requireParam(params: Record<string, unknown>, name: string): string {
   const value = readToolStringParam(params, name);
   if (!value?.trim()) {
-    throw new ToolInputError(`openclaw: "${name}" is required for this action`);
+    throw new ToolInputError(`afora: "${name}" is required for this action`);
   }
   return value.trim();
 }
@@ -265,7 +265,7 @@ function readSetupTarget(
   ) {
     return target;
   }
-  throw new ToolInputError(`openclaw: unknown setup target "${target}"`);
+  throw new ToolInputError(`afora: unknown setup target "${target}"`);
 }
 
 function operationForAction(params: Record<string, unknown>): SystemAgentOperation {
@@ -339,7 +339,7 @@ function operationForAction(params: Record<string, unknown>): SystemAgentOperati
       const spec = requireParam(params, "spec");
       const validationError = validateSystemAgentPluginInstallSpec(spec);
       if (validationError) {
-        throw new ToolInputError(`openclaw: ${validationError}`);
+        throw new ToolInputError(`afora: ${validationError}`);
       }
       return { kind: "plugin-install", spec };
     }
@@ -386,14 +386,14 @@ function operationForAction(params: Record<string, unknown>): SystemAgentOperati
         id: requireParam(params, "envVar"),
       };
     default:
-      throw new ToolInputError(`openclaw: unknown action "${action}"`);
+      throw new ToolInputError(`afora: unknown action "${action}"`);
   }
 }
 
 export function createSystemAgentTool(options: SystemAgentToolOptions): AnyAgentTool {
   return {
-    name: "openclaw",
-    label: "OpenClaw",
+    name: "afora",
+    label: "Afora",
     // Setup authority is never discoverable through tool catalogs: the host
     // scopes it to this run and the model must receive it directly.
     catalogMode: "direct-only",
@@ -401,7 +401,7 @@ export function createSystemAgentTool(options: SystemAgentToolOptions): AnyAgent
       "System agent. Setup, config, channels, plugins, agents, repair.",
       "Read now: status, models, agents, channels, channel_info, config_get, config_schema, gateway_status, plugin_search, validate_config, doctor, audit.",
       "Handoff: connect_channel, configure_skills, configure_search, configure_gateway, import_memory; open_setup target=channels|search|gateway; open_agent.",
-      "Provider/auth/credentials: exit; run `openclaw onboard`. Never request credentials.",
+      "Provider/auth/credentials: exit; run `afora onboard`. Never request credentials.",
       "Write: setup, set_default_model (agentId optional; live-tested), config_set, config_set_ref, create_agent, gateway_*, plugin_install, plugin_uninstall. Exact user approval required; then approved=true. Host applies after turn; rechecks inference owner.",
       "plugin_install: ClawHub/bundled/official only. Arbitrary source: exit, trusted shell.",
       "Unknown config: config_schema first. Secrets: config_set_ref env. No plaintext. No raw auth/models/env/secrets/$include or default-route agent fields; use set_default_model / onboard.",
@@ -430,7 +430,7 @@ export function createSystemAgentTool(options: SystemAgentToolOptions): AnyAgent
                   : directive.kind === "memory-import"
                     ? `${SYSTEM_AGENT_DIRECTIVE_PREFIX} the host chat now starts guided copy-only memory import with the user. Tell the user the detected local-agent memory choices come next; do not describe steps yourself.`
                     : directive.kind === "model-setup"
-                      ? `${SYSTEM_AGENT_DIRECTIVE_PREFIX} the active inference route cannot be changed inside OpenClaw. Tell the user to exit OpenClaw and run \`openclaw onboard\`; do not ask for provider credentials here.`
+                      ? `${SYSTEM_AGENT_DIRECTIVE_PREFIX} the active inference route cannot be changed inside Afora. Tell the user to exit Afora and run \`afora onboard\`; do not ask for provider credentials here.`
                       : directive.kind === "open-tui"
                         ? `${SYSTEM_AGENT_DIRECTIVE_PREFIX} the host now hands the user over to their normal agent. Say goodbye briefly.`
                         : directive.target === "channels"
@@ -439,7 +439,7 @@ export function createSystemAgentTool(options: SystemAgentToolOptions): AnyAgent
                             ? `${SYSTEM_AGENT_DIRECTIVE_PREFIX} the host now opens masked terminal web search setup. Tell the user the terminal wizard comes next.`
                             : directive.target === "gateway"
                               ? `${SYSTEM_AGENT_DIRECTIVE_PREFIX} the host now opens masked terminal Gateway setup. Tell the user the terminal wizard comes next.`
-                              : `${SYSTEM_AGENT_DIRECTIVE_PREFIX} ${directive.target} setup cannot run inside OpenClaw because it may change the active inference route. Tell the user to exit OpenClaw and run \`openclaw onboard\`.`,
+                              : `${SYSTEM_AGENT_DIRECTIVE_PREFIX} ${directive.target} setup cannot run inside Afora because it may change the active inference route. Tell the user to exit Afora and run \`afora onboard\`.`,
           {},
         );
       }

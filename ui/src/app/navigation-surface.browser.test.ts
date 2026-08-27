@@ -65,7 +65,7 @@ describe.skipIf(!hasBrowserLayout)("navigation surface browser layout", () => {
 
     const refreshCardHost = document.querySelector<
       HTMLElement & { updateComplete: Promise<boolean> }
-    >("openclaw-sidebar-update-card");
+    >("afora-sidebar-update-card");
     await refreshCardHost?.updateComplete;
     const refreshCard = refreshCardHost?.querySelector<HTMLElement>(".sidebar-update-card");
     const buttons = Array.from(

@@ -101,14 +101,14 @@ function makeRunRecord(overrides: Partial<SubagentRunRecordOverrides>): Subagent
 }
 
 describe("subagent orphan recovery — faithful restart path", () => {
-  const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
+  const envSnapshot = captureEnv(["AFORA_STATE_DIR"]);
   let tempStateDir: string | null = null;
 
   beforeEach(async () => {
     resetTaskRegistryForTests({ persist: false });
     resetTaskFlowRegistryForTests({ persist: false });
-    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-orphan-integ-"));
-    process.env.OPENCLAW_STATE_DIR = tempStateDir;
+    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-orphan-integ-"));
+    process.env.AFORA_STATE_DIR = tempStateDir;
     setRuntimeConfigSnapshot({ session: { store: undefined } } as never);
     // Real registry wiring: only the delivery/announce/cleanup seams (true
     // external side effects) are recorded so completeSubagentRun runs in-process.

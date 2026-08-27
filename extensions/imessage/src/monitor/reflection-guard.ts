@@ -1,5 +1,5 @@
 // Imessage plugin module implements reflection guard behavior.
-import { findCodeRegions, isInsideCode } from "openclaw/plugin-sdk/text-chunking";
+import { findCodeRegions, isInsideCode } from "afora-agent/plugin-sdk/text-chunking";
 
 const INTERNAL_SEPARATOR_RE = /(?:#\+){2,}#?/;
 const ASSISTANT_ROLE_MARKER_RE = /\bassistant\s+to\s*=\s*\w+/i;

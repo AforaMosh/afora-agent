@@ -60,7 +60,7 @@ suite.define(() => {
 
     try {
       await page.goto(`${suite.server.baseUrl}chat`);
-      const panes = page.locator("openclaw-chat-pane.chat-split-view__pane");
+      const panes = page.locator("afora-chat-pane.chat-split-view__pane");
       await expect.poll(() => panes.count(), { timeout: 10_000 }).toBe(2);
       await expect
         .poll(() =>
@@ -96,7 +96,7 @@ suite.define(() => {
         role: index % 2 === 0 ? "user" : "assistant",
         content: `${label} message ${index}: ${"wrapped transcript content ".repeat(8)}`,
         timestamp: 1_000 + index,
-        __openclaw: { seq: index + 1 },
+        __afora: { seq: index + 1 },
       }));
     const response = (sessionKey: string, transcript: unknown[]) => ({
       messages: transcript,
@@ -218,7 +218,7 @@ suite.define(() => {
       await expect.poll(() => splitEntry.isVisible()).toBe(true);
       await expect.poll(() => page.locator(".chat-pane__header").count()).toBe(1);
       await page.evaluate(() => {
-        document.documentElement.classList.add("openclaw-native-macos");
+        document.documentElement.classList.add("afora-native-macos");
         document.querySelector(".shell")?.classList.add("shell--nav-collapsed");
       });
       await expect
@@ -229,7 +229,7 @@ suite.define(() => {
         )
         .toBe("90px");
       await page.evaluate(() => {
-        document.documentElement.classList.remove("openclaw-native-macos");
+        document.documentElement.classList.remove("afora-native-macos");
         document.querySelector(".shell")?.classList.remove("shell--nav-collapsed");
       });
       await page.setViewportSize({ height: 900, width: 1100 });
@@ -240,7 +240,7 @@ suite.define(() => {
           splitEntry.evaluate((node) => node.closest(".agent-chat__composer-shell") == null),
         )
         .toBe(true);
-      await page.locator("openclaw-chat-pane").evaluate((pane) => {
+      await page.locator("afora-chat-pane").evaluate((pane) => {
         (
           globalThis as typeof globalThis & {
             classicChatPane?: Element;
@@ -255,7 +255,7 @@ suite.define(() => {
         .toBeGreaterThan(startupRequestsBeforeSplit);
 
       // Each pane owns the same in-flow header in classic and split layouts.
-      const panes = page.locator("openclaw-chat-pane.chat-split-view__pane");
+      const panes = page.locator("afora-chat-pane.chat-split-view__pane");
       const headers = page.locator(".chat-pane__header");
       await expect.poll(() => panes.count()).toBe(2);
       await panes.last().getByText("Split toolbar proof.").waitFor();
@@ -297,7 +297,7 @@ suite.define(() => {
       await expect
         .poll(() =>
           targetHeader.evaluate((header) => {
-            const owner = header.closest("openclaw-chat-pane");
+            const owner = header.closest("afora-chat-pane");
             return (
               header.parentElement?.classList.contains("chat-main__conversation-column") === true &&
               owner?.classList.contains("chat-split-view__pane") === true
@@ -390,7 +390,7 @@ suite.define(() => {
           role: "assistant",
           content: "Usage ready.",
           model: "gateway-injected",
-          provider: "openclaw",
+          provider: "afora",
           timestamp: Date.now() + 1,
           usage: {
             cost: {
@@ -742,7 +742,7 @@ suite.define(() => {
       expect(await gateway.getRequests("chat.metadata")).toHaveLength(initialMetadataCount);
       const emptyOutboxListCount = initialListCount + emptyOutboxListRequests.length;
 
-      await page.locator('openclaw-chat-pane[aria-hidden="false"]').evaluate((pane, targetKey) => {
+      await page.locator('afora-chat-pane[aria-hidden="false"]').evaluate((pane, targetKey) => {
         const state = (
           pane as HTMLElement & {
             state: {
@@ -751,7 +751,7 @@ suite.define(() => {
           }
         ).state;
         const gatewayOwner = state.settings?.gatewayUrl?.trim() || "default";
-        const key = `openclaw.control.chatComposer.v2:${encodeURIComponent(gatewayOwner)}`;
+        const key = `afora.control.chatComposer.v2:${encodeURIComponent(gatewayOwner)}`;
         sessionStorage.setItem(
           key,
           JSON.stringify({

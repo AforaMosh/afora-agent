@@ -1,4 +1,4 @@
-import type { AssistantMessage, Model } from "@openclaw/llm-core";
+import type { AssistantMessage, Model } from "@afora/llm-core";
 import type { AgentEvent, AgentMessage } from "./types.js";
 
 /** Canonical empty aborted/error assistant recorded when a run ends without output. */
@@ -54,7 +54,7 @@ export function isTurnHandoffAbort(signal: AbortSignal | undefined): boolean {
 export function createInterruptedTurnMessage(): AgentMessage {
   return {
     role: "custom",
-    customType: "openclaw:turn-aborted",
+    customType: "afora:turn-aborted",
     content: INTERRUPTED_TURN_GUIDANCE,
     display: false,
     timestamp: Date.now(),
@@ -73,7 +73,7 @@ export async function appendInterruptedTurnMessage(
 
 export function normalizeCoreContextMessages(messages: AgentMessage[]): AgentMessage[] {
   return messages.map((message) => {
-    if (message.role !== "custom" || message.customType !== "openclaw:turn-aborted") {
+    if (message.role !== "custom" || message.customType !== "afora:turn-aborted") {
       return message;
     }
     return {

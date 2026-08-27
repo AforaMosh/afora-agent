@@ -340,9 +340,9 @@ export const TOOL_DISPLAY_CONFIG: ToolDisplayConfig = {
       title: "Skill Workshop",
       detailKeys: ["action", "name", "proposal_id"],
     },
-    openclaw: {
+    afora: {
       emoji: "🦀",
-      title: "OpenClaw",
+      title: "Afora",
       detailKeys: ["action", "path", "model"],
     },
     gateway: {

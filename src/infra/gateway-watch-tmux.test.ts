@@ -1,5 +1,5 @@
 // Covers gateway watch tmux script helpers.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, it, vi } from "vitest";
 import {
   buildGatewayWatchTmuxCommand,
@@ -52,70 +52,70 @@ function expectSpawn(mock: unknown, callIndex: number, command: string, args: Ar
 describe("gateway-watch tmux wrapper", () => {
   it("derives stable session names from profile and port", () => {
     expect(resolveGatewayWatchTmuxSessionName({ args: ["gateway", "--force"], env: {} })).toBe(
-      "openclaw-gateway-watch-main",
+      "afora-gateway-watch-main",
     );
     expect(
       resolveGatewayWatchTmuxSessionName({
         args: ["gateway", "--force", "--port", "19001"],
-        env: { OPENCLAW_PROFILE: "Dev Profile" },
+        env: { AFORA_PROFILE: "Dev Profile" },
       }),
-    ).toBe("openclaw-gateway-watch-dev-profile-19001");
+    ).toBe("afora-gateway-watch-dev-profile-19001");
     expect(
       resolveGatewayWatchTmuxSessionName({
         args: ["--dev", "gateway", "--port=18789"],
         env: {},
       }),
-    ).toBe("openclaw-gateway-watch-dev");
+    ).toBe("afora-gateway-watch-dev");
     expect(
       resolveGatewayWatchTmuxSessionName({
         args: ["gateway", "--dev", "--port=18789"],
         env: {},
       }),
-    ).toBe("openclaw-gateway-watch-main");
+    ).toBe("afora-gateway-watch-main");
     expect(
       resolveGatewayWatchTmuxSessionName({
         args: ["gateway", "--profile", "work", "--port=18789"],
-        env: { OPENCLAW_PROFILE: "main" },
+        env: { AFORA_PROFILE: "main" },
       }),
-    ).toBe("openclaw-gateway-watch-work");
+    ).toBe("afora-gateway-watch-work");
     expect(
       resolveGatewayWatchTmuxSessionName({
         args: ["gateway", "--force"],
-        env: { OPENCLAW_GATEWAY_PORT: "127.0.0.1:18789" },
+        env: { AFORA_GATEWAY_PORT: "127.0.0.1:18789" },
       }),
-    ).toBe("openclaw-gateway-watch-main");
+    ).toBe("afora-gateway-watch-main");
   });
 
   it("builds a login-shell command that runs the raw watcher in the repo", () => {
     const command = buildGatewayWatchTmuxCommand({
       args: ["gateway", "--force", "--raw-stream-path", "a b.jsonl"],
-      cwd: "/repo with spaces/openclaw",
+      cwd: "/repo with spaces/afora",
       env: {
-        OPENCLAW_GATEWAY_PORT: "19001",
-        OPENCLAW_GATEWAY_RESTART_TRACE: "1",
-        OPENCLAW_GATEWAY_STARTUP_TRACE: "1",
-        OPENCLAW_GATEWAY_WATCH_AUTO_DOCTOR: "0",
-        OPENCLAW_PROFILE: "Dev Profile",
-        OPENCLAW_TRACE_SYNC_IO: "0",
+        AFORA_GATEWAY_PORT: "19001",
+        AFORA_GATEWAY_RESTART_TRACE: "1",
+        AFORA_GATEWAY_STARTUP_TRACE: "1",
+        AFORA_GATEWAY_WATCH_AUTO_DOCTOR: "0",
+        AFORA_PROFILE: "Dev Profile",
+        AFORA_TRACE_SYNC_IO: "0",
         SHELL: "/bin/zsh",
       },
       nodePath: "/opt/node",
-      sessionName: "openclaw-gateway-watch-main",
+      sessionName: "afora-gateway-watch-main",
     });
 
     expect(command).toContain("exec '/bin/zsh' -lc");
-    expect(command).toContain("/repo with spaces/openclaw");
-    expect(command).toContain("'OPENCLAW_GATEWAY_WATCH_TMUX_CHILD=1'");
-    expect(command).toContain("'OPENCLAW_GATEWAY_WATCH_SESSION=openclaw-gateway-watch-main'");
+    expect(command).toContain("/repo with spaces/afora");
+    expect(command).toContain("'AFORA_GATEWAY_WATCH_TMUX_CHILD=1'");
+    expect(command).toContain("'AFORA_GATEWAY_WATCH_SESSION=afora-gateway-watch-main'");
     expect(command).toContain("'\\''-u'\\'' '\\''NO_COLOR'\\''");
     expect(command).toContain("'FORCE_COLOR=1'");
-    expect(command).toContain("'OPENCLAW_GATEWAY_PORT=19001'");
-    expect(command).toContain("'OPENCLAW_GATEWAY_RESTART_TRACE=1'");
-    expect(command).toContain("'OPENCLAW_GATEWAY_STARTUP_TRACE=1'");
-    expect(command).toContain("'OPENCLAW_GATEWAY_WATCH_AUTO_DOCTOR=0'");
-    expect(command).toContain("'OPENCLAW_PROFILE=Dev Profile'");
-    expect(command).toContain("'OPENCLAW_TRACE_SYNC_IO=0'");
-    expect(command).toContain("'\\''-u'\\'' '\\''OPENCLAW_SKIP_CHANNELS'\\''");
+    expect(command).toContain("'AFORA_GATEWAY_PORT=19001'");
+    expect(command).toContain("'AFORA_GATEWAY_RESTART_TRACE=1'");
+    expect(command).toContain("'AFORA_GATEWAY_STARTUP_TRACE=1'");
+    expect(command).toContain("'AFORA_GATEWAY_WATCH_AUTO_DOCTOR=0'");
+    expect(command).toContain("'AFORA_PROFILE=Dev Profile'");
+    expect(command).toContain("'AFORA_TRACE_SYNC_IO=0'");
+    expect(command).toContain("'\\''-u'\\'' '\\''AFORA_SKIP_CHANNELS'\\''");
     expect(command).toContain("/opt/node");
     expect(command).toContain("scripts/watch-node.mjs");
     expect(command).toContain("gateway");
@@ -132,7 +132,7 @@ describe("gateway-watch tmux wrapper", () => {
       cwd: "/repo",
       env: { SHELL: "/bin/zsh" },
       nodePath: "/opt/node",
-      sessionName: "openclaw-gateway-watch-main",
+      sessionName: "afora-gateway-watch-main",
     });
 
     expect(command).toContain("scripts/gateway-watch-tmux.mts");
@@ -161,7 +161,7 @@ describe("gateway-watch tmux wrapper", () => {
     const code = runGatewayWatchServiceHandoff({
       args: ["gateway", "--force", "--port", "18789", "--profile", "work"],
       cwd: "/repo",
-      env: { OPENCLAW_GATEWAY_PORT: "19001", OPENCLAW_PROFILE: "main" },
+      env: { AFORA_GATEWAY_PORT: "19001", AFORA_PROFILE: "main" },
       nodePath: "/opt/node",
       spawnSync,
       stderr: stderr.stream,
@@ -184,7 +184,7 @@ describe("gateway-watch tmux wrapper", () => {
       "gateway",
       "stop",
     ]);
-    expect(requireRecord(stopOptions.env, "stop env").OPENCLAW_GATEWAY_PORT).toBe("18789");
+    expect(requireRecord(stopOptions.env, "stop env").AFORA_GATEWAY_PORT).toBe("18789");
     expect(stopOptions.stdio).toBe("inherit");
   });
 
@@ -199,7 +199,7 @@ describe("gateway-watch tmux wrapper", () => {
     const code = runGatewayWatchServiceHandoff({
       args: ["gateway", "--force", "--port=19001"],
       cwd: "/repo",
-      env: { OPENCLAW_GATEWAY_PORT: "18789" },
+      env: { AFORA_GATEWAY_PORT: "18789" },
       nodePath: "/opt/node",
       spawnSync,
       stderr: stderr.stream,
@@ -253,7 +253,7 @@ describe("gateway-watch tmux wrapper", () => {
     const code = runGatewayWatchServiceHandoff({
       args: ["gateway", "--force"],
       cwd: "/repo",
-      env: { OPENCLAW_GATEWAY_PORT: "127.0.0.1:18789" },
+      env: { AFORA_GATEWAY_PORT: "127.0.0.1:18789" },
       nodePath: "/opt/node",
       spawnSync,
     });
@@ -352,9 +352,9 @@ describe("gateway-watch tmux wrapper", () => {
 
     expect(code).toBe(0);
     const command = spawnShellCommand(spawnSync);
-    expect(command).toContain("'OPENCLAW_RUN_NODE_CPU_PROF_DIR=.artifacts/gateway-watch-profiles'");
-    expect(command).toContain("'OPENCLAW_RUN_NODE_CPU_PROF_MAX_FILES=40'");
-    expect(command).toContain("'OPENCLAW_TRACE_SYNC_IO=0'");
+    expect(command).toContain("'AFORA_RUN_NODE_CPU_PROF_DIR=.artifacts/gateway-watch-profiles'");
+    expect(command).toContain("'AFORA_RUN_NODE_CPU_PROF_MAX_FILES=40'");
+    expect(command).toContain("'AFORA_TRACE_SYNC_IO=0'");
     expect(command).not.toContain("--benchmark");
     expect(command).toContain("'gateway'");
     expect(command).toContain("'--force'");
@@ -374,7 +374,7 @@ describe("gateway-watch tmux wrapper", () => {
     const code = runGatewayWatchTmuxMain({
       args: ["gateway", "--force", "--benchmark"],
       cwd: "/repo",
-      env: { OPENCLAW_RUN_NODE_CPU_PROF_MAX_FILES: "8", SHELL: "/bin/zsh" },
+      env: { AFORA_RUN_NODE_CPU_PROF_MAX_FILES: "8", SHELL: "/bin/zsh" },
       nodePath: "/node",
       spawnSync,
       stderr: stderr.stream,
@@ -383,7 +383,7 @@ describe("gateway-watch tmux wrapper", () => {
 
     expect(code).toBe(0);
     const command = spawnShellCommand(spawnSync);
-    expect(command).toContain("'OPENCLAW_RUN_NODE_CPU_PROF_MAX_FILES=8'");
+    expect(command).toContain("'AFORA_RUN_NODE_CPU_PROF_MAX_FILES=8'");
   });
 
   it("preserves explicit sync I/O tracing in benchmark mode", () => {
@@ -397,7 +397,7 @@ describe("gateway-watch tmux wrapper", () => {
     const code = runGatewayWatchTmuxMain({
       args: ["gateway", "--force", "--benchmark"],
       cwd: "/repo",
-      env: { OPENCLAW_TRACE_SYNC_IO: "1", SHELL: "/bin/zsh" },
+      env: { AFORA_TRACE_SYNC_IO: "1", SHELL: "/bin/zsh" },
       nodePath: "/node",
       spawnSync,
       stderr: stderr.stream,
@@ -406,11 +406,11 @@ describe("gateway-watch tmux wrapper", () => {
 
     expect(code).toBe(0);
     const command = spawnShellCommand(spawnSync);
-    expect(command).toContain("'OPENCLAW_TRACE_SYNC_IO=1'");
+    expect(command).toContain("'AFORA_TRACE_SYNC_IO=1'");
     expect(command).toContain(
-      "'OPENCLAW_RUN_NODE_OUTPUT_LOG=.artifacts/gateway-watch-profiles/gateway-watch-output.log'",
+      "'AFORA_RUN_NODE_OUTPUT_LOG=.artifacts/gateway-watch-profiles/gateway-watch-output.log'",
     );
-    expect(command).toContain("'OPENCLAW_RUN_NODE_FILTER_SYNC_IO_STDERR=1'");
+    expect(command).toContain("'AFORA_RUN_NODE_FILTER_SYNC_IO_STDERR=1'");
     expect(stderr.chunks.join("")).toContain(
       "gateway:watch benchmark trace output: .artifacts/gateway-watch-profiles/gateway-watch-output.log",
     );
@@ -436,7 +436,7 @@ describe("gateway-watch tmux wrapper", () => {
 
     expect(code).toBe(0);
     const command = spawnShellCommand(spawnSync);
-    expect(command).toContain("'OPENCLAW_RUN_NODE_CPU_PROF_DIR=.artifacts/gateway-watch-profiles'");
+    expect(command).toContain("'AFORA_RUN_NODE_CPU_PROF_DIR=.artifacts/gateway-watch-profiles'");
     expect(command).not.toContain("--benchmark-no-force");
     expect(command).toContain("'gateway'");
     expect(command).not.toContain("'--force'");
@@ -453,7 +453,7 @@ describe("gateway-watch tmux wrapper", () => {
         SHELL: "/bin/zsh",
       },
       nodePath: "/opt/node",
-      sessionName: "openclaw-gateway-watch-main",
+      sessionName: "afora-gateway-watch-main",
     });
 
     expect(command).toContain("'FORCE_COLOR=0'");
@@ -481,7 +481,7 @@ describe("gateway-watch tmux wrapper", () => {
 
     expect(code).toBe(0);
     expect(
-      expectSpawn(spawnSync, 0, "tmux", ["has-session", "-t", "openclaw-gateway-watch-main"])
+      expectSpawn(spawnSync, 0, "tmux", ["has-session", "-t", "afora-gateway-watch-main"])
         .encoding,
     ).toBe("utf8");
     const newSessionCall = spawnCall(spawnSync, 1);
@@ -491,7 +491,7 @@ describe("gateway-watch tmux wrapper", () => {
       "new-session",
       "-d",
       "-s",
-      "openclaw-gateway-watch-main",
+      "afora-gateway-watch-main",
       "-c",
       "/repo",
     ]);
@@ -502,7 +502,7 @@ describe("gateway-watch tmux wrapper", () => {
         "set-option",
         "-w",
         "-t",
-        "openclaw-gateway-watch-main",
+        "afora-gateway-watch-main",
         "remain-on-exit",
         "on",
       ]).encoding,
@@ -514,7 +514,7 @@ describe("gateway-watch tmux wrapper", () => {
       "respawn-pane",
       "-k",
       "-t",
-      "openclaw-gateway-watch-main",
+      "afora-gateway-watch-main",
       "-c",
       "/repo",
     ]);
@@ -525,8 +525,8 @@ describe("gateway-watch tmux wrapper", () => {
         "set-option",
         "-q",
         "-t",
-        "openclaw-gateway-watch-main",
-        "@openclaw.gateway_watch.cwd",
+        "afora-gateway-watch-main",
+        "@afora.gateway_watch.cwd",
         "/repo",
       ]).encoding,
     ).toBe("utf8");
@@ -534,20 +534,20 @@ describe("gateway-watch tmux wrapper", () => {
       expectSpawn(spawnSync, 5, "tmux", [
         "set-environment",
         "-t",
-        "openclaw-gateway-watch-main",
-        "OPENCLAW_GATEWAY_WATCH_CWD",
+        "afora-gateway-watch-main",
+        "AFORA_GATEWAY_WATCH_CWD",
         "/repo",
       ]).encoding,
     ).toBe("utf8");
     expect(stderr.chunks.join("")).toContain(
-      "gateway:watch started in tmux session openclaw-gateway-watch-main",
+      "gateway:watch started in tmux session afora-gateway-watch-main",
     );
-    expect(stdout.chunks.join("")).toContain("tmux attach -t openclaw-gateway-watch-main");
+    expect(stdout.chunks.join("")).toContain("tmux attach -t afora-gateway-watch-main");
     expect(stdout.chunks.join("")).toContain(
-      "tmux capture-pane -ep -t openclaw-gateway-watch-main -S -200",
+      "tmux capture-pane -ep -t afora-gateway-watch-main -S -200",
     );
     expect(stdout.chunks.join("")).toContain(
-      "tmux show-options -v -t openclaw-gateway-watch-main @openclaw.gateway_watch.cwd",
+      "tmux show-options -v -t afora-gateway-watch-main @afora.gateway_watch.cwd",
     );
   });
 
@@ -573,7 +573,7 @@ describe("gateway-watch tmux wrapper", () => {
 
     expect(code).toBe(0);
     expect(
-      expectSpawn(spawnSync, 6, "tmux", ["attach-session", "-t", "openclaw-gateway-watch-main"])
+      expectSpawn(spawnSync, 6, "tmux", ["attach-session", "-t", "afora-gateway-watch-main"])
         .stdio,
     ).toBe("inherit");
     expect(stdout.chunks.join("")).not.toContain("tmux attach -t");
@@ -603,7 +603,7 @@ describe("gateway-watch tmux wrapper", () => {
 
       expect(code).toBe(0);
       expect(spawnSync).toHaveBeenCalledTimes(6);
-      expect(stdout.chunks.join("")).toContain("tmux attach -t openclaw-gateway-watch-main");
+      expect(stdout.chunks.join("")).toContain("tmux attach -t afora-gateway-watch-main");
     },
   );
 
@@ -626,7 +626,7 @@ describe("gateway-watch tmux wrapper", () => {
 
     expect(code).toBe(0);
     expect(
-      expectSpawn(spawnSync, 5, "tmux", ["switch-client", "-t", "openclaw-gateway-watch-main"])
+      expectSpawn(spawnSync, 5, "tmux", ["switch-client", "-t", "afora-gateway-watch-main"])
         .stdio,
     ).toBe("inherit");
   });
@@ -653,7 +653,7 @@ describe("gateway-watch tmux wrapper", () => {
 
     expect(code).toBe(0);
     expect(spawnSync).toHaveBeenCalledTimes(6);
-    expect(stdout.chunks.join("")).toContain("tmux attach -t openclaw-gateway-watch-main");
+    expect(stdout.chunks.join("")).toContain("tmux attach -t afora-gateway-watch-main");
   });
 
   it("respawns the existing tmux pane on repeated runs", () => {
@@ -665,8 +665,8 @@ describe("gateway-watch tmux wrapper", () => {
       args: ["gateway", "--force", "--port=19001"],
       cwd: "/repo",
       env: {
-        OPENCLAW_GATEWAY_WATCH_AUTO_DOCTOR: "0",
-        OPENCLAW_PROFILE: "dev",
+        AFORA_GATEWAY_WATCH_AUTO_DOCTOR: "0",
+        AFORA_PROFILE: "dev",
         SHELL: "/bin/zsh",
       },
       nodePath: "/node",
@@ -680,7 +680,7 @@ describe("gateway-watch tmux wrapper", () => {
       "set-option",
       "-w",
       "-t",
-      "openclaw-gateway-watch-dev-19001",
+      "afora-gateway-watch-dev-19001",
       "remain-on-exit",
       "on",
     ]);
@@ -691,16 +691,16 @@ describe("gateway-watch tmux wrapper", () => {
       "respawn-pane",
       "-k",
       "-t",
-      "openclaw-gateway-watch-dev-19001",
+      "afora-gateway-watch-dev-19001",
       "-c",
       "/repo",
     ]);
     expect(String(respawnArgs[6])).toContain("scripts/watch-node.mjs");
-    expect(String(respawnArgs[6])).toContain("OPENCLAW_GATEWAY_WATCH_AUTO_DOCTOR=0");
-    expect(String(respawnArgs[6])).toContain("OPENCLAW_SKIP_CHANNELS");
+    expect(String(respawnArgs[6])).toContain("AFORA_GATEWAY_WATCH_AUTO_DOCTOR=0");
+    expect(String(respawnArgs[6])).toContain("AFORA_SKIP_CHANNELS");
     expect(requireRecord(respawnCall[2], "spawn options").encoding).toBe("utf8");
     expect(stderr.chunks.join("")).toContain(
-      "gateway:watch restarted in tmux session openclaw-gateway-watch-dev-19001",
+      "gateway:watch restarted in tmux session afora-gateway-watch-dev-19001",
     );
   });
 
@@ -728,12 +728,12 @@ describe("gateway-watch tmux wrapper", () => {
       "set-option",
       "-w",
       "-t",
-      "openclaw-gateway-watch-main",
+      "afora-gateway-watch-main",
       "remain-on-exit",
       "on",
     ]);
     expect(
-      expectSpawn(spawnSync, 2, "tmux", ["kill-session", "-t", "openclaw-gateway-watch-main"])
+      expectSpawn(spawnSync, 2, "tmux", ["kill-session", "-t", "afora-gateway-watch-main"])
         .encoding,
     ).toBe("utf8");
     const recreatedCall = spawnCall(spawnSync, 3);
@@ -743,7 +743,7 @@ describe("gateway-watch tmux wrapper", () => {
       "new-session",
       "-d",
       "-s",
-      "openclaw-gateway-watch-main",
+      "afora-gateway-watch-main",
       "-c",
       "/repo",
     ]);
@@ -753,7 +753,7 @@ describe("gateway-watch tmux wrapper", () => {
       "set-option",
       "-w",
       "-t",
-      "openclaw-gateway-watch-main",
+      "afora-gateway-watch-main",
       "remain-on-exit",
       "on",
     ]);
@@ -764,7 +764,7 @@ describe("gateway-watch tmux wrapper", () => {
       "respawn-pane",
       "-k",
       "-t",
-      "openclaw-gateway-watch-main",
+      "afora-gateway-watch-main",
       "-c",
       "/repo",
     ]);
@@ -777,7 +777,7 @@ describe("gateway-watch tmux wrapper", () => {
     const code = runGatewayWatchTmuxMain({
       args: ["gateway", "--force"],
       cwd: "/repo",
-      env: { OPENCLAW_GATEWAY_WATCH_TMUX: "0" },
+      env: { AFORA_GATEWAY_WATCH_TMUX: "0" },
       nodePath: "/node",
       spawnSync,
     });
@@ -788,7 +788,7 @@ describe("gateway-watch tmux wrapper", () => {
       ["scripts/watch-node.mjs", "gateway", "--force"],
       {
         cwd: "/repo",
-        env: { OPENCLAW_GATEWAY_WATCH_TMUX: "0" },
+        env: { AFORA_GATEWAY_WATCH_TMUX: "0" },
         stdio: "inherit",
       },
     );

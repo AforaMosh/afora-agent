@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { materializePreparedRuntimeModel } from "./materialize-model.js";
 import type { AgentRuntimeAuthPlan } from "./types.js";
 
@@ -86,7 +86,7 @@ describe("materializePreparedRuntimeModel", () => {
         },
         provider: "clawrouter",
         modelId: "private-model",
-        config: {} as OpenClawConfig,
+        config: {} as AforaConfig,
         model,
         forceResolve: true,
         resolveModel,
@@ -113,7 +113,7 @@ describe("materializePreparedRuntimeModel", () => {
         plan,
         provider: "openai",
         modelId: "gpt-5.5",
-        config: { models: { providers: {} } } as OpenClawConfig,
+        config: { models: { providers: {} } } as AforaConfig,
         model: {
           provider: "openai",
           id: "gpt-5.5",
@@ -203,7 +203,7 @@ describe("materializePreparedRuntimeModel", () => {
         plan: completionsPlan,
         provider: "openai",
         modelId: "gpt-5.5",
-        config: { models: { providers: {} } } as OpenClawConfig,
+        config: { models: { providers: {} } } as AforaConfig,
         model: {
           provider: "openai",
           id: "gpt-5.5",

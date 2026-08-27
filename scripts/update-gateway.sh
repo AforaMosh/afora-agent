@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Updates a self-hosted OpenClaw gateway that runs from this source checkout.
+# Updates a self-hosted Afora gateway that runs from this source checkout.
 #
 # Reference workflow for team-operated servers (see docs/install/updating.md).
-# Simple installs should prefer `openclaw update` / `openclaw update --channel
+# Simple installs should prefer `afora update` / `afora update --channel
 # dev`; this script exists for checkouts that additionally need to:
 #   - preserve a local branch by rebasing it onto origin/main,
 #   - tolerate tracked build outputs that `pnpm build` rewrites,
@@ -10,9 +10,9 @@
 #   - restart a custom service unit.
 #
 # Environment:
-#   OPENCLAW_UPDATE_RESTART_CMD  restart command (default: openclaw gateway restart)
+#   AFORA_UPDATE_RESTART_CMD  restart command (default: afora gateway restart)
 #                                set to "" to skip the restart step
-#   OPENCLAW_UPDATE_REMOTE       git remote to update from (default: origin)
+#   AFORA_UPDATE_REMOTE       git remote to update from (default: origin)
 set -euo pipefail
 
 log() { echo "[update-gateway] $*"; }
@@ -27,7 +27,7 @@ trap on_exit EXIT
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
-remote="${OPENCLAW_UPDATE_REMOTE:-origin}"
+remote="${AFORA_UPDATE_REMOTE:-origin}"
 
 # Never update over an in-progress git operation: aborting or rebasing on top
 # of an operator's paused rebase/merge would discard their progress.
@@ -96,12 +96,12 @@ done
 rm -rf dist dist-runtime .artifacts/tsgo-cache
 pnpm build
 
-restart_cmd="${OPENCLAW_UPDATE_RESTART_CMD-openclaw gateway restart}"
+restart_cmd="${AFORA_UPDATE_RESTART_CMD-afora gateway restart}"
 if [ -n "$restart_cmd" ]; then
   log "restarting gateway: $restart_cmd"
   bash -c "$restart_cmd"
 else
-  log "restart skipped (OPENCLAW_UPDATE_RESTART_CMD is empty)"
+  log "restart skipped (AFORA_UPDATE_RESTART_CMD is empty)"
 fi
 
 log "OK $(git rev-parse --short HEAD) ($branch)"

@@ -1,6 +1,6 @@
 // Resolves channel presence policy advertised by plugin metadata.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
-import { sortUniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
+import { sortUniqueStrings } from "@afora/normalization-core/string-normalization";
 import { isChannelConfigMetadataKey } from "../channels/config-metadata.js";
 import {
   hasMeaningfulChannelConfig,
@@ -10,7 +10,7 @@ import {
   type ChannelPresenceSignalSource,
 } from "../channels/config-presence.js";
 import { resolveConfigWidePluginManifestRegistry } from "../config/io.plugin-metadata.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isSafeChannelEnvVarTriggerName } from "../secrets/channel-env-var-names.js";
 import { resolveManifestActivationPluginIds } from "./activation-planner.js";
 import {
@@ -84,7 +84,7 @@ function hasNonEmptyEnvValue(env: NodeJS.ProcessEnv, key: string): boolean {
 
 /** True when config contains meaningful enabled channel settings. */
 export function hasExplicitChannelConfig(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   channelId: string;
 }): boolean {
   const channels = params.config.channels;
@@ -103,7 +103,7 @@ export function hasExplicitChannelConfig(params: {
 }
 
 /** Lists explicitly configured channel ids, excluding global channel config keys. */
-export function listExplicitConfiguredChannelIdsForConfig(config: OpenClawConfig): string[] {
+export function listExplicitConfiguredChannelIdsForConfig(config: AforaConfig): string[] {
   const channels = config.channels;
   if (!channels || typeof channels !== "object" || Array.isArray(channels)) {
     return [];
@@ -133,8 +133,8 @@ function recordDeclaresChannel(record: PluginManifestRecord, channelId: string):
 
 function listManifestEnvConfiguredChannelSignals(params: {
   records: readonly PluginManifestRecord[];
-  activationSourceConfig?: OpenClawConfig;
-  config: OpenClawConfig;
+  activationSourceConfig?: AforaConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
 }): Array<{ channelId: string; source: "manifest-env" }> {
   const signals: Array<{ channelId: string; source: "manifest-env" }> = [];
@@ -208,7 +208,7 @@ function resolveBasePolicyBlockedReason(params: {
 function isChannelPluginEligibleForScopedOwnership(params: {
   plugin: PluginManifestRecord;
   normalizedConfig: ReturnType<typeof normalizePluginsConfig>;
-  rootConfig: OpenClawConfig;
+  rootConfig: AforaConfig;
   channelId?: string;
 }): boolean {
   // Explicit config can activate bundled channel owners even under restrictive allowlists.
@@ -248,7 +248,7 @@ function evaluateEffectiveChannelPlugin(params: {
   plugin: PluginManifestRecord;
   channelId: string;
   normalizedConfig: ReturnType<typeof normalizePluginsConfig>;
-  config: OpenClawConfig;
+  config: AforaConfig;
   activationSource: ReturnType<typeof createPluginActivationSource>;
 }): { effective: boolean; pluginId: string; blockedReason?: ConfiguredChannelBlockedReason } {
   // Bundled channels with explicit config are effective before default enablement checks.
@@ -338,7 +338,7 @@ function addPolicySignal(
 }
 
 function loadInstalledChannelManifestRecords(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   workspaceDir?: string;
   env: NodeJS.ProcessEnv;
 }): readonly PluginManifestRecord[] {
@@ -358,8 +358,8 @@ function loadInstalledChannelManifestRecords(params: {
 
 /** Resolves effective configured-channel policy rows from config, auth state, env, and manifests. */
 export function resolveConfiguredChannelPresencePolicy(params: {
-  config: OpenClawConfig;
-  activationSourceConfig?: OpenClawConfig;
+  config: AforaConfig;
+  activationSourceConfig?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   includePersistedAuthState?: boolean;
@@ -559,8 +559,8 @@ export function hasConfiguredChannelsForReadOnlyScope(
 
 /** Lists channel ids that should be announced as configured for operators. */
 export function listConfiguredAnnounceChannelIdsForConfig(params: {
-  config: OpenClawConfig;
-  activationSourceConfig?: OpenClawConfig;
+  config: AforaConfig;
+  activationSourceConfig?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   manifestRecords?: readonly PluginManifestRecord[];
@@ -601,8 +601,8 @@ export function listConfiguredAnnounceChannelIdsForConfig(params: {
 }
 
 function resolveScopedChannelOwnerPluginIds(params: {
-  config: OpenClawConfig;
-  activationSourceConfig?: OpenClawConfig;
+  config: AforaConfig;
+  activationSourceConfig?: AforaConfig;
   channelIds: readonly string[];
   workspaceDir?: string;
   env: NodeJS.ProcessEnv;
@@ -661,8 +661,8 @@ function resolveScopedChannelOwnerPluginIds(params: {
 
 /** Resolves plugin ids discoverable for scoped channel activation. */
 export function resolveDiscoverableScopedChannelPluginIds(params: {
-  config: OpenClawConfig;
-  activationSourceConfig?: OpenClawConfig;
+  config: AforaConfig;
+  activationSourceConfig?: AforaConfig;
   channelIds: readonly string[];
   workspaceDir?: string;
   env: NodeJS.ProcessEnv;
@@ -673,8 +673,8 @@ export function resolveDiscoverableScopedChannelPluginIds(params: {
 
 /** Resolves plugin ids that own currently configured channels. */
 export function resolveConfiguredChannelPluginIds(params: {
-  config: OpenClawConfig;
-  activationSourceConfig?: OpenClawConfig;
+  config: AforaConfig;
+  activationSourceConfig?: AforaConfig;
   workspaceDir?: string;
   env: NodeJS.ProcessEnv;
   manifestRecords?: readonly PluginManifestRecord[];

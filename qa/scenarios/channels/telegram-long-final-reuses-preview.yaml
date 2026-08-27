@@ -8,7 +8,7 @@ scenario:
     primary:
       - telegram.conversation-routing-and-delivery
   regressionRefs:
-    - openclaw/openclaw#39905
+    - AforaMosh/afora-agent#39905
   objective: Verify a long Telegram final replaces its preview instead of leaving stale text.
   successCriteria:
     - The joined final contains both scripted boundary markers.
@@ -35,7 +35,7 @@ flow:
             conversation: { id: telegram-stream-room, kind: channel }
             senderId: qa-stream-operator
             senderName: QA Stream Operator
-            text: "@openclaw Telegram long final QA check. Use the scripted long final response."
+            text: "@afora Telegram long final QA check. Use the scripted long final response."
         - waitForOutbound:
             conversation: { id: telegram-stream-room, kind: channel }
             sinceIndex: { ref: outboundStartIndex }

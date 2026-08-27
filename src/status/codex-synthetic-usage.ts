@@ -1,4 +1,4 @@
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { CODEX_APP_SERVER_AUTH_MARKER } from "../agents/model-auth-markers.js";
 import type { ProviderAuth } from "../infra/provider-usage.auth.js";
 import type {

@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 import type { DoctorPrompter } from "../commands/doctor-prompter.js";
-import type { OpenClawConfig, OpenClawConfigInput } from "../config/config.js";
+import type { AforaConfig, AforaConfigInput } from "../config/config.js";
 import type { DoctorHealthFlowContext } from "./doctor-health-contributions.js";
 import "./doctor-health-contributions.js";
 import type { runDoctorLintChecks } from "./doctor-lint-flow.js";
@@ -50,8 +50,8 @@ type DoctorHealthFlowContextFixture = Partial<Omit<DoctorHealthFlowContext, "con
 
 type DoctorLintContext = Parameters<typeof runDoctorLintChecks>[0];
 
-export function createDoctorConfigFixture(input: OpenClawConfigInput): OpenClawConfig {
-  return input as OpenClawConfig;
+export function createDoctorConfigFixture(input: AforaConfigInput): AforaConfig {
+  return input as AforaConfig;
 }
 
 export function createDoctorLintContext(
@@ -92,14 +92,14 @@ export function createDoctorHealthFlowContext(
     cfg,
     cfgForPersistence: cfg,
     sourceConfigValid: true,
-    configPath: "/tmp/openclaw.json",
+    configPath: "/tmp/afora.json",
     ...contextOverrides,
   };
 }
 
 function getTestApi(): DoctorHealthContributionTestApi {
   const api = (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.doctorHealthContributionsTestApi")
+    Symbol.for("afora.doctorHealthContributionsTestApi")
   ];
   if (!api) {
     throw new Error("doctor health contributions test API is unavailable");

@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import {
   sanitizeEmbeddingCacheHeaders,
   type MemoryEmbeddingProviderAdapter,
-} from "openclaw/plugin-sdk/memory-core-host-engine-embeddings";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-embeddings";
 import { OLLAMA_DEFAULT_BASE_URL } from "./defaults.js";
 import {
   DEFAULT_OLLAMA_EMBEDDING_MODEL,

@@ -1,7 +1,7 @@
 import { describe, expectTypeOf, it } from "vitest";
-import type { OpenClawPluginServiceContext as CoreServiceContext } from "./core.js";
+import type { AforaPluginServiceContext as CoreServiceContext } from "./core.js";
 import type { DiagnosticEventPayload, DiagnosticEventPrivateData } from "./diagnostic-runtime.js";
-import type { OpenClawPluginServiceContext as PluginEntryServiceContext } from "./plugin-entry.js";
+import type { AforaPluginServiceContext as PluginEntryServiceContext } from "./plugin-entry.js";
 
 type ListenerArgs<T extends { internalDiagnostics?: unknown }> =
   NonNullable<T["internalDiagnostics"]> extends { onEvent: infer TOnEvent }

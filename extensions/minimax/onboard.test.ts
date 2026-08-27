@@ -1,9 +1,9 @@
 // Minimax tests cover onboard plugin behavior.
-import { resolveAgentModelPrimaryValue } from "openclaw/plugin-sdk/provider-onboard";
+import { resolveAgentModelPrimaryValue } from "afora-agent/plugin-sdk/provider-onboard";
 import {
   expectProviderOnboardMergedLegacyConfig,
   expectProviderOnboardPreservesPrimary,
-} from "openclaw/plugin-sdk/provider-test-contracts";
+} from "afora-agent/plugin-sdk/provider-test-contracts";
 import { describe, expect, it } from "vitest";
 import { buildMinimaxApiModelDefinition } from "./model-definitions.js";
 import { applyMinimaxApiConfig, applyMinimaxApiProviderConfig } from "./onboard.js";

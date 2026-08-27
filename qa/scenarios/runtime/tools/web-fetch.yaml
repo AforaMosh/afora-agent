@@ -7,7 +7,7 @@ scenario:
   coverage:
     primary:
       - web-search.web-fetch-exposure
-  objective: Verify web_fetch preserves arguments and result shape across OpenClaw and Codex.
+  objective: Verify web_fetch preserves arguments and result shape across Afora and Codex.
   successCriteria:
     - Effective tools expose web_fetch.
     - The mock provider plans exactly one happy-path web_fetch call.
@@ -27,14 +27,14 @@ scenario:
       toolCoverage:
         family: web_fetch
         actualTool: web_fetch
-        bucket: openclaw-dynamic-integration
-        expectedLayer: openclaw-dynamic
-        capabilityLayer: openclaw-dynamic-direct
+        bucket: afora-dynamic-integration
+        expectedLayer: afora-dynamic
+        capabilityLayer: afora-dynamic-direct
         required: true
         codexDefaultImpact: P4
         qaImpact: P1
         action: hard gate in the core runtime-pair lane
-        reason: web_fetch is an OpenClaw integration tool and must stay visible and callable under OpenClaw and Codex direct runtime parity.
+        reason: web_fetch is an Afora integration tool and must stay visible and callable under Afora and Codex direct runtime parity.
       promptSnippet: "target=web_fetch"
       failurePromptSnippet: "failure target=web_fetch"
 

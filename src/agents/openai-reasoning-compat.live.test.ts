@@ -1,7 +1,7 @@
 // Live checks for OpenAI reasoning compatibility and repaired tool replay payloads.
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
-import { SessionManager } from "openclaw/plugin-sdk/agent-sessions";
-import type { Model } from "openclaw/plugin-sdk/llm";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
+import { SessionManager } from "afora-agent/plugin-sdk/agent-sessions";
+import type { Model } from "afora-agent/plugin-sdk/llm";
 import { Type } from "typebox";
 import { describe, expect, it } from "vitest";
 import { discoverAuthStorage, discoverModels } from "./agent-model-discovery.js";
@@ -17,13 +17,13 @@ import {
   resolveLiveCredentialPrecedence,
 } from "./live-test-helpers.js";
 import { getApiKeyForModelCore, requireApiKey } from "./model-auth.js";
-import { ensureOpenClawModelsJson } from "./models-config.js";
+import { ensureAforaModelsJson } from "./models-config.js";
 
 const LIVE = isLiveTestEnabled();
 const REQUIRE_PROFILE_KEYS = isLiveProfileKeyModeEnabled();
 const DEFAULT_TARGET_MODEL_REF = "openai/gpt-5.4-mini";
 const TARGET_MODEL_REF =
-  process.env.OPENCLAW_LIVE_OPENAI_REASONING_COMPAT_MODEL?.trim() || DEFAULT_TARGET_MODEL_REF;
+  process.env.AFORA_LIVE_OPENAI_REASONING_COMPAT_MODEL?.trim() || DEFAULT_TARGET_MODEL_REF;
 const describeLive = LIVE ? describe : describe.skip;
 
 const logProgress = logLiveProgress;
@@ -89,7 +89,7 @@ function resolveTargetModelRef(): { provider: string; modelId: string } {
   const modelId = rest.join("/").trim();
   if (!provider?.trim() || !modelId) {
     throw new Error(
-      `Invalid OPENCLAW_LIVE_OPENAI_REASONING_COMPAT_MODEL: ${JSON.stringify(TARGET_MODEL_REF)}`,
+      `Invalid AFORA_LIVE_OPENAI_REASONING_COMPAT_MODEL: ${JSON.stringify(TARGET_MODEL_REF)}`,
     );
   }
   return {
@@ -104,7 +104,7 @@ describeLive("openai reasoning compat live", () => {
     async () => {
       const { provider, modelId } = resolveTargetModelRef();
       const cfg = await readLiveTestConfig();
-      await ensureOpenClawModelsJson(cfg);
+      await ensureAforaModelsJson(cfg);
 
       const agentDir = resolveDefaultAgentDir(cfg);
       const authStorage = discoverAuthStorage(agentDir);
@@ -164,7 +164,7 @@ describeLive("openai reasoning compat live", () => {
     async () => {
       const { provider, modelId } = resolveTargetModelRef();
       const cfg = await readLiveTestConfig();
-      await ensureOpenClawModelsJson(cfg);
+      await ensureAforaModelsJson(cfg);
 
       const agentDir = resolveDefaultAgentDir(cfg);
       const authStorage = discoverAuthStorage(agentDir);

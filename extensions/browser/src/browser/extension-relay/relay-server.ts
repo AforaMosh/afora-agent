@@ -2,8 +2,8 @@
 import crypto from "node:crypto";
 import http, { type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { Duplex } from "node:stream";
-import { safeEqualSecret } from "openclaw/plugin-sdk/security-runtime";
-import { rawDataToString } from "openclaw/plugin-sdk/webhook-ingress";
+import { safeEqualSecret } from "afora-agent/plugin-sdk/security-runtime";
+import { rawDataToString } from "afora-agent/plugin-sdk/webhook-ingress";
 import { WebSocketServer, type RawData, type WebSocket } from "ws";
 import { isLoopbackHost } from "../../gateway/net.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
@@ -38,7 +38,7 @@ import {
 } from "./relay-request.js";
 
 const log = createSubsystemLogger("browser").child("extension-relay");
-const INTERNAL_CDP_USERNAME = "openclaw-internal";
+const INTERNAL_CDP_USERNAME = "afora-internal";
 const MAX_AUTH_BODY_BYTES = 8 * 1024;
 
 export const EXTENSION_RELAY_MAX_PAYLOAD_BYTES = 64 * 1024 * 1024;
@@ -67,7 +67,7 @@ export type ExtensionRelayHandle = {
   port: number;
   token: string;
   allowLegacyAuth: boolean;
-  /** Process-only Basic credential for OpenClaw's own CDP client. Never persisted or printed. */
+  /** Process-only Basic credential for Afora's own CDP client. Never persisted or printed. */
   internalToken: string;
   bridge: ExtensionRelayBridge;
   close: () => Promise<void>;
@@ -513,7 +513,7 @@ export async function startExtensionRelayServer(params: {
         if (existingState.flow === "cdp" && req.method === "GET" && req.url === "/json/version") {
           if (!bridge.extensionConnected) {
             clearSocketState(socket);
-            rejectHttp(res, 503, "OpenClaw Chrome extension is not connected");
+            rejectHttp(res, 503, "Afora Chrome extension is not connected");
             return;
           }
           res.once("finish", () => {
@@ -561,7 +561,7 @@ export async function startExtensionRelayServer(params: {
         if (!bridge.extensionConnected) {
           writeJson(res, 503, {
             error:
-              "OpenClaw Chrome extension is not connected. Install the extension and pair it with `openclaw browser extension pair`.",
+              "Afora Chrome extension is not connected. Install the extension and pair it with `afora browser extension pair`.",
           });
           return;
         }

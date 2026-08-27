@@ -1,5 +1,5 @@
 import type { SessionIdentityMutation } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { WorkerLiveTrajectoryTarget } from "./live-event-projection.js";
 import { resolveWorkerSessionTarget } from "./session-target.js";
 
@@ -23,7 +23,7 @@ export function isValidLiveSessionBinding(binding: WorkerLiveSessionBinding): bo
 }
 
 function resolveLiveEventTarget(
-  config: OpenClawConfig,
+  config: AforaConfig,
   sessionId: string,
 ): LiveEventTarget | undefined {
   const target = resolveWorkerSessionTarget(config, sessionId);
@@ -39,7 +39,7 @@ function resolveLiveEventTarget(
 }
 
 function prepareBoundLiveSession(
-  config: OpenClawConfig,
+  config: AforaConfig,
   binding: WorkerLiveSessionBinding,
 ): BoundLiveSession | undefined {
   if (!isValidLiveSessionBinding(binding)) {
@@ -50,7 +50,7 @@ function prepareBoundLiveSession(
 }
 
 export function prepareBoundLiveSessionSafely(
-  config: OpenClawConfig,
+  config: AforaConfig,
   binding: WorkerLiveSessionBinding,
 ): BoundLiveSession | undefined {
   try {

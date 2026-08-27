@@ -31,7 +31,7 @@ import {
   withPluginInstallRoots,
 } from "../plugins/install-root-context.js";
 import type { RuntimeEnv } from "../runtime.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 
 interface DoctorLintCliOptions {
   readonly json?: boolean;
@@ -249,7 +249,7 @@ async function withReadOnlyPluginStateSnapshot<T>(
   sourceEnv: NodeJS.ProcessEnv,
   run: (pluginMetadataEnv: NodeJS.ProcessEnv) => Promise<T>,
 ): Promise<T> {
-  const sourceDatabasePath = resolveOpenClawStateSqlitePath(sourceEnv);
+  const sourceDatabasePath = resolveAforaStateSqlitePath(sourceEnv);
   if (!fs.existsSync(sourceDatabasePath)) {
     return await run(sourceEnv);
   }
@@ -262,10 +262,10 @@ async function withReadOnlyPluginStateSnapshot<T>(
   let outcome: { ok: true; value: T } | { ok: false; error: unknown };
   let runStarted = false;
   try {
-    const privateStateDir = path.join(path.dirname(prepared.location), "openclaw-state");
-    const privateDatabasePath = resolveOpenClawStateSqlitePath({
+    const privateStateDir = path.join(path.dirname(prepared.location), "afora-state");
+    const privateDatabasePath = resolveAforaStateSqlitePath({
       ...sourceEnv,
-      OPENCLAW_STATE_DIR: privateStateDir,
+      AFORA_STATE_DIR: privateStateDir,
     });
     fs.mkdirSync(path.dirname(privateDatabasePath), { recursive: true, mode: 0o700 });
     for (const suffix of ["", "-journal", "-shm", "-wal"]) {
@@ -277,8 +277,8 @@ async function withReadOnlyPluginStateSnapshot<T>(
     const sourceConfigPath = resolveConfigPath(sourceEnv, resolveStateDir(sourceEnv));
     const privateEnv = {
       ...sourceEnv,
-      OPENCLAW_CONFIG_PATH: sourceConfigPath,
-      OPENCLAW_STATE_DIR: privateStateDir,
+      AFORA_CONFIG_PATH: sourceConfigPath,
+      AFORA_STATE_DIR: privateStateDir,
     };
     const installRoots = resolvePluginInstallRoots(sourceEnv);
     outcome = {

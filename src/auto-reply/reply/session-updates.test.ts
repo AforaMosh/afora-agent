@@ -1,5 +1,5 @@
 // Tests session update fanout and persisted lifecycle records.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createReplySessionEntryHandle } from "./session-entry-handle.js";
 
@@ -106,7 +106,7 @@ describe("ensureSkillSnapshot", () => {
   });
 
   it("uses config-aware session agent resolution for legacy session keys", async () => {
-    vi.stubEnv("OPENCLAW_TEST_FAST", "0");
+    vi.stubEnv("AFORA_TEST_FAST", "0");
 
     await ensureSkillSnapshot({
       sessionKey: "main",
@@ -148,7 +148,7 @@ describe("ensureSkillSnapshot", () => {
   });
 
   it("does not keep a deleted first-turn session entry when persisting skills", async () => {
-    vi.stubEnv("OPENCLAW_TEST_FAST", "0");
+    vi.stubEnv("AFORA_TEST_FAST", "0");
     const sessionKey = "agent:main:main";
     const sessionEntry = {
       sessionId: "deleted-session",
@@ -187,7 +187,7 @@ describe("ensureSkillSnapshot", () => {
   });
 
   it("adopts a rebound first-turn session entry instead of overwriting it", async () => {
-    vi.stubEnv("OPENCLAW_TEST_FAST", "0");
+    vi.stubEnv("AFORA_TEST_FAST", "0");
     const sessionKey = "agent:main:main";
     const sessionEntry = {
       sessionId: "old-session",
@@ -221,7 +221,7 @@ describe("ensureSkillSnapshot", () => {
   });
 
   it("persists first-turn skill snapshots as a guarded partial update", async () => {
-    vi.stubEnv("OPENCLAW_TEST_FAST", "0");
+    vi.stubEnv("AFORA_TEST_FAST", "0");
     const sessionKey = "agent:main:main";
     const sessionEntry = {
       sessionId: "session-1",
@@ -263,7 +263,7 @@ describe("ensureSkillSnapshot", () => {
   });
 
   it("keeps a concurrent rename and unpin while persisting a skill snapshot", async () => {
-    vi.stubEnv("OPENCLAW_TEST_FAST", "0");
+    vi.stubEnv("AFORA_TEST_FAST", "0");
     const sessionKey = "agent:main:reply";
     const staleEntry = {
       sessionId: "reply-session",

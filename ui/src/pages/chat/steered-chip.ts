@@ -1,4 +1,4 @@
-import { hasNonEmptyString as hasString } from "@openclaw/normalization-core/string-coerce";
+import { hasNonEmptyString as hasString } from "@afora/normalization-core/string-coerce";
 import type { ChatQueueItem } from "../../lib/chat/chat-types.ts";
 
 type SteerState = { sendState: "steering" } | { sendState?: undefined; pendingRunId: string };

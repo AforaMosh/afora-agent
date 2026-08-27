@@ -6,7 +6,7 @@ describe("ModelSetupWizardRunner", () => {
   it("starts, advances an unbounded note step, and guards duplicate answers", async () => {
     let resolveDone: ((value: unknown) => void) | null = null;
     const request = vi.fn((method: string, _params?: unknown, _options?: unknown) => {
-      if (method === "openclaw.setup.auth.start") {
+      if (method === "afora.setup.auth.start") {
         return Promise.resolve({ sessionId: "session-1", done: false, status: "running" });
       }
       if (method === "wizard.next" && !resolveDone) {
@@ -37,7 +37,7 @@ describe("ModelSetupWizardRunner", () => {
     await runner.start("openai-oauth");
     expect(request).toHaveBeenNthCalledWith(
       1,
-      "openclaw.setup.auth.start",
+      "afora.setup.auth.start",
       { sessionId: expect.any(String), agentId: "research", authChoice: "openai-oauth" },
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
@@ -54,13 +54,13 @@ describe("ModelSetupWizardRunner", () => {
       expect.objectContaining({ timeoutMs: null, signal: expect.any(AbortSignal) }),
     );
     resolveDone!({ done: true, status: "done" });
-    await expect(answer).resolves.toEqual({ startMethod: "openclaw.setup.auth.start" });
+    await expect(answer).resolves.toEqual({ startMethod: "afora.setup.auth.start" });
     expect(runner.state).toEqual({ phase: "done", authChoice: "openai-oauth" });
   });
 
   it("cancels the gateway wizard when advancing fails", async () => {
     const request = vi.fn((method: string) => {
-      if (method === "openclaw.setup.auth.start") {
+      if (method === "afora.setup.auth.start") {
         return Promise.resolve({ sessionId: "session-1", done: false, status: "running" });
       }
       if (method === "wizard.next") {
@@ -92,7 +92,7 @@ describe("ModelSetupWizardRunner", () => {
 
   it("uses the prepare start method with the shared wizard transport", async () => {
     const request = vi.fn((method: string) => {
-      if (method === "openclaw.setup.prepare.start") {
+      if (method === "afora.setup.prepare.start") {
         return Promise.resolve({ sessionId: "prepare-session", done: false, status: "running" });
       }
       if (method === "wizard.next") {
@@ -113,11 +113,11 @@ describe("ModelSetupWizardRunner", () => {
       sessionExpiredMessage: () => "expired",
     });
 
-    await runner.start("llama-cpp", "openclaw.setup.prepare.start");
+    await runner.start("llama-cpp", "afora.setup.prepare.start");
 
     expect(request).toHaveBeenNthCalledWith(
       1,
-      "openclaw.setup.prepare.start",
+      "afora.setup.prepare.start",
       { sessionId: expect.any(String), authChoice: "llama-cpp" },
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
@@ -133,7 +133,7 @@ describe("ModelSetupWizardRunner", () => {
     let answerSignal: AbortSignal | undefined;
     const request = vi.fn(
       (method: string, _params?: unknown, options?: { signal?: AbortSignal }) => {
-        if (method === "openclaw.setup.auth.start") {
+        if (method === "afora.setup.auth.start") {
           return Promise.resolve({ sessionId: "session-expired", done: false, status: "running" });
         }
         if (method === "wizard.next" && nextCount++ === 0) {
@@ -176,7 +176,7 @@ describe("ModelSetupWizardRunner", () => {
     expect(answerSignal?.aborted).toBe(true);
     await runner.cancel();
     expect(
-      request.mock.calls.filter(([method]) => method === "openclaw.setup.auth.start"),
+      request.mock.calls.filter(([method]) => method === "afora.setup.auth.start"),
     ).toHaveLength(1);
     expect(request.mock.calls.filter(([method]) => method === "wizard.next")).toHaveLength(2);
     expect(request.mock.calls.filter(([method]) => method === "wizard.cancel")).toEqual([]);
@@ -189,7 +189,7 @@ describe("ModelSetupWizardRunner", () => {
     const messages = ["Preparing model download…", "Downloading… 7%", "Downloading… 16%"];
     let nextIndex = 0;
     const request = vi.fn((method: string) => {
-      if (method === "openclaw.setup.prepare.start") {
+      if (method === "afora.setup.prepare.start") {
         return Promise.resolve({ sessionId: "session-progress", done: false, status: "running" });
       }
       if (method === "wizard.next") {
@@ -225,14 +225,14 @@ describe("ModelSetupWizardRunner", () => {
       sessionExpiredMessage: () => "expired",
     });
 
-    await expect(runner.start("llama-cpp", "openclaw.setup.prepare.start")).resolves.toEqual({
-      startMethod: "openclaw.setup.prepare.start",
+    await expect(runner.start("llama-cpp", "afora.setup.prepare.start")).resolves.toEqual({
+      startMethod: "afora.setup.prepare.start",
       preparedModelRef: "llama-cpp/gemma-4-e4b-it-q4_k_m",
     });
 
     expect(seen).toEqual(messages);
     expect(request.mock.calls.map(([method]) => method)).toEqual([
-      "openclaw.setup.prepare.start",
+      "afora.setup.prepare.start",
       "wizard.next",
       "wizard.next",
       "wizard.next",

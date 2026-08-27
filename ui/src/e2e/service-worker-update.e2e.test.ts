@@ -18,8 +18,8 @@ import {
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const artifactDir = path.resolve(".artifacts/control-ui-e2e/service-worker-update");
-const captureUiProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
-const workerUpdateVersionsStorageKey = "openclaw.control-ui-e2e.worker-update-versions";
+const captureUiProof = process.env.AFORA_CAPTURE_UI_PROOF === "1";
+const workerUpdateVersionsStorageKey = "afora.control-ui-e2e.worker-update-versions";
 
 const buildA = "service-worker-build-a";
 const buildB = "service-worker-build-b";
@@ -239,7 +239,7 @@ describe("Control UI service-worker production update E2E", () => {
     });
     try {
       expect((await page.goto(`${server.baseUrl}chat/research`))?.status()).toBe(200);
-      await page.waitForFunction(() => Boolean(customElements.get("openclaw-app")), undefined, {
+      await page.waitForFunction(() => Boolean(customElements.get("afora-app")), undefined, {
         timeout: controlUiE2eWaitTimeoutMs,
       });
     } catch (error) {
@@ -260,11 +260,11 @@ describe("Control UI service-worker production update E2E", () => {
     if (!canRunPlaywrightChromium(chromiumExecutablePath)) {
       throw new Error(`Playwright Chromium is unavailable at ${chromiumExecutablePath}`);
     }
-    outDir = await mkdtemp(path.join(os.tmpdir(), "openclaw-service-worker-update-"));
+    outDir = await mkdtemp(path.join(os.tmpdir(), "afora-service-worker-update-"));
     server = await startProductionControlUiE2eServer(outDir, buildA, {
       assistantAgentId: "research",
       assistantAvatar: "",
-      assistantName: "OpenClaw",
+      assistantName: "Afora",
       basePath: "/",
       terminalEnabled: true,
     });
@@ -340,10 +340,10 @@ describe("Control UI service-worker production update E2E", () => {
         .poll(
           async () =>
             page.evaluate(() => {
-              const panel = document.querySelector("openclaw-terminal-panel") as
+              const panel = document.querySelector("afora-terminal-panel") as
                 | (HTMLElement & { available: boolean })
                 | null;
-              const shell = document.querySelector("openclaw-app-shell") as HTMLElement & {
+              const shell = document.querySelector("afora-app-shell") as HTMLElement & {
                 runtime?: {
                   context?: {
                     config: { current: { terminalEnabled: boolean } };
@@ -375,7 +375,7 @@ describe("Control UI service-worker production update E2E", () => {
       });
       await expect
         .poll(() => page.evaluate(() => caches.keys()))
-        .toContain(`openclaw-control-${buildA}`);
+        .toContain(`afora-control-${buildA}`);
 
       const nextOutDir = `${outDir}-next`;
       const previousOutDir = `${outDir}-previous`;
@@ -388,13 +388,13 @@ describe("Control UI service-worker production update E2E", () => {
 
       await page.evaluate(() => {
         localStorage.setItem(
-          "openclaw.terminal.panel.v1",
+          "afora.terminal.panel.v1",
           JSON.stringify({ open: true, dock: "bottom", height: 320, width: 520 }),
         );
       });
       await gateway.setOnline(false);
       await page.waitForFunction(() => {
-        const panel = document.querySelector("openclaw-terminal-panel") as
+        const panel = document.querySelector("afora-terminal-panel") as
           | (HTMLElement & { available: boolean })
           | null;
         return panel?.available === false;
@@ -413,14 +413,14 @@ describe("Control UI service-worker production update E2E", () => {
         return registration?.installing?.state === "installing";
       });
       await page.waitForFunction(() => {
-        const panel = document.querySelector("openclaw-terminal-panel") as
+        const panel = document.querySelector("afora-terminal-panel") as
           | (HTMLElement & { available: boolean; terminalPanelOpen: boolean })
           | null;
         return panel?.available === true && panel.terminalPanelOpen;
       });
       await page.evaluate(() => {
         window.dispatchEvent(
-          new CustomEvent("openclaw:terminal-toggle", {
+          new CustomEvent("afora:terminal-toggle", {
             detail: {
               open: true,
               catalog: {
@@ -433,7 +433,7 @@ describe("Control UI service-worker production update E2E", () => {
         );
       });
       await expect
-        .poll(() => page.evaluate(() => sessionStorage.getItem("openclaw.terminal.actions.v1")))
+        .poll(() => page.evaluate(() => sessionStorage.getItem("afora.terminal.actions.v1")))
         .toContain("thread-during-worker-refresh");
       await page.waitForTimeout(300);
       expect(await gateway.getRequests("terminal.open")).toHaveLength(0);
@@ -443,7 +443,7 @@ describe("Control UI service-worker production update E2E", () => {
       await ensureControlledPage(page, pageErrors, buildB);
       await expect.poll(() => readWorkerUpdateVersions(page)).toContain(buildB);
 
-      const terminal = page.locator("openclaw-terminal-panel[embedded]");
+      const terminal = page.locator("afora-terminal-panel[embedded]");
       await terminal.waitFor({ state: "attached" });
       await expect
         .poll(() =>
@@ -476,7 +476,7 @@ describe("Control UI service-worker production update E2E", () => {
 
       await expect
         .poll(() => page.evaluate(() => caches.keys()))
-        .toContain(`openclaw-control-${buildB}`);
+        .toContain(`afora-control-${buildB}`);
       const refreshedAsset = await fetchControlledAsset(page, assetB.path);
       expect(refreshedAsset).toMatchObject({
         controllerState: "activated",

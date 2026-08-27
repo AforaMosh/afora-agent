@@ -1,22 +1,22 @@
 /**
- * OpenClaw-managed Chrome profile decoration.
+ * Afora-managed Chrome profile decoration.
  *
  * Applies managed-browser policy, a stable profile name, color, download
  * directory, and clean-exit markers to Chrome's profile files.
  */
 import fs from "node:fs";
 import path from "node:path";
-import { loadJsonFile, saveJsonFile } from "openclaw/plugin-sdk/json-store";
-import { asNullableRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { loadJsonFile, saveJsonFile } from "afora-agent/plugin-sdk/json-store";
+import { asNullableRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
-  DEFAULT_OPENCLAW_BROWSER_COLOR,
-  DEFAULT_OPENCLAW_BROWSER_PROFILE_NAME,
+  DEFAULT_AFORA_BROWSER_COLOR,
+  DEFAULT_AFORA_BROWSER_PROFILE_NAME,
 } from "./constants.js";
 
 const CHROME_NETWORK_PREDICTION_DISABLED = 2;
 
 function decoratedMarkerPath(userDataDir: string) {
-  return path.join(userDataDir, ".openclaw-profile-decorated");
+  return path.join(userDataDir, ".afora-profile-decorated");
 }
 
 function safeReadJson(filePath: string): Record<string, unknown> | null {
@@ -115,12 +115,12 @@ export function isProfileDecorated(
 }
 
 /** Return whether this profile was initialized with Chromium's automation keychain. */
-export function usesOpenClawMockKeychain(userDataDir: string): boolean {
+export function usesAforaMockKeychain(userDataDir: string): boolean {
   const localState = safeReadJson(path.join(userDataDir, "Local State"));
-  return readDefaultProfileInfo(localState)?.openclaw_mock_keychain === true;
+  return readDefaultProfileInfo(localState)?.afora_mock_keychain === true;
 }
 
-/** Disable Chromium network prediction in an OpenClaw-managed Chrome profile. */
+/** Disable Chromium network prediction in an Afora-managed Chrome profile. */
 export function ensureProfileNetworkPredictionDisabled(userDataDir: string) {
   const preferencesPath = path.join(userDataDir, "Default", "Preferences");
   const prefs = safeReadJson(preferencesPath) ?? {};
@@ -134,12 +134,12 @@ export function ensureProfileNetworkPredictionDisabled(userDataDir: string) {
  * Best-effort profile decoration (name + lobster-orange). Chrome preference keys
  * vary by version; we keep this conservative and idempotent.
  */
-export function decorateOpenClawProfile(
+export function decorateAforaProfile(
   userDataDir: string,
   opts?: { name?: string; color?: string; downloadDir?: string; mockKeychain?: boolean },
 ) {
-  const desiredName = opts?.name ?? DEFAULT_OPENCLAW_BROWSER_PROFILE_NAME;
-  const desiredColor = (opts?.color ?? DEFAULT_OPENCLAW_BROWSER_COLOR).toUpperCase();
+  const desiredName = opts?.name ?? DEFAULT_AFORA_BROWSER_PROFILE_NAME;
+  const desiredColor = (opts?.color ?? DEFAULT_AFORA_BROWSER_COLOR).toUpperCase();
   const desiredColorInt = parseHexRgbToSignedArgbInt(desiredColor);
 
   const localStatePath = path.join(userDataDir, "Local State");
@@ -153,7 +153,7 @@ export function decorateOpenClawProfile(
   if (opts?.mockKeychain) {
     // Chrome preserves extra fields in this per-profile dictionary. Recording
     // the key source here keeps later launches on the same encryption backend.
-    setDeep(localState, ["profile", "info_cache", "Default", "openclaw_mock_keychain"], true);
+    setDeep(localState, ["profile", "info_cache", "Default", "afora_mock_keychain"], true);
   }
   // Color keys are best-effort (Chrome changes these frequently).
   setDeep(localState, ["profile", "info_cache", "Default", "profile_color"], desiredColor);

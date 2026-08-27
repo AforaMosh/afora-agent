@@ -1,7 +1,7 @@
 import type { UsageBarTemplate } from "./translator.js";
 
 export const DEFAULT_USAGE_BAR_TEMPLATE: UsageBarTemplate = {
-  schema: "openclaw.usageBar.v1",
+  schema: "afora.usageBar.v1",
   scales: {
     braille: "⠐⡀⡄⡆⡇⣇⣧⣷⣿",
     block: "░▏▎▍▌▋▊▉█",

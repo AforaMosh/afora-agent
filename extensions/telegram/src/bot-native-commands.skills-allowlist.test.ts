@@ -5,10 +5,10 @@ import path from "node:path";
 import {
   createEmptyPluginRegistry,
   withPluginRuntimeRegistryScope,
-} from "openclaw/plugin-sdk/channel-test-helpers";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { listSkillCommandsForAgents as listActualSkillCommandsForAgents } from "openclaw/plugin-sdk/skill-commands-runtime";
-import { writeSkill } from "openclaw/plugin-sdk/test-fixtures";
+} from "afora-agent/plugin-sdk/channel-test-helpers";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { listSkillCommandsForAgents as listActualSkillCommandsForAgents } from "afora-agent/plugin-sdk/skill-commands-runtime";
+import { writeSkill } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { registerTelegramNativeCommands } from "./bot-native-commands.js";
 import {
@@ -34,7 +34,7 @@ describe("registerTelegramNativeCommands skill allowlist integration", () => {
   });
 
   it("registers only allowlisted skills for the bound agent menu", async () => {
-    const workspaceDir = await makeWorkspace("openclaw-telegram-skills-");
+    const workspaceDir = await makeWorkspace("afora-telegram-skills-");
     await writeSkill({
       dir: path.join(workspaceDir, "skills", "alpha-skill"),
       name: "alpha-skill",
@@ -47,7 +47,7 @@ describe("registerTelegramNativeCommands skill allowlist integration", () => {
     });
 
     const setMyCommands = vi.fn().mockResolvedValue(undefined);
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         list: [
           { id: "alpha", workspace: workspaceDir, skills: ["alpha-skill"] },
@@ -62,7 +62,7 @@ describe("registerTelegramNativeCommands skill allowlist integration", () => {
       ],
     };
     listSkillCommandsForAgents.mockImplementation(
-      ({ cfg: cfgLocal, agentIds }: { cfg: OpenClawConfig; agentIds?: string[] }) =>
+      ({ cfg: cfgLocal, agentIds }: { cfg: AforaConfig; agentIds?: string[] }) =>
         listActualSkillCommandsForAgents({ cfg: cfgLocal, agentIds }),
     );
 

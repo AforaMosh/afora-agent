@@ -1,7 +1,7 @@
 /**
  * Core plugin SDK contract-test fixture builders and registration helpers.
  */
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import type { PluginRegistryParams } from "../../plugins/registry-types.js";
 import { createPluginRegistry, type PluginRecord } from "../../plugins/registry.js";
 import type { PluginRuntime } from "../../plugins/runtime/types.js";
@@ -10,14 +10,14 @@ import {
   registerProviderPlugins as registerProviders,
   requireRegisteredProvider as requireProvider,
 } from "../../test-utils/plugin-registration.js";
-import type { OpenClawPluginApi } from "../plugin-entry.js";
+import type { AforaPluginApi } from "../plugin-entry.js";
 export { assertNoImportTimeSideEffects } from "./import-side-effects.js";
 
 export { registerProviders, requireProvider };
 
 /** Creates a minimal plugin registry fixture with quiet logger defaults. */
 export function createPluginRegistryFixture(
-  config = {} as OpenClawConfig,
+  config = {} as AforaConfig,
   params: {
     allowProcessHomeSessionCatalogs?: boolean;
     hostServices?: PluginRegistryParams["hostServices"];
@@ -42,9 +42,9 @@ export function createPluginRegistryFixture(
 /** Registers one plugin record against a registry fixture and invokes its register hook. */
 export function registerTestPlugin(params: {
   registry: ReturnType<typeof createPluginRegistry>;
-  config: OpenClawConfig;
+  config: AforaConfig;
   record: PluginRecord;
-  register(api: OpenClawPluginApi): void;
+  register(api: AforaPluginApi): void;
 }) {
   params.registry.registry.plugins.push(params.record);
   params.register(
@@ -58,13 +58,13 @@ export function registerTestPlugin(params: {
 /** Registers a virtual plugin record for tests that do not need a real package path. */
 export function registerVirtualTestPlugin(params: {
   registry: ReturnType<typeof createPluginRegistry>;
-  config: OpenClawConfig;
+  config: AforaConfig;
   id: string;
   name: string;
   source?: string;
   kind?: PluginRecord["kind"];
   contracts?: PluginRecord["contracts"];
-  register(this: void, api: OpenClawPluginApi): void;
+  register(this: void, api: AforaPluginApi): void;
 }) {
   registerTestPlugin({
     registry: params.registry,

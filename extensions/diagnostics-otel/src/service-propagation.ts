@@ -19,8 +19,8 @@ import { B3InjectEncoding, B3Propagator } from "@opentelemetry/propagator-b3";
 import { JaegerPropagator } from "@opentelemetry/propagator-jaeger";
 
 const DEFAULT_PROPAGATORS = ["tracecontext", "baggage"];
-const CONTEXT_OWNER_KEY = createContextKey("openclaw.owned-sdk.context-owner");
-const PROPAGATOR_OWNER_KEY = createContextKey("openclaw.owned-sdk.propagator-owner");
+const CONTEXT_OWNER_KEY = createContextKey("afora.owned-sdk.context-owner");
+const PROPAGATOR_OWNER_KEY = createContextKey("afora.owned-sdk.propagator-owner");
 
 class OwnedContextManager extends AsyncLocalStorageContextManager {
   constructor(private readonly owner: object) {

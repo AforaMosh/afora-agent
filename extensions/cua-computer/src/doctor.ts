@@ -2,7 +2,7 @@ import {
   getHealthCheck,
   registerHealthCheck as registerPluginHealthCheck,
   type HealthCheck,
-} from "openclaw/plugin-sdk/health";
+} from "afora-agent/plugin-sdk/health";
 import { verifyInstalledCuaDriverArtifacts } from "./driver-artifacts.js";
 
 export const CUA_DRIVER_ARTIFACT_CHECK_ID = "cua-computer/driver-artifacts";

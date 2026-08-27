@@ -4,8 +4,8 @@ import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { GatewayClient } from "openclaw/plugin-sdk/gateway-runtime";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { GatewayClient } from "afora-agent/plugin-sdk/gateway-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { type RawData, WebSocketServer } from "ws";
 import { startQaGatewayChild } from "../../../../extensions/qa-lab/api.js";
@@ -21,7 +21,7 @@ import {
   PROTOCOL_VERSION,
   type HelloOk,
 } from "../../../../packages/gateway-protocol/src/index.js";
-import type { OpenClawConfig } from "../../../../src/config/types.openclaw.js";
+import type { AforaConfig } from "../../../../src/config/types.afora.js";
 import {
   loadOrCreateDeviceIdentity,
   type DeviceIdentity,
@@ -103,10 +103,10 @@ describe("Gateway node control plane", () => {
         transportBaseUrl: "http://127.0.0.1",
         controlUiEnabled: false,
         runtimeEnvPatch: {
-          OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-          OPENCLAW_SKIP_CHANNELS: "1",
-          OPENCLAW_SKIP_PROVIDERS: "1",
-          OPENCLAW_TEST_MINIMAL_GATEWAY: "1",
+          AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+          AFORA_SKIP_CHANNELS: "1",
+          AFORA_SKIP_PROVIDERS: "1",
+          AFORA_TEST_MINIMAL_GATEWAY: "1",
         },
         mutateConfig: (cfg) => {
           const { plugins: _plugins, ...withoutPlugins } = cfg;
@@ -374,7 +374,7 @@ describe("Gateway node control plane", () => {
     { timeout: REQUEST_TIMEOUT_MS * 4 },
     async () => {
       const identity = loadOrCreateDeviceIdentity({
-        path: path.join(tempDirs.make("openclaw-node-host-negotiation-"), "node.sqlite"),
+        path: path.join(tempDirs.make("afora-node-host-negotiation-"), "node.sqlite"),
       });
       const fixture = await startProtocolEnvelopeFixture();
       const helloProtocols: number[] = [];
@@ -518,10 +518,10 @@ describe("Gateway node control plane", () => {
           transportBaseUrl: "http://127.0.0.1",
           controlUiEnabled: false,
           runtimeEnvPatch: {
-            OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-            OPENCLAW_SKIP_CHANNELS: "1",
-            OPENCLAW_SKIP_PROVIDERS: "1",
-            OPENCLAW_TEST_MINIMAL_GATEWAY: "1",
+            AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+            AFORA_SKIP_CHANNELS: "1",
+            AFORA_SKIP_PROVIDERS: "1",
+            AFORA_TEST_MINIMAL_GATEWAY: "1",
           },
           mutateConfig: (cfg) => {
             // Bundled plugins are disabled for this focused proof, so their
@@ -633,7 +633,7 @@ describe("Gateway node control plane", () => {
         if (!fixtureSurfaceUrl) {
           throw new Error("v4 hello omitted the fixture plugin surface URL");
         }
-        expect(new URL(fixtureSurfaceUrl).pathname).toMatch(/^\/__openclaw__\/cap\//);
+        expect(new URL(fixtureSurfaceUrl).pathname).toMatch(/^\/__afora__\/cap\//);
         const fixtureSurfaceResponse = await fetch(`${fixtureSurfaceUrl}${FIXTURE_ROUTE}`, {
           signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         });
@@ -1086,12 +1086,12 @@ async function createFixturePlugin(): Promise<{
   pluginDir: string;
   cleanup: () => Promise<void>;
 }> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gateway-node-rolling-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-gateway-node-rolling-"));
   const pluginDir = path.join(root, FIXTURE_PLUGIN_ID);
   try {
     await fs.mkdir(pluginDir, { recursive: true });
     await fs.writeFile(
-      path.join(pluginDir, "openclaw.plugin.json"),
+      path.join(pluginDir, "afora.plugin.json"),
       `${JSON.stringify(
         {
           id: FIXTURE_PLUGIN_ID,
@@ -1147,7 +1147,7 @@ async function createFixturePlugin(): Promise<{
   }
 }
 
-function withFixturePlugin(config: OpenClawConfig, pluginDir: string): OpenClawConfig {
+function withFixturePlugin(config: AforaConfig, pluginDir: string): AforaConfig {
   return {
     ...config,
     plugins: {

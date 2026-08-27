@@ -169,7 +169,7 @@ describe("context-engine host parameter projection", () => {
       agentId: "main",
       sessionId: "session-1",
       sessionKey: "agent:main:session-1",
-      storePath: "/tmp/openclaw-agent.sqlite",
+      storePath: "/tmp/afora-agent.sqlite",
       generation: "generation-1",
       entryId: "user-1",
       rawSeq: 1,

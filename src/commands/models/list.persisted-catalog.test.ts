@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
     (value: unknown) =>
       typeof value === "object" &&
       value !== null &&
-      (value as { generatedBy?: unknown }).generatedBy === "openclaw-plugin-model-catalog-v1",
+      (value as { generatedBy?: unknown }).generatedBy === "afora-plugin-model-catalog-v1",
   ),
   filterGeneratedPluginModelCatalogProviders: vi.fn(
     ({ providers }: { providers: Record<string, unknown> }) => providers,
@@ -31,7 +31,7 @@ describe("loadPersistedListCatalogEntries", () => {
       {
         pluginId: "openai",
         contents: JSON.stringify({
-          generatedBy: "openclaw-plugin-model-catalog-v1",
+          generatedBy: "afora-plugin-model-catalog-v1",
           providers: {
             openai: {
               api: "openai-chatgpt-responses",
@@ -53,7 +53,7 @@ describe("loadPersistedListCatalogEntries", () => {
 
     expect(
       loadPersistedListCatalogEntries({
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         providerIds: new Set(["openai"]),
       }),
     ).toEqual([
@@ -76,7 +76,7 @@ describe("loadPersistedListCatalogEntries", () => {
       {
         pluginId: "catalog",
         contents: JSON.stringify({
-          generatedBy: "openclaw-plugin-model-catalog-v1",
+          generatedBy: "afora-plugin-model-catalog-v1",
           providers: {
             openai: { models: [{ id: "missing-api" }] },
             google: {
@@ -90,7 +90,7 @@ describe("loadPersistedListCatalogEntries", () => {
 
     expect(
       loadPersistedListCatalogEntries({
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         providerIds: new Set(["openai"]),
       }),
     ).toEqual([]);

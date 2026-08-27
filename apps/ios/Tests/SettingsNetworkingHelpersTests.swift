@@ -1,5 +1,5 @@
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 @Suite struct SettingsNetworkingHelpersTests {
     @Test func diagnosticsIssuesNameEachReviewerVisibleCheck() {

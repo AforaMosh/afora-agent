@@ -125,7 +125,7 @@ describe("uninstallCommand", () => {
 
     expect(
       cleanupCommandLogMessages(runtime).some((message) =>
-        message.includes("openclaw backup create"),
+        message.includes("afora backup create"),
       ),
     ).toBe(true);
   });
@@ -140,7 +140,7 @@ describe("uninstallCommand", () => {
 
     expect(
       cleanupCommandLogMessages(runtime).some((message) =>
-        message.includes("openclaw backup create"),
+        message.includes("afora backup create"),
       ),
     ).toBe(false);
   });
@@ -158,14 +158,14 @@ describe("uninstallCommand", () => {
       runtime,
       expect.objectContaining({
         dryRun: true,
-        preservePaths: ["/tmp/.openclaw/workspace"],
+        preservePaths: ["/tmp/.afora/workspace"],
       }),
     );
   });
 
   it("previews retired workspace files during state-only uninstall", async () => {
     removeLegacyWorkspaceStateForReset.mockResolvedValueOnce({
-      removedPaths: ["/tmp/.openclaw/workspace/openclaw-workspace-state.json"],
+      removedPaths: ["/tmp/.afora/workspace/afora-workspace-state.json"],
       warnings: [],
     });
 
@@ -176,13 +176,13 @@ describe("uninstallCommand", () => {
       dryRun: true,
     });
 
-    expect(prepareLegacyWorkspaceStateReset).toHaveBeenCalledWith("/tmp/.openclaw/workspace");
+    expect(prepareLegacyWorkspaceStateReset).toHaveBeenCalledWith("/tmp/.afora/workspace");
     expect(removeLegacyWorkspaceStateForReset).toHaveBeenCalledWith(
-      { workspaceDir: "/tmp/.openclaw/workspace" },
+      { workspaceDir: "/tmp/.afora/workspace" },
       { dryRun: true },
     );
     expect(cleanupCommandLogMessages(runtime)).toContain(
-      "[dry-run] remove /tmp/.openclaw/workspace/openclaw-workspace-state.json",
+      "[dry-run] remove /tmp/.afora/workspace/afora-workspace-state.json",
     );
   });
 
@@ -213,7 +213,7 @@ describe("uninstallCommand", () => {
       dryRun: true,
     });
 
-    expect(removeWorkspaceDirs).toHaveBeenCalledWith(["/tmp/.openclaw/workspace"], runtime, {
+    expect(removeWorkspaceDirs).toHaveBeenCalledWith(["/tmp/.afora/workspace"], runtime, {
       dryRun: true,
       removeStateRows: true,
     });
@@ -228,7 +228,7 @@ describe("uninstallCommand", () => {
       dryRun: true,
     });
 
-    expect(removeWorkspaceDirs).toHaveBeenCalledWith(["/tmp/.openclaw/workspace"], runtime, {
+    expect(removeWorkspaceDirs).toHaveBeenCalledWith(["/tmp/.afora/workspace"], runtime, {
       dryRun: true,
       removeStateRows: false,
     });
@@ -244,7 +244,7 @@ describe("uninstallCommand", () => {
       nonInteractive: true,
     });
 
-    expect(removeWorkspaceDirs).toHaveBeenCalledWith(["/tmp/.openclaw/workspace"], runtime, {
+    expect(removeWorkspaceDirs).toHaveBeenCalledWith(["/tmp/.afora/workspace"], runtime, {
       dryRun: false,
       removeStateRows: true,
     });

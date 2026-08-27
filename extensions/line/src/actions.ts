@@ -1,7 +1,7 @@
 // Line plugin module implements actions behavior.
 import type { messagingApi } from "@line/bot-sdk";
-import { isRecord } from "openclaw/plugin-sdk/channel-secret-basic-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/channel-secret-basic-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 
 export type Action = messagingApi.Action;
 type Message = messagingApi.Message;

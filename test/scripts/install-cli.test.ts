@@ -16,7 +16,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { isSupportedOpenClawNodeVersion } from "../../node-version.mjs";
+import { isSupportedAforaNodeVersion } from "../../node-version.mjs";
 import { NODE_RELEASE_VERSION_CASES } from "../helpers/node-version-cases.js";
 import { useAutoCleanupTempDirTracker } from "../helpers/temp-dir.js";
 import {
@@ -33,7 +33,7 @@ function runInstallCliShell(script: string, env: NodeJS.ProcessEnv = {}) {
     encoding: "utf8",
     env: {
       ...process.env,
-      OPENCLAW_INSTALL_CLI_SH_NO_RUN: "1",
+      AFORA_INSTALL_CLI_SH_NO_RUN: "1",
       ...env,
     },
   });
@@ -45,8 +45,8 @@ function linkRequiredShellTools(bin: string) {
   }
 }
 
-function writeInstalledOpenClawEntry(nodeDir: string) {
-  const entry = join(nodeDir, "lib", "node_modules", "openclaw", "dist", "entry.js");
+function writeInstalledAforaEntry(nodeDir: string) {
+  const entry = join(nodeDir, "lib", "node_modules", "afora", "dist", "entry.js");
   mkdirSync(join(entry, ".."), { recursive: true });
   writeFileSync(entry, "");
 }
@@ -55,9 +55,9 @@ describe("install-cli.sh", () => {
   const script = readFileSync(SCRIPT_PATH, "utf8");
 
   it("fails a low-space fresh Git install before Node or checkout work", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-disk-low-"));
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-disk-low-"));
     const commandLog = join(tmp, "commands.log");
-    const repo = join(tmp, "new", "openclaw");
+    const repo = join(tmp, "new", "afora");
 
     try {
       const result = runInstallCliShell(
@@ -67,7 +67,7 @@ describe("install-cli.sh", () => {
           `source ${JSON.stringify(SCRIPT_PATH)}`,
           "available_disk_kib() { printf '2097152\\n'; }",
           `install_node() { printf 'node\\n' >> ${JSON.stringify(commandLog)}; }`,
-          `install_openclaw_from_git() { printf 'git\\n' >> ${JSON.stringify(commandLog)}; }`,
+          `install_afora_from_git() { printf 'git\\n' >> ${JSON.stringify(commandLog)}; }`,
           `main --json --git --git-dir ${JSON.stringify(repo)}`,
         ].join("\n"),
       );
@@ -92,8 +92,8 @@ describe("install-cli.sh", () => {
   });
 
   it("allows a fresh Git install with enough free space", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-disk-ok-"));
-    const repo = join(tmp, "new", "openclaw");
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-disk-ok-"));
+    const repo = join(tmp, "new", "afora");
 
     try {
       const result = runInstallCliShell(
@@ -118,8 +118,8 @@ describe("install-cli.sh", () => {
   });
 
   it("does not apply the fresh-install disk threshold to an existing checkout", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-disk-existing-"));
-    const repo = join(tmp, "openclaw");
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-disk-existing-"));
+    const repo = join(tmp, "afora");
     mkdirSync(join(repo, ".git"), { recursive: true });
 
     try {
@@ -143,8 +143,8 @@ describe("install-cli.sh", () => {
   });
 
   it("emits ordered stages for an existing Git checkout build", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-events-"));
-    const repo = join(tmp, "openclaw");
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-events-"));
+    const repo = join(tmp, "afora");
     mkdirSync(join(repo, ".git"), { recursive: true });
 
     try {
@@ -161,15 +161,15 @@ describe("install-cli.sh", () => {
           "ensure_pnpm_git_prepare_allowlist() { :; }",
           "activate_repo_pnpm_version() { :; }",
           "cleanup_legacy_submodules() { :; }",
-          "resolve_git_openclaw_ref() { printf 'main\\n'; }",
-          "checkout_git_openclaw_ref() { :; }",
+          "resolve_git_afora_ref() { printf 'main\\n'; }",
+          "checkout_git_afora_ref() { :; }",
           "run_pnpm() { :; }",
           "git() {",
           '  if [[ "$1" == --git-dir=* ]]; then return 0; fi',
           '  if [[ "$1" == "-C" && "$3" == "status" ]]; then return 0; fi',
           "  return 0",
           "}",
-          `install_openclaw_from_git ${JSON.stringify(repo)}`,
+          `install_afora_from_git ${JSON.stringify(repo)}`,
         ].join("\n"),
       );
 
@@ -181,7 +181,7 @@ describe("install-cli.sh", () => {
         .filter((event) => event.event === "step")
         .map((event) => `${event.name}:${event.status}`);
       expect(stages).toEqual([
-        "openclaw:start",
+        "afora:start",
         "git-tools:start",
         "git-tools:ok",
         "git-update:start",
@@ -192,7 +192,7 @@ describe("install-cli.sh", () => {
         "control-ui:ok",
         "cli-build:start",
         "cli-build:ok",
-        "openclaw:ok",
+        "afora:ok",
       ]);
     } finally {
       rmSync(tmp, { force: true, recursive: true });
@@ -221,7 +221,7 @@ describe("install-cli.sh", () => {
       }
 
       set +e
-      (install_openclaw_from_git "$repo")
+      (install_afora_from_git "$repo")
       status="$?"
       set -e
       [[ "$status" -eq 1 ]]
@@ -232,8 +232,8 @@ describe("install-cli.sh", () => {
   });
 
   it("keeps a pre-existing empty Git install destination retryable after clone failure", () => {
-    const root = tempDirs.make("openclaw-install-cli-empty-retry-");
-    const repo = join(root, "openclaw");
+    const root = tempDirs.make("afora-install-cli-empty-retry-");
+    const repo = join(root, "afora");
     mkdirSync(repo);
     const runAttempt = (cloneMode: "failure" | "success") =>
       runInstallCliShell(
@@ -243,8 +243,8 @@ describe("install-cli.sh", () => {
         ensure_git() { :; }
         ensure_pnpm() { :; }
         ensure_pnpm_binary_for_scripts() { :; }
-        resolve_git_openclaw_ref() { printf 'main\\n'; }
-        checkout_git_openclaw_ref() { :; }
+        resolve_git_afora_ref() { printf 'main\\n'; }
+        checkout_git_afora_ref() { :; }
         cleanup_legacy_submodules() { :; }
         ensure_pnpm_git_prepare_allowlist() { :; }
         activate_repo_pnpm_version() { :; }
@@ -261,7 +261,7 @@ describe("install-cli.sh", () => {
           fi
           return 0
         }
-        install_openclaw_from_git "$REPO"
+        install_afora_from_git "$REPO"
       `,
         { CLONE_MODE: cloneMode, REPO: repo },
       );
@@ -277,7 +277,7 @@ describe("install-cli.sh", () => {
   });
 
   it("publishes fresh Git clones only after success and cleans failed staging directories", () => {
-    const root = tempDirs.make("openclaw-install-cli-transactional-clone-");
+    const root = tempDirs.make("afora-install-cli-transactional-clone-");
     const result = runInstallCliShell(
       `
       set -euo pipefail
@@ -303,13 +303,13 @@ describe("install-cli.sh", () => {
 
       CLONE_MODE=success
       success_repo="$root/success"
-      clone_git_checkout_transactionally https://example.invalid/openclaw.git "$success_repo"
+      clone_git_checkout_transactionally https://example.invalid/afora.git "$success_repo"
       [[ -f "$success_repo/checkout.marker" ]]
 
       CLONE_MODE=failure
       failed_repo="$root/failure"
       set +e
-      clone_git_checkout_transactionally https://example.invalid/openclaw.git "$failed_repo"
+      clone_git_checkout_transactionally https://example.invalid/afora.git "$failed_repo"
       failure_status="$?"
       set -e
       [[ "$failure_status" -eq 42 ]]
@@ -321,14 +321,14 @@ describe("install-cli.sh", () => {
       ALIAS_PATH="$root/alias"
       mkdir -p "$ALIAS_TARGET" "$ALIAS_REPLACEMENT"
       ln -s "$ALIAS_TARGET" "$ALIAS_PATH"
-      clone_git_checkout_transactionally https://example.invalid/openclaw.git "$ALIAS_PATH"
+      clone_git_checkout_transactionally https://example.invalid/afora.git "$ALIAS_PATH"
       [[ -f "$ALIAS_TARGET/checkout.marker" ]]
       [[ -z "$(ls -A "$ALIAS_REPLACEMENT")" ]]
-      [[ -z "$(find "$ALIAS_TARGET" -maxdepth 1 -name '.openclaw-clone.*' -print -quit)" ]]
+      [[ -z "$(find "$ALIAS_TARGET" -maxdepth 1 -name '.afora-clone.*' -print -quit)" ]]
 
       CLONE_MODE=concurrent
       CONCURRENT_REPO="$root/concurrent"
-      clone_git_checkout_transactionally https://example.invalid/openclaw.git "$CONCURRENT_REPO"
+      clone_git_checkout_transactionally https://example.invalid/afora.git "$CONCURRENT_REPO"
     `,
       { ROOT: root },
     );
@@ -337,11 +337,11 @@ describe("install-cli.sh", () => {
     expect(result.stdout + result.stderr).toContain("Git install dir appeared while cloning");
     expect(readFileSync(join(root, "concurrent", "user.marker"), "utf8")).toBe("keep\n");
     expect(existsSync(join(root, "concurrent", "checkout.marker"))).toBe(false);
-    expect(readdirSync(root).filter((entry) => entry.startsWith(".openclaw-clone."))).toEqual([]);
+    expect(readdirSync(root).filter((entry) => entry.startsWith(".afora-clone."))).toEqual([]);
   });
 
   it("keeps the full Git install on the canonical checkout after an alias is retargeted", () => {
-    const root = tempDirs.make("openclaw-install-cli-retargeted-alias-");
+    const root = tempDirs.make("afora-install-cli-retargeted-alias-");
     const result = runInstallCliShell(
       `
       set -euo pipefail
@@ -356,8 +356,8 @@ describe("install-cli.sh", () => {
       ensure_git() { :; }
       ensure_pnpm() { :; }
       ensure_pnpm_binary_for_scripts() { :; }
-      resolve_git_openclaw_ref() { printf 'main\\n'; }
-      checkout_git_openclaw_ref() { [[ "$1" == "$target" && "$2" == "main" ]]; }
+      resolve_git_afora_ref() { printf 'main\\n'; }
+      checkout_git_afora_ref() { [[ "$1" == "$target" && "$2" == "main" ]]; }
       cleanup_legacy_submodules() { [[ "$1" == "$target" ]]; }
       ensure_pnpm_git_prepare_allowlist() { [[ "$1" == "$target" ]]; }
       activate_repo_pnpm_version() { [[ "$1" == "$target" ]]; }
@@ -378,10 +378,10 @@ describe("install-cli.sh", () => {
         [[ "$1" == "-C" && "$2" == "$target" ]]
       }
 
-      install_openclaw_from_git "$alias_path"
-      grep -F "$target/dist/entry.js" "$PREFIX/bin/openclaw"
+      install_afora_from_git "$alias_path"
+      grep -F "$target/dist/entry.js" "$PREFIX/bin/afora"
       [[ -z "$(ls -A "$replacement")" ]]
-      [[ -z "$(find "$target" -maxdepth 1 -name '.openclaw-clone.*' -print -quit)" ]]
+      [[ -z "$(find "$target" -maxdepth 1 -name '.afora-clone.*' -print -quit)" ]]
     `,
       { ROOT: root },
     );
@@ -432,7 +432,7 @@ describe("install-cli.sh", () => {
 
     expect(result.status).toBe(0);
     for (const [index, version] of NODE_RELEASE_VERSION_CASES.entries()) {
-      const expectedStatus = isSupportedOpenClawNodeVersion(version) ? 0 : 1;
+      const expectedStatus = isSupportedAforaNodeVersion(version) ? 0 : 1;
       expect(result.stdout, version).toContain(`${index}=${expectedStatus}`);
     }
   });
@@ -546,7 +546,7 @@ describe("install-cli.sh", () => {
         2026.7.3-beta.1:2026.7.2; do
         candidate="\${pair%%:*}"
         writer="\${pair#*:}"
-        openclaw_version_is_compatible_with "$candidate" "$writer"
+        afora_version_is_compatible_with "$candidate" "$writer"
         printf '%s=%s\\n' "$pair" "$?"
       done
     `);
@@ -561,19 +561,19 @@ describe("install-cli.sh", () => {
   });
 
   it("rejects an incompatible channel before replacing an existing managed CLI", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-compatible-"));
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-compatible-"));
     const prefix = join(tmp, "prefix");
     const bin = join(prefix, "bin");
-    const openclaw = join(bin, "openclaw");
+    const afora = join(bin, "afora");
     mkdirSync(bin, { recursive: true });
-    writeFileSync(openclaw, "existing-managed-cli\n");
+    writeFileSync(afora, "existing-managed-cli\n");
 
     try {
       const result = runInstallCliShell(`
         set -euo pipefail
         source "${SCRIPT_PATH}"
         PREFIX=${JSON.stringify(prefix)}
-        OPENCLAW_VERSION=latest
+        AFORA_VERSION=latest
         REQUIRED_COMPATIBLE_VERSION=2026.7.2
         node_bin() { command -v node; }
         npm_bin() { printf 'npm\\n'; }
@@ -584,27 +584,27 @@ describe("install-cli.sh", () => {
           printf 'unexpected mutation: %s\\n' "$*" >&2
           return 99
         }
-        install_openclaw
+        install_afora
       `);
 
       expect(result.status).toBe(1);
-      expect(result.stdout).toContain("OpenClaw 2026.7.1-2 is older than config writer 2026.7.2");
+      expect(result.stdout).toContain("Afora 2026.7.1-2 is older than config writer 2026.7.2");
       expect(result.stderr).not.toContain("unexpected mutation");
-      expect(readFileSync(openclaw, "utf8")).toBe("existing-managed-cli\n");
+      expect(readFileSync(afora, "utf8")).toBe("existing-managed-cli\n");
     } finally {
       rmSync(tmp, { force: true, recursive: true });
     }
   });
 
   it("checks a git checkout version before dependency install or wrapper replacement", () => {
-    const checkoutIndex = script.indexOf('checkout_git_openclaw_ref "$repo_dir" "$git_ref"');
+    const checkoutIndex = script.indexOf('checkout_git_afora_ref "$repo_dir" "$git_ref"');
     const compatibilityIndex = script.indexOf(
-      'require_openclaw_version_compatible "$resolved_version"',
+      'require_afora_version_compatible "$resolved_version"',
     );
     const dependencyInstallIndex = script.indexOf(
       'CI="${CI:-true}" run_pnpm -C "$repo_dir" install "$install_lockfile_flag"',
     );
-    const wrapperIndex = script.indexOf('cat > "${PREFIX}/bin/openclaw"', compatibilityIndex);
+    const wrapperIndex = script.indexOf('cat > "${PREFIX}/bin/afora"', compatibilityIndex);
 
     expect(checkoutIndex).toBeGreaterThan(-1);
     expect(compatibilityIndex).toBeGreaterThan(checkoutIndex);
@@ -613,14 +613,14 @@ describe("install-cli.sh", () => {
   });
 
   it("does not restart a gateway again after force-install activates it", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-gateway-refresh-"));
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-gateway-refresh-"));
     const prefix = join(tmp, "prefix");
     const bin = join(prefix, "bin");
     const commandLog = join(tmp, "commands.log");
-    const openclaw = join(bin, "openclaw");
+    const afora = join(bin, "afora");
     mkdirSync(bin, { recursive: true });
-    writeFileSync(openclaw, '#!/bin/bash\nprintf "%s\\n" "$*" >> "$COMMAND_LOG"\n');
-    chmodSync(openclaw, 0o755);
+    writeFileSync(afora, '#!/bin/bash\nprintf "%s\\n" "$*" >> "$COMMAND_LOG"\n');
+    chmodSync(afora, 0o755);
 
     try {
       const result = runInstallCliShell(
@@ -651,7 +651,7 @@ describe("install-cli.sh", () => {
   ])(
     "rejects a package without a runnable CLI in $mode mode before service refresh",
     ({ args }) => {
-      const tmp = tempDirs.make("openclaw-install-cli-invalid-package-");
+      const tmp = tempDirs.make("afora-install-cli-invalid-package-");
       const prefix = join(tmp, "prefix");
       const refreshLog = join(tmp, "gateway-refresh.log");
 
@@ -660,7 +660,7 @@ describe("install-cli.sh", () => {
           "set -euo pipefail",
           `cd ${JSON.stringify(process.cwd())}`,
           `source ${JSON.stringify(SCRIPT_PATH)}`,
-          'install_node() { mkdir -p "$(node_dir)/lib/node_modules/openclaw/dist"; : > "$(node_dir)/lib/node_modules/openclaw/dist/entry.js"; }',
+          'install_node() { mkdir -p "$(node_dir)/lib/node_modules/afora/dist"; : > "$(node_dir)/lib/node_modules/afora/dist/entry.js"; }',
           "ensure_git() { :; }",
           'npm_bin() { printf "/usr/bin/true\\n"; }',
           `refresh_gateway_service_if_loaded() { touch ${JSON.stringify(refreshLog)}; }`,
@@ -669,9 +669,9 @@ describe("install-cli.sh", () => {
       );
 
       expect(result.status).toBe(1);
-      expect(result.stdout).toContain("Installed OpenClaw CLI did not return a version");
+      expect(result.stdout).toContain("Installed Afora CLI did not return a version");
       expect(result.stdout).not.toContain('"event":"done"');
-      expect(result.stdout).not.toContain("OpenClaw installed.");
+      expect(result.stdout).not.toContain("Afora installed.");
       expect(existsSync(refreshLog)).toBe(false);
     },
   );
@@ -682,14 +682,14 @@ describe("install-cli.sh", () => {
   ])(
     "rejects a version command that prints output and fails in $mode mode before service refresh",
     ({ args }) => {
-      const tmp = tempDirs.make("openclaw-install-cli-failed-version-");
+      const tmp = tempDirs.make("afora-install-cli-failed-version-");
       const prefix = join(tmp, "prefix");
       const bin = join(prefix, "bin");
-      const openclaw = join(bin, "openclaw");
+      const afora = join(bin, "afora");
       const refreshLog = join(tmp, "gateway-refresh.log");
       mkdirSync(bin, { recursive: true });
-      writeFileSync(openclaw, '#!/bin/bash\nprintf "OpenClaw 2026.8.1\\n"\nexit 1\n');
-      chmodSync(openclaw, 0o755);
+      writeFileSync(afora, '#!/bin/bash\nprintf "Afora 2026.8.1\\n"\nexit 1\n');
+      chmodSync(afora, 0o755);
 
       const result = runInstallCliShell(
         [
@@ -698,26 +698,26 @@ describe("install-cli.sh", () => {
           `source ${JSON.stringify(SCRIPT_PATH)}`,
           "install_node() { :; }",
           "ensure_git() { :; }",
-          "install_openclaw() { :; }",
+          "install_afora() { :; }",
           `refresh_gateway_service_if_loaded() { touch ${JSON.stringify(refreshLog)}; }`,
           `main ${args} --prefix ${JSON.stringify(prefix)} --version 0.0.0`,
         ].join("\n"),
       );
 
       expect(result.status).toBe(1);
-      expect(result.stdout).toContain("Installed OpenClaw CLI did not return a version");
+      expect(result.stdout).toContain("Installed Afora CLI did not return a version");
       expect(result.stdout).not.toContain('"event":"done"');
-      expect(result.stdout).not.toContain("OpenClaw installed.");
+      expect(result.stdout).not.toContain("Afora installed.");
       expect(existsSync(refreshLog)).toBe(false);
     },
   );
 
-  it("keeps HOME for default prefix while OPENCLAW_HOME controls git checkout paths", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-home-"));
+  it("keeps HOME for default prefix while AFORA_HOME controls git checkout paths", () => {
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-home-"));
     const osHome = join(tmp, "os-home");
-    const openclawHome = join(tmp, "openclaw-home");
+    const aforaHome = join(tmp, "afora-home");
     mkdirSync(osHome, { recursive: true });
-    mkdirSync(openclawHome, { recursive: true });
+    mkdirSync(aforaHome, { recursive: true });
 
     let result: ReturnType<typeof runInstallCliShell> | undefined;
     try {
@@ -729,9 +729,9 @@ describe("install-cli.sh", () => {
         ].join("\n"),
         {
           HOME: osHome,
-          OPENCLAW_HOME: openclawHome,
-          OPENCLAW_GIT_DIR: undefined,
-          OPENCLAW_PREFIX: undefined,
+          AFORA_HOME: aforaHome,
+          AFORA_GIT_DIR: undefined,
+          AFORA_PREFIX: undefined,
         },
       );
     } finally {
@@ -740,8 +740,8 @@ describe("install-cli.sh", () => {
 
     expect(result?.status).toBe(0);
     const output = result?.stdout ?? "";
-    expect(output).toContain(`prefix=${join(osHome, ".openclaw")}`);
-    expect(output).toContain(`git=${join(openclawHome, "openclaw")}`);
+    expect(output).toContain(`prefix=${join(osHome, ".afora")}`);
+    expect(output).toContain(`git=${join(aforaHome, "afora")}`);
   });
 
   it.each([
@@ -754,18 +754,18 @@ describe("install-cli.sh", () => {
   ] as const)(
     "keeps a generated $method launcher working after $input supplied paths change cwd",
     ({ input, method }) => {
-      const tmp = mkdtempSync(join(tmpdir(), `openclaw-install-cli-relative-${method}-`));
+      const tmp = mkdtempSync(join(tmpdir(), `afora-install-cli-relative-${method}-`));
       const installRoot = join(tmp, "install-root");
       const otherRoot = join(tmp, "other-root");
       const home = join(tmp, "home");
-      const prefixInput = input === "literal tilde" ? "~/openclaw-local" : "openclaw-local";
-      const prefix = join(input === "literal tilde" ? home : installRoot, "openclaw-local");
+      const prefixInput = input === "literal tilde" ? "~/afora-local" : "afora-local";
+      const prefix = join(input === "literal tilde" ? home : installRoot, "afora-local");
       const nodeDir = join(prefix, "tools", "node-v24.15.0");
-      const repoInput = input === "literal tilde" ? "~/openclaw-source" : "openclaw-source";
-      const repo = join(input === "literal tilde" ? home : installRoot, "openclaw-source");
+      const repoInput = input === "literal tilde" ? "~/afora-source" : "afora-source";
+      const repo = join(input === "literal tilde" ? home : installRoot, "afora-source");
       mkdirSync(installRoot, { recursive: true });
       mkdirSync(join(nodeDir, "bin"), { recursive: true });
-      mkdirSync(join(nodeDir, "lib", "node_modules", "openclaw", "dist"), { recursive: true });
+      mkdirSync(join(nodeDir, "lib", "node_modules", "afora", "dist"), { recursive: true });
       mkdirSync(join(repo, ".git"), { recursive: true });
       mkdirSync(join(repo, "dist"), { recursive: true });
       mkdirSync(otherRoot, { recursive: true });
@@ -777,7 +777,7 @@ describe("install-cli.sh", () => {
       );
       chmodSync(join(nodeDir, "bin", "npm"), 0o755);
       for (const entry of [
-        join(nodeDir, "lib", "node_modules", "openclaw", "dist", "entry.js"),
+        join(nodeDir, "lib", "node_modules", "afora", "dist", "entry.js"),
         join(repo, "dist", "entry.js"),
       ]) {
         writeFileSync(entry, 'console.log("fixture cli");\n');
@@ -806,8 +806,8 @@ describe("install-cli.sh", () => {
                   "ensure_pnpm_git_prepare_allowlist() { :; }",
                   "activate_repo_pnpm_version() { :; }",
                   "cleanup_legacy_submodules() { :; }",
-                  "resolve_git_openclaw_ref() { printf 'main\\n'; }",
-                  "checkout_git_openclaw_ref() { :; }",
+                  "resolve_git_afora_ref() { printf 'main\\n'; }",
+                  "checkout_git_afora_ref() { :; }",
                   "git_install_lockfile_flag() { printf '%s\\n' '--no-frozen-lockfile'; }",
                   "run_pnpm() { :; }",
                   "git() { return 0; }",
@@ -815,12 +815,12 @@ describe("install-cli.sh", () => {
               : []),
             `main --${method} ${args}`,
             `cd ${JSON.stringify(otherRoot)}`,
-            `${JSON.stringify(join(prefix, "bin", "openclaw"))} --version`,
+            `${JSON.stringify(join(prefix, "bin", "afora"))} --version`,
           ].join("\n"),
           {
             HOME: home,
-            OPENCLAW_GIT_DIR: input === "environment" && method === "git" ? repoInput : undefined,
-            OPENCLAW_PREFIX: input === "environment" ? prefixInput : undefined,
+            AFORA_GIT_DIR: input === "environment" && method === "git" ? repoInput : undefined,
+            AFORA_PREFIX: input === "environment" ? prefixInput : undefined,
           },
         );
 
@@ -838,20 +838,20 @@ describe("install-cli.sh", () => {
       source "${SCRIPT_PATH}"
       npm_bin() { echo npm; }
       npm() {
-        if [[ "$1" == "view" && "$2" == "openclaw" && "$3" == "dist-tags.beta" ]]; then
+        if [[ "$1" == "view" && "$2" == "afora" && "$3" == "dist-tags.beta" ]]; then
           printf '2026.5.12-beta.3\\n'
           return 0
         fi
         return 1
       }
-      OPENCLAW_VERSION=v2026.5.12-beta.3
-      printf 'tag=%s\\n' "$(resolve_git_openclaw_ref)"
-      OPENCLAW_VERSION=2026.5.12-beta.3
-      printf 'semver=%s\\n' "$(resolve_git_openclaw_ref)"
-      OPENCLAW_VERSION=beta
-      printf 'beta=%s\\n' "$(resolve_git_openclaw_ref)"
-      OPENCLAW_VERSION=main
-      printf 'main=%s\\n' "$(resolve_git_openclaw_ref)"
+      AFORA_VERSION=v2026.5.12-beta.3
+      printf 'tag=%s\\n' "$(resolve_git_afora_ref)"
+      AFORA_VERSION=2026.5.12-beta.3
+      printf 'semver=%s\\n' "$(resolve_git_afora_ref)"
+      AFORA_VERSION=beta
+      printf 'beta=%s\\n' "$(resolve_git_afora_ref)"
+      AFORA_VERSION=main
+      printf 'main=%s\\n' "$(resolve_git_afora_ref)"
     `);
 
     expect(result.status).toBe(0);
@@ -906,7 +906,7 @@ describe("install-cli.sh", () => {
   });
 
   it("uses the repo Corepack pnpm when a global pnpm version is already present", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-pnpm-version-"));
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-pnpm-version-"));
     const bin = join(tmp, "bin");
     const outer = join(tmp, "outer");
     const repo = join(tmp, "repo");
@@ -960,7 +960,7 @@ describe("install-cli.sh", () => {
   });
 
   it("links an existing usable Alpine/musl Node runtime without sudo", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-alpine-"));
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-alpine-"));
     const bin = join(tmp, "bin");
     const prefix = join(tmp, "prefix");
     const apkLog = join(tmp, "apk.log");
@@ -1030,7 +1030,7 @@ describe("install-cli.sh", () => {
   });
 
   it("replaces a stale Alpine/musl prefix Node before the generic skip", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-alpine-stale-"));
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-alpine-stale-"));
     const bin = join(tmp, "bin");
     const oldBin = join(tmp, "old-bin");
     const prefix = join(tmp, "prefix");
@@ -1140,7 +1140,7 @@ describe("install-cli.sh", () => {
   });
 
   it("uses apk-managed Node and Git on Alpine/musl when the existing Node is unusable", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-alpine-apk-"));
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-alpine-apk-"));
     const bin = join(tmp, "bin");
     const prefix = join(tmp, "prefix");
     const apkLog = join(tmp, "apk.log");
@@ -1224,7 +1224,7 @@ describe("install-cli.sh", () => {
   });
 
   it("skips PATH Node runtimes whose npm command cannot start", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-broken-npm-"));
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-broken-npm-"));
     const badBin = join(tmp, "bad-bin");
     const goodBin = join(tmp, "good-bin");
     const prefix = join(tmp, "prefix");
@@ -1299,7 +1299,7 @@ describe("install-cli.sh", () => {
   });
 
   it("rejects Alpine/musl Node packages below the requested runtime floor", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-alpine-old-node-"));
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-alpine-old-node-"));
     const bin = join(tmp, "bin");
     const prefix = join(tmp, "prefix");
     const apkLog = join(tmp, "apk.log");
@@ -1367,7 +1367,7 @@ describe("install-cli.sh", () => {
   });
 
   it("replaces cached generic Node runtimes below the runtime floor", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-generic-stale-node-"));
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-generic-stale-node-"));
     const prefix = join(tmp, "prefix");
     const nodePrefixBin = join(prefix, "tools", "node-v22.22.3", "bin");
     const staleNode = join(nodePrefixBin, "node");
@@ -1460,7 +1460,7 @@ describe("install-cli.sh", () => {
   });
 
   it("rejects downloaded generic Node runtimes below the runtime floor", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-generic-old-node-"));
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-generic-old-node-"));
     const prefix = join(tmp, "prefix");
     const newNode = join(tmp, "new-node");
     const newNpm = join(tmp, "new-npm");
@@ -1532,7 +1532,7 @@ describe("install-cli.sh", () => {
   });
 
   it("removes the Node staging directory when download fails", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-node-cleanup-"));
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-node-cleanup-"));
     const prefix = join(tmp, "prefix");
     const stagingDir = join(tmp, "node-staging");
 
@@ -1564,7 +1564,7 @@ describe("install-cli.sh", () => {
   });
 
   it("removes the workspace rewrite temp file when rewriting fails", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-workspace-cleanup-"));
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-workspace-cleanup-"));
     const repo = join(tmp, "repo");
     const workspaceFile = join(repo, "pnpm-workspace.yaml");
     const rewriteTemp = join(tmp, "workspace-rewrite");
@@ -1600,7 +1600,7 @@ describe("install-cli.sh", () => {
   });
 
   it("does not emit --before when raw user npmrc config contains min-release-age", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-npmrc-"));
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-npmrc-"));
     const bin = join(tmp, "bin");
     const npmrc = join(tmp, "user.npmrc");
     const installArgs = join(tmp, "npm-install-args.txt");
@@ -1608,7 +1608,7 @@ describe("install-cli.sh", () => {
     const nodeDir = join(tmp, "node");
     mkdirSync(bin, { recursive: true });
     mkdirSync(nodeDir, { recursive: true });
-    writeInstalledOpenClawEntry(nodeDir);
+    writeInstalledAforaEntry(nodeDir);
     writeFileSync(npmrc, "min-release-age=7\n");
     const fakeNpm = join(bin, "npm");
     writeFileSync(
@@ -1644,8 +1644,8 @@ describe("install-cli.sh", () => {
           "log() { :; }",
           `PREFIX=${JSON.stringify(prefix)}`,
           "SET_NPM_PREFIX=0",
-          "OPENCLAW_VERSION=1.2.3",
-          "install_openclaw",
+          "AFORA_VERSION=1.2.3",
+          "install_afora",
         ].join("\n"),
         {
           NPM_CONFIG_USERCONFIG: npmrc,
@@ -1672,7 +1672,7 @@ describe("install-cli.sh", () => {
       source: "builtin" as const,
     },
   ])("$name", ({ source }) => {
-    const tmp = mkdtempSync(join(tmpdir(), `openclaw-install-cli-${source}-npmrc-`));
+    const tmp = mkdtempSync(join(tmpdir(), `afora-install-cli-${source}-npmrc-`));
     const bin = join(tmp, "bin");
     const home = join(tmp, "home");
     const prefix = join(tmp, "prefix");
@@ -1684,7 +1684,7 @@ describe("install-cli.sh", () => {
     mkdirSync(bin, { recursive: true });
     mkdirSync(home, { recursive: true });
     mkdirSync(nodeDir, { recursive: true });
-    writeInstalledOpenClawEntry(nodeDir);
+    writeInstalledAforaEntry(nodeDir);
     if (source === "global") {
       mkdirSync(join(prefix, "etc"), { recursive: true });
     }
@@ -1728,8 +1728,8 @@ describe("install-cli.sh", () => {
           "log() { :; }",
           `PREFIX=${JSON.stringify(installPrefix)}`,
           "SET_NPM_PREFIX=0",
-          "OPENCLAW_VERSION=1.2.3",
-          "install_openclaw",
+          "AFORA_VERSION=1.2.3",
+          "install_afora",
         ].join("\n"),
         {
           HOME: home,
@@ -1753,16 +1753,16 @@ describe("install-cli.sh", () => {
     }
   });
 
-  it("rejects OpenClaw GitHub source targets for npm installs", () => {
+  it("rejects Afora GitHub source targets for npm installs", () => {
     const result = runInstallCliShell(`
       set -euo pipefail
       source "${SCRIPT_PATH}"
-      OPENCLAW_VERSION=main
-      install_openclaw
+      AFORA_VERSION=main
+      install_afora
     `);
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain("npm installs do not support OpenClaw GitHub source targets");
+    expect(result.stdout).toContain("npm installs do not support Afora GitHub source targets");
     expect(result.stdout).toContain("--install-method git --version main");
   });
 
@@ -1804,9 +1804,9 @@ describe("install-cli.sh", () => {
       status: 1,
     },
   ])(
-    "keeps openclaw@$requested immutable across $outcome npm installs",
+    "keeps afora@$requested immutable across $outcome npm installs",
     ({ requested, outcome, error, calls: expectedCalls, status }) => {
-      const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-npm-retry-"));
+      const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-npm-retry-"));
       const fakeNpm = join(tmp, "npm");
       const calls = join(tmp, "calls");
       const nodeDir = join(tmp, "node");
@@ -1822,10 +1822,10 @@ describe("install-cli.sh", () => {
             `node_dir() { printf '%s\\n' ${JSON.stringify(nodeDir)}; }`,
             "npm_config_has_raw_key() { return 1; }",
             `PREFIX=${JSON.stringify(prefix)}`,
-            `OPENCLAW_VERSION=${requested}`,
+            `AFORA_VERSION=${requested}`,
             "JSON=1",
             "set +e",
-            "install_openclaw",
+            "install_afora",
             "status=$?",
             'exit "$status"',
           ].join("\n"),
@@ -1833,21 +1833,21 @@ describe("install-cli.sh", () => {
             NPM_FAKE_CALLS: calls,
             NPM_FAKE_ERROR: error,
             NPM_FAKE_OUTCOME: outcome,
-            NPM_FAKE_PACKAGE_DIR: join(nodeDir, "lib", "node_modules", "openclaw"),
+            NPM_FAKE_PACKAGE_DIR: join(nodeDir, "lib", "node_modules", "afora"),
           },
         );
 
         expect(result.status).toBe(status);
         expect(readFileSync(calls, "utf8").trim().split("\n")).toEqual(
-          Array.from({ length: expectedCalls }, () => `openclaw@${requested}`),
+          Array.from({ length: expectedCalls }, () => `afora@${requested}`),
         );
         if (status !== 0) {
           expect(result.stderr).toContain(`${error} (attempt 2)`);
           expect(result.stdout).not.toContain('"status":"ok"');
-          expect(existsSync(join(prefix, "bin", "openclaw"))).toBe(false);
+          expect(existsSync(join(prefix, "bin", "afora"))).toBe(false);
         }
         if (requested !== "next") {
-          expect(`${result.stdout}\n${result.stderr}`).not.toContain("openclaw@next");
+          expect(`${result.stdout}\n${result.stderr}`).not.toContain("afora@next");
         }
       } finally {
         rmSync(tmp, { force: true, recursive: true });
@@ -1855,8 +1855,8 @@ describe("install-cli.sh", () => {
     },
   );
 
-  it("fails after retrying the exact npm spec when npm exits zero without installing OpenClaw", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-empty-success-"));
+  it("fails after retrying the exact npm spec when npm exits zero without installing Afora", () => {
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-empty-success-"));
     const fakeNpm = join(tmp, "npm");
     const calls = join(tmp, "calls");
     const nodeDir = join(tmp, "node");
@@ -1872,9 +1872,9 @@ describe("install-cli.sh", () => {
           `node_dir() { printf '%s\\n' ${JSON.stringify(nodeDir)}; }`,
           "npm_config_has_raw_key() { return 1; }",
           `PREFIX=${JSON.stringify(prefix)}`,
-          "OPENCLAW_VERSION=latest",
+          "AFORA_VERSION=latest",
           "JSON=1",
-          "install_openclaw",
+          "install_afora",
         ].join("\n"),
         {
           NPM_FAKE_CALLS: calls,
@@ -1885,27 +1885,27 @@ describe("install-cli.sh", () => {
 
       expect(result.status).toBe(1);
       expect(readFileSync(calls, "utf8").trim().split("\n")).toEqual([
-        "openclaw@latest",
-        "openclaw@latest",
+        "afora@latest",
+        "afora@latest",
       ]);
-      expect(result.stdout).toContain("npm install did not produce a usable OpenClaw package");
+      expect(result.stdout).toContain("npm install did not produce a usable Afora package");
       expect(result.stdout).not.toContain('"status":"ok"');
-      expect(result.stdout).not.toContain("openclaw@next");
-      expect(existsSync(join(prefix, "bin", "openclaw"))).toBe(false);
+      expect(result.stdout).not.toContain("afora@next");
+      expect(existsSync(join(prefix, "bin", "afora"))).toBe(false);
     } finally {
       rmSync(tmp, { force: true, recursive: true });
     }
   });
 
   it("does not emit before args when npmrc min-release-age computes a before cutoff", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-freshness-"));
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-freshness-"));
     const prefix = join(tmp, "prefix");
     const home = join(tmp, "home");
     const nodeBin = join(prefix, "tools/node-v24.15.0/bin");
     const argsLog = join(tmp, "npm-args.log");
     mkdirSync(nodeBin, { recursive: true });
     mkdirSync(home, { recursive: true });
-    writeInstalledOpenClawEntry(join(prefix, "tools", "node-v24.15.0"));
+    writeInstalledAforaEntry(join(prefix, "tools", "node-v24.15.0"));
     writeFileSync(join(home, ".npmrc"), "min-release-age=7\n");
     writeNpmFreshnessConflictFixture(join(nodeBin, "npm"), argsLog);
 
@@ -1916,11 +1916,11 @@ describe("install-cli.sh", () => {
         [
           "set -euo pipefail",
           `HOME=${JSON.stringify(home)}`,
-          `OPENCLAW_PREFIX=${JSON.stringify(prefix)}`,
-          "OPENCLAW_VERSION=2026.5.19",
+          `AFORA_PREFIX=${JSON.stringify(prefix)}`,
+          "AFORA_VERSION=2026.5.19",
           `source ${JSON.stringify(SCRIPT_PATH)}`,
           "ensure_git() { return 0; }",
-          "install_openclaw",
+          "install_afora",
         ].join("\n"),
       );
       argsOutput = readFileSync(argsLog, "utf8");
@@ -1934,7 +1934,7 @@ describe("install-cli.sh", () => {
   });
 
   it("ignores project npmrc when choosing global install freshness args", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "openclaw-install-cli-global-freshness-"));
+    const tmp = mkdtempSync(join(tmpdir(), "afora-install-cli-global-freshness-"));
     const prefix = join(tmp, "prefix");
     const home = join(tmp, "home");
     const project = join(tmp, "project");
@@ -1943,7 +1943,7 @@ describe("install-cli.sh", () => {
     mkdirSync(nodeBin, { recursive: true });
     mkdirSync(home, { recursive: true });
     mkdirSync(project, { recursive: true });
-    writeInstalledOpenClawEntry(join(prefix, "tools", "node-v24.15.0"));
+    writeInstalledAforaEntry(join(prefix, "tools", "node-v24.15.0"));
     writeFileSync(join(home, ".npmrc"), "before=2026-01-01T00:00:00.000Z\n");
     writeFileSync(join(project, ".npmrc"), "min-release-age=7\n");
     writeNpmBeforePolicyFixture(join(nodeBin, "npm"), argsLog);
@@ -1956,11 +1956,11 @@ describe("install-cli.sh", () => {
           "set -euo pipefail",
           `cd ${JSON.stringify(project)}`,
           `HOME=${JSON.stringify(home)}`,
-          `OPENCLAW_PREFIX=${JSON.stringify(prefix)}`,
-          "OPENCLAW_VERSION=2026.5.19",
+          `AFORA_PREFIX=${JSON.stringify(prefix)}`,
+          "AFORA_VERSION=2026.5.19",
           `source ${JSON.stringify(process.cwd() + "/" + SCRIPT_PATH)}`,
           "ensure_git() { return 0; }",
-          "install_openclaw",
+          "install_afora",
         ].join("\n"),
       );
       argsOutput = readFileSync(argsLog, "utf8");

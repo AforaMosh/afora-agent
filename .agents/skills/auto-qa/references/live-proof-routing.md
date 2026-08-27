@@ -1,4 +1,4 @@
-# OpenClaw live proof routing
+# Afora live proof routing
 
 Determine the actual current command and owner from root and scoped
 `AGENTS.md`, the current source tree, package scripts, and existing scenario
@@ -6,7 +6,7 @@ inventory. Do not preserve stale invocation details as product contracts.
 
 ## Providers and scenarios
 
-Read `.agents/skills/openclaw-qa-testing/SKILL.md`,
+Read `.agents/skills/afora-qa-testing/SKILL.md`,
 `qa/scenarios/index.yaml`, and the currently owning QA suite. Derive the
 `live-frontier` provider and current authorized `openai/<model>` from the
 user's request, the current QA skill, and the actual available model catalog.
@@ -24,7 +24,7 @@ Preserve redacted artifact paths, provider/model identity, exact command, run
 ID, and the actual executed/passed/skipped counts.
 
 A standard `pnpm build` intentionally excludes private QA plugins. Run QA from
-the source checkout or explicitly build with `OPENCLAW_BUILD_PRIVATE_QA=1`.
+the source checkout or explicitly build with `AFORA_BUILD_PRIVATE_QA=1`.
 Place QA output under the repo-relative `.artifacts/` directory.
 
 ## Gateway, package, and apps
@@ -53,7 +53,7 @@ actually available and exercised. Source inspection is not runtime proof.
 
 ## Execution host
 
-Follow `.agents/skills/openclaw-testing/SKILL.md` for the current-host gate.
+Follow `.agents/skills/afora-testing/SKILL.md` for the current-host gate.
 Run capable trusted-source Linux suites, packaging, Docker, browser, and live
 provider proof directly on a dedicated Linux worker. When another capability
 or boundary requires Crabbox, acquire a trusted lease only when needed and

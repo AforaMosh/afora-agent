@@ -1,5 +1,5 @@
-import { stringEnum } from "openclaw/plugin-sdk/channel-actions";
-import type { AnyAgentTool } from "openclaw/plugin-sdk/plugin-entry";
+import { stringEnum } from "afora-agent/plugin-sdk/channel-actions";
+import type { AnyAgentTool } from "afora-agent/plugin-sdk/plugin-entry";
 import { Type } from "typebox";
 
 export const OLLAMA_NODE_INFERENCE_CAPABILITY = "local-inference";

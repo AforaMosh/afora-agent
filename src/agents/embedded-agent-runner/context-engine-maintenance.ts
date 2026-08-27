@@ -2,10 +2,10 @@
  * Schedules and runs deferred context-engine turn maintenance.
  */
 import { randomUUID } from "node:crypto";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { resolveSessionStorePathCore } from "../../config/sessions/paths.js";
 import { publishTranscriptUpdate } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveContextEngineOwnerPluginId } from "../../context-engine/registry.js";
 import type {
   ContextEngine,
@@ -43,7 +43,7 @@ const TURN_MAINTENANCE_TASK_KIND = "context_engine_turn_maintenance";
 const TURN_MAINTENANCE_LANE_PREFIX = "context-engine-turn-maintenance:";
 const TURN_MAINTENANCE_LONG_WAIT_MS = 10_000;
 const DEFERRED_TURN_MAINTENANCE_ABORT_STATE_KEY = Symbol.for(
-  "openclaw.contextEngineTurnMaintenanceAbortState",
+  "afora.contextEngineTurnMaintenanceAbortState",
 );
 type SessionManagerRewriteLock = <T>(operation: () => Promise<T> | T) => Promise<T>;
 
@@ -63,7 +63,7 @@ type ContextEngineMaintenanceParams = {
   executionMode?: "foreground" | "background";
   onDeferredMaintenance?: (promise: Promise<void>) => void;
   onDeferredMaintenanceFailure?: (error: unknown) => void;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   disposeDeferredContextEngineAfterMaintenance?: boolean;
 };
 
@@ -179,7 +179,7 @@ function resetDeferredTurnMaintenanceStateForTest(): void {
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
   (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.contextEngineMaintenanceTestApi")
+    Symbol.for("afora.contextEngineMaintenanceTestApi")
   ] = {
     createDeferredTurnMaintenanceAbortSignal,
     resetDeferredTurnMaintenanceStateForTest,

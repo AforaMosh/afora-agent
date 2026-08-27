@@ -5,7 +5,7 @@
  */
 import { AsyncLocalStorage } from "node:async_hooks";
 import { isDeepStrictEqual } from "node:util";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { isSecretRef } from "../../config/types.secrets.js";
 import { isRecord } from "../../utils.js";
 import { cloneAuthProfileStore } from "./clone.js";
@@ -76,7 +76,7 @@ import type { AuthProfileStore, RuntimeAuthProfileStore } from "./types.js";
 
 type LoadAuthProfileStoreOptions = {
   allowKeychainPrompt?: boolean;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   database?: AuthProfileDatabase;
   externalCli?: ExternalCliAuthDiscovery;
   inheritedAuthDir?: string;
@@ -188,7 +188,7 @@ function preserveLegacyOAuthRefsOnSave(params: {
 
 type ResolvedExternalCliOverlayOptions = {
   allowKeychainPrompt?: boolean;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   externalCliProviderIds?: Iterable<string>;
   externalCliProfileIds?: Iterable<string>;
 };
@@ -230,7 +230,7 @@ const testing = {
   },
 };
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.authProfileStoreTestApi")] =
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.authProfileStoreTestApi")] =
     testing;
 }
 
@@ -386,7 +386,7 @@ function maybeSyncPersistedExternalCliAuthProfiles(params: {
   if (
     params.options?.readOnly === true ||
     params.options?.syncExternalCli === false ||
-    process.env.OPENCLAW_AUTH_STORE_READONLY === "1"
+    process.env.AFORA_AUTH_STORE_READONLY === "1"
   ) {
     return { store: params.store, cacheable: true };
   }
@@ -1095,7 +1095,7 @@ export function ensureAuthProfileStore(
   agentDir?: string,
   options?: {
     allowKeychainPrompt?: boolean;
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     externalCli?: ExternalCliAuthDiscovery;
     externalCliProviderIds?: Iterable<string>;
     externalCliProfileIds?: Iterable<string>;
@@ -1698,7 +1698,7 @@ export function saveAuthProfileStoreIfPersistenceSnapshotMatches(params: {
           captureRuntimeAuthProfileStorePersistenceSnapshot(
             agentDir,
             params.stateDir && agentDir === undefined
-              ? resolveSharedAuthPath({ ...process.env, OPENCLAW_STATE_DIR: params.stateDir })
+              ? resolveSharedAuthPath({ ...process.env, AFORA_STATE_DIR: params.stateDir })
               : undefined,
           ),
         );
@@ -1708,7 +1708,7 @@ export function saveAuthProfileStoreIfPersistenceSnapshotMatches(params: {
           captureRuntimeAuthProfileStorePersistenceSnapshot(
             params.agentDir,
             params.stateDir && params.agentDir === undefined
-              ? resolveSharedAuthPath({ ...process.env, OPENCLAW_STATE_DIR: params.stateDir })
+              ? resolveSharedAuthPath({ ...process.env, AFORA_STATE_DIR: params.stateDir })
               : undefined,
           ),
         );

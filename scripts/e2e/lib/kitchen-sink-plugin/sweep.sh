@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-source scripts/lib/openclaw-e2e-instance.sh
+source scripts/lib/afora-e2e-instance.sh
 
 KITCHEN_SINK_SWEEP_SOURCE_ONLY="${KITCHEN_SINK_SWEEP_SOURCE_ONLY:-0}"
-if [[ -z "${OPENCLAW_ENTRY:-}" && "$KITCHEN_SINK_SWEEP_SOURCE_ONLY" != "1" ]]; then
-  OPENCLAW_ENTRY="$(openclaw_e2e_resolve_entrypoint)"
+if [[ -z "${AFORA_ENTRY:-}" && "$KITCHEN_SINK_SWEEP_SOURCE_ONLY" != "1" ]]; then
+  AFORA_ENTRY="$(afora_e2e_resolve_entrypoint)"
 fi
-export OPENCLAW_ENTRY
+export AFORA_ENTRY
 KITCHEN_SINK_CREATED_TMP_DIR=0
 if [[ -z "${KITCHEN_SINK_TMP_DIR:-}" ]]; then
-  KITCHEN_SINK_TMP_DIR="$(mktemp -d "/tmp/openclaw-kitchen-sink.XXXXXX")"
+  KITCHEN_SINK_TMP_DIR="$(mktemp -d "/tmp/afora-kitchen-sink.XXXXXX")"
   KITCHEN_SINK_CREATED_TMP_DIR=1
 else
   mkdir -p "$KITCHEN_SINK_TMP_DIR"
@@ -22,7 +22,7 @@ KITCHEN_SINK_CLAWHUB_PID_FILE=""
 
 cleanup_kitchen_sink_sweep() {
   if [[ -n "${KITCHEN_SINK_CLAWHUB_PID_FILE:-}" && -f "$KITCHEN_SINK_CLAWHUB_PID_FILE" ]]; then
-    openclaw_e2e_stop_process "$(cat "$KITCHEN_SINK_CLAWHUB_PID_FILE" 2>/dev/null || true)"
+    afora_e2e_stop_process "$(cat "$KITCHEN_SINK_CLAWHUB_PID_FILE" 2>/dev/null || true)"
   fi
   if [[ -n "${KITCHEN_SINK_CLAWHUB_FIXTURE_DIR:-}" ]]; then
     rm -rf "$KITCHEN_SINK_CLAWHUB_FIXTURE_DIR"
@@ -34,13 +34,13 @@ cleanup_kitchen_sink_sweep() {
 
 if [[ "$KITCHEN_SINK_SWEEP_SOURCE_ONLY" != "1" ]]; then
   trap cleanup_kitchen_sink_sweep EXIT
-  openclaw_e2e_eval_test_state_from_b64 "${OPENCLAW_TEST_STATE_SCRIPT_B64:?missing OPENCLAW_TEST_STATE_SCRIPT_B64}"
+  afora_e2e_eval_test_state_from_b64 "${AFORA_TEST_STATE_SCRIPT_B64:?missing AFORA_TEST_STATE_SCRIPT_B64}"
 fi
 
 print_kitchen_sink_log() {
   local log_file="$1"
   local max_bytes
-  max_bytes="$(openclaw_e2e_read_positive_int_env OPENCLAW_DOCKER_E2E_LOG_PRINT_BYTES 65536)" || return $?
+  max_bytes="$(afora_e2e_read_positive_int_env AFORA_DOCKER_E2E_LOG_PRINT_BYTES 65536)" || return $?
   if [ ! -f "$log_file" ]; then
     return 0
   fi
@@ -58,24 +58,24 @@ print_kitchen_sink_log() {
   tail -c "$max_bytes" "$log_file"
 }
 
-openclaw_e2e_read_positive_int_env OPENCLAW_DOCKER_E2E_LOG_PRINT_BYTES 65536 >/dev/null
+afora_e2e_read_positive_int_env AFORA_DOCKER_E2E_LOG_PRINT_BYTES 65536 >/dev/null
 
-run_kitchen_sink_openclaw_logged() {
+run_kitchen_sink_afora_logged() {
   local label="$1"
   shift
   local safe_label="${label//[^[:alnum:]._-]/_}"
   local log_file="${KITCHEN_SINK_TMP_DIR}/${safe_label}.log"
-  if ! openclaw_e2e_maybe_timeout "$KITCHEN_SINK_CLI_TIMEOUT" node "$OPENCLAW_ENTRY" "$@" >"$log_file" 2>&1; then
+  if ! afora_e2e_maybe_timeout "$KITCHEN_SINK_CLI_TIMEOUT" node "$AFORA_ENTRY" "$@" >"$log_file" 2>&1; then
     print_kitchen_sink_log "$log_file"
     return 1
   fi
   print_kitchen_sink_log "$log_file"
 }
 
-run_kitchen_sink_openclaw_capture() {
+run_kitchen_sink_afora_capture() {
   local output_file="$1"
   shift
-  openclaw_e2e_maybe_timeout "$KITCHEN_SINK_CLI_TIMEOUT" node "$OPENCLAW_ENTRY" "$@" >"$output_file"
+  afora_e2e_maybe_timeout "$KITCHEN_SINK_CLI_TIMEOUT" node "$AFORA_ENTRY" "$@" >"$output_file"
 }
 
 run_expect_failure() {
@@ -108,10 +108,10 @@ start_kitchen_sink_clawhub_fixture_server() {
   KITCHEN_SINK_CLAWHUB_PID_FILE="$server_pid_file"
 
   local wait_attempts
-  wait_attempts="$(openclaw_e2e_read_positive_int_env OPENCLAW_CLAWHUB_FIXTURE_WAIT_ATTEMPTS 600)" || return $?
+  wait_attempts="$(afora_e2e_read_positive_int_env AFORA_CLAWHUB_FIXTURE_WAIT_ATTEMPTS 600)" || return $?
   for _ in $(seq 1 "$wait_attempts"); do
     if [[ -s "$server_port_file" ]]; then
-      export OPENCLAW_CLAWHUB_URL="http://127.0.0.1:$(cat "$server_port_file")"
+      export AFORA_CLAWHUB_URL="http://127.0.0.1:$(cat "$server_port_file")"
       return 0
     fi
     if ! kill -0 "$server_pid" 2>/dev/null; then
@@ -155,44 +155,44 @@ run_success_scenario() {
   echo "Testing ${KITCHEN_SINK_LABEL} install from ${KITCHEN_SINK_SPEC}..."
   local install_args=("$KITCHEN_SINK_SPEC")
   if [ -n "${KITCHEN_SINK_PREINSTALL_SPEC:-}" ]; then
-    run_kitchen_sink_openclaw_logged "kitchen-sink-preinstall-${KITCHEN_SINK_LABEL}" plugins install "$KITCHEN_SINK_PREINSTALL_SPEC" --force
+    run_kitchen_sink_afora_logged "kitchen-sink-preinstall-${KITCHEN_SINK_LABEL}" plugins install "$KITCHEN_SINK_PREINSTALL_SPEC" --force
     assert_kitchen_sink_cutover_preinstalled
     install_args+=("--force")
   fi
-  run_kitchen_sink_openclaw_logged "kitchen-sink-install-${KITCHEN_SINK_LABEL}" plugins install "${install_args[@]}" --force
+  run_kitchen_sink_afora_logged "kitchen-sink-install-${KITCHEN_SINK_LABEL}" plugins install "${install_args[@]}" --force
   configure_kitchen_sink_runtime
-  run_kitchen_sink_openclaw_logged "kitchen-sink-enable-${KITCHEN_SINK_LABEL}" plugins enable "$KITCHEN_SINK_ID"
-  run_kitchen_sink_openclaw_capture "${KITCHEN_SINK_TMP_DIR}/kitchen-sink-${KITCHEN_SINK_LABEL}-plugins.json" plugins list --json
-  run_kitchen_sink_openclaw_capture "${KITCHEN_SINK_TMP_DIR}/kitchen-sink-${KITCHEN_SINK_LABEL}-inspect.json" plugins inspect "$KITCHEN_SINK_ID" --runtime --json
-  run_kitchen_sink_openclaw_capture "${KITCHEN_SINK_TMP_DIR}/kitchen-sink-${KITCHEN_SINK_LABEL}-inspect-all.json" plugins inspect --all --runtime --json
+  run_kitchen_sink_afora_logged "kitchen-sink-enable-${KITCHEN_SINK_LABEL}" plugins enable "$KITCHEN_SINK_ID"
+  run_kitchen_sink_afora_capture "${KITCHEN_SINK_TMP_DIR}/kitchen-sink-${KITCHEN_SINK_LABEL}-plugins.json" plugins list --json
+  run_kitchen_sink_afora_capture "${KITCHEN_SINK_TMP_DIR}/kitchen-sink-${KITCHEN_SINK_LABEL}-inspect.json" plugins inspect "$KITCHEN_SINK_ID" --runtime --json
+  run_kitchen_sink_afora_capture "${KITCHEN_SINK_TMP_DIR}/kitchen-sink-${KITCHEN_SINK_LABEL}-inspect-all.json" plugins inspect --all --runtime --json
   assert_kitchen_sink_installed
   if [ "$KITCHEN_SINK_SOURCE" = "clawhub" ]; then
-    run_kitchen_sink_openclaw_logged "kitchen-sink-uninstall-${KITCHEN_SINK_LABEL}" plugins uninstall "$KITCHEN_SINK_SPEC" --force
+    run_kitchen_sink_afora_logged "kitchen-sink-uninstall-${KITCHEN_SINK_LABEL}" plugins uninstall "$KITCHEN_SINK_SPEC" --force
   else
-    run_kitchen_sink_openclaw_logged "kitchen-sink-uninstall-${KITCHEN_SINK_LABEL}" plugins uninstall "$KITCHEN_SINK_ID" --force
+    run_kitchen_sink_afora_logged "kitchen-sink-uninstall-${KITCHEN_SINK_LABEL}" plugins uninstall "$KITCHEN_SINK_ID" --force
   fi
   remove_kitchen_sink_channel_config
-  run_kitchen_sink_openclaw_capture "${KITCHEN_SINK_TMP_DIR}/kitchen-sink-${KITCHEN_SINK_LABEL}-uninstalled.json" plugins list --json
+  run_kitchen_sink_afora_capture "${KITCHEN_SINK_TMP_DIR}/kitchen-sink-${KITCHEN_SINK_LABEL}-uninstalled.json" plugins list --json
   assert_kitchen_sink_removed
 }
 
 run_failure_scenario() {
   echo "Testing expected ${KITCHEN_SINK_LABEL} install failure from ${KITCHEN_SINK_SPEC}..."
-  run_expect_failure "install-${KITCHEN_SINK_LABEL}" openclaw_e2e_maybe_timeout "$KITCHEN_SINK_CLI_TIMEOUT" node "$OPENCLAW_ENTRY" plugins install "$KITCHEN_SINK_SPEC" --force
+  run_expect_failure "install-${KITCHEN_SINK_LABEL}" afora_e2e_maybe_timeout "$KITCHEN_SINK_CLI_TIMEOUT" node "$AFORA_ENTRY" plugins install "$KITCHEN_SINK_SPEC" --force
   remove_kitchen_sink_channel_config
-  run_kitchen_sink_openclaw_capture "${KITCHEN_SINK_TMP_DIR}/kitchen-sink-${KITCHEN_SINK_LABEL}-uninstalled.json" plugins list --json
+  run_kitchen_sink_afora_capture "${KITCHEN_SINK_TMP_DIR}/kitchen-sink-${KITCHEN_SINK_LABEL}-uninstalled.json" plugins list --json
   assert_kitchen_sink_removed
 }
 
 run_kitchen_sink_sweep_main() {
   if [[ "$KITCHEN_SINK_SCENARIOS" == *"clawhub:"* ]]; then
-    if [[ "${OPENCLAW_KITCHEN_SINK_LIVE_CLAWHUB:-0}" = "1" ]]; then
-      export OPENCLAW_CLAWHUB_URL="${OPENCLAW_CLAWHUB_URL:-${CLAWHUB_URL:-https://clawhub.ai}}"
+    if [[ "${AFORA_KITCHEN_SINK_LIVE_CLAWHUB:-0}" = "1" ]]; then
+      export AFORA_CLAWHUB_URL="${AFORA_CLAWHUB_URL:-${CLAWHUB_URL:-https://clawhub.ai}}"
     else
-      if [[ -n "${OPENCLAW_CLAWHUB_URL:-}" || -n "${CLAWHUB_URL:-}" ]]; then
-        echo "Ignoring ambient ClawHub URL for fixture-mode kitchen-sink E2E; set OPENCLAW_KITCHEN_SINK_LIVE_CLAWHUB=1 for live ClawHub."
+      if [[ -n "${AFORA_CLAWHUB_URL:-}" || -n "${CLAWHUB_URL:-}" ]]; then
+        echo "Ignoring ambient ClawHub URL for fixture-mode kitchen-sink E2E; set AFORA_KITCHEN_SINK_LIVE_CLAWHUB=1 for live ClawHub."
       fi
-      unset OPENCLAW_CLAWHUB_URL CLAWHUB_URL
+      unset AFORA_CLAWHUB_URL CLAWHUB_URL
       clawhub_fixture_dir="$(mktemp -d "${KITCHEN_SINK_TMP_DIR}/clawhub.XXXXXX")"
       start_kitchen_sink_clawhub_fixture_server "$clawhub_fixture_dir"
     fi
@@ -210,7 +210,7 @@ run_kitchen_sink_sweep_main() {
     export KITCHEN_SINK_SOURCE="$source"
     export KITCHEN_SINK_SURFACE_MODE="$surface_mode"
     export KITCHEN_SINK_PERSONALITY="${personality:-}"
-    export OPENCLAW_KITCHEN_SINK_PERSONALITY="${personality:-}"
+    export AFORA_KITCHEN_SINK_PERSONALITY="${personality:-}"
     export KITCHEN_SINK_PREINSTALL_SPEC="${preinstall_spec:-}"
     case "$expectation" in
     success)

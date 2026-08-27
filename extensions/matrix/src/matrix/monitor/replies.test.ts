@@ -322,19 +322,19 @@ describe("deliverMatrixReplies", () => {
       runtime: runtimeEnv,
       textLimit: 4000,
       replyToMode: "all",
-      mediaLocalRoots: ["/tmp/openclaw-matrix-test"],
+      mediaLocalRoots: ["/tmp/afora-matrix-test"],
     });
 
     expect(sendMessageMatrixMock).toHaveBeenCalledTimes(3);
     expect(sendCall(0)[0]).toBe("room:2");
     expect(sendCall(0)[1]).toBe("caption");
     expect(sendOptions(0).mediaUrl).toBe("https://example.com/a.jpg");
-    expect(sendOptions(0).mediaLocalRoots).toEqual(["/tmp/openclaw-matrix-test"]);
+    expect(sendOptions(0).mediaLocalRoots).toEqual(["/tmp/afora-matrix-test"]);
     expect(sendOptions(0).replyToId).toBe("reply-media");
     expect(sendCall(1)[0]).toBe("room:2");
     expect(sendCall(1)[1]).toBe("");
     expect(sendOptions(1).mediaUrl).toBe("https://example.com/b.jpg");
-    expect(sendOptions(1).mediaLocalRoots).toEqual(["/tmp/openclaw-matrix-test"]);
+    expect(sendOptions(1).mediaLocalRoots).toEqual(["/tmp/afora-matrix-test"]);
     expect(sendOptions(1).replyToId).toBe("reply-media");
     expect(sendOptions(2).replyToId).toBe("reply-text");
   });

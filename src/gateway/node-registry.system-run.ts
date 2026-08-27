@@ -1,4 +1,4 @@
-import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
+import { resolveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
 
 /** Normalize system.run timeout values, preserving null for no expiry. */
 export function normalizeSystemRunTimeoutMs(value: unknown): number | null | undefined {

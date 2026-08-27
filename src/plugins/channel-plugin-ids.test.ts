@@ -1,13 +1,13 @@
 /** Tests channel plugin id resolution from config, manifests, and installed state. */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
 import type { InstalledPluginIndex, InstalledPluginIndexRecord } from "./installed-plugin-index.js";
 import type { PluginManifestRecord, PluginManifestRegistry } from "./manifest-registry.js";
 
 const listPotentialConfiguredChannelIds = vi.hoisted(() => vi.fn());
 const listExplicitlyDisabledChannelIdsForConfig = vi.hoisted(() =>
-  vi.fn((config: OpenClawConfig) => {
+  vi.fn((config: AforaConfig) => {
     return Object.entries(config.channels ?? {})
       .filter(([, value]) => {
         return (
@@ -91,7 +91,7 @@ function withManifestLoadPaths<T extends { id: string }>(
   return {
     rootDir: `/tmp/plugins/${plugin.id}`,
     source: `/tmp/plugins/${plugin.id}/index.ts`,
-    manifestPath: `/tmp/plugins/${plugin.id}/openclaw.plugin.json`,
+    manifestPath: `/tmp/plugins/${plugin.id}/afora.plugin.json`,
     skills: [],
     hooks: [],
     ...plugin,
@@ -403,8 +403,8 @@ function useManifestRegistryFixture(
 }
 
 function expectStartupPluginIds(params: {
-  config: OpenClawConfig;
-  activationSourceConfig?: OpenClawConfig;
+  config: AforaConfig;
+  activationSourceConfig?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   workerProviderIds?: readonly string[];
   expected: readonly string[];
@@ -501,12 +501,12 @@ function createStartupConfig(params: {
     };
   }
 
-  return config as OpenClawConfig;
+  return config as AforaConfig;
 }
 
 describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
   beforeEach(() => {
-    listPotentialConfiguredChannelIds.mockReset().mockImplementation((config: OpenClawConfig) => {
+    listPotentialConfiguredChannelIds.mockReset().mockImplementation((config: AforaConfig) => {
       if (Object.hasOwn(config, "channels")) {
         return Object.keys(config.channels ?? {});
       }
@@ -514,7 +514,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
     });
     listPotentialConfiguredChannelPresenceSignals
       .mockReset()
-      .mockImplementation((config: OpenClawConfig) => {
+      .mockImplementation((config: AforaConfig) => {
         return listPotentialConfiguredChannelIds(config).map((channelId: string) => ({
           channelId,
           source: "env",
@@ -540,7 +540,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
     ],
     [
       "keeps bundled startup sidecars with enabledByDefault at idle startup",
-      {} as OpenClawConfig,
+      {} as AforaConfig,
       ["demo-channel", "browser", "memory-core"],
     ],
     [
@@ -567,7 +567,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["demo-channel", "browser", "amazon-bedrock", "memory-core"],
     ],
     [
@@ -579,7 +579,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           },
         },
         plugins: { entries: { "amazon-bedrock": { enabled: false } } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["demo-channel", "browser", "memory-core"],
     ],
     [
@@ -587,7 +587,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
       {
         channels: {},
         tts: { provider: "microsoft" },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "microsoft", "memory-core"],
     ],
     [
@@ -595,7 +595,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
       {
         channels: {},
         tts: { providers: { "tts-local-cli": { command: "say" } } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "tts-local-cli", "memory-core"],
     ],
     [
@@ -603,7 +603,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
       {
         channels: {},
         tts: { provider: "edge" },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "microsoft", "memory-core"],
     ],
     [
@@ -612,7 +612,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         channels: {},
         tts: { provider: "gradium" },
         plugins: { entries: { gradium: { enabled: true } } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "gradium", "memory-core"],
     ],
     [
@@ -628,7 +628,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "microsoft", "memory-core"],
     ],
     [
@@ -646,7 +646,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         agents: {
           list: [{ id: "reader", tts: { persona: "narrator" } }],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "microsoft", "memory-core"],
     ],
     [
@@ -663,7 +663,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["demo-channel", "browser", "microsoft", "memory-core"],
     ],
     [
@@ -684,7 +684,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["demo-channel", "browser", "microsoft", "memory-core"],
     ],
     [
@@ -695,7 +695,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           provider: "microsoft",
           providers: { microsoft: { enabled: false } },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "memory-core"],
     ],
     [
@@ -704,7 +704,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         channels: {},
         tts: { provider: "microsoft" },
         plugins: { entries: { microsoft: { enabled: false } } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "memory-core"],
     ],
     [
@@ -723,7 +723,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "openai", "google", "memory-core"],
     ],
     [
@@ -738,7 +738,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           },
         },
         plugins: { entries: { google: { enabled: false } } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "memory-core"],
     ],
     [
@@ -753,7 +753,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "openai", "google", "memory-core"],
     ],
     [
@@ -766,7 +766,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           },
         },
         plugins: { entries: { openai: { enabled: false } } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "memory-core"],
     ],
     [
@@ -778,7 +778,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         agents: {
           defaults: {},
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "openai", "memory-core"],
     ],
     [
@@ -790,7 +790,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           allow: ["memory-core"],
           slots: { memory: "memory-core" },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["memory-core"],
     ],
     [
@@ -802,7 +802,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         agents: {
           defaults: {},
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "openai", "ollama", "memory-core"],
     ],
     [
@@ -812,7 +812,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         agents: {
           list: [{ id: "researcher", memory: { search: { provider: "openai" } } }],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "openai", "memory-core"],
     ],
     [
@@ -833,7 +833,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "ollama", "memory-core"],
     ],
     [
@@ -854,7 +854,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "openai", "ollama", "memory-core"],
     ],
     [
@@ -866,7 +866,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         agents: {
           defaults: {},
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "generic-embedding", "memory-core"],
     ],
     [
@@ -878,7 +878,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         agents: {
           defaults: {},
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "memory-core"],
     ],
     [
@@ -899,7 +899,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "memory-core"],
     ],
     [
@@ -914,7 +914,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         plugins: {
           slots: { memory: "none" },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser"],
     ],
     [
@@ -926,7 +926,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         agents: {
           defaults: {},
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "memory-core"],
     ],
     [
@@ -938,7 +938,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         agents: {
           defaults: {},
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "llama-cpp", "memory-core"],
     ],
     [
@@ -950,7 +950,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         agents: {
           defaults: {},
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "memory-core"],
     ],
     [
@@ -963,7 +963,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           defaults: {},
         },
         plugins: { entries: { openai: { enabled: false } } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "memory-core"],
     ],
     [
@@ -976,7 +976,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           defaults: {},
         },
         plugins: { deny: ["openai"] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "memory-core"],
     ],
     [
@@ -991,7 +991,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             { id: "researcher", memory: { search: { provider: "openai", fallback: "ollama" } } },
           ],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "memory-core"],
     ],
     [
@@ -1004,7 +1004,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           defaults: {},
           list: [{ id: "researcher", memory: { search: { enabled: true } } }],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "openai", "ollama", "memory-core"],
     ],
     [
@@ -1020,7 +1020,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             { id: "researcher", memory: { search: { provider: "ollama" } } },
           ],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "openai", "ollama", "memory-core"],
     ],
     [
@@ -1033,7 +1033,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           defaults: {},
           list: [{ id: "researcher" }],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "openai", "memory-core"],
     ],
     [
@@ -1056,7 +1056,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["brave"],
     ],
     [
@@ -1079,7 +1079,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       [],
     ],
     [
@@ -1102,7 +1102,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       [],
     ],
     [
@@ -1117,7 +1117,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           },
         },
         plugins: { allow: ["browser"] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser"],
     ],
     [
@@ -1136,7 +1136,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             "external-env-channel-plugin": { enabled: true },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "external-env-channel-plugin", "memory-core"],
     ],
     [
@@ -1150,7 +1150,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             "external-env-channel-plugin": { enabled: true },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ["browser", "memory-core"],
     ],
     [
@@ -1193,7 +1193,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             "external-env-channel-plugin": { enabled: true },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       expected: ["browser", "memory-core"],
     });
   });
@@ -1202,7 +1202,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
     const registry = createManifestRegistryFixture();
     registry.plugins.push(
       withManifestLoadPaths({
-        id: "openclaw-qqbot",
+        id: "afora-qqbot",
         channels: ["qqbot"],
         channelConfigs: {
           qqbot: {
@@ -1219,8 +1219,8 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
     const index = createInstalledPluginIndexFixture(registry);
     const sourceConfig = {
       channels: { qqbot: { appId: "app", clientSecret: "secret" } },
-      plugins: { entries: { "openclaw-qqbot": { enabled: true } } },
-    } as OpenClawConfig;
+      plugins: { entries: { "afora-qqbot": { enabled: true } } },
+    } as AforaConfig;
     const runtimeConfig = applyPluginAutoEnable({
       config: sourceConfig,
       env: createPluginPlanningTestEnv(),
@@ -1236,7 +1236,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         index,
         manifestRegistry: registry,
       }).pluginIds,
-    ).toContain("openclaw-qqbot");
+    ).toContain("afora-qqbot");
   });
 
   it("loads configured worker-provider owners from the activation source", () => {
@@ -1248,7 +1248,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           secondary: { provider: "STATIC-SSH" },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expectStartupPluginIds({
       config: activationSourceConfig,
@@ -1262,7 +1262,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
       channels: {},
       cloudWorkers: { profiles: { development: { provider: "static-ssh" } } },
       plugins: { allow: ["browser"] },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const effectiveConfig = applyPluginAutoEnable({
       config: authoredConfig,
       env: createPluginPlanningTestEnv(),
@@ -1278,7 +1278,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
 
   it("loads bundled worker-provider owners required by durable environments", () => {
     expectStartupPluginIds({
-      config: { channels: {} } as OpenClawConfig,
+      config: { channels: {} } as AforaConfig,
       workerProviderIds: [" Static-SSH ", "STATIC-SSH"],
       expected: ["browser", "memory-core", "qa-lab"],
     });
@@ -1286,7 +1286,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
 
   it("keeps durable external worker-provider owners behind explicit enablement", () => {
     expectStartupPluginIds({
-      config: { channels: {} } as OpenClawConfig,
+      config: { channels: {} } as AforaConfig,
       workerProviderIds: ["external-ssh"],
       expected: ["browser", "memory-core"],
     });
@@ -1294,7 +1294,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
       config: {
         channels: {},
         plugins: { entries: { "external-worker-provider": { enabled: true } } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       workerProviderIds: ["external-ssh"],
       expected: ["browser", "memory-core", "external-worker-provider"],
     });
@@ -1309,7 +1309,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         },
       },
       plugins: { entries: { "qa-lab": { enabled: false } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expectStartupPluginIds({
       config,
@@ -1327,7 +1327,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         },
       },
       plugins: { allow: ["browser"] },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expectStartupPluginIds({
       config,
@@ -1338,7 +1338,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
 
   it("keeps durable worker-provider owners behind disable and allowlist gates", () => {
     expectStartupPluginIds({
-      config: { channels: {}, plugins: { enabled: false } } as OpenClawConfig,
+      config: { channels: {}, plugins: { enabled: false } } as AforaConfig,
       workerProviderIds: ["static-ssh"],
       expected: [],
     });
@@ -1346,17 +1346,17 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
       config: {
         channels: {},
         plugins: { entries: { "qa-lab": { enabled: false } } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       workerProviderIds: ["static-ssh"],
       expected: ["browser", "memory-core"],
     });
     expectStartupPluginIds({
-      config: { channels: {}, plugins: { deny: ["qa-lab"] } } as OpenClawConfig,
+      config: { channels: {}, plugins: { deny: ["qa-lab"] } } as AforaConfig,
       workerProviderIds: ["static-ssh"],
       expected: ["browser", "memory-core"],
     });
     expectStartupPluginIds({
-      config: { channels: {}, plugins: { allow: ["browser"] } } as OpenClawConfig,
+      config: { channels: {}, plugins: { allow: ["browser"] } } as AforaConfig,
       workerProviderIds: ["static-ssh"],
       expected: ["browser"],
     });
@@ -1379,7 +1379,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expectStartupPluginIds({
       config: effectiveConfig,
@@ -1402,7 +1402,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
       plugins: {
         allow: ["browser"],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const effectiveConfig = {
       ...rawConfig,
       plugins: {
@@ -1413,7 +1413,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expectStartupPluginIds({
       config: effectiveConfig,
@@ -1433,7 +1433,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const runtimeConfig = {
       ...activationSourceConfig,
       plugins: {
@@ -1449,7 +1449,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expectStartupPluginIds({
       config: runtimeConfig,
@@ -1570,7 +1570,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         plugins: {
           slots: { memory: "none" },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     ],
     [
       "selected provider",
@@ -1621,7 +1621,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       expected: ["browser", "demo-config-startup"],
     });
   });
@@ -1639,7 +1639,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       expected: ["browser", "external-config-startup"],
     });
 
@@ -1654,7 +1654,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       expected: ["browser"],
     });
   });
@@ -1664,7 +1664,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
       enabled: true,
       config: { autoStart: { enabled: true } },
     };
-    const cases: Array<{ plugins: OpenClawConfig["plugins"]; expected: readonly string[] }> = [
+    const cases: Array<{ plugins: AforaConfig["plugins"]; expected: readonly string[] }> = [
       {
         plugins: {
           slots: { memory: "none" },
@@ -1705,7 +1705,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
 
     for (const testCase of cases) {
       expectStartupPluginIds({
-        config: { channels: {}, plugins: testCase.plugins } as OpenClawConfig,
+        config: { channels: {}, plugins: testCase.plugins } as AforaConfig,
         expected: testCase.expected,
       });
     }
@@ -1724,14 +1724,14 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const runtimeConfig = {
       ...activationSourceConfig,
       plugins: {
         ...activationSourceConfig.plugins,
         allow: ["browser", "external-config-startup"],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expectStartupPluginIds({
       config: runtimeConfig,
@@ -1881,7 +1881,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const runtimeConfig = {
       channels: {},
       plugins: {
@@ -1898,7 +1898,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expectStartupPluginIds({
       config: runtimeConfig,
@@ -1914,7 +1914,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         defaultProfile: "docker-cdp",
       },
       channels: {},
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const effectiveConfig = {
       ...rawConfig,
       plugins: {
@@ -1924,7 +1924,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expectStartupPluginIds({
       config: effectiveConfig,
@@ -1970,7 +1970,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
       { channelId: "demo-channel", source: "env" },
     ]);
 
-    const config = {} as OpenClawConfig;
+    const config = {} as AforaConfig;
 
     expectStartupPluginIds({
       config,
@@ -1992,7 +1992,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         plugins: {
           allow: ["browser"],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: createPluginPlanningTestEnv(),
       expected: ["demo-channel", "browser"],
     });
@@ -2016,7 +2016,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
               memory: "none",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2040,7 +2040,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
               memory: "none",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2067,7 +2067,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
               memory: "none",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2093,7 +2093,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
               memory: "memory-core",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2109,7 +2109,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         config: {
           channels: {},
           plugins: { allow: ["browser"], slots: { memory: "none" } },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
         workerProviderIds: ["static-ssh"],
@@ -2127,7 +2127,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           channels: {},
           cloudWorkers: { profiles: { development: { provider: "static-ssh" } } },
           plugins: { allow: ["browser"], slots: { memory: "none" } },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2153,7 +2153,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
               memory: "none",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2195,7 +2195,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
               memory: "none",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2235,7 +2235,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           plugins: {
             allow: ["openai"],
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2253,7 +2253,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             allow: ["browser"],
             bundledDiscovery: "compat",
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2275,7 +2275,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           plugins: {
             allow: ["browser"],
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2308,7 +2308,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
               memory: "none",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2336,7 +2336,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
               memory: "none",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2362,7 +2362,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
               memory: "none",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2390,7 +2390,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
               memory: "none",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2415,7 +2415,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
               memory: "none",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2441,7 +2441,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
               memory: "none",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2456,7 +2456,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
       resolveConfigValidationMetadataPluginIds({
         config: {
           channels: {},
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2478,7 +2478,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
           plugins: {
             enabled: false,
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2499,7 +2499,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
               paths: ["/tmp/plugins/custom"],
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2515,7 +2515,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             token: "stale",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: createPluginPlanningTestEnv(),
       expected: ["browser", "memory-core"],
     });
@@ -2524,14 +2524,14 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
   it("does not treat persisted auth alone as gateway startup intent", () => {
     listPotentialConfiguredChannelIds.mockImplementation(
       (
-        configForTest: OpenClawConfig,
+        configForTest: AforaConfig,
         _env: NodeJS.ProcessEnv,
         options?: { includePersistedAuthState?: boolean },
       ) => (options?.includePersistedAuthState === false ? [] : ["demo-channel"]),
     );
     listPotentialConfiguredChannelPresenceSignals.mockImplementation(
       (
-        _configForTest: OpenClawConfig,
+        _configForTest: AforaConfig,
         _env: NodeJS.ProcessEnv,
         options?: { includePersistedAuthState?: boolean },
       ) =>
@@ -2541,9 +2541,9 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
     );
 
     expectStartupPluginIds({
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       env: createPluginPlanningTestEnv({
-        OPENCLAW_STATE_DIR: "/tmp/openclaw-with-persisted-demo-channel",
+        AFORA_STATE_DIR: "/tmp/afora-with-persisted-demo-channel",
       }),
       expected: ["browser", "memory-core"],
     });
@@ -2560,7 +2560,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             token: "configured",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: createPluginPlanningTestEnv(),
       index,
       manifestRegistry: registry,
@@ -2584,7 +2584,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
         plugins: {
           allow: ["workspace-demo-channel-plugin"],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: createPluginPlanningTestEnv(),
       index,
       manifestRegistry: registry,
@@ -2614,7 +2614,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             "memory-lancedb": { enabled: true, config: { dreaming: { enabled: true } } },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       expected: ["browser", "memory-core", "memory-lancedb"],
     });
   });
@@ -2634,7 +2634,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
               "memory-lancedb": { enabled: true, config: { dreaming: { enabled: true } } },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         env: createPluginPlanningTestEnv(),
         index,
       }),
@@ -2653,7 +2653,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             "memory-lancedb": { enabled: true, config: { dreaming: { enabled: true } } },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       expected: ["browser", "memory-lancedb"],
     });
   });
@@ -2670,7 +2670,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             "memory-lancedb": { enabled: true, config: { dreaming: { enabled: true } } },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       expected: ["browser", "memory-lancedb"],
     });
   });
@@ -2767,7 +2767,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             codex: { enabled: true },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       expected: ["demo-channel", "browser", "openai", "codex", "memory-core"],
     });
   });
@@ -2792,23 +2792,23 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       expected: ["demo-channel", "browser", "anthropic", "openai", "codex", "memory-core"],
     });
   });
 
-  it("does not include Codex when an OpenAI model is manually pinned to OpenClaw", () => {
+  it("does not include Codex when an OpenAI model is manually pinned to Afora", () => {
     expectStartupPluginIds({
       config: {
         agents: {
           defaults: {
             model: { primary: "openai/gpt-5.5" },
             models: {
-              "openai/gpt-5.5": { agentRuntime: { id: "openclaw" } },
+              "openai/gpt-5.5": { agentRuntime: { id: "afora" } },
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       expected: ["demo-channel", "browser", "openai", "memory-core"],
     });
   });
@@ -2828,7 +2828,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
       config: createStartupConfig({
         enabledPluginIds: ["codex"],
       }),
-      env: { OPENCLAW_AGENT_RUNTIME: "codex" },
+      env: { AFORA_AGENT_RUNTIME: "codex" },
       expected: ["demo-channel", "browser", "memory-core"],
     });
   });
@@ -2860,7 +2860,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             "demo-provider-plugin": { enabled: true },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       expected: ["demo-channel", "browser", "demo-provider-plugin", "memory-core"],
     });
   });
@@ -2875,7 +2875,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       expected: ["demo-channel", "browser", "anthropic", "memory-core"],
     });
   });
@@ -2911,7 +2911,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       expected: ["demo-channel", "browser", "memory-core"],
     });
   });
@@ -2933,7 +2933,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       expected: ["demo-channel", "browser", "openai", "memory-core"],
     });
   });
@@ -2941,7 +2941,7 @@ describe("resolveGatewayStartupPluginIdsFromRegistry", () => {
 
 describe("resolveConfiguredChannelPluginIds", () => {
   beforeEach(() => {
-    listPotentialConfiguredChannelIds.mockReset().mockImplementation((config: OpenClawConfig) => {
+    listPotentialConfiguredChannelIds.mockReset().mockImplementation((config: AforaConfig) => {
       if (Object.hasOwn(config, "channels")) {
         return Object.keys(config.channels ?? {});
       }
@@ -2949,7 +2949,7 @@ describe("resolveConfiguredChannelPluginIds", () => {
     });
     listPotentialConfiguredChannelPresenceSignals
       .mockReset()
-      .mockImplementation((config: OpenClawConfig) => {
+      .mockImplementation((config: AforaConfig) => {
         return listPotentialConfiguredChannelIds(config).map((channelId: string) => ({
           channelId,
           source: "config",
@@ -2977,7 +2977,7 @@ describe("resolveConfiguredChannelPluginIds", () => {
       config: {
         channels: { "demo-channel": { token: "configured" } },
         plugins: { allow: ["browser"] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: {},
       expected: ["demo-channel"],
     },
@@ -2986,7 +2986,7 @@ describe("resolveConfiguredChannelPluginIds", () => {
       config: {
         channels: { "activation-only-channel": { enabled: true } },
         plugins: { deny: ["activation-only-channel-plugin"] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       expected: [],
     },
     {
@@ -2994,7 +2994,7 @@ describe("resolveConfiguredChannelPluginIds", () => {
       config: {
         channels: { "activation-only-channel": { enabled: true } },
         plugins: { enabled: false },
-      } as OpenClawConfig,
+      } as AforaConfig,
       expected: [],
     },
     {
@@ -3031,13 +3031,13 @@ describe("resolveConfiguredChannelPluginIds", () => {
       config: {
         channels: { "activation-only-channel": { enabled: true } },
         plugins: { entries: { "activation-only-channel-plugin": { enabled: false } } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       expected: [],
     },
   ] satisfies Array<{
     name: string;
-    config: OpenClawConfig;
-    activationSourceConfig?: OpenClawConfig;
+    config: AforaConfig;
+    activationSourceConfig?: AforaConfig;
     env?: NodeJS.ProcessEnv;
     expected: string[];
   }>)("$name", ({ config, activationSourceConfig, env, expected }) => {
@@ -3072,7 +3072,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
           plugins: {
             allow: ["memory-core"],
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {
           DEMO_FAKE_TEST_TRIGGER: "present",
@@ -3087,7 +3087,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
           plugins: {
             allow: ["memory-core"],
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {
           DEMO_FAKE_TEST_TRIGGER: "present",
@@ -3109,7 +3109,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
           plugins: {
             allow: ["memory-core"],
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {
           DEMO_FAKE_TEST_TRIGGER: "present",
@@ -3150,11 +3150,11 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
           plugins: {
             allow: ["external-env-channel-plugin"],
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {
           EXTERNAL_ENV_CHANNEL_HOST: "irc.example.com",
-          EXTERNAL_ENV_CHANNEL_NICK: "openclaw",
+          EXTERNAL_ENV_CHANNEL_NICK: "afora",
         } as NodeJS.ProcessEnv,
         includePersistedAuthState: false,
         ambientEnvTriggers: "suppress",
@@ -3173,7 +3173,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
           channels: {
             "demo-channel": { enabled: true },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: { DEMO_FAKE_TEST_TRIGGER: "present" } as NodeJS.ProcessEnv,
         includePersistedAuthState: false,
@@ -3206,7 +3206,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {
           DEMO_FAKE_TEST_TRIGGER: "present",
@@ -3225,7 +3225,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
               enabled: true,
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {},
         includePersistedAuthState: false,
@@ -3248,7 +3248,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
               enabled: true,
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {},
         includePersistedAuthState: false,
@@ -3264,7 +3264,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
           token: "stale-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(listExplicitConfiguredChannelIdsForConfig(config)).toStrictEqual([]);
     expect(
@@ -3305,7 +3305,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       resolveConfiguredChannelPresencePolicy({
@@ -3350,7 +3350,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {},
       }),
@@ -3369,7 +3369,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
           plugins: {
             allow: ["external-env-channel-plugin"],
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {
           EXTERNAL_ENV_CHANNEL_TOKEN: "present",
@@ -3384,7 +3384,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
       plugins: {
         allow: ["external-env-channel-plugin"],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       listConfiguredChannelIdsForReadOnlyScope({
@@ -3402,7 +3402,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
         workspaceDir: "/tmp",
         env: {
           EXTERNAL_ENV_CHANNEL_HOST: "irc.example.com",
-          EXTERNAL_ENV_CHANNEL_NICK: "openclaw",
+          EXTERNAL_ENV_CHANNEL_NICK: "afora",
         } as NodeJS.ProcessEnv,
         includePersistedAuthState: false,
       }),
@@ -3419,7 +3419,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
       plugins: {
         allow: ["browser"],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       resolveConfiguredChannelPresencePolicy({
@@ -3461,7 +3461,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
               token: "configured",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {},
         includePersistedAuthState: false,
@@ -3486,7 +3486,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
           plugins: {
             enabled: false,
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {},
         includePersistedAuthState: false,
@@ -3504,7 +3504,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
           plugins: {
             deny: ["demo-channel"],
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {},
         includePersistedAuthState: false,
@@ -3533,7 +3533,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
             enabled: false,
           },
         },
-      } as OpenClawConfig),
+      } as AforaConfig),
     ).toEqual(["demo-channel", "trimmed-channel"]);
   });
 
@@ -3559,7 +3559,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {
           DEMO_FAKE_TEST_TRIGGER: "ambient",
@@ -3586,7 +3586,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
           plugins: {
             allow: ["demo-other-channel"],
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {
           DEMO_FAKE_TEST_TRIGGER: "ambient",
@@ -3604,7 +3604,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
               token: "configured",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {},
       }),
@@ -3618,7 +3618,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
           token: "configured",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       listConfiguredAnnounceChannelIdsForConfig({
@@ -3627,7 +3627,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
           plugins: {
             enabled: false,
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {},
       }),
@@ -3640,7 +3640,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
           plugins: {
             deny: ["clickclack"],
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {},
       }),
@@ -3657,7 +3657,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {},
       }),
@@ -3670,7 +3670,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
           plugins: {
             allow: ["slack"],
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {},
       }),
@@ -3684,7 +3684,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
           token: "configured",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       listConfiguredAnnounceChannelIdsForConfig({
@@ -3693,7 +3693,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
           plugins: {
             enabled: false,
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {},
       }),
@@ -3706,7 +3706,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
           plugins: {
             deny: ["demo-channel"],
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {},
       }),
@@ -3723,7 +3723,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {},
       }),
@@ -3749,7 +3749,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {},
         manifestRecords: [
@@ -3790,7 +3790,7 @@ describe("listConfiguredChannelIdsForReadOnlyScope", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir: "/tmp",
         env: {
           ACTIVATION_ONLY_CHANNEL_TOKEN: "ambient",

@@ -9,10 +9,10 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { resolveOAuthDir } from "../../config/paths.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { withEnvAsync } from "../../test-utils/env.js";
 import { AUTH_STORE_VERSION } from "./constants.js";
 import { testing as externalAuthTesting } from "./external-auth.test-support.js";
@@ -95,8 +95,8 @@ async function withAuthProfileTestState<T>(
   try {
     return await withEnvAsync(
       {
-        OPENCLAW_STATE_DIR: stateDir,
-        ...(options.clearOAuthDir ? { OPENCLAW_OAUTH_DIR: undefined } : {}),
+        AFORA_STATE_DIR: stateDir,
+        ...(options.clearOAuthDir ? { AFORA_OAUTH_DIR: undefined } : {}),
       },
       async () =>
         await run({
@@ -106,8 +106,8 @@ async function withAuthProfileTestState<T>(
         }),
     );
   } finally {
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     fs.rmSync(stateDir, { recursive: true, force: true });
   }
 }
@@ -141,7 +141,7 @@ function expectOAuthCredentialFields(
 describe("promoteAuthProfileInOrder", () => {
   it("refreshes inherited main selection state without advancing credential ownership", async () => {
     await withAuthProfileTestState(
-      "openclaw-auth-profile-main-selection-",
+      "afora-auth-profile-main-selection-",
       async ({ agentDirFor }) => {
         const customAgentDir = agentDirFor("custom");
         fs.mkdirSync(customAgentDir, { recursive: true });
@@ -183,7 +183,7 @@ describe("promoteAuthProfileInOrder", () => {
 
   it("rebuilds a derived custom-agent snapshot after locked main OAuth rotation", async () => {
     await withAuthProfileTestState(
-      "openclaw-auth-profile-main-inheritance-",
+      "afora-auth-profile-main-inheritance-",
       async ({ agentDirFor }) => {
         const customAgentDir = agentDirFor("custom");
         fs.mkdirSync(customAgentDir, { recursive: true });
@@ -259,7 +259,7 @@ describe("promoteAuthProfileInOrder", () => {
 
   it("keeps inherited resolved credentials when publishing a locked custom-agent save", async () => {
     await withAuthProfileTestState(
-      "openclaw-auth-profile-custom-publication-",
+      "afora-auth-profile-custom-publication-",
       async ({ agentDirFor }) => {
         const customAgentDir = agentDirFor("custom");
         fs.mkdirSync(customAgentDir, { recursive: true });
@@ -352,7 +352,7 @@ describe("promoteAuthProfileInOrder", () => {
   });
 
   it("keeps a direct save committed when postcommit publication throws", async () => {
-    await withAuthProfileTestState("openclaw-auth-direct-publication-", async ({ agentDir }) => {
+    await withAuthProfileTestState("afora-auth-direct-publication-", async ({ agentDir }) => {
       const store = (key: string): AuthProfileStore => ({
         version: AUTH_STORE_VERSION,
         profiles: {
@@ -385,7 +385,7 @@ describe("promoteAuthProfileInOrder", () => {
   });
 
   it("publishes a caller-owned database transaction from the supplied store", async () => {
-    await withAuthProfileTestState("openclaw-auth-caller-transaction-", async ({ agentDir }) => {
+    await withAuthProfileTestState("afora-auth-caller-transaction-", async ({ agentDir }) => {
       const store = (key: string): AuthProfileStore => ({
         version: AUTH_STORE_VERSION,
         profiles: {
@@ -432,7 +432,7 @@ describe("promoteAuthProfileInOrder", () => {
 
   it("preserves derived runtime snapshots on a caller-owned main-store no-op", async () => {
     await withAuthProfileTestState(
-      "openclaw-auth-caller-noop-",
+      "afora-auth-caller-noop-",
       async ({ agentDir, agentDirFor }) => {
         const derivedAgentDir = agentDirFor("worker");
         const mainStore: AuthProfileStore = {
@@ -458,7 +458,7 @@ describe("promoteAuthProfileInOrder", () => {
   });
 
   it("drops caller-owned publication when a nested savepoint rolls back", async () => {
-    await withAuthProfileTestState("openclaw-auth-caller-savepoint-", async ({ agentDir }) => {
+    await withAuthProfileTestState("afora-auth-caller-savepoint-", async ({ agentDir }) => {
       const initial: AuthProfileStore = {
         version: AUTH_STORE_VERSION,
         profiles: {
@@ -489,7 +489,7 @@ describe("promoteAuthProfileInOrder", () => {
   });
 
   it("rolls back credentials when the state write fails", async () => {
-    await withAuthProfileTestState("openclaw-auth-atomic-save-", async ({ agentDir }) => {
+    await withAuthProfileTestState("afora-auth-atomic-save-", async ({ agentDir }) => {
       const oldStore: AuthProfileStore = {
         version: AUTH_STORE_VERSION,
         profiles: {
@@ -501,7 +501,7 @@ describe("promoteAuthProfileInOrder", () => {
       const credentialRevision =
         getRuntimeAuthProfileStoreCredentialMutationToken(agentDir).revision;
       const stateRevision = getRuntimeAuthProfileStoreStateMutationToken(agentDir).revision;
-      const database = openOpenClawAgentDatabase({
+      const database = openAforaAgentDatabase({
         agentId: "main",
         path: resolveAuthProfileDatabasePath(agentDir),
       });
@@ -536,7 +536,7 @@ describe("promoteAuthProfileInOrder", () => {
   });
 
   it("restores materialized and runtime-external snapshot credentials after a temporary write", async () => {
-    await withAuthProfileTestState("openclaw-auth-runtime-restore-", async ({ agentDir }) => {
+    await withAuthProfileTestState("afora-auth-runtime-restore-", async ({ agentDir }) => {
       const keyRef = { source: "env", provider: "default", id: "OPENAI_API_KEY" } as const;
       saveAuthProfileStore(
         {
@@ -600,7 +600,7 @@ describe("promoteAuthProfileInOrder", () => {
   });
 
   it("does not persist built-in CLI ownership metadata", async () => {
-    await withAuthProfileTestState("openclaw-auth-cli-provenance-", async ({ agentDir }) => {
+    await withAuthProfileTestState("afora-auth-cli-provenance-", async ({ agentDir }) => {
       const profileId = "openai:default";
       const runtimeStore: RuntimeAuthProfileStore = {
         version: AUTH_STORE_VERSION,
@@ -630,7 +630,7 @@ describe("promoteAuthProfileInOrder", () => {
     "preserves a runtime-only OAuth mutation %s",
     async (mutationTiming) => {
       await withAuthProfileTestState(
-        "openclaw-auth-runtime-edge-ownership-",
+        "afora-auth-runtime-edge-ownership-",
         async ({ agentDir }) => {
           const baselineStore: AuthProfileStore = {
             version: AUTH_STORE_VERSION,
@@ -721,7 +721,7 @@ describe("promoteAuthProfileInOrder", () => {
 
   it("restores captured and rebuilds newer derived snapshots after main rollback", async () => {
     await withAuthProfileTestState(
-      "openclaw-auth-main-derived-rollback-",
+      "afora-auth-main-derived-rollback-",
       async ({ agentDirFor }) => {
         const capturedAgentDir = agentDirFor("captured");
         const newerAgentDir = agentDirFor("newer");
@@ -829,7 +829,7 @@ describe("promoteAuthProfileInOrder", () => {
 
   it("restores an exactly owned derived snapshot under its custom database key", async () => {
     await withAuthProfileTestState(
-      "openclaw-auth-custom-key-rollback-",
+      "afora-auth-custom-key-rollback-",
       async ({ agentDirFor }) => {
         const derivedAgentDir = agentDirFor("custom-key");
         const databasePath = path.join(derivedAgentDir, "custom.sqlite");
@@ -891,7 +891,7 @@ describe("promoteAuthProfileInOrder", () => {
   });
 
   it("tracks state-only saves without advancing credential ownership", async () => {
-    await withAuthProfileTestState("openclaw-auth-state-lineage-", async ({ agentDir }) => {
+    await withAuthProfileTestState("afora-auth-state-lineage-", async ({ agentDir }) => {
       const store: AuthProfileStore = {
         version: AUTH_STORE_VERSION,
         profiles: {
@@ -916,7 +916,7 @@ describe("promoteAuthProfileInOrder", () => {
 
   it("marks newly saved runtime snapshot profiles as persisted", async () => {
     await withAuthProfileTestState(
-      "openclaw-auth-profile-runtime-persisted-",
+      "afora-auth-profile-runtime-persisted-",
       async ({ agentDir }) => {
         fs.mkdirSync(agentDir, { recursive: true });
         replaceRuntimeAuthProfileStoreSnapshots([
@@ -962,7 +962,7 @@ describe("promoteAuthProfileInOrder", () => {
 
   it("normalizes copied secrets when using the locked upsert path", async () => {
     await withAuthProfileTestState(
-      "openclaw-auth-profile-upsert-",
+      "afora-auth-profile-upsert-",
       async ({ agentDir }) => {
         fs.mkdirSync(agentDir, { recursive: true });
 
@@ -1009,7 +1009,7 @@ describe("promoteAuthProfileInOrder", () => {
   });
 
   it("persists openai oauth credentials inline", async () => {
-    await withAuthProfileTestState("openclaw-auth-profile-metadata-", ({ agentDir }) => {
+    await withAuthProfileTestState("afora-auth-profile-metadata-", ({ agentDir }) => {
       fs.mkdirSync(agentDir, { recursive: true });
       const profileId = "openai:default";
       const expires = Date.now() + 60 * 60 * 1000;
@@ -1063,7 +1063,7 @@ describe("promoteAuthProfileInOrder", () => {
   });
 
   it("preserves access-only openai oauth credentials inline", async () => {
-    await withAuthProfileTestState("openclaw-auth-profile-access-only-", ({ agentDir }) => {
+    await withAuthProfileTestState("afora-auth-profile-access-only-", ({ agentDir }) => {
       fs.mkdirSync(agentDir, { recursive: true });
       const profileId = "openai:default";
       const expires = Date.now() + 60 * 60 * 1000;
@@ -1103,7 +1103,7 @@ describe("promoteAuthProfileInOrder", () => {
   });
 
   it("keeps copied openai oauth profiles inline", async () => {
-    await withAuthProfileTestState("openclaw-auth-profile-copy-ref-", ({ agentDirFor }) => {
+    await withAuthProfileTestState("afora-auth-profile-copy-ref-", ({ agentDirFor }) => {
       const mainAgentDir = agentDirFor("main");
       const copiedAgentDir = agentDirFor("copied");
       fs.mkdirSync(mainAgentDir, { recursive: true });
@@ -1173,7 +1173,7 @@ describe("promoteAuthProfileInOrder", () => {
   });
 
   it("moves a relogin profile to the front of an existing per-agent provider order", async () => {
-    await withAuthProfileTestState("openclaw-auth-order-promote-", async ({ agentDir }) => {
+    await withAuthProfileTestState("afora-auth-order-promote-", async ({ agentDir }) => {
       fs.mkdirSync(agentDir, { recursive: true });
       const newProfileId = "openai:bunsthedev@gmail.com";
       const staleProfileId = "openai:val@viewdue.ai";
@@ -1219,7 +1219,7 @@ describe("promoteAuthProfileInOrder", () => {
   });
 
   it("creates a per-agent provider order when relogin has no existing order", async () => {
-    await withAuthProfileTestState("openclaw-auth-order-create-", async ({ agentDir }) => {
+    await withAuthProfileTestState("afora-auth-order-create-", async ({ agentDir }) => {
       fs.mkdirSync(agentDir, { recursive: true });
       const newProfileId = "openai:new-login";
       const primaryProfileId = "openai:primary-login";
@@ -1280,7 +1280,7 @@ describe("promoteAuthProfileInOrder", () => {
   });
 
   it("preserves config-only fallback ids when creating a relogin order", async () => {
-    await withAuthProfileTestState("openclaw-auth-order-config-only-", async ({ agentDir }) => {
+    await withAuthProfileTestState("afora-auth-order-config-only-", async ({ agentDir }) => {
       fs.mkdirSync(agentDir, { recursive: true });
       const newProfileId = "openai:new-login";
       const existingProfileId = "openai:old-login";
@@ -1331,7 +1331,7 @@ describe("promoteAuthProfileInOrder", () => {
   });
 
   it("keeps implicit round-robin when relogin has no existing order by default", async () => {
-    await withAuthProfileTestState("openclaw-auth-order-implicit-", async ({ agentDir }) => {
+    await withAuthProfileTestState("afora-auth-order-implicit-", async ({ agentDir }) => {
       fs.mkdirSync(agentDir, { recursive: true });
       const newProfileId = "openai:new-login";
       saveAuthProfileStore(
@@ -1362,7 +1362,7 @@ describe("promoteAuthProfileInOrder", () => {
   });
 
   it("clears matching lastGood after a stale refresh_token_reused profile", async () => {
-    await withAuthProfileTestState("openclaw-auth-clear-lastgood-", async ({ agentDir }) => {
+    await withAuthProfileTestState("afora-auth-clear-lastgood-", async ({ agentDir }) => {
       fs.mkdirSync(agentDir, { recursive: true });
       const staleProfileId = "openai:default";
       saveAuthProfileStore(
@@ -1393,7 +1393,7 @@ describe("promoteAuthProfileInOrder", () => {
   });
 
   it("removes selected profiles while preserving unrelated provider credentials", async () => {
-    await withAuthProfileTestState("openclaw-auth-remove-selected-", async ({ agentDir }) => {
+    await withAuthProfileTestState("afora-auth-remove-selected-", async ({ agentDir }) => {
       fs.mkdirSync(agentDir, { recursive: true });
       saveAuthProfileStore(
         {
@@ -1438,7 +1438,7 @@ describe("promoteAuthProfileInOrder", () => {
   });
 
   it("removes an inherited profile from the owning main store too", async () => {
-    await withAuthProfileTestState("openclaw-auth-remove-owner-", async ({ agentDirFor }) => {
+    await withAuthProfileTestState("afora-auth-remove-owner-", async ({ agentDirFor }) => {
       const mainAgentDir = agentDirFor("main");
       const customAgentDir = agentDirFor("custom");
       fs.mkdirSync(mainAgentDir, { recursive: true });
@@ -1475,7 +1475,7 @@ describe("promoteAuthProfileInOrder", () => {
   });
 
   it("does not clear lastGood when the failed profile is not the stored profile", async () => {
-    await withAuthProfileTestState("openclaw-auth-clear-lastgood-keep-", async ({ agentDir }) => {
+    await withAuthProfileTestState("afora-auth-clear-lastgood-keep-", async ({ agentDir }) => {
       fs.mkdirSync(agentDir, { recursive: true });
       const goodProfileId = "openai:user@example.test";
       saveAuthProfileStore(
@@ -1508,7 +1508,7 @@ describe("promoteAuthProfileInOrder", () => {
 
 describe("setAuthProfileOrder", () => {
   it("canonicalizes every alias-equivalent provider state mutation", async () => {
-    await withAuthProfileTestState("openclaw-auth-alias-state-", async ({ agentDir }) => {
+    await withAuthProfileTestState("afora-auth-alias-state-", async ({ agentDir }) => {
       fs.mkdirSync(agentDir, { recursive: true });
       const primary = "gmi:primary";
       const secondary = "gmi:secondary";
@@ -1596,7 +1596,7 @@ describe("setAuthProfileOrder", () => {
 
   it("preserves inherited main OAuth profile IDs in a secondary agent order without copying credentials", async () => {
     await withAuthProfileTestState(
-      "openclaw-auth-order-set-inherited-",
+      "afora-auth-order-set-inherited-",
       async ({ agentDirFor }) => {
         const mainAgentDir = agentDirFor("main");
         const customAgentDir = agentDirFor("custom");
@@ -1657,7 +1657,7 @@ describe("setAuthProfileOrder", () => {
 
   it("clears a provider order without preserving any profile IDs", async () => {
     await withAuthProfileTestState(
-      "openclaw-auth-order-set-clear-",
+      "afora-auth-order-set-clear-",
       async ({ agentDir }) => {
         fs.mkdirSync(agentDir, { recursive: true });
         saveAuthProfileStore({

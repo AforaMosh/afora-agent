@@ -14,7 +14,7 @@ const suite = createChatFlowE2eSuite();
 
 suite.define(() => {
   it("drains an inactive agent outbox while the selected global agent is active", async () => {
-    const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+    const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
     const context = await suite.newBrowserContext({
       locale: "en-US",
       ...(artifactDir
@@ -106,7 +106,7 @@ suite.define(() => {
       }
       await page.goto(controlUiSessionUrl(suite.server.baseUrl, "agent:main:main"));
       await page.evaluate(() => {
-        const app = document.querySelector("openclaw-app") as HTMLElement & {
+        const app = document.querySelector("afora-app") as HTMLElement & {
           runtime?: { context: { agentSelection: { set: (agentId: string) => void } } };
         };
         app.runtime?.context.agentSelection.set("main");
@@ -116,7 +116,7 @@ suite.define(() => {
         .locator(".agent-chat__offline-hint")
         .waitFor({ state: "detached", timeout: 10_000 });
       await page.evaluate(async () => {
-        const app = document.querySelector("openclaw-app") as HTMLElement & {
+        const app = document.querySelector("afora-app") as HTMLElement & {
           runtime?: { context: { sessions: { refresh: (options: unknown) => Promise<void> } } };
         };
         await app.runtime?.context.sessions.refresh({ agentId: "main", force: true });
@@ -156,7 +156,7 @@ suite.define(() => {
       await expectRequestCountStable(gateway, "chat.send", 1);
       const workPath = controlUiSessionPath("agent:work:main");
       await page.evaluate((pathname) => {
-        const app = document.querySelector("openclaw-app") as HTMLElement & {
+        const app = document.querySelector("afora-app") as HTMLElement & {
           runtime?: {
             context: {
               agentSelection: { set: (agentId: string) => void };
@@ -165,7 +165,7 @@ suite.define(() => {
           };
         };
         if (!app.runtime) {
-          throw new Error("OpenClaw application runtime is unavailable");
+          throw new Error("Afora application runtime is unavailable");
         }
         app.runtime.context.agentSelection.set("work");
         app.runtime.context.navigate("chat", { pathname });
@@ -184,7 +184,7 @@ suite.define(() => {
         clientRunId: runId,
         hasActiveRun: true,
         message: {
-          __openclaw: { id: "work-outbox-user", idempotencyKey: `${runId}:user`, seq: 1 },
+          __afora: { id: "work-outbox-user", idempotencyKey: `${runId}:user`, seq: 1 },
           content: [{ text: prompt, type: "text" }],
           role: "user",
           timestamp: Date.now(),

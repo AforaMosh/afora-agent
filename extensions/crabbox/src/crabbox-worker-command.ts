@@ -1,5 +1,5 @@
-import { WorkerProviderError } from "openclaw/plugin-sdk/plugin-entry";
-import type { SpawnResult } from "openclaw/plugin-sdk/process-runtime";
+import { WorkerProviderError } from "afora-agent/plugin-sdk/plugin-entry";
+import type { SpawnResult } from "afora-agent/plugin-sdk/process-runtime";
 import {
   crabboxCommandError,
   permanentCrabboxCommandError,

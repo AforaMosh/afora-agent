@@ -4,7 +4,7 @@ import { t } from "../../../i18n/index.ts";
 import { getSafeLocalStorage } from "../../../local-storage.ts";
 
 // Persisted preference key: renaming it would reset users' "Don't ask again" choice.
-const SKIP_REWIND_CONFIRM_PREFERENCE = "openclaw:skip-rewind-confirm";
+const SKIP_REWIND_CONFIRM_PREFERENCE = "afora:skip-rewind-confirm";
 const CONFIRMED_ACTION_VIEWPORT_MARGIN_PX = 8;
 const CONFIRMED_ACTION_TRIGGER_GAP_PX = 6;
 
@@ -112,7 +112,7 @@ export function renderRewindButton(onRewind: () => void, disabled: boolean) {
   };
   return html`
     <span class="chat-confirm-wrap chat-rewind-wrap">
-      <openclaw-tooltip .content=${disabled ? t("chat.messages.rewindUnavailable") : label}>
+      <afora-tooltip .content=${disabled ? t("chat.messages.rewindUnavailable") : label}>
         <button
           class="chat-group-rewind"
           aria-label=${label}
@@ -122,7 +122,7 @@ export function renderRewindButton(onRewind: () => void, disabled: boolean) {
         >
           ${icons.refresh}
         </button>
-      </openclaw-tooltip>
+      </afora-tooltip>
     </span>
   `;
 }

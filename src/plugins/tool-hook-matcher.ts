@@ -1,4 +1,4 @@
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import type { PluginToolMatcher } from "./hook-types.js";
 
 export type PluginToolMatcherScope = {
@@ -45,7 +45,7 @@ export function normalizePluginToolMatcher(matcher: unknown): PluginToolMatcher 
       throw new TypeError("tool hook matcher wildcard entries are not supported");
     }
     if (NON_CANONICAL_TOOL_MATCHER_NAMES.has(canonicalToolName)) {
-      throw new TypeError("tool hook matcher entries must use canonical OpenClaw tool ids");
+      throw new TypeError("tool hook matcher entries must use canonical Afora tool ids");
     }
     normalized.add(canonicalToolName);
   }

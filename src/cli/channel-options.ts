@@ -1,5 +1,5 @@
 // CLI channel option formatter backed by generated startup metadata when available.
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { readCliStartupMetadata } from "./startup-metadata.js";
 
 function loadPrecomputedChannelOptions(): string[] | null {

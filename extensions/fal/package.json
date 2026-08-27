@@ -1,13 +1,13 @@
 {
-  "name": "@openclaw/fal-provider",
+  "name": "@afora/fal-provider",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw fal provider plugin",
+  "description": "Afora fal provider plugin",
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

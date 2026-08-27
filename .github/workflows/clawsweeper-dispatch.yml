@@ -27,7 +27,7 @@ jobs:
     if: >-
       ${{
         (github.event_name != 'issue_comment' ||
-          (github.actor != 'clawsweeper[bot]' && github.actor != 'openclaw-clawsweeper[bot]')) &&
+          (github.actor != 'clawsweeper[bot]' && github.actor != 'afora-clawsweeper[bot]')) &&
         !(
           endsWith(github.actor, '[bot]') &&
           (github.event.action == 'labeled' || github.event.action == 'unlabeled') &&
@@ -84,7 +84,7 @@ jobs:
         with:
           client-id: ${{ env.CLAWSWEEPER_APP_CLIENT_ID }}
           private-key: ${{ secrets.CLAWSWEEPER_APP_PRIVATE_KEY }}
-          owner: openclaw
+          owner: afora
           repositories: clawsweeper
           permission-contents: write
 
@@ -95,7 +95,7 @@ jobs:
           COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
           set -euo pipefail
-          if grep -Eiq '(^|[[:space:]])@(clawsweeper|openclaw-clawsweeper)\b(\[bot\])?|(^|[[:space:]])/(clawsweeper|review|autoclose|auto([[:space:]]+|-)?merge)\b' <<< "$COMMENT_BODY"; then
+          if grep -Eiq '(^|[[:space:]])@(clawsweeper|afora-clawsweeper)\b(\[bot\])?|(^|[[:space:]])/(clawsweeper|review|autoclose|auto([[:space:]]+|-)?merge)\b' <<< "$COMMENT_BODY"; then
             echo "is_command=true" >> "$GITHUB_OUTPUT"
           else
             echo "is_command=false" >> "$GITHUB_OUTPUT"
@@ -276,12 +276,12 @@ jobs:
             ' "$GITHUB_EVENT_PATH")"
           payload="$(jq -nc --argjson activity "$activity" \
             '{event_type:"github_activity",client_payload:{activity:$activity}}')"
-          if gh_api_with_retry repos/openclaw/clawsweeper/dispatches \
+          if gh_api_with_retry repos/afora/clawsweeper/dispatches \
             --method POST \
             --input - <<< "$payload"; then
             echo "Dispatched GitHub activity to ClawSweeper."
           else
-            echo "::warning::Skipping GitHub activity dispatch because the configured credential could not dispatch to openclaw/clawsweeper."
+            echo "::warning::Skipping GitHub activity dispatch because the configured credential could not dispatch to afora/clawsweeper."
           fi
 
       - name: Dispatch exact ClawSweeper review
@@ -346,12 +346,12 @@ jobs:
             --arg ingress_fingerprint "$ingress_fingerprint" \
             --argjson supersedes_in_progress "$SUPERSEDES_IN_PROGRESS" \
             '{event_type:"clawsweeper_item",client_payload:({target_repo:$target_repo,target_branch:$target_branch,item_number:$item_number,item_kind:$item_kind,source_event:$source_event,source_action:$source_action,supersedes_in_progress:$supersedes_in_progress} + (if $ingress_fingerprint != "" then {ingress_route:"target_dispatcher",ingress_fingerprint:$ingress_fingerprint} else {} end))}')"
-          if gh_api_with_retry repos/openclaw/clawsweeper/dispatches \
+          if gh_api_with_retry repos/afora/clawsweeper/dispatches \
             --method POST \
             --input - <<< "$payload"; then
             echo "Dispatched ClawSweeper review."
           else
-            echo "::warning::Skipping ClawSweeper dispatch because the configured credential could not dispatch to openclaw/clawsweeper."
+            echo "::warning::Skipping ClawSweeper dispatch because the configured credential could not dispatch to afora/clawsweeper."
           fi
 
       - name: Acknowledge and dispatch ClawSweeper comment
@@ -428,10 +428,10 @@ jobs:
             --arg source_event "issue_comment" \
             --arg source_action "$SOURCE_ACTION" \
             '{event_type:"clawsweeper_comment",client_payload:({target_repo:$target_repo,item_number:$item_number,comment_id:$comment_id,source_event:$source_event,source_action:$source_action,max_comments:"1"} + (if $status_comment_id != "" then {status_comment_id:($status_comment_id|tonumber)} else {} end))}')"
-          if GH_TOKEN="$DISPATCH_TOKEN" gh_api_with_retry repos/openclaw/clawsweeper/dispatches \
+          if GH_TOKEN="$DISPATCH_TOKEN" gh_api_with_retry repos/afora/clawsweeper/dispatches \
             --method POST \
             --input - <<< "$payload"; then
             echo "Dispatched ClawSweeper comment router."
           else
-            echo "::warning::Skipping ClawSweeper comment dispatch because the configured credential could not dispatch to openclaw/clawsweeper."
+            echo "::warning::Skipping ClawSweeper comment dispatch because the configured credential could not dispatch to afora/clawsweeper."
           fi

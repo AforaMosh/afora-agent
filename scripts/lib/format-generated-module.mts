@@ -49,7 +49,7 @@ export function formatGeneratedModule(
   const { repoRoot, outputPath, errorLabel } = options;
   const spawnSyncImpl: FormatterSpawn = deps.spawnSync ?? spawnSync;
   const resolvedRepoRoot = path.resolve(repoRoot);
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-generated-format-"));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-generated-format-"));
   const tempOutputPath = path.join(tempDir, path.basename(outputPath));
 
   try {

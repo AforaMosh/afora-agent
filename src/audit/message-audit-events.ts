@@ -15,7 +15,7 @@ export type TrustedMessageAuditEvent = TrustedMessageAuditEventVariant<MessageAu
 type MessageAuditListener = (event: TrustedMessageAuditEvent) => void;
 
 const listeners = resolveGlobalSet<MessageAuditListener>(
-  Symbol.for("openclaw.messageAuditListeners"),
+  Symbol.for("afora.messageAuditListeners"),
   "close-and-restart",
 );
 

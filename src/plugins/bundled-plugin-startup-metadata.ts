@@ -1,7 +1,7 @@
 // Narrow bundled-plugin facts used before the full metadata/runtime registry is available.
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { tryReadJsonSync } from "../infra/json-files.js";
 import { resolveBundledPluginsDir } from "./bundled-dir.js";
 
@@ -27,7 +27,7 @@ export function inspectPluginStartupMetadata(params: {
   pluginId: string;
   rootDir: string;
 }): PluginStartupMetadata | undefined {
-  const manifest = tryReadJsonSync(path.join(params.rootDir, "openclaw.plugin.json"));
+  const manifest = tryReadJsonSync(path.join(params.rootDir, "afora.plugin.json"));
   if (!isRecord(manifest) || manifest.id !== params.pluginId) {
     return undefined;
   }

@@ -1,19 +1,19 @@
 import type { AuthProfileStore } from "../../../agents/auth-profiles/types.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import "./stale-auth-order.js";
 
 type TestApi = {
   repairStaleConfiguredAuthOrders(params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     stores: readonly AuthProfileStore[];
     activeStores?: readonly AuthProfileStore[];
     runtimeProfileIds?: ReadonlySet<string>;
-  }): { config: OpenClawConfig; changes: string[] };
+  }): { config: AforaConfig; changes: string[] };
 };
 
 function getTestApi(): TestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.staleAuthOrderTestApi")
+    Symbol.for("afora.staleAuthOrderTestApi")
   ] as TestApi;
 }
 

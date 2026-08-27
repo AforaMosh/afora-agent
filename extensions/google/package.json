@@ -1,8 +1,8 @@
 {
-  "name": "@openclaw/google-plugin",
+  "name": "@afora/google-plugin",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw Google plugin",
+  "description": "Afora Google plugin",
   "type": "module",
   "dependencies": {
     "@google/genai": "2.13.0",
@@ -10,9 +10,9 @@
     "google-auth-library": "10.9.1"
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

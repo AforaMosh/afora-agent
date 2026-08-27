@@ -19,7 +19,7 @@ Standing orders grant your agent **permanent operating authority** for defined p
 
 Standing orders are defined in your [agent workspace](/concepts/agent-workspace) files. The recommended approach is to include them directly in `AGENTS.md` (which is auto-injected every session) so the agent always has them in context. For larger configurations, you can also place them in a dedicated file like `standing-orders.md` and reference it from `AGENTS.md`.
 
-For a strict, ephemeral CI or scripting entry point, use [`openclaw agent exec`](/cli/agent#agent-exec). It skips workspace bootstrap files, so each one-shot run is self-contained rather than governed by standing orders.
+For a strict, ephemeral CI or scripting entry point, use [`afora agent exec`](/cli/agent#agent-exec). It skips workspace bootstrap files, so each one-shot run is self-contained rather than governed by standing orders.
 
 Each program specifies:
 
@@ -71,10 +71,10 @@ Automation (8 AM daily): "Execute inbox triage per standing orders"
 Agent: Reads standing orders → executes steps → reports results
 ```
 
-The automation job prompt should reference the standing order rather than duplicating it (`openclaw automations`; `openclaw cron` remains an alias):
+The automation job prompt should reference the standing order rather than duplicating it (`afora automations`; `afora cron` remains an alias):
 
 ```bash
-openclaw automations add \
+afora automations add \
   --name daily-inbox-triage \
   --cron "0 8 * * 1-5" \
   --tz America/New_York \

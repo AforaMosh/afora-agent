@@ -1,5 +1,5 @@
 // Resolves the system-agent turn budget from manifest-owned provider metadata.
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import type { PluginManifestRecord } from "../plugins/manifest-registry.js";
 import { resolvePluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.js";
@@ -47,7 +47,7 @@ export function resolveSystemAgentAssistantTimeoutMs(route: SystemAgentConfigure
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.systemAgentTimeoutTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.systemAgentTimeoutTestApi")] = {
     resolveSystemAgentAssistantTimeoutFromManifests,
   };
 }

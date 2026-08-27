@@ -3,10 +3,10 @@ import type { Dirent } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { isRecord as hasRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalLowercaseString as normalizeString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord as hasRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalLowercaseString as normalizeString } from "@afora/normalization-core/string-coerce";
 import { collectConfiguredAgentHarnessRuntimes } from "../../../agents/harness-runtimes.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 
 type CodexNativeAssetHit = {
   /** Native Codex asset category discovered under Codex or personal agent homes. */
@@ -111,11 +111,11 @@ async function discoverPluginHits(root: string): Promise<CodexNativeAssetHit[]> 
   return [...hits.values()];
 }
 
-function isCodexRuntimeConfigured(cfg: OpenClawConfig, _env: NodeJS.ProcessEnv): boolean {
+function isCodexRuntimeConfigured(cfg: AforaConfig, _env: NodeJS.ProcessEnv): boolean {
   return collectConfiguredAgentHarnessRuntimes(cfg).includes("codex");
 }
 
-function isCodexPluginConfigured(cfg: OpenClawConfig): boolean {
+function isCodexPluginConfigured(cfg: AforaConfig): boolean {
   const plugins = cfg.plugins;
   if (plugins?.enabled === false) {
     return false;
@@ -131,13 +131,13 @@ function isCodexPluginConfigured(cfg: OpenClawConfig): boolean {
   return hasRecord(plugins?.entries?.codex) && plugins.entries.codex.enabled !== false;
 }
 
-function shouldScanCodexNativeAssets(cfg: OpenClawConfig, env: NodeJS.ProcessEnv): boolean {
+function shouldScanCodexNativeAssets(cfg: AforaConfig, env: NodeJS.ProcessEnv): boolean {
   return isCodexRuntimeConfigured(cfg, env) || isCodexPluginConfigured(cfg);
 }
 
 /** Discover personal Codex skills, plugins, config, and hooks relevant to Codex-mode agents. */
 async function scanCodexNativeAssets(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
 }): Promise<CodexNativeAssetHit[]> {
   const env = params.env ?? process.env;
@@ -182,7 +182,7 @@ function plural(count: number, singular: string): string {
 
 /** Build an informational doctor note when personal Codex CLI assets need migration review. */
 export async function collectCodexNativeAssetInfoNotes(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
 }): Promise<string[]> {
   const env = params.env ?? process.env;
@@ -199,13 +199,13 @@ export async function collectCodexNativeAssetInfoNotes(params: {
   return [
     [
       `- Personal Codex CLI assets found (${counts.join(", ")}) in ${resolveCodexHome(env)} and ${resolvePersonalAgentSkillsDir(env)}; native Codex-mode agents use isolated per-agent homes and will not load them.`,
-      "- To review or promote them: install the Codex plugin (openclaw plugins install npm:@openclaw/codex), then run openclaw migrate plan codex.",
+      "- To review or promote them: install the Codex plugin (afora plugins install npm:@afora/codex), then run afora migrate plan codex.",
     ].join("\n"),
   ];
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.codexNativeAssetsTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.codexNativeAssetsTestApi")] = {
     scanCodexNativeAssets,
   };
 }

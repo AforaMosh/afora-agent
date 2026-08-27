@@ -8,7 +8,7 @@ import type { SessionEntry } from "../../config/sessions/types.js";
 import { clearAbortCutoffInSessionRuntime } from "./abort-cutoff.runtime.js";
 
 async function withTempStore<T>(run: (storePath: string) => Promise<T>): Promise<T> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-abort-cutoff-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-abort-cutoff-"));
   try {
     return await run(path.join(dir, "sessions.json"));
   } finally {

@@ -6,15 +6,15 @@ import {
   runAgentHarnessBeforeMessageWriteHook,
   type AgentMessage,
   type EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { withCodexSessionTranscriptMirrorWriteLock } from "openclaw/plugin-sdk/codex-session-transcript-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { withCodexSessionTranscriptMirrorWriteLock } from "afora-agent/plugin-sdk/codex-session-transcript-runtime";
 import {
   publishSessionTranscriptUpdateByIdentity,
   type TranscriptEntryAnchor,
   type SessionTranscriptTargetParams,
   type SessionTranscriptWriteLockParams,
-} from "openclaw/plugin-sdk/session-transcript-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/session-transcript-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { EmbeddedRunAttemptResult } from "./attempt-terminal.js";
 import type { CodexThread } from "./protocol.js";
 import {
@@ -58,7 +58,7 @@ function isMirroredAgentMessage(message: AgentMessage): message is MirroredAgent
   return message.role === "user" || message.role === "assistant" || message.role === "toolResult";
 }
 
-/** Imports a bounded, user-visible Codex history tail into a new OpenClaw transcript. */
+/** Imports a bounded, user-visible Codex history tail into a new Afora transcript. */
 export async function importCodexThreadHistoryToTranscript(params: {
   thread: CodexThread;
   throughTurnId: string | null;

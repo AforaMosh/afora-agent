@@ -98,7 +98,7 @@ const ROOT_RESPONSE_CASES: RootResponseCase[] = [
   {
     path: "/root-failed",
     root: { kind: "failed" },
-    body: "Control UI assets could not be prepared. Check the Gateway logs or run `openclaw doctor --fix`.",
+    body: "Control UI assets could not be prepared. Check the Gateway logs or run `afora doctor --fix`.",
     missingHeaders: ["retry-after"],
   },
   {
@@ -109,7 +109,7 @@ const ROOT_RESPONSE_CASES: RootResponseCase[] = [
   },
   {
     path: "/root-disappeared",
-    root: { kind: "resolved", path: "/openclaw-test/missing-control-ui-root" },
+    root: { kind: "resolved", path: "/afora-test/missing-control-ui-root" },
     body: "Control UI assets not found. Build them with `pnpm ui:build` (auto-installs UI deps), or run `pnpm ui:dev` during development.",
     missingHeaders: ["retry-after"],
   },

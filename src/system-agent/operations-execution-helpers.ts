@@ -2,7 +2,7 @@
 import { tryResolveLegacyCompatibilityAgentId } from "../agents/agent-scope-config.js";
 import type { AgentExecutionAuthBinding } from "../agents/execution-auth-binding.js";
 import type { ConfigSetOptions } from "../cli/config-set-input.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -140,7 +140,7 @@ export async function resolveChannelSetupState(deps: SystemAgentCommandDeps | un
 }
 
 export function formatChannelDocsUrl(docsPath: string): string {
-  return `https://docs.openclaw.ai${docsPath.startsWith("/") ? docsPath : `/${docsPath}`}`;
+  return `https://docs.afora.ai${docsPath.startsWith("/") ? docsPath : `/${docsPath}`}`;
 }
 
 export function formatConfigValidationLine(snapshot: ConfigFileSnapshot): string {
@@ -215,7 +215,7 @@ export type ExecuteOptions = {
 /**
  * One persistent operation = one audited apply. The shared wrapper owns the
  * approval gate, before/after config hashes, the audit record, and the
- * `[openclaw] running/done` markers the e2e lanes assert on; each spec only
+ * `[afora] running/done` markers the e2e lanes assert on; each spec only
  * describes what to run and what to record.
  */
 type PersistentApplyContext = {
@@ -247,7 +247,7 @@ export async function applyPersistentOperation(params: {
     runtime.log(message);
     return { applied: false, message };
   }
-  runtime.log(`[openclaw] running: ${auditOperation}`);
+  runtime.log(`[afora] running: ${auditOperation}`);
   const { readConfigFileSnapshot } = await loadConfigModule();
   const before = await readConfigFileSnapshot();
   const commit: PersistentApplyContext["commit"] = async (effect) => {
@@ -269,10 +269,10 @@ export async function applyPersistentOperation(params: {
     // The mutation already committed. Keep success truthful while making the
     // missing audit record visible to every CLI/chat capture surface.
     runtime.error(
-      `${outcome.summary}, but OpenClaw could not record its audit entry: ${formatErrorMessage(error)}`,
+      `${outcome.summary}, but Afora could not record its audit entry: ${formatErrorMessage(error)}`,
     );
   }
-  runtime.log(`[openclaw] done: ${auditOperation}`);
+  runtime.log(`[afora] done: ${auditOperation}`);
   return {
     applied: true,
     ...(outcome.bootstrapPending === undefined
@@ -369,7 +369,7 @@ export async function assertConfigWriteDoesNotBypassInferenceVerification(
       return;
     }
     throw new Error(
-      `Direct config writes cannot change plugin "${pluginId}" because it may back OpenClaw's own active inference route. Editing it is a human-only change, made with OpenClaw stopped from a trusted shell on the machine running it.`,
+      `Direct config writes cannot change plugin "${pluginId}" because it may back Afora's own active inference route. Editing it is a human-only change, made with Afora stopped from a trusted shell on the machine running it.`,
     );
   }
   const deniedRoot = segments[0]?.trim().toLowerCase() ?? "";
@@ -377,7 +377,7 @@ export async function assertConfigWriteDoesNotBypassInferenceVerification(
   throw new Error(
     denialReason
       ? `Direct config writes cannot change \`${deniedRoot}\` (${denialReason}).`
-      : "Direct config writes cannot change the default inference route or include alternate config. Use `set_default_model` (optionally with agentId) for an already configured route; changing provider or auth access is `openclaw onboard` on the machine running OpenClaw.",
+      : "Direct config writes cannot change the default inference route or include alternate config. Use `set_default_model` (optionally with agentId) for an already configured route; changing provider or auth access is `afora onboard` on the machine running Afora.",
   );
 }
 
@@ -393,14 +393,14 @@ async function verifyCurrentSetupInference(
   const before = await readConfigFileSnapshot();
   if (!before.exists || !before.valid) {
     throw new Error(
-      "OpenClaw setup requires a valid configured inference route. Run `openclaw onboard` on the machine running OpenClaw, then retry.",
+      "Afora setup requires a valid configured inference route. Run `afora onboard` on the machine running Afora, then retry.",
     );
   }
   const beforeConfig = before.runtimeConfig ?? before.config;
   const beforeRoute = await projectDefaultInferenceRoute(beforeConfig);
   if (!beforeRoute.route) {
     throw new Error(
-      "OpenClaw setup requires working inference first. Run `openclaw onboard` on the machine running OpenClaw, then retry.",
+      "Afora setup requires working inference first. Run `afora onboard` on the machine running Afora, then retry.",
     );
   }
   const verifyInferenceConfig =
@@ -409,7 +409,7 @@ async function verifyCurrentSetupInference(
   const verification = await verifyInferenceConfig({ config: beforeConfig, runtime });
   if (!verification.ok) {
     throw new Error(
-      `OpenClaw setup requires working inference first. The configured route failed a live check: ${verification.error} Run \`openclaw onboard\` on the machine running OpenClaw, then retry.`,
+      `Afora setup requires working inference first. The configured route failed a live check: ${verification.error} Run \`afora onboard\` on the machine running Afora, then retry.`,
     );
   }
 
@@ -445,13 +445,13 @@ export async function executeSetup(
   const defaultModel = overview.defaultModel?.trim();
   if (!defaultModel) {
     throw new Error(
-      "OpenClaw setup requires working inference first. Run `openclaw onboard` on the machine running OpenClaw to configure and verify a default model, then start OpenClaw again.",
+      "Afora setup requires working inference first. Run `afora onboard` on the machine running Afora to configure and verify a default model, then start Afora again.",
     );
   }
   const requestedModel = operation.model?.trim();
   if (requestedModel && requestedModel !== defaultModel) {
     throw new Error(
-      `OpenClaw setup will preserve the verified default model ${defaultModel}. Staging, live-testing, and saving a different inference route is \`openclaw onboard\` on the machine running OpenClaw.`,
+      `Afora setup will preserve the verified default model ${defaultModel}. Staging, live-testing, and saving a different inference route is \`afora onboard\` on the machine running Afora.`,
     );
   }
   if (!opts.approved) {
@@ -465,11 +465,11 @@ export async function executeSetup(
   const verified = await verifyCurrentSetupInference(runtime, opts.deps);
   if (requestedModel && requestedModel !== verified.modelRef) {
     throw new Error(
-      `The verified default model is now ${verified.modelRef}, not ${requestedModel}. Review the current route, or run \`openclaw onboard\` on the machine running OpenClaw, before retrying setup.`,
+      `The verified default model is now ${verified.modelRef}, not ${requestedModel}. Review the current route, or run \`afora onboard\` on the machine running Afora, before retrying setup.`,
     );
   }
   return await applyPersistentOperation({
-    auditOperation: "openclaw.setup",
+    auditOperation: "afora.setup",
     operation,
     runtime,
     opts,
@@ -548,7 +548,7 @@ export async function executeSetDefaultModel(
       // Route projection and the live probes below all take the same optional
       // agent scope, so a per-agent selection is verified against that agent's
       // route with the exact rigor the default route gets.
-      const projectRoute = (config: OpenClawConfig) => projectInferenceRoute(config, targetAgentId);
+      const projectRoute = (config: AforaConfig) => projectInferenceRoute(config, targetAgentId);
       const stagedConfig = await applySystemAgentModelSelection({
         config: snapshot.sourceConfig,
         model: operation.model,
@@ -627,7 +627,7 @@ export async function executeSetDefaultModel(
                 "The final live inference test did not return a reusable session binding, so the requested model was not saved. Retry the model change.",
               );
             }
-            // The live probe can outlive the original OpenClaw authority.
+            // The live probe can outlive the original Afora authority.
             // Re-check it last, immediately before the writer crosses to disk.
             await opts.beforePersistentApply?.();
             persistedVerification = latestVerification;

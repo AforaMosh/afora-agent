@@ -62,7 +62,7 @@ type AgentRunRegistryState = {
   version: number;
 };
 
-const AGENT_RUN_REGISTRY_STATE_KEY = Symbol.for("openclaw.agentRunRegistry.state");
+const AGENT_RUN_REGISTRY_STATE_KEY = Symbol.for("afora.agentRunRegistry.state");
 
 function getAgentRunRegistryState(): AgentRunRegistryState {
   return resolveGlobalSingleton<AgentRunRegistryState>(AGENT_RUN_REGISTRY_STATE_KEY, () => ({

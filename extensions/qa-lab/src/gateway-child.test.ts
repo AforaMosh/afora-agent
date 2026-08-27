@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { Writable } from "node:stream";
 import { pathToFileURL } from "node:url";
-import { toErrorObject } from "openclaw/plugin-sdk/error-runtime";
+import { toErrorObject } from "afora-agent/plugin-sdk/error-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createQaBundledPluginsDir,
@@ -52,13 +52,13 @@ const qaTempPathState = vi.hoisted(() => ({
   preferredTmpDir: process.env.TMPDIR || "/tmp",
 }));
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ({
   fetchWithSsrFGuard: fetchWithSsrFGuardMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/temp-path", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/temp-path")>()),
-  resolvePreferredOpenClawTmpDir: () => qaTempPathState.preferredTmpDir,
+vi.mock("afora-agent/plugin-sdk/temp-path", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/temp-path")>()),
+  resolvePreferredAforaTmpDir: () => qaTempPathState.preferredTmpDir,
 }));
 
 vi.mock("./node-exec.js", () => ({
@@ -76,16 +76,16 @@ afterEach(async () => {
 
 function createParams(baseEnv?: NodeJS.ProcessEnv) {
   return {
-    configPath: "/tmp/openclaw-qa/openclaw.json",
+    configPath: "/tmp/afora-qa/afora.json",
     gatewayToken: "qa-token",
-    homeDir: "/tmp/openclaw-qa/home",
-    stateDir: "/tmp/openclaw-qa/state",
-    tempRoot: "/tmp/openclaw-qa",
-    xdgConfigHome: "/tmp/openclaw-qa/xdg-config",
-    xdgDataHome: "/tmp/openclaw-qa/xdg-data",
-    xdgCacheHome: "/tmp/openclaw-qa/xdg-cache",
-    bundledPluginsDir: "/tmp/openclaw-qa/bundled-plugins",
-    stagedBundledPluginsRoot: "/repo/.artifacts/qa-runtime/openclaw-qa-suite-test",
+    homeDir: "/tmp/afora-qa/home",
+    stateDir: "/tmp/afora-qa/state",
+    tempRoot: "/tmp/afora-qa",
+    xdgConfigHome: "/tmp/afora-qa/xdg-config",
+    xdgDataHome: "/tmp/afora-qa/xdg-data",
+    xdgCacheHome: "/tmp/afora-qa/xdg-cache",
+    bundledPluginsDir: "/tmp/afora-qa/bundled-plugins",
+    stagedBundledPluginsRoot: "/repo/.artifacts/qa-runtime/afora-qa-suite-test",
     compatibilityHostVersion: "2026.4.8",
     baseEnv,
   };
@@ -140,7 +140,7 @@ async function writeJsonFixture(filePath: string, value: unknown, space?: number
 }
 
 async function writeTempProviderConfig(value: unknown) {
-  const configPath = path.join(await tempDirs.makeTempDir("qa-provider-config-"), "openclaw.json");
+  const configPath = path.join(await tempDirs.makeTempDir("qa-provider-config-"), "afora.json");
   await writeJsonFixture(configPath, value);
   return configPath;
 }
@@ -154,8 +154,8 @@ import path from "node:path";
 
 const args = process.argv.slice(2);
 const recordPath = process.env.QA_RECORD_PATH;
-const configPath = process.env.OPENCLAW_CONFIG_PATH;
-const stateDir = process.env.OPENCLAW_STATE_DIR;
+const configPath = process.env.AFORA_CONFIG_PATH;
+const stateDir = process.env.AFORA_STATE_DIR;
 if (!recordPath || !configPath || !stateDir) {
   throw new Error("missing fixture environment");
 }
@@ -169,11 +169,11 @@ if (args[0] === "models") {
     kind: "auth",
     args,
     stdin,
-    dbExists: fs.existsSync(path.join(stateDir, "agents", "qa", "agent", "openclaw-agent.sqlite")),
+    dbExists: fs.existsSync(path.join(stateDir, "agents", "qa", "agent", "afora-agent.sqlite")),
     env: {
-      OPENCLAW_CLI: process.env.OPENCLAW_CLI,
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_CLI: process.env.AFORA_CLI,
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_STATE_DIR: stateDir,
     },
   });
   if (process.env.QA_FAIL_PROVIDER === provider) {
@@ -210,7 +210,7 @@ describe("runQaGatewayCliCommand", () => {
       executablePath: process.execPath,
       argsPrefix: [
         "--eval",
-        'process.stdout.write(`${process.env.OPENCLAW_CLI}:${process.env.QA_VALUE}:${process.argv.slice(1).join(",")}`)',
+        'process.stdout.write(`${process.env.AFORA_CLI}:${process.env.QA_VALUE}:${process.argv.slice(1).join(",")}`)',
       ],
       args: ["voicecall", "start"],
       cwd: process.cwd(),
@@ -229,7 +229,7 @@ describe("runQaGatewayCliCommand", () => {
         cwd: process.cwd(),
         env: process.env,
       }),
-    ).rejects.toThrow("OpenClaw CLI exited 7: fixture failure");
+    ).rejects.toThrow("Afora CLI exited 7: fixture failure");
   });
 });
 
@@ -406,7 +406,7 @@ describe("Gateway child fixture helpers", () => {
       }),
     ).toEqual(
       expect.objectContaining({
-        OPENCLAW_CODEX_APP_SERVER_ARGS: `app-server -c openai_base_url=http://127.0.0.1:44080/v1 -c ${JSON.stringify(`model_catalog_json=${modelCatalogPath}`)} -c sandbox_workspace_write.exclude_tmpdir_env_var=true -c sandbox_workspace_write.exclude_slash_tmp=true --listen stdio://`,
+        AFORA_CODEX_APP_SERVER_ARGS: `app-server -c openai_base_url=http://127.0.0.1:44080/v1 -c ${JSON.stringify(`model_catalog_json=${modelCatalogPath}`)} -c sandbox_workspace_write.exclude_tmpdir_env_var=true -c sandbox_workspace_write.exclude_slash_tmp=true --listen stdio://`,
       }),
     );
   });
@@ -416,7 +416,7 @@ describe("Gateway child fixture helpers", () => {
     await expect(
       stageQaCodexMockModelCatalog({
         tempRoot,
-        forcedRuntime: "openclaw",
+        forcedRuntime: "afora",
         providerMode: "mock-openai",
       }),
     ).resolves.toBeUndefined();
@@ -488,7 +488,7 @@ describe("buildQaRuntimeEnv", () => {
         useRepoCli: true,
         transportBaseUrl: "http://127.0.0.1:43123",
       }),
-    ).rejects.toThrow("OpenClaw CLI entry not found");
+    ).rejects.toThrow("Afora CLI entry not found");
 
     await expect(readdir(tempParent)).resolves.toStrictEqual([]);
   });
@@ -533,7 +533,7 @@ describe("buildQaRuntimeEnv", () => {
     const preferredTempParent = await tempDirs.makeTempDir("qa-gateway-default-spawn-fail-");
     const commandTempParent = await tempDirs.makeTempDir("qa-gateway-command-spawn-fail-");
     qaTempPathState.preferredTmpDir = preferredTempParent;
-    const missingExecutable = path.join(commandTempParent, "missing-openclaw-node");
+    const missingExecutable = path.join(commandTempParent, "missing-afora-node");
 
     await expect(
       startQaGatewayChild({
@@ -561,19 +561,19 @@ describe("buildQaRuntimeEnv", () => {
       providerMode: "mock-openai",
     });
 
-    expect(env.OPENCLAW_TEST_FAST).toBe("1");
-    expect(env.OPENCLAW_SKIP_STARTUP_MODEL_PREWARM).toBe("1");
-    expect(env.OPENCLAW_EMBEDDED_ABORT_SETTLE_TIMEOUT_MS).toBe("2000");
-    expect(env.OPENCLAW_QA_PARENT_PID).toBe(String(process.pid));
-    expect(env.OPENCLAW_QA_TEMP_ROOT).toBe("/tmp/openclaw-qa");
-    expect(env.OPENCLAW_QA_STAGED_RUNTIME_ROOT).toBe(
-      "/repo/.artifacts/qa-runtime/openclaw-qa-suite-test",
+    expect(env.AFORA_TEST_FAST).toBe("1");
+    expect(env.AFORA_SKIP_STARTUP_MODEL_PREWARM).toBe("1");
+    expect(env.AFORA_EMBEDDED_ABORT_SETTLE_TIMEOUT_MS).toBe("2000");
+    expect(env.AFORA_QA_PARENT_PID).toBe(String(process.pid));
+    expect(env.AFORA_QA_TEMP_ROOT).toBe("/tmp/afora-qa");
+    expect(env.AFORA_QA_STAGED_RUNTIME_ROOT).toBe(
+      "/repo/.artifacts/qa-runtime/afora-qa-suite-test",
     );
-    expect(env.OPENCLAW_QA_ALLOW_LOCAL_IMAGE_PROVIDER).toBe("1");
-    expect(env.OPENCLAW_BUILD_PRIVATE_QA).toBe("1");
-    expect(env.OPENCLAW_ALLOW_SLOW_REPLY_TESTS).toBe("1");
-    expect(env.OPENCLAW_BUNDLED_PLUGINS_DIR).toBe("/tmp/openclaw-qa/bundled-plugins");
-    expect(env.OPENCLAW_COMPATIBILITY_HOST_VERSION).toBe("2026.4.8");
+    expect(env.AFORA_QA_ALLOW_LOCAL_IMAGE_PROVIDER).toBe("1");
+    expect(env.AFORA_BUILD_PRIVATE_QA).toBe("1");
+    expect(env.AFORA_ALLOW_SLOW_REPLY_TESTS).toBe("1");
+    expect(env.AFORA_BUNDLED_PLUGINS_DIR).toBe("/tmp/afora-qa/bundled-plugins");
+    expect(env.AFORA_COMPATIBILITY_HOST_VERSION).toBe("2026.4.8");
   });
 
   it("isolates gateway children from Vitest without removing QA controls or non-test NODE_ENV", () => {
@@ -595,8 +595,8 @@ describe("buildQaRuntimeEnv", () => {
     expect(testEnv.VITEST).toBeUndefined();
     expect(testEnv.VITEST_POOL_ID).toBeUndefined();
     expect(testEnv.VITEST_WORKER_ID).toBeUndefined();
-    expect(testEnv.OPENCLAW_TEST_FAST).toBe("1");
-    expect(testEnv.OPENCLAW_ALLOW_SLOW_REPLY_TESTS).toBe("1");
+    expect(testEnv.AFORA_TEST_FAST).toBe("1");
+    expect(testEnv.AFORA_ALLOW_SLOW_REPLY_TESTS).toBe("1");
 
     const developmentEnv = buildQaRuntimeEnv({
       ...createParams({ NODE_ENV: "development" }),
@@ -607,37 +607,37 @@ describe("buildQaRuntimeEnv", () => {
   it("does not inherit parent channel or provider skip controls", () => {
     const env = buildQaRuntimeEnv({
       ...createParams({
-        OPENCLAW_SKIP_CHANNELS: "1",
-        OPENCLAW_SKIP_PROVIDERS: "1",
+        AFORA_SKIP_CHANNELS: "1",
+        AFORA_SKIP_PROVIDERS: "1",
       }),
     });
 
-    expect(env.OPENCLAW_SKIP_CHANNELS).toBeUndefined();
-    expect(env.OPENCLAW_SKIP_PROVIDERS).toBeUndefined();
+    expect(env.AFORA_SKIP_CHANNELS).toBeUndefined();
+    expect(env.AFORA_SKIP_PROVIDERS).toBeUndefined();
   });
 
   it("honors explicit channel and provider skip controls", () => {
     const env = buildQaRuntimeEnv({
       ...createParams({
-        OPENCLAW_SKIP_CHANNELS: "inherited",
-        OPENCLAW_SKIP_PROVIDERS: "inherited",
+        AFORA_SKIP_CHANNELS: "inherited",
+        AFORA_SKIP_PROVIDERS: "inherited",
       }),
       runtimeEnvPatch: {
-        OPENCLAW_SKIP_CHANNELS: "patched-channels",
-        OPENCLAW_SKIP_PROVIDERS: "patched-providers",
+        AFORA_SKIP_CHANNELS: "patched-channels",
+        AFORA_SKIP_PROVIDERS: "patched-providers",
       },
     });
 
-    expect(env.OPENCLAW_SKIP_CHANNELS).toBe("patched-channels");
-    expect(env.OPENCLAW_SKIP_PROVIDERS).toBe("patched-providers");
+    expect(env.AFORA_SKIP_CHANNELS).toBe("patched-channels");
+    expect(env.AFORA_SKIP_PROVIDERS).toBe("patched-providers");
   });
 
   it("maps live frontier key aliases into provider env vars", () => {
     const env = buildQaRuntimeEnv({
       ...createParams({
-        OPENCLAW_LIVE_OPENAI_KEY: "openai-live",
-        OPENCLAW_LIVE_ANTHROPIC_KEY: "anthropic-live",
-        OPENCLAW_LIVE_GEMINI_KEY: "gemini-live",
+        AFORA_LIVE_OPENAI_KEY: "openai-live",
+        AFORA_LIVE_ANTHROPIC_KEY: "anthropic-live",
+        AFORA_LIVE_GEMINI_KEY: "gemini-live",
       }),
       providerMode: "live-frontier",
     });
@@ -651,7 +651,7 @@ describe("buildQaRuntimeEnv", () => {
     const env = buildQaRuntimeEnv({
       ...createParams({
         OPENAI_API_KEY: "openai-explicit",
-        OPENCLAW_LIVE_OPENAI_KEY: "openai-live",
+        AFORA_LIVE_OPENAI_KEY: "openai-live",
       }),
       providerMode: "live-frontier",
     });
@@ -659,7 +659,7 @@ describe("buildQaRuntimeEnv", () => {
     expect(env.OPENAI_API_KEY).toBe("openai-explicit");
   });
 
-  it("preserves Codex CLI auth home for live frontier runs while sandboxing OpenClaw home", async () => {
+  it("preserves Codex CLI auth home for live frontier runs while sandboxing Afora home", async () => {
     const hostHome = await tempDirs.makeTempDir("qa-host-home-");
     const codexHome = path.join(hostHome, ".codex");
     await mkdir(codexHome);
@@ -671,12 +671,12 @@ describe("buildQaRuntimeEnv", () => {
       providerMode: "live-frontier",
     });
 
-    expect(env.HOME).toBe("/tmp/openclaw-qa/home");
-    expect(env.OPENCLAW_HOME).toBe("/tmp/openclaw-qa/home");
+    expect(env.HOME).toBe("/tmp/afora-qa/home");
+    expect(env.AFORA_HOME).toBe("/tmp/afora-qa/home");
     expect(env.CODEX_HOME).toBe(codexHome);
   });
 
-  it("forwards host HOME for live Claude CLI runs while keeping OpenClaw home sandboxed", async () => {
+  it("forwards host HOME for live Claude CLI runs while keeping Afora home sandboxed", async () => {
     const hostHome = await tempDirs.makeTempDir("qa-host-home-");
 
     const env = buildQaRuntimeEnv({
@@ -688,11 +688,11 @@ describe("buildQaRuntimeEnv", () => {
     });
 
     expect(env.HOME).toBe(hostHome);
-    expect(env.OPENCLAW_HOME).toBe("/tmp/openclaw-qa/home");
-    expect(env.OPENCLAW_STATE_DIR).toBe("/tmp/openclaw-qa/state");
+    expect(env.AFORA_HOME).toBe("/tmp/afora-qa/home");
+    expect(env.AFORA_STATE_DIR).toBe("/tmp/afora-qa/state");
   });
 
-  it("can forward host HOME for browser-backed QA runs while keeping OpenClaw home sandboxed", async () => {
+  it("can forward host HOME for browser-backed QA runs while keeping Afora home sandboxed", async () => {
     const hostHome = await tempDirs.makeTempDir("qa-host-home-");
 
     const env = buildQaRuntimeEnv({
@@ -704,8 +704,8 @@ describe("buildQaRuntimeEnv", () => {
     });
 
     expect(env.HOME).toBe(hostHome);
-    expect(env.OPENCLAW_HOME).toBe("/tmp/openclaw-qa/home");
-    expect(env.OPENCLAW_STATE_DIR).toBe("/tmp/openclaw-qa/state");
+    expect(env.AFORA_HOME).toBe("/tmp/afora-qa/home");
+    expect(env.AFORA_STATE_DIR).toBe("/tmp/afora-qa/state");
   });
 
   it("preserves the live Anthropic key for live Claude CLI runs without writing it into config", async () => {
@@ -714,8 +714,8 @@ describe("buildQaRuntimeEnv", () => {
     const env = buildQaRuntimeEnv({
       ...createParams({
         HOME: hostHome,
-        OPENCLAW_LIVE_ANTHROPIC_KEY: "anthropic-live",
-        OPENCLAW_LIVE_CLI_BACKEND_PRESERVE_ENV: '["SAFE_KEEP"]',
+        AFORA_LIVE_ANTHROPIC_KEY: "anthropic-live",
+        AFORA_LIVE_CLI_BACKEND_PRESERVE_ENV: '["SAFE_KEEP"]',
       }),
       providerMode: "live-frontier",
       forwardHostHomeForClaudeCli: true,
@@ -723,8 +723,8 @@ describe("buildQaRuntimeEnv", () => {
     });
 
     expect(env.ANTHROPIC_API_KEY).toBe("anthropic-live");
-    expect(env.OPENCLAW_LIVE_CLI_BACKEND_PRESERVE_ENV).toBe('["SAFE_KEEP","ANTHROPIC_API_KEY"]');
-    expect(env.OPENCLAW_LIVE_CLI_BACKEND_AUTH_MODE).toBe("api-key");
+    expect(env.AFORA_LIVE_CLI_BACKEND_PRESERVE_ENV).toBe('["SAFE_KEEP","ANTHROPIC_API_KEY"]');
+    expect(env.AFORA_LIVE_CLI_BACKEND_AUTH_MODE).toBe("api-key");
   });
 
   it("removes preserved Anthropic keys for live Claude CLI subscription runs", async () => {
@@ -734,7 +734,7 @@ describe("buildQaRuntimeEnv", () => {
       ...createParams({
         HOME: hostHome,
         ANTHROPIC_API_KEY: "anthropic-live",
-        OPENCLAW_LIVE_CLI_BACKEND_PRESERVE_ENV: '["SAFE_KEEP","ANTHROPIC_API_KEY"]',
+        AFORA_LIVE_CLI_BACKEND_PRESERVE_ENV: '["SAFE_KEEP","ANTHROPIC_API_KEY"]',
       }),
       providerMode: "live-frontier",
       forwardHostHomeForClaudeCli: true,
@@ -742,42 +742,42 @@ describe("buildQaRuntimeEnv", () => {
     });
 
     expect(env.ANTHROPIC_API_KEY).toBe("anthropic-live");
-    expect(env.OPENCLAW_LIVE_CLI_BACKEND_PRESERVE_ENV).toBe('["SAFE_KEEP"]');
-    expect(env.OPENCLAW_LIVE_CLI_BACKEND_AUTH_MODE).toBe("subscription");
+    expect(env.AFORA_LIVE_CLI_BACKEND_PRESERVE_ENV).toBe('["SAFE_KEEP"]');
+    expect(env.AFORA_LIVE_CLI_BACKEND_AUTH_MODE).toBe("subscription");
   });
 
   it("does not pass QA setup-token values to the gateway child env", () => {
     const env = buildQaRuntimeEnv({
       ...createParams({
-        OPENCLAW_LIVE_SETUP_TOKEN_VALUE: `sk-ant-oat01-${"a".repeat(80)}`,
-        OPENCLAW_QA_LIVE_ANTHROPIC_SETUP_TOKEN: `sk-ant-oat01-${"b".repeat(80)}`,
+        AFORA_LIVE_SETUP_TOKEN_VALUE: `sk-ant-oat01-${"a".repeat(80)}`,
+        AFORA_QA_LIVE_ANTHROPIC_SETUP_TOKEN: `sk-ant-oat01-${"b".repeat(80)}`,
       }),
       providerMode: "live-frontier",
     });
 
-    expect(env.OPENCLAW_LIVE_SETUP_TOKEN_VALUE).toBeUndefined();
-    expect(env.OPENCLAW_QA_LIVE_ANTHROPIC_SETUP_TOKEN).toBeUndefined();
+    expect(env.AFORA_LIVE_SETUP_TOKEN_VALUE).toBeUndefined();
+    expect(env.AFORA_QA_LIVE_ANTHROPIC_SETUP_TOKEN).toBeUndefined();
   });
 
   it("does not pass credential broker or Telegram harness secrets to the gateway child env", () => {
     const env = buildQaRuntimeEnv({
       ...createParams({
-        OPENCLAW_QA_CONVEX_SECRET_CI: "convex-ci-secret",
-        OPENCLAW_QA_CONVEX_SECRET_MAINTAINER: "convex-maintainer-secret",
-        OPENCLAW_QA_SUT_FORBIDDEN_SENTINEL: "trusted-parent-only",
-        OPENCLAW_QA_TELEGRAM_GROUP_ID: "-1001234567890",
-        OPENCLAW_QA_TELEGRAM_DRIVER_BOT_TOKEN: "driver-token",
-        OPENCLAW_QA_TELEGRAM_SUT_BOT_TOKEN: "sut-token",
+        AFORA_QA_CONVEX_SECRET_CI: "convex-ci-secret",
+        AFORA_QA_CONVEX_SECRET_MAINTAINER: "convex-maintainer-secret",
+        AFORA_QA_SUT_FORBIDDEN_SENTINEL: "trusted-parent-only",
+        AFORA_QA_TELEGRAM_GROUP_ID: "-1001234567890",
+        AFORA_QA_TELEGRAM_DRIVER_BOT_TOKEN: "driver-token",
+        AFORA_QA_TELEGRAM_SUT_BOT_TOKEN: "sut-token",
       }),
       providerMode: "live-frontier",
     });
 
-    expect(env.OPENCLAW_QA_CONVEX_SECRET_CI).toBeUndefined();
-    expect(env.OPENCLAW_QA_CONVEX_SECRET_MAINTAINER).toBeUndefined();
-    expect(env.OPENCLAW_QA_SUT_FORBIDDEN_SENTINEL).toBeUndefined();
-    expect(env.OPENCLAW_QA_TELEGRAM_GROUP_ID).toBeUndefined();
-    expect(env.OPENCLAW_QA_TELEGRAM_DRIVER_BOT_TOKEN).toBeUndefined();
-    expect(env.OPENCLAW_QA_TELEGRAM_SUT_BOT_TOKEN).toBeUndefined();
+    expect(env.AFORA_QA_CONVEX_SECRET_CI).toBeUndefined();
+    expect(env.AFORA_QA_CONVEX_SECRET_MAINTAINER).toBeUndefined();
+    expect(env.AFORA_QA_SUT_FORBIDDEN_SENTINEL).toBeUndefined();
+    expect(env.AFORA_QA_TELEGRAM_GROUP_ID).toBeUndefined();
+    expect(env.AFORA_QA_TELEGRAM_DRIVER_BOT_TOKEN).toBeUndefined();
+    expect(env.AFORA_QA_TELEGRAM_SUT_BOT_TOKEN).toBeUndefined();
   });
 
   it("re-scrubs blocked credentials after runtime env patches", () => {
@@ -785,24 +785,24 @@ describe("buildQaRuntimeEnv", () => {
       ...createParams({ SAFE_VALUE: "base" }),
       runtimeEnvPatch: {
         SAFE_VALUE: "patched",
-        OPENCLAW_LIVE_SETUP_TOKEN_VALUE: "setup-token",
-        OPENCLAW_QA_LIVE_ANTHROPIC_SETUP_TOKEN: "anthropic-setup-token",
-        OPENCLAW_QA_CONVEX_SECRET_CI: "convex-ci-secret",
-        OPENCLAW_QA_SUT_FORBIDDEN_SENTINEL: "trusted-parent-only",
-        OPENCLAW_QA_TELEGRAM_GROUP_ID: "-1001234567890",
-        OPENCLAW_QA_TELEGRAM_DRIVER_BOT_TOKEN: "driver-token",
-        OPENCLAW_QA_TELEGRAM_SUT_BOT_TOKEN: "sut-token",
+        AFORA_LIVE_SETUP_TOKEN_VALUE: "setup-token",
+        AFORA_QA_LIVE_ANTHROPIC_SETUP_TOKEN: "anthropic-setup-token",
+        AFORA_QA_CONVEX_SECRET_CI: "convex-ci-secret",
+        AFORA_QA_SUT_FORBIDDEN_SENTINEL: "trusted-parent-only",
+        AFORA_QA_TELEGRAM_GROUP_ID: "-1001234567890",
+        AFORA_QA_TELEGRAM_DRIVER_BOT_TOKEN: "driver-token",
+        AFORA_QA_TELEGRAM_SUT_BOT_TOKEN: "sut-token",
       },
     });
 
     expect(env.SAFE_VALUE).toBe("patched");
-    expect(env.OPENCLAW_LIVE_SETUP_TOKEN_VALUE).toBeUndefined();
-    expect(env.OPENCLAW_QA_LIVE_ANTHROPIC_SETUP_TOKEN).toBeUndefined();
-    expect(env.OPENCLAW_QA_CONVEX_SECRET_CI).toBeUndefined();
-    expect(env.OPENCLAW_QA_SUT_FORBIDDEN_SENTINEL).toBeUndefined();
-    expect(env.OPENCLAW_QA_TELEGRAM_GROUP_ID).toBeUndefined();
-    expect(env.OPENCLAW_QA_TELEGRAM_DRIVER_BOT_TOKEN).toBeUndefined();
-    expect(env.OPENCLAW_QA_TELEGRAM_SUT_BOT_TOKEN).toBeUndefined();
+    expect(env.AFORA_LIVE_SETUP_TOKEN_VALUE).toBeUndefined();
+    expect(env.AFORA_QA_LIVE_ANTHROPIC_SETUP_TOKEN).toBeUndefined();
+    expect(env.AFORA_QA_CONVEX_SECRET_CI).toBeUndefined();
+    expect(env.AFORA_QA_SUT_FORBIDDEN_SENTINEL).toBeUndefined();
+    expect(env.AFORA_QA_TELEGRAM_GROUP_ID).toBeUndefined();
+    expect(env.AFORA_QA_TELEGRAM_DRIVER_BOT_TOKEN).toBeUndefined();
+    expect(env.AFORA_QA_TELEGRAM_SUT_BOT_TOKEN).toBeUndefined();
   });
 
   it("re-scrubs blocked credentials in the spawned gateway child env", async () => {
@@ -813,13 +813,13 @@ describe("buildQaRuntimeEnv", () => {
       'const fs = require("node:fs");',
       "const env = {",
       "SAFE_VALUE: process.env.SAFE_VALUE,",
-      "OPENCLAW_LIVE_SETUP_TOKEN_VALUE: process.env.OPENCLAW_LIVE_SETUP_TOKEN_VALUE,",
-      "OPENCLAW_QA_LIVE_ANTHROPIC_SETUP_TOKEN: process.env.OPENCLAW_QA_LIVE_ANTHROPIC_SETUP_TOKEN,",
-      "OPENCLAW_QA_CONVEX_SECRET_CI: process.env.OPENCLAW_QA_CONVEX_SECRET_CI,",
-      "OPENCLAW_QA_SUT_FORBIDDEN_SENTINEL: process.env.OPENCLAW_QA_SUT_FORBIDDEN_SENTINEL,",
-      "OPENCLAW_QA_TELEGRAM_GROUP_ID: process.env.OPENCLAW_QA_TELEGRAM_GROUP_ID,",
-      "OPENCLAW_QA_TELEGRAM_DRIVER_BOT_TOKEN: process.env.OPENCLAW_QA_TELEGRAM_DRIVER_BOT_TOKEN,",
-      "OPENCLAW_QA_TELEGRAM_SUT_BOT_TOKEN: process.env.OPENCLAW_QA_TELEGRAM_SUT_BOT_TOKEN,",
+      "AFORA_LIVE_SETUP_TOKEN_VALUE: process.env.AFORA_LIVE_SETUP_TOKEN_VALUE,",
+      "AFORA_QA_LIVE_ANTHROPIC_SETUP_TOKEN: process.env.AFORA_QA_LIVE_ANTHROPIC_SETUP_TOKEN,",
+      "AFORA_QA_CONVEX_SECRET_CI: process.env.AFORA_QA_CONVEX_SECRET_CI,",
+      "AFORA_QA_SUT_FORBIDDEN_SENTINEL: process.env.AFORA_QA_SUT_FORBIDDEN_SENTINEL,",
+      "AFORA_QA_TELEGRAM_GROUP_ID: process.env.AFORA_QA_TELEGRAM_GROUP_ID,",
+      "AFORA_QA_TELEGRAM_DRIVER_BOT_TOKEN: process.env.AFORA_QA_TELEGRAM_DRIVER_BOT_TOKEN,",
+      "AFORA_QA_TELEGRAM_SUT_BOT_TOKEN: process.env.AFORA_QA_TELEGRAM_SUT_BOT_TOKEN,",
       "};",
       `fs.writeFileSync(${JSON.stringify(observedEnvPath)}, JSON.stringify(env));`,
     ].join("\n");
@@ -834,13 +834,13 @@ describe("buildQaRuntimeEnv", () => {
         },
         runtimeEnvPatch: {
           SAFE_VALUE: "patched",
-          OPENCLAW_LIVE_SETUP_TOKEN_VALUE: "setup-token",
-          OPENCLAW_QA_LIVE_ANTHROPIC_SETUP_TOKEN: "anthropic-setup-token",
-          OPENCLAW_QA_CONVEX_SECRET_CI: "convex-ci-secret",
-          OPENCLAW_QA_SUT_FORBIDDEN_SENTINEL: "trusted-parent-only",
-          OPENCLAW_QA_TELEGRAM_GROUP_ID: "-1001234567890",
-          OPENCLAW_QA_TELEGRAM_DRIVER_BOT_TOKEN: "driver-token",
-          OPENCLAW_QA_TELEGRAM_SUT_BOT_TOKEN: "sut-token",
+          AFORA_LIVE_SETUP_TOKEN_VALUE: "setup-token",
+          AFORA_QA_LIVE_ANTHROPIC_SETUP_TOKEN: "anthropic-setup-token",
+          AFORA_QA_CONVEX_SECRET_CI: "convex-ci-secret",
+          AFORA_QA_SUT_FORBIDDEN_SENTINEL: "trusted-parent-only",
+          AFORA_QA_TELEGRAM_GROUP_ID: "-1001234567890",
+          AFORA_QA_TELEGRAM_DRIVER_BOT_TOKEN: "driver-token",
+          AFORA_QA_TELEGRAM_SUT_BOT_TOKEN: "sut-token",
         },
         transport: {
           requiredPluginIds: [],
@@ -896,11 +896,11 @@ describe("buildQaRuntimeEnv", () => {
           OPENAI_API_KEY: "openai-live",
           OPENAI_API_KEYS: "openai-a,openai-b",
           CODEX_HOME: "/host/.codex",
-          OPENCLAW_LIVE_ANTHROPIC_KEY: "anthropic-live",
-          OPENCLAW_LIVE_ANTHROPIC_KEYS: "anthropic-a,anthropic-b",
-          OPENCLAW_LIVE_CODEX_API_KEY: "codex-live",
-          OPENCLAW_LIVE_GEMINI_KEY: "gemini-live",
-          OPENCLAW_LIVE_OPENAI_KEY: "openai-live",
+          AFORA_LIVE_ANTHROPIC_KEY: "anthropic-live",
+          AFORA_LIVE_ANTHROPIC_KEYS: "anthropic-a,anthropic-b",
+          AFORA_LIVE_CODEX_API_KEY: "codex-live",
+          AFORA_LIVE_GEMINI_KEY: "gemini-live",
+          AFORA_LIVE_OPENAI_KEY: "openai-live",
         }),
         providerMode,
       });
@@ -914,11 +914,11 @@ describe("buildQaRuntimeEnv", () => {
       expect(env.GEMINI_API_KEY).toBeUndefined();
       expect(env.GEMINI_API_KEYS).toBeUndefined();
       expect(env.GOOGLE_API_KEY).toBeUndefined();
-      expect(env.OPENCLAW_LIVE_OPENAI_KEY).toBeUndefined();
-      expect(env.OPENCLAW_LIVE_ANTHROPIC_KEY).toBeUndefined();
-      expect(env.OPENCLAW_LIVE_ANTHROPIC_KEYS).toBeUndefined();
-      expect(env.OPENCLAW_LIVE_CODEX_API_KEY).toBeUndefined();
-      expect(env.OPENCLAW_LIVE_GEMINI_KEY).toBeUndefined();
+      expect(env.AFORA_LIVE_OPENAI_KEY).toBeUndefined();
+      expect(env.AFORA_LIVE_ANTHROPIC_KEY).toBeUndefined();
+      expect(env.AFORA_LIVE_ANTHROPIC_KEYS).toBeUndefined();
+      expect(env.AFORA_LIVE_CODEX_API_KEY).toBeUndefined();
+      expect(env.AFORA_LIVE_GEMINI_KEY).toBeUndefined();
     },
   );
 
@@ -1063,7 +1063,7 @@ describe("buildQaRuntimeEnv", () => {
       cfg: {},
       stateDir,
       env: {
-        OPENCLAW_LIVE_SETUP_TOKEN_VALUE: token,
+        AFORA_LIVE_SETUP_TOKEN_VALUE: token,
       },
     });
 
@@ -1119,7 +1119,7 @@ describe("buildQaRuntimeEnv", () => {
       stateDir,
       providerIds: ["openai"],
       env: {
-        OPENCLAW_LIVE_CODEX_API_KEY: "qa-live-direct-codex-key",
+        AFORA_LIVE_CODEX_API_KEY: "qa-live-direct-codex-key",
       },
     });
 
@@ -1136,7 +1136,7 @@ describe("buildQaRuntimeEnv", () => {
         cfg,
         providerIds: ["openai"],
         env: {
-          OPENCLAW_LIVE_CODEX_API_KEY: "qa-live-direct-codex-key",
+          AFORA_LIVE_CODEX_API_KEY: "qa-live-direct-codex-key",
         },
         readCodexCredentials: () => null,
       }),
@@ -1149,7 +1149,7 @@ describe("buildQaRuntimeEnv", () => {
         cfg: {},
         providerIds: ["openai"],
         env: {
-          CODEX_HOME: path.join(os.tmpdir(), "missing-openclaw-codex-home"),
+          CODEX_HOME: path.join(os.tmpdir(), "missing-afora-codex-home"),
         },
         readCodexCredentials: () => null,
       }),
@@ -1171,7 +1171,7 @@ describe("buildQaRuntimeEnv", () => {
         },
         providerIds: ["openai"],
         env: {
-          CODEX_HOME: path.join(os.tmpdir(), "missing-openclaw-codex-home"),
+          CODEX_HOME: path.join(os.tmpdir(), "missing-afora-codex-home"),
         },
         readCodexCredentials: () => null,
       }),
@@ -1184,8 +1184,8 @@ describe("buildQaRuntimeEnv", () => {
         cfg: {},
         providerIds: ["openai"],
         env: {
-          CODEX_HOME: path.join(os.tmpdir(), "missing-openclaw-codex-home"),
-          OPENCLAW_QA_FORCE_RUNTIME: "codex",
+          CODEX_HOME: path.join(os.tmpdir(), "missing-afora-codex-home"),
+          AFORA_QA_FORCE_RUNTIME: "codex",
         },
         readCodexCredentials: () => null,
       }),
@@ -1198,8 +1198,8 @@ describe("buildQaRuntimeEnv", () => {
         cfg: {},
         providerIds: ["openai"],
         env: {
-          OPENCLAW_LIVE_OPENAI_KEY: "qa-live-codex-fallback-key",
-          OPENCLAW_QA_FORCE_RUNTIME: "codex",
+          AFORA_LIVE_OPENAI_KEY: "qa-live-codex-fallback-key",
+          AFORA_QA_FORCE_RUNTIME: "codex",
         },
         readCodexCredentials: () => null,
       }),
@@ -1251,7 +1251,7 @@ describe("buildQaRuntimeEnv", () => {
   it("stages configured OpenAI env secret refs for default OpenAI live QA runs", async () => {
     const stateDir = await tempDirs.makeTempDir("qa-live-codex-config-ref-state-");
     const env = {
-      OPENCLAW_LIVE_CODEX_API_KEY: "qa-configured-env-ref-not-a-real-key",
+      AFORA_LIVE_CODEX_API_KEY: "qa-configured-env-ref-not-a-real-key",
     };
     const cfg = await stageQaLiveApiKeyProfiles({
       cfg: {
@@ -1263,7 +1263,7 @@ describe("buildQaRuntimeEnv", () => {
               apiKey: {
                 source: "env",
                 provider: "default",
-                id: "OPENCLAW_LIVE_CODEX_API_KEY",
+                id: "AFORA_LIVE_CODEX_API_KEY",
               },
             },
           },
@@ -1301,7 +1301,7 @@ describe("buildQaRuntimeEnv", () => {
             openai: {
               baseUrl: "",
               models: [],
-              apiKey: "OPENCLAW_LIVE_CODEX_API_KEY",
+              apiKey: "AFORA_LIVE_CODEX_API_KEY",
             },
           },
         },
@@ -1309,7 +1309,7 @@ describe("buildQaRuntimeEnv", () => {
       stateDir,
       providerIds: ["openai"],
       env: {
-        OPENCLAW_LIVE_CODEX_API_KEY: "qa-configured-marker-not-a-real-key",
+        AFORA_LIVE_CODEX_API_KEY: "qa-configured-marker-not-a-real-key",
       },
     });
 
@@ -1444,7 +1444,7 @@ describe("buildQaRuntimeEnv", () => {
       expect(record.dbExists).toBe(false);
       expect(record.stdin).toMatch(/^sk-qa-mock-[a-f0-9]{32}\n$/u);
       expect(record.env).toMatchObject({
-        OPENCLAW_CLI: "1",
+        AFORA_CLI: "1",
       });
     }
     expect(records.at(-1)).toMatchObject({
@@ -1482,7 +1482,7 @@ describe("buildQaRuntimeEnv", () => {
       throw new Error("expected package auth bootstrap error");
     }
     expect(error.message).toContain(
-      "installed package mock auth bootstrap failed for openai: OpenClaw CLI exited 9: Authorization: Bearer <redacted>",
+      "installed package mock auth bootstrap failed for openai: Afora CLI exited 9: Authorization: Bearer <redacted>",
     );
     const records = await readJsonLines(recordPath);
     expect(records).toHaveLength(1);
@@ -1518,7 +1518,7 @@ describe("buildQaRuntimeEnv", () => {
 
     // The main agent's canonical database should not exist because it was not requested.
     await expect(
-      lstat(path.join(stateDir, "agents", "main", "agent", "openclaw-agent.sqlite")),
+      lstat(path.join(stateDir, "agents", "main", "agent", "afora-agent.sqlite")),
     ).rejects.toThrow(/ENOENT/);
   });
 
@@ -1691,7 +1691,7 @@ describe("buildQaRuntimeEnv", () => {
       "bind-collision",
     ],
     [
-      "OpenClaw plugin migration inputs changed during startup convergence; refusing to report the gateway ready. Restart OpenClaw so state migrations run against the final config and plugin inventory.",
+      "Afora plugin migration inputs changed during startup convergence; refusing to report the gateway ready. Restart Afora so state migrations run against the final config and plugin inventory.",
       "migration-convergence-restart",
     ],
   ] as const)("classifies %s", (details, expectedKind) => {
@@ -1705,9 +1705,9 @@ describe("buildQaRuntimeEnv", () => {
   });
 
   it.each([
-    "OpenClaw startup migrations did not complete cleanly; refusing to report the gateway ready.",
-    "OpenClaw plugin migration inputs changed during startup convergence",
-    "Restart OpenClaw so state migrations can continue.",
+    "Afora startup migrations did not complete cleanly; refusing to report the gateway ready.",
+    "Afora plugin migration inputs changed during startup convergence",
+    "Restart Afora so state migrations can continue.",
     "gateway failed to become healthy",
   ])("does not retry unrelated startup failure: %s", (details) => {
     expect(
@@ -1723,7 +1723,7 @@ describe("buildQaRuntimeEnv", () => {
     const first = resolveQaGatewayStartupRetry({
       attempt: 1,
       details:
-        "OpenClaw plugin migration inputs changed during startup convergence; refusing readiness.",
+        "Afora plugin migration inputs changed during startup convergence; refusing readiness.",
       migrationConvergenceRestartUsed: false,
     });
 
@@ -1736,7 +1736,7 @@ describe("buildQaRuntimeEnv", () => {
       resolveQaGatewayStartupRetry({
         attempt: 2,
         details:
-          "OpenClaw plugin migration inputs changed during startup convergence; refusing readiness.",
+          "Afora plugin migration inputs changed during startup convergence; refusing readiness.",
         migrationConvergenceRestartUsed: first?.migrationConvergenceRestartUsed ?? false,
       }),
     ).toBeNull();
@@ -1793,11 +1793,11 @@ describe("buildQaRuntimeEnv", () => {
     await writeFile(
       stdoutLogPath,
       [
-        "OPENCLAW_GATEWAY_TOKEN=qa-suite-token",
+        "AFORA_GATEWAY_TOKEN=qa-suite-token",
         'OPENAI_API_KEY="openai-live"',
-        "OPENCLAW_QA_CONVEX_SECRET_CI=convex-ci-secret",
-        "OPENCLAW_QA_CONVEX_SECRET_MAINTAINER=convex-maintainer-secret",
-        "OPENCLAW_LIVE_CODEX_API_KEY=codex-live-secret",
+        "AFORA_QA_CONVEX_SECRET_CI=convex-ci-secret",
+        "AFORA_QA_CONVEX_SECRET_MAINTAINER=convex-maintainer-secret",
+        "AFORA_LIVE_CODEX_API_KEY=codex-live-secret",
         "botToken=12345:AbCdEfGhIjKl",
         "--botToken=12345:flag-secret",
         '"driverToken":"12345:driver-secr3t"',
@@ -1838,11 +1838,11 @@ describe("buildQaRuntimeEnv", () => {
     ]);
     await expect(readFile(path.join(artifactDir, "gateway.stdout.log"), "utf8")).resolves.toBe(
       [
-        "OPENCLAW_GATEWAY_TOKEN=<redacted>",
+        "AFORA_GATEWAY_TOKEN=<redacted>",
         "OPENAI_API_KEY=<redacted>",
-        "OPENCLAW_QA_CONVEX_SECRET_CI=<redacted>",
-        "OPENCLAW_QA_CONVEX_SECRET_MAINTAINER=<redacted>",
-        "OPENCLAW_LIVE_CODEX_API_KEY=<redacted>",
+        "AFORA_QA_CONVEX_SECRET_CI=<redacted>",
+        "AFORA_QA_CONVEX_SECRET_MAINTAINER=<redacted>",
+        "AFORA_LIVE_CODEX_API_KEY=<redacted>",
         "botToken=<redacted>",
         "--botToken=<redacted>",
         '"driverToken":"<redacted>"',
@@ -1878,7 +1878,7 @@ describe("qa bundled plugin dir", () => {
       path.join(repoRoot, "package.json"),
       JSON.stringify(
         {
-          name: "openclaw",
+          name: "afora",
           type: "module",
           exports: {
             "./plugin-sdk/account-id": {
@@ -1905,13 +1905,13 @@ describe("qa bundled plugin dir", () => {
     );
     await writeFile(
       path.join(repoRoot, "dist", "extensions", "qa-channel", "package.json"),
-      JSON.stringify({ name: "@openclaw/qa-channel", type: "module" }, null, 2),
+      JSON.stringify({ name: "@afora/qa-channel", type: "module" }, null, 2),
       "utf8",
     );
     await writeFile(
       path.join(repoRoot, "dist", "extensions", "qa-channel", "index.js"),
       [
-        'import { normalizeAccountId } from "openclaw/plugin-sdk/account-id";',
+        'import { normalizeAccountId } from "afora-agent/plugin-sdk/account-id";',
         'export const accountId = normalizeAccountId("QA");',
         "",
       ].join("\n"),
@@ -1919,7 +1919,7 @@ describe("qa bundled plugin dir", () => {
     );
     await mkdir(path.join(repoRoot, "extensions", "qa-channel"), { recursive: true });
     await writeFile(
-      path.join(repoRoot, "extensions", "qa-channel", "openclaw.plugin.json"),
+      path.join(repoRoot, "extensions", "qa-channel", "afora.plugin.json"),
       JSON.stringify({
         id: "qa-channel",
         toolMetadata: { qa_read: { replaySafe: true } },
@@ -1954,14 +1954,14 @@ describe("qa bundled plugin dir", () => {
       path.join(repoRoot, ".artifacts", "qa-runtime", path.basename(tempRoot)),
     );
     await expect(readFile(path.join(stagedRoot, "package.json"), "utf8")).resolves.toContain(
-      '"name": "openclaw"',
+      '"name": "afora"',
     );
     const qaChannel = (await import(
       `${pathToFileURL(path.join(bundledPluginsDir, "qa-channel", "index.js")).href}?t=${Date.now()}`
     )) as { accountId: string };
     expect(qaChannel.accountId).toBe("qa");
     await expect(
-      readFile(path.join(bundledPluginsDir, "qa-channel", "openclaw.plugin.json"), "utf8"),
+      readFile(path.join(bundledPluginsDir, "qa-channel", "afora.plugin.json"), "utf8"),
     ).resolves.toContain('"replaySafe":true');
     expect((await lstat(path.join(bundledPluginsDir, "qa-channel"))).isDirectory()).toBe(true);
     expect((await lstat(path.join(bundledPluginsDir, "memory-core"))).isDirectory()).toBe(true);
@@ -1989,7 +1989,7 @@ describe("qa bundled plugin dir", () => {
     const repoRoot = await tempDirs.makeTempDir("qa-bundled-mixed-runtime-");
     await writeFile(
       path.join(repoRoot, "package.json"),
-      JSON.stringify({ name: "openclaw", type: "module" }, null, 2),
+      JSON.stringify({ name: "afora", type: "module" }, null, 2),
       "utf8",
     );
     await mkdir(path.join(repoRoot, "dist"), { recursive: true });
@@ -2008,7 +2008,7 @@ describe("qa bundled plugin dir", () => {
     );
     await writeFile(
       path.join(repoRoot, "dist-runtime", "extensions", "runtime-only", "package.json"),
-      JSON.stringify({ name: "@openclaw/runtime-only", type: "module" }, null, 2),
+      JSON.stringify({ name: "@afora/runtime-only", type: "module" }, null, 2),
       "utf8",
     );
     await writeFile(
@@ -2059,7 +2059,7 @@ describe("qa bundled plugin dir", () => {
     const repoRoot = await tempDirs.makeTempDir("qa-bundled-invalid-id-");
     await writeFile(
       path.join(repoRoot, "package.json"),
-      JSON.stringify({ name: "openclaw", type: "module" }, null, 2),
+      JSON.stringify({ name: "afora", type: "module" }, null, 2),
       "utf8",
     );
     const tempRoot = await tempDirs.makeTempDir("qa-bundled-invalid-target-");
@@ -2077,7 +2077,7 @@ describe("qa bundled plugin dir", () => {
     const repoRoot = await tempDirs.makeTempDir("qa-bundled-external-id-");
     await writeFile(
       path.join(repoRoot, "package.json"),
-      JSON.stringify({ name: "openclaw", type: "module" }, null, 2),
+      JSON.stringify({ name: "afora", type: "module" }, null, 2),
       "utf8",
     );
     const tempRoot = await tempDirs.makeTempDir("qa-bundled-external-target-");
@@ -2098,7 +2098,7 @@ describe("qa bundled plugin dir", () => {
       path.join(repoRoot, "package.json"),
       JSON.stringify(
         {
-          name: "openclaw",
+          name: "afora",
           type: "module",
           exports: {
             "./plugin-sdk/account-id": {
@@ -2120,13 +2120,13 @@ describe("qa bundled plugin dir", () => {
     await mkdir(path.join(repoRoot, "extensions", "qa-channel"), { recursive: true });
     await writeFile(
       path.join(repoRoot, "extensions", "qa-channel", "package.json"),
-      JSON.stringify({ name: "@openclaw/qa-channel", type: "module" }, null, 2),
+      JSON.stringify({ name: "@afora/qa-channel", type: "module" }, null, 2),
       "utf8",
     );
     await writeFile(
       path.join(repoRoot, "extensions", "qa-channel", "index.ts"),
       [
-        'import { normalizeAccountId } from "openclaw/plugin-sdk/account-id";',
+        'import { normalizeAccountId } from "afora-agent/plugin-sdk/account-id";',
         'import { marker } from "fake-dep";',
         'export const accountId = `${normalizeAccountId("QA")}:${marker}`;',
         "",
@@ -2185,7 +2185,7 @@ describe("qa bundled plugin dir", () => {
   it("maps cli backend provider ids to their owning bundled plugin ids", async () => {
     const repoRoot = await tempDirs.makeTempDir("qa-plugin-owner-");
     await writeJsonFixture(
-      path.join(repoRoot, "dist", "extensions", "openai", "openclaw.plugin.json"),
+      path.join(repoRoot, "dist", "extensions", "openai", "afora.plugin.json"),
       {
         id: "openai",
         providers: ["openai", "openai"],
@@ -2204,7 +2204,7 @@ describe("qa bundled plugin dir", () => {
   it("maps configured OpenAI Responses provider aliases to the OpenAI plugin", async () => {
     const repoRoot = await tempDirs.makeTempDir("qa-plugin-owner-");
     await writeJsonFixture(
-      path.join(repoRoot, "dist", "extensions", "openai", "openclaw.plugin.json"),
+      path.join(repoRoot, "dist", "extensions", "openai", "afora.plugin.json"),
       {
         id: "openai",
         providers: ["openai"],
@@ -2269,7 +2269,7 @@ describe("qa bundled plugin dir", () => {
 
     const overrides = await readQaLiveProviderConfigOverrides({
       providerIds: ["custom-openai"],
-      env: { OPENCLAW_QA_LIVE_PROVIDER_CONFIG_PATH: configPath },
+      env: { AFORA_QA_LIVE_PROVIDER_CONFIG_PATH: configPath },
     });
     expect(Object.keys(overrides)).toEqual(["custom-openai"]);
     expect(overrides["custom-openai"]?.baseUrl).toBe("https://api.example.test/v1");
@@ -2283,7 +2283,7 @@ describe("qa bundled plugin dir", () => {
           openai: {
             apiKey: {
               source: "env",
-              id: "OPENCLAW_LIVE_CODEX_API_KEY",
+              id: "AFORA_LIVE_CODEX_API_KEY",
             },
           },
         },
@@ -2292,14 +2292,14 @@ describe("qa bundled plugin dir", () => {
 
     const overrides = await readQaLiveProviderConfigOverrides({
       providerIds: ["openai"],
-      env: { OPENCLAW_QA_LIVE_PROVIDER_CONFIG_PATH: configPath },
+      env: { AFORA_QA_LIVE_PROVIDER_CONFIG_PATH: configPath },
     });
     expect(Object.keys(overrides)).toEqual(["openai"]);
     expect(overrides["openai"]).not.toHaveProperty("baseUrl");
     expect(overrides["openai"]?.models).toEqual([]);
     expect(overrides["openai"]?.apiKey).toEqual({
       source: "env",
-      id: "OPENCLAW_LIVE_CODEX_API_KEY",
+      id: "AFORA_LIVE_CODEX_API_KEY",
     });
   });
 
@@ -2318,7 +2318,7 @@ describe("qa bundled plugin dir", () => {
 
     const overrides = await readQaLiveProviderConfigOverrides({
       providerIds: ["openai"],
-      env: { OPENCLAW_QA_LIVE_PROVIDER_CONFIG_PATH: configPath },
+      env: { AFORA_QA_LIVE_PROVIDER_CONFIG_PATH: configPath },
     });
     expect(Object.keys(overrides)).toEqual(["openai"]);
     expect(overrides["openai"]).not.toHaveProperty("baseUrl");
@@ -2330,11 +2330,11 @@ describe("qa bundled plugin dir", () => {
     await writeJsonFixture(path.join(repoRoot, "package.json"), { version: "2026.4.7-1" });
     const bundledRoot = path.join(repoRoot, "extensions");
     await writeJsonFixture(path.join(bundledRoot, "qa-channel", "package.json"), {
-      openclaw: { install: { minHostVersion: ">=2026.4.8" } },
+      afora: { install: { minHostVersion: ">=2026.4.8" } },
     });
 
     await writeJsonFixture(path.join(bundledRoot, "memory-core", "package.json"), {
-      openclaw: { install: { minHostVersion: ">=2026.4.7" } },
+      afora: { install: { minHostVersion: ">=2026.4.7" } },
     });
 
     await expect(
@@ -2350,10 +2350,10 @@ describe("qa bundled plugin dir", () => {
     await writeJsonFixture(path.join(repoRoot, "package.json"), { version: "2026.4.7-1" });
     const bundledRoot = path.join(repoRoot, "extensions");
     await writeJsonFixture(path.join(bundledRoot, "qa-channel", "package.json"), {
-      openclaw: { install: { minHostVersion: ">=2026.4.8" } },
+      afora: { install: { minHostVersion: ">=2026.4.8" } },
     });
     await writeJsonFixture(path.join(bundledRoot, "image-generation-core", "package.json"), {
-      openclaw: { install: { minHostVersion: ">=2026.4.9" } },
+      afora: { install: { minHostVersion: ">=2026.4.9" } },
     });
 
     await expect(

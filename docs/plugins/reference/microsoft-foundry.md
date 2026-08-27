@@ -1,5 +1,5 @@
 ---
-summary: "Adds Microsoft Foundry model provider support to OpenClaw."
+summary: "Adds Microsoft Foundry model provider support to Afora."
 read_when:
   - You are installing, configuring, or auditing the microsoft-foundry plugin
 title: "Microsoft Foundry plugin"
@@ -7,18 +7,18 @@ title: "Microsoft Foundry plugin"
 
 # Microsoft Foundry plugin
 
-Adds Microsoft Foundry model provider support to OpenClaw.
+Adds Microsoft Foundry model provider support to Afora.
 
 ## Distribution
 
-- Package: `@openclaw/microsoft-foundry`
-- Install route: included in OpenClaw
+- Package: `@afora/microsoft-foundry`
+- Install route: included in Afora
 
 ## Surface
 
 providers: `microsoft-foundry`; contracts: `imageGenerationProviders`
 
-<!-- openclaw-plugin-reference:manual-start -->
+<!-- afora-plugin-reference:manual-start -->
 
 - Image-generation provider: `microsoft-foundry`
 
@@ -27,7 +27,7 @@ providers: `microsoft-foundry`; contracts: `imageGenerationProviders`
 - A Microsoft Foundry or Azure AI Foundry resource with deployments.
 - API-key auth through `AZURE_OPENAI_API_KEY` or a configured provider API key.
 - For Entra ID auth, install the Azure CLI and run `az login` before
-  onboarding. OpenClaw refreshes Microsoft Foundry runtime tokens through
+  onboarding. Afora refreshes Microsoft Foundry runtime tokens through
   `az account get-access-token`.
 
 ## Chat models
@@ -37,7 +37,7 @@ Microsoft Foundry chat deployments use the provider model ref
 and deployments with the Azure CLI, then writes the selected deployment name to
 the model config.
 
-OpenClaw uses the Foundry `/openai/v1` endpoint for supported OpenAI-compatible
+Afora uses the Foundry `/openai/v1` endpoint for supported OpenAI-compatible
 chat APIs:
 
 - GPT, `o*`, `computer-use-preview`, and DeepSeek-V4 model families default to
@@ -52,7 +52,7 @@ Anthropic Claude deployments in Microsoft Foundry use the Anthropic Messages
 API shape, not the OpenAI-compatible `/openai/v1` shape. Configure those as a
 custom `anthropic-messages` provider until the Microsoft Foundry plugin grows a
 native Anthropic runtime. When the Foundry deployment name differs from the
-Claude model ID, set `params.canonicalModelId` on the model entry so OpenClaw
+Claude model ID, set `params.canonicalModelId` on the model entry so Afora
 can apply model-specific wire contracts, map `/think off` correctly, and
 preserve signed thinking safely.
 
@@ -92,7 +92,7 @@ Prompt-only generation calls Microsoft Foundry's MAI generations endpoint:
 
 Prompt-only generation can use a custom deployment name with just the Foundry
 endpoint configured. For image edits with a custom deployment name, select the
-deployment through onboarding or include model metadata so OpenClaw can verify
+deployment through onboarding or include model metadata so Afora can verify
 that the deployment is backed by `MAI-Image-2.5-Flash` or `MAI-Image-2.5`.
 
 MAI image constraints:
@@ -112,4 +112,4 @@ MAI image constraints:
 - `supports MAI image deployments only`: the selected image model points at a
   non-MAI deployment. Use a deployed MAI image model for `image_generate`.
 
-<!-- openclaw-plugin-reference:manual-end -->
+<!-- afora-plugin-reference:manual-end -->

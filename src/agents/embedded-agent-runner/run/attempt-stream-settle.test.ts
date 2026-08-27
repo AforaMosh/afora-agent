@@ -190,7 +190,7 @@ describe("prepareEmbeddedAttemptTransport", () => {
   });
 
   it("materializes native video from the prepared session agent workspace", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-transport-video-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-transport-video-"));
     const videoPath = path.join(workspaceDir, "history.mp4");
     await fs.writeFile(videoPath, MP4);
     let providerOptions: ProviderStreamOptions | undefined;

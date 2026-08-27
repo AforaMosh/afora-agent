@@ -5,11 +5,11 @@ import path from "node:path";
 import {
   clearActiveEmbeddedRun,
   setActiveEmbeddedRun,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import type { ExecApprovalsFile } from "openclaw/plugin-sdk/exec-approvals-runtime";
-import type { PluginConversationBinding } from "openclaw/plugin-sdk/plugin-entry";
-import { upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
-import { appendSessionTranscriptMessageByIdentity } from "openclaw/plugin-sdk/session-transcript-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import type { ExecApprovalsFile } from "afora-agent/plugin-sdk/exec-approvals-runtime";
+import type { PluginConversationBinding } from "afora-agent/plugin-sdk/plugin-entry";
+import { upsertSessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
+import { appendSessionTranscriptMessageByIdentity } from "afora-agent/plugin-sdk/session-transcript-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const sharedClientMocks = vi.hoisted(() => ({
@@ -70,17 +70,17 @@ vi.mock("node:fs", async (importOriginal) => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/agent-harness-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/agent-harness-runtime")>();
+vi.mock("afora-agent/plugin-sdk/agent-harness-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/agent-harness-runtime")>();
   return {
     ...actual,
     resolveSandboxContext: resolveSandboxContextMock,
   };
 });
 
-vi.mock("openclaw/plugin-sdk/conversation-binding-runtime", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/conversation-binding-runtime", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("openclaw/plugin-sdk/conversation-binding-runtime")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/conversation-binding-runtime")>();
   return {
     ...actual,
     getSessionBindingService: () => ({
@@ -113,17 +113,17 @@ vi.mock("./app-server/shared-client.js", () => ({
     run: (client: unknown) => Promise<unknown>;
   }) => await params.run(params.lease.client),
 }));
-vi.mock("openclaw/plugin-sdk/exec-approvals-runtime", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/exec-approvals-runtime", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("openclaw/plugin-sdk/exec-approvals-runtime")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/exec-approvals-runtime")>();
   return {
     ...actual,
     loadExecApprovals: execApprovalsRuntimeMocks.loadExecApprovals,
   };
 });
-vi.mock("openclaw/plugin-sdk/agent-runtime", () => agentRuntimeMocks);
-vi.mock("openclaw/plugin-sdk/agent-scope-runtime", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/agent-scope-runtime")>()),
+vi.mock("afora-agent/plugin-sdk/agent-runtime", () => agentRuntimeMocks);
+vi.mock("afora-agent/plugin-sdk/agent-scope-runtime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/agent-scope-runtime")>()),
   resolveSessionAgentIds: agentRuntimeMocks.resolveSessionAgentIds,
 }));
 
@@ -390,7 +390,7 @@ function mockCallArg(mock: ReturnType<typeof vi.fn>, callIndex = 0, argIndex = 0
 describe("codex conversation binding", () => {
   beforeEach(async () => {
     resetCodexTestBindingStore();
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-binding-"));
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-binding-"));
   });
 
   afterEach(async () => {
@@ -1330,7 +1330,7 @@ describe("codex conversation binding", () => {
         model: "gpt-5.4-mini",
       }),
     ).rejects.toThrow(
-      "OpenClaw native Codex conversation binding cannot route interactive approvals yet",
+      "Afora native Codex conversation binding cannot route interactive approvals yet",
     );
     expect(requests).toEqual([]);
   });
@@ -1369,7 +1369,7 @@ describe("codex conversation binding", () => {
         model: "gpt-5.4-mini",
       }),
     ).rejects.toThrow(
-      "OpenClaw native Codex conversation binding cannot route interactive approvals yet",
+      "Afora native Codex conversation binding cannot route interactive approvals yet",
     );
     expect(request).not.toHaveBeenCalled();
   });
@@ -1401,7 +1401,7 @@ describe("codex conversation binding", () => {
         model: "gpt-5.4-mini",
       }),
     ).rejects.toThrow(
-      "OpenClaw native Codex conversation binding cannot route interactive approvals yet",
+      "Afora native Codex conversation binding cannot route interactive approvals yet",
     );
     expect(requests).toEqual([]);
   });
@@ -1685,7 +1685,7 @@ describe("codex conversation binding", () => {
         workspaceDir: tempDir,
         threadId: "thread-owned",
       }),
-    ).rejects.toThrow("owned by another OpenClaw session");
+    ).rejects.toThrow("owned by another Afora session");
     expect(request).not.toHaveBeenCalled();
     await expect(testCodexAppServerBindingStore.read(otherIdentity)).resolves.toMatchObject({
       threadId: "thread-owned",
@@ -1811,7 +1811,7 @@ describe("codex conversation binding", () => {
     });
   });
 
-  it("blocks bound Codex app-server turns when the current OpenClaw session is sandboxed", async () => {
+  it("blocks bound Codex app-server turns when the current Afora session is sandboxed", async () => {
     const sessionFile = path.join(tempDir, "session.jsonl");
     await writeTestConversationBinding(sessionFile, { threadId: "thread-1", cwd: tempDir });
 
@@ -1851,7 +1851,7 @@ describe("codex conversation binding", () => {
       handled: true,
       reply: {
         text: expect.stringContaining(
-          "Codex-native Codex app-server conversation binding is unavailable because OpenClaw sandboxing is active for this session.",
+          "Codex-native Codex app-server conversation binding is unavailable because Afora sandboxing is active for this session.",
         ),
       },
     });
@@ -1898,7 +1898,7 @@ describe("codex conversation binding", () => {
       handled: true,
       reply: {
         text: expect.stringContaining(
-          "Codex-native Codex app-server conversation binding is unavailable because OpenClaw exec host=node is active for this session.",
+          "Codex-native Codex app-server conversation binding is unavailable because Afora exec host=node is active for this session.",
         ),
       },
     });
@@ -1948,7 +1948,7 @@ describe("codex conversation binding", () => {
     );
 
     expect(result?.handled).toBe(true);
-    expect(result?.reply?.text).toContain("OpenClaw exec host=node is active");
+    expect(result?.reply?.text).toContain("Afora exec host=node is active");
     expect(sharedClientMocks.getSharedCodexAppServerClient).not.toHaveBeenCalled();
   });
 
@@ -1998,7 +1998,7 @@ describe("codex conversation binding", () => {
     );
 
     expect(result?.handled).toBe(true);
-    expect(result?.reply?.text).toContain("OpenClaw exec host=node is active");
+    expect(result?.reply?.text).toContain("Afora exec host=node is active");
     expect(sharedClientMocks.getSharedCodexAppServerClient).not.toHaveBeenCalled();
   });
 
@@ -2063,7 +2063,7 @@ describe("codex conversation binding", () => {
     );
 
     expect(result?.handled).toBe(true);
-    expect(result?.reply?.text).toContain("OpenClaw exec host=node is active");
+    expect(result?.reply?.text).toContain("Afora exec host=node is active");
     expect(sharedClientMocks.getSharedCodexAppServerClient).not.toHaveBeenCalled();
   });
 
@@ -2131,7 +2131,7 @@ describe("codex conversation binding", () => {
 
     expect(result?.handled).toBe(true);
     expect(result?.reply?.text).toContain(
-      "OpenClaw native Codex conversation binding cannot route interactive approvals yet",
+      "Afora native Codex conversation binding cannot route interactive approvals yet",
     );
     expect(request).not.toHaveBeenCalled();
   });
@@ -2214,12 +2214,12 @@ describe("codex conversation binding", () => {
 
     expect(result?.handled).toBe(true);
     expect(result?.reply?.text).toContain(
-      "OpenClaw native Codex conversation binding cannot route interactive approvals yet",
+      "Afora native Codex conversation binding cannot route interactive approvals yet",
     );
     expect(request).not.toHaveBeenCalled();
   });
 
-  it("blocks bound Codex CLI node turns when the current OpenClaw session is sandboxed", async () => {
+  it("blocks bound Codex CLI node turns when the current Afora session is sandboxed", async () => {
     const resumeCodexCliSessionOnNode = vi.fn();
 
     const result = await handleCodexConversationInboundClaim(
@@ -2260,7 +2260,7 @@ describe("codex conversation binding", () => {
       handled: true,
       reply: {
         text: expect.stringContaining(
-          "Codex-native Codex CLI node conversation binding is unavailable because OpenClaw sandboxing is active for this session.",
+          "Codex-native Codex CLI node conversation binding is unavailable because Afora sandboxing is active for this session.",
         ),
       },
     });
@@ -2583,7 +2583,7 @@ describe("codex conversation binding", () => {
       "turn/start",
     ]);
     expect(requests[0]?.params).toMatchObject({
-      developerInstructions: expect.stringContaining("bound to an OpenClaw conversation"),
+      developerInstructions: expect.stringContaining("bound to an Afora conversation"),
       config: { apps: { _default: { enabled: false } }, "features.apps": false },
     });
     expect(requests[0]?.params).not.toHaveProperty("dynamicTools");
@@ -2884,7 +2884,7 @@ describe("codex conversation binding", () => {
 
     expect(result?.handled).toBe(true);
     expect(result?.reply?.text).toContain(
-      "OpenClaw native Codex conversation binding cannot route interactive approvals yet",
+      "Afora native Codex conversation binding cannot route interactive approvals yet",
     );
     expect(requests).toEqual([]);
   });
@@ -3055,7 +3055,7 @@ describe("codex conversation binding", () => {
 
     expect(result?.handled).toBe(true);
     expect(result?.reply?.text).toContain(
-      "OpenClaw native Codex conversation binding cannot route interactive approvals yet",
+      "Afora native Codex conversation binding cannot route interactive approvals yet",
     );
     expect(result?.reply?.text).not.toContain(
       "legacy full exec security with ask requires Codex app-server danger-full-access",
@@ -3905,7 +3905,7 @@ describe("codex conversation binding", () => {
     await writeTestConversationBinding(sessionFile, {
       threadId: "thread-old",
       cwd: tempDir,
-      networkProxyProfileName: "openclaw-network-stale",
+      networkProxyProfileName: "afora-network-stale",
       networkProxyConfigFingerprint: "stale-proxy-config",
       conversationStartId: "start-1",
       conversationSourceTransferComplete: true,
@@ -4007,7 +4007,7 @@ describe("codex conversation binding", () => {
       threadId: "thread-old",
       clientId: "client-network-rotation",
       cwd: tempDir,
-      networkProxyProfileName: "openclaw-network-stale",
+      networkProxyProfileName: "afora-network-stale",
       networkProxyConfigFingerprint: "stale-proxy-config",
       conversationStartId: "start-1",
     });
@@ -4138,7 +4138,7 @@ describe("codex conversation binding", () => {
 
     expect(result?.handled).toBe(true);
     expect(result?.reply?.text).toContain(
-      "OpenClaw native Codex conversation binding cannot route interactive approvals yet",
+      "Afora native Codex conversation binding cannot route interactive approvals yet",
     );
     expect(turnStartParams).toEqual([]);
     expect(sharedClientMocks.getSharedCodexAppServerClient).not.toHaveBeenCalled();
@@ -4222,7 +4222,7 @@ describe("codex conversation binding", () => {
       handled: true,
       reply: {
         text: expect.stringContaining(
-          "OpenClaw native Codex conversation binding cannot route interactive approvals yet",
+          "Afora native Codex conversation binding cannot route interactive approvals yet",
         ),
       },
     });

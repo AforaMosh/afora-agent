@@ -1,6 +1,6 @@
 // Imessage plugin module implements approval reaction poller behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { asDateTimestampMs, asPositiveFiniteNumber } from "openclaw/plugin-sdk/number-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { asDateTimestampMs, asPositiveFiniteNumber } from "afora-agent/plugin-sdk/number-runtime";
 import type { IMessageApprovalGatewayRuntime } from "./approval-gateway-types.js";
 import {
   listPendingIMessageApprovalReactionPollTargets,
@@ -187,7 +187,7 @@ function bindObservedConversation(params: {
 
 export async function pollPendingIMessageApprovalReactions(params: {
   client: IMessageRpcClient;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   allowRecentChatDiscovery?: boolean;
   gatewayRuntime?: IMessageApprovalGatewayRuntime;

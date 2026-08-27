@@ -1,13 +1,13 @@
-// Matrix plugin entrypoint registers its OpenClaw integration.
+// Matrix plugin entrypoint registers its Afora integration.
 import { format } from "node:util";
-import { CHANNEL_APPROVAL_NATIVE_RUNTIME_CONTEXT_CAPABILITY } from "openclaw/plugin-sdk/approval-handler-adapter-runtime";
-import type { ChannelRuntimeSurface } from "openclaw/plugin-sdk/channel-contract";
+import { CHANNEL_APPROVAL_NATIVE_RUNTIME_CONTEXT_CAPABILITY } from "afora-agent/plugin-sdk/approval-handler-adapter-runtime";
+import type { ChannelRuntimeSurface } from "afora-agent/plugin-sdk/channel-contract";
 import {
   resolveChannelStreamingBlockEnabled,
   waitUntilAbort,
-} from "openclaw/plugin-sdk/channel-outbound";
-import { registerChannelRuntimeContext } from "openclaw/plugin-sdk/channel-runtime-context";
-import { resolveOptionalIntegerOption } from "openclaw/plugin-sdk/number-runtime";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import { registerChannelRuntimeContext } from "afora-agent/plugin-sdk/channel-runtime-context";
+import { resolveOptionalIntegerOption } from "afora-agent/plugin-sdk/number-runtime";
 import {
   GROUP_POLICY_BLOCKED_LABEL,
   resolveThreadBindingIdleTimeoutMsForChannel,
@@ -64,7 +64,7 @@ type MonitorMatrixOpts = {
   initialSyncLimit?: number;
   replyToMode?: ReplyToMode;
   accountId?: string | null;
-  setStatus?: (next: import("openclaw/plugin-sdk/channel-contract").ChannelAccountSnapshot) => void;
+  setStatus?: (next: import("afora-agent/plugin-sdk/channel-contract").ChannelAccountSnapshot) => void;
 };
 
 type MatrixStreamingInput = MatrixStreamingConfig | undefined;

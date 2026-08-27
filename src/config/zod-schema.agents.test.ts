@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AgentsSchema } from "./zod-schema.agents.js";
-import { OpenClawSchema } from "./zod-schema.js";
+import { AforaSchema } from "./zod-schema.js";
 
 describe("agent roster ownership", () => {
   it("rejects an empty roster after load-time migration", () => {
@@ -20,7 +20,7 @@ describe("agent roster ownership", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0]?.message).toContain('agents.ownership="explicit"');
-      expect(result.error.issues[0]?.message).toContain("run openclaw doctor");
+      expect(result.error.issues[0]?.message).toContain("run afora doctor");
     }
   });
 
@@ -64,7 +64,7 @@ describe("explicit ambient agent targets", () => {
     },
     { agents: { entries: { main: {} } }, talk: { agentId: "missing" } },
   ])("rejects an unknown explicit target", (target) => {
-    const result = OpenClawSchema.safeParse(target);
+    const result = AforaSchema.safeParse(target);
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0]?.message).toContain("Unknown agent id");
@@ -73,7 +73,7 @@ describe("explicit ambient agent targets", () => {
 
   it("accepts configured heartbeat, system-agent, compatibility, and Talk targets", () => {
     expect(
-      OpenClawSchema.safeParse({
+      AforaSchema.safeParse({
         agents: {
           defaults: {
             heartbeat: { agentId: "ops" },
@@ -115,17 +115,17 @@ describe("explicit ambient agent targets", () => {
     },
     { agents: { entries: { main: {} } }, talk: { agentId: " " } },
   ])("rejects blank explicit targets", (config) => {
-    expect(OpenClawSchema.safeParse(config).success).toBe(false);
+    expect(AforaSchema.safeParse(config).success).toBe(false);
   });
 
   it("validates targets against the implicit main roster", () => {
-    expect(OpenClawSchema.safeParse({ talk: { agentId: "main" } }).success).toBe(true);
-    expect(OpenClawSchema.safeParse({ talk: { agentId: "missing" } }).success).toBe(false);
+    expect(AforaSchema.safeParse({ talk: { agentId: "main" } }).success).toBe(true);
+    expect(AforaSchema.safeParse({ talk: { agentId: "missing" } }).success).toBe(false);
   });
 
   it("allows upgrade compatibility owners to outlive their roster entries", () => {
     expect(
-      OpenClawSchema.safeParse({
+      AforaSchema.safeParse({
         agents: {
           ownership: "explicit",
           defaults: {

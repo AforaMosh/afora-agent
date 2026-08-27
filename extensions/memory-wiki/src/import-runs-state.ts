@@ -2,16 +2,16 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolveNonNegativeIntegerOption } from "openclaw/plugin-sdk/number-runtime";
+import { resolveNonNegativeIntegerOption } from "afora-agent/plugin-sdk/number-runtime";
 import type {
   OpenKeyedStoreOptions,
   PluginStateKeyedStore,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   asNullableRecord,
   normalizeOptionalString,
   normalizeUniqueTrimmedStringList,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import pMap, { pMapSkip } from "p-map";
 import { walkMemoryWikiDirectory } from "./bounded-walk.js";
 
@@ -79,7 +79,7 @@ let configuredImportRunStore: MemoryWikiImportRunStateStore | undefined;
 const memoryImportRunsByVault = new Map<string, Map<string, ChatGptImportRunRecord>>();
 
 export function resolveMemoryWikiImportRunsDir(vaultRoot: string): string {
-  return path.join(vaultRoot, ".openclaw-wiki", "import-runs");
+  return path.join(vaultRoot, ".afora-wiki", "import-runs");
 }
 
 function resolveVaultRootKey(vaultRoot: string): string {

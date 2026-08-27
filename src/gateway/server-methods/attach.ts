@@ -1,6 +1,6 @@
-import { asPositiveFiniteNumber } from "@openclaw/normalization-core/number-coercion";
-import { asRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { asPositiveFiniteNumber } from "@afora/normalization-core/number-coercion";
+import { asRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { ErrorCodes, errorShape } from "../../../packages/gateway-protocol/src/index.js";
 import { resolveSessionEntryAccessTarget } from "../../config/sessions/session-accessor.js";
 import { parseAgentSessionKey } from "../../routing/session-key.js";
@@ -75,7 +75,7 @@ export const attachHandlers: GatewayRequestHandlers = {
       expiresAtMs: grant.expiresAtMs,
       mcpConfig: createMcpAttachGrantServerConfig(runtime.port),
       env: {
-        OPENCLAW_MCP_TOKEN: grant.token,
+        AFORA_MCP_TOKEN: grant.token,
       },
     });
   },

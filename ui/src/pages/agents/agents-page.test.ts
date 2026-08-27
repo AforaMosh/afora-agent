@@ -209,7 +209,7 @@ describe("AgentsPage gateway lifecycle", () => {
     const agents = agentsCapability(async () => files("main", "unused"));
     const stageDefaultAgent = vi.fn(() => true);
     const save = vi.fn(async () => true);
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     const context = pageContext(currentGateway, agents);
     page.context = {
       ...context,
@@ -250,7 +250,7 @@ describe("AgentsPage gateway lifecycle", () => {
       patch,
       subscribe: vi.fn(() => () => undefined),
     } as unknown as ApplicationContext["runtimeConfig"];
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     page.context = { ...pageContext(currentGateway, agents), runtimeConfig };
     setPageGateway(page, client);
     page.agentsSelectedId = "main";
@@ -279,7 +279,7 @@ describe("AgentsPage gateway lifecycle", () => {
       patch: vi.fn(async () => false),
       subscribe: vi.fn(() => () => undefined),
     } as unknown as ApplicationContext["runtimeConfig"];
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     page.context = { ...pageContext(currentGateway, agents), runtimeConfig };
     setPageGateway(page, client);
     page.agentsSelectedId = "main";
@@ -293,7 +293,7 @@ describe("AgentsPage gateway lifecycle", () => {
     const client = {} as GatewayBrowserClient;
     const refreshList = vi.fn(async () => agentsList);
     const save = vi.fn(async () => false);
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     setPageGateway(page, client, false);
     page.agentsSelectedId = "main";
     page.context = {
@@ -320,7 +320,7 @@ describe("AgentsPage gateway lifecycle", () => {
       },
     ];
     const request = vi.fn(async () => ({ models }));
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     page.routeData = { panel: "overview" } as AgentsRouteData;
     setPageGateway(page, { request } as unknown as GatewayBrowserClient);
     page.agentsSelectedId = "main";
@@ -343,7 +343,7 @@ describe("AgentsPage gateway lifecycle", () => {
     const request = vi.fn(async (_method: string, params?: { agentId?: string }) => ({
       models: params?.agentId === "worker" ? workerModels : defaultModels,
     }));
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     page.routeData = { panel: "overview" } as AgentsRouteData;
     setPageGateway(page, { request } as unknown as GatewayBrowserClient);
     page.agentsSelectedId = "main";
@@ -376,7 +376,7 @@ describe("AgentsPage gateway lifecycle", () => {
         ? Promise.resolve({ models: workerModels })
         : defaultResult.promise,
     );
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     page.routeData = { panel: "overview" } as AgentsRouteData;
     setPageGateway(page, { request } as unknown as GatewayBrowserClient);
     page.agentsSelectedId = "main";
@@ -402,7 +402,7 @@ describe("AgentsPage gateway lifecycle", () => {
       .fn()
       .mockResolvedValueOnce({ models: oldModels })
       .mockResolvedValueOnce({ models: nextModels });
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     page.routeData = { panel: "overview" } as AgentsRouteData;
     setPageGateway(page, { request } as unknown as GatewayBrowserClient);
     page.agentsSelectedId = "main";
@@ -426,7 +426,7 @@ describe("AgentsPage gateway lifecycle", () => {
     const oldResult = deferred<{ models: ModelCatalogEntry[] }>();
     const oldRequest = vi.fn(() => oldResult.promise);
     const nextRequest = vi.fn(async () => ({ models: nextModels }));
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     page.routeData = { panel: "overview" } as AgentsRouteData;
     setPageGateway(page, { request: oldRequest } as unknown as GatewayBrowserClient);
     page.agentsSelectedId = "main";
@@ -455,7 +455,7 @@ describe("AgentsPage gateway lifecycle", () => {
       .fn()
       .mockReturnValueOnce(oldResult.promise)
       .mockResolvedValueOnce({ models: nextModels });
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     page.routeData = { panel: "overview" } as AgentsRouteData;
     setPageGateway(page, { request } as unknown as GatewayBrowserClient);
     page.agentsSelectedId = "main";
@@ -483,7 +483,7 @@ describe("AgentsPage gateway lifecycle", () => {
       .mockResolvedValueOnce({ models: oldModels })
       .mockResolvedValueOnce({ models: nextModels });
     const client = { request } as unknown as GatewayBrowserClient;
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     page.routeData = { panel: "overview" } as AgentsRouteData;
     setPageGateway(page, client);
     page.agentsSelectedId = "main";
@@ -508,7 +508,7 @@ describe("AgentsPage gateway lifecycle", () => {
       .fn()
       .mockRejectedValueOnce(new Error("model catalog unavailable"))
       .mockResolvedValueOnce({ models });
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     page.routeData = { panel: "overview" } as AgentsRouteData;
     setPageGateway(page, { request } as unknown as GatewayBrowserClient);
     page.agentsSelectedId = "main";
@@ -552,7 +552,7 @@ describe("AgentsPage gateway lifecycle", () => {
       throw new Error(`Unexpected gateway method: ${method}`);
     });
     const client = { request } as unknown as GatewayBrowserClient;
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     page.routeData = { panel: "cron" } as AgentsRouteData;
     setPageGateway(page, client);
     page.agentsSelectedId = "main";
@@ -598,7 +598,7 @@ describe("AgentsPage gateway lifecycle", () => {
       },
     );
     const client = { request } as unknown as GatewayBrowserClient;
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     page.routeData = { panel: "cron" } as AgentsRouteData;
     setPageGateway(page, client);
     page.agentsSelectedId = "main";
@@ -636,7 +636,7 @@ describe("AgentsPage gateway lifecycle", () => {
       return cronListResponse([cronJob(`${params?.agentId}-job`, params?.agentId)]);
     });
     const client = { request } as unknown as GatewayBrowserClient;
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     page.routeData = { panel: "cron" } as AgentsRouteData;
     setPageGateway(page, client);
     page.agentsSelectedId = "main";
@@ -669,7 +669,7 @@ describe("AgentsPage gateway lifecycle", () => {
       return Promise.resolve(cronListResponse([job]));
     });
     const client = { request } as unknown as GatewayBrowserClient;
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     page.routeData = { panel: "cron" } as AgentsRouteData;
     setPageGateway(page, client);
     page.agentsSelectedId = "main";
@@ -702,7 +702,7 @@ describe("AgentsPage gateway lifecycle", () => {
       return Promise.resolve(cronListResponse([job]));
     });
     const client = { request } as unknown as GatewayBrowserClient;
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     setPageGateway(page, client);
     page.cron = { ...page.cron, client, connected: true, cronAgentId: "main" };
     const requestUpdate = vi.spyOn(page, "requestUpdate");
@@ -734,7 +734,7 @@ describe("AgentsPage gateway lifecycle", () => {
       scope: "per-sender",
       agents: [{ id: "main", name: "Main" }],
     };
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     page.routeData = {
       gateway: currentGateway,
       gatewaySnapshot: currentGateway.snapshot,
@@ -771,7 +771,7 @@ describe("AgentsPage gateway lifecycle", () => {
     const preloadedGateway = gateway(preloadedSnapshot);
     const currentGateway = gateway(preloadedSnapshot);
     const ensureList = vi.fn(async () => null);
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     setPageGateway(page, client);
     page.routeData = {
       gateway: preloadedGateway,
@@ -811,7 +811,7 @@ describe("AgentsPage gateway lifecycle", () => {
       resolveSecond = resolve;
     });
     const ensureFiles = vi.fn().mockReturnValueOnce(first).mockReturnValueOnce(second);
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     const oldClient = {} as GatewayBrowserClient;
     const nextClient = {} as GatewayBrowserClient;
     setPageGateway(page, oldClient);
@@ -867,7 +867,7 @@ describe("AgentsPage gateway lifecycle", () => {
       },
     }));
     const client = { request } as unknown as GatewayBrowserClient;
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     setPageGateway(page, client);
     page.agentsSelectedId = "main";
     page.context = {
@@ -899,7 +899,7 @@ describe("AgentsPage gateway lifecycle", () => {
     });
     const ensureFiles = vi.fn().mockReturnValueOnce(first).mockReturnValueOnce(second);
     const client = {} as GatewayBrowserClient;
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     setPageGateway(page, client);
     page.agentsList = {
       defaultId: "main",
@@ -948,7 +948,7 @@ describe("AgentsPage gateway lifecycle", () => {
     const currentGateway = gateway(snapshot(client));
     const oldAgents = agentsCapability(() => oldFiles.promise);
     const nextAgents = agentsCapability(() => nextFiles.promise);
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     const context = pageContext(currentGateway, oldAgents);
     page.context = context;
     setPageGateway(page, client);
@@ -987,7 +987,7 @@ describe("AgentsPage gateway lifecycle", () => {
         ensure: vi.fn(ensure),
         subscribe: vi.fn(() => () => undefined),
       }) as unknown as ApplicationContext["agentIdentity"];
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     const context = pageContext(currentGateway, agents, {
       agentIdentity: identity(() => oldEnsure.promise),
     });
@@ -1033,7 +1033,7 @@ describe("AgentsPage gateway lifecycle", () => {
       state: { result: null, modelOverrides: {} },
       subscribe: vi.fn(() => () => undefined),
     } as unknown as ApplicationContext["sessions"];
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     const context = pageContext(currentGateway, agents, { sessions: oldSessions });
     page.context = context;
     setPageGateway(page, client);
@@ -1063,7 +1063,7 @@ describe("AgentsPage gateway lifecycle", () => {
 describe("AgentsPage routing", () => {
   it("derives the panel from route data", () => {
     const currentGateway = gateway(snapshot(null, false));
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     page.context = {
       basePath: "/ui",
       gateway: currentGateway,

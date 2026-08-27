@@ -1,7 +1,7 @@
 // Gateway Client tests cover client.watchdog behavior.
 import { createServer as createHttpsServer } from "node:https";
 import { createServer } from "node:net";
-import type { EventFrame } from "@openclaw/gateway-protocol";
+import type { EventFrame } from "@afora/gateway-protocol";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { WebSocket, WebSocketServer } from "ws";
 import { GatewayClient } from "./client.js";
@@ -632,7 +632,7 @@ describe("GatewayClient", () => {
       commands: ["canvas.present", "system.run"],
       workerRuns: {
         bundleHash: "a".repeat(64),
-        openclawVersion: "2026.8.12",
+        aforaVersion: "2026.8.12",
         protocolFeatures: ["worker-heartbeat-v1"],
       },
     });
@@ -643,7 +643,7 @@ describe("GatewayClient", () => {
       commands: ["canvas.present", "system.run"],
       workerRuns: {
         bundleHash: "a".repeat(64),
-        openclawVersion: "2026.8.12",
+        aforaVersion: "2026.8.12",
         protocolFeatures: ["worker-heartbeat-v1"],
       },
     });

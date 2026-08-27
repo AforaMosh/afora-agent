@@ -2,12 +2,12 @@
 import { randomUUID } from "node:crypto";
 import http from "node:http";
 import type { Duplex } from "node:stream";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import {
   isFutureDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "openclaw/plugin-sdk/number-runtime";
+} from "afora-agent/plugin-sdk/number-runtime";
 import {
   buildRealtimeVoiceAgentConsultWorkingResponse,
   calculateMulawRms,
@@ -22,10 +22,10 @@ import {
   type RealtimeVoiceProviderPlugin,
   type RealtimeVoiceSessionHarness,
   type TalkEvent,
-} from "openclaw/plugin-sdk/realtime-voice";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
-import { sliceUtf16Safe, truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
-import { normalizeWebhookPath } from "openclaw/plugin-sdk/webhook-ingress";
+} from "afora-agent/plugin-sdk/realtime-voice";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/runtime-env";
+import { sliceUtf16Safe, truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
+import { normalizeWebhookPath } from "afora-agent/plugin-sdk/webhook-ingress";
 import WebSocket, { WebSocketServer } from "ws";
 import type { VoiceCallRealtimeConfig } from "../config.js";
 import type { CallManager } from "../manager.js";
@@ -56,7 +56,7 @@ const MAX_REALTIME_WS_BUFFERED_BYTES = 1024 * 1024;
 const FORCED_CONSULT_FALLBACK_DELAY_MS = 200;
 const FORCED_CONSULT_NATIVE_DEDUPE_MS = 2_000;
 const FORCED_CONSULT_RESULT_MAX_CHARS = 1800;
-const FORCED_CONSULT_REASON = "provider_final_transcript_without_openclaw_agent_consult";
+const FORCED_CONSULT_REASON = "provider_final_transcript_without_afora_agent_consult";
 const CONSULT_TRANSCRIPT_SETTLE_MS = 350;
 const CONSULT_TRANSCRIPT_SETTLE_MAX_MS = 1_000;
 const MAX_PARTIAL_USER_TRANSCRIPT_CHARS = 1_200;
@@ -225,7 +225,7 @@ function buildForcedConsultSpeechPrompt(result: string): string {
       ? trimmed
       : `${truncateUtf16Safe(trimmed, FORCED_CONSULT_RESULT_MAX_CHARS - 16).trimEnd()} [truncated]`;
   return [
-    "Internal OpenClaw consult result is ready.",
+    "Internal Afora consult result is ready.",
     "Do not call tools for this internal result.",
     "Speak the following answer to the caller now, briefly and naturally:",
     bounded,
@@ -376,7 +376,7 @@ export class RealtimeCallHandler {
     private readonly provider: VoiceCallProvider,
     private readonly resolveCallRegistration: ResolveRealtimeCallRegistration,
     private readonly servePath: string,
-    private readonly coreConfig?: OpenClawConfig,
+    private readonly coreConfig?: AforaConfig,
   ) {}
 
   setPublicUrl(url: string): void {
@@ -1729,7 +1729,7 @@ export class RealtimeCallHandler {
         }
         await submitFinalToolResult({
           status: "cancelled",
-          message: "OpenClaw cancelled this consult before completion. Do not restart it.",
+          message: "Afora cancelled this consult before completion. Do not restart it.",
         });
         return;
       }
@@ -1737,7 +1737,7 @@ export class RealtimeCallHandler {
         if (forcedConsult.completedAt || forcedMatch.kind === "already_delivered") {
           await submitFinalToolResult({
             status: "already_delivered",
-            message: "OpenClaw already delivered this consult result internally. Do not repeat it.",
+            message: "Afora already delivered this consult result internally. Do not repeat it.",
           });
           return;
         }

@@ -1,6 +1,6 @@
 // Video capability overlay tests cover config-driven capability overrides.
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import {
   buildVideoGenerationCapabilityFailure,
   resolveProviderWithModelCapabilities,
@@ -28,7 +28,7 @@ async function resolveCapabilitiesWithOverlay(
     provider,
     providerId: "video-plugin",
     model: "model",
-    cfg: {} as OpenClawConfig,
+    cfg: {} as AforaConfig,
     log: { debug: vi.fn() },
   });
   return resolved.capabilities;
@@ -156,7 +156,7 @@ describe("video-generation capability overlays", () => {
       provider,
       providerId: "openrouter",
       model: "minimax/hailuo-2.3",
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       log: { debug: vi.fn() },
     });
 
@@ -189,7 +189,7 @@ describe("video-generation capability overlays", () => {
         provider,
         providerId: "qwen",
         model,
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         log: { debug: vi.fn() },
       });
       const declaredModes = DASHSCOPE_WAN_VIDEO_CATALOG_BY_MODEL[model]?.modes ?? [];

@@ -38,8 +38,8 @@ jobs:
           github.event_name == 'issue_comment' &&
           github.event.issue.pull_request &&
           (
-            contains(github.event.comment.body, '@openclaw-mantis') ||
-            contains(github.event.comment.body, '/openclaw-mantis')
+            contains(github.event.comment.body, '@afora-mantis') ||
+            contains(github.event.comment.body, '/afora-mantis')
           )
         )
       }}
@@ -171,7 +171,7 @@ jobs:
           node --import tsx scripts/ensure-playwright-chromium.mts
 
           set +e
-          OPENCLAW_MANTIS_WEB_UI_CHAT_OUTPUT_DIR="$root" \
+          AFORA_MANTIS_WEB_UI_CHAT_OUTPUT_DIR="$root" \
             node scripts/run-vitest.mjs run \
               --config test/vitest/vitest.ui-e2e.config.ts \
               --configLoader runner \
@@ -239,9 +239,9 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.mantis_app_token.outputs.token }}
           MANTIS_ARTIFACT_R2_ACCESS_KEY_ID: ${{ secrets.MANTIS_ARTIFACT_R2_ACCESS_KEY_ID }}
-          MANTIS_ARTIFACT_R2_BUCKET: openclaw-crabbox-artifacts
+          MANTIS_ARTIFACT_R2_BUCKET: afora-crabbox-artifacts
           MANTIS_ARTIFACT_R2_ENDPOINT: ${{ vars.MANTIS_ARTIFACT_R2_ENDPOINT }}
-          MANTIS_ARTIFACT_R2_PUBLIC_BASE_URL: https://artifacts.openclaw.ai
+          MANTIS_ARTIFACT_R2_PUBLIC_BASE_URL: https://artifacts.afora.ai
           MANTIS_ARTIFACT_R2_REGION: auto
           MANTIS_ARTIFACT_R2_SECRET_ACCESS_KEY: ${{ secrets.MANTIS_ARTIFACT_R2_SECRET_ACCESS_KEY }}
           REQUEST_SOURCE: ${{ needs.resolve_request.outputs.request_source }}

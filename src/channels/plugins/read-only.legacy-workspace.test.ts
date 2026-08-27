@@ -58,7 +58,7 @@ describe("read-only channel plugin legacy workspace discovery", () => {
       name: "Research Chat",
       description: "Research workspace channel",
       version: "1.0.0",
-      source: "/srv/research/.openclaw/extensions/research-chat-plugin",
+      source: "/srv/research/.afora/extensions/research-chat-plugin",
       origin: "workspace",
       channels: ["research-chat"],
     } as PluginManifestRecord;

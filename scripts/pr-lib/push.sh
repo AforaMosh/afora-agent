@@ -235,7 +235,7 @@ push_prep_head_once() {
   local lease_sha="$2"
   local prep_head_sha="$3"
 
-  local push_mode="${OPENCLAW_PR_PUSH_MODE:-auto}"
+  local push_mode="${AFORA_PR_PUSH_MODE:-auto}"
   if [ "$push_mode" = "auto" ] && verify_prep_first_parent_range_signed "$lease_sha" "$prep_head_sha"; then
     push_mode="git"
   elif [ "$push_mode" = "auto" ]; then
@@ -248,9 +248,9 @@ push_prep_head_once() {
     return $?
   fi
 
-  if ! verify_prep_first_parent_range_signed "$lease_sha" "$prep_head_sha" && [ "${OPENCLAW_ALLOW_UNSIGNED_GIT_PUSH:-}" != "1" ]; then
+  if ! verify_prep_first_parent_range_signed "$lease_sha" "$prep_head_sha" && [ "${AFORA_ALLOW_UNSIGNED_GIT_PUSH:-}" != "1" ]; then
     echo "Refusing git-protocol PR branch push because it can publish unsigned commits." >&2
-    echo "Sign the prep commit, use GitHub createCommitOnBranch, or set OPENCLAW_ALLOW_UNSIGNED_GIT_PUSH=1 for an explicit manual override." >&2
+    echo "Sign the prep commit, use GitHub createCommitOnBranch, or set AFORA_ALLOW_UNSIGNED_GIT_PUSH=1 for an explicit manual override." >&2
     return 2
   fi
 

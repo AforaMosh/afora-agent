@@ -2,8 +2,8 @@
 import fs from "node:fs/promises";
 import { setTimeout as sleepTimeout } from "node:timers/promises";
 import type { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { runExec } from "openclaw/plugin-sdk/process-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { runExec } from "afora-agent/plugin-sdk/process-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { toErrorObject } from "../infra/errors.js";
 import {
   CHROME_MCP_PROCESS_EXIT_GRACE_MS,

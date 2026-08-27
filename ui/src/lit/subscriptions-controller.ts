@@ -143,7 +143,7 @@ export class SubscriptionsController implements ReactiveController {
     try {
       cleanup();
     } catch (error) {
-      console.error("[openclaw] subscription cleanup failed", error);
+      console.error("[afora] subscription cleanup failed", error);
     }
   }
 }

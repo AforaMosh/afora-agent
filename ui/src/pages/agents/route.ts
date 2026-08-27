@@ -51,6 +51,6 @@ export const page = definePage({
     import("./agents-page.ts").then(() => ({
       header: true,
       render: (data: AgentsRouteData | undefined) =>
-        html`<openclaw-agents-page .routeData=${data}></openclaw-agents-page>`,
+        html`<afora-agents-page .routeData=${data}></afora-agents-page>`,
     })),
 });

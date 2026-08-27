@@ -1,5 +1,5 @@
-import { normalizeAgentId } from "@openclaw/normalization-core/agent-id";
-import { normalizeNullableString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeAgentId } from "@afora/normalization-core/agent-id";
+import { normalizeNullableString } from "@afora/normalization-core/string-coerce";
 import {
   DEFAULT_MAIN_KEY,
   isReservedSessionRest,

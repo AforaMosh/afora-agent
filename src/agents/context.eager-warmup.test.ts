@@ -1,6 +1,6 @@
 // Verifies importing context helpers does not eagerly load runtime config for
 // lightweight CLI commands.
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const loadConfigMock = vi.hoisted(() => vi.fn());
@@ -19,9 +19,9 @@ describe("agents/context eager warmup", () => {
   });
 
   it.each([
-    ["models", ["node", "openclaw", "models", "set", "openai/gpt-5.4"]],
-    ["agent", ["node", "openclaw", "agent", "--message", "ok"]],
-    ["memory", ["node", "openclaw", "memory", "search", "--json"]],
+    ["models", ["node", "afora", "models", "set", "openai/gpt-5.4"]],
+    ["agent", ["node", "afora", "agent", "--message", "ok"]],
+    ["memory", ["node", "afora", "memory", "search", "--json"]],
   ])("does not eager-load config for %s commands on import", async (_label, argv) => {
     // Import-time config reads are expensive and can fail for commands that only
     // need static context helpers.

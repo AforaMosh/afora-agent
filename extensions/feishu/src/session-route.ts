@@ -3,7 +3,7 @@ import {
   buildChannelOutboundSessionRoute,
   stripChannelTargetPrefix,
   type ChannelOutboundSessionRouteParams,
-} from "openclaw/plugin-sdk/channel-core";
+} from "afora-agent/plugin-sdk/channel-core";
 import { resolveFeishuAccount } from "./accounts.js";
 import { resolveConfiguredFeishuGroupSessionScope } from "./conversation-id.js";
 import { resolveFeishuGroupConfig } from "./policy.js";

@@ -1,4 +1,4 @@
-import { withTempDir } from "openclaw/plugin-sdk/test-env";
+import { withTempDir } from "afora-agent/plugin-sdk/test-env";
 import { describe, expect, it } from "vitest";
 import { createQaBusState } from "./bus-state.js";
 import { createQaCrablineTransportAdapter } from "./crabline-transport.js";

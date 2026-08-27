@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { ThinkLevel } from "../../../auto-reply/thinking.js";
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../defaults.js";
 import {
@@ -76,7 +76,7 @@ export function resolveInitialThinkLevel(params: {
   });
 }
 
-/** Marks only request parameters that OpenClaw applies to provider egress. */
+/** Marks only request parameters that Afora applies to provider egress. */
 export function resolveRequestStreamTransportOverrides(
   streamParams: RunEmbeddedAgentParams["streamParams"],
 ): "present" | undefined {

@@ -46,7 +46,7 @@ export function buildUsageContract(
     state.overrideSource !== "auto";
 
   return {
-    schema: "openclaw.usageLine.v1",
+    schema: "afora.usageLine.v1",
     surface: surface ?? null,
     agentId: state.agentId ?? null,
     chat_type: state.chatType ?? null,

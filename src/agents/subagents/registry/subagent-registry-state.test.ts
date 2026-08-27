@@ -46,12 +46,12 @@ function createRun(runId: string): SubagentRunRecord {
 }
 
 describe("subagent registry state read cache", () => {
-  const previousReadSqliteFlag = process.env.OPENCLAW_TEST_READ_SUBAGENT_RUNS_FROM_SQLITE;
+  const previousReadSqliteFlag = process.env.AFORA_TEST_READ_SUBAGENT_RUNS_FROM_SQLITE;
 
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(1_000);
-    process.env.OPENCLAW_TEST_READ_SUBAGENT_RUNS_FROM_SQLITE = "1";
+    process.env.AFORA_TEST_READ_SUBAGENT_RUNS_FROM_SQLITE = "1";
     clearSubagentRunsReadCacheForTest();
     mocks.loadSubagentRunsForChildSessionFromSqlite.mockReset();
     mocks.loadSubagentRunsForControllerFromSqlite.mockReset();
@@ -64,9 +64,9 @@ describe("subagent registry state read cache", () => {
   afterEach(() => {
     clearSubagentRunsReadCacheForTest();
     if (previousReadSqliteFlag === undefined) {
-      delete process.env.OPENCLAW_TEST_READ_SUBAGENT_RUNS_FROM_SQLITE;
+      delete process.env.AFORA_TEST_READ_SUBAGENT_RUNS_FROM_SQLITE;
     } else {
-      process.env.OPENCLAW_TEST_READ_SUBAGENT_RUNS_FROM_SQLITE = previousReadSqliteFlag;
+      process.env.AFORA_TEST_READ_SUBAGENT_RUNS_FROM_SQLITE = previousReadSqliteFlag;
     }
     vi.useRealTimers();
   });

@@ -107,7 +107,7 @@ function createProps(overrides: Partial<ChannelsProps> = {}): ChannelsProps {
   };
 }
 
-// Rendered prompts mount <openclaw-modal-dialog> into document.body; leaked
+// Rendered prompts mount <afora-modal-dialog> into document.body; leaked
 // containers keep an open dialog alive and poison later dialog-owning test
 // files in the same worker.
 const renderedContainers: HTMLDivElement[] = [];

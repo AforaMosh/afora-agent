@@ -1,7 +1,7 @@
 /** CLI commands for listing, inspecting, and cancelling TaskFlow records. */
-import { timestampMsToIsoString } from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe, truncateWithMarker } from "@openclaw/normalization-core/utf16-slice";
+import { timestampMsToIsoString } from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe, truncateWithMarker } from "@afora/normalization-core/utf16-slice";
 import { truncateToVisibleWidth, visibleWidth } from "../../packages/terminal-core/src/ansi.js";
 import { sanitizeTerminalText } from "../../packages/terminal-core/src/safe-text.js";
 import { isRich, theme } from "../../packages/terminal-core/src/theme.js";
@@ -33,7 +33,7 @@ const REV_PAD = 6;
 const CTRL_PAD = 20;
 
 function formatFlowLookupMiss(lookup: string): string {
-  return `TaskFlow not found: ${sanitizeTerminalText(lookup)}. Run ${formatCliCommand("openclaw tasks flow list")} to see recent flow ids.`;
+  return `TaskFlow not found: ${sanitizeTerminalText(lookup)}. Run ${formatCliCommand("afora tasks flow list")} to see recent flow ids.`;
 }
 
 function truncate(value: string, maxChars: number) {
@@ -194,7 +194,7 @@ export async function flowsListCommand(
   }
   if (flows.length === 0) {
     runtime.log(
-      `No TaskFlows found. Run ${formatCliCommand("openclaw tasks list")} to inspect standalone background tasks.`,
+      `No TaskFlows found. Run ${formatCliCommand("afora tasks list")} to inspect standalone background tasks.`,
     );
     return;
   }

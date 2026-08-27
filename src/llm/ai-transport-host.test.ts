@@ -6,7 +6,7 @@ import "./ai-transport-host.js";
 
 afterEach(resetSecretRedactionRegistryForTest);
 
-describe("OpenClaw provider error redaction", () => {
+describe("Afora provider error redaction", () => {
   it("redacts registered opaque secrets from ordinary provider error messages", () => {
     const secret = "opaque-configured-provider-value";
     registerSecretValueForRedaction(secret);

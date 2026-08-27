@@ -10,19 +10,19 @@ import {
 } from "./config.js";
 
 describe("Canvas plugin config", () => {
-  const originalSkipCanvasHost = process.env.OPENCLAW_SKIP_CANVAS_HOST;
+  const originalSkipCanvasHost = process.env.AFORA_SKIP_CANVAS_HOST;
 
   afterEach(() => {
     if (originalSkipCanvasHost === undefined) {
-      delete process.env.OPENCLAW_SKIP_CANVAS_HOST;
+      delete process.env.AFORA_SKIP_CANVAS_HOST;
     } else {
-      process.env.OPENCLAW_SKIP_CANVAS_HOST = originalSkipCanvasHost;
+      process.env.AFORA_SKIP_CANVAS_HOST = originalSkipCanvasHost;
     }
   });
 
   it("keeps host config presentation metadata manifest-owned", () => {
     const manifest = JSON.parse(
-      readFileSync(new URL("../openclaw.plugin.json", import.meta.url), "utf8"),
+      readFileSync(new URL("../afora.plugin.json", import.meta.url), "utf8"),
     ) as { uiHints?: Record<string, Record<string, unknown>> };
 
     expect(canvasConfigSchema).not.toHaveProperty("uiHints");
@@ -38,7 +38,7 @@ describe("Canvas plugin config", () => {
       },
       "host.root": {
         label: "Canvas Host Root Directory",
-        help: "Directory to serve. Defaults to the OpenClaw state canvas directory.",
+        help: "Directory to serve. Defaults to the Afora state canvas directory.",
         advanced: true,
       },
       "host.port": {
@@ -115,7 +115,7 @@ describe("Canvas plugin config", () => {
 
   it("honors truthy skip-canvas env values before host registration", () => {
     for (const value of ["1", "true", " yes ", "ON"]) {
-      process.env.OPENCLAW_SKIP_CANVAS_HOST = value;
+      process.env.AFORA_SKIP_CANVAS_HOST = value;
       expect(isCanvasHostEnabled()).toBe(false);
     }
   });

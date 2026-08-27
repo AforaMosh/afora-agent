@@ -41,7 +41,7 @@ function assembleChatDelta(currentText, payload) {
   return snapshot;
 }
 
-const INLINE_WIDGET_DOCUMENTS_PATH = "/__openclaw__/canvas/documents";
+const INLINE_WIDGET_DOCUMENTS_PATH = "/__afora__/canvas/documents";
 const INLINE_WIDGET_MIN_HEIGHT = 160;
 const INLINE_WIDGET_MAX_HEIGHT = 1200;
 const INLINE_WIDGET_VIEWPORT_MAX_HEIGHT = 160;
@@ -100,8 +100,8 @@ function canonicalInlineWidgetTarget(raw) {
     return null;
   }
   try {
-    const parsed = new URL(target, "http://openclaw.invalid");
-    return parsed.origin === "http://openclaw.invalid" && parsed.pathname === path ? target : null;
+    const parsed = new URL(target, "http://afora.invalid");
+    return parsed.origin === "http://afora.invalid" && parsed.pathname === path ? target : null;
   } catch {
     return null;
   }
@@ -229,7 +229,7 @@ function resolveInlineWidgetUrl(rawSurfaceUrl, rawTarget) {
   }
   if (
     segments.length < 3 ||
-    segments.at(-3) !== "__openclaw__" ||
+    segments.at(-3) !== "__afora__" ||
     segments.at(-2) !== "cap" ||
     !segments.at(-1)
   ) {

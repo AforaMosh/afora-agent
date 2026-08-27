@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { resolveNodeHostExecutable } from "openclaw/plugin-sdk/node-host";
+import { resolveNodeHostExecutable } from "afora-agent/plugin-sdk/node-host";
 
 const BROKEN_NPM_SHIM_MARKER = "Error: claude native binary not installed.";
 const BROKEN_NPM_INSTALL_HINT = "node_modules/@anthropic-ai/claude-code/install.cjs";

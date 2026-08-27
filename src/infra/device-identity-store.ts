@@ -1,16 +1,16 @@
 // Canonical SQLite storage for gateway/device Ed25519 identities.
 import crypto from "node:crypto";
 import path from "node:path";
-import { asSafeIntegerInRange } from "@openclaw/normalization-core/number-coercion";
+import { asSafeIntegerInRange } from "@afora/normalization-core/number-coercion";
 import type { Insertable, Selectable } from "kysely";
-import { withExistingOpenClawStateDatabaseArtifactPreservingReadOnly } from "../state/openclaw-state-db-readonly.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import { withExistingAforaStateDatabaseArtifactPreservingReadOnly } from "../state/afora-state-db-readonly.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import {
   deriveCanonicalEd25519PrivateKeyRaw,
   deriveCanonicalEd25519PublicKeyRaw,
@@ -34,11 +34,11 @@ export type StoredDeviceIdentity = DeviceIdentity & {
   createdAtMs: number;
 };
 
-export type DeviceIdentityStoreOptions = OpenClawStateDatabaseOptions & {
+export type DeviceIdentityStoreOptions = AforaStateDatabaseOptions & {
   identityKey?: string;
 };
 
-type DeviceIdentityDatabase = Pick<OpenClawStateKyselyDatabase, "device_identities">;
+type DeviceIdentityDatabase = Pick<AforaStateKyselyDatabase, "device_identities">;
 type DeviceIdentityRow = Selectable<DeviceIdentityDatabase["device_identities"]>;
 type DeviceIdentityInsert = Insertable<DeviceIdentityDatabase["device_identities"]>;
 type SqliteMasterDatabase = { sqlite_master: { name: string } };
@@ -68,7 +68,7 @@ function invalidStoredIdentityError(
   cause?: unknown,
 ): DeviceIdentityStorageError {
   return new DeviceIdentityStorageError(
-    `SQLite contains an invalid persisted device identity "${identityKey}". Run "openclaw doctor --fix" before starting the gateway or connecting this client.`,
+    `SQLite contains an invalid persisted device identity "${identityKey}". Run "afora doctor --fix" before starting the gateway or connecting this client.`,
     cause === undefined ? undefined : { cause },
   );
 }
@@ -273,7 +273,7 @@ export function resolveDeviceIdentityStore(options: DeviceIdentityStoreOptions =
 } {
   return {
     databasePath: path.resolve(
-      options.path ?? resolveOpenClawStateSqlitePath(options.env ?? process.env),
+      options.path ?? resolveAforaStateSqlitePath(options.env ?? process.env),
     ),
     identityKey: normalizeIdentityKey(options.identityKey),
   };
@@ -284,7 +284,7 @@ export function readStoredDeviceIdentity(
   options: DeviceIdentityStoreOptions = {},
 ): StoredDeviceIdentity | null {
   const resolved = resolveDeviceIdentityStore(options);
-  const database = openOpenClawStateDatabase({
+  const database = openAforaStateDatabase({
     env: options.env,
     path: resolved.databasePath,
   });
@@ -301,7 +301,7 @@ export function readStoredDeviceIdentityReadOnly(
 ): StoredDeviceIdentity | null {
   const resolved = resolveDeviceIdentityStore(options);
   return (
-    withExistingOpenClawStateDatabaseArtifactPreservingReadOnly(
+    withExistingAforaStateDatabaseArtifactPreservingReadOnly(
       (database) => {
         let stored: StoredDeviceIdentity | null;
         try {
@@ -331,7 +331,7 @@ export function insertStoredDeviceIdentityIfAbsent(
 ): StoredDeviceIdentity {
   const resolved = resolveDeviceIdentityStore(options);
   validateStoredDeviceIdentity(candidate, resolved.identityKey);
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db }) => {
       const existing = readStoredIdentityFromDatabase({ db }, resolved.identityKey);
       if (existing) {
@@ -367,7 +367,7 @@ export function repairInvalidStoredDeviceIdentity(
 ): { identity: StoredDeviceIdentity; repaired: boolean; rotated: boolean } {
   const resolved = resolveDeviceIdentityStore(options);
   validateStoredDeviceIdentity(candidate, resolved.identityKey);
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db }) => {
       let repaired = false;
       let rotated = false;

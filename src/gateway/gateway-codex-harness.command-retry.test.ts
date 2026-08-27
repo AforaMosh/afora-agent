@@ -3,7 +3,7 @@ import { requireSuccessfulNativeCommandExecution } from "./gateway-codex-harness
 
 describe("Codex gateway command retry evidence", () => {
   it("accepts a successful retry after an earlier matching command fails", () => {
-    const expectedCommand = "node -e OPENCLAW-RETRY";
+    const expectedCommand = "node -e AFORA-RETRY";
     const events = [
       {
         stream: "tool",
@@ -47,7 +47,7 @@ describe("Codex gateway command retry evidence", () => {
 
     expect(
       requireSuccessfulNativeCommandExecution(events, {
-        commandMarker: "OPENCLAW-RETRY",
+        commandMarker: "AFORA-RETRY",
         expectedCommand,
       }),
     ).toEqual({ itemId: "item-retry", resultIndex: 3, startIndex: 2 });

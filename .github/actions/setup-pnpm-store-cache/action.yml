@@ -53,7 +53,7 @@ runs:
 
         requested_node="${REQUESTED_NODE_VERSION:-${NODE_VERSION:-}}"
         source "$GITHUB_ACTION_PATH/ensure-node.sh"
-        openclaw_ensure_node "$requested_node"
+        afora_ensure_node "$requested_node"
 
     - name: Setup pnpm from packageManager
       shell: bash

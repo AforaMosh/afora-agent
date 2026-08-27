@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { listAgentIds, tryResolveSoleAgentId } from "../../agents/agent-scope-config.js";
 import {
   executeSqliteQuerySync,
@@ -13,13 +13,13 @@ import {
   normalizeMainKey,
   parseAgentSessionKey,
 } from "../../routing/session-key.js";
-import { withOpenClawAgentDatabaseReadOnly } from "../../state/openclaw-agent-db-readonly.js";
-import { isSameOpenClawAgentDatabasePath } from "../../state/openclaw-agent-db-registry.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../../state/openclaw-state-db-readonly.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../../state/openclaw-state-db.generated.js";
-import { runOpenClawStateWriteTransaction } from "../../state/openclaw-state-db.js";
+import { withAforaAgentDatabaseReadOnly } from "../../state/afora-agent-db-readonly.js";
+import { isSameAforaAgentDatabasePath } from "../../state/afora-agent-db-registry.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../../state/afora-state-db-readonly.js";
+import type { DB as AforaStateKyselyDatabase } from "../../state/afora-state-db.generated.js";
+import { runAforaStateWriteTransaction } from "../../state/afora-state-db.js";
 import { resolveStateDir } from "../paths.js";
-import type { OpenClawConfig } from "../types.openclaw.js";
+import type { AforaConfig } from "../types.afora.js";
 import {
   claimsMatch,
   processIdenticalClaims,
@@ -47,7 +47,7 @@ const SOURCE_KEY = "legacy-main-session-keys";
 const MIGRATION_KIND = "legacy-main-session-keys-v1";
 const REPORT_VERSION = 1;
 
-type LedgerDatabase = Pick<OpenClawStateKyselyDatabase, "migration_runs" | "migration_sources">;
+type LedgerDatabase = Pick<AforaStateKyselyDatabase, "migration_runs" | "migration_sources">;
 
 type ArmingDecision =
   | { armed: false; reason: "legacy-agent-present" | "owner-unresolved" }
@@ -63,7 +63,7 @@ type LedgerReport = {
   status: "complete";
 };
 
-function resolveArmingDecision(cfg: OpenClawConfig, legacyAgentId: string): ArmingDecision {
+function resolveArmingDecision(cfg: AforaConfig, legacyAgentId: string): ArmingDecision {
   const roster = new Set(listAgentIds(cfg).map(normalizeAgentId));
   if (roster.has(legacyAgentId)) {
     return { armed: false, reason: "legacy-agent-present" };
@@ -156,7 +156,7 @@ type ResolvedPhysicalStores = {
 };
 
 function resolvePhysicalStores(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   legacyAgentId: string;
   mode: LegacyMainSessionMigrationMode;
@@ -238,7 +238,7 @@ function readClaimsFromStore(params: {
   if (inspectPath(params.store.path) === "missing") {
     return { canonical: [], legacy: [] };
   }
-  const result = withOpenClawAgentDatabaseReadOnly(
+  const result = withAforaAgentDatabaseReadOnly(
     (database) => {
       const keys = executeSqliteQuerySync(
         database.db,
@@ -272,7 +272,7 @@ function readClaimsFromStore(params: {
 
 function readLedger(env: NodeJS.ProcessEnv): { report: LedgerReport; status: string } | undefined {
   return (
-    withExistingOpenClawStateDatabaseReadOnly(
+    withExistingAforaStateDatabaseReadOnly(
       ({ db }) => {
         const row = executeSqliteQueryTakeFirstSync(
           db,
@@ -341,7 +341,7 @@ function writeLedger(params: {
   const reportJson = JSON.stringify(report);
   const identityHash = createHash("sha256").update(JSON.stringify(params.identity)).digest("hex");
   const runId = `${SOURCE_KEY}:${identityHash.slice(0, 24)}`;
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       const kysely = getNodeSqliteKysely<LedgerDatabase>(db);
       executeSqliteQuerySync(
@@ -402,7 +402,7 @@ function writeLedger(params: {
 
 /** Migrates retired agent-owned session keys without adding runtime read aliases. */
 async function migrateLegacyMainSessionKeysInternal(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   forceScan?: boolean;
   legacyAgentId?: string;
@@ -429,7 +429,7 @@ async function migrateLegacyMainSessionKeysInternal(params: {
       outcomes: [{ kind: "not-armed", detail: arming.reason }],
       warnings: unresolved
         ? [
-            `session: legacy ${legacyAgentId} rows have no unambiguous configured owner; preserve them and run openclaw doctor after assigning agents.defaults.sessionStore.agentId`,
+            `session: legacy ${legacyAgentId} rows have no unambiguous configured owner; preserve them and run afora doctor after assigning agents.defaults.sessionStore.agentId`,
           ]
         : [],
     };
@@ -458,7 +458,7 @@ async function migrateLegacyMainSessionKeysInternal(params: {
   }
   for (const pathname of resolved.jsonPaths) {
     warnings.push(
-      `session: deferred legacy-main session migration for JSON store ${pathname}; run openclaw doctor --fix`,
+      `session: deferred legacy-main session migration for JSON store ${pathname}; run afora doctor --fix`,
     );
   }
   const identityBase = { legacyAgentId, mainKey, ownerAgentId };
@@ -525,7 +525,7 @@ async function migrateLegacyMainSessionKeysInternal(params: {
     env,
   });
   const destination: PhysicalStore = resolved.stores.find((store) =>
-    isSameOpenClawAgentDatabasePath(store.path, destinationResolved.path),
+    isSameAforaAgentDatabasePath(store.path, destinationResolved.path),
   ) ?? {
     databaseAgentId: normalizeAgentId(destinationResolved.agentId ?? ownerAgentId),
     path: destinationResolved.path,
@@ -671,7 +671,7 @@ async function migrateLegacyMainSessionKeysInternal(params: {
 }
 
 export async function migrateLegacyMainSessionKeys(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   /** Bypass the startup ledger shortcut and verify the physical legacy stores. */
   forceScan?: boolean;

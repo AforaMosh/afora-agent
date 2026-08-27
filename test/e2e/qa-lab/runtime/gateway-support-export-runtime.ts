@@ -6,9 +6,9 @@ import { pathToFileURL } from "node:url";
 import JSZip from "jszip";
 import { formatErrorMessage } from "../../../../src/infra/errors.js";
 import {
-  createOpenClawTestInstance,
-  type OpenClawTestInstance,
-} from "../../../helpers/openclaw-test-instance.js";
+  createAforaTestInstance,
+  type AforaTestInstance,
+} from "../../../helpers/afora-test-instance.js";
 import { createQaScriptEvidenceWriter } from "./script-evidence.js";
 
 const SOURCE_PATH = "test/e2e/qa-lab/runtime/gateway-support-export-runtime.ts";
@@ -66,7 +66,7 @@ function parseOptions(
 
 function parseCliJson<T>(
   label: string,
-  result: Awaited<ReturnType<OpenClawTestInstance["cli"]>>,
+  result: Awaited<ReturnType<AforaTestInstance["cli"]>>,
   parse: (value: unknown) => T = (value) => value as T,
 ): T {
   if (result.code !== 0) {
@@ -133,15 +133,15 @@ export async function runGatewaySupportExportRuntime(options: GatewaySupportExpo
   await fs.mkdir(options.artifactBase, { recursive: true });
   const writer = createWriter(options);
   const startedAt = Date.now();
-  let instance: OpenClawTestInstance | undefined;
+  let instance: AforaTestInstance | undefined;
   try {
-    instance = await createOpenClawTestInstance({
+    instance = await createAforaTestInstance({
       name: "qa-gateway-support-export",
       config: {
         diagnostics: { enabled: true },
       },
       env: {
-        OPENCLAW_TEST_FILE_LOG: "1",
+        AFORA_TEST_FILE_LOG: "1",
       },
     });
     await instance.startGateway();
@@ -185,7 +185,7 @@ export async function runGatewaySupportExportRuntime(options: GatewaySupportExpo
       "config/shape.json",
       "diagnostics.json",
       "health/gateway-health.json",
-      "logs/openclaw-sanitized.jsonl",
+      "logs/afora-sanitized.jsonl",
       "manifest.json",
       "status/gateway-status.json",
       "summary.md",

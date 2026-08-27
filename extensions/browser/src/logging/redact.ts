@@ -1,4 +1,4 @@
 /**
  * Logging redaction helpers re-exported for Browser diagnostics.
  */
-export { redactSensitiveText, redactToolPayloadText } from "openclaw/plugin-sdk/logging-core";
+export { redactSensitiveText, redactToolPayloadText } from "afora-agent/plugin-sdk/logging-core";

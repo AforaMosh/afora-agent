@@ -2,8 +2,8 @@ import type {
   ProgressCard,
   ProgressCardGetResult,
   ProgressCardStep,
-} from "@openclaw/gateway-protocol";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+} from "@afora/gateway-protocol";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import type { ApplicationGateway } from "../app/gateway.ts";
 import { isGatewayMethodAdvertised } from "./gateway-methods.ts";
 

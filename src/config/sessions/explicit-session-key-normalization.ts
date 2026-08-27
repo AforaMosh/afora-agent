@@ -2,7 +2,7 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import type { MsgContext } from "../../auto-reply/templating.js";
 import { getLoadedChannelPlugin, listChannelPlugins } from "../../channels/plugins/index.js";
 import { normalizeSessionKeyPreservingOpaquePeerIds } from "../../sessions/session-key-utils.js";

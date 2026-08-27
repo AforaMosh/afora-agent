@@ -1,4 +1,4 @@
-import { isContextOverflow } from "@openclaw/ai/internal/runtime";
+import { isContextOverflow } from "@afora/ai/internal/runtime";
 import type { AssistantMessage } from "../../llm/types.js";
 import { isRetryableAssistantError } from "../../llm/utils/retry.js";
 import { sleep } from "../../utils/sleep.js";

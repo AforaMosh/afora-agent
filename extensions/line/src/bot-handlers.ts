@@ -5,38 +5,38 @@ import {
   buildMentionRegexes,
   isChannelPartialDeliveryError,
   matchesMentionPatterns,
-} from "openclaw/plugin-sdk/channel-inbound";
+} from "afora-agent/plugin-sdk/channel-inbound";
 import {
   resolveStableChannelMessageIngress,
   type ChannelIngressContextBinding,
   type ResolvedChannelMessageIngress,
-} from "openclaw/plugin-sdk/channel-ingress-runtime";
-import { createChannelPairingChallengeIssuer } from "openclaw/plugin-sdk/channel-pairing";
-import { hasControlCommand } from "openclaw/plugin-sdk/command-auth-native";
-import type { GroupPolicy, OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+} from "afora-agent/plugin-sdk/channel-ingress-runtime";
+import { createChannelPairingChallengeIssuer } from "afora-agent/plugin-sdk/channel-pairing";
+import { hasControlCommand } from "afora-agent/plugin-sdk/command-auth-native";
+import type { GroupPolicy, AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   readChannelAllowFromStore,
   resolvePairingIdLabel,
   upsertChannelPairingRequest,
-} from "openclaw/plugin-sdk/conversation-runtime";
-import { toErrorObject } from "openclaw/plugin-sdk/error-runtime";
+} from "afora-agent/plugin-sdk/conversation-runtime";
+import { toErrorObject } from "afora-agent/plugin-sdk/error-runtime";
 import {
   DEFAULT_GROUP_HISTORY_LIMIT,
   createChannelHistoryWindow,
   type HistoryEntry,
-} from "openclaw/plugin-sdk/reply-history";
-import { resolveAgentRoute } from "openclaw/plugin-sdk/routing";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime";
-import { danger, logVerbose } from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/reply-history";
+import { resolveAgentRoute } from "afora-agent/plugin-sdk/routing";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime";
+import { danger, logVerbose } from "afora-agent/plugin-sdk/runtime-env";
 import {
   resolveAllowlistProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
   warnMissingProviderGroupPolicyFallbackOnce,
-} from "openclaw/plugin-sdk/runtime-group-policy";
+} from "afora-agent/plugin-sdk/runtime-group-policy";
 import {
   normalizeOptionalString,
   normalizeStringEntries,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { firstDefined, normalizeLineAllowEntry } from "./bot-access.js";
 import {
   buildLineMessageContext,
@@ -78,7 +78,7 @@ function isDownloadableLineMessageType(
 }
 
 interface LineHandlerContext {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   account: ResolvedLineAccount;
   runtime: RuntimeEnv;
   buildContext?: typeof buildChannelInboundEventContext;

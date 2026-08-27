@@ -9,7 +9,7 @@ import {
   promoteDockerChannel,
 } from "../../scripts/docker-channel-promote.mjs";
 
-const images = ["ghcr.io/openclaw/openclaw", "docker.io/openclaw/openclaw"];
+const images = ["ghcr.io/AforaMosh/afora-agent", "docker.io/AforaMosh/afora-agent"];
 const digest = `sha256:${"1".repeat(64)}`;
 const changedDigest = `sha256:${"2".repeat(64)}`;
 
@@ -230,12 +230,12 @@ describe("Docker channel promotion", () => {
     expect(verifyAttestationsImpl).toHaveBeenCalledWith(
       expect.objectContaining({
         imageRefs: [
-          `ghcr.io/openclaw/openclaw@${digest}`,
-          `ghcr.io/openclaw/openclaw@${digest}`,
-          `ghcr.io/openclaw/openclaw@${digest}`,
-          `docker.io/openclaw/openclaw@${digest}`,
-          `docker.io/openclaw/openclaw@${digest}`,
-          `docker.io/openclaw/openclaw@${digest}`,
+          `ghcr.io/AforaMosh/afora-agent@${digest}`,
+          `ghcr.io/AforaMosh/afora-agent@${digest}`,
+          `ghcr.io/AforaMosh/afora-agent@${digest}`,
+          `docker.io/AforaMosh/afora-agent@${digest}`,
+          `docker.io/AforaMosh/afora-agent@${digest}`,
+          `docker.io/AforaMosh/afora-agent@${digest}`,
         ],
         requiredPlatforms: [
           { architecture: "amd64", os: "linux", variant: undefined },
@@ -251,8 +251,8 @@ describe("Docker channel promotion", () => {
         "create",
         "--prefer-index=false",
         "--tag",
-        "ghcr.io/openclaw/openclaw:extended-stable",
-        `ghcr.io/openclaw/openclaw@${digest}`,
+        "ghcr.io/AforaMosh/afora-agent:extended-stable",
+        `ghcr.io/AforaMosh/afora-agent@${digest}`,
       ],
       expect.objectContaining({ timeout: 120_000 }),
     );
@@ -308,10 +308,10 @@ describe("Docker channel promotion", () => {
         { execFileSyncImpl, verifyAttestationsImpl: skipAttestationVerification },
       ),
     ).toThrow(
-      "Refusing to move ghcr.io/openclaw/openclaw:extended-stable backward from 2026.6.34 to 2026.6.33",
+      "Refusing to move ghcr.io/AforaMosh/afora-agent:extended-stable backward from 2026.6.34 to 2026.6.33",
     );
     expect(execFileSyncImpl.mock.calls[0]?.[1]).toContain(
-      "ghcr.io/openclaw/openclaw:2026.6.33-r20260820",
+      "ghcr.io/AforaMosh/afora-agent:2026.6.33-r20260820",
     );
     expect(execFileSyncImpl.mock.calls.some(([, args]) => args[2] === "create")).toBe(false);
   });
@@ -428,12 +428,12 @@ describe("Docker channel promotion", () => {
       },
     );
 
-    expect(verifiedRefs).toEqual(Array(3).fill(`ghcr.io/openclaw/openclaw@${digest}`));
+    expect(verifiedRefs).toEqual(Array(3).fill(`ghcr.io/AforaMosh/afora-agent@${digest}`));
     expect(
       execFileSyncImpl.mock.calls
         .filter(([, args]) => args[2] === "create")
         .map(([, args]) => args.at(-1)),
-    ).toEqual(Array(3).fill(`ghcr.io/openclaw/openclaw@${digest}`));
+    ).toEqual(Array(3).fill(`ghcr.io/AforaMosh/afora-agent@${digest}`));
   });
 
   it("does not expose an attestation bypass", () => {
@@ -453,7 +453,7 @@ describe("Docker channel promotion", () => {
         { version: "2026.6.33", images: images.slice(0, 1) },
         { execFileSyncImpl, verifyAttestationsImpl: skipAttestationVerification },
       ),
-    ).toThrow(`ghcr.io/openclaw/openclaw@${digest} reports version 2026.6.34, expected 2026.6.33`);
+    ).toThrow(`ghcr.io/AforaMosh/afora-agent@${digest} reports version 2026.6.34, expected 2026.6.33`);
   });
 
   it("rejects a source whose platform version labels disagree", () => {
@@ -520,15 +520,15 @@ describe("Docker channel promotion", () => {
       for (const imageTagSuffix of ["", "-r20260820"]) {
         const imageVersion = `2026.7.1-2${imageTagSuffix}`;
         for (const testCase of resolveCases) {
-          const root = mkdtempSync(path.join(tmpdir(), "openclaw-docker-release-refs-"));
+          const root = mkdtempSync(path.join(tmpdir(), "afora-docker-release-refs-"));
           try {
             const outputPath = path.join(root, "github-output");
             writeFileSync(outputPath, "", "utf8");
             const result = runWorkflowStep(
               requireStep(requireJob(workflow, testCase.job), testCase.step),
               {
-                DOCKERHUB_IMAGE: "docker.io/openclaw/openclaw",
-                GHCR_IMAGE: "ghcr.io/openclaw/openclaw",
+                DOCKERHUB_IMAGE: "docker.io/AforaMosh/afora-agent",
+                GHCR_IMAGE: "ghcr.io/AforaMosh/afora-agent",
                 GITHUB_OUTPUT: outputPath,
                 IMAGE_TAG_SUFFIX: imageTagSuffix,
                 SOURCE_REF: "refs/tags/v2026.7.1-2",
@@ -538,10 +538,10 @@ describe("Docker channel promotion", () => {
             const output = readFileSync(outputPath, "utf8");
             for (const suffix of testCase.expected) {
               expect(output, `${testCase.step}: ${suffix}`).toContain(
-                `ghcr.io/openclaw/openclaw:${imageVersion}${suffix}`,
+                `ghcr.io/AforaMosh/afora-agent:${imageVersion}${suffix}`,
               );
               expect(output, `${testCase.step}: ${suffix}`).toContain(
-                `docker.io/openclaw/openclaw:${imageVersion}${suffix}`,
+                `docker.io/AforaMosh/afora-agent:${imageVersion}${suffix}`,
               );
             }
             if (imageTagSuffix === "") {
@@ -585,7 +585,7 @@ describe("Docker channel promotion", () => {
     "uses suffixed per-arch sources for Docker Hub manifests and VCR verification",
     () => {
       const workflow = readWorkflow(".github/workflows/docker-release.yml");
-      const root = mkdtempSync(path.join(tmpdir(), "openclaw-docker-release-sources-"));
+      const root = mkdtempSync(path.join(tmpdir(), "afora-docker-release-sources-"));
       try {
         const dockerCalls = path.join(root, "docker-calls");
         const outputPath = path.join(root, "github-output");
@@ -605,27 +605,27 @@ describe("Docker channel promotion", () => {
         const manifest = runWorkflowStep(
           requireStep(requireJob(workflow, "create-manifest"), "Create and push manifest"),
           {
-            AMD64_BROWSER_DIGEST: "ghcr.io/openclaw/openclaw@sha256:3",
-            AMD64_DIGEST: "ghcr.io/openclaw/openclaw@sha256:1",
-            ARM64_BROWSER_DIGEST: "ghcr.io/openclaw/openclaw@sha256:4",
-            ARM64_DIGEST: "ghcr.io/openclaw/openclaw@sha256:2",
-            BROWSER_TAGS: "ghcr.io/openclaw/openclaw:2026.7.1-2-r20260820-browser",
-            DOCKERHUB_BROWSER_TAGS: "docker.io/openclaw/openclaw:2026.7.1-2-r20260820-browser",
-            DOCKERHUB_IMAGE: "docker.io/openclaw/openclaw",
+            AMD64_BROWSER_DIGEST: "ghcr.io/AforaMosh/afora-agent@sha256:3",
+            AMD64_DIGEST: "ghcr.io/AforaMosh/afora-agent@sha256:1",
+            ARM64_BROWSER_DIGEST: "ghcr.io/AforaMosh/afora-agent@sha256:4",
+            ARM64_DIGEST: "ghcr.io/AforaMosh/afora-agent@sha256:2",
+            BROWSER_TAGS: "ghcr.io/AforaMosh/afora-agent:2026.7.1-2-r20260820-browser",
+            DOCKERHUB_BROWSER_TAGS: "docker.io/AforaMosh/afora-agent:2026.7.1-2-r20260820-browser",
+            DOCKERHUB_IMAGE: "docker.io/AforaMosh/afora-agent",
             DOCKERHUB_TAGS:
-              "docker.io/openclaw/openclaw:2026.7.1-2-r20260820\ndocker.io/openclaw/openclaw:2026.7.1-2-r20260820-slim",
+              "docker.io/AforaMosh/afora-agent:2026.7.1-2-r20260820\ndocker.io/AforaMosh/afora-agent:2026.7.1-2-r20260820-slim",
             DOCKER_CALLS: dockerCalls,
             IMAGE_TAG_SUFFIX: "-r20260820",
             PATH: `${root}:${process.env.PATH ?? ""}`,
             SOURCE_REF: "refs/tags/v2026.7.1-2",
-            TAGS: "ghcr.io/openclaw/openclaw:2026.7.1-2-r20260820\nghcr.io/openclaw/openclaw:2026.7.1-2-r20260820-slim",
+            TAGS: "ghcr.io/AforaMosh/afora-agent:2026.7.1-2-r20260820\nghcr.io/AforaMosh/afora-agent:2026.7.1-2-r20260820-slim",
           },
         );
         expect(manifest.status, manifest.stderr).toBe(0);
         const manifestCalls = readFileSync(dockerCalls, "utf8");
-        expect(manifestCalls).toContain("docker.io/openclaw/openclaw:2026.7.1-2-r20260820-amd64");
+        expect(manifestCalls).toContain("docker.io/AforaMosh/afora-agent:2026.7.1-2-r20260820-amd64");
         expect(manifestCalls).toContain(
-          "docker.io/openclaw/openclaw:2026.7.1-2-r20260820-browser-arm64",
+          "docker.io/AforaMosh/afora-agent:2026.7.1-2-r20260820-browser-arm64",
         );
 
         writeFileSync(dockerCalls, "", "utf8");
@@ -636,7 +636,7 @@ describe("Docker channel promotion", () => {
           ),
           {
             DOCKER_CALLS: dockerCalls,
-            GHCR_IMAGE: "ghcr.io/openclaw/openclaw",
+            GHCR_IMAGE: "ghcr.io/AforaMosh/afora-agent",
             GITHUB_OUTPUT: outputPath,
             IMAGE_TAG_SUFFIX: "-r20260820",
             INCLUDE_BROWSER: "true",
@@ -646,9 +646,9 @@ describe("Docker channel promotion", () => {
         );
         expect(vcr.status, vcr.stderr).toBe(0);
         const vcrCalls = readFileSync(dockerCalls, "utf8");
-        expect(vcrCalls).toContain("ghcr.io/openclaw/openclaw:2026.7.1-2-r20260820 ");
-        expect(vcrCalls).toContain("ghcr.io/openclaw/openclaw:2026.7.1-2-r20260820-slim");
-        expect(vcrCalls).toContain("ghcr.io/openclaw/openclaw:2026.7.1-2-r20260820-browser");
+        expect(vcrCalls).toContain("ghcr.io/AforaMosh/afora-agent:2026.7.1-2-r20260820 ");
+        expect(vcrCalls).toContain("ghcr.io/AforaMosh/afora-agent:2026.7.1-2-r20260820-slim");
+        expect(vcrCalls).toContain("ghcr.io/AforaMosh/afora-agent:2026.7.1-2-r20260820-browser");
       } finally {
         rmSync(root, { force: true, recursive: true });
       }

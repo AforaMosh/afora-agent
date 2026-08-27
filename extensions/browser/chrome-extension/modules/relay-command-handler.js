@@ -3,7 +3,7 @@ export function createRelayCommandHandler({
   send,
   attachDebugger,
   detachDebugger,
-  addTabToOpenClawGroup,
+  addTabToAforaGroup,
   focusWindowForTab,
   scheduleTabsSync,
   captureAccess,
@@ -43,7 +43,7 @@ export function createRelayCommandHandler({
             url: message.url,
             active: message.background !== true,
           });
-          await addTabToOpenClawGroup(tab.id);
+          await addTabToAforaGroup(tab.id);
           if (message.focus === true) {
             await focusWindowForTab(tab);
           }

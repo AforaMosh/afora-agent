@@ -3,8 +3,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
-import { resolveOpenClawAgentSqlitePath } from "openclaw/plugin-sdk/sqlite-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/memory-core-host-engine-foundation";
+import { resolveAforaAgentSqlitePath } from "afora-agent/plugin-sdk/sqlite-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetEmbeddingMocks } from "./embedding.test-mocks.js";
 import { acquireMemoryReindexLock } from "./manager-reindex-lock.js";
@@ -36,11 +36,11 @@ describe("memory manager reindex recovery", () => {
 
   beforeEach(async () => {
     resetEmbeddingMocks();
-    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-mem-reindex-recovery-"));
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-mem-reindex-recovery-"));
     workspaceDir = path.join(fixtureRoot, "workspace");
     memoryDir = path.join(workspaceDir, "memory");
     await fs.mkdir(memoryDir, { recursive: true });
-    vi.stubEnv("OPENCLAW_STATE_DIR", path.join(fixtureRoot, "state"));
+    vi.stubEnv("AFORA_STATE_DIR", path.join(fixtureRoot, "state"));
   });
 
   afterEach(async () => {
@@ -58,7 +58,7 @@ describe("memory manager reindex recovery", () => {
   function createCfg(params: {
     provider?: string;
     sources?: Array<"memory" | "sessions">;
-  }): OpenClawConfig {
+  }): AforaConfig {
     return {
       memory: {
         search: {
@@ -79,7 +79,7 @@ describe("memory manager reindex recovery", () => {
     };
   }
 
-  async function openManager(cfg: OpenClawConfig): Promise<MemoryIndexManager> {
+  async function openManager(cfg: AforaConfig): Promise<MemoryIndexManager> {
     const { getMemorySearchManager } = await import("./index.js");
     const result = await getMemorySearchManager({ cfg, agentId: "main" });
     if (!result.manager) {
@@ -182,7 +182,7 @@ describe("memory manager reindex recovery", () => {
   it("rejects a full reindex while another process owns the build lock", async () => {
     const memoryManager = await openManager(createCfg({ provider: "none", sources: ["memory"] }));
     const harness = memoryManager as unknown as ReindexHarness;
-    const databasePath = resolveOpenClawAgentSqlitePath({ agentId: "main" });
+    const databasePath = resolveAforaAgentSqlitePath({ agentId: "main" });
     const lock = acquireMemoryReindexLock(databasePath);
 
     try {
@@ -225,7 +225,7 @@ describe("memory manager reindex recovery", () => {
   });
 
   it("closes the database after constructor schema failure", async () => {
-    const databasePath = resolveOpenClawAgentSqlitePath({ agentId: "main" });
+    const databasePath = resolveAforaAgentSqlitePath({ agentId: "main" });
     await fs.mkdir(path.dirname(databasePath), { recursive: true });
     const db = new DatabaseSync(databasePath);
     db.exec("CREATE TABLE memory_index_chunks (id TEXT PRIMARY KEY)");

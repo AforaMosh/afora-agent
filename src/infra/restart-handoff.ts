@@ -1,12 +1,12 @@
 // Persists short-lived gateway restart handoff metadata.
 import { randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
-import { asPositiveSafeInteger } from "@openclaw/normalization-core/number-coercion";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { asPositiveSafeInteger } from "@afora/normalization-core/number-coercion";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { createSubsystemLogger } from "../logging/subsystem.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../state/openclaw-state-db-readonly.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
-import { runOpenClawStateWriteTransaction } from "../state/openclaw-state-db.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../state/afora-state-db-readonly.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
+import { runAforaStateWriteTransaction } from "../state/afora-state-db.js";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
@@ -25,7 +25,7 @@ const MAX_PROCESS_INSTANCE_ID_LENGTH = 120;
 const MAX_REASON_LENGTH = 200;
 
 const handoffLog = createSubsystemLogger("restart-handoff");
-type GatewayRestartHandoffDatabase = Pick<OpenClawStateKyselyDatabase, "gateway_restart_handoff">;
+type GatewayRestartHandoffDatabase = Pick<AforaStateKyselyDatabase, "gateway_restart_handoff">;
 type GatewayRestartHandoffRow = {
   kind: string;
   version: number;
@@ -305,7 +305,7 @@ function selectGatewayRestartHandoffRowSync(
 function readGatewayRestartHandoffRowSync(env: NodeJS.ProcessEnv) {
   try {
     return (
-      withExistingOpenClawStateDatabaseReadOnly(
+      withExistingAforaStateDatabaseReadOnly(
         ({ db }) => selectGatewayRestartHandoffRowSync(db),
         { env },
       ) ?? null
@@ -362,7 +362,7 @@ export function writeGatewayRestartHandoffSync(opts: {
   };
 
   try {
-    runOpenClawStateWriteTransaction(
+    runAforaStateWriteTransaction(
       ({ db }) => {
         const stateDb = getNodeSqliteKysely<GatewayRestartHandoffDatabase>(db);
         executeSqliteQuerySync(
@@ -448,7 +448,7 @@ export function consumeGatewayRestartHandoffSync(opts: {
       ? Math.floor(opts.now)
       : undefined;
 
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db }) => {
       const now = fixedNow ?? Date.now();
       const stateDb = getNodeSqliteKysely<GatewayRestartHandoffDatabase>(db);

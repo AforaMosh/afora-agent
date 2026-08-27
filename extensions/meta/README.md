@@ -1,13 +1,13 @@
 # Meta provider
 
-Official OpenClaw provider plugin for the **Meta API** — an OpenAI-compatible
+Official Afora provider plugin for the **Meta API** — an OpenAI-compatible
 **Responses API** endpoint (`POST /v1/responses`).
 
 - **Base URL:** `https://api.meta.ai/v1`
 - **Auth:** `Authorization: Bearer $MODEL_API_KEY`
 - **Models:** `muse-spark-1.1`, `muse-spark-1.2`, `muse-spark-1.2-contributor` (reasoning models)
   - Context window: 1,048,576 tokens (input + output share the budget)
-  - Reasoning effort: `minimal | low | medium | high | xhigh` (OpenClaw default: `high`)
+  - Reasoning effort: `minimal | low | medium | high | xhigh` (Afora default: `high`)
   - Vision: image input in `user` messages
   - Tool calling + streaming
   - Stateless encrypted reasoning replay (`store: false`)
@@ -31,7 +31,7 @@ Official OpenClaw provider plugin for the **Meta API** — an OpenAI-compatible
 > Standard Services.
 
 Meta's [model catalog](https://dev.meta.ai/docs/models) lists text, image, video,
-audio, and PDF input for these models. OpenClaw's model catalog directly represents
+audio, and PDF input for these models. Afora's model catalog directly represents
 text and image input only; the other upstream modalities are not model-manifest input
 values. Meta does not publish an exact maximum-output figure for these catalog rows.
 
@@ -40,8 +40,8 @@ values. Meta does not publish an exact maximum-output figure for these catalog r
 Install the plugin and restart Gateway:
 
 ```bash
-openclaw plugins install @openclaw/meta-provider
-openclaw gateway restart
+afora plugins install @afora/meta-provider
+afora gateway restart
 ```
 
 Set the API key and select the model:
@@ -51,7 +51,7 @@ export MODEL_API_KEY=<key>
 ```
 
 ```json5
-// ~/.openclaw/openclaw.json
+// ~/.AforaMosh/afora-agent.json
 {
   agents: {
     defaults: {
@@ -66,9 +66,9 @@ Or run onboarding and choose **Meta**.
 ## Thinking / reasoning
 
 `--thinking <level>` and `/think <level>` map to Responses API `reasoning.effort`.
-OpenClaw defaults to `high`. Meta's
+Afora defaults to `high`. Meta's
 [reasoning documentation](https://dev.meta.ai/docs/reasoning/) says that an
-omitted effort uses a model-determined level, so `high` is an OpenClaw policy rather
+omitted effort uses a model-determined level, so `high` is an Afora policy rather
 than Meta's omitted-parameter default. `off` maps to `minimal` because Muse Spark does
 not accept `none`.
 

@@ -6,7 +6,7 @@ import type {
   SystemAgentSetupDetectResult,
   SystemAgentSetupVerifyResult,
 } from "../../packages/gateway-protocol/src/index.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { CallGatewayCliOptions } from "../gateway/call.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import type {
@@ -28,7 +28,7 @@ const GATEWAY_SYSTEM_AGENT_CHAT_TIMEOUT_MS = 190_000;
 type CallGateway = <T>(options: CallGatewayCliOptions) => Promise<T>;
 
 type RemoteGatewayInferenceTarget = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   gatewayUrl: string;
   token?: string;
   password?: string;
@@ -151,7 +151,7 @@ function activationTimeoutMs(kind: ActivateSetupInferenceParams["kind"]): number
     : GATEWAY_SETUP_ACTIVATE_TIMEOUT_MS;
 }
 
-function bindGatewayConfig(target: RemoteGatewayInferenceTarget): OpenClawConfig {
+function bindGatewayConfig(target: RemoteGatewayInferenceTarget): AforaConfig {
   return {
     ...target.config,
     gateway: {
@@ -190,7 +190,7 @@ function assertVerifiedActivation(params: {
 
 /**
  * Configure missing inference on the selected remote Gateway, then let that
- * Gateway's OpenClaw finish setup before handing off to its normal TUI.
+ * Gateway's Afora finish setup before handing off to its normal TUI.
  * The local config is routing input only; every setup mutation runs through
  * Gateway RPC.
  */
@@ -228,7 +228,7 @@ export async function runRemoteGatewayInferenceOnboarding(
 
   const detect = async (): Promise<SetupInferenceDetection> => {
     const result = await request<SystemAgentSetupDetectResult>({
-      method: "openclaw.setup.detect",
+      method: "afora.setup.detect",
       payload: {},
       timeoutMs: GATEWAY_SETUP_DETECT_TIMEOUT_MS,
     });
@@ -241,7 +241,7 @@ export async function runRemoteGatewayInferenceOnboarding(
     params: ActivateSetupInferenceParams,
   ): Promise<ActivateSetupInferenceResult> => {
     const result = await request<SystemAgentSetupActivateResult>({
-      method: "openclaw.setup.activate",
+      method: "afora.setup.activate",
       payload: {
         kind: params.kind,
         ...(params.modelRef !== undefined ? { modelRef: params.modelRef } : {}),
@@ -256,7 +256,7 @@ export async function runRemoteGatewayInferenceOnboarding(
       return activation;
     }
     const verification = await request<SystemAgentSetupVerifyResult>({
-      method: "openclaw.setup.verify",
+      method: "afora.setup.verify",
       payload: {},
       timeoutMs: GATEWAY_SETUP_VERIFY_TIMEOUT_MS,
     });
@@ -281,10 +281,10 @@ export async function runRemoteGatewayInferenceOnboarding(
         import("../wizard/clack-prompter.js").then(({ createClackPrompter }) =>
           createClackPrompter(),
         ));
-      await prompter.intro("OpenClaw");
+      await prompter.intro("Afora");
       const sessionId = randomUUID();
       let reply = await request<SystemAgentChatResult>({
-        method: "openclaw.chat",
+        method: "afora.chat",
         payload: { sessionId, welcomeVariant: "onboarding" },
         timeoutMs: GATEWAY_SYSTEM_AGENT_CHAT_TIMEOUT_MS,
       });
@@ -292,9 +292,9 @@ export async function runRemoteGatewayInferenceOnboarding(
       let agentDraft: SystemAgentChatResult["agentDraft"];
       try {
         for (;;) {
-          await prompter.note(reply.reply, "OpenClaw");
+          await prompter.note(reply.reply, "Afora");
           if (reply.action === "exit") {
-            await prompter.outro("OpenClaw setup finished.");
+            await prompter.outro("Afora setup finished.");
             return;
           }
           if (reply.action === "open-agent") {
@@ -303,19 +303,19 @@ export async function runRemoteGatewayInferenceOnboarding(
             break;
           }
           const message = await prompter.text({
-            message: "Reply to OpenClaw",
+            message: "Reply to Afora",
             ...(reply.sensitive ? { sensitive: true } : {}),
             validate: (value) => (value.trim() ? undefined : "Required"),
           });
           reply = await request<SystemAgentChatResult>({
-            method: "openclaw.chat",
+            method: "afora.chat",
             payload: { sessionId, message },
             timeoutMs: GATEWAY_SYSTEM_AGENT_CHAT_TIMEOUT_MS,
           });
         }
       } catch (error) {
         if (error instanceof WizardCancelledError) {
-          await prompter.outro("OpenClaw setup paused.");
+          await prompter.outro("Afora setup paused.");
           return;
         }
         throw error;

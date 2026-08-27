@@ -1,11 +1,11 @@
 // Discord plugin module implements source-preserving Markdown normalization.
 import { fromMarkdown } from "mdast-util-from-markdown";
-import type { MarkdownTableMode } from "openclaw/plugin-sdk/config-contracts";
+import type { MarkdownTableMode } from "afora-agent/plugin-sdk/config-contracts";
 import {
   convertMarkdownTables,
   FormatCapabilityProfile,
   renderMarkdownWithMarkers,
-} from "openclaw/plugin-sdk/text-chunking";
+} from "afora-agent/plugin-sdk/text-chunking";
 
 const DISCORD_FORMAT_PROFILE = FormatCapabilityProfile.define({
   mechanism: "markdown",
@@ -13,7 +13,7 @@ const DISCORD_FORMAT_PROFILE = FormatCapabilityProfile.define({
   chunk: { limit: 2_000, unit: "utf16" },
 });
 
-const DISCORD_BOLD_PROBE_TEXT = "openclaw-discord-bold";
+const DISCORD_BOLD_PROBE_TEXT = "afora-discord-bold";
 const DISCORD_BOLD_PROBE = renderMarkdownWithMarkers(
   {
     text: DISCORD_BOLD_PROBE_TEXT,

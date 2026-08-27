@@ -74,7 +74,7 @@ describe("sidebar preference persistence", () => {
     expect(loadSettings().navWidth).toBe(258);
 
     // Corrupt the persisted list; load falls back to the default pinned set.
-    const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
+    const scopedKey = `afora.control.settings.v1:${gwUrl}`;
     const persisted = JSON.parse(localStorage.getItem(scopedKey) ?? "{}") as Record<
       string,
       unknown
@@ -94,7 +94,7 @@ describe("sidebar preference persistence", () => {
       pathname: "/",
     });
     const gwUrl = expectedGatewayUrl("");
-    const scopedKey = `openclaw.control.settings.v1:${gwUrl}`;
+    const scopedKey = `afora.control.settings.v1:${gwUrl}`;
     const legacy = makeSettings(gwUrl) as unknown as Record<string, unknown>;
     delete legacy.sidebarEntries;
     legacy.sidebarPinnedRoutes = ["usage", "tasks", "usage", "worktrees", 7];

@@ -22,7 +22,7 @@ function buildPatch(touchInteraction: boolean, opts?: { requestLabel?: string; l
     cfg: {},
     sessionAgentId: "main",
     canonicalSessionKey: "agent:main:main",
-    storePath: "/tmp/openclaw-agent-status-test.json",
+    storePath: "/tmp/afora-agent-status-test.json",
     normalizedSpawned: {},
     requestDeliveryHint: undefined,
     expectedExistingSessionId: entry.sessionId,

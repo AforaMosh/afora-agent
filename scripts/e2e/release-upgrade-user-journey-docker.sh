@@ -6,8 +6,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$ROOT_DIR/scripts/lib/docker-e2e-image.sh"
 source "$ROOT_DIR/scripts/lib/docker-e2e-package.sh"
 
-IMAGE_NAME="$(docker_e2e_resolve_image "openclaw-release-upgrade-user-journey-e2e" OPENCLAW_RELEASE_UPGRADE_USER_JOURNEY_E2E_IMAGE)"
-SKIP_BUILD="${OPENCLAW_RELEASE_UPGRADE_USER_JOURNEY_E2E_SKIP_BUILD:-0}"
+IMAGE_NAME="$(docker_e2e_resolve_image "afora-release-upgrade-user-journey-e2e" AFORA_RELEASE_UPGRADE_USER_JOURNEY_E2E_IMAGE)"
+SKIP_BUILD="${AFORA_RELEASE_UPGRADE_USER_JOURNEY_E2E_SKIP_BUILD:-0}"
 run_log=""
 cleanup() {
   docker_e2e_cleanup_package_tgz "${PACKAGE_TGZ:-}"
@@ -17,19 +17,19 @@ cleanup() {
 }
 trap cleanup EXIT
 
-PACKAGE_TGZ="$(docker_e2e_prepare_package_tgz release-upgrade-user-journey "${OPENCLAW_CURRENT_PACKAGE_TGZ:-}")"
+PACKAGE_TGZ="$(docker_e2e_prepare_package_tgz release-upgrade-user-journey "${AFORA_CURRENT_PACKAGE_TGZ:-}")"
 docker_e2e_package_mount_args "$PACKAGE_TGZ"
 
 docker_e2e_build_or_reuse "$IMAGE_NAME" release-upgrade-user-journey "$ROOT_DIR/scripts/e2e/Dockerfile" "$ROOT_DIR" "bare" "$SKIP_BUILD"
-OPENCLAW_TEST_STATE_SCRIPT_B64="$(docker_e2e_test_state_shell_b64 release-upgrade-user-journey empty)"
+AFORA_TEST_STATE_SCRIPT_B64="$(docker_e2e_test_state_shell_b64 release-upgrade-user-journey empty)"
 
 run_log="$(docker_e2e_run_log release-upgrade-user-journey)"
 DOCKER_ENV_ARGS=(
   -e COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-  -e "OPENCLAW_TEST_STATE_SCRIPT_B64=$OPENCLAW_TEST_STATE_SCRIPT_B64"
+  -e "AFORA_TEST_STATE_SCRIPT_B64=$AFORA_TEST_STATE_SCRIPT_B64"
 )
-if [ -n "${OPENCLAW_RELEASE_UPGRADE_BASELINE_SPEC:-}" ]; then
-  DOCKER_ENV_ARGS+=(-e "OPENCLAW_RELEASE_UPGRADE_BASELINE_SPEC=$OPENCLAW_RELEASE_UPGRADE_BASELINE_SPEC")
+if [ -n "${AFORA_RELEASE_UPGRADE_BASELINE_SPEC:-}" ]; then
+  DOCKER_ENV_ARGS+=(-e "AFORA_RELEASE_UPGRADE_BASELINE_SPEC=$AFORA_RELEASE_UPGRADE_BASELINE_SPEC")
 fi
 
 echo "Running release upgrade user journey Docker E2E..."

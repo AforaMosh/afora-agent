@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { patchSessionEntryCore } from "../config/sessions/session-accessor.js";
 import { runHeartbeatOnce, type HeartbeatDeps } from "./heartbeat-runner.js";
 import { installHeartbeatRunnerTestRuntime } from "./heartbeat-runner.test-harness.js";
@@ -17,7 +17,7 @@ type StoredEntry = Record<string, unknown> | undefined;
 describe("runHeartbeatOnce clears stuck pendingFinalDelivery state once delivery is satisfied", () => {
   const TELEGRAM_GROUP = "-1001234567890";
 
-  function createHeartbeatConfig(storePath: string): OpenClawConfig {
+  function createHeartbeatConfig(storePath: string): AforaConfig {
     return {
       agents: {
         defaults: {
@@ -32,7 +32,7 @@ describe("runHeartbeatOnce clears stuck pendingFinalDelivery state once delivery
         },
       },
       session: { store: storePath },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
   }
 
   function heartbeatDeps(
@@ -131,7 +131,7 @@ describe("runHeartbeatOnce clears stuck pendingFinalDelivery state once delivery
             responsePrefix: "🤖",
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       const body = "Heartbeat update: everything is green.";
       const deliveredText = `🤖 ${body}`;

@@ -37,14 +37,14 @@ describe("check-package-dist-imports", () => {
   });
 
   it("accepts a minimal package dist root", () => {
-    const root = makeTempDir(tempDirs, "openclaw-package-dist-imports-");
+    const root = makeTempDir(tempDirs, "afora-package-dist-imports-");
     mkdirSync(join(root, "dist"), { recursive: true });
     writeFileSync(join(root, "dist", "index.js"), "export {};\n", "utf8");
 
     const result = spawnSync("node", [CHECK_SCRIPT, root], { encoding: "utf8" });
 
     expect(result.status, result.stderr).toBe(0);
-    expect(result.stdout).toContain("OpenClaw package dist import closure passed.");
+    expect(result.stdout).toContain("Afora package dist import closure passed.");
   });
 
   it.each([
@@ -65,7 +65,7 @@ describe("check-package-dist-imports", () => {
       source: 'export {\n  value,\n} from "./missing.js";\n',
     },
   ])("rejects missing chunks in $name", ({ source }) => {
-    const root = makeTempDir(tempDirs, "openclaw-package-dist-imports-");
+    const root = makeTempDir(tempDirs, "afora-package-dist-imports-");
     mkdirSync(join(root, "dist"), { recursive: true });
     writeFileSync(join(root, "dist", "index.js"), source, "utf8");
 
@@ -76,7 +76,7 @@ describe("check-package-dist-imports", () => {
   });
 
   it("ignores import-like text inside multiline template literals", () => {
-    const root = makeTempDir(tempDirs, "openclaw-package-dist-imports-");
+    const root = makeTempDir(tempDirs, "afora-package-dist-imports-");
     mkdirSync(join(root, "dist"), { recursive: true });
     writeFileSync(
       join(root, "dist", "index.js"),
@@ -87,16 +87,16 @@ describe("check-package-dist-imports", () => {
     const result = spawnSync("node", [CHECK_SCRIPT, root], { encoding: "utf8" });
 
     expect(result.status, result.stderr).toBe(0);
-    expect(result.stdout).toContain("OpenClaw package dist import closure passed.");
+    expect(result.stdout).toContain("Afora package dist import closure passed.");
   });
 
   it.each([
-    "../../openclaw.mjs",
+    "../../afora.mjs",
     "../../scripts/run-node.mjs",
     "../../dist/entry.js",
     "../../dist/entry.mjs",
   ])("ignores import.meta.url probes outside packaged dist (%s)", (specifier) => {
-    const root = makeTempDir(tempDirs, "openclaw-package-dist-imports-");
+    const root = makeTempDir(tempDirs, "afora-package-dist-imports-");
     mkdirSync(join(root, "dist"), { recursive: true });
     writeFileSync(
       join(root, "dist", "index.js"),
@@ -107,11 +107,11 @@ describe("check-package-dist-imports", () => {
     const result = spawnSync("node", [CHECK_SCRIPT, root], { encoding: "utf8" });
 
     expect(result.status, result.stderr).toBe(0);
-    expect(result.stdout).toContain("OpenClaw package dist import closure passed.");
+    expect(result.stdout).toContain("Afora package dist import closure passed.");
   });
 
   it("rejects missing CommonJS require chunks", () => {
-    const root = makeTempDir(tempDirs, "openclaw-package-dist-imports-");
+    const root = makeTempDir(tempDirs, "afora-package-dist-imports-");
     mkdirSync(join(root, "dist"), { recursive: true });
     writeFileSync(
       join(root, "dist", "index.cjs"),

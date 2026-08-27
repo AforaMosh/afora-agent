@@ -207,7 +207,7 @@ export abstract class ChatPaneBoard extends ChatPaneHistory {
     if (
       board.hasBoard &&
       board.face === "dashboard" &&
-      !customElements.get("openclaw-board-view")
+      !customElements.get("afora-board-view")
     ) {
       void ensureBoardViewElement().then((loaded) => {
         if (loaded) {

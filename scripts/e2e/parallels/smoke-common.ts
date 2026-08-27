@@ -1,14 +1,14 @@
-// Smoke Common helper supports OpenClaw script workflows.
+// Smoke Common helper supports Afora script workflows.
 import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
-import { extractLastOpenClawVersionFromLog } from "./filesystem.ts";
+import { extractLastAforaVersionFromLog } from "./filesystem.ts";
 import { run, say } from "./host-command.ts";
 import { resolveHostIp, resolveHostPort, startHostServer } from "./host-server.ts";
 import { runSmokeLane, type SmokeLane, type SmokeLaneStatus } from "./lane-runner.ts";
 import {
   packageBuildCommitFromTgz,
   packageVersionFromTgz,
-  packOpenClaw,
+  packAfora,
 } from "./package-artifact.ts";
 import type { HostServer, Mode, PackageArtifact, Provider, SnapshotInfo } from "./types.ts";
 
@@ -193,7 +193,7 @@ export async function packAndServeSmokeArtifact(
   label: string,
   requireControlUi = false,
 ): Promise<readonly [artifact: PackageArtifact, server: HostServer, hostPort: number]> {
-  const artifact = await packOpenClaw({
+  const artifact = await packAfora({
     destination: tgzDir,
     packageSpec,
     requireControlUi,
@@ -301,12 +301,12 @@ export async function expectedPackageBuildCommit(artifact: PackageArtifact): Pro
   return artifact.buildCommitShort || (await packageBuildCommitFromTgz(artifact.path)).slice(0, 7);
 }
 
-export async function extractLastOpenClawVersion(
+export async function extractLastAforaVersion(
   runDir: string,
   phaseName: string,
   pattern: RegExp,
 ): Promise<string> {
-  return await extractLastOpenClawVersionFromLog(path.join(runDir, `${phaseName}.log`), pattern);
+  return await extractLastAforaVersionFromLog(path.join(runDir, `${phaseName}.log`), pattern);
 }
 
 export function buildCommonSmokeSummary(input: {

@@ -1,5 +1,5 @@
 /** Bounded TypeScript-style hints for model-visible tool input and output schemas. */
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 
 const MAX_COMPACT_INPUT_HINT_CHARS = 300;
 // Sized so real multi-branch contracts like web_search's four-way union stay

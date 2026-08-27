@@ -1,18 +1,18 @@
 // Memory Core plugin module coordinates synchronization and shadow reindexing.
 import { randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import {
   createSubsystemLogger,
   resolveAgentDir,
   resolveUserPath,
-} from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-foundation";
 import {
   MEMORY_CHUNKING_VERSION,
   type MemorySyncParams,
   type MemorySyncProgressUpdate,
-} from "openclaw/plugin-sdk/memory-core-host-engine-storage";
-import { resolveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
+import { resolveTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
 import {
   createEmbeddingProvider,
   type EmbeddingProvider,

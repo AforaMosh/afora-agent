@@ -3,8 +3,8 @@ import {
   applyAgentDefaultModelPrimary,
   ensureModelAllowlistEntry,
   resolveAgentModelPrimaryValue,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/provider-onboard";
+  type AforaConfig,
+} from "afora-agent/plugin-sdk/provider-onboard";
 
 export const OPENAI_DEFAULT_MODEL = "openai/gpt-5.6-sol";
 export const OPENAI_CODEX_DEFAULT_MODEL = "openai/gpt-5.6-sol";
@@ -14,7 +14,7 @@ export const OPENAI_DEFAULT_TTS_VOICE = "alloy";
 export const OPENAI_DEFAULT_AUDIO_TRANSCRIPTION_MODEL = "gpt-4o-transcribe";
 export const OPENAI_DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small";
 
-export function applyOpenAIProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyOpenAIProviderConfig(cfg: AforaConfig): AforaConfig {
   const configuredModel = cfg.agents?.defaults?.model;
   const configuredRefs = [
     resolveAgentModelPrimaryValue(configuredModel),
@@ -48,7 +48,7 @@ export function applyOpenAIProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
   };
 }
 
-export function applyOpenAIConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyOpenAIConfig(cfg: AforaConfig): AforaConfig {
   const next = applyOpenAIProviderConfig(cfg);
   return resolveAgentModelPrimaryValue(cfg.agents?.defaults?.model) === undefined
     ? applyAgentDefaultModelPrimary(next, OPENAI_DEFAULT_MODEL)

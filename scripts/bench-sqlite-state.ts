@@ -1,4 +1,4 @@
-// SQLite state benchmark seeds OpenClaw DBs and reports hot-query proof lines.
+// SQLite state benchmark seeds Afora DBs and reports hot-query proof lines.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -6,13 +6,13 @@ import type { DatabaseSync, SQLInputValue } from "node:sqlite";
 import { pathToFileURL } from "node:url";
 import { expectDefined } from "../packages/normalization-core/src/expect.js";
 import {
-  openOpenClawAgentDatabase,
-  closeOpenClawAgentDatabasesForTest,
-} from "../src/state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  closeAforaAgentDatabasesForTest,
+} from "../src/state/afora-agent-db.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../src/state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../src/state/afora-state-db.js";
 import { parseStrictIntegerOption } from "./lib/dev-tooling-safety.ts";
 import {
   CliUsageError,
@@ -131,7 +131,7 @@ function applyScale(config: ProfileConfig): ProfileConfig {
 }
 
 function printUsage(): void {
-  console.log(`OpenClaw SQLite state benchmark
+  console.log(`Afora SQLite state benchmark
 
 Usage:
   node --import tsx scripts/bench-sqlite-state.ts [options]
@@ -508,13 +508,13 @@ function main(): void {
   const { options } = cli;
   const config = applyScale(PROFILES[options.profile]);
   const stateDir =
-    options.stateDir ?? fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-sqlite-perf-"));
-  const env = { OPENCLAW_STATE_DIR: stateDir };
+    options.stateDir ?? fs.mkdtempSync(path.join(os.tmpdir(), "afora-sqlite-perf-"));
+  const env = { AFORA_STATE_DIR: stateDir };
   const started = nowMs();
   try {
-    const stateDatabase = openOpenClawStateDatabase({ env });
+    const stateDatabase = openAforaStateDatabase({ env });
     const agentDatabases = Array.from({ length: config.agentCount }, (_, index) =>
-      openOpenClawAgentDatabase({ agentId: `perf-agent-${index}`, env }),
+      openAforaAgentDatabase({ agentId: `perf-agent-${index}`, env }),
     );
 
     const seedStarted = nowMs();
@@ -583,8 +583,8 @@ function main(): void {
     }
     printProofLines(report);
   } finally {
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     if (!options.stateDir) {
       fs.rmSync(stateDir, { recursive: true, force: true });
     }

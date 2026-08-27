@@ -15,7 +15,7 @@ export default {
         throw new Error("Voice Call fixture is bridge-only");
       },
       createBridge(request) {
-        append(process.env.OPENCLAW_QA_VOICE_BRIDGE_CALLS_PATH, {
+        append(process.env.AFORA_QA_VOICE_BRIDGE_CALLS_PATH, {
           instructions: request.instructions,
           tools: request.tools?.map((tool) => tool.name) ?? [],
         });
@@ -30,7 +30,7 @@ export default {
               request.onToolCall?.({
                 itemId: "qa-consult-item",
                 callId: "qa-consult-call",
-                name: "openclaw_agent_consult",
+                name: "afora_agent_consult",
                 args: {
                   question: "Use the embedded agent context to identify the caller request.",
                   context: "Realtime provider context marker: VOICE-CONSULT-42",
@@ -41,7 +41,7 @@ export default {
           sendAudio() {},
           setMediaTimestamp() {},
           submitToolResult(callId, result, options) {
-            append(process.env.OPENCLAW_QA_VOICE_TOOL_RESULTS_PATH, { callId, result, options });
+            append(process.env.AFORA_QA_VOICE_TOOL_RESULTS_PATH, { callId, result, options });
           },
           acknowledgeMark() {},
           close() {
@@ -55,7 +55,7 @@ export default {
       },
     });
     api.registerGatewayMethod("qa.voiceCall.streamSession", async ({ params, respond }) => {
-      const coordinator = globalThis[Symbol.for("openclaw.voice-call.runtimeCoordinator")];
+      const coordinator = globalThis[Symbol.for("afora.voice-call.runtimeCoordinator")];
       const slot = coordinator?.slot;
       const runtime =
         slot?.state === "running" && slot.owner === coordinator.current ? slot.runtime : undefined;

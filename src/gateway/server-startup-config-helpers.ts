@@ -18,7 +18,7 @@ import { isNixMode } from "../config/paths.js";
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
 import { isPluginPackagingRuntimeOutputInvalidConfigSnapshot } from "../config/recovery-policy.js";
 import type { GatewayAuthConfig, GatewayTailscaleConfig } from "../config/types.gateway.js";
-import type { ConfigFileSnapshot, OpenClawConfig } from "../config/types.openclaw.js";
+import type { ConfigFileSnapshot, AforaConfig } from "../config/types.afora.js";
 import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.js";
 import {
   GATEWAY_AUTH_SURFACE_PATHS,
@@ -71,7 +71,7 @@ export function assertValidGatewayStartupConfigSnapshot(
 
 function withRuntimeConfig(
   snapshot: ConfigFileSnapshot,
-  runtimeConfig: OpenClawConfig,
+  runtimeConfig: AforaConfig,
 ): ConfigFileSnapshot {
   return {
     ...snapshot,
@@ -142,7 +142,7 @@ export async function loadGatewayStartupConfigSnapshot(params: {
   };
 }
 
-export function hasActiveGatewayAuthSecretRef(config: OpenClawConfig): boolean {
+export function hasActiveGatewayAuthSecretRef(config: AforaConfig): boolean {
   const states = evaluateGatewayAuthSurfaceStates({
     config,
     defaults: config.secrets?.defaults,
@@ -154,7 +154,7 @@ export function hasActiveGatewayAuthSecretRef(config: OpenClawConfig): boolean {
   });
 }
 
-export function assertRuntimeGatewayAuthNotKnownWeak(config: OpenClawConfig): void {
+export function assertRuntimeGatewayAuthNotKnownWeak(config: AforaConfig): void {
   assertGatewayAuthNotKnownWeak(
     resolveGatewayAuth({
       authConfig: config.gateway?.auth,
@@ -166,7 +166,7 @@ export function assertRuntimeGatewayAuthNotKnownWeak(config: OpenClawConfig): vo
 
 export function logGatewayAuthSurfaceDiagnostics(
   prepared: {
-    sourceConfig: OpenClawConfig;
+    sourceConfig: AforaConfig;
     warnings: Array<{ code: string; path: string; message: string }>;
   },
   logSecrets: GatewayStartupLog,
@@ -197,9 +197,9 @@ export function logGatewayAuthSurfaceDiagnostics(
 }
 
 export function applyGatewayAuthOverridesForStartupPreflight(
-  config: OpenClawConfig,
+  config: AforaConfig,
   overrides: { auth?: GatewayAuthConfig; tailscale?: GatewayTailscaleConfig },
-): OpenClawConfig {
+): AforaConfig {
   if (!overrides.auth && !overrides.tailscale) {
     return config;
   }

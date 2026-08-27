@@ -1,7 +1,7 @@
 // Config gateway methods: validation, redaction, secrets, reload planning.
 import { isDeepStrictEqual } from "node:util";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 import {
   ErrorCodes,
   errorShape,
@@ -36,7 +36,7 @@ import { normalizeConfigPatchReplacePaths } from "../../config/patch-replace-pat
 import { redactConfigObject, restoreRedactedValues } from "../../config/redact-snapshot.js";
 import { loadGatewayRuntimeConfigSchema } from "../../config/runtime-schema.js";
 import { lookupConfigSchema, type ConfigSchemaResponse } from "../../config/schema.js";
-import type { ConfigValidationIssue, OpenClawConfig } from "../../config/types.openclaw.js";
+import type { ConfigValidationIssue, AforaConfig } from "../../config/types.afora.js";
 import {
   validateConfigObjectRawWithPlugins,
   validateConfigObjectWithPlugins,
@@ -370,7 +370,7 @@ function collectDestructiveIdKeyedArrayEntryPatchPaths(params: {
 }
 
 function rejectDestructiveArrayPatchWithoutIntent(params: {
-  currentConfig: OpenClawConfig;
+  currentConfig: AforaConfig;
   mergedConfig: unknown;
   patch: unknown;
   replacePaths: Set<string>;
@@ -489,7 +489,7 @@ function parseValidateConfigFromRawOrRespond(
   snapshot: Awaited<ReturnType<typeof readConfigFileSnapshot>>,
   respond: RespondFn,
   modelIdNormalizationPolicies?: Parameters<typeof normalizeSubmittedConfigModelRefs>[1],
-): { config: OpenClawConfig; writeConfig: OpenClawConfig; schema: ConfigSchemaResponse } | null {
+): { config: AforaConfig; writeConfig: AforaConfig; schema: ConfigSchemaResponse } | null {
   const rawValue = parseRawConfigOrRespond(params, requestName, respond);
   if (!rawValue) {
     return null;
@@ -532,7 +532,7 @@ function parseValidateConfigFromRawOrRespond(
   };
 }
 
-function listExplicitAgentRosterIds(config: OpenClawConfig): string[] {
+function listExplicitAgentRosterIds(config: AforaConfig): string[] {
   const roster = readAgentRosterProperty(config);
   if (roster?.kind === "entries" && isRecord(roster.value)) {
     return Object.keys(roster.value);
@@ -546,8 +546,8 @@ function listExplicitAgentRosterIds(config: OpenClawConfig): string[] {
 }
 
 function rejectDroppedAgentRosterEntries(params: {
-  currentConfig: OpenClawConfig;
-  submittedConfig: OpenClawConfig;
+  currentConfig: AforaConfig;
+  submittedConfig: AforaConfig;
   respond: RespondFn;
 }): boolean {
   const submittedIds = new Set(
@@ -565,7 +565,7 @@ function rejectDroppedAgentRosterEntries(params: {
     errorShape(
       ErrorCodes.INVALID_REQUEST,
       `config.set would remove existing agent entries: ${droppedIds.join(", ")}. ` +
-        "Use the agents.delete RPC or `openclaw agents delete <id>` for intentional deletion.",
+        "Use the agents.delete RPC or `afora agents delete <id>` for intentional deletion.",
     ),
   );
   return true;
@@ -574,15 +574,15 @@ function rejectDroppedAgentRosterEntries(params: {
 /** Shared normalize -> raw-validate -> plugin-validate pipeline for submitted configs; responds on failure. */
 function validateSubmittedConfigOrRespond(params: {
   candidate: unknown;
-  sourceConfig: OpenClawConfig | undefined;
+  sourceConfig: AforaConfig | undefined;
   modelIdNormalizationPolicies: Parameters<typeof normalizeSubmittedConfigModelRefs>[1];
   respond: RespondFn;
-}): { validationCandidate: OpenClawConfig; config: OpenClawConfig } | null {
+}): { validationCandidate: AforaConfig; config: AforaConfig } | null {
   const validationCandidate = normalizeSubmittedConfigModelRefs(
     stripBundledProviderRuntimeDefaults({
       candidate: params.candidate,
       sourceConfig: params.sourceConfig,
-    }) as OpenClawConfig,
+    }) as AforaConfig,
     params.modelIdNormalizationPolicies,
   );
   const respondInvalid = (issues: ReadonlyArray<ConfigValidationIssue>) => {
@@ -604,7 +604,7 @@ function validateSubmittedConfigOrRespond(params: {
     respondInvalid(validated.issues);
     return null;
   }
-  return { validationCandidate: validationCandidate as OpenClawConfig, config: validated.config };
+  return { validationCandidate: validationCandidate as AforaConfig, config: validated.config };
 }
 
 function summarizeConfigValidationIssues(issues: ReadonlyArray<ConfigValidationIssue>): string {
@@ -622,7 +622,7 @@ function summarizeConfigValidationIssues(issues: ReadonlyArray<ConfigValidationI
 }
 
 async function ensureResolvableSecretRefsOrRespond(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   respond: RespondFn;
 }): Promise<PreparedSecretsRuntimeSnapshot | null> {
   try {
@@ -721,9 +721,9 @@ async function respondWithConfigRestartWrite(params: {
 }
 
 function shouldDisconnectSharedAuthClientsForConfigWrite(params: {
-  prevConfig: OpenClawConfig;
-  prevSourceConfig: OpenClawConfig;
-  nextConfig: OpenClawConfig;
+  prevConfig: AforaConfig;
+  prevSourceConfig: AforaConfig;
+  nextConfig: AforaConfig;
   preparedSecretsSnapshot: PreparedSecretsRuntimeSnapshot;
 }): boolean {
   return (
@@ -738,7 +738,7 @@ function shouldDisconnectSharedAuthClientsForConfigWrite(params: {
 
 function respondConfigPatchNoop(params: {
   snapshot: Awaited<ReturnType<typeof readConfigFileSnapshot>>;
-  config: OpenClawConfig;
+  config: AforaConfig;
   uiHints: ConfigRedactionHints;
   actor: ReturnType<typeof resolveControlPlaneActor>;
   context: GatewayRequestContext | undefined;
@@ -977,7 +977,7 @@ export const configHandlers: GatewayRequestHandlers = {
         undefined,
         errorShape(
           ErrorCodes.INVALID_REQUEST,
-          `${summarizeConfigValidationIssues(snapshot.issues)}; fix (openclaw doctor) before patching`,
+          `${summarizeConfigValidationIssues(snapshot.issues)}; fix (afora doctor) before patching`,
           { details: { issues: snapshot.issues } },
         ),
       );
@@ -1013,7 +1013,7 @@ export const configHandlers: GatewayRequestHandlers = {
       return;
     }
     const normalizedPatch = normalizeSubmittedConfigModelRefs(
-      parsedRes.parsed as OpenClawConfig,
+      parsedRes.parsed as AforaConfig,
       modelIdNormalizationPolicies,
     );
     if (hashlessPatch && !hasHashlessPatchLwwStructure(normalizedPatch)) {

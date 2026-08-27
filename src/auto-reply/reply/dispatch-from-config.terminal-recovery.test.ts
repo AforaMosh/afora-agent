@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { readAgentRunTerminalOutcome } from "../../channels/turn/agent-run-terminal-outcome.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ReplyPayload } from "../types.js";
 import {
   createDispatcher,
@@ -33,7 +33,7 @@ function createVisibleDispatchParams(
       MessageThreadId: "501.000",
       BodyForAgent: "second telegram direct turn",
     }),
-    cfg: {} as OpenClawConfig,
+    cfg: {} as AforaConfig,
     dispatcher: createDispatcher(),
     replyResolver,
   };

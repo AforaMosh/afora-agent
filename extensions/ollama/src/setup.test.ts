@@ -1,7 +1,7 @@
 // Ollama tests cover setup plugin behavior.
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import type { WizardPrompter } from "openclaw/plugin-sdk/setup";
-import { jsonResponse, requestBodyText, requestUrl } from "openclaw/plugin-sdk/test-env";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+import type { WizardPrompter } from "afora-agent/plugin-sdk/setup";
+import { jsonResponse, requestBodyText, requestUrl } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   configureOllamaNonInteractive,
@@ -22,16 +22,16 @@ const fetchWithSsrFGuardMock = vi.hoisted(() =>
   })),
 );
 
-vi.mock("openclaw/plugin-sdk/provider-auth", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/provider-auth")>();
+vi.mock("afora-agent/plugin-sdk/provider-auth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/provider-auth")>();
   return {
     ...actual,
     upsertAuthProfileWithLock,
   };
 });
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/ssrf-runtime")>();
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/ssrf-runtime")>();
   return {
     ...actual,
     fetchWithSsrFGuard: (...args: Parameters<typeof actual.fetchWithSsrFGuard>) =>
@@ -158,7 +158,7 @@ describe("ollama setup", () => {
   });
 
   it("Docker setup defaults to the host Ollama endpoint", async () => {
-    vi.stubEnv("OPENCLAW_DOCKER_SETUP", "1");
+    vi.stubEnv("AFORA_DOCKER_SETUP", "1");
     const text = vi.fn().mockResolvedValueOnce("http://host.docker.internal:11434");
     const prompter = {
       select: vi.fn().mockResolvedValueOnce("local-only"),
@@ -385,7 +385,7 @@ describe("ollama setup", () => {
         "Start or restart the Ollama server for this address.",
         "If Ollama is not installed on that machine, download it at https://ollama.com/download",
         "",
-        "Continue when it is running. OpenClaw will retry this address.",
+        "Continue when it is running. Afora will retry this address.",
       ].join("\n"),
       "Ollama",
     );

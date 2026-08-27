@@ -49,7 +49,7 @@ function resolveWizardLocale(value: string | undefined): WizardLocale {
 }
 
 function resolveWizardLocaleFromEnv(env: NodeJS.ProcessEnv = process.env): WizardLocale {
-  const locale = [env.OPENCLAW_LOCALE, env.LC_ALL, env.LC_MESSAGES, env.LANG].find((value) =>
+  const locale = [env.AFORA_LOCALE, env.LC_ALL, env.LC_MESSAGES, env.LANG].find((value) =>
     value?.trim(),
   );
   return resolveWizardLocale(locale);

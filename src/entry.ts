@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Boots the OpenClaw CLI entry point under Node.
-// CLI process entrypoint for OpenClaw command execution.
+// Boots the Afora CLI entry point under Node.
+// CLI process entrypoint for Afora command execution.
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { format } from "node:util";
@@ -20,22 +20,22 @@ import {
 } from "./cli/startup-trace.js";
 import { normalizeWindowsArgv } from "./cli/windows-argv.js";
 import {
-  enableOpenClawCompileCache,
+  enableAforaCompileCache,
   resolveEntryInstallRoot,
-  respawnWithoutOpenClawCompileCacheIfNeeded,
+  respawnWithoutAforaCompileCacheIfNeeded,
 } from "./entry.compile-cache.js";
 import { buildCliRespawnPlan, runCliRespawnPlan } from "./entry.respawn.js";
 import { tryHandleRootVersionFastPath } from "./entry.version-fast-path.js";
 import { normalizeEnv } from "./infra/env.js";
 import { isMainModule } from "./infra/is-main.js";
-import { ensureOpenClawExecMarkerOnProcess } from "./infra/openclaw-exec-env.js";
+import { ensureAforaExecMarkerOnProcess } from "./infra/afora-exec-env.js";
 import { installProcessWarningFilter } from "./infra/warning-filter.js";
 import { defaultRuntime } from "./runtime.js";
 
 const ENTRY_WRAPPER_PAIRS = [
-  { wrapperBasename: "openclaw.mjs", entryBasename: "entry.js" },
-  { wrapperBasename: "openclaw.mjs", entryBasename: "entry.mjs" },
-  { wrapperBasename: "openclaw.js", entryBasename: "entry.js" },
+  { wrapperBasename: "afora.mjs", entryBasename: "entry.js" },
+  { wrapperBasename: "afora.mjs", entryBasename: "entry.mjs" },
+  { wrapperBasename: "afora.js", entryBasename: "entry.js" },
 ] as const;
 
 const loadRootHelpLiveConfigModule = async () => await import("./cli/root-help-live-config.js");
@@ -54,7 +54,7 @@ async function writeCapturedCliArgumentError(message: string): Promise<void> {
   if (isJsonOutputModeActive(process.argv)) {
     defaultRuntime.writeJson(formatCliJsonFailure(message));
   }
-  console.error(`[openclaw] ${message}`);
+  console.error(`[afora] ${message}`);
 }
 
 async function writeCliDiagnosticBlock(message: string): Promise<void> {
@@ -119,8 +119,8 @@ if (
 } else {
   const entryFile = fileURLToPath(import.meta.url);
   const installRoot = resolveEntryInstallRoot(entryFile);
-  process.title = "openclaw";
-  ensureOpenClawExecMarkerOnProcess();
+  process.title = "afora";
+  ensureAforaExecMarkerOnProcess();
   installProcessWarningFilter();
   normalizeEnv();
   process.argv = normalizeWindowsArgv(process.argv);
@@ -138,7 +138,7 @@ if (
   assertSupportedRuntime();
   gatewayEntryStartupTrace.mark("bootstrap");
 
-  const waitingForCompileCacheRespawn = await respawnWithoutOpenClawCompileCacheIfNeeded({
+  const waitingForCompileCacheRespawn = await respawnWithoutAforaCompileCacheIfNeeded({
     currentFile: entryFile,
     installRoot,
     prepareWriteError: async () => {
@@ -149,12 +149,12 @@ if (
     },
   });
   if (!waitingForCompileCacheRespawn) {
-    enableOpenClawCompileCache({
+    enableAforaCompileCache({
       installRoot,
     });
 
     if (shouldForceReadOnlyAuthStore(process.argv)) {
-      process.env.OPENCLAW_AUTH_STORE_READONLY = "1";
+      process.env.AFORA_AUTH_STORE_READONLY = "1";
     }
 
     if (process.argv.includes("--no-color")) {
@@ -223,7 +223,7 @@ export async function tryHandleRootHelpFastPath(
 ): Promise<boolean> {
   const env = deps.env ?? process.env;
   if (
-    env.OPENCLAW_DISABLE_CLI_STARTUP_HELP_FAST_PATH === "1" ||
+    env.AFORA_DISABLE_CLI_STARTUP_HELP_FAST_PATH === "1" ||
     resolveCliContainerTarget(argv, env)
   ) {
     return false;
@@ -235,7 +235,7 @@ export async function tryHandleRootHelpFastPath(
     deps.onError ??
     (async (error: unknown) => {
       const detail = error instanceof Error ? (error.stack ?? error.message) : String(error);
-      await writeCliDiagnosticBlock(`[openclaw] Failed to display help: ${detail}`);
+      await writeCliDiagnosticBlock(`[afora] Failed to display help: ${detail}`);
       process.exit(1);
     });
   try {

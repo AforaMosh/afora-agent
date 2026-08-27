@@ -1,6 +1,6 @@
 import os from "node:os";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawPluginNodeHostCommandIo } from "../plugins/types.js";
+import type { AforaPluginNodeHostCommandIo } from "../plugins/types.js";
 import { decodeNodePtyResumeParams, runNodePtyCommand } from "./pty-command.js";
 
 const { nodePtySpawn } = vi.hoisted(() => ({ nodePtySpawn: vi.fn() }));
@@ -51,7 +51,7 @@ describe("node PTY command", () => {
     } satisfies TerminalPtyHandle;
     const abort = new AbortController();
     const emitChunk = vi.fn(async () => {});
-    const io: OpenClawPluginNodeHostCommandIo = {
+    const io: AforaPluginNodeHostCommandIo = {
       signal: abort.signal,
       emitChunk,
       onInput: (callback) => {
@@ -79,7 +79,7 @@ describe("node PTY command", () => {
     expect(spawnCalls[0]?.[0].cwd).toBe(os.homedir());
     expect(spawnCalls[0]?.[0].env?.PATH).toBe("/shell/bin:/usr/bin");
     expect(spawnCalls[0]?.[0].env?.CODEX_HOME).toBe("/catalog/codex-home");
-    expect(spawnCalls[0]?.[0].env?.OPENCLAW_TERMINAL).toBe("1");
+    expect(spawnCalls[0]?.[0].env?.AFORA_TERMINAL).toBe("1");
 
     onData?.("output");
     await vi.waitFor(() => expect(emitChunk).toHaveBeenCalledWith("output"));
@@ -122,7 +122,7 @@ describe("node PTY command", () => {
         onExit = callback;
       },
     } satisfies TerminalPtyHandle;
-    const io: OpenClawPluginNodeHostCommandIo = {
+    const io: AforaPluginNodeHostCommandIo = {
       signal: new AbortController().signal,
       emitChunk: vi.fn(async () => {}),
       onInput: (callback) => {
@@ -172,7 +172,7 @@ describe("node PTY command", () => {
             queueMicrotask(() => callback({ exitCode: 0 }));
           },
         });
-        const io: OpenClawPluginNodeHostCommandIo = {
+        const io: AforaPluginNodeHostCommandIo = {
           signal: new AbortController().signal,
           emitChunk: vi.fn(async () => {}),
           onInput: vi.fn(),

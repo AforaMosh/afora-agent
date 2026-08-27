@@ -4,7 +4,7 @@ import type { GatewayBrowserClient } from "../api/gateway.ts";
 import { icons } from "../components/icons.ts";
 import { t } from "../i18n/index.ts";
 import { formatUiError } from "../lib/format-error.ts";
-import { OpenClawLightDomContentsElement } from "../lit/openclaw-element.ts";
+import { AforaLightDomContentsElement } from "../lit/afora-element.ts";
 import {
   dismissScopeUpgradeBanner,
   hasDismissedScopeUpgradeBanner,
@@ -138,7 +138,7 @@ type ScopeUpgradeBannerProps = {
   snapshot: ApplicationGatewaySnapshot;
 };
 
-class ScopeUpgradeBanner extends OpenClawLightDomContentsElement {
+class ScopeUpgradeBanner extends AforaLightDomContentsElement {
   @property({ attribute: false }) props?: ScopeUpgradeBannerProps;
   private controller?: ScopeUpgradeController;
   private expanded = !hasDismissedScopeUpgradeBanner();
@@ -232,7 +232,7 @@ class ScopeUpgradeBanner extends OpenClawLightDomContentsElement {
               `
             : nothing}
       ${dismissible
-        ? html`<openclaw-tooltip .content=${t("connection.scopeUpgrade.dismiss")}>
+        ? html`<afora-tooltip .content=${t("connection.scopeUpgrade.dismiss")}>
             <button
               class="callout__dismiss"
               type="button"
@@ -245,12 +245,12 @@ class ScopeUpgradeBanner extends OpenClawLightDomContentsElement {
             >
               ${icons.x}
             </button>
-          </openclaw-tooltip>`
+          </afora-tooltip>`
         : nothing}
     </div>`;
   }
 }
 
-if (!customElements.get("openclaw-device-scope-upgrade-banner")) {
-  customElements.define("openclaw-device-scope-upgrade-banner", ScopeUpgradeBanner);
+if (!customElements.get("afora-device-scope-upgrade-banner")) {
+  customElements.define("afora-device-scope-upgrade-banner", ScopeUpgradeBanner);
 }

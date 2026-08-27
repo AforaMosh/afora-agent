@@ -1,5 +1,5 @@
 /** Store binding for ACP session metadata: resolves which session-store row owns a key. */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { AgentSelectionRequiredError, listAgentIds } from "../../agents/agent-scope-config.js";
 import { getRuntimeConfig } from "../../config/config.js";
 import { tryResolveLegacyCompatibilityAgentId } from "../../config/legacy.default-agent-owner.js";
@@ -10,7 +10,7 @@ import {
 } from "../../config/sessions/session-accessor.js";
 import { resolvePersistedSessionStoreOwnerForKey } from "../../config/sessions/session-store-owner.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../../routing/session-key.js";
 
 /**
@@ -64,9 +64,9 @@ export function resolveStoreEntryForSessionKey(params: {
 export function resolveSessionStorePathForAcp(params: {
   sessionKey: string;
   agentId?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   env?: NodeJS.ProcessEnv;
-}): { cfg: OpenClawConfig; agentId?: string; storePath?: string } {
+}): { cfg: AforaConfig; agentId?: string; storePath?: string } {
   const cfg = params.cfg ?? getRuntimeConfig();
   const parsed = parseAgentSessionKey(params.sessionKey);
   const requestedAgentId = params.agentId?.trim() ? normalizeAgentId(params.agentId) : undefined;
@@ -119,11 +119,11 @@ export function resolveSessionStorePathForAcp(params: {
 export function readSessionEntryFromStore(params: {
   sessionKey: string;
   agentId?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   clone?: boolean;
 }): {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
   storePath?: string;
   storeSessionKey: string;

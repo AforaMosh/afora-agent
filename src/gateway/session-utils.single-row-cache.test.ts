@@ -3,7 +3,7 @@
  */
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { resetConfigRuntimeState, setRuntimeConfigSnapshot } from "../config/config.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { resolveSessionStorePathCore, type SessionEntry } from "../config/sessions.js";
 import { replaceSessionEntry, updateSessionEntry } from "../config/sessions/session-accessor.js";
 import { resetPluginRuntimeStateForTest } from "../plugins/runtime.js";
@@ -95,7 +95,7 @@ async function withSingleRowCacheStore(
   run: (context: SingleRowCacheContext) => Promise<void>,
 ): Promise<void> {
   await withStateDirEnv(statePrefix, async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         list: [
           {
@@ -106,7 +106,7 @@ async function withSingleRowCacheStore(
         ],
         defaults: { model: { primary: TEST_MODEL } },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     setRuntimeConfigSnapshot(cfg, cfg);
     await run({
       now: Math.floor(Date.now() / 1_000) * 1_000 + 100,
@@ -211,8 +211,8 @@ describe("single gateway session row child-session cache", () => {
 
   test("shares the child-session index across repeated single-row loads for the same store", async () => {
     await withSingleRowCacheStore(
-      "openclaw-single-row-cache-",
-      "/tmp/openclaw-single-row-cache",
+      "afora-single-row-cache-",
+      "/tmp/afora-single-row-cache",
       async ({ now, storePath }) => {
         const store: Record<string, SessionEntry> = {
           "agent:main:subagent:parent-a": parentSession("parent-a", now),
@@ -246,8 +246,8 @@ describe("single gateway session row child-session cache", () => {
 
   test("refreshes subagent registry state while reusing store child candidates", async () => {
     await withSingleRowCacheStore(
-      "openclaw-single-row-cache-fresh-registry-",
-      "/tmp/openclaw-single-row-cache-fresh-registry",
+      "afora-single-row-cache-fresh-registry-",
+      "/tmp/afora-single-row-cache-fresh-registry",
       async ({ now, storePath }) => {
         const fixture = createMovingChildFixture(now);
         // This fixture moves runtime control only; an explicit parent would
@@ -272,8 +272,8 @@ describe("single gateway session row child-session cache", () => {
 
   test("keeps independent navigation lineage while cached runtime control moves", async () => {
     await withSingleRowCacheStore(
-      "openclaw-single-row-cache-navigation-owner-",
-      "/tmp/openclaw-single-row-cache-navigation-owner",
+      "afora-single-row-cache-navigation-owner-",
+      "/tmp/afora-single-row-cache-navigation-owner",
       async ({ now, storePath }) => {
         const fixture = createMovingChildFixture(now);
         const navigationParent = "agent:main:dashboard:navigation-parent";
@@ -302,24 +302,24 @@ describe("single gateway session row child-session cache", () => {
 
   test("builds shared subagent metadata context for single-row session lists", async () => {
     await withSingleRowCacheStore(
-      "openclaw-single-row-list-context-",
-      "/tmp/openclaw-single-row-list-context",
+      "afora-single-row-list-context-",
+      "/tmp/afora-single-row-list-context",
       async ({ now, storePath }) => {
         const store: Record<string, SessionEntry> = {
           "agent:main:discord:channel:parent": parentSession("parent", now),
         };
-        const cfg: OpenClawConfig = {
+        const cfg: AforaConfig = {
           agents: {
             list: [
               {
                 id: MAIN_AGENT_ID,
                 default: true,
-                workspace: "/tmp/openclaw-single-row-list-context",
+                workspace: "/tmp/afora-single-row-list-context",
               },
             ],
             defaults: { model: { primary: TEST_MODEL } },
           },
-        } as OpenClawConfig;
+        } as AforaConfig;
 
         const syncListed = listSessionsFromStore({
           cfg,
@@ -354,8 +354,8 @@ describe("single gateway session row child-session cache", () => {
 
   test("rebuilds store child candidates after same-object session store writes", async () => {
     await withSingleRowCacheStore(
-      "openclaw-single-row-cache-write-version-",
-      "/tmp/openclaw-single-row-cache-write-version",
+      "afora-single-row-cache-write-version-",
+      "/tmp/afora-single-row-cache-write-version",
       async ({ now, storePath }) => {
         const fixture = createMovingChildFixture(now);
         await seedSessionEntries(storePath, fixture.store);

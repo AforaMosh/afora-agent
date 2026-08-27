@@ -9,7 +9,7 @@ scenario:
       - telegram.startup-getme
   objective: Verify a leased Telegram bot reaches polling through the real Gateway product-startup getMe path.
   successCriteria:
-    - The live producer launches an isolated real OpenClaw Gateway with the leased bot configured on a named Telegram account.
+    - The live producer launches an isolated real Afora Gateway with the leased bot configured on a named Telegram account.
     - Product startAccount logs the getMe-derived bot username before the polling monitor starts.
     - Missing dedicated leased credentials produce blocked evidence and never pass startup coverage.
   docsRefs:

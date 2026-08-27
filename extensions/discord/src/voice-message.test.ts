@@ -1,7 +1,7 @@
 // Discord tests cover voice message plugin behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { withServer } from "openclaw/plugin-sdk/test-env";
+import { withServer } from "afora-agent/plugin-sdk/test-env";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { DiscordError, type RequestClient } from "./internal/discord.js";
 import { DISCORD_ATTACHMENT_TOTAL_TIMEOUT_MS } from "./monitor/timeouts.js";
@@ -38,13 +38,13 @@ const fetchWithSsrFGuardMock = vi.hoisted(() =>
   ),
 );
 
-vi.mock("openclaw/plugin-sdk/temp-path", async () => {
+vi.mock("afora-agent/plugin-sdk/temp-path", async () => {
   return {
-    resolvePreferredOpenClawTmpDir: () => "/tmp",
+    resolvePreferredAforaTmpDir: () => "/tmp",
   };
 });
 
-vi.mock("openclaw/plugin-sdk/media-runtime", async () => {
+vi.mock("afora-agent/plugin-sdk/media-runtime", async () => {
   return {
     runFfprobe: runFfprobeMock,
     runFfmpeg: runFfmpegMock,
@@ -60,7 +60,7 @@ vi.mock("openclaw/plugin-sdk/media-runtime", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", async () => {
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", async () => {
   return {
     fetchWithSsrFGuard: fetchWithSsrFGuardMock,
   };

@@ -1,6 +1,6 @@
 // Covers synchronous extra security audit aggregation.
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import {
   collectAttackSurfaceSummaryFindings,
   collectSmallModelRiskFindings,
@@ -24,26 +24,26 @@ describe("collectAttackSurfaceSummaryFindings", () => {
       name: "distinguishes external webhooks from internal hooks when only internal hooks are enabled",
       cfg: {
         hooks: { internal: { enabled: true } },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       expectedDetail: ["hooks.webhooks: disabled", "hooks.internal: enabled"],
     },
     {
       name: "reports both hook systems as enabled when both are configured",
       cfg: {
         hooks: { enabled: true, internal: { enabled: true } },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       expectedDetail: ["hooks.webhooks: enabled", "hooks.internal: enabled"],
     },
     {
       name: "reports internal hooks as disabled until configured",
-      cfg: {} satisfies OpenClawConfig,
+      cfg: {} satisfies AforaConfig,
       expectedDetail: ["hooks.webhooks: disabled", "hooks.internal: disabled"],
     },
     {
       name: "reports internal hooks as disabled when explicitly set to false",
       cfg: {
         hooks: { internal: { enabled: false } },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       expectedDetail: ["hooks.internal: disabled"],
     },
   ])("$name", ({ cfg, expectedDetail }) => {
@@ -63,19 +63,19 @@ describe("collectSmallModelRiskFindings", () => {
     agents: { defaults: { model: { primary: "ollama/mistral-8b" } } },
     browser: { enabled: false },
     tools: { web: { fetch: { enabled: false } } },
-  } satisfies OpenClawConfig;
+  } satisfies AforaConfig;
   const browserDefaultCfg = {
     agents: { defaults: { model: { primary: "ollama/mistral-8b" } } },
     tools: { web: { fetch: { enabled: false } } },
-  } satisfies OpenClawConfig;
+  } satisfies AforaConfig;
   const browserBlockedByPluginPolicyCfg = {
     ...browserDefaultCfg,
     plugins: { allow: ["openai"] },
-  } satisfies OpenClawConfig;
+  } satisfies AforaConfig;
   const configuredBrowserBlockedByPluginPolicyCfg = {
     ...browserBlockedByPluginPolicyCfg,
     browser: { enabled: true },
-  } satisfies OpenClawConfig;
+  } satisfies AforaConfig;
 
   it.each([
     {

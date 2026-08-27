@@ -10,7 +10,7 @@ import {
 import type { CronServiceDeps } from "./service/state.js";
 
 const noopLogger = createNoopLogger();
-const { makeStorePath } = createCronStoreHarness({ prefix: "openclaw-cron-delivery-" });
+const { makeStorePath } = createCronStoreHarness({ prefix: "afora-cron-delivery-" });
 
 type DeliveryMode = "none" | "announce";
 

@@ -2,20 +2,20 @@
 import {
   resolveStableChannelMessageIngress,
   type StableChannelIngressIdentityParams,
-} from "openclaw/plugin-sdk/channel-ingress-runtime";
+} from "afora-agent/plugin-sdk/channel-ingress-runtime";
 import {
   bindIngressLifecycleToReplyOptions,
   runPassiveAccountLifecycle,
-} from "openclaw/plugin-sdk/channel-outbound";
-import { createChannelPairingController } from "openclaw/plugin-sdk/channel-pairing";
-import { attachChannelToResult } from "openclaw/plugin-sdk/channel-send-result";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { channelReadyPatch } from "openclaw/plugin-sdk/gateway-runtime";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import { createChannelPairingController } from "afora-agent/plugin-sdk/channel-pairing";
+import { attachChannelToResult } from "afora-agent/plugin-sdk/channel-send-result";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { channelReadyPatch } from "afora-agent/plugin-sdk/gateway-runtime";
 import {
   chunkTextForOutbound,
   sanitizeAssistantVisibleText,
   stripMarkdown,
-} from "openclaw/plugin-sdk/text-chunking";
+} from "afora-agent/plugin-sdk/text-chunking";
 import type { PluginRuntime } from "../runtime-api.js";
 import type { ChannelOutboundAdapter, ChannelPlugin } from "./channel-api.js";
 import type { MetricEvent, MetricsSnapshot } from "./metrics.js";
@@ -112,7 +112,7 @@ export const startNostrGatewayAccount: NostrGatewayStart = async (ctx) => {
   const resolveInboundAccess = async (
     senderPubkey: string,
     rawBody: string,
-    contextBinding?: import("openclaw/plugin-sdk/channel-ingress-runtime").ChannelIngressContextBinding,
+    contextBinding?: import("afora-agent/plugin-sdk/channel-ingress-runtime").ChannelIngressContextBinding,
   ) =>
     await resolveStableChannelMessageIngress({
       channelId: "nostr",
@@ -343,7 +343,7 @@ export const nostrPairingTextAdapter = {
     message,
     accountId,
   }: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     id: string;
     message: string;
     accountId?: string;

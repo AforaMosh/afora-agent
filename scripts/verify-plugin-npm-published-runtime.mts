@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // Verifies published plugin npm packages include built runtime entries and
-// metadata expected by OpenClaw.
+// metadata expected by Afora.
 
 import { execFileSync, type ExecFileSyncOptionsWithStringEncoding } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import * as tar from "tar";
 import { readPositiveIntEnv } from "./e2e/lib/env-limits.mjs";
 import { sleep } from "./lib/sleep.mjs";
@@ -112,29 +112,29 @@ export function collectPluginNpmPublishedRuntimeErrors(params: {
   readme?: string;
 }) {
   const packageJson = params.packageJson ?? {};
-  const openclaw = isRecord(packageJson.openclaw) ? packageJson.openclaw : {};
+  const afora = isRecord(packageJson.afora) ? packageJson.afora : {};
   const packageFiles = new Set([...params.files].map(normalizePackagePath));
   const packageLabel = formatPackageLabel(packageJson, params.spec);
   const errors: string[] = [];
   const extensionsResult = readPackageStringList(
     packageLabel,
-    "openclaw.extensions",
-    openclaw.extensions,
+    "afora.extensions",
+    afora.extensions,
   );
   const runtimeExtensionsResult = readPackageStringList(
     packageLabel,
-    "openclaw.runtimeExtensions",
-    openclaw.runtimeExtensions,
+    "afora.runtimeExtensions",
+    afora.runtimeExtensions,
   );
   const setupEntryResult = readOptionalPackageString(
     packageLabel,
-    "openclaw.setupEntry",
-    openclaw.setupEntry,
+    "afora.setupEntry",
+    afora.setupEntry,
   );
   const runtimeSetupEntryResult = readOptionalPackageString(
     packageLabel,
-    "openclaw.runtimeSetupEntry",
-    openclaw.runtimeSetupEntry,
+    "afora.runtimeSetupEntry",
+    afora.runtimeSetupEntry,
   );
   errors.push(
     ...extensionsResult.errors,
@@ -145,8 +145,8 @@ export function collectPluginNpmPublishedRuntimeErrors(params: {
   if (errors.length > 0) {
     return errors;
   }
-  if (!hasPackedFile(packageFiles, "openclaw.plugin.json")) {
-    errors.push(`${packageLabel} plugin npm package must include openclaw.plugin.json`);
+  if (!hasPackedFile(packageFiles, "afora.plugin.json")) {
+    errors.push(`${packageLabel} plugin npm package must include afora.plugin.json`);
     return errors;
   }
   const extensions = extensionsResult.entries;
@@ -156,7 +156,7 @@ export function collectPluginNpmPublishedRuntimeErrors(params: {
 
   if (runtimeExtensions.length > 0 && runtimeExtensions.length !== extensions.length) {
     errors.push(
-      `${packageLabel} package.json openclaw.runtimeExtensions length (${runtimeExtensions.length}) must match openclaw.extensions length (${extensions.length})`,
+      `${packageLabel} package.json afora.runtimeExtensions length (${runtimeExtensions.length}) must match afora.extensions length (${extensions.length})`,
     );
     return errors;
   }
@@ -184,7 +184,7 @@ export function collectPluginNpmPublishedRuntimeErrors(params: {
 
   if (runtimeSetupEntry && !setupEntry) {
     errors.push(
-      `${packageLabel} package.json openclaw.runtimeSetupEntry requires openclaw.setupEntry`,
+      `${packageLabel} package.json afora.runtimeSetupEntry requires afora.setupEntry`,
     );
     return errors;
   }
@@ -236,13 +236,13 @@ export function readPluginNpmCommandOptions(env: NodeJS.ProcessEnv = process.env
     encoding: "utf8",
     killSignal: "SIGKILL",
     maxBuffer: readPositiveIntEnv(
-      "OPENCLAW_PLUGIN_NPM_COMMAND_MAX_BUFFER_BYTES",
+      "AFORA_PLUGIN_NPM_COMMAND_MAX_BUFFER_BYTES",
       DEFAULT_NPM_COMMAND_MAX_BUFFER_BYTES,
       env,
     ),
     stdio: ["ignore", "pipe", "pipe"],
     timeout: readPositiveIntEnv(
-      "OPENCLAW_PLUGIN_NPM_COMMAND_TIMEOUT_MS",
+      "AFORA_PLUGIN_NPM_COMMAND_TIMEOUT_MS",
       DEFAULT_NPM_COMMAND_TIMEOUT_MS,
       env,
     ),
@@ -286,8 +286,8 @@ function npmViewReadme(spec: string) {
 }
 
 async function packPublishedPackage(spec: string, destinationDir: string) {
-  const attempts = readPositiveIntEnv("OPENCLAW_PLUGIN_NPM_VERIFY_ATTEMPTS", 90);
-  const delayMs = readPositiveIntEnv("OPENCLAW_PLUGIN_NPM_VERIFY_DELAY_MS", 10000);
+  const attempts = readPositiveIntEnv("AFORA_PLUGIN_NPM_VERIFY_ATTEMPTS", 90);
+  const delayMs = readPositiveIntEnv("AFORA_PLUGIN_NPM_VERIFY_DELAY_MS", 10000);
   let lastError: unknown;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
@@ -306,8 +306,8 @@ async function packPublishedPackage(spec: string, destinationDir: string) {
 }
 
 async function verifyPublishedPackageReadme(spec: string) {
-  const attempts = readPositiveIntEnv("OPENCLAW_PLUGIN_NPM_README_VERIFY_ATTEMPTS", 6);
-  const delayMs = readPositiveIntEnv("OPENCLAW_PLUGIN_NPM_README_VERIFY_DELAY_MS", 10000);
+  const attempts = readPositiveIntEnv("AFORA_PLUGIN_NPM_README_VERIFY_ATTEMPTS", 6);
+  const delayMs = readPositiveIntEnv("AFORA_PLUGIN_NPM_README_VERIFY_DELAY_MS", 10000);
   let lastError: unknown;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
@@ -394,7 +394,7 @@ export function parseVerifyPublishedPluginRuntimeArgs(argv: string[]) {
 }
 
 async function verifyPublishedPluginRuntime(spec: string) {
-  const workingDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-npm-runtime."));
+  const workingDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-npm-runtime."));
   try {
     const tarballPath = await packPublishedPackage(spec, workingDir);
     const extractDir = path.join(workingDir, "extract");

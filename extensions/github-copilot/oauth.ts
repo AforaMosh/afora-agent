@@ -1,10 +1,10 @@
-import { MAX_DATE_TIMESTAMP_MS } from "openclaw/plugin-sdk/number-runtime";
-import type { ProviderAuthDoctorHintContext } from "openclaw/plugin-sdk/plugin-entry";
-import type { OAuthCredential } from "openclaw/plugin-sdk/provider-auth";
+import { MAX_DATE_TIMESTAMP_MS } from "afora-agent/plugin-sdk/number-runtime";
+import type { ProviderAuthDoctorHintContext } from "afora-agent/plugin-sdk/plugin-entry";
+import type { OAuthCredential } from "afora-agent/plugin-sdk/provider-auth";
 import type {
   OAuthCredentials,
   OAuthLoginCallbacks,
-} from "openclaw/plugin-sdk/provider-oauth-runtime";
+} from "afora-agent/plugin-sdk/provider-oauth-runtime";
 import {
   isSupportedGithubCopilotDomain,
   normalizeGithubCopilotDomain,
@@ -12,7 +12,7 @@ import {
 } from "./domain.js";
 import { runGitHubCopilotDeviceFlow } from "./login.js";
 
-const LEGACY_OAUTH_KEY_PREFIX = "openclaw-github-copilot-oauth:v1:";
+const LEGACY_OAUTH_KEY_PREFIX = "afora-github-copilot-oauth:v1:";
 
 function parseLegacyEnterpriseInput(raw: string): string | null {
   const trimmed = raw.trim();
@@ -146,5 +146,5 @@ export function buildGithubCopilotAuthDoctorHint(
   if (!unsupported) {
     return undefined;
   }
-  return "This GitHub Copilot OAuth profile has an unsupported enterprise domain and can no longer refresh. Remove the legacy profile before re-authenticating with a supported host (github.com or a *.ghe.com tenant): openclaw models auth login --provider github-copilot --force.";
+  return "This GitHub Copilot OAuth profile has an unsupported enterprise domain and can no longer refresh. Remove the legacy profile before re-authenticating with a supported host (github.com or a *.ghe.com tenant): afora models auth login --provider github-copilot --force.";
 }

@@ -1,16 +1,16 @@
 // Opencode Go provider module implements model/runtime integration.
-import type { ModelCatalogEntry } from "openclaw/plugin-sdk/agent-runtime";
-import type { ProviderRuntimeModel } from "openclaw/plugin-sdk/plugin-entry";
+import type { ModelCatalogEntry } from "afora-agent/plugin-sdk/agent-runtime";
+import type { ProviderRuntimeModel } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   buildLiveModelProviderConfig,
   fetchLiveProviderModelIds,
   type LiveModelCatalogFetchGuard,
-} from "openclaw/plugin-sdk/provider-catalog-live-runtime";
-import { normalizeModelCompat } from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/provider-catalog-live-runtime";
+import { normalizeModelCompat } from "afora-agent/plugin-sdk/provider-model-shared";
 import type {
   ModelDefinitionConfig,
   ModelProviderConfig,
-} from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/provider-model-shared";
 
 const PROVIDER_ID = "opencode-go";
 

@@ -10,7 +10,7 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("extension import boundary checker", () => {
   it("rejects oversized TypeScript source files before scanning imports", async () => {
-    const root = tempDirs.make("openclaw-extension-boundary-");
+    const root = tempDirs.make("afora-extension-boundary-");
     const sourcePath = path.join(root, "large.ts");
     writeFileSync(sourcePath, "x".repeat(33), "utf8");
     const checker = createExtensionImportBoundaryChecker({
@@ -27,7 +27,7 @@ describe("extension import boundary checker", () => {
   });
 
   it("skips declared generated bundles without admitting oversized handwritten JavaScript", async () => {
-    const root = tempDirs.make("openclaw-extension-boundary-");
+    const root = tempDirs.make("afora-extension-boundary-");
     const pluginRoot = path.join(root, "extensions", "generated-plugin");
     const assetRoot = path.join(pluginRoot, "assets");
     const generatedPath = path.join(assetRoot, "generated.js");
@@ -37,7 +37,7 @@ describe("extension import boundary checker", () => {
     writeFileSync(
       path.join(pluginRoot, "package.json"),
       JSON.stringify({
-        openclaw: {
+        afora: {
           assetScripts: { build: "node generate.mjs" },
           build: {
             staticAssets: [{ source: "./assets/generated.js", output: "assets/generated.js" }],
@@ -132,7 +132,7 @@ describe("extension import boundary checker", () => {
       kind: "import",
     },
   ])("rejects $name crossing the real plugin boundary", async ({ createSource, kind }) => {
-    const root = tempDirs.make("openclaw-extension-boundary-");
+    const root = tempDirs.make("afora-extension-boundary-");
     const sourcePath = path.join(root, "guarded.ts");
     const targetPath = path.join(process.cwd(), "extensions", "security-proof", "private.js");
     const specifier = path.relative(root, targetPath).split(path.sep).join("/");

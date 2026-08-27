@@ -19,9 +19,9 @@ describe("managed npm retention", () => {
   it.each(["ordinary", "generation"] as const)(
     "cleans a retired %s project while preserving the active install root",
     async (layout) => {
-      const stateDir = retentionTempDirs.make("openclaw-retention-");
+      const stateDir = retentionTempDirs.make("afora-retention-");
       const npmDir = path.join(stateDir, "npm");
-      const packageName = "@openclaw/codex";
+      const packageName = "@afora/codex";
       const oldProjectRoot =
         layout === "ordinary"
           ? resolvePluginNpmProjectDir({ npmDir, packageName })
@@ -35,8 +35,8 @@ describe("managed npm retention", () => {
         packageName,
         generationKey: "codex-v2",
       });
-      const oldPackageDir = path.join(oldProjectRoot, "node_modules", "@openclaw", "codex");
-      const activePackageDir = path.join(activeProjectRoot, "node_modules", "@openclaw", "codex");
+      const oldPackageDir = path.join(oldProjectRoot, "node_modules", "@afora", "codex");
+      const activePackageDir = path.join(activeProjectRoot, "node_modules", "@afora", "codex");
       fs.mkdirSync(oldPackageDir, { recursive: true });
       fs.mkdirSync(activePackageDir, { recursive: true });
       await markRetainedManagedNpmInstall({
@@ -58,9 +58,9 @@ describe("managed npm retention", () => {
   );
 
   it("cleans retained packages from the legacy shared npm root", async () => {
-    const stateDir = retentionTempDirs.make("openclaw-retention-");
+    const stateDir = retentionTempDirs.make("afora-retention-");
     const npmDir = path.join(stateDir, "npm");
-    const packageDir = path.join(npmDir, "node_modules", "@openclaw", "codex");
+    const packageDir = path.join(npmDir, "node_modules", "@afora", "codex");
     fs.mkdirSync(packageDir, { recursive: true });
     await markRetainedManagedNpmInstall({
       packageDir,
@@ -78,10 +78,10 @@ describe("managed npm retention", () => {
   });
 
   it("preserves a noncanonical project root even when it has a retained marker", async () => {
-    const stateDir = retentionTempDirs.make("openclaw-retention-noncanonical-");
+    const stateDir = retentionTempDirs.make("afora-retention-noncanonical-");
     const npmDir = path.join(stateDir, "npm");
     const projectRoot = path.join(npmDir, "projects", "noncanonical-sibling");
-    const packageDir = path.join(projectRoot, "node_modules", "@openclaw", "codex");
+    const packageDir = path.join(projectRoot, "node_modules", "@afora", "codex");
     const siblingFile = path.join(projectRoot, "must-remain.txt");
     fs.mkdirSync(packageDir, { recursive: true });
     fs.writeFileSync(siblingFile, "preserve me", "utf8");
@@ -96,16 +96,16 @@ describe("managed npm retention", () => {
   });
 
   it("does not follow a substituted managed projects directory", async () => {
-    const stateDir = retentionTempDirs.make("openclaw-retention-symlink-");
+    const stateDir = retentionTempDirs.make("afora-retention-symlink-");
     const npmDir = path.join(stateDir, "npm");
-    const outsideProjectsDir = retentionTempDirs.make("openclaw-retention-outside-");
+    const outsideProjectsDir = retentionTempDirs.make("afora-retention-outside-");
     fs.mkdirSync(npmDir, { recursive: true });
     fs.symlinkSync(outsideProjectsDir, path.join(npmDir, "projects"), "dir");
     const projectRoot = resolvePluginNpmProjectDir({
       npmDir,
-      packageName: "@openclaw/codex",
+      packageName: "@afora/codex",
     });
-    const packageDir = path.join(projectRoot, "node_modules", "@openclaw", "codex");
+    const packageDir = path.join(projectRoot, "node_modules", "@afora", "codex");
     const sentinel = path.join(projectRoot, "must-remain.txt");
     fs.mkdirSync(packageDir, { recursive: true });
     fs.writeFileSync(sentinel, "preserve me", "utf8");
@@ -122,17 +122,17 @@ describe("managed npm retention", () => {
   it.each(["project", "legacy"] as const)(
     "preserves %s packages retained by an explicit keep-files uninstall",
     async (layout) => {
-      const stateDir = retentionTempDirs.make("openclaw-retention-");
+      const stateDir = retentionTempDirs.make("afora-retention-");
       const npmDir = path.join(stateDir, "npm");
       const projectRoot =
         layout === "legacy"
           ? npmDir
           : resolvePluginNpmGenerationProjectDir({
               npmDir,
-              packageName: "@openclaw/kept-plugin",
+              packageName: "@afora/kept-plugin",
               generationKey: "kept-plugin-v1",
             });
-      const packageDir = path.join(projectRoot, "node_modules", "@openclaw", "kept-plugin");
+      const packageDir = path.join(projectRoot, "node_modules", "@afora", "kept-plugin");
       fs.mkdirSync(packageDir, { recursive: true });
       await markRetainedManagedNpmInstall({
         packageDir,

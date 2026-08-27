@@ -1,5 +1,5 @@
 import { resolveConfigWidePluginManifestRegistry } from "../../../config/io.plugin-metadata.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import {
   withPluginMetadataSnapshotScope,
   type PluginMetadataSnapshotScopeRunner,
@@ -26,7 +26,7 @@ const configWideDoctorSnapshots = new WeakSet<PluginMetadataSnapshot>();
 /** Aligns Doctor's immutable snapshot view with config-wide agent workspace discovery. */
 export function resolveConfigWideDoctorPluginMetadataSnapshot(params: {
   snapshot: PluginMetadataSnapshot;
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
 }): PluginMetadataSnapshot {
   if (configWideDoctorSnapshots.has(params.snapshot)) {
@@ -47,7 +47,7 @@ export function resolveConfigWideDoctorPluginMetadataSnapshot(params: {
 /** Promotes validation-scoped metadata to a complete immutable Doctor snapshot. */
 export function completeDoctorPluginMetadataSnapshot(params: {
   snapshot?: PluginMetadataSnapshot;
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
 }): PluginMetadataSnapshot | undefined {
   const snapshot = completePluginMetadataSnapshot(params);
@@ -83,7 +83,7 @@ export function createDoctorPluginMetadataSnapshotScope(params: {
     }
   };
 
-  const resolveSnapshot = (config: OpenClawConfig, workspaceDir: string | undefined) => {
+  const resolveSnapshot = (config: AforaConfig, workspaceDir: string | undefined) => {
     refreshBaseSnapshot();
     const current = snapshotsByWorkspace.get(workspaceDir);
     if (

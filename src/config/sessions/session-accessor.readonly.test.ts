@@ -6,15 +6,15 @@ import {
   useAutoCleanupTempDirTracker,
 } from "../../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  isOpenClawAgentDatabaseOpen,
-  openOpenClawAgentDatabase,
-  resolveOpenClawAgentSqlitePath,
-} from "../../state/openclaw-agent-db.js";
+  closeAforaAgentDatabasesForTest,
+  isAforaAgentDatabaseOpen,
+  openAforaAgentDatabase,
+  resolveAforaAgentSqlitePath,
+} from "../../state/afora-agent-db.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../../state/afora-state-db.js";
 import {
   hasSessionEntriesByStatusReadOnly,
   listSessionEntriesCore,
@@ -28,26 +28,26 @@ const tempDirs: string[] = [];
 const autoTempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 function countRegisteredAgentDatabases(env: NodeJS.ProcessEnv): number {
-  const row = openOpenClawStateDatabase({ env })
+  const row = openAforaStateDatabase({ env })
     .db.prepare("SELECT count(*) AS count FROM agent_databases")
     .get() as { count: number };
   return row.count;
 }
 
 function clearRegisteredAgentDatabases(env: NodeJS.ProcessEnv): void {
-  openOpenClawStateDatabase({ env }).db.prepare("DELETE FROM agent_databases").run();
+  openAforaStateDatabase({ env }).db.prepare("DELETE FROM agent_databases").run();
 }
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   cleanupTempDirs(tempDirs);
 });
 
 describe("session accessor readonly listing", () => {
   it("returns the same entries as the writable listing for a populated agent database", async () => {
-    const stateDir = makeTempDir(tempDirs, "openclaw-session-readonly-populated-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = makeTempDir(tempDirs, "afora-session-readonly-populated-");
+    const env = { AFORA_STATE_DIR: stateDir };
     const listScope = { agentId: "worker-1", env };
 
     await upsertSessionEntryCore(
@@ -59,16 +59,16 @@ describe("session accessor readonly listing", () => {
       { sessionId: "session-2", updatedAt: 20 },
     );
     const writableEntries = listSessionEntriesCore(listScope);
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
 
     expect(listSessionEntriesReadOnly(listScope)).toEqual(writableEntries);
   });
 
   it("returns an empty list without creating or registering a missing agent database", () => {
-    const stateDir = makeTempDir(tempDirs, "openclaw-session-readonly-missing-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = makeTempDir(tempDirs, "afora-session-readonly-missing-");
+    const env = { AFORA_STATE_DIR: stateDir };
     const agentId = "worker-1";
-    const databasePath = resolveOpenClawAgentSqlitePath({ agentId, env });
+    const databasePath = resolveAforaAgentSqlitePath({ agentId, env });
     clearRegisteredAgentDatabases(env);
 
     expect(listSessionEntriesReadOnly({ agentId, env })).toEqual([]);
@@ -77,10 +77,10 @@ describe("session accessor readonly listing", () => {
   });
 
   it("probes lifecycle status without creating or registering a missing database", () => {
-    const stateDir = makeTempDir(tempDirs, "openclaw-session-readonly-status-missing-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = makeTempDir(tempDirs, "afora-session-readonly-status-missing-");
+    const env = { AFORA_STATE_DIR: stateDir };
     const agentId = "worker-1";
-    const databasePath = resolveOpenClawAgentSqlitePath({ agentId, env });
+    const databasePath = resolveAforaAgentSqlitePath({ agentId, env });
     clearRegisteredAgentDatabases(env);
 
     expect(hasSessionEntriesByStatusReadOnly({ agentId, env }, ["running"])).toBe(false);
@@ -89,12 +89,12 @@ describe("session accessor readonly listing", () => {
   });
 
   it("distinguishes non-session agent state from a running session row", async () => {
-    const stateDir = makeTempDir(tempDirs, "openclaw-session-readonly-status-existing-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = makeTempDir(tempDirs, "afora-session-readonly-status-existing-");
+    const env = { AFORA_STATE_DIR: stateDir };
     const agentId = "worker-1";
-    const databasePath = resolveOpenClawAgentSqlitePath({ agentId, env });
-    openOpenClawAgentDatabase({ agentId, env, path: databasePath });
-    closeOpenClawAgentDatabasesForTest();
+    const databasePath = resolveAforaAgentSqlitePath({ agentId, env });
+    openAforaAgentDatabase({ agentId, env, path: databasePath });
+    closeAforaAgentDatabasesForTest();
     clearRegisteredAgentDatabases(env);
 
     expect(hasSessionEntriesByStatusReadOnly({ agentId, env }, ["running"])).toBe(false);
@@ -104,7 +104,7 @@ describe("session accessor readonly listing", () => {
       { agentId, env, sessionKey: "agent:worker-1:main" },
       { sessionId: "session-1", status: "running", updatedAt: 10 },
     );
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
     clearRegisteredAgentDatabases(env);
 
     expect(hasSessionEntriesByStatusReadOnly({ agentId, env }, ["running"])).toBe(true);
@@ -113,10 +113,10 @@ describe("session accessor readonly listing", () => {
   });
 
   it("resolves a missing session identity without creating or registering a database", () => {
-    const stateDir = makeTempDir(tempDirs, "openclaw-session-readonly-missing-identity-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = makeTempDir(tempDirs, "afora-session-readonly-missing-identity-");
+    const env = { AFORA_STATE_DIR: stateDir };
     const agentId = "worker-1";
-    const databasePath = resolveOpenClawAgentSqlitePath({ agentId, env });
+    const databasePath = resolveAforaAgentSqlitePath({ agentId, env });
     clearRegisteredAgentDatabases(env);
 
     expect(
@@ -127,15 +127,15 @@ describe("session accessor readonly listing", () => {
   });
 
   it("resolves an existing session identity without registering its database", async () => {
-    const stateDir = makeTempDir(tempDirs, "openclaw-session-readonly-existing-identity-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = makeTempDir(tempDirs, "afora-session-readonly-existing-identity-");
+    const env = { AFORA_STATE_DIR: stateDir };
     const agentId = "worker-1";
     const sessionKey = "agent:worker-1:main";
     await upsertSessionEntryCore(
       { agentId, env, sessionKey },
       { sessionId: "session-1", updatedAt: 1 },
     );
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
     clearRegisteredAgentDatabases(env);
 
     expect(resolveTranscriptSessionKeyBySessionId({ agentId, env, sessionId: "session-1" })).toBe(
@@ -145,19 +145,19 @@ describe("session accessor readonly listing", () => {
   });
 
   it("batches exact, moved, absent, and unreadable session identity evidence", async () => {
-    const stateDir = autoTempDirs.make("openclaw-session-readonly-evidence-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = autoTempDirs.make("afora-session-readonly-evidence-");
+    const env = { AFORA_STATE_DIR: stateDir };
     const agentId = "worker-1";
     const sessionKey = "agent:worker-1:moved";
     const sessionId = "session-1";
     await upsertSessionEntryCore({ agentId, env, sessionKey }, { sessionId, updatedAt: 1 });
-    const storePath = resolveOpenClawAgentSqlitePath({ agentId, env });
+    const storePath = resolveAforaAgentSqlitePath({ agentId, env });
     const invalidSessionKey = "agent:worker-1:invalid";
     await upsertSessionEntryCore(
       { agentId, env, sessionKey: invalidSessionKey },
       { sessionId: "invalid-session", updatedAt: 1 },
     );
-    openOpenClawAgentDatabase({ agentId, env })
+    openAforaAgentDatabase({ agentId, env })
       .db.prepare("UPDATE session_nodes SET entry_valid = 0 WHERE session_key = ?")
       .run(invalidSessionKey);
     const migrationInvalidAgentId = "migration-invalid";
@@ -166,13 +166,13 @@ describe("session accessor readonly listing", () => {
       { agentId: migrationInvalidAgentId, env, sessionKey: migrationInvalidSessionKey },
       { sessionId: "migration-invalid-session", updatedAt: 1 },
     );
-    const invalidDatabase = openOpenClawAgentDatabase({ agentId: migrationInvalidAgentId, env });
+    const invalidDatabase = openAforaAgentDatabase({ agentId: migrationInvalidAgentId, env });
     invalidDatabase.db.exec("PRAGMA user_version = 999;");
     const invalidStorePath = invalidDatabase.path;
     const missingAgentId = "missing";
-    const missingStorePath = resolveOpenClawAgentSqlitePath({ agentId: missingAgentId, env });
+    const missingStorePath = resolveAforaAgentSqlitePath({ agentId: missingAgentId, env });
     const unreadableAgentId = "unreadable";
-    const unreadableStorePath = resolveOpenClawAgentSqlitePath({
+    const unreadableStorePath = resolveAforaAgentSqlitePath({
       agentId: unreadableAgentId,
       env,
     });
@@ -225,8 +225,8 @@ describe("session accessor readonly listing", () => {
   });
 
   it("rejects stale valid projections for unreadable session identity evidence", async () => {
-    const stateDir = autoTempDirs.make("openclaw-session-readonly-stale-valid-evidence-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = autoTempDirs.make("afora-session-readonly-stale-valid-evidence-");
+    const env = { AFORA_STATE_DIR: stateDir };
     const agentId = "worker-1";
     const sessionId = "session-1";
     const sessionKey = "agent:worker-1:main";
@@ -237,7 +237,7 @@ describe("session accessor readonly listing", () => {
       { agentId, env, sessionKey: readableSessionKey },
       { sessionId: readableSessionId, updatedAt: 1 },
     );
-    const database = openOpenClawAgentDatabase({ agentId, env });
+    const database = openAforaAgentDatabase({ agentId, env });
     database.db
       .prepare("UPDATE session_nodes SET entry_json = ? WHERE session_key = ?")
       .run(JSON.stringify({ sessionId: "mismatched-session", updatedAt: 1 }), sessionKey);
@@ -269,10 +269,10 @@ describe("session accessor readonly listing", () => {
   });
 
   it("uses the current-session-id index for fallback identity probes", async () => {
-    const stateDir = autoTempDirs.make("openclaw-session-readonly-evidence-index-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = autoTempDirs.make("afora-session-readonly-evidence-index-");
+    const env = { AFORA_STATE_DIR: stateDir };
     const agentId = "worker-1";
-    const database = openOpenClawAgentDatabase({ agentId, env });
+    const database = openAforaAgentDatabase({ agentId, env });
     const detail = database.db
       .prepare(
         "EXPLAIN QUERY PLAN SELECT session_key FROM session_nodes WHERE current_session_id IN (?)",
@@ -288,8 +288,8 @@ describe("session accessor readonly listing", () => {
   });
 
   it("does not register a populated database during readonly health-style listing", async () => {
-    const stateDir = makeTempDir(tempDirs, "openclaw-session-readonly-registry-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = makeTempDir(tempDirs, "afora-session-readonly-registry-");
+    const env = { AFORA_STATE_DIR: stateDir };
     const agentId = "worker-1";
     const scope = { agentId, env };
 
@@ -297,12 +297,12 @@ describe("session accessor readonly listing", () => {
       { ...scope, sessionKey: "agent:worker-1:main" },
       { sessionId: "session-1", updatedAt: 10 },
     );
-    const databasePath = resolveOpenClawAgentSqlitePath({ agentId, env });
-    closeOpenClawAgentDatabasesForTest();
+    const databasePath = resolveAforaAgentSqlitePath({ agentId, env });
+    closeAforaAgentDatabasesForTest();
     clearRegisteredAgentDatabases(env);
 
     expect(listSessionEntriesReadOnly(scope)).toHaveLength(1);
     expect(countRegisteredAgentDatabases(env)).toBe(0);
-    expect(isOpenClawAgentDatabaseOpen(databasePath)).toBe(false);
+    expect(isAforaAgentDatabaseOpen(databasePath)).toBe(false);
   });
 });

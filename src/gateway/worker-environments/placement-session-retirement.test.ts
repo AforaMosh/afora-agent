@@ -3,9 +3,9 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../../state/afora-state-db.js";
 import type { WorkerSessionPlacementRecord } from "./placement-record.js";
 import { createPlacementSessionRetirement } from "./placement-session-retirement.js";
 import {
@@ -160,9 +160,9 @@ describe("placement session retirement", () => {
 
   it("retires an exact ownerless requested placement after its session disappears", async () => {
     const root = await fs.mkdtemp(
-      path.join(await fs.realpath(os.tmpdir()), "openclaw-placement-retirement-"),
+      path.join(await fs.realpath(os.tmpdir()), "afora-placement-retirement-"),
     );
-    const database = openOpenClawStateDatabase({ env: { OPENCLAW_STATE_DIR: root } });
+    const database = openAforaStateDatabase({ env: { AFORA_STATE_DIR: root } });
     const placements = createWorkerSessionPlacementStore({ database, now: () => 1_000 });
     const requested = placements.startDispatch({
       sessionId: "session-requested",
@@ -222,7 +222,7 @@ describe("placement session retirement", () => {
       );
       expect(forceDestroyEnvironment).not.toHaveBeenCalled();
     } finally {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       await fs.rm(root, { recursive: true, force: true });
     }
   });

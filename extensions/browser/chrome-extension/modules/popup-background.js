@@ -43,8 +43,8 @@ export function createPopupMessageHandler({
   setBadge,
   attachingTabs,
   detachDebugger,
-  removeTabFromOpenClawGroup,
-  addTabToOpenClawGroup,
+  removeTabFromAforaGroup,
+  addTabToAforaGroup,
   scheduleTabsSync,
   pauseTab,
 }) {
@@ -253,10 +253,10 @@ export function createPopupMessageHandler({
                     policy.invalidateTab(tabId);
                     await Promise.allSettled([attachingTabs.get(tabId)]);
                     await detachDebugger(tabId);
-                    await removeTabFromOpenClawGroup(tabId);
+                    await removeTabFromAforaGroup(tabId);
                   } else if (msg.grant && !selected) {
                     policy.invalidateTab(tabId);
-                    await addTabToOpenClawGroup(tabId);
+                    await addTabToAforaGroup(tabId);
                   }
                 }
                 scheduleTabsSync();

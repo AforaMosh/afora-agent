@@ -16,7 +16,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runInNewContext } from "node:vm";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { NATIVE_I18N_LOCALES } from "../../scripts/native-i18n-locales.ts";
@@ -47,7 +47,7 @@ const PUBLISH_GENERATED_PR_ACTION = ".github/actions/publish-generated-pr/action
 const SETUP_ANDROID_TOOLCHAIN_ACTION = ".github/actions/setup-android-toolchain/action.yml";
 const MATURITY_SCORECARD_WORKFLOW = ".github/workflows/maturity-scorecard.yml";
 const MATURITY_SCORECARD_WORKFLOW_REF =
-  "openclaw/openclaw/.github/workflows/maturity-scorecard.yml@refs/heads/main";
+  "AforaMosh/afora-agent/.github/workflows/maturity-scorecard.yml@refs/heads/main";
 const OIDC_BOUND_MAIN_REUSABLE_WORKFLOWS = new Set<string>();
 const AMBIGUOUS_MAIN_PUSH_DIAGNOSTIC =
   "::error title=ambiguous main push::github.event.before is zero; refusing to infer a diff base for a created or recreated main branch.";
@@ -129,7 +129,7 @@ function evaluateWorkflowExpression(
     },
     matrix: context.matrix ?? {},
     vars: {
-      OPENCLAW_CI_RUNNER_BACKEND: context.runnerBackend ?? "",
+      AFORA_CI_RUNNER_BACKEND: context.runnerBackend ?? "",
     },
   });
 }
@@ -156,7 +156,7 @@ function runWorkflowShellScript(
   script: string,
   options: { cwd?: string; env?: NodeJS.ProcessEnv },
 ) {
-  const root = mkdtempSync(path.join(tmpdir(), "openclaw-workflow-shell-"));
+  const root = mkdtempSync(path.join(tmpdir(), "afora-workflow-shell-"));
   const modulePaths: string[] = [];
   try {
     let moduleIndex = 0;
@@ -167,7 +167,7 @@ function runWorkflowShellScript(
         (_match, _marker: string, body: string) => {
           const modulePath = path.join(
             moduleRoot,
-            `.openclaw-${path.basename(root)}-${moduleIndex}.mjs`,
+            `.afora-${path.basename(root)}-${moduleIndex}.mjs`,
           );
           moduleIndex += 1;
           modulePaths.push(modulePath);
@@ -203,7 +203,7 @@ function runCiManifestFixture(options: {
   iosBuildCapability?: boolean;
   androidCiCapabilities?: boolean;
   nativeI18nCapabilities?: boolean;
-  openClawKitTests?: boolean;
+  aforaKitTests?: boolean;
   protocolCoverage?: boolean;
   qaSmokePlan?: boolean;
   formatCheck?: boolean;
@@ -215,7 +215,7 @@ function runCiManifestFixture(options: {
   runNode?: boolean;
   runnerBackend?: "blacksmith" | "github" | "hybrid";
 }) {
-  const root = mkdtempSync(path.join(tmpdir(), "openclaw-ci-manifest-"));
+  const root = mkdtempSync(path.join(tmpdir(), "afora-ci-manifest-"));
   try {
     const scriptsDir = path.join(root, "scripts", "lib");
     mkdirSync(scriptsDir, { recursive: true });
@@ -234,8 +234,8 @@ function runCiManifestFixture(options: {
             checkName: "bundled-node-plan",
             configs: ["test/vitest/bundled.config.ts"],
             env: {
-              OPENCLAW_CI_TEST_COMPACT_MODE: options.compactMode ?? "full",
-              OPENCLAW_CI_TEST_RUNNER_BACKEND: options.runnerBackend ?? "",
+              AFORA_CI_TEST_COMPACT_MODE: options.compactMode ?? "full",
+              AFORA_CI_TEST_RUNNER_BACKEND: options.runnerBackend ?? "",
             },
             requiresDist: false,
             runner: "ubuntu-24.04",
@@ -369,8 +369,8 @@ function runCiManifestFixture(options: {
         ...((options.androidCiCapabilities ?? options.bundledPlanner)
           ? ["android-ci-contract-v2"]
           : []),
-        ...((options.openClawKitTests ?? options.bundledPlanner)
-          ? ["openclawkit-tests-contract-v1"]
+        ...((options.aforaKitTests ?? options.bundledPlanner)
+          ? ["aforakit-tests-contract-v1"]
           : []),
       ].join("\n"),
     );
@@ -384,36 +384,36 @@ function runCiManifestFixture(options: {
       env: {
         ...process.env,
         GITHUB_OUTPUT: outputPath,
-        OPENCLAW_CI_CHANGED_PATHS_JSON: JSON.stringify(options.changedPaths ?? null),
-        OPENCLAW_CI_CHECKOUT_REVISION: "a".repeat(40),
-        OPENCLAW_CI_DOCS_CHANGED: "true",
-        OPENCLAW_CI_DOCS_ONLY: "false",
-        OPENCLAW_CI_EVENT_NAME: options.eventName ?? "workflow_dispatch",
-        OPENCLAW_CI_HISTORICAL_TARGET:
+        AFORA_CI_CHANGED_PATHS_JSON: JSON.stringify(options.changedPaths ?? null),
+        AFORA_CI_CHECKOUT_REVISION: "a".repeat(40),
+        AFORA_CI_DOCS_CHANGED: "true",
+        AFORA_CI_DOCS_ONLY: "false",
+        AFORA_CI_EVENT_NAME: options.eventName ?? "workflow_dispatch",
+        AFORA_CI_HISTORICAL_TARGET:
           (options.historicalCompatibility ?? true) &&
           (options.eventName ?? "workflow_dispatch") === "workflow_dispatch"
             ? "true"
             : "false",
-        OPENCLAW_CI_RELEASE_CANDIDATE_TARGET:
+        AFORA_CI_RELEASE_CANDIDATE_TARGET:
           options.releaseCandidateCompatibility === true ? "true" : "false",
-        OPENCLAW_CI_TARGET_CONTEXT_TARGET:
+        AFORA_CI_TARGET_CONTEXT_TARGET:
           options.targetContextCompatibility === true ? "true" : "false",
-        OPENCLAW_CI_REPOSITORY: "openclaw/openclaw",
-        OPENCLAW_CI_RUN_ANDROID: "true",
-        OPENCLAW_CI_RUN_CONTROL_UI_I18N: "true",
-        OPENCLAW_CI_RUN_IOS_BUILD: "true",
-        OPENCLAW_CI_RUN_MACOS: "true",
-        OPENCLAW_CI_RUN_NATIVE_I18N: "true",
-        OPENCLAW_CI_RUN_NODE: String(options.runNode ?? true),
-        OPENCLAW_CI_RUN_NODE_FAST_CI_ROUTING: String(options.nodeFastCiRouting ?? false),
-        OPENCLAW_CI_RUN_NODE_FAST_ONLY: String(options.nodeFastOnly ?? false),
-        OPENCLAW_CI_RUN_NODE_FAST_PLUGIN_CONTRACTS: String(
+        AFORA_CI_REPOSITORY: "AforaMosh/afora-agent",
+        AFORA_CI_RUN_ANDROID: "true",
+        AFORA_CI_RUN_CONTROL_UI_I18N: "true",
+        AFORA_CI_RUN_IOS_BUILD: "true",
+        AFORA_CI_RUN_MACOS: "true",
+        AFORA_CI_RUN_NATIVE_I18N: "true",
+        AFORA_CI_RUN_NODE: String(options.runNode ?? true),
+        AFORA_CI_RUN_NODE_FAST_CI_ROUTING: String(options.nodeFastCiRouting ?? false),
+        AFORA_CI_RUN_NODE_FAST_ONLY: String(options.nodeFastOnly ?? false),
+        AFORA_CI_RUN_NODE_FAST_PLUGIN_CONTRACTS: String(
           options.nodeFastPluginContracts ?? false,
         ),
-        OPENCLAW_CI_RUNNER_BACKEND: options.runnerBackend ?? "",
-        OPENCLAW_CI_RUN_SKILLS_PYTHON: "true",
-        OPENCLAW_CI_RUN_WINDOWS: "true",
-        OPENCLAW_CI_WORKFLOW_REVISION: "b".repeat(40),
+        AFORA_CI_RUNNER_BACKEND: options.runnerBackend ?? "",
+        AFORA_CI_RUN_SKILLS_PYTHON: "true",
+        AFORA_CI_RUN_WINDOWS: "true",
+        AFORA_CI_WORKFLOW_REVISION: "b".repeat(40),
       },
     });
     const outputs = Object.fromEntries(
@@ -432,7 +432,7 @@ function runCiManifestFixture(options: {
 }
 
 function runTargetContextValidation(targetContextRef: string, targetRef: string) {
-  const root = tempDirs.make("openclaw-ci-target-context-");
+  const root = tempDirs.make("afora-ci-target-context-");
   const outputPath = path.join(root, "github-output");
   writeFileSync(outputPath, "", "utf8");
   const step = expectDefined(
@@ -506,7 +506,7 @@ function runMaturityInvocationScenario(options: {
       CALLER_WORKFLOW_REF: options.callerWorkflowRef,
       JOB_WORKFLOW_FILE_PATH: MATURITY_SCORECARD_WORKFLOW,
       JOB_WORKFLOW_REF: options.jobWorkflowRef ?? MATURITY_SCORECARD_WORKFLOW_REF,
-      JOB_WORKFLOW_REPOSITORY: "openclaw/openclaw",
+      JOB_WORKFLOW_REPOSITORY: "AforaMosh/afora-agent",
       PATH: process.env.PATH ?? "",
       PUBLISH_PULL_REQUEST: String(options.publishPullRequest),
     },
@@ -524,7 +524,7 @@ function runMaturityArtifactCopyScenario(
   const copyStep = workflow.jobs.publish_generated_pr.steps.find(
     (step: { name?: string }) => step.name === "Validate and copy generated PR files",
   );
-  const root = mkdtempSync(path.join(tmpdir(), "openclaw-maturity-copy-"));
+  const root = mkdtempSync(path.join(tmpdir(), "afora-maturity-copy-"));
   const staging = path.join(root, "staging");
   try {
     for (const generatedPath of MATURITY_GENERATED_PR_PATHS) {
@@ -579,7 +579,7 @@ function readQaProfileEvidenceWorkflow() {
 type QaProfileTimeoutFixtureMode = "natural-124" | "self-kill" | "term" | "kill";
 
 function runQaProfileTimeoutFixture(mode: QaProfileTimeoutFixtureMode) {
-  const root = mkdtempSync(path.join(tmpdir(), "openclaw-qa-profile-timeout-"));
+  const root = mkdtempSync(path.join(tmpdir(), "afora-qa-profile-timeout-"));
   try {
     const selectedRoot = path.join(root, "selected");
     mkdirSync(selectedRoot);
@@ -720,7 +720,7 @@ function runQaProfileFailureGate(options: { allowFailures: boolean; qaExitCode?:
 }
 
 function readReleaseChecksWorkflow() {
-  return parse(readFileSync(".github/workflows/openclaw-release-checks.yml", "utf8"));
+  return parse(readFileSync(".github/workflows/afora-release-checks.yml", "utf8"));
 }
 
 function readCriticalQualityWorkflow() {
@@ -798,7 +798,7 @@ function runPushDiffBaseFixture(options: {
   commitCount: 1 | 2 | 3;
   eventBaseSha: string | "parent";
 }) {
-  const root = tempDirs.make("openclaw-ci-diff-base-");
+  const root = tempDirs.make("afora-ci-diff-base-");
   runGit(root, ["init", "-q", "-b", "main"]);
   runGit(root, ["config", "commit.gpgsign", "false"]);
   runGit(root, ["config", "user.email", "ci-fixture@example.com"]);
@@ -826,7 +826,7 @@ function runPushDiffBaseFixture(options: {
       EVENT_BASE_SHA: eventBaseSha,
       GITHUB_EVENT_NAME: "push",
       GITHUB_OUTPUT: outputPath,
-      GITHUB_REPOSITORY: "openclaw/openclaw",
+      GITHUB_REPOSITORY: "AforaMosh/afora-agent",
       PULL_REQUEST_NUMBER: "",
       RELEASE_GATE: "false",
     },
@@ -890,7 +890,7 @@ function commitProtocolFixture(repo: string, message: string): string {
 }
 
 function createQaProtocolTopology() {
-  const root = tempDirs.make("openclaw-qa-protocol-topology-");
+  const root = tempDirs.make("afora-qa-protocol-topology-");
   const origin = path.join(root, "origin");
   const checkout = path.join(root, "checkout");
   const releaseBranch = "release/2026.8.1";
@@ -1032,7 +1032,7 @@ function runProtocolSinceFixture(checkout: string, baseSha: string) {
     JSON.stringify({
       compilerOptions: {
         paths: {
-          "@openclaw/normalization-core/record-coerce": [
+          "@afora/normalization-core/record-coerce": [
             "./packages/normalization-core/src/record-coerce.ts",
           ],
         },
@@ -1059,7 +1059,7 @@ function runDependencyCheckFixture(options: {
   output: string;
   status: number | null;
 } {
-  const root = mkdtempSync(path.join(tmpdir(), "openclaw-ci-deadcode-"));
+  const root = mkdtempSync(path.join(tmpdir(), "afora-ci-deadcode-"));
   try {
     const fakeBin = path.join(root, "bin");
     const callsPath = path.join(root, "pnpm-calls.txt");
@@ -1123,7 +1123,7 @@ function runControlUiI18nSourceFixture(options: {
   compatibilityTarget: boolean;
   hasVerifyScript: boolean;
 }): { calls: string[]; output: string; summary: string; status: number | null } {
-  const root = mkdtempSync(path.join(tmpdir(), "openclaw-ci-control-ui-i18n-"));
+  const root = mkdtempSync(path.join(tmpdir(), "afora-ci-control-ui-i18n-"));
   try {
     const fakeBin = path.join(root, "bin");
     const callsPath = path.join(root, "pnpm-calls.txt");
@@ -1183,7 +1183,7 @@ function runGeneratedPublisherScenario(
     updateSource?: boolean;
   } = {},
 ) {
-  const root = mkdtempSync(path.join(tmpdir(), "openclaw-generated-pr-"));
+  const root = mkdtempSync(path.join(tmpdir(), "afora-generated-pr-"));
   try {
     const origin = path.join(root, "origin.git");
     const updater = path.join(root, "updater");
@@ -1284,12 +1284,12 @@ function runGeneratedPublisherScenario(
       "      else",
       '        head="$(git --git-dir="$FAKE_ORIGIN" rev-parse refs/heads/automation/locale)"',
       "      fi",
-      '      printf "https://github.com/openclaw/openclaw/pull/1\\t%s\\n" "$head"',
+      '      printf "https://github.com/AforaMosh/afora-agent/pull/1\\t%s\\n" "$head"',
       "    fi",
       "    ;;",
       "  pr:create)",
       '    : > "$FAKE_PR_STATE"',
-      '    printf "%s\\n" "https://github.com/openclaw/openclaw/pull/1"',
+      '    printf "%s\\n" "https://github.com/AforaMosh/afora-agent/pull/1"',
       "    ;;",
       "  pr:edit) exit 0 ;;",
       "  pr:view)",
@@ -1346,8 +1346,8 @@ ${actionRun}`;
         OVERLAP_POLICY: options.overlapPolicy ?? "defer",
         CONTENTS_TOKEN: "contents-token",
         GH_TOKEN: "test-token",
-        GITHUB_REPOSITORY: "openclaw/openclaw",
-        GITHUB_REPOSITORY_OWNER: "openclaw",
+        GITHUB_REPOSITORY: "AforaMosh/afora-agent",
+        GITHUB_REPOSITORY_OWNER: "afora",
         GITHUB_STEP_SUMMARY: summary,
         HEAD_BRANCH: "automation/locale",
         PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
@@ -1471,7 +1471,7 @@ NODE
     const workflow = readWorkflow(workflowPath);
     const steps = workflow.jobs.dispatch.steps as WorkflowStep[];
     const receiverDispatchSteps = steps.filter((step) =>
-      step.run?.includes("repos/openclaw/clawsweeper/dispatches"),
+      step.run?.includes("repos/afora/clawsweeper/dispatches"),
     );
     const eventTypes = receiverDispatchSteps.map((step) => {
       const matches = [...(step.run ?? "").matchAll(/\bevent_type\s*:\s*"([^"]+)"/gu)];
@@ -1554,8 +1554,8 @@ NODE
     expect(guard).toContain("github.event.action != 'labeled'");
     expect(guard).toContain("github.event.action != 'unlabeled'");
     expect(guard).toContain("github.actor != 'clawsweeper[bot]'");
-    expect(guard).toContain("github.actor != 'openclaw-clawsweeper[bot]'");
-    expect(guard).not.toContain("openclaw-barnacle[bot]");
+    expect(guard).toContain("github.actor != 'afora-clawsweeper[bot]'");
+    expect(guard).not.toContain("afora-barnacle[bot]");
   });
 
   it("routes stale bug issues through ClawSweeper instead of Barnacle closure", () => {
@@ -1691,7 +1691,7 @@ NODE
     expect(changedScopeStep.if).toContain(
       "github.event_name == 'workflow_dispatch' && inputs.release_gate",
     );
-    expect(changedScopeStep.env?.OPENCLAW_ALLOW_RELEASE_GENERATED_MIX).toContain(
+    expect(changedScopeStep.env?.AFORA_ALLOW_RELEASE_GENERATED_MIX).toContain(
       "github.event_name == 'workflow_dispatch'",
     );
     expect(changedScopeStep.run).toContain('elif [ "${{ github.event_name }}" = "pull_request" ]');
@@ -1705,13 +1705,13 @@ NODE
     );
     const workflowSource = readFileSync(".github/workflows/ci.yml", "utf8");
     expect(workflowSource).toContain(
-      "OPENCLAW_CI_RUN_MACOS: ${{ github.event_name == 'workflow_dispatch' && !inputs.release_gate && 'true' || steps.changed_scope.outputs.run_macos || 'false' }}",
+      "AFORA_CI_RUN_MACOS: ${{ github.event_name == 'workflow_dispatch' && !inputs.release_gate && 'true' || steps.changed_scope.outputs.run_macos || 'false' }}",
     );
     expect(workflowSource).toContain(
-      "OPENCLAW_CI_RUN_IOS_BUILD: ${{ github.event_name == 'workflow_dispatch' && !inputs.release_gate && 'true' || steps.changed_scope.outputs.run_ios_build || 'false' }}",
+      "AFORA_CI_RUN_IOS_BUILD: ${{ github.event_name == 'workflow_dispatch' && !inputs.release_gate && 'true' || steps.changed_scope.outputs.run_ios_build || 'false' }}",
     );
     expect(workflowSource).toContain(
-      "OPENCLAW_CI_RUN_ANDROID: ${{ github.event_name == 'workflow_dispatch' && (inputs.release_gate || inputs.include_android) && 'true' || steps.changed_scope.outputs.run_android || 'false' }}",
+      "AFORA_CI_RUN_ANDROID: ${{ github.event_name == 'workflow_dispatch' && (inputs.release_gate || inputs.include_android) && 'true' || steps.changed_scope.outputs.run_android || 'false' }}",
     );
 
     for (const [jobName, job] of Object.entries(workflow.jobs)) {
@@ -1902,12 +1902,12 @@ NODE
     expect(controlUiResolveBase.if).not.toContain("chore(ui): refresh control ui locales");
     const controlResolveCondition = controlUiResolveBase.if.replace(/\s+/gu, " ");
     expect(controlResolveCondition).toBe(
-      "github.repository == 'openclaw/openclaw' && (github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main')",
+      "github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main')",
     );
     expect(controlResolveCondition).not.toContain("inputs.token_preflight_only");
     expect(controlResolveCondition).not.toContain("github.ref_type");
     expect(nativeResolveBase.if).toBe(
-      "github.repository == 'openclaw/openclaw' && (github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main')",
+      "github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main')",
     );
     expect(controlUiWorkflow.on.workflow_dispatch.inputs.token_preflight_only).toEqual({
       description: "Verify generated PR App permissions without running locale generation.",
@@ -1928,8 +1928,8 @@ NODE
     expect(refreshStep.run).toContain("retrying with OpenAI");
     expect(refreshStep.run).toContain("run_openai_refresh");
     expect(refreshStep.run).toContain("repository OpenAI key");
-    expect(refreshStep.env.OPENCLAW_DOCS_I18N_OPENAI_API_KEY).toBe(
-      "${{ secrets.OPENCLAW_DOCS_I18N_OPENAI_API_KEY }}",
+    expect(refreshStep.env.AFORA_DOCS_I18N_OPENAI_API_KEY).toBe(
+      "${{ secrets.AFORA_DOCS_I18N_OPENAI_API_KEY }}",
     );
     expect(refreshStep.env.OPENAI_API_KEY).toBe("${{ secrets.OPENAI_API_KEY }}");
     expect(nativeArtifactStep.run).toContain("git add -A apps/.i18n/native");
@@ -1946,13 +1946,13 @@ NODE
     );
     expect(nativePublishStep.with["generated-paths"].trim().split("\n")).toEqual([
       "apps/.i18n/native",
-      "apps/android/app/src/main/java/ai/openclaw/app/i18n/NativeStringResources.kt",
+      "apps/android/app/src/main/java/ai/afora/app/i18n/NativeStringResources.kt",
       "apps/android/app/src/main/res/values*/assistant.xml",
       "apps/android/app/src/main/res/values*/strings.xml",
       "apps/android/app/src/thirdParty/res/values*/accessibility_strings.xml",
       "apps/android/wear/src/main/res/values*/strings.xml",
       "apps/ios/Resources/Localizable.xcstrings",
-      "apps/macos/Sources/OpenClaw/Resources/Localizable.xcstrings",
+      "apps/macos/Sources/Afora/Resources/Localizable.xcstrings",
       "apps/ios/Sources/*.lproj/InfoPlist.strings",
       "apps/ios/WatchApp/*.lproj/InfoPlist.strings",
       "apps/ios/ShareExtension/*.lproj/InfoPlist.strings",
@@ -1970,11 +1970,11 @@ NODE
     expect(controlUiRefreshStep.run).toContain("retrying with OpenAI");
     expect(controlUiRefreshStep.run).toContain("run_openai_refresh");
     expect(controlUiRefreshStep.run).toContain("repository OpenAI key");
-    expect(controlUiRefreshStep.env.OPENCLAW_DOCS_I18N_OPENAI_API_KEY).toBe(
-      "${{ secrets.OPENCLAW_DOCS_I18N_OPENAI_API_KEY }}",
+    expect(controlUiRefreshStep.env.AFORA_DOCS_I18N_OPENAI_API_KEY).toBe(
+      "${{ secrets.AFORA_DOCS_I18N_OPENAI_API_KEY }}",
     );
     expect(controlUiRefreshStep.env.OPENAI_API_KEY).toBe("${{ secrets.OPENAI_API_KEY }}");
-    expect(controlUiRefreshStep.env.OPENCLAW_CONTROL_UI_I18N_AUTH_OPTIONAL).toBe("0");
+    expect(controlUiRefreshStep.env.AFORA_CONTROL_UI_I18N_AUTH_OPTIONAL).toBe("0");
     const controlUiArtifactStep = controlUiWorkflow.jobs.refresh.steps.find(
       (step: { name?: string }) => step.name === "Prepare locale artifact",
     );
@@ -2274,7 +2274,7 @@ NODE
     );
     expect(actionPublishStep.run).not.toContain('HEAD:"${BASE_BRANCH}"');
     expect(readFileSync(".github/workflows/ci.yml", "utf8")).toContain(
-      "OPENCLAW_ALLOW_RELEASE_GENERATED_MIX",
+      "AFORA_ALLOW_RELEASE_GENERATED_MIX",
     );
 
     for (const [
@@ -2370,7 +2370,7 @@ NODE
       const result = runGeneratedPublisherScenario(null, { autoMerge: true });
 
       expect(result.branchExists).toBe(true);
-      expect(result.mergeCalls).toContain("pr merge https://github.com/openclaw/openclaw/pull/1");
+      expect(result.mergeCalls).toContain("pr merge https://github.com/AforaMosh/afora-agent/pull/1");
       expect(result.mergeCalls).toContain("--auto --squash --match-head-commit");
       expect(result.summary).toContain("Enabled squash auto-merge for exact generated head");
     },
@@ -2694,12 +2694,12 @@ NODE
     const nodeMaxParallel =
       workflow.jobs["checks-node-core-test-nondist-shard"].strategy["max-parallel"];
     expect(nodeMaxParallel).toBe(
-      "${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 96 || 28 }}",
+      "${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 96 || 28 }}",
     );
     expect(
       evaluateWorkflowExpression(nodeMaxParallel, {
         eventName: "push",
-        repository: "openclaw/openclaw",
+        repository: "AforaMosh/afora-agent",
         runnerBackend: "blacksmith",
         runAttempt: 1,
       }),
@@ -2707,7 +2707,7 @@ NODE
     expect(
       evaluateWorkflowExpression(nodeMaxParallel, {
         eventName: "push",
-        repository: "openclaw/openclaw",
+        repository: "AforaMosh/afora-agent",
         runnerBackend: "github",
         runAttempt: 1,
       }),
@@ -2715,7 +2715,7 @@ NODE
     expect(
       evaluateWorkflowExpression(nodeMaxParallel, {
         eventName: "push",
-        repository: "openclaw/openclaw",
+        repository: "AforaMosh/afora-agent",
         runnerBackend: "hybrid",
         runAttempt: 1,
       }),
@@ -2875,7 +2875,7 @@ NODE
       const result = runTargetContextValidation(contextRef, targetSha);
       expect(result.status, contextRef).toBe(1);
       expect(result.output).toContain(
-        "target_context_ref must be a canonical OpenClaw release branch.",
+        "target_context_ref must be a canonical Afora release branch.",
       );
     }
 
@@ -2959,10 +2959,10 @@ NODE
     expect(source).toContain('task: useCompatibleAndroidCi ? "build-play-compat" : "build-play"');
     expect(androidJob.name).toBe("${{ matrix.check_name }}");
     expect(androidJob["runs-on"]).toBe(
-      "${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('[\"OWNER\",\"MEMBER\",\"COLLABORATOR\",\"CONTRIBUTOR\"]'), github.event.pull_request.author_association)) && 'blacksmith-8vcpu-ubuntu-2404' || 'ubuntu-24.04') }}",
+      "${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('[\"OWNER\",\"MEMBER\",\"COLLABORATOR\",\"CONTRIBUTOR\"]'), github.event.pull_request.author_association)) && 'blacksmith-8vcpu-ubuntu-2404' || 'ubuntu-24.04') }}",
     );
     expect(runStep.env.CI_RUNNER_BACKEND).toContain(
-      "vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1",
+      "vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1",
     );
     expect(runStep.run).toContain(":app:testPlayDebugUnitTest");
     expect(runStep.run).toContain(":app:testThirdPartyDebugUnitTest");
@@ -2998,7 +2998,7 @@ NODE
     const workflow = readCiWorkflow();
 
     expect(workflow.concurrency.group).toBe(
-      "${{ github.event_name == 'workflow_dispatch' && format('{0}-manual-v1-{1}', github.workflow, github.run_id) || (github.event_name == 'pull_request' && format('{0}-v7-{1}', github.workflow, github.event.pull_request.number) || (github.repository == 'openclaw/openclaw' && github.event_name == 'push' && github.ref == 'refs/heads/main' && format('{0}-v8-{1}-{2}', github.workflow, github.ref, (endsWith(format('{0}', github.run_number), '0') || endsWith(format('{0}', github.run_number), '2') || endsWith(format('{0}', github.run_number), '4') || endsWith(format('{0}', github.run_number), '6') || endsWith(format('{0}', github.run_number), '8')) && 'a' || 'b') || (github.repository == 'openclaw/openclaw' && format('{0}-v7-{1}', github.workflow, github.ref) || format('{0}-v7-{1}-{2}', github.workflow, github.ref, github.sha)))) }}",
+      "${{ github.event_name == 'workflow_dispatch' && format('{0}-manual-v1-{1}', github.workflow, github.run_id) || (github.event_name == 'pull_request' && format('{0}-v7-{1}', github.workflow, github.event.pull_request.number) || (github.repository == 'AforaMosh/afora-agent' && github.event_name == 'push' && github.ref == 'refs/heads/main' && format('{0}-v8-{1}-{2}', github.workflow, github.ref, (endsWith(format('{0}', github.run_number), '0') || endsWith(format('{0}', github.run_number), '2') || endsWith(format('{0}', github.run_number), '4') || endsWith(format('{0}', github.run_number), '6') || endsWith(format('{0}', github.run_number), '8')) && 'a' || 'b') || (github.repository == 'AforaMosh/afora-agent' && format('{0}-v7-{1}', github.workflow, github.ref) || format('{0}-v7-{1}-{2}', github.workflow, github.ref, github.sha)))) }}",
     );
     expect(workflow.concurrency["cancel-in-progress"]).toBe(
       "${{ github.event_name == 'pull_request' }}",
@@ -3006,7 +3006,7 @@ NODE
     expect(workflow.jobs["runner-admission"]).toBeUndefined();
     const preflight = workflow.jobs.preflight;
     expect(preflight.needs).toBeUndefined();
-    expect(preflight.env?.OPENCLAW_MAIN_CI_DEBOUNCE_SECONDS).toBeUndefined();
+    expect(preflight.env?.AFORA_MAIN_CI_DEBOUNCE_SECONDS).toBeUndefined();
     const steps = preflight.steps as Array<{ if?: string; name?: string; run?: string }>;
     expect(steps.some((step) => step.name === "Record debounce epoch")).toBe(false);
     expect(steps.some((step) => step.name === "Debounce canonical main fan-out")).toBe(false);
@@ -3087,16 +3087,16 @@ NODE
       .toSorted();
     const canonicalPullRequest = {
       eventName: "pull_request",
-      headRepository: "openclaw/openclaw",
+      headRepository: "AforaMosh/afora-agent",
       matrix: { runner: "blacksmith-32vcpu-ubuntu-2404" },
-      repository: "openclaw/openclaw",
+      repository: "AforaMosh/afora-agent",
       runAttempt: 1,
     } as const;
     expect(configurableJobs).toEqual(Object.keys(expectedHostedRunners).toSorted());
     expect(jobs["check-lint-hosted-core-shard"]?.["runs-on"]).toBe("ubuntu-24.04");
     for (const [jobName, hostedRunner] of Object.entries(expectedHostedRunners)) {
       const expression = jobs[jobName]?.["runs-on"];
-      expect(expression, jobName).toContain("vars.OPENCLAW_CI_RUNNER_BACKEND == 'github'");
+      expect(expression, jobName).toContain("vars.AFORA_CI_RUNNER_BACKEND == 'github'");
       expect(
         evaluateWorkflowExpression(expression, {
           ...canonicalPullRequest,
@@ -3132,7 +3132,7 @@ NODE
         evaluateWorkflowExpression(expression, {
           ...canonicalPullRequest,
           authorAssociation: "NONE",
-          headRepository: "contributor/openclaw",
+          headRepository: "contributor/afora",
           runnerBackend: "hybrid",
         }),
         `${jobName}: untrusted fork`,
@@ -3144,7 +3144,7 @@ NODE
         evaluateWorkflowExpression(expression, {
           ...canonicalPullRequest,
           authorAssociation: "CONTRIBUTOR",
-          headRepository: "contributor/openclaw",
+          headRepository: "contributor/afora",
           runnerBackend: "hybrid",
         }),
         `${jobName}: returning-contributor fork`,
@@ -3233,7 +3233,7 @@ NODE
         evaluateWorkflowExpression(expression, {
           ...canonicalPullRequest,
           authorAssociation: "NONE",
-          headRepository: "contributor/openclaw",
+          headRepository: "contributor/afora",
           matrix,
           runnerBackend: "hybrid",
         }),
@@ -3295,15 +3295,15 @@ NODE
       .toSorted();
     const canonicalPullRequest = {
       eventName: "pull_request",
-      headRepository: "openclaw/openclaw",
-      repository: "openclaw/openclaw",
+      headRepository: "AforaMosh/afora-agent",
+      repository: "AforaMosh/afora-agent",
       runAttempt: 1,
     } as const;
 
     expect(routeDependentTimeoutJobs).toEqual(Object.keys(expectedHostedTimeouts).toSorted());
     for (const [jobName, hostedTimeout] of Object.entries(expectedHostedTimeouts)) {
       const expression = jobs[jobName]?.["timeout-minutes"];
-      expect(expression, jobName).toContain("vars.OPENCLAW_CI_RUNNER_BACKEND == 'github'");
+      expect(expression, jobName).toContain("vars.AFORA_CI_RUNNER_BACKEND == 'github'");
       expect(
         evaluateWorkflowExpression(expression, {
           ...canonicalPullRequest,
@@ -3391,7 +3391,7 @@ NODE
     const installScript = expectDefined(install.run, "Install dependencies script");
     const save = step("Save exact dependency cache");
     const cachePaths =
-      "node_modules\nui/node_modules\npackages/*/node_modules\nexamples/*/node_modules\n.cache/openclaw-pnpm-store\n";
+      "node_modules\nui/node_modules\npackages/*/node_modules\nexamples/*/node_modules\n.cache/afora-pnpm-store\n";
 
     expect(action.inputs["dependency-cache"].default).toBe("false");
     expect(action.inputs["save-dependency-cache"].default).toBe("false");
@@ -3401,7 +3401,7 @@ NODE
 
     expect(configureStore.if).toBe("inputs.dependency-cache == 'true'");
     expect(configureStore.run).toContain(
-      'echo "PNPM_CONFIG_STORE_DIR=$GITHUB_WORKSPACE/.cache/openclaw-pnpm-store"',
+      'echo "PNPM_CONFIG_STORE_DIR=$GITHUB_WORKSPACE/.cache/afora-pnpm-store"',
     );
     expect(resolve.if).toBe("inputs.dependency-cache == 'true'");
     expect(resolve.run).toContain('node "$GITHUB_ACTION_PATH/dependency-fingerprint.mjs"');
@@ -3412,7 +3412,7 @@ NODE
     expect(actionSteps.indexOf(resolve)).toBeLessThan(actionSteps.indexOf(restore));
     for (const cleanup of [prepare, prepareFallback]) {
       expect(cleanup.run).toContain('rm -rf "$GITHUB_WORKSPACE/node_modules"');
-      expect(cleanup.run).toContain('"$GITHUB_WORKSPACE/.cache/openclaw-pnpm-store"');
+      expect(cleanup.run).toContain('"$GITHUB_WORKSPACE/.cache/afora-pnpm-store"');
       expect(cleanup.run).toContain('"$GITHUB_WORKSPACE/packages"');
       expect(cleanup.run).toContain("-name node_modules");
     }
@@ -3449,7 +3449,7 @@ NODE
     expect(installScript).toContain("-name node_modules");
     expect(installScript).toContain('"${PNPM_CONFIG_STORE_DIR:?}"');
     expect(installScript.match(/run_pnpm_install/g)).toHaveLength(5);
-    expect(installScript).toContain('echo "OPENCLAW_BUILD_ALL_NO_PNPM=1" >> "$GITHUB_ENV"');
+    expect(installScript).toContain('echo "AFORA_BUILD_ALL_NO_PNPM=1" >> "$GITHUB_ENV"');
     expect(installScript).toContain(
       'echo "pnpm_config_verify_deps_before_run=false" >> "$GITHUB_ENV"',
     );
@@ -3488,13 +3488,13 @@ NODE
     });
     expect(writers[0]?.step.if).toContain("github.ref == 'refs/heads/main'");
     expect(writers[0]?.step.if).toContain("github.event_name == 'pull_request'");
-    expect(writers[0]?.step.if).toContain("vars.OPENCLAW_CI_RUNNER_BACKEND != 'github'");
-    expect(writers[0]?.step.if).toContain("vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid'");
+    expect(writers[0]?.step.if).toContain("vars.AFORA_CI_RUNNER_BACKEND != 'github'");
+    expect(writers[0]?.step.if).toContain("vars.AFORA_CI_RUNNER_BACKEND != 'hybrid'");
     expect(workflow.jobs["pnpm-store-warmup"].if).toContain(
-      "vars.OPENCLAW_CI_RUNNER_BACKEND == 'github'",
+      "vars.AFORA_CI_RUNNER_BACKEND == 'github'",
     );
     expect(workflow.jobs["pnpm-store-warmup"].if).toContain(
-      "vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid'",
+      "vars.AFORA_CI_RUNNER_BACKEND == 'hybrid'",
     );
     const consumers = dependencySetups.filter(({ jobName }) => jobName !== "preflight");
     expect(consumers.map(({ jobName }) => jobName).toSorted()).toEqual([
@@ -3523,14 +3523,14 @@ NODE
       expect(consumer.with?.["dependency-cache"], jobName).toContain("'true' || 'false'");
       expect(consumer.with?.["use-actions-cache"], jobName).toContain("'false' || 'true'");
       expect(consumer.with?.["dependency-cache"], jobName).toContain(
-        "vars.OPENCLAW_CI_RUNNER_BACKEND",
+        "vars.AFORA_CI_RUNNER_BACKEND",
       );
       for (const runnerBackend of ["github", "hybrid"] as const) {
         expect(
           evaluateWorkflowExpression(consumer.with?.["dependency-cache"], {
             eventName: "push",
             matrix: { node_version: "24.x" },
-            repository: "openclaw/openclaw",
+            repository: "AforaMosh/afora-agent",
             runnerBackend,
             runAttempt: 1,
           }),
@@ -3540,7 +3540,7 @@ NODE
           evaluateWorkflowExpression(consumer.with?.["use-actions-cache"], {
             eventName: "push",
             matrix: { node_version: "24.x" },
-            repository: "openclaw/openclaw",
+            repository: "AforaMosh/afora-agent",
             runnerBackend,
             runAttempt: 1,
           }),
@@ -3561,12 +3561,12 @@ NODE
   it.skipIf(process.platform === "win32")(
     "preserves pnpm hard links and validates cached importers offline",
     () => {
-      const root = tempDirs.make("openclaw-dependency-cache-");
+      const root = tempDirs.make("afora-dependency-cache-");
       const source = path.join(root, "source");
       const registry = path.join(root, "registry");
       const workspace = path.join(root, "workspace");
       const consumer = path.join(workspace, "packages", "consumer");
-      const store = path.join(workspace, ".cache", "openclaw-pnpm-store");
+      const store = path.join(workspace, ".cache", "afora-pnpm-store");
       const readyFile = path.join(root, "registry-ready");
       mkdirSync(source, { recursive: true });
       mkdirSync(registry, { recursive: true });
@@ -3694,7 +3694,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
             workspace,
             "node_modules",
             "packages/consumer/node_modules",
-            ".cache/openclaw-pnpm-store",
+            ".cache/afora-pnpm-store",
           ],
           { stdio: "pipe" },
         );
@@ -3778,11 +3778,11 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
     }
 
     const releaseChecks = parse(
-      readFileSync(".github/workflows/openclaw-live-and-e2e-checks-reusable.yml", "utf8"),
+      readFileSync(".github/workflows/afora-live-and-e2e-checks-reusable.yml", "utf8"),
     );
     expect(releaseChecks.jobs.validate_repo_e2e.env).toMatchObject({
-      OPENCLAW_BUILD_PRIVATE_QA: "1",
-      OPENCLAW_ENABLE_PRIVATE_QA_CLI: "1",
+      AFORA_BUILD_PRIVATE_QA: "1",
+      AFORA_ENABLE_PRIVATE_QA_CLI: "1",
     });
     expect(releaseChecks.jobs.validate_repo_e2e["timeout-minutes"]).toBe(90);
     const repoE2eSteps = releaseChecks.jobs.validate_repo_e2e.steps as WorkflowStep[];
@@ -3795,7 +3795,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
     const targetedGroupStep = releaseChecks.jobs.plan_docker_lane_groups.steps.find(
       (step: WorkflowStep) => step.name === "Build targeted Docker lane groups",
     );
-    expect(targetedGroupStep.env.OPENCLAW_UPGRADE_SURVIVOR_SCENARIOS).toBe(
+    expect(targetedGroupStep.env.AFORA_UPGRADE_SURVIVOR_SCENARIOS).toBe(
       "${{ inputs.published_upgrade_survivor_scenarios }}",
     );
     expect(releaseChecks.jobs.validate_docker_lanes["timeout-minutes"]).toBe(
@@ -3834,7 +3834,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
       },
     });
     expect(uploadStep).toMatchObject({
-      if: "success() && github.repository == 'openclaw/openclaw' && github.ref == 'refs/heads/main'",
+      if: "success() && github.repository == 'AforaMosh/afora-agent' && github.ref == 'refs/heads/main'",
       uses: UPLOAD_ARTIFACT_V7,
       with: {
         "if-no-files-found": "error",
@@ -3847,7 +3847,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
   });
 
   it("fingerprints dependency install inputs without ordinary script churn", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-dependency-fingerprint-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-dependency-fingerprint-"));
     try {
       const helper = path.resolve(".github/actions/setup-node-env/dependency-fingerprint.mjs");
       const writeManifest = (manifest: Record<string, unknown>) => {
@@ -3863,7 +3863,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
       execFileSync("git", ["init", "-q"], { cwd: root });
       writeManifest({
         name: "fixture",
-        openclaw: { schemaVersions: { agent: 17, state: 6 } },
+        afora: { schemaVersions: { agent: 17, state: 6 } },
         scripts: {
           postinstall: "node scripts/postinstall-bundled-plugins.mjs",
           preinstall: "node scripts/preinstall-package-manager-warning.mjs",
@@ -3925,7 +3925,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
       // or any audited install hook, so schema churn must stay warm.
       writeManifest({
         name: "fixture",
-        openclaw: { schemaVersions: { agent: 17, state: 7 } },
+        afora: { schemaVersions: { agent: 17, state: 7 } },
         scripts: {
           postinstall: "node scripts/postinstall-bundled-plugins.mjs",
           preinstall: "node scripts/preinstall-package-manager-warning.mjs",
@@ -4032,7 +4032,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
       (step: WorkflowStep) => step.name === "Restore build-all step cache",
     );
     const hostedTestCacheInput =
-      "${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'true' || 'false' }}";
+      "${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 'true' || 'false' }}";
     const hostedTestCacheJobs = [
       "checks-ui",
       "checks-ui-e2e",
@@ -4041,13 +4041,13 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
       "checks-fast-channel-contracts-shard",
     ];
     const hostedFastCoreTestCacheInput =
-      "${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && (matrix.task == 'bundled-protocol' || matrix.task == 'contracts-plugins-ci-routing' || matrix.task == 'ci-routing' || matrix.task == 'bun-launcher') && 'true' || 'false' }}";
+      "${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && (matrix.task == 'bundled-protocol' || matrix.task == 'contracts-plugins-ci-routing' || matrix.task == 'ci-routing' || matrix.task == 'bun-launcher') && 'true' || 'false' }}";
 
     expect(setupNodeStep.with).toMatchObject({
       "node-compile-cache": "true",
       "node-compile-cache-scope": "test",
       "save-vitest-fs-cache":
-        "${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && matrix.save_vitest_fs_cache && 'true' || 'false' }}",
+        "${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && matrix.save_vitest_fs_cache && 'true' || 'false' }}",
       "vitest-fs-cache": "true",
     });
     expect(setupNodeStep.with).not.toHaveProperty("save-node-compile-cache");
@@ -4093,13 +4093,13 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
     expect(configureStep.env.CACHE_GENERATION).toContain("!**/node_modules/**");
     expect(configureStep.env.CACHE_GENERATION).toContain("src/state/*.sql");
     expect(configureStep.if).toContain("inputs.restore-test-caches == 'true'");
-    expect(configureStep.run).toContain("OPENCLAW_VITEST_FS_MODULE_CACHE_PATH=$cache_root");
-    expect(configureStep.run).toContain(".openclaw-transform-generation");
+    expect(configureStep.run).toContain("AFORA_VITEST_FS_MODULE_CACHE_PATH=$cache_root");
+    expect(configureStep.run).toContain(".afora-transform-generation");
     expect(configureStep.run).not.toContain("protected Vitest transform seed");
     expect(configureStep.env.CACHE_WRITER).toBe(
       "${{ inputs.save-vitest-fs-cache == 'true' && '1' || '0' }}",
     );
-    expect(configureStep.run).toContain("OPENCLAW_VITEST_FS_MODULE_CACHE_WRITER=");
+    expect(configureStep.run).toContain("AFORA_VITEST_FS_MODULE_CACHE_WRITER=");
     expect(compileEpochStep.run).toContain('if [ "$CACHE_SCOPE" = "build" ]');
     expect(compileEpochStep.run).toContain("date -u +%Y%m%d");
     expect(compileEpochStep.run).toContain("GITHUB_RUN_ID");
@@ -4141,7 +4141,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
       expect(
         evaluateWorkflowExpression(setup.with["restore-test-caches"], {
           eventName: "push",
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           runnerBackend: "github",
           runAttempt: 1,
         }),
@@ -4150,7 +4150,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
       expect(
         evaluateWorkflowExpression(setup.with["restore-test-caches"], {
           eventName: "push",
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           runnerBackend: "blacksmith",
           runAttempt: 1,
         }),
@@ -4173,7 +4173,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
         evaluateWorkflowExpression(fastCoreSetup.with["restore-test-caches"], {
           eventName: "push",
           matrix: { task },
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           runnerBackend: "github",
           runAttempt: 1,
         }),
@@ -4185,7 +4185,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
         evaluateWorkflowExpression(fastCoreSetup.with["restore-test-caches"], {
           eventName: "push",
           matrix: { task },
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           runnerBackend: "github",
           runAttempt: 1,
         }),
@@ -4196,7 +4196,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
       evaluateWorkflowExpression(fastCoreSetup.with["restore-test-caches"], {
         eventName: "push",
         matrix: { task: "bundled-protocol" },
-        repository: "openclaw/openclaw",
+        repository: "AforaMosh/afora-agent",
         runnerBackend: "blacksmith",
         runAttempt: 1,
       }),
@@ -4237,9 +4237,9 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
     // scheduled seed is missing or stale.
     expect(warmer.on).toHaveProperty("workflow_dispatch");
     expect(warmer.on.repository_dispatch.types).toEqual(["vitest-cache-warm"]);
-    expect(warmer.jobs.warm.if).toContain("github.repository == 'openclaw/openclaw'");
+    expect(warmer.jobs.warm.if).toContain("github.repository == 'AforaMosh/afora-agent'");
     expect(warmer.jobs.warm["runs-on"]).toBe(
-      "${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || 'blacksmith-8vcpu-ubuntu-2404' }}",
+      "${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || 'blacksmith-8vcpu-ubuntu-2404' }}",
     );
     expect(warmer.on).not.toHaveProperty("workflow_run");
     expect(checkoutStep.with).toBeUndefined();
@@ -4248,10 +4248,10 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
       'import { createVitestCacheWarmGroups } from "./scripts/lib/ci-node-test-plan.mts";',
     );
     expect(seedStep.run).toMatch(
-      /const groups = createVitestCacheWarmGroups\(\);[\s\S]*appendFileSync\(\s*process\.env\.GITHUB_ENV,[\s\S]*OPENCLAW_NODE_TEST_GROUPS_JSON=\$\{JSON\.stringify\(groups\)\}/u,
+      /const groups = createVitestCacheWarmGroups\(\);[\s\S]*appendFileSync\(\s*process\.env\.GITHUB_ENV,[\s\S]*AFORA_NODE_TEST_GROUPS_JSON=\$\{JSON\.stringify\(groups\)\}/u,
     );
-    expect(warmerSource).not.toContain("OPENCLAW_NODE_TEST_CONFIGS_JSON");
-    expect(warmerSource).toContain('"OPENCLAW_NODE_TEST_PLAN_CONCURRENCY=1"');
+    expect(warmerSource).not.toContain("AFORA_NODE_TEST_CONFIGS_JSON");
+    expect(warmerSource).toContain('"AFORA_NODE_TEST_PLAN_CONCURRENCY=1"');
     expect(warmerSetup.with).toMatchObject({
       "node-compile-cache-scope": "test",
       "save-actions-cache": "true",
@@ -4276,7 +4276,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
     expect(source).toContain("createNodeTestShardBundles");
     expect(workflow.jobs["build-artifacts"]["runs-on"]).toContain("blacksmith-32vcpu-ubuntu-2404");
     expect(workflow.jobs["build-artifacts"]["timeout-minutes"]).toBe(
-      "${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)) && 35 || 20 }}",
+      "${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || (vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)) && 35 || 20 }}",
     );
     // PR events validate the artifact build on hosted runners (landing gate
     // stays satisfiable during Blacksmith outages); Testbox leases are
@@ -4343,7 +4343,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
     const runStep = additionalJob.steps.find(
       (step: WorkflowStep) => step.name === "Run additional check shard",
     );
-    expect(runStep.env.OPENCLAW_EXTENSION_BOUNDARY_CONCURRENCY).toBe(16);
+    expect(runStep.env.AFORA_EXTENSION_BOUNDARY_CONCURRENCY).toBe(16);
 
     // O(1) disks: Blacksmith caps sticky disks per installation, and the old
     // per-PR/per-config keys minted new disks until every mount 429-failed
@@ -4370,10 +4370,10 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
     expect(boundaryMount.with.key).toBe("${{ github.repository }}-ext-boundary-v2");
     expect(lintMount.with.key).toBe(boundaryMount.with.key);
     for (const gate of [boundaryMount, lintMount]) {
-      expect(gate.if).toContain("vars.OPENCLAW_CI_RUNNER_BACKEND != 'github'");
+      expect(gate.if).toContain("vars.AFORA_CI_RUNNER_BACKEND != 'github'");
     }
     expect(hostedLintCache.if).toBe(
-      "matrix.task == 'lint' && (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository))",
+      "matrix.task == 'lint' && (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository))",
     );
     expect(hostedLintCache.uses).toBe("actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae");
     expect(hostedLintCache.with).toEqual(boundaryCache.with);
@@ -4420,7 +4420,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
       expect(gate.run).toContain(".source-fingerprint");
       expect(gate.run).not.toContain("git rev-parse HEAD:");
       expect(gate.run).not.toContain("BOUNDARY_CONFIG_HASH");
-      expect(gate.if).toContain("vars.OPENCLAW_CI_RUNNER_BACKEND != 'github'");
+      expect(gate.if).toContain("vars.AFORA_CI_RUNNER_BACKEND != 'github'");
     }
     // Seeding is writer-only work: PR mounts never commit, so seeding there
     // would burn wall clock on a discarded clone.
@@ -4447,9 +4447,9 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
     // budget 429-failed every mount fleet-wide.
     expect(mountWith.key).toBe("${{ github.repository }}-gradle-v2-${{ matrix.task }}");
     expect(androidSteps.find((step) => step.name === "Mount Gradle sticky disk")?.if).toContain(
-      "vars.OPENCLAW_CI_RUNNER_BACKEND != 'github'",
+      "vars.AFORA_CI_RUNNER_BACKEND != 'github'",
     );
-    expect(pointStep.if).toContain("vars.OPENCLAW_CI_RUNNER_BACKEND != 'github'");
+    expect(pointStep.if).toContain("vars.AFORA_CI_RUNNER_BACKEND != 'github'");
     // Single semantic writer: protected pushes commit explicitly (on-change's
     // allocated-byte heuristic can miss a same-size refresh and strand the
     // fingerprint marker); PR clones stay read-only.
@@ -4462,7 +4462,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
     expect(pointEnv.GRADLE_DEPS_FINGERPRINT).toContain("hashFiles(");
     expect(pointEnv.GRADLE_DEPS_FINGERPRINT).toContain("apps/android/gradle/libs.versions.toml");
     expect(pointEnv.STICKY_WRITER).toContain("github.event_name != 'pull_request'");
-    expect(pointStep.run).toContain(".openclaw-gradle-deps-fingerprint");
+    expect(pointStep.run).toContain(".afora-gradle-deps-fingerprint");
     expect(pointStep.run).toContain('rm -rf "$sticky_root/gradle-user-home"');
   });
 
@@ -4565,7 +4565,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
         BLACKSMITH_ENV: "production-amd64",
         BLACKSMITH_REGION: "us-test-1",
         RETIRED_ARCHITECTURE: "amd64",
-        RETIRED_KEY: "openclaw/openclaw-not-retired",
+        RETIRED_KEY: "AforaMosh/afora-agent-not-retired",
         RETIRED_REGION: "us-test-1",
       },
     });
@@ -4577,7 +4577,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
         BLACKSMITH_ENV: "production-amd64",
         BLACKSMITH_REGION: "us-test-1",
         RETIRED_ARCHITECTURE: "amd64",
-        RETIRED_KEY: " openclaw/openclaw-active-key ",
+        RETIRED_KEY: " AforaMosh/afora-agent-active-key ",
         RETIRED_REGION: "us-test-1",
       },
     });
@@ -4730,7 +4730,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
       compatibilityTarget: boolean,
       eventName = "workflow_dispatch",
     ) => {
-      const root = tempDirs.make("openclaw-plugin-sdk-api-workflow-");
+      const root = tempDirs.make("afora-plugin-sdk-api-workflow-");
       const binDir = path.join(root, "bin");
       const callsPath = path.join(root, "pnpm-calls.txt");
       const summaryPath = path.join(root, "summary.md");
@@ -5116,7 +5116,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
         expect(
           evaluateWorkflowExpression(checkoutStep?.with?.["fetch-depth"], {
             eventName,
-            repository: "openclaw/openclaw",
+            repository: "AforaMosh/afora-agent",
             runAttempt: 1,
           }),
           `${workflowPath} ${eventName}`,
@@ -5388,7 +5388,7 @@ server.listen(0, "127.0.0.1", () => writeFileSync(readyPath, String(server.addre
     )?.[0];
     expect(discoveryBlock).toBeTruthy();
 
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-mantis-runner-ip-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-mantis-runner-ip-"));
     try {
       const fakeBin = path.join(root, "bin");
       const callCount = path.join(root, "curl-calls");
@@ -5696,25 +5696,25 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     const untrustedForkPullRequest = {
       authorAssociation: "NONE",
       eventName: "pull_request",
-      headRepository: "contributor/openclaw",
-      repository: "openclaw/openclaw",
+      headRepository: "contributor/afora",
+      repository: "AforaMosh/afora-agent",
       runnerBackend: "",
       runAttempt: 1,
     } as const;
 
-    expect(manifestStep.env.OPENCLAW_CI_RUNNER_BACKEND).toBe(
-      "${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND }}",
+    expect(manifestStep.env.AFORA_CI_RUNNER_BACKEND).toBe(
+      "${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'github' || vars.AFORA_CI_RUNNER_BACKEND }}",
     );
     expect(
       evaluateWorkflowExpression(
-        manifestStep.env.OPENCLAW_CI_RUNNER_BACKEND,
+        manifestStep.env.AFORA_CI_RUNNER_BACKEND,
         untrustedForkPullRequest,
       ),
     ).toBe("github");
     expect(
       evaluateWorkflowExpression(checkShardStep.env.RUNNER_BACKEND, untrustedForkPullRequest),
     ).toBe("github");
-    expect(manifestStep.run).toContain("runnerBackend: process.env.OPENCLAW_CI_RUNNER_BACKEND");
+    expect(manifestStep.run).toContain("runnerBackend: process.env.AFORA_CI_RUNNER_BACKEND");
     expect(checkShardRun).toContain('if [ "$RUNNER_BACKEND" = "github" ]; then');
     expect(checkShardRun).toContain("lint_args=(--only=extensions --only=scripts --threads=1)");
     expect(checkShardRun).toContain('elif [ "$(nproc)" -lt 8 ]; then');
@@ -5725,7 +5725,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     expect(checkShardRun).toContain(
       'node --import tsx scripts/run-oxlint-shards.mts "${lint_args[@]}"',
     );
-    expect(hostedCoreLint.if).toContain("vars.OPENCLAW_CI_RUNNER_BACKEND == 'github'");
+    expect(hostedCoreLint.if).toContain("vars.AFORA_CI_RUNNER_BACKEND == 'github'");
     expect(hostedCoreLint.if).toContain(
       "github.event.pull_request.head.repo.full_name != github.repository",
     );
@@ -5783,7 +5783,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     expect(checksFastRun.run).toContain("pnpm check:coercion-helpers");
     expect(checksFastRun.run).toContain("bun-launcher)");
     expect(checksFastRun.run).toContain(
-      "OPENCLAW_E2E_SKIP_BUILD=1 OPENCLAW_TEST_BUN_LAUNCHER=1 pnpm test test/openclaw-launcher.e2e.test.ts",
+      "AFORA_E2E_SKIP_BUILD=1 AFORA_TEST_BUN_LAUNCHER=1 pnpm test test/afora-launcher.e2e.test.ts",
     );
     expect(checksFastRun.run).toContain(
       "for required_script in check:max-lines-ratchet check:assertion-safety; do",
@@ -5906,7 +5906,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     expect(legacy.outputs.use_compatible_android_ci).toBe("true");
     expect(legacy.outputs.run_ios_build).toBe("false");
     expect(legacy.outputs.run_native_i18n).toBe("false");
-    expect(legacy.outputs.run_openclawkit_tests).toBe("false");
+    expect(legacy.outputs.run_aforakit_tests).toBe("false");
     expect(legacy.outputs.run_qa_smoke_ci).toBe("false");
     expect(legacy.outputs.run_channel_contracts_shards).toBe("false");
     expect(legacy.outputs.run_protocol_event_coverage).toBe("false");
@@ -5937,7 +5937,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     expect(current.outputs.use_compatible_android_ci).toBe("false");
     expect(current.outputs.run_ios_build).toBe("true");
     expect(current.outputs.run_native_i18n).toBe("true");
-    expect(current.outputs.run_openclawkit_tests).toBe("true");
+    expect(current.outputs.run_aforakit_tests).toBe("true");
     expect(current.outputs.run_qa_smoke_ci).toBe("true");
     expect(current.outputs.run_sqlite_session_lifecycle).toBe("true");
     expect(current.outputs.run_channel_contracts_shards).toBe("true");
@@ -5990,8 +5990,8 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
       expect.objectContaining({
         check_name: "bundled-node-plan",
         env: {
-          OPENCLAW_CI_TEST_COMPACT_MODE: "full",
-          OPENCLAW_CI_TEST_RUNNER_BACKEND: "",
+          AFORA_CI_TEST_COMPACT_MODE: "full",
+          AFORA_CI_TEST_RUNNER_BACKEND: "",
         },
         shard_name: "bundled-node-plan",
       }),
@@ -6015,8 +6015,8 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
         expect.objectContaining({
           check_name: "bundled-node-plan",
           env: {
-            OPENCLAW_CI_TEST_COMPACT_MODE: "push",
-            OPENCLAW_CI_TEST_RUNNER_BACKEND: runnerBackend ?? "",
+            AFORA_CI_TEST_COMPACT_MODE: "push",
+            AFORA_CI_TEST_RUNNER_BACKEND: runnerBackend ?? "",
           },
         }),
       );
@@ -6076,8 +6076,8 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
         expect.objectContaining({
           check_name: "bundled-node-plan",
           env: {
-            OPENCLAW_CI_TEST_COMPACT_MODE: "pull-request",
-            OPENCLAW_CI_TEST_RUNNER_BACKEND: "",
+            AFORA_CI_TEST_COMPACT_MODE: "pull-request",
+            AFORA_CI_TEST_RUNNER_BACKEND: "",
           },
         }),
         expect.objectContaining({ check_name: "changed-extension-fallback-plan" }),
@@ -6268,8 +6268,8 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     const swiftLint = workflow.jobs["macos-swift"].steps.find(
       (step: { name?: string }) => step.name === "Swift lint",
     );
-    const openClawKitTests = workflow.jobs["macos-swift"].steps.find(
-      (step: { name?: string }) => step.name === "OpenClawKit tests",
+    const aforaKitTests = workflow.jobs["macos-swift"].steps.find(
+      (step: { name?: string }) => step.name === "AforaKit tests",
     );
     expect(swiftInstall.run).toContain("brew install xcodegen swiftlint");
     expect(swiftInstall.run).not.toContain("brew install xcodegen swiftlint swiftformat");
@@ -6298,7 +6298,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     expect(swiftInstall.run).toContain('elif [[ "$HISTORICAL_TARGET" == "true" ]]');
     expect(swiftLint.run).toContain("swiftlint lint --config config/swiftlint.yml");
     expect(swiftLint.run).toContain('elif [[ "$HISTORICAL_TARGET" == "true" ]]');
-    expect(openClawKitTests.if).toBe("needs.preflight.outputs.run_openclawkit_tests == 'true'");
+    expect(aforaKitTests.if).toBe("needs.preflight.outputs.run_aforakit_tests == 'true'");
 
     const checkShard = workflow.jobs["check-shard"].steps.find(
       (step: { name?: string }) => step.name === "Run check shard",
@@ -6351,7 +6351,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     expect(uiInstall.run).toContain(
       "Target does not provide a supported Playwright Chromium installer.",
     );
-    expect(uiInstall.run).not.toContain("OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM");
+    expect(uiInstall.run).not.toContain("AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM");
     const playwrightVersion = JSON.parse(readFileSync("package.json", "utf8")).devDependencies
       .playwright;
     expect(playwrightVersion).toBe(
@@ -6384,10 +6384,10 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     );
     expect(uiE2e["runs-on"]).not.toBe(ui["runs-on"]);
     expect(uiE2e["timeout-minutes"]).toBe(25);
-    expect(uiE2e.env).toEqual({ OPENCLAW_UI_E2E_SKIP_REAL_GATEWAY: "1" });
+    expect(uiE2e.env).toEqual({ AFORA_UI_E2E_SKIP_REAL_GATEWAY: "1" });
     expect(uiE2e.strategy["fail-fast"]).toBe(false);
     expect(uiE2e.strategy["max-parallel"]).toBe(
-      "${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 12 || 4 }}",
+      "${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 12 || 4 }}",
     );
     expect(uiE2e.strategy.matrix).toBe("${{ fromJson(needs.preflight.outputs.ui_e2e_matrix) }}");
     const expectedUiE2eMatrix = (shardCount: number) => ({
@@ -6419,7 +6419,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
       expect(
         evaluateWorkflowExpression(uiE2e.strategy["max-parallel"], {
           eventName: "push",
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           runnerBackend,
           runAttempt: 1,
         }),
@@ -6443,14 +6443,14 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
       "node-version": "24.x",
       "install-bun": "false",
       "dependency-cache":
-        "${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.run_attempt > 1)) && 'false' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'true' || 'false') }}",
+        "${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.run_attempt > 1)) && 'false' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'true' || 'false') }}",
       "use-actions-cache":
-        "${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.run_attempt > 1)) && 'true' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'false' || 'true') }}",
+        "${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.run_attempt > 1)) && 'true' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'false' || 'true') }}",
     } as const;
     const expectedUiE2eSetup = {
       ...expectedSharedUiE2eSetup,
       "restore-test-caches":
-        "${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'true' || 'false' }}",
+        "${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 'true' || 'false' }}",
     } as const;
     expect(uiE2eSetup.with).toEqual(expectedUiE2eSetup);
     const realGatewaySetup = expectDefined(
@@ -6467,7 +6467,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     // routing shape and differ only in Blacksmith size. Pin the literal so a
     // divergence like the hosted-only real-Gateway row cannot return unnoticed.
     const uiE2eRunsOnExpression = (blacksmithRunner: string) =>
-      `\${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.run_attempt > 1)) && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && '${blacksmithRunner}' || 'ubuntu-24.04') }}`;
+      `\${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.run_attempt > 1)) && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && '${blacksmithRunner}' || 'ubuntu-24.04') }}`;
     const routedUiE2eJobs = [
       {
         job: uiE2e,
@@ -6491,8 +6491,8 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
         name: "same-repo pull request first attempt",
         context: {
           eventName: "pull_request",
-          headRepository: "openclaw/openclaw",
-          repository: "openclaw/openclaw",
+          headRepository: "AforaMosh/afora-agent",
+          repository: "AforaMosh/afora-agent",
           runAttempt: 1,
         },
         expected: { blacksmith: true, dependencyCache: "true", useActionsCache: "false" },
@@ -6501,8 +6501,8 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
         name: "same-repo pull request with GitHub backend",
         context: {
           eventName: "pull_request",
-          headRepository: "openclaw/openclaw",
-          repository: "openclaw/openclaw",
+          headRepository: "AforaMosh/afora-agent",
+          repository: "AforaMosh/afora-agent",
           runnerBackend: "github",
           runAttempt: 1,
         },
@@ -6512,8 +6512,8 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
         name: "same-repo pull request with hybrid backend",
         context: {
           eventName: "pull_request",
-          headRepository: "openclaw/openclaw",
-          repository: "openclaw/openclaw",
+          headRepository: "AforaMosh/afora-agent",
+          repository: "AforaMosh/afora-agent",
           runnerBackend: "hybrid",
           runAttempt: 1,
         },
@@ -6523,8 +6523,8 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
         name: "same-repo pull request retry",
         context: {
           eventName: "pull_request",
-          headRepository: "openclaw/openclaw",
-          repository: "openclaw/openclaw",
+          headRepository: "AforaMosh/afora-agent",
+          repository: "AforaMosh/afora-agent",
           runAttempt: 2,
         },
         expected: { blacksmith: false, dependencyCache: "false", useActionsCache: "true" },
@@ -6536,8 +6536,8 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
         context: {
           authorAssociation: "CONTRIBUTOR",
           eventName: "pull_request",
-          headRepository: "contributor/openclaw",
-          repository: "openclaw/openclaw",
+          headRepository: "contributor/afora",
+          repository: "AforaMosh/afora-agent",
           runAttempt: 1,
         },
         expected: { blacksmith: true, dependencyCache: "false", useActionsCache: "true" },
@@ -6547,8 +6547,8 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
         context: {
           authorAssociation: "NONE",
           eventName: "pull_request",
-          headRepository: "contributor/openclaw",
-          repository: "openclaw/openclaw",
+          headRepository: "contributor/afora",
+          repository: "AforaMosh/afora-agent",
           runAttempt: 1,
         },
         expected: { blacksmith: false, dependencyCache: "false", useActionsCache: "true" },
@@ -6557,7 +6557,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
         name: "workflow dispatch",
         context: {
           eventName: "workflow_dispatch",
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           runAttempt: 1,
         },
         expected: { blacksmith: false, dependencyCache: "false", useActionsCache: "true" },
@@ -6566,7 +6566,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
         name: "canonical push retry",
         context: {
           eventName: "push",
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           runAttempt: 2,
         },
         expected: { blacksmith: true, dependencyCache: "true", useActionsCache: "false" },
@@ -6636,7 +6636,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     );
     expect(scenario.if).toBe("matrix.task == 'control-ui'");
     expect(scenario.env).toEqual({
-      OPENCLAW_UI_E2E_DIAGNOSTIC_DIR:
+      AFORA_UI_E2E_DIAGNOSTIC_DIR:
         ".artifacts/control-ui-e2e-timeouts/shard-${{ matrix.shard }}-attempt-${{ github.run_attempt }}",
       SHARD_INDEX: "${{ matrix.shard }}",
       VITEST_SHARD_COUNT: "${{ matrix.vitest_shard_count }}",
@@ -6671,8 +6671,8 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     expect(browserExtension.run).toBe("pnpm test:e2e:browser-extension");
     for (const { job } of routedUiE2eJobs) {
       const jobContract = JSON.stringify(job);
-      expect(jobContract).not.toContain("OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM");
-      expect(jobContract).not.toContain("OPENCLAW_VITEST_NO_OUTPUT_RETRY");
+      expect(jobContract).not.toContain("AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM");
+      expect(jobContract).not.toContain("AFORA_VITEST_NO_OUTPUT_RETRY");
     }
 
     const realGatewayRuns = uiE2eRealGateway.steps
@@ -6809,7 +6809,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     );
     // The hosted RSS allowance and the serial fallback keep the startup-memory
     // measurement unperturbed on 4-core hosted runners.
-    expect(verifierStep.env.OPENCLAW_STARTUP_MEMORY_PLUGINS_LIST_MB).toBe(
+    expect(verifierStep.env.AFORA_STARTUP_MEMORY_PLUGINS_LIST_MB).toBe(
       "${{ runner.environment == 'github-hosted' && '425' || '400' }}",
     );
     expect(verifierStep.env.PARALLEL_BUILT_VERIFIERS).toBe(
@@ -6819,7 +6819,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
       "test/scripts/doctor-config-preflight-plugin-index.built-cli.e2e.test.ts",
     );
     expect(verifierStep.run).toContain(
-      "env OPENCLAW_E2E_USE_PREBUILT_DIST=1 OPENCLAW_VITEST_NO_OUTPUT_TIMEOUT_MS=660000 node scripts/run-vitest.mjs run",
+      "env AFORA_E2E_USE_PREBUILT_DIST=1 AFORA_VITEST_NO_OUTPUT_TIMEOUT_MS=660000 node scripts/run-vitest.mjs run",
     );
     expect(verifierStep.run).toContain("--config test/vitest/vitest.e2e.config.ts");
     expect(verifierStep.run).toContain("Selected target predates");
@@ -6868,8 +6868,8 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     expect(downloadStep.uses).toBe(DOWNLOAD_ARTIFACT_V8);
     expect(downloadStep.with.name).toBe("dist-runtime-build");
     expect(extractStep.run).toContain("dist-runtime-build.tar.zst");
-    expect(proofStep.env.OPENCLAW_E2E_USE_PREBUILT_DIST).toBe("1");
-    expect(proofStep.env.OPENCLAW_VITEST_NO_OUTPUT_TIMEOUT_MS).toBe("660000");
+    expect(proofStep.env.AFORA_E2E_USE_PREBUILT_DIST).toBe("1");
+    expect(proofStep.env.AFORA_VITEST_NO_OUTPUT_TIMEOUT_MS).toBe("660000");
     expect(proofStep.run).toContain(
       "test/scripts/sqlite-sessions-transcripts-flip-proof.built-cli.e2e.test.ts",
     );
@@ -6975,7 +6975,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     expect(run.slice(tuiPty, tuiPtyWait)).toContain("src/tui/tui-pty-local.e2e.test.ts");
     expect(run.slice(tuiPty, tuiPtyWait)).toContain("--testNamePattern");
     expect(run.slice(tuiPty, tuiPtyWait)).toContain(
-      "launches openclaw (chat as local mode|tui against a real Gateway) through a real PTY",
+      "launches afora (chat as local mode|tui against a real Gateway) through a real PTY",
     );
     expect(run).toContain("wait_checks()");
     // Three wave barriers plus the one inside run_verifier, which serializes
@@ -7027,13 +7027,13 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
       'shard.groups?.some((group) => group.shard_name.startsWith("core-tooling"))',
     );
     expect(nodeTestJob["timeout-minutes"]).toBe("${{ matrix.timeout_minutes || 60 }}");
-    expect(runStep.env.OPENCLAW_VITEST_NO_OUTPUT_TIMEOUT_MS).toBe(
+    expect(runStep.env.AFORA_VITEST_NO_OUTPUT_TIMEOUT_MS).toBe(
       "${{ needs.preflight.outputs.compatibility_target == 'true' && '660000' || '300000' }}",
     );
-    expect(runStep.env.OPENCLAW_VITEST_NO_OUTPUT_RETRY).toBe("1");
-    expect(runStep.env.OPENCLAW_NODE_TEST_ENV_JSON).toBe("${{ toJson(matrix.env) }}");
-    expect(runStep.env.OPENCLAW_NODE_TEST_TARGETS_JSON).toBe("${{ toJson(matrix.targets) }}");
-    expect(runStep.env.OPENCLAW_NODE_TEST_VITEST_ARGS_JSON).toBe(
+    expect(runStep.env.AFORA_VITEST_NO_OUTPUT_RETRY).toBe("1");
+    expect(runStep.env.AFORA_NODE_TEST_ENV_JSON).toBe("${{ toJson(matrix.env) }}");
+    expect(runStep.env.AFORA_NODE_TEST_TARGETS_JSON).toBe("${{ toJson(matrix.targets) }}");
+    expect(runStep.env.AFORA_NODE_TEST_VITEST_ARGS_JSON).toBe(
       "${{ needs.preflight.outputs.compatibility_target == 'true' && '[\"--hookTimeout=600000\"]' || '[]' }}",
     );
     const trustedRunnerStep = nodeTestJob.steps.find(
@@ -7078,7 +7078,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     expect(buildChecks.run).toContain("pnpm test:gateway:watch-regression -- --skip-build");
     expect(buildChecks.run).not.toContain("scripts/check-gateway-watch-regression.mts");
     expect(qaBuild.run.match(/pnpm build qaRuntime/gu)).toHaveLength(1);
-    expect(qaBuild.run).not.toContain("package-openclaw-for-docker");
+    expect(qaBuild.run).not.toContain("package-afora-for-docker");
     expect(additionalChecks.run).toContain(
       "boundary_runner=(node --import tsx scripts/run-additional-boundary-checks.mts)",
     );
@@ -7126,7 +7126,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     ];
 
     expect(workflow.on.pull_request).not.toHaveProperty("paths-ignore");
-    expect(gate.name).toBe("openclaw/ci-gate");
+    expect(gate.name).toBe("afora-agent/ci-gate");
     expect(gate.needs).toEqual([...requiredJobs, ...selectedJobs]);
     // Every job in the file is gated; a new lane cannot slip in ungated.
     expect(gate.needs.toSorted()).toEqual(
@@ -7336,7 +7336,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
       expect(maturityWorkflow.jobs.generate_qa_evidence.with.trusted_ref).toBe("${{ inputs.ref }}");
 
       const topology = createQaProtocolTopology();
-      const checkout = tempDirs.make("openclaw-qa-protocol-fetch-");
+      const checkout = tempDirs.make("afora-qa-protocol-fetch-");
       runGit(checkout, ["init", "-q", "-b", "main"]);
       runGit(checkout, ["remote", "add", "origin", topology.origin]);
       runGit(checkout, [
@@ -7496,7 +7496,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
         type: "string",
       },
       ref: {
-        description: "OpenClaw branch, tag, or SHA containing the maturity score source",
+        description: "Afora branch, tag, or SHA containing the maturity score source",
         required: true,
         type: "string",
       },
@@ -7528,22 +7528,22 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     expect(maturityWorkflow.on.workflow_call.inputs).not.toHaveProperty("publish_pull_request");
     expect(maturityWorkflow.on.workflow_call.secrets.OPENAI_API_KEY.required).toBe(true);
     expect(
-      maturityWorkflow.on.workflow_call.secrets.OPENCLAW_MATURITY_SCORECARD_AGENT_OPENAI_API_KEY
+      maturityWorkflow.on.workflow_call.secrets.AFORA_MATURITY_SCORECARD_AGENT_OPENAI_API_KEY
         .required,
     ).toBe(false);
     expect(Object.keys(maturityWorkflow.on.workflow_call.secrets).toSorted()).toEqual([
       "CLAWSWEEPER_APP_PRIVATE_KEY",
       "MANTIS_GITHUB_APP_PRIVATE_KEY",
       "OPENAI_API_KEY",
-      "OPENCLAW_MATURITY_SCORECARD_AGENT_OPENAI_API_KEY",
-      "OPENCLAW_QA_CONVEX_SECRET_CI",
-      "OPENCLAW_QA_CONVEX_SITE_URL",
+      "AFORA_MATURITY_SCORECARD_AGENT_OPENAI_API_KEY",
+      "AFORA_QA_CONVEX_SECRET_CI",
+      "AFORA_QA_CONVEX_SITE_URL",
     ]);
     for (const secret of [
       "CLAWSWEEPER_APP_PRIVATE_KEY",
       "MANTIS_GITHUB_APP_PRIVATE_KEY",
-      "OPENCLAW_QA_CONVEX_SECRET_CI",
-      "OPENCLAW_QA_CONVEX_SITE_URL",
+      "AFORA_QA_CONVEX_SECRET_CI",
+      "AFORA_QA_CONVEX_SITE_URL",
     ]) {
       expect(maturityWorkflow.on.workflow_call.secrets[secret].required).toBe(false);
     }
@@ -7592,7 +7592,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     });
     expect(qaAuthorizeStep.with?.script).toContain("callerWorkflowRef !== calledWorkflowRef");
     expect(qaAuthorizeStep.with?.script).toContain(
-      'job.workflow_repository === "openclaw/openclaw"',
+      'job.workflow_repository === "AforaMosh/afora-agent"',
     );
     expect(qaAuthorizeStep.with?.script).toContain("job.workflow_ref === calledWorkflowRef");
     expect(qaAuthorizeStep.with?.script).toContain(
@@ -7672,7 +7672,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
       expect(permissionStep.with?.script).toContain('new Set(["admin", "maintain", "write"])');
       expect(permissionStep.with?.script).toContain("callerWorkflowRef !== calledWorkflowRef");
       expect(permissionStep.with?.script).toContain(
-        'job.workflow_repository === "openclaw/openclaw"',
+        'job.workflow_repository === "AforaMosh/afora-agent"',
       );
       expect(permissionStep.with?.script).toContain("job.workflow_ref === calledWorkflowRef");
       expect(permissionStep.with?.script).toContain("if (!trustedMainCaller)");
@@ -7680,7 +7680,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
         name: "Checkout trusted QA harness",
         uses: CHECKOUT_V6,
         with: {
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           ref: "main",
           "fetch-depth": 1,
           "persist-credentials": false,
@@ -7691,7 +7691,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
       );
       expect(checkoutSteps).toHaveLength(1);
       expect(checkoutSteps[0]?.with).toMatchObject({
-        repository: "openclaw/openclaw",
+        repository: "AforaMosh/afora-agent",
         ref: "main",
       });
       expect(restoreTrusted).toMatchObject({
@@ -7738,7 +7738,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
       ).toBe(false);
       expect(installSelected["working-directory"]).toBe("selected");
       expect(installSelected.run).toContain(
-        '--store-dir "$RUNNER_TEMP/openclaw-qa-selected-pnpm-store"',
+        '--store-dir "$RUNNER_TEMP/afora-qa-selected-pnpm-store"',
       );
       for (const installFlag of [
         "--frozen-lockfile",
@@ -7792,8 +7792,8 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     const runProfileStep = qaShardJob.steps.find(
       (step: WorkflowStep) => step.name === "Run QA profile shard",
     );
-    expect(runProfileStep.env?.OPENCLAW_QA_ALLOW_UPDATE_RUN_SELF).toBe("1");
-    expect(runProfileStep.env?.OPENCLAW_QA_CREDENTIAL_ACQUIRE_TIMEOUT_MS).toBe("120000");
+    expect(runProfileStep.env?.AFORA_QA_ALLOW_UPDATE_RUN_SELF).toBe("1");
+    expect(runProfileStep.env?.AFORA_QA_CREDENTIAL_ACQUIRE_TIMEOUT_MS).toBe("120000");
     expect(runProfileStep.env?.PROTOCOL_SINCE_BASE_SHA).toBe(
       "${{ needs.validate_selected_ref.outputs.protocol_base_revision }}",
     );
@@ -7930,8 +7930,8 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     expect(generateJob.with).not.toHaveProperty("fail_on_qa_failure");
     expect(generateJob.secrets).toMatchObject({
       OPENAI_API_KEY: "${{ secrets.OPENAI_API_KEY }}",
-      OPENCLAW_QA_CONVEX_SECRET_CI: "${{ secrets.OPENCLAW_QA_CONVEX_SECRET_CI }}",
-      OPENCLAW_QA_CONVEX_SITE_URL: "${{ secrets.OPENCLAW_QA_CONVEX_SITE_URL }}",
+      AFORA_QA_CONVEX_SECRET_CI: "${{ secrets.AFORA_QA_CONVEX_SECRET_CI }}",
+      AFORA_QA_CONVEX_SITE_URL: "${{ secrets.AFORA_QA_CONVEX_SITE_URL }}",
     });
 
     const maturityPermissionStep = expectDefined(
@@ -7962,7 +7962,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     );
     expect(maturityPermissionStep.with?.script).toContain(`"${MATURITY_SCORECARD_WORKFLOW_REF}"`);
     expect(maturityPermissionStep.with?.script).toContain(
-      'job.workflow_repository === "openclaw/openclaw"',
+      'job.workflow_repository === "AforaMosh/afora-agent"',
     );
     expect(maturityPermissionStep.with?.script).toContain("job.workflow_ref === calledWorkflowRef");
     expect(workflowStep.env.JOB_CONTEXT).toBe("${{ toJSON(job) }}");
@@ -8024,7 +8024,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
       `github.workflow_ref == '${MATURITY_SCORECARD_WORKFLOW_REF}' &&`,
       `needs.validate_selected_ref.outputs.workflow_file_path == '${MATURITY_SCORECARD_WORKFLOW}' &&`,
       `needs.validate_selected_ref.outputs.workflow_ref == '${MATURITY_SCORECARD_WORKFLOW_REF}' &&`,
-      "needs.validate_selected_ref.outputs.workflow_repository == 'openclaw/openclaw' }}",
+      "needs.validate_selected_ref.outputs.workflow_repository == 'AforaMosh/afora-agent' }}",
     ].join(" ");
     expect(publisherPreflight.needs).toBe("validate_selected_ref");
     expect(publisherPreflight.if).toBe("${{ inputs.publish_pull_request }}");
@@ -8280,7 +8280,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
       );
       const producerScript = expectDefined(producerStep?.run, "QA evidence producer script");
       const consumerScript = expectDefined(consumerStep?.run, "QA evidence consumer script");
-      const root = tempDirs.make("openclaw-qa-profile-artifact-");
+      const root = tempDirs.make("afora-qa-profile-artifact-");
       const evidencePath = path.join(root, "qa-evidence.json");
       const manifestPath = path.join(root, "qa-profile-evidence-manifest.json");
       const protocolBaseSha = "b".repeat(40);
@@ -8330,7 +8330,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
         writeFileSync(
           evidencePath,
           `${JSON.stringify({
-            kind: "openclaw.qa.evidence-summary",
+            kind: "afora.qa.evidence-summary",
             schemaVersion: 2,
             generatedAt: "2026-08-05T00:00:00.000Z",
             evidenceMode: "full",
@@ -8437,7 +8437,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     "keeps a reusable maturity call artifact-only even when its caller was dispatched",
     () => {
       const callerWorkflowRef =
-        "openclaw/openclaw/.github/workflows/openclaw-release-checks.yml@refs/heads/main";
+        "AforaMosh/afora-agent/.github/workflows/afora-release-checks.yml@refs/heads/main";
       const artifactOnly = runMaturityInvocationScenario({
         callerEventName: "workflow_dispatch",
         callerWorkflowRef,
@@ -8494,7 +8494,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
   it("keeps exact release validation identity separate from release context", () => {
     const fullReleaseWorkflow = readWorkflow(".github/workflows/full-release-validation.yml");
     const releaseWorkflow = readReleaseChecksWorkflow();
-    const telegramWorkflow = readWorkflow(".github/workflows/openclaw-release-telegram-qa.yml");
+    const telegramWorkflow = readWorkflow(".github/workflows/afora-release-telegram-qa.yml");
     const telegramProvenanceHelper = readFileSync("scripts/release-telegram-provenance.sh", "utf8");
     const fullReleaseDispatchStep = fullReleaseWorkflow.jobs.release_checks.steps.find(
       (step: WorkflowStep) => step.name === "Dispatch and monitor release checks",
@@ -8634,8 +8634,8 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     expect(job.with).not.toHaveProperty("publish_pull_request");
     expect(job.secrets).toMatchObject({
       OPENAI_API_KEY: "${{ secrets.OPENAI_API_KEY }}",
-      OPENCLAW_QA_CONVEX_SECRET_CI: "${{ secrets.OPENCLAW_QA_CONVEX_SECRET_CI }}",
-      OPENCLAW_QA_CONVEX_SITE_URL: "${{ secrets.OPENCLAW_QA_CONVEX_SITE_URL }}",
+      AFORA_QA_CONVEX_SECRET_CI: "${{ secrets.AFORA_QA_CONVEX_SECRET_CI }}",
+      AFORA_QA_CONVEX_SITE_URL: "${{ secrets.AFORA_QA_CONVEX_SITE_URL }}",
     });
     expect(summaryJob.needs).toContain("maturity_scorecard_release_checks");
     expect(verifyStep.env.MATURITY_SCORECARD_RELEASE_CHECKS_RESULT).toBe(
@@ -8694,21 +8694,21 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     // build. Today that holds vacuously — the smoke set has no docker-lane
     // scenario, so the step performs exactly one private build and no pack;
     // the run step fails closed if a docker-lane scenario returns.
-    expect(smokeBuildStep.run).toContain("OPENCLAW_BUILD_PRIVATE_QA=1 pnpm build qaRuntime");
+    expect(smokeBuildStep.run).toContain("AFORA_BUILD_PRIVATE_QA=1 pnpm build qaRuntime");
     expect(smokeBuildStep.run.match(/pnpm build qaRuntime/g)).toHaveLength(1);
-    expect(smokeBuildStep.run).not.toContain("package-openclaw-for-docker");
+    expect(smokeBuildStep.run).not.toContain("package-afora-for-docker");
     expect(smokeBuildStep.run).not.toContain("npm pack");
-    expect(smokeBuildStep.env).not.toHaveProperty("OPENCLAW_BUILD_PRIVATE_QA");
+    expect(smokeBuildStep.env).not.toHaveProperty("AFORA_BUILD_PRIVATE_QA");
     const smokePlanRunStep = smokeProfileJob.steps.find(
       (step: WorkflowStep) => step.name === "Run smoke profile part",
     );
     expect(smokePlanRunStep.run).toContain("restore the public pack step in ci.yml");
-    expect(smokePlanRunStep.run).not.toContain("OPENCLAW_CURRENT_PACKAGE_TGZ");
+    expect(smokePlanRunStep.run).not.toContain("AFORA_CURRENT_PACKAGE_TGZ");
     expect(workflow.jobs["qa-smoke-ci-artifacts"]).toBeUndefined();
     expect(workflow.jobs["qa-smoke-ci"]).toBeUndefined();
     expect(smokeProfileJob.needs).toEqual(["preflight"]);
     expect(smokeProfileJob.strategy["max-parallel"]).toBe(
-      "${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 6 || 4 }}",
+      "${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 6 || 4 }}",
     );
     expect(smokeProfileJob.strategy.matrix).toBe(
       "${{ fromJson(needs.preflight.outputs.qa_smoke_ci_matrix) }}",
@@ -8760,7 +8760,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
       expect(
         evaluateWorkflowExpression(smokeProfileJob.strategy["max-parallel"], {
           eventName: "push",
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           runnerBackend,
           runAttempt: 1,
         }),
@@ -8791,24 +8791,24 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
       "console.log(`[skip] ${partId} is not declared by this checkout's smoke plan`)",
     );
     expect(smokeRunStep.run).toContain("No QA smoke runs assigned");
-    expect(smokeRunStep.run).toContain("node openclaw.mjs qa run");
-    expect(smokeRunStep.run).not.toContain("pnpm openclaw qa run");
+    expect(smokeRunStep.run).toContain("node afora.mjs qa run");
+    expect(smokeRunStep.run).not.toContain("pnpm afora qa run");
     expect(smokeRunStep.run).toContain(
-      "timeout --signal=TERM --kill-after=15s 10m node openclaw.mjs qa run",
+      "timeout --signal=TERM --kill-after=15s 10m node afora.mjs qa run",
     );
     expect(smokeRunStep.run).toContain("--qa-profile smoke-ci");
     expect(smokeRunStep.run).toContain("--concurrency 10");
-    expect(smokeRunStep.env.OPENCLAW_QA_SUITE_WORKER_START_STAGGER_MS).toContain(
+    expect(smokeRunStep.env.AFORA_QA_SUITE_WORKER_START_STAGGER_MS).toContain(
       "github.event_name != 'workflow_dispatch'",
     );
-    expect(smokeRunStep.env.OPENCLAW_QA_SUITE_WORKER_START_STAGGER_MS).toContain(
-      "vars.OPENCLAW_CI_RUNNER_BACKEND != 'github'",
+    expect(smokeRunStep.env.AFORA_QA_SUITE_WORKER_START_STAGGER_MS).toContain(
+      "vars.AFORA_CI_RUNNER_BACKEND != 'github'",
     );
-    expect(smokeRunStep.env.OPENCLAW_QA_SUITE_WORKER_START_STAGGER_MS).toContain(
-      "github.repository == 'openclaw/openclaw'",
+    expect(smokeRunStep.env.AFORA_QA_SUITE_WORKER_START_STAGGER_MS).toContain(
+      "github.repository == 'AforaMosh/afora-agent'",
     );
-    expect(smokeRunStep.env.OPENCLAW_QA_SUITE_WORKER_START_STAGGER_MS).toContain("'0'");
-    expect(smokeRunStep.env.OPENCLAW_QA_SUITE_WORKER_START_STAGGER_MS).toContain("'1500'");
+    expect(smokeRunStep.env.AFORA_QA_SUITE_WORKER_START_STAGGER_MS).toContain("'0'");
+    expect(smokeRunStep.env.AFORA_QA_SUITE_WORKER_START_STAGGER_MS).toContain("'1500'");
     expect(smokeRunStep.run).toContain('scenario_args+=(--scenario "$scenario_id")');
     expect(smokeRunStep.run).toContain('done <<< "$PROFILE_RUNS_TSV"');
     expect(smokeRunStep.run).not.toContain('pids+=("$!")');
@@ -8835,10 +8835,10 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
   it("keeps push docs validation ClawHub-backed", () => {
     const workflow = readFileSync(".github/workflows/docs.yml", "utf8");
 
-    expect(workflow).toContain("repository: openclaw/clawhub");
+    expect(workflow).toContain("repository: afora/clawhub");
     expect(workflow).toContain("path: clawhub-source");
     expect(workflow).toContain(
-      "OPENCLAW_DOCS_SYNC_CLAWHUB_REPO: ${{ github.workspace }}/clawhub-source",
+      "AFORA_DOCS_SYNC_CLAWHUB_REPO: ${{ github.workspace }}/clawhub-source",
     );
   });
 
@@ -8861,7 +8861,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
       "utf8",
     );
     const rawSocketQuery = readFileSync(
-      ".github/codeql/openclaw-boundary/queries/raw-socket-callsite-classification.ql",
+      ".github/codeql/afora-boundary/queries/raw-socket-callsite-classification.ql",
       "utf8",
     );
     const networkSelector = workflow.slice(
@@ -8895,7 +8895,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
       'codex_transport="extensions/codex/src/app-server/transport-websocket.ts"',
     );
     expect(workflow).toContain(
-      "network_codeql_contract_pattern='^\\.github/codeql/(codeql-network-runtime-boundary-critical-quality\\.yml|openclaw-boundary/queries/(raw-socket-callsite-classification|managed-proxy-runtime-mutation)\\.ql)$'",
+      "network_codeql_contract_pattern='^\\.github/codeql/(codeql-network-runtime-boundary-critical-quality\\.yml|afora-boundary/queries/(raw-socket-callsite-classification|managed-proxy-runtime-mutation)\\.ql)$'",
     );
     expect(workflow).toContain(
       'if grep -Eq "$network_codeql_contract_pattern" "$changed_files" ||',
@@ -8908,7 +8908,7 @@ printf '%s\n' "\${CURL_SUCCESS_IP:-203.0.113.7}"
     // contain the transport path as data without disappearing from the scan.
     expect(workflow).toContain("packages/net-policy/src/");
     expect(workflow).toContain(
-      "grep -En 'HTTP_PROXY|HTTPS_PROXY|NO_PROXY|GLOBAL_AGENT_|OPENCLAW_PROXY_' \"$added_lines\"",
+      "grep -En 'HTTP_PROXY|HTTPS_PROXY|NO_PROXY|GLOBAL_AGENT_|AFORA_PROXY_' \"$added_lines\"",
     );
     expect(workflow).toContain('echo "full_codeql=true" >> "$GITHUB_OUTPUT"');
     expect(workflow).toContain(

@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { buildSessionCreationStamp } from "../../../config/sessions/session-entry-provenance.js";
 import type { SessionEntry } from "../../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
-import { resolveIncognitoOpenClawAgentSqlitePath } from "../../../state/openclaw-agent-db.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
+import { resolveIncognitoAforaAgentSqlitePath } from "../../../state/afora-agent-db.js";
 import {
   inheritedToolAllowPatch,
   inheritedToolDenyPatch,
@@ -105,7 +105,7 @@ export function loadSubagentConfig() {
 }
 
 export async function createInitialSubagentSession(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   targetAgentId: string;
   childSessionKey: string;
   incognito: boolean;
@@ -152,7 +152,7 @@ export async function createInitialSubagentSession(params: {
           agentId: params.targetAgentId,
           canonicalKey: params.childSessionKey,
           storeKeys: [params.childSessionKey],
-          storePath: resolveIncognitoOpenClawAgentSqlitePath({ agentId: params.targetAgentId }),
+          storePath: resolveIncognitoAforaAgentSqlitePath({ agentId: params.targetAgentId }),
         }
       : resolveGatewaySessionStoreTarget({
           cfg: params.cfg,
@@ -180,7 +180,7 @@ export async function createInitialSubagentSession(params: {
 }
 
 export async function persistInitialChildSessionRuntimeModel(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   childSessionKey: string;
   resolvedModel?: string;
 }): Promise<string | undefined> {

@@ -1,5 +1,5 @@
 // Slack plugin module implements file reference behavior.
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { SlackFile } from "./types.js";
 
 export function formatSlackFileReference(file: SlackFile | undefined): string {

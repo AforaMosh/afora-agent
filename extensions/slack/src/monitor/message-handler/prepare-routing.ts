@@ -1,12 +1,12 @@
 // Slack plugin module implements prepare routing behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   resolveConfiguredBindingRoute,
   resolveRuntimeConversationBindingRoute,
   type ConfiguredBindingRouteResult,
   type RuntimeConversationBindingRouteResult,
-} from "openclaw/plugin-sdk/conversation-runtime";
-import { resolveAgentRoute, resolveThreadSessionKeys } from "openclaw/plugin-sdk/routing";
+} from "afora-agent/plugin-sdk/conversation-runtime";
+import { resolveAgentRoute, resolveThreadSessionKeys } from "afora-agent/plugin-sdk/routing";
 import { resolveSlackReplyToMode } from "../../account-reply-mode.js";
 import type { ResolvedSlackAccount } from "../../accounts.js";
 import { parseSlackTarget, type SlackTargetKind } from "../../targets.js";
@@ -21,7 +21,7 @@ import {
 } from "../workspace-routing.js";
 
 type SlackRoutingContextDeps = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   teamId: string;
   threadInheritParent: boolean;
   threadHistoryScope: "thread" | "channel";
@@ -43,12 +43,12 @@ type SlackRoutingContext = {
   historyKey: string;
 };
 
-type SlackRouteBinding = NonNullable<OpenClawConfig["bindings"]>[number];
+type SlackRouteBinding = NonNullable<AforaConfig["bindings"]>[number];
 type SlackRouteBindingPeer = NonNullable<SlackRouteBinding["match"]["peer"]>;
 
 const slackRouteBindingConfigCache = new WeakMap<
-  OpenClawConfig,
-  { bindingsRef: OpenClawConfig["bindings"]; normalizedCfg: OpenClawConfig }
+  AforaConfig,
+  { bindingsRef: AforaConfig["bindings"]; normalizedCfg: AforaConfig }
 >();
 
 function slackTargetDefaultKindForPeer(kind: SlackRouteBindingPeer["kind"]): SlackTargetKind {
@@ -89,7 +89,7 @@ function normalizeSlackRouteBindingPeer(peer: SlackRouteBindingPeer): SlackRoute
   return normalizedId === peer.id ? peer : { ...peer, id: normalizedId };
 }
 
-function normalizeSlackRouteBindingConfig(cfg: OpenClawConfig): OpenClawConfig {
+function normalizeSlackRouteBindingConfig(cfg: AforaConfig): AforaConfig {
   const bindings = cfg.bindings;
   const cached = slackRouteBindingConfigCache.get(cfg);
   if (cached && cached.bindingsRef === bindings) {
@@ -123,7 +123,7 @@ function normalizeSlackRouteBindingConfig(cfg: OpenClawConfig): OpenClawConfig {
   });
 
   const normalizedCfg = changed
-    ? ({ ...cfg, bindings: normalizedBindings } as OpenClawConfig)
+    ? ({ ...cfg, bindings: normalizedBindings } as AforaConfig)
     : cfg;
   slackRouteBindingConfigCache.set(cfg, { bindingsRef: bindings, normalizedCfg });
   return normalizedCfg;

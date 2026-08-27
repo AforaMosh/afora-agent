@@ -2,7 +2,7 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { findBundledPluginMetadataById } from "../plugins/bundled-plugin-metadata.js";
 import { resolvePluginConfigContractsById } from "../plugins/config-contracts.js";
 import { resolveSecretRefValues } from "./resolve.js";
@@ -13,7 +13,7 @@ function envRef(id: string) {
   return { source: "env" as const, provider: "default", id };
 }
 
-const explicitMainRoster: NonNullable<OpenClawConfig["agents"]> = {
+const explicitMainRoster: NonNullable<AforaConfig["agents"]> = {
   list: [{ id: "main", default: true }],
 };
 
@@ -42,7 +42,7 @@ describe("collectPluginConfigAssignments bundled plugin manifests", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const context = createResolverContext({ sourceConfig: config, env: {} });
 
     collectPluginConfigAssignments({
@@ -93,7 +93,7 @@ describe("collectPluginConfigAssignments bundled plugin manifests", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     expect(
       resolvePluginConfigContractsById({
         config,
@@ -168,7 +168,7 @@ describe("collectPluginConfigAssignments bundled plugin manifests", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const env = { GEMINI_GATEWAY_TOKEN: "resolved-gateway-token" };
     const context = createResolverContext({ sourceConfig: config, env });
 
@@ -247,7 +247,7 @@ describe("collectPluginConfigAssignments bundled plugin manifests", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     expect(
       resolvePluginConfigContractsById({
         config,
@@ -317,7 +317,7 @@ describe("collectPluginConfigAssignments bundled plugin manifests", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     expect(
       resolvePluginConfigContractsById({
         config,

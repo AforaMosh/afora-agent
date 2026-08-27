@@ -175,7 +175,7 @@ import WatchKit
     private static let maxDeferredGatewayPayloads = 32
     private static let maxExecApprovalTerminalTombstones = 128
     private static let execApprovalTerminalTombstoneLifetime: TimeInterval = 24 * 60 * 60
-    private static let defaultTitle = "OpenClaw"
+    private static let defaultTitle = "Afora"
     private static let defaultBody = "Waiting for messages from your iPhone."
     private let defaults: UserDefaults
 
@@ -377,7 +377,7 @@ import WatchKit
             sentAtMs: message.sentAtMs)
         guard deliveryKey != self.lastDeliveryKey else { return }
 
-        let normalizedTitle = message.title.isEmpty ? "OpenClaw" : message.title
+        let normalizedTitle = message.title.isEmpty ? "Afora" : message.title
         self.title = normalizedTitle
         self.body = message.body
         self.transport = transport
@@ -1606,7 +1606,7 @@ extension WatchInboxStore {
         content.title = title
         content.body = body
         content.sound = .default
-        content.threadIdentifier = "openclaw-watch"
+        content.threadIdentifier = "afora-watch"
 
         let request = UNNotificationRequest(
             identifier: identifier,

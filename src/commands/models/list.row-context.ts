@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { PluginMetadataSnapshot } from "../../plugins/plugin-metadata-snapshot.types.js";
 import type { ModelListAuthIndex } from "./list.auth-index.js";
 import type { ConfiguredEntry } from "./list.types.js";
@@ -10,7 +10,7 @@ type RowFilter = {
 
 /** Context shared by every model-list row source builder. */
 export type RowBuilderContext = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
   agentDir: string;
   inheritedAuthDir?: string;

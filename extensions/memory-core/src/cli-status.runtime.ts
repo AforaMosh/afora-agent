@@ -1,9 +1,9 @@
-import type { MemoryEmbeddingProbeResult } from "openclaw/plugin-sdk/memory-core-host-engine-storage";
+import type { MemoryEmbeddingProbeResult } from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
 import {
   resolveMemoryLightDreamingConfig,
   resolveMemoryRemDreamingConfig,
-} from "openclaw/plugin-sdk/memory-core-host-status";
-import { asNullableRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/memory-core-host-status";
+import { asNullableRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   formatAuditCounts,
   formatExtraPaths,
@@ -22,7 +22,7 @@ import {
   theme,
   withProgress,
   withProgressTotals,
-  type OpenClawConfig,
+  type AforaConfig,
 } from "./cli.host.runtime.js";
 import type { MemoryCommandOptions } from "./cli.types.js";
 import {
@@ -73,10 +73,10 @@ function formatMemoryIndexIdentityWarning(
   }
   return {
     reason,
-    fix: `Run: openclaw memory status --index --agent ${agentId}`,
+    fix: `Run: afora memory status --index --agent ${agentId}`,
   };
 }
-function formatDreamingSummary(cfg: OpenClawConfig): string {
+function formatDreamingSummary(cfg: AforaConfig): string {
   const pluginConfig = resolveMemoryPluginConfig(cfg);
   const light = resolveMemoryLightDreamingConfig({ pluginConfig, cfg });
   const deep = resolveShortTermPromotionDreamingConfig({ pluginConfig, cfg });
@@ -508,7 +508,7 @@ export async function runMemoryStatus(
       }
       if (!opts.fix) {
         if (audit.issues.some((issue) => issue.fixable)) {
-          lines.push(`  ${muted(`Fix: openclaw memory status --fix --agent ${agentId}`)}`);
+          lines.push(`  ${muted(`Fix: afora memory status --fix --agent ${agentId}`)}`);
         }
       }
     }
@@ -520,7 +520,7 @@ export async function runMemoryStatus(
         lines.push(`  ${issue.severity === "error" ? warn(issue.message) : muted(issue.message)}`);
       }
       if (!opts.fix && dreamingAudit.issues.some((issue) => issue.fixable)) {
-        lines.push(`  ${muted(`Fix: openclaw memory status --fix --agent ${agentId}`)}`);
+        lines.push(`  ${muted(`Fix: afora memory status --fix --agent ${agentId}`)}`);
       }
     }
     defaultRuntime.log(lines.join("\n"));

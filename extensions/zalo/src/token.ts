@@ -1,8 +1,8 @@
 // Zalo plugin module implements token behavior.
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
-import type { BaseTokenResolution } from "openclaw/plugin-sdk/channel-contract";
-import { tryReadSecretFileSync } from "openclaw/plugin-sdk/core";
-import { resolveAccountEntry } from "openclaw/plugin-sdk/routing";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "afora-agent/plugin-sdk/account-id";
+import type { BaseTokenResolution } from "afora-agent/plugin-sdk/channel-contract";
+import { tryReadSecretFileSync } from "afora-agent/plugin-sdk/core";
+import { resolveAccountEntry } from "afora-agent/plugin-sdk/routing";
 import { resolveSecretInputString, type SecretInputStringResolutionMode } from "./secret-input.js";
 import type { ZaloConfig, ZaloTokenStatus } from "./types.js";
 

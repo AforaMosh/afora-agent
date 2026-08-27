@@ -15,7 +15,7 @@ function writePlugin(extensionsRoot: string, dirName: string, manifestId?: strin
   fs.writeFileSync(path.join(pluginDir, "package.json"), `${JSON.stringify({ name: dirName })}\n`);
   if (manifestId) {
     fs.writeFileSync(
-      path.join(pluginDir, "openclaw.plugin.json"),
+      path.join(pluginDir, "afora.plugin.json"),
       `${JSON.stringify({ id: manifestId })}\n`,
     );
   }
@@ -29,7 +29,7 @@ function runSelector(extensionsRoot: string, selection: string) {
 
 describe("Docker plugin selection", () => {
   it("resolves manifest ids and source directory names deterministically", () => {
-    const extensionsRoot = tempDirs.make("openclaw-docker-plugin-selection-");
+    const extensionsRoot = tempDirs.make("afora-docker-plugin-selection-");
     writePlugin(extensionsRoot, "source-only");
     writePlugin(extensionsRoot, "provider-source", "provider-id");
 
@@ -44,14 +44,14 @@ describe("Docker plugin selection", () => {
   });
 
   it("fails closed for unknown, invalid, and ambiguous ids", () => {
-    const extensionsRoot = tempDirs.make("openclaw-docker-plugin-selection-errors-");
+    const extensionsRoot = tempDirs.make("afora-docker-plugin-selection-errors-");
     writePlugin(extensionsRoot, "shared");
     writePlugin(extensionsRoot, "other-source", "shared");
 
     for (const [selection, message] of [
-      ["missing-plugin", "unknown OPENCLAW_EXTENSIONS plugin id: missing-plugin"],
-      ["../invalid", "invalid OPENCLAW_EXTENSIONS plugin id: ../invalid"],
-      ["shared", "ambiguous OPENCLAW_EXTENSIONS plugin id: shared"],
+      ["missing-plugin", "unknown AFORA_EXTENSIONS plugin id: missing-plugin"],
+      ["../invalid", "invalid AFORA_EXTENSIONS plugin id: ../invalid"],
+      ["shared", "ambiguous AFORA_EXTENSIONS plugin id: shared"],
     ] as const) {
       const result = runSelector(extensionsRoot, selection);
       expect(result.status).toBe(1);

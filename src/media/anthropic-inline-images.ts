@@ -1,5 +1,5 @@
-import { canonicalizeBase64, estimateBase64DecodedBytes } from "@openclaw/media-core/base64";
-import { detectMime, normalizeMimeType } from "@openclaw/media-core/mime";
+import { canonicalizeBase64, estimateBase64DecodedBytes } from "@afora/media-core/base64";
+import { detectMime, normalizeMimeType } from "@afora/media-core/mime";
 import { convertImageToJpeg, convertImageToPng } from "./image-ops.js";
 
 const ANTHROPIC_SUPPORTED_IMAGE_MIMES = [
@@ -8,7 +8,7 @@ const ANTHROPIC_SUPPORTED_IMAGE_MIMES = [
   "image/gif",
   "image/webp",
 ] as const;
-// Match OpenClaw's decoded inbound-image hard cap before any copy or native decode.
+// Match Afora's decoded inbound-image hard cap before any copy or native decode.
 const ANTHROPIC_INLINE_IMAGE_DECODE_SAFETY_BYTES = 10 * 1024 * 1024;
 
 type AnthropicSupportedImageMime = (typeof ANTHROPIC_SUPPORTED_IMAGE_MIMES)[number];

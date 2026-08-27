@@ -1,7 +1,7 @@
 // Tool subscription helper tests cover error extraction, sanitized tool results,
 // and safe lifecycle payloads for embedded tool events.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as loggingConfigModule from "../logging/config.js";
 import {
@@ -507,9 +507,9 @@ describe("extractToolResultText", () => {
   it("normalizes top-level CLI result arrays and objects", () => {
     expect(
       extractToolResultText([
-        { type: "web_search_result", title: "OpenClaw", url: "https://example.com" },
+        { type: "web_search_result", title: "Afora", url: "https://example.com" },
       ]),
-    ).toContain('"title":"OpenClaw"');
+    ).toContain('"title":"Afora"');
     expect(extractToolResultText([{ type: "text", text: "hello" }])).toBe("hello");
     expect(
       extractToolResultText({ type: "web_search_tool_result_error", error_code: "unavailable" }),

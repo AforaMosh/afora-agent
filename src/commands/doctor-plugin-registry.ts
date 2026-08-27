@@ -1,10 +1,10 @@
 /** Doctor repairs for stale plugin registry entries, managed npm shadows, and peer links. */
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { note } from "../../packages/terminal-core/src/note.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import type { HealthFinding, HealthRepairEffect } from "../flows/health-checks.js";
 import { writeJsonTarget } from "../infra/json-file.js";
@@ -35,8 +35,8 @@ import {
 } from "./doctor-plugin-generations.js";
 import {
   resolveDoctorPluginNpmRoots,
-  listPluginOpenClawHostLinkIssues,
-  maybeRepairPluginOpenClawHostLinks,
+  listPluginAforaHostLinkIssues,
+  maybeRepairPluginAforaHostLinks,
 } from "./doctor-plugin-host-links.js";
 import type { DoctorPrompter } from "./doctor-prompter.js";
 import {
@@ -48,12 +48,12 @@ import {
 
 type PluginRegistryDoctorRepairParams = Omit<PluginRegistryInstallMigrationParams, "config"> &
   InstalledPluginIndexRecordStoreOptions & {
-    config: OpenClawConfig;
+    config: AforaConfig;
     prompter: Pick<DoctorPrompter, "shouldRepair">;
   };
 
 type PluginRegistryDoctorRepairResult = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   pluginInventoryChanged?: true;
 };
 
@@ -89,13 +89,13 @@ type PluginRegistryHealthIssue =
       stalePath: string;
     }
   | {
-      kind: "managed-npm-openclaw-peer-link";
+      kind: "managed-npm-afora-peer-link";
       packageName: string;
       packageDir: string;
       reason: string;
     }
   | {
-      kind: "registered-npm-openclaw-host-link";
+      kind: "registered-npm-afora-host-link";
       packageName: string;
       packageDir: string;
       reason: string;
@@ -145,7 +145,7 @@ function readPackageVersion(packageDir: string): string | undefined {
 }
 
 function readPluginManifestId(packageDir: string): string | undefined {
-  const manifest = readJsonObject(path.join(packageDir, "openclaw.plugin.json"));
+  const manifest = readJsonObject(path.join(packageDir, "afora.plugin.json"));
   const id = manifest?.id;
   return typeof id === "string" && id.trim() ? id.trim() : undefined;
 }
@@ -168,7 +168,7 @@ function listStaleManagedNpmBundledPlugins(
     for (const packageName of Object.keys(dependencies).toSorted((left, right) =>
       left.localeCompare(right),
     )) {
-      if (!packageName.startsWith("@openclaw/")) {
+      if (!packageName.startsWith("@afora/")) {
         continue;
       }
       const bundled = bundledByPackage.get(packageName);
@@ -319,7 +319,7 @@ export function maybeRepairStaleManagedNpmBundledPlugins(
           (plugin) =>
             `- ${plugin.pluginId}: ${plugin.packageName}${plugin.version ? `@${plugin.version}` : ""}`,
         ),
-        `Repair with ${formatCliCommand("openclaw doctor --fix")} to remove stale managed npm packages and rebuild the plugin registry.`,
+        `Repair with ${formatCliCommand("afora doctor --fix")} to remove stale managed npm packages and rebuild the plugin registry.`,
       ].join("\n"),
       "Plugin registry",
     );
@@ -365,7 +365,7 @@ async function maybeRepairStaleLocalBundledPluginInstallRecords(
       [
         "Local bundled plugin install records shadow bundled plugins:",
         ...stale.map((record) => `- ${record.pluginId}: ${shortenHomePath(record.stalePath)}`),
-        `Repair with ${formatCliCommand("openclaw doctor --fix")} to remove stale local install records and rebuild the plugin registry.`,
+        `Repair with ${formatCliCommand("afora doctor --fix")} to remove stale local install records and rebuild the plugin registry.`,
       ].join("\n"),
       "Plugin registry",
     );
@@ -423,10 +423,10 @@ export async function detectPluginRegistryHealthIssues(
     });
   }
   issues.push(...(await listStaleManagedNpmInstallGenerations(params)));
-  const hostLinkAudit = await listPluginOpenClawHostLinkIssues(params);
+  const hostLinkAudit = await listPluginAforaHostLinkIssues(params);
   for (const issue of hostLinkAudit.peerLinkIssues) {
     issues.push({
-      kind: "managed-npm-openclaw-peer-link",
+      kind: "managed-npm-afora-peer-link",
       packageName: issue.packageName,
       packageDir: issue.packageDir,
       reason: issue.reason,
@@ -441,7 +441,7 @@ export async function detectPluginRegistryHealthIssues(
   }
   for (const issue of hostLinkAudit.registeredPeerLinkIssues) {
     issues.push({
-      kind: "registered-npm-openclaw-host-link",
+      kind: "registered-npm-afora-host-link",
       packageName: issue.packageName,
       packageDir: issue.packageDir,
       reason: issue.reason,
@@ -467,7 +467,7 @@ export function pluginRegistryIssueToHealthFinding(
         severity: "warning",
         message: "Persisted plugin registry is missing or stale.",
         path: issue.path,
-        fixHint: "Run `openclaw doctor --fix` to rebuild the plugin registry from enabled plugins.",
+        fixHint: "Run `afora doctor --fix` to rebuild the plugin registry from enabled plugins.",
       };
     case "stale-managed-npm-bundled-plugin":
       return {
@@ -479,7 +479,7 @@ export function pluginRegistryIssueToHealthFinding(
         path: issue.packageDir,
         target: issue.pluginId,
         fixHint:
-          "Run `openclaw doctor --fix` to remove stale managed npm packages and rebuild the plugin registry.",
+          "Run `afora doctor --fix` to remove stale managed npm packages and rebuild the plugin registry.",
       };
     case "stale-local-bundled-plugin-install-record":
       return {
@@ -489,25 +489,25 @@ export function pluginRegistryIssueToHealthFinding(
         path: issue.stalePath,
         target: issue.pluginId,
         fixHint:
-          "Run `openclaw doctor --fix` to remove stale local install records and rebuild the plugin registry.",
+          "Run `afora doctor --fix` to remove stale local install records and rebuild the plugin registry.",
       };
-    case "managed-npm-openclaw-peer-link":
+    case "managed-npm-afora-peer-link":
       return {
         checkId: PLUGIN_REGISTRY_CHECK_ID,
         severity: "warning",
-        message: `Managed npm package ${issue.packageName} has a broken OpenClaw peer link: ${issue.reason}.`,
+        message: `Managed npm package ${issue.packageName} has a broken Afora peer link: ${issue.reason}.`,
         path: issue.packageDir,
         target: issue.packageName,
-        fixHint: "Run `openclaw doctor --fix` to relink managed npm plugin packages.",
+        fixHint: "Run `afora doctor --fix` to relink managed npm plugin packages.",
       };
-    case "registered-npm-openclaw-host-link":
+    case "registered-npm-afora-host-link":
       return {
         checkId: PLUGIN_REGISTRY_CHECK_ID,
         severity: "warning",
-        message: `Registered npm plugin ${issue.packageName} has a broken OpenClaw host link: ${issue.reason}.`,
+        message: `Registered npm plugin ${issue.packageName} has a broken Afora host link: ${issue.reason}.`,
         path: issue.packageDir,
         target: issue.packageName,
-        fixHint: "Run `openclaw doctor --fix` to relink the installed npm plugin package.",
+        fixHint: "Run `afora doctor --fix` to relink the installed npm plugin package.",
       };
     case "managed-npm-package-unreadable":
       return {
@@ -515,7 +515,7 @@ export function pluginRegistryIssueToHealthFinding(
         severity: "warning",
         message: `Managed npm package could not be inspected: ${issue.reason}.`,
         path: issue.packageDir,
-        fixHint: "Restore access to the package files, then run `openclaw doctor` again.",
+        fixHint: "Restore access to the package files, then run `afora doctor` again.",
       };
     case "registered-npm-package-unreadable":
       return {
@@ -523,7 +523,7 @@ export function pluginRegistryIssueToHealthFinding(
         severity: "warning",
         message: `Registered npm plugin package could not be inspected: ${issue.reason}.`,
         path: issue.packageDir,
-        fixHint: "Restore access to the package files, then run `openclaw doctor` again.",
+        fixHint: "Restore access to the package files, then run `afora doctor` again.",
       };
     case "stale-managed-npm-install-generation":
       return staleManagedNpmInstallGenerationToHealthFinding(issue);
@@ -556,17 +556,17 @@ export function pluginRegistryIssueToRepairEffect(
         target: issue.pluginId,
         dryRunSafe: false,
       };
-    case "managed-npm-openclaw-peer-link":
+    case "managed-npm-afora-peer-link":
       return {
         kind: "package",
-        action: "would-relink-managed-npm-openclaw-peer",
+        action: "would-relink-managed-npm-afora-peer",
         target: issue.packageDir,
         dryRunSafe: false,
       };
-    case "registered-npm-openclaw-host-link":
+    case "registered-npm-afora-host-link":
       return {
         kind: "package",
-        action: "would-relink-registered-npm-openclaw-host",
+        action: "would-relink-registered-npm-afora-host",
         target: issue.packageDir,
         dryRunSafe: false,
       };
@@ -625,7 +625,7 @@ export async function maybeRepairPluginRegistryState(
     await maybeRepairStaleLocalBundledPluginInstallRecords(params);
   const retiredStaleManagedNpmInstallGenerations =
     await maybeRepairStaleManagedNpmInstallGenerations(params);
-  const repairedPluginOpenClawHostLinks = await maybeRepairPluginOpenClawHostLinks(params);
+  const repairedPluginAforaHostLinks = await maybeRepairPluginAforaHostLinks(params);
   const stalePluginIdsToRemove = [
     ...new Set([
       ...(staleManagedNpmBundledPluginRepair?.removedPluginIds ?? []),
@@ -639,7 +639,7 @@ export async function maybeRepairPluginRegistryState(
       note(
         [
           "Persisted plugin registry is missing or stale.",
-          `Repair with ${formatCliCommand("openclaw doctor --fix")} to rebuild ${shortenHomePath(preflight.filePath)} from enabled plugins.`,
+          `Repair with ${formatCliCommand("afora doctor --fix")} to rebuild ${shortenHomePath(preflight.filePath)} from enabled plugins.`,
         ].join("\n"),
         "Plugin registry",
       );
@@ -679,7 +679,7 @@ export async function maybeRepairPluginRegistryState(
     staleManagedNpmBundledPluginRepair ||
     removedStaleLocalBundledPluginIds.length > 0 ||
     retiredStaleManagedNpmInstallGenerations ||
-    repairedPluginOpenClawHostLinks
+    repairedPluginAforaHostLinks
   ) {
     const index = await refreshPluginRegistry({
       ...migrationParams,
@@ -705,7 +705,7 @@ export async function maybeRepairPluginRegistryState(
       resolveInstalledManifestRegistryIndexFingerprint(index);
     return {
       config: params.config,
-      ...(indexChanged || repairedPluginOpenClawHostLinks
+      ...(indexChanged || repairedPluginAforaHostLinks
         ? { pluginInventoryChanged: true as const }
         : {}),
     };

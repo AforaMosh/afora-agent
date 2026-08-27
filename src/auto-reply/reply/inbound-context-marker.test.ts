@@ -25,7 +25,7 @@ describe("inbound context marker", () => {
 
   it("matches the Swift copy", () => {
     const swift = readRepoFile(
-      "apps/shared/OpenClawKit/Sources/OpenClawChatUI/ChatMarkdownPreprocessor.swift",
+      "apps/shared/AforaKit/Sources/AforaChatUI/ChatMarkdownPreprocessor.swift",
     );
     const declaration = /inboundContextMarker\s*=\s*"([^"]+)"/.exec(swift);
     expect(declaration).not.toBeNull();

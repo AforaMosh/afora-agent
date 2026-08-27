@@ -3,7 +3,7 @@ import fsp from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { CopilotClient, Tool as SdkTool } from "@github/copilot-sdk";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import {
   abortAgentHarnessRun,
   attachModelProviderRequestTransport,
@@ -13,15 +13,15 @@ import {
   type AgentHarnessV2,
   type AgentMessage,
   type SandboxContext,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { toErrorObject as toLintErrorObject } from "openclaw/plugin-sdk/error-runtime";
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { toErrorObject as toLintErrorObject } from "afora-agent/plugin-sdk/error-runtime";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
 import {
   initializeGlobalHookRunner,
   resetGlobalHookRunner,
-} from "openclaw/plugin-sdk/hook-runtime";
-import { createMockPluginRegistry } from "openclaw/plugin-sdk/plugin-test-runtime";
-import { createOpenClawTestState } from "openclaw/plugin-sdk/test-state";
+} from "afora-agent/plugin-sdk/hook-runtime";
+import { createMockPluginRegistry } from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { createAforaTestState } from "afora-agent/plugin-sdk/test-state";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCopilotAttempt } from "./attempt.js";
 import { createCopilotTestHostCapabilities } from "./host-capability.test-support.js";
@@ -52,7 +52,7 @@ const gatewayQuestionMock = vi.hoisted(() => ({
   claimPendingAgentQuestionAnswer: undefined as
     | ((
         ...args: Parameters<
-          typeof import("openclaw/plugin-sdk/agent-harness-runtime").claimPendingAgentQuestionAnswer
+          typeof import("afora-agent/plugin-sdk/agent-harness-runtime").claimPendingAgentQuestionAnswer
         >
       ) => Promise<boolean>)
     | undefined,
@@ -61,8 +61,8 @@ const gatewayQuestionMock = vi.hoisted(() => ({
   setActiveEmbeddedRun: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/agent-harness-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/agent-harness-runtime")>();
+vi.mock("afora-agent/plugin-sdk/agent-harness-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/agent-harness-runtime")>();
   return {
     ...actual,
     embeddedAgentLog: { ...actual.embeddedAgentLog, warn: gatewayQuestionMock.warn },
@@ -145,9 +145,9 @@ const transcriptRuntimeMock = vi.hoisted(() => ({
   }),
   readVisible: vi.fn(async () => []),
 }));
-vi.mock("openclaw/plugin-sdk/session-transcript-runtime", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/session-transcript-runtime", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("openclaw/plugin-sdk/session-transcript-runtime")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/session-transcript-runtime")>();
   return {
     ...actual,
     appendSessionTranscriptMessageByIdentity: transcriptRuntimeMock.append,
@@ -490,7 +490,7 @@ function makeParams(
     sessionTarget: {
       sessionId: "session-1",
       sessionKey: "agent:agent-1:session-1",
-      storePath: "openclaw-agent.sqlite",
+      storePath: "afora-agent.sqlite",
     },
     timeoutMs: 5000,
     userTurnTranscriptRecorder: makeUserTurnRecorder({
@@ -1152,11 +1152,11 @@ describe("runCopilotAttempt", () => {
   });
 
   it("hydrates offloaded prompt images before creating SDK blob attachments", async () => {
-    const openClawState = await createOpenClawTestState({
+    const aforaState = await createAforaTestState({
       layout: "state-only",
       prefix: "copilot-offloaded-image-",
     });
-    const inboundDir = openClawState.statePath("media", "inbound");
+    const inboundDir = aforaState.statePath("media", "inbound");
     const mediaId = "telegram-photo.png";
     await fsp.mkdir(inboundDir, { recursive: true });
     await fsp.writeFile(path.join(inboundDir, mediaId), Buffer.from(TINY_PNG_BASE64, "base64"));
@@ -1198,7 +1198,7 @@ describe("runCopilotAttempt", () => {
         },
       ]);
     } finally {
-      await openClawState.cleanup();
+      await aforaState.cleanup();
     }
   });
 
@@ -1992,7 +1992,7 @@ describe("runCopilotAttempt", () => {
     expect(result.feedback).toContain("no permission policy installed");
   });
 
-  it("registers ask_user and resolves it from the active OpenClaw queue", async () => {
+  it("registers ask_user and resolves it from the active Afora queue", async () => {
     const onBlockReply = vi.fn();
     const sdk = makeFakeSdk({
       onCreateSession: (session, cfg) => {
@@ -2419,7 +2419,7 @@ describe("runCopilotAttempt", () => {
       // receives it as system context without having to read the file
       // via its read tool. The SDK's `append` mode keeps the SDK
       // foundation (identity/safety/tool-instruction sections) intact
-      // while layering OpenClaw context after it. See
+      // while layering Afora context after it. See
       // workspace-bootstrap.ts and @github/copilot-sdk types.d.ts
       // L1052 (SystemMessageConfig).
       const cfg = (sdk.createSession.mock.calls[0] as unknown[] | undefined)?.[0] as {
@@ -2575,7 +2575,7 @@ describe("runCopilotAttempt", () => {
 
       // SystemMessage is in ResumeSessionConfig's Pick set (per SDK
       // types.d.ts:1198), so it must be propagated on resume too,
-      // otherwise resumed sessions would silently lose OpenClaw
+      // otherwise resumed sessions would silently lose Afora
       // persona/identity context after every reconnect.
       const cfg = sdk.resumeSession.mock.calls[0]?.[1] as {
         systemMessage?: { mode?: string; content?: string };
@@ -3405,17 +3405,17 @@ describe("runCopilotAttempt", () => {
 
       // No env tokens, no contract token, no explicit token: falls
       // through to default useLoggedInUser mode.
-      const prevOpenclaw = process.env.OPENCLAW_GITHUB_TOKEN;
+      const prevAfora = process.env.AFORA_GITHUB_TOKEN;
       const prevGithub = process.env.GITHUB_TOKEN;
-      delete process.env.OPENCLAW_GITHUB_TOKEN;
+      delete process.env.AFORA_GITHUB_TOKEN;
       delete process.env.GITHUB_TOKEN;
       try {
         await runCopilotAttempt(makeParams({ auth: {} as never }), { pool });
         const cfg = requireCreateSessionConfig(sdk);
         expect("gitHubToken" in cfg).toBe(false);
       } finally {
-        if (prevOpenclaw !== undefined) {
-          process.env.OPENCLAW_GITHUB_TOKEN = prevOpenclaw;
+        if (prevAfora !== undefined) {
+          process.env.AFORA_GITHUB_TOKEN = prevAfora;
         }
         if (prevGithub !== undefined) {
           process.env.GITHUB_TOKEN = prevGithub;
@@ -4609,7 +4609,7 @@ describe("runCopilotAttempt", () => {
   // (`@github/copilot-sdk/dist/types.d.ts:1059-1066`). Without it, the
   // CLI keeps its native read/write/shell/url/mcp/memory/hook tools
   // visible to the model alongside our bridged overrides, which would
-  // bypass OpenClaw's wrapped-tool enforcement under any permissive
+  // bypass Afora's wrapped-tool enforcement under any permissive
   // permission policy and pollute the catalog under the default reject
   // policy. `createSessionConfig` derives `availableTools` from the
   // post-filter `sdkTools` so create- and resume-session always carry
@@ -4659,7 +4659,7 @@ describe("runCopilotAttempt", () => {
       expect(readAvailableTools(sdk.createSession.mock.calls[0])).toEqual(["read"]);
     });
 
-    it("keeps native ask_user when its restricted OpenClaw equivalent remains allowed", async () => {
+    it("keeps native ask_user when its restricted Afora equivalent remains allowed", async () => {
       const sdk = makeFakeSdk();
       const pool = makeFakePool(sdk);
       const sdkTools = [makeFakeSdkTool("read"), makeFakeSdkTool("ask_user")];
@@ -4677,19 +4677,19 @@ describe("runCopilotAttempt", () => {
       ]);
     });
 
-    it("keeps a host-scoped OpenClaw create-session surface ring-zero", async () => {
+    it("keeps a host-scoped Afora create-session surface ring-zero", async () => {
       const sdk = makeFakeSdk();
       const pool = makeFakePool(sdk);
-      const sdkTools = [makeFakeSdkTool("openclaw")];
+      const sdkTools = [makeFakeSdkTool("afora")];
       const createToolBridge = vi.fn(async () => ({ sdkTools, sourceTools: [] }));
 
-      await runCopilotAttempt(makeParams({ toolsAllow: ["openclaw"] }), {
+      await runCopilotAttempt(makeParams({ toolsAllow: ["afora"] }), {
         createToolBridge,
-        isHostScopedToolActive: (toolName) => toolName === "openclaw",
+        isHostScopedToolActive: (toolName) => toolName === "afora",
         pool,
       });
 
-      expect(readAvailableTools(sdk.createSession.mock.calls[0])).toEqual(["openclaw"]);
+      expect(readAvailableTools(sdk.createSession.mock.calls[0])).toEqual(["afora"]);
     });
 
     it("forwards `[]` to the SDK when the bridge returns no tools (disable / raw / fully filtered)", async () => {
@@ -4781,31 +4781,31 @@ describe("runCopilotAttempt", () => {
       expect(requireResumeSessionConfig(sdk).availableTools).toEqual(["read"]);
     });
 
-    it("keeps a host-scoped OpenClaw resume-session surface ring-zero", async () => {
+    it("keeps a host-scoped Afora resume-session surface ring-zero", async () => {
       const sdk = makeFakeSdk({
         onResumeSession: (session) => {
           session.sendAndWait.mockResolvedValueOnce(makeAssistantMessageEvent("resumed"));
         },
       });
       const pool = makeFakePool(sdk);
-      const sdkTools = [makeFakeSdkTool("openclaw")];
+      const sdkTools = [makeFakeSdkTool("afora")];
       const createToolBridge = vi.fn(async () => ({ sdkTools, sourceTools: [] }));
 
       await runCopilotAttempt(
         makeParams({
-          initialReplayState: { sdkSessionId: "sess-openclaw" },
-          toolsAllow: ["openclaw"],
+          initialReplayState: { sdkSessionId: "sess-afora" },
+          toolsAllow: ["afora"],
         } as never),
         {
           createToolBridge,
-          isHostScopedToolActive: (toolName) => toolName === "openclaw",
+          isHostScopedToolActive: (toolName) => toolName === "afora",
           pool,
         },
       );
 
       const resumeCall = sdk.resumeSession.mock.calls[0] as unknown[] | undefined;
       const resumeCfg = resumeCall?.[1] as { availableTools?: string[] };
-      expect(resumeCfg?.availableTools).toEqual(["openclaw"]);
+      expect(resumeCfg?.availableTools).toEqual(["afora"]);
     });
 
     it("forwards `[]` to resumeSession when the bridge returns no tools", async () => {

@@ -5,7 +5,7 @@ import { resolveStateDir } from "../config/paths.js";
 import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 import { resolveConfigDir } from "../utils.js";
 
-const PLUGIN_INSTALL_ROOT_CONTEXT_KEY = Symbol.for("openclaw.pluginInstallRootContext");
+const PLUGIN_INSTALL_ROOT_CONTEXT_KEY = Symbol.for("afora.pluginInstallRootContext");
 
 /** Immutable roots that own installed plugin artifacts and their registry. */
 export type PluginInstallRoots = Readonly<{
@@ -49,7 +49,7 @@ export function hasActivePluginInstallRoots(): boolean {
 
 /**
  * Keep plugin discovery on one operator-owned install generation while a run
- * redirects OPENCLAW_STATE_DIR for ephemeral sessions and runtime state.
+ * redirects AFORA_STATE_DIR for ephemeral sessions and runtime state.
  */
 export function withPluginInstallRoots<T>(roots: PluginInstallRoots, run: () => T): T {
   return pluginInstallRootContext.run(roots, run);

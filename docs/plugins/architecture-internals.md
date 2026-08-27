@@ -14,7 +14,7 @@ routes, import paths, and schema tables.
 
 ## Load pipeline
 
-At startup, OpenClaw does roughly this:
+At startup, Afora does roughly this:
 
 1. discover candidate plugin roots
 2. read native or compatible bundle manifests and package metadata
@@ -46,7 +46,7 @@ error.
 
 ### Manifest-first behavior
 
-The manifest is the control-plane source of truth. OpenClaw uses it to:
+The manifest is the control-plane source of truth. Afora uses it to:
 
 - identify the plugin
 - discover declared channels/skills/config schema or bundle capabilities
@@ -95,7 +95,7 @@ Request-time runtime preloads that ask for the broad `all` scope still derive
 an explicit effective plugin id set from config, startup planning, configured
 channels, slots, and auto-enable rules
 (`resolveEffectivePluginIds` in `src/plugins/effective-plugin-ids.ts`). If that
-derived set is empty, OpenClaw keeps the scope empty instead of widening to
+derived set is empty, Afora keeps the scope empty instead of widening to
 every discoverable plugin.
 
 Setup discovery prefers descriptor-owned ids such as `setup.providers` and
@@ -113,7 +113,7 @@ backends actually registered by setup-api, without blocking legacy plugins.
 
 ### Plugin cache boundary
 
-OpenClaw does not cache plugin discovery results or direct manifest registry
+Afora does not cache plugin discovery results or direct manifest registry
 data behind wall-clock windows. Installs, manifest edits, and load-path changes
 must become visible on the next explicit metadata read or snapshot rebuild.
 The manifest file parser keeps a bounded file-signature cache keyed by the
@@ -231,7 +231,7 @@ Provider plugins have three layers:
   stream wrapping, thinking levels, replay policy, and usage endpoints. See
   [Hook order and usage](#hook-order-and-usage).
 
-OpenClaw still owns the generic agent loop, failover, transcript handling, and
+Afora still owns the generic agent loop, failover, transcript handling, and
 tool policy. These hooks are the extension surface for provider-specific
 behavior without needing a whole custom inference transport.
 
@@ -251,9 +251,9 @@ Describe env-driven channel setup and auth through the owning
 
 ### Hook order and usage
 
-For model/provider plugins, OpenClaw calls hooks in this rough order.
+For model/provider plugins, Afora calls hooks in this rough order.
 The "When to use" column is the quick decision guide.
-Compatibility-only provider fields that OpenClaw no longer calls, such as
+Compatibility-only provider fields that Afora no longer calls, such as
 `ProviderPlugin.capabilities` and `suppressBuiltInModel`, are intentionally not
 listed here.
 
@@ -261,7 +261,7 @@ listed here.
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `catalog`                         | Publish provider config into `models.providers` during `models.json` generation                                | Provider owns a catalog or base URL defaults                                                                                                  |
 | `applyConfigDefaults`             | Apply provider-owned global config defaults during config materialization                                      | Defaults depend on auth mode, env, or provider model-family semantics                                                                         |
-| _(built-in model lookup)_         | OpenClaw tries the normal registry/catalog path first                                                          | _(not a plugin hook)_                                                                                                                         |
+| _(built-in model lookup)_         | Afora tries the normal registry/catalog path first                                                          | _(not a plugin hook)_                                                                                                                         |
 | `normalizeModelId`                | Normalize legacy or preview model-id aliases before lookup                                                     | Provider owns alias cleanup before canonical model resolution                                                                                 |
 | `normalizeTransport`              | Normalize provider-family `api` / `baseUrl` before generic model assembly                                      | Provider owns transport cleanup for custom provider ids in the same transport family                                                          |
 | `normalizeConfig`                 | Normalize `models.providers.<id>` before runtime/provider resolution                                           | Provider needs config cleanup that should live with the plugin; bundled Google-family helpers also backstop supported Google config entries   |
@@ -282,7 +282,7 @@ listed here.
 | `resolveTransportTurnState`       | Attach native per-turn headers, metadata, or WebSocket policy                                                  | Provider wants generic transports to send provider-native turn identity or tune WebSocket headers and fallback cool-down                      |
 | `resolveWebSocketSessionPolicy`   | Deprecated compatibility hook for WebSocket policy                                                             | Existing plugins migrate WebSocket fields into `resolveTransportTurnState`                                                                    |
 | `formatApiKey`                    | Auth-profile formatter: stored profile becomes the runtime `apiKey` string                                     | Provider stores extra auth metadata and needs a custom runtime token shape                                                                    |
-| `refreshOAuth`                    | OAuth refresh override for custom refresh endpoints or refresh-failure policy                                  | Provider does not fit the shared OpenClaw refreshers                                                                                          |
+| `refreshOAuth`                    | OAuth refresh override for custom refresh endpoints or refresh-failure policy                                  | Provider does not fit the shared Afora refreshers                                                                                          |
 | `buildAuthDoctorHint`             | Repair hint appended when OAuth refresh fails                                                                  | Provider needs provider-owned auth repair guidance after refresh failure                                                                      |
 | `matchesContextOverflowError`     | Provider-owned context-window overflow matcher                                                                 | Provider has raw overflow errors generic heuristics would miss                                                                                |
 | `classifyFailoverReason`          | Provider-owned failover reason classification                                                                  | Provider can map raw API/transport errors to rate-limit/overload/etc                                                                          |
@@ -313,9 +313,9 @@ that compatibility cleanup.
 
 If the provider needs a fully custom wire protocol or custom request executor,
 that is a different class of extension. These hooks are for provider behavior
-that still runs on OpenClaw's normal inference loop.
+that still runs on Afora's normal inference loop.
 
-`resolveUsageAuth` decides whether OpenClaw should call `fetchUsageSnapshot` or
+`resolveUsageAuth` decides whether Afora should call `fetchUsageSnapshot` or
 fall back to generic credential resolution for usage/status surfaces. Return
 `{ token, accountId?, subscriptionType?, rateLimitTier? }` when the provider
 has a usage credential (the optional plan metadata flows into
@@ -393,7 +393,7 @@ mirroring the list.
   <Accordion title="Pass-through catalog providers">
     OpenRouter, Kilocode, Z.AI, xAI register `catalog` plus
     `resolveDynamicModel` / `prepareDynamicModel` so they can surface upstream
-    model ids ahead of OpenClaw's static catalog.
+    model ids ahead of Afora's static catalog.
   </Accordion>
   <Accordion title="OAuth and usage endpoint providers">
     GitHub Copilot, Gemini CLI, ChatGPT Codex, MiniMax, Xiaomi, z.ai pair
@@ -426,12 +426,12 @@ Plugins can access selected core helpers via `api.runtime`. For TTS:
 
 ```ts
 const clip = await api.runtime.tts.textToSpeech({
-  text: "Hello from OpenClaw",
+  text: "Hello from Afora",
   cfg: api.config,
 });
 
 const result = await api.runtime.tts.textToSpeechTelephony({
-  text: "Hello from OpenClaw",
+  text: "Hello from Afora",
   cfg: api.config,
 });
 
@@ -475,7 +475,7 @@ Notes:
 - Use speech providers for vendor-owned synthesis behavior.
 - Legacy Microsoft `edge` input is normalized to the `microsoft` provider id.
 - The preferred ownership model is company-oriented: one vendor plugin can own
-  text, speech, image, and future media providers as OpenClaw adds those
+  text, speech, image, and future media providers as Afora adds those
   capability contracts.
 
 For image/audio/video understanding, plugins register one typed
@@ -560,7 +560,7 @@ Notes:
 - `extractStructuredWithModel(...)` is the plugin-facing seam for bounded
   provider-owned image-first extraction. Include at least one image input;
   text inputs are supplemental context. Product plugins own their routes and
-  schemas while OpenClaw owns the provider/runtime boundary.
+  schemas while Afora owns the provider/runtime boundary.
 - Uses core media-understanding audio configuration (`tools.media.audio`) and provider fallback order.
 - Returns `{ text: undefined }` when no transcription output is produced (for example skipped/unsupported input).
 
@@ -581,7 +581,7 @@ Notes:
 
 - `provider` and `model` are optional per-run overrides, not persistent session changes.
 - `toolsAlsoAllow` accepts exact, uniquely owned tool names registered by the calling plugin. Core and ambiguous names are rejected. It is additive to the normal profile, but operator allowlists and denies remain authoritative.
-- OpenClaw only honors those override fields for trusted callers.
+- Afora only honors those override fields for trusted callers.
 - For plugin-owned fallback runs, operators must opt in with `plugins.entries.<id>.subagent.allowModelOverride: true`.
 - Use `plugins.entries.<id>.subagent.allowedModels` to restrict trusted plugins to specific canonical `provider/model` targets, or `"*"` to allow any target explicitly.
 - Untrusted plugin subagent runs still work, but override requests are rejected instead of silently falling back.
@@ -598,7 +598,7 @@ const providers = api.runtime.webSearch.listProviders({
 const result = await api.runtime.webSearch.search({
   config: api.config,
   args: {
-    query: "OpenClaw plugin runtime helpers",
+    query: "Afora plugin runtime helpers",
     count: 5,
   },
 });
@@ -661,31 +661,31 @@ Notes:
 - Plugin routes must declare `auth` explicitly.
 - Canonically equivalent paths with the same `match` mode occupy one route. Static `api.registerHttpRoute(...)` calls from the same plugin replace that route; another plugin cannot replace it.
 - Overlapping routes with different `auth` levels are rejected. Keep `exact`/`prefix` fallthrough chains on the same auth level only.
-- Dynamic lifecycle code using `registerPluginHttpRoute(...)` from `openclaw/plugin-sdk/webhook-ingress` must set `replaceExisting: true` to refresh its own canonical route. Named registrations can replace only the same nonempty `pluginId`; when either side sets a route `source`, both must set the same nonempty source. Same-plugin source-less-to-source-less refresh and anonymous-to-anonymous refresh remain supported for shipped SDK callers, but named and anonymous routes cannot replace each other.
+- Dynamic lifecycle code using `registerPluginHttpRoute(...)` from `afora/plugin-sdk/webhook-ingress` must set `replaceExisting: true` to refresh its own canonical route. Named registrations can replace only the same nonempty `pluginId`; when either side sets a route `source`, both must set the same nonempty source. Same-plugin source-less-to-source-less refresh and anonymous-to-anonymous refresh remain supported for shipped SDK callers, but named and anonymous routes cannot replace each other.
 - Treat route `source` as a stable same-plugin sub-owner, not a diagnostic label. Existing source-less callers may keep omitting it; source-aware callers must keep it unchanged across refreshes.
 - Dynamic lifecycle registration logs and returns a no-op unregister callback on rejection by default. Set `throwOnFailure: true` when readiness depends on that route; required bundled webhook transports use strict registration so they cannot report ready without live ingress.
 - `auth: "plugin"` routes do **not** receive operator runtime scopes automatically. They are for plugin-managed webhooks/signature verification, not privileged Gateway helper calls.
 - `auth: "gateway"` routes run inside a Gateway request runtime scope. The default surface (`gatewayRuntimeScopeSurface: "write-default"`) is intentionally conservative:
-  - shared-secret bearer auth (`gateway.auth.mode = "token"` / `"password"`) and any non-trusted-proxy auth method get a single `operator.write` scope, even if the caller sends `x-openclaw-scopes`
-  - `trusted-proxy` callers without an explicit `x-openclaw-scopes` header also keep the legacy `operator.write`-only surface
-  - `trusted-proxy` callers that do send `x-openclaw-scopes` get the declared scopes instead
-  - a route can opt into `gatewayRuntimeScopeSurface: "trusted-operator"` to always honor `x-openclaw-scopes` for identity-bearing auth modes (falling back to the full CLI default scope set when the header is absent)
+  - shared-secret bearer auth (`gateway.auth.mode = "token"` / `"password"`) and any non-trusted-proxy auth method get a single `operator.write` scope, even if the caller sends `x-afora-scopes`
+  - `trusted-proxy` callers without an explicit `x-afora-scopes` header also keep the legacy `operator.write`-only surface
+  - `trusted-proxy` callers that do send `x-afora-scopes` get the declared scopes instead
+  - a route can opt into `gatewayRuntimeScopeSurface: "trusted-operator"` to always honor `x-afora-scopes` for identity-bearing auth modes (falling back to the full CLI default scope set when the header is absent)
 - Sandboxed external Control UI tabs backed by `auth: "gateway"` routes use a short-lived signed cookie grant minted only by authenticated bootstrap; plugin-auth tabs keep their direct iframe path. Before mounting, the parent runs a route-owned probe inside the same opaque sandbox and fails closed when browser privacy policy blocks the cookie. The grant is bound to the owning plugin, matched route root, and current auth generation; its process-random cookie name prevents trusted same-host Gateways from overwriting one another, but cookies never isolate TCP ports. The Gateway hostname is therefore one credential boundary: do not cohost mutually untrusted services on that hostname, including other ports. Route dispatch rejects reuse against a nested route owned by another plugin. Because sandbox descendants are cross-site for cookie purposes, the grant accepts only `GET` and `HEAD` with `operator.read`; mutations and WebSocket upgrades stay on explicit Gateway-authenticated surfaces. The cookie intentionally cannot use CHIPS: current browsers include a cross-site-ancestor bit in the partition key, so nested opaque sandbox frames would lose access to same-route assets. The cookie requires a secure context and browser permission for cross-site cookies, so gateway-auth external tabs are unavailable on plain-HTTP LAN origins or under full third-party-cookie blocking; use HTTPS/Tailscale Serve or browser-trusted loopback with a compatible cookie policy.
 - The grant prevents Gateway bearer-token disclosure and accidental route/scope reuse; it does not create a security boundary between native plugins. Native plugin code and the UI content it serves remain part of the same trusted in-process plugin boundary.
-- Practical rule: do not assume a gateway-auth plugin route is an implicit admin surface. If your route needs admin-only behavior, opt into `trusted-operator` scope surface, require an identity-bearing auth mode, and document the explicit `x-openclaw-scopes` header contract.
+- Practical rule: do not assume a gateway-auth plugin route is an implicit admin surface. If your route needs admin-only behavior, opt into `trusted-operator` scope surface, require an identity-bearing auth mode, and document the explicit `x-afora-scopes` header contract.
 - Startup plugins register HTTP routes with their full runtime after the Gateway starts listening. Until startup sidecars are ready, an otherwise-unclaimed HTTP request returns `503` with `Retry-After: 1`; core routes continue to dispatch normally. This generic fallback covers plugin routes before the runtime registry can identify their owners.
 - After route matching and authentication, ordinary handlers participate in Gateway root-work admission. A prepared or restarting Gateway returns `503` before invoking the handler. The narrow exception is a manifest-entitled `auth: "gateway"` route that also opts into the route-specific `trusted-operator` surface; it remains reachable so suspension control dispatch cannot be stranded, while ordinary sibling routes from the same plugin remain behind the admission boundary. WebSocket `handleUpgrade` ownership uses the same atomic admission boundary; once the handler accepts a socket, the socket's later lifetime is plugin-owned and is not tracked by this boundary.
 
 ## Plugin SDK import paths
 
-Use narrow SDK subpaths instead of the monolithic `openclaw/plugin-sdk` root
+Use narrow SDK subpaths instead of the monolithic `afora/plugin-sdk` root
 barrel when authoring new plugins. Core subpaths:
 
 | Subpath                            | Purpose                                      |
 | ---------------------------------- | -------------------------------------------- |
-| `openclaw/plugin-sdk/plugin-entry` | Plugin registration primitives               |
-| `openclaw/plugin-sdk/channel-core` | Channel entry/build helpers                  |
-| `openclaw/plugin-sdk/core`         | Generic shared helpers and umbrella contract |
+| `afora/plugin-sdk/plugin-entry` | Plugin registration primitives               |
+| `afora/plugin-sdk/channel-core` | Channel entry/build helpers                  |
+| `afora/plugin-sdk/core`         | Generic shared helpers and umbrella contract |
 
 Channel plugins pick from a family of narrow seams — `channel-setup`,
 `setup-runtime`, `setup-tools`, `channel-pairing`,
@@ -703,8 +703,8 @@ Runtime and config helpers live under matching focused `*-runtime` subpaths
 instead of the broad `config-runtime` compatibility barrel.
 
 <Info>
-`openclaw/plugin-sdk/channel-lifecycle`, small channel helper facades,
-`openclaw/plugin-sdk/config-runtime`, and `openclaw/plugin-sdk/infra-runtime`
+`afora/plugin-sdk/channel-lifecycle`, small channel helper facades,
+`afora/plugin-sdk/config-runtime`, and `afora/plugin-sdk/infra-runtime`
 are deprecated compatibility shims for older plugins. New code should import
 narrower generic primitives instead.
 </Info>
@@ -716,7 +716,7 @@ Repo-internal entry points (per bundled plugin package root):
 - `runtime-api.js` — runtime-only barrel
 - `setup-entry.js` — setup plugin entry
 
-External plugins should only import `openclaw/plugin-sdk/*` subpaths. Never
+External plugins should only import `afora/plugin-sdk/*` subpaths. Never
 import another plugin package's `src/*` from core or from another plugin.
 Facade-loaded entry points prefer the active runtime config snapshot when one
 exists, then fall back to the resolved config file on disk.
@@ -782,7 +782,7 @@ Recommended split:
 
 Plugins that derive directory entries from config should keep that logic in the
 plugin and reuse the shared helpers from
-`openclaw/plugin-sdk/directory-runtime`.
+`afora/plugin-sdk/directory-runtime`.
 
 Use this when a channel needs config-backed peers/groups such as:
 
@@ -805,7 +805,7 @@ plugin implementation.
 Provider plugins can define model catalogs for inference with
 `registerProvider({ catalog: { run(...) { ... } } })`.
 
-`catalog.run(...)` returns the same shape OpenClaw writes into
+`catalog.run(...)` returns the same shape Afora writes into
 `models.providers`:
 
 - `{ provider }` for one provider entry
@@ -814,7 +814,7 @@ Provider plugins can define model catalogs for inference with
 Use `catalog` when the plugin owns provider-specific model ids, base URL
 defaults, or auth-gated model metadata.
 
-`catalog.order` controls when a plugin's catalog merges relative to OpenClaw's
+`catalog.order` controls when a plugin's catalog merges relative to Afora's
 built-in implicit providers:
 
 - `simple`: plain API-key or env-driven providers
@@ -838,7 +838,7 @@ static catalog rows automatically from `defaultModel`, `models`, and
 Compatibility:
 
 - `discovery` still works as a legacy alias, but emits a deprecation warning
-- if both `catalog` and `discovery` are registered, OpenClaw uses `catalog`
+- if both `catalog` and `discovery` are registered, Afora uses `catalog`
   and emits a warning
 - `augmentModelCatalog` is deprecated; bundled providers should publish
   supplemental rows through `registerModelCatalogProvider`
@@ -852,8 +852,8 @@ Why:
 
 - `resolveAccount(...)` is the runtime path. It is allowed to assume credentials
   are fully materialized and can fail fast when required secrets are missing.
-- Read-only command paths such as `openclaw status`, `openclaw status --all`,
-  `openclaw channels status`, `openclaw channels resolve`, and doctor/config
+- Read-only command paths such as `afora status`, `afora status --all`,
+  `afora channels status`, `afora channels resolve`, and doctor/config
   repair flows should not need to materialize runtime credentials just to
   describe configuration.
 
@@ -877,12 +877,12 @@ path" instead of crashing or misreporting the account as not configured.
 
 ## Package packs
 
-A plugin directory may include a `package.json` with `openclaw.extensions`:
+A plugin directory may include a `package.json` with `afora.extensions`:
 
 ```json
 {
   "name": "my-pack",
-  "openclaw": {
+  "afora": {
     "extensions": ["./src/safety.ts", "./src/tools.ts"],
     "setupEntry": "./src/setup-entry.ts"
   }
@@ -896,18 +896,18 @@ present; otherwise the unscoped `package.json` name).
 If your plugin imports npm deps, install them in that directory so
 `node_modules` is available (`npm install` / `pnpm install`).
 
-Security guardrail: every `openclaw.extensions` entry must stay inside the plugin
+Security guardrail: every `afora.extensions` entry must stay inside the plugin
 directory after symlink resolution. Entries that escape the package directory are
 rejected.
 
-Security note: `openclaw plugins install` installs plugin dependencies with a
+Security note: `afora plugins install` installs plugin dependencies with a
 project-local `npm install --omit=dev --ignore-scripts` (no lifecycle scripts,
 no dev dependencies at runtime), ignoring inherited global npm install settings.
 Keep plugin dependency trees "pure JS/TS" and avoid packages that require
 `postinstall` builds.
 
-Optional: `openclaw.setupEntry` can point at a lightweight setup-only module.
-When OpenClaw needs setup surfaces for a disabled channel plugin, or
+Optional: `afora.setupEntry` can point at a lightweight setup-only module.
+When Afora needs setup surfaces for a disabled channel plugin, or
 when a channel plugin is enabled but still unconfigured, it loads `setupEntry`
 instead of the full plugin entry. This keeps startup and setup lighter
 when your main plugin entry also wires tools, hooks, or other runtime-only
@@ -939,15 +939,15 @@ to `operator.admin`, even if a plugin requests a narrower scope.
 
 ### Channel catalog metadata
 
-Channel plugins can advertise setup/discovery metadata via `openclaw.channel` and
-install hints via `openclaw.install`. This keeps the core catalog data-free.
+Channel plugins can advertise setup/discovery metadata via `afora.channel` and
+install hints via `afora.install`. This keeps the core catalog data-free.
 
 Example:
 
 ```json
 {
-  "name": "@openclaw/nextcloud-talk",
-  "openclaw": {
+  "name": "@afora/nextcloud-talk",
+  "afora": {
     "extensions": ["./index.ts"],
     "channel": {
       "id": "nextcloud-talk",
@@ -960,7 +960,7 @@ Example:
       "aliases": ["nc-talk", "nc"]
     },
     "install": {
-      "npmSpec": "@openclaw/nextcloud-talk",
+      "npmSpec": "@afora/nextcloud-talk",
       "localPath": "<bundled-plugin-local-path>",
       "defaultChoice": "npm"
     }
@@ -968,7 +968,7 @@ Example:
 }
 ```
 
-Useful `openclaw.channel` fields beyond the minimal example:
+Useful `afora.channel` fields beyond the minimal example:
 
 - `detailLabel`: secondary label for richer catalog/status surfaces
 - `docsLabel`: override link text for the docs link
@@ -982,19 +982,19 @@ Useful `openclaw.channel` fields beyond the minimal example:
 - `forceAccountBinding`: require explicit account binding even when only one account exists
 - `preferSessionLookupForAnnounceTarget`: prefer session lookup when resolving announce targets
 
-OpenClaw can also merge **external channel catalogs** (for example, an MPM
+Afora can also merge **external channel catalogs** (for example, an MPM
 registry export). Drop a JSON file at one of:
 
-- `~/.openclaw/mpm/plugins.json`
-- `~/.openclaw/mpm/catalog.json`
-- `~/.openclaw/plugins/catalog.json`
+- `~/.afora/mpm/plugins.json`
+- `~/.afora/mpm/catalog.json`
+- `~/.afora/plugins/catalog.json`
 
-Or point `OPENCLAW_PLUGIN_CATALOG_PATHS` (or `OPENCLAW_MPM_CATALOG_PATHS`) at
+Or point `AFORA_PLUGIN_CATALOG_PATHS` (or `AFORA_MPM_CATALOG_PATHS`) at
 one or more JSON files (comma/semicolon/`PATH`-delimited). Each file should
-contain `{ "entries": [ { "name": "@scope/pkg", "openclaw": { "channel": {...}, "install": {...} } } ] }`. The parser also accepts `"packages"` or `"plugins"` as legacy aliases for the `"entries"` key.
+contain `{ "entries": [ { "name": "@scope/pkg", "afora": { "channel": {...}, "install": {...} } } ] }`. The parser also accepts `"packages"` or `"plugins"` as legacy aliases for the `"entries"` key.
 
 Generated channel catalog entries and provider install catalog entries expose
-normalized install-source facts next to the raw `openclaw.install` block. The
+normalized install-source facts next to the raw `afora.install` block. The
 normalized facts identify whether the npm spec is an exact version or floating
 selector, whether expected integrity metadata is present, and whether a local
 source path is also available. When the catalog/package identity is known, the
@@ -1032,7 +1032,7 @@ Use this when your plugin needs to replace or extend the default context
 pipeline rather than just add memory search or hooks.
 
 ```ts
-import { buildMemorySystemPromptAddition } from "openclaw/plugin-sdk/core";
+import { buildMemorySystemPromptAddition } from "afora-agent/plugin-sdk/core";
 
 export default function (api) {
   api.registerContextEngine("lossless-claw", (ctx) => ({
@@ -1089,7 +1089,7 @@ implemented and delegate it explicitly:
 import {
   buildMemorySystemPromptAddition,
   delegateCompactionToRuntime,
-} from "openclaw/plugin-sdk/core";
+} from "afora-agent/plugin-sdk/core";
 
 export default function (api) {
   api.registerContextEngine("my-memory-engine", (ctx) => ({
@@ -1130,7 +1130,7 @@ Recommended sequence:
    policy, fallback, config merge, lifecycle, channel-facing semantics, and
    runtime helper shape.
 2. **Add typed plugin registration/runtime surfaces.** Extend
-   `OpenClawPluginApi` and/or `api.runtime` with the smallest useful typed
+   `AforaPluginApi` and/or `api.runtime` with the smallest useful typed
    capability surface.
 3. **Wire core + channel/feature consumers.** Channels and feature plugins
    should consume the new capability through core, not by importing a vendor
@@ -1140,7 +1140,7 @@ Recommended sequence:
 5. **Add contract coverage.** Add tests so ownership and registration shape
    stay explicit over time.
 
-This is how OpenClaw stays opinionated without becoming hardcoded to one
+This is how Afora stays opinionated without becoming hardcoded to one
 provider's worldview. See the [Capability Cookbook](/tools/capability-cookbook)
 for a concrete file checklist and worked example.
 

@@ -1,14 +1,14 @@
 // Doctor config-flow tests cover config repair, migration, stripping, and validation orchestration.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
-import { withTempHome } from "openclaw/plugin-sdk/test-env";
+import { expectDefined } from "@afora/normalization-core";
+import { withTempHome } from "afora-agent/plugin-sdk/test-env";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { migratePersistedImplicitMainRoster } from "../config/legacy.roster.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { writeChannelPairingStateSnapshot } from "../pairing/pairing-store-sqlite.test-helpers.js";
 import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { loadAndMaybeMigrateDoctorConfig } from "./doctor-config-flow.js";
 import {
   getDoctorConfigInputForTest,
@@ -24,7 +24,7 @@ const createDoctorPluginMetadataSnapshotScopeParamsMock = vi.hoisted(() => vi.fn
 const runDoctorConfigPreflightOptionsMock = vi.hoisted(() => vi.fn());
 const collectDoctorPreviewNotesParamsMock = vi.hoisted(() => vi.fn());
 const prepareTailscaleConfigMigrationMock = vi.hoisted(() =>
-  vi.fn(({ cfg }: { cfg: OpenClawConfig }) => ({
+  vi.fn(({ cfg }: { cfg: AforaConfig }) => ({
     config: cfg,
     changes: [] as string[],
     warnings: [] as string[],
@@ -43,7 +43,7 @@ const noteImplicitFallbackClobberWarningsMock = vi.hoisted(() =>
 );
 const legacyConfigMigrationForTest = await vi.hoisted(async () => {
   const { asNullableRecord: readNullableRecord } =
-    await import("@openclaw/normalization-core/record-coerce");
+    await import("@afora/normalization-core/record-coerce");
 
   function ensureRecord(parent: Record<string, unknown>, key: string): Record<string, unknown> {
     const current = readNullableRecord(parent[key]);
@@ -353,7 +353,7 @@ vi.mock("../config/validation.js", () => ({
 
 vi.mock("../config/legacy.js", async () => {
   const { asNullableRecord: readNullableRecord } =
-    await import("@openclaw/normalization-core/record-coerce");
+    await import("@afora/normalization-core/record-coerce");
   type LegacyRule = {
     path: string[];
     message: string;
@@ -407,14 +407,14 @@ vi.mock("../config/legacy.js", async () => {
         addIssue(
           issues,
           ["heartbeat"],
-          'heartbeat is legacy; use agents.defaults.heartbeat and channels.defaults.heartbeat. Run "openclaw doctor --fix".',
+          'heartbeat is legacy; use agents.defaults.heartbeat and channels.defaults.heartbeat. Run "afora doctor --fix".',
         );
       }
       if ("memorySearch" in root) {
         addIssue(
           issues,
           ["memorySearch"],
-          'memorySearch is legacy; use memory.search. Run "openclaw doctor --fix".',
+          'memorySearch is legacy; use memory.search. Run "afora doctor --fix".',
         );
       }
       const gateway = readNullableRecord(root.gateway);
@@ -422,7 +422,7 @@ vi.mock("../config/legacy.js", async () => {
         addIssue(
           issues,
           ["gateway", "bind"],
-          'gateway.bind host aliases are legacy; use the canonical bind mode. Run "openclaw doctor --fix".',
+          'gateway.bind host aliases are legacy; use the canonical bind mode. Run "afora doctor --fix".',
         );
       }
       const sessionThreadBindings = readNullableRecord(
@@ -432,7 +432,7 @@ vi.mock("../config/legacy.js", async () => {
         addIssue(
           issues,
           ["session", "threadBindings", "ttlHours"],
-          'session.threadBindings.ttlHours is legacy; use session.threadBindings.idleHours. Run "openclaw doctor --fix".',
+          'session.threadBindings.ttlHours is legacy; use session.threadBindings.idleHours. Run "afora doctor --fix".',
         );
       }
       const sessionMaintenance = readNullableRecord(readNullableRecord(root.session)?.maintenance);
@@ -440,7 +440,7 @@ vi.mock("../config/legacy.js", async () => {
         addIssue(
           issues,
           ["session", "maintenance"],
-          'session.maintenance.rotateBytes is deprecated and ignored; run "openclaw doctor --fix" to remove it.',
+          'session.maintenance.rotateBytes is deprecated and ignored; run "afora doctor --fix" to remove it.',
         );
       }
       const xSearch = readNullableRecord(
@@ -450,7 +450,7 @@ vi.mock("../config/legacy.js", async () => {
         addIssue(
           issues,
           ["tools", "web", "x_search", "apiKey"],
-          'tools.web.x_search.apiKey is legacy; use plugins.entries.xai.config.webSearch.apiKey. Run "openclaw doctor --fix".',
+          'tools.web.x_search.apiKey is legacy; use plugins.entries.xai.config.webSearch.apiKey. Run "afora doctor --fix".',
         );
       }
       const sandbox = readNullableRecord(
@@ -460,7 +460,7 @@ vi.mock("../config/legacy.js", async () => {
         addIssue(
           issues,
           ["agents", "defaults", "sandbox"],
-          'agents.defaults.sandbox.perSession is legacy; use agents.defaults.sandbox.scope. Run "openclaw doctor --fix".',
+          'agents.defaults.sandbox.perSession is legacy; use agents.defaults.sandbox.scope. Run "afora doctor --fix".',
         );
       }
       const internalHooks = readNullableRecord(readNullableRecord(root.hooks)?.internal);
@@ -468,7 +468,7 @@ vi.mock("../config/legacy.js", async () => {
         addIssue(
           issues,
           ["hooks", "internal", "handlers"],
-          'hooks.internal.handlers is retired. Move each module to a managed/workspace hook directory with HOOK.md + handler file before running "openclaw doctor --fix"; the fix removes retired registrations and does not materialize executable files.',
+          'hooks.internal.handlers is retired. Move each module to a managed/workspace hook directory with HOOK.md + handler file before running "afora doctor --fix"; the fix removes retired registrations and does not materialize executable files.',
         );
       }
 
@@ -486,8 +486,8 @@ vi.mock("../config/legacy.js", async () => {
             issues,
             ["channels", channelId],
             channelId === "googlechat"
-              ? `channels.${channelId}.streamMode is legacy and no longer used. Run "openclaw doctor --fix".`
-              : `channels.${channelId}.streamMode, channels.${channelId}.streaming aliases are legacy. Run "openclaw doctor --fix".`,
+              ? `channels.${channelId}.streamMode is legacy and no longer used. Run "afora doctor --fix".`
+              : `channels.${channelId}.streamMode, channels.${channelId}.streaming aliases are legacy. Run "afora doctor --fix".`,
           );
         }
         const threadBindings = readNullableRecord(channel.threadBindings);
@@ -495,7 +495,7 @@ vi.mock("../config/legacy.js", async () => {
           addIssue(
             issues,
             ["channels", channelId, "threadBindings", "ttlHours"],
-            'channels.<id>.threadBindings.ttlHours is legacy; use channels.<id>.threadBindings.idleHours. Run "openclaw doctor --fix".',
+            'channels.<id>.threadBindings.ttlHours is legacy; use channels.<id>.threadBindings.idleHours. Run "afora doctor --fix".',
           );
         }
         if (channelId === "slack") {
@@ -504,7 +504,7 @@ vi.mock("../config/legacy.js", async () => {
               addIssue(
                 issues,
                 ["channels", "slack"],
-                'channels.slack.channels.<id>.allow is legacy; use enabled. Run "openclaw doctor --fix".',
+                'channels.slack.channels.<id>.allow is legacy; use enabled. Run "afora doctor --fix".',
               );
             }
           }
@@ -515,7 +515,7 @@ vi.mock("../config/legacy.js", async () => {
               addIssue(
                 issues,
                 ["channels", "googlechat"],
-                'channels.googlechat.groups.<id>.allow is legacy; use enabled. Run "openclaw doctor --fix".',
+                'channels.googlechat.groups.<id>.allow is legacy; use enabled. Run "afora doctor --fix".',
               );
             }
           }
@@ -528,7 +528,7 @@ vi.mock("../config/legacy.js", async () => {
                 addIssue(
                   issues,
                   ["channels", "discord"],
-                  'channels.discord.guilds.<id>.channels.<id>.allow is legacy; use enabled. Run "openclaw doctor --fix".',
+                  'channels.discord.guilds.<id>.channels.<id>.allow is legacy; use enabled. Run "afora doctor --fix".',
                 );
               }
             }
@@ -543,7 +543,7 @@ vi.mock("../config/legacy.js", async () => {
             addIssue(
               issues,
               ["channels", channelId, "accounts", accountId, "threadBindings", "ttlHours"],
-              'channels.<id>.threadBindings.ttlHours is legacy; use channels.<id>.threadBindings.idleHours. Run "openclaw doctor --fix".',
+              'channels.<id>.threadBindings.ttlHours is legacy; use channels.<id>.threadBindings.idleHours. Run "afora doctor --fix".',
             );
           }
         }
@@ -782,7 +782,7 @@ vi.mock("./doctor/shared/plugin-tool-allowlist-warnings.js", () => ({
 }));
 
 vi.mock("../doctor-plugin-host-links.js", () => ({
-  maybeRepairPluginOpenClawHostLinks: vi.fn(async () => undefined),
+  maybeRepairPluginAforaHostLinks: vi.fn(async () => undefined),
 }));
 
 vi.mock("../doctor-plugin-registry.js", () => ({
@@ -875,7 +875,7 @@ vi.mock("./doctor/channel-capabilities.js", () => {
 
 vi.mock("../plugins/doctor-contract-registry.js", async () => {
   const { asNullableRecord: readNullableRecord } =
-    await import("@openclaw/normalization-core/record-coerce");
+    await import("@afora/normalization-core/record-coerce");
 
   function hasLegacyTalkFields(value: unknown): boolean {
     const talk = readNullableRecord(value);
@@ -1023,12 +1023,12 @@ vi.mock("../plugins/doctor-contract-registry.js", async () => {
       {
         path: ["channels", "telegram", "groupMentionsOnly"],
         message:
-          'channels.telegram.groupMentionsOnly was removed; use channels.telegram.groups."*".requireMention instead. Run "openclaw doctor --fix".',
+          'channels.telegram.groupMentionsOnly was removed; use channels.telegram.groups."*".requireMention instead. Run "afora doctor --fix".',
       },
       {
         path: ["talk"],
         message:
-          "talk.voiceId/talk.voiceAliases/talk.modelId/talk.outputFormat/talk.apiKey are legacy; use talk.providers.<provider> and run openclaw doctor --fix.",
+          "talk.voiceId/talk.voiceAliases/talk.modelId/talk.outputFormat/talk.apiKey are legacy; use talk.providers.<provider> and run afora doctor --fix.",
         match: hasLegacyTalkFields,
       },
     ],
@@ -1073,7 +1073,7 @@ vi.mock("../plugins/setup-registry.js", () => ({
 
 vi.mock("./doctor/shared/channel-doctor.js", async () => {
   const { asNullableRecord: readNullableRecord } =
-    await import("@openclaw/normalization-core/record-coerce");
+    await import("@afora/normalization-core/record-coerce");
 
   function hasOwnStringArray(value: unknown): boolean {
     return Array.isArray(value) && value.some((entry) => typeof entry === "string" && entry);
@@ -1260,7 +1260,7 @@ vi.mock("./doctor/shared/channel-doctor.js", async () => {
 
 vi.mock("./doctor/shared/preview-warnings.js", async () => {
   const { asNullableRecord: readNullableRecord } =
-    await import("@openclaw/normalization-core/record-coerce");
+    await import("@afora/normalization-core/record-coerce");
 
   function hasStringEntries(value: unknown): boolean {
     return Array.isArray(value) && value.some((entry) => typeof entry === "string" && entry);
@@ -1371,9 +1371,9 @@ vi.mock("./doctor-config-preflight.js", async () => {
 
   function resolveConfigPath() {
     const stateDir =
-      process.env.OPENCLAW_STATE_DIR ||
-      (process.env.HOME ? pathLocal.join(process.env.HOME, ".openclaw") : "");
-    return process.env.OPENCLAW_CONFIG_PATH || pathLocal.join(stateDir, "openclaw.json");
+      process.env.AFORA_STATE_DIR ||
+      (process.env.HOME ? pathLocal.join(process.env.HOME, ".afora") : "");
+    return process.env.AFORA_CONFIG_PATH || pathLocal.join(stateDir, "afora.json");
   }
 
   function normalizeDiscordStreamingCompat(cfg: Record<string, unknown>): Record<string, unknown> {
@@ -1675,7 +1675,7 @@ describe("doctor config flow", () => {
     const result = await runDoctorConfigWithInput({
       config: {
         gateway: { auth: { mode: "token", token: 123 } },
-        agents: { entries: { openclaw: {} } },
+        agents: { entries: { afora: {} } },
       },
       run: loadAndMaybeMigrateDoctorConfig,
     });
@@ -1686,7 +1686,7 @@ describe("doctor config flow", () => {
   });
 
   it("previews and applies the legacy Tailscale Serve migration through Doctor", async () => {
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       gateway: {
         bind: "lan",
         auth: { mode: "token", token: "secret" },
@@ -1838,7 +1838,7 @@ describe("doctor config flow", () => {
       },
     };
     const result = await runDoctorConfigWithInput({
-      config: migratePersistedImplicitMainRoster(rawConfig).config as OpenClawConfig,
+      config: migratePersistedImplicitMainRoster(rawConfig).config as AforaConfig,
       parsedConfig: rawConfig,
       repair: true,
       run: loadAndMaybeMigrateDoctorConfig,
@@ -1869,7 +1869,7 @@ describe("doctor config flow", () => {
       channels: { telegram: { enabled: true } },
       talk: { provider: "test" },
     };
-    const config = migratePersistedImplicitMainRoster(rawConfig).config as OpenClawConfig;
+    const config = migratePersistedImplicitMainRoster(rawConfig).config as AforaConfig;
     const result = await runDoctorConfigWithInput({
       config,
       parsedConfig: rawConfig,
@@ -1900,7 +1900,7 @@ describe("doctor config flow", () => {
       channels: { telegram: { enabled: true } },
       talk: { provider: "test" },
     };
-    const config = migratePersistedImplicitMainRoster(rawConfig).config as OpenClawConfig;
+    const config = migratePersistedImplicitMainRoster(rawConfig).config as AforaConfig;
     const result = await runDoctorConfigWithInput({
       config,
       parsedConfig: rawConfig,
@@ -2340,7 +2340,7 @@ describe("doctor config flow", () => {
       previewNotes.mock.calls.some(
         ([message, title]) =>
           title === "Doctor" &&
-          message.includes("openclaw doctor --fix") &&
+          message.includes("afora doctor --fix") &&
           message.includes("rotate hooks.token"),
       ),
     ).toBe(true);
@@ -2414,13 +2414,13 @@ describe("doctor config flow", () => {
       hooks: {
         enabled: true,
         token: "hook-secret",
-        transformsDir: "/virtual/.openclaw/workspace/skills/linear-webhook",
+        transformsDir: "/virtual/.afora/workspace/skills/linear-webhook",
         mappings: [
           {
             match: { path: "linear" },
             action: "agent",
             messageTemplate: "Linear event",
-            transform: { module: "./openclaw-linear-transform.js" },
+            transform: { module: "./afora-linear-transform.js" },
           },
         ],
       },
@@ -2428,8 +2428,8 @@ describe("doctor config flow", () => {
 
     const warning = doctorWarnings.join("\n");
     expect(warning).toContain("hooks.transformsDir:");
-    expect(warning).toContain("/virtual/.openclaw/workspace/skills/linear-webhook");
-    expect(warning).toContain("/virtual/.openclaw/hooks/transforms");
+    expect(warning).toContain("/virtual/.afora/workspace/skills/linear-webhook");
+    expect(warning).toContain("/virtual/.afora/hooks/transforms");
     expect(warning).toContain("move custom transforms there or remove hooks.transformsDir");
   });
 
@@ -2442,7 +2442,7 @@ describe("doctor config flow", () => {
               enabled: true,
               handler: "./hooks/custom.ts",
               extraDirs: ["./hooks"],
-              env: { OPENCLAW_CUSTOM_HOOK: "1" },
+              env: { AFORA_CUSTOM_HOOK: "1" },
             },
             "valid-hook": {
               enabled: true,
@@ -2655,7 +2655,7 @@ describe("doctor config flow", () => {
       config: {
         bridge: { bind: "auto" },
         gateway: { auth: { mode: "token", token: "ok", extra: true } },
-        agents: { entries: { openclaw: { default: true } } },
+        agents: { entries: { afora: { default: true } } },
         session: {
           maintenance: {
             rotateBytes: "10mb",
@@ -2817,8 +2817,8 @@ describe("doctor config flow", () => {
   it("keeps discord streaming aliases on disk during repair so downgrades stay recoverable", async () => {
     await withTempHome(
       async (home) => {
-        const configDir = path.join(home, ".openclaw");
-        const configPath = path.join(configDir, "openclaw.json");
+        const configDir = path.join(home, ".afora");
+        const configPath = path.join(configDir, "afora.json");
         await fs.mkdir(configDir, { recursive: true });
         await fs.writeFile(
           configPath,
@@ -3124,10 +3124,10 @@ describe("doctor config flow", () => {
   it("converts numeric discord ids to strings on repair", async () => {
     await withTempHome(
       async (home) => {
-        const configDir = path.join(home, ".openclaw");
+        const configDir = path.join(home, ".afora");
         await fs.mkdir(configDir, { recursive: true });
         await fs.writeFile(
-          path.join(configDir, "openclaw.json"),
+          path.join(configDir, "afora.json"),
           JSON.stringify(
             {
               channels: {
@@ -3397,10 +3397,10 @@ describe("doctor config flow", () => {
   it('repairs dmPolicy="allowlist" by restoring allowFrom from pairing store on repair', async () => {
     const result = await withTempHome(
       async (home) => {
-        const configDir = path.join(home, ".openclaw");
+        const configDir = path.join(home, ".afora");
         await fs.mkdir(configDir, { recursive: true });
         await fs.writeFile(
-          path.join(configDir, "openclaw.json"),
+          path.join(configDir, "afora.json"),
           JSON.stringify(
             {
               channels: {
@@ -3427,7 +3427,7 @@ describe("doctor config flow", () => {
       },
       { skipSessionCleanup: true },
     );
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
 
     const cfg = result.cfg as {
       channels: {
@@ -3688,7 +3688,7 @@ describe("doctor config flow", () => {
         noteSpy.mock.calls.some(
           ([message, title]) =>
             title === "Doctor" &&
-            message.includes('Run "openclaw doctor --fix" to migrate legacy config keys.'),
+            message.includes('Run "afora doctor --fix" to migrate legacy config keys.'),
         ),
       ).toBe(true);
     } finally {
@@ -3823,10 +3823,10 @@ describe("doctor config flow", () => {
     await withTempHome(
       async (home) => {
         const providerId = "acme-speech";
-        const configDir = path.join(home, ".openclaw");
+        const configDir = path.join(home, ".afora");
         await fs.mkdir(configDir, { recursive: true });
         await fs.writeFile(
-          path.join(configDir, "openclaw.json"),
+          path.join(configDir, "afora.json"),
           JSON.stringify(
             {
               talk: {

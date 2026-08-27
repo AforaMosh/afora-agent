@@ -11,7 +11,7 @@ import type {
   ChannelThreadingToolContext,
 } from "../../channels/plugins/types.public.js";
 import type { InternalChannelThreadingToolContext } from "../../channels/threading-tool-context-internal.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { OutboundMediaAccess } from "../../media/load-options.js";
 import type { GatewayClientMode, GatewayClientName } from "../../utils/message-channel.js";
 import type { OutboundDeliveryResult } from "./deliver-types.js";
@@ -38,7 +38,7 @@ export type MessageActionGateway = {
 };
 
 export type MessageActionInput = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   action: ChannelMessageActionName;
   params: Record<string, unknown>;
   /** @internal Identifies model-authored calls for lossy input normalization. */
@@ -170,7 +170,7 @@ export type MessageActionResult =
     };
 
 export type ResolvedActionContext = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   params: Record<string, unknown>;
   idempotencyKey?: string;
   channel: ChannelId;

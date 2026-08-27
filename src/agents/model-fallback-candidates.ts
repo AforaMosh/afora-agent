@@ -1,10 +1,10 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 /** Resolves ordered model and image fallback candidate chains. */
 import {
   resolveAgentModelFallbackValues,
   resolveAgentModelPrimaryValue,
 } from "../config/model-input.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { pruneMapToMaxSize } from "../infra/map-size.js";
 import { normalizePluginsConfig } from "../plugins/config-state.js";
 import { getCurrentPluginMetadataSnapshot } from "../plugins/current-plugin-metadata-snapshot.js";
@@ -75,7 +75,7 @@ function createModelCandidateCollector(): {
 
 export function resolveImageFallbackCandidates(
   params: {
-    cfg: OpenClawConfig | undefined;
+    cfg: AforaConfig | undefined;
     defaultProvider: string;
     modelOverride?: string;
   } & ModelManifestNormalizationContext,
@@ -119,7 +119,7 @@ export function resolveImageFallbackCandidates(
   return candidates;
 }
 
-export function resolveImageFallbackDefaultProvider(cfg: OpenClawConfig | undefined): string {
+export function resolveImageFallbackDefaultProvider(cfg: AforaConfig | undefined): string {
   const configuredPrimary = resolveAgentModelPrimaryValue(cfg?.agents?.defaults?.imageModel);
   if (configuredPrimary?.trim()) {
     const aliasIndex = buildModelAliasIndex({
@@ -141,7 +141,7 @@ export function resolveImageFallbackDefaultProvider(cfg: OpenClawConfig | undefi
 
 export function resolveModelCandidateChain(
   params: {
-    cfg: OpenClawConfig | undefined;
+    cfg: AforaConfig | undefined;
     provider: string;
     model: string;
     /** Optional explicit fallbacks list; when provided (even empty), replaces agents.defaults.model.fallbacks. */
@@ -175,7 +175,7 @@ function cloneModelCandidate(candidate: ModelFallbackCandidate): ModelFallbackCa
 
 function resolveFallbackCandidateCacheKey(
   params: {
-    cfg: OpenClawConfig | undefined;
+    cfg: AforaConfig | undefined;
     provider: string;
     model: string;
     fallbacksOverride?: string[];
@@ -230,7 +230,7 @@ function resolveFallbackCandidateCacheKey(
   });
 }
 
-function resolveFallbackCandidateModelProviderCacheParts(cfg: OpenClawConfig | undefined): unknown {
+function resolveFallbackCandidateModelProviderCacheParts(cfg: AforaConfig | undefined): unknown {
   const providers = cfg?.models?.providers;
   if (!providers) {
     return undefined;
@@ -248,7 +248,7 @@ function resolveFallbackCandidateModelProviderCacheParts(cfg: OpenClawConfig | u
 
 function resolveFallbackCandidatesUncached(
   params: {
-    cfg: OpenClawConfig | undefined;
+    cfg: AforaConfig | undefined;
     provider: string;
     model: string;
     fallbacksOverride?: string[];

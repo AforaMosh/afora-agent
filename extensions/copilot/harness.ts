@@ -15,9 +15,9 @@ import {
   type AgentHarnessCompactParams,
   type AgentHarnessCompactResult,
   type AgentHarnessResetParams,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import type { PluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import type { PluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { AttemptParamsLike, ModelRefInputObject } from "./src/attempt-types.js";
 import type { CopilotSessionConfig } from "./src/attempt.js";
 import { createCopilotByokAuth, resolveCopilotAuth, tokenFingerprint } from "./src/auth-bridge.js";
@@ -537,7 +537,7 @@ export function createCopilotAgentHarness(
     string,
     Map<Promise<DeferredCompactionCleanupOutcome>, DeferredCompactionCleanup>
   >();
-  // Maps OpenClaw session id (from AgentHarnessAttemptParams.sessionId) to
+  // Maps Afora session id (from AgentHarnessAttemptParams.sessionId) to
   // the SDK session id + client that owns it. Populated by
   // runCopilotAttempt via the onSessionEstablished callback so that
   // reset(params) can call client.deleteSession on the right client.
@@ -644,25 +644,25 @@ export function createCopilotAgentHarness(
         }
         throw error;
       }
-      const openclawSessionId = typeof params.sessionId === "string" ? params.sessionId : undefined;
+      const aforaSessionId = typeof params.sessionId === "string" ? params.sessionId : undefined;
 
-      // Reuse the SDK session across turns within the same OpenClaw session so
+      // Reuse the SDK session across turns within the same Afora session so
       // Copilot's prompt cache, tool history, and compaction state survive.
       // Compatibility covers provider/model/cwd/auth; incompatible state starts
       // a fresh ordinary attempt but cannot be used for settled finalization.
       const currentCompatKey = computeSessionCompatKey(params);
       const currentCompactKey = computeAttemptCompactKey(params);
       const compactionCleanupPending =
-        openclawSessionId !== undefined && hasPendingDeferredCompactionCleanup(openclawSessionId);
+        aforaSessionId !== undefined && hasPendingDeferredCompactionCleanup(aforaSessionId);
       const replayBlocked =
-        openclawSessionId !== undefined &&
-        (compactionCleanupPending || resetBlockedStoredSessions.has(openclawSessionId));
+        aforaSessionId !== undefined &&
+        (compactionCleanupPending || resetBlockedStoredSessions.has(aforaSessionId));
       const tracked =
-        openclawSessionId && !replayBlocked ? trackedSessions.get(openclawSessionId) : undefined;
-      const stored = openclawSessionId
+        aforaSessionId && !replayBlocked ? trackedSessions.get(aforaSessionId) : undefined;
+      const stored = aforaSessionId
         ? replayBlocked
           ? undefined
-          : lookupStoredBinding(options?.sessionStore, openclawSessionId)
+          : lookupStoredBinding(options?.sessionStore, aforaSessionId)
         : undefined;
       const resumableBinding =
         tracked && tracked.compatKey === currentCompatKey
@@ -716,7 +716,7 @@ export function createCopilotAgentHarness(
         pool,
         ...(operation === "settled-tool-finalization" ? { operation } : {}),
         onSessionEstablished:
-          operation === "attempt" && openclawSessionId
+          operation === "attempt" && aforaSessionId
             ? ({
                 compactionSessionConfig,
                 sdkSessionId,
@@ -728,7 +728,7 @@ export function createCopilotAgentHarness(
                 pooledClient: PooledClient;
                 sessionConfig: CopilotSessionConfig;
               }) => {
-                trackedSessions.set(openclawSessionId, {
+                trackedSessions.set(aforaSessionId, {
                   sdkSessionId,
                   client: pooledClient.client,
                   clientOptions: poolAcquire.options,
@@ -738,7 +738,7 @@ export function createCopilotAgentHarness(
                   sessionConfig: compactionSessionConfig ?? sessionConfig,
                   ...sessionAuthFields(poolAcquire.auth),
                 });
-                registerStoredBinding(options?.sessionStore, openclawSessionId, {
+                registerStoredBinding(options?.sessionStore, aforaSessionId, {
                   schemaVersion: 2,
                   sdkSessionId,
                   compatKey: currentCompatKey,
@@ -746,10 +746,10 @@ export function createCopilotAgentHarness(
                   ...sessionAuthFields(poolAcquire.auth),
                   updatedAt: Date.now(),
                 });
-                resetBlockedStoredSessions.delete(openclawSessionId);
+                resetBlockedStoredSessions.delete(aforaSessionId);
               }
             : undefined,
-        onDeferredCompaction: openclawSessionId
+        onDeferredCompaction: aforaSessionId
           ? ({
               abort,
               cleanup,
@@ -759,8 +759,8 @@ export function createCopilotAgentHarness(
               cleanup: Promise<DeferredCompactionCleanupOutcome>;
               sdkSessionId: string;
             }) => {
-              const trackedBinding = trackedSessions.get(openclawSessionId);
-              const storedBinding = lookupStoredBinding(options?.sessionStore, openclawSessionId);
+              const trackedBinding = trackedSessions.get(aforaSessionId);
+              const storedBinding = lookupStoredBinding(options?.sessionStore, aforaSessionId);
               const ownsTrackedSession = trackedBinding?.sdkSessionId === sdkSessionId;
               const ownsStoredSession = storedBinding?.sdkSessionId === sdkSessionId;
               if (!ownsTrackedSession && !ownsStoredSession) {
@@ -769,52 +769,52 @@ export function createCopilotAgentHarness(
               trackDeferredCompactionCleanup({
                 abort,
                 cleanup,
-                sessionId: openclawSessionId,
+                sessionId: aforaSessionId,
                 sdkSessionId,
               });
               // The attempt retains this SDK session until its background
               // compaction resolves. Preserve its binding for a successful
               // completion, but do not let a new turn resume it yet.
-              resetBlockedStoredSessions.add(openclawSessionId);
+              resetBlockedStoredSessions.add(aforaSessionId);
               void cleanup.then((outcome) => {
-                const currentTracked = trackedSessions.get(openclawSessionId);
-                const currentStored = lookupStoredBinding(options?.sessionStore, openclawSessionId);
+                const currentTracked = trackedSessions.get(aforaSessionId);
+                const currentStored = lookupStoredBinding(options?.sessionStore, aforaSessionId);
                 const stillOwnsTrackedSession = currentTracked?.sdkSessionId === sdkSessionId;
                 const stillOwnsStoredSession = currentStored?.sdkSessionId === sdkSessionId;
                 if (outcome === "completed") {
                   if (stillOwnsTrackedSession || stillOwnsStoredSession) {
-                    resetBlockedStoredSessions.delete(openclawSessionId);
+                    resetBlockedStoredSessions.delete(aforaSessionId);
                   }
                   return;
                 }
                 if (stillOwnsTrackedSession) {
-                  trackedSessions.delete(openclawSessionId);
+                  trackedSessions.delete(aforaSessionId);
                 }
                 if (stillOwnsStoredSession) {
-                  deleteStoredBinding(options?.sessionStore, openclawSessionId);
+                  deleteStoredBinding(options?.sessionStore, aforaSessionId);
                 }
                 if (stillOwnsTrackedSession || stillOwnsStoredSession) {
-                  resetBlockedStoredSessions.add(openclawSessionId);
+                  resetBlockedStoredSessions.add(aforaSessionId);
                 }
               });
             }
           : undefined,
       });
-      if (operation === "attempt" && openclawSessionId) {
+      if (operation === "attempt" && aforaSessionId) {
         const attemptResult = result as AgentHarnessAttemptResult & {
           journalValidated?: boolean;
           sdkSessionId?: string;
         };
         const sdkSessionId = attemptResult.sdkSessionId;
-        const trackedSession = trackedSessions.get(openclawSessionId);
+        const trackedSession = trackedSessions.get(aforaSessionId);
         if (sdkSessionId && trackedSession?.sdkSessionId === sdkSessionId) {
           const { journalVersion: _journalVersion, ...baseTracked } = trackedSession;
           const nextTracked: TrackedSession = {
             ...baseTracked,
             ...(attemptResult.journalValidated ? { journalVersion: 1 } : {}),
           };
-          trackedSessions.set(openclawSessionId, nextTracked);
-          registerStoredBinding(options?.sessionStore, openclawSessionId, {
+          trackedSessions.set(aforaSessionId, nextTracked);
+          registerStoredBinding(options?.sessionStore, aforaSessionId, {
             schemaVersion: 2,
             ...(attemptResult.journalValidated ? { journalVersion: 1 } : {}),
             sdkSessionId,
@@ -921,33 +921,33 @@ export function createCopilotAgentHarness(
     },
 
     async reset(params: AgentHarnessResetParams): Promise<void> {
-      const openclawSessionId = typeof params.sessionId === "string" ? params.sessionId : undefined;
-      if (!openclawSessionId) {
+      const aforaSessionId = typeof params.sessionId === "string" ? params.sessionId : undefined;
+      if (!aforaSessionId) {
         return;
       }
       // Deferred cleanup yields while another attempt can establish a fresh
       // session. Capture the reset target first so reset never deletes that
       // replacement session or its durable binding.
-      const tracked = trackedSessions.get(openclawSessionId);
-      const stored = lookupStoredBinding(options?.sessionStore, openclawSessionId);
-      resetBlockedStoredSessions.add(openclawSessionId);
-      await abortDeferredCompactionCleanups(openclawSessionId);
-      const currentStored = lookupStoredBinding(options?.sessionStore, openclawSessionId);
+      const tracked = trackedSessions.get(aforaSessionId);
+      const stored = lookupStoredBinding(options?.sessionStore, aforaSessionId);
+      resetBlockedStoredSessions.add(aforaSessionId);
+      await abortDeferredCompactionCleanups(aforaSessionId);
+      const currentStored = lookupStoredBinding(options?.sessionStore, aforaSessionId);
       const stillOwnsStoredSession =
         stored !== undefined && currentStored?.sdkSessionId === stored.sdkSessionId;
       if (stillOwnsStoredSession) {
-        if (deleteStoredBinding(options?.sessionStore, openclawSessionId)) {
-          resetBlockedStoredSessions.delete(openclawSessionId);
+        if (deleteStoredBinding(options?.sessionStore, aforaSessionId)) {
+          resetBlockedStoredSessions.delete(aforaSessionId);
         }
       } else {
-        resetBlockedStoredSessions.delete(openclawSessionId);
+        resetBlockedStoredSessions.delete(aforaSessionId);
       }
       if (!tracked) {
         // Session was created by a different harness, or already reset.
         return;
       }
-      if (trackedSessions.get(openclawSessionId)?.sdkSessionId === tracked.sdkSessionId) {
-        trackedSessions.delete(openclawSessionId);
+      if (trackedSessions.get(aforaSessionId)?.sdkSessionId === tracked.sdkSessionId) {
+        trackedSessions.delete(aforaSessionId);
       }
       try {
         await tracked.client.deleteSession(tracked.sdkSessionId);
@@ -962,19 +962,19 @@ export function createCopilotAgentHarness(
     async compact(
       params: AgentHarnessCompactParams,
     ): Promise<AgentHarnessCompactResult | undefined> {
-      // The SDK owns Copilot history compaction. OpenClaw only resumes
+      // The SDK owns Copilot history compaction. Afora only resumes
       // the tracked SDK session and calls the session-scoped RPC; durable
-      // OpenClaw session/transcript state stays in SQLite, with no marker
+      // Afora session/transcript state stays in SQLite, with no marker
       // sidecars under the workspace.
-      const openclawSessionId = typeof params.sessionId === "string" ? params.sessionId : undefined;
-      if (!openclawSessionId) {
+      const aforaSessionId = typeof params.sessionId === "string" ? params.sessionId : undefined;
+      if (!aforaSessionId) {
         return {
           ok: false,
           compacted: false,
           reason: "missing-required-params",
         };
       }
-      if (hasPendingDeferredCompactionCleanup(openclawSessionId)) {
+      if (hasPendingDeferredCompactionCleanup(aforaSessionId)) {
         return {
           ok: false,
           compacted: false,
@@ -982,7 +982,7 @@ export function createCopilotAgentHarness(
           failure: { reason: "background-compaction-pending" },
         };
       }
-      const tracked = trackedSessions.get(openclawSessionId);
+      const tracked = trackedSessions.get(aforaSessionId);
       const currentCompactKey = computeCompactRequestKey(params);
       const { resolvePoolAcquire } = await import("./src/attempt.js");
       let resolvedPoolAcquire: ReturnType<typeof resolvePoolAcquire> | undefined;
@@ -1009,7 +1009,7 @@ export function createCopilotAgentHarness(
           : undefined;
       if (!compatibleTracked) {
         // Durable bindings only carry SDK session ids. Manual SDK compaction also
-        // needs the live SessionConfig with OpenClaw hooks/tools, so preserve the
+        // needs the live SessionConfig with Afora hooks/tools, so preserve the
         // binding for the next attempt and let the host compact transcript state.
         return {
           ok: false,
@@ -1079,8 +1079,8 @@ export function createCopilotAgentHarness(
       } catch (err) {
         const rawError = err instanceof Error ? err.message : String(err);
         if (isStaleSdkSessionError(err)) {
-          trackedSessions.delete(openclawSessionId);
-          deleteStoredBinding(options?.sessionStore, openclawSessionId);
+          trackedSessions.delete(aforaSessionId);
+          deleteStoredBinding(options?.sessionStore, aforaSessionId);
           return {
             ok: false,
             compacted: false,

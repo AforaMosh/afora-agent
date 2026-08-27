@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { withEnvAsync } from "../../test-utils/env.js";
 import { discoverAuthStorage, discoverModels } from "../agent-model-discovery.js";
@@ -56,7 +56,7 @@ vi.mock("../../plugins/provider-runtime.js", () => ({
 
 vi.mock("../model-suppression.js", () => {
   // Mirrors the canonical manifest-driven suppression in
-  // extensions/qwen/openclaw.plugin.json and src/plugins/manifest-model-suppression.ts.
+  // extensions/qwen/afora.plugin.json and src/plugins/manifest-model-suppression.ts.
   function isQwenCodingPlanBaseUrl(value: string | undefined): boolean {
     const trimmed = value?.trim();
     if (!trimmed) {
@@ -152,10 +152,10 @@ vi.mock("../model-suppression.js", () => {
         (provider === "openai" || provider === "azure-openai-responses" || provider === "openai") &&
         id?.trim().toLowerCase() === "gpt-5.3-codex-spark"
       ) {
-        return `Unknown model: ${provider}/gpt-5.3-codex-spark. gpt-5.3-codex-spark is available only through ChatGPT/Codex OAuth. Run \`openclaw models auth login --provider openai\` and use openai/gpt-5.3-codex-spark with that OAuth profile; OpenAI API-key auth cannot use this model.`;
+        return `Unknown model: ${provider}/gpt-5.3-codex-spark. gpt-5.3-codex-spark is available only through ChatGPT/Codex OAuth. Run \`afora models auth login --provider openai\` and use openai/gpt-5.3-codex-spark with that OAuth profile; OpenAI API-key auth cannot use this model.`;
       }
       if (isUnsupportedXaiMultiAgentModel(provider, id)) {
-        return "Unknown model: xai/grok-4.20-multi-agent-0309. OpenClaw does not currently support xAI multi-agent models; choose another xAI model. See https://docs.openclaw.ai/providers/xai.";
+        return "Unknown model: xai/grok-4.20-multi-agent-0309. Afora does not currently support xAI multi-agent models; choose another xAI model. See https://docs.afora.ai/providers/xai.";
       }
       return undefined;
     },
@@ -170,7 +170,7 @@ vi.mock("../prepared-model-runtime.js", async () => {
   const createSnapshot = (input: {
     agentId?: string;
     agentDir: string;
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     workspaceDir?: string;
   }) => {
     const workspaceDir = discoveryContext.resolveModelWorkspaceDir(
@@ -247,7 +247,7 @@ vi.mock("./openrouter-model-capabilities.js", () => ({
     mockLoadOpenRouterModelCapabilities(modelId),
 }));
 
-import type { OpenClawConfig, OpenClawConfigInput } from "../../config/config.js";
+import type { AforaConfig, AforaConfigInput } from "../../config/config.js";
 import type { ModelDefinitionConfig, ModelProviderConfig } from "../../config/types.models.js";
 import type { Model } from "../../llm/types.js";
 import { getModelProviderLocalService } from "../provider-local-service.js";
@@ -257,7 +257,7 @@ import { buildInlineProviderModels } from "./model.inline-provider.js";
 import { resolveModel, resolveModelAsync, resolveModelWithRegistry } from "./model.js";
 import {
   buildOpenAICodexForwardCompatExpectation,
-  makeOpenClawConfigFixture,
+  makeAforaConfigFixture,
   makeModel,
   mockDiscoveredModel,
   OPENAI_CODEX_TEMPLATE_MODEL,
@@ -341,7 +341,7 @@ function resolveModelForTest(
   provider: string,
   modelId: string,
   agentDir?: string,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ) {
   // Most tests use fixed auth storage to keep assertions focused on model
   // resolution rather than auth discovery.
@@ -377,7 +377,7 @@ function resolveModelAsyncForTest(
   provider: string,
   modelId: string,
   agentDir?: string,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
   options?: {
     allowBundledStaticCatalogFallback?: boolean;
     preferBundledStaticCatalogTransport?: boolean;
@@ -478,8 +478,8 @@ function mockMinimalModelDiscovery(
 function makeProviderConfig(
   provider: string,
   overrides: Record<string, unknown> = {},
-): OpenClawConfig {
-  return makeOpenClawConfigFixture({
+): AforaConfig {
+  return makeAforaConfigFixture({
     models: {
       providers: {
         [provider]: { models: [], ...overrides },
@@ -548,7 +548,7 @@ function makeConfiguredDeepSeekModel(
 function makeDeepSeekConfig(
   modelOverrides: Partial<ModelDefinitionConfig> = {},
   providerOverrides: Partial<ModelProviderConfig> = {},
-): OpenClawConfig {
+): AforaConfig {
   return makeProviderConfig("deepseek", {
     models: [makeConfiguredDeepSeekModel(modelOverrides)],
     ...providerOverrides,
@@ -558,7 +558,7 @@ function makeDeepSeekConfig(
 function makeVllmQwenConfig(
   modelOverrides: Record<string, unknown> = {},
   providerOverrides: Record<string, unknown> = {},
-): OpenClawConfig {
+): AforaConfig {
   return makeProviderConfig("vllm", {
     baseUrl: "http://localhost:9000",
     api: "openai-completions",
@@ -595,7 +595,7 @@ describe("resolveModel", () => {
     mockModelDiscovery();
     const cfg = {
       agents: { defaults: { workspace: "/tmp/config-derived-workspace" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await resolveModelAsync("openai", "gpt-5.5", "/tmp/agent", cfg, {
       agentId: "main",
@@ -640,7 +640,7 @@ describe("resolveModel", () => {
             },
           },
         },
-      }) as OpenClawConfig;
+      }) as AforaConfig;
 
     const first = await resolveModelAsync(
       "openai",
@@ -664,7 +664,7 @@ describe("resolveModel", () => {
   });
 
   it("does not poll generated plugin catalogs between lifecycle generations", async () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-model-cache-plugin-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-model-cache-plugin-"));
     const agentDir = path.join(rootDir, "agent");
     fs.mkdirSync(agentDir, { recursive: true });
     mockDiscoveredModel(discoverModels, {
@@ -698,12 +698,12 @@ describe("resolveModel", () => {
   });
 
   it("reuses inherited auth from one lifecycle generation", async () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-model-cache-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-model-cache-"));
     const agentDir = path.join(rootDir, "agent");
     const defaultAgentDir = path.join(rootDir, "default-agent");
     fs.mkdirSync(agentDir, { recursive: true });
     fs.mkdirSync(defaultAgentDir, { recursive: true });
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       agents: {
         list: [
           { id: "main", default: true, agentDir: defaultAgentDir },
@@ -735,12 +735,12 @@ describe("resolveModel", () => {
   });
 
   it("uses the resolved default agent workspace for prepared model discovery", () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-model-workspace-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-model-workspace-"));
     const agentDir = path.join(rootDir, "agent");
     const workspaceDir = path.join(rootDir, "workspace");
     fs.mkdirSync(agentDir, { recursive: true });
     mockModelDiscovery();
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       agents: {
         list: [{ id: "workspace-agent", default: true, agentDir, workspace: workspaceDir }],
       },
@@ -774,7 +774,7 @@ describe("resolveModel", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
       mockModelDiscovery();
 
       const options = {
@@ -796,13 +796,13 @@ describe("resolveModel", () => {
   );
 
   it("does not poll implicit main auth during request resolution", async () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-model-cache-state-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-model-cache-state-"));
     const agentDir = path.join(rootDir, "agents", "worker", "agent");
     const mainAgentDir = path.join(rootDir, "agents", "main", "agent");
     fs.mkdirSync(agentDir, { recursive: true });
     fs.mkdirSync(mainAgentDir, { recursive: true });
     try {
-      await withEnvAsync({ OPENCLAW_STATE_DIR: rootDir }, async () => {
+      await withEnvAsync({ AFORA_STATE_DIR: rootDir }, async () => {
         mockModelDiscovery();
 
         const first = await resolveModelAsync("openai", "gpt-5.5", agentDir, undefined, {
@@ -874,7 +874,7 @@ describe("resolveModel", () => {
     expect(discoverModels).toHaveBeenCalledTimes(1);
   });
 
-  it("skips OpenClaw auth and model discovery during dynamic model resolution", async () => {
+  it("skips Afora auth and model discovery during dynamic model resolution", async () => {
     const result = await resolveModelAsync(
       "openrouter",
       "openrouter/auto",
@@ -1101,7 +1101,7 @@ describe("resolveModel", () => {
   });
 
   it("falls back to bundled static catalog rows without agent discovery", async () => {
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           openai: {
@@ -1234,7 +1234,7 @@ describe("resolveModel", () => {
     );
   });
 
-  it("prefers user openclaw.json config over the Fireworks manifest for the same id", () => {
+  it("prefers user afora.json config over the Fireworks manifest for the same id", () => {
     resolveBundledStaticCatalogModelMock.mockReturnValue({
       ...makeModel("accounts/fireworks/models/kimi-k2p6"),
       provider: "fireworks",
@@ -1245,7 +1245,7 @@ describe("resolveModel", () => {
       contextWindow: 262_144,
       maxTokens: 262_144,
     });
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           fireworks: {
@@ -1458,7 +1458,7 @@ describe("resolveModel", () => {
         image: { maxSidePx: 2048, preferredSidePx: 1536, tokenMode: "provider" },
       },
     });
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           mistral: {
@@ -1587,7 +1587,7 @@ describe("resolveModel", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig);
+    } as unknown as AforaConfig);
 
     expect((expectResolvedModel(result) as { mediaInput?: unknown }).mediaInput).toEqual({
       image: { maxBytes: 1, maxSidePx: 2048, preferredSidePx: 1536, tokenMode: "provider" },
@@ -1642,13 +1642,13 @@ describe("resolveModel", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig);
+    } as unknown as AforaConfig);
 
     expect(expectResolvedModel(result).input).toEqual(["text"]);
   });
 
-  it("defaults missing model cost before handing models to OpenClaw", () => {
-    const cfg: OpenClawConfig = {
+  it("defaults missing model cost before handing models to Afora", () => {
+    const cfg: AforaConfig = {
       models: {
         providers: {
           openai: {
@@ -1816,7 +1816,7 @@ describe("resolveModel", () => {
   });
 
   it("leaves maxTokens undefined when no configured or catalog value is available (regression: #98295)", () => {
-    // Regression for https://github.com/openclaw/openclaw/issues/98295.
+    // Regression for https://github.com/AforaMosh/afora-agent/issues/98295.
     // A custom provider entry without maxTokens (and no matching bundled
     // static catalog row) must not synthesize an oversized output cap from
     // DEFAULT_CONTEXT_TOKENS. Leaving maxTokens undefined lets the transport
@@ -2073,13 +2073,13 @@ describe("resolveModel", () => {
           },
         },
       },
-    } satisfies OpenClawConfigInput;
+    } satisfies AforaConfigInput;
 
     const result = resolveModelForTest(
       "typoProvider",
       "typoed-model",
       "/tmp/agent",
-      makeOpenClawConfigFixture(cfg),
+      makeAforaConfigFixture(cfg),
     );
 
     expect(result.model).toBeUndefined();
@@ -2095,13 +2095,13 @@ describe("resolveModel", () => {
           },
         },
       },
-    } satisfies OpenClawConfigInput;
+    } satisfies AforaConfigInput;
 
     const result = resolveModelForTest(
       "openai",
       "typoed-model",
       "/tmp/agent",
-      makeOpenClawConfigFixture(cfg),
+      makeAforaConfigFixture(cfg),
     );
 
     expect(result.model).toBeUndefined();
@@ -2135,7 +2135,7 @@ describe("resolveModel", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const claude = resolveModelForTest("my-router", "my-router/claude", "/tmp/agent", cfg);
     const claudeModel = expectResolvedModel(claude);
@@ -2171,7 +2171,7 @@ describe("resolveModel", () => {
   });
 
   it("defaults baseUrl-only local custom fallback models to chat completions", () => {
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       agents: {
         defaults: {
           model: { primary: "local-agent-proxy/gpt-5.2" },
@@ -2244,7 +2244,7 @@ describe("resolveModel", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const result = resolveModelForTest("qwen", "qwen3.6-plus", "/tmp/agent", cfg);
 
@@ -2291,7 +2291,7 @@ describe("resolveModel", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const result = resolveModelForTest("openai", "gpt-5.4-mini", "/tmp/agent", cfg);
 
@@ -2461,7 +2461,7 @@ describe("resolveModel", () => {
     mockMinimalModelDiscovery("ollama", "qwen3:32b", {
       params: { num_ctx: 4096, keep_alive: "1m" },
     });
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       agents: {
         defaults: {
           models: {
@@ -2539,13 +2539,13 @@ describe("resolveModel", () => {
           },
         },
       },
-    } satisfies OpenClawConfigInput;
+    } satisfies AforaConfigInput;
 
     const result = resolveModelForTest(
       "openai",
       "gpt-5.5",
       "/tmp/agent",
-      makeOpenClawConfigFixture(cfg),
+      makeAforaConfigFixture(cfg),
     );
 
     expect(result.error).toBeUndefined();
@@ -2564,13 +2564,13 @@ describe("resolveModel", () => {
           },
         },
       },
-    } satisfies OpenClawConfigInput;
+    } satisfies AforaConfigInput;
 
     const result = resolveModelForTest(
       "openai",
       "gpt-5.5",
       "/tmp/agent",
-      makeOpenClawConfigFixture(cfg),
+      makeAforaConfigFixture(cfg),
     );
 
     expect(result.error).toBeUndefined();
@@ -2627,7 +2627,7 @@ describe("resolveModel", () => {
 
   it("applies agent default model params without explicit provider config", () => {
     mockMinimalModelDiscovery("ollama", "llama3.2");
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       agents: {
         defaults: {
           models: {
@@ -2822,7 +2822,7 @@ describe("resolveModel", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const result = resolveModelForTest("azure-openai-responses", "gpt-5.5", "/tmp/agent", cfg);
 
@@ -3060,7 +3060,7 @@ describe("resolveModel", () => {
   );
 
   it("does not treat arbitrary namespaced model ids as provider prefixes", () => {
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           custom: {
@@ -3085,7 +3085,7 @@ describe("resolveModel", () => {
 
   it("resolves custom MLX-style Hugging Face ids without adding the provider prefix", () => {
     const modelId = "mlx-community/Qwen3-30B-A3B-6bit";
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       agents: {
         defaults: {
           model: { primary: `mlx/${modelId}` },
@@ -3122,7 +3122,7 @@ describe("resolveModel", () => {
 
   it("prefers provider-prefixed configured metadata over discovered text-only models", () => {
     mockMinimalModelDiscovery("custom", "vision-model", { input: ["text"] });
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           custom: {
@@ -3150,7 +3150,7 @@ describe("resolveModel", () => {
   });
 
   it("keeps unknown fallback models text-only instead of borrowing image input from another configured model", () => {
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           custom: {
@@ -3184,7 +3184,7 @@ describe("resolveModel", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const result = await resolveModelAsync("microsoft-foundry", "Kimi-K2.6-1", "/tmp/agent", cfg, {
       runtimeHooks: createRuntimeHooks(),
@@ -3192,7 +3192,7 @@ describe("resolveModel", () => {
     });
 
     expect(result.error).toBe(
-      'Unknown model: microsoft-foundry/Kimi-K2.6-1. Found agents.defaults.models["microsoft-foundry/Kimi-K2.6-1"], but no matching models.providers["microsoft-foundry"].models[] entry. Add { "id": "Kimi-K2.6-1", "name": "Kimi-K2.6-1" } to models.providers["microsoft-foundry"].models[] to register this provider model. For custom or proxy providers, also set api and baseUrl so requests route to the intended endpoint. See https://docs.openclaw.ai/concepts/model-providers.',
+      'Unknown model: microsoft-foundry/Kimi-K2.6-1. Found agents.defaults.models["microsoft-foundry/Kimi-K2.6-1"], but no matching models.providers["microsoft-foundry"].models[] entry. Add { "id": "Kimi-K2.6-1", "name": "Kimi-K2.6-1" } to models.providers["microsoft-foundry"].models[] to register this provider model. For custom or proxy providers, also set api and baseUrl so requests route to the intended endpoint. See https://docs.afora.ai/concepts/model-providers.',
     );
   });
 
@@ -3226,7 +3226,7 @@ describe("resolveModel", () => {
       "openai-codex",
       "gpt-5.4",
       "/tmp/agent",
-      cfg as unknown as OpenClawConfig,
+      cfg as unknown as AforaConfig,
       {
         runtimeHooks: createRuntimeHooks(),
         skipAgentDiscovery: true,
@@ -3234,12 +3234,12 @@ describe("resolveModel", () => {
     );
 
     expect(result.error).toBe(
-      'Unknown model: openai-codex/gpt-5.4. "openai-codex" is a legacy provider ID. Run `openclaw doctor --fix` to migrate legacy model and provider config to the current OpenAI format. If the provider has no authenticated profile, run `openclaw models status` to check provider auth and re-authenticate if needed. See https://docs.openclaw.ai/concepts/model-providers.',
+      'Unknown model: openai-codex/gpt-5.4. "openai-codex" is a legacy provider ID. Run `afora doctor --fix` to migrate legacy model and provider config to the current OpenAI format. If the provider has no authenticated profile, run `afora models status` to check provider auth and re-authenticate if needed. See https://docs.afora.ai/concepts/model-providers.',
     );
   });
 
   it("suggests adding config entry when a non-bundled provider model is missing", async () => {
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       agents: {
         defaults: {
           models: {
@@ -3255,12 +3255,12 @@ describe("resolveModel", () => {
     });
 
     expect(result.error).toBe(
-      'Unknown model: custom-provider/some-model. Found agents.defaults.models["custom-provider/some-model"], but no matching models.providers["custom-provider"].models[] entry. Add { "id": "some-model", "name": "some-model" } to models.providers["custom-provider"].models[] to register this provider model. For custom or proxy providers, also set api and baseUrl so requests route to the intended endpoint. See https://docs.openclaw.ai/concepts/model-providers.',
+      'Unknown model: custom-provider/some-model. Found agents.defaults.models["custom-provider/some-model"], but no matching models.providers["custom-provider"].models[] entry. Add { "id": "some-model", "name": "some-model" } to models.providers["custom-provider"].models[] to register this provider model. For custom or proxy providers, also set api and baseUrl so requests route to the intended endpoint. See https://docs.afora.ai/concepts/model-providers.',
     );
   });
 
   it("points runtime-bound model entries at the runtime catalog instead of provider registration", async () => {
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       agents: {
         defaults: {
           models: {
@@ -3278,12 +3278,12 @@ describe("resolveModel", () => {
     });
 
     expect(result.error).toBe(
-      'Unknown model: openai/gpt-5.3-codex. Found agents.defaults.models["openai/gpt-5.3-codex"] bound to the "codex" agent runtime. Models served by an agent runtime come from that runtime and its linked account, not from models.providers["openai"].models[] — registering it there will not make it usable. Confirm "gpt-5.3-codex" is still offered by the "codex" runtime and switch agents.defaults.model.primary to a currently available model (run `openclaw models list --provider openai` to list them). See https://docs.openclaw.ai/concepts/model-providers.',
+      'Unknown model: openai/gpt-5.3-codex. Found agents.defaults.models["openai/gpt-5.3-codex"] bound to the "codex" agent runtime. Models served by an agent runtime come from that runtime and its linked account, not from models.providers["openai"].models[] — registering it there will not make it usable. Confirm "gpt-5.3-codex" is still offered by the "codex" runtime and switch agents.defaults.model.primary to a currently available model (run `afora models list --provider openai` to list them). See https://docs.afora.ai/concepts/model-providers.',
     );
   });
 
   it("repairs stale text-only Foundry fallback rows for GPT-family models", () => {
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           "microsoft-foundry": {
@@ -3308,7 +3308,7 @@ describe("resolveModel", () => {
   });
 
   it("repairs stale text-only Anthropic fallback rows for Claude vision models", () => {
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           anthropic: {
@@ -3333,7 +3333,7 @@ describe("resolveModel", () => {
   });
 
   it("repairs stale text-only Foundry discovered rows for GPT-family models", () => {
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           "microsoft-foundry": {
@@ -3398,7 +3398,7 @@ describe("resolveModel", () => {
   });
 
   it("matches prefixed OpenRouter native ids in configured fallback models", () => {
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           openrouter: {
@@ -3609,7 +3609,7 @@ describe("resolveModel", () => {
 
   it("threads the model id through inline configured transport normalization", () => {
     const normalizeProviderTransportWithPlugin = vi.fn(() => undefined);
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           openai: {
@@ -3663,7 +3663,7 @@ describe("resolveModel", () => {
       },
     });
 
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           onehub: {
@@ -3715,7 +3715,7 @@ describe("resolveModel", () => {
       },
     });
 
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           "amazon-bedrock": {
@@ -3844,7 +3844,7 @@ describe("resolveModel", () => {
   it("applies canonical openai overrides when resolving the gpt-5.4-codex alias", () => {
     mockOpenAICodexTemplateModel(discoverModels);
 
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           openai: {
@@ -3882,7 +3882,7 @@ describe("resolveModel", () => {
   it("prefers alias-specific overrides over canonical ones for gpt-5.4-codex", () => {
     mockOpenAICodexTemplateModel(discoverModels);
 
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           openai: {
@@ -3935,12 +3935,12 @@ describe("resolveModel", () => {
 
     expect(result.model).toBeUndefined();
     expect(result.error).toBe(
-      "Unknown model: openai/gpt-5.3-codex-spark. gpt-5.3-codex-spark is available only through ChatGPT/Codex OAuth. Run `openclaw models auth login --provider openai` and use openai/gpt-5.3-codex-spark with that OAuth profile; OpenAI API-key auth cannot use this model.",
+      "Unknown model: openai/gpt-5.3-codex-spark. gpt-5.3-codex-spark is available only through ChatGPT/Codex OAuth. Run `afora models auth login --provider openai` and use openai/gpt-5.3-codex-spark with that OAuth profile; OpenAI API-key auth cannot use this model.",
     );
   });
 
   it("does not build a configured fallback for unsupported xAI multi-agent models", () => {
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           xai: {
@@ -3956,7 +3956,7 @@ describe("resolveModel", () => {
 
     expect(result.model).toBeUndefined();
     expect(result.error).toBe(
-      "Unknown model: xai/grok-4.20-multi-agent-0309. OpenClaw does not currently support xAI multi-agent models; choose another xAI model. See https://docs.openclaw.ai/providers/xai.",
+      "Unknown model: xai/grok-4.20-multi-agent-0309. Afora does not currently support xAI multi-agent models; choose another xAI model. See https://docs.afora.ai/providers/xai.",
     );
   });
 
@@ -3967,7 +3967,7 @@ describe("resolveModel", () => {
 
     expect(result.model).toBeUndefined();
     expect(result.error).toBe(
-      "Unknown model: openai/gpt-5.3-codex-spark. gpt-5.3-codex-spark is available only through ChatGPT/Codex OAuth. Run `openclaw models auth login --provider openai` and use openai/gpt-5.3-codex-spark with that OAuth profile; OpenAI API-key auth cannot use this model.",
+      "Unknown model: openai/gpt-5.3-codex-spark. gpt-5.3-codex-spark is available only through ChatGPT/Codex OAuth. Run `afora models auth login --provider openai` and use openai/gpt-5.3-codex-spark with that OAuth profile; OpenAI API-key auth cannot use this model.",
     );
   });
 
@@ -3994,7 +3994,7 @@ describe("resolveModel", () => {
   it("lets official openai metadata override stale configured model rows", () => {
     mockOpenAIForwardCompatDiscovery();
 
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           openai: {
@@ -4058,7 +4058,7 @@ describe("resolveModel", () => {
       contextWindow: 400_000,
     });
 
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           openai: {
@@ -4202,7 +4202,7 @@ describe("resolveModel", () => {
           workspace: "/tmp/workspace",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = resolveModel("openai", "gpt-5.4", "/tmp/agent-state", cfg, {
       authStorage: { mocked: true } as never,
@@ -4264,7 +4264,7 @@ describe("resolveModel", () => {
           workspace: "/tmp/workspace",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = resolveModelWithRegistry({
       provider: "openai",
@@ -4326,7 +4326,7 @@ describe("resolveModel", () => {
 
     expect(result.model).toBeUndefined();
     expect(result.error).toBe(
-      "Unknown model: openai/gpt-5.3-codex-spark. gpt-5.3-codex-spark is available only through ChatGPT/Codex OAuth. Run `openclaw models auth login --provider openai` and use openai/gpt-5.3-codex-spark with that OAuth profile; OpenAI API-key auth cannot use this model.",
+      "Unknown model: openai/gpt-5.3-codex-spark. gpt-5.3-codex-spark is available only through ChatGPT/Codex OAuth. Run `afora models auth login --provider openai` and use openai/gpt-5.3-codex-spark with that OAuth profile; OpenAI API-key auth cannot use this model.",
     );
   });
 
@@ -4343,7 +4343,7 @@ describe("resolveModel", () => {
       }),
     });
 
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           openai: {
@@ -4369,7 +4369,7 @@ describe("resolveModel", () => {
   });
 
   it("applies configured overrides to github-copilot dynamic models", () => {
-    const cfg = makeOpenClawConfigFixture({
+    const cfg = makeAforaConfigFixture({
       models: {
         providers: {
           "github-copilot": {

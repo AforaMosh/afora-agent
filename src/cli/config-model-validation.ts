@@ -18,7 +18,7 @@ import type { loadPreparedModelCatalogOwnerSnapshot } from "../agents/prepared-m
 import { containsEnvVarReference, resolveConfigEnvVars } from "../config/env-substitution.js";
 import { migratePersistedImplicitMainRoster } from "../config/legacy.roster.js";
 import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { formatCliCommand } from "./command-format.js";
 
@@ -32,7 +32,7 @@ type TouchedModelRef = {
 };
 
 type ConfigModelRefResolver = (params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   ref: TouchedModelRef;
 }) => Promise<string | undefined>;
 
@@ -92,7 +92,7 @@ function collectTextModelConfigRefs(params: {
   return refs;
 }
 
-function collectTextModelRefs(config: OpenClawConfig): TouchedModelRef[] {
+function collectTextModelRefs(config: AforaConfig): TouchedModelRef[] {
   const refs = collectTextModelConfigRefs({
     model: config.agents?.defaults?.model,
     path: "agents.defaults.model",
@@ -133,8 +133,8 @@ function modelRefComparisonKey(ref: TouchedModelRef): string {
 }
 
 function collectTouchedTextModelRefs(params: {
-  config: OpenClawConfig;
-  previousConfig?: OpenClawConfig;
+  config: AforaConfig;
+  previousConfig?: AforaConfig;
   touchedPaths: readonly (readonly string[])[];
 }): TouchedModelRef[] {
   const listedAgentEntries = listAgentEntriesWithSource(params.config);
@@ -239,10 +239,10 @@ function collectTouchedTextModelRefs(params: {
 }
 
 function resolveCanonicalPrimaryRef(
-  config: OpenClawConfig,
+  config: AforaConfig,
   value: string,
 ): { provider: string; model: string } | undefined {
-  const validationConfig: OpenClawConfig = {
+  const validationConfig: AforaConfig = {
     ...config,
     agents: {
       ...config.agents,
@@ -261,7 +261,7 @@ function resolveCanonicalPrimaryRef(
   return resolved.model ? resolved : undefined;
 }
 
-function resolveFallbackRef(config: OpenClawConfig, value: string) {
+function resolveFallbackRef(config: AforaConfig, value: string) {
   const defaultProvider = resolveDefaultModelForAgent({ cfg: config }).provider;
   return resolveModelRefFromString({
     cfg: config,
@@ -277,14 +277,14 @@ function resolveFallbackRef(config: OpenClawConfig, value: string) {
 }
 
 function resolveCanonicalFallbackRef(
-  config: OpenClawConfig,
+  config: AforaConfig,
   value: string,
 ): { provider: string; model: string } | undefined {
   return resolveFallbackRef(config, value)?.ref;
 }
 
 function hasUnresolvedInheritedFallbackProvider(
-  config: OpenClawConfig,
+  config: AforaConfig,
   ref: TouchedModelRef,
 ): boolean {
   if (!ref.fallback || ref.value.includes("/")) {
@@ -302,7 +302,7 @@ function hasUnresolvedInheritedFallbackProvider(
 }
 
 function expandInheritedDefaultRefs(
-  config: OpenClawConfig,
+  config: AforaConfig,
   refs: TouchedModelRef[],
 ): TouchedModelRef[] {
   const agentEntries = listAgentEntries(config);
@@ -349,7 +349,7 @@ function expandInheritedDefaultRefs(
   return expanded;
 }
 
-function validateModelRefSyntax(config: OpenClawConfig, ref: TouchedModelRef): string | undefined {
+function validateModelRefSyntax(config: AforaConfig, ref: TouchedModelRef): string | undefined {
   if (!ref.value) {
     return "Model reference is empty";
   }
@@ -448,12 +448,12 @@ function formatModelRefError(
       ? "Unable to resolve authored model reference"
       : error;
   const detail = safeError.endsWith(".") ? safeError : `${safeError}.`;
-  return `Cannot set model reference "${authoredValue}" at ${ref.path}: ${detail} Run ${formatCliCommand("openclaw models list")} to list available models.`;
+  return `Cannot set model reference "${authoredValue}" at ${ref.path}: ${detail} Run ${formatCliCommand("afora models list")} to list available models.`;
 }
 
 export async function checkTouchedTextModelRefs(params: {
-  config: OpenClawConfig;
-  previousConfig?: OpenClawConfig;
+  config: AforaConfig;
+  previousConfig?: AforaConfig;
   touchedPaths: readonly (readonly string[])[];
   env?: NodeJS.ProcessEnv;
   resolveModelRef?: ConfigModelRefResolver;
@@ -465,10 +465,10 @@ export async function checkTouchedTextModelRefs(params: {
   // explicit empty or malformed rosters must remain visible to schema repair.
   const config = hasAgentRosterProperty(params.config)
     ? params.config
-    : (migratePersistedImplicitMainRoster(params.config).config as OpenClawConfig);
+    : (migratePersistedImplicitMainRoster(params.config).config as AforaConfig);
   const previousConfig =
     params.previousConfig && !hasAgentRosterProperty(params.previousConfig)
-      ? (migratePersistedImplicitMainRoster(params.previousConfig).config as OpenClawConfig)
+      ? (migratePersistedImplicitMainRoster(params.previousConfig).config as AforaConfig)
       : params.previousConfig;
   const validationParams = { ...params, config, previousConfig };
   const authoredRefs = collectTouchedTextModelRefs(validationParams);
@@ -478,17 +478,17 @@ export async function checkTouchedTextModelRefs(params: {
   const previousAuthoredValuesByPath = new Map(
     collectTextModelRefs(params.previousConfig ?? {}).map((ref) => [ref.path, ref.value]),
   );
-  let validationConfig: OpenClawConfig;
-  let validationPreviousConfig: OpenClawConfig | undefined;
+  let validationConfig: AforaConfig;
+  let validationPreviousConfig: AforaConfig | undefined;
   try {
     const env = params.env ?? process.env;
     validationConfig = resolveConfigEnvVars(params.config, env, {
       onMissing: () => {},
-    }) as OpenClawConfig;
+    }) as AforaConfig;
     validationPreviousConfig = params.previousConfig
       ? (resolveConfigEnvVars(params.previousConfig, env, {
           onMissing: () => {},
-        }) as OpenClawConfig)
+        }) as AforaConfig)
       : undefined;
   } catch (cause) {
     const detail = cause instanceof Error ? cause.message : String(cause);
@@ -518,10 +518,10 @@ export async function checkTouchedTextModelRefs(params: {
   );
   const validationRosterConfig = hasAgentRosterProperty(validationConfig)
     ? validationConfig
-    : (migratePersistedImplicitMainRoster(validationConfig).config as OpenClawConfig);
+    : (migratePersistedImplicitMainRoster(validationConfig).config as AforaConfig);
   const validationPreviousRosterConfig =
     validationPreviousConfig && !hasAgentRosterProperty(validationPreviousConfig)
-      ? (migratePersistedImplicitMainRoster(validationPreviousConfig).config as OpenClawConfig)
+      ? (migratePersistedImplicitMainRoster(validationPreviousConfig).config as AforaConfig)
       : validationPreviousConfig;
   const refsByKey = new Map(
     collectTouchedTextModelRefs({

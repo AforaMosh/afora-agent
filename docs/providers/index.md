@@ -1,19 +1,19 @@
 ---
-summary: "Model providers (LLMs) supported by OpenClaw"
+summary: "Model providers (LLMs) supported by Afora"
 read_when:
   - You want to choose a model provider
   - You need a quick overview of supported LLM backends
 title: "Provider directory"
 ---
 
-OpenClaw can use many LLM providers. Pick a provider, authenticate, then set the
+Afora can use many LLM providers. Pick a provider, authenticate, then set the
 default model as `provider/model`.
 
 Looking for chat channel docs (WhatsApp/Telegram/Discord/Slack/Mattermost (plugin)/etc.)? See [Channels](/channels).
 
 ## Quick start
 
-1. Authenticate with the provider (usually via `openclaw onboard`).
+1. Authenticate with the provider (usually via `afora onboard`).
 2. Set the default model:
 
 ```json5

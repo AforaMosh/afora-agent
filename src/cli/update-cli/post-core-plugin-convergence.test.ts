@@ -1,7 +1,7 @@
 // Post-core plugin convergence tests cover update convergence checks after core updates.
 import fs from "node:fs";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 
@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
   listManagedPluginNpmRoots: vi.fn(),
   maybeRepairStaleManagedNpmBundledPlugins: vi.fn(),
   repairMissingConfiguredPluginInstalls: vi.fn(),
-  relinkOpenClawPeerDependenciesInManagedNpmRoot: vi.fn(),
+  relinkAforaPeerDependenciesInManagedNpmRoot: vi.fn(),
   runPluginPayloadSmokeCheck: vi.fn(),
 }));
 
@@ -23,8 +23,8 @@ vi.mock("../../plugins/plugin-peer-link.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../plugins/plugin-peer-link.js")>();
   return {
     ...actual,
-    relinkOpenClawPeerDependenciesInManagedNpmRoot:
-      mocks.relinkOpenClawPeerDependenciesInManagedNpmRoot,
+    relinkAforaPeerDependenciesInManagedNpmRoot:
+      mocks.relinkAforaPeerDependenciesInManagedNpmRoot,
   };
 });
 vi.mock("../../plugins/npm-project-roots.js", async (importOriginal) => {
@@ -38,7 +38,7 @@ vi.mock("./plugin-payload-validation.js", () => ({
   runPluginPayloadSmokeCheck: mocks.runPluginPayloadSmokeCheck,
 }));
 
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { PluginInstallRecord } from "../../config/types.plugins.js";
 import { VERSION } from "../../version.js";
 import {
@@ -64,7 +64,7 @@ describe("runPostCorePluginConvergence", () => {
       warnings: [],
       records: {},
     });
-    mocks.relinkOpenClawPeerDependenciesInManagedNpmRoot.mockResolvedValue({
+    mocks.relinkAforaPeerDependenciesInManagedNpmRoot.mockResolvedValue({
       checked: 0,
       attempted: 0,
       repaired: 0,
@@ -82,7 +82,7 @@ describe("runPostCorePluginConvergence", () => {
     fs.mkdirSync(pluginDir, { recursive: true });
     fs.writeFileSync(path.join(pluginDir, "index.js"), "export default {};\n", "utf8");
     fs.writeFileSync(
-      path.join(pluginDir, "openclaw.plugin.json"),
+      path.join(pluginDir, "afora.plugin.json"),
       JSON.stringify({
         id: pluginId,
         name: pluginId,
@@ -94,7 +94,7 @@ describe("runPostCorePluginConvergence", () => {
     fs.writeFileSync(
       path.join(pluginDir, "package.json"),
       JSON.stringify({
-        name: `@openclaw/${pluginId}`,
+        name: `@afora/${pluginId}`,
         version,
       }),
       "utf8",
@@ -102,28 +102,28 @@ describe("runPostCorePluginConvergence", () => {
     return pluginDir;
   }
 
-  it("calls repair with OPENCLAW_UPDATE_POST_CORE_CONVERGENCE=1 set", async () => {
-    const cfg = { plugins: { entries: {} } } as unknown as OpenClawConfig;
+  it("calls repair with AFORA_UPDATE_POST_CORE_CONVERGENCE=1 set", async () => {
+    const cfg = { plugins: { entries: {} } } as unknown as AforaConfig;
     await runPostCorePluginConvergence({
       cfg,
-      env: { OPENCLAW_UPDATE_IN_PROGRESS: "1" },
+      env: { AFORA_UPDATE_IN_PROGRESS: "1" },
     });
     expect(mocks.repairMissingConfiguredPluginInstalls).toHaveBeenCalledTimes(1);
     expect(mocks.maybeRepairStaleManagedNpmBundledPlugins).toHaveBeenCalledWith({
       config: cfg,
       env: {
-        OPENCLAW_UPDATE_IN_PROGRESS: "1",
-        OPENCLAW_COMPATIBILITY_HOST_VERSION: VERSION,
-        OPENCLAW_UPDATE_POST_CORE_CONVERGENCE: "1",
+        AFORA_UPDATE_IN_PROGRESS: "1",
+        AFORA_COMPATIBILITY_HOST_VERSION: VERSION,
+        AFORA_UPDATE_POST_CORE_CONVERGENCE: "1",
       },
       prompter: { shouldRepair: true },
     });
     expect(mocks.repairMissingConfiguredPluginInstalls).toHaveBeenCalledWith({
       cfg,
       env: {
-        OPENCLAW_UPDATE_IN_PROGRESS: "1",
-        OPENCLAW_COMPATIBILITY_HOST_VERSION: VERSION,
-        OPENCLAW_UPDATE_POST_CORE_CONVERGENCE: "1",
+        AFORA_UPDATE_IN_PROGRESS: "1",
+        AFORA_COMPATIBILITY_HOST_VERSION: VERSION,
+        AFORA_UPDATE_POST_CORE_CONVERGENCE: "1",
       },
     });
     expect(
@@ -145,49 +145,49 @@ describe("runPostCorePluginConvergence", () => {
         deny: ["disabled"],
         entries: { active: { enabled: true }, disabled: { enabled: true } },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const records = {
       active: { source: "npm" as const, installPath: "/p/active" },
       disabled: { source: "npm" as const, installPath: "/p/disabled" },
     };
 
-    await runActivePluginPayloadSmokeCheck({ cfg, records, env: { OPENCLAW_STATE_DIR: "/state" } });
+    await runActivePluginPayloadSmokeCheck({ cfg, records, env: { AFORA_STATE_DIR: "/state" } });
 
     expect(mocks.runPluginPayloadSmokeCheck).toHaveBeenCalledWith({
       records: { active: records.active },
-      env: { OPENCLAW_STATE_DIR: "/state" },
+      env: { AFORA_STATE_DIR: "/state" },
     });
     expect(mocks.repairMissingConfiguredPluginInstalls).not.toHaveBeenCalled();
-    expect(mocks.relinkOpenClawPeerDependenciesInManagedNpmRoot).not.toHaveBeenCalled();
+    expect(mocks.relinkAforaPeerDependenciesInManagedNpmRoot).not.toHaveBeenCalled();
   });
 
   it("uses the candidate runtime version over a stale inherited host version", async () => {
-    const cfg = { plugins: { entries: {} } } as unknown as OpenClawConfig;
+    const cfg = { plugins: { entries: {} } } as unknown as AforaConfig;
     await runPostCorePluginConvergence({
       cfg,
-      env: { OPENCLAW_COMPATIBILITY_HOST_VERSION: "2026.5.12" },
+      env: { AFORA_COMPATIBILITY_HOST_VERSION: "2026.5.12" },
     });
     expect(mocks.repairMissingConfiguredPluginInstalls).toHaveBeenCalledWith({
       cfg,
       env: {
-        OPENCLAW_COMPATIBILITY_HOST_VERSION: VERSION,
-        OPENCLAW_UPDATE_POST_CORE_CONVERGENCE: "1",
+        AFORA_COMPATIBILITY_HOST_VERSION: VERSION,
+        AFORA_UPDATE_POST_CORE_CONVERGENCE: "1",
       },
     });
   });
 
   it("uses an explicit compatibility host version for startup convergence", async () => {
-    const cfg = { plugins: { entries: {} } } as unknown as OpenClawConfig;
+    const cfg = { plugins: { entries: {} } } as unknown as AforaConfig;
     await runPostCorePluginConvergence({
       cfg,
-      env: { OPENCLAW_COMPATIBILITY_HOST_VERSION: "2026.5.12" },
+      env: { AFORA_COMPATIBILITY_HOST_VERSION: "2026.5.12" },
       compatibilityHostVersion: "2026.7.2-beta.7",
     });
     expect(mocks.repairMissingConfiguredPluginInstalls).toHaveBeenCalledWith({
       cfg,
       env: {
-        OPENCLAW_COMPATIBILITY_HOST_VERSION: "2026.7.2-beta.7",
-        OPENCLAW_UPDATE_POST_CORE_CONVERGENCE: "1",
+        AFORA_COMPATIBILITY_HOST_VERSION: "2026.7.2-beta.7",
+        AFORA_UPDATE_POST_CORE_CONVERGENCE: "1",
       },
     });
   });
@@ -201,7 +201,7 @@ describe("runPostCorePluginConvergence", () => {
     const result = await runPostCorePluginConvergence({
       cfg: {
         plugins: { entries: { discord: { enabled: true } } },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       env: {},
     });
     expect(result.errored).toBe(false);
@@ -216,7 +216,7 @@ describe("runPostCorePluginConvergence", () => {
       records: { discord: { source: "npm", installPath: "/p/discord" } },
     });
     const result = await runPostCorePluginConvergence({
-      cfg: { plugins: { entries: { discord: { enabled: true } } } } as unknown as OpenClawConfig,
+      cfg: { plugins: { entries: { discord: { enabled: true } } } } as unknown as AforaConfig,
       env: {},
     });
     expect(result.installRecords).toEqual({
@@ -224,17 +224,17 @@ describe("runPostCorePluginConvergence", () => {
     });
   });
 
-  it("repairs managed npm openclaw peer links in every managed npm project before payload smoke checks", async () => {
+  it("repairs managed npm afora peer links in every managed npm project before payload smoke checks", async () => {
     mocks.repairMissingConfiguredPluginInstalls.mockResolvedValue({
       changes: [],
       warnings: [],
       records: { codex: { source: "npm", installPath: "/p/codex" } },
     });
     mocks.listManagedPluginNpmRoots.mockResolvedValue([
-      "/tmp/openclaw-state/npm",
-      "/tmp/openclaw-state/npm/projects/codex",
+      "/tmp/afora-state/npm",
+      "/tmp/afora-state/npm/projects/codex",
     ]);
-    mocks.relinkOpenClawPeerDependenciesInManagedNpmRoot
+    mocks.relinkAforaPeerDependenciesInManagedNpmRoot
       .mockResolvedValueOnce({
         checked: 0,
         attempted: 0,
@@ -249,25 +249,25 @@ describe("runPostCorePluginConvergence", () => {
       });
 
     const result = await runPostCorePluginConvergence({
-      cfg: { plugins: { entries: { codex: { enabled: true } } } } as unknown as OpenClawConfig,
-      env: { OPENCLAW_STATE_DIR: "/tmp/openclaw-state" },
+      cfg: { plugins: { entries: { codex: { enabled: true } } } } as unknown as AforaConfig,
+      env: { AFORA_STATE_DIR: "/tmp/afora-state" },
     });
 
-    expect(mocks.relinkOpenClawPeerDependenciesInManagedNpmRoot).toHaveBeenNthCalledWith(1, {
-      npmRoot: "/tmp/openclaw-state/npm",
+    expect(mocks.relinkAforaPeerDependenciesInManagedNpmRoot).toHaveBeenNthCalledWith(1, {
+      npmRoot: "/tmp/afora-state/npm",
       logger: {},
       onPackageReadError: expect.any(Function),
     });
-    expect(mocks.relinkOpenClawPeerDependenciesInManagedNpmRoot).toHaveBeenNthCalledWith(2, {
-      npmRoot: "/tmp/openclaw-state/npm/projects/codex",
+    expect(mocks.relinkAforaPeerDependenciesInManagedNpmRoot).toHaveBeenNthCalledWith(2, {
+      npmRoot: "/tmp/afora-state/npm/projects/codex",
       logger: {},
       onPackageReadError: expect.any(Function),
     });
     expect(result.changes).toEqual([
-      "Repaired OpenClaw host peer link(s) for 1 managed npm plugin package(s).",
+      "Repaired Afora host peer link(s) for 1 managed npm plugin package(s).",
     ]);
     expect(
-      mocks.relinkOpenClawPeerDependenciesInManagedNpmRoot.mock.invocationCallOrder[0],
+      mocks.relinkAforaPeerDependenciesInManagedNpmRoot.mock.invocationCallOrder[0],
     ).toBeLessThan(
       expectDefined(
         mocks.runPluginPayloadSmokeCheck.mock.invocationCallOrder[0],
@@ -279,23 +279,23 @@ describe("runPostCorePluginConvergence", () => {
   it.each(["peerDependencies", "dependencies"] as const)(
     "repairs a registered extensions-root %s stale host before the real payload smoke check",
     async (dependencyField) => {
-      const stateDir = tempDirs.make("openclaw-post-core-convergence-");
+      const stateDir = tempDirs.make("afora-post-core-convergence-");
       const packageDir = path.join(stateDir, "extensions", "email");
-      const staleHostDir = path.join(packageDir, "node_modules", "openclaw");
+      const staleHostDir = path.join(packageDir, "node_modules", "afora");
       fs.mkdirSync(staleHostDir, { recursive: true });
       fs.writeFileSync(
         path.join(packageDir, "package.json"),
         JSON.stringify({
           name: "@clawemail/email",
           version: "2026.7.1",
-          [dependencyField]: { openclaw: ">=2026.7.1" },
-          openclaw: { extensions: ["./index.js"] },
+          [dependencyField]: { afora: ">=2026.7.1" },
+          afora: { extensions: ["./index.js"] },
         }),
       );
       fs.writeFileSync(path.join(packageDir, "index.js"), "export default {};\n");
       fs.writeFileSync(
         path.join(staleHostDir, "package.json"),
-        JSON.stringify({ name: "openclaw", version: "2026.7.1-beta.2" }),
+        JSON.stringify({ name: "afora", version: "2026.7.1-beta.2" }),
       );
       const records = {
         email: { source: "npm" as const, installPath: packageDir },
@@ -314,7 +314,7 @@ describe("runPostCorePluginConvergence", () => {
 
       const result = await runPostCorePluginConvergence({
         cfg: { plugins: { entries: { email: { enabled: true } } } },
-        env: { OPENCLAW_STATE_DIR: stateDir },
+        env: { AFORA_STATE_DIR: stateDir },
         baselineInstallRecords: records,
       });
 
@@ -329,7 +329,7 @@ describe("runPostCorePluginConvergence", () => {
     const baseline = { matrix: { source: "npm" as const, installPath: "/p/matrix" } };
     const cfg = {
       plugins: { entries: { matrix: { enabled: true } } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     mocks.repairMissingConfiguredPluginInstalls.mockResolvedValue({
       changes: [],
       warnings: [],
@@ -343,8 +343,8 @@ describe("runPostCorePluginConvergence", () => {
     expect(mocks.maybeRepairStaleManagedNpmBundledPlugins).toHaveBeenCalledWith({
       config: cfg,
       env: {
-        OPENCLAW_COMPATIBILITY_HOST_VERSION: VERSION,
-        OPENCLAW_UPDATE_POST_CORE_CONVERGENCE: "1",
+        AFORA_COMPATIBILITY_HOST_VERSION: VERSION,
+        AFORA_UPDATE_POST_CORE_CONVERGENCE: "1",
       },
       installRecords: baseline,
       prompter: { shouldRepair: true },
@@ -353,21 +353,21 @@ describe("runPostCorePluginConvergence", () => {
     expect(mocks.repairMissingConfiguredPluginInstalls).toHaveBeenCalledWith({
       cfg,
       env: {
-        OPENCLAW_COMPATIBILITY_HOST_VERSION: VERSION,
-        OPENCLAW_UPDATE_POST_CORE_CONVERGENCE: "1",
+        AFORA_COMPATIBILITY_HOST_VERSION: VERSION,
+        AFORA_UPDATE_POST_CORE_CONVERGENCE: "1",
       },
       baselineRecords: baseline,
     });
   });
 
   it("prunes stale local bundled plugin shadows from baseline records before repair", async () => {
-    const bundledRoot = tempDirs.make("openclaw-post-core-convergence-");
+    const bundledRoot = tempDirs.make("afora-post-core-convergence-");
     writeBundledPlugin(bundledRoot, "discord");
     const baseline = {
       discord: {
         source: "path" as const,
         installPath: path.join(
-          tempDirs.make("openclaw-post-core-convergence-"),
+          tempDirs.make("afora-post-core-convergence-"),
           "dist",
           "extensions",
           "discord",
@@ -383,13 +383,13 @@ describe("runPostCorePluginConvergence", () => {
     });
     const cfg = {
       plugins: { entries: { discord: { enabled: true }, brave: { enabled: true } } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const result = await runPostCorePluginConvergence({
       cfg,
       env: {
-        OPENCLAW_BUNDLED_PLUGINS_DIR: bundledRoot,
-        OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
+        AFORA_BUNDLED_PLUGINS_DIR: bundledRoot,
+        AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
         VITEST: "true",
       },
       baselineInstallRecords: baseline,
@@ -398,11 +398,11 @@ describe("runPostCorePluginConvergence", () => {
     expect(mocks.repairMissingConfiguredPluginInstalls).toHaveBeenCalledWith({
       cfg,
       env: {
-        OPENCLAW_BUNDLED_PLUGINS_DIR: bundledRoot,
-        OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
+        AFORA_BUNDLED_PLUGINS_DIR: bundledRoot,
+        AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
         VITEST: "true",
-        OPENCLAW_COMPATIBILITY_HOST_VERSION: VERSION,
-        OPENCLAW_UPDATE_POST_CORE_CONVERGENCE: "1",
+        AFORA_COMPATIBILITY_HOST_VERSION: VERSION,
+        AFORA_UPDATE_POST_CORE_CONVERGENCE: "1",
       },
       baselineRecords: {
         brave: baseline.brave,
@@ -417,7 +417,7 @@ describe("runPostCorePluginConvergence", () => {
   it("forwards ClawHub risk acknowledgement options to repair", async () => {
     const cfg = {
       plugins: { entries: { matrix: { enabled: true } } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const onClawHubRisk = vi.fn(async () => true);
     await runPostCorePluginConvergence({
       cfg,
@@ -429,8 +429,8 @@ describe("runPostCorePluginConvergence", () => {
     expect(mocks.repairMissingConfiguredPluginInstalls).toHaveBeenCalledWith({
       cfg,
       env: {
-        OPENCLAW_COMPATIBILITY_HOST_VERSION: VERSION,
-        OPENCLAW_UPDATE_POST_CORE_CONVERGENCE: "1",
+        AFORA_COMPATIBILITY_HOST_VERSION: VERSION,
+        AFORA_UPDATE_POST_CORE_CONVERGENCE: "1",
       },
       acknowledgeClawHubRisk: true,
       onClawHubRisk,
@@ -441,24 +441,24 @@ describe("runPostCorePluginConvergence", () => {
     mocks.repairMissingConfiguredPluginInstalls.mockResolvedValue({
       changes: [],
       warnings: [
-        'Failed to install missing configured plugin "discord" from @openclaw/discord: ENETUNREACH.',
+        'Failed to install missing configured plugin "discord" from @afora/discord: ENETUNREACH.',
       ],
       records: {},
     });
     const result = await runPostCorePluginConvergence({
       cfg: {
         plugins: { entries: { discord: { enabled: true } } },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       env: {},
     });
     expect(result.errored).toBe(false);
     expect(result.warnings).toStrictEqual([
       {
         reason:
-          'Failed to install missing configured plugin "discord" from @openclaw/discord: ENETUNREACH.',
+          'Failed to install missing configured plugin "discord" from @afora/discord: ENETUNREACH.',
         message:
-          'Failed to install missing configured plugin "discord" from @openclaw/discord: ENETUNREACH.',
-        guidance: ["Run `openclaw update repair` to retry plugin repair."],
+          'Failed to install missing configured plugin "discord" from @afora/discord: ENETUNREACH.',
+        guidance: ["Run `afora update repair` to retry plugin repair."],
       },
     ]);
   });
@@ -467,7 +467,7 @@ describe("runPostCorePluginConvergence", () => {
     mocks.repairMissingConfiguredPluginInstalls.mockResolvedValue({
       changes: [],
       warnings: [
-        'Failed to install missing configured plugin "matrix" from clawhub:@openclaw/matrix@beta: ClawHub ClawPack download for @openclaw/matrix@2026.6.1-beta.1 body stalled after 30000ms.',
+        'Failed to install missing configured plugin "matrix" from clawhub:@afora/matrix@beta: ClawHub ClawPack download for @afora/matrix@2026.6.1-beta.1 body stalled after 30000ms.',
       ],
       failedPluginIds: ["matrix"],
       records: {},
@@ -475,17 +475,17 @@ describe("runPostCorePluginConvergence", () => {
     const result = await runPostCorePluginConvergence({
       cfg: {
         plugins: { entries: { matrix: { enabled: true } } },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       env: {},
     });
     expect(result.errored).toBe(false);
     expect(result.warnings).toStrictEqual([
       {
         reason:
-          'Failed to install missing configured plugin "matrix" from clawhub:@openclaw/matrix@beta: ClawHub ClawPack download for @openclaw/matrix@2026.6.1-beta.1 body stalled after 30000ms.',
+          'Failed to install missing configured plugin "matrix" from clawhub:@afora/matrix@beta: ClawHub ClawPack download for @afora/matrix@2026.6.1-beta.1 body stalled after 30000ms.',
         message:
-          'Failed to install missing configured plugin "matrix" from clawhub:@openclaw/matrix@beta: ClawHub ClawPack download for @openclaw/matrix@2026.6.1-beta.1 body stalled after 30000ms.',
-        guidance: ["Run `openclaw update repair` to retry plugin repair."],
+          'Failed to install missing configured plugin "matrix" from clawhub:@afora/matrix@beta: ClawHub ClawPack download for @afora/matrix@2026.6.1-beta.1 body stalled after 30000ms.',
+        guidance: ["Run `afora update repair` to retry plugin repair."],
       },
     ]);
     expect(mocks.runPluginPayloadSmokeCheck).toHaveBeenCalledWith({
@@ -498,7 +498,7 @@ describe("runPostCorePluginConvergence", () => {
     mocks.repairMissingConfiguredPluginInstalls.mockResolvedValue({
       changes: [],
       warnings: [
-        'Failed to install missing configured plugin "discord" from @openclaw/discord: ENETUNREACH.',
+        'Failed to install missing configured plugin "discord" from @afora/discord: ENETUNREACH.',
       ],
       failedPluginIds: ["discord"],
       records: {
@@ -515,7 +515,7 @@ describe("runPostCorePluginConvergence", () => {
           deny: ["discord"],
           entries: { discord: { enabled: true } },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       env: {},
     });
     expect(result.errored).toBe(false);
@@ -529,7 +529,7 @@ describe("runPostCorePluginConvergence", () => {
     mocks.repairMissingConfiguredPluginInstalls.mockResolvedValue({
       changes: ['Installed missing configured plugin "discord".'],
       notices: [
-        'ClawHub trust warning for "@openclaw/discord@1.2.3": ClawHub has not completed a fresh clean security check for this release. Status: security scan is pending. Review the package before enabling it.',
+        'ClawHub trust warning for "@afora/discord@1.2.3": ClawHub has not completed a fresh clean security check for this release. Status: security scan is pending. Review the package before enabling it.',
       ],
       warnings: [],
       records: { discord: { source: "clawhub", installPath: "/p/discord" } },
@@ -537,7 +537,7 @@ describe("runPostCorePluginConvergence", () => {
     const result = await runPostCorePluginConvergence({
       cfg: {
         plugins: { entries: { discord: { enabled: true } } },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       env: {},
     });
     expect(result.errored).toBe(false);
@@ -545,9 +545,9 @@ describe("runPostCorePluginConvergence", () => {
     expect(result.notices).toStrictEqual([
       {
         reason:
-          'ClawHub trust warning for "@openclaw/discord@1.2.3": ClawHub has not completed a fresh clean security check for this release. Status: security scan is pending. Review the package before enabling it.',
+          'ClawHub trust warning for "@afora/discord@1.2.3": ClawHub has not completed a fresh clean security check for this release. Status: security scan is pending. Review the package before enabling it.',
         message:
-          'ClawHub trust warning for "@openclaw/discord@1.2.3": ClawHub has not completed a fresh clean security check for this release. Status: security scan is pending. Review the package before enabling it.',
+          'ClawHub trust warning for "@afora/discord@1.2.3": ClawHub has not completed a fresh clean security check for this release. Status: security scan is pending. Review the package before enabling it.',
         guidance: [],
       },
     ]);
@@ -578,7 +578,7 @@ describe("runPostCorePluginConvergence", () => {
     const result = await runPostCorePluginConvergence({
       cfg: {
         plugins: { entries: { brave: { enabled: true } } },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       env: {},
     });
     expect(result.errored).toBe(true);
@@ -590,8 +590,8 @@ describe("runPostCorePluginConvergence", () => {
         message:
           'Plugin "brave" failed post-core payload smoke check (missing-main-entry): Plugin main entry "dist/index.js" not found at /p/brave/dist/index.js',
         guidance: [
-          "Run `openclaw update repair` to retry plugin repair.",
-          "Run `openclaw plugins inspect brave --runtime --json` for details.",
+          "Run `afora update repair` to retry plugin repair.",
+          "Run `afora plugins inspect brave --runtime --json` for details.",
         ],
       },
     ]);
@@ -616,7 +616,7 @@ describe("runPostCorePluginConvergence", () => {
     const result = await runPostCorePluginConvergence({
       cfg: {
         plugins: { entries: { brave: { enabled: true } } },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       env: {},
     });
     expect(result.errored).toBe(true);
@@ -627,8 +627,8 @@ describe("runPostCorePluginConvergence", () => {
         message:
           'Plugin "brave" failed post-core payload smoke check (missing-install-path): Install path is missing from the plugin install record.',
         guidance: [
-          "Run `openclaw update repair` to retry plugin repair.",
-          "Run `openclaw plugins inspect brave --runtime --json` for details.",
+          "Run `afora update repair` to retry plugin repair.",
+          "Run `afora plugins inspect brave --runtime --json` for details.",
         ],
       },
     ]);
@@ -655,15 +655,15 @@ describe("runPostCorePluginConvergence", () => {
     const result = await runPostCorePluginConvergence({
       cfg: {
         plugins: { entries: { brave: { enabled: true } } },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       env: {},
     });
 
     const message =
       'Plugin "brave" failed post-core payload smoke check (unreadable-package-json): Could not read package.json at /p/brave/package.json: EACCES: permission denied';
     const guidance = [
-      "Fix file access for /p/brave/package.json so it is readable by the user running OpenClaw. For EACCES or EPERM, correct its ownership or permissions; otherwise resolve the reported filesystem I/O error, then retry.",
-      "Run `openclaw plugins inspect brave --runtime --json` for details.",
+      "Fix file access for /p/brave/package.json so it is readable by the user running Afora. For EACCES or EPERM, correct its ownership or permissions; otherwise resolve the reported filesystem I/O error, then retry.",
+      "Run `afora plugins inspect brave --runtime --json` for details.",
     ];
     expect(result.warnings).toStrictEqual([
       {
@@ -682,13 +682,13 @@ describe("runPostCorePluginConvergence", () => {
   });
 
   it("does not duplicate a package-scoped repair error owned by a smoke failure", async () => {
-    const installPath = "/tmp/openclaw-state/npm/projects/brave/node_modules/brave";
+    const installPath = "/tmp/afora-state/npm/projects/brave/node_modules/brave";
     mocks.repairMissingConfiguredPluginInstalls.mockResolvedValue({
       changes: [],
       warnings: [],
       records: { brave: { source: "npm", installPath } },
     });
-    mocks.relinkOpenClawPeerDependenciesInManagedNpmRoot.mockImplementation(
+    mocks.relinkAforaPeerDependenciesInManagedNpmRoot.mockImplementation(
       async (params: { onPackageReadError?: (error: unknown, packageDir: string) => void }) => {
         params.onPackageReadError?.(
           new Error(`EACCES: permission denied, open '${installPath}/package.json'`),
@@ -712,8 +712,8 @@ describe("runPostCorePluginConvergence", () => {
     const result = await runPostCorePluginConvergence({
       cfg: {
         plugins: { entries: { brave: { enabled: true } } },
-      } as unknown as OpenClawConfig,
-      env: { OPENCLAW_STATE_DIR: "/tmp/openclaw-state" },
+      } as unknown as AforaConfig,
+      env: { AFORA_STATE_DIR: "/tmp/afora-state" },
     });
 
     expect(result.warnings).toHaveLength(1);
@@ -725,7 +725,7 @@ describe("runPostCorePluginConvergence", () => {
   });
 
   it("keeps an active __proto__ record in smoke and package-path classification", async () => {
-    const installPath = "/tmp/openclaw-state/npm/projects/__proto__/node_modules/__proto__";
+    const installPath = "/tmp/afora-state/npm/projects/__proto__/node_modules/__proto__";
     const record: PluginInstallRecord = { source: "npm", installPath };
     const records = Object.create(null) as Record<string, PluginInstallRecord>;
     Object.defineProperty(records, "__proto__", {
@@ -739,7 +739,7 @@ describe("runPostCorePluginConvergence", () => {
       warnings: [],
       records,
     });
-    mocks.relinkOpenClawPeerDependenciesInManagedNpmRoot.mockImplementation(
+    mocks.relinkAforaPeerDependenciesInManagedNpmRoot.mockImplementation(
       async (params: { onPackageReadError?: (error: unknown, packageDir: string) => void }) => {
         params.onPackageReadError?.(new Error("EACCES: permission denied"), installPath);
         return { checked: 0, attempted: 0, repaired: 0, skipped: 1 };
@@ -765,8 +765,8 @@ describe("runPostCorePluginConvergence", () => {
     );
 
     const result = await runPostCorePluginConvergence({
-      cfg: { plugins: { enabled: true } } as unknown as OpenClawConfig,
-      env: { OPENCLAW_STATE_DIR: "/tmp/openclaw-state" },
+      cfg: { plugins: { enabled: true } } as unknown as AforaConfig,
+      env: { AFORA_STATE_DIR: "/tmp/afora-state" },
     });
 
     expect(result.warnings).toHaveLength(1);
@@ -778,13 +778,13 @@ describe("runPostCorePluginConvergence", () => {
   });
 
   it("does not promote an inactive package read error into an ownerless blocker", async () => {
-    const installPath = "/tmp/openclaw-state/npm/projects/brave/node_modules/brave";
+    const installPath = "/tmp/afora-state/npm/projects/brave/node_modules/brave";
     mocks.repairMissingConfiguredPluginInstalls.mockResolvedValue({
       changes: [],
       warnings: [],
       records: { brave: { source: "npm", installPath } },
     });
-    mocks.relinkOpenClawPeerDependenciesInManagedNpmRoot.mockImplementation(
+    mocks.relinkAforaPeerDependenciesInManagedNpmRoot.mockImplementation(
       async (params: { onPackageReadError?: (error: unknown, packageDir: string) => void }) => {
         params.onPackageReadError?.(
           new Error(`EACCES: permission denied, open '${installPath}/package.json'`),
@@ -797,8 +797,8 @@ describe("runPostCorePluginConvergence", () => {
     const result = await runPostCorePluginConvergence({
       cfg: {
         plugins: { entries: { brave: { enabled: false } } },
-      } as unknown as OpenClawConfig,
-      env: { OPENCLAW_STATE_DIR: "/tmp/openclaw-state" },
+      } as unknown as AforaConfig,
+      env: { AFORA_STATE_DIR: "/tmp/afora-state" },
     });
 
     expect(mocks.runPluginPayloadSmokeCheck).toHaveBeenCalledWith({
@@ -810,8 +810,8 @@ describe("runPostCorePluginConvergence", () => {
   });
 
   it("keeps an unowned package read error visible for startup to block", async () => {
-    const packageDir = "/tmp/openclaw-state/npm/node_modules/untracked";
-    mocks.relinkOpenClawPeerDependenciesInManagedNpmRoot.mockImplementation(
+    const packageDir = "/tmp/afora-state/npm/node_modules/untracked";
+    mocks.relinkAforaPeerDependenciesInManagedNpmRoot.mockImplementation(
       async (params: { onPackageReadError?: (error: unknown, packageDir: string) => void }) => {
         params.onPackageReadError?.(new Error("EACCES: permission denied"), packageDir);
         return { checked: 0, attempted: 0, repaired: 0, skipped: 1 };
@@ -819,15 +819,15 @@ describe("runPostCorePluginConvergence", () => {
     );
 
     const result = await runPostCorePluginConvergence({
-      cfg: { plugins: { entries: {} } } as unknown as OpenClawConfig,
-      env: { OPENCLAW_STATE_DIR: "/tmp/openclaw-state" },
+      cfg: { plugins: { entries: {} } } as unknown as AforaConfig,
+      env: { AFORA_STATE_DIR: "/tmp/afora-state" },
     });
 
     expect(result.warnings).toStrictEqual([
       {
-        reason: "Failed to repair managed npm OpenClaw host peer links: EACCES: permission denied",
-        message: "Failed to repair managed npm OpenClaw host peer links: EACCES: permission denied",
-        guidance: ["Run `openclaw update repair` to retry plugin repair."],
+        reason: "Failed to repair managed npm Afora host peer links: EACCES: permission denied",
+        message: "Failed to repair managed npm Afora host peer links: EACCES: permission denied",
+        guidance: ["Run `afora update repair` to retry plugin repair."],
       },
     ]);
     expect(result.errored).toBe(false);
@@ -843,15 +843,15 @@ describe("runPostCorePluginConvergence", () => {
     await runPostCorePluginConvergence({
       cfg: {
         plugins: { entries: { brave: { enabled: true } } },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       env: {},
     });
     expect(mocks.runPluginPayloadSmokeCheck).toHaveBeenCalledTimes(1);
     expect(mocks.runPluginPayloadSmokeCheck).toHaveBeenCalledWith({
       records,
       env: {
-        OPENCLAW_COMPATIBILITY_HOST_VERSION: VERSION,
-        OPENCLAW_UPDATE_POST_CORE_CONVERGENCE: "1",
+        AFORA_COMPATIBILITY_HOST_VERSION: VERSION,
+        AFORA_UPDATE_POST_CORE_CONVERGENCE: "1",
       },
     });
   });
@@ -866,12 +866,12 @@ describe("convergenceWarningsToOutcomes", () => {
           pluginId: "brave",
           reason: "missing-main-entry: …",
           message: 'Plugin "brave" failed payload smoke check.',
-          guidance: ["Run `openclaw update repair`."],
+          guidance: ["Run `afora update repair`."],
         },
         {
           reason: "Failed install",
           message: "Failed install for some plugin.",
-          guidance: ["Run `openclaw update repair`."],
+          guidance: ["Run `afora update repair`."],
         },
       ],
       errored: true,
@@ -911,7 +911,7 @@ describe("filterRecordsToActive", () => {
       });
 
       const filtered = filterRecordsToActive({
-        cfg: { plugins: { enabled: true } } as unknown as OpenClawConfig,
+        cfg: { plugins: { enabled: true } } as unknown as AforaConfig,
         records,
       });
 
@@ -933,7 +933,7 @@ describe("filterRecordsToActive", () => {
     const filtered = filterRecordsToActive({
       cfg: {
         plugins: { enabled: true, entries: { enabled: { enabled: true } } },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       records,
     });
     expect(filtered).toEqual(records);
@@ -953,7 +953,7 @@ describe("filterRecordsToActive", () => {
             "active-plugin": { enabled: true },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       records,
     });
     expect(filtered).toEqual({
@@ -971,7 +971,7 @@ describe("filterRecordsToActive", () => {
           enabled: true,
           deny: ["denied"],
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       records,
     });
     expect(filtered).toEqual({});
@@ -984,7 +984,7 @@ describe("filterRecordsToActive", () => {
     const records = {
       codex: {
         source: "npm" as const,
-        spec: "@openclaw/codex",
+        spec: "@afora/codex",
         installPath: "/p/codex",
         trustedSourceLinkedOfficial: true,
       },
@@ -995,7 +995,7 @@ describe("filterRecordsToActive", () => {
           enabled: true,
           entries: { codex: { enabled: false } },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       records,
     });
     expect(filtered).toEqual(records);

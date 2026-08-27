@@ -1,5 +1,5 @@
 // Discord tests cover targets plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveDiscordDirectoryUserId } from "./directory-cache.js";
 import { clearDiscordDirectoryCacheForTest } from "./directory-cache.test-support.js";
@@ -98,7 +98,7 @@ describe("resolveDiscordChannelId", () => {
 });
 
 describe("resolveDiscordTarget", () => {
-  const cfg = { channels: { discord: {} } } as OpenClawConfig;
+  const cfg = { channels: { discord: {} } } as AforaConfig;
 
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -146,7 +146,7 @@ describe("resolveDiscordTarget", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expectTargetFields(
       await resolveDiscordTarget(
@@ -170,7 +170,7 @@ describe("resolveDiscordTarget", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expectTargetFields(
       await resolveDiscordTarget(
@@ -193,7 +193,7 @@ describe("resolveDiscordTarget", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expectTargetFields(
       await resolveDiscordTarget(
@@ -217,7 +217,7 @@ describe("resolveDiscordTarget", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expectTargetFields(
       await resolveDiscordTarget(
@@ -249,7 +249,7 @@ describe("resolveDiscordTarget", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     vi.spyOn(directoryLive, "listDiscordDirectoryPeersLive").mockResolvedValueOnce([
       { kind: "user", id: "user:999", name: "Jane" } as const,
@@ -297,7 +297,7 @@ describe("discord group policy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       resolveDiscordGroupRequireMention({ cfg: discordCfg, groupSpace: "guild1", groupId: "123" }),
@@ -373,7 +373,7 @@ describe("discord group policy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       resolveDiscordGroupRequireMention({

@@ -1,5 +1,5 @@
 // Defines and normalizes doctor session route state ownership for plugin repairs.
-import { normalizeTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+import { normalizeTrimmedStringList } from "@afora/normalization-core/string-normalization";
 
 export type DoctorSessionRouteStateOwner = {
   id: string;

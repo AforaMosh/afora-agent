@@ -1,7 +1,7 @@
 // Model list result building resolves visible model catalogs for an agent and
 // strips runtime-only provider params before sending the browse API payload.
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { asPositiveSafeInteger as resolvePositiveSafeInteger } from "@openclaw/normalization-core/number-coercion";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import { asPositiveSafeInteger as resolvePositiveSafeInteger } from "@afora/normalization-core/number-coercion";
 import type { ModelChoice } from "../../../packages/gateway-protocol/src/schema/agents-models-skills.js";
 import type { PreparedAgentCredentialModes } from "../../agents/agent-auth-credential-modes.js";
 import {
@@ -48,7 +48,7 @@ import { publishedModelCatalogOwnerMatchesAgent } from "../../agents/prepared-mo
 import { preparedModelRuntimeConfigsMatch } from "../../agents/prepared-model-runtime.js";
 import { resolveDefaultAgentWorkspaceDir } from "../../agents/workspace.js";
 import { getRuntimeConfigSourceSnapshot } from "../../config/config.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { PluginMetadataSnapshot } from "../../plugins/plugin-metadata-snapshot.types.js";
 import type { ProviderCatalogOutcome } from "../../plugins/provider-catalog.types.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
@@ -103,7 +103,7 @@ function buildPublicModelProjection(entry: ModelCatalogEntry): ModelsListEntry {
 }
 
 function resolveModelChoiceAgentRuntime(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   entry: ModelCatalogEntry;
 }): GatewayAgentRuntime | undefined {
@@ -128,7 +128,7 @@ function resolveLegacyEntryAvailability(params: {
   authResolver: ModelAuthAvailabilityResolver;
   entry: ModelCatalogEntry;
   primaryAvailability: ModelsListAvailability;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   metadataSnapshot: PluginMetadataSnapshot;
 }): ModelsListAvailability {
@@ -159,7 +159,7 @@ function resolveLegacyEntryAvailability(params: {
 }
 
 function createModelsListEntryEvaluator(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   authResolver: ModelAuthAvailabilityResolver;
   metadataSnapshot: PluginMetadataSnapshot;
@@ -228,7 +228,7 @@ function resolveGatewayModelCatalogRouteKey(entry: ModelCatalogEntry): string {
 
 /** Configured dynamic-catalog providers that omit explicit model inventory. */
 function listConfiguredRuntimeDiscoveryProviderIds(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   metadataSnapshot?: Pick<PluginMetadataSnapshot, "plugins">,
 ): Set<string> {
   const ids = new Set<string>();
@@ -298,7 +298,7 @@ function resolveProviderConfigInventoryEntries(params: {
 
 /** Builds one per-agent, snapshot-scoped route projection for Gateway thinking metadata. */
 export function createGatewayAgentModelCatalogProjector(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   snapshot: ModelCatalogSnapshot;
   metadataSnapshot: PluginMetadataSnapshot;
@@ -406,7 +406,7 @@ export function createGatewayAgentModelCatalogProjector(params: {
 
 async function buildPublicModelsListEntries(params: {
   catalog: ModelCatalogEntry[];
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   evaluateEntry(entry: ModelCatalogEntry): Promise<ModelsListEntryEvaluation>;
   includeInput?: boolean;
@@ -459,7 +459,7 @@ async function buildPublicModelsListEntries(params: {
 }
 
 function apiKeyProviderCapabilities(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   metadataSnapshot: PluginMetadataSnapshot;
   workspaceDir: string;
 }): ApiKeyProviderCapabilities {
@@ -482,7 +482,7 @@ type BuildModelsListResultParams = {
   params: Record<string, unknown>;
   preloadedCatalog?: {
     agentId: string;
-    config: OpenClawConfig;
+    config: AforaConfig;
     snapshot: ModelCatalogSnapshot;
     /** The owner already ran full discovery for this exact snapshot. */
     fullyDiscovered?: boolean;

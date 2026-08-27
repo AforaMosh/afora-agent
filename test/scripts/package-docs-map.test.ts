@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { renderDocsHeadingMap } from "../../scripts/docs-list.js";
-import { restorePrepackArtifacts } from "../../scripts/openclaw-postpack.mjs";
+import { restorePrepackArtifacts } from "../../scripts/afora-postpack.mjs";
 import { preparePackageChangelog } from "../../scripts/package-changelog.mjs";
 import { preparePackageDocsMap, restorePackageDocsMap } from "../../scripts/package-docs-map.mjs";
 import { cleanupTempDirs, makeTempDir } from "../helpers/temp-dir.js";
@@ -18,10 +18,10 @@ const sourceChangelog = `# Changelog
 `;
 
 function makePackageRoot(): string {
-  const root = makeTempDir(tempDirs, "openclaw-package-docs-map-");
+  const root = makeTempDir(tempDirs, "afora-package-docs-map-");
   mkdirSync(path.join(root, "docs"), { recursive: true });
   writeFileSync(path.join(root, "docs", "page.md"), "# Package docs\n", "utf8");
-  writeFileSync(path.join(root, "package.json"), '{"name":"openclaw","version":"2026.8.1"}\n');
+  writeFileSync(path.join(root, "package.json"), '{"name":"afora","version":"2026.8.1"}\n');
   writeFileSync(path.join(root, "CHANGELOG.md"), sourceChangelog);
   return root;
 }
@@ -80,7 +80,7 @@ describe("package docs map", () => {
     expect(rejected).toMatchObject({
       reason: expect.objectContaining({
         code: "PACKAGE_DOCS_MAP_ACTIVE",
-        message: expect.stringContaining("node scripts/openclaw-postpack.mjs"),
+        message: expect.stringContaining("node scripts/afora-postpack.mjs"),
       }),
     });
     expect(readFileSync(mapPath, "utf8")).toBe(renderDocsHeadingMap(path.join(root, "docs")));

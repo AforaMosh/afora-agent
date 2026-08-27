@@ -81,7 +81,7 @@ suite.define(() => {
           "Logging out of account default stops its listener and deletes its saved credentials.",
         );
         await firstConfirm.getByRole("button", { name: "Cancel" }).click();
-        await expect.poll(() => page.locator("openclaw-modal-dialog").count()).toBe(1);
+        await expect.poll(() => page.locator("afora-modal-dialog").count()).toBe(1);
         await expect.poll(async () => gateway.getRequests("channels.logout")).toHaveLength(0);
         await expect(qr.getAttribute("src")).resolves.toBe(QR_DATA_URL);
         await expect
@@ -169,7 +169,7 @@ suite.define(() => {
       await gateway.closeLatest(1012, "Reconnect during logout confirmation");
       await expect.poll(() => gateway.getSocketCount()).toBeGreaterThan(socketCount);
       await confirm.getByRole("button", { name: "Logout" }).click();
-      await expect.poll(() => page.locator("openclaw-modal-dialog").count()).toBe(1);
+      await expect.poll(() => page.locator("afora-modal-dialog").count()).toBe(1);
       await expect.poll(async () => gateway.getRequests("channels.logout")).toHaveLength(0);
     });
   });

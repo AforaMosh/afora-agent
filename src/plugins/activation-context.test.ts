@@ -4,20 +4,20 @@ import {
   createPluginMetadataSnapshot,
   makeRegistry,
 } from "../config/plugin-auto-enable.test-helpers.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { setCurrentPluginMetadataSnapshot } from "./current-plugin-metadata-snapshot.js";
 import type { PluginDiscoveryResult } from "./discovery.js";
 import { clearPluginMetadataLifecycleCaches } from "./plugin-metadata-lifecycle.js";
 
 const applyPluginAutoEnableMock = vi.hoisted(() =>
-  vi.fn((params: { config?: OpenClawConfig }) => ({
+  vi.fn((params: { config?: AforaConfig }) => ({
     config: params.config,
     changes: [],
     autoEnabledReasons: {},
   })),
 );
 const withBundledPluginEnablementCompatMock = vi.hoisted(() =>
-  vi.fn((params: { config?: OpenClawConfig }) => params.config),
+  vi.fn((params: { config?: AforaConfig }) => params.config),
 );
 
 vi.mock("../config/plugin-auto-enable.js", () => ({
@@ -69,7 +69,7 @@ describe("withActivatedPluginIds", () => {
 describe("plugin activation inputs", () => {
   it("passes the current manifest registry into activation auto-enable", () => {
     const manifestRegistry = makeRegistry([{ id: "openai", channels: [], providers: ["openai"] }]);
-    const workspaceDir = "/tmp/openclaw-activation-workspace";
+    const workspaceDir = "/tmp/afora-activation-workspace";
     setCurrentPluginMetadataSnapshot(
       createPluginMetadataSnapshot({
         config: {},
@@ -132,16 +132,16 @@ describe("plugin activation inputs", () => {
   });
 
   it("applies bundled enablement once after canonical auto-enable", () => {
-    const rawConfig = { plugins: { allow: ["openai"] } } satisfies OpenClawConfig;
+    const rawConfig = { plugins: { allow: ["openai"] } } satisfies AforaConfig;
     const autoEnabledConfig = {
       plugins: { allow: ["openai"], entries: { openai: { enabled: true } } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const compatConfig = {
       plugins: {
         allow: ["openai", "anthropic"],
         entries: { openai: { enabled: true }, anthropic: { enabled: true } },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const resolveBundledPluginIds = vi.fn(() => ["anthropic"]);
     applyPluginAutoEnableMock.mockReturnValueOnce({
       config: autoEnabledConfig,
@@ -153,7 +153,7 @@ describe("plugin activation inputs", () => {
     const activation = resolveBundledCompatActivationInputs({
       rawConfig,
       env: process.env,
-      workspaceDir: "/tmp/openclaw-activation-workspace",
+      workspaceDir: "/tmp/afora-activation-workspace",
       onlyPluginIds: ["anthropic"],
       applyAutoEnable: true,
       resolveBundledPluginIds,
@@ -161,7 +161,7 @@ describe("plugin activation inputs", () => {
 
     expect(resolveBundledPluginIds).toHaveBeenCalledWith({
       config: autoEnabledConfig,
-      workspaceDir: "/tmp/openclaw-activation-workspace",
+      workspaceDir: "/tmp/afora-activation-workspace",
       env: process.env,
       onlyPluginIds: ["anthropic"],
     });

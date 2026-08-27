@@ -1,5 +1,5 @@
 // Slack plugin module implements approval auth behavior.
-import { createChannelApprovalAuth } from "openclaw/plugin-sdk/approval-auth-runtime";
+import { createChannelApprovalAuth } from "afora-agent/plugin-sdk/approval-auth-runtime";
 import { resolveSlackAccount, resolveSlackAccountAllowFrom } from "./accounts.js";
 import { normalizeSlackApproverId } from "./exec-approvals.js";
 

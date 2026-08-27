@@ -28,7 +28,7 @@ function hashMetrics() {
 
 describe("workspace hash memo", () => {
   it("reuses content hashes only within one reconcile stat identity", async () => {
-    const root = await fs.realpath(tempDirs.make("openclaw-workspace-hash-memo-"));
+    const root = await fs.realpath(tempDirs.make("afora-workspace-hash-memo-"));
     const target = path.join(root, "same-size.txt");
     await fs.writeFile(target, "alpha");
     const memo = new Map<string, string>();
@@ -73,7 +73,7 @@ describe("workspace hash memo", () => {
   });
 
   it("reuses local workspace nodes within one preflight but not across fences", async () => {
-    const root = await fs.realpath(tempDirs.make("openclaw-workspace-preflight-memo-"));
+    const root = await fs.realpath(tempDirs.make("afora-workspace-preflight-memo-"));
     await fs.writeFile(path.join(root, "parent"), "base");
     const baseContent = Buffer.from("base");
     const currentContent = Buffer.from("worker");
@@ -192,7 +192,7 @@ describe("workspace hash memo", () => {
   });
 
   it("reuses hashes only for matching stat identities in one remote reconcile", async () => {
-    const root = tempDirs.make("openclaw-remote-manifest-memo-");
+    const root = tempDirs.make("afora-remote-manifest-memo-");
     const home = path.join(root, "home");
     let workspace = path.join(root, "workspace");
     await Promise.all([fs.mkdir(home), fs.mkdir(workspace)]);
@@ -239,7 +239,7 @@ describe("workspace hash memo", () => {
   });
 
   it("bounds the remote memo to the largest files and reports truncation", async () => {
-    const root = tempDirs.make("openclaw-remote-manifest-memo-cap-");
+    const root = tempDirs.make("afora-remote-manifest-memo-cap-");
     const home = path.join(root, "home");
     const workspace = path.join(root, "workspace");
     await Promise.all([fs.mkdir(home), fs.mkdir(workspace)]);

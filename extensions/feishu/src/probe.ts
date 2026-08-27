@@ -1,10 +1,10 @@
 // Feishu plugin module implements probe behavior.
 import { createHash } from "node:crypto";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import {
   asDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "openclaw/plugin-sdk/number-runtime";
+} from "afora-agent/plugin-sdk/number-runtime";
 import { raceWithTimeoutAndAbort } from "./async.js";
 import { createFeishuClient, type FeishuClientCredentials } from "./client.js";
 import type { FeishuProbeResult } from "./types.js";
@@ -222,7 +222,7 @@ export async function registerFeishuAiAgent(
     const responseResult = await raceWithTimeoutAndAbort<FeishuAiAgentRegistrationResponse>(
       client.request({
         method: "POST",
-        url: "/open-apis/bot/v1/openclaw_bot/ping",
+        url: "/open-apis/bot/v1/afora_bot/ping",
         data: { needBotInfo: true },
         timeout: timeoutMs,
       }) as Promise<FeishuAiAgentRegistrationResponse>,

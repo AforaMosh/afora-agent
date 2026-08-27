@@ -158,7 +158,7 @@ export function isAssistantForModelRef(
 }
 
 function isEmbeddedHarnessProvider(provider: string): boolean {
-  return provider.trim().toLowerCase() === "openclaw";
+  return provider.trim().toLowerCase() === "afora";
 }
 
 export function resolveReportedModelRef(params: {

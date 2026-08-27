@@ -1,5 +1,5 @@
 // Docker E2E aggregate scheduler.
-// Builds shared Docker images, prepares one OpenClaw npm tarball, assigns lanes
+// Builds shared Docker images, prepares one Afora npm tarball, assigns lanes
 // to bare/functional images, and runs lanes through weighted resource pools.
 
 import assert from "node:assert/strict";
@@ -8,7 +8,7 @@ import fs from "node:fs";
 import { mkdir, open, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
   DEFAULT_E2E_BARE_IMAGE,
   DEFAULT_E2E_FUNCTIONAL_IMAGE,
@@ -23,7 +23,7 @@ import {
   laneSummary,
   laneWeight,
   lanesNeedE2eImageKind,
-  lanesNeedOpenClawPackage,
+  lanesNeedAforaPackage,
   normalizeReleaseProfile,
   parseLaneSelection,
   parseLiveMode,
@@ -39,7 +39,7 @@ import {
 } from "./prepublish-plugin-registry-artifact.mjs";
 
 const SCRIPT_ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const ROOT_DIR = path.resolve(process.env.OPENCLAW_DOCKER_E2E_REPO_ROOT || SCRIPT_ROOT_DIR);
+const ROOT_DIR = path.resolve(process.env.AFORA_DOCKER_E2E_REPO_ROOT || SCRIPT_ROOT_DIR);
 const LIVE_DOCKER_DEFAULT_HARNESS_DIR =
   path.basename(SCRIPT_ROOT_DIR) === ".release-harness" && ROOT_DIR !== SCRIPT_ROOT_DIR
     ? ".release-harness"
@@ -57,13 +57,13 @@ const SHELL_POST_FORCE_KILL_WAIT_MS = 1_000;
 const SHELL_PROCESS_GROUP_EXIT_POLL_MS = 25;
 const MAX_TIMER_TIMEOUT_MS = 2_147_000_000;
 const DEFAULT_TIMINGS_FILE = path.join(ROOT_DIR, ".artifacts/docker-tests/lane-timings.json");
-const DEFAULT_GITHUB_WORKFLOW = "openclaw-live-and-e2e-checks-reusable.yml";
+const DEFAULT_GITHUB_WORKFLOW = "afora-live-and-e2e-checks-reusable.yml";
 const CANDIDATE_ENV_KEYS =
-  "OPENCLAW_DOCKER_E2E_SELECTED_SHA OPENCLAW_CURRENT_PACKAGE_TGZ OPENCLAW_CURRENT_PACKAGE_VERSION OPENCLAW_CURRENT_PACKAGE_SHA256".split(
+  "AFORA_DOCKER_E2E_SELECTED_SHA AFORA_CURRENT_PACKAGE_TGZ AFORA_CURRENT_PACKAGE_VERSION AFORA_CURRENT_PACKAGE_SHA256".split(
     " ",
   );
 const REGISTRY_ENV_KEYS =
-  "OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_DIR OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_CANDIDATE_VERSION OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_MANIFEST_SHA256".split(
+  "AFORA_PREPUBLISH_PLUGIN_REGISTRY_DIR AFORA_PREPUBLISH_PLUGIN_REGISTRY_CANDIDATE_VERSION AFORA_PREPUBLISH_PLUGIN_REGISTRY_MANIFEST_SHA256".split(
     " ",
   );
 
@@ -157,7 +157,7 @@ function dockerAllUsage() {
     "  --prepare-plugin-registry Prepare only the selected lanes' plugin registry.",
     "  -h, --help               Show this help.",
     "",
-    "Lane selection and scheduler settings are configured with OPENCLAW_DOCKER_ALL_* env vars.",
+    "Lane selection and scheduler settings are configured with AFORA_DOCKER_ALL_* env vars.",
   ].join("\n");
 }
 
@@ -299,13 +299,13 @@ export function describeDockerSchedulerLimits(parallelism: number, options: Sche
 
 function parseSchedulerOptions(env: NodeJS.ProcessEnv, parallelism: number) {
   const weightLimit = parsePositiveInt(
-    env.OPENCLAW_DOCKER_ALL_WEIGHT_LIMIT,
+    env.AFORA_DOCKER_ALL_WEIGHT_LIMIT,
     parallelism,
-    "OPENCLAW_DOCKER_ALL_WEIGHT_LIMIT",
+    "AFORA_DOCKER_ALL_WEIGHT_LIMIT",
   );
   const resourceLimits: Record<string, number> = {};
   for (const [resource, fallback] of Object.entries(DEFAULT_RESOURCE_LIMITS)) {
-    const envName = `OPENCLAW_DOCKER_ALL_${resource.toUpperCase().replace(/[^A-Z0-9]+/g, "_")}_LIMIT`;
+    const envName = `AFORA_DOCKER_ALL_${resource.toUpperCase().replace(/[^A-Z0-9]+/g, "_")}_LIMIT`;
     resourceLimits[resource] = parsePositiveInt(
       env[envName],
       Math.min(parallelism, fallback),
@@ -374,12 +374,12 @@ function utcStamp() {
 }
 
 function appendExtension(env: NodeJS.ProcessEnv, extension: string) {
-  const current = env.OPENCLAW_DOCKER_BUILD_EXTENSIONS ?? env.OPENCLAW_EXTENSIONS ?? "";
+  const current = env.AFORA_DOCKER_BUILD_EXTENSIONS ?? env.AFORA_EXTENSIONS ?? "";
   const tokens = current.split(/\s+/).filter(Boolean);
   if (!tokens.includes(extension)) {
     tokens.push(extension);
   }
-  env.OPENCLAW_DOCKER_BUILD_EXTENSIONS = tokens.join(" ");
+  env.AFORA_DOCKER_BUILD_EXTENSIONS = tokens.join(" ");
 }
 
 function commandEnv(extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
@@ -416,10 +416,10 @@ function readCompleteTuple(env: NodeJS.ProcessEnv, keys: readonly string[], labe
 
 function validateRegistryEnvironment(baseEnv: NodeJS.ProcessEnv, plan: DockerCandidatePlan) {
   validatePrepublishPluginRegistryArtifact({
-    artifactDir: baseEnv.OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_DIR!,
-    expectedCandidateVersion: baseEnv.OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_CANDIDATE_VERSION!,
-    expectedManifestSha256: baseEnv.OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_MANIFEST_SHA256!,
-    expectedSourceSha: baseEnv.OPENCLAW_DOCKER_E2E_SELECTED_SHA!,
+    artifactDir: baseEnv.AFORA_PREPUBLISH_PLUGIN_REGISTRY_DIR!,
+    expectedCandidateVersion: baseEnv.AFORA_PREPUBLISH_PLUGIN_REGISTRY_CANDIDATE_VERSION!,
+    expectedManifestSha256: baseEnv.AFORA_PREPUBLISH_PLUGIN_REGISTRY_MANIFEST_SHA256!,
+    expectedSourceSha: baseEnv.AFORA_DOCKER_E2E_SELECTED_SHA!,
     requiredPackages: plan.requiredPrepublishPluginPackages,
   });
 }
@@ -431,36 +431,36 @@ export function validateDockerCandidateEnvironment(
 ) {
   const strictCandidate = CANDIDATE_ENV_KEYS.slice(2).some((key) => baseEnv[key]);
   if (!strictCandidate || !plan.needs.package) {
-    baseEnv.OPENCLAW_CURRENT_PACKAGE_TGZ &&= path.resolve(baseEnv.OPENCLAW_CURRENT_PACKAGE_TGZ);
-    const registryDir = baseEnv.OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_DIR;
+    baseEnv.AFORA_CURRENT_PACKAGE_TGZ &&= path.resolve(baseEnv.AFORA_CURRENT_PACKAGE_TGZ);
+    const registryDir = baseEnv.AFORA_PREPUBLISH_PLUGIN_REGISTRY_DIR;
     if (!plan.needs.prepublishPluginRegistry || !registryDir) {
-      delete baseEnv.OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_DIR;
+      delete baseEnv.AFORA_PREPUBLISH_PLUGIN_REGISTRY_DIR;
       return;
     }
-    baseEnv.OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_DIR = path.resolve(registryDir);
+    baseEnv.AFORA_PREPUBLISH_PLUGIN_REGISTRY_DIR = path.resolve(registryDir);
     validateRegistryEnvironment(baseEnv, plan);
     return;
   }
   const candidate = readCompleteTuple(baseEnv, CANDIDATE_ENV_KEYS, "Docker candidate")!;
   const registry = readCompleteTuple(baseEnv, REGISTRY_ENV_KEYS, "Docker candidate registry");
-  const packagePath = candidate.OPENCLAW_CURRENT_PACKAGE_TGZ;
+  const packagePath = candidate.AFORA_CURRENT_PACKAGE_TGZ;
   if (
     !path.isAbsolute(packagePath) ||
-    gitOutput(repoRoot, ["rev-parse", "HEAD"]) !== candidate.OPENCLAW_DOCKER_E2E_SELECTED_SHA
+    gitOutput(repoRoot, ["rev-parse", "HEAD"]) !== candidate.AFORA_DOCKER_E2E_SELECTED_SHA
   ) {
     throw new Error("Docker candidate path must be absolute and selected SHA must equal HEAD");
   }
   const packed = inspectNpmPackageTarball(packagePath);
   if (
-    packed.packageJson.name !== "openclaw" ||
+    packed.packageJson.name !== "afora" ||
     packed.packageJson.version !== rootPackageVersion(repoRoot) ||
-    packed.packageJson.version !== candidate.OPENCLAW_CURRENT_PACKAGE_VERSION ||
-    packed.sha256 !== candidate.OPENCLAW_CURRENT_PACKAGE_SHA256
+    packed.packageJson.version !== candidate.AFORA_CURRENT_PACKAGE_VERSION ||
+    packed.sha256 !== candidate.AFORA_CURRENT_PACKAGE_SHA256
   ) {
     throw new Error("Docker candidate package identity differs from the immutable tuple");
   }
   if (registry) {
-    const registryDir = registry.OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_DIR;
+    const registryDir = registry.AFORA_PREPUBLISH_PLUGIN_REGISTRY_DIR;
     assert(path.isAbsolute(registryDir), "Docker candidate registry path must be absolute");
     validateRegistryEnvironment(baseEnv, plan);
   } else if (plan.needs.prepublishPluginRegistry) {
@@ -481,14 +481,14 @@ export function githubWorkflowRerunCommand(
   ref: string,
   env: NodeJS.ProcessEnv = process.env,
 ) {
-  const workflowRef = env.OPENCLAW_DOCKER_E2E_WORKFLOW_REF || undefined;
-  const releasePath = env.OPENCLAW_DOCKER_ALL_PROFILE === RELEASE_PATH_PROFILE;
-  const allowUnreleasedChangelog = env.OPENCLAW_DOCKER_E2E_ALLOW_UNRELEASED_CHANGELOG === "true";
-  const bareImage = maybeGhcrImage(env.OPENCLAW_DOCKER_E2E_BARE_IMAGE);
-  const functionalImage = maybeGhcrImage(env.OPENCLAW_DOCKER_E2E_FUNCTIONAL_IMAGE);
+  const workflowRef = env.AFORA_DOCKER_E2E_WORKFLOW_REF || undefined;
+  const releasePath = env.AFORA_DOCKER_ALL_PROFILE === RELEASE_PATH_PROFILE;
+  const allowUnreleasedChangelog = env.AFORA_DOCKER_E2E_ALLOW_UNRELEASED_CHANGELOG === "true";
+  const bareImage = maybeGhcrImage(env.AFORA_DOCKER_E2E_BARE_IMAGE);
+  const functionalImage = maybeGhcrImage(env.AFORA_DOCKER_E2E_FUNCTIONAL_IMAGE);
   const fields = [
     "gh workflow run",
-    shellQuote(env.OPENCLAW_DOCKER_E2E_WORKFLOW || DEFAULT_GITHUB_WORKFLOW),
+    shellQuote(env.AFORA_DOCKER_E2E_WORKFLOW || DEFAULT_GITHUB_WORKFLOW),
     ...(workflowRef ? ["--ref", shellQuote(workflowRef)] : []),
     "-f",
     `ref=${shellQuote(ref)}`,
@@ -508,22 +508,22 @@ export function githubWorkflowRerunCommand(
   if (allowUnreleasedChangelog) {
     fields.push("-f", "allow_unreleased_changelog=true");
   }
-  if (env.OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC) {
+  if (env.AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC) {
     fields.push(
       "-f",
-      `published_upgrade_survivor_baseline=${shellQuote(env.OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC)}`,
+      `published_upgrade_survivor_baseline=${shellQuote(env.AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC)}`,
     );
   }
-  if (env.OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPECS) {
+  if (env.AFORA_UPGRADE_SURVIVOR_BASELINE_SPECS) {
     fields.push(
       "-f",
-      `published_upgrade_survivor_baselines=${shellQuote(env.OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPECS)}`,
+      `published_upgrade_survivor_baselines=${shellQuote(env.AFORA_UPGRADE_SURVIVOR_BASELINE_SPECS)}`,
     );
   }
-  if (env.OPENCLAW_UPGRADE_SURVIVOR_SCENARIOS) {
+  if (env.AFORA_UPGRADE_SURVIVOR_SCENARIOS) {
     fields.push(
       "-f",
-      `published_upgrade_survivor_scenarios=${shellQuote(env.OPENCLAW_UPGRADE_SURVIVOR_SCENARIOS)}`,
+      `published_upgrade_survivor_scenarios=${shellQuote(env.AFORA_UPGRADE_SURVIVOR_SCENARIOS)}`,
     );
   }
   if (bareImage) {
@@ -541,23 +541,23 @@ export function githubWorkflowRerunCommand(
 export function buildLaneRerunCommand(name: string, baseEnv: NodeJS.ProcessEnv) {
   const poolLane = findLaneByName(name);
   const build = name.startsWith("live-") ? "1" : "0";
-  const image = poolLane ? e2eImageForLane(poolLane, baseEnv) : baseEnv.OPENCLAW_DOCKER_E2E_IMAGE;
+  const image = poolLane ? e2eImageForLane(poolLane, baseEnv) : baseEnv.AFORA_DOCKER_E2E_IMAGE;
   const env: Array<readonly [string, string | undefined]> = [
-    ["OPENCLAW_DOCKER_ALL_LANES", name],
-    ["OPENCLAW_DOCKER_ALL_BUILD", build],
-    ["OPENCLAW_DOCKER_ALL_PREFLIGHT", "0"],
-    ["OPENCLAW_SKIP_DOCKER_BUILD", "1"],
-    ["OPENCLAW_DOCKER_E2E_IMAGE", image || DEFAULT_E2E_FUNCTIONAL_IMAGE],
-    ["OPENCLAW_DOCKER_E2E_BARE_IMAGE", baseEnv.OPENCLAW_DOCKER_E2E_BARE_IMAGE],
-    ["OPENCLAW_DOCKER_E2E_FUNCTIONAL_IMAGE", baseEnv.OPENCLAW_DOCKER_E2E_FUNCTIONAL_IMAGE],
+    ["AFORA_DOCKER_ALL_LANES", name],
+    ["AFORA_DOCKER_ALL_BUILD", build],
+    ["AFORA_DOCKER_ALL_PREFLIGHT", "0"],
+    ["AFORA_SKIP_DOCKER_BUILD", "1"],
+    ["AFORA_DOCKER_E2E_IMAGE", image || DEFAULT_E2E_FUNCTIONAL_IMAGE],
+    ["AFORA_DOCKER_E2E_BARE_IMAGE", baseEnv.AFORA_DOCKER_E2E_BARE_IMAGE],
+    ["AFORA_DOCKER_E2E_FUNCTIONAL_IMAGE", baseEnv.AFORA_DOCKER_E2E_FUNCTIONAL_IMAGE],
     ...CANDIDATE_ENV_KEYS.map((key) => [key, baseEnv[key]] as const),
     ...REGISTRY_ENV_KEYS.map((key) => [key, baseEnv[key]] as const),
-    ["OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC", baseEnv.OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC],
-    ["OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPECS", baseEnv.OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPECS],
-    ["OPENCLAW_UPGRADE_SURVIVOR_SCENARIOS", baseEnv.OPENCLAW_UPGRADE_SURVIVOR_SCENARIOS],
+    ["AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC", baseEnv.AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC],
+    ["AFORA_UPGRADE_SURVIVOR_BASELINE_SPECS", baseEnv.AFORA_UPGRADE_SURVIVOR_BASELINE_SPECS],
+    ["AFORA_UPGRADE_SURVIVOR_SCENARIOS", baseEnv.AFORA_UPGRADE_SURVIVOR_SCENARIOS],
   ];
-  if (baseEnv.OPENCLAW_DOCKER_ALL_PNPM_COMMAND) {
-    env.push(["OPENCLAW_DOCKER_ALL_PNPM_COMMAND", baseEnv.OPENCLAW_DOCKER_ALL_PNPM_COMMAND]);
+  if (baseEnv.AFORA_DOCKER_ALL_PNPM_COMMAND) {
+    env.push(["AFORA_DOCKER_ALL_PNPM_COMMAND", baseEnv.AFORA_DOCKER_ALL_PNPM_COMMAND]);
   }
   return `${env
     .filter(
@@ -568,7 +568,7 @@ export function buildLaneRerunCommand(name: string, baseEnv: NodeJS.ProcessEnv) 
 }
 
 function liveDockerHarnessScriptCommand(script: string) {
-  return `bash -c 'harness="\${OPENCLAW_DOCKER_E2E_TRUSTED_HARNESS_DIR:-${LIVE_DOCKER_DEFAULT_HARNESS_DIR}}"; OPENCLAW_LIVE_DOCKER_REPO_ROOT="\${OPENCLAW_DOCKER_E2E_REPO_ROOT:-$PWD}" bash "$harness/scripts/${script}"'`;
+  return `bash -c 'harness="\${AFORA_DOCKER_E2E_TRUSTED_HARNESS_DIR:-${LIVE_DOCKER_DEFAULT_HARNESS_DIR}}"; AFORA_LIVE_DOCKER_REPO_ROOT="\${AFORA_DOCKER_E2E_REPO_ROOT:-$PWD}" bash "$harness/scripts/${script}"'`;
 }
 
 async function loadTimingStore(file: string, enabled: boolean) {
@@ -632,7 +632,7 @@ function githubRunSummary(env: NodeJS.ProcessEnv) {
       env.GITHUB_SERVER_URL && env.GITHUB_REPOSITORY && env.GITHUB_RUN_ID
         ? `${env.GITHUB_SERVER_URL}/${env.GITHUB_REPOSITORY}/actions/runs/${env.GITHUB_RUN_ID}`
         : undefined,
-    selectedSha: env.OPENCLAW_DOCKER_E2E_SELECTED_SHA || undefined,
+    selectedSha: env.AFORA_DOCKER_E2E_SELECTED_SHA || undefined,
     sha: env.GITHUB_SHA || undefined,
     workflow: env.GITHUB_WORKFLOW || undefined,
   };
@@ -648,8 +648,8 @@ export async function writeRunSummary(
     ...summary,
     // Summary reruns do not carry failure-index commands, so preserve this exact package intent.
     allowUnreleasedChangelog:
-      env.OPENCLAW_DOCKER_E2E_ALLOW_UNRELEASED_CHANGELOG === "true" ? true : undefined,
-    packageArtifactName: env.OPENCLAW_DOCKER_E2E_PACKAGE_ARTIFACT_NAME || undefined,
+      env.AFORA_DOCKER_E2E_ALLOW_UNRELEASED_CHANGELOG === "true" ? true : undefined,
+    packageArtifactName: env.AFORA_DOCKER_E2E_PACKAGE_ARTIFACT_NAME || undefined,
     finishedAt: new Date().toISOString(),
     github: githubRunSummary(env),
     version: 1,
@@ -662,7 +662,7 @@ export async function writeRunSummary(
 async function writeFailureIndex(logDir: string, summary: RunSummary, env: NodeJS.ProcessEnv) {
   const ref =
     summary.github?.selectedSha ||
-    env.OPENCLAW_DOCKER_E2E_SELECTED_SHA ||
+    env.AFORA_DOCKER_E2E_SELECTED_SHA ||
     summary.github?.sha ||
     summary.github?.ref ||
     env.GITHUB_SHA ||
@@ -700,12 +700,12 @@ async function writeFailureIndex(logDir: string, summary: RunSummary, env: NodeJ
     lanes,
     note: "Targeted GitHub reruns repack the exact selected ref and reuse only GHCR-backed shared images when the generated command includes docker_e2e_*_image inputs.",
     images: summary.images,
-    packageArtifactName: env.OPENCLAW_DOCKER_E2E_PACKAGE_ARTIFACT_NAME || undefined,
+    packageArtifactName: env.AFORA_DOCKER_E2E_PACKAGE_ARTIFACT_NAME || undefined,
     ref,
     runUrl: summary.github?.runUrl,
     status: summary.status,
     version: 1,
-    workflow: env.OPENCLAW_DOCKER_E2E_WORKFLOW || DEFAULT_GITHUB_WORKFLOW,
+    workflow: env.AFORA_DOCKER_E2E_WORKFLOW || DEFAULT_GITHUB_WORKFLOW,
   };
   await fs.promises.writeFile(
     path.join(logDir, "failures.json"),
@@ -745,7 +745,7 @@ function cleanupSmokeResult(
     attempts: [laneAttempt(1, startedAtMs, result)],
     elapsedSeconds: phaseElapsedSeconds(startedAtMs),
     finishedAt: new Date().toISOString(),
-    image: baseEnv.OPENCLAW_DOCKER_E2E_IMAGE,
+    image: baseEnv.AFORA_DOCKER_E2E_IMAGE,
     logFile,
     name: CLEANUP_SMOKE_NAME,
     noOutputTimedOut: result.noOutputTimedOut,
@@ -806,7 +806,7 @@ export function dockerPreflightContainerNames(raw: string): string[] {
   return raw.split(/\r?\n/).flatMap((line) => {
     const name = line.trim().split(/\s+/, 1)[0];
     return name &&
-      /^(?:openclaw-[a-z0-9-]+-e2e-\d+|openclaw-openwebui(?:-gateway)?-\d+)$/u.test(name)
+      /^(?:afora-[a-z0-9-]+-e2e-\d+|afora-openwebui(?:-gateway)?-\d+)$/u.test(name)
       ? [name]
       : [];
   });
@@ -1192,33 +1192,33 @@ async function runDockerPreflight(
   console.log(`==> Docker preflight run: ${elapsedSeconds}s`);
 }
 
-async function prepareOpenClawPackage(baseEnv: NodeJS.ProcessEnv, logDir: string) {
-  const existing = baseEnv.OPENCLAW_CURRENT_PACKAGE_TGZ;
+async function prepareAforaPackage(baseEnv: NodeJS.ProcessEnv, logDir: string) {
+  const existing = baseEnv.AFORA_CURRENT_PACKAGE_TGZ;
   if (existing) {
     const packageTgz = path.resolve(existing);
-    baseEnv.OPENCLAW_CURRENT_PACKAGE_TGZ = packageTgz;
-    baseEnv.OPENCLAW_BUNDLED_CHANNEL_HOST_BUILD = "0";
-    baseEnv.OPENCLAW_NPM_ONBOARD_HOST_BUILD = "0";
-    console.log(`==> OpenClaw package: ${packageTgz}`);
+    baseEnv.AFORA_CURRENT_PACKAGE_TGZ = packageTgz;
+    baseEnv.AFORA_BUNDLED_CHANNEL_HOST_BUILD = "0";
+    baseEnv.AFORA_NPM_ONBOARD_HOST_BUILD = "0";
+    console.log(`==> Afora package: ${packageTgz}`);
     return;
   }
 
-  const packDir = path.join(logDir, "openclaw-package");
+  const packDir = path.join(logDir, "afora-package");
   await mkdir(packDir, { recursive: true });
-  const packageTgz = path.join(packDir, "openclaw-current.tgz");
+  const packageTgz = path.join(packDir, "afora-current.tgz");
   await runForeground(
-    "Prepare OpenClaw package once",
-    `node ${shellQuote(path.join(ROOT_DIR, "scripts/package-openclaw-for-docker.mjs"))} --source-dir ${shellQuote(ROOT_DIR)} --allow-unreleased-changelog --output-dir ${shellQuote(packDir)} --output-name openclaw-current.tgz`,
+    "Prepare Afora package once",
+    `node ${shellQuote(path.join(ROOT_DIR, "scripts/package-afora-for-docker.mjs"))} --source-dir ${shellQuote(ROOT_DIR)} --allow-unreleased-changelog --output-dir ${shellQuote(packDir)} --output-name afora-current.tgz`,
     baseEnv,
   );
   await fs.promises.access(packageTgz);
   // Preserve current-tree package intent in generated GitHub reruns; otherwise a local QA
   // failure would retry through the strict release path and fail before reaching its lane.
-  baseEnv.OPENCLAW_DOCKER_E2E_ALLOW_UNRELEASED_CHANGELOG = "true";
-  baseEnv.OPENCLAW_CURRENT_PACKAGE_TGZ = packageTgz;
-  baseEnv.OPENCLAW_BUNDLED_CHANNEL_HOST_BUILD = "0";
-  baseEnv.OPENCLAW_NPM_ONBOARD_HOST_BUILD = "0";
-  console.log(`==> OpenClaw package: ${baseEnv.OPENCLAW_CURRENT_PACKAGE_TGZ}`);
+  baseEnv.AFORA_DOCKER_E2E_ALLOW_UNRELEASED_CHANGELOG = "true";
+  baseEnv.AFORA_CURRENT_PACKAGE_TGZ = packageTgz;
+  baseEnv.AFORA_BUNDLED_CHANNEL_HOST_BUILD = "0";
+  baseEnv.AFORA_NPM_ONBOARD_HOST_BUILD = "0";
+  console.log(`==> Afora package: ${baseEnv.AFORA_CURRENT_PACKAGE_TGZ}`);
 }
 
 export function preparePrepublishPluginRegistry(
@@ -1254,11 +1254,11 @@ async function prepareDockerCandidate(
     for (const key of [...CANDIDATE_ENV_KEYS, ...REGISTRY_ENV_KEYS]) {
       delete candidateEnv[key];
     }
-    await prepareOpenClawPackage(candidateEnv, logDir);
-    const packagePath = candidateEnv.OPENCLAW_CURRENT_PACKAGE_TGZ!;
+    await prepareAforaPackage(candidateEnv, logDir);
+    const packagePath = candidateEnv.AFORA_CURRENT_PACKAGE_TGZ!;
     const packed = inspectNpmPackageTarball(packagePath);
     const version = rootPackageVersion(ROOT_DIR);
-    if (packed.packageJson.name !== "openclaw" || packed.packageJson.version !== version) {
+    if (packed.packageJson.name !== "afora" || packed.packageJson.version !== version) {
       throw new Error("packed Docker candidate name or version differs from the root package");
     }
     let registry = null;
@@ -1273,24 +1273,24 @@ async function prepareDockerCandidate(
   await mkdir(path.dirname(manifestPath), { recursive: true });
   fs.writeFileSync(
     manifestPath,
-    `${JSON.stringify({ schema: "openclaw.qa-docker-candidate/v1", schemaVersion: 1, sourceSha, candidate }, null, 2)}\n`,
+    `${JSON.stringify({ schema: "afora.qa-docker-candidate/v1", schemaVersion: 1, sourceSha, candidate }, null, 2)}\n`,
   );
 }
 
 function e2eImageForLane(poolLane: DockerE2eLane, baseEnv: NodeJS.ProcessEnv) {
   if (poolLane.e2eImageKind === "bare") {
-    return baseEnv.OPENCLAW_DOCKER_E2E_BARE_IMAGE;
+    return baseEnv.AFORA_DOCKER_E2E_BARE_IMAGE;
   }
   if (poolLane.e2eImageKind === "functional") {
-    return baseEnv.OPENCLAW_DOCKER_E2E_FUNCTIONAL_IMAGE;
+    return baseEnv.AFORA_DOCKER_E2E_FUNCTIONAL_IMAGE;
   }
   return undefined;
 }
 
 type DockerLaneEnv = {
   [key: string]: string | undefined;
-  OPENCLAW_DOCKER_CACHE_HOME_DIR: string;
-  OPENCLAW_DOCKER_CLI_TOOLS_DIR: string;
+  AFORA_DOCKER_CACHE_HOME_DIR: string;
+  AFORA_DOCKER_CLI_TOOLS_DIR: string;
 };
 
 function laneEnv(
@@ -1303,18 +1303,18 @@ function laneEnv(
   const cacheName = cacheKey || name;
   const env: DockerLaneEnv = {
     ...baseEnv,
-    OPENCLAW_DOCKER_CACHE_HOME_DIR:
-      process.env.OPENCLAW_DOCKER_CACHE_HOME_DIR ?? path.join(logDir, `${cacheName}-cache`),
-    OPENCLAW_DOCKER_CLI_TOOLS_DIR:
-      process.env.OPENCLAW_DOCKER_CLI_TOOLS_DIR ?? path.join(logDir, `${cacheName}-cli-tools`),
+    AFORA_DOCKER_CACHE_HOME_DIR:
+      process.env.AFORA_DOCKER_CACHE_HOME_DIR ?? path.join(logDir, `${cacheName}-cache`),
+    AFORA_DOCKER_CLI_TOOLS_DIR:
+      process.env.AFORA_DOCKER_CLI_TOOLS_DIR ?? path.join(logDir, `${cacheName}-cli-tools`),
   };
-  env.OPENCLAW_DOCKER_ALL_LANE_NAME = name;
+  env.AFORA_DOCKER_ALL_LANE_NAME = name;
   const image = e2eImageForLane(poolLane, baseEnv);
   if (image) {
-    env.OPENCLAW_DOCKER_E2E_IMAGE = image;
+    env.AFORA_DOCKER_E2E_IMAGE = image;
   }
   if (poolLane.e2eImageKind) {
-    env.OPENCLAW_DOCKER_E2E_IMAGE_KIND = poolLane.e2eImageKind;
+    env.AFORA_DOCKER_E2E_IMAGE_KIND = poolLane.e2eImageKind;
   }
   return env;
 }
@@ -1330,22 +1330,22 @@ async function runLane(
   const noOutputTimeoutMs = lane.noOutputTimeoutMs;
   const logFile = path.join(logDir, `${name}.log`);
   const env = laneEnv(lane, baseEnv, logDir, lane.cacheKey);
-  const pnpmCommand = env.OPENCLAW_DOCKER_ALL_PNPM_COMMAND?.trim();
+  const pnpmCommand = env.AFORA_DOCKER_ALL_PNPM_COMMAND?.trim();
   const command = pnpmCommand
     ? lane.command.replace(/(^|\s)pnpm(?=\s)/g, `$1${shellQuote(pnpmCommand)}`)
     : lane.command;
-  await mkdir(env.OPENCLAW_DOCKER_CLI_TOOLS_DIR, { recursive: true });
-  await mkdir(env.OPENCLAW_DOCKER_CACHE_HOME_DIR, { recursive: true });
+  await mkdir(env.AFORA_DOCKER_CLI_TOOLS_DIR, { recursive: true });
+  await mkdir(env.AFORA_DOCKER_CACHE_HOME_DIR, { recursive: true });
   await fs.promises.writeFile(
     logFile,
     [
-      `==> [${name}] cli tools dir: ${env.OPENCLAW_DOCKER_CLI_TOOLS_DIR}`,
-      `==> [${name}] cache dir: ${env.OPENCLAW_DOCKER_CACHE_HOME_DIR}`,
+      `==> [${name}] cli tools dir: ${env.AFORA_DOCKER_CLI_TOOLS_DIR}`,
+      `==> [${name}] cache dir: ${env.AFORA_DOCKER_CACHE_HOME_DIR}`,
       `==> [${name}] timeout: ${timeoutMs}ms`,
       `==> [${name}] no output timeout: ${noOutputTimeoutMs ?? 0}ms`,
       `==> [${name}] retries: ${lane.retries ?? 0}`,
       `==> [${name}] e2e image kind: ${lane.e2eImageKind ?? "none"}`,
-      `==> [${name}] e2e image: ${env.OPENCLAW_DOCKER_E2E_IMAGE ?? ""}`,
+      `==> [${name}] e2e image: ${env.AFORA_DOCKER_E2E_IMAGE ?? ""}`,
       "",
     ].join("\n"),
   );
@@ -1392,7 +1392,7 @@ async function runLane(
     command,
     attempts,
     finishedAt: new Date().toISOString(),
-    image: env.OPENCLAW_DOCKER_E2E_IMAGE,
+    image: env.AFORA_DOCKER_E2E_IMAGE,
     imageKind: lane.e2eImageKind,
     logFile,
     name,
@@ -1529,7 +1529,7 @@ async function runLanePool(
           `No Docker lanes fit scheduler limits (${describeDockerSchedulerLimits(
             parallelism,
             options,
-          )}): ${blocked}. Tune OPENCLAW_DOCKER_ALL_PARALLELISM, OPENCLAW_DOCKER_ALL_WEIGHT_LIMIT, or OPENCLAW_DOCKER_ALL_<RESOURCE>_LIMIT.`,
+          )}): ${blocked}. Tune AFORA_DOCKER_ALL_PARALLELISM, AFORA_DOCKER_ALL_WEIGHT_LIMIT, or AFORA_DOCKER_ALL_<RESOURCE>_LIMIT.`,
         );
       }
 
@@ -1714,95 +1714,95 @@ async function main() {
   const runStartedAt = new Date().toISOString();
   const phases: Array<Record<string, unknown>> = [];
   const parallelism = parsePositiveInt(
-    process.env.OPENCLAW_DOCKER_ALL_PARALLELISM,
+    process.env.AFORA_DOCKER_ALL_PARALLELISM,
     DEFAULT_PARALLELISM,
-    "OPENCLAW_DOCKER_ALL_PARALLELISM",
+    "AFORA_DOCKER_ALL_PARALLELISM",
   );
   const tailParallelism = parsePositiveInt(
-    process.env.OPENCLAW_DOCKER_ALL_TAIL_PARALLELISM,
+    process.env.AFORA_DOCKER_ALL_TAIL_PARALLELISM,
     Math.min(parallelism, DEFAULT_TAIL_PARALLELISM),
-    "OPENCLAW_DOCKER_ALL_TAIL_PARALLELISM",
+    "AFORA_DOCKER_ALL_TAIL_PARALLELISM",
   );
   const tailLines = parsePositiveInt(
-    process.env.OPENCLAW_DOCKER_ALL_FAILURE_TAIL_LINES,
+    process.env.AFORA_DOCKER_ALL_FAILURE_TAIL_LINES,
     DEFAULT_FAILURE_TAIL_LINES,
-    "OPENCLAW_DOCKER_ALL_FAILURE_TAIL_LINES",
+    "AFORA_DOCKER_ALL_FAILURE_TAIL_LINES",
   );
   const laneTimeoutMs = parsePositiveInt(
-    process.env.OPENCLAW_DOCKER_ALL_LANE_TIMEOUT_MS,
+    process.env.AFORA_DOCKER_ALL_LANE_TIMEOUT_MS,
     DEFAULT_LANE_TIMEOUT_MS,
-    "OPENCLAW_DOCKER_ALL_LANE_TIMEOUT_MS",
+    "AFORA_DOCKER_ALL_LANE_TIMEOUT_MS",
   );
   const laneStartStaggerMs = parseNonNegativeInt(
-    process.env.OPENCLAW_DOCKER_ALL_START_STAGGER_MS,
+    process.env.AFORA_DOCKER_ALL_START_STAGGER_MS,
     DEFAULT_LANE_START_STAGGER_MS,
-    "OPENCLAW_DOCKER_ALL_START_STAGGER_MS",
+    "AFORA_DOCKER_ALL_START_STAGGER_MS",
   );
   const statusIntervalMs = parseNonNegativeInt(
-    process.env.OPENCLAW_DOCKER_ALL_STATUS_INTERVAL_MS,
+    process.env.AFORA_DOCKER_ALL_STATUS_INTERVAL_MS,
     DEFAULT_STATUS_INTERVAL_MS,
-    "OPENCLAW_DOCKER_ALL_STATUS_INTERVAL_MS",
+    "AFORA_DOCKER_ALL_STATUS_INTERVAL_MS",
   );
   const preflightRunTimeoutMs = parsePositiveInt(
-    process.env.OPENCLAW_DOCKER_ALL_PREFLIGHT_RUN_TIMEOUT_MS,
+    process.env.AFORA_DOCKER_ALL_PREFLIGHT_RUN_TIMEOUT_MS,
     DEFAULT_PREFLIGHT_RUN_TIMEOUT_MS,
-    "OPENCLAW_DOCKER_ALL_PREFLIGHT_RUN_TIMEOUT_MS",
+    "AFORA_DOCKER_ALL_PREFLIGHT_RUN_TIMEOUT_MS",
   );
-  const failFast = parseBool(process.env.OPENCLAW_DOCKER_ALL_FAIL_FAST, true);
-  const dryRun = parseBool(process.env.OPENCLAW_DOCKER_ALL_DRY_RUN, false);
-  const preflightEnabled = parseBool(process.env.OPENCLAW_DOCKER_ALL_PREFLIGHT, true);
-  const preflightCleanup = parseBool(process.env.OPENCLAW_DOCKER_ALL_PREFLIGHT_CLEANUP, true);
-  const timingsEnabled = parseBool(process.env.OPENCLAW_DOCKER_ALL_TIMINGS, true);
-  const buildEnabled = parseBool(process.env.OPENCLAW_DOCKER_ALL_BUILD, true);
+  const failFast = parseBool(process.env.AFORA_DOCKER_ALL_FAIL_FAST, true);
+  const dryRun = parseBool(process.env.AFORA_DOCKER_ALL_DRY_RUN, false);
+  const preflightEnabled = parseBool(process.env.AFORA_DOCKER_ALL_PREFLIGHT, true);
+  const preflightCleanup = parseBool(process.env.AFORA_DOCKER_ALL_PREFLIGHT_CLEANUP, true);
+  const timingsEnabled = parseBool(process.env.AFORA_DOCKER_ALL_TIMINGS, true);
+  const buildEnabled = parseBool(process.env.AFORA_DOCKER_ALL_BUILD, true);
   const allowFrozenTargetScenarioOmissions = parseBool(
-    process.env.OPENCLAW_ALLOW_FROZEN_TARGET_SCENARIO_OMISSIONS,
+    process.env.AFORA_ALLOW_FROZEN_TARGET_SCENARIO_OMISSIONS,
     false,
   );
   const planJson =
-    cliOptions.planJson || parseBool(process.env.OPENCLAW_DOCKER_ALL_PLAN_JSON, false);
-  const planReleaseAll = parseBool(process.env.OPENCLAW_DOCKER_ALL_PLAN_RELEASE_ALL, false);
-  const profile = parseProfile(process.env.OPENCLAW_DOCKER_ALL_PROFILE);
+    cliOptions.planJson || parseBool(process.env.AFORA_DOCKER_ALL_PLAN_JSON, false);
+  const planReleaseAll = parseBool(process.env.AFORA_DOCKER_ALL_PLAN_RELEASE_ALL, false);
+  const profile = parseProfile(process.env.AFORA_DOCKER_ALL_PROFILE);
   const releaseProfile = normalizeReleaseProfileEnv(
-    process.env.OPENCLAW_DOCKER_ALL_RELEASE_PROFILE || process.env.OPENCLAW_RELEASE_PROFILE,
+    process.env.AFORA_DOCKER_ALL_RELEASE_PROFILE || process.env.AFORA_RELEASE_PROFILE,
   );
-  const releaseChunk = process.env.OPENCLAW_DOCKER_ALL_CHUNK || process.env.DOCKER_E2E_CHUNK || "";
+  const releaseChunk = process.env.AFORA_DOCKER_ALL_CHUNK || process.env.DOCKER_E2E_CHUNK || "";
   const includeOpenWebUI = parseBool(
-    process.env.OPENCLAW_DOCKER_ALL_INCLUDE_OPENWEBUI ?? process.env.INCLUDE_OPENWEBUI,
+    process.env.AFORA_DOCKER_ALL_INCLUDE_OPENWEBUI ?? process.env.INCLUDE_OPENWEBUI,
     true,
   );
   const selectedLaneNamesRaw =
-    process.env.OPENCLAW_DOCKER_ALL_LANES || process.env.DOCKER_E2E_LANES || "";
+    process.env.AFORA_DOCKER_ALL_LANES || process.env.DOCKER_E2E_LANES || "";
   const selectedLaneNames = parseLaneSelection(selectedLaneNamesRaw);
   if (selectedLaneNamesRaw && selectedLaneNames.length === 0) {
-    throw new Error("OPENCLAW_DOCKER_ALL_LANES must include at least one lane name");
+    throw new Error("AFORA_DOCKER_ALL_LANES must include at least one lane name");
   }
-  const liveMode = parseLiveMode(process.env.OPENCLAW_DOCKER_ALL_LIVE_MODE);
+  const liveMode = parseLiveMode(process.env.AFORA_DOCKER_ALL_LIVE_MODE);
   const liveRetries = parseNonNegativeInt(
-    process.env.OPENCLAW_DOCKER_ALL_LIVE_RETRIES,
+    process.env.AFORA_DOCKER_ALL_LIVE_RETRIES,
     DEFAULT_LIVE_RETRIES,
-    "OPENCLAW_DOCKER_ALL_LIVE_RETRIES",
+    "AFORA_DOCKER_ALL_LIVE_RETRIES",
   );
   const timingsFile = path.resolve(
-    process.env.OPENCLAW_DOCKER_ALL_TIMINGS_FILE || DEFAULT_TIMINGS_FILE,
+    process.env.AFORA_DOCKER_ALL_TIMINGS_FILE || DEFAULT_TIMINGS_FILE,
   );
-  const runId = process.env.OPENCLAW_DOCKER_ALL_RUN_ID || utcStampForPath();
+  const runId = process.env.AFORA_DOCKER_ALL_RUN_ID || utcStampForPath();
   const logDir = path.resolve(
-    process.env.OPENCLAW_DOCKER_ALL_LOG_DIR ||
+    process.env.AFORA_DOCKER_ALL_LOG_DIR ||
       path.join(ROOT_DIR, ".artifacts/docker-tests", runId),
   );
 
   const baseEnv = commandEnv({
-    OPENCLAW_DOCKER_E2E_BARE_IMAGE:
-      process.env.OPENCLAW_DOCKER_E2E_BARE_IMAGE ||
-      process.env.OPENCLAW_DOCKER_E2E_IMAGE ||
+    AFORA_DOCKER_E2E_BARE_IMAGE:
+      process.env.AFORA_DOCKER_E2E_BARE_IMAGE ||
+      process.env.AFORA_DOCKER_E2E_IMAGE ||
       DEFAULT_E2E_BARE_IMAGE,
-    OPENCLAW_DOCKER_E2E_FUNCTIONAL_IMAGE:
-      process.env.OPENCLAW_DOCKER_E2E_FUNCTIONAL_IMAGE ||
-      process.env.OPENCLAW_DOCKER_E2E_IMAGE ||
+    AFORA_DOCKER_E2E_FUNCTIONAL_IMAGE:
+      process.env.AFORA_DOCKER_E2E_FUNCTIONAL_IMAGE ||
+      process.env.AFORA_DOCKER_E2E_IMAGE ||
       DEFAULT_E2E_FUNCTIONAL_IMAGE,
   });
-  baseEnv.OPENCLAW_DOCKER_E2E_IMAGE =
-    process.env.OPENCLAW_DOCKER_E2E_IMAGE || baseEnv.OPENCLAW_DOCKER_E2E_FUNCTIONAL_IMAGE;
+  baseEnv.AFORA_DOCKER_E2E_IMAGE =
+    process.env.AFORA_DOCKER_E2E_IMAGE || baseEnv.AFORA_DOCKER_E2E_FUNCTIONAL_IMAGE;
   const writeSummary = (summary: RunSummary) => writeRunSummary(logDir, summary, baseEnv);
   appendExtension(baseEnv, "matrix");
   appendExtension(baseEnv, "acpx");
@@ -1821,9 +1821,9 @@ async function main() {
       releaseProfile,
       selectedLaneNames,
       timingStore,
-      upgradeSurvivorBaselines: process.env.OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPECS,
-      upgradeSurvivorScenarios: process.env.OPENCLAW_UPGRADE_SURVIVOR_SCENARIOS,
-      upgradeSurvivorTargetRoot: process.env.OPENCLAW_UPGRADE_SURVIVOR_TARGET_ROOT,
+      upgradeSurvivorBaselines: process.env.AFORA_UPGRADE_SURVIVOR_BASELINE_SPECS,
+      upgradeSurvivorScenarios: process.env.AFORA_UPGRADE_SURVIVOR_SCENARIOS,
+      upgradeSurvivorTargetRoot: process.env.AFORA_UPGRADE_SURVIVOR_TARGET_ROOT,
       allowFrozenTargetScenarioOmissions,
       candidatePackageRoot: ROOT_DIR,
     });
@@ -1891,8 +1891,8 @@ async function main() {
     }`,
   );
   console.log(`==> Build shared Docker images: ${buildEnabled ? "yes" : "no"}`);
-  console.log(`==> Docker E2E bare image: ${baseEnv.OPENCLAW_DOCKER_E2E_BARE_IMAGE}`);
-  console.log(`==> Docker E2E functional image: ${baseEnv.OPENCLAW_DOCKER_E2E_FUNCTIONAL_IMAGE}`);
+  console.log(`==> Docker E2E bare image: ${baseEnv.AFORA_DOCKER_E2E_BARE_IMAGE}`);
+  console.log(`==> Docker E2E functional image: ${baseEnv.AFORA_DOCKER_E2E_FUNCTIONAL_IMAGE}`);
   if (profile === RELEASE_PATH_PROFILE) {
     console.log(`==> Include Open WebUI: ${includeOpenWebUI ? "yes" : "no"}`);
   }
@@ -1900,7 +1900,7 @@ async function main() {
     console.log(`==> Selected lanes: ${selectedLaneNames.join(", ")}`);
   }
   console.log(`==> Docker lane timings: ${timingStore.enabled ? timingsFile : "disabled"}`);
-  console.log(`==> Live-test bundled plugins: ${baseEnv.OPENCLAW_DOCKER_BUILD_EXTENSIONS}`);
+  console.log(`==> Live-test bundled plugins: ${baseEnv.AFORA_DOCKER_BUILD_EXTENSIONS}`);
   const schedulerOptions = parseSchedulerOptions(process.env, parallelism);
   const tailSchedulerOptions = parseSchedulerOptions(process.env, tailParallelism);
   console.log(
@@ -1953,14 +1953,14 @@ async function main() {
       });
     },
   );
-  if (lanesNeedOpenClawPackage(scheduledLanes)) {
-    await runPhase(phases, "prepare-openclaw-package", {}, async () => {
-      await prepareOpenClawPackage(baseEnv, logDir);
+  if (lanesNeedAforaPackage(scheduledLanes)) {
+    await runPhase(phases, "prepare-afora-package", {}, async () => {
+      await prepareAforaPackage(baseEnv, logDir);
     });
   } else {
-    console.log("==> OpenClaw package: not needed for selected lanes");
+    console.log("==> Afora package: not needed for selected lanes");
   }
-  if (plan.needs.prepublishPluginRegistry && !baseEnv.OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_DIR) {
+  if (plan.needs.prepublishPluginRegistry && !baseEnv.AFORA_PREPUBLISH_PLUGIN_REGISTRY_DIR) {
     await runPhase(phases, "prepare-prepublish-plugin-registry", {}, async () => {
       const registry = preparePrepublishPluginRegistry(
         plan,
@@ -1968,9 +1968,9 @@ async function main() {
         gitOutput(ROOT_DIR, ["rev-parse", "HEAD"]),
         rootPackageVersion(ROOT_DIR),
       );
-      baseEnv.OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_DIR = registry.dir;
-      baseEnv.OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_CANDIDATE_VERSION = registry.candidateVersion;
-      baseEnv.OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_MANIFEST_SHA256 = registry.manifestSha256;
+      baseEnv.AFORA_PREPUBLISH_PLUGIN_REGISTRY_DIR = registry.dir;
+      baseEnv.AFORA_PREPUBLISH_PLUGIN_REGISTRY_CANDIDATE_VERSION = registry.candidateVersion;
+      baseEnv.AFORA_PREPUBLISH_PLUGIN_REGISTRY_MANIFEST_SHA256 = registry.manifestSha256;
     });
   }
 
@@ -1988,11 +1988,11 @@ async function main() {
       buildEntries.push({
         command: "pnpm test:docker:e2e-build",
         env: {
-          OPENCLAW_DOCKER_E2E_IMAGE: baseEnv.OPENCLAW_DOCKER_E2E_BARE_IMAGE,
-          OPENCLAW_DOCKER_E2E_TARGET: "bare",
+          AFORA_DOCKER_E2E_IMAGE: baseEnv.AFORA_DOCKER_E2E_BARE_IMAGE,
+          AFORA_DOCKER_E2E_TARGET: "bare",
         },
-        label: `shared bare Docker E2E image once: ${baseEnv.OPENCLAW_DOCKER_E2E_BARE_IMAGE}`,
-        phaseDetails: { image: baseEnv.OPENCLAW_DOCKER_E2E_BARE_IMAGE, imageKind: "bare" },
+        label: `shared bare Docker E2E image once: ${baseEnv.AFORA_DOCKER_E2E_BARE_IMAGE}`,
+        phaseDetails: { image: baseEnv.AFORA_DOCKER_E2E_BARE_IMAGE, imageKind: "bare" },
         phases,
       });
     }
@@ -2000,12 +2000,12 @@ async function main() {
       buildEntries.push({
         command: "pnpm test:docker:e2e-build",
         env: {
-          OPENCLAW_DOCKER_E2E_IMAGE: baseEnv.OPENCLAW_DOCKER_E2E_FUNCTIONAL_IMAGE,
-          OPENCLAW_DOCKER_E2E_TARGET: "functional",
+          AFORA_DOCKER_E2E_IMAGE: baseEnv.AFORA_DOCKER_E2E_FUNCTIONAL_IMAGE,
+          AFORA_DOCKER_E2E_TARGET: "functional",
         },
-        label: `shared functional Docker E2E image once: ${baseEnv.OPENCLAW_DOCKER_E2E_FUNCTIONAL_IMAGE}`,
+        label: `shared functional Docker E2E image once: ${baseEnv.AFORA_DOCKER_E2E_FUNCTIONAL_IMAGE}`,
         phaseDetails: {
-          image: baseEnv.OPENCLAW_DOCKER_E2E_FUNCTIONAL_IMAGE,
+          image: baseEnv.AFORA_DOCKER_E2E_FUNCTIONAL_IMAGE,
           imageKind: "functional",
         },
         phases,
@@ -2034,10 +2034,10 @@ async function main() {
     await writeSummary({
       chunk: releaseChunk || undefined,
       failures,
-      image: baseEnv.OPENCLAW_DOCKER_E2E_IMAGE,
+      image: baseEnv.AFORA_DOCKER_E2E_IMAGE,
       images: {
-        bare: baseEnv.OPENCLAW_DOCKER_E2E_BARE_IMAGE,
-        functional: baseEnv.OPENCLAW_DOCKER_E2E_FUNCTIONAL_IMAGE,
+        bare: baseEnv.AFORA_DOCKER_E2E_BARE_IMAGE,
+        functional: baseEnv.AFORA_DOCKER_E2E_FUNCTIONAL_IMAGE,
       },
       lanes: allResults,
       omittedUnsupportedLanes,
@@ -2074,10 +2074,10 @@ async function main() {
     await writeSummary({
       chunk: releaseChunk || undefined,
       failures,
-      image: baseEnv.OPENCLAW_DOCKER_E2E_IMAGE,
+      image: baseEnv.AFORA_DOCKER_E2E_IMAGE,
       images: {
-        bare: baseEnv.OPENCLAW_DOCKER_E2E_BARE_IMAGE,
-        functional: baseEnv.OPENCLAW_DOCKER_E2E_FUNCTIONAL_IMAGE,
+        bare: baseEnv.AFORA_DOCKER_E2E_BARE_IMAGE,
+        functional: baseEnv.AFORA_DOCKER_E2E_FUNCTIONAL_IMAGE,
       },
       lanes: allResults,
       omittedUnsupportedLanes,
@@ -2104,10 +2104,10 @@ async function main() {
     await writeSummary({
       chunk: releaseChunk || undefined,
       failures,
-      image: baseEnv.OPENCLAW_DOCKER_E2E_IMAGE,
+      image: baseEnv.AFORA_DOCKER_E2E_IMAGE,
       images: {
-        bare: baseEnv.OPENCLAW_DOCKER_E2E_BARE_IMAGE,
-        functional: baseEnv.OPENCLAW_DOCKER_E2E_FUNCTIONAL_IMAGE,
+        bare: baseEnv.AFORA_DOCKER_E2E_BARE_IMAGE,
+        functional: baseEnv.AFORA_DOCKER_E2E_FUNCTIONAL_IMAGE,
       },
       lanes: allResults,
       omittedUnsupportedLanes,
@@ -2123,10 +2123,10 @@ async function main() {
   await writeSummary({
     chunk: releaseChunk || undefined,
     failures,
-    image: baseEnv.OPENCLAW_DOCKER_E2E_IMAGE,
+    image: baseEnv.AFORA_DOCKER_E2E_IMAGE,
     images: {
-      bare: baseEnv.OPENCLAW_DOCKER_E2E_BARE_IMAGE,
-      functional: baseEnv.OPENCLAW_DOCKER_E2E_FUNCTIONAL_IMAGE,
+      bare: baseEnv.AFORA_DOCKER_E2E_BARE_IMAGE,
+      functional: baseEnv.AFORA_DOCKER_E2E_FUNCTIONAL_IMAGE,
     },
     lanes: allResults,
     omittedUnsupportedLanes,

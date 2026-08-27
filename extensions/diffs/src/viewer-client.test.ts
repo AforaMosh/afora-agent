@@ -2,10 +2,10 @@
 
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const disableAutoStartKey = Symbol.for("openclaw.diffs.disableAutoStart");
+const disableAutoStartKey = Symbol.for("afora.diffs.disableAutoStart");
 (globalThis as typeof globalThis & Record<symbol, unknown>)[disableAutoStartKey] = true;
 
 const VIEWER_CLIENT_SRC = readFileSync(
@@ -65,8 +65,8 @@ function renderCard(payloadOverride?: string): void {
   document.body.insertAdjacentHTML(
     "beforeend",
     `<section class="oc-diff-card">
-      <div data-openclaw-diff-host></div>
-      <script type="application/json" data-openclaw-diff-payload>${payload}</script>
+      <div data-afora-diff-host></div>
+      <script type="application/json" data-afora-diff-payload>${payload}</script>
     </section>`,
   );
 }
@@ -92,8 +92,8 @@ describe("createToolbarButton icon safety", () => {
 describe("hydrateViewer", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
-    delete document.documentElement.dataset.openclawDiffsError;
-    delete document.documentElement.dataset.openclawDiffsReady;
+    delete document.documentElement.dataset.aforaDiffsError;
+    delete document.documentElement.dataset.aforaDiffsReady;
     vi.clearAllMocks();
   });
 
@@ -114,7 +114,7 @@ describe("hydrateViewer", () => {
       "Skipping diff card that failed to hydrate",
       expect.any(Error),
     );
-    expect(document.documentElement.dataset.openclawDiffsError).toBeUndefined();
+    expect(document.documentElement.dataset.aforaDiffsError).toBeUndefined();
     warn.mockRestore();
   });
 
@@ -136,7 +136,7 @@ describe("hydrateViewer", () => {
       "Skipping diff card that failed to hydrate",
       expect.any(Error),
     );
-    expect(document.documentElement.dataset.openclawDiffsError).toBeUndefined();
+    expect(document.documentElement.dataset.aforaDiffsError).toBeUndefined();
     warn.mockRestore();
   });
 
@@ -164,8 +164,8 @@ describe("hydrateViewer", () => {
 describe("viewerState initialization", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
-    delete document.documentElement.dataset.openclawDiffsError;
-    delete document.documentElement.dataset.openclawDiffsReady;
+    delete document.documentElement.dataset.aforaDiffsError;
+    delete document.documentElement.dataset.aforaDiffsReady;
     delete document.body.dataset.theme;
     vi.clearAllMocks();
   });

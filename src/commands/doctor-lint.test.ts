@@ -5,12 +5,12 @@ import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { clearHealthChecksForTest, registerHealthCheck } from "../flows/health-check-registry.js";
 import { clearLoadInstalledPluginIndexInstallRecordsCache } from "../plugins/installed-plugin-index-record-cache.js";
 import { writePersistedInstalledPluginIndexInstallRecords } from "../plugins/installed-plugin-index-records.js";
-import { closeOpenClawStateDatabaseByPath } from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+import { closeAforaStateDatabaseByPath } from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import { runDoctorLintCli } from "./doctor-lint.js";
 
 const mocks = vi.hoisted(() => ({
@@ -92,7 +92,7 @@ describe("runDoctorLintCli", () => {
       exists: true,
       valid: true,
       config: {},
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
     });
 
     const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
@@ -116,7 +116,7 @@ describe("runDoctorLintCli", () => {
       exists: true,
       valid: true,
       config: {},
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
     });
 
     const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
@@ -142,7 +142,7 @@ describe("runDoctorLintCli", () => {
       exists: true,
       valid: true,
       config: {},
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
     });
     const detect = vi.fn(async (_ctx: unknown) => []);
     registerHealthCheck({
@@ -175,7 +175,7 @@ describe("runDoctorLintCli", () => {
       exists: true,
       valid: false,
       config: {},
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       issues: [{ path: "gateway.mode", message: "Required" }],
     });
 
@@ -208,7 +208,7 @@ describe("runDoctorLintCli", () => {
       exists: true,
       valid: true,
       config: {},
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
     });
 
     const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
@@ -253,8 +253,8 @@ describe("runDoctorLintCli", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig,
-      path: "/tmp/openclaw.json",
+      } as unknown as AforaConfig,
+      path: "/tmp/afora.json",
     });
 
     const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
@@ -292,7 +292,7 @@ describe("runDoctorLintCli", () => {
       exists: true,
       valid: true,
       config: {},
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
     });
     registerHealthCheck({
       id: "plugin/example/lint",
@@ -332,7 +332,7 @@ describe("runDoctorLintCli", () => {
       exists: true,
       valid: true,
       config: {},
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
     });
     registerHealthCheck({
       id: "plugin/example/lint",
@@ -376,11 +376,11 @@ describe("runDoctorLintCli", () => {
   });
 
   it("does not require shared state inspection for an unrelated selected check", async () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-doctor-lint-state-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-doctor-lint-state-"));
     const stateDir = path.join(rootDir, "operator-state");
-    const originalStateDir = process.env.OPENCLAW_STATE_DIR;
-    process.env.OPENCLAW_STATE_DIR = stateDir;
-    const databasePath = resolveOpenClawStateSqlitePath(process.env);
+    const originalStateDir = process.env.AFORA_STATE_DIR;
+    process.env.AFORA_STATE_DIR = stateDir;
+    const databasePath = resolveAforaStateSqlitePath(process.env);
     fs.mkdirSync(path.dirname(databasePath), { recursive: true });
     fs.writeFileSync(databasePath, "not a sqlite database");
     const sourceContents = fs.readFileSync(databasePath);
@@ -389,7 +389,7 @@ describe("runDoctorLintCli", () => {
       exists: true,
       valid: true,
       config: {},
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
     });
 
     const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
@@ -411,37 +411,37 @@ describe("runDoctorLintCli", () => {
     } finally {
       stdout.mockRestore();
       if (originalStateDir === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.AFORA_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = originalStateDir;
+        process.env.AFORA_STATE_DIR = originalStateDir;
       }
       fs.rmSync(rootDir, { recursive: true, force: true });
     }
   });
 
   it("keeps mixed selected checks on a fully isolated state view", async () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-doctor-lint-private-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-doctor-lint-private-"));
     const stateDir = path.join(rootDir, "operator-state");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const config = {
       gateway: { mode: "local" },
-      agents: { defaults: { workspace: "${OPENCLAW_STATE_DIR}/workspace" } },
+      agents: { defaults: { workspace: "${AFORA_STATE_DIR}/workspace" } },
       memory: { search: { provider: "local", fallback: "none" } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     fs.mkdirSync(stateDir, { recursive: true });
     fs.writeFileSync(configPath, `${JSON.stringify(config)}\n`);
     const env = {
       ...process.env,
       HOME: stateDir,
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_STATE_DIR: stateDir,
     };
     await writePersistedInstalledPluginIndexInstallRecords(
       {},
       { config, env, stateDir, workspaceDir: rootDir },
     );
-    const databasePath = resolveOpenClawStateSqlitePath(env);
-    closeOpenClawStateDatabaseByPath(databasePath);
+    const databasePath = resolveAforaStateSqlitePath(env);
+    closeAforaStateDatabaseByPath(databasePath);
     const before = snapshotSqliteFamily(databasePath);
     mocks.openNodeSqliteDatabase.mockClear();
     const sourceOpenStacks: string[] = [];
@@ -453,16 +453,16 @@ describe("runDoctorLintCli", () => {
     });
     const originalEnv = {
       HOME: process.env.HOME,
-      OPENCLAW_CONFIG_PATH: process.env.OPENCLAW_CONFIG_PATH,
-      OPENCLAW_STATE_DIR: process.env.OPENCLAW_STATE_DIR,
+      AFORA_CONFIG_PATH: process.env.AFORA_CONFIG_PATH,
+      AFORA_STATE_DIR: process.env.AFORA_STATE_DIR,
     };
     process.env.HOME = stateDir;
-    process.env.OPENCLAW_CONFIG_PATH = configPath;
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+    process.env.AFORA_CONFIG_PATH = configPath;
+    process.env.AFORA_STATE_DIR = stateDir;
     mocks.readConfigFileSnapshot.mockImplementation((...args: unknown[]) =>
       mocks.actualReadConfigFileSnapshot(...args),
     );
-    const inspectSourceConfig = vi.fn(async (ctx: { cfg: OpenClawConfig }) => {
+    const inspectSourceConfig = vi.fn(async (ctx: { cfg: AforaConfig }) => {
       expect(ctx.cfg.agents?.defaults?.workspace).toBe(path.join(stateDir, "workspace"));
       return [];
     });
@@ -502,36 +502,36 @@ describe("runDoctorLintCli", () => {
   });
 
   it("does not inspect plugin state when no semantic index exists", async () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-doctor-lint-no-index-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-doctor-lint-no-index-"));
     const stateDir = path.join(rootDir, "operator-state");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const config = {
       gateway: { mode: "local" },
       memory: { search: { provider: "local", fallback: "none" } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     fs.mkdirSync(stateDir, { recursive: true });
     fs.writeFileSync(configPath, `${JSON.stringify(config)}\n`);
     const env = {
       ...process.env,
       HOME: stateDir,
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_STATE_DIR: stateDir,
     };
     await writePersistedInstalledPluginIndexInstallRecords(
       {},
       { config, env, stateDir, workspaceDir: rootDir },
     );
-    const databasePath = resolveOpenClawStateSqlitePath(env);
-    closeOpenClawStateDatabaseByPath(databasePath);
+    const databasePath = resolveAforaStateSqlitePath(env);
+    closeAforaStateDatabaseByPath(databasePath);
     const before = snapshotSqliteFamily(databasePath);
     const originalEnv = {
       HOME: process.env.HOME,
-      OPENCLAW_CONFIG_PATH: process.env.OPENCLAW_CONFIG_PATH,
-      OPENCLAW_STATE_DIR: process.env.OPENCLAW_STATE_DIR,
+      AFORA_CONFIG_PATH: process.env.AFORA_CONFIG_PATH,
+      AFORA_STATE_DIR: process.env.AFORA_STATE_DIR,
     };
     process.env.HOME = stateDir;
-    process.env.OPENCLAW_CONFIG_PATH = configPath;
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+    process.env.AFORA_CONFIG_PATH = configPath;
+    process.env.AFORA_STATE_DIR = stateDir;
     mocks.readConfigFileSnapshot.mockImplementation((...args: unknown[]) =>
       mocks.actualReadConfigFileSnapshot(...args),
     );
@@ -564,9 +564,9 @@ describe("runDoctorLintCli", () => {
   });
 
   it("keeps relevant deferred plugin inspection off the source state database", async () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-doctor-lint-relevant-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-doctor-lint-relevant-"));
     const stateDir = path.join(rootDir, "operator-state");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const config = {
       gateway: { mode: "local" },
       memory: { search: { provider: "local", fallback: "none" } },
@@ -579,21 +579,21 @@ describe("runDoctorLintCli", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     fs.mkdirSync(stateDir, { recursive: true });
     fs.writeFileSync(configPath, `${JSON.stringify(config)}\n`);
     const env = {
       ...process.env,
       HOME: stateDir,
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_STATE_DIR: stateDir,
     };
     await writePersistedInstalledPluginIndexInstallRecords(
       {},
       { config, env, stateDir, workspaceDir: rootDir },
     );
-    const databasePath = resolveOpenClawStateSqlitePath(env);
-    closeOpenClawStateDatabaseByPath(databasePath);
+    const databasePath = resolveAforaStateSqlitePath(env);
+    closeAforaStateDatabaseByPath(databasePath);
     clearLoadInstalledPluginIndexInstallRecordsCache();
     createSemanticIndex(stateDir);
     const before = snapshotSqliteFamily(databasePath);
@@ -607,12 +607,12 @@ describe("runDoctorLintCli", () => {
     });
     const originalEnv = {
       HOME: process.env.HOME,
-      OPENCLAW_CONFIG_PATH: process.env.OPENCLAW_CONFIG_PATH,
-      OPENCLAW_STATE_DIR: process.env.OPENCLAW_STATE_DIR,
+      AFORA_CONFIG_PATH: process.env.AFORA_CONFIG_PATH,
+      AFORA_STATE_DIR: process.env.AFORA_STATE_DIR,
     };
     process.env.HOME = stateDir;
-    process.env.OPENCLAW_CONFIG_PATH = configPath;
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+    process.env.AFORA_CONFIG_PATH = configPath;
+    process.env.AFORA_STATE_DIR = stateDir;
     mocks.readConfigFileSnapshot.mockImplementation((...args: unknown[]) =>
       mocks.actualReadConfigFileSnapshot(...args),
     );
@@ -647,36 +647,36 @@ describe("runDoctorLintCli", () => {
   });
 
   it("fails closed when a semantic index needs plugin state that cannot be prepared", async () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-doctor-lint-failure-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-doctor-lint-failure-"));
     const stateDir = path.join(rootDir, "operator-state");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const config = {
       gateway: { mode: "local" },
       memory: { search: { provider: "local", fallback: "none" } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     fs.mkdirSync(stateDir, { recursive: true });
     fs.writeFileSync(configPath, `${JSON.stringify(config)}\n`);
     const env = {
       ...process.env,
       HOME: stateDir,
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_STATE_DIR: stateDir,
     };
     await writePersistedInstalledPluginIndexInstallRecords(
       {},
       { config, env, stateDir, workspaceDir: rootDir },
     );
-    const pluginDatabasePath = resolveOpenClawStateSqlitePath(env);
-    closeOpenClawStateDatabaseByPath(pluginDatabasePath);
+    const pluginDatabasePath = resolveAforaStateSqlitePath(env);
+    closeAforaStateDatabaseByPath(pluginDatabasePath);
     createSemanticIndex(stateDir);
     const originalEnv = {
       HOME: process.env.HOME,
-      OPENCLAW_CONFIG_PATH: process.env.OPENCLAW_CONFIG_PATH,
-      OPENCLAW_STATE_DIR: process.env.OPENCLAW_STATE_DIR,
+      AFORA_CONFIG_PATH: process.env.AFORA_CONFIG_PATH,
+      AFORA_STATE_DIR: process.env.AFORA_STATE_DIR,
     };
     process.env.HOME = stateDir;
-    process.env.OPENCLAW_CONFIG_PATH = configPath;
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+    process.env.AFORA_CONFIG_PATH = configPath;
+    process.env.AFORA_STATE_DIR = stateDir;
     mocks.readConfigFileSnapshot.mockImplementation((...args: unknown[]) =>
       mocks.actualReadConfigFileSnapshot(...args),
     );
@@ -719,36 +719,36 @@ describe("runDoctorLintCli", () => {
   });
 
   it("emits one structured failure when relevant plugin state cleanup does not complete", async () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-doctor-lint-cleanup-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-doctor-lint-cleanup-"));
     const stateDir = path.join(rootDir, "operator-state");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const config = {
       gateway: { mode: "local" },
       memory: { search: { provider: "local", fallback: "none" } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     fs.mkdirSync(stateDir, { recursive: true });
     fs.writeFileSync(configPath, `${JSON.stringify(config)}\n`);
     const env = {
       ...process.env,
       HOME: stateDir,
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_STATE_DIR: stateDir,
     };
     await writePersistedInstalledPluginIndexInstallRecords(
       {},
       { config, env, stateDir, workspaceDir: rootDir },
     );
-    const pluginDatabasePath = resolveOpenClawStateSqlitePath(env);
-    closeOpenClawStateDatabaseByPath(pluginDatabasePath);
+    const pluginDatabasePath = resolveAforaStateSqlitePath(env);
+    closeAforaStateDatabaseByPath(pluginDatabasePath);
     createSemanticIndex(stateDir);
     const originalEnv = {
       HOME: process.env.HOME,
-      OPENCLAW_CONFIG_PATH: process.env.OPENCLAW_CONFIG_PATH,
-      OPENCLAW_STATE_DIR: process.env.OPENCLAW_STATE_DIR,
+      AFORA_CONFIG_PATH: process.env.AFORA_CONFIG_PATH,
+      AFORA_STATE_DIR: process.env.AFORA_STATE_DIR,
     };
     process.env.HOME = stateDir;
-    process.env.OPENCLAW_CONFIG_PATH = configPath;
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+    process.env.AFORA_CONFIG_PATH = configPath;
+    process.env.AFORA_STATE_DIR = stateDir;
     mocks.readConfigFileSnapshot.mockImplementation((...args: unknown[]) =>
       mocks.actualReadConfigFileSnapshot(...args),
     );
@@ -830,7 +830,7 @@ describe("runDoctorLintCli", () => {
       exists: true,
       valid: true,
       config: {},
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
     });
     registerHealthCheck({
       id: checkId,
@@ -852,7 +852,7 @@ describe("runDoctorLintCli", () => {
 });
 
 function createSemanticIndex(stateDir: string): string {
-  const databasePath = path.join(stateDir, "agents", "main", "agent", "openclaw-agent.sqlite");
+  const databasePath = path.join(stateDir, "agents", "main", "agent", "afora-agent.sqlite");
   fs.mkdirSync(path.dirname(databasePath), { recursive: true });
   const database = new DatabaseSync(databasePath);
   database.exec(
@@ -880,22 +880,22 @@ function snapshotSqliteFamily(databasePath: string): Array<{
 
 function restoreDoctorLintTestEnv(values: {
   HOME: string | undefined;
-  OPENCLAW_CONFIG_PATH: string | undefined;
-  OPENCLAW_STATE_DIR: string | undefined;
+  AFORA_CONFIG_PATH: string | undefined;
+  AFORA_STATE_DIR: string | undefined;
 }): void {
   if (values.HOME === undefined) {
     delete process.env.HOME;
   } else {
     process.env.HOME = values.HOME;
   }
-  if (values.OPENCLAW_CONFIG_PATH === undefined) {
-    delete process.env.OPENCLAW_CONFIG_PATH;
+  if (values.AFORA_CONFIG_PATH === undefined) {
+    delete process.env.AFORA_CONFIG_PATH;
   } else {
-    process.env.OPENCLAW_CONFIG_PATH = values.OPENCLAW_CONFIG_PATH;
+    process.env.AFORA_CONFIG_PATH = values.AFORA_CONFIG_PATH;
   }
-  if (values.OPENCLAW_STATE_DIR === undefined) {
-    delete process.env.OPENCLAW_STATE_DIR;
+  if (values.AFORA_STATE_DIR === undefined) {
+    delete process.env.AFORA_STATE_DIR;
   } else {
-    process.env.OPENCLAW_STATE_DIR = values.OPENCLAW_STATE_DIR;
+    process.env.AFORA_STATE_DIR = values.AFORA_STATE_DIR;
   }
 }

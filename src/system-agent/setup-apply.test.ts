@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveAgentEntry } from "../agents/agent-scope-config.js";
 import * as configModule from "../config/config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { projectDefaultInferenceRoute } from "./inference-route.js";
@@ -12,31 +12,31 @@ type ConfigSnapshot = {
   path: string;
   hash: string | null;
   parsed: unknown;
-  sourceConfigBeforeMigrations?: OpenClawConfig;
-  config: OpenClawConfig;
-  sourceConfig: OpenClawConfig;
-  runtimeConfig?: OpenClawConfig;
+  sourceConfigBeforeMigrations?: AforaConfig;
+  config: AforaConfig;
+  sourceConfig: AforaConfig;
+  runtimeConfig?: AforaConfig;
   issues: Array<{ path?: string; message: string }>;
 };
 
 type CommitTransform = (
-  currentConfig: OpenClawConfig,
+  currentConfig: AforaConfig,
   context: {
     previousHash: string | null;
     snapshot: ConfigSnapshot;
     attempt: number;
   },
 ) =>
-  | { nextConfig: OpenClawConfig; result?: unknown }
-  | Promise<{ nextConfig: OpenClawConfig; result?: unknown }>;
+  | { nextConfig: AforaConfig; result?: unknown }
+  | Promise<{ nextConfig: AforaConfig; result?: unknown }>;
 
 const mocks = vi.hoisted(() => ({
   state: {
     initialSnapshot: {} as ConfigSnapshot,
-    commitConfig: {} as OpenClawConfig,
+    commitConfig: {} as AforaConfig,
     commitSnapshot: {} as ConfigSnapshot,
     commitPreviousHash: "probe" as string | null,
-    persistedConfig: undefined as OpenClawConfig | undefined,
+    persistedConfig: undefined as AforaConfig | undefined,
   },
   events: [] as string[],
   readSnapshot: vi.fn<() => Promise<ConfigSnapshot>>(),
@@ -74,7 +74,7 @@ vi.mock("../wizard/setup.shared.js", async (importOriginal) => ({
 }));
 
 vi.mock("../commands/onboard-helpers.js", () => ({
-  applyWizardMetadata: (config: OpenClawConfig) => ({
+  applyWizardMetadata: (config: AforaConfig) => ({
     ...config,
     wizard: {
       ...config.wizard,
@@ -114,7 +114,7 @@ vi.mock("../infra/exec-approvals.js", () => ({
 
 vi.mock("../agents/agent-scope.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../agents/agent-scope.js")>()),
-  resolveAgentDir: (config: OpenClawConfig, agentId: string) =>
+  resolveAgentDir: (config: AforaConfig, agentId: string) =>
     resolveAgentEntry(config, agentId)?.agentDir ?? `/agents/${agentId}`,
 }));
 
@@ -128,13 +128,13 @@ const runtime: RuntimeEnv = {
 
 function snapshot(
   hash: string | null,
-  sourceConfig: OpenClawConfig,
-  runtimeConfig: OpenClawConfig = sourceConfig,
+  sourceConfig: AforaConfig,
+  runtimeConfig: AforaConfig = sourceConfig,
 ): ConfigSnapshot {
   return {
     exists: hash !== null,
     valid: true,
-    path: "/tmp/openclaw.json",
+    path: "/tmp/afora.json",
     hash,
     parsed: structuredClone(sourceConfig),
     sourceConfigBeforeMigrations: structuredClone(sourceConfig),
@@ -161,7 +161,7 @@ function codexPluginMetadataSnapshot(homeScope: "agent" | "user") {
           hooks: [],
           rootDir: "/tmp/codex",
           source: "/tmp/codex/index.js",
-          manifestPath: "/tmp/codex/openclaw.plugin.json",
+          manifestPath: "/tmp/codex/afora.plugin.json",
           configSchema: {
             type: "object",
             additionalProperties: false,
@@ -185,9 +185,9 @@ function codexPluginMetadataSnapshot(homeScope: "agent" | "user") {
 }
 
 function materializePluginDefaults(
-  config: OpenClawConfig,
+  config: AforaConfig,
   pluginMetadataSnapshot: ReturnType<typeof codexPluginMetadataSnapshot>,
-): OpenClawConfig {
+): AforaConfig {
   const result = configModule.validateConfigObjectWithPlugins(config, { pluginMetadataSnapshot });
   if (!result.ok) {
     throw new Error(result.issues[0]?.message ?? "test config failed validation");
@@ -197,18 +197,18 @@ function materializePluginDefaults(
 
 function baseParams(overrides: Partial<Parameters<typeof applySystemAgentSetup>[0]> = {}) {
   return {
-    workspace: "/tmp/openclaw-workspace",
+    workspace: "/tmp/afora-workspace",
     surface: "gateway" as const,
     runtime,
     ...overrides,
   };
 }
 
-function mainAgentModelConfig(model = "openai/gpt-5.5"): OpenClawConfig {
+function mainAgentModelConfig(model = "openai/gpt-5.5"): AforaConfig {
   return { agents: { defaults: { model }, entries: { main: { default: true } } } };
 }
 
-function setSetupCommitState(config: OpenClawConfig, initialSnapshot: ConfigSnapshot): void {
+function setSetupCommitState(config: AforaConfig, initialSnapshot: ConfigSnapshot): void {
   mocks.state.initialSnapshot = initialSnapshot;
   mocks.state.commitConfig = config;
   mocks.state.commitSnapshot = initialSnapshot;
@@ -218,7 +218,7 @@ describe("applySystemAgentSetup transaction boundaries", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mocks.events.length = 0;
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       agents: {
         defaults: { model: { primary: "openai/gpt-5.5" } },
         entries: { main: { default: true } },
@@ -271,7 +271,7 @@ describe("applySystemAgentSetup transaction boundaries", () => {
       mocks.state.initialSnapshot = snapshot("persisted", result.nextConfig);
       return {
         nextConfig: result.nextConfig,
-        path: "/tmp/openclaw.json",
+        path: "/tmp/afora.json",
         previousHash: mocks.state.commitPreviousHash,
         persistedHash: "persisted",
         result: result.result,
@@ -282,7 +282,7 @@ describe("applySystemAgentSetup transaction boundaries", () => {
         nextConfig,
         quickstartGateway,
       }: {
-        nextConfig: OpenClawConfig;
+        nextConfig: AforaConfig;
         quickstartGateway: {
           authMode: "token" | "password";
           bind: "loopback" | "lan";
@@ -352,7 +352,7 @@ describe("applySystemAgentSetup transaction boundaries", () => {
     expect(result.bootstrapPending).toBe(true);
     expect(mocks.state.persistedConfig).toMatchObject({
       agents: {
-        defaults: { workspace: "/tmp/openclaw-workspace" },
+        defaults: { workspace: "/tmp/afora-workspace" },
         entries: { main: { default: true } },
       },
     });
@@ -360,13 +360,13 @@ describe("applySystemAgentSetup transaction boundaries", () => {
   });
 
   it("creates a named first agent while preserving the pre-roster verified route", async () => {
-    const source = { agents: { defaults: { model: "openai/gpt-5.5" } } } satisfies OpenClawConfig;
+    const source = { agents: { defaults: { model: "openai/gpt-5.5" } } } satisfies AforaConfig;
     const runtimeConfig = {
       agents: {
         defaults: { model: "openai/gpt-5.5" },
         entries: { main: { default: true, agentDir: "/agents/main" } },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const absentRoster = snapshot("probe", source, runtimeConfig);
     setSetupCommitState(runtimeConfig, absentRoster);
     const expectedInferenceRoute = await projectDefaultInferenceRoute(runtimeConfig);
@@ -413,13 +413,13 @@ describe("applySystemAgentSetup transaction boundaries", () => {
     { label: "entries", agents: { entries: {} } },
     { label: "list", agents: { list: [] } },
   ])("treats an authored $label roster as bootstrap", async ({ agents }) => {
-    const authoredConfig: OpenClawConfig = {
+    const authoredConfig: AforaConfig = {
       agents: {
         ...agents,
         defaults: { model: { primary: "openai/gpt-5.5" } },
       },
     };
-    const emptyRosterRuntime: OpenClawConfig = {
+    const emptyRosterRuntime: AforaConfig = {
       agents: {
         ...authoredConfig.agents,
         list: undefined,
@@ -441,7 +441,7 @@ describe("applySystemAgentSetup transaction boundaries", () => {
   });
 
   it("preserves fleet workspace ownership when the roster comes from an include", async () => {
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       agents: {
         defaults: { model: { primary: "openai/gpt-5.5" }, workspace: "/tmp/current-workspace" },
         entries: { main: { default: true } },
@@ -472,7 +472,7 @@ describe("applySystemAgentSetup transaction boundaries", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     setSetupCommitState(structuredClone(config), snapshot("probe", config));
 
     await applySystemAgentSetup(
@@ -507,7 +507,7 @@ describe("applySystemAgentSetup transaction boundaries", () => {
   });
 
   it.each([
-    { id: "OpenClaw", reserved: "openclaw" },
+    { id: "Afora", reserved: "afora" },
     { id: "crestodian", reserved: "crestodian" },
   ])("rejects the reserved user agent id $id", async ({ id, reserved }) => {
     const config = {
@@ -515,7 +515,7 @@ describe("applySystemAgentSetup transaction boundaries", () => {
         defaults: { model: "openai/gpt-5.5" },
         entries: { [id]: {} },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     mocks.state.initialSnapshot = snapshot("reserved", config);
 
     await expect(applySystemAgentSetup(baseParams())).rejects.toThrow(
@@ -537,7 +537,7 @@ describe("applySystemAgentSetup transaction boundaries", () => {
 
   it.each<{
     name: string;
-    runtimeConfig: OpenClawConfig;
+    runtimeConfig: AforaConfig;
     error: string;
   }>([
     {
@@ -577,7 +577,7 @@ describe("applySystemAgentSetup transaction boundaries", () => {
   });
 
   it("rejects same-revision agent credential directory drift in the final snapshot", async () => {
-    const movedConfig: OpenClawConfig = {
+    const movedConfig: AforaConfig = {
       agents: {
         defaults: { model: { primary: "openai/gpt-5.5" } },
         entries: { main: { default: true, agentDir: "/agents/moved" } },
@@ -627,7 +627,7 @@ describe("applySystemAgentSetup transaction boundaries", () => {
       logging: { level: "debug" },
       plugins: { entries: { codex: { enabled: true } } },
     });
-    expect(result.configPath).toBe("/tmp/openclaw.json");
+    expect(result.configPath).toBe("/tmp/afora.json");
   });
 
   it("rejects route drift before opening the config transaction", async () => {
@@ -649,11 +649,11 @@ describe("applySystemAgentSetup transaction boundaries", () => {
     const stale = {
       agents: { defaults: { model: "openai/gpt-5.5" }, entries: { main: { default: true } } },
       gateway: { port: 18789 },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const current = {
       ...stale,
       gateway: { port: 19000 },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     mocks.state.initialSnapshot = snapshot("same-root", stale);
     mocks.readVerifiedSnapshot.mockResolvedValue(snapshot("same-root", current));
 
@@ -693,7 +693,7 @@ describe("applySystemAgentSetup transaction boundaries", () => {
         bind: "loopback",
         auth: { mode: "token", token: "initial-token" },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const concurrent = {
       ...initial,
       gateway: {
@@ -702,7 +702,7 @@ describe("applySystemAgentSetup transaction boundaries", () => {
         bind: "lan",
         auth: { mode: "token" as const, token: "concurrent-token" },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const initialSnapshot = snapshot("hash-1", initial);
     const concurrentSnapshot = snapshot("hash-2", concurrent);
     setSetupCommitState(initial, initialSnapshot);
@@ -739,7 +739,7 @@ describe("applySystemAgentSetup transaction boundaries", () => {
       mocks.state.persistedConfig = result.nextConfig;
       return {
         nextConfig: result.nextConfig,
-        path: "/tmp/openclaw.json",
+        path: "/tmp/afora.json",
         previousHash: "hash-2",
         persistedHash: "persisted",
         result: result.result,
@@ -791,7 +791,7 @@ describe("applySystemAgentSetup transaction boundaries", () => {
       mocks.state.persistedConfig = persistedDrift;
       return {
         nextConfig: persistedDrift,
-        path: "/tmp/openclaw.json",
+        path: "/tmp/afora.json",
         previousHash: "probe",
         persistedHash: "persisted",
         result: result.result,
@@ -819,7 +819,7 @@ describe("applySystemAgentSetup transaction boundaries", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const initialSnapshot = {
       ...snapshot("probe", sourceConfig),
       runtimeConfig: materializePluginDefaults(sourceConfig, pluginMetadataSnapshot),
@@ -891,10 +891,10 @@ describe("applySystemAgentSetup transaction boundaries", () => {
     const initial = {
       agents: { defaults: { model: "openai/gpt-5.5" }, entries: { main: { default: true } } },
       auth: { order: { openai: ["openai:verified"] } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const initialSnapshot = snapshot("probe", initial);
     const expectedInferenceRoute = await projectDefaultInferenceRoute(initial);
-    let currentConfig: OpenClawConfig = initial;
+    let currentConfig: AforaConfig = initial;
     let currentHash = "probe";
     setSetupCommitState(initial, initialSnapshot);
     let setupReads = 0;
@@ -914,7 +914,7 @@ describe("applySystemAgentSetup transaction boundaries", () => {
       mocks.events.push("commit");
       return {
         nextConfig: result.nextConfig,
-        path: "/tmp/openclaw.json",
+        path: "/tmp/afora.json",
         previousHash: "probe",
         persistedHash: currentHash,
         result: result.result,
@@ -949,12 +949,12 @@ describe("applySystemAgentSetup transaction boundaries", () => {
   it("finalizes setup against the source config held by the commit lock", async () => {
     const sourceConfig = {
       plugins: { entries: { codex: { config: { supervision: { enabled: false } } } } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     mocks.state.commitSnapshot = {
       ...snapshot("probe", mocks.state.commitConfig),
       sourceConfig,
     };
-    const finalizeConfig = vi.fn((config: OpenClawConfig, source: OpenClawConfig) => {
+    const finalizeConfig = vi.fn((config: AforaConfig, source: AforaConfig) => {
       const { list: _legacyList, ...agents } = config.agents ?? {};
       return {
         ...config,
@@ -1004,7 +1004,7 @@ describe("applySystemAgentSetup transaction boundaries", () => {
     expect(result.lines).toEqual(
       expect.arrayContaining([
         "Workspace files: workspace exploded",
-        "OpenClaw exec approval: approval exploded; local model harnesses may ask again.",
+        "Afora exec approval: approval exploded; local model harnesses may ask again.",
         "Plugin registry refresh failed: registry exploded",
         "Gateway service: service exploded",
       ]),
@@ -1066,7 +1066,7 @@ describe("applySystemAgentSetup transaction boundaries", () => {
       expectedCredential: "gateway-token",
     },
   ])("authenticates non-restarting Gateway recovery with its $label only", async (scenario) => {
-    const config: OpenClawConfig = { ...mainAgentModelConfig(), gateway: { auth: scenario.auth } };
+    const config: AforaConfig = { ...mainAgentModelConfig(), gateway: { auth: scenario.auth } };
     setSetupCommitState(config, snapshot("probe", config));
     mocks.ensureGatewayService.mockResolvedValueOnce({
       gateway: { status: "ready", action: "reused" },

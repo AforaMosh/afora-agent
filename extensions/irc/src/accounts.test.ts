@@ -148,7 +148,7 @@ describe("resolveIrcAccount", () => {
   });
 
   it.runIf(process.platform !== "win32")("isolates symlinked password files", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-irc-account-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-irc-account-"));
     const passwordFile = path.join(dir, "password.txt");
     const passwordLink = path.join(dir, "password-link.txt");
     fs.writeFileSync(passwordFile, "secret-pass\n", "utf8");
@@ -180,7 +180,7 @@ describe("resolveIrcAccount", () => {
   });
 
   it.runIf(process.platform !== "win32")("isolates symlinked NickServ password files", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-irc-nickserv-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-irc-nickserv-"));
     const passwordFile = path.join(dir, "nickserv-password.txt");
     const passwordLink = path.join(dir, "nickserv-password-link.txt");
     fs.writeFileSync(passwordFile, "nickserv-pass\n", "utf8");
@@ -213,7 +213,7 @@ describe("resolveIrcAccount", () => {
   });
 
   it("does not fall through from a missing explicit password file", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-irc-missing-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-irc-missing-"));
     const passwordFile = path.join(dir, "missing-password.txt");
     const account = resolveIrcAccount({
       cfg: asConfig({

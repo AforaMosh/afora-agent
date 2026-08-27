@@ -50,20 +50,20 @@ const PNG_BYTES = Buffer.from(
 const NORMALIZED_PNG_BYTES = Buffer.from("normalized-png");
 const CATALOG_ICON_URL = "https://cdn.example.test/setup-tool.svg";
 const ICON_ROUTES = [
-  { label: "plugin", pathname: "/__openclaw__/plugin-icon/firecrawl" },
+  { label: "plugin", pathname: "/__afora__/plugin-icon/firecrawl" },
   {
     label: "catalog",
-    pathname: `/__openclaw__/catalog-icon/${encodeURIComponent(CATALOG_ICON_URL)}`,
+    pathname: `/__afora__/catalog-icon/${encodeURIComponent(CATALOG_ICON_URL)}`,
   },
 ] as const;
 const INVALID_ICON_ROUTES = [
-  { label: "blank plugin id", pathname: "/__openclaw__/plugin-icon/" },
-  { label: "invalid plugin id", pathname: "/__openclaw__/plugin-icon/%20" },
-  { label: "malformed plugin id", pathname: "/__openclaw__/plugin-icon/%zz" },
-  { label: "nested plugin id", pathname: "/__openclaw__/plugin-icon/one/two" },
-  { label: "blank catalog URL", pathname: "/__openclaw__/catalog-icon/" },
-  { label: "malformed catalog URL", pathname: "/__openclaw__/catalog-icon/%zz" },
-  { label: "nested catalog URL", pathname: "/__openclaw__/catalog-icon/one/two" },
+  { label: "blank plugin id", pathname: "/__afora__/plugin-icon/" },
+  { label: "invalid plugin id", pathname: "/__afora__/plugin-icon/%20" },
+  { label: "malformed plugin id", pathname: "/__afora__/plugin-icon/%zz" },
+  { label: "nested plugin id", pathname: "/__afora__/plugin-icon/one/two" },
+  { label: "blank catalog URL", pathname: "/__afora__/catalog-icon/" },
+  { label: "malformed catalog URL", pathname: "/__afora__/catalog-icon/%zz" },
+  { label: "nested catalog URL", pathname: "/__afora__/catalog-icon/one/two" },
 ] as const;
 
 let port = 0;
@@ -209,7 +209,7 @@ describe("Control UI plugin and catalog icon routes", () => {
 
   it("resolves by plugin identity and ignores arbitrary remote URL parameters", async () => {
     const response = await request(
-      "/__openclaw__/plugin-icon/firecrawl?url=http%3A%2F%2F127.0.0.1%2Fsecret",
+      "/__afora__/plugin-icon/firecrawl?url=http%3A%2F%2F127.0.0.1%2Fsecret",
     );
 
     expect(response.status).toBe(200);
@@ -248,7 +248,7 @@ describe("Control UI plugin and catalog icon routes", () => {
 
   it("resolves encoded catalog URLs through the server-owned allowlist", async () => {
     const iconUrl = CATALOG_ICON_URL;
-    const response = await request(`/__openclaw__/catalog-icon/${encodeURIComponent(iconUrl)}`);
+    const response = await request(`/__afora__/catalog-icon/${encodeURIComponent(iconUrl)}`);
 
     expect(response.status).toBe(200);
     expect(mocks.resolveCatalogIconUrl).toHaveBeenCalledWith({
@@ -263,7 +263,7 @@ describe("Control UI plugin and catalog icon routes", () => {
   it("does not fetch catalog URLs rejected by the server-owned allowlist", async () => {
     mocks.resolveCatalogIconUrl.mockReturnValueOnce(undefined);
     const response = await request(
-      `/__openclaw__/catalog-icon/${encodeURIComponent("https://untrusted.example/icon.png")}`,
+      `/__afora__/catalog-icon/${encodeURIComponent("https://untrusted.example/icon.png")}`,
     );
 
     expect(response.status).toBe(404);
@@ -277,7 +277,7 @@ describe("Control UI plugin and catalog icon routes", () => {
       contentType: "image/svg+xml",
     });
 
-    const response = await request("/__openclaw__/plugin-icon/simple-icons");
+    const response = await request("/__afora__/plugin-icon/simple-icons");
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe("image/svg+xml");
@@ -289,8 +289,8 @@ describe("Control UI plugin and catalog icon routes", () => {
 
   it("reuses successful icon bytes from the bounded process cache", async () => {
     configForRequest = () => ({});
-    const first = await request("/__openclaw__/plugin-icon/firecrawl");
-    const second = await request("/__openclaw__/plugin-icon/firecrawl");
+    const first = await request("/__afora__/plugin-icon/firecrawl");
+    const second = await request("/__afora__/plugin-icon/firecrawl");
 
     expect(first.status).toBe(200);
     expect(second.status).toBe(200);
@@ -348,23 +348,23 @@ describe("Control UI plugin and catalog icon routes", () => {
 
   it("accepts one canonical scoped plugin id encoded as a single path segment", async () => {
     const response = await request(
-      `/__openclaw__/plugin-icon/${encodeURIComponent("@expediagroup/expedia-openclaw")}`,
+      `/__afora__/plugin-icon/${encodeURIComponent("@expediagroup/expedia-afora")}`,
     );
 
     expect(response.status).toBe(200);
     expect(mocks.resolveIconUrl).toHaveBeenCalledWith({
       config: testConfig,
-      pluginId: "@expediagroup/expedia-openclaw",
+      pluginId: "@expediagroup/expedia-afora",
     });
   });
 
   it("refreshes cached icon bytes after the cache lifetime", async () => {
     const now = vi.spyOn(Date, "now").mockReturnValue(1_000);
     try {
-      const first = await request("/__openclaw__/plugin-icon/firecrawl");
-      const cached = await request("/__openclaw__/plugin-icon/firecrawl");
+      const first = await request("/__afora__/plugin-icon/firecrawl");
+      const cached = await request("/__afora__/plugin-icon/firecrawl");
       now.mockReturnValue(1_000 + PLUGIN_ICON_CACHE_TTL_MS + 1);
-      const refreshed = await request("/__openclaw__/plugin-icon/firecrawl");
+      const refreshed = await request("/__afora__/plugin-icon/firecrawl");
 
       expect(first.status).toBe(200);
       expect(cached.status).toBe(200);
@@ -377,21 +377,21 @@ describe("Control UI plugin and catalog icon routes", () => {
 
   it("returns not found when metadata is absent or remote image validation fails", async () => {
     mocks.resolveIconUrl.mockResolvedValueOnce(undefined);
-    const missing = await request("/__openclaw__/plugin-icon/missing");
+    const missing = await request("/__afora__/plugin-icon/missing");
     expect(missing.status).toBe(404);
 
     mocks.readRemoteMediaBuffer.mockResolvedValueOnce({
       buffer: Buffer.from("<html>nope</html>"),
       contentType: "text/html",
     });
-    const invalid = await request("/__openclaw__/plugin-icon/not-an-image");
+    const invalid = await request("/__afora__/plugin-icon/not-an-image");
     expect(invalid.status).toBe(404);
 
     mocks.readRemoteMediaBuffer.mockResolvedValueOnce({
       buffer: Buffer.from("<html>still nope</html>"),
       contentType: "image/png",
     });
-    const mislabeled = await request("/__openclaw__/plugin-icon/mislabeled");
+    const mislabeled = await request("/__afora__/plugin-icon/mislabeled");
     expect(mislabeled.status).toBe(404);
 
     mocks.readImageMetadata.mockReturnValueOnce({ width: 10_000, height: 10_000 });
@@ -399,11 +399,11 @@ describe("Control UI plugin and catalog icon routes", () => {
       buffer: PNG_BYTES,
       contentType: "image/png",
     });
-    const oversized = await request("/__openclaw__/plugin-icon/oversized");
+    const oversized = await request("/__afora__/plugin-icon/oversized");
     expect(oversized.status).toBe(404);
 
     mocks.readRemoteMediaBuffer.mockRejectedValueOnce(new Error("upstream failed"));
-    const failed = await request("/__openclaw__/plugin-icon/broken");
+    const failed = await request("/__afora__/plugin-icon/broken");
     expect(failed.status).toBe(404);
   });
 
@@ -424,7 +424,7 @@ describe("Control UI plugin and catalog icon routes", () => {
       void handlePluginIconHttpRequest(req, res, {
         auth: { mode: "token", token: "test-token", allowTailscale: false },
         config: {},
-        basePath: "/openclaw",
+        basePath: "/afora",
       }).then((handled) => {
         if (!handled) {
           res.statusCode = 404;
@@ -440,7 +440,7 @@ describe("Control UI plugin and catalog icon routes", () => {
       const handledPort = (handledServer.address() as AddressInfo).port;
       for (const { pathname } of ICON_ROUTES) {
         for (const method of ["GET", "HEAD"]) {
-          const response = await fetch(`http://127.0.0.1:${handledPort}/openclaw${pathname}`, {
+          const response = await fetch(`http://127.0.0.1:${handledPort}/afora${pathname}`, {
             headers: { Authorization: "Bearer test-token" },
             method,
           });

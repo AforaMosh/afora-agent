@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { testing } from "../../scripts/test-perf-budget.mts";
 
 function withReport(payload: unknown, run: (reportPath: string) => void) {
-  const reportPath = path.join(os.tmpdir(), `openclaw-test-perf-budget-${Date.now()}.json`);
+  const reportPath = path.join(os.tmpdir(), `afora-test-perf-budget-${Date.now()}.json`);
   fs.writeFileSync(
     reportPath,
     typeof payload === "string" ? payload : `${JSON.stringify(payload)}\n`,
@@ -30,7 +30,7 @@ describe("test perf budget script", () => {
     });
     expect(
       testing.parseArgs([], {
-        OPENCLAW_TEST_PERF_REPORT_ONLY: "yes",
+        AFORA_TEST_PERF_REPORT_ONLY: "yes",
       }),
     ).toMatchObject({
       baselineWallMs: null,
@@ -48,9 +48,9 @@ describe("test perf budget script", () => {
   it("parses numeric budget env vars strictly before running Vitest", () => {
     expect(
       testing.parseArgs([], {
-        OPENCLAW_TEST_PERF_BASELINE_WALL_MS: "1000",
-        OPENCLAW_TEST_PERF_MAX_REGRESSION_PCT: "12.5",
-        OPENCLAW_TEST_PERF_MAX_WALL_MS: "1500",
+        AFORA_TEST_PERF_BASELINE_WALL_MS: "1000",
+        AFORA_TEST_PERF_MAX_REGRESSION_PCT: "12.5",
+        AFORA_TEST_PERF_MAX_WALL_MS: "1500",
       }),
     ).toMatchObject({
       baselineWallMs: 1000,
@@ -60,9 +60,9 @@ describe("test perf budget script", () => {
 
     expect(() =>
       testing.parseArgs([], {
-        OPENCLAW_TEST_PERF_MAX_WALL_MS: "1000ms",
+        AFORA_TEST_PERF_MAX_WALL_MS: "1000ms",
       }),
-    ).toThrow("OPENCLAW_TEST_PERF_MAX_WALL_MS must be a non-negative number");
+    ).toThrow("AFORA_TEST_PERF_MAX_WALL_MS must be a non-negative number");
   });
 
   it("rejects malformed CLI budget values before running Vitest", () => {

@@ -18,7 +18,7 @@ describe("sync-labels", () => {
     execFileSyncMock.mockReset();
     execFileSyncMock.mockImplementation((command: string, args?: readonly string[]) => {
       if (command === "git") {
-        return "https://github.com/openclaw/openclaw.git\n";
+        return "https://github.com/AforaMosh/afora-agent.git\n";
       }
       if (command === "gh" && args?.some((arg) => arg.includes("/labels?"))) {
         return "[]";

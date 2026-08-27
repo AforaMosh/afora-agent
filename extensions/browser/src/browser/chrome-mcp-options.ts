@@ -1,5 +1,5 @@
 // Normalizes Chrome MCP profile options and subprocess arguments.
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   CHROME_MCP_CONNECTION_FLAGS,
   CHROME_MCP_USAGE_STATISTICS_FLAG_RE,

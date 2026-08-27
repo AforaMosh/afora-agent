@@ -7,7 +7,7 @@ import { toSafeImportPath } from "../shared/import-specifier.js";
 import { withEnv } from "../test-utils/env.js";
 import { writePersistedInstalledPluginIndexInstallRecordsSync } from "./installed-plugin-index-records.js";
 import { warnWhenAllowlistIsOpen } from "./loader-provenance.js";
-import { loadOpenClawPluginCliRegistry, loadOpenClawPlugins } from "./loader.js";
+import { loadAforaPluginCliRegistry, loadAforaPlugins } from "./loader.js";
 import {
   clearPluginLoaderCache,
   EMPTY_PLUGIN_SCHEMA,
@@ -24,7 +24,7 @@ import {
   memoryPluginBody,
   setupBundledDreamingMemoryPlugins,
   writeBundledPlugin,
-  makeOpenClawDevSourceRoot,
+  makeAforaDevSourceRoot,
   writeWorkspacePlugin,
   withStateDir,
   loadRegistryFromSinglePlugin,
@@ -46,11 +46,11 @@ import {
 afterEach(globalAfterEach0);
 afterAll(globalAfterAll1);
 
-describe("loadOpenClawPlugins", () => {
+describe("loadAforaPlugins", () => {
   it("loads every entry in a multi-entry package pack under its derived id", () => {
     useNoBundledPlugins();
     const stateDir = makePluginLoaderTempDir();
-    withEnv({ OPENCLAW_STATE_DIR: stateDir }, () => {
+    withEnv({ AFORA_STATE_DIR: stateDir }, () => {
       const packageDir = path.join(stateDir, "extensions", "pack");
       mkdirSafe(packageDir);
       fs.writeFileSync(
@@ -58,12 +58,12 @@ describe("loadOpenClawPlugins", () => {
         JSON.stringify({
           name: "pack",
           version: "1.0.0",
-          openclaw: { extensions: ["./one.cjs", "./two.cjs"] },
+          afora: { extensions: ["./one.cjs", "./two.cjs"] },
         }),
         "utf8",
       );
       fs.writeFileSync(
-        path.join(packageDir, "openclaw.plugin.json"),
+        path.join(packageDir, "afora.plugin.json"),
         JSON.stringify({ id: "pack", configSchema: EMPTY_PLUGIN_SCHEMA }),
         "utf8",
       );
@@ -78,7 +78,7 @@ describe("loadOpenClawPlugins", () => {
         "utf8",
       );
 
-      const registry = loadOpenClawPlugins({
+      const registry = loadAforaPlugins({
         cache: false,
         config: {
           plugins: {
@@ -167,11 +167,11 @@ describe("loadOpenClawPlugins", () => {
 
           return withEnv(
             {
-              OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-              OPENCLAW_BUNDLED_PLUGINS_DIR: undefined,
+              AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+              AFORA_BUNDLED_PLUGINS_DIR: undefined,
             },
             () =>
-              loadOpenClawPlugins({
+              loadAforaPlugins({
                 cache: false,
                 config: {
                   plugins: {
@@ -182,7 +182,7 @@ describe("loadOpenClawPlugins", () => {
               }),
           );
         },
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadAforaPlugins>) => {
           const a = registry.plugins.find((entry) => entry.id === "memory-a");
           const b = registry.plugins.find((entry) => entry.id === "memory-b");
           expect(b?.status).toBe("loaded");
@@ -210,7 +210,7 @@ describe("loadOpenClawPlugins", () => {
             body: memoryPluginBody("memory-b"),
           });
           fs.writeFileSync(
-            path.join(memoryADir, "openclaw.plugin.json"),
+            path.join(memoryADir, "afora.plugin.json"),
             JSON.stringify(
               {
                 id: "memory-a",
@@ -223,7 +223,7 @@ describe("loadOpenClawPlugins", () => {
             "utf-8",
           );
           fs.writeFileSync(
-            path.join(memoryBDir, "openclaw.plugin.json"),
+            path.join(memoryBDir, "afora.plugin.json"),
             JSON.stringify(
               {
                 id: "memory-b",
@@ -235,9 +235,9 @@ describe("loadOpenClawPlugins", () => {
             ),
             "utf-8",
           );
-          process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
+          process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledDir;
 
-          return loadOpenClawPlugins({
+          return loadAforaPlugins({
             cache: false,
             config: {
               plugins: {
@@ -251,7 +251,7 @@ describe("loadOpenClawPlugins", () => {
             },
           });
         },
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadAforaPlugins>) => {
           const a = registry.plugins.find((entry) => entry.id === "memory-a");
           const b = registry.plugins.find((entry) => entry.id === "memory-b");
           expect(a?.status).toBe("disabled");
@@ -265,7 +265,7 @@ describe("loadOpenClawPlugins", () => {
         loadRegistry: () => {
           const { selectedId } = setupBundledDreamingMemoryPlugins();
 
-          return loadOpenClawPlugins({
+          return loadAforaPlugins({
             cache: false,
             config: {
               plugins: {
@@ -278,7 +278,7 @@ describe("loadOpenClawPlugins", () => {
             },
           });
         },
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadAforaPlugins>) => {
           const core = registry.plugins.find((entry) => entry.id === "memory-core");
           const lance = registry.plugins.find((entry) => entry.id === "memory-lancedb");
           expect(core?.status).toBe("loaded");
@@ -294,7 +294,7 @@ describe("loadOpenClawPlugins", () => {
             coreBody: `throw new Error("manifest-only snapshot should not import memory-core");`,
           });
 
-          return loadOpenClawPlugins({
+          return loadAforaPlugins({
             cache: false,
             activate: false,
             loadModules: false,
@@ -309,7 +309,7 @@ describe("loadOpenClawPlugins", () => {
             },
           });
         },
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadAforaPlugins>) => {
           const core = registry.plugins.find((entry) => entry.id === "memory-core");
           const lance = registry.plugins.find((entry) => entry.id === "memory-lancedb");
           expect(core?.status).toBe("loaded");
@@ -324,7 +324,7 @@ describe("loadOpenClawPlugins", () => {
             coreBody: `throw new Error("denied memory-core should not load");`,
           });
 
-          return loadOpenClawPlugins({
+          return loadAforaPlugins({
             cache: false,
             config: {
               plugins: {
@@ -338,7 +338,7 @@ describe("loadOpenClawPlugins", () => {
             },
           });
         },
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadAforaPlugins>) => {
           const core = registry.plugins.find((entry) => entry.id === "memory-core");
           const lance = registry.plugins.find((entry) => entry.id === "memory-lancedb");
           expect(core?.status).toBe("disabled");
@@ -353,7 +353,7 @@ describe("loadOpenClawPlugins", () => {
             coreBody: `throw new Error("disabled memory-core should not load");`,
           });
 
-          return loadOpenClawPlugins({
+          return loadAforaPlugins({
             cache: false,
             config: {
               plugins: {
@@ -367,7 +367,7 @@ describe("loadOpenClawPlugins", () => {
             },
           });
         },
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadAforaPlugins>) => {
           const core = registry.plugins.find((entry) => entry.id === "memory-core");
           const lance = registry.plugins.find((entry) => entry.id === "memory-lancedb");
           expect(core?.status).toBe("disabled");
@@ -383,7 +383,7 @@ describe("loadOpenClawPlugins", () => {
             coreBody: `throw new Error("non-memory selected slot should not load memory-core");`,
           });
 
-          return loadOpenClawPlugins({
+          return loadAforaPlugins({
             cache: false,
             config: {
               plugins: {
@@ -396,7 +396,7 @@ describe("loadOpenClawPlugins", () => {
             },
           });
         },
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadAforaPlugins>) => {
           const core = registry.plugins.find((entry) => entry.id === "memory-core");
           const selected = registry.plugins.find((entry) => entry.id === "memory-lancedb");
           expect(core?.status).toBe("disabled");
@@ -427,7 +427,7 @@ describe("loadOpenClawPlugins", () => {
           });
           const openSchema = { type: "object", additionalProperties: true };
           fs.writeFileSync(
-            path.join(memoryCoreDir, "openclaw.plugin.json"),
+            path.join(memoryCoreDir, "afora.plugin.json"),
             JSON.stringify(
               { id: "memory-core", kind: "memory", configSchema: EMPTY_PLUGIN_SCHEMA },
               null,
@@ -436,7 +436,7 @@ describe("loadOpenClawPlugins", () => {
             "utf-8",
           );
           fs.writeFileSync(
-            path.join(memoryLanceDir, "openclaw.plugin.json"),
+            path.join(memoryLanceDir, "afora.plugin.json"),
             JSON.stringify(
               { id: "memory-lancedb", kind: "memory", configSchema: openSchema },
               null,
@@ -444,9 +444,9 @@ describe("loadOpenClawPlugins", () => {
             ),
             "utf-8",
           );
-          process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
+          process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledDir;
 
-          return loadOpenClawPlugins({
+          return loadAforaPlugins({
             cache: false,
             config: {
               plugins: {
@@ -460,7 +460,7 @@ describe("loadOpenClawPlugins", () => {
             },
           });
         },
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadAforaPlugins>) => {
           const core = registry.plugins.find((entry) => entry.id === "memory-core");
           const lance = registry.plugins.find((entry) => entry.id === "memory-lancedb");
           expect(core?.status).toBe("loaded");
@@ -490,7 +490,7 @@ describe("loadOpenClawPlugins", () => {
             body: memoryPluginBody("memory-lancedb"),
           });
           fs.writeFileSync(
-            path.join(memoryCoreDir, "openclaw.plugin.json"),
+            path.join(memoryCoreDir, "afora.plugin.json"),
             JSON.stringify(
               { id: "memory-core", kind: "memory", configSchema: EMPTY_PLUGIN_SCHEMA },
               null,
@@ -499,7 +499,7 @@ describe("loadOpenClawPlugins", () => {
             "utf-8",
           );
           fs.writeFileSync(
-            path.join(memoryLanceDir, "openclaw.plugin.json"),
+            path.join(memoryLanceDir, "afora.plugin.json"),
             JSON.stringify(
               {
                 id: "memory-lancedb",
@@ -511,9 +511,9 @@ describe("loadOpenClawPlugins", () => {
             ),
             "utf-8",
           );
-          process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
+          process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledDir;
 
-          return loadOpenClawPlugins({
+          return loadAforaPlugins({
             cache: false,
             config: {
               plugins: {
@@ -530,7 +530,7 @@ describe("loadOpenClawPlugins", () => {
             },
           });
         },
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadAforaPlugins>) => {
           const core = registry.plugins.find((entry) => entry.id === "memory-core");
           const lance = registry.plugins.find((entry) => entry.id === "memory-lancedb");
           expect(core?.status).toBe("disabled");
@@ -550,7 +550,7 @@ describe("loadOpenClawPlugins", () => {
             body: `throw new Error("memory-core should not load when memory slot is none");`,
           });
           fs.writeFileSync(
-            path.join(memoryCoreDir, "openclaw.plugin.json"),
+            path.join(memoryCoreDir, "afora.plugin.json"),
             JSON.stringify(
               { id: "memory-core", kind: "memory", configSchema: EMPTY_PLUGIN_SCHEMA },
               null,
@@ -558,9 +558,9 @@ describe("loadOpenClawPlugins", () => {
             ),
             "utf-8",
           );
-          process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
+          process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledDir;
 
-          return loadOpenClawPlugins({
+          return loadAforaPlugins({
             cache: false,
             config: {
               plugins: {
@@ -573,7 +573,7 @@ describe("loadOpenClawPlugins", () => {
             },
           });
         },
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadAforaPlugins>) => {
           const core = registry.plugins.find((entry) => entry.id === "memory-core");
           expect(core?.status).toBe("disabled");
         },
@@ -588,11 +588,11 @@ describe("loadOpenClawPlugins", () => {
 
           return withEnv(
             {
-              OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-              OPENCLAW_BUNDLED_PLUGINS_DIR: undefined,
+              AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+              AFORA_BUNDLED_PLUGINS_DIR: undefined,
             },
             () =>
-              loadOpenClawPlugins({
+              loadAforaPlugins({
                 cache: false,
                 config: {
                   plugins: {
@@ -603,7 +603,7 @@ describe("loadOpenClawPlugins", () => {
               }),
           );
         },
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadAforaPlugins>) => {
           const entry = registry.plugins.find((item) => item.id === "memory-off");
           expect(entry?.status).toBe("disabled");
         },
@@ -616,7 +616,7 @@ describe("loadOpenClawPlugins", () => {
   it("loads dreaming sidecar metadata through a restrictive selected-memory allowlist", async () => {
     const { selectedId } = setupBundledDreamingMemoryPlugins();
 
-    const registry = await loadOpenClawPluginCliRegistry({
+    const registry = await loadAforaPluginCliRegistry({
       cache: false,
       config: {
         plugins: {
@@ -655,7 +655,7 @@ describe("loadOpenClawPlugins", () => {
             body: simplePluginBody("shadow"),
           });
 
-          return loadOpenClawPlugins({
+          return loadAforaPlugins({
             cache: false,
             config: {
               plugins: {
@@ -696,7 +696,7 @@ describe("loadOpenClawPlugins", () => {
               filename: "index.cjs",
             });
 
-            return loadOpenClawPlugins({
+            return loadAforaPlugins({
               cache: false,
               config: {
                 plugins: {
@@ -742,7 +742,7 @@ describe("loadOpenClawPlugins", () => {
               { stateDir },
             );
 
-            return loadOpenClawPlugins({
+            return loadAforaPlugins({
               cache: false,
               config: {
                 plugins: {
@@ -766,15 +766,15 @@ describe("loadOpenClawPlugins", () => {
         pluginId: "demo-dev-source-duplicate",
         bundledFilename: "index.cjs",
         loadRegistry: () => {
-          const devSourceRoot = makeOpenClawDevSourceRoot();
+          const devSourceRoot = makeAforaDevSourceRoot();
           const bundledPluginsDir = path.join(devSourceRoot, "extensions");
           writeBundledPlugin({
             id: "demo-dev-source-duplicate",
             body: simplePluginBody("demo-dev-source-duplicate"),
             bundledDir: path.join(bundledPluginsDir, "demo-dev-source-duplicate"),
           });
-          process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
-          return withEnv({ OPENCLAW_DEV_SOURCE_ROOT: devSourceRoot }, () =>
+          process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
+          return withEnv({ AFORA_DEV_SOURCE_ROOT: devSourceRoot }, () =>
             withStateDir((stateDir) => {
               const globalDir = path.join(stateDir, "extensions", "demo-dev-source-duplicate");
               mkdirSafe(globalDir);
@@ -794,7 +794,7 @@ describe("loadOpenClawPlugins", () => {
                 { stateDir },
               );
 
-              return loadOpenClawPlugins({
+              return loadAforaPlugins({
                 cache: false,
                 config: {
                   plugins: {
@@ -823,7 +823,7 @@ describe("loadOpenClawPlugins", () => {
             body: memoryPluginBody("memory-lancedb"),
           });
           return withStateDir((stateDir) => {
-            const globalDir = path.join(stateDir, "node_modules", "@openclaw", "memory-lancedb");
+            const globalDir = path.join(stateDir, "node_modules", "@afora", "memory-lancedb");
             mkdirSafe(globalDir);
             const globalPlugin = writePlugin({
               id: "memory-lancedb",
@@ -850,9 +850,9 @@ describe("loadOpenClawPlugins", () => {
               path.join(globalDir, "package.json"),
               JSON.stringify(
                 {
-                  name: "@openclaw/memory-lancedb",
+                  name: "@afora/memory-lancedb",
                   version: "2026.5.12-beta.1",
-                  openclaw: { extensions: ["./index.cjs"] },
+                  afora: { extensions: ["./index.cjs"] },
                 },
                 null,
                 2,
@@ -860,7 +860,7 @@ describe("loadOpenClawPlugins", () => {
               "utf-8",
             );
 
-            return loadOpenClawPlugins({
+            return loadAforaPlugins({
               cache: false,
               config: {
                 plugins: {
@@ -872,8 +872,8 @@ describe("loadOpenClawPlugins", () => {
                   installs: {
                     "memory-lancedb": {
                       source: "npm",
-                      spec: "@openclaw/memory-lancedb",
-                      resolvedName: "@openclaw/memory-lancedb",
+                      spec: "@afora/memory-lancedb",
+                      resolvedName: "@afora/memory-lancedb",
                       resolvedVersion: "2026.5.12-beta.1",
                       installPath: globalDir,
                     },
@@ -917,7 +917,7 @@ describe("loadOpenClawPlugins", () => {
             id: "warn-open-allow-config",
             body: simplePluginBody("warn-open-allow-config"),
           });
-          return loadOpenClawPlugins({
+          return loadAforaPlugins({
             cache: false,
             logger: createWarningLogger(warnings),
             config: {
@@ -938,7 +938,7 @@ describe("loadOpenClawPlugins", () => {
             id: "warn-open-allow-workspace",
           });
           return (warnings: string[]) =>
-            loadOpenClawPlugins({
+            loadAforaPlugins({
               cache: false,
               workspaceDir,
               logger: createWarningLogger(warnings),
@@ -975,7 +975,7 @@ describe("loadOpenClawPlugins", () => {
       id: "warn-explicitly-enabled-plugin",
     });
     const warnings: string[] = [];
-    loadOpenClawPlugins({
+    loadAforaPlugins({
       cache: false,
       workspaceDir,
       logger: createWarningLogger(warnings),
@@ -997,7 +997,7 @@ describe("loadOpenClawPlugins", () => {
       id: "warn-mismatch-allow-plugin",
     });
     const warnings: string[] = [];
-    loadOpenClawPlugins({
+    loadAforaPlugins({
       cache: false,
       workspaceDir,
       logger: createWarningLogger(warnings),
@@ -1027,7 +1027,7 @@ describe("loadOpenClawPlugins", () => {
       id: "warn-partial-allow-plugin",
     });
     const warnings: string[] = [];
-    loadOpenClawPlugins({
+    loadAforaPlugins({
       cache: false,
       workspaceDir,
       logger: createWarningLogger(warnings),
@@ -1065,7 +1065,7 @@ describe("loadOpenClawPlugins", () => {
       id: "warn-noise-workspace-plugin",
     });
     const warnings: string[] = [];
-    loadOpenClawPlugins({
+    loadAforaPlugins({
       cache: false,
       workspaceDir,
       logger: createWarningLogger(warnings),
@@ -1096,7 +1096,7 @@ describe("loadOpenClawPlugins", () => {
       id: "warn-open-allow-remediation",
     });
     const warnings: string[] = [];
-    loadOpenClawPlugins({
+    loadAforaPlugins({
       cache: false,
       workspaceDir,
       logger: createWarningLogger(warnings),
@@ -1111,14 +1111,14 @@ describe("loadOpenClawPlugins", () => {
     expect(openAllowWarning).toBeDefined();
     expect(openAllowWarning).toContain('"warn-open-allow-remediation"');
     expect(openAllowWarning).toContain('"plugins": { "allow": [');
-    expect(openAllowWarning).toContain("openclaw plugins list --enabled --verbose");
-    expect(openAllowWarning).toContain("openclaw plugins inspect warn-open-allow-remediation");
+    expect(openAllowWarning).toContain("afora plugins list --enabled --verbose");
+    expect(openAllowWarning).toContain("afora plugins inspect warn-open-allow-remediation");
   });
 
   it("distinguishes load permission from capability trust in the untracked-provenance warning", () => {
     useNoBundledPlugins();
     const stateDir = makePluginLoaderTempDir();
-    withEnv({ OPENCLAW_STATE_DIR: stateDir }, () => {
+    withEnv({ AFORA_STATE_DIR: stateDir }, () => {
       const globalDir = path.join(stateDir, "extensions", "warn-untracked-remediation");
       mkdirSafe(globalDir);
       writePlugin({
@@ -1129,7 +1129,7 @@ describe("loadOpenClawPlugins", () => {
       });
 
       const warnings: string[] = [];
-      const registry = loadOpenClawPlugins({
+      const registry = loadAforaPlugins({
         cache: false,
         logger: createWarningLogger(warnings),
         config: {
@@ -1142,11 +1142,11 @@ describe("loadOpenClawPlugins", () => {
       const untrackedWarning = warnings.find(
         (msg) =>
           msg.includes("warn-untracked-remediation") &&
-          msg.includes("OpenClaw can't verify where this plugin came from"),
+          msg.includes("Afora can't verify where this plugin came from"),
       );
       expect(untrackedWarning).toBeDefined();
-      expect(untrackedWarning).toContain("OpenClaw can't verify where this plugin came from");
-      expect(untrackedWarning).toContain("openclaw plugins inspect warn-untracked-remediation");
+      expect(untrackedWarning).toContain("Afora can't verify where this plugin came from");
+      expect(untrackedWarning).toContain("afora plugins inspect warn-untracked-remediation");
       expect(untrackedWarning).toContain(
         "plugins.allow lets it load, but does not make it trusted",
       );
@@ -1157,10 +1157,10 @@ describe("loadOpenClawPlugins", () => {
       const diagnostic = registry.diagnostics.find(
         (entry) =>
           entry.pluginId === "warn-untracked-remediation" &&
-          entry.message.includes("OpenClaw can't verify where this plugin came from"),
+          entry.message.includes("Afora can't verify where this plugin came from"),
       );
-      expect(diagnostic?.message).toContain("OpenClaw can't verify where this plugin came from");
-      expect(diagnostic?.message).toContain("openclaw plugins inspect warn-untracked-remediation");
+      expect(diagnostic?.message).toContain("Afora can't verify where this plugin came from");
+      expect(diagnostic?.message).toContain("afora plugins inspect warn-untracked-remediation");
       expect(diagnostic?.message).toContain(
         "plugins.allow lets it load, but does not make it trusted",
       );
@@ -1197,8 +1197,8 @@ describe("loadOpenClawPlugins", () => {
     expect(message).toContain("plugins.allow is empty");
     expect(message).toContain("(+2 more)");
     expect(message).not.toContain('"plugins": { "allow": [');
-    expect(message).toContain("openclaw plugins list --enabled --verbose");
-    expect(message).toContain("openclaw plugins inspect <id>");
+    expect(message).toContain("afora plugins list --enabled --verbose");
+    expect(message).toContain("afora plugins inspect <id>");
   });
 
   it("handles workspace-discovered plugins according to trust and precedence", () => {
@@ -1212,7 +1212,7 @@ describe("loadOpenClawPlugins", () => {
             id: "workspace-helper",
           });
 
-          return loadOpenClawPlugins({
+          return loadAforaPlugins({
             cache: false,
             workspaceDir,
             config: {
@@ -1222,7 +1222,7 @@ describe("loadOpenClawPlugins", () => {
             },
           });
         },
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadAforaPlugins>) => {
           expectPluginOriginAndStatus({
             registry,
             pluginId: "workspace-helper",
@@ -1241,7 +1241,7 @@ describe("loadOpenClawPlugins", () => {
             id: "workspace-helper",
           });
 
-          return loadOpenClawPlugins({
+          return loadAforaPlugins({
             cache: false,
             workspaceDir,
             config: {
@@ -1252,7 +1252,7 @@ describe("loadOpenClawPlugins", () => {
             },
           });
         },
-        assert: (registry: ReturnType<typeof loadOpenClawPlugins>) => {
+        assert: (registry: ReturnType<typeof loadAforaPlugins>) => {
           expectPluginOriginAndStatus({
             registry,
             pluginId: "workspace-helper",
@@ -1276,7 +1276,7 @@ describe("loadOpenClawPlugins", () => {
             id: "shadowed",
           });
 
-          return loadOpenClawPlugins({
+          return loadAforaPlugins({
             cache: false,
             workspaceDir,
             config: {
@@ -1311,7 +1311,7 @@ describe("loadOpenClawPlugins", () => {
       body: simplePluginBody("profile-aware"),
     });
     fs.writeFileSync(
-      path.join(plugin.dir, "openclaw.plugin.json"),
+      path.join(plugin.dir, "afora.plugin.json"),
       JSON.stringify(
         {
           id: "profile-aware",
@@ -1324,7 +1324,7 @@ describe("loadOpenClawPlugins", () => {
       "utf-8",
     );
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadAforaPlugins({
       cache: false,
       workspaceDir: bundledDir,
       config: {
@@ -1352,7 +1352,7 @@ describe("loadOpenClawPlugins", () => {
       filename: "unscoped.cjs",
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadAforaPlugins({
       cache: false,
       config: {
         plugins: {
@@ -1384,7 +1384,7 @@ describe("loadOpenClawPlugins", () => {
             });
 
             const warnings: string[] = [];
-            const registry = loadOpenClawPlugins({
+            const registry = loadAforaPlugins({
               cache: false,
               logger: createWarningLogger(warnings),
               config: {
@@ -1402,7 +1402,7 @@ describe("loadOpenClawPlugins", () => {
         label: "warns when loaded non-bundled plugin has no provenance and no allowlist is set",
         loadRegistry: () => {
           const stateDir = makePluginLoaderTempDir();
-          return withEnv({ OPENCLAW_STATE_DIR: stateDir }, () => {
+          return withEnv({ AFORA_STATE_DIR: stateDir }, () => {
             const globalDir = path.join(stateDir, "extensions", "rogue");
             mkdirSafe(globalDir);
             writePlugin({
@@ -1413,7 +1413,7 @@ describe("loadOpenClawPlugins", () => {
             });
 
             const warnings: string[] = [];
-            const registry = loadOpenClawPlugins({
+            const registry = loadAforaPlugins({
               cache: false,
               logger: createWarningLogger(warnings),
               config: {
@@ -1432,7 +1432,7 @@ describe("loadOpenClawPlugins", () => {
         loadRegistry: () => {
           const { plugin, env } = createEnvResolvedPluginFixture("tracked-load-path");
           const warnings: string[] = [];
-          const registry = loadOpenClawPlugins({
+          const registry = loadAforaPlugins({
             cache: false,
             logger: createWarningLogger(warnings),
             env,
@@ -1458,7 +1458,7 @@ describe("loadOpenClawPlugins", () => {
         loadRegistry: () => {
           const { plugin, env } = createEnvResolvedPluginFixture("tracked-install-path");
           const warnings: string[] = [];
-          const registry = loadOpenClawPlugins({
+          const registry = loadAforaPlugins({
             cache: false,
             logger: createWarningLogger(warnings),
             env,
@@ -1498,7 +1498,7 @@ describe("loadOpenClawPlugins", () => {
 
           const pluginDir = path.join(
             realHome,
-            ".openclaw",
+            ".afora",
             "npm",
             "node_modules",
             "@example",
@@ -1518,7 +1518,7 @@ describe("loadOpenClawPlugins", () => {
                 spec: "@example/tracked-symlink-install@1.0.0",
                 installPath: path.join(
                   linkedHome,
-                  ".openclaw",
+                  ".afora",
                   "npm",
                   "node_modules",
                   "@example",
@@ -1531,13 +1531,13 @@ describe("loadOpenClawPlugins", () => {
           );
 
           const warnings: string[] = [];
-          const registry = loadOpenClawPlugins({
+          const registry = loadAforaPlugins({
             cache: false,
             logger: createWarningLogger(warnings),
             env: {
               ...process.env,
-              OPENCLAW_STATE_DIR: stateDir,
-              OPENCLAW_BUNDLED_PLUGINS_DIR: "/nonexistent/bundled/plugins",
+              AFORA_STATE_DIR: stateDir,
+              AFORA_BUNDLED_PLUGINS_DIR: "/nonexistent/bundled/plugins",
             },
             config: {
               plugins: {
@@ -1573,7 +1573,7 @@ describe("loadOpenClawPlugins", () => {
   it("uses the source runtime snapshot allowlist for plugin trust checks", () => {
     useNoBundledPlugins();
     const stateDir = makePluginLoaderTempDir();
-    withEnv({ OPENCLAW_STATE_DIR: stateDir }, () => {
+    withEnv({ AFORA_STATE_DIR: stateDir }, () => {
       const globalDir = path.join(stateDir, "extensions", "trusted-plugin");
       mkdirSafe(globalDir);
       writePlugin({
@@ -1605,7 +1605,7 @@ describe("loadOpenClawPlugins", () => {
       setRuntimeConfigSnapshot(runtimeConfig, sourceConfig);
 
       const warnings: string[] = [];
-      const registry = loadOpenClawPlugins({
+      const registry = loadAforaPlugins({
         cache: false,
         logger: createWarningLogger(warnings),
         config: runtimeConfig,
@@ -1622,7 +1622,7 @@ describe("loadOpenClawPlugins", () => {
         warnings.filter(
           (message) =>
             message.includes("trusted-plugin") &&
-            message.includes("OpenClaw can't verify where this plugin came from"),
+            message.includes("Afora can't verify where this plugin came from"),
         ),
       ).toEqual([]);
     });
@@ -1682,8 +1682,8 @@ describe("loadOpenClawPlugins", () => {
       throw err;
     }
 
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
-    const registry = loadOpenClawPlugins({
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledDir;
+    const registry = loadAforaPlugins({
       cache: false,
       workspaceDir: bundledDir,
       config: {
@@ -1724,7 +1724,7 @@ describe("loadOpenClawPlugins", () => {
   } };`,
     });
 
-    const registry = withEnv({ OPENCLAW_STATE_DIR: stateDir }, () =>
+    const registry = withEnv({ AFORA_STATE_DIR: stateDir }, () =>
       loadRegistryFromSinglePlugin({
         plugin,
         pluginConfig: {
@@ -1743,7 +1743,7 @@ describe("loadOpenClawPlugins", () => {
   it("suppresses trust warning logs for non-activating snapshot loads", () => {
     useNoBundledPlugins();
     const stateDir = makePluginLoaderTempDir();
-    withEnv({ OPENCLAW_STATE_DIR: stateDir }, () => {
+    withEnv({ AFORA_STATE_DIR: stateDir }, () => {
       const globalDir = path.join(stateDir, "extensions", "rogue");
       mkdirSafe(globalDir);
       writePlugin({
@@ -1754,7 +1754,7 @@ describe("loadOpenClawPlugins", () => {
       });
 
       const warnings: string[] = [];
-      const registry = loadOpenClawPlugins({
+      const registry = loadAforaPlugins({
         activate: false,
         cache: false,
         logger: createWarningLogger(warnings),
@@ -1770,7 +1770,7 @@ describe("loadOpenClawPlugins", () => {
         registry,
         level: "warn",
         pluginId: "rogue",
-        message: "OpenClaw can't verify where this plugin came from",
+        message: "Afora can't verify where this plugin came from",
       });
     });
   });
@@ -1799,7 +1799,7 @@ describe("loadOpenClawPlugins", () => {
       "utf-8",
     );
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadAforaPlugins({
       cache: false,
       workspaceDir: plugin.dir,
       config: {

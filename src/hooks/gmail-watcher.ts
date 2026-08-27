@@ -7,7 +7,7 @@
 
 import { type ChildProcess, spawn } from "node:child_process";
 import process from "node:process";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { killProcessTree } from "../process/kill-tree.js";
@@ -140,7 +140,7 @@ function spawnGogServe(cfg: GmailHookRuntimeConfig): ChildProcess {
     if (addressInUse) {
       log.warn(
         "gog serve failed to bind (address already in use); stopping restarts. " +
-          "Another watcher is likely running. Set OPENCLAW_SKIP_GMAIL_WATCHER=1 or stop the other process.",
+          "Another watcher is likely running. Set AFORA_SKIP_GMAIL_WATCHER=1 or stop the other process.",
       );
       watcherProcess = null;
       return;
@@ -331,7 +331,7 @@ function createGmailWatcherCancellation(
  * Called automatically by the gateway if hooks.gmail is configured.
  */
 export async function startGmailWatcher(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   options: GmailWatcherStartOptions = {},
 ): Promise<GmailWatcherStartResult> {
   // Check if gmail hooks are configured

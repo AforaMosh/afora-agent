@@ -1,7 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { McpServerConfig } from "../config/types.mcp.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { applyClawAddPlan } from "./add.js";
 import { buildClawAddPlan } from "./lifecycle.js";
 import { installClawMcpServers } from "./mcp.js";
@@ -59,12 +59,12 @@ export async function createUpdatePlanFixture(root: string) {
     name: "@acme/worker",
     version: "1.0.0",
     packageRoot: root,
-    manifestPath: join(root, "openclaw.claw.json"),
+    manifestPath: join(root, "afora.claw.json"),
     integrityKind: "artifact",
     integrity: "sha256:base",
     byteLength: 100,
   };
-  const env = { OPENCLAW_STATE_DIR: join(root, "state") };
+  const env = { AFORA_STATE_DIR: join(root, "state") };
   const addPlan = await buildClawAddPlan({
     manifest: parsed.manifest,
     source,
@@ -73,7 +73,7 @@ export async function createUpdatePlanFixture(root: string) {
   if (addPlan.blockers.length > 0) {
     throw new Error(JSON.stringify(addPlan.blockers));
   }
-  let config: OpenClawConfig = {};
+  let config: AforaConfig = {};
   await applyClawAddPlan(addPlan, {
     consentPlanIntegrity: addPlan.planIntegrity,
     env,
@@ -107,7 +107,7 @@ export function targetSource(root: string, version: string, integrity: string): 
     name: "@acme/worker",
     version,
     packageRoot: root,
-    manifestPath: join(root, "openclaw.claw.json"),
+    manifestPath: join(root, "afora.claw.json"),
     integrityKind: "artifact",
     integrity,
     byteLength: 100,

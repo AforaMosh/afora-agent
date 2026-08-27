@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveGlobalSingleton } from "../../shared/global-singleton.js";
 import { withPluginMetadataSnapshotScope } from "../current-plugin-metadata-snapshot.js";
 import type { PluginMetadataSnapshot } from "../plugin-metadata-snapshot.types.js";
@@ -8,7 +8,7 @@ import type { PluginRegistry } from "../registry-types.js";
 import { withPluginRuntimeRegistryScope } from "./gateway-request-scope.js";
 
 const PLUGIN_RUNTIME_GENERATION_REGISTRY_SCOPE_KEY: unique symbol = Symbol.for(
-  "openclaw.pluginRuntimeGenerationRegistryScope",
+  "afora.pluginRuntimeGenerationRegistryScope",
 );
 
 const pluginRuntimeGenerationRegistryScope = resolveGlobalSingleton<
@@ -18,7 +18,7 @@ const pluginRuntimeGenerationRegistryScope = resolveGlobalSingleton<
 /** Carries one prepared plugin generation through all nested runtime lookups. */
 export function withPluginRuntimeGenerationScope<T>(
   generation: {
-    config: OpenClawConfig;
+    config: AforaConfig;
     metadataSnapshot: PluginMetadataSnapshot;
     pluginRegistry?: PluginRegistry;
     workspaceDir?: string;

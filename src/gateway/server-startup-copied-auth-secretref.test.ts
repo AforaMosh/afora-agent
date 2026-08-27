@@ -6,7 +6,7 @@ import {
   readPersistedAuthProfileStoreRaw,
   writePersistedAuthProfileStoreRaw,
 } from "../agents/auth-profiles/sqlite.js";
-import { writeConfigFile, type OpenClawConfig } from "../config/config.js";
+import { writeConfigFile, type AforaConfig } from "../config/config.js";
 import { resolveAuthProfileSecretOwnerId } from "../secrets/runtime-auth-profile-owner.js";
 import {
   clearSecretsRuntimeSnapshot,
@@ -36,7 +36,7 @@ describe("Gateway startup copied auth SecretRef isolation", () => {
 
   it("starts degraded when copied auth state references an omitted SecretRef provider", async () => {
     const profileId = "openai:copied";
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       gateway: { mode: "local", bind: "loopback", auth: { mode: "none" } },
       agents: { defaults: { model: { primary: "openai/gpt-5.4" } } },
       auth: { order: { openai: [profileId] } },

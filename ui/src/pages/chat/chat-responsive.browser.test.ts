@@ -91,7 +91,7 @@ async function createSharedAppPage(): Promise<Page> {
         },
         {
           content: "Encoded transcript video",
-          __openclaw: { media: [{ url: SHARED_APP_VIDEO_URL, contentType: "video/mp4" }] },
+          __afora: { media: [{ url: SHARED_APP_VIDEO_URL, contentType: "video/mp4" }] },
           role: "user",
           timestamp: Date.UTC(2026, 6, 9, 10, 1),
         },
@@ -156,12 +156,12 @@ async function getBoundingBox(page: Page, selector: string) {
 /**
  * Corner radii are expressed as their base step times the live corner scale,
  * so these expectations stay true on engines that draw continuous curvature
- * (`--openclaw-corner-radius-scale: 1.25`) and on engines that do not.
+ * (`--afora-corner-radius-scale: 1.25`) and on engines that do not.
  */
 async function readCornerScale(page: Page): Promise<number> {
   return await page.evaluate(() =>
     Number.parseFloat(
-      getComputedStyle(document.documentElement).getPropertyValue("--openclaw-corner-radius-scale"),
+      getComputedStyle(document.documentElement).getPropertyValue("--afora-corner-radius-scale"),
     ),
   );
 }
@@ -414,7 +414,7 @@ function chatHtml(opts: ChatFixtureOptions = {}, mobileNavLayout = false) {
               </div>
               ${
                 opts.sessionRailBody !== undefined
-                  ? `<openclaw-chat-session-rail>
+                  ? `<afora-chat-session-rail>
                     <section class="chat-session-rail chat-session-rail--expanded" role="region" aria-label="Session companion">
                       <header class="chat-session-rail__header">
                         <div class="chat-session-rail__header-copy">
@@ -437,7 +437,7 @@ function chatHtml(opts: ChatFixtureOptions = {}, mobileNavLayout = false) {
                         <button class="chat-send-btn">${iconSvg()}</button>
                       </footer>
                     </section>
-                  </openclaw-chat-session-rail>`
+                  </afora-chat-session-rail>`
                   : ""
               }
               ${
@@ -933,11 +933,11 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
                   >A deliberately long split-pane session title</span
                 ></span
               >
-              <openclaw-session-owner-chip>
+              <afora-session-owner-chip>
                 <span class="session-owner-chip session-owner-chip--header">O</span>
-              </openclaw-session-owner-chip>
+              </afora-session-owner-chip>
               <button class="chat-pane__workspace-chip" type="button">
-                ${iconSvg()}<span>openclaw-workspace</span>
+                ${iconSvg()}<span>afora-workspace</span>
               </button>
               <div class="chat-pane__face-switch chat-pane__face-switch--split">
                 <div class="settings-segmented">
@@ -978,7 +978,7 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
       );
 
       const selectors = [
-        "openclaw-session-owner-chip",
+        "afora-session-owner-chip",
         ".chat-side-panel-toggle",
         ".chat-pane__dock-caret",
         ".chat-pane__sharing-menu",
@@ -1077,7 +1077,7 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
               <div class="chat-pane__crumbs">
                 <wa-dropdown class="chat-pane__workspace-menu">
                   <button class="chat-pane__workspace-chip" type="button">
-                    ${iconSvg()}<span>openclaw</span>
+                    ${iconSvg()}<span>afora</span>
                   </button>
                 </wa-dropdown>
                 <span class="chat-pane__crumb-sep" aria-hidden="true">/</span>
@@ -2026,7 +2026,7 @@ describeBrowserLayout.concurrent("chat responsive browser layout", () => {
                 <div class="chat-group-messages">
                   <div class="chat-bubble">
                     <div class="chat-text">
-                      <p><code>openclaw_message_send_channel_webchat_target_example_com_thread_very_long_identifier_without_spaces_1234567890abcdefghijklmnopqrstuvwxyz</code></p>
+                      <p><code>afora_message_send_channel_webchat_target_example_com_thread_very_long_identifier_without_spaces_1234567890abcdefghijklmnopqrstuvwxyz</code></p>
                     </div>
                   </div>
                 </div>

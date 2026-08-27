@@ -5,7 +5,7 @@
 import fs from "node:fs";
 import { normalizeConfiguredMcpServers } from "../config/mcp-config-normalize.js";
 import type { SessionToolOverrides } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import {
   loadEnabledBundleMcpConfig,
@@ -24,7 +24,7 @@ type MergedBundleMcpConfig = {
 
 type BundleMcpServerMapper = (server: BundleMcpServerConfig, name: string) => BundleMcpServerConfig;
 
-const OPENCLAW_TRANSPORT_TO_CLI_BUNDLE_TYPE: Record<string, string> = {
+const AFORA_TRANSPORT_TO_CLI_BUNDLE_TYPE: Record<string, string> = {
   "streamable-http": "http",
   http: "http",
   sse: "sse",
@@ -57,10 +57,10 @@ export function prepareOwnedBundleMcpDataDirs(params: {
 }
 
 /**
- * User config stores OpenClaw MCP transport names, while CLI backends such as
+ * User config stores Afora MCP transport names, while CLI backends such as
  * Claude Code and Gemini expect a downstream `type` field. Keep this adapter
- * out of the generic merge path because embedded OpenClaw still consumes the raw
- * OpenClaw `transport` shape directly.
+ * out of the generic merge path because embedded Afora still consumes the raw
+ * Afora `transport` shape directly.
  */
 export function toCliBundleMcpServerConfig(server: BundleMcpServerConfig): BundleMcpServerConfig {
   const next = { ...server } as Record<string, unknown>;
@@ -70,7 +70,7 @@ export function toCliBundleMcpServerConfig(server: BundleMcpServerConfig): Bundl
     return next as BundleMcpServerConfig;
   }
   if (typeof rawTransport === "string") {
-    const mapped = OPENCLAW_TRANSPORT_TO_CLI_BUNDLE_TYPE[rawTransport];
+    const mapped = AFORA_TRANSPORT_TO_CLI_BUNDLE_TYPE[rawTransport];
     if (mapped) {
       next.type = mapped;
     }
@@ -81,7 +81,7 @@ export function toCliBundleMcpServerConfig(server: BundleMcpServerConfig): Bundl
 /** Loads enabled bundled MCP servers and overlays user config by server name. */
 export function loadMergedBundleMcpConfig(params: {
   workspaceDir: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
   mapConfiguredServer?: BundleMcpServerMapper;
   toolOverrides?: Pick<SessionToolOverrides, "mcpServers">;
@@ -122,7 +122,7 @@ export function loadMergedBundleMcpConfig(params: {
 
   return {
     config: {
-      // OpenClaw config is the owner-managed layer, so it overrides bundle defaults.
+      // Afora config is the owner-managed layer, so it overrides bundle defaults.
       mcpServers: {
         ...Object.fromEntries(
           Object.entries(enabledBundleMcp).map(([name, server]) => [

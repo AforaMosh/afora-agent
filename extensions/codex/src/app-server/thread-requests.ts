@@ -1,7 +1,7 @@
 import {
   isHostScopedAgentToolActive,
   type EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import { isIncognitoSessionKey } from "../incognito-session.js";
 import type { CodexAppServerClient } from "./client.js";
 import type { CodexAppServerRuntimeOptions } from "./config.js";
@@ -12,7 +12,7 @@ import {
 } from "./dynamic-tool-profile.js";
 import { mergeCodexThreadConfigs } from "./plugin-thread-config.js";
 import {
-  CODEX_OPENCLAW_DIRECT_DYNAMIC_TOOL_NAMESPACE,
+  CODEX_AFORA_DIRECT_DYNAMIC_TOOL_NAMESPACE,
   isJsonObject,
   type CodexConfigReadResponse,
   type CodexConfigRequirementsReadResponse,
@@ -45,7 +45,7 @@ const CODEX_GOAL_CONTINUATION_DISABLED_THREAD_CONFIG: JsonObject = {
 };
 
 const CODEX_NATIVE_UPDATE_PLAN_DISABLED_THREAD_CONFIG: JsonObject = {
-  // OpenClaw owns the durable progress card; Codex's native checklist would create a second owner.
+  // Afora owns the durable progress card; Codex's native checklist would create a second owner.
   "tools.update_plan.enabled": false,
 };
 
@@ -167,7 +167,7 @@ export function buildThreadStartParams(
   },
 ): CodexThreadStartParams {
   const ringZeroActive =
-    (options.hostSystemAgentActive ?? isHostScopedAgentToolActive("openclaw")) &&
+    (options.hostSystemAgentActive ?? isHostScopedAgentToolActive("afora")) &&
     isSystemAgentOnlyCodexDynamicToolAllowlist(params.toolsAllow);
   const resolvedModelProvider = resolveCodexAppServerModelProvider({
     provider: params.provider,
@@ -198,7 +198,7 @@ export function buildThreadStartParams(
       ? { serviceTier: options.appServer.serviceTier }
       : {}),
     personality: CODEX_NATIVE_PERSONALITY_NONE,
-    serviceName: "OpenClaw",
+    serviceName: "Afora",
     ...(ringZeroActive ? { baseInstructions: CODEX_RING_ZERO_BASE_INSTRUCTIONS } : {}),
     config: buildCodexRuntimeThreadConfigForRun(params, options.config, {
       nativeCodeModeEnabled: options.nativeCodeModeEnabled,
@@ -391,7 +391,7 @@ function resolveDirectOnlyToolNamespaces(
   return (dynamicTools ?? [])
     .filter(
       (tool) =>
-        tool.type === "namespace" && tool.name === CODEX_OPENCLAW_DIRECT_DYNAMIC_TOOL_NAMESPACE,
+        tool.type === "namespace" && tool.name === CODEX_AFORA_DIRECT_DYNAMIC_TOOL_NAMESPACE,
     )
     .map((tool) => tool.name);
 }
@@ -411,7 +411,7 @@ export function buildCodexRuntimeThreadConfigForRun(
   } = {},
 ): JsonObject {
   const ringZeroActive =
-    (options.hostSystemAgentActive ?? isHostScopedAgentToolActive("openclaw")) &&
+    (options.hostSystemAgentActive ?? isHostScopedAgentToolActive("afora")) &&
     isSystemAgentOnlyCodexDynamicToolAllowlist(params.toolsAllow);
   const messageOnlySourceReply = isMessageOnlyCodexSourceReply(params);
   const restrictedToolSurface =
@@ -478,7 +478,7 @@ export function buildCodexRuntimeThreadConfigForRun(
 
 export function buildCodexRingZeroThreadConfigPatch(
   params: Pick<EmbeddedRunAttemptParams, "toolsAllow">,
-  hostSystemAgentActive = isHostScopedAgentToolActive("openclaw"),
+  hostSystemAgentActive = isHostScopedAgentToolActive("afora"),
   inheritedMcpServerNames: readonly string[] = [],
 ): JsonObject | undefined {
   if (!hostSystemAgentActive || !isSystemAgentOnlyCodexDynamicToolAllowlist(params.toolsAllow)) {

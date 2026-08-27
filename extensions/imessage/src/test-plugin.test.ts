@@ -1,21 +1,21 @@
 // Imessage tests cover test plugin plugin behavior.
 import fs from "node:fs";
 import path from "node:path";
-import { buildTypedExecApprovalPendingReplyPayload } from "openclaw/plugin-sdk/approval-reply-runtime";
+import { buildTypedExecApprovalPendingReplyPayload } from "afora-agent/plugin-sdk/approval-reply-runtime";
 import {
   createMessageReceiptFromOutboundResults,
   sendDurableMessageBatch,
   verifyChannelMessageAdapterCapabilityProofs,
   verifyDurableFinalCapabilityProofs,
-} from "openclaw/plugin-sdk/channel-outbound";
+} from "afora-agent/plugin-sdk/channel-outbound";
 import {
   createTestRegistry,
   resetPluginRuntimeStateForTest,
   setActivePluginRegistry,
-} from "openclaw/plugin-sdk/channel-test-helpers";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { drainPendingDeliveries } from "openclaw/plugin-sdk/delivery-queue-runtime";
-import { withStateDirEnv } from "openclaw/plugin-sdk/test-env";
+} from "afora-agent/plugin-sdk/channel-test-helpers";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { drainPendingDeliveries } from "afora-agent/plugin-sdk/delivery-queue-runtime";
+import { withStateDirEnv } from "afora-agent/plugin-sdk/test-env";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   clearIMessageApprovalReactionTargetsForTest,
@@ -146,7 +146,7 @@ describe("imessagePlugin contracts", () => {
               enabled: true,
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         accountId: "default",
         payload: {
           text: "Approval required.",
@@ -176,7 +176,7 @@ describe("imessagePlugin contracts", () => {
     }
     const cfg = {
       channels: { imessage: { enabled: true } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const payload = buildTypedExecApprovalPendingReplyPayload({
       approvalId: "exec-shared-hook",
       approvalSlug: "shared-hook",
@@ -462,7 +462,7 @@ describe("imessagePlugin contracts", () => {
   ])(
     "rejects $name before native iMessage delivery",
     async ({ filename, contents, readerCalls }) => {
-      await withStateDirEnv("openclaw-imessage-media-policy-", async ({ stateDir }) => {
+      await withStateDirEnv("afora-imessage-media-policy-", async ({ stateDir }) => {
         const stateRoot = fs.realpathSync(stateDir);
         const workspaceDir = path.join(stateRoot, "workspace");
         fs.mkdirSync(workspaceDir);
@@ -529,7 +529,7 @@ describe("imessagePlugin contracts", () => {
   it("preserves provider-accepted attachment progress through actual durable core without replay", async () => {
     const cfg = {
       channels: { imessage: { accounts: { default: {} } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const captionError = new Error("caption failed after native attachment acceptance");
     const captionClient = {
       request: vi.fn(async () => {
@@ -557,7 +557,7 @@ describe("imessagePlugin contracts", () => {
       createTestRegistry([{ pluginId: "imessage", plugin: imessagePlugin, source: "test" }]),
     );
     try {
-      await withStateDirEnv("openclaw-imessage-durable-attachment-", async ({ stateDir }) => {
+      await withStateDirEnv("afora-imessage-durable-attachment-", async ({ stateDir }) => {
         const workspaceDir = fs.realpathSync(stateDir);
         const sourcePath = path.join(workspaceDir, "workspace-image.png");
         fs.writeFileSync(sourcePath, attachmentBytes);
@@ -619,7 +619,7 @@ describe("imessagePlugin contracts", () => {
   it("halts native caption delivery when actual durable progress custody rejects", async () => {
     const cfg = {
       channels: { imessage: { accounts: { default: {} } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const custodyError = new Error("durable accepted-attachment custody rejected");
     const captionRequest = vi.fn(async () => ({ guid: "p:0/caption-must-not-send" }));
     const captionClient = {
@@ -638,7 +638,7 @@ describe("imessagePlugin contracts", () => {
       createTestRegistry([{ pluginId: "imessage", plugin: imessagePlugin, source: "test" }]),
     );
     try {
-      await withStateDirEnv("openclaw-imessage-durable-custody-", async ({ stateDir }) => {
+      await withStateDirEnv("afora-imessage-durable-custody-", async ({ stateDir }) => {
         const workspaceDir = fs.realpathSync(stateDir);
         const sourcePath = path.join(workspaceDir, "custody-report.pdf");
         fs.writeFileSync(sourcePath, attachmentBytes);

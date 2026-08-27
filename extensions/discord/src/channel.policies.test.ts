@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { discordPlugin } from "./channel.js";
-import type { OpenClawConfig } from "./runtime-api.js";
+import type { AforaConfig } from "./runtime-api.js";
 
 // Split from channel.test.ts to keep it under the max-lines lint budget; these
 // describes exercise pure config/binding/policy surfaces and need no transport mocks.
@@ -72,7 +72,7 @@ describe("discordPlugin security", () => {
           allowFrom: ["  discord:<@!123456789>  "],
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = resolveDmPolicy({
       cfg,
@@ -111,7 +111,7 @@ describe("discordPlugin groups", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       discordPlugin.groups?.resolveRequireMention?.({

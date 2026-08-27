@@ -5,7 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { collectExcludedPackagedExtensionDirs } from "./lib/packaged-extension-dirs.mts";
 import { packageNameFromSpecifier } from "./lib/plugin-package-dependencies.mts";
 
@@ -193,7 +193,7 @@ function collectInternalizedBundledExtensionRuntimeDependencies(
       continue;
     }
     const packageJsonPath = path.join(extensionsRoot, entry.name, "package.json");
-    const manifestPath = path.join(extensionsRoot, entry.name, "openclaw.plugin.json");
+    const manifestPath = path.join(extensionsRoot, entry.name, "afora.plugin.json");
     if (!fs.existsSync(packageJsonPath) || !fs.existsSync(manifestPath)) {
       continue;
     }

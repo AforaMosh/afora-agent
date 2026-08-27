@@ -1,5 +1,5 @@
 // Googlechat plugin module implements monitor durable behavior.
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-runtime";
 
 type GoogleChatDurableReplyOptions = {
   to: string;

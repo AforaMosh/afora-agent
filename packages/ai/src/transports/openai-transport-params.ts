@@ -1,6 +1,6 @@
-import type { Context, Model } from "@openclaw/llm-core";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import type { Context, Model } from "@afora/llm-core";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { getAiTransportHost } from "../host.js";
 import { clampOpenAIPromptCacheKey } from "../providers/openai-prompt-cache.js";
 import type { OpenAIToolProjection } from "../providers/openai-tool-projection.js";
@@ -256,7 +256,7 @@ export function isOpenAICodexResponsesModel(model: Model): boolean {
   return (
     OPENAI_CODEX_RESPONSES_PROVIDERS.has(model.provider) &&
     (model.api === "openai-chatgpt-responses" ||
-      model.api === "openclaw-openai-chatgpt-responses-transport")
+      model.api === "afora-openai-chatgpt-responses-transport")
   );
 }
 

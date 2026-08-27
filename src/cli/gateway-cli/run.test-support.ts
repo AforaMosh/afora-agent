@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { RespawnSupervisor } from "../../infra/supervisor-markers.js";
 import "./run.js";
 
@@ -9,7 +9,7 @@ type GatewayRunTestLogger = {
 
 type GatewayRunTestApi = {
   createConfiguredGatewayHealthProbe(
-    cfg: OpenClawConfig,
+    cfg: AforaConfig,
   ): (params: { host: string; port: number }) => Promise<boolean>;
   isGatewayHealthzResponse(statusCode: number | undefined, body: string): boolean;
   normalizeGatewayHealthProbeHost(host: string): string;
@@ -37,7 +37,7 @@ type GatewayRunTestApi = {
 
 function getTestApi(): GatewayRunTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.gatewayRunTestApi")
+    Symbol.for("afora.gatewayRunTestApi")
   ] as GatewayRunTestApi;
 }
 

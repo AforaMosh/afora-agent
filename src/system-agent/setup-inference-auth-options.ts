@@ -2,7 +2,7 @@ import { compareProviderAuthChoiceGroups } from "../plugins/provider-auth-choice
 import type { ProviderAuthChoiceMetadata } from "../plugins/provider-auth-choices.js";
 
 export type SetupInferenceManualProvider = {
-  /** Provider-auth choice id sent back to `openclaw.setup.activate`. */
+  /** Provider-auth choice id sent back to `afora.setup.activate`. */
   id: string;
   /** Canonical provider identity for clients with bundled brand artwork. */
   brandId?: string;
@@ -15,7 +15,7 @@ export type SetupInferenceManualProvider = {
 };
 
 export type SetupInferenceAuthOption = {
-  /** Provider-auth choice id sent to `openclaw.setup.auth.start`. */
+  /** Provider-auth choice id sent to `afora.setup.auth.start`. */
   id: string;
   /** Canonical provider identity for clients with bundled brand artwork. */
   brandId?: string;
@@ -29,7 +29,7 @@ export type SetupInferenceAuthOption = {
 };
 
 export type SetupInferencePrepareOption = {
-  /** Provider-auth choice id sent to `openclaw.setup.prepare.start`. */
+  /** Provider-auth choice id sent to `afora.setup.prepare.start`. */
   id: string;
   /** Canonical provider identity for clients with bundled brand artwork. */
   brandId?: string;

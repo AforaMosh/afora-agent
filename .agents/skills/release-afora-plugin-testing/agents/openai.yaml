@@ -1,0 +1,4 @@
+interface:
+  display_name: "Afora Plugin Pre-Release Testing"
+  short_description: "Plan plugin release validation"
+  default_prompt: "Use $release-afora-plugin-testing to plan or run pre-release Afora plugin validation across package, lifecycle, doctor, gateway, SDK, and live-ish proof."

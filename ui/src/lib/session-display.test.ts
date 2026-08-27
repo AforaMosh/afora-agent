@@ -23,7 +23,7 @@ describe("resolveSessionDisplayName", () => {
     expect(
       resolveSessionDisplayName("agent:main:telegram:direct:42", {
         label: "Alice",
-        displayName: "openclaw-tui",
+        displayName: "afora-tui",
       }),
     ).toBe("Alice");
     expect(
@@ -150,7 +150,7 @@ describe("resolveSessionDisplayName", () => {
   it("names unnamed work sessions after their checkout", () => {
     expect(
       resolveSessionDisplayName("agent:main:dashboard:uuid", {
-        worktree: { branch: "openclaw/wt-3f2a", repoRoot: "/Users/dev/Projects/clawdbot" },
+        worktree: { branch: "afora-agent/wt-3f2a", repoRoot: "/Users/dev/Projects/clawdbot" },
       }),
     ).toBe("clawdbot ⎇ wt-3f2a");
   });
@@ -174,7 +174,7 @@ describe("resolveSessionDisplayName", () => {
     ).toBe("Release room");
     expect(
       resolveSessionDisplayName("agent:main:dashboard:uuid", {
-        worktree: { branch: "openclaw/wt-3f2a", repoRoot: "/repo/clawdbot" },
+        worktree: { branch: "afora-agent/wt-3f2a", repoRoot: "/repo/clawdbot" },
         derivedTitle: "Quarterly launch plan",
       }),
     ).toBe("clawdbot ⎇ wt-3f2a");
@@ -235,7 +235,7 @@ describe("resolveSessionWorkSubtitle", () => {
   it("combines repo, branch, and node host", () => {
     expect(
       resolveSessionWorkSubtitle({
-        worktree: { branch: "openclaw/session-ui", repoRoot: "/repo/clawdbot" },
+        worktree: { branch: "afora-agent/session-ui", repoRoot: "/repo/clawdbot" },
       }),
     ).toBe("clawdbot ⎇ session-ui");
     expect(
@@ -254,7 +254,7 @@ describe("resolveSessionWorkSubtitle", () => {
     ).toBe("…0357");
     expect(
       resolveSessionWorkSubtitle({
-        worktree: { branch: "openclaw/wt-1", repoRoot: "/repo/clawdbot" },
+        worktree: { branch: "afora-agent/wt-1", repoRoot: "/repo/clawdbot" },
         execNode: "11c38726acc6fac280357576c87acc6fac280357",
       }),
     ).toBe("clawdbot ⎇ wt-1 · …0357");

@@ -2,7 +2,7 @@
  * Model ids, default model metadata, and URL construction for the Cloudflare AI
  * Gateway provider.
  */
-import type { ModelDefinitionConfig } from "openclaw/plugin-sdk/provider-model-shared";
+import type { ModelDefinitionConfig } from "afora-agent/plugin-sdk/provider-model-shared";
 
 /** Provider id used in model refs and auth profiles. */
 export const CLOUDFLARE_AI_GATEWAY_PROVIDER_ID = "cloudflare-ai-gateway";

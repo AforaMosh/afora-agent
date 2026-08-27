@@ -28,7 +28,7 @@ type RequestTransportConfig = {
 };
 
 const MODEL_PROVIDER_REQUEST_TRANSPORT_SYMBOL = Symbol.for(
-  "openclaw.modelProviderRequestTransport",
+  "afora.modelProviderRequestTransport",
 );
 
 function resolveTestEndpointClass(baseUrl: string | undefined): string {

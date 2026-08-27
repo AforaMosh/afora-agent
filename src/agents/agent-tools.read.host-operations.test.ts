@@ -105,7 +105,7 @@ describe("host tool tilde expansion (non-workspace mode)", () => {
   });
 
   it("edit readFile expands ~ to the OS home directory", async () => {
-    const dir = tempDirs.make("openclaw-tilde-test-edit-", osHome());
+    const dir = tempDirs.make("afora-tilde-test-edit-", osHome());
     const testFile = path.join(dir, "test.txt");
     await fs.writeFile(testFile, "hello", "utf8");
 
@@ -116,7 +116,7 @@ describe("host tool tilde expansion (non-workspace mode)", () => {
   });
 
   it("edit access expands ~ to the OS home directory", async () => {
-    const dir = tempDirs.make("openclaw-tilde-test-edit-", osHome());
+    const dir = tempDirs.make("afora-tilde-test-edit-", osHome());
     const testFile = path.join(dir, "test.txt");
     await fs.writeFile(testFile, "hello", "utf8");
 
@@ -126,7 +126,7 @@ describe("host tool tilde expansion (non-workspace mode)", () => {
   });
 
   it("write writeFile expands ~ to the OS home directory", async () => {
-    const dir = tempDirs.make("openclaw-tilde-test-write-", osHome());
+    const dir = tempDirs.make("afora-tilde-test-write-", osHome());
     const testFile = path.join(dir, "tilde-write-test.txt");
 
     createHostWorkspaceWriteTool(dir, { workspaceOnly: false });
@@ -136,7 +136,7 @@ describe("host tool tilde expansion (non-workspace mode)", () => {
   });
 
   it("write mkdir expands ~ to the OS home directory", async () => {
-    const dir = tempDirs.make("openclaw-tilde-test-mkdir-", osHome());
+    const dir = tempDirs.make("afora-tilde-test-mkdir-", osHome());
     const newDir = path.join(dir, "subdir");
 
     createHostWorkspaceWriteTool(dir, { workspaceOnly: false });
@@ -148,7 +148,7 @@ describe("host tool tilde expansion (non-workspace mode)", () => {
   it.runIf(process.platform === "win32")(
     "keeps host write and edit operations on the same Windows-style home path",
     async () => {
-      const dir = tempDirs.make("openclaw-tilde-test-win32-", osHome());
+      const dir = tempDirs.make("afora-tilde-test-win32-", osHome());
       const testFile = path.join(dir, "same-path.txt");
       const modelPath = toTildePath(testFile);
 
@@ -163,60 +163,60 @@ describe("host tool tilde expansion (non-workspace mode)", () => {
     },
   );
 
-  it("ignores OPENCLAW_HOME for write operations", async () => {
-    const openclawHome = tempDirs.make("openclaw-home-override-", os.tmpdir());
-    const dir = tempDirs.make("openclaw-tilde-test-write-", osHome());
+  it("ignores AFORA_HOME for write operations", async () => {
+    const aforaHome = tempDirs.make("afora-home-override-", os.tmpdir());
+    const dir = tempDirs.make("afora-tilde-test-write-", osHome());
     const testFile = path.join(dir, "os-home-write.txt");
 
-    await withEnvAsync({ OPENCLAW_HOME: openclawHome }, async () => {
-      createHostWorkspaceWriteTool(openclawHome, { workspaceOnly: false });
+    await withEnvAsync({ AFORA_HOME: aforaHome }, async () => {
+      createHostWorkspaceWriteTool(aforaHome, { workspaceOnly: false });
       await readWriteOps().writeFile(toTildePath(testFile), "written via os home");
 
       expect(await fs.readFile(testFile, "utf8")).toBe("written via os home");
-      await expectMissingPath(fs.access(path.join(openclawHome, path.basename(testFile))));
+      await expectMissingPath(fs.access(path.join(aforaHome, path.basename(testFile))));
     });
   });
 
-  it("ignores OPENCLAW_HOME for mkdir operations", async () => {
-    const openclawHome = tempDirs.make("openclaw-home-override-", os.tmpdir());
-    const dir = tempDirs.make("openclaw-tilde-test-mkdir-", osHome());
+  it("ignores AFORA_HOME for mkdir operations", async () => {
+    const aforaHome = tempDirs.make("afora-home-override-", os.tmpdir());
+    const dir = tempDirs.make("afora-tilde-test-mkdir-", osHome());
     const newDir = path.join(dir, "os-home-subdir");
 
-    await withEnvAsync({ OPENCLAW_HOME: openclawHome }, async () => {
-      createHostWorkspaceWriteTool(openclawHome, { workspaceOnly: false });
+    await withEnvAsync({ AFORA_HOME: aforaHome }, async () => {
+      createHostWorkspaceWriteTool(aforaHome, { workspaceOnly: false });
       await readWriteOps().mkdir(toTildePath(newDir));
 
       expect((await fs.stat(newDir)).isDirectory()).toBe(true);
-      await expectMissingPath(fs.access(path.join(openclawHome, path.basename(newDir))));
+      await expectMissingPath(fs.access(path.join(aforaHome, path.basename(newDir))));
     });
   });
 
-  it("ignores OPENCLAW_HOME for readFile operations", async () => {
-    const openclawHome = tempDirs.make("openclaw-home-override-", os.tmpdir());
-    const dir = tempDirs.make("openclaw-tilde-test-edit-", osHome());
+  it("ignores AFORA_HOME for readFile operations", async () => {
+    const aforaHome = tempDirs.make("afora-home-override-", os.tmpdir());
+    const dir = tempDirs.make("afora-tilde-test-edit-", osHome());
     const testFile = path.join(dir, "os-home-read.txt");
     await fs.writeFile(testFile, "OS home content", "utf8");
 
-    await withEnvAsync({ OPENCLAW_HOME: openclawHome }, async () => {
-      createHostWorkspaceEditTool(openclawHome, { workspaceOnly: false });
+    await withEnvAsync({ AFORA_HOME: aforaHome }, async () => {
+      createHostWorkspaceEditTool(aforaHome, { workspaceOnly: false });
       const content = await readEditOps().readFile(toTildePath(testFile));
 
       expect(content.toString("utf8")).toBe("OS home content");
-      await expectMissingPath(fs.access(path.join(openclawHome, path.basename(testFile))));
+      await expectMissingPath(fs.access(path.join(aforaHome, path.basename(testFile))));
     });
   });
 
-  it("ignores OPENCLAW_HOME for access operations", async () => {
-    const openclawHome = tempDirs.make("openclaw-home-override-", os.tmpdir());
-    const dir = tempDirs.make("openclaw-tilde-test-edit-", osHome());
+  it("ignores AFORA_HOME for access operations", async () => {
+    const aforaHome = tempDirs.make("afora-home-override-", os.tmpdir());
+    const dir = tempDirs.make("afora-tilde-test-edit-", osHome());
     const testFile = path.join(dir, "os-home-access.txt");
     await fs.writeFile(testFile, "exists", "utf8");
 
-    await withEnvAsync({ OPENCLAW_HOME: openclawHome }, async () => {
-      createHostWorkspaceEditTool(openclawHome, { workspaceOnly: false });
+    await withEnvAsync({ AFORA_HOME: aforaHome }, async () => {
+      createHostWorkspaceEditTool(aforaHome, { workspaceOnly: false });
 
       await expect(readEditOps().access(toTildePath(testFile))).resolves.toBeUndefined();
-      await expectMissingPath(fs.access(path.join(openclawHome, path.basename(testFile))));
+      await expectMissingPath(fs.access(path.join(aforaHome, path.basename(testFile))));
     });
   });
 });
@@ -225,7 +225,7 @@ describe("createHostWorkspaceEditTool host access mapping", () => {
   it.runIf(process.platform !== "win32")(
     "silently passes access for outside-workspace paths so readFile reports the real error",
     async () => {
-      const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-edit-access-test-"));
+      const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-edit-access-test-"));
       try {
         const workspaceDir = path.join(tmpDir, "workspace");
         const outsideDir = path.join(tmpDir, "outside");

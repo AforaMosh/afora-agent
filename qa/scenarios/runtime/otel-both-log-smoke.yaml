@@ -89,7 +89,7 @@ flow:
             expr: "String(readGatewayLogs() ?? '')"
         - set: stdoutDiagnosticLogs
           value:
-            expr: "gatewayLogText.split('\\n').map((line) => { try { return JSON.parse(line); } catch { return null; } }).filter((entry) => entry?.signal === 'openclaw.diagnostic.log')"
+            expr: "gatewayLogText.split('\\n').map((line) => { try { return JSON.parse(line); } catch { return null; } }).filter((entry) => entry?.signal === 'afora.diagnostic.log')"
         - assert:
             expr: "stdoutDiagnosticLogs.length > 0"
             message: "expected at least one stdout diagnostics-otel JSONL log record"

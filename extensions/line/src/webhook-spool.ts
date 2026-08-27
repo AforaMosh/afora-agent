@@ -7,11 +7,11 @@ import {
   DEFAULT_INGRESS_ADOPTION_STALL_MS,
   DEFAULT_INGRESS_RETRY_MAX_ATTEMPTS,
   type ChannelIngressQueue,
-} from "openclaw/plugin-sdk/channel-outbound";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { danger, type RuntimeEnv, warn } from "openclaw/plugin-sdk/runtime-env";
-import { normalizeNullableString as nonEmptyString } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { runDetachedWebhookWork } from "openclaw/plugin-sdk/webhook-request-guards";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { danger, type RuntimeEnv, warn } from "afora-agent/plugin-sdk/runtime-env";
+import { normalizeNullableString as nonEmptyString } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { runDetachedWebhookWork } from "afora-agent/plugin-sdk/webhook-request-guards";
 import { getLineRuntime } from "./runtime.js";
 
 const LINE_WEBHOOK_SPOOL_VERSION = 1;

@@ -1,4 +1,4 @@
-name: openclaw-codeql-android-critical-security
+name: afora-codeql-android-critical-security
 
 disable-default-queries: true
 
@@ -10,7 +10,7 @@ query-filters:
   - exclude:
       id: java/android/websettings-javascript-enabled
   # Gateway TLS already pins verified certificate SHA-256 fingerprints. OkHttp CertificatePinner pins SPKI hashes,
-  # so this query is noisy for OpenClaw's TOFU/local-gateway trust model and does not belong in the critical profile.
+  # so this query is noisy for Afora's TOFU/local-gateway trust model and does not belong in the critical profile.
   - exclude:
       id: java/android/missing-certificate-pinning
 

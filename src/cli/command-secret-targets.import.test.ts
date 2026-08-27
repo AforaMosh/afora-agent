@@ -80,7 +80,7 @@ describe("command secret targets module import", () => {
             {
               id: "channels.telegram.botToken",
               targetType: "channels.telegram.botToken",
-              configFile: "openclaw.json",
+              configFile: "afora.json",
               pathPattern: "channels.telegram.botToken",
               secretShape: "secret_input",
               expectedResolvedValue: "string",
@@ -91,7 +91,7 @@ describe("command secret targets module import", () => {
             {
               id: "channels.telegram.gatewayToken",
               targetType: "gateway.auth.token",
-              configFile: "openclaw.json",
+              configFile: "afora.json",
               pathPattern: "gateway.auth.token",
               secretShape: "secret_input",
               expectedResolvedValue: "string",
@@ -102,7 +102,7 @@ describe("command secret targets module import", () => {
             {
               id: "channels.telegram.gatewayTokenRef",
               targetType: "channels.telegram.gatewayTokenRef",
-              configFile: "openclaw.json",
+              configFile: "afora.json",
               pathPattern: "channels.telegram.gatewayToken",
               refPathPattern: "gateway.auth.token",
               secretShape: "sibling_ref",
@@ -114,7 +114,7 @@ describe("command secret targets module import", () => {
             {
               id: "channels.discord.token",
               targetType: "channels.discord.token",
-              configFile: "openclaw.json",
+              configFile: "afora.json",
               pathPattern: "channels.discord.token",
               secretShape: "secret_input",
               expectedResolvedValue: "string",
@@ -132,7 +132,7 @@ describe("command secret targets module import", () => {
             {
               id: "channels.external-chat.token",
               targetType: "channels.external-chat.token",
-              configFile: "openclaw.json",
+              configFile: "afora.json",
               pathPattern: "channels.external-chat.token",
               secretShape: "secret_input",
               expectedResolvedValue: "string",

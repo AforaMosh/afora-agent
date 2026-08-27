@@ -52,9 +52,9 @@ describe("renderMcp", () => {
     expect(summary?.textContent?.replace(/\s+/gu, " ")).toContain("Enabled 1");
     expect(summary?.textContent?.replace(/\s+/gu, " ")).toContain("OAuth 1");
     expect(summary?.textContent?.replace(/\s+/gu, " ")).toContain("Filtered 1");
-    expect(container.textContent).toContain("openclaw mcp doctor --probe");
+    expect(container.textContent).toContain("afora mcp doctor --probe");
 
-    const card = container.querySelector("openclaw-mcp-servers-card");
+    const card = container.querySelector("afora-mcp-servers-card");
     expect(card).not.toBeNull();
     expect(card?.pluginsHref).toBe("/settings/plugins");
   });

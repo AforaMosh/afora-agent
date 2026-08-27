@@ -8,7 +8,7 @@ title: "Onboarding reference"
 sidebarTitle: "Onboarding Reference"
 ---
 
-This is the full reference for `openclaw onboard`.
+This is the full reference for `afora onboard`.
 For a high-level overview, see [Onboarding (CLI)](/start/wizard). For step-by-step
 behavior and outputs, see [CLI setup reference](/start/wizard-cli-reference).
 
@@ -44,21 +44,21 @@ behavior and outputs, see [CLI setup reference](/start/wizard-cli-reference).
 
   </Step>
   <Step title="Workspace">
-    - Default `~/.openclaw/workspace` (configurable).
+    - Default `~/.afora/workspace` (configurable).
     - Seeds the workspace files needed for the agent bootstrap ritual.
     - Full workspace layout + backup guide: [Agent workspace](/concepts/agent-workspace)
 
   </Step>
   <Step title="Model/Auth">
     - **Anthropic API key**: uses `ANTHROPIC_API_KEY` if present or prompts for a key, then saves it for daemon use.
-    - **Anthropic Claude CLI**: preferred local path when a Claude CLI sign-in already exists; OpenClaw still supports Anthropic setup-token auth as an alternative.
+    - **Anthropic Claude CLI**: preferred local path when a Claude CLI sign-in already exists; Afora still supports Anthropic setup-token auth as an alternative.
     - **OpenAI Code (Codex) subscription (OAuth)**: browser flow; paste the `code#state`.
       - On a fresh setup with no primary model, sets `agents.defaults.model` to `openai/gpt-5.6-sol` through the Codex runtime.
     - **OpenAI Code (Codex) subscription (device pairing)**: browser pairing flow with a short-lived device code.
       - On a fresh setup with no primary model, sets `agents.defaults.model` to `openai/gpt-5.6-sol` through the Codex runtime.
     - **OpenAI API key**: uses `OPENAI_API_KEY` if present or prompts for a key, then stores it in auth profiles.
       - On a fresh setup with no primary model, sets `agents.defaults.model` to `openai/gpt-5.6-sol`. The bare direct-API `openai/gpt-5.6` alias remains supported and resolves to the same tier.
-    - Adding or reauthenticating OpenAI preserves an existing explicit primary model, including `openai/gpt-5.5`. If the account does not expose GPT-5.6, select `openai/gpt-5.5` explicitly; OpenClaw does not silently downgrade the model.
+    - Adding or reauthenticating OpenAI preserves an existing explicit primary model, including `openai/gpt-5.5`. If the account does not expose GPT-5.6, select `openai/gpt-5.5` explicitly; Afora does not silently downgrade the model.
     - **xAI OAuth**: device-code browser sign-in with no localhost callback required, so it works over SSH/Docker/VPS too (`--auth-choice xai-oauth`).
     - **xAI API key**: prompts for `XAI_API_KEY` (`--auth-choice xai-api-key`).
     - `--auth-choice xai-device-code` still works as a manual-only compatibility alias for the same xAI OAuth device-code flow; use `xai-oauth` for new scripts.
@@ -87,13 +87,13 @@ behavior and outputs, see [CLI setup reference](/start/wizard-cli-reference).
     - Pick a default model from detected options (or enter provider/model manually). For best quality and lower prompt-injection risk, choose the strongest latest-generation model available in your provider stack.
     - Onboarding runs a model check and warns if the configured model is unknown or missing auth.
     - API key storage mode defaults to plaintext auth-profile values. Use `--secret-input-mode ref` to store env-backed refs instead (for example `keyRef: { source: "env", provider: "default", id: "OPENAI_API_KEY" }`); the referenced env var must already be set, or onboarding fails fast.
-    - Auth profiles live in `~/.openclaw/agents/<agentId>/agent/auth-profiles.json` (API keys + OAuth). `~/.openclaw/credentials/oauth.json` is legacy import-only.
+    - Auth profiles live in `~/.afora/agents/<agentId>/agent/auth-profiles.json` (API keys + OAuth). `~/.afora/credentials/oauth.json` is legacy import-only.
     - More detail: [OAuth](/concepts/oauth)
     <Note>
     Headless/server tip: complete OAuth on a machine with a browser, then copy
     that agent's `auth-profiles.json` (for example
-    `~/.openclaw/agents/<agentId>/agent/auth-profiles.json`, or the matching
-    `$OPENCLAW_STATE_DIR/...` path) to the gateway host. `credentials/oauth.json`
+    `~/.afora/agents/<agentId>/agent/auth-profiles.json`, or the matching
+    `$AFORA_STATE_DIR/...` path) to the gateway host. `credentials/oauth.json`
     is only a legacy import source.
     </Note>
   </Step>
@@ -123,14 +123,14 @@ behavior and outputs, see [CLI setup reference](/start/wizard-cli-reference).
     - [iMessage](/channels/imessage): `imsg` CLI path + Messages DB access; use an SSH wrapper when the Gateway runs off-Mac.
     - Discord, Feishu, Microsoft Teams, QQ Bot, Slack, and other channels ship as
       plugins onboarding can install for you. Full catalog: [Channels](/channels).
-    - DM security: default is pairing. First DM sends a code; approve via `openclaw pairing approve <channel> <code>` or use allowlists.
+    - DM security: default is pairing. First DM sends a code; approve via `afora pairing approve <channel> <code>` or use allowlists.
 
   </Step>
   <Step title="Web search">
     - Pick a supported provider such as Brave, Codex (Hosted Search), DuckDuckGo, Exa, Firecrawl, Gemini, Grok, Kimi, MiniMax Search, Ollama Web Search, Parallel, Perplexity, SearXNG, or Tavily (or skip).
     - API-backed providers can use env vars or existing config for quick setup; key-free providers use their provider-specific prerequisites instead.
     - Skip with `--skip-search`.
-    - Configure later: `openclaw configure --section web`.
+    - Configure later: `afora configure --section web`.
 
   </Step>
   <Step title="Daemon install">
@@ -139,7 +139,7 @@ behavior and outputs, see [CLI setup reference](/start/wizard-cli-reference).
     - Linux (and Windows via WSL2): systemd user unit
       - Onboarding attempts to enable lingering via `loginctl enable-linger <user>` so the Gateway stays up after logout.
       - May prompt for sudo (writes `/var/lib/systemd/linger`); it tries without sudo first.
-    - Native Windows: Scheduled Task first; if task creation is denied, OpenClaw falls back to a per-user Startup-folder login item and starts the Gateway immediately.
+    - Native Windows: Scheduled Task first; if task creation is denied, Afora falls back to a per-user Startup-folder login item and starts the Gateway immediately.
     - **Runtime selection:** Node is required because the canonical runtime state store uses `node:sqlite`. Legacy Bun services are migrated to Node during repair.
     - If token auth requires a token and `gateway.auth.token` is SecretRef-managed, daemon install validates it but does not persist resolved plaintext token values into supervisor service environment metadata.
     - If token auth requires a token and the configured token SecretRef is unresolved, daemon install is blocked with actionable guidance.
@@ -147,15 +147,15 @@ behavior and outputs, see [CLI setup reference](/start/wizard-cli-reference).
 
   </Step>
   <Step title="Health check">
-    - Starts the Gateway (if needed) and runs `openclaw health`.
-    - Tip: `openclaw status --deep` adds the live gateway health probe to status output, including channel probes when supported (requires a reachable gateway).
+    - Starts the Gateway (if needed) and runs `afora health`.
+    - Tip: `afora status --deep` adds the live gateway health probe to status output, including channel probes when supported (requires a reachable gateway).
 
   </Step>
   <Step title="Skills (recommended)">
     - Reads the available skills and checks requirements.
     - Lets you choose a node manager: **npm / pnpm / bun**.
     - Auto-installs optional dependencies for trusted bundled skills (some use Homebrew on macOS).
-    - Skips skills whose Homebrew, uv, or Go installer prerequisite is unavailable, groups them with manual setup guidance, and points you at `openclaw doctor` once the prerequisite is installed.
+    - Skips skills whose Homebrew, uv, or Go installer prerequisite is unavailable, groups them with manual setup guidance, and points you at `afora doctor` once the prerequisite is installed.
 
   </Step>
   <Step title="Finish">
@@ -176,7 +176,7 @@ flag is the required risk acknowledgement; onboarding exits with an error
 without it):
 
 ```bash
-openclaw onboard --non-interactive --accept-risk \
+afora onboard --non-interactive --accept-risk \
   --mode local \
   --auth-choice apiKey \
   --anthropic-api-key "$ANTHROPIC_API_KEY" \
@@ -192,12 +192,12 @@ Add `--json` for a machine-readable summary.
 Gateway token SecretRef in non-interactive mode:
 
 ```bash
-export OPENCLAW_GATEWAY_TOKEN="your-token"
-openclaw onboard --non-interactive --accept-risk --skip-health \
+export AFORA_GATEWAY_TOKEN="your-token"
+afora onboard --non-interactive --accept-risk --skip-health \
   --mode local \
   --auth-choice skip \
   --gateway-auth token \
-  --gateway-token-ref-env OPENCLAW_GATEWAY_TOKEN
+  --gateway-token-ref-env AFORA_GATEWAY_TOKEN
 ```
 
 `--gateway-token` and `--gateway-token-ref-env` are mutually exclusive.
@@ -212,15 +212,15 @@ Use this reference page for flag semantics and step ordering.
 ### Add agent (non-interactive)
 
 ```bash
-openclaw agents add work \
-  --workspace ~/.openclaw/workspace-work \
+afora agents add work \
+  --workspace ~/.afora/workspace-work \
   --model openai/gpt-5.6-sol \
   --bind whatsapp:biz \
   --non-interactive \
   --json
 ```
 
-`main` is a reserved agent id and cannot be used for `openclaw agents add`.
+`main` is a reserved agent id and cannot be used for `afora agents add`.
 
 ## Gateway wizard RPC
 
@@ -231,21 +231,21 @@ Clients (macOS app, Control UI) can render steps without re-implementing onboard
 
 Onboarding detects whether `signal-cli` is on `PATH` and, if missing, offers to install it:
 
-- Linux x86-64: downloads the official native GraalVM build from the `signal-cli` GitHub releases and stores it under `~/.openclaw/tools/signal-cli/<version>/`.
+- Linux x86-64: downloads the official native GraalVM build from the `signal-cli` GitHub releases and stores it under `~/.afora/tools/signal-cli/<version>/`.
 - macOS and other architectures: installs via Homebrew instead.
 - Native Windows: not supported yet; run onboarding inside WSL2 to get the Linux install path.
 - Writes `channels.signal.transport.cliPath` with `kind: "managed-native"` either way.
 
 ## What the wizard writes
 
-Typical fields in `~/.openclaw/openclaw.json`:
+Typical fields in `~/.AforaMosh/afora-agent.json`:
 
 - `agents.defaults.workspace`
 - `agents.defaults.skipBootstrap` when `--skip-bootstrap` is passed
 - `agents.defaults.model` / `models.providers` (if Minimax chosen)
 - `tools.profile` (local onboarding defaults to `"coding"` when unset; existing explicit values are preserved)
 - `gateway.*` (mode, bind, auth, tailscale)
-- `session.dmScope` (onboarding preserves explicit values and otherwise leaves it unset, so the `"main"` default keeps all direct messages across channels in the agent's rolling main session—the personal-agent default. For shared or multi-user inboxes, use `"per-channel-peer"`; `openclaw security audit` recommends isolation when it detects multi-user DM traffic. Details: [CLI Setup Reference](/start/wizard-cli-reference#outputs-and-internals))
+- `session.dmScope` (onboarding preserves explicit values and otherwise leaves it unset, so the `"main"` default keeps all direct messages across channels in the agent's rolling main session—the personal-agent default. For shared or multi-user inboxes, use `"per-channel-peer"`; `afora security audit` recommends isolation when it detects multi-user DM traffic. Details: [CLI Setup Reference](/start/wizard-cli-reference#outputs-and-internals))
 - `channels.telegram.botToken`, `channels.discord.token`, `channels.matrix.*`, `channels.signal.*`, `channels.imessage.*`
 - Channel DM allowlists when you opt in during the channel prompts. Discord, Matrix, Microsoft Teams, and Slack resolve names to IDs when possible; other channels take IDs directly (for example numeric Telegram sender IDs or WhatsApp phone numbers).
 - `skills.install.nodeManager`
@@ -258,12 +258,12 @@ Typical fields in `~/.openclaw/openclaw.json`:
 - `wizard.lastRunMode`
 - `wizard.securityAcknowledgedAt`
 
-`openclaw agents add` writes `agents.entries.*` and optional `bindings`.
+`afora agents add` writes `agents.entries.*` and optional `bindings`.
 
-WhatsApp credentials go under `~/.openclaw/credentials/whatsapp/<accountId>/`.
+WhatsApp credentials go under `~/.afora/credentials/whatsapp/<accountId>/`.
 Active sessions and transcripts are stored in
-`~/.openclaw/agents/<agentId>/agent/openclaw-agent.sqlite`. The
-`~/.openclaw/agents/<agentId>/sessions/` directory is used for legacy migration
+`~/.afora/agents/<agentId>/agent/afora-agent.sqlite`. The
+`~/.afora/agents/<agentId>/sessions/` directory is used for legacy migration
 inputs and archive/support artifacts.
 
 Some channels are delivered as plugins. When you pick one during setup, onboarding

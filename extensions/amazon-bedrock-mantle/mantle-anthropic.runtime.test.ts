@@ -1,6 +1,6 @@
-import type { Model } from "openclaw/plugin-sdk/llm";
+import type { Model } from "afora-agent/plugin-sdk/llm";
 // Amazon Bedrock Mantle tests cover mantle anthropic plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, it, vi } from "vitest";
 import { createMantleAnthropicStreamFn } from "./mantle-anthropic.runtime.js";
 

@@ -1,20 +1,20 @@
 // Node-host plugin command contracts, including the opt-in duplex transport.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
-export type OpenClawPluginNodeHostCommandAvailabilityContext = {
+export type AforaPluginNodeHostCommandAvailabilityContext = {
   /** Node-local configuration used to build this host's Gateway declaration. */
-  config: OpenClawConfig;
+  config: AforaConfig;
   /** Node-host process environment. */
   env: NodeJS.ProcessEnv;
 };
 
-export type OpenClawPluginNodeHostCommandIo = {
+export type AforaPluginNodeHostCommandIo = {
   emitChunk(chunk: string): Promise<void>;
   onInput(callback: (payloadJSON: string) => void): void;
   signal: AbortSignal;
 };
 
-export type OpenClawPluginNodeHostCommandContext = {
+export type AforaPluginNodeHostCommandContext = {
   /** Emit one node-owned event through the active Gateway connection. */
   sendNodeEvent(event: string, payload: unknown): Promise<unknown>;
   /** Agent session that owns this invocation, when the caller supplied one. */
@@ -23,21 +23,21 @@ export type OpenClawPluginNodeHostCommandContext = {
   signal?: AbortSignal;
 };
 
-type OpenClawPluginNodeHostCommandBase = {
+type AforaPluginNodeHostCommandBase = {
   command: string;
   cap?: string;
   dangerous?: boolean;
   /** Return false to omit this command and capability from the node declaration. */
-  isAvailable?: (context: OpenClawPluginNodeHostCommandAvailabilityContext) => boolean;
+  isAvailable?: (context: AforaPluginNodeHostCommandAvailabilityContext) => boolean;
   /** Watch node-local availability and request a fresh Gateway declaration. */
   watchAvailability?: (
-    context: OpenClawPluginNodeHostCommandAvailabilityContext,
+    context: AforaPluginNodeHostCommandAvailabilityContext,
     onChange: () => void,
   ) => (() => void) | void;
   /** Release command-owned state when the active Gateway connection closes. */
   onDisconnect?: () => Promise<void> | void;
   /** Optional Computer Use declaration published with this command's node manifest. */
-  computerUse?: (context: OpenClawPluginNodeHostCommandAvailabilityContext) => unknown;
+  computerUse?: (context: AforaPluginNodeHostCommandAvailabilityContext) => unknown;
   agentTool?: {
     name: string;
     description: string;
@@ -48,14 +48,14 @@ type OpenClawPluginNodeHostCommandBase = {
   };
 };
 
-export type OpenClawPluginNodeHostCommand = OpenClawPluginNodeHostCommandBase & {
+export type AforaPluginNodeHostCommand = AforaPluginNodeHostCommandBase & {
   // Not a discriminated handle signature: a union of different arities makes
   // plain `command.handle(params)` uncallable for consumers holding the union.
   // The node host enforces io presence for duplex commands at runtime.
   duplex?: boolean;
   handle: (
     paramsJSON?: string | null,
-    io?: OpenClawPluginNodeHostCommandIo,
-    context?: OpenClawPluginNodeHostCommandContext,
+    io?: AforaPluginNodeHostCommandIo,
+    context?: AforaPluginNodeHostCommandContext,
   ) => Promise<string>;
 };

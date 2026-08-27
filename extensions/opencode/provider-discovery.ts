@@ -1,5 +1,5 @@
 // Opencode Zen provider module exposes offline catalog metadata to core discovery.
-import type { ProviderPlugin } from "openclaw/plugin-sdk/provider-model-shared";
+import type { ProviderPlugin } from "afora-agent/plugin-sdk/provider-model-shared";
 import { buildStaticOpencodeZenProviderConfig } from "./provider-catalog.js";
 
 const opencodeProviderDiscovery: ProviderPlugin = {

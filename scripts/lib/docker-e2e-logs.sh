@@ -27,7 +27,7 @@ docker_e2e_read_positive_int_env() {
 run_logged() {
   local label="$1"
   shift
-  docker_e2e_read_positive_int_env OPENCLAW_DOCKER_E2E_LOG_PRINT_BYTES 65536 >/dev/null || return $?
+  docker_e2e_read_positive_int_env AFORA_DOCKER_E2E_LOG_PRINT_BYTES 65536 >/dev/null || return $?
   local log_file
   log_file="$(docker_e2e_run_log "$label")"
   if ! "$@" >"$log_file" 2>&1; then
@@ -45,7 +45,7 @@ run_logged() {
 run_logged_print() {
   local label="$1"
   shift
-  docker_e2e_read_positive_int_env OPENCLAW_DOCKER_E2E_LOG_PRINT_BYTES 65536 >/dev/null || return $?
+  docker_e2e_read_positive_int_env AFORA_DOCKER_E2E_LOG_PRINT_BYTES 65536 >/dev/null || return $?
   local log_file
   log_file="$(docker_e2e_run_log "$label")"
   if ! "$@" >"$log_file" 2>&1; then
@@ -85,11 +85,11 @@ run_logged_print_heartbeat() {
   local label="$1"
   local interval_seconds="$2"
   shift 2
-  docker_e2e_read_positive_int_env OPENCLAW_DOCKER_E2E_LOG_PRINT_BYTES 65536 >/dev/null || return $?
+  docker_e2e_read_positive_int_env AFORA_DOCKER_E2E_LOG_PRINT_BYTES 65536 >/dev/null || return $?
   interval_seconds="$(docker_e2e_normalize_positive_int_value "Docker E2E log heartbeat interval" "$interval_seconds")" || return $?
   local heartbeat_term_grace_seconds
   heartbeat_term_grace_seconds="$(
-    docker_e2e_read_positive_int_env OPENCLAW_DOCKER_E2E_HEARTBEAT_TERM_GRACE_SECONDS 30
+    docker_e2e_read_positive_int_env AFORA_DOCKER_E2E_HEARTBEAT_TERM_GRACE_SECONDS 30
   )" || return $?
   local log_file
   log_file="$(docker_e2e_run_log "$label")"
@@ -184,13 +184,13 @@ docker_e2e_run_log() {
   local label="$1"
   local tmp_dir="${TMPDIR:-/tmp}"
   tmp_dir="${tmp_dir%/}"
-  mktemp "$tmp_dir/openclaw-${label}.XXXXXX"
+  mktemp "$tmp_dir/afora-${label}.XXXXXX"
 }
 
 docker_e2e_print_log() {
   local log_file="$1"
   local max_bytes
-  max_bytes="$(docker_e2e_read_positive_int_env OPENCLAW_DOCKER_E2E_LOG_PRINT_BYTES 65536)" || return $?
+  max_bytes="$(docker_e2e_read_positive_int_env AFORA_DOCKER_E2E_LOG_PRINT_BYTES 65536)" || return $?
   if [ ! -f "$log_file" ]; then
     return 0
   fi

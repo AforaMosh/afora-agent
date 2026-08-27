@@ -1,11 +1,11 @@
 // Mattermost tests cover group mentions plugin behavior.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 import { resolveMattermostGroupRequireMention } from "./group-mentions.js";
 
 describe("resolveMattermostGroupRequireMention", () => {
   it("defaults to requiring mention when no override is configured", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         mattermost: {},
       },
@@ -16,7 +16,7 @@ describe("resolveMattermostGroupRequireMention", () => {
   });
 
   it("lets groups config beat chatmode and chatmode beat the final default", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         mattermost: {
           chatmode: "onmessage",
@@ -36,7 +36,7 @@ describe("resolveMattermostGroupRequireMention", () => {
   });
 
   it("prefers an explicit runtime override when provided", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         mattermost: {
           chatmode: "oncall",

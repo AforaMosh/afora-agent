@@ -1,14 +1,14 @@
 ---
 summary: "Detect the Mac you most recently used and route node alerts there"
 read_when:
-  - You want OpenClaw to identify the active Mac
+  - You want Afora to identify the active Mac
   - You are debugging last-input activity or active-node selection
   - You want to understand node connection notification routing
 title: "Active computer presence"
 ---
 
 Active computer presence tells the Gateway which connected macOS node received
-the most recent physical mouse or keyboard input. OpenClaw uses that signal to
+the most recent physical mouse or keyboard input. Afora uses that signal to
 mark one Mac as `active`, give the agent a stable active-node hint, and route
 node connection alerts to the computer where you are most likely present.
 
@@ -18,9 +18,9 @@ record when a mobile node last woke without treating it as connected.
 
 ## Requirements
 
-- The OpenClaw macOS app is paired and connected in node mode.
+- The Afora macOS app is paired and connected in node mode.
 - **Settings -> Permissions -> Active computer detection** is enabled. It is off by default.
-- **Accessibility** permission is granted to the signed OpenClaw app.
+- **Accessibility** permission is granted to the signed Afora app.
 - For connection alerts, **Notifications** permission is also granted and the
   Mac node exposes `system.notify`.
 
@@ -35,14 +35,14 @@ last-seen state, but they do not compete for the active-computer designation.
 2. Confirm the Mac node is connected:
 
    ```bash
-   openclaw nodes status --connected
+   afora nodes status --connected
    ```
 
 3. Move the mouse or press a key on that Mac, then run:
 
    ```bash
-   openclaw nodes status
-   openclaw nodes describe --node <node-id-or-name>
+   afora nodes status
+   afora nodes describe --node <node-id-or-name>
    ```
 
 The freshest eligible Mac is marked `active`. Status output shows its last-input
@@ -83,7 +83,7 @@ Accessibility clears that node's activity state and recomputes the active Mac.
 ## Privacy and model context
 
 Activity sharing is off by default and is separate from the Accessibility grant
-used for UI automation. OpenClaw sends idle duration, not input content. It does not send key values,
+used for UI automation. Afora sends idle duration, not input content. It does not send key values,
 mouse coordinates, application names, window titles, or raw input events. The
 macOS reporter reads the hardware HID state, so synthetic computer-control
 events do not make an automated Mac appear to be the computer you physically
@@ -103,12 +103,12 @@ the `nodes` tool can read `node.list` or `node.describe` instead.
 ## How connection alerts are routed
 
 After a node finishes its first successful Gateway handshake after approval,
-OpenClaw waits 750 milliseconds so the connecting Mac can submit its first
+Afora waits 750 milliseconds so the connecting Mac can submit its first
 activity sample. It then tries the connected notification-capable Mac with the
 freshest activity.
 
 - If primary delivery succeeds, no other Mac receives the alert.
-- If no active Mac is available or primary delivery fails, OpenClaw waits five
+- If no active Mac is available or primary delivery fails, Afora waits five
   seconds and tries every remaining connected Mac that exposes `system.notify`.
 - Later reconnects are silent. The Gateway records the successful connection
   in pairing metadata, so a Gateway restart does not replay alerts for every
@@ -122,8 +122,8 @@ longer connected when delivery runs, the alert is canceled.
 
 | Symptom                                   | Check                                                                                                                                                                |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No row is marked `active`                 | Confirm active computer detection is enabled, a native macOS node is connected, and `openclaw nodes describe --node <id>` shows `permissions.accessibility: true`.   |
-| The wrong Mac remains active              | Use that Mac physically, wait for the coalescing window, then rerun `openclaw nodes status`. Synthetic computer-control actions do not count.                        |
+| No row is marked `active`                 | Confirm active computer detection is enabled, a native macOS node is connected, and `afora nodes describe --node <id>` shows `permissions.accessibility: true`.   |
+| The wrong Mac remains active              | Use that Mac physically, wait for the coalescing window, then rerun `afora nodes status`. Synthetic computer-control actions do not count.                        |
 | Last-input data disappears                | Check whether the Mac disconnected, its node session was replaced, or Accessibility was revoked. Each condition intentionally clears activity.                       |
 | The alert appears on several Macs         | Primary delivery was unavailable or failed, so the delayed fallback ran. Verify that the active Mac is connected, allows notifications, and exposes `system.notify`. |
 | The agent does not mention the active Mac | Start a new turn after activity changes. The runtime hint is stable and compact; use the `nodes` tool for exact current metadata.                                    |

@@ -55,7 +55,7 @@ describe("showConfirmDialog", () => {
     findButton("Delete").click();
 
     await expect(result).resolves.toBe(true);
-    expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull();
+    expect(document.body.querySelector("afora-modal-dialog")).toBeNull();
   });
 
   it("treats modal dismissal as cancellation", async () => {
@@ -75,7 +75,7 @@ describe("showConfirmDialog", () => {
     controller.abort();
 
     await expect(result).resolves.toBe(false);
-    expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull();
+    expect(document.body.querySelector("afora-modal-dialog")).toBeNull();
   });
 
   it("offers the opt-out only when a skip preference is supplied", async () => {
@@ -132,7 +132,7 @@ describe("showConfirmDialog", () => {
     });
 
     await expect(result).resolves.toBe(true);
-    expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull();
+    expect(document.body.querySelector("afora-modal-dialog")).toBeNull();
     // Re-remembering a stored choice would rewrite the preference on every run.
     expect(remember).not.toHaveBeenCalled();
   });

@@ -38,7 +38,7 @@ async function upsertSessionEntry(params: {
 }
 
 describe("session goals", () => {
-  const fixture = useTempSessionsFixture("openclaw-session-goals-");
+  const fixture = useTempSessionsFixture("afora-session-goals-");
   const sessionKey = "agent:main:telegram:direct:123";
 
   async function writeSession(totalTokens = 0) {

@@ -123,7 +123,7 @@ export function registerControlUiPairingSuite(): void {
     const { getPairedDevice, listDevicePairing } = await import("../infra/device-pairing.js");
     const { server, port, prevToken } = await startControlUiServer("secret");
     const { identity, identityPath } = await seedApprovedOperatorReadPairing({
-      identityPrefix: "openclaw-device-token-scope-",
+      identityPrefix: "afora-device-token-scope-",
       clientId: CONTROL_UI_CLIENT.id,
       clientMode: CONTROL_UI_CLIENT.mode,
       displayName: "loopback-control-ui-upgrade",
@@ -160,7 +160,7 @@ export function registerControlUiPairingSuite(): void {
   test("silently repairs malformed persisted access lists on local re-approval", async () => {
     const { getPairedDevice } = await import("../infra/device-pairing.js");
     const { identity, identityPath } = await seedApprovedOperatorReadPairing({
-      identityPrefix: "openclaw-device-malformed-access-",
+      identityPrefix: "afora-device-malformed-access-",
       clientId: TEST_OPERATOR_CLIENT.id,
       clientMode: TEST_OPERATOR_CLIENT.mode,
       displayName: "malformed-access-upgrade",
@@ -200,7 +200,7 @@ export function registerControlUiPairingSuite(): void {
 
   test("does not expose approved access when a paired device id reconnects with a different key", async () => {
     const { identity, identityPath } = await seedApprovedOperatorReadPairing({
-      identityPrefix: "openclaw-device-key-mismatch-",
+      identityPrefix: "afora-device-key-mismatch-",
       clientId: TEST_OPERATOR_CLIENT.id,
       clientMode: TEST_OPERATOR_CLIENT.mode,
       displayName: "remote-key-mismatch",
@@ -294,7 +294,7 @@ export function registerControlUiPairingSuite(): void {
   test("auto-approves local-direct node pairing, then silently grants operator scopes", async () => {
     const { getPairedDevice, listDevicePairing } = await import("../infra/device-pairing.js");
     const { identityPath, identity, client } =
-      await createOperatorIdentityFixture("openclaw-device-scope-");
+      await createOperatorIdentityFixture("afora-device-scope-");
     await withControlUiServer(async ({ port }) => {
       const connectWithNonce = async (role: "operator" | "node", scopes: string[]) => {
         const socket = await openWs(port, { host: "gateway.example" });
@@ -345,7 +345,7 @@ export function registerControlUiPairingSuite(): void {
   test("allows operator.read connect when device is paired with operator.admin", async () => {
     const { listDevicePairing } = await import("../infra/device-pairing.js");
     const { identityPath, identity } = await seedApprovedOperatorReadPairing({
-      identityPrefix: "openclaw-device-admin-superset-",
+      identityPrefix: "afora-device-admin-superset-",
       clientId: TEST_OPERATOR_CLIENT.id,
       clientMode: TEST_OPERATOR_CLIENT.mode,
       displayName: "operator-admin-superset",
@@ -384,7 +384,7 @@ export function registerControlUiPairingSuite(): void {
     const { getPairedDevice, listDevicePairing, requestDevicePairing } =
       await import("../infra/device-pairing.js");
     const { identityPath, identity } = await createOperatorIdentityFixture(
-      "openclaw-device-legacy-meta-",
+      "afora-device-legacy-meta-",
     );
     const deviceId = identity.deviceId;
     const publicKey = publicKeyRawBase64UrlFromPem(identity.publicKeyPem);
@@ -439,7 +439,7 @@ export function registerControlUiPairingSuite(): void {
   test("silently widens local scope upgrades even when paired metadata is legacy-shaped", async () => {
     const { getPairedDevice, listDevicePairing } = await import("../infra/device-pairing.js");
     const { identity, identityPath } = await seedApprovedOperatorReadPairing({
-      identityPrefix: "openclaw-device-legacy-",
+      identityPrefix: "afora-device-legacy-",
       clientId: TEST_OPERATOR_CLIENT.id,
       clientMode: TEST_OPERATOR_CLIENT.mode,
       displayName: "legacy-upgrade-test",
@@ -522,7 +522,7 @@ export function registerControlUiPairingSuite(): void {
     const wsDockerCli = await openWs(port, { host: "172.17.0.2:18789" });
     try {
       const { identity, identityPath } =
-        await createOperatorIdentityFixture("openclaw-cli-docker-");
+        await createOperatorIdentityFixture("afora-cli-docker-");
       const nonce = await readConnectChallengeNonce(wsDockerCli);
       const dockerCli = await connectReq(wsDockerCli, {
         token: "secret",

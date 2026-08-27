@@ -22,7 +22,7 @@ const manifestRegistry = {
       cliBackends: [],
       hooks: [],
       origin: "bundled",
-      manifestPath: "/tmp/xai/openclaw.plugin.json",
+      manifestPath: "/tmp/xai/afora.plugin.json",
       providers: ["xai"],
       providerAuthAliases: { "x-ai": "xai" },
       rootDir: "/tmp/xai",
@@ -41,18 +41,18 @@ vi.mock("./model-auth-env-vars.js", () => ({
   }),
 }));
 
-let planOpenClawModelsJsonWithDeps: typeof import("./models-config.plan.test-support.js").planOpenClawModelsJsonWithDeps;
+let planAforaModelsJsonWithDeps: typeof import("./models-config.plan.test-support.js").planAforaModelsJsonWithDeps;
 let loadPluginManifestRegistrySpy: MockInstance | undefined;
 let loadBundledPluginPublicArtifactModuleSyncSpy: MockInstance | undefined;
 let bundledPluginsDir: string;
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
-const originalBundledPluginsDir = process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
-const originalTrustBundledPluginsDir = process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR;
+const originalBundledPluginsDir = process.env.AFORA_BUNDLED_PLUGINS_DIR;
+const originalTrustBundledPluginsDir = process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR;
 
 beforeAll(async () => {
-  bundledPluginsDir = tempDirs.make("openclaw-provider-policy-registry-");
-  process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
-  process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
+  bundledPluginsDir = tempDirs.make("afora-provider-policy-registry-");
+  process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledPluginsDir;
+  process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
 
   const manifestRegistryModule = await import("../plugins/manifest-registry.js");
   loadPluginManifestRegistrySpy = vi
@@ -76,21 +76,21 @@ beforeAll(async () => {
         }),
       };
     });
-  ({ planOpenClawModelsJsonWithDeps } = await import("./models-config.plan.test-support.js"));
+  ({ planAforaModelsJsonWithDeps } = await import("./models-config.plan.test-support.js"));
 });
 
 afterAll(() => {
   loadPluginManifestRegistrySpy?.mockRestore();
   loadBundledPluginPublicArtifactModuleSyncSpy?.mockRestore();
   if (originalBundledPluginsDir === undefined) {
-    delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+    delete process.env.AFORA_BUNDLED_PLUGINS_DIR;
   } else {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = originalBundledPluginsDir;
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = originalBundledPluginsDir;
   }
   if (originalTrustBundledPluginsDir === undefined) {
-    delete process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR;
+    delete process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR;
   } else {
-    process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR = originalTrustBundledPluginsDir;
+    process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR = originalTrustBundledPluginsDir;
   }
 });
 
@@ -111,10 +111,10 @@ describe("models-config provider policy registry", () => {
       "index" | "manifestRegistry" | "owners" | "pluginIds"
     >;
 
-    const plan = await planOpenClawModelsJsonWithDeps(
+    const plan = await planAforaModelsJsonWithDeps(
       {
         cfg: { models: { providers: {} } },
-        agentDir: "/tmp/openclaw-provider-policy-registry-test/agent",
+        agentDir: "/tmp/afora-provider-policy-registry-test/agent",
         env: {},
         existingRaw: "",
         existingParsed: null,

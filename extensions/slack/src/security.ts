@@ -1,10 +1,10 @@
 // Slack plugin module implements security behavior.
-import { createScopedDmSecurityResolver } from "openclaw/plugin-sdk/channel-config-helpers";
+import { createScopedDmSecurityResolver } from "afora-agent/plugin-sdk/channel-config-helpers";
 import {
   createConditionalWarningCollector,
   createOpenProviderConfiguredRouteWarningCollector,
-} from "openclaw/plugin-sdk/channel-policy";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+} from "afora-agent/plugin-sdk/channel-policy";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 import {
   resolveSlackAccountAllowFrom,
   resolveSlackAccountDmPolicy,

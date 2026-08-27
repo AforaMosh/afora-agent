@@ -1,9 +1,9 @@
 import crypto from "node:crypto";
 import { executeSqliteQuerySync } from "../../infra/kysely-sync.js";
 import {
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-} from "../../state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+} from "../../state/afora-agent-db.js";
 import {
   getSessionKysely,
   resolveSqliteReadScope,
@@ -150,7 +150,7 @@ export class ConversationDeliveryInputError extends Error {
 }
 
 function selectOperation(
-  database: ReturnType<typeof openOpenClawAgentDatabase>,
+  database: ReturnType<typeof openAforaAgentDatabase>,
   operationId: string,
 ): ConversationDeliveryRecord | undefined {
   const db = getSessionKysely(database.db);
@@ -178,7 +178,7 @@ export function getConversationDeliveryOperation(
   scope: ConversationDeliveryStoreScope,
   operationId: string,
 ): ConversationDeliveryRecord | undefined {
-  const database = openOpenClawAgentDatabase(resolveDatabaseOptions(scope));
+  const database = openAforaAgentDatabase(resolveDatabaseOptions(scope));
   return selectOperation(database, normalizeOperationId(operationId));
 }
 
@@ -197,7 +197,7 @@ export function beginConversationDeliveryOperation(
   const operationId = normalizeOperationId(params.operationId);
   const sourceSessionKey = params.sourceSessionKey?.trim() || undefined;
   const messageHash = hashMessage(params.message);
-  return runOpenClawAgentWriteTransaction(
+  return runAforaAgentWriteTransaction(
     (database) => {
       const existing = selectOperation(database, operationId);
       if (existing) {
@@ -261,7 +261,7 @@ function updateConversationDeliveryOperation(
   },
 ): ConversationDeliveryRecord {
   const operationId = normalizeOperationId(params.operationId);
-  return runOpenClawAgentWriteTransaction(
+  return runAforaAgentWriteTransaction(
     (database) => {
       const current = selectOperation(database, operationId);
       if (!current) {
@@ -393,7 +393,7 @@ export function findConversationTurnDeliveryByReplyTarget(
   scope: ConversationDeliveryStoreScope,
   params: { conversationRef: string; replyToId: string },
 ): ConversationDeliveryRecord | undefined {
-  const database = openOpenClawAgentDatabase(resolveDatabaseOptions(scope));
+  const database = openAforaAgentDatabase(resolveDatabaseOptions(scope));
   const db = getSessionKysely(database.db);
   const row = executeSqliteQuerySync(
     database.db,

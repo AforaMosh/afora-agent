@@ -1,5 +1,5 @@
 // Openai tests cover realtime voice provider plugin behavior.
-import type { RealtimeVoiceBridge } from "openclaw/plugin-sdk/realtime-voice";
+import type { RealtimeVoiceBridge } from "afora-agent/plugin-sdk/realtime-voice";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildOpenAIRealtimeVoiceProvider } from "./realtime-voice-provider.js";
 
@@ -19,11 +19,11 @@ vi.mock("ws", () => ({
   default: mocks.FakeWebSocket,
 }));
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ({
   fetchWithSsrFGuard: mocks.fetchWithSsrFGuardMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/provider-auth", () => ({
+vi.mock("afora-agent/plugin-sdk/provider-auth", () => ({
   isProviderAuthProfileConfigured: mocks.isProviderAuthProfileConfiguredMock,
   resolveProviderAuthProfileApiKey: mocks.resolveProviderAuthProfileApiKeyMock,
 }));
@@ -176,7 +176,7 @@ describe("OpenAI realtime voice response control", () => {
 
     expect(parseSent(socket).at(-1)).toEqual({
       type: "response.create",
-      event_id: expect.stringMatching(/^openclaw-response-create-/),
+      event_id: expect.stringMatching(/^afora-response-create-/),
       response: {
         output_modalities: ["audio"],
         tool_choice: { type: "function", name: "lookup_weather" },

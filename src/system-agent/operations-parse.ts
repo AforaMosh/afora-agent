@@ -1,4 +1,4 @@
-// OpenClaw operation grammar, approval descriptions, and public types.
+// Afora operation grammar, approval descriptions, and public types.
 import { parseConfigSetPath } from "../cli/config-cli-path.js";
 import type { ConfigSetOptions } from "../cli/config-set-input.js";
 import type { DoctorOptions } from "../commands/doctor.types.js";
@@ -34,7 +34,7 @@ export type SystemAgentOperationResult = {
   exitsInteractive?: boolean;
   message?: string;
   nextInput?: string;
-  /** Agent TUI exited via /openclaw: re-enter the shell even without a request. */
+  /** Agent TUI exited via /afora: re-enter the shell even without a request. */
   returnToShell?: boolean;
   followUp?: Extract<SystemAgentOperation, { kind: "model-setup" }>;
 };
@@ -91,7 +91,7 @@ const CONFIG_SET_REF_ARGS_RE = new RegExp(
   "i",
 );
 const SETUP_RE = new RegExp(
-  String.raw`^(?:setup|set\s+me\s+up|set\s+up\s+openclaw|onboard(?:\s+me)?|bootstrap|first\s+run)(?:\s+workspace\s+(?<workspace>${ARG_WORD}))?(?:\s+model\s+(?<model>\S+))?$`,
+  String.raw`^(?:setup|set\s+me\s+up|set\s+up\s+afora|onboard(?:\s+me)?|bootstrap|first\s+run)(?:\s+workspace\s+(?<workspace>${ARG_WORD}))?(?:\s+model\s+(?<model>\S+))?$`,
   "i",
 );
 const MODEL_SETUP_RE = new RegExp(
@@ -253,7 +253,7 @@ function parseConfigSetRefCommand(input: string):
 }
 
 /**
- * Parse one user command into OpenClaw's closed operation union. Anything
+ * Parse one user command into Afora's closed operation union. Anything
  * that does not match the anchored grammar exactly returns kind "none" so the
  * caller can route it to the system agent (or show guidance).
  */
@@ -298,7 +298,7 @@ export function parseSystemAgentOperation(input: string): SystemAgentOperation {
       return { kind: "open-tui" };
     case "quit":
     case "exit":
-      return { kind: "none", message: "OpenClaw retracts into shell. Bye." };
+      return { kind: "none", message: "Afora retracts into shell. Bye." };
     default:
       break;
   }
@@ -539,7 +539,7 @@ export function describeSystemAgentPersistentOperation(operation: SystemAgentOpe
     case "model-setup":
       return "configure a model provider and default model";
     case "doctor-fix":
-      return "run openclaw doctor --fix on the machine running OpenClaw, with OpenClaw stopped";
+      return "run afora doctor --fix on the machine running Afora, with Afora stopped";
     case "plugin-install":
       return `install plugin ${operation.spec}`;
     case "plugin-uninstall":
@@ -582,5 +582,5 @@ function formatSetupPlanDescription(
   operation: Extract<SystemAgentOperation, { kind: "setup" }>,
 ): string {
   const workspace = shortenHomePath(resolveUserPath(operation.workspace ?? process.cwd()));
-  return `bootstrap OpenClaw setup for workspace ${workspace}`;
+  return `bootstrap Afora setup for workspace ${workspace}`;
 }

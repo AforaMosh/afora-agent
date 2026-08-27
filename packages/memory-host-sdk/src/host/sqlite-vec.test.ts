@@ -82,11 +82,11 @@ describe("loadSqliteVecExtension", () => {
     await expect(
       loadSqliteVecExtension({
         db: db as never,
-        extensionPath: "/opt/openclaw/sqlite-vec.so",
+        extensionPath: "/opt/afora/sqlite-vec.so",
       }),
-    ).resolves.toEqual({ ok: true, extensionPath: "/opt/openclaw/sqlite-vec.so" });
+    ).resolves.toEqual({ ok: true, extensionPath: "/opt/afora/sqlite-vec.so" });
     expect(db.enableLoadExtension).toHaveBeenCalledWith(true);
-    expect(db.loadExtension).toHaveBeenCalledWith("/opt/openclaw/sqlite-vec.so");
+    expect(db.loadExtension).toHaveBeenCalledWith("/opt/afora/sqlite-vec.so");
     expect(prepare).toHaveBeenCalledWith("SELECT vec_version() AS version");
   });
 
@@ -97,15 +97,15 @@ describe("loadSqliteVecExtension", () => {
 
     const result = await loadSqliteVecExtension({
       db: db as never,
-      extensionPath: "/opt/openclaw/sqlite-vec.so",
+      extensionPath: "/opt/afora/sqlite-vec.so",
     });
 
     expect(result).toEqual({
       ok: false,
       error:
-        "sqlite-vec health check failed after loading /opt/openclaw/sqlite-vec.so | no such function: vec_version",
+        "sqlite-vec health check failed after loading /opt/afora/sqlite-vec.so | no such function: vec_version",
     });
-    expect(db.loadExtension).toHaveBeenCalledWith("/opt/openclaw/sqlite-vec.so");
+    expect(db.loadExtension).toHaveBeenCalledWith("/opt/afora/sqlite-vec.so");
   });
 
   it("returns a valid memory.search extensionPath hint when sqlite-vec is absent", async () => {

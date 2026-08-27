@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { expect } from "vitest";
 import { handleChatAbortRequestWithLifecycle } from "./chat-abort-handler.js";
 import {

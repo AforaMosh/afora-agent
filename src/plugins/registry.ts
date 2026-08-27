@@ -9,10 +9,10 @@ import type {
   PluginRecord as RegistryPluginRecord,
   PluginRegistryParams,
 } from "./registry-types.js";
-import type { OpenClawPluginGatewayRuntimeScopeSurface } from "./types.js";
+import type { AforaPluginGatewayRuntimeScopeSurface } from "./types.js";
 
 export type PluginHttpRouteRegistration = RegistryTypesPluginHttpRouteRegistration & {
-  gatewayRuntimeScopeSurface?: OpenClawPluginGatewayRuntimeScopeSurface;
+  gatewayRuntimeScopeSurface?: AforaPluginGatewayRuntimeScopeSurface;
 };
 
 export type { PluginRecord, PluginRegistry } from "./registry-types.js";

@@ -4,8 +4,8 @@
  * These utilities connect Talk tool calls to spoken follow-up answers by
  * pulling human-readable questions/results out of provider-owned payloads.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { readTrimmedStringAlias } from "../utils/string-readers.js";
 
 const REALTIME_VOICE_CONSULT_QUESTION_STOPWORDS = new Set([

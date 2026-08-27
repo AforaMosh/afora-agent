@@ -1,5 +1,5 @@
-// Deepgram plugin entrypoint registers its OpenClaw integration.
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+// Deepgram plugin entrypoint registers its Afora integration.
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import { deepgramMediaUnderstandingProvider } from "./media-understanding-provider.js";
 import { buildDeepgramRealtimeTranscriptionProvider } from "./realtime-transcription-provider.js";
 

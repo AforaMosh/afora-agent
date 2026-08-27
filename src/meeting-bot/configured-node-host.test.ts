@@ -71,14 +71,14 @@ describe("configured meeting node host", () => {
       if (args[0] === "list" && args[2] === "sinks") {
         return {
           status: 0,
-          stdout: sinkLoaded ? "42\topenclaw_meeting_audio\tPipeWire" : "",
+          stdout: sinkLoaded ? "42\tafora_meeting_audio\tPipeWire" : "",
           stderr: "",
         };
       }
       if (args[0] === "list" && args[2] === "sources") {
         return {
           status: 0,
-          stdout: sourceLoaded ? "43\topenclaw_meeting_audio\tPipeWire" : "",
+          stdout: sourceLoaded ? "43\tafora_meeting_audio\tPipeWire" : "",
           stderr: "",
         };
       }
@@ -93,7 +93,7 @@ describe("configured meeting node host", () => {
     expect(result).toEqual({
       ok: true,
       audioBackend: "pipewire-pulse",
-      audioDeviceLabel: "OpenClaw Meeting Audio",
+      audioDeviceLabel: "Afora Meeting Audio",
     });
     expect(childProcessMocks.spawnSync).toHaveBeenCalledWith(
       "/bin/sh",
@@ -122,10 +122,10 @@ describe("configured meeting node host", () => {
         return { status: 0, stdout: "Server Name: PulseAudio (on PipeWire)", stderr: "" };
       }
       if (args[0] === "list" && args[2] === "sinks") {
-        return { status: 0, stdout: "42\topenclaw_meeting_audio\tPipeWire", stderr: "" };
+        return { status: 0, stdout: "42\tafora_meeting_audio\tPipeWire", stderr: "" };
       }
       if (args[0] === "list" && args[2] === "sources") {
-        return { status: 0, stdout: "43\topenclaw_meeting_audio\tPipeWire", stderr: "" };
+        return { status: 0, stdout: "43\tafora_meeting_audio\tPipeWire", stderr: "" };
       }
       return { status: 0, stdout: "", stderr: "" };
     });

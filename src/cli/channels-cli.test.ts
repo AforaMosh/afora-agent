@@ -54,8 +54,8 @@ function getChannelSubcommandNames(program: Command, parentName: string): string
 }
 
 async function runChannelsAddCli(args: string[]) {
-  const program = new Command().name("openclaw");
-  await registerChannelsCli(program, ["node", "openclaw", ...args]);
+  const program = new Command().name("afora");
+  await registerChannelsCli(program, ["node", "afora", ...args]);
   await program.parseAsync(args, { from: "user" });
   return program;
 }
@@ -70,21 +70,21 @@ describe("registerChannelsCli", () => {
   });
 
   it("loads channel-specific add options only for channels add invocations", async () => {
-    process.argv = ["node", "openclaw", "channels"];
-    await registerChannelsCli(new Command().name("openclaw"));
+    process.argv = ["node", "afora", "channels"];
+    await registerChannelsCli(new Command().name("afora"));
 
     expect(listBundledPackageChannelMetadataMock).not.toHaveBeenCalled();
     expect(listRawChannelPluginCatalogEntriesMock).not.toHaveBeenCalled();
 
-    process.argv = ["node", "openclaw", "channels", "add", "clickclack", "--help"];
-    await registerChannelsCli(new Command().name("openclaw"));
+    process.argv = ["node", "afora", "channels", "add", "clickclack", "--help"];
+    await registerChannelsCli(new Command().name("afora"));
 
     expect(listBundledPackageChannelMetadataMock).toHaveBeenCalledTimes(1);
     expect(listRawChannelPluginCatalogEntriesMock).toHaveBeenCalledTimes(1);
   });
 
   it("registers dead-letter inspection and resubmission commands", async () => {
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
 
     await registerChannelsCli(program);
 
@@ -94,10 +94,10 @@ describe("registerChannelsCli", () => {
   it.each(["auto", "user", "group", "channel"])(
     "forwards the supported %s resolve target kind",
     async (kind) => {
-      const program = new Command().name("openclaw").exitOverride();
+      const program = new Command().name("afora").exitOverride();
       const args = ["channels", "resolve", "--kind", kind, "room"];
 
-      await registerChannelsCli(program, ["node", "openclaw", ...args]);
+      await registerChannelsCli(program, ["node", "afora", ...args]);
       await program.parseAsync(args, { from: "user" });
 
       expect(channelsResolveCommandMock).toHaveBeenCalledWith(
@@ -111,9 +111,9 @@ describe("registerChannelsCli", () => {
     ["parent", ["channels", "--agent", "ops", "resolve", "room"]],
     ["leaf", ["channels", "resolve", "--agent", "ops", "room"]],
   ])("forwards the %s --agent option to channel resolution", async (_label, args) => {
-    const program = new Command().name("openclaw").enablePositionalOptions().exitOverride();
+    const program = new Command().name("afora").enablePositionalOptions().exitOverride();
 
-    await registerChannelsCli(program, ["node", "openclaw", ...args]);
+    await registerChannelsCli(program, ["node", "afora", ...args]);
     await program.parseAsync(args, { from: "user" });
 
     expect(channelsResolveCommandMock).toHaveBeenCalledWith(
@@ -124,10 +124,10 @@ describe("registerChannelsCli", () => {
 
   it("rejects unsupported resolve target kinds before dispatching", async () => {
     const writeErr = vi.fn();
-    const program = new Command().name("openclaw").exitOverride().configureOutput({ writeErr });
+    const program = new Command().name("afora").exitOverride().configureOutput({ writeErr });
     const args = ["channels", "resolve", "--kind", "person", "room"];
 
-    await registerChannelsCli(program, ["node", "openclaw", ...args]);
+    await registerChannelsCli(program, ["node", "afora", ...args]);
 
     await expect(program.parseAsync(args, { from: "user" })).rejects.toMatchObject({
       code: "commander.invalidArgument",
@@ -154,8 +154,8 @@ describe("registerChannelsCli", () => {
         ],
       },
     ]);
-    process.argv = ["node", "openclaw", "channels", "add", "clickclack", "--help"];
-    const program = new Command().name("openclaw");
+    process.argv = ["node", "afora", "channels", "add", "clickclack", "--help"];
+    const program = new Command().name("afora");
 
     await registerChannelsCli(program);
 
@@ -181,14 +181,14 @@ describe("registerChannelsCli", () => {
           docsPath: "/channels/installed-chat",
           blurb: "Installed test channel.",
         },
-        install: { npmSpec: "@openclaw/installed-chat" },
+        install: { npmSpec: "@afora/installed-chat" },
       },
     ]);
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
 
     await registerChannelsCli(program, [
       "node",
-      "openclaw",
+      "afora",
       "channels",
       "add",
       "--channel",
@@ -220,7 +220,7 @@ describe("registerChannelsCli", () => {
           docsPath: "/channels/chat-a",
           blurb: "Chat A test channel.",
         },
-        install: { npmSpec: "@openclaw/chat-a" },
+        install: { npmSpec: "@afora/chat-a" },
       },
       {
         id: "chat-b",
@@ -238,17 +238,17 @@ describe("registerChannelsCli", () => {
           docsPath: "/channels/chat-b",
           blurb: "Chat B test channel.",
         },
-        install: { npmSpec: "@openclaw/chat-b" },
+        install: { npmSpec: "@afora/chat-b" },
       },
     ]);
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
 
     // Commander throws on conflicting switches; registration must survive a
     // plugin redeclaring `--url` with a different placeholder or the static
     // `--token` with a different value name.
     await registerChannelsCli(program, [
       "node",
-      "openclaw",
+      "afora",
       "channels",
       "add",
       "--channel",
@@ -281,7 +281,7 @@ describe("registerChannelsCli", () => {
           docsPath: "/channels/chat-a",
           blurb: "Chat A test channel.",
         },
-        install: { npmSpec: "@openclaw/chat-a" },
+        install: { npmSpec: "@afora/chat-a" },
       },
       {
         id: "chat-b",
@@ -299,14 +299,14 @@ describe("registerChannelsCli", () => {
           docsPath: "/channels/chat-b",
           blurb: "Chat B test channel.",
         },
-        install: { npmSpec: "@openclaw/chat-b" },
+        install: { npmSpec: "@afora/chat-b" },
       },
     ]);
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
 
     await registerChannelsCli(program, [
       "node",
-      "openclaw",
+      "afora",
       "channels",
       "add",
       "--channel",
@@ -346,8 +346,8 @@ describe("registerChannelsCli", () => {
         },
       },
     ]);
-    process.argv = ["node", "openclaw", "channels", "add", "--channel", "signal", "--help"];
-    const program = new Command().name("openclaw");
+    process.argv = ["node", "afora", "channels", "add", "--channel", "signal", "--help"];
+    const program = new Command().name("afora");
 
     await registerChannelsCli(program);
 
@@ -382,11 +382,11 @@ describe("registerChannelsCli", () => {
         },
       },
     ]);
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
 
     await registerChannelsCli(program, [
       "node",
-      "openclaw",
+      "afora",
       "channels",
       "add",
       "telegram",
@@ -404,9 +404,9 @@ describe("registerChannelsCli", () => {
   it.each(["--help", "-h"])(
     "keeps generic add help via %s limited to the shared control envelope",
     async (helpFlag) => {
-      const program = new Command().name("openclaw");
+      const program = new Command().name("afora");
 
-      await registerChannelsCli(program, ["node", "openclaw", "channels", "add", helpFlag]);
+      await registerChannelsCli(program, ["node", "afora", "channels", "add", helpFlag]);
 
       expect(getChannelAddOptionFlags(program)).toEqual([
         "--channel <name>",
@@ -437,8 +437,8 @@ describe("registerChannelsCli", () => {
         },
       },
     ]);
-    process.argv = ["node", "openclaw", "channels", "add", "example", "--help"];
-    const program = new Command().name("openclaw");
+    process.argv = ["node", "afora", "channels", "add", "example", "--help"];
+    const program = new Command().name("afora");
 
     await registerChannelsCli(program);
 
@@ -503,11 +503,11 @@ describe("registerChannelsCli", () => {
   });
 
   it("uses caller argv instead of raw process argv for channel-specific add options", async () => {
-    process.argv = ["node", "openclaw", "channels"];
+    process.argv = ["node", "afora", "channels"];
 
-    await registerChannelsCli(new Command().name("openclaw"), [
+    await registerChannelsCli(new Command().name("afora"), [
       "node",
-      "openclaw",
+      "afora",
       "channels",
       "add",
       "telegram",
@@ -524,8 +524,8 @@ describe("registerChannelsCli", () => {
         cliAddOptions: [{ flags: "--homeserver <url>", description: "Matrix homeserver URL" }],
       },
     ]);
-    process.argv = ["node", "openclaw", "completion", "--write-state"];
-    const program = new Command().name("openclaw");
+    process.argv = ["node", "afora", "completion", "--write-state"];
+    const program = new Command().name("afora");
 
     await registerChannelsCli(program, process.argv, { includeSetupOptions: true });
 
@@ -544,7 +544,7 @@ describe("registerChannelsCli", () => {
     process.argv = [
       "C:\\Program Files\\nodejs\\node.exe",
       "C:\\Program Files\\nodejs\\node.exe",
-      "C:\\repo\\openclaw.js",
+      "C:\\repo\\afora.js",
       "channels",
       "add",
       "--channel",
@@ -552,7 +552,7 @@ describe("registerChannelsCli", () => {
       "--homeserver",
       "https://matrix.example.org",
     ];
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
 
     await registerChannelsCli(program);
 
@@ -630,9 +630,9 @@ describe("registerChannelsCli", () => {
       },
     ]);
 
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
     const argv = ["channels", "add", "telegram", "--token", "test-token"];
-    await registerChannelsCli(program, ["node", "openclaw", ...argv]);
+    await registerChannelsCli(program, ["node", "afora", ...argv]);
     const flags = getChannelAddOptionFlags(program);
     expect(flags).toContain("--token <token>");
     expect(flags).not.toContain("--legacy-token <token>");
@@ -705,7 +705,7 @@ describe("registerChannelsCli", () => {
     await expect(
       resolveChannelsAddChannelFromArgv([
         "node",
-        "openclaw",
+        "afora",
         "channels",
         "add",
         "--unknown-option",
@@ -746,7 +746,7 @@ describe("registerChannelsCli", () => {
     await expect(
       resolveChannelsAddChannelFromArgv([
         "node",
-        "openclaw",
+        "afora",
         "channels",
         "add",
         "--mode",

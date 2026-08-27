@@ -1,8 +1,8 @@
 import AVFAudio
 import Foundation
-import OpenClawChatUI
-import OpenClawKit
-import OpenClawProtocol
+import AforaChatUI
+import AforaKit
+import AforaProtocol
 import OSLog
 
 private func makeRealtimeAudioTapBlock(
@@ -68,7 +68,7 @@ private actor RealtimeAudioSender {
 
 @MainActor
 final class RealtimeTalkRelaySession {
-    private static let agentControlToolName = "openclaw_agent_control"
+    private static let agentControlToolName = "afora_agent_control"
 
     struct Options {
         let sessionKey: String
@@ -140,7 +140,7 @@ final class RealtimeTalkRelaySession {
     private var startupTransport: StartupTransport?
     private let options: Options
     private let pcmPlayer: PCMStreamingAudioPlaying
-    private let logger = Logger(subsystem: "ai.openclawfoundation.app", category: "RealtimeTalkRelay")
+    private let logger = Logger(subsystem: "ai.aforafoundation.app", category: "RealtimeTalkRelay")
     private let onStatus: (String) -> Void
     private let onIssue: (TalkRuntimeIssue) -> Void
     private let onSpeakingChanged: (Bool) -> Void
@@ -647,8 +647,8 @@ final class RealtimeTalkRelaySession {
                 timeoutSeconds: 120)
             try await self.ensureCurrentLifecycle(lifecycleGeneration)
             let result: [String: Any] = completion.failed
-                ? ["error": "OpenClaw tool call failed"]
-                : ["text": completion.text ?? "OpenClaw finished with no text."]
+                ? ["error": "Afora tool call failed"]
+                : ["text": completion.text ?? "Afora finished with no text."]
             try await self.submitToolResult(
                 callId: callId,
                 result: result,
@@ -748,12 +748,12 @@ final class RealtimeTalkRelaySession {
                           let payload = event.payload,
                           let chatEvent = try? GatewayPayloadDecoding.decode(
                               payload,
-                              as: OpenClawChatEventPayload.self),
+                              as: AforaChatEventPayload.self),
                           chatEvent.runId == runId
                     else { continue }
                     if chatEvent.state == "final" {
                         return ChatCompletionResult(
-                            text: OpenClawChatEventText.assistantText(from: chatEvent),
+                            text: AforaChatEventText.assistantText(from: chatEvent),
                             failed: false)
                     }
                     if chatEvent.state == "aborted" || chatEvent.state == "error" {

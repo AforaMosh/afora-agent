@@ -1,4 +1,4 @@
-// Http module supports OpenClaw QA credential workflows.
+// Http module supports Afora QA credential workflows.
 import { httpRouter } from "convex/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -49,8 +49,8 @@ function resolveAuthRole(token: string | null): ActorRole {
       "Missing Authorization: Bearer <secret> header.",
     );
   }
-  const maintainerSecret = process.env.OPENCLAW_QA_CONVEX_SECRET_MAINTAINER?.trim();
-  const ciSecret = process.env.OPENCLAW_QA_CONVEX_SECRET_CI?.trim();
+  const maintainerSecret = process.env.AFORA_QA_CONVEX_SECRET_MAINTAINER?.trim();
+  const ciSecret = process.env.AFORA_QA_CONVEX_SECRET_CI?.trim();
 
   if (!maintainerSecret && !ciSecret) {
     throw new BrokerHttpError(
@@ -76,18 +76,18 @@ function assertMaintainerAdminAuth(token: string | null) {
       "Missing Authorization: Bearer <secret> header.",
     );
   }
-  const maintainerSecret = process.env.OPENCLAW_QA_CONVEX_SECRET_MAINTAINER?.trim();
+  const maintainerSecret = process.env.AFORA_QA_CONVEX_SECRET_MAINTAINER?.trim();
   if (!maintainerSecret) {
     throw new BrokerHttpError(
       500,
       "SERVER_MISCONFIGURED",
-      "Admin endpoints require OPENCLAW_QA_CONVEX_SECRET_MAINTAINER on this deployment.",
+      "Admin endpoints require AFORA_QA_CONVEX_SECRET_MAINTAINER on this deployment.",
     );
   }
   if (token === maintainerSecret) {
     return;
   }
-  const ciSecret = process.env.OPENCLAW_QA_CONVEX_SECRET_CI?.trim();
+  const ciSecret = process.env.AFORA_QA_CONVEX_SECRET_CI?.trim();
   if (ciSecret && token === ciSecret) {
     throw new BrokerHttpError(
       403,

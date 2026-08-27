@@ -1,12 +1,12 @@
 /**
- * Mirrors Codex native subagent thread lifecycle events into OpenClaw task
+ * Mirrors Codex native subagent thread lifecycle events into Afora task
  * runtime rows so parent sessions can observe child progress.
  */
-import type { AgentHarnessTaskRuntime } from "openclaw/plugin-sdk/agent-harness-task-runtime";
+import type { AgentHarnessTaskRuntime } from "afora-agent/plugin-sdk/agent-harness-task-runtime";
 import {
   normalizeOptionalString,
   readStringField as readString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { CODEX_NATIVE_SUBAGENT_RUN_ID_PREFIX } from "./native-subagent-task-ids.js";
 import type {
   CodexServerNotification,
@@ -433,7 +433,7 @@ export class CodexNativeSubagentTaskMirror {
   }
 }
 
-/** Converts a Codex child thread id into the OpenClaw task-runtime run id. */
+/** Converts a Codex child thread id into the Afora task-runtime run id. */
 export function codexNativeSubagentRunId(threadId: string): string {
   return `${CODEX_NATIVE_SUBAGENT_RUN_ID_PREFIX}${threadId.trim()}`;
 }

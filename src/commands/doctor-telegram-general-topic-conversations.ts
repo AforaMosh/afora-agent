@@ -11,14 +11,14 @@ import {
 } from "../config/sessions/session-accessor.sqlite-scope.js";
 import { resolveAllAgentSessionStoreTargetsSync } from "../config/sessions/targets.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { executeSqliteQuerySync } from "../infra/kysely-sync.js";
 import { buildConversationRef } from "../routing/conversation-ref.js";
-import { withOpenClawAgentDatabaseReadOnly } from "../state/openclaw-agent-db-readonly.js";
+import { withAforaAgentDatabaseReadOnly } from "../state/afora-agent-db-readonly.js";
 import {
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-} from "../state/openclaw-agent-db.js";
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabase,
+} from "../state/afora-agent-db.js";
 import { runDoctorAgentDatabaseOperation } from "./doctor-agent-database-operation.js";
 
 const GENERAL_TOPIC_ID = "1";
@@ -88,7 +88,7 @@ function listLegacyRows(database: import("node:sqlite").DatabaseSync): Conversat
   ).rows.filter((row) => canonicalIdentity(row) !== null);
 }
 
-function resolveRepairScopes(cfg: OpenClawConfig, env: NodeJS.ProcessEnv) {
+function resolveRepairScopes(cfg: AforaConfig, env: NodeJS.ProcessEnv) {
   return resolveAllAgentSessionStoreTargetsSync(cfg, { env }).map((target) => {
     const scope = resolveSqliteReadScope({
       agentId: target.agentId,
@@ -101,7 +101,7 @@ function resolveRepairScopes(cfg: OpenClawConfig, env: NodeJS.ProcessEnv) {
 
 /** Finds stale General-topic rows without creating or migrating agent databases. */
 export function detectTelegramGeneralTopicConversationRepairs(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
 }): TelegramGeneralTopicConversationRepair[] {
   const env = params.env ?? process.env;
@@ -111,7 +111,7 @@ export function detectTelegramGeneralTopicConversationRepairs(params: {
       agentId: scope.agentId,
       path: databaseOptions.path ?? storePath,
       run: () =>
-        withOpenClawAgentDatabaseReadOnly(
+        withAforaAgentDatabaseReadOnly(
           (database) =>
             listLegacyRows(database.db).flatMap((row) => {
               const canonical = canonicalIdentity(row);
@@ -170,7 +170,7 @@ function canonicalizeLegacySessionEntry(
   };
 }
 
-function repairLegacyRow(database: OpenClawAgentDatabase, legacyConversationId: string): boolean {
+function repairLegacyRow(database: AforaAgentDatabase, legacyConversationId: string): boolean {
   const db = getSessionKysely(database.db);
   const legacy = executeSqliteQuerySync(
     database.db,
@@ -315,14 +315,14 @@ function repairLegacyRow(database: OpenClawAgentDatabase, legacyConversationId: 
 
 /** Canonicalizes stale rows and merges every durable reference in one transaction per agent DB. */
 export async function repairTelegramGeneralTopicConversations(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
 }): Promise<number> {
   const env = params.env ?? process.env;
   let repaired = 0;
   for (const { scope } of resolveRepairScopes(params.cfg, env)) {
     await runExclusiveSqliteSessionWrite(scope, async () => {
-      repaired += runOpenClawAgentWriteTransaction(
+      repaired += runAforaAgentWriteTransaction(
         (database) => {
           // Detection is advisory. Re-read every candidate after BEGIN so a live
           // session write cannot turn the doctor repair into a stale merge.

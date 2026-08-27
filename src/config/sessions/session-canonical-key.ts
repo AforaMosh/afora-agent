@@ -9,7 +9,7 @@ import {
   normalizeMainKey,
   parseAgentSessionKey,
 } from "../../routing/session-key.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
+import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.generated.js";
 import { parseSqliteSessionEntryRecord } from "./session-entry-json.js";
 import { projectCanonicalSessionEntryShape } from "./store-entry-shape.js";
 import {
@@ -18,9 +18,9 @@ import {
 } from "./store-entry.js";
 import type { SessionEntry } from "./types.js";
 
-const SESSION_CANONICAL_KEY_REPAIR_COMMAND = "openclaw doctor --fix";
+const SESSION_CANONICAL_KEY_REPAIR_COMMAND = "afora doctor --fix";
 type CanonicalSessionDatabase = Pick<
-  OpenClawAgentKyselyDatabase,
+  AforaAgentKyselyDatabase,
   "session_key_contract" | "session_nodes" | "session_windows"
 >;
 const validatedDatabases = new WeakSet<DatabaseSync>();

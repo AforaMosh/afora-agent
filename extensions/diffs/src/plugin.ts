@@ -1,11 +1,11 @@
 // Diffs plugin module implements plugin behavior.
 import fs from "node:fs";
 import path from "node:path";
-import { resolveLivePluginConfigObject } from "openclaw/plugin-sdk/plugin-config-runtime";
+import { resolveLivePluginConfigObject } from "afora-agent/plugin-sdk/plugin-config-runtime";
 import {
-  resolvePreferredOpenClawTmpDir,
-  type OpenClawConfig,
-  type OpenClawPluginApi,
+  resolvePreferredAforaTmpDir,
+  type AforaConfig,
+  type AforaPluginApi,
 } from "../api.js";
 import {
   resolveDiffsPluginDefaults,
@@ -24,9 +24,9 @@ const DIFF_ARTIFACT_MAX_ENTRIES = 2_048;
 const DIFF_ARTIFACT_MAX_BYTES_PER_ENTRY = 32 * 1024 * 1024;
 const DIFF_ARTIFACT_MAX_BYTES_PER_NAMESPACE = 256 * 1024 * 1024;
 
-export function registerDiffsPlugin(api: OpenClawPluginApi): void {
+export function registerDiffsPlugin(api: AforaPluginApi): void {
   const store = new DiffArtifactStore({
-    rootDir: path.join(resolvePreferredOpenClawTmpDir(), "openclaw-diffs"),
+    rootDir: path.join(resolvePreferredAforaTmpDir(), "afora-diffs"),
     blobStore: api.runtime.state.openBlobStore<DiffArtifactBlobMetadata>({
       namespace: DIFF_ARTIFACT_NAMESPACE,
       maxEntries: DIFF_ARTIFACT_MAX_ENTRIES,
@@ -39,13 +39,13 @@ export function registerDiffsPlugin(api: OpenClawPluginApi): void {
   const resolveCurrentPluginConfig = () =>
     resolveLivePluginConfigObject(
       api.runtime.config?.current
-        ? () => api.runtime.config.current() as OpenClawConfig
+        ? () => api.runtime.config.current() as AforaConfig
         : undefined,
       "diffs",
       api.pluginConfig as Record<string, unknown>,
     ) ?? {};
   const resolveCurrentAccessConfig = () => {
-    const currentConfig = (api.runtime.config?.current?.() ?? api.config) as OpenClawConfig;
+    const currentConfig = (api.runtime.config?.current?.() ?? api.config) as AforaConfig;
     const pluginConfig = resolveCurrentPluginConfig();
     return {
       allowRemoteViewer: resolveDiffsPluginSecurity(pluginConfig).allowRemoteViewer,
@@ -89,8 +89,8 @@ export function registerDiffsPlugin(api: OpenClawPluginApi): void {
   }));
 }
 
-function resolveDiffsLanguagePackAvailability(api: OpenClawPluginApi): boolean {
-  const currentConfig = (api.runtime.config?.current?.() ?? api.config) as OpenClawConfig;
+function resolveDiffsLanguagePackAvailability(api: AforaPluginApi): boolean {
+  const currentConfig = (api.runtime.config?.current?.() ?? api.config) as AforaConfig;
   const plugins = currentConfig.plugins;
   if (plugins?.enabled === false) {
     return false;
@@ -117,7 +117,7 @@ function hasSiblingLanguagePackRuntime(rootDir: string | undefined): boolean {
     path.join(languagePackRoot, "dist", "assets", "viewer-runtime.js"),
   ];
   return (
-    fs.existsSync(path.join(languagePackRoot, "openclaw.plugin.json")) &&
+    fs.existsSync(path.join(languagePackRoot, "afora.plugin.json")) &&
     runtimePaths.some((runtimePath) => fs.existsSync(runtimePath))
   );
 }

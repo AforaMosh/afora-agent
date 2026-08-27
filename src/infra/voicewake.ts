@@ -1,10 +1,10 @@
 // Stores voice wake trigger configuration.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../state/afora-state-db.js";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "./kysely-sync.js";
 
 // Voice wake config stores trigger words used by local voice integrations.
@@ -13,10 +13,10 @@ type VoiceWakeConfig = {
   updatedAtMs: number;
 };
 
-const DEFAULT_TRIGGERS = ["openclaw", "claude", "computer"];
+const DEFAULT_TRIGGERS = ["afora", "claude", "computer"];
 const VOICEWAKE_CONFIG_KEY = "default";
 
-type VoiceWakeDatabase = Pick<OpenClawStateKyselyDatabase, "voicewake_triggers">;
+type VoiceWakeDatabase = Pick<AforaStateKyselyDatabase, "voicewake_triggers">;
 
 function sanitizeTriggers(triggers: string[] | undefined | null): string[] {
   const cleaned = (triggers ?? [])
@@ -26,8 +26,8 @@ function sanitizeTriggers(triggers: string[] | undefined | null): string[] {
 }
 
 function openStateDatabase(stateDir?: string) {
-  return openOpenClawStateDatabase({
-    env: stateDir ? { ...process.env, OPENCLAW_STATE_DIR: stateDir } : process.env,
+  return openAforaStateDatabase({
+    env: stateDir ? { ...process.env, AFORA_STATE_DIR: stateDir } : process.env,
   });
 }
 
@@ -64,7 +64,7 @@ export async function setVoiceWakeTriggers(
 ): Promise<VoiceWakeConfig> {
   const sanitized = sanitizeTriggers(triggers);
   const updatedAtMs = Date.now();
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       const voicewakeDb = getNodeSqliteKysely<VoiceWakeDatabase>(db);
       executeSqliteQuerySync(
@@ -83,7 +83,7 @@ export async function setVoiceWakeTriggers(
         ),
       );
     },
-    baseDir ? { env: { ...process.env, OPENCLAW_STATE_DIR: baseDir } } : {},
+    baseDir ? { env: { ...process.env, AFORA_STATE_DIR: baseDir } } : {},
   );
   return {
     triggers: sanitized,

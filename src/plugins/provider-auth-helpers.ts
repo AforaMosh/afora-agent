@@ -1,7 +1,7 @@
 // Builds provider auth credentials from config and plugin metadata.
 import fs from "node:fs";
 import path from "node:path";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { resolveDefaultAgentDir } from "../agents/agent-scope-config.js";
 import { buildAuthProfileId } from "../agents/auth-profiles/identity.js";
 import {
@@ -11,7 +11,7 @@ import {
 } from "../agents/auth-profiles/profiles.js";
 import { resolveProviderIdForAuth } from "../agents/provider-auth-aliases.js";
 import { resolveStateDir } from "../config/paths.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   coerceSecretRef,
   DEFAULT_SECRET_PROVIDER_ALIAS,
@@ -26,12 +26,12 @@ import { isValidSecretRef } from "../secrets/ref-contract.js";
 import { normalizeSecretInput } from "../utils/normalize-secret-input.js";
 import type { SecretInputMode } from "./provider-auth-types.js";
 
-const resolveAuthAgentDir = (agentDir?: string, config?: OpenClawConfig) =>
+const resolveAuthAgentDir = (agentDir?: string, config?: AforaConfig) =>
   agentDir ?? resolveDefaultAgentDir(config ?? {});
 
 export type ApiKeyStorageOptions = {
   secretInputMode?: SecretInputMode;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 };
 
 export type WriteOAuthCredentialsOptions = {
@@ -44,7 +44,7 @@ function buildEnvSecretRef(id: string): SecretRef {
   return { source: "env", provider: DEFAULT_SECRET_PROVIDER_ALIAS, id };
 }
 
-function resolveProviderDefaultEnvSecretRef(provider: string, config?: OpenClawConfig): SecretRef {
+function resolveProviderDefaultEnvSecretRef(provider: string, config?: AforaConfig): SecretRef {
   const envVars = getProviderEnvVars(provider, {
     ...(config ? { config } : {}),
     includeUntrustedWorkspacePlugins: false,
@@ -143,7 +143,7 @@ export function upsertApiKeyProfile(params: {
 }
 
 export function applyAuthProfileConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   params: {
     profileId: string;
     provider: string;
@@ -152,7 +152,7 @@ export function applyAuthProfileConfig(
     displayName?: string;
     preferProfileFirst?: boolean;
   },
-): OpenClawConfig {
+): AforaConfig {
   const normalizedProvider = resolveProviderIdForAuth(params.provider, { config: cfg });
   const profiles = {
     ...cfg.auth?.profiles,
@@ -234,7 +234,7 @@ export function applyAuthProfileConfig(
 }
 
 /** Returns true when config still names a removed auth profile. */
-export function configReferencesAuthProfile(cfg: OpenClawConfig, profileId: string): boolean {
+export function configReferencesAuthProfile(cfg: AforaConfig, profileId: string): boolean {
   return (
     Boolean(cfg.auth?.profiles?.[profileId]) ||
     Object.values(cfg.auth?.order ?? {}).some((order) => order.includes(profileId))
@@ -247,7 +247,7 @@ export function configReferencesAuthProfile(cfg: OpenClawConfig, profileId: stri
  * deleted rather than left as `[]`, because an authored empty order is a hard
  * "select no profiles" instruction and would disable the provider entirely.
  */
-export function removeAuthProfileConfig(cfg: OpenClawConfig, profileId: string): OpenClawConfig {
+export function removeAuthProfileConfig(cfg: AforaConfig, profileId: string): AforaConfig {
   if (!configReferencesAuthProfile(cfg, profileId)) {
     return cfg;
   }

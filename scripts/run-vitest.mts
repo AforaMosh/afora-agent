@@ -59,8 +59,8 @@ export const DEFAULT_VITEST_NO_OUTPUT_HEARTBEAT_MS = 30_000;
 export const DEFAULT_LONG_RUNNING_VITEST_NO_OUTPUT_TIMEOUT_MS = 300_000;
 /** Extra-long watchdog timeout for broad configs that can stay silent on macOS. */
 export const DEFAULT_EXTRA_LONG_RUNNING_VITEST_NO_OUTPUT_TIMEOUT_MS = 2_400_000;
-const VITEST_NO_OUTPUT_TIMEOUT_ENV_KEY = "OPENCLAW_VITEST_NO_OUTPUT_TIMEOUT_MS";
-const VITEST_NO_OUTPUT_HEARTBEAT_ENV_KEY = "OPENCLAW_VITEST_NO_OUTPUT_HEARTBEAT_MS";
+const VITEST_NO_OUTPUT_TIMEOUT_ENV_KEY = "AFORA_VITEST_NO_OUTPUT_TIMEOUT_MS";
+const VITEST_NO_OUTPUT_HEARTBEAT_ENV_KEY = "AFORA_VITEST_NO_OUTPUT_HEARTBEAT_MS";
 const UI_VITEST_CONFIG = "test/vitest/vitest.ui.config.ts";
 const TOOLING_DOCKER_VITEST_CONFIG = "test/vitest/vitest.tooling-docker.config.ts";
 const TOOLING_VITEST_CONFIG = "test/vitest/vitest.tooling.config.ts";
@@ -187,7 +187,7 @@ function parsePositiveInt(value: string | undefined): number | null {
  * Resolves default Node flags for Vitest, including the local Maglev opt-in.
  */
 export function resolveVitestNodeArgs(env: NodeJS.ProcessEnv = process.env): string[] {
-  if (parsePermissiveBooleanToken(env.OPENCLAW_VITEST_ENABLE_MAGLEV) === true) {
+  if (parsePermissiveBooleanToken(env.AFORA_VITEST_ENABLE_MAGLEV) === true) {
     return [];
   }
 
@@ -367,7 +367,7 @@ export function resolveVitestCliEntry({
       const wrappedError: NodeJS.ErrnoException = new Error(
         resolveMissingVitestDependencyMessage(baseDir, fsImpl),
       );
-      wrappedError.code = "OPENCLAW_MISSING_VITEST";
+      wrappedError.code = "AFORA_MISSING_VITEST";
       throw wrappedError;
     }
     throw error;
@@ -1338,7 +1338,7 @@ async function main(
   try {
     vitestCliEntry = resolveVitestCliEntry();
   } catch (error) {
-    if (isErrorWithCode(error, "OPENCLAW_MISSING_VITEST")) {
+    if (isErrorWithCode(error, "AFORA_MISSING_VITEST")) {
       console.error(error.message);
       process.exitCode = 1;
       return;

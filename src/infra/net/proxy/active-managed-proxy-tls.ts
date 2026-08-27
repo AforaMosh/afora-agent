@@ -1,4 +1,4 @@
-// Resolves OpenClaw-managed proxy TLS trust for non-Undici transports.
+// Resolves Afora-managed proxy TLS trust for non-Undici transports.
 import { resolveEnvHttpProxyUrl } from "../proxy-env.js";
 import { getActiveManagedProxyTlsOptions, getActiveManagedProxyUrl } from "./active-proxy-state.js";
 import {
@@ -14,7 +14,7 @@ type ResolveActiveManagedProxyTlsOptionsParams = {
   env?: ManagedProxyTlsEnv;
 };
 
-const MANAGED_PROXY_ENV_PREFIX = ["OPENCLAW", "PROXY"].join("_");
+const MANAGED_PROXY_ENV_PREFIX = ["AFORA", "PROXY"].join("_");
 const MANAGED_PROXY_ACTIVE_ENV_KEY = `${MANAGED_PROXY_ENV_PREFIX}_ACTIVE`;
 const MANAGED_PROXY_CA_FILE_ENV_KEY = `${MANAGED_PROXY_ENV_PREFIX}_CA_FILE`;
 
@@ -42,7 +42,7 @@ function resolveManagedProxyUrl(env: ManagedProxyTlsEnv = process.env): string |
   return normalizeProxyUrl(resolveEnvHttpProxyUrl("https", env));
 }
 
-/** Resolves managed proxy TLS trust only when the target proxy is OpenClaw's active proxy. */
+/** Resolves managed proxy TLS trust only when the target proxy is Afora's active proxy. */
 export function resolveActiveManagedProxyTlsOptions(
   params?: ResolveActiveManagedProxyTlsOptionsParams,
 ): ManagedProxyTlsOptions | undefined {

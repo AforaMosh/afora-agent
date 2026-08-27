@@ -6,7 +6,7 @@ import {
   isFutureDateTimestampMs,
   resolveDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import { sha256Base64Url } from "../infra/crypto-digest.js";
 import { resolveGlobalMap } from "../shared/global-singleton.js";
 import { recordTalkObservabilityEvent } from "../talk/observability.js";
@@ -85,7 +85,7 @@ type TalkHandoffRoomState = {
 };
 
 const handoffs = resolveGlobalMap<string, TalkHandoffRecord>(
-  Symbol.for("openclaw.talkHandoffs"),
+  Symbol.for("afora.talkHandoffs"),
   "close-and-restart",
 );
 

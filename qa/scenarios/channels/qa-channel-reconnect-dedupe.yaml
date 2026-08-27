@@ -28,8 +28,8 @@ scenario:
     summary: Verify qa-channel Gateway restart recovery does not replay consumed messages.
     channel: qa-channel
     config:
-      firstPrompt: "@openclaw Reconnect dedupe setup marker. Reply exactly: RECONNECT-FIRST-OK"
-      secondPrompt: "@openclaw Reconnect dedupe follow-up marker. Reply exactly: RECONNECT-SECOND-OK"
+      firstPrompt: "@afora Reconnect dedupe setup marker. Reply exactly: RECONNECT-FIRST-OK"
+      secondPrompt: "@afora Reconnect dedupe follow-up marker. Reply exactly: RECONNECT-SECOND-OK"
       firstMarker: RECONNECT-FIRST-OK
       secondMarker: RECONNECT-SECOND-OK
 

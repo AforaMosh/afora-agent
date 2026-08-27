@@ -38,19 +38,19 @@ export function pullListItem(overrides: Record<string, unknown> = {}): Record<st
   return {
     number: 103469,
     title: "fix(macos): tighten the link-browser tab header",
-    html_url: "https://github.com/openclaw/openclaw/pull/103469",
+    html_url: "https://github.com/AforaMosh/afora-agent/pull/103469",
     state: "open",
     draft: false,
     merged_at: null,
     head: { sha: "a".repeat(40) },
-    base: { ref: "main", repo: { name: "openclaw", owner: { login: "openclaw" } } },
+    base: { ref: "main", repo: { name: "afora", owner: { login: "afora" } } },
     ...overrides,
   };
 }
 
 export const testGitContext: GitContext = {
-  owner: "openclaw",
-  repo: "openclaw",
+  owner: "afora",
+  repo: "afora",
   branch: "claude/browser-tabs-tighter-header",
 };
 

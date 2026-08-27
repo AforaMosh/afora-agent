@@ -2,10 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { trackSqliteStatementExecutions } from "../../../test/helpers/sqlite-statement-execution-counter.js";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import {
   deliveryContextFromSession,
   normalizeSessionDeliveryState,
@@ -36,12 +36,12 @@ const sourceExpectedState = {
 
 afterEach(() => {
   vi.restoreAllMocks();
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 function trackFullTranscriptLoads(env: NodeJS.ProcessEnv): () => number {
-  const database = openOpenClawAgentDatabase({ agentId, env });
+  const database = openAforaAgentDatabase({ agentId, env });
   const { counts } = trackSqliteStatementExecutions(database.db, ["loads"], (sqlText) =>
     sqlText.includes('select "event_json" from "transcript_events"') &&
     sqlText.includes('order by "seq" asc')
@@ -75,8 +75,8 @@ async function createSiblingSession(params: {
 }
 
 async function createSession(options: { activeLeafTarget?: string } = {}) {
-  const stateDir = tempDirs.make("openclaw-message-cut-");
-  const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+  const stateDir = tempDirs.make("afora-message-cut-");
+  const env = { ...process.env, AFORA_STATE_DIR: stateDir };
   const sessionId = "message-cut-source";
   const scope = { agentId, env, sessionId, sessionKey };
   const entry: InternalSessionEntry = {
@@ -129,7 +129,7 @@ async function createSession(options: { activeLeafTarget?: string } = {}) {
           { type: "text", text: "second prompt" },
           { type: "image", data: "aW1hZ2U=", mimeType: "image/png" },
         ],
-        __openclaw: {
+        __afora: {
           media: [
             { path: "/state/media/inbound/stored-image.png", contentType: "image/png" },
             { path: "/state/media/inbound/notes.txt", contentType: "text/plain" },

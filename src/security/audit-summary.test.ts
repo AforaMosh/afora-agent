@@ -1,6 +1,6 @@
 // Verifies security audit summary formatting and severity counts.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { collectAttackSurfaceSummaryFindings } from "./audit-extra.summary.js";
 
 function requireAttackSurfaceSummary(
@@ -17,7 +17,7 @@ function requireAttackSurfaceSummary(
 
 describe("security audit attack surface summary", () => {
   it("includes an attack surface summary (info)", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: { whatsapp: { groupPolicy: "open" }, telegram: { groupPolicy: "allowlist" } },
       tools: { elevated: { enabled: true, allowFrom: { whatsapp: ["+1"] } } },
       hooks: { enabled: true },
@@ -34,7 +34,7 @@ describe("security audit attack surface summary", () => {
         "hooks.webhooks: enabled",
         "hooks.internal: disabled",
         "browser control: enabled",
-        "trust model: personal assistant (one trusted operator boundary), not hostile multi-tenant on one shared gateway. For multiple users or organizations, run one isolated Gateway cell per tenant: https://docs.openclaw.ai/gateway/multi-tenant-hosting",
+        "trust model: personal assistant (one trusted operator boundary), not hostile multi-tenant on one shared gateway. For multiple users or organizations, run one isolated Gateway cell per tenant: https://docs.afora.ai/gateway/multi-tenant-hosting",
       ].join("\n"),
     );
   });
@@ -44,7 +44,7 @@ describe("security audit attack surface summary", () => {
       name: "restrictive plugin allowlist excludes browser and no browser config is present",
       cfg: {
         plugins: { allow: ["openai"] },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       expected: "browser control: disabled",
     },
     {
@@ -52,14 +52,14 @@ describe("security audit attack surface summary", () => {
       cfg: {
         browser: { enabled: true },
         plugins: { allow: ["openai"] },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       expected: "browser control: disabled",
     },
     {
       name: "plugin ids use the same case-insensitive canonical form as startup",
       cfg: {
         plugins: { allow: ["Browser"] },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       expected: "browser control: enabled",
     },
     {
@@ -67,7 +67,7 @@ describe("security audit attack surface summary", () => {
       cfg: {
         browser: { enabled: true },
         plugins: { allow: ["browser"], deny: ["browser"] },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       expected: "browser control: disabled",
     },
     {
@@ -75,7 +75,7 @@ describe("security audit attack surface summary", () => {
       cfg: {
         browser: { enabled: true },
         plugins: { allow: ["browser"], entries: { browser: { enabled: false } } },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       expected: "browser control: disabled",
     },
     {
@@ -83,14 +83,14 @@ describe("security audit attack surface summary", () => {
       cfg: {
         browser: { enabled: false },
         plugins: { allow: ["browser"] },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       expected: "browser control: disabled",
     },
     {
       name: "case-normalized plugin deny policy disables browser control",
       cfg: {
         plugins: { deny: ["BROWSER"] },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       expected: "browser control: disabled",
     },
   ])("reports browser control from effective plugin policy: $name", ({ cfg, expected }) => {

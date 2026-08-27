@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { AforaConfig } from "../../../config/config.js";
 import { replaceTranscriptEvents } from "../../../config/sessions/session-accessor.js";
 import {
   isGatewaySubordinateWorkAdmissionClosed,
@@ -26,7 +26,7 @@ afterEach(async () => {
 
 describe("session-memory gateway admission", () => {
   it("keeps detached manual-reset slug generation admitted after the request returns", async () => {
-    const tempDir = tempDirs.make("openclaw-session-memory-admission-");
+    const tempDir = tempDirs.make("afora-session-memory-admission-");
     const sessionId = "manual-reset-session";
     const sessionKey = "agent:main:main";
     const storePath = path.join(tempDir, "sessions.json");
@@ -40,7 +40,7 @@ describe("session-memory gateway admission", () => {
         },
       },
       session: { store: storePath },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     await replaceTranscriptEvents({ agentId: "main", sessionId, sessionKey, storePath }, [
       {
         type: "message",
@@ -70,7 +70,7 @@ describe("session-memory gateway admission", () => {
     await withEnvAsync(
       {
         NODE_ENV: "production",
-        OPENCLAW_TEST_FAST: undefined,
+        AFORA_TEST_FAST: undefined,
         VITEST: undefined,
         VITEST_POOL_ID: undefined,
         VITEST_WORKER_ID: undefined,

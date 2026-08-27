@@ -1,7 +1,7 @@
 // Vydra plugin module implements shared behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { extensionForMime, type MediaKind } from "openclaw/plugin-sdk/media-mime";
-import { resolveApiKeyForProvider } from "openclaw/plugin-sdk/provider-auth-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { extensionForMime, type MediaKind } from "afora-agent/plugin-sdk/media-mime";
+import { resolveApiKeyForProvider } from "afora-agent/plugin-sdk/provider-auth-runtime";
 import {
   assertOkOrThrowHttpError,
   createProviderOperationDeadline,
@@ -12,14 +12,14 @@ import {
   sanitizeConfiguredModelProviderRequest,
   type ProviderOperationDeadline,
   type ProviderOperationTimeoutMs,
-} from "openclaw/plugin-sdk/provider-http";
-import { readResponseWithLimit } from "openclaw/plugin-sdk/response-limit-runtime";
-import type { SsrFPolicy } from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/provider-http";
+import { readResponseWithLimit } from "afora-agent/plugin-sdk/response-limit-runtime";
+import type { SsrFPolicy } from "afora-agent/plugin-sdk/ssrf-runtime";
 import {
   asOptionalRecord,
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export const DEFAULT_VYDRA_BASE_URL = "https://www.vydra.ai/api/v1";
 export const DEFAULT_VYDRA_IMAGE_MODEL = "grok-imagine";
@@ -95,7 +95,7 @@ function resolveVydraBaseUrlFromConfig(cfg: unknown): string {
 }
 
 export async function resolveVydraRequestContext(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentDir?: string;
   authStore?: VydraAuthStore;
   capability: "image" | "video";

@@ -1,10 +1,10 @@
 // Byteplus tests cover live plugin behavior.
-import { completeSimple, type Model } from "openclaw/plugin-sdk/llm";
+import { completeSimple, type Model } from "afora-agent/plugin-sdk/llm";
 import {
   createSingleUserPromptMessage,
   extractNonEmptyAssistantText,
   isLiveTestEnabled,
-} from "openclaw/plugin-sdk/test-live";
+} from "afora-agent/plugin-sdk/test-live";
 import { describe, expect, it } from "vitest";
 import { BYTEPLUS_CODING_BASE_URL } from "./models.js";
 

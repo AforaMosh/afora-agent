@@ -3,19 +3,19 @@ import path from "node:path";
 import type {
   AgentHarnessAttemptParamsV2,
   EmbeddedContextFile,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   resolveBootstrapContextForRun,
   resolveUserPath,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { readNonBlankString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { readNonBlankString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 // Filenames the Copilot SDK already loads natively from the working
 // directory / instructionDirectories (per
 // `@github/copilot-sdk/dist/types.d.ts:1036,1155` —
 // "custom instruction files (.github/copilot-instructions.md,
 // AGENTS.md, etc.) are always loaded from the working directory").
-// Filtering them out of the OpenClaw bootstrap injection avoids
+// Filtering them out of the Afora bootstrap injection avoids
 // duplicating their content into `SessionConfig.systemMessage`, which
 // would otherwise inflate every prompt with the same text the SDK
 // already includes. Mirrors codex's CODEX_NATIVE_PROJECT_DOC_BASENAMES
@@ -42,7 +42,7 @@ type CopilotWorkspaceBootstrapResult = {
 };
 
 /**
- * Loads OpenClaw workspace bootstrap files (IDENTITY.md, SOUL.md,
+ * Loads Afora workspace bootstrap files (IDENTITY.md, SOUL.md,
  * HEARTBEAT.md, USER.md, BOOTSTRAP.md, MEMORY.md, ...) using
  * the shared core helper PI and codex both use, then renders them as a
  * single string suitable for `SessionConfig.systemMessage.content` on
@@ -98,7 +98,7 @@ export async function resolveCopilotWorkspaceBootstrapContext(params: {
     });
     // Remap context-file paths from the workspace we LOADED them
     // from (`workspaceDir`, the canonical host workspace where
-    // SOUL.md / IDENTITY.md / .openclaw conventions live) onto the
+    // SOUL.md / IDENTITY.md / .afora conventions live) onto the
     // workspace the SDK session will actually OPERATE in
     // (`effectiveWorkspaceDir`). When the two are identical (no
     // sandbox, or sandbox `rw`), remap is a no-op. The render below
@@ -192,7 +192,7 @@ function renderCopilotWorkspaceBootstrapInstructions(
   }
   const hasSoulFile = files.some((file) => getCopilotContextFileBasename(file.path) === "soul.md");
   const lines: string[] = [
-    "OpenClaw loaded these user-editable workspace files. Treat them as project/user context. The Copilot SDK loads AGENTS.md natively from its instruction directories, so AGENTS.md is not repeated here.",
+    "Afora loaded these user-editable workspace files. Treat them as project/user context. The Copilot SDK loads AGENTS.md natively from its instruction directories, so AGENTS.md is not repeated here.",
     "",
     "# Project Context",
     "",

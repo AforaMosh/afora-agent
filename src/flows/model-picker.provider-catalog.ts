@@ -1,16 +1,16 @@
 // Model picker provider choices projected from the lifecycle-owned catalog.
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import { resolveDefaultAgentDir } from "../agents/agent-scope.js";
 import {
   canonicalizePreparedModelCatalogProvider,
   type ModelCatalogEntry,
 } from "../agents/model-catalog.js";
 import { loadPreparedModelCatalogOwnerSnapshot } from "../agents/prepared-model-catalog.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 /** Loads committed catalog models for the user's preferred provider. */
 export async function loadPreferredProviderPickerCatalog(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   preferredProvider: string;
   agentDir?: string;
   workspaceDir?: string;

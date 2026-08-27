@@ -229,7 +229,7 @@ describe("createComputerTool v2 execution", () => {
     ];
     listNodesMock.mockResolvedValue([macComputerNode({ computerUse: v2Descriptor(actions) })]);
     const tool = createVisionComputerTool({ registerRunCleanup: () => {} });
-    const resourceHandle = "openclaw:computer-resource:v1:123e4567-e89b-42d3-a456-426614174000";
+    const resourceHandle = "afora:computer-resource:v1:123e4567-e89b-42d3-a456-426614174000";
 
     await tool.execute("record", { action: "start_recording", recordVideo: true });
     expect(readLastComputerActParams()).toEqual({ action: "start_recording", recordVideo: true });

@@ -14,16 +14,16 @@ type WebKitNotificationsMessageHandler = {
 };
 
 type NativeNotificationsWindow = Window & {
-  __OPENCLAW_NATIVE_NOTIFICATIONS__?: unknown;
+  __AFORA_NATIVE_NOTIFICATIONS__?: unknown;
   webkit?: {
     messageHandlers?: {
-      openclawNotifications?: WebKitNotificationsMessageHandler;
+      aforaNotifications?: WebKitNotificationsMessageHandler;
     };
   };
 };
 
 // Wire contract with the Mac app's dashboard bridge (DashboardWindowController+Notifications.swift).
-const NATIVE_NOTIFICATIONS_STATUS_EVENT = "openclaw:native-notifications-status";
+const NATIVE_NOTIFICATIONS_STATUS_EVENT = "afora:native-notifications-status";
 
 export type NativeNotificationsCapability = {
   readonly snapshot: NativeNotificationsSnapshot;
@@ -53,7 +53,7 @@ function getNativeNotificationsPoster():
     return undefined;
   }
   const handler = (window as NativeNotificationsWindow).webkit?.messageHandlers
-    ?.openclawNotifications;
+    ?.aforaNotifications;
   return handler?.postMessage.bind(handler);
 }
 
@@ -64,7 +64,7 @@ export function createNativeNotificationsCapability(): NativeNotificationsCapabi
   }
 
   const nativeWindow = window as NativeNotificationsWindow;
-  let snapshot = snapshotFrom(nativeWindow["__OPENCLAW_NATIVE_NOTIFICATIONS__"]) ?? {
+  let snapshot = snapshotFrom(nativeWindow["__AFORA_NATIVE_NOTIFICATIONS__"]) ?? {
     permission: "unknown" as const,
   };
   const listeners = new Set<(snapshot: NativeNotificationsSnapshot) => void>();

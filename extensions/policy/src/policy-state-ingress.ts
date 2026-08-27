@@ -4,7 +4,7 @@ import {
   isRecord,
   asBoolean as readBoolean,
   normalizeOptionalString as readString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { configuredChannels } from "./policy-state-core.js";
 import { ocPathSegment } from "./policy-state-helpers.js";
 import { IMPLICIT_DEFAULT_ACCOUNT_FIELDS } from "./policy-state-tool-posture.js";
@@ -28,14 +28,14 @@ export function scanPolicyIngress(cfg: Record<string, unknown>): readonly Policy
   const channels = configuredChannels(cfg);
   const channelDefaults = asNonArrayRecord(channels.defaults);
   const inheritedChannelDefaults = pickSupportedIngressDefaults(channelDefaults);
-  const channelDefaultsSource = "oc://openclaw.config/channels/defaults";
+  const channelDefaultsSource = "oc://afora.config/channels/defaults";
   const entries: PolicyIngressEvidence[] = [];
   const session = asNonArrayRecord(cfg.session);
   const dmScope = readString(session.dmScope)?.toLowerCase();
   entries.push({
     id: "session-dm-scope",
     kind: "sessionDmScope",
-    source: "oc://openclaw.config/session/dmScope",
+    source: "oc://afora.config/session/dmScope",
     value: dmScope ?? "main",
     explicit: dmScope !== undefined,
   });
@@ -44,7 +44,7 @@ export function scanPolicyIngress(cfg: Record<string, unknown>): readonly Policy
     if (RESERVED_CHANNEL_CONFIG_KEYS.has(channel) || !isRecord(value) || value.enabled === false) {
       continue;
     }
-    const channelSource = `oc://openclaw.config/channels/${ocPathSegment(channel)}`;
+    const channelSource = `oc://afora.config/channels/${ocPathSegment(channel)}`;
     const accounts = asNonArrayRecord(value.accounts);
     const configuredAccounts = Object.entries(accounts).filter(
       (entry): entry is [string, Record<string, unknown>] => isRecord(entry[1]),

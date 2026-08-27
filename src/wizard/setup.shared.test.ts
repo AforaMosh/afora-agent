@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ConfigFileSnapshot, OpenClawConfig } from "../config/types.openclaw.js";
+import type { ConfigFileSnapshot, AforaConfig } from "../config/types.afora.js";
 
 const mocks = vi.hoisted(() => ({
-  currentConfig: {} as OpenClawConfig,
+  currentConfig: {} as AforaConfig,
   transformConfigWithPendingPluginInstalls: vi.fn(),
 }));
 
@@ -14,7 +14,7 @@ vi.mock("../plugins/install-record-commit.js", async (importOriginal) => ({
 import { resolveQuickstartGatewayDefaults, writeWizardConfigFile } from "./setup.shared.js";
 
 describe("resolveQuickstartGatewayDefaults", () => {
-  const storedConfig: OpenClawConfig = {
+  const storedConfig: AforaConfig = {
     gateway: {
       port: 19111,
       bind: "custom",
@@ -94,14 +94,14 @@ describe("resolveQuickstartGatewayDefaults", () => {
   it("maps an explicit env-backed token to the canonical SecretRef", () => {
     expect(
       resolveQuickstartGatewayDefaults(storedConfig, {
-        gatewayTokenRefEnv: " OPENCLAW_GATEWAY_TOKEN ",
+        gatewayTokenRefEnv: " AFORA_GATEWAY_TOKEN ",
       }),
     ).toMatchObject({
       authMode: "token",
       token: {
         source: "env",
         provider: "default",
-        id: "OPENCLAW_GATEWAY_TOKEN",
+        id: "AFORA_GATEWAY_TOKEN",
       },
     });
   });
@@ -113,14 +113,14 @@ describe("writeWizardConfigFile", () => {
     mocks.currentConfig = {};
     mocks.transformConfigWithPendingPluginInstalls.mockImplementation(
       async (params: {
-        transform: (current: OpenClawConfig) => { nextConfig: OpenClawConfig };
+        transform: (current: AforaConfig) => { nextConfig: AforaConfig };
       }) => ({ nextConfig: params.transform(mocks.currentConfig).nextConfig }),
     );
   });
 
   it("delegates CAS and pending-install ownership to the canonical transform", async () => {
-    const config: OpenClawConfig = { gateway: { port: 18789 } };
-    const baseSnapshot = { path: "/tmp/openclaw.json", exists: false } as ConfigFileSnapshot;
+    const config: AforaConfig = { gateway: { port: 18789 } };
+    const baseSnapshot = { path: "/tmp/afora.json", exists: false } as ConfigFileSnapshot;
     const afterWrite = { mode: "none" as const, reason: "restart after setup" };
 
     await writeWizardConfigFile(config, {
@@ -140,7 +140,7 @@ describe("writeWizardConfigFile", () => {
   });
 
   it("replaces config directly when no merge base is supplied", async () => {
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       plugins: { installs: { fresh: { source: "npm", spec: "fresh@1.0.0" } } },
     };
     mocks.currentConfig = { gateway: { port: 19001 } };
@@ -149,11 +149,11 @@ describe("writeWizardConfigFile", () => {
   });
 
   it("applies only the wizard delta to a fresh concurrent config", async () => {
-    const base: OpenClawConfig = {
+    const base: AforaConfig = {
       agents: { defaults: { workspace: "/old" } },
       gateway: { port: 18789 },
     };
-    const next: OpenClawConfig = {
+    const next: AforaConfig = {
       agents: { defaults: { workspace: "/old" } },
       gateway: { port: 19001 },
     };

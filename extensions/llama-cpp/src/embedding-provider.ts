@@ -4,9 +4,9 @@ import {
   type EmbeddingProvider,
   type EmbeddingProviderAdapter,
   type EmbeddingProviderCreateOptions,
-} from "openclaw/plugin-sdk/embedding-providers";
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-shared";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/embedding-providers";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-model-shared";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   DEFAULT_LLAMA_CPP_EMBEDDING_CACHE_FILE,
   DEFAULT_LLAMA_CPP_EMBEDDING_MODEL,
@@ -31,7 +31,7 @@ type LlamaCppLocalOptions = {
   modelCacheDir?: string;
 };
 
-const LOCAL_EMBEDDING_RUNTIME_FACTS = Symbol.for("openclaw.localEmbeddingRuntimeFacts");
+const LOCAL_EMBEDDING_RUNTIME_FACTS = Symbol.for("afora.localEmbeddingRuntimeFacts");
 const preparedEmbeddingServers = new Map<string, Promise<void>>();
 
 type LlamaCppModelIdentity = {
@@ -216,7 +216,7 @@ export const llamaCppEmbeddingProviderAdapter: EmbeddingProviderAdapter = {
   defaultModel: DEFAULT_LLAMA_CPP_EMBEDDING_MODEL,
   transport: "local",
   formatSetupError: (error) =>
-    `Managed local embeddings are unavailable. Run \`openclaw configure\`, choose llama.cpp, and retry. ${error instanceof Error ? error.message : String(error)}`,
+    `Managed local embeddings are unavailable. Run \`afora configure\`, choose llama.cpp, and retry. ${error instanceof Error ? error.message : String(error)}`,
   resolveIndexIdentity: (options) => {
     const local = readLocalOptions(options);
     const modelPath = normalizeOptionalString(local.modelPath) ?? DEFAULT_LLAMA_CPP_EMBEDDING_MODEL;

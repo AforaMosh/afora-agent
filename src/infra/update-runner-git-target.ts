@@ -1,14 +1,14 @@
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 import {
-  parsePackageOpenClawSchemaVersions,
-  type OpenClawSchemaVersions,
-} from "../state/openclaw-schema-versions.js";
+  parsePackageAforaSchemaVersions,
+  type AforaSchemaVersions,
+} from "../state/afora-schema-versions.js";
 import { isBetaTag, isStableTag, type UpdateChannel } from "./update-channels.js";
 import { compareSemverStrings } from "./update-check.js";
 import type { CommandRunner, UpdateRunnerOptions } from "./update-runner-types.js";
 
 type GitTargetSchemaMetadata =
-  | { status: "ok"; schemaVersions?: OpenClawSchemaVersions }
+  | { status: "ok"; schemaVersions?: AforaSchemaVersions }
   | { status: "unreadable"; reason: string };
 
 async function readGitTargetSchemaVersions(params: {
@@ -33,7 +33,7 @@ async function readGitTargetSchemaVersions(params: {
     };
   }
   try {
-    const schemaVersions = parsePackageOpenClawSchemaVersions(JSON.parse(result.stdout) as unknown);
+    const schemaVersions = parsePackageAforaSchemaVersions(JSON.parse(result.stdout) as unknown);
     return { status: "ok", ...(schemaVersions ? { schemaVersions } : {}) };
   } catch (error) {
     return { status: "unreadable", reason: `target package.json unparseable: ${String(error)}` };

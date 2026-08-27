@@ -2,16 +2,16 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import { expectDefined } from "@afora/normalization-core";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   createPluginStateKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import type {
   OpenKeyedStoreOptions,
   PluginDoctorStateMigrationContext,
-} from "openclaw/plugin-sdk/runtime-doctor-migrations";
+} from "afora-agent/plugin-sdk/runtime-doctor-migrations";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   legacyConfigRules,
@@ -30,15 +30,15 @@ import {
 } from "./src/state.js";
 
 describe("acpx doctor config repair", () => {
-  it("flags both retired config keys for openclaw doctor --fix", () => {
+  it("flags both retired config keys for afora doctor --fix", () => {
     expect(legacyConfigRules).toEqual([
       expect.objectContaining({
         path: ["plugins", "entries", "acpx", "config", "strictWindowsCmdWrapper"],
-        message: expect.stringContaining("openclaw doctor --fix"),
+        message: expect.stringContaining("afora doctor --fix"),
       }),
       expect.objectContaining({
         path: ["plugins", "entries", "acpx", "config", "queueOwnerTtlSeconds"],
-        message: expect.stringContaining("openclaw doctor --fix"),
+        message: expect.stringContaining("afora doctor --fix"),
       }),
     ]);
   });
@@ -57,7 +57,7 @@ describe("acpx doctor config repair", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = normalizeCompatibilityConfig({ cfg: config });
 
@@ -100,8 +100,8 @@ describe("acpx doctor state migration", () => {
 
   beforeEach(async () => {
     resetPluginStateStoreForTests();
-    stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-acpx-doctor-"));
-    env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-acpx-doctor-"));
+    env = { ...process.env, AFORA_STATE_DIR: stateDir };
   });
 
   afterEach(async () => {

@@ -6,7 +6,7 @@ import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import { resolveSessionStorePathCore } from "../config/sessions/paths.js";
 import { listSessionEntriesReadOnly } from "../config/sessions/session-accessor.js";
 import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/session-sqlite-target.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { listGatewayAgentsBasic, type GatewayAgentOwnership } from "../gateway/agent-list.js";
 import { pathExists } from "../infra/fs-safe.js";
 
@@ -32,7 +32,7 @@ type AgentLocalStatusesResult = {
 
 /** Returns per-agent local workspace, bootstrap, session count, and last activity status. */
 export async function getAgentLocalStatuses(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): Promise<AgentLocalStatusesResult> {
   const agentList = listGatewayAgentsBasic(cfg);
   const now = Date.now();

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-openclaw_node_version_matches() {
+afora_node_version_matches() {
   local actual="$1"
   local requested="$2"
   if [[ -z "$requested" ]]; then
@@ -10,11 +10,11 @@ openclaw_node_version_matches() {
     *x)
       [[ "${actual%%.*}" == "${requested%%.*}" ]] || return 1
       if [[ "${requested%%.*}" == "22" ]]; then
-        openclaw_node_version_at_least "$actual" "22.22.3"
+        afora_node_version_at_least "$actual" "22.22.3"
       elif [[ "${requested%%.*}" == "24" ]]; then
-        openclaw_node_version_at_least "$actual" "24.15.0"
+        afora_node_version_at_least "$actual" "24.15.0"
       elif [[ "${requested%%.*}" == "25" ]]; then
-        openclaw_node_version_at_least "$actual" "25.9.0"
+        afora_node_version_at_least "$actual" "25.9.0"
       fi
       ;;
     *.*.*)
@@ -29,7 +29,7 @@ openclaw_node_version_matches() {
   esac
 }
 
-openclaw_node_version_at_least() {
+afora_node_version_at_least() {
   local actual="$1"
   local minimum="$2"
   local actual_major actual_minor actual_patch minimum_major minimum_minor minimum_patch
@@ -51,11 +51,11 @@ openclaw_node_version_at_least() {
   (( actual_patch >= minimum_patch ))
 }
 
-openclaw_active_node_version() {
+afora_active_node_version() {
   node -p 'process.versions.node' 2>/dev/null || true
 }
 
-openclaw_prepend_node_bin() {
+afora_prepend_node_bin() {
   local node_bin_dir="$1"
   local github_path_dir="${2:-$node_bin_dir}"
   local shell_node_bin_dir="$node_bin_dir"
@@ -74,7 +74,7 @@ openclaw_prepend_node_bin() {
   hash -r
 }
 
-openclaw_find_toolcache_node() {
+afora_find_toolcache_node() {
   local requested_node="$1"
   local roots=()
   local root
@@ -82,11 +82,11 @@ openclaw_find_toolcache_node() {
   # predates our engines floor it is the only candidate that can satisfy the
   # request without a network round trip.
   for root in \
-    "${OPENCLAW_NODE_TOOLCHAIN_ROOT:-}" \
+    "${AFORA_NODE_TOOLCHAIN_ROOT:-}" \
     "${RUNNER_TOOL_CACHE:-}" \
     "${AGENT_TOOLSDIRECTORY:-}" \
     "${ACTIONS_RUNNER_TOOL_CACHE:-}" \
-    "${OPENCLAW_CONTAINER_TOOL_CACHE:-/__t}" \
+    "${AFORA_CONTAINER_TOOL_CACHE:-/__t}" \
     "/opt/hostedtoolcache" \
     "/home/runner/_work/_tool" \
     "/Users/runner/hostedtoolcache" \
@@ -106,7 +106,7 @@ openclaw_find_toolcache_node() {
   for node_root in ${roots[@]+"${roots[@]}"}; do
     while IFS= read -r candidate; do
       candidate_version="$("$candidate" -p 'process.versions.node' 2>/dev/null || true)"
-      if openclaw_node_version_matches "$candidate_version" "$requested_node"; then
+      if afora_node_version_matches "$candidate_version" "$requested_node"; then
         printf '%s\n' "$candidate"
         return 0
       fi
@@ -115,7 +115,7 @@ openclaw_find_toolcache_node() {
   return 1
 }
 
-openclaw_resolve_node_download_version() {
+afora_resolve_node_download_version() {
   local requested_node="$1"
   if [[ "$requested_node" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     [[ "$requested_node" == v* ]] && printf '%s\n' "$requested_node" || printf 'v%s\n' "$requested_node"
@@ -128,8 +128,8 @@ openclaw_resolve_node_download_version() {
   [[ "$prefix" == *. ]] || prefix="${prefix}."
   curl -fsSL --connect-timeout 10 --max-time 120 --retry 2 --retry-delay 2 \
     https://nodejs.org/dist/index.json |
-    OPENCLAW_NODE_PREFIX="$prefix" python3 -c 'import json, os, sys
-prefix = os.environ["OPENCLAW_NODE_PREFIX"]
+    AFORA_NODE_PREFIX="$prefix" python3 -c 'import json, os, sys
+prefix = os.environ["AFORA_NODE_PREFIX"]
 for item in json.load(sys.stdin):
     version = item.get("version", "")
     if version.startswith(prefix):
@@ -138,7 +138,7 @@ for item in json.load(sys.stdin):
 '
 }
 
-openclaw_node_download_platform() {
+afora_node_download_platform() {
   local os_name arch_name
   os_name="$(uname -s)"
   arch_name="$(uname -m)"
@@ -157,23 +157,23 @@ openclaw_node_download_platform() {
   esac
 }
 
-openclaw_download_node() {
+afora_download_node() {
   local requested_node="$1"
   local version platform archive_url archive_path install_root temp_root
-  version="$(openclaw_resolve_node_download_version "$requested_node")"
-  platform="$(openclaw_node_download_platform)" || return 1
+  version="$(afora_resolve_node_download_version "$requested_node")"
+  platform="$(afora_node_download_platform)" || return 1
   temp_root="${RUNNER_TEMP:-/tmp}"
   if command -v cygpath >/dev/null 2>&1; then
     temp_root="$(cygpath -u "$temp_root" 2>/dev/null || printf '%s\n' "$temp_root")"
   fi
-  install_root="${temp_root}/openclaw-node-${version}-${platform}"
+  install_root="${temp_root}/afora-node-${version}-${platform}"
   # Land inside the cached root when one is configured so the post-job save
   # publishes this download for the next run instead of repeating it. Clear the
   # root first: reaching here means any restored payload was rejected, and
   # keeping it would ride along in every future save and grow without bound.
-  if [[ -n "${OPENCLAW_NODE_TOOLCHAIN_ROOT:-}" ]]; then
-    rm -rf "${OPENCLAW_NODE_TOOLCHAIN_ROOT:?}"
-    install_root="${OPENCLAW_NODE_TOOLCHAIN_ROOT}/${version}-${platform}"
+  if [[ -n "${AFORA_NODE_TOOLCHAIN_ROOT:-}" ]]; then
+    rm -rf "${AFORA_NODE_TOOLCHAIN_ROOT:?}"
+    install_root="${AFORA_NODE_TOOLCHAIN_ROOT}/${version}-${platform}"
   fi
   if [[ "$platform" == win-* ]]; then
     local ps_archive_path ps_install_root ps_bin_dir node_bin_dir
@@ -194,13 +194,13 @@ openclaw_download_node() {
     node_bin_dir="$install_root/node-${version}-${platform}"
     if command -v pwsh >/dev/null 2>&1; then
       pwsh -NoLogo -NoProfile -Command "Expand-Archive -LiteralPath '${ps_archive_path}' -DestinationPath '${ps_install_root}' -Force"
-      openclaw_prepend_node_bin "$node_bin_dir" "$ps_bin_dir"
+      afora_prepend_node_bin "$node_bin_dir" "$ps_bin_dir"
     elif command -v powershell.exe >/dev/null 2>&1; then
       powershell.exe -NoLogo -NoProfile -Command "Expand-Archive -LiteralPath '${ps_archive_path}' -DestinationPath '${ps_install_root}' -Force"
-      openclaw_prepend_node_bin "$node_bin_dir" "$ps_bin_dir"
+      afora_prepend_node_bin "$node_bin_dir" "$ps_bin_dir"
     else
       unzip -q "$archive_path" -d "$install_root"
-      openclaw_prepend_node_bin "$node_bin_dir"
+      afora_prepend_node_bin "$node_bin_dir"
     fi
   else
     archive_url="https://nodejs.org/dist/${version}/node-${version}-${platform}.tar.xz"
@@ -218,11 +218,11 @@ openclaw_download_node() {
       return 1
     fi
     rm -f "$archive_path"
-    openclaw_prepend_node_bin "$install_root/bin"
+    afora_prepend_node_bin "$install_root/bin"
   fi
 }
 
-openclaw_ensure_node() {
+afora_ensure_node() {
   local requested_node="${1:-}"
   requested_node="${requested_node#v}"
   if [[ -z "$requested_node" ]]; then
@@ -230,22 +230,22 @@ openclaw_ensure_node() {
   fi
 
   local active_node_version node_bin
-  active_node_version="$(openclaw_active_node_version)"
-  if openclaw_node_version_matches "$active_node_version" "$requested_node"; then
+  active_node_version="$(afora_active_node_version)"
+  if afora_node_version_matches "$active_node_version" "$requested_node"; then
     echo "Using active Node ${active_node_version} at $(command -v node)"
     return 0
   fi
 
-  node_bin="$(openclaw_find_toolcache_node "$requested_node" || true)"
+  node_bin="$(afora_find_toolcache_node "$requested_node" || true)"
   if [[ -n "$node_bin" ]]; then
     echo "Using Node $("$node_bin" -p 'process.versions.node') from $node_bin"
-    openclaw_prepend_node_bin "$(dirname "$node_bin")"
+    afora_prepend_node_bin "$(dirname "$node_bin")"
   else
-    openclaw_download_node "$requested_node" || true
+    afora_download_node "$requested_node" || true
   fi
 
-  active_node_version="$(openclaw_active_node_version)"
-  if ! openclaw_node_version_matches "$active_node_version" "$requested_node"; then
+  active_node_version="$(afora_active_node_version)"
+  if ! afora_node_version_matches "$active_node_version" "$requested_node"; then
     echo "::error::Expected Node '${requested_node}', but active node is '${active_node_version:-missing}' at $(command -v node || true)"
     return 1
   fi

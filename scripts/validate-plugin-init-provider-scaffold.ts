@@ -13,7 +13,7 @@ type InspectorReport = {
 };
 
 const artifactRoot = path.resolve(
-  process.env.OPENCLAW_PLUGIN_INIT_VALIDATE_ROOT ?? ".artifacts/plugin-init-provider-scaffold",
+  process.env.AFORA_PLUGIN_INIT_VALIDATE_ROOT ?? ".artifacts/plugin-init-provider-scaffold",
 );
 const projectDir = path.join(artifactRoot, "plugin-init-test");
 const reportPath = path.join(projectDir, ".clawhub-validation", "plugin-inspector-report.json");

@@ -1,5 +1,5 @@
 // Assistant error formatting helpers normalize assistant-visible error payloads.
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { extractHttpResponseBody } from "./http-error-response.js";
 const ERROR_PAYLOAD_PREFIX_RE =
   /^(?:error|(?:[a-z][\w-]*\s+)?api\s*error|apierror|openai\s*error|anthropic\s*error|gateway\s*error|codex\s*error)(?:\s+\d{3})?[:\s-]+/i;
@@ -31,7 +31,7 @@ const GENERIC_PROVIDER_INTERNAL_ERROR_USER_MESSAGE =
   "The AI service returned an internal error. Please try again in a moment.";
 
 export const MALFORMED_STREAMING_FRAGMENT_ERROR_MESSAGE =
-  "OpenClaw transport error: malformed_streaming_fragment";
+  "Afora transport error: malformed_streaming_fragment";
 const MALFORMED_STREAMING_FRAGMENT_USER_MESSAGE =
   "LLM streaming response contained a malformed fragment. Please try again.";
 

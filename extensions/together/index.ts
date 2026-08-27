@@ -1,7 +1,7 @@
-// Together plugin entrypoint registers its OpenClaw integration.
-import { defineSingleProviderPluginEntry } from "openclaw/plugin-sdk/provider-entry";
+// Together plugin entrypoint registers its Afora integration.
+import { defineSingleProviderPluginEntry } from "afora-agent/plugin-sdk/provider-entry";
 import { applyTogetherConfig } from "./onboard.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 import { buildTogetherVideoGenerationProvider } from "./video-generation-provider.js";
 
 const PROVIDER_ID = "together";

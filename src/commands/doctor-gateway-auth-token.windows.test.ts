@@ -1,6 +1,6 @@
 // Windows Doctor service-token tests cover detailed SecretRef diagnostic rendering.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 const mocks = vi.hoisted(() => ({
   resolveGatewayAuthToken: vi.fn(),
@@ -20,8 +20,8 @@ describe("resolveGatewayAuthTokenForService Windows diagnostics", () => {
   it("preserves the detailed path-free ACL recovery from the canonical resolver", async () => {
     const privateCommand = String.raw`C:\private\gateway-token-provider.cmd`;
     const recovery =
-      "Windows path security could not be verified. Restore Windows path security verification, or use an existing provider command whose owner and ACLs OpenClaw can verify.";
-    const cfg: OpenClawConfig = {
+      "Windows path security could not be verified. Restore Windows path security verification, or use an existing provider command whose owner and ACLs Afora can verify.";
+    const cfg: AforaConfig = {
       gateway: {
         auth: {
           token: {

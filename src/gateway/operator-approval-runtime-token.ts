@@ -4,7 +4,7 @@ import { createHmac, randomBytes } from "node:crypto";
 import { loadExecApprovals } from "../infra/exec-approvals.js";
 import { safeEqualSecret } from "../security/secret-equal.js";
 
-const APPROVAL_RUNTIME_TOKEN_CONTEXT = "openclaw:gateway-approval-runtime-token:v1";
+const APPROVAL_RUNTIME_TOKEN_CONTEXT = "afora:gateway-approval-runtime-token:v1";
 
 let fallbackApprovalRuntimeToken: string | null = null;
 

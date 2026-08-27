@@ -1,5 +1,5 @@
 /** Detects whether the current process is running inside a launchd service label. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 
 type CurrentProcessLaunchdServiceLabelOptions = {
   allowConfiguredLabelFallback?: boolean;
@@ -24,13 +24,13 @@ export function isCurrentProcessLaunchdServiceLabel(
     }
   }
 
-  const configuredLabel = normalizeOptionalString(env.OPENCLAW_LAUNCHD_LABEL);
+  const configuredLabel = normalizeOptionalString(env.AFORA_LAUNCHD_LABEL);
   if (!configuredLabel || configuredLabel !== label) {
     return false;
   }
   if (
-    normalizeOptionalString(env.OPENCLAW_SERVICE_MARKER) === "openclaw" &&
-    Boolean(normalizeOptionalString(env.OPENCLAW_SERVICE_KIND))
+    normalizeOptionalString(env.AFORA_SERVICE_MARKER) === "afora" &&
+    Boolean(normalizeOptionalString(env.AFORA_SERVICE_KIND))
   ) {
     // Managed wrappers inject service metadata; trust it when launchd's own
     // label variables are absent or renamed by the host environment.

@@ -16,7 +16,7 @@ describe("Control UI build info", () => {
       release: false,
       buildId: "test",
     };
-    vi.stubGlobal("OPENCLAW_CONTROL_UI_BUILD_INFO", injectedBuildInfo);
+    vi.stubGlobal("AFORA_CONTROL_UI_BUILD_INFO", injectedBuildInfo);
     vi.resetModules();
 
     try {
@@ -40,7 +40,7 @@ describe("Control UI build info", () => {
   });
 
   it("normalizes the fallback when no build info is injected", async () => {
-    vi.stubGlobal("OPENCLAW_CONTROL_UI_BUILD_INFO", undefined);
+    vi.stubGlobal("AFORA_CONTROL_UI_BUILD_INFO", undefined);
     vi.resetModules();
 
     try {

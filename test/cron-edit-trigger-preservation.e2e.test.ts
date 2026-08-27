@@ -4,12 +4,12 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { CronJob } from "../src/cron/types.js";
 import {
-  createOpenClawTestInstance,
-  type OpenClawTestInstance,
-} from "./helpers/openclaw-test-instance.js";
+  createAforaTestInstance,
+  type AforaTestInstance,
+} from "./helpers/afora-test-instance.js";
 
 const TEST_TIMEOUT_MS = 180_000;
-const instances: OpenClawTestInstance[] = [];
+const instances: AforaTestInstance[] = [];
 
 afterEach(async () => {
   await Promise.allSettled(instances.splice(0).map((instance) => instance.cleanup()));
@@ -24,10 +24,10 @@ describe("cron edit trigger preservation", () => {
     "validates locally and preserves trigger.once through the real Gateway after restart",
     { timeout: TEST_TIMEOUT_MS },
     async () => {
-      const instance = await createOpenClawTestInstance({
+      const instance = await createAforaTestInstance({
         name: "cron-edit-trigger-preservation",
         config: { cron: { enabled: true, triggers: { enabled: true } } },
-        env: { OPENCLAW_SKIP_CRON: "0" },
+        env: { AFORA_SKIP_CRON: "0" },
       });
       instances.push(instance);
       const initialScriptPath = path.join(instance.homeDir, "initial-trigger.js");
@@ -59,7 +59,7 @@ describe("cron edit trigger preservation", () => {
         sqlitePath: string;
       }>(status.stdout);
       expect(statusJson).toMatchObject({ enabled: true, storage: "sqlite" });
-      expect(statusJson.sqlitePath).toBe(path.join(instance.stateDir, "state", "openclaw.sqlite"));
+      expect(statusJson.sqlitePath).toBe(path.join(instance.stateDir, "state", "afora.sqlite"));
 
       const added = await instance.cli([
         "cron",

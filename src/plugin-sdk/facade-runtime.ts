@@ -27,13 +27,13 @@ export {
   listImportedBundledPluginFacadeIds,
 } from "./facade-loader.js";
 
-const OPENCLAW_PACKAGE_ROOT =
+const AFORA_PACKAGE_ROOT =
   resolveLoaderPackageRoot({
     modulePath: fileURLToPath(import.meta.url),
     moduleUrl: import.meta.url,
   }) ?? fileURLToPath(new URL("../..", import.meta.url));
 const CURRENT_MODULE_PATH = fileURLToPath(import.meta.url);
-const OPENCLAW_SOURCE_EXTENSIONS_ROOT = path.resolve(OPENCLAW_PACKAGE_ROOT, "extensions");
+const AFORA_SOURCE_EXTENSIONS_ROOT = path.resolve(AFORA_PACKAGE_ROOT, "extensions");
 // Null entries memoize failed resolutions: plugin install topology is
 // process-stable, so a missing plugin must not re-walk the filesystem on
 // every request-time lookup. Install/reload flows clear via the lifecycle hook.
@@ -78,7 +78,7 @@ function resolveFacadeModuleLocationUncached(params: {
     const bundledLocation = resolveBundledFacadeModuleLocation({
       ...params,
       currentModulePath: CURRENT_MODULE_PATH,
-      packageRoot: OPENCLAW_PACKAGE_ROOT,
+      packageRoot: AFORA_PACKAGE_ROOT,
       bundledPluginsDir,
     });
     if (bundledLocation) {
@@ -200,7 +200,7 @@ function buildFacadeActivationCheckParams(
   return {
     ...params,
     location,
-    sourceExtensionsRoot: OPENCLAW_SOURCE_EXTENSIONS_ROOT,
+    sourceExtensionsRoot: AFORA_SOURCE_EXTENSIONS_ROOT,
     resolutionKey: createFacadeResolutionKey(params),
   };
 }

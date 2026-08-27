@@ -6,7 +6,7 @@ import type { MessageReceipt } from "./channel-outbound.js";
 import type {
   DiscordComponentSendOpts,
   DiscordComponentSendResult,
-  OpenClawConfig,
+  AforaConfig,
 } from "./discord.js";
 
 const mocks = vi.hoisted(() => {
@@ -103,7 +103,7 @@ vi.mock("./runtime-config-snapshot.js", () => ({
 }));
 
 describe("discord plugin-sdk facade", () => {
-  it("exports the @openclaw/discord 2026.3.13 import surface", async () => {
+  it("exports the @afora/discord 2026.3.13 import surface", async () => {
     const discordSdk = await import("./discord.js");
 
     for (const exportName of [
@@ -183,7 +183,7 @@ describe("discord plugin-sdk facade", () => {
     type IsCfgOptional = object extends Pick<DiscordComponentSendOpts, "cfg"> ? true : false;
 
     expectTypeOf<IsCfgOptional>().toEqualTypeOf<false>();
-    expectTypeOf<DiscordComponentSendOpts["cfg"]>().toEqualTypeOf<OpenClawConfig>();
+    expectTypeOf<DiscordComponentSendOpts["cfg"]>().toEqualTypeOf<AforaConfig>();
     expectTypeOf<DiscordComponentSendResult>().toEqualTypeOf<{
       messageId: string;
       channelId: string;

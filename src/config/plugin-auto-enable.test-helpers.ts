@@ -6,7 +6,7 @@ import { clearPluginMetadataLifecycleCaches } from "../plugins/plugin-metadata-l
 import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.js";
 import type { PluginOrigin } from "../plugins/plugin-origin.types.js";
 import { cleanupTrackedTempDirs, makeTrackedTempDir } from "../plugins/test-helpers/fs-fixtures.js";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import type { AforaConfig } from "./types.afora.js";
 
 const tempDirs: string[] = [];
 
@@ -17,15 +17,15 @@ export function resetPluginAutoEnableTestState(): void {
 }
 
 export function makeTempDir(): string {
-  return makeTrackedTempDir("openclaw-plugin-auto-enable", tempDirs);
+  return makeTrackedTempDir("afora-plugin-auto-enable", tempDirs);
 }
 
 export function makeIsolatedEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
   const rootDir = makeTempDir();
   return {
-    OPENCLAW_STATE_DIR: path.join(rootDir, "state"),
-    OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(process.cwd(), "extensions"),
-    OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
+    AFORA_STATE_DIR: path.join(rootDir, "state"),
+    AFORA_BUNDLED_PLUGINS_DIR: path.join(process.cwd(), "extensions"),
+    AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
     VITEST: "true",
     ...overrides,
   };
@@ -72,14 +72,14 @@ export function makeRegistry(
       origin: plugin.origin ?? "config",
       rootDir: `/fake/${plugin.id}`,
       source: `/fake/${plugin.id}/index.js`,
-      manifestPath: `/fake/${plugin.id}/openclaw.plugin.json`,
+      manifestPath: `/fake/${plugin.id}/afora.plugin.json`,
     })),
     diagnostics: [],
   };
 }
 
 export function createPluginMetadataSnapshot(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   manifestRegistry: PluginManifestRegistry;
   workspaceDir?: string;
 }): PluginMetadataSnapshot {

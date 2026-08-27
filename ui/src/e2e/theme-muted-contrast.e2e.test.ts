@@ -4,7 +4,7 @@ import { expect, it } from "vitest";
 import { controlUiBundledGatewayUrl, installMockGateway } from "../test-helpers/control-ui-e2e.ts";
 import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts";
 
-const captureUiProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+const captureUiProof = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 const proofDirectory = path.resolve(
   process.cwd(),
   ".artifacts/control-ui-e2e/theme-muted-contrast",
@@ -144,7 +144,7 @@ suite.define(() => {
       await context.addInitScript(
         ({ gatewayUrl, initialMode, initialTheme }) => {
           localStorage.setItem(
-            `openclaw.control.settings.v1:${gatewayUrl}`,
+            `afora.control.settings.v1:${gatewayUrl}`,
             JSON.stringify({ gatewayUrl, theme: initialTheme, themeMode: initialMode }),
           );
         },
@@ -349,7 +349,7 @@ suite.define(() => {
             },
             "skills.proposals.list": {
               proposals: [proposal],
-              schema: "openclaw.skill-workshop.proposals-manifest.v1",
+              schema: "afora.skill-workshop.proposals-manifest.v1",
               updatedAt,
             },
           },

@@ -621,7 +621,7 @@ describe("audit run explanation", () => {
         remediation: [
           {
             code: "select_execution_id",
-            text: "Select one candidate with openclaw audit --execution <id> --explain.",
+            text: "Select one candidate with afora audit --execution <id> --explain.",
           },
         ],
       },

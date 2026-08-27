@@ -1,7 +1,7 @@
 // Covers safe-bin policy profiles, validation, and generated docs text.
 import fs from "node:fs";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SAFE_BINS,

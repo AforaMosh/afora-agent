@@ -2,7 +2,7 @@
  * Prepares user-message boundaries, restored history, and transcript policy for an attempt.
  * It may assume normalized attempt and session inputs are ready.
  */
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import { buildHierarchyReinforcementMessage } from "../../../auto-reply/handoff-summarizer.js";
 import { filterHeartbeatTranscriptArtifacts } from "../../../auto-reply/heartbeat-filter.js";
 import { formatContextJsonBlock } from "../../../auto-reply/reply/channel-prompt-context.js";
@@ -12,8 +12,8 @@ import {
   listSessionEntriesReadOnly,
   updateSessionEntry,
 } from "../../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
-import { OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST } from "../../../context-engine/host-compat.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
+import { AFORA_EMBEDDED_CONTEXT_ENGINE_HOST } from "../../../context-engine/host-compat.js";
 import type { AssembleResult } from "../../../context-engine/types.js";
 import { resolveHeartbeatSummaryForAgent } from "../../../infra/heartbeat-summary.js";
 import type { ProviderRuntimeModel } from "../../../plugins/provider-runtime-model.types.js";
@@ -201,11 +201,11 @@ type PersistedSender = {
 };
 
 function readPersistedSender(message: AgentMessage): PersistedSender | undefined {
-  const openclaw = Reflect.get(message, "__openclaw");
-  if (!openclaw || typeof openclaw !== "object" || Array.isArray(openclaw)) {
+  const afora = Reflect.get(message, "__afora");
+  if (!afora || typeof afora !== "object" || Array.isArray(afora)) {
     return undefined;
   }
-  const meta = openclaw as Record<string, unknown>;
+  const meta = afora as Record<string, unknown>;
   const sender = {
     id: normalizePersistedSenderValue(meta["senderId"]),
     name: normalizePersistedSenderValue(meta["senderName"]),
@@ -501,7 +501,7 @@ export async function prepareEmbeddedAttemptHistory(input: {
     }
 
     if (attempt.sessionKey && attempt.config && !isSettledTurnFinalization) {
-      // Capability guidance must include deferred OpenClaw tools without
+      // Capability guidance must include deferred Afora tools without
       // interpreting arbitrary client tool names as native capabilities.
       const activeSubagentPromptAddition = buildActiveSubagentSystemPromptAddition({
         cfg: attempt.config,
@@ -589,7 +589,7 @@ export async function prepareEmbeddedAttemptHistory(input: {
         sandboxed: input.sandboxed,
         modelId: attempt.modelId,
         maxOutputTokens: reserveTokens,
-        contextEngineHostSupport: OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST,
+        contextEngineHostSupport: AFORA_EMBEDDED_CONTEXT_ENGINE_HOST,
         providerId: attempt.provider,
         requestedModelId: attempt.requestedModelId,
         fallbackReason: attempt.fallbackReason,
@@ -664,7 +664,7 @@ export function resolveAttemptTranscriptPolicy(params: {
   runtimePlanModelContext: AttemptRuntimeModelContext;
   provider: string;
   modelId: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
 }): TranscriptPolicy {
   return (

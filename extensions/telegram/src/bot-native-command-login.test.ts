@@ -2,12 +2,12 @@
 import {
   createEmptyPluginRegistry,
   withPluginRuntimeRegistryScope,
-} from "openclaw/plugin-sdk/channel-test-helpers";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
-import type { ModelsAuthLoginFlowOptions } from "openclaw/plugin-sdk/provider-auth-login-flow-runtime";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import type { SessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
+} from "afora-agent/plugin-sdk/channel-test-helpers";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
+import type { ModelsAuthLoginFlowOptions } from "afora-agent/plugin-sdk/provider-auth-login-flow-runtime";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+import type { SessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { TelegramNativeCommandDeps } from "./bot-native-command-deps.runtime.js";
 import { createTelegramGroupCommandContext } from "./bot-native-commands.fixture-test-support.js";
@@ -47,9 +47,9 @@ vi.mock("./bot-native-commands.runtime.js", () => ({
     }),
   ),
 }));
-vi.mock("openclaw/plugin-sdk/session-store-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/session-store-runtime")>(
-    "openclaw/plugin-sdk/session-store-runtime",
+vi.mock("afora-agent/plugin-sdk/session-store-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/session-store-runtime")>(
+    "afora-agent/plugin-sdk/session-store-runtime",
   );
   return {
     ...actual,
@@ -65,7 +65,7 @@ type TelegramLoginFlow = NonNullable<TelegramNativeCommandDeps["runModelsAuthLog
 let loginAccountIndex = 0;
 
 function registerLoginCommand(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   loginFlow: LoginFlowMock;
   accountId?: string;
   allowFrom?: string[];
@@ -128,7 +128,7 @@ describe("registerTelegramNativeCommands /login", () => {
         ({ storePath, sessionKey }: { storePath: string; sessionKey: string }) =>
           loginSessionMocks.loadSessionStore(storePath)[sessionKey],
       );
-    loginSessionMocks.resolveStorePath.mockReset().mockReturnValue("/tmp/openclaw-sessions.json");
+    loginSessionMocks.resolveStorePath.mockReset().mockReturnValue("/tmp/afora-sessions.json");
     loginSessionMocks.updateSessionStoreEntry.mockReset().mockImplementation(async (params) => {
       const current = loginSessionMocks.loadSessionStore(params.storePath)[params.sessionKey];
       if (!current) {
@@ -165,7 +165,7 @@ describe("registerTelegramNativeCommands /login", () => {
           ownerAllowFrom: ["200"],
         },
         agents: { list: [{ id: "main", default: true }] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       loginFlow,
     });
 
@@ -216,7 +216,7 @@ describe("registerTelegramNativeCommands /login", () => {
       cfg: {
         commands: { native: true, ownerAllowFrom: ["200"] },
         agents: { list: [{ id: "main", default: true }] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       loginFlow,
     });
 
@@ -275,7 +275,7 @@ describe("registerTelegramNativeCommands /login", () => {
       cfg: {
         commands: { native: true, ownerAllowFrom: ["200"] },
         agents: { list: [{ id: "main", default: true }] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       loginFlow,
     });
     if (!nativeCommandCallbackDispatcher) {
@@ -338,7 +338,7 @@ describe("registerTelegramNativeCommands /login", () => {
           ownerAllowFrom: ["200"],
         },
         agents: { list: [{ id: "main", default: true }] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       loginFlow,
       allowFrom: ["200"],
     });
@@ -367,7 +367,7 @@ describe("registerTelegramNativeCommands /login", () => {
           allowFrom: { telegram: ["200"] },
           ownerAllowFrom: ["999"],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       loginFlow,
     });
 
@@ -375,7 +375,7 @@ describe("registerTelegramNativeCommands /login", () => {
 
     expect(loginFlow).not.toHaveBeenCalled();
     expect(sendMessage.mock.calls.map((call) => String(call[1]))).toContain(
-      "Only a configured OpenClaw owner can start Codex login from Telegram.",
+      "Only a configured Afora owner can start Codex login from Telegram.",
     );
   });
 
@@ -402,7 +402,7 @@ describe("registerTelegramNativeCommands /login", () => {
           ownerAllowFrom: ["200"],
         },
         agents: { list: [{ id: "main", default: true }] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       loginFlow,
     });
 
@@ -429,7 +429,7 @@ describe("registerTelegramNativeCommands /login", () => {
       cfg: {
         commands: { native: true, ownerAllowFrom: ["200"] },
         agents: { list: [{ id: "main", default: true }] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       loginFlow,
     });
 
@@ -459,7 +459,7 @@ describe("registerTelegramNativeCommands /login", () => {
       cfg: {
         commands: { native: true, ownerAllowFrom: ["200"] },
         agents: { list: [{ id: "main", default: true }] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       loginFlow,
       runtime,
     });
@@ -510,7 +510,7 @@ describe("registerTelegramNativeCommands /login", () => {
       cfg: {
         commands: { native: true, ownerAllowFrom: ["200"] },
         agents: { list: [{ id: "main", default: true }] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       loginFlow,
       abortSignal: shutdown.signal,
     });
@@ -542,7 +542,7 @@ describe("registerTelegramNativeCommands /login", () => {
       cfg: {
         commands: { native: true, ownerAllowFrom: ["200"] },
         agents: { list: [{ id: "main", default: true }] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       loginFlow,
       abortSignal: account.signal,
     });
@@ -593,7 +593,7 @@ describe("registerTelegramNativeCommands /login", () => {
       accountId: "default",
       cfg: {
         commands: { native: true, ownerAllowFrom: ["200"] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       allowFrom: ["200"],
       loginFlow: runModelsAuthLoginFlow,
     });
@@ -615,7 +615,7 @@ describe("registerTelegramNativeCommands /login", () => {
     await vi.waitFor(() =>
       expect(loginSessionMocks.updateSessionStoreEntry).toHaveBeenCalledWith({
         sessionKey: "agent:main:main",
-        storePath: "/tmp/openclaw-sessions.json",
+        storePath: "/tmp/afora-sessions.json",
         requireWriteSuccess: true,
         skipMaintenance: true,
         update: expect.any(Function),
@@ -666,7 +666,7 @@ describe("registerTelegramNativeCommands /login", () => {
       accountId: "default",
       cfg: {
         commands: { native: true, ownerAllowFrom: ["200"] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       allowFrom: ["200"],
       loginFlow: runModelsAuthLoginFlow,
     });
@@ -727,7 +727,7 @@ describe("registerTelegramNativeCommands /login", () => {
       accountId: "default",
       cfg: {
         commands: { native: true, ownerAllowFrom: ["200"] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       allowFrom: ["200"],
       loginFlow: runModelsAuthLoginFlow,
     });
@@ -777,7 +777,7 @@ describe("registerTelegramNativeCommands /login", () => {
       accountId: "default",
       cfg: {
         commands: { native: true, ownerAllowFrom: ["200"] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       allowFrom: ["200"],
       loginFlow: runModelsAuthLoginFlow,
     });
@@ -831,7 +831,7 @@ describe("registerTelegramNativeCommands /login", () => {
       accountId: "default",
       cfg: {
         commands: { native: true, ownerAllowFrom: ["200"] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       allowFrom: ["200"],
       loginFlow: runModelsAuthLoginFlow,
     });
@@ -860,7 +860,7 @@ describe("registerTelegramNativeCommands /login", () => {
       accountId: "default",
       cfg: {
         commands: { native: true, ownerAllowFrom: ["200"] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       allowFrom: ["200"],
       loginFlow: runModelsAuthLoginFlow,
     });
@@ -907,7 +907,7 @@ describe("registerTelegramNativeCommands /login", () => {
       accountId: "default",
       cfg: {
         commands: { native: true, ownerAllowFrom: ["200"] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       allowFrom: ["200"],
       loginFlow: runModelsAuthLoginFlow,
     });

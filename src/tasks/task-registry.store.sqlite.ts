@@ -1,18 +1,18 @@
-// Persists task registry records and events through the OpenClaw SQLite state database.
+// Persists task registry records and events through the Afora SQLite state database.
 import type { DatabaseSync } from "node:sqlite";
 import type { Insertable, Selectable } from "kysely";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../infra/kysely-sync.js";
 import { assertSqliteTableIntegrity } from "../infra/sqlite-integrity.js";
 import { normalizeSqliteNumber } from "../infra/sqlite-number.js";
 import { runSqliteDeferredTransactionSync } from "../infra/sqlite-transaction.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../state/openclaw-state-db-readonly.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../state/afora-state-db-readonly.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  closeOpenClawStateDatabase,
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabase,
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { parseDeliveryContextJson, parseSqliteJsonValue } from "./task-registry.sqlite.shared.js";
 import type { TaskRegistryStoreSnapshot } from "./task-registry.store.types.js";
 import {
@@ -28,10 +28,10 @@ import {
   type TaskRuntime,
 } from "./task-registry.types.js";
 
-type TaskRunsTable = OpenClawStateKyselyDatabase["task_runs"];
-type TaskDeliveryStateTable = OpenClawStateKyselyDatabase["task_delivery_state"];
+type TaskRunsTable = AforaStateKyselyDatabase["task_runs"];
+type TaskDeliveryStateTable = AforaStateKyselyDatabase["task_delivery_state"];
 type TaskRegistryStoreDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "task_delivery_state" | "task_runs"
 >;
 
@@ -51,7 +51,7 @@ type TaskRegistryDatabase = {
   path: string;
 };
 
-// SQLite-backed task store mirrors task records and delivery state into openclaw-state.db.
+// SQLite-backed task store mirrors task records and delivery state into afora-state.db.
 const TASK_RUN_SELECT_COLUMNS = [
   "task_id",
   "runtime",
@@ -278,7 +278,7 @@ function selectTaskDeliveryStateRows(db: DatabaseSync): TaskDeliveryStateRow[] {
 
 /** Upserts a prebound task on the exact supplied shared-state handle. */
 export function upsertTaskRunRowInDatabase(
-  database: OpenClawStateDatabase,
+  database: AforaStateDatabase,
   row: BoundTaskRecord,
 ): void {
   const { db } = database;
@@ -320,7 +320,7 @@ function deleteTaskRowsWithDeliveryState(db: DatabaseSync, taskId: string): void
 }
 
 function openTaskRegistryDatabase(): TaskRegistryDatabase {
-  const database = openOpenClawStateDatabase();
+  const database = openAforaStateDatabase();
   const pathname = database.path;
   if (cachedDatabase && cachedDatabase.path === pathname && cachedDatabase.db.isOpen) {
     return cachedDatabase;
@@ -335,10 +335,10 @@ function openTaskRegistryDatabase(): TaskRegistryDatabase {
   return cachedDatabase;
 }
 
-function withWriteTransaction(write: (database: OpenClawStateDatabase) => void) {
+function withWriteTransaction(write: (database: AforaStateDatabase) => void) {
   // Open once before BEGIN; the callback receives that exact shared-state owner.
   openTaskRegistryDatabase();
-  runOpenClawStateWriteTransaction((database) => write(database));
+  runAforaStateWriteTransaction((database) => write(database));
 }
 
 function readTaskRegistrySnapshot({ db, path }: TaskRegistryDatabase): TaskRegistryStoreSnapshot {
@@ -363,7 +363,7 @@ export function loadTaskRegistryStateFromSqlite(): TaskRegistryStoreSnapshot {
 /** Loads task records without creating or migrating shared state. */
 export function loadTaskRegistryStateFromSqliteReadOnly(): TaskRegistryStoreSnapshot {
   return (
-    withExistingOpenClawStateDatabaseReadOnly(readTaskRegistrySnapshot) ?? {
+    withExistingAforaStateDatabaseReadOnly(readTaskRegistrySnapshot) ?? {
       tasks: new Map(),
       deliveryStates: new Map(),
     }
@@ -389,7 +389,7 @@ export function listTaskRegistryRecordsByRuntimeSourceIdFromSqlite(params: {
     return [];
   }
   return (
-    withExistingOpenClawStateDatabaseReadOnly(({ db }) =>
+    withExistingAforaStateDatabaseReadOnly(({ db }) =>
       selectTaskRowsByRuntimeSourceId(db, params.runtime, sourceId).map(rowToTaskRecord),
     ) ?? []
   );
@@ -409,7 +409,7 @@ export function saveTaskRegistryStateToSqlite(snapshot: TaskRegistryStoreSnapsho
       db,
       tableName: "task_runs",
       columnName: "task_id",
-      tempTableName: "openclaw_live_task_run_ids",
+      tempTableName: "afora_live_task_run_ids",
       ids: taskIds,
     });
     const deliveryTaskIds = [...snapshot.deliveryStates.keys()];
@@ -420,7 +420,7 @@ export function saveTaskRegistryStateToSqlite(snapshot: TaskRegistryStoreSnapsho
         db,
         tableName: "task_delivery_state",
         columnName: "task_id",
-        tempTableName: "openclaw_live_task_delivery_ids",
+        tempTableName: "afora_live_task_delivery_ids",
         ids: deliveryTaskIds,
       });
     }
@@ -488,5 +488,5 @@ export function deleteTaskDeliveryStateFromSqlite(taskId: string) {
 
 export function closeTaskRegistryDatabase() {
   cachedDatabase = null;
-  closeOpenClawStateDatabase();
+  closeAforaStateDatabase();
 }

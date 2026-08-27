@@ -1,6 +1,6 @@
 ---
 name: node-connect
-description: "Diagnose OpenClaw Control UI browser and native Android, iOS, or macOS node connection failures across route, auth, pairing, QR/setup-code, and reconnect states."
+description: "Diagnose Afora Control UI browser and native Android, iOS, or macOS node connection failures across route, auth, pairing, QR/setup-code, and reconnect states."
 ---
 
 # Node Connect
@@ -9,10 +9,10 @@ Goal: fix one exact client against one exact Gateway, then prove that client's f
 
 ## 1. Lock the target
 
-Record the target environment/profile, OpenClaw binary, config/state root, Gateway URL/port, and service before changing anything.
+Record the target environment/profile, Afora binary, config/state root, Gateway URL/port, and service before changing anything.
 
 - Use the named deployment wrapper/profile for every config, log, service, device, and node command.
-- Never drift to a bare `openclaw`, proof environment, or similarly named deployment.
+- Never drift to a bare `afora`, proof environment, or similarly named deployment.
 - If the global executable is stale, invoke the target through its owner.
 - Verify status, config, logs, and process identity describe the same Gateway.
 
@@ -22,25 +22,25 @@ Do not mutate pairing or auth until the target is unambiguous.
 
 Classify from the request and Gateway log before choosing commands:
 
-- **Control UI browser:** the user says browser, dashboard, Control UI, or webchat; logs show `client=openclaw-control-ui` or `mode=webchat`.
+- **Control UI browser:** the user says browser, dashboard, Control UI, or webchat; logs show `client=afora-control-ui` or `mode=webchat`.
 - **Native mobile/node:** the official app shows Connect, Scan QR, or setup code; logs/request metadata show a native client or `role=node`.
 
-A phone can be either client. Do not use `openclaw qr` or `openclaw nodes status` for a phone browser; those belong to native mobile/node pairing.
+A phone can be either client. Do not use `afora qr` or `afora nodes status` for a phone browser; those belong to native mobile/node pairing.
 
 ## 3. Observe the failing attempt
 
 Run these through the locked target:
 
 ```bash
-openclaw gateway status --deep
-openclaw logs --follow --json
-openclaw devices list
-openclaw config get gateway.mode
-openclaw config get gateway.bind
-openclaw config get gateway.remote.url
-openclaw config get gateway.auth.mode
-openclaw config get gateway.auth.allowTailscale
-openclaw config get gateway.tailscale.mode
+afora gateway status --deep
+afora logs --follow --json
+afora devices list
+afora config get gateway.mode
+afora config get gateway.bind
+afora config get gateway.remote.url
+afora config get gateway.auth.mode
+afora config get gateway.auth.allowTailscale
+afora config get gateway.tailscale.mode
 ```
 
 Have the client retry once while logs are live. Correlate its client ID, mode, platform, address, auth result, device ID, user, and close code. Ignore other paired devices.
@@ -58,8 +58,8 @@ Interpret the first failed transition:
 Choose one topology: same machine, LAN, tailnet, or public reverse proxy. Do not mix them.
 
 - Browser Control UI needs HTTPS or localhost for browser device identity. A remote plain-HTTP Tailnet/LAN URL is not a valid substitute.
-- `gateway.tailscale.mode=off` means OpenClaw is not managing Serve/Funnel. It does not prove that Tailscale or an externally managed Serve route is absent.
-- When Tailscale is involved, inspect live state rather than inferring it from OpenClaw config:
+- `gateway.tailscale.mode=off` means Afora is not managing Serve/Funnel. It does not prove that Tailscale or an externally managed Serve route is absent.
+- When Tailscale is involved, inspect live state rather than inferring it from Afora config:
 
 ```bash
 tailscale status --json
@@ -73,7 +73,7 @@ Match the client's URL to the listener/proxy route reaching the locked Gateway.
 Restore browser auth before looking for a pairing request:
 
 - For token/password auth, enter the credential in Control UI settings. Never put permanent secrets in chat, logs, or URLs.
-- Prefer `openclaw dashboard` on the Gateway host for a one-time signed handoff. Use `--no-open` only when the operator can retrieve that host's clipboard, and keep the host browser/clipboard outside agent tooling. Never capture `dashboard --json`: it can expose the handoff and shared credentials. Never relay, rewrite, or send a loopback handoff URL to a remote phone.
+- Prefer `afora dashboard` on the Gateway host for a one-time signed handoff. Use `--no-open` only when the operator can retrieve that host's clipboard, and keep the host browser/clipboard outside agent tooling. Never capture `dashboard --json`: it can expose the handoff and shared credentials. Never relay, rewrite, or send a loopback handoff URL to a remote phone.
 - For Tailscale Serve, verify the live route and forwarded identity. Enable `gateway.auth.allowTailscale` only for that intended trust boundary. Verified Tailscale Control UI auth with browser device identity can skip pairing.
 
 After auth succeeds:
@@ -88,20 +88,20 @@ After auth succeeds:
 Inspect the native route through the locked target without exposing the setup credential:
 
 ```bash
-openclaw qr --json | jq '{gatewayUrl, gatewayUrls, auth, access, accessDowngraded, urlSource}'
+afora qr --json | jq '{gatewayUrl, gatewayUrls, auth, access, accessDowngraded, urlSource}'
 ```
 
 For a CLI controlling a remote Gateway, add `--remote` before `--json`; it selects `gateway.remote.url` and remote credentials. If the redaction filter is unavailable, do not run raw QR JSON in agent-visible output.
 
-Verify `gatewayUrl` and `urlSource`. The setup code is password-equivalent: have the operator copy it from **Control UI → Devices → Pair device**, or run `openclaw qr --setup-code-only` in a terminal outside agent tooling and paste it directly into the official app. Never relay it through agent/chat/tool output. Generate a fresh code after a URL/auth fix or expiry.
+Verify `gatewayUrl` and `urlSource`. The setup code is password-equivalent: have the operator copy it from **Control UI → Devices → Pair device**, or run `afora qr --setup-code-only` in a terminal outside agent tooling and paste it directly into the official app. Never relay it through agent/chat/tool output. Generate a fresh code after a URL/auth fix or expiry.
 
 If the app reports `pairing required`:
 
 ```bash
-openclaw devices list
-openclaw devices approve --latest   # preview only; exits without approval
-openclaw devices approve <requestId>
-openclaw nodes status
+afora devices list
+afora devices approve --latest   # preview only; exits without approval
+afora devices approve <requestId>
+afora nodes status
 ```
 
 `--latest` only previews the current request; never treat it as approval. Re-list immediately before the exact-ID command because retries can supersede the request. Never approve by position, age, or similarity.
@@ -114,7 +114,7 @@ Declare success only after a new attempt made after the final change proves all 
 
 - the exact client reaches the locked Gateway;
 - intended auth succeeds;
-- the browser completes initial requests, or the native node appears in `openclaw nodes status`;
+- the browser completes initial requests, or the native node appears in `afora nodes status`;
 - approval used the exact request ID; and
 - no immediate auth, pairing, or reconnect failure follows.
 

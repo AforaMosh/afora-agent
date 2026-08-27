@@ -4,19 +4,19 @@ struct WatchMascot: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.isLuminanceReduced) private var isLuminanceReduced
 
-    let mood: OpenClawMascotMood
+    let mood: AforaMascotMood
     let size: CGFloat
 
     var body: some View {
         Group {
             if self.isLuminanceReduced {
                 // Always-On display must stay static so the animation loop never consumes background power.
-                OpenClawMascotCanvas(
+                AforaMascotCanvas(
                     pose: .staticPose(for: self.mood),
                     palette: .forScheme(self.colorScheme))
             } else {
                 // Fifteen frames per second keeps the tiny watch animation expressive without needless battery cost.
-                OpenClawMascotView(
+                AforaMascotView(
                     mood: self.mood,
                     minimumFrameInterval: 1.0 / 15.0)
             }
@@ -29,7 +29,7 @@ struct WatchMascot: View {
 func watchInboxMascotMood(
     hasSnapshot: Bool,
     hasApprovals: Bool,
-    hasChats: Bool) -> OpenClawMascotMood
+    hasChats: Bool) -> AforaMascotMood
 {
     // Approval decisions demand attention above every other inbox state.
     if hasApprovals { return .attentive }

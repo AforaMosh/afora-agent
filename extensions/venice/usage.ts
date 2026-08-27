@@ -1,9 +1,9 @@
-import { readProviderJsonObjectResponse } from "openclaw/plugin-sdk/provider-http";
+import { readProviderJsonObjectResponse } from "afora-agent/plugin-sdk/provider-http";
 import {
   buildUsageHttpErrorSnapshot,
   parseProviderUsageNonNegativeNumber,
   type ProviderUsageSnapshot,
-} from "openclaw/plugin-sdk/provider-usage";
+} from "afora-agent/plugin-sdk/provider-usage";
 
 const VENICE_BALANCE_URL = "https://api.venice.ai/api/v1/billing/balance";
 const VENICE_USAGE_RESPONSE_MAX_BYTES = 1024 * 1024;

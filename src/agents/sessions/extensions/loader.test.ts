@@ -20,13 +20,13 @@ describe("loadExtensionsCached", () => {
     clearExtensionCache();
     // Extensions import public SDK helpers through package subpaths; the loader
     // must route those aliases without package-manager involvement.
-    const dir = await mkdtemp(join(tmpdir(), "openclaw-extension-sdk-"));
+    const dir = await mkdtemp(join(tmpdir(), "afora-extension-sdk-"));
     tempDirs.push(dir);
     const extensionPath = join(dir, "extension.ts");
     await writeFile(
       extensionPath,
       `
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export default async function(api) {
   if (normalizeLowercaseStringOrEmpty("  MIXED  ") !== "mixed") {

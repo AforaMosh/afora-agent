@@ -1,5 +1,5 @@
-// Runtime-only rendering and config fallback for `openclaw channels status`.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+// Runtime-only rendering and config fallback for `afora channels status`.
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { formatDocsLink } from "../../../packages/terminal-core/src/links.js";
 import { theme } from "../../../packages/terminal-core/src/theme.js";
 import { normalizeChannelId } from "../../channels/plugins/index.js";
@@ -209,7 +209,7 @@ export function formatGatewayChannelsStatusLines(payload: Record<string, unknown
         `- ${issue.channel} ${issue.accountId}: ${issue.message}${issue.fix ? ` (${issue.fix})` : ""}`,
       );
     }
-    lines.push(`- Run: ${formatCliCommand("openclaw doctor")}`);
+    lines.push(`- Run: ${formatCliCommand("afora doctor")}`);
     lines.push("");
   }
   lines.push(

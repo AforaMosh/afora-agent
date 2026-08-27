@@ -1,7 +1,7 @@
 // Parallels Npm Update Smoke tests cover parallels npm update smoke script behavior.
 import { chmodSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   posixAgentWorkspaceScript,
@@ -90,8 +90,8 @@ function extractWindowsBackgroundControlMarkers(decoded: string): {
     return match[0];
   };
   return {
-    done: marker("__OPENCLAW_BACKGROUND_DONE__", false),
-    exitPrefix: marker("__OPENCLAW_BACKGROUND_EXIT__", true),
+    done: marker("__AFORA_BACKGROUND_DONE__", false),
+    exitPrefix: marker("__AFORA_BACKGROUND_EXIT__", true),
   };
 }
 
@@ -105,27 +105,27 @@ describe("parallels npm update smoke", () => {
     expect(
       parseArgs([
         "--target-tarball",
-        "/tmp/openclaw-candidate.tgz",
+        "/tmp/afora-candidate.tgz",
         "--dependency-tarball",
-        "/tmp/openclaw-ai-candidate.tgz",
+        "/tmp/afora-ai-candidate.tgz",
         "--registry-package-tarball",
-        "/tmp/openclaw-codex-candidate.tgz",
+        "/tmp/afora-codex-candidate.tgz",
       ]),
     ).toMatchObject({
-      dependencyTarballs: ["/tmp/openclaw-ai-candidate.tgz"],
-      registryPackageTarballs: ["/tmp/openclaw-codex-candidate.tgz"],
-      targetTarball: "/tmp/openclaw-candidate.tgz",
+      dependencyTarballs: ["/tmp/afora-ai-candidate.tgz"],
+      registryPackageTarballs: ["/tmp/afora-codex-candidate.tgz"],
+      targetTarball: "/tmp/afora-candidate.tgz",
       updateTarget: "",
       freshTargetSpec: undefined,
     });
     expect(() =>
-      parseArgs(["--target-tarball", "/tmp/openclaw-candidate.tgz", "--update-target", "beta"]),
+      parseArgs(["--target-tarball", "/tmp/afora-candidate.tgz", "--update-target", "beta"]),
     ).toThrow("--target-tarball cannot be combined");
-    expect(() => parseArgs(["--dependency-tarball", "/tmp/openclaw-ai-candidate.tgz"])).toThrow(
+    expect(() => parseArgs(["--dependency-tarball", "/tmp/afora-ai-candidate.tgz"])).toThrow(
       "--dependency-tarball requires --target-tarball",
     );
     expect(() =>
-      parseArgs(["--registry-package-tarball", "/tmp/openclaw-codex-candidate.tgz"]),
+      parseArgs(["--registry-package-tarball", "/tmp/afora-codex-candidate.tgz"]),
     ).toThrow("--registry-package-tarball requires --target-tarball");
   });
 
@@ -152,7 +152,7 @@ describe("parallels npm update smoke", () => {
     class FailingNpmUpdateSmoke extends NpmUpdateSmoke {
       protected override async makeRunTempDir(prefix: string): Promise<string> {
         void prefix;
-        return tempDirs.make("openclaw-parallels-npm-update-");
+        return tempDirs.make("afora-parallels-npm-update-");
       }
 
       protected override async runSteps(): Promise<void> {
@@ -167,7 +167,7 @@ describe("parallels npm update smoke", () => {
         dependencyTarballs: [],
         registryPackageTarballs: [],
         json: false,
-        packageSpec: "openclaw@latest",
+        packageSpec: "afora@latest",
         platforms: new Set<Platform>(["linux"]),
         provider: "openai",
         updateTarget: "local-main",
@@ -180,7 +180,7 @@ describe("parallels npm update smoke", () => {
   });
 
   it("removes uploaded guest update scripts when chmod fails", () => {
-    const root = tempDirs.make("openclaw-parallels-npm-update-");
+    const root = tempDirs.make("afora-parallels-npm-update-");
     const logPath = path.join(root, "prlctl.log");
     const prlctlPath = path.join(root, "prlctl");
     writeFileSync(
@@ -190,15 +190,15 @@ set -euo pipefail
 log_path=${JSON.stringify(logPath)}
 printf '%s\\n' "$*" >>"$log_path"
 args=" $* "
-if [[ "$args" == *" /usr/bin/tee /tmp/openclaw-parallels-npm-update-linux-"* ]]; then
+if [[ "$args" == *" /usr/bin/tee /tmp/afora-parallels-npm-update-linux-"* ]]; then
   cat >/dev/null
   exit 0
 fi
-if [[ "$args" == *" /bin/chmod 755 /tmp/openclaw-parallels-npm-update-linux-"* ]]; then
+if [[ "$args" == *" /bin/chmod 755 /tmp/afora-parallels-npm-update-linux-"* ]]; then
   echo "chmod denied" >&2
   exit 7
 fi
-if [[ "$args" == *" /bin/rm -f /tmp/openclaw-parallels-npm-update-linux-"* ]]; then
+if [[ "$args" == *" /bin/rm -f /tmp/afora-parallels-npm-update-linux-"* ]]; then
   printf 'cleanup\\n' >>"$log_path"
   exit 0
 fi
@@ -218,7 +218,7 @@ exit 1
           dependencyTarballs: [],
           registryPackageTarballs: [],
           json: false,
-          packageSpec: "openclaw@latest",
+          packageSpec: "afora@latest",
           platforms: new Set<Platform>(["linux"]),
           provider: "openai",
           updateTarget: "local-main",
@@ -234,20 +234,20 @@ exit 1
             smoke,
             "Linux VM",
             "echo update",
-            "openclaw-parallels-npm-update-linux",
+            "afora-parallels-npm-update-linux",
           ),
         ).toThrow("failed to chmod guest script");
       },
     );
 
     const log = readFileSync(logPath, "utf8");
-    expect(log).toContain("/bin/chmod 755 /tmp/openclaw-parallels-npm-update-linux-");
-    expect(log).toContain("/bin/rm -f /tmp/openclaw-parallels-npm-update-linux-");
+    expect(log).toContain("/bin/chmod 755 /tmp/afora-parallels-npm-update-linux-");
+    expect(log).toContain("/bin/rm -f /tmp/afora-parallels-npm-update-linux-");
     expect(log.match(/^cleanup$/gm)).toHaveLength(1);
   });
 
   it("uses one macOS guest identity to write and execute update scripts", async () => {
-    const root = tempDirs.make("openclaw-parallels-npm-update-");
+    const root = tempDirs.make("afora-parallels-npm-update-");
     const logPath = path.join(root, "prlctl.log");
     const prlctlPath = path.join(root, "prlctl");
     writeFileSync(
@@ -261,17 +261,17 @@ if [[ "$args" == *" --current-user whoami "* ]]; then
   printf 'desktop-user\\n'
   exit 0
 fi
-if [[ "$args" == *" /usr/bin/tee /tmp/openclaw-parallels-npm-update-macos-"* ]]; then
+if [[ "$args" == *" /usr/bin/tee /tmp/afora-parallels-npm-update-macos-"* ]]; then
   cat >/dev/null
   exit 0
 fi
-if [[ "$args" == *" /bin/chmod 700 /tmp/openclaw-parallels-npm-update-macos-"* ]]; then
+if [[ "$args" == *" /bin/chmod 700 /tmp/afora-parallels-npm-update-macos-"* ]]; then
   exit 0
 fi
-if [[ "$args" == *" /usr/sbin/chown desktop-user /tmp/openclaw-parallels-npm-update-macos-"* ]]; then
+if [[ "$args" == *" /usr/sbin/chown desktop-user /tmp/afora-parallels-npm-update-macos-"* ]]; then
   exit 0
 fi
-if [[ "$args" == *" /bin/rm -f /tmp/openclaw-parallels-npm-update-macos-"* ]]; then
+if [[ "$args" == *" /bin/rm -f /tmp/afora-parallels-npm-update-macos-"* ]]; then
   exit 0
 fi
 exit 1
@@ -290,7 +290,7 @@ exit 1
           dependencyTarballs: [],
           registryPackageTarballs: [],
           json: false,
-          packageSpec: "openclaw@latest",
+          packageSpec: "afora@latest",
           platforms: new Set<Platform>(["macos"]),
           provider: "openai",
           updateTarget: "local-main",
@@ -315,7 +315,7 @@ exit 1
           "/usr/bin/env",
           expect.stringMatching(/^PATH=/),
           "/bin/bash",
-          expect.stringMatching(/^\/tmp\/openclaw-parallels-npm-update-macos-/),
+          expect.stringMatching(/^\/tmp\/afora-parallels-npm-update-macos-/),
         ]);
       },
     );
@@ -323,8 +323,8 @@ exit 1
     const log = readFileSync(logPath, "utf8");
     expect(log).toContain("--current-user whoami");
     expect(log).toContain("--current-user /usr/bin/env PATH=");
-    expect(log).toContain("/usr/bin/tee /tmp/openclaw-parallels-npm-update-macos-");
-    expect(log).toContain("/bin/chmod 700 /tmp/openclaw-parallels-npm-update-macos-");
+    expect(log).toContain("/usr/bin/tee /tmp/afora-parallels-npm-update-macos-");
+    expect(log).toContain("/bin/chmod 700 /tmp/afora-parallels-npm-update-macos-");
     expect(log).toContain("/usr/sbin/chown desktop-user");
   });
 
@@ -332,9 +332,9 @@ exit 1
     const script = readFileSync(SCRIPT_PATH, "utf8");
 
     expect(script).toContain("--beta-validation [target]");
-    expect(script).toContain("resolveOpenClawRegistryVersion");
+    expect(script).toContain("resolveAforaRegistryVersion");
     expect(script).toContain("this.options.updateTarget = version");
-    expect(script).toContain("this.options.freshTargetSpec = `openclaw@${version}`");
+    expect(script).toContain("this.options.freshTargetSpec = `afora@${version}`");
     expect(script).toContain("runFreshTargetInstalls");
     expect(script).toContain("freshTargetStatus");
   });
@@ -350,11 +350,11 @@ exit 1
     expect(script).toContain("startNpmRegistryServer");
     expect(script).toContain("...this.targetRegistryPackages");
     expect(script).toContain("this.updateTargetEffective = this.targetTarballVersion");
-    expect(script).toContain("this.freshTargetSpec = `openclaw@${this.targetTarballVersion}`");
+    expect(script).toContain("this.freshTargetSpec = `afora@${this.targetTarballVersion}`");
     expect(script).toContain("NPM_CONFIG_REGISTRY: this.targetRegistryHostUrl");
     expect(script).toContain("npm_config_registry: this.targetRegistryHostUrl");
     expect(script).toContain("this.updateExpectedNeedle = this.targetTarballVersion");
-    expect(script).toContain('readPositiveIntEnv("OPENCLAW_PARALLELS_NPM_UPDATE_TIMEOUT_S", 2700)');
+    expect(script).toContain('readPositiveIntEnv("AFORA_PARALLELS_NPM_UPDATE_TIMEOUT_S", 2700)');
   });
 
   it("routes update installs through the prepared package registry", () => {
@@ -380,7 +380,7 @@ exit 1
 
     for (const script of [macosUpdateScript(input), linuxUpdateScript(input)]) {
       expect(script).toContain(
-        "OpenClaw plugin migration inputs changed during startup convergence;",
+        "Afora plugin migration inputs changed during startup convergence;",
       );
       expect(script).toContain("gateway_launch_log_offset=");
       expect(script).toContain("gateway_pid=$!");
@@ -402,7 +402,7 @@ exit 1
     });
 
     expect(script).toContain(
-      "OpenClaw plugin migration inputs changed during startup convergence;",
+      "Afora plugin migration inputs changed during startup convergence;",
     );
     expect(script).toContain("$script:gatewayProcess.HasExited");
     expect(script).toContain("$script:gatewayProcess.WaitForExit()");
@@ -411,7 +411,7 @@ exit 1
     expect(script).toContain("Select-String -Path $script:gatewayLogPath -SimpleMatch");
     expect(script).toContain("$script:gatewayRestartCount = 1");
     expect(script).not.toContain("$attempt -eq 4");
-    expect(script).not.toContain("Invoke-OpenClaw gateway restart");
+    expect(script).not.toContain("Invoke-Afora gateway restart");
   });
 
   it("keeps POSIX provider secrets out of executable command lines", () => {
@@ -463,13 +463,13 @@ exit 1
       parseRegistryPackageMetadata(
         JSON.stringify({
           version: "2026.5.20-beta.1",
-          "dist.tarball": "https://registry.example/openclaw-keyed.tgz",
+          "dist.tarball": "https://registry.example/afora-keyed.tgz",
           gitHead: "abcdef0123456789",
         }),
       ),
     ).toEqual({
       version: "2026.5.20-beta.1",
-      tarball: "https://registry.example/openclaw-keyed.tgz",
+      tarball: "https://registry.example/afora-keyed.tgz",
       gitHead: "abcdef0123456789",
     });
 
@@ -477,12 +477,12 @@ exit 1
       parseRegistryPackageMetadata(
         JSON.stringify({
           version: "2026.5.20-beta.1",
-          dist: { tarball: "https://registry.example/openclaw-nested.tgz" },
+          dist: { tarball: "https://registry.example/afora-nested.tgz" },
         }),
       ),
     ).toEqual({
       version: "2026.5.20-beta.1",
-      tarball: "https://registry.example/openclaw-nested.tgz",
+      tarball: "https://registry.example/afora-nested.tgz",
       gitHead: "",
     });
   });
@@ -492,8 +492,8 @@ exit 1
 
     expect(script).toContain("assertPublishedTargetMatchesHarnessCheckout");
     expect(script).toContain("readHarnessCheckoutVersion");
-    expect(script).toContain("openClawVersionFamily");
-    expect(script).toContain("OPENCLAW_PARALLELS_ALLOW_HARNESS_TARGET_MISMATCH");
+    expect(script).toContain("aforaVersionFamily");
+    expect(script).toContain("AFORA_PARALLELS_ALLOW_HARNESS_TARGET_MISMATCH");
     expect(script).toContain("checkout the matching release branch");
   });
 
@@ -543,11 +543,11 @@ exit 1
     ].join("\n");
 
     expect(scripts).toContain("print_log_tail()");
-    expect(scripts).toContain("OPENCLAW_PARALLELS_NPM_UPDATE_LOG_TAIL_BYTES");
+    expect(scripts).toContain("AFORA_PARALLELS_NPM_UPDATE_LOG_TAIL_BYTES");
     expect(scripts).toContain('print_log_tail "$output_file"');
     expect(scripts).toContain('print_log_tail "$gateway_log" >&2');
     expect(scripts).not.toContain('cat "$output_file"');
-    expect(scripts).not.toContain("cat /tmp/openclaw-parallels-");
+    expect(scripts).not.toContain("cat /tmp/afora-parallels-");
   });
 
   it("passes platform model timeouts to POSIX update agent turns", () => {
@@ -558,9 +558,9 @@ exit 1
     };
     withEnv(
       {
-        OPENCLAW_PARALLELS_LINUX_MODEL_TIMEOUT_S: undefined,
-        OPENCLAW_PARALLELS_MACOS_MODEL_TIMEOUT_S: undefined,
-        OPENCLAW_PARALLELS_MODEL_TIMEOUT_S: undefined,
+        AFORA_PARALLELS_LINUX_MODEL_TIMEOUT_S: undefined,
+        AFORA_PARALLELS_MACOS_MODEL_TIMEOUT_S: undefined,
+        AFORA_PARALLELS_MODEL_TIMEOUT_S: undefined,
       },
       () => {
         expect(macosUpdateScript(input)).toContain("--timeout 1800 --json");
@@ -569,8 +569,8 @@ exit 1
     );
     withEnv(
       {
-        OPENCLAW_PARALLELS_LINUX_MODEL_TIMEOUT_S: "321",
-        OPENCLAW_PARALLELS_MACOS_MODEL_TIMEOUT_S: "654",
+        AFORA_PARALLELS_LINUX_MODEL_TIMEOUT_S: "321",
+        AFORA_PARALLELS_MACOS_MODEL_TIMEOUT_S: "654",
       },
       () => {
         expect(macosUpdateScript(input)).toContain("--timeout 654 --json");
@@ -580,7 +580,7 @@ exit 1
   });
 
   it("streams fresh lane logs instead of retaining them in memory", async () => {
-    const root = tempDirs.make("openclaw-parallels-npm-update-");
+    const root = tempDirs.make("afora-parallels-npm-update-");
     const logPath = path.join(root, "fresh.log");
     const output: string[] = [];
 
@@ -602,18 +602,18 @@ exit 1
   });
 
   it("sets platform-aware fresh lane timeouts", () => {
-    withEnv({ OPENCLAW_PARALLELS_NPM_UPDATE_FRESH_TIMEOUT_S: undefined }, () => {
+    withEnv({ AFORA_PARALLELS_NPM_UPDATE_FRESH_TIMEOUT_S: undefined }, () => {
       expect(freshLaneTimeoutMs("macos")).toBe(75 * 60 * 1000);
       expect(freshLaneTimeoutMs("linux")).toBe(75 * 60 * 1000);
       expect(freshLaneTimeoutMs("windows")).toBe(90 * 60 * 1000);
     });
 
-    withEnv({ OPENCLAW_PARALLELS_NPM_UPDATE_FRESH_TIMEOUT_S: "3" }, () => {
+    withEnv({ AFORA_PARALLELS_NPM_UPDATE_FRESH_TIMEOUT_S: "3" }, () => {
       expect(freshLaneTimeoutMs("macos")).toBe(3000);
     });
 
     withEnv(
-      { OPENCLAW_PARALLELS_NPM_UPDATE_FRESH_TIMEOUT_S: String(Number.MAX_SAFE_INTEGER) },
+      { AFORA_PARALLELS_NPM_UPDATE_FRESH_TIMEOUT_S: String(Number.MAX_SAFE_INTEGER) },
       () => {
         expect(freshLaneTimeoutMs("linux")).toBe(MAX_TIMER_TIMEOUT_MS);
       },
@@ -621,7 +621,7 @@ exit 1
   });
 
   it("clamps oversized fresh lane command timeouts before scheduling", async () => {
-    const root = tempDirs.make("openclaw-parallels-npm-update-");
+    const root = tempDirs.make("afora-parallels-npm-update-");
     const logPath = path.join(root, "fresh.log");
 
     const code = await spawnLoggedCommand(
@@ -637,7 +637,7 @@ exit 1
   });
 
   it.runIf(process.platform !== "win32")("times out fresh lane process groups", async () => {
-    const root = tempDirs.make("openclaw-parallels-npm-update-");
+    const root = tempDirs.make("afora-parallels-npm-update-");
     const logPath = path.join(root, "fresh.log");
     const scriptPath = path.join(root, "hung-fresh-lane.mjs");
     const descendantPidPath = path.join(root, "descendant.pid");
@@ -677,7 +677,7 @@ exit 1
   it.runIf(process.platform !== "win32")(
     "lets fresh lane descendants exit during timeout kill grace",
     async () => {
-      const root = tempDirs.make("openclaw-parallels-npm-update-");
+      const root = tempDirs.make("afora-parallels-npm-update-");
       const logPath = path.join(root, "fresh.log");
       const scriptPath = path.join(root, "graceful-fresh-lane.mjs");
       const readyPath = path.join(root, "ready");
@@ -726,7 +726,7 @@ exit 1
           dependencyTarballs: [],
           registryPackageTarballs: [],
           json: false,
-          packageSpec: "openclaw@latest",
+          packageSpec: "afora@latest",
           platforms: new Set<Platform>(["linux"]),
           provider: "openai",
           updateTarget: "local-main",
@@ -744,7 +744,7 @@ exit 1
     ) => Promise<number>;
 
     await expect(
-      runStreamingToJobLog.call(smoke, "openclaw-definitely-missing-command", [], 60 * 60 * 1000, {
+      runStreamingToJobLog.call(smoke, "afora-definitely-missing-command", [], 60 * 60 * 1000, {
         append: () => undefined,
         logPath: "",
         signal: new AbortController().signal,
@@ -756,7 +756,7 @@ exit 1
   it.runIf(process.platform !== "win32")(
     "lets update stream descendants exit during timeout kill grace",
     async () => {
-      const root = tempDirs.make("openclaw-parallels-npm-update-");
+      const root = tempDirs.make("afora-parallels-npm-update-");
       const scriptPath = path.join(root, "stream-update-grace.mjs");
       const readyPath = path.join(root, "stream-ready");
       const donePath = path.join(root, "stream-done");
@@ -768,7 +768,7 @@ exit 1
             dependencyTarballs: [],
             registryPackageTarballs: [],
             json: false,
-            packageSpec: "openclaw@latest",
+            packageSpec: "afora@latest",
             platforms: new Set<Platform>(["linux"]),
             provider: "openai",
             updateTarget: "local-main",
@@ -824,8 +824,8 @@ exit 1
 
     expect(script).toContain("runWindowsBackgroundPowerShell");
     expect(transports).toContain("runWindowsBackgroundPowerShell");
-    expect(transports).toContain("__OPENCLAW_BACKGROUND_EXIT__");
-    expect(transports).toContain("__OPENCLAW_BACKGROUND_DONE__");
+    expect(transports).toContain("__AFORA_BACKGROUND_EXIT__");
+    expect(transports).toContain("__AFORA_BACKGROUND_DONE__");
     expect(transports).toContain("${options.label} timed out");
   });
 
@@ -861,14 +861,14 @@ exit 1
     const commands = decodedCommands.join("\n---\n");
     const payloads = inputs.join("\n---\n");
     expect(commands).toContain("$pidPath");
-    expect(commands).toContain("function Write-OpenClawUtf8File");
+    expect(commands).toContain("function Write-AforaUtf8File");
     expect(commands).toContain("[System.Text.UTF8Encoding]::new($false)");
-    expect(payloads).toContain("Write-OpenClawUtf8File $exitPath '0'");
-    expect(payloads).toContain("Write-OpenClawUtf8File $donePath 'done'");
-    expect(payloads).toContain("Write-OpenClawUtf8File $pidPath ([string]$PID)");
+    expect(payloads).toContain("Write-AforaUtf8File $exitPath '0'");
+    expect(payloads).toContain("Write-AforaUtf8File $donePath 'done'");
+    expect(payloads).toContain("Write-AforaUtf8File $pidPath ([string]$PID)");
     expect(commands).toContain('cmd.exe /d /s /c start "" /b powershell.exe');
     expect(commands).toContain("icacls.exe $runDir /inheritance:r");
-    expect(commands).toContain("Stop-OpenClawBackgroundProcessTree ([int]$backgroundPid)");
+    expect(commands).toContain("Stop-AforaBackgroundProcessTree ([int]$backgroundPid)");
     expect(commands).toContain(
       'Get-CimInstance Win32_Process -Filter "ParentProcessId=$ProcessId"',
     );
@@ -950,7 +950,7 @@ exit 1
       }
       if (args.includes("cmd.exe")) {
         const command = args.at(-1) ?? "";
-        if (command.includes("__OPENCLAW_BACKGROUND_DONE__")) {
+        if (command.includes("__AFORA_BACKGROUND_DONE__")) {
           logProbes++;
           const markers = extractWindowsBackgroundControlMarkers(command);
           return {
@@ -1012,7 +1012,7 @@ exit 1
     ).rejects.toThrow("windows background marker smuggle timed out");
 
     expect(decodedCommands.join("\n")).toContain(
-      "Stop-OpenClawBackgroundProcessTree ([int]$backgroundPid)",
+      "Stop-AforaBackgroundProcessTree ([int]$backgroundPid)",
     );
   });
 
@@ -1060,7 +1060,7 @@ exit 1
 
     expect(pollCount).toBe(1);
     expect(output.join("")).toContain("first chunk");
-    expect(decodedCommands.join("\n")).not.toContain("Stop-OpenClawBackgroundProcessTree");
+    expect(decodedCommands.join("\n")).not.toContain("Stop-AforaBackgroundProcessTree");
     expect(decodedCommands.join("\n")).toContain(
       "Remove-Item -Path $scriptPath, $logPath, $donePath, $exitPath, $pidPath",
     );
@@ -1075,7 +1075,7 @@ exit 1
   });
 
   it("selects macOS desktop users with homes on spaced mounted volumes", () => {
-    const root = tempDirs.make("openclaw-parallels-npm-update-");
+    const root = tempDirs.make("afora-parallels-npm-update-");
     const prlctlPath = path.join(root, "prlctl");
     writeFileSync(
       prlctlPath,
@@ -1107,7 +1107,7 @@ exit 7
           dependencyTarballs: [],
           registryPackageTarballs: [],
           json: false,
-          packageSpec: "openclaw@latest",
+          packageSpec: "afora@latest",
           platforms: new Set<Platform>(["macos"]),
           provider: "openai",
           updateTarget: "local-main",
@@ -1123,7 +1123,7 @@ exit 7
   });
 
   it("keeps spaces in macOS sudo fallback desktop homes", () => {
-    const root = tempDirs.make("openclaw-parallels-npm-update-");
+    const root = tempDirs.make("afora-parallels-npm-update-");
     const prlctlPath = path.join(root, "prlctl");
     writeFileSync(
       prlctlPath,
@@ -1150,7 +1150,7 @@ exit 7
           dependencyTarballs: [],
           registryPackageTarballs: [],
           json: false,
-          packageSpec: "openclaw@latest",
+          packageSpec: "afora@latest",
           platforms: new Set<Platform>(["macos"]),
           provider: "openai",
           updateTarget: "local-main",
@@ -1204,11 +1204,11 @@ exit 7
     expect(windowsScript).toContain(
       "Remove-Item $nodeScriptPath -Force -ErrorAction SilentlyContinue",
     );
-    expect(windowsScript).toContain("Remove-FuturePluginEntries\nStop-OpenClawGatewayProcesses");
-    expect(script).toContain("scrub_future_plugin_entries\nstop_openclaw_gateway_processes");
-    expect(macosScript).toContain('OPENCLAW_BIN="$(resolve_required_command openclaw)"');
+    expect(windowsScript).toContain("Remove-FuturePluginEntries\nStop-AforaGatewayProcesses");
+    expect(script).toContain("scrub_future_plugin_entries\nstop_afora_gateway_processes");
+    expect(macosScript).toContain('AFORA_BIN="$(resolve_required_command afora)"');
     expect(macosScript).toContain("/usr/local/bin:/usr/local/sbin");
-    expect(macosScript).not.toContain("/opt/homebrew/bin/openclaw");
+    expect(macosScript).not.toContain("/opt/homebrew/bin/afora");
   });
 
   it("preserves bundled plugin inventory during updates while isolating POSIX gateway stops", () => {
@@ -1226,16 +1226,16 @@ exit 7
 
     expect(updateLines).not.toContain(undefined);
     for (const updateLine of updateLines) {
-      expect(updateLine).not.toContain("OPENCLAW_DISABLE_BUNDLED_PLUGINS");
+      expect(updateLine).not.toContain("AFORA_DISABLE_BUNDLED_PLUGINS");
     }
     expect(windowsScript).toContain(
-      "Invoke-WithScopedEnv @{ OPENCLAW_ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS = '1'",
+      "Invoke-WithScopedEnv @{ AFORA_ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS = '1'",
     );
     expect(macosScript).toContain(
-      'OPENCLAW_DISABLE_BUNDLED_PLUGINS=1 "$OPENCLAW_BIN" gateway stop',
+      'AFORA_DISABLE_BUNDLED_PLUGINS=1 "$AFORA_BIN" gateway stop',
     );
     expect(linuxScript).toContain(
-      "OPENCLAW_DISABLE_BUNDLED_PLUGINS=1 OPENCLAW_ALLOW_ROOT=1 openclaw gateway stop",
+      "AFORA_DISABLE_BUNDLED_PLUGINS=1 AFORA_ALLOW_ROOT=1 afora gateway stop",
     );
   });
 
@@ -1246,13 +1246,13 @@ exit 7
       updateTarget: "2026.5.3-beta.2",
     });
 
-    const updateIndex = script.indexOf("Invoke-OpenClaw update --tag");
+    const updateIndex = script.indexOf("Invoke-Afora update --tag");
     const scopedIndex = script.indexOf(
-      "Invoke-WithScopedEnv @{ OPENCLAW_ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS",
+      "Invoke-WithScopedEnv @{ AFORA_ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS",
     );
-    const versionIndex = script.indexOf("Invoke-OpenClaw --version", scopedIndex);
-    const startIndex = script.indexOf("\nStart-OpenClawGateway\n", updateIndex);
-    const agentIndex = script.indexOf("Invoke-OpenClaw agent --local");
+    const versionIndex = script.indexOf("Invoke-Afora --version", scopedIndex);
+    const startIndex = script.indexOf("\nStart-AforaGateway\n", updateIndex);
+    const agentIndex = script.indexOf("Invoke-Afora agent --local");
 
     expect(updateIndex).toBeGreaterThanOrEqual(0);
     expect(scopedIndex).toBeGreaterThanOrEqual(0);
@@ -1260,7 +1260,7 @@ exit 7
     expect(versionIndex).toBeGreaterThan(updateIndex);
     expect(startIndex).toBeGreaterThan(updateIndex);
     expect(agentIndex).toBeGreaterThan(updateIndex);
-    expect(script).not.toContain("OPENCLAW_DISABLE_BUNDLED_PLUGINS");
+    expect(script).not.toContain("AFORA_DISABLE_BUNDLED_PLUGINS");
   });
 
   it("generates a .NET-safe Windows stale import regex in the update-failure guard", () => {
@@ -1282,13 +1282,13 @@ exit 7
     expect(staleImportLine).toContain("$updateText -match 'ERR_MODULE_NOT_FOUND'");
     expect(staleImportLine).toContain(`$updateText -match '${staleImportPattern}'`);
     expect(staleImportPattern).toBe(
-      String.raw`node_modules\\openclaw\\dist\\[^\\]+-[A-Za-z0-9_-]+\.js`,
+      String.raw`node_modules\\afora\\dist\\[^\\]+-[A-Za-z0-9_-]+\.js`,
     );
-    expect(staleImportPattern).not.toContain("node_modules\\openclaw\\dist\\");
+    expect(staleImportPattern).not.toContain("node_modules\\afora\\dist\\");
     expect(staleImportPattern.match(/\\\\/g)).toHaveLength(4);
-    const representativeUpdateFailure = String.raw`Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\Users\runner\AppData\Roaming\npm\node_modules\openclaw\dist\main-a1_B2.js' imported from C:\Users\runner\AppData\Roaming\npm\node_modules\openclaw\dist\cli.js`;
+    const representativeUpdateFailure = String.raw`Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\Users\runner\AppData\Roaming\npm\node_modules\afora\dist\main-a1_B2.js' imported from C:\Users\runner\AppData\Roaming\npm\node_modules\afora\dist\cli.js`;
     const generatedRegex = new RegExp(staleImportPattern);
     expect(generatedRegex.test(representativeUpdateFailure)).toBe(true);
-    expect(generatedRegex.test(String.raw`node_modules\openclaw\dist\main.js`)).toBe(false);
+    expect(generatedRegex.test(String.raw`node_modules\afora\dist\main.js`)).toBe(false);
   });
 });

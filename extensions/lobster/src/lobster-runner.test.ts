@@ -2,8 +2,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 // Lobster tests cover lobster runner plugin behavior.
-import { toErrorObject as toLintErrorObject } from "openclaw/plugin-sdk/error-runtime";
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { toErrorObject as toLintErrorObject } from "afora-agent/plugin-sdk/error-runtime";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createEmbeddedLobsterRunner, resolveLobsterCwd } from "./lobster-runner.js";
 
@@ -123,7 +123,7 @@ describe("createEmbeddedLobsterRunner", () => {
   });
 
   it("detects workflow files and parses argsJson", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-lobster-runner-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-lobster-runner-"));
     const workflowPath = path.join(tempDir, "workflow.lobster");
     await fs.writeFile(workflowPath, "steps: []\n", "utf8");
 
@@ -166,7 +166,7 @@ describe("createEmbeddedLobsterRunner", () => {
   });
 
   it("detects existing workflow file paths that contain spaces", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-lobster-runner-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-lobster-runner-"));
     const workflowPath = path.join(tempDir, "daily inbox.lobster");
     await fs.writeFile(workflowPath, "steps: []\n", "utf8");
 
@@ -210,7 +210,7 @@ describe("createEmbeddedLobsterRunner", () => {
     ["missing.lobster", "missing.lobster"],
     ["nested/missing.yaml", path.join("nested", "missing.yaml")],
   ])("surfaces missing workflow path errors for %s", async (pipeline, expectedRelativePath) => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-lobster-runner-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-lobster-runner-"));
 
     try {
       const runtime = {
@@ -240,7 +240,7 @@ describe("createEmbeddedLobsterRunner", () => {
   });
 
   it("returns a parse error when workflow args are invalid JSON", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-lobster-runner-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-lobster-runner-"));
     const workflowPath = path.join(tempDir, "workflow.lobster");
     await fs.writeFile(workflowPath, "steps: []\n", "utf8");
 
@@ -325,7 +325,7 @@ describe("createEmbeddedLobsterRunner", () => {
         timeoutMs: 2000,
         maxStdoutBytes: 4096,
       }),
-    ).rejects.toThrow("Lobster input requests are not supported by the OpenClaw Lobster tool yet");
+    ).rejects.toThrow("Lobster input requests are not supported by the Afora Lobster tool yet");
   });
 
   it("routes resume through the embedded runtime", async () => {

@@ -1,5 +1,5 @@
 // Imessage plugin module implements actions behavior.
-import { readBooleanParam } from "openclaw/plugin-sdk/boolean-param";
+import { readBooleanParam } from "afora-agent/plugin-sdk/boolean-param";
 import {
   createActionGate,
   jsonResult,
@@ -8,17 +8,17 @@ import {
   readReactionParams,
   readStringArrayParam,
   readStringParam,
-} from "openclaw/plugin-sdk/channel-actions";
+} from "afora-agent/plugin-sdk/channel-actions";
 import type {
   ChannelMessageActionAdapter,
   ChannelMessageActionContext,
   ChannelMessageActionName,
-} from "openclaw/plugin-sdk/channel-contract";
-import { createLazyRuntimeNamedExport } from "openclaw/plugin-sdk/lazy-runtime";
-import { normalizePollInput } from "openclaw/plugin-sdk/poll-runtime";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
-import { normalizeOptionalLowercaseString } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { extractToolSend } from "openclaw/plugin-sdk/tool-send";
+} from "afora-agent/plugin-sdk/channel-contract";
+import { createLazyRuntimeNamedExport } from "afora-agent/plugin-sdk/lazy-runtime";
+import { normalizePollInput } from "afora-agent/plugin-sdk/poll-runtime";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/runtime-env";
+import { normalizeOptionalLowercaseString } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { extractToolSend } from "afora-agent/plugin-sdk/tool-send";
 import { hasExclusiveIMessageLocalDatabase, resolveIMessageAccount } from "./accounts.js";
 import { IMESSAGE_ACTION_NAMES, IMESSAGE_ACTIONS } from "./actions-contract.js";
 import { chatContextFromIMessageTarget } from "./chat-context.js";
@@ -491,10 +491,10 @@ export const imessageMessageActions: ChannelMessageActionAdapter = {
           ? ` imsg reports: ${privateApiStatus.statusMessage}`
           : "";
         log.warn(
-          `iMessage ${action} blocked: private API bridge unavailable (accountId=${account.accountId}, cliPath=${cliPathForProbe}). Run \`imsg launch\` to re-inject the dylib, then \`openclaw channels status --probe\` to refresh.${reason}`,
+          `iMessage ${action} blocked: private API bridge unavailable (accountId=${account.accountId}, cliPath=${cliPathForProbe}). Run \`imsg launch\` to re-inject the dylib, then \`afora channels status --probe\` to refresh.${reason}`,
         );
         throw new Error(
-          `iMessage ${action} requires the imsg private API bridge. Run imsg launch, then openclaw channels status --probe to refresh capability detection.${reason}`,
+          `iMessage ${action} requires the imsg private API bridge. Run imsg launch, then afora channels status --probe to refresh capability detection.${reason}`,
         );
       }
     };
@@ -634,17 +634,17 @@ export const imessageMessageActions: ChannelMessageActionAdapter = {
           );
         }
         // Reply-with-attachment requires the `imsg send-rich --file` flag
-        // (openclaw/imsg#114). Older imsg builds reject the option, so
+        // (afora/imsg#114). Older imsg builds reject the option, so
         // refuse loudly here rather than letting send-rich ship the text
         // alone and silently drop the attachment — the original symptom
-        // of openclaw/openclaw#79822.
+        // of AforaMosh/afora-agent#79822.
         if (
           !opts.remoteHost &&
           privateApiStatus?.cliCapabilities?.sendRichSupportsAttachment !== true
         ) {
           throw new Error(
             "iMessage reply with an attachment needs an imsg build that exposes `send-rich --file` " +
-              "(openclaw/imsg#114). Upgrade imsg, or use action 'upload-file' (with filePath/filename) " +
+              "(afora/imsg#114). Upgrade imsg, or use action 'upload-file' (with filePath/filename) " +
               "or action 'send' (with media) to deliver the file plus a separate 'reply' for any text.",
           );
         }
@@ -779,7 +779,7 @@ export const imessageMessageActions: ChannelMessageActionAdapter = {
       }
       if (privateApiStatus?.selectors?.pollPayloadMessage !== true) {
         throw new Error(
-          "iMessage poll requires an imsg bridge that advertises the pollPayloadMessage selector. Update imsg, run imsg launch to re-inject the bridge, then run openclaw channels status --probe to refresh capability detection.",
+          "iMessage poll requires an imsg bridge that advertises the pollPayloadMessage selector. Update imsg, run imsg launch to re-inject the bridge, then run afora channels status --probe to refresh capability detection.",
         );
       }
       // Shared `message`-tool poll params (see src/poll-params.ts): pollQuestion
@@ -813,14 +813,14 @@ export const imessageMessageActions: ChannelMessageActionAdapter = {
       }
       if (privateApiStatus?.selectors?.pollVoteMessage !== true) {
         throw new Error(
-          "iMessage poll-vote requires an imsg bridge that advertises the pollVoteMessage selector. Update imsg, run imsg launch to re-inject the bridge, then run openclaw channels status --probe to refresh capability detection.",
+          "iMessage poll-vote requires an imsg bridge that advertises the pollVoteMessage selector. Update imsg, run imsg launch to re-inject the bridge, then run afora channels status --probe to refresh capability detection.",
         );
       }
       // A previously injected helper can be newer than cliPath. The selector
       // proves native construction; rpc_methods proves this binary has vote.
       if (!imessageRpcSupportsMethod(privateApiStatus, "poll.vote")) {
         throw new Error(
-          "iMessage poll-vote requires an imsg build that advertises the poll.vote capability. Update imsg, then run openclaw channels status --probe to refresh capability detection.",
+          "iMessage poll-vote requires an imsg build that advertises the poll.vote capability. Update imsg, then run afora channels status --probe to refresh capability detection.",
         );
       }
       // The poll being voted on is an inbound message; the agent references it

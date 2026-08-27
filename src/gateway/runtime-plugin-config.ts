@@ -1,19 +1,19 @@
 // Gateway runtime plugin config resolver.
 // Applies plugin auto-enable rules against the active manifest snapshot.
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { getCurrentPluginMetadataSnapshot } from "../plugins/current-plugin-metadata-snapshot.js";
 import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.types.js";
 
 type CachedGatewayPluginConfig = {
   snapshot: PluginMetadataSnapshot;
-  config: OpenClawConfig;
+  config: AforaConfig;
 };
 
-const gatewayPluginConfigCache = new WeakMap<OpenClawConfig, CachedGatewayPluginConfig>();
+const gatewayPluginConfigCache = new WeakMap<AforaConfig, CachedGatewayPluginConfig>();
 
 /** Resolves runtime config with plugin auto-enable applied for gateway startup/reload paths. */
-export function resolveGatewayPluginConfig(params: { config: OpenClawConfig }): OpenClawConfig {
+export function resolveGatewayPluginConfig(params: { config: AforaConfig }): AforaConfig {
   const currentSnapshot = getCurrentPluginMetadataSnapshot({
     config: params.config,
     allowWorkspaceScopedSnapshot: true,

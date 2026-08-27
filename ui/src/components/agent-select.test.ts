@@ -6,7 +6,7 @@ import { i18n, t } from "../i18n/index.ts";
 import { waitForFast } from "../test-helpers/wait-for.ts";
 import { AgentSelect, type AgentSelectOption } from "./agent-select.ts";
 
-const AGENT_SELECT_TEST_TAG = `test-openclaw-agent-select-${crypto.randomUUID()}`;
+const AGENT_SELECT_TEST_TAG = `test-afora-agent-select-${crypto.randomUUID()}`;
 
 customElements.define(AGENT_SELECT_TEST_TAG, class extends AgentSelect {});
 

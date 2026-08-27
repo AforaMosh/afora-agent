@@ -39,7 +39,7 @@ describe("gateway tailscale bind validation", () => {
     const res = validateConfigObject({
       gateway: {
         bind: "loopback",
-        tailscale: { mode: "serve", serviceName: "svc:openclaw-gateway" },
+        tailscale: { mode: "serve", serviceName: "svc:afora-gateway" },
       },
     });
 

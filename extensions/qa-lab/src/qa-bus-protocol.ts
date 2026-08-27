@@ -1,6 +1,6 @@
 // QA Lab source is mounted into package acceptance without the local-only QA Channel SDK.
 // Keep its in-memory bus protocol self-contained; parity tests guard the shared semantics.
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { QaBusConversation, QaBusToolCall } from "./runtime-api.js";
 
 type QaTargetParts = {

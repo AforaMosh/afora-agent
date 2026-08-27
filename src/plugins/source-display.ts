@@ -1,6 +1,6 @@
 /** Formats plugin source paths for user-facing status output. */
 import path from "node:path";
-import { sliceUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { sliceUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { isPathInside } from "../infra/path-guards.js";
 import { shortenHomeInString } from "../utils.js";
 import type { PluginRecord } from "./registry.js";

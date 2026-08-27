@@ -190,7 +190,7 @@ describe("Windows command execution", () => {
       }
       const extension = path.extname(command) || path.win32.extname(command);
       return path.win32.join(
-        "C:\\openclaw-test-bin",
+        "C:\\afora-test-bin",
         extension ? command : `${path.win32.basename(command)}.exe`,
       );
     });
@@ -237,7 +237,7 @@ describe("Windows command execution", () => {
   });
 
   it("resolves implicit batch shims before Execa can consult ComSpec", async () => {
-    await withTempDir("openclaw-execa-windows-shim-", async (binDir) => {
+    await withTempDir("afora-execa-windows-shim-", async (binDir) => {
       const shimPath = path.join(binDir, "custom-shim.cmd");
       fs.writeFileSync(shimPath, "@echo off\r\n", "utf8");
       resolveExecutableFromPathEnvMock.mockReturnValueOnce(shimPath);
@@ -265,7 +265,7 @@ describe("Windows command execution", () => {
         spawnCommand(["missing\r\ncalc.exe"], {
           baseEnv: {
             ComSpec: "C:\\workspace\\evil\\cmd.exe",
-            PATH: "C:\\openclaw-test-bin",
+            PATH: "C:\\afora-test-bin",
             PATHEXT: ".EXE;.CMD;.BAT;.COM",
           },
         }),

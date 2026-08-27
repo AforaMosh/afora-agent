@@ -2,17 +2,17 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   formatLegacyAgentMediaMigrationRequiredMessage,
   GATEWAY_AGENT_MEDIA_MIGRATION_REQUIRED_REASON,
-} from "../state/openclaw-agent-db-migration-required.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+} from "../state/afora-agent-db-migration-required.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import {
   GATEWAY_CRASH_LOOP_BREAKER_REASON,
   GATEWAY_CRASH_LOOP_RECOVERED_REASON,
@@ -26,7 +26,7 @@ import {
 } from "./gateway-boot-lifecycle.js";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "./kysely-sync.js";
 
-type GatewayBootLifecycleTestDatabase = Pick<OpenClawStateKyselyDatabase, "gateway_boot_lifecycle">;
+type GatewayBootLifecycleTestDatabase = Pick<AforaStateKyselyDatabase, "gateway_boot_lifecycle">;
 type GatewayBootLifecycleOutcome = Parameters<typeof completeGatewayBootLifecycle>[1]["outcome"];
 
 const GATEWAY_BOOT_LOOP_UNCLEAN_THRESHOLD = 3;
@@ -34,13 +34,13 @@ const GATEWAY_BOOT_LOOP_WINDOW_MS = 5 * 60_000;
 const GATEWAY_BOOT_LIFECYCLE_RETENTION_MS = 24 * 60 * 60_000;
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 function createLifecycleDb() {
-  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-gateway-boot-"));
-  const env = { OPENCLAW_STATE_DIR: stateDir } as NodeJS.ProcessEnv;
-  const { db } = openOpenClawStateDatabase({ env });
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-gateway-boot-"));
+  const env = { AFORA_STATE_DIR: stateDir } as NodeJS.ProcessEnv;
+  const { db } = openAforaStateDatabase({ env });
   const kysely = getNodeSqliteKysely<GatewayBootLifecycleTestDatabase>(db);
   return { env, db, kysely };
 }
@@ -257,8 +257,8 @@ describe("gateway crash-loop breaker", () => {
 
   it("repairs only typed and shipped media-migration startup failures", () => {
     const lifecycle = createLifecycleDb();
-    const databasePath = "/tmp/openclaw-agent.sqlite";
-    const longDatabasePath = `/tmp/${"agent-".repeat(100)}openclaw-agent.sqlite`;
+    const databasePath = "/tmp/afora-agent.sqlite";
+    const longDatabasePath = `/tmp/${"agent-".repeat(100)}afora-agent.sqlite`;
     const nowMs = 1_000_000;
 
     insertBootRows(lifecycle, [

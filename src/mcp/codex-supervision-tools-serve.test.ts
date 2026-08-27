@@ -77,7 +77,7 @@ describe("createCodexSupervisionToolsMcpServer", () => {
         config: {},
         tools: [],
       }),
-    ).toThrow("Install or update @openclaw/codex");
+    ).toThrow("Install or update @afora/codex");
   });
 
   it("lists official tools through the trusted standalone owner context", async () => {

@@ -12,14 +12,14 @@ describe("xai responses tool helpers", () => {
     expect(
       buildXaiResponsesToolBody({
         model: "grok-4.3",
-        inputText: "search for openclaw",
+        inputText: "search for afora",
         tools: [{ type: "x_search" }],
         maxTurns: 2,
         reasoningEffort: "none",
       }),
     ).toEqual({
       model: "grok-4.3",
-      input: [{ role: "user", content: "search for openclaw" }],
+      input: [{ role: "user", content: "search for afora" }],
       tools: [{ type: "x_search" }],
       store: false,
       reasoning: { effort: "none" },

@@ -150,8 +150,8 @@ jobs:
 
             const normalized = body.toLowerCase();
             const mentionsMantis =
-              normalized.includes("@openclaw-mantis") ||
-              normalized.includes("/openclaw-mantis");
+              normalized.includes("@afora-mantis") ||
+              normalized.includes("/afora-mantis");
             const requested = new RegExp(process.env.REQUEST_PATTERN, "u").test(normalized);
             const excluded =
               process.env.EXCLUDE_PATTERN !== "" &&

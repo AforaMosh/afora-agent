@@ -18,7 +18,7 @@ import {
   type CompletionShell,
 } from "../cli/completion-runtime.js";
 import type { HealthFinding, HealthRepairEffect } from "../flows/health-checks.js";
-import { resolveOpenClawPackageRoot } from "../infra/openclaw-root.js";
+import { resolveAforaPackageRoot } from "../infra/afora-root.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { DoctorPrompter } from "./doctor-prompter.js";
 
@@ -62,7 +62,7 @@ async function installCompletionForDoctor(
 async function generateCompletionCache(
   options: CompletionCacheGenerationOptions,
 ): Promise<boolean> {
-  const root = await resolveOpenClawPackageRoot({
+  const root = await resolveAforaPackageRoot({
     moduleUrl: import.meta.url,
     argv1: process.argv[1],
     cwd: process.cwd(),
@@ -71,7 +71,7 @@ async function generateCompletionCache(
     return false;
   }
 
-  const binPath = path.join(root, "openclaw.mjs");
+  const binPath = path.join(root, "afora.mjs");
   const args = [binPath, "completion", "--write-state"];
   if (options.shell) {
     args.push("--shell", options.shell);
@@ -98,13 +98,13 @@ export type ShellCompletionStatus = {
   profileInstalled: boolean;
   cacheExists: boolean;
   cachePath: string;
-  /** True if profile uses slow dynamic pattern like `source <(openclaw completion ...)` */
+  /** True if profile uses slow dynamic pattern like `source <(afora completion ...)` */
   usesSlowPattern: boolean;
 };
 
 /** Check the status of shell completion for the current shell. */
 export async function checkShellCompletionStatus(
-  binName = "openclaw",
+  binName = "afora",
   options: ShellCompletionStatusOptions = {},
 ): Promise<ShellCompletionStatus> {
   const shell = options.shell ?? resolveShellFromEnv();
@@ -135,7 +135,7 @@ export function shellCompletionStatusToHealthFindings(
         severity: "info",
         message: `Your ${status.shell} profile uses slow dynamic completion (source <(...)).`,
         path: pathLocal,
-        fixHint: "Run `openclaw doctor --fix` to upgrade to cached completion.",
+        fixHint: "Run `afora doctor --fix` to upgrade to cached completion.",
       },
     ];
   }
@@ -146,7 +146,7 @@ export function shellCompletionStatusToHealthFindings(
         severity: "info",
         message: `Shell completion is configured in your ${status.shell} profile but the cache is missing.`,
         path: pathLocal,
-        fixHint: `Run \`openclaw completion --write-state\` or \`openclaw doctor --fix\` to regenerate ${status.cachePath}.`,
+        fixHint: `Run \`afora completion --write-state\` or \`afora doctor --fix\` to regenerate ${status.cachePath}.`,
       },
     ];
   }

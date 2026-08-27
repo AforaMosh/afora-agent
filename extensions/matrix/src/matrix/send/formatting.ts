@@ -1,6 +1,6 @@
-import type { MarkdownTableMode } from "openclaw/plugin-sdk/markdown-table-runtime";
+import type { MarkdownTableMode } from "afora-agent/plugin-sdk/markdown-table-runtime";
 // Matrix helper module supports formatting behavior.
-import { isVoiceMessageCompatibleAudio } from "openclaw/plugin-sdk/media-runtime";
+import { isVoiceMessageCompatibleAudio } from "afora-agent/plugin-sdk/media-runtime";
 import { getMatrixRuntime } from "../../runtime.js";
 import {
   markdownToMatrixBody,

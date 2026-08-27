@@ -15,10 +15,10 @@ future `tsx`/esbuild upgrade reintroduces it.
 
 ## Original symptom
 
-Running OpenClaw dev scripts through `tsx` failed at startup with:
+Running Afora dev scripts through `tsx` failed at startup with:
 
 ```text
-[openclaw] Failed to start CLI: TypeError: __name is not a function
+[afora] Failed to start CLI: TypeError: __name is not a function
     at createSubsystemLogger (src/logging/subsystem.ts)
     at <caller> (src/agents/auth-profiles/constants.ts)
 ```
@@ -60,7 +60,7 @@ again, capture the exact Node version, `tsx` version
 
   ```bash
   pnpm tsgo
-  node openclaw.mjs status
+  node afora.mjs status
   ```
 
 - Try a different `tsx` version (`pnpm add -D tsx@<version>` is a dependency

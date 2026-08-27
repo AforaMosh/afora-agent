@@ -1,4 +1,4 @@
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { parsePostContent } from "./post.js";
 
 const INTERACTIVE_CARD_FALLBACK_TEXT = "[Interactive Card]";

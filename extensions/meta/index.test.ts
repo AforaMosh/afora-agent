@@ -9,11 +9,11 @@ import {
   type AssistantMessageEventStreamContract,
   type SimpleStreamOptions,
   type StreamFunction,
-} from "@openclaw/ai";
-import { prepareModelForSimpleCompletion } from "@openclaw/ai/transports";
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import { streamSimple, type Context, type Model } from "openclaw/plugin-sdk/llm";
-import { capturePluginRegistration } from "openclaw/plugin-sdk/plugin-test-runtime";
+} from "@afora/ai";
+import { prepareModelForSimpleCompletion } from "@afora/ai/transports";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import { streamSimple, type Context, type Model } from "afora-agent/plugin-sdk/llm";
+import { capturePluginRegistration } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildMetaProvider } from "./api.js";
 import plugin from "./index.js";
@@ -112,7 +112,7 @@ describe("meta provider", () => {
     }
     const model = {
       ...resolveCatalogModel(CATALOG_CAP_MODEL_ID),
-      api: "openclaw-provider-stream:meta:muse-spark-1.2",
+      api: "afora-provider-stream:meta:muse-spark-1.2",
     } as Model;
 
     for (const hook of [provider.wrapStreamFn, provider.wrapSimpleCompletionStreamFn]) {
@@ -148,7 +148,7 @@ describe("meta provider", () => {
     }
     const model = {
       ...resolveCatalogModel(CATALOG_CAP_MODEL_ID),
-      api: "openclaw-provider-stream:meta:muse-spark-1.2",
+      api: "afora-provider-stream:meta:muse-spark-1.2",
     } as Model;
     let capturedPayload: Record<string, unknown> | undefined;
     const baseStreamFn: StreamFn = (streamModel, _context, options) => {
@@ -323,7 +323,7 @@ describe("meta provider", () => {
     });
 
     const preparedModel = prepareModelForSimpleCompletion({ apiRegistry: registry, model });
-    expect(preparedModel.api).toMatch(/^openclaw-provider-simple:/);
+    expect(preparedModel.api).toMatch(/^afora-provider-simple:/);
 
     const result = await runtime.completeSimple(preparedModel, { messages: [] });
 

@@ -3,7 +3,7 @@ import {
   readSystemAgentInferenceUnavailableErrorDetails,
   type SystemAgentChatParams,
   type SystemAgentChatResult,
-} from "@openclaw/gateway-protocol";
+} from "@afora/gateway-protocol";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import type { WizardStep } from "../../api/types.ts";
 import { selectApplicationSession } from "../../app/agent-selection.ts";
@@ -449,8 +449,8 @@ export class CustodianSessionStore {
     const snapshot = context.gateway.snapshot;
     const client = snapshot.phase === "connected" ? snapshot.client : null;
     const chatSupported =
-      client !== null && canCallGatewayMethod(snapshot, "openclaw.chat", "operator.admin");
-    const chatUnsupported = isGatewayMethodAdvertised(snapshot, "openclaw.chat") === false;
+      client !== null && canCallGatewayMethod(snapshot, "afora.chat", "operator.admin");
+    const chatUnsupported = isGatewayMethodAdvertised(snapshot, "afora.chat") === false;
     const configuredInferenceState = this.resolveConfiguredInferenceState();
     const inferenceStateChanged = configuredInferenceState !== this.configuredInferenceState;
     this.configuredInferenceState = configuredInferenceState;
@@ -584,7 +584,7 @@ export class CustodianSessionStore {
     const context = this.context;
     if (
       !context ||
-      isGatewayMethodAdvertised(context.gateway.snapshot, "openclaw.chat.history") !== true
+      isGatewayMethodAdvertised(context.gateway.snapshot, "afora.chat.history") !== true
     ) {
       return;
     }
@@ -642,7 +642,7 @@ export class CustodianSessionStore {
     const snapshot = context.gateway.snapshot;
     if (
       snapshot.client !== client ||
-      !canCallGatewayMethod(snapshot, "openclaw.chat", "operator.admin")
+      !canCallGatewayMethod(snapshot, "afora.chat", "operator.admin")
     ) {
       return "rejected";
     }
@@ -659,7 +659,7 @@ export class CustodianSessionStore {
     this.retryParams = params;
     this.emit();
     try {
-      const result = await client.request<SystemAgentChatResult>("openclaw.chat", params, {
+      const result = await client.request<SystemAgentChatResult>("afora.chat", params, {
         timeoutMs: SYSTEM_AGENT_CHAT_TIMEOUT_MS,
         onSent: () => (delivery = "sent"),
         signal: requestAbort.signal,

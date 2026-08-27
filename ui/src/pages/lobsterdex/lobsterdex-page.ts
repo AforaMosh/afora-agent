@@ -5,10 +5,10 @@ import { getLobsterdexEntries } from "../../components/lobster-dex.ts";
 import type { LobsterPetPaletteId } from "../../components/lobster-pet-contract.ts";
 import { LOBSTER_PET_PALETTES } from "../../components/lobster-pet.ts";
 import { renderSettingsWorkspace } from "../../components/settings-workspace.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { renderLobsterdex } from "./view.ts";
 
-class LobsterdexPage extends OpenClawLightDomElement {
+class LobsterdexPage extends AforaLightDomElement {
   @state() private copiedPaletteId: LobsterPetPaletteId | null = null;
   private copyResetTimer: number | null = null;
 
@@ -85,6 +85,6 @@ class LobsterdexPage extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-lobsterdex-page")) {
-  customElements.define("openclaw-lobsterdex-page", LobsterdexPage);
+if (!customElements.get("afora-lobsterdex-page")) {
+  customElements.define("afora-lobsterdex-page", LobsterdexPage);
 }

@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { sha256Hex } from "../../infra/crypto-digest.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import type {
@@ -10,7 +10,7 @@ import type {
 import { parseSkillFrontmatter } from "../loading/frontmatter.js";
 
 const SKILL_FILE_CANDIDATES = ["SKILL.md", "skill.md", "skills.md", "SKILL.MD"] as const;
-const EXCLUDED_ROOT_DIRS = new Set([".clawhub", ".clawdhub", ".openclaw"]);
+const EXCLUDED_ROOT_DIRS = new Set([".clawhub", ".clawdhub", ".afora"]);
 
 type CommittedSkillChangeSource = PluginHookSkillChangedEvent["source"];
 

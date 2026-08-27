@@ -1,8 +1,8 @@
-import type { ImageContent, TextContent } from "@openclaw/llm-core";
+import type { ImageContent, TextContent } from "@afora/llm-core";
 import type { AgentMessage } from "../types.js";
 
-export { err, ok } from "@openclaw/normalization-core/result";
-export type { Result } from "@openclaw/normalization-core/result";
+export { err, ok } from "@afora/normalization-core/result";
+export type { Result } from "@afora/normalization-core/result";
 
 type CompactionErrorCode = "aborted" | "summarization_failed" | "invalid_session" | "unknown";
 

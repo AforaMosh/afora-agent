@@ -1,21 +1,21 @@
 ---
-summary: "CLI reference for `openclaw config` (get/set/patch/unset/file/schema/validate)"
+summary: "CLI reference for `afora config` (get/set/patch/unset/file/schema/validate)"
 read_when:
   - You want to read or edit config non-interactively
 title: "Config"
 sidebarTitle: "Config"
 ---
 
-Non-interactive helpers for `openclaw.json`: get/set/patch/unset a value by path, print the schema, validate, or print the active file path. Run `openclaw config` with no subcommand to open the same guided wizard as `openclaw configure`.
+Non-interactive helpers for `afora.json`: get/set/patch/unset a value by path, print the schema, validate, or print the active file path. Run `afora config` with no subcommand to open the same guided wizard as `afora configure`.
 
 <Note>
-When `OPENCLAW_NIX_MODE=1`, OpenClaw treats `openclaw.json` as immutable. Read-only commands (`config get`, `config file`, `config schema`, `config validate`) still work; config writers refuse. Edit the Nix source for the install instead; for the first-party nix-openclaw distribution, use the [nix-openclaw Quick Start](https://github.com/openclaw/nix-openclaw#quick-start) and set values under `programs.openclaw.config` or `instances.<name>.config`.
+When `AFORA_NIX_MODE=1`, Afora treats `afora.json` as immutable. Read-only commands (`config get`, `config file`, `config schema`, `config validate`) still work; config writers refuse. Edit the Nix source for the install instead; for the first-party nix-afora distribution, use the [nix-afora Quick Start](https://github.com/afora/nix-afora#quick-start) and set values under `programs.afora.config` or `instances.<name>.config`.
 </Note>
 
 ## Root options
 
 <ParamField path="--section <section>" type="string">
-  Repeatable guided-setup section filter when you run `openclaw config` without a subcommand.
+  Repeatable guided-setup section filter when you run `afora config` without a subcommand.
 </ParamField>
 
 Guided sections: `workspace`, `model`, `web`, `gateway`, `daemon`, `channels`, `plugins`, `skills`, `health`.
@@ -23,26 +23,26 @@ Guided sections: `workspace`, `model`, `web`, `gateway`, `daemon`, `channels`, `
 ## Examples
 
 ```bash
-openclaw config file
-openclaw config file --json
-openclaw config --section model
-openclaw config --section gateway --section daemon
-openclaw config schema
-openclaw config schema --json
-openclaw config get browser.executablePath
-openclaw config set browser.executablePath "/usr/bin/google-chrome"
-openclaw config set browser.profiles.work.executablePath "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-openclaw config set agents.defaults.heartbeat.every "2h"
-openclaw config set logging.audit.executionIdentity true
-openclaw config set 'agents.entries.main.tools.exec.node' "node-id-or-name"
-openclaw config set agents.defaults.models '{"openai/gpt-5.4":{}}' --strict-json --merge
-openclaw config set channels.discord.token --ref-provider default --ref-source env --ref-id DISCORD_BOT_TOKEN
-openclaw config set secrets.providers.vaultfile --provider-source file --provider-path /etc/openclaw/secrets.json --provider-mode json
-openclaw config patch --file ./openclaw.patch.json5 --dry-run
-openclaw config unset plugins.entries.brave.config.webSearch.apiKey
-openclaw config set channels.discord.token --ref-provider default --ref-source env --ref-id DISCORD_BOT_TOKEN --dry-run
-openclaw config validate
-openclaw config validate --json
+afora config file
+afora config file --json
+afora config --section model
+afora config --section gateway --section daemon
+afora config schema
+afora config schema --json
+afora config get browser.executablePath
+afora config set browser.executablePath "/usr/bin/google-chrome"
+afora config set browser.profiles.work.executablePath "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+afora config set agents.defaults.heartbeat.every "2h"
+afora config set logging.audit.executionIdentity true
+afora config set 'agents.entries.main.tools.exec.node' "node-id-or-name"
+afora config set agents.defaults.models '{"openai/gpt-5.4":{}}' --strict-json --merge
+afora config set channels.discord.token --ref-provider default --ref-source env --ref-id DISCORD_BOT_TOKEN
+afora config set secrets.providers.vaultfile --provider-source file --provider-path /etc/afora/secrets.json --provider-mode json
+afora config patch --file ./afora.patch.json5 --dry-run
+afora config unset plugins.entries.brave.config.webSearch.apiKey
+afora config set channels.discord.token --ref-provider default --ref-source env --ref-id DISCORD_BOT_TOKEN --dry-run
+afora config validate
+afora config validate --json
 ```
 
 ### Paths
@@ -50,10 +50,10 @@ openclaw config validate --json
 Dot or bracket notation. Quote bracket paths in shell examples so zsh does not glob-expand `[0]`:
 
 ```bash
-openclaw config get agents.defaults.workspace
-openclaw config get agents.entries.main
-openclaw config get agents.entries
-openclaw config set 'agents.entries.work.tools.exec.node' "node-id-or-name"
+afora config get agents.defaults.workspace
+afora config get agents.entries.main
+afora config get agents.entries
+afora config set 'agents.entries.work.tools.exec.node' "node-id-or-name"
 ```
 
 ### `config get`
@@ -63,19 +63,19 @@ Reads a value from the redacted config snapshot (secrets never print). `--json` 
 When the path is missing, `--json` writes `{ "error": "Config path not found: <path>" }` to stdout and exits with status 1. Without `--json`, the diagnostic remains on stderr.
 
 ```bash
-openclaw config get browser.executablePath
-openclaw config get agents.defaults.model --json
+afora config get browser.executablePath
+afora config get agents.defaults.model --json
 ```
 
 ### `config file`
 
-Prints the active config file path, resolved from `OPENCLAW_CONFIG_PATH` or the default location. The path names a regular file, not a symlink; see [Write safety](#write-safety).
+Prints the active config file path, resolved from `AFORA_CONFIG_PATH` or the default location. The path names a regular file, not a symlink; see [Write safety](#write-safety).
 
 With `--json`, stdout contains an object with the resolved path under `path`.
 
 ### `config schema`
 
-Prints the generated JSON schema for `openclaw.json` to stdout.
+Prints the generated JSON schema for `afora.json` to stdout.
 
 <AccordionGroup>
   <Accordion title="What it includes">
@@ -93,9 +93,9 @@ Prints the generated JSON schema for `openclaw.json` to stdout.
 </AccordionGroup>
 
 ```bash
-openclaw config schema
-openclaw config schema --json
-openclaw config schema > openclaw.schema.json
+afora config schema
+afora config schema --json
+afora config schema > afora.schema.json
 ```
 
 The schema is JSON in both modes. `--json` is accepted as the explicit
@@ -106,17 +106,17 @@ machine-output spelling and keeps stdout reserved for the schema document.
 Validates the current config against the active schema without starting the gateway.
 
 ```bash
-openclaw config validate
-openclaw config validate --json
+afora config validate
+afora config validate --json
 ```
 
 <Note>
-If validation is already failing, start with `openclaw configure` or `openclaw doctor --fix`. `openclaw chat` does not bypass the invalid-config guard.
+If validation is already failing, start with `afora configure` or `afora doctor --fix`. `afora chat` does not bypass the invalid-config guard.
 </Note>
 
 Provider and runtime `params` bags are intentionally typed as
 `Record<string, unknown>` because their owners define the supported keys and
-values. `openclaw config validate` can validate the container and overall
+values. `afora config validate` can validate the container and overall
 config shape, but it cannot type-check provider-specific parameter names or
 values. Passing validation does not prove that a param is supported; consult
 the provider docs and verify behavior on the selected runtime and provider.
@@ -126,14 +126,14 @@ the provider docs and verify behavior on the selected runtime and provider.
 Values parse as JSON5 when possible; otherwise they are treated as raw strings. Use `--strict-json` to require standard JSON with no string fallback (JSON5-only syntax such as comments, trailing commas, or unquoted keys is then rejected). `--json` is a legacy alias for `--strict-json` on `config set`.
 
 ```bash
-openclaw config set agents.defaults.heartbeat.every "0m"
-openclaw config set gateway.port 19001 --strict-json
-openclaw config set channels.whatsapp.groups '["*"]' --strict-json
+afora config set agents.defaults.heartbeat.every "0m"
+afora config set gateway.port 19001 --strict-json
+afora config set channels.whatsapp.groups '["*"]' --strict-json
 ```
 
 `config get <path> --json` prints the redacted value as JSON instead of terminal-formatted text.
 
-When a write changes `agents.defaults.model` or a per-agent `agents.entries.*.model`, OpenClaw resolves each changed primary or fallback through the configured provider catalogs before writing. Unknown model references are rejected without changing the active config; run `openclaw models list` to see available models.
+When a write changes `agents.defaults.model` or a per-agent `agents.entries.*.model`, Afora resolves each changed primary or fallback through the configured provider catalogs before writing. Unknown model references are rejected without changing the active config; run `afora models list` to see available models.
 
 <Note>
 Object assignment replaces the target path by default. Protected paths that commonly hold user-added entries refuse replacements that would remove existing entries unless you pass `--replace`: `agents.defaults.models`, `agents.entries`, `models.providers`, `models.providers.<id>`, `models.providers.<id>.models`, `plugins.entries`, and `auth.profiles`.
@@ -142,8 +142,8 @@ Object assignment replaces the target path by default. Protected paths that comm
 Use `--merge` when adding entries to those maps:
 
 ```bash
-openclaw config set agents.defaults.models '{"openai/gpt-5.4":{}}' --strict-json --merge
-openclaw config set models.providers.ollama.models '[{"id":"llama3.2","name":"Llama 3.2"}]' --strict-json --merge
+afora config set agents.defaults.models '{"openai/gpt-5.4":{}}' --strict-json --merge
+afora config set models.providers.ollama.models '[{"id":"llama3.2","name":"Llama 3.2"}]' --strict-json --merge
 ```
 
 Use `--replace` only when the provided value should intentionally become the complete target value.
@@ -153,12 +153,12 @@ Use `--replace` only when the provided value should intentionally become the com
 <Tabs>
   <Tab title="Value mode">
     ```bash
-    openclaw config set <path> <value>
+    afora config set <path> <value>
     ```
   </Tab>
   <Tab title="SecretRef builder mode">
     ```bash
-    openclaw config set channels.discord.token \
+    afora config set channels.discord.token \
       --ref-provider default \
       --ref-source env \
       --ref-id DISCORD_BOT_TOKEN
@@ -168,9 +168,9 @@ Use `--replace` only when the provided value should intentionally become the com
     Targets `secrets.providers.<alias>` paths only:
 
     ```bash
-    openclaw config set secrets.providers.vault \
+    afora config set secrets.providers.vault \
       --provider-source exec \
-      --provider-command /usr/local/bin/openclaw-vault \
+      --provider-command /usr/local/bin/afora-vault \
       --provider-arg read \
       --provider-arg openai/api-key \
       --provider-timeout-ms 5000
@@ -179,7 +179,7 @@ Use `--replace` only when the provided value should intentionally become the com
   </Tab>
   <Tab title="Batch mode">
     ```bash
-    openclaw config set --batch-json '[
+    afora config set --batch-json '[
       {
         "path": "secrets.providers.default",
         "provider": { "source": "env" }
@@ -192,7 +192,7 @@ Use `--replace` only when the provided value should intentionally become the com
     ```
 
     ```bash
-    openclaw config set --batch-file ./config-set.batch.json --dry-run
+    afora config set --batch-file ./config-set.batch.json --dry-run
     ```
 
     Batch files are limited to 8 MiB.
@@ -209,12 +209,12 @@ Batch parsing always uses the batch payload (`--batch-json`/`--batch-file`) as t
 JSON path/value mode also works for SecretRefs and providers directly:
 
 ```bash
-openclaw config set channels.discord.token \
+afora config set channels.discord.token \
   '{"source":"env","provider":"default","id":"DISCORD_BOT_TOKEN"}' \
   --strict-json
 
-openclaw config set secrets.providers.vaultfile \
-  '{"source":"file","path":"/etc/openclaw/secrets.json","mode":"json"}' \
+afora config set secrets.providers.vaultfile \
+  '{"source":"file","path":"/etc/afora/secrets.json","mode":"json"}' \
   --strict-json
 ```
 
@@ -254,9 +254,9 @@ Provider builder targets must use `secrets.providers.<alias>` as the path.
 Hardened exec provider example:
 
 ```bash
-openclaw config set secrets.providers.vault \
+afora config set secrets.providers.vault \
   --provider-source exec \
-  --provider-command /usr/local/bin/openclaw-vault \
+  --provider-command /usr/local/bin/afora-vault \
   --provider-arg read \
   --provider-arg openai/api-key \
   --provider-json-only \
@@ -270,8 +270,8 @@ openclaw config set secrets.providers.vault \
 Paste or pipe a config-shaped JSON5 patch instead of running many path-based `config set` commands. Objects merge recursively; arrays and scalar values replace the target; `null` deletes the target path.
 
 ```bash
-openclaw config patch --file ./openclaw.patch.json5 --dry-run
-openclaw config patch --file ./openclaw.patch.json5
+afora config patch --file ./afora.patch.json5 --dry-run
+afora config patch --file ./afora.patch.json5
 ```
 
 Patch files are limited to 8 MiB. Piped `--stdin` patches are limited to 1 MiB.
@@ -279,8 +279,8 @@ Patch files are limited to 8 MiB. Piped `--stdin` patches are limited to 1 MiB.
 Pipe a patch over stdin for remote setup scripts:
 
 ```bash
-ssh user@gateway-host 'openclaw config patch --stdin --dry-run' < ./openclaw.patch.json5
-ssh user@gateway-host 'openclaw config patch --stdin' < ./openclaw.patch.json5
+ssh user@gateway-host 'afora config patch --stdin --dry-run' < ./afora.patch.json5
+ssh user@gateway-host 'afora config patch --stdin' < ./afora.patch.json5
 ```
 
 Example patch:
@@ -309,7 +309,7 @@ Example patch:
       model: { primary: "openai/gpt-5.6-sol" },
       models: {
         "openai/gpt-5.6-sol": {
-          agentRuntime: { id: "openclaw" },
+          agentRuntime: { id: "afora" },
           params: { fastMode: true },
         },
       },
@@ -318,31 +318,31 @@ Example patch:
 }
 ```
 
-The runtime pin makes this an embedded OpenClaw recipe. A valid `fastMode`
-value is a portable typed runtime control and does not choose OpenClaw by
+The runtime pin makes this an embedded Afora recipe. A valid `fastMode`
+value is a portable typed runtime control and does not choose Afora by
 itself.
 
 Use `--replace-path <path>` when one object or array must become exactly the provided value instead of being recursively patched:
 
 ```bash
-openclaw config patch --file ./discord.patch.json5 --replace-path 'channels.discord.guilds["123"].channels'
+afora config patch --file ./discord.patch.json5 --replace-path 'channels.discord.guilds["123"].channels'
 ```
 
 `--dry-run` runs schema and SecretRef resolvability checks without writing. Exec-backed SecretRefs are skipped by default during dry-run; add `--allow-exec` when you intentionally want dry-run to execute provider commands.
 
 ## Dry run
 
-`--dry-run` validates changes without writing `openclaw.json`. Available on `config set`, `config patch`, and `config unset`.
+`--dry-run` validates changes without writing `afora.json`. Available on `config set`, `config patch`, and `config unset`.
 
 ```bash
-openclaw config set channels.discord.token \
+afora config set channels.discord.token \
   --ref-provider default \
   --ref-source env \
   --ref-id DISCORD_BOT_TOKEN \
   --dry-run \
   --json
 
-openclaw config set channels.discord.token \
+afora config set channels.discord.token \
   --ref-provider vault \
   --ref-source exec \
   --ref-id discord/token \
@@ -401,7 +401,7 @@ openclaw config set channels.discord.token \
     {
       "ok": true,
       "operations": 1,
-      "configPath": "/home/user/.openclaw/openclaw.json",
+      "configPath": "/home/user/.AforaMosh/afora-agent.json",
       "inputModes": ["builder"],
       "checks": {
         "schema": false,
@@ -418,7 +418,7 @@ openclaw config set channels.discord.token \
     {
       "ok": false,
       "operations": 1,
-      "configPath": "/home/user/.openclaw/openclaw.json",
+      "configPath": "/home/user/.AforaMosh/afora-agent.json",
       "inputModes": ["builder"],
       "checks": {
         "schema": false,
@@ -444,7 +444,7 @@ openclaw config set channels.discord.token \
     - `config schema validation failed`: your post-change config shape is invalid; fix the path/value or provider/ref object shape.
     - `Config policy validation failed: unsupported SecretRef usage`: move that credential back to plaintext/string input; keep SecretRefs on supported surfaces only.
     - `SecretRef assignment(s) could not be resolved`: the referenced provider/ref cannot currently resolve (missing env/store name, invalid file pointer, exec provider failure, or provider/source mismatch).
-    - `model reference validation failed`: a changed text-model primary or fallback is unknown; run `openclaw models list` and choose an available model.
+    - `model reference validation failed`: a changed text-model primary or fallback is unknown; run `afora models list` and choose an available model.
     - `Dry run note: skipped <n> exec SecretRef resolvability check(s)`: rerun with `--allow-exec` if you need exec resolvability validation.
     - For batch mode, fix failing entries and rerun `--dry-run` before writing.
 
@@ -465,49 +465,49 @@ Effective changes to `plugins.entries` (or any subpath) require a restart, since
 
 ## Write safety
 
-`openclaw config set` and other OpenClaw-owned config writers validate the full post-change config before committing it to disk. If the new payload fails schema validation or looks like a destructive clobber, the active config is left alone and the rejected payload is saved beside it as `openclaw.json.rejected.*`.
+`afora config set` and other Afora-owned config writers validate the full post-change config before committing it to disk. If the new payload fails schema validation or looks like a destructive clobber, the active config is left alone and the rejected payload is saved beside it as `afora.json.rejected.*`.
 
-OpenClaw-owned writes reserialize JSON5 as standard JSON. When the source contains comments, the writer warns immediately before removing them; use a direct editor when preserving comments matters.
+Afora-owned writes reserialize JSON5 as standard JSON. When the source contains comments, the writer warns immediately before removing them; use a direct editor when preserving comments matters.
 
 <Warning>
-The active config path must be a regular file. Symlinked `openclaw.json` layouts are unsupported for writes; use `OPENCLAW_CONFIG_PATH` to point directly at the real file instead.
+The active config path must be a regular file. Symlinked `afora.json` layouts are unsupported for writes; use `AFORA_CONFIG_PATH` to point directly at the real file instead.
 </Warning>
 
 Prefer CLI writes for small edits:
 
 ```bash
-openclaw config set gateway.reload.mode hybrid --dry-run
-openclaw config set gateway.reload.mode hybrid
-openclaw config validate
+afora config set gateway.reload.mode hybrid --dry-run
+afora config set gateway.reload.mode hybrid
+afora config validate
 ```
 
 If a write is rejected, inspect the saved payload and fix the full config shape:
 
 ```bash
-CONFIG="$(openclaw config file)"
+CONFIG="$(afora config file)"
 ls -lt "$CONFIG".rejected.* 2>/dev/null | head
-openclaw config validate
+afora config validate
 ```
 
-Direct editor writes are still allowed, but the running Gateway treats them as untrusted until they validate. Invalid direct edits fail startup or are skipped by hot reload; Gateway does not rewrite `openclaw.json`. Run `openclaw doctor --fix` to repair prefixed/clobbered config or restore the last-known-good copy. See [Gateway troubleshooting](/gateway/troubleshooting#gateway-rejected-invalid-config).
+Direct editor writes are still allowed, but the running Gateway treats them as untrusted until they validate. Invalid direct edits fail startup or are skipped by hot reload; Gateway does not rewrite `afora.json`. Run `afora doctor --fix` to repair prefixed/clobbered config or restore the last-known-good copy. See [Gateway troubleshooting](/gateway/troubleshooting#gateway-rejected-invalid-config).
 
 Whole-file recovery is reserved for doctor repair. Plugin schema changes or `minHostVersion` skew stay loud instead of rolling back unrelated user settings such as models, providers, auth profiles, channels, gateway exposure, tools, memory, browser, or cron config.
 
 ## Repair loop
 
-After `openclaw config validate` passes, use the local TUI to have an embedded agent compare the active config against the docs while you validate each change from the same terminal:
+After `afora config validate` passes, use the local TUI to have an embedded agent compare the active config against the docs while you validate each change from the same terminal:
 
 ```bash
-openclaw chat
+afora chat
 ```
 
 Inside the TUI, a leading `!` runs a literal local shell command (after a one-time per-session confirmation prompt):
 
 ```text
-!openclaw config file
-!openclaw docs gateway auth token secretref
-!openclaw config validate
-!openclaw doctor
+!afora config file
+!afora docs gateway auth token secretref
+!afora config validate
+!afora doctor
 ```
 
 <Steps>
@@ -515,13 +515,13 @@ Inside the TUI, a leading `!` runs a literal local shell command (after a one-ti
     Ask the agent to compare your current config with the relevant docs page and suggest the smallest fix.
   </Step>
   <Step title="Apply targeted edits">
-    Apply targeted edits with `openclaw config set` or `openclaw configure`.
+    Apply targeted edits with `afora config set` or `afora configure`.
   </Step>
   <Step title="Re-validate">
-    Rerun `openclaw config validate` after each change.
+    Rerun `afora config validate` after each change.
   </Step>
   <Step title="Doctor for runtime issues">
-    If validation passes but the runtime is still unhealthy, run `openclaw doctor` or `openclaw doctor --fix` for migration and repair help.
+    If validation passes but the runtime is still unhealthy, run `afora doctor` or `afora doctor --fix` for migration and repair help.
   </Step>
 </Steps>
 

@@ -13,9 +13,9 @@ import {
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
-const proofDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+const proofDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
 
 const LIMITED_SCOPES = ["operator.read", "operator.write"];
 const FULL_SCOPES = [
@@ -31,11 +31,11 @@ const SCOPE_UPGRADE_METHODS = [
   "device.scopes.waitUpgrade",
 ] as const;
 const HIDDEN_WEB_CHROME_HOSTS = [
-  { collapsed: false, label: "native web chrome", rootClass: "openclaw-native-web-chrome" },
-  { collapsed: true, label: "collapsed native navigation", rootClass: "openclaw-native-nav" },
+  { collapsed: false, label: "native web chrome", rootClass: "afora-native-web-chrome" },
+  { collapsed: true, label: "collapsed native navigation", rootClass: "afora-native-nav" },
 ] as const;
 const MANUAL_UPGRADE_GUIDANCE =
-  "This browser has limited access. Manage it with openclaw devices on the Gateway or from Devices on an admin browser.";
+  "This browser has limited access. Manage it with afora devices on the Gateway or from Devices on an admin browser.";
 const BANNER_MODULE_ROUTE = /device-scope-upgrade\.runtime(?:-[^/.]+)?\.(?:js|ts)/u;
 
 type BoundingBox = { x: number; y: number; width: number; height: number };
@@ -201,7 +201,7 @@ describeControlUiE2e("Control UI live device scope upgrade", () => {
     const wait = await gateway.waitForRequest("device.scopes.waitUpgrade");
     expect(wait.params).toEqual({ requestId: "upgrade-1" });
     await page
-      .getByText(/Approve this browser by running openclaw devices on the Gateway/)
+      .getByText(/Approve this browser by running afora devices on the Gateway/)
       .waitFor();
     await page.getByRole("button", { name: "Retry", exact: true }).waitFor();
     await page.getByRole("button", { name: "Cancel", exact: true }).waitFor();
@@ -286,13 +286,13 @@ describeControlUiE2e("Control UI live device scope upgrade", () => {
       });
 
       await page.goto(`${server.baseUrl}chat`);
-      const scopeUpgradeCallout = page.locator("openclaw-device-scope-upgrade-banner .callout");
+      const scopeUpgradeCallout = page.locator("afora-device-scope-upgrade-banner .callout");
       await scopeUpgradeCallout.waitFor();
       const guidance = scopeUpgradeCallout.getByText(MANUAL_UPGRADE_GUIDANCE, { exact: true });
       await guidance.waitFor();
       await waitForLayoutSettled(
         page,
-        "openclaw-device-scope-upgrade-banner .callout, .shell-chrome-controls",
+        "afora-device-scope-upgrade-banner .callout, .shell-chrome-controls",
       );
 
       const guidanceBox = await guidance.boundingBox();
@@ -327,7 +327,7 @@ describeControlUiE2e("Control UI live device scope upgrade", () => {
         ({ hostClass, settingsKey, startCollapsed }) => {
           localStorage.setItem(settingsKey, JSON.stringify({ navCollapsed: startCollapsed }));
           const stamp = () =>
-            document.documentElement.classList.add("openclaw-native-macos", hostClass);
+            document.documentElement.classList.add("afora-native-macos", hostClass);
           if (document.documentElement) {
             stamp();
           } else {
@@ -356,13 +356,13 @@ describeControlUiE2e("Control UI live device scope upgrade", () => {
       }
       await expect.poll(() => page.locator(".shell-chrome-controls").isVisible()).toBe(false);
 
-      const scopeUpgradeCallout = page.locator("openclaw-device-scope-upgrade-banner .callout");
+      const scopeUpgradeCallout = page.locator("afora-device-scope-upgrade-banner .callout");
       await scopeUpgradeCallout.waitFor();
-      await waitForLayoutSettled(page, ".content, openclaw-device-scope-upgrade-banner .callout");
+      await waitForLayoutSettled(page, ".content, afora-device-scope-upgrade-banner .callout");
       const calloutInsetDelta = await page.evaluate(() => {
         const content = document.querySelector<HTMLElement>(".content");
         const callout = document.querySelector<HTMLElement>(
-          "openclaw-device-scope-upgrade-banner .callout",
+          "afora-device-scope-upgrade-banner .callout",
         );
         if (!content || !callout) {
           throw new Error("Missing content or scope-upgrade callout after layout settled");
@@ -381,7 +381,7 @@ describeControlUiE2e("Control UI live device scope upgrade", () => {
     const context = await createContext();
     const page = await context.newPage();
     const gateway = await installMockGateway(page, {
-      featureMethods: ["chat.metadata", "chat.startup", "openclaw.chat", ...SCOPE_UPGRADE_METHODS],
+      featureMethods: ["chat.metadata", "chat.startup", "afora.chat", ...SCOPE_UPGRADE_METHODS],
       operatorScopes: LIMITED_SCOPES,
     });
 
@@ -389,9 +389,9 @@ describeControlUiE2e("Control UI live device scope upgrade", () => {
     await page.getByText("This browser has limited access.", { exact: true }).waitFor();
 
     expect(
-      await page.getByText("Update the Gateway to continue setup with OpenClaw.").count(),
+      await page.getByText("Update the Gateway to continue setup with Afora.").count(),
     ).toBe(0);
-    expect(await gateway.getRequests("openclaw.chat")).toHaveLength(0);
+    expect(await gateway.getRequests("afora.chat")).toHaveLength(0);
     await captureProof(page, "custodian-limited.png");
   });
 
@@ -480,7 +480,7 @@ describeControlUiE2e("Control UI live device scope upgrade", () => {
     const page = await context.newPage();
     const gateway = await installMockGateway(page, { operatorScopes: FULL_SCOPES });
     await page.goto(`${server.baseUrl}chat`);
-    await page.locator("openclaw-app-shell").waitFor();
+    await page.locator("afora-app-shell").waitFor();
 
     expect(await page.getByText("This browser has limited access.", { exact: true }).count()).toBe(
       0,

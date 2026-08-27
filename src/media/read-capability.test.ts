@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { __setFsSafeTestHooksForTest } from "@openclaw/fs-safe/test-hooks";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { readOutboundMediaFile } from "./bounded-read-file.js";
 import { getDefaultMediaLocalRoots } from "./local-roots.js";
 import { resolveAgentScopedOutboundMediaAccess } from "./read-capability.js";
@@ -35,7 +35,7 @@ describe("resolveAgentScopedOutboundMediaAccess", () => {
 
   it("preserves caller-provided workspaceDir from mediaAccess", () => {
     const result = resolveAgentScopedOutboundMediaAccess({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       mediaAccess: { workspaceDir: "/tmp/media-workspace" },
     });
 
@@ -50,7 +50,7 @@ describe("resolveAgentScopedOutboundMediaAccess", () => {
 
   it("prefers explicit workspaceDir over mediaAccess.workspaceDir", () => {
     const result = resolveAgentScopedOutboundMediaAccess({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       workspaceDir: "/tmp/explicit-workspace",
       mediaAccess: { workspaceDir: "/tmp/media-workspace" },
     });
@@ -65,13 +65,13 @@ describe("resolveAgentScopedOutboundMediaAccess", () => {
   });
 
   it("keeps explicit workspaceDir in localRoots when agent id is unavailable", () => {
-    const workspaceDir = "/tmp/openclaw-home/workspace-xiaoqian";
+    const workspaceDir = "/tmp/afora-home/workspace-xiaoqian";
     const result = resolveAgentScopedOutboundMediaAccess({
       cfg: {
         tools: {
           fs: { workspaceOnly: true },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       workspaceDir,
       mediaSources: [`${workspaceDir}/report.html`],
     });
@@ -81,7 +81,7 @@ describe("resolveAgentScopedOutboundMediaAccess", () => {
   });
 
   it("does not enable host reads when sender group policy denies read", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         allow: ["read"],
       },
@@ -124,7 +124,7 @@ describe("resolveAgentScopedOutboundMediaAccess", () => {
         tools: {
           allow: ["read"],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       sessionKey: "agent:main:slack:group:C123",
       groupChannel: "#incidents",
       groupSpace: "team-a",
@@ -146,7 +146,7 @@ describe("resolveAgentScopedOutboundMediaAccess", () => {
   });
 
   it("keeps host reads enabled when sender group policy allows read", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         allow: ["read"],
       },
@@ -182,7 +182,7 @@ describe("resolveAgentScopedOutboundMediaAccess", () => {
         tools: {
           allow: ["read"],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       messageProvider: "requestchat",
       requesterSenderId: "trusted-user",
     });
@@ -191,7 +191,7 @@ describe("resolveAgentScopedOutboundMediaAccess", () => {
   });
 
   it("enforces the caller byte cap before buffering host media", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-media-cap-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-media-cap-"));
     try {
       const filePath = path.join(workspaceDir, "oversized.bin");
       await fs.writeFile(filePath, Buffer.alloc(2));
@@ -200,7 +200,7 @@ describe("resolveAgentScopedOutboundMediaAccess", () => {
           tools: {
             allow: ["read"],
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         workspaceDir,
       });
 
@@ -215,7 +215,7 @@ describe("resolveAgentScopedOutboundMediaAccess", () => {
   it.runIf(process.platform !== "win32")(
     "rejects owned host reads when an allowed ancestor symlink retargets before open",
     async () => {
-      const base = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-host-media-race-"));
+      const base = await fs.mkdtemp(path.join(os.tmpdir(), "afora-host-media-race-"));
       const workspaceDir = path.join(base, "workspace");
       const insideDir = path.join(workspaceDir, "inside");
       const outsideDir = path.join(base, "outside");
@@ -227,7 +227,7 @@ describe("resolveAgentScopedOutboundMediaAccess", () => {
       await fs.writeFile(path.join(outsideDir, "report.csv"), "outside-secret");
       await fs.symlink(insideDir, aliasDir);
       const result = resolveAgentScopedOutboundMediaAccess({
-        cfg: { tools: { allow: ["read"] } } as OpenClawConfig,
+        cfg: { tools: { allow: ["read"] } } as AforaConfig,
         workspaceDir,
         mediaSources: [filePath],
       });
@@ -271,7 +271,7 @@ describe("resolveAgentScopedOutboundMediaAccess", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       messageProvider: "requestchat",
       requesterSenderId: "dm-sender",
     });

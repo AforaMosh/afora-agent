@@ -19,7 +19,7 @@ import type { CronJob } from "./types.js";
 
 const noopLogger = createNoopLogger();
 const { makeStorePath } = createCronStoreHarness({
-  prefix: "openclaw-cron-reaper-finally-",
+  prefix: "afora-cron-reaper-finally-",
 });
 
 function createDueIsolatedJob(params: { id: string; nowMs: number }): CronJob {
@@ -363,7 +363,7 @@ describe("CronService - session reaper runs in finally block (#31946)", () => {
     const resolveSessionStorePath = vi.fn((agentId?: string) => {
       if (agentId === unavailableAgentId) {
         throw new Error(
-          `OpenClaw agent database is unavailable while agent ${unavailableAgentId} is deleted.`,
+          `Afora agent database is unavailable while agent ${unavailableAgentId} is deleted.`,
         );
       }
       return sessionStorePath;

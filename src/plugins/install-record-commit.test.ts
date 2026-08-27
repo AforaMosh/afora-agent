@@ -9,7 +9,7 @@ import {
   getPluginInstallRecordMapEntry,
   setPluginInstallRecordMapEntry,
 } from "../config/plugin-install-record-map.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { listRecoveredManagedNpmInstallCandidates } from "./installed-plugin-index-record-reader.js";
@@ -25,7 +25,7 @@ const retentionTempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 const mocks = vi.hoisted(() => {
   const lease = {
-    databasePath: "/tmp/openclaw-plugin-index.sqlite",
+    databasePath: "/tmp/afora-plugin-index.sqlite",
     signal: new AbortController().signal,
     assertOwned: vi.fn(),
     assertOwnedInTransaction: vi.fn(),
@@ -111,8 +111,8 @@ describe("commitConfigWithPendingPluginInstalls", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.loadInstalledPluginIndexInstallRecords.mockResolvedValue({});
-    mocks.replaceConfigFile.mockImplementation(async (params: { nextConfig: OpenClawConfig }) => ({
-      path: "/tmp/openclaw.json",
+    mocks.replaceConfigFile.mockImplementation(async (params: { nextConfig: AforaConfig }) => ({
+      path: "/tmp/afora.json",
       previousHash: null,
       snapshot: {} as never,
       nextConfig: params.nextConfig,
@@ -141,7 +141,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
       },
     };
     mocks.loadInstalledPluginIndexInstallRecords.mockResolvedValue(existingRecords);
-    const nextConfig: OpenClawConfig = {
+    const nextConfig: AforaConfig = {
       plugins: {
         entries: {
           demo: { enabled: true },
@@ -204,7 +204,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
   });
 
   it("uses the effective config for records-only index commits", async () => {
-    const nextConfig: OpenClawConfig = {
+    const nextConfig: AforaConfig = {
       plugins: {
         entries: {
           demo: { enabled: false },
@@ -238,7 +238,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
   });
 
   it("migrates source records below the canonical index and explicit pending records", async () => {
-    const sourceConfig: OpenClawConfig = {
+    const sourceConfig: AforaConfig = {
       plugins: {
         installs: {
           stale: { source: "npm", spec: "stale@1.0.0" },
@@ -251,7 +251,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
       stale: { source: "npm", spec: "stale@2.0.0" },
       codex: { source: "npm", spec: "codex@2.0.0" },
     };
-    const nextConfig: OpenClawConfig = {
+    const nextConfig: AforaConfig = {
       plugins: {
         installs: {
           ...sourceConfig.plugins?.installs,
@@ -299,7 +299,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
   });
 
   it("preserves source records omitted by a transform callback", async () => {
-    const sourceConfig: OpenClawConfig = {
+    const sourceConfig: AforaConfig = {
       plugins: {
         installs: {
           other: { source: "npm", spec: "other@1.0.0" },
@@ -311,9 +311,9 @@ describe("commitConfigWithPendingPluginInstalls", () => {
     mocks.transformConfigFileWithRetry.mockImplementationOnce(async (params: unknown) => {
       const transformParams = params as {
         transform: (
-          config: OpenClawConfig,
+          config: AforaConfig,
           context: { snapshot: typeof snapshot },
-        ) => { nextConfig: OpenClawConfig };
+        ) => { nextConfig: AforaConfig };
         commit: (input: unknown) => Promise<unknown>;
       };
       const transformed = transformParams.transform(sourceConfig, { snapshot });
@@ -341,7 +341,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
   });
 
   it("strips only selected pending plugin install records", () => {
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       plugins: {
         installs: {
           legacy: { source: "npm", spec: "legacy@1.0.0" },
@@ -360,7 +360,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
   });
 
   it("selects only unchanged pending plugin install records for migration stripping", () => {
-    const baseConfig: OpenClawConfig = {
+    const baseConfig: AforaConfig = {
       plugins: {
         installs: {
           legacy: { source: "npm", spec: "legacy@1.0.0" },
@@ -368,7 +368,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
         },
       },
     };
-    const nextConfig: OpenClawConfig = {
+    const nextConfig: AforaConfig = {
       plugins: {
         installs: {
           legacy: { source: "npm", spec: "legacy@1.0.0" },
@@ -393,8 +393,8 @@ describe("commitConfigWithPendingPluginInstalls", () => {
     for (const [pluginId, record] of Object.entries(baseInstalls)) {
       setPluginInstallRecordMapEntry(nextInstalls, pluginId, record);
     }
-    const baseConfig = { plugins: { installs: baseInstalls } } satisfies OpenClawConfig;
-    const nextConfig = { plugins: { installs: nextInstalls } } satisfies OpenClawConfig;
+    const baseConfig = { plugins: { installs: baseInstalls } } satisfies AforaConfig;
+    const nextConfig = { plugins: { installs: nextInstalls } } satisfies AforaConfig;
 
     expect(unchangedPendingPluginInstallRecordIds(nextConfig, baseConfig)).toEqual([
       "constructor",
@@ -437,14 +437,14 @@ describe("commitConfigWithPendingPluginInstalls", () => {
   });
 
   it("marks replaced managed npm generations when install records are committed", async () => {
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-record-commit-"));
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-record-commit-"));
     const previousInstallPath = path.join(
       stateDir,
       "npm",
       "projects",
       "codex-v1",
       "node_modules",
-      "@openclaw",
+      "@afora",
       "codex",
     );
     const nextInstallPath = path.join(
@@ -453,26 +453,26 @@ describe("commitConfigWithPendingPluginInstalls", () => {
       "projects",
       "codex-v2",
       "node_modules",
-      "@openclaw",
+      "@afora",
       "codex",
     );
     fs.mkdirSync(previousInstallPath, { recursive: true });
     fs.mkdirSync(nextInstallPath, { recursive: true });
 
     try {
-      await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+      await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
         await commitPluginInstallRecordsWithConfig({
           previousInstallRecords: {
             codex: {
               source: "npm",
-              spec: "@openclaw/codex@1.0.0",
+              spec: "@afora/codex@1.0.0",
               installPath: previousInstallPath,
             },
           },
           nextInstallRecords: {
             codex: {
               source: "npm",
-              spec: "@openclaw/codex@2.0.0",
+              spec: "@afora/codex@2.0.0",
               installPath: nextInstallPath,
             },
           },
@@ -487,24 +487,24 @@ describe("commitConfigWithPendingPluginInstalls", () => {
   });
 
   it("removes a new retirement marker when the leased config commit rolls back", async () => {
-    const stateDir = retentionTempDirs.make("openclaw-record-commit-");
+    const stateDir = retentionTempDirs.make("afora-record-commit-");
     const installPath = writeManagedNpmPlugin({
       stateDir,
-      packageName: "@openclaw/retained-rollback",
+      packageName: "@afora/retained-rollback",
       pluginId: "retained-rollback",
       version: "1.0.0",
     });
     const previousInstallRecords: Record<string, PluginInstallRecord> = {
       "retained-rollback": {
         source: "npm",
-        spec: "@openclaw/retained-rollback@1.0.0",
+        spec: "@afora/retained-rollback@1.0.0",
         installPath,
       },
     };
     mocks.replaceConfigFile.mockRejectedValueOnce(new Error("config changed"));
 
     try {
-      await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+      await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
         await expect(
           commitPluginInstallRecordsWithConfig({
             previousInstallRecords,
@@ -530,15 +530,15 @@ describe("commitConfigWithPendingPluginInstalls", () => {
   });
 
   it("does not mark arbitrary npm paths outside the managed npm root", async () => {
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-record-commit-"));
-    const outsideRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-record-outside-"));
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-record-commit-"));
+    const outsideRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-record-outside-"));
     const previousInstallPath = path.join(
       outsideRoot,
       "npm",
       "projects",
       "codex-v1",
       "node_modules",
-      "@openclaw",
+      "@afora",
       "codex",
     );
     const nextInstallPath = path.join(
@@ -547,26 +547,26 @@ describe("commitConfigWithPendingPluginInstalls", () => {
       "projects",
       "codex-v2",
       "node_modules",
-      "@openclaw",
+      "@afora",
       "codex",
     );
     fs.mkdirSync(previousInstallPath, { recursive: true });
     fs.mkdirSync(nextInstallPath, { recursive: true });
 
     try {
-      await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+      await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
         await commitPluginInstallRecordsWithConfig({
           previousInstallRecords: {
             codex: {
               source: "npm",
-              spec: "@openclaw/codex@1.0.0",
+              spec: "@afora/codex@1.0.0",
               installPath: previousInstallPath,
             },
           },
           nextInstallRecords: {
             codex: {
               source: "npm",
-              spec: "@openclaw/codex@2.0.0",
+              spec: "@afora/codex@2.0.0",
               installPath: nextInstallPath,
             },
           },
@@ -582,14 +582,14 @@ describe("commitConfigWithPendingPluginInstalls", () => {
   });
 
   it("marks replaced npm generations across install record id migrations", async () => {
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-record-commit-"));
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-record-commit-"));
     const previousInstallPath = path.join(
       stateDir,
       "npm",
       "projects",
       "voice-call-v1",
       "node_modules",
-      "@openclaw",
+      "@afora",
       "voice-call",
     );
     const nextInstallPath = path.join(
@@ -598,26 +598,26 @@ describe("commitConfigWithPendingPluginInstalls", () => {
       "projects",
       "voice-call-v2",
       "node_modules",
-      "@openclaw",
+      "@afora",
       "voice-call",
     );
     fs.mkdirSync(previousInstallPath, { recursive: true });
     fs.mkdirSync(nextInstallPath, { recursive: true });
 
     try {
-      await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+      await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
         await commitPluginInstallRecordsWithConfig({
           previousInstallRecords: {
             "voice-call": {
               source: "npm",
-              spec: "@openclaw/voice-call@1.0.0",
+              spec: "@afora/voice-call@1.0.0",
               installPath: previousInstallPath,
             },
           },
           nextInstallRecords: {
-            "@openclaw/voice-call": {
+            "@afora/voice-call": {
               source: "npm",
-              spec: "@openclaw/voice-call@2.0.0",
+              spec: "@afora/voice-call@2.0.0",
               installPath: nextInstallPath,
             },
           },
@@ -632,14 +632,14 @@ describe("commitConfigWithPendingPluginInstalls", () => {
   });
 
   it("removes newly retained npm markers when the config commit rolls back", async () => {
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-record-commit-"));
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-record-commit-"));
     const previousInstallPath = path.join(
       stateDir,
       "npm",
       "projects",
       "codex-v1",
       "node_modules",
-      "@openclaw",
+      "@afora",
       "codex",
     );
     const nextInstallPath = path.join(
@@ -648,7 +648,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
       "projects",
       "codex-v2",
       "node_modules",
-      "@openclaw",
+      "@afora",
       "codex",
     );
     fs.mkdirSync(previousInstallPath, { recursive: true });
@@ -656,20 +656,20 @@ describe("commitConfigWithPendingPluginInstalls", () => {
     mocks.replaceConfigFile.mockRejectedValueOnce(new Error("config changed"));
 
     try {
-      await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+      await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
         await expect(
           commitPluginInstallRecordsWithConfig({
             previousInstallRecords: {
               codex: {
                 source: "npm",
-                spec: "@openclaw/codex@1.0.0",
+                spec: "@afora/codex@1.0.0",
                 installPath: previousInstallPath,
               },
             },
             nextInstallRecords: {
               codex: {
                 source: "npm",
-                spec: "@openclaw/codex@2.0.0",
+                spec: "@afora/codex@2.0.0",
                 installPath: nextInstallPath,
               },
             },
@@ -685,14 +685,14 @@ describe("commitConfigWithPendingPluginInstalls", () => {
   });
 
   it("removes earlier retained markers when a later marker creation fails", async () => {
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-record-commit-"));
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-record-commit-"));
     const firstPreviousInstallPath = path.join(
       stateDir,
       "npm",
       "projects",
       "codex-v1",
       "node_modules",
-      "@openclaw",
+      "@afora",
       "codex",
     );
     const firstNextInstallPath = path.join(
@@ -701,7 +701,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
       "projects",
       "codex-v2",
       "node_modules",
-      "@openclaw",
+      "@afora",
       "codex",
     );
     const secondPreviousInstallPath = path.join(
@@ -710,7 +710,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
       "projects",
       "voice-call-v1",
       "node_modules",
-      "@openclaw",
+      "@afora",
       "voice-call",
     );
     const secondNextInstallPath = path.join(
@@ -719,7 +719,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
       "projects",
       "voice-call-v2",
       "node_modules",
-      "@openclaw",
+      "@afora",
       "voice-call",
     );
     fs.mkdirSync(firstPreviousInstallPath, { recursive: true });
@@ -727,36 +727,36 @@ describe("commitConfigWithPendingPluginInstalls", () => {
     fs.mkdirSync(secondPreviousInstallPath, { recursive: true });
     fs.mkdirSync(secondNextInstallPath, { recursive: true });
     fs.writeFileSync(
-      path.join(stateDir, "npm", "projects", "voice-call-v1", ".openclaw-retained-npm-installs"),
+      path.join(stateDir, "npm", "projects", "voice-call-v1", ".afora-retained-npm-installs"),
       "not a directory",
       "utf8",
     );
 
     try {
-      await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+      await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
         await expect(
           commitPluginInstallRecordsWithConfig({
             previousInstallRecords: {
               codex: {
                 source: "npm",
-                spec: "@openclaw/codex@1.0.0",
+                spec: "@afora/codex@1.0.0",
                 installPath: firstPreviousInstallPath,
               },
               "voice-call": {
                 source: "npm",
-                spec: "@openclaw/voice-call@1.0.0",
+                spec: "@afora/voice-call@1.0.0",
                 installPath: secondPreviousInstallPath,
               },
             },
             nextInstallRecords: {
               codex: {
                 source: "npm",
-                spec: "@openclaw/codex@2.0.0",
+                spec: "@afora/codex@2.0.0",
                 installPath: firstNextInstallPath,
               },
               "voice-call": {
                 source: "npm",
-                spec: "@openclaw/voice-call@2.0.0",
+                spec: "@afora/voice-call@2.0.0",
                 installPath: secondNextInstallPath,
               },
             },
@@ -772,14 +772,14 @@ describe("commitConfigWithPendingPluginInstalls", () => {
   });
 
   it("clears retained npm markers for active committed install records", async () => {
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-record-commit-"));
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-record-commit-"));
     const installPath = path.join(
       stateDir,
       "npm",
       "projects",
       "codex-v2",
       "node_modules",
-      "@openclaw",
+      "@afora",
       "codex",
     );
     fs.mkdirSync(installPath, { recursive: true });
@@ -791,13 +791,13 @@ describe("commitConfigWithPendingPluginInstalls", () => {
     });
 
     try {
-      await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+      await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
         await commitPluginInstallRecordsWithConfig({
           previousInstallRecords: {},
           nextInstallRecords: {
             codex: {
               source: "npm",
-              spec: "@openclaw/codex@2.0.0",
+              spec: "@afora/codex@2.0.0",
               installPath,
             },
           },
@@ -812,14 +812,14 @@ describe("commitConfigWithPendingPluginInstalls", () => {
   });
 
   it("restores cleared active npm markers when the config commit rolls back", async () => {
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-record-commit-"));
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-record-commit-"));
     const installPath = path.join(
       stateDir,
       "npm",
       "projects",
       "codex-v2",
       "node_modules",
-      "@openclaw",
+      "@afora",
       "codex",
     );
     fs.mkdirSync(installPath, { recursive: true });
@@ -832,14 +832,14 @@ describe("commitConfigWithPendingPluginInstalls", () => {
     mocks.replaceConfigFile.mockRejectedValueOnce(new Error("config changed"));
 
     try {
-      await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+      await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
         await expect(
           commitPluginInstallRecordsWithConfig({
             previousInstallRecords: {},
             nextInstallRecords: {
               codex: {
                 source: "npm",
-                spec: "@openclaw/codex@2.0.0",
+                spec: "@afora/codex@2.0.0",
                 installPath,
               },
             },
@@ -855,7 +855,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
   });
 
   it("restores earlier active markers when clearing a later marker fails", async () => {
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-record-commit-"));
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-record-commit-"));
     const installPaths = ["codex", "voice-call"].map((pluginId) =>
       path.join(
         stateDir,
@@ -863,7 +863,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
         "projects",
         `${pluginId}-v2`,
         "node_modules",
-        "@openclaw",
+        "@afora",
         pluginId,
       ),
     );
@@ -898,7 +898,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
                 pluginId,
                 {
                   source: "npm",
-                  spec: `@openclaw/${pluginId}@2.0.0`,
+                  spec: `@afora/${pluginId}@2.0.0`,
                   installPath,
                 },
               ];
@@ -976,14 +976,14 @@ describe("commitConfigWithPendingPluginInstalls", () => {
   });
 
   it("leaves marker state intact when a successor owns the plugin index", async () => {
-    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-record-commit-"));
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-record-commit-"));
     const installPath = path.join(
       stateDir,
       "npm",
       "projects",
       "codex-v2",
       "node_modules",
-      "@openclaw",
+      "@afora",
       "codex",
     );
     fs.mkdirSync(installPath, { recursive: true });
@@ -1003,7 +1003,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
           nextInstallRecords: {
             codex: {
               source: "npm",
-              spec: "@openclaw/codex@2.0.0",
+              spec: "@afora/codex@2.0.0",
               installPath,
             },
           },
@@ -1018,7 +1018,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
   });
 
   it("uses a plain config write when no pending plugin install records exist", async () => {
-    const nextConfig: OpenClawConfig = {
+    const nextConfig: AforaConfig = {
       gateway: {
         mode: "local",
       },
@@ -1041,7 +1041,7 @@ describe("commitConfigWithPendingPluginInstalls", () => {
 
   it("supports non-replace config writers without adding an undefined write options argument", async () => {
     const writeConfigFile = vi.fn(async () => undefined);
-    const nextConfig: OpenClawConfig = {
+    const nextConfig: AforaConfig = {
       gateway: {
         mode: "local",
       },

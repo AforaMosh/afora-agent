@@ -3,9 +3,9 @@ import {
   loadSessionEntry,
   upsertSessionEntryCore,
 } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
-import { withOpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+import type { AforaConfig } from "../../config/types.afora.js";
+import { closeAforaAgentDatabasesForTest } from "../../state/afora-agent-db.js";
+import { withAforaTestState } from "../../test-utils/afora-test-state.js";
 import { dispatchGatewayMethodInProcess, setFallbackGatewayContext } from "../server-plugins.js";
 import {
   resolveSessionMutationAuthorization,
@@ -18,7 +18,7 @@ import type { GatewayClient, GatewayRequestContext, RespondFn } from "./types.js
 
 afterEach(() => {
   flushPendingSessionsChangedEvents();
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
   vi.restoreAllMocks();
 });
 
@@ -28,7 +28,7 @@ function client(profileId?: string): GatewayClient {
       minProtocol: 1,
       maxProtocol: 1,
       client: {
-        id: "openclaw-control-ui",
+        id: "afora-control-ui",
         version: "test",
         platform: "test",
         mode: "webchat",
@@ -50,7 +50,7 @@ function client(profileId?: string): GatewayClient {
   };
 }
 
-function context(cfg: OpenClawConfig) {
+function context(cfg: AforaConfig) {
   return {
     getRuntimeConfig: () => cfg,
     getSessionEventSubscriberConnIds: () => new Set(["observer"]),
@@ -60,7 +60,7 @@ function context(cfg: OpenClawConfig) {
 }
 
 async function invoke(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   client: GatewayClient;
   request: Record<string, unknown>;
 }) {
@@ -86,7 +86,7 @@ async function invoke(params: {
 
 describe("sessions.assignOwner", () => {
   it("records the trusted in-process agent tool caller as the assigning agent", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async (state) => {
+    await withAforaTestState({ scenario: "minimal" }, async (state) => {
       const sessionKey = "agent:main:handoff";
       await upsertSessionEntryCore(
         { agentId: "main", env: state.env, sessionKey },
@@ -104,7 +104,7 @@ describe("sessions.assignOwner", () => {
             { id: "research", identity: { name: "Research" } },
           ],
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const requestContext = context(cfg);
       const clearContext = setFallbackGatewayContext(requestContext);
 
@@ -144,7 +144,7 @@ describe("sessions.assignOwner", () => {
   });
 
   it("lets a write-scoped viewer assign a shared session without changing sharing authority", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async (state) => {
+    await withAforaTestState({ scenario: "minimal" }, async (state) => {
       const sessionKey = "agent:main:handoff";
       await upsertSessionEntryCore(
         { agentId: "main", env: state.env, sessionKey },
@@ -162,7 +162,7 @@ describe("sessions.assignOwner", () => {
             { id: "research", identity: { name: "Research" } },
           ],
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       vi.spyOn(Date, "now").mockReturnValue(4242);
 
       const result = await invoke({
@@ -214,7 +214,7 @@ describe("sessions.assignOwner", () => {
   });
 
   it("rejects hidden viewers, unidentified callers, and unknown agent targets", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async (state) => {
+    await withAforaTestState({ scenario: "minimal" }, async (state) => {
       const sessionKey = "agent:main:private-handoff";
       await upsertSessionEntryCore(
         { agentId: "main", env: state.env, sessionKey },
@@ -227,7 +227,7 @@ describe("sessions.assignOwner", () => {
       );
       const cfg = {
         agents: { list: [{ id: "main", default: true }, { id: "research" }] },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const request = { key: sessionKey, owner: { type: "agent", id: "research" } };
       const hidden = await invoke({ cfg, client: client("profile-viewer"), request });
       expect(hidden.responses[0]?.[2]).toMatchObject({

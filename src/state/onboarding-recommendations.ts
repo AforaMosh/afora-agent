@@ -6,13 +6,13 @@ import {
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../infra/kysely-sync.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "./openclaw-state-db-readonly.js";
-import { tableExists } from "./openclaw-state-db-schema-helpers.js";
-import type { DB as OpenClawStateKyselyDatabase } from "./openclaw-state-db.generated.js";
+import { withExistingAforaStateDatabaseReadOnly } from "./afora-state-db-readonly.js";
+import { tableExists } from "./afora-state-db-schema-helpers.js";
+import type { DB as AforaStateKyselyDatabase } from "./afora-state-db.generated.js";
 import {
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "./openclaw-state-db.js";
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "./afora-state-db.js";
 
 const OnboardingRecommendationMatchSchema = z.object({
   appLabel: z.string(),
@@ -83,7 +83,7 @@ export type OnboardingRecommendationsStore = {
 };
 
 type OnboardingRecommendationsDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "onboarding_recommendations"
 >;
 
@@ -110,11 +110,11 @@ function hashOnboardingRecommendationInventory(
 
 function readOnboardingRecommendations(
   configKey: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): OnboardingRecommendationsRecord | null {
   // CLI reads must not join the Gateway's writable SQLite lifecycle (#101290).
   return (
-    withExistingOpenClawStateDatabaseReadOnly(({ db: database }) => {
+    withExistingAforaStateDatabaseReadOnly(({ db: database }) => {
       if (!tableExists(database, "onboarding_recommendations")) {
         return null;
       }
@@ -149,13 +149,13 @@ function readOnboardingRecommendations(
 function writeOnboardingRecommendationsOffer(
   configKey: string,
   params: WriteOnboardingRecommendationsOfferParams,
-  databaseOptions: OpenClawStateDatabaseOptions = {},
+  databaseOptions: AforaStateDatabaseOptions = {},
 ): OnboardingRecommendationsRecord {
   const nowMs = params.nowMs ?? Date.now();
   const inventoryHash = hashOnboardingRecommendationInventory(params.inventory);
   const matches = OnboardingRecommendationMatchesSchema.parse(params.matches);
   const acceptedAt = params.answered ? nowMs : null;
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     (database) => {
       const db = getNodeSqliteKysely<OnboardingRecommendationsDatabase>(database.db);
       const existing = executeSqliteQueryTakeFirstSync(
@@ -220,10 +220,10 @@ function writeOnboardingRecommendationsOffer(
 function acknowledgeOnboardingRecommendations(
   configKey: string,
   params: AcknowledgeOnboardingRecommendationsParams = {},
-  databaseOptions: OpenClawStateDatabaseOptions = {},
+  databaseOptions: AforaStateDatabaseOptions = {},
 ): OnboardingRecommendationsRecord | null {
   const nowMs = params.nowMs ?? Date.now();
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     (database) => {
       const db = getNodeSqliteKysely<OnboardingRecommendationsDatabase>(database.db);
       const existing = executeSqliteQueryTakeFirstSync(
@@ -287,11 +287,11 @@ function acknowledgeOnboardingRecommendations(
 function updatePendingOnboardingRecommendations(
   configKey: string,
   params: UpdatePendingOnboardingRecommendationsParams,
-  databaseOptions: OpenClawStateDatabaseOptions = {},
+  databaseOptions: AforaStateDatabaseOptions = {},
 ): OnboardingRecommendationsRecord | null {
   const nowMs = params.nowMs ?? Date.now();
   const matches = OnboardingRecommendationMatchesSchema.parse(params.matches);
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     (database) => {
       const db = getNodeSqliteKysely<OnboardingRecommendationsDatabase>(database.db);
       const existing = executeSqliteQueryTakeFirstSync(
@@ -349,9 +349,9 @@ function updatePendingOnboardingRecommendations(
 function clearPendingOnboardingRecommendations(
   configKey: string,
   params: ClearPendingOnboardingRecommendationsParams,
-  databaseOptions: OpenClawStateDatabaseOptions = {},
+  databaseOptions: AforaStateDatabaseOptions = {},
 ): boolean {
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     (database) => {
       const db = getNodeSqliteKysely<OnboardingRecommendationsDatabase>(database.db);
       const result = executeSqliteQuerySync(
@@ -374,9 +374,9 @@ function clearPendingOnboardingRecommendations(
 
 function clearOnboardingRecommendations(
   configKey: string,
-  databaseOptions: OpenClawStateDatabaseOptions = {},
+  databaseOptions: AforaStateDatabaseOptions = {},
 ): boolean {
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     (database) => {
       const db = getNodeSqliteKysely<OnboardingRecommendationsDatabase>(database.db);
       const result = executeSqliteQuerySync(
@@ -392,7 +392,7 @@ function clearOnboardingRecommendations(
 
 export function createOnboardingRecommendationsStore(params: {
   workspaceDir: string;
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): OnboardingRecommendationsStore {
   // Doctor owns the one-time `primary` migration; a runtime fallback would recreate
   // cross-workspace reads. Every operation stays bound to one canonical workspace key.

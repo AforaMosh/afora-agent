@@ -1,5 +1,5 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { createNonExitingRuntimeEnv } from "openclaw/plugin-sdk/plugin-test-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { createNonExitingRuntimeEnv } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { describe, expect, it, vi } from "vitest";
 import { lookupTelegramChatId } from "./api-fetch.js";
 import { telegramPlugin } from "./channel.js";
@@ -13,7 +13,7 @@ describe("telegram target resolution", () => {
     const lookupMock = vi.mocked(lookupTelegramChatId);
     lookupMock.mockResolvedValue("-1001234567890");
 
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         telegram: {
           botToken: "123456:ABC-DEF",

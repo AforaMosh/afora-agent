@@ -1,4 +1,4 @@
-// Import Cycle Graph script supports OpenClaw repository automation.
+// Import Cycle Graph script supports Afora repository automation.
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
 

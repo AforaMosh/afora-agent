@@ -3,10 +3,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  auditOpenClawPeerDependenciesInManagedNpmRoot,
-  linkOpenClawPeerDependencies,
-  reconcileRegisteredOpenClawHostLinks,
-  relinkOpenClawPeerDependenciesInManagedNpmRoot,
+  auditAforaPeerDependenciesInManagedNpmRoot,
+  linkAforaPeerDependencies,
+  reconcileRegisteredAforaHostLinks,
+  relinkAforaPeerDependenciesInManagedNpmRoot,
 } from "./plugin-peer-link.js";
 import { cleanupTrackedTempDirs, makeTrackedTempDir } from "./test-helpers/fs-fixtures.js";
 
@@ -17,11 +17,11 @@ afterEach(() => {
 });
 
 function makeTempDir() {
-  return makeTrackedTempDir("openclaw-plugin-peer-link", tempDirs);
+  return makeTrackedTempDir("afora-plugin-peer-link", tempDirs);
 }
 
 describe("plugin peer links", () => {
-  it("relinks openclaw peers in the managed npm root", async () => {
+  it("relinks afora peers in the managed npm root", async () => {
     const npmRoot = makeTempDir();
     const packageDir = path.join(npmRoot, "node_modules", "peer-plugin");
     fs.mkdirSync(packageDir, { recursive: true });
@@ -31,14 +31,14 @@ describe("plugin peer links", () => {
         name: "peer-plugin",
         version: "1.0.0",
         peerDependencies: {
-          openclaw: ">=2026.0.0",
+          afora: ">=2026.0.0",
         },
       }),
       "utf8",
     );
 
     const messages: string[] = [];
-    const result = await relinkOpenClawPeerDependenciesInManagedNpmRoot({
+    const result = await relinkAforaPeerDependenciesInManagedNpmRoot({
       npmRoot,
       logger: {
         info: (message) => messages.push(message),
@@ -46,14 +46,14 @@ describe("plugin peer links", () => {
       },
     });
 
-    const linkPath = path.join(packageDir, "node_modules", "openclaw");
+    const linkPath = path.join(packageDir, "node_modules", "afora");
     expect(result).toEqual({ checked: 1, attempted: 1, repaired: 1, skipped: 0 });
     expect(fs.lstatSync(linkPath).isSymbolicLink()).toBe(true);
     expect(fs.realpathSync(linkPath)).toBe(fs.realpathSync(process.cwd()));
-    expect(messages.join("\n")).toContain('Linked peerDependency "openclaw"');
+    expect(messages.join("\n")).toContain('Linked peerDependency "afora"');
   });
 
-  it("relinks openclaw runtime dependencies in the managed npm root", async () => {
+  it("relinks afora runtime dependencies in the managed npm root", async () => {
     const npmRoot = makeTempDir();
     const packageDir = path.join(npmRoot, "node_modules", "runtime-plugin");
     fs.mkdirSync(packageDir, { recursive: true });
@@ -63,18 +63,18 @@ describe("plugin peer links", () => {
         name: "runtime-plugin",
         version: "1.0.0",
         dependencies: {
-          openclaw: "2026.7.1",
+          afora: "2026.7.1",
         },
       }),
       "utf8",
     );
 
-    const result = await relinkOpenClawPeerDependenciesInManagedNpmRoot({
+    const result = await relinkAforaPeerDependenciesInManagedNpmRoot({
       npmRoot,
       logger: {},
     });
 
-    const linkPath = path.join(packageDir, "node_modules", "openclaw");
+    const linkPath = path.join(packageDir, "node_modules", "afora");
     expect(result).toEqual({ checked: 1, attempted: 1, repaired: 1, skipped: 0 });
     expect(fs.lstatSync(linkPath).isSymbolicLink()).toBe(true);
     expect(fs.realpathSync(linkPath)).toBe(fs.realpathSync(process.cwd()));
@@ -91,13 +91,13 @@ describe("plugin peer links", () => {
       path.join(peerDir, "package.json"),
       JSON.stringify({
         name: "peer-plugin",
-        peerDependencies: { openclaw: ">=2026.0.0" },
+        peerDependencies: { afora: ">=2026.0.0" },
       }),
       "utf8",
     );
     const failures: Array<{ error: unknown; packageDir: string }> = [];
 
-    const result = await relinkOpenClawPeerDependenciesInManagedNpmRoot({
+    const result = await relinkAforaPeerDependenciesInManagedNpmRoot({
       npmRoot,
       logger: {},
       onPackageReadError: (error, packageDir) => failures.push({ error, packageDir }),
@@ -107,7 +107,7 @@ describe("plugin peer links", () => {
     expect(failures).toHaveLength(1);
     expect(failures[0]?.packageDir).toBe(unreadableDir);
     expect(failures[0]?.error).toBeInstanceOf(SyntaxError);
-    expect(fs.lstatSync(path.join(peerDir, "node_modules", "openclaw")).isSymbolicLink()).toBe(
+    expect(fs.lstatSync(path.join(peerDir, "node_modules", "afora")).isSymbolicLink()).toBe(
       true,
     );
   });
@@ -123,13 +123,13 @@ describe("plugin peer links", () => {
       path.join(peerDir, "package.json"),
       JSON.stringify({
         name: "peer-plugin",
-        peerDependencies: { openclaw: ">=2026.0.0" },
+        peerDependencies: { afora: ">=2026.0.0" },
       }),
       "utf8",
     );
     const failures: Array<{ error: unknown; packageDir: string }> = [];
 
-    const result = await auditOpenClawPeerDependenciesInManagedNpmRoot({
+    const result = await auditAforaPeerDependenciesInManagedNpmRoot({
       npmRoot,
       onPackageReadError: (error, packageDir) => failures.push({ error, packageDir }),
     });
@@ -141,7 +141,7 @@ describe("plugin peer links", () => {
     expect(failures[0]?.packageDir).toBe(unreadableDir);
   });
 
-  it("audits missing managed npm openclaw peer links without relinking", async () => {
+  it("audits missing managed npm afora peer links without relinking", async () => {
     const npmRoot = makeTempDir();
     const packageDir = path.join(npmRoot, "node_modules", "peer-plugin");
     fs.mkdirSync(packageDir, { recursive: true });
@@ -151,15 +151,15 @@ describe("plugin peer links", () => {
         name: "peer-plugin",
         version: "1.0.0",
         peerDependencies: {
-          openclaw: ">=2026.0.0",
+          afora: ">=2026.0.0",
         },
       }),
       "utf8",
     );
 
-    const result = await auditOpenClawPeerDependenciesInManagedNpmRoot({ npmRoot });
+    const result = await auditAforaPeerDependenciesInManagedNpmRoot({ npmRoot });
 
-    const linkPath = path.join(packageDir, "node_modules", "openclaw");
+    const linkPath = path.join(packageDir, "node_modules", "afora");
     expect(result.checked).toBe(1);
     expect(result.broken).toBe(1);
     expect(result.issues[0]?.packageName).toBe("peer-plugin");
@@ -168,7 +168,7 @@ describe("plugin peer links", () => {
   });
 
   it.runIf(process.platform !== "win32")(
-    "does not follow a package-local node_modules symlink while linking openclaw peers",
+    "does not follow a package-local node_modules symlink while linking afora peers",
     async () => {
       const root = makeTempDir();
       const packageDir = path.join(root, "peer-plugin");
@@ -178,10 +178,10 @@ describe("plugin peer links", () => {
       fs.symlinkSync(outsideDir, path.join(packageDir, "node_modules"), "dir");
 
       const warnings: string[] = [];
-      const result = await linkOpenClawPeerDependencies({
+      const result = await linkAforaPeerDependencies({
         installedDir: packageDir,
         peerDependencies: {
-          openclaw: ">=2026.0.0",
+          afora: ">=2026.0.0",
         },
         logger: {
           warn: (message) => warnings.push(message),
@@ -189,23 +189,23 @@ describe("plugin peer links", () => {
       });
 
       expect(result).toEqual({ repaired: 0, skipped: 1 });
-      expect(fs.existsSync(path.join(outsideDir, "openclaw"))).toBe(false);
+      expect(fs.existsSync(path.join(outsideDir, "afora"))).toBe(false);
       expect(warnings.join("\n")).toContain("is not a real directory");
     },
   );
 
-  it("replaces an existing real openclaw package directory", async () => {
+  it("replaces an existing real afora package directory", async () => {
     const root = makeTempDir();
     const packageDir = path.join(root, "peer-plugin");
-    const existingOpenClawDir = path.join(packageDir, "node_modules", "openclaw");
-    fs.mkdirSync(existingOpenClawDir, { recursive: true });
-    fs.writeFileSync(path.join(existingOpenClawDir, "package.json"), '{"name":"openclaw"}', "utf8");
+    const existingAforaDir = path.join(packageDir, "node_modules", "afora");
+    fs.mkdirSync(existingAforaDir, { recursive: true });
+    fs.writeFileSync(path.join(existingAforaDir, "package.json"), '{"name":"afora-agent"}', "utf8");
 
     const messages: string[] = [];
-    const result = await linkOpenClawPeerDependencies({
+    const result = await linkAforaPeerDependencies({
       installedDir: packageDir,
       peerDependencies: {
-        openclaw: ">=2026.0.0",
+        afora: ">=2026.0.0",
       },
       logger: {
         info: (message) => messages.push(message),
@@ -213,27 +213,27 @@ describe("plugin peer links", () => {
     });
 
     expect(result).toEqual({ repaired: 1, skipped: 0 });
-    expect(fs.lstatSync(existingOpenClawDir).isSymbolicLink()).toBe(true);
-    expect(fs.realpathSync(existingOpenClawDir)).toBe(fs.realpathSync(process.cwd()));
-    expect(messages.join("\n")).toContain('Linked peerDependency "openclaw"');
+    expect(fs.lstatSync(existingAforaDir).isSymbolicLink()).toBe(true);
+    expect(fs.realpathSync(existingAforaDir)).toBe(fs.realpathSync(process.cwd()));
+    expect(messages.join("\n")).toContain('Linked peerDependency "afora"');
   });
 
   it("does not delete an unrelated existing package directory", async () => {
     const root = makeTempDir();
     const packageDir = path.join(root, "peer-plugin");
-    const existingOpenClawDir = path.join(packageDir, "node_modules", "openclaw");
-    fs.mkdirSync(existingOpenClawDir, { recursive: true });
+    const existingAforaDir = path.join(packageDir, "node_modules", "afora");
+    fs.mkdirSync(existingAforaDir, { recursive: true });
     fs.writeFileSync(
-      path.join(existingOpenClawDir, "package.json"),
-      '{"name":"not-openclaw"}',
+      path.join(existingAforaDir, "package.json"),
+      '{"name":"not-afora"}',
       "utf8",
     );
 
     const warnings: string[] = [];
-    const result = await linkOpenClawPeerDependencies({
+    const result = await linkAforaPeerDependencies({
       installedDir: packageDir,
       peerDependencies: {
-        openclaw: ">=2026.0.0",
+        afora: ">=2026.0.0",
       },
       logger: {
         warn: (message) => warnings.push(message),
@@ -241,7 +241,7 @@ describe("plugin peer links", () => {
     });
 
     expect(result).toEqual({ repaired: 0, skipped: 1 });
-    expect(fs.existsSync(path.join(existingOpenClawDir, "package.json"))).toBe(true);
+    expect(fs.existsSync(path.join(existingAforaDir, "package.json"))).toBe(true);
     expect(warnings.join("\n")).toContain("already exists and is not a symlink");
   });
 
@@ -251,18 +251,18 @@ describe("plugin peer links", () => {
       const root = makeTempDir();
       const extensionsDir = path.join(root, "extensions");
       const packageDir = path.join(extensionsDir, "email");
-      const staleHostDir = path.join(packageDir, "node_modules", "openclaw");
+      const staleHostDir = path.join(packageDir, "node_modules", "afora");
       const outsideManifest = path.join(root, "outside-package.json");
       fs.mkdirSync(staleHostDir, { recursive: true });
       fs.writeFileSync(
         outsideManifest,
-        JSON.stringify({ name: "email", peerDependencies: { openclaw: "*" } }),
+        JSON.stringify({ name: "email", peerDependencies: { afora: "*" } }),
       );
       fs.symlinkSync(outsideManifest, path.join(packageDir, "package.json"), "file");
-      fs.writeFileSync(path.join(staleHostDir, "package.json"), '{"name":"openclaw"}');
+      fs.writeFileSync(path.join(staleHostDir, "package.json"), '{"name":"afora-agent"}');
       const failures: Array<{ error: unknown; packageDir: string }> = [];
 
-      const result = await reconcileRegisteredOpenClawHostLinks({
+      const result = await reconcileRegisteredAforaHostLinks({
         extensionsDir,
         installRecords: { email: { source: "npm", installPath: packageDir } },
         mode: "repair",
@@ -287,15 +287,15 @@ describe("plugin peer links", () => {
       fs.mkdirSync(realExtensionsDir, { recursive: true });
       fs.symlinkSync(realExtensionsDir, extensionsDir, "dir");
       const packageDir = path.join(extensionsDir, "email");
-      const staleHostDir = path.join(packageDir, "node_modules", "openclaw");
+      const staleHostDir = path.join(packageDir, "node_modules", "afora");
       fs.mkdirSync(staleHostDir, { recursive: true });
       fs.writeFileSync(
         path.join(packageDir, "package.json"),
-        JSON.stringify({ name: "email", dependencies: { openclaw: "2026.7.1" } }),
+        JSON.stringify({ name: "email", dependencies: { afora: "2026.7.1" } }),
       );
-      fs.writeFileSync(path.join(staleHostDir, "package.json"), '{"name":"openclaw"}');
+      fs.writeFileSync(path.join(staleHostDir, "package.json"), '{"name":"afora-agent"}');
 
-      const result = await reconcileRegisteredOpenClawHostLinks({
+      const result = await reconcileRegisteredAforaHostLinks({
         extensionsDir,
         installRecords: { email: { source: "npm", installPath: packageDir } },
         mode: "repair",
@@ -314,18 +314,18 @@ describe("plugin peer links", () => {
       const extensionsDir = path.join(root, "extensions");
       const packageDir = path.join(extensionsDir, "email");
       const outsideModules = path.join(root, "outside-node-modules");
-      const outsideHost = path.join(outsideModules, "openclaw");
+      const outsideHost = path.join(outsideModules, "afora");
       fs.mkdirSync(packageDir, { recursive: true });
       fs.mkdirSync(outsideHost, { recursive: true });
       fs.writeFileSync(
         path.join(packageDir, "package.json"),
-        JSON.stringify({ name: "email", peerDependencies: { openclaw: "*" } }),
+        JSON.stringify({ name: "email", peerDependencies: { afora: "*" } }),
       );
-      fs.writeFileSync(path.join(outsideHost, "package.json"), '{"name":"openclaw"}');
+      fs.writeFileSync(path.join(outsideHost, "package.json"), '{"name":"afora-agent"}');
       fs.symlinkSync(outsideModules, path.join(packageDir, "node_modules"), "dir");
       const warnings: string[] = [];
 
-      const result = await reconcileRegisteredOpenClawHostLinks({
+      const result = await reconcileRegisteredAforaHostLinks({
         extensionsDir,
         installRecords: { email: { source: "npm", installPath: packageDir } },
         mode: "repair",

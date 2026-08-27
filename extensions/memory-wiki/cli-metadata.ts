@@ -1,10 +1,10 @@
 // Memory Wiki plugin module implements cli metadata behavior.
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 
 export default definePluginEntry({
   id: "memory-wiki",
   name: "Memory Wiki",
-  description: "Persistent wiki compiler and Obsidian-friendly knowledge vault for OpenClaw.",
+  description: "Persistent wiki compiler and Obsidian-friendly knowledge vault for Afora.",
   register(api) {
     api.registerCli(
       async ({ program, config: appConfig }) => {

@@ -4,9 +4,9 @@ import path from "node:path";
 import {
   resetPluginBlobStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 // Matrix tests cover send plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PluginRuntime } from "../../runtime-api.js";
 import { setMatrixRuntime } from "../runtime.js";
@@ -22,7 +22,7 @@ import {
   sendSingleTextMessageMatrix,
   sendTypingMatrix,
 } from "./send.js";
-import { MATRIX_OPENCLAW_FINALIZED_PREVIEW_KEY } from "./send/types.js";
+import { MATRIX_AFORA_FINALIZED_PREVIEW_KEY } from "./send/types.js";
 
 const loadOutboundMediaFromUrlMock = vi.hoisted(() => vi.fn());
 const loadWebMediaMock = vi.fn().mockResolvedValue({
@@ -47,9 +47,9 @@ const chunkMarkdownTextWithModeMock = vi.fn<
   (text: string, limit?: number, mode?: unknown) => string[]
 >((text) => (text ? [text] : []));
 
-vi.mock("openclaw/plugin-sdk/plugin-config-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/plugin-config-runtime")>(
-    "openclaw/plugin-sdk/plugin-config-runtime",
+vi.mock("afora-agent/plugin-sdk/plugin-config-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/plugin-config-runtime")>(
+    "afora-agent/plugin-sdk/plugin-config-runtime",
   );
   return {
     ...actual,
@@ -444,7 +444,7 @@ describe("sendMessageMatrix durable delivery", () => {
 
   beforeEach(() => {
     resetMatrixSendRuntimeMocks();
-    stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-matrix-send-plan-"));
+    stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-matrix-send-plan-"));
     installMatrixTestRuntime({
       stateDir,
       cfg: {},
@@ -574,8 +574,8 @@ describe("sendMessageMatrix media", () => {
   it("uploads media with url payloads", async () => {
     const { client, sendMessage, uploadContent } = makeClient();
     const mediaAccess = {
-      localRoots: ["/tmp/openclaw"],
-      workspaceDir: "/tmp/openclaw",
+      localRoots: ["/tmp/afora"],
+      workspaceDir: "/tmp/afora",
     };
 
     await sendMessageMatrix("room:!room:example", "caption", {
@@ -1023,7 +1023,7 @@ describe("sendMessageMatrix media", () => {
       client,
       cfg: {} as never,
       mediaUrl: "file:///tmp/photo.png",
-      mediaLocalRoots: ["/tmp/openclaw-matrix-test"],
+      mediaLocalRoots: ["/tmp/afora-matrix-test"],
     });
 
     expect(mockCallArg(loadWebMediaMock, "loadWebMedia", 0)).toBe("file:///tmp/photo.png");
@@ -1032,7 +1032,7 @@ describe("sendMessageMatrix media", () => {
       "media options",
     );
     expect(mediaOptions.maxBytes).toBeUndefined();
-    expect(mediaOptions.localRoots).toEqual(["/tmp/openclaw-matrix-test"]);
+    expect(mediaOptions.localRoots).toEqual(["/tmp/afora-matrix-test"]);
   });
 });
 
@@ -1309,16 +1309,16 @@ describe("sendMessageMatrix threads", () => {
     await sendMessageMatrix("room:!room:example", "first|second|third", {
       client,
       cfg: {} as never,
-      extraContent: { "com.openclaw.approval": { id: "req-1" } },
+      extraContent: { "com.afora.approval": { id: "req-1" } },
     });
 
     expect(sendMessage).toHaveBeenCalledTimes(3);
     expect(sentContent(sendMessage, 0).body).toBe("first");
-    expect(sentContent(sendMessage, 0)["com.openclaw.approval"]).toEqual({ id: "req-1" });
+    expect(sentContent(sendMessage, 0)["com.afora.approval"]).toEqual({ id: "req-1" });
     expect(sentContent(sendMessage, 1).body).toBe("second");
-    expect(sentContent(sendMessage, 1)).not.toHaveProperty("com.openclaw.approval");
+    expect(sentContent(sendMessage, 1)).not.toHaveProperty("com.afora.approval");
     expect(sentContent(sendMessage, 2).body).toBe("third");
-    expect(sentContent(sendMessage, 2)).not.toHaveProperty("com.openclaw.approval");
+    expect(sentContent(sendMessage, 2)).not.toHaveProperty("com.afora.approval");
   });
 });
 
@@ -1491,11 +1491,11 @@ describe("sendSingleTextMessageMatrix", () => {
     const result = await sendSingleTextMessageMatrix("room:!room:example", "done", {
       client,
       cfg: {} as never,
-      extraContent: { [MATRIX_OPENCLAW_FINALIZED_PREVIEW_KEY]: true },
+      extraContent: { [MATRIX_AFORA_FINALIZED_PREVIEW_KEY]: true },
     });
 
     expect(sentContent(sendMessage).body).toBe("done");
-    expect(sentContent(sendMessage)[MATRIX_OPENCLAW_FINALIZED_PREVIEW_KEY]).toBe(true);
+    expect(sentContent(sendMessage)[MATRIX_AFORA_FINALIZED_PREVIEW_KEY]).toBe(true);
     expect(result.receipt.primaryPlatformMessageId).toBe("evt1");
     expect(result.receipt.platformMessageIds).toEqual(["evt1"]);
     expectTextReceiptPart(result.receipt.parts[0], "evt1");
@@ -1613,12 +1613,12 @@ describe("editMessageMatrix mentions", () => {
     await editMessageMatrix("room:!room:example", "$original", "done", {
       client,
       cfg: {} as never,
-      extraContent: { [MATRIX_OPENCLAW_FINALIZED_PREVIEW_KEY]: true },
+      extraContent: { [MATRIX_AFORA_FINALIZED_PREVIEW_KEY]: true },
     });
 
     const content = sentContent(sendMessage);
-    expect(content[MATRIX_OPENCLAW_FINALIZED_PREVIEW_KEY]).toBe(true);
-    expect(newContent(content)[MATRIX_OPENCLAW_FINALIZED_PREVIEW_KEY]).toBe(true);
+    expect(content[MATRIX_AFORA_FINALIZED_PREVIEW_KEY]).toBe(true);
+    expect(newContent(content)[MATRIX_AFORA_FINALIZED_PREVIEW_KEY]).toBe(true);
   });
 
   it("preserves Markdown-significant indentation in edits", async () => {

@@ -36,7 +36,7 @@ describe("run-android-gradle", () => {
     expect(
       shouldSkipLinuxArmAndroidGradle({
         arch: "arm64",
-        env: { OPENCLAW_ANDROID_GRADLE_ALLOW_LINUX_ARM: "1" },
+        env: { AFORA_ANDROID_GRADLE_ALLOW_LINUX_ARM: "1" },
         platform: "linux",
       }),
     ).toBe(false);
@@ -44,7 +44,7 @@ describe("run-android-gradle", () => {
 
   it("explains the skip with the override escape hatch", () => {
     expect(linuxArmAndroidGradleSkipMessage("linux", "arm64")).toContain(
-      "OPENCLAW_ANDROID_GRADLE_ALLOW_LINUX_ARM=1",
+      "AFORA_ANDROID_GRADLE_ALLOW_LINUX_ARM=1",
     );
   });
 
@@ -162,7 +162,7 @@ process.exitCode = await run(
 
   it("reports spawn errors and returns a failure status", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
-    const missingCommand = path.join(os.tmpdir(), `openclaw-missing-command-${process.pid}`);
+    const missingCommand = path.join(os.tmpdir(), `afora-missing-command-${process.pid}`);
     try {
       await expect(run(missingCommand, [], process.cwd(), {})).resolves.toBe(1);
       expect(error).toHaveBeenCalledOnce();

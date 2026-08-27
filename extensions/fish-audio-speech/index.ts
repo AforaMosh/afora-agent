@@ -1,5 +1,5 @@
 // Fish Audio plugin entrypoint registers hosted speech synthesis.
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import { buildFishAudioSpeechProvider } from "./speech-provider.js";
 
 export default definePluginEntry({

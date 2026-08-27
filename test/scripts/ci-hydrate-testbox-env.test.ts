@@ -26,10 +26,10 @@ function runBash(args: string[], env: NodeJS.ProcessEnv = {}): string {
 
 describe("scripts/ci-hydrate-testbox-env.sh", () => {
   it("bakes custom profile paths into the generated helper default", () => {
-    const root = makeTempDir(tempDirs, "openclaw-testbox-env-");
+    const root = makeTempDir(tempDirs, "afora-testbox-env-");
     const home = join(root, "home");
     const profilePath = join(root, "custom profile.env");
-    const helperPath = join(root, "bin", "openclaw-testbox-env");
+    const helperPath = join(root, "bin", "afora-testbox-env");
 
     runBash([SCRIPT, profilePath, helperPath], {
       HOME: home,
@@ -45,11 +45,11 @@ describe("scripts/ci-hydrate-testbox-env.sh", () => {
     const helper = readFileSync(helperPath, "utf8");
     expect(helper).toContain("default_profile_path=");
     expect(helper).toContain("custom\\ profile.env");
-    expect(helper).not.toContain(".openclaw-testbox-live.profile");
+    expect(helper).not.toContain(".afora-testbox-live.profile");
 
     const output = runBash([helperPath, "env"], {
       HOME: home,
-      OPENCLAW_TESTBOX_PROFILE_FILE: "",
+      AFORA_TESTBOX_PROFILE_FILE: "",
     });
     expect(output).toContain("OPENAI_API_KEY=testbox-sentinel-key\n");
   });

@@ -1,5 +1,5 @@
 import { readPackageVersion } from "./package-json.js";
-// Runs OpenClaw package update checks, package steps, and restart handoff.
+// Runs Afora package update checks, package steps, and restart handoff.
 import { detectGlobalInstallManagerForRoot } from "./update-global.js";
 import { resolveUpdateInstallRoot, updateInstallRootsMatch } from "./update-install-root.js";
 import { buildUpdateCommandRunner, UPDATE_RUNNER_TIMEOUT_MS } from "./update-runner-command.js";
@@ -48,7 +48,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
       status: "error",
       mode: "unknown",
       root: gitRoot,
-      reason: "not-openclaw-root",
+      reason: "not-afora-root",
       steps: [],
       durationMs: Date.now() - startedAt,
     };
@@ -67,7 +67,7 @@ export async function runGatewayUpdate(opts: UpdateRunnerOptions = {}): Promise<
     return {
       status: "error",
       mode: "unknown",
-      reason: "not-openclaw-root",
+      reason: "not-afora-root",
       steps: [],
       durationMs: Date.now() - startedAt,
     };

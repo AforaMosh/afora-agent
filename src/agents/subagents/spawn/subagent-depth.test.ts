@@ -3,9 +3,9 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { AforaConfig } from "../../../config/config.js";
 import { replaceSessionEntry } from "../../../config/sessions/session-accessor.js";
 import { resolveAgentTimeoutMs } from "../../timeout.js";
 import { getSubagentDepthFromSessionStore } from "./subagent-depth.js";
@@ -93,7 +93,7 @@ describe("getSubagentDepthFromSessionStore", () => {
   });
 
   it("resolves prefixed store keys when caller key omits the agent prefix", async () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-subagent-depth-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-subagent-depth-"));
     const storeTemplate = path.join(tmpDir, "sessions-{agentId}.json");
     const prefixedKey = "agent:main:subagent:flat";
     const storePath = storeTemplate.replaceAll("{agentId}", "main");
@@ -121,7 +121,7 @@ describe("getSubagentDepthFromSessionStore", () => {
   });
 
   it("reads a bare fixed-store key through its persisted owner", async () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-subagent-depth-shared-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-subagent-depth-shared-"));
     try {
       const storePath = path.join(tmpDir, "sessions.sqlite");
       await replaceSessionEntry(
@@ -139,7 +139,7 @@ describe("getSubagentDepthFromSessionStore", () => {
           entries: { ops: {}, research: {} },
         },
         session: { scope: "global", store: storePath },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
 
       expect(getSubagentDepthFromSessionStore("global", { cfg })).toBe(2);
     } finally {
@@ -148,7 +148,7 @@ describe("getSubagentDepthFromSessionStore", () => {
   });
 
   it("resolves a cross-agent parent outside the supplied child store", async () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-subagent-depth-cross-agent-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-subagent-depth-cross-agent-"));
     try {
       const storeTemplate = path.join(tmpDir, "sessions-{agentId}.json");
       const parentKey = "agent:main:dashboard:parent";
@@ -182,7 +182,7 @@ describe("getSubagentDepthFromSessionStore", () => {
   });
 
   it("keeps agent-scoped views separate for a fixed shared store", async () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-subagent-depth-fixed-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-subagent-depth-fixed-"));
     try {
       const storePath = path.join(tmpDir, "sessions.sqlite");
       const childKey = "agent:ops:dashboard:child";
@@ -239,7 +239,7 @@ describe("resolveAgentTimeoutMs", () => {
     ["negative", -1, 1_000],
     ["NaN", Number.NaN, 48 * 60 * 60 * 1000],
   ])("resolves config timeoutSeconds %s", (_label, timeoutSeconds, expected) => {
-    const cfg = { agents: { defaults: { timeoutSeconds } } } as OpenClawConfig;
+    const cfg = { agents: { defaults: { timeoutSeconds } } } as AforaConfig;
     expect(resolveAgentTimeoutMs({ cfg })).toBe(expected);
   });
 

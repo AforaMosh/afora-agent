@@ -3,12 +3,12 @@ export function configSnapshot(config: Record<string, unknown> = {}) {
     snapshot: {
       valid: true,
       parsed: {},
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       sourceConfig: config,
       hash: "base-hash",
     },
     writeOptions: {
-      expectedConfigPath: "/tmp/openclaw.json",
+      expectedConfigPath: "/tmp/afora.json",
       includeFileHashesForWrite: { "/tmp/plugins.json": "include-hash" },
       includeFileTargetsForWrite: { "/tmp/plugins.json": "/tmp/plugins.json" },
     },
@@ -42,7 +42,7 @@ export function metadataSnapshot(params: {
     origin,
     rootDir: `/tmp/${id}`,
     source: `/tmp/${id}/index.ts`,
-    manifestPath: `/tmp/${id}/openclaw.plugin.json`,
+    manifestPath: `/tmp/${id}/afora.plugin.json`,
   };
   return {
     index: {
@@ -50,7 +50,7 @@ export function metadataSnapshot(params: {
         {
           pluginId: id,
           ...(origin === "global" ? { installOwner: id } : {}),
-          packageName: `@openclaw/${id}`,
+          packageName: `@afora/${id}`,
           origin,
           enabled: params.enabled,
           rootDir: `/tmp/${id}`,
@@ -76,27 +76,27 @@ export function emptyMetadataSnapshot() {
 }
 
 export const hostedDiffsEntry = {
-  name: "@openclaw/diffs",
+  name: "@afora/diffs",
   version: "2.0.0",
   description: "Hosted description",
-  openclaw: {
+  afora: {
     plugin: { id: "diffs", label: "Hosted Diffs" },
-    install: { clawhubSpec: "clawhub:@openclaw/diffs", defaultChoice: "clawhub" },
+    install: { clawhubSpec: "clawhub:@afora/diffs", defaultChoice: "clawhub" },
   },
 };
 
 // Mirrors the ClawHub feed: package identity is remote, while runtime metadata stays local.
 export const hostedFeedDiffsEntry = {
-  id: "@openclaw/diffs",
+  id: "@afora/diffs",
   title: "Diffs",
   state: "available",
   featured: true,
-  publisher: { id: "openclaw", trust: "official" },
+  publisher: { id: "afora", trust: "official" },
   install: {
     candidates: [
       {
         sourceRef: "public-clawhub",
-        package: "@openclaw/diffs",
+        package: "@afora/diffs",
         version: "2026.6.11",
         integrity: `sha256:${"a".repeat(64)}`,
       },

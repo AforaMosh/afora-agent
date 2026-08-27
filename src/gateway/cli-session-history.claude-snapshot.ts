@@ -2,7 +2,7 @@ import fs from "node:fs";
 import readline from "node:readline";
 import { setImmediate as yieldToEventLoop } from "node:timers/promises";
 import { Worker } from "node:worker_threads";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import type { CliSessionReseedReceipt } from "../config/sessions.js";
 import { normalizeCliSessionReseedReceipt } from "../config/sessions/cli-session-binding.js";
 import {

@@ -1,12 +1,12 @@
 // Migrate Hermes plugin module implements items behavior.
-import type { MigrationItem } from "openclaw/plugin-sdk/migration";
+import type { MigrationItem } from "afora-agent/plugin-sdk/migration";
 import {
   createMigrationItem,
   markMigrationItemConflict,
   markMigrationItemError,
   markMigrationItemSkipped,
-} from "openclaw/plugin-sdk/migration";
-import { isRecord, normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/migration";
+import { isRecord, normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export const HERMES_REASON_ALREADY_CONFIGURED = "already configured";
 export const HERMES_REASON_DEFAULT_MODEL_CONFIGURED = "default model already configured";

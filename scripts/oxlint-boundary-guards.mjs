@@ -574,7 +574,7 @@ function noWidenThenAssertRule({ roots }) {
 }
 
 export default {
-  meta: { name: "openclaw-boundaries" },
+  meta: { name: "afora-boundaries" },
   rules: {
     "no-raw-window-open-call": restrictedCallRule({
       allowedFiles: ["ui/src/lib/editor-links.ts", "ui/src/lib/open-external-url.ts"],

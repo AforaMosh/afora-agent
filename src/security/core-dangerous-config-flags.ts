@@ -1,8 +1,8 @@
 // Detects dangerous core config flags during security audits.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 /** List enabled core config flags that intentionally weaken security posture. */
-export function collectCoreInsecureOrDangerousFlags(cfg: OpenClawConfig): string[] {
+export function collectCoreInsecureOrDangerousFlags(cfg: AforaConfig): string[] {
   const enabledFlags: string[] = [];
   if (cfg.gateway?.controlUi?.dangerouslyAllowHostHeaderOriginFallback === true) {
     enabledFlags.push("gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback=true");

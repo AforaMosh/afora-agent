@@ -1,5 +1,5 @@
 import path from "node:path";
-import { openNodeSqliteDatabase } from "openclaw/plugin-sdk/sqlite-runtime";
+import { openNodeSqliteDatabase } from "afora-agent/plugin-sdk/sqlite-runtime";
 import type { QaSuiteRuntimeEnv } from "./suite-runtime-types.js";
 
 function tableCount(
@@ -27,11 +27,11 @@ export function inspectQaExecutionIdentityStorage(env: Pick<QaSuiteRuntimeEnv, "
   contextCount: number;
   decisionCount: number;
 } {
-  const stateDir = env.gateway.runtimeEnv.OPENCLAW_STATE_DIR?.trim();
+  const stateDir = env.gateway.runtimeEnv.AFORA_STATE_DIR?.trim();
   if (!stateDir) {
     throw new Error("QA Gateway did not expose its isolated state directory");
   }
-  const database = openNodeSqliteDatabase(path.join(stateDir, "state", "openclaw.sqlite"), {
+  const database = openNodeSqliteDatabase(path.join(stateDir, "state", "afora.sqlite"), {
     readOnly: true,
   });
   try {

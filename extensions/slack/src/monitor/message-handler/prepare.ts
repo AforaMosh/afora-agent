@@ -3,7 +3,7 @@ import {
   resolveAckReaction,
   shouldAckReaction as shouldAckReactionGate,
   type AckReactionScope,
-} from "openclaw/plugin-sdk/channel-feedback";
+} from "afora-agent/plugin-sdk/channel-feedback";
 import {
   buildChannelInboundEventContext,
   buildMentionRegexes,
@@ -17,27 +17,27 @@ import {
   resolveEnvelopeFormatOptions,
   resolveUnmentionedGroupInboundPolicy,
   toInboundMediaFactsWithMetadata,
-} from "openclaw/plugin-sdk/channel-inbound";
-import { resolveChannelImplicitMentions } from "openclaw/plugin-sdk/channel-ingress-runtime";
-import { resolveChannelMessageSourceReplyDeliveryMode } from "openclaw/plugin-sdk/channel-outbound";
-import { hasControlCommand } from "openclaw/plugin-sdk/command-detection";
-import { isAbortRequestText } from "openclaw/plugin-sdk/command-primitives-runtime";
-import { shouldHandleTextCommands } from "openclaw/plugin-sdk/command-surface";
-import { ensureConfiguredBindingRouteReady } from "openclaw/plugin-sdk/conversation-runtime";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { mimeTypeFromFilePath } from "openclaw/plugin-sdk/media-mime";
-import { createChannelHistoryWindow } from "openclaw/plugin-sdk/reply-history";
-import type { FinalizedMsgContext } from "openclaw/plugin-sdk/reply-runtime";
-import { resolveInboundLastRouteSessionKey } from "openclaw/plugin-sdk/routing";
-import { logVerbose, shouldLogVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { resolvePinnedMainDmOwnerFromAllowlist } from "openclaw/plugin-sdk/security-runtime";
+} from "afora-agent/plugin-sdk/channel-inbound";
+import { resolveChannelImplicitMentions } from "afora-agent/plugin-sdk/channel-ingress-runtime";
+import { resolveChannelMessageSourceReplyDeliveryMode } from "afora-agent/plugin-sdk/channel-outbound";
+import { hasControlCommand } from "afora-agent/plugin-sdk/command-detection";
+import { isAbortRequestText } from "afora-agent/plugin-sdk/command-primitives-runtime";
+import { shouldHandleTextCommands } from "afora-agent/plugin-sdk/command-surface";
+import { ensureConfiguredBindingRouteReady } from "afora-agent/plugin-sdk/conversation-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { mimeTypeFromFilePath } from "afora-agent/plugin-sdk/media-mime";
+import { createChannelHistoryWindow } from "afora-agent/plugin-sdk/reply-history";
+import type { FinalizedMsgContext } from "afora-agent/plugin-sdk/reply-runtime";
+import { resolveInboundLastRouteSessionKey } from "afora-agent/plugin-sdk/routing";
+import { logVerbose, shouldLogVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { resolvePinnedMainDmOwnerFromAllowlist } from "afora-agent/plugin-sdk/security-runtime";
 import {
   asOptionalRecord as asRecord,
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
-import { enqueueRoutedSystemEvent } from "openclaw/plugin-sdk/system-event-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { enqueueRoutedSystemEvent } from "afora-agent/plugin-sdk/system-event-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { resolveSlackReplyToMode } from "../../account-reply-mode.js";
 import type { ResolvedSlackAccount } from "../../accounts.js";
 import { reactSlackMessage } from "../../actions.js";
@@ -102,7 +102,7 @@ const SLACK_HISTORY_MEDIA_MAX_BYTES = 10 * 1024 * 1024;
 const SLACK_HISTORY_MEDIA_IDLE_TIMEOUT_MS = 1_000;
 const SLACK_HISTORY_MEDIA_TOTAL_TIMEOUT_MS = 3_000;
 const SLACK_CHANNEL_ACCESS_DOCS_URL =
-  "https://docs.openclaw.ai/channels/slack#access-control-and-routing";
+  "https://docs.afora.ai/channels/slack#access-control-and-routing";
 
 function resolveSlackGroupSessionSubject(params: {
   channelId: string;
@@ -619,7 +619,7 @@ async function authorizeSlackInboundMessage(params: {
       !isBotMessage &&
       message.user
     ) {
-      let subject = "This OpenClaw bot";
+      let subject = "This Afora bot";
       if (ctx.botUserId) {
         try {
           const botIdentity = await ctx.resolveUserName(ctx.botUserId, params.eventScope);
@@ -636,7 +636,7 @@ async function authorizeSlackInboundMessage(params: {
           token: ctx.botToken,
           channel: message.channel,
           user: message.user,
-          text: `${subject} can’t reply here because this channel isn’t in its OpenClaw channel allowlist. Ask the OpenClaw owner to allow this channel. <${SLACK_CHANNEL_ACCESS_DOCS_URL}|Learn how to configure Slack channel access.>`,
+          text: `${subject} can’t reply here because this channel isn’t in its Afora channel allowlist. Ask the Afora owner to allow this channel. <${SLACK_CHANNEL_ACCESS_DOCS_URL}|Learn how to configure Slack channel access.>`,
         });
         params.onVisibleDrop?.();
       } catch (error) {
@@ -1138,7 +1138,7 @@ export async function prepareSlackMessage(params: {
   const channelUsersAllowlistConfigured =
     isRoom && Array.isArray(channelConfig?.users) && channelConfig.users.length > 0;
   const resolveMessageIngress = async (
-    contextBinding?: import("openclaw/plugin-sdk/channel-ingress-runtime").ChannelIngressContextBinding,
+    contextBinding?: import("afora-agent/plugin-sdk/channel-ingress-runtime").ChannelIngressContextBinding,
     threadId?: string,
   ) =>
     await resolveSlackCommandIngress({

@@ -1,7 +1,7 @@
 // Codex tests cover auth profile runtime contract plugin behavior.
 import path from "node:path";
-import type { EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams } from "openclaw/plugin-sdk/agent-harness";
-import { AUTH_PROFILE_RUNTIME_CONTRACT } from "openclaw/plugin-sdk/agent-runtime-test-contracts";
+import type { EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams } from "afora-agent/plugin-sdk/agent-harness";
+import { AUTH_PROFILE_RUNTIME_CONTRACT } from "afora-agent/plugin-sdk/agent-runtime-test-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createAppServerHarness,
@@ -20,7 +20,7 @@ import {
 } from "./session-binding.test-helpers.js";
 import type { CodexAppServerClientOptions } from "./shared-client.js";
 
-/** Keeps native Codex bindings reusable while omitting OpenClaw tools and search. */
+/** Keeps native Codex bindings reusable while omitting Afora tools and search. */
 function withPersistentCodexTestToolPolicy(
   params: EmbeddedRunAttemptParams,
 ): EmbeddedRunAttemptParams {

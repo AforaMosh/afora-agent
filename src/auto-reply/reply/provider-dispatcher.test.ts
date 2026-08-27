@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type {
   ReplyDispatcherOptions,
   ReplyDispatcherWithTypingOptions,
@@ -43,7 +43,7 @@ describe("provider dispatcher wrappers", () => {
 
     await dispatchReplyWithBufferedBlockDispatcherCore({
       ctx: { Body: "hello" },
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       dispatcherOptions,
       toolsAllow: ["message"],
     });
@@ -64,7 +64,7 @@ describe("provider dispatcher wrappers", () => {
 
     await dispatchReplyWithDispatcherCore({
       ctx: { Body: "hello" },
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       dispatcherOptions,
       toolsAllow: ["message"],
     });

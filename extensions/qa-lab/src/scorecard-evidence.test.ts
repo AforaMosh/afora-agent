@@ -33,7 +33,7 @@ function evidenceEntry(
 
 function evidenceSummary(entries: QaEvidenceSummaryEntry[]): QaEvidenceSummaryJson {
   return {
-    kind: "openclaw.qa.evidence-summary",
+    kind: "afora.qa.evidence-summary",
     schemaVersion: 2,
     generatedAt: "2026-06-24T00:00:00.000Z",
     evidenceMode: "full",

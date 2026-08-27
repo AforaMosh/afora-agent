@@ -8,9 +8,9 @@ import path from "node:path";
 import {
   embeddedAgentLog,
   type EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { root as openSafeFilesystemRoot } from "openclaw/plugin-sdk/file-access-runtime";
-import { parseSqliteSessionFileMarker } from "openclaw/plugin-sdk/session-store-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { root as openSafeFilesystemRoot } from "afora-agent/plugin-sdk/file-access-runtime";
+import { parseSqliteSessionFileMarker } from "afora-agent/plugin-sdk/session-store-runtime";
 import { resolveCodexAppServerHomeDir } from "./auth-bridge.js";
 import { isJsonObject, type JsonValue } from "./protocol.js";
 import type {
@@ -19,7 +19,7 @@ import type {
   CodexAppServerThreadBinding,
 } from "./session-binding.js";
 
-// Codex owns proactive auto-compaction, but OpenClaw must not resume a native
+// Codex owns proactive auto-compaction, but Afora must not resume a native
 // thread that is already too close to the server-side window for the next turn.
 const CODEX_APP_SERVER_NATIVE_THREAD_FALLBACK_MAX_TOKENS = 300_000;
 const CODEX_APP_SERVER_NATIVE_THREAD_DEFAULT_RESERVE_TOKENS = 20_000;

@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/plugin-entry";
+import type { AforaConfig } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   DEFAULT_SECRET_FILE_MAX_BYTES,
   tryReadSecretFileSync,
-} from "openclaw/plugin-sdk/secret-file-runtime";
-import { createPluginSecretRefSetupCli } from "openclaw/plugin-sdk/secret-ref-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/secret-file-runtime";
+import { createPluginSecretRefSetupCli } from "afora-agent/plugin-sdk/secret-ref-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
 import { resolveTrustedOnePasswordCli } from "../onepassword-op-path.js";
 import { encodeOnePasswordSecretId } from "../onepassword-secret-id.js";
 
@@ -34,10 +34,10 @@ const onePasswordSecretRefSetupCli: PluginSecretRefSetupCli = createPluginSecret
   },
   normalizeSecretId: normalizeOnePasswordSecretId,
   defaultPlanPath: () =>
-    path.join(resolvePreferredOpenClawTmpDir(), `openclaw-1password-secrets-${randomUUID()}.json`),
+    path.join(resolvePreferredAforaTmpDir(), `afora-1password-secrets-${randomUUID()}.json`),
   beforeApplyCommands: [
-    "openclaw plugins enable onepassword",
-    "openclaw onepassword secretref status",
+    "afora plugins enable onepassword",
+    "afora onepassword secretref status",
   ],
 });
 
@@ -45,7 +45,7 @@ type CommandLike = Parameters<typeof onePasswordSecretRefSetupCli.registerSetupC
 
 type RegisterOnePasswordSecretRefCommandsParams = {
   command: CommandLike;
-  config: OpenClawConfig;
+  config: AforaConfig;
   tokenFile: string;
   env?: NodeJS.ProcessEnv;
 };

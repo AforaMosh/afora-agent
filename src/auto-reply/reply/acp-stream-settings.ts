@@ -1,6 +1,6 @@
 /** ACP streaming and projection settings derived from config. */
-import type { AcpSessionUpdateTag } from "@openclaw/acp-core/runtime/types";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AcpSessionUpdateTag } from "@afora/acp-core/runtime/types";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveEffectiveBlockStreamingConfig } from "./block-streaming.js";
 
 const DEFAULT_ACP_STREAM_COALESCE_IDLE_MS = 350;
@@ -63,7 +63,7 @@ function resolveAcpStreamMaxChunkChars(): number {
 }
 
 /** Resolves ACP projection settings with bounded defaults. */
-export function resolveAcpProjectionSettings(cfg: OpenClawConfig): AcpProjectionSettings {
+export function resolveAcpProjectionSettings(cfg: AforaConfig): AcpProjectionSettings {
   const stream = cfg.acp?.stream;
   const deliveryMode = resolveAcpDeliveryMode(stream?.deliveryMode);
   const hiddenBoundaryFallback: AcpHiddenBoundarySeparator =
@@ -82,7 +82,7 @@ export function resolveAcpProjectionSettings(cfg: OpenClawConfig): AcpProjection
 
 /** Resolves ACP streaming chunk/coalescing settings. */
 export function resolveAcpStreamingConfig(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider?: string;
   accountId?: string;
   deliveryMode?: AcpDeliveryMode;

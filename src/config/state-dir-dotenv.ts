@@ -12,7 +12,7 @@ import { createSubsystemLogger } from "../logging/subsystem.js";
 import { collectConfigServiceEnvVars } from "./config-env-vars.js";
 import { ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS_ENV } from "./future-version-guard.js";
 import { resolveStateDir } from "./paths.js";
-import type { OpenClawConfig } from "./types.js";
+import type { AforaConfig } from "./types.js";
 
 /** Maximum bytes to read from the state-directory .env file. */
 const MAX_STATE_DIR_DOTENV_BYTES = 1024 * 1024;
@@ -42,7 +42,7 @@ function unwrapMatchingLiteralQuotes(value: string): string {
 export function isUnresolvedShellReference(value: string): boolean {
   const candidate = unwrapMatchingLiteralQuotes(value.trim());
   // Match only values whose entire content is a shell variable reference:
-  //   $VAR_NAME          (simple reference, OpenClaw env-var style)
+  //   $VAR_NAME          (simple reference, Afora env-var style)
   //   ${VAR_NAME}        (brace-form reference)
   //   $(command)         (command substitution)
   // A real credential that merely contains a $ (e.g. "abc$2!", "$100") is NOT matched.
@@ -58,7 +58,7 @@ type ParsedStateDirDotEnv = {
   entries: Record<string, string>;
   /**
    * Keys that were dropped because their entire value was an unresolved shell
-   * reference ($VAR, ${VAR}, or $(cmd)). These are still OpenClaw-managed keys:
+   * reference ($VAR, ${VAR}, or $(cmd)). These are still Afora-managed keys:
    * a previously generated env file may carry a stale literal reference for them
    * that must be removed on re-stage rather than preserved as an operator secret.
    */
@@ -97,7 +97,7 @@ function parseStateDirDotEnvContent(content: string | Buffer): ParsedStateDirDot
  * Read and parse the state-dir `.env`, returning both the persisted entries and
  * the keys that were skipped because they held unresolved shell references. The
  * skipped keys are surfaced so generated service env files can remove stale
- * literal references for keys OpenClaw previously managed.
+ * literal references for keys Afora previously managed.
  */
 export function readStateDirDotEnvFromStateDir(stateDir: string): ParsedStateDirDotEnv {
   const dotEnvPath = path.join(stateDir, ".env");
@@ -124,7 +124,7 @@ export function readStateDirDotEnvFromStateDir(stateDir: string): ParsedStateDir
 }
 
 /**
- * Read and parse `~/.openclaw/.env` (or `$OPENCLAW_STATE_DIR/.env`), returning
+ * Read and parse `~/.afora/.env` (or `$AFORA_STATE_DIR/.env`), returning
  * a filtered record of key-value pairs suitable for a managed service
  * environment source.
  */
@@ -143,7 +143,7 @@ type DurableServiceEnvVarSources = {
 /** Collects durable service env vars from state-dir `.env` and config, preserving each source. */
 export function collectDurableServiceEnvVarSources(params: {
   env: Record<string, string | undefined>;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): DurableServiceEnvVarSources {
   const stateDirDotEnvEnvironment = readStateDirDotEnvVars(params.env);
   const configEnvironment = collectConfigServiceEnvVars(params.config);
@@ -167,7 +167,7 @@ export function collectDurableServiceEnvVarSources(params: {
  */
 export function collectDurableServiceEnvVars(params: {
   env: Record<string, string | undefined>;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): Record<string, string> {
   return collectDurableServiceEnvVarSources(params).durableEnvironment;
 }

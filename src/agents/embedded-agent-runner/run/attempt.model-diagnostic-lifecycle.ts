@@ -1,5 +1,5 @@
-import { isPromiseLike } from "@openclaw/normalization-core/promise-like";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { isPromiseLike } from "@afora/normalization-core/promise-like";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { fireAndForgetBoundedHook } from "../../../hooks/fire-and-forget.js";
 import {
   diagnosticErrorCategory,

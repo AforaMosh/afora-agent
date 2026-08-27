@@ -1,4 +1,4 @@
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
+import { asFiniteNumber } from "@afora/normalization-core/number-coercion";
 import type { ImageLightboxItem } from "../../../components/image-lightbox.ts";
 import { t } from "../../../i18n/index.ts";
 import type { MessageContentItem } from "../../../lib/chat/chat-types.ts";
@@ -461,7 +461,7 @@ export function extractImages(message: unknown): ImageBlock[] {
             }),
           });
         }
-      } else if (b.type === "openclaw_pairing_qr") {
+      } else if (b.type === "afora_pairing_qr") {
         if (isExpiredPairingQrBlock(b)) {
           continue;
         }
@@ -510,7 +510,7 @@ export function extractPairingQrExpiryNotices(
       continue;
     }
     const b = block as Record<string, unknown>;
-    if (b.type === "openclaw_pairing_qr" && isExpiredPairingQrBlock(b, nowMs)) {
+    if (b.type === "afora_pairing_qr" && isExpiredPairingQrBlock(b, nowMs)) {
       notices.push({
         title: t("chat.pairingQrExpired.title"),
         reason: t("chat.pairingQrExpired.reason"),
@@ -535,7 +535,7 @@ function resolveNearestFuturePairingQrExpiresAtMs(
       continue;
     }
     const b = block as Record<string, unknown>;
-    if (b.type !== "openclaw_pairing_qr") {
+    if (b.type !== "afora_pairing_qr") {
       continue;
     }
     const expiresAtMs = readPairingQrExpiresAtMs(b);

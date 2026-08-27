@@ -2,7 +2,7 @@
 import { Script } from "node:vm";
 
 const FUNCTION_SOURCE_PATTERN = /^(?:async\s+)?(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)/;
-const EXPRESSION_RESULT_NAME = "__openclawEvaluateExpressionResult";
+const EXPRESSION_RESULT_NAME = "__aforaEvaluateExpressionResult";
 
 function canParseAsExpression(source: string): boolean {
   try {

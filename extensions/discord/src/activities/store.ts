@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import type { PluginStateKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { PluginStateKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DISCORD_EPOCH_MS = 1_420_070_400_000;

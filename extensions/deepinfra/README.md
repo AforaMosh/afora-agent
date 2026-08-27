@@ -1,12 +1,12 @@
-# OpenClaw DeepInfra Provider
+# Afora DeepInfra Provider
 
-Official OpenClaw provider plugin for DeepInfra.
+Official Afora provider plugin for DeepInfra.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/deepinfra-provider
-openclaw gateway restart
+afora plugins install @afora/deepinfra-provider
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/providers/deepinfra> for setup and configuration.
+See <https://docs.afora.ai/providers/deepinfra> for setup and configuration.

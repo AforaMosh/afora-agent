@@ -1,10 +1,10 @@
 // Xai tests cover xai oauth plugin behavior.
-import type { ProviderAuthContext } from "openclaw/plugin-sdk/plugin-entry";
+import type { ProviderAuthContext } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   createRuntimeEnv,
   createTestWizardPrompter,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
-import type { OAuthCredential } from "openclaw/plugin-sdk/provider-auth";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
+import type { OAuthCredential } from "afora-agent/plugin-sdk/provider-auth";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createXaiDeviceCodeAuthMethod, createXaiOAuthAuthMethod } from "./xai-oauth-entry.js";
 import { refreshXaiOAuthCredential } from "./xai-oauth.js";
@@ -98,7 +98,7 @@ describe("xAI OAuth", () => {
   });
 
   it("refreshes with the cached token endpoint and preserves refresh fallback", async () => {
-    vi.stubEnv("OPENCLAW_VERSION", "2026.3.22");
+    vi.stubEnv("AFORA_VERSION", "2026.3.22");
     const fetchImpl = vi.fn<typeof fetch>(async (_url, init) => {
       expect(init?.method).toBe("POST");
       expect(typeof init?.body).toBe("string");
@@ -107,7 +107,7 @@ describe("xAI OAuth", () => {
       expect(body).toContain(`client_id=${encodeURIComponent(XAI_OAUTH_CLIENT_ID)}`);
       expect(body).toContain("refresh_token=refresh-1");
       const headers = new Headers(init?.headers ?? {});
-      expect(headers.get("user-agent")).toBe("openclaw/2026.3.22");
+      expect(headers.get("user-agent")).toBe("afora-agent/2026.3.22");
       return jsonResponse({
         access_token: "access-2",
         expires_in: 120,
@@ -327,7 +327,7 @@ describe("xAI OAuth", () => {
   });
 
   it("logs in with xAI device code without a localhost callback", async () => {
-    vi.stubEnv("OPENCLAW_VERSION", "2026.3.22");
+    vi.stubEnv("AFORA_VERSION", "2026.3.22");
     const progress = {
       update: vi.fn(),
       stop: vi.fn(),

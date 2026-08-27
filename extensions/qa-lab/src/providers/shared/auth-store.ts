@@ -3,8 +3,8 @@ import path from "node:path";
 import {
   loadAuthProfileStoreWithoutExternalProfiles,
   type AuthProfileCredential,
-} from "openclaw/plugin-sdk/agent-runtime";
-import { updateAuthProfileStoreWithLock } from "openclaw/plugin-sdk/provider-auth";
+} from "afora-agent/plugin-sdk/agent-runtime";
+import { updateAuthProfileStoreWithLock } from "afora-agent/plugin-sdk/provider-auth";
 
 type QaAuthProfileCredential = AuthProfileCredential;
 

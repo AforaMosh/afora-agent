@@ -1,9 +1,9 @@
 /**
  * Publishes ClickClack's native ephemeral agent.progress signal for one
- * OpenClaw turn. ClickClack renders this as its compact "Agent is
+ * Afora turn. ClickClack renders this as its compact "Agent is
  * responding" status and the detailed progress lines above the composer.
  */
-import { buildChannelProgressDraftLine } from "openclaw/plugin-sdk/channel-outbound";
+import { buildChannelProgressDraftLine } from "afora-agent/plugin-sdk/channel-outbound";
 
 export type ClickClackItemEventPayload = {
   itemId?: string;

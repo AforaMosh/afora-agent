@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   resolveModelCostConfig,
   resolveModelCostConfigFingerprint,
@@ -16,7 +16,7 @@ const readStoredCatalog = vi.fn();
 beforeEach(() => {
   resetRemoteModelCatalogOverlayForTest();
   readStoredCatalog.mockReset().mockReturnValue({
-    source_url: "https://catalog.openclaw.ai/models/v1/catalog.json",
+    source_url: "https://catalog.afora.ai/models/v1/catalog.json",
     bundle_json: JSON.stringify({
       schemaVersion: 1,
       generatedAt: 200,
@@ -63,7 +63,7 @@ afterEach(() => {
   resetRemoteModelCatalogOverlayForTest();
 });
 
-function configFor(baseUrl: string): OpenClawConfig {
+function configFor(baseUrl: string): AforaConfig {
   return {
     models: {
       providers: {
@@ -73,12 +73,12 @@ function configFor(baseUrl: string): OpenClawConfig {
         },
       },
     },
-  } as unknown as OpenClawConfig;
+  } as unknown as AforaConfig;
 }
 
 describe("hosted model pricing", () => {
   it("resolves a non-catalog model from the stored hosted pricing map", () => {
-    const agentDir = tempDirs.make("openclaw-hosted-pricing-");
+    const agentDir = tempDirs.make("afora-hosted-pricing-");
     expect(
       resolveModelCostConfig({
         config: configFor("https://api.openai.com/v1"),
@@ -90,7 +90,7 @@ describe("hosted model pricing", () => {
   });
 
   it("prefers configured pricing over merged catalog pricing", () => {
-    const agentDir = tempDirs.make("openclaw-catalog-pricing-");
+    const agentDir = tempDirs.make("afora-catalog-pricing-");
     const config = {
       models: {
         providers: {
@@ -106,14 +106,14 @@ describe("hosted model pricing", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     expect(
       resolveModelCostConfig({ config, agentDir, provider: "openai", model: "gpt-catalog" }),
     ).toEqual({ input: 99, output: 99, cacheRead: 0, cacheWrite: 0 });
   });
 
   it("does not apply hosted pricing to private endpoints or unknown models", () => {
-    const agentDir = tempDirs.make("openclaw-private-pricing-");
+    const agentDir = tempDirs.make("afora-private-pricing-");
     expect(
       resolveModelCostConfig({
         config: configFor("http://127.0.0.1:8080/v1"),
@@ -173,7 +173,7 @@ describe("hosted model pricing", () => {
   });
 
   it("resolves passthrough provider aliases through a priced catalog row", () => {
-    const agentDir = tempDirs.make("openclaw-passthrough-pricing-");
+    const agentDir = tempDirs.make("afora-passthrough-pricing-");
     const config = {
       models: {
         providers: {
@@ -183,7 +183,7 @@ describe("hosted model pricing", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     expect(
       resolveModelCostConfig({
         config,
@@ -195,7 +195,7 @@ describe("hosted model pricing", () => {
   });
 
   it("falls through zero-only catalog tiers without reviving disabled source aliases", () => {
-    const agentDir = tempDirs.make("openclaw-zero-tier-pricing-");
+    const agentDir = tempDirs.make("afora-zero-tier-pricing-");
     expect(
       resolveModelCostConfig({
         config: configFor("https://api.openai.com/v1"),
@@ -214,7 +214,7 @@ describe("hosted model pricing", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     expect(
       resolveModelCostConfig({
         config: zaiConfig,
@@ -228,7 +228,7 @@ describe("hosted model pricing", () => {
   it("fingerprints provider overlays without explicit model rows", () => {
     const config = {
       models: { providers: { openai: { baseUrl: "https://api.openai.com/v1" } } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     expect(() => resolveModelCostConfigFingerprint(config)).not.toThrow();
   });
 
@@ -252,7 +252,7 @@ describe("hosted model pricing", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expect(resolveModelCostConfig({ config, provider: "fixture", model: "priced" })).toEqual({
       input: 1,
@@ -286,7 +286,7 @@ describe("hosted model pricing", () => {
     const bundleJson = JSON.stringify(bundle);
     expect(Buffer.byteLength(bundleJson)).toBeGreaterThan(2 * 1024 * 1024);
     readStoredCatalog.mockReturnValue({
-      source_url: "https://catalog.openclaw.ai/models/v1/catalog.json",
+      source_url: "https://catalog.afora.ai/models/v1/catalog.json",
       bundle_json: bundleJson,
     });
     resetRemoteModelCatalogOverlayForTest();

@@ -1,11 +1,11 @@
-import { resolveSessionAgentIds } from "openclaw/plugin-sdk/agent-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
+import { resolveSessionAgentIds } from "afora-agent/plugin-sdk/agent-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
 import {
   createSessionCatalogAdoptionCoordinator,
   sessionCatalogAdoptedSourceKey,
-} from "openclaw/plugin-sdk/session-catalog";
+} from "afora-agent/plugin-sdk/session-catalog";
 import type { CodexThread } from "./app-server/protocol.js";
 import { withTimeout } from "./app-server/timeout.js";
 import { createCodexCliNodeConversationBindingData } from "./conversation-binding-data.js";
@@ -234,7 +234,7 @@ function requireContinuableNodeRecord(record: CodexSessionCatalogSession): void 
   }
   if (record.status === "idle" || record.status === "notLoaded") {
     // The node App Server is a passive catalog reader, so stored native Codex
-    // sessions normally report notLoaded. Node resume serializes OpenClaw turns.
+    // sessions normally report notLoaded. Node resume serializes Afora turns.
     return;
   }
   if (record.status === "active") {
@@ -280,8 +280,8 @@ async function readNodeCodexHistory(params: {
 
 async function continueNodeCodexSessionInner(params: {
   agentId: string;
-  api: OpenClawPluginApi;
-  config: OpenClawConfig;
+  api: AforaPluginApi;
+  config: AforaConfig;
   hostId: string;
   threadId: string;
   clientScopes?: readonly string[];
@@ -366,8 +366,8 @@ async function continueNodeCodexSessionInner(params: {
 
 export async function continueNodeCodexSession(params: {
   agentId?: string;
-  api: OpenClawPluginApi;
-  config: OpenClawConfig;
+  api: AforaPluginApi;
+  config: AforaConfig;
   hostId: string;
   threadId: string;
   clientScopes?: readonly string[];

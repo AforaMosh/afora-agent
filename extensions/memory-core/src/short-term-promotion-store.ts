@@ -1,6 +1,6 @@
-import { KeyedAsyncQueue } from "openclaw/plugin-sdk/keyed-async-queue";
-import { sleep } from "openclaw/plugin-sdk/runtime-env";
-import { asNullableRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { KeyedAsyncQueue } from "afora-agent/plugin-sdk/keyed-async-queue";
+import { sleep } from "afora-agent/plugin-sdk/runtime-env";
+import { asNullableRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   SHORT_TERM_LOCK_MAX_ENTRIES,
   SHORT_TERM_LOCK_NAMESPACE,

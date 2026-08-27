@@ -6,7 +6,7 @@ import {
 } from "../../packages/gateway-protocol/src/index.js";
 import { MAX_WORKER_BUNDLE_ARCHIVE_BYTES } from "../shared/worker-bundle-limits.js";
 
-export const NODE_WORKER_BUNDLE_TRANSFER_PATH = "/__openclaw__/worker-bundle/v1";
+export const NODE_WORKER_BUNDLE_TRANSFER_PATH = "/__afora__/worker-bundle/v1";
 export const NODE_WORKER_BUNDLE_INSTALL_ERROR_CODE = "WORKER_BUNDLE_INSTALL_FAILED";
 
 const REQUEST_MAX_BYTES = 16 * 1024;

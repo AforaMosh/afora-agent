@@ -3,7 +3,7 @@
 // documented denylist. A new top-level config key must be classified here
 // on purpose instead of silently becoming operator-only or agent-writable.
 import { describe, expect, it } from "vitest";
-import { OpenClawSchemaShape } from "../config/zod-schema.root-shape.js";
+import { AforaSchemaShape } from "../config/zod-schema.root-shape.js";
 import {
   SYSTEM_AGENT_CONFIG_WRITE_DENYLIST,
   classifyInferenceRouteConfigPath,
@@ -15,7 +15,7 @@ const PARTIAL_ROOTS = new Set(["plugins", "agents"]);
 
 describe("system-agent config write parity", () => {
   it("classifies every top-level config key as agent-writable or explicitly denied", () => {
-    for (const key of Object.keys(OpenClawSchemaShape)) {
+    for (const key of Object.keys(AforaSchemaShape)) {
       const verdict = classifyInferenceRouteConfigPath([key]);
       if (key in SYSTEM_AGENT_CONFIG_WRITE_DENYLIST) {
         expect(verdict, `${key} is on the denylist and must stay blocked`).toBe("blocked");

@@ -1,7 +1,7 @@
 /**
  * Tests delivery queue runtime ordering and retry behavior.
  */
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getActiveGatewayRootWorkCount,

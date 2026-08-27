@@ -10,7 +10,7 @@ import {
 function catalogEntry(name: string, tool: { name: string } = { name }): ToolSearchCatalogEntry {
   return {
     id: name,
-    source: "openclaw",
+    source: "afora",
     name,
     description: name,
     tool,

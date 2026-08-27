@@ -1,5 +1,5 @@
 // Provider setup flow configures provider credentials, models, and defaults.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizePluginsConfig, resolveEffectiveEnableState } from "../plugins/config-state.js";
 import * as providerAuthChoices from "../plugins/provider-auth-choices.js";
 import * as providerInstallCatalog from "../plugins/provider-install-catalog.js";
@@ -35,7 +35,7 @@ function includesProviderFlowScope(
 }
 
 function resolveInstallCatalogProviderSetupFlowContributions(params?: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   scope?: ProviderFlowScope;
@@ -92,7 +92,7 @@ function resolveInstallCatalogProviderSetupFlowContributions(params?: {
 }
 
 function resolveManifestProviderSetupFlowContributions(params?: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   scope?: ProviderFlowScope;
@@ -139,7 +139,7 @@ function resolveManifestProviderSetupFlowContributions(params?: {
 }
 
 export function resolveProviderSetupFlowContributions(params?: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   scope?: ProviderFlowScope;

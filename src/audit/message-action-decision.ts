@@ -6,7 +6,7 @@ import type { ExecutionIdentityAdmissionToken } from "./execution-identity-admis
 
 const state = resolveGlobalSingleton<{
   sink: ((receipt: DecisionReceiptV1) => boolean) | undefined;
-}>(Symbol.for("openclaw.messageActionDecisionSink"), () => ({ sink: undefined }));
+}>(Symbol.for("afora.messageActionDecisionSink"), () => ({ sink: undefined }));
 
 export function configureMessageActionDecisionSink(
   sink: (receipt: DecisionReceiptV1) => boolean,

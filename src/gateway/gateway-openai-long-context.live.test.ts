@@ -24,11 +24,11 @@ import {
   type OpenAITransportReplayEvidence,
 } from "../../test/helpers/openai-long-context-live.js";
 import {
-  createOpenClawTestInstance,
-  type OpenClawTestInstance,
-} from "../../test/helpers/openclaw-test-instance.js";
+  createAforaTestInstance,
+  type AforaTestInstance,
+} from "../../test/helpers/afora-test-instance.js";
 import { isLiveTestEnabled } from "../agents/live-test-helpers.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { loadOrCreateDeviceIdentity } from "../infra/device-identity.js";
 import { extractFirstTextBlock } from "../shared/chat-message-content.js";
 import type { GatewayClient } from "./client.js";
@@ -89,7 +89,7 @@ type SessionRow = {
   agentRuntime?: { id?: string };
 };
 
-const instances: OpenClawTestInstance[] = [];
+const instances: AforaTestInstance[] = [];
 const clients: GatewayClient[] = [];
 
 afterEach(async () => {
@@ -188,7 +188,7 @@ function emitMetric(params: {
 }
 
 async function waitForTransportEvidence(params: {
-  instance: OpenClawTestInstance;
+  instance: AforaTestInstance;
   modelId: string;
   requestId: string;
 }): Promise<OpenAITransportReplayEvidence> {
@@ -211,7 +211,7 @@ async function waitForTransportEvidence(params: {
 
 async function requestTurn(params: {
   client: GatewayClient;
-  instance: OpenClawTestInstance;
+  instance: AforaTestInstance;
   allEvents: OpenAILongContextAgentEvent[];
   profile: OpenAILongContextProfile;
   phase: string;
@@ -275,7 +275,7 @@ async function requestTurn(params: {
     agentId: AGENT_ID,
     sessionId: params.sessionId,
     sessionKey: SESSION_KEY,
-    storePath: path.join(params.instance.state.agentDir(AGENT_ID), "openclaw-agent.sqlite"),
+    storePath: path.join(params.instance.state.agentDir(AGENT_ID), "afora-agent.sqlite"),
   });
   emitMetric({
     profile: params.profile,
@@ -375,16 +375,16 @@ describeLive("Gateway OpenAI long-context compaction (live)", () => {
     async () => {
       const settings = requireSettings();
       const { profile } = settings;
-      const instance = await createOpenClawTestInstance({
+      const instance = await createAforaTestInstance({
         name: `gateway-openai-long-context-${profile.name}`,
         env: {
           OPENAI_API_KEY: settings.apiKey,
           OPENAI_BASE_URL: undefined,
           OPENAI_API_BASE: undefined,
-          OPENCLAW_SKIP_PROVIDERS: undefined,
-          OPENCLAW_TEST_MINIMAL_GATEWAY: undefined,
-          OPENCLAW_DEBUG_MODEL_PAYLOAD: "summary",
-          OPENCLAW_LOG_LEVEL: "info",
+          AFORA_SKIP_PROVIDERS: undefined,
+          AFORA_TEST_MINIMAL_GATEWAY: undefined,
+          AFORA_DEBUG_MODEL_PAYLOAD: "summary",
+          AFORA_LOG_LEVEL: "info",
         },
         startTimeoutMs: 120_000,
         stopTimeoutMs: 10_000,
@@ -396,7 +396,7 @@ describeLive("Gateway OpenAI long-context compaction (live)", () => {
         agentId: AGENT_ID,
       });
       assertOpenAILongContextConfig(modelConfig, profile);
-      const config: OpenClawConfig = {
+      const config: AforaConfig = {
         ...modelConfig,
         gateway: {
           mode: "local",
@@ -495,7 +495,7 @@ describeLive("Gateway OpenAI long-context compaction (live)", () => {
           agentId: AGENT_ID,
           sessionId,
           sessionKey: SESSION_KEY,
-          storePath: path.join(instance.state.agentDir(AGENT_ID), "openclaw-agent.sqlite"),
+          storePath: path.join(instance.state.agentDir(AGENT_ID), "afora-agent.sqlite"),
         });
         if (observed.activeCount > 0) {
           compactionState = observed;
@@ -580,7 +580,7 @@ describeLive("Gateway OpenAI long-context compaction (live)", () => {
       }
 
       if (settings.runToolOutput) {
-        const toolPath = ".openclaw/tmp/openai-long-context-tool-output.txt";
+        const toolPath = ".afora/tmp/openai-long-context-tool-output.txt";
         const toolMarker = `TOOL-OUTPUT-${randomUUID().toUpperCase()}`;
         const fixture = buildToolOutputFixture({
           marker: toolMarker,
@@ -631,7 +631,7 @@ describeLive("Gateway OpenAI long-context compaction (live)", () => {
         agentId: AGENT_ID,
         sessionId,
         sessionKey: SESSION_KEY,
-        storePath: path.join(instance.state.agentDir(AGENT_ID), "openclaw-agent.sqlite"),
+        storePath: path.join(instance.state.agentDir(AGENT_ID), "afora-agent.sqlite"),
       });
       expect(beforeRestart.activeCount).toBeGreaterThan(0);
       await client.stopAndWait({ timeoutMs: 5_000 });
@@ -662,7 +662,7 @@ describeLive("Gateway OpenAI long-context compaction (live)", () => {
         agentId: AGENT_ID,
         sessionId,
         sessionKey: SESSION_KEY,
-        storePath: path.join(instance.state.agentDir(AGENT_ID), "openclaw-agent.sqlite"),
+        storePath: path.join(instance.state.agentDir(AGENT_ID), "afora-agent.sqlite"),
       });
       expect(afterRestart).toEqual(beforeRestart);
 

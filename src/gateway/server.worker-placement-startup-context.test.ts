@@ -23,7 +23,7 @@ test(
     // The shared server harness defaults to its minimal mode, which deliberately skips all
     // worker stores. Exercise the production startup path while keeping plugin profiles unconfigured;
     // the core device provider still owns the worker service.
-    process.env.OPENCLAW_TEST_MINIMAL_GATEWAY = "0";
+    process.env.AFORA_TEST_MINIMAL_GATEWAY = "0";
     harness = await startGatewayServerHarness();
     const context = getFallbackGatewayContext();
     expect(context?.workerEnvironmentService).toBeDefined();

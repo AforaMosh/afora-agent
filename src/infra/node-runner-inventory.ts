@@ -1,4 +1,4 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { validateWorkerAdmissionHandshake } from "../../packages/gateway-protocol/src/index.js";
 import { WORKER_BUNDLE_PREWARM_VERSION } from "../../packages/gateway-protocol/src/schema/worker-admission.js";
 
@@ -14,8 +14,8 @@ export const NODE_WORKER_BUNDLE_STATUS_VERSION = 1;
 export const NODE_RUNNER_UPDATE_REQUIRED_ISSUE = {
   code: "update-required",
   action: "update-and-reconnect",
-  updateCommand: "openclaw update",
-  headlessReconnectCommand: "openclaw node restart",
+  updateCommand: "afora update",
+  headlessReconnectCommand: "afora node restart",
 } as const;
 
 export type NodeRunnerInventoryIssue = typeof NODE_RUNNER_UPDATE_REQUIRED_ISSUE;

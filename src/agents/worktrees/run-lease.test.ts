@@ -5,7 +5,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { lockState, unlockWorktree } from "./git-lock.js";
 import {
   admitWorktreeRunLeaseRow,
@@ -33,8 +33,8 @@ async function initializeRepository(root: string): Promise<string> {
   const repo = path.join(root, "repo");
   await fs.mkdir(repo, { recursive: true });
   await git(repo, "init", "-b", "main");
-  await git(repo, "config", "user.name", "OpenClaw Test");
-  await git(repo, "config", "user.email", "openclaw-test@example.invalid");
+  await git(repo, "config", "user.name", "Afora Test");
+  await git(repo, "config", "user.email", "afora-test@example.invalid");
   await fs.writeFile(path.join(repo, "README.md"), "base\n");
   await git(repo, "add", "README.md");
   await git(repo, "commit", "-m", "initial");
@@ -46,7 +46,7 @@ describe("worktree run lease", () => {
   const caseTempDirs = useAutoCleanupTempDirTracker((cleanup) => {
     afterEach(() => {
       runLeaseTesting.resetForTest();
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       cleanup();
     });
   });
@@ -58,18 +58,18 @@ describe("worktree run lease", () => {
 
   beforeAll(async () => {
     const tempRoot = await fs.realpath(os.tmpdir());
-    const templateRoot = templateTempDirs.make("openclaw-run-lease-template-", tempRoot);
+    const templateRoot = templateTempDirs.make("afora-run-lease-template-", tempRoot);
     templateRepo = await initializeRepository(templateRoot);
   });
 
   beforeEach(async () => {
     const tempRoot = await fs.realpath(os.tmpdir());
-    root = caseTempDirs.make("openclaw-run-lease-", tempRoot);
+    root = caseTempDirs.make("afora-run-lease-", tempRoot);
     repo = path.join(root, "repo");
     // Each case keeps a private .git directory; only repository construction is shared.
     await fs.cp(templateRepo, repo, { recursive: true });
     repo = await fs.realpath(repo);
-    env = { ...process.env, OPENCLAW_STATE_DIR: path.join(root, "openclaw-state") };
+    env = { ...process.env, AFORA_STATE_DIR: path.join(root, "afora-state") };
     service = new ManagedWorktreeService({ env });
   });
 

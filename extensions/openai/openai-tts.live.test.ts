@@ -1,5 +1,5 @@
 // Openai tests cover openai tts plugin behavior.
-import { isLiveTestEnabled } from "openclaw/plugin-sdk/test-live";
+import { isLiveTestEnabled } from "afora-agent/plugin-sdk/test-live";
 import { describe, expect, it } from "vitest";
 import { buildOpenAISpeechProvider } from "./speech-provider.js";
 
@@ -22,7 +22,7 @@ describeLive("openai tts live", () => {
     };
 
     const audioFile = await speechProvider.synthesize({
-      text: "OpenClaw OpenAI text to speech integration test OK.",
+      text: "Afora OpenAI text to speech integration test OK.",
       cfg: { plugins: { enabled: true } } as never,
       providerConfig,
       target: "audio-file",
@@ -33,7 +33,7 @@ describeLive("openai tts live", () => {
     expect(audioFile.audioBuffer.byteLength).toBeGreaterThan(512);
 
     const telephony = await speechProvider.synthesizeTelephony?.({
-      text: "OpenClaw OpenAI telephony integration test OK.",
+      text: "Afora OpenAI telephony integration test OK.",
       cfg: { plugins: { enabled: true } } as never,
       providerConfig,
       timeoutMs: 45_000,

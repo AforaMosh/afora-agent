@@ -17,7 +17,7 @@ fs.writeFileSync(
       name: "clickclack",
       version: "0.0.1",
       type: "module",
-      openclaw: {
+      afora: {
         extensions: ["./index.mjs"],
         channel: {
           id: "clickclack",
@@ -30,7 +30,7 @@ fs.writeFileSync(
   )}\n`,
 );
 fs.writeFileSync(
-  path.join(pluginDir, "openclaw.plugin.json"),
+  path.join(pluginDir, "afora.plugin.json"),
   `${JSON.stringify(
     {
       id: "clickclack",

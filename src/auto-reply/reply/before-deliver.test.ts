@@ -17,7 +17,7 @@ import {
 } from "./reply-dispatcher.js";
 
 async function makePendingFinalFixture() {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-dispatcher-pending-final-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-dispatcher-pending-final-"));
   const storePath = path.join(tmpDir, "sessions.json");
   const sessionKey = "agent:main:telegram:direct:123";
   await replaceSessionEntry(

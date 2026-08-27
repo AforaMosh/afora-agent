@@ -1,11 +1,11 @@
 // Opencode provider module implements model/runtime integration.
-import type { ProviderStreamOptions } from "openclaw/plugin-sdk/llm";
+import type { ProviderStreamOptions } from "afora-agent/plugin-sdk/llm";
 import {
   describeImageWithModelPayloadTransform,
   describeImagesWithModelPayloadTransform,
   type MediaUnderstandingProvider,
-} from "openclaw/plugin-sdk/media-understanding";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/media-understanding";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 function stripOpencodeDisabledResponsesReasoningPayload(payload: unknown): void {
   if (!isRecord(payload)) {

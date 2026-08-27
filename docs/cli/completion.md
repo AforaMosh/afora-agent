@@ -1,37 +1,37 @@
 ---
-summary: "CLI reference for `openclaw completion` (generate/install shell completion scripts)"
+summary: "CLI reference for `afora completion` (generate/install shell completion scripts)"
 read_when:
   - You want shell completions for zsh/bash/fish/PowerShell
-  - You need to cache completion scripts under OpenClaw state
+  - You need to cache completion scripts under Afora state
 title: "Completion"
 ---
 
-# `openclaw completion`
+# `afora completion`
 
-Generate shell completion scripts, cache them under OpenClaw state, and optionally install them into your shell profile.
+Generate shell completion scripts, cache them under Afora state, and optionally install them into your shell profile.
 
 ## Usage
 
 ```bash
-openclaw completion                          # print the detected shell's script
-openclaw completion --shell fish             # print fish script
-openclaw completion --write-state            # cache scripts for all shells
-openclaw completion --write-state --install  # cache, then install in one step
-openclaw completion --shell bash --write-state
+afora completion                          # print the detected shell's script
+afora completion --shell fish             # print fish script
+afora completion --write-state            # cache scripts for all shells
+afora completion --write-state --install  # cache, then install in one step
+afora completion --shell bash --write-state
 ```
 
 ## Options
 
 - `-s, --shell <shell>`: shell target (`zsh`, `bash`, `powershell`, `fish`; detected from `$SHELL`, otherwise PowerShell on Windows and zsh elsewhere)
 - `-i, --install`: install completion by adding a source line for the cached script to your shell profile
-- `--write-state`: write completion script(s) to `$OPENCLAW_STATE_DIR/completions` (default `~/.openclaw/completions`) without printing to stdout; with `--shell` writes only that shell, otherwise all four
+- `--write-state`: write completion script(s) to `$AFORA_STATE_DIR/completions` (default `~/.afora/completions`) without printing to stdout; with `--shell` writes only that shell, otherwise all four
 - `-y, --yes`: skip install confirmation prompts (non-interactive)
 
 ## Install flow
 
-`--install` points your profile at the cached script, so the cache must exist first: if it is missing, the command fails and tells you to run `openclaw completion --write-state`. Combine `--write-state --install` to do both in one step. Without `--shell`, the command preserves a recognized `$SHELL`; when `$SHELL` is missing or unrecognized, it defaults to PowerShell on Windows and zsh elsewhere.
+`--install` points your profile at the cached script, so the cache must exist first: if it is missing, the command fails and tells you to run `afora completion --write-state`. Combine `--write-state --install` to do both in one step. Without `--shell`, the command preserves a recognized `$SHELL`; when `$SHELL` is missing or unrecognized, it defaults to PowerShell on Windows and zsh elsewhere.
 
-The install writes a small `# OpenClaw Completion` block into your shell profile and replaces any older slow `source <(openclaw completion ...)` lines with the cached source line:
+The install writes a small `# Afora Completion` block into your shell profile and replaces any older slow `source <(afora completion ...)` lines with the cached source line:
 
 | Shell      | Profile                                                                                                                                                                                    |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -46,7 +46,7 @@ Profile changes are staged beside the destination and atomically replace it only
 
 - Without `--install` or `--write-state`, the command prints the script to stdout.
 - Completion generation eagerly loads the full command tree, including plugin CLI commands, so nested subcommands are included.
-- `openclaw update` refreshes the completion cache automatically after a successful update; `openclaw doctor` can repair missing or stale completion setups.
+- `afora update` refreshes the completion cache automatically after a successful update; `afora doctor` can repair missing or stale completion setups.
 
 ## Related
 

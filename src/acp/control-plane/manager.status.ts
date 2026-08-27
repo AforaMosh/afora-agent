@@ -1,12 +1,12 @@
 /** Reads ACP session status from the runtime and reconciles persisted identity metadata. */
-import { resolveSessionIdentityFromMeta } from "@openclaw/acp-core/runtime/session-identity";
+import { resolveSessionIdentityFromMeta } from "@afora/acp-core/runtime/session-identity";
 import type {
   AcpRuntime,
   AcpRuntimeCapabilities,
   AcpRuntimeHandle,
   AcpRuntimeStatus,
-} from "@openclaw/acp-core/runtime/types";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+} from "@afora/acp-core/runtime/types";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { withAcpRuntimeErrorBoundary } from "../runtime/errors.js";
 import type {
   AcpSessionStatus,
@@ -19,7 +19,7 @@ import { resolveRuntimeOptionsFromMeta } from "./runtime-options.js";
 
 /** Reads a fresh ACP session status and reconciles runtime identifiers from the status response. */
 export async function runManagerGetSessionStatus(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   signal?: AbortSignal;
   throwIfAborted: (signal?: AbortSignal) => void;

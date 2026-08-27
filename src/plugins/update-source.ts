@@ -1,5 +1,5 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import type { ClawHubTrustErrorCode } from "../infra/clawhub-install-trust.js";
 import { parseClawHubPluginSpec } from "../infra/clawhub-spec.js";
@@ -7,7 +7,7 @@ import { unscopedPackageName } from "../infra/install-safe-path.js";
 import type { NpmSpecResolution } from "../infra/install-source-utils.js";
 import { createNpmMetadataEnv, resolveNpmSpecMetadata } from "../infra/install-source-utils.js";
 import {
-  compareOpenClawReleaseVersions,
+  compareAforaReleaseVersions,
   isExactSemverVersion,
   isPrereleaseResolutionAllowed,
   isPrereleaseSemverVersion,
@@ -77,7 +77,7 @@ export type PluginUpdateOutcome =
     });
 
 export type PluginUpdateSummary = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   changed: boolean;
   outcomes: PluginUpdateOutcome[];
 };
@@ -226,7 +226,7 @@ export function expectedIntegrityForNpmUpdate(params: {
 }
 
 function compareNpmSemverForUpdate(left: string, right: string): number {
-  const releaseCmp = compareOpenClawReleaseVersions(left, right);
+  const releaseCmp = compareAforaReleaseVersions(left, right);
   if (releaseCmp !== null) {
     return releaseCmp;
   }
@@ -312,7 +312,7 @@ export async function resolveTrustedOfficialPrereleaseFallbackMetadataForUpdate(
   const parsedSpec = parseRegistryNpmSpec(params.spec);
   if (
     !parsedSpec ||
-    !parsedSpec.name.startsWith("@openclaw/") ||
+    !parsedSpec.name.startsWith("@afora/") ||
     !params.metadata.version ||
     isPrereleaseResolutionAllowed({
       spec: parsedSpec,
@@ -400,7 +400,7 @@ export async function expectedIntegrityForNpmFallback(params: {
 
 export function isNpmMetadataCompatibleWithCurrentHost(metadata: NpmSpecResolution): boolean {
   const hostVersion = resolveCompatibilityHostVersion();
-  const installMetadata = metadata.packageOpenClaw?.install;
+  const installMetadata = metadata.packageAfora?.install;
   const minHostVersionCheck = checkMinHostVersion({
     currentVersion: hostVersion,
     minHostVersion: isRecord(installMetadata) ? installMetadata.minHostVersion : undefined,
@@ -408,7 +408,7 @@ export function isNpmMetadataCompatibleWithCurrentHost(metadata: NpmSpecResoluti
   if (!minHostVersionCheck.ok) {
     return false;
   }
-  const pluginApiRangeCheck = resolvePackagePluginApiRange(metadata.packageOpenClaw);
+  const pluginApiRangeCheck = resolvePackagePluginApiRange(metadata.packageAfora);
   if (!pluginApiRangeCheck.ok) {
     return false;
   }
@@ -420,7 +420,7 @@ export function isNpmMetadataCompatibleWithCurrentHost(metadata: NpmSpecResoluti
 }
 
 export function isBundledVersionNewer(bundledVersion: string, installedVersion: string): boolean {
-  const releaseCmp = compareOpenClawReleaseVersions(bundledVersion, installedVersion);
+  const releaseCmp = compareAforaReleaseVersions(bundledVersion, installedVersion);
   if (releaseCmp !== null) {
     return releaseCmp > 0;
   }

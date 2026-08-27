@@ -17,7 +17,7 @@ export function createUiIsolatedVitestConfig(
     environment: "jsdom",
     env,
     excludeUnitFastTests: false,
-    includeOpenClawRuntimeSetup: false,
+    includeAforaRuntimeSetup: false,
     isolate: true,
     name: "ui-isolated",
     setupFiles: ["ui/src/test-helpers/lit-warnings.setup.ts"],

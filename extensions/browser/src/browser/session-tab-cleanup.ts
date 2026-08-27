@@ -1,11 +1,11 @@
 /**
- * Periodic cleanup for browser tabs tracked to primary OpenClaw sessions.
+ * Periodic cleanup for browser tabs tracked to primary Afora sessions.
  */
 import {
   isAcpSessionKey,
   isCronSessionKey,
   isSubagentSessionKey,
-} from "openclaw/plugin-sdk/routing";
+} from "afora-agent/plugin-sdk/routing";
 import { getRuntimeConfig } from "../config/config.js";
 import {
   resolveBrowserConfig,

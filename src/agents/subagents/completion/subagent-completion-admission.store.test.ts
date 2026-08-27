@@ -8,12 +8,12 @@ import {
   SessionDeliveryDeadLetteredError,
   SessionDeliveryDeferredError,
 } from "../../../infra/session-delivery-queue-storage.js";
-import { resolvePreferredOpenClawTmpDir } from "../../../infra/tmp-openclaw-dir.js";
+import { resolvePreferredAforaTmpDir } from "../../../infra/tmp-afora-dir.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-  type OpenClawStateDatabase,
-} from "../../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+  type AforaStateDatabase,
+} from "../../../state/afora-state-db.js";
 import { ensureTaskRegistryReady, getTaskById } from "../../../tasks/runtime-internal.js";
 import { publishTaskRecordAfterAtomicStore } from "../../../tasks/task-registry.js";
 import type { TaskRecord } from "../../../tasks/task-registry.types.js";
@@ -45,17 +45,17 @@ vi.mock("../registry/subagent-registry.js", () => ({ resumeSubagentRun }));
 
 describe("atomic subagent completion admission store", () => {
   let tempDir: string;
-  let database: OpenClawStateDatabase;
+  let database: AforaStateDatabase;
 
   beforeEach(() => {
-    tempDir = tempDirs.make("openclaw-subagent-admission-", resolvePreferredOpenClawTmpDir());
-    database = openOpenClawStateDatabase({ path: path.join(tempDir, "state.sqlite") });
+    tempDir = tempDirs.make("afora-subagent-admission-", resolvePreferredAforaTmpDir());
+    database = openAforaStateDatabase({ path: path.join(tempDir, "state.sqlite") });
   });
 
   afterEach(() => {
     subagentRuns.clear();
     resetTaskRegistryForTests({ persist: false });
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
   });
 
   function records() {
@@ -244,9 +244,9 @@ describe("atomic subagent completion admission store", () => {
   });
 
   it("keeps canonical owner payload through failure and clears it after redrive success", async () => {
-    await withEnvAsync({ OPENCLAW_STATE_DIR: tempDir }, async () => {
-      closeOpenClawStateDatabaseForTest();
-      database = openOpenClawStateDatabase();
+    await withEnvAsync({ AFORA_STATE_DIR: tempDir }, async () => {
+      closeAforaStateDatabaseForTest();
+      database = openAforaStateDatabase();
       const input = records();
       input.subagent.delivery = {
         status: "pending",
@@ -324,9 +324,9 @@ describe("atomic subagent completion admission store", () => {
   });
 
   it("reloads a blocked text completion from SQLite before canonical owner redrive", async () => {
-    await withEnvAsync({ OPENCLAW_STATE_DIR: tempDir }, async () => {
-      closeOpenClawStateDatabaseForTest();
-      database = openOpenClawStateDatabase();
+    await withEnvAsync({ AFORA_STATE_DIR: tempDir }, async () => {
+      closeAforaStateDatabaseForTest();
+      database = openAforaStateDatabase();
       const input = records();
       const now = Date.now();
       input.subagent.delivery = {
@@ -383,8 +383,8 @@ describe("atomic subagent completion admission store", () => {
 
       resetTaskRegistryForTests({ persist: false });
       subagentRuns.clear();
-      closeOpenClawStateDatabaseForTest();
-      database = openOpenClawStateDatabase();
+      closeAforaStateDatabaseForTest();
+      database = openAforaStateDatabase();
       for (const [runId, entry] of loadSubagentRegistryFromSqlite()) {
         subagentRuns.set(runId, entry);
       }

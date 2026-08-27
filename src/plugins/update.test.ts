@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
-import { bundledPluginRootAt } from "openclaw/plugin-sdk/test-fixtures";
+import { expectDefined } from "@afora/normalization-core";
+import { bundledPluginRootAt } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { makeTrackedTempDir } from "./test-helpers/fs-fixtures.js";
 
@@ -139,8 +139,8 @@ function createSuccessfulNpmUpdateResult(params?: {
 }) {
   return {
     ok: true,
-    pluginId: params?.pluginId ?? "opik-openclaw",
-    targetDir: params?.targetDir ?? "/tmp/opik-openclaw",
+    pluginId: params?.pluginId ?? "opik-afora",
+    targetDir: params?.targetDir ?? "/tmp/opik-afora",
     version: params?.version ?? "0.2.6",
     extensions: ["index.ts"],
     ...(params?.npmResolution ? { npmResolution: params.npmResolution } : {}),
@@ -156,7 +156,7 @@ function createSuccessfulClawHubUpdateResult(params?: {
   return {
     ok: true,
     pluginId: params?.pluginId ?? "legacy-chat",
-    targetDir: params?.targetDir ?? "/tmp/openclaw-plugins/legacy-chat",
+    targetDir: params?.targetDir ?? "/tmp/afora-plugins/legacy-chat",
     version: params?.version ?? "2026.5.1-beta.2",
     extensions: ["index.ts"],
     packageName: params?.clawhubPackage ?? "legacy-chat",
@@ -220,7 +220,7 @@ function createMarketplaceInstallConfig(params: {
   marketplaceSource: string;
   marketplacePlugin: string;
   marketplaceName?: string;
-}): OpenClawConfig {
+}): AforaConfig {
   return {
     plugins: {
       installs: {
@@ -246,7 +246,7 @@ function createClawHubInstallConfig(
     clawhubChannel?: "community" | "official" | "private";
     spec?: string;
   } = {},
-): OpenClawConfig {
+): AforaConfig {
   const pluginId = params.pluginId ?? "demo";
   const clawhubPackage = params.clawhubPackage ?? pluginId;
   return {
@@ -266,7 +266,7 @@ function createClawHubInstallConfig(
   };
 }
 
-function createEnabledDemoClawHubInstallConfig(): OpenClawConfig {
+function createEnabledDemoClawHubInstallConfig(): AforaConfig {
   const installPath = createInstalledPackageDir({
     name: "demo",
     version: "1.2.3",
@@ -293,7 +293,7 @@ function createGitInstallConfig(params: {
   spec: string;
   installPath: string;
   commit?: string;
-}): OpenClawConfig {
+}): AforaConfig {
   return {
     plugins: {
       installs: {
@@ -313,7 +313,7 @@ function createBundledPathInstallConfig(params: {
   installPath: string;
   sourcePath?: string;
   spec?: string;
-}): OpenClawConfig {
+}): AforaConfig {
   return {
     plugins: {
       load: { paths: params.loadPaths },
@@ -337,10 +337,10 @@ function createCodexAppServerInstallConfig(params: {
   return {
     plugins: {
       installs: {
-        "openclaw-codex-app-server": {
+        "afora-codex-app-server": {
           source: "npm" as const,
           spec: params.spec,
-          installPath: "/tmp/openclaw-codex-app-server",
+          installPath: "/tmp/afora-codex-app-server",
           ...(params.resolvedName ? { resolvedName: params.resolvedName } : {}),
           ...(params.resolvedSpec ? { resolvedSpec: params.resolvedSpec } : {}),
         },
@@ -357,7 +357,7 @@ function createInstalledPackageDir(params: {
   installPath?: string;
 }): string {
   const dir =
-    params.installPath ?? fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-update-test-"));
+    params.installPath ?? fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-update-test-"));
   if (params.installPath) {
     fs.mkdirSync(dir, { recursive: true });
   } else {
@@ -370,7 +370,7 @@ function createInstalledPackageDir(params: {
         name: params.name ?? "test-plugin",
         version: params.version,
         ...(params.peerDependencies ? { peerDependencies: params.peerDependencies } : {}),
-        ...(params.runnable ? { openclaw: { extensions: ["./index.js"] } } : {}),
+        ...(params.runnable ? { afora: { extensions: ["./index.js"] } } : {}),
       },
       null,
       2,
@@ -382,8 +382,8 @@ function createInstalledPackageDir(params: {
   return dir;
 }
 
-function createOpenClawPeerLinkFixtures(plugins: Array<{ pluginId: string; packageName: string }>) {
-  const stateDir = makeTrackedTempDir("openclaw-plugin-update-owner", tempDirs);
+function createAforaPeerLinkFixtures(plugins: Array<{ pluginId: string; packageName: string }>) {
+  const stateDir = makeTrackedTempDir("afora-plugin-update-owner", tempDirs);
   const peerTarget = fs.realpathSync(process.cwd());
   const installPaths = Object.fromEntries(
     plugins.map(({ pluginId, packageName }) => [
@@ -391,7 +391,7 @@ function createOpenClawPeerLinkFixtures(plugins: Array<{ pluginId: string; packa
       createInstalledPackageDir({
         name: packageName,
         version: "2026.5.4",
-        peerDependencies: { openclaw: ">=2026.5.4" },
+        peerDependencies: { afora: ">=2026.5.4" },
         installPath: path.join(stateDir, "extensions", pluginId),
       }),
     ]),
@@ -400,7 +400,7 @@ function createOpenClawPeerLinkFixtures(plugins: Array<{ pluginId: string; packa
     path.join(
       expectDefined(installPaths[pluginId], "installPaths[pluginId] test invariant"),
       "node_modules",
-      "openclaw",
+      "afora",
     );
   const linkPeer = (pluginId: string) => {
     fs.mkdirSync(path.dirname(peerLinkPath(pluginId)), { recursive: true });
@@ -413,7 +413,7 @@ function createPeerLinkInstallConfig(params: {
   plugins: Array<{ pluginId: string; packageName: string }>;
   installPaths: Record<string, string>;
   extraInstalls?: Record<string, PluginInstallRecord>;
-}): OpenClawConfig {
+}): AforaConfig {
   return {
     plugins: {
       installs: {
@@ -443,7 +443,7 @@ function mockNpmViewMetadata(params: {
   version: string;
   integrity?: string;
   shasum?: string;
-  openclaw?: Record<string, unknown>;
+  afora?: Record<string, unknown>;
 }) {
   runCommandWithTimeoutMock.mockResolvedValueOnce({
     code: 0,
@@ -452,7 +452,7 @@ function mockNpmViewMetadata(params: {
       version: params.version,
       ...(params.integrity ? { "dist.integrity": params.integrity } : {}),
       ...(params.shasum ? { "dist.shasum": params.shasum } : {}),
-      ...(params.openclaw ? { openclaw: params.openclaw } : {}),
+      ...(params.afora ? { afora: params.afora } : {}),
     }),
     stderr: "",
   });
@@ -473,7 +473,7 @@ function createNpmUpdateFixture(params: {
   registryVersion?: string;
   registryIntegrity?: string;
   registryShasum?: string;
-  registryOpenClaw?: Record<string, unknown>;
+  registryAfora?: Record<string, unknown>;
   spec?: string;
   resolvedSpec?: string;
   integrity?: string;
@@ -495,7 +495,7 @@ function createNpmUpdateFixture(params: {
       version: params.registryVersion,
       ...(params.registryIntegrity ? { integrity: params.registryIntegrity } : {}),
       ...(params.registryShasum ? { shasum: params.registryShasum } : {}),
-      ...(params.registryOpenClaw ? { openclaw: params.registryOpenClaw } : {}),
+      ...(params.registryAfora ? { afora: params.registryAfora } : {}),
     });
   }
   if (params.installerVersion) {
@@ -599,16 +599,16 @@ function createBundledSource(params?: { pluginId?: string; localPath?: string; n
   return {
     pluginId,
     localPath: params?.localPath ?? appBundledPluginRoot(pluginId),
-    npmSpec: params?.npmSpec ?? `@openclaw/${pluginId}`,
+    npmSpec: params?.npmSpec ?? `@afora/${pluginId}`,
   };
 }
 
 type ExternalizedPluginBridge = NonNullable<
   Parameters<typeof syncPluginsForUpdateChannel>[0]["externalizedBundledPluginBridges"]
 >[number];
-type PluginInstallRecord = NonNullable<NonNullable<OpenClawConfig["plugins"]>["installs"]>[string];
+type PluginInstallRecord = NonNullable<NonNullable<AforaConfig["plugins"]>["installs"]>[string];
 
-function createDisabledPluginConfig(install: PluginInstallRecord): OpenClawConfig {
+function createDisabledPluginConfig(install: PluginInstallRecord): AforaConfig {
   return {
     plugins: {
       entries: { demo: { enabled: false, config: { preserved: true } } },
@@ -622,7 +622,7 @@ function createExternalizedPluginBridge(
 ): ExternalizedPluginBridge {
   return {
     bundledPluginId: "legacy-chat",
-    npmSpec: "@openclaw/legacy-chat",
+    npmSpec: "@afora/legacy-chat",
     channelIds: ["legacy-chat"],
     ...overrides,
   };
@@ -635,7 +635,7 @@ function createExternalizedPluginConfig(params?: {
   includeLoad?: boolean;
   loadPaths?: string[];
   install?: PluginInstallRecord;
-}): OpenClawConfig {
+}): AforaConfig {
   const pluginId = params?.pluginId ?? "legacy-chat";
   const bundledRoot = appBundledPluginRoot(pluginId);
   return {
@@ -657,7 +657,7 @@ function createExternalizedPluginConfig(params?: {
 }
 
 function syncExternalizedPlugin(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   bridge?: Partial<ExternalizedPluginBridge>;
   channel?: "stable" | "beta" | "extended-stable";
   coreVersion?: string;
@@ -700,10 +700,10 @@ function expectCodexAppServerInstallState(params: {
   version: string;
   resolvedSpec?: string;
 }) {
-  const install = params.result.config.plugins?.installs?.["openclaw-codex-app-server"];
+  const install = params.result.config.plugins?.installs?.["afora-codex-app-server"];
   expect(install?.source).toBe("npm");
   expect(install?.spec).toBe(params.spec);
-  expect(install?.installPath).toBe("/tmp/openclaw-codex-app-server");
+  expect(install?.installPath).toBe("/tmp/afora-codex-app-server");
   expect(install?.version).toBe(params.version);
   if (params.resolvedSpec) {
     expect(install?.resolvedSpec).toBe(params.resolvedSpec);
@@ -713,7 +713,7 @@ function expectCodexAppServerInstallState(params: {
 type UpdateInstalledPluginParams = Parameters<typeof updateNpmInstalledPlugins>[0];
 
 function updatePlugin(
-  config: OpenClawConfig,
+  config: AforaConfig,
   pluginId: string,
   params: Omit<UpdateInstalledPluginParams, "config" | "pluginIds"> = {},
 ) {
@@ -857,7 +857,7 @@ describe("updateNpmInstalledPlugins", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const result = await updateNpmInstalledPlugins({ config, pluginIds: ["demo"] });
 
@@ -874,7 +874,7 @@ describe("updateNpmInstalledPlugins", () => {
   });
 
   it("does not treat inherited prototype names as install records", async () => {
-    const config: OpenClawConfig = { plugins: { installs: {} } };
+    const config: AforaConfig = { plugins: { installs: {} } };
 
     const result = await updatePlugin(config, "constructor");
 
@@ -894,52 +894,52 @@ describe("updateNpmInstalledPlugins", () => {
     {
       name: "skips integrity drift checks for unpinned npm specs during dry-run updates",
       config: createNpmInstallConfig({
-        pluginId: "opik-openclaw",
-        spec: "@opik/opik-openclaw",
+        pluginId: "opik-afora",
+        spec: "@opik/opik-afora",
         integrity: "sha512-old",
-        installPath: "/tmp/opik-openclaw",
+        installPath: "/tmp/opik-afora",
       }),
-      pluginIds: ["opik-openclaw"],
+      pluginIds: ["opik-afora"],
       dryRun: true,
       expectedCall: {
-        spec: "@opik/opik-openclaw",
+        spec: "@opik/opik-afora",
         expectedIntegrity: undefined,
       },
     },
     {
       name: "keeps integrity drift checks for exact-version npm specs during dry-run updates",
       config: createNpmInstallConfig({
-        pluginId: "opik-openclaw",
-        spec: "@opik/opik-openclaw@0.2.5",
+        pluginId: "opik-afora",
+        spec: "@opik/opik-afora@0.2.5",
         integrity: "sha512-old",
-        installPath: "/tmp/opik-openclaw",
+        installPath: "/tmp/opik-afora",
       }),
-      pluginIds: ["opik-openclaw"],
+      pluginIds: ["opik-afora"],
       dryRun: true,
       expectedCall: {
-        spec: "@opik/opik-openclaw@0.2.5",
+        spec: "@opik/opik-afora@0.2.5",
         expectedIntegrity: "sha512-old",
       },
     },
     {
       name: "skips recorded integrity checks when an explicit npm version override changes the spec",
       config: createNpmInstallConfig({
-        pluginId: "openclaw-codex-app-server",
-        spec: "openclaw-codex-app-server@0.2.0-beta.3",
+        pluginId: "afora-codex-app-server",
+        spec: "afora-codex-app-server@0.2.0-beta.3",
         integrity: "sha512-old",
-        installPath: "/tmp/openclaw-codex-app-server",
+        installPath: "/tmp/afora-codex-app-server",
       }),
-      pluginIds: ["openclaw-codex-app-server"],
+      pluginIds: ["afora-codex-app-server"],
       specOverrides: {
-        "openclaw-codex-app-server": "openclaw-codex-app-server@0.2.0-beta.4",
+        "afora-codex-app-server": "afora-codex-app-server@0.2.0-beta.4",
       },
       installerResult: createSuccessfulNpmUpdateResult({
-        pluginId: "openclaw-codex-app-server",
-        targetDir: "/tmp/openclaw-codex-app-server",
+        pluginId: "afora-codex-app-server",
+        targetDir: "/tmp/afora-codex-app-server",
         version: "0.2.0-beta.4",
       }),
       expectedCall: {
-        spec: "openclaw-codex-app-server@0.2.0-beta.4",
+        spec: "afora-codex-app-server@0.2.0-beta.4",
         expectedIntegrity: undefined,
       },
     },
@@ -973,19 +973,19 @@ describe("updateNpmInstalledPlugins", () => {
   it("trusts official catalog npm updates when the installed package matches the catalog", async () => {
     const { config } = createNpmUpdateFixture({
       pluginId: "acpx",
-      packageName: "@openclaw/acpx",
+      packageName: "@afora/acpx",
       installedVersion: "2026.5.2-beta.1",
       registryVersion: "2026.5.2-beta.2",
       installerVersion: "2026.5.2-beta.2",
-      installerResolvedSpec: "@openclaw/acpx@2026.5.2-beta.2",
+      installerResolvedSpec: "@afora/acpx@2026.5.2-beta.2",
     });
 
     const result = await updatePlugin(config, "acpx", { syncOfficialPluginInstalls: true });
 
-    expect(npmInstallCall()?.spec).toBe("@openclaw/acpx");
+    expect(npmInstallCall()?.spec).toBe("@afora/acpx");
     expect(npmInstallCall()?.expectedPluginId).toBe("acpx");
     expect(npmInstallCall()?.trustedSourceLinkedOfficialInstall).toBe(true);
-    expect(result.config.plugins?.installs?.acpx?.spec).toBe("@openclaw/acpx@2026.5.2-beta.2");
+    expect(result.config.plugins?.installs?.acpx?.spec).toBe("@afora/acpx@2026.5.2-beta.2");
   });
 
   it.each([
@@ -994,32 +994,32 @@ describe("updateNpmInstalledPlugins", () => {
       channel: "beta" as const,
       configuredChannel: undefined,
       registryVersion: "2026.5.3-beta.1",
-      expectedSpec: "@openclaw/codex@beta",
+      expectedSpec: "@afora/codex@beta",
     },
     {
       name: "inferred stable",
       channel: "stable" as const,
       configuredChannel: undefined,
       registryVersion: "2026.5.3",
-      expectedSpec: "@openclaw/codex",
+      expectedSpec: "@afora/codex",
     },
     {
       name: "configured stable over inferred beta",
       channel: "beta" as const,
       configuredChannel: "stable" as const,
       registryVersion: "2026.5.3",
-      expectedSpec: "@openclaw/codex",
+      expectedSpec: "@afora/codex",
     },
   ])(
     "uses the $name channel for a targeted floating official npm update",
     async ({ channel, configuredChannel, registryVersion, expectedSpec }) => {
       const { config } = createNpmUpdateFixture({
         pluginId: "codex",
-        packageName: "@openclaw/codex",
+        packageName: "@afora/codex",
         installedVersion: "2026.5.2",
         registryVersion,
         installerVersion: registryVersion,
-        installerResolvedSpec: `@openclaw/codex@${registryVersion}`,
+        installerResolvedSpec: `@afora/codex@${registryVersion}`,
       });
 
       const result = await updatePlugin(config, "codex", {
@@ -1028,9 +1028,9 @@ describe("updateNpmInstalledPlugins", () => {
       });
 
       expect(npmInstallCall()?.spec).toBe(expectedSpec);
-      expect(result.config.plugins?.installs?.codex?.spec).toBe("@openclaw/codex");
+      expect(result.config.plugins?.installs?.codex?.spec).toBe("@afora/codex");
       expect(result.config.plugins?.installs?.codex?.resolvedSpec).toBe(
-        `@openclaw/codex@${registryVersion}`,
+        `@afora/codex@${registryVersion}`,
       );
     },
   );
@@ -1040,7 +1040,7 @@ describe("updateNpmInstalledPlugins", () => {
       .mockResolvedValueOnce({
         ok: false,
         code: "npm_package_not_found",
-        error: "No matching version found for @openclaw/codex@beta",
+        error: "No matching version found for @afora/codex@beta",
       })
       .mockResolvedValueOnce(
         createSuccessfulNpmUpdateResult({
@@ -1048,32 +1048,32 @@ describe("updateNpmInstalledPlugins", () => {
           targetDir: "/tmp/codex",
           version: "2026.5.3",
           npmResolution: {
-            name: "@openclaw/codex",
+            name: "@afora/codex",
             version: "2026.5.3",
-            resolvedSpec: "@openclaw/codex@2026.5.3",
+            resolvedSpec: "@afora/codex@2026.5.3",
           },
         }),
       );
     const config = createNpmInstallConfig({
       pluginId: "codex",
-      spec: "@openclaw/codex",
+      spec: "@afora/codex",
       installPath: "/tmp/codex",
-      resolvedName: "@openclaw/codex",
+      resolvedName: "@afora/codex",
     });
 
     const result = await updatePlugin(config, "codex", {
       officialPluginUpdateChannel: "beta",
     });
 
-    expect(npmInstallCall(0)?.spec).toBe("@openclaw/codex@beta");
-    expect(npmInstallCall(1)?.spec).toBe("@openclaw/codex");
-    expect(result.config.plugins?.installs?.codex?.spec).toBe("@openclaw/codex");
+    expect(npmInstallCall(0)?.spec).toBe("@afora/codex@beta");
+    expect(npmInstallCall(1)?.spec).toBe("@afora/codex");
+    expect(result.config.plugins?.installs?.codex?.spec).toBe("@afora/codex");
   });
 
   it("pins unchanged official npm records during official sync", async () => {
     const { config } = createNpmUpdateFixture({
       pluginId: "acpx",
-      packageName: "@openclaw/acpx",
+      packageName: "@afora/acpx",
       installedVersion: "2026.5.2",
       registryVersion: "2026.5.2",
       registryIntegrity: "sha512-old",
@@ -1085,7 +1085,7 @@ describe("updateNpmInstalledPlugins", () => {
 
     expect(result.changed).toBe(true);
     expect(result.outcomes[0]?.status).toBe("unchanged");
-    expect(result.config.plugins?.installs?.acpx?.spec).toBe("@openclaw/acpx@2026.5.2");
+    expect(result.config.plugins?.installs?.acpx?.spec).toBe("@afora/acpx@2026.5.2");
     expect(result.config.plugins?.installs?.acpx?.installedAt).toBe("2026-05-01T00:00:00.000Z");
     expect(result.config.plugins?.installs?.acpx?.resolvedAt).toBe("2026-05-01T00:00:01.000Z");
     expect(npmInstallCall()).toBeUndefined();
@@ -1094,20 +1094,20 @@ describe("updateNpmInstalledPlugins", () => {
   it("keeps integrity drift checks for exact official pins during official sync", async () => {
     const { config } = createNpmUpdateFixture({
       pluginId: "acpx",
-      packageName: "@openclaw/acpx",
+      packageName: "@afora/acpx",
       installedVersion: "2026.5.2",
       registryVersion: "2026.5.2",
       registryIntegrity: "sha512-new",
-      spec: "@openclaw/acpx@2026.5.2",
+      spec: "@afora/acpx@2026.5.2",
       integrity: "sha512-old",
       installerVersion: "2026.5.2",
-      installerResolvedSpec: "@openclaw/acpx@2026.5.2",
+      installerResolvedSpec: "@afora/acpx@2026.5.2",
     });
 
     await updatePlugin(config, "acpx", { syncOfficialPluginInstalls: true });
 
     expectNpmUpdateCall({
-      spec: "@openclaw/acpx",
+      spec: "@afora/acpx",
       expectedPluginId: "acpx",
       expectedIntegrity: "sha512-old",
     });
@@ -1116,21 +1116,21 @@ describe("updateNpmInstalledPlugins", () => {
   it("skips integrity checks when official sync may choose a compatible fallback", async () => {
     const { config } = createNpmUpdateFixture({
       pluginId: "acpx",
-      packageName: "@openclaw/acpx",
+      packageName: "@afora/acpx",
       installedVersion: "2026.5.2",
       registryVersion: "2026.5.2",
       registryIntegrity: "sha512-old",
-      registryOpenClaw: { compat: { pluginApi: ">=9999.0.0" } },
-      spec: "@openclaw/acpx@2026.5.2",
+      registryAfora: { compat: { pluginApi: ">=9999.0.0" } },
+      spec: "@afora/acpx@2026.5.2",
       integrity: "sha512-old",
       installerVersion: "2026.5.1",
-      installerResolvedSpec: "@openclaw/acpx@2026.5.1",
+      installerResolvedSpec: "@afora/acpx@2026.5.1",
     });
 
     await updatePlugin(config, "acpx", { syncOfficialPluginInstalls: true });
 
     expectNpmUpdateCall({
-      spec: "@openclaw/acpx",
+      spec: "@afora/acpx",
       expectedPluginId: "acpx",
       expectedIntegrity: undefined,
     });
@@ -1139,18 +1139,18 @@ describe("updateNpmInstalledPlugins", () => {
   it("keeps integrity drift checks when official latest falls back to pinned stable", async () => {
     const { config } = createNpmUpdateFixture({
       pluginId: "acpx",
-      packageName: "@openclaw/acpx",
+      packageName: "@afora/acpx",
       installedVersion: "2026.5.2",
       registryVersion: "2026.5.3-beta.1",
       registryIntegrity: "sha512-beta",
-      spec: "@openclaw/acpx@2026.5.2",
+      spec: "@afora/acpx@2026.5.2",
       integrity: "sha512-old",
       installerVersion: "2026.5.2",
-      installerResolvedSpec: "@openclaw/acpx@2026.5.2",
+      installerResolvedSpec: "@afora/acpx@2026.5.2",
     });
     mockNpmViewVersions(["2026.5.2", "2026.5.3-beta.1"]);
     mockNpmViewMetadata({
-      name: "@openclaw/acpx",
+      name: "@afora/acpx",
       version: "2026.5.2",
       integrity: "sha512-old",
     });
@@ -1158,7 +1158,7 @@ describe("updateNpmInstalledPlugins", () => {
     await updatePlugin(config, "acpx", { syncOfficialPluginInstalls: true });
 
     expectNpmUpdateCall({
-      spec: "@openclaw/acpx",
+      spec: "@afora/acpx",
       expectedPluginId: "acpx",
       expectedIntegrity: "sha512-old",
     });
@@ -1167,21 +1167,21 @@ describe("updateNpmInstalledPlugins", () => {
   it("keeps integrity drift checks for exact prerelease-only official pins", async () => {
     const { config } = createNpmUpdateFixture({
       pluginId: "voice-call",
-      packageName: "@openclaw/voice-call",
+      packageName: "@afora/voice-call",
       installedVersion: "0.0.2-beta.1",
       registryVersion: "0.0.2-beta.1",
       registryIntegrity: "sha512-beta",
-      spec: "@openclaw/voice-call@0.0.2-beta.1",
+      spec: "@afora/voice-call@0.0.2-beta.1",
       integrity: "sha512-old",
       installerVersion: "0.0.2-beta.1",
-      installerResolvedSpec: "@openclaw/voice-call@0.0.2-beta.1",
+      installerResolvedSpec: "@afora/voice-call@0.0.2-beta.1",
     });
     mockNpmViewVersions(["0.0.1-beta.1", "0.0.2-beta.1"]);
 
     await updatePlugin(config, "voice-call", { syncOfficialPluginInstalls: true });
 
     expectNpmUpdateCall({
-      spec: "@openclaw/voice-call",
+      spec: "@afora/voice-call",
       expectedPluginId: "voice-call",
       expectedIntegrity: "sha512-old",
     });
@@ -1210,7 +1210,7 @@ describe("updateNpmInstalledPlugins", () => {
         {
           version: "2026.5.2",
           integrity: "sha512-old",
-          openclaw: { compat: { pluginApi: ">=9999.0.0" } },
+          afora: { compat: { pluginApi: ">=9999.0.0" } },
         },
       ],
       installerVersion: "2026.5.1",
@@ -1219,24 +1219,24 @@ describe("updateNpmInstalledPlugins", () => {
   ])("$name", async ({ fallbackMetadata, installerVersion, expectedIntegrity }) => {
     const { installPath, config } = createNpmUpdateFixture({
       pluginId: "acpx",
-      packageName: "@openclaw/acpx",
+      packageName: "@afora/acpx",
       installedVersion: "2026.5.2",
       registryVersion: "2026.5.3-beta.1",
       registryIntegrity: "sha512-beta",
-      spec: "@openclaw/acpx@2026.5.2",
+      spec: "@afora/acpx@2026.5.2",
       integrity: "sha512-old",
     });
     for (const metadata of fallbackMetadata) {
       if ("versions" in metadata && metadata.versions) {
         mockNpmViewVersions(metadata.versions);
       } else {
-        mockNpmViewMetadata({ name: "@openclaw/acpx", ...metadata });
+        mockNpmViewMetadata({ name: "@afora/acpx", ...metadata });
       }
     }
     installPluginFromNpmSpecMock
       .mockResolvedValueOnce({
         ok: false,
-        error: "No matching version found for @openclaw/acpx@beta",
+        error: "No matching version found for @afora/acpx@beta",
         code: "npm_package_not_found",
       })
       .mockResolvedValueOnce(
@@ -1245,9 +1245,9 @@ describe("updateNpmInstalledPlugins", () => {
           targetDir: installPath,
           version: installerVersion,
           npmResolution: {
-            name: "@openclaw/acpx",
+            name: "@afora/acpx",
             version: installerVersion,
-            resolvedSpec: `@openclaw/acpx@${installerVersion}`,
+            resolvedSpec: `@afora/acpx@${installerVersion}`,
           },
         }),
       );
@@ -1257,9 +1257,9 @@ describe("updateNpmInstalledPlugins", () => {
       updateChannel: "beta",
     });
 
-    expect(npmInstallCall(0)?.spec).toBe("@openclaw/acpx@beta");
+    expect(npmInstallCall(0)?.spec).toBe("@afora/acpx@beta");
     expect(npmInstallCall(0)?.expectedIntegrity).toBeUndefined();
-    expect(npmInstallCall(1)?.spec).toBe("@openclaw/acpx");
+    expect(npmInstallCall(1)?.spec).toBe("@afora/acpx");
     expect(npmInstallCall(1)?.expectedIntegrity).toBe(expectedIntegrity);
   });
 
@@ -1301,20 +1301,20 @@ describe("updateNpmInstalledPlugins", () => {
   it("does not skip trusted official default updates when latest resolves to the installed prerelease", async () => {
     const { config } = createNpmUpdateFixture({
       pluginId: "acpx",
-      packageName: "@openclaw/acpx",
+      packageName: "@afora/acpx",
       installedVersion: "2026.5.2-beta.2",
       registryVersion: "2026.5.2-beta.2",
       registryIntegrity: "sha512-beta",
       registryShasum: "beta",
-      spec: "@openclaw/acpx@2026.5.2-beta.2",
+      spec: "@afora/acpx@2026.5.2-beta.2",
       integrity: "sha512-beta",
       shasum: "beta",
       installerVersion: "2026.5.2",
-      installerResolvedSpec: "@openclaw/acpx@2026.5.2",
+      installerResolvedSpec: "@afora/acpx@2026.5.2",
     });
     const result = await updatePlugin(config, "acpx", { syncOfficialPluginInstalls: true });
 
-    expect(npmInstallCall()?.spec).toBe("@openclaw/acpx");
+    expect(npmInstallCall()?.spec).toBe("@afora/acpx");
     expect(npmInstallCall()?.expectedIntegrity).toBeUndefined();
     expect(npmInstallCall()?.expectedPluginId).toBe("acpx");
     expect(npmInstallCall()?.trustedSourceLinkedOfficialInstall).toBe(true);
@@ -1327,17 +1327,17 @@ describe("updateNpmInstalledPlugins", () => {
   it("updates trusted official npm plugins when latest resolves to a stable correction release", async () => {
     const { config } = createNpmUpdateFixture({
       pluginId: "acpx",
-      packageName: "@openclaw/acpx",
+      packageName: "@afora/acpx",
       installedVersion: "2026.5.3",
       registryVersion: "2026.5.3-1",
       registryIntegrity: "sha512-correction",
       registryShasum: "correction",
       installerVersion: "2026.5.3-1",
-      installerResolvedSpec: "@openclaw/acpx@2026.5.3-1",
+      installerResolvedSpec: "@afora/acpx@2026.5.3-1",
     });
     const result = await updatePlugin(config, "acpx");
 
-    expect(npmInstallCall()?.spec).toBe("@openclaw/acpx");
+    expect(npmInstallCall()?.spec).toBe("@afora/acpx");
     expect(npmInstallCall()?.expectedPluginId).toBe("acpx");
     expect(npmInstallCall()?.trustedSourceLinkedOfficialInstall).toBe(true);
     expect(result.outcomes[0]?.pluginId).toBe("acpx");
@@ -1382,7 +1382,7 @@ describe("updateNpmInstalledPlugins", () => {
       "version",
       "dist.integrity",
       "dist.shasum",
-      "openclaw",
+      "afora",
       "--json",
     ]);
     if (npmViewCall()?.[1] === undefined) {
@@ -1451,7 +1451,7 @@ describe("updateNpmInstalledPlugins", () => {
         "version",
         "dist.integrity",
         "dist.shasum",
-        "openclaw",
+        "afora",
         "--json",
       ]);
       expect(result.changed).toBe(false);
@@ -1465,7 +1465,7 @@ describe("updateNpmInstalledPlugins", () => {
           message:
             `demo is pinned to @acme/demo@1.2.3 (installed 1.2.3); ` +
             `registry ${updateChannel === "beta" ? "beta" : "latest"} resolves to ${registryVersion}. ` +
-            `Pass \`openclaw plugins update ${overrideSpec}\` to follow that registry line.`,
+            `Pass \`afora plugins update ${overrideSpec}\` to follow that registry line.`,
         },
       ]);
     },
@@ -1506,7 +1506,7 @@ describe("updateNpmInstalledPlugins", () => {
       "version",
       "dist.integrity",
       "dist.shasum",
-      "openclaw",
+      "afora",
       "--json",
     ]);
     expect(result.outcomes).toEqual([
@@ -1517,7 +1517,7 @@ describe("updateNpmInstalledPlugins", () => {
         nextVersion: "1.2.4",
         message:
           "demo is pinned to @acme/demo@1.2.3 (installed 1.2.3); registry latest resolves to 1.2.4. " +
-          "Pass `openclaw plugins update @acme/demo@latest` to follow that registry line.",
+          "Pass `afora plugins update @acme/demo@latest` to follow that registry line.",
       },
     ]);
   });
@@ -1534,24 +1534,24 @@ describe("updateNpmInstalledPlugins", () => {
       assertFullOutcome: false,
     },
   ] as const)("$name", async ({ compatibility, assertFullOutcome }) => {
-    vi.stubEnv("OPENCLAW_COMPATIBILITY_HOST_VERSION", "2026.5.28-beta.3");
+    vi.stubEnv("AFORA_COMPATIBILITY_HOST_VERSION", "2026.5.28-beta.3");
     const { config } = createNpmUpdateFixture({
       pluginId: "msteams",
-      packageName: "@openclaw/msteams",
+      packageName: "@afora/msteams",
       installedVersion: "2026.5.28-beta.4",
       registryVersion: "2026.5.28-beta.4",
       registryIntegrity: "sha512-newer",
       registryShasum: "newer",
-      registryOpenClaw: { extensions: ["./dist/index.js"], ...compatibility },
+      registryAfora: { extensions: ["./dist/index.js"], ...compatibility },
       integrity: "sha512-newer",
       shasum: "newer",
       installerVersion: "2026.5.28-beta.3",
-      installerResolvedSpec: "@openclaw/msteams@2026.5.28-beta.3",
+      installerResolvedSpec: "@afora/msteams@2026.5.28-beta.3",
     });
 
     const result = await updatePlugin(config, "msteams");
 
-    expect(npmInstallCall()?.spec).toBe("@openclaw/msteams");
+    expect(npmInstallCall()?.spec).toBe("@afora/msteams");
     expect(npmInstallCall()?.mode).toBe("update");
     if (assertFullOutcome) {
       expect(npmInstallCall()?.expectedPluginId).toBe("msteams");
@@ -1560,9 +1560,9 @@ describe("updateNpmInstalledPlugins", () => {
     expectRecordFields(result.config.plugins?.installs?.msteams, {
       source: "npm",
       version: "2026.5.28-beta.3",
-      resolvedName: "@openclaw/msteams",
+      resolvedName: "@afora/msteams",
       resolvedVersion: "2026.5.28-beta.3",
-      resolvedSpec: "@openclaw/msteams@2026.5.28-beta.3",
+      resolvedSpec: "@afora/msteams@2026.5.28-beta.3",
     });
     if (assertFullOutcome) {
       expect(result.outcomes).toEqual([
@@ -1577,14 +1577,14 @@ describe("updateNpmInstalledPlugins", () => {
     }
   });
 
-  it("repairs missing openclaw peer links before skipping unchanged npm plugins", async () => {
+  it("repairs missing afora peer links before skipping unchanged npm plugins", async () => {
     const installPath = createInstalledPackageDir({
-      name: "@openclaw/codex",
+      name: "@afora/codex",
       version: "2026.5.3",
-      peerDependencies: { openclaw: ">=2026.5.3" },
+      peerDependencies: { afora: ">=2026.5.3" },
     });
     mockNpmViewMetadata({
-      name: "@openclaw/codex",
+      name: "@afora/codex",
       version: "2026.5.3",
       integrity: "sha512-same",
       shasum: "same",
@@ -1595,22 +1595,22 @@ describe("updateNpmInstalledPlugins", () => {
         targetDir: installPath,
         version: "2026.5.3",
         npmResolution: {
-          name: "@openclaw/codex",
+          name: "@afora/codex",
           version: "2026.5.3",
-          resolvedSpec: "@openclaw/codex@2026.5.3",
+          resolvedSpec: "@afora/codex@2026.5.3",
         },
       }),
     );
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       plugins: {
         installs: {
           codex: {
             source: "npm",
-            spec: "@openclaw/codex",
+            spec: "@afora/codex",
             installPath,
-            resolvedName: "@openclaw/codex",
+            resolvedName: "@afora/codex",
             resolvedVersion: "2026.5.3",
-            resolvedSpec: "@openclaw/codex@2026.5.3",
+            resolvedSpec: "@afora/codex@2026.5.3",
             integrity: "sha512-same",
             shasum: "same",
           },
@@ -1620,7 +1620,7 @@ describe("updateNpmInstalledPlugins", () => {
 
     const result = await updatePlugin(config, "codex");
 
-    expect(npmInstallCall()?.spec).toBe("@openclaw/codex");
+    expect(npmInstallCall()?.spec).toBe("@afora/codex");
     expect(npmInstallCall()?.mode).toBe("update");
     expect(npmInstallCall()?.expectedPluginId).toBe("codex");
     expect(result.changed).toBe(true);
@@ -1635,20 +1635,20 @@ describe("updateNpmInstalledPlugins", () => {
     ]);
   });
 
-  it("skips unchanged npm plugins when the openclaw peer link already resolves", async () => {
+  it("skips unchanged npm plugins when the afora peer link already resolves", async () => {
     const installPath = createInstalledPackageDir({
-      name: "@openclaw/codex",
+      name: "@afora/codex",
       version: "2026.5.3",
-      peerDependencies: { openclaw: ">=2026.5.3" },
+      peerDependencies: { afora: ">=2026.5.3" },
     });
     fs.mkdirSync(path.join(installPath, "node_modules"), { recursive: true });
     fs.symlinkSync(
       fs.realpathSync(process.cwd()),
-      path.join(installPath, "node_modules", "openclaw"),
+      path.join(installPath, "node_modules", "afora"),
       "junction",
     );
     mockNpmViewMetadata({
-      name: "@openclaw/codex",
+      name: "@afora/codex",
       version: "2026.5.3",
       integrity: "sha512-same",
       shasum: "same",
@@ -1661,11 +1661,11 @@ describe("updateNpmInstalledPlugins", () => {
           installs: {
             codex: {
               source: "npm",
-              spec: "@openclaw/codex",
+              spec: "@afora/codex",
               installPath,
-              resolvedName: "@openclaw/codex",
+              resolvedName: "@afora/codex",
               resolvedVersion: "2026.5.3",
-              resolvedSpec: "@openclaw/codex@2026.5.3",
+              resolvedSpec: "@afora/codex@2026.5.3",
               integrity: "sha512-same",
               shasum: "same",
             },
@@ -1691,23 +1691,23 @@ describe("updateNpmInstalledPlugins", () => {
   it.each(["peerDependencies", "dependencies"] as const)(
     "repairs every copied stale %s host for unchanged npm plugins without reinstalling them",
     async (dependencyField) => {
-      const stateDir = makeTrackedTempDir("openclaw-plugin-update-legacy", tempDirs);
+      const stateDir = makeTrackedTempDir("afora-plugin-update-legacy", tempDirs);
       const plugins = ["email", "calendar"].map((pluginId) => {
         const packageName = `@clawemail/${pluginId}`;
         const installPath = path.join(stateDir, "extensions", pluginId);
-        const staleHostDir = path.join(installPath, "node_modules", "openclaw");
+        const staleHostDir = path.join(installPath, "node_modules", "afora");
         fs.mkdirSync(staleHostDir, { recursive: true });
         fs.writeFileSync(
           path.join(installPath, "package.json"),
           JSON.stringify({
             name: packageName,
             version: "2026.7.1",
-            [dependencyField]: { openclaw: ">=2026.7.1" },
+            [dependencyField]: { afora: ">=2026.7.1" },
           }),
         );
         fs.writeFileSync(
           path.join(staleHostDir, "package.json"),
-          JSON.stringify({ name: "openclaw", version: "2026.7.1-beta.2" }),
+          JSON.stringify({ name: "afora", version: "2026.7.1-beta.2" }),
         );
         mockNpmViewMetadata({
           name: packageName,
@@ -1719,7 +1719,7 @@ describe("updateNpmInstalledPlugins", () => {
       });
       installPluginFromNpmSpecMock.mockRejectedValue(new Error("installer should not run"));
 
-      const result = await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () =>
+      const result = await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () =>
         updateNpmInstalledPlugins({
           config: {
             plugins: {
@@ -1756,14 +1756,14 @@ describe("updateNpmInstalledPlugins", () => {
     },
   );
 
-  it("repairs openclaw peer links after batch npm updates prune earlier plugin links", async () => {
+  it("repairs afora peer links after batch npm updates prune earlier plugin links", async () => {
     const plugins = [
-      { pluginId: "brave", packageName: "@openclaw/brave-plugin" },
-      { pluginId: "codex", packageName: "@openclaw/codex" },
-      { pluginId: "discord", packageName: "@openclaw/discord" },
+      { pluginId: "brave", packageName: "@afora/brave-plugin" },
+      { pluginId: "codex", packageName: "@afora/codex" },
+      { pluginId: "discord", packageName: "@afora/discord" },
     ];
     const { stateDir, installPaths, peerLinkPath, linkPeer } =
-      createOpenClawPeerLinkFixtures(plugins);
+      createAforaPeerLinkFixtures(plugins);
     for (const { packageName } of plugins) {
       mockNpmViewMetadata({
         name: packageName,
@@ -1795,7 +1795,7 @@ describe("updateNpmInstalledPlugins", () => {
       },
     );
 
-    const result = await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () =>
+    const result = await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () =>
       updateNpmInstalledPlugins({
         config: createPeerLinkInstallConfig({ plugins, installPaths }),
         pluginIds: plugins.map((plugin) => plugin.pluginId),
@@ -1817,18 +1817,18 @@ describe("updateNpmInstalledPlugins", () => {
     );
   });
 
-  it("repairs sibling openclaw peer links after a targeted npm update prunes the shared install tree", async () => {
+  it("repairs sibling afora peer links after a targeted npm update prunes the shared install tree", async () => {
     const plugins = [
-      { pluginId: "brave", packageName: "@openclaw/brave-plugin" },
-      { pluginId: "codex", packageName: "@openclaw/codex" },
-      { pluginId: "discord", packageName: "@openclaw/discord" },
+      { pluginId: "brave", packageName: "@afora/brave-plugin" },
+      { pluginId: "codex", packageName: "@afora/codex" },
+      { pluginId: "discord", packageName: "@afora/discord" },
     ];
     const { stateDir, installPaths, peerLinkPath, linkPeer } =
-      createOpenClawPeerLinkFixtures(plugins);
+      createAforaPeerLinkFixtures(plugins);
     linkPeer("brave");
     linkPeer("discord");
     mockNpmViewMetadata({
-      name: "@openclaw/codex",
+      name: "@afora/codex",
       version: "2026.5.5",
       integrity: "sha512-same",
       shasum: "same",
@@ -1844,15 +1844,15 @@ describe("updateNpmInstalledPlugins", () => {
           targetDir: installPaths.codex,
           version: "2026.5.5",
           npmResolution: {
-            name: "@openclaw/codex",
+            name: "@afora/codex",
             version: "2026.5.5",
-            resolvedSpec: "@openclaw/codex@2026.5.5",
+            resolvedSpec: "@afora/codex@2026.5.5",
           },
         }),
       );
     });
 
-    await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () =>
+    await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () =>
       updateNpmInstalledPlugins({
         config: createPeerLinkInstallConfig({ plugins, installPaths }),
         pluginIds: ["codex"],
@@ -1873,30 +1873,30 @@ describe("updateNpmInstalledPlugins", () => {
         { pluginId: "updated", packageName: "@acme/updated" },
       ];
       const { stateDir, installPaths, peerLinkPath, linkPeer } =
-        createOpenClawPeerLinkFixtures(plugins);
+        createAforaPeerLinkFixtures(plugins);
       linkPeer("sibling");
 
       const outsideInstallPath = createInstalledPackageDir({
         name: "@acme/outside",
         version: "2026.5.4",
-        peerDependencies: { openclaw: ">=2026.5.4" },
+        peerDependencies: { afora: ">=2026.5.4" },
       });
       const developerInstallPath = createInstalledPackageDir({
         name: "@acme/developer",
         version: "2026.5.4",
-        peerDependencies: { openclaw: ">=2026.5.4" },
+        peerDependencies: { afora: ">=2026.5.4" },
         installPath: path.join(stateDir, "extensions", "developer"),
       });
       const marketplaceInstallPath = createInstalledPackageDir({
         name: "@acme/marketplace",
         version: "2026.5.4",
-        peerDependencies: { openclaw: ">=2026.5.4" },
+        peerDependencies: { afora: ">=2026.5.4" },
         installPath: path.join(stateDir, "extensions", "marketplace"),
       });
       const clawhubInstallPath = createInstalledPackageDir({
         name: "@acme/clawhub",
         version: "2026.5.4",
-        peerDependencies: { openclaw: ">=2026.5.4" },
+        peerDependencies: { afora: ">=2026.5.4" },
         installPath: path.join(stateDir, "extensions", "clawhub"),
       });
       const copiedHosts = [
@@ -1905,11 +1905,11 @@ describe("updateNpmInstalledPlugins", () => {
         marketplaceInstallPath,
         clawhubInstallPath,
       ].map((installPath) => {
-        const copiedHostDir = path.join(installPath, "node_modules", "openclaw");
+        const copiedHostDir = path.join(installPath, "node_modules", "afora");
         fs.mkdirSync(copiedHostDir, { recursive: true });
         fs.writeFileSync(
           path.join(copiedHostDir, "package.json"),
-          JSON.stringify({ name: "openclaw", version: "2026.4.1" }),
+          JSON.stringify({ name: "afora", version: "2026.4.1" }),
         );
         return copiedHostDir;
       });
@@ -1942,7 +1942,7 @@ describe("updateNpmInstalledPlugins", () => {
         );
       });
 
-      await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () =>
+      await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () =>
         updateNpmInstalledPlugins({
           config: createPeerLinkInstallConfig({
             plugins,
@@ -1967,31 +1967,31 @@ describe("updateNpmInstalledPlugins", () => {
         expect(fs.lstatSync(copiedHostDir).isDirectory()).toBe(true);
         expect(
           JSON.parse(fs.readFileSync(path.join(copiedHostDir, "package.json"), "utf8")),
-        ).toEqual({ name: "openclaw", version: "2026.4.1" });
+        ).toEqual({ name: "afora", version: "2026.4.1" });
       }
     },
   );
 
-  it("continues repairing sibling openclaw peer links after one recorded npm install cannot be relinked", async () => {
+  it("continues repairing sibling afora peer links after one recorded npm install cannot be relinked", async () => {
     const plugins = [
-      { pluginId: "brave", packageName: "@openclaw/brave-plugin" },
-      { pluginId: "codex", packageName: "@openclaw/codex" },
+      { pluginId: "brave", packageName: "@afora/brave-plugin" },
+      { pluginId: "codex", packageName: "@afora/codex" },
     ];
     const { stateDir, installPaths, peerLinkPath, linkPeer } =
-      createOpenClawPeerLinkFixtures(plugins);
+      createAforaPeerLinkFixtures(plugins);
     const malformedInstallPath = path.join(stateDir, "extensions", "aardvark");
     fs.mkdirSync(malformedInstallPath, { recursive: true });
     fs.writeFileSync(path.join(malformedInstallPath, "package.json"), "{ malformed");
     const brokenInstallPath = createInstalledPackageDir({
-      name: "@openclaw/broken-plugin",
+      name: "@afora/broken-plugin",
       version: "2026.5.4",
-      peerDependencies: { openclaw: ">=2026.5.4" },
+      peerDependencies: { afora: ">=2026.5.4" },
       installPath: path.join(stateDir, "extensions", "broken"),
     });
     fs.writeFileSync(path.join(brokenInstallPath, "node_modules"), "not a directory");
     linkPeer("brave");
     mockNpmViewMetadata({
-      name: "@openclaw/codex",
+      name: "@afora/codex",
       version: "2026.5.5",
       integrity: "sha512-same",
       shasum: "same",
@@ -2007,16 +2007,16 @@ describe("updateNpmInstalledPlugins", () => {
           targetDir: installPaths.codex,
           version: "2026.5.5",
           npmResolution: {
-            name: "@openclaw/codex",
+            name: "@afora/codex",
             version: "2026.5.5",
-            resolvedSpec: "@openclaw/codex@2026.5.5",
+            resolvedSpec: "@afora/codex@2026.5.5",
           },
         }),
       );
     });
     const warnMessages: string[] = [];
 
-    await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () =>
+    await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () =>
       updateNpmInstalledPlugins({
         config: createPeerLinkInstallConfig({
           plugins,
@@ -2025,11 +2025,11 @@ describe("updateNpmInstalledPlugins", () => {
             aardvark: { source: "npm", installPath: malformedInstallPath },
             broken: {
               source: "npm",
-              spec: "@openclaw/broken-plugin",
+              spec: "@afora/broken-plugin",
               installPath: brokenInstallPath,
-              resolvedName: "@openclaw/broken-plugin",
+              resolvedName: "@afora/broken-plugin",
               resolvedVersion: "2026.5.4",
-              resolvedSpec: "@openclaw/broken-plugin@2026.5.4",
+              resolvedSpec: "@afora/broken-plugin@2026.5.4",
             },
           },
         }),
@@ -2043,9 +2043,9 @@ describe("updateNpmInstalledPlugins", () => {
     expect(fs.existsSync(peerLinkPath("codex"))).toBe(true);
     expect(warnMessages).toEqual([
       expect.stringContaining(
-        `Could not repair openclaw peer link at ${malformedInstallPath}: SyntaxError:`,
+        `Could not repair afora peer link at ${malformedInstallPath}: SyntaxError:`,
       ),
-      `Skipping openclaw peerDependency link because ${path.join(brokenInstallPath, "node_modules")} is not a real directory.`,
+      `Skipping afora peerDependency link because ${path.join(brokenInstallPath, "node_modules")} is not a real directory.`,
     ]);
   });
 
@@ -2100,9 +2100,9 @@ describe("updateNpmInstalledPlugins", () => {
   });
 
   it("expands home-relative install paths before checking installed npm versions", async () => {
-    const home = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-update-home-"));
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-update-home-"));
     tempDirs.push(home);
-    const installPath = path.join(home, ".openclaw", "extensions", "lossless-claw");
+    const installPath = path.join(home, ".afora", "extensions", "lossless-claw");
     fs.mkdirSync(installPath, { recursive: true });
     fs.writeFileSync(
       path.join(installPath, "package.json"),
@@ -2121,7 +2121,7 @@ describe("updateNpmInstalledPlugins", () => {
         config: createNpmInstallConfig({
           pluginId: "lossless-claw",
           spec: "@martian-engineering/lossless-claw",
-          installPath: "~/.openclaw/extensions/lossless-claw",
+          installPath: "~/.afora/extensions/lossless-claw",
           resolvedName: "@martian-engineering/lossless-claw",
           resolvedVersion: "0.9.0",
           resolvedSpec: "@martian-engineering/lossless-claw@0.9.0",
@@ -2365,7 +2365,7 @@ describe("updateNpmInstalledPlugins", () => {
     });
 
     const message =
-      'Disabled "lossless-claw" after plugin update failure; OpenClaw will continue without it. Failed to check lossless-claw: npm view failed: registry timeout';
+      'Disabled "lossless-claw" after plugin update failure; Afora will continue without it. Failed to check lossless-claw: npm view failed: registry timeout';
     expect(warn).toHaveBeenCalledWith(message);
     expect(result.changed).toBe(true);
     expect(result.config.plugins?.entries?.["lossless-claw"]).toEqual({
@@ -2431,7 +2431,7 @@ describe("updateNpmInstalledPlugins", () => {
 
   it("disables a missing plugin payload when metadata probing also fails", async () => {
     const warn = vi.fn();
-    const installPath = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-update-missing-"));
+    const installPath = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-update-missing-"));
     tempDirs.push(installPath);
     installPluginFromNpmSpecMock.mockResolvedValue({
       ok: false,
@@ -2457,7 +2457,7 @@ describe("updateNpmInstalledPlugins", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const result = await updatePlugin(config, "demo", {
       disableOnFailure: true,
@@ -2465,7 +2465,7 @@ describe("updateNpmInstalledPlugins", () => {
     });
 
     const message =
-      'Disabled "demo" after plugin update failure; OpenClaw will continue without it. Failed to update demo: npm view failed: registry timeout';
+      'Disabled "demo" after plugin update failure; Afora will continue without it. Failed to update demo: npm view failed: registry timeout';
     expect(warn).toHaveBeenCalledWith(message);
     expect(result.changed).toBe(true);
     expect(result.config.plugins?.entries?.demo).toEqual({
@@ -2549,11 +2549,11 @@ describe("updateNpmInstalledPlugins", () => {
 
   it("updates disabled trusted official npm installs from the channel spec when requested", async () => {
     const installPath = createInstalledPackageDir({
-      name: "@openclaw/codex",
+      name: "@afora/codex",
       version: "2026.5.3",
     });
     mockNpmViewMetadata({
-      name: "@openclaw/codex",
+      name: "@afora/codex",
       version: "2026.5.4",
       integrity: "sha512-next",
       shasum: "next",
@@ -2564,9 +2564,9 @@ describe("updateNpmInstalledPlugins", () => {
         targetDir: installPath,
         version: "2026.5.4",
         npmResolution: {
-          name: "@openclaw/codex",
+          name: "@afora/codex",
           version: "2026.5.4",
-          resolvedSpec: "@openclaw/codex@2026.5.4",
+          resolvedSpec: "@afora/codex@2026.5.4",
         },
       }),
     );
@@ -2583,7 +2583,7 @@ describe("updateNpmInstalledPlugins", () => {
           installs: {
             codex: {
               source: "npm",
-              spec: "@openclaw/codex@2026.5.3",
+              spec: "@afora/codex@2026.5.3",
               installPath,
             },
           },
@@ -2593,7 +2593,7 @@ describe("updateNpmInstalledPlugins", () => {
       syncOfficialPluginInstalls: true,
     });
 
-    expect(npmInstallCall()?.spec).toBe("@openclaw/codex");
+    expect(npmInstallCall()?.spec).toBe("@afora/codex");
     expect(npmInstallCall()?.expectedPluginId).toBe("codex");
     expect(npmInstallCall()?.trustedSourceLinkedOfficialInstall).toBe(true);
     expect(result.changed).toBe(true);
@@ -2603,11 +2603,11 @@ describe("updateNpmInstalledPlugins", () => {
     });
     expectRecordFields(result.config.plugins?.installs?.codex, {
       source: "npm",
-      spec: "@openclaw/codex@2026.5.4",
+      spec: "@afora/codex@2026.5.4",
       version: "2026.5.4",
-      resolvedName: "@openclaw/codex",
+      resolvedName: "@afora/codex",
       resolvedVersion: "2026.5.4",
-      resolvedSpec: "@openclaw/codex@2026.5.4",
+      resolvedSpec: "@afora/codex@2026.5.4",
     });
     expectRecordFields(result.outcomes[0], {
       pluginId: "codex",
@@ -2620,18 +2620,18 @@ describe("updateNpmInstalledPlugins", () => {
   it("preserves exact official npm pins on an inferred beta channel", async () => {
     const { config } = createNpmUpdateFixture({
       pluginId: "codex",
-      packageName: "@openclaw/codex",
+      packageName: "@afora/codex",
       installedVersion: "2026.5.28",
-      spec: "@openclaw/codex@2026.5.28",
+      spec: "@afora/codex@2026.5.28",
       installerVersion: "2026.5.28",
-      installerResolvedSpec: "@openclaw/codex@2026.5.28",
+      installerResolvedSpec: "@afora/codex@2026.5.28",
     });
     const result = await updatePlugin(config, "codex", {
       dryRun: true,
       officialPluginUpdateChannel: "beta",
     });
 
-    expect(npmInstallCall()?.spec).toBe("@openclaw/codex@2026.5.28");
+    expect(npmInstallCall()?.spec).toBe("@afora/codex@2026.5.28");
     expect(npmInstallCall()?.expectedPluginId).toBe("codex");
     expect(npmInstallCall()?.trustedSourceLinkedOfficialInstall).toBe(true);
     expect(result.changed).toBe(false);
@@ -2644,7 +2644,7 @@ describe("updateNpmInstalledPlugins", () => {
   });
 
   it("reinstalls missing exact official npm pins without official install sync", async () => {
-    const extensionsDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-missing-plugin-"));
+    const extensionsDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-missing-plugin-"));
     tempDirs.push(extensionsDir);
     const installPath = path.join(extensionsDir, "codex");
     installPluginFromNpmSpecMock.mockResolvedValue(
@@ -2653,9 +2653,9 @@ describe("updateNpmInstalledPlugins", () => {
         targetDir: installPath,
         version: "2026.5.28",
         npmResolution: {
-          name: "@openclaw/codex",
+          name: "@afora/codex",
           version: "2026.5.28",
-          resolvedSpec: "@openclaw/codex@2026.5.28",
+          resolvedSpec: "@afora/codex@2026.5.28",
         },
       }),
     );
@@ -2663,25 +2663,25 @@ describe("updateNpmInstalledPlugins", () => {
     const result = await updateNpmInstalledPlugins({
       config: createNpmInstallConfig({
         pluginId: "codex",
-        spec: "@openclaw/codex@2026.5.28",
+        spec: "@afora/codex@2026.5.28",
         installPath,
-        resolvedName: "@openclaw/codex",
-        resolvedSpec: "@openclaw/codex@2026.5.28",
+        resolvedName: "@afora/codex",
+        resolvedSpec: "@afora/codex@2026.5.28",
         resolvedVersion: "2026.5.28",
       }),
       pluginIds: ["codex"],
     });
 
-    expect(npmInstallCall()?.spec).toBe("@openclaw/codex@2026.5.28");
+    expect(npmInstallCall()?.spec).toBe("@afora/codex@2026.5.28");
     expect(npmInstallCall()?.extensionsDir).toBe(extensionsDir);
     expect(runCommandWithTimeoutMock).not.toHaveBeenCalled();
     expectRecordFields(result.config.plugins?.installs?.codex, {
       source: "npm",
-      spec: "@openclaw/codex@2026.5.28",
+      spec: "@afora/codex@2026.5.28",
       installPath,
       version: "2026.5.28",
-      resolvedName: "@openclaw/codex",
-      resolvedSpec: "@openclaw/codex@2026.5.28",
+      resolvedName: "@afora/codex",
+      resolvedSpec: "@afora/codex@2026.5.28",
       resolvedVersion: "2026.5.28",
     });
     expectRecordFields(result.outcomes[0], {
@@ -2692,11 +2692,11 @@ describe("updateNpmInstalledPlugins", () => {
   });
 
   it("keeps integrity checks when official sync repairs missing exact npm pins", async () => {
-    const extensionsDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-missing-plugin-"));
+    const extensionsDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-missing-plugin-"));
     tempDirs.push(extensionsDir);
     const installPath = path.join(extensionsDir, "codex");
     mockNpmViewMetadata({
-      name: "@openclaw/codex",
+      name: "@afora/codex",
       version: "2026.5.28",
       integrity: "sha512-old",
     });
@@ -2706,9 +2706,9 @@ describe("updateNpmInstalledPlugins", () => {
         targetDir: installPath,
         version: "2026.5.28",
         npmResolution: {
-          name: "@openclaw/codex",
+          name: "@afora/codex",
           version: "2026.5.28",
-          resolvedSpec: "@openclaw/codex@2026.5.28",
+          resolvedSpec: "@afora/codex@2026.5.28",
         },
       }),
     );
@@ -2716,10 +2716,10 @@ describe("updateNpmInstalledPlugins", () => {
     await updateNpmInstalledPlugins({
       config: createNpmInstallConfig({
         pluginId: "codex",
-        spec: "@openclaw/codex@2026.5.28",
+        spec: "@afora/codex@2026.5.28",
         installPath,
-        resolvedName: "@openclaw/codex",
-        resolvedSpec: "@openclaw/codex@2026.5.28",
+        resolvedName: "@afora/codex",
+        resolvedSpec: "@afora/codex@2026.5.28",
         resolvedVersion: "2026.5.28",
         integrity: "sha512-old",
       }),
@@ -2727,7 +2727,7 @@ describe("updateNpmInstalledPlugins", () => {
       syncOfficialPluginInstalls: true,
     });
 
-    expect(npmInstallCall()?.spec).toBe("@openclaw/codex");
+    expect(npmInstallCall()?.spec).toBe("@afora/codex");
     expect(npmInstallCall()?.expectedIntegrity).toBe("sha512-old");
   });
 
@@ -2815,7 +2815,7 @@ describe("updateNpmInstalledPlugins", () => {
         "version",
         "dist.integrity",
         "dist.shasum",
-        "openclaw",
+        "afora",
         "--json",
       ]);
       expectRecordFields(result.outcomes[0], {
@@ -2823,7 +2823,7 @@ describe("updateNpmInstalledPlugins", () => {
         status: "unchanged",
         currentVersion: "1.2.3",
         nextVersion: "1.2.4",
-        message: `demo is pinned to ${spec} (installed 1.2.3); registry latest resolves to 1.2.4. Pass \`openclaw plugins update @acme/demo@latest\` to follow that registry line.`,
+        message: `demo is pinned to ${spec} (installed 1.2.3); registry latest resolves to 1.2.4. Pass \`afora plugins update @acme/demo@latest\` to follow that registry line.`,
       });
     },
   );
@@ -2834,14 +2834,14 @@ describe("updateNpmInstalledPlugins", () => {
         pluginId: "diagnostics-otel",
         targetDir: "/tmp/diagnostics-otel",
         version: "2026.5.4",
-        clawhubPackage: "@openclaw/diagnostics-otel",
+        clawhubPackage: "@afora/diagnostics-otel",
       }),
     );
 
     const config = createClawHubInstallConfig({
       pluginId: "diagnostics-otel",
-      clawhubPackage: "@openclaw/diagnostics-otel",
-      spec: "clawhub:@openclaw/diagnostics-otel@2026.5.3",
+      clawhubPackage: "@afora/diagnostics-otel",
+      spec: "clawhub:@afora/diagnostics-otel@2026.5.3",
     });
     const result = await updateNpmInstalledPlugins({
       config: {
@@ -2860,13 +2860,13 @@ describe("updateNpmInstalledPlugins", () => {
       syncOfficialPluginInstalls: true,
     });
 
-    expect(clawHubInstallCall()?.spec).toBe("clawhub:@openclaw/diagnostics-otel");
+    expect(clawHubInstallCall()?.spec).toBe("clawhub:@afora/diagnostics-otel");
     expect(clawHubInstallCall()?.expectedPluginId).toBe("diagnostics-otel");
     expectRecordFields(result.config.plugins?.installs?.["diagnostics-otel"], {
       source: "clawhub",
-      spec: "clawhub:@openclaw/diagnostics-otel",
+      spec: "clawhub:@afora/diagnostics-otel",
       version: "2026.5.4",
-      clawhubPackage: "@openclaw/diagnostics-otel",
+      clawhubPackage: "@afora/diagnostics-otel",
       clawhubChannel: "official",
     });
     expect(result.config.plugins?.entries?.["diagnostics-otel"]).toEqual({
@@ -2881,7 +2881,7 @@ describe("updateNpmInstalledPlugins", () => {
         pluginId: "diagnostics-prometheus",
         targetDir: "/tmp/diagnostics-prometheus",
         version: "2026.5.4",
-        clawhubPackage: "@openclaw/diagnostics-prometheus",
+        clawhubPackage: "@afora/diagnostics-prometheus",
       }),
     );
 
@@ -2891,7 +2891,7 @@ describe("updateNpmInstalledPlugins", () => {
           installs: {
             "diagnostics-prometheus": {
               source: "clawhub",
-              spec: "clawhub:@openclaw/diagnostics-prometheus@2026.5.3",
+              spec: "clawhub:@afora/diagnostics-prometheus@2026.5.3",
               installPath: "/tmp/diagnostics-prometheus",
             },
           },
@@ -2900,13 +2900,13 @@ describe("updateNpmInstalledPlugins", () => {
       syncOfficialPluginInstalls: true,
     });
 
-    expect(clawHubInstallCall()?.spec).toBe("clawhub:@openclaw/diagnostics-prometheus");
+    expect(clawHubInstallCall()?.spec).toBe("clawhub:@afora/diagnostics-prometheus");
     expect(clawHubInstallCall()?.expectedPluginId).toBe("diagnostics-prometheus");
     expectRecordFields(result.config.plugins?.installs?.["diagnostics-prometheus"], {
       source: "clawhub",
-      spec: "clawhub:@openclaw/diagnostics-prometheus",
+      spec: "clawhub:@afora/diagnostics-prometheus",
       version: "2026.5.4",
-      clawhubPackage: "@openclaw/diagnostics-prometheus",
+      clawhubPackage: "@afora/diagnostics-prometheus",
       clawhubChannel: "official",
     });
   });
@@ -2931,7 +2931,7 @@ describe("updateNpmInstalledPlugins", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const result = await updateNpmInstalledPlugins({
       config,
@@ -2981,7 +2981,7 @@ describe("updateNpmInstalledPlugins", () => {
           contextEngine: "demo",
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const result = await updateNpmInstalledPlugins({
       config,
@@ -2993,7 +2993,7 @@ describe("updateNpmInstalledPlugins", () => {
     expect(npmInstallCall()?.spec).toBe("@acme/demo");
     expect(npmInstallCall()?.expectedPluginId).toBe("demo");
     const message =
-      'Disabled "demo" after plugin update failure; OpenClaw will continue without it. Failed to update demo: registry timeout';
+      'Disabled "demo" after plugin update failure; Afora will continue without it. Failed to update demo: registry timeout';
     expect(warn).toHaveBeenCalledWith(message);
     expect(result.changed).toBe(true);
     expect(result.config.plugins?.entries?.demo).toEqual({
@@ -3112,7 +3112,7 @@ describe("updateNpmInstalledPlugins", () => {
       warning:
         "╭─ WARNING - ClawHub found security risks in this release ─╮\n│ • Finding: suspicious payload strings │\n╰───────────────────────────────────────────────────────────────────────╯",
     });
-    const installPath = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-update-missing-"));
+    const installPath = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-update-missing-"));
     tempDirs.push(installPath);
     const config = createClawHubInstallConfig({ installPath });
     config.plugins = {
@@ -3133,7 +3133,7 @@ describe("updateNpmInstalledPlugins", () => {
 
     expect(clawHubInstallCall()?.spec).toBe("clawhub:demo");
     const message =
-      'Disabled "demo" after plugin update failure; OpenClaw will continue without it. Failed to update demo: Update cancelled; rerun with --acknowledge-clawhub-risk to continue after reviewing the warning. (ClawHub clawhub:demo).';
+      'Disabled "demo" after plugin update failure; Afora will continue without it. Failed to update demo: Update cancelled; rerun with --acknowledge-clawhub-risk to continue after reviewing the warning. (ClawHub clawhub:demo).';
     expect(result.changed).toBe(true);
     expect(result.config.plugins?.entries?.demo).toEqual({
       enabled: false,
@@ -3177,7 +3177,7 @@ describe("updateNpmInstalledPlugins", () => {
       memory: "memory-core",
     });
     const message =
-      'Disabled "demo" after plugin update failure; OpenClaw will continue without it. Failed to update demo: ClawHub blocked this release; update was not started. (ClawHub clawhub:demo).';
+      'Disabled "demo" after plugin update failure; Afora will continue without it. Failed to update demo: ClawHub blocked this release; update was not started. (ClawHub clawhub:demo).';
     expect(warn).toHaveBeenCalledWith(message);
     expect(result.outcomes).toEqual([
       {
@@ -3201,14 +3201,14 @@ describe("updateNpmInstalledPlugins", () => {
           actualIntegrity: "sha512-new",
           resolution: {
             integrity: "sha512-new",
-            resolvedSpec: "@opik/opik-openclaw@0.2.5",
+            resolvedSpec: "@opik/opik-afora@0.2.5",
             version: "0.2.5",
           },
         });
         if (proceed === false) {
           return {
             ok: false,
-            error: "aborted: npm package integrity drift detected for @opik/opik-openclaw@0.2.5",
+            error: "aborted: npm package integrity drift detected for @opik/opik-afora@0.2.5",
           };
         }
         return createSuccessfulNpmUpdateResult();
@@ -3216,24 +3216,24 @@ describe("updateNpmInstalledPlugins", () => {
     );
 
     const config = createNpmInstallConfig({
-      pluginId: "opik-openclaw",
-      spec: "@opik/opik-openclaw@0.2.5",
+      pluginId: "opik-afora",
+      spec: "@opik/opik-afora@0.2.5",
       integrity: "sha512-old",
-      installPath: "/tmp/opik-openclaw",
+      installPath: "/tmp/opik-afora",
     });
-    const result = await updatePlugin(config, "opik-openclaw", { logger: { warn } });
+    const result = await updatePlugin(config, "opik-afora", { logger: { warn } });
 
     expect(warn).toHaveBeenCalledWith(
-      'Integrity drift for "opik-openclaw" (@opik/opik-openclaw@0.2.5): expected sha512-old, got sha512-new',
+      'Integrity drift for "opik-afora" (@opik/opik-afora@0.2.5): expected sha512-old, got sha512-new',
     );
     expect(result.changed).toBe(false);
     expect(result.config).toBe(config);
     expect(result.outcomes).toEqual([
       {
-        pluginId: "opik-openclaw",
+        pluginId: "opik-afora",
         status: "error",
         message:
-          "Failed to update opik-openclaw: aborted: npm package integrity drift detected for @opik/opik-openclaw@0.2.5",
+          "Failed to update opik-afora: aborted: npm package integrity drift detected for @opik/opik-afora@0.2.5",
       },
     ]);
   });
@@ -3244,15 +3244,15 @@ describe("updateNpmInstalledPlugins", () => {
       installerResult: {
         ok: false,
         code: "npm_package_not_found",
-        error: "Package not found on npm: @openclaw/missing.",
+        error: "Package not found on npm: @afora/missing.",
       },
       config: createNpmInstallConfig({
         pluginId: "missing",
-        spec: "@openclaw/missing",
+        spec: "@afora/missing",
         installPath: "/tmp/missing",
       }),
       pluginId: "missing",
-      expectedMessage: "Failed to check missing: npm package not found for @openclaw/missing.",
+      expectedMessage: "Failed to check missing: npm package not found for @afora/missing.",
     },
     {
       name: "falls back to raw installer error for unknown error codes",
@@ -3292,43 +3292,43 @@ describe("updateNpmInstalledPlugins", () => {
       name: "reuses a recorded npm dist-tag spec for id-based updates",
       installerResult: {
         ok: true,
-        pluginId: "openclaw-codex-app-server",
-        targetDir: "/tmp/openclaw-codex-app-server",
+        pluginId: "afora-codex-app-server",
+        targetDir: "/tmp/afora-codex-app-server",
         version: "0.2.0-beta.4",
         extensions: ["index.ts"],
       },
       config: createCodexAppServerInstallConfig({
-        spec: "openclaw-codex-app-server@beta",
-        resolvedName: "openclaw-codex-app-server",
-        resolvedSpec: "openclaw-codex-app-server@0.2.0-beta.3",
+        spec: "afora-codex-app-server@beta",
+        resolvedName: "afora-codex-app-server",
+        resolvedSpec: "afora-codex-app-server@0.2.0-beta.3",
       }),
-      expectedSpec: "openclaw-codex-app-server@beta",
+      expectedSpec: "afora-codex-app-server@beta",
       expectedVersion: "0.2.0-beta.4",
     },
     {
       name: "uses and persists an explicit npm spec override during updates",
       installerResult: {
         ok: true,
-        pluginId: "openclaw-codex-app-server",
-        targetDir: "/tmp/openclaw-codex-app-server",
+        pluginId: "afora-codex-app-server",
+        targetDir: "/tmp/afora-codex-app-server",
         version: "0.2.0-beta.4",
         extensions: ["index.ts"],
         npmResolution: {
-          name: "openclaw-codex-app-server",
+          name: "afora-codex-app-server",
           version: "0.2.0-beta.4",
-          resolvedSpec: "openclaw-codex-app-server@0.2.0-beta.4",
+          resolvedSpec: "afora-codex-app-server@0.2.0-beta.4",
         },
       },
       config: createCodexAppServerInstallConfig({
-        spec: "openclaw-codex-app-server",
+        spec: "afora-codex-app-server",
       }),
       specOverrides: {
-        "openclaw-codex-app-server": "openclaw-codex-app-server@beta",
+        "afora-codex-app-server": "afora-codex-app-server@beta",
       },
-      expectedSpec: "openclaw-codex-app-server@beta",
-      expectedRecordSpec: "openclaw-codex-app-server@beta",
+      expectedSpec: "afora-codex-app-server@beta",
+      expectedRecordSpec: "afora-codex-app-server@beta",
       expectedVersion: "0.2.0-beta.4",
-      expectedResolvedSpec: "openclaw-codex-app-server@0.2.0-beta.4",
+      expectedResolvedSpec: "afora-codex-app-server@0.2.0-beta.4",
     },
   ] as const)(
     "$name",
@@ -3345,13 +3345,13 @@ describe("updateNpmInstalledPlugins", () => {
 
       const result = await updatePlugin(
         config,
-        "openclaw-codex-app-server",
+        "afora-codex-app-server",
         specOverrides ? { specOverrides } : {},
       );
 
       expectNpmUpdateCall({
         spec: expectedSpec,
-        expectedPluginId: "openclaw-codex-app-server",
+        expectedPluginId: "afora-codex-app-server",
       });
       expectCodexAppServerInstallState({
         result,
@@ -3365,69 +3365,69 @@ describe("updateNpmInstalledPlugins", () => {
   it("preserves explicit official npm tag overrides during manual updates", async () => {
     const { config } = createNpmUpdateFixture({
       pluginId: "acpx",
-      packageName: "@openclaw/acpx",
+      packageName: "@afora/acpx",
       installedVersion: "2026.5.2",
       registryVersion: "2026.5.3-beta.1",
       installerVersion: "2026.5.3-beta.1",
-      installerResolvedSpec: "@openclaw/acpx@2026.5.3-beta.1",
+      installerResolvedSpec: "@afora/acpx@2026.5.3-beta.1",
     });
     const result = await updatePlugin(config, "acpx", {
-      specOverrides: { acpx: "@openclaw/acpx@beta" },
+      specOverrides: { acpx: "@afora/acpx@beta" },
     });
 
     expectNpmUpdateCall({
-      spec: "@openclaw/acpx@beta",
+      spec: "@afora/acpx@beta",
       expectedPluginId: "acpx",
     });
     expectRecordFields(result.config.plugins?.installs?.acpx, {
-      spec: "@openclaw/acpx@beta",
+      spec: "@afora/acpx@beta",
       version: "2026.5.3-beta.1",
-      resolvedSpec: "@openclaw/acpx@2026.5.3-beta.1",
+      resolvedSpec: "@afora/acpx@2026.5.3-beta.1",
     });
   });
 
   it("tries npm beta for default npm specs on beta channel and preserves the default selector", async () => {
     installPluginFromNpmSpecMock.mockResolvedValue(
       createSuccessfulNpmUpdateResult({
-        pluginId: "openclaw-codex-app-server",
-        targetDir: "/tmp/openclaw-codex-app-server",
+        pluginId: "afora-codex-app-server",
+        targetDir: "/tmp/afora-codex-app-server",
         version: "0.2.0-beta.4",
         npmResolution: {
-          name: "openclaw-codex-app-server",
+          name: "afora-codex-app-server",
           version: "0.2.0-beta.4",
-          resolvedSpec: "openclaw-codex-app-server@0.2.0-beta.4",
+          resolvedSpec: "afora-codex-app-server@0.2.0-beta.4",
         },
       }),
     );
 
     const result = await updateNpmInstalledPlugins({
       config: createCodexAppServerInstallConfig({
-        spec: "openclaw-codex-app-server",
+        spec: "afora-codex-app-server",
       }),
-      pluginIds: ["openclaw-codex-app-server"],
+      pluginIds: ["afora-codex-app-server"],
       updateChannel: "beta",
     });
 
     expectNpmUpdateCall({
-      spec: "openclaw-codex-app-server@beta",
-      expectedPluginId: "openclaw-codex-app-server",
+      spec: "afora-codex-app-server@beta",
+      expectedPluginId: "afora-codex-app-server",
     });
     expectCodexAppServerInstallState({
       result,
-      spec: "openclaw-codex-app-server",
+      spec: "afora-codex-app-server",
       version: "0.2.0-beta.4",
-      resolvedSpec: "openclaw-codex-app-server@0.2.0-beta.4",
+      resolvedSpec: "afora-codex-app-server@0.2.0-beta.4",
     });
   });
 
   it("targets the exact core version for official extended-stable updates and preserves intent", async () => {
     const { config } = createNpmUpdateFixture({
       pluginId: "acpx",
-      packageName: "@openclaw/acpx",
+      packageName: "@afora/acpx",
       installedVersion: "2026.7.21",
       registryVersion: "2026.7.33",
       installerVersion: "2026.7.33",
-      installerResolvedSpec: "@openclaw/acpx@2026.7.33",
+      installerResolvedSpec: "@afora/acpx@2026.7.33",
     });
     const result = await updatePlugin(config, "acpx", {
       syncOfficialPluginInstalls: true,
@@ -3436,22 +3436,22 @@ describe("updateNpmInstalledPlugins", () => {
     });
 
     expectNpmUpdateCall({
-      spec: "@openclaw/acpx@2026.7.33",
+      spec: "@afora/acpx@2026.7.33",
       expectedPluginId: "acpx",
     });
     expectRecordFields(result.config.plugins?.installs?.acpx, {
-      spec: "@openclaw/acpx",
+      spec: "@afora/acpx",
       version: "2026.7.33",
-      resolvedSpec: "@openclaw/acpx@2026.7.33",
+      resolvedSpec: "@afora/acpx@2026.7.33",
     });
   });
 
   it("preserves an explicit official pin during extended-stable updates", async () => {
     const { config } = createNpmUpdateFixture({
       pluginId: "acpx",
-      packageName: "@openclaw/acpx",
+      packageName: "@afora/acpx",
       installedVersion: "2026.6.33",
-      spec: "@openclaw/acpx@2026.6.33",
+      spec: "@afora/acpx@2026.6.33",
       installerVersion: "2026.6.33",
     });
     await updatePlugin(config, "acpx", {
@@ -3462,7 +3462,7 @@ describe("updateNpmInstalledPlugins", () => {
     });
 
     expectNpmUpdateCall({
-      spec: "@openclaw/acpx@2026.6.33",
+      spec: "@afora/acpx@2026.6.33",
       expectedPluginId: "acpx",
     });
   });
@@ -3470,28 +3470,28 @@ describe("updateNpmInstalledPlugins", () => {
   it("lets an explicit bare official spec opt a legacy pin into exact-core tracking", async () => {
     const { config } = createNpmUpdateFixture({
       pluginId: "acpx",
-      packageName: "@openclaw/acpx",
+      packageName: "@afora/acpx",
       installedVersion: "2026.6.21",
       registryVersion: "2026.7.33",
-      spec: "@openclaw/acpx@2026.6.21",
+      spec: "@afora/acpx@2026.6.21",
       installerVersion: "2026.7.33",
-      installerResolvedSpec: "@openclaw/acpx@2026.7.33",
+      installerResolvedSpec: "@afora/acpx@2026.7.33",
     });
     const result = await updatePlugin(config, "acpx", {
-      specOverrides: { acpx: "@openclaw/acpx" },
+      specOverrides: { acpx: "@afora/acpx" },
       syncOfficialPluginInstalls: true,
       officialPluginUpdateChannel: "extended-stable",
       coreVersion: "2026.7.33",
     });
 
     expectNpmUpdateCall({
-      spec: "@openclaw/acpx@2026.7.33",
+      spec: "@afora/acpx@2026.7.33",
       expectedPluginId: "acpx",
     });
     expectRecordFields(result.config.plugins?.installs?.acpx, {
-      spec: "@openclaw/acpx",
+      spec: "@afora/acpx",
       version: "2026.7.33",
-      resolvedSpec: "@openclaw/acpx@2026.7.33",
+      resolvedSpec: "@afora/acpx@2026.7.33",
     });
   });
 
@@ -3500,53 +3500,53 @@ describe("updateNpmInstalledPlugins", () => {
       .mockResolvedValueOnce({
         ok: false,
         error:
-          "npm ERR! code ETARGET\nnpm ERR! No matching version found for openclaw-codex-app-server@beta.",
+          "npm ERR! code ETARGET\nnpm ERR! No matching version found for afora-codex-app-server@beta.",
       })
       .mockResolvedValueOnce(
         createSuccessfulNpmUpdateResult({
-          pluginId: "openclaw-codex-app-server",
-          targetDir: "/tmp/openclaw-codex-app-server",
+          pluginId: "afora-codex-app-server",
+          targetDir: "/tmp/afora-codex-app-server",
           version: "0.2.6",
           npmResolution: {
-            name: "openclaw-codex-app-server",
+            name: "afora-codex-app-server",
             version: "0.2.6",
-            resolvedSpec: "openclaw-codex-app-server@0.2.6",
+            resolvedSpec: "afora-codex-app-server@0.2.6",
           },
         }),
       );
 
     const config = createCodexAppServerInstallConfig({
-      spec: "openclaw-codex-app-server",
+      spec: "afora-codex-app-server",
     });
     const warnMessages: string[] = [];
-    const result = await updatePlugin(config, "openclaw-codex-app-server", {
+    const result = await updatePlugin(config, "afora-codex-app-server", {
       updateChannel: "beta",
       logger: { warn: (msg) => warnMessages.push(msg) },
     });
 
-    expect(npmInstallCall(0)?.spec).toBe("openclaw-codex-app-server@beta");
-    expect(npmInstallCall(1)?.spec).toBe("openclaw-codex-app-server");
+    expect(npmInstallCall(0)?.spec).toBe("afora-codex-app-server@beta");
+    expect(npmInstallCall(1)?.spec).toBe("afora-codex-app-server");
     expect(npmInstallCall(1)?.config).toBe(config);
     expect(warnMessages).toEqual([
-      'Plugin "openclaw-codex-app-server" has no beta npm release for openclaw-codex-app-server@beta; using openclaw-codex-app-server instead. Core update can still complete.',
+      'Plugin "afora-codex-app-server" has no beta npm release for afora-codex-app-server@beta; using afora-codex-app-server instead. Core update can still complete.',
     ]);
     expectCodexAppServerInstallState({
       result,
-      spec: "openclaw-codex-app-server",
+      spec: "afora-codex-app-server",
       version: "0.2.6",
-      resolvedSpec: "openclaw-codex-app-server@0.2.6",
+      resolvedSpec: "afora-codex-app-server@0.2.6",
     });
     expect(result.outcomes[0]?.message).toBe(
-      "Updated openclaw-codex-app-server: unknown -> 0.2.6. (warning: beta channel fallback used openclaw-codex-app-server because openclaw-codex-app-server@beta could not be used).",
+      "Updated afora-codex-app-server: unknown -> 0.2.6. (warning: beta channel fallback used afora-codex-app-server because afora-codex-app-server@beta could not be used).",
     );
     expect(result.outcomes[0]?.channelFallback).toEqual({
-      requestedSpec: "openclaw-codex-app-server@beta",
-      usedSpec: "openclaw-codex-app-server",
+      requestedSpec: "afora-codex-app-server@beta",
+      usedSpec: "afora-codex-app-server",
       requestedLabel: "@beta",
       usedLabel: "@latest",
       reason: "unavailable",
       message:
-        "plugin channel fallback: openclaw-codex-app-server used @latest because @beta was unavailable",
+        "plugin channel fallback: afora-codex-app-server used @latest because @beta was unavailable",
     });
   });
 
@@ -3555,35 +3555,35 @@ describe("updateNpmInstalledPlugins", () => {
       .mockResolvedValueOnce({
         ok: false,
         error:
-          "npm ERR! code ETARGET\nnpm ERR! No matching version found for openclaw-codex-app-server@beta.",
+          "npm ERR! code ETARGET\nnpm ERR! No matching version found for afora-codex-app-server@beta.",
       })
       .mockResolvedValueOnce(
         createSuccessfulNpmUpdateResult({
-          pluginId: "openclaw-codex-app-server",
-          targetDir: "/tmp/openclaw-codex-app-server",
+          pluginId: "afora-codex-app-server",
+          targetDir: "/tmp/afora-codex-app-server",
           version: "0.2.6",
           npmResolution: {
-            name: "openclaw-codex-app-server",
+            name: "afora-codex-app-server",
             version: "0.2.6",
-            resolvedSpec: "openclaw-codex-app-server@0.2.6",
+            resolvedSpec: "afora-codex-app-server@0.2.6",
           },
         }),
       );
 
     const result = await updateNpmInstalledPlugins({
       config: createCodexAppServerInstallConfig({
-        spec: "openclaw-codex-app-server",
+        spec: "afora-codex-app-server",
       }),
-      pluginIds: ["openclaw-codex-app-server"],
+      pluginIds: ["afora-codex-app-server"],
       updateChannel: "beta",
       dryRun: true,
     });
 
     expect(result.outcomes[0]?.message).toBe(
-      "Would update openclaw-codex-app-server: unknown -> 0.2.6. (warning: beta channel fallback would use openclaw-codex-app-server because openclaw-codex-app-server@beta could not be used).",
+      "Would update afora-codex-app-server: unknown -> 0.2.6. (warning: beta channel fallback would use afora-codex-app-server because afora-codex-app-server@beta could not be used).",
     );
     expect(result.outcomes[0]?.channelFallback?.message).toBe(
-      "plugin channel fallback: openclaw-codex-app-server would use @latest because @beta was unavailable",
+      "plugin channel fallback: afora-codex-app-server would use @latest because @beta was unavailable",
     );
   });
 
@@ -3595,13 +3595,13 @@ describe("updateNpmInstalledPlugins", () => {
       })
       .mockResolvedValueOnce(
         createSuccessfulNpmUpdateResult({
-          pluginId: "openclaw-codex-app-server",
-          targetDir: "/tmp/openclaw-codex-app-server",
+          pluginId: "afora-codex-app-server",
+          targetDir: "/tmp/afora-codex-app-server",
           version: "0.2.6",
           npmResolution: {
-            name: "openclaw-codex-app-server",
+            name: "afora-codex-app-server",
             version: "0.2.6",
-            resolvedSpec: "openclaw-codex-app-server@0.2.6",
+            resolvedSpec: "afora-codex-app-server@0.2.6",
           },
         }),
       );
@@ -3609,32 +3609,32 @@ describe("updateNpmInstalledPlugins", () => {
     const warnMessages: string[] = [];
     const result = await updateNpmInstalledPlugins({
       config: createCodexAppServerInstallConfig({
-        spec: "openclaw-codex-app-server",
+        spec: "afora-codex-app-server",
       }),
-      pluginIds: ["openclaw-codex-app-server"],
+      pluginIds: ["afora-codex-app-server"],
       updateChannel: "beta",
       logger: { warn: (msg) => warnMessages.push(msg) },
     });
 
-    expect(npmInstallCall(0)?.spec).toBe("openclaw-codex-app-server@beta");
-    expect(npmInstallCall(1)?.spec).toBe("openclaw-codex-app-server");
+    expect(npmInstallCall(0)?.spec).toBe("afora-codex-app-server@beta");
+    expect(npmInstallCall(1)?.spec).toBe("afora-codex-app-server");
     expect(warnMessages).toEqual([
-      'Plugin "openclaw-codex-app-server" failed beta npm update for openclaw-codex-app-server@beta; using openclaw-codex-app-server instead. Core update can still complete.',
+      'Plugin "afora-codex-app-server" failed beta npm update for afora-codex-app-server@beta; using afora-codex-app-server instead. Core update can still complete.',
     ]);
     expectCodexAppServerInstallState({
       result,
-      spec: "openclaw-codex-app-server",
+      spec: "afora-codex-app-server",
       version: "0.2.6",
-      resolvedSpec: "openclaw-codex-app-server@0.2.6",
+      resolvedSpec: "afora-codex-app-server@0.2.6",
     });
     expect(result.outcomes[0]?.message).toBe(
-      "Updated openclaw-codex-app-server: unknown -> 0.2.6. (warning: beta channel fallback used openclaw-codex-app-server because openclaw-codex-app-server@beta could not be used).",
+      "Updated afora-codex-app-server: unknown -> 0.2.6. (warning: beta channel fallback used afora-codex-app-server because afora-codex-app-server@beta could not be used).",
     );
     expect(result.outcomes[0]?.channelFallback).toMatchObject({
       requestedLabel: "@beta",
       usedLabel: "@latest",
       reason: "failed",
-      message: "plugin channel fallback: openclaw-codex-app-server used @latest after @beta failed",
+      message: "plugin channel fallback: afora-codex-app-server used @latest after @beta failed",
     });
   });
 
@@ -3648,15 +3648,15 @@ describe("updateNpmInstalledPlugins", () => {
       });
 
       const result = await updatePlugin(
-        createCodexAppServerInstallConfig({ spec: "openclaw-codex-app-server" }),
-        "openclaw-codex-app-server",
+        createCodexAppServerInstallConfig({ spec: "afora-codex-app-server" }),
+        "afora-codex-app-server",
         { updateChannel: "beta" },
       );
 
       expect(installPluginFromNpmSpecMock).toHaveBeenCalledTimes(1);
       expect(result.outcomes[0]).toMatchObject({
         status: "error",
-        message: `Failed to update openclaw-codex-app-server: install policy returned ${code}`,
+        message: `Failed to update afora-codex-app-server: install policy returned ${code}`,
       });
     },
   );
@@ -3689,8 +3689,8 @@ describe("updateNpmInstalledPlugins", () => {
       });
 
     const result = await updatePlugin(
-      createCodexAppServerInstallConfig({ spec: "openclaw-codex-app-server" }),
-      "openclaw-codex-app-server",
+      createCodexAppServerInstallConfig({ spec: "afora-codex-app-server" }),
+      "afora-codex-app-server",
       { updateChannel: "beta", ...(dryRun ? { dryRun: true } : {}) },
     );
 
@@ -3699,16 +3699,16 @@ describe("updateNpmInstalledPlugins", () => {
     }
     expect(result.outcomes).toEqual([
       {
-        pluginId: "openclaw-codex-app-server",
+        pluginId: "afora-codex-app-server",
         status: "error",
-        message: `Failed to ${action} openclaw-codex-app-server: npm package not found for openclaw-codex-app-server.`,
+        message: `Failed to ${action} afora-codex-app-server: npm package not found for afora-codex-app-server.`,
         channelFallback: {
-          requestedSpec: "openclaw-codex-app-server@beta",
-          usedSpec: "openclaw-codex-app-server",
+          requestedSpec: "afora-codex-app-server@beta",
+          usedSpec: "afora-codex-app-server",
           requestedLabel: "@beta",
           usedLabel: "@latest",
           reason: "failed",
-          message: `plugin channel fallback: openclaw-codex-app-server ${fallbackVerb} @latest after @beta failed`,
+          message: `plugin channel fallback: afora-codex-app-server ${fallbackVerb} @latest after @beta failed`,
         },
       },
     ]);
@@ -3717,24 +3717,24 @@ describe("updateNpmInstalledPlugins", () => {
   it("preserves explicit npm tags when updating on the beta channel", async () => {
     installPluginFromNpmSpecMock.mockResolvedValue(
       createSuccessfulNpmUpdateResult({
-        pluginId: "openclaw-codex-app-server",
-        targetDir: "/tmp/openclaw-codex-app-server",
+        pluginId: "afora-codex-app-server",
+        targetDir: "/tmp/afora-codex-app-server",
         version: "0.2.0-rc.1",
       }),
     );
 
     await updateNpmInstalledPlugins({
       config: createCodexAppServerInstallConfig({
-        spec: "openclaw-codex-app-server@rc",
+        spec: "afora-codex-app-server@rc",
       }),
-      pluginIds: ["openclaw-codex-app-server"],
+      pluginIds: ["afora-codex-app-server"],
       updateChannel: "beta",
       dryRun: true,
     });
 
     expectNpmUpdateCall({
-      spec: "openclaw-codex-app-server@rc",
-      expectedPluginId: "openclaw-codex-app-server",
+      spec: "afora-codex-app-server@rc",
+      expectedPluginId: "afora-codex-app-server",
     });
   });
 
@@ -3852,25 +3852,25 @@ describe("updateNpmInstalledPlugins", () => {
         pluginId: "discord",
         targetDir: "/tmp/discord",
         version: "2026.5.4-beta.1",
-        clawhubPackage: "@openclaw/discord",
+        clawhubPackage: "@afora/discord",
       }),
     );
 
     const result = await updatePlugin(
       createClawHubInstallConfig({
         pluginId: "discord",
-        clawhubPackage: "@openclaw/discord",
+        clawhubPackage: "@afora/discord",
       }),
       "discord",
       { officialPluginUpdateChannel: "beta" },
     );
 
-    expect(clawHubInstallCall()?.spec).toBe("clawhub:@openclaw/discord@beta");
+    expect(clawHubInstallCall()?.spec).toBe("clawhub:@afora/discord@beta");
     expectRecordFields(result.config.plugins?.installs?.discord, {
       source: "clawhub",
-      spec: "clawhub:@openclaw/discord",
+      spec: "clawhub:@afora/discord",
       version: "2026.5.4-beta.1",
-      clawhubPackage: "@openclaw/discord",
+      clawhubPackage: "@afora/discord",
     });
   });
 
@@ -3880,21 +3880,21 @@ describe("updateNpmInstalledPlugins", () => {
         pluginId: "discord",
         targetDir: "/tmp/discord",
         version: "2026.5.4",
-        clawhubPackage: "@openclaw/discord",
+        clawhubPackage: "@afora/discord",
       }),
     );
 
     await updatePlugin(
       createClawHubInstallConfig({
         pluginId: "discord",
-        clawhubPackage: "@openclaw/discord",
+        clawhubPackage: "@afora/discord",
         clawhubUrl: "https://custom-clawhub.example",
       }),
       "discord",
       { officialPluginUpdateChannel: "beta" },
     );
 
-    expect(clawHubInstallCall()?.spec).toBe("clawhub:@openclaw/discord");
+    expect(clawHubInstallCall()?.spec).toBe("clawhub:@afora/discord");
   });
 
   it("falls back to the default ClawHub spec when a beta release is unavailable", async () => {
@@ -3939,14 +3939,14 @@ describe("updateNpmInstalledPlugins", () => {
   it("does not fall back to npm for blocked official ClawHub artifact downloads", async () => {
     const warnMessages: string[] = [];
     const installPath = createInstalledPackageDir({
-      name: "@openclaw/discord",
+      name: "@afora/discord",
       version: "2026.5.12",
     });
     installPluginFromClawHubMock.mockResolvedValueOnce({
       ok: false,
       code: "clawhub_download_blocked",
       error:
-        'ClawHub blocked artifact download for "@openclaw/discord@2026.5.16-beta.5"; install was not started. ClawHub /api/v1/packages/%40openclaw%2Fdiscord/versions/2026.5.16-beta.5/artifact/download failed (403): Blocked: this package release has been flagged as malicious and cannot be downloaded.',
+        'ClawHub blocked artifact download for "@afora/discord@2026.5.16-beta.5"; install was not started. ClawHub /api/v1/packages/%40afora%2Fdiscord/versions/2026.5.16-beta.5/artifact/download failed (403): Blocked: this package release has been flagged as malicious and cannot be downloaded.',
       version: "2026.5.16-beta.5",
     });
 
@@ -3954,7 +3954,7 @@ describe("updateNpmInstalledPlugins", () => {
       createClawHubInstallConfig({
         pluginId: "discord",
         installPath,
-        clawhubPackage: "@openclaw/discord",
+        clawhubPackage: "@afora/discord",
       }),
       "discord",
       {
@@ -3964,14 +3964,14 @@ describe("updateNpmInstalledPlugins", () => {
       },
     );
 
-    expect(clawHubInstallCall()?.spec).toBe("clawhub:@openclaw/discord@beta");
+    expect(clawHubInstallCall()?.spec).toBe("clawhub:@afora/discord@beta");
     expect(installPluginFromNpmSpecMock).not.toHaveBeenCalled();
     expect(result.config.plugins?.entries?.discord?.enabled).toBeUndefined();
     expectRecordFields(result.config.plugins?.installs?.discord, {
       source: "clawhub",
-      spec: "clawhub:@openclaw/discord",
+      spec: "clawhub:@afora/discord",
       installPath,
-      clawhubPackage: "@openclaw/discord",
+      clawhubPackage: "@afora/discord",
     });
     expect(result.outcomes).toEqual([
       {
@@ -3980,7 +3980,7 @@ describe("updateNpmInstalledPlugins", () => {
         code: "clawhub_download_blocked",
         currentVersion: "2026.5.12",
         message:
-          'Skipped discord ClawHub update: ClawHub blocked artifact download for "@openclaw/discord@2026.5.16-beta.5"; install was not started. ClawHub /api/v1/packages/%40openclaw%2Fdiscord/versions/2026.5.16-beta.5/artifact/download failed (403): Blocked: this package release has been flagged as malicious and cannot be downloaded. Existing installed plugin left unchanged.',
+          'Skipped discord ClawHub update: ClawHub blocked artifact download for "@afora/discord@2026.5.16-beta.5"; install was not started. ClawHub /api/v1/packages/%40afora%2Fdiscord/versions/2026.5.16-beta.5/artifact/download failed (403): Blocked: this package release has been flagged as malicious and cannot be downloaded. Existing installed plugin left unchanged.',
       },
     ]);
     expect(warnMessages).toStrictEqual([]);
@@ -3989,7 +3989,7 @@ describe("updateNpmInstalledPlugins", () => {
   it("uses the default npm spec when beta ClawHub falls back before an artifact block", async () => {
     const warnMessages: string[] = [];
     const installPath = createInstalledPackageDir({
-      name: "@openclaw/discord",
+      name: "@afora/discord",
       version: "2026.5.12",
     });
     installPluginFromClawHubMock
@@ -4006,12 +4006,12 @@ describe("updateNpmInstalledPlugins", () => {
     installPluginFromNpmSpecMock.mockResolvedValueOnce(
       createSuccessfulNpmUpdateResult({
         pluginId: "discord",
-        targetDir: "/tmp/openclaw-plugins/discord",
+        targetDir: "/tmp/afora-plugins/discord",
         version: "2026.5.16",
         npmResolution: {
-          name: "@openclaw/discord",
+          name: "@afora/discord",
           version: "2026.5.16",
-          resolvedSpec: "@openclaw/discord@2026.5.16",
+          resolvedSpec: "@afora/discord@2026.5.16",
         },
       }),
     );
@@ -4020,7 +4020,7 @@ describe("updateNpmInstalledPlugins", () => {
       createClawHubInstallConfig({
         pluginId: "discord",
         installPath,
-        clawhubPackage: "@openclaw/discord",
+        clawhubPackage: "@afora/discord",
       }),
       "discord",
       {
@@ -4029,27 +4029,27 @@ describe("updateNpmInstalledPlugins", () => {
       },
     );
 
-    expect(clawHubInstallCall(0)?.spec).toBe("clawhub:@openclaw/discord@beta");
-    expect(clawHubInstallCall(1)?.spec).toBe("clawhub:@openclaw/discord");
-    expect(npmInstallCall()?.spec).toBe("@openclaw/discord");
+    expect(clawHubInstallCall(0)?.spec).toBe("clawhub:@afora/discord@beta");
+    expect(clawHubInstallCall(1)?.spec).toBe("clawhub:@afora/discord");
+    expect(npmInstallCall()?.spec).toBe("@afora/discord");
     expectRecordFields(result.config.plugins?.installs?.discord, {
       source: "npm",
-      spec: "@openclaw/discord@2026.5.16",
-      installPath: "/tmp/openclaw-plugins/discord",
+      spec: "@afora/discord@2026.5.16",
+      installPath: "/tmp/afora-plugins/discord",
       version: "2026.5.16",
     });
     expect(result.outcomes[0]?.message).toBe(
-      "Updated discord: 2026.5.12 -> 2026.5.16. (warning: official ClawHub artifact fallback used @openclaw/discord).",
+      "Updated discord: 2026.5.12 -> 2026.5.16. (warning: official ClawHub artifact fallback used @afora/discord).",
     );
     expect(warnMessages).toEqual([
-      'Plugin "discord" has no beta ClawHub release for clawhub:@openclaw/discord@beta; using clawhub:@openclaw/discord instead. Core update can still complete.',
-      'Plugin "discord" could not download official ClawHub artifact for clawhub:@openclaw/discord; using npm @openclaw/discord instead. Core update can still complete.',
+      'Plugin "discord" has no beta ClawHub release for clawhub:@afora/discord@beta; using clawhub:@afora/discord instead. Core update can still complete.',
+      'Plugin "discord" could not download official ClawHub artifact for clawhub:@afora/discord; using npm @afora/discord instead. Core update can still complete.',
     ]);
   });
 
   it("uses exact-core npm when an official ClawHub install falls back on extended-stable", async () => {
     const installPath = createInstalledPackageDir({
-      name: "@openclaw/discord",
+      name: "@afora/discord",
       version: "2026.6.33",
     });
     installPluginFromClawHubMock.mockResolvedValueOnce({
@@ -4060,12 +4060,12 @@ describe("updateNpmInstalledPlugins", () => {
     installPluginFromNpmSpecMock.mockResolvedValueOnce(
       createSuccessfulNpmUpdateResult({
         pluginId: "discord",
-        targetDir: "/tmp/openclaw-plugins/discord",
+        targetDir: "/tmp/afora-plugins/discord",
         version: "2026.7.33",
         npmResolution: {
-          name: "@openclaw/discord",
+          name: "@afora/discord",
           version: "2026.7.33",
-          resolvedSpec: "@openclaw/discord@2026.7.33",
+          resolvedSpec: "@afora/discord@2026.7.33",
         },
       }),
     );
@@ -4074,7 +4074,7 @@ describe("updateNpmInstalledPlugins", () => {
       createClawHubInstallConfig({
         pluginId: "discord",
         installPath,
-        clawhubPackage: "@openclaw/discord",
+        clawhubPackage: "@afora/discord",
       }),
       "discord",
       {
@@ -4084,18 +4084,18 @@ describe("updateNpmInstalledPlugins", () => {
       },
     );
 
-    expect(npmInstallCall()?.spec).toBe("@openclaw/discord@2026.7.33");
+    expect(npmInstallCall()?.spec).toBe("@afora/discord@2026.7.33");
     expectRecordFields(result.config.plugins?.installs?.discord, {
       source: "npm",
-      spec: "@openclaw/discord",
+      spec: "@afora/discord",
       version: "2026.7.33",
-      resolvedSpec: "@openclaw/discord@2026.7.33",
+      resolvedSpec: "@afora/discord@2026.7.33",
     });
   });
 
   it("reports npm dry-run versions for trusted official ClawHub artifact fallback", async () => {
     const installPath = createInstalledPackageDir({
-      name: "@openclaw/discord",
+      name: "@afora/discord",
       version: "2026.5.16-beta.5",
     });
     installPluginFromClawHubMock.mockResolvedValueOnce({
@@ -4106,12 +4106,12 @@ describe("updateNpmInstalledPlugins", () => {
     installPluginFromNpmSpecMock.mockResolvedValueOnce({
       ok: true,
       pluginId: "discord",
-      targetDir: "/tmp/openclaw-plugins/discord",
+      targetDir: "/tmp/afora-plugins/discord",
       extensions: [],
       npmResolution: {
-        name: "@openclaw/discord",
+        name: "@afora/discord",
         version: "2026.5.16-beta.5",
-        resolvedSpec: "@openclaw/discord@2026.5.16-beta.5",
+        resolvedSpec: "@afora/discord@2026.5.16-beta.5",
       },
     });
 
@@ -4119,7 +4119,7 @@ describe("updateNpmInstalledPlugins", () => {
       createClawHubInstallConfig({
         pluginId: "discord",
         installPath,
-        clawhubPackage: "@openclaw/discord",
+        clawhubPackage: "@afora/discord",
       }),
       "discord",
       {
@@ -4128,7 +4128,7 @@ describe("updateNpmInstalledPlugins", () => {
       },
     );
 
-    expect(npmInstallCall()?.spec).toBe("@openclaw/discord@beta");
+    expect(npmInstallCall()?.spec).toBe("@afora/discord@beta");
     expect(npmInstallCall()?.dryRun).toBe(true);
     expect(result.outcomes).toEqual([
       {
@@ -4137,14 +4137,14 @@ describe("updateNpmInstalledPlugins", () => {
         currentVersion: "2026.5.16-beta.5",
         nextVersion: "2026.5.16-beta.5",
         message:
-          "discord is up to date (2026.5.16-beta.5). (warning: official ClawHub artifact fallback would use @openclaw/discord@beta).",
+          "discord is up to date (2026.5.16-beta.5). (warning: official ClawHub artifact fallback would use @afora/discord@beta).",
       },
     ]);
   });
 
   it("does not fall back to trusted npm from custom ClawHub provenance", async () => {
     const installPath = createInstalledPackageDir({
-      name: "@openclaw/discord",
+      name: "@afora/discord",
       version: "2026.5.12",
     });
     installPluginFromClawHubMock.mockResolvedValueOnce({
@@ -4158,7 +4158,7 @@ describe("updateNpmInstalledPlugins", () => {
         pluginId: "discord",
         installPath,
         clawhubUrl: "https://custom-clawhub.example",
-        clawhubPackage: "@openclaw/discord",
+        clawhubPackage: "@afora/discord",
       }),
       "discord",
       { updateChannel: "beta" },
@@ -4170,7 +4170,7 @@ describe("updateNpmInstalledPlugins", () => {
         pluginId: "discord",
         status: "error",
         message:
-          "Failed to update discord: artifact unavailable (ClawHub clawhub:@openclaw/discord@beta).",
+          "Failed to update discord: artifact unavailable (ClawHub clawhub:@afora/discord@beta).",
       },
     ]);
   });
@@ -4329,8 +4329,8 @@ describe("updateNpmInstalledPlugins", () => {
   it("migrates legacy unscoped install keys when a scoped npm package updates", async () => {
     installPluginFromNpmSpecMock.mockResolvedValue({
       ok: true,
-      pluginId: "@openclaw/voice-call",
-      targetDir: "/tmp/openclaw-voice-call",
+      pluginId: "@afora/voice-call",
+      targetDir: "/tmp/afora-voice-call",
       version: "0.0.2",
       extensions: ["index.ts"],
     });
@@ -4350,7 +4350,7 @@ describe("updateNpmInstalledPlugins", () => {
           installs: {
             "voice-call": {
               source: "npm",
-              spec: "@openclaw/voice-call",
+              spec: "@afora/voice-call",
               installPath: "/tmp/voice-call",
             },
           },
@@ -4359,20 +4359,20 @@ describe("updateNpmInstalledPlugins", () => {
       pluginIds: ["voice-call"],
     });
 
-    expect(npmInstallCall()?.spec).toBe("@openclaw/voice-call");
+    expect(npmInstallCall()?.spec).toBe("@afora/voice-call");
     expect(npmInstallCall()?.expectedPluginId).toBe("voice-call");
-    expect(result.config.plugins?.allow).toEqual(["@openclaw/voice-call"]);
-    expect(result.config.plugins?.deny).toEqual(["@openclaw/voice-call"]);
-    expect(result.config.plugins?.slots?.memory).toBe("@openclaw/voice-call");
-    expect(result.config.plugins?.entries?.["@openclaw/voice-call"]).toEqual({
+    expect(result.config.plugins?.allow).toEqual(["@afora/voice-call"]);
+    expect(result.config.plugins?.deny).toEqual(["@afora/voice-call"]);
+    expect(result.config.plugins?.slots?.memory).toBe("@afora/voice-call");
+    expect(result.config.plugins?.entries?.["@afora/voice-call"]).toEqual({
       enabled: false,
       hooks: { allowPromptInjection: false },
     });
     expect(result.config.plugins?.entries?.["voice-call"]).toBeUndefined();
-    expectRecordFields(result.config.plugins?.installs?.["@openclaw/voice-call"], {
+    expectRecordFields(result.config.plugins?.installs?.["@afora/voice-call"], {
       source: "npm",
-      spec: "@openclaw/voice-call",
-      installPath: "/tmp/openclaw-voice-call",
+      spec: "@afora/voice-call",
+      installPath: "/tmp/afora-voice-call",
       version: "0.0.2",
     });
     expect(result.config.plugins?.installs?.["voice-call"]).toBeUndefined();
@@ -4382,14 +4382,14 @@ describe("updateNpmInstalledPlugins", () => {
     {
       name: "beta",
       params: { officialPluginUpdateChannel: "beta" as const },
-      expectedInstallSpec: "@openclaw/fish-audio-speech@beta",
-      expectedRecordSpec: "@openclaw/fish-audio-speech",
+      expectedInstallSpec: "@afora/fish-audio-speech@beta",
+      expectedRecordSpec: "@afora/fish-audio-speech",
     },
     {
       name: "stable",
       params: { officialPluginUpdateChannel: "stable" as const },
-      expectedInstallSpec: "@openclaw/fish-audio-speech",
-      expectedRecordSpec: "@openclaw/fish-audio-speech",
+      expectedInstallSpec: "@afora/fish-audio-speech",
+      expectedRecordSpec: "@afora/fish-audio-speech",
     },
     {
       name: "extended-stable",
@@ -4397,17 +4397,17 @@ describe("updateNpmInstalledPlugins", () => {
         officialPluginUpdateChannel: "extended-stable" as const,
         coreVersion: "2026.8.1",
       },
-      expectedInstallSpec: "@openclaw/fish-audio-speech@2026.8.1",
-      expectedRecordSpec: "@openclaw/fish-audio-speech",
+      expectedInstallSpec: "@afora/fish-audio-speech@2026.8.1",
+      expectedRecordSpec: "@afora/fish-audio-speech",
     },
     {
       name: "explicit override",
       params: {
         officialPluginUpdateChannel: "beta" as const,
-        specOverrides: { "fish-audio": "@openclaw/fish-audio-speech@next" },
+        specOverrides: { "fish-audio": "@afora/fish-audio-speech@next" },
       },
-      expectedInstallSpec: "@openclaw/fish-audio-speech@next",
-      expectedRecordSpec: "@openclaw/fish-audio-speech@next",
+      expectedInstallSpec: "@afora/fish-audio-speech@next",
+      expectedRecordSpec: "@afora/fish-audio-speech@next",
     },
   ])(
     "selects the $name package line when migrating a manifest-declared legacy id",
@@ -4428,9 +4428,9 @@ describe("updateNpmInstalledPlugins", () => {
             installs: {
               "fish-audio": {
                 source: "npm",
-                spec: "@openclaw/fish-audio-speech@2026.7.2-beta.7",
-                resolvedName: "@openclaw/fish-audio-speech",
-                resolvedSpec: "@openclaw/fish-audio-speech@2026.7.2-beta.7",
+                spec: "@afora/fish-audio-speech@2026.7.2-beta.7",
+                resolvedName: "@afora/fish-audio-speech",
+                resolvedSpec: "@afora/fish-audio-speech@2026.7.2-beta.7",
                 installPath: "/tmp/fish-audio",
               },
             },
@@ -4465,21 +4465,21 @@ describe("updateNpmInstalledPlugins", () => {
         installs: {
           "fish-audio": {
             source: "npm",
-            spec: "@openclaw/fish-audio-speech@2026.7.2-beta.7",
-            resolvedName: "@openclaw/fish-audio-speech",
-            resolvedSpec: "@openclaw/fish-audio-speech@2026.7.2-beta.7",
+            spec: "@afora/fish-audio-speech@2026.7.2-beta.7",
+            resolvedName: "@afora/fish-audio-speech",
+            resolvedSpec: "@afora/fish-audio-speech@2026.7.2-beta.7",
             installPath: "/tmp/fish-audio-legacy",
           },
           "fish-audio-speech": {
             source: "npm",
-            spec: "@openclaw/fish-audio-speech@2026.8.1-beta.1",
-            resolvedName: "@openclaw/fish-audio-speech",
-            resolvedSpec: "@openclaw/fish-audio-speech@2026.8.1-beta.1",
+            spec: "@afora/fish-audio-speech@2026.8.1-beta.1",
+            resolvedName: "@afora/fish-audio-speech",
+            resolvedSpec: "@afora/fish-audio-speech@2026.8.1-beta.1",
             installPath: "/tmp/fish-audio-canonical",
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const result = await updatePlugin(config, "fish-audio");
 
@@ -4509,8 +4509,8 @@ describe("updateNpmInstalledPlugins", () => {
     await updatePlugin(
       createNpmInstallConfig({
         pluginId: "acpx",
-        spec: "@openclaw/acpx@2026.7.2",
-        resolvedName: "@openclaw/acpx",
+        spec: "@afora/acpx@2026.7.2",
+        resolvedName: "@afora/acpx",
         installPath: "/tmp/acpx",
       }),
       "acpx",
@@ -4518,7 +4518,7 @@ describe("updateNpmInstalledPlugins", () => {
     );
 
     expectNpmUpdateCall({
-      spec: "@openclaw/acpx@2026.7.2",
+      spec: "@afora/acpx@2026.7.2",
       expectedPluginId: "acpx",
     });
   });
@@ -4526,8 +4526,8 @@ describe("updateNpmInstalledPlugins", () => {
   it("keeps authored plugin config shape when only the install key migrates", async () => {
     installPluginFromNpmSpecMock.mockResolvedValue({
       ok: true,
-      pluginId: "@openclaw/voice-call",
-      targetDir: "/tmp/openclaw-voice-call",
+      pluginId: "@afora/voice-call",
+      targetDir: "/tmp/afora-voice-call",
       version: "0.0.2",
       extensions: ["index.ts"],
     });
@@ -4538,7 +4538,7 @@ describe("updateNpmInstalledPlugins", () => {
           installs: {
             "voice-call": {
               source: "npm",
-              spec: "@openclaw/voice-call",
+              spec: "@afora/voice-call",
               installPath: "/tmp/voice-call",
             },
           },
@@ -4549,10 +4549,10 @@ describe("updateNpmInstalledPlugins", () => {
 
     expect(result.config.plugins).toEqual({
       installs: {
-        "@openclaw/voice-call": expect.objectContaining({
+        "@afora/voice-call": expect.objectContaining({
           source: "npm",
-          spec: "@openclaw/voice-call",
-          installPath: "/tmp/openclaw-voice-call",
+          spec: "@afora/voice-call",
+          installPath: "/tmp/afora-voice-call",
         }),
       },
     });
@@ -4561,8 +4561,8 @@ describe("updateNpmInstalledPlugins", () => {
   it("migrates context engine slot when a plugin id changes during update", async () => {
     installPluginFromNpmSpecMock.mockResolvedValue({
       ok: true,
-      pluginId: "@openclaw/context-engine",
-      targetDir: "/tmp/openclaw-context-engine",
+      pluginId: "@afora/context-engine",
+      targetDir: "/tmp/afora-context-engine",
       version: "0.0.2",
       extensions: ["index.ts"],
     });
@@ -4574,20 +4574,20 @@ describe("updateNpmInstalledPlugins", () => {
           installs: {
             "context-engine": {
               source: "npm",
-              spec: "@openclaw/context-engine",
+              spec: "@afora/context-engine",
               installPath: "/tmp/context-engine",
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       pluginIds: ["context-engine"],
     });
 
-    expect(result.config.plugins?.slots?.contextEngine).toBe("@openclaw/context-engine");
-    expectRecordFields(result.config.plugins?.installs?.["@openclaw/context-engine"], {
+    expect(result.config.plugins?.slots?.contextEngine).toBe("@afora/context-engine");
+    expectRecordFields(result.config.plugins?.installs?.["@afora/context-engine"], {
       source: "npm",
-      spec: "@openclaw/context-engine",
-      installPath: "/tmp/openclaw-context-engine",
+      spec: "@afora/context-engine",
+      installPath: "/tmp/afora-context-engine",
       version: "0.0.2",
     });
     expect(result.config.plugins?.installs?.["context-engine"]).toBeUndefined();
@@ -4709,28 +4709,28 @@ describe("updateNpmInstalledPlugins", () => {
   it("forwards dangerous force unsafe install to plugin update installers", async () => {
     installPluginFromNpmSpecMock.mockResolvedValue(
       createSuccessfulNpmUpdateResult({
-        pluginId: "openclaw-codex-app-server",
-        targetDir: "/tmp/openclaw-codex-app-server",
+        pluginId: "afora-codex-app-server",
+        targetDir: "/tmp/afora-codex-app-server",
         version: "0.2.0-beta.4",
       }),
     );
 
     await updatePlugin(
       createCodexAppServerInstallConfig({
-        spec: "openclaw-codex-app-server@beta",
+        spec: "afora-codex-app-server@beta",
       }),
-      "openclaw-codex-app-server",
+      "afora-codex-app-server",
       { dangerouslyForceUnsafeInstall: true },
     );
 
-    expect(npmInstallCall()?.spec).toBe("openclaw-codex-app-server@beta");
+    expect(npmInstallCall()?.spec).toBe("afora-codex-app-server@beta");
     expect(npmInstallCall()?.dangerouslyForceUnsafeInstall).toBe(true);
-    expect(npmInstallCall()?.expectedPluginId).toBe("openclaw-codex-app-server");
+    expect(npmInstallCall()?.expectedPluginId).toBe("afora-codex-app-server");
   });
 
   it("reuses the recorded managed extensions root when updating external plugins", async () => {
-    const installPath = "/var/openclaw/extensions/demo";
-    const extensionsDir = "/var/openclaw/extensions";
+    const installPath = "/var/afora/extensions/demo";
+    const extensionsDir = "/var/afora/extensions";
     const expectedExtensionsDir = path.resolve(extensionsDir);
     installPluginFromNpmSpecMock.mockResolvedValue(
       createSuccessfulNpmUpdateResult({
@@ -4826,7 +4826,7 @@ describe("syncPluginsForUpdateChannel", () => {
       config: createBundledPathInstallConfig({
         loadPaths: [appBundledPluginRoot("feishu")],
         installPath: appBundledPluginRoot("feishu"),
-        spec: "@openclaw/feishu",
+        spec: "@afora/feishu",
       }),
       expectedChanged: false,
       expectedLoadPaths: [appBundledPluginRoot("feishu")],
@@ -4837,7 +4837,7 @@ describe("syncPluginsForUpdateChannel", () => {
       config: createBundledPathInstallConfig({
         loadPaths: [],
         installPath: "/tmp/old-feishu",
-        spec: "@openclaw/feishu",
+        spec: "@afora/feishu",
       }),
       expectedChanged: true,
       expectedLoadPaths: [appBundledPluginRoot("feishu")],
@@ -4861,14 +4861,14 @@ describe("syncPluginsForUpdateChannel", () => {
         install: result.config.plugins?.installs?.feishu,
         sourcePath: appBundledPluginRoot("feishu"),
         installPath: expectedInstallPath,
-        spec: "@openclaw/feishu",
+        spec: "@afora/feishu",
       });
     },
   );
 
   it("forwards an explicit env to bundled plugin source resolution", async () => {
     resolveBundledPluginSourcesMock.mockReturnValue(new Map());
-    const env = { OPENCLAW_HOME: "/srv/openclaw-home" } as NodeJS.ProcessEnv;
+    const env = { AFORA_HOME: "/srv/afora-home" } as NodeJS.ProcessEnv;
 
     await syncPluginsForUpdateChannel({
       channel: "beta",
@@ -4884,7 +4884,7 @@ describe("syncPluginsForUpdateChannel", () => {
   });
 
   it("uses the provided env when matching bundled load and install paths", async () => {
-    const bundledHome = "/tmp/openclaw-home";
+    const bundledHome = "/tmp/afora-home";
     mockBundledSources(
       createBundledSource({
         localPath: `${bundledHome}/plugins/feishu`,
@@ -4896,7 +4896,7 @@ describe("syncPluginsForUpdateChannel", () => {
         channel: "beta",
         env: {
           ...process.env,
-          OPENCLAW_HOME: bundledHome,
+          AFORA_HOME: bundledHome,
           HOME: "/tmp/ignored-home",
         },
         config: {
@@ -4907,7 +4907,7 @@ describe("syncPluginsForUpdateChannel", () => {
                 source: "path",
                 sourcePath: "~/plugins/feishu",
                 installPath: "~/plugins/feishu",
-                spec: "@openclaw/feishu",
+                spec: "@afora/feishu",
               },
             },
           },
@@ -4929,19 +4929,19 @@ describe("syncPluginsForUpdateChannel", () => {
     installPluginFromNpmSpecMock.mockResolvedValue(
       createSuccessfulNpmUpdateResult({
         pluginId: "legacy-chat",
-        targetDir: "/tmp/openclaw-plugins/legacy-chat",
+        targetDir: "/tmp/afora-plugins/legacy-chat",
         version: "2.0.0",
         npmResolution: {
-          name: "@openclaw/legacy-chat",
+          name: "@afora/legacy-chat",
           version: "2.0.0",
-          resolvedSpec: "@openclaw/legacy-chat@2.0.0",
+          resolvedSpec: "@afora/legacy-chat@2.0.0",
         },
       }),
     );
 
     const result = await syncExternalizedPlugin({});
 
-    expect(npmInstallCall()?.spec).toBe("@openclaw/legacy-chat");
+    expect(npmInstallCall()?.spec).toBe("@afora/legacy-chat");
     expect(npmInstallCall()?.mode).toBe("update");
     expect(npmInstallCall()?.expectedPluginId).toBe("legacy-chat");
     expect(npmInstallCall()?.trustedSourceLinkedOfficialInstall).not.toBe(true);
@@ -4951,12 +4951,12 @@ describe("syncPluginsForUpdateChannel", () => {
     expect(result.config.plugins?.load?.paths).toStrictEqual([]);
     expectRecordFields(result.config.plugins?.installs?.["legacy-chat"], {
       source: "npm",
-      spec: "@openclaw/legacy-chat",
-      installPath: "/tmp/openclaw-plugins/legacy-chat",
+      spec: "@afora/legacy-chat",
+      installPath: "/tmp/afora-plugins/legacy-chat",
       version: "2.0.0",
-      resolvedName: "@openclaw/legacy-chat",
+      resolvedName: "@afora/legacy-chat",
       resolvedVersion: "2.0.0",
-      resolvedSpec: "@openclaw/legacy-chat@2.0.0",
+      resolvedSpec: "@afora/legacy-chat@2.0.0",
     });
   });
 
@@ -4964,8 +4964,8 @@ describe("syncPluginsForUpdateChannel", () => {
     resolveBundledPluginSourcesMock.mockReturnValue(new Map());
     installPluginFromNpmSpecMock.mockResolvedValue(
       createSuccessfulNpmUpdateResult({
-        pluginId: "openclaw-qqbot",
-        targetDir: "/tmp/openclaw-plugins/openclaw-qqbot",
+        pluginId: "afora-qqbot",
+        targetDir: "/tmp/afora-plugins/afora-qqbot",
         version: "2.0.1",
       }),
     );
@@ -4975,8 +4975,8 @@ describe("syncPluginsForUpdateChannel", () => {
       externalizedBundledPluginBridges: [
         {
           bundledPluginId: "qqbot",
-          pluginId: "openclaw-qqbot",
-          npmSpec: "@tencent-connect/openclaw-qqbot@2.0.1",
+          pluginId: "afora-qqbot",
+          npmSpec: "@tencent-connect/afora-qqbot@2.0.1",
           expectedIntegrity: "sha512-qqbot-catalog-pin",
           channelIds: ["qqbot"],
         },
@@ -4997,16 +4997,16 @@ describe("syncPluginsForUpdateChannel", () => {
       },
     });
 
-    expect(npmInstallCall()?.expectedPluginId).toBe("openclaw-qqbot");
+    expect(npmInstallCall()?.expectedPluginId).toBe("afora-qqbot");
     expect(npmInstallCall()?.expectedIntegrity).toBe("sha512-qqbot-catalog-pin");
-    expect(result.summary.switchedToNpm).toEqual(["openclaw-qqbot"]);
+    expect(result.summary.switchedToNpm).toEqual(["afora-qqbot"]);
     expect(result.config.plugins?.entries?.qqbot).toBeUndefined();
-    expect(result.config.plugins?.entries?.["openclaw-qqbot"]).toEqual({ enabled: true });
+    expect(result.config.plugins?.entries?.["afora-qqbot"]).toEqual({ enabled: true });
     expect(result.config.plugins?.installs?.qqbot).toBeUndefined();
-    expectRecordFields(result.config.plugins?.installs?.["openclaw-qqbot"], {
+    expectRecordFields(result.config.plugins?.installs?.["afora-qqbot"], {
       source: "npm",
-      spec: "@tencent-connect/openclaw-qqbot@2.0.1",
-      installPath: "/tmp/openclaw-plugins/openclaw-qqbot",
+      spec: "@tencent-connect/afora-qqbot@2.0.1",
+      installPath: "/tmp/afora-plugins/afora-qqbot",
       version: "2.0.1",
     });
   });
@@ -5016,7 +5016,7 @@ describe("syncPluginsForUpdateChannel", () => {
     installPluginFromNpmSpecMock.mockResolvedValue(
       createSuccessfulNpmUpdateResult({
         pluginId: "voice-call",
-        targetDir: "/tmp/openclaw-plugins/voice-call",
+        targetDir: "/tmp/afora-plugins/voice-call",
         version: "0.0.2-beta.1",
       }),
     );
@@ -5024,13 +5024,13 @@ describe("syncPluginsForUpdateChannel", () => {
     await syncExternalizedPlugin({
       bridge: {
         bundledPluginId: "voice-call",
-        npmSpec: "@openclaw/voice-call",
+        npmSpec: "@afora/voice-call",
         channelIds: ["voice-call"],
       },
       config: createExternalizedPluginConfig({ pluginId: "voice-call" }),
     });
 
-    expect(npmInstallCall()?.spec).toBe("@openclaw/voice-call");
+    expect(npmInstallCall()?.spec).toBe("@afora/voice-call");
     expect(npmInstallCall()?.expectedPluginId).toBe("voice-call");
     expect(npmInstallCall()?.trustedSourceLinkedOfficialInstall).toBe(true);
   });
@@ -5040,7 +5040,7 @@ describe("syncPluginsForUpdateChannel", () => {
     installPluginFromClawHubMock.mockResolvedValue(
       createSuccessfulClawHubUpdateResult({
         pluginId: "legacy-chat",
-        targetDir: "/tmp/openclaw-plugins/legacy-chat",
+        targetDir: "/tmp/afora-plugins/legacy-chat",
         version: "2026.5.1-beta.2",
         clawhubPackage: "legacy-chat",
       }),
@@ -5072,7 +5072,7 @@ describe("syncPluginsForUpdateChannel", () => {
     expectRecordFields(result.config.plugins?.installs?.["legacy-chat"], {
       source: "clawhub",
       spec: "clawhub:legacy-chat@2026.5.1-beta.2",
-      installPath: "/tmp/openclaw-plugins/legacy-chat",
+      installPath: "/tmp/afora-plugins/legacy-chat",
       version: "2026.5.1-beta.2",
       integrity: "sha256-clawpack",
       clawhubUrl: "https://clawhub.ai",
@@ -5101,7 +5101,7 @@ describe("syncPluginsForUpdateChannel", () => {
     installPluginFromNpmSpecMock.mockResolvedValue(
       createSuccessfulNpmUpdateResult({
         pluginId: "legacy-chat",
-        targetDir: "/tmp/openclaw-plugins/legacy-chat",
+        targetDir: "/tmp/afora-plugins/legacy-chat",
         version: "2.0.0",
       }),
     );
@@ -5113,7 +5113,7 @@ describe("syncPluginsForUpdateChannel", () => {
       },
     });
 
-    expect(npmInstallCall()?.spec).toBe("@openclaw/legacy-chat");
+    expect(npmInstallCall()?.spec).toBe("@afora/legacy-chat");
     expect(npmInstallCall()?.mode).toBe("update");
     expect(npmInstallCall()?.expectedPluginId).toBe("legacy-chat");
     expect(npmInstallCall()?.trustedSourceLinkedOfficialInstall).not.toBe(true);
@@ -5121,13 +5121,13 @@ describe("syncPluginsForUpdateChannel", () => {
     expect(result.summary.switchedToClawHub).toStrictEqual([]);
     expect(result.summary.switchedToNpm).toEqual(["legacy-chat"]);
     expect(result.summary.warnings).toEqual([
-      "ClawHub clawhub:legacy-chat@2026.5.1-beta.2 unavailable for legacy-chat; falling back to npm @openclaw/legacy-chat.",
+      "ClawHub clawhub:legacy-chat@2026.5.1-beta.2 unavailable for legacy-chat; falling back to npm @afora/legacy-chat.",
     ]);
     expect(result.summary.errors).toStrictEqual([]);
     expectRecordFields(result.config.plugins?.installs?.["legacy-chat"], {
       source: "npm",
-      spec: "@openclaw/legacy-chat",
-      installPath: "/tmp/openclaw-plugins/legacy-chat",
+      spec: "@afora/legacy-chat",
+      installPath: "/tmp/afora-plugins/legacy-chat",
       version: "2.0.0",
     });
   });
@@ -5142,12 +5142,12 @@ describe("syncPluginsForUpdateChannel", () => {
     installPluginFromNpmSpecMock.mockResolvedValue(
       createSuccessfulNpmUpdateResult({
         pluginId: "voice-call",
-        targetDir: "/tmp/openclaw-plugins/voice-call",
+        targetDir: "/tmp/afora-plugins/voice-call",
         version: "2026.7.33",
         npmResolution: {
-          name: "@openclaw/voice-call",
+          name: "@afora/voice-call",
           version: "2026.7.33",
-          resolvedSpec: "@openclaw/voice-call@2026.7.33",
+          resolvedSpec: "@afora/voice-call@2026.7.33",
         },
       }),
     );
@@ -5158,24 +5158,24 @@ describe("syncPluginsForUpdateChannel", () => {
       bridge: {
         bundledPluginId: "voice-call",
         preferredSource: "clawhub",
-        clawhubSpec: "clawhub:@openclaw/voice-call",
-        npmSpec: "@openclaw/voice-call",
+        clawhubSpec: "clawhub:@afora/voice-call",
+        npmSpec: "@afora/voice-call",
         channelIds: ["voice-call"],
       },
       config: createExternalizedPluginConfig({ pluginId: "voice-call", includeLoad: false }),
     });
 
-    expect(npmInstallCall()?.spec).toBe("@openclaw/voice-call@2026.7.33");
+    expect(npmInstallCall()?.spec).toBe("@afora/voice-call@2026.7.33");
     expect(npmInstallCall()?.trustedSourceLinkedOfficialInstall).toBe(true);
     expectRecordFields(result.config.plugins?.installs?.["voice-call"], {
       source: "npm",
-      spec: "@openclaw/voice-call",
+      spec: "@afora/voice-call",
       version: "2026.7.33",
-      resolvedSpec: "@openclaw/voice-call@2026.7.33",
+      resolvedSpec: "@afora/voice-call@2026.7.33",
     });
   });
 
-  it("does not fall back from ClawHub to non-OpenClaw npm packages", async () => {
+  it("does not fall back from ClawHub to non-Afora npm packages", async () => {
     resolveBundledPluginSourcesMock.mockReturnValue(new Map());
     installPluginFromClawHubMock.mockResolvedValue({
       ok: false,
@@ -5213,7 +5213,7 @@ describe("syncPluginsForUpdateChannel", () => {
     installPluginFromNpmSpecMock.mockResolvedValue(
       createSuccessfulNpmUpdateResult({
         pluginId: "voice-call",
-        targetDir: "/tmp/openclaw-plugins/voice-call",
+        targetDir: "/tmp/afora-plugins/voice-call",
         version: "0.0.2-beta.1",
       }),
     );
@@ -5222,14 +5222,14 @@ describe("syncPluginsForUpdateChannel", () => {
       bridge: {
         bundledPluginId: "voice-call",
         preferredSource: "clawhub",
-        clawhubSpec: "clawhub:@openclaw/voice-call",
-        npmSpec: "@openclaw/voice-call",
+        clawhubSpec: "clawhub:@afora/voice-call",
+        npmSpec: "@afora/voice-call",
         channelIds: ["voice-call"],
       },
       config: createExternalizedPluginConfig({ pluginId: "voice-call" }),
     });
 
-    expect(npmInstallCall()?.spec).toBe("@openclaw/voice-call");
+    expect(npmInstallCall()?.spec).toBe("@afora/voice-call");
     expect(npmInstallCall()?.expectedPluginId).toBe("voice-call");
     expect(npmInstallCall()?.trustedSourceLinkedOfficialInstall).toBe(true);
   });
@@ -5239,7 +5239,7 @@ describe("syncPluginsForUpdateChannel", () => {
     installPluginFromClawHubMock.mockResolvedValue(
       createSuccessfulClawHubUpdateResult({
         pluginId: "legacy-chat",
-        targetDir: "/tmp/openclaw-plugins/legacy-chat",
+        targetDir: "/tmp/afora-plugins/legacy-chat",
         version: "2026.5.1-beta.2",
         clawhubPackage: "legacy-chat",
       }),
@@ -5254,8 +5254,8 @@ describe("syncPluginsForUpdateChannel", () => {
         includeLoad: false,
         install: {
           source: "npm",
-          spec: "@openclaw/legacy-chat",
-          installPath: "/tmp/openclaw-plugins/legacy-chat",
+          spec: "@afora/legacy-chat",
+          installPath: "/tmp/afora-plugins/legacy-chat",
         },
       }),
     });
@@ -5269,7 +5269,7 @@ describe("syncPluginsForUpdateChannel", () => {
     expectRecordFields(result.config.plugins?.installs?.["legacy-chat"], {
       source: "clawhub",
       spec: "clawhub:legacy-chat@2026.5.1-beta.2",
-      installPath: "/tmp/openclaw-plugins/legacy-chat",
+      installPath: "/tmp/afora-plugins/legacy-chat",
     });
   });
 
@@ -5305,7 +5305,7 @@ describe("syncPluginsForUpdateChannel", () => {
     installPluginFromNpmSpecMock.mockResolvedValue(
       createSuccessfulNpmUpdateResult({
         pluginId: "default-chat",
-        targetDir: "/tmp/openclaw-plugins/default-chat",
+        targetDir: "/tmp/afora-plugins/default-chat",
         version: "2.0.0",
       }),
     );
@@ -5316,22 +5316,22 @@ describe("syncPluginsForUpdateChannel", () => {
         {
           bundledPluginId: "default-chat",
           enabledByDefault: true,
-          npmSpec: "@openclaw/default-chat",
+          npmSpec: "@afora/default-chat",
           channelIds: ["default-chat"],
         },
       ],
       config: {},
     });
 
-    expect(npmInstallCall()?.spec).toBe("@openclaw/default-chat");
+    expect(npmInstallCall()?.spec).toBe("@afora/default-chat");
     expect(npmInstallCall()?.mode).toBe("update");
     expect(npmInstallCall()?.expectedPluginId).toBe("default-chat");
     expect(result.changed).toBe(true);
     expect(result.summary.switchedToNpm).toEqual(["default-chat"]);
     expectRecordFields(result.config.plugins?.installs?.["default-chat"], {
       source: "npm",
-      spec: "@openclaw/default-chat",
-      installPath: "/tmp/openclaw-plugins/default-chat",
+      spec: "@afora/default-chat",
+      installPath: "/tmp/afora-plugins/default-chat",
       version: "2.0.0",
     });
   });
@@ -5411,7 +5411,7 @@ describe("syncPluginsForUpdateChannel", () => {
     "migrates already-externalized records to prototype-named plugin id %s",
     async (targetPluginId) => {
       const legacyPluginId = `legacy-${targetPluginId}`;
-      const npmPackageName = `openclaw-plugin-${targetPluginId}`;
+      const npmPackageName = `afora-plugin-${targetPluginId}`;
       resolveBundledPluginSourcesMock.mockReturnValue(new Map());
 
       const result = await syncPluginsForUpdateChannel({
@@ -5462,10 +5462,10 @@ describe("syncPluginsForUpdateChannel", () => {
       name: "removes stale bundled load paths for already-externalized npm installs",
       install: {
         source: "npm",
-        spec: "@openclaw/legacy-chat",
-        installPath: "/tmp/openclaw-plugins/legacy-chat",
+        spec: "@afora/legacy-chat",
+        installPath: "/tmp/afora-plugins/legacy-chat",
       },
-      expectedInstall: { source: "npm", spec: "@openclaw/legacy-chat" },
+      expectedInstall: { source: "npm", spec: "@afora/legacy-chat" },
       bridge: {},
       expectClawHubNotCalled: false,
     },
@@ -5473,10 +5473,10 @@ describe("syncPluginsForUpdateChannel", () => {
       name: "removes stale bundled load paths for already-externalized resolved-name-only npm installs",
       install: {
         source: "npm",
-        resolvedName: "@openclaw/legacy-chat",
-        installPath: "/tmp/openclaw-plugins/legacy-chat",
+        resolvedName: "@afora/legacy-chat",
+        installPath: "/tmp/afora-plugins/legacy-chat",
       },
-      expectedInstall: { source: "npm", resolvedName: "@openclaw/legacy-chat" },
+      expectedInstall: { source: "npm", resolvedName: "@afora/legacy-chat" },
       bridge: {},
       expectClawHubNotCalled: false,
     },
@@ -5484,11 +5484,11 @@ describe("syncPluginsForUpdateChannel", () => {
       name: "removes stale bundled load paths for already-externalized pinned npm installs",
       install: {
         source: "npm",
-        spec: "@openclaw/legacy-chat@1.2.3",
-        resolvedSpec: "@openclaw/legacy-chat@1.2.3",
-        installPath: "/tmp/openclaw-plugins/legacy-chat",
+        spec: "@afora/legacy-chat@1.2.3",
+        resolvedSpec: "@afora/legacy-chat@1.2.3",
+        installPath: "/tmp/afora-plugins/legacy-chat",
       },
-      expectedInstall: { source: "npm", spec: "@openclaw/legacy-chat@1.2.3" },
+      expectedInstall: { source: "npm", spec: "@afora/legacy-chat@1.2.3" },
       bridge: {},
       expectClawHubNotCalled: false,
     },
@@ -5498,7 +5498,7 @@ describe("syncPluginsForUpdateChannel", () => {
         source: "clawhub",
         spec: "clawhub:legacy-chat@2026.5.1",
         clawhubPackage: "legacy-chat",
-        installPath: "/tmp/openclaw-plugins/legacy-chat",
+        installPath: "/tmp/afora-plugins/legacy-chat",
       },
       expectedInstall: { source: "clawhub", spec: "clawhub:legacy-chat@2026.5.1" },
       bridge: { preferredSource: "clawhub", clawhubSpec: "clawhub:legacy-chat" },

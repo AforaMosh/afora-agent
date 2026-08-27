@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { registerSecretValueForRedaction } from "../../logging/secret-redaction-registry.js";
 import { NODE_DESKTOP_STREAM_COMMAND } from "../../shared/node-desktop-stream.js";
 import { isNodeCommandAllowed, resolveNodeCommandAllowlist } from "../node-command-policy.js";
@@ -64,7 +64,7 @@ function retireActiveStream(active: ActiveNodeDesktopStream): void {
 
 /** Combines node command policy, ticket redemption, and desktop session ownership. */
 export function createNodeDesktopService(params: {
-  getConfig: () => OpenClawConfig;
+  getConfig: () => AforaConfig;
   nodeRegistry: NodeRegistry;
   desktopRegistry: DesktopSessionRegistry;
   streamBroker: NodeDesktopStreamBroker;

@@ -7,11 +7,11 @@ import {
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../../infra/kysely-sync.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
+import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.generated.js";
 import {
-  openOpenClawAgentDatabase,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import type { SessionTranscriptReadScope } from "./session-accessor.sqlite-contract.js";
 import {
   resolveSqliteTranscriptReadScope,
@@ -20,7 +20,7 @@ import {
 } from "./session-accessor.sqlite-scope.js";
 
 type WatermarkDatabase = Pick<
-  OpenClawAgentKyselyDatabase,
+  AforaAgentKyselyDatabase,
   "session_windows" | "transcript_events" | "transcript_rewrite_watermarks"
 >;
 
@@ -36,7 +36,7 @@ export function readSessionTranscriptWatermark(
   scope: SessionTranscriptReadScope,
 ): SessionTranscriptWatermark {
   const resolved = resolveSqliteTranscriptReadScope(scope);
-  const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+  const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
   const db = getNodeSqliteKysely<WatermarkDatabase>(database.db);
   const maxSeq = executeSqliteQueryTakeFirstSync(
     database.db,
@@ -56,7 +56,7 @@ export function readSessionTranscriptWatermark(
 }
 
 function readSessionTranscriptWatermarkChunk(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionIds: readonly string[],
 ): Map<string, SessionTranscriptWatermark> {
   const db = getNodeSqliteKysely<WatermarkDatabase>(database.db);
@@ -100,12 +100,12 @@ export function readSessionTranscriptWatermarkBatch(
   });
   const groups = new Map<
     string,
-    { database: OpenClawAgentDatabase; items: Array<{ index: number; sessionId: string }> }
+    { database: AforaAgentDatabase; items: Array<{ index: number; sessionId: string }> }
   >();
   const targetCache: SessionSqliteTargetResolutionCache = new Map();
   for (const [index, scope] of scopes.entries()) {
     const resolved = resolveSqliteTranscriptReadScope(scope, targetCache);
-    const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+    const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
     const group = groups.get(database.path) ?? { database, items: [] };
     group.items.push({ index, sessionId: resolved.sessionId });
     groups.set(database.path, group);

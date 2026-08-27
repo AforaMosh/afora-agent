@@ -1,4 +1,4 @@
-import type { MarkdownIR } from "openclaw/plugin-sdk/text-chunking";
+import type { MarkdownIR } from "afora-agent/plugin-sdk/text-chunking";
 import { TextStyle, type Style } from "./zca-constants.js";
 
 export type MarkdownBlockMetadata = {

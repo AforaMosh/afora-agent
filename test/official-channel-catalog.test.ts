@@ -1,7 +1,7 @@
 // Official channel catalog tests validate catalog metadata and entries.
 import fs from "node:fs";
 import path from "node:path";
-import { bundledPluginRoot } from "openclaw/plugin-sdk/test-fixtures";
+import { bundledPluginRoot } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   buildOfficialChannelDocsCatalog,
@@ -28,7 +28,7 @@ type OfficialChannelCatalogEntry = ReturnType<
   typeof buildOfficialChannelCatalog
 >["entries"][number];
 type OfficialChannelInstall = NonNullable<
-  NonNullable<OfficialChannelCatalogEntry["openclaw"]>["install"]
+  NonNullable<OfficialChannelCatalogEntry["afora"]>["install"]
 >;
 
 function makeRepoRoot(prefix: string): string {
@@ -59,15 +59,15 @@ function writeExternalChannelDocs(repoRoot: string): void {
     fs.readFileSync(path.resolve("scripts/lib/official-external-channel-seed.json"), "utf8"),
   ) as {
     entries: Array<{
-      openclaw?: { channel?: { docsPath?: string; id?: string; label?: string } };
+      afora?: { channel?: { docsPath?: string; id?: string; label?: string } };
     }>;
   };
   for (const entry of seed.entries) {
-    const channel = entry.openclaw?.channel;
+    const channel = entry.afora?.channel;
     if (!channel?.docsPath || !channel.label) {
       continue;
     }
-    const title = channel.id === "openclaw-weixin" ? "WeChat" : channel.label;
+    const title = channel.id === "afora-weixin" ? "WeChat" : channel.label;
     writeChannelDoc(repoRoot, channel.docsPath, title, `${title} test summary`);
   }
   writeChannelDoc(repoRoot, "/web/webchat", "WebChat", "Gateway WebChat UI over WebSocket");
@@ -100,7 +100,7 @@ function writeEnglishDocsNavigation(
 }
 
 function requireInstall(entry: OfficialChannelCatalogEntry | undefined): OfficialChannelInstall {
-  const install = entry?.openclaw?.install;
+  const install = entry?.afora?.install;
   if (!install) {
     throw new Error("expected official channel install config");
   }
@@ -130,13 +130,13 @@ function summarizeCatalogEntry(entry: OfficialChannelCatalogEntry) {
     name: entry.name,
     description: entry.description,
     source: entry.source,
-    plugin: entry.openclaw?.plugin,
-    catalog: entry.openclaw?.catalog,
-    contracts: entry.openclaw?.contracts,
-    channel: entry.openclaw?.channel,
-    channelConfigs: entry.openclaw?.channelConfigs,
-    providerEndpoints: entry.openclaw?.providerEndpoints,
-    install: entry.openclaw?.install,
+    plugin: entry.afora?.plugin,
+    catalog: entry.afora?.catalog,
+    contracts: entry.afora?.contracts,
+    channel: entry.afora?.channel,
+    channelConfigs: entry.afora?.channelConfigs,
+    providerEndpoints: entry.afora?.providerEndpoints,
+    install: entry.afora?.install,
   };
 }
 
@@ -156,9 +156,9 @@ describe("buildOfficialChannelCatalog", () => {
     expect(findDuplicateOfficialChannelDocsNavRoutes({ repoRoot: process.cwd() })).toEqual([]);
 
     const entries = buildOfficialChannelDocsCatalog({ repoRoot: process.cwd() }).entries;
-    expect(entries.find((entry) => entry.id === "openclaw-weixin")).toMatchObject({
+    expect(entries.find((entry) => entry.id === "afora-weixin")).toMatchObject({
       label: "WeChat",
-      summary: "WeChat channel setup through the external openclaw-weixin plugin",
+      summary: "WeChat channel setup through the external afora-weixin plugin",
     });
     expect(entries.map((entry) => entry.id)).toEqual(
       expect.arrayContaining(["reef", "telegram", "webchat"]),
@@ -175,12 +175,12 @@ describe("buildOfficialChannelCatalog", () => {
   });
 
   it("lets publishable package metadata override same-id seeds and skips non-publishable entries", () => {
-    const repoRoot = makeRepoRoot("openclaw-official-channel-catalog-");
+    const repoRoot = makeRepoRoot("afora-official-channel-catalog-");
     writeJson(path.join(repoRoot, "extensions", "wecom", "package.json"), {
-      name: "@openclaw/wecom",
+      name: "@afora/wecom",
       version: "2026.8.1",
       description: "Repository-owned WeCom channel",
-      openclaw: {
+      afora: {
         channel: {
           id: "wecom",
           label: "Repository WeCom",
@@ -194,7 +194,7 @@ describe("buildOfficialChannelCatalog", () => {
           },
         },
         install: {
-          npmSpec: "@openclaw/wecom",
+          npmSpec: "@afora/wecom",
           defaultChoice: "npm",
         },
         release: {
@@ -202,7 +202,7 @@ describe("buildOfficialChannelCatalog", () => {
         },
       },
     });
-    writeJson(path.join(repoRoot, "extensions", "wecom", "openclaw.plugin.json"), {
+    writeJson(path.join(repoRoot, "extensions", "wecom", "afora.plugin.json"), {
       id: "wecom",
       catalog: {
         featured: true,
@@ -234,8 +234,8 @@ describe("buildOfficialChannelCatalog", () => {
       },
     });
     writeJson(path.join(repoRoot, "extensions", "local-only", "package.json"), {
-      name: "@openclaw/local-only",
-      openclaw: {
+      name: "@afora/local-only",
+      afora: {
         channel: {
           id: "local-only",
           label: "Local Only",
@@ -256,10 +256,10 @@ describe("buildOfficialChannelCatalog", () => {
 
     expect(
       summarizeCatalogEntry(
-        findCatalogEntry(entries, (entry) => entry.openclaw?.channel?.id === "wecom"),
+        findCatalogEntry(entries, (entry) => entry.afora?.channel?.id === "wecom"),
       ),
     ).toEqual({
-      name: "@openclaw/wecom",
+      name: "@afora/wecom",
       description: "Repository-owned WeCom channel",
       source: "official",
       plugin: undefined,
@@ -299,20 +299,20 @@ describe("buildOfficialChannelCatalog", () => {
         },
       ],
       install: {
-        npmSpec: "@openclaw/wecom",
+        npmSpec: "@afora/wecom",
         defaultChoice: "npm",
       },
     });
     expect(
       summarizeCatalogEntry(
-        findCatalogEntry(entries, (entry) => entry.name === "openclaw-plugin-yuanbao"),
+        findCatalogEntry(entries, (entry) => entry.name === "afora-plugin-yuanbao"),
       ),
     ).toEqual({
-      name: "openclaw-plugin-yuanbao",
-      description: "OpenClaw Yuanbao channel plugin by the Tencent Yuanbao team.",
+      name: "afora-plugin-yuanbao",
+      description: "Afora Yuanbao channel plugin by the Tencent Yuanbao team.",
       source: "external",
       plugin: {
-        id: "openclaw-plugin-yuanbao",
+        id: "afora-plugin-yuanbao",
         label: "Yuanbao",
       },
       catalog: undefined,
@@ -342,7 +342,7 @@ describe("buildOfficialChannelCatalog", () => {
       },
       providerEndpoints: undefined,
       install: {
-        npmSpec: "openclaw-plugin-yuanbao@2.15.0",
+        npmSpec: "afora-plugin-yuanbao@2.15.0",
         defaultChoice: "npm",
         expectedIntegrity:
           "sha512-3GD+mf3EjTSUTOAREjTHAyp/deXdpgqB+q+xE0b19Qtat4ADhUV1mHDwFkVCRqTCBY5ATFKtKcipoDejqFj/+w==",
@@ -350,13 +350,13 @@ describe("buildOfficialChannelCatalog", () => {
     });
     expect(
       summarizeCatalogEntry(
-        findCatalogEntry(entries, (entry) => entry.name === "@tencent-connect/openclaw-qqbot"),
+        findCatalogEntry(entries, (entry) => entry.name === "@tencent-connect/afora-qqbot"),
       ),
     ).toMatchObject({
-      name: "@tencent-connect/openclaw-qqbot",
+      name: "@tencent-connect/afora-qqbot",
       source: "external",
       plugin: {
-        id: "openclaw-qqbot",
+        id: "afora-qqbot",
         label: "QQ Bot",
       },
       contracts: {
@@ -368,47 +368,47 @@ describe("buildOfficialChannelCatalog", () => {
         approvalFlags: ["native"],
       },
       install: {
-        npmSpec: "@tencent-connect/openclaw-qqbot@2.0.1",
+        npmSpec: "@tencent-connect/afora-qqbot@2.0.1",
         defaultChoice: "npm",
         expectedIntegrity:
           "sha512-2010PaCummeQaxerLtaGfQ/5HChiXaW/KpTERid7V/1zyTs46S2ACi0hgZQ1SB7tH0t1InWr8tzVBJV/pLss3Q==",
       },
     });
-    expect(entries.some((entry) => entry.openclaw?.channel?.id === "local-only")).toBe(false);
+    expect(entries.some((entry) => entry.afora?.channel?.id === "local-only")).toBe(false);
   });
 
   it("preserves manifest-owned fallback metadata for externalized channel packages", () => {
     const entries = buildOfficialChannelCatalog({ repoRoot: process.cwd() }).entries;
-    const slack = findCatalogEntry(entries, (entry) => entry.openclaw?.channel?.id === "slack");
-    const raft = findCatalogEntry(entries, (entry) => entry.openclaw?.channel?.id === "raft");
+    const slack = findCatalogEntry(entries, (entry) => entry.afora?.channel?.id === "slack");
+    const raft = findCatalogEntry(entries, (entry) => entry.afora?.channel?.id === "raft");
     const clickclack = findCatalogEntry(
       entries,
-      (entry) => entry.openclaw?.channel?.id === "clickclack",
+      (entry) => entry.afora?.channel?.id === "clickclack",
     );
 
-    expect(slack.openclaw.channelConfigs?.slack?.schema).toEqual({
+    expect(slack.afora.channelConfigs?.slack?.schema).toEqual({
       type: "object",
       additionalProperties: true,
     });
-    expect(raft.openclaw.channelConfigs?.raft?.schema).toMatchObject({
+    expect(raft.afora.channelConfigs?.raft?.schema).toMatchObject({
       type: "object",
       additionalProperties: false,
     });
-    expect(clickclack.openclaw.contracts?.tools).toEqual(["discussion"]);
+    expect(clickclack.afora.contracts?.tools).toEqual(["discussion"]);
   });
 
   it("rejects duplicate channel ids from repository packages", () => {
-    const repoRoot = makeRepoRoot("openclaw-official-channel-catalog-duplicate-");
+    const repoRoot = makeRepoRoot("afora-official-channel-catalog-duplicate-");
     for (const dirName of ["first", "second"]) {
       writeJson(path.join(repoRoot, "extensions", dirName, "package.json"), {
-        name: `@openclaw/${dirName}`,
-        openclaw: {
+        name: `@afora/${dirName}`,
+        afora: {
           channel: {
             id: "duplicate",
             label: dirName,
           },
           install: {
-            npmSpec: `@openclaw/${dirName}`,
+            npmSpec: `@afora/${dirName}`,
           },
           release: {
             publishToNpm: true,
@@ -429,7 +429,7 @@ describe("buildOfficialChannelCatalog", () => {
       entries: Array<{
         name?: string;
         source?: string;
-        openclaw?: { channel?: { id?: string } };
+        afora?: { channel?: { id?: string } };
       }>;
     };
     const publishableChannelIds = new Set(
@@ -439,36 +439,36 @@ describe("buildOfficialChannelCatalog", () => {
           return [];
         }
         const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8")) as {
-          openclaw?: {
+          afora?: {
             channel?: { id?: string };
             release?: { publishToNpm?: boolean };
           };
         };
-        const channelId = packageJson.openclaw?.channel?.id;
-        return channelId && packageJson.openclaw?.release?.publishToNpm === true ? [channelId] : [];
+        const channelId = packageJson.afora?.channel?.id;
+        return channelId && packageJson.afora?.release?.publishToNpm === true ? [channelId] : [];
       }),
     );
-    const seedChannelIds = seed.entries.map((entry) => entry.openclaw?.channel?.id?.toLowerCase());
+    const seedChannelIds = seed.entries.map((entry) => entry.afora?.channel?.id?.toLowerCase());
 
     expect(seed.entries.every((entry) => entry.source === "external")).toBe(true);
-    expect(seed.entries.some((entry) => entry.name?.startsWith("@openclaw/"))).toBe(false);
+    expect(seed.entries.some((entry) => entry.name?.startsWith("@afora/"))).toBe(false);
     expect(new Set(seedChannelIds).size).toBe(seedChannelIds.length);
     expect(
       seed.entries.some((entry) => {
-        const channelId = entry.openclaw?.channel?.id;
+        const channelId = entry.afora?.channel?.id;
         return channelId ? publishableChannelIds.has(channelId) : false;
       }),
     ).toBe(false);
   });
 
   it("projects bundled, external, and built-in channels into docs while hiding source-only channels", () => {
-    const repoRoot = makeRepoRoot("openclaw-official-channel-docs-");
+    const repoRoot = makeRepoRoot("afora-official-channel-docs-");
     writeJson(path.join(repoRoot, "package.json"), {
       files: ["dist/extensions/**", "!dist/extensions/hidden/**"],
     });
     writeJson(path.join(repoRoot, "extensions", "bundled", "package.json"), {
-      name: "@openclaw/bundled",
-      openclaw: {
+      name: "@afora/bundled",
+      afora: {
         channel: {
           id: "bundled",
           label: "Bundled",
@@ -478,8 +478,8 @@ describe("buildOfficialChannelCatalog", () => {
       },
     });
     writeJson(path.join(repoRoot, "extensions", "hidden", "package.json"), {
-      name: "@openclaw/hidden",
-      openclaw: {
+      name: "@afora/hidden",
+      afora: {
         channel: {
           id: "hidden",
           label: "Hidden",
@@ -517,10 +517,10 @@ describe("buildOfficialChannelCatalog", () => {
   });
 
   it("uses the canonical channel docs route when a manifest omits docsPath", () => {
-    const repoRoot = makeRepoRoot("openclaw-default-channel-docs-route-");
+    const repoRoot = makeRepoRoot("afora-default-channel-docs-route-");
     writeJson(path.join(repoRoot, "extensions", "defaulted", "package.json"), {
-      name: "@openclaw/defaulted",
-      openclaw: {
+      name: "@afora/defaulted",
+      afora: {
         channel: {
           id: "defaulted",
           label: "Defaulted",
@@ -544,13 +544,13 @@ describe("buildOfficialChannelCatalog", () => {
   });
 
   it("rejects docs-visible source-only channels", () => {
-    const repoRoot = makeRepoRoot("openclaw-source-only-channel-docs-");
+    const repoRoot = makeRepoRoot("afora-source-only-channel-docs-");
     writeJson(path.join(repoRoot, "package.json"), {
       files: ["dist/extensions/**", "!dist/extensions/source-only/**"],
     });
     writeJson(path.join(repoRoot, "extensions", "source-only", "package.json"), {
-      name: "@openclaw/source-only",
-      openclaw: {
+      name: "@afora/source-only",
+      afora: {
         channel: {
           id: "source-only",
           label: "Source Only",
@@ -586,10 +586,10 @@ describe("buildOfficialChannelCatalog", () => {
       error: "docs/channels/frontmatter-test.md must define title and summary",
     },
   ])("rejects channel docs with $name", ({ content, error }) => {
-    const repoRoot = makeRepoRoot("openclaw-channel-docs-frontmatter-");
+    const repoRoot = makeRepoRoot("afora-channel-docs-frontmatter-");
     writeJson(path.join(repoRoot, "extensions", "frontmatter-test", "package.json"), {
-      name: "@openclaw/frontmatter-test",
-      openclaw: {
+      name: "@afora/frontmatter-test",
+      afora: {
         channel: {
           id: "frontmatter-test",
           label: "Manifest label",
@@ -607,10 +607,10 @@ describe("buildOfficialChannelCatalog", () => {
   });
 
   it("writes the generated docs block and reports missing or hidden navigation routes", () => {
-    const repoRoot = makeRepoRoot("openclaw-official-channel-docs-write-");
+    const repoRoot = makeRepoRoot("afora-official-channel-docs-write-");
     writeJson(path.join(repoRoot, "extensions", "bundled", "package.json"), {
-      name: "@openclaw/bundled",
-      openclaw: {
+      name: "@afora/bundled",
+      afora: {
         channel: {
           id: "bundled",
           label: "Bundled",
@@ -620,8 +620,8 @@ describe("buildOfficialChannelCatalog", () => {
       },
     });
     writeJson(path.join(repoRoot, "extensions", "hidden", "package.json"), {
-      name: "@openclaw/hidden",
-      openclaw: {
+      name: "@afora/hidden",
+      afora: {
         channel: {
           id: "hidden",
           label: "Hidden",
@@ -671,7 +671,7 @@ describe("buildOfficialChannelCatalog", () => {
   });
 
   it("rejects missing or duplicate generated docs markers", () => {
-    const repoRoot = makeRepoRoot("openclaw-official-channel-docs-markers-");
+    const repoRoot = makeRepoRoot("afora-official-channel-docs-markers-");
     writeExternalChannelDocs(repoRoot);
     const docsIndexPath = path.join(repoRoot, OFFICIAL_CHANNEL_DOCS_INDEX_RELATIVE_PATH);
     fs.mkdirSync(path.dirname(docsIndexPath), { recursive: true });
@@ -696,9 +696,9 @@ describe("buildOfficialChannelCatalog", () => {
   });
 
   it("keeps third-party official external catalog npm sources pinned unless they track latest", () => {
-    const repoRoot = makeRepoRoot("openclaw-official-channel-catalog-policy-");
+    const repoRoot = makeRepoRoot("afora-official-channel-catalog-policy-");
     const entries = buildOfficialChannelCatalog({ repoRoot }).entries.filter(
-      (entry) => entry.source === "external" && !entry.name?.startsWith("@openclaw/"),
+      (entry) => entry.source === "external" && !entry.name?.startsWith("@afora/"),
     );
 
     expect(entries.length).toBeGreaterThan(0);
@@ -709,18 +709,18 @@ describe("buildOfficialChannelCatalog", () => {
     }
   });
 
-  it("allows official OpenClaw channel npm specs without integrity during launch", () => {
-    const repoRoot = makeRepoRoot("openclaw-official-channel-catalog-openclaw-policy-");
+  it("allows official Afora channel npm specs without integrity during launch", () => {
+    const repoRoot = makeRepoRoot("afora-official-channel-catalog-afora-policy-");
     writeJson(path.join(repoRoot, "extensions", "twitch", "package.json"), {
-      name: "@openclaw/twitch",
-      openclaw: {
+      name: "@afora/twitch",
+      afora: {
         channel: {
           id: "twitch",
           label: "Twitch",
           docsPath: "/channels/twitch",
         },
         install: {
-          npmSpec: "@openclaw/twitch",
+          npmSpec: "@afora/twitch",
           defaultChoice: "npm",
           minHostVersion: ">=2026.4.10",
         },
@@ -730,16 +730,16 @@ describe("buildOfficialChannelCatalog", () => {
       },
     });
     const twitch = buildOfficialChannelCatalog({ repoRoot }).entries.find(
-      (entry) => entry.openclaw?.channel?.id === "twitch",
+      (entry) => entry.afora?.channel?.id === "twitch",
     );
 
     expect({
       name: twitch?.name,
-      install: twitch?.openclaw?.install,
+      install: twitch?.afora?.install,
     }).toEqual({
-      name: "@openclaw/twitch",
+      name: "@afora/twitch",
       install: {
-        npmSpec: "@openclaw/twitch",
+        npmSpec: "@afora/twitch",
         defaultChoice: "npm",
         minHostVersion: ">=2026.4.10",
       },
@@ -750,10 +750,10 @@ describe("buildOfficialChannelCatalog", () => {
   });
 
   it("keeps iMessage available for cold install after core package externalization", () => {
-    const repoRoot = makeRepoRoot("openclaw-official-channel-catalog-imessage-");
+    const repoRoot = makeRepoRoot("afora-official-channel-catalog-imessage-");
     writeJson(path.join(repoRoot, "extensions", "imessage", "package.json"), {
-      name: "@openclaw/imessage",
-      openclaw: {
+      name: "@afora/imessage",
+      afora: {
         channel: {
           id: "imessage",
           label: "iMessage",
@@ -761,8 +761,8 @@ describe("buildOfficialChannelCatalog", () => {
           docsPath: "/channels/imessage",
         },
         install: {
-          clawhubSpec: "clawhub:@openclaw/imessage",
-          npmSpec: "@openclaw/imessage",
+          clawhubSpec: "clawhub:@afora/imessage",
+          npmSpec: "@afora/imessage",
           defaultChoice: "npm",
           minHostVersion: ">=2026.7.2",
           allowInvalidConfigRecovery: true,
@@ -773,19 +773,19 @@ describe("buildOfficialChannelCatalog", () => {
       },
     });
     const imessage = buildOfficialChannelCatalog({ repoRoot }).entries.find(
-      (entry) => entry.openclaw?.channel?.id === "imessage",
+      (entry) => entry.afora?.channel?.id === "imessage",
     );
 
     expect({
       name: imessage?.name,
-      aliases: imessage?.openclaw?.channel?.aliases,
-      install: imessage?.openclaw?.install,
+      aliases: imessage?.afora?.channel?.aliases,
+      install: imessage?.afora?.install,
     }).toEqual({
-      name: "@openclaw/imessage",
+      name: "@afora/imessage",
       aliases: ["imsg"],
       install: {
-        clawhubSpec: "clawhub:@openclaw/imessage",
-        npmSpec: "@openclaw/imessage",
+        clawhubSpec: "clawhub:@afora/imessage",
+        npmSpec: "@afora/imessage",
         defaultChoice: "npm",
         minHostVersion: ">=2026.7.2",
         allowInvalidConfigRecovery: true,
@@ -794,10 +794,10 @@ describe("buildOfficialChannelCatalog", () => {
   });
 
   it("preserves ClawHub specs when generating publishable channel catalog entries", () => {
-    const repoRoot = makeRepoRoot("openclaw-official-channel-catalog-clawhub-");
+    const repoRoot = makeRepoRoot("afora-official-channel-catalog-clawhub-");
     writeJson(path.join(repoRoot, "extensions", "storepack-chat", "package.json"), {
-      name: "@openclaw/storepack-chat",
-      openclaw: {
+      name: "@afora/storepack-chat",
+      afora: {
         channel: {
           id: "storepack-chat",
           label: "Storepack Chat",
@@ -806,8 +806,8 @@ describe("buildOfficialChannelCatalog", () => {
           blurb: "storepack-first channel",
         },
         install: {
-          clawhubSpec: "clawhub:@openclaw/storepack-chat",
-          npmSpec: "@openclaw/storepack-chat",
+          clawhubSpec: "clawhub:@afora/storepack-chat",
+          npmSpec: "@afora/storepack-chat",
           defaultChoice: "clawhub",
         },
         release: {
@@ -817,21 +817,21 @@ describe("buildOfficialChannelCatalog", () => {
     });
 
     const entry = buildOfficialChannelCatalog({ repoRoot }).entries.find(
-      (candidate) => candidate.openclaw?.channel?.id === "storepack-chat",
+      (candidate) => candidate.afora?.channel?.id === "storepack-chat",
     );
 
     expect(requireInstall(entry)).toEqual({
-      clawhubSpec: "clawhub:@openclaw/storepack-chat",
-      npmSpec: "@openclaw/storepack-chat",
+      clawhubSpec: "clawhub:@afora/storepack-chat",
+      npmSpec: "@afora/storepack-chat",
       defaultChoice: "clawhub",
     });
   });
 
   it("writes the official catalog under dist", () => {
-    const repoRoot = makeRepoRoot("openclaw-official-channel-catalog-write-");
+    const repoRoot = makeRepoRoot("afora-official-channel-catalog-write-");
     writeJson(path.join(repoRoot, "extensions", "whatsapp", "package.json"), {
-      name: "@openclaw/whatsapp",
-      openclaw: {
+      name: "@afora/whatsapp",
+      afora: {
         channel: {
           id: "whatsapp",
           label: "WhatsApp",
@@ -840,7 +840,7 @@ describe("buildOfficialChannelCatalog", () => {
           blurb: "wa",
         },
         install: {
-          npmSpec: "@openclaw/whatsapp",
+          npmSpec: "@afora/whatsapp",
         },
         release: {
           publishToNpm: true,
@@ -854,18 +854,18 @@ describe("buildOfficialChannelCatalog", () => {
     expect(fs.existsSync(outputPath)).toBe(true);
     const entries = JSON.parse(fs.readFileSync(outputPath, "utf8")).entries;
     expect(entries.map((entry: { name?: string }) => entry.name)).toContain(
-      "@wecom/wecom-openclaw-plugin",
+      "@wecom/wecom-afora-plugin",
     );
     expect(entries.map((entry: { name?: string }) => entry.name)).toContain(
-      "openclaw-plugin-yuanbao",
+      "afora-plugin-yuanbao",
     );
     const whatsappEntry = findCatalogEntry(
       entries,
-      (entry: { openclaw?: { channel?: { id?: string } } }) =>
-        entry.openclaw?.channel?.id === "whatsapp",
+      (entry: { afora?: { channel?: { id?: string } } }) =>
+        entry.afora?.channel?.id === "whatsapp",
     );
     expect(summarizeCatalogEntry(whatsappEntry)).toEqual({
-      name: "@openclaw/whatsapp",
+      name: "@afora/whatsapp",
       description: undefined,
       source: "official",
       plugin: undefined,
@@ -881,28 +881,28 @@ describe("buildOfficialChannelCatalog", () => {
       channelConfigs: undefined,
       providerEndpoints: undefined,
       install: {
-        npmSpec: "@openclaw/whatsapp",
+        npmSpec: "@afora/whatsapp",
       },
     });
     const whatsappEntries = entries.filter(
-      (entry: { openclaw?: { channel?: { id?: string } } }) =>
-        entry.openclaw?.channel?.id === "whatsapp",
+      (entry: { afora?: { channel?: { id?: string } } }) =>
+        entry.afora?.channel?.id === "whatsapp",
     );
     expect(whatsappEntries).toHaveLength(1);
   });
 
   it("writes and checks the committed official catalog", () => {
-    const repoRoot = makeRepoRoot("openclaw-official-channel-catalog-source-");
+    const repoRoot = makeRepoRoot("afora-official-channel-catalog-source-");
     writeJson(path.join(repoRoot, "extensions", "demo", "package.json"), {
-      name: "@openclaw/demo",
-      openclaw: {
+      name: "@afora/demo",
+      afora: {
         channel: {
           id: "demo",
           label: "Demo",
           docsPath: "/channels/demo",
         },
         install: {
-          npmSpec: "@openclaw/demo",
+          npmSpec: "@afora/demo",
         },
         release: {
           publishToNpm: true,

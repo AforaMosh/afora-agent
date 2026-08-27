@@ -1,6 +1,6 @@
 // Verifies Slack config TypeScript contracts match the SecretRef-capable schema.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "./types.js";
+import type { AforaConfig } from "./types.js";
 
 const slackSecretRefConfig = {
   channels: {
@@ -28,7 +28,7 @@ const slackSecretRefConfig = {
       },
     },
   },
-} satisfies OpenClawConfig;
+} satisfies AforaConfig;
 
 const slackStreamingConfig = {
   channels: {
@@ -40,7 +40,7 @@ const slackStreamingConfig = {
       },
     },
   },
-} satisfies OpenClawConfig;
+} satisfies AforaConfig;
 
 describe("Slack config types", () => {
   it("accepts SecretRef-backed token fields", () => {

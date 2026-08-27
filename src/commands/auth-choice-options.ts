@@ -1,7 +1,7 @@
 // Builds provider-aware auth-choice options and grouped onboarding menus.
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import type { AuthProfileStore } from "../agents/auth-profiles/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveProviderSetupFlowContributions } from "../flows/provider-flow.js";
 import {
   compareProviderAuthChoiceGroups,
@@ -39,7 +39,7 @@ export function compareAuthChoiceGroups(a: AuthChoiceGroup, b: AuthChoiceGroup):
 }
 
 function resolveProviderChoiceOptions(params?: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
 }): AuthChoiceOption[] {
@@ -76,7 +76,7 @@ function resolveProviderChoiceOptions(params?: {
 export function formatAuthChoiceChoicesForCli(params?: {
   includeSkip?: boolean;
   includeLegacyAliases?: boolean;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
 }): string {
@@ -96,7 +96,7 @@ function buildAuthChoiceOptions(params: {
   store: AuthProfileStore;
   includeSkip: boolean;
   assistantVisibleOnly?: boolean;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
 }): AuthChoiceOption[] {
@@ -131,7 +131,7 @@ export function buildAuthChoiceGroups(params: {
   store: AuthProfileStore;
   includeSkip: boolean;
   assistantVisibleOnly?: boolean;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
 }): {

@@ -6,20 +6,20 @@ import {
   WebAPIRateLimitedError,
   WebAPIRequestError,
 } from "@slack/web-api";
-import { pruneMapToMaxSize } from "openclaw/plugin-sdk/collection-runtime";
+import { pruneMapToMaxSize } from "afora-agent/plugin-sdk/collection-runtime";
 import {
   collectErrorGraphCandidates,
   extractErrorCode,
   readErrorName,
-} from "openclaw/plugin-sdk/error-runtime";
+} from "afora-agent/plugin-sdk/error-runtime";
 import {
   asDateTimestampMs,
   parseFiniteNumber,
   resolveExpiresAtMsFromDurationMs,
-} from "openclaw/plugin-sdk/number-runtime";
-import { classifyTransientNetworkErrorCode } from "openclaw/plugin-sdk/retry-runtime";
-import { logVerbose, shouldLogVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { normalizeOptionalString as normalizeThreadTs } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/number-runtime";
+import { classifyTransientNetworkErrorCode } from "afora-agent/plugin-sdk/retry-runtime";
+import { logVerbose, shouldLogVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { normalizeOptionalString as normalizeThreadTs } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { formatSlackError } from "../errors.js";
 import type { SlackMessageEvent } from "../types.js";
 import type { SlackIngressTurnLifecycle } from "./ingress.js";

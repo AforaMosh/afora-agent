@@ -1,5 +1,5 @@
 /** Model-facing schema and input validation for the cron tool. */
-import { MAX_DATE_TIMESTAMP_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_DATE_TIMESTAMP_MS } from "@afora/normalization-core/number-coercion";
 import { Type, type TSchema } from "typebox";
 import { parseCronPacingBounds } from "../../cron/pacing.js";
 import type { CronPacing } from "../../cron/types.js";

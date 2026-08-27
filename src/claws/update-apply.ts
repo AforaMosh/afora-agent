@@ -1,11 +1,11 @@
 import { createHash } from "node:crypto";
-import { coerceErrorMessage, stableStringify } from "@openclaw/normalization-core";
+import { coerceErrorMessage, stableStringify } from "@afora/normalization-core";
 import { listAgentEntries } from "../agents/agent-scope.js";
 import { transformConfigFileWithRetry } from "../config/config.js";
 import type { AgentConfig } from "../config/types.agents.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { RuntimeEnv } from "../runtime.js";
-import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
+import type { AforaStateDatabaseOptions } from "../state/afora-state-db.js";
 import { clawTargetPackages } from "./application-provenance.js";
 import {
   applyClawCronUpdate,
@@ -33,7 +33,7 @@ import {
 import {
   CLAW_OUTPUT_STABILITY,
   type ClawManifest,
-  type ClawOpenClawProfile,
+  type ClawAforaProfile,
   type ClawSourceIdentity,
 } from "./types.js";
 import { buildClawUpdatePlan, type ClawUpdateAction, type ClawUpdatePlan } from "./update-plan.js";
@@ -43,9 +43,9 @@ import {
   type ClawWorkspaceUpdateExecution,
 } from "./workspace-update.js";
 
-export const CLAW_UPDATE_RESULT_SCHEMA_VERSION = "openclaw.clawUpdateResult.v1" as const;
+export const CLAW_UPDATE_RESULT_SCHEMA_VERSION = "afora.clawUpdateResult.v1" as const;
 
-type ConfigCommit = (transform: (config: OpenClawConfig) => OpenClawConfig) => Promise<void>;
+type ConfigCommit = (transform: (config: AforaConfig) => AforaConfig) => Promise<void>;
 
 function digest(value: unknown): string {
   return `sha256:${createHash("sha256").update(stableStringify(value)).digest("hex")}`;
@@ -92,11 +92,11 @@ export async function applyClawUpdatePlan(
   params: {
     targetManifest: ClawManifest;
     targetClawMarkdownBody?: Buffer;
-    targetOpenClawProfile?: ClawOpenClawProfile;
+    targetAforaProfile?: ClawAforaProfile;
     targetSource: ClawSourceIdentity;
   },
-  options: OpenClawStateDatabaseOptions & {
-    config: OpenClawConfig;
+  options: AforaStateDatabaseOptions & {
+    config: AforaConfig;
     sourceMcpServers: Record<string, Record<string, unknown>>;
     consentPlanIntegrity: string | undefined;
     packagePreflight?: ClawAddPlanContext["packagePreflight"];
@@ -131,7 +131,7 @@ export async function applyClawUpdatePlan(
     agentId: plan.agentId,
     targetManifest: params.targetManifest,
     targetClawMarkdownBody: params.targetClawMarkdownBody,
-    targetOpenClawProfile: params.targetOpenClawProfile,
+    targetAforaProfile: params.targetAforaProfile,
     targetSource: params.targetSource,
     config: options.config,
     sourceMcpServers: options.sourceMcpServers,
@@ -185,7 +185,7 @@ export async function applyClawUpdatePlan(
     manifest: params.targetManifest,
     clawMarkdownBody: params.targetClawMarkdownBody,
     includePackageBootstrap: false,
-    openClawProfile: params.targetOpenClawProfile,
+    aforaProfile: params.targetAforaProfile,
     source: params.targetSource,
     context: {
       agentId: fresh.agentId,
@@ -231,7 +231,7 @@ export async function applyClawUpdatePlan(
       "The target Claw cannot be safely materialized for update.",
     );
   }
-  const targetPackages = clawTargetPackages(params.targetManifest, params.targetOpenClawProfile);
+  const targetPackages = clawTargetPackages(params.targetManifest, params.targetAforaProfile);
   for (const action of fresh.actions.filter(
     (candidate) =>
       candidate.kind === "package" &&

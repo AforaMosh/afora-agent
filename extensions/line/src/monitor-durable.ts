@@ -1,6 +1,6 @@
 // Line plugin module implements monitor durable behavior.
-import { resolveSendableOutboundReplyParts } from "openclaw/plugin-sdk/reply-payload";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
+import { resolveSendableOutboundReplyParts } from "afora-agent/plugin-sdk/reply-payload";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-runtime";
 import type { LineChannelData } from "./types.js";
 
 type LineDurableReplyOptions = {

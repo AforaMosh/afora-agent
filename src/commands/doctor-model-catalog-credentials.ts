@@ -1,8 +1,8 @@
 /** Doctor-owned migration of plaintext model-catalog credentials into agent SQLite. */
 import fs from "node:fs";
 import path from "node:path";
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { note } from "../../packages/terminal-core/src/note.js";
 import { listAgentIds, resolveAgentDir, resolveDefaultAgentDir } from "../agents/agent-scope.js";
 import { AUTH_STORE_VERSION } from "../agents/auth-profiles/constants.js";
@@ -21,7 +21,7 @@ import {
   loadPersistedPluginModelCatalogsReadOnly,
 } from "../agents/plugin-model-catalog.js";
 import { resolveStateDir } from "../config/paths.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { listAgentModelsJsonPaths } from "../secrets/storage-scan.js";
 import { shortenHomePath } from "../utils.js";
@@ -176,7 +176,7 @@ async function persistCredentials(params: {
     ? loadPersistedAuthProfileStore(params.agentDir)
     : loadPersistedSharedAuthProfileStore({
         ...process.env,
-        OPENCLAW_STATE_DIR: params.stateDir,
+        AFORA_STATE_DIR: params.stateDir,
       });
   const effectivePersisted = params.inheritedStore
     ? mergeAuthProfileStores(params.inheritedStore, persisted ?? emptyStore())
@@ -230,7 +230,7 @@ function collectAgentCatalogs(agentDir: string, warnings: string[]): AgentCatalo
 
 /** Copies and verifies catalog credentials before the runtime retires plaintext catalog auth. */
 export async function maybeMigrateModelCatalogCredentials(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   prompter: DoctorPrompter;
   runtime: RuntimeEnv;
@@ -279,7 +279,7 @@ export async function maybeMigrateModelCatalogCredentials(params: {
   }
 
   note(
-    `Found ${detected} plaintext model credential${detected === 1 ? "" : "s"}. Run openclaw doctor --fix to copy and verify them in agent SQLite before plaintext catalog authentication is retired.`,
+    `Found ${detected} plaintext model credential${detected === 1 ? "" : "s"}. Run afora doctor --fix to copy and verify them in agent SQLite before plaintext catalog authentication is retired.`,
     "Model catalog credentials",
   );
   const shouldRepair =

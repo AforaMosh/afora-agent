@@ -1,5 +1,5 @@
 // Realtime transcription provider types describe streaming transcription providers.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 // Public contracts for realtime transcription provider plugins and sessions.
 // Providers own config resolution; core owns session lifecycle shape.
@@ -8,12 +8,12 @@ export type RealtimeTranscriptionProviderId = string;
 export type RealtimeTranscriptionProviderConfig = Record<string, unknown>;
 
 export type RealtimeTranscriptionProviderResolveConfigContext = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   rawConfig: RealtimeTranscriptionProviderConfig;
 };
 
 export type RealtimeTranscriptionProviderConfiguredContext = {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   providerConfig: RealtimeTranscriptionProviderConfig;
 };
 
@@ -27,7 +27,7 @@ export type RealtimeTranscriptionSessionCallbacks = {
 
 /** Inputs passed to a provider when creating a transcription session. */
 export type RealtimeTranscriptionSessionCreateRequest = RealtimeTranscriptionSessionCallbacks & {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   providerConfig: RealtimeTranscriptionProviderConfig;
 };
 

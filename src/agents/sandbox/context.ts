@@ -4,7 +4,7 @@
  * Prepares workspace layout, backend handle, filesystem bridge, browser bridge, and registry state for one run.
  */
 import fs from "node:fs/promises";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   ensureBrowserControlAuth,
   resolveBrowserControlAuth,
@@ -38,7 +38,7 @@ const loadSyncWorkspaceSkills = createLazyRuntimeNamedExport(
 async function syncSandboxSkillsToWorkspace(params: {
   sourceWorkspaceDir: string;
   targetWorkspaceDir: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId: string;
   rawSessionKey: string;
   execOverrides?: ExecPolicyOverrides;
@@ -83,7 +83,7 @@ async function ensureSandboxWorkspaceLayout(params: {
   cfg: ReturnType<typeof resolveSandboxConfigForAgent>;
   agentId: string;
   rawSessionKey: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   execOverrides?: ExecPolicyOverrides;
   skillsSnapshot?: SkillSnapshot;
   workspaceDir?: string;
@@ -147,7 +147,7 @@ async function ensureSandboxWorkspaceLayout(params: {
 }
 
 function resolveSandboxSession(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   sessionKey?: string;
 }) {
@@ -188,7 +188,7 @@ function resolveSandboxWorkspaceInfoWorkdir(params: {
 }
 
 type ResolveSandboxContextParams = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   execOverrides?: ExecPolicyOverrides;
   requireCurrentConfig?: boolean;
@@ -200,7 +200,7 @@ type ResolveSandboxContextParams = {
 type ResolvedSandboxSession = NonNullable<ReturnType<typeof resolveSandboxSession>>;
 
 function assertSandboxSessionSecretOwnerAvailable(
-  config: OpenClawConfig | undefined,
+  config: AforaConfig | undefined,
   resolved: ResolvedSandboxSession,
 ): void {
   if (resolved.cfg.backend !== "ssh") {
@@ -346,7 +346,7 @@ async function resolveProvisionedSandboxContext(
 }
 
 export async function resolveSandboxContext(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   execOverrides?: ExecPolicyOverrides;
   requireCurrentConfig?: boolean;
@@ -370,7 +370,7 @@ export async function resolveSandboxContext(params: {
 }
 
 export async function ensureSandboxWorkspaceForSession(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   sessionKey?: string;
   workspaceDir?: string;
 }): Promise<SandboxWorkspaceInfo | null> {

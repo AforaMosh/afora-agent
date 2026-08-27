@@ -4,23 +4,23 @@ import fs from "node:fs/promises";
 import { createServer } from "node:http";
 import os from "node:os";
 import path from "node:path";
-import { createChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
-import { createInboundDebouncer } from "openclaw/plugin-sdk/channel-inbound-debounce";
+import { createChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
+import { createInboundDebouncer } from "afora-agent/plugin-sdk/channel-inbound-debounce";
 import {
   createMessageReceiptFromOutboundResults,
   DEFAULT_INGRESS_RETRY_MAX_ATTEMPTS,
-} from "openclaw/plugin-sdk/channel-outbound";
-import { createTestInboundDebounceFlush } from "openclaw/plugin-sdk/channel-test-helpers";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import { createTestInboundDebounceFlush } from "afora-agent/plugin-sdk/channel-test-helpers";
 import {
-  closeOpenClawStateDatabaseForTest,
+  closeAforaStateDatabaseForTest,
   createChannelIngressQueueForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { WebSocketServer } from "ws";
 import type { MattermostPost } from "./client.js";
 import type { MattermostEventPayload } from "./monitor-websocket.js";
 import { monitorMattermostProvider } from "./monitor.js";
-import type { OpenClawConfig, ReplyPayload, RuntimeEnv } from "./runtime-api.js";
+import type { AforaConfig, ReplyPayload, RuntimeEnv } from "./runtime-api.js";
 
 class FakeWebSocket {
   public readonly sent: string[] = [];
@@ -119,13 +119,13 @@ const mockState = vi.hoisted(() => ({
   updateMattermostPost: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/plugin-runtime", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/plugin-runtime")>()),
+vi.mock("afora-agent/plugin-sdk/plugin-runtime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/plugin-runtime")>()),
   getGlobalHookRunner: mockState.getGlobalHookRunner,
 }));
 
-vi.mock("openclaw/plugin-sdk/channel-outbound", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/channel-outbound")>();
+vi.mock("afora-agent/plugin-sdk/channel-outbound", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/channel-outbound")>();
   return {
     ...actual,
     createChannelProgressDraftCompositor: (
@@ -138,8 +138,8 @@ vi.mock("openclaw/plugin-sdk/channel-outbound", async (importOriginal) => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/reply-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/reply-runtime")>();
+vi.mock("afora-agent/plugin-sdk/reply-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/reply-runtime")>();
   return {
     ...actual,
     createReplyDispatcherWithTyping: (...args: unknown[]) =>
@@ -242,7 +242,7 @@ vi.mock("./runtime-api.js", async () => {
       readStoreForDmPolicy: vi.fn(async () => []),
       upsertPairingRequest: vi.fn(async () => ({ code: "123456", created: true })),
     })),
-    createChannelMessageReplyPipeline: vi.fn((params: { cfg: OpenClawConfig }) => ({
+    createChannelMessageReplyPipeline: vi.fn((params: { cfg: AforaConfig }) => ({
       onModelSelected: vi.fn(),
       typingCallbacks: {},
       resolveResponsePrefix: () => params.cfg.channels?.mattermost?.responsePrefix,
@@ -262,7 +262,7 @@ vi.mock("./send.js", async () => {
 });
 
 function createRuntimeCore(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   routeOverride?: {
     accountId?: string;
     agentId?: string;
@@ -321,7 +321,7 @@ function createRuntimeCore(
   const recordInboundSession = vi.fn(async (_params: RecordInboundSessionInput) => {});
   const dispatchPlanForTest = vi.fn(
     async (turn: {
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       channel: string;
       route: { agentId: string; sessionKey: string };
       ctxPayload: { SessionKey?: string };
@@ -344,7 +344,7 @@ function createRuntimeCore(
     }) => {
       mockState.deliveryPlanObserver(turn.delivery.observeMessageSent);
       await recordInboundSession({
-        storePath: "/tmp/openclaw-test-sessions.json",
+        storePath: "/tmp/afora-test-sessions.json",
         sessionKey: turn.ctxPayload.SessionKey ?? turn.route.sessionKey,
         ctx: turn.ctxPayload,
         groupResolution: turn.record?.groupResolution,
@@ -468,7 +468,7 @@ function createRuntimeCore(
         }),
       },
       session: {
-        resolveStorePath: () => "/tmp/openclaw-test-sessions.json",
+        resolveStorePath: () => "/tmp/afora-test-sessions.json",
         recordInboundSession,
         updateLastRoute: vi.fn(async () => {}),
       },
@@ -488,7 +488,7 @@ function createRuntimeCore(
   };
 }
 
-const testConfig: OpenClawConfig = {
+const testConfig: AforaConfig = {
   channels: {
     mattermost: {
       enabled: true,
@@ -569,7 +569,7 @@ describe("mattermost inbound user posts", () => {
     });
     mockState.fetchMattermostMe.mockResolvedValue({
       id: "bot-user",
-      username: "openclaw",
+      username: "afora",
       update_at: 1,
     });
     mockState.registerMattermostMonitorSlashCommands.mockResolvedValue(undefined);
@@ -593,7 +593,7 @@ describe("mattermost inbound user posts", () => {
     vi.useFakeTimers();
     const now = Date.UTC(2026, 0, 2);
     vi.setSystemTime(now);
-    const created = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-mattermost-abandon-"));
+    const created = await fs.mkdtemp(path.join(os.tmpdir(), "afora-mattermost-abandon-"));
     const stateDir = await fs.realpath(created);
     type Payload = { version: 1; receivedAt: number; rawEvent: string };
     const queue = createChannelIngressQueueForTests<Payload>({
@@ -723,7 +723,7 @@ describe("mattermost inbound user posts", () => {
     } finally {
       await Promise.allSettled(activeProviders.map(async (provider) => await provider.stop()));
       mockState.ingressQueue = undefined;
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       await fs.rm(stateDir, { recursive: true, force: true });
       vi.useRealTimers();
     }
@@ -862,7 +862,7 @@ describe("mattermost inbound user posts", () => {
     const socket = new FakeWebSocket();
     const abortController = new AbortController();
     mockState.abortController = abortController;
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       agents: {
         defaults: {
           envelopeTimezone: "user",
@@ -947,7 +947,7 @@ describe("mattermost inbound user posts", () => {
       const socket = new FakeWebSocket();
       const abortController = new AbortController();
       mockState.abortController = abortController;
-      const config: OpenClawConfig = {
+      const config: AforaConfig = {
         messages: { groupChat: { historyLimit: 2 } },
         channels: {
           ...(contextVisibility ? { defaults: { contextVisibility } } : {}),
@@ -1045,7 +1045,7 @@ describe("mattermost inbound user posts", () => {
           return;
         }
         if (request.url === "/api/v4/users/me") {
-          response.end(JSON.stringify({ id: "bot-user", username: "openclaw", update_at: 1 }));
+          response.end(JSON.stringify({ id: "bot-user", username: "afora", update_at: 1 }));
           return;
         }
         if (request.url === "/api/v4/channels/chan-1") {
@@ -1075,7 +1075,7 @@ describe("mattermost inbound user posts", () => {
       mockState.abortController = abortController;
       const verboseDebug = vi.fn();
       const baseUrl = `http://127.0.0.1:${address.port}`;
-      const config: OpenClawConfig = {
+      const config: AforaConfig = {
         messages: { groupChat: { historyLimit: 2 } },
         channels: {
           ...(contextVisibility ? { defaults: { contextVisibility } } : {}),
@@ -1270,7 +1270,7 @@ describe("mattermost inbound user posts", () => {
           id: "post-bare-mention",
           channel_id: "chan-1",
           user_id: "user-1",
-          message: "@openclaw",
+          message: "@afora",
           create_at: 1_714_000_000_001,
         }),
       },
@@ -1284,7 +1284,7 @@ describe("mattermost inbound user posts", () => {
 
     expect(mockState.dispatchInboundMessage).toHaveBeenCalledTimes(1);
     const ctx = mockState.dispatchInboundMessage.mock.calls.at(0)?.[0].ctx;
-    expect(ctx?.BodyForAgent).toBe("@openclaw");
+    expect(ctx?.BodyForAgent).toBe("@afora");
     expect(ctx?.MessageSid).toBe("post-bare-mention");
     expect(ctx?.OriginatingChannel).toBe("mattermost");
     expect(ctx?.Provider).toBe("mattermost");
@@ -1301,7 +1301,7 @@ describe("mattermost inbound user posts", () => {
       stop: vi.fn(async () => {}),
     };
     mockState.createMattermostDraftStream.mockReturnValue(draftStream);
-    const progressConfig: OpenClawConfig = {
+    const progressConfig: AforaConfig = {
       channels: {
         mattermost: {
           enabled: true,
@@ -1405,7 +1405,7 @@ describe("mattermost inbound user posts", () => {
     const socket = new FakeWebSocket();
     const abortController = new AbortController();
     mockState.abortController = abortController;
-    const inlineCommandConfig: OpenClawConfig = {
+    const inlineCommandConfig: AforaConfig = {
       channels: {
         mattermost: {
           enabled: true,
@@ -1480,7 +1480,7 @@ describe("mattermost inbound user posts", () => {
     const socket = new FakeWebSocket();
     const abortController = new AbortController();
     mockState.abortController = abortController;
-    const directConfig: OpenClawConfig = {
+    const directConfig: AforaConfig = {
       channels: {
         mattermost: {
           enabled: true,
@@ -1607,7 +1607,7 @@ describe("mattermost inbound user posts", () => {
     const socket = new FakeWebSocket();
     const abortController = new AbortController();
     mockState.abortController = abortController;
-    const channelTypeConfig: OpenClawConfig = {
+    const channelTypeConfig: AforaConfig = {
       channels: {
         mattermost: {
           enabled: true,
@@ -1666,7 +1666,7 @@ describe("mattermost inbound user posts", () => {
     const socket = new FakeWebSocket();
     const abortController = new AbortController();
     mockState.abortController = abortController;
-    const mentionConfig: OpenClawConfig = {
+    const mentionConfig: AforaConfig = {
       messages: { inbound: { debounceMs: 60_000 } },
       channels: {
         mattermost: {
@@ -1758,7 +1758,7 @@ describe("mattermost inbound user posts", () => {
     const socket = new FakeWebSocket();
     const abortController = new AbortController();
     mockState.abortController = abortController;
-    const directConfig: OpenClawConfig = {
+    const directConfig: AforaConfig = {
       channels: {
         mattermost: {
           enabled: true,
@@ -1815,7 +1815,7 @@ describe("mattermost inbound user posts", () => {
 
     expect(runtimeCore.channel.session.recordInboundSession).toHaveBeenCalledTimes(1);
     const [recordCall] = runtimeCore.channel.session.recordInboundSession.mock.calls.at(0) ?? [];
-    expect(recordCall?.storePath).toBe("/tmp/openclaw-test-sessions.json");
+    expect(recordCall?.storePath).toBe("/tmp/afora-test-sessions.json");
     expect(recordCall?.sessionKey).toBe("mattermost:default:channel:chan-1");
     const updateLastRoute = recordCall?.updateLastRoute;
     expect(updateLastRoute?.sessionKey).toBe("mattermost:default:channel:chan-1");
@@ -1834,7 +1834,7 @@ describe("mattermost inbound user posts", () => {
     const socket = new FakeWebSocket();
     const abortController = new AbortController();
     mockState.abortController = abortController;
-    const directConfig: OpenClawConfig = {
+    const directConfig: AforaConfig = {
       session: { dmScope: "per-channel-peer" },
       channels: {
         mattermost: {
@@ -1910,7 +1910,7 @@ describe("mattermost inbound user posts", () => {
   });
 
   it("keeps core block streaming enabled when preview streaming is off", async () => {
-    const offConfig: OpenClawConfig = {
+    const offConfig: AforaConfig = {
       channels: {
         mattermost: {
           enabled: true,
@@ -2031,7 +2031,7 @@ describe("mattermost inbound user posts", () => {
   });
 
   it("preserves text-tool-text boundaries while grouping interleaved tool updates", async () => {
-    const blockConfig: OpenClawConfig = {
+    const blockConfig: AforaConfig = {
       channels: {
         mattermost: {
           enabled: true,
@@ -2258,7 +2258,7 @@ describe("mattermost inbound user posts", () => {
   });
 
   it("finalizes only the current block when the terminal reply is cumulative", async () => {
-    const blockConfig: OpenClawConfig = {
+    const blockConfig: AforaConfig = {
       channels: {
         mattermost: {
           enabled: true,
@@ -2347,7 +2347,7 @@ describe("mattermost inbound user posts", () => {
   });
 
   it("records participation when the confirmed preview already contains the final", async () => {
-    const blockConfig: OpenClawConfig = {
+    const blockConfig: AforaConfig = {
       channels: {
         mattermost: {
           enabled: true,
@@ -2421,7 +2421,7 @@ describe("mattermost inbound user posts", () => {
   });
 
   it("records participation when confirmed-preview cleanup fails", async () => {
-    const blockConfig: OpenClawConfig = {
+    const blockConfig: AforaConfig = {
       channels: {
         mattermost: {
           enabled: true,
@@ -2500,7 +2500,7 @@ describe("mattermost inbound user posts", () => {
   });
 
   it("records participation when a later send step fails after a visible thread post", async () => {
-    const progressConfig: OpenClawConfig = {
+    const progressConfig: AforaConfig = {
       channels: {
         mattermost: {
           enabled: true,

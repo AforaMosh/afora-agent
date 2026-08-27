@@ -2,8 +2,8 @@ import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promi
 import { createServer, type Server } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { rawDataToString } from "@openclaw/gateway-client/websocket-data";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { rawDataToString } from "@afora/gateway-client/websocket-data";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { Type } from "typebox";
 import { Value } from "typebox/value";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -183,7 +183,7 @@ class FakeWorkerGateway {
   }
 
   async start(): Promise<void> {
-    this.rootDir = await mkdtemp(path.join(tmpdir(), "openclaw-worker-gateway-"));
+    this.rootDir = await mkdtemp(path.join(tmpdir(), "afora-worker-gateway-"));
     this.socketPath = path.join(this.rootDir, "gateway.sock");
     await new Promise<void>((resolve, reject) => {
       const onError = (error: Error) => {
@@ -824,7 +824,7 @@ function descriptor(socketPath: string, workspaceDir: string): WorkerLaunchDescr
       rpcSetVersion: WORKER_RPC_SET_VERSION,
       handshake: {
         bundleHash: BUNDLE_HASH,
-        openclawVersion: "worker-test",
+        aforaVersion: "worker-test",
         protocolFeatures: [...WORKER_PROTOCOL_FEATURES],
       },
     },
@@ -860,7 +860,7 @@ async function setup(options?: FakeGatewayOptions): Promise<{
   const gateway = new FakeWorkerGateway(options);
   gateways.push(gateway);
   await gateway.start();
-  const workspaceDir = await mkdtemp(path.join(tmpdir(), "openclaw-worker-workspace-"));
+  const workspaceDir = await mkdtemp(path.join(tmpdir(), "afora-worker-workspace-"));
   tempDirs.push(workspaceDir);
   return { gateway, workspaceDir, launch: descriptor(gateway.socketPath, workspaceDir) };
 }
@@ -962,7 +962,7 @@ describe("worker runtime", () => {
     launch.assignment.toolAuthority.allowedToolNames = ["browser"];
     launch.assignment.browser = {
       cdpUrl: "http://127.0.0.1:9222",
-      launcherPath: "/usr/local/bin/openclaw-worker-browser",
+      launcherPath: "/usr/local/bin/afora-worker-browser",
     };
 
     await expect(runWorkerDescriptor(launch)).resolves.toMatchObject({ status: "completed" });
@@ -985,7 +985,7 @@ describe("worker runtime", () => {
       authority: ["read"] as const,
       browser: {
         cdpUrl: "http://127.0.0.1:9222",
-        launcherPath: "/usr/local/bin/openclaw-worker-browser",
+        launcherPath: "/usr/local/bin/afora-worker-browser",
       },
     },
   ])("fails before inference when Browser authority and descriptor disagree", async (testCase) => {
@@ -1330,28 +1330,28 @@ describe("worker runtime", () => {
 
   it("executes coding tools locally without reading the preexisting auth profile", async () => {
     const { gateway, workspaceDir, launch } = await setup({ inferencePlans: ["tool", "text"] });
-    const previousStateDir = process.env.OPENCLAW_STATE_DIR;
-    const previousConfigPath = process.env.OPENCLAW_CONFIG_PATH;
+    const previousStateDir = process.env.AFORA_STATE_DIR;
+    const previousConfigPath = process.env.AFORA_CONFIG_PATH;
     const trapStateDir = path.join(workspaceDir, "state-trap");
     const authDir = path.join(trapStateDir, "agents", "main", "agent");
     const configTrap = path.join(workspaceDir, "config-trap");
     await mkdir(authDir, { recursive: true });
     await writeFile(path.join(authDir, "auth-profiles.json"), "not valid json", "utf8");
     await mkdir(configTrap);
-    process.env.OPENCLAW_STATE_DIR = trapStateDir;
-    process.env.OPENCLAW_CONFIG_PATH = configTrap;
+    process.env.AFORA_STATE_DIR = trapStateDir;
+    process.env.AFORA_CONFIG_PATH = configTrap;
     try {
       await expect(runWorkerDescriptor(launch)).resolves.toMatchObject({ status: "completed" });
     } finally {
       if (previousStateDir === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.AFORA_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = previousStateDir;
+        process.env.AFORA_STATE_DIR = previousStateDir;
       }
       if (previousConfigPath === undefined) {
-        delete process.env.OPENCLAW_CONFIG_PATH;
+        delete process.env.AFORA_CONFIG_PATH;
       } else {
-        process.env.OPENCLAW_CONFIG_PATH = previousConfigPath;
+        process.env.AFORA_CONFIG_PATH = previousConfigPath;
       }
     }
 
@@ -1462,7 +1462,7 @@ describe("worker runtime", () => {
 
   it("rejects a dot-dot workspace escape before worker connection", async () => {
     const { workspaceDir, launch } = await setup();
-    const outside = await mkdtemp(path.join(tmpdir(), "openclaw-worker-outside-"));
+    const outside = await mkdtemp(path.join(tmpdir(), "afora-worker-outside-"));
     tempDirs.push(outside);
     launch.assignment.workspaceDir = path.join(workspaceDir, "..", path.basename(outside));
     launch.assignment.permissionMode = "workspace";

@@ -6,7 +6,7 @@ import { loadSessionEntry, replaceSessionEntry } from "../config/sessions/sessio
 import type { SessionEntry } from "../config/sessions/types.js";
 import { saveCronStore } from "../cron/store.js";
 import type { RuntimeEnv } from "../runtime.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
 import { createManagedTaskFlow as createManagedTaskFlowOrNull } from "../tasks/task-flow-registry.js";
 import type { TaskFlowRecord } from "../tasks/task-flow-registry.types.js";
 import {
@@ -29,8 +29,8 @@ import type {
   TaskSystemAuditCode,
   TaskSystemAuditSeverity,
 } from "../tasks/task-system-audit.types.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
-import type { OpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
+import type { AforaTestState } from "../test-utils/afora-test-state.js";
 import {
   tasksAuditCommand,
   tasksCancelCommand,
@@ -132,14 +132,14 @@ function resetTaskCommandRuntime() {
   resetTaskRegistryDeliveryRuntimeForTests();
   resetTaskRegistryForTests({ persist: false });
   resetTaskFlowRegistryForTests({ persist: false });
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
 }
 
 async function withTaskCommandStateDir(
-  run: (state: OpenClawTestState) => Promise<void>,
+  run: (state: AforaTestState) => Promise<void>,
 ): Promise<void> {
-  await withOpenClawTestState(
-    { layout: "state-only", prefix: "openclaw-tasks-command-" },
+  await withAforaTestState(
+    { layout: "state-only", prefix: "afora-tasks-command-" },
     async (state) => {
       resetTaskCommandRuntime();
       try {

@@ -2,13 +2,13 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { isMessagingToolDuplicate } from "../../agents/embedded-agent-helpers.js";
 import type { MessagingToolSend } from "../../agents/embedded-agent-messaging.types.js";
 import { getChannelPlugin } from "../../channels/plugins/index.js";
 import { getLoadedChannelPluginForRead } from "../../channels/plugins/registry-loaded.js";
 import { normalizeAnyChannelId } from "../../channels/registry.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { normalizeMediaReferenceForComparison } from "../../media/media-reference-comparison.js";
 import {
   channelRouteTargetsMatchExact,
@@ -24,7 +24,7 @@ import {
 import type { ReplyPayload } from "../types.js";
 
 type MessagingToolDedupeRouteParams = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   messageProvider?: string;
   messagingToolSentTargets?: MessagingToolSend[];
   originatingTo?: string;
@@ -207,7 +207,7 @@ function targetsMatchForDedupe(params: {
 
 function resolveOriginThreadIdForPayload(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   accountId?: string;
   originatingThreadId?: string | number;
   replyToId?: string;

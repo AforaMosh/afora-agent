@@ -1,5 +1,5 @@
 // Windows launcher normalization for npm/bun wrappers that duplicate node.exe in argv.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 
 /** Remove duplicated Windows node launcher argv entries while preserving normal POSIX argv. */
 export function normalizeWindowsArgv(

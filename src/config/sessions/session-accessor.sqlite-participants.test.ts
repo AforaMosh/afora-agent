@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
-import { withOpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
+import { withAforaTestState } from "../../test-utils/afora-test-state.js";
 import {
   deleteSessionEntryLifecycle,
   listSessionParticipantsReadOnly,
@@ -14,12 +14,12 @@ import {
 } from "./session-accessor.js";
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
 });
 
 describe("SQLite session participants", () => {
   it("lazily creates, deduplicates, caps, projects, and deletes participant history", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async (state) => {
+    await withAforaTestState({ scenario: "minimal" }, async (state) => {
       const sessionKey = "agent:main:participants";
       const scope = { agentId: "main", env: state.env, sessionKey };
       await upsertSessionEntryCore(scope, {
@@ -27,7 +27,7 @@ describe("SQLite session participants", () => {
         updatedAt: 1,
         createdActor: { type: "human", id: "profile-owner" },
       });
-      const initial = openOpenClawAgentDatabase({ agentId: "main", env: state.env });
+      const initial = openAforaAgentDatabase({ agentId: "main", env: state.env });
       const storePath = initial.path;
       initial.db.exec(`
         DROP TABLE session_participants;
@@ -49,7 +49,7 @@ describe("SQLite session participants", () => {
         )
         .run(sessionKey);
       const schemaVersion = initial.db.prepare("PRAGMA user_version").get()?.user_version;
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
 
       expect(listSessionParticipantsReadOnly(scope).get(sessionKey)).toEqual([
         {
@@ -61,10 +61,10 @@ describe("SQLite session participants", () => {
       expect(loadSessionEntry(scope)?.participants).toEqual([
         { type: "human", id: "profile-legacy" },
       ]);
-      openOpenClawAgentDatabase({ agentId: "main", env: state.env })
+      openAforaAgentDatabase({ agentId: "main", env: state.env })
         .db.prepare("DELETE FROM session_participants WHERE actor_id = 'profile-legacy'")
         .run();
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
       expect(
         recordSessionParticipant(scope, {
           actor: { type: "human", id: "profile-owner" },
@@ -116,7 +116,7 @@ describe("SQLite session participants", () => {
         }),
       ).toBeNull();
 
-      const participantDatabase = openOpenClawAgentDatabase({ agentId: "main", env: state.env });
+      const participantDatabase = openAforaAgentDatabase({ agentId: "main", env: state.env });
       participantDatabase.db
         .prepare(
           "UPDATE session_participants SET actor_source = NULL WHERE actor_id = 'profile-01'",
@@ -143,8 +143,8 @@ describe("SQLite session participants", () => {
         { type: "human", id: "profile-03", source: "profile" },
       ]);
 
-      closeOpenClawAgentDatabasesForTest();
-      const reopened = openOpenClawAgentDatabase({ agentId: "main", env: state.env });
+      closeAforaAgentDatabasesForTest();
+      const reopened = openAforaAgentDatabase({ agentId: "main", env: state.env });
       expect(reopened.db.prepare("PRAGMA user_version").get()?.user_version).toBe(schemaVersion);
       expect(loadSessionEntry(scope)?.participantCount).toBe(MAX_SESSION_PARTICIPANTS - 1);
 

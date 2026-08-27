@@ -1,13 +1,13 @@
-# Moonshot OpenClaw provider
+# Moonshot Afora provider
 
-Official OpenClaw provider plugin for Moonshot.
+Official Afora provider plugin for Moonshot.
 
 ## Install
 
 ```sh
-openclaw plugins install @openclaw/moonshot-provider
+afora plugins install @afora/moonshot-provider
 ```
 
 ## Docs
 
-See `docs/providers/moonshot.md` in the OpenClaw repository, or the published docs at `https://docs.openclaw.ai/providers/moonshot`.
+See `docs/providers/moonshot.md` in the Afora repository, or the published docs at `https://docs.afora.ai/providers/moonshot`.

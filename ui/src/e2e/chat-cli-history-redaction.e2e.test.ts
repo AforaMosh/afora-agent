@@ -19,7 +19,7 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 suite.define(() => {
   it("renders a real imported Claude transcript once without exposing its unredacted secret", async () => {
-    const homeDir = tempDirs.make("openclaw-cli-history-redaction-");
+    const homeDir = tempDirs.make("afora-cli-history-redaction-");
     const context = await suite.newBrowserContext({
       locale: "en-US",
       serviceWorkers: "block",
@@ -74,7 +74,7 @@ suite.define(() => {
 
       expect(mergedMessages).toHaveLength(2);
       expect(mergedMessages[0]).toBe(localUserMessage);
-      expect(requireRecord(requireRecord(mergedMessages[1])["__openclaw"])).toMatchObject({
+      expect(requireRecord(requireRecord(mergedMessages[1])["__afora"])).toMatchObject({
         cliSessionId,
         externalId: "control-ui-claude-imported-assistant",
         importedFrom: "claude-cli",

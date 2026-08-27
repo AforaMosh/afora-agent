@@ -1,4 +1,4 @@
-import { pruneMapToMaxSize } from "openclaw/plugin-sdk/collection-runtime";
+import { pruneMapToMaxSize } from "afora-agent/plugin-sdk/collection-runtime";
 
 /** LRU-touch read: move hit to newest so pruneMapToMaxSize keeps active keys. */
 export function readLruMapEntry<T>(cache: Map<string, T>, cacheKey: string): T | undefined {

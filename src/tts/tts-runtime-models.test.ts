@@ -13,7 +13,7 @@ import {
   synthesizeSpeech,
   textToSpeechStream,
   transcodeAudioBufferMock,
-  type OpenClawConfig,
+  type AforaConfig,
   type SpeechSynthesisRequest,
 } from "./tts-runtime.test-support.js";
 
@@ -45,7 +45,7 @@ describe("TTS runtime voice model and streaming behavior", () => {
           enabled: true,
           provider: "mock",
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       disableFallback: true,
     });
 
@@ -81,9 +81,9 @@ describe("TTS runtime voice model and streaming behavior", () => {
         },
         tts: {
           enabled: true,
-          prefsPath: "/tmp/openclaw-speech-core-voice-model-default-test.json",
+          prefsPath: "/tmp/afora-speech-core-voice-model-default-test.json",
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       disableFallback: true,
     });
 
@@ -120,14 +120,14 @@ describe("TTS runtime voice model and streaming behavior", () => {
         tts: {
           enabled: true,
           provider: "openrouter",
-          prefsPath: "/tmp/openclaw-speech-core-explicit-model-alias-test.json",
+          prefsPath: "/tmp/afora-speech-core-explicit-model-alias-test.json",
           providers: {
             openrouter: {
               modelId: "explicit-model",
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       disableFallback: true,
     });
 
@@ -167,9 +167,9 @@ describe("TTS runtime voice model and streaming behavior", () => {
         },
         tts: {
           enabled: true,
-          prefsPath: "/tmp/openclaw-speech-core-voice-model-fallback-test.json",
+          prefsPath: "/tmp/afora-speech-core-voice-model-fallback-test.json",
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(result.success).toBe(true);
@@ -211,9 +211,9 @@ describe("TTS runtime voice model and streaming behavior", () => {
         },
         tts: {
           enabled: true,
-          prefsPath: "/tmp/openclaw-speech-core-same-provider-voice-model-fallback-test.json",
+          prefsPath: "/tmp/afora-speech-core-same-provider-voice-model-fallback-test.json",
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(result.success).toBe(true);
@@ -253,9 +253,9 @@ describe("TTS runtime voice model and streaming behavior", () => {
         tts: {
           enabled: true,
           provider: "buffered",
-          prefsPath: "/tmp/openclaw-speech-core-streaming-fallback-test.json",
+          prefsPath: "/tmp/afora-speech-core-streaming-fallback-test.json",
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(result.success).toBe(true);
@@ -317,9 +317,9 @@ describe("TTS runtime voice model and streaming behavior", () => {
         tts: {
           enabled: true,
           provider: "primary",
-          prefsPath: "/tmp/openclaw-speech-core-streaming-timeout-test.json",
+          prefsPath: "/tmp/afora-speech-core-streaming-timeout-test.json",
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(result.success).toBe(true);

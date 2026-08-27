@@ -1,5 +1,5 @@
 // Discord tests cover dm command decision plugin behavior.
-import type { ResolvedChannelMessageIngress } from "openclaw/plugin-sdk/channel-ingress-runtime";
+import type { ResolvedChannelMessageIngress } from "afora-agent/plugin-sdk/channel-ingress-runtime";
 import { describe, expect, it, vi } from "vitest";
 import { handleDiscordDmCommandDecision } from "./dm-command-decision.js";
 

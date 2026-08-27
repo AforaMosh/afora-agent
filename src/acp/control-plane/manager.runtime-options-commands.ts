@@ -1,7 +1,7 @@
 /** Command handlers for changing ACP runtime mode and config options on live sessions. */
-import type { AcpRuntime, AcpRuntimeHandle } from "@openclaw/acp-core/runtime/types";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AcpRuntime, AcpRuntimeHandle } from "@afora/acp-core/runtime/types";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { AcpRuntimeError, withAcpRuntimeErrorBoundary } from "../runtime/errors.js";
 import type { ManagerRuntimeHandleCache } from "./manager.runtime-handle-cache.js";
 import type {
@@ -33,7 +33,7 @@ export type RuntimeOptionCommandServices = {
 };
 
 type RuntimeOptionCommandContext = RuntimeOptionCommandServices & {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
 };
 

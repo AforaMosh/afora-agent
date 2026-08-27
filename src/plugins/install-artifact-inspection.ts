@@ -1,9 +1,9 @@
 import { isBundleCapabilitySupported } from "./bundle-capability-support.js";
 import type { PluginBundleFormat } from "./manifest-types.js";
 
-type PluginArtifactFormat = "openclaw" | PluginBundleFormat;
+type PluginArtifactFormat = "afora" | PluginBundleFormat;
 
-export const PLUGIN_ARTIFACT_ADAPTER_IDENTITY = "openclaw/v1" as const;
+export const PLUGIN_ARTIFACT_ADAPTER_IDENTITY = "afora-agent/v1" as const;
 
 export type PluginInstallArtifactInspection = {
   format: PluginArtifactFormat;
@@ -12,7 +12,7 @@ export type PluginInstallArtifactInspection = {
 };
 
 export function inspectNativePluginArtifact(): PluginInstallArtifactInspection {
-  return { format: "openclaw", mapped: ["plugin"], unavailable: [] };
+  return { format: "afora", mapped: ["plugin"], unavailable: [] };
 }
 
 export function inspectBundlePluginArtifact(params: {

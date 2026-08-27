@@ -11,26 +11,26 @@ import {
   readSqliteUserVersion,
 } from "../../infra/sqlite-user-version.js";
 import {
-  OPENCLAW_SQLITE_BUSY_TIMEOUT_MS,
-  OPENCLAW_STATE_SCHEMA_VERSION,
-} from "../../state/openclaw-state-db-contract.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../../state/openclaw-state-db.generated.js";
-import { resolveOpenClawStateSqlitePath } from "../../state/openclaw-state-db.paths.js";
+  AFORA_SQLITE_BUSY_TIMEOUT_MS,
+  AFORA_STATE_SCHEMA_VERSION,
+} from "../../state/afora-state-db-contract.js";
+import type { DB as AforaStateKyselyDatabase } from "../../state/afora-state-db.generated.js";
+import { resolveAforaStateSqlitePath } from "../../state/afora-state-db.paths.js";
 import {
   readNativeHookRelayBridgeRecordRow,
   type NativeHookRelayBridgeRecord,
 } from "./native-hook-relay-bridge-record.js";
 
-type NativeHookRelayBridgeDatabase = Pick<OpenClawStateKyselyDatabase, "native_hook_relay_bridges">;
+type NativeHookRelayBridgeDatabase = Pick<AforaStateKyselyDatabase, "native_hook_relay_bridges">;
 
 function assertSupportedSchemaVersion(db: DatabaseSync, pathname: string): void {
   const userVersion = readSqliteUserVersion(db);
-  if (userVersion > OPENCLAW_STATE_SCHEMA_VERSION) {
+  if (userVersion > AFORA_STATE_SCHEMA_VERSION) {
     throw createNewerSqliteSchemaVersionError(
-      "OpenClaw state database",
+      "Afora state database",
       pathname,
       userVersion,
-      OPENCLAW_STATE_SCHEMA_VERSION,
+      AFORA_STATE_SCHEMA_VERSION,
     );
   }
 }
@@ -40,10 +40,10 @@ export function readNativeHookRelayClientBridgeRecord(params: {
   relayId: string;
   stateDbPath?: string;
 }): NativeHookRelayBridgeRecord | undefined {
-  const pathname = path.resolve(params.stateDbPath ?? resolveOpenClawStateSqlitePath());
+  const pathname = path.resolve(params.stateDbPath ?? resolveAforaStateSqlitePath());
   const db = openNodeSqliteDatabase(pathname, { readOnly: true });
   try {
-    db.exec(`PRAGMA busy_timeout = ${OPENCLAW_SQLITE_BUSY_TIMEOUT_MS};`);
+    db.exec(`PRAGMA busy_timeout = ${AFORA_SQLITE_BUSY_TIMEOUT_MS};`);
     assertSupportedSchemaVersion(db, pathname);
     const query = getNodeSqliteKysely<NativeHookRelayBridgeDatabase>(db)
       .selectFrom("native_hook_relay_bridges")

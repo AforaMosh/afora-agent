@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { ManagedWorktreeService } from "./service.js";
 import { initializeManagedWorktreeTestRepository } from "./service.test-support.js";
 
@@ -25,18 +25,18 @@ describe("ManagedWorktreeService canonical paths", () => {
 
   beforeEach(async () => {
     root = await fs.mkdtemp(
-      path.join(await fs.realpath(os.tmpdir()), "openclaw-worktree-canonical-paths-"),
+      path.join(await fs.realpath(os.tmpdir()), "afora-worktree-canonical-paths-"),
     );
     repo = await initializeManagedWorktreeTestRepository(root);
     stateDir = path.join(root, "state");
     await fs.mkdir(stateDir, { recursive: true });
     service = new ManagedWorktreeService({
-      env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+      env: { ...process.env, AFORA_STATE_DIR: stateDir },
     });
   });
 
   afterEach(async () => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(root, { recursive: true, force: true });
   });
 
@@ -67,7 +67,7 @@ describe("ManagedWorktreeService canonical paths", () => {
       const linkedStateDir = path.join(root, "linked-state");
       await fs.symlink(realStateDir, linkedStateDir, "dir");
       const linkedStateService = new ManagedWorktreeService({
-        env: { ...process.env, OPENCLAW_STATE_DIR: linkedStateDir },
+        env: { ...process.env, AFORA_STATE_DIR: linkedStateDir },
       });
 
       const created = await linkedStateService.create({

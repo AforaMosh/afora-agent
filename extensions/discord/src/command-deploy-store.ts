@@ -1,4 +1,4 @@
-import type { PluginStateKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { PluginStateKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
 
 export const DISCORD_COMMAND_DEPLOY_HASH_NAMESPACE = "command-deploy-hashes";
 export const DISCORD_COMMAND_DEPLOY_HASH_MAX_ENTRIES = 10_000;

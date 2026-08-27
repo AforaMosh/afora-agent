@@ -17,10 +17,10 @@ describe("legacy workspace reset cleanup", () => {
   afterEach(() => resetLegacyWorkspaceStateCheckForTest());
 
   function setup() {
-    const homeDir = tempDirs.make("openclaw-workspace-legacy-cleanup-");
+    const homeDir = tempDirs.make("afora-workspace-legacy-cleanup-");
     const stateDir = path.join(homeDir, "state");
     const workspaceDir = path.join(homeDir, "workspace");
-    const env = { ...process.env, HOME: homeDir, OPENCLAW_STATE_DIR: stateDir };
+    const env = { ...process.env, HOME: homeDir, AFORA_STATE_DIR: stateDir };
     const homedir = () => homeDir;
     return {
       env,
@@ -143,7 +143,7 @@ describe("legacy workspace reset cleanup", () => {
     );
 
     expect(() => assertNoUnmigratedWorkspaceState({ workspaceDir: context.workspaceDir })).toThrow(
-      /run openclaw doctor --fix/u,
+      /run afora doctor --fix/u,
     );
   });
 
@@ -173,7 +173,7 @@ describe("legacy workspace reset cleanup", () => {
       path.join(context.stateDir, "workspace-attestations", `${identity.workspaceKey}.attested`),
     );
     expect(() => assertNoUnmigratedWorkspaceState({ workspaceDir: context.workspaceDir })).toThrow(
-      /run openclaw doctor --fix/u,
+      /run afora doctor --fix/u,
     );
     const cleanup = await removeLegacyWorkspaceStateForReset(prepare(context));
     expect(cleanup.removedPaths).toContain(canonicalSiblingPath);
@@ -190,7 +190,7 @@ describe("legacy workspace reset cleanup", () => {
       process.platform === "win32" ? "junction" : "dir",
     );
     const identity = resolveWorkspaceStateIdentity(targetDir);
-    const setupPath = path.join(targetDir, "openclaw-workspace-state.json");
+    const setupPath = path.join(targetDir, "afora-workspace-state.json");
     const stateAttestationPath = path.join(
       context.stateDir,
       "workspace-attestations",

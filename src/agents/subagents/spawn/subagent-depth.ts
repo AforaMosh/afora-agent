@@ -1,13 +1,13 @@
-import { parseStrictNonNegativeInteger } from "@openclaw/normalization-core/number-coercion";
+import { parseStrictNonNegativeInteger } from "@afora/normalization-core/number-coercion";
 /**
  * Subagent spawn-depth lookup helpers.
  *
  * Reads persisted session store state to recover spawn depth and parent lineage across restarts.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { resolveSessionStorePathCore } from "../../../config/sessions/paths.js";
 import { listSessionEntriesReadOnly } from "../../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { normalizeAgentId } from "../../../routing/session-key.js";
 import { getSubagentDepth, parseAgentSessionKey } from "../../../sessions/session-key-utils.js";
 import { resolveSessionAgentId } from "../../agent-scope.js";
@@ -46,7 +46,7 @@ export function readSubagentSessionStore<T extends SessionDepthEntry = SessionDe
 
 function buildKeyCandidates(
   rawKey: string,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
   explicitAgentId?: string,
 ): string[] {
   if (!cfg) {
@@ -86,7 +86,7 @@ export function findSubagentSessionEntryById<T extends SessionDepthEntry>(
 
 function resolveEntryForSessionKey(params: {
   sessionKey: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   store?: Record<string, SessionDepthEntry>;
   cache: Map<string, Record<string, SessionDepthEntry>>;
   agentId?: string;
@@ -140,7 +140,7 @@ function resolveEntryForSessionKey(params: {
 export function getSubagentDepthFromSessionStore(
   sessionKey: string | undefined | null,
   opts?: {
-    cfg?: OpenClawConfig;
+    cfg?: AforaConfig;
     store?: Record<string, SessionDepthEntry>;
     agentId?: string;
   },

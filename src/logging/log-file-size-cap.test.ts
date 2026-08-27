@@ -12,7 +12,7 @@ import { createSuiteLogPathTracker } from "./log-test-helpers.js";
 import { testApi } from "./logger.test-support.js";
 
 const DEFAULT_MAX_FILE_BYTES = 100 * 1024 * 1024;
-const logPathTracker = createSuiteLogPathTracker("openclaw-log-cap-");
+const logPathTracker = createSuiteLogPathTracker("afora-log-cap-");
 
 function rotatedLogPath(file: string, index: number): string {
   const ext = path.extname(file);
@@ -111,8 +111,8 @@ describe("log file size cap", () => {
 
   it("keeps cached default rolling loggers on the current-day file", async () => {
     const logDir = path.dirname(logPath);
-    const firstDay = path.join(logDir, "openclaw-2026-01-01.log");
-    const secondDay = path.join(logDir, "openclaw-2026-01-02.log");
+    const firstDay = path.join(logDir, "afora-2026-01-01.log");
+    const secondDay = path.join(logDir, "afora-2026-01-02.log");
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-01T08:00:00Z"));
     setLoggerOverride({ level: "info", file: firstDay });
@@ -130,8 +130,8 @@ describe("log file size cap", () => {
 
   it("keeps an explicit profile-shaped log path stable across date changes", async () => {
     const logDir = path.dirname(logPath);
-    const configured = path.join(logDir, "openclaw-dev-2026-01-01.log");
-    const inferredNextDay = path.join(logDir, "openclaw-dev-2026-01-02.log");
+    const configured = path.join(logDir, "afora-dev-2026-01-01.log");
+    const inferredNextDay = path.join(logDir, "afora-dev-2026-01-02.log");
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-01T08:00:00Z"));
     setLoggerOverride({ level: "info", file: configured });

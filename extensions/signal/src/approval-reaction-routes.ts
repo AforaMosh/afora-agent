@@ -1,15 +1,15 @@
-import { matchesApprovalRequestFilters } from "openclaw/plugin-sdk/approval-client-runtime";
-import type { ChannelApprovalKind } from "openclaw/plugin-sdk/approval-handler-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { normalizeAccountId } from "openclaw/plugin-sdk/routing";
+import { matchesApprovalRequestFilters } from "afora-agent/plugin-sdk/approval-client-runtime";
+import type { ChannelApprovalKind } from "afora-agent/plugin-sdk/approval-handler-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { normalizeAccountId } from "afora-agent/plugin-sdk/routing";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveSignalTarget } from "./aliases.js";
 import { normalizeSignalMessagingTarget } from "./normalize.js";
 
-type ApprovalForwardingConfig = NonNullable<NonNullable<OpenClawConfig["approvals"]>["exec"]>;
+type ApprovalForwardingConfig = NonNullable<NonNullable<AforaConfig["approvals"]>["exec"]>;
 type ApprovalForwardingMode = NonNullable<ApprovalForwardingConfig["mode"]>;
 
 export type SignalApprovalReactionRoute =
@@ -27,7 +27,7 @@ export type SignalApprovalReactionRoute =
     };
 
 function resolveApprovalForwardingConfig(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   approvalKind: ChannelApprovalKind;
 }): ApprovalForwardingConfig | undefined {
   return params.approvalKind === "plugin"
@@ -80,7 +80,7 @@ function targetAccountMatches(params: {
 }
 
 function resolveSignalApprovalRouteTarget(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   to: string;
 }): string | null {
@@ -100,7 +100,7 @@ function resolveSignalApprovalRouteTarget(params: {
 }
 
 function hasMatchingSignalApprovalReactionTarget(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   config: ApprovalForwardingConfig;
   route: Extract<SignalApprovalReactionRoute, { deliveryMode: "target" }>;
 }): boolean {
@@ -124,7 +124,7 @@ function hasMatchingSignalApprovalReactionTarget(params: {
 }
 
 export function isSignalApprovalReactionRouteStillEnabled(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   target: {
     approvalKind: ChannelApprovalKind;
     route: SignalApprovalReactionRoute;
@@ -156,7 +156,7 @@ export function isSignalApprovalReactionRouteStillEnabled(params: {
 }
 
 export function buildTargetRoute(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   to: string;
   approvalKind: ChannelApprovalKind;

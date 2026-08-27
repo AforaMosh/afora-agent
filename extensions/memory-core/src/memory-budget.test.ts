@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { compactMemoryForBudget, DEFAULT_MEMORY_FILE_MAX_CHARS } from "./memory-budget.js";
 
-const PROMOTION_MARKER_LINE = "<!-- openclaw-memory-promotion:memory/short-term.md#entry -->";
+const PROMOTION_MARKER_LINE = "<!-- afora-memory-promotion:memory/short-term.md#entry -->";
 
 function promotionSection(date: string, sizeChars: number): string {
   const heading = `## Promoted From Short-Term Memory (${date})\n`;
@@ -25,12 +25,12 @@ function projectGroupedSection(date: string): string {
     "",
     "### Global",
     "",
-    "<!-- openclaw-memory-promotion:memory/short-term.md#global -->",
+    "<!-- afora-memory-promotion:memory/short-term.md#global -->",
     `- ${"g".repeat(120)} [score=0.900 signals=4 recalls=4 avg=0.900 source=memory/short-term.md:1-2]`,
     "",
     "### Project: alpha",
     "",
-    "<!-- openclaw-memory-promotion:memory/short-term.md#alpha -->",
+    "<!-- afora-memory-promotion:memory/short-term.md#alpha -->",
     `- ${"a".repeat(120)} [score=0.900 signals=4 recalls=4 avg=0.900 source=memory/short-term.md:3-4]`,
     "",
     "",
@@ -285,7 +285,7 @@ describe("compactMemoryForBudget — bounded MEMORY.md compaction (regression fo
     expect(result.droppedDates).toEqual(["2026-04-10", "2026-04-20"]);
     expect(result.compacted).not.toContain("### Project: alpha");
     expect(result.compacted).not.toContain("### Global");
-    expect(result.compacted).not.toContain("openclaw-memory-promotion");
+    expect(result.compacted).not.toContain("afora-memory-promotion");
   });
 
   it("preserves an empty user heading line written under a promotion section", () => {
@@ -393,7 +393,7 @@ describe("compactMemoryForBudget — bounded MEMORY.md compaction (regression fo
       PROMOTION_MARKER_LINE,
       "- first generated entry",
       "USER-AUTHORED: this line is not owned by either marker.",
-      "<!-- openclaw-memory-promotion:memory/short-term.md#second -->",
+      "<!-- afora-memory-promotion:memory/short-term.md#second -->",
       "- second generated entry",
       "",
     ].join("\n");

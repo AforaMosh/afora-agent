@@ -1,5 +1,5 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString as optionalString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString as optionalString } from "@afora/normalization-core/string-coerce";
 import { Value } from "typebox/value";
 import {
   TasksCancelResultSchema,

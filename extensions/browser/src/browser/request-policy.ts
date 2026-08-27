@@ -1,7 +1,7 @@
 /**
  * Request policy helpers for profile-aware Browser control server routes.
  */
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 type BrowserRequestProfileParams = {
   query?: Record<string, unknown>;

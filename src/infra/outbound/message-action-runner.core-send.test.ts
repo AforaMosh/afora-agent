@@ -1,7 +1,7 @@
 // Covers core message-action send fallback, TTS application, and durable send
 // policy after plugin preparation is absent.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../../test-utils/channel-plugins.js";
 import { runMessageAction } from "./message-action-runner.js";
@@ -68,7 +68,7 @@ describe("runMessageAction core send routing", () => {
           enabled: true,
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await runMessageAction({
       cfg,

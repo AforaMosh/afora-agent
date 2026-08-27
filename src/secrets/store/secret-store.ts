@@ -1,6 +1,6 @@
 import net from "node:net";
 import { domainToASCII } from "node:url";
-import { err, ok, type Result } from "@openclaw/normalization-core/result";
+import { err, ok, type Result } from "@afora/normalization-core/result";
 import type { Selectable } from "kysely";
 import { ENV_SECRET_REF_ID_RE } from "../../config/types.secrets.js";
 import {
@@ -10,18 +10,18 @@ import {
 } from "../../infra/kysely-sync.js";
 import { normalizeSqliteNumber } from "../../infra/sqlite-number.js";
 import { registerSecretValueForRedaction } from "../../logging/secret-redaction-registry.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../../state/openclaw-state-db-readonly.js";
-import { ensureSecretStoreSchema } from "../../state/openclaw-state-db-schema-additive.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../../state/openclaw-state-db.generated.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../../state/afora-state-db-readonly.js";
+import { ensureSecretStoreSchema } from "../../state/afora-state-db-schema-additive.js";
+import type { DB as AforaStateKyselyDatabase } from "../../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../../state/afora-state-db.js";
 import { mintSecretSentinel } from "../sentinel.js";
 
-type SecretStoreDatabase = Pick<OpenClawStateKyselyDatabase, "secret_store_entries">;
-type SecretStoreRow = Selectable<OpenClawStateKyselyDatabase["secret_store_entries"]>;
+type SecretStoreDatabase = Pick<AforaStateKyselyDatabase, "secret_store_entries">;
+type SecretStoreRow = Selectable<AforaStateKyselyDatabase["secret_store_entries"]>;
 type SecretStoreScope = { kind: "team" };
 type SecretStoreKind = "secret" | "env";
 
@@ -202,12 +202,12 @@ function toMetadata(row: SecretStoreRow): SecretStoreEntryMetadata {
 export function listSecretStoreEntries(params: {
   scope: SecretStoreScope;
   includeDeleted?: boolean;
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): SecretStoreEntryMetadata[] {
   const { scopeKind, scopeId } = normalizeScope(params.scope);
   try {
     return (
-      withExistingOpenClawStateDatabaseReadOnly(({ db: sqlite }) => {
+      withExistingAforaStateDatabaseReadOnly(({ db: sqlite }) => {
         const db = getNodeSqliteKysely<SecretStoreDatabase>(sqlite);
         let query = db
           .selectFrom("secret_store_entries")
@@ -232,11 +232,11 @@ export function listSecretStoreEntries(params: {
 /** Captures one coherent team-store snapshot for an agent run's exec environment. */
 export function readSecretStoreExecEnvironment(params: {
   includeSecretSentinels: boolean;
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): SecretStoreExecEnvironment {
   try {
     return (
-      withExistingOpenClawStateDatabaseReadOnly(({ db: sqlite }) => {
+      withExistingAforaStateDatabaseReadOnly(({ db: sqlite }) => {
         const db = getNodeSqliteKysely<SecretStoreDatabase>(sqlite);
         const rows = executeSqliteQuerySync(
           sqlite,
@@ -289,12 +289,12 @@ export function readSecretStoreExecEnvironment(params: {
 export function readSecretStoreValue(params: {
   scope: SecretStoreScope;
   name: string;
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): Result<string, SecretStoreReadError> {
   try {
     assertSecretStoreName(params.name);
     const { scopeKind, scopeId } = normalizeScope(params.scope);
-    const row = withExistingOpenClawStateDatabaseReadOnly(({ db: sqlite }) => {
+    const row = withExistingAforaStateDatabaseReadOnly(({ db: sqlite }) => {
       const db = getNodeSqliteKysely<SecretStoreDatabase>(sqlite);
       return executeSqliteQueryTakeFirstSync(
         sqlite,
@@ -342,7 +342,7 @@ export function writeSecretStoreEntry(params: {
   kind: SecretStoreKind;
   allowedHosts?: readonly string[];
   updatedBy: string | null;
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): void {
   assertSecretStoreName(params.name);
   assertSecretStoreValue(params.value, params.kind);
@@ -359,7 +359,7 @@ export function writeSecretStoreEntry(params: {
   const allowedHostsJson = allowedHosts?.length ? JSON.stringify(allowedHosts) : null;
   const { scopeKind, scopeId } = normalizeScope(params.scope);
   const now = Date.now();
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db: sqlite }) => {
       ensureSecretStoreSchema(sqlite);
       const db = getNodeSqliteKysely<SecretStoreDatabase>(sqlite);
@@ -405,13 +405,13 @@ export function updateSecretStoreAllowedHosts(params: {
   name: string;
   allowedHosts: readonly string[];
   updatedBy: string | null;
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): void {
   assertSecretStoreName(params.name);
   const allowedHosts = normalizeSecretAllowedHosts(params.allowedHosts);
   const { scopeKind, scopeId } = normalizeScope(params.scope);
   const now = Date.now();
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db: sqlite }) => {
       ensureSecretStoreSchema(sqlite);
       const db = getNodeSqliteKysely<SecretStoreDatabase>(sqlite);
@@ -445,14 +445,14 @@ export function updateSecretStoreAllowedHosts(params: {
 export function deleteSecretStoreEntry(params: {
   scope: SecretStoreScope;
   name: string;
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): void {
   assertSecretStoreName(params.name);
   const { scopeKind, scopeId } = normalizeScope(params.scope);
-  const state = openOpenClawStateDatabase(params.database);
+  const state = openAforaStateDatabase(params.database);
   const now = Date.now();
   try {
-    runOpenClawStateWriteTransaction(
+    runAforaStateWriteTransaction(
       ({ db: sqlite }) => {
         const db = getNodeSqliteKysely<SecretStoreDatabase>(sqlite);
         executeSqliteQuerySync(
@@ -478,13 +478,13 @@ export function deleteSecretStoreEntry(params: {
 
 export function purgeExpiredSecretStoreEntries(
   params: {
-    database?: OpenClawStateDatabaseOptions;
+    database?: AforaStateDatabaseOptions;
   } = {},
 ): number {
-  const state = openOpenClawStateDatabase(params.database);
+  const state = openAforaStateDatabase(params.database);
   const threshold = Date.now() - SECRET_STORE_RETENTION_MS;
   try {
-    return runOpenClawStateWriteTransaction(
+    return runAforaStateWriteTransaction(
       ({ db: sqlite }) => {
         const db = getNodeSqliteKysely<SecretStoreDatabase>(sqlite);
         const deleted = executeSqliteQuerySync(

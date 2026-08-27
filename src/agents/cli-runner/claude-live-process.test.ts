@@ -1,5 +1,5 @@
 import path from "node:path";
-import { SYSTEM_PROMPT_CACHE_BOUNDARY } from "@openclaw/ai/internal/shared";
+import { SYSTEM_PROMPT_CACHE_BOUNDARY } from "@afora/ai/internal/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   onInternalDiagnosticEvent,
@@ -17,7 +17,7 @@ import {
   mockClaudeLiveRun,
   requireArgAfter,
   withTempExecApprovalsState,
-  withTempOpenClawHome,
+  withTempAforaHome,
   type PreparedCliRunContextOverrides,
 } from "../cli-runner.test-helpers.js";
 import {
@@ -152,7 +152,7 @@ describe("Claude live process", () => {
             subtype: "set_model",
             model: "sonnet",
             system_prompt:
-              "# OpenClaw\n\n## Stable Instructions\nKeep the operator informed.\nSecond-turn metadata",
+              "# Afora\n\n## Stable Instructions\nKeep the operator informed.\nSecond-turn metadata",
           });
           emit([
             {
@@ -186,14 +186,14 @@ describe("Claude live process", () => {
       buildPreparedCliRunContext({
         backend,
         prompt: "first",
-        systemPrompt: `# OpenClaw\n\n## Stable Instructions\nKeep the operator informed.${SYSTEM_PROMPT_CACHE_BOUNDARY}First-turn metadata`,
+        systemPrompt: `# Afora\n\n## Stable Instructions\nKeep the operator informed.${SYSTEM_PROMPT_CACHE_BOUNDARY}First-turn metadata`,
       }),
     );
     const second = await executePreparedCliRun(
       buildPreparedCliRunContext({
         backend,
         prompt: "second",
-        systemPrompt: `# OpenClaw\n\n## Stable Instructions\nKeep the operator informed.${SYSTEM_PROMPT_CACHE_BOUNDARY}Second-turn metadata`,
+        systemPrompt: `# Afora\n\n## Stable Instructions\nKeep the operator informed.${SYSTEM_PROMPT_CACHE_BOUNDARY}Second-turn metadata`,
       }),
       "live-dynamic-prompt",
     );
@@ -296,7 +296,7 @@ describe("Claude live process", () => {
     expectClaudeControlDecision(live, {
       behavior: "deny",
       requestId: "req-deny",
-      messageIncludes: "OpenClaw user denied Claude native tool use (Bash).",
+      messageIncludes: "Afora user denied Claude native tool use (Bash).",
     });
     expect(diagnosticEvents).toMatchObject([
       {
@@ -455,8 +455,8 @@ describe("Claude live process", () => {
   });
 
   it("does not create exec approvals file while resolving Claude live policy", async () => {
-    await withTempOpenClawHome(async (home) => {
-      const approvalsPath = path.join(home, ".openclaw", "exec-approvals.json");
+    await withTempAforaHome(async (home) => {
+      const approvalsPath = path.join(home, ".afora", "exec-approvals.json");
       const live = mockClaudeLiveRun(supervisorSpawnMock, {
         events: [
           { type: "system", subtype: "init", session_id: "live-no-approvals-file" },
@@ -493,7 +493,7 @@ describe("Claude live process", () => {
       requestId: "req-approval-default-deny",
       toolUseId: "tool-approval-default-deny-1",
       input: { command: "ls" },
-      expected: { behavior: "deny", messageIncludes: "OpenClaw user denied" },
+      expected: { behavior: "deny", messageIncludes: "Afora user denied" },
       approvals: {
         version: 1,
         defaults: { security: "allowlist", ask: "on-miss" },
@@ -512,7 +512,7 @@ describe("Claude live process", () => {
       requestId: "req-session-ask-deny",
       toolUseId: "tool-session-ask-deny-1",
       input: { command: "ls" },
-      expected: { behavior: "deny", messageIncludes: "OpenClaw user denied" },
+      expected: { behavior: "deny", messageIncludes: "Afora user denied" },
       context: {
         backend: {
           liveSession: "claude-stdio",
@@ -558,7 +558,7 @@ describe("Claude live process", () => {
       expectedPermissionMode: "default",
     },
     {
-      name: "allows tools when OpenClaw exec is YOLO despite raw --permission-mode default",
+      name: "allows tools when Afora exec is YOLO despite raw --permission-mode default",
       requestId: "req-permmode-allow",
       toolUseId: "tool-permmode-allow-1",
       input: { command: "ls" },

@@ -214,7 +214,7 @@ export abstract class ChatPaneLifecycle extends ChatPaneSessionCreation {
     const title = t("chat.board.resetTitle");
     const description = t("chat.board.resetDescription");
     return html`
-      <openclaw-modal-dialog
+      <afora-modal-dialog
         label=${title}
         description=${description}
         @modal-cancel=${() => this.settleResetConfirmation(false)}
@@ -244,7 +244,7 @@ export abstract class ChatPaneLifecycle extends ChatPaneSessionCreation {
             </button>
           </div>
         </div>
-      </openclaw-modal-dialog>
+      </afora-modal-dialog>
     `;
   }
 
@@ -511,9 +511,9 @@ export abstract class ChatPaneLifecycle extends ChatPaneSessionCreation {
       window.removeEventListener(BROWSER_ANNOTATION_EVENT, handleBrowserAnnotation),
     );
     const panelToggleEvents = [
-      [TERMINAL_PANEL_TOGGLE_EVENT, "terminal", "openclaw-terminal-panel"],
-      [BROWSER_PANEL_TOGGLE_EVENT, "browser", "openclaw-browser-panel"],
-      [DESKTOP_PANEL_TOGGLE_EVENT, "desktop", "openclaw-desktop-panel"],
+      [TERMINAL_PANEL_TOGGLE_EVENT, "terminal", "afora-terminal-panel"],
+      [BROWSER_PANEL_TOGGLE_EVENT, "browser", "afora-browser-panel"],
+      [DESKTOP_PANEL_TOGGLE_EVENT, "desktop", "afora-desktop-panel"],
     ] as const;
     const panelToggleCleanups = panelToggleEvents.map(([eventName, slot, tagName]) => {
       const listener = (event: Event) => {

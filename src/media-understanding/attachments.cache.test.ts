@@ -28,7 +28,7 @@ describe("media understanding attachment MIME detection", () => {
   });
 
   it("prefers local attachment bytes over conflicting declared MIME", async () => {
-    await withTestDir({ prefix: "openclaw-media-cache-mime-local-" }, async (base) => {
+    await withTestDir({ prefix: "afora-media-cache-mime-local-" }, async (base) => {
       const attachmentPath = path.join(base, "photo.jpg");
       await fs.writeFile(attachmentPath, PNG_1X1);
       const cache = new MediaAttachmentCache(

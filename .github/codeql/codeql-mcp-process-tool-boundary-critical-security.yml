@@ -1,4 +1,4 @@
-name: openclaw-codeql-mcp-process-tool-boundary-critical-security
+name: afora-codeql-mcp-process-tool-boundary-critical-security
 
 disable-default-queries: true
 
@@ -21,9 +21,9 @@ paths:
   - src/agents/bash-tools.process*.ts
   - src/agents/exec-*.ts
   - src/agents/execution-contract.ts
-  - src/agents/openclaw-plugin-tools.ts
-  - src/agents/openclaw-tools.runtime.ts
-  - src/agents/openclaw-tools.registration.ts
+  - src/agents/afora-plugin-tools.ts
+  - src/agents/afora-tools.runtime.ts
+  - src/agents/afora-tools.registration.ts
   - src/agents/agent-tool-definition-adapter.ts
   - src/agents/agent-tools.abort.ts
   - src/agents/agent-tools.before-tool-call*.ts

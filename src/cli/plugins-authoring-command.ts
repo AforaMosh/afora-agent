@@ -1,8 +1,8 @@
 // Plugin authoring commands for init/build/validate manifest generation.
 import fs from "node:fs";
 import path from "node:path";
-import { jsonSchemaValuesEqual } from "@openclaw/normalization-core/json-schema";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { jsonSchemaValuesEqual } from "@afora/normalization-core/json-schema";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { formatCwdRelativePathOrAbsolute as formatOutputPath } from "../infra/safe-cwd.js";
 import { getToolPluginMetadata, type ToolPluginMetadata } from "../plugin-sdk/tool-plugin.js";
 import {
@@ -216,20 +216,20 @@ export function buildToolPluginPackageManifest(params: {
   packageManifest: JsonObject;
   entry: string;
 }): JsonObject {
-  const openclaw =
-    params.packageManifest.openclaw &&
-    typeof params.packageManifest.openclaw === "object" &&
-    !Array.isArray(params.packageManifest.openclaw)
-      ? { ...(params.packageManifest.openclaw as JsonObject) }
+  const afora =
+    params.packageManifest.afora &&
+    typeof params.packageManifest.afora === "object" &&
+    !Array.isArray(params.packageManifest.afora)
+      ? { ...(params.packageManifest.afora as JsonObject) }
       : {};
-  const existingExtensions = Array.isArray(openclaw.extensions)
-    ? openclaw.extensions.filter((entry): entry is string => typeof entry === "string")
+  const existingExtensions = Array.isArray(afora.extensions)
+    ? afora.extensions.filter((entry): entry is string => typeof entry === "string")
     : [];
   const extensions = uniqueStrings([...existingExtensions, params.entry]);
   return {
     ...params.packageManifest,
-    openclaw: {
-      ...openclaw,
+    afora: {
+      ...afora,
       extensions,
     },
   };
@@ -248,15 +248,15 @@ export function validateToolPluginProject(params: {
     existingManifest: params.manifest,
   });
   if (!jsonSchemaValuesEqual(params.manifest, expectedManifest)) {
-    errors.push("openclaw.plugin.json generated metadata is stale. Run openclaw plugins build.");
+    errors.push("afora.plugin.json generated metadata is stale. Run afora plugins build.");
   }
   if (params.manifest.id !== params.metadata.id) {
     errors.push(
-      `openclaw.plugin.json id (${String(params.manifest.id)}) must match entry id (${params.metadata.id})`,
+      `afora.plugin.json id (${String(params.manifest.id)}) must match entry id (${params.metadata.id})`,
     );
   }
   if (!params.manifest.configSchema || typeof params.manifest.configSchema !== "object") {
-    errors.push("openclaw.plugin.json must include object configSchema");
+    errors.push("afora.plugin.json must include object configSchema");
   }
   const manifestContracts = params.manifest.contracts as { tools?: unknown } | undefined;
   const manifestTools = Array.isArray(manifestContracts?.tools)
@@ -266,11 +266,11 @@ export function validateToolPluginProject(params: {
   const missing = metadataTools.filter((tool) => !manifestTools.includes(tool));
   const extra = manifestTools.filter((tool) => !metadataTools.includes(tool));
   if (missing.length > 0) {
-    errors.push(`openclaw.plugin.json contracts.tools is missing: ${missing.join(", ")}`);
+    errors.push(`afora.plugin.json contracts.tools is missing: ${missing.join(", ")}`);
   }
   if (extra.length > 0) {
     errors.push(
-      `openclaw.plugin.json contracts.tools has no matching defineToolPlugin tool: ${extra.join(
+      `afora.plugin.json contracts.tools has no matching defineToolPlugin tool: ${extra.join(
         ", ",
       )}`,
     );
@@ -279,11 +279,11 @@ export function validateToolPluginProject(params: {
   if (extensionResolution.status !== "ok") {
     errors.push(
       extensionResolution.status === "missing" || extensionResolution.status === "empty"
-        ? "package.json must include openclaw.extensions"
+        ? "package.json must include afora.extensions"
         : extensionResolution.error,
     );
   } else if (!extensionResolution.entries.includes(params.entry)) {
-    errors.push(`package.json openclaw.extensions must include ${params.entry}`);
+    errors.push(`package.json afora.extensions must include ${params.entry}`);
   }
   return errors;
 }
@@ -313,7 +313,7 @@ export async function runPluginsBuildCommand(opts: PluginsBuildOptions): Promise
       !jsonSchemaValuesEqual(currentManifest, manifest) ||
       !jsonSchemaValuesEqual(currentPackage, nextPackageManifest)
     ) {
-      defaultRuntime.error("Generated plugin metadata is out of date. Run openclaw plugins build.");
+      defaultRuntime.error("Generated plugin metadata is out of date. Run afora plugins build.");
       return defaultRuntime.exit(1);
     }
     defaultRuntime.log("Plugin metadata is up to date.");
@@ -481,38 +481,38 @@ export default defineConfig({
 
 function writeToolPluginScaffold(params: { rootDir: string; id: string; name: string }): void {
   const packageManifest = {
-    name: `openclaw-plugin-${params.id}`,
+    name: `afora-plugin-${params.id}`,
     version: "0.1.0",
     type: "module",
     private: true,
     scripts: {
       build: "tsc -p tsconfig.json",
-      "plugin:build": "npm run build && openclaw plugins build --entry ./dist/index.js",
-      "plugin:validate": "npm run build && openclaw plugins validate --entry ./dist/index.js",
+      "plugin:build": "npm run build && afora plugins build --entry ./dist/index.js",
+      "plugin:validate": "npm run build && afora plugins validate --entry ./dist/index.js",
       test: "vitest run --config ./vitest.config.ts",
     },
-    files: ["dist", "openclaw.plugin.json", "README.md"],
+    files: ["dist", "afora.plugin.json", "README.md"],
     peerDependencies: {
-      openclaw: ">=2026.5.17",
+      afora: ">=2026.5.17",
     },
     dependencies: {
       typebox: "^1.1.38",
     },
     devDependencies: {
-      openclaw: "latest",
+      afora: "latest",
       typescript: "^5.9.0",
       vitest: "^3.2.0",
     },
-    openclaw: {
+    afora: {
       extensions: ["./dist/index.js"],
     },
   };
   const idLiteral = jsStringLiteral(params.id);
   const nameLiteral = jsStringLiteral(params.name);
-  const description = `Add ${params.name} tools to OpenClaw.`;
+  const description = `Add ${params.name} tools to Afora.`;
   const descriptionLiteral = jsStringLiteral(description);
   const indexSource = `import { Type } from "typebox";
-import { defineToolPlugin } from "openclaw/plugin-sdk/tool-plugin";
+import { defineToolPlugin } from "afora-agent/plugin-sdk/tool-plugin";
 
 export default defineToolPlugin({
   id: ${idLiteral},
@@ -532,7 +532,7 @@ export default defineToolPlugin({
 `;
   const testSource = `import { describe, expect, it } from "vitest";
 import entry from "./index.js";
-import { getToolPluginMetadata } from "openclaw/plugin-sdk/tool-plugin";
+import { getToolPluginMetadata } from "afora-agent/plugin-sdk/tool-plugin";
 
 describe(${idLiteral}, () => {
   it("declares tool metadata", () => {
@@ -542,7 +542,7 @@ describe(${idLiteral}, () => {
 `;
   const readmeSource = `# ${params.name}
 
-Simple OpenClaw tool plugin.
+Simple Afora tool plugin.
 
 ## Build
 
@@ -570,39 +570,39 @@ npm test
 }
 
 function writeProviderPluginScaffold(params: { rootDir: string; id: string; name: string }): void {
-  const packageName = `openclaw-plugin-${params.id}`;
+  const packageName = `afora-plugin-${params.id}`;
   const envVar = `${upperSnakeFromId(params.id)}_API_KEY`;
   const optionKey = `${lowerCamelFromId(params.id)}ApiKey`;
   const flagName = `--${params.id}-api-key`;
   const defaultModelId = "example-chat";
   const defaultModelRef = `${params.id}/${defaultModelId}`;
-  const description = `Add ${params.name} models to OpenClaw.`;
+  const description = `Add ${params.name} models to Afora.`;
   const packageManifest = {
     name: packageName,
     version: "0.1.0",
-    description: `OpenClaw provider plugin for ${params.name}.`,
+    description: `Afora provider plugin for ${params.name}.`,
     type: "module",
     scripts: {
       build: "tsc -p tsconfig.json",
       test: "vitest run --config ./vitest.config.ts",
       validate: "npm run build && clawhub package validate . --out .clawhub-validation",
     },
-    files: ["dist", "openclaw.plugin.json", "README.md"],
+    files: ["dist", "afora.plugin.json", "README.md"],
     peerDependencies: {
-      openclaw: `>=${VERSION}`,
+      afora: `>=${VERSION}`,
     },
     peerDependenciesMeta: {
-      openclaw: {
+      afora: {
         optional: true,
       },
     },
     devDependencies: {
       clawhub: "latest",
-      openclaw: "latest",
+      afora: "latest",
       typescript: "^5.9.0",
       vitest: "^3.2.0",
     },
-    openclaw: {
+    afora: {
       extensions: ["./dist/index.js"],
       install: {
         clawhubSpec: `clawhub:${packageName}`,
@@ -613,7 +613,7 @@ function writeProviderPluginScaffold(params: { rootDir: string; id: string; name
         pluginApi: `>=${VERSION}`,
       },
       build: {
-        openclawVersion: VERSION,
+        aforaVersion: VERSION,
       },
       release: {
         publishToClawHub: true,
@@ -645,10 +645,10 @@ function writeProviderPluginScaffold(params: { rootDir: string; id: string; name
   const noteMessageLiteral = jsStringLiteral(
     `Replace https://api.example.com/v1 with your ${params.name} API base URL.`,
   );
-  const indexSource = `import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
-import { createProviderApiKeyAuthMethod } from "openclaw/plugin-sdk/provider-auth-api-key";
-import { buildSingleProviderApiKeyCatalog } from "openclaw/plugin-sdk/provider-catalog-shared";
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-shared";
+  const indexSource = `import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
+import { createProviderApiKeyAuthMethod } from "afora-agent/plugin-sdk/provider-auth-api-key";
+import { buildSingleProviderApiKeyCatalog } from "afora-agent/plugin-sdk/provider-catalog-shared";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-model-shared";
 
 const PLUGIN_ID = ${idLiteral};
 const PROVIDER_ID = PLUGIN_ID;
@@ -719,7 +719,7 @@ export default definePluginEntry({
 });
 `;
   const testSource = `import { describe, expect, it } from "vitest";
-import type { OpenClawPluginApi, ProviderPlugin } from "openclaw/plugin-sdk/plugin-entry";
+import type { AforaPluginApi, ProviderPlugin } from "afora-agent/plugin-sdk/plugin-entry";
 import entry from "./index.js";
 
 describe(${idLiteral}, () => {
@@ -729,9 +729,9 @@ describe(${idLiteral}, () => {
       registerProvider(provider: ProviderPlugin) {
         providers.push(provider);
       },
-    } as Partial<OpenClawPluginApi>;
+    } as Partial<AforaPluginApi>;
 
-    entry.register(api as OpenClawPluginApi);
+    entry.register(api as AforaPluginApi);
 
     expect(providers.map((provider) => provider.id)).toEqual([${idLiteral}]);
     expect(providers[0]?.label).toBe(${nameLiteral});
@@ -741,7 +741,7 @@ describe(${idLiteral}, () => {
 `;
   const readmeSource = `# ${params.name}
 
-OpenClaw provider plugin for ${params.name}.
+Afora provider plugin for ${params.name}.
 
 ## Commands
 
@@ -800,7 +800,7 @@ jobs:
       actions: read
       contents: read
       id-token: write
-    uses: openclaw/clawhub/.github/workflows/package-publish.yml@${CLAWHUB_PACKAGE_PUBLISH_WORKFLOW_REF}
+    uses: afora/clawhub/.github/workflows/package-publish.yml@${CLAWHUB_PACKAGE_PUBLISH_WORKFLOW_REF}
     with:
       dry_run: \${{ inputs.dry_run }}
 `;

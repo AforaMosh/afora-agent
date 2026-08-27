@@ -1,22 +1,22 @@
 {
-  "name": "@openclaw/migrate-claude",
+  "name": "@afora/migrate-claude",
   "version": "2026.8.1",
   "private": true,
-  "description": "Claude to OpenClaw migration provider",
+  "description": "Claude to Afora migration provider",
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*",
-    "openclaw": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*",
+    "afora-agent": "workspace:*"
   },
   "peerDependencies": {
-    "openclaw": ">=2026.8.1"
+    "afora-agent": ">=2026.8.1"
   },
   "peerDependenciesMeta": {
-    "openclaw": {
+    "afora": {
       "optional": true
     }
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

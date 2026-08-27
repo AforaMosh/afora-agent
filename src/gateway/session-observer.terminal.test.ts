@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SessionObserverDigest } from "../../packages/gateway-protocol/src/schema/sessions.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   createHarness as createBaseHarness,
   event,
@@ -307,7 +307,7 @@ describe("session observer terminal, persistence, synthesis, and races", () => {
     const runtimeCfg = {
       gateway: { controlUi: { sessionObserver: true as boolean } },
       agents: { defaults: { utilityModel: "openai/gpt-test" } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const { storedDigest, harness } = createPersistedHarness({ config: runtimeCfg });
     harness.observer.handleEvent(lifecycleEvent({ phase: "start" }));
     runtimeCfg.gateway.controlUi.sessionObserver = false;
@@ -724,7 +724,7 @@ describe("session observer terminal, persistence, synthesis, and races", () => {
     const harness = createHarness();
     startAndAddToolNotes(harness.observer);
     emitEvent(harness, "assistant", {
-      delta: "prose before\n<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>\n",
+      delta: "prose before\n<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>\n",
     });
     emitEvent(harness, "assistant", { delta: "private-context-body-must-not-leave" });
     await advanceAndFlush(12_000);
@@ -734,7 +734,7 @@ describe("session observer terminal, persistence, synthesis, and races", () => {
     expect(openPrompt).not.toContain("Assistant:");
 
     emitEvent(harness, "assistant", {
-      delta: "\n<<<END_OPENCLAW_INTERNAL_CONTEXT>>>\nvisible prose after",
+      delta: "\n<<<END_AFORA_INTERNAL_CONTEXT>>>\nvisible prose after",
     });
     startAndAddToolNotes(harness.observer, { count: 4 });
     await advanceAndFlush(12_000);

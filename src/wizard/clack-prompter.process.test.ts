@@ -18,7 +18,7 @@ afterEach(async () => {
 
 describe("classic onboarding process", () => {
   it("exits through wizard cancellation when Ctrl-D ends stdin at the first prompt", async () => {
-    const home = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-onboard-eof-"));
+    const home = await fs.mkdtemp(path.join(os.tmpdir(), "afora-onboard-eof-"));
     homes.add(home);
     const fixture = `
       import { runInteractiveOnboarding } from "./src/commands/onboard-interactive-runner.ts";
@@ -44,8 +44,8 @@ describe("classic onboarding process", () => {
           NODE_DISABLE_COMPILE_CACHE: "1",
           NODE_ENV: undefined,
           NODE_OPTIONS: undefined,
-          OPENCLAW_NO_RESPAWN: "1",
-          OPENCLAW_STATE_DIR: path.join(home, ".openclaw"),
+          AFORA_NO_RESPAWN: "1",
+          AFORA_STATE_DIR: path.join(home, ".afora"),
           NO_COLOR: "1",
           TERM: "xterm-256color",
           VITEST: undefined,

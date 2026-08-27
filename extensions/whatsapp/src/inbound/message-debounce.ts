@@ -1,6 +1,6 @@
 // Whatsapp plugin module owns inbound debounce batching and flush lifecycle.
-import { createInboundDebouncer } from "openclaw/plugin-sdk/channel-inbound-debounce";
-import { fanInChannelIngressLifecycles } from "openclaw/plugin-sdk/channel-ingress-runtime";
+import { createInboundDebouncer } from "afora-agent/plugin-sdk/channel-inbound-debounce";
+import { fanInChannelIngressLifecycles } from "afora-agent/plugin-sdk/channel-ingress-runtime";
 import { getPrimaryIdentityId } from "../identity.js";
 import { requireWhatsAppInboundAdmission } from "./admission.js";
 import type { WhatsAppIngressLifecycle, WhatsAppReadReceiptTarget } from "./durable-receive.js";

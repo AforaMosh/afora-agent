@@ -5,19 +5,19 @@
 import {
   createAccountListHelpers,
   hasConfiguredAccountValue,
-} from "openclaw/plugin-sdk/account-helpers";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
-import { resolveNormalizedAccountEntry } from "openclaw/plugin-sdk/account-resolution-runtime";
-import { resolveIntegerOption } from "openclaw/plugin-sdk/number-runtime";
-import { mergePairLoopGuardConfig } from "openclaw/plugin-sdk/pair-loop-guard-runtime";
-import { resolveDefaultSecretProviderAlias } from "openclaw/plugin-sdk/provider-auth";
-import { tryReadSecretFileSync } from "openclaw/plugin-sdk/secret-file-runtime";
+} from "afora-agent/plugin-sdk/account-helpers";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "afora-agent/plugin-sdk/account-id";
+import { resolveNormalizedAccountEntry } from "afora-agent/plugin-sdk/account-resolution-runtime";
+import { resolveIntegerOption } from "afora-agent/plugin-sdk/number-runtime";
+import { mergePairLoopGuardConfig } from "afora-agent/plugin-sdk/pair-loop-guard-runtime";
+import { resolveDefaultSecretProviderAlias } from "afora-agent/plugin-sdk/provider-auth";
+import { tryReadSecretFileSync } from "afora-agent/plugin-sdk/secret-file-runtime";
 import {
   normalizeSecretInputString,
   normalizeResolvedSecretInputString,
   resolveSecretInputString,
-} from "openclaw/plugin-sdk/secret-input";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/secret-input";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type {
   ClickClackAccountConfig,
   ClickClackGroupConfig,

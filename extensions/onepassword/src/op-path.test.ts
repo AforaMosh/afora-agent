@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { pluginSecretRefSetup } from "openclaw/plugin-sdk/secret-ref-runtime";
+import { pluginSecretRefSetup } from "afora-agent/plugin-sdk/secret-ref-runtime";
 import { describe, expect, it } from "vitest";
 import { createTrustedNodeFixture } from "./trusted-node.test-support.js";
 
@@ -9,7 +9,7 @@ const { resolveTrustedExecutablePath } = pluginSecretRefSetup;
 
 describe("1Password CLI owner trust", () => {
   it("copies the Node fixture without mutating the installed runtime", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-op-path-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-op-path-"));
     const before = await fs.stat(process.execPath);
     try {
       const fixture = createTrustedNodeFixture(tempDir);
@@ -33,7 +33,7 @@ describe("1Password CLI owner trust", () => {
   it.runIf(process.platform !== "win32")(
     "canonicalizes an intentional executable symlink before trust validation",
     async () => {
-      const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-op-path-"));
+      const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-op-path-"));
       const executable = path.join(tempDir, "op-real");
       const symlink = path.join(tempDir, "op");
       try {
@@ -52,7 +52,7 @@ describe("1Password CLI owner trust", () => {
   );
 
   it.runIf(process.platform !== "win32")("rejects env-indirected script interpreters", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-op-path-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-op-path-"));
     const executable = path.join(tempDir, "op");
     try {
       await fs.writeFile(executable, "#!/usr/bin/env node\nprocess.exit(0);\n", { mode: 0o700 });
@@ -65,7 +65,7 @@ describe("1Password CLI owner trust", () => {
   it.runIf(process.platform !== "win32")(
     "rejects non-canonical script interpreter aliases",
     async () => {
-      const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-op-path-"));
+      const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-op-path-"));
       const executable = path.join(tempDir, "op");
       try {
         const canonicalInterpreter = createTrustedNodeFixture(tempDir);

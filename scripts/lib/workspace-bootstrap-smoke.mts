@@ -1,4 +1,4 @@
-// Verifies installed packages can bootstrap the default OpenClaw workspace files.
+// Verifies installed packages can bootstrap the default Afora workspace files.
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -63,11 +63,11 @@ export function createWorkspaceBootstrapSmokeEnv(
     PATH: safePath,
     HOME: homeDir,
     USERPROFILE: homeDir,
-    OPENCLAW_HOME: homeDir,
-    OPENCLAW_NO_ONBOARD: "1",
-    OPENCLAW_SUPPRESS_NOTES: "1",
-    OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-    OPENCLAW_DISABLE_BUNDLED_ENTRY_SOURCE_FALLBACK: "1",
+    AFORA_HOME: homeDir,
+    AFORA_NO_ONBOARD: "1",
+    AFORA_SUPPRESS_NOTES: "1",
+    AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+    AFORA_DISABLE_BUNDLED_ENTRY_SOURCE_FALLBACK: "1",
     AWS_EC2_METADATA_DISABLED: "true",
     AWS_SHARED_CREDENTIALS_FILE: join(homeDir, ".aws", "credentials"),
     AWS_CONFIG_FILE: join(homeDir, ".aws", "config"),
@@ -106,7 +106,7 @@ function describeExecFailure(error: unknown): string {
  * Runs the installed CLI workspace bootstrap smoke and validates created files.
  */
 export function runInstalledWorkspaceBootstrapSmoke(params: { packageRoot: string }): void {
-  const tempRoot = mkdtempSync(join(tmpdir(), "openclaw-workspace-bootstrap-smoke-"));
+  const tempRoot = mkdtempSync(join(tmpdir(), "afora-workspace-bootstrap-smoke-"));
   const homeDir = join(tempRoot, "home");
   const cwd = join(tempRoot, "cwd");
   mkdirSync(homeDir, { recursive: true });
@@ -118,7 +118,7 @@ export function runInstalledWorkspaceBootstrapSmoke(params: { packageRoot: strin
       execFileSync(
         process.execPath,
         [
-          join(params.packageRoot, "openclaw.mjs"),
+          join(params.packageRoot, "afora.mjs"),
           "agent",
           "--message",
           "workspace bootstrap smoke",
@@ -148,7 +148,7 @@ export function runInstalledWorkspaceBootstrapSmoke(params: { packageRoot: strin
       );
     }
 
-    const workspaceDir = join(homeDir, ".openclaw", "workspace");
+    const workspaceDir = join(homeDir, ".afora", "workspace");
     const missingFiles = collectMissingBootstrapWorkspaceFiles(workspaceDir);
     if (missingFiles.length > 0) {
       const outputDetails = combinedOutput.length > 0 ? `\nCommand output:\n${combinedOutput}` : "";

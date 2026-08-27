@@ -53,7 +53,7 @@ async function postResponses(body: unknown) {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-openclaw-scopes": "operator.write",
+      "x-afora-scopes": "operator.write",
     },
     body: JSON.stringify(body),
   });
@@ -90,7 +90,7 @@ describe("OpenResponses file-only input that renders to images", () => {
     agentCommandMock.mockResolvedValueOnce({ payloads: [{ text: "ok" }] } as never);
 
     const res = await postResponses({
-      model: "openclaw",
+      model: "afora",
       instructions: "Describe the attached scan.",
       input: [
         {
@@ -128,7 +128,7 @@ describe("OpenResponses file-only input that renders to images", () => {
     agentCommandMock.mockResolvedValueOnce({ payloads: [{ text: "ok" }] } as never);
 
     const res = await postResponses({
-      model: "openclaw",
+      model: "afora",
       input: [
         {
           type: "message",
@@ -180,7 +180,7 @@ describe("OpenResponses file-only input that renders to images", () => {
     agentCommandMock.mockResolvedValueOnce({ payloads: [{ text: "ok" }] } as never);
 
     const res = await postResponses({
-      model: "openclaw",
+      model: "afora",
       input: [
         {
           type: "message",
@@ -218,7 +218,7 @@ describe("OpenResponses file-only input that renders to images", () => {
     agentCommandMock.mockResolvedValueOnce({ payloads: [{ text: "ok" }] } as never);
 
     const res = await postResponses({
-      model: "openclaw",
+      model: "afora",
       input: [
         {
           type: "message",
@@ -265,7 +265,7 @@ describe("OpenResponses file-only input that renders to images", () => {
       agentCommandMock.mockResolvedValueOnce({ payloads: [{ text: "ok" }] } as never);
 
       const res = await postResponses({
-        model: "openclaw",
+        model: "afora",
         input: [
           {
             type: "message",
@@ -298,7 +298,7 @@ describe("OpenResponses file-only input that renders to images", () => {
       agentCommandMock.mockResolvedValueOnce({ payloads: [{ text: "ok" }] } as never);
 
       const res = await postResponses({
-        model: "openclaw",
+        model: "afora",
         input: [
           {
             type: "message",
@@ -323,7 +323,7 @@ describe("OpenResponses file-only input that renders to images", () => {
     }));
 
     const res = await postResponses({
-      model: "openclaw",
+      model: "afora",
       input: [
         { type: "message", role: "user", content: historicalParts },
         { type: "message", role: "user", content: "Answer without fetching history." },

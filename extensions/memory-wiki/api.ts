@@ -3,8 +3,8 @@ export {
   buildPluginConfigSchema,
   definePluginEntry,
   type AnyAgentTool,
-  type OpenClawConfig,
-  type OpenClawPluginApi,
-  type OpenClawPluginConfigSchema,
-} from "openclaw/plugin-sdk/plugin-entry";
+  type AforaConfig,
+  type AforaPluginApi,
+  type AforaPluginConfigSchema,
+} from "afora-agent/plugin-sdk/plugin-entry";
 export { z } from "zod";

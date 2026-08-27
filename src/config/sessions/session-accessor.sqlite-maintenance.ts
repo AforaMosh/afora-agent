@@ -1,10 +1,10 @@
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { executeSqliteQuerySync } from "../../infra/kysely-sync.js";
 import { getChildLogger } from "../../logging/logger.js";
 import {
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import { publishSessionStateArchives } from "./session-accessor.sqlite-archive-store.js";
 import {
   materializeSessionStateDeletePlans,
@@ -69,7 +69,7 @@ function collectSqliteSessionMaintenanceBaseKeys(
 }
 
 function hasStaleSqliteSessionEntryCandidate(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   pruneAfterMs: number,
   preserveKeys: ReadonlySet<string> | undefined,
   preserveRecentMs: number | null,
@@ -100,7 +100,7 @@ function hasStaleSqliteSessionEntryCandidate(
 }
 
 function loadSqliteSessionMaintenanceStore(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
 ): Record<string, SessionEntry> {
   const db = getSessionKysely(database.db);
   const rows = executeSqliteQuerySync(
@@ -118,7 +118,7 @@ function loadSqliteSessionMaintenanceStore(
 }
 
 export function applySessionEntryMaintenance(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   params: {
     activeSessionKey: string;
     archiveDirectory: string;
@@ -312,7 +312,7 @@ async function finalizeSqliteSessionEntryMaintenancePlansWithCommit(
     const materializedPlans = await materializeSessionStateDeletePlans(stateDeletePlans);
     archivedTranscripts = await commit(() => {
       let committed: SessionLifecycleArchivedTranscript[] = [];
-      runOpenClawAgentWriteTransaction((database) => {
+      runAforaAgentWriteTransaction((database) => {
         assertPlannedLifecycleArtifactEntriesUnchanged(database, entryRemovals);
         committed = deleteMaterializedSessionStatePlans(
           database,

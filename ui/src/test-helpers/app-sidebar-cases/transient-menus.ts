@@ -23,7 +23,7 @@ describe("AppSidebar transient menus", () => {
 
     const menu = sidebar.querySelector(".sidebar-session-sort-menu");
     expect(menu).not.toBeNull();
-    expect(menu?.closest("openclaw-menu-surface")).not.toBeNull();
+    expect(menu?.closest("afora-menu-surface")).not.toBeNull();
   });
 
   it("ignores a stale sort-menu hide after opening its replacement", async () => {

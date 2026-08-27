@@ -6,7 +6,7 @@ import type {
 } from "./types.js";
 import type { ClawUpdateCapabilityChange } from "./update-capability-changes.js";
 
-export const CLAW_UPDATE_PLAN_SCHEMA_VERSION = "openclaw.clawUpdatePlan.v1" as const;
+export const CLAW_UPDATE_PLAN_SCHEMA_VERSION = "afora.clawUpdatePlan.v1" as const;
 
 export type ClawUpdateAction = {
   kind: "agent" | "workspaceFile" | "package" | "mcpServer" | "cronJob";

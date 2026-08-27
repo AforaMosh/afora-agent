@@ -1,8 +1,8 @@
 // Qa Lab plugin module owns gateway readiness and retry behavior.
 import { setTimeout as sleep } from "node:timers/promises";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { resolveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
-import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { resolveTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
+import { fetchWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { QaSuiteInfraError } from "./errors.js";
 import {
   hasQaGatewayChildExited,
@@ -14,7 +14,7 @@ import { formatQaGatewayLogsForError } from "./gateway-log-redaction.js";
 export const QA_GATEWAY_CHILD_STARTUP_MAX_ATTEMPTS = 5;
 const QA_GATEWAY_CHILD_RESTART_BOUNDARY_TIMEOUT_MS = 90_000;
 const QA_GATEWAY_MIGRATION_CONVERGENCE_RESTART_PREFIX =
-  "OpenClaw plugin migration inputs changed during startup convergence;";
+  "Afora plugin migration inputs changed during startup convergence;";
 
 type QaGatewayStartupRetryKind = "bind-collision" | "migration-convergence-restart";
 

@@ -29,25 +29,25 @@ read_nonnegative_int_env() {
   printf "%s\n" "$((10#$value))"
 }
 
-INSTALL_URL="${OPENCLAW_INSTALL_URL:-https://openclaw.bot/install.sh}"
-SMOKE_MODE="${OPENCLAW_INSTALL_SMOKE_MODE:-install}"
-SMOKE_PREVIOUS_VERSION="${OPENCLAW_INSTALL_SMOKE_PREVIOUS:-}"
-SKIP_PREVIOUS="${OPENCLAW_INSTALL_SMOKE_SKIP_PREVIOUS:-0}"
-DEFAULT_PACKAGE="openclaw"
-PACKAGE_NAME="${OPENCLAW_INSTALL_PACKAGE:-$DEFAULT_PACKAGE}"
-FRESH_VERSION="${OPENCLAW_INSTALL_FRESH_VERSION:-}"
-FRESH_TAG_URL="${OPENCLAW_INSTALL_FRESH_TAG_URL:-}"
-UPDATE_BASELINE_VERSION="${OPENCLAW_INSTALL_UPDATE_BASELINE:-latest}"
-UPDATE_BASELINE_TAG_URL="${OPENCLAW_INSTALL_UPDATE_BASELINE_TAG_URL:-}"
-UPDATE_EXPECT_VERSION="${OPENCLAW_INSTALL_UPDATE_EXPECT_VERSION:-}"
-UPDATE_TAG_URL="${OPENCLAW_INSTALL_UPDATE_TAG_URL:-}"
-SELF_UPDATE_WARNING_FIXED_VERSION="${OPENCLAW_INSTALL_SELF_UPDATE_WARNING_FIXED_VERSION:-2026.5.25}"
-FRESHNESS_VERSION="${OPENCLAW_INSTALL_FRESHNESS_VERSION:-latest}"
+INSTALL_URL="${AFORA_INSTALL_URL:-https://afora.bot/install.sh}"
+SMOKE_MODE="${AFORA_INSTALL_SMOKE_MODE:-install}"
+SMOKE_PREVIOUS_VERSION="${AFORA_INSTALL_SMOKE_PREVIOUS:-}"
+SKIP_PREVIOUS="${AFORA_INSTALL_SMOKE_SKIP_PREVIOUS:-0}"
+DEFAULT_PACKAGE="afora"
+PACKAGE_NAME="${AFORA_INSTALL_PACKAGE:-$DEFAULT_PACKAGE}"
+FRESH_VERSION="${AFORA_INSTALL_FRESH_VERSION:-}"
+FRESH_TAG_URL="${AFORA_INSTALL_FRESH_TAG_URL:-}"
+UPDATE_BASELINE_VERSION="${AFORA_INSTALL_UPDATE_BASELINE:-latest}"
+UPDATE_BASELINE_TAG_URL="${AFORA_INSTALL_UPDATE_BASELINE_TAG_URL:-}"
+UPDATE_EXPECT_VERSION="${AFORA_INSTALL_UPDATE_EXPECT_VERSION:-}"
+UPDATE_TAG_URL="${AFORA_INSTALL_UPDATE_TAG_URL:-}"
+SELF_UPDATE_WARNING_FIXED_VERSION="${AFORA_INSTALL_SELF_UPDATE_WARNING_FIXED_VERSION:-2026.5.25}"
+FRESHNESS_VERSION="${AFORA_INSTALL_FRESHNESS_VERSION:-latest}"
 # npm min-release-age is days; 10000 keeps the control failure independent of normal release cadence.
-FRESHNESS_MIN_RELEASE_AGE="${OPENCLAW_INSTALL_FRESHNESS_MIN_RELEASE_AGE:-10000}"
-FRESHNESS_NPM_VERSION="${OPENCLAW_INSTALL_FRESHNESS_NPM_VERSION:-11.14.1}"
-HEARTBEAT_INTERVAL="$(read_nonnegative_int_env OPENCLAW_INSTALL_SMOKE_HEARTBEAT_INTERVAL 60)"
-INSTALL_COMMAND_TIMEOUT="$(read_positive_int_env OPENCLAW_INSTALL_SMOKE_COMMAND_TIMEOUT 900)"
+FRESHNESS_MIN_RELEASE_AGE="${AFORA_INSTALL_FRESHNESS_MIN_RELEASE_AGE:-10000}"
+FRESHNESS_NPM_VERSION="${AFORA_INSTALL_FRESHNESS_NPM_VERSION:-11.14.1}"
+HEARTBEAT_INTERVAL="$(read_nonnegative_int_env AFORA_INSTALL_SMOKE_HEARTBEAT_INTERVAL 60)"
+INSTALL_COMMAND_TIMEOUT="$(read_positive_int_env AFORA_INSTALL_SMOKE_COMMAND_TIMEOUT 900)"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # shellcheck source=../install-sh-common/cli-verify.sh
@@ -101,7 +101,7 @@ print_install_audit() {
 
 verify_candidate_ai_runtime() {
   echo "==> Verify installed AI runtime"
-  OPENCLAW_ALLOW_ROOT=1 openclaw infer image providers --json >/dev/null
+  AFORA_ALLOW_ROOT=1 afora infer image providers --json >/dev/null
 }
 
 run_with_heartbeat() {
@@ -149,9 +149,9 @@ run_with_heartbeat() {
 
 is_self_swapped_package_process_exit() {
   local stderr="$1"
-  [[ "$stderr" == *"[openclaw] Failed to start CLI:"* ]] &&
+  [[ "$stderr" == *"[afora] Failed to start CLI:"* ]] &&
     [[ "$stderr" == *"ERR_MODULE_NOT_FOUND"* ]] &&
-    [[ "$stderr" == *"/node_modules/openclaw/dist/"* ]]
+    [[ "$stderr" == *"/node_modules/afora/dist/"* ]]
 }
 
 is_version_before() {
@@ -219,7 +219,7 @@ NODE
 }
 
 allow_legacy_update_warning() {
-  [[ "${OPENCLAW_INSTALL_ALLOW_LEGACY_UPDATE_WARNING:-0}" == "1" ]] && return 0
+  [[ "${AFORA_INSTALL_ALLOW_LEGACY_UPDATE_WARNING:-0}" == "1" ]] && return 0
   is_version_before "$UPDATE_BASELINE_VERSION" "$SELF_UPDATE_WARNING_FIXED_VERSION"
 }
 
@@ -268,7 +268,7 @@ run_install_smoke() {
   if [[ -n "$FRESH_VERSION" && -n "$FRESH_TAG_URL" ]]; then
     echo "package=$PACKAGE_NAME latest=$FRESH_VERSION source=$FRESH_TAG_URL"
     echo "==> Run official installer one-liner for latest release tarball"
-    OPENCLAW_NO_ONBOARD=1 OPENCLAW_NO_PROMPT=1 \
+    AFORA_NO_ONBOARD=1 AFORA_NO_PROMPT=1 \
       run_with_heartbeat "installer latest release tarball" \
         run_installer_pipeline \
           "$INSTALL_URL" \
@@ -279,15 +279,15 @@ run_install_smoke() {
     print_install_audit "fresh install"
 
     echo "==> Verify installed version"
-    if [[ -n "${OPENCLAW_INSTALL_LATEST_OUT:-}" ]]; then
+    if [[ -n "${AFORA_INSTALL_LATEST_OUT:-}" ]]; then
       # Non-root installer smoke uses the public install script path, which
       # resolves npm "latest" rather than this host-served candidate tarball.
       local latest_npm_version
       latest_npm_version="$(quiet_npm view "$PACKAGE_NAME" version 2>/dev/null || true)"
       if [[ -n "$latest_npm_version" ]]; then
-        printf "%s" "$latest_npm_version" > "${OPENCLAW_INSTALL_LATEST_OUT:-}"
+        printf "%s" "$latest_npm_version" > "${AFORA_INSTALL_LATEST_OUT:-}"
       else
-        printf "%s" "$FRESH_VERSION" > "${OPENCLAW_INSTALL_LATEST_OUT:-}"
+        printf "%s" "$FRESH_VERSION" > "${AFORA_INSTALL_LATEST_OUT:-}"
       fi
     fi
     verify_installed_cli "$PACKAGE_NAME" "$FRESH_VERSION"
@@ -335,7 +335,7 @@ NODE
   echo "package=$PACKAGE_NAME latest=$LATEST_VERSION previous=$PREVIOUS_VERSION"
 
   if [[ "$SKIP_PREVIOUS" == "1" ]]; then
-    echo "==> Skip preinstall previous (OPENCLAW_INSTALL_SMOKE_SKIP_PREVIOUS=1)"
+    echo "==> Skip preinstall previous (AFORA_INSTALL_SMOKE_SKIP_PREVIOUS=1)"
   else
     echo "==> Preinstall previous (forces installer upgrade path)"
     npm_install_global "preinstall previous release" "${PACKAGE_NAME}@${PREVIOUS_VERSION}"
@@ -346,8 +346,8 @@ NODE
   run_installer_pipeline "$INSTALL_URL" --no-prompt
 
   echo "==> Verify installed version"
-  if [[ -n "${OPENCLAW_INSTALL_LATEST_OUT:-}" ]]; then
-    printf "%s" "$LATEST_VERSION" > "${OPENCLAW_INSTALL_LATEST_OUT:-}"
+  if [[ -n "${AFORA_INSTALL_LATEST_OUT:-}" ]]; then
+    printf "%s" "$LATEST_VERSION" > "${AFORA_INSTALL_LATEST_OUT:-}"
   fi
   verify_installed_cli "$PACKAGE_NAME" "$LATEST_VERSION"
 
@@ -356,11 +356,11 @@ NODE
 
 run_update_smoke() {
   if [[ -z "$UPDATE_EXPECT_VERSION" ]]; then
-    echo "ERROR: OPENCLAW_INSTALL_UPDATE_EXPECT_VERSION is required for update mode" >&2
+    echo "ERROR: AFORA_INSTALL_UPDATE_EXPECT_VERSION is required for update mode" >&2
     return 1
   fi
   if [[ -z "$UPDATE_TAG_URL" ]]; then
-    echo "ERROR: OPENCLAW_INSTALL_UPDATE_TAG_URL is required for update mode" >&2
+    echo "ERROR: AFORA_INSTALL_UPDATE_TAG_URL is required for update mode" >&2
     return 1
   fi
 
@@ -376,7 +376,7 @@ run_update_smoke() {
   print_install_audit "baseline install"
   verify_installed_cli "$PACKAGE_NAME" "$UPDATE_BASELINE_VERSION"
 
-  echo "==> Run openclaw update from host-served tgz"
+  echo "==> Run afora update from host-served tgz"
   local update_status
   local update_stderr_file
   local update_stderr
@@ -384,17 +384,17 @@ run_update_smoke() {
     env
     npm_config_omit=optional
     NPM_CONFIG_OMIT=optional
-    OPENCLAW_ALLOW_ROOT=1
+    AFORA_ALLOW_ROOT=1
   )
   if allow_legacy_update_warning; then
-    update_env+=(OPENCLAW_UPDATE_IN_PROGRESS=1)
+    update_env+=(AFORA_UPDATE_IN_PROGRESS=1)
   fi
   update_stderr_file="$(mktemp)"
   set +e
   UPDATE_JSON="$(
-    run_with_heartbeat "openclaw update" \
+    run_with_heartbeat "afora update" \
       "${update_env[@]}" \
-      openclaw update --tag "$UPDATE_TAG_URL" --yes --json 2>"$update_stderr_file"
+      afora update --tag "$UPDATE_TAG_URL" --yes --json 2>"$update_stderr_file"
   )"
   update_status=$?
   set -e
@@ -407,14 +407,14 @@ run_update_smoke() {
   if [[ "$update_stderr" == *"config was written by version"* ]] && allow_legacy_update_warning; then
     echo "WARN: legacy baseline emitted a self-update version-skew warning; fixed baselines must not" >&2
   elif [[ "$update_stderr" == *"config was written by version"* ]]; then
-    echo "ERROR: openclaw update emitted a self-update version-skew warning" >&2
+    echo "ERROR: afora update emitted a self-update version-skew warning" >&2
     return 1
   fi
   if [[ "$update_status" -ne 0 ]]; then
     if is_self_swapped_package_process_exit "$update_stderr"; then
       echo "WARN: legacy updater process exited after self-swap; validating update JSON and installed CLI" >&2
     else
-      echo "ERROR: openclaw update failed with exit code $update_status" >&2
+      echo "ERROR: afora update failed with exit code $update_status" >&2
       return "$update_status"
     fi
   fi
@@ -489,11 +489,11 @@ if (Number(updateStep.exitCode ?? 1) !== 0) {
 if (typeof updateStep.command !== "string" || !updateStep.command.includes(expectedUrl)) {
   throw new Error(`global update step missing expected tgz URL: ${JSON.stringify(updateStep)}`);
 }
-const doctorStep = steps.find((step) => step?.name === "openclaw doctor");
+const doctorStep = steps.find((step) => step?.name === "afora doctor");
 // Every baseline that passes verify_installed_cli implements this contract;
 // the sole earlier npm artifact has no CLI and cannot reach this parser.
 if (!doctorStep) {
-  throw new Error("missing openclaw doctor step in update JSON");
+  throw new Error("missing afora doctor step in update JSON");
 }
 // Exit 86 is the updater's explicit recoverable post-install doctor contract.
 const doctorSucceeded = doctorStep.exitCode === 0;
@@ -501,7 +501,7 @@ const doctorWasAdvisory =
   doctorStep.exitCode === 86 &&
   doctorStep.advisory?.kind === "package-post-install-doctor";
 if (!doctorSucceeded && !doctorWasAdvisory) {
-  throw new Error(`openclaw doctor step failed: ${JSON.stringify(doctorStep)}`);
+  throw new Error(`afora doctor step failed: ${JSON.stringify(doctorStep)}`);
 }
 NODE
 
@@ -515,11 +515,11 @@ NODE
 
 run_npm_global_smoke() {
   if [[ -z "$UPDATE_EXPECT_VERSION" ]]; then
-    echo "ERROR: OPENCLAW_INSTALL_UPDATE_EXPECT_VERSION is required for npm-global mode" >&2
+    echo "ERROR: AFORA_INSTALL_UPDATE_EXPECT_VERSION is required for npm-global mode" >&2
     return 1
   fi
   if [[ -z "$UPDATE_TAG_URL" ]]; then
-    echo "ERROR: OPENCLAW_INSTALL_UPDATE_TAG_URL is required for npm-global mode" >&2
+    echo "ERROR: AFORA_INSTALL_UPDATE_TAG_URL is required for npm-global mode" >&2
     return 1
   fi
 
@@ -604,8 +604,8 @@ run_freshness_smoke() {
   echo "==> Run installer with same npm freshness policy"
   HOME="$policy_home" \
   NPM_CONFIG_USERCONFIG="${policy_home}/.npmrc" \
-  OPENCLAW_NO_ONBOARD=1 \
-  OPENCLAW_NO_PROMPT=1 \
+  AFORA_NO_ONBOARD=1 \
+  AFORA_NO_PROMPT=1 \
     run_installer_pipeline \
       "$INSTALL_URL" \
       --install-method npm \
@@ -634,7 +634,7 @@ case "$SMOKE_MODE" in
     run_freshness_smoke
     ;;
   *)
-    echo "ERROR: unsupported OPENCLAW_INSTALL_SMOKE_MODE=$SMOKE_MODE" >&2
+    echo "ERROR: unsupported AFORA_INSTALL_SMOKE_MODE=$SMOKE_MODE" >&2
     exit 1
     ;;
 esac

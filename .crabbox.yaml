@@ -1,5 +1,5 @@
-profile: openclaw-check
-# Default OpenClaw remote proof to Blacksmith Testbox through Crabbox: the
+profile: afora-check
+# Default Afora remote proof to Blacksmith Testbox through Crabbox: the
 # delegated CI environment owns checkout/hydration and leases reliably.
 # Use `--provider aws` for direct AWS runner proof; `--provider azure` spends
 # the Azure-backed credit account (its coordinator has stalled under load).
@@ -23,11 +23,11 @@ actions:
   ref: main
   runnerLabels:
     - crabbox
-    - openclaw
+    - afora
   runnerVersion: latest
   ephemeral: true
 blacksmith:
-  org: openclaw
+  org: afora
   workflow: .github/workflows/ci-check-testbox.yml
   job: check
   ref: main
@@ -37,12 +37,12 @@ cache:
   git: true
   volumes:
     - name: pnpm
-      key: openclaw-linux-node24-pnpm
+      key: afora-linux-node24-pnpm
       path: /var/cache/crabbox/pnpm
       sizeGB: 80
       required: false
     - name: npm
-      key: openclaw-linux-node24-npm
+      key: afora-linux-node24-npm
       path: /var/cache/crabbox/npm
       sizeGB: 40
       required: false
@@ -52,7 +52,7 @@ aws:
   region: eu-west-1
   rootGB: 400
 azure:
-  # The OpenClaw Azure subscription is reliable in eastus2; eastus rejects the
+  # The Afora Azure subscription is reliable in eastus2; eastus rejects the
   # same SKUs and can stall provisioning.
   location: eastus2
 sync:
@@ -71,7 +71,7 @@ env:
   allow:
     - CI
     - NODE_OPTIONS
-    - OPENCLAW_*
+    - AFORA_*
 ssh:
   user: crabbox
   # Azure coordinator leases expose SSH on 22. The run wrapper can fall back
@@ -118,7 +118,7 @@ jobs:
         git init -q
         git add -A
         if ! git diff --cached --quiet; then
-          git -c user.name=OpenClaw -c user.email=ci@openclaw.local commit -q --no-gpg-sign -m remote-check-tree
+          git -c user.name=Afora -c user.email=ci@afora.local commit -q --no-gpg-sign -m remote-check-tree
         fi
       fi
       env CI=1 corepack pnpm check --timed
@@ -133,5 +133,5 @@ jobs:
       workflow: .github/workflows/ci-check-testbox.yml
       job: check
       ref: main
-    command: env OPENCLAW_CHECK_CHANGED_REMOTE_CHILD=1 OPENCLAW_CHANGED_LANES_RAW_SYNC=1 CI=1 corepack pnpm check:changed
+    command: env AFORA_CHECK_CHANGED_REMOTE_CHILD=1 AFORA_CHANGED_LANES_RAW_SYNC=1 CI=1 corepack pnpm check:changed
     stop: always

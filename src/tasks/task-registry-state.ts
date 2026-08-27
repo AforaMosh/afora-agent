@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { formatErrorMessage } from "../infra/errors.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { createLazyPromiseLoader } from "../shared/lazy-runtime.js";
@@ -42,10 +42,10 @@ export type TaskRegistryDeliveryRuntime = Pick<
   "sendMessage"
 >;
 export const TASK_REGISTRY_DELIVERY_RUNTIME_OVERRIDE_KEY = Symbol.for(
-  "openclaw.taskRegistry.deliveryRuntimeOverride",
+  "afora.taskRegistry.deliveryRuntimeOverride",
 );
 export const TASK_REGISTRY_CONTROL_RUNTIME_OVERRIDE_KEY = Symbol.for(
-  "openclaw.taskRegistry.controlRuntimeOverride",
+  "afora.taskRegistry.controlRuntimeOverride",
 );
 const require = createRequire(import.meta.url);
 const TASK_REGISTRY_CONTROL_RUNTIME_CANDIDATES = [

@@ -1,5 +1,5 @@
 // Provider entry contracts define provider plugin hooks, model catalogs, and runtime adapters.
-import type { UnifiedModelCatalogEntry } from "@openclaw/model-catalog-core/model-catalog-types";
+import type { UnifiedModelCatalogEntry } from "@afora/model-catalog-core/model-catalog-types";
 import {
   normalizeStringEntries,
   uniqueStrings,
@@ -26,9 +26,9 @@ import {
 } from "../shared/safe-record.js";
 import { definePluginEntry } from "./plugin-entry.js";
 import type {
-  OpenClawPluginApi,
-  OpenClawPluginConfigSchema,
-  OpenClawPluginDefinition,
+  AforaPluginApi,
+  AforaPluginConfigSchema,
+  AforaPluginDefinition,
 } from "./plugin-entry.js";
 import {
   buildOpenAICompatibleProviderCatalog,
@@ -206,26 +206,26 @@ export type SingleProviderPluginOptions = {
    */
   manifest?: SingleProviderPluginManifest;
   /**
-   * @deprecated Declare exclusive plugin kind in `openclaw.plugin.json` via
+   * @deprecated Declare exclusive plugin kind in `afora.plugin.json` via
    * manifest `kind`. Runtime-entry `kind` remains only as a compatibility
    * fallback for older plugins.
    */
-  kind?: OpenClawPluginDefinition["kind"];
+  kind?: AforaPluginDefinition["kind"];
   /**
    * Optional plugin configuration schema or lazy schema factory.
    */
-  configSchema?: OpenClawPluginConfigSchema | (() => OpenClawPluginConfigSchema);
+  configSchema?: AforaPluginConfigSchema | (() => AforaPluginConfigSchema);
   /**
    * Primary provider registration. Extra provider fields are forwarded after
    * the helper-owned id/auth/catalog fields are normalized.
    */
   provider?:
     | SingleProviderPluginDefinition
-    | ((api: OpenClawPluginApi) => SingleProviderPluginDefinition);
+    | ((api: AforaPluginApi) => SingleProviderPluginDefinition);
   /**
    * Optional hook for registering companion capabilities with the same plugin entry.
    */
-  register?: (api: OpenClawPluginApi) => void;
+  register?: (api: AforaPluginApi) => void;
 };
 
 function resolveManifestProviderAuth(params: {

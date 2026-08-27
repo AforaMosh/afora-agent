@@ -1,6 +1,6 @@
 // Discord tests cover gateway plugin behavior.
 import { EventEmitter } from "node:events";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import {
   GatewayCloseCodes,
   GatewayDispatchEvents,

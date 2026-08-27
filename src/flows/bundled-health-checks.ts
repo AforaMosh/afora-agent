@@ -1,7 +1,7 @@
 // Bundled health checks define built-in doctor checks for runtime readiness.
-import { asOptionalObjectRecord as readRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalObjectRecord as readRecord } from "@afora/normalization-core/record-coerce";
 import { collectConfiguredAgentHarnessRuntimes } from "../agents/harness-runtimes.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizePluginId, normalizePluginsConfig } from "../plugins/config-state.js";
 import { passesManifestOwnerBasePolicy } from "../plugins/manifest-owner-policy.js";
 import type { PluginManifestRegistry } from "../plugins/manifest-registry.js";
@@ -77,7 +77,7 @@ export function resolveBundledHealthCheckPluginStateMode(
 
 /** Registers bundled health checks that are explicitly enabled by config and owner policy. */
 export function registerBundledHealthChecks(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   cwd?: string;
   env?: NodeJS.ProcessEnv;
   runWithPluginStateSnapshot?: <T>(
@@ -129,7 +129,7 @@ export function registerBundledHealthChecks(params: {
   }
 }
 
-function shouldRegisterCodexManagedHealth(cfg: OpenClawConfig): boolean {
+function shouldRegisterCodexManagedHealth(cfg: AforaConfig): boolean {
   if (!collectConfiguredAgentHarnessRuntimes(cfg).includes("codex")) {
     return false;
   }
@@ -142,7 +142,7 @@ function shouldRegisterCodexManagedHealth(cfg: OpenClawConfig): boolean {
   });
 }
 
-function isMemoryCoreActive(cfg: OpenClawConfig): boolean {
+function isMemoryCoreActive(cfg: AforaConfig): boolean {
   const plugins = normalizePluginsConfig(cfg.plugins);
   const selectedMemoryPluginId =
     typeof plugins.slots.memory === "string"
@@ -162,7 +162,7 @@ function isMemoryCoreActive(cfg: OpenClawConfig): boolean {
   );
 }
 
-function shouldRegisterPluginHealth(cfg: OpenClawConfig, pluginId: string): boolean {
+function shouldRegisterPluginHealth(cfg: AforaConfig, pluginId: string): boolean {
   const entry = cfg.plugins?.entries?.[pluginId];
   if (entry?.enabled !== true) {
     return false;
@@ -173,7 +173,7 @@ function shouldRegisterPluginHealth(cfg: OpenClawConfig, pluginId: string): bool
   });
 }
 
-function shouldRegisterPolicyHealth(params: { cfg: OpenClawConfig; cwd?: string }): boolean {
+function shouldRegisterPolicyHealth(params: { cfg: AforaConfig; cwd?: string }): boolean {
   const entry = params.cfg.plugins?.entries?.policy;
   const config = readRecord(entry?.config) ?? {};
   if (entry === undefined || entry.enabled === false || config.enabled === false) {

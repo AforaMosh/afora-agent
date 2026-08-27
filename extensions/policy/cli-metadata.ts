@@ -1,4 +1,4 @@
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import { POLICY_CLI_DESCRIPTOR } from "./src/cli-output-mode.js";
 
 export default definePluginEntry({

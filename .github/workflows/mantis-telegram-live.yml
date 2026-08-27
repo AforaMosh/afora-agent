@@ -48,8 +48,8 @@ permissions:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   NODE_VERSION: "24.x"
-  OPENCLAW_BUILD_PRIVATE_QA: "1"
-  OPENCLAW_ENABLE_PRIVATE_QA_CLI: "1"
+  AFORA_BUILD_PRIVATE_QA: "1"
+  AFORA_ENABLE_PRIVATE_QA_CLI: "1"
   CRABBOX_REF: main
   CRABBOX_AWS_REGION: us-east-1
   CRABBOX_CAPACITY_REGIONS: us-east-1
@@ -64,8 +64,8 @@ jobs:
           github.event_name == 'issue_comment' &&
           github.event.issue.pull_request &&
           (
-            contains(github.event.comment.body, '@openclaw-mantis') ||
-            contains(github.event.comment.body, '/openclaw-mantis')
+            contains(github.event.comment.body, '@afora-mantis') ||
+            contains(github.event.comment.body, '/afora-mantis')
           )
         )
       }}
@@ -260,7 +260,7 @@ jobs:
           install_dir="${RUNNER_TEMP}/crabbox"
           mkdir -p "$install_dir/src" "$HOME/.local/bin"
           git init "$install_dir/src"
-          git -C "$install_dir/src" remote add origin https://github.com/openclaw/crabbox.git
+          git -C "$install_dir/src" remote add origin https://github.com/afora/crabbox.git
           timeout --signal=TERM --kill-after=10s 120s git -C "$install_dir/src" fetch --depth 1 origin "$CRABBOX_REF"
           git -C "$install_dir/src" checkout --detach FETCH_HEAD
           go build -C "$install_dir/src" -o "$HOME/.local/bin/crabbox" ./cmd/crabbox
@@ -286,14 +286,14 @@ jobs:
         id: run_mantis
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENCLAW_QA_CONVEX_SITE_URL: ${{ secrets.OPENCLAW_QA_CONVEX_SITE_URL }}
-          OPENCLAW_QA_CONVEX_SECRET_CI: ${{ secrets.OPENCLAW_QA_CONVEX_SECRET_CI }}
-          OPENCLAW_QA_CREDENTIAL_ACQUIRE_TIMEOUT_MS: "1800000"
-          OPENCLAW_QA_REDACT_PUBLIC_METADATA: "1"
+          AFORA_QA_CONVEX_SITE_URL: ${{ secrets.AFORA_QA_CONVEX_SITE_URL }}
+          AFORA_QA_CONVEX_SECRET_CI: ${{ secrets.AFORA_QA_CONVEX_SECRET_CI }}
+          AFORA_QA_CREDENTIAL_ACQUIRE_TIMEOUT_MS: "1800000"
+          AFORA_QA_REDACT_PUBLIC_METADATA: "1"
           CRABBOX_COORDINATOR: ${{ secrets.CRABBOX_COORDINATOR }}
           CRABBOX_COORDINATOR_TOKEN: ${{ secrets.CRABBOX_COORDINATOR_TOKEN }}
-          OPENCLAW_QA_MANTIS_CRABBOX_COORDINATOR: ${{ secrets.OPENCLAW_QA_MANTIS_CRABBOX_COORDINATOR }}
-          OPENCLAW_QA_MANTIS_CRABBOX_COORDINATOR_TOKEN: ${{ secrets.OPENCLAW_QA_MANTIS_CRABBOX_COORDINATOR_TOKEN }}
+          AFORA_QA_MANTIS_CRABBOX_COORDINATOR: ${{ secrets.AFORA_QA_MANTIS_CRABBOX_COORDINATOR }}
+          AFORA_QA_MANTIS_CRABBOX_COORDINATOR_TOKEN: ${{ secrets.AFORA_QA_MANTIS_CRABBOX_COORDINATOR_TOKEN }}
           CRABBOX_ACCESS_CLIENT_ID: ${{ secrets.CRABBOX_ACCESS_CLIENT_ID }}
           CRABBOX_ACCESS_CLIENT_SECRET: ${{ secrets.CRABBOX_ACCESS_CLIENT_SECRET }}
           CRABBOX_AWS_REGION: ${{ env.CRABBOX_AWS_REGION }}
@@ -315,12 +315,12 @@ jobs:
             fi
           }
 
-          CRABBOX_COORDINATOR="${CRABBOX_COORDINATOR:-${OPENCLAW_QA_MANTIS_CRABBOX_COORDINATOR:-}}"
-          CRABBOX_COORDINATOR_TOKEN="${CRABBOX_COORDINATOR_TOKEN:-${OPENCLAW_QA_MANTIS_CRABBOX_COORDINATOR_TOKEN:-}}"
+          CRABBOX_COORDINATOR="${CRABBOX_COORDINATOR:-${AFORA_QA_MANTIS_CRABBOX_COORDINATOR:-}}"
+          CRABBOX_COORDINATOR_TOKEN="${CRABBOX_COORDINATOR_TOKEN:-${AFORA_QA_MANTIS_CRABBOX_COORDINATOR_TOKEN:-}}"
           export CRABBOX_COORDINATOR CRABBOX_COORDINATOR_TOKEN
 
-          require_var OPENCLAW_QA_CONVEX_SITE_URL
-          require_var OPENCLAW_QA_CONVEX_SECRET_CI
+          require_var AFORA_QA_CONVEX_SITE_URL
+          require_var AFORA_QA_CONVEX_SECRET_CI
           require_var CRABBOX_COORDINATOR_TOKEN
 
           candidate_repo="$(pwd)/.artifacts/qa-e2e/mantis/telegram-live-worktrees/candidate"
@@ -336,7 +336,7 @@ jobs:
           case "$PROVIDER_MODE" in
             live-frontier)
               require_var OPENAI_API_KEY
-              model="${OPENCLAW_CI_OPENAI_MODEL:-openai/gpt-5.6-luna}"
+              model="${AFORA_CI_OPENAI_MODEL:-openai/gpt-5.6-luna}"
               qa_args+=(--model "$model" --alt-model "$model" --fast)
               ;;
             mock-openai) ;;
@@ -363,7 +363,7 @@ jobs:
           fi
 
           set +e
-          pnpm --dir "$candidate_repo" openclaw qa telegram "${qa_args[@]}" "${scenario_args[@]}"
+          pnpm --dir "$candidate_repo" afora qa telegram "${qa_args[@]}" "${scenario_args[@]}"
           telegram_exit=$?
           set -e
 
@@ -386,7 +386,7 @@ jobs:
           if [[ -n "${CRABBOX_LEASE_ID:-}" ]]; then
             desktop_args+=(--lease-id "$CRABBOX_LEASE_ID")
           fi
-          pnpm --dir "$candidate_repo" openclaw qa mantis desktop-browser-smoke \
+          pnpm --dir "$candidate_repo" afora qa mantis desktop-browser-smoke \
             --repo-root "$candidate_repo" \
             --html-file "$output_rel/telegram-live-transcript.html" \
             --output-dir "$output_rel/desktop-browser" \
@@ -449,9 +449,9 @@ jobs:
           GH_TOKEN: ${{ steps.mantis_app_token.outputs.token }}
           ARTIFACT_URL: ${{ steps.upload_artifact.outputs.artifact-url }}
           MANTIS_ARTIFACT_R2_ACCESS_KEY_ID: ${{ secrets.MANTIS_ARTIFACT_R2_ACCESS_KEY_ID }}
-          MANTIS_ARTIFACT_R2_BUCKET: openclaw-crabbox-artifacts
+          MANTIS_ARTIFACT_R2_BUCKET: afora-crabbox-artifacts
           MANTIS_ARTIFACT_R2_ENDPOINT: ${{ vars.MANTIS_ARTIFACT_R2_ENDPOINT }}
-          MANTIS_ARTIFACT_R2_PUBLIC_BASE_URL: https://artifacts.openclaw.ai
+          MANTIS_ARTIFACT_R2_PUBLIC_BASE_URL: https://artifacts.afora.ai
           MANTIS_ARTIFACT_R2_REGION: auto
           MANTIS_ARTIFACT_R2_SECRET_ACCESS_KEY: ${{ secrets.MANTIS_ARTIFACT_R2_SECRET_ACCESS_KEY }}
           REQUEST_SOURCE: ${{ needs.resolve_request.outputs.request_source }}

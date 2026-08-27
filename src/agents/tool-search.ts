@@ -1,8 +1,8 @@
-/** Tool Search catalog compaction for large OpenClaw, MCP, and client tool inventories. */
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+/** Tool Search catalog compaction for large Afora, MCP, and client tool inventories. */
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { Type } from "typebox";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { HookContext } from "./agent-tools.before-tool-call.js";
 import type { AgentToolResult, AgentToolUpdateCallback } from "./runtime/index.js";
 import type { ToolDefinition } from "./sessions/index.js";
@@ -224,7 +224,7 @@ function shouldExposeControlTool(name: string, mode: ToolSearchMode): boolean {
 /** Replace visible tools with Tool Search controls and register hidden catalog entries. */
 export function applyToolSearchCatalog(params: {
   tools: AnyAgentTool[];
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   sessionId?: string;
   sessionKey?: string;
   agentId?: string;
@@ -251,7 +251,7 @@ export { applyToolSchemaDirectoryCatalog };
 /** Move client-provided tools into an existing Tool Search catalog. */
 export function addClientToolsToToolSearchCatalog(params: {
   tools: ToolDefinition[];
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   sessionId?: string;
   sessionKey?: string;
   agentId?: string;
@@ -274,11 +274,11 @@ export function createToolSearchTools(ctx: ToolSearchToolContext): AnyAgentTool[
       name: TOOL_SEARCH_CODE_MODE_TOOL_NAME,
       label: "Tool Search Code",
       description:
-        "Run JavaScript in an isolated Node subprocess over a large tool catalog. APIs: `openclaw.tools.search(query: string, options?)`, `openclaw.tools.describe(id: string)`, and `openclaw.tools.call(id: string, args?)`. Search takes a positional query string, which must be in English: matching is lexical against tool names and descriptions, which are written in English. Call returns `{ tool, result }`; JSON values normally live in `result.details`.",
+        "Run JavaScript in an isolated Node subprocess over a large tool catalog. APIs: `afora.tools.search(query: string, options?)`, `afora.tools.describe(id: string)`, and `afora.tools.call(id: string, args?)`. Search takes a positional query string, which must be in English: matching is lexical against tool names and descriptions, which are written in English. Call returns `{ tool, result }`; JSON values normally live in `result.details`.",
       parameters: Type.Object({
         code: Type.String({
           description:
-            "JavaScript body for an async function. Use return to return the final value. The openclaw.tools bridge is available.",
+            "JavaScript body for an async function. Use return to return the final value. The afora.tools bridge is available.",
         }),
       }),
       execute: async (
@@ -380,7 +380,7 @@ export function createToolSearchTools(ctx: ToolSearchToolContext): AnyAgentTool[
     {
       name: TOOL_CALL_RAW_TOOL_NAME,
       label: "Tool Call",
-      description: "Call an exact Tool Search result id or name through OpenClaw.",
+      description: "Call an exact Tool Search result id or name through Afora.",
       parameters: Type.Object({
         id: Type.String({ description: "Tool search result id or tool name." }),
         args: Type.Optional(
@@ -431,5 +431,5 @@ const testing = {
 };
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.toolSearchTestApi")] = testing;
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.toolSearchTestApi")] = testing;
 }

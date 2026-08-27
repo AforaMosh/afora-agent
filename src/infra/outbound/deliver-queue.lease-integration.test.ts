@@ -3,7 +3,7 @@ import { createDeferred } from "../../../test/helpers/promise.js";
 import { onTrustedMessageAuditEvent } from "../../audit/message-audit-events.js";
 import { createMessageReceiptFromOutboundResults } from "../../channels/message/receipt.js";
 import type { ChannelMessageSendTextContext } from "../../channels/message/types.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { createEmptyPluginRegistry } from "../../plugins/registry.js";
 import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../../test-utils/channel-plugins.js";
@@ -23,7 +23,7 @@ import {
 let deliverOutboundPayloads: typeof import("./deliver.js").deliverOutboundPayloads;
 
 async function startBlockedFreshDelivery(params: { tmpDir: string }) {
-  process.env.OPENCLAW_STATE_DIR = params.tmpDir;
+  process.env.AFORA_STATE_DIR = params.tmpDir;
   const preparationEntered = createDeferred();
   const releasePreparation = createDeferred();
   const queueIdReady = createDeferred<string>();
@@ -63,7 +63,7 @@ async function startBlockedFreshDelivery(params: { tmpDir: string }) {
     ]),
   );
   const delivery = deliverOutboundPayloads({
-    cfg: {} as OpenClawConfig,
+    cfg: {} as AforaConfig,
     channel: "matrix",
     to: "!room:example",
     payloads: [{ text: "fresh live content" }],
@@ -80,7 +80,7 @@ async function startBlockedStableDelivery(params: {
   deliveryIntentId: string;
   requiresProducerClaim: boolean;
 }) {
-  process.env.OPENCLAW_STATE_DIR = params.tmpDir;
+  process.env.AFORA_STATE_DIR = params.tmpDir;
   const preparationEntered = createDeferred();
   const releasePreparation = createDeferred();
   const messageId = `${params.deliveryIntentId}-message`;
@@ -131,7 +131,7 @@ async function startBlockedStableDelivery(params: {
     params.tmpDir,
   );
   const delivery = deliverOutboundPayloads({
-    cfg: {} as OpenClawConfig,
+    cfg: {} as AforaConfig,
     channel: "matrix",
     to: "!room:example",
     payloads: [{ text: "regenerated content must not replace queue custody" }],
@@ -148,7 +148,7 @@ async function startBlockedRenderedStableDelivery(params: {
   tmpDir: string;
   deliveryIntentId: string;
 }) {
-  process.env.OPENCLAW_STATE_DIR = params.tmpDir;
+  process.env.AFORA_STATE_DIR = params.tmpDir;
   const renderEntered = createDeferred();
   const releaseRender = createDeferred();
   const messageId = `${params.deliveryIntentId}-message`;
@@ -208,7 +208,7 @@ async function startBlockedRenderedStableDelivery(params: {
     params.tmpDir,
   );
   const delivery = deliverOutboundPayloads({
-    cfg: {} as OpenClawConfig,
+    cfg: {} as AforaConfig,
     channel: "matrix",
     to: "!room:example",
     payloads: [{ text: "regenerated content must not replace queue custody" }],
@@ -225,7 +225,7 @@ async function startBlockedProviderStableDelivery(params: {
   tmpDir: string;
   deliveryIntentId: string;
 }) {
-  process.env.OPENCLAW_STATE_DIR = params.tmpDir;
+  process.env.AFORA_STATE_DIR = params.tmpDir;
   const providerEntered = createDeferred();
   const releaseProvider = createDeferred();
   const messageId = `${params.deliveryIntentId}-message`;
@@ -271,7 +271,7 @@ async function startBlockedProviderStableDelivery(params: {
     params.tmpDir,
   );
   const delivery = deliverOutboundPayloads({
-    cfg: {} as OpenClawConfig,
+    cfg: {} as AforaConfig,
     channel: "matrix",
     to: "!room:example",
     payloads: [{ text: "regenerated content must not replace queue custody" }],

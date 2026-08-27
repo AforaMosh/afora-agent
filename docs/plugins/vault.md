@@ -1,7 +1,7 @@
 ---
 summary: "Use the bundled Vault plugin to resolve SecretRefs from HashiCorp Vault"
 read_when:
-  - You want OpenClaw to read API keys from HashiCorp Vault
+  - You want Afora to read API keys from HashiCorp Vault
   - You are setting up SecretRefs on a local machine or server
   - You need to configure Vault-backed model provider credentials
 title: "Vault SecretRefs"
@@ -9,41 +9,41 @@ title: "Vault SecretRefs"
 
 # Vault SecretRefs
 
-The bundled Vault plugin lets OpenClaw resolve `exec` SecretRefs from
-HashiCorp Vault at Gateway startup and reload time. OpenClaw stores Vault
+The bundled Vault plugin lets Afora resolve `exec` SecretRefs from
+HashiCorp Vault at Gateway startup and reload time. Afora stores Vault
 references in config, keeps resolved values in the in-memory secrets snapshot,
-and does not write the resolved API keys back to `openclaw.json`.
+and does not write the resolved API keys back to `afora.json`.
 
 Use this when you already run Vault or want model provider keys to live outside
-OpenClaw config files. For the SecretRef runtime model, see
+Afora config files. For the SecretRef runtime model, see
 [Secrets management](/gateway/secrets).
 
 ## Before you begin
 
 You need:
 
-- OpenClaw with the bundled `vault` plugin available
+- Afora with the bundled `vault` plugin available
 - a reachable Vault server
 - Vault auth that can produce a client token with read access to the secret
-  paths OpenClaw should resolve
+  paths Afora should resolve
 - the environment that starts the Gateway must include `VAULT_ADDR` and either
-  `VAULT_TOKEN`, `OPENCLAW_VAULT_AUTH_METHOD=token_file` with `VAULT_TOKEN_FILE`,
+  `VAULT_TOKEN`, `AFORA_VAULT_AUTH_METHOD=token_file` with `VAULT_TOKEN_FILE`,
   or a configured JWT/Kubernetes login
 
 The resolver talks to Vault over HTTP from Node. The Gateway does not need the
 Vault CLI to resolve SecretRefs.
 
-Enable the bundled plugin before running the `openclaw vault` commands:
+Enable the bundled plugin before running the `afora vault` commands:
 
 ```bash
-openclaw plugins enable vault
+afora plugins enable vault
 ```
 
 ## Store a provider key in Vault
 
-OpenClaw defaults to KV v2 mounted at `secret`, matching Vault dev-server
-examples. For production Vault, set `OPENCLAW_VAULT_KV_MOUNT` to your actual KV
-mount path before creating SecretRef ids. With the OpenClaw defaults, this
+Afora defaults to KV v2 mounted at `secret`, matching Vault dev-server
+examples. For production Vault, set `AFORA_VAULT_KV_MOUNT` to your actual KV
+mount path before creating SecretRef ids. With the Afora defaults, this
 SecretRef id:
 
 ```text
@@ -63,7 +63,7 @@ export OPENROUTER_API_KEY=<openrouter-api-key>
 vault kv put secret/providers/openrouter apiKey="$OPENROUTER_API_KEY"
 ```
 
-Use a scoped client token for OpenClaw, not a root token. For the default KV v2
+Use a scoped client token for Afora, not a root token. For the default KV v2
 layout, a minimal policy for model provider keys looks like:
 
 ```hcl
@@ -75,7 +75,7 @@ path "secret/data/providers/*" {
 ## Make Vault visible to the Gateway
 
 For an uncontainerized local Gateway, export Vault settings in the same shell
-that starts OpenClaw. The default auth method reads a Vault client token from
+that starts Afora. The default auth method reads a Vault client token from
 `VAULT_TOKEN`:
 
 ```bash
@@ -87,7 +87,7 @@ If Vault Agent writes a token sink file, use token-file auth:
 
 ```bash
 export VAULT_ADDR=https://vault.example.com
-export OPENCLAW_VAULT_AUTH_METHOD=token_file
+export AFORA_VAULT_AUTH_METHOD=token_file
 export VAULT_TOKEN_FILE=/vault/secrets/token
 ```
 
@@ -104,7 +104,7 @@ Or provide a PEM bundle directly:
 export NODE_EXTRA_CA_CERTS=/path/to/vault-ca.pem
 ```
 
-These variables must be present when OpenClaw starts. The Vault plugin forwards
+These variables must be present when Afora starts. The Vault plugin forwards
 them to its resolver process.
 
 For non-interactive JWT auth, use a workload JWT file and a Vault role of type
@@ -112,10 +112,10 @@ For non-interactive JWT auth, use a workload JWT file and a Vault role of type
 
 ```bash
 export VAULT_ADDR=https://vault.example.com
-export OPENCLAW_VAULT_AUTH_METHOD=jwt
-export OPENCLAW_VAULT_AUTH_MOUNT=jwt
-export OPENCLAW_VAULT_AUTH_ROLE=openclaw
-export OPENCLAW_VAULT_JWT_FILE=/var/run/secrets/tokens/vault
+export AFORA_VAULT_AUTH_METHOD=jwt
+export AFORA_VAULT_AUTH_MOUNT=jwt
+export AFORA_VAULT_AUTH_ROLE=afora
+export AFORA_VAULT_JWT_FILE=/var/run/secrets/tokens/vault
 ```
 
 The JWT file should be a projected workload token, such as a Kubernetes service account
@@ -129,36 +129,36 @@ file is the standard service account token path:
 
 ```bash
 export VAULT_ADDR=https://vault.example.com
-export OPENCLAW_VAULT_AUTH_METHOD=kubernetes
-export OPENCLAW_VAULT_AUTH_ROLE=openclaw
+export AFORA_VAULT_AUTH_METHOD=kubernetes
+export AFORA_VAULT_AUTH_ROLE=afora
 ```
 
-Set `OPENCLAW_VAULT_AUTH_MOUNT` only when Vault mounted Kubernetes auth somewhere
-other than `auth/kubernetes`. Set `OPENCLAW_VAULT_JWT_FILE` only when the service
+Set `AFORA_VAULT_AUTH_MOUNT` only when Vault mounted Kubernetes auth somewhere
+other than `auth/kubernetes`. Set `AFORA_VAULT_JWT_FILE` only when the service
 account token is projected at a custom path.
 
 Optional settings:
 
 ```bash
 export VAULT_NAMESPACE=<namespace-name>
-export OPENCLAW_VAULT_KV_MOUNT=secret
-export OPENCLAW_VAULT_KV_VERSION=2
+export AFORA_VAULT_KV_MOUNT=secret
+export AFORA_VAULT_KV_VERSION=2
 ```
 
 Check what the current shell can see:
 
 ```bash
-openclaw vault status
+afora vault status
 ```
 
 When more than one Vault-backed secret provider is configured, select one by
 alias:
 
 ```bash
-openclaw vault status --provider-alias corp-vault
+afora vault status --provider-alias corp-vault
 ```
 
-`openclaw vault status` never prints `VAULT_TOKEN`; it reports only whether the
+`afora vault status` never prints `VAULT_TOKEN`; it reports only whether the
 token, token file, and JWT file are set.
 
 <Warning>
@@ -173,7 +173,7 @@ already-running Gateway.
 Create a plan that maps OpenRouter's model provider API key to Vault:
 
 ```bash
-openclaw vault setup \
+afora vault setup \
   --plan-out ./vault-secrets-plan.json \
   --openrouter-id providers/openrouter/apiKey
 ```
@@ -181,32 +181,32 @@ openclaw vault setup \
 Apply and verify the plan:
 
 ```bash
-openclaw secrets apply --from ./vault-secrets-plan.json --dry-run --allow-exec
-openclaw secrets apply --from ./vault-secrets-plan.json --allow-exec
-openclaw secrets audit --check --allow-exec
-openclaw secrets reload
+afora secrets apply --from ./vault-secrets-plan.json --dry-run --allow-exec
+afora secrets apply --from ./vault-secrets-plan.json --allow-exec
+afora secrets audit --check --allow-exec
+afora secrets reload
 ```
 
-Use `--allow-exec` because the Vault plugin resolves through an OpenClaw-managed
+Use `--allow-exec` because the Vault plugin resolves through an Afora-managed
 exec SecretRef provider.
 
 If the Gateway is not running yet, start it normally after applying the plan
-instead of running `openclaw secrets reload`.
+instead of running `afora secrets reload`.
 
 ## Configure more provider keys
 
 Built-in shortcuts:
 
 ```bash
-openclaw vault setup --openai-id providers/openai/apiKey
-openclaw vault setup --anthropic-id providers/anthropic/apiKey
-openclaw vault setup --openrouter-id providers/openrouter/apiKey
+afora vault setup --openai-id providers/openai/apiKey
+afora vault setup --anthropic-id providers/anthropic/apiKey
+afora vault setup --openrouter-id providers/openrouter/apiKey
 ```
 
 Multiple provider keys in one plan:
 
 ```bash
-openclaw vault setup \
+afora vault setup \
   --plan-out ./vault-secrets-plan.json \
   --openai-id providers/openai/apiKey \
   --anthropic-id providers/anthropic/apiKey \
@@ -217,7 +217,7 @@ Bundled providers without shortcuts, or already-configured OpenAI-compatible and
 custom model providers, use `--provider-key`:
 
 ```bash
-openclaw vault setup \
+afora vault setup \
   --plan-out ./vault-secrets-plan.json \
   --provider-key local-openai=providers/local-openai/apiKey \
   --provider-key groq=providers/groq/apiKey
@@ -230,17 +230,17 @@ the provider's `baseUrl`, `api`, or `models` settings; configure those first.
 Use `--target <path=id>` for any known SecretRef target path:
 
 ```bash
-openclaw vault setup \
+afora vault setup \
   --target channels.telegram.botToken=channels/telegram/botToken \
   --target models.providers.openai.headers.x-api-key=providers/openai/proxyKey \
   --target auth-profiles:main:profiles.openai.key=providers/openai/apiKey
 ```
 
-Bare target paths apply to `openclaw.json`. Use
+Bare target paths apply to `afora.json`. Use
 `auth-profiles:<agentId>:<path>` for existing `auth-profiles.json` targets.
-The target path must be a registered OpenClaw SecretRef target. The setup
-command does not create arbitrary named secrets in OpenClaw; Vault remains the
-secret store, and OpenClaw stores SecretRefs only on supported config fields.
+The target path must be a registered Afora SecretRef target. The setup
+command does not create arbitrary named secrets in Afora; Vault remains the
+secret store, and Afora stores SecretRefs only on supported config fields.
 
 ## SecretRef id format
 
@@ -263,7 +263,7 @@ The returned Vault field must be a string.
 For KV v1, set:
 
 ```bash
-export OPENCLAW_VAULT_KV_VERSION=1
+export AFORA_VAULT_KV_VERSION=1
 ```
 
 Then `providers/openrouter/apiKey` reads:
@@ -272,7 +272,7 @@ Then `providers/openrouter/apiKey` reads:
 secret/providers/openrouter -> apiKey
 ```
 
-## What OpenClaw stores
+## What Afora stores
 
 Applying a Vault setup plan stores a plugin-managed provider:
 
@@ -302,25 +302,25 @@ container must receive:
 - `VAULT_ADDR`
 - one auth source:
   - `VAULT_TOKEN`
-  - `OPENCLAW_VAULT_AUTH_METHOD=token_file` plus `VAULT_TOKEN_FILE`
-  - `OPENCLAW_VAULT_AUTH_METHOD=jwt` plus `OPENCLAW_VAULT_AUTH_MOUNT`,
-    `OPENCLAW_VAULT_AUTH_ROLE`, and `OPENCLAW_VAULT_JWT_FILE`
-  - `OPENCLAW_VAULT_AUTH_METHOD=kubernetes` plus `OPENCLAW_VAULT_AUTH_ROLE`; optionally
-    override `OPENCLAW_VAULT_AUTH_MOUNT` or `OPENCLAW_VAULT_JWT_FILE`
-- optional `VAULT_NAMESPACE`, `OPENCLAW_VAULT_KV_MOUNT`, and
-  `OPENCLAW_VAULT_KV_VERSION`
+  - `AFORA_VAULT_AUTH_METHOD=token_file` plus `VAULT_TOKEN_FILE`
+  - `AFORA_VAULT_AUTH_METHOD=jwt` plus `AFORA_VAULT_AUTH_MOUNT`,
+    `AFORA_VAULT_AUTH_ROLE`, and `AFORA_VAULT_JWT_FILE`
+  - `AFORA_VAULT_AUTH_METHOD=kubernetes` plus `AFORA_VAULT_AUTH_ROLE`; optionally
+    override `AFORA_VAULT_AUTH_MOUNT` or `AFORA_VAULT_JWT_FILE`
+- optional `VAULT_NAMESPACE`, `AFORA_VAULT_KV_MOUNT`, and
+  `AFORA_VAULT_KV_VERSION`
 
-When using Kubernetes, prefer `OPENCLAW_VAULT_AUTH_METHOD=kubernetes`
+When using Kubernetes, prefer `AFORA_VAULT_AUTH_METHOD=kubernetes`
 when Vault has Kubernetes auth configured for the cluster. Use
-`OPENCLAW_VAULT_AUTH_METHOD=jwt` only when Vault is configured to treat the cluster
+`AFORA_VAULT_AUTH_METHOD=jwt` only when Vault is configured to treat the cluster
 as a generic JWT/OIDC issuer. Either option is better than a long-lived Vault
 token in a Kubernetes Secret. Vault Agent sidecar or injector deployments can
 use `token_file` instead.
 
 For multi-tenant Vault setups, keep tenant routing in Vault policy and
-deployment config. OpenClaw does not require a fixed mount, role, or path: each
-Gateway environment can set its own `OPENCLAW_VAULT_KV_MOUNT`,
-`OPENCLAW_VAULT_AUTH_ROLE`, and SecretRef ids. If one shared Gateway must resolve
+deployment config. Afora does not require a fixed mount, role, or path: each
+Gateway environment can set its own `AFORA_VAULT_KV_MOUNT`,
+`AFORA_VAULT_AUTH_ROLE`, and SecretRef ids. If one shared Gateway must resolve
 different Vault users at the same time, use manually configured exec providers
 that wrap distinct auth environments, or split tenants across Gateway
 environments with separate Vault env.
@@ -328,5 +328,5 @@ environments with separate Vault env.
 ## Related
 
 - [Secrets management](/gateway/secrets)
-- [`openclaw secrets`](/cli/secrets)
+- [`afora secrets`](/cli/secrets)
 - [Plugin inventory](/plugins/plugin-inventory)

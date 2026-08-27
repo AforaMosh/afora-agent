@@ -5,9 +5,9 @@ import path from "node:path";
 import {
   fetchWithSsrFGuard,
   ssrfPolicyFromHttpBaseUrlAllowedOrigin,
-} from "openclaw/plugin-sdk/ssrf-runtime";
-import { fetchConfiguredLocalOriginWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime-internal";
-import { asOptionalRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/ssrf-runtime";
+import { fetchConfiguredLocalOriginWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime-internal";
+import { asOptionalRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   DEFAULT_LLAMA_CPP_CONTEXT_SIZE,
   DEFAULT_LLAMA_CPP_EMBEDDING_CACHE_FILE,
@@ -405,7 +405,7 @@ export async function prepareManagedLlamaServer(params: {
 }
 
 export async function ensureManagedLlamaServerForChat(params: {
-  provider: import("openclaw/plugin-sdk/provider-model-shared").ModelProviderConfig;
+  provider: import("afora-agent/plugin-sdk/provider-model-shared").ModelProviderConfig;
   model: {
     id: string;
     params?: Record<string, unknown>;
@@ -539,7 +539,7 @@ export async function inspectLlamaServerRuntime(params: {
     model: { id: params.modelId, ...(pathValue ? { path: pathValue } : {}) },
     capabilities: {
       vision: modalities?.vision === true,
-      // OpenClaw does not configure a draft model in the managed preset.
+      // Afora does not configure a draft model in the managed preset.
       draft: false,
     },
     endpoints: {

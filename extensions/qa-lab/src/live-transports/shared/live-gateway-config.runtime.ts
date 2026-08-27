@@ -1,5 +1,5 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 
 type GatewayConfigClient = {
   call: (method: string, params?: unknown, options?: { timeoutMs?: number }) => Promise<unknown>;

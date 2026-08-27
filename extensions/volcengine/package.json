@@ -1,22 +1,22 @@
 {
-  "name": "@openclaw/volcengine-provider",
+  "name": "@afora/volcengine-provider",
   "version": "2026.8.1",
-  "description": "OpenClaw Volcengine provider plugin.",
+  "description": "Afora Volcengine provider plugin.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   },
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
     "install": {
-      "clawhubSpec": "clawhub:@openclaw/volcengine-provider",
-      "npmSpec": "@openclaw/volcengine-provider",
+      "clawhubSpec": "clawhub:@afora/volcengine-provider",
+      "npmSpec": "@afora/volcengine-provider",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.7.2"
     },
@@ -24,7 +24,7 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1",
+      "aforaVersion": "2026.8.1",
       "bundledDist": false
     },
     "release": {

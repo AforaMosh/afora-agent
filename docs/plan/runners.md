@@ -19,8 +19,8 @@ advances a milestone.
 | 1a  | Naming: session copy revert                                | landed      | #120667                                                                                                                                                                   |
 | 1b  | Naming: devices consolidation                              | landed      | #120689                                                                                                                                                                   |
 | 1c  | Cleanup: node-pairing → device-pairing merge               | landed      | #120726                                                                                                                                                                   |
-| 2   | `openclaw resume` + web Continue in terminal               | in progress | #120664, #122870                                                                                                                                                          |
-| 3   | `openclaw connect` one-paste onboarding + `/j/` join route | in progress | #120768, #122499                                                                                                                                                          |
+| 2   | `afora resume` + web Continue in terminal               | in progress | #120664, #122870                                                                                                                                                          |
+| 3   | `afora connect` one-paste onboarding + `/j/` join route | in progress | #120768, #122499                                                                                                                                                          |
 | 4   | Picker: grouping, placement, liveness, enrichment          | in progress | #120804, #122531, #122635, #122774, #122923                                                                                                                               |
 | F   | Real-wire session boundary harness                         | landed      | #121212                                                                                                                                                                   |
 | 5   | Public worker ingress path                                 | landed      | #122578, #122643                                                                                                                                                          |
@@ -28,7 +28,7 @@ advances a milestone.
 | 7   | Bundle push consent + runner updates                       | in progress | #123985, #124037, #124356, #124590                                                                                                                                        |
 | 8   | Stop-and-continue moves                                    | not started | —                                                                                                                                                                         |
 | 9   | Deletions (ssh sandbox, openshell, exec-host clones, …)    | not started | —                                                                                                                                                                         |
-| 10  | Cloud convergence (provisioners run `openclaw connect`)    | not started | —                                                                                                                                                                         |
+| 10  | Cloud convergence (provisioners run `afora connect`)    | not started | —                                                                                                                                                                         |
 
 Revision history: revision 1 (2026-08-08) established the session/runner
 vocabulary, the naming rulings, and the milestone skeleton after a
@@ -45,7 +45,7 @@ changed the plan:
   _connection_ is still not an authority boundary, so session-hosting
   authority lives in the dispatch layer (worker admission, per-dispatch
   credentials, turn claims, owner epochs) — relocated, not removed.
-- **`openclaw worker` becomes a node-supervised child.** One machine concept:
+- **`afora worker` becomes a node-supervised child.** One machine concept:
   a paired node can run everything a cloud worker runs today.
 - **SSH is not the device transport.** The gateway never dials devices; the
   device always dials out. Revision 1's "ship sshd first" for device runners
@@ -55,7 +55,7 @@ changed the plan:
 
 ## Problem
 
-Unchanged from revision 1 in substance: OpenClaw has disconnected answers to
+Unchanged from revision 1 in substance: Afora has disconnected answers to
 "where does work run." Nodes receive forwarded `exec host=node` calls only; a
 user's always-on workstation is less capable as a session host than a
 throwaway cloud lease. Cloud workers host full sessions with a durable
@@ -82,7 +82,7 @@ Node      a paired machine holding an outbound connection to the gateway
 Runner    anything that can host a session's turn loop: the gateway itself,
           or a session-capable node. "Runner" is internal/docs vocabulary;
           UI copy says "Runs on …".
-Worker    the per-turn child process (`openclaw worker`) that hosts a
+Worker    the per-turn child process (`afora worker`) that hosts a
           session's loop under worker admission. On cloud leases it is
           launched over SSH today; on nodes it is a supervised child of the
           node host. Same admission, same protocol, either way.
@@ -96,8 +96,8 @@ Turn      one prompt-to-response work attempt inside a session.
 
 Naming rulings (operator-decided, carried from revision 1): **session** is the
 only product noun for a conversation; **devices** is the user-facing word for
-paired hardware; new CLI ergonomics ship as **verbs** (`openclaw resume`,
-`openclaw connect`); "runner" never appears in UI copy. Milestone 1c (nodes →
+paired hardware; new CLI ergonomics ship as **verbs** (`afora resume`,
+`afora connect`); "runner" never appears in UI copy. Milestone 1c (nodes →
 devices route/i18n consolidation) lands before any new placement copy ships.
 
 ## Architecture
@@ -107,7 +107,7 @@ devices route/i18n consolidation) lands before any new placement copy ships.
 Every surveyed production system (GitHub Actions runners, GitLab, Buildkite,
 CircleCI, Tailscale, VS Code tunnels, Coder, Gitpod, Amp) uses outbound-only
 connections from the machine to the control plane, and the mature ones split
-a persistent presence/control channel from per-job work channels. OpenClaw
+a persistent presence/control channel from per-job work channels. Afora
 already has both halves; this plan connects them:
 
 1. **Node connection** (exists): the outbound gateway WebSocket. Carries
@@ -284,12 +284,12 @@ long-lived device identity; GitLab deprecated reusable registration tokens to
 get here, Tailscale's key/device revocation split is the documented model):
 
 - Admin mints a **single-use, ~10-minute join code** (≥128-bit entropy) from
-  the picker's "Connect a machine…" foot or `openclaw devices` CLI. The
+  the picker's "Connect a machine…" foot or `afora devices` CLI. The
   existing `device.pair.setupCode` RPC and `node` bootstrap profile are the
   substrate; the code pre-approves exactly the node role with zero operator
   scopes.
-- The pasted one-liner is `npx openclaw connect <url-or-code>` (top-level
-  verb; `openclaw node run` stays as the plumbing command). It accepts the
+- The pasted one-liner is `npx afora connect <url-or-code>` (top-level
+  verb; `afora node run` stays as the plumbing command). It accepts the
   full `oc-pair://` payload (offline form, carries gateway URL + bootstrap
   token + optional TLS pin for self-signed gateways) or an
   `https://<gateway-host>/j/<shortcode>` URL whose payload is fetched over
@@ -334,7 +334,7 @@ version quietly on Devices or a remediation warning when the bundle is missing.
 
 ### Projects read model (milestone 4 foundation)
 
-OpenClaw already computes project identity twice without naming it: the
+Afora already computes project identity twice without naming it: the
 worktree service derives `originUrl` + a 16-char repo fingerprint
 (`src/agents/worktrees/service.ts:199-205`), and the sessions catalog groups
 Codex/Claude rows by project folder, folding `.claude/worktrees/<name>` into
@@ -383,7 +383,7 @@ speak. Additions:
 ### Cloud convergence (milestone 10)
 
 A cloud provider's job collapses to: boot box, run
-`openclaw connect <one-shot code> --ephemeral` in setup. Ephemeral enrollment
+`afora connect <one-shot code> --ephemeral` in setup. Ephemeral enrollment
 (industry: GitHub `--ephemeral`/JIT, Buildkite `--acquire-job`, Tailscale
 ephemeral keys) auto-deregisters after the run and auto-purges the node
 record when it goes offline. `destroy` = release lease. After soak, the SSH
@@ -444,7 +444,7 @@ Revised or new in revision 2:
 - **Cursor / Claude Code / Codex cloud**: managed-VM-only execution with
   git-based handoff; Claude Code's proxy-minted scoped git credentials
   inform the scoped-git-token rule above; teleport-style continuation
-  validates attach-only sessions (which OpenClaw gets for free).
+  validates attach-only sessions (which Afora gets for free).
 
 ## Milestones
 
@@ -452,7 +452,7 @@ Independently mergeable PR series; 3–5 can interleave after 1c.
 
 1. **1c naming cleanup**: finish nodes → devices in route ids, i18n keys,
    labels; `node-pairing.ts` facade merge. Before any new placement copy.
-2. **Continuation ergonomics** (in progress): `openclaw resume` plus the web
+2. **Continuation ergonomics** (in progress): `afora resume` plus the web
    **Continue in terminal…** session action. The browser copies one
    credential-free command with one bounded, versioned, URL-safe handoff
    argument that encodes the exact qualified session key and selected Gateway
@@ -473,7 +473,7 @@ Independently mergeable PR series; 3–5 can interleave after 1c.
    Ambient Gateway auth env fallback is suppressed for handoffs. Mismatches fail
    closed, terminal auth remains independent, and session ACLs stay
    authoritative.
-3. **`openclaw connect`**: verb + `oc-pair://` decoder + TLS pin in payload +
+3. **`afora connect`**: verb + `oc-pair://` decoder + TLS pin in payload +
    `/j/<shortcode>` join route (reserved prefix, single-use, rate-limited) +
    shortcode mint + curl wrapper on the public site. Exit: a fresh machine
    pairs against a remote gateway with one pasted command and one admin
@@ -513,7 +513,7 @@ Independently mergeable PR series; 3–5 can interleave after 1c.
    (superseded by full session hosting), node/device pairing merge remainder.
    Each gated on its replacement, each its own PR with proof.
 10. **Cloud convergence**: `--ephemeral` enrollment, provisioners run
-    `openclaw connect`, then delete the SSH tunnel/rsync transport stack.
+    `afora connect`, then delete the SSH tunnel/rsync transport stack.
 
 Net production LOC across the plan is targeted negative: milestones 3–5 are
 small additions, 6–7 are mostly a provider + one transport implementation

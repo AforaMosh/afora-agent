@@ -1,14 +1,14 @@
 import type {
   AgentHarnessSessionForkParams,
   AgentHarnessSessionForkResult,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
 import {
   deleteSessionUpstreamLink,
   upsertSessionUpstreamLink,
-} from "openclaw/plugin-sdk/session-catalog";
-import { isRecord, normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/session-catalog";
+import { isRecord, normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { isIncognitoSessionKey } from "../incognito-session.js";
 import type { CodexSessionCatalogControlFactory } from "../session-catalog-types.js";
 import { codexLastTerminalTurnId, codexUpstreamBaseline } from "../session-upstream-marker.js";
@@ -41,7 +41,7 @@ export async function forkCodexUpstreamSession(
     bindingStore: CodexAppServerBindingStore;
     controlFactory: CodexSessionCatalogControlFactory;
     harnessRuntimeId: string;
-    resolveConfig?: () => OpenClawConfig | undefined;
+    resolveConfig?: () => AforaConfig | undefined;
     runtime: PluginRuntime;
   },
 ): Promise<AgentHarnessSessionForkResult> {

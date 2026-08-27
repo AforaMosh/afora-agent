@@ -1,7 +1,7 @@
 // The managed Responses transport must price usage through the canonical
 // model-aware service-tier helper. A transport-local flat table previously
 // drifted (2x while gpt-5.5 priority bills 2.5x) and understated UI cost.
-import type { Model } from "@openclaw/llm-core";
+import type { Model } from "@afora/llm-core";
 import { describe, expect, it, vi } from "vitest";
 
 type SdkResponse = { data: AsyncIterable<unknown>; response: Response };

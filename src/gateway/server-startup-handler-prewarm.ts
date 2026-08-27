@@ -1,5 +1,5 @@
 import { listAgentIds } from "../agents/agent-scope-config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { getActiveGatewayRootWorkCount } from "../process/gateway-work-admission.js";
 import { scheduleGatewayIdleTask, type GatewayIdleTaskHandle } from "./server-idle-task.js";
 
@@ -20,7 +20,7 @@ type GatewayHandlerPrewarmHandle = {
   stop: () => void;
 };
 
-async function prewarmGatewaySessionListData(cfg: OpenClawConfig, agentId: string): Promise<void> {
+async function prewarmGatewaySessionListData(cfg: AforaConfig, agentId: string): Promise<void> {
   const [{ loadCombinedSessionStoreForGatewayCore }, { listSessionsFromStoreAsync }] =
     await Promise.all([
       import("../config/sessions/combined-store-gateway.js"),
@@ -47,7 +47,7 @@ async function prewarmGatewaySessionListData(cfg: OpenClawConfig, agentId: strin
 }
 
 function dashboardDataPrewarmItems(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   log: { info?: (msg: string) => void },
 ): GatewayHandlerPrewarmItem[] {
   const agentIds = listAgentIds(cfg);
@@ -94,7 +94,7 @@ function dashboardDataPrewarmItems(
 }
 
 export function scheduleGatewayHandlerPrewarm(params: {
-  cfgAtStart: OpenClawConfig;
+  cfgAtStart: AforaConfig;
   startupTrace?: StartupTrace;
   log: { info?: (msg: string) => void; warn: (msg: string) => void };
   items?: readonly GatewayHandlerPrewarmItem[];

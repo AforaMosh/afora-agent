@@ -1,15 +1,15 @@
 // Codex tests cover run attemptynamic tools plugin behavior.
 import path from "node:path";
-import { onAgentEvent, type AgentEventPayload } from "openclaw/plugin-sdk/agent-harness-runtime";
+import { onAgentEvent, type AgentEventPayload } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   emitTrustedDiagnosticEvent,
   hasPendingInternalDiagnosticEvent,
   onInternalDiagnosticEvent,
   waitForDiagnosticEventsDrained,
   type DiagnosticEventPayload,
-} from "openclaw/plugin-sdk/diagnostic-runtime";
-import { initializeGlobalHookRunner } from "openclaw/plugin-sdk/hook-runtime";
-import { createMockPluginRegistry } from "openclaw/plugin-sdk/plugin-test-runtime";
+} from "afora-agent/plugin-sdk/diagnostic-runtime";
+import { initializeGlobalHookRunner } from "afora-agent/plugin-sdk/hook-runtime";
+import { createMockPluginRegistry } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { describe, expect, it, vi } from "vitest";
 import { dynamicToolBuildState } from "./dynamic-tool-build-state.js";
 import { resolveCodexAppServerHookChannelId } from "./dynamic-tool-build.js";
@@ -83,7 +83,7 @@ describe("runCodexAppServerAttempt dynamic tools", () => {
       };
     });
     tool.execute = execute;
-    dynamicToolBuildState.openClawCodingToolsFactory = () => [tool];
+    dynamicToolBuildState.aforaCodingToolsFactory = () => [tool];
     const harness = createStartedThreadHarness();
     let closeHostCapabilities: (() => void) | undefined;
     const unsubscribeDiagnostics = onInternalDiagnosticEvent((event) => {
@@ -229,7 +229,7 @@ describe("runCodexAppServerAttempt dynamic tools", () => {
       };
       expect(toolResult.success).toBe(false);
       expect(toolResult.contentItems?.[0]?.type).toBe("inputText");
-      expect(toolResult.contentItems?.[0]?.text).toMatch(/^Unknown OpenClaw tool: lookup$/u);
+      expect(toolResult.contentItems?.[0]?.text).toMatch(/^Unknown Afora tool: lookup$/u);
 
       await harness.completeTurn({ threadId: "thread-1", turnId: "turn-1" });
       await run;
@@ -276,7 +276,7 @@ describe("runCodexAppServerAttempt dynamic tools", () => {
     expect(resultEvent?.data?.result).not.toHaveProperty("success");
     expect(resultEvent?.data?.result).not.toHaveProperty("contentItems");
     expect(resultEvent?.data?.result?.content?.[0]?.type).toBe("text");
-    expect(resultEvent?.data?.result?.content?.[0]?.text).toBe("Unknown OpenClaw tool: lookup");
+    expect(resultEvent?.data?.result?.content?.[0]?.text).toBe("Unknown Afora tool: lookup");
     expect(JSON.stringify(agentEvents)).not.toContain("plain-secret-value-12345");
     const globalStartEvent = globalAgentEvents.find(
       (event) => event.stream === "tool" && event.data.phase === "start",
@@ -673,7 +673,7 @@ describe("runCodexAppServerAttempt dynamic tools", () => {
           contentItems: [
             {
               type: "inputText",
-              text: "OpenClaw dynamic tool call timed out after 1ms while running tool echo.",
+              text: "Afora dynamic tool call timed out after 1ms while running tool echo.",
             },
           ],
         },

@@ -2,12 +2,12 @@
 import type { Dirent } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { createMigrationItem, MIGRATION_REASON_TARGET_EXISTS } from "openclaw/plugin-sdk/migration";
-import type { MigrationItem } from "openclaw/plugin-sdk/plugin-entry";
+import { createMigrationItem, MIGRATION_REASON_TARGET_EXISTS } from "afora-agent/plugin-sdk/migration";
+import type { MigrationItem } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   canonicalPathFromExistingAncestor,
   isPathInside,
-} from "openclaw/plugin-sdk/security-runtime";
+} from "afora-agent/plugin-sdk/security-runtime";
 import {
   CLAUDE_AUTO_MEMORY_MAX_FILES,
   CLAUDE_AUTO_MEMORY_MAX_SCAN_ENTRIES,
@@ -156,7 +156,7 @@ async function assertSafeMemoryDestination(
     isPathInside(canonicalTarget, boundary.source)
   ) {
     throw new Error(
-      "Claude Code auto-memory source and OpenClaw import destination must be separate directories.",
+      "Claude Code auto-memory source and Afora import destination must be separate directories.",
     );
   }
 }
@@ -215,7 +215,7 @@ async function buildAutoMemoryItems(params: {
             : targetConflict
               ? MIGRATION_REASON_TARGET_EXISTS
               : undefined,
-          message: "Copy Claude Code auto-memory Markdown into the OpenClaw memory index.",
+          message: "Copy Claude Code auto-memory Markdown into the Afora memory index.",
           details: {
             sourceType: "claude-auto-memory",
             sourceLabel: "Claude Code auto-memory",

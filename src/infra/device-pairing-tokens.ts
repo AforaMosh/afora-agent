@@ -22,7 +22,7 @@ import { generatePairingToken, verifyPairingToken } from "./pairing-token.js";
 
 const OPERATOR_SCOPE_PREFIX = "operator.";
 const SHARED_GATEWAY_AUTH_ISSUER_KIND = "shared-gateway-auth";
-const BROWSER_DEVICE_CLIENT_IDS = new Set(["openclaw-control-ui", "webchat-ui"]);
+const BROWSER_DEVICE_CLIENT_IDS = new Set(["afora-control-ui", "webchat-ui"]);
 const BROWSER_DEVICE_CLIENT_MODE = "webchat";
 
 /** Redacted token metadata safe for list/status responses. */

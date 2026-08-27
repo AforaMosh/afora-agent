@@ -1,22 +1,22 @@
 {
-  "name": "@openclaw/deepinfra-provider",
+  "name": "@afora/deepinfra-provider",
   "version": "2026.8.1",
-  "description": "OpenClaw DeepInfra provider plugin.",
+  "description": "Afora DeepInfra provider plugin.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   },
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
     "install": {
-      "clawhubSpec": "clawhub:@openclaw/deepinfra-provider",
-      "npmSpec": "@openclaw/deepinfra-provider",
+      "clawhubSpec": "clawhub:@afora/deepinfra-provider",
+      "npmSpec": "@afora/deepinfra-provider",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.6.8"
     },
@@ -24,7 +24,7 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1",
+      "aforaVersion": "2026.8.1",
       "bundledDist": false
     },
     "release": {

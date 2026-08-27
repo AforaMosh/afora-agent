@@ -1,8 +1,8 @@
 import type { DatabaseSync } from "node:sqlite";
 import { executeSqliteQuerySync } from "../../infra/kysely-sync.js";
-import { withOpenClawAgentDatabaseReadOnly } from "../../state/openclaw-agent-db-readonly.js";
-import { SESSION_PARTICIPANTS_TABLE } from "../../state/openclaw-agent-session-participants-schema.js";
-import { tableExists, tableHasColumn } from "../../state/openclaw-state-db-schema-helpers.js";
+import { withAforaAgentDatabaseReadOnly } from "../../state/afora-agent-db-readonly.js";
+import { SESSION_PARTICIPANTS_TABLE } from "../../state/afora-agent-session-participants-schema.js";
+import { tableExists, tableHasColumn } from "../../state/afora-state-db-schema-helpers.js";
 import {
   getSessionKysely,
   resolveSqliteReadScope,
@@ -138,7 +138,7 @@ export function listSessionParticipantsReadOnly(scope: {
   storePath?: string;
 }): Map<string, SessionParticipantRecord[]> {
   const resolved = resolveSqliteReadScope(scope);
-  const result = withOpenClawAgentDatabaseReadOnly(
+  const result = withAforaAgentDatabaseReadOnly(
     (database) => participantRecordsBySessionKey(database.db),
     toDatabaseOptions(resolved),
   );

@@ -9,7 +9,7 @@ import {
 } from "./state-migrations.legacy-session-store.js";
 
 it("stages prompt blobs after a recreated session directory", async () => {
-  await withTestDir({ prefix: "openclaw-legacy-session-store-" }, async (root) => {
+  await withTestDir({ prefix: "afora-legacy-session-store-" }, async (root) => {
     const storeDir = path.join(root, "sessions");
     const storePath = path.join(storeDir, "sessions.json");
     const sessionKey = "agent:main:main";
@@ -56,7 +56,7 @@ it("stages prompt blobs after a recreated session directory", async () => {
 });
 
 it("normalizes file-era rows and drops malformed entries", async () => {
-  await withTestDir({ prefix: "openclaw-legacy-session-normalize-" }, async (root) => {
+  await withTestDir({ prefix: "afora-legacy-session-normalize-" }, async (root) => {
     const storePath = path.join(root, "sessions.json");
     await fs.writeFile(
       storePath,
@@ -97,7 +97,7 @@ it("normalizes file-era rows and drops malformed entries", async () => {
 });
 
 it("normalizes compatibility writes before persistence", async () => {
-  await withTestDir({ prefix: "openclaw-legacy-session-write-" }, async (root) => {
+  await withTestDir({ prefix: "afora-legacy-session-write-" }, async (root) => {
     const storePath = path.join(root, "sessions.json");
     const store = {
       malformed: null,

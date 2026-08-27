@@ -4,7 +4,7 @@ export {
   getMemoryEmbeddingProvider,
   listMemoryEmbeddingProviders,
   listRegisteredMemoryEmbeddingProviderAdapters,
-} from "./host/openclaw-runtime-memory.js";
+} from "./host/afora-runtime-memory.js";
 export type {
   MemoryEmbeddingBatchChunk,
   MemoryEmbeddingBatchOptions,
@@ -14,7 +14,7 @@ export type {
   MemoryEmbeddingProviderCreateOptions,
   MemoryEmbeddingProviderCreateResult,
   MemoryEmbeddingProviderRuntime,
-} from "./host/openclaw-runtime-memory.js";
+} from "./host/afora-runtime-memory.js";
 export {
   EmbeddingBatchUnavailableError,
   extractBatchErrorMessage,

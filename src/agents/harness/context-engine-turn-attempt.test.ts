@@ -9,9 +9,9 @@ import {
 } from "../../config/sessions/session-accessor.js";
 import type { ContextEngine } from "../../context-engine/types.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import type { ContextEngineLogicalTurnLease } from "./context-engine-logical-turn.js";
 import {
   drainPendingContextEngineTurnsBeforeRun,
@@ -23,7 +23,7 @@ import { enqueueContextEngineTurnIntent } from "./context-engine-turn-outbox.js"
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
 });
 
 // Keep durable-engine setup identical across range and recovery cases so each
@@ -70,7 +70,7 @@ async function createAcceptedTurnFixture(params: {
   prefix: string[];
   sessionId: string;
 }) {
-  const tempDir = tempDirs.make("openclaw-context-turn-range-");
+  const tempDir = tempDirs.make("afora-context-turn-range-");
   const target = {
     agentId: "main",
     sessionId: params.sessionId,
@@ -105,7 +105,7 @@ async function createAcceptedTurnFixture(params: {
     logicalTurnId: params.logicalTurnId,
     role: "user" as const,
   };
-  const database = openOpenClawAgentDatabase({
+  const database = openAforaAgentDatabase({
     agentId: target.agentId,
     path: admission.storePath,
   });
@@ -214,7 +214,7 @@ describe("accepted context-engine turn finalization", () => {
   });
 
   it("advances only the admitted durable range and rejects stale admission facts", async () => {
-    const tempDir = tempDirs.make("openclaw-context-turn-attempt-");
+    const tempDir = tempDirs.make("afora-context-turn-attempt-");
     const target = {
       agentId: "main",
       sessionId: "accepted-turn",
@@ -267,7 +267,7 @@ describe("accepted context-engine turn finalization", () => {
       logicalTurnId: "logical-turn-1",
       role: "user" as const,
     };
-    const database = openOpenClawAgentDatabase({
+    const database = openAforaAgentDatabase({
       agentId: target.agentId,
       path: admission.storePath,
     });

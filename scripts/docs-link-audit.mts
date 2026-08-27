@@ -7,7 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { createProcessor } from "@mdx-js/mdx";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import MarkdownIt from "markdown-it";
 import type { Nodes } from "mdast";
 import { resolveClawHubRepoPath, syncClawHubDocsTree } from "./docs-sync-publish.mjs";
@@ -575,7 +575,7 @@ export function prepareMirroredDocsDir(
     return { dir: sourceRoot, mirroredClawHub: false, cleanup: () => {} };
   }
 
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-docs-link-audit-"));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-docs-link-audit-"));
   try {
     fs.cpSync(sourceRoot, tempDir, { recursive: true });
     syncClawHubDocsTreeImpl(tempDir, { repoPath: clawhubRepo, required: false });
@@ -594,7 +594,7 @@ export function prepareMirroredDocsDir(
  * Creates an English-only temporary docs tree for Mintlify anchor checks.
  */
 export function prepareAnchorAuditDocsDir(sourceDir = DOCS_DIR) {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-docs-anchor-audit-"));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-docs-anchor-audit-"));
   try {
     fs.cpSync(sourceDir, tempDir, { recursive: true });
 

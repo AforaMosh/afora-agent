@@ -6,8 +6,8 @@
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+} from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   parseRawSessionConversationRef,
   parseThreadSessionSuffix,
@@ -37,7 +37,7 @@ type ChannelModelOverride = {
 type ChannelModelByChannelConfig = Record<string, Record<string, string>>;
 
 type ChannelModelOverrideParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel?: string | null;
   groupId?: string | null;
   groupChatType?: string | null;

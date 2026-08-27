@@ -22,7 +22,7 @@ describe("stopKnownBrowserProfiles", () => {
           releases.push(() => resolve({ stopped: true }));
         }),
     );
-    const runtimes = [{ profile: { name: "openclaw" } }, { profile: { name: "user" } }];
+    const runtimes = [{ profile: { name: "afora" } }, { profile: { name: "user" } }];
     const state = { profiles: new Map(runtimes.map((runtime) => [runtime.profile.name, runtime])) };
 
     const stopping = stopKnownBrowserProfiles({
@@ -43,7 +43,7 @@ describe("stopKnownBrowserProfiles", () => {
     beginProfileTransitionMock
       .mockResolvedValueOnce({ stopped: true })
       .mockRejectedValueOnce(new Error("profile stop failed"));
-    const runtimes = [{ profile: { name: "openclaw" } }, { profile: { name: "user" } }];
+    const runtimes = [{ profile: { name: "afora" } }, { profile: { name: "user" } }];
     const state = { profiles: new Map(runtimes.map((runtime) => [runtime.profile.name, runtime])) };
     const onWarn = vi.fn();
 
@@ -55,6 +55,6 @@ describe("stopKnownBrowserProfiles", () => {
       }),
     ).rejects.toThrow("profile stop failed");
 
-    expect(onWarn).toHaveBeenCalledWith("openclaw browser stop failed: Error: profile stop failed");
+    expect(onWarn).toHaveBeenCalledWith("afora browser stop failed: Error: profile stop failed");
   });
 });

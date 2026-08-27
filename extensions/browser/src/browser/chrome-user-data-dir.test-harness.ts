@@ -16,7 +16,7 @@ type ChromeUserDataDirRef = {
 /** Install beforeAll/afterAll hooks for a temporary Chrome user-data-dir. */
 export function installChromeUserDataDirHooks(chromeUserDataDir: ChromeUserDataDirRef): void {
   beforeAll(async () => {
-    chromeUserDataDir.dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-chrome-user-data-"));
+    chromeUserDataDir.dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-chrome-user-data-"));
   });
 
   afterAll(async () => {

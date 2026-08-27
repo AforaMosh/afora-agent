@@ -1,16 +1,16 @@
 // Memory Core plugin module owns public search orchestration.
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { classifyMemoryMultimodalPath } from "openclaw/plugin-sdk/memory-core-host-engine-embeddings";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { classifyMemoryMultimodalPath } from "afora-agent/plugin-sdk/memory-core-host-engine-embeddings";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/memory-core-host-engine-foundation";
 import {
   MEMORY_INDEX_FTS_TABLE,
   MEMORY_INDEX_VECTOR_TABLE,
   type MemorySearchManager,
   type MemorySearchResult,
   type MemorySource,
-} from "openclaw/plugin-sdk/memory-core-host-engine-storage";
-import { redactSensitiveText } from "openclaw/plugin-sdk/security-runtime";
-import { uniqueValues } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
+import { redactSensitiveText } from "afora-agent/plugin-sdk/security-runtime";
+import { uniqueValues } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   mergeHybridResults,
   selectHybridSearchResults,

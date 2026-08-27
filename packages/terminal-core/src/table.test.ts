@@ -35,15 +35,15 @@ const pluginListRows = [
   {
     Name: "Amazon Bedrock",
     ID: "amazon-bedrock",
-    Format: "openclaw",
+    Format: "afora",
     Status: "enabled",
-    Source: "~/Projects/openclaw/extensions/amazon-bedrock/index.ts",
+    Source: "~/Projects/afora/extensions/amazon-bedrock/index.ts",
     Version: "2026.8.1",
   },
   {
     Name: "N".repeat(40),
     ID: "i".repeat(22),
-    Format: "openclaw",
+    Format: "afora",
     Status: "disabled",
     Source: `/${"s".repeat(80)}`,
     Version: "2026.8.1",
@@ -71,7 +71,7 @@ describe("renderTable", () => {
       const home = path.resolve("test-home", `${pattern}user`);
       vi.stubEnv("HOME", home);
       vi.stubEnv("USERPROFILE", "");
-      vi.stubEnv("OPENCLAW_HOME", "~/state");
+      vi.stubEnv("AFORA_HOME", "~/state");
 
       expect(
         renderTable({
@@ -79,7 +79,7 @@ describe("renderTable", () => {
           rows: [{ location: `${home}/state/project` }],
           border: "none",
         }),
-      ).toBe("Location\n$OPENCLAW_HOME/project\n");
+      ).toBe("Location\n$AFORA_HOME/project\n");
     },
   );
 
@@ -204,7 +204,7 @@ describe("renderTable", () => {
             `\x1b[2mGet current weather and forecasts via wttr.in or Open-Meteo. ` +
             `Use when: user asks about weather, temperature, or forecasts for any location.` +
             `\x1b[0m`,
-          Source: "openclaw-bundled",
+          Source: "afora-bundled",
         },
       ],
     });
@@ -351,7 +351,7 @@ describe("renderTable", () => {
   });
 
   it("does not split BEL-terminated OSC-8 links when wrapping", () => {
-    const open = "\x1b]8;;https://openclaw.ai\x07";
+    const open = "\x1b]8;;https://afora.ai\x07";
     const close = "\x1b]8;;\x07";
     const out = renderTable({
       width: 24,
@@ -359,7 +359,7 @@ describe("renderTable", () => {
         { key: "K", header: "K", minWidth: 3 },
         { key: "V", header: "V", flex: true, minWidth: 10 },
       ],
-      rows: [{ K: "X", V: `${open}OpenClaw${close}` }],
+      rows: [{ K: "X", V: `${open}Afora${close}` }],
     });
 
     expectIntroducersToStartCompleteSequences(out, "\x1b", [open, close]);
@@ -389,9 +389,9 @@ describe("renderTable", () => {
   });
 
   it("does not split C1 OSC-8 links when wrapping", () => {
-    const open = "\x9d8;;https://openclaw.ai\x9c";
+    const open = "\x9d8;;https://afora.ai\x9c";
     const close = "\x9d8;;\x9c";
-    const canonicalOpen = "\x1b]8;;https://openclaw.ai\x07";
+    const canonicalOpen = "\x1b]8;;https://afora.ai\x07";
     const canonicalClose = "\x1b]8;;\x07";
     const out = renderTable({
       width: 24,
@@ -399,7 +399,7 @@ describe("renderTable", () => {
         { key: "K", header: "K", minWidth: 3 },
         { key: "V", header: "V", flex: true, minWidth: 10 },
       ],
-      rows: [{ K: "X", V: `${open}OpenClaw${close}` }],
+      rows: [{ K: "X", V: `${open}Afora${close}` }],
     });
 
     expectIntroducersToStartCompleteSequences(out, "\x9d", [open, close]);
@@ -407,7 +407,7 @@ describe("renderTable", () => {
   });
 
   it("preserves OSC-8 parameters when reopening wrapped links", () => {
-    const open = "\x1b]8;id=docs;https://openclaw.ai\x07";
+    const open = "\x1b]8;id=docs;https://afora.ai\x07";
     const close = "\x1b]8;;\x07";
     const out = renderTable({
       width: 20,
@@ -415,10 +415,10 @@ describe("renderTable", () => {
         { key: "K", header: "K", minWidth: 3 },
         { key: "V", header: "V", flex: true, minWidth: 10 },
       ],
-      rows: [{ K: "X", V: `${open}${"OpenClaw".repeat(5)}${close} after` }],
+      rows: [{ K: "X", V: `${open}${"Afora".repeat(5)}${close} after` }],
     });
 
-    const linkLines = out.split("\n").filter((line) => line.includes("OpenClaw"));
+    const linkLines = out.split("\n").filter((line) => line.includes("Afora"));
     expect(linkLines.length).toBeGreaterThan(1);
     for (const line of linkLines) {
       expect(line).toContain(open);
@@ -437,13 +437,13 @@ describe("renderTable", () => {
   });
 
   it.each([
-    ["BEL ST", "\x1b]8;;https://openclaw.ai\x07", "\x1b]8;;\x07"],
-    ["ESC-backslash ST", "\x1b]8;;https://openclaw.ai\x1b\\", "\x1b]8;;\x1b\\"],
-    ["C1 ST", "\x9d8;;https://openclaw.ai\x9c", "\x9d8;;\x9c"],
+    ["BEL ST", "\x1b]8;;https://afora.ai\x07", "\x1b]8;;\x07"],
+    ["ESC-backslash ST", "\x1b]8;;https://afora.ai\x1b\\", "\x1b]8;;\x1b\\"],
+    ["C1 ST", "\x9d8;;https://afora.ai\x9c", "\x9d8;;\x9c"],
   ])(
     "closes and reopens embedded OSC-8 links at wrap boundaries (%s)",
     (_label, openSeq, closeSeq) => {
-      const link = `${openSeq}OpenClaw${closeSeq}`;
+      const link = `${openSeq}Afora${closeSeq}`;
       const out = renderTable({
         width: 20,
         columns: [
@@ -478,13 +478,13 @@ describe("renderTable", () => {
   );
 
   it.each([
-    ["BEL ST", "\x1b]8;;https://openclaw.ai\x07", "\x1b]8;;\x07"],
-    ["ESC-backslash ST", "\x1b]8;;https://openclaw.ai\x1b\\", "\x1b]8;;\x1b\\"],
-    ["C1 ST", "\x9d8;;https://openclaw.ai\x9c", "\x9d8;;\x9c"],
+    ["BEL ST", "\x1b]8;;https://afora.ai\x07", "\x1b]8;;\x07"],
+    ["ESC-backslash ST", "\x1b]8;;https://afora.ai\x1b\\", "\x1b]8;;\x1b\\"],
+    ["C1 ST", "\x9d8;;https://afora.ai\x9c", "\x9d8;;\x9c"],
   ])(
     "does not reopen a leading OSC-8 link onto wrapped suffix lines (%s)",
     (_label, openSeq, closeSeq) => {
-      const link = `${openSeq}OpenClaw${closeSeq}`;
+      const link = `${openSeq}Afora${closeSeq}`;
       const out = renderTable({
         width: 20,
         columns: [
@@ -503,8 +503,8 @@ describe("renderTable", () => {
       for (const line of afterLines) {
         expect(line.includes(openSeq)).toBe(false);
       }
-      // The link itself stays intact on the OpenClaw line: open + close present.
-      const linkLine = lines.find((line) => line.includes("OpenClaw"));
+      // The link itself stays intact on the Afora line: open + close present.
+      const linkLine = lines.find((line) => line.includes("Afora"));
       expect(linkLine).toBeDefined();
       expect(linkLine?.includes(openSeq)).toBe(true);
       expect(linkLine?.includes(closeSeq)).toBe(true);
@@ -532,7 +532,7 @@ describe("renderTable", () => {
     const home = path.resolve("test-home", "alice");
     vi.stubEnv("HOME", home);
     vi.stubEnv("USERPROFILE", "");
-    vi.stubEnv("OPENCLAW_HOME", "");
+    vi.stubEnv("AFORA_HOME", "");
 
     const out = renderTable({
       border: "none",
@@ -567,7 +567,7 @@ describe("renderTable", () => {
           Status: "✗ missing",
           Skill: "📸 peekaboo",
           Description: "Capture screenshots from macOS windows and keep table wrapping stable.",
-          Source: "openclaw-bundled",
+          Source: "afora-bundled",
         },
       ],
     });
@@ -764,7 +764,7 @@ describe("wrapNoteMessage", () => {
 
   it("preserves long Windows paths without inserting spaces/newlines", () => {
     // No spaces: wrapNoteMessage splits on whitespace, so a "Program Files" style path would wrap.
-    const input = "C:\\\\State\\\\OpenClaw\\\\bin\\\\openclaw.exe";
+    const input = "C:\\\\State\\\\Afora\\\\bin\\\\afora.exe";
     const wrapped = wrapNoteMessage(input, { maxWidth: 10, columns: 80 });
     expect(wrapped).toBe(input);
   });
@@ -787,7 +787,7 @@ describe("wrapNoteMessage", () => {
     const wrapped = wrapNoteMessage(
       [
         "- Found 1 session lock file.",
-        "- ~/.openclaw/agents/main/sessions/9c2acae5-841f-4aea-936b-fdb513b60202.jsonl.lock pid=86519 (alive) age=2m47s stale=no",
+        "- ~/.afora/agents/main/sessions/9c2acae5-841f-4aea-936b-fdb513b60202.jsonl.lock pid=86519 (alive) age=2m47s stale=no",
       ].join("\n"),
       { columns: 80 },
     );
@@ -806,7 +806,7 @@ describe("wrapNoteMessage", () => {
     expect(rendered).toContain(".jsonl.lock");
     expect(rendered).not.toContain(".js\n");
     expect(rendered).toContain(
-      "- ~/.openclaw/agents/main/sessions/9c2acae5-841f-4aea-936b-fdb513b60202.jsonl.lock",
+      "- ~/.afora/agents/main/sessions/9c2acae5-841f-4aea-936b-fdb513b60202.jsonl.lock",
     );
   });
 

@@ -17,13 +17,13 @@ describe("hooks install (e2e)", () => {
   let workspaceDir: string;
 
   beforeEach(async () => {
-    const baseDir = tempDirs.make("openclaw-hooks-e2e-");
+    const baseDir = tempDirs.make("afora-hooks-e2e-");
     workspaceDir = path.join(baseDir, "workspace");
     await fs.mkdir(workspaceDir, { recursive: true });
   });
 
   it("installs a hook pack and triggers the handler", async () => {
-    const baseDir = tempDirs.make("openclaw-hooks-e2e-");
+    const baseDir = tempDirs.make("afora-hooks-e2e-");
     const packDir = path.join(baseDir, "hook-pack");
     const hookDir = path.join(packDir, "hooks", "hello-hook");
     await fs.mkdir(hookDir, { recursive: true });
@@ -34,7 +34,7 @@ describe("hooks install (e2e)", () => {
         {
           name: "@acme/hello-hooks",
           version: "0.0.0",
-          openclaw: { hooks: ["./hooks/hello-hook"] },
+          afora: { hooks: ["./hooks/hello-hook"] },
         },
         null,
         2,
@@ -48,7 +48,7 @@ describe("hooks install (e2e)", () => {
         "---",
         'name: "hello-hook"',
         'description: "Test hook"',
-        'metadata: {"openclaw":{"events":["command:new"]}}',
+        'metadata: {"afora":{"events":["command:new"]}}',
         "---",
         "",
         "# Hello Hook",

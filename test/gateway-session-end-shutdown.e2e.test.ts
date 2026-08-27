@@ -4,12 +4,12 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../src/config/types.openclaw.js";
+import type { AforaConfig } from "../src/config/types.afora.js";
 import { connectGatewayClient, disconnectGatewayClient } from "../src/gateway/test-helpers.e2e.js";
 import {
-  createOpenClawTestInstance,
-  type OpenClawTestInstance,
-} from "./helpers/openclaw-test-instance.js";
+  createAforaTestInstance,
+  type AforaTestInstance,
+} from "./helpers/afora-test-instance.js";
 
 const PLUGIN_ID = "session-end-shutdown-proof";
 const SESSION_KEY = "agent:main:dashboard:session-end-shutdown-proof";
@@ -17,7 +17,7 @@ const HOOK_DELAY_MS = 10_000;
 const TEST_TIMEOUT_MS = 120_000;
 const WAIT_OPTIONS = { timeout: 10_000, interval: 25 } as const;
 
-const instances: OpenClawTestInstance[] = [];
+const instances: AforaTestInstance[] = [];
 const fixtureDirs: string[] = [];
 
 afterEach(async () => {
@@ -30,7 +30,7 @@ afterEach(async () => {
 async function writeSessionEndPlugin(pluginDir: string, tracePath: string): Promise<void> {
   await mkdir(pluginDir, { recursive: true });
   await writeFile(
-    path.join(pluginDir, "openclaw.plugin.json"),
+    path.join(pluginDir, "afora.plugin.json"),
     `${JSON.stringify({
       id: PLUGIN_ID,
       name: "Session End Shutdown Proof",
@@ -73,7 +73,7 @@ describe("Gateway session-end shutdown", () => {
   it(
     "finishes a real reset-started session_end hook after an operating-system SIGTERM",
     async () => {
-      const fixtureDir = await mkdtemp(path.join(tmpdir(), "openclaw-session-end-shutdown-"));
+      const fixtureDir = await mkdtemp(path.join(tmpdir(), "afora-session-end-shutdown-"));
       fixtureDirs.push(fixtureDir);
       const pluginDir = path.join(fixtureDir, "plugin");
       const tracePath = path.join(fixtureDir, "session-end.trace");
@@ -87,11 +87,11 @@ describe("Gateway session-end shutdown", () => {
           entries: { [PLUGIN_ID]: { enabled: true } },
           slots: { memory: "none" },
         },
-      } satisfies OpenClawConfig;
-      const instance = await createOpenClawTestInstance({
+      } satisfies AforaConfig;
+      const instance = await createAforaTestInstance({
         name: "session-end-shutdown",
         config,
-        env: { OPENCLAW_TEST_MINIMAL_GATEWAY: undefined },
+        env: { AFORA_TEST_MINIMAL_GATEWAY: undefined },
         stopTimeoutMs: 10_000,
       });
       instances.push(instance);

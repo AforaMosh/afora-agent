@@ -1,5 +1,5 @@
 // Telegram plugin module implements raw update log behavior.
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 
 const MAX_RAW_UPDATE_STRING = 500;
 const MAX_RAW_UPDATE_ARRAY = 20;

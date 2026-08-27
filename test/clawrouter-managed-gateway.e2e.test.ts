@@ -5,9 +5,9 @@ import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  createOpenClawTestInstance,
-  type OpenClawTestInstance,
-} from "./helpers/openclaw-test-instance.js";
+  createAforaTestInstance,
+  type AforaTestInstance,
+} from "./helpers/afora-test-instance.js";
 
 const API_KEY = "clawrouter-e2e-secret";
 const MODEL_ID = "openai/gpt-5.5";
@@ -28,7 +28,7 @@ type FakeClawRouter = {
   close: () => Promise<void>;
 };
 
-const instances: OpenClawTestInstance[] = [];
+const instances: AforaTestInstance[] = [];
 const routers: FakeClawRouter[] = [];
 
 afterEach(async () => {
@@ -40,13 +40,13 @@ describe("ClawRouter managed gateway contract", () => {
   it("boots from a SecretRef, reports truthful readiness, and routes an attributed agent turn", async () => {
     const router = await startFakeClawRouter();
     routers.push(router);
-    const instance = await createOpenClawTestInstance({
+    const instance = await createAforaTestInstance({
       name: "clawrouter-managed-gateway",
       env: {
         CLAWROUTER_API_KEY: API_KEY,
-        OPENCLAW_SKIP_PROVIDERS: undefined,
-        OPENCLAW_TEST_FAST: "1",
-        OPENCLAW_TEST_MINIMAL_GATEWAY: undefined,
+        AFORA_SKIP_PROVIDERS: undefined,
+        AFORA_TEST_FAST: "1",
+        AFORA_TEST_MINIMAL_GATEWAY: undefined,
       },
     });
     instances.push(instance);
@@ -181,7 +181,7 @@ describe("ClawRouter managed gateway contract", () => {
       body: { model: MODEL_ID, stream: true },
       headers: {
         "x-clawrouter-agent-id": "main",
-        "x-clawrouter-client": "openclaw",
+        "x-clawrouter-client": "afora",
         "x-clawrouter-project-id": "fakeco-e2e",
       },
     });
@@ -224,7 +224,7 @@ describe("ClawRouter managed gateway contract", () => {
 });
 
 async function waitForGatewayReadiness(
-  instance: OpenClawTestInstance,
+  instance: AforaTestInstance,
 ): Promise<{ ready: boolean; failing: string[] }> {
   const url = `http://127.0.0.1:${instance.port}/readyz`;
   // Preserve the 10-second readiness budget while detecting startup sooner.

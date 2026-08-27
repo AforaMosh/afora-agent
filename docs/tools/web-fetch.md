@@ -152,7 +152,7 @@ If Readability extraction fails, `web_fetch` can fall back to
 
 `plugins.entries.firecrawl.config.webFetch.apiKey` is optional and supports SecretRef objects.
 Legacy `tools.web.fetch.firecrawl.*` config auto-migrates to
-`plugins.entries.firecrawl.config.webFetch` via `openclaw doctor --fix`.
+`plugins.entries.firecrawl.config.webFetch` via `afora doctor --fix`.
 
 <Note>
   If you configure a Firecrawl API-key SecretRef and it is unresolved with no
@@ -168,7 +168,7 @@ Legacy `tools.web.fetch.firecrawl.*` config auto-migrates to
 Current runtime behavior:
 
 - `tools.web.fetch.provider` selects the fetch fallback provider explicitly.
-- If `provider` is omitted, OpenClaw auto-detects the first ready web-fetch
+- If `provider` is omitted, Afora auto-detects the first ready web-fetch
   provider from configured credentials. Non-sandboxed `web_fetch` can use
   installed plugins that declare `contracts.webFetchProviders` and register a
   matching provider at runtime. The official Firecrawl plugin provides this
@@ -241,7 +241,7 @@ Behavior worth knowing:
 If your deployment requires `web_fetch` to go through a trusted outbound
 HTTP(S) proxy, set `tools.web.fetch.useTrustedEnvProxy: true`.
 
-In this mode, OpenClaw still applies hostname-based SSRF checks before sending
+In this mode, Afora still applies hostname-based SSRF checks before sending
 the request, but it lets the proxy resolve DNS instead of doing local DNS
 pinning. Enable this only when the proxy is operator-controlled and enforces
 outbound policy after DNS resolution.

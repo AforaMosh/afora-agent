@@ -1,12 +1,12 @@
 // Matrix plugin module implements session route behavior.
-import { normalizeAccountId } from "openclaw/plugin-sdk/account-id";
+import { normalizeAccountId } from "afora-agent/plugin-sdk/account-id";
 import {
   buildChannelOutboundSessionRoute,
   buildThreadAwareOutboundSessionRoute,
   type ChannelOutboundSessionRouteParams,
-} from "openclaw/plugin-sdk/channel-core";
-import { parseThreadSessionSuffix } from "openclaw/plugin-sdk/routing";
-import { getSessionEntry, resolveStorePath } from "openclaw/plugin-sdk/session-store-runtime";
+} from "afora-agent/plugin-sdk/channel-core";
+import { parseThreadSessionSuffix } from "afora-agent/plugin-sdk/routing";
+import { getSessionEntry, resolveStorePath } from "afora-agent/plugin-sdk/session-store-runtime";
 import { resolveMatrixAccountConfig } from "./matrix/account-config.js";
 import { resolveDefaultMatrixAccountId } from "./matrix/accounts.js";
 import { resolveMatrixStoredSessionMeta } from "./matrix/session-store-metadata.js";

@@ -1,6 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import { INVALID_PROJECT_ANNOTATION_KEY } from "./internal.js";
-import { executeSqliteQuerySync, getNodeSqliteKysely } from "./openclaw-runtime-kysely.js";
+import { executeSqliteQuerySync, getNodeSqliteKysely } from "./afora-runtime-kysely.js";
 
 type MemoryRecallMetadataDatabase = {
   memory_index_chunks: {

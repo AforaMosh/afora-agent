@@ -3,14 +3,14 @@ import { randomUUID } from "node:crypto";
  * Runs `/btw` side questions against the active conversation without resuming
  * or continuing the main task.
  */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import type { GetReplyOptions } from "../auto-reply/get-reply-options.types.js";
 import type { ReplyPayload } from "../auto-reply/reply-payload.js";
 import type { ReasoningLevel, ThinkLevel } from "../auto-reply/thinking.js";
 import type { ChatType } from "../channels/chat-type.js";
 import type { SessionEntry as StoredSessionEntry } from "../config/sessions.js";
 import { resolveSessionAuthProfileOverrideSource } from "../config/sessions/auth-profile-override-provenance.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { streamWithPayloadPatch } from "../llm/providers/stream-wrappers/stream-payload-utils.js";
 import type {
   AssistantMessageEvent,
@@ -137,7 +137,7 @@ function resolveReturnedAuthProfileSource(
 // Planning and immediate resolution share one scoped snapshot so provider
 // bindings and cooldown decisions cannot diverge inside a side question.
 function resolveBtwAuthProfileStore(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: string;
   modelId: string;
   agentId?: string;
@@ -473,7 +473,7 @@ async function resolveBtwPreparedRuntimeAuth(
 }
 
 async function resolveRuntimeModel(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: string;
   model: string;
   agentId?: string;
@@ -581,7 +581,7 @@ async function resolveRuntimeModel(params: {
 }
 
 type RunBtwSideQuestionParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentDir: string;
   provider: string;
   model: string;
@@ -627,7 +627,7 @@ type RunBtwSideQuestionParams = {
 };
 
 async function runCliBtwSideQuestion(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   model: string;
   question: string;
   sessionId: string;
@@ -846,13 +846,13 @@ export async function runBtwSideQuestion(
   type BtwHarnessSideQuestionDispatch =
     | { kind: "handled"; payload: ReplyPayload }
     | {
-        kind: "openclaw";
+        kind: "afora";
         harness: AgentHarness;
         runtime: Awaited<ReturnType<typeof resolveRuntimeModel>>;
         resolvedAttempt: Awaited<ReturnType<typeof resolveBtwPreparedRuntimeAuth>>;
       };
-  let preparedOpenClawFallback:
-    | Extract<BtwHarnessSideQuestionDispatch, { kind: "openclaw" }>
+  let preparedAforaFallback:
+    | Extract<BtwHarnessSideQuestionDispatch, { kind: "afora" }>
     | undefined;
   const runHarnessSideQuestion = async (
     selectedHarness: AgentHarness,
@@ -922,7 +922,7 @@ export async function runBtwSideQuestion(
         ? runtimeAuthPreparation.attempts[0].plan
         : undefined;
     // A native harness owns this deferred auth decision. Resolving it through
-    // OpenClaw would incorrectly require a host credential before handoff.
+    // Afora would incorrectly require a host credential before handoff.
     const resolvedAttempt = implicitHarnessAuthPlan
       ? { plan: implicitHarnessAuthPlan, model: runtime.model }
       : await resolveBtwPreparedRuntimeAuth({
@@ -959,13 +959,13 @@ export async function runBtwSideQuestion(
       );
     }
     if (!selectedHarness.runSideQuestion) {
-      if (selectedHarness.id !== "openclaw" || !("auth" in resolvedAttempt)) {
+      if (selectedHarness.id !== "afora" || !("auth" in resolvedAttempt)) {
         throw new Error(
           `Selected agent harness "${selectedHarness.id}" does not support /btw side questions.`,
         );
       }
       return {
-        kind: "openclaw",
+        kind: "afora",
         harness: selectedHarness,
         runtime: {
           ...runtime,
@@ -1078,7 +1078,7 @@ export async function runBtwSideQuestion(
     if (dispatch.kind === "handled") {
       return dispatch.payload;
     }
-    preparedOpenClawFallback = dispatch;
+    preparedAforaFallback = dispatch;
   }
   if (harness.id === "codex" && !harness.runSideQuestion) {
     throw new Error(`Selected agent harness "${harness.id}" does not support /btw side questions.`);
@@ -1179,13 +1179,13 @@ export async function runBtwSideQuestion(
     });
   }
 
-  const initialOpenClawFallback = preparedOpenClawFallback;
+  const initialAforaFallback = preparedAforaFallback;
   const runtimeSelectionForHarness =
-    initialOpenClawFallback?.runtime ?? (await resolveRuntimeSelection());
+    initialAforaFallback?.runtime ?? (await resolveRuntimeSelection());
   // Model resolution can canonicalize a legacy provider alias, so reselect against the resolved
   // provider/model instead of reusing the raw route's selection.
   const runtimeHarness =
-    initialOpenClawFallback?.harness ??
+    initialAforaFallback?.harness ??
     (await prepareHarness(
       runtimeSelectionForHarness.model.provider,
       runtimeSelectionForHarness.model.id,
@@ -1195,7 +1195,7 @@ export async function runBtwSideQuestion(
     if (dispatch.kind === "handled") {
       return dispatch.payload;
     }
-    preparedOpenClawFallback = dispatch;
+    preparedAforaFallback = dispatch;
   }
   if (runtimeHarness.id === "codex" && !runtimeHarness.runSideQuestion) {
     throw new Error(
@@ -1203,13 +1203,13 @@ export async function runBtwSideQuestion(
     );
   }
 
-  const finalizedOpenClawFallback = preparedOpenClawFallback;
+  const finalizedAforaFallback = preparedAforaFallback;
   const effectiveRuntimeSelection =
-    finalizedOpenClawFallback?.runtime ?? runtimeSelectionForHarness;
+    finalizedAforaFallback?.runtime ?? runtimeSelectionForHarness;
   const { authStorage, model, modelRegistry, authProfileStore, runtimeAuthPreparation } =
     effectiveRuntimeSelection;
   const resolvedAttempt =
-    finalizedOpenClawFallback?.resolvedAttempt ??
+    finalizedAforaFallback?.resolvedAttempt ??
     (await resolveBtwPreparedRuntimeAuth({
       preparation: runtimeAuthPreparation,
       model,

@@ -1,4 +1,4 @@
-import type { BoardChangedEvent, BoardSnapshot } from "@openclaw/gateway-protocol";
+import type { BoardChangedEvent, BoardSnapshot } from "@afora/gateway-protocol";
 import type { ReactiveController, ReactiveControllerHost } from "lit";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import {

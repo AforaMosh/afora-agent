@@ -1,10 +1,10 @@
-/** Implementation of `openclaw models status`. */
+/** Implementation of `afora models status`. */
 import path from "node:path";
 import {
   parseStrictFiniteNumber,
   parseStrictPositiveInteger,
-} from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { colorize, theme } from "../../../packages/terminal-core/src/theme.js";
 import {
   resolveAgentDir,
@@ -106,7 +106,7 @@ type ProviderUsageRuntime = typeof import("../../infra/provider-usage.js");
 type ProgressRuntime = typeof import("../../cli/progress.js");
 
 function resolveEnvAgentDirOverride(env: NodeJS.ProcessEnv = process.env): string | undefined {
-  const override = env.OPENCLAW_AGENT_DIR?.trim() || env.PI_CODING_AGENT_DIR?.trim();
+  const override = env.AFORA_AGENT_DIR?.trim() || env.PI_CODING_AGENT_DIR?.trim();
   return override ? resolveUserPath(override, env) : undefined;
 }
 type TerminalTableRuntime = typeof import("../../../packages/terminal-core/src/table.js");

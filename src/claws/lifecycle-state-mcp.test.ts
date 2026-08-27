@@ -2,9 +2,9 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { withTempHomeConfig } from "../config/test-helpers.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { markClawMcpServerIndependentlyOwned } from "../state/claw-mcp-adoption.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { applyClawAddPlan } from "./add.js";
 import { applyClawRemovePlan, buildClawRemovePlan } from "./lifecycle-state.js";
 import { buildClawAddPlan } from "./lifecycle.js";
@@ -13,7 +13,7 @@ import { parseClawManifest } from "./schema.js";
 import type { ClawSourceIdentity } from "./types.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
-afterEach(() => closeOpenClawStateDatabaseForTest());
+afterEach(() => closeAforaStateDatabaseForTest());
 
 const sourceServer = {
   command: "uvx",
@@ -22,7 +22,7 @@ const sourceServer = {
 };
 
 async function addMcpFixture() {
-  const root = tempDirs.make("openclaw-claw-remove-mcp-");
+  const root = tempDirs.make("afora-claw-remove-mcp-");
   const parsed = parseClawManifest({
     schemaVersion: 1,
     agent: { id: "worker", name: "Worker" },
@@ -36,7 +36,7 @@ async function addMcpFixture() {
     name: "@acme/worker",
     version: "1.0.0",
     packageRoot: root,
-    manifestPath: join(root, "openclaw.claw.json"),
+    manifestPath: join(root, "afora.claw.json"),
     integrityKind: "artifact",
     integrity: "sha256:manifest",
     byteLength: 100,
@@ -46,8 +46,8 @@ async function addMcpFixture() {
     source,
     context: { workspace: join(root, "workspace-worker") },
   });
-  const env = { OPENCLAW_STATE_DIR: join(root, "state") };
-  let config: OpenClawConfig = {};
+  const env = { AFORA_STATE_DIR: join(root, "state") };
+  let config: AforaConfig = {};
   await applyClawAddPlan(plan, {
     consentPlanIntegrity: plan.planIntegrity,
     env,
@@ -64,7 +64,7 @@ async function addMcpFixture() {
 }
 
 function listedMcpServers(
-  config: OpenClawConfig,
+  config: AforaConfig,
   mcpServers: Record<string, Record<string, unknown>>,
 ) {
   return {
@@ -91,7 +91,7 @@ describe("Claw MCP removal", () => {
       setMcpServer: vi.fn(),
       listMcpServers: vi.fn().mockResolvedValue(listedMcpServers({}, { docs: sourceServer })),
     });
-    let config: OpenClawConfig = {
+    let config: AforaConfig = {
       ...current.getConfig(),
       mcp: { servers: { docs: sourceServer } },
     };
@@ -116,7 +116,7 @@ describe("Claw MCP removal", () => {
   it("deletes the final unchanged Claw-created MCP server", async () => {
     const current = await addMcpFixture();
     await recordManagedMcp(current);
-    let config: OpenClawConfig = {
+    let config: AforaConfig = {
       ...current.getConfig(),
       mcp: {
         servers: {

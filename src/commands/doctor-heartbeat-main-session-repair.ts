@@ -1,7 +1,7 @@
 /** Doctor repair for main sessions accidentally occupied by synthetic heartbeat transcripts. */
 import fs from "node:fs";
 import { StringDecoder } from "node:string_decoder";
-import { asNullableObjectRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableObjectRecord } from "@afora/normalization-core/record-coerce";
 import type { note } from "../../packages/terminal-core/src/note.js";
 import { isHeartbeatOkResponse, isHeartbeatUserMessage } from "../auto-reply/heartbeat-filter.js";
 import { formatSessionArchiveTimestamp } from "../config/sessions/artifacts.js";
@@ -11,7 +11,7 @@ import {
   type resolveSessionFilePathOptions,
 } from "../config/sessions/paths.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { updateLegacySessionStore } from "../infra/state-migrations.legacy-session-store.js";
 import { parseAgentSessionKey } from "../sessions/session-key-utils.js";
 import { clearTuiLastSessionPointers } from "../tui/tui-last-session.js";
@@ -262,7 +262,7 @@ function moveHeartbeatMainSessionEntry(params: {
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
   (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.doctorHeartbeatMainSessionRepairTestApi")
+    Symbol.for("afora.doctorHeartbeatMainSessionRepairTestApi")
   ] = {
     TRANSCRIPT_RECORD_MAX_CHARS,
     moveHeartbeatMainSessionEntry,
@@ -278,7 +278,7 @@ if (process.env.VITEST || process.env.NODE_ENV === "test") {
  * prevents moving a newly-human main session.
  */
 export async function repairHeartbeatPoisonedMainSession(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   store: Record<string, SessionEntry>;
   absoluteStorePath: string;
   stateDir: string;

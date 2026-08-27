@@ -1,6 +1,6 @@
 // Covers APNs HTTP/2 session and proxy behavior.
 import type http2 from "node:http2";
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   registerActiveManagedProxyUrl,
@@ -420,8 +420,8 @@ describe("connectApnsHttp2Session", () => {
     expect(fakeSession.request).toHaveBeenCalledWith({
       ":method": "POST",
       ":path": `/3/device/${"0".repeat(64)}`,
-      authorization: "bearer intentionally.invalid.openclaw.proxy.validation",
-      "apns-topic": "ai.openclaw.ios",
+      authorization: "bearer intentionally.invalid.afora.proxy.validation",
+      "apns-topic": "ai.afora.ios",
       "apns-push-type": "alert",
       "apns-priority": "10",
     });

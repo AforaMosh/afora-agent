@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { GatewaySessionRow } from "../../api/types.ts";
 import { pathForRoute } from "../../app-route-paths.ts";
 import { pathForSession } from "../../app-session-path-builder.ts";
@@ -15,9 +15,9 @@ import {
   resolveUiDefaultAgentId,
 } from "./session-key.ts";
 
-export const SESSION_FACE_PREFERENCE_PARAM = "__openclawSessionFacePreference";
-export const SESSION_NAVIGATION_KEY_PARAM = "__openclawSessionKey";
-export const SESSION_COMPOSER_FOCUS_PARAM = "__openclawComposerFocus";
+export const SESSION_FACE_PREFERENCE_PARAM = "__aforaSessionFacePreference";
+export const SESSION_NAVIGATION_KEY_PARAM = "__aforaSessionKey";
+export const SESSION_COMPOSER_FOCUS_PARAM = "__aforaComposerFocus";
 
 export function composerDraftSearch(draft: string): string {
   return `?${new URLSearchParams({ draft, [SESSION_COMPOSER_FOCUS_PARAM]: "1" }).toString()}`;

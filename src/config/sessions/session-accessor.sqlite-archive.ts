@@ -3,10 +3,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Worker } from "node:worker_threads";
-import { toStringifiedError } from "@openclaw/normalization-core/error-coercion";
+import { toStringifiedError } from "@afora/normalization-core/error-coercion";
 import { syncDirectoryBestEffortSync } from "../../infra/directory-durability.js";
 import { KeyedAsyncQueue } from "../../plugin-sdk/keyed-async-queue.js";
-import { withOpenClawAgentDatabaseReadOnly } from "../../state/openclaw-agent-db-readonly.js";
+import { withAforaAgentDatabaseReadOnly } from "../../state/afora-agent-db-readonly.js";
 import {
   encodeSessionArchiveContent,
   readSessionArchiveContentSync,
@@ -378,7 +378,7 @@ export function runSqliteTranscriptArchivePublishWorker(
 }
 
 function validateEmptyTranscriptArchivePlan(plan: TranscriptArchiveWorkerPlan): void {
-  const opened = withOpenClawAgentDatabaseReadOnly(
+  const opened = withAforaAgentDatabaseReadOnly(
     (database) => readSessionStateDeleteSnapshot(database.db, plan.sessionId),
     { agentId: plan.agentId, path: plan.databasePath },
   );

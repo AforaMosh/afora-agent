@@ -70,7 +70,7 @@ suite.define(() => {
         await outside.focus();
         await trigger.click();
         expect(await outside.evaluate((element) => document.activeElement === element)).toBe(true);
-        const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+        const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
         if (artifactDir && triggerSelector.startsWith(".context-usage")) {
           await fs.mkdir(artifactDir, { recursive: true });
           const composerBox = await composer.boundingBox();

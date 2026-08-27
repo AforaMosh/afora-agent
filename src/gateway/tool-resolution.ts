@@ -1,7 +1,7 @@
 // Gateway-scoped tool resolution for HTTP and loopback tool surfaces.
 import { resolveAgentWorkspaceDir, resolveSessionAgentIds } from "../agents/agent-scope.js";
 import { applyToolAvailabilityDescriptions } from "../agents/agent-tools.deferred-followup.js";
-import { createOpenClawCodingTools } from "../agents/agent-tools.js";
+import { createAforaCodingTools } from "../agents/agent-tools.js";
 import { filterToolsByMessageProvider } from "../agents/agent-tools.message-provider-policy.js";
 import { resolveEffectiveToolPolicy } from "../agents/agent-tools.policy.js";
 import type { AuthProfileStore } from "../agents/auth-profiles/types.js";
@@ -13,7 +13,7 @@ import {
   type ExecSessionDefaults,
 } from "../agents/exec-defaults.js";
 import { createLazyExecTool, resolveExecToolConfig } from "../agents/lazy-exec-tool.js";
-import { createOpenClawTools } from "../agents/openclaw-tools.js";
+import { createAforaTools } from "../agents/afora-tools.js";
 import { resolveRequesterToolPolicies } from "../agents/requester-tool-policy.js";
 import { resolveSandboxRuntimeStatus } from "../agents/sandbox/runtime-status.js";
 import {
@@ -45,7 +45,7 @@ import type {
 } from "../auto-reply/get-reply-options.types.js";
 import type { InboundEventKind } from "../channels/inbound-event/kind.js";
 import type { ConversationReadInvocationOrigin } from "../channels/plugins/conversation-read-origin.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveEventSessionRoutingPolicy } from "../infra/event-session-routing.js";
 import { logWarn } from "../logger.js";
 import type { PluginHookChannelContext } from "../plugins/hook-types.js";
@@ -61,7 +61,7 @@ type GatewayScopedToolSurface = "http" | "loopback";
 
 /** Resolve the tools visible to a gateway caller after agent, channel, and surface policy. */
 export function resolveGatewayScopedTools(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   authProfileStore?: AuthProfileStore;
   agentDir?: string;
   sessionKey: string;
@@ -281,7 +281,7 @@ export function resolveGatewayScopedTools(params: {
     gatewayRequestedTools.length > 0 ? { allow: gatewayRequestedTools } : undefined,
   ].some(hasRestrictiveAllowPolicy);
 
-  const openClawTools = createOpenClawTools({
+  const aforaTools = createAforaTools({
     agentSessionKey: params.sessionKey,
     runId: params.runId,
     requesterAgentIdOverride: sessionAgentId,
@@ -363,7 +363,7 @@ export function resolveGatewayScopedTools(params: {
   );
   const mediatedCodingTools =
     surface === "loopback" && (includeMediatedBaseCodingTools || includeMediatedShellTools)
-      ? createOpenClawCodingTools({
+      ? createAforaCodingTools({
           config: params.cfg,
           agentId: policyAgentId,
           sessionKey: runtimePolicySessionKey,
@@ -415,7 +415,7 @@ export function resolveGatewayScopedTools(params: {
             includeBaseCodingTools: includeMediatedBaseCodingTools,
             includeShellTools: includeMediatedShellTools,
             includeChannelTools: false,
-            includeOpenClawTools: false,
+            includeAforaTools: false,
             includePluginTools: false,
           },
           // The MCP dispatcher is the shared hook and abort boundary for these tools.
@@ -425,8 +425,8 @@ export function resolveGatewayScopedTools(params: {
   // CLI backends already own their local shell. This extra surface is deliberately
   // fixed to node so it cannot become a second path to Gateway-local execution.
   const baseTools = nodeExecSurface
-    ? openClawTools.filter((tool) => tool.name.trim().toLowerCase() !== "exec")
-    : openClawTools;
+    ? aforaTools.filter((tool) => tool.name.trim().toLowerCase() !== "exec")
+    : aforaTools;
   const toolsWithMediatedCoding = [
     // Once a name is server-minted as mediated, only the canonical coding
     // factory may supply it. A policy-filtered tool must not fall back to a
@@ -483,7 +483,7 @@ export function resolveGatewayScopedTools(params: {
           },
           {
             description:
-              "Execute a shell command on a connected OpenClaw node. This tool is node-only; use the CLI native shell for Gateway-local commands. Commands run synchronously. Set node when multiple nodes are available.",
+              "Execute a shell command on a connected Afora node. This tool is node-only; use the CLI native shell for Gateway-local commands. Commands run synchronously. Set node when multiple nodes are available.",
             displaySummary: "Run commands on a connected node",
             parameters: nodeExecSchema,
           },

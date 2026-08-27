@@ -148,7 +148,7 @@ describe("compileMemoryWikiVault", () => {
     const normal = await compileMemoryWikiVault(config);
     expect(normal.updatedFiles).toContain(sourcePath);
     await expect(fs.readFile(sourcePath, "utf8")).resolves.toContain(
-      "<!-- openclaw:wiki:related:start -->",
+      "<!-- afora:wiki:related:start -->",
     );
   });
 

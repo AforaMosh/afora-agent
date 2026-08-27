@@ -1,4 +1,4 @@
-import type { ResolvedAgentRoute } from "openclaw/plugin-sdk/routing";
+import type { ResolvedAgentRoute } from "afora-agent/plugin-sdk/routing";
 import type { ClawdbotConfig } from "../runtime-api.js";
 import type { FeishuMessageEvent } from "./bot.js";
 

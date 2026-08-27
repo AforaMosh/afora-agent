@@ -1,13 +1,13 @@
 // Github Copilot tests cover models plugin behavior.
-import { expectDefined } from "@openclaw/normalization-core";
-import { createProviderUsageFetch, makeResponse } from "openclaw/plugin-sdk/test-env";
+import { expectDefined } from "@afora/normalization-core";
+import { createProviderUsageFetch, makeResponse } from "afora-agent/plugin-sdk/test-env";
 import { describe, expect, it, vi } from "vitest";
 import { CopilotRuntimeAuthError } from "./runtime-auth-error.js";
 import { resolveCopilotRuntimeAuth } from "./runtime-auth.js";
 import { fetchCopilotUsage } from "./usage.js";
 
-vi.mock("openclaw/plugin-sdk/provider-model-shared", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/provider-model-shared")>()),
+vi.mock("afora-agent/plugin-sdk/provider-model-shared", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/provider-model-shared")>()),
   normalizeModelCompat: (model: Record<string, unknown>) => model,
   resolveProviderEndpoint: (baseUrl: string) => ({
     baseUrl,
@@ -16,11 +16,11 @@ vi.mock("openclaw/plugin-sdk/provider-model-shared", async (importOriginal) => (
   }),
 }));
 
-vi.mock("openclaw/plugin-sdk/state-paths", () => ({
-  resolveStateDir: () => "/tmp/openclaw-state",
+vi.mock("afora-agent/plugin-sdk/state-paths", () => ({
+  resolveStateDir: () => "/tmp/afora-state",
 }));
 
-import type { ProviderResolveDynamicModelContext } from "openclaw/plugin-sdk/core";
+import type { ProviderResolveDynamicModelContext } from "afora-agent/plugin-sdk/core";
 import {
   fetchCopilotModelCatalog,
   resolveCopilotForwardCompatModel,

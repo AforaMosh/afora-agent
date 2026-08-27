@@ -1,5 +1,5 @@
 // Owns Chrome MCP session creation, sharing, leasing, and shutdown.
-import { uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { toErrorObject } from "../infra/errors.js";
 import { createChromeMcpSession, waitForChromeMcpReady } from "./chrome-mcp-connect.js";
 import type {

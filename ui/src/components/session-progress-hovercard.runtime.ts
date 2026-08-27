@@ -1,4 +1,4 @@
-import type { ProgressCard } from "@openclaw/gateway-protocol";
+import type { ProgressCard } from "@afora/gateway-protocol";
 import { ReactiveElement, render } from "lit";
 import type { ApplicationGateway } from "../app/gateway.ts";
 import { t } from "../i18n/index.ts";
@@ -228,7 +228,7 @@ export class SessionProgressHovercardProvider extends ReactiveElement {
     this.card?.remove();
     const card = document.createElement("div");
     nextHovercardId += 1;
-    card.id = `openclaw-session-progress-hovercard-${nextHovercardId}`;
+    card.id = `afora-session-progress-hovercard-${nextHovercardId}`;
     card.className = "session-progress-hovercard";
     card.dataset.open = "true";
     card.dataset.revision = String(progressCard.revision);

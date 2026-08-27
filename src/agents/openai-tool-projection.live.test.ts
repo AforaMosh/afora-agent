@@ -53,7 +53,7 @@ const context = {
 } satisfies Context;
 
 describeLive("OpenAI tool projection live", () => {
-  const modelId = process.env.OPENCLAW_LIVE_OPENAI_TOOL_MODEL || "gpt-5.6-luna";
+  const modelId = process.env.AFORA_LIVE_OPENAI_TOOL_MODEL || "gpt-5.6-luna";
   const client = new OpenAI({ apiKey: OPENAI_KEY });
 
   it("calls a healthy Responses function after quarantining an unreadable sibling", async () => {
@@ -190,7 +190,7 @@ describeLive("OpenAI tool projection live", () => {
       maxTokens: 128,
       reasoning: "low",
       toolChoice: { type: "function", name: "exec" },
-      openclawCodeModeToolSurface: true,
+      aforaCodeModeToolSurface: true,
       onPayload(payload: unknown) {
         const record = payload as Record<string, unknown>;
         const tools = record.tools;
@@ -212,7 +212,7 @@ describeLive("OpenAI tool projection live", () => {
     } satisfies Parameters<typeof streamFn>[2] & {
       reasoning: "low";
       toolChoice: { type: "function"; name: string };
-      openclawCodeModeToolSurface: true;
+      aforaCodeModeToolSurface: true;
     };
     const stream = await Promise.resolve(streamFn(model, codeModeContext, streamOptions));
 

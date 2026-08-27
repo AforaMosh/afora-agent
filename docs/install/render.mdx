@@ -1,12 +1,12 @@
 ---
-summary: "Deploy OpenClaw on Render with Infrastructure-as-Code"
+summary: "Deploy Afora on Render with Infrastructure-as-Code"
 read_when:
-  - Deploying OpenClaw to Render
+  - Deploying Afora to Render
   - You want a declarative cloud deploy with Render Blueprints
 title: "Render"
 ---
 
-Deploy OpenClaw on [Render](https://render.com) using the repo's `render.yaml` Blueprint. It declares the service, disk, and environment variables in one file.
+Deploy Afora on [Render](https://render.com) using the repo's `render.yaml` Blueprint. It declares the service, disk, and environment variables in one file.
 
 ## Prerequisites
 
@@ -15,7 +15,7 @@ Deploy OpenClaw on [Render](https://render.com) using the repo's `render.yaml` B
 
 ## Deploy
 
-[Deploy to Render](https://render.com/deploy?repo=https://github.com/openclaw/openclaw)
+[Deploy to Render](https://render.com/deploy?repo=https://github.com/AforaMosh/afora-agent)
 
 This creates a Render service from `render.yaml`, builds the Docker image, and deploys it. Your service URL follows the pattern `https://<service-name>.onrender.com`.
 
@@ -24,22 +24,22 @@ This creates a Render service from `render.yaml`, builds the Docker image, and d
 ```yaml
 services:
   - type: web
-    name: openclaw
+    name: afora
     runtime: docker
     plan: starter
-    dockerCommand: node openclaw.mjs gateway --allow-unconfigured
+    dockerCommand: node afora.mjs gateway --allow-unconfigured
     healthCheckPath: /startupz
     envVars:
-      - key: OPENCLAW_GATEWAY_PORT
+      - key: AFORA_GATEWAY_PORT
         value: "8080"
-      - key: OPENCLAW_STATE_DIR
-        value: /data/.openclaw
-      - key: OPENCLAW_WORKSPACE_DIR
+      - key: AFORA_STATE_DIR
+        value: /data/.afora
+      - key: AFORA_WORKSPACE_DIR
         value: /data/workspace
-      - key: OPENCLAW_GATEWAY_TOKEN
+      - key: AFORA_GATEWAY_TOKEN
         generateValue: true # auto-generates a secure token
     disk:
-      name: openclaw-data
+      name: afora-data
       mountPath: /data
       sizeGB: 1
 ```
@@ -59,13 +59,13 @@ services:
 | Starter   | Never             | 1GB+          | Personal use, small teams     |
 | Standard+ | Never             | 1GB+          | Production, multiple channels |
 
-The Blueprint defaults to `starter`. To use the free tier, change `plan: free` **and delete the `disk:` block** in your fork's `render.yaml`; Render rejects a Blueprint that attaches a persistent disk to a free instance. Without that disk, OpenClaw state resets on every deploy.
+The Blueprint defaults to `starter`. To use the free tier, change `plan: free` **and delete the `disk:` block** in your fork's `render.yaml`; Render rejects a Blueprint that attaches a persistent disk to a free instance. Without that disk, Afora state resets on every deploy.
 
 ## After deployment
 
 ### Access the Control UI
 
-The web dashboard is available at `https://<your-service>.onrender.com/`. Connect using the shared secret: the auto-generated `OPENCLAW_GATEWAY_TOKEN` (find it in **Dashboard → your service → Environment**), or your password if you switched to password auth.
+The web dashboard is available at `https://<your-service>.onrender.com/`. Connect using the shared secret: the auto-generated `AFORA_GATEWAY_TOKEN` (find it in **Dashboard → your service → Environment**), or your password if you switched to password auth.
 
 ### Logs
 
@@ -81,7 +81,7 @@ Edit variables in **Dashboard → your service → Environment**. Changes trigge
 
 ### Auto-deploy
 
-Render redeploys automatically when the connected repo's branch gets a new commit. If you deployed straight from `openclaw/openclaw` instead of your own fork, you have no push access to trigger that, so update by running a manual Blueprint sync from the Dashboard, or point the service at your own fork.
+Render redeploys automatically when the connected repo's branch gets a new commit. If you deployed straight from `AforaMosh/afora-agent` instead of your own fork, you have no push access to trigger that, so update by running a manual Blueprint sync from the Dashboard, or point the service at your own fork.
 
 ## Custom domain
 
@@ -92,16 +92,16 @@ Render redeploys automatically when the connected repo's branch gets a new commi
 
 ## Scaling
 
-- **Vertical**: change the plan for more CPU/RAM. Usually sufficient for OpenClaw.
-- **Horizontal**: increase instance count (Standard plan and above). Requires sticky sessions or external state management since OpenClaw keeps runtime state on the local disk.
+- **Vertical**: change the plan for more CPU/RAM. Usually sufficient for Afora.
+- **Horizontal**: increase instance count (Standard plan and above). Requires sticky sessions or external state management since Afora keeps runtime state on the local disk.
 
 ## Backups and migration
 
 From the Render Dashboard shell, export state, config, auth profiles, and workspace at any time:
 
 ```bash
-openclaw backup create
-openclaw backup restore <archive.tar.gz> --target <fresh-directory>
+afora backup create
+afora backup restore <archive.tar.gz> --target <fresh-directory>
 ```
 
 Restore verifies and extracts into a fresh staging directory; activation is a
@@ -114,8 +114,8 @@ for the rollback warnings and activation sequence.
 
 Check the deploy logs in the Render Dashboard. Common issues:
 
-- Missing `OPENCLAW_GATEWAY_TOKEN` — verify it is set in **Dashboard → Environment**
-- Port mismatch — ensure `OPENCLAW_GATEWAY_PORT=8080` so the gateway binds to the port Render expects
+- Missing `AFORA_GATEWAY_TOKEN` — verify it is set in **Dashboard → Environment**
+- Port mismatch — ensure `AFORA_GATEWAY_PORT=8080` so the gateway binds to the port Render expects
 
 ### Slow cold starts (free tier)
 
@@ -123,7 +123,7 @@ Free tier services spin down after 15 minutes of inactivity; the first request a
 
 ### Data loss after redeploy
 
-Happens on the free tier (no persistent disk). Upgrade to a paid plan, or regularly export a backup with `openclaw backup create` from the Render shell.
+Happens on the free tier (no persistent disk). Upgrade to a paid plan, or regularly export a backup with `afora backup create` from the Render shell.
 
 ### Health check failures
 
@@ -136,4 +136,4 @@ If builds succeed but deploys fail, the service may be taking too long to start 
 
 - Set up messaging channels: [Channels](/channels)
 - Configure the Gateway: [Gateway configuration](/gateway/configuration)
-- Keep OpenClaw up to date: [Updating](/install/updating)
+- Keep Afora up to date: [Updating](/install/updating)

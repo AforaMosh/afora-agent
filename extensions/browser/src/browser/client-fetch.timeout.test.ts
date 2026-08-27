@@ -20,7 +20,7 @@ vi.mock("./control-auth.js", () => ({
 vi.mock("./bridge-auth-registry.js", () => ({
   getBridgeAuthForPort: authMocks.getBridgeAuthForPort,
 }));
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ({
   fetchWithSsrFGuard: (...args: unknown[]) => fetchWithSsrFGuardMock(...args),
 }));
 

@@ -1,4 +1,4 @@
-import type { AssistantMessage, ProviderReplayState } from "@openclaw/llm-core";
+import type { AssistantMessage, ProviderReplayState } from "@afora/llm-core";
 
 /** Whether provider replay state is a prefix-bound server compaction checkpoint. */
 export function isCompactionReplayCheckpoint(replay: unknown): replay is ProviderReplayState {

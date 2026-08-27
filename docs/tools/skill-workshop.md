@@ -9,7 +9,7 @@ title: "Skill Workshop"
 sidebarTitle: "Skill Workshop"
 ---
 
-Skill Workshop is OpenClaw's governed path for creating and updating workspace
+Skill Workshop is Afora's governed path for creating and updating workspace
 skills. Through this path, agents and operators create a **proposal** (pending
 draft with content, target binding, scanner state, hashes, and rollback
 metadata) that becomes a live skill only when applied.
@@ -62,7 +62,7 @@ Every eligible writable skill must be read and receive exactly one `keep`,
 Shared workspaces use the union of each agent's allowed skills only when
 provider, model, and resolved auth identity match. Reconciliation must leave
 every sharing agent at least one visible skill.
-OpenClaw validates and scans every write before changing the workspace,
+Afora validates and scans every write before changing the workspace,
 serializes collection edits with a workspace lease, and retains one backup
 under the state directory. The changed collection appears in new agent runs;
 running sessions keep their existing skill snapshot.
@@ -99,7 +99,7 @@ naming requirements. It gathers the sources with its existing tools, then calls
 skill, or create a proposal when neither exists.
 
 The resulting proposal stays `pending`; `/learn` never applies it. Review and
-apply it through the normal approval flow or with `openclaw skills workshop`.
+apply it through the normal approval flow or with `afora skills workshop`.
 
 Create:
 
@@ -137,35 +137,35 @@ skill, and shows the proposal description, support-file count, and body size.
 Approval requests are bounded to finish before the agent tool watchdog. If no
 decision arrives before the prompt expires, the lifecycle action does not run:
 the proposal stays pending and unchanged. Decide later in the Skill Workshop UI or run
-`openclaw skills workshop apply|reject|quarantine <proposal-id>`. Agents should
+`afora skills workshop apply|reject|quarantine <proposal-id>`. Agents should
 not retry an expired lifecycle action in a loop.
 
 ## CLI
 
 ```bash
 # Create
-openclaw skills workshop propose-create \
+afora skills workshop propose-create \
   --name morning-catchup \
   --description "Daily inbox catch-up: triage, archive, surface, draft, plan" \
   --proposal ./PROPOSAL.md
 
 # Update an existing workspace skill
-openclaw skills workshop propose-update trip-planning --proposal ./PROPOSAL.md
+afora skills workshop propose-update trip-planning --proposal ./PROPOSAL.md
 
 # List and inspect
-openclaw skills workshop list
-openclaw skills workshop inspect <proposal-id>
+afora skills workshop list
+afora skills workshop inspect <proposal-id>
 
 # Revise before approval
-openclaw skills workshop revise <proposal-id> --proposal ./PROPOSAL.md
+afora skills workshop revise <proposal-id> --proposal ./PROPOSAL.md
 
 # Run installed plugin evaluators against the exact current draft
-openclaw skills workshop evaluate <proposal-id>
+afora skills workshop evaluate <proposal-id>
 
 # Close out
-openclaw skills workshop apply <proposal-id>
-openclaw skills workshop reject <proposal-id> --reason "Duplicate"
-openclaw skills workshop quarantine <proposal-id> --reason "Needs security review"
+afora skills workshop apply <proposal-id>
+afora skills workshop reject <proposal-id> --reason "Duplicate"
+afora skills workshop quarantine <proposal-id> --reason "Needs security review"
 ```
 
 Every subcommand takes `--agent <id>` (target workspace; defaults to
@@ -200,7 +200,7 @@ tree, so any live skill asset drift requires a fresh evaluation.
 The lifecycle supports external optimization loops without embedding one.
 Controllers can consume `skills.proposals.events.list`, evaluate an exact
 `revisionHash`, revise with `expectedRevisionHash` and `correlationId`, then continue
-from the returned event sequence. OpenClaw does not schedule, auto-revise, or
+from the returned event sequence. Afora does not schedule, auto-revise, or
 decide when such a loop should stop.
 
 ## Proposal content
@@ -227,7 +227,7 @@ Use `--proposal-dir` when the proposed skill needs files beside
 `PROPOSAL.md`:
 
 ```bash
-openclaw skills workshop propose-create \
+afora skills workshop propose-create \
   --name weekly-update \
   --description "Friday wrap-up: stats, highlights, next week's top three" \
   --proposal-dir ./weekly-update-proposal
@@ -309,10 +309,10 @@ the available history is exhausted, the action becomes **Scan new work**.
 Historical review is manual even when
 `skills.workshop.autonomous.mode` is `off`. Each click starts a model run,
 so provider pricing and data-handling terms apply. The cursor and coverage counts
-are stored in the shared OpenClaw state database; transcript content is not copied
+are stored in the shared Afora state database; transcript content is not copied
 into scan state.
 
-In `propose` and `auto` modes, OpenClaw can also perform a conservative review after successful,
+In `propose` and `auto` modes, Afora can also perform a conservative review after successful,
 substantial work and after the whole agent system becomes idle. The review receives an
 authoritative receipt of skills the foreground run actually used. It can draft at most one pending
 proposal: a new skill, a patch or full-body rewrite of an existing workspace skill, or a revision
@@ -402,8 +402,8 @@ proposals.
 ## Storage
 
 ```text
-<OPENCLAW_STATE_DIR>/
-  state/openclaw.sqlite
+<AFORA_STATE_DIR>/
+  state/afora.sqlite
   skill-workshop/proposals/<proposal-id>/
     PROPOSAL.md
     assets/
@@ -413,13 +413,13 @@ proposals.
     templates/
 ```
 
-Default state directory: `~/.openclaw`.
+Default state directory: `~/.afora`.
 
-- `state/openclaw.sqlite`: canonical proposal records, lifecycle status, origin attribution, and apply rollback metadata.
+- `state/afora.sqlite`: canonical proposal records, lifecycle status, origin attribution, and apply rollback metadata.
 - `PROPOSAL.md`: pending skill proposal.
 - Support files remain beside `PROPOSAL.md` so operators can review the proposed skill as a normal directory.
 
-`openclaw doctor --fix` imports the previous `proposals.json`, `proposal.json`, and
+`afora doctor --fix` imports the previous `proposals.json`, `proposal.json`, and
 `rollback.json` metadata into SQLite after verifying each proposal, then removes
 the migrated JSON files. If an agent's configured workspace changes, its earlier
 proposals remain listed with a previous-workspace marker instead of disappearing.
@@ -444,16 +444,16 @@ proposals remain listed with a previous-workspace marker instead of disappearing
 | `Proposal scan failed`                         | Inspect scanner findings, then revise or quarantine the proposal.                                                                                                                                           |
 | `untrusted symlink target`                     | Configure `skills.load.allowSymlinkTargets` and enable `skills.workshop.allowSymlinkTargetWrites` only for intentional shared skill roots.                                                                  |
 | `Support file paths must be under one of...`   | Move support files under `assets/`, `examples/`, `references/`, `scripts/`, or `templates/`.                                                                                                                |
-| Proposal does not show in list                 | Check the selected `--agent` workspace and `OPENCLAW_STATE_DIR`.                                                                                                                                            |
+| Proposal does not show in list                 | Check the selected `--agent` workspace and `AFORA_STATE_DIR`.                                                                                                                                            |
 | Agent cannot call `skill_workshop`             | Check the active tool policy and run mode. `coding` includes the tool; restrictive `tools.allow` policies must list it explicitly, and sandboxed runs must use a normal host-side agent session or the CLI. |
 
 ### Tool-policy diagnostic
 
-In `propose` and `auto` modes, `openclaw doctor` runs the
+In `propose` and `auto` modes, `afora doctor` runs the
 `core/doctor/skill-workshop-tool-policy` check for the default agent. If policy
 hides `skill_workshop`, the warning names the first excluding config layer and
 the exact `allow` or `alsoAllow` change to make. Older runbooks may still use
-`openclaw plugins inspect skill-workshop`; that command now explains that Skill
+`afora plugins inspect skill-workshop`; that command now explains that Skill
 Workshop is built in and prints the same policy hint when applicable.
 
 ## Related
@@ -463,4 +463,4 @@ Workshop is built in and prints the same policy hint when applicable.
 - [Creating skills](/tools/creating-skills) for hand-written `SKILL.md`
   basics
 - [Skills config](/tools/skills-config) for the full `skills.workshop` schema
-- [Skills CLI](/cli/skills) for `openclaw skills` commands
+- [Skills CLI](/cli/skills) for `afora skills` commands

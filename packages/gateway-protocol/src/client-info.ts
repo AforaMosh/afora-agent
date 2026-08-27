@@ -13,23 +13,23 @@ function normalizeOptionalProtocolLowercaseString(raw?: string | null): string |
 /** Canonical client ids accepted in gateway hello/connect payloads. */
 export const GATEWAY_CLIENT_IDS = {
   WEBCHAT_UI: "webchat-ui",
-  CONTROL_UI: "openclaw-control-ui",
-  BROWSER_COPILOT: "openclaw-browser-copilot",
-  TUI: "openclaw-tui",
+  CONTROL_UI: "afora-control-ui",
+  BROWSER_COPILOT: "afora-browser-copilot",
+  TUI: "afora-tui",
   WEBCHAT: "webchat",
   CLI: "cli",
   GATEWAY_CLIENT: "gateway-client",
-  MACOS_APP: "openclaw-macos",
+  MACOS_APP: "afora-macos",
   // Native Linux UI uses the same trusted-client admission class as the macOS app.
-  LINUX_APP: "openclaw-linux",
-  IOS_APP: "openclaw-ios",
-  WATCHOS_APP: "openclaw-watchos",
-  ANDROID_APP: "openclaw-android",
+  LINUX_APP: "afora-linux",
+  IOS_APP: "afora-ios",
+  WATCHOS_APP: "afora-watchos",
+  ANDROID_APP: "afora-android",
   NODE_HOST: "node-host",
-  WORKER: "openclaw-worker",
+  WORKER: "afora-worker",
   TEST: "test",
   FINGERPRINT: "fingerprint",
-  PROBE: "openclaw-probe",
+  PROBE: "afora-probe",
 } as const;
 
 /** Stable gateway client ids used on the wire during hello/connect handshakes. */

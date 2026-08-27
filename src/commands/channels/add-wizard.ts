@@ -1,12 +1,12 @@
-// Guided channel-setup wizard flow shared by `openclaw channels add` (clack
+// Guided channel-setup wizard flow shared by `afora channels add` (clack
 // prompter) and the gateway `wizard.start {flow:"channels"}` RPC (session
 // prompter driving the Control UI / native clients).
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import { getLoadedChannelPlugin } from "../../channels/plugins/index.js";
 import type { ChannelSetupPlugin } from "../../channels/plugins/setup-wizard-types.js";
 import { formatUnknownChannelMessage } from "../../cli/error-format.js";
-import { readConfigFileSnapshot, type OpenClawConfig } from "../../config/config.js";
+import { readConfigFileSnapshot, type AforaConfig } from "../../config/config.js";
 import { commitConfigWithPendingPluginInstalls } from "../../plugins/install-record-commit.js";
 import { refreshPluginRegistryAfterConfigMutation } from "../../plugins/registry-refresh.js";
 import { DEFAULT_ACCOUNT_ID } from "../../routing/session-key.js";
@@ -34,7 +34,7 @@ function unresolvedInitialWizardChannelTarget(channel: string): InitialWizardCha
 /** Resolve omitted, matched, and unmatched channel targets without collapsing caller intent. */
 export async function resolveInitialWizardChannelTarget(
   raw: string | undefined,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): Promise<InitialWizardChannelTarget> {
   if (raw === undefined) {
     return { kind: "omitted" };
@@ -67,7 +67,7 @@ export async function resolveInitialWizardChannelTarget(
 }
 
 type ChannelsAddWizardFlowParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   baseHash?: string;
   runtime: RuntimeEnv;
   prompter: WizardPrompter;
@@ -124,7 +124,7 @@ export async function runChannelsAddWizardFlow(params: ChannelsAddWizardFlowPara
       resolvedPlugins.set(channel, plugin);
     },
   });
-  const commitWizardConfig = async (config: OpenClawConfig) => {
+  const commitWizardConfig = async (config: AforaConfig) => {
     return await channelSetup.commit(config, async (configToCommit) => {
       const committed = await commitConfigWithPendingPluginInstalls({
         nextConfig: configToCommit,
@@ -280,10 +280,10 @@ export async function runChannelsSetupWizard(
   const snapshot = await readConfigFileSnapshot();
   if (snapshot.exists && !snapshot.valid) {
     throw new Error(
-      "OpenClaw config is invalid; run `openclaw doctor --fix`, then retry channel setup.",
+      "Afora config is invalid; run `afora doctor --fix`, then retry channel setup.",
     );
   }
-  const cfg = (snapshot.sourceConfig ?? snapshot.config) as OpenClawConfig;
+  const cfg = (snapshot.sourceConfig ?? snapshot.config) as AforaConfig;
   const target = await resolveInitialWizardChannelTarget(opts.channel, cfg);
   if (target.kind === "unresolved") {
     throw new Error(target.message);

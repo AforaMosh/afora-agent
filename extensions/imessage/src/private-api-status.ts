@@ -1,5 +1,5 @@
 // Imessage plugin module implements private api status behavior.
-import { asDateTimestampMs } from "openclaw/plugin-sdk/number-runtime";
+import { asDateTimestampMs } from "afora-agent/plugin-sdk/number-runtime";
 
 export type IMessagePrivateApiStatus = {
   available: boolean;

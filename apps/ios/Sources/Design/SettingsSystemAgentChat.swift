@@ -1,6 +1,6 @@
 import Foundation
 import Observation
-import OpenClawKit
+import AforaKit
 import SwiftUI
 
 struct IOSSystemAgentChatRouteLease: Sendable {
@@ -99,7 +99,7 @@ final class IOSSystemAgentChatModel {
     init(
         accessState: AccessState,
         routeIdentity: String?,
-        sessionPrefix: String = "ios-settings-openclaw",
+        sessionPrefix: String = "ios-settings-afora",
         captureRoute: @escaping CaptureRoute)
     {
         self.accessState = accessState
@@ -157,14 +157,14 @@ final class IOSSystemAgentChatModel {
             ? String(localized: "I’ll keep this conversation separate from ordinary agent chat.")
             : String(localized: "I can check Gateway status, repair configuration, change models, or connect channels.")
         var result: [String: Any] = [
-            "sessionId": "ios-screenshot-openclaw",
+            "sessionId": "ios-screenshot-afora",
             "reply": reply,
             "action": "none",
         ]
         if !hasMessage {
             result["question"] = [
                 "id": "help",
-                "header": "OpenClaw",
+                "header": "Afora",
                 "question": String(localized: "What should we look at first?"),
                 "options": [
                     [
@@ -217,7 +217,7 @@ final class IOSSystemAgentChatModel {
         self.input = ""
         self.expectsSensitiveReply = false
         self.pendingHandoff = nil
-        self.errorMessage = String(localized: "The Gateway connection changed. Restart OpenClaw to reconnect.")
+        self.errorMessage = String(localized: "The Gateway connection changed. Restart Afora to reconnect.")
     }
 
     @discardableResult
@@ -429,7 +429,7 @@ final class IOSSystemAgentChatModel {
             }
             let routeLease = try await self.sessionRoute(for: generation)
             guard self.isCurrentRequest(generation) else { return }
-            let data = try await routeLease.request("openclaw.chat", params, 190_000)
+            let data = try await routeLease.request("afora.chat", params, 190_000)
             guard self.isCurrentRequest(generation) else { return }
             guard await routeLease.isCurrent() else { throw CancellationError() }
             let result = try JSONDecoder().decode(ChatResult.self, from: data)
@@ -454,7 +454,7 @@ final class IOSSystemAgentChatModel {
             if error is CancellationError || routeChangedBeforeDispatch {
                 self.started = false
                 self.routeLease = nil
-                self.errorMessage = String(localized: "The Gateway connection changed. Restart OpenClaw to reconnect.")
+                self.errorMessage = String(localized: "The Gateway connection changed. Restart Afora to reconnect.")
                 return
             }
             self.errorMessage = error.localizedDescription
@@ -498,7 +498,7 @@ struct SettingsSystemAgentChatScreen: View {
             }
         }
         .background(Color(uiColor: .systemGroupedBackground))
-        .navigationTitle("OpenClaw")
+        .navigationTitle("Afora")
         .navigationBarTitleDisplayMode(.inline)
         .task {
             self.isScreenActive = true
@@ -559,8 +559,8 @@ struct SettingsSystemAgentChatScreen: View {
                             HStack(spacing: 8) {
                                 ProgressView()
                                     .controlSize(.small)
-                                Text("OpenClaw is working…")
-                                    .font(OpenClawType.caption)
+                                Text("Afora is working…")
+                                    .font(AforaType.caption)
                                     .foregroundStyle(.secondary)
                             }
                             .padding(.horizontal, 4)
@@ -590,11 +590,11 @@ struct SettingsSystemAgentChatScreen: View {
         VStack(spacing: 14) {
             Image(systemName: self.accessGateIcon)
                 .font(.system(size: 42, weight: .semibold))
-                .foregroundStyle(OpenClawBrand.warn)
+                .foregroundStyle(AforaBrand.warn)
             Text(self.accessGateTitle)
-                .font(OpenClawType.title3SemiBold)
+                .font(AforaType.title3SemiBold)
             Text(self.accessGateDetail)
-                .font(OpenClawType.body)
+                .font(AforaType.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -628,13 +628,13 @@ struct SettingsSystemAgentChatScreen: View {
     private var accessGateDetail: String {
         switch self.model.accessState {
         case .disconnected:
-            String(localized: "Connect this iPhone to a Gateway before opening the OpenClaw settings assistant.")
+            String(localized: "Connect this iPhone to a Gateway before opening the Afora settings assistant.")
         case .missingAdminScope:
             String(localized: "Reconnect with operator.admin access to review and change Gateway settings.")
         case .checkingSystemAgentMethod:
-            String(localized: "Checking whether this Gateway supports the OpenClaw settings assistant.")
+            String(localized: "Checking whether this Gateway supports the Afora settings assistant.")
         case .missingSystemAgentMethod:
-            String(localized: "Update this Gateway to use the OpenClaw settings assistant.")
+            String(localized: "Update this Gateway to use the Afora settings assistant.")
         case .ready:
             ""
         }
@@ -643,9 +643,9 @@ struct SettingsSystemAgentChatScreen: View {
     private func errorRow(_ error: String) -> some View {
         HStack(spacing: 10) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(OpenClawBrand.warn)
+                .foregroundStyle(AforaBrand.warn)
             Text(error)
-                .font(OpenClawType.caption)
+                .font(AforaType.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
@@ -653,7 +653,7 @@ struct SettingsSystemAgentChatScreen: View {
                 self.model.restartAfterError()
             } label: {
                 Text("Restart")
-                    .font(OpenClawType.captionSemiBold)
+                    .font(AforaType.captionSemiBold)
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
@@ -663,15 +663,15 @@ struct SettingsSystemAgentChatScreen: View {
 
     private var handoffRow: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("OpenClaw is ready to continue in your ordinary chat.")
-                .font(OpenClawType.subhead)
+            Text("Afora is ready to continue in your ordinary chat.")
+                .font(AforaType.subhead)
                 .foregroundStyle(.secondary)
             Button {
                 self.model.openAgent()
             } label: {
                 Label {
                     Text("Open Chat")
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                 } icon: {
                     Image(systemName: "bubble.left.and.bubble.right.fill")
                 }
@@ -690,13 +690,13 @@ struct SettingsSystemAgentChatScreen: View {
                 if self.model.expectsSensitiveReply {
                     ZStack(alignment: .leading) {
                         SecureField("", text: self.$model.input)
-                            .font(OpenClawType.body)
+                            .font(AforaType.body)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .accessibilityLabel("Enter secret")
                         if self.model.input.isEmpty {
                             Text("Enter secret…")
-                                .font(OpenClawType.body)
+                                .font(AforaType.body)
                                 .foregroundStyle(.tertiary)
                                 .allowsHitTesting(false)
                                 .accessibilityHidden(true)
@@ -704,10 +704,10 @@ struct SettingsSystemAgentChatScreen: View {
                     }
                 } else {
                     TextField(text: self.$model.input, axis: .vertical) {
-                        Text("Reply to OpenClaw…")
-                            .font(OpenClawType.body)
+                        Text("Reply to Afora…")
+                            .font(AforaType.body)
                     }
-                    .font(OpenClawType.body)
+                    .font(AforaType.body)
                     .lineLimit(1...5)
                 }
             }
@@ -813,7 +813,7 @@ struct SettingsSystemAgentChatScreen: View {
 
         self.enterCheckingSystemAgentSupport(gatewayID: gatewayID)
         let support = await self.appModel.operatorSession.supportsServerMethod(
-            "openclaw.chat",
+            "afora.chat",
             ifCurrentRoute: route)
         guard self.isCurrentSystemAgentSupportCheck(checkID, gatewayID: gatewayID) else { return }
         guard let currentRoute = await self.appModel.operatorSession.currentRoute(ifGatewayID: gatewayID) else {
@@ -851,16 +851,16 @@ private struct IOSSystemAgentQuestionCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(self.question.header.uppercased())
-                .font(OpenClawType.caption2SemiBold)
-                .foregroundStyle(OpenClawBrand.accent)
+                .font(AforaType.caption2SemiBold)
+                .foregroundStyle(AforaBrand.accent)
             Text(self.question.question)
-                .font(OpenClawType.subheadSemiBold)
+                .font(AforaType.subheadSemiBold)
             ForEach(self.question.options, id: \.label) { option in
                 self.optionButton(option)
             }
             Button(action: self.onSkip) {
                 Text("Skip for now")
-                    .font(OpenClawType.captionSemiBold)
+                    .font(AforaType.captionSemiBold)
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
@@ -885,19 +885,19 @@ private struct IOSSystemAgentQuestionCard: View {
             HStack(alignment: .top, spacing: 10) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(option.label)
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                         .foregroundStyle(.primary)
                     if let description = option.description {
                         Text(description)
-                            .font(OpenClawType.caption)
+                            .font(AforaType.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
                 Spacer(minLength: 8)
                 if option.recommended {
                     Text("Recommended")
-                        .font(OpenClawType.caption2SemiBold)
-                        .foregroundStyle(OpenClawBrand.accent)
+                        .font(AforaType.caption2SemiBold)
+                        .foregroundStyle(AforaBrand.accent)
                 }
             }
             .padding(.horizontal, 11)
@@ -906,12 +906,12 @@ private struct IOSSystemAgentQuestionCard: View {
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(option.recommended
-                        ? OpenClawBrand.accent.opacity(0.12)
+                        ? AforaBrand.accent.opacity(0.12)
                         : Color(uiColor: .tertiarySystemGroupedBackground)))
             .overlay(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .stroke(option.recommended
-                        ? OpenClawBrand.accent.opacity(0.55)
+                        ? AforaBrand.accent.opacity(0.55)
                         : Color.secondary.opacity(0.12)))
             .contentShape(Rectangle())
         }
@@ -929,14 +929,14 @@ private struct IOSSystemAgentChatBubble: View {
                 Spacer(minLength: 44)
             }
             Text(self.message.text)
-                .font(OpenClawType.body)
+                .font(AforaType.body)
                 .textSelection(.enabled)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 9)
                 .background(
                     RoundedRectangle(cornerRadius: 13, style: .continuous)
                         .fill(self.message.role == .user
-                            ? OpenClawBrand.accent.opacity(0.18)
+                            ? AforaBrand.accent.opacity(0.18)
                             : Color(uiColor: .secondarySystemGroupedBackground)))
             if self.message.role == .assistant {
                 Spacer(minLength: 44)

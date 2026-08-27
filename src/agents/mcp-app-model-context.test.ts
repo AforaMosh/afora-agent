@@ -193,7 +193,7 @@ describe("MCP App model context", () => {
       prompt: "visible user text",
     })?.prompt;
     expect(prompt?.split(INTERNAL_RUNTIME_CONTEXT_END)).toHaveLength(2);
-    expect(prompt).toContain("[[OPENCLAW_INTERNAL_CONTEXT_END]]");
+    expect(prompt).toContain("[[AFORA_INTERNAL_CONTEXT_END]]");
     expect(prompt?.endsWith("visible user text")).toBe(true);
   });
 });

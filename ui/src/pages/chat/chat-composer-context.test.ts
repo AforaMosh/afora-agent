@@ -27,7 +27,7 @@ describe("renderChatComposer context usage", () => {
             totalTokens: 46_000,
             contextTokens: 200_000,
             model: "gateway-injected",
-            modelProvider: "openclaw",
+            modelProvider: "afora",
           },
         ],
         defaults: { contextTokens: 200_000 },
@@ -71,7 +71,7 @@ describe("renderChatComposer context usage", () => {
         .trim(),
     ).toBe("Provider: OpenAI");
     const popoverText = container.querySelector(".context-usage__popover")?.textContent ?? "";
-    expect(popoverText).not.toContain("openclaw");
+    expect(popoverText).not.toContain("afora");
     expect(popoverText).not.toContain("gateway-injected");
     expect(popoverText).not.toContain("Model:");
   });
@@ -199,7 +199,7 @@ describe("renderChatComposer context usage", () => {
             totalTokens: 1_000,
             contextTokens: 200_000,
             model: "gateway-injected",
-            modelProvider: "openclaw",
+            modelProvider: "afora",
           },
         ],
         defaults: { contextTokens: 200_000 },
@@ -258,7 +258,7 @@ describe("renderChatComposer context usage", () => {
           role: "assistant",
           content: "hello",
           model: "gateway-injected",
-          provider: "openclaw",
+          provider: "afora",
           usage: {
             cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
           },

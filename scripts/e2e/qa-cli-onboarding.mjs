@@ -70,7 +70,7 @@ const startedAt = Date.now();
 const child = spawn("bash", ["scripts/e2e/onboard-docker.sh"], {
   env: {
     ...process.env,
-    OPENCLAW_ONBOARD_E2E_CASES:
+    AFORA_ONBOARD_E2E_CASES:
       "guided-skip-ui,local-auth-refs,local-password,remote-non-interactive,reset,skills",
   },
   stdio: ["inherit", "pipe", "pipe"],

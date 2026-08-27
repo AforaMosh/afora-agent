@@ -36,23 +36,23 @@ describe("TUI PTY test support", () => {
   });
 
   it("removes explicitly cleared inherited environment variables", () => {
-    vi.stubEnv("OPENCLAW_TUI_PTY_PARENT_ONLY", "parent");
+    vi.stubEnv("AFORA_TUI_PTY_PARENT_ONLY", "parent");
     nodePtyMocks.spawn.mockReturnValue(createMockPty());
 
     startPty("node", [], {
       cwd: process.cwd(),
       env: {
-        OPENCLAW_TUI_PTY_PARENT_ONLY: undefined,
-        OPENCLAW_TUI_PTY_CHILD_ONLY: "child",
+        AFORA_TUI_PTY_PARENT_ONLY: undefined,
+        AFORA_TUI_PTY_CHILD_ONLY: "child",
       },
       exitTimeoutMs: 1_000,
       outputTimeoutMs: 1_000,
     });
 
     const spawnOptions = nodePtyMocks.spawn.mock.calls[0]?.[2];
-    expect(spawnOptions?.env).not.toHaveProperty("OPENCLAW_TUI_PTY_PARENT_ONLY");
+    expect(spawnOptions?.env).not.toHaveProperty("AFORA_TUI_PTY_PARENT_ONLY");
     expect(spawnOptions?.env).toMatchObject({
-      OPENCLAW_TUI_PTY_CHILD_ONLY: "child",
+      AFORA_TUI_PTY_CHILD_ONLY: "child",
       TERM: "xterm-256color",
     });
   });
@@ -63,8 +63,8 @@ describe("TUI PTY test support", () => {
     const run = startPty("node", [], {
       cwd: process.cwd(),
       env: {
-        OPENCLAW_TUI_PTY_COLS: "72",
-        OPENCLAW_TUI_PTY_ROWS: "20",
+        AFORA_TUI_PTY_COLS: "72",
+        AFORA_TUI_PTY_ROWS: "20",
       },
       exitTimeoutMs: 1_000,
       outputTimeoutMs: 1_000,
@@ -87,8 +87,8 @@ describe("TUI PTY test support", () => {
     const run = startPty("node", [], {
       cwd: process.cwd(),
       env: {
-        OPENCLAW_TUI_PTY_COLS: "0",
-        OPENCLAW_TUI_PTY_ROWS: "not-a-number",
+        AFORA_TUI_PTY_COLS: "0",
+        AFORA_TUI_PTY_ROWS: "not-a-number",
       },
       exitTimeoutMs: 1_000,
       outputTimeoutMs: 1_000,
@@ -118,8 +118,8 @@ describe("TUI PTY test support", () => {
       const run = startPty("node", [], {
         cwd: process.cwd(),
         env: {
-          OPENCLAW_TUI_PTY_TYPE_CHUNK_SIZE: chunkSize,
-          OPENCLAW_TUI_PTY_TYPE_DELAY_MS: "1",
+          AFORA_TUI_PTY_TYPE_CHUNK_SIZE: chunkSize,
+          AFORA_TUI_PTY_TYPE_DELAY_MS: "1",
         },
         exitTimeoutMs: 1_000,
         outputTimeoutMs: 1_000,

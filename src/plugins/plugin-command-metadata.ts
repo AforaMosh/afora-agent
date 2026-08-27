@@ -1,5 +1,5 @@
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawPluginCommandDefinition } from "./types.js";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
+import type { AforaPluginCommandDefinition } from "./types.js";
 
 type PluginCommandNativeMetadata = Readonly<{
   name: string;
@@ -11,7 +11,7 @@ type PluginCommandNativeMetadata = Readonly<{
 }>;
 
 export function pluginCommandSupportsChannel(
-  command: OpenClawPluginCommandDefinition,
+  command: AforaPluginCommandDefinition,
   channel?: string,
 ): boolean {
   if (!command.channels || command.channels.length === 0 || !channel) {
@@ -25,7 +25,7 @@ export function pluginCommandSupportsChannel(
 
 /** Projects the safe provider-native metadata shared by catalog and runtime surfaces. */
 export function projectPluginCommandNativeMetadata(
-  command: OpenClawPluginCommandDefinition,
+  command: AforaPluginCommandDefinition,
   provider?: string,
 ): PluginCommandNativeMetadata {
   const normalizedProvider = normalizeOptionalLowercaseString(provider);

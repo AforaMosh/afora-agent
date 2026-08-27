@@ -1,6 +1,6 @@
 // Isolated agent session tests cover session creation and metadata for cron runs.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import type { SessionEntry, SessionOrigin } from "../../config/sessions/types.js";
 import { normalizeLegacySessionEntryDelivery } from "../../infra/state-migrations.legacy-session-store.js";
 import { projectSessionDeliveryFields } from "../../utils/delivery-context.shared.js";
@@ -75,7 +75,7 @@ function resolveWithStoredEntry(params?: {
   vi.mocked(evaluateSessionFreshness).mockReturnValue({ fresh: params?.fresh ?? true });
 
   const result = resolveCronSession({
-    cfg: {} as OpenClawConfig,
+    cfg: {} as AforaConfig,
     sessionKey,
     sourceSessionKey,
     agentId: "main",
@@ -317,7 +317,7 @@ describe("resolveCronSession", () => {
         entry: {
           sessionId: "existing-session-id-runtime",
           updatedAt: NOW_MS - 1000,
-          agentRuntimeOverride: "openclaw",
+          agentRuntimeOverride: "afora",
           agentHarnessId: "codex",
         },
         fresh: true,
@@ -363,7 +363,7 @@ describe("resolveCronSession", () => {
             threadId: "1737500000.123456",
           },
           modelOverride: "gpt-5.4",
-          agentRuntimeOverride: "openclaw",
+          agentRuntimeOverride: "afora",
           agentHarnessId: "codex",
         },
         fresh: true,
@@ -381,7 +381,7 @@ describe("resolveCronSession", () => {
       expect(result.sessionEntry.deliveryContext).toBeUndefined();
       // Per-session overrides must be preserved
       expect(result.sessionEntry.modelOverride).toBe("gpt-5.4");
-      expect(result.sessionEntry.agentRuntimeOverride).toBe("openclaw");
+      expect(result.sessionEntry.agentRuntimeOverride).toBe("afora");
       expect(result.sessionEntry.agentHarnessId).toBeUndefined();
     });
 
@@ -546,7 +546,7 @@ describe("resolveCronSession", () => {
           modelOverride: "claude-sonnet-4-6",
           providerOverride: "anthropic",
           modelOverrideSource: "user",
-          agentRuntimeOverride: "openclaw",
+          agentRuntimeOverride: "afora",
           authProfileOverride: "work-profile",
           authProfileOverrideSource: "user",
           authProfileOverrideCompactionCount: 3,
@@ -559,7 +559,7 @@ describe("resolveCronSession", () => {
       expect(result.sessionEntry.modelOverride).toBe("claude-sonnet-4-6");
       expect(result.sessionEntry.providerOverride).toBe("anthropic");
       expect(result.sessionEntry.modelOverrideSource).toBe("user");
-      expect(result.sessionEntry.agentRuntimeOverride).toBe("openclaw");
+      expect(result.sessionEntry.agentRuntimeOverride).toBe("afora");
       expect(result.sessionEntry.authProfileOverride).toBe("work-profile");
       expect(result.sessionEntry.authProfileOverrideSource).toBe("user");
       expect(result.sessionEntry.authProfileOverrideCompactionCount).toBe(3);

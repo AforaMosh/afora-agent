@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { listSessionTranscriptCorpusEntriesForAgent } from "openclaw/plugin-sdk/memory-core-host-engine-sessions";
-import type { MemorySearchResult } from "openclaw/plugin-sdk/memory-core-host-runtime-files";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
+import { listSessionTranscriptCorpusEntriesForAgent } from "afora-agent/plugin-sdk/memory-core-host-engine-sessions";
+import type { MemorySearchResult } from "afora-agent/plugin-sdk/memory-core-host-runtime-files";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
 import type { SessionIngestionFileState } from "./dreaming-ingestion-state.js";
 import { removeBackfillDiaryEntries, writeBackfillDiaryEntries } from "./dreaming-narrative.js";
 import { previewGroundedRemMarkdown } from "./rem-evidence.js";
@@ -253,7 +253,7 @@ async function buildRemDiaryEntries(params: {
   days: Array<{ day: string; candidates: SessionBackfillCandidate[] }>;
 }): Promise<Array<{ isoDay: string; sourcePath: string; bodyLines: string[] }>> {
   const scratchDir = await fs.mkdtemp(
-    path.join(resolvePreferredOpenClawTmpDir(), "openclaw-session-backfill-"),
+    path.join(resolvePreferredAforaTmpDir(), "afora-session-backfill-"),
   );
   try {
     const entries: Array<{ isoDay: string; sourcePath: string; bodyLines: string[] }> = [];

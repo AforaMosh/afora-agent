@@ -1,5 +1,5 @@
 // Signal tests cover setup adapter integration with account-owned transport policy.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createSignalCliPathTextInput, signalSetupAdapter } from "./setup-core.js";
 import { signalSetupWizard } from "./setup-surface.js";
@@ -17,7 +17,7 @@ async function prepareInput(
     signalTransport?: "external-native" | "container";
     httpUrl?: string;
   },
-  cfg: OpenClawConfig = {},
+  cfg: AforaConfig = {},
 ) {
   const prepared = await signalSetupAdapter.prepareAccountConfigInput?.({
     cfg,
@@ -72,7 +72,7 @@ describe("signalSetupAdapter", () => {
 
   it("preserves an existing container account when detection is unreachable", async () => {
     detectSignalTransportMock.mockRejectedValue(new Error("unreachable"));
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         signal: {
           account: "+15555550123",
@@ -261,7 +261,7 @@ describe("signalSetupAdapter", () => {
   });
 
   it("uses the setup transport allocator for a second managed account", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         signal: {
           account: "+15555550123",
@@ -285,7 +285,7 @@ describe("signalSetupAdapter", () => {
   });
 
   it("preserves managed transport options during a partial setup update", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         signal: {
           accounts: {
@@ -324,7 +324,7 @@ describe("signalSetupAdapter", () => {
   });
 
   it("makes a new default transport update authoritative over accounts.default", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         signal: {
           accounts: {
@@ -353,7 +353,7 @@ describe("signalSetupAdapter", () => {
   });
 
   it("keeps the canonical root transport during a default account-only update", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         signal: {
           transport: { kind: "external-native", url: "http://canonical-signal:8080" },
@@ -522,7 +522,7 @@ describe("signalSetupAdapter", () => {
   });
 
   it("rejects an invalid replacement without overwriting an existing container account", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         signal: {
           account: "+15555550123",
@@ -583,7 +583,7 @@ describe("signalSetupAdapter", () => {
 
   it("does not materialize a CLI path for an external transport", async () => {
     const input = createSignalCliPathTextInput(async () => false);
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         signal: {
           account: "+15555550124",
@@ -606,7 +606,7 @@ describe("signalSetupAdapter", () => {
   });
 
   it("reports an external transport as configured without checking signal-cli", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         signal: {
           account: "+15555550124",

@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import { commitPluginInstallRecordsWithConfig } from "./install-record-commit.js";
 import { listRecoveredManagedNpmInstallCandidates } from "./installed-plugin-index-record-reader.js";
 import {
@@ -17,8 +17,8 @@ function npmRecord(packageName: string, installPath: string): PluginInstallRecor
 
 describe("retained managed npm record commits", () => {
   it("suppresses recovery when a retained install record is removed", async () => {
-    await withOpenClawTestState({ label: "retained-record-removal" }, async (state) => {
-      const packageName = "@openclaw/retained-demo";
+    await withAforaTestState({ label: "retained-record-removal" }, async (state) => {
+      const packageName = "@afora/retained-demo";
       const installPath = writeManagedNpmPlugin({
         stateDir: state.stateDir,
         packageName,
@@ -49,8 +49,8 @@ describe("retained managed npm record commits", () => {
   it.each(["direct", "symlink"] as const)(
     "does not retire a package still used by a %s active install path",
     async (activePathKind) => {
-      await withOpenClawTestState({ label: `retained-active-${activePathKind}` }, async (state) => {
-        const packageName = "@openclaw/retained-active";
+      await withAforaTestState({ label: `retained-active-${activePathKind}` }, async (state) => {
+        const packageName = "@afora/retained-active";
         const installPath = writeManagedNpmPlugin({
           stateDir: state.stateDir,
           packageName,
@@ -82,10 +82,10 @@ describe("retained managed npm record commits", () => {
   );
 
   it("does not retire a removed npm record outside the managed npm root", async () => {
-    await withOpenClawTestState({ label: "retained-outside-root" }, async (state) => {
+    await withAforaTestState({ label: "retained-outside-root" }, async (state) => {
       const outsideRoot = state.path("outside-root");
       try {
-        const packageName = "@openclaw/outside-retained";
+        const packageName = "@afora/outside-retained";
         const installPath = writeManagedNpmPlugin({
           stateDir: outsideRoot,
           packageName,
@@ -105,8 +105,8 @@ describe("retained managed npm record commits", () => {
   });
 
   it("keeps npm-to-local source changes cleanup-eligible", async () => {
-    await withOpenClawTestState({ label: "retained-source-change" }, async (state) => {
-      const packageName = "@openclaw/moved-local";
+    await withAforaTestState({ label: "retained-source-change" }, async (state) => {
+      const packageName = "@afora/moved-local";
       const installPath = writeManagedNpmPlugin({
         stateDir: state.stateDir,
         packageName,

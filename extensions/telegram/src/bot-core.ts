@@ -3,20 +3,20 @@ import {
   buildChannelGroupsScopeTree,
   resolveChannelGroupPolicy,
   resolveScopeRequireMention,
-} from "openclaw/plugin-sdk/channel-policy";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+} from "afora-agent/plugin-sdk/channel-policy";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   resolveThreadBindingIdleTimeoutMsForChannel,
   resolveThreadBindingMaxAgeMsForChannel,
   resolveThreadBindingSpawnPolicy,
-} from "openclaw/plugin-sdk/conversation-runtime";
-import { formatErrorMessage, formatUncaughtError } from "openclaw/plugin-sdk/error-runtime";
-import { normalizeGroupActivation } from "openclaw/plugin-sdk/group-activation";
+} from "afora-agent/plugin-sdk/conversation-runtime";
+import { formatErrorMessage, formatUncaughtError } from "afora-agent/plugin-sdk/error-runtime";
+import { normalizeGroupActivation } from "afora-agent/plugin-sdk/group-activation";
 import {
   resolveNativeCommandsEnabled,
   resolveNativeSkillsEnabled,
-} from "openclaw/plugin-sdk/native-command-config-runtime";
-import type { HistoryEntry } from "openclaw/plugin-sdk/reply-history";
+} from "afora-agent/plugin-sdk/native-command-config-runtime";
+import type { HistoryEntry } from "afora-agent/plugin-sdk/reply-history";
 import {
   danger,
   logVerbose,
@@ -25,8 +25,8 @@ import {
   createSubsystemLogger,
   createNonExitingRuntime,
   type RuntimeEnv,
-} from "openclaw/plugin-sdk/runtime-env";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/runtime-env";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveTelegramAccountOwnerAgentId } from "./account-owner.js";
 import { getOrCreateAccountThrottler } from "./account-throttler.js";
 import { resolveTelegramAccount } from "./accounts.js";
@@ -323,7 +323,7 @@ export function createTelegramBotCore(
   });
   const mediaMaxBytes = (opts.mediaMaxMb ?? telegramCfg.mediaMaxMb ?? 100) * 1024 * 1024;
   const logger = getChildLogger({ module: "telegram-auto-reply" });
-  const resolveGroupPolicy = (chatId: string | number, turnCfg: OpenClawConfig) =>
+  const resolveGroupPolicy = (chatId: string | number, turnCfg: AforaConfig) =>
     resolveChannelGroupPolicy({
       cfg: turnCfg,
       channel: "telegram",
@@ -335,7 +335,7 @@ export function createTelegramBotCore(
     agentId?: string;
     messageThreadId?: number;
     sessionKey?: string;
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
   }) => {
     const agentId = params.agentId ?? ownerAgentId;
     const sessionKey =
@@ -363,7 +363,7 @@ export function createTelegramBotCore(
     }
     return undefined;
   };
-  const resolveGroupRequireMention = (chatId: string | number, turnCfg: OpenClawConfig) =>
+  const resolveGroupRequireMention = (chatId: string | number, turnCfg: AforaConfig) =>
     resolveScopeRequireMention({
       tree: buildChannelGroupsScopeTree(turnCfg, "telegram", account.accountId),
       path: [String(chatId)],
@@ -373,7 +373,7 @@ export function createTelegramBotCore(
   const resolveTelegramGroupConfig = (
     chatId: string | number,
     messageThreadId: number | undefined,
-    turnCfg: OpenClawConfig,
+    turnCfg: AforaConfig,
   ) => {
     const turnTelegramCfg = resolveTelegramAccount({
       cfg: turnCfg,

@@ -1,6 +1,6 @@
 // Mattermost tests cover monitor plugin behavior.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../runtime-api.js";
+import type { AforaConfig } from "../../runtime-api.js";
 import { resolveMattermostAccount } from "./accounts.js";
 import {
   buildMattermostButtonInteractionMessageSid,
@@ -269,7 +269,7 @@ describe("canFinalizeMattermostPreviewInPlace", () => {
 });
 
 describe("shouldUpdateMattermostDraftToolProgress", () => {
-  type MattermostConfig = NonNullable<NonNullable<OpenClawConfig["channels"]>["mattermost"]>;
+  type MattermostConfig = NonNullable<NonNullable<AforaConfig["channels"]>["mattermost"]>;
 
   function resolveToolProgressEnabled(mattermostConfig: MattermostConfig) {
     const account = resolveMattermostAccount({
@@ -315,7 +315,7 @@ describe("shouldUpdateMattermostDraftToolProgress", () => {
 });
 
 describe("shouldSuppressMattermostDefaultToolProgressMessages", () => {
-  type MattermostConfig = NonNullable<NonNullable<OpenClawConfig["channels"]>["mattermost"]>;
+  type MattermostConfig = NonNullable<NonNullable<AforaConfig["channels"]>["mattermost"]>;
 
   function resolveSuppressDefaultProgress(mattermostConfig: MattermostConfig) {
     const account = resolveMattermostAccount({

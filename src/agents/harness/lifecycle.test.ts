@@ -1,7 +1,7 @@
 // Verifies harness lifecycle capability checks, diagnostics, and trace scoping.
-import type { Model } from "openclaw/plugin-sdk/llm";
+import type { Model } from "afora-agent/plugin-sdk/llm";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST } from "../../context-engine/host-compat.js";
+import { AFORA_EMBEDDED_CONTEXT_ENGINE_HOST } from "../../context-engine/host-compat.js";
 import type { ContextEngine } from "../../context-engine/types.js";
 import {
   onTrustedInternalDiagnosticEvent,
@@ -16,7 +16,7 @@ import {
   type DiagnosticTraceContext,
 } from "../../infra/diagnostic-trace-context.js";
 import type { EmbeddedRunAttemptResult } from "../embedded-agent-runner/run/types.js";
-import { createOpenClawAgentHarness } from "./builtin-openclaw.js";
+import { createAforaAgentHarness } from "./builtin-afora.js";
 import { AgentHarnessPreflightError, resolveAgentHarnessPreflightOwner } from "./errors.js";
 import {
   runAgentHarnessLifecycleAttempt,
@@ -366,11 +366,11 @@ describe("AgentHarness lifecycle runner", () => {
     expect(runAttempt).toHaveBeenCalledOnce();
   });
 
-  it("advertises OpenClaw embedded host capabilities", async () => {
-    const harness = createOpenClawAgentHarness();
+  it("advertises Afora embedded host capabilities", async () => {
+    const harness = createAforaAgentHarness();
 
     expect(harness.contextEngineHostCapabilities).toEqual(
-      OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST.capabilities,
+      AFORA_EMBEDDED_CONTEXT_ENGINE_HOST.capabilities,
     );
   });
 

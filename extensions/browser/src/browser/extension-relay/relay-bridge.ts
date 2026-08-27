@@ -2,7 +2,7 @@
  * Extension relay CDP bridge.
  *
  * Presents a CDP browser endpoint (compatible with Playwright connectOverCDP)
- * on one side and the OpenClaw Chrome extension's chrome.debugger transport on
+ * on one side and the Afora Chrome extension's chrome.debugger transport on
  * the other. The bridge owns all Target.* synthesis so the extension stays a
  * thin forwarder — the old assets/chrome-extension put this logic in an
  * untestable MV3 service worker, which is why it rotted and was removed.
@@ -25,9 +25,9 @@ const EXTENSION_COMMAND_TIMEOUT_MS = 15_000;
 const EXTENSION_PING_INTERVAL_MS = 20_000;
 
 /** Synthetic targetId for the emulated browser target. */
-const BROWSER_TARGET_ID = "openclaw-extension-relay";
+const BROWSER_TARGET_ID = "afora-extension-relay";
 /** Playwright requires every attached page target to identify its browser context. */
-const BROWSER_CONTEXT_ID = "openclaw-extension-context";
+const BROWSER_CONTEXT_ID = "afora-extension-context";
 
 /** Minimal socket seam so tests can drive the bridge without real WebSockets. */
 type BridgeSocket = {
@@ -331,7 +331,7 @@ export class ExtensionRelayBridge {
 
   private sendToExtension(msg: RelayToExtensionMessage): void {
     if (!this.extension) {
-      throw new Error("OpenClaw Chrome extension is not connected to the relay");
+      throw new Error("Afora Chrome extension is not connected to the relay");
     }
     this.extension.socket.send(JSON.stringify(msg));
   }
@@ -392,7 +392,7 @@ export class ExtensionRelayBridge {
   private async ensureTabAttached(tabId: number): Promise<{ targetId: string; sessionId: string }> {
     const tab = this.tabs.get(tabId);
     if (!tab) {
-      throw new Error(`tab ${tabId} is not available to OpenClaw`);
+      throw new Error(`tab ${tabId} is not available to Afora`);
     }
     if (tab.attached) {
       return tab.attached;
@@ -405,7 +405,7 @@ export class ExtensionRelayBridge {
         targetId?: unknown;
       } | null;
       const targetId = typeof result?.targetId === "string" ? result.targetId : `tab-${tabId}`;
-      const sessionId = `openclaw-tab-${tabId}-${this.nextSessionOrdinal++}`;
+      const sessionId = `afora-tab-${tabId}-${this.nextSessionOrdinal++}`;
       const attached = { targetId, sessionId };
       // Identity check, not just presence: the tab could have lost and regained
       // access under the same tabId while this attach was in flight, replacing
@@ -615,7 +615,7 @@ export class ExtensionRelayBridge {
 
   /**
    * Drop chrome.debugger sessions once no CDP client is connected so the
-   * "OpenClaw is debugging this browser" infobar only spans active automation.
+   * "Afora is debugging this browser" infobar only spans active automation.
    */
   private detachAllWhenIdle(): void {
     if (this.clients.size > 0 || !this.extension) {
@@ -727,7 +727,7 @@ export class ExtensionRelayBridge {
         this.respond(client, request, {
           protocolVersion: "1.3",
           product: identity?.browserVersion ?? "Chrome/unknown",
-          revision: "openclaw-extension-relay",
+          revision: "afora-extension-relay",
           userAgent: identity?.userAgent ?? "unknown",
           jsVersion: "",
         });
@@ -753,7 +753,7 @@ export class ExtensionRelayBridge {
             targetInfo: {
               targetId: BROWSER_TARGET_ID,
               type: "browser",
-              title: "OpenClaw Extension Relay",
+              title: "Afora Extension Relay",
               url: "",
               attached: true,
               canAccessOpener: false,
@@ -779,7 +779,7 @@ export class ExtensionRelayBridge {
         return;
       }
       case "Target.attachToBrowserTarget": {
-        const sessionId = `openclaw-browser-${this.nextSessionOrdinal++}`;
+        const sessionId = `afora-browser-${this.nextSessionOrdinal++}`;
         this.browserSessions.set(sessionId, client);
         this.respond(client, request, { sessionId });
         return;
@@ -830,7 +830,7 @@ export class ExtensionRelayBridge {
           // Playwright creates a fresh page-scoped session for helpers such as
           // Target.getTargetInfo and DOM refs. Multiplex it onto the one real
           // chrome.debugger attachment instead of reusing the auto-attach id.
-          const sessionId = `openclaw-tab-${found.tabId}-${this.nextSessionOrdinal++}`;
+          const sessionId = `afora-tab-${found.tabId}-${this.nextSessionOrdinal++}`;
           this.auxiliaryTabSessions.set(sessionId, {
             tabId: found.tabId,
             parentSessionId: request.sessionId,
@@ -952,7 +952,7 @@ export class ExtensionRelayBridge {
         this.respondError(
           client,
           request,
-          "The OpenClaw extension relay drives the user's real browser profile; isolated browser contexts are not supported.",
+          "The Afora extension relay drives the user's real browser profile; isolated browser contexts are not supported.",
         );
         return;
       }

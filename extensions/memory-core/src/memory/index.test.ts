@@ -8,14 +8,14 @@ import {
   MEMORY_CHUNKING_VERSION,
   type MemorySessionSyncTarget,
   type MemorySyncParams,
-} from "openclaw/plugin-sdk/memory-core-host-engine-storage";
-import { resolveSessionTranscriptsDirForAgent } from "openclaw/plugin-sdk/memory-core-host-runtime-core";
-import { deleteSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
-import { resolveOpenClawAgentSqlitePath } from "openclaw/plugin-sdk/sqlite-runtime";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
+import { resolveSessionTranscriptsDirForAgent } from "afora-agent/plugin-sdk/memory-core-host-runtime-core";
+import { deleteSessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
+import { resolveAforaAgentSqlitePath } from "afora-agent/plugin-sdk/sqlite-runtime";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "openclaw/plugin-sdk/sqlite-runtime-testing";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "afora-agent/plugin-sdk/sqlite-runtime-testing";
 import { describe, expect, it, vi } from "vitest";
 import {
   createManagerIndexFixture,
@@ -133,7 +133,7 @@ describe("memory index", () => {
     );
     await fs.writeFile(
       path.join(fixture.paths.memory, "2026-01-12.md"),
-      "- Daily note. <!-- trigger: should not inject --> <!-- importance: 10 --> <!-- project: github.com/openclaw/openclaw -->\n",
+      "- Daily note. <!-- trigger: should not inject --> <!-- importance: 10 --> <!-- project: github.com/AforaMosh/afora-agent -->\n",
     );
     await fs.writeFile(
       path.join(fixture.paths.memory, "2026-01-13.md"),
@@ -204,7 +204,7 @@ describe("memory index", () => {
       expect(rows.find((row) => row.path === "memory/2026-01-12.md")).toMatchObject({
         importance: null,
         triggers: null,
-        projectKey: "github.com/openclaw/openclaw",
+        projectKey: "github.com/AforaMosh/afora-agent",
         originClass: "agent",
       });
       expect(rows.find((row) => row.path === "memory/2026-01-13.md")).toMatchObject({
@@ -241,7 +241,7 @@ describe("memory index", () => {
   });
 
   it("round-trips mixed-case project keys through indexed recall consumers", async () => {
-    const projectKey = "github.com/OpenClaw/OpenClaw";
+    const projectKey = "github.com/AforaMosh/afora-agent";
     await fs.writeFile(
       path.join(fixture.paths.workspace, "MEMORY.md"),
       `- Follow the kraken deploy ritual. <!-- trigger: kraken deploy ritual --> <!-- importance: 8 --> <!-- project: ${projectKey} -->\n`,
@@ -552,12 +552,12 @@ describe("memory index", () => {
   it("reindexes memory tables in place without deleting unrelated agent rows", async () => {
     const stateDir = path.join(fixture.paths.workspace, "managed-memory-state");
     fixture.setStateDir(stateDir);
-    const agentDbPath = resolveOpenClawAgentSqlitePath({ agentId: "main" });
-    const agentDb = openOpenClawAgentDatabase({ agentId: "main" });
+    const agentDbPath = resolveAforaAgentSqlitePath({ agentId: "main" });
+    const agentDb = openAforaAgentDatabase({ agentId: "main" });
     agentDb.db
       .prepare("INSERT INTO cache_entries (scope, key, value_json, updated_at) VALUES (?, ?, ?, ?)")
       .run("test", "keep-me", JSON.stringify({ value: "keep-me" }), 1);
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
 
     const manager = await getFreshManager(
       createCfg({
@@ -571,7 +571,7 @@ describe("memory index", () => {
       await manager.close?.();
     }
 
-    const reopened = openOpenClawAgentDatabase({ agentId: "main" });
+    const reopened = openAforaAgentDatabase({ agentId: "main" });
     expect(
       reopened.db
         .prepare("SELECT value_json FROM cache_entries WHERE scope = ? AND key = ?")
@@ -585,7 +585,7 @@ describe("memory index", () => {
     const manager = await getFreshManager(createCfg({}));
     await manager.close?.();
 
-    const agentDb = openOpenClawAgentDatabase({ agentId: "main" });
+    const agentDb = openAforaAgentDatabase({ agentId: "main" });
     expect(
       agentDb.db.prepare("SELECT role, agent_id FROM schema_meta WHERE meta_key = 'primary'").get(),
     ).toEqual({
@@ -1327,7 +1327,7 @@ describe("memory index", () => {
         });
       }
 
-      const dbPath = resolveOpenClawAgentSqlitePath({ agentId: "main" });
+      const dbPath = resolveAforaAgentSqlitePath({ agentId: "main" });
       lock = new DatabaseSync(dbPath);
       lock.exec("PRAGMA busy_timeout = 0");
       lock.exec("BEGIN EXCLUSIVE");
@@ -1610,7 +1610,7 @@ describe("memory index", () => {
         progress: recoveryProgress,
       });
 
-      const dbPath = resolveOpenClawAgentSqlitePath({ agentId: "main" });
+      const dbPath = resolveAforaAgentSqlitePath({ agentId: "main" });
       const observer = new DatabaseSync(dbPath, { readOnly: true });
       try {
         const indexedCount = (marker: string) =>
@@ -2332,7 +2332,7 @@ describe("memory index", () => {
   });
 
   it("status-purpose manager detects unindexed session transcripts as dirty", async () => {
-    // Regression test for #97814: plain openclaw memory status (purpose: status)
+    // Regression test for #97814: plain afora memory status (purpose: status)
     // must report dirty=true when session files exist without index rows.
     const cfg = createCfg({ sources: ["sessions"], sessionMemory: true });
     const stateDirName = ".state-status-dirty-test";
@@ -2404,7 +2404,7 @@ describe("memory index", () => {
         initial.search("ORBIT-DELETE-91", { minScore: 0, sources: ["sessions"] }),
       ).resolves.not.toEqual([]);
       await initial.close?.();
-      const agentDb = new DatabaseSync(resolveOpenClawAgentSqlitePath({ agentId: "main" }));
+      const agentDb = new DatabaseSync(resolveAforaAgentSqlitePath({ agentId: "main" }));
       agentDb.exec("DELETE FROM memory_embedding_cache");
       agentDb.close();
       providerFixture.embedBatchCalls = 0;

@@ -1,7 +1,7 @@
 import Foundation
-import OpenClawChatUI
-import OpenClawKit
-import OpenClawProtocol
+import AforaChatUI
+import AforaKit
+import AforaProtocol
 
 struct IOSMediaArtifactLoader: Sendable {
     struct Connection: Sendable {
@@ -49,9 +49,9 @@ struct IOSMediaArtifactLoader: Sendable {
 
     func load(
         response: ArtifactsDownloadResult,
-        kind: OpenClawChatMediaKind,
-        playback: OpenClawChatPlaybackMode? = nil,
-        expectedGatewayID: String) async throws -> OpenClawChatLoadedMedia
+        kind: AforaChatMediaKind,
+        playback: AforaChatPlaybackMode? = nil,
+        expectedGatewayID: String) async throws -> AforaChatLoadedMedia
     {
         let maximumBytes = Self.maximumBytes(for: kind)
         let declaredMIME = response.artifact.mimetype?.lowercased()
@@ -65,7 +65,7 @@ struct IOSMediaArtifactLoader: Sendable {
                   let data = Data(base64Encoded: encoded)
             else { throw LoadError.invalidResponse }
             guard data.count <= maximumBytes else { throw LoadError.payloadTooLarge }
-            return .data(OpenClawChatMediaData(data: data, mimeType: declaredMIME))
+            return .data(AforaChatMediaData(data: data, mimeType: declaredMIME))
         }
 
         let path = response.url?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -86,7 +86,7 @@ struct IOSMediaArtifactLoader: Sendable {
             headers.isEmpty &&
             declaredMIME?.hasPrefix(kind.mimeTypePrefix) == true
         if canStreamDirectly, playback != .transcode, let declaredMIME {
-            return .stream(OpenClawChatMediaStream(
+            return .stream(AforaChatMediaStream(
                 url: url,
                 mimeType: declaredMIME,
                 sizeBytes: response.artifact.sizebytes))
@@ -124,16 +124,16 @@ struct IOSMediaArtifactLoader: Sendable {
               mimeType.hasPrefix(kind.mimeTypePrefix)
         else { throw LoadError.unsupportedMediaType }
         if canStreamDirectly {
-            return .stream(OpenClawChatMediaStream(
+            return .stream(AforaChatMediaStream(
                 url: url,
                 mimeType: mimeType,
                 sizeBytes: response.artifact.sizebytes))
         }
         guard data.count <= maximumBytes else { throw LoadError.payloadTooLarge }
-        return .data(OpenClawChatMediaData(data: data, mimeType: mimeType))
+        return .data(AforaChatMediaData(data: data, mimeType: mimeType))
     }
 
-    private static func maximumBytes(for kind: OpenClawChatMediaKind) -> Int {
+    private static func maximumBytes(for kind: AforaChatMediaKind) -> Int {
         switch kind {
         case .image: self.maximumImageBytes
         case .audio: self.maximumAudioBytes
@@ -165,7 +165,7 @@ struct IOSMediaArtifactLoader: Sendable {
         return base.url
     }
 
-    private static func playbackURL(_ url: URL, mode: OpenClawChatPlaybackMode?) -> URL? {
+    private static func playbackURL(_ url: URL, mode: AforaChatPlaybackMode?) -> URL? {
         guard mode == .transcode else { return url }
         guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return nil }
         var queryItems = components.queryItems ?? []

@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../../state/afora-state-db.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../../test-utils/afora-test-state.js";
 import {
   clearCuratedSkillLifecycle,
   getArchivedSkillFiles,
@@ -16,24 +16,24 @@ import {
   unpinCuratedSkill,
 } from "./curator.js";
 
-let testState: OpenClawTestState;
+let testState: AforaTestState;
 
 beforeEach(async () => {
-  testState = await createOpenClawTestState({
+  testState = await createAforaTestState({
     layout: "state-only",
-    prefix: "openclaw-legacy-skill-curator-",
+    prefix: "afora-legacy-skill-curator-",
   });
 });
 
 afterEach(async () => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   await testState.cleanup();
 });
 
 describe("legacy skill curator state", () => {
   it("keeps shipped status controls while collection review clears their state", () => {
     const skillFile = "/workspace/skills/daily-brief/SKILL.md";
-    const database = openOpenClawStateDatabase({ env: testState.env });
+    const database = openAforaStateDatabase({ env: testState.env });
     database.db
       .prepare(
         `INSERT INTO skill_lifecycle (

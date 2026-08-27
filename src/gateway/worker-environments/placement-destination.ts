@@ -1,6 +1,6 @@
-import { err, ok, type Result } from "@openclaw/normalization-core/result";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import { err, ok, type Result } from "@afora/normalization-core/result";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { DEVICE_WORKER_PROVIDER_ID } from "./device-provider.js";
 import type { WorkerPlacementDispatchRequest } from "./service-contract.js";
 
@@ -18,7 +18,7 @@ type WorkerPlacementDestination =
     };
 
 export function resolveWorkerPlacementDestination(params: {
-  cfg: Pick<OpenClawConfig, "cloudWorkers">;
+  cfg: Pick<AforaConfig, "cloudWorkers">;
   profileId?: string;
   deviceId?: string;
   machineClass?: string;

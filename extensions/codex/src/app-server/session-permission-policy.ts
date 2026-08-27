@@ -1,13 +1,13 @@
 import { hostname as readHostName } from "node:os";
-import type { EmbeddedRunAttemptParamsV2 } from "openclaw/plugin-sdk/agent-harness-runtime";
-import { isPathInside } from "openclaw/plugin-sdk/security-runtime";
+import type { EmbeddedRunAttemptParamsV2 } from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { isPathInside } from "afora-agent/plugin-sdk/security-runtime";
 import type {
   CodexAppServerApprovalPolicy,
   CodexAppServerApprovalsReviewer,
   CodexAppServerRuntimeOptions,
   CodexAppServerSandboxMode,
   CodexPluginConfig,
-  OpenClawExecMode,
+  AforaExecMode,
 } from "./config-contracts.js";
 import { selectGuardianSandbox } from "./config-exec-policy.js";
 import {
@@ -75,7 +75,7 @@ function requirementsAllowTuple(
 
 function tightenTupleForExecMode(
   tuple: CodexSessionPermissionTuple,
-  execMode: OpenClawExecMode | undefined,
+  execMode: AforaExecMode | undefined,
 ): CodexSessionPermissionTuple {
   switch (execMode) {
     case "deny":
@@ -139,7 +139,7 @@ export function applyCodexSessionPermissionPolicy(params: {
   requirementsToml?: string;
   hostName?: string;
   policyLocked?: boolean;
-  execMode?: OpenClawExecMode;
+  execMode?: AforaExecMode;
 }): CodexAppServerRuntimeOptions {
   if (!params.permissionMode) {
     return params.appServer;

@@ -3,18 +3,18 @@ import type { Selectable } from "kysely";
 import { tryResolveLegacyCompatibilityAgentId } from "../../config/legacy.default-agent-owner.js";
 import { resolvePersistedSessionStoreOwnerForKey } from "../../config/sessions/session-store-owner.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../../infra/kysely-sync.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../../routing/session-key.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../../state/openclaw-state-db.generated.js";
-import { runOpenClawStateWriteTransaction } from "../../state/openclaw-state-db.js";
+import type { DB as AforaStateKyselyDatabase } from "../../state/afora-state-db.generated.js";
+import { runAforaStateWriteTransaction } from "../../state/afora-state-db.js";
 
-export type AcpSessionsTable = OpenClawStateKyselyDatabase["acp_sessions"];
-type AcpSessionMetaDatabase = Pick<OpenClawStateKyselyDatabase, "acp_sessions">;
+export type AcpSessionsTable = AforaStateKyselyDatabase["acp_sessions"];
+type AcpSessionMetaDatabase = Pick<AforaStateKyselyDatabase, "acp_sessions">;
 export type AcpSessionRow = Selectable<AcpSessionsTable>;
 export type AcpSessionEntryBinding = Pick<SessionEntry, "lifecycleRevision"> &
   Partial<Pick<SessionEntry, "sessionId" | "sessionStartedAt">>;
@@ -95,7 +95,7 @@ export function parseAcpDatabaseSessionKeyCandidates(sessionKey: string): Array<
 }
 
 function resolveAcpLegacyUnscopedOwner(
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
   storeSessionKey: string,
 ): string | undefined {
   if (!cfg) {
@@ -112,7 +112,7 @@ function resolveAcpLegacyUnscopedOwner(
 export function legacyAcpDatabaseSessionKeys(
   storeSessionKey: string,
   agentId?: string,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): string[] {
   const normalizedKey = storeSessionKey.trim();
   const keys: string[] = [];
@@ -148,7 +148,7 @@ export function selectAcpSessionRowForStoreEntry(
   db: DatabaseSync,
   storeSessionKey: string,
   agentId?: string,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
   entry?: AcpSessionEntryBinding,
 ): AcpSessionRow | undefined {
   const databaseKey = buildAcpDatabaseSessionKey(storeSessionKey, agentId);
@@ -181,7 +181,7 @@ export function resolveReadableAcpSessionRow(params: {
   ) {
     return row;
   }
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     (database) => {
       const current = selectAcpSessionRow(database.db, row.session_key);
       if (!current || current.session_id === lifecycleRevision || current.session_id == null) {

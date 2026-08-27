@@ -6,9 +6,9 @@ describe("parseLaunchdPlistLabel", () => {
   it("decodes the XML entities accepted in launchd labels", () => {
     expect(
       parseLaunchdPlistLabel(
-        "<plist><dict><key>Label</key><string>ai.openclaw.a&amp;b</string></dict></plist>",
+        "<plist><dict><key>Label</key><string>ai.afora.a&amp;b</string></dict></plist>",
       ),
-    ).toBe("ai.openclaw.a&b");
+    ).toBe("ai.afora.a&b");
   });
 
   it("returns null for missing or empty labels", () => {

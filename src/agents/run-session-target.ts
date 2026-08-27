@@ -1,5 +1,5 @@
 import path from "node:path";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { getRuntimeConfig } from "../config/io.js";
 import { parseSqliteSessionFileMarker } from "../config/sessions/legacy-sqlite-marker.js";
 import { resolveSessionStorePathCore } from "../config/sessions/paths.js";
@@ -10,7 +10,7 @@ import {
   type SessionTranscriptRuntimeTarget,
 } from "../config/sessions/session-accessor.js";
 import { resolvePersistedSessionStoreOwnerForTarget } from "../config/sessions/session-store-owner.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { parseAgentSessionKey, toAgentStoreSessionKey } from "../routing/session-key.js";
 import { resolvePreferredSessionKeyForSessionIdMatches } from "../sessions/session-id-resolution.js";
 import { resolveSessionAgentId } from "./agent-scope.js";
@@ -47,7 +47,7 @@ class AgentRunSessionTargetResolutionError extends Error {
 /** Resolves the active runtime target used by current run/session internals. */
 export async function resolveAgentRunSessionTarget(params: {
   agentId?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   missingSessionKey: "create" | "resolve-existing";
   sessionId: string;
   sessionFile?: string;

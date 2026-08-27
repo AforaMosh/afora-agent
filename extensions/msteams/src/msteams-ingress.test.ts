@@ -2,11 +2,11 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { ChannelIngressQueue } from "openclaw/plugin-sdk/channel-outbound";
+import type { ChannelIngressQueue } from "afora-agent/plugin-sdk/channel-outbound";
 import {
-  closeOpenClawStateDatabaseForTest,
+  closeAforaStateDatabaseForTest,
   createChannelIngressQueueForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createMSTeamsIngress } from "./msteams-ingress.js";
 import { MSTEAMS_REQUEST_TIMEOUT_MS } from "./request-timeout.js";
@@ -53,7 +53,7 @@ function makeIngress(queue: IngressQueue, dispatch: IngressDispatch) {
 }
 
 async function withQueue<T>(fn: (queue: IngressQueue) => Promise<T>): Promise<T> {
-  const created = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-msteams-ingress-"));
+  const created = await fs.mkdtemp(path.join(os.tmpdir(), "afora-msteams-ingress-"));
   const stateDir = await fs.realpath(created);
   const queue = createChannelIngressQueueForTests<IngressPayload>({
     channelId: "msteams",
@@ -63,7 +63,7 @@ async function withQueue<T>(fn: (queue: IngressQueue) => Promise<T>): Promise<T>
   try {
     return await fn(queue);
   } finally {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(stateDir, { recursive: true, force: true });
   }
 }
@@ -83,7 +83,7 @@ async function waitForVerdict(
 }
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   vi.restoreAllMocks();
 });
 

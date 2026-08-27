@@ -2,12 +2,12 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { readJsonFileWithFallback } from "openclaw/plugin-sdk/json-store";
+import { readJsonFileWithFallback } from "afora-agent/plugin-sdk/json-store";
 import type {
   OpenKeyedStoreOptions,
   PluginStateKeyedStore,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
-import { FsSafeError, root as fsRoot } from "openclaw/plugin-sdk/security-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-runtime";
+import { FsSafeError, root as fsRoot } from "afora-agent/plugin-sdk/security-runtime";
 import { createWikiPageFilename, extractHumanNotesBlock } from "./markdown.js";
 
 export type MemoryWikiImportedSourceGroup = "bridge" | "unsafe-local";
@@ -69,7 +69,7 @@ const sourceSyncStateChanges = new WeakMap<
 >();
 
 export function resolveMemoryWikiSourceSyncStatePath(vaultRoot: string): string {
-  return path.join(vaultRoot, ".openclaw-wiki", "source-sync.json");
+  return path.join(vaultRoot, ".afora-wiki", "source-sync.json");
 }
 
 function cloneSourceSyncState(state: MemoryWikiImportedSourceState): MemoryWikiImportedSourceState {
@@ -372,7 +372,7 @@ async function readImportedSourcePageForNotes(
     // Scan from the pinned descriptor so the first complete producer-owned
     // boundary wins; a similar fence inside later human Notes cannot qualify.
     const notesBoundary = new RegExp(
-      `\\r?\\n${fence}\\r?\\n(?:[\\t ]*\\r?\\n)*## Notes\\r?\\n<!-- openclaw:human:start -->(?=\\r?\\n|$)`,
+      `\\r?\\n${fence}\\r?\\n(?:[\\t ]*\\r?\\n)*## Notes\\r?\\n<!-- afora:human:start -->(?=\\r?\\n|$)`,
       "u",
     );
     const decoder = new TextDecoder();

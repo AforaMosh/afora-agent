@@ -1,5 +1,5 @@
 // Mattermost plugin module owns native model-picker interactions.
-import { runDetachedWebhookWork } from "openclaw/plugin-sdk/webhook-request-guards";
+import { runDetachedWebhookWork } from "afora-agent/plugin-sdk/webhook-request-guards";
 import type { MattermostPost } from "./client.js";
 import type { MattermostInteractionResponse } from "./interactions.js";
 import {

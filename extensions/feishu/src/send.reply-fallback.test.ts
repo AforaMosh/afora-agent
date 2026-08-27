@@ -1,5 +1,5 @@
 // Feishu tests cover send.reply fallback plugin behavior.
-import { isChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
+import { isChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const resolveFeishuSendTargetMock = vi.hoisted(() => vi.fn());

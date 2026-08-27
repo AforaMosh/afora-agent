@@ -1,10 +1,10 @@
 // Discord plugin module implements directory cache behavior.
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/routing";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "afora-agent/plugin-sdk/routing";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
   normalizeOptionalStringifiedId,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { discordDirectoryCacheState } from "./directory-cache-state.js";
 
 const DISCORD_DIRECTORY_CACHE_MAX_ENTRIES = 4000;

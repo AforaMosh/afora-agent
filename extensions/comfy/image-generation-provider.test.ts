@@ -1,6 +1,6 @@
 // Comfy tests cover image generation provider plugin behavior.
 import type { LookupAddress } from "node:dns";
-import { MAX_TIMER_TIMEOUT_MS } from "openclaw/plugin-sdk/number-runtime";
+import { MAX_TIMER_TIMEOUT_MS } from "afora-agent/plugin-sdk/number-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildComfyImageGenerationProvider } from "./image-generation-provider.js";
 import {
@@ -11,15 +11,15 @@ import {
   parseComfyJsonBody,
 } from "./test-helpers.js";
 
-type FetchWithSsrFGuard = (typeof import("openclaw/plugin-sdk/ssrf-runtime"))["fetchWithSsrFGuard"];
+type FetchWithSsrFGuard = (typeof import("afora-agent/plugin-sdk/ssrf-runtime"))["fetchWithSsrFGuard"];
 
 const { fetchWithSsrFGuardMock, ssrfGuardState } = vi.hoisted(() => ({
   fetchWithSsrFGuardMock: vi.fn(),
   ssrfGuardState: {} as { actual?: FetchWithSsrFGuard },
 }));
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/ssrf-runtime")>();
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/ssrf-runtime")>();
   ssrfGuardState.actual = actual.fetchWithSsrFGuard;
   return {
     ...actual,

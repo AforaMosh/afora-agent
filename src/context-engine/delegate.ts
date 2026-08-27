@@ -1,7 +1,7 @@
 // Context-engine delegates bridge custom engines to built-in compaction and memory prompt paths.
 import path from "node:path";
-import { normalizeStructuredPromptSection } from "@openclaw/ai/internal/shared";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeStructuredPromptSection } from "@afora/ai/internal/shared";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { parseSqliteSessionFileMarker } from "../config/sessions/legacy-sqlite-marker.js";
 import { listSessionEntriesCore, loadSessionEntry } from "../config/sessions/session-accessor.js";
 import {
@@ -135,7 +135,7 @@ function buildCompactionResultSessionTarget(params: {
 }
 
 /**
- * Delegate a context-engine compaction request to OpenClaw's built-in runtime compaction path.
+ * Delegate a context-engine compaction request to Afora's built-in runtime compaction path.
  *
  * This is the same bridge used by the legacy context engine. Third-party
  * engines can call it from their own `compact()` implementations when they do

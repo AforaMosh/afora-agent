@@ -13,9 +13,9 @@ import {
   verifyGitBackupRef,
 } from "../snapshot/git-backup.js";
 import { recordBackupRunOutcome } from "../state/backup-run-records.js";
-import { listOpenClawRegisteredAgentDatabases } from "../state/openclaw-agent-db.js";
-import { resolveOpenClawAgentSqlitePath } from "../state/openclaw-agent-db.paths.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+import { listAforaRegisteredAgentDatabases } from "../state/afora-agent-db.js";
+import { resolveAforaAgentSqlitePath } from "../state/afora-agent-db.paths.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import { resolveUserPath, shortenHomePath } from "../utils.js";
 
 type BackupGitCreateOptions = {
@@ -59,7 +59,7 @@ async function resolveCreateDatabases(runtime: RuntimeEnv, options: BackupGitCre
   }> = [];
   if (options.all || options.global) {
     databases.push({
-      path: await fs.realpath(resolveOpenClawStateSqlitePath()),
+      path: await fs.realpath(resolveAforaStateSqlitePath()),
       identity: { role: "global" },
     });
   }
@@ -68,10 +68,10 @@ async function resolveCreateDatabases(runtime: RuntimeEnv, options: BackupGitCre
   // canonical database under the current state dir and skips absent files
   // instead of aborting the whole scheduled run on one dead registration.
   const allAgentIds = options.all
-    ? [...new Set(listOpenClawRegisteredAgentDatabases().map((entry) => entry.agentId))].toSorted()
+    ? [...new Set(listAforaRegisteredAgentDatabases().map((entry) => entry.agentId))].toSorted()
     : agents;
   for (const agentId of allAgentIds) {
-    const canonicalPath = resolveOpenClawAgentSqlitePath({ agentId });
+    const canonicalPath = resolveAforaAgentSqlitePath({ agentId });
     let resolvedPath: string;
     try {
       resolvedPath = await fs.realpath(canonicalPath);

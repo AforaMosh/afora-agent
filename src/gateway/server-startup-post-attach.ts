@@ -4,7 +4,7 @@ import { loadGetReplyFromConfigRuntime } from "../auto-reply/reply/dispatch-from
 import type { AmbientEnvTriggerPolicy } from "../channels/config-presence.js";
 import type { CliDeps } from "../cli/deps.types.js";
 import { resolveStateDir } from "../config/paths.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { hasConfiguredInternalHooks } from "../hooks/configured.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 import type { GatewayActiveWorkInspectors } from "../infra/gateway-active-work.js";
@@ -15,7 +15,7 @@ import type {
 } from "../infra/update-startup.js";
 import type { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 import type { PluginHookGatewayCronService } from "../plugins/hook-types.js";
-import type { loadOpenClawPlugins } from "../plugins/loader.js";
+import type { loadAforaPlugins } from "../plugins/loader.js";
 import type { PluginManifestRecord } from "../plugins/manifest-registry.js";
 import { getPluginModuleLoaderStats } from "../plugins/plugin-module-loader-cache.js";
 import type { PluginRegistry } from "../plugins/registry.js";
@@ -52,7 +52,7 @@ const ACP_BACKEND_READY_POLL_MS = 50;
 const PROVIDER_AUTH_PREWARM_START_DELAY_MS = 5_000;
 const PROVIDER_AUTH_REWARM_DELAY_MS = 1_000;
 const DEFERRED_SIDECAR_START_DELAY_MS = 100;
-const SKIP_STARTUP_MODEL_PREWARM_ENV = "OPENCLAW_SKIP_STARTUP_MODEL_PREWARM";
+const SKIP_STARTUP_MODEL_PREWARM_ENV = "AFORA_SKIP_STARTUP_MODEL_PREWARM";
 type Awaitable<T> = T | Promise<T>;
 
 const loadMainSessionRestartRecoveryModule = createLazyRuntimeModule(
@@ -131,7 +131,7 @@ function schedulePostAttachUpdateSentinelRefresh(params: {
 }
 
 function scheduleProviderAuthStatePrewarm(params: {
-  getConfig: () => OpenClawConfig;
+  getConfig: () => AforaConfig;
   log: {
     info: (msg: string) => void;
     warn: (msg: string) => void;
@@ -347,7 +347,7 @@ function scheduleRestartSentinelWakeAfterReady(params: {
 }
 
 function scheduleTranscriptsAutoStartSidecar(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   startupTrace?: GatewayStartupTrace;
   log: { warn: (msg: string) => void };
   waitForPostReadyWork?: () => Promise<void>;
@@ -391,7 +391,7 @@ async function refreshLatestUpdateRestartSentinelIfPresent(): Promise<Awaited<
   return await (await loadGatewayRestartSentinelModule()).refreshLatestUpdateRestartSentinel();
 }
 
-function hasGatewayStartHooks(pluginRegistry: ReturnType<typeof loadOpenClawPlugins>): boolean {
+function hasGatewayStartHooks(pluginRegistry: ReturnType<typeof loadAforaPlugins>): boolean {
   return pluginRegistry.typedHooks.some((hook) => hook.hookName === "gateway_start");
 }
 
@@ -428,7 +428,7 @@ async function waitForAcpRuntimeBackendReady(params: {
 }
 
 async function prewarmConfiguredPrimaryModel(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   workspaceDir?: string;
   log: { warn: (msg: string) => void };
   startupTrace?: GatewayStartupTrace;
@@ -437,14 +437,14 @@ async function prewarmConfiguredPrimaryModel(params: {
 }
 
 type StartupExternalAuthHydrationDeps = {
-  listAgentIds: (cfg: OpenClawConfig) => string[];
-  resolveAgentDir: (cfg: OpenClawConfig, agentId: string) => string;
-  collectConfiguredRefs: (cfg: OpenClawConfig, agentId: string) => readonly { value: string }[];
+  listAgentIds: (cfg: AforaConfig) => string[];
+  resolveAgentDir: (cfg: AforaConfig, agentId: string) => string;
+  collectConfiguredRefs: (cfg: AforaConfig, agentId: string) => readonly { value: string }[];
   hydrate: (agentDir: string, providers: readonly string[]) => void;
 };
 
 async function hydrateConfiguredExternalCliAuth(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   log: { warn: (msg: string) => void };
   deps?: StartupExternalAuthHydrationDeps;
 }): Promise<void> {
@@ -498,7 +498,7 @@ async function hydrateConfiguredExternalCliAuth(params: {
 }
 
 async function publishConfiguredModelRuntimeSnapshots(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   workspaceDir?: string;
   log: { warn: (msg: string) => void };
   startupTrace?: GatewayStartupTrace;
@@ -543,7 +543,7 @@ async function publishConfiguredModelRuntimeSnapshots(params: {
 
 async function publishStartupModelRuntime(
   params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     workspaceDir?: string;
     log: { warn: (msg: string) => void };
     startupTrace?: GatewayStartupTrace;
@@ -558,8 +558,8 @@ async function publishStartupModelRuntime(
 
 /** Start post-ready sidecars such as channels, hooks, plugin services, and cleanup tasks. */
 export async function startGatewaySidecars(params: {
-  cfg: OpenClawConfig;
-  pluginRegistry: ReturnType<typeof loadOpenClawPlugins>;
+  cfg: AforaConfig;
+  pluginRegistry: ReturnType<typeof loadAforaPlugins>;
   defaultWorkspaceDir: string;
   deps: CliDeps;
   startChannels: () => Promise<void>;
@@ -619,8 +619,8 @@ export async function startGatewaySidecars(params: {
   });
 
   const skipChannels =
-    isTruthyEnvValue(process.env.OPENCLAW_SKIP_CHANNELS) ||
-    isTruthyEnvValue(process.env.OPENCLAW_SKIP_PROVIDERS);
+    isTruthyEnvValue(process.env.AFORA_SKIP_CHANNELS) ||
+    isTruthyEnvValue(process.env.AFORA_SKIP_PROVIDERS);
   // These runs were orphaned by the previous Gateway lifecycle. Record that fact
   // even if this process later fails model preparation and never starts channels.
   await measureStartup(params.startupTrace, "sidecars.main-session-recovery", async () => {
@@ -668,7 +668,7 @@ export async function startGatewaySidecars(params: {
     if (skipChannels) {
       await measureStartup(params.startupTrace, "sidecars.channel-skip", () =>
         params.logChannels.info(
-          "skipping channel start (OPENCLAW_SKIP_CHANNELS=1 or OPENCLAW_SKIP_PROVIDERS=1)",
+          "skipping channel start (AFORA_SKIP_CHANNELS=1 or AFORA_SKIP_PROVIDERS=1)",
         ),
       );
     } else if (params.shouldStartChannels?.() !== false) {
@@ -789,7 +789,7 @@ export async function startGatewaySidecars(params: {
         const [{ getAcpSessionManager }, { ACP_SESSION_IDENTITY_RENDERER_VERSION }] =
           await Promise.all([
             import("../acp/control-plane/manager.js"),
-            import("@openclaw/acp-core/runtime/session-identifiers"),
+            import("@afora/acp-core/runtime/session-identifiers"),
           ]);
         const result = await getAcpSessionManager().reconcilePendingSessionIdentities({
           cfg: params.cfg,
@@ -955,7 +955,7 @@ const defaultGatewayPostAttachRuntimeDeps: GatewayPostAttachRuntimeDeps = {
 function createDeferredGatewayUpdateCheck(params: {
   startupTrace?: GatewayStartupTrace;
   runtimeDeps: GatewayPostAttachRuntimeDeps;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   log: {
     info: (msg: string) => void;
     warn: (msg: string) => void;
@@ -1077,8 +1077,8 @@ function createDeferredGatewayUpdateCheck(params: {
 export async function startGatewayPostAttachRuntime(
   params: {
     minimalTestGateway: boolean;
-    cfgAtStart: OpenClawConfig;
-    getConfig: () => OpenClawConfig;
+    cfgAtStart: AforaConfig;
+    getConfig: () => AforaConfig;
     bindHost: string;
     bindHosts: string[];
     port: number;
@@ -1094,11 +1094,11 @@ export async function startGatewayPostAttachRuntime(
     broadcastPluginEvent?: import("./server-broadcast-types.js").GatewayPluginEventBroadcastFn;
     controlUiBasePath: string;
     controlUiRootLifecycle?: GatewayControlUiRootLifecycle;
-    gatewayPluginConfigAtStart: OpenClawConfig;
-    activationSourceConfig: OpenClawConfig;
+    gatewayPluginConfigAtStart: AforaConfig;
+    activationSourceConfig: AforaConfig;
     pluginManifestRecords: readonly PluginManifestRecord[];
     ambientEnvTriggers?: AmbientEnvTriggerPolicy;
-    pluginRegistry: ReturnType<typeof loadOpenClawPlugins>;
+    pluginRegistry: ReturnType<typeof loadAforaPlugins>;
     defaultWorkspaceDir: string;
     deps: CliDeps;
     startChannels: () => Promise<void>;
@@ -1136,7 +1136,7 @@ export async function startGatewayPostAttachRuntime(
     providerAuthPrewarm?: {
       enabled?: boolean;
       delayMs?: number;
-      getConfig?: () => OpenClawConfig;
+      getConfig?: () => AforaConfig;
     };
     waitForPostReadyWork?: () => Promise<void>;
     activeWorkInspectors?: Partial<GatewayActiveWorkInspectors>;

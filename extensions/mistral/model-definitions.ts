@@ -1,9 +1,9 @@
 import {
   buildManifestModelProviderConfig,
   readManifestProviderDefaultModelRef,
-} from "openclaw/plugin-sdk/provider-catalog-shared";
-import type { ModelDefinitionConfig } from "openclaw/plugin-sdk/provider-model-shared";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+} from "afora-agent/plugin-sdk/provider-catalog-shared";
+import type { ModelDefinitionConfig } from "afora-agent/plugin-sdk/provider-model-shared";
+import manifest from "./afora.plugin.json" with { type: "json" };
 
 const MISTRAL_MANIFEST_CATALOG = manifest.modelCatalog.providers.mistral;
 

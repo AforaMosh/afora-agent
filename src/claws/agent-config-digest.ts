@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import type { AgentConfig } from "../config/types.agents.js";
 
 export function digestClawAgentConfig(agent: AgentConfig): string {

@@ -1,6 +1,6 @@
 # iOS design system
 
-OpenClaw follows the native iOS 26 design language while keeping an iOS 18 deployment target. Use SwiftUI system structure first, Liquid Glass for interactive chrome, and quiet opaque surfaces for content.
+Afora follows the native iOS 26 design language while keeping an iOS 18 deployment target. Use SwiftUI system structure first, Liquid Glass for interactive chrome, and quiet opaque surfaces for content.
 
 ## Principles
 
@@ -16,7 +16,7 @@ Apple references: [Adopting Liquid Glass](https://developer.apple.com/documentat
 
 ## Tokens
 
-`OpenClawProMetric` in `Sources/Design/OpenClawProComponents.swift` is the source of truth for shared geometry:
+`AforaProMetric` in `Sources/Design/AforaProComponents.swift` is the source of truth for shared geometry:
 
 - `pagePadding`: standard page gutter
 - `cardRadius`: content group radius
@@ -29,19 +29,19 @@ Feature-local layout enums may define row heights and grid dimensions, but shoul
 
 ## Components
 
-- `OpenClawProBackground`: grouped page background
+- `AforaProBackground`: grouped page background
 - `ProCard`: quiet content grouping; never Liquid Glass
 - `ProIconBadge`, `ProValuePill`: compact semantic indicators
-- `OpenClawNoticeBanner`: shared connection and runtime notices
-- `OpenClawAdaptiveHeaderRow`: responsive destination heading
-- `OpenClawGlassControlGroup`: performance and morphing boundary for nearby glass controls
-- `OpenClawSidebarPalette`: fixed black-sidebar colors that remain dark in every app appearance
-- `OpenClawSidebarRevealButton`, `OpenClawSidebarHeaderLeadingSlot`: shared leading toolbar affordance
-- `openClawGlassButton(prominent:tint:)`: iOS 26 glass button with an iOS 18 bordered fallback
+- `AforaNoticeBanner`: shared connection and runtime notices
+- `AforaAdaptiveHeaderRow`: responsive destination heading
+- `AforaGlassControlGroup`: performance and morphing boundary for nearby glass controls
+- `AforaSidebarPalette`: fixed black-sidebar colors that remain dark in every app appearance
+- `AforaSidebarRevealButton`, `AforaSidebarHeaderLeadingSlot`: shared leading toolbar affordance
+- `aforaGlassButton(prominent:tint:)`: iOS 26 glass button with an iOS 18 bordered fallback
 
 ## Liquid Glass rules
 
-Use `openClawGlassButton` for primary actions, compact header controls, and navigation-adjacent controls. Use the prominent style for one primary action per region. Wrap nearby controls in `OpenClawGlassControlGroup`.
+Use `aforaGlassButton` for primary actions, compact header controls, and navigation-adjacent controls. Use the prominent style for one primary action per region. Wrap nearby controls in `AforaGlassControlGroup`.
 
 Do not place Liquid Glass behind reading content, forms, metrics, or every card in a scroll view. Excess glass weakens hierarchy, increases rendering cost, and competes with the sidebar and navigation chrome.
 

@@ -7,7 +7,7 @@ import type {
 } from "../../packages/gateway-protocol/src/index.js";
 import { isWellFormedApprovalId } from "../../packages/gateway-protocol/src/schema/approvals.js";
 import { findChatChannelLabel } from "../channels/ids.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { withOperatorApprovalsGatewayClient } from "../gateway/operator-approvals-client.js";
 import { isApprovalNotFoundError } from "./approval-errors.js";
 import { getGatewayNativeApprovalRuntime } from "./approval-gateway-runtime-context.js";
@@ -15,7 +15,7 @@ import type { GatewayNativeApprovalMethod } from "./approval-gateway-runtime-met
 import type { ChannelApprovalKind } from "./approval-types.js";
 
 type ResolveApprovalOverGatewayBaseParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   approvalId: string;
   decision: ApprovalDecision;
   channel?: string;

@@ -43,12 +43,12 @@ describe("tailscale helpers", () => {
 
   beforeEach(() => {
     envSnapshot = captureEnv([
-      "OPENCLAW_TEST_TAILSCALE_BINARY",
-      "OPENCLAW_TEST_TAILSCALE_FIXTURE_MARKER",
+      "AFORA_TEST_TAILSCALE_BINARY",
+      "AFORA_TEST_TAILSCALE_FIXTURE_MARKER",
       "NODE_ENV",
       "VITEST",
     ]);
-    process.env.OPENCLAW_TEST_TAILSCALE_BINARY = "tailscale";
+    process.env.AFORA_TEST_TAILSCALE_BINARY = "tailscale";
     process.env.VITEST ??= "true";
   });
 
@@ -212,7 +212,7 @@ describe("tailscale helpers", () => {
   it.runIf(process.platform !== "win32")(
     "holds a foreground route claim until cleanup stops its owner",
     async () => {
-      process.env.OPENCLAW_TEST_TAILSCALE_BINARY = fileURLToPath(
+      process.env.AFORA_TEST_TAILSCALE_BINARY = fileURLToPath(
         new URL("../../test/fixtures/tailscale-foreground-fixture.mjs", import.meta.url),
       );
 
@@ -232,10 +232,10 @@ describe("tailscale helpers", () => {
       const fixture = fileURLToPath(
         new URL("../../test/fixtures/tailscale-foreground-fixture.mjs", import.meta.url),
       );
-      const fixtureDir = tempDirs.make("openclaw-tailscale-fixture-");
+      const fixtureDir = tempDirs.make("afora-tailscale-fixture-");
       const marker = path.join(fixtureDir, "started");
-      process.env.OPENCLAW_TEST_TAILSCALE_BINARY = fixture;
-      process.env.OPENCLAW_TEST_TAILSCALE_FIXTURE_MARKER = marker;
+      process.env.AFORA_TEST_TAILSCALE_BINARY = fixture;
+      process.env.AFORA_TEST_TAILSCALE_FIXTURE_MARKER = marker;
 
       const markerWritten = new Promise<void>((resolve) => {
         const watcher = watch(fixtureDir, (_event, filename) => {

@@ -1,6 +1,6 @@
 // Non-interactive setup tests keep provisioning and output on the configured default agent.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { RuntimeEnv } from "../../runtime.js";
 
 const mocks = vi.hoisted(() => ({
@@ -24,7 +24,7 @@ vi.mock("../../config/logging.js", () => ({
 
 vi.mock("../onboard-helpers.js", () => ({
   DEFAULT_WORKSPACE: "/tmp/default-workspace",
-  applyWizardMetadata: (config: OpenClawConfig) => config,
+  applyWizardMetadata: (config: AforaConfig) => config,
   ensureWorkspaceAndSessions: mocks.ensureWorkspaceAndSessions,
   resolveLocalControlUiProbeLinks: vi.fn(),
   waitForGatewayReachable: vi.fn(),
@@ -56,7 +56,7 @@ vi.mock("./local/output.js", () => ({
 }));
 
 vi.mock("./local/skills-config.js", () => ({
-  applyNonInteractiveSkillsConfig: ({ nextConfig }: { nextConfig: OpenClawConfig }) => nextConfig,
+  applyNonInteractiveSkillsConfig: ({ nextConfig }: { nextConfig: AforaConfig }) => nextConfig,
 }));
 
 import { runNonInteractiveLocalSetup } from "./local.js";
@@ -71,10 +71,10 @@ describe("runNonInteractiveLocalSetup default-agent ownership", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.applyAuthChoice.mockImplementation(
-      async ({ nextConfig }: { nextConfig: OpenClawConfig }) => nextConfig,
+      async ({ nextConfig }: { nextConfig: AforaConfig }) => nextConfig,
     );
     mocks.applyGatewayConfig.mockImplementation(
-      ({ nextConfig }: { nextConfig: OpenClawConfig }) => ({
+      ({ nextConfig }: { nextConfig: AforaConfig }) => ({
         nextConfig,
         port: 18789,
         bind: "loopback",
@@ -83,10 +83,10 @@ describe("runNonInteractiveLocalSetup default-agent ownership", () => {
       }),
     );
     mocks.commitConfig.mockImplementation(
-      async ({ nextConfig }: { nextConfig: OpenClawConfig }) => nextConfig,
+      async ({ nextConfig }: { nextConfig: AforaConfig }) => nextConfig,
     );
     mocks.ensureOnboardingAgent.mockImplementation(
-      async ({ config }: { config: OpenClawConfig }) => ({
+      async ({ config }: { config: AforaConfig }) => ({
         config,
         agentId: "ops",
         bootstrapPending: false,
@@ -135,7 +135,7 @@ describe("runNonInteractiveLocalSetup default-agent ownership", () => {
   it("resolves provider auth in the requested first-agent workspace before creating state", async () => {
     const workspace = "/tmp/requested-provider-workspace";
     mocks.ensureOnboardingAgent.mockImplementationOnce(
-      async ({ config }: { config: OpenClawConfig }) => ({
+      async ({ config }: { config: AforaConfig }) => ({
         config: {
           ...config,
           agents: {
@@ -260,7 +260,7 @@ describe("runNonInteractiveLocalSetup default-agent ownership", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     await runNonInteractiveLocalSetup({
       opts: {

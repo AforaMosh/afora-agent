@@ -1,8 +1,8 @@
 // Memory Core tests cover embeddings plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { EmbeddingProviderAdapter } from "openclaw/plugin-sdk/embedding-providers";
-import { coerceErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import type { MemoryEmbeddingProviderAdapter } from "openclaw/plugin-sdk/memory-core-host-engine-embeddings";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { EmbeddingProviderAdapter } from "afora-agent/plugin-sdk/embedding-providers";
+import { coerceErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import type { MemoryEmbeddingProviderAdapter } from "afora-agent/plugin-sdk/memory-core-host-engine-embeddings";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createEmbeddingProvider,
@@ -13,16 +13,16 @@ import {
 const mockEmbeddingRegistry = vi.hoisted(() => ({
   genericAdapters: [] as EmbeddingProviderAdapter[],
   adapters: [] as MemoryEmbeddingProviderAdapter[],
-  genericLookupConfigs: [] as Array<OpenClawConfig | undefined>,
+  genericLookupConfigs: [] as Array<AforaConfig | undefined>,
   acquireLocalService: vi.fn(async () => undefined),
 }));
 
-vi.mock("openclaw/plugin-sdk/memory-core-host-engine-embeddings", () => ({
+vi.mock("afora-agent/plugin-sdk/memory-core-host-engine-embeddings", () => ({
   DEFAULT_LOCAL_MODEL: "nomic-embed-text",
   createLocalEmbeddingProvider: async () => {
     throw new Error("local embedding provider is not used by these tests");
   },
-  getMemoryEmbeddingProvider: (id: string, config?: OpenClawConfig) => {
+  getMemoryEmbeddingProvider: (id: string, config?: AforaConfig) => {
     const memoryAdapter = mockEmbeddingRegistry.adapters.find((adapter) => adapter.id === id);
     if (memoryAdapter) {
       return memoryAdapter;
@@ -88,8 +88,8 @@ function createOptions(
           "voyage",
         ],
       },
-    } as OpenClawConfig,
-    agentDir: "/tmp/openclaw-agent",
+    } as AforaConfig,
+    agentDir: "/tmp/afora-agent",
     provider,
     fallback: "none",
     model: "",
@@ -244,7 +244,7 @@ describe("createEmbeddingProvider", () => {
       const config = {
         ...primaryOptions.config,
         models: { providers: { [fallback]: fallbackProviderConfig } },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       const local = { modelPath: "/tmp/synthetic-memory-model.gguf", contextSize: 2048 };
 
       const result = await createEmbeddingProvider({
@@ -414,7 +414,7 @@ describe("createEmbeddingProvider", () => {
 
   it("reports the llama.cpp plugin install command when local is unregistered", async () => {
     await expect(createEmbeddingProvider(createOptions("local"))).rejects.toThrow(
-      "openclaw plugins install @openclaw/llama-cpp-provider",
+      "afora plugins install @afora/llama-cpp-provider",
     );
   });
 

@@ -2,8 +2,8 @@
 import {
   assertOkOrThrowProviderError,
   readProviderBinaryResponse,
-} from "openclaw/plugin-sdk/provider-http";
-import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/provider-http";
+import { fetchWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { GRADIUM_API_HOSTNAME, normalizeGradiumBaseUrl } from "./shared.js";
 
 const DEFAULT_TTS_MAX_BYTES = 16 * 1024 * 1024;

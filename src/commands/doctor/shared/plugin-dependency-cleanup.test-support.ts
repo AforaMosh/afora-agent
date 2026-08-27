@@ -9,7 +9,7 @@ type TestApi = {
 
 function getTestApi(): TestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.pluginDependencyCleanupTestApi")
+    Symbol.for("afora.pluginDependencyCleanupTestApi")
   ] as TestApi;
 }
 

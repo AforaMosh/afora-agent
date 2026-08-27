@@ -13,7 +13,7 @@ import {
 } from "../../packages/gateway-protocol/src/index.js";
 import { clearConfigCache, clearRuntimeConfigSnapshot } from "../config/config.js";
 import { clearSessionStoreCacheForTest } from "../config/sessions/store-writer-state.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { loadOrCreateDeviceIdentity } from "../infra/device-identity.js";
 import { captureEnv, deleteTestEnvValue, setTestEnvValue } from "../test-utils/env.js";
 import { ADMIN_SCOPE, APPROVALS_SCOPE, READ_SCOPE } from "./method-scopes.js";
@@ -32,11 +32,11 @@ import {
 const TEST_ENV_KEYS = [
   "HOME",
   ...MANUAL_GATEWAY_ENV_KEYS,
-  "OPENCLAW_STATE_DIR",
-  "OPENCLAW_CONFIG_PATH",
-  "OPENCLAW_GATEWAY_URL",
-  "OPENCLAW_GATEWAY_TOKEN",
-  "OPENCLAW_GATEWAY_PASSWORD",
+  "AFORA_STATE_DIR",
+  "AFORA_CONFIG_PATH",
+  "AFORA_GATEWAY_URL",
+  "AFORA_GATEWAY_TOKEN",
+  "AFORA_GATEWAY_PASSWORD",
 ];
 
 type Cleanup = () => Promise<void> | void;
@@ -79,24 +79,24 @@ describe("operator approval gateway client e2e", () => {
   it("uses runtime authority only for generated local gateway URLs", async () => {
     const envSnapshot = captureEnv(TEST_ENV_KEYS);
     cleanup.push(() => envSnapshot.restore());
-    deleteTestEnvValue("OPENCLAW_CONFIG_PATH");
-    deleteTestEnvValue("OPENCLAW_GATEWAY_URL");
-    deleteTestEnvValue("OPENCLAW_GATEWAY_TOKEN");
-    deleteTestEnvValue("OPENCLAW_GATEWAY_PASSWORD");
+    deleteTestEnvValue("AFORA_CONFIG_PATH");
+    deleteTestEnvValue("AFORA_GATEWAY_URL");
+    deleteTestEnvValue("AFORA_GATEWAY_TOKEN");
+    deleteTestEnvValue("AFORA_GATEWAY_PASSWORD");
 
-    const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-approval-client-e2e-"));
+    const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "afora-approval-client-e2e-"));
     cleanup.push(() => fs.rm(tempHome, { recursive: true, force: true, maxRetries: 5 }));
 
-    const stateDir = path.join(tempHome, ".openclaw");
+    const stateDir = path.join(tempHome, ".afora");
     await fs.mkdir(stateDir, { recursive: true });
     setTestEnvValue("HOME", tempHome);
-    setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+    setTestEnvValue("AFORA_STATE_DIR", stateDir);
     configureManualGatewayBackgroundEnv(tempHome);
 
     const port = await getGatewayE2ePortBlock();
     const token = "approval-client-e2e-token";
     const url = `ws://127.0.0.1:${port}`;
-    setTestEnvValue("OPENCLAW_GATEWAY_PORT", String(port));
+    setTestEnvValue("AFORA_GATEWAY_PORT", String(port));
 
     const server = await startGatewayServer(port, {
       bind: "loopback",
@@ -129,7 +129,7 @@ describe("operator approval gateway client e2e", () => {
         port,
         auth: { mode: "token", token },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     await requestExecApproval({ requester, id: "local-source-approval" });
     await withOperatorApprovalsGatewayClient(
@@ -152,7 +152,7 @@ describe("operator approval gateway client e2e", () => {
         remote: { url },
         auth: { mode: "token", token },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     await requestExecApproval({ requester, id: "remote-loopback-approval" });
     await expect(
@@ -184,18 +184,18 @@ describe("operator approval gateway client e2e", () => {
   it("resolves one approval from distinct devices with first-answer-wins semantics", async () => {
     const envSnapshot = captureEnv(TEST_ENV_KEYS);
     cleanup.push(() => envSnapshot.restore());
-    deleteTestEnvValue("OPENCLAW_CONFIG_PATH");
-    deleteTestEnvValue("OPENCLAW_GATEWAY_URL");
-    deleteTestEnvValue("OPENCLAW_GATEWAY_TOKEN");
-    deleteTestEnvValue("OPENCLAW_GATEWAY_PASSWORD");
+    deleteTestEnvValue("AFORA_CONFIG_PATH");
+    deleteTestEnvValue("AFORA_GATEWAY_URL");
+    deleteTestEnvValue("AFORA_GATEWAY_TOKEN");
+    deleteTestEnvValue("AFORA_GATEWAY_PASSWORD");
 
-    const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-approval-surfaces-e2e-"));
+    const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "afora-approval-surfaces-e2e-"));
     cleanup.push(() => fs.rm(tempHome, { recursive: true, force: true, maxRetries: 5 }));
 
-    const stateDir = path.join(tempHome, ".openclaw");
+    const stateDir = path.join(tempHome, ".afora");
     await fs.mkdir(stateDir, { recursive: true });
     setTestEnvValue("HOME", tempHome);
-    setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+    setTestEnvValue("AFORA_STATE_DIR", stateDir);
     configureManualGatewayBackgroundEnv(tempHome);
 
     const requesterIdentity = loadOrCreateDeviceIdentity({
@@ -212,7 +212,7 @@ describe("operator approval gateway client e2e", () => {
     const port = await getGatewayE2ePortBlock();
     const token = "approval-surfaces-e2e-token";
     const url = `ws://127.0.0.1:${port}`;
-    setTestEnvValue("OPENCLAW_GATEWAY_PORT", String(port));
+    setTestEnvValue("AFORA_GATEWAY_PORT", String(port));
 
     const server = await startGatewayServer(port, {
       bind: "loopback",

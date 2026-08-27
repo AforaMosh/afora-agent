@@ -10,8 +10,8 @@ function createGatewayLockOptions(stateDir: string): GatewayLockOptions {
     allowInTests: true,
     env: {
       ...process.env,
-      OPENCLAW_CONFIG_PATH: path.join(stateDir, "openclaw.json"),
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_CONFIG_PATH: path.join(stateDir, "afora.json"),
+      AFORA_STATE_DIR: stateDir,
     },
     lockDir: path.join(stateDir, "gateway-locks"),
     readProcessStartTime: () => 123_456,
@@ -45,7 +45,7 @@ function createSignalProcess() {
 }
 
 async function withTempState<T>(run: (stateDir: string) => Promise<T>): Promise<T> {
-  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-tui-state-lock-"));
+  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-tui-state-lock-"));
   try {
     return await run(stateDir);
   } finally {
@@ -67,7 +67,7 @@ describe("embedded TUI state ownership", () => {
         await expect(
           withEmbeddedTuiStateLock(run, { gatewayLockOptions: lockOptions }),
         ).rejects.toThrow(
-          `A Gateway is running for this state directory (pid ${process.pid}, port 28789). Run without --local to use it, or stop the Gateway first (openclaw gateway stop).`,
+          `A Gateway is running for this state directory (pid ${process.pid}, port 28789). Run without --local to use it, or stop the Gateway first (afora gateway stop).`,
         );
         expect(run).not.toHaveBeenCalled();
       } finally {

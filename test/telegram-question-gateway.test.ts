@@ -1,5 +1,5 @@
 // Root-owned integration may combine public plugin surfaces with Gateway-owned runtime.
-import { questionGatewayRuntime } from "openclaw/plugin-sdk/question-gateway-runtime";
+import { questionGatewayRuntime } from "afora-agent/plugin-sdk/question-gateway-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { telegramOutbound } from "../extensions/telegram/api.js";
 import { buildAgentHarnessQuestionPromptPayload } from "../src/agents/harness/user-input-bridge.js";

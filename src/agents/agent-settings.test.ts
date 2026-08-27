@@ -363,14 +363,14 @@ describe("isSilentOverflowProneModel", () => {
     ).toBe(true);
   });
 
-  // openclaw#75799 reporter's setup: an OpenAI-compatible in-house gateway
+  // afora#75799 reporter's setup: an OpenAI-compatible in-house gateway
   // exposing Zhipu's GLM family directly (model id `glm-5.1`, no `z-ai/`
   // qualifier, custom baseUrl that is not api.z.ai). Catch the bare GLM
   // family name so direct gateway deployments hit the guard regardless of
   // what `provider` field the user picked — gateways relabel the upstream
   // identity, so `provider` here can be anything from `openai` to a custom
-  // string. False positives only disable OpenClaw runtime's secondary compaction path;
-  // OpenClaw's preemptive compaction continues to handle real overflow.
+  // string. False positives only disable Afora runtime's secondary compaction path;
+  // Afora's preemptive compaction continues to handle real overflow.
   it("flags bare glm- model ids without a namespace prefix, regardless of provider", () => {
     expect(isSilentOverflowProneModel({ provider: "custom", modelId: "glm-5.1" })).toBe(true);
     expect(isSilentOverflowProneModel({ provider: "custom", modelId: "glm-4.7" })).toBe(true);
@@ -421,12 +421,12 @@ describe("isSilentOverflowProneModel", () => {
 });
 
 describe("applyAgentAutoCompactionGuard", () => {
-  // Direct repro of openclaw#75799: shared model runtime's silent-overflow detection misfires
-  // on a successful turn against z.ai-style providers, triggering OpenClaw runtime's
+  // Direct repro of afora#75799: shared model runtime's silent-overflow detection misfires
+  // on a successful turn against z.ai-style providers, triggering Afora runtime's
   // _runAutoCompaction from inside Session.prompt() and reassigning
   // agent.state.messages between the runner's prompt.submitted trajectory
   // event and the provider request. Disabling embedded auto-compaction here keeps
-  // state.messages intact; OpenClaw's preemptive compaction continues to
+  // state.messages intact; Afora's preemptive compaction continues to
   // handle real overflow on its own path.
   it("disables embedded auto-compaction for silent-overflow-prone providers", () => {
     const setCompactionEnabled = vi.fn();
@@ -507,8 +507,8 @@ describe("applyAgentAutoCompactionGuard", () => {
     });
   });
 
-  // Default-mode runs against ordinary providers must keep OpenClaw runtime's auto-compaction
-  // enabled. Disabling it across the board would silently remove OpenClaw runtime's
+  // Default-mode runs against ordinary providers must keep Afora runtime's auto-compaction
+  // enabled. Disabling it across the board would silently remove Afora runtime's
   // overflow-recovery path inside Session.prompt() for users who are not
   // affected by z.ai's silent-overflow accounting.
   it("leaves embedded auto-compaction alone for non-z.ai providers without engine ownership", () => {

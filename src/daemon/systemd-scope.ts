@@ -1,7 +1,7 @@
 /** Installed systemd scope discovery and dueling-manager diagnostics. */
 import fs from "node:fs/promises";
 import path from "node:path";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import type { GatewayServiceEnv } from "./service-types.js";
 import { execSystemctl, isSystemdUnitActive, type SystemdUnitScope } from "./systemd-exec.js";
 import { resolveSystemdServiceName, resolveSystemdUnitPath } from "./systemd-service-files.js";
@@ -34,7 +34,7 @@ type InstalledSystemdGatewayScope = {
 };
 
 export async function assertNoSystemGatewayOwnership(env: GatewayServiceEnv): Promise<void> {
-  if (env.OPENCLAW_SERVICE_KIND?.trim() === "node") {
+  if (env.AFORA_SERVICE_KIND?.trim() === "node") {
     return;
   }
   await assertNoSystemSystemdOwnership(`${resolveSystemdServiceName(env)}.service`);
@@ -57,7 +57,7 @@ async function findMarkerOwnedSystemSystemdUnit(): Promise<{
     if (
       svc.platform !== "linux" ||
       svc.scope !== "system" ||
-      svc.marker !== "openclaw" ||
+      svc.marker !== "afora" ||
       !svc.label?.endsWith(".service")
     ) {
       continue;
@@ -225,6 +225,6 @@ export function formatDuelingScopesWarning(
   return (
     `detected BOTH a user-scope (${user.unitPath}) and a system-scope (${system.unitPath}) ` +
     `gateway unit bound to port ${port}; they will SIGTERM each other in a restart loop. ` +
-    `Run \`openclaw doctor --fix\` to resolve which unit should own this gateway.`
+    `Run \`afora doctor --fix\` to resolve which unit should own this gateway.`
   );
 }

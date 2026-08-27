@@ -1,7 +1,7 @@
 /** Direct Gateway extension relay with in-band Browser Relay Authentication v2. */
 import type { IncomingMessage } from "node:http";
 import type { Duplex } from "node:stream";
-import { safeEqualSecret } from "openclaw/plugin-sdk/security-runtime";
+import { safeEqualSecret } from "afora-agent/plugin-sdk/security-runtime";
 import { WebSocketServer } from "ws";
 import { getRuntimeConfig } from "../../config/config.js";
 import {

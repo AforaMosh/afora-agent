@@ -20,7 +20,7 @@ import {
   type PluginBoardWidgetRenderer,
 } from "../../lib/board/widgets/index.ts";
 import { formatUiError } from "../../lib/format-error.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { renderBoardMcpAppContent } from "./board-mcp-app-content.ts";
 import { BoardMcpAppLifecycle } from "./board-mcp-app-lifecycle.ts";
 import { renderBoardGrantedCapabilities } from "./board-widget-capabilities.ts";
@@ -57,7 +57,7 @@ export type BoardWidgetCellCallbacks = {
   refreshWidgetAppView: (name: string, revision: number) => Promise<BoardWidgetAppViewState>;
 };
 
-class OpenClawBoardWidgetCell extends OpenClawLightDomElement {
+class AforaBoardWidgetCell extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context?: ApplicationContext;
 
@@ -468,12 +468,12 @@ class OpenClawBoardWidgetCell extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-board-widget-cell")) {
-  customElements.define("openclaw-board-widget-cell", OpenClawBoardWidgetCell);
+if (!customElements.get("afora-board-widget-cell")) {
+  customElements.define("afora-board-widget-cell", AforaBoardWidgetCell);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "openclaw-board-widget-cell": OpenClawBoardWidgetCell;
+    "afora-board-widget-cell": AforaBoardWidgetCell;
   }
 }

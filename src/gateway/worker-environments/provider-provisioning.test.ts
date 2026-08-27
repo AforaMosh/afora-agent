@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it, vi } from "vitest";
 import { WorkerProviderError, type WorkerProfile } from "../../plugins/types.js";
 import { hashWorkerCredential } from "./credential.js";

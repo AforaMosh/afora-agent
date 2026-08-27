@@ -1,9 +1,9 @@
 // Qa Lab plugin module implements tool coverage report behavior.
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
 import {
   isRecord,
   normalizeOptionalString as readString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   isRuntimeParityCellPassable,
   type RuntimeId,
@@ -46,12 +46,12 @@ type QaToolCoverageRow = {
   fixtureCount: number;
   scenarios: string[];
   sourcePaths: string[];
-  openclaw: QaToolCoverageStatus;
+  afora: QaToolCoverageStatus;
   codex: QaToolCoverageStatus;
   drift: QaToolCoverageDrift;
-  openclawToolCalls: number;
+  aforaToolCalls: number;
   codexToolCalls: number;
-  openclawSuccessfulToolCalls: number;
+  aforaSuccessfulToolCalls: number;
   codexSuccessfulToolCalls: number;
   tracking?: string;
   codexDefaultImpact?: string;
@@ -92,7 +92,7 @@ function normalizeRuntimePair(
   if (pair?.[0] && pair?.[1]) {
     return pair;
   }
-  return ["openclaw", "codex"];
+  return ["afora", "codex"];
 }
 
 function cellStatus(
@@ -199,7 +199,7 @@ function countRuntimeToolCalls(
   if (!result || !toolName) {
     return 0;
   }
-  const cell = runtime === "openclaw" ? result.cells.openclaw : result.cells.codex;
+  const cell = runtime === "afora" ? result.cells.afora : result.cells.codex;
   return cell.toolCalls.filter((call) => call.tool === toolName).length;
 }
 
@@ -211,7 +211,7 @@ function countSuccessfulRuntimeToolCalls(
   if (!result || !toolName) {
     return 0;
   }
-  const cell = runtime === "openclaw" ? result.cells.openclaw : result.cells.codex;
+  const cell = runtime === "afora" ? result.cells.afora : result.cells.codex;
   return cell.toolCalls.filter(
     (call) => call.tool === toolName && !call.errorClass && call.resultHash.trim().length > 0,
   ).length;
@@ -243,14 +243,14 @@ function buildRow(params: {
     fixtureCount: params.group.scenarios.length,
     scenarios: params.group.scenarios.map((scenario) => scenario.id),
     sourcePaths: params.group.scenarios.map((scenario) => scenario.sourcePath),
-    openclaw: result ? cellStatus(result.cells.openclaw) : "not-run",
+    afora: result ? cellStatus(result.cells.afora) : "not-run",
     codex: result ? cellStatus(result.cells.codex) : "not-run",
     drift: result?.drift ?? "not-run",
-    openclawToolCalls: countRuntimeToolCalls(result, "openclaw", runtimeToolName),
+    aforaToolCalls: countRuntimeToolCalls(result, "afora", runtimeToolName),
     codexToolCalls: countRuntimeToolCalls(result, "codex", runtimeToolName),
-    openclawSuccessfulToolCalls: countSuccessfulRuntimeToolCalls(
+    aforaSuccessfulToolCalls: countSuccessfulRuntimeToolCalls(
       result,
-      "openclaw",
+      "afora",
       runtimeToolName,
     ),
     codexSuccessfulToolCalls: countSuccessfulRuntimeToolCalls(result, "codex", runtimeToolName),
@@ -271,14 +271,14 @@ function coverageFailureForRow(row: QaToolCoverageRow): string | undefined {
   if (row.drift === "not-run") {
     return `${row.tool} drift=not-run`;
   }
-  if (row.openclaw !== "pass" || row.codex !== "pass") {
-    return `${row.tool} status openclaw=${row.openclaw} codex=${row.codex}`;
+  if (row.afora !== "pass" || row.codex !== "pass") {
+    return `${row.tool} status afora=${row.afora} codex=${row.codex}`;
   }
   if (row.drift === "failure-mode") {
     return `${row.tool} drift=failure-mode${row.details ? ` (${row.details})` : ""}`;
   }
-  if (row.runtimeToolName && row.openclawSuccessfulToolCalls === 0) {
-    return `${row.tool} missing successful openclaw tool call/result ${row.runtimeToolName}`;
+  if (row.runtimeToolName && row.aforaSuccessfulToolCalls === 0) {
+    return `${row.tool} missing successful afora tool call/result ${row.runtimeToolName}`;
   }
   if (row.runtimeToolName && row.codexSuccessfulToolCalls === 0) {
     return `${row.tool} missing successful codex tool call/result ${row.runtimeToolName}`;
@@ -312,10 +312,10 @@ export function buildQaToolCoverageReport(params: {
     reportOnlyTools: rows.filter((row) => !row.required).length,
     trackedTools: rows.filter((row) => Boolean(row.tracking)).length,
     nativeWorkspaceTools: rows.filter((row) => row.bucket === "codex-native-workspace").length,
-    dynamicIntegrationTools: rows.filter((row) => row.bucket === "openclaw-dynamic-integration")
+    dynamicIntegrationTools: rows.filter((row) => row.bucket === "afora-dynamic-integration")
       .length,
     searchableDynamicTools: rows.filter(
-      (row) => row.capabilityLayer === "openclaw-dynamic-searchable",
+      (row) => row.capabilityLayer === "afora-dynamic-searchable",
     ).length,
     optionalTools: rows.filter((row) => row.bucket === "optional-profile-or-plugin").length,
     passingTools: evaluated
@@ -330,7 +330,7 @@ export function buildQaToolCoverageReport(params: {
 
 export function renderQaToolCoverageMarkdownReport(report: QaToolCoverageReport): string {
   const lines = [
-    `# OpenClaw Runtime Tool Coverage — ${report.runtimePair[0]} vs ${report.runtimePair[1]}`,
+    `# Afora Runtime Tool Coverage — ${report.runtimePair[0]} vs ${report.runtimePair[1]}`,
     "",
     `- Generated at: ${report.generatedAt}`,
     `- Mode: ${report.evaluated ? "runtime summary" : "catalog inventory"}`,
@@ -339,14 +339,14 @@ export function renderQaToolCoverageMarkdownReport(report: QaToolCoverageReport)
     `- Report-only tools: ${report.reportOnlyTools}`,
     `- Tracked issue rows: ${report.trackedTools}`,
     `- Codex-native workspace tools: ${report.nativeWorkspaceTools}`,
-    `- OpenClaw dynamic integration tools: ${report.dynamicIntegrationTools}`,
+    `- Afora dynamic integration tools: ${report.dynamicIntegrationTools}`,
     `- Searchable/deferred dynamic tools: ${report.searchableDynamicTools}`,
     `- Optional/profile/plugin-dependent tools: ${report.optionalTools}`,
     `- Passing tools: ${report.passingTools}`,
     `- Failing tools: ${report.failingTools}`,
     `- Verdict: ${report.pass ? "pass" : "fail"}`,
     "",
-    "| Tool | Bucket | Expected layer | Capability layer | Required | Fixtures | OpenClaw | Codex | Drift | Codex default impact | QA impact | Action | Tracking |",
+    "| Tool | Bucket | Expected layer | Capability layer | Required | Fixtures | Afora | Codex | Drift | Codex default impact | QA impact | Action | Tracking |",
     "| --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- |",
   ];
 
@@ -358,7 +358,7 @@ export function renderQaToolCoverageMarkdownReport(report: QaToolCoverageReport)
       row.capabilityLayer,
       row.required ? "yes" : "no",
       row.fixtureCount.toString(),
-      row.openclaw,
+      row.afora,
       row.codex,
       row.drift,
       row.codexDefaultImpact ?? "",

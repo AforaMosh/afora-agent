@@ -6,7 +6,7 @@ import path from "node:path";
 import * as tar from "tar";
 import { resolveStateDir } from "../../config/paths.js";
 import { isExactSemverVersion, resolveNpmJsonEntries } from "../../infra/npm-registry-spec.js";
-import { resolveOpenClawPackageRootSync } from "../../infra/openclaw-root.js";
+import { resolveAforaPackageRootSync } from "../../infra/afora-root.js";
 import { runCommandWithTimeout } from "../../process/exec.js";
 import {
   DEFAULT_WORKER_BUNDLE_ARCHIVE_LIMITS,
@@ -21,7 +21,7 @@ import { VERSION } from "../../version.js";
 import { collectWorkerBundleManifest, type WorkerBundleManifestEntry } from "./bundle-staging.js";
 
 export { WORKER_BUNDLE_MANIFEST_VERSION };
-const OPENCLAW_NPM_REGISTRY = "https://registry.npmjs.org/";
+const AFORA_NPM_REGISTRY = "https://registry.npmjs.org/";
 const NPM_RELEASE_PROOF_TIMEOUT_MS = 60_000;
 const NPM_SHA512_INTEGRITY_PATTERN = /^sha512-[A-Za-z0-9+/]{86}==$/u;
 const BUNDLE_TARBALL_NAME_PATTERN = /^([a-f0-9]{64})\.tgz$/u;
@@ -29,7 +29,7 @@ const BUNDLE_STAGING_NAME_PATTERN = /^\.staging-[A-Za-z0-9_-]+$/u;
 const BUNDLE_TEMP_NAME_PATTERN = /^[a-f0-9]{64}\.tgz\.[0-9]+\.[0-9a-f-]{36}\.tmp$/u;
 type WorkerInstallationArtifactBase = {
   bundleHash: string;
-  openclawVersion: string;
+  aforaVersion: string;
   protocolFeatures: readonly string[];
 };
 
@@ -56,7 +56,7 @@ export type WorkerBundleProducer = {
 type WorkerBundleProducerOptions = {
   packageRoot?: string;
   cacheDir?: string;
-  openclawVersion?: string;
+  aforaVersion?: string;
   protocolFeatures?: readonly string[];
   cacheOwnership?: "exclusive";
   onCacheCleanupError?: (error: unknown) => void;
@@ -87,13 +87,13 @@ function resolvePackageRoot(packageRoot: string | undefined): string {
   if (packageRoot) {
     return path.resolve(packageRoot);
   }
-  const resolved = resolveOpenClawPackageRootSync({
+  const resolved = resolveAforaPackageRootSync({
     moduleUrl: import.meta.url,
     argv1: process.argv[1],
     cwd: process.cwd(),
   });
   if (!resolved) {
-    throw new Error("Unable to locate the running OpenClaw package root for worker bundling");
+    throw new Error("Unable to locate the running Afora package root for worker bundling");
   }
   return resolved;
 }
@@ -195,7 +195,7 @@ async function verifyPublishedNpmRelease(params: {
   runCommand?: WorkerNpmProofCommandRunner;
 }): Promise<string> {
   const runCommand = params.runCommand ?? runCommandWithTimeout;
-  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-worker-npm-proof-"));
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-worker-npm-proof-"));
   try {
     const published = parseNpmPackageIdentity(
       unwrapNpmJsonEntry(
@@ -203,42 +203,42 @@ async function verifyPublishedNpmRelease(params: {
           argv: [
             "npm",
             "view",
-            `openclaw@${params.version}`,
+            `afora@${params.version}`,
             "name",
             "version",
             "dist.integrity",
             "--json",
-            `--registry=${OPENCLAW_NPM_REGISTRY}`,
+            `--registry=${AFORA_NPM_REGISTRY}`,
           ],
           cwd: temporaryRoot,
-          failureMessage: `OpenClaw ${params.version} is not published; use the worker bundle install`,
+          failureMessage: `Afora ${params.version} is not published; use the worker bundle install`,
           runCommand,
         }),
       ),
     );
     if (
-      published?.name !== "openclaw" ||
+      published?.name !== "afora" ||
       published.version !== params.version ||
       !NPM_SHA512_INTEGRITY_PATTERN.test(published.integrity)
     ) {
       throw new Error(
-        `Cannot verify exact public npm release openclaw@${params.version}; use the worker bundle install`,
+        `Cannot verify exact public npm release afora@${params.version}; use the worker bundle install`,
       );
     }
     const packedValue = await runNpmProofCommand({
       argv: [
         "npm",
         "pack",
-        `openclaw@${params.version}`,
+        `afora@${params.version}`,
         "--pack-destination",
         temporaryRoot,
         "--ignore-scripts",
         "--json",
-        `--registry=${OPENCLAW_NPM_REGISTRY}`,
+        `--registry=${AFORA_NPM_REGISTRY}`,
       ],
       cwd: temporaryRoot,
       failureMessage:
-        "Unable to verify the installed OpenClaw package; use the worker bundle install",
+        "Unable to verify the installed Afora package; use the worker bundle install",
       runCommand,
     });
     const packed = parseNpmPackageIdentity(unwrapNpmJsonEntry(packedValue));
@@ -251,7 +251,7 @@ async function verifyPublishedNpmRelease(params: {
       packedTarballIntegrity = await hashNpmTarballIntegrity(packedTarballPath);
     } catch {
       throw new Error(
-        "Unable to verify the installed OpenClaw package; use the worker bundle install",
+        "Unable to verify the installed Afora package; use the worker bundle install",
       );
     }
     if (
@@ -261,7 +261,7 @@ async function verifyPublishedNpmRelease(params: {
       packedTarballIntegrity !== published.integrity
     ) {
       throw new Error(
-        `Installed OpenClaw ${params.version} does not match the published package; use the worker bundle install`,
+        `Installed Afora ${params.version} does not match the published package; use the worker bundle install`,
       );
     }
     const extractedRoot = path.join(temporaryRoot, "package");
@@ -276,11 +276,11 @@ async function verifyPublishedNpmRelease(params: {
     const packedBundle = await prepareWorkerBundle({
       packageRoot: extractedRoot,
       cacheDir: path.join(temporaryRoot, "bundle-cache"),
-      openclawVersion: params.version,
+      aforaVersion: params.version,
     });
     if (packedBundle.bundleHash !== params.bundleHash) {
       throw new Error(
-        `Published OpenClaw ${params.version} does not match the prepared worker bundle; use the worker bundle install`,
+        `Published Afora ${params.version} does not match the prepared worker bundle; use the worker bundle install`,
       );
     }
     return published.integrity;
@@ -440,9 +440,9 @@ async function prepareWorkerBundle(
 ): Promise<WorkerBundleArtifact> {
   const packageRoot = resolvePackageRoot(options.packageRoot);
   const cacheDir = resolveBundleCacheDir(options.cacheDir);
-  const openclawVersion = (options.openclawVersion ?? VERSION).trim();
-  if (!openclawVersion) {
-    throw new Error("Worker bundle requires a non-empty OpenClaw version");
+  const aforaVersion = (options.aforaVersion ?? VERSION).trim();
+  if (!aforaVersion) {
+    throw new Error("Worker bundle requires a non-empty Afora version");
   }
   const protocolFeatures = normalizeProtocolFeatures(options.protocolFeatures ?? []);
   await fs.mkdir(cacheDir, { recursive: true });
@@ -459,7 +459,7 @@ async function prepareWorkerBundle(
     return {
       install: "bundle",
       bundleHash,
-      openclawVersion,
+      aforaVersion,
       protocolFeatures,
       tarballBytes: (await fs.stat(tarballPath)).size,
       tarballSha256: await hashWorkerBundleTarball(tarballPath),
@@ -524,7 +524,7 @@ export async function resolveWorkerNpmInstallationArtifact(params: {
   isPackageInstall?: WorkerNpmPackageInstallCheck;
   verifyRelease?: WorkerNpmReleaseVerifier;
 }): Promise<WorkerNpmArtifact> {
-  const version = params.bundle.openclawVersion.trim();
+  const version = params.bundle.aforaVersion.trim();
   if (!isExactSemverVersion(version)) {
     throw new Error(
       `Worker npm install requires the exact published gateway version; expected ${version}`,
@@ -546,9 +546,9 @@ export async function resolveWorkerNpmInstallationArtifact(params: {
   return {
     install: "npm",
     bundleHash: params.bundle.bundleHash,
-    openclawVersion: version,
+    aforaVersion: version,
     packageIntegrity,
     protocolFeatures: params.bundle.protocolFeatures,
-    packageSpec: `openclaw@${version}`,
+    packageSpec: `afora@${version}`,
   };
 }

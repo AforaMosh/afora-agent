@@ -5,7 +5,7 @@ import {
   type ReplyPayload,
 } from "../../auto-reply/reply-payload.js";
 import { bindNormalizeReplyTransformOwner } from "../../auto-reply/reply/normalize-reply.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ChannelMessagingAdapter } from "../plugins/types.public.js";
 
 const channelReplyTransformOwners = new WeakMap<object, Map<string, object>>();
@@ -39,7 +39,7 @@ export function bindChannelReplyTransformOwner<
 
 export function createChannelReplyTransform(params: {
   messaging: ChannelMessagingAdapter | undefined;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): ((payload: ReplyPayload) => ReplyPayload | null) | undefined {
   if (!params.messaging?.transformReplyPayload) {
@@ -52,7 +52,7 @@ export function createChannelReplyTransform(params: {
 export function applyChannelReplyTransform(params: {
   messaging: ChannelMessagingAdapter | undefined;
   payload: ReplyPayload;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): ReplyPayload | null {
   const transform = params.messaging?.transformReplyPayload;

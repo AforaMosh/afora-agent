@@ -2,8 +2,8 @@
  * Channel-neutral thread-binding message builders shared by plugins, ACP focus, and subagent flows.
  * Keep text system-prefixed and compact because callers post it directly into user-visible threads.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { prefixSystemMessage } from "../infra/system-message.js";
 
 const DEFAULT_THREAD_BINDING_FAREWELL_TEXT =

@@ -1,13 +1,13 @@
 // Chat attachment tests cover inbound image/file parsing, media-store cleanup,
 // warning surfaces, size limits, and outbound message block assembly.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const saveMediaBufferMock = vi.hoisted(() =>
   vi.fn(async (_buffer: Buffer, mime?: string, _subdir?: string) => ({
     id: `fake-id-${Math.random().toString(36).slice(2, 10)}`,
-    path: `/tmp/openclaw-test-media/inbound/fake.${mime?.split("/")[1] ?? "bin"}`,
+    path: `/tmp/afora-test-media/inbound/fake.${mime?.split("/")[1] ?? "bin"}`,
     size: 0,
     contentType: mime,
   })),
@@ -31,8 +31,8 @@ vi.mock("../media/media-probe.js", () => ({
   probeMediaFilesWithinBudget: probeMediaFilesWithinBudgetMock,
 }));
 
-import { MAX_IMAGE_BYTES } from "@openclaw/media-core/constants";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { MAX_IMAGE_BYTES } from "@afora/media-core/constants";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   resolveChatAttachmentMaxBytes,
   resolveChatAttachmentPolicy,
@@ -401,7 +401,7 @@ describe("parseMessageWithAttachments", () => {
       parseMessageWithAttachments(
         "x",
         [{ type: "image", mimeType: "image/png", fileName: "huge.png", content: big }],
-        { maxBytes: resolveChatAttachmentMaxBytes({} as OpenClawConfig), log: { warn: () => {} } },
+        { maxBytes: resolveChatAttachmentMaxBytes({} as AforaConfig), log: { warn: () => {} } },
       ),
     ).rejects.toThrow(/image exceeds size limit/i);
     expect(saveMediaBufferMock).not.toHaveBeenCalled();
@@ -733,10 +733,10 @@ describe("parseMessageWithAttachments validation errors", () => {
 describe("advertised attachment policy matches enforcement", () => {
   const MB = 1024 * 1024;
 
-  const cfgWithMediaMaxMb = (value: number): OpenClawConfig =>
-    ({ agents: { defaults: { mediaMaxMb: value } } }) as unknown as OpenClawConfig;
+  const cfgWithMediaMaxMb = (value: number): AforaConfig =>
+    ({ agents: { defaults: { mediaMaxMb: value } } }) as unknown as AforaConfig;
 
-  async function parseImageWithPolicy(cfg: OpenClawConfig, imageBytes: number) {
+  async function parseImageWithPolicy(cfg: AforaConfig, imageBytes: number) {
     const policy = resolveChatAttachmentPolicy(cfg);
     const parse = parseMessageWithAttachments(
       "x",

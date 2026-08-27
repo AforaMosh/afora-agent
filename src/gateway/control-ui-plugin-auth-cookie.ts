@@ -1,7 +1,7 @@
 // Control UI plugin-tab cookie auth lets an authenticated UI open gateway-auth plugin iframes.
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { asDateTimestampMs } from "@openclaw/normalization-core/number-coercion";
+import { asDateTimestampMs } from "@afora/normalization-core/number-coercion";
 import {
   CONTROL_UI_PLUGIN_AUTH_GRANT_TTL_MS,
   CONTROL_UI_PLUGIN_AUTH_PROBE_MESSAGE,
@@ -15,7 +15,7 @@ import { resolvePluginRoutePathContext } from "./server/plugins-http/path-contex
 // Cookies are hostname-scoped, never port-scoped. The suffix prevents trusted
 // same-host Gateways from overwriting one another; it does not isolate them.
 // Do not cohost mutually untrusted services on the Gateway's cookie hostname.
-const CONTROL_UI_PLUGIN_AUTH_COOKIE_PREFIX = `__openclaw_plugin_tab_auth_${randomBytes(8).toString("hex")}`;
+const CONTROL_UI_PLUGIN_AUTH_COOKIE_PREFIX = `__afora_plugin_tab_auth_${randomBytes(8).toString("hex")}`;
 const CONTROL_UI_PLUGIN_AUTH_COOKIE_SCOPE = "plugin-tab";
 const controlUiPluginAuthCookieSecret = randomBytes(32);
 

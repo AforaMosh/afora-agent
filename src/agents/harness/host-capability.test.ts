@@ -199,7 +199,7 @@ describe("agent harness host capability", () => {
   });
 
   it("closes prepared mutable-file approval revalidators with the admitted run", async () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-host-binding-"));
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "afora-host-binding-"));
     try {
       fs.writeFileSync(path.join(cwd, "script.sh"), "#!/bin/sh\necho approved\n");
       const { attempt } = await admittedAttempt("run-file-binding", { cwd });

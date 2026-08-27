@@ -1,4 +1,4 @@
-// Runtime config helpers expose scoped OpenClaw config reads to plugin runtimes.
+// Runtime config helpers expose scoped Afora config reads to plugin runtimes.
 import { getRuntimeConfig } from "../../config/config.js";
 import {
   mutateConfigFile as mutateConfigFileInternal,

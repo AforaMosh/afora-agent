@@ -407,12 +407,12 @@ export function renderChatModelPicker(params: ChatModelPickerParams) {
       >
         ${modelToolsUnavailable
           ? html`
-              <openclaw-tooltip .content=${t("chat.modelControls.chatOnlyHelp")}>
+              <afora-tooltip .content=${t("chat.modelControls.chatOnlyHelp")}>
                 <span class="chat-controls__model-capability-badge" aria-hidden="true">
                   ${icons.alertTriangle}
                   <span>${t("chat.modelControls.chatOnly")}</span>
                 </span>
-              </openclaw-tooltip>
+              </afora-tooltip>
             `
           : nothing}
         <span class="chat-controls__inline-select-label">
@@ -556,7 +556,7 @@ export function renderChatModelPicker(params: ChatModelPickerParams) {
                                 </span>`
                               : html`
                                   <span>${t("chat.modelControls.sessionOverride")}</span>
-                                  <openclaw-tooltip
+                                  <afora-tooltip
                                     .content=${t("chat.modelControls.resetToDefault", {
                                       model: params.defaultModelLabel,
                                     })}
@@ -584,7 +584,7 @@ export function renderChatModelPicker(params: ChatModelPickerParams) {
                                     >
                                       ${t("chat.modelControls.useDefault")}
                                     </button>
-                                  </openclaw-tooltip>
+                                  </afora-tooltip>
                                 `}
                           </footer>`
                         : nothing}

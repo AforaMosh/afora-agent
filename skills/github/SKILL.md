@@ -3,7 +3,7 @@ name: github
 description: "GitHub CLI for issues, PRs, CI/check logs, comments, reviews, releases, repos, and gh api queries."
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "emoji": "🐙",
         "requires": { "bins": ["gh"] },

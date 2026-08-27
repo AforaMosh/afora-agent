@@ -15,17 +15,17 @@ let cacheEpochMs = Date.now();
 
 describe("parseGitHubRemoteUrl", () => {
   it("parses https, scp-like, and ssh remotes", () => {
-    const expected = { owner: "openclaw", repo: "openclaw" };
-    expect(parseGitHubRemoteUrl("https://github.com/openclaw/openclaw.git")).toEqual(expected);
-    expect(parseGitHubRemoteUrl("https://github.com/openclaw/openclaw")).toEqual(expected);
-    expect(parseGitHubRemoteUrl("git@github.com:openclaw/openclaw.git")).toEqual(expected);
-    expect(parseGitHubRemoteUrl("ssh://git@github.com/openclaw/openclaw.git")).toEqual(expected);
+    const expected = { owner: "afora", repo: "afora" };
+    expect(parseGitHubRemoteUrl("https://github.com/AforaMosh/afora-agent.git")).toEqual(expected);
+    expect(parseGitHubRemoteUrl("https://github.com/AforaMosh/afora-agent")).toEqual(expected);
+    expect(parseGitHubRemoteUrl("git@github.com:AforaMosh/afora-agent.git")).toEqual(expected);
+    expect(parseGitHubRemoteUrl("ssh://git@github.com/AforaMosh/afora-agent.git")).toEqual(expected);
   });
 
   it("rejects non-GitHub and malformed remotes", () => {
-    expect(parseGitHubRemoteUrl("https://gitlab.com/openclaw/openclaw.git")).toBeNull();
-    expect(parseGitHubRemoteUrl("git@github.com:openclaw")).toBeNull();
-    expect(parseGitHubRemoteUrl("https://github.com/openclaw/openclaw/extra")).toBeNull();
+    expect(parseGitHubRemoteUrl("https://gitlab.com/AforaMosh/afora-agent.git")).toBeNull();
+    expect(parseGitHubRemoteUrl("git@github.com:afora")).toBeNull();
+    expect(parseGitHubRemoteUrl("https://github.com/AforaMosh/afora-agent/extra")).toBeNull();
     expect(parseGitHubRemoteUrl("/local/path/repo.git")).toBeNull();
   });
 });
@@ -73,24 +73,24 @@ describe("loadControlUiSessionPullRequests", () => {
       pullRequests: [
         {
           number: 103469,
-          owner: "openclaw",
-          repo: "openclaw",
+          owner: "afora",
+          repo: "afora",
           branch: context.branch,
           title: "fix(macos): tighten the link-browser tab header",
-          url: "https://github.com/openclaw/openclaw/pull/103469",
+          url: "https://github.com/AforaMosh/afora-agent/pull/103469",
           state: "open",
           additions: 4,
           deletions: 3,
           checks: { state: "passing", passed: 1, failed: 0, skipped: 1, running: 0 },
-          checksUrl: "https://github.com/openclaw/openclaw/pull/103469/checks",
+          checksUrl: "https://github.com/AforaMosh/afora-agent/pull/103469/checks",
         },
       ],
       branch: {
-        owner: "openclaw",
-        repo: "openclaw",
+        owner: "afora",
+        repo: "afora",
         branch: context.branch,
         createUrl:
-          "https://github.com/openclaw/openclaw/pull/new/claude/browser-tabs-tighter-header",
+          "https://github.com/AforaMosh/afora-agent/pull/new/claude/browser-tabs-tighter-header",
       },
       rateLimited: false,
     });
@@ -170,11 +170,11 @@ describe("loadControlUiSessionPullRequests", () => {
     expect(result.pullRequests).toEqual([
       {
         number: 103469,
-        owner: "openclaw",
-        repo: "openclaw",
+        owner: "afora",
+        repo: "afora",
         branch: context.branch,
         title: "fix(macos): tighten the link-browser tab header",
-        url: "https://github.com/openclaw/openclaw/pull/103469",
+        url: "https://github.com/AforaMosh/afora-agent/pull/103469",
         state: "merged",
       },
     ]);
@@ -238,19 +238,19 @@ describe("loadControlUiSessionPullRequests", () => {
   it("falls back to the fork parent repo when the origin repo has no PRs", async () => {
     const fetchImpl = routedFetch([
       {
-        match: "/repos/fork-owner/openclaw/pulls?head=",
+        match: "/repos/fork-owner/afora/pulls?head=",
         response: () => githubJson([]),
       },
       {
-        match: "/repos/fork-owner/openclaw",
+        match: "/repos/fork-owner/afora",
         response: () =>
           githubJson({
             fork: true,
-            parent: { name: "openclaw", owner: { login: "openclaw" } },
+            parent: { name: "afora", owner: { login: "afora" } },
           }),
       },
       {
-        match: "/repos/openclaw/openclaw/pulls?head=",
+        match: "/repos/AforaMosh/afora-agent/pulls?head=",
         response: () => githubJson([pullListItem({ merged_at: "2026-07-09T10:00:00Z" })]),
       },
     ]);
@@ -366,7 +366,7 @@ describe("loadControlUiSessionPullRequests", () => {
         return "feature";
       }
       if (args[0] === "remote") {
-        return "git@github.com:openclaw/openclaw.git";
+        return "git@github.com:AforaMosh/afora-agent.git";
       }
       return "origin/main";
     });
@@ -399,7 +399,7 @@ describe("loadControlUiSessionPullRequests", () => {
     let pulls: Record<string, unknown>[] = [];
     const fetchImpl = routedFetch([
       { match: "/pulls?head=", response: () => githubJson(pulls) },
-      { match: "/repos/openclaw/openclaw", response: () => githubJson({ fork: false }) },
+      { match: "/repos/AforaMosh/afora-agent", response: () => githubJson({ fork: false }) },
     ]);
     const resolveBranchLanding = vi.fn(async () => ({
       pushedSha: "a".repeat(40),
@@ -466,7 +466,7 @@ describe("loadControlUiSessionPullRequests", () => {
     let pulls: Record<string, unknown>[] = [];
     const fetchImpl = routedFetch([
       { match: "/pulls?head=", response: () => githubJson(pulls) },
-      { match: "/repos/openclaw/openclaw", response: () => githubJson({ fork: false }) },
+      { match: "/repos/AforaMosh/afora-agent", response: () => githubJson({ fork: false }) },
     ]);
 
     const initial = await loadControlUiSessionPullRequests(
@@ -529,7 +529,7 @@ describe("loadControlUiSessionPullRequests", () => {
           return githubJson([pullListItem({ merged_at: "2026-07-09T10:00:00Z" })]);
         },
       },
-      { match: "/repos/openclaw/openclaw", response: () => githubJson({ fork: false }) },
+      { match: "/repos/AforaMosh/afora-agent", response: () => githubJson({ fork: false }) },
     ]);
 
     const initial = loadControlUiSessionPullRequests(
@@ -583,11 +583,11 @@ describe("loadControlUiSessionPullRequests", () => {
     expect(result).toEqual({
       pullRequests: [],
       branch: {
-        owner: "openclaw",
-        repo: "openclaw",
+        owner: "afora",
+        repo: "afora",
         branch: context.branch,
         createUrl:
-          "https://github.com/openclaw/openclaw/pull/new/claude/browser-tabs-tighter-header",
+          "https://github.com/AforaMosh/afora-agent/pull/new/claude/browser-tabs-tighter-header",
       },
       rateLimited: true,
     });
@@ -618,11 +618,11 @@ describe("loadControlUiSessionPullRequests", () => {
     expect(result.pullRequests).toEqual([
       {
         number: 103469,
-        owner: "openclaw",
-        repo: "openclaw",
+        owner: "afora",
+        repo: "afora",
         branch: context.branch,
         title: "fix(macos): tighten the link-browser tab header",
-        url: "https://github.com/openclaw/openclaw/pull/103469",
+        url: "https://github.com/AforaMosh/afora-agent/pull/103469",
         state: "open",
       },
     ]);
@@ -644,7 +644,7 @@ describe("loadControlUiSessionPullRequests", () => {
     const fetchImpl = routedFetch([
       { match: "/pulls?head=", response: () => githubJson([]) },
       // Empty PR lists trigger the fork-parent probe; answer "not a fork".
-      { match: "/repos/openclaw/openclaw", response: () => githubJson({ fork: false }) },
+      { match: "/repos/AforaMosh/afora-agent", response: () => githubJson({ fork: false }) },
     ]);
     const result = await loadControlUiSessionPullRequests(
       { sessionKey: "agent:main:main" },
@@ -654,7 +654,7 @@ describe("loadControlUiSessionPullRequests", () => {
       },
     );
     expect(result.branch?.createUrl).toBe(
-      "https://github.com/openclaw/openclaw/pull/new/claude/fix%20%231",
+      "https://github.com/AforaMosh/afora-agent/pull/new/claude/fix%20%231",
     );
   });
 });

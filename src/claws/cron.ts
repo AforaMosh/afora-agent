@@ -1,17 +1,17 @@
-import { coerceErrorMessage } from "@openclaw/normalization-core/error-coercion";
+import { coerceErrorMessage } from "@afora/normalization-core/error-coercion";
 import { resolveCronJobConfigRevision } from "../cron/config-revision.js";
 import { normalizeCronJobCreate } from "../cron/normalize.js";
 import { createTrustedCronScheduledToolPolicy } from "../cron/scheduled-tool-policy.js";
 import { applyDefaultCronToolsAllow } from "../cron/tools-allow.js";
 import type { CronJob } from "../cron/types.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
 import type { ClawAddPlan, ClawCronJob } from "./types.js";
 
-export const CLAW_CRON_REF_SCHEMA_VERSION = "openclaw.clawCronRef.v1" as const;
+export const CLAW_CRON_REF_SCHEMA_VERSION = "afora.clawCronRef.v1" as const;
 
 export type PersistedClawCronRef = {
   schemaVersion: typeof CLAW_CRON_REF_SCHEMA_VERSION;
@@ -76,11 +76,11 @@ function rowToRef(row: CronRefRow): PersistedClawCronRef {
 function persistPendingRef(
   plan: ClawAddPlan,
   job: ClawCronJob,
-  options: OpenClawStateDatabaseOptions & { nowMs?: number },
+  options: AforaStateDatabaseOptions & { nowMs?: number },
 ): PersistedClawCronRef {
   const nowMs = options.nowMs ?? Date.now();
   const declarationKey = `claw:${plan.agent.finalId}:${job.id}`;
-  const database = openOpenClawStateDatabase(options);
+  const database = openAforaStateDatabase(options);
   const existing =
     database.db /* sqlite-allow-raw: read one Claw cron ownership row by closed agent and manifest ids. */
       .prepare(
@@ -114,7 +114,7 @@ function persistPendingRef(
     createdAtMs: nowMs,
     updatedAtMs: nowMs,
   };
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     db /* sqlite-allow-raw: insert one pending Claw cron ownership row. */
       .prepare(
         `INSERT INTO claw_cron_refs (
@@ -142,14 +142,14 @@ function persistPendingRef(
 function updateRef(
   ref: PersistedClawCronRef,
   update: { schedulerJobId?: string; status: PersistedClawCronRef["status"]; error?: string },
-  options: OpenClawStateDatabaseOptions & { nowMs?: number },
+  options: AforaStateDatabaseOptions & { nowMs?: number },
 ): PersistedClawCronRef {
   const updated = {
     ...ref,
     ...update,
     updatedAtMs: options.nowMs ?? Date.now(),
   };
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     db /* sqlite-allow-raw: update one Claw cron ownership row. */
       .prepare(
         `UPDATE claw_cron_refs
@@ -290,7 +290,7 @@ export function clawCronGatewayJobMatchesRef(
 
 export async function installClawCronJobs(
   plan: ClawAddPlan,
-  options: OpenClawStateDatabaseOptions & {
+  options: AforaStateDatabaseOptions & {
     gateway?: Pick<ClawCronGateway, "add" | "list" | "waitUntilAgentAvailable">;
     nowMs?: number;
   } = {},
@@ -406,9 +406,9 @@ export async function installClawCronJobs(
 
 export function readClawCronRefs(
   agentId: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): PersistedClawCronRef[] {
-  const database = openOpenClawStateDatabase(options);
+  const database = openAforaStateDatabase(options);
   if (
     options.readOnly &&
     !database.db /* sqlite-allow-raw: read-only Claw cron table-existence probe. */
@@ -432,9 +432,9 @@ export function readClawCronRefs(
 export function deleteClawCronRef(
   agentId: string,
   manifestId: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): void {
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     db /* sqlite-allow-raw: delete one Claw cron ownership row after scheduler cleanup. */
       .prepare("DELETE FROM claw_cron_refs WHERE agent_id = ? AND manifest_id = ?")
       .run(agentId, manifestId);
@@ -444,7 +444,7 @@ export function deleteClawCronRef(
 export function markClawCronRefRemoved(
   agentId: string,
   manifestId: string,
-  options: OpenClawStateDatabaseOptions & { nowMs?: number } = {},
+  options: AforaStateDatabaseOptions & { nowMs?: number } = {},
 ): PersistedClawCronRef | undefined {
   const ref = readClawCronRefs(agentId, options).find(
     (candidate) => candidate.manifestId === manifestId,
@@ -454,9 +454,9 @@ export function markClawCronRefRemoved(
 
 export function upsertClawCronRef(
   ref: PersistedClawCronRef,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): void {
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     db /* sqlite-allow-raw: Claw cron lifecycle provenance write. */
       .prepare(
         `INSERT INTO claw_cron_refs (

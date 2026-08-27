@@ -14,7 +14,7 @@ import { formatUiError } from "../../lib/format-error.ts";
 import { canCallGatewayMethod } from "../../lib/gateway-methods.ts";
 import { sessionNavigationTarget } from "../../lib/sessions/route-navigation.ts";
 import { buildAgentMainSessionKey } from "../../lib/sessions/session-key.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import "../../styles/chat.css";
 import "../../styles/new-session.css";
@@ -46,7 +46,7 @@ import { renderProjectChip, resolveProjectChip } from "./project-chip.ts";
 import { renderAgentSelect } from "./target-controls.ts";
 import { renderWhereChip, resolveWhereChip } from "./where-chip.ts";
 
-class NewSessionPage extends OpenClawLightDomElement {
+class NewSessionPage extends AforaLightDomElement {
   @property({ attribute: false }) data: NewSessionRouteData | undefined;
 
   @consume({ context: applicationContext, subscribe: true })
@@ -717,9 +717,9 @@ class NewSessionPage extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-new-session-page")) {
-  customElements.define("openclaw-new-session-page", NewSessionPage);
+if (!customElements.get("afora-new-session-page")) {
+  customElements.define("afora-new-session-page", NewSessionPage);
 }
 
 export const render = (data: unknown) =>
-  html`<openclaw-new-session-page .data=${data}></openclaw-new-session-page>`;
+  html`<afora-new-session-page .data=${data}></afora-new-session-page>`;

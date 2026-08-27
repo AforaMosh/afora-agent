@@ -3,9 +3,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { Command } from "commander";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawPluginApi } from "./api.js";
+import type { AforaPluginApi } from "./api.js";
 import type { VoiceCallRuntime } from "./runtime-entry.js";
 import type { CallRecord } from "./src/types.js";
 
@@ -16,8 +16,8 @@ vi.mock("./runtime-entry.js", () => ({
   createVoiceCallRuntime: vi.fn(async () => runtimeStub),
 }));
 
-vi.mock("openclaw/plugin-sdk/gateway-runtime", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/gateway-runtime")>()),
+vi.mock("afora-agent/plugin-sdk/gateway-runtime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/gateway-runtime")>()),
   callGatewayFromCli: callGatewayFromCliMock,
 }));
 
@@ -35,7 +35,7 @@ type Registered = {
   methods: Map<string, unknown>;
   methodScopes: Map<string, string | undefined>;
   tools: unknown[];
-  service?: Parameters<OpenClawPluginApi["registerService"]>[0];
+  service?: Parameters<AforaPluginApi["registerService"]>[0];
 };
 type MockCallSource = {
   mock: {
@@ -142,7 +142,7 @@ function setup(
     registrationMode: "full",
     config: {},
     pluginConfig: config,
-    runtime: { tts: { textToSpeechTelephony: vi.fn() } } as unknown as OpenClawPluginApi["runtime"],
+    runtime: { tts: { textToSpeechTelephony: vi.fn() } } as unknown as AforaPluginApi["runtime"],
     logger: noopLogger,
     registerGatewayMethod: (method: string, handler: unknown, opts?: { scope?: string }) => {
       methods.set(method, handler);
@@ -256,13 +256,13 @@ describe("voice-call plugin", () => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
     delete (globalThis as Record<PropertyKey, unknown>)[
-      Symbol.for("openclaw.voice-call.runtimeCoordinator")
+      Symbol.for("afora.voice-call.runtimeCoordinator")
     ];
   });
 
   it("keeps config presentation metadata manifest-owned", () => {
     const manifest = JSON.parse(
-      fs.readFileSync(new URL("./openclaw.plugin.json", import.meta.url), "utf8"),
+      fs.readFileSync(new URL("./afora.plugin.json", import.meta.url), "utf8"),
     ) as {
       uiHints?: Record<string, Record<string, unknown>>;
       configSchema?: { properties?: Record<string, unknown> };
@@ -315,7 +315,7 @@ describe("voice-call plugin", () => {
   });
 
   it("does not start the webhook runtime for CLI-only plugin loading", async () => {
-    vi.stubEnv("OPENCLAW_CLI", "1");
+    vi.stubEnv("AFORA_CLI", "1");
     const { service } = setup({ provider: "mock" });
 
     await service?.start(createServiceContext());
@@ -325,8 +325,8 @@ describe("voice-call plugin", () => {
 
   it("still starts the webhook runtime for gateway CLI processes", async () => {
     const previousArgv = process.argv;
-    vi.stubEnv("OPENCLAW_CLI", "1");
-    process.argv = ["node", "openclaw", "gateway", "run"];
+    vi.stubEnv("AFORA_CLI", "1");
+    process.argv = ["node", "afora", "gateway", "run"];
     const { service } = setup({ provider: "mock" });
 
     try {
@@ -1314,7 +1314,7 @@ describe("voice-call plugin", () => {
         from: "user",
       });
       expect(runtimeStub.manager["initiateCall"]).toHaveBeenCalledWith("+15550009999", undefined, {
-        message: "OpenClaw voice call smoke test.",
+        message: "Afora voice call smoke test.",
         mode: "notify",
       });
       expect(stdout.output()).toContain("live-call: started call-1");

@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { expect, it } from "vitest";
 import {
   describeTelegramDispatch,

@@ -1,4 +1,4 @@
-export const NATIVE_HISTORY_STATE_EVENT = "openclaw:native-history-state";
+export const NATIVE_HISTORY_STATE_EVENT = "afora:native-history-state";
 
 export type NativeHistoryState = {
   canGoBack: boolean;
@@ -6,16 +6,16 @@ export type NativeHistoryState = {
 };
 
 type NativeWebChromeWindow = Window & {
-  __OPENCLAW_NATIVE_WEB_CHROME__?: boolean;
-  __OPENCLAW_NATIVE_HISTORY__?: NativeHistoryState;
+  __AFORA_NATIVE_WEB_CHROME__?: boolean;
+  __AFORA_NATIVE_HISTORY__?: NativeHistoryState;
 };
 
 export function isNativeWebChromeHost(): boolean {
-  return (window as NativeWebChromeWindow)["__OPENCLAW_NATIVE_WEB_CHROME__"] === true;
+  return (window as NativeWebChromeWindow)["__AFORA_NATIVE_WEB_CHROME__"] === true;
 }
 
 export function readNativeHistoryState(): NativeHistoryState {
-  const state = (window as NativeWebChromeWindow)["__OPENCLAW_NATIVE_HISTORY__"];
+  const state = (window as NativeWebChromeWindow)["__AFORA_NATIVE_HISTORY__"];
   return state && typeof state.canGoBack === "boolean" && typeof state.canGoForward === "boolean"
     ? state
     : { canGoBack: false, canGoForward: false };

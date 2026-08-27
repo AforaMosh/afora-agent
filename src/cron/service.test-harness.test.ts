@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createCronStoreHarness, writeCronStoreSnapshot } from "./service.test-harness.js";
 import { loadCronStore } from "./store.js";
 
-const { makeStorePath } = createCronStoreHarness({ prefix: "openclaw-cron-harness-" });
+const { makeStorePath } = createCronStoreHarness({ prefix: "afora-cron-harness-" });
 let previousStorePath: string | undefined;
 
 function testJob() {

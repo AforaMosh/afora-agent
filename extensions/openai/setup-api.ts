@@ -1,7 +1,7 @@
 // Openai API module exposes the plugin public contract.
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
-import type { ProviderAuthContext, ProviderAuthResult } from "openclaw/plugin-sdk/plugin-entry";
-import type { ProviderPlugin } from "openclaw/plugin-sdk/provider-model-shared";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
+import type { ProviderAuthContext, ProviderAuthResult } from "afora-agent/plugin-sdk/plugin-entry";
+import type { ProviderPlugin } from "afora-agent/plugin-sdk/provider-model-shared";
 import { createOpenAIProvider } from "./provider-contract-api.js";
 
 async function runOpenAIProviderAuthMethod(

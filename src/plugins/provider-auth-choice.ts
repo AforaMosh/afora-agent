@@ -9,7 +9,7 @@ import { upsertAuthProfileWithLockOrThrow } from "../agents/auth-profiles.js";
 import { formatLiteralProviderPrefixedModelRef } from "../agents/model-ref-shared.js";
 import { resolveDefaultAgentWorkspaceDir } from "../agents/workspace.js";
 import { normalizeAgentModelRefForConfig } from "../config/model-input.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { openUrl } from "../infra/browser-open.js";
 import { isRemoteEnvironment } from "../infra/remote-env.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -33,7 +33,7 @@ import type {
 
 type ApplyProviderAuthChoiceParams = {
   authChoice: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
   prompter: WizardPrompter;
   runtime: RuntimeEnv;
@@ -49,7 +49,7 @@ type ApplyProviderAuthChoiceParams = {
 };
 
 type ApplyProviderAuthChoiceResult = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentModelOverride?: string;
   retrySelection?: boolean;
 };
@@ -77,9 +77,9 @@ function formatModelRefForDisplay(modelRef: string, provider: ProviderPlugin): s
 }
 
 function restoreConfiguredPrimaryModel(
-  nextConfig: OpenClawConfig,
-  originalConfig: OpenClawConfig,
-): OpenClawConfig {
+  nextConfig: AforaConfig,
+  originalConfig: AforaConfig,
+): AforaConfig {
   const originalModel = originalConfig.agents?.defaults?.model;
   const nextAgents = nextConfig.agents;
   const nextDefaults = nextAgents?.defaults;
@@ -108,7 +108,7 @@ function restoreConfiguredPrimaryModel(
   };
 }
 
-function resolveConfiguredDefaultModelPrimary(cfg: OpenClawConfig): string | undefined {
+function resolveConfiguredDefaultModelPrimary(cfg: AforaConfig): string | undefined {
   const model = cfg.agents?.defaults?.model;
   if (typeof model === "string") {
     return model;
@@ -149,16 +149,16 @@ async function noteDefaultModelResult(params: {
 }
 
 async function applyDefaultModelFromAuthChoice(params: {
-  config: OpenClawConfig;
-  configBeforeProviderAuth?: OpenClawConfig;
+  config: AforaConfig;
+  configBeforeProviderAuth?: AforaConfig;
   selectedModel: string;
   selectedModelDisplay?: string;
   preserveExistingDefaultModel: boolean | undefined;
   prompter: WizardPrompter;
   runtime: RuntimeEnv;
   workspaceDir?: string;
-  runSelectedModelHook: (config: OpenClawConfig) => Promise<void>;
-}): Promise<OpenClawConfig> {
+  runSelectedModelHook: (config: AforaConfig) => Promise<void>;
+}): Promise<AforaConfig> {
   const defaultModelBaseConfig = params.configBeforeProviderAuth ?? params.config;
   const previousPrimary = resolveConfiguredDefaultModelPrimary(defaultModelBaseConfig);
   const preservesDifferentPrimary =
@@ -229,7 +229,7 @@ async function loadPluginProviderRuntime(): Promise<ProviderAuthChoiceRuntime> {
 
 function resolveManifestAuthChoiceScope(params: {
   authChoice: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   workspaceDir: string;
   env?: NodeJS.ProcessEnv;
 }): ProviderAuthChoiceMetadata | undefined {
@@ -245,7 +245,7 @@ function withProviderPluginId(provider: ProviderPlugin, pluginId: string): Provi
   return provider.pluginId === pluginId ? provider : { ...provider, pluginId };
 }
 export async function runProviderPluginAuthMethodUnpersisted(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
   runtime: RuntimeEnv;
   signal?: AbortSignal;
@@ -285,9 +285,9 @@ export async function runProviderPluginAuthMethodUnpersisted(params: {
 }
 
 export function applyProviderPluginAuthMethodResultConfig(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   result: ProviderAuthResult;
-}): OpenClawConfig {
+}): AforaConfig {
   const { result } = params;
   let nextConfig = params.config;
 
@@ -314,7 +314,7 @@ export function applyProviderPluginAuthMethodResultConfig(params: {
 }
 
 export async function runProviderPluginAuthMethod(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
   runtime: RuntimeEnv;
   prompter: WizardPrompter;
@@ -329,7 +329,7 @@ export async function runProviderPluginAuthMethod(params: {
   secretInputMode?: ProviderAuthOptionBag["secretInputMode"];
   allowSecretRefPrompt?: boolean;
   opts?: Partial<ProviderAuthOptionBag>;
-}): Promise<{ config: OpenClawConfig; defaultModel?: string }> {
+}): Promise<{ config: AforaConfig; defaultModel?: string }> {
   const agentId = params.agentId ?? resolveDefaultAgentId(params.config);
   const agentDir = params.agentDir ?? resolveAgentDir(params.config, agentId);
   const workspaceDir =
@@ -382,7 +382,7 @@ export async function runProviderPluginAuthMethod(params: {
 async function prepareProviderPluginAuthMethod(
   params: Parameters<typeof runProviderPluginAuthMethod>[0],
 ): Promise<{
-  config: OpenClawConfig;
+  config: AforaConfig;
   defaultModel?: string;
   authProfiles: ProviderAuthResult["profiles"];
   persistAuthProfiles: (profiles?: ProviderAuthResult["profiles"]) => Promise<void>;
@@ -432,7 +432,7 @@ async function prepareProviderPluginAuthMethod(
         profileId,
         credential,
         agentDir,
-        stateDir: params.env?.OPENCLAW_STATE_DIR,
+        stateDir: params.env?.AFORA_STATE_DIR,
       });
     }
     profilesPersisted = true;
@@ -492,7 +492,7 @@ export async function prepareAuthChoiceLoadedPluginProvider(
     enabledConfig = enableResult.config;
   }
 
-  const resolveScopedRuntimeProviders = (config: OpenClawConfig): ProviderPlugin[] =>
+  const resolveScopedRuntimeProviders = (config: AforaConfig): ProviderPlugin[] =>
     resolvePluginProviders({
       config,
       workspaceDir,

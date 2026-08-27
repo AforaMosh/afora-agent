@@ -18,17 +18,17 @@ const {
   clearPluginCommands,
   getPluginCommandSpecs,
   getPluginModuleLoaderStats,
-  loadOpenClawPlugins,
+  loadAforaPlugins,
   matchPluginCommand,
 } = await import(pathToFileURL(smokeEntryPath).href);
 
-assert.equal(typeof loadOpenClawPlugins, "function", "built loader export missing");
+assert.equal(typeof loadAforaPlugins, "function", "built loader export missing");
 assert.equal(typeof clearPluginCommands, "function", "clearPluginCommands missing");
 assert.equal(typeof getPluginCommandSpecs, "function", "getPluginCommandSpecs missing");
 assert.equal(typeof getPluginModuleLoaderStats, "function", "plugin loader stats missing");
 assert.equal(typeof matchPluginCommand, "function", "matchPluginCommand missing");
 
-const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-build-smoke-"));
+const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-build-smoke-"));
 const pluginId = "build-smoke-plugin";
 const distPluginDir = path.join(repoRoot, "dist", "extensions", pluginId);
 const runtimePluginDir = path.join(repoRoot, "dist-runtime", "extensions", pluginId);
@@ -55,9 +55,9 @@ fs.writeFileSync(
   path.join(distPluginDir, "package.json"),
   JSON.stringify(
     {
-      name: "@openclaw/build-smoke-plugin",
+      name: "@afora/build-smoke-plugin",
       type: "module",
-      openclaw: {
+      afora: {
         extensions: ["./index.js"],
       },
     },
@@ -67,7 +67,7 @@ fs.writeFileSync(
   "utf8",
 );
 fs.writeFileSync(
-  path.join(distPluginDir, "openclaw.plugin.json"),
+  path.join(distPluginDir, "afora.plugin.json"),
   JSON.stringify(
     {
       id: pluginId,
@@ -85,7 +85,7 @@ fs.writeFileSync(
 fs.writeFileSync(
   path.join(distPluginDir, "index.js"),
   [
-    "import { emptyPluginConfigSchema } from 'openclaw/plugin-sdk/plugin-entry';",
+    "import { emptyPluginConfigSchema } from 'afora-agent/plugin-sdk/plugin-entry';",
     "",
     "export default {",
     `  id: ${JSON.stringify(pluginId)},`,
@@ -126,13 +126,13 @@ assert.equal(
 clearPluginCommands();
 
 const smsStatsBefore = getPluginModuleLoaderStats();
-const smsRegistry = loadOpenClawPlugins({
+const smsRegistry = loadAforaPlugins({
   cache: false,
   preferBuiltPluginArtifacts: true,
   workspaceDir: tempRoot,
   env: {
     ...process.env,
-    OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(repoRoot, "dist-runtime", "extensions"),
+    AFORA_BUNDLED_PLUGINS_DIR: path.join(repoRoot, "dist-runtime", "extensions"),
   },
   config: {
     plugins: {
@@ -173,12 +173,12 @@ assert.equal(
 
 clearPluginCommands();
 
-const registry = loadOpenClawPlugins({
+const registry = loadAforaPlugins({
   cache: false,
   workspaceDir: tempRoot,
   env: {
     ...process.env,
-    OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(repoRoot, "dist-runtime", "extensions"),
+    AFORA_BUNDLED_PLUGINS_DIR: path.join(repoRoot, "dist-runtime", "extensions"),
   },
   config: {
     plugins: {

@@ -1,4 +1,4 @@
-import type { SessionTranscriptMessageEntry } from "openclaw/plugin-sdk/session-transcript-runtime";
+import type { SessionTranscriptMessageEntry } from "afora-agent/plugin-sdk/session-transcript-runtime";
 import { describe, expect, it, vi } from "vitest";
 import type { CodexThreadItem, CodexTurn } from "./protocol.js";
 import { resolveCodexUpstreamForkBoundary } from "./upstream-fork-boundary.js";
@@ -7,7 +7,7 @@ const transcriptMocks = vi.hoisted(() => ({
   readVisibleEntries: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/session-transcript-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/session-transcript-runtime", () => ({
   readVisibleSessionTranscriptMessageEntries: transcriptMocks.readVisibleEntries,
 }));
 

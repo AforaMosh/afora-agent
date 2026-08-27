@@ -4,7 +4,7 @@ description: "Fetch GitHub issues, select candidates, spawn background fix agent
 user-invocable: true
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "requires": { "bins": ["git", "gh"] },
         "primaryEnv": "GH_TOKEN",
@@ -49,7 +49,7 @@ Use for issue-to-PR automation. Prefer `gh` CLI; fall back to `gh api` only when
 ```bash
 git remote get-url origin
 if [ -z "${GH_TOKEN:-}" ]; then
-  CONFIG_PATH="${OPENCLAW_CONFIG_PATH:-${OPENCLAW_STATE_DIR:-$HOME/.openclaw}/openclaw.json}"
+  CONFIG_PATH="${AFORA_CONFIG_PATH:-${AFORA_STATE_DIR:-$HOME/.afora}/afora.json}"
   GH_TOKEN=$(jq -r '.skills.entries["gh-issues"].apiKey // empty' "$CONFIG_PATH" 2>/dev/null || true)
   if [ -n "$GH_TOKEN" ]; then export GH_TOKEN; fi
 fi
@@ -105,7 +105,7 @@ Skip candidates with an open PR, existing branch, or active local claim.
 Claim file:
 
 ```text
-${OPENCLAW_STATE_DIR:-$HOME/.openclaw}/gh-issues-<owner>-<repo>.json
+${AFORA_STATE_DIR:-$HOME/.afora}/gh-issues-<owner>-<repo>.json
 ```
 
 Expire claims older than 2 hours.
@@ -154,7 +154,7 @@ Push to PUSH_REMOTE.
 Open PR against SOURCE_REPO BASE_BRANCH.
 PR body: What Problem This Solves + Why This Change Was Made + User Impact + Evidence + visible Fixes SOURCE_REPO#<n>.
 Report PR URL or failure reason.
-Send completion/failure with openclaw message send if route provided.
+Send completion/failure with afora message send if route provided.
 ```
 
 Use `coding-agent` launch rules when available.

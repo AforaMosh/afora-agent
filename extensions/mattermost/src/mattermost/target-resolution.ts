@@ -1,10 +1,10 @@
 // Mattermost plugin module implements target resolution behavior.
-import { pruneMapToMaxSize } from "openclaw/plugin-sdk/collection-runtime";
-import { isPrivateNetworkOptInEnabled } from "openclaw/plugin-sdk/ssrf-runtime";
+import { pruneMapToMaxSize } from "afora-agent/plugin-sdk/collection-runtime";
+import { isPrivateNetworkOptInEnabled } from "afora-agent/plugin-sdk/ssrf-runtime";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveMattermostAccount } from "./accounts.js";
 import {
   createMattermostClient,
@@ -14,7 +14,7 @@ import {
   parseMattermostApiStatus,
 } from "./client.js";
 import { resolveMattermostTrustedChatKind } from "./monitor-auth.js";
-import type { OpenClawConfig } from "./runtime-api.js";
+import type { AforaConfig } from "./runtime-api.js";
 
 type MattermostOpaqueTargetResolution = {
   kind: "user" | "channel" | "group";
@@ -141,7 +141,7 @@ function isExplicitMattermostTarget(raw: string): boolean {
 
 export async function resolveMattermostOpaqueTarget(params: {
   input: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   accountId?: string | null;
   token?: string;
   baseUrl?: string;

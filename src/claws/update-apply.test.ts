@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { ClawCronUpdateError } from "./cron-update.js";
 import type { buildClawAddPlan } from "./lifecycle.js";
 import {
@@ -12,7 +12,7 @@ import {
 import type {
   ClawAddPlan,
   ClawManifest,
-  ClawOpenClawProfile,
+  ClawAforaProfile,
   ClawSourceIdentity,
 } from "./types.js";
 import { applyClawUpdatePlan } from "./update-apply.js";
@@ -25,7 +25,7 @@ const source: ClawSourceIdentity = {
   name: "@acme/worker",
   version: "2.0.0",
   packageRoot: "/tmp/target",
-  manifestPath: "/tmp/target/openclaw.claw.json",
+  manifestPath: "/tmp/target/afora.claw.json",
   integrityKind: "artifact",
   integrity: "sha256:target",
   byteLength: 1,
@@ -39,7 +39,7 @@ const manifest: ClawManifest = {
   cronJobs: [],
 };
 const install: PersistedClawInstall = {
-  schemaVersion: "openclaw.clawInstallRecord.v1",
+  schemaVersion: "afora.clawInstallRecord.v1",
   claw: { ...source, version: "1.0.0", integrity: "sha256:current" },
   manifestSchemaVersion: 1,
   planIntegrity: "sha256:current-add-plan",
@@ -52,7 +52,7 @@ const install: PersistedClawInstall = {
   updatedAtMs: 1,
 };
 const addPlan: ClawAddPlan = {
-  schemaVersion: "openclaw.clawAddPlan.v1",
+  schemaVersion: "afora.clawAddPlan.v1",
   stability: "experimental",
   dryRun: true,
   mutationAllowed: false,
@@ -84,7 +84,7 @@ const addPlan: ClawAddPlan = {
 
 function plan(actions: ClawUpdatePlan["actions"]): ClawUpdatePlan {
   return {
-    schemaVersion: "openclaw.clawUpdatePlan.v1",
+    schemaVersion: "afora.clawUpdatePlan.v1",
     stability: "experimental",
     dryRun: true,
     mutationAllowed: false,
@@ -221,7 +221,7 @@ describe("applyClawUpdatePlan", () => {
         desiredDigest: "sha256:target-agent",
       },
     ]);
-    let config: OpenClawConfig = { agents: { entries: { worker: { name: "Worker" } } } };
+    let config: AforaConfig = { agents: { entries: { worker: { name: "Worker" } } } };
     const persisted = { ...install, claw: source, updatedAtMs: 2 };
     const persistInstall = vi.fn(() => persisted);
 
@@ -247,7 +247,7 @@ describe("applyClawUpdatePlan", () => {
     });
     expect(persistInstall).toHaveBeenCalledWith(addPlan, expect.any(Object));
     expect(result).toMatchObject({
-      schemaVersion: "openclaw.clawUpdateResult.v1",
+      schemaVersion: "afora.clawUpdateResult.v1",
       status: "complete",
       agentId: "worker",
       targetClaw: { version: "2.0.0" },
@@ -266,7 +266,7 @@ describe("applyClawUpdatePlan", () => {
       },
     ]);
     const order: string[] = [];
-    let config: OpenClawConfig = { agents: { entries: {} } };
+    let config: AforaConfig = { agents: { entries: {} } };
 
     await applyClawUpdatePlan(
       updatePlan,
@@ -395,8 +395,8 @@ describe("applyClawUpdatePlan", () => {
   });
 
   it("preserves cron prerequisites when the gateway mutation outcome is uncertain", async () => {
-    const root = tempDirs.make("openclaw-claw-update-apply-");
-    const env = { OPENCLAW_STATE_DIR: join(root, "state") };
+    const root = tempDirs.make("afora-claw-update-apply-");
+    const env = { AFORA_STATE_DIR: join(root, "state") };
     const currentAddPlan: ClawAddPlan = {
       ...addPlan,
       claw: install.claw,
@@ -425,7 +425,7 @@ describe("applyClawUpdatePlan", () => {
         reason: "target adds cron job",
       },
     ]);
-    let config: OpenClawConfig = { agents: { entries: {} } };
+    let config: AforaConfig = { agents: { entries: {} } };
     const workspaceRollback = vi.fn(async () => undefined);
     const mcpRollback = vi.fn(async () => undefined);
     const packageRollback = vi.fn(async () => undefined);
@@ -548,11 +548,11 @@ describe("applyClawUpdatePlan", () => {
   });
 
   it("preserves resolved plugin metadata when applying an owned version upgrade", async () => {
-    const packageRoot = tempDirs.make("openclaw-claw-plugin-update-");
+    const packageRoot = tempDirs.make("afora-claw-plugin-update-");
     const targetSource = {
       ...source,
       packageRoot,
-      manifestPath: join(packageRoot, "openclaw.claw.json"),
+      manifestPath: join(packageRoot, "afora.claw.json"),
     };
     const targetPackage = {
       kind: "plugin" as const,
@@ -631,11 +631,11 @@ describe("applyClawUpdatePlan", () => {
   });
 
   it("validates and applies profile extension package updates", async () => {
-    const packageRoot = tempDirs.make("openclaw-claw-extension-update-");
+    const packageRoot = tempDirs.make("afora-claw-extension-update-");
     const targetSource = {
       ...source,
       packageRoot,
-      manifestPath: join(packageRoot, "openclaw.claw.json"),
+      manifestPath: join(packageRoot, "afora.claw.json"),
     };
     const extension = {
       id: "github-tools",
@@ -651,7 +651,7 @@ describe("applyClawUpdatePlan", () => {
       detectedFormat: "claude" as const,
       mapped: ["commands", "skills"],
       unavailable: ["agents"],
-      adapterIdentity: "openclaw/current",
+      adapterIdentity: "afora-agent/current",
     };
     const targetPackage = {
       kind: extension.kind,
@@ -694,7 +694,7 @@ describe("applyClawUpdatePlan", () => {
       schemaVersion: 1,
       packages: [],
     };
-    const targetOpenClawProfile: ClawOpenClawProfile = {
+    const targetAforaProfile: ClawAforaProfile = {
       schemaVersion: 1,
       agent: {},
       extensions: [extension],
@@ -749,7 +749,7 @@ describe("applyClawUpdatePlan", () => {
 
     await applyClawUpdatePlan(
       updatePlan,
-      { targetManifest, targetOpenClawProfile, targetSource },
+      { targetManifest, targetAforaProfile, targetSource },
       {
         config: {},
         ...consent(updatePlan),
@@ -831,7 +831,7 @@ describe("applyClawUpdatePlan", () => {
         currentDigest,
       },
     ]);
-    let config: OpenClawConfig = { agents: { entries: { worker: { name: "Worker" } } } };
+    let config: AforaConfig = { agents: { entries: { worker: { name: "Worker" } } } };
     let commits = 0;
 
     await expect(
@@ -872,7 +872,7 @@ describe("applyClawUpdatePlan", () => {
         currentDigest,
       },
     ]);
-    let config: OpenClawConfig = { agents: { entries: {} } };
+    let config: AforaConfig = { agents: { entries: {} } };
 
     await expect(
       applyClawUpdatePlan(
@@ -931,4 +931,4 @@ describe("applyClawUpdatePlan", () => {
   });
 });
 import { createHash } from "node:crypto";
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";

@@ -5,11 +5,11 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { loadNodeHostConfig } from "../node-host/config.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { acquireGatewayLock } from "./gateway-lock.js";
 import {
   executeSqliteQuerySync,
@@ -21,20 +21,20 @@ import {
   migrateLegacyNodeHostConfig,
 } from "./state-migrations.node-host.js";
 
-type NodeHostConfigDatabase = Pick<OpenClawStateKyselyDatabase, "node_host_config">;
+type NodeHostConfigDatabase = Pick<AforaStateKyselyDatabase, "node_host_config">;
 const fixtureDigest = ["fixture", "digest"].join("-");
 
 describe("legacy node-host Doctor migration", () => {
   const tempDirs = useAutoCleanupTempDirTracker((cleanup) => {
     afterEach(() => {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       cleanup();
     });
   });
 
   function useStateDir(): { env: NodeJS.ProcessEnv; stateDir: string } {
-    const stateDir = tempDirs.make("openclaw-node-host-migration-");
-    return { env: { ...process.env, OPENCLAW_STATE_DIR: stateDir }, stateDir };
+    const stateDir = tempDirs.make("afora-node-host-migration-");
+    return { env: { ...process.env, AFORA_STATE_DIR: stateDir }, stateDir };
   }
 
   function legacyConfig(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -48,7 +48,7 @@ describe("legacy node-host Doctor migration", () => {
         port: 18443,
         tls: false,
         tlsFingerprint: fixtureDigest,
-        contextPath: "/openclaw-gw",
+        contextPath: "/afora-gw",
       },
       ...overrides,
     };
@@ -71,7 +71,7 @@ describe("legacy node-host Doctor migration", () => {
     updatedAtMs: number;
     token?: string | null;
   }): void {
-    const database = openOpenClawStateDatabase({ env: params.env });
+    const database = openAforaStateDatabase({ env: params.env });
     executeSqliteQuerySync(
       database.db,
       getNodeSqliteKysely<NodeHostConfigDatabase>(database.db)
@@ -86,7 +86,7 @@ describe("legacy node-host Doctor migration", () => {
           gateway_port: 18443,
           gateway_tls: 0,
           gateway_tls_fingerprint: fixtureDigest,
-          gateway_context_path: "/openclaw-gw",
+          gateway_context_path: "/afora-gw",
           gateway_cloudflare_access_json: null,
           updated_at_ms: params.updatedAtMs,
         }),
@@ -94,7 +94,7 @@ describe("legacy node-host Doctor migration", () => {
   }
 
   function readCanonicalRow(env: NodeJS.ProcessEnv) {
-    const database = openOpenClawStateDatabase({ env });
+    const database = openAforaStateDatabase({ env });
     return executeSqliteQueryTakeFirstSync(
       database.db,
       getNodeSqliteKysely<NodeHostConfigDatabase>(database.db)
@@ -138,7 +138,7 @@ describe("legacy node-host Doctor migration", () => {
         port: 18443,
         tls: false,
         tlsFingerprint: fixtureDigest,
-        contextPath: "/openclaw-gw",
+        contextPath: "/afora-gw",
       },
       installedAppsSharing: false,
     });
@@ -415,6 +415,6 @@ describe("legacy node-host Doctor migration", () => {
 
     expect(result.warnings[0]).toContain("source or Doctor claim remains after cleanup");
     expect(fs.existsSync(sourcePath)).toBe(true);
-    await expect(loadNodeHostConfig(env)).rejects.toThrow("openclaw doctor --fix");
+    await expect(loadNodeHostConfig(env)).rejects.toThrow("afora doctor --fix");
   });
 });

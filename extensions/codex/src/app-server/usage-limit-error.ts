@@ -6,9 +6,9 @@ import {
   embeddedAgentLog,
   formatErrorMessage,
   type EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { markAuthProfileBlockedUntil } from "openclaw/plugin-sdk/agent-runtime";
-import { readStringField as readString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { markAuthProfileBlockedUntil } from "afora-agent/plugin-sdk/agent-runtime";
+import { readStringField as readString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { CODEX_CONTROL_METHODS } from "./capabilities.js";
 import type { CodexAppServerClient } from "./client.js";
 import { isJsonObject, type CodexServerNotification, type JsonValue } from "./protocol.js";

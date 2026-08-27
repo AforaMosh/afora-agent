@@ -28,7 +28,7 @@ scenario:
     summary: Verify the QA agent can respond correctly in a shared channel and respect mention-driven group semantics.
     config:
       expectedMarker: QA-CHANNEL-BASELINE-OK
-      mentionPrompt: "@openclaw qa channel baseline marker check. Reply exactly: QA-CHANNEL-BASELINE-OK"
+      mentionPrompt: "@afora qa channel baseline marker check. Reply exactly: QA-CHANNEL-BASELINE-OK"
 
 flow:
   steps:

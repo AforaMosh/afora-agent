@@ -1,13 +1,13 @@
 import {
   buildManifestModelDefinition,
   readManifestProviderDefaultModelRef,
-} from "openclaw/plugin-sdk/provider-catalog-shared";
+} from "afora-agent/plugin-sdk/provider-catalog-shared";
 import type {
   ModelDefinitionConfig,
   ModelProviderConfig,
-} from "openclaw/plugin-sdk/provider-model-shared";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+} from "afora-agent/plugin-sdk/provider-model-shared";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import manifest from "./afora.plugin.json" with { type: "json" };
 
 const VENICE_MANIFEST_CATALOG = manifest.modelCatalog.providers.venice;
 

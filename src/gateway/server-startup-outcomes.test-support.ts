@@ -82,7 +82,7 @@ describe("gateway startup outcomes", () => {
       params: {
         ...inactiveParams,
         cfg: { hooks: { enabled: true, gmail: { account: "operator@example.com" } } },
-        env: { OPENCLAW_SKIP_GMAIL_WATCHER: "1" },
+        env: { AFORA_SKIP_GMAIL_WATCHER: "1" },
       } satisfies GatewayStartupOutcomeRecorderParams,
       expected: ["gmail-watcher=skipped (disabled-by-environment)"],
     },

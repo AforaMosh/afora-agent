@@ -1,7 +1,7 @@
 import {
   parseStrictFiniteNumber,
   parseStrictPositiveInteger,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import { listAgentIds, resolveSystemAgentTargetAgentId } from "../../agents/agent-scope-config.js";
 import { resolveAgentDir } from "../../agents/agent-scope.js";
 import {
@@ -13,7 +13,7 @@ import {
   getRuntimeConfigSourceSnapshot,
   setRuntimeConfigSnapshot,
 } from "../../config/config.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { writeRuntimeJson, defaultRuntime, type RuntimeEnv } from "../../runtime.js";
 import { getProviderEnvVars } from "../../secrets/provider-env-vars.js";
 import { resolveCommandConfigWithSecrets } from "../command-config-resolution.js";
@@ -103,7 +103,7 @@ export function resolveSelectedProviderFromModelRef(
 }
 
 export function resolveCapabilityProviderAgentId(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   rawAgentId: string | undefined,
 ): string {
   const requestedAgentId = rawAgentId?.trim();
@@ -116,14 +116,14 @@ export function resolveCapabilityProviderAgentId(
   });
   if (!listAgentIds(cfg).includes(agentId)) {
     throw new Error(
-      `Unknown agent id "${agentId}". Run \`openclaw agents list\` to see configured agents.`,
+      `Unknown agent id "${agentId}". Run \`afora agents list\` to see configured agents.`,
     );
   }
   return agentId;
 }
 
 function getAuthProfileIdsForProvider(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   providerId: string,
   agentId: string,
 ): string[] {
@@ -133,7 +133,7 @@ function getAuthProfileIdsForProvider(
 }
 
 export function providerHasGenericConfig(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   providerId: string;
   /** Omit only for aggregate/global callers that intentionally exclude agent auth stores. */
   agentId?: string;
@@ -232,8 +232,8 @@ export async function resolveLocalCapabilityRuntimeConfig(params: {
   allowedPaths?: Set<string>;
   forcedActivePaths?: Set<string>;
   optionalActivePaths?: Set<string>;
-  config?: OpenClawConfig;
-}): Promise<OpenClawConfig> {
+  config?: AforaConfig;
+}): Promise<AforaConfig> {
   const cfg = params.config ?? getRuntimeConfig();
   const { effectiveConfig } = await resolveCommandConfigWithSecrets({
     config: cfg,
@@ -249,7 +249,7 @@ export async function resolveLocalCapabilityRuntimeConfig(params: {
   return effectiveConfig;
 }
 
-export function pinRuntimeConfigSnapshot(config: OpenClawConfig): void {
+export function pinRuntimeConfigSnapshot(config: AforaConfig): void {
   const sourceConfig = getRuntimeConfigSourceSnapshot();
   if (sourceConfig) {
     setRuntimeConfigSnapshot(config, sourceConfig);

@@ -30,16 +30,16 @@ type TestRunnerInternals = {
   workerState: { evaluatedModules: unknown };
 };
 
-const SHARED_TEST_SETUP = Symbol.for("openclaw.sharedTestSetup");
-const EMBEDDED_RUN_STATE = Symbol.for("openclaw.embeddedRunState");
-const REPLY_RUN_REGISTRY = Symbol.for("openclaw.replyRunRegistry");
-const DIAGNOSTIC_EVENTS_STATE = Symbol.for("openclaw.diagnosticEvents.state.v1");
+const SHARED_TEST_SETUP = Symbol.for("afora.sharedTestSetup");
+const EMBEDDED_RUN_STATE = Symbol.for("afora.embeddedRunState");
+const REPLY_RUN_REGISTRY = Symbol.for("afora.replyRunRegistry");
+const DIAGNOSTIC_EVENTS_STATE = Symbol.for("afora.diagnosticEvents.state.v1");
 const DIAGNOSTIC_EVENT_LISTENER_PRESENCE = Symbol.for(
-  "openclaw.diagnosticEventListenerPresence.v1",
+  "afora.diagnosticEventListenerPresence.v1",
 );
-const SESSION_SUSPENSION_TEST_API = Symbol.for("openclaw.sessionSuspensionTestApi");
+const SESSION_SUSPENSION_TEST_API = Symbol.for("afora.sessionSuspensionTestApi");
 // Shared-worker scoped: the registry lives on the worker global, not in the module graph.
-const CUSTOM_ELEMENT_TRACKING = Symbol.for("openclaw.nonIsolatedCustomElementTracking");
+const CUSTOM_ELEMENT_TRACKING = Symbol.for("afora.nonIsolatedCustomElementTracking");
 const nativeTimerGlobals = {
   setTimeout: globalThis.setTimeout,
   clearTimeout: globalThis.clearTimeout,
@@ -54,7 +54,7 @@ function getSharedTestHome(): string | undefined {
   const globalState = globalThis as typeof globalThis & {
     [SHARED_TEST_SETUP]?: { tempHome?: string };
   };
-  return globalState[SHARED_TEST_SETUP]?.tempHome ?? process.env.OPENCLAW_TEST_HOME;
+  return globalState[SHARED_TEST_SETUP]?.tempHome ?? process.env.AFORA_TEST_HOME;
 }
 
 function resetEvaluatedModules(modules: EvaluatedModules, resetMocks: boolean) {
@@ -84,10 +84,10 @@ function restoreSharedTestHomeAfterEnvUnstub(testHomeRaw: string | undefined): v
 
   process.env.HOME = testHome;
   process.env.USERPROFILE = testHome;
-  process.env.OPENCLAW_TEST_HOME = testHome;
-  delete process.env.OPENCLAW_CONFIG_PATH;
-  delete process.env.OPENCLAW_STATE_DIR;
-  delete process.env.OPENCLAW_AGENT_DIR;
+  process.env.AFORA_TEST_HOME = testHome;
+  delete process.env.AFORA_CONFIG_PATH;
+  delete process.env.AFORA_STATE_DIR;
+  delete process.env.AFORA_AGENT_DIR;
   process.env.XDG_CONFIG_HOME = path.join(testHome, ".config");
   process.env.XDG_DATA_HOME = path.join(testHome, ".local", "share");
   process.env.XDG_STATE_HOME = path.join(testHome, ".local", "state");
@@ -217,7 +217,7 @@ function runCleanupActions(actions: CleanupAction[]): unknown {
   return firstError;
 }
 
-function resetOpenClawGlobalRunState(): void {
+function resetAforaGlobalRunState(): void {
   const cleanupActions: CleanupAction[] = [];
   const globalStore = globalThis as Record<PropertyKey, unknown>;
   const embeddedRunState = globalStore[EMBEDDED_RUN_STATE] as EmbeddedRunStateForTest | undefined;
@@ -278,7 +278,7 @@ function resetOpenClawGlobalRunState(): void {
   replyRunState?.waitersByKey?.clear();
 }
 
-function resetOpenClawGlobalDiagnosticState(): void {
+function resetAforaGlobalDiagnosticState(): void {
   const globalStore = globalThis as Record<PropertyKey, unknown>;
   const state = globalStore[DIAGNOSTIC_EVENTS_STATE] as DiagnosticEventsStateForTest | undefined;
   // The dispatcher intentionally survives module reloads. Mirror isolate mode
@@ -301,13 +301,13 @@ function resetOpenClawGlobalDiagnosticState(): void {
   }
 }
 
-function resetOpenClawSessionSuspensionState(): void {
+function resetAforaSessionSuspensionState(): void {
   const globalStore = globalThis as Record<PropertyKey, unknown>;
   const api = globalStore[SESSION_SUSPENSION_TEST_API] as SessionSuspensionTestApi | undefined;
   api?.resetSessionSuspensionStateForTest?.();
 }
 
-const SERIALIZED_RESOLVE_MOCKS = Symbol.for("openclaw.serializedResolveMocks");
+const SERIALIZED_RESOLVE_MOCKS = Symbol.for("afora.serializedResolveMocks");
 
 // Vitest's BareModuleMocker.resolveMocks has no in-flight guard: pendingIds is
 // cleared only after all parallel resolveId RPCs settle, and every registration
@@ -365,7 +365,7 @@ export function serializeMockerResolveMocks(
   };
 }
 
-export default class OpenClawNonIsolatedRunner extends TestRunner {
+export default class AforaNonIsolatedRunner extends TestRunner {
   override onCollectStart(file: RunnerTestFile) {
     super.onCollectStart(file);
     if (!this.config.isolate) {
@@ -414,10 +414,10 @@ export default class OpenClawNonIsolatedRunner extends TestRunner {
     vi.unstubAllEnvs();
     restoreSharedTestHomeAfterEnvUnstub(testHome);
     vi.clearAllMocks();
-    resetOpenClawGlobalRunState();
+    resetAforaGlobalRunState();
     resetAgentEventsForTest();
-    resetOpenClawGlobalDiagnosticState();
-    resetOpenClawSessionSuspensionState();
+    resetAforaGlobalDiagnosticState();
+    resetAforaSessionSuspensionState();
     // Named plugin runtimes intentionally survive duplicate module evaluation in production.
     // Clear their shared slots here so one test file cannot lend a partial runtime to the next.
     clearNamedPluginRuntimeStoresForTest();

@@ -1,5 +1,5 @@
 // Lazy runtime boundary for task cancellation and its runtime-specific control stack.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { getRegisteredDetachedTaskLifecycleRuntime } from "./detached-task-runtime-state.js";
 import {
@@ -9,7 +9,7 @@ import {
 } from "./runtime-internal.js";
 
 export async function cancelDetachedTaskRunByIdCore(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   taskId: string;
   reason?: string;
 }) {

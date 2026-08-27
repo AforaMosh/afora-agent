@@ -4,7 +4,7 @@ import { createRuntimePluginModelSelectionHelpers } from "./runtime-plugin-insta
 
 const COPILOT_RUNTIME_PLUGIN_ID = "copilot";
 const COPILOT_RUNTIME_PLUGIN_LABEL = "GitHub Copilot agent runtime";
-const COPILOT_RUNTIME_PLUGIN_NPM_SPEC = "@openclaw/copilot";
+const COPILOT_RUNTIME_PLUGIN_NPM_SPEC = "@afora/copilot";
 const COPILOT_RUNTIME_PLUGIN_DESCRIPTOR = {
   pluginId: COPILOT_RUNTIME_PLUGIN_ID,
   label: COPILOT_RUNTIME_PLUGIN_LABEL,

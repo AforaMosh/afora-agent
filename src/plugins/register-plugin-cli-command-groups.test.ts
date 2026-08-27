@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { describe, expect, it, vi } from "vitest";
 import { isCommandJsonOutputMode } from "../cli/program/json-mode.js";
-import type { OpenClawPluginCliRegistrationOptions } from "./plugin-registration.types.js";
+import type { AforaPluginCliRegistrationOptions } from "./plugin-registration.types.js";
 import { registerPluginCliCommandGroups } from "./register-plugin-cli-command-groups.js";
 
 const descriptor = {
@@ -22,7 +22,7 @@ function requireCommand(program: Command): Command {
 describe("plugin CLI machine-output metadata", () => {
   it("keeps dynamically built legacy parent paths assignable", () => {
     const parentPath: string[] = ["nodes"];
-    const options: OpenClawPluginCliRegistrationOptions = {
+    const options: AforaPluginCliRegistrationOptions = {
       parentPath,
       descriptors: [{ name: "camera", description: "Camera", hasSubcommands: true }],
     };
@@ -54,7 +54,7 @@ describe("plugin CLI machine-output metadata", () => {
     expect(
       isCommandJsonOutputMode(requireCommand(program), [
         "node",
-        "openclaw",
+        "afora",
         "machine",
         "--machine",
       ]),

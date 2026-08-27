@@ -1,6 +1,6 @@
 // Tlon plugin module implements auth behavior.
-import { readResponseTextLimited } from "openclaw/plugin-sdk/provider-http";
-import type { LookupFn, SsrFPolicy } from "openclaw/plugin-sdk/ssrf-runtime";
+import { readResponseTextLimited } from "afora-agent/plugin-sdk/provider-http";
+import type { LookupFn, SsrFPolicy } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { UrbitAuthError } from "./errors.js";
 import { urbitFetch } from "./fetch.js";
 

@@ -3,7 +3,7 @@
  * Channels can restrict tool names after runtime assembly when the active
  * transport cannot safely render or execute a class of tools.
  */
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 
 const TOOL_DENY_BY_MESSAGE_PROVIDER: Readonly<Record<string, readonly string[]>> = {
   "discord-voice": ["tts"],

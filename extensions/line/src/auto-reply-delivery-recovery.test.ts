@@ -1,6 +1,6 @@
 // LINE auto-reply tests cover HTTP rejection recovery and replay safety.
 import { HTTPFetchError, type messagingApi } from "@line/bot-sdk";
-import { createChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
+import { createChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
 import { describe, expect, it, vi } from "vitest";
 import { deliverLineAutoReply } from "./auto-reply-delivery.js";
 import {

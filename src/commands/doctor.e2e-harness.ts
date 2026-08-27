@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { afterEach, beforeEach, vi } from "vitest";
 import { createEmptyPluginRegistry } from "../plugins/registry-empty.js";
 import { defineMockFn, type MockFn } from "../test-utils/vitest-mock-fn.js";
@@ -33,7 +33,7 @@ export const confirm = defineMockFn(vi.fn().mockResolvedValue(true));
 const select = defineMockFn(vi.fn().mockResolvedValue("node"));
 const note = defineMockFn(vi.fn());
 export const writeConfigFile = defineMockFn(vi.fn().mockResolvedValue(undefined));
-export const resolveOpenClawPackageRoot = defineMockFn(vi.fn().mockResolvedValue(null));
+export const resolveAforaPackageRoot = defineMockFn(vi.fn().mockResolvedValue(null));
 export const runGatewayUpdate = defineMockFn(
   vi.fn().mockResolvedValue(createGatewayUpdateResult()),
 );
@@ -233,7 +233,7 @@ function createLegacyStateMigrationDetectionResult(params?: {
       preview: [],
     },
     sharedAuthStore: {
-      sourcePath: "/tmp/state/agents/main/agent/openclaw-agent.sqlite",
+      sourcePath: "/tmp/state/agents/main/agent/afora-agent.sqlite",
       hasLegacy: false,
     },
     worktrees: { hasLegacy: false, pathRewrites: [] },
@@ -306,7 +306,7 @@ function createLegacyStateMigrationDetectionResult(params?: {
       hasLegacy: false,
     },
     rescuePending: {
-      sourcePaths: ["/tmp/state/crestodian/rescue-pending", "/tmp/state/openclaw/rescue-pending"],
+      sourcePaths: ["/tmp/state/crestodian/rescue-pending", "/tmp/state/afora/rescue-pending"],
       hasLegacy: false,
     },
     channelPairing: {
@@ -349,7 +349,7 @@ vi.mock("../skills/discovery/status.js", () => ({
 vi.mock("../plugins/loader.js", () => ({
   getRuntimePluginRegistryForLoadOptions: () => null,
   isPluginRegistryLoadInFlight: () => false,
-  loadOpenClawPlugins: () => createEmptyPluginRegistry(),
+  loadAforaPlugins: () => createEmptyPluginRegistry(),
   loadPluginRegistryHandle: () => createEmptyPluginRegistry(),
   resolveCompatibleRuntimePluginRegistry: () => null,
   resolveRuntimePluginRegistry: () => null,
@@ -359,7 +359,7 @@ vi.mock("../config/config.js", async () => {
   const actual = await vi.importActual<typeof import("../config/config.js")>("../config/config.js");
   return {
     ...actual,
-    CONFIG_PATH: "/tmp/openclaw.json",
+    CONFIG_PATH: "/tmp/afora.json",
     createConfigIO,
     readConfigFileSnapshot,
     writeConfigFile,
@@ -421,22 +421,22 @@ vi.mock("../process/exec.js", () => ({
   runCommandWithTimeout,
 }));
 
-vi.mock("openclaw/plugin-sdk/provider-auth", () => ({
+vi.mock("afora-agent/plugin-sdk/provider-auth", () => ({
   isNonSecretApiKeyMarker: () => false,
 }));
 
-vi.mock("openclaw/plugin-sdk/provider-model-shared", () => ({
+vi.mock("afora-agent/plugin-sdk/provider-model-shared", () => ({
   DEFAULT_CONTEXT_TOKENS: 32768,
   normalizeProviderId: (value: string) => normalizeLowercaseStringOrEmpty(value),
 }));
 
-vi.mock("openclaw/plugin-sdk/provider-stream-shared", () => ({
+vi.mock("afora-agent/plugin-sdk/provider-stream-shared", () => ({
   createMoonshotThinkingWrapper: () => undefined,
   resolveMoonshotThinkingType: () => undefined,
   streamWithPayloadPatch: () => undefined,
 }));
 
-vi.mock("openclaw/plugin-sdk/runtime-env", () => ({
+vi.mock("afora-agent/plugin-sdk/runtime-env", () => ({
   createSubsystemLogger: () => ({
     debug: () => {},
     info: () => {},
@@ -445,11 +445,11 @@ vi.mock("openclaw/plugin-sdk/runtime-env", () => ({
   }),
 }));
 
-vi.mock("../infra/openclaw-root.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../infra/openclaw-root.js")>();
+vi.mock("../infra/afora-root.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../infra/afora-root.js")>();
   return {
     ...actual,
-    resolveOpenClawPackageRoot,
+    resolveAforaPackageRoot,
   };
 });
 
@@ -621,7 +621,7 @@ beforeEach(() => {
 
   readConfigFileSnapshot.mockReset();
   writeConfigFile.mockReset().mockResolvedValue(undefined);
-  resolveOpenClawPackageRoot.mockReset().mockResolvedValue(null);
+  resolveAforaPackageRoot.mockReset().mockResolvedValue(null);
   runGatewayUpdate.mockReset().mockResolvedValue(createGatewayUpdateResult());
   listPluginDoctorLegacyConfigRules.mockReset().mockReturnValue([]);
   runDoctorHealthContributions.mockReset().mockImplementation(defaultRunDoctorHealthContributions);
@@ -672,11 +672,11 @@ beforeEach(() => {
 
   originalIsTTY = process.stdin.isTTY;
   setDoctorStdinTty(true);
-  originalStateDir = process.env.OPENCLAW_STATE_DIR;
-  originalUpdateInProgress = process.env.OPENCLAW_UPDATE_IN_PROGRESS;
-  process.env.OPENCLAW_UPDATE_IN_PROGRESS = "1";
-  tempStateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-doctor-state-"));
-  process.env.OPENCLAW_STATE_DIR = tempStateDir;
+  originalStateDir = process.env.AFORA_STATE_DIR;
+  originalUpdateInProgress = process.env.AFORA_UPDATE_IN_PROGRESS;
+  process.env.AFORA_UPDATE_IN_PROGRESS = "1";
+  tempStateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-doctor-state-"));
+  process.env.AFORA_STATE_DIR = tempStateDir;
   fs.mkdirSync(path.join(tempStateDir, "agents", "main", "sessions"), {
     recursive: true,
   });
@@ -686,14 +686,14 @@ beforeEach(() => {
 afterEach(() => {
   setDoctorStdinTty(originalIsTTY);
   if (originalStateDir === undefined) {
-    delete process.env.OPENCLAW_STATE_DIR;
+    delete process.env.AFORA_STATE_DIR;
   } else {
-    process.env.OPENCLAW_STATE_DIR = originalStateDir;
+    process.env.AFORA_STATE_DIR = originalStateDir;
   }
   if (originalUpdateInProgress === undefined) {
-    delete process.env.OPENCLAW_UPDATE_IN_PROGRESS;
+    delete process.env.AFORA_UPDATE_IN_PROGRESS;
   } else {
-    process.env.OPENCLAW_UPDATE_IN_PROGRESS = originalUpdateInProgress;
+    process.env.AFORA_UPDATE_IN_PROGRESS = originalUpdateInProgress;
   }
   if (tempStateDir) {
     fs.rmSync(tempStateDir, { recursive: true, force: true });

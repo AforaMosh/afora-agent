@@ -10,7 +10,7 @@ title: "Gateway logging"
 
 For a user-facing overview (CLI + Control UI + config), see [/logging](/logging).
 
-OpenClaw has two log surfaces:
+Afora has two log surfaces:
 
 - **Console output** - what you see in the terminal / Debug UI.
 - **File logs** - JSON lines written by the gateway logger.
@@ -25,9 +25,9 @@ agent model: openai/gpt-5.6-sol (thinking=medium, fast=on)
 
 ## File-based logger
 
-- Default rolling log files are under `/tmp/openclaw/` (one file per day), dated by the gateway host's local timezone. The default profile uses `openclaw-YYYY-MM-DD.log`; named profiles use `openclaw-<profile>-YYYY-MM-DD.log` (for example, `openclaw-dev-YYYY-MM-DD.log`). If that directory is unsafe or unwritable (wrong owner, world-writable, a symlink), OpenClaw falls back to a user-scoped `os.tmpdir()/openclaw-<uid>` path instead; on Windows it always uses that OS-tmpdir fallback.
+- Default rolling log files are under `/tmp/afora/` (one file per day), dated by the gateway host's local timezone. The default profile uses `afora-YYYY-MM-DD.log`; named profiles use `afora-<profile>-YYYY-MM-DD.log` (for example, `afora-dev-YYYY-MM-DD.log`). If that directory is unsafe or unwritable (wrong owner, world-writable, a symlink), Afora falls back to a user-scoped `os.tmpdir()/afora-<uid>` path instead; on Windows it always uses that OS-tmpdir fallback.
 - Active log files rotate at `logging.maxFileBytes` (default: 100 MB), keeping up to five numbered archives (`.1` through `.5`) and continuing to write a fresh active file.
-- Configure the log file path and level via `~/.openclaw/openclaw.json`: `logging.file`, `logging.level`.
+- Configure the log file path and level via `~/.AforaMosh/afora-agent.json`: `logging.file`, `logging.level`.
 - The file format is one JSON object per line.
 
 Talk, realtime voice, and managed-room code paths use the shared file logger for bounded lifecycle records intended for operational debugging and OTLP log export. Transcript text, audio payloads, turn ids, call ids, and provider item ids are never copied into the log record.
@@ -35,7 +35,7 @@ Talk, realtime voice, and managed-room code paths use the shared file logger for
 The Control UI Logs tab tails this file via the gateway (`logs.tail`). The CLI does the same:
 
 ```bash
-openclaw logs --follow
+afora logs --follow
 ```
 
 ### Verbose vs. log levels
@@ -52,11 +52,11 @@ The CLI captures `console.log/info/warn/error/debug/trace`, writes them to file 
 Tune console verbosity independently:
 
 - `logging.consoleLevel` (default `info`)
-- `logging.consoleStyle` (`pretty` | `json`). When unset, output is `pretty` on a TTY and the automatic `compact` style otherwise. `compact` is no longer a settable value; `openclaw doctor --fix` maps a stored one to `pretty`.
+- `logging.consoleStyle` (`pretty` | `json`). When unset, output is `pretty` on a TTY and the automatic `compact` style otherwise. `compact` is no longer a settable value; `afora doctor --fix` maps a stored one to `pretty`.
 
 ## Redaction
 
-OpenClaw masks sensitive tokens before log or transcript output leaves the process. This redaction policy applies at console, file-log, OTLP log-record, and session transcript text sinks, so matching secret values are masked before JSONL lines or messages are written to disk.
+Afora masks sensitive tokens before log or transcript output leaves the process. This redaction policy applies at console, file-log, OTLP log-record, and session transcript text sinks, so matching secret values are masked before JSONL lines or messages are written to disk.
 
 - Sensitive-value redaction is always enabled.
 - `logging.redactPatterns`: array of regex strings (overrides defaults)
@@ -75,7 +75,7 @@ The gateway prints WebSocket protocol logs in two modes:
 
 ### WS log style
 
-`openclaw gateway` supports a per-gateway style switch:
+`afora gateway` supports a per-gateway style switch:
 
 - `--ws-log auto` (default): normal mode is optimized; verbose mode uses compact output.
 - `--ws-log compact`: compact output (paired request/response) when verbose.
@@ -84,13 +84,13 @@ The gateway prints WebSocket protocol logs in two modes:
 
 ```bash
 # optimized (only errors/slow)
-openclaw gateway
+afora gateway
 
 # show all WS traffic (paired)
-openclaw gateway --verbose --ws-log compact
+afora gateway --verbose --ws-log compact
 
 # show all WS traffic (full meta)
-openclaw gateway --verbose --ws-log full
+afora gateway --verbose --ws-log full
 ```
 
 ## Console formatting (subsystem logging)

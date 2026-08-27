@@ -1,11 +1,11 @@
 import crypto from "node:crypto";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 // Covers model fallback ordering, error classification, and auth cooldown behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TranscriptNotContinuableError } from "../../packages/agent-core/src/errors.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { createAgentRunStaleLifecycleError } from "../infra/agent-lifecycle-error.js";
 import {
   onTrustedInternalDiagnosticEvent,
@@ -314,7 +314,7 @@ async function runModelFallbackCase(name: string, run: () => Promise<void>): Pro
   }
 }
 
-function makeFallbacksOnlyCfg(): OpenClawConfig {
+function makeFallbacksOnlyCfg(): AforaConfig {
   return {
     agents: {
       defaults: {
@@ -323,10 +323,10 @@ function makeFallbacksOnlyCfg(): OpenClawConfig {
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
-function makeProviderFallbackCfg(provider: string): OpenClawConfig {
+function makeProviderFallbackCfg(provider: string): AforaConfig {
   return makeCfg({
     agents: {
       defaults: {
@@ -341,7 +341,7 @@ function makeProviderFallbackCfg(provider: string): OpenClawConfig {
 
 function makeProviderOrderFallbackCfg(
   entries: Array<[provider: string, model: string]>,
-): OpenClawConfig {
+): AforaConfig {
   return {
     agents: {
       defaults: {
@@ -361,7 +361,7 @@ function makeProviderOrderFallbackCfg(
         ]),
       ),
     },
-  } as unknown as OpenClawConfig;
+  } as unknown as AforaConfig;
 }
 
 async function withTempAuthStore<T>(
@@ -374,12 +374,12 @@ async function withTempAuthStore<T>(
 }
 
 async function makeAuthTempDir(): Promise<string> {
-  authTempRoot ||= path.join("/tmp", "openclaw-auth-suite-mock");
+  authTempRoot ||= path.join("/tmp", "afora-auth-suite-mock");
   return path.join(authTempRoot, `case-${++authTempCounter}`);
 }
 
 async function runWithStoredAuth(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   store: AuthProfileStore;
   provider: string;
   run: (provider: string, model: string) => Promise<string>;
@@ -562,7 +562,7 @@ async function expectSkippedUnavailableProvider(params: {
 }
 
 // Issue-backed Anthropic/OpenAI-compatible insufficient_quota payload under HTTP 400:
-// https://github.com/openclaw/openclaw/issues/23440
+// https://github.com/AforaMosh/afora-agent/issues/23440
 const INSUFFICIENT_QUOTA_PAYLOAD =
   '{"type":"error","error":{"type":"insufficient_quota","message":"Your account has insufficient quota balance to run this request."}}';
 
@@ -581,7 +581,7 @@ function captureModelFailoverDiagnostics(): {
   return { events, stop };
 }
 
-function makeDiagnosticFallbackConfig(fallbacks: string[]): OpenClawConfig {
+function makeDiagnosticFallbackConfig(fallbacks: string[]): AforaConfig {
   return makeCfg({
     agents: { defaults: { model: { primary: "openai/gpt-5.5", fallbacks } } },
   });
@@ -845,8 +845,8 @@ describe("runWithModelFallback", () => {
   });
 
   it("uses the opt-in auth skip cache on the second turn for the same session", async () => {
-    const previous = process.env.OPENCLAW_FALLBACK_SKIP_TTL_MS;
-    process.env.OPENCLAW_FALLBACK_SKIP_TTL_MS = "60000";
+    const previous = process.env.AFORA_FALLBACK_SKIP_TTL_MS;
+    process.env.AFORA_FALLBACK_SKIP_TTL_MS = "60000";
     try {
       const cfg = makeCfg({
         agents: {
@@ -906,9 +906,9 @@ describe("runWithModelFallback", () => {
       );
     } finally {
       if (previous === undefined) {
-        delete process.env.OPENCLAW_FALLBACK_SKIP_TTL_MS;
+        delete process.env.AFORA_FALLBACK_SKIP_TTL_MS;
       } else {
-        process.env.OPENCLAW_FALLBACK_SKIP_TTL_MS = previous;
+        process.env.AFORA_FALLBACK_SKIP_TTL_MS = previous;
       }
     }
   });
@@ -919,8 +919,8 @@ describe("runWithModelFallback", () => {
   ])(
     "scopes auth skip markers to the explicit profile for %s",
     async (_label, harnessOwnedAuth) => {
-      const previous = process.env.OPENCLAW_FALLBACK_SKIP_TTL_MS;
-      process.env.OPENCLAW_FALLBACK_SKIP_TTL_MS = "60000";
+      const previous = process.env.AFORA_FALLBACK_SKIP_TTL_MS;
+      process.env.AFORA_FALLBACK_SKIP_TTL_MS = "60000";
       try {
         const provider = `scoped-auth-skip-${crypto.randomUUID()}`;
         if (harnessOwnedAuth) {
@@ -997,17 +997,17 @@ describe("runWithModelFallback", () => {
         );
       } finally {
         if (previous === undefined) {
-          delete process.env.OPENCLAW_FALLBACK_SKIP_TTL_MS;
+          delete process.env.AFORA_FALLBACK_SKIP_TTL_MS;
         } else {
-          process.env.OPENCLAW_FALLBACK_SKIP_TTL_MS = previous;
+          process.env.AFORA_FALLBACK_SKIP_TTL_MS = previous;
         }
       }
     },
   );
 
   it("scopes automatic auth skips to the selected profile", async () => {
-    const previous = process.env.OPENCLAW_FALLBACK_SKIP_TTL_MS;
-    process.env.OPENCLAW_FALLBACK_SKIP_TTL_MS = "60000";
+    const previous = process.env.AFORA_FALLBACK_SKIP_TTL_MS;
+    process.env.AFORA_FALLBACK_SKIP_TTL_MS = "60000";
     try {
       const provider = `automatic-auth-skip-${crypto.randomUUID()}`;
       const lockedProfile = "openai:locked";
@@ -1086,9 +1086,9 @@ describe("runWithModelFallback", () => {
       );
     } finally {
       if (previous === undefined) {
-        delete process.env.OPENCLAW_FALLBACK_SKIP_TTL_MS;
+        delete process.env.AFORA_FALLBACK_SKIP_TTL_MS;
       } else {
-        process.env.OPENCLAW_FALLBACK_SKIP_TTL_MS = previous;
+        process.env.AFORA_FALLBACK_SKIP_TTL_MS = previous;
       }
     }
   });
@@ -1101,13 +1101,13 @@ describe("runWithModelFallback", () => {
       cfg: makeCfg(),
       provider: "openai",
       model: "gpt-4.1-mini",
-      agentDir: "/tmp/openclaw-no-auth-profiles",
+      agentDir: "/tmp/afora-no-auth-profiles",
       run,
     });
 
     expect(result.result).toBe("ok");
     expect(authSourceCheckMock.hasAnyAuthProfileStoreSource).toHaveBeenCalledWith(
-      "/tmp/openclaw-no-auth-profiles",
+      "/tmp/afora-no-auth-profiles",
     );
     expect(authRuntimeMock.runtime.ensureAuthProfileStore).not.toHaveBeenCalled();
     expect(run).toHaveBeenCalledWith("openai", "gpt-4.1-mini", {
@@ -1231,7 +1231,7 @@ describe("runWithModelFallback", () => {
       },
     ] satisfies Array<{
       name: string;
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       provider: string;
       model: string;
       requestedRouteResolution?: "raw" | "resolved";
@@ -1350,7 +1350,7 @@ describe("runWithModelFallback", () => {
       },
     });
     const missingToolResultError = new Error(
-      "OpenClaw recorded a native Codex tool.call without a matching tool.result before the turn completed.",
+      "Afora recorded a native Codex tool.call without a matching tool.result before the turn completed.",
     );
     const run = vi.fn().mockRejectedValue(missingToolResultError);
 
@@ -1421,20 +1421,20 @@ describe("runWithModelFallback", () => {
     );
   });
 
-  it("does not prepare agent harness plugins for forced OpenClaw candidates", async () => {
+  it("does not prepare agent harness plugins for forced Afora candidates", async () => {
     const cfg = makeCfg({
       models: {
         providers: {
           openai: {
             baseUrl: "https://api.openai.com/v1",
-            agentRuntime: { id: "openclaw" },
+            agentRuntime: { id: "afora" },
             models: [],
           },
         },
       },
     });
     const prepareAgentHarnessRuntime = vi.fn(() => {
-      throw new Error("OpenClaw candidates should not prepare plugin harnesses");
+      throw new Error("Afora candidates should not prepare plugin harnesses");
     });
     const run = vi.fn().mockResolvedValueOnce("ok");
 
@@ -2044,7 +2044,7 @@ describe("runWithModelFallback", () => {
   it("skips only same-runtime candidates after a scoped preflight", async () => {
     registerFallbackHarness("codex");
     const preflightError = createHarnessScopedPreflightError("codex");
-    const run = vi.fn().mockRejectedValueOnce(preflightError).mockResolvedValueOnce("openclaw-ok");
+    const run = vi.fn().mockRejectedValueOnce(preflightError).mockResolvedValueOnce("afora-ok");
     const onFallbackStep = vi.fn();
 
     const result = await runWithModelFallback({
@@ -2053,12 +2053,12 @@ describe("runWithModelFallback", () => {
       model: "gpt-5.5",
       fallbacksOverride: ["openai/gpt-5.4", "anthropic/claude-sonnet-4-6"],
       resolveAgentHarnessRuntimeOverride: (provider) =>
-        provider === "openai" ? "codex" : "openclaw",
+        provider === "openai" ? "codex" : "afora",
       onFallbackStep,
       run,
     });
 
-    expect(result.result).toBe("openclaw-ok");
+    expect(result.result).toBe("afora-ok");
     expect(run.mock.calls).toEqual([
       ["openai", "gpt-5.5", { isFinalFallbackAttempt: false }],
       ["anthropic", "claude-sonnet-4-6", { isFinalFallbackAttempt: true }],
@@ -2089,7 +2089,7 @@ describe("runWithModelFallback", () => {
         model: "gpt-5.5",
         fallbacksOverride: ["anthropic/claude-sonnet-4-6"],
         resolveAgentHarnessRuntimeOverride: (provider) =>
-          provider === "openai" ? "codex" : "openclaw",
+          provider === "openai" ? "codex" : "afora",
         run,
       }),
     ).rejects.toBe(hostPolicyError);
@@ -2129,7 +2129,7 @@ describe("runWithModelFallback", () => {
       },
     });
     const provisioningError = toSandboxProvisioningError(
-      new Error("Sandbox image not found: openclaw-sandbox:analyst. Build or pull it first."),
+      new Error("Sandbox image not found: afora-sandbox:analyst. Build or pull it first."),
       "docker",
     );
     const run = vi.fn().mockRejectedValue(provisioningError);
@@ -2992,7 +2992,7 @@ describe("runWithModelFallback", () => {
         provider: "anthropic",
         model: "claude-haiku-3-5",
         resolveAgentHarnessRuntimeOverride: (provider) =>
-          provider === "openai" ? "openclaw" : undefined,
+          provider === "openai" ? "afora" : undefined,
         run,
       }),
     ).rejects.toBe(switchError);
@@ -3013,7 +3013,7 @@ describe("runWithModelFallback", () => {
         provider: "openai",
         model: "gpt-4.1-mini",
         fallbacksOverride: [],
-        resolveAgentHarnessRuntimeOverride: () => "openclaw",
+        resolveAgentHarnessRuntimeOverride: () => "afora",
         run,
       }),
     ).rejects.toBe(switchError);
@@ -3375,7 +3375,7 @@ describe("runWithModelFallback", () => {
   });
 
   it("warns when falling back due to model_not_found", async () => {
-    const warnLogs = createWarnLogCapture("openclaw-model-fallback-test");
+    const warnLogs = createWarnLogCapture("afora-model-fallback-test");
     try {
       const cfg = makeCfg();
       const run = vi
@@ -3402,7 +3402,7 @@ describe("runWithModelFallback", () => {
   });
 
   it("sanitizes model identifiers in model_not_found warnings", async () => {
-    const warnLogs = createWarnLogCapture("openclaw-model-fallback-test");
+    const warnLogs = createWarnLogCapture("afora-model-fallback-test");
     try {
       const cfg = makeCfg();
       const run = vi
@@ -4370,7 +4370,7 @@ describe("runWithModelFallback", () => {
         },
       ] satisfies Array<{
         name: string;
-        cfg: OpenClawConfig;
+        cfg: AforaConfig;
         provider: string;
         model: string;
         calls: Array<[string, string]>;
@@ -5182,7 +5182,7 @@ describe("runWithImageModelFallback", () => {
       },
     ] satisfies Array<{
       name: string;
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       modelOverride: string;
       expected: Array<[string, string]>;
     }>;

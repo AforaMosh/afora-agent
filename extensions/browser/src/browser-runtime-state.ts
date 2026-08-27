@@ -1,6 +1,6 @@
-import type { PluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { PluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
 // Browser plugin runtime state shared across lazy bundles and duplicate SDK module instances.
-import { createPluginRuntimeStore } from "openclaw/plugin-sdk/runtime-store";
+import { createPluginRuntimeStore } from "afora-agent/plugin-sdk/runtime-store";
 
 type BrowserStateRuntime = {
   sessionTabs: PluginStateSyncKeyedStore<unknown>;

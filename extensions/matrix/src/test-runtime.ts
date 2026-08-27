@@ -4,24 +4,24 @@ import path from "node:path";
 import {
   implicitMentionKindWhen,
   resolveInboundMentionDecision,
-} from "openclaw/plugin-sdk/channel-mention-gating";
+} from "afora-agent/plugin-sdk/channel-mention-gating";
 import type {
   OpenBlobStoreOptions,
   OpenKeyedStoreOptions,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginBlobStoreForTests,
   createPluginStateKeyedStoreForTests,
   createPluginStateSyncKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
 import { afterAll, vi } from "vitest";
 import type { PluginRuntime } from "./runtime-api.js";
 import { setMatrixRuntime } from "./runtime.js";
 
 const defaultStateDir = fs.realpathSync(
-  fs.mkdtempSync(path.join(resolvePreferredOpenClawTmpDir(), "openclaw-matrix-test-state-")),
+  fs.mkdtempSync(path.join(resolvePreferredAforaTmpDir(), "afora-matrix-test-state-")),
 );
 
 afterAll(() => {
@@ -84,8 +84,8 @@ export function installMatrixTestRuntime(options: MatrixTestRuntimeOptions = {})
   ) => stateDir;
   const resolvePluginStateEnv = (storeOptions: OpenKeyedStoreOptions): NodeJS.ProcessEnv => ({
     ...(storeOptions.env ?? process.env),
-    OPENCLAW_STATE_DIR:
-      storeOptions.env?.OPENCLAW_STATE_DIR?.trim() || defaultStateDirResolver(storeOptions.env),
+    AFORA_STATE_DIR:
+      storeOptions.env?.AFORA_STATE_DIR?.trim() || defaultStateDirResolver(storeOptions.env),
   });
   const getRuntimeConfig = () => options.cfg ?? {};
   const logging: PluginRuntime["logging"] | undefined = options.logging
@@ -113,7 +113,7 @@ export function installMatrixTestRuntime(options: MatrixTestRuntimeOptions = {})
       openBlobStore: (<T>(storeOptions: OpenBlobStoreOptions) =>
         createPluginBlobStoreForTests<T>("matrix", storeOptions, {
           ...process.env,
-          OPENCLAW_STATE_DIR: defaultStateDirResolver(process.env),
+          AFORA_STATE_DIR: defaultStateDirResolver(process.env),
         })) as PluginRuntime["state"]["openBlobStore"],
       openKeyedStore: (<T>(storeOptions: OpenKeyedStoreOptions) =>
         createPluginStateKeyedStoreForTests<T>("matrix", {

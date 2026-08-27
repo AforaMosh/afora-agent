@@ -6,7 +6,7 @@ import { coerceErrorMessage as formatError } from "./lib/error-format.mts";
 import { runManagedCommand } from "./lib/managed-child-process.mts";
 import { parseReleaseVersion } from "./lib/release-version.mjs";
 
-const macosInfoPlistPath = "apps/macos/Sources/OpenClaw/Resources/Info.plist";
+const macosInfoPlistPath = "apps/macos/Sources/Afora/Resources/Info.plist";
 type Command = { args: string[]; bin: string };
 const SCOPES = ["all", "config", "dependencies", "plugin-sdk", "plugins", "version"] as const;
 type Scope = (typeof SCOPES)[number];
@@ -355,7 +355,7 @@ function printSkipped(skipped: SkippedTask[]): void {
 
 function parseArgs(argv: string[]) {
   let check = false;
-  let jobs = parseJobs(process.env.OPENCLAW_RELEASE_PREFLIGHT_JOBS ?? "4");
+  let jobs = parseJobs(process.env.AFORA_RELEASE_PREFLIGHT_JOBS ?? "4");
   let wantsFix = false;
   let macosVersionsOnly = false;
   const scopes = new Set<Scope>();

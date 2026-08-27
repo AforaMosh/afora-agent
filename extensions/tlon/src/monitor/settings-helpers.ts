@@ -1,5 +1,5 @@
 // Tlon helper module supports settings helpers behavior.
-import { uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { PendingApproval, TlonSettingsStore } from "../settings.js";
 import { normalizeShip } from "../targets.js";
 import type { TlonResolvedAccount } from "../types.js";

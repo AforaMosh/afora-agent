@@ -1,11 +1,11 @@
 // Elevenlabs provider module implements model/runtime integration.
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { parseStrictFiniteNumber, parseStrictInteger } from "openclaw/plugin-sdk/number-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { parseStrictFiniteNumber, parseStrictInteger } from "afora-agent/plugin-sdk/number-runtime";
 import {
   assertOkOrThrowProviderError,
   readProviderJsonResponse,
-} from "openclaw/plugin-sdk/provider-http";
-import { normalizeResolvedSecretInputString } from "openclaw/plugin-sdk/secret-input";
+} from "afora-agent/plugin-sdk/provider-http";
+import { normalizeResolvedSecretInputString } from "afora-agent/plugin-sdk/secret-input";
 import type {
   SpeechDirectiveTokenParseContext,
   SpeechProviderConfig,
@@ -13,7 +13,7 @@ import type {
   SpeechProviderPlugin,
   SpeechSynthesisRequest,
   SpeechVoiceOption,
-} from "openclaw/plugin-sdk/speech";
+} from "afora-agent/plugin-sdk/speech";
 import {
   asBoolean,
   asFiniteNumber,
@@ -22,17 +22,17 @@ import {
   normalizeSeed,
   requireInRange,
   trimToUndefined,
-} from "openclaw/plugin-sdk/speech";
-import { resolveSpeechProviderApiKey } from "openclaw/plugin-sdk/speech-core";
+} from "afora-agent/plugin-sdk/speech";
+import { resolveSpeechProviderApiKey } from "afora-agent/plugin-sdk/speech-core";
 import {
   fetchWithSsrFGuard,
   ssrfPolicyFromHttpBaseUrlAllowedHostname,
-} from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/ssrf-runtime";
 import {
   asOptionalRecord,
   normalizeLowercaseStringOrEmpty,
   parseBooleanValue,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveElevenLabsApiKeyWithProfileFallback } from "./config-api.js";
 import { isValidElevenLabsVoiceId, normalizeElevenLabsBaseUrl } from "./shared.js";
 import { elevenLabsTTS, elevenLabsTTSStream } from "./tts.js";

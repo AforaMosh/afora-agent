@@ -2,7 +2,7 @@
 // sentinels, and hand off managed-service restarts when needed.
 import { randomUUID } from "node:crypto";
 import os from "node:os";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
   validateUpdateHoldParams,
   validateUpdateHoldResult,
@@ -13,13 +13,13 @@ import {
 import { isRestartEnabled } from "../../config/commands.flags.js";
 import { readConfigFileSnapshot } from "../../config/config.js";
 import { extractDeliveryInfo } from "../../config/sessions.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { GATEWAY_SERVICE_KIND, GATEWAY_SERVICE_MARKER } from "../../daemon/constants.js";
 import {
   EXTERNAL_SUPERVISOR_UPDATE_REQUIRED_REASON,
   isGatewayExternallySupervised,
 } from "../../infra/gateway-supervision.js";
-import { resolveOpenClawPackageRoot } from "../../infra/openclaw-root.js";
+import { resolveAforaPackageRoot } from "../../infra/afora-root.js";
 import { readPackageVersion } from "../../infra/package-json.js";
 import { type RestartSentinelPayload, writeRestartSentinel } from "../../infra/restart-sentinel.js";
 import {
@@ -88,9 +88,9 @@ function tryResolveProcessCwd(): string | undefined {
 
 // Explicit callers share only active checkout work for the exact config snapshot.
 // Reloaded config must never join work started under an older snapshot.
-const updateStatusCheckoutRefreshes = new WeakMap<OpenClawConfig, Promise<void>>();
+const updateStatusCheckoutRefreshes = new WeakMap<AforaConfig, Promise<void>>();
 
-function refreshUpdateStatusCheckout(config: OpenClawConfig): Promise<void> {
+function refreshUpdateStatusCheckout(config: AforaConfig): Promise<void> {
   const current = updateStatusCheckoutRefreshes.get(config);
   if (current) {
     return current;
@@ -114,7 +114,7 @@ async function readPreUpdateConfigForPostCoreFinalize(): Promise<
   return {
     sourceConfig: snapshot.sourceConfig,
     authoredConfig: isRecord(snapshot.parsed)
-      ? (snapshot.parsed as OpenClawConfig)
+      ? (snapshot.parsed as AforaConfig)
       : snapshot.sourceConfig,
   };
 }
@@ -138,7 +138,7 @@ function hasManagedServiceHandoffContext(
 ): boolean {
   if (supervisor === "launchd") {
     return Boolean(
-      env.OPENCLAW_LAUNCHD_LABEL?.trim() ||
+      env.AFORA_LAUNCHD_LABEL?.trim() ||
       env.LAUNCH_JOB_LABEL?.trim() ||
       env.LAUNCH_JOB_NAME?.trim() ||
       env.XPC_SERVICE_NAME?.trim(),
@@ -148,13 +148,13 @@ function hasManagedServiceHandoffContext(
     // Ambient systemd markers only prove that a service manager started this
     // process. The detached CLI needs the durable unit name to stop the same
     // gateway before mutating the install root.
-    return Boolean(env.OPENCLAW_SYSTEMD_UNIT?.trim());
+    return Boolean(env.AFORA_SYSTEMD_UNIT?.trim());
   }
   if (supervisor === "schtasks") {
     return Boolean(
-      env.OPENCLAW_WINDOWS_TASK_NAME?.trim() ||
-      (env.OPENCLAW_SERVICE_MARKER?.trim() === GATEWAY_SERVICE_MARKER &&
-        env.OPENCLAW_SERVICE_KIND?.trim() === GATEWAY_SERVICE_KIND),
+      env.AFORA_WINDOWS_TASK_NAME?.trim() ||
+      (env.AFORA_SERVICE_MARKER?.trim() === GATEWAY_SERVICE_MARKER &&
+        env.AFORA_SERVICE_KIND?.trim() === GATEWAY_SERVICE_KIND),
     );
   }
   return false;
@@ -306,7 +306,7 @@ export const updateHandlers: GatewayRequestHandlers = {
       const configChannel = normalizeUpdateChannel(config.update?.channel);
       const invocationCwd = tryResolveProcessCwd();
       const root =
-        (await resolveOpenClawPackageRoot({
+        (await resolveAforaPackageRoot({
           moduleUrl: import.meta.url,
           argv1: process.argv[1],
           ...(invocationCwd ? { cwd: invocationCwd } : {}),
@@ -525,7 +525,7 @@ export const updateHandlers: GatewayRequestHandlers = {
           allowGatewayServiceRepair: false,
           allowGatewayActivation: false,
         });
-        // The CLI `openclaw update` resumes post-core plugin convergence after a
+        // The CLI `afora update` resumes post-core plugin convergence after a
         // git/source core update; the RPC path did not, leaving official managed
         // plugins stale on the new core. Run the finalizer here to match.
         const finalizeOutcome = await runPostCoreFinalizeAfterGatewayUpdate({

@@ -1,5 +1,5 @@
 import type { Model } from "../../../llm/types.js";
-import { OPENCLAW_AGENT_RUNTIME_ID } from "../../agent-runtime-id.js";
+import { AFORA_AGENT_RUNTIME_ID } from "../../agent-runtime-id.js";
 import { resolveAuthoredModelContextTokens } from "../../context-resolution.js";
 import {
   selectAgentHarness,
@@ -47,7 +47,7 @@ export function resolveEmbeddedRunEffectiveModel(
     nativeModelOwned: params.nativeModelOwned,
   });
   const authoredContextTokenCap =
-    params.agentHarnessId === OPENCLAW_AGENT_RUNTIME_ID
+    params.agentHarnessId === AFORA_AGENT_RUNTIME_ID
       ? undefined
       : resolveAuthoredModelContextTokens({
           cfg: params.runParams.config,

@@ -23,7 +23,7 @@ const mockFiles: WorkspaceBootstrapFile[] = [
 
 describe("workspace bootstrap source identity", () => {
   it("carries canonical source identity through extra-file conversion", async () => {
-    const tempDir = await makeTempWorkspace("openclaw-workspace-source-identity-");
+    const tempDir = await makeTempWorkspace("afora-workspace-source-identity-");
     const nestedDir = path.join(tempDir, "packages", "core");
     const rootAliasDir = path.join(tempDir, "root-memory-alias");
     const nestedAliasDir = path.join(tempDir, "nested-memory-alias");

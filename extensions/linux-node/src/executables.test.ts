@@ -6,7 +6,7 @@ import { resolveExecutable } from "./executables.js";
 
 describe("linux-node executable discovery", () => {
   it("caches resolved executables per process environment", () => {
-    const dir = mkdtempSync(join(tmpdir(), "openclaw-linux-node-exec-"));
+    const dir = mkdtempSync(join(tmpdir(), "afora-linux-node-exec-"));
     const command = `ffmpeg-${process.pid}-${Date.now()}`;
     const expected = join(dir, command);
     writeFileSync(expected, "#!/bin/sh\nexit 0\n");
@@ -19,7 +19,7 @@ describe("linux-node executable discovery", () => {
   });
 
   it("checks known GeoClue demo paths after PATH", () => {
-    const dir = mkdtempSync(join(tmpdir(), "openclaw-linux-node-demo-"));
+    const dir = mkdtempSync(join(tmpdir(), "afora-linux-node-demo-"));
     const demo = join(dir, "where-am-i");
     writeFileSync(demo, "#!/bin/sh\nexit 0\n");
     chmodSync(demo, 0o755);

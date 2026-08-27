@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { isStringRecord as isRecordOfStrings } from "@openclaw/normalization-core/record-coerce";
+import { isStringRecord as isRecordOfStrings } from "@afora/normalization-core/record-coerce";
 import { acquireFileLockSyncWithRetry } from "../infra/file-lock-sync.js";
 import {
   executeSqliteQuerySync,
@@ -13,21 +13,21 @@ import {
   recordLegacyMigrationRun,
   recordLegacyMigrationSource,
 } from "../infra/state-migrations.receipts.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../state/openclaw-agent-db.generated.js";
-import type { DB as OpenClawStateDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaAgentKyselyDatabase } from "../state/afora-agent-db.generated.js";
+import type { DB as AforaStateDatabase } from "../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../state/afora-state-db.js";
 
 const MIGRATION_KIND = "auth-profile-json-to-sqlite-v2";
-type MigrationDatabase = Pick<OpenClawStateDatabase, "migration_runs" | "migration_sources">;
+type MigrationDatabase = Pick<AforaStateDatabase, "migration_runs" | "migration_sources">;
 type AuthProfileTargetDatabase = Pick<
-  OpenClawAgentKyselyDatabase,
+  AforaAgentKyselyDatabase,
   "auth_profile_store" | "auth_profile_state"
 >;
 type SharedAuthProfileTargetDatabase = Pick<
-  OpenClawStateDatabase,
+  AforaStateDatabase,
   "auth_profile_stores" | "auth_profile_state"
 >;
 
@@ -105,7 +105,7 @@ function recordAuthProfileMigrationImported(
   receipt: AuthProfileMigrationSourceReceipt,
   now = Date.now(),
 ): void {
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       const kysely = getNodeSqliteKysely<MigrationDatabase>(db);
       const existing = executeSqliteQueryTakeFirstSync(
@@ -158,7 +158,7 @@ function retirePendingAuthProfileMigrationReceipt(
   status: "retryable" | "superseded",
   now = Date.now(),
 ): void {
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       const kysely = getNodeSqliteKysely<MigrationDatabase>(db);
       executeSqliteQuerySync(
@@ -203,7 +203,7 @@ function recordAuthProfileMigrationCompleted(
   now = Date.now(),
   status: "completed" | "archived-unparsed" = "completed",
 ): void {
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       const kysely = getNodeSqliteKysely<MigrationDatabase>(db);
       executeSqliteQuerySync(
@@ -343,7 +343,7 @@ export function finalizeAuthProfileMigrationSource(
 
 export function resumePendingAuthProfileMigrationArchives(env?: NodeJS.ProcessEnv): string[] {
   const changes: string[] = [];
-  const database = openOpenClawStateDatabase({ env });
+  const database = openAforaStateDatabase({ env });
   const kysely = getNodeSqliteKysely<MigrationDatabase>(database.db);
   const rows = executeSqliteQuerySync(
     database.db,
@@ -463,7 +463,7 @@ export function hasTerminalAuthProfileMigrationReceipt(
   sourceKey: string,
   env?: NodeJS.ProcessEnv,
 ): boolean {
-  const database = openOpenClawStateDatabase({ env });
+  const database = openAforaStateDatabase({ env });
   const row = executeSqliteQueryTakeFirstSync(
     database.db,
     getNodeSqliteKysely<MigrationDatabase>(database.db)
@@ -476,7 +476,7 @@ export function hasTerminalAuthProfileMigrationReceipt(
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
   (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.authProfileMigrationReceiptsTestApi")
+    Symbol.for("afora.authProfileMigrationReceiptsTestApi")
   ] = {
     recordAuthProfileMigrationImported,
     recordAuthProfileMigrationCompleted,

@@ -1,11 +1,11 @@
 // Non-interactive auth-choice tests cover built-in, custom, deprecated, and plugin provider dispatch.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { AforaConfig } from "../../../config/config.js";
 import { resolveAgentModelPrimaryValue } from "../../../config/model-input.js";
 import { commitNonInteractiveOnboardConfig } from "../config-write.js";
 import { applyNonInteractiveAuthChoice } from "./auth-choice.js";
 
-const writeWizardConfigFile = vi.hoisted(() => vi.fn(async (config: OpenClawConfig) => config));
+const writeWizardConfigFile = vi.hoisted(() => vi.fn(async (config: AforaConfig) => config));
 vi.mock("../../../wizard/setup.shared.js", () => ({ writeWizardConfigFile }));
 
 const formatAuthChoiceChoicesForCli = vi.hoisted(() =>
@@ -66,7 +66,7 @@ const target = {
 describe("applyNonInteractiveAuthChoice", () => {
   it("rejects an unknown auth choice and lists the valid choices", async () => {
     const runtime = createRuntime();
-    const nextConfig = { agents: { defaults: {} } } as OpenClawConfig;
+    const nextConfig = { agents: { defaults: {} } } as AforaConfig;
 
     const result = await applyNonInteractiveAuthChoice({
       nextConfig,
@@ -86,7 +86,7 @@ describe("applyNonInteractiveAuthChoice", () => {
 
   it("continues to apply an enumerated provider auth choice", async () => {
     const runtime = createRuntime();
-    const nextConfig = { agents: { defaults: {} } } as OpenClawConfig;
+    const nextConfig = { agents: { defaults: {} } } as AforaConfig;
     const resolvedConfig = { auth: { profiles: { "demo-provider:default": { mode: "api_key" } } } };
     applyNonInteractivePluginProviderChoice.mockResolvedValueOnce(resolvedConfig as never);
 
@@ -109,7 +109,7 @@ describe("applyNonInteractiveAuthChoice", () => {
 
   it("resolves plugin provider auth before builtin custom-provider handling", async () => {
     const runtime = createRuntime();
-    const nextConfig = { agents: { defaults: {} } } as OpenClawConfig;
+    const nextConfig = { agents: { defaults: {} } } as AforaConfig;
     const resolvedConfig = { auth: { profiles: { "demo-provider:default": { mode: "api_key" } } } };
     applyNonInteractivePluginProviderChoice.mockResolvedValueOnce(resolvedConfig as never);
 
@@ -128,7 +128,7 @@ describe("applyNonInteractiveAuthChoice", () => {
 
   it("fails with manifest-owned replacement guidance for deprecated auth choices", async () => {
     const runtime = createRuntime();
-    const nextConfig = { agents: { defaults: {} } } as OpenClawConfig;
+    const nextConfig = { agents: { defaults: {} } } as AforaConfig;
     resolveManifestDeprecatedProviderAuthChoice.mockReturnValue({
       choiceId: "demo-provider-modern-api",
     } as never);
@@ -152,7 +152,7 @@ describe("applyNonInteractiveAuthChoice", () => {
 
   it("escapes deprecated auth choice guidance for terminal output", async () => {
     const runtime = createRuntime();
-    const nextConfig = { agents: { defaults: {} } } as OpenClawConfig;
+    const nextConfig = { agents: { defaults: {} } } as AforaConfig;
     resolveManifestDeprecatedProviderAuthChoice.mockReturnValueOnce({
       choiceId: "modern\nchoice",
     } as never);
@@ -176,7 +176,7 @@ describe("applyNonInteractiveAuthChoice", () => {
 
   it("keeps replacement guidance for deprecated install-catalog choices", async () => {
     const runtime = createRuntime();
-    const nextConfig = { agents: { defaults: {} } } as OpenClawConfig;
+    const nextConfig = { agents: { defaults: {} } } as AforaConfig;
     resolveDeprecatedProviderInstallCatalogEntry.mockReturnValueOnce({
       choiceId: "qwen-api-key",
     } as never);
@@ -200,7 +200,7 @@ describe("applyNonInteractiveAuthChoice", () => {
 
   it("stores custom provider env refs through the local auth-choice seam", async () => {
     const runtime = createRuntime();
-    const nextConfig = { agents: { defaults: {} } } as OpenClawConfig;
+    const nextConfig = { agents: { defaults: {} } } as AforaConfig;
     resolveNonInteractiveApiKey.mockResolvedValueOnce({
       key: "custom-env-key",
       source: "env",
@@ -240,7 +240,7 @@ describe("applyNonInteractiveAuthChoice", () => {
 
   it("never commits an existing profile key as plaintext during custom secret-ref onboarding", async () => {
     const runtime = createRuntime();
-    const nextConfig = { agents: { defaults: {} } } as OpenClawConfig;
+    const nextConfig = { agents: { defaults: {} } } as AforaConfig;
     const profileKey = "fixture-custom-profile-secret";
     resolveNonInteractiveApiKey.mockResolvedValueOnce({ key: profileKey, source: "profile" });
 
@@ -278,7 +278,7 @@ describe("applyNonInteractiveAuthChoice", () => {
     "never serializes an unreferenceable custom $source key in secret-ref mode",
     async (resolved) => {
       const runtime = createRuntime();
-      const nextConfig = { agents: { defaults: {} } } as OpenClawConfig;
+      const nextConfig = { agents: { defaults: {} } } as AforaConfig;
       resolveNonInteractiveApiKey.mockResolvedValueOnce(resolved);
 
       const result = await applyNonInteractiveAuthChoice({
@@ -323,7 +323,7 @@ describe("applyNonInteractiveAuthChoice", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       resolveNonInteractiveApiKey.mockResolvedValueOnce({
         key: "fixture-existing-profile-secret",
         source: "profile",
@@ -349,7 +349,7 @@ describe("applyNonInteractiveAuthChoice", () => {
 
   it("preserves intentionally keyless custom setup in secret-ref mode", async () => {
     const runtime = createRuntime();
-    const nextConfig = { agents: { defaults: {} } } as OpenClawConfig;
+    const nextConfig = { agents: { defaults: {} } } as AforaConfig;
     resolveNonInteractiveApiKey.mockResolvedValueOnce(null);
 
     const result = await applyNonInteractiveAuthChoice({
@@ -372,7 +372,7 @@ describe("applyNonInteractiveAuthChoice", () => {
 
   it("preserves existing custom profile serialization in explicit plaintext mode", async () => {
     const runtime = createRuntime();
-    const nextConfig = { agents: { defaults: {} } } as OpenClawConfig;
+    const nextConfig = { agents: { defaults: {} } } as AforaConfig;
     resolveNonInteractiveApiKey.mockResolvedValueOnce({
       key: "fixture-plaintext-profile-key",
       source: "profile",
@@ -404,7 +404,7 @@ describe("applyNonInteractiveAuthChoice", () => {
     "rejects non-referenceable $source plugin credentials in secret-ref mode",
     async (resolved) => {
       const runtime = createRuntime();
-      const nextConfig = { agents: { defaults: {} } } as OpenClawConfig;
+      const nextConfig = { agents: { defaults: {} } } as AforaConfig;
       applyNonInteractivePluginProviderChoice.mockResolvedValueOnce(nextConfig as never);
 
       await applyNonInteractiveAuthChoice({
@@ -439,7 +439,7 @@ describe("applyNonInteractiveAuthChoice", () => {
 
   it("preserves env-backed plugin credentials and profile metadata in secret-ref mode", async () => {
     const runtime = createRuntime();
-    const nextConfig = { agents: { defaults: {} } } as OpenClawConfig;
+    const nextConfig = { agents: { defaults: {} } } as AforaConfig;
     applyNonInteractivePluginProviderChoice.mockResolvedValueOnce(nextConfig as never);
 
     await applyNonInteractiveAuthChoice({
@@ -485,7 +485,7 @@ describe("applyNonInteractiveAuthChoice", () => {
 
   it("stores custom provider OpenAI Responses compatibility", async () => {
     const runtime = createRuntime();
-    const nextConfig = { agents: { defaults: {} } } as OpenClawConfig;
+    const nextConfig = { agents: { defaults: {} } } as AforaConfig;
     resolveNonInteractiveApiKey.mockResolvedValueOnce(undefined);
 
     const result = await applyNonInteractiveAuthChoice({
@@ -506,7 +506,7 @@ describe("applyNonInteractiveAuthChoice", () => {
 
   it("marks non-interactive custom provider models as image-capable when requested", async () => {
     const runtime = createRuntime();
-    const nextConfig = { agents: { defaults: {} } } as OpenClawConfig;
+    const nextConfig = { agents: { defaults: {} } } as AforaConfig;
     resolveNonInteractiveApiKey.mockResolvedValueOnce(undefined);
 
     const result = await applyNonInteractiveAuthChoice({
@@ -530,7 +530,7 @@ describe("applyNonInteractiveAuthChoice", () => {
 
   it("infers image-capable non-interactive custom provider models by known model id", async () => {
     const runtime = createRuntime();
-    const nextConfig = { agents: { defaults: {} } } as OpenClawConfig;
+    const nextConfig = { agents: { defaults: {} } } as AforaConfig;
     resolveNonInteractiveApiKey.mockResolvedValueOnce(undefined);
 
     const result = await applyNonInteractiveAuthChoice({
@@ -553,7 +553,7 @@ describe("applyNonInteractiveAuthChoice", () => {
 
   it("honors explicit text-only override for known custom vision models", async () => {
     const runtime = createRuntime();
-    const nextConfig = { agents: { defaults: {} } } as OpenClawConfig;
+    const nextConfig = { agents: { defaults: {} } } as AforaConfig;
     resolveNonInteractiveApiKey.mockResolvedValueOnce(undefined);
 
     const result = await applyNonInteractiveAuthChoice({

@@ -8,7 +8,7 @@ describe("OutputAccumulator", () => {
     const accumulator = new OutputAccumulator({
       maxBytes: 8,
       maxLines: 10,
-      tempFilePrefix: "openclaw-output-test",
+      tempFilePrefix: "afora-output-test",
     });
 
     accumulator.append(Buffer.from("secret output"));
@@ -28,7 +28,7 @@ describe("OutputAccumulator", () => {
     const accumulator = new OutputAccumulator({
       maxBytes: 5,
       maxLines: 10,
-      tempFilePrefix: "openclaw-output-test",
+      tempFilePrefix: "afora-output-test",
     });
 
     accumulator.append(Buffer.from("a🙂b"));
@@ -60,7 +60,7 @@ describe("OutputAccumulator", () => {
     const accumulator = new OutputAccumulator({
       maxBytes: 1,
       maxLines: 10,
-      tempFilePrefix: "openclaw-output-test",
+      tempFilePrefix: "afora-output-test",
     });
 
     accumulator.append(Buffer.from([0xe6, 0x97]), "stdout"); // leading bytes of 日

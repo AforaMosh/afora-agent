@@ -20,7 +20,7 @@ type SourceReplyDeliveryRuntime = {
   applyPreparedMode: (owner: SourceReplyDeliveryProjection, mode: SourceReplyDeliveryMode) => void;
 };
 
-const sourceReplyDeliveryRuntimeKey = "__openclawSourceReplyDeliveryRuntime" as const;
+const sourceReplyDeliveryRuntimeKey = "__aforaSourceReplyDeliveryRuntime" as const;
 type SourceReplyDeliveryRuntimeOwner = {
   [sourceReplyDeliveryRuntimeKey]?: SourceReplyDeliveryRuntime;
 };

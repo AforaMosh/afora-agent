@@ -49,7 +49,7 @@ const mocks = vi.hoisted(() => ({
   writeQaSuiteProgress: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/agent-harness", () => ({
+vi.mock("afora-agent/plugin-sdk/agent-harness", () => ({
   disposeRegisteredAgentHarnesses: vi.fn(async () => {}),
 }));
 vi.mock("./gateway-child.js", () => ({
@@ -240,7 +240,7 @@ describe("QA runtime parity scenario retry isolation", () => {
   });
 
   it.each([
-    { forcedRuntime: undefined, expectedRuntime: "openclaw" },
+    { forcedRuntime: undefined, expectedRuntime: "afora" },
     { forcedRuntime: "codex" as const, expectedRuntime: "codex" },
   ])(
     "records $expectedRuntime as the selected runtime fact",

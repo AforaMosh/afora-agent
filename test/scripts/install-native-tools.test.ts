@@ -25,7 +25,7 @@ function expectOption(args: string[], option: string, value: string): void {
 
 describe.runIf(process.platform !== "win32")("native tool installers", () => {
   it.each(installers)("bounds stalled downloads in $script", ({ script, url }) => {
-    const root = tempDirs.make("openclaw-native-tool-installer-");
+    const root = tempDirs.make("afora-native-tool-installer-");
     const binDir = path.join(root, "bin");
     const argsPath = path.join(root, "curl-args.txt");
     const curlPath = path.join(binDir, "curl");
@@ -34,7 +34,7 @@ describe.runIf(process.platform !== "win32")("native tool installers", () => {
       curlPath,
       [
         "#!/usr/bin/env bash",
-        'printf "%s\\n" "$@" >"$OPENCLAW_TEST_CURL_ARGS_PATH"',
+        'printf "%s\\n" "$@" >"$AFORA_TEST_CURL_ARGS_PATH"',
         "exit 28",
         "",
       ].join("\n"),
@@ -46,7 +46,7 @@ describe.runIf(process.platform !== "win32")("native tool installers", () => {
       encoding: "utf8",
       env: {
         ...process.env,
-        OPENCLAW_TEST_CURL_ARGS_PATH: argsPath,
+        AFORA_TEST_CURL_ARGS_PATH: argsPath,
         PATH: `${binDir}${path.delimiter}${process.env.PATH ?? ""}`,
       },
     });

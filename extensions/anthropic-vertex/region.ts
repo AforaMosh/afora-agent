@@ -5,12 +5,12 @@
 import { homedir, platform } from "node:os";
 import { join } from "node:path";
 import type { GoogleAuthOptions } from "google-auth-library";
-import { resolveProviderEndpoint } from "openclaw/plugin-sdk/provider-http";
-import { tryReadSecretFileSync } from "openclaw/plugin-sdk/secret-file-runtime";
+import { resolveProviderEndpoint } from "afora-agent/plugin-sdk/provider-http";
+import { tryReadSecretFileSync } from "afora-agent/plugin-sdk/secret-file-runtime";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString as normalizeOptionalSecretInput,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 const ANTHROPIC_VERTEX_DEFAULT_REGION = "global";
 const ANTHROPIC_VERTEX_REGION_RE = /^[a-z0-9-]+$/;

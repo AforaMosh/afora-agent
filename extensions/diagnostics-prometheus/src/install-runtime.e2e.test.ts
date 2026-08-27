@@ -7,14 +7,14 @@ import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { promisify } from "node:util";
 import {
-  resolvePreferredOpenClawTmpDir,
+  resolvePreferredAforaTmpDir,
   tempWorkspace,
   type TempWorkspace,
-} from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/temp-path";
 import { afterEach, describe, expect, it } from "vitest";
 
 const execFileAsync = promisify(execFile);
-const packageName = "@openclaw/diagnostics-prometheus";
+const packageName = "@afora/diagnostics-prometheus";
 const pluginId = "diagnostics-prometheus";
 const repoRoot = path.resolve(import.meta.dirname, "../../..");
 const pluginRoot = path.resolve(import.meta.dirname, "..");
@@ -65,21 +65,21 @@ function isolatedEnv(params: {
     ...process.env,
     HOME: params.home,
     USERPROFILE: params.home,
-    OPENCLAW_HOME: params.home,
-    OPENCLAW_STATE_DIR: params.stateDir,
-    OPENCLAW_CONFIG_PATH: params.configPath,
-    OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
+    AFORA_HOME: params.home,
+    AFORA_STATE_DIR: params.stateDir,
+    AFORA_CONFIG_PATH: params.configPath,
+    AFORA_DISABLE_BUNDLED_PLUGINS: "1",
     NODE_ENV: "production",
     NO_COLOR: "1",
   };
   for (const key of [
-    "OPENCLAW_BUNDLED_PLUGINS_DIR",
-    "OPENCLAW_PLUGIN_CATALOG_PATHS",
-    "OPENCLAW_PLUGINS_PATHS",
-    "OPENCLAW_TEST_FAST",
-    "OPENCLAW_TEST_HOME",
-    "OPENCLAW_TEST_MINIMAL_GATEWAY",
-    "OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR",
+    "AFORA_BUNDLED_PLUGINS_DIR",
+    "AFORA_PLUGIN_CATALOG_PATHS",
+    "AFORA_PLUGINS_PATHS",
+    "AFORA_TEST_FAST",
+    "AFORA_TEST_HOME",
+    "AFORA_TEST_MINIMAL_GATEWAY",
+    "AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR",
     "VITEST",
     "VITEST_POOL_ID",
     "VITEST_WORKER_ID",
@@ -94,7 +94,7 @@ function isolatedEnv(params: {
 }
 
 async function runCli(args: string[], env: NodeJS.ProcessEnv, build = false): Promise<string> {
-  const entry = build ? "scripts/run-node.mjs" : "openclaw.mjs";
+  const entry = build ? "scripts/run-node.mjs" : "afora.mjs";
   const result = await execFileAsync(process.execPath, [entry, ...args], {
     cwd: repoRoot,
     env,
@@ -140,7 +140,7 @@ async function packPlugin(outputDir: string): Promise<{
       cwd: repoRoot,
       env: {
         ...process.env,
-        OPENCLAW_PLUGIN_NPM_BUNDLE_DEPENDENCIES: "1",
+        AFORA_PLUGIN_NPM_BUNDLE_DEPENDENCIES: "1",
       },
       maxBuffer: 2 * 1024 * 1024,
       timeout: 60_000,
@@ -259,14 +259,14 @@ async function waitForGateway(params: {
 describe("diagnostics-prometheus managed install runtime", () => {
   it("installs the exact official package and exports metrics at Gateway startup", async () => {
     const workspace = await tempWorkspace({
-      rootDir: resolvePreferredOpenClawTmpDir(),
-      prefix: "openclaw-prometheus-install-",
+      rootDir: resolvePreferredAforaTmpDir(),
+      prefix: "afora-prometheus-install-",
     });
     tempWorkspaces.push(workspace);
     const root = workspace.dir;
     const home = path.join(root, "home");
     const stateDir = path.join(root, "state");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const gatewayLog = path.join(root, "gateway.log");
     const gatewayToken = "prometheus-managed-install-test-token";
     const gatewayPort = await reservePort();
@@ -346,7 +346,7 @@ describe("diagnostics-prometheus managed install runtime", () => {
     const gatewayLogHandle = await fs.open(gatewayLog, "a");
     const gateway = spawn(
       process.execPath,
-      ["openclaw.mjs", "gateway", "run", "--bind", "loopback", "--port", String(gatewayPort)],
+      ["afora.mjs", "gateway", "run", "--bind", "loopback", "--port", String(gatewayPort)],
       {
         cwd: repoRoot,
         env,
@@ -367,7 +367,7 @@ describe("diagnostics-prometheus managed install runtime", () => {
     expect(authenticated.status).toBe(200);
     expect(authenticated.headers.get("content-type")).toContain("text/plain");
     expect(body).toContain(
-      'openclaw_telemetry_exporter_total{exporter="diagnostics-prometheus",reason="configured",signal="metrics",status="started"} 1',
+      'afora_telemetry_exporter_total{exporter="diagnostics-prometheus",reason="configured",signal="metrics",status="started"} 1',
     );
     const gatewayLogs = await fs.readFile(gatewayLog, "utf8");
     expect(gatewayLogs).not.toContain(

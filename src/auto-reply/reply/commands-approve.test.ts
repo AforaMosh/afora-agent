@@ -1,11 +1,11 @@
 // Tests approval command behavior for pending tool and execution requests.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   ChannelApprovalCapability,
   ChannelPlugin,
 } from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import type { ChannelApprovalKind } from "../../infra/approval-types.js";
 import { markImplicitSameChatApprovalAuthorization } from "../../plugin-sdk/approval-auth-runtime.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
@@ -62,9 +62,9 @@ type ApprovalTestPolicy = Partial<
   >
 >;
 
-const approvalPolicies = new WeakMap<OpenClawConfig, ApprovalTestPolicy>();
+const approvalPolicies = new WeakMap<AforaConfig, ApprovalTestPolicy>();
 
-function withApprovalPolicy(cfg: OpenClawConfig, policy: ApprovalTestPolicy): OpenClawConfig {
+function withApprovalPolicy(cfg: AforaConfig, policy: ApprovalTestPolicy): AforaConfig {
   approvalPolicies.set(cfg, policy);
   return cfg;
 }
@@ -122,7 +122,7 @@ function setApprovePluginRegistry(): void {
 
 function buildApproveParams(
   commandBodyNormalized: string,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   ctxOverrides?: {
     Provider?: string;
     Surface?: string;
@@ -164,7 +164,7 @@ describe("handleApproveCommand", () => {
       approvers: string[];
       target: "dm";
     } | null = { enabled: true, approvers: ["123"], target: "dm" },
-  ): OpenClawConfig {
+  ): AforaConfig {
     return withApprovalPolicy(
       {
         commands: { text: true },
@@ -174,7 +174,7 @@ describe("handleApproveCommand", () => {
             ...(execApprovals ? { execApprovals } : {}),
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       {
         exec: {
           authorizedSenders: execApprovals?.approvers ?? [],
@@ -193,7 +193,7 @@ describe("handleApproveCommand", () => {
       approvers: string[];
       target: "dm" | "channel" | "both";
     } | null = { enabled: true, approvers: ["123"], target: "channel" },
-  ): OpenClawConfig {
+  ): AforaConfig {
     return withApprovalPolicy(
       {
         commands: { text: true },
@@ -203,7 +203,7 @@ describe("handleApproveCommand", () => {
             ...(execApprovals ? { execApprovals } : {}),
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       {
         exec: { authorizedSenders: execApprovals?.approvers ?? [] },
         plugin: { authorizedSenders: execApprovals?.approvers ?? [] },
@@ -216,7 +216,7 @@ describe("handleApproveCommand", () => {
       buildApproveParams("/approve", {
         commands: { text: true },
         channels: { whatsapp: { allowFrom: ["*"] } },
-      } as OpenClawConfig),
+      } as AforaConfig),
       true,
     );
     expect(result?.shouldContinue).toBe(false);
@@ -230,7 +230,7 @@ describe("handleApproveCommand", () => {
       cfg: {
         commands: { text: true },
         channels: { whatsapp: { allowFrom: ["*"] } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ctx: { SenderId: "123" },
       authorized: true,
       method: "exec.approval.resolve",
@@ -242,7 +242,7 @@ describe("handleApproveCommand", () => {
       cfg: {
         commands: { text: true },
         channels: { slack: { allowFrom: ["*"] } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ctx: { Provider: "slack", Surface: "slack", SenderId: "U123" },
       authorized: true,
       method: "exec.approval.resolve",
@@ -273,7 +273,7 @@ describe("handleApproveCommand", () => {
         {
           commands: { text: true },
           channels: { signal: { allowFrom: ["+15551230000"] } },
-        } as OpenClawConfig,
+        } as AforaConfig,
         {
           exec: { authorizedSenders: ["+15551230000"] },
           plugin: { authorizedSenders: ["+15551230000"] },
@@ -290,7 +290,7 @@ describe("handleApproveCommand", () => {
       cfg: {
         commands: { text: true },
         channels: { signal: { allowFrom: [] } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ctx: { Provider: "signal", Surface: "signal", SenderId: "+15551239999" },
       authorized: true,
       method: "exec.approval.resolve",
@@ -310,7 +310,7 @@ describe("handleApproveCommand", () => {
             },
           },
           channels: { telegram: { allowFrom: ["*"] } },
-        } as OpenClawConfig,
+        } as AforaConfig,
         {
           exec: { authorizedSenders: ["123"] },
           plugin: { authorizedSenders: [] },
@@ -350,7 +350,7 @@ describe("handleApproveCommand", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         {
           exec: { authorizedSenders: ["123"], accountId: "work" },
           plugin: { authorizedSenders: ["123"], accountId: "work" },
@@ -375,7 +375,7 @@ describe("handleApproveCommand", () => {
   it.each([
     {
       name: "does not treat implicit default approval auth as a bypass for unauthorized senders",
-      cfg: { commands: { text: true } } as OpenClawConfig,
+      cfg: { commands: { text: true } } as AforaConfig,
       ctx: { Provider: "webchat", Surface: "webchat", SenderId: "123" },
       setup: undefined,
     },
@@ -384,7 +384,7 @@ describe("handleApproveCommand", () => {
       cfg: {
         commands: { text: true },
         channels: { slack: { allowFrom: ["*"] } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ctx: { Provider: "slack", Surface: "slack", SenderId: "U123" },
       setup: () =>
         setActivePluginRegistry(
@@ -408,7 +408,7 @@ describe("handleApproveCommand", () => {
       cfg: {
         commands: { text: true },
         channels: { signal: { allowFrom: [] } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       ctx: { Provider: "signal", Surface: "signal", SenderId: "+15551239999" },
       setup: undefined,
     },
@@ -570,7 +570,7 @@ describe("handleApproveCommand", () => {
         {
           commands: { text: true },
           channels: { matrix: { allowFrom: ["*"] } },
-        } as OpenClawConfig,
+        } as AforaConfig,
         {
           Provider: "matrix",
           Surface: "matrix",
@@ -706,7 +706,7 @@ describe("handleApproveCommand", () => {
   it("enforces gateway approval scopes", async () => {
     const cfg = {
       commands: { text: true },
-    } as OpenClawConfig;
+    } as AforaConfig;
     for (const testCase of [
       {
         scopes: ["operator.write"],

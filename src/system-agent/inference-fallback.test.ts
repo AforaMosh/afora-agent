@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { verifySystemAgentInferenceWithFallback } from "./inference-fallback.js";
 import type { SystemAgentConfiguredRoute } from "./inference-route.js";
@@ -9,7 +9,7 @@ const runtime = {} as RuntimeEnv;
 function route(agentId: string, provider: string): SystemAgentConfiguredRoute {
   return {
     runner: "embedded",
-    agentHarnessRuntimeOverride: "openclaw",
+    agentHarnessRuntimeOverride: "afora",
     runConfig: {},
     modelLabel: `${provider}/model`,
     provider,
@@ -19,7 +19,7 @@ function route(agentId: string, provider: string): SystemAgentConfiguredRoute {
   };
 }
 
-const config: OpenClawConfig = {
+const config: AforaConfig = {
   agents: {
     defaults: {
       model: { primary: "zeta/model" },
@@ -46,7 +46,7 @@ describe("system-agent inference fallback", () => {
     expect(result).toEqual({
       ok: false,
       status: "unknown",
-      error: "OpenClaw could not verify a usable inference route. Check model setup and try again.",
+      error: "Afora could not verify a usable inference route. Check model setup and try again.",
     });
   });
 
@@ -118,7 +118,7 @@ describe("system-agent inference fallback", () => {
 
   it("uses a later authenticated route for one fallback provider", async () => {
     const attempts: string[] = [];
-    const duplicateProviderConfig: OpenClawConfig = {
+    const duplicateProviderConfig: AforaConfig = {
       agents: {
         defaults: { model: { primary: "zeta/model" } },
         list: [
@@ -152,7 +152,7 @@ describe("system-agent inference fallback", () => {
 
   it("tries another credential owner of the same provider after an auth failure", async () => {
     const attempts: string[] = [];
-    const sameProviderConfig: OpenClawConfig = {
+    const sameProviderConfig: AforaConfig = {
       agents: {
         defaults: { model: { primary: "alpha/model" } },
         list: [
@@ -184,7 +184,7 @@ describe("system-agent inference fallback", () => {
 
   it("treats a rate limit as credential-scoped and tries another owner", async () => {
     const attempts: string[] = [];
-    const sameProviderConfig: OpenClawConfig = {
+    const sameProviderConfig: AforaConfig = {
       agents: {
         defaults: { model: { primary: "alpha/model" } },
         list: [
@@ -216,7 +216,7 @@ describe("system-agent inference fallback", () => {
 
   it("tries another route of the same provider after a malformed response", async () => {
     const attempts: string[] = [];
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: { model: { primary: "alpha/model" } },
         list: [
@@ -250,7 +250,7 @@ describe("system-agent inference fallback", () => {
 
   it("retires the whole provider after a provider-wide failure", async () => {
     const attempts: string[] = [];
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: { model: { primary: "alpha/model" } },
         list: [

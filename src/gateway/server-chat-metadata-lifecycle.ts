@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { createSubsystemLogger } from "../logging/subsystem.js";
 import type { GatewayRequestContext } from "./server-methods/types.js";
 import type { GatewayPostReadySidecarHandle } from "./server-startup-post-attach.js";
@@ -6,7 +6,7 @@ import type { GatewayPostReadySidecarHandle } from "./server-startup-post-attach
 type GatewayLogger = ReturnType<typeof createSubsystemLogger>;
 
 export async function createGatewayChatMetadataLifecycle(params: {
-  getConfig: () => OpenClawConfig;
+  getConfig: () => AforaConfig;
   minimalTestGateway: boolean;
   log: GatewayLogger;
 }) {

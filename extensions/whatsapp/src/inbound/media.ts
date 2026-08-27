@@ -1,6 +1,6 @@
 // Whatsapp plugin module implements media behavior.
 import type { proto, WAMessage } from "baileys";
-import { saveMediaStream, type SavedMedia } from "openclaw/plugin-sdk/media-store";
+import { saveMediaStream, type SavedMedia } from "afora-agent/plugin-sdk/media-store";
 import { identitiesOverlap } from "../identity.js";
 import type { createWaSocket } from "../session.js";
 import { extractContextInfo } from "./extract.js";

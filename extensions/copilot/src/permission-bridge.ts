@@ -30,7 +30,7 @@ import type {
   PermissionRequest as SdkPermissionRequest,
   PermissionRequestResult as SdkPermissionRequestResult,
 } from "@github/copilot-sdk";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 
 /** Request shape forwarded to host-implemented policies. */
 interface CopilotPermissionContext {

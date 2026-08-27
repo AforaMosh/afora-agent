@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { markInboundContextLabel } from "../auto-reply/reply/inbound-context-marker.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { encodeSessionArchiveContent } from "../config/sessions/archive-compression.js";
 import {
   appendTranscriptMessage,
@@ -89,9 +89,9 @@ async function refreshSessionCostUsageForTest(sessionFile: string): Promise<void
 }
 
 describe("session cost usage", () => {
-  const suiteRootTracker = createSuiteTempRootTracker({ prefix: "openclaw-session-cost-" });
+  const suiteRootTracker = createSuiteTempRootTracker({ prefix: "afora-session-cost-" });
   const withStateDir = async <T>(stateDir: string, fn: () => Promise<T>): Promise<T> =>
-    await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, fn);
+    await withEnvAsync({ AFORA_STATE_DIR: stateDir }, fn);
   const makeSessionCostRoot = async (prefix: string): Promise<string> =>
     await suiteRootTracker.make(prefix);
   const transcriptText = (sessionId: string, entry: unknown): string =>
@@ -358,7 +358,7 @@ describe("session cost usage", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     await withStateDir(root, async () => {
       const summary = await loadCostUsageSummary({ config });
@@ -437,7 +437,7 @@ describe("session cost usage", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     await withStateDir(root, async () => {
       const alpha = await loadCostUsageSummary({ agentId: "alpha", config });
@@ -554,7 +554,7 @@ describe("session cost usage", () => {
       );
       expect(sqliteRows).toHaveLength(1);
       expect(sqliteRows[0]?.key).toContain(
-        path.join("agents", "main", "agent", "openclaw-agent.sqlite"),
+        path.join("agents", "main", "agent", "afora-agent.sqlite"),
       );
     });
   });
@@ -635,7 +635,7 @@ describe("session cost usage", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const costSpy = vi.spyOn(usageFormat, "resolveModelCostConfig");
     try {
@@ -690,7 +690,7 @@ describe("session cost usage", () => {
       bundledGeneratedAt: () => 100,
       readStoredCatalog: () => ({
         id: 1,
-        source_url: "https://catalog.openclaw.ai/models/v1/catalog.json",
+        source_url: "https://catalog.afora.ai/models/v1/catalog.json",
         bundle_json: bundleJson,
         generated_at: 200,
         min_version: "2026.7.0",
@@ -709,7 +709,7 @@ describe("session cost usage", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     try {
       await withStateDir(root, async () => {
@@ -825,7 +825,7 @@ describe("session cost usage", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     await withStateDir(root, async () => {
       const summary = await loadCostUsageSummary({ config });
@@ -918,7 +918,7 @@ describe("session cost usage", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const expectedCost = 0.0028;
 
     await withStateDir(root, async () => {

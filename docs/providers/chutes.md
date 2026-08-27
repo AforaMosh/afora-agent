@@ -2,18 +2,18 @@
 summary: "Chutes setup (OAuth or API key, model discovery, aliases)"
 title: "Chutes"
 read_when:
-  - You want to use Chutes with OpenClaw
+  - You want to use Chutes with Afora
   - You need the OAuth or API key setup path
   - You want the default model, aliases, or discovery behavior
 ---
 
 [Chutes](https://chutes.ai) exposes open-source model catalogs through an
-OpenAI-compatible API. OpenClaw supports both browser OAuth and API-key auth.
+OpenAI-compatible API. Afora supports both browser OAuth and API-key auth.
 
 | Property         | Value                                                   |
 | ---------------- | ------------------------------------------------------- |
 | Provider         | `chutes`                                                |
-| Plugin           | official external package (`@openclaw/chutes-provider`) |
+| Plugin           | official external package (`@afora/chutes-provider`) |
 | API              | OpenAI-compatible                                       |
 | Base URL         | `https://llm.chutes.ai/v1`                              |
 | Auth             | OAuth or API key (see below)                            |
@@ -25,8 +25,8 @@ OpenAI-compatible API. OpenClaw supports both browser OAuth and API-key auth.
 ## Install plugin
 
 ```bash
-openclaw plugins install @openclaw/chutes-provider
-openclaw gateway restart
+afora plugins install @afora/chutes-provider
+afora gateway restart
 ```
 
 ## Getting started
@@ -39,10 +39,10 @@ the Chutes catalog.
     <Steps>
       <Step title="Run the OAuth onboarding flow">
         ```bash
-        openclaw onboard --auth-choice chutes
+        afora onboard --auth-choice chutes
         ```
-        OpenClaw launches the browser flow locally, or shows a URL + redirect-paste
-        flow on remote/headless hosts. OAuth tokens auto-refresh through OpenClaw auth
+        Afora launches the browser flow locally, or shows a URL + redirect-paste
+        flow on remote/headless hosts. OAuth tokens auto-refresh through Afora auth
         profiles.
       </Step>
     </Steps>
@@ -55,7 +55,7 @@ the Chutes catalog.
       </Step>
       <Step title="Run the API key onboarding flow">
         ```bash
-        openclaw onboard --auth-choice chutes-api-key
+        afora onboard --auth-choice chutes-api-key
         ```
       </Step>
     </Steps>
@@ -64,9 +64,9 @@ the Chutes catalog.
 
 ## Discovery behavior
 
-When Chutes auth is available, OpenClaw queries `GET /v1/models` with that
+When Chutes auth is available, Afora queries `GET /v1/models` with that
 credential and uses the discovered models, cached for 5 minutes per
-credential. On an expired/unauthorized key (HTTP 401), OpenClaw retries once
+credential. On an expired/unauthorized key (HTTP 401), Afora retries once
 without credentials. If discovery still returns no rows, fails, or returns any
 other non-2xx status, it falls back to the bundled static catalog (both API-key
 and OAuth discovery use this same path). If discovery fails at startup, the
@@ -74,7 +74,7 @@ static catalog is used automatically.
 
 ## Default aliases
 
-OpenClaw registers two convenience aliases for the Chutes catalog:
+Afora registers two convenience aliases for the Chutes catalog:
 
 | Alias           | Target model                           |
 | --------------- | -------------------------------------- |
@@ -97,7 +97,7 @@ pickers:
 | `chutes/moonshotai/Kimi-K2.5-TEE`      | Hidden        |
 | `chutes/Qwen/Qwen3.5-397B-A17B-TEE`    | Hidden        |
 
-Run `openclaw models list --all --provider chutes` for the full list.
+Run `afora models list --all --provider chutes` for the full list.
 
 ## Config example
 

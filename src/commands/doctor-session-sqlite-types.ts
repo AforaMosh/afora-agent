@@ -1,5 +1,5 @@
 /** Shared type contracts for doctor-owned session SQLite migration reports. */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 export type DoctorSessionSqliteIssue = {
   code: string;
@@ -88,7 +88,7 @@ export type DoctorSessionSqliteMode =
 export type DoctorSessionSqliteOptions = {
   allAgents?: boolean;
   agent?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   mode: DoctorSessionSqliteMode;
   store?: string;

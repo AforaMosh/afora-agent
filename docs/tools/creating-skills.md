@@ -1,7 +1,7 @@
 ---
 title: "Creating skills"
 sidebarTitle: "Creating skills"
-summary: "Build, test, and publish custom SKILL.md workspace skills for your OpenClaw agents."
+summary: "Build, test, and publish custom SKILL.md workspace skills for your Afora agents."
 read_when:
   - You are creating a new custom skill
   - You need a quick starter workflow for SKILL.md-based skills
@@ -10,7 +10,7 @@ read_when:
 
 Skills teach the agent how and when to use tools. Each skill is a directory
 containing a `SKILL.md` file with YAML frontmatter and markdown instructions.
-OpenClaw loads skills from several roots in a defined [precedence order](/tools/skills#loading-order).
+Afora loads skills from several roots in a defined [precedence order](/tools/skills#loading-order).
 
 ## Create your first skill
 
@@ -19,14 +19,14 @@ OpenClaw loads skills from several roots in a defined [precedence order](/tools/
     Skills live in your workspace `skills/` folder:
 
     ```bash
-    mkdir -p ~/.openclaw/workspace/skills/hello-world
+    mkdir -p ~/.afora/workspace/skills/hello-world
     ```
 
     You can group skills in subfolders for organization — the skill is still
     named by the `SKILL.md` frontmatter, not the folder path:
 
     ```bash
-    mkdir -p ~/.openclaw/workspace/skills/personal/hello-world
+    mkdir -p ~/.afora/workspace/skills/personal/hello-world
     # skill name is still "hello-world", invoked as /hello-world
     ```
 
@@ -60,10 +60,10 @@ OpenClaw loads skills from several roots in a defined [precedence order](/tools/
 
   <Step title="Verify the skill loaded">
     ```bash
-    openclaw skills list
+    afora skills list
     ```
 
-    OpenClaw watches `SKILL.md` files under skills roots by default. If the
+    Afora watches `SKILL.md` files under skills roots by default. If the
     watcher is disabled or you are continuing an existing session, start a new
     one so the agent receives the refreshed list:
 
@@ -72,14 +72,14 @@ OpenClaw loads skills from several roots in a defined [precedence order](/tools/
     /new
 
     # Or restart the gateway
-    openclaw gateway restart
+    afora gateway restart
     ```
 
   </Step>
 
   <Step title="Test it">
     ```bash
-    openclaw agent --message "give me a greeting"
+    afora agent --message "give me a greeting"
     ```
 
     Or open a chat and ask the agent directly. Use `/skill hello-world` to
@@ -128,7 +128,7 @@ Gate your skill so it only loads when its dependencies are available:
 ---
 name: gemini-search
 description: Search using Gemini CLI.
-metadata: { "openclaw": { "requires": { "bins": ["gemini"] }, "primaryEnv": "GEMINI_API_KEY" } }
+metadata: { "afora": { "requires": { "bins": ["gemini"] }, "primaryEnv": "GEMINI_API_KEY" } }
 ---
 ```
 
@@ -139,7 +139,7 @@ metadata: { "openclaw": { "requires": { "bins": ["gemini"] }, "primaryEnv": "GEM
     | `requires.bins` | All binaries must exist on `PATH` |
     | `requires.anyBins` | At least one binary must exist on `PATH` |
     | `requires.env` | Each env var must exist in the process or config |
-    | `requires.config` | Each `openclaw.json` path must be truthy |
+    | `requires.config` | Each `afora.json` path must be truthy |
     | `os` | Platform filter: `["darwin"]`, `["linux"]`, `["win32"]` |
     | `always` | Include on a compatible OS even when `requires.*` checks fail |
 
@@ -147,7 +147,7 @@ metadata: { "openclaw": { "requires": { "bins": ["gemini"] }, "primaryEnv": "GEM
 
   </Accordion>
   <Accordion title="Environment and API keys">
-    Wire an API key to a skill entry in `openclaw.json`:
+    Wire an API key to a skill entry in `afora.json`:
 
     ```json5
     {
@@ -177,13 +177,13 @@ live, use [Skill Workshop](/tools/skill-workshop) proposals instead of writing
 
 ```bash
 # Propose a brand-new skill
-openclaw skills workshop propose-create \
+afora skills workshop propose-create \
   --name "hello-world" \
   --description "A simple skill that prints a greeting." \
   --proposal ./PROPOSAL.md
 
 # Propose an update to an existing skill
-openclaw skills workshop propose-update hello-world \
+afora skills workshop propose-update hello-world \
   --proposal ./PROPOSAL.md \
   --description "Updated greeting skill"
 ```
@@ -191,7 +191,7 @@ openclaw skills workshop propose-update hello-world \
 Use `--proposal-dir` when the proposal includes support files:
 
 ```bash
-openclaw skills workshop propose-create \
+afora skills workshop propose-create \
   --name "hello-world" \
   --description "A simple skill that prints a greeting." \
   --proposal-dir ./hello-world-proposal/
@@ -203,9 +203,9 @@ The directory must contain `PROPOSAL.md` at its root. Support files go under
 After review:
 
 ```bash
-openclaw skills workshop inspect <proposal-id>
-openclaw skills workshop evaluate <proposal-id>
-openclaw skills workshop apply <proposal-id>
+afora skills workshop inspect <proposal-id>
+afora skills workshop evaluate <proposal-id>
+afora skills workshop apply <proposal-id>
 ```
 
 See [Skill Workshop](/tools/skill-workshop) for the full proposal lifecycle.
@@ -214,7 +214,7 @@ See [Skill Workshop](/tools/skill-workshop) for the full proposal lifecycle.
 
 <Steps>
   <Step title="Ensure your SKILL.md is complete">
-    Make sure `name`, `description`, and any `metadata.openclaw` gating fields
+    Make sure `name`, `description`, and any `metadata.afora` gating fields
     are set. Add a `homepage` URL if you have a project page.
   </Step>
   <Step title="Install the standalone ClawHub CLI and log in">
@@ -243,7 +243,7 @@ See [Skill Workshop](/tools/skill-workshop) for the full proposal lifecycle.
   - **Be concise** — instruct the model on *what* to do, not how to be an AI.
   - **Safety first** — if your skill uses `exec`, ensure prompts do not allow
     arbitrary command injection from untrusted input.
-  - **Test locally** — use `openclaw agent --message "..."` before sharing.
+  - **Test locally** — use `afora agent --message "..."` before sharing.
   - **Use ClawHub** — browse community skills at [clawhub.ai](https://clawhub.ai)
     before building from scratch.
 </Tip>

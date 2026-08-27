@@ -21,7 +21,7 @@ import { migrateLegacyMainSessionKeys } from "../config/sessions/legacy-main-ses
 import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/session-sqlite-target.js";
 import { isPerAgentSessionStoreConfig } from "../config/sessions/session-store-config.js";
 import { resolveSessionStoreTargets } from "../config/sessions/targets.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
   createPluginStateKeyedStore,
@@ -45,12 +45,12 @@ import {
   normalizeAgentId,
 } from "../routing/session-key.js";
 import {
-  detectOpenClawStateDatabaseSchemaMigrations,
-  repairOpenClawStateDatabaseSchema,
-  repairOpenClawStateDatabaseSchemaIfNeeded,
-  type OpenClawStateDatabaseSchemaMigration,
-} from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+  detectAforaStateDatabaseSchemaMigrations,
+  repairAforaStateDatabaseSchema,
+  repairAforaStateDatabaseSchemaIfNeeded,
+  type AforaStateDatabaseSchemaMigration,
+} from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import { acquireGatewayLock } from "./gateway-lock.js";
 import {
   detectLegacyAcpReplayLedger,
@@ -182,7 +182,7 @@ import {
   migrateLegacyWorkspaceState,
 } from "./state-migrations.workspace-setup.js";
 
-function describeStateSchemaMigration(migration: OpenClawStateDatabaseSchemaMigration): string {
+function describeStateSchemaMigration(migration: AforaStateDatabaseSchemaMigration): string {
   switch (migration.kind) {
     case "agent-databases-composite-primary-key":
       return "agent database registry primary key → agent_id,path";
@@ -195,7 +195,7 @@ function describeStateSchemaMigration(migration: OpenClawStateDatabaseSchemaMigr
     case "agent-databases-relative-paths-v9":
       return "agent database registry paths → state-relative storage";
     case "operator-approvals-system-agent":
-      return "operator approvals → OpenClaw system changes";
+      return "operator approvals → Afora system changes";
     case "session-watch-cursor-provenance-v4":
       return "session watch cursors → provenance column";
     case "strict-tables-v3":
@@ -217,8 +217,8 @@ export function resetAutoMigrateLegacyStateForTest(): void {
 }
 
 async function collectPluginDoctorStateMigrationPlans(params: {
-  cfg: OpenClawConfig;
-  pluginDoctorConfig?: OpenClawConfig;
+  cfg: AforaConfig;
+  pluginDoctorConfig?: AforaConfig;
   env: NodeJS.ProcessEnv;
   stateDir: string;
   oauthDir: string;
@@ -281,13 +281,13 @@ function createPluginDoctorStateMigrationContext(
   };
 }
 
-function tryResolveDoctorStateMigrationAgentId(cfg: OpenClawConfig): string | undefined {
+function tryResolveDoctorStateMigrationAgentId(cfg: AforaConfig): string | undefined {
   const agentId =
     tryResolveLegacyCompatibilityAgentId(cfg) ?? tryResolveSystemAgentTargetAgentId(cfg);
   return agentId && listAgentIds(cfg).includes(agentId) ? agentId : undefined;
 }
 
-function tryResolveDoctorSessionMigrationAgentId(cfg: OpenClawConfig): string | undefined {
+function tryResolveDoctorSessionMigrationAgentId(cfg: AforaConfig): string | undefined {
   return (
     tryResolveDoctorStateMigrationAgentId(cfg) ??
     (!isPerAgentSessionStoreConfig(cfg.session?.store)
@@ -307,12 +307,12 @@ function resolveConcreteBindingAccountId(value: unknown): string | undefined {
 async function detectManagedWorktreeStateMigration(params: {
   env: NodeJS.ProcessEnv;
   stateDir: string;
-  stateSchemaMigrations: readonly OpenClawStateDatabaseSchemaMigration[];
+  stateSchemaMigrations: readonly AforaStateDatabaseSchemaMigration[];
   doctorOnlyStateMigrations?: boolean;
 }): Promise<LegacyStateDetection["worktrees"]> {
   const rawRoot = path.join(params.stateDir, "worktrees");
-  const stateEnv = { ...params.env, OPENCLAW_STATE_DIR: params.stateDir };
-  const databaseExists = migrationFileExists(resolveOpenClawStateSqlitePath(stateEnv));
+  const stateEnv = { ...params.env, AFORA_STATE_DIR: params.stateDir };
+  const databaseExists = migrationFileExists(resolveAforaStateSqlitePath(stateEnv));
   const hasCurrentSchema = params.stateSchemaMigrations.length === 0;
   const hasLegacy =
     params.doctorOnlyStateMigrations === true &&
@@ -356,8 +356,8 @@ async function detectManagedWorktreeStateMigration(params: {
 }
 
 export async function detectLegacyStateMigrations(params: {
-  cfg: OpenClawConfig;
-  pluginDoctorConfig?: OpenClawConfig;
+  cfg: AforaConfig;
+  pluginDoctorConfig?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   homedir?: () => string;
   pluginSessionStoreAgentIds?: readonly string[];
@@ -467,8 +467,8 @@ export async function detectLegacyStateMigrations(params: {
   const pluginInstallIndexPath = resolveLegacyInstalledPluginIndexStorePath({ stateDir });
   const hasPluginInstallIndex = migrationFileExists(pluginInstallIndexPath);
   const debugProxyCaptureSidecar = detectLegacyDebugProxyCaptureSidecar(stateDir, env);
-  const stateSchemaMigrations = detectOpenClawStateDatabaseSchemaMigrations({
-    env: { ...env, OPENCLAW_STATE_DIR: stateDir },
+  const stateSchemaMigrations = detectAforaStateDatabaseSchemaMigrations({
+    env: { ...env, AFORA_STATE_DIR: stateDir },
   });
   const worktrees = await detectManagedWorktreeStateMigration({
     env,
@@ -540,7 +540,7 @@ export async function detectLegacyStateMigrations(params: {
     stateSchemaMigrations.length === 0
       ? detectDoctorOwnedState(detectSharedAuthStoreMigration)
       : {
-          sourcePath: path.join(resolveSharedMainAuthAgentDir(env), "openclaw-agent.sqlite"),
+          sourcePath: path.join(resolveSharedMainAuthAgentDir(env), "afora-agent.sqlite"),
           hasLegacy: false,
         };
   const deviceIdentity = detectLegacyDeviceIdentity({
@@ -882,7 +882,7 @@ export async function detectLegacyStateMigrations(params: {
 
 async function runPluginDoctorStateMigrationPlans(params: {
   detected: LegacyStateDetection;
-  config: OpenClawConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
 }): Promise<MigrationMessages> {
   const warnings: string[] = [];
@@ -913,7 +913,7 @@ async function runPluginDoctorStateMigrationPlans(params: {
 
 async function migratePluginDoctorStatePlans(params: {
   plans: readonly DetectedPluginDoctorStateMigrationPlan[];
-  config: OpenClawConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
   stateDir: string;
   oauthDir: string;
@@ -929,7 +929,7 @@ async function migratePluginDoctorStatePlans(params: {
   try {
     lock = await acquireGatewayLock({
       allowInTests: true,
-      env: { ...params.env, OPENCLAW_STATE_DIR: params.stateDir },
+      env: { ...params.env, AFORA_STATE_DIR: params.stateDir },
       pollIntervalMs: PLUGIN_DOCTOR_MIGRATION_LOCK_POLL_INTERVAL_MS,
       role: "sqlite-maintenance",
       timeoutMs: PLUGIN_DOCTOR_MIGRATION_LOCK_TIMEOUT_MS,
@@ -977,7 +977,7 @@ async function migratePluginDoctorStatePlans(params: {
 }
 
 export async function autoMigrateLegacyPluginDoctorState(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
   homedir?: () => string;
   log?: MigrationLogger;
@@ -997,8 +997,8 @@ export async function autoMigrateLegacyPluginDoctorState(params: {
   });
   const stateDir = resolveStateDir(env, params.homedir ?? os.homedir);
   const oauthDir = resolveOAuthDir(env, stateDir);
-  const stateSchema = repairOpenClawStateDatabaseSchemaIfNeeded({
-    env: { ...env, OPENCLAW_STATE_DIR: stateDir },
+  const stateSchema = repairAforaStateDatabaseSchemaIfNeeded({
+    env: { ...env, AFORA_STATE_DIR: stateDir },
   });
   const changes = [...stateDirResult.changes, ...stateSchema.changes];
   const warnings = [...stateDirResult.warnings, ...stateSchema.warnings];
@@ -1046,8 +1046,8 @@ function migrateLegacyStateSchema(
   changes: string[];
   warnings: string[];
 } {
-  return repairOpenClawStateDatabaseSchema({
-    env: { ...env, OPENCLAW_STATE_DIR: detected.stateDir },
+  return repairAforaStateDatabaseSchema({
+    env: { ...env, AFORA_STATE_DIR: detected.stateDir },
   });
 }
 
@@ -1061,8 +1061,8 @@ type LegacyStateMigrationStep = {
 type LegacyStateMigrationPlan = {
   mode: "doctor" | "automatic";
   detected: LegacyStateDetection;
-  config: OpenClawConfig;
-  sessionConfig?: OpenClawConfig;
+  config: AforaConfig;
+  sessionConfig?: AforaConfig;
   env: NodeJS.ProcessEnv;
   now?: () => number;
   pluginSessionStoreAgentIds?: readonly string[];
@@ -1104,7 +1104,7 @@ function buildLegacyStateMigrationSteps(
 
   const managedWorktreePrelude: LegacyStateMigrationStep[] = [
     finalStep(() => {
-      const stateEnv = { ...env, OPENCLAW_STATE_DIR: stateDir };
+      const stateEnv = { ...env, AFORA_STATE_DIR: stateDir };
       const discardedWorktrees =
         isDoctor && detected.worktrees.hasLegacy ? discardLegacyRegistryWorktrees(stateEnv) : 0;
       const canonicalizedWorktrees = rewriteRegistryWorktreePathsForMigration(
@@ -1201,7 +1201,7 @@ function buildLegacyStateMigrationSteps(
     finalStep(() =>
       migrateLegacyChannelPairingState({
         detected: detected.channelPairing,
-        env: { ...env, OPENCLAW_STATE_DIR: stateDir },
+        env: { ...env, AFORA_STATE_DIR: stateDir },
       }),
     ),
     finalStep(
@@ -1245,7 +1245,7 @@ function buildLegacyStateMigrationSteps(
         ...finalStep(() =>
           migrateLegacyAcpSessionMetadata({
             cfg: params.sessionConfig ?? params.config,
-            env: isDoctor ? { ...env, OPENCLAW_STATE_DIR: stateDir } : env,
+            env: isDoctor ? { ...env, AFORA_STATE_DIR: stateDir } : env,
             now,
             ...(isDoctor ? {} : { pluginSessionStoreAgentIds: params.pluginSessionStoreAgentIds }),
             legacySessionSurfaces: params.legacySessionSurfaces,
@@ -1289,7 +1289,7 @@ async function runLegacyStateMigrationSteps(steps: readonly LegacyStateMigration
 
 export async function runLegacyStateMigrations(params: {
   detected: LegacyStateDetection;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   now?: () => number;
   recoverCorruptTargetStore?: boolean;
@@ -1298,7 +1298,7 @@ export async function runLegacyStateMigrations(params: {
 }): Promise<MigrationMessages> {
   const detected = params.detected;
   const env = params.env ?? process.env;
-  const config = params.config ?? ({} as OpenClawConfig);
+  const config = params.config ?? ({} as AforaConfig);
   const legacySessionSurfaces = params.legacySessionSurfaces;
   const stateSchema = migrateLegacyStateSchema(detected, env);
   if (detected.stateSchema.hasLegacy && stateSchema.warnings.length > 0) {
@@ -1346,8 +1346,8 @@ export async function runLegacyStateMigrations(params: {
  * Safe to run multiple times (idempotent). See #29683.
  */
 export async function autoMigrateLegacyState(params: {
-  cfg: OpenClawConfig;
-  pluginDoctorConfig?: OpenClawConfig;
+  cfg: AforaConfig;
+  pluginDoctorConfig?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   homedir?: () => string;
   log?: MigrationLogger;
@@ -1379,11 +1379,11 @@ export async function autoMigrateLegacyState(params: {
   });
   const stateDir = resolveStateDir(env, homedir);
   autoMigrateChecked.add(`${path.resolve(stateDir)}\0${migrationMode}`);
-  const stateSchemaOptions = { env: { ...env, OPENCLAW_STATE_DIR: stateDir } };
+  const stateSchemaOptions = { env: { ...env, AFORA_STATE_DIR: stateDir } };
   const stateSchema =
     params.doctorOnlyStateMigrations === true
-      ? repairOpenClawStateDatabaseSchema(stateSchemaOptions)
-      : repairOpenClawStateDatabaseSchemaIfNeeded(stateSchemaOptions);
+      ? repairAforaStateDatabaseSchema(stateSchemaOptions)
+      : repairAforaStateDatabaseSchemaIfNeeded(stateSchemaOptions);
   if (stateSchema.warnings.length > 0) {
     return {
       migrated: stateDirResult.migrated || stateSchema.changes.length > 0,
@@ -1409,13 +1409,13 @@ export async function autoMigrateLegacyState(params: {
   }));
   const transcriptDirectives = migrateHistoricalTranscriptDirectives({
     configuredAgentDatabaseTargets,
-    env: { ...env, OPENCLAW_STATE_DIR: stateDir },
+    env: { ...env, AFORA_STATE_DIR: stateDir },
   });
   const mediaPersistence =
     params.doctorOnlyStateMigrations === true
       ? migrateLegacyMediaPersistence({
           configuredAgentDatabaseTargets,
-          env: { ...env, OPENCLAW_STATE_DIR: stateDir },
+          env: { ...env, AFORA_STATE_DIR: stateDir },
         })
       : { changes: [], warnings: [] };
   if (transcriptDirectives.warnings.length > 0 || mediaPersistence.warnings.length > 0) {
@@ -1448,7 +1448,7 @@ export async function autoMigrateLegacyState(params: {
   const pluginDoctorConfig = params.pluginDoctorConfig ?? params.cfg;
   const configMachineState = migrateLegacyConfigMachineState({
     config: pluginDoctorConfig,
-    env: { ...env, OPENCLAW_STATE_DIR: stateDir },
+    env: { ...env, AFORA_STATE_DIR: stateDir },
   });
   const pluginSessionStoreAgentIds = listPluginDoctorSessionStoreAgentIds({
     config: pluginDoctorConfig,
@@ -1529,7 +1529,7 @@ export async function autoMigrateLegacyState(params: {
     stateDir: detected.stateDir,
     now: params.now,
   });
-  const hasCustomAgentDir = env.OPENCLAW_AGENT_DIR?.trim() || env.PI_CODING_AGENT_DIR?.trim();
+  const hasCustomAgentDir = env.AFORA_AGENT_DIR?.trim() || env.PI_CODING_AGENT_DIR?.trim();
   const migrationSteps = buildLegacyStateMigrationSteps({
     mode: "automatic",
     detected,

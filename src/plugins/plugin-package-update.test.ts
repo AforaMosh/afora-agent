@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { recordInstalledPluginIndexInstallOwner } from "./installed-plugin-index-install-owner.js";
 import type { InstalledPluginIndex, InstalledPluginIndexRecord } from "./installed-plugin-index.js";
 import {
@@ -16,7 +16,7 @@ function record(
   return recordInstalledPluginIndexInstallOwner(
     {
       pluginId,
-      manifestPath: `${rootDir}/openclaw.plugin.json`,
+      manifestPath: `${rootDir}/afora.plugin.json`,
       manifestHash: pluginId,
       source: `${rootDir}/${pluginId.split("/").at(-1)}.js`,
       rootDir,
@@ -49,7 +49,7 @@ function index(rootDir: string, plugins: InstalledPluginIndexRecord[]): Installe
     policyHash: "test",
     generatedAtMs: 1,
     installRecords: {
-      pack: { source: "npm", installPath: rootDir, spec: "@openclaw/pack@latest" },
+      pack: { source: "npm", installPath: rootDir, spec: "@afora/pack@latest" },
     },
     plugins,
     diagnostics: [],
@@ -77,7 +77,7 @@ describe("plugin package update policy reconciliation", () => {
     if (!snapshot.ok) {
       throw new Error(snapshot.error);
     }
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       plugins: {
         allow: ["pack/one", "pack/two", "pack/old", "other"],
         deny: ["pack/two", "pack/old", "other-denied"],

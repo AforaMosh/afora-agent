@@ -2,7 +2,7 @@
  * Safe file resolution helpers for Canvas-hosted static assets.
  */
 import path from "node:path";
-import { root as fsRoot, FsSafeError } from "openclaw/plugin-sdk/security-runtime";
+import { root as fsRoot, FsSafeError } from "afora-agent/plugin-sdk/security-runtime";
 
 type CanvasOpenResult = Awaited<ReturnType<Awaited<ReturnType<typeof fsRoot>>["open"]>>;
 

@@ -14,7 +14,7 @@ describe("write-build-info", () => {
   const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
   function createPackage(version = "2026.7.10"): string {
-    const rootDir = tempDirs.make("openclaw-build-info-");
+    const rootDir = tempDirs.make("afora-build-info-");
     fs.writeFileSync(path.join(rootDir, "package.json"), `${JSON.stringify({ version })}\n`);
     return rootDir;
   }
@@ -29,7 +29,7 @@ describe("write-build-info", () => {
       rootDir,
       env: {
         GIT_COMMIT: "ABCDEF0123456789ABCDEF0123456789ABCDEF01",
-        OPENCLAW_BUILD_TIMESTAMP: "2026-07-10T12:34:56Z",
+        AFORA_BUILD_TIMESTAMP: "2026-07-10T12:34:56Z",
       },
       execFileSync,
     });
@@ -90,8 +90,8 @@ describe("write-build-info", () => {
         rootDir,
         env: {
           GIT_COMMIT: "a".repeat(40),
-          OPENCLAW_BUILD_TIMESTAMP: "2026-07-10T01:02:03.000Z",
-          OPENCLAW_CONTROL_UI_RELEASE_BUILD: "1",
+          AFORA_BUILD_TIMESTAMP: "2026-07-10T01:02:03.000Z",
+          AFORA_CONTROL_UI_RELEASE_BUILD: "1",
         },
       }).buildId,
     ).toBe("2026.7.10-release-aaaaaaaaaaaa-2026-07-10T01-02-03.000Z");
@@ -163,10 +163,10 @@ describe("write-build-info", () => {
   it("normalizes valid UTC timestamps and rejects offsets or impossible dates", () => {
     expect(normalizeBuildTimestamp("2026-07-10T12:34:56.7Z")).toBe("2026-07-10T12:34:56.700Z");
     expect(() => normalizeBuildTimestamp("2026-07-10T12:34:56+00:00")).toThrow(
-      "OPENCLAW_BUILD_TIMESTAMP must be an ISO-8601 UTC timestamp ending in Z.",
+      "AFORA_BUILD_TIMESTAMP must be an ISO-8601 UTC timestamp ending in Z.",
     );
     expect(() => normalizeBuildTimestamp("2026-02-30T12:34:56Z")).toThrow(
-      "OPENCLAW_BUILD_TIMESTAMP must be a valid ISO-8601 UTC timestamp.",
+      "AFORA_BUILD_TIMESTAMP must be a valid ISO-8601 UTC timestamp.",
     );
   });
 });

@@ -2,14 +2,14 @@ import { resolveSessionStorePathCore } from "../../config/sessions.js";
 import { loadSessionEntry as getSessionEntry } from "../../config/sessions/session-accessor.js";
 import { isPerAgentSessionStoreConfig } from "../../config/sessions/session-store-config.js";
 import { resolvePersistedSessionStoreOwnerForKey } from "../../config/sessions/session-store-owner.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { parseAgentSessionKey } from "../../routing/session-key.js";
 import { beginSessionWorkAdmission } from "../../sessions/session-lifecycle-admission.js";
 import { resolveSessionAgentIds } from "../agent-scope.js";
 
 /** Resolves a target key without letting requester scope override a durable fixed-store owner. */
 export function resolveSessionToolTargetAgentId(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   targetSessionKey: string;
   resolvedAgentId?: string;
   requesterAgentId?: string;
@@ -32,7 +32,7 @@ export function resolveSessionToolTargetAgentId(params: {
 
 /** Linearizes a host-scoped grant against reset/delete of its expected incarnation. */
 export async function runWithScopedSessionAccess<T>(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
   expectedSessionId?: string;
   signal?: AbortSignal;

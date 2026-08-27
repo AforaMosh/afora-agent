@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from "node:util";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   sameDefaultInferenceRoute,
   type DefaultInferenceRouteProjection,
@@ -44,13 +44,13 @@ export function sameSetupConfiguredRoute(
 }
 
 export function assertSetupTarget(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   expectedAgentId?: string;
   expectedAgentDir?: string;
   expectedModelRef?: string;
-  resolveAgentDir: (config: OpenClawConfig, agentId: string) => string;
-  resolveDefaultAgentId: (config: OpenClawConfig) => string;
-  resolveDefaultModelForAgent: (params: { cfg: OpenClawConfig; agentId: string }) => {
+  resolveAgentDir: (config: AforaConfig, agentId: string) => string;
+  resolveDefaultAgentId: (config: AforaConfig) => string;
+  resolveDefaultModelForAgent: (params: { cfg: AforaConfig; agentId: string }) => {
     provider: string;
     model: string;
   };

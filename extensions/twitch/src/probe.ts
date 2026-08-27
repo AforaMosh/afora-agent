@@ -1,9 +1,9 @@
 // Twitch plugin module implements probe behavior.
 import { StaticAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
-import type { BaseProbeResult } from "openclaw/plugin-sdk/channel-contract";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { runChannelProbe } from "openclaw/plugin-sdk/text-utility-runtime";
+import type { BaseProbeResult } from "afora-agent/plugin-sdk/channel-contract";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { runChannelProbe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import type { TwitchAccountConfig } from "./types.js";
 import { normalizeToken } from "./utils/twitch.js";
 

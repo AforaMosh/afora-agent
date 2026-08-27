@@ -1,5 +1,5 @@
 // Whatsapp tests cover directory config plugin behavior.
-import { createDirectoryTestRuntime } from "openclaw/plugin-sdk/channel-test-helpers";
+import { createDirectoryTestRuntime } from "afora-agent/plugin-sdk/channel-test-helpers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readWebAuthExistsForDecision } from "./auth-store.js";
 import { getWhatsAppConnectionController } from "./connection-controller-runtime-context.js";
@@ -12,7 +12,7 @@ import {
   listWhatsAppDirectoryGroupsFromConfig,
   listWhatsAppDirectoryPeersFromConfig,
 } from "./directory-config.js";
-import type { OpenClawConfig } from "./runtime-api.js";
+import type { AforaConfig } from "./runtime-api.js";
 import {
   createWaDirectorySocket,
   waitForCredsSaveQueueWithTimeout,
@@ -90,7 +90,7 @@ describe("whatsapp directory", () => {
         },
       },
     },
-  } as unknown as OpenClawConfig;
+  } as unknown as AforaConfig;
 
   const makeParams = (overrides: { query?: string; limit?: number } = {}) =>
     ({
@@ -257,7 +257,7 @@ describe("whatsapp directory", () => {
     readAuthMock.mockResolvedValueOnce({ outcome: "stable", exists: false });
     const namedCfg = {
       channels: { whatsapp: { accounts: { secondary: { enabled: true } } } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     await expect(
       listWhatsAppDirectoryGroupsLive({

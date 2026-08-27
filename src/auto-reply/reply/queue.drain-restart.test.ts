@@ -1,5 +1,5 @@
 // Tests queue drain restart behavior when follow-up runs chain together.
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, it, vi } from "vitest";
 import { createDeferred } from "../../../test/helpers/promise.js";
 import {
@@ -79,8 +79,8 @@ describe("followup queue drain restart after idle window", () => {
 
   it("releases a detached drain root when its queue is cleared during debounce", async () => {
     resetGatewayWorkAdmission();
-    const env = captureEnv(["OPENCLAW_TEST_FAST"]);
-    setTestEnvValue("OPENCLAW_TEST_FAST", "0");
+    const env = captureEnv(["AFORA_TEST_FAST"]);
+    setTestEnvValue("AFORA_TEST_FAST", "0");
     const key = `test-cleared-debounce-root-${Date.now()}`;
     const settings: QueueSettings = { mode: "followup", debounceMs: 60_000, cap: 50 };
 
@@ -443,7 +443,7 @@ describe("followup queue drain restart after idle window", () => {
         expect(run).toMatchObject({
           run: { senderIsOwner, inputProvenance },
           userTurnTranscriptRecorder: {
-            message: { provenance: inputProvenance, __openclaw: { senderIsOwner: owner } },
+            message: { provenance: inputProvenance, __afora: { senderIsOwner: owner } },
           },
         });
       }
@@ -488,7 +488,7 @@ describe("followup queue drain restart after idle window", () => {
     ]) {
       expect(message).toMatchObject({
         provenance: inputProvenance,
-        __openclaw: { senderIsOwner: owner },
+        __afora: { senderIsOwner: owner },
       });
     }
   });

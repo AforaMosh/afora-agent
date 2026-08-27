@@ -5,7 +5,7 @@ import { ref } from "lit/directives/ref.js";
 import { normalizeSessionIconValue } from "../../../packages/gateway-protocol/src/session-agent-status.js";
 import { t } from "../i18n/index.ts";
 import { EDITOR_IDS, EDITOR_LABELS, type EditorId } from "../lib/editor-links.ts";
-import { OpenClawLightDomElement } from "../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../lit/afora-element.ts";
 import { DropdownMenuController } from "./dropdown-menu-controller.ts";
 import { icons } from "./icons.ts";
 import { activateMenuShortcut, menuShortcutHint } from "./menu-shortcuts.ts";
@@ -65,7 +65,7 @@ const EMPTY_SESSION: SessionMenuData = {
 
 const SESSION_ICON_GRID_COLUMNS = 6;
 
-class SessionMenu extends OpenClawLightDomElement {
+class SessionMenu extends AforaLightDomElement {
   @property({ attribute: false }) session: SessionMenuData = EMPTY_SESSION;
   // >1 renders the batch menu: only actions that apply to every selected
   // session (unread/group/archive/delete); `session` then carries aggregated
@@ -104,7 +104,7 @@ class SessionMenu extends OpenClawLightDomElement {
     // Sidebar-hosted menus live inside the nav stacking context (z-index 10),
     // which paints below the sidebar resizer divider (z-index 20); promoting
     // the menu to the popover top layer keeps app chrome from bleeding
-    // through it (same pattern as openclaw-native-link-menu).
+    // through it (same pattern as afora-native-link-menu).
     promoteToPopoverTopLayer(this);
   }
 
@@ -711,6 +711,6 @@ class SessionMenu extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-session-menu")) {
-  customElements.define("openclaw-session-menu", SessionMenu);
+if (!customElements.get("afora-session-menu")) {
+  customElements.define("afora-session-menu", SessionMenu);
 }

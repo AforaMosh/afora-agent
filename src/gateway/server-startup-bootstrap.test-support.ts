@@ -6,7 +6,7 @@ import {
   resetConfigRuntimeState,
   setAppliedRuntimeConfigSnapshot,
 } from "../config/runtime-snapshot.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { testing } from "./server-startup-bootstrap.js";
 
 const { publishGatewayPluginRuntimeConfigAtStartup } = testing;
@@ -19,7 +19,7 @@ describe("Gateway startup runtime config publication", () => {
   it("replaces the pre-activation snapshot with the exact plugin runtime config", () => {
     const sourceConfig = {
       agents: { defaults: { model: "openai/gpt-5.2" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const preActivationConfig = structuredClone(sourceConfig);
     const pluginRuntimeConfig = {
       ...preActivationConfig,
@@ -28,7 +28,7 @@ describe("Gateway startup runtime config publication", () => {
           openai: { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     setAppliedRuntimeConfigSnapshot(preActivationConfig, sourceConfig);
 
     publishGatewayPluginRuntimeConfigAtStartup({

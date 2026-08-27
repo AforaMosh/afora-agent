@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as sessionsConfig from "../config/sessions.js";
 import * as sessionAccessor from "../config/sessions/session-accessor.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import type { GatewayClient } from "./server-methods/types.js";
 import {
   authorizeResolvedSessionMutation,
@@ -11,7 +11,7 @@ import {
 
 afterEach(() => {
   vi.restoreAllMocks();
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
 });
 
 function identifiedClient(userId: string): GatewayClient {
@@ -20,7 +20,7 @@ function identifiedClient(userId: string): GatewayClient {
       minProtocol: 1,
       maxProtocol: 1,
       client: {
-        id: "openclaw-control-ui",
+        id: "afora-control-ui",
         version: "test",
         platform: "test",
         mode: "webchat",
@@ -40,7 +40,7 @@ function identifiedClient(userId: string): GatewayClient {
 
 describe("session mutation authorization store caches", () => {
   it("fails a patchMany request when a nested target is incognito", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const sessionKey = "agent:main:dashboard:incognito-patch-many";
       await sessionAccessor.upsertSessionEntryCore(
         { agentId: "main", sessionKey },
@@ -60,7 +60,7 @@ describe("session mutation authorization store caches", () => {
   });
 
   it("authorizes every patchMany target before dispatch", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const sharedKey = "agent:main:batch-shared";
       const draftKey = "agent:main:batch-private";
       await sessionAccessor.upsertSessionEntryCore(
@@ -96,7 +96,7 @@ describe("session mutation authorization store caches", () => {
   });
 
   it("fences a replaced patchMany target with padded identity fields", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const sessionKey = "agent:main:padded-batch-target";
       await sessionAccessor.upsertSessionEntryCore(
         { agentId: "main", sessionKey },
@@ -130,7 +130,7 @@ describe("session mutation authorization store caches", () => {
   });
 
   it("bounds malformed patchMany target discovery before schema validation", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const hiddenKey = "agent:main:dashboard:incognito-over-limit";
       await sessionAccessor.upsertSessionEntryCore(
         { agentId: "main", sessionKey: hiddenKey },
@@ -154,7 +154,7 @@ describe("session mutation authorization store caches", () => {
   });
 
   it("materializes and discovers each store once when one request resolves multiple targets", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       for (const [sessionKey, sessionId] of [
         ["agent:main:cache-one", "session-cache-one"],
         ["agent:main:cache-two", "session-cache-two"],
@@ -223,7 +223,7 @@ describe("session mutation authorization store caches", () => {
       },
     },
   ])("matches uncached $name authorization", async ({ sessionKey, entry }) => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       await sessionAccessor.upsertSessionEntryCore({ agentId: "main", sessionKey }, entry);
       const cfg = {};
       const requestClient = identifiedClient("viewer@example.com");

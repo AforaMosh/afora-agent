@@ -1,10 +1,10 @@
 import { toAgentEntriesRecord } from "../agents/agent-scope-config.js";
 import type { AgentModelEntryConfig } from "../config/types.agent-defaults.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizeAgentId, normalizeAgentIdStrict } from "../routing/session-key.js";
 
 type SystemAgentModelSelectionParams = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   model: string;
   /** Write the model onto this configured agent instead of the default route. */
   targetAgentId?: string;
@@ -22,7 +22,7 @@ type SystemAgentModelSelectionModules = {
 function applySystemAgentModelSelectionWithModules(
   params: SystemAgentModelSelectionParams,
   modules: SystemAgentModelSelectionModules,
-): OpenClawConfig {
+): AforaConfig {
   const { agentScope, modelConfig, runtimePolicy } = modules;
   const nextConfig = structuredClone(params.config);
   const normalizedTarget =
@@ -124,7 +124,7 @@ function applySystemAgentModelSelectionWithModules(
 
 export async function createSystemAgentModelSelectionUpdater(
   params: Omit<SystemAgentModelSelectionParams, "config">,
-): Promise<(config: OpenClawConfig) => OpenClawConfig> {
+): Promise<(config: AforaConfig) => AforaConfig> {
   const [agentScope, modelConfig, runtimePolicy] = await Promise.all([
     import("../agents/agent-scope.js"),
     import("../commands/models/shared.js"),
@@ -136,7 +136,7 @@ export async function createSystemAgentModelSelectionUpdater(
 
 export async function applySystemAgentModelSelection(
   params: SystemAgentModelSelectionParams,
-): Promise<OpenClawConfig> {
+): Promise<AforaConfig> {
   const update = await createSystemAgentModelSelectionUpdater(params);
   return update(params.config);
 }

@@ -83,8 +83,8 @@ suite.define(() => {
 
       const firstRequest = await gateway.waitForRequest("device.pair.setupCode");
       expect(firstRequest.params).toEqual({ includeQr: false, joinUrl: true });
-      const dialog = page.locator('openclaw-modal-dialog[label="Connect a machine"]');
-      await dialog.getByText(`npx openclaw connect '${firstJoinUrl}'`, { exact: true }).waitFor();
+      const dialog = page.locator('afora-modal-dialog[label="Connect a machine"]');
+      await dialog.getByText(`npx afora connect '${firstJoinUrl}'`, { exact: true }).waitFor();
       const copy = dialog.locator("button.chat-copy-btn");
       expect(await copy.count()).toBe(1);
       expect(await copy.getAttribute("aria-label")).toBe("Copy command");
@@ -102,7 +102,7 @@ suite.define(() => {
         includeQr: false,
         joinUrl: true,
       });
-      await dialog.getByText(`npx openclaw connect ${secondJoinUrl}`, { exact: true }).waitFor();
+      await dialog.getByText(`npx afora connect ${secondJoinUrl}`, { exact: true }).waitFor();
       await captureProof(page, "02-connect-dialog.png");
     } finally {
       await context.close();
@@ -140,7 +140,7 @@ suite.define(() => {
       await page.locator("#new-session-where-trigger").click();
       await page.getByRole("button", { name: "Connect a machine…" }).click();
       await gateway.waitForRequest("device.pair.setupCode");
-      const dialog = page.locator('openclaw-modal-dialog[label="Connect a machine"]');
+      const dialog = page.locator('afora-modal-dialog[label="Connect a machine"]');
       await dialog.getByText("Creating a secure connection link…", { exact: true }).waitFor();
 
       await gateway.closeLatest(1012, "test reconnect");

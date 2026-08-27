@@ -1,6 +1,6 @@
 // Discord plugin module implements reply delivery behavior.
-import { formatReasoningMessage, resolveAgentAvatar } from "openclaw/plugin-sdk/agent-runtime";
-import { createChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
+import { formatReasoningMessage, resolveAgentAvatar } from "afora-agent/plugin-sdk/agent-runtime";
+import { createChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
 import {
   buildOutboundSessionContext,
   listMessageReceiptPlatformIds,
@@ -8,18 +8,18 @@ import {
   type OutboundDeliveryFormattingOptions,
   type OutboundIdentity,
   type OutboundSendDeps,
-} from "openclaw/plugin-sdk/channel-outbound";
+} from "afora-agent/plugin-sdk/channel-outbound";
 import type {
   MarkdownTableMode,
-  OpenClawConfig,
+  AforaConfig,
   ReplyToMode,
-} from "openclaw/plugin-sdk/config-contracts";
-import type { OutboundMediaAccess } from "openclaw/plugin-sdk/media-runtime";
-import type { ChunkMode } from "openclaw/plugin-sdk/reply-chunking";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-dispatch-runtime";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/config-contracts";
+import type { OutboundMediaAccess } from "afora-agent/plugin-sdk/media-runtime";
+import type { ChunkMode } from "afora-agent/plugin-sdk/reply-chunking";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-dispatch-runtime";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import type { RequestClient } from "../internal/discord.js";
 import { sendMessageDiscord, sendVoiceMessageDiscord } from "../send.js";
 import type { DiscordAllowedMentions } from "../send.shared.js";
@@ -99,7 +99,7 @@ function resolveBoundThreadBinding(params: {
 }
 
 function resolveBindingIdentity(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   binding: DiscordThreadBindingLookupRecord | undefined,
 ): OutboundIdentity | undefined {
   if (!binding) {
@@ -122,7 +122,7 @@ function resolveBindingIdentity(
 }
 
 function createDiscordDeliveryDeps(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   token: string;
   rest?: RequestClient;
   allowedMentions?: DiscordAllowedMentions;
@@ -163,7 +163,7 @@ type DiscordDeliveryOptions = {
 };
 
 function resolveDiscordDeliveryOptions(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   target: string;
   sessionKey?: string;
   threadBindings?: DiscordThreadBindingLookup;
@@ -211,7 +211,7 @@ function formatDiscordReasoningPayload(payload: ReplyPayload): ReplyPayload {
 }
 
 export async function deliverDiscordReply(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   replies: ReplyPayload[];
   target: string;
   token: string;

@@ -8,14 +8,14 @@ import os from "node:os";
 import {
   hasNonEmptyString,
   normalizeOptionalLowercaseString,
-} from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-coerce";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import {
   hasBundledChannelPersistedAuthState,
   listBundledChannelIdsWithPersistedAuthState,
 } from "../channels/plugins/persisted-auth-state.js";
 import { resolveStateDir } from "../config/paths.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginDiscoveryResult } from "../plugins/discovery.js";
 import { listOfficialExternalChannelEnvVars } from "../plugins/official-external-plugin-catalog.js";
 import { isRecord } from "../utils.js";
@@ -33,7 +33,7 @@ type ChannelPresenceOptions = {
     listChannelIds: () => readonly string[];
     hasState: (params: {
       channelId: string;
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       env: NodeJS.ProcessEnv;
     }) => boolean;
   };
@@ -58,7 +58,7 @@ export function hasMeaningfulChannelConfig(value: unknown): boolean {
 }
 
 /** Lists channels explicitly disabled in config so activation logic can suppress auto-detection. */
-export function listExplicitlyDisabledChannelIdsForConfig(cfg: OpenClawConfig): string[] {
+export function listExplicitlyDisabledChannelIdsForConfig(cfg: AforaConfig): string[] {
   const channels = isRecord(cfg.channels) ? cfg.channels : null;
   if (!channels) {
     return [];
@@ -105,7 +105,7 @@ function listPersistedAuthStateChannelIds(options: ChannelPresenceOptions): read
 
 function hasPersistedAuthState(params: {
   channelId: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   options: ChannelPresenceOptions;
 }): boolean {
@@ -123,7 +123,7 @@ function hasPersistedAuthState(params: {
 
 /** Lists channel ids detected from config, env vars, or persisted auth state. */
 export function listPotentialConfiguredChannelIds(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   env: NodeJS.ProcessEnv = process.env,
   options: ChannelPresenceOptions = {},
 ): string[] {
@@ -136,7 +136,7 @@ export function listPotentialConfiguredChannelIds(
 
 /** Lists deduplicated channel presence signals with their detection source. */
 export function listPotentialConfiguredChannelPresenceSignals(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   env: NodeJS.ProcessEnv = process.env,
   options: ChannelPresenceOptions = {},
 ): ChannelPresenceSignal[] {

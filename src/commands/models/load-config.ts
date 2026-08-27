@@ -5,14 +5,14 @@ import {
   getRuntimeConfig,
   getRuntimeConfigSourceSnapshot,
   setRuntimeConfigSnapshot,
-  type OpenClawConfig,
+  type AforaConfig,
 } from "../../config/config.js";
 import type { RuntimeEnv } from "../../runtime.js";
 
 /** Source and resolved config pair returned by model command config loading. */
 type LoadedModelsConfig = {
-  sourceConfig: OpenClawConfig;
-  resolvedConfig: OpenClawConfig;
+  sourceConfig: AforaConfig;
+  resolvedConfig: AforaConfig;
   diagnostics: string[];
 };
 
@@ -48,6 +48,6 @@ export async function loadModelsConfig(params: {
   commandName: string;
   runtime?: RuntimeEnv;
   skipPluginValidation?: boolean;
-}): Promise<OpenClawConfig> {
+}): Promise<AforaConfig> {
   return (await loadModelsConfigWithSource(params)).resolvedConfig;
 }

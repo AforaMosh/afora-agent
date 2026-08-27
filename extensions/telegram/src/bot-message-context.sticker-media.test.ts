@@ -38,7 +38,7 @@ const { buildTelegramMessageContextForTest } =
 
 describe("buildTelegramMessageContext sticker media", () => {
   it("keeps cached static sticker media attached to the inbound context", async () => {
-    const stickerPath = "/tmp/openclaw/media/inbound/sticker.webp";
+    const stickerPath = "/tmp/afora/media/inbound/sticker.webp";
     const ctx = await buildTelegramMessageContextForTest({
       message: {
         message_id: 104,

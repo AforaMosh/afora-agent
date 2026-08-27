@@ -1,5 +1,5 @@
 // Telegram plugin module owns dispatch status-reaction finalization.
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
 import type { TelegramMessageContext } from "./bot-message-context.js";
 
 export function createTelegramDispatchStatus(params: { context: TelegramMessageContext }) {

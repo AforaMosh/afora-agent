@@ -7,7 +7,7 @@
  * 3. Sessions matching the default model correctly inherit defaults
  */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { expect, test, vi } from "vitest";
 import { formatThinkingLevels } from "../auto-reply/thinking.js";
 import { testState, writeSessionStore } from "./test-helpers.js";
@@ -93,7 +93,7 @@ async function listMainSessionWithThinking(params: {
   primaryModel: string;
   sessionModelProvider: string;
   sessionModel: string;
-  agentRuntime?: "codex" | "openclaw";
+  agentRuntime?: "codex" | "afora";
   selectedByOverride?: boolean;
   readPreparedGatewayModelCatalog?: () => Promise<
     Array<{

@@ -29,7 +29,7 @@ import { createVerifiedSqliteSnapshot } from "./sqlite-snapshot.js";
 const tempDirs: string[] = [];
 
 async function createTempDir(): Promise<string> {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-sqlite-snapshot-"));
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-sqlite-snapshot-"));
   tempDirs.push(tempDir);
   if (process.platform === "win32") {
     const privateTempDir = path.join(tempDir, "private");
@@ -113,7 +113,7 @@ function createHotRollbackJournal(sqlitePath: string): void {
       "-e",
       `
         import { DatabaseSync } from "node:sqlite";
-        const database = new DatabaseSync(process.env.OPENCLAW_HOT_JOURNAL_PATH);
+        const database = new DatabaseSync(process.env.AFORA_HOT_JOURNAL_PATH);
         database.exec(
           "PRAGMA journal_mode = DELETE; " +
           "PRAGMA synchronous = FULL; " +
@@ -126,7 +126,7 @@ function createHotRollbackJournal(sqlitePath: string): void {
       `,
     ],
     {
-      env: { ...process.env, OPENCLAW_HOT_JOURNAL_PATH: sqlitePath },
+      env: { ...process.env, AFORA_HOT_JOURNAL_PATH: sqlitePath },
       encoding: "utf8",
     },
   );

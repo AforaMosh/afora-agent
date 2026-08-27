@@ -1,6 +1,6 @@
 // Whatsapp tests cover auto reply.broadcast groups.combined plugin behavior.
 import "./test-helpers.js";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it, vi } from "vitest";
 import {
   monitorWebChannelWithCapture,
@@ -31,7 +31,7 @@ describe("broadcast groups", () => {
       broadcast: {
         "+1000": ["alfred", "missing"],
       },
-    } satisfies OpenClawConfig);
+    } satisfies AforaConfig);
 
     const { seen, resolver } = await sendWebDirectInboundAndCollectSessionKeys();
 
@@ -52,7 +52,7 @@ describe("broadcast groups", () => {
         strategy: "sequential",
         "+1000": ["alfred", "baerbel"],
       },
-    } satisfies OpenClawConfig);
+    } satisfies AforaConfig);
 
     const { seen, resolver } = await sendWebDirectInboundAndCollectSessionKeys();
 
@@ -74,7 +74,7 @@ describe("broadcast groups", () => {
         strategy: "sequential",
         "123@g.us": ["alfred", "baerbel"],
       },
-    } satisfies OpenClawConfig);
+    } satisfies AforaConfig);
 
     const resolver = vi.fn().mockResolvedValue({ text: "ok" });
 
@@ -164,7 +164,7 @@ describe("broadcast groups", () => {
         strategy: "sequential",
         "123@g.us": ["alfred", "baerbel"],
       },
-    } satisfies OpenClawConfig);
+    } satisfies AforaConfig);
 
     const seen: string[] = [];
     const resolver = vi.fn(async (ctx: { SessionKey?: unknown }) => {
@@ -207,7 +207,7 @@ describe("broadcast groups", () => {
         strategy: "parallel",
         "+1000": ["alfred", "baerbel"],
       },
-    } satisfies OpenClawConfig);
+    } satisfies AforaConfig);
 
     const { sendMedia, reply, sendComposing } = createWebInboundDeliverySpies();
 

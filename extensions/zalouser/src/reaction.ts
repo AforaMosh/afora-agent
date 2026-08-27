@@ -1,5 +1,5 @@
 // Zalouser plugin module implements reaction behavior.
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { Reactions } from "./zca-constants.js";
 
 const REACTION_ALIAS_MAP = new Map<string, string>([

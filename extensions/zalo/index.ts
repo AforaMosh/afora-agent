@@ -1,5 +1,5 @@
-// Zalo plugin entrypoint registers its OpenClaw integration.
-import { defineBundledChannelEntry } from "openclaw/plugin-sdk/channel-entry-contract";
+// Zalo plugin entrypoint registers its Afora integration.
+import { defineBundledChannelEntry } from "afora-agent/plugin-sdk/channel-entry-contract";
 
 export default defineBundledChannelEntry({
   id: "zalo",

@@ -1,6 +1,6 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import {
   classifyOtelGrpcMigrationOwnership,
   isSingleTopLevelIncludeMigration,
@@ -8,14 +8,14 @@ import {
 
 const sourceConfig = {
   mcp: { servers: { local: { command: "node", disabled: true } } },
-} as unknown as OpenClawConfig;
+} as unknown as AforaConfig;
 const candidate = {
   mcp: { servers: { local: { command: "node", enabled: false } } },
-} as OpenClawConfig;
+} as AforaConfig;
 
 describe("include migration ownership", () => {
-  const configDir = path.resolve("/tmp/openclaw-config");
-  const configPath = path.join(configDir, "openclaw.json");
+  const configDir = path.resolve("/tmp/afora-config");
+  const configPath = path.join(configDir, "afora.json");
   const diagnosticsPath = path.join(configDir, "diagnostics.json5");
   const classifyOtelOwnership = (
     includeProvenance: NonNullable<
@@ -136,7 +136,7 @@ describe("include migration ownership", () => {
   });
 
   it.each([
-    ["root include", { $include: "./openclaw.json5" }],
+    ["root include", { $include: "./afora.json5" }],
     ["include array", { mcp: { $include: ["./a.json5", "./b.json5"] } }],
     ["nested include", { mcp: { servers: { $include: "./servers.json5" } } }],
     ["sibling override", { mcp: { $include: "./mcp.json5", sessionIdleTtlMs: 1000 } }],

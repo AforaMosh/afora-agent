@@ -1,23 +1,23 @@
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 // Lobster tests cover lobster tool plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawPluginApi, OpenClawPluginToolContext } from "../runtime-api.js";
+import type { AforaPluginApi, AforaPluginToolContext } from "../runtime-api.js";
 import { createLobsterTool } from "./lobster-tool.js";
 import { createFakeTaskFlow } from "./taskflow-test-helpers.js";
 
-function fakeApi(overrides: Partial<OpenClawPluginApi> = {}): OpenClawPluginApi {
+function fakeApi(overrides: Partial<AforaPluginApi> = {}): AforaPluginApi {
   return createTestPluginApi({
     id: "lobster",
     name: "lobster",
     source: "test",
-    runtime: { version: "test" } as OpenClawPluginApi["runtime"],
+    runtime: { version: "test" } as AforaPluginApi["runtime"],
     resolvePath: (p) => p,
     ...overrides,
   });
 }
 
-function fakeCtx(overrides: Partial<OpenClawPluginToolContext> = {}): OpenClawPluginToolContext {
+function fakeCtx(overrides: Partial<AforaPluginToolContext> = {}): AforaPluginToolContext {
   return {
     config: {},
     workspaceDir: "/tmp",
@@ -581,7 +581,7 @@ describe("lobster plugin tool", () => {
 
   it("can be gated off in sandboxed contexts", () => {
     const api = fakeApi();
-    const factoryTool = (ctx: OpenClawPluginToolContext) => {
+    const factoryTool = (ctx: AforaPluginToolContext) => {
       if (ctx.sandboxed) {
         return null;
       }

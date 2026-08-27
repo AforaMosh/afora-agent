@@ -125,15 +125,15 @@ describe("cron run filter accessibility", () => {
     try {
       await i18n.useSystemLocale();
       const systemLocale = i18n.getLocale();
-      expect(localStorage.getItem("openclaw.i18n.locale")).toBeNull();
+      expect(localStorage.getItem("afora.i18n.locale")).toBeNull();
 
       const restoreSystemState = captureI18nStateForTesting();
       await i18n.setLocale("de");
-      expect(localStorage.getItem("openclaw.i18n.locale")).toBe("de");
+      expect(localStorage.getItem("afora.i18n.locale")).toBe("de");
 
       await restoreSystemState();
       expect(i18n.getLocale()).toBe(systemLocale);
-      expect(localStorage.getItem("openclaw.i18n.locale")).toBeNull();
+      expect(localStorage.getItem("afora.i18n.locale")).toBeNull();
     } finally {
       await restoreOriginalState();
     }

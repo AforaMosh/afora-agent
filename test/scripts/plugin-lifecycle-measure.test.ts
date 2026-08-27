@@ -80,7 +80,7 @@ describe("plugin lifecycle resource sampler", () => {
   it.runIf(process.platform === "linux")(
     "derives proc units from getconf when overrides are absent",
     () => {
-      const dir = tempDirs.make("openclaw-plugin-lifecycle-measure-");
+      const dir = tempDirs.make("afora-plugin-lifecycle-measure-");
       const summary = path.join(dir, "summary.tsv");
       const logPath = path.join(dir, "getconf.log");
       const binDir = writeFakeGetconf(
@@ -92,8 +92,8 @@ describe("plugin lifecycle resource sampler", () => {
         GETCONF_LOG: logPath,
         PATH: `${binDir}:${process.env.PATH ?? ""}`,
       };
-      delete env.OPENCLAW_PROC_PAGE_SIZE;
-      delete env.OPENCLAW_PROC_CLK_TCK;
+      delete env.AFORA_PROC_PAGE_SIZE;
+      delete env.AFORA_PROC_CLK_TCK;
 
       const result = spawnSync(
         process.execPath,
@@ -107,75 +107,75 @@ describe("plugin lifecycle resource sampler", () => {
       );
 
       expect(readFileSync(logPath, "utf8")).toBe("PAGESIZE\nCLK_TCK\n");
-      expect(result.stderr).not.toContain("failed to derive OPENCLAW_PROC");
+      expect(result.stderr).not.toContain("failed to derive AFORA_PROC");
     },
   );
 
   it("rejects loose numeric env values instead of parsing prefixes", () => {
-    const dir = tempDirs.make("openclaw-plugin-lifecycle-measure-");
+    const dir = tempDirs.make("afora-plugin-lifecycle-measure-");
     const summary = path.join(dir, "summary.tsv");
     const result = spawnSync("node", [scriptPath, summary, "invalid-env", "--", "node", "-e", ""], {
       cwd: process.cwd(),
       encoding: "utf8",
       env: {
         ...process.env,
-        OPENCLAW_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS: "150ms",
+        AFORA_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS: "150ms",
       },
       timeout: 5000,
     });
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain(
-      "OPENCLAW_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS must be a positive integer; got: 150ms",
+      "AFORA_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS must be a positive integer; got: 150ms",
     );
   });
 
   it("rejects zero lifecycle timeouts instead of disabling the guard", () => {
-    const dir = tempDirs.make("openclaw-plugin-lifecycle-measure-");
+    const dir = tempDirs.make("afora-plugin-lifecycle-measure-");
     const summary = path.join(dir, "summary.tsv");
     const result = spawnSync("node", [scriptPath, summary, "invalid-env", "--", "node", "-e", ""], {
       cwd: process.cwd(),
       encoding: "utf8",
       env: {
         ...process.env,
-        OPENCLAW_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS: "0",
+        AFORA_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS: "0",
       },
       timeout: 5000,
     });
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain(
-      "OPENCLAW_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS must be a positive integer; got: 0",
+      "AFORA_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS must be a positive integer; got: 0",
     );
   });
 
   it("rejects loose resource ceiling env values instead of parsing prefixes", () => {
-    const dir = tempDirs.make("openclaw-plugin-lifecycle-measure-");
+    const dir = tempDirs.make("afora-plugin-lifecycle-measure-");
     const summary = path.join(dir, "summary.tsv");
     const result = spawnSync("node", [scriptPath, summary, "invalid-env", "--", "node", "-e", ""], {
       cwd: process.cwd(),
       encoding: "utf8",
       env: {
         ...process.env,
-        OPENCLAW_PLUGIN_LIFECYCLE_MAX_CPU_CORE_RATIO: "1x",
+        AFORA_PLUGIN_LIFECYCLE_MAX_CPU_CORE_RATIO: "1x",
       },
       timeout: 5000,
     });
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain(
-      "OPENCLAW_PLUGIN_LIFECYCLE_MAX_CPU_CORE_RATIO must be a positive number; got: 1x",
+      "AFORA_PLUGIN_LIFECYCLE_MAX_CPU_CORE_RATIO must be a positive number; got: 1x",
     );
   });
 
   it("configures a phase timeout with process-group cleanup", () => {
     const script = readFileSync(scriptPath, "utf8");
 
-    expect(script).toContain("OPENCLAW_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS");
-    expect(script).toContain("OPENCLAW_PLUGIN_LIFECYCLE_TIMEOUT_KILL_GRACE_MS");
-    expect(script).toContain("OPENCLAW_PLUGIN_LIFECYCLE_MAX_RSS_KB");
-    expect(script).toContain("OPENCLAW_PLUGIN_LIFECYCLE_MAX_WALL_MS");
-    expect(script).toContain("OPENCLAW_PLUGIN_LIFECYCLE_MAX_CPU_CORE_RATIO");
+    expect(script).toContain("AFORA_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS");
+    expect(script).toContain("AFORA_PLUGIN_LIFECYCLE_TIMEOUT_KILL_GRACE_MS");
+    expect(script).toContain("AFORA_PLUGIN_LIFECYCLE_MAX_RSS_KB");
+    expect(script).toContain("AFORA_PLUGIN_LIFECYCLE_MAX_WALL_MS");
+    expect(script).toContain("AFORA_PLUGIN_LIFECYCLE_MAX_CPU_CORE_RATIO");
     expect(script).toContain("detached: true");
     expect(script).toContain("process.kill(-child.pid, signal)");
     expect(script).toContain("plugin lifecycle resource ceiling exceeded");
@@ -186,7 +186,7 @@ describe("plugin lifecycle resource sampler", () => {
   it.runIf(process.platform === "linux")(
     "fails successful phases that exceed wall ceilings",
     () => {
-      const dir = tempDirs.make("openclaw-plugin-lifecycle-measure-");
+      const dir = tempDirs.make("afora-plugin-lifecycle-measure-");
       const summary = path.join(dir, "summary.tsv");
       const result = spawnSync(
         "node",
@@ -196,8 +196,8 @@ describe("plugin lifecycle resource sampler", () => {
           encoding: "utf8",
           env: {
             ...process.env,
-            OPENCLAW_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS: "5000",
-            OPENCLAW_PLUGIN_LIFECYCLE_MAX_WALL_MS: "1",
+            AFORA_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS: "5000",
+            AFORA_PLUGIN_LIFECYCLE_MAX_WALL_MS: "1",
           },
           timeout: 5000,
         },
@@ -213,7 +213,7 @@ describe("plugin lifecycle resource sampler", () => {
   it.runIf(process.platform === "linux")(
     "times out wedged phases and records the timeout signal",
     () => {
-      const dir = tempDirs.make("openclaw-plugin-lifecycle-measure-");
+      const dir = tempDirs.make("afora-plugin-lifecycle-measure-");
       const summary = path.join(dir, "summary.tsv");
       const result = spawnSync(
         "node",
@@ -223,8 +223,8 @@ describe("plugin lifecycle resource sampler", () => {
           encoding: "utf8",
           env: {
             ...process.env,
-            OPENCLAW_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS: "150",
-            OPENCLAW_PLUGIN_LIFECYCLE_TIMEOUT_KILL_GRACE_MS: "50",
+            AFORA_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS: "150",
+            AFORA_PLUGIN_LIFECYCLE_TIMEOUT_KILL_GRACE_MS: "50",
           },
           timeout: 5000,
         },
@@ -239,7 +239,7 @@ describe("plugin lifecycle resource sampler", () => {
   );
 
   it.runIf(process.platform === "linux")("clamps oversized timer env values", () => {
-    const dir = tempDirs.make("openclaw-plugin-lifecycle-measure-");
+    const dir = tempDirs.make("afora-plugin-lifecycle-measure-");
     const summary = path.join(dir, "summary.tsv");
     const oversizedTimerMs = "2147000001";
     const result = spawnSync(
@@ -258,9 +258,9 @@ describe("plugin lifecycle resource sampler", () => {
         encoding: "utf8",
         env: {
           ...process.env,
-          OPENCLAW_PLUGIN_LIFECYCLE_METRIC_POLL_MS: oversizedTimerMs,
-          OPENCLAW_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS: oversizedTimerMs,
-          OPENCLAW_PLUGIN_LIFECYCLE_TIMEOUT_KILL_GRACE_MS: oversizedTimerMs,
+          AFORA_PLUGIN_LIFECYCLE_METRIC_POLL_MS: oversizedTimerMs,
+          AFORA_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS: oversizedTimerMs,
+          AFORA_PLUGIN_LIFECYCLE_TIMEOUT_KILL_GRACE_MS: oversizedTimerMs,
         },
         timeout: 5000,
       },
@@ -276,7 +276,7 @@ describe("plugin lifecycle resource sampler", () => {
   it.runIf(process.platform === "linux")(
     "kills stubborn descendants after the timeout grace period",
     () => {
-      const dir = tempDirs.make("openclaw-plugin-lifecycle-measure-");
+      const dir = tempDirs.make("afora-plugin-lifecycle-measure-");
       const summary = path.join(dir, "summary.tsv");
       const pidFile = path.join(dir, "descendant.pid");
       let descendantPid: number | undefined;
@@ -302,8 +302,8 @@ describe("plugin lifecycle resource sampler", () => {
             encoding: "utf8",
             env: {
               ...process.env,
-              OPENCLAW_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS: "3000",
-              OPENCLAW_PLUGIN_LIFECYCLE_TIMEOUT_KILL_GRACE_MS: "200",
+              AFORA_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS: "3000",
+              AFORA_PLUGIN_LIFECYCLE_TIMEOUT_KILL_GRACE_MS: "200",
               PID_FILE: pidFile,
             },
             timeout: 7000,
@@ -328,7 +328,7 @@ describe("plugin lifecycle resource sampler", () => {
   it.runIf(process.platform === "linux")(
     "forwards external termination to the measured process group",
     async () => {
-      const dir = tempDirs.make("openclaw-plugin-lifecycle-measure-");
+      const dir = tempDirs.make("afora-plugin-lifecycle-measure-");
       const summary = path.join(dir, "summary.tsv");
       const pidFile = path.join(dir, "descendant.pid");
       let descendantPid: number | undefined;
@@ -349,8 +349,8 @@ describe("plugin lifecycle resource sampler", () => {
             cwd: process.cwd(),
             env: {
               ...process.env,
-              OPENCLAW_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS: "5000",
-              OPENCLAW_PLUGIN_LIFECYCLE_TIMEOUT_KILL_GRACE_MS: "200",
+              AFORA_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS: "5000",
+              AFORA_PLUGIN_LIFECYCLE_TIMEOUT_KILL_GRACE_MS: "200",
               PID_FILE: pidFile,
             },
             stdio: "ignore",
@@ -374,7 +374,7 @@ describe("plugin lifecycle resource sampler", () => {
   it.runIf(process.platform === "linux")(
     "exits promptly when externally terminated phases stop during grace",
     async () => {
-      const dir = tempDirs.make("openclaw-plugin-lifecycle-measure-");
+      const dir = tempDirs.make("afora-plugin-lifecycle-measure-");
       const summary = path.join(dir, "summary.tsv");
       const readyFile = path.join(dir, "ready.pid");
       const result = spawn(
@@ -398,8 +398,8 @@ describe("plugin lifecycle resource sampler", () => {
           cwd: process.cwd(),
           env: {
             ...process.env,
-            OPENCLAW_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS: "5000",
-            OPENCLAW_PLUGIN_LIFECYCLE_TIMEOUT_KILL_GRACE_MS: "1500",
+            AFORA_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS: "5000",
+            AFORA_PLUGIN_LIFECYCLE_TIMEOUT_KILL_GRACE_MS: "1500",
             READY_FILE: readyFile,
           },
           stdio: "ignore",
@@ -419,7 +419,7 @@ describe("plugin lifecycle resource sampler", () => {
   it.runIf(process.platform === "linux")(
     "exits promptly when shell descendants drain during termination grace",
     async () => {
-      const dir = tempDirs.make("openclaw-plugin-lifecycle-measure-");
+      const dir = tempDirs.make("afora-plugin-lifecycle-measure-");
       const summary = path.join(dir, "summary.tsv");
       const readyFile = path.join(dir, "ready.pid");
       const result = spawn(
@@ -437,8 +437,8 @@ describe("plugin lifecycle resource sampler", () => {
           cwd: process.cwd(),
           env: {
             ...process.env,
-            OPENCLAW_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS: "5000",
-            OPENCLAW_PLUGIN_LIFECYCLE_TIMEOUT_KILL_GRACE_MS: "1500",
+            AFORA_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS: "5000",
+            AFORA_PLUGIN_LIFECYCLE_TIMEOUT_KILL_GRACE_MS: "1500",
             READY_FILE: readyFile,
           },
           stdio: "ignore",

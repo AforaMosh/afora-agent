@@ -32,9 +32,9 @@ import type { ExecAutoReviewer } from "../infra/exec-auto-review.js";
 import type { ExecHostResponse } from "../infra/exec-host.js";
 import { formatExecCommand } from "../infra/system-run-command.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { buildSystemRunApprovalPlan } from "./invoke-system-run-plan.js";
 import { handleSystemRunInvoke } from "./invoke-system-run.js";
@@ -54,25 +54,25 @@ type MockedSendNodeEvent = Mock<HandleSystemRunInvokeOptions["sendNodeEvent"]>;
 
 describe("handleSystemRunInvoke mac app exec host routing", () => {
   let sharedFixtureRoot = "";
-  let sharedOpenClawHome = "";
+  let sharedAforaHome = "";
   let sharedRuntimeBinDir = "";
   let sharedFixtureId = 0;
-  let previousOpenClawHome: string | undefined;
+  let previousAforaHome: string | undefined;
   const sharedRuntimeBins = new Set<string>();
 
   beforeAll(() => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     sharedFixtureRoot = fs.realpathSync(
-      fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-node-host-fixtures-")),
+      fs.mkdtempSync(path.join(os.tmpdir(), "afora-node-host-fixtures-")),
     );
-    sharedOpenClawHome = path.join(sharedFixtureRoot, "openclaw-home");
+    sharedAforaHome = path.join(sharedFixtureRoot, "afora-home");
     sharedRuntimeBinDir = path.join(sharedFixtureRoot, "bin");
-    fs.mkdirSync(sharedOpenClawHome, { recursive: true });
+    fs.mkdirSync(sharedAforaHome, { recursive: true });
     fs.mkdirSync(sharedRuntimeBinDir, { recursive: true });
   });
 
   afterAll(() => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     if (sharedFixtureRoot) {
       fs.rmSync(sharedFixtureRoot, { recursive: true, force: true });
     }
@@ -85,21 +85,21 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   }
 
   beforeEach(() => {
-    previousOpenClawHome = process.env.OPENCLAW_HOME;
-    process.env.OPENCLAW_HOME = sharedOpenClawHome;
+    previousAforaHome = process.env.AFORA_HOME;
+    process.env.AFORA_HOME = sharedAforaHome;
     execApprovalsStoreTesting.reset();
     // Cases isolate the canonical policy row, not shared-state schema bootstrap.
-    deleteExecApprovalsConfigRow(openOpenClawStateDatabase().db);
+    deleteExecApprovalsConfigRow(openAforaStateDatabase().db);
     clearRuntimeConfigSnapshot();
   });
 
   afterEach(() => {
     execApprovalsStoreTesting.reset();
     clearRuntimeConfigSnapshot();
-    if (previousOpenClawHome === undefined) {
-      delete process.env.OPENCLAW_HOME;
+    if (previousAforaHome === undefined) {
+      delete process.env.AFORA_HOME;
     } else {
-      process.env.OPENCLAW_HOME = previousOpenClawHome;
+      process.env.AFORA_HOME = previousAforaHome;
     }
   });
 
@@ -395,8 +395,8 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
     approvals: Parameters<typeof saveExecApprovals>[0];
     run: (ctx: { tempHome: string }) => Promise<T>;
   }): Promise<T> {
-    const tempHome = sharedOpenClawHome;
-    return await withEnvAsync({ OPENCLAW_HOME: tempHome }, async () => {
+    const tempHome = sharedAforaHome;
+    return await withEnvAsync({ AFORA_HOME: tempHome }, async () => {
       saveExecApprovals(params.approvals);
       return await params.run({ tempHome });
     });
@@ -750,7 +750,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   });
 
   it("uses auto reviewer for system.run approval misses when exec mode is auto", async () => {
-    const tmp = createFixtureDir("openclaw-system-run-auto-review-");
+    const tmp = createFixtureDir("afora-system-run-auto-review-");
     const executablePath = createTempExecutable({ dir: tmp, name: "read-info" });
     setRuntimeConfigSnapshot({
       tools: {
@@ -834,7 +834,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   });
 
   it("does not auto-review direct system.run approval misses without an approval plan", async () => {
-    const tmp = createFixtureDir("openclaw-system-run-auto-review-no-plan-");
+    const tmp = createFixtureDir("afora-system-run-auto-review-no-plan-");
     const executablePath = createTempExecutable({ dir: tmp, name: "read-info" });
     setRuntimeConfigSnapshot({
       tools: {
@@ -884,7 +884,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
       },
     },
   ])("denies direct system.run when its reviewer $name", async ({ reviewer }) => {
-    const tmp = createFixtureDir("openclaw-system-run-auto-review-failure-");
+    const tmp = createFixtureDir("afora-system-run-auto-review-failure-");
     const executablePath = createTempExecutable({ dir: tmp, name: "read-info" });
     setRuntimeConfigSnapshot({ tools: { exec: { mode: "auto" } } });
     const autoReviewer = vi.fn<ExecAutoReviewer>(reviewer);
@@ -917,7 +917,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   it.runIf(process.platform !== "win32").each(["bash", "sh", "/bin/sh"])(
     "does not auto-review direct %s login-shell startup",
     async (shell) => {
-      const tmp = createFixtureDir("openclaw-system-run-auto-review-login-");
+      const tmp = createFixtureDir("afora-system-run-auto-review-login-");
       setRuntimeConfigSnapshot({ tools: { exec: { mode: "auto" } } });
       try {
         const autoReviewer = vi.fn<ExecAutoReviewer>(() => ({
@@ -960,8 +960,8 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   );
 
   it("does not auto-review direct system.run security audit suppression edits", async () => {
-    const tmp = createFixtureDir("openclaw-system-run-auto-review-suppression-");
-    const executablePath = createTempExecutable({ dir: tmp, name: "openclaw" });
+    const tmp = createFixtureDir("afora-system-run-auto-review-suppression-");
+    const executablePath = createTempExecutable({ dir: tmp, name: "afora" });
     setRuntimeConfigSnapshot({
       tools: {
         exec: {
@@ -1006,7 +1006,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   });
 
   it("defers to human approval when system.run auto reviewer asks", async () => {
-    const tmp = createFixtureDir("openclaw-system-run-auto-review-ask-");
+    const tmp = createFixtureDir("afora-system-run-auto-review-ask-");
     const executablePath = createTempExecutable({ dir: tmp, name: "read-info" });
     setRuntimeConfigSnapshot({
       tools: {
@@ -1066,7 +1066,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
     "preserves wrapper argv for approved env shell commands",
     async () => {
       for (const testCase of approvedEnvShellWrapperCases) {
-        const tmp = createFixtureDir("openclaw-approved-wrapper-");
+        const tmp = createFixtureDir("afora-approved-wrapper-");
         const marker = path.join(tmp, "marker");
         const attackerScript = path.join(tmp, "sh");
         fs.writeFileSync(attackerScript, "#!/bin/sh\necho exploited > marker\n");
@@ -1201,16 +1201,16 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
         label: "semicolon chain simple command",
         command:
           process.platform === "win32"
-            ? ["cmd.exe", "/d", "/s", "/c", "openclaw status; id"]
-            : ["/bin/sh", "-lc", "openclaw status; id"],
+            ? ["cmd.exe", "/d", "/s", "/c", "afora status; id"]
+            : ["/bin/sh", "-lc", "afora status; id"],
         approvalRequired: true,
       },
       {
         label: "semicolon chain path read",
         command:
           process.platform === "win32"
-            ? ["cmd.exe", "/d", "/s", "/c", "openclaw status; cat /etc/passwd"]
-            : ["/bin/sh", "-lc", "openclaw status; cat /etc/passwd"],
+            ? ["cmd.exe", "/d", "/s", "/c", "afora status; cat /etc/passwd"]
+            : ["/bin/sh", "-lc", "afora status; cat /etc/passwd"],
         approvalRequired: true,
       },
       {
@@ -1243,8 +1243,8 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
         preferMacAppExecHost: false,
         security: "allowlist",
         ask: "off",
-        command: ["/bin/sh", "-lc", "head -c${IFS}16${IFS}${OPENCLAW_CONFIG_PATH}"],
-        rawCommand: "head -c${IFS}16${IFS}${OPENCLAW_CONFIG_PATH}",
+        command: ["/bin/sh", "-lc", "head -c${IFS}16${IFS}${AFORA_CONFIG_PATH}"],
+        rawCommand: "head -c${IFS}16${IFS}${AFORA_CONFIG_PATH}",
       });
 
       expect(runCommand).not.toHaveBeenCalled();
@@ -1346,7 +1346,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   );
 
   it("denies abbreviated PowerShell encoded payloads even when the wrapper is allowlisted", async () => {
-    const binDir = createFixtureDir("openclaw-pwsh-allowlist-");
+    const binDir = createFixtureDir("afora-pwsh-allowlist-");
     const executablePath = createTempExecutable({ dir: binDir, name: "pwsh" });
     await withTempApprovalsHome({
       approvals: createAllowlistOnMissApprovals({
@@ -1398,7 +1398,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
     "pins PATH-token executable to canonical path",
     async () => {
       await withPathTokenCommand({
-        tmpPrefix: "openclaw-approval-path-pin-",
+        tmpPrefix: "afora-approval-path-pin-",
         run: async ({ expected }) => {
           const { runCommand, sendInvokeResult } = await runSystemInvoke({
             preferMacAppExecHost: false,
@@ -1426,7 +1426,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
       }));
       const sendInvokeResult = vi.fn(async () => {});
       await withPathTokenCommand({
-        tmpPrefix: "openclaw-allowlist-path-pin-",
+        tmpPrefix: "afora-allowlist-path-pin-",
         run: async ({ link: _link, expected }) => {
           await withTempApprovalsHome({
             approvals: {
@@ -1471,7 +1471,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
         {
           label: "cwd symlink",
           setup: () => {
-            const tmp = createFixtureDir("openclaw-approval-cwd-link-");
+            const tmp = createFixtureDir("afora-approval-cwd-link-");
             const safeDir = path.join(tmp, "safe");
             const linkDir = path.join(tmp, "cwd-link");
             const script = path.join(safeDir, "run.sh");
@@ -1488,7 +1488,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
         {
           label: "parent symlink",
           setup: () => {
-            const tmp = createFixtureDir("openclaw-approval-cwd-parent-link-");
+            const tmp = createFixtureDir("afora-approval-cwd-parent-link-");
             const safeSymlinkRoot = path.join(tmp, "safe-root");
             const safeSymlinkSub = path.join(safeSymlinkRoot, "sub");
             const linkRoot = path.join(tmp, "approved-link");
@@ -1515,7 +1515,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   );
 
   it("uses canonical executable path for approval-based relative command execution", async () => {
-    const tmp = createFixtureDir("openclaw-approval-cwd-real-");
+    const tmp = createFixtureDir("afora-approval-cwd-real-");
     const script = path.join(tmp, "run.sh");
     fs.writeFileSync(script, "#!/bin/sh\necho SAFE\n");
     fs.chmodSync(script, 0o755);
@@ -1545,8 +1545,8 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   });
 
   it("denies approval-based execution when cwd identity drifts before execution", async () => {
-    const tmp = createFixtureDir("openclaw-approval-cwd-drift-");
-    const fallback = createFixtureDir("openclaw-approval-cwd-drift-alt-");
+    const tmp = createFixtureDir("afora-approval-cwd-drift-");
+    const fallback = createFixtureDir("afora-approval-cwd-drift-alt-");
     const script = path.join(tmp, "run.sh");
     fs.writeFileSync(script, "#!/bin/sh\necho SAFE\n");
     fs.chmodSync(script, 0o755);
@@ -1593,7 +1593,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   it("validates approved script operand bindings at dispatch", async () => {
     for (const mutate of [true, false]) {
       const tmp = createFixtureDir(
-        mutate ? "openclaw-approval-script-drift-" : "openclaw-approval-script-stable-",
+        mutate ? "afora-approval-script-drift-" : "afora-approval-script-stable-",
       );
       const fixture = createMutableScriptOperandFixture(tmp);
       fs.writeFileSync(fixture.scriptPath, fixture.initialBody);
@@ -1639,7 +1639,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   it.runIf(process.platform !== "win32")(
     "revalidates approved cwd identity after authorization commit",
     async () => {
-      const tmp = createFixtureDir("openclaw-approval-cwd-post-commit-drift-");
+      const tmp = createFixtureDir("afora-approval-cwd-post-commit-drift-");
       const moved = `${tmp}-approved`;
       const script = path.join(tmp, "run.sh");
       fs.writeFileSync(script, "#!/bin/sh\necho SAFE\n");
@@ -1672,7 +1672,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   );
 
   it("revalidates approved script operands after authorization commit", async () => {
-    const tmp = createFixtureDir("openclaw-approval-script-post-commit-drift-");
+    const tmp = createFixtureDir("afora-approval-script-post-commit-drift-");
     const fixture = createMutableScriptOperandFixture(tmp);
     fs.writeFileSync(fixture.scriptPath, fixture.initialBody);
     if (process.platform !== "win32") {
@@ -1713,7 +1713,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
     await withFakeRuntimeOnPath({
       runtime: "tsx",
       run: async () => {
-        const tmp = createFixtureDir("openclaw-approval-tsx-script-drift-");
+        const tmp = createFixtureDir("afora-approval-tsx-script-drift-");
         const fixture = createRuntimeScriptOperandFixture({ tmp, runtime: "tsx" });
         fs.writeFileSync(fixture.scriptPath, fixture.initialBody);
         const prepared = buildSystemRunApprovalPlan({
@@ -1742,7 +1742,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
           message: "SYSTEM_RUN_DENIED: approval script operand changed before execution",
           exact: true,
         });
-        const missingBindingTmp = createFixtureDir("openclaw-approval-tsx-missing-binding-");
+        const missingBindingTmp = createFixtureDir("afora-approval-tsx-missing-binding-");
         const missingBindingFixture = createRuntimeScriptOperandFixture({
           tmp: missingBindingTmp,
           runtime: "tsx",
@@ -1780,7 +1780,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   });
 
   it("denies ./sh wrapper spoof in allowlist on-miss mode before execution", async () => {
-    const marker = path.join(os.tmpdir(), `openclaw-wrapper-spoof-${process.pid}-${Date.now()}`);
+    const marker = path.join(os.tmpdir(), `afora-wrapper-spoof-${process.pid}-${Date.now()}`);
     const runCommand = vi.fn(async () => {
       fs.writeFileSync(marker, "executed");
       return createLocalRunResult();
@@ -1903,7 +1903,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
       ask: "off",
       command: ["/bin/sh", "./script.sh"],
       env: {
-        OPENCLAW_TEST: "1",
+        AFORA_TEST: "1",
         LANG: "C",
         LC_TIME: "C",
       },
@@ -2050,7 +2050,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
     await withTempApprovalsHome({
       approvals: createAllowlistOnMissApprovals(),
       run: async () => {
-        const tempDir = createFixtureDir("openclaw-allow-always-write-failure-");
+        const tempDir = createFixtureDir("afora-allow-always-write-failure-");
         const executablePath = createTempExecutable({ dir: tempDir, name: "approved-tool" });
         const commitAuthorization = vi.fn(async () => {
           throw new Error("approval lock unavailable");
@@ -2076,7 +2076,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   });
 
   it("does not restore a revoked allowlist rule during explicit allow-always persistence", async () => {
-    const tempDir = createFixtureDir("openclaw-allow-always-revoked-rule-");
+    const tempDir = createFixtureDir("afora-allow-always-revoked-rule-");
     const executablePath = createTempExecutable({ dir: tempDir, name: "approved-tool" });
     const matchedEntry = { pattern: fs.realpathSync(executablePath) };
     const expectedPolicySnapshot = {
@@ -2148,7 +2148,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   });
 
   it("fails closed when allowlist usage persistence fails", async () => {
-    const tempDir = createFixtureDir("openclaw-allowlist-usage-write-failure-");
+    const tempDir = createFixtureDir("afora-allowlist-usage-write-failure-");
     const executablePath = createTempExecutable({ dir: tempDir, name: "allowlisted-tool" });
     await withTempApprovalsHome({
       approvals: createAllowlistOnMissApprovals({
@@ -2546,8 +2546,8 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   });
 
   it("does not let forwarded auto-review authorize security audit suppression edits", async () => {
-    const tmp = createFixtureDir("openclaw-forwarded-auto-review-suppression-");
-    const executablePath = createTempExecutable({ dir: tmp, name: "openclaw" });
+    const tmp = createFixtureDir("afora-forwarded-auto-review-suppression-");
+    const executablePath = createTempExecutable({ dir: tmp, name: "afora" });
     const prepared = buildSystemRunApprovalPlan({
       command: [executablePath, "config", "set", "security.audit.suppressions", "[]"],
       cwd: tmp,
@@ -2585,7 +2585,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   });
 
   it("preserves exact-plan forwarded auto-review for strict inline eval", async () => {
-    const plan = createStrictInlineEvalApprovalPlan("openclaw-forwarded-inline-");
+    const plan = createStrictInlineEvalApprovalPlan("afora-forwarded-inline-");
     setRuntimeConfigSnapshot({ tools: { exec: { strictInlineEval: true } } });
     try {
       await withTempApprovalsHome({
@@ -2976,7 +2976,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   it.runIf(process.platform !== "win32")(
     "permits a durable exact-command approval under allowlist timeout fallback",
     async () => {
-      const tempDir = createFixtureDir("openclaw-fallback-durable-");
+      const tempDir = createFixtureDir("afora-fallback-durable-");
       const prepared = buildSystemRunApprovalPlan({
         command: ["/bin/sh", "-c", "/bin/ls"],
         cwd: tempDir,
@@ -3031,7 +3031,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   it.runIf(process.platform !== "win32")(
     "rejects allowlist timeout fallback when its durable source is removed before commit",
     async () => {
-      const tempDir = createFixtureDir("openclaw-fallback-durable-revoked-");
+      const tempDir = createFixtureDir("afora-fallback-durable-revoked-");
       const prepared = buildSystemRunApprovalPlan({
         command: ["/bin/sh", "-c", "/bin/ls"],
         cwd: tempDir,
@@ -3168,7 +3168,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   });
 
   it("does not let timeout fallback satisfy strict inline review", async () => {
-    const plan = createStrictInlineEvalApprovalPlan("openclaw-fallback-inline-");
+    const plan = createStrictInlineEvalApprovalPlan("afora-fallback-inline-");
     setRuntimeConfigSnapshot({ tools: { exec: { strictInlineEval: true } } });
     try {
       await withTempApprovalsHome({
@@ -3198,8 +3198,8 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   });
 
   it("does not let timeout fallback authorize security audit suppression edits", async () => {
-    const tmp = createFixtureDir("openclaw-timeout-fallback-suppression-");
-    const executablePath = createTempExecutable({ dir: tmp, name: "openclaw" });
+    const tmp = createFixtureDir("afora-timeout-fallback-suppression-");
+    const executablePath = createTempExecutable({ dir: tmp, name: "afora" });
     const prepared = buildSystemRunApprovalPlan({
       command: [executablePath, "config", "set", "security.audit.suppressions", "[]"],
       cwd: tmp,
@@ -3235,8 +3235,8 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   });
 
   it("keeps audit suppression edits approval-gated under allowlist fallback from full/off", async () => {
-    const tmp = createFixtureDir("openclaw-timeout-fallback-full-off-suppression-");
-    const executablePath = createTempExecutable({ dir: tmp, name: "openclaw" });
+    const tmp = createFixtureDir("afora-timeout-fallback-full-off-suppression-");
+    const executablePath = createTempExecutable({ dir: tmp, name: "afora" });
     const prepared = buildSystemRunApprovalPlan({
       command: [executablePath, "config", "set", "security.audit.suppressions", "[]"],
       cwd: tmp,
@@ -3304,7 +3304,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
       await withTempApprovalsHome({
         approvals: createAllowlistOnMissApprovals(),
         run: async () => {
-          const tempDir = createFixtureDir("openclaw-inline-eval-bin-");
+          const tempDir = createFixtureDir("afora-inline-eval-bin-");
           const executablePath = createTempExecutable({
             dir: tempDir,
             name: "python3.13",
@@ -3338,7 +3338,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
       await withTempApprovalsHome({
         approvals: createAllowlistOnMissApprovals(),
         run: async () => {
-          const tempDir = createFixtureDir("openclaw-inline-eval-awk-");
+          const tempDir = createFixtureDir("afora-inline-eval-awk-");
           const executablePath = createTempExecutable({
             dir: tempDir,
             name: "gawk",
@@ -3408,7 +3408,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
       await withTempApprovalsHome({
         approvals: createAllowlistOnMissApprovals(),
         run: async () => {
-          const tempDir = createFixtureDir("openclaw-inline-eval-make-");
+          const tempDir = createFixtureDir("afora-inline-eval-make-");
           const executablePath = createTempExecutable({
             dir: tempDir,
             name: "make",
@@ -3450,7 +3450,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   it.runIf(process.platform !== "win32")(
     "auto-runs allowlisted inner scripts through transport shell wrappers",
     async () => {
-      const tempDir = createFixtureDir("openclaw-shell-wrapper-inner-");
+      const tempDir = createFixtureDir("afora-shell-wrapper-inner-");
       const scriptsDir = path.join(tempDir, "scripts");
       fs.mkdirSync(scriptsDir, { recursive: true });
       const scriptPath = path.join(scriptsDir, "check_mail.sh");
@@ -3494,7 +3494,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
           commandPrefix: ["env", "FOO=bar", "cmd.exe", "/d", "/s", "/c"],
         },
       ]) {
-        const tempDir = createFixtureDir("openclaw-cmd-wrapper-allow-");
+        const tempDir = createFixtureDir("afora-cmd-wrapper-allow-");
         const scriptPath = path.join(tempDir, "check_mail.cmd");
         fs.writeFileSync(scriptPath, "@echo off\r\necho ok\r\n");
         const command = [...testCase.commandPrefix, `${scriptPath} --limit 5`];
@@ -3545,7 +3545,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
   it("fails closed when cmd.exe wrapper trust is downgraded before execution", async () => {
     const platformSpy = vi.spyOn(process, "platform", "get").mockReturnValue("win32");
     try {
-      const tempDir = createFixtureDir("openclaw-cmd-wrapper-downgraded-");
+      const tempDir = createFixtureDir("afora-cmd-wrapper-downgraded-");
       const commandName = "check_mail.cmd";
       const command = ["env", "FOO=bar", "cmd.exe", "/d", "/s", "/c", `${commandName} --limit 5`];
       const ordinaryPattern = "*";
@@ -3627,7 +3627,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
       return;
     }
 
-    const tempDir = createFixtureDir("openclaw-shell-wrapper-allow-");
+    const tempDir = createFixtureDir("afora-shell-wrapper-allow-");
     const prepared = buildSystemRunApprovalPlan({
       command: ["/bin/sh", "-c", "/bin/ls"],
       cwd: tempDir,
@@ -3679,7 +3679,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
       return;
     }
 
-    const tempDir = createFixtureDir("openclaw-shell-wrapper-redundant-grant-");
+    const tempDir = createFixtureDir("afora-shell-wrapper-redundant-grant-");
     const prepared = buildSystemRunApprovalPlan({
       command: ["/bin/sh", "-c", "cd ."],
       cwd: tempDir,
@@ -3745,7 +3745,7 @@ describe("handleSystemRunInvoke mac app exec host routing", () => {
       return;
     }
 
-    const tempDir = createFixtureDir("openclaw-shell-wrapper-revoked-");
+    const tempDir = createFixtureDir("afora-shell-wrapper-revoked-");
     const prepared = buildSystemRunApprovalPlan({
       command: ["/bin/sh", "-c", "/bin/ls"],
       cwd: tempDir,

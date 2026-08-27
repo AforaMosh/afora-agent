@@ -1,5 +1,5 @@
 // Msteams plugin module implements remote media behavior.
-import { saveResponseMedia, type SavedRemoteMedia } from "openclaw/plugin-sdk/media-runtime";
+import { saveResponseMedia, type SavedRemoteMedia } from "afora-agent/plugin-sdk/media-runtime";
 import type { SsrFPolicy } from "../../runtime-api.js";
 import { getMSTeamsRuntime } from "../runtime.js";
 import { resolveMSTeamsMediaKind } from "./shared.js";

@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it, vi } from "vitest";
 import { SecretSurfaceUnavailableError } from "../../secrets/runtime-degraded-state.js";
 import type { ControlUiGitHubPreview, ControlUiSessionPreview } from "../control-ui-contract.js";
@@ -29,8 +29,8 @@ describe("controlUi.githubPreview", () => {
       kind: "issue",
       login: "octocat",
       number: 99815,
-      owner: "openclaw",
-      repo: "openclaw",
+      owner: "afora",
+      repo: "afora",
       state: "open",
       title: "Keep hover previews compact",
       updatedAt: "2026-07-05T09:55:00Z",
@@ -44,7 +44,7 @@ describe("controlUi.githubPreview", () => {
       'handlers["controlUi.githubPreview"] test invariant',
     )(
       requestOptions(
-        { kind: "issue", number: 99815, owner: "openclaw", repo: "openclaw" },
+        { kind: "issue", number: 99815, owner: "afora", repo: "afora" },
         respond,
       ),
     );
@@ -52,8 +52,8 @@ describe("controlUi.githubPreview", () => {
     expect(loadPreview).toHaveBeenCalledWith({
       kind: "issue",
       number: 99815,
-      owner: "openclaw",
-      repo: "openclaw",
+      owner: "afora",
+      repo: "afora",
     });
     expect(respond).toHaveBeenCalledWith(true, preview, undefined);
   });
@@ -68,7 +68,7 @@ describe("controlUi.githubPreview", () => {
       'handlers["controlUi.githubPreview"] test invariant',
     )(
       requestOptions(
-        { kind: "issue", number: 1, owner: "openclaw/evil", repo: "openclaw" },
+        { kind: "issue", number: 1, owner: "afora-agent/evil", repo: "afora" },
         respond,
       ),
     );
@@ -90,7 +90,7 @@ describe("controlUi.githubPreview", () => {
       handlers["controlUi.githubPreview"],
       'handlers["controlUi.githubPreview"] test invariant',
     )(
-      requestOptions({ kind: "pull", number: 99816, owner: "openclaw", repo: "openclaw" }, respond),
+      requestOptions({ kind: "pull", number: 99816, owner: "afora", repo: "afora" }, respond),
     );
 
     expect(respond).toHaveBeenCalledWith(false, undefined, {
@@ -116,7 +116,7 @@ describe("controlUi.githubPreview", () => {
       handlers["controlUi.githubPreview"],
       'handlers["controlUi.githubPreview"] test invariant',
     )(
-      requestOptions({ kind: "pull", number: 99816, owner: "openclaw", repo: "openclaw" }, respond),
+      requestOptions({ kind: "pull", number: 99816, owner: "afora", repo: "afora" }, respond),
     );
 
     expect(respond).toHaveBeenCalledWith(false, undefined, {

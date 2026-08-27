@@ -15,7 +15,7 @@ export * from "./schema/channel-pairing.js";
 export * from "./schema/talk-marks.js";
 export * from "./schema/commands.js";
 export * from "./schema/config.js";
-export * from "./schema/openclaw.js";
+export * from "./schema/afora.js";
 export * from "./schema/cron.js";
 export * from "./schema/cron.types.js";
 export * from "./schema/error-codes.js";

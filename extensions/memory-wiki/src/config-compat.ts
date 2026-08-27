@@ -1,6 +1,6 @@
 // Memory Wiki helper module supports config compat behavior.
-import { asNullableRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
-import type { OpenClawConfig } from "../api.js";
+import { asNullableRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import type { AforaConfig } from "../api.js";
 
 type LegacyConfigRule = {
   path: Array<string | number>;
@@ -16,13 +16,13 @@ export const legacyConfigRules: LegacyConfigRule[] = [
   {
     path: ["plugins", "entries", "memory-wiki", "config", "bridge"],
     message:
-      'plugins.entries.memory-wiki.config.bridge.readMemoryCore is legacy; use plugins.entries.memory-wiki.config.bridge.readMemoryArtifacts. Run "openclaw doctor --fix".',
+      'plugins.entries.memory-wiki.config.bridge.readMemoryCore is legacy; use plugins.entries.memory-wiki.config.bridge.readMemoryArtifacts. Run "afora doctor --fix".',
     match: hasLegacyBridgeArtifactToggle,
   },
 ];
 
-export function migrateMemoryWikiLegacyConfig(config: OpenClawConfig): {
-  config: OpenClawConfig;
+export function migrateMemoryWikiLegacyConfig(config: AforaConfig): {
+  config: AforaConfig;
   changes: string[];
 } | null {
   const rawEntry = asNullableRecord(config.plugins?.entries?.["memory-wiki"]);
@@ -63,8 +63,8 @@ export function migrateMemoryWikiLegacyConfig(config: OpenClawConfig): {
   };
 }
 
-export function normalizeCompatibilityConfig({ cfg }: { cfg: OpenClawConfig }): {
-  config: OpenClawConfig;
+export function normalizeCompatibilityConfig({ cfg }: { cfg: AforaConfig }): {
+  config: AforaConfig;
   changes: string[];
 } {
   return migrateMemoryWikiLegacyConfig(cfg) ?? { config: cfg, changes: [] };

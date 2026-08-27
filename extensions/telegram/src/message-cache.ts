@@ -1,10 +1,10 @@
 // Telegram plugin module implements message cache behavior.
 import type { Message } from "grammy/types";
-import { formatLocationText } from "openclaw/plugin-sdk/channel-inbound";
-import { parseStrictPositiveInteger } from "openclaw/plugin-sdk/number-runtime";
-import type { MsgContext } from "openclaw/plugin-sdk/reply-runtime";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { formatLocationText } from "afora-agent/plugin-sdk/channel-inbound";
+import { parseStrictPositiveInteger } from "afora-agent/plugin-sdk/number-runtime";
+import type { MsgContext } from "afora-agent/plugin-sdk/reply-runtime";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   resolveTelegramPrimaryMedia,
   resolveTelegramRichMessageBody,
@@ -102,7 +102,7 @@ type TelegramMessageCache = {
 
 type MessageWithExternalReply = Message & { external_reply?: Message };
 type MessageWithPromptContextTimestamp = Message & {
-  openclaw_prompt_context_timestamp_ms?: unknown;
+  afora_prompt_context_timestamp_ms?: unknown;
 };
 
 type TelegramMessageCacheBucket = {
@@ -123,7 +123,7 @@ type TelegramEmbeddedReplyMessage = NonNullable<Message["reply_to_message"]>;
 
 const DEFAULT_MAX_MESSAGES = 5000;
 const PERSISTENT_BUCKET_KEY = `plugin-state:${TELEGRAM_MESSAGE_CACHE_PERSISTENT_NAMESPACE}`;
-const TELEGRAM_MESSAGE_CACHE_BUCKETS_KEY = Symbol.for("openclaw.telegram.messageCacheBuckets");
+const TELEGRAM_MESSAGE_CACHE_BUCKETS_KEY = Symbol.for("afora.telegram.messageCacheBuckets");
 
 function getPersistedMessageCacheBuckets(): Map<string, TelegramMessageCacheBucket> {
   const globalRecord = globalThis as Record<PropertyKey, unknown>;
@@ -193,7 +193,7 @@ function resolveMessageBody(msg: Message, preserveWhitespace: boolean): string |
 
 function resolveMessageTimestamp(msg: Message): number | undefined {
   const promptContextTimestamp = (msg as MessageWithPromptContextTimestamp)
-    .openclaw_prompt_context_timestamp_ms;
+    .afora_prompt_context_timestamp_ms;
   return typeof promptContextTimestamp === "number" && Number.isFinite(promptContextTimestamp)
     ? promptContextTimestamp
     : msg.date

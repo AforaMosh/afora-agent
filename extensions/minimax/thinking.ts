@@ -1,5 +1,5 @@
 // MiniMax thinking policy keeps M3 active by default while preserving M2.x leak prevention.
-import type { ProviderThinkingProfile } from "openclaw/plugin-sdk/plugin-entry";
+import type { ProviderThinkingProfile } from "afora-agent/plugin-sdk/plugin-entry";
 
 const BUDGET_THINKING_LEVELS = ["off", "minimal", "low", "medium", "high"] as const;
 const ADAPTIVE_THINKING_LEVELS = ["off", "adaptive"] as const;

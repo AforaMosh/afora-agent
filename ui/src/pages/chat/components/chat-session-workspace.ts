@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { html, nothing, type TemplateResult } from "lit";
 import type { SessionsDiffResult } from "../../../../../packages/gateway-protocol/src/index.js";
 import {
@@ -849,7 +849,7 @@ export function renderSessionWorkspaceRail(
   const dock = sessionWorkspace.narrowLayout ? "bottom" : sessionWorkspace.dock;
   const terminalButton = sessionWorkspace.onToggleTerminal
     ? html`
-        <openclaw-tooltip .content=${t("terminal.toggle")}>
+        <afora-tooltip .content=${t("terminal.toggle")}>
           <button
             type="button"
             class="rail-header__action chat-workspace-rail__terminal"
@@ -858,12 +858,12 @@ export function renderSessionWorkspaceRail(
           >
             ${icons.terminal}
           </button>
-        </openclaw-tooltip>
+        </afora-tooltip>
       `
     : nothing;
   const browserButton = sessionWorkspace.onToggleBrowser
     ? html`
-        <openclaw-tooltip .content=${t("browser.toggle")}>
+        <afora-tooltip .content=${t("browser.toggle")}>
           <button
             type="button"
             class="rail-header__action chat-workspace-rail__terminal"
@@ -872,12 +872,12 @@ export function renderSessionWorkspaceRail(
           >
             ${icons.globe}
           </button>
-        </openclaw-tooltip>
+        </afora-tooltip>
       `
     : nothing;
   const custodianButton = sessionWorkspace.onToggleCustodian
     ? html`
-        <openclaw-tooltip .content=${t("custodian.panel.toggle")}>
+        <afora-tooltip .content=${t("custodian.panel.toggle")}>
           <button
             type="button"
             class="rail-header__action chat-workspace-rail__terminal"
@@ -886,12 +886,12 @@ export function renderSessionWorkspaceRail(
           >
             ${icons.lobster}
           </button>
-        </openclaw-tooltip>
+        </afora-tooltip>
       `
     : nothing;
   const diffButton = sessionWorkspace.onOpenDiff
     ? html`
-        <openclaw-tooltip .content=${t("chat.sessionDiff.show")}>
+        <afora-tooltip .content=${t("chat.sessionDiff.show")}>
           <button
             type="button"
             class="rail-header__action chat-workspace-rail__terminal chat-session-diff-toggle"
@@ -900,7 +900,7 @@ export function renderSessionWorkspaceRail(
           >
             ${icons.diff}
           </button>
-        </openclaw-tooltip>
+        </afora-tooltip>
       `
     : nothing;
   const files = sessionWorkspace.list?.files ?? [];
@@ -917,7 +917,7 @@ export function renderSessionWorkspaceRail(
       role="group"
       aria-label=${t("chat.workspaceFiles.actions")}
     >
-      <openclaw-tooltip .content=${t("chat.workspaceFiles.preview")}>
+      <afora-tooltip .content=${t("chat.workspaceFiles.preview")}>
         <button
           class="chat-workspace-rail__row-action"
           type="button"
@@ -929,8 +929,8 @@ export function renderSessionWorkspaceRail(
         >
           ${icons.eye}
         </button>
-      </openclaw-tooltip>
-      <openclaw-tooltip .content=${t("chat.workspaceFiles.copyPath")}>
+      </afora-tooltip>
+      <afora-tooltip .content=${t("chat.workspaceFiles.copyPath")}>
         <button
           class="chat-workspace-rail__row-action"
           type="button"
@@ -942,7 +942,7 @@ export function renderSessionWorkspaceRail(
         >
           ${icons.copy}
         </button>
-      </openclaw-tooltip>
+      </afora-tooltip>
     </span>
   `;
   const renderSessionSummary = (): TemplateResult | typeof nothing => {
@@ -984,11 +984,11 @@ export function renderSessionWorkspaceRail(
                   >
                     <span class="chat-workspace-rail__file-icon">${icons.fileText}</span>
                     <span class="chat-workspace-rail__file-main">
-                      <openclaw-tooltip .content=${file.path || file.name}>
+                      <afora-tooltip .content=${file.path || file.name}>
                         <span class="chat-workspace-rail__file-name"
                           >${file.path || file.name}</span
                         >
-                      </openclaw-tooltip>
+                      </afora-tooltip>
                       ${size
                         ? html`<span class="chat-workspace-rail__file-meta">${size}</span>`
                         : nothing}
@@ -1096,9 +1096,9 @@ export function renderSessionWorkspaceRail(
                         >${entry.kind === "directory" ? icons.folder : icons.fileText}</span
                       >
                       <span class="chat-workspace-rail__file-main">
-                        <openclaw-tooltip .content=${entry.path || entry.name}>
+                        <afora-tooltip .content=${entry.path || entry.name}>
                           <span class="chat-workspace-rail__file-name">${entry.name}</span>
-                        </openclaw-tooltip>
+                        </afora-tooltip>
                         <span class="chat-workspace-rail__file-meta">
                           ${entry.kind === "directory"
                             ? entry.path || t("chat.workspaceFiles.root")
@@ -1146,9 +1146,9 @@ export function renderSessionWorkspaceRail(
                       >${isImage ? icons.image : icons.paperclip}</span
                     >
                     <span class="chat-workspace-rail__file-main">
-                      <openclaw-tooltip .content=${artifact.title}>
+                      <afora-tooltip .content=${artifact.title}>
                         <span class="chat-workspace-rail__file-name">${artifact.title}</span>
-                      </openclaw-tooltip>
+                      </afora-tooltip>
                       ${size || artifact.mimeType
                         ? html`<span class="chat-workspace-rail__file-meta"
                             >${[artifact.mimeType, size].filter(Boolean).join(" / ")}</span
@@ -1157,7 +1157,7 @@ export function renderSessionWorkspaceRail(
                     </span>
                   </button>
                   <span class="chat-workspace-rail__row-actions">
-                    <openclaw-tooltip .content=${t("chat.workspaceFiles.preview")}>
+                    <afora-tooltip .content=${t("chat.workspaceFiles.preview")}>
                       <button
                         class="chat-workspace-rail__row-action"
                         type="button"
@@ -1169,7 +1169,7 @@ export function renderSessionWorkspaceRail(
                       >
                         ${icons.eye}
                       </button>
-                    </openclaw-tooltip>
+                    </afora-tooltip>
                   </span>
                 </div>
               `;
@@ -1192,7 +1192,7 @@ export function renderSessionWorkspaceRail(
               ${sessionWorkspace.narrowLayout
                 ? nothing
                 : html`
-                    <openclaw-tooltip
+                    <afora-tooltip
                       .content=${dock === "bottom"
                         ? t("chat.workspaceFiles.dockRight")
                         : t("chat.workspaceFiles.dockBottom")}
@@ -1208,9 +1208,9 @@ export function renderSessionWorkspaceRail(
                       >
                         ${dock === "bottom" ? icons.panelRightOpen : icons.panelBottomOpen}
                       </button>
-                    </openclaw-tooltip>
+                    </afora-tooltip>
                   `}
-              <openclaw-tooltip .content=${t("chat.workspaceFiles.refresh")}>
+              <afora-tooltip .content=${t("chat.workspaceFiles.refresh")}>
                 <button
                   class="rail-header__action chat-workspace-rail__refresh"
                   type="button"
@@ -1220,8 +1220,8 @@ export function renderSessionWorkspaceRail(
                 >
                   ${icons.refresh}
                 </button>
-              </openclaw-tooltip>
-              <openclaw-tooltip .content=${`${t("chat.workspaceFiles.collapse")} (⇧⌘B)`}>
+              </afora-tooltip>
+              <afora-tooltip .content=${`${t("chat.workspaceFiles.collapse")} (⇧⌘B)`}>
                 <button
                   type="button"
                   class="rail-header__action chat-workspace-rail__collapse-toggle"
@@ -1234,14 +1234,14 @@ export function renderSessionWorkspaceRail(
                     >${dock === "bottom" ? icons.panelBottomClose : icons.panelRightClose}</span
                   >
                 </button>
-              </openclaw-tooltip>
+              </afora-tooltip>
             </div>
           </div>`}
       ${sessionWorkspace.list?.root
         ? html`
-            <openclaw-tooltip .content=${sessionWorkspace.list.root}>
+            <afora-tooltip .content=${sessionWorkspace.list.root}>
               <div class="chat-workspace-rail__path">${sessionWorkspace.list.root}</div>
-            </openclaw-tooltip>
+            </afora-tooltip>
           `
         : nothing}
       ${renderSessionSummary()}

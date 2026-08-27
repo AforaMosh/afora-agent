@@ -1,8 +1,8 @@
 // Google tests cover image generation provider plugin behavior.
-import * as providerAuth from "openclaw/plugin-sdk/provider-auth";
-import * as providerAuthRuntime from "openclaw/plugin-sdk/provider-auth-runtime";
-import * as providerHttp from "openclaw/plugin-sdk/provider-http";
-import { mockPinnedHostnameResolution } from "openclaw/plugin-sdk/test-env";
+import * as providerAuth from "afora-agent/plugin-sdk/provider-auth";
+import * as providerAuthRuntime from "afora-agent/plugin-sdk/provider-auth-runtime";
+import * as providerHttp from "afora-agent/plugin-sdk/provider-http";
+import { mockPinnedHostnameResolution } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildGoogleImageGenerationProvider } from "./image-generation-provider.js";
 
@@ -199,7 +199,7 @@ describe("Google image-generation provider", () => {
       expect(request.url).toBe(
         "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent",
       );
-      expect(new Headers(request.headers).get("x-goog-api-client")).toMatch(/^openclaw\//u);
+      expect(new Headers(request.headers).get("x-goog-api-client")).toMatch(/^afora\//u);
     },
   );
 

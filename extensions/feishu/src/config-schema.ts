@@ -1,12 +1,12 @@
 // Feishu helper module supports config schema behavior.
-import { normalizeAccountId } from "openclaw/plugin-sdk/account-id";
+import { normalizeAccountId } from "afora-agent/plugin-sdk/account-id";
 import {
   DmPolicySchema,
   GroupPolicySchema,
   buildChannelConfigSchema,
   buildGroupEntrySchema,
   buildMultiAccountChannelSchema,
-} from "openclaw/plugin-sdk/channel-config-schema";
+} from "afora-agent/plugin-sdk/channel-config-schema";
 import { z } from "zod";
 import { buildSecretInputSchema, hasConfiguredSecretInput } from "./secret-input.js";
 import { DEFAULT_FEISHU_WEBHOOK_PATH, normalizeFeishuWebhookPath } from "./webhook-path.js";
@@ -33,7 +33,7 @@ const FeishuWebhookPathSchema = z
   .string()
   .refine((value) => normalizeFeishuWebhookPath(value) === value, {
     message:
-      'webhookPath must be a canonical HTTP request path; run "openclaw doctor --fix" to repair it',
+      'webhookPath must be a canonical HTTP request path; run "afora doctor --fix" to repair it',
   });
 const TtsOverrideSchema = z
   .object({
@@ -96,7 +96,7 @@ const BlockStreamingCoalesceSchema = z
 // ("partial" = streaming cards, default; "off" = single final message);
 // `chunkMode`/`block` are the shared delivery controls. Legacy boolean
 // `streaming` and flat chunkMode/blockStreaming/blockStreamingCoalesce keys
-// migrate via `openclaw doctor --fix`.
+// migrate via `afora doctor --fix`.
 const FeishuStreamingSchema = z
   .object({
     mode: z.enum(["off", "partial"]).optional(),

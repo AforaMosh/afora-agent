@@ -165,7 +165,7 @@ extension RootTabs {
     }
 
     static func requestedInitialSidebarVisibility(arguments: [String]) -> Bool? {
-        guard let flagIndex = arguments.firstIndex(of: "--openclaw-sidebar-visibility") else {
+        guard let flagIndex = arguments.firstIndex(of: "--afora-sidebar-visibility") else {
             return nil
         }
         let valueIndex = arguments.index(after: flagIndex)

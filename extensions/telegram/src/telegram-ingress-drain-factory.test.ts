@@ -1,5 +1,5 @@
 /** Verifies the grammY-to-durable-ingress terminal outcome handoff. */
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ensureTelegramMessageProcessingResult,
@@ -56,7 +56,7 @@ describe("Telegram transport ingress outcome handoff", () => {
       createTelegramTransportIngressMonitor({
         spoolDir: "/tmp/telegram-ingress-proof",
         bot,
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         accountId: "default",
       });
       const monitor = mocks.createTelegramIngressMonitor.mock.calls[0]?.[0] as CapturedMonitor;
@@ -78,7 +78,7 @@ describe("Telegram transport ingress outcome handoff", () => {
     createTelegramTransportIngressMonitor({
       spoolDir: "/tmp/telegram-ingress-proof",
       bot,
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       accountId: "default",
     });
     const monitor = mocks.createTelegramIngressMonitor.mock.calls[0]?.[0] as CapturedMonitor;
@@ -100,7 +100,7 @@ describe("Telegram transport ingress outcome handoff", () => {
     createTelegramTransportIngressMonitor({
       spoolDir: "/tmp/telegram-ingress-proof",
       bot,
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       accountId: "default",
     });
     const monitor = mocks.createTelegramIngressMonitor.mock.calls[0]?.[0] as CapturedMonitor;

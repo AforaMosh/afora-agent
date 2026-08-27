@@ -2,8 +2,8 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-shared";
-import { normalizeStringEntries, uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-model-shared";
+import { normalizeStringEntries, uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { coerce as coerceSemver } from "semver";
 
 const QA_ALWAYS_STAGE_RUNTIME_PLUGIN_IDS = Object.freeze(["image-generation-core"]);
@@ -86,7 +86,7 @@ function findQaBundledPluginDirsByManifestId(params: {
         continue;
       }
       const candidate = path.join(sourceRoot, entry.name);
-      const manifestId = readQaBundledManifestId(path.join(candidate, "openclaw.plugin.json"));
+      const manifestId = readQaBundledManifestId(path.join(candidate, "afora.plugin.json"));
       if (manifestId === params.pluginId) {
         candidates.push(candidate);
       }
@@ -105,7 +105,7 @@ function resolveQaBundledPluginManifestPath(params: {
     (candidate) => path.dirname(candidate) === sourceExtensionsRoot,
   );
   const manifestDir = sourceDir ?? manifestDirs[0];
-  return manifestDir ? path.join(manifestDir, "openclaw.plugin.json") : null;
+  return manifestDir ? path.join(manifestDir, "afora.plugin.json") : null;
 }
 
 export async function resolveQaOwnerPluginIdsForProviderIds(params: {
@@ -125,7 +125,7 @@ export async function resolveQaOwnerPluginIdsForProviderIds(params: {
       if (!entry.isDirectory()) {
         continue;
       }
-      const manifestPath = path.join(sourceRoot, entry.name, "openclaw.plugin.json");
+      const manifestPath = path.join(sourceRoot, entry.name, "afora.plugin.json");
       if (!existsSync(manifestPath)) {
         continue;
       }
@@ -255,7 +255,7 @@ async function seedQaStagedNodeModules(params: { repoRoot: string; stagedRoot: s
   const stagedNodeModulesDir = path.join(params.stagedRoot, "node_modules");
   await fs.mkdir(stagedNodeModulesDir, { recursive: true });
   for (const entry of await fs.readdir(sourceNodeModulesDir, { withFileTypes: true })) {
-    if (entry.name === "openclaw") {
+    if (entry.name === "afora") {
       continue;
     }
     await symlinkQaStagedDirEntry({
@@ -349,13 +349,13 @@ export async function resolveQaRuntimeHostVersion(params: {
     }
     const packageRaw = await fs.readFile(packagePath, "utf8");
     const packageJson = JSON.parse(packageRaw) as {
-      openclaw?: {
+      afora?: {
         install?: {
           minHostVersion?: string;
         };
       };
     };
-    const candidate = parseStableSemverFloor(packageJson.openclaw?.install?.minHostVersion);
+    const candidate = parseStableSemverFloor(packageJson.afora?.install?.minHostVersion);
     if (candidate && (!selected || candidate.compare(selected) > 0)) {
       selected = candidate;
     }
@@ -388,11 +388,11 @@ export async function createQaBundledPluginsDir(params: {
     repoRoot: params.repoRoot,
     stagedRoot,
   });
-  const stagedOpenClawPackageDir = path.join(stagedRoot, "node_modules", "openclaw");
-  await fs.mkdir(stagedOpenClawPackageDir, { recursive: true });
+  const stagedAforaPackageDir = path.join(stagedRoot, "node_modules", "afora");
+  await fs.mkdir(stagedAforaPackageDir, { recursive: true });
   await fs.copyFile(
     path.join(params.repoRoot, "package.json"),
-    path.join(stagedOpenClawPackageDir, "package.json"),
+    path.join(stagedAforaPackageDir, "package.json"),
   );
   const stagedTreeName = resolveQaStagedBundledTreeName(params.repoRoot);
   const stagedTreeRoot = path.join(stagedRoot, stagedTreeName);
@@ -433,12 +433,12 @@ export async function createQaBundledPluginsDir(params: {
       pluginId,
     });
     if (manifestPath) {
-      await fs.copyFile(manifestPath, path.join(targetDir, "openclaw.plugin.json"));
+      await fs.copyFile(manifestPath, path.join(targetDir, "afora.plugin.json"));
     }
   }
   await symlinkQaStagedDirEntry({
     sourcePath: path.join(stagedRoot, "dist"),
-    targetPath: path.join(stagedOpenClawPackageDir, "dist"),
+    targetPath: path.join(stagedAforaPackageDir, "dist"),
     directory: true,
   });
   return {

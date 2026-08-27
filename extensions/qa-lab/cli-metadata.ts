@@ -1,5 +1,5 @@
 // Qa Lab plugin module implements cli metadata behavior.
-import { definePluginEntry } from "openclaw/plugin-sdk/core";
+import { definePluginEntry } from "afora-agent/plugin-sdk/core";
 
 export default definePluginEntry({
   id: "qa-lab",

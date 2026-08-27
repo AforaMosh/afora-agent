@@ -41,7 +41,7 @@ When these rules conflict:
 
 For agent-instructions and contributor-governance specifics (AGENTS/aliases/CONTRIBUTING), use `references/agent-and-contributing.md` as the detailed additional source of truth.
 
-When the target repo or request is OpenClaw-specific, layer `references/openclaw.md` on top of these general rules. Otherwise ignore that repo-specific overlay.
+When the target repo or request is Afora-specific, layer `references/afora.md` on top of these general rules. Otherwise ignore that repo-specific overlay.
 
 ## Execution policy for this skill
 

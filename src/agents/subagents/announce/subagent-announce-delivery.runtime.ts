@@ -10,7 +10,7 @@ import { tryResolveLegacyCompatibilityAgentId } from "../../../config/legacy.def
 import { resolveSessionStorePathCore } from "../../../config/sessions.js";
 import { loadSessionEntryReadOnly as loadSessionEntry } from "../../../config/sessions/session-accessor.js";
 import { resolvePersistedSessionStoreOwnerForKey } from "../../../config/sessions/session-store-owner.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { callGateway } from "../../../gateway/call.js";
 import { dispatchGatewayMethodInProcess } from "../../../gateway/server-plugins.js";
 import { resolveExternalBestEffortDeliveryTarget } from "../../../infra/outbound/best-effort-delivery.js";
@@ -73,7 +73,7 @@ type RequesterSessionEntryResult = {
 };
 
 export function tryResolveSubagentRequesterAgentId(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   requesterSessionKey: string,
   explicitAgentId?: string,
 ): string | undefined {

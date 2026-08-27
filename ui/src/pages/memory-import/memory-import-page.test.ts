@@ -16,7 +16,7 @@ function waitForMemoryImport(assertion: () => void) {
 }
 
 function createPlan(agentId = "research") {
-  const workspace = `/tmp/openclaw-${agentId}`;
+  const workspace = `/tmp/afora-${agentId}`;
   return {
     agentId,
     workspace,
@@ -96,7 +96,7 @@ function createContext(request: ReturnType<typeof vi.fn>): ApplicationContext {
 
 async function mountPage(context: ApplicationContext): Promise<MemoryImportPageElement> {
   const provider = createApplicationContextProvider(context);
-  const page = document.createElement("openclaw-memory-import-page") as MemoryImportPageElement;
+  const page = document.createElement("afora-memory-import-page") as MemoryImportPageElement;
   provider.append(page);
   document.body.append(provider);
   await page.updateComplete;

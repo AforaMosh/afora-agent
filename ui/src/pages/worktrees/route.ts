@@ -7,6 +7,6 @@ export const page = definePage({
   component: () =>
     import("./worktrees-page.ts").then(() => ({
       header: true,
-      render: () => html`<openclaw-worktrees-page></openclaw-worktrees-page>`,
+      render: () => html`<afora-worktrees-page></afora-worktrees-page>`,
     })),
 });

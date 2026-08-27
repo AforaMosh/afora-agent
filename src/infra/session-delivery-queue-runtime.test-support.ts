@@ -4,7 +4,7 @@ type SessionDeliveryQueueRuntimeTesting = {
 
 function getTesting(): SessionDeliveryQueueRuntimeTesting {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.sessionDeliveryQueueRuntimeTestApi")
+    Symbol.for("afora.sessionDeliveryQueueRuntimeTestApi")
   ] as SessionDeliveryQueueRuntimeTesting;
 }
 

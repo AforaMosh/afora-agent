@@ -5,8 +5,8 @@ import os from "node:os";
 import path from "node:path";
 import type {
   MemorySearchConfig,
-  OpenClawConfig,
-} from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
+  AforaConfig,
+} from "afora-agent/plugin-sdk/memory-core-host-engine-foundation";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type WatchIgnoredFn = (watchPath: string, stats?: { isDirectory?: () => boolean }) => boolean;
@@ -24,8 +24,8 @@ const {
   // Symbols are also declared at module top-level (CHOKIDAR_FACTORY_KEY,
   // NATIVE_FACTORY_KEY) but vi.hoisted runs before those declarations
   // execute, so we resolve the same Symbol.for keys inline here.
-  const chokidarKey = Symbol.for("openclaw.test.memoryWatchFactory");
-  const nativeKey = Symbol.for("openclaw.test.memoryNativeWatchFactory");
+  const chokidarKey = Symbol.for("afora.test.memoryWatchFactory");
+  const nativeKey = Symbol.for("afora.test.memoryNativeWatchFactory");
   type ChokidarEvent = "add" | "change" | "unlink" | "unlinkDir" | "error" | "ready";
   type ChokidarCallback = (...args: unknown[]) => void;
   function createMockChokidarWatcher() {
@@ -121,25 +121,25 @@ const {
   return result;
 });
 
-const CHOKIDAR_FACTORY_KEY = Symbol.for("openclaw.test.memoryWatchFactory");
-const NATIVE_FACTORY_KEY = Symbol.for("openclaw.test.memoryNativeWatchFactory");
-const originalWatcherStateDir = process.env.OPENCLAW_STATE_DIR;
+const CHOKIDAR_FACTORY_KEY = Symbol.for("afora.test.memoryWatchFactory");
+const NATIVE_FACTORY_KEY = Symbol.for("afora.test.memoryNativeWatchFactory");
+const originalWatcherStateDir = process.env.AFORA_STATE_DIR;
 
 function setWatcherStateDir(stateDir: string): void {
-  Reflect.set(process.env, "OPENCLAW_STATE_DIR", stateDir);
+  Reflect.set(process.env, "AFORA_STATE_DIR", stateDir);
 }
 
 function restoreWatcherStateDir(): void {
   if (originalWatcherStateDir === undefined) {
-    Reflect.deleteProperty(process.env, "OPENCLAW_STATE_DIR");
+    Reflect.deleteProperty(process.env, "AFORA_STATE_DIR");
   } else {
-    Reflect.set(process.env, "OPENCLAW_STATE_DIR", originalWatcherStateDir);
+    Reflect.set(process.env, "AFORA_STATE_DIR", originalWatcherStateDir);
   }
 }
 
-vi.mock("openclaw/plugin-sdk/memory-core-host-engine-foundation", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/memory-core-host-engine-foundation", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("openclaw/plugin-sdk/memory-core-host-engine-foundation")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/memory-core-host-engine-foundation")>();
   return {
     ...actual,
     createSubsystemLogger: (subsystem: string) => ({
@@ -169,7 +169,7 @@ vi.mock("./embeddings.js", () => ({
   }),
 }));
 
-import { clearEmbeddingProviders as clearRegistry } from "openclaw/plugin-sdk/plugin-test-runtime";
+import { clearEmbeddingProviders as clearRegistry } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { closeAllMemorySearchManagers, getMemorySearchManager } from "./index.js";
 import type { MemoryIndexManager } from "./manager.js";
 import { isolateMemoryManagerTestConfig } from "./test-config-helpers.js";
@@ -216,7 +216,7 @@ describe("memory watcher config", () => {
   });
 
   async function setupWatcherWorkspace(seedFile: { name: string; contents: string }) {
-    workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-memory-watch-"));
+    workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-memory-watch-"));
     setWatcherStateDir(path.join(workspaceDir, "state"));
     extraDir = path.join(workspaceDir, "extra");
     await fs.mkdir(path.join(workspaceDir, "memory"), { recursive: true });
@@ -224,8 +224,8 @@ describe("memory watcher config", () => {
     await fs.writeFile(path.join(extraDir, seedFile.name), seedFile.contents);
   }
 
-  function createWatcherConfig(overrides?: Partial<MemorySearchConfig>): OpenClawConfig {
-    const defaults: NonNullable<NonNullable<OpenClawConfig["agents"]>["defaults"]> = {
+  function createWatcherConfig(overrides?: Partial<MemorySearchConfig>): AforaConfig {
+    const defaults: NonNullable<NonNullable<AforaConfig["agents"]>["defaults"]> = {
       workspace: workspaceDir,
     };
     return isolateMemoryManagerTestConfig({
@@ -245,10 +245,10 @@ describe("memory watcher config", () => {
         defaults,
         list: [{ id: "main", default: true }],
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
   }
 
-  async function expectWatcherManager(cfg: OpenClawConfig) {
+  async function expectWatcherManager(cfg: AforaConfig) {
     const result = await getMemorySearchManager({ cfg, agentId: "main" });
     if (!result.manager) {
       throw new Error("manager missing");
@@ -560,7 +560,7 @@ describe("memory watcher config", () => {
 
   it("routes Linux directories through directory-only native watchers", async () => {
     // Node's Linux `fs.watch({ recursive: true })` watches every file via
-    // internal/fs/recursive_watch. OpenClaw watches directories only so
+    // internal/fs/recursive_watch. Afora watches directories only so
     // large file-heavy memory trees do not allocate per-file watchers.
     const originalPlatformValue = process.platform;
     try {

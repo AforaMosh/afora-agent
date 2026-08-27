@@ -1,5 +1,5 @@
 ---
-summary: "Generated heading map for OpenClaw docs pages"
+summary: "Generated heading map for Afora docs pages"
 read_when: "Finding which docs page covers a topic before reading the page"
 title: "Docs map source"
 ---

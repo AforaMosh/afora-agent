@@ -1,5 +1,5 @@
-import { resolveSessionAgentId } from "openclaw/plugin-sdk/agent-scope-runtime";
-import type { PluginRuntime } from "openclaw/plugin-sdk/core";
+import { resolveSessionAgentId } from "afora-agent/plugin-sdk/agent-scope-runtime";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/core";
 import {
   ClickClackHttpError,
   isClickClackChannelNameConflict,
@@ -178,7 +178,7 @@ export async function openClickClackDiscussionBinding(
     return undefined;
   }
   if (!entry.sessionId?.trim()) {
-    throw new Error("OpenClaw session does not yet have a concrete session id");
+    throw new Error("Afora session does not yet have a concrete session id");
   }
   const client = params.clientFactory(account);
   const workspaces = await client.workspaces();
@@ -404,7 +404,7 @@ export async function openClickClackDiscussionBinding(
         expectedGeneration: bindingGeneration,
       });
       params.warn(`unattached discussion channel remains quarantined: ${channel.id}`);
-      throw new Error("OpenClaw session became inactive while opening its ClickClack discussion");
+      throw new Error("Afora session became inactive while opening its ClickClack discussion");
     }
     const currentLabel = resolveDiscussionLabel(currentEntry, sessionKey, agentId);
     const currentDisplayTitle =

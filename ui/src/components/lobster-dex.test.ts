@@ -45,7 +45,7 @@ describe("lobsterdex", () => {
   });
 
   it("migrates v1 array entries and backfills memories on the next visit", () => {
-    localStorage.setItem("openclaw.control.lobsterdex.v1", JSON.stringify(["crimson"]));
+    localStorage.setItem("afora.control.lobsterdex.v1", JSON.stringify(["crimson"]));
     const migrated = getLobsterdexEntries().get("crimson");
     expect(migrated).toEqual({ firstSeenAt: null, name: null, shinySeenAt: null });
     expect(getLobsterdex().has("crimson")).toBe(true);
@@ -73,7 +73,7 @@ describe("lobsterdex", () => {
   });
 
   it("tolerates corrupt storage", () => {
-    localStorage.setItem("openclaw.control.lobsterdex.v1", "{not json");
+    localStorage.setItem("afora.control.lobsterdex.v1", "{not json");
     expect(getLobsterdex().size).toBe(0);
     recordLobsterVisit("blue");
     expect(getLobsterdex().has("blue")).toBe(true);

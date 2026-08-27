@@ -1,7 +1,7 @@
 // Qa Matrix plugin module implements shared scenario runtime E2EE behavior.
 import { randomUUID } from "node:crypto";
 import { setTimeout as sleep } from "node:timers/promises";
-import type { MatrixVerificationSummary } from "@openclaw/matrix/test-api.js";
+import type { MatrixVerificationSummary } from "@afora/matrix/test-api.js";
 import { createMatrixQaClient } from "../substrate/client.js";
 import {
   createMatrixQaE2eeScenarioClient,
@@ -43,7 +43,7 @@ export function requireMatrixQaCliRuntimeEnv(context: MatrixQaScenarioContext) {
 }
 
 export function requireMatrixQaGatewayConfigPath(context: MatrixQaScenarioContext) {
-  const configPath = requireMatrixQaCliRuntimeEnv(context).OPENCLAW_CONFIG_PATH?.trim();
+  const configPath = requireMatrixQaCliRuntimeEnv(context).AFORA_CONFIG_PATH?.trim();
   if (!configPath) {
     throw new Error("Matrix CLI QA scenarios require the gateway config path");
   }

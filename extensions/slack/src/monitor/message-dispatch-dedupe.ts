@@ -9,7 +9,7 @@ import {
   createChannelReplayGuard,
   runClaimableDedupeClaimLoop,
   type ChannelReplayClaimHandle,
-} from "openclaw/plugin-sdk/persistent-dedupe";
+} from "afora-agent/plugin-sdk/persistent-dedupe";
 
 // 24h/20k mirrors the retired persistent inbound-delivery state so the twin
 // window also survives restarts while claimed rows sit in drain retry backoff.

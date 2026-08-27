@@ -9,7 +9,7 @@ import {
 import { usesFastLoopbackCdpProbeClass } from "./cdp-timeouts.js";
 import { redactCdpUrl } from "./cdp.helpers.js";
 import { countChromeMcpTabs } from "./chrome-mcp.js";
-import { isChromeReachable, resolveOpenClawUserDataDir } from "./chrome.js";
+import { isChromeReachable, resolveAforaUserDataDir } from "./chrome.js";
 import { getOwnBrowserProfile, resolveProfile, type ResolvedBrowserProfile } from "./config.js";
 import {
   BrowserProfileNotFoundError,
@@ -139,7 +139,7 @@ function createProfileContext(
     state,
     runtime: profileState,
     configRevision,
-    resolveOpenClawUserDataDir,
+    resolveAforaUserDataDir,
   });
 
   const withLease = async <T>(

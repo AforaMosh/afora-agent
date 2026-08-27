@@ -1,4 +1,4 @@
-// Sync Labels script supports OpenClaw repository automation.
+// Sync Labels script supports Afora repository automation.
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";

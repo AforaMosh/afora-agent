@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { createSuiteTempRootTracker } from "../test-helpers/temp-dir.js";
 import {
@@ -14,11 +14,11 @@ import type { DoctorPrompter } from "./doctor-prompter.js";
 
 const fixturesRoot = path.join(process.cwd(), "dist", "extensions");
 const suiteTempDirs = createSuiteTempRootTracker({
-  prefix: "openclaw-doctor-plugin-manifests-",
+  prefix: "afora-doctor-plugin-manifests-",
   parentDir: fixturesRoot,
 });
 
-function configWithPluginLoadPath(pluginRoot: string): OpenClawConfig {
+function configWithPluginLoadPath(pluginRoot: string): AforaConfig {
   return {
     plugins: {
       load: {
@@ -30,7 +30,7 @@ function configWithPluginLoadPath(pluginRoot: string): OpenClawConfig {
 
 function writeManifest(dir: string, manifest: Record<string, unknown>) {
   fs.writeFileSync(
-    path.join(dir, "openclaw.plugin.json"),
+    path.join(dir, "afora.plugin.json"),
     `${JSON.stringify(manifest, null, 2)}\n`,
     "utf-8",
   );
@@ -41,9 +41,9 @@ function writePackageJson(dir: string) {
     path.join(dir, "package.json"),
     `${JSON.stringify(
       {
-        name: "@openclaw/test-plugin",
+        name: "@afora/test-plugin",
         version: "1.0.0",
-        openclaw: {
+        afora: {
           extensions: ["./index.ts"],
         },
       },
@@ -116,7 +116,7 @@ describe("doctor plugin manifest legacy contract repair", () => {
       manifestRoots: [pluginsRoot],
     });
 
-    const manifestPath = path.join(root, "openclaw.plugin.json");
+    const manifestPath = path.join(root, "afora.plugin.json");
     expect(migrations).toStrictEqual([
       {
         changeLines: [`- ${manifestPath}: moved speechProviders to contracts.speechProviders`],
@@ -153,7 +153,7 @@ describe("doctor plugin manifest legacy contract repair", () => {
       manifestRoots: [pluginsRoot],
     });
 
-    const manifestPath = path.join(root, "openclaw.plugin.json");
+    const manifestPath = path.join(root, "afora.plugin.json");
     expect(migrations).toStrictEqual([
       {
         changeLines: [`- ${manifestPath}: moved tools to contracts.tools`],
@@ -196,11 +196,11 @@ describe("doctor plugin manifest legacy contract repair", () => {
       checkId: "core/doctor/legacy-plugin-manifests",
       severity: "warning",
       message: "Plugin manifest openai uses legacy top-level capability keys.",
-      path: path.join(root, "openclaw.plugin.json"),
+      path: path.join(root, "afora.plugin.json"),
       target: "openai",
       requirement: "contracts-capability-keys",
       fixHint:
-        "Run `openclaw doctor --fix` to rewrite legacy plugin manifest capability keys under contracts.*.",
+        "Run `afora doctor --fix` to rewrite legacy plugin manifest capability keys under contracts.*.",
     });
   });
 
@@ -232,7 +232,7 @@ describe("doctor plugin manifest legacy contract repair", () => {
     });
     expect(changed).toBe(true);
 
-    const next = JSON.parse(fs.readFileSync(path.join(root, "openclaw.plugin.json"), "utf-8")) as {
+    const next = JSON.parse(fs.readFileSync(path.join(root, "afora.plugin.json"), "utf-8")) as {
       speechProviders?: string[];
       mediaUnderstandingProviders?: string[];
       contracts?: Record<string, string[]>;
@@ -271,7 +271,7 @@ describe("doctor plugin manifest legacy contract repair", () => {
       note: vi.fn(),
     });
 
-    const next = JSON.parse(fs.readFileSync(path.join(root, "openclaw.plugin.json"), "utf-8")) as {
+    const next = JSON.parse(fs.readFileSync(path.join(root, "afora.plugin.json"), "utf-8")) as {
       tools?: string[];
       contracts?: Record<string, string[]>;
     };
@@ -302,7 +302,7 @@ describe("doctor plugin manifest legacy contract repair", () => {
       manifestRoots: [pluginsRoot],
     });
 
-    const manifestPath = path.join(root, "openclaw.plugin.json");
+    const manifestPath = path.join(root, "afora.plugin.json");
     expect(migrations).toStrictEqual([
       {
         changeLines: [`- ${manifestPath}: moved speechProviders to contracts.speechProviders`],

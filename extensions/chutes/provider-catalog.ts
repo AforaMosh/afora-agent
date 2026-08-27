@@ -1,7 +1,7 @@
 /**
  * Chutes provider builders for static and dynamically discovered catalogs.
  */
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-shared";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-model-shared";
 import { CHUTES_BASE_URL, CHUTES_MODEL_CATALOG, discoverChutesModels } from "./models.js";
 
 /** Builds the static Chutes provider catalog from bundled model metadata. */

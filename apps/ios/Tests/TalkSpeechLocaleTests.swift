@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 @Suite struct TalkSpeechLocaleTests {
     @Test func localSelectionOverridesGatewayConfig() {

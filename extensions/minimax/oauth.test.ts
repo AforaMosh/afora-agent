@@ -1,7 +1,7 @@
 // Minimax tests cover oauth plugin behavior.
 import { createServer } from "node:http";
 import type { Socket } from "node:net";
-import { MAX_TIMER_TIMEOUT_MS } from "openclaw/plugin-sdk/number-runtime";
+import { MAX_TIMER_TIMEOUT_MS } from "afora-agent/plugin-sdk/number-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { loginMiniMaxPortalOAuth } from "./oauth.js";
 

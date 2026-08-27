@@ -1,12 +1,12 @@
 // Discord plugin module implements inbound event delivery behavior.
-import { createInboundEventDeliveryCorrelation } from "openclaw/plugin-sdk/inbound-event-delivery";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-payload";
+import { createInboundEventDeliveryCorrelation } from "afora-agent/plugin-sdk/inbound-event-delivery";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-payload";
 import {
   asOptionalRecord,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 
-const DISCORD_INBOUND_EVENT_DELIVERY_KEY = "__openclawInboundEventDelivery";
+const DISCORD_INBOUND_EVENT_DELIVERY_KEY = "__aforaInboundEventDelivery";
 
 function normalizeDiscordDeliveryTarget(value: string): string {
   return value

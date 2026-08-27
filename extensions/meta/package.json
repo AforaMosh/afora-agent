@@ -1,22 +1,22 @@
 {
-  "name": "@openclaw/meta-provider",
+  "name": "@afora/meta-provider",
   "version": "2026.8.1",
-  "description": "OpenClaw Meta provider plugin.",
+  "description": "Afora Meta provider plugin.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   },
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
     "install": {
-      "clawhubSpec": "clawhub:@openclaw/meta-provider",
-      "npmSpec": "@openclaw/meta-provider",
+      "clawhubSpec": "clawhub:@afora/meta-provider",
+      "npmSpec": "@afora/meta-provider",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.6.11"
     },
@@ -24,7 +24,7 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1",
+      "aforaVersion": "2026.8.1",
       "bundledDist": false
     },
     "release": {

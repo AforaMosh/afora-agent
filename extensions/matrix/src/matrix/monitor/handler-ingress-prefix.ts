@@ -6,7 +6,7 @@ import type { MatrixRawEvent, RoomMessageEventContent } from "./types.js";
 import { EventType, RelationType } from "./types.js";
 import { isMatrixVerificationRoomMessage } from "./verification-utils.js";
 
-type ReplayClaimHandle = import("openclaw/plugin-sdk/persistent-dedupe").ChannelReplayClaimHandle;
+type ReplayClaimHandle = import("afora-agent/plugin-sdk/persistent-dedupe").ChannelReplayClaimHandle;
 
 type MatrixIngressPrefixConfig = {
   client: { getUserId: () => Promise<string> };

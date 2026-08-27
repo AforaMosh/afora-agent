@@ -3,10 +3,10 @@
  */
 import fsSync from "node:fs";
 import fs from "node:fs/promises";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ErrorCodes, errorShape } from "../../../packages/gateway-protocol/src/index.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { withTestDir } from "../../test-helpers/temp-dir.js";
 import { withEnvAsync } from "../../test-utils/env.js";
 
@@ -422,7 +422,7 @@ describe("gateway usage helpers", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-02-05T00:00:00.000Z"));
 
-    const config = {} as OpenClawConfig;
+    const config = {} as AforaConfig;
     const a = await testApi.loadCostUsageSummaryCached({
       startMs: 1,
       endMs: 2,
@@ -457,7 +457,7 @@ describe("gateway usage helpers", () => {
 
     const config = {
       agents: { entries: { ops: { default: true } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     await testApi.loadCostUsageSummaryCached({ startMs: 1, endMs: 2, config });
 
     const entry = testApi.costUsageCache.get("agent:ops:1-2:gateway");
@@ -474,7 +474,7 @@ describe("gateway usage helpers", () => {
   });
 
   it("keeps cost usage cache entries scoped by agentId", async () => {
-    const config = {} as OpenClawConfig;
+    const config = {} as AforaConfig;
 
     await testApi.loadCostUsageSummaryCached({
       startMs: 1,
@@ -505,7 +505,7 @@ describe("gateway usage helpers", () => {
   });
 
   it("keeps cost usage cache entries scoped by the complete day bucket", async () => {
-    const config = {} as OpenClawConfig;
+    const config = {} as AforaConfig;
 
     await testApi.loadCostUsageSummaryCached({
       startMs: 1,
@@ -642,9 +642,9 @@ describe("gateway usage helpers", () => {
   });
 
   it("aggregates all-agent cost over the gateway agent universe, including on-disk system agents", async () => {
-    await withTestDir({ prefix: "openclaw-usage-universe-" }, async (stateDir) => {
-      await fs.mkdir(`${stateDir}/agents/openclaw`, { recursive: true });
-      await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+    await withTestDir({ prefix: "afora-usage-universe-" }, async (stateDir) => {
+      await fs.mkdir(`${stateDir}/agents/afora`, { recursive: true });
+      await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
         await expectDefined(
           usageHandlers["usage.cost"],
           'usageHandlers["usage.cost"] test invariant',
@@ -663,14 +663,14 @@ describe("gateway usage helpers", () => {
       expect(loadedAgentIds).toContain("main");
       // sessions.usage discovers this on-disk system agent's sessions; cost
       // totals must cover the same agent set or the two views diverge.
-      expect(loadedAgentIds).toContain("openclaw");
+      expect(loadedAgentIds).toContain("afora");
     });
   });
 
   it("does not project local avatar bytes for usage-only agent enumeration", async () => {
-    await withTestDir({ prefix: "openclaw-usage-avatar-" }, async (workspace) => {
+    await withTestDir({ prefix: "afora-usage-avatar-" }, async (workspace) => {
       await fs.writeFile(`${workspace}/avatar.png`, "avatar");
-      const config: OpenClawConfig = {
+      const config: AforaConfig = {
         agents: {
           list: [{ id: "main", workspace, identity: { avatar: "avatar.png" } }],
         },
@@ -711,7 +711,7 @@ describe("gateway usage helpers", () => {
     const config = {
       agents: { list: [{ id: "main", default: true }, { id: "opus" }] },
       session: {},
-    } as OpenClawConfig;
+    } as AforaConfig;
     const context = { getRuntimeConfig: () => config };
     const params = { startDate: "2026-02-01", endDate: "2026-02-01", mode: "utc" };
 

@@ -1,6 +1,6 @@
 // @vitest-environment node
 // Control UI tests cover cron behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, it, vi } from "vitest";
 import {
   validateCronAddParams,

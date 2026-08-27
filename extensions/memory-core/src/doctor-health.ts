@@ -1,7 +1,7 @@
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import type { HealthCheck } from "openclaw/plugin-sdk/health";
-import { resolveStateDir } from "openclaw/plugin-sdk/state-paths";
-import { normalizeOptionalLowercaseString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import type { HealthCheck } from "afora-agent/plugin-sdk/health";
+import { resolveStateDir } from "afora-agent/plugin-sdk/state-paths";
+import { normalizeOptionalLowercaseString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   LLAMA_CPP_PROVIDER_INSTALL_COMMAND,
   LOCAL_MEMORY_EMBEDDING_PROVIDER_ID,

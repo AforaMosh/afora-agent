@@ -1,8 +1,8 @@
 import type {
-  OpenClawPluginApi,
-  OpenClawPluginService,
-  OpenClawPluginServiceContext,
-} from "openclaw/plugin-sdk/plugin-entry";
+  AforaPluginApi,
+  AforaPluginService,
+  AforaPluginServiceContext,
+} from "afora-agent/plugin-sdk/plugin-entry";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const {
@@ -29,7 +29,7 @@ const {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/sandbox", () => ({
+vi.mock("afora-agent/plugin-sdk/sandbox", () => ({
   registerSandboxBackend: registerSandboxBackendMock,
 }));
 
@@ -55,7 +55,7 @@ import { registerMxcPlugin } from "../src/plugin.js";
 const originalPlatform = Object.getOwnPropertyDescriptor(process, "platform");
 
 type MxcPluginApiForTest = Pick<
-  OpenClawPluginApi,
+  AforaPluginApi,
   "pluginConfig" | "registerService" | "registrationMode"
 >;
 
@@ -65,7 +65,7 @@ const nonFullRegistrationModes = [
   "setup-only",
   "setup-runtime",
   "cli-metadata",
-] as const satisfies readonly OpenClawPluginApi["registrationMode"][];
+] as const satisfies readonly AforaPluginApi["registrationMode"][];
 
 function setProcessPlatformForTest(platform: NodeJS.Platform): void {
   Object.defineProperty(process, "platform", {
@@ -83,14 +83,14 @@ function restoreProcessPlatformForTest(): void {
 
 function createApi(
   pluginConfig: Record<string, unknown> | undefined = {},
-  registrationMode: OpenClawPluginApi["registrationMode"] = "full",
+  registrationMode: AforaPluginApi["registrationMode"] = "full",
 ): {
-  api: OpenClawPluginApi;
+  api: AforaPluginApi;
   registerService: ReturnType<typeof vi.fn>;
-  services: OpenClawPluginService[];
+  services: AforaPluginService[];
 } {
-  const services: OpenClawPluginService[] = [];
-  const registerService = vi.fn((service: OpenClawPluginService): void => {
+  const services: AforaPluginService[] = [];
+  const registerService = vi.fn((service: AforaPluginService): void => {
     services.push(service);
   });
   const api = {
@@ -100,7 +100,7 @@ function createApi(
   } satisfies MxcPluginApiForTest;
 
   return {
-    api: api as unknown as OpenClawPluginApi,
+    api: api as unknown as AforaPluginApi,
     registerService,
     services,
   };
@@ -177,7 +177,7 @@ describe("registerMxcPlugin", () => {
     });
     expect(services).toHaveLength(1);
 
-    void services[0]?.stop?.({} as OpenClawPluginServiceContext);
+    void services[0]?.stop?.({} as AforaPluginServiceContext);
     expect(unregisterMock).toHaveBeenCalledTimes(1);
   });
 

@@ -9,13 +9,13 @@ Status: experimental. Direct messages and group chats are both implemented; the 
 
 ## Bundled plugin
 
-Zalo ships as a bundled plugin in current OpenClaw releases, so packaged builds do not need a separate install.
+Zalo ships as a bundled plugin in current Afora releases, so packaged builds do not need a separate install.
 
 On an older build or a custom install that excludes Zalo, install the npm package directly:
 
-- Install: `openclaw plugins install @openclaw/zalo`
-- Pinned version: `openclaw plugins install @openclaw/zalo@2026.6.11`
-- From a local checkout: `openclaw plugins install ./path/to/local/zalo-plugin`
+- Install: `afora plugins install @afora/zalo`
+- Pinned version: `afora plugins install @afora/zalo@2026.6.11`
+- From a local checkout: `afora plugins install ./path/to/local/zalo-plugin`
 - Details: [Plugins](/tools/plugin)
 
 ## Quick setup
@@ -74,8 +74,8 @@ This page covers **Zalo Bot Creator / Marketplace bots**. **Zalo Official Accoun
 
 - `channels.zalo.dmPolicy`: `pairing` (default) | `allowlist` | `open` | `disabled`.
 - Pairing: unknown senders get a pairing code; messages are ignored until approved. Codes expire after 1 hour.
-  - `openclaw pairing list zalo`
-  - `openclaw pairing approve zalo <CODE>`
+  - `afora pairing list zalo`
+  - `afora pairing approve zalo <CODE>`
   - Details: [Pairing](/channels/pairing)
 - `channels.zalo.allowFrom` accepts numeric Zalo user IDs (no username lookup). `open` requires `"*"`.
 
@@ -86,7 +86,7 @@ Group chats are supported by the plugin (`chatTypes: ["direct", "group"]`) and g
 - `channels.zalo.groupPolicy`: `open` | `allowlist` | `disabled`.
 - `channels.zalo.groupAllowFrom` restricts which sender IDs can trigger the bot in groups; falls back to `allowFrom` when unset.
 - Default resolution: when `channels.zalo` is configured, an unset `groupPolicy` resolves to `open`. When `channels.zalo` is missing entirely, runtime fails closed to `allowlist`.
-- Reported real-world caveat: on some Marketplace-bot setups the bot could not be added to a group at all. If you hit that, verify with your bot's Zalo Bot Platform settings; it is a platform-side constraint, not an OpenClaw policy.
+- Reported real-world caveat: on some Marketplace-bot setups the bot could not be added to a group at all. If you hit that, verify with your bot's Zalo Bot Platform settings; it is a platform-side constraint, not an Afora policy.
 
 ## Long-polling vs webhook
 
@@ -97,7 +97,7 @@ Group chats are supported by the plugin (`chatTypes: ["direct", "group"]`) and g
   - Zalo sends events with an `X-Bot-Api-Secret-Token` header, checked with a constant-time comparison.
   - Gateway HTTP handles webhook requests at `channels.zalo.webhookPath` (defaults to the webhook URL's path).
   - Requests must use `Content-Type: application/json` (or a `+json` media type).
-  - HTTP 200 is returned only after the raw event is durably stored; storage failures return HTTP 500. The durable `200` carries `x-openclaw-delivery-accepted: durable`, so reverse proxies can require it to distinguish OpenClaw acceptance from a generic `200` (authentication, validation, and storage-error responses omit it).
+  - HTTP 200 is returned only after the raw event is durably stored; storage failures return HTTP 500. The durable `200` carries `x-afora-delivery-accepted: durable`, so reverse proxies can require it to distinguish Afora acceptance from a generic `200` (authentication, validation, and storage-error responses omit it).
   - getUpdates polling and webhook are mutually exclusive per Zalo API docs.
 
 ## Supported message types
@@ -125,16 +125,16 @@ Group chats are supported by the plugin (`chatTypes: ["direct", "group"]`) and g
 Use a chat ID as the target:
 
 ```bash
-openclaw message send --channel zalo --target 123456789 --message "hi"
+afora message send --channel zalo --target 123456789 --message "hi"
 ```
 
 ## Troubleshooting
 
 **Bot does not respond:**
 
-- Check the token: `openclaw channels status --probe`
+- Check the token: `afora channels status --probe`
 - Verify the sender is approved (pairing or `allowFrom`)
-- Check gateway logs: `openclaw logs --follow`
+- Check gateway logs: `afora logs --follow`
 
 **Webhook not receiving events:**
 

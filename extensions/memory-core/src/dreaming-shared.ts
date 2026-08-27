@@ -2,9 +2,9 @@
 import {
   asNullableRecord,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 
-export { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+export { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 
 export function extractAssistantText(messages: unknown[]): string | null {
   for (let index = messages.length - 1; index >= 0; index -= 1) {

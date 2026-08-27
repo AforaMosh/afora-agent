@@ -13,7 +13,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 use zeroize::{Zeroize, Zeroizing};
 
-pub(crate) const CLIENT_ID: &str = "openclaw-linux";
+pub(crate) const CLIENT_ID: &str = "afora-linux";
 pub(crate) const CLIENT_MODE: &str = "ui";
 pub(crate) const CLIENT_PLATFORM: &str = "linux";
 pub(crate) const CLIENT_DEVICE_FAMILY: &str = "desktop";
@@ -405,7 +405,7 @@ fn load_existing_identity(
     match decode_identity(&bytes) {
         Ok(identity) => Ok(identity),
         Err(DecodeIdentityError::VersionMismatch { found }) => Err(format!(
-            "Gateway device identity was written by a different version of OpenClaw \
+            "Gateway device identity was written by a different version of Afora \
              (identity version {found}; this build supports {IDENTITY_VERSION}); \
              this build will not replace it."
         )),
@@ -507,7 +507,7 @@ mod tests {
 
     fn assert_corrupt_identity_recovers(original_bytes: &[u8]) {
         let directory = std::env::temp_dir().join(format!(
-            "openclaw-linux-corrupt-gateway-identity-test-{}",
+            "afora-linux-corrupt-gateway-identity-test-{}",
             Uuid::new_v4()
         ));
         fs::create_dir_all(&directory).expect("create identity fixture directory");
@@ -539,7 +539,7 @@ mod tests {
 
     fn assert_version_mismatch_is_preserved(version: u8) {
         let directory = std::env::temp_dir().join(format!(
-            "openclaw-linux-version-mismatch-identity-test-{}",
+            "afora-linux-version-mismatch-identity-test-{}",
             Uuid::new_v4()
         ));
         let path = directory.join("quickchat-gateway-device.json");
@@ -556,7 +556,7 @@ mod tests {
             .err()
             .expect("version mismatch should fail");
 
-        assert!(error.contains("written by a different version of OpenClaw"));
+        assert!(error.contains("written by a different version of Afora"));
         assert!(error.contains("this build will not replace it"));
         assert_eq!(
             fs::read(&path).expect("reread version-mismatched identity"),
@@ -596,14 +596,14 @@ mod tests {
 
         assert_eq!(
             payload.as_bytes(),
-            b"v3|dev-1|openclaw-linux|ui|operator|operator.admin,operator.read|1800000000000|test-token|nonce-abc|linux|desktop"
+            b"v3|dev-1|afora-linux|ui|operator|operator.admin,operator.read|1800000000000|test-token|nonce-abc|linux|desktop"
         );
     }
 
     #[test]
     fn identity_persistence_round_trip_keeps_keypair_token_and_private_mode() {
         let directory = std::env::temp_dir().join(format!(
-            "openclaw-linux-gateway-identity-test-{}",
+            "afora-linux-gateway-identity-test-{}",
             Uuid::new_v4()
         ));
         let path = directory.join("quickchat-gateway-device.json");
@@ -682,7 +682,7 @@ mod tests {
     #[test]
     fn identity_directory_is_a_hard_error_without_quarantine() {
         let directory = std::env::temp_dir().join(format!(
-            "openclaw-linux-gateway-identity-directory-test-{}",
+            "afora-linux-gateway-identity-directory-test-{}",
             Uuid::new_v4()
         ));
         let path = directory.join("quickchat-gateway-device.json");
@@ -705,7 +705,7 @@ mod tests {
     #[test]
     fn valid_symlinked_identity_loads_without_quarantine() {
         let directory = std::env::temp_dir().join(format!(
-            "openclaw-linux-valid-symlink-identity-test-{}",
+            "afora-linux-valid-symlink-identity-test-{}",
             Uuid::new_v4()
         ));
         fs::create_dir_all(&directory).expect("create identity fixture directory");
@@ -734,7 +734,7 @@ mod tests {
     #[test]
     fn corrupt_symlinked_identity_quarantines_link_and_recovers() {
         let directory = std::env::temp_dir().join(format!(
-            "openclaw-linux-corrupt-symlink-identity-test-{}",
+            "afora-linux-corrupt-symlink-identity-test-{}",
             Uuid::new_v4()
         ));
         fs::create_dir_all(&directory).expect("create identity fixture directory");
@@ -785,7 +785,7 @@ mod tests {
     #[test]
     fn dangling_identity_symlink_is_a_hard_error_without_quarantine() {
         let directory = std::env::temp_dir().join(format!(
-            "openclaw-linux-dangling-symlink-identity-test-{}",
+            "afora-linux-dangling-symlink-identity-test-{}",
             Uuid::new_v4()
         ));
         fs::create_dir_all(&directory).expect("create identity fixture directory");
@@ -857,7 +857,7 @@ mod tests {
     #[test]
     fn stale_device_token_can_be_cleared_without_rotating_the_identity() {
         let directory = std::env::temp_dir().join(format!(
-            "openclaw-linux-gateway-stale-token-test-{}",
+            "afora-linux-gateway-stale-token-test-{}",
             Uuid::new_v4()
         ));
         let path = directory.join("quickchat-gateway-device.json");

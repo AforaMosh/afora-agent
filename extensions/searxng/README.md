@@ -1,13 +1,13 @@
-# SearXNG OpenClaw plugin
+# SearXNG Afora plugin
 
-Official OpenClaw plugin for SearXNG.
+Official Afora plugin for SearXNG.
 
 ## Install
 
 ```sh
-openclaw plugins install @openclaw/searxng-plugin
+afora plugins install @afora/searxng-plugin
 ```
 
 ## Docs
 
-See `docs/tools/searxng-search.md` in the OpenClaw repository, or the published docs at `https://docs.openclaw.ai/tools/searxng-search`.
+See `docs/tools/searxng-search.md` in the Afora repository, or the published docs at `https://docs.afora.ai/tools/searxng-search`.

@@ -80,7 +80,7 @@ export function createDiagnosticsTraceRuntime(tracer: Tracer) {
     metadata.trusted ? normalizeTraceContext(evt.trace) : undefined;
   // Internal-dispatcher events are linkable on their own; everything else defers to
   // the shared trusted-trace-context rule, which also accepts an untrusted payload
-  // whose trace context came from OpenClaw-owned scope (metadata.trustedTraceContext).
+  // whose trace context came from Afora-owned scope (metadata.trustedTraceContext).
   const internalOrTrustedTraceContext = (
     evt: DiagnosticEventPayload,
     metadata: DiagnosticEventMetadata,
@@ -363,16 +363,16 @@ export function createDiagnosticsTraceRuntime(tracer: Tracer) {
     },
   ) => {
     if (evt.provider) {
-      spanAttrs["openclaw.provider"] = evt.provider;
+      spanAttrs["afora.provider"] = evt.provider;
     }
     if (evt.model) {
-      spanAttrs["openclaw.model"] = evt.model;
+      spanAttrs["afora.model"] = evt.model;
     }
     if (evt.channel) {
-      spanAttrs["openclaw.channel"] = evt.channel;
+      spanAttrs["afora.channel"] = evt.channel;
     }
     if (evt.trigger) {
-      spanAttrs["openclaw.trigger"] = evt.trigger;
+      spanAttrs["afora.trigger"] = evt.trigger;
     }
   };
 
@@ -383,8 +383,8 @@ export function createDiagnosticsTraceRuntime(tracer: Tracer) {
       return {};
     }
     return {
-      "openclaw.tool.params.kind": summary.kind,
-      ...("length" in summary ? { "openclaw.tool.params.length": summary.length } : {}),
+      "afora.tool.params.kind": summary.kind,
+      ...("length" in summary ? { "afora.tool.params.length": summary.length } : {}),
     };
   };
   return {

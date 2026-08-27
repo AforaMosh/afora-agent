@@ -1,5 +1,5 @@
 // Matrix tests cover crypto bootstrap plugin behavior.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import { MatrixCryptoBootstrapper } from "./crypto-bootstrap.js";
 import type { MatrixRecoveryKeyStore } from "./recovery-key-store.js";

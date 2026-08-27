@@ -10,7 +10,7 @@ OpenCode Go is a separate paid subscription inside [OpenCode](/providers/opencod
 It uses the same `OPENCODE_API_KEY` credential infrastructure as Zen, but a Zen
 key does not automatically include Go entitlement. Go keeps its own runtime
 provider id (`opencode-go`) so upstream per-model routing stays correct.
-OpenCode Go is bundled in the OpenClaw package for this release, so onboarding
+OpenCode Go is bundled in the Afora package for this release, so onboarding
 and configuration are sufficient; no separate plugin install is required.
 
 | Property         | Value                                              |
@@ -22,7 +22,7 @@ and configuration are sufficient; no separate plugin install is required.
 
 ## Getting started
 
-OpenCode Go is already included with OpenClaw for this release. Continue with
+OpenCode Go is already included with Afora for this release. Continue with
 interactive onboarding or pass the shared OpenCode API key directly.
 
 <Tabs>
@@ -30,17 +30,17 @@ interactive onboarding or pass the shared OpenCode API key directly.
     <Steps>
       <Step title="Run onboarding">
         ```bash
-        openclaw onboard --auth-choice opencode-go
+        afora onboard --auth-choice opencode-go
         ```
       </Step>
       <Step title="Set a Go model as default">
         ```bash
-        openclaw config set agents.defaults.model.primary "opencode-go/kimi-k3"
+        afora config set agents.defaults.model.primary "opencode-go/kimi-k3"
         ```
       </Step>
       <Step title="Verify models are available">
         ```bash
-        openclaw models list --provider opencode-go
+        afora models list --provider opencode-go
         ```
       </Step>
     </Steps>
@@ -50,12 +50,12 @@ interactive onboarding or pass the shared OpenCode API key directly.
     <Steps>
       <Step title="Pass the key directly">
         ```bash
-        openclaw onboard --opencode-go-api-key "$OPENCODE_API_KEY"
+        afora onboard --opencode-go-api-key "$OPENCODE_API_KEY"
         ```
       </Step>
       <Step title="Verify models are available">
         ```bash
-        openclaw models list --provider opencode-go
+        afora models list --provider opencode-go
         ```
       </Step>
     </Steps>
@@ -73,7 +73,7 @@ interactive onboarding or pass the shared OpenCode API key directly.
 
 ## Catalog
 
-Run `openclaw models list --provider opencode-go` for the current model list.
+Run `afora models list --provider opencode-go` for the current model list.
 Current active rows:
 
 | Model ref                       | Context   | Max output | Inputs      | Transport |
@@ -106,13 +106,13 @@ OpenCode's current policy says model training is not used for any active Go
 route. Grok 4.5 and GPT-5.6 Luna retain data for up to 30 days; the other active
 Go routes list zero-day retention. Review the current
 [OpenCode Go privacy table](https://opencode.ai/docs/go/#privacy) before using a
-model, because provider policy can change independently of OpenClaw.
+model, because provider policy can change independently of Afora.
 
 ## Advanced configuration
 
 <AccordionGroup>
   <Accordion title="Routing behavior">
-    OpenClaw routes any `opencode-go/...` model ref automatically. No extra
+    Afora routes any `opencode-go/...` model ref automatically. No extra
     provider config is required.
   </Accordion>
 

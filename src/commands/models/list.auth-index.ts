@@ -1,12 +1,12 @@
 import type { AuthProfileStore } from "../../agents/auth-profiles/types.js";
-/** Auth availability index for `openclaw models list` rows. */
+/** Auth availability index for `afora models list` rows. */
 import {
   createModelAuthAvailabilityResolver,
   type ModelAuthAvailabilityEvaluation,
   type ModelAuthAvailabilityRef,
 } from "../../agents/model-auth-availability.js";
 import type { createOpenAIModelRoutesResolver } from "../../agents/openai-model-routes.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { PluginMetadataSnapshot } from "../../plugins/plugin-metadata-snapshot.types.js";
 
 export type ModelListAuthRef = ModelAuthAvailabilityRef;
@@ -18,7 +18,7 @@ export type ModelListAuthIndex = {
 };
 
 type CreateModelListAuthIndexParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   authStore: AuthProfileStore;
   agentDir?: string;
   workspaceDir?: string;

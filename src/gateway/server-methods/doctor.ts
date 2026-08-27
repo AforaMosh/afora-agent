@@ -1,10 +1,10 @@
 // Doctor gateway methods inspect and repair memory dreaming artifacts and managed cron state.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
-import { parseDateStringTimestampMs } from "@openclaw/normalization-core/number-coercion";
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { expectDefined } from "@afora/normalization-core";
+import { parseDateStringTimestampMs } from "@afora/normalization-core/number-coercion";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { ErrorCodes, errorShape } from "../../../packages/gateway-protocol/src/index.js";
 import { AgentSelectionRequiredError } from "../../agents/agent-scope-config.js";
 import {
@@ -12,7 +12,7 @@ import {
   resolveAgentWorkspaceDir,
   resolveDefaultAgentId,
 } from "../../agents/agent-scope.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   resolveMemoryDeepDreamingConfig,
   resolveMemoryLightDreamingConfig,
@@ -40,7 +40,7 @@ type DoctorMemoryCoreRuntime = Pick<
 
 const MANAGED_DEEP_SLEEP_CRON_NAME = "Memory Dreaming Promotion";
 const MANAGED_DEEP_SLEEP_CRON_TAG = "[managed-by=memory-core.short-term-promotion]";
-const DEEP_SLEEP_SYSTEM_EVENT_TEXT = "__openclaw_memory_core_short_term_promotion_dream__";
+const DEEP_SLEEP_SYSTEM_EVENT_TEXT = "__afora_memory_core_short_term_promotion_dream__";
 const DREAM_DIARY_FILE_NAMES = ["DREAMS.md", "dreams.md"] as const;
 
 type DoctorMemoryDreamingPhasePayload = {
@@ -210,7 +210,7 @@ async function listWorkspaceDailyFiles(memoryDir: string): Promise<string[]> {
 }
 
 function resolveDreamingConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): Omit<
   DoctorMemoryDreamingPayload,
   | "shortTermCount"
@@ -637,7 +637,7 @@ function resolveDoctorMemoryAgent(
   params: unknown,
   respond: RespondFn,
 ): {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   requestedAgentId?: string;
 } | null {
@@ -682,7 +682,7 @@ function resolveDoctorMemoryTarget(
   params: unknown,
   respond: RespondFn,
 ): {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   workspaceDir: string;
 } | null {
@@ -700,7 +700,7 @@ function resolveDoctorMemoryTarget(
 const SKIPPED_MEMORY_EMBEDDING_PROBE = {
   ok: false,
   checked: false,
-  error: "memory embedding readiness not checked; run `openclaw memory status --deep` to probe",
+  error: "memory embedding readiness not checked; run `afora memory status --deep` to probe",
 } as const;
 
 export const createDoctorHandlers = (

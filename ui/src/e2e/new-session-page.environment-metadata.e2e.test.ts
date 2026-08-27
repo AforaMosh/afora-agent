@@ -37,8 +37,8 @@ suite.define(() => {
                 {
                   code: "update-required",
                   action: "update-and-reconnect",
-                  updateCommand: "openclaw update",
-                  headlessReconnectCommand: "openclaw node restart",
+                  updateCommand: "afora update",
+                  headlessReconnectCommand: "afora node restart",
                 },
               ],
             },
@@ -99,8 +99,8 @@ suite.define(() => {
                 {
                   code: "update-required",
                   action: "update-and-reconnect",
-                  updateCommand: "openclaw update",
-                  headlessReconnectCommand: "openclaw node restart",
+                  updateCommand: "afora update",
+                  headlessReconnectCommand: "afora node restart",
                 },
               ],
             },
@@ -149,9 +149,9 @@ suite.define(() => {
       await expect
         .poll(() => outdated.locator(".new-session-page__menu-fact").allTextContents())
         .toEqual([
-          "Update required: run openclaw update, then reconnect. For a headless node, run openclaw node restart.",
+          "Update required: run afora update, then reconnect. For a headless node, run afora node restart.",
         ]);
-      expect(await outdated.getAttribute("title")).toContain("openclaw update");
+      expect(await outdated.getAttribute("title")).toContain("afora update");
       await expect
         .poll(() =>
           place

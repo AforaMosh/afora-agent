@@ -1,6 +1,6 @@
 // Xai plugin module implements code execution shared behavior.
-import { readProviderJsonObjectResponse } from "openclaw/plugin-sdk/provider-http";
-import { postTrustedWebToolsJson } from "openclaw/plugin-sdk/provider-web-search";
+import { readProviderJsonObjectResponse } from "afora-agent/plugin-sdk/provider-http";
+import { postTrustedWebToolsJson } from "afora-agent/plugin-sdk/provider-web-search";
 import { XAI_DEFAULT_MODEL_ID } from "../model-definitions.js";
 import {
   buildXaiResponsesToolBody,

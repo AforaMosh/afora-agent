@@ -1,4 +1,4 @@
-// OpenAI-compatible `/v1/models` HTTP route backed by configured OpenClaw agents.
+// OpenAI-compatible `/v1/models` HTTP route backed by configured Afora agents.
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { listAgentIds, tryResolveLegacyCompatibilityAgentId } from "../agents/agent-scope.js";
 import { getRuntimeConfig } from "../config/io.js";
@@ -11,10 +11,10 @@ import {
   sendMissingScopeForbidden,
 } from "./http-common.js";
 import {
-  OPENCLAW_DEFAULT_MODEL_ID,
-  OPENCLAW_MODEL_ID,
+  AFORA_DEFAULT_MODEL_ID,
+  AFORA_MODEL_ID,
   authorizeGatewayHttpRequestOrReply,
-  isOpenClawAgentModelId,
+  isAforaAgentModelId,
   resolveAgentIdFromModel,
   type AuthorizedGatewayHttpRequest,
   resolveOpenAiCompatibleHttpOperatorScopes,
@@ -41,7 +41,7 @@ function toOpenAiModel(id: string): OpenAiModelObject {
     id,
     object: "model",
     created: 0,
-    owned_by: "openclaw",
+    owned_by: "afora",
     permission: [],
   };
 }
@@ -63,13 +63,13 @@ async function authorizeRequest(
 
 function loadAgentModelIds(): string[] {
   const cfg = getRuntimeConfig();
-  const ids = new Set<string>([OPENCLAW_MODEL_ID, OPENCLAW_DEFAULT_MODEL_ID]);
+  const ids = new Set<string>([AFORA_MODEL_ID, AFORA_DEFAULT_MODEL_ID]);
   const compatibilityAgentId = tryResolveLegacyCompatibilityAgentId(cfg);
   if (compatibilityAgentId) {
-    ids.add(`openclaw/${compatibilityAgentId}`);
+    ids.add(`afora/${compatibilityAgentId}`);
   }
   for (const agentId of listAgentIds(cfg)) {
-    ids.add(`openclaw/${agentId}`);
+    ids.add(`afora/${agentId}`);
   }
   return Array.from(ids);
 }
@@ -129,13 +129,13 @@ export async function handleOpenAiModelsHttpRequest(
     return true;
   }
 
-  if (!isOpenClawAgentModelId(decodedId)) {
+  if (!isAforaAgentModelId(decodedId)) {
     sendInvalidRequest(res, "Invalid model id.");
     return true;
   }
 
   const normalizedModelId = decodedId.trim().toLowerCase();
-  if (normalizedModelId !== OPENCLAW_MODEL_ID && normalizedModelId !== OPENCLAW_DEFAULT_MODEL_ID) {
+  if (normalizedModelId !== AFORA_MODEL_ID && normalizedModelId !== AFORA_DEFAULT_MODEL_ID) {
     const cfg = getRuntimeConfig();
     const agentId = resolveAgentIdFromModel(decodedId, cfg);
     if (!agentId || !listAgentIds(cfg).includes(agentId)) {

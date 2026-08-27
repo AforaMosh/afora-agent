@@ -1,6 +1,6 @@
 // Application-owned approval parsing and queue state.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 
 export type ExecApprovalRequestPayload = {
   command: string;
@@ -244,7 +244,7 @@ export function parseApprovalRequestedEvent(
   if (event === "plugin.approval.requested") {
     return parsePluginApprovalRequested(payload);
   }
-  return event === "openclaw.approval.requested"
+  return event === "afora.approval.requested"
     ? parseSystemAgentApprovalRequested(payload)
     : null;
 }
@@ -473,7 +473,7 @@ export async function refreshPendingApprovalQueue(
     const [execResult, pluginResult, systemAgentResult] = await Promise.allSettled([
       client.request("exec.approval.list", {}),
       client.request("plugin.approval.list", {}),
-      client.request("openclaw.approval.list", {}),
+      client.request("afora.approval.list", {}),
     ]);
     const execApprovals =
       execResult.status === "fulfilled"

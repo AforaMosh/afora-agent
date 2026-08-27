@@ -4,7 +4,7 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { withEnvAsync } from "openclaw/plugin-sdk/test-env";
+import { withEnvAsync } from "afora-agent/plugin-sdk/test-env";
 import { chromium, type BrowserContext } from "playwright-core";
 import { afterEach, describe, expect, it } from "vitest";
 import {
@@ -23,7 +23,7 @@ declare const chrome: {
 };
 
 const runE2E =
-  process.env.OPENCLAW_BROWSER_EXTENSION_E2E === "1" &&
+  process.env.AFORA_BROWSER_EXTENSION_E2E === "1" &&
   (process.platform === "linux" || process.platform === "darwin");
 const cleanups: Array<() => Promise<void>> = [];
 const STORE_ORIGIN = "chrome-extension://kcdjddhmeafeomebliikmbpblkmkfoig/";
@@ -57,7 +57,7 @@ async function waitForExtensionId(context: BrowserContext, extensionPath: string
       setTimeout(resolve, 100);
     });
   } while (Date.now() < deadline);
-  throw new Error("Chromium did not report the loaded OpenClaw extension");
+  throw new Error("Chromium did not report the loaded Afora extension");
 }
 
 async function loadUnpackedExtension(
@@ -85,13 +85,13 @@ async function exactOwnedManifestsExist(
         key?: unknown;
       };
       if (
-        manifest.name !== "ai.openclaw.browser_bootstrap" ||
+        manifest.name !== "ai.afora.browser_bootstrap" ||
         typeof manifest.path !== "string" ||
         Object.hasOwn(manifest, "key") ||
         !Array.isArray(manifest.allowed_origins) ||
         JSON.stringify(manifest.allowed_origins) !== JSON.stringify(expectedOrigins) ||
         !(await fs.readFile(manifest.path, "utf8")).includes(
-          "# OpenClaw native messaging bootstrap v1",
+          "# Afora native messaging bootstrap v1",
         )
       ) {
         return false;
@@ -143,12 +143,12 @@ function decodeSingleNativeResponse(frame: Buffer): Record<string, unknown> {
 describe.runIf(runE2E)("Chrome native bootstrap Chromium E2E", () => {
   it("pre-registers before the first native call, auto-pairs, and revokes a paused tab", async () => {
     const root = await fs.realpath(
-      await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-extension-e2e-")),
+      await fs.mkdtemp(path.join(os.tmpdir(), "afora-extension-e2e-")),
     );
     cleanups.push(async () => await fs.rm(root, { recursive: true, force: true }));
     const homeDir = path.join(root, "home");
     const stateDir = path.join(root, "custom-state");
-    const configPath = path.join(root, "custom-config", "openclaw.json");
+    const configPath = path.join(root, "custom-config", "afora.json");
     const gatewayPort = await getFreePort();
     let relayPort = await getFreePort();
     while (relayPort === gatewayPort) {
@@ -178,9 +178,9 @@ describe.runIf(runE2E)("Chrome native bootstrap Chromium E2E", () => {
     );
     await withEnvAsync(
       {
-        OPENCLAW_STATE_DIR: stateDir,
-        OPENCLAW_CONFIG_PATH: configPath,
-        OPENCLAW_GATEWAY_PORT: String(gatewayPort),
+        AFORA_STATE_DIR: stateDir,
+        AFORA_CONFIG_PATH: configPath,
+        AFORA_GATEWAY_PORT: String(gatewayPort),
       },
       async () => {
         const extensionSource = path.dirname(fileURLToPath(import.meta.url));
@@ -196,9 +196,9 @@ describe.runIf(runE2E)("Chrome native bootstrap Chromium E2E", () => {
           env: {
             HOME: homeDir,
             ...chromeRootEnv,
-            OPENCLAW_STATE_DIR: stateDir,
-            OPENCLAW_CONFIG_PATH: configPath,
-            OPENCLAW_GATEWAY_PORT: String(gatewayPort),
+            AFORA_STATE_DIR: stateDir,
+            AFORA_CONFIG_PATH: configPath,
+            AFORA_GATEWAY_PORT: String(gatewayPort),
           },
           nodePath: tsxPath,
           nativeHostPath,
@@ -226,10 +226,10 @@ describe.runIf(runE2E)("Chrome native bootstrap Chromium E2E", () => {
           ...chromeRootEnv,
           TSX_TSCONFIG_PATH: tsxTsconfigPath,
         };
-        delete browserEnv.OPENCLAW_STATE_DIR;
-        delete browserEnv.OPENCLAW_CONFIG_PATH;
+        delete browserEnv.AFORA_STATE_DIR;
+        delete browserEnv.AFORA_CONFIG_PATH;
         delete browserEnv.VITEST;
-        delete browserEnv.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR;
+        delete browserEnv.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR;
 
         const launchChromium = async () =>
           await chromium.launchPersistentContext(userDataDir, {
@@ -255,7 +255,7 @@ describe.runIf(runE2E)("Chrome native bootstrap Chromium E2E", () => {
         const relevantManifestPaths = chromeProductRoots(deps)
           .filter((productRoot) => productRoot.userDataDir === userDataDir)
           .map((productRoot) =>
-            path.join(productRoot.nativeManifestDir, "ai.openclaw.browser_bootstrap.json"),
+            path.join(productRoot.nativeManifestDir, "ai.afora.browser_bootstrap.json"),
           );
         const installPromise = installChromeExtensionBootstrap({
           bundledDir: extensionSource,
@@ -296,7 +296,7 @@ describe.runIf(runE2E)("Chrome native bootstrap Chromium E2E", () => {
         expect(await waitForExtensionId(context, installed)).toBe(predictedId);
         process.stderr.write("[browser-extension-e2e] persisted extension reloaded\n");
         const controlled = await context.newPage();
-        await controlled.goto("data:text/html,<title>OpenClaw E2E</title><p>ready</p>");
+        await controlled.goto("data:text/html,<title>Afora E2E</title><p>ready</p>");
 
         const extensionPage = await context.newPage();
         await extensionPage.goto(`chrome-extension://${extensionId}/options.html`);

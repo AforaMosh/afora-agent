@@ -1,4 +1,4 @@
-import { registerSingleProviderPlugin } from "openclaw/plugin-sdk/plugin-test-runtime";
+import { registerSingleProviderPlugin } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { describe, expect, it } from "vitest";
 import plugin from "./index.js";
 import { inspectPerplexityToolSchemas, normalizePerplexityToolSchemas } from "./tool-schemas.js";
@@ -11,7 +11,7 @@ function schemaContext(modelId: string, tools: unknown[]) {
     model: {
       provider: "clawrouter",
       api: "openai-responses",
-      baseUrl: "https://clawrouter.openclaw.ai/v1",
+      baseUrl: "https://clawrouter.afora.ai/v1",
       id: modelId,
     },
     tools,

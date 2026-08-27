@@ -4,7 +4,7 @@ import { buildFishAudioSpeechProvider } from "./speech-provider.js";
 
 const fetchWithSsrFGuardMock = vi.hoisted(() => vi.fn());
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ({
   fetchWithSsrFGuard: async (params: { url: string; init?: RequestInit; timeoutMs?: number }) => {
     fetchWithSsrFGuardMock(params);
     return {
@@ -26,7 +26,7 @@ describe("Fish Audio speech provider", () => {
   const originalFetch = globalThis.fetch;
 
   afterAll(() => {
-    vi.doUnmock("openclaw/plugin-sdk/ssrf-runtime");
+    vi.doUnmock("afora-agent/plugin-sdk/ssrf-runtime");
     vi.resetModules();
   });
 

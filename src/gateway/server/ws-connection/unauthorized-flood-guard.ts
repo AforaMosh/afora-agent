@@ -1,5 +1,5 @@
 // Unauthorized flood guard rate-limits repeated unauthorized role errors on one WebSocket connection.
-import { resolveIntegerOption } from "@openclaw/normalization-core/number-coercion";
+import { resolveIntegerOption } from "@afora/normalization-core/number-coercion";
 import { ErrorCodes, type ErrorShape } from "../../../../packages/gateway-protocol/src/index.js";
 
 /**

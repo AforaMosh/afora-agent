@@ -14,7 +14,7 @@ import { createCronServiceState } from "./service/state.js";
 import * as cronStoreModule from "./store.js";
 
 const noopLogger = createNoopLogger();
-const { makeStorePath } = createCronStoreHarness({ prefix: "openclaw-cron-" });
+const { makeStorePath } = createCronStoreHarness({ prefix: "afora-cron-" });
 installCronTestHooks({
   logger: noopLogger,
   baseTimeIso: "2025-12-13T00:00:00.000Z",

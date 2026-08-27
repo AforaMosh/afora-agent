@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { WorkboardChange } from "@openclaw/workboard-contract";
+import type { WorkboardChange } from "@afora/workboard-contract";
 import type { WorkboardCardStore, WorkboardKeyedStore } from "./persistence-types.js";
 
 export class WorkboardChangeTracker {

@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import nodePath from "node:path";
-import { normalizeDiagnosticValue } from "openclaw/plugin-sdk/diagnostic-runtime";
-import { collectErrorGraphCandidates } from "openclaw/plugin-sdk/error-runtime";
-import { createNodeProxyAgent } from "openclaw/plugin-sdk/fetch-runtime";
+import { normalizeDiagnosticValue } from "afora-agent/plugin-sdk/diagnostic-runtime";
+import { collectErrorGraphCandidates } from "afora-agent/plugin-sdk/error-runtime";
+import { createNodeProxyAgent } from "afora-agent/plugin-sdk/fetch-runtime";
 import {
   OTEL_EXPORTER_OTLP_CERTIFICATE_ENV,
   OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE_ENV,

@@ -1,6 +1,6 @@
 // Verifies gateway tool HTTP exposure audit findings.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { collectGatewayConfigFindings } from "./audit-gateway-config.js";
 
 function hasFinding(
@@ -23,7 +23,7 @@ describe("security audit gateway HTTP tool findings", () => {
           auth: { token: "secret" },
           tools: { allow: ["sessions_spawn"] },
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       expectedSeverity: "warn" as const,
     },
     {
@@ -34,7 +34,7 @@ describe("security audit gateway HTTP tool findings", () => {
           auth: { token: "secret" },
           tools: { allow: ["sessions_spawn", "gateway"] },
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       expectedSeverity: "critical" as const,
     },
     {
@@ -45,7 +45,7 @@ describe("security audit gateway HTTP tool findings", () => {
           auth: { token: "secret" },
           tools: { allow: ["exec"] },
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       expectedSeverity: "critical" as const,
     },
   ])(

@@ -52,12 +52,12 @@ describe("board widget sizing", () => {
 
   it("pins the exact reported height on the card and re-fills while dragging", async () => {
     const view = await mount();
-    const cell = view.querySelector("openclaw-board-widget-cell");
+    const cell = view.querySelector("afora-board-widget-cell");
     const frame = cell?.querySelector("iframe");
     window.dispatchEvent(
       new MessageEvent("message", {
         source: frame?.contentWindow ?? null,
-        data: { type: "openclaw:widget-size", height: 300 },
+        data: { type: "afora:widget-size", height: 300 },
       }),
     );
     const widget = boardWidget();
@@ -90,7 +90,7 @@ describe("board widget sizing", () => {
         },
       ]),
     );
-    const cell = view.querySelector("openclaw-board-widget-cell");
+    const cell = view.querySelector("afora-board-widget-cell");
     await vi.waitFor(() => expect(Reflect.get(cell ?? {}, "actionPending")).toBe(false));
 
     // The menu item is a checkbox toggle: an auto widget pins to its current

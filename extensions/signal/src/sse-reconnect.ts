@@ -1,6 +1,6 @@
 // Signal plugin module implements sse reconnect behavior.
-import type { ChannelAccountSnapshot } from "openclaw/plugin-sdk/channel-contract";
-import { channelReadyPatch } from "openclaw/plugin-sdk/gateway-runtime";
+import type { ChannelAccountSnapshot } from "afora-agent/plugin-sdk/channel-contract";
+import { channelReadyPatch } from "afora-agent/plugin-sdk/gateway-runtime";
 import {
   computeBackoff,
   logVerbose,
@@ -8,7 +8,7 @@ import {
   sleepWithAbort,
   type BackoffPolicy,
   type RuntimeEnv,
-} from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/runtime-env";
 import {
   type SignalSseEvent,
   type SignalTransportKind,

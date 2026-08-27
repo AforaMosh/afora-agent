@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { resolve, sep } from "node:path";
-import { coerceErrorMessage } from "@openclaw/normalization-core/error-coercion";
+import { coerceErrorMessage } from "@afora/normalization-core/error-coercion";
 import { root as fsSafeRoot } from "../infra/fs-safe.js";
-import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
+import type { AforaStateDatabaseOptions } from "../state/afora-state-db.js";
 import type { ClawAddPlan } from "./types.js";
 import type { ClawUpdatePlan } from "./update-plan.js";
 import {
@@ -38,7 +38,7 @@ function digest(content: Uint8Array): string {
 export async function applyClawWorkspaceUpdate(
   updatePlan: ClawUpdatePlan,
   targetAddPlan: ClawAddPlan,
-  options: OpenClawStateDatabaseOptions & { nowMs?: number } = {},
+  options: AforaStateDatabaseOptions & { nowMs?: number } = {},
 ): Promise<ClawWorkspaceUpdateExecution> {
   const actions = updatePlan.actions.filter(
     (action) => action.kind === "workspaceFile" && action.action !== "unchanged",

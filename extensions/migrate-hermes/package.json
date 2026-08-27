@@ -1,26 +1,26 @@
 {
-  "name": "@openclaw/migrate-hermes",
+  "name": "@afora/migrate-hermes",
   "version": "2026.8.1",
   "private": true,
-  "description": "Hermes to OpenClaw migration provider",
+  "description": "Hermes to Afora migration provider",
   "type": "module",
   "dependencies": {
     "dotenv": "17.4.2",
     "yaml": "2.9.0"
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*",
-    "openclaw": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*",
+    "afora-agent": "workspace:*"
   },
   "peerDependencies": {
-    "openclaw": ">=2026.8.1"
+    "afora-agent": ">=2026.8.1"
   },
   "peerDependenciesMeta": {
-    "openclaw": {
+    "afora": {
       "optional": true
     }
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

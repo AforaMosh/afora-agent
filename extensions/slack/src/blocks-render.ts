@@ -1,11 +1,11 @@
 // Slack plugin module implements blocks render behavior.
 import type { Block, KnownBlock } from "@slack/web-api";
-import { parseExecApprovalCommandText } from "openclaw/plugin-sdk/approval-reply-runtime";
+import { parseExecApprovalCommandText } from "afora-agent/plugin-sdk/approval-reply-runtime";
 import {
   reduceLegacyInteractiveReply,
   resolveMessagePresentationButtonAction,
   resolveMessagePresentationOptionAction,
-} from "openclaw/plugin-sdk/interactive-runtime";
+} from "afora-agent/plugin-sdk/interactive-runtime";
 import type {
   LegacyInteractiveReply,
   MessagePresentation,
@@ -13,9 +13,9 @@ import type {
   MessagePresentationButtonsBlock,
   MessagePresentationChartBlock,
   MessagePresentationSelectBlock,
-} from "openclaw/plugin-sdk/interactive-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { chunkTextForOutbound } from "openclaw/plugin-sdk/text-chunking";
+} from "afora-agent/plugin-sdk/interactive-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { chunkTextForOutbound } from "afora-agent/plugin-sdk/text-chunking";
 import { encodeSlackApprovalAction } from "./approval-actions.js";
 import {
   buildSlackDataTableBlock,
@@ -200,7 +200,7 @@ function readSlackBlockId(block: SlackBlock): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
-function readSlackOpenClawBlockIndex(blockId: string, prefix: string): number | undefined {
+function readSlackAforaBlockIndex(blockId: string, prefix: string): number | undefined {
   if (!blockId.startsWith(prefix)) {
     return undefined;
   }
@@ -226,11 +226,11 @@ export function resolveSlackBlockOffsets(blocks?: readonly SlackBlock[]): SlackB
     }
     buttonIndexOffset = Math.max(
       buttonIndexOffset,
-      readSlackOpenClawBlockIndex(blockId, "openclaw_reply_buttons_") ?? 0,
+      readSlackAforaBlockIndex(blockId, "afora_reply_buttons_") ?? 0,
     );
     selectIndexOffset = Math.max(
       selectIndexOffset,
-      readSlackOpenClawBlockIndex(blockId, "openclaw_reply_select_") ?? 0,
+      readSlackAforaBlockIndex(blockId, "afora_reply_select_") ?? 0,
     );
   }
   return {
@@ -312,7 +312,7 @@ export function buildSlackInteractiveBlocks(
       }
       state.blocks.push({
         type: "actions",
-        block_id: `openclaw_reply_buttons_${++state.buttonIndex}`,
+        block_id: `afora_reply_buttons_${++state.buttonIndex}`,
         elements,
       });
       return state;
@@ -330,7 +330,7 @@ export function buildSlackInteractiveBlocks(
     }
     state.blocks.push({
       type: "actions",
-      block_id: `openclaw_reply_select_${++state.selectIndex}`,
+      block_id: `afora_reply_select_${++state.selectIndex}`,
       elements: [
         {
           type: "static_select",
@@ -519,7 +519,7 @@ function buildSlackPresentationButtonBlock(
   return elements.length > 0
     ? {
         type: "actions",
-        block_id: `openclaw_reply_buttons_${buttonIndex}`,
+        block_id: `afora_reply_buttons_${buttonIndex}`,
         elements,
       }
     : undefined;
@@ -635,7 +635,7 @@ function buildSlackPresentationSelectBlock(
   return options.length > 0 && optionKinds.size === 1
     ? {
         type: "actions",
-        block_id: `openclaw_reply_select_${selectIndex}`,
+        block_id: `afora_reply_select_${selectIndex}`,
         elements: [
           {
             type: "static_select",

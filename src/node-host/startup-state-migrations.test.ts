@@ -10,19 +10,19 @@ import { resolveExecApprovalsPath } from "../infra/exec-approvals-config.js";
 import { loadExecApprovals } from "../infra/exec-approvals-store.js";
 import { testing as execApprovalsStoreTesting } from "../infra/exec-approvals-store.test-support.js";
 import { acquireGatewayLock } from "../infra/gateway-lock.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { captureEnv, setTestEnvValue } from "../test-utils/env.js";
 import { runStartupMigrations } from "./startup-state-migrations.js";
 
 describe("node-host startup state migrations", () => {
-  const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
+  const envSnapshot = captureEnv(["AFORA_STATE_DIR"]);
   const log = {
     info: vi.fn<(message: string) => void>(),
     warn: vi.fn<(message: string) => void>(),
   };
   const tempDirs = useAutoCleanupTempDirTracker((cleanup) => {
     afterEach(() => {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       execApprovalsStoreTesting.reset();
       envSnapshot.restore();
       cleanup();
@@ -34,9 +34,9 @@ describe("node-host startup state migrations", () => {
   });
 
   function useStateDir(): { env: NodeJS.ProcessEnv; stateDir: string } {
-    const stateDir = fs.realpathSync(tempDirs.make("openclaw-node-host-migrations-"));
+    const stateDir = fs.realpathSync(tempDirs.make("afora-node-host-migrations-"));
     return {
-      env: { ...process.env, HOME: stateDir, OPENCLAW_STATE_DIR: stateDir },
+      env: { ...process.env, HOME: stateDir, AFORA_STATE_DIR: stateDir },
       stateDir,
     };
   }
@@ -103,7 +103,7 @@ describe("node-host startup state migrations", () => {
   it("migrates legacy exec approvals into the canonical store", async () => {
     const { env, stateDir } = useStateDir();
     const sourcePath = await writeExecApprovals(env);
-    setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+    setTestEnvValue("AFORA_STATE_DIR", stateDir);
     execApprovalsStoreTesting.reset();
 
     await runStartupMigrations({ env, log });

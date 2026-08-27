@@ -7,7 +7,7 @@ import type { SessionWorkerPlacementContext } from "./worker-environments/sessio
 export type { SessionWorkerPlacementContext } from "./worker-environments/session-placement-lifecycle.js";
 
 const localPlacementState = resolveGlobalSingleton(
-  Symbol.for("openclaw.localSessionWorkerPlacementContext"),
+  Symbol.for("afora.localSessionWorkerPlacementContext"),
   (): { store?: ReturnType<typeof createWorkerSessionPlacementStore> } => ({}),
   (state) => {
     state.store = undefined;

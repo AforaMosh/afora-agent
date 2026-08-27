@@ -1,6 +1,6 @@
 // Verifies group-policy normalization and runtime resolution.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "./config.js";
+import type { AforaConfig } from "./config.js";
 import {
   resolveChannelGroupPolicy,
   resolveChannelGroupRequireMention,
@@ -23,7 +23,7 @@ describe("resolveChannelGroupPolicy", () => {
           groupPolicy: "allowlist",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const policy = resolveChannelGroupPolicy({
       cfg,
@@ -45,7 +45,7 @@ describe("resolveChannelGroupPolicy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const policy = resolveChannelGroupPolicy({
       cfg,
@@ -67,7 +67,7 @@ describe("resolveChannelGroupPolicy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const policy = resolveChannelGroupPolicy({
       cfg,
@@ -90,7 +90,7 @@ describe("resolveChannelGroupPolicy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const policy = resolveChannelGroupPolicy({
       cfg,
@@ -110,7 +110,7 @@ describe("resolveChannelGroupPolicy", () => {
           groupPolicy: "allowlist",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const policy = resolveChannelGroupPolicy({
       cfg,
@@ -130,7 +130,7 @@ describe("resolveChannelGroupPolicy", () => {
           groupPolicy: "allowlist",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const policy = resolveChannelGroupPolicy({
       cfg,
@@ -152,7 +152,7 @@ describe("resolveChannelGroupPolicy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       resolveChannelGroupRequireMention({
@@ -184,7 +184,7 @@ describe("resolveChannelGroupPolicy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const policy = resolveChannelGroupPolicy({
       cfg,
@@ -213,7 +213,7 @@ describe("resolveChannelGroupPolicy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       resolveChannelGroupPolicy({
@@ -410,7 +410,7 @@ describe("resolveToolsBySender", () => {
     expect(warningSpy).toHaveBeenCalledTimes(1);
     const [warningMessage, warningMeta] = firstWarningCall(warningSpy);
     expect(String(warningMessage)).toContain(`toolsBySender key "${legacyKey}"`);
-    expect(warningMeta?.code).toBe("OPENCLAW_TOOLS_BY_SENDER_UNTYPED_KEY");
+    expect(warningMeta?.code).toBe("AFORA_TOOLS_BY_SENDER_UNTYPED_KEY");
   });
 
   describe("legacy key warning dedupe cache", () => {

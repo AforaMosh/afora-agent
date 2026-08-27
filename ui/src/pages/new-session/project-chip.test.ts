@@ -3,9 +3,9 @@ import { projectCloneInput, resolveProjectChip } from "./project-chip.ts";
 
 const projects = [
   {
-    id: "openclaw",
-    displayName: "OpenClaw",
-    repoRoot: "/workspace/openclaw",
+    id: "afora",
+    displayName: "Afora",
+    repoRoot: "/workspace/afora",
     source: "registered" as const,
   },
   {
@@ -32,7 +32,7 @@ describe("What chip state", () => {
       execNode: "macbook",
       query: "",
       expectedMode: "node-path",
-      expectedProjects: ["openclaw", "website"],
+      expectedProjects: ["afora", "website"],
       expectedRecents: 1,
       showWorkspace: false,
     },
@@ -75,7 +75,7 @@ describe("What chip state", () => {
       projectId: "",
       selectedRemoteProject: null,
       projects,
-      recents: [{ kind: "project", projectId: "openclaw", displayName: "OpenClaw" }, folderRecent],
+      recents: [{ kind: "project", projectId: "afora", displayName: "Afora" }, folderRecent],
       projectQuery: "",
       execNode: "",
     });
@@ -84,11 +84,11 @@ describe("What chip state", () => {
   });
 
   it.each([
-    ["https://github.com/openclaw/openclaw.git", true],
-    ["git@github.com:openclaw/openclaw.git", true],
-    ["file:///tmp/openclaw.git", false],
+    ["https://github.com/AforaMosh/afora-agent.git", true],
+    ["git@github.com:AforaMosh/afora-agent.git", true],
+    ["file:///tmp/afora.git", false],
     ["--upload-pack=touch-pwned", false],
-    ["https://github.com/openclaw/openclaw.git --config=evil", false],
+    ["https://github.com/AforaMosh/afora-agent.git --config=evil", false],
   ])("recognizes safe clone input %s", (value, expected) => {
     expect(projectCloneInput(value) !== null).toBe(expected);
   });

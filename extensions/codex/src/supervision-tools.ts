@@ -1,6 +1,6 @@
-import { resolveDefaultAgentDir } from "openclaw/plugin-sdk/agent-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { jsonResult, readStringParam, type AnyAgentTool } from "openclaw/plugin-sdk/core";
+import { resolveDefaultAgentDir } from "afora-agent/plugin-sdk/agent-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { jsonResult, readStringParam, type AnyAgentTool } from "afora-agent/plugin-sdk/core";
 /**
  * Compatibility tools for the retired Codex Supervisor plugin.
  *
@@ -9,8 +9,8 @@ import { jsonResult, readStringParam, type AnyAgentTool } from "openclaw/plugin-
  * continuation belongs to the Codex harness, which installs approval and tool
  * handlers before it starts or resumes the harness-owned Codex thread.
  */
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { Type } from "typebox";
 import {
   resolveCodexAppServerAuthProfileIdForAgent,
@@ -27,12 +27,12 @@ import {
 import { requestCodexAppServerJson } from "./app-server/request.js";
 
 /** Legacy endpoint env retained for the shipped Supervisor tool contract. */
-const LEGACY_CODEX_SUPERVISOR_ENDPOINTS_ENV = "OPENCLAW_CODEX_SUPERVISOR_ENDPOINTS";
+const LEGACY_CODEX_SUPERVISOR_ENDPOINTS_ENV = "AFORA_CODEX_SUPERVISOR_ENDPOINTS";
 /** Legacy standalone-MCP transcript gate. Agent tools use canonical config. */
 const LEGACY_CODEX_SUPERVISOR_RAW_TRANSCRIPTS_ENV =
-  "OPENCLAW_CODEX_SUPERVISOR_ALLOW_RAW_TRANSCRIPTS";
+  "AFORA_CODEX_SUPERVISOR_ALLOW_RAW_TRANSCRIPTS";
 /** Legacy standalone-MCP write gate. Agent tools use canonical config. */
-const LEGACY_CODEX_SUPERVISOR_WRITE_CONTROLS_ENV = "OPENCLAW_CODEX_SUPERVISOR_ALLOW_WRITE_CONTROLS";
+const LEGACY_CODEX_SUPERVISOR_WRITE_CONTROLS_ENV = "AFORA_CODEX_SUPERVISOR_ALLOW_WRITE_CONTROLS";
 
 export const CODEX_SUPERVISION_COMPAT_TOOL_NAMES = [
   "codex_endpoint_probe",
@@ -147,7 +147,7 @@ type EndpointRequest = <T = unknown>(
 
 type CodexSupervisionToolsOptions = {
   getPluginConfig: () => unknown;
-  getRuntimeConfig?: () => OpenClawConfig | undefined;
+  getRuntimeConfig?: () => AforaConfig | undefined;
   /** Trusted owner bit supplied by the plugin tool context. */
   senderIsOwner: boolean;
   env?: NodeJS.ProcessEnv;
@@ -352,7 +352,7 @@ function readLegacyEnvEndpoints(env: NodeJS.ProcessEnv): CodexSupervisionEndpoin
 function resolveEndpoints(
   pluginConfig: unknown,
   env: NodeJS.ProcessEnv,
-  runtimeConfig: OpenClawConfig | undefined,
+  runtimeConfig: AforaConfig | undefined,
 ): ResolvedSupervisionEndpoint[] {
   const configured = readCodexPluginConfig(pluginConfig).supervision?.endpoints;
   const endpoints = configured?.length ? configured : readLegacyEnvEndpoints(env);
@@ -429,7 +429,7 @@ function supervisionEndpointConnectionKey(params: {
   endpoint: NormalizedSupervisionEndpoint;
   pluginConfig: unknown;
   env: NodeJS.ProcessEnv;
-  runtimeConfig: OpenClawConfig | undefined;
+  runtimeConfig: AforaConfig | undefined;
 }): string {
   // Endpoint probes report unsafe connections as unhealthy; the actual request path still
   // validates security before connecting, while this path only fingerprints live ownership.
@@ -1025,7 +1025,7 @@ function createPolicyGuardedRequest(
 
 function idleContinuationError(threadId: string): Error {
   return new Error(
-    `Codex thread ${threadId} is idle. Continue it from Codex Sessions so OpenClaw can install the Codex harness approval and tool handlers before resume.`,
+    `Codex thread ${threadId} is idle. Continue it from Codex Sessions so Afora can install the Codex harness approval and tool handlers before resume.`,
   );
 }
 
@@ -1074,7 +1074,7 @@ export function createCodexSupervisionTools(options: CodexSupervisionToolsOption
     {
       name: "codex_sessions_list",
       label: "Codex Sessions List",
-      description: "List Codex sessions visible to the OpenClaw supervisor.",
+      description: "List Codex sessions visible to the Afora supervisor.",
       parameters: SessionsListParamsSchema,
       execute: async (_toolCallId, rawParams) => {
         const params = isRecord(rawParams) ? rawParams : {};

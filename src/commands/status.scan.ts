@@ -56,7 +56,7 @@ export async function scanStatus(
         env: process.env,
         commandName: "status",
         opts,
-        showSecrets: process.env.OPENCLAW_SHOW_SECRETS?.trim() !== "0",
+        showSecrets: process.env.AFORA_SHOW_SECRETS?.trim() !== "0",
         includeLiveChannelStatus: isFullScan,
         includeChannelSetupRuntimeFallback: isFullScan,
         // Fast status avoids local secret resolution and relies on config/runtime hints.

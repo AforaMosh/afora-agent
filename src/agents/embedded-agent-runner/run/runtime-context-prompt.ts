@@ -5,14 +5,14 @@ import {
   extractInternalRuntimeContext,
   INTERNAL_RUNTIME_CONTEXT_BEGIN,
   INTERNAL_RUNTIME_CONTEXT_END,
-  OPENCLAW_NEXT_TURN_RUNTIME_CONTEXT_HEADER,
-  OPENCLAW_RUNTIME_CONTEXT_CUSTOM_TYPE,
-  OPENCLAW_RUNTIME_CONTEXT_NOTICE,
-  OPENCLAW_RUNTIME_EVENT_HEADER,
+  AFORA_NEXT_TURN_RUNTIME_CONTEXT_HEADER,
+  AFORA_RUNTIME_CONTEXT_CUSTOM_TYPE,
+  AFORA_RUNTIME_CONTEXT_NOTICE,
+  AFORA_RUNTIME_EVENT_HEADER,
 } from "../../internal-runtime-context.js";
 import type { CurrentInboundPromptContext } from "./params.js";
 
-const OPENCLAW_RUNTIME_EVENT_USER_PROMPT = "Continue the OpenClaw runtime event.";
+const AFORA_RUNTIME_EVENT_USER_PROMPT = "Continue the Afora runtime event.";
 
 type RuntimeContextPromptParts = {
   prompt: string;
@@ -28,7 +28,7 @@ export type RuntimeContextCustomMessage = {
   customType: string;
   content: string;
   display: false;
-  details: { source: "openclaw-runtime-context"; runtimeContextCarrier: true };
+  details: { source: "afora-runtime-context"; runtimeContextCarrier: true };
   timestamp: number;
 };
 
@@ -201,8 +201,8 @@ export function resolveRuntimeContextPromptParts(params: {
   if (!prompt.trim()) {
     return runtimeContext
       ? {
-          prompt: OPENCLAW_RUNTIME_EVENT_USER_PROMPT,
-          ...(modelPromptText.trim() && modelPromptText !== OPENCLAW_RUNTIME_EVENT_USER_PROMPT
+          prompt: AFORA_RUNTIME_EVENT_USER_PROMPT,
+          ...(modelPromptText.trim() && modelPromptText !== AFORA_RUNTIME_EVENT_USER_PROMPT
             ? { modelPrompt: modelPromptText }
             : {}),
           runtimeContext,
@@ -253,9 +253,9 @@ function buildRuntimeContextMessageContent(params: {
   // into user-visible surfaces (e.g. Feishu streaming cards, #92589).
   return [
     params.kind === "runtime-event"
-      ? OPENCLAW_RUNTIME_EVENT_HEADER
-      : OPENCLAW_NEXT_TURN_RUNTIME_CONTEXT_HEADER,
-    OPENCLAW_RUNTIME_CONTEXT_NOTICE,
+      ? AFORA_RUNTIME_EVENT_HEADER
+      : AFORA_NEXT_TURN_RUNTIME_CONTEXT_HEADER,
+    AFORA_RUNTIME_CONTEXT_NOTICE,
     "",
     INTERNAL_RUNTIME_CONTEXT_BEGIN,
     params.runtimeContext,
@@ -273,13 +273,13 @@ export function buildRuntimeContextCustomMessage(
   }
   return {
     role: "custom",
-    customType: OPENCLAW_RUNTIME_CONTEXT_CUSTOM_TYPE,
+    customType: AFORA_RUNTIME_CONTEXT_CUSTOM_TYPE,
     content: buildRuntimeContextMessageContent({
       runtimeContext: trimmedRuntimeContext,
       kind: "next-turn",
     }),
     display: false,
-    details: { source: "openclaw-runtime-context", runtimeContextCarrier: true },
+    details: { source: "afora-runtime-context", runtimeContextCarrier: true },
     timestamp: Date.now(),
   };
 }

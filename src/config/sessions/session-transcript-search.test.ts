@@ -4,12 +4,12 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../../infra/kysely-sync.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
+import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.generated.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import type { TranscriptEvent } from "./session-accessor.js";
 import {
   appendTranscriptEvent,
@@ -29,7 +29,7 @@ type TestPaths = { stateDir: string; tempDir: string };
 let paths: TestPaths;
 
 beforeEach(() => {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-session-search-"));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-session-search-"));
   paths = {
     stateDir: path.join(tempDir, "state"),
     tempDir,
@@ -37,7 +37,7 @@ beforeEach(() => {
 });
 
 function env(): NodeJS.ProcessEnv {
-  return { ...process.env, OPENCLAW_STATE_DIR: paths.stateDir };
+  return { ...process.env, AFORA_STATE_DIR: paths.stateDir };
 }
 
 function transcriptScope(sessionId: string, sessionKey: string) {
@@ -81,18 +81,18 @@ async function waitForSearchReconcile(query: string): Promise<void> {
 
 afterEach(async () => {
   await waitForSearchReconcile("cleanup-probe");
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   fs.rmSync(paths.tempDir, { recursive: true, force: true });
 });
 
 function agentKysely() {
-  const database = openOpenClawAgentDatabase({ agentId: "main", env: env() });
+  const database = openAforaAgentDatabase({ agentId: "main", env: env() });
   return {
     db: database.db,
     kysely: getNodeSqliteKysely<
       Pick<
-        OpenClawAgentKyselyDatabase,
+        AforaAgentKyselyDatabase,
         "session_transcript_fts" | "session_transcript_index_state" | "transcript_events"
       >
     >(database.db),

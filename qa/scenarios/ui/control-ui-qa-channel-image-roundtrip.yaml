@@ -81,7 +81,7 @@ flow:
           args:
             - pageId:
                 ref: uiPageId
-              selector: openclaw-app
+              selector: afora-app
               timeoutMs:
                 expr: liveTurnTimeoutMs(env, 45000)
         - try:
@@ -98,7 +98,7 @@ flow:
                 args:
                   - pageId:
                       ref: uiPageId
-                    expression: "(() => { const fallback = document.getElementById('openclaw-mount-fallback'); return { appDefined: Boolean(customElements.get('openclaw-app')), shellPresent: Boolean(document.querySelector('openclaw-app-shell')), composerPresent: Boolean(document.querySelector('.agent-chat__composer-combobox textarea')), fallbackHidden: fallback?.hidden === true }; })()"
+                    expression: "(() => { const fallback = document.getElementById('afora-mount-fallback'); return { appDefined: Boolean(customElements.get('afora-app')), shellPresent: Boolean(document.querySelector('afora-app-shell')), composerPresent: Boolean(document.querySelector('.agent-chat__composer-combobox textarea')), fallbackHidden: fallback?.hidden === true }; })()"
                     timeoutMs:
                       expr: liveTurnTimeoutMs(env, 15000)
             catch:
@@ -107,7 +107,7 @@ flow:
                 args:
                   - pageId:
                       ref: uiPageId
-                    expression: "(() => { const fallback = document.getElementById('openclaw-mount-fallback'); return { appDefined: Boolean(customElements.get('openclaw-app')), shellPresent: Boolean(document.querySelector('openclaw-app-shell')), composerPresent: Boolean(document.querySelector('.agent-chat__composer-combobox textarea')), fallbackHidden: fallback?.hidden === true }; })()"
+                    expression: "(() => { const fallback = document.getElementById('afora-mount-fallback'); return { appDefined: Boolean(customElements.get('afora-app')), shellPresent: Boolean(document.querySelector('afora-app-shell')), composerPresent: Boolean(document.querySelector('.agent-chat__composer-combobox textarea')), fallbackHidden: fallback?.hidden === true }; })()"
                     timeoutMs:
                       expr: liveTurnTimeoutMs(env, 15000)
               - throw:
@@ -169,7 +169,7 @@ flow:
           args:
             - pageId:
                 ref: uiAckPageId
-              selector: openclaw-app
+              selector: afora-app
               timeoutMs:
                 expr: liveTurnTimeoutMs(env, 45000)
         - try:
@@ -196,7 +196,7 @@ flow:
                 args:
                   - pageId:
                       ref: uiAckPageId
-                    expression: "(() => { const app = document.querySelector('openclaw-app'); return app ? { sessionKey: app.sessionKey, settingsSessionKey: app.settings?.sessionKey, lastActiveSessionKey: app.settings?.lastActiveSessionKey, chatMessages: Array.isArray(app.chatMessages) ? app.chatMessages.length : null, chatLoading: app.chatLoading, lastError: app.lastError, connected: app.connected } : null; })()"
+                    expression: "(() => { const app = document.querySelector('afora-app'); return app ? { sessionKey: app.sessionKey, settingsSessionKey: app.settings?.sessionKey, lastActiveSessionKey: app.settings?.lastActiveSessionKey, chatMessages: Array.isArray(app.chatMessages) ? app.chatMessages.length : null, chatLoading: app.chatLoading, lastError: app.lastError, connected: app.connected } : null; })()"
                     timeoutMs:
                       expr: liveTurnTimeoutMs(env, 15000)
               - throw:
@@ -268,7 +268,7 @@ flow:
           args:
             - pageId:
                 ref: uiImagePageId
-              selector: openclaw-app
+              selector: afora-app
               timeoutMs:
                 expr: liveTurnTimeoutMs(env, 45000)
         - try:
@@ -295,7 +295,7 @@ flow:
                 args:
                   - pageId:
                       ref: uiImagePageId
-                    expression: "(() => { const app = document.querySelector('openclaw-app'); return app ? { sessionKey: app.sessionKey, settingsSessionKey: app.settings?.sessionKey, lastActiveSessionKey: app.settings?.lastActiveSessionKey, chatMessages: Array.isArray(app.chatMessages) ? app.chatMessages.length : null, chatLoading: app.chatLoading, lastError: app.lastError, connected: app.connected } : null; })()"
+                    expression: "(() => { const app = document.querySelector('afora-app'); return app ? { sessionKey: app.sessionKey, settingsSessionKey: app.settings?.sessionKey, lastActiveSessionKey: app.settings?.lastActiveSessionKey, chatMessages: Array.isArray(app.chatMessages) ? app.chatMessages.length : null, chatLoading: app.chatLoading, lastError: app.lastError, connected: app.connected } : null; })()"
                     timeoutMs:
                       expr: liveTurnTimeoutMs(env, 15000)
               - throw:

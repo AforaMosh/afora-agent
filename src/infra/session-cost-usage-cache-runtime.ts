@@ -1,5 +1,5 @@
 import { resolveSessionTranscriptsDirForAgent } from "../config/sessions/paths.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { runTasksWithConcurrency } from "../utils/run-with-concurrency.js";
 import { formatErrorMessage } from "./errors.js";
@@ -38,7 +38,7 @@ const logger = createSubsystemLogger("usage-cost-cache");
 
 type UsageCostRefreshState = {
   agentId: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   databasePath: string;
   fullRefreshRequested: boolean;
   pendingSessionFiles: Set<string>;
@@ -54,7 +54,7 @@ export async function loadCostUsageSummary(params: {
   startMs?: number;
   endMs?: number;
   dayBucket?: UsageDailyBucket;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId: string;
 }): Promise<CostUsageSummary> {
   const now = Date.now();
@@ -90,7 +90,7 @@ export async function loadCostUsageSummaryFromCache(params: {
   startMs: number;
   endMs: number;
   dayBucket?: UsageDailyBucket;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId: string;
   requestRefresh?: boolean;
   refreshMode?: "background" | "sync-when-empty";
@@ -133,7 +133,7 @@ export async function loadCostUsageSummaryFromCache(params: {
 
 export async function loadSessionCostSummariesFromCache(params: {
   sessions: Array<{ sessionId?: string; sessionFile: string }>;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId: string;
   startMs?: number;
   endMs?: number;
@@ -205,7 +205,7 @@ export async function loadSessionCostSummariesFromCache(params: {
 }
 
 function requestCostUsageCacheRefresh(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId: string;
   sessionFiles?: string[];
 }): void {
@@ -235,7 +235,7 @@ function requestCostUsageCacheRefresh(params: {
 function mergeUsageCostRefreshRequest(
   state: UsageCostRefreshState,
   params: {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     agentId: string;
     sessionFiles?: string[];
   },
@@ -332,7 +332,7 @@ function clearUsageCostRefreshesForTest(): void {
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.sessionCostUsageTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.sessionCostUsageTestApi")] = {
     requestCostUsageCacheRefresh,
     usageCostRefreshRuntime,
     clearUsageCostRefreshesForTest,

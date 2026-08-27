@@ -1,4 +1,4 @@
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
 /**
  * Builds prepared runtime plans consumed by embedded agent runs. A plan
  * centralizes provider hooks, auth, tool schema policy, transcript policy,
@@ -7,7 +7,7 @@ import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
 import type { TSchema } from "typebox";
 import { isSilentReplyPayloadText, SILENT_REPLY_TOKEN } from "../../auto-reply/tokens.js";
 import { projectConfigOntoRuntimeSourceSnapshot } from "../../config/config.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { hasReplyPayloadContent } from "../../interactive/payload.js";
 import {
   isPluginMetadataSnapshotCompatible,
@@ -46,8 +46,8 @@ function formatResolvedRef(params: { provider: string; modelId: string }): strin
   return `${params.provider}/${params.modelId}`;
 }
 
-function asOpenClawConfig(value: unknown): OpenClawConfig | undefined {
-  return asOptionalRecord(value) as OpenClawConfig | undefined;
+function asAforaConfig(value: unknown): AforaConfig | undefined {
+  return asOptionalRecord(value) as AforaConfig | undefined;
 }
 
 function asProviderRuntimeModel(
@@ -62,7 +62,7 @@ type RuntimePlanMetadataParams = BuildAgentRuntimeDeliveryPlanParams & {
 
 function resolveCompatibleMetadataSnapshot(
   params: RuntimePlanMetadataParams,
-  config: OpenClawConfig | undefined = asOpenClawConfig(params.config),
+  config: AforaConfig | undefined = asAforaConfig(params.config),
 ): PluginMetadataSnapshot | undefined {
   const metadataSnapshot = params.metadataSnapshot as PluginMetadataSnapshot | undefined;
   return metadataSnapshot &&
@@ -96,7 +96,7 @@ function resolvePreparedProviderRuntimeHandle(
     ...resolveProviderRuntimePluginHandle({
       provider: params.provider,
       modelId: params.modelId,
-      config: asOpenClawConfig(params.config),
+      config: asAforaConfig(params.config),
       workspaceDir: params.workspaceDir,
       env: process.env,
       ...(compatibleMetadataSnapshot ? { pluginMetadataSnapshot: compatibleMetadataSnapshot } : {}),
@@ -110,7 +110,7 @@ function resolvePreparedProviderRuntimeHandle(
 export function buildAgentRuntimeDeliveryPlan(
   params: BuildAgentRuntimeDeliveryPlanParams,
 ): AgentRuntimeDeliveryPlan {
-  const config = asOpenClawConfig(params.config);
+  const config = asAforaConfig(params.config);
   const providerRuntimeHandle = resolvePreparedProviderRuntimeHandle(params);
   return {
     isSilentPayload(payload): boolean {
@@ -151,7 +151,7 @@ function buildAgentRuntimeOutcomePlan(): AgentRuntimeOutcomePlan {
 
 /** Build the complete runtime plan for an embedded agent attempt. */
 export function buildAgentRuntimePlan(params: BuildAgentRuntimePlanParams): AgentRuntimePlan {
-  const config = asOpenClawConfig(params.config);
+  const config = asAforaConfig(params.config);
   const model = asProviderRuntimeModel(params.model);
   const modelApi = params.modelApi ?? params.model?.api ?? undefined;
   const transport = params.resolvedTransport;
@@ -283,7 +283,7 @@ export function buildAgentRuntimePlan(params: BuildAgentRuntimePlanParams): Agen
           runtimeHandle: providerRuntimeHandleForPlugins,
           context: {
             ...context,
-            config: asOpenClawConfig(context.config),
+            config: asAforaConfig(context.config),
           },
         });
       },
@@ -295,7 +295,7 @@ export function buildAgentRuntimePlan(params: BuildAgentRuntimePlanParams): Agen
           runtimeHandle: providerRuntimeHandleForPlugins,
           context: {
             ...context,
-            config: asOpenClawConfig(context.config),
+            config: asAforaConfig(context.config),
           },
         });
       },

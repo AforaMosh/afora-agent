@@ -1,13 +1,13 @@
 /**
  * Normalizes and sanitizes Codex dynamic-tool progress payloads before they are
- * emitted into OpenClaw events or logs.
+ * emitted into Afora events or logs.
  */
 import {
   inferToolMetaFromArgs,
   type EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams,
   type ToolProgressDetailMode,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { redactSensitiveFieldValue, redactToolPayloadText } from "openclaw/plugin-sdk/logging-core";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { redactSensitiveFieldValue, redactToolPayloadText } from "afora-agent/plugin-sdk/logging-core";
 import {
   isJsonObject,
   type CodexDynamicToolCallParams,
@@ -15,7 +15,7 @@ import {
   type JsonValue,
 } from "./protocol.js";
 
-/** Maps OpenClaw tool-progress config to the mode used by Codex progress metadata. */
+/** Maps Afora tool-progress config to the mode used by Codex progress metadata. */
 export function resolveCodexToolProgressDetailMode(
   value: EmbeddedRunAttemptParams["toolProgressDetail"],
 ): ToolProgressDetailMode {

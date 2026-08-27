@@ -1,6 +1,6 @@
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
-import type { ProviderAuthMethod } from "openclaw/plugin-sdk/plugin-entry";
-import type { OAuthCredential } from "openclaw/plugin-sdk/provider-auth";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
+import type { ProviderAuthMethod } from "afora-agent/plugin-sdk/plugin-entry";
+import type { OAuthCredential } from "afora-agent/plugin-sdk/provider-auth";
 
 const PROVIDER_ID = "xai";
 const XAI_OAUTH_METHOD_ID = "oauth";

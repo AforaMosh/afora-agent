@@ -1,8 +1,8 @@
 // Resolves package version metadata for CLI and library callers.
 import { createRequire } from "node:module";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 
-const CORE_PACKAGE_NAME = "openclaw";
+const CORE_PACKAGE_NAME = "afora";
 
 const PACKAGE_JSON_CANDIDATES = [
   "../package.json",
@@ -134,8 +134,8 @@ function resolveVersionFromRuntimeSources(params: {
 }): string {
   const preferredCandidates =
     params.preference === "env-first"
-      ? [params.env["OPENCLAW_VERSION"], params.runtimeVersion]
-      : [params.runtimeVersion, params.env["OPENCLAW_VERSION"]];
+      ? [params.env["AFORA_VERSION"], params.runtimeVersion]
+      : [params.runtimeVersion, params.env["AFORA_VERSION"]];
   return (
     firstNonEmpty(...preferredCandidates, params.env["npm_package_version"]) ?? params.fallback
   );
@@ -165,7 +165,7 @@ export function resolveCompatibilityHostVersion(
   env: RuntimeVersionEnv = process.env as RuntimeVersionEnv,
   fallback = RUNTIME_SERVICE_VERSION_FALLBACK,
 ): string {
-  const explicitCompatibilityVersion = firstNonEmpty(env.OPENCLAW_COMPATIBILITY_HOST_VERSION);
+  const explicitCompatibilityVersion = firstNonEmpty(env.AFORA_COMPATIBILITY_HOST_VERSION);
   if (explicitCompatibilityVersion) {
     return explicitCompatibilityVersion;
   }
@@ -177,10 +177,10 @@ export function resolveCompatibilityHostVersion(
   });
 }
 
-// Single source of truth for the current OpenClaw version.
+// Single source of truth for the current Afora version.
 // - Embedded/bundled builds: bundled-version env var.
 // - Dev/npm builds: package.json.
 export const VERSION = resolveBinaryVersion({
   moduleUrl: import.meta.url,
-  bundledVersion: process.env.OPENCLAW_BUNDLED_VERSION,
+  bundledVersion: process.env.AFORA_BUNDLED_VERSION,
 });

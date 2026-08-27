@@ -2,9 +2,9 @@
 // non-interactive so agents can register a claw and manage friendships when
 // asked to by their owner; --json emits machine-readable results.
 import type { Command } from "commander";
-import { createChannelPairingController } from "openclaw/plugin-sdk/channel-pairing";
-import { mutateConfigFile } from "openclaw/plugin-sdk/config-mutation";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/core";
+import { createChannelPairingController } from "afora-agent/plugin-sdk/channel-pairing";
+import { mutateConfigFile } from "afora-agent/plugin-sdk/config-mutation";
+import type { AforaConfig } from "afora-agent/plugin-sdk/core";
 import { fingerprint } from "../protocol/index.js";
 import {
   parseReefRelayUrl,
@@ -123,7 +123,7 @@ async function loadConfiguredManager(output: ReefCliOutput): Promise<{
 }> {
   const config = currentReefConfig();
   if (!config?.handle) {
-    return await fail(output, "Reef is not configured. Run `openclaw reef register` first.");
+    return await fail(output, "Reef is not configured. Run `afora reef register` first.");
   }
   const keys = await loadOrCreateKeys(false);
   const runtime = getReefRuntime();
@@ -162,7 +162,7 @@ type RegisterOptions = {
 async function writeReefRegistration(candidate: ReefChannelConfig): Promise<void> {
   await mutateConfigFile({
     afterWrite: { mode: "auto" },
-    mutate(draft: OpenClawConfig) {
+    mutate(draft: AforaConfig) {
       draft.channels = {
         ...draft.channels,
         reef: candidate,
@@ -174,7 +174,7 @@ async function writeReefRegistration(candidate: ReefChannelConfig): Promise<void
 async function writeReefMigrationStateDir(stateDir: string): Promise<void> {
   await mutateConfigFile({
     afterWrite: { mode: "auto" },
-    mutate(draft: OpenClawConfig) {
+    mutate(draft: AforaConfig) {
       const existing = draft.channels?.reef;
       draft.channels = {
         ...draft.channels,
@@ -210,7 +210,7 @@ async function runRegister(output: ReefCliOutput, options: RegisterOptions): Pro
   ) {
     return await fail(
       output,
-      `This OpenClaw state already holds the Reef identity @${identity.handle} on ${identity.relayUrl}. Re-register the same handle and relay.`,
+      `This Afora state already holds the Reef identity @${identity.handle} on ${identity.relayUrl}. Re-register the same handle and relay.`,
     );
   }
   const requestedHandle = explicitHandle ?? identity?.handle;
@@ -394,7 +394,7 @@ async function runRegister(output: ReefCliOutput, options: RegisterOptions): Pro
   emit(output, { status: "registered", handle, relayUrl, fingerprint: printed }, [
     `Registered @${handle} on ${relayUrl}.`,
     `Safety fingerprint (share out of band): ${printed}`,
-    "Restart the gateway to connect: openclaw gateway restart",
+    "Restart the gateway to connect: afora gateway restart",
   ]);
 }
 

@@ -3,7 +3,7 @@
  * Keeps provider/model allow and hide rules aligned with catalog row metadata.
  */
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   resolveLogicalModelCatalogEntryState,
   resolveLogicalVisibleModelCatalog,
@@ -57,7 +57,7 @@ describe("resolveLogicalVisibleModelCatalog", () => {
       ];
 
       const result = await resolveLogicalVisibleModelCatalog({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         catalog,
         defaultProvider: "demo",
         view,
@@ -76,7 +76,7 @@ describe("resolveLogicalVisibleModelCatalog", () => {
     ];
 
     const result = await resolveLogicalVisibleModelCatalog({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       catalog,
       defaultProvider: "demo",
       view: "all",
@@ -96,7 +96,7 @@ describe("resolveLogicalVisibleModelCatalog", () => {
     ];
 
     const result = await resolveLogicalVisibleModelCatalog({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       catalog,
       defaultProvider: "openai",
       view: "all",
@@ -134,7 +134,7 @@ describe("resolveLogicalVisibleModelCatalog", () => {
           models: { "demo/alias-key": { alias: "legacy" } },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     // This unit test covers configured-row retention, not runtime plugin
     // discovery. Keep fake provider refs on the deterministic static path.
     const policy = createModelVisibilityPolicy({
@@ -163,7 +163,7 @@ describe("resolveLogicalVisibleModelCatalog", () => {
   it("dedupes physical routes after selected-route projection", async () => {
     const catalog = [platform, chatGPT];
     const result = await resolveLogicalVisibleModelCatalog({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       catalog,
       defaultProvider: "openai",
       view: "all",
@@ -202,7 +202,7 @@ describe("resolveLogicalVisibleModelCatalog", () => {
     const chatGPTSelected = { ...chatGPT, status };
     const catalog = [platformAvailable, chatGPTSelected];
     const result = await resolveLogicalVisibleModelCatalog({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       catalog,
       routeVariants: catalog,
       defaultProvider: "openai",
@@ -224,7 +224,7 @@ describe("resolveLogicalVisibleModelCatalog", () => {
 
   it("omits physical capabilities while managed route selection is unresolved", async () => {
     const result = await resolveLogicalVisibleModelCatalog({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       catalog: [platform],
       defaultProvider: "openai",
       view: "all",
@@ -271,7 +271,7 @@ describe("resolveLogicalVisibleModelCatalog", () => {
       );
 
       const result = await resolveLogicalVisibleModelCatalog({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         catalog: [platformNano],
         routeVariants,
         defaultProvider: "openai",

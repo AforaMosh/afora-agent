@@ -1,15 +1,15 @@
 {
-  "name": "@openclaw/linux-canvas",
+  "name": "@afora/linux-canvas",
   "version": "2026.8.1",
-  "description": "OpenClaw Linux desktop canvas bridge",
+  "description": "Afora Linux desktop canvas bridge",
   "type": "module",
   "dependencies": {
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

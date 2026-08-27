@@ -5,7 +5,7 @@ type BeforeToolCallBlockedErrorTestApi = {
 };
 
 const testing = (globalThis as Record<PropertyKey, unknown>)[
-  Symbol.for("openclaw.beforeToolCallBlockedErrorTestApi")
+  Symbol.for("afora.beforeToolCallBlockedErrorTestApi")
 ] as BeforeToolCallBlockedErrorTestApi;
 
 export function createBeforeToolCallBlockedError(message: string): Error {

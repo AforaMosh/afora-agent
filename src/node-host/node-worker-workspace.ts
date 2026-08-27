@@ -554,7 +554,7 @@ export class NodeWorkerWorkspaceRuntime {
           workspaceSessionKey(session.environmentHash, session.sessionHash),
         );
         if (!hasLocalProtection && retainedManifestRefs !== null) {
-          const manifestRoot = path.join(session.sessionRoot, ".openclaw-worker", "manifests");
+          const manifestRoot = path.join(session.sessionRoot, ".afora-worker", "manifests");
           for (const entry of await listOwnedEntries(manifestRoot)) {
             if (
               !entry.isFile() ||
@@ -593,7 +593,7 @@ export class NodeWorkerWorkspaceRuntime {
           key.startsWith(sessionPrefix),
         );
         if (!hasGenerationOrArtifact && !hasAuthoritativeRetain && !hasCurrentLocalProtection()) {
-          const metadataRoot = path.join(session.sessionRoot, ".openclaw-worker");
+          const metadataRoot = path.join(session.sessionRoot, ".afora-worker");
           if (deleted >= WORKSPACE_RETENTION_DELETE_LIMIT) {
             hasMore = true;
             return;

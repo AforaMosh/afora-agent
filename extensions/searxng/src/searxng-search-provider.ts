@@ -1,10 +1,10 @@
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 // Searxng provider module implements model/runtime integration.
-import { readPositiveIntegerParam, readStringParam } from "openclaw/plugin-sdk/param-readers";
+import { readPositiveIntegerParam, readStringParam } from "afora-agent/plugin-sdk/param-readers";
 import {
   createWebSearchProviderContractFields,
   type WebSearchProviderPlugin,
-} from "openclaw/plugin-sdk/provider-web-search-contract";
+} from "afora-agent/plugin-sdk/provider-web-search-contract";
 
 const SEARXNG_CREDENTIAL_PATH = "plugins.entries.searxng.config.webSearch.baseUrl";
 

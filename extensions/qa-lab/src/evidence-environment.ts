@@ -28,7 +28,7 @@ export function resolveQaEvidenceEnvironment(params: {
     // GitHub's GITHUB_SHA describes the workflow event, not necessarily the
     // checked-out ref selected by a manual or remote QA run.
     ref:
-      params.env?.OPENCLAW_QA_REF?.trim() ||
+      params.env?.AFORA_QA_REF?.trim() ||
       resolveQaEvidenceCheckoutRef(params.repoRoot) ||
       params.env?.GITHUB_SHA?.trim() ||
       null,

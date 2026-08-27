@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { retireSessionMcpRuntime } from "../../agents/agent-bundle-mcp-tools.js";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import { clearBootstrapSnapshotOnSessionBoundary } from "../../agents/bootstrap-cache.js";
@@ -53,7 +53,7 @@ import {
   type SessionEntry,
   type SessionScope,
 } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   forgetActiveSessionForShutdown,
   noteActiveSessionForShutdown,
@@ -143,7 +143,7 @@ function resolveExplicitSessionEndReason(matchedResetTriggerLower?: string): Rep
 }
 
 function resolveSessionDefaultAccountId(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channelRaw?: string;
   accountIdRaw?: string;
   persistedLastAccountId?: string;
@@ -199,7 +199,7 @@ export type SessionInitResult = {
 };
 
 type InitSessionStateParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   commandAuthorized: boolean;
   ctx: FinalizedRuntimeMsgContext;
   expectedExistingSessionId?: string;
@@ -223,7 +223,7 @@ type InitSessionStateAttemptOutcome =
   | { kind: "lifecycle-mutation"; sessionId: string; sessionKey: string };
 
 function resolveSessionConversationBindingContext(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   ctx: MsgContext,
 ): {
   channel: string;
@@ -249,7 +249,7 @@ function resolveSessionConversationBindingContext(
 }
 
 function resolveBoundConversationSessionKey(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   ctx: MsgContext;
   touch?: boolean;
   bindingContext?: {

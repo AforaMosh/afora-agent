@@ -1,7 +1,7 @@
 // Open policy allow-from tests cover doctor handling of open allowlist policy.
 import { describe, expect, it } from "vitest";
 import type { GoogleChatConfig } from "../../../config/types.googlechat.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { GoogleChatConfigSchema } from "../../../config/zod-schema.providers-googlechat.js";
 import {
   collectOpenPolicyAllowFromWarnings,
@@ -121,7 +121,7 @@ describe("doctor open-policy allowFrom repair", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig);
+    } as unknown as AforaConfig);
 
     expect(result.changes).toEqual([
       '- channels.discord.dmPolicy: set to "open" (migrated from channels.discord.dm.policy)',
@@ -180,7 +180,7 @@ describe("doctor open-policy allowFrom repair", () => {
       channels: {
         qqbot: {
           dmPolicy: "open",
-          allowFrom: ["openclaw:approval-disabled"],
+          allowFrom: ["afora:approval-disabled"],
           accounts: {
             work: {
               dmPolicy: "open",
@@ -189,7 +189,7 @@ describe("doctor open-policy allowFrom repair", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const first = maybeRepairOpenPolicyAllowFrom(config);
     const second = maybeRepairOpenPolicyAllowFrom(first.config);
@@ -201,12 +201,12 @@ describe("doctor open-policy allowFrom repair", () => {
   it("formats open-policy wildcard warnings", () => {
     const warnings = collectOpenPolicyAllowFromWarnings({
       changes: ['- channels.signal.allowFrom: set to ["*"] (required by dmPolicy="open")'],
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     expect(warnings).toEqual([
       '- channels.signal.allowFrom: set to ["*"] (required by dmPolicy="open")',
-      '- Run "openclaw doctor --fix" to add missing allowFrom wildcards.',
+      '- Run "afora doctor --fix" to add missing allowFrom wildcards.',
     ]);
   });
 });

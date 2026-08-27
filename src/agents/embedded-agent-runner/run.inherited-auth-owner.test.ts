@@ -1,6 +1,6 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { listAgentIds } from "../agent-scope-config.js";
 import { makeAttemptResult } from "./run.overflow-compaction.fixture.js";
 import {
@@ -11,14 +11,14 @@ import {
   overflowBaseRunParams,
 } from "./run.overflow-compaction.harness.js";
 
-function projectSetupExecutionConfig(source: OpenClawConfig): OpenClawConfig {
+function projectSetupExecutionConfig(source: AforaConfig): AforaConfig {
   return {
     ...source,
     agents: {
       ...source.agents,
       entries: {
         ...(source.agents?.entries ?? { main: {} }),
-        openclaw: {},
+        afora: {},
       },
     },
   };
@@ -28,11 +28,11 @@ describe("embedded setup inference inherited auth owner", () => {
   it.each([
     { name: "a pre-roster config", source: {} },
     { name: "a sole-agent config", source: { agents: { entries: { main: {} } } } },
-  ] satisfies Array<{ name: string; source: OpenClawConfig }>)(
+  ] satisfies Array<{ name: string; source: AforaConfig }>)(
     "prepares the explicit main agent from $name",
     async ({ name, source }) => {
       const config = projectSetupExecutionConfig(source);
-      expect(listAgentIds(config)).toEqual(["main", "openclaw"]);
+      expect(listAgentIds(config)).toEqual(["main", "afora"]);
 
       const { runEmbeddedAgent } = await loadRunOverflowCompactionHarness();
       mockedBuildEmbeddedRunPayloads.mockReturnValue([{ text: "OK" }]);

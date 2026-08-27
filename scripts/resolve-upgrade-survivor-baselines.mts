@@ -185,7 +185,7 @@ function resolveAllSince(args: Map<string, string>, minimumVersion: string) {
  */
 export function resolveBaselines(args: Map<string, string>) {
   const requested = args.get("requested") ?? "";
-  const fallback = args.get("fallback") ?? "openclaw@latest";
+  const fallback = args.get("fallback") ?? "afora-agent@latest";
   const requestedTokens = splitSpecs(requested);
   if (requestedTokens.length === 0) {
     return dedupeSpecs([fallback]);

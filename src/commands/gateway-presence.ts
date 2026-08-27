@@ -1,5 +1,5 @@
 /** Extracts the gateway's self presence entry from status/presence payloads. */
-import { readStringValue } from "@openclaw/normalization-core/string-coerce";
+import { readStringValue } from "@afora/normalization-core/string-coerce";
 
 type GatewaySelfPresence = {
   host?: string;

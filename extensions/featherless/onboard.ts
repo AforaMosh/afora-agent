@@ -1,5 +1,5 @@
 // Featherless onboarding applies the curated model catalog and default.
-import { createModelCatalogPresetAppliers } from "openclaw/plugin-sdk/provider-onboard";
+import { createModelCatalogPresetAppliers } from "afora-agent/plugin-sdk/provider-onboard";
 import {
   buildFeatherlessCatalogModels,
   FEATHERLESS_BASE_URL,

@@ -1,12 +1,12 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { chatHistoryHandlers } from "./chat-history-handler.js";
 import type { GatewayRequestContext, RespondFn } from "./types.js";
 
 describe("chat metadata ownership", () => {
   it("returns a typed selection error for an ownerless explicit fleet", async () => {
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       agents: {
         ownership: "explicit",
         entries: { ops: {}, research: {} },

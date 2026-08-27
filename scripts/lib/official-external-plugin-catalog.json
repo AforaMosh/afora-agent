@@ -1,33 +1,33 @@
 {
   "schemaVersion": 1,
-  "id": "openclaw-official-external-plugins",
+  "id": "afora-official-external-plugins",
   "generatedAt": "2026-06-22T00:00:00.000Z",
   "sequence": 1,
-  "description": "Bundled fallback feed for official external OpenClaw plugins.",
+  "description": "Bundled fallback feed for official external Afora plugins.",
   "entries": [
     {
-      "name": "@openclaw/acpx",
-      "description": "OpenClaw ACP runtime backend",
+      "name": "@afora/acpx",
+      "description": "Afora ACP runtime backend",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "acpx",
           "label": "ACPX Runtime"
         },
         "install": {
-          "npmSpec": "@openclaw/acpx",
+          "npmSpec": "@afora/acpx",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.4.25"
         }
       }
     },
     {
-      "name": "@openclaw/brave-plugin",
-      "description": "OpenClaw Brave plugin",
+      "name": "@afora/brave-plugin",
+      "description": "Afora Brave plugin",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "brave",
           "label": "Brave"
@@ -42,13 +42,13 @@
             "envVars": ["BRAVE_API_KEY"],
             "placeholder": "BSA...",
             "signupUrl": "https://api-dashboard.search.brave.com/app/keys",
-            "docsUrl": "https://docs.openclaw.ai/tools/brave-search",
+            "docsUrl": "https://docs.afora.ai/tools/brave-search",
             "credentialPath": "plugins.entries.brave.config.webSearch.apiKey",
             "autoDetectOrder": 10
           }
         ],
         "install": {
-          "npmSpec": "@openclaw/brave-plugin",
+          "npmSpec": "@afora/brave-plugin",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.4.10",
           "allowInvalidConfigRecovery": true
@@ -56,11 +56,11 @@
       }
     },
     {
-      "name": "@openclaw/codex",
-      "description": "OpenClaw Codex app-server harness and native session catalog",
+      "name": "@afora/codex",
+      "description": "Afora Codex app-server harness and native session catalog",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "codex",
           "label": "Codex"
@@ -69,72 +69,72 @@
           "migrationProviders": ["codex"]
         },
         "install": {
-          "npmSpec": "@openclaw/codex",
+          "npmSpec": "@afora/codex",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.5.1-beta.1"
         }
       }
     },
     {
-      "name": "@openclaw/copilot",
-      "description": "OpenClaw GitHub Copilot agent runtime plugin",
+      "name": "@afora/copilot",
+      "description": "Afora GitHub Copilot agent runtime plugin",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "copilot",
           "label": "GitHub Copilot agent runtime"
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/copilot",
-          "npmSpec": "@openclaw/copilot",
+          "clawhubSpec": "clawhub:@afora/copilot",
+          "npmSpec": "@afora/copilot",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.5.28"
         }
       }
     },
     {
-      "name": "@openclaw/diagnostics-otel",
-      "description": "OpenClaw diagnostics OpenTelemetry exporter",
+      "name": "@afora/diagnostics-otel",
+      "description": "Afora diagnostics OpenTelemetry exporter",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "diagnostics-otel",
           "label": "Diagnostics OpenTelemetry"
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/diagnostics-otel",
-          "npmSpec": "@openclaw/diagnostics-otel",
+          "clawhubSpec": "clawhub:@afora/diagnostics-otel",
+          "npmSpec": "@afora/diagnostics-otel",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.4.25"
         }
       }
     },
     {
-      "name": "@openclaw/diagnostics-prometheus",
-      "description": "OpenClaw diagnostics Prometheus exporter",
+      "name": "@afora/diagnostics-prometheus",
+      "description": "Afora diagnostics Prometheus exporter",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "diagnostics-prometheus",
           "label": "Diagnostics Prometheus"
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/diagnostics-prometheus",
-          "npmSpec": "@openclaw/diagnostics-prometheus",
+          "clawhubSpec": "clawhub:@afora/diagnostics-prometheus",
+          "npmSpec": "@afora/diagnostics-prometheus",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.4.25"
         }
       }
     },
     {
-      "name": "@openclaw/diffs",
-      "description": "OpenClaw diff viewer plugin",
+      "name": "@afora/diffs",
+      "description": "Afora diff viewer plugin",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "diffs",
           "label": "Diffs"
@@ -144,37 +144,37 @@
           "order": 40
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/diffs",
-          "npmSpec": "@openclaw/diffs",
+          "clawhubSpec": "clawhub:@afora/diffs",
+          "npmSpec": "@afora/diffs",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.4.30"
         }
       }
     },
     {
-      "name": "@openclaw/diffs-language-pack",
-      "description": "OpenClaw diffs viewer syntax highlighting language pack",
+      "name": "@afora/diffs-language-pack",
+      "description": "Afora diffs viewer syntax highlighting language pack",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "diffs-language-pack",
           "label": "Diff Viewer Language Pack"
         },
         "install": {
-          "npmSpec": "@openclaw/diffs-language-pack",
-          "clawhubSpec": "clawhub:@openclaw/diffs-language-pack",
+          "npmSpec": "@afora/diffs-language-pack",
+          "clawhubSpec": "clawhub:@afora/diffs-language-pack",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.5.27"
         }
       }
     },
     {
-      "name": "@openclaw/duckduckgo-plugin",
-      "description": "OpenClaw DuckDuckGo plugin.",
+      "name": "@afora/duckduckgo-plugin",
+      "description": "Afora DuckDuckGo plugin.",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "duckduckgo",
           "label": "DuckDuckGo"
@@ -196,25 +196,25 @@
             "envVars": [],
             "placeholder": "(no key needed)",
             "signupUrl": "https://duckduckgo.com/",
-            "docsUrl": "https://docs.openclaw.ai/tools/duckduckgo-search",
+            "docsUrl": "https://docs.afora.ai/tools/duckduckgo-search",
             "credentialPath": "",
             "autoDetectOrder": 100
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/duckduckgo-plugin",
-          "npmSpec": "@openclaw/duckduckgo-plugin",
+          "clawhubSpec": "clawhub:@afora/duckduckgo-plugin",
+          "npmSpec": "@afora/duckduckgo-plugin",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.7.2"
         }
       }
     },
     {
-      "name": "@openclaw/exa-plugin",
-      "description": "OpenClaw Exa plugin.",
+      "name": "@afora/exa-plugin",
+      "description": "Afora Exa plugin.",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "exa",
           "label": "Exa"
@@ -238,25 +238,25 @@
             ],
             "placeholder": "exa-...",
             "signupUrl": "https://exa.ai/",
-            "docsUrl": "https://docs.openclaw.ai/tools/web",
+            "docsUrl": "https://docs.afora.ai/tools/web",
             "credentialPath": "plugins.entries.exa.config.webSearch.apiKey",
             "autoDetectOrder": 65
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/exa-plugin",
-          "npmSpec": "@openclaw/exa-plugin",
+          "clawhubSpec": "clawhub:@afora/exa-plugin",
+          "npmSpec": "@afora/exa-plugin",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/firecrawl-plugin",
-      "description": "OpenClaw Firecrawl plugin.",
+      "name": "@afora/firecrawl-plugin",
+      "description": "Afora Firecrawl plugin.",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "firecrawl",
           "label": "Firecrawl"
@@ -288,7 +288,7 @@
             ],
             "placeholder": "fc-...",
             "signupUrl": "https://www.firecrawl.dev/",
-            "docsUrl": "https://docs.openclaw.ai/tools/firecrawl",
+            "docsUrl": "https://docs.afora.ai/tools/firecrawl",
             "credentialPath": "plugins.entries.firecrawl.config.webSearch.apiKey",
             "autoDetectOrder": 60
           },
@@ -303,60 +303,60 @@
             "envVars": [],
             "placeholder": "(no key needed)",
             "signupUrl": "https://www.firecrawl.dev/",
-            "docsUrl": "https://docs.openclaw.ai/tools/firecrawl",
+            "docsUrl": "https://docs.afora.ai/tools/firecrawl",
             "credentialPath": ""
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/firecrawl-plugin",
-          "npmSpec": "@openclaw/firecrawl-plugin",
+          "clawhubSpec": "clawhub:@afora/firecrawl-plugin",
+          "npmSpec": "@afora/firecrawl-plugin",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/fish-audio-speech",
-      "description": "OpenClaw Fish Audio speech plugin.",
+      "name": "@afora/fish-audio-speech",
+      "description": "Afora Fish Audio speech plugin.",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "legacyPluginIds": ["fish-audio"],
         "plugin": {
           "id": "fish-audio-speech",
           "label": "Fish Audio Speech"
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/fish-audio-speech",
-          "npmSpec": "@openclaw/fish-audio-speech",
+          "clawhubSpec": "clawhub:@afora/fish-audio-speech",
+          "npmSpec": "@afora/fish-audio-speech",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.7.2"
         }
       }
     },
     {
-      "name": "@openclaw/google-meet",
-      "description": "OpenClaw Google Meet participant plugin",
+      "name": "@afora/google-meet",
+      "description": "Afora Google Meet participant plugin",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "google-meet",
           "label": "Google Meet"
         },
         "install": {
-          "npmSpec": "@openclaw/google-meet",
+          "npmSpec": "@afora/google-meet",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.4.20"
         }
       }
     },
     {
-      "name": "@openclaw/gradium-speech",
-      "description": "OpenClaw Gradium speech plugin.",
+      "name": "@afora/gradium-speech",
+      "description": "Afora Gradium speech plugin.",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "gradium",
           "label": "Gradium"
@@ -367,19 +367,19 @@
           ]
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/gradium-speech",
-          "npmSpec": "@openclaw/gradium-speech",
+          "clawhubSpec": "clawhub:@afora/gradium-speech",
+          "npmSpec": "@afora/gradium-speech",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/inworld-speech",
-      "description": "OpenClaw Inworld speech plugin.",
+      "name": "@afora/inworld-speech",
+      "description": "Afora Inworld speech plugin.",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "inworld",
           "label": "Inworld"
@@ -390,19 +390,19 @@
           ]
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/inworld-speech",
-          "npmSpec": "@openclaw/inworld-speech",
+          "clawhubSpec": "clawhub:@afora/inworld-speech",
+          "npmSpec": "@afora/inworld-speech",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/lobster",
+      "name": "@afora/lobster",
       "description": "Lobster workflow tool plugin (typed pipelines + resumable approvals)",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "lobster",
           "label": "Lobster"
@@ -412,19 +412,19 @@
           "order": 50
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/lobster",
-          "npmSpec": "@openclaw/lobster",
+          "clawhubSpec": "clawhub:@afora/lobster",
+          "npmSpec": "@afora/lobster",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.4.25"
         }
       }
     },
     {
-      "name": "@openclaw/memory-lancedb",
-      "description": "OpenClaw LanceDB-backed long-term memory plugin with auto-recall/capture",
+      "name": "@afora/memory-lancedb",
+      "description": "Afora LanceDB-backed long-term memory plugin with auto-recall/capture",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "memory-lancedb",
           "label": "Memory LanceDB"
@@ -434,19 +434,19 @@
           "order": 70
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/memory-lancedb",
-          "npmSpec": "@openclaw/memory-lancedb",
+          "clawhubSpec": "clawhub:@afora/memory-lancedb",
+          "npmSpec": "@afora/memory-lancedb",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.5.31"
         }
       }
     },
     {
-      "name": "@openclaw/llama-cpp-provider",
-      "description": "OpenClaw managed llama.cpp server provider plugin",
+      "name": "@afora/llama-cpp-provider",
+      "description": "Afora managed llama.cpp server provider plugin",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "llama-cpp",
           "label": "llama.cpp Provider"
@@ -455,35 +455,35 @@
           "embeddingProviders": ["local"]
         },
         "install": {
-          "npmSpec": "@openclaw/llama-cpp-provider",
+          "npmSpec": "@afora/llama-cpp-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.2"
         }
       }
     },
     {
-      "name": "@openclaw/openshell-sandbox",
-      "description": "OpenClaw OpenShell sandbox backend",
+      "name": "@afora/openshell-sandbox",
+      "description": "Afora OpenShell sandbox backend",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "openshell",
           "label": "OpenShell Sandbox"
         },
         "install": {
-          "npmSpec": "@openclaw/openshell-sandbox",
+          "npmSpec": "@afora/openshell-sandbox",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.5.12-beta.1"
         }
       }
     },
     {
-      "name": "@openclaw/parallel-plugin",
-      "description": "OpenClaw Parallel web search plugin.",
+      "name": "@afora/parallel-plugin",
+      "description": "Afora Parallel web search plugin.",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "parallel",
           "label": "Parallel"
@@ -508,7 +508,7 @@
             ],
             "placeholder": "par-...",
             "signupUrl": "https://platform.parallel.ai",
-            "docsUrl": "https://docs.openclaw.ai/tools/parallel-search",
+            "docsUrl": "https://docs.afora.ai/tools/parallel-search",
             "credentialPath": "plugins.entries.parallel.config.webSearch.apiKey",
             "autoDetectOrder": 75
           },
@@ -523,24 +523,24 @@
             "envVars": [],
             "placeholder": "(no key needed)",
             "signupUrl": "https://parallel.ai",
-            "docsUrl": "https://docs.openclaw.ai/tools/parallel-search",
+            "docsUrl": "https://docs.afora.ai/tools/parallel-search",
             "credentialPath": ""
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/parallel-plugin",
-          "npmSpec": "@openclaw/parallel-plugin",
+          "clawhubSpec": "clawhub:@afora/parallel-plugin",
+          "npmSpec": "@afora/parallel-plugin",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/perplexity-plugin",
-      "description": "OpenClaw Perplexity plugin.",
+      "name": "@afora/perplexity-plugin",
+      "description": "Afora Perplexity plugin.",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "perplexity",
           "label": "Perplexity"
@@ -565,43 +565,43 @@
             ],
             "placeholder": "pplx-...",
             "signupUrl": "https://www.perplexity.ai/settings/api",
-            "docsUrl": "https://docs.openclaw.ai/perplexity",
+            "docsUrl": "https://docs.afora.ai/perplexity",
             "credentialPath": "plugins.entries.perplexity.config.webSearch.apiKey",
             "autoDetectOrder": 50
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/perplexity-plugin",
-          "npmSpec": "@openclaw/perplexity-plugin",
+          "clawhubSpec": "clawhub:@afora/perplexity-plugin",
+          "npmSpec": "@afora/perplexity-plugin",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/pixverse-provider",
-      "description": "OpenClaw PixVerse video generation provider plugin",
+      "name": "@afora/pixverse-provider",
+      "description": "Afora PixVerse video generation provider plugin",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "pixverse",
           "label": "PixVerse"
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/pixverse-provider",
-          "npmSpec": "@openclaw/pixverse-provider",
+          "clawhubSpec": "clawhub:@afora/pixverse-provider",
+          "npmSpec": "@afora/pixverse-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.5.26"
         }
       }
     },
     {
-      "name": "@openclaw/searxng-plugin",
-      "description": "OpenClaw SearXNG plugin",
+      "name": "@afora/searxng-plugin",
+      "description": "Afora SearXNG plugin",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "searxng",
           "label": "SearXNG"
@@ -626,14 +626,14 @@
             ],
             "placeholder": "http://localhost:8080",
             "signupUrl": "https://docs.searxng.org/",
-            "docsUrl": "https://docs.openclaw.ai/tools/searxng-search",
+            "docsUrl": "https://docs.afora.ai/tools/searxng-search",
             "credentialPath": "plugins.entries.searxng.config.webSearch.baseUrl",
             "autoDetectOrder": 200
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/searxng-plugin",
-          "npmSpec": "@openclaw/searxng-plugin",
+          "clawhubSpec": "clawhub:@afora/searxng-plugin",
+          "npmSpec": "@afora/searxng-plugin",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.9",
           "allowInvalidConfigRecovery": true
@@ -641,11 +641,11 @@
       }
     },
     {
-      "name": "@openclaw/tavily-plugin",
-      "description": "OpenClaw Tavily plugin",
+      "name": "@afora/tavily-plugin",
+      "description": "Afora Tavily plugin",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "tavily",
           "label": "Tavily"
@@ -673,14 +673,14 @@
             ],
             "placeholder": "tvly-...",
             "signupUrl": "https://tavily.com/",
-            "docsUrl": "https://docs.openclaw.ai/tools/tavily",
+            "docsUrl": "https://docs.afora.ai/tools/tavily",
             "credentialPath": "plugins.entries.tavily.config.webSearch.apiKey",
             "autoDetectOrder": 70
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/tavily-plugin",
-          "npmSpec": "@openclaw/tavily-plugin",
+          "clawhubSpec": "clawhub:@afora/tavily-plugin",
+          "npmSpec": "@afora/tavily-plugin",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.9",
           "allowInvalidConfigRecovery": true
@@ -688,11 +688,11 @@
       }
     },
     {
-      "name": "@openclaw/teams-meetings",
-      "description": "OpenClaw Microsoft Teams browser meeting participant plugin.",
+      "name": "@afora/teams-meetings",
+      "description": "Afora Microsoft Teams browser meeting participant plugin.",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "teams-meetings",
           "label": "Microsoft Teams meetings"
@@ -706,19 +706,19 @@
           ]
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/teams-meetings",
-          "npmSpec": "@openclaw/teams-meetings",
+          "clawhubSpec": "clawhub:@afora/teams-meetings",
+          "npmSpec": "@afora/teams-meetings",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.7.2"
         }
       }
     },
     {
-      "name": "@openclaw/tokenjuice",
-      "description": "OpenClaw tokenjuice exec output compaction plugin",
+      "name": "@afora/tokenjuice",
+      "description": "Afora tokenjuice exec output compaction plugin",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "tokenjuice",
           "label": "Tokenjuice"
@@ -728,36 +728,36 @@
           "order": 60
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/tokenjuice",
-          "npmSpec": "@openclaw/tokenjuice",
+          "clawhubSpec": "clawhub:@afora/tokenjuice",
+          "npmSpec": "@afora/tokenjuice",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.5.28"
         }
       }
     },
     {
-      "name": "@openclaw/voice-call",
-      "description": "OpenClaw voice-call plugin",
+      "name": "@afora/voice-call",
+      "description": "Afora voice-call plugin",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "voice-call",
           "label": "Voice Call"
         },
         "install": {
-          "npmSpec": "@openclaw/voice-call",
+          "npmSpec": "@afora/voice-call",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.4.10"
         }
       }
     },
     {
-      "name": "@openclaw/zoom-meetings",
-      "description": "OpenClaw Zoom browser meeting participant plugin.",
+      "name": "@afora/zoom-meetings",
+      "description": "Afora Zoom browser meeting participant plugin.",
       "source": "official",
       "kind": "plugin",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "zoom-meetings",
           "label": "Zoom meetings"
@@ -771,8 +771,8 @@
           ]
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/zoom-meetings",
-          "npmSpec": "@openclaw/zoom-meetings",
+          "clawhubSpec": "clawhub:@afora/zoom-meetings",
+          "npmSpec": "@afora/zoom-meetings",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.7.2"
         }

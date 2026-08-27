@@ -1,4 +1,4 @@
-// Deprecated compatibility for released @openclaw/matrix packages.
+// Deprecated compatibility for released @afora/matrix packages.
 // Remove next major after supported Matrix versions no longer import this lazy lifecycle surface.
 
 export { ensureConfiguredAcpBindingReadyCore as ensureConfiguredAcpBindingReady } from "../acp/persistent-bindings.lifecycle.js";

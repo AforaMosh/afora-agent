@@ -1,5 +1,5 @@
 /** Resolves the selected native harness from a run-owned plugin registry. */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ProviderRouteOverridePresence } from "../../plugin-sdk/provider-model-types.js";
 import type { PluginRegistry } from "../../plugins/registry-types.js";
 import {
@@ -8,7 +8,7 @@ import {
 } from "../../plugins/runtime-degraded-state.js";
 import {
   isDefaultAgentRuntimeId,
-  OPENCLAW_AGENT_RUNTIME_ID,
+  AFORA_AGENT_RUNTIME_ID,
   normalizeOptionalAgentRuntimeId,
 } from "../agent-runtime-id.js";
 import { isCliRuntimeAliasForProvider } from "../model-runtime-aliases.js";
@@ -42,7 +42,7 @@ type AgentHarnessRuntimePayloadFailure = {
 export function resolveAgentHarnessRuntimeAvailability(params: {
   runtime: string;
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir: string;
   payloadFailures: readonly AgentHarnessRuntimePayloadFailure[];
   payloadCheckedPluginIds: readonly string[];
@@ -97,7 +97,7 @@ export function resolveAgentHarnessRuntimeAvailability(params: {
 export async function ensureSelectedAgentHarnessPlugin(params: {
   provider: string;
   modelId: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   sessionKey?: string;
   agentHarnessId?: string;
@@ -123,7 +123,7 @@ export async function ensureSelectedAgentHarnessPlugin(params: {
       : policy.runtime;
   if (
     isDefaultAgentRuntimeId(runtime) ||
-    runtime === OPENCLAW_AGENT_RUNTIME_ID ||
+    runtime === AFORA_AGENT_RUNTIME_ID ||
     isCliRuntimeAliasForProvider({
       runtime,
       provider: params.provider,

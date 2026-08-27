@@ -1,5 +1,5 @@
 // Source-reply suppression after message-tool delivery.
-import type { AssistantMessage } from "openclaw/plugin-sdk/llm";
+import type { AssistantMessage } from "afora-agent/plugin-sdk/llm";
 import { describe, expect, it, vi } from "vitest";
 import {
   createSubscribedSessionHarness,
@@ -442,7 +442,7 @@ describe("subscribeEmbeddedAgentSession", () => {
     const { emit, onBlockReply } = createBlockReplyHarness("message_end");
 
     emitAssistantMessageEnd(emit, "Mirrored transcript text", {
-      provider: "openclaw",
+      provider: "afora",
       model: "delivery-mirror",
     });
     await Promise.resolve();
@@ -454,7 +454,7 @@ describe("subscribeEmbeddedAgentSession", () => {
     const { emit, onBlockReply } = createBlockReplyHarness("message_end");
 
     emitAssistantMessageEnd(emit, "Injected transcript text", {
-      provider: "openclaw",
+      provider: "afora",
       model: "gateway-injected",
     });
     await Promise.resolve();

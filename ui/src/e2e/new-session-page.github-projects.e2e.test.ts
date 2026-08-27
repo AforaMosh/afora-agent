@@ -30,10 +30,10 @@ suite.define(() => {
     });
     const page = await context.newPage();
     const clonedProject = {
-      id: "openclaw",
-      displayName: "OpenClaw",
-      repoRoot: "/state/projects/fingerprint/openclaw",
-      originUrl: "https://github.com/openclaw/openclaw.git",
+      id: "afora",
+      displayName: "Afora",
+      repoRoot: "/state/projects/fingerprint/afora",
+      originUrl: "https://github.com/AforaMosh/afora-agent.git",
       source: "cloned",
     };
     const gateway = await installMockGateway(page, {
@@ -55,11 +55,11 @@ suite.define(() => {
           credential: "missing",
           projects: [
             {
-              name: "openclaw",
-              fullName: "openclaw/openclaw",
+              name: "afora",
+              fullName: "AforaMosh/afora-agent",
               description: "Personal AI assistant",
-              cloneUrl: "https://github.com/openclaw/openclaw.git",
-              webUrl: "https://github.com/openclaw/openclaw",
+              cloneUrl: "https://github.com/AforaMosh/afora-agent.git",
+              webUrl: "https://github.com/AforaMosh/afora-agent",
               private: false,
             },
           ],
@@ -82,27 +82,27 @@ suite.define(() => {
       const search = place.getByRole("searchbox", {
         name: "Search projects or paste a Git URL",
       });
-      await search.fill("openclaw");
+      await search.fill("afora");
 
       const searchRequest = await gateway.waitForRequest("projects.searchRemote");
-      expect(searchRequest.params).toEqual({ query: "openclaw" });
+      expect(searchRequest.params).toEqual({ query: "afora" });
       await place
         .getByText(
           "No Control UI GitHub credential or shared Gateway environment token is configured; public GitHub results only.",
         )
         .waitFor();
-      await place.getByRole("button", { name: /openclaw\/openclaw/u }).click();
+      await place.getByRole("button", { name: /afora\/afora/u }).click();
 
       expect(await gateway.getRequests("projects.add")).toHaveLength(0);
       await pollLocatorText(trigger.locator(".new-session-page__trigger-label")).toBe(
-        "openclaw/openclaw",
+        "AforaMosh/afora-agent",
       );
       expect(await trigger.getAttribute("data-project-id")).toBeNull();
 
       await page.locator(".new-session-page__message").fill("inspect the cloned project");
       await page.getByRole("button", { name: "Start session" }).click();
       const addRequest = await gateway.waitForRequest("projects.add");
-      expect(addRequest.params).toEqual({ gitUrl: "https://github.com/openclaw/openclaw.git" });
+      expect(addRequest.params).toEqual({ gitUrl: "https://github.com/AforaMosh/afora-agent.git" });
       await captureProjectUiProof(page, "project-cloning.png");
       expect(await gateway.getRequests("sessions.create")).toHaveLength(0);
       await gateway.resolveDeferred("projects.add", clonedProject);
@@ -111,7 +111,7 @@ suite.define(() => {
       expect(create.params).toMatchObject({
         agentId: "main",
         message: "inspect the cloned project",
-        projectId: "openclaw",
+        projectId: "afora",
       });
       expect(create.params).not.toHaveProperty("cwd");
     } finally {

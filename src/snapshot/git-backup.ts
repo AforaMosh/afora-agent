@@ -20,7 +20,7 @@ import {
   type GitBackupRestoreResult,
 } from "./git-backup-codec.js";
 import { ensurePrivateSnapshotRepositoryRoot } from "./local-repository.js";
-import { createOpenClawSnapshotCopy } from "./openclaw-snapshot-copy.js";
+import { createAforaSnapshotCopy } from "./afora-snapshot-copy.js";
 import type { SnapshotDatabaseRef } from "./snapshot-provider.js";
 
 const GIT_BACKUP_MATERIALIZE_MAX_BYTES = 1024 * 1024 * 1024;
@@ -70,7 +70,7 @@ export async function initializeGitBackupRepository(params: {
     isPathInside(canonicalRepositoryPath, canonicalStateDir)
   ) {
     throw new Error(
-      `Git backup repository must be outside the OpenClaw state directory: ${stateDir}`,
+      `Git backup repository must be outside the Afora state directory: ${stateDir}`,
     );
   }
   try {
@@ -137,7 +137,7 @@ async function isBackupOwnedScope(scopePath: string): Promise<boolean> {
 async function assertBackupOwnedScope(scopePath: string): Promise<void> {
   if (!(await isBackupOwnedScope(scopePath))) {
     throw new Error(
-      `Refusing to replace non-backup-owned path ${scopePath}; the repository must be dedicated to OpenClaw backups.`,
+      `Refusing to replace non-backup-owned path ${scopePath}; the repository must be dedicated to Afora backups.`,
     );
   }
 }
@@ -184,7 +184,7 @@ async function commitGitBackup(params: {
   const identityArgs =
     email.code === 0 && email.stdout.trim()
       ? []
-      : ["-c", "user.name=OpenClaw", "-c", "user.email=backup@openclaw.local"];
+      : ["-c", "user.name=Afora", "-c", "user.email=backup@afora.local"];
   await requireGit(
     params.repositoryPath,
     [...identityArgs, "commit", "-m", params.message, "--", ...params.scopes],
@@ -210,7 +210,7 @@ export async function createGitBackup(params: {
     stateDir: params.stateDir,
     gitEnv: params.gitEnv,
   });
-  const stagingRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-git-backup-"));
+  const stagingRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-git-backup-"));
   await fs.chmod(stagingRoot, 0o700);
   const manifests: GitBackupManifest[] = [];
   try {
@@ -221,7 +221,7 @@ export async function createGitBackup(params: {
         stagingRoot,
         `${database.identity.role}-${manifests.length}.sqlite`,
       );
-      await createOpenClawSnapshotCopy({ database, targetPath: copyPath });
+      await createAforaSnapshotCopy({ database, targetPath: copyPath });
       manifests.push(
         await dumpGitBackupDatabase({
           snapshotPath: copyPath,
@@ -274,7 +274,7 @@ export async function createGitBackup(params: {
     );
     commit = await commitGitBackup({
       repositoryPath,
-      message: `openclaw backup ${now.toISOString()}`,
+      message: `afora backup ${now.toISOString()}`,
       scopes: commitScopes,
       env: params.gitEnv,
     });
@@ -286,7 +286,7 @@ export async function createGitBackup(params: {
     // repository is the supported remote shape.
     const nonBackupCommitCount = await requireGit(
       repositoryPath,
-      ["rev-list", "HEAD", "--invert-grep", "--grep=^openclaw backup ", "--count"],
+      ["rev-list", "HEAD", "--invert-grep", "--grep=^afora backup ", "--count"],
       { env: params.gitEnv },
     );
     if (nonBackupCommitCount !== "0") {
@@ -341,7 +341,7 @@ async function materializeGitBackupRef(params: {
   if ([...required].some((entry) => !files.includes(entry))) {
     throw new Error(`Git backup ref ${commit} does not contain ${scope}.`);
   }
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-git-restore-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-git-restore-"));
   await fs.chmod(root, 0o700);
   const outputPath = path.join(root, scope);
   try {
@@ -405,7 +405,7 @@ export async function verifyGitBackupRef(params: {
   identity: GitBackupIdentity;
   ref?: string;
 }): Promise<GitBackupRestoreResult & { commit: string }> {
-  const scratch = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-git-verify-"));
+  const scratch = await fs.mkdtemp(path.join(os.tmpdir(), "afora-git-verify-"));
   await fs.chmod(scratch, 0o700);
   try {
     return await restoreGitBackupRef({

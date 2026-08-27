@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ContextEngineTurnAttemptFacts } from "../harness/context-engine-turn-attempt.js";
 import type { EmbeddedAgentRunResult } from "./types.js";
 
@@ -231,7 +231,7 @@ describe("runEmbeddedAgentEntry", () => {
 
   it("keeps shared fallback and terminal behavior aligned across entry modes", async () => {
     const { runEmbeddedAgentEntry } = await import("./run-entry.js");
-    const cfg: OpenClawConfig = {};
+    const cfg: AforaConfig = {};
     const runMode = async (behavior: "channel-delivery" | "command-rpc") => {
       const candidateCalls: Array<{
         provider: string;

@@ -1,9 +1,9 @@
 /**
  * Transport-aware stream factory selection.
  *
- * Routes models that need OpenClaw-managed proxy/TLS/local-service semantics onto built-in transport implementations.
+ * Routes models that need Afora-managed proxy/TLS/local-service semantics onto built-in transport implementations.
  */
-import type { Api, Model, StreamFn } from "@openclaw/llm-core";
+import type { Api, Model, StreamFn } from "@afora/llm-core";
 import { getAiTransportHost } from "../host.js";
 import { createAnthropicMessagesTransportStreamFn } from "./anthropic-transport-stream.js";
 import { createOpenAICompletionsTransportStreamFn } from "./openai-completions-transport.js";
@@ -23,9 +23,9 @@ const SUPPORTED_TRANSPORT_APIS = new Set<Api>([
 ]);
 
 const SIMPLE_TRANSPORT_API_ALIAS: Record<string, Api> = {
-  "openai-completions": "openclaw-openai-completions-transport",
-  "anthropic-messages": "openclaw-anthropic-messages-transport",
-  "google-generative-ai": "openclaw-google-generative-ai-transport",
+  "openai-completions": "afora-openai-completions-transport",
+  "anthropic-messages": "afora-anthropic-messages-transport",
+  "google-generative-ai": "afora-google-generative-ai-transport",
 };
 
 type ProviderTransportStreamContext = {
@@ -93,11 +93,11 @@ function createSupportedTransportStreamFn(
   }
 }
 
-function hasOpenClawTransportRequirement(model: Model): boolean {
+function hasAforaTransportRequirement(model: Model): boolean {
   return getAiTransportHost().requiresManagedTransport(model);
 }
 
-/** Returns whether OpenClaw has a managed transport implementation for this API. */
+/** Returns whether Afora has a managed transport implementation for this API. */
 function isTransportAwareApiSupported(api: Api): boolean {
   return SUPPORTED_TRANSPORT_APIS.has(api);
 }
@@ -105,7 +105,7 @@ function isTransportAwareApiSupported(api: Api): boolean {
 /** Maps public model APIs to the internal transport API id used by simple runtime dispatch. */
 export function resolveTransportAwareSimpleApi(api: Api): Api | undefined {
   if (OPENAI_RESPONSES_APIS.has(api)) {
-    const alias = `openclaw-${api}-transport` as Api;
+    const alias = `afora-${api}-transport` as Api;
     return OPENAI_RESPONSES_APIS.has(alias) ? alias : undefined;
   }
   return SIMPLE_TRANSPORT_API_ALIAS[api];
@@ -116,7 +116,7 @@ export function createTransportAwareStreamFnForModel(
   model: Model,
   ctx?: ProviderTransportStreamContext,
 ): StreamFn | undefined {
-  if (!hasOpenClawTransportRequirement(model)) {
+  if (!hasAforaTransportRequirement(model)) {
     return undefined;
   }
   if (!isTransportAwareApiSupported(model.api)) {
@@ -131,12 +131,12 @@ export function createTransportAwareStreamFnForModel(
   return streamFn;
 }
 
-/** Creates a managed OpenClaw transport stream for explicit fallback/runtime callers. */
-export function createOpenClawTransportStreamFnForModel(
+/** Creates a managed Afora transport stream for explicit fallback/runtime callers. */
+export function createAforaTransportStreamFnForModel(
   model: Model,
   ctx?: ProviderTransportStreamContext,
 ): StreamFn | undefined {
-  // Explicit fallback callers use this when they need OpenClaw's HTTP
+  // Explicit fallback callers use this when they need Afora's HTTP
   // transport semantics regardless of the default embedded-runner strategy.
   // Native OpenAI HTTP still depends on this path for strict tool shaping,
   // attribution, cache-boundary stripping, and runtime credential injection.
@@ -151,7 +151,7 @@ export function createBoundaryAwareStreamFnForModel(
   ctx?: ProviderTransportStreamContext,
 ): StreamFn | undefined {
   // Default embedded-runner fallback. Keep OpenAI-family APIs here while native
-  // HTTP streams preserve the same OpenClaw request contract.
+  // HTTP streams preserve the same Afora request contract.
   if (!isTransportAwareApiSupported(model.api)) {
     return undefined;
   }

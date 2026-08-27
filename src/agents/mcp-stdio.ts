@@ -1,9 +1,9 @@
 /**
  * Stdio MCP launch config normalization.
- * Accepts OpenClaw and upstream MCP config field names, keeping only
+ * Accepts Afora and upstream MCP config field names, keeping only
  * command/args/env/cwd needed to spawn a stdio server.
  */
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { redactSensitiveArgv } from "../config/redact-argv.js";
 import { toMcpEnvRecord, toMcpStringArray } from "./mcp-config-shared.js";
 

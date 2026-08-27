@@ -406,7 +406,7 @@ export function createFleetService(options: FleetServiceOptions = {}) {
               // Unlike upgrade/restore, create has no previous container to bring back;
               // keep the sick cell (container + registry row) as diagnosable evidence.
               throw new Error(
-                `Fleet cell ${tenantId} was created but did not become healthy within 60s; inspect it with \`openclaw fleet status ${tenantId}\` or \`openclaw fleet logs ${tenantId}\`, or remove it with \`openclaw fleet rm ${tenantId} --force\`.`,
+                `Fleet cell ${tenantId} was created but did not become healthy within 60s; inspect it with \`afora fleet status ${tenantId}\` or \`afora fleet logs ${tenantId}\`, or remove it with \`afora fleet rm ${tenantId} --force\`.`,
                 { cause: error },
               );
             }
@@ -536,7 +536,7 @@ export function createFleetService(options: FleetServiceOptions = {}) {
         record,
         await containers.inspect(record.runtime, record.containerName),
       );
-      const gatewayCredential = inspection.environment.OPENCLAW_GATEWAY_TOKEN;
+      const gatewayCredential = inspection.environment.AFORA_GATEWAY_TOKEN;
       // Pin the inspected generation so a concurrent restore cannot redirect the stream.
       await containers.logs(record.runtime, inspection.containerId, {
         follow: logOptions.follow,

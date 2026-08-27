@@ -10,7 +10,7 @@ import { noteClaudeCliHealth } from "./doctor-claude-cli.js";
 
 const resolveCliBackendConfigMock = vi.hoisted(() => vi.fn());
 const resolveModelAgentRuntimeMetadataMock = vi.hoisted(() =>
-  vi.fn((_params: { agentId: string }) => ({ id: "openclaw", source: "implicit" })),
+  vi.fn((_params: { agentId: string }) => ({ id: "afora", source: "implicit" })),
 );
 
 vi.mock("../agents/cli-backends.js", () => ({
@@ -35,7 +35,7 @@ function createStore(profiles: AuthProfileStore["profiles"] = {}): AuthProfileSt
 async function withTempHome<T>(
   run: (params: { homeDir: string; workspaceDir: string }) => Promise<T> | T,
 ): Promise<T> {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-doctor-claude-cli-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-doctor-claude-cli-"));
   const homeDir = path.join(root, "home");
   const workspaceDir = path.join(root, "workspace");
   fs.mkdirSync(homeDir, { recursive: true });
@@ -76,7 +76,7 @@ describe("noteClaudeCliHealth", () => {
     resolveCliBackendConfigMock.mockReset();
     resolveModelAgentRuntimeMetadataMock
       .mockReset()
-      .mockReturnValue({ id: "openclaw", source: "implicit" });
+      .mockReturnValue({ id: "afora", source: "implicit" });
     vi.restoreAllMocks();
   });
 
@@ -197,7 +197,7 @@ describe("noteClaudeCliHealth", () => {
       );
 
       expect(noteBody(noteFn)).toContain(
-        "Binary version advisory: Claude Code 2.1.206 is the first published build known to advertise msg_lifecycle_v1; found 2.1.205. OpenClaw verifies this capability at runtime. If this build is rejected, run `claude update`, restart OpenClaw, and retry.",
+        "Binary version advisory: Claude Code 2.1.206 is the first published build known to advertise msg_lifecycle_v1; found 2.1.205. Afora verifies this capability at runtime. If this build is rejected, run `claude update`, restart Afora, and retry.",
       );
     });
   });
@@ -205,7 +205,7 @@ describe("noteClaudeCliHealth", () => {
   it("stays quiet for a healthy non-default Claude CLI runtime agent", async () => {
     await withTempHome(({ homeDir, workspaceDir }) => {
       resolveModelAgentRuntimeMetadataMock.mockImplementation(({ agentId }) => ({
-        id: agentId === "xiaoao" ? "claude-cli" : "openclaw",
+        id: agentId === "xiaoao" ? "claude-cli" : "afora",
         source: agentId === "xiaoao" ? "model" : "implicit",
       }));
       const root = path.dirname(workspaceDir);
@@ -293,9 +293,9 @@ describe("noteClaudeCliHealth", () => {
       );
 
       const body = noteBody(noteFn);
-      expect(body).toContain(`OpenClaw auth profile: missing (${CLAUDE_CLI_PROFILE_ID})`);
+      expect(body).toContain(`Afora auth profile: missing (${CLAUDE_CLI_PROFILE_ID})`);
       expect(body).toContain(
-        "openclaw models auth login --provider anthropic --method cli --set-default",
+        "afora models auth login --provider anthropic --method cli --set-default",
       );
       expect(body).not.toContain("Headless Claude auth: OK");
       expect(body).not.toContain("not created yet");

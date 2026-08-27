@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveExternalCliAuthOverlayScopeFromSelection } from "./external-cli-auth-selection.js";
 import type { AuthProfileStore } from "./types.js";
 
@@ -7,7 +7,7 @@ import type { AuthProfileStore } from "./types.js";
 // and must not cold-load every registered backend just to project one configured runtime id.
 vi.mock("../model-runtime-aliases.js", () => ({
   resolveCliRuntimeExecutionProvider: vi.fn(
-    (params: { cfg?: OpenClawConfig; provider?: string; modelId?: string }) => {
+    (params: { cfg?: AforaConfig; provider?: string; modelId?: string }) => {
       const modelKey =
         params.provider && params.modelId ? `${params.provider}/${params.modelId}` : undefined;
       return modelKey
@@ -26,7 +26,7 @@ const claudeCliProfile = {
 };
 
 function resolveScope(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   store?: AuthProfileStore;
   userPinnedAuthProfileId?: string;
 }) {
@@ -46,7 +46,7 @@ describe("resolveExternalCliAuthOverlayScopeFromSelection", () => {
           "anthropic:claude-cli": { provider: "claude-cli", mode: "oauth" },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveScope({ cfg })).toEqual({
       providerIds: ["claude-cli"],
@@ -63,7 +63,7 @@ describe("resolveExternalCliAuthOverlayScopeFromSelection", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveScope({ cfg })).toEqual({
       providerIds: ["claude-cli"],
@@ -80,7 +80,7 @@ describe("resolveExternalCliAuthOverlayScopeFromSelection", () => {
           "anthropic:claude-cli": { provider: "claude-cli", mode: "oauth" },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const store = {
       version: 1,
       profiles: {
@@ -104,7 +104,7 @@ describe("resolveExternalCliAuthOverlayScopeFromSelection", () => {
           "anthropic:claude-cli": { provider: "claude-cli", mode: "oauth" },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveScope({ cfg })).toEqual({
       providerIds: ["claude-cli"],
@@ -134,7 +134,7 @@ describe("resolveExternalCliAuthOverlayScopeFromSelection", () => {
           "anthropic:claude-cli": { provider: "claude-cli", mode: "oauth" },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveScope({ cfg })).toEqual({ ignoreAutoPreferredProfile: false });
   });
@@ -148,7 +148,7 @@ describe("resolveExternalCliAuthOverlayScopeFromSelection", () => {
           "anthropic:claude-cli": { provider: "claude-cli", mode: "oauth" },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveScope({ cfg, userPinnedAuthProfileId: "anthropic:api" })).toEqual({
       providerIds: ["claude-cli"],

@@ -7,7 +7,7 @@ import {
   type ModelAuthAvailabilityResolver,
 } from "../../agents/model-auth-availability.js";
 import { createOpenAIModelRoutesResolver } from "../../agents/openai-model-routes.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { PluginMetadataSnapshot } from "../../plugins/plugin-metadata-snapshot.types.js";
 
 function listEnabledSyntheticAuthProviderRefs(
@@ -19,7 +19,7 @@ function listEnabledSyntheticAuthProviderRefs(
 }
 
 export function createModelsListAuthResolver(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   metadataSnapshot: PluginMetadataSnapshot;
   preparedAuthStore: AuthProfileStore;

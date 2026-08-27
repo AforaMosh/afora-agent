@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { saveMediaBuffer } from "openclaw/plugin-sdk/media-store";
+import { saveMediaBuffer } from "afora-agent/plugin-sdk/media-store";
 import {
   DEFAULT_BROWSER_SCREENSHOT_MAX_BYTES,
   DEFAULT_BROWSER_SCREENSHOT_MAX_SIDE,

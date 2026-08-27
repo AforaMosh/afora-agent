@@ -15,9 +15,9 @@ export function buildDeprecatedPluginSdkModuleSpecifiers(
 ) {
   const unscoped = [
     ...DEPRECATED_PLUGIN_SDK_EXTRA_SPECIFIERS,
-    ...deprecatedSubpaths.map((subpath) => `openclaw/plugin-sdk/${subpath}`),
+    ...deprecatedSubpaths.map((subpath) => `afora/plugin-sdk/${subpath}`),
   ];
-  // tsconfig aliases the scoped @openclaw/plugin-sdk package to the same
+  // tsconfig aliases the scoped @afora/plugin-sdk package to the same
   // src/plugin-sdk modules, so ban both spellings of every deprecated specifier.
   return [...new Set(unscoped.flatMap((specifier) => [specifier, `@${specifier}`]))].toSorted(
     (a, b) => a.localeCompare(b),
@@ -33,22 +33,22 @@ export function buildDeprecatedPluginSdkModuleSpecifiers(
  * compat re-export chain that keeps the public subpath alive.
  */
 export const BANNED_INTERNAL_PLUGIN_SDK_FACADE_MODULES: BannedInternalPluginSdkFacadeModule[] = [
-  // Reply facades: canonical seams are openclaw/plugin-sdk/channel-inbound and
-  // openclaw/plugin-sdk/channel-outbound (defineChannelMessageAdapter family).
+  // Reply facades: canonical seams are afora/plugin-sdk/channel-inbound and
+  // afora/plugin-sdk/channel-outbound (defineChannelMessageAdapter family).
   {
     modulePath: "src/plugin-sdk/channel-message",
-    canonical: "openclaw/plugin-sdk/channel-outbound",
+    canonical: "afora-agent/plugin-sdk/channel-outbound",
   },
   {
     modulePath: "src/plugin-sdk/channel-reply-pipeline",
-    canonical: "openclaw/plugin-sdk/channel-outbound",
+    canonical: "afora-agent/plugin-sdk/channel-outbound",
   },
   {
     modulePath: "src/plugin-sdk/inbound-reply-dispatch",
-    canonical: "openclaw/plugin-sdk/channel-inbound",
+    canonical: "afora-agent/plugin-sdk/channel-inbound",
   },
   {
     modulePath: "src/plugin-sdk/inbound-envelope",
-    canonical: "openclaw/plugin-sdk/channel-inbound",
+    canonical: "afora-agent/plugin-sdk/channel-inbound",
   },
 ];

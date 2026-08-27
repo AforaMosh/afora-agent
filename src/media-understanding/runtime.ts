@@ -1,10 +1,10 @@
 // Public file-oriented media-understanding runtime for image, audio, video, and
 // structured extraction calls outside normal channel message handling.
 import path from "node:path";
-import { detectMime, kindFromMime, mimeTypeFromFilePath } from "@openclaw/media-core/mime";
-import { hasHttpUrlPrefix } from "@openclaw/net-policy/url-protocol";
+import { detectMime, kindFromMime, mimeTypeFromFilePath } from "@afora/media-core/mime";
+import { hasHttpUrlPrefix } from "@afora/net-policy/url-protocol";
 import { resolveAgentDir, resolveDefaultAgentDir } from "../agents/agent-scope.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { readLocalFileSafely } from "../infra/fs-safe.js";
 import { DEFAULT_MAX_BYTES } from "./defaults.constants.js";
 import { normalizeImageDescriptionInput } from "./image-input-normalize.js";
@@ -147,7 +147,7 @@ export async function runMediaUnderstandingFile(
     params.timeoutMs > 0
       ? Math.ceil(params.timeoutMs / 1000)
       : undefined;
-  const cfg: OpenClawConfig =
+  const cfg: AforaConfig =
     requestPrompt || requestTimeoutSeconds !== undefined
       ? ({
           ...params.cfg,
@@ -169,7 +169,7 @@ export async function runMediaUnderstandingFile(
               },
             },
           },
-        } as OpenClawConfig)
+        } as AforaConfig)
       : params.cfg;
   const ctx = buildFileContext({
     ...params,
@@ -328,7 +328,7 @@ async function readImageDescriptionInput(params: {
   filePath: string;
   mediaUrl?: string;
   mime?: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   timeoutMs: number;
 }): Promise<{ buffer: Buffer; fileName: string; mime?: string }> {
   const remoteRef =
@@ -411,7 +411,7 @@ export async function describeVideoFile(
 export async function transcribeAudioFile(
   params: TranscribeAudioFileParams,
 ): Promise<RunMediaUnderstandingFileResult> {
-  const cfg: OpenClawConfig =
+  const cfg: AforaConfig =
     params.language || params.prompt
       ? ({
           ...params.cfg,
@@ -428,7 +428,7 @@ export async function transcribeAudioFile(
               },
             },
           },
-        } as OpenClawConfig)
+        } as AforaConfig)
       : params.cfg;
   const result = await runMediaUnderstandingFile({ ...params, cfg, capability: "audio" });
   return result;

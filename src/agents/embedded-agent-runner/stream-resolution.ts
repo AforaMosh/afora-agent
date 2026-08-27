@@ -1,10 +1,10 @@
 /**
  * Resolves provider stream functions and API keys for embedded agents.
  */
-import type { LlmRuntime } from "@openclaw/ai";
-import { stripSystemPromptCacheBoundary } from "@openclaw/ai/internal/shared";
-import { createBoundaryAwareStreamFnForModel } from "@openclaw/ai/transports";
-import { hasNonEmptyString as hasResolvedRuntimeApiKey } from "@openclaw/normalization-core/string-coerce";
+import type { LlmRuntime } from "@afora/ai";
+import { stripSystemPromptCacheBoundary } from "@afora/ai/internal/shared";
+import { createBoundaryAwareStreamFnForModel } from "@afora/ai/transports";
+import { hasNonEmptyString as hasResolvedRuntimeApiKey } from "@afora/normalization-core/string-coerce";
 import { getStreamLlmRuntime } from "../../llm/model-runtime-binding.js";
 import "../ai-transport-runtime-host.js";
 import { createAnthropicVertexStreamFnForModel } from "../anthropic-vertex-stream.js";
@@ -54,7 +54,7 @@ function resolveEmbeddedStreamRuntime(owner: EmbeddedStreamRuntimeOwner): LlmRun
   return runtime;
 }
 
-function isDefaultOpenClawStreamFnForModel(
+function isDefaultAforaStreamFnForModel(
   model: EmbeddedRunAttemptParams["model"],
   streamFn: StreamFn | undefined,
   llmRuntime: LlmRuntime,
@@ -74,7 +74,7 @@ function isOpenAICodexResponsesModel(model: EmbeddedRunAttemptParams["model"]): 
   return model.provider === "openai" && model.api === "openai-chatgpt-responses";
 }
 
-function resolveOpenClawNativeCodexResponsesStreamFn(params: {
+function resolveAforaNativeCodexResponsesStreamFn(params: {
   model: EmbeddedRunAttemptParams["model"];
   currentStreamFn: StreamFn | undefined;
   llmRuntime: LlmRuntime;
@@ -85,7 +85,7 @@ function resolveOpenClawNativeCodexResponsesStreamFn(params: {
   // Lifecycle-owned session streams wrap auth/retry policy, so their runtime
   // binding preserves native Codex transport even when function identity differs.
   if (
-    !isDefaultOpenClawStreamFnForModel(params.model, params.currentStreamFn, params.llmRuntime) &&
+    !isDefaultAforaStreamFnForModel(params.model, params.currentStreamFn, params.llmRuntime) &&
     getStreamLlmRuntime(params.currentStreamFn) !== params.llmRuntime
   ) {
     return undefined;
@@ -108,15 +108,15 @@ export function describeEmbeddedAgentStreamStrategy(
     return "anthropic-vertex";
   }
   if (
-    resolveOpenClawNativeCodexResponsesStreamFn({
+    resolveAforaNativeCodexResponsesStreamFn({
       model: params.model,
       currentStreamFn: params.currentStreamFn,
       llmRuntime,
     })
   ) {
-    return "openclaw-native-codex-responses";
+    return "afora-native-codex-responses";
   }
-  if (isDefaultOpenClawStreamFnForModel(params.model, params.currentStreamFn, llmRuntime)) {
+  if (isDefaultAforaStreamFnForModel(params.model, params.currentStreamFn, llmRuntime)) {
     return createBoundaryAwareStreamFnForModel(params.model)
       ? `boundary-aware:${params.model.api}`
       : "stream-simple";
@@ -185,13 +185,13 @@ export function resolveEmbeddedAgentStreamFn(
       : vertexStreamFn;
   }
 
-  const openClawNativeCodexResponsesStreamFn = resolveOpenClawNativeCodexResponsesStreamFn({
+  const aforaNativeCodexResponsesStreamFn = resolveAforaNativeCodexResponsesStreamFn({
     model: params.model,
     currentStreamFn: params.currentStreamFn,
     llmRuntime,
   });
-  if (openClawNativeCodexResponsesStreamFn) {
-    return wrapEmbeddedAgentStreamFn(openClawNativeCodexResponsesStreamFn, {
+  if (aforaNativeCodexResponsesStreamFn) {
+    return wrapEmbeddedAgentStreamFn(aforaNativeCodexResponsesStreamFn, {
       runSignal: params.signal,
       resolvedApiKey: params.resolvedApiKey,
       authProfileId: params.authProfileId,
@@ -210,7 +210,7 @@ export function resolveEmbeddedAgentStreamFn(
   }
 
   if (
-    isDefaultOpenClawStreamFnForModel(params.model, params.currentStreamFn, llmRuntime) ||
+    isDefaultAforaStreamFnForModel(params.model, params.currentStreamFn, llmRuntime) ||
     hasResolvedRuntimeApiKey(params.resolvedApiKey) ||
     params.transportAuthAvailable ||
     // Proxied anthropic-messages providers (provider !== "anthropic", e.g. pioneer)
@@ -225,9 +225,9 @@ export function resolveEmbeddedAgentStreamFn(
   ) {
     const boundaryAwareStreamFn = createBoundaryAwareStreamFnForModel(params.model);
     if (boundaryAwareStreamFn) {
-      // Some OpenClaw session factories return a provider-specific stream wrapper
+      // Some Afora session factories return a provider-specific stream wrapper
       // once runtime auth is resolved. Keep transport-supported APIs on
-      // OpenClaw's HTTP transport so provider-specific auth/header semantics
+      // Afora's HTTP transport so provider-specific auth/header semantics
       // are not lost behind that wrapper.
       // Boundary-aware transports read credentials from options.apiKey just
       // like provider-owned streams, but the embedded run layer never gets to

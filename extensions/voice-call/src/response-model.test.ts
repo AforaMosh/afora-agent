@@ -1,6 +1,6 @@
 // Voice Call tests cover response model plugin behavior.
 import { describe, expect, it } from "vitest";
-import type { OpenClawPluginApi } from "../api.js";
+import type { AforaPluginApi } from "../api.js";
 import { VoiceCallConfigSchema } from "./config.js";
 import { resolveVoiceResponseModel } from "./response-model.js";
 
@@ -9,7 +9,7 @@ const agentRuntime = {
     provider: "together",
     model: "Qwen/Qwen2.5-7B-Instruct-Turbo",
   },
-} as unknown as OpenClawPluginApi["runtime"]["agent"];
+} as unknown as AforaPluginApi["runtime"]["agent"];
 
 describe("resolveVoiceResponseModel", () => {
   it("falls back to the runtime default model", () => {

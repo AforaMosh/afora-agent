@@ -1,4 +1,4 @@
-import type { MeetingBrowserCandidateTab } from "openclaw/plugin-sdk/meeting-runtime";
+import type { MeetingBrowserCandidateTab } from "afora-agent/plugin-sdk/meeting-runtime";
 
 // Meet automation scripts match English UI labels. Pin the page language while
 // preserving authuser and every other caller-supplied query parameter.

@@ -6,7 +6,7 @@ import type { ISyncResponse } from "matrix-js-sdk/lib/matrix.js";
 import {
   createPluginStateSyncKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getMatrixRuntime } from "../../runtime.js";
 import { installMatrixTestRuntime } from "../../test-runtime.js";
@@ -55,7 +55,7 @@ function createSyncResponse(nextBatch: string): ISyncResponse {
       events: [
         {
           content: { theme: "dark" },
-          type: "com.openclaw.test",
+          type: "com.afora.test",
         },
       ],
     },
@@ -66,7 +66,7 @@ describe("SqliteBackedMatrixSyncStore", () => {
   const tempDirs: string[] = [];
 
   function createStorageRoot(): string {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-matrix-sync-store-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-matrix-sync-store-"));
     tempDirs.push(tempDir);
     return tempDir;
   }

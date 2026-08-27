@@ -27,11 +27,11 @@ describe("boundary vitest config", () => {
       "node",
       "vitest",
       "run",
-      "src/infra/openclaw-root.test.ts",
+      "src/infra/afora-root.test.ts",
     ]);
     const testConfig = requireTestConfig(config);
 
-    expect(testConfig.include).toEqual(["src/infra/openclaw-root.test.ts"]);
+    expect(testConfig.include).toEqual(["src/infra/afora-root.test.ts"]);
     expect(testConfig.passWithNoTests).toBeUndefined();
   });
 

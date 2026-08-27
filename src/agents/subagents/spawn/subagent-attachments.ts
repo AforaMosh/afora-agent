@@ -6,8 +6,8 @@
 import crypto from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { privateFileStore } from "../../../infra/private-file-store.js";
 import { resolveAgentWorkspaceDir } from "../../agent-scope.js";
 
@@ -95,7 +95,7 @@ type SubagentAttachmentRequest =
   | { status: "forbidden"; error: string }
   | { status: "error"; error: string };
 
-function resolveAttachmentLimits(config: OpenClawConfig): AttachmentLimits {
+function resolveAttachmentLimits(config: AforaConfig): AttachmentLimits {
   const attachmentsCfg = config.tools?.sessions_spawn?.attachments;
   return {
     enabled: attachmentsCfg?.enabled === true,
@@ -118,7 +118,7 @@ function resolveAttachmentLimits(config: OpenClawConfig): AttachmentLimits {
 }
 
 function resolveSubagentAttachmentRequest(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   attachments?: SubagentInlineAttachment[];
 }): SubagentAttachmentRequest {
   const requestedAttachments = Array.isArray(params.attachments) ? params.attachments : [];
@@ -246,7 +246,7 @@ function prepareSubagentAttachments(params: {
 }
 
 export function resolveAcpSessionsSpawnImageAttachments(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   attachments?: SubagentInlineAttachment[];
 }):
   | { status: "ok"; attachments: AcpInlineImageAttachment[] }
@@ -283,7 +283,7 @@ export function resolveAcpSessionsSpawnImageAttachments(params: {
 }
 
 export async function materializeSubagentAttachments(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   targetAgentId: string;
   workspaceDir?: string;
   attachments?: SubagentInlineAttachment[];
@@ -301,8 +301,8 @@ export async function materializeSubagentAttachments(params: {
   const childWorkspaceDir =
     normalizeOptionalString(params.workspaceDir) ??
     resolveAgentWorkspaceDir(params.config, params.targetAgentId);
-  const absRootDir = path.join(childWorkspaceDir, ".openclaw", "attachments");
-  const relDir = path.posix.join(".openclaw", "attachments", attachmentId);
+  const absRootDir = path.join(childWorkspaceDir, ".afora", "attachments");
+  const relDir = path.posix.join(".afora", "attachments", attachmentId);
   const absDir = path.join(absRootDir, attachmentId);
 
   try {

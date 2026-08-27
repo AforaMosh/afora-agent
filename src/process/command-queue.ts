@@ -1,6 +1,6 @@
 // Command queue serializes and limits process execution for shared command lanes.
 import { AsyncLocalStorage } from "node:async_hooks";
-import { clampPositiveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
+import { clampPositiveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
 import { formatErrorMessage, readErrorName } from "../infra/errors.js";
 import {
   diagnosticLogger as diag,

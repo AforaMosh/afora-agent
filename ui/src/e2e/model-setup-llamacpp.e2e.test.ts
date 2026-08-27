@@ -11,7 +11,7 @@ const suite = createControlUiE2eSuite({
   unavailableMessage: (executablePath) => `Playwright Chromium is unavailable at ${executablePath}`,
 });
 
-const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
 const prepareOptions = [
   {
     id: "ollama",
@@ -24,7 +24,7 @@ const prepareOptions = [
     id: "llama-cpp",
     brandId: "llama-cpp",
     label: "llama.cpp",
-    hint: "Install a verified llama.cpp server and run a private GGUF model managed by OpenClaw",
+    hint: "Install a verified llama.cpp server and run a private GGUF model managed by Afora",
     actionLabel: "Set up model",
   },
   {
@@ -52,7 +52,7 @@ suite.define(() => {
           candidates: [],
           manualProviders: [],
           prepareOptions,
-          workspace: "/tmp/openclaw-e2e",
+          workspace: "/tmp/afora-e2e",
           setupComplete: false,
         };
         const modelRef = "llama-cpp/gemma-4-e4b-it-q4_k_m";
@@ -60,19 +60,19 @@ suite.define(() => {
           featureMethods: [
             "chat.metadata",
             "chat.startup",
-            "openclaw.setup.detect",
-            "openclaw.setup.activate",
-            "openclaw.setup.prepare.start",
+            "afora.setup.detect",
+            "afora.setup.activate",
+            "afora.setup.prepare.start",
             "wizard.next",
           ],
           methodResponses: {
-            "openclaw.setup.detect": initialDetection,
-            "openclaw.setup.prepare.start": {
+            "afora.setup.detect": initialDetection,
+            "afora.setup.prepare.start": {
               sessionId: "llama-cpp-prepare-session",
               done: false,
               status: "running",
             },
-            "openclaw.setup.activate": {
+            "afora.setup.activate": {
               ok: true,
               modelRef,
               latencyMs: 731,
@@ -87,7 +87,7 @@ suite.define(() => {
                     id: "llama-cpp-consent",
                     type: "confirm",
                     message:
-                      "OpenClaw will install a verified llama.cpp server and download Gemma 4 E4B IT Q4_K_M (about 5.0 GB) plus the local embedding model (about 0.3 GB). Continue?",
+                      "Afora will install a verified llama.cpp server and download Gemma 4 E4B IT Q4_K_M (about 5.0 GB) plus the local embedding model (about 0.3 GB). Continue?",
                     initialValue: false,
                   },
                 },
@@ -148,10 +148,10 @@ suite.define(() => {
         }
 
         await llamaCppRow.getByRole("button", { name: "Set up model" }).click();
-        const start = await gateway.waitForRequest("openclaw.setup.prepare.start");
+        const start = await gateway.waitForRequest("afora.setup.prepare.start");
         expect(start.params).toMatchObject({ authChoice: "llama-cpp" });
         await page.getByRole("heading", { name: "Set up a local model" }).waitFor();
-        await page.getByText("OpenClaw will install a verified llama.cpp server").waitFor();
+        await page.getByText("Afora will install a verified llama.cpp server").waitFor();
 
         if (artifactDir) {
           await page.screenshot({
@@ -161,7 +161,7 @@ suite.define(() => {
           });
         }
 
-        await gateway.setMethodResponse("openclaw.setup.detect", {
+        await gateway.setMethodResponse("afora.setup.detect", {
           ...initialDetection,
           candidates: [
             {
@@ -187,7 +187,7 @@ suite.define(() => {
           .poll(() => page.locator('.model-setup-success [data-provider-icon="llamacpp"]').count())
           .toBe(1);
 
-        const activate = await gateway.waitForRequest("openclaw.setup.activate");
+        const activate = await gateway.waitForRequest("afora.setup.activate");
         expect(activate.params).toEqual({
           kind: "provider-auto:llama-cpp",
           agentId: "main",
@@ -208,7 +208,7 @@ suite.define(() => {
           });
         }
 
-        await gateway.setMethodResponse("openclaw.setup.detect", {
+        await gateway.setMethodResponse("afora.setup.detect", {
           ...initialDetection,
           candidates: [],
           configuredModel: modelRef,

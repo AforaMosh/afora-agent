@@ -1,5 +1,5 @@
 // Channel runtime context helpers build plugin runtime context for channel execution.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type {
   ChannelRuntimeContextEvent,
   ChannelRuntimeContextKey,

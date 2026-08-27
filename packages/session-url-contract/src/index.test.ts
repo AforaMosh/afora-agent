@@ -22,8 +22,8 @@ describe("buildControlUiCatalogSessionUrl", () => {
     {
       label: "nested base path and non-main agent",
       agentId: "research",
-      basePath: "/admin/openclaw/",
-      expected: "/admin/openclaw/chat/research?catalog=beam&host=gateway&thread=beam-1",
+      basePath: "/admin/afora/",
+      expected: "/admin/afora/chat/research?catalog=beam&host=gateway&thread=beam-1",
     },
   ])("builds a canonical URL for $label", ({ agentId, basePath, expected }) => {
     expect(

@@ -16,7 +16,7 @@ import { createApplicationContextProvider } from "../../test-helpers/application
 import { ApprovalPage } from "./approval-page.ts";
 
 const TEST_ELEMENT_SUFFIX = crypto.randomUUID();
-const APPROVAL_PAGE_ELEMENT_NAME = `test-openclaw-approval-page-${TEST_ELEMENT_SUFFIX}`;
+const APPROVAL_PAGE_ELEMENT_NAME = `test-afora-approval-page-${TEST_ELEMENT_SUFFIX}`;
 
 // The non-isolated UI runner resets modules but not customElements. Register
 // the current page graph so context and locale state stay paired.

@@ -2,7 +2,7 @@
 import {
   adaptMessagePresentationForChannel,
   renderMessagePresentationFallbackText,
-} from "openclaw/plugin-sdk/interactive-runtime";
+} from "afora-agent/plugin-sdk/interactive-runtime";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createDiscordOutboundHoisted,
@@ -13,9 +13,9 @@ import {
 } from "./outbound-adapter.test-harness.js";
 
 const outboundWarnSpy = vi.hoisted(() => vi.fn());
-vi.mock("openclaw/plugin-sdk/runtime-env", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/runtime-env")>(
-    "openclaw/plugin-sdk/runtime-env",
+vi.mock("afora-agent/plugin-sdk/runtime-env", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/runtime-env")>(
+    "afora-agent/plugin-sdk/runtime-env",
   );
   return {
     ...actual,
@@ -886,7 +886,7 @@ describe("discordOutbound", () => {
           text: "delivered",
           channelData: {
             discord: {
-              __openclawInboundEventDelivery: {
+              __aforaInboundEventDelivery: {
                 sessionKey: "agent:main:discord:channel:c1",
                 inboundEventKind: "room_event",
               },

@@ -64,7 +64,7 @@ describe("emitJsonl — render mode", () => {
 
   it("throws when a value-leaf EMBEDS the sentinel (prefix/suffix wrap)", () => {
     // Regression: prior to this fix, render mode used exact-match
-    // (`value.value === SENTINEL`), so `prefix__OPENCLAW_REDACTED__suffix`
+    // (`value.value === SENTINEL`), so `prefix__AFORA_REDACTED__suffix`
     // slipped through. The contains-check is the right invariant.
     const ast = parseJsonl('{"a":"ok"}\n').ast;
     const tampered = {

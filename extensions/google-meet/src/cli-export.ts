@@ -1,7 +1,7 @@
 import fsp from "node:fs/promises";
 import path from "node:path";
 import JSZip from "jszip";
-import { writeExternalFileWithinRoot } from "openclaw/plugin-sdk/security-runtime";
+import { writeExternalFileWithinRoot } from "afora-agent/plugin-sdk/security-runtime";
 import { listGoogleMeetCalendarEvents, type GoogleMeetCalendarLookupResult } from "./calendar.js";
 import {
   formatDuration,

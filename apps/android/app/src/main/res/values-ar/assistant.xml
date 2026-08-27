@@ -1,7 +1,7 @@
 <resources>
-    <string-array name="ask_openclaw_query_patterns">
-        <item>"اسأل OpenClaw %1$s"</item>
-        <item>"أخبر OpenClaw أن %1$s"</item>
-        <item>"افتح OpenClaw واسأل %1$s"</item>
+    <string-array name="ask_afora_query_patterns">
+        <item>"اسأل Afora %1$s"</item>
+        <item>"أخبر Afora أن %1$s"</item>
+        <item>"افتح Afora واسأل %1$s"</item>
     </string-array>
 </resources>

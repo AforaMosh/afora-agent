@@ -1,5 +1,5 @@
 // Implements agent route binding list/add/remove subcommands.
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 import { listAgentEntries, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { isRouteBinding, listRouteBindings } from "../config/bindings.js";
@@ -65,7 +65,7 @@ function resolveTargetAgentIdOrExit(params: {
     params.agentInput === undefined ? null : normalizeAgentIdStrict(params.agentInput);
   if (normalized && !normalized.ok) {
     params.runtime.error(
-      `Agent "${params.agentInput}" not found. Run ${formatCliCommand("openclaw agents list")} to see configured agents.`,
+      `Agent "${params.agentInput}" not found. Run ${formatCliCommand("afora agents list")} to see configured agents.`,
     );
     params.runtime.exit(1);
     return null;
@@ -73,7 +73,7 @@ function resolveTargetAgentIdOrExit(params: {
   const agentId = normalized?.value ?? resolveDefaultAgentId(params.cfg);
   if (!hasAgent(params.cfg, agentId)) {
     params.runtime.error(
-      `Agent "${agentId}" not found. Run ${formatCliCommand("openclaw agents list")} to see configured agents.`,
+      `Agent "${agentId}" not found. Run ${formatCliCommand("afora agents list")} to see configured agents.`,
     );
     params.runtime.exit(1);
     return null;
@@ -169,7 +169,7 @@ export async function agentsBindingsCommand(
   const normalizedFilter = opts.agent === undefined ? null : normalizeAgentIdStrict(opts.agent);
   if (normalizedFilter && !normalizedFilter.ok) {
     runtime.error(
-      `Agent "${opts.agent}" not found. Run ${formatCliCommand("openclaw agents list")} to see configured agents.`,
+      `Agent "${opts.agent}" not found. Run ${formatCliCommand("afora agents list")} to see configured agents.`,
     );
     runtime.exit(1);
     return;
@@ -177,7 +177,7 @@ export async function agentsBindingsCommand(
   const filterAgentId = normalizedFilter?.value;
   if (filterAgentId && !hasAgent(cfg, filterAgentId)) {
     runtime.error(
-      `Agent "${filterAgentId}" not found. Run ${formatCliCommand("openclaw agents list")} to see configured agents.`,
+      `Agent "${filterAgentId}" not found. Run ${formatCliCommand("afora agents list")} to see configured agents.`,
     );
     runtime.exit(1);
     return;

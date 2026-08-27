@@ -2,20 +2,20 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { resetPluginStateStoreForTests } from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { resetPluginStateStoreForTests } from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { withEnvAsync } from "../../test-utils/env.js";
 
 async function withOpenRouterStateDir(run: (stateDir: string) => Promise<void>) {
   // Each case gets an isolated state dir because the module persists capability
   // rows through the plugin state store across imports.
-  const stateDir = mkdtempSync(join(tmpdir(), "openclaw-openrouter-capabilities-"));
+  const stateDir = mkdtempSync(join(tmpdir(), "afora-openrouter-capabilities-"));
   resetPluginStateStoreForTests();
   try {
     await withEnvAsync(
       {
-        OPENCLAW_STATE_DIR: stateDir,
+        AFORA_STATE_DIR: stateDir,
         ALL_PROXY: "",
         all_proxy: "",
         HTTP_PROXY: "",

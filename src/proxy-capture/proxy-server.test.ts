@@ -9,7 +9,7 @@ import net, { Socket, type AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import type { DebugProxySettings } from "./env.js";
 import { startDebugProxyServer } from "./proxy-server.js";
 import { closeDebugProxyCaptureStore, getDebugProxyCaptureStore } from "./store.sqlite.js";
@@ -19,15 +19,15 @@ vi.mock("./ca.js", () => ({
 }));
 
 let testRoot: string | undefined;
-const originalStateDir = process.env.OPENCLAW_STATE_DIR;
+const originalStateDir = process.env.AFORA_STATE_DIR;
 
 async function cleanupTestRoot(): Promise<void> {
   closeDebugProxyCaptureStore();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   if (originalStateDir === undefined) {
-    delete process.env.OPENCLAW_STATE_DIR;
+    delete process.env.AFORA_STATE_DIR;
   } else {
-    process.env.OPENCLAW_STATE_DIR = originalStateDir;
+    process.env.AFORA_STATE_DIR = originalStateDir;
   }
   if (!testRoot) {
     return;
@@ -38,9 +38,9 @@ async function cleanupTestRoot(): Promise<void> {
 }
 
 async function makeSettings(): Promise<DebugProxySettings> {
-  testRoot = await mkdtemp(join(tmpdir(), "openclaw-debug-proxy-server-"));
+  testRoot = await mkdtemp(join(tmpdir(), "afora-debug-proxy-server-"));
   const certDir = join(testRoot, "certs");
-  process.env.OPENCLAW_STATE_DIR = testRoot;
+  process.env.AFORA_STATE_DIR = testRoot;
   return {
     enabled: true,
     required: false,

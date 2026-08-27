@@ -1,5 +1,5 @@
 // Minimax provider module implements model/runtime integration.
-import type { ProviderPlugin } from "openclaw/plugin-sdk/provider-model-shared";
+import type { ProviderPlugin } from "afora-agent/plugin-sdk/provider-model-shared";
 import { buildMinimaxPortalProvider, buildMinimaxProvider } from "./provider-catalog.js";
 
 const minimaxProviderDiscovery: ProviderPlugin[] = [

@@ -1,9 +1,9 @@
 // Covers when model selection should install the Copilot runtime plugin.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { modelSelectionShouldEnsureCopilotRuntimePlugin } from "./copilot-routing.js";
 
-function withDefaultRoster(config: OpenClawConfig = {}): OpenClawConfig {
+function withDefaultRoster(config: AforaConfig = {}): AforaConfig {
   return {
     ...config,
     agents: { entries: { main: { default: true } }, ...config.agents },
@@ -12,17 +12,17 @@ function withDefaultRoster(config: OpenClawConfig = {}): OpenClawConfig {
 
 const emptyCfg = withDefaultRoster();
 
-function cfgWithProviderRuntime(id: string): OpenClawConfig {
+function cfgWithProviderRuntime(id: string): AforaConfig {
   return withDefaultRoster({
     models: {
       providers: {
         "github-copilot": { agentRuntime: { id } },
       },
     },
-  } as unknown as OpenClawConfig);
+  } as unknown as AforaConfig);
 }
 
-function cfgWithModelRuntime(modelId: string, id: string): OpenClawConfig {
+function cfgWithModelRuntime(modelId: string, id: string): AforaConfig {
   return withDefaultRoster({
     models: {
       providers: {
@@ -31,7 +31,7 @@ function cfgWithModelRuntime(modelId: string, id: string): OpenClawConfig {
         },
       },
     },
-  } as unknown as OpenClawConfig);
+  } as unknown as AforaConfig);
 }
 
 describe("modelSelectionShouldEnsureCopilotRuntimePlugin", () => {
@@ -100,7 +100,7 @@ describe("modelSelectionShouldEnsureCopilotRuntimePlugin", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig);
+    } as unknown as AforaConfig);
     expect(
       modelSelectionShouldEnsureCopilotRuntimePlugin({
         model: "github-copilot/gpt-4o",
@@ -123,7 +123,7 @@ describe("modelSelectionShouldEnsureCopilotRuntimePlugin", () => {
           openai: { agentRuntime: { id: "copilot" } },
         },
       },
-    } as unknown as OpenClawConfig);
+    } as unknown as AforaConfig);
     expect(
       modelSelectionShouldEnsureCopilotRuntimePlugin({ model: "openai/gpt-4o", config: cfg }),
     ).toBe(false);

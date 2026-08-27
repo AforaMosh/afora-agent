@@ -66,9 +66,9 @@ suite.define(() => {
             () =>
               (
                 window as Window & {
-                  openclawTalkE2eState?: { constraints: unknown[] };
+                  aforaTalkE2eState?: { constraints: unknown[] };
                 }
-              ).openclawTalkE2eState?.constraints,
+              ).aforaTalkE2eState?.constraints,
           ),
         )
         .toEqual([
@@ -135,7 +135,7 @@ suite.define(() => {
       await page.evaluate(() => {
         const state = (
           window as Window & {
-            openclawTalkE2eState?: {
+            aforaTalkE2eState?: {
               inputProcessor?: {
                 onaudioprocess?: (event: {
                   inputBuffer: { getChannelData: () => Float32Array };
@@ -144,7 +144,7 @@ suite.define(() => {
               meterLevel?: number;
             };
           }
-        ).openclawTalkE2eState;
+        ).aforaTalkE2eState;
         if (state) {
           state.meterLevel = 0.25;
         }
@@ -176,9 +176,9 @@ suite.define(() => {
           page.evaluate(() => {
             const state = (
               window as Window & {
-                openclawTalkE2eState?: { audioContextsClosed: number; tracksStopped: number };
+                aforaTalkE2eState?: { audioContextsClosed: number; tracksStopped: number };
               }
-            ).openclawTalkE2eState;
+            ).aforaTalkE2eState;
             return state
               ? {
                   audioContextsClosed: state.audioContextsClosed,
@@ -233,7 +233,7 @@ suite.define(() => {
       await page.evaluate(() => {
         const state = (
           window as Window & {
-            openclawTalkE2eState?: {
+            aforaTalkE2eState?: {
               inputProcessor?: {
                 onaudioprocess?: (event: {
                   inputBuffer: { getChannelData: () => Float32Array };
@@ -242,7 +242,7 @@ suite.define(() => {
               meterLevel?: number;
             };
           }
-        ).openclawTalkE2eState;
+        ).aforaTalkE2eState;
         if (state) {
           state.meterLevel = 0.25;
         }
@@ -334,11 +334,11 @@ suite.define(() => {
             const stream = await getUserMedia(constraints);
             (
               window as Window & {
-                openclawVideoTalkTracks?: MediaStreamTrack[];
+                aforaVideoTalkTracks?: MediaStreamTrack[];
               }
-            ).openclawVideoTalkTracks = [
-              ...((window as Window & { openclawVideoTalkTracks?: MediaStreamTrack[] })
-                .openclawVideoTalkTracks ?? []),
+            ).aforaVideoTalkTracks = [
+              ...((window as Window & { aforaVideoTalkTracks?: MediaStreamTrack[] })
+                .aforaVideoTalkTracks ?? []),
               ...stream.getTracks(),
             ];
             return stream;
@@ -367,12 +367,12 @@ suite.define(() => {
             super();
             (
               window as Window & {
-                openclawVideoTalkE2e?: {
+                aforaVideoTalkE2e?: {
                   dataChannelCreated: boolean;
                   peer: FakePeerConnection;
                 };
               }
-            ).openclawVideoTalkE2e = { dataChannelCreated: false, peer: this };
+            ).aforaVideoTalkE2e = { dataChannelCreated: false, peer: this };
           }
 
           addTrack() {}
@@ -380,9 +380,9 @@ suite.define(() => {
           createDataChannel() {
             const harness = (
               window as Window & {
-                openclawVideoTalkE2e?: { dataChannelCreated: boolean };
+                aforaVideoTalkE2e?: { dataChannelCreated: boolean };
               }
-            ).openclawVideoTalkE2e;
+            ).aforaVideoTalkE2e;
             if (harness) {
               harness.dataChannelCreated = true;
             }
@@ -431,9 +431,9 @@ suite.define(() => {
             Boolean(
               (
                 window as Window & {
-                  openclawVideoTalkE2e?: { dataChannelCreated: boolean };
+                  aforaVideoTalkE2e?: { dataChannelCreated: boolean };
                 }
-              ).openclawVideoTalkE2e?.dataChannelCreated,
+              ).aforaVideoTalkE2e?.dataChannelCreated,
             ),
           ),
         )
@@ -441,9 +441,9 @@ suite.define(() => {
       await page.evaluate(() => {
         const channel = (
           window as Window & {
-            openclawVideoTalkE2e?: { peer: { channel: EventTarget } };
+            aforaVideoTalkE2e?: { peer: { channel: EventTarget } };
           }
-        ).openclawVideoTalkE2e?.peer.channel;
+        ).aforaVideoTalkE2e?.peer.channel;
         channel?.dispatchEvent(new Event("open"));
       });
       const turnCameraOn = page.getByRole("button", { name: "Turn camera on" });
@@ -468,9 +468,9 @@ suite.define(() => {
       await page.evaluate(() => {
         const channel = (
           window as Window & {
-            openclawVideoTalkE2e?: { peer: { channel: EventTarget } };
+            aforaVideoTalkE2e?: { peer: { channel: EventTarget } };
           }
-        ).openclawVideoTalkE2e?.peer.channel;
+        ).aforaVideoTalkE2e?.peer.channel;
         channel?.dispatchEvent(
           new MessageEvent("message", {
             data: JSON.stringify({
@@ -498,9 +498,9 @@ suite.define(() => {
           page.evaluate(() => {
             const sent = (
               window as Window & {
-                openclawVideoTalkE2e?: { peer: { channel: { sent: unknown[] } } };
+                aforaVideoTalkE2e?: { peer: { channel: { sent: unknown[] } } };
               }
-            ).openclawVideoTalkE2e?.peer.channel.sent;
+            ).aforaVideoTalkE2e?.peer.channel.sent;
             return {
               image: sent?.some(
                 (event) =>
@@ -534,9 +534,9 @@ suite.define(() => {
       const trackStates = await page.evaluate(() =>
         (
           window as Window & {
-            openclawVideoTalkTracks?: MediaStreamTrack[];
+            aforaVideoTalkTracks?: MediaStreamTrack[];
           }
-        ).openclawVideoTalkTracks?.map((track) => track.readyState),
+        ).aforaVideoTalkTracks?.map((track) => track.readyState),
       );
       expect(trackStates).toHaveLength(2);
       expect(trackStates?.every((state) => state === "ended")).toBe(true);
@@ -601,11 +601,11 @@ suite.define(() => {
             const stream = await getUserMedia(constraints);
             (
               window as Window & {
-                openclawGeminiVideoTalkTracks?: MediaStreamTrack[];
+                aforaGeminiVideoTalkTracks?: MediaStreamTrack[];
               }
-            ).openclawGeminiVideoTalkTracks = [
-              ...((window as Window & { openclawGeminiVideoTalkTracks?: MediaStreamTrack[] })
-                .openclawGeminiVideoTalkTracks ?? []),
+            ).aforaGeminiVideoTalkTracks = [
+              ...((window as Window & { aforaGeminiVideoTalkTracks?: MediaStreamTrack[] })
+                .aforaGeminiVideoTalkTracks ?? []),
               ...stream.getTracks(),
             ];
             return stream;
@@ -677,9 +677,9 @@ suite.define(() => {
       const trackStates = await page.evaluate(() =>
         (
           window as Window & {
-            openclawGeminiVideoTalkTracks?: MediaStreamTrack[];
+            aforaGeminiVideoTalkTracks?: MediaStreamTrack[];
           }
-        ).openclawGeminiVideoTalkTracks?.map((track) => track.readyState),
+        ).aforaGeminiVideoTalkTracks?.map((track) => track.readyState),
       );
       expect(trackStates).toHaveLength(2);
       expect(trackStates?.every((state) => state === "ended")).toBe(true);
@@ -775,9 +775,9 @@ suite.define(() => {
             () =>
               (
                 window as Window & {
-                  openclawTalkE2eState?: { constraints: unknown[] };
+                  aforaTalkE2eState?: { constraints: unknown[] };
                 }
-              ).openclawTalkE2eState?.constraints.length,
+              ).aforaTalkE2eState?.constraints.length,
           ),
         )
         .toBe(1);
@@ -859,9 +859,9 @@ suite.define(() => {
             () =>
               (
                 window as Window & {
-                  openclawTalkE2eState?: { inputProcessor?: unknown };
+                  aforaTalkE2eState?: { inputProcessor?: unknown };
                 }
-              ).openclawTalkE2eState?.inputProcessor != null,
+              ).aforaTalkE2eState?.inputProcessor != null,
           ),
         )
         .toBe(true);
@@ -870,7 +870,7 @@ suite.define(() => {
       await page.evaluate(() => {
         const processor = (
           window as Window & {
-            openclawTalkE2eState?: {
+            aforaTalkE2eState?: {
               inputProcessor?: {
                 onaudioprocess?: (event: {
                   inputBuffer: { getChannelData: () => Float32Array };
@@ -878,7 +878,7 @@ suite.define(() => {
               };
             };
           }
-        ).openclawTalkE2eState?.inputProcessor;
+        ).aforaTalkE2eState?.inputProcessor;
         for (let index = 0; index < 5; index += 1) {
           processor?.onaudioprocess?.({
             inputBuffer: { getChannelData: () => new Float32Array(4096).fill(0.1) },
@@ -943,9 +943,9 @@ suite.define(() => {
             () =>
               (
                 window as Window & {
-                  openclawTalkE2eState?: { constraints: unknown[] };
+                  aforaTalkE2eState?: { constraints: unknown[] };
                 }
-              ).openclawTalkE2eState?.constraints.length,
+              ).aforaTalkE2eState?.constraints.length,
           ),
         )
         .toBe(1);
@@ -979,7 +979,7 @@ suite.define(() => {
       await page.evaluate(() => {
         const state = (
           window as Window & {
-            openclawTalkE2eState?: {
+            aforaTalkE2eState?: {
               inputProcessor?: {
                 onaudioprocess?: (event: {
                   inputBuffer: { getChannelData: () => Float32Array };
@@ -987,7 +987,7 @@ suite.define(() => {
               };
             };
           }
-        ).openclawTalkE2eState;
+        ).aforaTalkE2eState;
         state?.inputProcessor?.onaudioprocess?.({
           inputBuffer: { getChannelData: () => new Float32Array(4096).fill(0.1) },
         });

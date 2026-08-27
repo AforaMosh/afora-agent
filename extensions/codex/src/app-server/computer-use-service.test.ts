@@ -19,7 +19,7 @@ describe("Codex Computer Use native service", () => {
   const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
   it("installs the official client beneath the isolated Codex home", async () => {
-    const root = tempDirs.make("openclaw-computer-use-service-");
+    const root = tempDirs.make("afora-computer-use-service-");
     const sourcePath = path.join(root, "source", "Codex Computer Use.app");
     const codexHome = path.join(root, "agent", "codex-home");
     await writeExecutableClient(sourcePath);
@@ -40,7 +40,7 @@ describe("Codex Computer Use native service", () => {
   });
 
   it("reuses a complete home-owned client without consulting desktop sources", async () => {
-    const root = tempDirs.make("openclaw-computer-use-service-");
+    const root = tempDirs.make("afora-computer-use-service-");
     const codexHome = path.join(root, "codex-home");
     await writeExecutableClient(path.join(codexHome, "computer-use", "Codex Computer Use.app"));
     const copyServiceApp = vi.fn();
@@ -57,7 +57,7 @@ describe("Codex Computer Use native service", () => {
   });
 
   it("reports a missing source without creating a partial target", async () => {
-    const root = tempDirs.make("openclaw-computer-use-service-");
+    const root = tempDirs.make("afora-computer-use-service-");
     const codexHome = path.join(root, "codex-home");
 
     const result = await ensureCodexComputerUseServiceApp({
@@ -73,7 +73,7 @@ describe("Codex Computer Use native service", () => {
   });
 
   it("replaces an incomplete home-owned service app", async () => {
-    const root = tempDirs.make("openclaw-computer-use-service-");
+    const root = tempDirs.make("afora-computer-use-service-");
     const sourcePath = path.join(root, "source", "Codex Computer Use.app");
     const codexHome = path.join(root, "codex-home");
     const targetPath = path.join(codexHome, "computer-use", "Codex Computer Use.app");

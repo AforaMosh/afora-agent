@@ -1,9 +1,9 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
 /** Exercises provider runtime loading, ordering, and manifest-backed discovery paths. */
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ModelProviderConfig, OpenClawConfig } from "../config/types.js";
+import type { ModelProviderConfig, AforaConfig } from "../config/types.js";
 import { captureEnv, deleteTestEnvValue, setTestEnvValue } from "../test-utils/env.js";
 import type { ProviderRuntimeModel } from "./provider-runtime-model.types.js";
 import {
@@ -52,7 +52,7 @@ const resolveBundledProviderPolicySurfaceMock = vi.fn<ResolveBundledProviderPoli
 );
 const providerRuntimeWarnMock = vi.fn();
 
-let getAiTransportHost: typeof import("@openclaw/ai").getAiTransportHost;
+let getAiTransportHost: typeof import("@afora/ai").getAiTransportHost;
 let attachModelProviderRuntimePluginHandle: typeof import("./provider-hook-runtime.js").attachModelProviderRuntimePluginHandle;
 let augmentModelCatalogWithProviderPlugins: typeof import("./provider-runtime.js").augmentModelCatalogWithProviderPlugins;
 let buildProviderAuthDoctorHintWithPlugin: typeof import("./provider-runtime.js").buildProviderAuthDoctorHintWithPlugin;
@@ -345,7 +345,7 @@ describe("provider-runtime", () => {
     } = await import("./provider-runtime.js"));
     ({ attachModelProviderRuntimePluginHandle } = await import("./provider-hook-runtime.js"));
     await import("../agents/ai-transport-runtime-host.js");
-    ({ getAiTransportHost } = await import("@openclaw/ai"));
+    ({ getAiTransportHost } = await import("@afora/ai"));
     ({ createEmptyPluginRegistry } = await import("./registry.js"));
     ({ resetPluginRuntimeStateForTest, setActivePluginRegistry } = await import("./runtime.js"));
   });
@@ -872,14 +872,14 @@ describe("provider-runtime", () => {
           demo: { enabled: true, config: { endpoint: "https://one.example" } },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const secondConfig = {
       plugins: {
         entries: {
           demo: { enabled: true, config: { endpoint: "https://two.example" } },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveProviderRuntimePlugin({ provider: DEMO_PROVIDER_ID, config: firstConfig })).toBe(
       provider,
@@ -906,7 +906,7 @@ describe("provider-runtime", () => {
           "active-memory": { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const secondConfig = {
       plugins: {
         entries: {
@@ -914,7 +914,7 @@ describe("provider-runtime", () => {
           "active-memory": { enabled: true, config: { queryMode: "recent" } },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveProviderRuntimePlugin({ provider: DEMO_PROVIDER_ID, config: firstConfig })).toBe(
       provider,
@@ -937,11 +937,11 @@ describe("provider-runtime", () => {
       label: "Demo two",
       auth: [],
     };
-    const config = {} as OpenClawConfig;
-    const envSnapshot = captureEnv(["HOME", "OPENCLAW_HOME"]);
+    const config = {} as AforaConfig;
+    const envSnapshot = captureEnv(["HOME", "AFORA_HOME"]);
     try {
       setTestEnvValue("HOME", "/home/one");
-      deleteTestEnvValue("OPENCLAW_HOME");
+      deleteTestEnvValue("AFORA_HOME");
       resolvePluginProvidersMock.mockReturnValueOnce([firstProvider]);
       expect(resolveProviderRuntimePlugin({ provider: DEMO_PROVIDER_ID, config })).toBe(
         firstProvider,
@@ -1136,15 +1136,15 @@ describe("provider-runtime", () => {
           demo: { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const firstConfig = {
       ...baseConfig,
       agents: { defaults: { model: "openai/gpt-5.4" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const secondConfig = {
       ...baseConfig,
       agents: { defaults: { model: "anthropic/claude-sonnet-4-5" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const metadataSnapshot = {
       index: {},
       manifestRegistry: {},
@@ -1200,7 +1200,7 @@ describe("provider-runtime", () => {
           "active-memory": { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const secondConfig = {
       plugins: {
         entries: {
@@ -1208,7 +1208,7 @@ describe("provider-runtime", () => {
           "active-memory": { enabled: true, config: { queryMode: "recent" } },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     for (const config of [firstConfig, secondConfig]) {
       expect(

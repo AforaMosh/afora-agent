@@ -52,9 +52,9 @@ function formatCliProcessFailure(params: {
 }
 
 async function createHelpProcessFixture(config?: Record<string, unknown>) {
-  const root = tempDirs.make("openclaw-help-exit-");
+  const root = tempDirs.make("afora-help-exit-");
   const stateDir = path.join(root, "state");
-  const configPath = path.join(stateDir, "openclaw.json");
+  const configPath = path.join(stateDir, "afora.json");
   const tlsImportGuardPath = path.join(root, "forbid-tls-import.mjs");
   const keepAlivePath = path.join(root, "keep-alive.mjs");
   const failRunMainImportPath = path.join(root, "fail-run-main-import.mjs");
@@ -155,9 +155,9 @@ async function runCliProcess(params: {
         NODE_ENV: undefined,
         NODE_OPTIONS: undefined,
         NODE_USE_SYSTEM_CA: "1",
-        OPENCLAW_CONFIG_PATH: params.pristineHome ? undefined : fixture.configPath,
-        OPENCLAW_NO_RESPAWN: params.allowRespawn ? undefined : "1",
-        OPENCLAW_STATE_DIR: params.pristineHome ? undefined : fixture.stateDir,
+        AFORA_CONFIG_PATH: params.pristineHome ? undefined : fixture.configPath,
+        AFORA_NO_RESPAWN: params.allowRespawn ? undefined : "1",
+        AFORA_STATE_DIR: params.pristineHome ? undefined : fixture.stateDir,
         VITEST: undefined,
         ...params.env,
       },
@@ -275,7 +275,7 @@ describe("CLI help process exit", () => {
     });
 
     expect(result.stderr).toBe("");
-    expect(result.stdout).toContain("Usage: openclaw [options] [command]");
+    expect(result.stdout).toContain("Usage: afora [options] [command]");
     expect(() => parseJsonLines(result.stdout)).toThrow();
   });
 
@@ -285,13 +285,13 @@ describe("CLI help process exit", () => {
     const result = await runCliProcess({ args: ["backup", "--help"], keepAlive: true });
 
     expect(result.stderr).toBe("");
-    expect(result.stdout).toContain("Usage: openclaw backup [options] [command]");
+    expect(result.stdout).toContain("Usage: afora backup [options] [command]");
   });
   it("flushes explicitly requested entry traces on precomputed help", async () => {
     const result = await runCliProcess({
       args: ["gateway", "--help"],
       config: { logging: { consoleStyle: "json", level: "silent" } },
-      env: { OPENCLAW_GATEWAY_STARTUP_TRACE: "1" },
+      env: { AFORA_GATEWAY_STARTUP_TRACE: "1" },
     });
 
     expect(parseJsonLines(result.stderr)).toEqual(
@@ -310,7 +310,7 @@ describe("CLI help process exit", () => {
       let stdout = "";
       let stderr = "";
       const program = new Command()
-        .name("openclaw")
+        .name("afora")
         .exitOverride()
         .configureOutput({
           writeOut: (value) => {
@@ -320,7 +320,7 @@ describe("CLI help process exit", () => {
             stderr += value;
           },
         });
-      const argv = ["node", "openclaw", group, "--help"];
+      const argv = ["node", "afora", group, "--help"];
       const registered =
         registry === "core"
           ? await registerCoreCliByName(program, createProgramContext(), group, argv)
@@ -333,19 +333,19 @@ describe("CLI help process exit", () => {
       expect(parseResult).toBeInstanceOf(CommanderError);
       expect(parseResult).toMatchObject({ code: "commander.helpDisplayed", exitCode: 0 });
       expect(stderr).toBe("");
-      expect(stdout).toContain(`Usage: openclaw ${usageCommand} [options] [command]`);
+      expect(stdout).toContain(`Usage: afora ${usageCommand} [options] [command]`);
     },
   );
 
   it.concurrent.each([
-    { args: ["acp", "--help"], usage: "Usage: openclaw acp [options] [command]" },
-    { args: ["acp", "client", "--help"], usage: "Usage: openclaw acp client [options]" },
+    { args: ["acp", "--help"], usage: "Usage: afora acp [options] [command]" },
+    { args: ["acp", "client", "--help"], usage: "Usage: afora acp client [options]" },
   ])("renders in-process ACP help for $args", async ({ args, usage }) => {
     let stdout = "";
     let stderr = "";
     let actionStarted = false;
     const program = new Command()
-      .name("openclaw")
+      .name("afora")
       .exitOverride()
       .configureOutput({
         writeOut: (value) => {
@@ -358,7 +358,7 @@ describe("CLI help process exit", () => {
     program.hook("preAction", () => {
       actionStarted = true;
     });
-    const argv = ["node", "openclaw", ...args];
+    const argv = ["node", "afora", ...args];
 
     const registered = await registerSubCliByName(program, "acp", argv);
     const parseResult = await program
@@ -392,7 +392,7 @@ describe("rejected CLI process state isolation", () => {
     });
 
     expect(result.stderr).toContain("--gateway-port must be an integer between 1 and 65535.");
-    await expect(fs.access(path.join(result.root, `.openclaw-${profile}`))).rejects.toMatchObject({
+    await expect(fs.access(path.join(result.root, `.afora-${profile}`))).rejects.toMatchObject({
       code: "ENOENT",
     });
   });
@@ -414,12 +414,12 @@ describe("JSON console style process output", () => {
         args: ["--container"],
         config: {
           logging: {
-            consoleStyle: "${OPENCLAW_TEST_CONSOLE_STYLE}",
+            consoleStyle: "${AFORA_TEST_CONSOLE_STYLE}",
             level: "silent",
           },
         },
-        env: { OPENCLAW_TEST_CONSOLE_STYLE: undefined },
-        stateEnv: () => ({ OPENCLAW_TEST_CONSOLE_STYLE: "json" }),
+        env: { AFORA_TEST_CONSOLE_STYLE: undefined },
+        stateEnv: () => ({ AFORA_TEST_CONSOLE_STYLE: "json" }),
         timeoutMs: SLOW_DOTENV_CHILD_PROCESS_TIMEOUT_MS,
         expectedExitCode: 2,
       });
@@ -441,16 +441,16 @@ describe("JSON console style process output", () => {
         args: ["gateway", "status"],
         config: {
           logging: {
-            consoleStyle: "${OPENCLAW_TEST_CONSOLE_STYLE}",
+            consoleStyle: "${AFORA_TEST_CONSOLE_STYLE}",
             level: "silent",
           },
         },
         env: {
-          OPENCLAW_GATEWAY_STARTUP_TRACE: "1",
-          OPENCLAW_TEST_CONSOLE_STYLE: undefined,
+          AFORA_GATEWAY_STARTUP_TRACE: "1",
+          AFORA_TEST_CONSOLE_STYLE: undefined,
         },
         failRunMainImport: true,
-        stateEnv: () => ({ OPENCLAW_TEST_CONSOLE_STYLE: "json" }),
+        stateEnv: () => ({ AFORA_TEST_CONSOLE_STYLE: "json" }),
         timeoutMs: SLOW_DOTENV_CHILD_PROCESS_TIMEOUT_MS,
         expectedExitCode: 1,
       });
@@ -476,7 +476,7 @@ describe("JSON console style process output", () => {
       args: ["gateway", "status"],
       allowRespawn: true,
       config: loggingConfig,
-      env: { OPENCLAW_GATEWAY_STARTUP_TRACE: "1" },
+      env: { AFORA_GATEWAY_STARTUP_TRACE: "1" },
     });
 
     const bootstrapRecords = parseJsonLines(result.stderr).filter(

@@ -1,5 +1,5 @@
 // Telegram tests cover message-session routing and persisted model inheritance.
-import type { SessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
+import type { SessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
 import { describe, expect, it, vi } from "vitest";
 import type { TelegramBotDeps } from "./bot-deps.js";
 import { createTelegramMessageSessionRuntime } from "./bot-handlers.message-context.js";

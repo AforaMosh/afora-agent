@@ -2,12 +2,12 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { OpenClawStdioClientTransport } from "./mcp-stdio-transport.js";
+import { AforaStdioClientTransport } from "./mcp-stdio-transport.js";
 import { resolveStdioMcpServerLaunchConfig } from "./mcp-stdio.js";
 
-describe.runIf(process.platform === "win32")("OpenClawStdioClientTransport on Windows", () => {
+describe.runIf(process.platform === "win32")("AforaStdioClientTransport on Windows", () => {
   it("applies configured environment overrides regardless of key case", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-mcp-env-case-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-mcp-env-case-"));
     const inheritedTemp = path.join(root, "inherited");
     const configuredTemp = path.join(root, "configured");
     const capturePath = path.join(root, "captured.txt");
@@ -15,18 +15,18 @@ describe.runIf(process.platform === "win32")("OpenClawStdioClientTransport on Wi
     await fs.mkdir(configuredTemp);
     const previousTemp = process.env.TEMP;
     process.env.TEMP = inheritedTemp;
-    let transport: OpenClawStdioClientTransport | undefined;
+    let transport: AforaStdioClientTransport | undefined;
 
     try {
       const resolved = resolveStdioMcpServerLaunchConfig({
         command: process.execPath,
         args: [
           "-e",
-          'require("node:fs").writeFileSync(process.env.OPENCLAW_MCP_ENV_CAPTURE, process.env.TEMP)',
+          'require("node:fs").writeFileSync(process.env.AFORA_MCP_ENV_CAPTURE, process.env.TEMP)',
         ],
         env: {
           temp: configuredTemp,
-          OPENCLAW_MCP_ENV_CAPTURE: capturePath,
+          AFORA_MCP_ENV_CAPTURE: capturePath,
         },
       });
       expect(resolved.ok).toBe(true);
@@ -34,7 +34,7 @@ describe.runIf(process.platform === "win32")("OpenClawStdioClientTransport on Wi
         return;
       }
 
-      transport = new OpenClawStdioClientTransport(resolved.config);
+      transport = new AforaStdioClientTransport(resolved.config);
       const closed = new Promise<void>((resolve, reject) => {
         // oxlint-disable-next-line unicorn/prefer-add-event-listener -- MCP Transport uses callback properties, not EventTarget.
         transport!.onclose = resolve;

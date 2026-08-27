@@ -1,11 +1,11 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 // Covers plugin registry assembly, contribution lookup, and reset behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { recordPluginCandidateInstallOwner } from "./candidate-install-owner.js";
 import type { PluginCandidate } from "./discovery.js";
 import { writePersistedInstalledPluginIndex } from "./installed-plugin-index-store.js";
@@ -51,19 +51,19 @@ function listPluginRecords(params: { index: InstalledPluginIndex }) {
 }
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   clearPluginMetadataLifecycleCaches();
   cleanupTrackedTempDirs(tempDirs);
 });
 
 function makeTempDir() {
-  return makeTrackedTempDir("openclaw-plugin-registry", tempDirs);
+  return makeTrackedTempDir("afora-plugin-registry", tempDirs);
 }
 
 function hermeticEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
   return {
-    OPENCLAW_BUNDLED_PLUGINS_DIR: undefined,
-    OPENCLAW_VERSION: "2026.4.25",
+    AFORA_BUNDLED_PLUGINS_DIR: undefined,
+    AFORA_VERSION: "2026.4.25",
     VITEST: "true",
     ...overrides,
   };
@@ -84,7 +84,7 @@ function createCandidate(
     "utf8",
   );
   fs.writeFileSync(
-    path.join(rootDir, "openclaw.plugin.json"),
+    path.join(rootDir, "afora.plugin.json"),
     JSON.stringify({
       id: pluginId,
       name: pluginId,
@@ -151,7 +151,7 @@ function createIndex(
     plugins: [
       {
         pluginId,
-        manifestPath: path.join(pluginRoot, "openclaw.plugin.json"),
+        manifestPath: path.join(pluginRoot, "afora.plugin.json"),
         manifestHash: "manifest-hash",
         rootDir: pluginRoot,
         origin: "global",
@@ -353,7 +353,7 @@ describe("plugin registry facade", () => {
       env,
       index,
     });
-    fs.unlinkSync(path.join(rootDir, "openclaw.plugin.json"));
+    fs.unlinkSync(path.join(rootDir, "afora.plugin.json"));
 
     expect(listPluginContributionIds({ lookUpTable, contribution: "providers" })).toEqual(["demo"]);
     expect(resolveProviderOwners({ lookUpTable, providerId: "DEMO" })).toEqual(["demo"]);
@@ -405,7 +405,7 @@ describe("plugin registry facade", () => {
     const rootDir = makeTempDir();
     fs.writeFileSync(path.join(rootDir, "index.ts"), "", "utf8");
     fs.writeFileSync(
-      path.join(rootDir, "openclaw.plugin.json"),
+      path.join(rootDir, "afora.plugin.json"),
       JSON.stringify({
         id: "openai",
         legacyPluginIds: ["openai-codex"],
@@ -422,7 +422,7 @@ describe("plugin registry facade", () => {
             createIndex("openai").plugins[0],
             'createIndex("openai").plugins[0] test invariant',
           ),
-          manifestPath: path.join(rootDir, "openclaw.plugin.json"),
+          manifestPath: path.join(rootDir, "afora.plugin.json"),
           source: path.join(rootDir, "index.ts"),
           rootDir,
         },
@@ -463,7 +463,7 @@ describe("plugin registry facade", () => {
       env,
       index,
     });
-    fs.unlinkSync(path.join(rootDir, "openclaw.plugin.json"));
+    fs.unlinkSync(path.join(rootDir, "afora.plugin.json"));
 
     const normalizePluginId = createPluginRegistryIdNormalizer(index, {
       manifestRegistry: lookUpTable.manifestRegistry,
@@ -488,7 +488,7 @@ describe("plugin registry facade", () => {
     const config = {} as const;
     fs.writeFileSync(path.join(persistedRootDir, "index.ts"), "", "utf8");
     fs.writeFileSync(
-      path.join(persistedRootDir, "openclaw.plugin.json"),
+      path.join(persistedRootDir, "afora.plugin.json"),
       JSON.stringify({ id: "persisted", configSchema: { type: "object" } }),
       "utf8",
     );
@@ -501,8 +501,8 @@ describe("plugin registry facade", () => {
               createIndex("persisted").plugins[0],
               'createIndex("persisted").plugins[0] test invariant',
             ),
-            manifestPath: path.join(persistedRootDir, "openclaw.plugin.json"),
-            manifestHash: hashFile(path.join(persistedRootDir, "openclaw.plugin.json")),
+            manifestPath: path.join(persistedRootDir, "afora.plugin.json"),
+            manifestHash: hashFile(path.join(persistedRootDir, "afora.plugin.json")),
             source: path.join(persistedRootDir, "index.ts"),
             rootDir: persistedRootDir,
           },
@@ -547,7 +547,7 @@ describe("plugin registry facade", () => {
       },
       { stateDir },
     );
-    const manifestPath = path.join(rootDir, "openclaw.plugin.json");
+    const manifestPath = path.join(rootDir, "afora.plugin.json");
     const future = new Date(Date.now() + 1_000);
     fs.utimesSync(manifestPath, future, future);
 
@@ -562,8 +562,8 @@ describe("plugin registry facade", () => {
     const rootDir = makeTempDir();
     const filePath = path.join(tempDir, "custom-registry.sqlite");
     const env = hermeticEnv({
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_STATE_DIR: tempDir,
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_STATE_DIR: tempDir,
     });
     const installRecords = {
       demo: { source: "npm" as const, spec: "demo@1.0.0", installPath: rootDir },
@@ -623,7 +623,7 @@ describe("plugin registry facade", () => {
     });
     await writePersistedInstalledPluginIndex(persisted, { stateDir });
     fs.writeFileSync(
-      path.join(rootDir, "openclaw.plugin.json"),
+      path.join(rootDir, "afora.plugin.json"),
       JSON.stringify({
         id: "demo",
         name: "Demo",
@@ -737,7 +737,7 @@ describe("plugin registry facade", () => {
               createIndex("persisted").plugins[0],
               'createIndex("persisted").plugins[0] test invariant',
             ),
-            manifestPath: path.join(staleBundledRootDir, "openclaw.plugin.json"),
+            manifestPath: path.join(staleBundledRootDir, "afora.plugin.json"),
             source: path.join(staleBundledRootDir, "index.ts"),
             rootDir: staleBundledRootDir,
             origin: "bundled",
@@ -750,7 +750,7 @@ describe("plugin registry facade", () => {
     const result = loadPluginRegistrySnapshotWithMetadata({
       stateDir,
       candidates: [candidate],
-      env: hermeticEnv({ OPENCLAW_BUNDLED_PLUGINS_DIR: rootDir }),
+      env: hermeticEnv({ AFORA_BUNDLED_PLUGINS_DIR: rootDir }),
     });
 
     expect(result.source).toBe("derived");
@@ -761,7 +761,7 @@ describe("plugin registry facade", () => {
   it("refreshes stale built records and accepts source records for dist-opt-out plugins", async () => {
     const tempRoot = makeTempDir();
     const stateDir = path.join(tempRoot, "state");
-    const packageRoot = path.join(tempRoot, "openclaw");
+    const packageRoot = path.join(tempRoot, "afora");
     const sourceRoot = path.join(packageRoot, "extensions", "demo");
     const builtRoot = path.join(packageRoot, "dist", "extensions", "demo");
     fs.mkdirSync(path.join(packageRoot, ".git"), { recursive: true });
@@ -776,18 +776,18 @@ describe("plugin registry facade", () => {
       packageManifest: { extensions: ["./index.ts"], build: { bundledDist: false } },
     } satisfies PluginCandidate;
     const packageJson = JSON.stringify({
-      openclaw: sourceCandidate.packageManifest,
+      afora: sourceCandidate.packageManifest,
     });
     fs.writeFileSync(path.join(sourceRoot, "package.json"), packageJson);
     fs.copyFileSync(
-      path.join(sourceRoot, "openclaw.plugin.json"),
-      path.join(builtRoot, "openclaw.plugin.json"),
+      path.join(sourceRoot, "afora.plugin.json"),
+      path.join(builtRoot, "afora.plugin.json"),
     );
     fs.copyFileSync(path.join(sourceRoot, "index.ts"), path.join(builtRoot, "index.ts"));
     fs.writeFileSync(path.join(builtRoot, "package.json"), packageJson);
     const env = hermeticEnv({
-      OPENCLAW_BUNDLED_PLUGINS_DIR: path.dirname(builtRoot),
-      OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
+      AFORA_BUNDLED_PLUGINS_DIR: path.dirname(builtRoot),
+      AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
     });
     const freshIndex = loadPluginRegistrySnapshot({
       candidates: [sourceCandidate],
@@ -821,7 +821,7 @@ describe("plugin registry facade", () => {
     for (const plugin of staleBuiltIndex.plugins) {
       plugin.rootDir = builtRoot;
       plugin.source = path.join(builtRoot, "index.ts");
-      plugin.manifestPath = path.join(builtRoot, "openclaw.plugin.json");
+      plugin.manifestPath = path.join(builtRoot, "afora.plugin.json");
       delete plugin.packageBuild;
     }
     await writePersistedInstalledPluginIndex(staleBuiltIndex, { stateDir });
@@ -896,7 +896,7 @@ describe("plugin registry facade", () => {
     const rootDir = path.join(bundledRoot, "demo");
     fs.mkdirSync(rootDir, { recursive: true });
     createCandidate(rootDir);
-    const env = hermeticEnv({ OPENCLAW_BUNDLED_PLUGINS_DIR: bundledRoot });
+    const env = hermeticEnv({ AFORA_BUNDLED_PLUGINS_DIR: bundledRoot });
     const config = { plugins: { entries: { demo: { enabled: true } } } } as const;
     const readFileSyncSpy = vi.spyOn(fs, "readFileSync");
 
@@ -907,7 +907,7 @@ describe("plugin registry facade", () => {
       env,
     });
     const manifestReadsAfterFirst = readFileSyncSpy.mock.calls.filter((call) =>
-      String(call[0]).endsWith("openclaw.plugin.json"),
+      String(call[0]).endsWith("afora.plugin.json"),
     ).length;
 
     const second = loadPluginRegistrySnapshotWithMetadata({
@@ -917,7 +917,7 @@ describe("plugin registry facade", () => {
       env,
     });
     const manifestReadsAfterSecond = readFileSyncSpy.mock.calls.filter((call) =>
-      String(call[0]).endsWith("openclaw.plugin.json"),
+      String(call[0]).endsWith("afora.plugin.json"),
     ).length;
 
     expect(first.source).toBe("derived");
@@ -934,8 +934,8 @@ describe("plugin registry facade", () => {
     fs.mkdirSync(firstRoot, { recursive: true });
     createCandidate(firstRoot, "first");
     const env = hermeticEnv({
-      OPENCLAW_CONFIG_PATH: path.join(configDir, "openclaw.json"),
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_CONFIG_PATH: path.join(configDir, "afora.json"),
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
     });
 
     const first = loadPluginRegistrySnapshotWithMetadata({ stateDir, env });
@@ -962,14 +962,14 @@ describe("plugin registry facade", () => {
     const first = loadPluginRegistrySnapshotWithMetadata({
       stateDir,
       config,
-      env: hermeticEnv({ OPENCLAW_BUNDLED_PLUGINS_DIR: bundledRoot }),
+      env: hermeticEnv({ AFORA_BUNDLED_PLUGINS_DIR: bundledRoot }),
     });
     const second = loadPluginRegistrySnapshotWithMetadata({
       stateDir,
       config,
       env: hermeticEnv({
-        OPENCLAW_BUNDLED_PLUGINS_DIR: bundledRoot,
-        OPENCLAW_VERSION: "2026.4.26",
+        AFORA_BUNDLED_PLUGINS_DIR: bundledRoot,
+        AFORA_VERSION: "2026.4.26",
       }),
     });
 

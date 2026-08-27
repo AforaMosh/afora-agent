@@ -37,7 +37,7 @@ export const OLLAMA_DEFAULT_MODEL = "gemma4";
 export const DEFAULT_OLLAMA_EMBEDDING_MODEL = "nomic-embed-text";
 
 export function resolveOllamaSetupDefaultBaseUrl(env: NodeJS.ProcessEnv = process.env): string {
-  return ["1", "true", "yes", "on"].includes(env.OPENCLAW_DOCKER_SETUP?.trim().toLowerCase() ?? "")
+  return ["1", "true", "yes", "on"].includes(env.AFORA_DOCKER_SETUP?.trim().toLowerCase() ?? "")
     ? OLLAMA_DOCKER_HOST_BASE_URL
     : OLLAMA_DEFAULT_BASE_URL;
 }

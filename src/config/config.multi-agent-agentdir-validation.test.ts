@@ -8,7 +8,7 @@ import { validateConfigObject } from "./validation.js";
 
 describe("multi-agent agentDir validation", () => {
   it("rejects shared agents.entries agentDir", () => {
-    const shared = path.join(tmpdir(), "openclaw-shared-agentdir");
+    const shared = path.join(tmpdir(), "afora-shared-agentdir");
     const res = validateConfigObject({
       agents: {
         entries: { a: { agentDir: shared, default: true }, b: { agentDir: shared } },
@@ -37,8 +37,8 @@ If you want to share credentials, copy auth-profiles.json instead of sharing the
       {
         agents: {
           entries: {
-            a: { agentDir: "~/.openclaw/agents/shared/agent", default: true },
-            b: { agentDir: "~/.openclaw/agents/shared/agent" },
+            a: { agentDir: "~/.afora/agents/shared/agent", default: true },
+            b: { agentDir: "~/.afora/agents/shared/agent" },
           },
         },
         bindings: [{ agentId: "a", match: { channel: "forum" } }],

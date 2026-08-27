@@ -2,14 +2,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { resolveOpenClawPackageRootSync } from "../../infra/openclaw-root.js";
+import { resolveAforaPackageRootSync } from "../../infra/afora-root.js";
 
 const PRIVATE_QA_DIST_RELATIVE_PATH = path.join("dist", "plugin-sdk", "qa-lab.js");
 const SOURCE_CHECKOUT_MARKER_RELATIVE_PATHS = [".git", "pnpm-workspace.yaml"] as const;
 
 /** Return true when private QA CLI routes should be exposed. */
 export function isPrivateQaCliEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env.OPENCLAW_ENABLE_PRIVATE_QA_CLI === "1";
+  return env.AFORA_ENABLE_PRIVATE_QA_CLI === "1";
 }
 
 function resolvePrivateQaSourceModuleSpecifier(params?: {
@@ -17,14 +17,14 @@ function resolvePrivateQaSourceModuleSpecifier(params?: {
   cwd?: string;
   argv1?: string;
   moduleUrl?: string;
-  resolvePackageRootSync?: typeof resolveOpenClawPackageRootSync;
+  resolvePackageRootSync?: typeof resolveAforaPackageRootSync;
   existsSync?: typeof fs.existsSync;
 }): string | null {
   const env = params?.env ?? process.env;
   if (!isPrivateQaCliEnabled(env)) {
     return null;
   }
-  const resolvePackageRootSync = params?.resolvePackageRootSync ?? resolveOpenClawPackageRootSync;
+  const resolvePackageRootSync = params?.resolvePackageRootSync ?? resolveAforaPackageRootSync;
   const packageRoot = resolvePackageRootSync({
     argv1: params?.argv1 ?? process.argv[1],
     cwd: params?.cwd ?? process.cwd(),
@@ -60,13 +60,13 @@ export function loadPrivateQaCliModule(params?: {
   cwd?: string;
   argv1?: string;
   moduleUrl?: string;
-  resolvePackageRootSync?: typeof resolveOpenClawPackageRootSync;
+  resolvePackageRootSync?: typeof resolveAforaPackageRootSync;
   existsSync?: typeof fs.existsSync;
   importModule?: (specifier: string) => Promise<Record<string, unknown>>;
 }): Promise<Record<string, unknown>> {
   const specifier = resolvePrivateQaSourceModuleSpecifier(params);
   if (!specifier) {
-    throw new Error("Private QA CLI is only available from an OpenClaw source checkout.");
+    throw new Error("Private QA CLI is only available from an Afora source checkout.");
   }
   return (params?.importModule ?? dynamicImportPrivateQaCliModule)(specifier);
 }

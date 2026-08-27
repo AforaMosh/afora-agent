@@ -31,7 +31,7 @@ async function enqueueThenKillChild(source: string): Promise<ChildResult> {
     ["--import", "tsx", CHILD_SCRIPT, stateDir, sourceDir, source],
     {
       stdio: ["ignore", "pipe", "pipe"],
-      env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+      env: { ...process.env, AFORA_STATE_DIR: stateDir },
     },
   );
   child = spawned;

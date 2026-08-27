@@ -2,12 +2,12 @@
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Model } from "openclaw/plugin-sdk/llm";
+import type { Model } from "afora-agent/plugin-sdk/llm";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it } from "vitest";
 import { discoverModels } from "../agent-model-discovery.js";
 import { isLiveTestEnabled, readLiveTestConfig } from "../live-test-helpers.js";
-import { ensureOpenClawModelsJson } from "../models-config.js";
+import { ensureAforaModelsJson } from "../models-config.js";
 import type { AgentMessage } from "../runtime/index.js";
 import { AgentSession } from "./agent-session.js";
 import { AuthStorage } from "./auth-storage.js";
@@ -72,12 +72,12 @@ async function resolveLiveModel(
   agentDir: string,
   authStorage: AuthStorage,
 ): Promise<{ model: Model; modelRegistry: ModelRegistry }> {
-  await ensureOpenClawModelsJson(await readLiveTestConfig(), agentDir, {
+  await ensureAforaModelsJson(await readLiveTestConfig(), agentDir, {
     providerDiscoveryProviderIds: ["anthropic"],
   });
   const modelRegistry = discoverModels(authStorage, agentDir, { providerFilter: "anthropic" });
   const requestedModelId =
-    process.env.OPENCLAW_LIVE_AGENT_SESSION_MODEL?.trim() || DEFAULT_MODEL_ID;
+    process.env.AFORA_LIVE_AGENT_SESSION_MODEL?.trim() || DEFAULT_MODEL_ID;
   const model =
     modelRegistry.find("anthropic", requestedModelId) ??
     modelRegistry
@@ -98,7 +98,7 @@ async function createLiveSession(
     handlers?: ExtensionHandlers;
   } = {},
 ) {
-  const root = await mkdtemp(join(tmpdir(), "openclaw-agent-session-live-"));
+  const root = await mkdtemp(join(tmpdir(), "afora-agent-session-live-"));
   tempRoots.push(root);
   const cwd = join(root, "workspace");
   const agentDir = join(root, "agent");

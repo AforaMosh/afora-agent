@@ -1,7 +1,7 @@
 // Hook update tests cover updating installed hook records and config.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { HookInstallRecord } from "../config/types.hooks.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { HookNpmIntegrityDriftParams } from "./install.js";
 
 const installHooksFromNpmSpecMock = vi.fn();
@@ -14,7 +14,7 @@ vi.mock("./install.js", () => ({
 
 vi.mock("./installs.js", () => ({
   readHookInstalls: () => hookInstalls,
-  recordHookInstall: (cfg: OpenClawConfig, update: HookInstallRecord & { hookId: string }) => {
+  recordHookInstall: (cfg: AforaConfig, update: HookInstallRecord & { hookId: string }) => {
     const { hookId, ...record } = update;
     hookInstalls = {
       ...hookInstalls,
@@ -34,7 +34,7 @@ function createHookInstallConfig(params: {
   hookId: string;
   spec: string;
   integrity?: string;
-}): OpenClawConfig {
+}): AforaConfig {
   hookInstalls = {
     [params.hookId]: {
       source: "npm",
@@ -65,14 +65,14 @@ describe("updateNpmInstalledHookPacks", () => {
           actualIntegrity: "sha512-new",
           resolution: {
             integrity: "sha512-new",
-            resolvedSpec: "@openclaw/demo-hooks@1.0.0",
+            resolvedSpec: "@afora/demo-hooks@1.0.0",
             version: "1.0.0",
           },
         });
         if (proceed === false) {
           return {
             ok: false,
-            error: "aborted: npm package integrity drift detected for @openclaw/demo-hooks@1.0.0",
+            error: "aborted: npm package integrity drift detected for @afora/demo-hooks@1.0.0",
           };
         }
         return {
@@ -87,7 +87,7 @@ describe("updateNpmInstalledHookPacks", () => {
 
     const config = createHookInstallConfig({
       hookId: "demo-hooks",
-      spec: "@openclaw/demo-hooks@1.0.0",
+      spec: "@afora/demo-hooks@1.0.0",
       integrity: "sha512-old",
     });
     const result = await updateNpmInstalledHookPacks({
@@ -97,7 +97,7 @@ describe("updateNpmInstalledHookPacks", () => {
     });
 
     expect(warn).toHaveBeenCalledWith(
-      'Integrity drift for hook pack "demo-hooks" (@openclaw/demo-hooks@1.0.0): expected sha512-old, got sha512-new',
+      'Integrity drift for hook pack "demo-hooks" (@afora/demo-hooks@1.0.0): expected sha512-old, got sha512-new',
     );
     expect(result.changed).toBe(false);
     expect(result.config).toBe(config);
@@ -106,7 +106,7 @@ describe("updateNpmInstalledHookPacks", () => {
         hookId: "demo-hooks",
         status: "error",
         message:
-          'Failed to update hook pack "demo-hooks": aborted: npm package integrity drift detected for @openclaw/demo-hooks@1.0.0',
+          'Failed to update hook pack "demo-hooks": aborted: npm package integrity drift detected for @afora/demo-hooks@1.0.0',
       },
     ]);
   });
@@ -119,9 +119,9 @@ describe("updateNpmInstalledHookPacks", () => {
       targetDir: "/tmp/hooks/demo-hooks",
       version: "1.2.3",
       npmResolution: {
-        name: "@openclaw/demo-hooks",
+        name: "@afora/demo-hooks",
         version: "1.2.3",
-        resolvedSpec: "@openclaw/demo-hooks@1.2.3",
+        resolvedSpec: "@afora/demo-hooks@1.2.3",
         integrity: "sha512-new",
         shasum: "abc123",
         resolvedAt: "2026-05-11T20:00:00.000Z",
@@ -130,7 +130,7 @@ describe("updateNpmInstalledHookPacks", () => {
 
     const config = createHookInstallConfig({
       hookId: "demo-hooks",
-      spec: "@openclaw/demo-hooks",
+      spec: "@afora/demo-hooks",
     });
     const result = await updateNpmInstalledHookPacks({
       config,
@@ -147,12 +147,12 @@ describe("updateNpmInstalledHookPacks", () => {
     expect(result.changed).toBe(true);
     expect(hookInstalls["demo-hooks"]).toEqual({
       source: "npm",
-      spec: "@openclaw/demo-hooks",
+      spec: "@afora/demo-hooks",
       installPath: "/tmp/hooks/demo-hooks",
       version: "1.2.3",
-      resolvedName: "@openclaw/demo-hooks",
+      resolvedName: "@afora/demo-hooks",
       resolvedVersion: "1.2.3",
-      resolvedSpec: "@openclaw/demo-hooks@1.2.3",
+      resolvedSpec: "@afora/demo-hooks@1.2.3",
       integrity: "sha512-new",
       shasum: "abc123",
       resolvedAt: "2026-05-11T20:00:00.000Z",

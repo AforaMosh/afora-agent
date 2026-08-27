@@ -39,13 +39,13 @@ let boardViewLoad: Promise<unknown> | null = null;
 
 export function ensureWorkboardCardChipElement(): Promise<void> {
   return ensureCustomElementDefined(
-    "openclaw-workboard-card-chip",
+    "afora-workboard-card-chip",
     () => import("./workboard-card-chip.runtime.ts"),
   );
 }
 
 export async function ensureBoardViewElement(): Promise<boolean> {
-  if (customElements.get("openclaw-board-view")) {
+  if (customElements.get("afora-board-view")) {
     return false;
   }
   boardViewLoad ??= isMockBoardEnabled()
@@ -151,15 +151,15 @@ function renderBoardView(props: BoardSessionSurfaceProps) {
     <div class="board-session-surface__board">
       ${props.workboardCardChip
         ? html`
-            <openclaw-workboard-card-chip
+            <afora-workboard-card-chip
               .active=${props.workboardCardChip.active}
               .basePath=${props.workboardCardChip.basePath}
               .client=${props.workboardCardChip.client}
               .sessionKey=${props.workboardCardChip.sessionKey}
-            ></openclaw-workboard-card-chip>
+            ></afora-workboard-card-chip>
           `
         : nothing}
-      <openclaw-board-view
+      <afora-board-view
         .active=${props.active}
         .snapshot=${props.snapshot}
         .activeTabId=${props.activeTabId}
@@ -167,7 +167,7 @@ function renderBoardView(props: BoardSessionSurfaceProps) {
         .callbacks=${props.callbacks}
         .canMutate=${props.canMutate}
         .canGrant=${props.canGrant}
-      ></openclaw-board-view>
+      ></afora-board-view>
     </div>
   `;
 }

@@ -101,7 +101,7 @@ describe("Zalo account SecretRef inspection", () => {
   const unresolvedRef = {
     source: "env" as const,
     provider: "default",
-    id: "OPENCLAW_TEST_MISSING_ZALO_TOKEN",
+    id: "AFORA_TEST_MISSING_ZALO_TOKEN",
   };
 
   it("keeps direct account resolution strict", () => {

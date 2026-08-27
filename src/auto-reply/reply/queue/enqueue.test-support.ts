@@ -6,7 +6,7 @@ type QueueEnqueueTestApi = {
 
 function getTestApi(): QueueEnqueueTestApi {
   const api = (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.queueEnqueueTestApi")
+    Symbol.for("afora.queueEnqueueTestApi")
   ];
   if (!api) {
     throw new Error("queue enqueue test API is unavailable");

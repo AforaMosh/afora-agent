@@ -1,11 +1,11 @@
 // Google Meet adapter: platform URL, DOM, wire-value, and manual-action ownership.
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import {
   MeetingPlatformAdapter,
   type MeetingBrowserJoinSession,
   type MeetingManualActionCategory,
-} from "openclaw/plugin-sdk/meeting-runtime";
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
+} from "afora-agent/plugin-sdk/meeting-runtime";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
 import type { GoogleMeetConfig, GoogleMeetMode } from "../config.js";
 import { normalizeMeetUrl } from "../meet-url.js";
 import { createMeetWithBrowserProxyOnNode } from "./chrome-create.js";
@@ -147,7 +147,7 @@ export const GOOGLE_MEET_PLATFORM_ADAPTER = MeetingPlatformAdapter.create<
       category: "browser-control-unavailable",
       reason: "browser-control-unavailable",
       message:
-        "Open the OpenClaw browser profile, finish Google Meet login, admission, or permission prompts, then retry.",
+        "Open the Afora browser profile, finish Google Meet login, admission, or permission prompts, then retry.",
     }),
     buildLeaveScript: meetLeaveScript,
     captions: {

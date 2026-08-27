@@ -59,7 +59,7 @@ class FakeCommandChild extends EventEmitter {
 
 describe("plugin lifecycle matrix probe", () => {
   it("accepts inspect JSON for an enabled loaded plugin", async () => {
-    const dir = tempDirs.make("openclaw-plugin-lifecycle-probe-");
+    const dir = tempDirs.make("afora-plugin-lifecycle-probe-");
     const inspectPath = path.join(dir, "inspect.json");
     writeFileSync(
       inspectPath,
@@ -71,7 +71,7 @@ describe("plugin lifecycle matrix probe", () => {
   });
 
   it("accepts inspect JSON for a disabled plugin", async () => {
-    const dir = tempDirs.make("openclaw-plugin-lifecycle-probe-");
+    const dir = tempDirs.make("afora-plugin-lifecycle-probe-");
     const inspectPath = path.join(dir, "inspect.json");
     writeFileSync(
       inspectPath,
@@ -83,7 +83,7 @@ describe("plugin lifecycle matrix probe", () => {
   });
 
   it("rejects disabled inspect JSON that still reports a loaded plugin", async () => {
-    const dir = tempDirs.make("openclaw-plugin-lifecycle-probe-");
+    const dir = tempDirs.make("afora-plugin-lifecycle-probe-");
     const inspectPath = path.join(dir, "inspect.json");
     writeFileSync(
       inspectPath,
@@ -97,7 +97,7 @@ describe("plugin lifecycle matrix probe", () => {
   });
 
   it("rejects inspect JSON that does not prove the runtime loaded", async () => {
-    const dir = tempDirs.make("openclaw-plugin-lifecycle-probe-");
+    const dir = tempDirs.make("afora-plugin-lifecycle-probe-");
     const inspectPath = path.join(dir, "inspect.json");
     writeFileSync(
       inspectPath,
@@ -111,7 +111,7 @@ describe("plugin lifecycle matrix probe", () => {
   });
 
   it("rejects missing inspect JSON instead of treating it as an empty object", async () => {
-    const dir = tempDirs.make("openclaw-plugin-lifecycle-probe-");
+    const dir = tempDirs.make("afora-plugin-lifecycle-probe-");
     const inspectPath = path.join(dir, "missing.json");
 
     expect(() => assertInspectLoaded("lifecycle-claw", inspectPath)).toThrow(
@@ -120,15 +120,15 @@ describe("plugin lifecycle matrix probe", () => {
   });
 
   it("rejects unreadable config during uninstall proof", async () => {
-    const dir = tempDirs.make("openclaw-plugin-lifecycle-probe-");
-    const configFile = path.join(dir, ".openclaw", "openclaw.json");
+    const dir = tempDirs.make("afora-plugin-lifecycle-probe-");
+    const configFile = path.join(dir, ".afora", "afora.json");
     mkdirSync(path.dirname(configFile), { recursive: true });
     writeFileSync(configFile, "{ malformed\n", "utf8");
 
     expect(() =>
       assertUninstalled("lifecycle-claw", {
         HOME: dir,
-        OPENCLAW_CONFIG_PATH: configFile,
+        AFORA_CONFIG_PATH: configFile,
       }),
     ).toThrow(`failed to read JSON from ${configFile}`);
   });
@@ -221,7 +221,7 @@ describe("plugin lifecycle matrix probe", () => {
       return;
     }
 
-    const dir = tempDirs.make("openclaw-plugin-lifecycle-probe-");
+    const dir = tempDirs.make("afora-plugin-lifecycle-probe-");
     const descendantPidPath = path.join(dir, "descendant.pid");
     let descendantPid: number | undefined;
     try {
@@ -231,7 +231,7 @@ describe("plugin lifecycle matrix probe", () => {
         "import { writeFileSync } from 'node:fs';",
         `const child = spawn(process.execPath, ['-e', ${JSON.stringify(childScript)}], { stdio: 'ignore' });`,
         "child.unref();",
-        "writeFileSync(process.env.OPENCLAW_TEST_DESCENDANT_PID, String(child.pid));",
+        "writeFileSync(process.env.AFORA_TEST_DESCENDANT_PID, String(child.pid));",
         "process.on('SIGTERM', () => process.exit(0));",
         "setInterval(() => {}, 1000);",
       ].join("\n");
@@ -240,7 +240,7 @@ describe("plugin lifecycle matrix probe", () => {
         process.execPath,
         ["--input-type=module", "-e", parentScript],
         {
-          env: { ...process.env, OPENCLAW_TEST_DESCENDANT_PID: descendantPidPath },
+          env: { ...process.env, AFORA_TEST_DESCENDANT_PID: descendantPidPath },
           timeoutKillGraceMs: 100,
           timeoutMs: 500,
         },

@@ -2,10 +2,10 @@ import {
   validateAndSanitizeRemoteModelCatalogBundle,
   type RemoteModelCatalogBundle,
   type RemoteModelCatalogPricing,
-} from "@openclaw/model-catalog-core";
-import type { ModelCatalogProvider } from "@openclaw/model-catalog-core/model-catalog-types";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
-import { compareOpenClawVersions } from "../config/version.js";
+} from "@afora/model-catalog-core";
+import type { ModelCatalogProvider } from "@afora/model-catalog-core/model-catalog-types";
+import type { AforaConfig } from "../config/types.afora.js";
+import { compareAforaVersions } from "../config/version.js";
 import { VERSION } from "../version.js";
 import { bundledCatalogGeneratedAt } from "./bundled-catalog-stamp.js";
 import { isRemoteModelCatalogRefreshEnabled, resolveRemoteCatalogUrl } from "./remote-refresh.js";
@@ -25,11 +25,11 @@ function isCompatible(bundle: RemoteModelCatalogBundle): boolean {
   if (!bundle.minVersion) {
     return true;
   }
-  const comparison = compareOpenClawVersions(VERSION, bundle.minVersion);
+  const comparison = compareAforaVersions(VERSION, bundle.minVersion);
   return comparison !== null && comparison >= 0;
 }
 
-function getActiveRemoteModelCatalog(config: OpenClawConfig): ActiveRemoteModelCatalog | undefined {
+function getActiveRemoteModelCatalog(config: AforaConfig): ActiveRemoteModelCatalog | undefined {
   if (!isRemoteModelCatalogRefreshEnabled(config)) {
     return undefined;
   }
@@ -66,13 +66,13 @@ function getActiveRemoteModelCatalog(config: OpenClawConfig): ActiveRemoteModelC
 }
 
 export function getRemoteModelCatalogOverlay(
-  config: OpenClawConfig,
+  config: AforaConfig,
 ): RemoteModelCatalogOverlay | undefined {
   return getActiveRemoteModelCatalog(config)?.providers;
 }
 
 export function getRemoteModelCatalogPricing(
-  config: OpenClawConfig,
+  config: AforaConfig,
 ): Readonly<Record<string, RemoteModelCatalogPricing>> | undefined {
   return getActiveRemoteModelCatalog(config)?.pricing;
 }
@@ -92,7 +92,7 @@ function setRemoteModelCatalogOverlaySourcesForTest(sources?: {
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
   (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.remoteModelCatalogOverlayTestApi")
+    Symbol.for("afora.remoteModelCatalogOverlayTestApi")
   ] = {
     resetRemoteModelCatalogOverlayForTest,
     setRemoteModelCatalogOverlaySourcesForTest,

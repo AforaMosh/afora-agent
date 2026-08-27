@@ -1,5 +1,5 @@
 // Memory Lancedb plugin module implements cli metadata behavior.
-import { definePluginEntry } from "openclaw/plugin-sdk/core";
+import { definePluginEntry } from "afora-agent/plugin-sdk/core";
 import { isMemoryMachineOutput } from "./cli-output-mode.js";
 
 export default definePluginEntry({

@@ -1,11 +1,11 @@
 // Host hook contract tests cover plugin host hook registration and runtime behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import {
   createPluginRegistryFixture,
   registerTestPlugin,
-} from "openclaw/plugin-sdk/plugin-test-contracts";
+} from "afora-agent/plugin-sdk/plugin-test-contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   validatePluginsUiDescriptorsResult,
@@ -23,7 +23,7 @@ import { pluginHostHookHandlers } from "../../gateway/server-methods/plugin-host
 import { buildGatewaySessionRow } from "../../gateway/session-utils.js";
 import { withTempConfig } from "../../gateway/test-temp-config.js";
 import { emitAgentEvent, resetAgentEventsForTest } from "../../infra/agent-events.js";
-import { resolvePreferredOpenClawTmpDir } from "../../infra/tmp-openclaw-dir.js";
+import { resolvePreferredAforaTmpDir } from "../../infra/tmp-afora-dir.js";
 import { withEnvAsync } from "../../test-utils/env.js";
 import type {
   AgentToolResultMiddlewareContext,
@@ -152,11 +152,11 @@ async function withHostHookState(
     session: { store: storePath },
   }),
 ): Promise<void> {
-  const stateDir = await fs.mkdtemp(path.join(resolvePreferredOpenClawTmpDir(), prefix));
+  const stateDir = await fs.mkdtemp(path.join(resolvePreferredAforaTmpDir(), prefix));
   const storePath = path.join(stateDir, "sessions.json");
   const tempConfig = createTempConfig(storePath);
   try {
-    await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+    await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
       await withTempConfig({
         cfg: tempConfig,
         run: async () => await run({ stateDir, storePath, tempConfig }),
@@ -347,7 +347,7 @@ describe("host-hook fixture plugin contract", () => {
         id: "scoped-middleware",
         name: "Scoped Middleware",
         origin: "bundled",
-        contracts: { agentToolResultMiddleware: ["openclaw", "codex"] },
+        contracts: { agentToolResultMiddleware: ["afora", "codex"] },
       }),
       register(api) {
         api.registerAgentToolResultMiddleware(handler, {
@@ -355,7 +355,7 @@ describe("host-hook fixture plugin contract", () => {
           matcher: ["exec"],
         });
         api.registerAgentToolResultMiddleware(handler, {
-          runtimes: ["openclaw"],
+          runtimes: ["afora"],
           matcher: ["apply_patch"],
         });
       },
@@ -372,14 +372,14 @@ describe("host-hook fixture plugin contract", () => {
     };
     await registration.handler({ ...event, toolName: "exec" }, { runtime: "codex" });
     await registration.handler({ ...event, toolName: "apply_patch" }, { runtime: "codex" });
-    await registration.handler({ ...event, toolName: "apply_patch" }, { runtime: "openclaw" });
-    await registration.handler({ ...event, toolName: "exec" }, { runtime: "openclaw" });
+    await registration.handler({ ...event, toolName: "apply_patch" }, { runtime: "afora" });
+    await registration.handler({ ...event, toolName: "exec" }, { runtime: "afora" });
 
     expect(registry.registry.agentToolResultMiddlewares).toHaveLength(1);
     expect(handler).toHaveBeenCalledTimes(2);
     expect(handler.mock.calls.map(([call, ctx]) => [call.toolName, ctx.runtime])).toEqual([
       ["exec", "codex"],
-      ["apply_patch", "openclaw"],
+      ["apply_patch", "afora"],
     ]);
   });
 
@@ -577,7 +577,7 @@ describe("host-hook fixture plugin contract", () => {
 
   it("allows the official npm Codex plugin to keep /codex command ownership", () => {
     const { config, registry } = createPluginRegistryFixture();
-    const codexRoot = path.join("/tmp", ".openclaw", "npm", "node_modules", "@openclaw", "codex");
+    const codexRoot = path.join("/tmp", ".afora", "npm", "node_modules", "@afora", "codex");
     registerTestPlugin({
       registry,
       config,
@@ -610,14 +610,14 @@ describe("host-hook fixture plugin contract", () => {
 
   it("allows the official ClawHub Codex plugin to keep /codex command ownership", () => {
     const { config, registry } = createPluginRegistryFixture();
-    const codexRoot = path.join("/tmp", ".openclaw", "extensions", "codex");
+    const codexRoot = path.join("/tmp", ".afora", "extensions", "codex");
     registerTestPlugin({
       registry,
       config,
       record: createPluginRecord({
         id: "codex",
         name: "Codex",
-        packageName: "@openclaw/codex",
+        packageName: "@afora/codex",
         origin: "global",
         rootDir: codexRoot,
         source: path.join(codexRoot, "dist", "index.js"),
@@ -644,7 +644,7 @@ describe("host-hook fixture plugin contract", () => {
 
   it("rejects non-official global Codex plugins from /codex command ownership", () => {
     const { config, registry } = createPluginRegistryFixture();
-    const codexRoot = path.join("/tmp", ".openclaw", "extensions", "codex");
+    const codexRoot = path.join("/tmp", ".afora", "extensions", "codex");
     registerTestPlugin({
       registry,
       config,
@@ -681,7 +681,7 @@ describe("host-hook fixture plugin contract", () => {
       record: createPluginRecord({
         id: "codex",
         name: "Codex",
-        packageName: "@openclaw/codex",
+        packageName: "@afora/codex",
         origin: "workspace",
         rootDir: codexRoot,
         source: path.join(codexRoot, "dist", "index.js"),
@@ -756,7 +756,7 @@ describe("host-hook fixture plugin contract", () => {
     });
   });
 
-  it("scopes trusted policies through canonical OpenClaw tool ids", async () => {
+  it("scopes trusted policies through canonical Afora tool ids", async () => {
     const evaluate = vi.fn(() => ({ block: true, blockReason: "covered" }));
     const registry = createEmptyPluginRegistry();
     registry.trustedToolPolicies = [
@@ -1644,7 +1644,7 @@ describe("host-hook fixture plugin contract", () => {
     });
     setActivePluginRegistry(registry.registry);
 
-    await withHostHookState("openclaw-host-hooks-patch-", async ({ storePath, tempConfig }) => {
+    await withHostHookState("afora-host-hooks-patch-", async ({ storePath, tempConfig }) => {
       await updateSessionStore(storePath, (store) => {
         store["agent:main:main"] = {
           sessionId: "session-1",
@@ -1839,7 +1839,7 @@ describe("host-hook fixture plugin contract", () => {
   });
 
   it("reports duplicate next-turn injections as not newly enqueued", async () => {
-    await withHostHookState("openclaw-host-hooks-injection-", async ({ storePath, tempConfig }) => {
+    await withHostHookState("afora-host-hooks-injection-", async ({ storePath, tempConfig }) => {
       await updateSessionStore(storePath, (store) => {
         store["agent:main:main"] = {
           sessionId: "session-1",
@@ -1906,7 +1906,7 @@ describe("host-hook fixture plugin contract", () => {
     );
     setActivePluginRegistry(registry);
     await withHostHookState(
-      "openclaw-host-hooks-stale-",
+      "afora-host-hooks-stale-",
       async ({ storePath, tempConfig }) => {
         await updateSessionStore(storePath, (store) => {
           store["agent:main:main"] = {
@@ -1987,7 +1987,7 @@ describe("host-hook fixture plugin contract", () => {
       }),
     );
     setActivePluginRegistry(registry);
-    await withHostHookState("openclaw-host-hooks-order-", async ({ storePath, tempConfig }) => {
+    await withHostHookState("afora-host-hooks-order-", async ({ storePath, tempConfig }) => {
       await updateSessionStore(storePath, (store) => {
         store["agent:main:main"] = {
           sessionId: "session-1",
@@ -2633,7 +2633,7 @@ describe("host-hook fixture plugin contract", () => {
       ],
     });
 
-    await withHostHookState("openclaw-host-hooks-state-", async ({ tempConfig }) => {
+    await withHostHookState("afora-host-hooks-state-", async ({ tempConfig }) => {
       await runPluginHostCleanup({
         cfg: tempConfig,
         registry: registry.registry,
@@ -2982,7 +2982,7 @@ describe("host-hook fixture plugin contract", () => {
       },
     });
 
-    await withHostHookState("openclaw-host-hooks-store-", async ({ storePath, tempConfig }) => {
+    await withHostHookState("afora-host-hooks-store-", async ({ storePath, tempConfig }) => {
       await updateSessionStore(storePath, (store) => {
         store["agent:main:main"] = {
           sessionId: "session-1",
@@ -3058,7 +3058,7 @@ describe("host-hook fixture plugin contract", () => {
       }),
     ).toBe(true);
 
-    await withHostHookState("openclaw-host-hooks-run-context-", async ({ tempConfig }) => {
+    await withHostHookState("afora-host-hooks-run-context-", async ({ tempConfig }) => {
       await runPluginHostCleanup({
         cfg: tempConfig,
         registry,
@@ -3099,7 +3099,7 @@ describe("host-hook fixture plugin contract", () => {
     });
 
     await withHostHookState(
-      "openclaw-host-hooks-restart-state-",
+      "afora-host-hooks-restart-state-",
       async ({ storePath, tempConfig }) => {
         await updateSessionStore(storePath, (store) => {
           store["agent:main:main"] = {
@@ -3160,7 +3160,7 @@ describe("host-hook fixture plugin contract", () => {
       }),
     );
     await withHostHookState(
-      "openclaw-host-hooks-injection-only-",
+      "afora-host-hooks-injection-only-",
       async ({ storePath, tempConfig }) => {
         await updateSessionStore(storePath, (store) => {
           store["agent:main:main"] = {

@@ -1,14 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { resolveMemoryFlushContextWindowTokens } from "../auto-reply/reply/memory-flush.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { refreshContextWindowCache, resetContextWindowCacheForTest } from "./context.js";
 
 describe("OpenCode Go context metadata", () => {
   let contextWindowTokens: number | undefined;
-  let configuredModels: OpenClawConfig["models"];
+  let configuredModels: AforaConfig["models"];
 
   beforeAll(async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: { defaults: { model: { primary: "opencode-go/deepseek-v4-pro" } } },
       plugins: { allow: ["opencode-go"] },
     };

@@ -1,5 +1,5 @@
 /** Reads channel plugin output/threading policy for isolated cron delivery. */
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { createLazyImportLoader } from "../../shared/lazy-promise.js";
 
 type ChannelPluginRuntime = typeof import("../../channels/plugins/index.js");

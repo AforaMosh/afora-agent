@@ -1,30 +1,30 @@
-/* OpenClaw source: "OpenClaw uses your calendars to show events and scheduling context when you enable calendar access." */
-"NSCalendarsFullAccessUsageDescription" = "OpenClaw usa i tuoi calendari per mostrare eventi e contesto di pianificazione quando abiliti l'accesso al calendario.";
-/* OpenClaw source: "OpenClaw uses your calendars to show events and scheduling context when you enable calendar access." */
-"NSCalendarsUsageDescription" = "OpenClaw usa i tuoi calendari per mostrare eventi e contesto di pianificazione quando abiliti l'accesso al calendario.";
-/* OpenClaw source: "OpenClaw uses your calendars to add events when you enable calendar access." */
-"NSCalendarsWriteOnlyAccessUsageDescription" = "OpenClaw usa i tuoi calendari per aggiungere eventi quando abiliti l'accesso al calendario.";
-/* OpenClaw source: "OpenClaw uses the camera when you scan a Gateway setup QR code or ask your paired Gateway or assistant to capture a photo or short video from this iPhone, for example to connect to your Gateway or show your assistant a document, device screen, or workspace." */
-"NSCameraUsageDescription" = "OpenClaw usa la fotocamera quando scansioni un codice QR di configurazione del Gateway o chiedi al Gateway associato o all'assistente di acquisire una foto o un breve video da questo iPhone, ad esempio per connetterti al Gateway o mostrare all'assistente un documento, lo schermo di un dispositivo o uno spazio di lavoro.";
-/* OpenClaw source: "OpenClaw uses your contacts so you can search and reference people while using the assistant." */
-"NSContactsUsageDescription" = "OpenClaw usa i tuoi contatti per permetterti di cercare e fare riferimento alle persone mentre usi l'assistente.";
-/* OpenClaw source: "OpenClaw discovers and connects to your OpenClaw gateway on the local network." */
-"NSLocalNetworkUsageDescription" = "OpenClaw rileva e si connette al tuo gateway OpenClaw sulla rete locale.";
-/* OpenClaw source: "OpenClaw can share your location in the background when you enable Always." */
-"NSLocationAlwaysAndWhenInUseUsageDescription" = "OpenClaw può condividere la tua posizione in background quando abiliti Sempre.";
-/* OpenClaw source: "OpenClaw uses your location when you allow location sharing." */
-"NSLocationWhenInUseUsageDescription" = "OpenClaw usa la tua posizione quando consenti la condivisione della posizione.";
-/* OpenClaw source: "OpenClaw uses the microphone for realtime chat, voice wake, push-to-talk, and voice notes." */
-"NSMicrophoneUsageDescription" = "OpenClaw usa il microfono per chat in tempo reale, attivazione vocale, push-to-talk e note vocali.";
-/* OpenClaw source: "OpenClaw may use motion data to support device-aware interactions and automations." */
-"NSMotionUsageDescription" = "OpenClaw può usare i dati di movimento per supportare interazioni e automazioni consapevoli del dispositivo.";
-/* OpenClaw source: "OpenClaw reads your steps, sleep, resting heart rate, and workouts from the Apple Health app to create summaries you request and send them through your Gateway to your configured AI provider." */
-"NSHealthShareUsageDescription" = "OpenClaw legge i dati relativi a passi, sonno, frequenza cardiaca a riposo e allenamenti dall'app Salute di Apple per creare i riepiloghi richiesti e inviarli tramite il tuo Gateway al provider di IA configurato.";
-/* OpenClaw source: "OpenClaw does not write to the Apple Health app. It uses read-only data to create summaries you request and send them through your Gateway to your configured AI provider." */
-"NSHealthUpdateUsageDescription" = "OpenClaw non scrive nell'app Salute di Apple. Utilizza dati di sola lettura per creare i riepiloghi richiesti e inviarli tramite il tuo Gateway al provider di IA configurato.";
-/* OpenClaw source: "OpenClaw lets your assistant read photos you allow and lets you choose photos to share." */
-"NSPhotoLibraryUsageDescription" = "OpenClaw consente al tuo assistente di leggere le foto che autorizzi e ti permette di scegliere le foto da condividere.";
-/* OpenClaw source: "OpenClaw uses your reminders to list, add, and complete tasks when you enable reminders access." */
-"NSRemindersFullAccessUsageDescription" = "OpenClaw usa i tuoi promemoria per elencare, aggiungere e completare attività quando abiliti l’accesso ai promemoria.";
-/* OpenClaw source: "OpenClaw uses on-device speech recognition for talk mode and voice wake." */
-"NSSpeechRecognitionUsageDescription" = "OpenClaw usa il riconoscimento vocale sul dispositivo per la modalità conversazione e l’attivazione vocale.";
+/* Afora source: "Afora uses your calendars to show events and scheduling context when you enable calendar access." */
+"NSCalendarsFullAccessUsageDescription" = "Afora usa i tuoi calendari per mostrare eventi e contesto di pianificazione quando abiliti l'accesso al calendario.";
+/* Afora source: "Afora uses your calendars to show events and scheduling context when you enable calendar access." */
+"NSCalendarsUsageDescription" = "Afora usa i tuoi calendari per mostrare eventi e contesto di pianificazione quando abiliti l'accesso al calendario.";
+/* Afora source: "Afora uses your calendars to add events when you enable calendar access." */
+"NSCalendarsWriteOnlyAccessUsageDescription" = "Afora usa i tuoi calendari per aggiungere eventi quando abiliti l'accesso al calendario.";
+/* Afora source: "Afora uses the camera when you scan a Gateway setup QR code or ask your paired Gateway or assistant to capture a photo or short video from this iPhone, for example to connect to your Gateway or show your assistant a document, device screen, or workspace." */
+"NSCameraUsageDescription" = "Afora usa la fotocamera quando scansioni un codice QR di configurazione del Gateway o chiedi al Gateway associato o all'assistente di acquisire una foto o un breve video da questo iPhone, ad esempio per connetterti al Gateway o mostrare all'assistente un documento, lo schermo di un dispositivo o uno spazio di lavoro.";
+/* Afora source: "Afora uses your contacts so you can search and reference people while using the assistant." */
+"NSContactsUsageDescription" = "Afora usa i tuoi contatti per permetterti di cercare e fare riferimento alle persone mentre usi l'assistente.";
+/* Afora source: "Afora discovers and connects to your Afora gateway on the local network." */
+"NSLocalNetworkUsageDescription" = "Afora rileva e si connette al tuo gateway Afora sulla rete locale.";
+/* Afora source: "Afora can share your location in the background when you enable Always." */
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "Afora può condividere la tua posizione in background quando abiliti Sempre.";
+/* Afora source: "Afora uses your location when you allow location sharing." */
+"NSLocationWhenInUseUsageDescription" = "Afora usa la tua posizione quando consenti la condivisione della posizione.";
+/* Afora source: "Afora uses the microphone for realtime chat, voice wake, push-to-talk, and voice notes." */
+"NSMicrophoneUsageDescription" = "Afora usa il microfono per chat in tempo reale, attivazione vocale, push-to-talk e note vocali.";
+/* Afora source: "Afora may use motion data to support device-aware interactions and automations." */
+"NSMotionUsageDescription" = "Afora può usare i dati di movimento per supportare interazioni e automazioni consapevoli del dispositivo.";
+/* Afora source: "Afora reads your steps, sleep, resting heart rate, and workouts from the Apple Health app to create summaries you request and send them through your Gateway to your configured AI provider." */
+"NSHealthShareUsageDescription" = "Afora legge i dati relativi a passi, sonno, frequenza cardiaca a riposo e allenamenti dall'app Salute di Apple per creare i riepiloghi richiesti e inviarli tramite il tuo Gateway al provider di IA configurato.";
+/* Afora source: "Afora does not write to the Apple Health app. It uses read-only data to create summaries you request and send them through your Gateway to your configured AI provider." */
+"NSHealthUpdateUsageDescription" = "Afora non scrive nell'app Salute di Apple. Utilizza dati di sola lettura per creare i riepiloghi richiesti e inviarli tramite il tuo Gateway al provider di IA configurato.";
+/* Afora source: "Afora lets your assistant read photos you allow and lets you choose photos to share." */
+"NSPhotoLibraryUsageDescription" = "Afora consente al tuo assistente di leggere le foto che autorizzi e ti permette di scegliere le foto da condividere.";
+/* Afora source: "Afora uses your reminders to list, add, and complete tasks when you enable reminders access." */
+"NSRemindersFullAccessUsageDescription" = "Afora usa i tuoi promemoria per elencare, aggiungere e completare attività quando abiliti l’accesso ai promemoria.";
+/* Afora source: "Afora uses on-device speech recognition for talk mode and voice wake." */
+"NSSpeechRecognitionUsageDescription" = "Afora usa il riconoscimento vocale sul dispositivo per la modalità conversazione e l’attivazione vocale.";

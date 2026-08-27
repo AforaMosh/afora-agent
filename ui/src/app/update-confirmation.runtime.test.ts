@@ -51,7 +51,7 @@ function installNativeBridge(): ReturnType<typeof vi.fn> {
   const postMessage = vi.fn();
   Object.defineProperty(window, "webkit", {
     configurable: true,
-    value: { messageHandlers: { openclawUpdate: { postMessage } } },
+    value: { messageHandlers: { aforaUpdate: { postMessage } } },
   });
   return postMessage;
 }
@@ -156,7 +156,7 @@ it("keeps a repeated request from stacking a second confirmation or update", asy
   await getRenderedModalDialog(document.body);
 
   await second.settled;
-  expect(document.body.querySelectorAll("openclaw-modal-dialog")).toHaveLength(1);
+  expect(document.body.querySelectorAll("afora-modal-dialog")).toHaveLength(1);
   expect(second.startGatewayUpdate).not.toHaveBeenCalled();
 
   findButton("Update and restart").click();
@@ -182,7 +182,7 @@ it("keeps the dialog open and narrates the install, the restart, and the failure
   // precisely so it can keep reporting through the disconnect.
   await stream.push({ busy: true, connected: false, failure: null });
   expect(modal.textContent).toContain("The Gateway is restarting");
-  expect(document.body.querySelector("openclaw-modal-dialog")).not.toBeNull();
+  expect(document.body.querySelector("afora-modal-dialog")).not.toBeNull();
 
   await stream.push({
     busy: false,
@@ -206,7 +206,7 @@ it("closes itself once a watched update finishes without a failure", async () =>
   await stream.push({ busy: false, connected: true, failure: null });
 
   await settled;
-  expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull();
+  expect(document.body.querySelector("afora-modal-dialog")).toBeNull();
 });
 
 /**

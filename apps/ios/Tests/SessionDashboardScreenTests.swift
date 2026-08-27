@@ -1,7 +1,7 @@
 import Foundation
 import Testing
-@testable import OpenClaw
-@testable import OpenClawKit
+@testable import Afora
+@testable import AforaKit
 
 @MainActor
 struct SessionDashboardScreenTests {

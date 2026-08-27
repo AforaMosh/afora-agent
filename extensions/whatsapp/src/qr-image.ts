@@ -1,2 +1,2 @@
 // Whatsapp plugin module implements qr image behavior.
-export { renderQrPngDataUrl } from "openclaw/plugin-sdk/media-runtime";
+export { renderQrPngDataUrl } from "afora-agent/plugin-sdk/media-runtime";

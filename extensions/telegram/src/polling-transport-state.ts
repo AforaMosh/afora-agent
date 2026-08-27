@@ -1,5 +1,5 @@
 // Telegram plugin module implements polling transport state behavior.
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import type { TelegramTransport } from "./fetch.js";
 
 type TelegramPollingTransportStateOpts = {

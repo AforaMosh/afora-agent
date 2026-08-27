@@ -1,5 +1,5 @@
 /**
- * Dispatches embedded attempts to native harness or OpenClaw backend execution.
+ * Dispatches embedded attempts to native harness or Afora backend execution.
  */
 import {
   runAgentHarnessAttempt,
@@ -17,7 +17,7 @@ export async function runEmbeddedAttemptWithBackend(
 ): Promise<EmbeddedRunAttemptResult> {
   const result = await runAgentHarnessAttempt(params);
   if (
-    result.agentHarnessId !== "openclaw" &&
+    result.agentHarnessId !== "afora" &&
     params.sessionKey &&
     result.acceptedSessionSpawns?.length
   ) {

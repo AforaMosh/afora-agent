@@ -67,7 +67,7 @@ async function mountMenu(
   containers.push(container);
   document.body.append(container);
   render(
-    html`<openclaw-chat-header-session-menu
+    html`<afora-chat-header-session-menu
       .sessionLabel=${"Test session"}
       .worktreePath=${options.worktreePath ?? null}
       .archived=${options.archived ?? false}
@@ -88,10 +88,10 @@ async function mountMenu(
       .onOpen=${options.onOpen ?? (() => {})}
       .onSettingsChange=${options.onSettingsChange ?? (() => {})}
       .onAction=${options.onAction ?? (() => {})}
-    ></openclaw-chat-header-session-menu>`,
+    ></afora-chat-header-session-menu>`,
     container,
   );
-  const menu = container.querySelector<HeaderMenuElement>("openclaw-chat-header-session-menu");
+  const menu = container.querySelector<HeaderMenuElement>("afora-chat-header-session-menu");
   if (!menu) {
     throw new Error("Expected chat header session menu");
   }
@@ -152,7 +152,7 @@ describe("chat header session menu", () => {
       ).map(itemLabel),
     ).not.toContain("Open in");
     const onAction = vi.fn<(action: HeaderMenuAction) => void>();
-    const menu = await mountMenu({ worktreePath: "/work/openclaw", onAction });
+    const menu = await mountMenu({ worktreePath: "/work/afora", onAction });
     const openIn = item(menu, "Open in");
 
     expect(
@@ -164,7 +164,7 @@ describe("chat header session menu", () => {
     expect(onAction).toHaveBeenCalledWith({
       kind: "open-in",
       editor: "vscode",
-      path: "/work/openclaw",
+      path: "/work/afora",
     });
   });
 

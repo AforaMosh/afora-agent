@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createDeferred } from "../../../test/helpers/promise.js";
-import { openOpenClawStateDatabase } from "../../state/openclaw-state-db.js";
+import { openAforaStateDatabase } from "../../state/afora-state-db.js";
 import { CronService } from "../service.js";
 import { setupCronServiceSuite } from "../service.test-harness.js";
 import { saveCronStore } from "../store.js";
@@ -43,7 +43,7 @@ function makeService(
 }
 
 function latestReceiptStatus(storePath: string, jobId: string): string | undefined {
-  const row = openOpenClawStateDatabase()
+  const row = openAforaStateDatabase()
     .db.prepare(
       "SELECT status FROM cron_run_receipts WHERE store_key = ? AND job_id = ? ORDER BY started_at_ms DESC LIMIT 1",
     )

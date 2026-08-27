@@ -4,13 +4,13 @@ import {
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../../../infra/kysely-sync.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../../../state/openclaw-agent-db.generated.js";
+import type { DB as AforaAgentKyselyDatabase } from "../../../state/afora-agent-db.generated.js";
 import {
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabaseOptions,
-} from "../../../state/openclaw-agent-db.js";
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabaseOptions,
+} from "../../../state/afora-agent-db.js";
 
-type AcpParentStreamDatabase = Pick<OpenClawAgentKyselyDatabase, "acp_parent_stream_events">;
+type AcpParentStreamDatabase = Pick<AforaAgentKyselyDatabase, "acp_parent_stream_events">;
 
 export type AcpParentStreamEvent = Record<string, unknown>;
 
@@ -24,7 +24,7 @@ function normalizeSqliteNumber(value: number | bigint): number {
 
 /** Records one ordered batch in the same synchronous commit section as sequence allocation. */
 export function recordAcpParentStreamEvents(
-  options: OpenClawAgentDatabaseOptions & {
+  options: AforaAgentDatabaseOptions & {
     sessionId: string;
     runId: string;
     events: Array<{ event: AcpParentStreamEvent; createdAt: number }>;
@@ -47,7 +47,7 @@ export function recordAcpParentStreamEvents(
   if (prepared.length === 0) {
     return;
   }
-  runOpenClawAgentWriteTransaction((database) => {
+  runAforaAgentWriteTransaction((database) => {
     const db = getAcpParentStreamKysely(database.db);
     const row = executeSqliteQueryTakeFirstSync(
       database.db,

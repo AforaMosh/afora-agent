@@ -1,7 +1,7 @@
 /** Cursor and pagination helpers for ACP session/list requests. */
 import path from "node:path";
-import { readMetadataNumber } from "@openclaw/acp-core/meta";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { readMetadataNumber } from "@afora/acp-core/meta";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 
 const ACP_LIST_SESSIONS_DEFAULT_PAGE_SIZE = 100;
 const ACP_LIST_SESSIONS_MAX_PAGE_SIZE = 100;

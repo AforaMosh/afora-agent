@@ -3,12 +3,12 @@ import {
   loadSessionEntry,
   upsertSessionEntryCore,
 } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
+import type { AforaConfig } from "../../config/types.afora.js";
+import { closeAforaAgentDatabasesForTest } from "../../state/afora-agent-db.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../../test-utils/afora-test-state.js";
 import type { GatewayClient, GatewayRequestContext, RespondFn } from "./types.js";
 
 const emptyPluginMetadataSnapshot = vi.hoisted(() => ({
@@ -100,9 +100,9 @@ const cfg = {
       { id: "work", model: "anthropic/claude-sonnet-4-6" },
     ],
   },
-} satisfies OpenClawConfig;
+} satisfies AforaConfig;
 
-let openClawTestState: OpenClawTestState;
+let aforaTestState: AforaTestState;
 
 function context(): GatewayRequestContext {
   return {
@@ -123,7 +123,7 @@ function client(scopes: string[]): GatewayClient {
     connect: {
       minProtocol: 1,
       maxProtocol: 1,
-      client: { id: "openclaw-control-ui", version: "test", platform: "test", mode: "webchat" },
+      client: { id: "afora-control-ui", version: "test", platform: "test", mode: "webchat" },
       role: "operator",
       scopes,
     },
@@ -147,7 +147,7 @@ async function patchSession(
 }
 
 beforeAll(async () => {
-  openClawTestState = await createOpenClawTestState({ scenario: "minimal" });
+  aforaTestState = await createAforaTestState({ scenario: "minimal" });
 });
 
 beforeEach(() => {
@@ -156,7 +156,7 @@ beforeEach(() => {
   effects.mutateConfigFileWithRetry
     .mockReset()
     .mockImplementation(
-      async (params: { mutate: (draft: OpenClawConfig, context: unknown) => unknown }) => {
+      async (params: { mutate: (draft: AforaConfig, context: unknown) => unknown }) => {
         const draft = structuredClone(cfg);
         const result = await params.mutate(draft, {});
         return { nextConfig: draft, result };
@@ -165,8 +165,8 @@ beforeEach(() => {
 });
 
 afterAll(async () => {
-  closeOpenClawAgentDatabasesForTest();
-  await openClawTestState.cleanup();
+  closeAforaAgentDatabasesForTest();
+  await aforaTestState.cleanup();
 });
 
 describe("sessions.patch sticky model persistence", () => {

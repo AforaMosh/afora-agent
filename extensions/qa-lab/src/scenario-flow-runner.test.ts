@@ -1,6 +1,6 @@
 // Qa Lab tests cover scenario flow runner plugin behavior.
-import { coerceErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { coerceErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { describe, expect, it } from "vitest";
 import { createQaBusState } from "./bus-state.js";
 import { QaSuiteScenarioSkipError } from "./errors.js";
@@ -227,11 +227,11 @@ function createPlanningEvidenceFixture(
       },
     };
   }
-  if (scenario.execution.runtime === "openclaw" && artifactFile) {
+  if (scenario.execution.runtime === "afora" && artifactFile) {
     return {
       scenario,
       outboundText: `Built ${artifactFile}`,
-      failureMessage: "missing OpenClaw update_plan signal",
+      failureMessage: "missing Afora update_plan signal",
       currentSummary: {
         eventCursor: 9,
         successfulToolCallCounts: { update_plan: 1 },

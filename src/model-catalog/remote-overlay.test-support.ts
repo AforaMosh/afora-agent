@@ -12,7 +12,7 @@ type RemoteModelCatalogOverlayTestApi = {
 
 function getTestApi(): RemoteModelCatalogOverlayTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.remoteModelCatalogOverlayTestApi")
+    Symbol.for("afora.remoteModelCatalogOverlayTestApi")
   ] as RemoteModelCatalogOverlayTestApi;
 }
 

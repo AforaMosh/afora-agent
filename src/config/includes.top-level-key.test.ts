@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { type IncludeResolver, resolveConfigIncludesForTopLevelKey } from "./includes.js";
 
 const CONFIG_DIR = path.join(path.parse(process.cwd()).root, "config");
-const DEFAULT_BASE_PATH = path.join(CONFIG_DIR, "openclaw.json");
+const DEFAULT_BASE_PATH = path.join(CONFIG_DIR, "afora.json");
 
 function configPath(name: string): string {
   return path.join(CONFIG_DIR, name);

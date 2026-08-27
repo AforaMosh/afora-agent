@@ -1,14 +1,14 @@
 // Telegram plugin module implements shared config adapter behavior.
-import { resolveNormalizedAccountEntry } from "openclaw/plugin-sdk/account-core";
-import { normalizeAccountId } from "openclaw/plugin-sdk/account-id";
-import { formatAllowFromLowercase } from "openclaw/plugin-sdk/allow-from";
+import { resolveNormalizedAccountEntry } from "afora-agent/plugin-sdk/account-core";
+import { normalizeAccountId } from "afora-agent/plugin-sdk/account-id";
+import { formatAllowFromLowercase } from "afora-agent/plugin-sdk/allow-from";
 import {
   adaptScopedAccountAccessor,
   createScopedChannelConfigAdapter,
-} from "openclaw/plugin-sdk/channel-config-helpers";
-import type { ChannelPlugin } from "openclaw/plugin-sdk/channel-core";
-import type { OpenClawConfig, TelegramAccountConfig } from "openclaw/plugin-sdk/config-contracts";
-import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/routing";
+} from "afora-agent/plugin-sdk/channel-config-helpers";
+import type { ChannelPlugin } from "afora-agent/plugin-sdk/channel-core";
+import type { AforaConfig, TelegramAccountConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { DEFAULT_ACCOUNT_ID } from "afora-agent/plugin-sdk/routing";
 import { inspectTelegramAccount } from "./account-inspect.js";
 import {
   listTelegramAccountIds,
@@ -25,7 +25,7 @@ type TelegramConfigAccessorAccount = {
 };
 
 export function findTelegramTokenOwnerAccountId(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
 }): string | null {
   const normalizedAccountId = normalizeAccountId(params.accountId);
@@ -70,9 +70,9 @@ export function formatDuplicateTelegramTokenReason(params: {
  *   2. The config has an explicit `accounts` section with entries, AND
  *   3. The accountId is not found in that `accounts` section.
  *
- * See: https://github.com/openclaw/openclaw/issues/53876
+ * See: https://github.com/AforaMosh/afora-agent/issues/53876
  */
-function isBlockedByMultiBotGuard(cfg: OpenClawConfig, accountId: string): boolean {
+function isBlockedByMultiBotGuard(cfg: AforaConfig, accountId: string): boolean {
   if (normalizeAccountId(accountId) === DEFAULT_ACCOUNT_ID) {
     return false;
   }
@@ -91,7 +91,7 @@ function isBlockedByMultiBotGuard(cfg: OpenClawConfig, accountId: string): boole
 }
 
 export function resolveTelegramConfigAccessorAccount(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): TelegramConfigAccessorAccount {
   const accountId = normalizeAccountId(

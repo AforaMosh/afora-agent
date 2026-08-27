@@ -3,7 +3,7 @@
  */
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
 import { sha256Hex, sha256HexPrefixCore } from "../infra/crypto-digest.js";
 import { syncDirectoryIfSupported } from "../infra/directory-durability.js";
@@ -28,7 +28,7 @@ import {
 } from "./memory-host-event-export.js";
 
 const MEMORY_HOST_EVENTS_FILENAME = "memory-host-events.jsonl";
-const MEMORY_HOST_EVENTS_OWNER_FILENAME = ".openclaw-memory-host-events-owner.json";
+const MEMORY_HOST_EVENTS_OWNER_FILENAME = ".afora-memory-host-events-owner.json";
 const MAX_MEMORY_HOST_PUBLIC_EXPORT_EVENTS = 1_000;
 const MEMORY_HOST_EVENT_EXPORT_LOCK_OPTIONS = {
   retries: { retries: 20, factor: 1.3, minTimeout: 25, maxTimeout: 250, randomize: true },
@@ -124,7 +124,7 @@ async function readMemoryHostEventExportOwnership(
     typeof parsed !== "object" ||
     Array.isArray(parsed) ||
     (parsed as { schemaVersion?: unknown }).schemaVersion !== 3 ||
-    (parsed as { kind?: unknown }).kind !== "openclaw-memory-host-events-export" ||
+    (parsed as { kind?: unknown }).kind !== "afora-memory-host-events-export" ||
     (parsed as { stateHash?: unknown }).stateHash !== owner.stateHash ||
     (parsed as { workspaceHash?: unknown }).workspaceHash !== owner.workspaceHash ||
     ((parsed as { contentSha256?: unknown }).contentSha256 !== undefined &&
@@ -509,7 +509,7 @@ async function listMemoryWorkspacePublicArtifacts(params: {
 
 /** Lists public memory artifacts across all configured memory workspaces. */
 export async function listMemoryHostPublicArtifacts(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }): Promise<MemoryPluginPublicArtifact[]> {
   const workspaces = resolveMemoryDreamingWorkspaces(params.cfg);
   const artifacts: MemoryPluginPublicArtifact[] = [];

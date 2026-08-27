@@ -4,7 +4,7 @@
 import {
   findNormalizedProviderKey,
   normalizeProviderId,
-} from "@openclaw/model-catalog-core/provider-id";
+} from "@afora/model-catalog-core/provider-id";
 import { isRecord } from "../../packages/normalization-core/src/record-coerce.js";
 import { resolvePrimaryStringValue } from "../../packages/normalization-core/src/string-coerce.js";
 import { ensureStaticModelAllowlistEntry } from "../agents/model-allowlist-entry.js";
@@ -19,9 +19,9 @@ import type {
   ModelDefinitionConfig,
   ModelProviderConfig,
 } from "../config/types.models.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
-export type { OpenClawConfig, ModelApi, ModelDefinitionConfig, ModelProviderConfig };
+export type { AforaConfig, ModelApi, ModelDefinitionConfig, ModelProviderConfig };
 export {
   resolveAgentModelFallbackValues,
   resolveAgentModelPrimaryValue,
@@ -45,8 +45,8 @@ export const OPENCODE_ZEN_DEFAULT_MODEL = "opencode/claude-opus-5";
 
 /** Pair of preset appliers exposed by provider setup modules. */
 export type ProviderOnboardPresetAppliers<TArgs extends unknown[]> = {
-  applyProviderConfig: (cfg: OpenClawConfig, ...args: TArgs) => OpenClawConfig;
-  applyConfig: (cfg: OpenClawConfig, ...args: TArgs) => OpenClawConfig;
+  applyProviderConfig: (cfg: AforaConfig, ...args: TArgs) => AforaConfig;
+  applyConfig: (cfg: AforaConfig, ...args: TArgs) => AforaConfig;
 };
 
 function extractAgentDefaultModelFallbacks(model: unknown): string[] | undefined {
@@ -60,7 +60,7 @@ function extractAgentDefaultModelFallbacks(model: unknown): string[] | undefined
   return Array.isArray(fallbacks) ? fallbacks.map((value) => String(value)) : undefined;
 }
 
-function hasAgentDefaultModelPrimary(cfg: OpenClawConfig): boolean {
+function hasAgentDefaultModelPrimary(cfg: AforaConfig): boolean {
   return resolvePrimaryStringValue(cfg.agents?.defaults?.model) !== undefined;
 }
 
@@ -140,7 +140,7 @@ function normalizeModelProvidersForConfig(
 }
 
 function resolveProviderModelMergeState(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   providerId: string,
 ): ProviderModelMergeState {
   const providers = { ...cfg.models?.providers } as Record<string, ModelProviderConfig>;
@@ -193,7 +193,7 @@ function buildProviderConfig(params: {
 }
 
 function applyProviderConfigWithMergedModels(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   params: {
     agentModels: Record<string, AgentModelEntryConfig>;
     providerId: string;
@@ -203,7 +203,7 @@ function applyProviderConfigWithMergedModels(
     mergedModels: ModelDefinitionConfig[];
     fallbackModels: ModelDefinitionConfig[];
   },
-): OpenClawConfig {
+): AforaConfig {
   const mergedModels = normalizeProviderModelsForConfig(params.providerId, params.mergedModels);
   const fallbackModels = normalizeProviderModelsForConfig(params.providerId, params.fallbackModels);
   params.providerState.providers[params.providerId] = buildProviderConfig({
@@ -226,10 +226,10 @@ function createProviderPresetAppliers<
   },
 >(params: {
   resolveParams: (
-    cfg: OpenClawConfig,
+    cfg: AforaConfig,
     ...args: TArgs
   ) => Omit<TParams, "primaryModelRef"> | null | undefined;
-  applyPreset: (cfg: OpenClawConfig, preset: TParams) => OpenClawConfig;
+  applyPreset: (cfg: AforaConfig, preset: TParams) => AforaConfig;
   primaryModelRef: string;
 }): ProviderOnboardPresetAppliers<TArgs> {
   return {
@@ -272,7 +272,7 @@ export function createAliasOnlyPresetAppliers(params: {
   modelRef: string;
   alias: string;
 }): ProviderOnboardPresetAppliers<[]> {
-  const applyProviderConfig = (cfg: OpenClawConfig): OpenClawConfig => {
+  const applyProviderConfig = (cfg: AforaConfig): AforaConfig => {
     const models = { ...cfg.agents?.defaults?.models };
     models[params.modelRef] = {
       ...models[params.modelRef],
@@ -372,12 +372,12 @@ function mergeOnboardProviderConfigs(
 
 /** Write onboarding-auth model aliases and provider configs into the canonical config sections. */
 export function applyOnboardAuthAgentModelsAndProviders(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   params: {
     agentModels: Record<string, AgentModelEntryConfig>;
     providers: Record<string, ModelProviderConfig>;
   },
-): OpenClawConfig {
+): AforaConfig {
   const mergedAgentModels = normalizeAgentModelMapForConfig({
     ...cfg.agents?.defaults?.models,
     ...params.agentModels,
@@ -402,9 +402,9 @@ export function applyOnboardAuthAgentModelsAndProviders(
 
 /** Set the agent default primary model while preserving normalized fallbacks and provider models. */
 export function applyAgentDefaultModelPrimary(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   primary: string,
-): OpenClawConfig {
+): AforaConfig {
   const defaults = cfg.agents?.defaults;
   const existingFallbacks = extractAgentDefaultModelFallbacks(cfg.agents?.defaults?.model);
   const normalizedFallbacks = existingFallbacks?.map((fallback) =>
@@ -438,8 +438,8 @@ export function applyAgentDefaultModelPrimary(
 }
 
 /** Move configs without a primary default onto the current OpenCode Zen model. */
-export function applyOpencodeZenModelDefault(cfg: OpenClawConfig): {
-  next: OpenClawConfig;
+export function applyOpencodeZenModelDefault(cfg: AforaConfig): {
+  next: AforaConfig;
   changed: boolean;
 } {
   const current = resolvePrimaryStringValue(cfg.agents?.defaults?.model);
@@ -458,7 +458,7 @@ export function applyOpencodeZenModelDefault(cfg: OpenClawConfig): {
 
 /** Merge a provider config and seed required default models when the provider has no matching model yet. */
 export function applyProviderConfigWithDefaultModels(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   params: {
     agentModels: Record<string, AgentModelEntryConfig>;
     providerId: string;
@@ -467,7 +467,7 @@ export function applyProviderConfigWithDefaultModels(
     defaultModels: ModelDefinitionConfig[];
     defaultModelId?: string;
   },
-): OpenClawConfig {
+): AforaConfig {
   const providerState = resolveProviderModelMergeState(cfg, params.providerId);
   const defaultModels = params.defaultModels;
   const defaultModelId = params.defaultModelId ?? defaultModels[0]?.id;
@@ -493,7 +493,7 @@ export function applyProviderConfigWithDefaultModels(
 
 /** Single-model wrapper around `applyProviderConfigWithDefaultModels`. */
 export function applyProviderConfigWithDefaultModel(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   params: {
     agentModels: Record<string, AgentModelEntryConfig>;
     providerId: string;
@@ -502,7 +502,7 @@ export function applyProviderConfigWithDefaultModel(
     defaultModel: ModelDefinitionConfig;
     defaultModelId?: string;
   },
-): OpenClawConfig {
+): AforaConfig {
   return applyProviderConfigWithDefaultModels(cfg, {
     agentModels: params.agentModels,
     providerId: params.providerId,
@@ -515,7 +515,7 @@ export function applyProviderConfigWithDefaultModel(
 
 /** Apply a single-model provider preset and set the primary model only when the user has none. */
 export function applyProviderConfigWithDefaultModelPreset(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   params: {
     providerId: string;
     api: ModelApi;
@@ -525,7 +525,7 @@ export function applyProviderConfigWithDefaultModelPreset(
     aliases?: readonly AgentModelAliasEntry[];
     primaryModelRef?: string;
   },
-): OpenClawConfig {
+): AforaConfig {
   const next = applyProviderConfigWithDefaultModel(cfg, {
     agentModels: withAgentModelAliases(cfg.agents?.defaults?.models, params.aliases ?? []),
     providerId: params.providerId,
@@ -544,7 +544,7 @@ export function applyProviderConfigWithDefaultModelPreset(
 /** Build setup appliers for presets that resolve to one default provider model. */
 export function createDefaultModelPresetAppliers<TArgs extends unknown[]>(params: {
   resolveParams: (
-    cfg: OpenClawConfig,
+    cfg: AforaConfig,
     ...args: TArgs
   ) =>
     | Omit<Parameters<typeof applyProviderConfigWithDefaultModelPreset>[1], "primaryModelRef">
@@ -561,7 +561,7 @@ export function createDefaultModelPresetAppliers<TArgs extends unknown[]>(params
 
 /** Apply a multi-model provider preset and set the primary model only when the user has none. */
 export function applyProviderConfigWithDefaultModelsPreset(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   params: {
     providerId: string;
     api: ModelApi;
@@ -571,7 +571,7 @@ export function applyProviderConfigWithDefaultModelsPreset(
     aliases?: readonly AgentModelAliasEntry[];
     primaryModelRef?: string;
   },
-): OpenClawConfig {
+): AforaConfig {
   const next = applyProviderConfigWithDefaultModels(cfg, {
     agentModels: withAgentModelAliases(cfg.agents?.defaults?.models, params.aliases ?? []),
     providerId: params.providerId,
@@ -590,7 +590,7 @@ export function applyProviderConfigWithDefaultModelsPreset(
 /** Build setup appliers for presets that resolve to multiple default provider models. */
 export function createDefaultModelsPresetAppliers<TArgs extends unknown[]>(params: {
   resolveParams: (
-    cfg: OpenClawConfig,
+    cfg: AforaConfig,
     ...args: TArgs
   ) =>
     | Omit<Parameters<typeof applyProviderConfigWithDefaultModelsPreset>[1], "primaryModelRef">
@@ -607,7 +607,7 @@ export function createDefaultModelsPresetAppliers<TArgs extends unknown[]>(param
 
 /** Merge a provider config with a catalog while preserving existing model entries first. */
 export function applyProviderConfigWithModelCatalog(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   params: {
     agentModels: Record<string, AgentModelEntryConfig>;
     providerId: string;
@@ -615,7 +615,7 @@ export function applyProviderConfigWithModelCatalog(
     baseUrl: string;
     catalogModels: ModelDefinitionConfig[];
   },
-): OpenClawConfig {
+): AforaConfig {
   const providerState = resolveProviderModelMergeState(cfg, params.providerId);
   const catalogModels = params.catalogModels;
   const mergedModels =
@@ -640,7 +640,7 @@ export function applyProviderConfigWithModelCatalog(
 
 /** Apply a catalog-backed provider preset and set the primary model only when the user has none. */
 export function applyProviderConfigWithModelCatalogPreset(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   params: {
     providerId: string;
     api: ModelApi;
@@ -649,7 +649,7 @@ export function applyProviderConfigWithModelCatalogPreset(
     aliases?: readonly AgentModelAliasEntry[];
     primaryModelRef?: string;
   },
-): OpenClawConfig {
+): AforaConfig {
   const next = applyProviderConfigWithModelCatalog(cfg, {
     agentModels: withAgentModelAliases(cfg.agents?.defaults?.models, params.aliases ?? []),
     providerId: params.providerId,
@@ -667,7 +667,7 @@ export function applyProviderConfigWithModelCatalogPreset(
 /** Build setup appliers for presets that resolve to a provider model catalog. */
 export function createModelCatalogPresetAppliers<TArgs extends unknown[]>(params: {
   resolveParams: (
-    cfg: OpenClawConfig,
+    cfg: AforaConfig,
     ...args: TArgs
   ) =>
     | Omit<Parameters<typeof applyProviderConfigWithModelCatalogPreset>[1], "primaryModelRef">
@@ -684,9 +684,9 @@ export function createModelCatalogPresetAppliers<TArgs extends unknown[]>(params
 
 /** Ensure static per-model config includes a provider model ref after onboarding. */
 export function ensureModelAllowlistEntry(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   modelRef: string;
   defaultProvider?: string;
-}): OpenClawConfig {
+}): AforaConfig {
   return ensureStaticModelAllowlistEntry(params);
 }

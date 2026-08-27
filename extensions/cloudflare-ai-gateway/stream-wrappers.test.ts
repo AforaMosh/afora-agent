@@ -1,5 +1,5 @@
 // Cloudflare Ai Gateway tests cover stream wrappers plugin behavior.
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { wrapCloudflareAiGatewayProviderStream } from "./stream-wrappers.js";
 
@@ -7,7 +7,7 @@ const { warnMock } = vi.hoisted(() => ({
   warnMock: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/runtime-env", () => ({
+vi.mock("afora-agent/plugin-sdk/runtime-env", () => ({
   createSubsystemLogger: () => ({
     debug: vi.fn(),
     error: vi.fn(),
@@ -17,7 +17,7 @@ vi.mock("openclaw/plugin-sdk/runtime-env", () => ({
 }));
 
 afterAll(() => {
-  vi.doUnmock("openclaw/plugin-sdk/runtime-env");
+  vi.doUnmock("afora-agent/plugin-sdk/runtime-env");
   vi.resetModules();
 });
 

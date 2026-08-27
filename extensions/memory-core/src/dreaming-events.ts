@@ -1,6 +1,6 @@
 // Memory Core plugin module implements structured dreaming event helpers.
-import type { MemoryDreamingPhaseName } from "openclaw/plugin-sdk/memory-core-host-status";
-import { appendMemoryHostEvent } from "openclaw/plugin-sdk/memory-host-events";
+import type { MemoryDreamingPhaseName } from "afora-agent/plugin-sdk/memory-core-host-status";
+import { appendMemoryHostEvent } from "afora-agent/plugin-sdk/memory-host-events";
 import { formatErrorMessage } from "./dreaming-shared.js";
 import { resolveMemoryCoreNowMs, resolveMemoryCoreTimestamp } from "./time.js";
 

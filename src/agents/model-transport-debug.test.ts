@@ -1,4 +1,4 @@
-import { emitModelTransportDebug } from "@openclaw/ai/transports";
+import { emitModelTransportDebug } from "@afora/ai/transports";
 import { describe, expect, it, vi } from "vitest";
 
 describe("emitModelTransportDebug", () => {

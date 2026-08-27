@@ -1,7 +1,7 @@
 import path from "node:path";
 // Image runtime tests cover model-backed image routing, auth/profile handling,
 // provider payload transforms, and MiniMax/Copilot special paths.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { attachModelProviderRequestTransport } from "../agents/provider-request-config.js";
 import { mintSecretSentinel } from "../secrets/sentinel.js";
@@ -12,7 +12,7 @@ const SET_RUNTIME_API_KEY_FIELD = ["setRuntime", "ApiKey"].join("");
 
 const hoisted = vi.hoisted(() => ({
   completeMock: vi.fn(),
-  ensureOpenClawModelsJsonMock: vi.fn(async () => {}),
+  ensureAforaModelsJsonMock: vi.fn(async () => {}),
   getApiKeyForModelMock: vi.fn(
     async (): Promise<{
       apiKey: string;
@@ -46,7 +46,7 @@ const hoisted = vi.hoisted(() => ({
 }));
 const {
   completeMock,
-  ensureOpenClawModelsJsonMock,
+  ensureAforaModelsJsonMock,
   getApiKeyForModelMock,
   resolveApiKeyForProviderCoreMock,
   requireApiKeyMock,
@@ -112,7 +112,7 @@ vi.mock("../agents/models-config.js", async () => ({
   ...(await vi.importActual<typeof import("../agents/models-config.js")>(
     "../agents/models-config.js",
   )),
-  ensureOpenClawModelsJson: ensureOpenClawModelsJsonMock,
+  ensureAforaModelsJson: ensureAforaModelsJsonMock,
 }));
 
 vi.mock("../agents/model-auth.js", () => ({
@@ -188,7 +188,7 @@ describe("describeImageWithModelCore", () => {
   beforeEach(() => {
     // Provider endpoint policy comes from manifests. Pin source manifests so a
     // prior local build cannot make this source-checkout test read partial dist output.
-    vi.stubEnv("OPENCLAW_BUNDLED_PLUGINS_DIR", path.join(process.cwd(), "extensions"));
+    vi.stubEnv("AFORA_BUNDLED_PLUGINS_DIR", path.join(process.cwd(), "extensions"));
     vi.stubGlobal("fetch", fetchMock);
     vi.clearAllMocks();
     acquireAgentRunPreparedModelRuntimeMock.mockImplementation(
@@ -280,7 +280,7 @@ describe("describeImageWithModelCore", () => {
     const authStore = { version: 1, profiles: {} };
     const result = await describeImageWithModelCore({
       cfg: {},
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       provider: "minimax-portal",
       model: "MiniMax-VL-01",
       buffer: Buffer.from("png-bytes"),
@@ -295,7 +295,7 @@ describe("describeImageWithModelCore", () => {
       text: "portal ok",
       model: "MiniMax-VL-01",
     });
-    expect(ensureOpenClawModelsJsonMock).not.toHaveBeenCalled();
+    expect(ensureAforaModelsJsonMock).not.toHaveBeenCalled();
     const authRequest = getApiKeyForModelCall();
     expect(authRequest?.store).toBe(authStore);
     expect(requireApiKeyMock).toHaveBeenCalled();
@@ -315,7 +315,7 @@ describe("describeImageWithModelCore", () => {
     expect(Object.fromEntries(new Headers(fetchOptions.headers as HeadersInit))).toEqual({
       authorization: ["Bearer", "test-api-key"].join(" "),
       "content-type": "application/json",
-      "mm-api-source": "OpenClaw",
+      "mm-api-source": "Afora",
     });
     expect(fetchOptions.signal).toBeInstanceOf(AbortSignal);
     expect(timeoutSpy).toHaveBeenCalledWith(1000);
@@ -335,7 +335,7 @@ describe("describeImageWithModelCore", () => {
     await expect(
       describeImagesWithModelCore({
         cfg: {},
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         provider: "minimax-portal",
         model: "MiniMax-VL-01",
         images: [
@@ -370,7 +370,7 @@ describe("describeImageWithModelCore", () => {
 
     await describeImageWithModelCore({
       cfg: {},
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       provider: "minimax-portal",
       model: "MiniMax-VL-01",
       buffer: Buffer.from("png-bytes"),
@@ -400,7 +400,7 @@ describe("describeImageWithModelCore", () => {
 
     await describeImageWithModelCore({
       cfg: {},
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       provider: "minimax-portal",
       model: "MiniMax-VL-01",
       buffer: Buffer.from("png-bytes"),
@@ -441,7 +441,7 @@ describe("describeImageWithModelCore", () => {
 
     const result = await describeImageWithModelCore({
       cfg: {},
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       provider: "minimax-portal",
       model: "custom-vision",
       buffer: Buffer.from("png-bytes"),
@@ -467,7 +467,7 @@ describe("describeImageWithModelCore", () => {
         baseUrl: "https://api.minimax.io/anthropic",
       },
       cfg: {},
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
     });
     expect(completeMock).toHaveBeenCalledOnce();
     expect(fetchMock).not.toHaveBeenCalled();
@@ -511,7 +511,7 @@ describe("describeImageWithModelCore", () => {
 
     const result = await describeImageWithModelCore({
       cfg: {},
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       provider: "amazon-bedrock",
       model: "us.anthropic.claude-sonnet-4-6-v1",
       buffer: Buffer.from("png-bytes"),
@@ -547,8 +547,8 @@ describe("describeImageWithModelCore", () => {
     await expect(
       describeImageWithModelCore({
         cfg: {},
-        agentDir: "/tmp/openclaw-agent",
-        workspaceDir: "/tmp/openclaw-workspace",
+        agentDir: "/tmp/afora-agent",
+        workspaceDir: "/tmp/afora-workspace",
         provider: "minimax-portal",
         model: "MiniMax-VL-01",
         buffer: Buffer.from("png-bytes"),
@@ -565,8 +565,8 @@ describe("describeImageWithModelCore", () => {
     expect(resolveApiKeyForProviderCoreMock).toHaveBeenCalledWith(
       expect.objectContaining({
         provider: "minimax-portal",
-        agentDir: "/tmp/openclaw-agent",
-        workspaceDir: "/tmp/openclaw-workspace",
+        agentDir: "/tmp/afora-agent",
+        workspaceDir: "/tmp/afora-workspace",
       }),
     );
     expect(fetchMock).toHaveBeenCalledOnce();
@@ -595,7 +595,7 @@ describe("describeImageWithModelCore", () => {
             },
           },
         },
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         provider: "minimax-cn",
         model: "MiniMax-VL-01",
         buffer: Buffer.from("png-bytes"),
@@ -645,7 +645,7 @@ describe("describeImageWithModelCore", () => {
             },
           },
         },
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         provider: "minimax-cn",
         model: "MiniMax-VL-01",
         buffer: Buffer.from("png-bytes"),
@@ -687,7 +687,7 @@ describe("describeImageWithModelCore", () => {
             },
           },
         },
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         provider: "minimax-cn",
         model: "MiniMax-VL-01",
         buffer: Buffer.from("png-bytes"),
@@ -727,8 +727,8 @@ describe("describeImageWithModelCore", () => {
     const result = await describeImageWithModelCore({
       cfg: {},
       agentId: "vision-agent",
-      agentDir: "/tmp/openclaw-agent",
-      workspaceDir: "/tmp/openclaw-workspace",
+      agentDir: "/tmp/afora-agent",
+      workspaceDir: "/tmp/afora-workspace",
       provider: "google",
       model: "gemini-2.5-flash",
       buffer: Buffer.from("png-bytes"),
@@ -739,31 +739,31 @@ describe("describeImageWithModelCore", () => {
     });
 
     expect(result.text).toBe("workspace ok");
-    expect(ensureOpenClawModelsJsonMock).not.toHaveBeenCalled();
+    expect(ensureAforaModelsJsonMock).not.toHaveBeenCalled();
     expect(acquireAgentRunPreparedModelRuntimeMock).toHaveBeenCalledWith(
       expect.objectContaining({
         agentId: "vision-agent",
-        agentDir: "/tmp/openclaw-agent",
-        workspaceDir: "/tmp/openclaw-workspace",
+        agentDir: "/tmp/afora-agent",
+        workspaceDir: "/tmp/afora-workspace",
       }),
     );
     expect(releasePreparedModelRuntimeMock).toHaveBeenCalledOnce();
     expect(resolveModelAsyncMock).toHaveBeenCalledWith(
       "google",
       "gemini-2.5-flash",
-      "/tmp/openclaw-agent",
+      "/tmp/afora-agent",
       {},
       {
         allowBundledStaticCatalogFallback: true,
         authStorage: preparedAuthStorage,
         modelRegistry: {},
         preparedModelRuntime: expect.objectContaining({
-          agentDir: "/tmp/openclaw-agent",
-          workspaceDir: "/tmp/openclaw-workspace",
+          agentDir: "/tmp/afora-agent",
+          workspaceDir: "/tmp/afora-workspace",
         }),
         skipAgentDiscovery: true,
         skipProviderRuntimeHooks: true,
-        workspaceDir: "/tmp/openclaw-workspace",
+        workspaceDir: "/tmp/afora-workspace",
       },
     );
     expect(registerProviderStreamForModelMock).toHaveBeenCalledWith({
@@ -774,8 +774,8 @@ describe("describeImageWithModelCore", () => {
         input: ["text", "image"],
       },
       cfg: {},
-      agentDir: "/tmp/openclaw-agent",
-      workspaceDir: "/tmp/openclaw-workspace",
+      agentDir: "/tmp/afora-agent",
+      workspaceDir: "/tmp/afora-workspace",
     });
   });
 
@@ -814,7 +814,7 @@ describe("describeImageWithModelCore", () => {
 
     const result = await describeImageWithModelCore({
       cfg: {},
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       provider: "openai",
       model: "gpt-5.4",
       buffer: Buffer.from("png-bytes"),
@@ -828,18 +828,18 @@ describe("describeImageWithModelCore", () => {
       text: "normalized ok",
       model: "gpt-5.4",
     });
-    expect(ensureOpenClawModelsJsonMock).not.toHaveBeenCalled();
+    expect(ensureAforaModelsJsonMock).not.toHaveBeenCalled();
     expect(resolveModelAsyncMock).toHaveBeenNthCalledWith(
       1,
       "openai",
       "gpt-5.4",
-      "/tmp/openclaw-agent",
+      "/tmp/afora-agent",
       {},
       {
         allowBundledStaticCatalogFallback: true,
         authStorage: preparedAuthStorage,
         modelRegistry: {},
-        preparedModelRuntime: expect.objectContaining({ agentDir: "/tmp/openclaw-agent" }),
+        preparedModelRuntime: expect.objectContaining({ agentDir: "/tmp/afora-agent" }),
         skipAgentDiscovery: true,
         skipProviderRuntimeHooks: true,
       },
@@ -848,13 +848,13 @@ describe("describeImageWithModelCore", () => {
       2,
       "openai",
       "gpt-5.4",
-      "/tmp/openclaw-agent",
+      "/tmp/afora-agent",
       {},
       {
         allowBundledStaticCatalogFallback: true,
         authStorage: preparedAuthStorage,
         modelRegistry: {},
-        preparedModelRuntime: expect.objectContaining({ agentDir: "/tmp/openclaw-agent" }),
+        preparedModelRuntime: expect.objectContaining({ agentDir: "/tmp/afora-agent" }),
         skipAgentDiscovery: true,
       },
     );
@@ -887,7 +887,7 @@ describe("describeImageWithModelCore", () => {
 
     const result = await describeImageWithModelCore({
       cfg: {},
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       provider: "ollama",
       model: "llava:latest",
       buffer: Buffer.from("png-bytes"),
@@ -909,7 +909,7 @@ describe("describeImageWithModelCore", () => {
         input: ["text", "image"],
       },
       cfg: {},
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
     });
     expect(streamFn).toHaveBeenCalledOnce();
     expect(completeMock).not.toHaveBeenCalled();
@@ -959,7 +959,7 @@ describe("describeImageWithModelCore", () => {
           },
         },
       },
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       provider: "lmstudio",
       model: "google/gemma-4-e2b",
       buffer: Buffer.from("png-bytes"),
@@ -981,7 +981,7 @@ describe("describeImageWithModelCore", () => {
     const resolveRequest = requireRecord(resolveRequestValue, "model registry request");
     expect(resolveRequest.provider).toBe("lmstudio");
     expect(resolveRequest.modelId).toBe("google/gemma-4-e2b");
-    expect(resolveRequest.agentDir).toBe("/tmp/openclaw-agent");
+    expect(resolveRequest.agentDir).toBe("/tmp/afora-agent");
     expect(
       requireRecord(
         requireRecord(

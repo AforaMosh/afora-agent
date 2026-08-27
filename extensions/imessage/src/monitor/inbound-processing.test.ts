@@ -1,6 +1,6 @@
 // Imessage tests cover inbound processing plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { sanitizeTerminalText } from "openclaw/plugin-sdk/test-fixtures";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { sanitizeTerminalText } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { loadFreshIMessageReplyCacheForTest } from "../test-support/runtime.js";
 import { createSelfChatCache } from "./self-chat-cache.js";
@@ -11,7 +11,7 @@ let rememberIMessageReplyCache: ReplyCacheModule["rememberIMessageReplyCache"];
 let buildIMessageInboundContext: InboundProcessingModule["buildIMessageInboundContext"];
 let resolveIMessageReactionContext: InboundProcessingModule["resolveIMessageReactionContext"];
 let resolveIMessageInboundDecision: InboundProcessingModule["resolveIMessageInboundDecision"];
-const cfg = {} as OpenClawConfig;
+const cfg = {} as AforaConfig;
 type InboundDecisionParams = Parameters<
   InboundProcessingModule["resolveIMessageInboundDecision"]
 >[0];
@@ -202,7 +202,7 @@ describe("resolveIMessageInboundDecision echo detection", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const createdAt = "2026-03-02T20:58:10.649Z";
 
     expect(
@@ -748,7 +748,7 @@ describe("buildIMessageInboundContext", () => {
     }
 
     const { ctxPayload } = await buildIMessageInboundContext({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       decision,
       message,
       historyLimit: 0,
@@ -776,7 +776,7 @@ describe("buildIMessageInboundContext", () => {
     }
 
     const { ctxPayload } = await buildIMessageInboundContext({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       decision: {
         ...decision,
         agentBodyText: "/reset\n\n[imessage attachment unavailable]",
@@ -808,7 +808,7 @@ describe("buildIMessageInboundContext", () => {
     }
 
     const { ctxPayload, inboundHistory } = await buildIMessageInboundContext({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       decision,
       message,
       historyLimit: 0,
@@ -968,7 +968,7 @@ describe("buildIMessageInboundContext MessageSid handling (rowid-leak regression
       hasControlCommand: false,
     };
     return {
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       decision: decision as unknown as Parameters<
         typeof buildIMessageInboundContext
       >[0]["decision"],

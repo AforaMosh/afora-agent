@@ -1,4 +1,4 @@
-import type { ErrorShape } from "@openclaw/gateway-protocol";
+import type { ErrorShape } from "@afora/gateway-protocol";
 
 export type GatewayProtocolRequestOptions = {
   timeoutMs?: number | null;

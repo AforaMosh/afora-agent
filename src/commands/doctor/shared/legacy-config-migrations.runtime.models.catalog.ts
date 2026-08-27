@@ -2,8 +2,8 @@ import { isDeepStrictEqual } from "node:util";
 import type {
   ModelCatalog,
   NormalizedModelCatalogRow,
-} from "@openclaw/model-catalog-core/model-catalog-types";
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+} from "@afora/model-catalog-core/model-catalog-types";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import {
   modelTransportRoutesMatch,
   resolveUniqueCatalogModelRoute,
@@ -12,7 +12,7 @@ import { getRecord, type LegacyConfigRule } from "../../../config/legacy.shared.
 import { isModelThinkingFormat } from "../../../config/types.models.js";
 // Doctor intentionally reads shipped catalogs only; remote rows must not influence migrations.
 import { planManifestModelCatalogRows } from "../../../model-catalog/manifest-planner.js";
-import { listOpenClawPluginManifestMetadata } from "../../../plugins/manifest-metadata-scan.js";
+import { listAforaPluginManifestMetadata } from "../../../plugins/manifest-metadata-scan.js";
 
 const STALE_CONTEXT_WINDOW_FIXES: Record<string, { stale: number; correct: number }> = {
   "deepseek/deepseek-v4-flash": { stale: 200_000, correct: 1_000_000 },
@@ -51,7 +51,7 @@ let modelCompatCatalogPlugins:
   | undefined;
 
 function getModelCompatCatalogPlugins() {
-  modelCompatCatalogPlugins ??= listOpenClawPluginManifestMetadata().flatMap(({ manifest }) => {
+  modelCompatCatalogPlugins ??= listAforaPluginManifestMetadata().flatMap(({ manifest }) => {
     const id = typeof manifest.id === "string" ? manifest.id.trim() : "";
     const modelCatalog = getRecord(manifest.modelCatalog);
     if (!id || !modelCatalog) {
@@ -176,13 +176,13 @@ export const MODEL_COMPAT_CATALOG_RULES: LegacyConfigRule[] = [
   {
     path: ["models", "providers"],
     message:
-      'nativeWebSearchTool and requiresMistralToolIds are unused and retired; run "openclaw doctor --fix" to remove them.',
+      'nativeWebSearchTool and requiresMistralToolIds are unused and retired; run "afora doctor --fix" to remove them.',
     match: (value) => inspectModelCompatOverrides(value).dead > 0,
   },
   {
     path: ["models", "providers"],
     message:
-      'Catalog-known model compat values are provider-owned; run "openclaw doctor --fix" to remove matching config overrides.',
+      'Catalog-known model compat values are provider-owned; run "afora doctor --fix" to remove matching config overrides.',
     match: (value) => inspectModelCompatOverrides(value).matching > 0,
   },
   {

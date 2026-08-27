@@ -1,5 +1,5 @@
 // Markdown Core tests cover frontmatter behavior.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import JSON5 from "json5";
 import { describe, expect, it } from "vitest";
 import {
@@ -27,7 +27,7 @@ description: |
 name: session-memory
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "emoji": "disk",
         "events": ["command:new"],
@@ -36,20 +36,20 @@ metadata:
 ---
 `;
     const result = parseFrontmatterBlock(content);
-    expect(result.metadata).toBe('{"openclaw":{"emoji":"disk","events":["command:new"]}}');
+    expect(result.metadata).toBe('{"afora":{"emoji":"disk","events":["command:new"]}}');
 
     const parsed = JSON5.parse(expectDefined(result.metadata, "result.metadata test invariant"));
-    expect(parsed.openclaw?.emoji).toBe("disk");
+    expect(parsed.afora?.emoji).toBe("disk");
   });
 
   it("preserves inline JSON values", () => {
     const content = `---
 name: inline-json
-metadata: {"openclaw": {"events": ["test"]}}
+metadata: {"afora": {"events": ["test"]}}
 ---
 `;
     const result = parseFrontmatterBlock(content);
-    expect(result.metadata).toBe('{"openclaw": {"events": ["test"]}}');
+    expect(result.metadata).toBe('{"afora": {"events": ["test"]}}');
   });
 
   it("stringifies YAML objects and arrays", () => {
@@ -61,7 +61,7 @@ tags:
   - alpha
   - beta
 metadata:
-  openclaw:
+  afora:
     events:
       - command:new
 ---
@@ -71,7 +71,7 @@ metadata:
     expect(result.retries).toBe("3");
     expect(JSON.parse(result.tags ?? "[]")).toEqual(["alpha", "beta"]);
     const parsed = JSON5.parse(result.metadata ?? "");
-    expect(parsed.openclaw?.events).toEqual(["command:new"]);
+    expect(parsed.afora?.events).toEqual(["command:new"]);
   });
 
   it("preserves inline description values containing colons", () => {
@@ -190,10 +190,10 @@ description: |-
     const content = `---
 name: sample-skill
 metadata:
-  openclaw: true
+  afora: true
 ---`;
     const result = parseFrontmatterBlock(content);
-    expect(result.metadata).toBe('{"openclaw":true}');
+    expect(result.metadata).toBe('{"afora":true}');
   });
 
   it("returns empty when frontmatter is missing", () => {

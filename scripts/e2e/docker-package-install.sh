@@ -4,14 +4,14 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$ROOT_DIR/scripts/lib/docker-e2e-image.sh"
 
-IMAGE_NAME="$(docker_e2e_resolve_image "openclaw-docker-e2e-bare:local")"
-PACKAGE_TGZ="$(docker_e2e_prepare_package_tgz docker-package-install "${OPENCLAW_CURRENT_PACKAGE_TGZ:-}")"
-IDENTITY_PATH="${OPENCLAW_DOCKER_ARTIFACT_IDENTITY_PATH:-$ROOT_DIR/.artifacts/docker-tests/docker-package-install-identities.json}"
-NPM_PROOF_CONTAINER="openclaw-package-npm-proof-$$"
-PNPM_PROOF_CONTAINER="openclaw-package-pnpm-proof-$$"
-BUN_PROOF_CONTAINER="openclaw-package-bun-proof-$$"
-DOCKER_RUN_TIMEOUT="${OPENCLAW_DOCKER_PACKAGE_INSTALL_RUN_TIMEOUT:-120s}"
-BUN_HARNESS_DIR="$(mktemp -d "${TMPDIR:-/tmp}/openclaw-bun-harness.XXXXXX")"
+IMAGE_NAME="$(docker_e2e_resolve_image "afora-docker-e2e-bare:local")"
+PACKAGE_TGZ="$(docker_e2e_prepare_package_tgz docker-package-install "${AFORA_CURRENT_PACKAGE_TGZ:-}")"
+IDENTITY_PATH="${AFORA_DOCKER_ARTIFACT_IDENTITY_PATH:-$ROOT_DIR/.artifacts/docker-tests/docker-package-install-identities.json}"
+NPM_PROOF_CONTAINER="afora-package-npm-proof-$$"
+PNPM_PROOF_CONTAINER="afora-package-pnpm-proof-$$"
+BUN_PROOF_CONTAINER="afora-package-bun-proof-$$"
+DOCKER_RUN_TIMEOUT="${AFORA_DOCKER_PACKAGE_INSTALL_RUN_TIMEOUT:-120s}"
+BUN_HARNESS_DIR="$(mktemp -d "${TMPDIR:-/tmp}/afora-bun-harness.XXXXXX")"
 
 cleanup() {
   docker_e2e_docker_cmd rm -f \
@@ -37,28 +37,28 @@ for harness_path in \
 done
 chmod -R a+rX "$BUN_HARNESS_DIR"
 
-echo "Installing the real OpenClaw package artifact with npm..."
+echo "Installing the real Afora package artifact with npm..."
 DOCKER_COMMAND_TIMEOUT="$DOCKER_RUN_TIMEOUT" docker_e2e_docker_run_cmd run -d \
   --name "$NPM_PROOF_CONTAINER" \
-  -v "$PACKAGE_TGZ:/tmp/openclaw-current.tgz:ro" \
+  -v "$PACKAGE_TGZ:/tmp/afora-current.tgz:ro" \
   "$IMAGE_NAME" \
   bash -lc '
     set -euo pipefail
-    npm install -g --prefix /tmp/openclaw-proof /tmp/openclaw-current.tgz --no-fund --no-audit
-    export PATH="/tmp/openclaw-proof/bin:$PATH"
-    package_root=/tmp/openclaw-proof/lib/node_modules/openclaw
-    test "$(command -v openclaw)" = "/tmp/openclaw-proof/bin/openclaw"
-    openclaw --version > /tmp/openclaw-version
-    openclaw --help > /tmp/openclaw-help
-    test -s /tmp/openclaw-help
-    touch /tmp/openclaw-proof-ready
+    npm install -g --prefix /tmp/afora-proof /tmp/afora-current.tgz --no-fund --no-audit
+    export PATH="/tmp/afora-proof/bin:$PATH"
+    package_root=/tmp/afora-proof/lib/node_modules/afora
+    test "$(command -v afora)" = "/tmp/afora-proof/bin/afora"
+    afora --version > /tmp/afora-version
+    afora --help > /tmp/afora-help
+    test -s /tmp/afora-help
+    touch /tmp/afora-proof-ready
     exec sleep infinity
   ' >/dev/null
 
-echo "Installing the real OpenClaw package artifact with pnpm..."
+echo "Installing the real Afora package artifact with pnpm..."
 DOCKER_COMMAND_TIMEOUT="$DOCKER_RUN_TIMEOUT" docker_e2e_docker_run_cmd run -d \
   --name "$PNPM_PROOF_CONTAINER" \
-  -v "$PACKAGE_TGZ:/tmp/openclaw-current.tgz:ro" \
+  -v "$PACKAGE_TGZ:/tmp/afora-current.tgz:ro" \
   "$IMAGE_NAME" \
   bash -lc '
     set -euo pipefail
@@ -67,21 +67,21 @@ DOCKER_COMMAND_TIMEOUT="$DOCKER_RUN_TIMEOUT" docker_e2e_docker_run_cmd run -d \
     corepack prepare pnpm@11.15.1 --activate
     pnpm config set global-bin-dir "$PNPM_HOME"
     pnpm config set global-dir /tmp/pnpm-global
-    pnpm add --global --allow-build=openclaw /tmp/openclaw-current.tgz
-    test "$(command -v openclaw)" = "$PNPM_HOME/openclaw"
-    package_root="$(pnpm root --global)/openclaw"
-    printf "%s\n" "$package_root" > /tmp/openclaw-package-root
-    openclaw --version > /tmp/openclaw-version
-    openclaw --help > /tmp/openclaw-help
-    test -s /tmp/openclaw-help
-    touch /tmp/openclaw-proof-ready
+    pnpm add --global --allow-build=afora /tmp/afora-current.tgz
+    test "$(command -v afora)" = "$PNPM_HOME/afora"
+    package_root="$(pnpm root --global)/afora"
+    printf "%s\n" "$package_root" > /tmp/afora-package-root
+    afora --version > /tmp/afora-version
+    afora --help > /tmp/afora-help
+    test -s /tmp/afora-help
+    touch /tmp/afora-proof-ready
     exec sleep infinity
   ' >/dev/null
 
-echo "Installing the real OpenClaw package artifact with Bun..."
+echo "Installing the real Afora package artifact with Bun..."
 DOCKER_COMMAND_TIMEOUT="$DOCKER_RUN_TIMEOUT" docker_e2e_docker_run_cmd run -d \
   --name "$BUN_PROOF_CONTAINER" \
-  -v "$PACKAGE_TGZ:/tmp/openclaw-current.tgz:ro" \
+  -v "$PACKAGE_TGZ:/tmp/afora-current.tgz:ro" \
   -v "$BUN_HARNESS_DIR:/repo:ro" \
   "$IMAGE_NAME" \
   bash -lc '
@@ -89,18 +89,18 @@ DOCKER_COMMAND_TIMEOUT="$DOCKER_RUN_TIMEOUT" docker_e2e_docker_run_cmd run -d \
     npm install -g --prefix /tmp/bun-runtime bun@1.3.14 --no-fund --no-audit
     cd /repo
     BUN_BIN=/tmp/bun-runtime/bin/bun \
-      OPENCLAW_BUN_GLOBAL_SMOKE_HOST_BUILD=0 \
-      OPENCLAW_BUN_GLOBAL_SMOKE_PACKAGE_TGZ=/tmp/openclaw-current.tgz \
-      OPENCLAW_BUN_GLOBAL_SMOKE_PROOF_PATH=/tmp/openclaw-bun-proof.json \
+      AFORA_BUN_GLOBAL_SMOKE_HOST_BUILD=0 \
+      AFORA_BUN_GLOBAL_SMOKE_PACKAGE_TGZ=/tmp/afora-current.tgz \
+      AFORA_BUN_GLOBAL_SMOKE_PROOF_PATH=/tmp/afora-bun-proof.json \
       bash scripts/e2e/bun-global-install-smoke.sh
-    touch /tmp/openclaw-proof-ready
+    touch /tmp/afora-proof-ready
     exec sleep infinity
   ' >/dev/null
 
 wait_for_proof() {
   local container_name="$1"
   for _ in $(seq 1 240); do
-    if docker exec "$container_name" test -f /tmp/openclaw-proof-ready; then
+    if docker exec "$container_name" test -f /tmp/afora-proof-ready; then
       return 0
     fi
     if [ "$(docker inspect --format '{{.State.Running}}' "$container_name")" != "true" ]; then
@@ -117,17 +117,17 @@ for container_name in "$NPM_PROOF_CONTAINER" "$PNPM_PROOF_CONTAINER" "$BUN_PROOF
   wait_for_proof "$container_name"
 done
 
-NPM_PACKAGE_ROOT="/tmp/openclaw-proof/lib/node_modules/openclaw"
-NPM_INSTALLED_VERSION="$(docker exec "$NPM_PROOF_CONTAINER" cat /tmp/openclaw-version | tr -d '\r\n')"
-PNPM_PACKAGE_ROOT="$(docker exec "$PNPM_PROOF_CONTAINER" cat /tmp/openclaw-package-root | tr -d '\r\n')"
-PNPM_INSTALLED_VERSION="$(docker exec "$PNPM_PROOF_CONTAINER" cat /tmp/openclaw-version | tr -d '\r\n')"
-BUN_OPENCLAW_PATH="$(
+NPM_PACKAGE_ROOT="/tmp/afora-proof/lib/node_modules/afora"
+NPM_INSTALLED_VERSION="$(docker exec "$NPM_PROOF_CONTAINER" cat /tmp/afora-version | tr -d '\r\n')"
+PNPM_PACKAGE_ROOT="$(docker exec "$PNPM_PROOF_CONTAINER" cat /tmp/afora-package-root | tr -d '\r\n')"
+PNPM_INSTALLED_VERSION="$(docker exec "$PNPM_PROOF_CONTAINER" cat /tmp/afora-version | tr -d '\r\n')"
+BUN_AFORA_PATH="$(
   docker exec "$BUN_PROOF_CONTAINER" \
-    node -p 'JSON.parse(require("node:fs").readFileSync("/tmp/openclaw-bun-proof.json", "utf8")).openclawPath'
+    node -p 'JSON.parse(require("node:fs").readFileSync("/tmp/afora-bun-proof.json", "utf8")).aforaPath'
 )"
 BUN_INSTALLED_VERSION="$(
   docker exec "$BUN_PROOF_CONTAINER" \
-    node -p 'JSON.parse(require("node:fs").readFileSync("/tmp/openclaw-bun-proof.json", "utf8")).openclawVersion'
+    node -p 'JSON.parse(require("node:fs").readFileSync("/tmp/afora-bun-proof.json", "utf8")).aforaVersion'
 )"
 PACKAGE_VERSION="$(docker exec "$NPM_PROOF_CONTAINER" node -p "require('$NPM_PACKAGE_ROOT/package.json').version")"
 for installed_version in "$NPM_INSTALLED_VERSION" "$PNPM_INSTALLED_VERSION" "$BUN_INSTALLED_VERSION"; do
@@ -147,17 +147,17 @@ node --import tsx "$ROOT_DIR/scripts/e2e/lib/docker-artifact-proof/write-identit
   --container "bun=$BUN_PROOF_CONTAINER" \
   --detail "npm:installedPackageRoot=$NPM_PACKAGE_ROOT" \
   --detail "npm:installedPackageVersion=$PACKAGE_VERSION" \
-  --detail "npm:openclawVersion=$NPM_INSTALLED_VERSION" \
-  --detail "npm:openclawPath=/tmp/openclaw-proof/bin/openclaw" \
+  --detail "npm:aforaVersion=$NPM_INSTALLED_VERSION" \
+  --detail "npm:aforaPath=/tmp/afora-proof/bin/afora" \
   --detail "npm:helpCommand=passed" \
   --detail "pnpm:installedPackageRoot=$PNPM_PACKAGE_ROOT" \
   --detail "pnpm:installedPackageVersion=$PACKAGE_VERSION" \
-  --detail "pnpm:openclawVersion=$PNPM_INSTALLED_VERSION" \
-  --detail "pnpm:openclawPath=/tmp/pnpm-home/openclaw" \
+  --detail "pnpm:aforaVersion=$PNPM_INSTALLED_VERSION" \
+  --detail "pnpm:aforaPath=/tmp/pnpm-home/afora" \
   --detail "pnpm:helpCommand=passed" \
   --detail "bun:installedPackageVersion=$PACKAGE_VERSION" \
-  --detail "bun:openclawVersion=$BUN_INSTALLED_VERSION" \
-  --detail "bun:openclawPath=$BUN_OPENCLAW_PATH" \
+  --detail "bun:aforaVersion=$BUN_INSTALLED_VERSION" \
+  --detail "bun:aforaPath=$BUN_AFORA_PATH" \
   --detail "bun:helpCommand=passed"
 
 echo "npm, pnpm, and Bun package artifact proofs passed."

@@ -1,4 +1,4 @@
-import type { AssistantMessage, Context, Model } from "@openclaw/llm-core";
+import type { AssistantMessage, Context, Model } from "@afora/llm-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type SdkResponse = { data: AsyncIterable<unknown>; response: Response };
@@ -154,15 +154,15 @@ describe("native OpenAI Responses SSE continuation", () => {
           turn += 1;
           return {
             headers: {
-              "x-openclaw-session-id": context.sessionId ?? "",
-              "x-openclaw-turn-id": `turn-${turn}`,
-              "x-openclaw-turn-attempt": "1",
+              "x-afora-session-id": context.sessionId ?? "",
+              "x-afora-turn-id": `turn-${turn}`,
+              "x-afora-turn-attempt": "1",
             },
             metadata: {
-              openclaw_session_id: context.sessionId ?? "",
-              openclaw_turn_id: `turn-${turn}`,
-              openclaw_turn_attempt: "1",
-              openclaw_transport: context.transport,
+              afora_session_id: context.sessionId ?? "",
+              afora_turn_id: `turn-${turn}`,
+              afora_turn_attempt: "1",
+              afora_transport: context.transport,
             },
           };
         },
@@ -190,8 +190,8 @@ describe("native OpenAI Responses SSE continuation", () => {
 
     expect(second.stopReason).toBe("stop");
     expect(sseState.clientHeaders).toMatchObject([
-      { "x-openclaw-turn-id": "turn-1" },
-      { "x-openclaw-turn-id": "turn-2" },
+      { "x-afora-turn-id": "turn-1" },
+      { "x-afora-turn-id": "turn-2" },
     ]);
     expect(sseState.requests[1]).toMatchObject({
       previous_response_id: "resp_1",

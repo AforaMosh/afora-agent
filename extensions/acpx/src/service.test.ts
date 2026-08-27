@@ -1,18 +1,18 @@
 // ACPX tests cover service plugin behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
-import { MAX_TIMER_TIMEOUT_MS } from "openclaw/plugin-sdk/number-runtime";
-import type { OpenKeyedStoreOptions } from "openclaw/plugin-sdk/plugin-state-runtime";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
+import { MAX_TIMER_TIMEOUT_MS } from "afora-agent/plugin-sdk/number-runtime";
+import type { OpenKeyedStoreOptions } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import {
-  resolvePreferredOpenClawTmpDir,
+  resolvePreferredAforaTmpDir,
   tempWorkspace,
   type TempWorkspace,
-} from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/temp-path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { runtimeRegistry } = vi.hoisted(() => ({
@@ -23,8 +23,8 @@ const { prepareAcpxCodexAuthConfigMock } = vi.hoisted(() => ({
     async ({ pluginConfig }: { pluginConfig: unknown }) => pluginConfig,
   ),
 }));
-const { cleanupOpenClawOwnedAcpxProcessTreeMock } = vi.hoisted(() => ({
-  cleanupOpenClawOwnedAcpxProcessTreeMock: vi.fn(
+const { cleanupAforaOwnedAcpxProcessTreeMock } = vi.hoisted(() => ({
+  cleanupAforaOwnedAcpxProcessTreeMock: vi.fn(
     async (): Promise<{
       inspectedPids: number[];
       terminatedPids: number[];
@@ -35,8 +35,8 @@ const { cleanupOpenClawOwnedAcpxProcessTreeMock } = vi.hoisted(() => ({
     }),
   ),
 }));
-const { cleanupOpenClawOwnedAcpxPendingLeaseMock } = vi.hoisted(() => ({
-  cleanupOpenClawOwnedAcpxPendingLeaseMock: vi.fn(
+const { cleanupAforaOwnedAcpxPendingLeaseMock } = vi.hoisted(() => ({
+  cleanupAforaOwnedAcpxPendingLeaseMock: vi.fn(
     async (): Promise<{
       inspectedPids: number[];
       terminatedPids: number[];
@@ -48,8 +48,8 @@ const { cleanupOpenClawOwnedAcpxPendingLeaseMock } = vi.hoisted(() => ({
     }),
   ),
 }));
-const { reapStaleOpenClawOwnedAcpxOrphansMock } = vi.hoisted(() => ({
-  reapStaleOpenClawOwnedAcpxOrphansMock: vi.fn(
+const { reapStaleAforaOwnedAcpxOrphansMock } = vi.hoisted(() => ({
+  reapStaleAforaOwnedAcpxOrphansMock: vi.fn(
     async (): Promise<{
       inspectedPids: number[];
       terminatedPids: number[];
@@ -103,13 +103,13 @@ vi.mock("./codex-auth-bridge.js", () => ({
 }));
 
 vi.mock("./process-reaper.js", () => ({
-  cleanupOpenClawOwnedAcpxPendingLease: cleanupOpenClawOwnedAcpxPendingLeaseMock,
-  cleanupOpenClawOwnedAcpxProcessTree: cleanupOpenClawOwnedAcpxProcessTreeMock,
-  reapStaleOpenClawOwnedAcpxOrphans: reapStaleOpenClawOwnedAcpxOrphansMock,
+  cleanupAforaOwnedAcpxPendingLease: cleanupAforaOwnedAcpxPendingLeaseMock,
+  cleanupAforaOwnedAcpxProcessTree: cleanupAforaOwnedAcpxProcessTreeMock,
+  reapStaleAforaOwnedAcpxOrphans: reapStaleAforaOwnedAcpxOrphansMock,
 }));
 
 import { getAcpRuntimeBackend } from "../runtime-api.js";
-import type { OpenClawPluginServiceContext } from "../runtime-api.js";
+import type { AforaPluginServiceContext } from "../runtime-api.js";
 import {
   ACPX_PROBE_LEASE_SESSION_KEY,
   openAcpxProcessLeaseStateStore,
@@ -128,9 +128,9 @@ import {
 
 let testWorkspace: TempWorkspace;
 const previousEnv = {
-  OPENCLAW_ACPX_RUNTIME_STARTUP_PROBE: process.env.OPENCLAW_ACPX_RUNTIME_STARTUP_PROBE,
-  OPENCLAW_SKIP_ACPX_RUNTIME: process.env.OPENCLAW_SKIP_ACPX_RUNTIME,
-  OPENCLAW_SKIP_ACPX_RUNTIME_PROBE: process.env.OPENCLAW_SKIP_ACPX_RUNTIME_PROBE,
+  AFORA_ACPX_RUNTIME_STARTUP_PROBE: process.env.AFORA_ACPX_RUNTIME_STARTUP_PROBE,
+  AFORA_SKIP_ACPX_RUNTIME: process.env.AFORA_SKIP_ACPX_RUNTIME,
+  AFORA_SKIP_ACPX_RUNTIME_PROBE: process.env.AFORA_SKIP_ACPX_RUNTIME_PROBE,
 };
 
 function restoreEnv(name: keyof typeof previousEnv): void {
@@ -144,8 +144,8 @@ function restoreEnv(name: keyof typeof previousEnv): void {
 
 beforeEach(async () => {
   testWorkspace = await tempWorkspace({
-    rootDir: resolvePreferredOpenClawTmpDir(),
-    prefix: "openclaw-acpx-service-",
+    rootDir: resolvePreferredAforaTmpDir(),
+    prefix: "afora-acpx-service-",
   });
 });
 
@@ -153,22 +153,22 @@ afterEach(async () => {
   resetPluginStateStoreForTests();
   runtimeRegistry.clear();
   prepareAcpxCodexAuthConfigMock.mockClear();
-  cleanupOpenClawOwnedAcpxProcessTreeMock.mockClear();
-  cleanupOpenClawOwnedAcpxPendingLeaseMock.mockClear();
-  reapStaleOpenClawOwnedAcpxOrphansMock.mockClear();
+  cleanupAforaOwnedAcpxProcessTreeMock.mockClear();
+  cleanupAforaOwnedAcpxPendingLeaseMock.mockClear();
+  reapStaleAforaOwnedAcpxOrphansMock.mockClear();
   acpxRuntimeConstructorMock.mockClear();
   createAgentRegistryMock.mockClear();
   createFileSessionStoreMock.mockClear();
-  restoreEnv("OPENCLAW_ACPX_RUNTIME_STARTUP_PROBE");
-  restoreEnv("OPENCLAW_SKIP_ACPX_RUNTIME");
-  restoreEnv("OPENCLAW_SKIP_ACPX_RUNTIME_PROBE");
+  restoreEnv("AFORA_ACPX_RUNTIME_STARTUP_PROBE");
+  restoreEnv("AFORA_SKIP_ACPX_RUNTIME");
+  restoreEnv("AFORA_SKIP_ACPX_RUNTIME_PROBE");
   await testWorkspace.cleanup();
 });
 
-function createServiceContext(workspaceDir: string): OpenClawPluginServiceContext {
+function createServiceContext(workspaceDir: string): AforaPluginServiceContext {
   return {
     workspaceDir,
-    stateDir: path.join(workspaceDir, ".openclaw-plugin-state"),
+    stateDir: path.join(workspaceDir, ".afora-plugin-state"),
     config: {},
     logger: {
       info: vi.fn(),
@@ -179,8 +179,8 @@ function createServiceContext(workspaceDir: string): OpenClawPluginServiceContex
   };
 }
 
-function createOpenKeyedStore(ctx: OpenClawPluginServiceContext) {
-  const env = { ...process.env, OPENCLAW_STATE_DIR: ctx.stateDir };
+function createOpenKeyedStore(ctx: AforaPluginServiceContext) {
+  const env = { ...process.env, AFORA_STATE_DIR: ctx.stateDir };
   return <T>(options: OpenKeyedStoreOptions) =>
     createPluginStateKeyedStoreForTests<T>("acpx", {
       ...options,
@@ -189,7 +189,7 @@ function createOpenKeyedStore(ctx: OpenClawPluginServiceContext) {
 }
 
 function createAcpxRuntimeService(
-  ctx: OpenClawPluginServiceContext,
+  ctx: AforaPluginServiceContext,
   params: Omit<Parameters<typeof createRealAcpxRuntimeService>[0], "backendLifecycle"> & {
     backendLifecycle?: Parameters<typeof createRealAcpxRuntimeService>[0]["backendLifecycle"];
   } = {},
@@ -211,14 +211,14 @@ function createAcpxRuntimeService(
   });
 }
 
-function openGatewayInstanceStore(ctx: OpenClawPluginServiceContext) {
+function openGatewayInstanceStore(ctx: AforaPluginServiceContext) {
   return createOpenKeyedStore(ctx)<AcpxGatewayInstanceRecord>({
     namespace: ACPX_GATEWAY_INSTANCE_NAMESPACE,
     maxEntries: ACPX_GATEWAY_INSTANCE_MAX_ENTRIES,
   });
 }
 
-function openProcessLeaseStore(ctx: OpenClawPluginServiceContext) {
+function openProcessLeaseStore(ctx: AforaPluginServiceContext) {
   return openAcpxProcessLeaseStateStore(createOpenKeyedStore(ctx));
 }
 
@@ -297,7 +297,7 @@ describe("createAcpxRuntimeService", () => {
   });
 
   it("publishes before probing and retracts the exact runtime through the injected lifecycle", async () => {
-    delete process.env.OPENCLAW_ACPX_RUNTIME_STARTUP_PROBE;
+    delete process.env.AFORA_ACPX_RUNTIME_STARTUP_PROBE;
     const workspaceDir = testWorkspace.dir;
     const ctx = createServiceContext(workspaceDir);
     const probeStarted = createDeferred<void>();
@@ -340,8 +340,8 @@ describe("createAcpxRuntimeService", () => {
   });
 
   it("skips the startup probe and does not advertise backend health when explicitly disabled", async () => {
-    process.env.OPENCLAW_ACPX_RUNTIME_STARTUP_PROBE = "0";
-    delete process.env.OPENCLAW_SKIP_ACPX_RUNTIME_PROBE;
+    process.env.AFORA_ACPX_RUNTIME_STARTUP_PROBE = "0";
+    delete process.env.AFORA_SKIP_ACPX_RUNTIME_PROBE;
     const workspaceDir = testWorkspace.dir;
     const stateDir = path.join(workspaceDir, "custom-state");
     const ctx = createServiceContext(workspaceDir);
@@ -368,7 +368,7 @@ describe("createAcpxRuntimeService", () => {
   });
 
   it("waits for the embedded runtime startup probe before resolving by default", async () => {
-    delete process.env.OPENCLAW_ACPX_RUNTIME_STARTUP_PROBE;
+    delete process.env.AFORA_ACPX_RUNTIME_STARTUP_PROBE;
     const workspaceDir = testWorkspace.dir;
     const ctx = createServiceContext(workspaceDir);
     let releaseProbe!: () => void;
@@ -410,7 +410,7 @@ describe("createAcpxRuntimeService", () => {
   });
 
   it("emits ACPX-owned startup trace subspans", async () => {
-    delete process.env.OPENCLAW_ACPX_RUNTIME_STARTUP_PROBE;
+    delete process.env.AFORA_ACPX_RUNTIME_STARTUP_PROBE;
     const workspaceDir = testWorkspace.dir;
     const ctx = createServiceContext(workspaceDir);
     const trace = createStartupTraceRecorder();
@@ -471,7 +471,7 @@ describe("createAcpxRuntimeService", () => {
       state: "open",
     };
     await openProcessLeaseStore(ctx).register(lease.leaseId, lease);
-    cleanupOpenClawOwnedAcpxProcessTreeMock.mockResolvedValueOnce({
+    cleanupAforaOwnedAcpxProcessTreeMock.mockResolvedValueOnce({
       inspectedPids: [101, 102],
       terminatedPids: [101, 102],
     });
@@ -482,14 +482,14 @@ describe("createAcpxRuntimeService", () => {
 
     await service.start(ctx);
 
-    expect(cleanupOpenClawOwnedAcpxProcessTreeMock).toHaveBeenCalledWith({
+    expect(cleanupAforaOwnedAcpxProcessTreeMock).toHaveBeenCalledWith({
       rootPid: 101,
       expectedLeaseId: "lease-1",
       expectedGatewayInstanceId: "gw-test",
       wrapperRoot,
       deps: processCleanupDeps,
     });
-    expect(ctx.logger.info).toHaveBeenCalledWith("reaped 2 stale OpenClaw-owned ACPX processes");
+    expect(ctx.logger.info).toHaveBeenCalledWith("reaped 2 stale Afora-owned ACPX processes");
 
     await service.stop?.(ctx);
   });
@@ -515,7 +515,7 @@ describe("createAcpxRuntimeService", () => {
       state: "open",
     };
     await openProcessLeaseStore(ctx).register(lease.leaseId, lease);
-    cleanupOpenClawOwnedAcpxProcessTreeMock.mockResolvedValueOnce({
+    cleanupAforaOwnedAcpxProcessTreeMock.mockResolvedValueOnce({
       inspectedPids: [],
       terminatedPids: [],
       skippedReason: "process-list-unavailable",
@@ -557,7 +557,7 @@ describe("createAcpxRuntimeService", () => {
       state: "open",
     };
     await openProcessLeaseStore(ctx).register(lease.leaseId, lease);
-    cleanupOpenClawOwnedAcpxPendingLeaseMock.mockResolvedValueOnce({
+    cleanupAforaOwnedAcpxPendingLeaseMock.mockResolvedValueOnce({
       inspectedPids: [201, 202],
       terminatedPids: [201, 202],
     });
@@ -568,18 +568,18 @@ describe("createAcpxRuntimeService", () => {
 
     await service.start(ctx);
 
-    expect(cleanupOpenClawOwnedAcpxPendingLeaseMock).toHaveBeenCalledWith({
+    expect(cleanupAforaOwnedAcpxPendingLeaseMock).toHaveBeenCalledWith({
       leaseId: "lease-pending",
       gatewayInstanceId: "gw-test",
       wrapperRoot,
       wrapperPath: path.join(wrapperRoot, "codex-acp-wrapper.mjs"),
       deps: processCleanupDeps,
     });
-    expect(reapStaleOpenClawOwnedAcpxOrphansMock).toHaveBeenCalledWith({
+    expect(reapStaleAforaOwnedAcpxOrphansMock).toHaveBeenCalledWith({
       wrapperRoot,
       deps: processCleanupDeps,
     });
-    expect(ctx.logger.info).toHaveBeenCalledWith("reaped 2 stale OpenClaw-owned ACPX processes");
+    expect(ctx.logger.info).toHaveBeenCalledWith("reaped 2 stale Afora-owned ACPX processes");
     await expect(openProcessLeaseStore(ctx).lookup("lease-pending")).resolves.toBeUndefined();
 
     await service.stop?.(ctx);
@@ -606,12 +606,12 @@ describe("createAcpxRuntimeService", () => {
       state: "open",
     };
     await openProcessLeaseStore(ctx).register(lease.leaseId, lease);
-    cleanupOpenClawOwnedAcpxPendingLeaseMock.mockResolvedValueOnce({
+    cleanupAforaOwnedAcpxPendingLeaseMock.mockResolvedValueOnce({
       inspectedPids: [201, 202],
       terminatedPids: [],
       skippedReason: "ambiguous-root",
     });
-    reapStaleOpenClawOwnedAcpxOrphansMock.mockResolvedValueOnce({
+    reapStaleAforaOwnedAcpxOrphansMock.mockResolvedValueOnce({
       inspectedPids: [301],
       terminatedPids: [301],
     });
@@ -674,15 +674,15 @@ describe("createAcpxRuntimeService", () => {
 
     await service.start(ctx);
 
-    expect(cleanupOpenClawOwnedAcpxProcessTreeMock).not.toHaveBeenCalled();
+    expect(cleanupAforaOwnedAcpxProcessTreeMock).not.toHaveBeenCalled();
     expect(ctx.logger.warn).not.toHaveBeenCalled();
 
     await service.stop?.(ctx);
   });
 
   it("registers the backend lazily without importing ACPX runtime when startup probe is disabled", async () => {
-    process.env.OPENCLAW_ACPX_RUNTIME_STARTUP_PROBE = "0";
-    delete process.env.OPENCLAW_SKIP_ACPX_RUNTIME_PROBE;
+    process.env.AFORA_ACPX_RUNTIME_STARTUP_PROBE = "0";
+    delete process.env.AFORA_SKIP_ACPX_RUNTIME_PROBE;
     const workspaceDir = testWorkspace.dir;
     const ctx = createServiceContext(workspaceDir);
     const service = createAcpxRuntimeService(ctx);
@@ -713,7 +713,7 @@ describe("createAcpxRuntimeService", () => {
   });
 
   it("forwards startTurn through the lazily resolved default runtime", async () => {
-    process.env.OPENCLAW_ACPX_RUNTIME_STARTUP_PROBE = "0";
+    process.env.AFORA_ACPX_RUNTIME_STARTUP_PROBE = "0";
     const workspaceDir = testWorkspace.dir;
     const ctx = createServiceContext(workspaceDir);
     const startTurn = vi.fn((input: { requestId: string }) => ({
@@ -793,7 +793,7 @@ describe("createAcpxRuntimeService", () => {
   });
 
   it("passes the plugin timeout to the default acpx runtime constructor", async () => {
-    process.env.OPENCLAW_ACPX_RUNTIME_STARTUP_PROBE = "0";
+    process.env.AFORA_ACPX_RUNTIME_STARTUP_PROBE = "0";
     const workspaceDir = testWorkspace.dir;
     const ctx = createServiceContext(workspaceDir);
     const service = createAcpxRuntimeService(ctx, {
@@ -823,7 +823,7 @@ describe("createAcpxRuntimeService", () => {
   });
 
   it("caps oversized plugin timeouts before constructing the default acpx runtime", async () => {
-    process.env.OPENCLAW_ACPX_RUNTIME_STARTUP_PROBE = "0";
+    process.env.AFORA_ACPX_RUNTIME_STARTUP_PROBE = "0";
     const workspaceDir = testWorkspace.dir;
     const ctx = createServiceContext(workspaceDir);
     const service = createAcpxRuntimeService(ctx, {
@@ -853,7 +853,7 @@ describe("createAcpxRuntimeService", () => {
   });
 
   it("runs the embedded runtime probe at startup when explicitly enabled and reports health", async () => {
-    process.env.OPENCLAW_ACPX_RUNTIME_STARTUP_PROBE = "1";
+    process.env.AFORA_ACPX_RUNTIME_STARTUP_PROBE = "1";
     const workspaceDir = testWorkspace.dir;
     const ctx = createServiceContext(workspaceDir);
     const probeAvailability = vi.fn(async () => {});
@@ -874,7 +874,7 @@ describe("createAcpxRuntimeService", () => {
   });
 
   it("bounds the opt-in embedded runtime startup probe wait with the configured timeout", async () => {
-    process.env.OPENCLAW_ACPX_RUNTIME_STARTUP_PROBE = "1";
+    process.env.AFORA_ACPX_RUNTIME_STARTUP_PROBE = "1";
     const workspaceDir = testWorkspace.dir;
     const ctx = createServiceContext(workspaceDir);
     const probeAvailability = vi.fn(() => new Promise<void>(() => {}));
@@ -958,8 +958,8 @@ describe("createAcpxRuntimeService", () => {
   });
 
   it("lets the skip env override the opt-in embedded runtime startup probe without advertising health", async () => {
-    process.env.OPENCLAW_ACPX_RUNTIME_STARTUP_PROBE = "1";
-    process.env.OPENCLAW_SKIP_ACPX_RUNTIME_PROBE = "1";
+    process.env.AFORA_ACPX_RUNTIME_STARTUP_PROBE = "1";
+    process.env.AFORA_SKIP_ACPX_RUNTIME_PROBE = "1";
     const workspaceDir = testWorkspace.dir;
     const ctx = createServiceContext(workspaceDir);
     const probeAvailability = vi.fn(async () => {});
@@ -982,7 +982,7 @@ describe("createAcpxRuntimeService", () => {
   });
 
   it("formats non-string doctor details without losing object payloads", async () => {
-    process.env.OPENCLAW_ACPX_RUNTIME_STARTUP_PROBE = "1";
+    process.env.AFORA_ACPX_RUNTIME_STARTUP_PROBE = "1";
     const workspaceDir = testWorkspace.dir;
     const ctx = createServiceContext(workspaceDir);
     const runtime = createMockRuntime({
@@ -1007,7 +1007,7 @@ describe("createAcpxRuntimeService", () => {
   });
 
   it("can skip the embedded runtime backend via env", async () => {
-    process.env.OPENCLAW_SKIP_ACPX_RUNTIME = "1";
+    process.env.AFORA_SKIP_ACPX_RUNTIME = "1";
     const workspaceDir = testWorkspace.dir;
     const ctx = createServiceContext(workspaceDir);
     const runtimeFactory = vi.fn(() => {
@@ -1022,7 +1022,7 @@ describe("createAcpxRuntimeService", () => {
     expect(runtimeFactory).not.toHaveBeenCalled();
     expect(getAcpRuntimeBackend("acpx")).toBeUndefined();
     expect(ctx.logger.info).toHaveBeenCalledWith(
-      "skipping embedded acpx runtime backend (OPENCLAW_SKIP_ACPX_RUNTIME=1)",
+      "skipping embedded acpx runtime backend (AFORA_SKIP_ACPX_RUNTIME=1)",
     );
   });
 });

@@ -1,7 +1,7 @@
 # Replace the placeholder with an immutable linux/amd64 digest from the official
-# Docker Hub repository. Cloudflare Containers cannot pull OpenClaw from GHCR.
-ARG OPENCLAW_IMAGE=openclaw/openclaw@sha256:<official-openclaw-image-digest>
-FROM ${OPENCLAW_IMAGE}
+# Docker Hub repository. Cloudflare Containers cannot pull Afora from GHCR.
+ARG AFORA_IMAGE=AforaMosh/afora-agent@sha256:<official-afora-image-digest>
+FROM ${AFORA_IMAGE}
 
 USER root
 

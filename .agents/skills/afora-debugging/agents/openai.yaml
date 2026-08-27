@@ -1,0 +1,4 @@
+interface:
+  display_name: "Afora Debugging"
+  short_description: "Debug model, tool, stream, and live behavior"
+  default_prompt: "Use $afora-debugging to identify the right Afora debug boundary, turn on targeted logs, and choose the narrowest local or Crabbox proof."

@@ -16,7 +16,7 @@ const suite = createControlUiE2eSuite({
   unavailableMessage: (executablePath) => `Playwright Chromium is unavailable at ${executablePath}`,
 });
 
-const captureUiProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+const captureUiProof = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 const proofDir = path.join(process.cwd(), ".artifacts", "control-ui-e2e", "operator-admin");
 const viewport = { height: 960, width: 1440 };
 
@@ -36,16 +36,16 @@ const operatorConfig = {
 
 function skillStatus(eligible: boolean) {
   return {
-    workspaceDir: "/tmp/openclaw-e2e/workspace",
-    managedSkillsDir: "/tmp/openclaw-e2e/skills",
+    workspaceDir: "/tmp/afora-e2e/workspace",
+    managedSkillsDir: "/tmp/afora-e2e/skills",
     skills: [
       {
         name: "Deploy Helper",
         description: "Prepare reviewed deployments.",
-        source: "openclaw-bundled",
+        source: "afora-bundled",
         bundled: true,
-        filePath: "/tmp/openclaw-e2e/skills/deploy-helper/SKILL.md",
-        baseDir: "/tmp/openclaw-e2e/skills/deploy-helper",
+        filePath: "/tmp/afora-e2e/skills/deploy-helper/SKILL.md",
+        baseDir: "/tmp/afora-e2e/skills/deploy-helper",
         skillKey: "deploy-helper",
         always: false,
         disabled: false,
@@ -128,7 +128,7 @@ async function createContext(): Promise<BrowserContext> {
 }
 
 async function selectAgentOnAgentsPage(page: Page, name: string) {
-  const select = page.locator(".agents-control-select openclaw-agent-select");
+  const select = page.locator(".agents-control-select afora-agent-select");
   await select.locator(".agent-select__trigger").click();
   await select.locator("wa-dropdown-item[data-agent-option]").filter({ hasText: name }).click();
   await expect
@@ -163,7 +163,7 @@ suite.define(() => {
         "config.get": configResponse(),
         "device.pair.list": { paired: [], pending: [] },
         "exec.approvals.get": {
-          path: "/tmp/openclaw-e2e/exec-approvals.json",
+          path: "/tmp/afora-e2e/exec-approvals.json",
           exists: true,
           hash: "approval-hash-1",
           file: {
@@ -205,7 +205,7 @@ suite.define(() => {
       expect(response?.status()).toBe(200);
       await gateway.waitForRequest("skills.status");
 
-      const agentSelect = page.locator('openclaw-agent-select[name="skills-agent"]');
+      const agentSelect = page.locator('afora-agent-select[name="skills-agent"]');
       await agentSelect.locator(".agent-select__trigger").click();
       await agentSelect
         .locator("wa-dropdown-item[data-agent-option]")
@@ -217,7 +217,7 @@ suite.define(() => {
         .toBe("Reviewer");
 
       await page.getByRole("button", { name: "Open Deploy Helper details" }).click();
-      const dialog = page.locator("openclaw-modal-dialog", { hasText: "Deploy Helper" });
+      const dialog = page.locator("afora-modal-dialog", { hasText: "Deploy Helper" });
       await expect
         .poll(() => dialog.getByRole("button", { name: "Install Deploy Helper" }).isVisible())
         .toBe(true);
@@ -313,10 +313,10 @@ suite.define(() => {
         },
         "agents.files.get": {
           agentId: "main",
-          workspace: "/tmp/openclaw-e2e/workspace",
+          workspace: "/tmp/afora-e2e/workspace",
           file: {
             name: "AGENTS.md",
-            path: "/tmp/openclaw-e2e/workspace/AGENTS.md",
+            path: "/tmp/afora-e2e/workspace/AGENTS.md",
             content: "# Main agent\n",
             missing: false,
           },
@@ -326,11 +326,11 @@ suite.define(() => {
           files: [
             {
               name: "AGENTS.md",
-              path: "/tmp/openclaw-e2e/workspace/AGENTS.md",
+              path: "/tmp/afora-e2e/workspace/AGENTS.md",
               missing: false,
             },
           ],
-          workspace: "/tmp/openclaw-e2e/workspace",
+          workspace: "/tmp/afora-e2e/workspace",
         },
         "config.get": configResponse(readOnlyConfig),
         "skills.proposals.inspect": {
@@ -344,7 +344,7 @@ suite.define(() => {
         },
         "skills.proposals.list": {
           proposals: [proposal],
-          schema: "openclaw.skill-workshop.proposals-manifest.v1",
+          schema: "afora.skill-workshop.proposals-manifest.v1",
           updatedAt: proposal.updatedAt,
         },
         "skills.proposals.historyStatus": {
@@ -370,7 +370,7 @@ suite.define(() => {
 
       await page.goto(`${suite.server.baseUrl}settings/agents/main/files`);
       await gateway.waitForRequest("agents.files.list");
-      await page.locator("openclaw-agents-page").evaluate((element) => {
+      await page.locator("afora-agents-page").evaluate((element) => {
         const agentsPage = element as HTMLElement & {
           agentFileActive: string | null;
           agentFileContents: Record<string, string>;
@@ -387,11 +387,11 @@ suite.define(() => {
           files: [
             {
               name: "AGENTS.md",
-              path: "/tmp/openclaw-e2e/workspace/AGENTS.md",
+              path: "/tmp/afora-e2e/workspace/AGENTS.md",
               missing: false,
             },
           ],
-          workspace: "/tmp/openclaw-e2e/workspace",
+          workspace: "/tmp/afora-e2e/workspace",
         };
         agentsPage.agentFileActive = "AGENTS.md";
         agentsPage.agentFileContents = { "AGENTS.md": "# Main agent\n" };
@@ -420,7 +420,7 @@ suite.define(() => {
       await globalSkillToggle.click({ force: true });
       expect(await gateway.getRequests("skills.update")).toHaveLength(0);
       await page.getByRole("button", { name: "Open Deploy Helper details" }).click();
-      const skillDialog = page.locator("openclaw-modal-dialog", { hasText: "Deploy Helper" });
+      const skillDialog = page.locator("afora-modal-dialog", { hasText: "Deploy Helper" });
       const install = skillDialog.getByRole("button", { name: "Install Deploy Helper" });
       await expect.poll(() => install.isDisabled()).toBe(true);
       await install.click({ force: true });
@@ -494,7 +494,7 @@ suite.define(() => {
       await gateway.waitForRequest("skills.status");
       await page.getByRole("button", { name: "Open Deploy Helper details" }).click();
       const install = page
-        .locator("openclaw-modal-dialog", { hasText: "Deploy Helper" })
+        .locator("afora-modal-dialog", { hasText: "Deploy Helper" })
         .getByRole("button", { name: "Install Deploy Helper" });
       await expect.poll(() => install.isEnabled()).toBe(true);
       await install.click();
@@ -508,7 +508,7 @@ suite.define(() => {
     const context = await createContext();
     const page = await context.newPage();
     const initialApprovals = {
-      path: "/tmp/openclaw-e2e/exec-approvals.json",
+      path: "/tmp/afora-e2e/exec-approvals.json",
       exists: true,
       hash: "approval-hash-1",
       file: {
@@ -560,7 +560,7 @@ suite.define(() => {
       expect(response?.status()).toBe(200);
       await gateway.waitForRequest("exec.approvals.get");
 
-      const scopeSelect = page.locator("openclaw-agent-select.agent-select--settings");
+      const scopeSelect = page.locator("afora-agent-select.agent-select--settings");
       await scopeSelect.locator(".agent-select__trigger").click();
       await scopeSelect
         .locator("wa-dropdown-item[data-agent-option]")

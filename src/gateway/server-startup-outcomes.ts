@@ -1,6 +1,6 @@
 // Fixed-vocabulary Gateway startup outcomes keep normal boot logs useful
 // without exposing configuration values, paths, or startup errors.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { hasConfiguredInternalHooks } from "../hooks/configured.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 
@@ -43,7 +43,7 @@ export type GatewayStartupOutcomeRecorder = {
 };
 
 type GatewayStartupOutcomeRecorderParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   gatewayStartHooks: boolean;
   env?: NodeJS.ProcessEnv;
 };
@@ -68,7 +68,7 @@ function resolveOutcomePlan(
     ? "hooks-disabled"
     : !params.cfg.hooks.gmail?.account
       ? "no-gmail-account"
-      : isTruthyEnvValue((params.env ?? process.env).OPENCLAW_SKIP_GMAIL_WATCHER)
+      : isTruthyEnvValue((params.env ?? process.env).AFORA_SKIP_GMAIL_WATCHER)
         ? "disabled-by-environment"
         : "scheduled";
 

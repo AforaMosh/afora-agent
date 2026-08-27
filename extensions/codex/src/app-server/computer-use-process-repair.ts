@@ -1,5 +1,5 @@
 // macOS process inspection and scoped stale-child repair for Codex Computer Use.
-import { runExec } from "openclaw/plugin-sdk/process-runtime";
+import { runExec } from "afora-agent/plugin-sdk/process-runtime";
 import { describeControlFailure } from "./capabilities.js";
 
 const COMPUTER_USE_PROCESS_LIST_TIMEOUT_MS = 2_000;

@@ -1,17 +1,17 @@
-import type { ProviderRuntimeModel } from "openclaw/plugin-sdk/plugin-entry";
+import type { ProviderRuntimeModel } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   registerProviderPlugin,
   registerSingleProviderPlugin,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
-import { NON_ENV_SECRETREF_MARKER } from "openclaw/plugin-sdk/provider-auth-runtime";
-import { clearLiveCatalogCacheForTests } from "openclaw/plugin-sdk/provider-catalog-live-runtime";
-import { expectPassthroughReplayPolicy } from "openclaw/plugin-sdk/provider-test-contracts";
-import { buildOpenAICompletionsParams } from "openclaw/plugin-sdk/provider-transport-runtime";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { NON_ENV_SECRETREF_MARKER } from "afora-agent/plugin-sdk/provider-auth-runtime";
+import { clearLiveCatalogCacheForTests } from "afora-agent/plugin-sdk/provider-catalog-live-runtime";
+import { expectPassthroughReplayPolicy } from "afora-agent/plugin-sdk/provider-test-contracts";
+import { buildOpenAICompletionsParams } from "afora-agent/plugin-sdk/provider-transport-runtime";
 // Opencode Go tests cover index plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import plugin from "./index.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 import {
   buildOpencodeGoLiveProviderConfig,
   buildStaticOpencodeGoProviderConfig,

@@ -1,7 +1,7 @@
 // Memory Wiki tests cover lint plugin behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { replaceFileAtomic } from "openclaw/plugin-sdk/security-runtime";
+import { replaceFileAtomic } from "afora-agent/plugin-sdk/security-runtime";
 import { describe, expect, it, vi } from "vitest";
 import { lintMemoryWikiVault } from "./lint.js";
 import {
@@ -13,8 +13,8 @@ import {
 import { writeMemoryWikiSourceSyncState } from "./source-sync-state.js";
 import { createMemoryWikiTestHarness } from "./test-helpers.js";
 
-vi.mock("openclaw/plugin-sdk/security-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/security-runtime")>();
+vi.mock("afora-agent/plugin-sdk/security-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/security-runtime")>();
   return {
     ...actual,
     replaceFileAtomic: vi.fn(actual.replaceFileAtomic),
@@ -214,8 +214,8 @@ describe("lintMemoryWikiVault", () => {
         "alpha bridge body",
         "",
         "## Notes",
-        "<!-- openclaw:human:start -->",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:start -->",
+        "<!-- afora:human:end -->",
       ].join("\n"),
       "utf8",
     );
@@ -232,8 +232,8 @@ describe("lintMemoryWikiVault", () => {
         "alpha unsafe-local body",
         "",
         "## Notes",
-        "<!-- openclaw:human:start -->",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:start -->",
+        "<!-- afora:human:end -->",
       ].join("\n"),
       "utf8",
     );
@@ -325,8 +325,8 @@ describe("lintMemoryWikiVault", () => {
         "source body",
         "",
         "## Notes",
-        "<!-- openclaw:human:start -->",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:start -->",
+        "<!-- afora:human:end -->",
         "",
       ].join("\n"),
       "utf8",
@@ -351,8 +351,8 @@ describe("lintMemoryWikiVault", () => {
           "source body",
           "",
           "## Notes",
-          "<!-- openclaw:human:start -->",
-          "<!-- openclaw:human:end -->",
+          "<!-- afora:human:start -->",
+          "<!-- afora:human:end -->",
           "",
         ].join("\n"),
       }),
@@ -372,8 +372,8 @@ describe("lintMemoryWikiVault", () => {
         "alpha",
         "",
         "## Notes",
-        "<!-- openclaw:human:start -->",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:start -->",
+        "<!-- afora:human:end -->",
         "",
       ].join("\n"),
       "utf8",
@@ -734,8 +734,8 @@ describe("lintMemoryWikiVault", () => {
     await fs.writeFile(reportPath, previousReport, "utf8");
     await fs.chmod(reportPath, 0o640);
     const previousBytes = await fs.readFile(reportPath);
-    const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/security-runtime")>(
-      "openclaw/plugin-sdk/security-runtime",
+    const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/security-runtime")>(
+      "afora-agent/plugin-sdk/security-runtime",
     );
     const publicationError = Object.assign(new Error("injected lint report publication failure"), {
       code: "EIO",

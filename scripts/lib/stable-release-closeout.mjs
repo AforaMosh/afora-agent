@@ -83,8 +83,8 @@ function readReleaseAssets(release) {
 function isCloseoutEvidenceAsset(assetName, tag) {
   const releaseVersion = tag.slice(1);
   return (
-    assetName === `openclaw-${releaseVersion}-stable-main-closeout.json` ||
-    assetName === `openclaw-${releaseVersion}-stable-main-closeout.json.sha256`
+    assetName === `afora-${releaseVersion}-stable-main-closeout.json` ||
+    assetName === `afora-${releaseVersion}-stable-main-closeout.json.sha256`
   );
 }
 
@@ -137,7 +137,7 @@ export function verifyStableMainCloseout(params) {
 
   if (mainVersion && !isStableMainVersionAtLeast(mainVersion, version)) {
     errors.push(
-      `main package.json version is ${mainVersion}, expected shipped version ${version} or a later stable OpenClaw CalVer.`,
+      `main package.json version is ${mainVersion}, expected shipped version ${version} or a later stable Afora CalVer.`,
     );
   }
   if (tagPackageVersion && tagPackageVersion !== version) {
@@ -174,9 +174,9 @@ export function verifyStableMainCloseout(params) {
 
   const macAssetVersion = version;
   const expectedMacAssets = [
-    `OpenClaw-${macAssetVersion}.zip`,
-    `OpenClaw-${macAssetVersion}.dmg`,
-    `OpenClaw-${macAssetVersion}.dSYM.zip`,
+    `Afora-${macAssetVersion}.zip`,
+    `Afora-${macAssetVersion}.dmg`,
+    `Afora-${macAssetVersion}.dSYM.zip`,
   ];
   const releaseAssets = readReleaseAssets(params.release);
   const assetNames = new Set(releaseAssets.map((asset) => asset.name));
@@ -197,16 +197,16 @@ export function verifyStableMainCloseout(params) {
     const requiredPlatformFamilies = [
       {
         label: "Android",
-        prefix: "OpenClaw-Android",
-        expected: ["OpenClaw-Android-SHA256SUMS.txt", "OpenClaw-Android.apk"],
+        prefix: "Afora-Android",
+        expected: ["Afora-Android-SHA256SUMS.txt", "Afora-Android.apk"],
       },
       {
         label: "Windows",
-        prefix: "OpenClawCompanion-",
+        prefix: "AforaCompanion-",
         expected: [
-          "OpenClawCompanion-SHA256SUMS.txt",
-          "OpenClawCompanion-Setup-arm64.exe",
-          "OpenClawCompanion-Setup-x64.exe",
+          "AforaCompanion-SHA256SUMS.txt",
+          "AforaCompanion-Setup-arm64.exe",
+          "AforaCompanion-Setup-x64.exe",
         ],
       },
     ];
@@ -233,8 +233,8 @@ export function verifyStableMainCloseout(params) {
     }
 
     const windowsInstallerNames = [
-      "OpenClawCompanion-Setup-arm64.exe",
-      "OpenClawCompanion-Setup-x64.exe",
+      "AforaCompanion-Setup-arm64.exe",
+      "AforaCompanion-Setup-x64.exe",
     ];
     let trustedWindowsDigests = params.windowsNodeInstallerDigests;
     if (typeof trustedWindowsDigests === "string") {

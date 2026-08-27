@@ -13,7 +13,7 @@ type UserTurnTranscriptTestApi = {
 
 function getTestApi(): UserTurnTranscriptTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.userTurnTranscriptTestApi")
+    Symbol.for("afora.userTurnTranscriptTestApi")
   ] as UserTurnTranscriptTestApi;
 }
 

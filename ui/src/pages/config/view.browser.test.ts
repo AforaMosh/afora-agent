@@ -107,7 +107,7 @@ describe("config view", () => {
     catalogOpenTarget: "viewer" as const,
     setCatalogOpenTarget: vi.fn(),
     gatewayUrl: "",
-    assistantName: "OpenClaw",
+    assistantName: "Afora",
   });
 
   it("lets config pages grow with their content instead of creating an inner viewport", async () => {
@@ -1209,7 +1209,7 @@ describe("config view", () => {
     const container = document.createElement("div");
     const props: ConfigProps = {
       ...baseProps(),
-      configPath: "/tmp/openclaw-a.json5",
+      configPath: "/tmp/afora-a.json5",
       formMode: "raw",
       raw: '{\n  token: "TOKEN_A_AFTER"\n}\n',
       originalRaw: '{\n  token: "TOKEN_A_BEFORE"\n}\n',
@@ -1247,7 +1247,7 @@ describe("config view", () => {
       '"TOKEN_A_AFTER"',
     );
 
-    props.configPath = "/tmp/openclaw-b.json5";
+    props.configPath = "/tmp/afora-b.json5";
     props.raw = '{\n  token: "TOKEN_B_AFTER"\n}\n';
     props.originalRaw = '{\n  token: "TOKEN_B_BEFORE"\n}\n';
     props.formValue = {
@@ -1400,7 +1400,7 @@ describe("config view", () => {
     const secretRefValue = {
       channels: {
         discord: {
-          token: { source: "env", provider: "default", id: "__OPENCLAW_REDACTED__" },
+          token: { source: "env", provider: "default", id: "__AFORA_REDACTED__" },
         },
       },
     };
@@ -1579,7 +1579,7 @@ describe("config view", () => {
       "Using default: Enabled",
       "Using default: 48rem",
       "Using default: Enter",
-      "Using default: OpenClaw viewer",
+      "Using default: Afora viewer",
       "Using default: Disabled",
     ]) {
       expect(text).toContain(expected);
@@ -2195,7 +2195,7 @@ describe("config view", () => {
     const firstSeenAt = new Date("2026-07-10T12:00:00.000Z").getTime();
     vi.stubGlobal("localStorage", window.localStorage);
     localStorage.setItem(
-      "openclaw.control.lobsterdex.v1",
+      "afora.control.lobsterdex.v1",
       JSON.stringify({
         crimson: { firstSeenAt, name: "Ruby", shinySeenAt: firstSeenAt },
       }),
@@ -2214,7 +2214,7 @@ describe("config view", () => {
       });
 
       const seen = container.querySelector(".lobster-pet--palette-crimson");
-      const seenTooltip = seen?.closest("openclaw-tooltip");
+      const seenTooltip = seen?.closest("afora-tooltip");
       expect(seen?.hasAttribute("title")).toBe(false);
       expect(seen?.getAttribute("aria-label")).toContain("Ruby ✦");
       expect(seenTooltip?.querySelector('[slot="content"]')?.textContent).toContain(
@@ -2227,7 +2227,7 @@ describe("config view", () => {
       const unseen = container.querySelector(".lobster-pet--palette-watermelon");
       expect(unseen?.getAttribute("aria-label")).toContain("Ripe when thumped.");
       expect(
-        unseen?.closest("openclaw-tooltip")?.querySelector('[slot="content"]')?.textContent,
+        unseen?.closest("afora-tooltip")?.querySelector('[slot="content"]')?.textContent,
       ).toContain("Ripe when thumped.");
 
       const openLink = container.querySelector<HTMLAnchorElement>(".lobsterdex__open");
@@ -2241,7 +2241,7 @@ describe("config view", () => {
       openLink?.click();
       expect(onOpenLobsterdex).toHaveBeenCalledOnce();
     } finally {
-      localStorage.removeItem("openclaw.control.lobsterdex.v1");
+      localStorage.removeItem("afora.control.lobsterdex.v1");
       vi.unstubAllGlobals();
     }
   });

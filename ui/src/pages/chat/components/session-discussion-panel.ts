@@ -9,7 +9,7 @@ import { icons } from "../../../components/icons.ts";
 import { renderPanelEmptyState } from "../../../components/panel-empty-state.ts";
 import { t } from "../../../i18n/index.ts";
 import { formatUiError } from "../../../lib/format-error.ts";
-import { OpenClawLightDomElement } from "../../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../../lit/afora-element.ts";
 import { buildWidgetThemeMessage, postWidgetTheme } from "./widget-theme.ts";
 
 type SessionDiscussionInfoLoader = (sessionKey: string) => Promise<SessionDiscussionInfo>;
@@ -68,7 +68,7 @@ function resolveDiscussionEmbedUrl(value: string | undefined): string | null {
     return null;
   }
   if (
-    url.searchParams.get("openclawHostTheme") !== "1" ||
+    url.searchParams.get("aforaHostTheme") !== "1" ||
     !/^\/embed\/(?:channel|thread)\/[^/]+\/[^/]+\/?$/u.test(url.pathname)
   ) {
     // Provider-issued and signed discussion URLs are opaque. Only ClickClack's
@@ -89,7 +89,7 @@ function resolveDiscussionEmbedUrl(value: string | undefined): string | null {
   return url.href;
 }
 
-class SessionDiscussionPanel extends OpenClawLightDomElement {
+class SessionDiscussionPanel extends AforaLightDomElement {
   @property() sessionKey = "";
   @property({ attribute: false }) loadInfo: SessionDiscussionInfoLoader | null = null;
   @property({ attribute: false }) openDiscussion: SessionDiscussionOpener | null = null;
@@ -276,12 +276,12 @@ class SessionDiscussionPanel extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-session-discussion")) {
-  customElements.define("openclaw-session-discussion", SessionDiscussionPanel);
+if (!customElements.get("afora-session-discussion")) {
+  customElements.define("afora-session-discussion", SessionDiscussionPanel);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "openclaw-session-discussion": SessionDiscussionPanel;
+    "afora-session-discussion": SessionDiscussionPanel;
   }
 }

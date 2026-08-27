@@ -1,6 +1,6 @@
 ---
 title: Codex supervision
-summary: "Architecture and product boundary for supervising native Codex sessions from OpenClaw."
+summary: "Architecture and product boundary for supervising native Codex sessions from Afora."
 read_when:
   - Designing Codex session discovery, continuation, or archive behavior
   - Changing the native session catalog UI or Gateway RPCs
@@ -11,9 +11,9 @@ read_when:
 
 ## Goal
 
-Codex supervision lets an OpenClaw operator discover native Codex sessions and,
-when safe, create a local branch through the normal OpenClaw Chat surface.
-Codex App Server remains the thread and model-loop owner. OpenClaw supplies the
+Codex supervision lets an Afora operator discover native Codex sessions and,
+when safe, create a local branch through the normal Afora Chat surface.
+Codex App Server remains the thread and model-loop owner. Afora supplies the
 fleet catalog, authenticated operator UI, session binding, and channel delivery.
 
 The feature belongs to the official `codex` plugin. There is no separate
@@ -72,7 +72,7 @@ The `codex` plugin owns all Codex App Server behavior:
 - protocol initialization and version checks
 - thread list, read, resume, archive, and event handling
 - approval and user-input bridges
-- native thread bindings to OpenClaw sessions
+- native thread bindings to Afora sessions
 - Codex-only model and harness enforcement after continuation
 
 The Control UI and Gateway consume that plugin-owned service. They do not read
@@ -83,14 +83,14 @@ The default local topology is:
 ```text
 Codex Desktop -> private stdio App Server -> user Codex home
                                              ^
-OpenClaw Codex plugin -> supervision App Server connection
+Afora Codex plugin -> supervision App Server connection
   (defaults to managed user-home stdio; explicit appServer settings are honored)
   -> passive source catalog and read
   -> snapshot pin -> canonical appServer-source branch
   -> visible-history injection and every later supervised Chat turn
 
-Ordinary OpenClaw Codex sessions -> managed agent-home stdio by default
-  -> ordinary full harness threads -> OpenClaw Chat and channel delivery
+Ordinary Afora Codex sessions -> managed agent-home stdio by default
+  -> ordinary full harness threads -> Afora Chat and channel delivery
 ```
 
 Enabling supervision does not change the ordinary Codex harness: it remains
@@ -103,7 +103,7 @@ explicitly only when the ordinary harness should also share the native Codex
 home. A Chat adopted from the Codex sidebar group is the exception: its private
 supervision binding keeps source reads, canonical branch creation, and later
 turns on the supervision connection. Live status and ownership remain
-process-local; a thread unknown to OpenClaw's supervision process is `notLoaded`
+process-local; a thread unknown to Afora's supervision process is `notLoaded`
 even when Codex Desktop is actively running it.
 
 Codex has an experimental canonical local daemon with a separate
@@ -126,7 +126,7 @@ the versioned `codex.appServer.thread.turns.list.v1` command on the selected
 node. Every response contains at most 20 persisted turns plus opaque
 forward/backward cursors. The Control UI requests newest-first pages, renders each page in
 chronological order, and prepends older pages. It never falls back to an
-unbounded `thread/read`. OpenClaw also rejects any serialized item page above
+unbounded `thread/read`. Afora also rejects any serialized item page above
 20 MiB before it can cross the node or Gateway transport.
 
 The native macOS paired-node implementation supports only an unset/default or
@@ -155,10 +155,10 @@ appears when its own App Server listing settles; the aggregate response remains
 the compatibility and recovery snapshot. The visible page reconciles after
 connectivity changes, on focus, and at most every 30 seconds, with a faster pass
 after changes. Native Codex sessions created in another client are therefore
-eventually discovered without importing them into OpenClaw storage.
+eventually discovered without importing them into Afora storage.
 
 Catalog discovery is passive. Listing or reading metadata must not call
-`thread/resume`, subscribe the OpenClaw client to live thread requests, or
+`thread/resume`, subscribe the Afora client to live thread requests, or
 answer an approval.
 
 Search is title-only and case-insensitive. For each returned catalog page, the
@@ -171,9 +171,9 @@ previews. The returned native cursor lets callers continue the scan.
 The plugin registers three Gateway-backed shell commands:
 
 ```text
-openclaw codex sessions [--search <text>] [--host <id>] [--limit <count>] [--cursor <cursor>] [--json] [gateway-options]
-openclaw codex continue <thread-id> [--json] [gateway-options]
-openclaw codex archive <thread-id> --confirm-no-other-runner [--json] [gateway-options]
+afora codex sessions [--search <text>] [--host <id>] [--limit <count>] [--cursor <cursor>] [--json] [gateway-options]
+afora codex continue <thread-id> [--json] [gateway-options]
+afora codex archive <thread-id> --confirm-no-other-runner [--json] [gateway-options]
 ```
 
 `[gateway-options]` is `--url <url>`, `--token <token>`, `--timeout <ms>`, and
@@ -204,10 +204,10 @@ ids. The plugin:
 1. Reuses the existing supervised Chat when the source already has one.
 2. Otherwise projects bounded user and assistant history through the source's
    last terminal persisted turn (completed, interrupted, or failed) into a new
-   OpenClaw Chat and records a pending harness branch.
+   Afora Chat and records a pending harness branch.
 3. Stores the pending Codex-only model-lock policy, not a concrete model or
    provider selection, plus the private supervision connection scope, and
-   returns the OpenClaw `sessionKey`.
+   returns the Afora `sessionKey`.
 
 The history projection selects the newest tail of visible user and assistant
 messages, with hard limits of 200 messages, 512 KiB of UTF-8 text in total, and
@@ -225,8 +225,8 @@ Codex approval, elicitation, event, and delivery handlers, then:
    reports the actual pair. If the model differs from the last model recorded
    in the source, Codex emits its normal model-difference warning.
 2. On that same connection, starts the canonical full Codex harness thread with
-   `threadSource: "appServer"`, OpenClaw's cwd, policy, config, environment, the
-   full OpenClaw harness tool surface, and exactly the model and provider
+   `threadSource: "appServer"`, Afora's cwd, policy, config, environment, the
+   full Afora harness tool surface, and exactly the model and provider
    returned by the fork for this initial start.
 3. Injects the bounded visible user and assistant history through that
    connection, commits the canonical binding without dropping its supervision
@@ -244,9 +244,9 @@ of falling back to the ordinary agent-home harness.
 This guarantees Codex-owned selection, not preservation of the source's
 historical model. The fork's returned pair is used for the canonical thread
 start, and Codex persists that thread's native model and provider. Later resumes
-omit OpenClaw model and provider overrides, so Codex restores the persisted pair.
-If a separate native Codex control changes the canonical thread, OpenClaw accepts
-that native persisted selection. The outer OpenClaw model and fallback chain
+omit Afora model and provider overrides, so Codex restores the persisted pair.
+If a separate native Codex control changes the canonical thread, Afora accepts
+that native persisted selection. The outer Afora model and fallback chain
 never substitute for it.
 
 Model changes, session deletion, and session reset/new operations fail closed
@@ -259,7 +259,7 @@ fork or archive the bound native thread. List and metadata-only read remain
 available; transcript fields require `supervision.allowRawTranscripts`, while
 rename, unarchive, detached fork, and archive of an unrelated thread require
 `supervision.allowWriteControls`. Neither option can replace the locked binding.
-Deleting or resetting the OpenClaw entry would otherwise discard the native
+Deleting or resetting the Afora entry would otherwise discard the native
 binding and create or permit a generic thread behind a Codex-looking session.
 Retention maintenance therefore preserves model-locked entries even when they
 exceed ordinary age, count, or disk-budget limits. Disabling or uninstalling the
@@ -269,11 +269,11 @@ converts it into an ordinary model session.
 
 The source is never resumed or mutated by this action. The temporary fork pins a
 snapshot; it is not the durable continuation thread. Starting a distinct
-canonical harness thread on the first turn prevents OpenClaw from becoming a
+canonical harness thread on the first turn prevents Afora from becoming a
 competing source writer merely because process-local status failed to see a
 Desktop-owned turn. The visible-history mirror and pinned snapshot may omit work
 that has not yet completed in an active source. The original CLI, VS Code,
-Atlas, or ChatGPT source remains eligible for both native and OpenClaw catalogs.
+Atlas, or ChatGPT source remains eligible for both native and Afora catalogs.
 The canonical branch remains a native Codex thread in the supervision store,
 but native clients may filter its `appServer` source kind, so Codex Desktop
 visibility is not a contract.
@@ -290,8 +290,8 @@ the non-archived catalog.
 An active or error status from the fresh read rejects archive. So does an
 initializing or pending supervised branch from the source: the first Chat turn
 must materialize its canonical branch before the source can be archived. A
-known active OpenClaw binding owner for the exact target or any non-archived
-spawned descendant also rejects archive. OpenClaw paginates Codex's experimental
+known active Afora binding owner for the exact target or any non-archived
+spawned descendant also rejects archive. Afora paginates Codex's experimental
 `thread/list ancestorThreadId` relation and fails closed on request or response
 errors, cursor or thread cycles, and safety-limit exhaustion. Native archive can
 shut down loaded parent and descendant work, so archive is not an interrupt
@@ -360,7 +360,7 @@ disabled.
 
 ## Compatibility
 
-`openclaw doctor --fix` migrates shipped `plugins.entries.codex-supervisor`
+`afora doctor --fix` migrates shipped `plugins.entries.codex-supervisor`
 configuration, including endpoints and transcript/write policies, plus plugin
 allow/deny references into
 `plugins.entries.codex.config.supervision`. Explicit canonical destination
@@ -394,7 +394,7 @@ without a second runtime facade.
 - explicit runner and approval-owner leases for simultaneous client handoff
 - remote archive after a runner-ownership lease or equivalent fencing exists
 - interrupt and richer active-session observation
-- audited handoff between Codex Desktop, CLI, and OpenClaw
+- audited handoff between Codex Desktop, CLI, and Afora
 
 Archived browsing is not part of the planned supervision sidebar. Native Codex
 surfaces remain the recovery path for archived threads.
@@ -414,9 +414,9 @@ surfaces remain the recovery path for archived threads.
 - Pending and committed supervised bindings use the supervision connection for
   source access, canonical branch creation, and every later turn; ordinary
   Codex sessions remain agent-scoped.
-- Later resumes omit OpenClaw model/provider overrides, preserve Codex's
+- Later resumes omit Afora model/provider overrides, preserve Codex's
   canonical persisted selection, accept separate native changes to that thread,
-  and never substitute the outer OpenClaw model or fallback chain.
+  and never substitute the outer Afora model or fallback chain.
 - Disabling supervision or losing the binding/connection lifecycle fails closed
   instead of moving the Chat to the ordinary agent-home harness.
 - A supervised model-locked Chat cannot be deleted while it protects the native

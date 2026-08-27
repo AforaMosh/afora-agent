@@ -1,4 +1,4 @@
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { runExec, spawnCommand } from "../../process/exec.js";
 
 const OPEN_PATH_TIMEOUT_MS = 5_000;

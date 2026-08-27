@@ -14,7 +14,7 @@ import type { ConfigSnapshotReadMeasure } from "../config/io.js";
 import { formatConfigIssueLines } from "../config/issue-format.js";
 import { resolveCanonicalConfigPath } from "../config/paths.js";
 import type { ConfigFileSnapshot } from "../config/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import type {
@@ -24,8 +24,8 @@ import type {
 import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.js";
 import { setActiveDegradedPlugins } from "../plugins/runtime-degraded-state.js";
 import { createLazyRuntimeModule } from "../shared/lazy-runtime.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
-import { assertOpenClawStateWriteAllowedAtPath } from "../state/openclaw-state-ownership.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
+import { assertAforaStateWriteAllowedAtPath } from "../state/afora-state-ownership.js";
 import { resolveHomeDir } from "../utils.js";
 import { noteIncludeConfinementWarning } from "./doctor-config-analysis.js";
 import {
@@ -118,7 +118,7 @@ async function maybeMigrateLegacyConfig(): Promise<string[]> {
 
 export type DoctorConfigPreflightResult = {
   snapshot: Awaited<ReturnType<typeof readConfigFileSnapshot>>;
-  baseConfig: OpenClawConfig;
+  baseConfig: AforaConfig;
   pluginMetadataSnapshot?: PluginMetadataSnapshot;
   cronCodexRuntimePolicyTargets?: CronCodexRuntimePolicyTarget[];
 };
@@ -127,7 +127,7 @@ export type DoctorConfigPreflightResult = {
 export function shouldSkipPluginValidationForDoctorConfigPreflight(
   env: NodeJS.ProcessEnv = process.env,
 ): boolean {
-  return isTruthyEnvValue(env.OPENCLAW_UPDATE_IN_PROGRESS);
+  return isTruthyEnvValue(env.AFORA_UPDATE_IN_PROGRESS);
 }
 
 function noteStateMigrationResult(result: {
@@ -184,8 +184,8 @@ export async function runDoctorConfigPreflight(
     await refuseStartupMigrationsForLiveGatewayOwner(process.env);
   }
   if (stateMigrationsRequested) {
-    await assertOpenClawStateWriteAllowedAtPath({
-      databasePath: resolveOpenClawStateSqlitePath(process.env),
+    await assertAforaStateWriteAllowedAtPath({
+      databasePath: resolveAforaStateSqlitePath(process.env),
       env: process.env,
     });
   }
@@ -398,7 +398,7 @@ export async function runDoctorConfigPreflight(
     if (options.repairPrefixedConfig === true && snapshot.exists && !snapshot.valid) {
       if (await recoverConfigFromJsonRootSuffix(snapshot)) {
         note(
-          "Removed non-JSON prefix from openclaw.json; original saved as .clobbered.*.",
+          "Removed non-JSON prefix from afora.json; original saved as .clobbered.*.",
           "Config",
         );
         configSnapshotRead = await readConfigSnapshotForPreflight();
@@ -407,7 +407,7 @@ export async function runDoctorConfigPreflight(
         await recoverConfigFromLastKnownGood({ snapshot, reason: "doctor-invalid-config" })
       ) {
         note(
-          "Restored openclaw.json from last-known-good; original saved as .clobbered.*.",
+          "Restored afora.json from last-known-good; original saved as .clobbered.*.",
           "Config",
         );
         configSnapshotRead = await readConfigSnapshotForPreflight();
@@ -640,7 +640,7 @@ export async function runDoctorConfigPreflight(
           persistedIdentity.pluginDoctorConfigFingerprint
       ) {
         throw new Error(
-          'OpenClaw config identity changed while persisting the refreshed plugin registry; refusing to write the migration checkpoint. Run "openclaw doctor --fix" and retry.',
+          'Afora config identity changed while persisting the refreshed plugin registry; refusing to write the migration checkpoint. Run "afora doctor --fix" and retry.',
         );
       }
       // The persisted reread is the only inventory mutation in preflight. Replace both the
@@ -654,7 +654,7 @@ export async function runDoctorConfigPreflight(
     ) {
       throw startupMigrationHeartbeatError instanceof Error
         ? startupMigrationHeartbeatError
-        : new Error("OpenClaw startup migration lease heartbeat failed.");
+        : new Error("Afora startup migration lease heartbeat failed.");
     }
     if (
       shouldRecordStateCheckpoint &&
@@ -664,7 +664,7 @@ export async function runDoctorConfigPreflight(
       snapshot.valid
     ) {
       if (!migrationCheckpoint) {
-        throw new Error("OpenClaw state migration checkpoint module was not loaded.");
+        throw new Error("Afora state migration checkpoint module was not loaded.");
       }
       migrationCheckpoint.recordSuccessfulStateMigrations({
         env: startupMigrationEnv,
@@ -685,7 +685,7 @@ export async function runDoctorConfigPreflight(
         throwStartupMigrationRefusal(
           formatStartupMigrationFailure({
             warnings: [],
-            blockers: ['OpenClaw config is invalid; run "openclaw doctor --fix" before startup.'],
+            blockers: ['Afora config is invalid; run "afora doctor --fix" before startup.'],
           }),
         );
       }
@@ -730,7 +730,7 @@ export async function runDoctorConfigPreflight(
     }
     if (shouldRecordStartupCheckpoint) {
       if (!migrationCheckpoint) {
-        throw new Error("OpenClaw startup migration checkpoint module was not loaded.");
+        throw new Error("Afora startup migration checkpoint module was not loaded.");
       }
       migrationCheckpoint.recordSuccessfulStartupMigrations({
         env: startupMigrationEnv,

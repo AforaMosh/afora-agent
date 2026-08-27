@@ -1,6 +1,6 @@
 // Tests lifecycle/work admission ordering across canonical keys and backing ids.
 import { setImmediate as waitForImmediate } from "node:timers/promises";
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { expect, it, vi } from "vitest";
 import { createDeferred } from "../../test/helpers/promise.js";
 import { runExclusiveSessionStoreWrite } from "../config/sessions/store-writer.js";

@@ -1,7 +1,7 @@
 // Verifies current plugin registry contribution snapshots.
 import fs from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { setCurrentPluginMetadataSnapshot } from "./current-plugin-metadata-snapshot.js";
 import { resolveInstalledPluginIndexPolicyHash } from "./installed-plugin-index-policy.js";
 import type { InstalledPluginIndex } from "./installed-plugin-index.js";
@@ -18,7 +18,7 @@ afterEach(() => {
 function createPluginRecord(id: string, enabled: boolean): InstalledPluginIndex["plugins"][number] {
   return {
     pluginId: id,
-    manifestPath: `/plugins/${id}/openclaw.plugin.json`,
+    manifestPath: `/plugins/${id}/afora.plugin.json`,
     manifestHash: id,
     rootDir: `/plugins/${id}`,
     origin: "global",
@@ -45,7 +45,7 @@ function createManifest(id: string): PluginManifestRecord {
 }
 
 function createSnapshot(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   workspaceDir: string;
   registryDiagnostics?: PluginMetadataSnapshot["registryDiagnostics"];
 }): PluginMetadataSnapshot {
@@ -96,10 +96,10 @@ function createSnapshot(params: {
 
 describe("loadPluginManifestRegistryForPluginRegistry current snapshot", () => {
   it("reuses compatible current manifest metadata", () => {
-    const config: OpenClawConfig = {};
+    const config: AforaConfig = {};
     const env = {
-      HOME: "/tmp/openclaw-test-home",
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
+      HOME: "/tmp/afora-test-home",
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
     };
     const workspaceDir = "/workspace";
     setCurrentPluginMetadataSnapshot(createSnapshot({ config, workspaceDir }), {
@@ -143,10 +143,10 @@ describe("loadPluginManifestRegistryForPluginRegistry current snapshot", () => {
   });
 
   it("keeps explicit registry inputs authoritative and reuses current diagnostics", () => {
-    const config: OpenClawConfig = {};
+    const config: AforaConfig = {};
     const env = {
-      HOME: "/tmp/openclaw-test-home",
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
+      HOME: "/tmp/afora-test-home",
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
     };
     const workspaceDir = "/workspace";
     setCurrentPluginMetadataSnapshot(createSnapshot({ config, workspaceDir }), {

@@ -4,7 +4,7 @@ import { isAbsolute, relative, resolve, sep } from "node:path";
 import { MAX_WORKSPACE_BOOTSTRAP_FILE_BYTES } from "../agents/workspace-bootstrap-read.js";
 import { DEFAULT_BOOTSTRAP_FILENAME, seedWorkspaceBootstrap } from "../agents/workspace.js";
 import { root as fsSafeRoot } from "../infra/fs-safe.js";
-import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
+import type { AforaStateDatabaseOptions } from "../state/afora-state-db.js";
 import type { ClawAddPlan } from "./types.js";
 
 export class ClawBootstrapWriteError extends Error {
@@ -34,7 +34,7 @@ export async function seedClawPackageBootstrap(
   options: {
     nowMs?: number;
     seedBootstrap?: typeof seedWorkspaceBootstrap;
-  } & OpenClawStateDatabaseOptions = {},
+  } & AforaStateDatabaseOptions = {},
 ): Promise<"seeded" | "already-seeded" | "consumed" | undefined> {
   const actions = plan.actions.filter((action) => action.kind === "bootstrap");
   if (actions.length === 0) {

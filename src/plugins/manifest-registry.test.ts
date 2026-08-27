@@ -9,7 +9,7 @@ import { recordPluginCandidateInstallOwner } from "./candidate-install-owner.js"
 import type { PluginCandidate } from "./discovery.js";
 import { resolvePluginManifestInstallOwner } from "./manifest-install-owner.js";
 import { loadPluginManifestRegistryCore } from "./manifest-registry.js";
-import type { OpenClawPackageManifest } from "./manifest.js";
+import type { AforaPackageManifest } from "./manifest.js";
 import { cleanupTrackedTempDirs, makeTrackedTempDir } from "./test-helpers/fs-fixtures.js";
 
 vi.unmock("../version.js");
@@ -33,19 +33,19 @@ function mkdirSafe(dir: string) {
 }
 
 function makeTempDir() {
-  return makeTrackedTempDir("openclaw-manifest-registry", tempDirs);
+  return makeTrackedTempDir("afora-manifest-registry", tempDirs);
 }
 
-function makeOpenClawDevSourceRoot() {
+function makeAforaDevSourceRoot() {
   const root = makeTempDir();
-  fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ name: "openclaw" }), "utf-8");
+  fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ name: "afora" }), "utf-8");
   mkdirSafe(path.join(root, "src"));
   mkdirSafe(path.join(root, "extensions"));
   return root;
 }
 
 function writeManifest(dir: string, manifest: Record<string, unknown>) {
-  fs.writeFileSync(path.join(dir, "openclaw.plugin.json"), JSON.stringify(manifest), "utf-8");
+  fs.writeFileSync(path.join(dir, "afora.plugin.json"), JSON.stringify(manifest), "utf-8");
 }
 
 function writeTextFile(rootDir: string, relativePath: string, value: string) {
@@ -76,11 +76,11 @@ function createPluginCandidate(params: {
   rootDir: string;
   sourceName?: string;
   origin: "bundled" | "global" | "workspace" | "config";
-  format?: "openclaw" | "bundle";
+  format?: "afora" | "bundle";
   bundleFormat?: "codex" | "claude" | "cursor";
   packageName?: string;
   packageVersion?: string;
-  packageManifest?: OpenClawPackageManifest;
+  packageManifest?: AforaPackageManifest;
   packageDir?: string;
   bundledManifest?: PluginCandidate["bundledManifest"];
   bundledManifestPath?: string;
@@ -111,10 +111,10 @@ function createMsteamsClawHubInstallRecord(
 ): PluginInstallRecord {
   const record: PluginInstallRecord = {
     source: "clawhub",
-    spec: "clawhub:@openclaw/msteams",
+    spec: "clawhub:@afora/msteams",
     installPath,
     clawhubUrl: "https://clawhub.ai",
-    clawhubPackage: "@openclaw/msteams",
+    clawhubPackage: "@afora/msteams",
     clawhubChannel: "official",
   };
   return { ...record, ...overrides };
@@ -131,7 +131,7 @@ function resolveMsteamsClawHubTrust(overrides: Partial<PluginInstallRecord> = {}
       createPluginCandidate({
         idHint: "msteams",
         rootDir: dir,
-        packageName: "@openclaw/msteams",
+        packageName: "@afora/msteams",
         origin: "global",
         installOwner: "msteams",
       }),
@@ -147,11 +147,11 @@ function resolveDiffsNpmTrust(overrides: Partial<PluginInstallRecord> = {}) {
     installRecords: {
       diffs: {
         source: "npm",
-        spec: "@openclaw/diffs",
+        spec: "@afora/diffs",
         installPath: dir,
-        resolvedName: "@openclaw/diffs",
+        resolvedName: "@afora/diffs",
         resolvedVersion: "2026.7.16",
-        resolvedSpec: "@openclaw/diffs@2026.7.16",
+        resolvedSpec: "@afora/diffs@2026.7.16",
         ...overrides,
       },
     },
@@ -159,7 +159,7 @@ function resolveDiffsNpmTrust(overrides: Partial<PluginInstallRecord> = {}) {
       createPluginCandidate({
         idHint: "diffs",
         rootDir: dir,
-        packageName: "@openclaw/diffs",
+        packageName: "@afora/diffs",
         origin: "global",
         installOwner: "diffs",
       }),
@@ -176,8 +176,8 @@ function loadRegistry(candidates: PluginCandidate[]) {
 
 function hermeticEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
   return {
-    OPENCLAW_BUNDLED_PLUGINS_DIR: undefined,
-    OPENCLAW_VERSION: undefined,
+    AFORA_BUNDLED_PLUGINS_DIR: undefined,
+    AFORA_VERSION: undefined,
     VITEST: "true",
     ...overrides,
   };
@@ -271,8 +271,8 @@ function prepareLinkedManifestFixture(params: { id: string; mode: "symlink" | "h
 } {
   const rootDir = makeTempDir();
   const outsideDir = makeTempDir();
-  const outsideManifest = path.join(outsideDir, "openclaw.plugin.json");
-  const linkedManifest = path.join(rootDir, "openclaw.plugin.json");
+  const outsideManifest = path.join(outsideDir, "afora.plugin.json");
+  const linkedManifest = path.join(rootDir, "afora.plugin.json");
   fs.writeFileSync(path.join(rootDir, "index.ts"), "export default function () {}", "utf-8");
   fs.writeFileSync(
     outsideManifest,
@@ -327,7 +327,7 @@ function loadRegistryForMinHostVersionCase(params: {
         origin: "global",
         packageManifest: {
           install: {
-            npmSpec: "@openclaw/synology-chat",
+            npmSpec: "@afora/synology-chat",
             minHostVersion: params.minHostVersion,
           },
         },
@@ -353,7 +353,7 @@ function loadRegistryForPluginApiCase(params: {
         origin: params.origin ?? "global",
         packageManifest: {
           install: {
-            npmSpec: "@openclaw/synology-chat",
+            npmSpec: "@afora/synology-chat",
             minHostVersion: ">=2026.4.25",
           },
           compat: {
@@ -490,19 +490,19 @@ describe("loadPluginManifestRegistry", () => {
     fs.writeFileSync(
       path.join(pluginDir, "package.json"),
       JSON.stringify({
-        name: "@openclaw/cached-manifest",
-        openclaw: { extensions: ["./index.js"] },
+        name: "@afora/cached-manifest",
+        afora: { extensions: ["./index.js"] },
       }),
       "utf-8",
     );
-    const manifestPath = path.join(pluginDir, "openclaw.plugin.json");
+    const manifestPath = path.join(pluginDir, "afora.plugin.json");
     writeManifest(pluginDir, {
       id: "cached-manifest",
       name: "Before",
       configSchema: { type: "object" },
     });
     const env = hermeticEnv({
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_STATE_DIR: stateDir,
     });
 
     const first = loadPluginManifestRegistryCore({ env });
@@ -688,7 +688,7 @@ describe("loadPluginManifestRegistry", () => {
   it("preserves the identity of every independently malformed plugin manifest", () => {
     const candidates = ["first-invalid", "second-invalid"].map((pluginId) => {
       const rootDir = makeTempDir();
-      fs.writeFileSync(path.join(rootDir, "openclaw.plugin.json"), '{"id":', "utf-8");
+      fs.writeFileSync(path.join(rootDir, "afora.plugin.json"), '{"id":', "utf-8");
       return createPluginCandidate({ idHint: pluginId, rootDir, origin: "global" });
     });
 
@@ -705,7 +705,7 @@ describe("loadPluginManifestRegistry", () => {
     const candidates = ["first", "second"].map((parent) => {
       const rootDir = path.join(root, parent, "plugin");
       mkdirSafe(rootDir);
-      fs.writeFileSync(path.join(rootDir, "openclaw.plugin.json"), '{"id":', "utf-8");
+      fs.writeFileSync(path.join(rootDir, "afora.plugin.json"), '{"id":', "utf-8");
       writeTextFile(rootDir, "index.js", "export default {};");
       return createPluginCandidate({
         idHint: "index",
@@ -722,7 +722,7 @@ describe("loadPluginManifestRegistry", () => {
         expect.objectContaining({
           level: "error",
           pluginId: "index",
-          source: path.join(candidate.rootDir, "openclaw.plugin.json"),
+          source: path.join(candidate.rootDir, "afora.plugin.json"),
         }),
       ),
     );
@@ -847,7 +847,7 @@ describe("loadPluginManifestRegistry", () => {
   });
 
   it("prefers dev source bundled plugins over installed globals with the same id", () => {
-    const devSourceRoot = makeOpenClawDevSourceRoot();
+    const devSourceRoot = makeAforaDevSourceRoot();
     const bundledDir = path.join(devSourceRoot, "extensions", "codex");
     const globalDir = makeTempDir();
     const manifest = { id: "codex", configSchema: { type: "object" } };
@@ -856,7 +856,7 @@ describe("loadPluginManifestRegistry", () => {
     writeManifest(globalDir, manifest);
 
     const registry = loadPluginManifestRegistryCore({
-      env: hermeticEnv({ OPENCLAW_DEV_SOURCE_ROOT: devSourceRoot }),
+      env: hermeticEnv({ AFORA_DEV_SOURCE_ROOT: devSourceRoot }),
       installRecords: {
         codex: {
           source: "npm",
@@ -926,10 +926,10 @@ describe("loadPluginManifestRegistry", () => {
       installRecords: {
         diffs: {
           source: "npm",
-          spec: "@openclaw/diffs",
+          spec: "@afora/diffs",
           installPath: dir,
-          resolvedName: "@openclaw/diffs",
-          resolvedSpec: "@openclaw/diffs@2026.7.16",
+          resolvedName: "@afora/diffs",
+          resolvedSpec: "@afora/diffs@2026.7.16",
         },
       },
       candidates: [
@@ -937,7 +937,7 @@ describe("loadPluginManifestRegistry", () => {
           ...createPluginCandidate({
             idHint: "diffs/two",
             rootDir: dir,
-            packageName: "@openclaw/diffs",
+            packageName: "@afora/diffs",
             origin: "global",
             installOwner: "diffs",
           }),
@@ -947,7 +947,7 @@ describe("loadPluginManifestRegistry", () => {
           ...createPluginCandidate({
             idHint: "diffs/one",
             rootDir: dir,
-            packageName: "@openclaw/diffs",
+            packageName: "@afora/diffs",
             origin: "global",
             installOwner: "diffs",
           }),
@@ -996,7 +996,7 @@ describe("loadPluginManifestRegistry", () => {
     { name: "complete records", overrides: {} },
     {
       name: "versioned ClawHub specs",
-      overrides: { spec: "clawhub:@openclaw/msteams@2026.6.11" },
+      overrides: { spec: "clawhub:@afora/msteams@2026.6.11" },
     },
     {
       name: "legacy spec-only records",
@@ -1008,15 +1008,15 @@ describe("loadPluginManifestRegistry", () => {
     },
     {
       name: "matching npm resolved specs",
-      overrides: { resolvedSpec: "@openclaw/msteams@2026.6.11" },
+      overrides: { resolvedSpec: "@afora/msteams@2026.6.11" },
     },
     {
       name: "matching ClawHub resolved specs",
-      overrides: { resolvedSpec: "clawhub:@openclaw/msteams@2026.6.11" },
+      overrides: { resolvedSpec: "clawhub:@afora/msteams@2026.6.11" },
     },
     {
       name: "matching resolved package names",
-      overrides: { resolvedName: "@openclaw/msteams" },
+      overrides: { resolvedName: "@afora/msteams" },
     },
   ] satisfies Array<{ name: string; overrides: Partial<PluginInstallRecord> }>)(
     "marks official npm-only ClawHub installs with $name as trusted",
@@ -1044,19 +1044,19 @@ describe("loadPluginManifestRegistry", () => {
     },
     {
       name: "conflicting ClawHub package",
-      overrides: { clawhubPackage: "@openclaw/line" },
+      overrides: { clawhubPackage: "@afora/line" },
     },
     {
       name: "conflicting requested spec",
-      overrides: { spec: "clawhub:@openclaw/line" },
+      overrides: { spec: "clawhub:@afora/line" },
     },
     {
       name: "conflicting npm resolved spec",
-      overrides: { resolvedSpec: "@openclaw/line@2026.6.11" },
+      overrides: { resolvedSpec: "@afora/line@2026.6.11" },
     },
     {
       name: "conflicting ClawHub resolved spec",
-      overrides: { resolvedSpec: "clawhub:@openclaw/line@2026.6.11" },
+      overrides: { resolvedSpec: "clawhub:@afora/line@2026.6.11" },
     },
     {
       name: "blank ClawHub package",
@@ -1064,11 +1064,11 @@ describe("loadPluginManifestRegistry", () => {
     },
     {
       name: "malformed ClawHub package",
-      overrides: { clawhubPackage: "@openclaw/msteams@2026.6.11" },
+      overrides: { clawhubPackage: "@afora/msteams@2026.6.11" },
     },
     {
       name: "malformed requested spec",
-      overrides: { spec: "@openclaw/msteams" },
+      overrides: { spec: "@afora/msteams" },
     },
     {
       name: "malformed resolved spec",
@@ -1076,11 +1076,11 @@ describe("loadPluginManifestRegistry", () => {
     },
     {
       name: "conflicting resolved package name",
-      overrides: { resolvedName: "@openclaw/line" },
+      overrides: { resolvedName: "@afora/line" },
     },
     {
       name: "malformed resolved package name",
-      overrides: { resolvedName: "@openclaw/msteams@2026.6.11" },
+      overrides: { resolvedName: "@afora/msteams@2026.6.11" },
     },
     {
       name: "missing package identities",
@@ -1095,7 +1095,7 @@ describe("loadPluginManifestRegistry", () => {
       overrides: {
         clawhubPackage: undefined,
         spec: undefined,
-        resolvedSpec: "@openclaw/msteams@2026.6.11",
+        resolvedSpec: "@afora/msteams@2026.6.11",
       },
     },
   ] satisfies Array<{ name: string; overrides: Partial<PluginInstallRecord> }>)(
@@ -1120,7 +1120,7 @@ describe("loadPluginManifestRegistry", () => {
         createPluginCandidate({
           idHint: "msteams",
           rootDir: dir,
-          packageName: "@openclaw/msteams",
+          packageName: "@afora/msteams",
           origin: "config",
         }),
       ],
@@ -1137,10 +1137,10 @@ describe("loadPluginManifestRegistry", () => {
       installRecords: {
         "diagnostics-otel": {
           source: "clawhub",
-          spec: "clawhub:@openclaw/diagnostics-otel",
+          spec: "clawhub:@afora/diagnostics-otel",
           installPath: dir,
           clawhubUrl: "https://example.invalid",
-          clawhubPackage: "@openclaw/diagnostics-otel",
+          clawhubPackage: "@afora/diagnostics-otel",
           clawhubChannel: "official",
         },
       },
@@ -1148,7 +1148,7 @@ describe("loadPluginManifestRegistry", () => {
         createPluginCandidate({
           idHint: "diagnostics-otel",
           rootDir: dir,
-          packageName: "@openclaw/diagnostics-otel",
+          packageName: "@afora/diagnostics-otel",
           origin: "global",
           installOwner: "diagnostics-otel",
         }),
@@ -1166,7 +1166,7 @@ describe("loadPluginManifestRegistry", () => {
       installRecords: {
         "diagnostics-otel": {
           source: "clawhub",
-          spec: "clawhub:@openclaw/diagnostics-otel@2026.5.18",
+          spec: "clawhub:@afora/diagnostics-otel@2026.5.18",
           installPath: dir,
         },
       },
@@ -1174,7 +1174,7 @@ describe("loadPluginManifestRegistry", () => {
         createPluginCandidate({
           idHint: "diagnostics-otel",
           rootDir: dir,
-          packageName: "@openclaw/diagnostics-otel",
+          packageName: "@afora/diagnostics-otel",
           origin: "global",
           installOwner: "diagnostics-otel",
         }),
@@ -1192,18 +1192,18 @@ describe("loadPluginManifestRegistry", () => {
       installRecords: {
         "diagnostics-otel": {
           source: "npm",
-          spec: "@openclaw/diagnostics-otel",
+          spec: "@afora/diagnostics-otel",
           installPath: dir,
-          resolvedName: "@openclaw/diagnostics-otel",
+          resolvedName: "@afora/diagnostics-otel",
           resolvedVersion: "2026.5.18",
-          resolvedSpec: "@openclaw/diagnostics-otel@2026.5.18",
+          resolvedSpec: "@afora/diagnostics-otel@2026.5.18",
         },
       },
       candidates: [
         createPluginCandidate({
           idHint: "diagnostics-otel",
           rootDir: dir,
-          packageName: "@openclaw/diagnostics-otel",
+          packageName: "@afora/diagnostics-otel",
           origin: "config",
           installOwner: "diagnostics-otel",
         }),
@@ -1226,7 +1226,7 @@ describe("loadPluginManifestRegistry", () => {
         "diagnostics-prometheus": {
           source: "npm",
           installPath: dir,
-          resolvedName: "@openclaw/diagnostics-prometheus",
+          resolvedName: "@afora/diagnostics-prometheus",
           resolvedVersion: "2026.5.3",
         },
       },
@@ -1234,14 +1234,14 @@ describe("loadPluginManifestRegistry", () => {
         createPluginCandidate({
           idHint: "diagnostics-prometheus",
           rootDir: dir,
-          packageName: "@openclaw/diagnostics-prometheus",
+          packageName: "@afora/diagnostics-prometheus",
           origin: "global",
           installOwner: "diagnostics-prometheus",
         }),
         createPluginCandidate({
           idHint: "diagnostics-prometheus",
           rootDir: dir,
-          packageName: "@openclaw/diagnostics-prometheus",
+          packageName: "@afora/diagnostics-prometheus",
           origin: "config",
           installOwner: "diagnostics-prometheus",
         }),
@@ -1265,7 +1265,7 @@ describe("loadPluginManifestRegistry", () => {
         createPluginCandidate({
           idHint: "diagnostics-prometheus",
           rootDir: dir,
-          packageName: "@openclaw/diagnostics-prometheus",
+          packageName: "@afora/diagnostics-prometheus",
           origin: "global",
         }),
       ],
@@ -1284,7 +1284,7 @@ describe("loadPluginManifestRegistry", () => {
         createPluginCandidate({
           idHint: "msteams",
           rootDir: dir,
-          packageName: "@openclaw/msteams",
+          packageName: "@afora/msteams",
           origin: "global",
         }),
       ],
@@ -1787,7 +1787,7 @@ describe("loadPluginManifestRegistry", () => {
     expectDiagnosticFields(registry, {
       level: "warn",
       pluginId: "external-chat",
-      source: path.join(dir, "openclaw.plugin.json"),
+      source: path.join(dir, "afora.plugin.json"),
       messageIncludes: "without channelConfigs metadata",
     });
   });
@@ -1852,17 +1852,17 @@ describe("loadPluginManifestRegistry", () => {
   it("hydrates supplemental official external catalog contracts for lagging npm manifests", () => {
     const dir = makeTempDir();
     writeManifest(dir, {
-      id: "wecom-openclaw-plugin",
+      id: "wecom-afora-plugin",
       channels: ["wecom"],
       configSchema: { type: "object" },
     });
 
     const registry = loadRegistry([
       createPluginCandidate({
-        idHint: "wecom-openclaw-plugin",
+        idHint: "wecom-afora-plugin",
         rootDir: dir,
         origin: "global",
-        packageName: "@wecom/wecom-openclaw-plugin",
+        packageName: "@wecom/wecom-afora-plugin",
       }),
     ]);
 
@@ -1891,7 +1891,7 @@ describe("loadPluginManifestRegistry", () => {
         idHint: "slack",
         rootDir: dir,
         origin: "global",
-        packageName: "@openclaw/slack",
+        packageName: "@afora/slack",
       }),
     ]);
 
@@ -1923,7 +1923,7 @@ describe("loadPluginManifestRegistry", () => {
         idHint: "diffs",
         rootDir: dir,
         origin: "global",
-        packageName: "@openclaw/diffs",
+        packageName: "@afora/diffs",
       }),
     ]);
 
@@ -1933,7 +1933,7 @@ describe("loadPluginManifestRegistry", () => {
   it("fills missing official external catalog descriptors for partial npm channel configs", () => {
     const dir = makeTempDir();
     writeManifest(dir, {
-      id: "wecom-openclaw-plugin",
+      id: "wecom-afora-plugin",
       channels: ["wecom"],
       configSchema: { type: "object" },
       channelConfigs: {
@@ -1951,10 +1951,10 @@ describe("loadPluginManifestRegistry", () => {
 
     const registry = loadRegistry([
       createPluginCandidate({
-        idHint: "wecom-openclaw-plugin",
+        idHint: "wecom-afora-plugin",
         rootDir: dir,
         origin: "global",
-        packageName: "@wecom/wecom-openclaw-plugin",
+        packageName: "@wecom/wecom-afora-plugin",
       }),
     ]);
 
@@ -1978,7 +1978,7 @@ describe("loadPluginManifestRegistry", () => {
     const dir = makeTempDir();
     writeTextFile(
       dir,
-      "openclaw.plugin.json",
+      "afora.plugin.json",
       JSON.stringify({
         id: "external-chat",
         channels: ["safe-chat"],
@@ -2101,7 +2101,7 @@ describe("loadPluginManifestRegistry", () => {
     expectDiagnosticFields(registry, {
       level: "warn",
       pluginId: "outside-provider",
-      source: path.join(pluginDir, "openclaw.plugin.json"),
+      source: path.join(pluginDir, "afora.plugin.json"),
       messageIncludes: "providerCatalogEntry must resolve inside the plugin root",
     });
   });
@@ -2128,7 +2128,7 @@ describe("loadPluginManifestRegistry", () => {
     expectDiagnosticFields(registry, {
       level: "warn",
       pluginId: "absolute-provider",
-      source: path.join(dir, "openclaw.plugin.json"),
+      source: path.join(dir, "afora.plugin.json"),
       messageIncludes: "providerCatalogEntry must resolve inside the plugin root",
     });
   });
@@ -2155,7 +2155,7 @@ describe("loadPluginManifestRegistry", () => {
     expectDiagnosticFields(registry, {
       level: "warn",
       pluginId: "absolute-catalog",
-      source: path.join(dir, "openclaw.plugin.json"),
+      source: path.join(dir, "afora.plugin.json"),
       messageIncludes: "providerCatalogEntry must resolve inside the plugin root",
     });
   });
@@ -2191,7 +2191,7 @@ describe("loadPluginManifestRegistry", () => {
     expectDiagnosticFields(registry, {
       level: "warn",
       pluginId: "symlink-provider",
-      source: path.join(dir, "openclaw.plugin.json"),
+      source: path.join(dir, "afora.plugin.json"),
       messageIncludes: "providerCatalogEntry must resolve inside the plugin root",
     });
   });
@@ -2227,7 +2227,7 @@ describe("loadPluginManifestRegistry", () => {
     expectDiagnosticFields(registry, {
       level: "warn",
       pluginId: "fallback-symlink-provider",
-      source: path.join(dir, "openclaw.plugin.json"),
+      source: path.join(dir, "afora.plugin.json"),
       messageIncludes: "providerCatalogEntry must resolve inside the plugin root",
     });
   });
@@ -2266,7 +2266,7 @@ describe("loadPluginManifestRegistry", () => {
     expectDiagnosticFields(registry, {
       level: "warn",
       pluginId: "hardlink-provider",
-      source: path.join(dir, "openclaw.plugin.json"),
+      source: path.join(dir, "afora.plugin.json"),
       messageIncludes: "providerCatalogEntry must resolve inside the plugin root",
     });
   });
@@ -2305,7 +2305,7 @@ describe("loadPluginManifestRegistry", () => {
     expectDiagnosticFields(registry, {
       level: "warn",
       pluginId: "fallback-hardlink-provider",
-      source: path.join(dir, "openclaw.plugin.json"),
+      source: path.join(dir, "afora.plugin.json"),
       messageIncludes: "providerCatalogEntry must resolve inside the plugin root",
     });
   });
@@ -2593,7 +2593,7 @@ describe("loadPluginManifestRegistry", () => {
     writeManifest(dir, {
       id: "workflow-harness",
       contracts: {
-        agentToolResultMiddleware: ["openclaw", "codex"],
+        agentToolResultMiddleware: ["afora", "codex"],
         trustedToolPolicies: ["workflow-budget"],
       },
       configSchema: { type: "object" },
@@ -2606,7 +2606,7 @@ describe("loadPluginManifestRegistry", () => {
     });
 
     expect(registry.plugins[0]?.contracts).toEqual({
-      agentToolResultMiddleware: ["openclaw", "codex"],
+      agentToolResultMiddleware: ["afora", "codex"],
       trustedToolPolicies: ["workflow-budget"],
     });
   });
@@ -2739,7 +2739,7 @@ describe("loadPluginManifestRegistry", () => {
         idHint: "telegram",
         rootDir: dir,
         origin: "bundled",
-        bundledManifestPath: path.join(dir, "openclaw.plugin.json"),
+        bundledManifestPath: path.join(dir, "afora.plugin.json"),
         bundledManifest: {
           id: "telegram",
           configSchema: { type: "object" },
@@ -2863,27 +2863,27 @@ describe("loadPluginManifestRegistry", () => {
     {
       name: "skips plugins whose minHostVersion is newer than the current host",
       minHostVersion: ">=2026.3.22",
-      env: { OPENCLAW_VERSION: "2026.3.21" } as NodeJS.ProcessEnv,
-      expectedMessage: "plugin requires OpenClaw >=2026.3.22, but this host is 2026.3.21",
+      env: { AFORA_VERSION: "2026.3.21" } as NodeJS.ProcessEnv,
+      expectedMessage: "plugin requires Afora >=2026.3.22, but this host is 2026.3.21",
       expectWarn: true,
     },
     {
       name: "skips plugins whose beta minHostVersion is newer than the current host",
       minHostVersion: ">=2026.5.1-beta.1",
-      env: { OPENCLAW_VERSION: "2026.4.30" } as NodeJS.ProcessEnv,
-      expectedMessage: "plugin requires OpenClaw >=2026.5.1-beta.1, but this host is 2026.4.30",
+      env: { AFORA_VERSION: "2026.4.30" } as NodeJS.ProcessEnv,
+      expectedMessage: "plugin requires Afora >=2026.5.1-beta.1, but this host is 2026.4.30",
       expectWarn: true,
     },
     {
       name: "rejects invalid minHostVersion metadata",
       minHostVersion: "2026.3.22",
-      expectedMessage: "plugin manifest invalid | openclaw.install.minHostVersion must use",
+      expectedMessage: "plugin manifest invalid | afora.install.minHostVersion must use",
       expectWarn: false,
     },
     {
       name: "warns distinctly when host version cannot be determined",
       minHostVersion: ">=2026.3.22",
-      env: { OPENCLAW_VERSION: "unknown" } as NodeJS.ProcessEnv,
+      env: { AFORA_VERSION: "unknown" } as NodeJS.ProcessEnv,
       expectedMessage: "host version could not be determined",
       expectWarn: true,
     },
@@ -2924,7 +2924,7 @@ describe("loadPluginManifestRegistry", () => {
             origin: "global",
             packageManifest: {
               install: {
-                npmSpec: "@openclaw/codex",
+                npmSpec: "@afora/codex",
                 minHostVersion: "2026.3.22",
               },
             },
@@ -2935,7 +2935,7 @@ describe("loadPluginManifestRegistry", () => {
     });
 
     expect(registry.plugins.map((plugin) => plugin.id)).toEqual(["codex"]);
-    expectNoRegistryDiagnosticContains(registry, "openclaw.install.minHostVersion must use");
+    expectNoRegistryDiagnosticContains(registry, "afora.install.minHostVersion must use");
   });
 
   it("does not runtime-gate bundled source plugins by install minHostVersion", () => {
@@ -2951,17 +2951,17 @@ describe("loadPluginManifestRegistry", () => {
           origin: "bundled",
           packageManifest: {
             install: {
-              npmSpec: "@openclaw/codex",
+              npmSpec: "@afora/codex",
               minHostVersion: ">=2026.5.1-beta.1",
             },
           },
         }),
       ],
-      env: { OPENCLAW_VERSION: "2026.4.30" } as NodeJS.ProcessEnv,
+      env: { AFORA_VERSION: "2026.4.30" } as NodeJS.ProcessEnv,
     });
 
     expect(registry.plugins.map((plugin) => plugin.id)).toContain("codex");
-    expectNoRegistryDiagnosticContains(registry, "requires OpenClaw");
+    expectNoRegistryDiagnosticContains(registry, "requires Afora");
   });
 
   it("skips installed plugins whose package plugin API range is newer than the current host", () => {
@@ -2971,13 +2971,13 @@ describe("loadPluginManifestRegistry", () => {
     const registry = loadRegistryForPluginApiCase({
       rootDir: dir,
       pluginApi: ">=2026.5.27",
-      env: { OPENCLAW_VERSION: "2026.5.10-beta.1" } as NodeJS.ProcessEnv,
+      env: { AFORA_VERSION: "2026.5.10-beta.1" } as NodeJS.ProcessEnv,
     });
 
     expect(registry.plugins).toStrictEqual([]);
     expectRegistryDiagnosticContains(
       registry,
-      'plugin requires plugin API >=2026.5.27, but this host is 2026.5.10-beta.1; skipping load (check "openclaw --version", OPENCLAW_COMPATIBILITY_HOST_VERSION, or run "openclaw doctor")',
+      'plugin requires plugin API >=2026.5.27, but this host is 2026.5.10-beta.1; skipping load (check "afora --version", AFORA_COMPATIBILITY_HOST_VERSION, or run "afora doctor")',
     );
     expect(registry.diagnostics.map((diag) => diag.level)).toContain("warn");
   });
@@ -2989,13 +2989,13 @@ describe("loadPluginManifestRegistry", () => {
     const registry = loadRegistryForPluginApiCase({
       rootDir: dir,
       pluginApi: 20260527,
-      env: { OPENCLAW_VERSION: "2026.5.27" } as NodeJS.ProcessEnv,
+      env: { AFORA_VERSION: "2026.5.27" } as NodeJS.ProcessEnv,
     });
 
     expect(registry.plugins).toStrictEqual([]);
     expectRegistryDiagnosticContains(
       registry,
-      "plugin manifest invalid | package.json openclaw.compat.pluginApi must be a string",
+      "plugin manifest invalid | package.json afora.compat.pluginApi must be a string",
     );
     expect(registry.diagnostics.map((diag) => diag.level)).toContain("error");
   });
@@ -3007,7 +3007,7 @@ describe("loadPluginManifestRegistry", () => {
     const registry = loadRegistryForPluginApiCase({
       rootDir: dir,
       pluginApi: ">=2026.5.27",
-      env: { OPENCLAW_VERSION: "2026.5.27-beta.1" } as NodeJS.ProcessEnv,
+      env: { AFORA_VERSION: "2026.5.27-beta.1" } as NodeJS.ProcessEnv,
     });
 
     expect(registry.plugins.map((plugin) => plugin.id)).toEqual(["synology-chat"]);
@@ -3023,7 +3023,7 @@ describe("loadPluginManifestRegistry", () => {
       pluginApi: ">=2026.5.27",
       origin: "bundled",
       idHint: "codex",
-      env: { OPENCLAW_VERSION: "2026.5.10-beta.1" } as NodeJS.ProcessEnv,
+      env: { AFORA_VERSION: "2026.5.10-beta.1" } as NodeJS.ProcessEnv,
     });
 
     expect(registry.plugins.map((plugin) => plugin.id)).toContain("codex");
@@ -3114,23 +3114,23 @@ describe("loadPluginManifestRegistry", () => {
   it("suppresses duplicate warning when global candidates come from the same package artifact", () => {
     const firstDir = makeTempDir();
     const secondDir = makeTempDir();
-    const manifest = { id: "opik-openclaw", configSchema: { type: "object" } };
+    const manifest = { id: "opik-afora", configSchema: { type: "object" } };
     writeManifest(firstDir, manifest);
     writeManifest(secondDir, manifest);
 
     const candidates: PluginCandidate[] = [
       createPluginCandidate({
-        idHint: "opik-openclaw",
+        idHint: "opik-afora",
         rootDir: firstDir,
         origin: "global",
-        packageName: "@opik/opik-openclaw",
+        packageName: "@opik/opik-afora",
         packageVersion: "0.2.14",
       }),
       createPluginCandidate({
-        idHint: "opik-openclaw",
+        idHint: "opik-afora",
         rootDir: secondDir,
         origin: "global",
-        packageName: "@opik/opik-openclaw",
+        packageName: "@opik/opik-afora",
         packageVersion: "0.2.14",
       }),
     ];
@@ -3325,7 +3325,7 @@ describe("loadPluginManifestRegistry", () => {
       return;
     }
     const registry = loadPluginManifestRegistryCore({
-      env: hermeticEnv({ OPENCLAW_NIX_MODE: "1" }),
+      env: hermeticEnv({ AFORA_NIX_MODE: "1" }),
       candidates: [
         createPluginCandidate({
           idHint: "unsafe-config-hardlink",
@@ -3384,16 +3384,16 @@ describe("loadPluginManifestRegistry", () => {
       config,
       env: hermeticEnv({
         HOME: homeA,
-        OPENCLAW_HOME: undefined,
-        OPENCLAW_STATE_DIR: path.join(homeA, ".state"),
+        AFORA_HOME: undefined,
+        AFORA_STATE_DIR: path.join(homeA, ".state"),
       }),
     });
     const second = loadPluginManifestRegistryCore({
       config,
       env: hermeticEnv({
         HOME: homeB,
-        OPENCLAW_HOME: undefined,
-        OPENCLAW_STATE_DIR: path.join(homeB, ".state"),
+        AFORA_HOME: undefined,
+        AFORA_STATE_DIR: path.join(homeB, ".state"),
       }),
     });
 
@@ -3418,7 +3418,7 @@ describe("loadPluginManifestRegistry", () => {
         origin: "global",
         packageManifest: {
           install: {
-            npmSpec: "@openclaw/synology-chat",
+            npmSpec: "@afora/synology-chat",
             minHostVersion: ">=2026.3.22",
           },
         },
@@ -3428,13 +3428,13 @@ describe("loadPluginManifestRegistry", () => {
     const olderHost = loadPluginManifestRegistryCore({
       candidates,
       env: hermeticEnv({
-        OPENCLAW_VERSION: "2026.3.21",
+        AFORA_VERSION: "2026.3.21",
       }),
     });
     const newerHost = loadPluginManifestRegistryCore({
       candidates,
       env: hermeticEnv({
-        OPENCLAW_VERSION: "2026.3.22",
+        AFORA_VERSION: "2026.3.22",
       }),
     });
 

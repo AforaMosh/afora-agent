@@ -18,7 +18,7 @@
  * capabilities instead of the text-only fallback.
  */
 
-import { parseStrictFiniteNumber } from "@openclaw/normalization-core/number-coercion";
+import { parseStrictFiniteNumber } from "@afora/normalization-core/number-coercion";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { cancelUnreadResponseBody, readResponseWithLimit } from "../../infra/http-body.js";
 import { resolveProxyFetchFromEnv } from "../../infra/net/proxy-fetch.js";

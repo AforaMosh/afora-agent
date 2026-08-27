@@ -48,7 +48,7 @@ import {
   GatewayPageController,
   type GatewayPageChange,
 } from "../../lit/gateway-page-controller.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import { fetchPluginIconBlobUrl } from "./icon-loader.ts";
 import { readPluginInstallPolicyWarning } from "./install-policy-warning.ts";
@@ -65,7 +65,7 @@ import {
   type PluginsTab,
 } from "./view.ts";
 
-const PLUGINS_DOCS_URL = "https://docs.openclaw.ai/plugins/manage-plugins";
+const PLUGINS_DOCS_URL = "https://docs.afora.ai/plugins/manage-plugins";
 
 export type PluginsRouteData = {
   gateway: ApplicationContext["gateway"];
@@ -119,7 +119,7 @@ function mutationSuccessMessage(
   return lines.filter(Boolean).join("\n");
 }
 
-class PluginsPage extends OpenClawLightDomElement {
+class PluginsPage extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context!: ApplicationContext;
 
@@ -622,7 +622,7 @@ class PluginsPage extends OpenClawLightDomElement {
     }
   }
 
-  private openClawHubSearch(query: string) {
+  private aforaHubSearch(query: string) {
     this.query = query;
     this.changeTab("discover");
   }
@@ -973,7 +973,7 @@ class PluginsPage extends OpenClawLightDomElement {
       mcp.followUp === "oauth"
         ? t("pluginsPage.connectorAddedOauth", {
             name: connector.name,
-            command: `openclaw mcp login ${mcp.serverName}`,
+            command: `afora mcp login ${mcp.serverName}`,
           })
         : mcp.followUp === "endpoint"
           ? t("pluginsPage.connectorAddedEndpoint", { name: connector.name })
@@ -1058,7 +1058,7 @@ class PluginsPage extends OpenClawLightDomElement {
           onCancelUninstall: (rowKey) => this.setPendingRemoval(rowKey, false),
           onUninstall: (pluginId, rowKey) => void this.uninstall(pluginId, rowKey),
           onAddConnector: (connector) => void this.addConnector(connector),
-          onSearchClawHub: (query) => this.openClawHubSearch(query),
+          onSearchClawHub: (query) => this.aforaHubSearch(query),
           onMcpToggle: (name, enabled) => void this.toggleMcpServer(name, enabled),
           onMcpRemove: (name) => void this.removeMcpServer(name),
           onMcpFormToggle: (open) => {
@@ -1074,13 +1074,13 @@ class PluginsPage extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-plugins-page")) {
-  customElements.define("openclaw-plugins-page", PluginsPage);
+if (!customElements.get("afora-plugins-page")) {
+  customElements.define("afora-plugins-page", PluginsPage);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "openclaw-plugins-page": PluginsPage;
+    "afora-plugins-page": PluginsPage;
   }
 }
 

@@ -18,16 +18,16 @@ const mocks = vi.hoisted(() => {
     }) satisfies AnyAgentTool;
 
   return {
-    createOpenClawToolsOptions: vi.fn(),
+    createAforaToolsOptions: vi.fn(),
     stubTool,
   };
 });
 
-vi.mock("./openclaw-tools.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./openclaw-tools.js")>();
+vi.mock("./afora-tools.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./afora-tools.js")>();
   return {
-    createOpenClawTools: (options: unknown) => {
-      mocks.createOpenClawToolsOptions(options);
+    createAforaTools: (options: unknown) => {
+      mocks.createAforaToolsOptions(options);
       return [mocks.stubTool(AUTOMATIONS_TOOL_NAME)];
     },
     filterToolsByClientCaps: actual.filterToolsByClientCaps,
@@ -36,37 +36,37 @@ vi.mock("./openclaw-tools.js", async (importOriginal) => {
 
 import "./test-helpers/fast-bash-tools.js";
 import "./test-helpers/fast-coding-tools.js";
-import { createOpenClawCodingTools } from "./agent-tools.js";
+import { createAforaCodingTools } from "./agent-tools.js";
 import { AUTOMATIONS_TOOL_NAME } from "./tools/automations-tool-name.js";
 
-function firstOpenClawToolsOptions(): { cronSelfRemoveOnlyJobId?: string } | undefined {
-  return mocks.createOpenClawToolsOptions.mock.calls[0]?.[0] as
+function firstAforaToolsOptions(): { cronSelfRemoveOnlyJobId?: string } | undefined {
+  return mocks.createAforaToolsOptions.mock.calls[0]?.[0] as
     | { cronSelfRemoveOnlyJobId?: string }
     | undefined;
 }
 
-describe("createOpenClawCodingTools cron scope", () => {
+describe("createAforaCodingTools cron scope", () => {
   beforeEach(() => {
-    mocks.createOpenClawToolsOptions.mockClear();
+    mocks.createAforaToolsOptions.mockClear();
   });
 
   it("scopes cron-triggered jobs to self-removal", () => {
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       trigger: "cron",
       jobId: "job-current",
     });
 
     expect(tools.map((tool) => tool.name)).toContain(AUTOMATIONS_TOOL_NAME);
-    expect(firstOpenClawToolsOptions()?.cronSelfRemoveOnlyJobId).toBe("job-current");
+    expect(firstAforaToolsOptions()?.cronSelfRemoveOnlyJobId).toBe("job-current");
   });
 
   it("does not scope non-cron sessions", () => {
-    createOpenClawCodingTools({
+    createAforaCodingTools({
       trigger: "user",
       jobId: "job-current",
     });
 
-    expect(firstOpenClawToolsOptions()?.cronSelfRemoveOnlyJobId).toBeUndefined();
+    expect(firstAforaToolsOptions()?.cronSelfRemoveOnlyJobId).toBeUndefined();
   });
 });
 
@@ -88,19 +88,19 @@ vi.mock("./lazy-exec-tool.js", async (importOriginal) => {
   };
 });
 
-describe("createOpenClawCodingTools exec notification routing", () => {
+describe("createAforaCodingTools exec notification routing", () => {
   it("routes detached completions to the live session without changing process scope", () => {
     const liveSessionKey = "agent:main:channel:group:example:thread:25";
     const policySessionKey = "agent:main:runtime-policy";
 
-    createOpenClawCodingTools({
+    createAforaCodingTools({
       sessionKey: policySessionKey,
       runSessionKey: liveSessionKey,
       toolConstructionPlan: {
         includeBaseCodingTools: false,
         includeShellTools: true,
         includeChannelTools: false,
-        includeOpenClawTools: false,
+        includeAforaTools: false,
         includePluginTools: false,
       },
     });

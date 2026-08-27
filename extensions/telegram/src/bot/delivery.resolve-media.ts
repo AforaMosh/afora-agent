@@ -1,7 +1,7 @@
 // Telegram plugin module implements delivery.resolve media behavior.
 import path from "node:path";
 import { GrammyError } from "grammy";
-import { root as fsRoot } from "openclaw/plugin-sdk/file-access-runtime";
+import { root as fsRoot } from "afora-agent/plugin-sdk/file-access-runtime";
 import { TelegramBotApiFileTooLargeError } from "../bot-handlers.media.js";
 import type { TelegramTransport } from "../fetch.js";
 import type { TelegramResolvedMedia } from "../message-cache-persistence.js";
@@ -223,7 +223,7 @@ function resolveTrustedLocalTelegramRoot(
 }
 
 // The maintained aiogram/telegram-bot-api image stores --local files here.
-// getFile returns this container path, while OpenClaw reads the host volume mount.
+// getFile returns this container path, while Afora reads the host volume mount.
 const TELEGRAM_BOT_API_CONTAINER_DATA_ROOT = "/var/lib/telegram-bot-api";
 
 function normalizeTrustedTelegramRelativeFilePath(filePath: string): string | null {

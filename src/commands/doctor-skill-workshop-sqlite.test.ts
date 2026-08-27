@@ -16,23 +16,23 @@ import {
   type SkillProposalRollback,
 } from "../skills/workshop/types.js";
 import {
-  OPENCLAW_STATE_SCHEMA_VERSION,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  AFORA_STATE_SCHEMA_VERSION,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../test-utils/afora-test-state.js";
 import { createTrackedTempDirs } from "../test-utils/tracked-temp-dirs.js";
 import { migrateLegacySkillWorkshopProposals } from "./doctor-skill-workshop-sqlite.js";
 
 const tempDirs = createTrackedTempDirs();
-let testState: OpenClawTestState;
+let testState: AforaTestState;
 
 beforeEach(async () => {
-  testState = await createOpenClawTestState({
+  testState = await createAforaTestState({
     layout: "state-only",
-    prefix: "openclaw-doctor-workshop-sqlite-",
+    prefix: "afora-doctor-workshop-sqlite-",
   });
 });
 
@@ -43,7 +43,7 @@ afterEach(async () => {
 
 describe("doctor Skill Workshop SQLite migration", () => {
   it("preserves shipped v1 proposals through migration, revision, and apply", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-workshop-shipped-upgrade-");
+    const workspaceDir = await tempDirs.make("afora-workshop-shipped-upgrade-");
     const proposalId = "shipped-workshop-20260729-1234567890";
     const proposalDir = path.join(testState.stateDir, "skill-workshop", "proposals", proposalId);
     const targetDir = path.join(workspaceDir, "skills", "shipped-workshop");
@@ -87,7 +87,7 @@ describe("doctor Skill Workshop SQLite migration", () => {
         skillKey: "shipped-workshop",
         skillDir: targetDir,
         skillFile: path.join(targetDir, "SKILL.md"),
-        source: "openclaw-workspace",
+        source: "afora-workspace",
       },
       scan: {
         state: "clean",
@@ -142,7 +142,7 @@ describe("doctor Skill Workshop SQLite migration", () => {
   });
 
   it("restores a shipped partial apply after migration and allows retry", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-workshop-partial-upgrade-");
+    const workspaceDir = await tempDirs.make("afora-workshop-partial-upgrade-");
     const proposalId = "partial-workshop-20260729-1234567890";
     const proposalDir = path.join(testState.stateDir, "skill-workshop", "proposals", proposalId);
     const targetDir = path.join(workspaceDir, "skills", "partial-workshop");
@@ -183,7 +183,7 @@ describe("doctor Skill Workshop SQLite migration", () => {
         skillKey: "partial-workshop",
         skillDir: targetDir,
         skillFile: path.join(targetDir, "SKILL.md"),
-        source: "openclaw-workspace",
+        source: "afora-workspace",
       },
       scan: {
         state: "clean",
@@ -244,8 +244,8 @@ describe("doctor Skill Workshop SQLite migration", () => {
   });
 
   it("imports verified sidecars, preserves review artifacts, and removes legacy JSON", async () => {
-    const oldWorkspace = await tempDirs.make("openclaw-workshop-old-workspace-");
-    const currentWorkspace = await tempDirs.make("openclaw-workshop-current-workspace-");
+    const oldWorkspace = await tempDirs.make("afora-workshop-old-workspace-");
+    const currentWorkspace = await tempDirs.make("afora-workshop-current-workspace-");
     const proposalId = "legacy-workshop-20260727-1234567890";
     const proposalDir = path.join(testState.stateDir, "skill-workshop", "proposals", proposalId);
     const targetDir = path.join(oldWorkspace, "skills", "legacy-workshop");
@@ -281,7 +281,7 @@ describe("doctor Skill Workshop SQLite migration", () => {
         skillKey: "legacy-workshop",
         skillDir: targetDir,
         skillFile: path.join(targetDir, "SKILL.md"),
-        source: "openclaw-workspace",
+        source: "afora-workspace",
       },
       scan: {
         state: "clean",
@@ -356,8 +356,8 @@ describe("doctor Skill Workshop SQLite migration", () => {
     await expect(
       fs.access(path.join(testState.stateDir, "skill-workshop", "proposals.json")),
     ).rejects.toThrow();
-    expect(openOpenClawStateDatabase().db.prepare("PRAGMA user_version").get()).toEqual({
-      user_version: OPENCLAW_STATE_SCHEMA_VERSION,
+    expect(openAforaStateDatabase().db.prepare("PRAGMA user_version").get()).toEqual({
+      user_version: AFORA_STATE_SCHEMA_VERSION,
     });
 
     const ambiguousId = "ambiguous-workshop-20260727-1234567890";
@@ -381,7 +381,7 @@ describe("doctor Skill Workshop SQLite migration", () => {
       "utf8",
     );
     await fs.writeFile(path.join(ambiguousDir, "PROPOSAL.md"), content, "utf8");
-    const secondWorkspace = await tempDirs.make("openclaw-workshop-second-agent-");
+    const secondWorkspace = await tempDirs.make("afora-workshop-second-agent-");
     const ambiguous = await migrateLegacySkillWorkshopProposals({
       config: {
         agents: {

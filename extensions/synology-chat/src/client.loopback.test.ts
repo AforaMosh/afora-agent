@@ -7,7 +7,7 @@ import { resolveLegacyWebhookNameToChatUserId, sendMessage } from "./client.js";
 
 const { hostedCapabilityUrl, hostedCapabilityCleanup } = vi.hoisted(() => ({
   hostedCapabilityUrl:
-    "https://gateway.example.com/webhook/synology?__openclaw_synology_media_token_aaaaaaaaaaaaaaaaaaaaaaaa=secret",
+    "https://gateway.example.com/webhook/synology?__afora_synology_media_token_aaaaaaaaaaaaaaaaaaaaaaaa=secret",
   hostedCapabilityCleanup: vi.fn(async () => undefined),
 }));
 vi.mock("./outbound-media.js", () => ({

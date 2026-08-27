@@ -72,10 +72,10 @@ if [[ "${packed_mode}" == "true" && ! -f "${clawpack_path}" ]]; then
   exit 2
 fi
 
-clawhub_cli="${OPENCLAW_CLAWHUB_CLI:-}"
+clawhub_cli="${AFORA_CLAWHUB_CLI:-}"
 if [[ -n "${clawhub_cli}" ]]; then
   if [[ "${clawhub_cli}" != /* || ! -x "${clawhub_cli}" ]]; then
-    echo "OPENCLAW_CLAWHUB_CLI must be an absolute executable path" >&2
+    echo "AFORA_CLAWHUB_CLI must be an absolute executable path" >&2
     exit 1
   fi
 else
@@ -89,7 +89,7 @@ fi
 if [[ "${packed_mode}" == "true" ]]; then
   package_name="${EXPECTED_CLAWHUB_PACKAGE_NAME:-}"
   package_version="${EXPECTED_CLAWHUB_PACKAGE_VERSION:-}"
-  if [[ ! "${package_name}" =~ ^@openclaw/[a-z0-9][a-z0-9._-]*$ ]]; then
+  if [[ ! "${package_name}" =~ ^@afora/[a-z0-9][a-z0-9._-]*$ ]]; then
     echo "EXPECTED_CLAWHUB_PACKAGE_NAME is invalid." >&2
     exit 2
   fi
@@ -102,14 +102,14 @@ else
   package_version="$(node -e 'const pkg = require(require("node:path").resolve(process.argv[1], "package.json")); console.log(pkg.version)' "${package_source}")"
 fi
 publish_tag="${PACKAGE_TAG:-latest}"
-source_repo="${SOURCE_REPO:-${GITHUB_REPOSITORY:-openclaw/openclaw}}"
+source_repo="${SOURCE_REPO:-${GITHUB_REPOSITORY:-AforaMosh/afora-agent}}"
 source_commit="${SOURCE_COMMIT:-$(git -C "${invocation_root}" rev-parse HEAD)}"
 source_ref="${SOURCE_REF:-$(git -C "${invocation_root}" symbolic-ref -q HEAD || true)}"
 clawhub_workdir="${CLAWDHUB_WORKDIR:-${CLAWHUB_WORKDIR:-${invocation_root}}}"
-manual_override_reason="${OPENCLAW_CLAWHUB_MANUAL_OVERRIDE_REASON:-}"
-release_git_dir="${OPENCLAW_CLAWHUB_RELEASE_GIT_DIR:-}"
-release_tag="${OPENCLAW_CLAWHUB_RELEASE_TAG:-}"
-release_target_sha="${OPENCLAW_CLAWHUB_TARGET_SHA:-}"
+manual_override_reason="${AFORA_CLAWHUB_MANUAL_OVERRIDE_REASON:-}"
+release_git_dir="${AFORA_CLAWHUB_RELEASE_GIT_DIR:-}"
+release_tag="${AFORA_CLAWHUB_RELEASE_TAG:-}"
+release_target_sha="${AFORA_CLAWHUB_TARGET_SHA:-}"
 release_binding_count=0
 for release_binding_value in "${release_git_dir}" "${release_tag}" "${release_target_sha}"; do
   if [[ -n "${release_binding_value}" ]]; then
@@ -117,7 +117,7 @@ for release_binding_value in "${release_git_dir}" "${release_tag}" "${release_ta
   fi
 done
 if [[ "${release_binding_count}" != "0" && "${release_binding_count}" != "3" ]]; then
-  echo "OPENCLAW_CLAWHUB_RELEASE_GIT_DIR, OPENCLAW_CLAWHUB_RELEASE_TAG, and OPENCLAW_CLAWHUB_TARGET_SHA must be provided together." >&2
+  echo "AFORA_CLAWHUB_RELEASE_GIT_DIR, AFORA_CLAWHUB_RELEASE_TAG, and AFORA_CLAWHUB_TARGET_SHA must be provided together." >&2
   exit 2
 fi
 if [[ "${release_binding_count}" == "3" ]]; then
@@ -127,7 +127,7 @@ if [[ "${release_binding_count}" == "3" ]]; then
   fi
 fi
 
-pack_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/openclaw-clawhub-pack.XXXXXX")"
+pack_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/afora-clawhub-pack.XXXXXX")"
 cleanup() {
   rm -rf "${pack_dir}"
 }
@@ -146,7 +146,7 @@ pack_cmd=(
 )
 
 build_package_runtime() {
-  if [[ "${OPENCLAW_PLUGIN_NPM_RUNTIME_BUILD:-1}" == "0" || "${OPENCLAW_PLUGIN_NPM_RUNTIME_BUILD:-1}" == "false" ]]; then
+  if [[ "${AFORA_PLUGIN_NPM_RUNTIME_BUILD:-1}" == "0" || "${AFORA_PLUGIN_NPM_RUNTIME_BUILD:-1}" == "false" ]]; then
     echo "Package-local runtime build: skipped"
     return
   fi
@@ -163,7 +163,7 @@ echo "Resolved source repo: ${source_repo}"
 echo "Resolved source commit: ${source_commit}"
 echo "Resolved source ref: ${source_ref:-<missing>}"
 echo "Resolved ClawHub workdir: ${clawhub_workdir}"
-echo "Publish auth: ${OPENCLAW_CLAWHUB_AUTH_LABEL:-GitHub Actions OIDC via ClawHub short-lived token}"
+echo "Publish auth: ${AFORA_CLAWHUB_AUTH_LABEL:-GitHub Actions OIDC via ClawHub short-lived token}"
 
 if [[ "${packed_mode}" == "false" ]]; then
   printf 'Pack command: CLAWHUB_WORKDIR=%q' "${clawhub_workdir}"
@@ -210,9 +210,9 @@ fi
 echo "Resolved ClawPack: ${clawpack_path}"
 
 if [[ "${mode}" == "--pack" ]]; then
-  output_dir="${OPENCLAW_CLAWHUB_PACK_OUTPUT_DIR:-}"
+  output_dir="${AFORA_CLAWHUB_PACK_OUTPUT_DIR:-}"
   if [[ -z "${output_dir}" ]]; then
-    echo "OPENCLAW_CLAWHUB_PACK_OUTPUT_DIR is required for --pack" >&2
+    echo "AFORA_CLAWHUB_PACK_OUTPUT_DIR is required for --pack" >&2
     exit 2
   fi
   mkdir -p "${output_dir}"
@@ -247,9 +247,9 @@ if [[ "${packed_mode}" == "true" ]]; then
   verify_packed_identity
 fi
 
-clawhub_timeout_seconds="${OPENCLAW_CLAWHUB_PUBLISH_ATTEMPT_TIMEOUT_SECONDS:-300}"
+clawhub_timeout_seconds="${AFORA_CLAWHUB_PUBLISH_ATTEMPT_TIMEOUT_SECONDS:-300}"
 if [[ ! "${clawhub_timeout_seconds}" =~ ^[1-9][0-9]*$ || "${clawhub_timeout_seconds}" -gt 900 ]]; then
-  echo "OPENCLAW_CLAWHUB_PUBLISH_ATTEMPT_TIMEOUT_SECONDS must be an integer from 1 through 900." >&2
+  echo "AFORA_CLAWHUB_PUBLISH_ATTEMPT_TIMEOUT_SECONDS must be an integer from 1 through 900." >&2
   exit 2
 fi
 timeout_bin=""
@@ -344,14 +344,14 @@ if [[ "${mode}" == "--dry-run" ]]; then
   exit 0
 fi
 
-publish_attempts="${OPENCLAW_CLAWHUB_PUBLISH_ATTEMPTS:-8}"
-publish_retry_delay="${OPENCLAW_CLAWHUB_PUBLISH_RETRY_DELAY_SECONDS:-60}"
+publish_attempts="${AFORA_CLAWHUB_PUBLISH_ATTEMPTS:-8}"
+publish_retry_delay="${AFORA_CLAWHUB_PUBLISH_RETRY_DELAY_SECONDS:-60}"
 if [[ ! "${publish_attempts}" =~ ^[1-9][0-9]*$ || "${publish_attempts}" -gt 12 ]]; then
-  echo "OPENCLAW_CLAWHUB_PUBLISH_ATTEMPTS must be an integer from 1 through 12." >&2
+  echo "AFORA_CLAWHUB_PUBLISH_ATTEMPTS must be an integer from 1 through 12." >&2
   exit 2
 fi
 if [[ ! "${publish_retry_delay}" =~ ^[1-9][0-9]*$ || "${publish_retry_delay}" -gt 300 ]]; then
-  echo "OPENCLAW_CLAWHUB_PUBLISH_RETRY_DELAY_SECONDS must be an integer from 1 through 300." >&2
+  echo "AFORA_CLAWHUB_PUBLISH_RETRY_DELAY_SECONDS must be an integer from 1 through 300." >&2
   exit 2
 fi
 

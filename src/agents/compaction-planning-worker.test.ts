@@ -1,6 +1,6 @@
 // Covers the compaction planning worker boundary and timeout behavior.
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
-import { serializeConversation } from "openclaw/plugin-sdk/agent-core";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
+import { serializeConversation } from "afora-agent/plugin-sdk/agent-core";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { runCompactionPlanningWorker } from "./compaction-planning-worker-runtime.js";
 import {

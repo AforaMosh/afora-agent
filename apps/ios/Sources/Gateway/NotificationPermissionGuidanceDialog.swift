@@ -50,14 +50,14 @@ private struct NotificationPermissionGuidanceCard: View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Notifications are off")
-                    .font(OpenClawType.headline)
+                    .font(AforaType.headline)
                 Text(
                     """
-                    Exec approvals can only be reviewed while OpenClaw is open and connected.
+                    Exec approvals can only be reviewed while Afora is open and connected.
 
-                    Enable Notifications to receive approval notifications while OpenClaw is not open.
+                    Enable Notifications to receive approval notifications while Afora is not open.
                     """)
-                    .font(OpenClawType.subhead)
+                    .font(AforaType.subhead)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -67,7 +67,7 @@ private struct NotificationPermissionGuidanceCard: View {
                     self.onOpenNotifications()
                 } label: {
                     Text("Open Notifications Settings")
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
@@ -76,7 +76,7 @@ private struct NotificationPermissionGuidanceCard: View {
                     self.onDismiss()
                 } label: {
                     Text("Not Now")
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -85,7 +85,7 @@ private struct NotificationPermissionGuidanceCard: View {
                     self.onSuppressFuture()
                 } label: {
                     Text("Don't show again")
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -94,7 +94,7 @@ private struct NotificationPermissionGuidanceCard: View {
             .frame(maxWidth: .infinity)
         }
         .padding(18)
-        .proPanelSurface(tint: OpenClawBrand.warn, radius: 20, isProminent: true)
+        .proPanelSurface(tint: AforaBrand.warn, radius: 20, isProminent: true)
     }
 }
 

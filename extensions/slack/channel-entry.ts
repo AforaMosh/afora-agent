@@ -1,5 +1,5 @@
 // Slack plugin module implements channel entry behavior.
-import { defineBundledChannelEntry } from "openclaw/plugin-sdk/channel-entry-contract";
+import { defineBundledChannelEntry } from "afora-agent/plugin-sdk/channel-entry-contract";
 
 export default defineBundledChannelEntry({
   id: "slack",

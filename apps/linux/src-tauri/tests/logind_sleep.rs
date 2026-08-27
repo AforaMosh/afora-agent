@@ -102,7 +102,7 @@ fn spawn_dbus_daemon() -> Option<(DbusDaemon, String)> {
         eprintln!("SKIP logind_sleep: dbus-daemon is unavailable (install the dbus package)");
         return None;
     }
-    let directory = std::env::temp_dir().join(format!("openclaw-logind-{}", Uuid::new_v4()));
+    let directory = std::env::temp_dir().join(format!("afora-logind-{}", Uuid::new_v4()));
     std::fs::create_dir_all(&directory).expect("create private D-Bus directory");
     let address = format!("unix:path={}", directory.join("bus.sock").display());
     let mut child = Command::new("dbus-daemon")

@@ -1,5 +1,5 @@
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   getActiveDiagnosticsTimelineSpan,
   measureDiagnosticsTimelineSpanSync,
@@ -30,14 +30,14 @@ import { normalizePluginIdScope, serializePluginIdScope } from "./plugin-scope.j
 const PLUGIN_METADATA_ENV_KEYS = [
   "APPDATA",
   "HOME",
-  "OPENCLAW_BUNDLED_PLUGINS_DIR",
-  "OPENCLAW_COMPATIBILITY_HOST_VERSION",
-  "OPENCLAW_CONFIG_PATH",
-  "OPENCLAW_DISABLE_BUNDLED_PLUGINS",
-  "OPENCLAW_DISABLE_BUNDLED_SOURCE_OVERLAYS",
-  "OPENCLAW_HOME",
-  "OPENCLAW_NIX_MODE",
-  "OPENCLAW_STATE_DIR",
+  "AFORA_BUNDLED_PLUGINS_DIR",
+  "AFORA_COMPATIBILITY_HOST_VERSION",
+  "AFORA_CONFIG_PATH",
+  "AFORA_DISABLE_BUNDLED_PLUGINS",
+  "AFORA_DISABLE_BUNDLED_SOURCE_OVERLAYS",
+  "AFORA_HOME",
+  "AFORA_NIX_MODE",
+  "AFORA_STATE_DIR",
   "USERPROFILE",
   "XDG_CONFIG_HOME",
 ] as const;
@@ -132,7 +132,7 @@ export function isPluginMetadataSnapshotCompatible(params: {
     PluginMetadataSnapshot,
     "configFingerprint" | "index" | "pluginIds" | "policyHash" | "workspaceDir"
   >;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   allowScopedSnapshot?: boolean;
   pluginIds?: readonly string[];
@@ -318,7 +318,7 @@ export function loadPluginMetadataSnapshot(
 /** Promotes a planning-scoped graph to the complete process-lifecycle metadata snapshot. */
 export function completePluginMetadataSnapshot(params: {
   snapshot?: PluginMetadataSnapshot;
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
   workspaceDir?: string;
 }): PluginMetadataSnapshot | undefined {
@@ -337,7 +337,7 @@ export function completePluginMetadataSnapshot(params: {
 /** Reuses process-stable plugin facts for a workspace proven to have no plugin root. */
 export function projectPluginMetadataSnapshotWorkspace(params: {
   snapshot: PluginMetadataSnapshot;
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
   workspaceDir: string;
 }): PluginMetadataSnapshot {

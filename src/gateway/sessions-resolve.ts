@@ -1,7 +1,7 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 // Gateway sessions.resolve implementation helper.
 // Resolves key/sessionId/label/shortId selectors into one canonical session key.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   ErrorCodes,
   type ErrorShape,
@@ -15,7 +15,7 @@ import {
 } from "../../packages/session-url-contract/src/index.js";
 import { listAgentIds } from "../agents/agent-scope.js";
 import type { SessionEntry } from "../config/sessions.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { parseAgentSessionKey } from "../routing/session-key.js";
 import { resolveSessionIdMatchSelection } from "../sessions/session-id-resolution.js";
 import { parseSessionLabel } from "../sessions/session-label.js";
@@ -60,7 +60,7 @@ function noSessionFoundResult(params: { p: SessionsResolveParams; message: strin
 
 /** Rejects sessions whose owning agent no longer exists in config (#65524). */
 function validateSessionAgentExists(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   key: string,
   entry?: SessionEntry | null,
   options?: { acpMetadataSessionKey?: string | null },
@@ -79,7 +79,7 @@ function validateSessionAgentExists(
 }
 
 function isResolvedSessionKeyVisible(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   p: SessionsResolveParams;
   store: Record<string, SessionEntry>;
   key: string;
@@ -96,7 +96,7 @@ function isResolvedSessionKeyVisible(params: {
 }
 
 function findVisibleSessionIdMatches(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   store: Record<string, SessionEntry>;
   p: SessionsResolveParams;
   sessionId: string;
@@ -119,7 +119,7 @@ function normalizeShortSessionId(shortId: string): string | null {
 }
 
 function findVisibleShortIdMatches(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   storePath: string;
   store: Record<string, SessionEntry>;
   p: SessionsResolveParams;
@@ -166,7 +166,7 @@ function findVisibleShortIdMatches(params: {
 }
 
 export async function resolveSessionKeyFromResolveParams(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   client: GatewayClient | null;
   p: SessionsResolveParams;
 }): Promise<SessionsResolveResult> {

@@ -10,7 +10,7 @@ import { nothing } from "lit";
 import { property } from "lit/decorators.js";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import { t } from "../../i18n/index.ts";
-import { OpenClawLitElement } from "../../lit/openclaw-element.ts";
+import { AforaLitElement } from "../../lit/afora-element.ts";
 import { scrollbarShadowStyles } from "../../lit/scrollbar-styles.ts";
 import { DockLayoutController, dockPanelStyles } from "../dock-layout-controller.ts";
 import { createDockPanelLayout } from "../dock-panel-layout.ts";
@@ -28,7 +28,7 @@ import { browserPanelStyles } from "./browser-panel.styles.ts";
 import { normalizeBrowserUrlDraft } from "./browser-url.ts";
 
 const panelLayout = createDockPanelLayout({
-  storageKey: "openclaw.browser.panel.v1",
+  storageKey: "afora.browser.panel.v1",
   minHeight: 240,
   minWidth: 380,
   defaultDock: "right",
@@ -37,8 +37,8 @@ const panelLayout = createDockPanelLayout({
   defaultWidth: 560,
 });
 
-/** `<openclaw-browser-panel>` — the dockable gateway browser surface. */
-class OpenClawBrowserPanel extends OpenClawLitElement implements BrowserPanelControllerHost {
+/** `<afora-browser-panel>` — the dockable gateway browser surface. */
+class AforaBrowserPanel extends AforaLitElement implements BrowserPanelControllerHost {
   /** Gateway client used for browser.request RPCs; null until connected. */
   @property({ attribute: false }) client: GatewayBrowserClient | null = null;
   /** Whether the connected gateway advertises browser.request to this operator. */
@@ -254,12 +254,12 @@ class OpenClawBrowserPanel extends OpenClawLitElement implements BrowserPanelCon
 
 // Guarded define (not @customElement) so re-imports under a shared registry —
 // e.g. vitest with isolate=false — don't throw "already registered".
-if (!customElements.get("openclaw-browser-panel")) {
-  customElements.define("openclaw-browser-panel", OpenClawBrowserPanel);
+if (!customElements.get("afora-browser-panel")) {
+  customElements.define("afora-browser-panel", AforaBrowserPanel);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "openclaw-browser-panel": OpenClawBrowserPanel;
+    "afora-browser-panel": AforaBrowserPanel;
   }
 }

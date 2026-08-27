@@ -4,7 +4,7 @@ import net from "node:net";
 import path from "node:path";
 import type { Page } from "playwright";
 import { expect, it } from "vitest";
-import { createOpenClawTestState } from "../../../src/test-utils/openclaw-test-state.ts";
+import { createAforaTestState } from "../../../src/test-utils/afora-test-state.ts";
 import { installMockGateway } from "../test-helpers/control-ui-e2e.ts";
 import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts";
 
@@ -15,7 +15,7 @@ const suite = createControlUiE2eSuite({
     `Playwright Chromium is not available at ${executablePath}`,
 });
 
-const captureUiProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+const captureUiProof = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 const proofDir = path.join(process.cwd(), ".artifacts", "control-ui-e2e", "agent-file-lifecycle");
 
 async function capture(page: Page, name: string) {
@@ -31,7 +31,7 @@ async function capture(page: Page, name: string) {
 }
 
 async function selectAgent(page: Page, name: string) {
-  const select = page.locator(".agents-control-select openclaw-agent-select");
+  const select = page.locator(".agents-control-select afora-agent-select");
   await select.locator(".agent-select__trigger").click();
   await select.locator("wa-dropdown-item[data-agent-option]").filter({ hasText: name }).click();
   await expect
@@ -59,11 +59,11 @@ async function getFreePort() {
 function fileList(agentId: string) {
   return {
     agentId,
-    workspace: `/tmp/openclaw-e2e/workspace-${agentId}`,
+    workspace: `/tmp/afora-e2e/workspace-${agentId}`,
     files: [
       {
         name: "AGENTS.md",
-        path: `/tmp/openclaw-e2e/workspace-${agentId}/AGENTS.md`,
+        path: `/tmp/afora-e2e/workspace-${agentId}/AGENTS.md`,
         missing: false,
       },
     ],
@@ -214,17 +214,17 @@ suite.define(() => {
 
   it("reads and saves the selected agent workspace through an isolated Gateway", async () => {
     const port = await getFreePort();
-    const state = await createOpenClawTestState({
+    const state = await createAforaTestState({
       label: "control-ui-agent-files",
       layout: "home",
       env: {
-        OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-        OPENCLAW_SKIP_CANVAS_HOST: "1",
-        OPENCLAW_SKIP_CHANNELS: "1",
-        OPENCLAW_SKIP_CRON: "1",
-        OPENCLAW_SKIP_GMAIL_WATCHER: "1",
-        OPENCLAW_SKIP_PROVIDERS: "1",
-        OPENCLAW_TEST_MINIMAL_GATEWAY: "1",
+        AFORA_SKIP_BROWSER_CONTROL_SERVER: "1",
+        AFORA_SKIP_CANVAS_HOST: "1",
+        AFORA_SKIP_CHANNELS: "1",
+        AFORA_SKIP_CRON: "1",
+        AFORA_SKIP_GMAIL_WATCHER: "1",
+        AFORA_SKIP_PROVIDERS: "1",
+        AFORA_TEST_MINIMAL_GATEWAY: "1",
         VITEST: "1",
       },
     });
@@ -275,7 +275,7 @@ suite.define(() => {
           const url = new URL("settings/agents/main/files", suite.server.baseUrl);
           url.searchParams.set("gatewayUrl", `ws://127.0.0.1:${port}`);
           await page.goto(url.toString());
-          const confirmation = page.locator("openclaw-gateway-url-confirmation");
+          const confirmation = page.locator("afora-gateway-url-confirmation");
           await confirmation.waitFor();
           await confirmation.getByRole("button", { name: "Confirm", exact: true }).click();
           const editor = page.locator(".agent-file-textarea");

@@ -4,12 +4,12 @@ import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { performance } from "node:perf_hooks";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isDiagnosticFlagEnabled } from "./diagnostic-flags.js";
 import { isTruthyEnvValue } from "./env.js";
 import { appendRegularFileSync } from "./regular-file.js";
 
-const OPENCLAW_DIAGNOSTICS_TIMELINE_SCHEMA_VERSION = "openclaw.diagnostics.v1";
+const AFORA_DIAGNOSTICS_TIMELINE_SCHEMA_VERSION = "afora.diagnostics.v1";
 
 type DiagnosticsTimelineEventType =
   | "span.start"
@@ -54,13 +54,13 @@ type DiagnosticsTimelineSpanOptions = {
   phase?: string;
   parentSpanId?: string;
   attributes?: DiagnosticsTimelineAttributes;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   omitErrorMessage?: boolean;
 };
 
 type DiagnosticsTimelineOptions = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
 };
 
@@ -74,7 +74,7 @@ type ActiveDiagnosticsTimelineSpan = {
 };
 
 type StartedDiagnosticsTimelineSpan = ActiveDiagnosticsTimelineSpan & {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env: NodeJS.ProcessEnv;
   startedAt: number;
   omitErrorMessage?: boolean;
@@ -99,9 +99,9 @@ export function isDiagnosticsTimelineEnabled(options: DiagnosticsTimelineOptions
   return (
     (isDiagnosticFlagEnabled("timeline", config, env) ||
       isDiagnosticFlagEnabled("diagnostics.timeline", config, env) ||
-      isTruthyEnvValue(env.OPENCLAW_DIAGNOSTICS)) &&
-    typeof env.OPENCLAW_DIAGNOSTICS_TIMELINE_PATH === "string" &&
-    env.OPENCLAW_DIAGNOSTICS_TIMELINE_PATH.trim().length > 0
+      isTruthyEnvValue(env.AFORA_DIAGNOSTICS)) &&
+    typeof env.AFORA_DIAGNOSTICS_TIMELINE_PATH === "string" &&
+    env.AFORA_DIAGNOSTICS_TIMELINE_PATH.trim().length > 0
   );
 }
 
@@ -135,12 +135,12 @@ function normalizeAttributes(
 
 function serializeTimelineEvent(event: DiagnosticsTimelineEvent, env: NodeJS.ProcessEnv): string {
   const normalized = {
-    schemaVersion: OPENCLAW_DIAGNOSTICS_TIMELINE_SCHEMA_VERSION,
+    schemaVersion: AFORA_DIAGNOSTICS_TIMELINE_SCHEMA_VERSION,
     type: event.type,
     timestamp: event.timestamp ?? new Date().toISOString(),
     name: event.name,
-    ...(env.OPENCLAW_DIAGNOSTICS_RUN_ID ? { runId: env.OPENCLAW_DIAGNOSTICS_RUN_ID } : {}),
-    ...(env.OPENCLAW_DIAGNOSTICS_ENV ? { envName: env.OPENCLAW_DIAGNOSTICS_ENV } : {}),
+    ...(env.AFORA_DIAGNOSTICS_RUN_ID ? { runId: env.AFORA_DIAGNOSTICS_RUN_ID } : {}),
+    ...(env.AFORA_DIAGNOSTICS_ENV ? { envName: env.AFORA_DIAGNOSTICS_ENV } : {}),
     pid: process.pid,
     ...(event.runId ? { runId: event.runId } : {}),
     ...(event.envName ? { envName: event.envName } : {}),
@@ -181,7 +181,7 @@ export function emitDiagnosticsTimelineEvent(
   if (!isDiagnosticsTimelineEnabled(options)) {
     return;
   }
-  const path = env.OPENCLAW_DIAGNOSTICS_TIMELINE_PATH?.trim();
+  const path = env.AFORA_DIAGNOSTICS_TIMELINE_PATH?.trim();
   if (!path) {
     return;
   }

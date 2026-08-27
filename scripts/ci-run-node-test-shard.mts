@@ -17,23 +17,23 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Readable } from "node:stream";
 import { StringDecoder } from "node:string_decoder";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { isDirectRunUrl } from "./lib/direct-run.mjs";
 
 // Two concurrent plans halve the serial tail of packed jobs. Children run with
 // inner test-projects parallelism 1 so a job never exceeds two Vitest runs;
 // stacking outer and inner parallelism oversubscribes the 4 vCPU runner class.
 const PLAN_CONCURRENCY = 2;
-const FS_MODULE_CACHE_PATH_ENV_KEY = "OPENCLAW_VITEST_FS_MODULE_CACHE_PATH";
-const FS_MODULE_CACHE_WRITER_ENV_KEY = "OPENCLAW_VITEST_FS_MODULE_CACHE_WRITER";
+const FS_MODULE_CACHE_PATH_ENV_KEY = "AFORA_VITEST_FS_MODULE_CACHE_PATH";
+const FS_MODULE_CACHE_WRITER_ENV_KEY = "AFORA_VITEST_FS_MODULE_CACHE_WRITER";
 const NODE_COMPILE_CACHE_PATH_ENV_KEY = "NODE_COMPILE_CACHE";
-const NODE_COMPILE_CACHE_WRITER_ENV_KEY = "OPENCLAW_NODE_COMPILE_CACHE_WRITER";
-const VITEST_EXTRA_ARGS_ENV_KEY = "OPENCLAW_NODE_TEST_VITEST_ARGS_JSON";
+const NODE_COMPILE_CACHE_WRITER_ENV_KEY = "AFORA_NODE_COMPILE_CACHE_WRITER";
+const VITEST_EXTRA_ARGS_ENV_KEY = "AFORA_NODE_TEST_VITEST_ARGS_JSON";
 const FS_MODULE_CACHE_MAX_BYTES = 2 * 1024 * 1024 * 1024;
 const NODE_COMPILE_CACHE_MAX_BYTES = 1024 * 1024 * 1024;
 const FS_MODULE_CACHE_PRUNE_TARGET_RATIO = 0.75;
 const FS_MODULE_CACHE_METADATA_FILE = "_metadata.json";
-const FS_MODULE_CACHE_GENERATION_FILE = ".openclaw-transform-generation";
+const FS_MODULE_CACHE_GENERATION_FILE = ".afora-transform-generation";
 
 export type ShardTargetPlan = { kind: "target"; name: string; target: string };
 type ShardGroupConfig = {
@@ -70,18 +70,18 @@ function parseJsonEnv(env: NodeJS.ProcessEnv, name: string, fallback: unknown = 
 }
 
 export function resolveShardPlans(env: NodeJS.ProcessEnv = process.env): ShardPlan[] {
-  const targets = parseJsonEnv(env, "OPENCLAW_NODE_TEST_TARGETS_JSON");
+  const targets = parseJsonEnv(env, "AFORA_NODE_TEST_TARGETS_JSON");
   if (isStringArray(targets) && targets.length > 0) {
     // One target per child process preserves the isolation boundaries encoded
     // by full-suite include-pattern shards while keeping one runner job.
     return targets.map((target) => ({ kind: "target", name: target, target }));
   }
 
-  const groups = parseJsonEnv(env, "OPENCLAW_NODE_TEST_GROUPS_JSON");
+  const groups = parseJsonEnv(env, "AFORA_NODE_TEST_GROUPS_JSON");
   const groupPlans = Array.isArray(groups) ? groups.filter(isShardGroupConfig) : [];
-  const configs = parseJsonEnv(env, "OPENCLAW_NODE_TEST_CONFIGS_JSON", []);
-  const groupEnv = parseJsonEnv(env, "OPENCLAW_NODE_TEST_ENV_JSON");
-  const includePatterns = parseJsonEnv(env, "OPENCLAW_NODE_TEST_INCLUDE_PATTERNS_JSON");
+  const configs = parseJsonEnv(env, "AFORA_NODE_TEST_CONFIGS_JSON", []);
+  const groupEnv = parseJsonEnv(env, "AFORA_NODE_TEST_ENV_JSON");
+  const includePatterns = parseJsonEnv(env, "AFORA_NODE_TEST_INCLUDE_PATTERNS_JSON");
   const plans: ShardGroupConfig[] =
     groupPlans.length > 0
       ? groupPlans
@@ -90,7 +90,7 @@ export function resolveShardPlans(env: NodeJS.ProcessEnv = process.env): ShardPl
             configs: isStringArray(configs) ? configs : [],
             env: isRecord(groupEnv) ? groupEnv : null,
             includePatterns: isStringArray(includePatterns) ? includePatterns : null,
-            shard_name: env.OPENCLAW_VITEST_SHARD_NAME,
+            shard_name: env.AFORA_VITEST_SHARD_NAME,
           },
         ];
   return plans.map((plan) => ({
@@ -120,12 +120,12 @@ export function buildChildEnv(
     // slots so serial plans on one worker reuse transforms without ENOTEMPTY
     // races. The scratch fallback preserves per-plan isolation.
     [FS_MODULE_CACHE_PATH_ENV_KEY]: join(persistentCacheRoot || scratchDir, cacheDirectory),
-    OPENCLAW_TEST_PROJECTS_PARALLEL: "1",
+    AFORA_TEST_PROJECTS_PARALLEL: "1",
   };
   if (entry.kind === "group") {
     const plan = entry.plan;
     if (plan.shard_name) {
-      childEnv.OPENCLAW_VITEST_SHARD_NAME = plan.shard_name;
+      childEnv.AFORA_VITEST_SHARD_NAME = plan.shard_name;
     }
     if (plan.env && typeof plan.env === "object" && !Array.isArray(plan.env)) {
       for (const [key, value] of Object.entries(plan.env)) {
@@ -137,9 +137,9 @@ export function buildChildEnv(
     if (Array.isArray(plan.includePatterns) && plan.includePatterns.length > 0) {
       const includeFile = join(scratchDir, `node-test-include-${index}.json`);
       writeFileSync(includeFile, JSON.stringify(plan.includePatterns), "utf8");
-      childEnv.OPENCLAW_VITEST_INCLUDE_FILE = includeFile;
+      childEnv.AFORA_VITEST_INCLUDE_FILE = includeFile;
     } else {
-      delete childEnv.OPENCLAW_VITEST_INCLUDE_FILE;
+      delete childEnv.AFORA_VITEST_INCLUDE_FILE;
     }
   }
   return childEnv;
@@ -309,7 +309,7 @@ export async function runShardPlans(plans: ShardPlan[], options: RunShardOptions
   const vitestExtraArgs = isStringArray(parsedVitestExtraArgs) ? parsedVitestExtraArgs : [];
   const concurrency = Math.max(1, options.concurrency ?? PLAN_CONCURRENCY);
   const runner = options.runChild ?? runChild;
-  const scratchDir = options.scratchDir ?? mkdtempSync(join(tmpdir(), "openclaw-node-shard-"));
+  const scratchDir = options.scratchDir ?? mkdtempSync(join(tmpdir(), "afora-node-shard-"));
   const persistentCacheRoot = baseEnv[FS_MODULE_CACHE_PATH_ENV_KEY]?.trim();
   const nodeCompileCacheRoot = baseEnv[NODE_COMPILE_CACHE_PATH_ENV_KEY]?.trim();
   const clonedCacheSlots = clonePersistentCacheSlots(persistentCacheRoot, concurrency);
@@ -385,6 +385,6 @@ if (isDirectRunUrl(process.argv[1], import.meta.url)) {
   const plans = resolveShardPlans();
   // Bins holding spawn/signal-timing suites are marked planConcurrency 1 by
   // the planner; overlapping them with a sibling Vitest run causes flakes.
-  const planConcurrency = Number(process.env.OPENCLAW_NODE_TEST_PLAN_CONCURRENCY) || undefined;
+  const planConcurrency = Number(process.env.AFORA_NODE_TEST_PLAN_CONCURRENCY) || undefined;
   process.exitCode = await runShardPlans(plans, { concurrency: planConcurrency });
 }

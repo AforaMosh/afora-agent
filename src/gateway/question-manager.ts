@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import {
   resolveExpiresAtMsFromDurationMs,
   resolveTimerTimeoutMs,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import type {
   Question,
   QuestionAnswers,

@@ -30,7 +30,7 @@ function createContext(request: ReturnType<typeof vi.fn>) {
       type: "hello-ok",
       protocol: 1,
       auth: { role: "operator", scopes: ["operator.admin"] },
-      features: { methods: ["openclaw.chat"] },
+      features: { methods: ["afora.chat"] },
     },
     assistantAgentId: "main",
     sessionKey: "main",
@@ -84,7 +84,7 @@ function createContext(request: ReturnType<typeof vi.fn>) {
 
 async function mountPage(context: ApplicationContext): Promise<TestCustodianPage> {
   const provider = createApplicationContextProvider(context);
-  const page = document.createElement("openclaw-custodian-page") as TestCustodianPage;
+  const page = document.createElement("afora-custodian-page") as TestCustodianPage;
   page.store = new CustodianSessionStore();
   page.onboarding = false;
   page.newAgentIntent = true;

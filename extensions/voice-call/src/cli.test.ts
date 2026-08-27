@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 // Voice Call tests cover cli plugin behavior.
 import { Command } from "commander";
-import { MAX_TIMER_TIMEOUT_MS } from "openclaw/plugin-sdk/number-runtime";
+import { MAX_TIMER_TIMEOUT_MS } from "afora-agent/plugin-sdk/number-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 const callGatewayFromCliMock = vi.hoisted(() => vi.fn());
 const sleepMock = vi.hoisted(() =>
@@ -15,8 +15,8 @@ const sleepMock = vi.hoisted(() =>
   ),
 );
 
-vi.mock("openclaw/plugin-sdk/gateway-runtime", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/gateway-runtime")>()),
+vi.mock("afora-agent/plugin-sdk/gateway-runtime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/gateway-runtime")>()),
   callGatewayFromCli: callGatewayFromCliMock,
 }));
 vi.mock("../api.js", async (importOriginal) => ({
@@ -129,8 +129,8 @@ describe("voice-call CLI status fallback", () => {
     initial: string | Buffer = "initial\n",
     copyTruncated?: string | Buffer,
   ): Promise<{ output: string; shortened: boolean }> {
-    // openclaw-temp-dir: allow extension tests cannot import repo-only test helpers
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-voice-call-tail-"));
+    // afora-temp-dir: allow extension tests cannot import repo-only test helpers
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-voice-call-tail-"));
     const logFile = path.join(tempDir, "custom.log");
     fs.writeFileSync(logFile, initial);
     const initialByteLength = Buffer.isBuffer(initial)

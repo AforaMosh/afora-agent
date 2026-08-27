@@ -15,7 +15,7 @@ import {
   replaceSessionEntrySync,
 } from "../../../config/sessions/session-accessor.js";
 import type { SessionEntry } from "../../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import type { CallGatewayOptions } from "../../../gateway/call.js";
 import { rotateAgentEventLifecycleGeneration } from "../../../infra/agent-events.js";
 import {
@@ -203,7 +203,7 @@ let tempRoot = "";
 let tempStoreIndex = 0;
 
 beforeAll(() => {
-  tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-subagent-control-"));
+  tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-subagent-control-"));
 });
 
 afterAll(() => {
@@ -215,10 +215,10 @@ function nextSessionStorePath(label: string) {
   return path.join(tempRoot, `${tempStoreIndex}-${label}.json`);
 }
 
-function cfgWithSessionStore(storePath = nextSessionStorePath("sessions")): OpenClawConfig {
+function cfgWithSessionStore(storePath = nextSessionStorePath("sessions")): AforaConfig {
   return {
     session: { store: storePath },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 async function writeSessionStoreFixture(label: string, store: Record<string, unknown>) {
@@ -268,7 +268,7 @@ describe("sendControlledSubagentMessage", () => {
 
   it("rejects follow-up messages for collector runs", async () => {
     const result = await sendControlledSubagentMessage({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       controller: {
         controllerSessionKey: "agent:main:main",
         callerSessionKey: "agent:main:main",
@@ -299,7 +299,7 @@ describe("sendControlledSubagentMessage", () => {
     const result = await sendControlledSubagentMessage({
       cfg: {
         channels: { whatsapp: { allowFrom: ["*"] } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       controller: {
         controllerSessionKey: "agent:main:subagent:leaf",
         callerSessionKey: "agent:main:subagent:leaf",
@@ -353,7 +353,7 @@ describe("sendControlledSubagentMessage", () => {
     const result = await sendControlledSubagentMessage({
       cfg: {
         channels: { whatsapp: { allowFrom: ["*"] } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       controller: {
         controllerSessionKey: "agent:main:main",
         callerSessionKey: "agent:main:main",
@@ -395,7 +395,7 @@ describe("sendControlledSubagentMessage", () => {
     const result = await sendControlledSubagentMessage({
       cfg: {
         channels: { whatsapp: { allowFrom: ["*"] } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       controller: {
         controllerSessionKey: "agent:main:main",
         callerSessionKey: "agent:main:main",
@@ -456,7 +456,7 @@ describe("sendControlledSubagentMessage", () => {
     const result = await sendControlledSubagentMessage({
       cfg: {
         channels: { whatsapp: { allowFrom: ["*"] } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       controller: {
         controllerSessionKey: "agent:main:main",
         callerSessionKey: "agent:main:main",
@@ -531,7 +531,7 @@ describe("sendControlledSubagentMessage", () => {
     const result = await sendControlledSubagentMessage({
       cfg: {
         channels: { whatsapp: { allowFrom: ["*"] } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       controller: {
         controllerSessionKey: "agent:main:main",
         callerSessionKey: "agent:main:main",
@@ -600,7 +600,7 @@ describe("sendControlledSubagentMessage", () => {
     const result = await sendControlledSubagentMessage({
       cfg: {
         channels: { whatsapp: { allowFrom: ["*"] } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       controller: {
         controllerSessionKey: "agent:main:main",
         callerSessionKey: "agent:main:main",
@@ -2449,7 +2449,7 @@ describe("steerControlledSubagentRun", () => {
     };
     addSubagentRunForTests(entry);
     const result = await steerControlledSubagentRun({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       controller: {
         controllerSessionKey: "agent:main:main",
         callerSessionKey: "agent:main:main",
@@ -3143,7 +3143,7 @@ describe("listControlledSubagentRuns", () => {
         ownership: "explicit",
         entries: { research: {}, ops: {} },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     expect(listControlledSubagentRuns("global", "research", cfg).map((run) => run.runId)).toEqual([
       "run-research",
     ]);

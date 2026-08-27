@@ -24,10 +24,10 @@ describe("plugin npm runtime build checks", () => {
     writeFileSync(
       join(packageDir, "package.json"),
       JSON.stringify({
-        name: `@openclaw/${pluginId}`,
+        name: `@afora/${pluginId}`,
         version: "2026.6.2",
         type: "module",
-        openclaw: {
+        afora: {
           compat: {
             pluginApi: ">=2026.4.30",
           },
@@ -39,7 +39,7 @@ describe("plugin npm runtime build checks", () => {
   }
 
   it("rejects publishable packages without a package-local runtime build plan", async () => {
-    const repoRoot = mkdtempSync(join(tmpdir(), "openclaw-plugin-runtime-check-"));
+    const repoRoot = mkdtempSync(join(tmpdir(), "afora-plugin-runtime-check-"));
     tempDirs.push(repoRoot);
     writePackage(repoRoot, "clawhub-only", { publishToClawHub: true }, ["./index.js"]);
     writePackage(repoRoot, "npm-javascript-only", { publishToNpm: true }, ["./index.js"]);
@@ -61,7 +61,7 @@ describe("plugin npm runtime build checks", () => {
   });
 
   it("rejects invalid explicit package targets", async () => {
-    const repoRoot = mkdtempSync(join(tmpdir(), "openclaw-plugin-runtime-check-"));
+    const repoRoot = mkdtempSync(join(tmpdir(), "afora-plugin-runtime-check-"));
     tempDirs.push(repoRoot);
     writePackage(repoRoot, "not-publishable", {});
 
@@ -80,7 +80,7 @@ describe("plugin npm runtime build checks", () => {
   });
 
   it("builds a ClawHub-only TypeScript package runtime", async () => {
-    const repoRoot = mkdtempSync(join(tmpdir(), "openclaw-plugin-runtime-check-"));
+    const repoRoot = mkdtempSync(join(tmpdir(), "afora-plugin-runtime-check-"));
     tempDirs.push(repoRoot);
     writePackage(repoRoot, "clawhub-typescript", { publishToClawHub: true }, ["./index.ts"]);
     writeFileSync(
@@ -104,7 +104,7 @@ describe("plugin npm runtime build checks", () => {
   });
 
   it("builds top-level public policy surfaces as standalone package artifacts", async () => {
-    const repoRoot = mkdtempSync(join(tmpdir(), "openclaw-plugin-runtime-check-"));
+    const repoRoot = mkdtempSync(join(tmpdir(), "afora-plugin-runtime-check-"));
     tempDirs.push(repoRoot);
     writePackage(repoRoot, "provider-plugin", { publishToNpm: true }, ["./index.ts"]);
     const packageDir = join(repoRoot, "extensions", "provider-plugin");

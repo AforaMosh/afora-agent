@@ -106,7 +106,7 @@ describe("status-overview-rows", () => {
         gatewayConnection: { url: "wss://gateway.example.com", urlSource: "config" },
       },
       osLabel: "macOS",
-      configPath: "/tmp/openclaw.json",
+      configPath: "/tmp/afora.json",
       secretDiagnosticsCount: 2,
       updateRestartValue: "restart pending health verification",
       agentStatus: {
@@ -119,9 +119,9 @@ describe("status-overview-rows", () => {
 
     expect(findRowValue(rows, "Version")).toBe(VERSION);
     expect(findRowValue(rows, "OS")).toBe("macOS");
-    expect(findRowValue(rows, "Config")).toBe("/tmp/openclaw.json");
+    expect(findRowValue(rows, "Config")).toBe("/tmp/afora.json");
     expect(findRowValue(rows, "Update restart")).toBe("restart pending health verification");
-    expect(findRowValue(rows, "Security")).toBe("Run: openclaw security audit --deep");
+    expect(findRowValue(rows, "Security")).toBe("Run: afora security audit --deep");
     expect(findRowValue(rows, "Secrets")).toBe("2 diagnostics");
   });
 });

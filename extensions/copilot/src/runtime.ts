@@ -1,7 +1,7 @@
 // Copilot plugin module implements runtime behavior.
 import { normalize, resolve, sep } from "node:path";
 import type { CopilotClient, CopilotClientOptions } from "@github/copilot-sdk";
-import { toStringifiedError as toCopilotRuntimeError } from "openclaw/plugin-sdk/error-runtime";
+import { toStringifiedError as toCopilotRuntimeError } from "afora-agent/plugin-sdk/error-runtime";
 import { loadCopilotSdk } from "./sdk-loader.js";
 
 // SAFETY: The pool reuses CopilotClient instances per normalized PoolKey and does not

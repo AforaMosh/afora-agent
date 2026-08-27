@@ -1,7 +1,7 @@
 // Doctor scanner for empty allowlist policies across configured channels and accounts.
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord } from "@afora/normalization-core/record-coerce";
 import type { ChannelDoctorEmptyAllowlistAccountContext } from "../../../channels/plugins/types.adapters.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import {
   getDoctorChannelCapabilities,
   resolveDoctorChannelAccountIds,
@@ -27,7 +27,7 @@ function isDisabledRecord(value: unknown): boolean {
 
 /** Scan all configured channels/accounts for empty allowlist policy warnings. */
 export function scanEmptyAllowlistPolicyWarnings(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   params: ScanEmptyAllowlistPolicyWarningsParams,
 ): string[] {
   const channels = cfg.channels;

@@ -1,7 +1,7 @@
 import {
   isRetryableGatewayStartupUnavailableError,
   readControlUiBuildMismatchId,
-} from "@openclaw/gateway-client/browser";
+} from "@afora/gateway-client/browser";
 import type { ControlUiBootstrapProfileHint } from "../../../src/gateway/control-ui-contract.js";
 // Control UI module owns the application gateway store: the reactive
 // snapshot around GatewayBrowserClient consumed by the app shell.
@@ -345,7 +345,7 @@ export function createApplicationGateway(
         : undefined,
       bootstrapProfile: nextConnection.bootstrapProfile,
       password: nextConnection.password.trim() ? nextConnection.password : undefined,
-      clientName: "openclaw-control-ui",
+      clientName: "afora-control-ui",
       clientVersion: CONTROL_UI_BUILD_INFO.version ?? "dev",
       clientBuildId: CONTROL_UI_BUILD_INFO.buildId,
       mode: "webchat",

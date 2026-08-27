@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 import { createPluginGatewayMethodDescriptor } from "../gateway/methods/registry.js";
 import type { OperatorScope } from "../gateway/operator-scopes.js";
@@ -18,10 +18,10 @@ import type {
 } from "./registry-types.js";
 import type { SessionCatalogProvider } from "./session-catalog.js";
 import type {
-  OpenClawPluginChannelRegistration,
-  OpenClawPluginHostedMediaResolver,
-  OpenClawPluginHttpRouteParams,
-  OpenClawPluginMcpServerConnectionResolver,
+  AforaPluginChannelRegistration,
+  AforaPluginHostedMediaResolver,
+  AforaPluginHttpRouteParams,
+  AforaPluginMcpServerConnectionResolver,
   PluginRegistrationMode,
 } from "./types.js";
 
@@ -139,7 +139,7 @@ export function createNetworkRegistrars(state: PluginRegistryState) {
   const canDispatchGatewayMethodsFromHttpRoute = (record: PluginRecord): boolean =>
     (record.contracts?.gatewayMethodDispatch ?? []).includes(GATEWAY_METHOD_DISPATCH_CONTRACT);
 
-  const registerHttpRoute = (record: PluginRecord, params: OpenClawPluginHttpRouteParams) => {
+  const registerHttpRoute = (record: PluginRecord, params: AforaPluginHttpRouteParams) => {
     const normalizedPath = normalizePluginHttpPath(params.path);
     if (!normalizedPath) {
       pushDiagnostic({
@@ -231,7 +231,7 @@ export function createNetworkRegistrars(state: PluginRegistryState) {
 
   const registerHostedMediaResolver = (
     record: PluginRecord,
-    resolver: OpenClawPluginHostedMediaResolver,
+    resolver: AforaPluginHostedMediaResolver,
   ) => {
     if (typeof resolver !== "function") {
       pushDiagnostic({
@@ -253,7 +253,7 @@ export function createNetworkRegistrars(state: PluginRegistryState) {
 
   const registerMcpServerConnectionResolver = (
     record: PluginRecord,
-    resolver: OpenClawPluginMcpServerConnectionResolver,
+    resolver: AforaPluginMcpServerConnectionResolver,
   ) => {
     const serverName = normalizeOptionalString(resolver?.serverName);
     if (!serverName || typeof resolver.resolve !== "function") {
@@ -300,7 +300,7 @@ export function createNetworkRegistrars(state: PluginRegistryState) {
 
   const registerChannel = (
     record: PluginRecord,
-    registration: OpenClawPluginChannelRegistration | ChannelPlugin,
+    registration: AforaPluginChannelRegistration | ChannelPlugin,
     mode: PluginRegistrationMode = "full",
     resolveChannelRuntime?: PluginChannelRegistration["resolveChannelRuntime"],
   ) => {
@@ -315,8 +315,8 @@ export function createNetworkRegistrars(state: PluginRegistryState) {
     }
     const registrationCapabilities = resolvePluginRegistrationCapabilities(mode);
     const normalized =
-      typeof (registration as OpenClawPluginChannelRegistration).plugin === "object"
-        ? (registration as OpenClawPluginChannelRegistration)
+      typeof (registration as AforaPluginChannelRegistration).plugin === "object"
+        ? (registration as AforaPluginChannelRegistration)
         : { plugin: registration as ChannelPlugin };
     const plugin = normalizeRegisteredChannelPlugin({
       pluginId: record.id,

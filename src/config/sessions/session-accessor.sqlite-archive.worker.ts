@@ -1,8 +1,8 @@
 /** Worker entrypoint for SQLite transcript archive materialization off the gateway event loop. */
 import { parentPort, workerData } from "node:worker_threads";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../../infra/kysely-sync.js";
-import { withOpenClawAgentDatabaseReadOnly } from "../../state/openclaw-agent-db-readonly.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
+import { withAforaAgentDatabaseReadOnly } from "../../state/afora-agent-db-readonly.js";
+import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.generated.js";
 import {
   encodeMaterializedSessionTranscriptArchive,
   hashSessionArchiveBytes,
@@ -23,7 +23,7 @@ import type { SessionStateDeleteSnapshot } from "./session-accessor.sqlite-delet
 import { serializeJsonlLines } from "./transcript-jsonl.js";
 
 type TranscriptArchiveDatabase = Pick<
-  OpenClawAgentKyselyDatabase,
+  AforaAgentKyselyDatabase,
   "session_transcript_archives" | "transcript_events"
 >;
 
@@ -153,7 +153,7 @@ function readTranscriptArchiveContent(
 export function materializeTranscriptArchiveInWorker(
   plan: TranscriptArchiveWorkerPlan,
 ): TranscriptArchiveWorkerResult {
-  const opened = withOpenClawAgentDatabaseReadOnly(
+  const opened = withAforaAgentDatabaseReadOnly(
     (database) => {
       let transactionOpen = false;
       try {
@@ -206,7 +206,7 @@ export function publishTranscriptArchiveInWorker(
   plan: TranscriptArchivePublishPlan,
 ): TranscriptArchivePublishResult {
   try {
-    const opened = withOpenClawAgentDatabaseReadOnly(
+    const opened = withAforaAgentDatabaseReadOnly(
       (database) => {
         const db = getNodeSqliteKysely<TranscriptArchiveDatabase>(database.db);
         return executeSqliteQuerySync(

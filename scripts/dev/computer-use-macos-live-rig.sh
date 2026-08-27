@@ -100,44 +100,44 @@ try {
 NODE
   )
   [[ ${#rig_values[@]} -eq 12 ]] || fail "invalid $rig_path"
-  OPENCLAW_CU_RIG_PLATFORM="${rig_values[0]}"
-  OPENCLAW_CU_RIG_ROOT="${rig_values[1]}"
-  OPENCLAW_CU_RIG_PROFILE="${rig_values[2]}"
-  OPENCLAW_CU_RIG_PORT="${rig_values[3]}"
-  OPENCLAW_CU_RIG_APP="${rig_values[4]}"
-  OPENCLAW_CU_RIG_APP_STATE="${rig_values[5]}"
-  OPENCLAW_CU_RIG_GATEWAY_CONFIG="${rig_values[6]}"
-  OPENCLAW_CU_RIG_AGENT_STATE="${rig_values[7]}"
-  OPENCLAW_CU_RIG_NODE_CONFIG="${rig_values[8]}"
-  OPENCLAW_CU_RIG_NODE_STATE="${rig_values[9]}"
-  OPENCLAW_CU_RIG_DISPLAY="${rig_values[10]}"
-  OPENCLAW_CU_RIG_GATEWAY_STATE="${rig_values[11]}"
-  [[ "$OPENCLAW_CU_RIG_ROOT" == "$repo_root" ]] ||
-    fail "rig belongs to a different checkout: $OPENCLAW_CU_RIG_ROOT"
-  [[ "$OPENCLAW_CU_RIG_PROFILE" =~ ^[A-Za-z0-9][A-Za-z0-9_-]+$ ]] || fail "invalid rig profile"
-  [[ "$OPENCLAW_CU_RIG_PORT" =~ ^[0-9]+$ ]] || fail "invalid rig port"
-  ((OPENCLAW_CU_RIG_PORT >= 1024 && OPENCLAW_CU_RIG_PORT <= 65535)) || fail "invalid rig port"
-  ((OPENCLAW_CU_RIG_PORT != 18789)) || fail "operator port is not valid rig state"
-  [[ "$OPENCLAW_CU_RIG_GATEWAY_CONFIG" == "$scratch/gateway.json" ]] ||
+  AFORA_CU_RIG_PLATFORM="${rig_values[0]}"
+  AFORA_CU_RIG_ROOT="${rig_values[1]}"
+  AFORA_CU_RIG_PROFILE="${rig_values[2]}"
+  AFORA_CU_RIG_PORT="${rig_values[3]}"
+  AFORA_CU_RIG_APP="${rig_values[4]}"
+  AFORA_CU_RIG_APP_STATE="${rig_values[5]}"
+  AFORA_CU_RIG_GATEWAY_CONFIG="${rig_values[6]}"
+  AFORA_CU_RIG_AGENT_STATE="${rig_values[7]}"
+  AFORA_CU_RIG_NODE_CONFIG="${rig_values[8]}"
+  AFORA_CU_RIG_NODE_STATE="${rig_values[9]}"
+  AFORA_CU_RIG_DISPLAY="${rig_values[10]}"
+  AFORA_CU_RIG_GATEWAY_STATE="${rig_values[11]}"
+  [[ "$AFORA_CU_RIG_ROOT" == "$repo_root" ]] ||
+    fail "rig belongs to a different checkout: $AFORA_CU_RIG_ROOT"
+  [[ "$AFORA_CU_RIG_PROFILE" =~ ^[A-Za-z0-9][A-Za-z0-9_-]+$ ]] || fail "invalid rig profile"
+  [[ "$AFORA_CU_RIG_PORT" =~ ^[0-9]+$ ]] || fail "invalid rig port"
+  ((AFORA_CU_RIG_PORT >= 1024 && AFORA_CU_RIG_PORT <= 65535)) || fail "invalid rig port"
+  ((AFORA_CU_RIG_PORT != 18789)) || fail "operator port is not valid rig state"
+  [[ "$AFORA_CU_RIG_GATEWAY_CONFIG" == "$scratch/gateway.json" ]] ||
     fail "rig gateway config is outside its scratch directory"
-  [[ "$OPENCLAW_CU_RIG_AGENT_STATE" == "$scratch/agent-state" ]] ||
+  [[ "$AFORA_CU_RIG_AGENT_STATE" == "$scratch/agent-state" ]] ||
     fail "rig agent state is outside its scratch directory"
-  case "$OPENCLAW_CU_RIG_PLATFORM" in
+  case "$AFORA_CU_RIG_PLATFORM" in
     macos)
-      [[ "$OPENCLAW_CU_RIG_APP" = /* ]] || fail "invalid rig app path"
-      [[ "$OPENCLAW_CU_RIG_APP_STATE" == "$HOME/.openclaw-$OPENCLAW_CU_RIG_PROFILE" ]] ||
+      [[ "$AFORA_CU_RIG_APP" = /* ]] || fail "invalid rig app path"
+      [[ "$AFORA_CU_RIG_APP_STATE" == "$HOME/.afora-$AFORA_CU_RIG_PROFILE" ]] ||
         fail "rig app state does not match its profile"
-      [[ "$OPENCLAW_CU_RIG_GATEWAY_STATE" == "$OPENCLAW_CU_RIG_APP_STATE" ]] ||
+      [[ "$AFORA_CU_RIG_GATEWAY_STATE" == "$AFORA_CU_RIG_APP_STATE" ]] ||
         fail "invalid macOS gateway state"
       ;;
     linux)
-      [[ "$OPENCLAW_CU_RIG_NODE_CONFIG" == "$scratch/node.json" ]] ||
+      [[ "$AFORA_CU_RIG_NODE_CONFIG" == "$scratch/node.json" ]] ||
         fail "rig node config is outside its scratch directory"
-      [[ "$OPENCLAW_CU_RIG_NODE_STATE" == "$scratch/node-state" ]] ||
+      [[ "$AFORA_CU_RIG_NODE_STATE" == "$scratch/node-state" ]] ||
         fail "rig node state is outside its scratch directory"
-      [[ "$OPENCLAW_CU_RIG_GATEWAY_STATE" == "$scratch/gateway-state" ]] ||
+      [[ "$AFORA_CU_RIG_GATEWAY_STATE" == "$scratch/gateway-state" ]] ||
         fail "rig gateway state is outside its scratch directory"
-      [[ -n "$OPENCLAW_CU_RIG_DISPLAY" ]] || fail "invalid Linux display"
+      [[ -n "$AFORA_CU_RIG_DISPLAY" ]] || fail "invalid Linux display"
       ;;
     *) fail "invalid rig platform" ;;
   esac
@@ -165,7 +165,7 @@ prepare() {
 
   local app_path
   app_path="$(cd "$(dirname "$app_input")" && pwd)/$(basename "$app_input")"
-  local app_executable="$app_path/Contents/MacOS/OpenClaw"
+  local app_executable="$app_path/Contents/MacOS/Afora"
   [[ -x "$app_executable" ]] || fail "signed app executable not found: $app_executable"
   codesign --verify --deep --strict "$app_path" >/dev/null 2>&1 ||
     fail "app is not a valid signed bundle: $app_path"
@@ -175,8 +175,8 @@ prepare() {
   git -C "$repo_root" diff --cached --quiet -- src packages extensions scripts ||
     fail "runtime sources are staged but uncommitted; commit and rebuild first"
 
-  local app_state="$HOME/.openclaw-$profile"
-  local defaults_domain="ai.openclaw.mac.profile.$profile"
+  local app_state="$HOME/.afora-$profile"
+  local defaults_domain="ai.afora.mac.profile.$profile"
   [[ ! -e "$app_state" && ! -L "$app_state" ]] ||
     fail "$app_state already exists; choose a fresh proof profile"
   if defaults read "$defaults_domain" >/dev/null 2>&1; then
@@ -185,7 +185,7 @@ prepare() {
   [[ ! -e "$scratch/rig.json" ]] || fail "$scratch already contains a rig"
   mkdir -p "$scratch" "$scratch/agent-state" "$scratch/cli-state"
 
-  local app_config="$app_state/openclaw.json"
+  local app_config="$app_state/afora.json"
   local staged_app_config="$scratch/app.json"
   local gateway_config="$scratch/gateway.json"
 
@@ -218,14 +218,14 @@ NODE
   cp "$staged_app_config" "$app_config"
   chmod 600 "$app_config" "$gateway_config"
 
-  defaults write "$defaults_domain" openclaw.macNodeIdentityProfile -string node
-  defaults write "$defaults_domain" openclaw.connectionMode -string remote
-  defaults write "$defaults_domain" openclaw.pauseEnabled -bool false
-  defaults write "$defaults_domain" openclaw.computerControlEnabled -bool true
-  defaults write "$defaults_domain" openclaw.computerControlProvider -string "$provider"
-  defaults write "$defaults_domain" openclaw.gatewayProjectRootPath -string "$repo_root"
-  defaults write "$defaults_domain" openclaw.onboardingSeen -bool true
-  defaults write "$defaults_domain" openclaw.onboardingVersion -int 8
+  defaults write "$defaults_domain" afora.macNodeIdentityProfile -string node
+  defaults write "$defaults_domain" afora.connectionMode -string remote
+  defaults write "$defaults_domain" afora.pauseEnabled -bool false
+  defaults write "$defaults_domain" afora.computerControlEnabled -bool true
+  defaults write "$defaults_domain" afora.computerControlProvider -string "$provider"
+  defaults write "$defaults_domain" afora.gatewayProjectRootPath -string "$repo_root"
+  defaults write "$defaults_domain" afora.onboardingSeen -bool true
+  defaults write "$defaults_domain" afora.onboardingVersion -int 8
 
   node - "$repo_root" "$profile" "$port" "$app_path" "$app_state" "$gateway_config" "$scratch/agent-state" >"$scratch/rig.json" <<'NODE'
 const [root, profile, port, app, appState, gatewayConfig, agentState] = process.argv.slice(2);
@@ -320,57 +320,57 @@ NODE
   echo "prepared isolated Linux X11 profile $profile on ws://127.0.0.1:$port ($DISPLAY)"
   echo "gateway: $0 gateway $scratch"
   echo "node:    $0 node $scratch"
-  echo "fixture: $0 fixture $scratch 'OpenClaw CUA X11 Target' 'OpenClaw X11 Sentinel' 'W3-LINUX BEFORE'"
+  echo "fixture: $0 fixture $scratch 'Afora CUA X11 Target' 'Afora X11 Sentinel' 'W3-LINUX BEFORE'"
   echo "nodes:   $0 nodes $scratch"
 }
 
 run_gateway() {
   [[ $# -eq 1 ]] || { usage; exit 2; }
   load_rig "$1"
-  require_unoccupied_port "$OPENCLAW_CU_RIG_PORT"
+  require_unoccupied_port "$AFORA_CU_RIG_PORT"
   local auth_mode="none"
-  [[ "$OPENCLAW_CU_RIG_PLATFORM" == "linux" ]] && auth_mode="token"
+  [[ "$AFORA_CU_RIG_PLATFORM" == "linux" ]] && auth_mode="token"
   exec env \
-    OPENCLAW_CONFIG_PATH="$OPENCLAW_CU_RIG_GATEWAY_CONFIG" \
-    OPENCLAW_STATE_DIR="$OPENCLAW_CU_RIG_GATEWAY_STATE" \
-    node "$repo_root/scripts/run-node.mjs" --profile "$OPENCLAW_CU_RIG_PROFILE" \
-      gateway run --port "$OPENCLAW_CU_RIG_PORT" --auth "$auth_mode" --verbose
+    AFORA_CONFIG_PATH="$AFORA_CU_RIG_GATEWAY_CONFIG" \
+    AFORA_STATE_DIR="$AFORA_CU_RIG_GATEWAY_STATE" \
+    node "$repo_root/scripts/run-node.mjs" --profile "$AFORA_CU_RIG_PROFILE" \
+      gateway run --port "$AFORA_CU_RIG_PORT" --auth "$auth_mode" --verbose
 }
 
 run_app() {
   [[ $# -ge 1 && $# -le 2 ]] || { usage; exit 2; }
   load_rig "$1"
-  [[ "$OPENCLAW_CU_RIG_PLATFORM" == "macos" ]] || fail "app is available only for macOS rigs"
+  [[ "$AFORA_CU_RIG_PLATFORM" == "macos" ]] || fail "app is available only for macOS rigs"
   local provider="${2:-peekaboo}"
   validate_provider "$provider"
-  defaults write "ai.openclaw.mac.profile.$OPENCLAW_CU_RIG_PROFILE" \
-    openclaw.computerControlProvider -string "$provider"
-  exec env OPENCLAW_PROFILE="$OPENCLAW_CU_RIG_PROFILE" \
-    "$OPENCLAW_CU_RIG_APP/Contents/MacOS/OpenClaw"
+  defaults write "ai.afora.mac.profile.$AFORA_CU_RIG_PROFILE" \
+    afora.computerControlProvider -string "$provider"
+  exec env AFORA_PROFILE="$AFORA_CU_RIG_PROFILE" \
+    "$AFORA_CU_RIG_APP/Contents/MacOS/Afora"
 }
 
 run_node() {
   [[ $# -eq 1 ]] || { usage; exit 2; }
   load_rig "$1"
-  [[ "$OPENCLAW_CU_RIG_PLATFORM" == "linux" ]] || fail "node is available only for Linux rigs"
+  [[ "$AFORA_CU_RIG_PLATFORM" == "linux" ]] || fail "node is available only for Linux rigs"
   require_linux_x11
-  [[ "$DISPLAY" == "$OPENCLAW_CU_RIG_DISPLAY" ]] || fail "DISPLAY does not match rig state"
+  [[ "$DISPLAY" == "$AFORA_CU_RIG_DISPLAY" ]] || fail "DISPLAY does not match rig state"
   exec env \
-    DISPLAY="$OPENCLAW_CU_RIG_DISPLAY" \
-    OPENCLAW_CONFIG_PATH="$OPENCLAW_CU_RIG_NODE_CONFIG" \
-    OPENCLAW_STATE_DIR="$OPENCLAW_CU_RIG_NODE_STATE" \
-    node "$repo_root/scripts/run-node.mjs" --profile "$OPENCLAW_CU_RIG_PROFILE" \
-      node run --host 127.0.0.1 --port "$OPENCLAW_CU_RIG_PORT" \
-      --display-name "OpenClaw CUA X11 Live Proof"
+    DISPLAY="$AFORA_CU_RIG_DISPLAY" \
+    AFORA_CONFIG_PATH="$AFORA_CU_RIG_NODE_CONFIG" \
+    AFORA_STATE_DIR="$AFORA_CU_RIG_NODE_STATE" \
+    node "$repo_root/scripts/run-node.mjs" --profile "$AFORA_CU_RIG_PROFILE" \
+      node run --host 127.0.0.1 --port "$AFORA_CU_RIG_PORT" \
+      --display-name "Afora CUA X11 Live Proof"
 }
 
 run_fixture() {
   [[ $# -eq 4 ]] || { usage; exit 2; }
   local scratch="$1"
   load_rig "$scratch"
-  [[ "$OPENCLAW_CU_RIG_PLATFORM" == "linux" ]] || fail "fixture is available only for Linux rigs"
+  [[ "$AFORA_CU_RIG_PLATFORM" == "linux" ]] || fail "fixture is available only for Linux rigs"
   require_linux_x11
-  [[ "$DISPLAY" == "$OPENCLAW_CU_RIG_DISPLAY" ]] || fail "DISPLAY does not match rig state"
+  [[ "$DISPLAY" == "$AFORA_CU_RIG_DISPLAY" ]] || fail "DISPLAY does not match rig state"
   command -v python3 >/dev/null || fail "python3 is required for the Linux proof fixture"
   command -v xmessage >/dev/null || fail "xmessage is required for the Linux proof sentinel"
 
@@ -406,8 +406,8 @@ run_nodes() {
   # keeps its own identity here; the proof client stays in agent-state, where it
   # is admitted unpaired as a local backend and keeps operator.write.
   exec env \
-    OPENCLAW_CONFIG_PATH="$OPENCLAW_CU_RIG_GATEWAY_CONFIG" \
-    OPENCLAW_STATE_DIR="$scratch/cli-state" \
+    AFORA_CONFIG_PATH="$AFORA_CU_RIG_GATEWAY_CONFIG" \
+    AFORA_STATE_DIR="$scratch/cli-state" \
     node "$repo_root/scripts/run-node.mjs" nodes list --json
 }
 
@@ -415,8 +415,8 @@ run_approve() {
   [[ $# -eq 2 ]] || { usage; exit 2; }
   load_rig "$1"
   exec env \
-    OPENCLAW_CONFIG_PATH="$OPENCLAW_CU_RIG_GATEWAY_CONFIG" \
-    OPENCLAW_STATE_DIR="$OPENCLAW_CU_RIG_AGENT_STATE" \
+    AFORA_CONFIG_PATH="$AFORA_CU_RIG_GATEWAY_CONFIG" \
+    AFORA_STATE_DIR="$AFORA_CU_RIG_AGENT_STATE" \
     node "$repo_root/scripts/run-node.mjs" nodes approve "$2" --json
 }
 
@@ -426,10 +426,10 @@ run_proof() {
   load_rig "$scratch"
   local provider="$2"
   validate_provider "$provider"
-  if [[ "$OPENCLAW_CU_RIG_PLATFORM" == "linux" ]]; then
+  if [[ "$AFORA_CU_RIG_PLATFORM" == "linux" ]]; then
     [[ "$provider" == "cua" ]] || fail "Linux rig supports only the CUA provider"
     require_linux_x11
-    [[ "$DISPLAY" == "$OPENCLAW_CU_RIG_DISPLAY" ]] || fail "DISPLAY does not match rig state"
+    [[ "$DISPLAY" == "$AFORA_CU_RIG_DISPLAY" ]] || fail "DISPLAY does not match rig state"
   fi
   local args=(
     --provider "$provider"
@@ -441,8 +441,8 @@ run_proof() {
     args+=(--element-label "$5")
   fi
   exec env \
-    OPENCLAW_CONFIG_PATH="$OPENCLAW_CU_RIG_GATEWAY_CONFIG" \
-    OPENCLAW_STATE_DIR="$OPENCLAW_CU_RIG_AGENT_STATE" \
+    AFORA_CONFIG_PATH="$AFORA_CU_RIG_GATEWAY_CONFIG" \
+    AFORA_STATE_DIR="$AFORA_CU_RIG_AGENT_STATE" \
     node --import tsx "$repo_root/scripts/dev/computer-use-macos-live-proof.ts" "${args[@]}"
 }
 

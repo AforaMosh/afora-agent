@@ -20,7 +20,7 @@ export type CaptureSessionRecord = {
   startedAt: number;
   endedAt?: number;
   mode: string;
-  sourceScope: "openclaw";
+  sourceScope: "afora";
   sourceProcess: string;
   proxyUrl?: string;
   /** @deprecated Capture storage now lives in the shared state database. */
@@ -45,7 +45,7 @@ export type SharedCaptureBlobRecord = Omit<CaptureBlobRecord, "path"> & {
 export type CaptureEventRecord = {
   sessionId: string;
   ts: number;
-  sourceScope: "openclaw";
+  sourceScope: "afora";
   sourceProcess: string;
   protocol: CaptureProtocol;
   direction: CaptureDirection;

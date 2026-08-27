@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 // Covers plugin status snapshots built from registry state.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   readPersistedInstalledPluginIndex,
@@ -26,11 +26,11 @@ import { writeManagedNpmPlugin } from "./test-helpers/managed-npm-plugin.js";
 const tempDirs: string[] = [];
 
 function makeTempDir() {
-  return makeTrackedTempDir("openclaw-plugin-status", tempDirs);
+  return makeTrackedTempDir("afora-plugin-status", tempDirs);
 }
 
 function createWorkspacePluginFixture(workspaceDir: string, pluginId: string) {
-  const rootDir = path.join(workspaceDir, ".openclaw", "extensions", pluginId);
+  const rootDir = path.join(workspaceDir, ".afora", "extensions", pluginId);
   fs.mkdirSync(rootDir, { recursive: true });
   return createColdPluginFixture({
     rootDir,
@@ -97,8 +97,8 @@ describe("buildPluginRegistrySnapshotReport", () => {
     const gadget = createWorkspacePluginFixture(gadgetWorkspace, "gadget-plugin");
     const env = {
       ...createColdPluginHermeticEnv(tempRoot, { bundledPluginsDir: makeTempDir() }),
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_STATE_DIR: path.join(tempRoot, "state"),
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_STATE_DIR: path.join(tempRoot, "state"),
     };
     const config = {
       agents: {
@@ -157,8 +157,8 @@ describe("buildPluginRegistrySnapshotReport", () => {
     const gadget = createWorkspacePluginFixture(gadgetWorkspace, "gadget-plugin");
     const env = {
       ...createColdPluginHermeticEnv(tempRoot, { bundledPluginsDir: makeTempDir() }),
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_STATE_DIR: stateDir,
     };
     const makeConfig = (reverse: boolean) => ({
       agents: {
@@ -215,8 +215,8 @@ describe("buildPluginRegistrySnapshotReport", () => {
     const gadget = createWorkspacePluginFixture(gadgetWorkspace, "gadget-plugin");
     const env = {
       ...createColdPluginHermeticEnv(tempRoot, { bundledPluginsDir: makeTempDir() }),
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_STATE_DIR: stateDir,
     };
     const ownerlessConfig = {
       agents: {
@@ -332,8 +332,8 @@ describe("buildPluginRegistrySnapshotReport", () => {
       ...createColdPluginHermeticEnv(tempRoot, {
         bundledPluginsDir: makeTempDir(),
       }),
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_STATE_DIR: stateDir,
     };
     const config = {
       plugins: {
@@ -344,7 +344,7 @@ describe("buildPluginRegistrySnapshotReport", () => {
     };
     const whatsappDir = writeManagedNpmPlugin({
       stateDir,
-      packageName: "@openclaw/whatsapp",
+      packageName: "@afora/whatsapp",
       pluginId: "whatsapp",
       version: "2026.5.2",
       name: "WhatsApp",
@@ -380,7 +380,7 @@ describe("buildPluginRegistrySnapshotReport", () => {
     const fixture = createColdPluginFixture({
       rootDir: makeTempDir(),
       pluginId: "indexed-demo",
-      packageName: "@example/openclaw-indexed-demo",
+      packageName: "@example/afora-indexed-demo",
       packageVersion: "9.8.7",
       manifest: {
         id: "indexed-demo",
@@ -389,7 +389,7 @@ describe("buildPluginRegistrySnapshotReport", () => {
         version: "1.2.3",
         providers: ["indexed-provider"],
         contracts: {
-          agentToolResultMiddleware: ["openclaw", "codex"],
+          agentToolResultMiddleware: ["afora", "codex"],
           speechProviders: ["indexed-speech-provider"],
           realtimeTranscriptionProviders: ["indexed-transcription-provider"],
           realtimeVoiceProviders: ["indexed-voice-provider"],
@@ -418,7 +418,7 @@ describe("buildPluginRegistrySnapshotReport", () => {
       name: "Indexed Demo",
       description: "Manifest-backed list metadata",
       version: "9.8.7",
-      format: "openclaw",
+      format: "afora",
       providerIds: ["indexed-provider"],
       speechProviderIds: ["indexed-speech-provider"],
       realtimeTranscriptionProviderIds: ["indexed-transcription-provider"],
@@ -426,7 +426,7 @@ describe("buildPluginRegistrySnapshotReport", () => {
       toolNames: ["indexed_echo", "indexed_search"],
       configSchema: true,
       contracts: {
-        agentToolResultMiddleware: ["openclaw", "codex"],
+        agentToolResultMiddleware: ["afora", "codex"],
         speechProviders: ["indexed-speech-provider"],
         realtimeTranscriptionProviders: ["indexed-transcription-provider"],
         realtimeVoiceProviders: ["indexed-voice-provider"],
@@ -446,8 +446,8 @@ describe("buildPluginRegistrySnapshotReport", () => {
     const fixture = createWorkspacePluginFixture(workspaceDir, "configured-workspace-plugin");
     const env = {
       ...createColdPluginHermeticEnv(tempRoot, { bundledPluginsDir: makeTempDir() }),
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_STATE_DIR: path.join(tempRoot, "state"),
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_STATE_DIR: path.join(tempRoot, "state"),
     };
     const config = {
       agents: { defaults: { workspace: workspaceDir } },
@@ -475,8 +475,8 @@ describe("buildPluginRegistrySnapshotReport", () => {
     const fixture = createWorkspacePluginFixture(workspaceDir, "selected-agent-plugin");
     const env = {
       ...createColdPluginHermeticEnv(tempRoot, { bundledPluginsDir: makeTempDir() }),
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_STATE_DIR: path.join(tempRoot, "state"),
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_STATE_DIR: path.join(tempRoot, "state"),
     };
     const config = {
       agents: {
@@ -507,8 +507,8 @@ describe("buildPluginRegistrySnapshotReport", () => {
     const explicit = createWorkspacePluginFixture(explicitWorkspace, "explicit-plugin");
     const env = {
       ...createColdPluginHermeticEnv(tempRoot, { bundledPluginsDir: makeTempDir() }),
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_STATE_DIR: path.join(tempRoot, "state"),
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_STATE_DIR: path.join(tempRoot, "state"),
     };
     const config = {
       agents: { defaults: { workspace: configuredWorkspace } },
@@ -540,8 +540,8 @@ describe("buildPluginRegistrySnapshotReport", () => {
     const fixture = createWorkspacePluginFixture(workspaceDir, "workspace-demo");
     const env = {
       ...createColdPluginHermeticEnv(rootDir, { bundledPluginsDir: makeTempDir() }),
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_STATE_DIR: stateDir,
     };
     const config = {
       agents: { defaults: { workspace: workspaceDir } },
@@ -593,8 +593,8 @@ describe("buildPluginRegistrySnapshotReport", () => {
     const explicit = createWorkspacePluginFixture(explicitWorkspace, "explicit-plugin");
     const env = {
       ...createColdPluginHermeticEnv(rootDir, { bundledPluginsDir: makeTempDir() }),
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_STATE_DIR: stateDir,
     };
 
     const refreshed = await refreshPluginRegistry({
@@ -795,7 +795,7 @@ describe("buildPluginRegistrySnapshotReport", () => {
     const fixture = createColdPluginFixture({
       rootDir: makeTempDir(),
       pluginId: "persisted-demo",
-      packageName: "@example/openclaw-persisted-demo",
+      packageName: "@example/afora-persisted-demo",
       packageVersion: "2.0.0",
       manifest: {
         id: "persisted-demo",

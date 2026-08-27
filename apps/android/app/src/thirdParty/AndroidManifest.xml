@@ -16,7 +16,7 @@
 
     <application>
         <service
-            android:name=".accessibility.OpenClawAccessibilityService"
+            android:name=".accessibility.AforaAccessibilityService"
             android:enabled="false"
             android:exported="true"
             android:label="@string/accessibility_service_label"

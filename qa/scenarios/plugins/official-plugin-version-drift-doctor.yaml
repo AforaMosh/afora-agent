@@ -9,7 +9,7 @@ scenario:
   objective: Verify the real generic version-drift and doctor owners diagnose active official Codex package pins without treating package-host equality as a hard compatibility gate.
   successCriteria:
     - Older and newer exact Codex npm pins produce an advisory plugin-version-drift warning through the generic official-plugin detector.
-    - Doctor identifies plugins.entries.codex and recommends the exact @openclaw/codex Gateway version followed by a Gateway restart.
+    - Doctor identifies plugins.entries.codex and recommends the exact @afora/codex Gateway version followed by a Gateway restart.
     - A trailing numeric correction suffix on either the Codex package or Gateway version is treated as equivalent and produces no drift warning.
   docsRefs:
     - docs/cli/doctor.md

@@ -1,6 +1,6 @@
 /** Synthetic-auth provider ref selection and prepared-catalog resolution for model-runtime builds. */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { ProviderPlugin } from "../plugins/types.js";
 
 // Provider-scoped live builds must not fan ambient synthetic-auth discovery out to every
@@ -31,7 +31,7 @@ export function listPreparedSyntheticAuthProviderRefs(
 }
 
 export function resolvePreparedSyntheticAuth(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   provider: string;
   providers: readonly ProviderPlugin[];
 }): { apiKey?: string } | undefined {

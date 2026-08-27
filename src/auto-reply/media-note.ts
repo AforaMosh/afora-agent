@@ -1,7 +1,7 @@
 /** Builds compact prompt notes for inbound media attachments. */
 import path from "node:path";
-import { isAudioFileName } from "@openclaw/media-core/mime";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { isAudioFileName } from "@afora/media-core/mime";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { normalizeMediaFacts, type MediaFact } from "../media/media-facts.js";
 import { getMediaDir } from "../media/store.js";
 import type { RuntimeMsgContext as MsgContext } from "./templating.js";

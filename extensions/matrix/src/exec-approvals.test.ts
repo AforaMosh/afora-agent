@@ -1,17 +1,17 @@
 // Matrix tests cover exec approvals plugin behavior.
 import path from "node:path";
-import type { ExecApprovalRequest } from "openclaw/plugin-sdk/approval-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { ExecApprovalRequest } from "afora-agent/plugin-sdk/approval-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   normalizeSessionDeliveryState,
   upsertSessionEntry,
-} from "openclaw/plugin-sdk/session-store-runtime";
-import { closeOpenClawAgentDatabasesForTest } from "openclaw/plugin-sdk/sqlite-runtime-testing";
+} from "afora-agent/plugin-sdk/session-store-runtime";
+import { closeAforaAgentDatabasesForTest } from "afora-agent/plugin-sdk/sqlite-runtime-testing";
 import {
-  resolvePreferredOpenClawTmpDir,
+  resolvePreferredAforaTmpDir,
   tempWorkspaceSync,
   type TempWorkspaceSync,
-} from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/temp-path";
 import { afterEach, describe, expect, it } from "vitest";
 import { normalizeMatrixApproverId } from "./approval-ids.js";
 import {
@@ -29,7 +29,7 @@ type MatrixExecApprovalConfig = NonNullable<MatrixAccountConfig["execApprovals"]
 type MatrixExecApprovalRequest = ExecApprovalRequest;
 
 function shouldHandleMatrixExecApprovalRequest(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   request: ExecApprovalRequest;
 }): boolean {
@@ -40,16 +40,16 @@ function shouldHandleMatrixExecApprovalRequest(params: {
 }
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
   for (const workspace of tempWorkspaces.splice(0)) {
     workspace.cleanup();
   }
 });
 
 function buildConfig(
-  execApprovals?: NonNullable<NonNullable<OpenClawConfig["channels"]>["matrix"]>["execApprovals"],
-  channelOverrides?: Partial<NonNullable<NonNullable<OpenClawConfig["channels"]>["matrix"]>>,
-): OpenClawConfig {
+  execApprovals?: NonNullable<NonNullable<AforaConfig["channels"]>["matrix"]>["execApprovals"],
+  channelOverrides?: Partial<NonNullable<NonNullable<AforaConfig["channels"]>["matrix"]>>,
+): AforaConfig {
   return {
     channels: {
       matrix: {
@@ -60,7 +60,7 @@ function buildConfig(
         execApprovals,
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function matrixAccount(
@@ -83,7 +83,7 @@ function buildMultiAccountMatrixConfig(params: {
   opsExecApprovals?: MatrixExecApprovalConfig;
   defaultOverrides?: Partial<MatrixAccountConfig>;
   opsOverrides?: Partial<MatrixAccountConfig>;
-}): OpenClawConfig {
+}): AforaConfig {
   return {
     ...(params.sessionStorePath ? { session: { store: params.sessionStorePath } } : {}),
     channels: {
@@ -108,7 +108,7 @@ function buildMultiAccountMatrixConfig(params: {
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function makeChannelApprovalRequest(params: {
@@ -217,7 +217,7 @@ describe("matrix exec approvals", () => {
           ],
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(isMatrixExecApprovalAuthorizedSender({ cfg, senderId: "@target:example.org" })).toBe(
       true,
@@ -374,8 +374,8 @@ describe("matrix exec approvals", () => {
 
   it("scopes non-matrix turn sources to the stored matrix account", async () => {
     const workspace = tempWorkspaceSync({
-      rootDir: resolvePreferredOpenClawTmpDir(),
-      prefix: "openclaw-matrix-exec-approvals-",
+      rootDir: resolvePreferredAforaTmpDir(),
+      prefix: "afora-matrix-exec-approvals-",
     });
     tempWorkspaces.push(workspace);
     const tmpDir = workspace.dir;

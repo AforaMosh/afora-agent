@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { migratePersistedImplicitMainRoster } from "../../config/legacy.roster.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { runWithAgentRingZeroTools } from "../agent-tools.ring-zero-context.js";
 import { createStubTool } from "../test-helpers/agent-tool-stubs.js";
 import {
@@ -17,7 +17,7 @@ function createAgentHarnessToolSurfaceRuntime(
 ): ReturnType<typeof createAgentHarnessToolSurfaceRuntimeBase> {
   return createAgentHarnessToolSurfaceRuntimeBase({
     ...params,
-    config: migratePersistedImplicitMainRoster(params.config).config as OpenClawConfig,
+    config: migratePersistedImplicitMainRoster(params.config).config as AforaConfig,
   });
 }
 
@@ -25,7 +25,7 @@ function tools(names: string[]) {
   return names.map(createStubTool);
 }
 
-function createRuntime(config: OpenClawConfig) {
+function createRuntime(config: AforaConfig) {
   return createAgentHarnessToolSurfaceRuntime({
     config,
     executeTool: async () => ({ content: [], details: {} }),
@@ -35,25 +35,25 @@ function createRuntime(config: OpenClawConfig) {
 
 describe("createAgentHarnessToolSurfaceRuntime", () => {
   it("suppresses catalog controls for a host-scoped ring-zero run", () => {
-    const openclaw = {
-      ...createStubTool("openclaw"),
+    const afora = {
+      ...createStubTool("afora"),
       catalogMode: "direct-only" as const,
     };
 
-    runWithAgentRingZeroTools([openclaw], () => {
+    runWithAgentRingZeroTools([afora], () => {
       const runtime = createAgentHarnessToolSurfaceRuntime({
         config: { tools: { toolSearch: true } },
         executeTool: async () => ({ content: [], details: {} }),
         modelToolsEnabled: true,
-        runtimeToolAllowlist: ["openclaw"],
-        toolsAllow: ["openclaw"],
+        runtimeToolAllowlist: ["afora"],
+        toolsAllow: ["afora"],
       });
 
       expect(runtime.codeModeControlsEnabled).toBe(false);
       expect(runtime.toolSearchControlsEnabled).toBe(false);
       expect(runtime.includeToolSearchControls).toBe(false);
-      expect(runtime.runtimeToolAllowlist).toEqual(["openclaw"]);
-      expect(runtime.compactTools([openclaw]).tools).toEqual([openclaw]);
+      expect(runtime.runtimeToolAllowlist).toEqual(["afora"]);
+      expect(runtime.compactTools([afora]).tools).toEqual([afora]);
       runtime.cleanup();
     });
   });
@@ -80,7 +80,7 @@ describe("createAgentHarnessToolSurfaceRuntime", () => {
   });
 
   it("filters raw SDK tools but does not refilter prepared constructor output", () => {
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       agents: { defaults: { experimental: { localModelLean: true } } },
       tools: { alsoAllow: ["image_generate"], toolSearch: { enabled: false } },
     };
@@ -100,7 +100,7 @@ describe("createAgentHarnessToolSurfaceRuntime", () => {
   });
 
   it("keeps exec direct in lean structured Tool Search mode", () => {
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       agents: { defaults: { experimental: { localModelLean: true } } },
     };
     const runtime = createRuntime(config);
@@ -128,7 +128,7 @@ describe("createAgentHarnessToolSurfaceRuntime", () => {
   });
 
   it("keeps directory tool schemas stable across unrelated user prompts", () => {
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       tools: { toolSearch: { enabled: true, mode: "directory" } },
     };
     const availableTools = tools([
@@ -295,7 +295,7 @@ describe("createAgentHarnessToolSurfaceRuntime", () => {
   it("preserves explicit code-mode compaction for lean runs", () => {
     testing.setToolSearchCodeModeSupportedForTest(true);
     try {
-      const config: OpenClawConfig = {
+      const config: AforaConfig = {
         agents: { defaults: { experimental: { localModelLean: true } } },
         tools: { toolSearch: { mode: "code" } },
       };

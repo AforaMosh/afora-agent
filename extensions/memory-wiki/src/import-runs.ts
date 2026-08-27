@@ -1,5 +1,5 @@
 // Memory Wiki plugin module implements import runs behavior.
-import { uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { ResolvedMemoryWikiConfig } from "./config.js";
 import {
   listMemoryWikiImportRunRecords,

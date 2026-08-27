@@ -1,6 +1,6 @@
 ---
 name: browser-automation
-description: Use when controlling web pages with the OpenClaw browser tool, especially multi-step flows, login checks, tab management, or recovery from stale refs/timeouts.
+description: Use when controlling web pages with the Afora browser tool, especially multi-step flows, login checks, tab management, or recovery from stale refs/timeouts.
 user-invocable: false
 ---
 
@@ -11,7 +11,7 @@ Use this skill when you need the `browser` tool for anything beyond a single pag
 ## Operating Loop
 
 1. Check browser state before acting:
-   - `openclaw browser doctor` or `action="status"` when the browser/plugin setup itself may be broken.
+   - `afora browser doctor` or `action="status"` when the browser/plugin setup itself may be broken.
    - `action="status"` for availability.
    - `action="profiles"` if login state or profile choice matters.
    - `action="tabs"` before opening a new tab if retries/timeouts may have left windows behind.
@@ -39,9 +39,9 @@ Use this skill when you need the `browser` tool for anything beyond a single pag
 
 ## Browser batch CLI
 
-`openclaw browser batch` runs an array of nested `/act` actions in one `/act` call (the same `kind="batch"` runtime reached through the agent tool), so CLI users and scripts can combine actions like `wait`, `click`, `type`, and `evaluate` into a single replayable plan without per-action round trips. Each entry in `actions[]` is a `BrowserActRequest` — the closed union the `/act` route accepts — not arbitrary `openclaw browser` subcommands. `batch` is not supported on `profile="user"` and other existing-session (chrome-mcp) profiles; send actions individually there.
+`afora browser batch` runs an array of nested `/act` actions in one `/act` call (the same `kind="batch"` runtime reached through the agent tool), so CLI users and scripts can combine actions like `wait`, `click`, `type`, and `evaluate` into a single replayable plan without per-action round trips. Each entry in `actions[]` is a `BrowserActRequest` — the closed union the `/act` route accepts — not arbitrary `afora browser` subcommands. `batch` is not supported on `profile="user"` and other existing-session (chrome-mcp) profiles; send actions individually there.
 
-- CLI: `openclaw browser batch --actions '<json>'`, `--actions-file plan.json`, or `--actions-file -` for stdin. `--continue` sets `stopOnError=false`; default stops on first error.
+- CLI: `afora browser batch --actions '<json>'`, `--actions-file plan.json`, or `--actions-file -` for stdin. `--continue` sets `stopOnError=false`; default stops on first error.
 - Ref lifecycle: refs come from a `snapshot` run before the batch (snapshot is not a nested action). A nested action that changes page state — such as a `click` that triggers navigation, or an `evaluate` that mutates the DOM — can invalidate earlier refs for the rest of the batch; put state-changing actions first, or split into a follow-up batch after re-snapshotting. Navigation and re-snapshotting happen outside the batch, since `open`, `navigate`, and `snapshot` are not `/act` kinds.
 - Target id: nested actions share the request's tab; an explicit nested `targetId` that resolves to a different tab is rejected with `ACT_TARGET_ID_MISMATCH`.
 - Response: `{ "results": [{ "ok": true } | { "ok": false, "error": "..." }, ...] }` in order; with default `stopOnError` the array ends at the first failure. Any failed entry exits nonzero; use `--json` to preserve the full response in scripts.
@@ -51,7 +51,7 @@ Use this skill when you need the `browser` tool for anything beyond a single pag
 When `tools.codeMode` is enabled, call the Browser tool from exec cells:
 
 ```javascript
-const browserTool = "openclaw:browser:browser";
+const browserTool = "afora:browser:browser";
 let previousSnapshot = "";
 const callBrowser = async (input) => await tools.call(browserTool, input);
 ```
@@ -112,7 +112,7 @@ If a retry creates duplicates, close the extras by `tabId`:
 { "action": "close", "targetId": "t3" }
 ```
 
-Do not pass bare numbers like `"2"` as `targetId`. Numeric tab positions are only for the CLI `openclaw browser tab select 2` helper; browser tool calls need a `suggestedTargetId`, label, `tabId`, or raw target id.
+Do not pass bare numbers like `"2"` as `targetId`. Numeric tab positions are only for the CLI `afora browser tab select 2` helper; browser tool calls need a `suggestedTargetId`, label, `tabId`, or raw target id.
 
 ## Stale Ref Recovery
 

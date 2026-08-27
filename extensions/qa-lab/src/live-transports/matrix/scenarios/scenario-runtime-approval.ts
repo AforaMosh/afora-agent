@@ -1,8 +1,8 @@
 // QA Lab Matrix plugin module implements scenario runtime approval behavior.
 import { randomUUID } from "node:crypto";
 import { setTimeout as sleep } from "node:timers/promises";
-import type { ChannelApprovalKind } from "openclaw/plugin-sdk/approval-handler-runtime";
-import { normalizeUniqueStringEntries } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { ChannelApprovalKind } from "afora-agent/plugin-sdk/approval-handler-runtime";
+import { normalizeUniqueStringEntries } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { MatrixQaObservedEvent } from "../substrate/events.js";
 import {
   MATRIX_QA_DRIVER_DM_ROOM_KEY,

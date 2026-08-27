@@ -1,6 +1,6 @@
 /** Lightweight reply-option contract for prepared plugin command ownership. */
 export const PLUGIN_COMMAND_DISPATCH: unique symbol = Symbol.for(
-  "openclaw.pluginCommandDispatch",
+  "afora.pluginCommandDispatch",
 ) as never;
 
 export type PluginCommandReplyOptions = Readonly<{

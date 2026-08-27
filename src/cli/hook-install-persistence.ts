@@ -1,6 +1,6 @@
 // CLI persistence for hook-pack installs.
 import { replaceConfigFile } from "../config/config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { type HookInstallUpdate, recordHookInstall } from "../hooks/installs.js";
 import type { ConfigSnapshotForInstallPersist } from "../plugins/install-persistence.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
@@ -13,7 +13,7 @@ export async function persistHookPackInstall(params: {
   install: Omit<HookInstallUpdate, "hookId" | "hooks">;
   successMessage?: string;
   runtime?: RuntimeEnv;
-}): Promise<OpenClawConfig> {
+}): Promise<AforaConfig> {
   const runtime = params.runtime ?? defaultRuntime;
   let next = enableInternalHookEntries(params.snapshot.config, params.hooks);
   next = recordHookInstall(next, {

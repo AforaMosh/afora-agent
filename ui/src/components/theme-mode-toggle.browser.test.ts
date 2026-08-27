@@ -10,7 +10,7 @@ type ThemeModeToggleElement = HTMLElement & {
 
 describe("theme mode toggle", () => {
   it("defaults to system and cycles one button through every mode", async () => {
-    const toggle = document.createElement("openclaw-theme-mode-toggle") as ThemeModeToggleElement;
+    const toggle = document.createElement("afora-theme-mode-toggle") as ThemeModeToggleElement;
     const modes: ThemeMode[] = [];
     toggle.addEventListener("theme-change", ((event: CustomEvent<ThemeModeChangeDetail>) => {
       modes.push(event.detail.mode);

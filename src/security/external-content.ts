@@ -1,6 +1,6 @@
 // Wraps external content with source tags and random boundary tokens.
 import { randomBytes } from "node:crypto";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 export {
   resolveHookExternalContentSource,
   type HookExternalContentSource,

@@ -138,8 +138,8 @@ function cookieJarHeader(jar: ReadonlyMap<string, string>): string {
 }
 
 function portalAuthCookie(portal: { listenPort: number; tokenQuery: string }): string {
-  const token = portal.tokenQuery.slice("openclaw_portal=".length);
-  return `openclaw_portal_${portal.listenPort}=${token}`;
+  const token = portal.tokenQuery.slice("afora_portal=".length);
+  return `afora_portal_${portal.listenPort}=${token}`;
 }
 
 function webSocketMessageText(data: RawData): string {
@@ -186,7 +186,7 @@ describe("portal HTTP proxy", () => {
     expect(authorized.status).toBe(200);
     expect(authorized.body).toBe("proxied");
     expect(authorized.headers["set-cookie"]?.[0]).toContain(
-      `openclaw_portal_${portal.listenPort}=`,
+      `afora_portal_${portal.listenPort}=`,
     );
     expect(authorized.headers["set-cookie"]?.[0]).toContain("HttpOnly; SameSite=Lax; Path=/");
     expect(targetPaths).toEqual(["/preview?x=1"]);
@@ -271,7 +271,7 @@ describe("portal HTTP proxy", () => {
       path: "/asset?q=1",
       headers: {
         Host: "portal.example:9999",
-        Cookie: `openclaw_plugin_tab=secret; ${portalAuthCookie(portal)}`,
+        Cookie: `afora_plugin_tab=secret; ${portalAuthCookie(portal)}`,
         Connection: "keep-alive, x-remove-me",
         "X-Remove-Me": "remove",
       },
@@ -334,9 +334,9 @@ describe("portal HTTP proxy", () => {
         "; ",
       ),
     ).not.toContain("Domain=");
-    expect([...jar.keys()].filter((name) => name.startsWith("openclaw_portal"))).toEqual([
-      `openclaw_portal_${portalA.listenPort}`,
-      `openclaw_portal_${portalB.listenPort}`,
+    expect([...jar.keys()].filter((name) => name.startsWith("afora_portal"))).toEqual([
+      `afora_portal_${portalA.listenPort}`,
+      `afora_portal_${portalB.listenPort}`,
     ]);
 
     expect(await browserCall(jar, { port: portalA.listenPort })).toMatchObject({
@@ -361,12 +361,12 @@ describe("portal HTTP proxy", () => {
       res.end("proxied");
     };
     const portal = await portalService().open({ targetPort });
-    const token = portal.tokenQuery.slice("openclaw_portal=".length);
+    const token = portal.tokenQuery.slice("afora_portal=".length);
 
     const result = await httpCall({
       port: portal.listenPort,
       headers: {
-        Cookie: `openclaw_portal_${portal.listenPort}=${token}`,
+        Cookie: `afora_portal_${portal.listenPort}=${token}`,
         Referer: `http://127.0.0.1:${portal.listenPort}/?${portal.tokenQuery}`,
       },
     });
@@ -456,7 +456,7 @@ describe("portal HTTP proxy", () => {
     let upgradeCookies: string[] | undefined;
     const ws = new WebSocket(
       `ws://127.0.0.1:${portal.listenPort}/hmr?channel=dev&${portal.tokenQuery}`,
-      { headers: { Cookie: "openclaw_plugin_tab=secret" } },
+      { headers: { Cookie: "afora_plugin_tab=secret" } },
     );
     ws.once("upgrade", (response) => {
       upgradeCookies = response.headers["set-cookie"];

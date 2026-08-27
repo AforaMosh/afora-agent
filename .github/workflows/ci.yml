@@ -59,7 +59,7 @@ run-name: ${{ github.event_name == 'workflow_dispatch' && inputs.dispatch_id != 
 concurrency:
   # Canonical main uses run-number parity for two non-canceling slots. Each
   # slot keeps GitHub's single coalesced pending tip while its active run finishes.
-  group: ${{ github.event_name == 'workflow_dispatch' && format('{0}-manual-v1-{1}', github.workflow, github.run_id) || (github.event_name == 'pull_request' && format('{0}-v7-{1}', github.workflow, github.event.pull_request.number) || (github.repository == 'openclaw/openclaw' && github.event_name == 'push' && github.ref == 'refs/heads/main' && format('{0}-v8-{1}-{2}', github.workflow, github.ref, (endsWith(format('{0}', github.run_number), '0') || endsWith(format('{0}', github.run_number), '2') || endsWith(format('{0}', github.run_number), '4') || endsWith(format('{0}', github.run_number), '6') || endsWith(format('{0}', github.run_number), '8')) && 'a' || 'b') || (github.repository == 'openclaw/openclaw' && format('{0}-v7-{1}', github.workflow, github.ref) || format('{0}-v7-{1}-{2}', github.workflow, github.ref, github.sha)))) }}
+  group: ${{ github.event_name == 'workflow_dispatch' && format('{0}-manual-v1-{1}', github.workflow, github.run_id) || (github.event_name == 'pull_request' && format('{0}-v7-{1}', github.workflow, github.event.pull_request.number) || (github.repository == 'AforaMosh/afora-agent' && github.event_name == 'push' && github.ref == 'refs/heads/main' && format('{0}-v8-{1}-{2}', github.workflow, github.ref, (endsWith(format('{0}', github.run_number), '0') || endsWith(format('{0}', github.run_number), '2') || endsWith(format('{0}', github.run_number), '4') || endsWith(format('{0}', github.run_number), '6') || endsWith(format('{0}', github.run_number), '8')) && 'a' || 'b') || (github.repository == 'AforaMosh/afora-agent' && format('{0}-v7-{1}', github.workflow, github.ref) || format('{0}-v7-{1}-{2}', github.workflow, github.ref, github.sha)))) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
@@ -73,7 +73,7 @@ jobs:
     permissions:
       contents: read
     if: github.event_name != 'pull_request' || !github.event.pull_request.draft
-    runs-on: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
+    runs-on: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: 20
     outputs:
       checkout_revision: ${{ steps.checkout_ref.outputs.sha }}
@@ -121,7 +121,7 @@ jobs:
       run_macos_node: ${{ steps.manifest.outputs.run_macos_node }}
       macos_node_matrix: ${{ steps.manifest.outputs.macos_node_matrix }}
       run_macos_swift: ${{ steps.manifest.outputs.run_macos_swift }}
-      run_openclawkit_tests: ${{ steps.manifest.outputs.run_openclawkit_tests }}
+      run_aforakit_tests: ${{ steps.manifest.outputs.run_aforakit_tests }}
       run_ios_build: ${{ steps.manifest.outputs.run_ios_build }}
       run_ios_screenshots: ${{ steps.changed_scope.outputs.run_ios_screenshots }}
       run_android_job: ${{ steps.manifest.outputs.run_android_job }}
@@ -325,7 +325,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ ! "$HISTORICAL_TARGET_TAG" =~ ^v[0-9]{4}\.[0-9]+\.[0-9]+(-(alpha|beta)\.[0-9]+)?$ ]]; then
-            echo "historical_target_tag must be a canonical OpenClaw release tag." >&2
+            echo "historical_target_tag must be a canonical Afora release tag." >&2
             exit 1
           fi
           tag_ref="refs/tags/${HISTORICAL_TARGET_TAG}"
@@ -349,7 +349,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ ! "$RELEASE_CANDIDATE_REF" =~ ^(release/[0-9]{4}\.[0-9]+\.[0-9]+|extended-stable/[0-9]{4}\.[0-9]+\.33)$ ]]; then
-            echo "release_candidate_ref must be a canonical OpenClaw release branch." >&2
+            echo "release_candidate_ref must be a canonical Afora release branch." >&2
             exit 1
           fi
           remote="$(git remote get-url origin)"
@@ -369,7 +369,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ ! "$TARGET_CONTEXT_REF" =~ ^(release/[0-9]{4}\.[0-9]+\.[0-9]+|extended-stable/[0-9]{4}\.[0-9]+\.33)$ ]]; then
-            echo "target_context_ref must be a canonical OpenClaw release branch." >&2
+            echo "target_context_ref must be a canonical Afora release branch." >&2
             exit 1
           fi
           if [[ ! "$TARGET_REF" =~ ^[0-9a-f]{40}$ ]]; then
@@ -397,7 +397,7 @@ jobs:
         if: (github.event_name != 'workflow_dispatch' && steps.docs_scope.outputs.docs_only != 'true') || (github.event_name == 'workflow_dispatch' && inputs.release_gate)
         shell: bash
         env:
-          OPENCLAW_ALLOW_RELEASE_GENERATED_MIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository }}
+          AFORA_ALLOW_RELEASE_GENERATED_MIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           set -euo pipefail
 
@@ -436,31 +436,31 @@ jobs:
       - name: Build CI manifest
         id: manifest
         env:
-          OPENCLAW_CI_DOCS_ONLY: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.docs_scope.outputs.docs_only }}
-          OPENCLAW_CI_DOCS_CHANGED: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.docs_scope.outputs.docs_changed }}
-          OPENCLAW_CI_RUN_NODE: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.changed_scope.outputs.run_node || 'false' }}
+          AFORA_CI_DOCS_ONLY: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.docs_scope.outputs.docs_only }}
+          AFORA_CI_DOCS_CHANGED: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.docs_scope.outputs.docs_changed }}
+          AFORA_CI_RUN_NODE: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.changed_scope.outputs.run_node || 'false' }}
           # Ordinary manual/release validation stays full. A release_gate is a
           # hosted substitute for PR CI, so it must retain the exact Apple scope.
-          OPENCLAW_CI_RUN_MACOS: ${{ github.event_name == 'workflow_dispatch' && !inputs.release_gate && 'true' || steps.changed_scope.outputs.run_macos || 'false' }}
-          OPENCLAW_CI_RUN_IOS_BUILD: ${{ github.event_name == 'workflow_dispatch' && !inputs.release_gate && 'true' || steps.changed_scope.outputs.run_ios_build || 'false' }}
-          OPENCLAW_CI_RUN_ANDROID: ${{ github.event_name == 'workflow_dispatch' && (inputs.release_gate || inputs.include_android) && 'true' || steps.changed_scope.outputs.run_android || 'false' }}
-          OPENCLAW_CI_RUN_WINDOWS: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.changed_scope.outputs.run_windows || 'false' }}
-          OPENCLAW_CI_RUN_NODE_FAST_ONLY: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.changed_scope.outputs.run_node_fast_only || 'false' }}
-          OPENCLAW_CI_RUN_NODE_FAST_PLUGIN_CONTRACTS: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.changed_scope.outputs.run_node_fast_plugin_contracts || 'false' }}
-          OPENCLAW_CI_RUN_NODE_FAST_CI_ROUTING: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.changed_scope.outputs.run_node_fast_ci_routing || 'false' }}
-          OPENCLAW_CI_RUN_SKILLS_PYTHON: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.changed_scope.outputs.run_skills_python || 'false' }}
-          OPENCLAW_CI_RUN_CONTROL_UI_I18N: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.changed_scope.outputs.run_control_ui_i18n || 'false' }}
-          OPENCLAW_CI_RUN_UI_TESTS: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.changed_scope.outputs.run_ui_tests || 'false' }}
-          OPENCLAW_CI_RUN_NATIVE_I18N: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.changed_scope.outputs.run_native_i18n || 'false' }}
-          OPENCLAW_CI_CHANGED_PATHS_JSON: ${{ steps.changed_scope.outputs.changed_paths_json || 'null' }}
-          OPENCLAW_CI_CHECKOUT_REVISION: ${{ steps.checkout_ref.outputs.sha }}
-          OPENCLAW_CI_HISTORICAL_TARGET: ${{ steps.historical_target.outputs.eligible || 'false' }}
-          OPENCLAW_CI_RELEASE_CANDIDATE_TARGET: ${{ steps.release_candidate_target.outputs.eligible || 'false' }}
-          OPENCLAW_CI_TARGET_CONTEXT_TARGET: ${{ steps.target_context_target.outputs.eligible || 'false' }}
-          OPENCLAW_CI_WORKFLOW_REVISION: ${{ github.sha }}
-          OPENCLAW_CI_REPOSITORY: ${{ github.repository }}
-          OPENCLAW_CI_EVENT_NAME: ${{ github.event_name }}
-          OPENCLAW_CI_RUNNER_BACKEND: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND }}
+          AFORA_CI_RUN_MACOS: ${{ github.event_name == 'workflow_dispatch' && !inputs.release_gate && 'true' || steps.changed_scope.outputs.run_macos || 'false' }}
+          AFORA_CI_RUN_IOS_BUILD: ${{ github.event_name == 'workflow_dispatch' && !inputs.release_gate && 'true' || steps.changed_scope.outputs.run_ios_build || 'false' }}
+          AFORA_CI_RUN_ANDROID: ${{ github.event_name == 'workflow_dispatch' && (inputs.release_gate || inputs.include_android) && 'true' || steps.changed_scope.outputs.run_android || 'false' }}
+          AFORA_CI_RUN_WINDOWS: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.changed_scope.outputs.run_windows || 'false' }}
+          AFORA_CI_RUN_NODE_FAST_ONLY: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.changed_scope.outputs.run_node_fast_only || 'false' }}
+          AFORA_CI_RUN_NODE_FAST_PLUGIN_CONTRACTS: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.changed_scope.outputs.run_node_fast_plugin_contracts || 'false' }}
+          AFORA_CI_RUN_NODE_FAST_CI_ROUTING: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.changed_scope.outputs.run_node_fast_ci_routing || 'false' }}
+          AFORA_CI_RUN_SKILLS_PYTHON: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.changed_scope.outputs.run_skills_python || 'false' }}
+          AFORA_CI_RUN_CONTROL_UI_I18N: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.changed_scope.outputs.run_control_ui_i18n || 'false' }}
+          AFORA_CI_RUN_UI_TESTS: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.changed_scope.outputs.run_ui_tests || 'false' }}
+          AFORA_CI_RUN_NATIVE_I18N: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.changed_scope.outputs.run_native_i18n || 'false' }}
+          AFORA_CI_CHANGED_PATHS_JSON: ${{ steps.changed_scope.outputs.changed_paths_json || 'null' }}
+          AFORA_CI_CHECKOUT_REVISION: ${{ steps.checkout_ref.outputs.sha }}
+          AFORA_CI_HISTORICAL_TARGET: ${{ steps.historical_target.outputs.eligible || 'false' }}
+          AFORA_CI_RELEASE_CANDIDATE_TARGET: ${{ steps.release_candidate_target.outputs.eligible || 'false' }}
+          AFORA_CI_TARGET_CONTEXT_TARGET: ${{ steps.target_context_target.outputs.eligible || 'false' }}
+          AFORA_CI_WORKFLOW_REVISION: ${{ github.sha }}
+          AFORA_CI_REPOSITORY: ${{ github.repository }}
+          AFORA_CI_EVENT_NAME: ${{ github.event_name }}
+          AFORA_CI_RUNNER_BACKEND: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'github' || vars.AFORA_CI_RUNNER_BACKEND }}
         run: |
           manifest_node_args=()
           if [ "${GITHUB_EVENT_NAME:-}" = "workflow_dispatch" ]; then
@@ -469,21 +469,21 @@ jobs:
           node "${manifest_node_args[@]}" --input-type=module <<'EOF'
           import { appendFileSync, existsSync, readFileSync } from "node:fs";
 
-          const eventName = process.env.OPENCLAW_CI_EVENT_NAME ?? "";
-          const checkoutRevision = process.env.OPENCLAW_CI_CHECKOUT_REVISION ?? "";
-          const workflowRevision = process.env.OPENCLAW_CI_WORKFLOW_REVISION ?? "";
-          const historicalTargetApproved = process.env.OPENCLAW_CI_HISTORICAL_TARGET === "true";
+          const eventName = process.env.AFORA_CI_EVENT_NAME ?? "";
+          const checkoutRevision = process.env.AFORA_CI_CHECKOUT_REVISION ?? "";
+          const workflowRevision = process.env.AFORA_CI_WORKFLOW_REVISION ?? "";
+          const historicalTargetApproved = process.env.AFORA_CI_HISTORICAL_TARGET === "true";
           const historicalTarget =
             eventName === "workflow_dispatch" &&
             historicalTargetApproved &&
             checkoutRevision !== workflowRevision;
           const releaseCandidateTarget =
             eventName === "workflow_dispatch" &&
-            process.env.OPENCLAW_CI_RELEASE_CANDIDATE_TARGET === "true" &&
+            process.env.AFORA_CI_RELEASE_CANDIDATE_TARGET === "true" &&
             checkoutRevision !== workflowRevision;
           const targetContextTarget =
             eventName === "workflow_dispatch" &&
-            process.env.OPENCLAW_CI_TARGET_CONTEXT_TARGET === "true" &&
+            process.env.AFORA_CI_TARGET_CONTEXT_TARGET === "true" &&
             checkoutRevision !== workflowRevision;
           const compatibilityTarget =
             historicalTarget || releaseCandidateTarget || targetContextTarget;
@@ -565,10 +565,10 @@ jobs:
           const outputPath = process.env.GITHUB_OUTPUT;
           const packageScripts = JSON.parse(readFileSync("package.json", "utf8")).scripts ?? {};
           const hasPackageScript = (name) => typeof packageScripts[name] === "string";
-          const isCanonicalRepository = process.env.OPENCLAW_CI_REPOSITORY === "openclaw/openclaw";
+          const isCanonicalRepository = process.env.AFORA_CI_REPOSITORY === "AforaMosh/afora-agent";
           const changedPaths = (() => {
             try {
-              const value = JSON.parse(process.env.OPENCLAW_CI_CHANGED_PATHS_JSON ?? "null");
+              const value = JSON.parse(process.env.AFORA_CI_CHANGED_PATHS_JSON ?? "null");
               return Array.isArray(value) && value.every((path) => typeof path === "string")
                 ? value
                 : null;
@@ -576,19 +576,19 @@ jobs:
               return null;
             }
           })();
-          const docsOnly = parseBoolean(process.env.OPENCLAW_CI_DOCS_ONLY);
-          const docsChanged = parseBoolean(process.env.OPENCLAW_CI_DOCS_CHANGED);
-          const runNode = parseBoolean(process.env.OPENCLAW_CI_RUN_NODE) && !docsOnly;
+          const docsOnly = parseBoolean(process.env.AFORA_CI_DOCS_ONLY);
+          const docsChanged = parseBoolean(process.env.AFORA_CI_DOCS_CHANGED);
+          const runNode = parseBoolean(process.env.AFORA_CI_RUN_NODE) && !docsOnly;
           const runNodeFastOnly =
-            runNode && parseBoolean(process.env.OPENCLAW_CI_RUN_NODE_FAST_ONLY);
+            runNode && parseBoolean(process.env.AFORA_CI_RUN_NODE_FAST_ONLY);
           const runNodeFull = runNode && !runNodeFastOnly;
           const runNodeFastPluginContracts =
-            runNode && parseBoolean(process.env.OPENCLAW_CI_RUN_NODE_FAST_PLUGIN_CONTRACTS);
+            runNode && parseBoolean(process.env.AFORA_CI_RUN_NODE_FAST_PLUGIN_CONTRACTS);
           const runNodeFastCiRouting =
-            runNode && parseBoolean(process.env.OPENCLAW_CI_RUN_NODE_FAST_CI_ROUTING);
+            runNode && parseBoolean(process.env.AFORA_CI_RUN_NODE_FAST_CI_ROUTING);
           const runPluginContractShards = runNodeFull || runNodeFastPluginContracts;
           const runMacos =
-            parseBoolean(process.env.OPENCLAW_CI_RUN_MACOS) && !docsOnly && isCanonicalRepository;
+            parseBoolean(process.env.AFORA_CI_RUN_MACOS) && !docsOnly && isCanonicalRepository;
           const supportsCurrentMacosSwiftCi =
             existsSync("scripts/install-swift-tools.sh") &&
             existsSync("scripts/lint-swift.sh") &&
@@ -596,26 +596,26 @@ jobs:
           const supportsIosBuild = hasPackageScript("ios:build");
           const supportsCurrentIosCi = supportsIosBuild && supportsCurrentMacosSwiftCi;
           const runIosBuild =
-            parseBoolean(process.env.OPENCLAW_CI_RUN_IOS_BUILD) &&
+            parseBoolean(process.env.AFORA_CI_RUN_IOS_BUILD) &&
             !docsOnly &&
             isCanonicalRepository &&
             (!frozenTarget ||
               supportsCurrentIosCi ||
               (releaseCandidateTarget && supportsIosBuild));
           const runAndroid =
-            parseBoolean(process.env.OPENCLAW_CI_RUN_ANDROID) && !docsOnly && isCanonicalRepository;
+            parseBoolean(process.env.AFORA_CI_RUN_ANDROID) && !docsOnly && isCanonicalRepository;
           const runWindows =
-            parseBoolean(process.env.OPENCLAW_CI_RUN_WINDOWS) &&
+            parseBoolean(process.env.AFORA_CI_RUN_WINDOWS) &&
             !docsOnly &&
             !runNodeFastOnly &&
             isCanonicalRepository;
-          const runSkillsPython = parseBoolean(process.env.OPENCLAW_CI_RUN_SKILLS_PYTHON) && !docsOnly;
+          const runSkillsPython = parseBoolean(process.env.AFORA_CI_RUN_SKILLS_PYTHON) && !docsOnly;
           const runControlUiI18n =
-            parseBoolean(process.env.OPENCLAW_CI_RUN_CONTROL_UI_I18N) && !docsOnly;
-          const runUiTests = parseBoolean(process.env.OPENCLAW_CI_RUN_UI_TESTS) && !docsOnly;
+            parseBoolean(process.env.AFORA_CI_RUN_CONTROL_UI_I18N) && !docsOnly;
+          const runUiTests = parseBoolean(process.env.AFORA_CI_RUN_UI_TESTS) && !docsOnly;
           const usesGithubRunnerProfile =
-            process.env.OPENCLAW_CI_RUNNER_BACKEND === "github" ||
-            process.env.OPENCLAW_CI_RUNNER_BACKEND === "hybrid";
+            process.env.AFORA_CI_RUNNER_BACKEND === "github" ||
+            process.env.AFORA_CI_RUNNER_BACKEND === "hybrid";
           const uiE2eShardCount = usesGithubRunnerProfile ? 12 : 4;
           const qaSmokeCiPartCount = usesGithubRunnerProfile ? 6 : 4;
           const supportsNativeI18n =
@@ -623,13 +623,13 @@ jobs:
             hasPackageScript("android:i18n:check") &&
             hasPackageScript("apple:i18n:check");
           const runNativeI18n =
-            parseBoolean(process.env.OPENCLAW_CI_RUN_NATIVE_I18N) &&
+            parseBoolean(process.env.AFORA_CI_RUN_NATIVE_I18N) &&
             !docsOnly &&
             (!frozenTarget || supportsNativeI18n);
           const targetWorkflow = existsSync(".github/workflows/ci.yml")
             ? readFileSync(".github/workflows/ci.yml", "utf8")
             : "";
-          const supportsOpenClawKitTests = targetWorkflow.includes("openclawkit-tests-contract-v1");
+          const supportsAforaKitTests = targetWorkflow.includes("aforakit-tests-contract-v1");
           const supportsCurrentAndroidCi = targetWorkflow.includes("android-ci-contract-v2");
           const useCompatibleAndroidCi = compatibilityTarget && !supportsCurrentAndroidCi;
           const supportsFormatCheck =
@@ -751,7 +751,7 @@ jobs:
                     // current planners use the event-specific mode.
                     compact: compactPlanMode !== undefined,
                     compactMode: compactPlanMode,
-                    runnerBackend: process.env.OPENCLAW_CI_RUNNER_BACKEND,
+                    runnerBackend: process.env.AFORA_CI_RUNNER_BACKEND,
                   }),
                   ...changedExtensionFallbackShards,
                 ]
@@ -877,7 +877,7 @@ jobs:
             ),
             run_macos_swift:
               runMacos && (!frozenTarget || compatibilityTarget || supportsCurrentMacosSwiftCi),
-            run_openclawkit_tests: runMacos && supportsOpenClawKitTests,
+            run_aforakit_tests: runMacos && supportsAforaKitTests,
             run_ios_build: runIosBuild,
             run_android_job: runAndroid,
             use_compatible_android_ci: useCompatibleAndroidCi,
@@ -934,7 +934,7 @@ jobs:
       # Pull-request archives remain merge-ref scoped;
       # main archives seed later pull requests through the default-branch scope.
       - name: Publish exact dependency cache
-        if: vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.repository == 'openclaw/openclaw' && steps.manifest.outputs.run_node == 'true' && ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))
+        if: vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.repository == 'AforaMosh/afora-agent' && steps.manifest.outputs.run_node == 'true' && ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))
         uses: ./.github/actions/setup-node-env
         with:
           dependency-cache: "true"
@@ -1142,7 +1142,7 @@ jobs:
         run: |
           set -euo pipefail
           source .github/actions/setup-pnpm-store-cache/ensure-node.sh
-          openclaw_ensure_node "$REQUESTED_NODE_VERSION"
+          afora_ensure_node "$REQUESTED_NODE_VERSION"
 
       - name: Audit production dependencies
         run: node scripts/pre-commit/pnpm-audit-prod.mjs --audit-level=high
@@ -1154,8 +1154,8 @@ jobs:
     permissions:
       contents: read
     needs: [preflight]
-    if: ${{ (needs.preflight.outputs.run_node == 'true' || needs.preflight.outputs.run_check_docs == 'true') && (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' || (!(github.repository == 'openclaw/openclaw' && github.event_name == 'push' && github.ref == 'refs/heads/main') && !(github.repository == 'openclaw/openclaw' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && needs.preflight.outputs.run_node == 'true'))) }}
-    runs-on: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
+    if: ${{ (needs.preflight.outputs.run_node == 'true' || needs.preflight.outputs.run_check_docs == 'true') && (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' || (!(github.repository == 'AforaMosh/afora-agent' && github.event_name == 'push' && github.ref == 'refs/heads/main') && !(github.repository == 'AforaMosh/afora-agent' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && needs.preflight.outputs.run_node == 'true'))) }}
+    runs-on: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: 20
     steps:
       - &linux_node_checkout_step
@@ -1225,8 +1225,8 @@ jobs:
     # 32 vCPU: the dist build sits on the light-run critical path alongside
     # check-lint/check-dependencies; tsdown parallelizes across the extra
     # cores for roughly the same billed core-minutes.
-    runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-32vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
-    timeout-minutes: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)) && 35 || 20 }}
+    runs-on: ${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-32vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
+    timeout-minutes: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || (vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)) && 35 || 20 }}
     steps:
       - *linux_node_checkout_step
       - name: Ensure secrets base commit (PR fast path)
@@ -1244,8 +1244,8 @@ jobs:
           node-compile-cache-scope: "build"
           # Same-repo Blacksmith runs restore the dependency cache published by
           # preflight; hosted paths use the pnpm store cache instead.
-          dependency-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'true' || 'false' }}
-          use-actions-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'false' || 'true' }}
+          dependency-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'true' || 'false' }}
+          use-actions-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'false' || 'true' }}
           save-node-compile-cache: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'true' || 'false' }}
 
       - name: Restore build-all step cache
@@ -1316,10 +1316,10 @@ jobs:
           retention-days: 1
 
       - name: Smoke test CLI launcher help
-        run: node openclaw.mjs --help
+        run: node afora.mjs --help
 
       - name: Smoke test CLI launcher status json
-        run: node openclaw.mjs status --json --timeout 1
+        run: node afora.mjs status --json --timeout 1
 
       # Doctor index proof, singleton smoke, and startup-memory check are
       # independent dist readers; Blacksmith runners have the cores to overlap
@@ -1335,7 +1335,7 @@ jobs:
           PARALLEL_BUILT_VERIFIERS: ${{ runner.environment != 'github-hosted' && 'true' || 'false' }}
           # GitHub-hosted Linux reports a higher RSS baseline than Blacksmith for
           # the same built CLI. Keep the tighter Blacksmith regression ceiling.
-          OPENCLAW_STARTUP_MEMORY_PLUGINS_LIST_MB: ${{ runner.environment == 'github-hosted' && '425' || '400' }}
+          AFORA_STARTUP_MEMORY_PLUGINS_LIST_MB: ${{ runner.environment == 'github-hosted' && '425' || '400' }}
           RUN_CHANNELS: ${{ needs.preflight.outputs.run_checks }}
           RUN_CORE_SUPPORT_BOUNDARY: ${{ needs.preflight.outputs.run_checks_node_core_dist }}
           RUN_GATEWAY_WATCH: ${{ needs.preflight.outputs.run_check_additional }}
@@ -1395,7 +1395,7 @@ jobs:
             if [[ -f test/scripts/doctor-config-preflight-plugin-index.built-cli.e2e.test.ts ]]; then
               # Cold hosted runners can spend over five minutes in E2E setup before
               # this proof's own bounded test can report a result.
-              env OPENCLAW_E2E_USE_PREBUILT_DIST=1 OPENCLAW_VITEST_NO_OUTPUT_TIMEOUT_MS=660000 node scripts/run-vitest.mjs run \
+              env AFORA_E2E_USE_PREBUILT_DIST=1 AFORA_VITEST_NO_OUTPUT_TIMEOUT_MS=660000 node scripts/run-vitest.mjs run \
                 --config test/vitest/vitest.e2e.config.ts \
                 test/scripts/doctor-config-preflight-plugin-index.built-cli.e2e.test.ts
             else
@@ -1425,14 +1425,14 @@ jobs:
           if [ "$RUN_CHANNELS" = "true" ]; then
             start_check "channels" env \
               NODE_OPTIONS=--max-old-space-size=8192 \
-              OPENCLAW_VITEST_MAX_WORKERS=1 \
+              AFORA_VITEST_MAX_WORKERS=1 \
               pnpm test:channels
           fi
 
           if [ "$RUN_CORE_SUPPORT_BOUNDARY" = "true" ]; then
             start_check "core-support-boundary" env \
               NODE_OPTIONS=--max-old-space-size=8192 \
-              OPENCLAW_VITEST_MAX_WORKERS=2 \
+              AFORA_VITEST_MAX_WORKERS=2 \
               node scripts/run-vitest.mjs run --config test/vitest/vitest.full-core-support-boundary.config.ts
           fi
 
@@ -1456,13 +1456,13 @@ jobs:
           if [ "$RUN_TUI_PTY" = "true" ]; then
             start_check "tui-pty" env \
               NODE_OPTIONS=--max-old-space-size=8192 \
-              OPENCLAW_TUI_PTY_INCLUDE_LOCAL=1 \
-              OPENCLAW_TUI_PTY_USE_BUILT_CLI=1 \
-              OPENCLAW_VITEST_MAX_WORKERS=2 \
+              AFORA_TUI_PTY_INCLUDE_LOCAL=1 \
+              AFORA_TUI_PTY_USE_BUILT_CLI=1 \
+              AFORA_VITEST_MAX_WORKERS=2 \
               node scripts/run-vitest.mjs run \
                 --config test/vitest/vitest.tui-pty.config.ts \
                 src/tui/tui-pty-local.e2e.test.ts \
-                --testNamePattern "launches openclaw (chat as local mode|tui against a real Gateway) through a real PTY"
+                --testNamePattern "launches afora (chat as local mode|tui against a real Gateway) through a real PTY"
             wait_checks
           fi
 
@@ -1519,7 +1519,7 @@ jobs:
     name: check-sqlite-session-lifecycle
     needs: [preflight, build-artifacts]
     if: ${{ !cancelled() && always() && needs.preflight.outputs.run_sqlite_session_lifecycle == 'true' && needs.build-artifacts.result == 'success' }}
-    runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-8vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
+    runs-on: ${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-8vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: 20
     steps:
       - *linux_node_checkout_step
@@ -1527,9 +1527,9 @@ jobs:
         uses: ./.github/actions/setup-node-env
         with:
           install-bun: "false"
-          dependency-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'true' || 'false' }}
-          use-actions-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'false' || 'true' }}
-          restore-test-caches: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'true' || 'false' }}
+          dependency-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'true' || 'false' }}
+          use-actions-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'false' || 'true' }}
+          restore-test-caches: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 'true' || 'false' }}
 
       - name: Download exact-run built runtime
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -1542,8 +1542,8 @@ jobs:
 
       - name: Verify SQLite session lifecycle
         env:
-          OPENCLAW_E2E_USE_PREBUILT_DIST: "1"
-          OPENCLAW_VITEST_NO_OUTPUT_TIMEOUT_MS: "660000"
+          AFORA_E2E_USE_PREBUILT_DIST: "1"
+          AFORA_VITEST_NO_OUTPUT_TIMEOUT_MS: "660000"
         run: node scripts/run-vitest.mjs run --config test/vitest/vitest.e2e.config.ts test/scripts/sqlite-sessions-transcripts-flip-proof.built-cli.e2e.test.ts
 
   native-i18n:
@@ -1551,7 +1551,7 @@ jobs:
       contents: read
     needs: [preflight]
     if: ${{ !cancelled() && always() && needs.preflight.outputs.run_native_i18n == 'true' }}
-    runs-on: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
+    runs-on: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: 10
     steps:
       - name: Checkout
@@ -1566,8 +1566,8 @@ jobs:
           install-bun: "false"
           # Same-repo Blacksmith runs restore the dependency cache published by
           # preflight; hosted paths use the pnpm store cache instead.
-          dependency-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'true' || 'false' }}
-          use-actions-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'false' || 'true' }}
+          dependency-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'true' || 'false' }}
+          use-actions-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'false' || 'true' }}
 
       - name: Verify native app i18n source
         run: |
@@ -1597,7 +1597,7 @@ jobs:
     if: needs.preflight.outputs.run_ui_tests == 'true'
     # Measured 177s body on hosted 4-core (run 31861511624); hybrid attempt 1
     # rides the 8 vCPU class like the ui-e2e shards, retries stay hosted.
-    runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-8vcpu-ubuntu-2404' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04')) }}
+    runs-on: ${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-8vcpu-ubuntu-2404' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04')) }}
     timeout-minutes: 20
     env:
       COMPATIBILITY_TARGET: ${{ needs.preflight.outputs.compatibility_target }}
@@ -1610,9 +1610,9 @@ jobs:
           install-bun: "false"
           # Same-repo Blacksmith runs restore the dependency cache published by
           # preflight; hosted paths use the pnpm store cache instead.
-          dependency-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'true' || 'false' }}
-          use-actions-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'false' || 'true' }}
-          restore-test-caches: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'true' || 'false' }}
+          dependency-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'true' || 'false' }}
+          use-actions-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'false' || 'true' }}
+          restore-test-caches: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 'true' || 'false' }}
 
       - &cache_playwright_chromium
         name: Cache Playwright Chromium
@@ -1667,14 +1667,14 @@ jobs:
     if: needs.preflight.outputs.run_ui_tests == 'true' && needs.preflight.outputs.compatibility_target != 'true'
     # Hybrid attempt 1 uses Blacksmith; github mode, hybrid retries, manual
     # dispatches, forks, and same-repo PR retries use GitHub-hosted capacity.
-    runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.run_attempt > 1)) && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-8vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
+    runs-on: ${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.run_attempt > 1)) && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-8vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     # Keep Chromium ownership serial within each independently required shard.
     timeout-minutes: 25
     env:
-      OPENCLAW_UI_E2E_SKIP_REAL_GATEWAY: "1"
+      AFORA_UI_E2E_SKIP_REAL_GATEWAY: "1"
     strategy:
       fail-fast: false
-      max-parallel: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 12 || 4 }}
+      max-parallel: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 12 || 4 }}
       matrix: ${{ fromJson(needs.preflight.outputs.ui_e2e_matrix) }}
     steps:
       - *linux_node_checkout_step
@@ -1685,9 +1685,9 @@ jobs:
           install-bun: "false"
           # The github/hybrid planner profile uses the Actions pnpm-store cache
           # on either runner backend; all-Blacksmith mode restores preflight's tree.
-          dependency-cache: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.run_attempt > 1)) && 'false' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'true' || 'false') }}
-          use-actions-cache: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.run_attempt > 1)) && 'true' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'false' || 'true') }}
-          restore-test-caches: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'true' || 'false' }}
+          dependency-cache: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.run_attempt > 1)) && 'false' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'true' || 'false') }}
+          use-actions-cache: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.run_attempt > 1)) && 'true' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'false' || 'true') }}
+          restore-test-caches: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 'true' || 'false' }}
 
       - *cache_playwright_chromium
       - *install_playwright_chromium
@@ -1695,7 +1695,7 @@ jobs:
       - name: Test Control UI end-to-end
         if: matrix.task == 'control-ui'
         env:
-          OPENCLAW_UI_E2E_DIAGNOSTIC_DIR: .artifacts/control-ui-e2e-timeouts/shard-${{ matrix.shard }}-attempt-${{ github.run_attempt }}
+          AFORA_UI_E2E_DIAGNOSTIC_DIR: .artifacts/control-ui-e2e-timeouts/shard-${{ matrix.shard }}-attempt-${{ github.run_attempt }}
           SHARD_INDEX: ${{ matrix.shard }}
           VITEST_SHARD_COUNT: ${{ matrix.vitest_shard_count }}
         run: >-
@@ -1729,7 +1729,7 @@ jobs:
     # set; manual dispatches, forks, and same-repo PR retries also use GitHub-hosted capacity.
     # This lane owns the same serial Chromium workload as checks-ui-e2e, so it
     # follows that job's hybrid routing: Blacksmith on attempt 1, hosted on rerun.
-    runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.run_attempt > 1)) && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-16vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
+    runs-on: ${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.run_attempt > 1)) && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-16vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: 20
     steps:
       - *linux_node_checkout_step
@@ -1740,8 +1740,8 @@ jobs:
           install-bun: "false"
           # The github/hybrid planner profile uses the Actions pnpm-store cache
           # on either runner backend; all-Blacksmith mode restores preflight's tree.
-          dependency-cache: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.run_attempt > 1)) && 'false' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'true' || 'false') }}
-          use-actions-cache: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.run_attempt > 1)) && 'true' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'false' || 'true') }}
+          dependency-cache: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.run_attempt > 1)) && 'false' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'true' || 'false') }}
+          use-actions-cache: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.run_attempt > 1)) && 'true' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'false' || 'true') }}
 
       - *cache_playwright_chromium
       - *install_playwright_chromium
@@ -1773,7 +1773,7 @@ jobs:
     name: control-ui-i18n
     needs: [preflight]
     if: needs.preflight.outputs.run_control_ui_i18n == 'true'
-    runs-on: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
+    runs-on: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: 10
     env:
       COMPATIBILITY_TARGET: ${{ needs.preflight.outputs.compatibility_target }}
@@ -1786,8 +1786,8 @@ jobs:
           install-bun: "false"
           # Same-repo Blacksmith runs restore the dependency cache published by
           # preflight; hosted paths use the pnpm store cache instead.
-          dependency-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'true' || 'false' }}
-          use-actions-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'false' || 'true' }}
+          dependency-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'true' || 'false' }}
+          use-actions-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'false' || 'true' }}
 
       - name: Verify Control UI i18n source
         run: |
@@ -1813,7 +1813,7 @@ jobs:
     name: ${{ matrix.check_name }}
     needs: [preflight]
     if: needs.preflight.outputs.run_checks_fast_core == 'true'
-    runs-on: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && (matrix.runner || 'blacksmith-4vcpu-ubuntu-2404') || 'ubuntu-24.04') }}
+    runs-on: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && (matrix.runner || 'blacksmith-4vcpu-ubuntu-2404') || 'ubuntu-24.04') }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -1874,13 +1874,13 @@ jobs:
           install-bun: ${{ matrix.task == 'bun-launcher' && 'true' || 'false' }}
           # Same-repo Blacksmith runs restore the dependency cache published by
           # preflight; hosted paths use the pnpm store cache instead.
-          dependency-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'true' || 'false' }}
-          use-actions-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'false' || 'true' }}
-          restore-test-caches: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && (matrix.task == 'bundled-protocol' || matrix.task == 'contracts-plugins-ci-routing' || matrix.task == 'ci-routing' || matrix.task == 'bun-launcher') && 'true' || 'false' }}
+          dependency-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'true' || 'false' }}
+          use-actions-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'false' || 'true' }}
+          restore-test-caches: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && (matrix.task == 'bundled-protocol' || matrix.task == 'contracts-plugins-ci-routing' || matrix.task == 'ci-routing' || matrix.task == 'bun-launcher') && 'true' || 'false' }}
 
       - name: Run ${{ matrix.task }} (${{ matrix.runtime }})
         env:
-          OPENCLAW_TEST_PROJECTS_PARALLEL: 3
+          AFORA_TEST_PROJECTS_PARALLEL: 3
           PROTOCOL_SINCE_BASE_SHA: ${{ needs.preflight.outputs.diff_base_revision }}
           RATCHET_PR_HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
           TASK: ${{ matrix.task }}
@@ -1941,7 +1941,7 @@ jobs:
               fi
               ;;
             bun-launcher)
-              OPENCLAW_E2E_SKIP_BUILD=1 OPENCLAW_TEST_BUN_LAUNCHER=1 pnpm test test/openclaw-launcher.e2e.test.ts
+              AFORA_E2E_SKIP_BUILD=1 AFORA_TEST_BUN_LAUNCHER=1 pnpm test test/afora-launcher.e2e.test.ts
               ;;
             *)
               echo "Unsupported checks-fast task: $TASK" >&2
@@ -1955,11 +1955,11 @@ jobs:
     name: QA Smoke CI (${{ matrix.name }})
     needs: [preflight]
     if: needs.preflight.outputs.run_qa_smoke_ci == 'true'
-    runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-16vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
+    runs-on: ${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-16vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
-      max-parallel: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 6 || 4 }}
+      max-parallel: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 6 || 4 }}
       matrix: ${{ fromJson(needs.preflight.outputs.qa_smoke_ci_matrix) }}
     steps:
       - *linux_node_checkout_step
@@ -1969,10 +1969,10 @@ jobs:
           install-bun: "false"
           # The github/hybrid planner profile uses the Actions pnpm-store cache
           # on either runner backend; all-Blacksmith mode restores preflight's tree.
-          dependency-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'true' || 'false' }}
-          use-actions-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'false' || 'true' }}
+          dependency-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'true' || 'false' }}
+          use-actions-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'false' || 'true' }}
           # Reader of build-artifacts' protected daily archive: warms tsdown
-          # tooling plus the repeated openclaw.mjs boots in the scenario loop.
+          # tooling plus the repeated afora.mjs boots in the scenario loop.
           node-compile-cache: "true"
           node-compile-cache-scope: build
 
@@ -1985,23 +1985,23 @@ jobs:
           # public pack and ui:build are skipped: one private overlay build
           # halves this fixed cost on every part. Never pack dist after a
           # private build; the overlay must not leak into public artifacts.
-          OPENCLAW_BUILD_PRIVATE_QA=1 pnpm build qaRuntime
+          AFORA_BUILD_PRIVATE_QA=1 pnpm build qaRuntime
 
       - name: Run smoke profile part
         env:
           PROFILE_PART: ${{ matrix.lane }}
           PROFILE_PART_COUNT: ${{ matrix.part_count }}
           PROFILE_PART_SLUG: ${{ matrix.slug }}
-          OPENCLAW_QA_SUITE_WORKER_START_STAGGER_MS: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && '0' || '1500' }}
+          AFORA_QA_SUITE_WORKER_START_STAGGER_MS: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && '0' || '1500' }}
         shell: bash
         run: |
           set -euo pipefail
           output_dir=".artifacts/qa-e2e/smoke-ci-profile-${PROFILE_PART_SLUG}"
-          export OPENCLAW_BUILD_PRIVATE_QA=1
-          export OPENCLAW_ENABLE_PRIVATE_QA_CLI=1
-          export OPENCLAW_DISABLE_BUNDLED_PLUGINS=0
-          export OPENCLAW_QA_REDACT_PUBLIC_METADATA=1
-          export OPENCLAW_QA_TRANSPORT_READY_TIMEOUT_MS=180000
+          export AFORA_BUILD_PRIVATE_QA=1
+          export AFORA_ENABLE_PRIVATE_QA_CLI=1
+          export AFORA_DISABLE_BUNDLED_PLUGINS=0
+          export AFORA_QA_REDACT_PUBLIC_METADATA=1
+          export AFORA_QA_TRANSPORT_READY_TIMEOUT_MS=180000
           export NODE_OPTIONS=--max-old-space-size=16384
           PROFILE_RUNS_TSV="$(
             node --import tsx --input-type=module <<'EOF'
@@ -2111,7 +2111,7 @@ jobs:
             for scenario_id in "${scenario_ids[@]}"; do
               scenario_args+=(--scenario "$scenario_id")
             done
-            timeout --signal=TERM --kill-after=15s 10m node openclaw.mjs qa run \
+            timeout --signal=TERM --kill-after=15s 10m node afora.mjs qa run \
               --repo-root . \
               --qa-profile smoke-ci \
               --concurrency 10 \
@@ -2139,7 +2139,7 @@ jobs:
     name: ${{ matrix.checkName }}
     needs: [preflight]
     if: needs.preflight.outputs.run_plugin_contracts_shards == 'true'
-    runs-on: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
+    runs-on: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -2153,13 +2153,13 @@ jobs:
           install-bun: "false"
           # Same-repo Blacksmith runs restore the dependency cache published by
           # preflight; hosted paths use the pnpm store cache instead.
-          dependency-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'true' || 'false' }}
-          use-actions-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'false' || 'true' }}
-          restore-test-caches: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'true' || 'false' }}
+          dependency-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'true' || 'false' }}
+          use-actions-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'false' || 'true' }}
+          restore-test-caches: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 'true' || 'false' }}
 
       - name: Run plugin contract shard
         env:
-          OPENCLAW_CONTRACT_INCLUDE_PATTERNS_JSON: ${{ toJson(matrix.includePatterns) }}
+          AFORA_CONTRACT_INCLUDE_PATTERNS_JSON: ${{ toJson(matrix.includePatterns) }}
         shell: bash
         run: |
           set -euo pipefail
@@ -2167,14 +2167,14 @@ jobs:
           INCLUDE_FILE="$include_file" node --input-type=module <<'EOF'
           import { writeFileSync } from "node:fs";
 
-          const includePatterns = JSON.parse(process.env.OPENCLAW_CONTRACT_INCLUDE_PATTERNS_JSON ?? "[]");
+          const includePatterns = JSON.parse(process.env.AFORA_CONTRACT_INCLUDE_PATTERNS_JSON ?? "[]");
           if (!Array.isArray(includePatterns) || includePatterns.length === 0) {
             console.error("Missing plugin contract include patterns");
             process.exit(1);
           }
           writeFileSync(process.env.INCLUDE_FILE, JSON.stringify(includePatterns), "utf8");
           EOF
-          OPENCLAW_VITEST_INCLUDE_FILE="$include_file" pnpm test:contracts:plugins
+          AFORA_VITEST_INCLUDE_FILE="$include_file" pnpm test:contracts:plugins
 
   checks-fast-channel-contracts-shard:
     permissions:
@@ -2182,7 +2182,7 @@ jobs:
     name: ${{ matrix.checkName }}
     needs: [preflight]
     if: needs.preflight.outputs.run_channel_contracts_shards == 'true'
-    runs-on: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
+    runs-on: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -2196,14 +2196,14 @@ jobs:
           install-bun: "false"
           # Same-repo Blacksmith runs restore the dependency cache published by
           # preflight; hosted paths use the pnpm store cache instead.
-          dependency-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'true' || 'false' }}
-          use-actions-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'false' || 'true' }}
-          restore-test-caches: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'true' || 'false' }}
+          dependency-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'true' || 'false' }}
+          use-actions-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'false' || 'true' }}
+          restore-test-caches: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 'true' || 'false' }}
 
       - name: Run channel contract shard
         env:
-          OPENCLAW_CONTRACT_INCLUDE_PATTERNS_JSON: ${{ toJson(matrix.includePatterns) }}
-          OPENCLAW_TEST_PROJECTS_PARALLEL: "4"
+          AFORA_CONTRACT_INCLUDE_PATTERNS_JSON: ${{ toJson(matrix.includePatterns) }}
+          AFORA_TEST_PROJECTS_PARALLEL: "4"
         shell: bash
         run: |
           set -euo pipefail
@@ -2211,14 +2211,14 @@ jobs:
           INCLUDE_FILE="$include_file" node --input-type=module <<'EOF'
           import { writeFileSync } from "node:fs";
 
-          const includePatterns = JSON.parse(process.env.OPENCLAW_CONTRACT_INCLUDE_PATTERNS_JSON ?? "[]");
+          const includePatterns = JSON.parse(process.env.AFORA_CONTRACT_INCLUDE_PATTERNS_JSON ?? "[]");
           if (!Array.isArray(includePatterns) || includePatterns.length === 0) {
             console.error("Missing channel contract include patterns");
             process.exit(1);
           }
           writeFileSync(process.env.INCLUDE_FILE, JSON.stringify(includePatterns), "utf8");
           EOF
-          OPENCLAW_VITEST_INCLUDE_FILE="$include_file" pnpm test:contracts:channels
+          AFORA_VITEST_INCLUDE_FILE="$include_file" pnpm test:contracts:channels
 
   checks-node-compat:
     permissions:
@@ -2226,7 +2226,7 @@ jobs:
     name: checks-node-compat-node22
     needs: [preflight]
     if: needs.preflight.outputs.run_build_artifacts == 'true' && github.event_name == 'workflow_dispatch'
-    runs-on: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
+    runs-on: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: 60
     steps:
       - *linux_node_checkout_step
@@ -2238,7 +2238,7 @@ jobs:
           build-all-cache-scope: full
 
       - name: Configure Node test resources
-        run: echo "OPENCLAW_VITEST_MAX_WORKERS=2" >> "$GITHUB_ENV"
+        run: echo "AFORA_VITEST_MAX_WORKERS=2" >> "$GITHUB_ENV"
 
       - name: Run Node 22 compatibility
         env:
@@ -2246,8 +2246,8 @@ jobs:
         run: |
           pnpm build
           pnpm ui:build
-          node openclaw.mjs --help
-          node openclaw.mjs status --json --timeout 1
+          node afora.mjs --help
+          node afora.mjs status --json --timeout 1
           pnpm test:build:singleton
 
   checks-node-core-test-nondist-shard:
@@ -2256,13 +2256,13 @@ jobs:
     name: ${{ matrix.check_name }}
     needs: [preflight]
     if: needs.preflight.outputs.run_checks_node_core_nondist == 'true'
-    runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && (matrix.runner || 'blacksmith-4vcpu-ubuntu-2404') || 'ubuntu-24.04') }}
+    runs-on: ${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && (matrix.runner || 'blacksmith-4vcpu-ubuntu-2404') || 'ubuntu-24.04') }}
     timeout-minutes: ${{ matrix.timeout_minutes || 60 }}
     strategy:
       fail-fast: false
       # Canonical main admits only one complete run at a time, so widen this
       # matrix within the current runner-registration budget.
-      max-parallel: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 96 || 28 }}
+      max-parallel: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 96 || 28 }}
       matrix: ${{ fromJson(needs.preflight.outputs.checks_node_core_nondist_matrix) }}
     steps:
       - *linux_node_checkout_step
@@ -2273,14 +2273,14 @@ jobs:
           install-bun: "false"
           # Only the preflight writer saves an exact dependency archive.
           # All-Blacksmith shards restore it; github/hybrid use the pnpm store.
-          dependency-cache: ${{ (matrix.node_version == null || matrix.node_version == '24.x') && vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'true' || 'false' }}
-          use-actions-cache: ${{ (matrix.node_version == null || matrix.node_version == '24.x') && vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'false' || 'true' }}
+          dependency-cache: ${{ (matrix.node_version == null || matrix.node_version == '24.x') && vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'true' || 'false' }}
+          use-actions-cache: ${{ (matrix.node_version == null || matrix.node_version == '24.x') && vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'false' || 'true' }}
           vitest-fs-cache: "true"
           node-compile-cache: "true"
           node-compile-cache-scope: "test"
           # The github/hybrid planner profile elects one in-run writer so the
           # transform cache can recover without waiting for the cache warmer.
-          save-vitest-fs-cache: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && matrix.save_vitest_fs_cache && 'true' || 'false' }}
+          save-vitest-fs-cache: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && matrix.save_vitest_fs_cache && 'true' || 'false' }}
 
       - name: Setup Go for docs i18n
         if: matrix.requires_go == true
@@ -2318,7 +2318,7 @@ jobs:
             workers=3
           fi
           echo "detected cores=$cores plan_concurrency=${SHARD_PLAN_CONCURRENCY:-default} predicted_test_seconds=${PREDICTED_TEST_SECONDS:-unknown} -> workers=$workers"
-          echo "OPENCLAW_VITEST_MAX_WORKERS=$workers" >> "$GITHUB_ENV"
+          echo "AFORA_VITEST_MAX_WORKERS=$workers" >> "$GITHUB_ENV"
 
       - name: Checkout trusted Node shard runner
         # Frozen release targets can predate the workflow-owned shard runner.
@@ -2339,19 +2339,19 @@ jobs:
       - name: Run Node test shard
         env:
           NODE_OPTIONS: --max-old-space-size=8192
-          OPENCLAW_NODE_TEST_GROUPS_JSON: ${{ toJson(matrix.groups || null) }}
-          OPENCLAW_NODE_TEST_CONFIGS_JSON: ${{ toJson(matrix.configs) }}
-          OPENCLAW_NODE_TEST_ENV_JSON: ${{ toJson(matrix.env) }}
-          OPENCLAW_NODE_TEST_INCLUDE_PATTERNS_JSON: ${{ toJson(matrix.includePatterns) }}
-          OPENCLAW_NODE_TEST_TARGETS_JSON: ${{ toJson(matrix.targets) }}
+          AFORA_NODE_TEST_GROUPS_JSON: ${{ toJson(matrix.groups || null) }}
+          AFORA_NODE_TEST_CONFIGS_JSON: ${{ toJson(matrix.configs) }}
+          AFORA_NODE_TEST_ENV_JSON: ${{ toJson(matrix.env) }}
+          AFORA_NODE_TEST_INCLUDE_PATTERNS_JSON: ${{ toJson(matrix.includePatterns) }}
+          AFORA_NODE_TEST_TARGETS_JSON: ${{ toJson(matrix.targets) }}
           # Frozen targets can carry integration hooks whose cold setup exceeds
           # the current defaults on shared release runners. Keep the no-output
           # watchdog above Vitest so it cannot preempt hook diagnostics.
-          OPENCLAW_NODE_TEST_VITEST_ARGS_JSON: ${{ needs.preflight.outputs.compatibility_target == 'true' && '["--hookTimeout=600000"]' || '[]' }}
-          OPENCLAW_VITEST_SHARD_NAME: ${{ matrix.shard_name }}
-          OPENCLAW_VITEST_NO_OUTPUT_TIMEOUT_MS: ${{ needs.preflight.outputs.compatibility_target == 'true' && '660000' || '300000' }}
-          OPENCLAW_VITEST_NO_OUTPUT_RETRY: "1"
-          OPENCLAW_NODE_TEST_PLAN_CONCURRENCY: ${{ matrix.plan_concurrency }}
+          AFORA_NODE_TEST_VITEST_ARGS_JSON: ${{ needs.preflight.outputs.compatibility_target == 'true' && '["--hookTimeout=600000"]' || '[]' }}
+          AFORA_VITEST_SHARD_NAME: ${{ matrix.shard_name }}
+          AFORA_VITEST_NO_OUTPUT_TIMEOUT_MS: ${{ needs.preflight.outputs.compatibility_target == 'true' && '660000' || '300000' }}
+          AFORA_VITEST_NO_OUTPUT_RETRY: "1"
+          AFORA_NODE_TEST_PLAN_CONCURRENCY: ${{ matrix.plan_concurrency }}
         shell: bash
         run: |
           set -euo pipefail
@@ -2369,7 +2369,7 @@ jobs:
     name: ${{ matrix.check_name }}
     needs: [preflight]
     if: ${{ !cancelled() && always() && needs.preflight.outputs.run_check == 'true' }}
-    runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && (github.run_attempt > 1 || (matrix.task != 'lint' && matrix.task != 'test-types' && matrix.task != 'dependencies'))) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && (matrix.runner || 'blacksmith-4vcpu-ubuntu-2404') || 'ubuntu-24.04') }}
+    runs-on: ${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && (github.run_attempt > 1 || (matrix.task != 'lint' && matrix.task != 'test-types' && matrix.task != 'dependencies'))) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && (matrix.runner || 'blacksmith-4vcpu-ubuntu-2404') || 'ubuntu-24.04') }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -2411,8 +2411,8 @@ jobs:
           install-bun: "false"
           # The github/hybrid planner profile uses the Actions pnpm-store cache
           # on either runner backend; all-Blacksmith mode restores preflight's tree.
-          dependency-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'true' || 'false' }}
-          use-actions-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'false' || 'true' }}
+          dependency-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'true' || 'false' }}
+          use-actions-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'false' || 'true' }}
 
       - name: Compute extension boundary input fingerprint
         id: extension-boundary-inputs
@@ -2424,7 +2424,7 @@ jobs:
           echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
 
       - name: Cache extension package boundary artifacts for hosted lint
-        if: matrix.task == 'lint' && (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository))
+        if: matrix.task == 'lint' && (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository))
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
@@ -2441,7 +2441,7 @@ jobs:
       # the shared sticky. Strictly read-only (commit: false): only the
       # protected boundary lane may publish this repository-global snapshot.
       - name: Mount extension boundary sticky disk
-        if: matrix.task == 'lint' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw')
+        if: matrix.task == 'lint' && vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent')
         uses: useblacksmith/stickydisk@6d373c96a74cbde0c99fedc5ea5d3a7ba66ba494 # main (post-v1.4.0 hot-attach fix)
         with:
           # One stable disk for the whole repository. The v1 per-PR/per-config
@@ -2450,15 +2450,15 @@ jobs:
           # budget, 429-failing every mount. Snapshot validity lives in the
           # in-job marker checked below instead of the key.
           key: ${{ github.repository }}-ext-boundary-v2
-          path: /var/tmp/openclaw-ext-boundary
+          path: /var/tmp/afora-ext-boundary
           commit: "false"
 
       - name: Restore extension boundary artifacts from sticky disk
-        if: matrix.task == 'lint' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw')
+        if: matrix.task == 'lint' && vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent')
         shell: bash
         run: |
           set -euo pipefail
-          sticky_root=/var/tmp/openclaw-ext-boundary
+          sticky_root=/var/tmp/afora-ext-boundary
           if [ ! -f "$sticky_root/.snapshot-ready" ]; then
             echo "boundary artifact snapshot not seeded yet; lint prepares cold"
             exit 0
@@ -2483,8 +2483,8 @@ jobs:
           FORMAT_CHECK: ${{ needs.preflight.outputs.run_format_check }}
           RUN_CONTROL_UI_I18N: ${{ needs.preflight.outputs.run_control_ui_i18n }}
           RUN_UI_TESTS: ${{ needs.preflight.outputs.run_ui_tests }}
-          RUNNER_BACKEND: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)) && 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND }}
-          OPENCLAW_LOCAL_CHECK: "0"
+          RUNNER_BACKEND: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)) && 'github' || vars.AFORA_CI_RUNNER_BACKEND }}
+          AFORA_LOCAL_CHECK: "0"
           TASK: ${{ matrix.task }}
           PR_BASE_SHA: ${{ github.event_name == 'pull_request' && needs.preflight.outputs.diff_base_revision || '' }}
           DIFF_BASE_SHA: ${{ needs.preflight.outputs.diff_base_revision }}
@@ -2712,7 +2712,7 @@ jobs:
       contents: read
     name: check-lint-core-${{ matrix.stripe }}
     needs: [preflight]
-    if: ${{ needs.preflight.outputs.run_check == 'true' && (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)) }}
+    if: ${{ needs.preflight.outputs.run_check == 'true' && (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
@@ -2726,13 +2726,13 @@ jobs:
         uses: ./.github/actions/setup-node-env
         with:
           install-bun: "false"
-          dependency-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'true' || 'false' }}
-          use-actions-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'false' || 'true' }}
+          dependency-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'true' || 'false' }}
+          use-actions-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'false' || 'true' }}
 
       - name: Run hosted core lint stripe
         env:
           GOMAXPROCS: "2"
-          OPENCLAW_LOCAL_CHECK: "0"
+          AFORA_LOCAL_CHECK: "0"
         run: >-
           node --import tsx scripts/run-oxlint-shards.mts
           --only=core --split-core --core-stripe=${{ matrix.stripe }}/5 --threads=1
@@ -2747,10 +2747,10 @@ jobs:
       contents: read
     name: check-test-types-core-${{ matrix.stripe }}
     needs: [preflight]
-    if: ${{ needs.preflight.outputs.run_check == 'true' && (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)) }}
+    if: ${{ needs.preflight.outputs.run_check == 'true' && (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)) }}
     # Measured 232-269s per stripe on hosted 4-core; hybrid attempt 1 rides
     # the 8 vCPU class like the compact large rows, retries stay hosted.
-    runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-8vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
+    runs-on: ${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-8vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -2763,8 +2763,8 @@ jobs:
         uses: ./.github/actions/setup-node-env
         with:
           install-bun: "false"
-          dependency-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'true' || 'false' }}
-          use-actions-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'false' || 'true' }}
+          dependency-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'true' || 'false' }}
+          use-actions-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'false' || 'true' }}
 
       - name: Run hosted core test-types stripe
         shell: bash
@@ -2784,7 +2784,7 @@ jobs:
     name: ${{ matrix.check_name }}
     needs: [preflight]
     if: ${{ !cancelled() && always() && needs.preflight.outputs.run_check_additional == 'true' }}
-    runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && (github.run_attempt > 1 || (matrix.group != 'extension-package-boundary' && matrix.group != 'runtime-topology-architecture' && matrix.group != 'plugin-sdk-api-diff'))) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && (matrix.runner || 'blacksmith-4vcpu-ubuntu-2404') || 'ubuntu-24.04') }}
+    runs-on: ${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && (github.run_attempt > 1 || (matrix.group != 'extension-package-boundary' && matrix.group != 'runtime-topology-architecture' && matrix.group != 'plugin-sdk-api-diff'))) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && (matrix.runner || 'blacksmith-4vcpu-ubuntu-2404') || 'ubuntu-24.04') }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -2854,8 +2854,8 @@ jobs:
           install-bun: "false"
           # The github/hybrid planner profile uses the Actions pnpm-store cache
           # on either runner backend; all-Blacksmith mode restores preflight's tree.
-          dependency-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'true' || 'false' }}
-          use-actions-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'false' || 'true' }}
+          dependency-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'true' || 'false' }}
+          use-actions-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'false' || 'true' }}
 
       - name: Compute extension boundary input fingerprint
         id: extension-boundary-inputs
@@ -2872,7 +2872,7 @@ jobs:
       # plugin-sdk declarations. Fork PRs must never produce writable
       # repository-global snapshots, so they keep the GitHub cache path.
       - name: Mount extension boundary sticky disk
-        if: matrix.group == 'extension-package-boundary' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw')
+        if: matrix.group == 'extension-package-boundary' && vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent')
         uses: useblacksmith/stickydisk@6d373c96a74cbde0c99fedc5ea5d3a7ba66ba494 # main (post-v1.4.0 hot-attach fix)
         with:
           # One stable disk for the whole repository. The v1 per-PR/per-config
@@ -2882,7 +2882,7 @@ jobs:
           # in-job marker checked below instead of the key, so source and
           # toolchain changes refresh this disk in place.
           key: ${{ github.repository }}-ext-boundary-v2
-          path: /var/tmp/openclaw-ext-boundary
+          path: /var/tmp/afora-ext-boundary
           # Single semantic writer: only protected pushes commit, so
           # pull_request clones stay read-only and the snapshot tracks main.
           # Explicit true (not on-change/if-missing) because the allocated-byte
@@ -2893,11 +2893,11 @@ jobs:
 
       - name: Restore extension boundary artifacts from sticky disk
         id: boundary-sticky-restore
-        if: matrix.group == 'extension-package-boundary' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw')
+        if: matrix.group == 'extension-package-boundary' && vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent')
         shell: bash
         run: |
           set -euo pipefail
-          sticky_root=/var/tmp/openclaw-ext-boundary
+          sticky_root=/var/tmp/afora-ext-boundary
           if [ ! -f "$sticky_root/.snapshot-ready" ]; then
             echo "restored=false" >> "$GITHUB_OUTPUT"
             exit 0
@@ -2963,11 +2963,11 @@ jobs:
           ADDITIONAL_CHECK_GROUP: ${{ matrix.group }}
           COMPATIBILITY_TARGET: ${{ needs.preflight.outputs.compatibility_target }}
           RUN_PROMPT_SNAPSHOTS: ${{ needs.preflight.outputs.run_prompt_snapshots }}
-          OPENCLAW_ADDITIONAL_BOUNDARY_SHARD: ${{ matrix.boundary_shard || '' }}
-          OPENCLAW_ADDITIONAL_BOUNDARY_CONCURRENCY: 4
+          AFORA_ADDITIONAL_BOUNDARY_SHARD: ${{ matrix.boundary_shard || '' }}
+          AFORA_ADDITIONAL_BOUNDARY_CONCURRENCY: 4
           # Matches the boundary lane's 32 vCPU runner (cores/2); the
           # script's default caps at 6 to protect laptops.
-          OPENCLAW_EXTENSION_BOUNDARY_CONCURRENCY: 16
+          AFORA_EXTENSION_BOUNDARY_CONCURRENCY: 16
         shell: bash
         run: |
           set -euo pipefail
@@ -3095,11 +3095,11 @@ jobs:
       # clone). Seed the payload before the sticky post-action flushes.
       # rsync -aR mirrors the repo-relative layout the restore step replays.
       - name: Seed extension boundary sticky disk
-        if: success() && steps.boundary-sticky-restore.outputs.restored == 'false' && matrix.group == 'extension-package-boundary' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request' && github.repository == 'openclaw/openclaw'
+        if: success() && steps.boundary-sticky-restore.outputs.restored == 'false' && matrix.group == 'extension-package-boundary' && vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request' && github.repository == 'AforaMosh/afora-agent'
         shell: bash
         run: |
           set -euo pipefail
-          sticky_root=/var/tmp/openclaw-ext-boundary
+          sticky_root=/var/tmp/afora-ext-boundary
           # A stale marker must not survive a mid-seed failure: drop readiness
           # first so a partial payload can never be restored as valid.
           rm -rf "$sticky_root/.snapshot-ready" "$sticky_root/.source-trees" "$sticky_root/.source-fingerprint" "$sticky_root/dist" "$sticky_root/packages" "$sticky_root/extensions"
@@ -3120,7 +3120,7 @@ jobs:
       contents: read
     needs: [preflight]
     if: needs.preflight.outputs.run_check_docs == 'true'
-    runs-on: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
+    runs-on: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: 20
     steps:
       - *linux_node_checkout_step
@@ -3130,8 +3130,8 @@ jobs:
           install-bun: "false"
           # Same-repo Blacksmith runs restore the dependency cache published by
           # preflight; hosted paths use the pnpm store cache instead.
-          dependency-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'true' || 'false' }}
-          use-actions-cache: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && vars.OPENCLAW_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw') && 'false' || 'true' }}
+          dependency-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'true' || 'false' }}
+          use-actions-cache: ${{ vars.AFORA_CI_RUNNER_BACKEND != 'github' && vars.AFORA_CI_RUNNER_BACKEND != 'hybrid' && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent') && 'false' || 'true' }}
 
       - name: Check formatting
         if: needs.preflight.outputs.run_format_check == 'true'
@@ -3155,7 +3155,7 @@ jobs:
             reset_checkout_dir
             git init "$workdir" >/dev/null
             git -C "$workdir" config gc.auto 0
-            git -C "$workdir" remote add origin "https://github.com/openclaw/clawhub.git"
+            git -C "$workdir" remote add origin "https://github.com/afora/clawhub.git"
 
             timeout --signal=TERM --kill-after=10s 120s git -C "$workdir" \
               -c protocol.version=2 \
@@ -3181,7 +3181,7 @@ jobs:
 
       - name: Check docs
         env:
-          OPENCLAW_DOCS_SYNC_CLAWHUB_REPO: ${{ github.workspace }}/clawhub-source
+          AFORA_DOCS_SYNC_CLAWHUB_REPO: ${{ github.workspace }}/clawhub-source
         run: pnpm check:docs
 
   skills-python:
@@ -3189,7 +3189,7 @@ jobs:
       contents: read
     needs: [preflight]
     if: needs.preflight.outputs.run_skills_python_job == 'true'
-    runs-on: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
+    runs-on: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || vars.AFORA_CI_RUNNER_BACKEND == 'hybrid') && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: 20
     steps:
       - name: Checkout
@@ -3244,13 +3244,13 @@ jobs:
     name: ${{ matrix.check_name }}
     needs: [preflight]
     if: needs.preflight.outputs.run_checks_windows == 'true'
-    runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'windows-2025' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'windows-2025' || github.event_name == 'workflow_dispatch' && 'windows-2025' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-8vcpu-windows-2025' || 'windows-2025') }}
+    runs-on: ${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'windows-2025' || (vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'windows-2025' || github.event_name == 'workflow_dispatch' && 'windows-2025' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-8vcpu-windows-2025' || 'windows-2025') }}
     timeout-minutes: 60
     env:
       NODE_OPTIONS: --max-old-space-size=8192
       # Keep total concurrency predictable on the smaller Windows runner.
-      OPENCLAW_VITEST_MAX_WORKERS: 1
-      OPENCLAW_TEST_SKIP_FULL_EXTENSIONS_SHARD: 1
+      AFORA_VITEST_MAX_WORKERS: 1
+      AFORA_TEST_SKIP_FULL_EXTENSIONS_SHARD: 1
     defaults:
       run:
         shell: bash
@@ -3335,7 +3335,7 @@ jobs:
         run: |
           set -euo pipefail
           source .github/actions/setup-pnpm-store-cache/ensure-node.sh
-          openclaw_ensure_node "$REQUESTED_NODE_VERSION"
+          afora_ensure_node "$REQUESTED_NODE_VERSION"
 
       - name: Setup pnpm
         uses: ./.github/actions/setup-pnpm-store-cache
@@ -3395,7 +3395,7 @@ jobs:
     name: ${{ matrix.check_name }}
     needs: [preflight]
     if: ${{ !cancelled() && always() && needs.preflight.outputs.run_macos_node == 'true' }}
-    runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'macos-15' || (github.event_name == 'workflow_dispatch' || github.run_attempt > 1) && 'macos-15' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-6vcpu-macos-15' || 'macos-15') }}
+    runs-on: ${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'macos-15' || (github.event_name == 'workflow_dispatch' || github.run_attempt > 1) && 'macos-15' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-6vcpu-macos-15' || 'macos-15') }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -3412,7 +3412,7 @@ jobs:
       - name: TS tests (macOS)
         env:
           NODE_OPTIONS: --max-old-space-size=4096
-          OPENCLAW_VITEST_MAX_WORKERS: 2
+          AFORA_VITEST_MAX_WORKERS: 2
           TASK: ${{ matrix.task }}
         shell: bash
         run: |
@@ -3435,10 +3435,10 @@ jobs:
     name: "macos-swift"
     needs: [preflight]
     if: needs.preflight.outputs.run_macos_swift == 'true'
-    runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'macos-26' || (github.event_name == 'workflow_dispatch' || github.run_attempt > 1) && 'macos-26' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-12vcpu-macos-26' || 'macos-26') }}
+    runs-on: ${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'macos-26' || (github.event_name == 'workflow_dispatch' || github.run_attempt > 1) && 'macos-26' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-12vcpu-macos-26' || 'macos-26') }}
     # Hosted runs may still be finalizing large Swift caches after every test
     # passes; keep that post-job work non-blocking.
-    timeout-minutes: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || github.event_name == 'workflow_dispatch' || github.run_attempt > 1) && 30 || 20 }}
+    timeout-minutes: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || github.event_name == 'workflow_dispatch' || github.run_attempt > 1) && 30 || 20 }}
     env:
       HISTORICAL_TARGET: ${{ needs.preflight.outputs.compatibility_target }}
       SWIFT_TEST_EXECUTION: ${{ (github.event_name == 'workflow_dispatch' || github.run_attempt > 1) && 'serial' || 'parallel' }}
@@ -3448,7 +3448,7 @@ jobs:
       - name: Install XcodeGen / SwiftLint / SwiftFormat
         run: |
           if [[ -x ./scripts/install-xcodegen.sh && -x ./scripts/install-swift-tools.sh ]]; then
-            swift_tools_dir="$RUNNER_TEMP/openclaw-swift-tools"
+            swift_tools_dir="$RUNNER_TEMP/afora-swift-tools"
             ./scripts/install-xcodegen.sh "$swift_tools_dir"
             ./scripts/install-swift-tools.sh "$swift_tools_dir"
             echo "$swift_tools_dir" >> "$GITHUB_PATH"
@@ -3476,7 +3476,7 @@ jobs:
                 ;;
             esac
             swiftformat_archive="$RUNNER_TEMP/swiftformat-$swiftformat_version.zip"
-            swift_tools_dir="$RUNNER_TEMP/openclaw-legacy-swift-tools"
+            swift_tools_dir="$RUNNER_TEMP/afora-legacy-swift-tools"
             curl --fail --location --silent --show-error \
               --connect-timeout 10 --max-time 120 \
               --retry 3 --retry-max-time 120 \
@@ -3518,7 +3518,7 @@ jobs:
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: apps/macos/.build
-          key: ${{ runner.os }}-swift-build-v3-${{ steps.swift-toolchain.outputs.key }}-${{ hashFiles('apps/macos/Package.swift', 'apps/macos/Package.resolved', 'apps/macos/Sources/**', 'apps/macos/Tests/**', 'apps/shared/OpenClawKit/Package.swift', 'apps/shared/OpenClawKit/Sources/**', 'apps/swabble/Package.swift', 'apps/swabble/Sources/**') }}
+          key: ${{ runner.os }}-swift-build-v3-${{ steps.swift-toolchain.outputs.key }}-${{ hashFiles('apps/macos/Package.swift', 'apps/macos/Package.resolved', 'apps/macos/Sources/**', 'apps/macos/Tests/**', 'apps/shared/AforaKit/Package.swift', 'apps/shared/AforaKit/Sources/**', 'apps/swabble/Package.swift', 'apps/swabble/Sources/**') }}
           restore-keys: |
             ${{ runner.os }}-swift-build-v3-${{ steps.swift-toolchain.outputs.key }}-
 
@@ -3541,12 +3541,12 @@ jobs:
           set -euo pipefail
           # Exact source-hash cache hits already match these inputs; checkout
           # mtimes are the only reason SwiftPM rebuilds cached products.
-          find apps/macos/Sources apps/macos/Tests apps/shared/OpenClawKit/Sources apps/swabble/Sources apps/macos/.build/checkouts \
+          find apps/macos/Sources apps/macos/Tests apps/shared/AforaKit/Sources apps/swabble/Sources apps/macos/.build/checkouts \
             -type f -exec touch -t 200001010000 {} +
           touch -t 200001010000 \
             apps/macos/Package.swift \
             apps/macos/Package.resolved \
-            apps/shared/OpenClawKit/Package.swift \
+            apps/shared/AforaKit/Package.swift \
             apps/swabble/Package.swift
 
       - name: Show toolchain
@@ -3574,7 +3574,7 @@ jobs:
           elif [[ "$HISTORICAL_TARGET" == "true" ]]; then
             # Frozen release targets before the shared wrappers used these commands directly.
             swiftlint lint --config config/swiftlint.yml
-            swiftformat --lint apps/macos/Sources --config config/swiftformat --exclude '**/OpenClawProtocol,**/HostEnvSecurityPolicy.generated.swift'
+            swiftformat --lint apps/macos/Sources --config config/swiftformat --exclude '**/AforaProtocol,**/HostEnvSecurityPolicy.generated.swift'
           else
             echo "Current CI targets must provide the Swift lint and format wrappers." >&2
             exit 1
@@ -3587,7 +3587,7 @@ jobs:
             # The macOS lane validates the desktop app build; the CLI product is
             # intentionally left to its own narrower surfaces instead of making
             # this lane rebuild the whole package graph.
-            if swift build --package-path apps/macos --product OpenClaw --configuration release; then
+            if swift build --package-path apps/macos --product Afora --configuration release; then
               exit 0
             fi
             if [[ "$attempt" -eq 3 ]]; then
@@ -3601,31 +3601,31 @@ jobs:
           done
           exit 1
 
-      - name: OpenClawKit Talk-trait opt-out (no ElevenLabsKit when default traits disabled)
+      - name: AforaKit Talk-trait opt-out (no ElevenLabsKit when default traits disabled)
         run: |
           set -euo pipefail
-          # Guard: chat-only consumers build OpenClawKit with the Talk trait
+          # Guard: chat-only consumers build AforaKit with the Talk trait
           # disabled and must NOT link ElevenLabsKit. Assert that future sources
-          # under OpenClawKit cannot silently reintroduce an unconditional
+          # under AforaKit cannot silently reintroduce an unconditional
           # ElevenLabsKit dependency while the manifest still looks correct.
-          deps="$(swift package --package-path apps/shared/OpenClawKit show-dependencies --disable-default-traits)"
+          deps="$(swift package --package-path apps/shared/AforaKit show-dependencies --disable-default-traits)"
           echo "$deps"
           if grep -qi 'elevenlabs' <<<"$deps"; then
             echo "::error::ElevenLabsKit resolved with the Talk trait disabled; keep it gated behind the Talk trait."
             exit 1
           fi
-          swift build --package-path apps/shared/OpenClawKit --target OpenClawKit --disable-default-traits
+          swift build --package-path apps/shared/AforaKit --target AforaKit --disable-default-traits
 
-      # openclawkit-tests-contract-v1: the target owns an independently runnable package suite.
-      - name: OpenClawKit tests
-        if: needs.preflight.outputs.run_openclawkit_tests == 'true'
+      # aforakit-tests-contract-v1: the target owns an independently runnable package suite.
+      - name: AforaKit tests
+        if: needs.preflight.outputs.run_aforakit_tests == 'true'
         run: |
           set -euo pipefail
-          openclawkit_scratch="$(mktemp -d "$RUNNER_TEMP/openclawkit.XXXXXX")"
-          trap 'rm -rf "$openclawkit_scratch"' EXIT
+          aforakit_scratch="$(mktemp -d "$RUNNER_TEMP/aforakit.XXXXXX")"
+          trap 'rm -rf "$aforakit_scratch"' EXIT
           swift test \
-            --package-path apps/shared/OpenClawKit \
-            --scratch-path "$openclawkit_scratch" \
+            --package-path apps/shared/AforaKit \
+            --scratch-path "$aforakit_scratch" \
             --parallel
 
       - name: Swift test
@@ -3655,7 +3655,7 @@ jobs:
     name: "ios-build"
     needs: [preflight]
     if: needs.preflight.outputs.run_ios_build == 'true'
-    runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'macos-26' || (github.event_name == 'workflow_dispatch' || github.run_attempt > 1) && 'macos-26' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-12vcpu-macos-26' || 'macos-26') }}
+    runs-on: ${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'macos-26' || (github.event_name == 'workflow_dispatch' || github.run_attempt > 1) && 'macos-26' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-12vcpu-macos-26' || 'macos-26') }}
     timeout-minutes: 150
     env:
       HISTORICAL_TARGET: ${{ needs.preflight.outputs.compatibility_target }}
@@ -3687,7 +3687,7 @@ jobs:
       - name: Install iOS Swift tooling
         run: |
           if [[ -x ./scripts/install-xcodegen.sh && -x ./scripts/install-swift-tools.sh ]]; then
-            swift_tools_dir="$RUNNER_TEMP/openclaw-swift-tools"
+            swift_tools_dir="$RUNNER_TEMP/afora-swift-tools"
             ./scripts/install-xcodegen.sh "$swift_tools_dir"
             ./scripts/install-swift-tools.sh "$swift_tools_dir"
             echo "$swift_tools_dir" >> "$GITHUB_PATH"
@@ -3715,7 +3715,7 @@ jobs:
                 ;;
             esac
             swiftformat_archive="$RUNNER_TEMP/swiftformat-$swiftformat_version.zip"
-            swift_tools_dir="$RUNNER_TEMP/openclaw-legacy-swift-tools"
+            swift_tools_dir="$RUNNER_TEMP/afora-legacy-swift-tools"
             curl --fail --location --silent --show-error \
               --connect-timeout 10 --max-time 120 \
               --retry 3 --retry-max-time 120 \
@@ -3759,8 +3759,8 @@ jobs:
         if: env.HISTORICAL_TARGET != 'true'
         run: |
           xcodebuild \
-            -project apps/ios/OpenClaw.xcodeproj \
-            -scheme OpenClaw \
+            -project apps/ios/Afora.xcodeproj \
+            -scheme Afora \
             -configuration Release \
             -destination "generic/platform=iOS" \
             CODE_SIGNING_ALLOWED=NO \
@@ -3788,20 +3788,20 @@ jobs:
               process.stdout.write(simulator.udid);
             '
           )"
-          result_bundle="apps/ios/build/LifecycleTestResults/OpenClawLifecycleTests.xcresult"
+          result_bundle="apps/ios/build/LifecycleTestResults/AforaLifecycleTests.xcresult"
           mkdir -p "apps/ios/build/LifecycleTestResults"
           xcodebuild \
-            -project apps/ios/OpenClaw.xcodeproj \
-            -scheme OpenClaw \
+            -project apps/ios/Afora.xcodeproj \
+            -scheme Afora \
             -configuration Debug \
             -destination "platform=iOS Simulator,id=${simulator_id}" \
             -resultBundlePath "$result_bundle" \
             -parallel-testing-enabled NO \
-            -only-testing:OpenClawTests/DelayedActionGateTests \
-            -only-testing:OpenClawTests/NodeAppModelInvokeTests \
-            -only-testing:OpenClawTests/NotificationServingPreferenceTests \
-            -only-testing:OpenClawTests/RootTabsSourceGuardTests \
-            -only-testing:OpenClawTests/TraceHeadingVisualProofTests \
+            -only-testing:AforaTests/DelayedActionGateTests \
+            -only-testing:AforaTests/NodeAppModelInvokeTests \
+            -only-testing:AforaTests/NotificationServingPreferenceTests \
+            -only-testing:AforaTests/RootTabsSourceGuardTests \
+            -only-testing:AforaTests/TraceHeadingVisualProofTests \
             test
 
       - name: Upload iOS lifecycle simulator evidence
@@ -3836,7 +3836,7 @@ jobs:
     name: ${{ matrix.check_name }}
     needs: [preflight]
     if: needs.preflight.outputs.run_android_job == 'true'
-    runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-8vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
+    runs-on: ${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || (vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && 'ubuntu-24.04' || github.event_name == 'workflow_dispatch' && 'ubuntu-24.04' || (github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || contains(fromJSON('["OWNER","MEMBER","COLLABORATOR","CONTRIBUTOR"]'), github.event.pull_request.author_association)) && 'blacksmith-8vcpu-ubuntu-2404' || 'ubuntu-24.04') }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -3914,7 +3914,7 @@ jobs:
       # repository-global snapshots, so they keep the GitHub cache path (their
       # runs-on already selects non-Blacksmith ubuntu-24.04 runners).
       - name: Mount Gradle sticky disk
-        if: vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && !(vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw')
+        if: vars.AFORA_CI_RUNNER_BACKEND != 'github' && !(vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent')
         uses: useblacksmith/stickydisk@6d373c96a74cbde0c99fedc5ea5d3a7ba66ba494 # main (post-v1.4.0 hot-attach fix)
         with:
           # One stable disk per matrix task. The v1 per-PR/per-dependency-hash
@@ -3926,7 +3926,7 @@ jobs:
           # build lanes can never repair. Dependency-file changes live in the
           # runtime fingerprint marker below instead of the key.
           key: ${{ github.repository }}-gradle-v2-${{ matrix.task }}
-          path: /var/tmp/openclaw-gradle
+          path: /var/tmp/afora-gradle
           # Single semantic writer: only protected pushes commit, so
           # pull_request clones stay read-only and the snapshot tracks main.
           # Explicit true (not on-change) because the allocated-byte heuristic
@@ -3936,7 +3936,7 @@ jobs:
           commit: ${{ github.event_name != 'pull_request' && 'true' || 'false' }}
 
       - name: Point Gradle at the sticky disk
-        if: vars.OPENCLAW_CI_RUNNER_BACKEND != 'github' && !(vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && github.event_name != 'workflow_dispatch' && github.repository == 'openclaw/openclaw' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw')
+        if: vars.AFORA_CI_RUNNER_BACKEND != 'github' && !(vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) && github.event_name != 'workflow_dispatch' && github.repository == 'AforaMosh/afora-agent' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent')
         shell: bash
         env:
           # Gradle caches are content-addressed, so a stale snapshot is safe
@@ -3948,8 +3948,8 @@ jobs:
           STICKY_WRITER: ${{ github.event_name != 'pull_request' && 'true' || 'false' }}
         run: |
           set -euo pipefail
-          sticky_root=/var/tmp/openclaw-gradle
-          marker="$sticky_root/.openclaw-gradle-deps-fingerprint"
+          sticky_root=/var/tmp/afora-gradle
+          marker="$sticky_root/.afora-gradle-deps-fingerprint"
           disk_fingerprint=""
           if [ -f "$marker" ]; then
             disk_fingerprint="$(<"$marker")"
@@ -3969,7 +3969,7 @@ jobs:
       - name: Run Android ${{ matrix.task }}
         working-directory: apps/android
         env:
-          CI_RUNNER_BACKEND: ${{ (vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' || (vars.OPENCLAW_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) || github.event_name == 'workflow_dispatch' || github.repository != 'openclaw/openclaw' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'openclaw/openclaw')) && 'github' || 'blacksmith' }}
+          CI_RUNNER_BACKEND: ${{ (vars.AFORA_CI_RUNNER_BACKEND == 'github' || (vars.AFORA_CI_RUNNER_BACKEND == 'hybrid' && github.run_attempt > 1) || github.event_name == 'workflow_dispatch' || github.repository != 'AforaMosh/afora-agent' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'AforaMosh/afora-agent')) && 'github' || 'blacksmith' }}
           TASK: ${{ matrix.task }}
         shell: bash
         run: |
@@ -4043,7 +4043,7 @@ jobs:
   ci-gate:
     permissions:
       contents: read
-    name: openclaw/ci-gate
+    name: afora/ci-gate
     needs:
       - preflight
       - security-fast

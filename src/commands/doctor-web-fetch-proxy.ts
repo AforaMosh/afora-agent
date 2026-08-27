@@ -2,11 +2,11 @@
 import tls from "node:tls";
 import { note } from "../../packages/terminal-core/src/note.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveGatewayService, type GatewayService } from "../daemon/service.js";
 import { hasEnvHttpProxyConfigured } from "../infra/net/proxy-env.js";
 
-const DIRECT_PROBE_HOST = "docs.openclaw.ai";
+const DIRECT_PROBE_HOST = "docs.afora.ai";
 const DIRECT_PROBE_PORT = 443;
 const DIRECT_PROBE_TIMEOUT_MS = 3_000;
 const HTTP_PROXY_ENV_KEYS = ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"] as const;
@@ -63,7 +63,7 @@ async function resolveProxyEnvSources(params: {
 
 /** Builds a read-only diagnostic when proxy env exists but web_fetch remains direct. */
 async function collectWebFetchProxyDiagnostic(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   service?: Pick<GatewayService, "readCommand">;
   probeDirectConnectivity?: () => Promise<DirectConnectivity>;
@@ -100,14 +100,14 @@ async function collectWebFetchProxyDiagnostic(params: {
     "- web_fetch still uses direct connections because tools.web.fetch.useTrustedEnvProxy is not enabled.",
     directProbe,
     "- If direct web_fetch requests time out and the proxy is operator-controlled, enable the explicit opt-in:",
-    `  ${formatCliCommand("openclaw config set tools.web.fetch.useTrustedEnvProxy true")}`,
-    "- Keep the opt-in disabled for untrusted proxies; enabling it lets the proxy resolve DNS after OpenClaw's hostname checks.",
+    `  ${formatCliCommand("afora config set tools.web.fetch.useTrustedEnvProxy true")}`,
+    "- Keep the opt-in disabled for untrusted proxies; enabling it lets the proxy resolve DNS after Afora's hostname checks.",
   ].join("\n");
 }
 
 /** Emits the web_fetch proxy diagnostic when relevant. */
 export async function noteWebFetchProxyDiagnostic(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   service?: Pick<GatewayService, "readCommand">;
   probeDirectConnectivity?: () => Promise<DirectConnectivity>;

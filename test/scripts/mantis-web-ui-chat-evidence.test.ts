@@ -9,7 +9,7 @@ import {
 } from "../../scripts/mantis/build-web-ui-chat-evidence.mjs";
 
 function withTempDir<T>(fn: (dir: string) => T): T {
-  const dir = mkdtempSync(path.join(tmpdir(), "openclaw-mantis-web-ui-chat-"));
+  const dir = mkdtempSync(path.join(tmpdir(), "afora-mantis-web-ui-chat-"));
   try {
     return fn(dir);
   } finally {

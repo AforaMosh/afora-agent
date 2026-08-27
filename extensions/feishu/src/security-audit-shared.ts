@@ -1,12 +1,12 @@
 // Feishu plugin module implements security audit shared behavior.
-import { hasConfiguredSecretInput } from "openclaw/plugin-sdk/secret-input";
+import { hasConfiguredSecretInput } from "afora-agent/plugin-sdk/secret-input";
 import {
   asOptionalRecord as asRecord,
   hasNonEmptyString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
-import type { OpenClawConfig } from "../runtime-api.js";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
+import type { AforaConfig } from "../runtime-api.js";
 
-function isFeishuDocToolEnabled(cfg: OpenClawConfig): boolean {
+function isFeishuDocToolEnabled(cfg: AforaConfig): boolean {
   const channels = asRecord(cfg.channels);
   const feishu = asRecord(channels?.feishu);
   if (!feishu || feishu.enabled === false) {
@@ -46,7 +46,7 @@ function isFeishuDocToolEnabled(cfg: OpenClawConfig): boolean {
   return false;
 }
 
-export function collectFeishuSecurityAuditFindings(params: { cfg: OpenClawConfig }) {
+export function collectFeishuSecurityAuditFindings(params: { cfg: AforaConfig }) {
   if (!isFeishuDocToolEnabled(params.cfg)) {
     return [];
   }

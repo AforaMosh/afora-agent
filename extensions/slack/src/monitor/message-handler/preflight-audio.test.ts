@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SlackMessageEvent } from "../../types.js";
 import type { SlackMediaResult } from "../media-types.js";
@@ -16,9 +16,9 @@ const { transcribeFirstAudioMock } = vi.hoisted(() => ({
   transcribeFirstAudioMock: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/media-understanding-runtime", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/media-understanding-runtime", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("openclaw/plugin-sdk/media-understanding-runtime")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/media-understanding-runtime")>();
   return {
     ...actual,
     createChannelPreflightAudio: (
@@ -85,7 +85,7 @@ describe("Slack captionless audio preflight", () => {
 
   it("transcribes the first audio attachment and returns its ordered media index", async () => {
     transcribeFirstAudioMock.mockResolvedValue("Bill please review this");
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
     const media: SlackMediaResult[] = [
       { path: "/tmp/image.png", contentType: "image/png", placeholder: "[image]" },
       { path: "/tmp/voice.mp4", contentType: "audio/mp4", placeholder: "[voice]" },
@@ -117,7 +117,7 @@ describe("Slack captionless audio preflight", () => {
   });
 
   it("removes preflight downloads when the transcript does not admit the message", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-slack-audio-preflight-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-slack-audio-preflight-"));
     const audioPath = path.join(root, "voice.mp4");
     await fs.writeFile(audioPath, "voice");
 

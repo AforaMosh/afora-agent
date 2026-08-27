@@ -25,7 +25,7 @@ import { SettingsManager } from "../agents/sessions/settings-manager.js";
 import { resolveToolLoopDetectionConfig } from "../agents/tool-loop-detection-config.js";
 import { wrapToolWithGatewayCallerIdentity } from "../agents/tools/gateway-caller-context.js";
 import { DEFAULT_AGENTS_FILENAME, loadWorkspaceBootstrapFiles } from "../agents/workspace.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { AssistantMessage, AssistantMessageEventStreamLike } from "../llm/types.js";
 import { getProcessSupervisor } from "../process/supervisor/index.js";
 import { createWorkerBrowserToolRuntime, type WorkerBrowserRuntime } from "./browser-runtime.js";
@@ -99,7 +99,7 @@ type RunWorkerEmbeddedTurnParams = {
   signal?: AbortSignal;
 };
 
-const WORKER_TOOL_CONFIG = { plugins: { enabled: false } } satisfies OpenClawConfig;
+const WORKER_TOOL_CONFIG = { plugins: { enabled: false } } satisfies AforaConfig;
 
 export async function runWorkerEmbeddedTurn(params: RunWorkerEmbeddedTurnParams): Promise<void> {
   const browserAuthorized = params.allowedToolNames.includes("browser");

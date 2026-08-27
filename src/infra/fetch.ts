@@ -10,7 +10,7 @@ type RequestInitWithDuplex = RequestInit & { duplex?: "half" };
 
 // Mark wrapped fetch functions so repeated resolver calls preserve identity and
 // avoid stacking abort relays around the same implementation.
-const wrapFetchWithAbortSignalMarker = Symbol.for("openclaw.fetch.abort-signal-wrapped");
+const wrapFetchWithAbortSignalMarker = Symbol.for("afora.fetch.abort-signal-wrapped");
 
 type FetchWithAbortSignalMarker = typeof fetch & {
   [wrapFetchWithAbortSignalMarker]?: true;

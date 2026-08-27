@@ -1,7 +1,7 @@
 // Control UI E2E tests cover composer-replacing Gateway questions through the mocked WebSocket.
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
-import type { QuestionResolveResult } from "@openclaw/gateway-protocol";
+import type { QuestionResolveResult } from "@afora/gateway-protocol";
 import type { BrowserContext, Page } from "playwright";
 import { afterEach, expect, it } from "vitest";
 import type { SessionsListResult } from "../api/types.ts";
@@ -21,7 +21,7 @@ const suite = createControlUiE2eSuite({
     `Playwright Chromium is not available at ${executablePath}`,
 });
 
-const captureUiProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+const captureUiProof = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 const proofDir = path.join(process.cwd(), ".artifacts", "control-ui-e2e", "question-flow");
 const mainSessionKey = "agent:main:main";
 const questionSessionKey = "agent:main:question-proof";
@@ -137,7 +137,7 @@ async function openQuestionPage() {
 }
 
 function panelFor(page: Page, prompt: string) {
-  return page.locator("openclaw-chat-question-panel").filter({ hasText: prompt });
+  return page.locator("afora-chat-question-panel").filter({ hasText: prompt });
 }
 
 async function expectQuestionAttention(page: Page, present: boolean): Promise<void> {
@@ -277,7 +277,7 @@ suite.define(() => {
     await panel.waitFor();
     await expectQuestionAttention(page, true);
     await expect
-      .poll(() => page.locator(".chat-thread openclaw-chat-question-panel").count())
+      .poll(() => page.locator(".chat-thread afora-chat-question-panel").count())
       .toBe(0);
     await expect.poll(() => panel.getByText("1/1", { exact: true }).count()).toBe(1);
     await expect.poll(() => panel.getByPlaceholder("Type your own answer here").count()).toBe(1);
@@ -435,7 +435,7 @@ suite.define(() => {
     async ({ status, closeSubmittingPane }) => {
       const { gateway, page } = await openQuestionPage();
       await page.getByRole("button", { name: "Open split view" }).click();
-      const panes = page.locator("openclaw-chat-pane.chat-split-view__pane");
+      const panes = page.locator("afora-chat-pane.chat-split-view__pane");
       await expect.poll(() => panes.count()).toBe(2);
       await expect
         .poll(async () => (await gateway.getRequests("question.list")).length)
@@ -476,7 +476,7 @@ suite.define(() => {
         status === "answered" ? { id: request.id, answers } : { id: request.id, cancel: true },
       );
       expect(await gateway.getRequests("question.resolve")).toHaveLength(1);
-      const remainingPanes = page.locator("openclaw-chat-pane");
+      const remainingPanes = page.locator("afora-chat-pane");
       if (closeSubmittingPane) {
         await submittingPane.getByRole("button", { name: "Close pane", exact: true }).click();
         await expect.poll(() => remainingPanes.count()).toBe(1);

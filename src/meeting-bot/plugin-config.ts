@@ -1,14 +1,14 @@
 import {
   asPositiveFiniteNumber,
   resolvePositiveTimerTimeoutMs,
-} from "@openclaw/normalization-core/number-coercion";
-import { asRecord } from "@openclaw/normalization-core/record-coerce";
+} from "@afora/normalization-core/number-coercion";
+import { asRecord } from "@afora/normalization-core/record-coerce";
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import { normalizeOptionalTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
-import type { OpenClawPluginConfigSchema } from "../plugins/plugin-config-schema.types.js";
+} from "@afora/normalization-core/string-coerce";
+import { normalizeOptionalTrimmedStringList } from "@afora/normalization-core/string-normalization";
+import type { AforaPluginConfigSchema } from "../plugins/plugin-config-schema.types.js";
 import {
   resolveRealtimeVoiceAgentConsultToolPolicy,
   type RealtimeVoiceAgentConsultToolPolicy,
@@ -59,7 +59,7 @@ type MeetingPluginConfigOptions = {
 const DEFAULT_AUDIO_BUFFER_BYTES = 4_096;
 const DEFAULT_AUDIO_FORMAT: MeetingRealtimeAudioFormat = "pcm16-24khz";
 const DEFAULT_MODE_HELP =
-  "Agent consults OpenClaw, bidi uses direct realtime voice, and transcribe observes only.";
+  "Agent consults Afora, bidi uses direct realtime voice, and transcribe observes only.";
 const CHROME_NODE_HELP = "Node id/name/IP that owns Chrome and the native virtual-audio backend.";
 
 function resolveBoolean(value: unknown, fallback: boolean): boolean {
@@ -138,7 +138,7 @@ export function createMeetingPluginConfigSchema(options: MeetingPluginConfigOpti
       audioFormat: DEFAULT_AUDIO_FORMAT,
       audioBufferBytes: DEFAULT_AUDIO_BUFFER_BYTES,
       launch: true,
-      guestName: "OpenClaw Agent",
+      guestName: "Afora Agent",
       reuseExistingTab: true,
       autoJoin: true,
       joinTimeoutMs: 30_000,
@@ -255,7 +255,7 @@ export function createMeetingPluginConfigSchema(options: MeetingPluginConfigOpti
       "realtime.agentId": { label: "Realtime Consult Agent", advanced: true },
       "realtime.toolPolicy": { label: "Realtime Tool Policy", advanced: true },
     },
-  } satisfies OpenClawPluginConfigSchema;
+  } satisfies AforaPluginConfigSchema;
   return {
     configSchema,
     defaultAudioInputCommand: defaultAudioRuntime.inputCommand,

@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   ConfigFileSnapshot,
   ConfigValidationIssue,
-  OpenClawConfig,
-} from "../config/types.openclaw.js";
+  AforaConfig,
+} from "../config/types.afora.js";
 import { createPluginRecord } from "../plugins/status.test-fixtures.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import {
@@ -30,10 +30,10 @@ const workshopMocks = vi.hoisted(() => ({
 
 const cleanDoctorMessage =
   "Plugin discovery, module loading, compatibility, and configuration checks passed. " +
-  'Run "openclaw health" to check the running Gateway, including runtime quarantines and fallbacks.';
+  'Run "afora health" to check the running Gateway, including runtime quarantines and fallbacks.';
 
 async function mockPluginDoctorValidationWarnings(warnings: ConfigValidationIssue[]) {
-  const config: OpenClawConfig = {
+  const config: AforaConfig = {
     plugins: {
       allow: ["imessage", "memory-core"],
       entries: { google: { config: { apiKey: "test-google-key" } } },
@@ -53,7 +53,7 @@ async function mockPluginDoctorValidationWarnings(warnings: ConfigValidationIssu
       origin: "bundled",
       rootDir: `/plugins/${id}`,
       source: `/plugins/${id}`,
-      manifestPath: `/plugins/${id}/openclaw.plugin.json`,
+      manifestPath: `/plugins/${id}/afora.plugin.json`,
     })),
     diagnostics: [],
   });
@@ -245,7 +245,7 @@ describe("plugins cli list", () => {
   });
 
   it("emits one sanitized JSON doctor report without human decoration", async () => {
-    const homeDir = "/tmp/openclaw-plugin-doctor-home";
+    const homeDir = "/tmp/afora-plugin-doctor-home";
     buildPluginDiagnosticsReportMock.mockReturnValue({
       plugins: [
         createPluginRecord({
@@ -272,7 +272,7 @@ describe("plugins cli list", () => {
       ],
     });
 
-    await withEnvAsync({ OPENCLAW_HOME: homeDir }, async () => {
+    await withEnvAsync({ AFORA_HOME: homeDir }, async () => {
       await runPluginsCommand(["plugins", "doctor", "--json"]);
     });
 
@@ -286,14 +286,14 @@ describe("plugins cli list", () => {
       pluginErrors: [
         {
           id: "broken",
-          error: "failed to load $OPENCLAW_HOME/plugins/broken/runtime.ts",
-          source: "$OPENCLAW_HOME/plugins/broken/index.ts",
+          error: "failed to load $AFORA_HOME/plugins/broken/runtime.ts",
+          source: "$AFORA_HOME/plugins/broken/index.ts",
         },
       ],
       diagnostics: [
         {
           level: "warn",
-          message: "failed to inspect $OPENCLAW_HOME/plugins/unreadable",
+          message: "failed to inspect $AFORA_HOME/plugins/unreadable",
         },
       ],
       sourceShadowing: [
@@ -301,19 +301,19 @@ describe("plugins cli list", () => {
           pluginId: "broken",
           message:
             "duplicate plugin id resolved by explicit config-selected plugin; " +
-            "global plugin will be overridden by config plugin ($OPENCLAW_HOME/plugins/broken/index.ts)",
+            "global plugin will be overridden by config plugin ($AFORA_HOME/plugins/broken/index.ts)",
           active: {
-            source: "$OPENCLAW_HOME/plugins/broken/index.ts",
+            source: "$AFORA_HOME/plugins/broken/index.ts",
             origin: "config",
             status: "error",
-            error: "failed to load $OPENCLAW_HOME/plugins/broken/runtime.ts",
+            error: "failed to load $AFORA_HOME/plugins/broken/runtime.ts",
           },
-          shadowedSource: "$OPENCLAW_HOME/plugins/shadowed/index.ts",
+          shadowedSource: "$AFORA_HOME/plugins/shadowed/index.ts",
           repair: [
-            "openclaw plugins inspect broken",
+            "afora plugins inspect broken",
             "edit or remove the config-selected plugin source",
-            "openclaw plugins registry --refresh",
-            "openclaw gateway restart --force",
+            "afora plugins registry --refresh",
+            "afora gateway restart --force",
           ],
         },
       ],
@@ -385,7 +385,7 @@ describe("plugins cli list", () => {
     };
     pluginCliConfigMock.mockReturnValue({});
     readConfigFileSnapshotMock.mockResolvedValueOnce({
-      path: "/tmp/openclaw-config.json5",
+      path: "/tmp/afora-config.json5",
       exists: true,
       raw: "{}",
       parsed: sourceConfig,
@@ -415,7 +415,7 @@ describe("plugins cli list", () => {
       'plugins.slots.contextEngine: slot references missing plugin "lossless-claw".',
     );
     expect(output).toContain(
-      'Run "openclaw doctor --fix" to remove stale plugin ids and dangling channel references.',
+      'Run "afora doctor --fix" to remove stale plugin ids and dangling channel references.',
     );
     expect(output).toContain(
       "No plugin install-tree issues detected; configuration warnings remain.",
@@ -437,7 +437,7 @@ describe("plugins cli list", () => {
     };
     pluginCliConfigMock.mockReturnValue(sourceConfig);
     readConfigFileSnapshotMock.mockResolvedValueOnce({
-      path: "/tmp/openclaw-config.json5",
+      path: "/tmp/afora-config.json5",
       exists: true,
       raw: "{}",
       parsed: sourceConfig,
@@ -461,8 +461,8 @@ describe("plugins cli list", () => {
     const output = pluginsCliRuntimeLogs.join("\n");
     expect(output).toContain("Plugin configuration:");
     expect(output).toContain('Configured runtime "codex" requires the Codex plugin');
-    expect(output).toContain("openclaw doctor --fix");
-    expect(output).toContain("openclaw plugins install @openclaw/codex");
+    expect(output).toContain("afora doctor --fix");
+    expect(output).toContain("afora plugins install @afora/codex");
     expect(output).toContain(
       "No plugin install-tree issues detected; configuration warnings remain.",
     );
@@ -486,8 +486,8 @@ describe("plugins cli list", () => {
     const output = pluginsCliRuntimeLogs.join("\n");
     expect(output).toContain("Plugin configuration:");
     expect(output).toContain('Configured runtime "acpx" requires the ACPX Runtime plugin');
-    expect(output).toContain("openclaw doctor --fix");
-    expect(output).toContain("openclaw plugins install @openclaw/acpx");
+    expect(output).toContain("afora doctor --fix");
+    expect(output).toContain("afora plugins install @afora/acpx");
     expect(output).not.toContain(cleanDoctorMessage);
   });
 
@@ -514,8 +514,8 @@ describe("plugins cli list", () => {
     expect(output).toContain('Configured runtime "acpx" requires the ACPX Runtime plugin');
     expect(output).toContain("Set plugins.entries.acpx.enabled=true");
     expect(output).toContain("disable ACP/acpx in acp config");
-    expect(output).not.toContain('runtime policy to "openclaw"');
-    expect(output).not.toContain("openclaw plugins install @openclaw/acpx");
+    expect(output).not.toContain('runtime policy to "afora"');
+    expect(output).not.toContain("afora plugins install @afora/acpx");
     expect(output).not.toContain(cleanDoctorMessage);
   });
 
@@ -537,8 +537,8 @@ describe("plugins cli list", () => {
     expect(output).toContain('Configured runtime "acpx" requires the ACPX Runtime plugin');
     expect(output).toContain('Enable the "acpx" plugin');
     expect(output).toContain("disable ACP/acpx in acp config");
-    expect(output).not.toContain('runtime policy to "openclaw"');
-    expect(output).not.toContain("openclaw plugins install @openclaw/acpx");
+    expect(output).not.toContain('runtime policy to "afora"');
+    expect(output).not.toContain("afora plugins install @afora/acpx");
     expect(output).not.toContain(cleanDoctorMessage);
   });
 
@@ -610,7 +610,7 @@ describe("plugins cli list", () => {
     expect(output).toContain('Configured runtime "codex" requires the Codex plugin');
     expect(output).toContain('but "codex" is disabled');
     expect(output).toContain('Enable the "codex" plugin');
-    expect(output).not.toContain("openclaw plugins install @openclaw/codex");
+    expect(output).not.toContain("afora plugins install @afora/codex");
     expect(output).not.toContain(cleanDoctorMessage);
   });
 
@@ -641,8 +641,8 @@ describe("plugins cli list", () => {
     expect(output).toContain('Configured runtime "codex" requires the Codex plugin');
     expect(output).toContain('but "codex" is blocked by plugin configuration');
     expect(output).toContain('Remove "codex" from plugins.deny');
-    expect(output).not.toContain('Run "openclaw doctor --fix" to install');
-    expect(output).not.toContain("openclaw plugins install @openclaw/codex");
+    expect(output).not.toContain('Run "afora doctor --fix" to install');
+    expect(output).not.toContain("afora plugins install @afora/codex");
     expect(output).not.toContain(cleanDoctorMessage);
   });
 
@@ -675,8 +675,8 @@ describe("plugins cli list", () => {
     expect(output).toContain('Configured runtime "codex" requires the Codex plugin');
     expect(output).toContain('but "codex" is blocked by plugin configuration');
     expect(output).toContain("Set plugins.entries.codex.enabled=true");
-    expect(output).not.toContain('Run "openclaw doctor --fix" to install');
-    expect(output).not.toContain("openclaw plugins install @openclaw/codex");
+    expect(output).not.toContain('Run "afora doctor --fix" to install');
+    expect(output).not.toContain("afora plugins install @afora/codex");
     expect(output).not.toContain(cleanDoctorMessage);
   });
 
@@ -686,7 +686,7 @@ describe("plugins cli list", () => {
         createPluginRecord({
           id: "discord",
           origin: "config",
-          source: "/tmp/openclaw-upstream/extensions/discord/index.ts",
+          source: "/tmp/afora-upstream/extensions/discord/index.ts",
           status: "error",
           error: "Cannot find module 'chalk'",
         }),
@@ -695,9 +695,9 @@ describe("plugins cli list", () => {
         {
           level: "warn",
           pluginId: "discord",
-          source: "/tmp/openclaw/npm/node_modules/@openclaw/discord/index.ts",
+          source: "/tmp/afora/npm/node_modules/@afora/discord/index.ts",
           message:
-            "duplicate plugin id resolved by explicit config-selected plugin; global plugin will be overridden by config plugin (/tmp/openclaw-upstream/extensions/discord/index.ts)",
+            "duplicate plugin id resolved by explicit config-selected plugin; global plugin will be overridden by config plugin (/tmp/afora-upstream/extensions/discord/index.ts)",
         },
       ],
     });
@@ -709,9 +709,9 @@ describe("plugins cli list", () => {
     expect(output).toContain(
       "discord: duplicate plugin id resolved by explicit config-selected plugin",
     );
-    expect(output).toContain("active: /tmp/openclaw-upstream/extensions/discord/index.ts");
-    expect(output).toContain("shadowed: /tmp/openclaw/npm/node_modules/@openclaw/discord/index.ts");
-    expect(output).toContain("openclaw plugins registry --refresh");
+    expect(output).toContain("active: /tmp/afora-upstream/extensions/discord/index.ts");
+    expect(output).toContain("shadowed: /tmp/afora/npm/node_modules/@afora/discord/index.ts");
+    expect(output).toContain("afora plugins registry --refresh");
   });
 
   it("does not report healthy config-selected plugin source shadowing as doctor issue", async () => {
@@ -720,7 +720,7 @@ describe("plugins cli list", () => {
         createPluginRecord({
           id: "discord",
           origin: "config",
-          source: "/tmp/openclaw-upstream/extensions/discord/index.ts",
+          source: "/tmp/afora-upstream/extensions/discord/index.ts",
           status: "loaded",
         }),
       ],
@@ -728,9 +728,9 @@ describe("plugins cli list", () => {
         {
           level: "warn",
           pluginId: "discord",
-          source: "/tmp/openclaw/npm/node_modules/@openclaw/discord/index.ts",
+          source: "/tmp/afora/npm/node_modules/@afora/discord/index.ts",
           message:
-            "duplicate plugin id resolved by explicit config-selected plugin; global plugin will be overridden by config plugin (/tmp/openclaw-upstream/extensions/discord/index.ts)",
+            "duplicate plugin id resolved by explicit config-selected plugin; global plugin will be overridden by config plugin (/tmp/afora-upstream/extensions/discord/index.ts)",
         },
       ],
     });
@@ -762,7 +762,7 @@ describe("plugins cli list", () => {
     expect(pluginsCliRuntimeLogs.join("\n")).toContain("State:");
     expect(pluginsCliRuntimeLogs.join("\n")).toContain("stale");
     expect(pluginsCliRuntimeLogs.join("\n")).toContain("Refresh reasons:");
-    expect(pluginsCliRuntimeLogs.join("\n")).toContain("openclaw plugins registry --refresh");
+    expect(pluginsCliRuntimeLogs.join("\n")).toContain("afora plugins registry --refresh");
   });
 
   it("refreshes the persisted plugin registry on request", async () => {
@@ -785,18 +785,18 @@ describe("plugins cli list", () => {
 
   it("keeps inspect on the static snapshot by default", async () => {
     setInstalledPluginIndexInstallRecords({
-      "openclaw-mem0": {
+      "afora-mem0": {
         source: "clawhub",
-        spec: "clawhub:openclaw-mem0",
-        installPath: "/plugins/openclaw-mem0",
+        spec: "clawhub:afora-mem0",
+        installPath: "/plugins/afora-mem0",
         version: "2026.5.1",
-        clawhubPackage: "openclaw-mem0",
+        clawhubPackage: "afora-mem0",
         clawhubChannel: "official",
         artifactKind: "npm-pack",
         artifactFormat: "tgz",
         npmIntegrity: "sha512-clawpack",
         npmShasum: "1".repeat(40),
-        npmTarballName: "openclaw-mem0-2026.5.1.tgz",
+        npmTarballName: "afora-mem0-2026.5.1.tgz",
         clawpackSha256: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         clawpackSpecVersion: 1,
         clawpackManifestSha256: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
@@ -804,12 +804,12 @@ describe("plugins cli list", () => {
       },
     });
     buildPluginSnapshotReportMock.mockReturnValue({
-      plugins: [createPluginRecord({ id: "openclaw-mem0", name: "Mem0" })],
+      plugins: [createPluginRecord({ id: "afora-mem0", name: "Mem0" })],
       diagnostics: [],
     });
     buildPluginInspectReportMock.mockReturnValue({
       workspaceDir: "/workspace",
-      plugin: createPluginRecord({ id: "openclaw-mem0", name: "Mem0" }),
+      plugin: createPluginRecord({ id: "afora-mem0", name: "Mem0" }),
       shape: "hook-only",
       capabilityMode: "plain",
       capabilityCount: 1,
@@ -839,12 +839,12 @@ describe("plugins cli list", () => {
       compatibility: [],
     });
 
-    await runPluginsCommand(["plugins", "inspect", "openclaw-mem0"]);
+    await runPluginsCommand(["plugins", "inspect", "afora-mem0"]);
 
     expect(buildPluginDiagnosticsReportMock).not.toHaveBeenCalled();
     expect(pluginsCliRuntimeLogs.join("\n")).toContain("Policy");
     expect(pluginsCliRuntimeLogs.join("\n")).toContain("allowConversationAccess: true");
-    expect(pluginsCliRuntimeLogs.join("\n")).toContain("ClawHub package: openclaw-mem0");
+    expect(pluginsCliRuntimeLogs.join("\n")).toContain("ClawHub package: afora-mem0");
     expect(pluginsCliRuntimeLogs.join("\n")).toContain("Artifact kind: npm-pack");
     expect(pluginsCliRuntimeLogs.join("\n")).toContain("Npm integrity: sha512-clawpack");
     expect(pluginsCliRuntimeLogs.join("\n")).toContain(
@@ -859,12 +859,12 @@ describe("plugins cli list", () => {
 
   it("runtime-inspects without repairing deps", async () => {
     buildPluginSnapshotReportMock.mockReturnValue({
-      plugins: [createPluginRecord({ id: "openclaw-mem0", name: "Mem0" })],
+      plugins: [createPluginRecord({ id: "afora-mem0", name: "Mem0" })],
       diagnostics: [],
     });
     buildPluginInspectReportMock.mockReturnValue({
       workspaceDir: "/workspace",
-      plugin: createPluginRecord({ id: "openclaw-mem0", name: "Mem0" }),
+      plugin: createPluginRecord({ id: "afora-mem0", name: "Mem0" }),
       shape: "hook-only",
       capabilityMode: "plain",
       capabilityCount: 1,
@@ -889,11 +889,11 @@ describe("plugins cli list", () => {
       compatibility: [],
     });
 
-    await runPluginsCommand(["plugins", "inspect", "openclaw-mem0", "--runtime"]);
+    await runPluginsCommand(["plugins", "inspect", "afora-mem0", "--runtime"]);
 
     expect(buildPluginDiagnosticsReportMock).toHaveBeenCalledWith({
       config: {},
-      onlyPluginIds: ["openclaw-mem0"],
+      onlyPluginIds: ["afora-mem0"],
     });
   });
 
@@ -913,7 +913,7 @@ describe("plugins cli list", () => {
   });
 
   it("explains a policy-hidden built-in Skill Workshop at the legacy inspect surface", async () => {
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       tools: { profile: "messaging" },
     };
     pluginCliConfigMock.mockReturnValue(config);
@@ -935,7 +935,7 @@ describe("plugins cli list", () => {
     );
 
     expect(runtimeErrors.at(-1)).toContain(
-      "Skill Workshop is built into OpenClaw, not a plugin; configure it under skills.workshop.",
+      "Skill Workshop is built into Afora, not a plugin; configure it under skills.workshop.",
     );
     expect(workshopMocks.detectToolPolicyDiagnostic).toHaveBeenCalledWith({
       config,

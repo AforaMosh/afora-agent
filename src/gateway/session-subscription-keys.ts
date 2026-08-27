@@ -1,4 +1,4 @@
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { normalizeAgentId } from "../routing/session-key.js";
 
 export function resolveSessionSubscriptionKey(sessionKey: string, agentId: string): string {

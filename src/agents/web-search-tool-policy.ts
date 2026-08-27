@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { InputProvenance } from "../sessions/input-provenance.js";
 import { resolveEffectiveToolPolicy, resolveGroupToolPolicy } from "./agent-tools.policy.js";
 import { resolveRequesterToolPolicies } from "./requester-tool-policy.js";
@@ -11,7 +11,7 @@ import { mergeAlsoAllowPolicy, resolveToolProfilePolicy } from "./tool-policy.js
 
 export type WebSearchToolPolicyParams = {
   webSearchEnabled?: boolean;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   modelProvider?: string;
   modelId?: string;
   agentId?: string;

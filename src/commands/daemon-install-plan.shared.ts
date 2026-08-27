@@ -62,13 +62,13 @@ export function resolveDaemonNodeBinDir(nodePath?: string): string[] | undefined
   return [path.dirname(trimmed)];
 }
 
-function isOpenClawCommandBasename(basename: string, platform: NodeJS.Platform): boolean {
-  if (basename === "openclaw") {
+function isAforaCommandBasename(basename: string, platform: NodeJS.Platform): boolean {
+  if (basename === "afora") {
     return true;
   }
   if (platform === "win32") {
     return (
-      basename === "openclaw.cmd" || basename === "openclaw.ps1" || basename === "openclaw.exe"
+      basename === "afora.cmd" || basename === "afora.ps1" || basename === "afora.exe"
     );
   }
   return false;
@@ -95,8 +95,8 @@ function addUniquePathDir(dirs: string[], dir: string | undefined): void {
   dirs.push(dir);
 }
 
-/** Resolve the OpenClaw CLI binary directory from argv/PATH for daemon PATH. */
-function resolveDaemonOpenClawBinDir(
+/** Resolve the Afora CLI binary directory from argv/PATH for daemon PATH. */
+function resolveDaemonAforaBinDir(
   params: {
     argv?: string[];
     env?: Record<string, string | undefined>;
@@ -116,7 +116,7 @@ function resolveDaemonOpenClawBinDir(
   if (
     argv1 &&
     path.isAbsolute(argv1) &&
-    isOpenClawCommandBasename(path.basename(argv1), platform)
+    isAforaCommandBasename(path.basename(argv1), platform)
   ) {
     addUniquePathDir(dirs, path.dirname(argv1));
   }
@@ -129,7 +129,7 @@ function resolveDaemonOpenClawBinDir(
     if (!path.isAbsolute(segment)) {
       continue;
     }
-    const candidate = path.join(segment, platform === "win32" ? "openclaw.cmd" : "openclaw");
+    const candidate = path.join(segment, platform === "win32" ? "afora.cmd" : "afora");
     if (!existsSync(candidate)) {
       continue;
     }
@@ -143,7 +143,7 @@ function resolveDaemonOpenClawBinDir(
   return dirs.length > 0 ? dirs : undefined;
 }
 
-/** Merge Node and OpenClaw binary directories for the daemon service PATH. */
+/** Merge Node and Afora binary directories for the daemon service PATH. */
 export function resolveDaemonServicePathDirs(params: {
   nodePath?: string;
   argv?: string[];
@@ -154,7 +154,7 @@ export function resolveDaemonServicePathDirs(params: {
   for (const dir of resolveDaemonNodeBinDir(params.nodePath) ?? []) {
     addUniquePathDir(dirs, dir);
   }
-  for (const dir of resolveDaemonOpenClawBinDir(params) ?? []) {
+  for (const dir of resolveDaemonAforaBinDir(params) ?? []) {
     addUniquePathDir(dirs, dir);
   }
   return dirs.length > 0 ? dirs : undefined;

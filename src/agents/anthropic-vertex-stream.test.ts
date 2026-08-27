@@ -24,7 +24,7 @@ describe("anthropic-vertex stream facade", () => {
       (model: { baseUrl?: string }, env: NodeJS.ProcessEnv) => async () => ({
         marker: "external-vertex",
         baseUrl: model.baseUrl,
-        envMarker: env.OPENCLAW_TEST_MARKER,
+        envMarker: env.AFORA_TEST_MARKER,
       }),
     );
     facadeRuntimeMocks.loadBundledPluginPublicSurfaceModuleSync.mockReturnValue({
@@ -34,7 +34,7 @@ describe("anthropic-vertex stream facade", () => {
     const { createAnthropicVertexStreamFnForModel } = await import("./anthropic-vertex-stream.js");
     const streamFn = createAnthropicVertexStreamFnForModel(
       { baseUrl: "https://us-central1-aiplatform.googleapis.com" },
-      { OPENCLAW_TEST_MARKER: "registry" },
+      { AFORA_TEST_MARKER: "registry" },
     );
 
     expect(facadeRuntimeMocks.loadBundledPluginPublicSurfaceModuleSync).toHaveBeenCalledWith({
@@ -43,7 +43,7 @@ describe("anthropic-vertex stream facade", () => {
     });
     expect(createStream).toHaveBeenCalledWith(
       { baseUrl: "https://us-central1-aiplatform.googleapis.com" },
-      { OPENCLAW_TEST_MARKER: "registry" },
+      { AFORA_TEST_MARKER: "registry" },
     );
     await expect(streamFn({} as never, {} as never, {} as never)).resolves.toEqual({
       marker: "external-vertex",

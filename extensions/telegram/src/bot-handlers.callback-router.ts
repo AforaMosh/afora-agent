@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 import type { Context } from "grammy";
-import { parseExecApprovalCommandText } from "openclaw/plugin-sdk/approval-reply-runtime";
-import { buildCommandsMessagePaginated } from "openclaw/plugin-sdk/command-status";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { applySessionModelSelection } from "openclaw/plugin-sdk/model-session-runtime";
-import { formatModelsAvailableHeader } from "openclaw/plugin-sdk/models-provider-runtime";
-import { parseStrictPositiveInteger } from "openclaw/plugin-sdk/number-runtime";
-import { danger, logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { getSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
+import { parseExecApprovalCommandText } from "afora-agent/plugin-sdk/approval-reply-runtime";
+import { buildCommandsMessagePaginated } from "afora-agent/plugin-sdk/command-status";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { applySessionModelSelection } from "afora-agent/plugin-sdk/model-session-runtime";
+import { formatModelsAvailableHeader } from "afora-agent/plugin-sdk/models-provider-runtime";
+import { parseStrictPositiveInteger } from "afora-agent/plugin-sdk/number-runtime";
+import { danger, logVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { getSessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import {
   hasTelegramApprovalCallbackPrefix,
@@ -420,7 +420,7 @@ async function handleTelegramModelCallback(params: {
   messageThreadId?: number;
   resolvedThreadId?: number;
   senderId: string;
-  runtimeCfg: OpenClawConfig;
+  runtimeCfg: AforaConfig;
   telegramDeps: RegisterTelegramHandlerParams["telegramDeps"];
   actions: TelegramCallbackMessageActions;
   messageRuntime: TelegramCallbackMessageRuntime;
@@ -686,7 +686,7 @@ async function handleTelegramModelCallback(params: {
         : "Runtime unchanged.";
     const scopeText = isDefaultSelection
       ? `Session model selection cleared.${defaultAuthProfileNotice ? ` ${defaultAuthProfileNotice}` : ""} ${runtimeText} New replies use the agent's configured default.`
-      : `Session-only model selection. ${runtimeText} Use /model ${escapeHtml(selection.provider)}/${escapeHtml(selection.model)} --runtime &lt;runtime&gt; -s to switch harnesses. The agent default in openclaw.json is unchanged. This chat keeps the model selection across /new and /reset; use /model default -s to clear the session model selection.`;
+      : `Session-only model selection. ${runtimeText} Use /model ${escapeHtml(selection.provider)}/${escapeHtml(selection.model)} --runtime &lt;runtime&gt; -s to switch harnesses. The agent default in afora.json is unchanged. This chat keeps the model selection across /new and /reset; use /model default -s to clear the session model selection.`;
     await editMessageWithButtons(`✅ Model ${actionText}\n\n${scopeText}`, [], {
       parse_mode: "HTML",
     });

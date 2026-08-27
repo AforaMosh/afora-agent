@@ -3,7 +3,7 @@ import EventKit
 import Foundation
 import Photos
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 struct PrivacyAccessRegistrationTests {
     @Test func `refresh all reconnects once for advertised permission changes`() throws {

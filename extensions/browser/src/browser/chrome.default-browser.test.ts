@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("node:child_process", async () => {
-  const { mockNodeBuiltinModule } = await import("openclaw/plugin-sdk/test-node-mocks");
+  const { mockNodeBuiltinModule } = await import("afora-agent/plugin-sdk/test-node-mocks");
   return mockNodeBuiltinModule(
     () => vi.importActual<typeof import("node:child_process")>("node:child_process"),
     {
@@ -11,7 +11,7 @@ vi.mock("node:child_process", async () => {
   );
 });
 vi.mock("node:fs", async () => {
-  const { mockNodeBuiltinModule } = await import("openclaw/plugin-sdk/test-node-mocks");
+  const { mockNodeBuiltinModule } = await import("afora-agent/plugin-sdk/test-node-mocks");
   const actual = await vi.importActual<typeof import("node:fs")>("node:fs");
   const accessSync = vi.fn();
   const existsSync = vi.fn();
@@ -25,7 +25,7 @@ vi.mock("node:fs", async () => {
   );
 });
 vi.mock("node:os", async () => {
-  const { mockNodeBuiltinModule } = await import("openclaw/plugin-sdk/test-node-mocks");
+  const { mockNodeBuiltinModule } = await import("afora-agent/plugin-sdk/test-node-mocks");
   const homedir = vi.fn();
   return mockNodeBuiltinModule(
     () => vi.importActual<typeof import("node:os")>("node:os"),

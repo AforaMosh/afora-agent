@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { renderMarkdownWithAttributedRanges } from "openclaw/plugin-sdk/text-chunking";
+import { renderMarkdownWithAttributedRanges } from "afora-agent/plugin-sdk/text-chunking";
 import { collectBlockEdits } from "./text-styles-compile.js";
 import { projectLocalTokens } from "./text-styles-inline.js";
 import {

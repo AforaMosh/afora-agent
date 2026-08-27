@@ -27,7 +27,7 @@ import { isReasoningTagProvider } from "../../utils/provider-utils.js";
 import { createBundleLspToolRuntime } from "../agent-bundle-lsp-runtime.js";
 import { createBundleMcpToolRuntime } from "../agent-bundle-mcp-tools.js";
 import { resolveSessionAgentIds } from "../agent-scope.js";
-import { createOpenClawCodingTools } from "../agent-tools.js";
+import { createAforaCodingTools } from "../agent-tools.js";
 import { listActiveProcessSessionReferences } from "../bash-process-references.js";
 import { resolveProcessToolScopeKey } from "../bash-process-scope.js";
 import {
@@ -42,7 +42,7 @@ import {
 } from "../channel-tools.js";
 import { resolveConversationCapabilityProfile } from "../conversation-capability-profile.js";
 import { formatDateStamp, resolveUserTimezone } from "../date-time.js";
-import { resolveOpenClawReferencePaths } from "../docs-path.js";
+import { resolveAforaReferencePaths } from "../docs-path.js";
 import { resolveHeartbeatPromptForSystemPrompt } from "../heartbeat-system-prompt.js";
 import { prepareAgentMemoryPrompt } from "../memory-prompt-prepare.js";
 import {
@@ -301,7 +301,7 @@ export async function buildPreparedCompactionRuntime(prepared: DirectCompactionP
     });
     const toolsEnabled = supportsModelTools(effectiveModel);
     const toolsRaw = toolsEnabled
-      ? createOpenClawCodingTools({
+      ? createAforaCodingTools({
           exec: {
             ...params.execOverrides,
             config: params.config,
@@ -525,7 +525,7 @@ export async function buildPreparedCompactionRuntime(prepared: DirectCompactionP
     const nativeCommandGuidanceLines = listRegisteredPluginAgentPromptGuidance({
       surface: promptSurface,
     });
-    const openClawReferences = await resolveOpenClawReferencePaths({
+    const aforaReferences = await resolveAforaReferencePaths({
       workspaceDir: effectiveWorkspace,
       argv1: process.argv[1],
       cwd: effectiveCwd,
@@ -583,8 +583,8 @@ export async function buildPreparedCompactionRuntime(prepared: DirectCompactionP
           defaultAgentId,
         }),
         skillsPrompt,
-        docsPath: openClawReferences.docsPath ?? undefined,
-        sourcePath: openClawReferences.sourcePath ?? undefined,
+        docsPath: aforaReferences.docsPath ?? undefined,
+        sourcePath: aforaReferences.sourcePath ?? undefined,
         promptMode,
         promptSurface,
         sourceReplyDeliveryMode: params.sourceReplyDeliveryMode,

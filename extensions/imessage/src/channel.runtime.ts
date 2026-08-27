@@ -2,7 +2,7 @@
 import {
   createAccountStatusSink,
   resolveOutboundSendDep,
-} from "openclaw/plugin-sdk/channel-outbound";
+} from "afora-agent/plugin-sdk/channel-outbound";
 import {
   listEnabledIMessageAccounts,
   resolveIMessageDuplicateSourceOwner,
@@ -112,7 +112,7 @@ export async function startIMessageGatewayAccount(
   );
   const ownerAccountId = resolveIMessageDuplicateSourceOwner({ cfg: ctx.cfg, account });
   if (ownerAccountId) {
-    // openclaw/openclaw#65141: this account shares a local Messages source with
+    // AforaMosh/afora-agent#65141: this account shares a local Messages source with
     // an already-owning account, so spawning a second `imsg rpc` would deliver
     // every inbound twice. Keep the account enabled for outbound sends, status,
     // and capability surfaces; just park the watcher slot until shutdown. Lifecycle stays silent:

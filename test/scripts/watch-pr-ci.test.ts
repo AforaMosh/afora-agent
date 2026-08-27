@@ -18,7 +18,7 @@ describe("watch-pr-ci", () => {
     expect(parseArgs(["42", sha])).toEqual({
       pr: 42,
       headSha: sha,
-      repo: "openclaw/openclaw",
+      repo: "AforaMosh/afora-agent",
       attachTimeout: 900,
       timeout: 3600,
       interval: 120,
@@ -67,11 +67,11 @@ describe("watch-pr-ci", () => {
   });
 
   it("builds a pull-request-only run attachment query", () => {
-    expect(buildFindRunArgs("openclaw/openclaw", sha)).toEqual([
+    expect(buildFindRunArgs("AforaMosh/afora-agent", sha)).toEqual([
       "api",
       "--method",
       "GET",
-      "repos/openclaw/openclaw/actions/workflows/ci.yml/runs",
+      "repos/AforaMosh/afora-agent/actions/workflows/ci.yml/runs",
       "-f",
       "event=pull_request",
       "-f",

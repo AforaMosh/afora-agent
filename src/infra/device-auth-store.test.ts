@@ -3,9 +3,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { withTempDir } from "../test-utils/temp-dir.js";
 import {
   clearDeviceAuthToken,
@@ -23,21 +23,21 @@ import { requireNodeSqlite } from "./node-sqlite.js";
 
 function createEnv(stateDir: string): NodeJS.ProcessEnv {
   return {
-    OPENCLAW_STATE_DIR: stateDir,
-    OPENCLAW_TEST_FAST: "1",
+    AFORA_STATE_DIR: stateDir,
+    AFORA_TEST_FAST: "1",
   };
 }
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   vi.restoreAllMocks();
 });
 
 describe("infra/device-auth-store", () => {
   it("reads no device auth and creates no database when shared state is absent", async () => {
-    await withTempDir("openclaw-device-auth-readonly-missing-", async (stateDir) => {
+    await withTempDir("afora-device-auth-readonly-missing-", async (stateDir) => {
       const env = createEnv(stateDir);
-      const databasePath = path.join(stateDir, "state", "openclaw.sqlite");
+      const databasePath = path.join(stateDir, "state", "afora.sqlite");
 
       expect(
         loadDeviceAuthTokenReadOnly({ deviceId: "device-1", role: "operator", env }),
@@ -55,7 +55,7 @@ describe("infra/device-auth-store", () => {
   });
 
   it("reads existing device auth without opening writable shared state", async () => {
-    await withTempDir("openclaw-device-auth-readonly-", async (stateDir) => {
+    await withTempDir("afora-device-auth-readonly-", async (stateDir) => {
       const env = createEnv(stateDir);
       storeDeviceAuthToken({
         deviceId: "device-1",
@@ -70,8 +70,8 @@ describe("infra/device-auth-store", () => {
         token: "origin-token",
         env,
       });
-      closeOpenClawStateDatabaseForTest();
-      const databaseDirectory = path.dirname(path.join(stateDir, "state", "openclaw.sqlite"));
+      closeAforaStateDatabaseForTest();
+      const databaseDirectory = path.dirname(path.join(stateDir, "state", "afora.sqlite"));
       const artifactsBeforeRead = fs.readdirSync(databaseDirectory).toSorted();
 
       expect(
@@ -90,25 +90,25 @@ describe("infra/device-auth-store", () => {
   });
 
   it("lazily adds origin-scoped tokens without changing the schema version", async () => {
-    await withTempDir("openclaw-device-auth-origin-", async (stateDir) => {
+    await withTempDir("afora-device-auth-origin-", async (stateDir) => {
       const env = createEnv(stateDir);
-      const databasePath = path.join(stateDir, "state", "openclaw.sqlite");
-      const opened = openOpenClawStateDatabase({ env });
+      const databasePath = path.join(stateDir, "state", "afora.sqlite");
+      const opened = openAforaStateDatabase({ env });
       const version = opened.db.prepare("PRAGMA user_version").get();
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
 
       const { DatabaseSync } = requireNodeSqlite();
       const beforeEnsure = new DatabaseSync(databasePath);
       beforeEnsure.exec("DROP TABLE gateway_origin_device_tokens;");
       beforeEnsure.close();
 
-      const reopened = openOpenClawStateDatabase({ env });
+      const reopened = openAforaStateDatabase({ env });
       expect(
         reopened.db
           .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = ?")
           .get("gateway_origin_device_tokens"),
       ).toBeUndefined();
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
 
       expect(
         loadOriginDeviceToken({
@@ -130,7 +130,7 @@ describe("infra/device-auth-store", () => {
   });
 
   it("never exposes a device token to a different gateway origin", async () => {
-    await withTempDir("openclaw-device-auth-origin-", async (stateDir) => {
+    await withTempDir("afora-device-auth-origin-", async (stateDir) => {
       const env = createEnv(stateDir);
       storeOriginDeviceToken({
         gatewayScope: "wss://one.example/rpc",
@@ -166,7 +166,7 @@ describe("infra/device-auth-store", () => {
   });
 
   it("upserts and clears only the exact origin, device, and normalized role", async () => {
-    await withTempDir("openclaw-device-auth-origin-", async (stateDir) => {
+    await withTempDir("afora-device-auth-origin-", async (stateDir) => {
       const env = createEnv(stateDir);
       storeOriginDeviceToken({
         gatewayScope: "wss://one.example",
@@ -224,7 +224,7 @@ describe("infra/device-auth-store", () => {
   });
 
   it("stores and loads normalized device auth tokens in SQLite", async () => {
-    await withTempDir("openclaw-device-auth-", async (stateDir) => {
+    await withTempDir("afora-device-auth-", async (stateDir) => {
       vi.spyOn(Date, "now").mockReturnValue(1234);
       const env = createEnv(stateDir);
 
@@ -249,7 +249,7 @@ describe("infra/device-auth-store", () => {
   });
 
   it("isolates device ids and overwrites only the normalized role", async () => {
-    await withTempDir("openclaw-device-auth-", async (stateDir) => {
+    await withTempDir("afora-device-auth-", async (stateDir) => {
       const env = createEnv(stateDir);
       vi.spyOn(Date, "now").mockReturnValueOnce(1).mockReturnValueOnce(2).mockReturnValueOnce(3);
 
@@ -274,9 +274,9 @@ describe("infra/device-auth-store", () => {
   });
 
   it("fails closed for malformed canonical scope metadata", async () => {
-    await withTempDir("openclaw-device-auth-", async (stateDir) => {
+    await withTempDir("afora-device-auth-", async (stateDir) => {
       const env = createEnv(stateDir);
-      const { db } = openOpenClawStateDatabase({ env });
+      const { db } = openAforaStateDatabase({ env });
       executeSqliteQuerySync(
         db,
         getNodeSqliteKysely<{
@@ -304,20 +304,20 @@ describe("infra/device-auth-store", () => {
   });
 
   it("fails closed with repair guidance while retired JSON remains", async () => {
-    await withTempDir("openclaw-device-auth-", async (stateDir) => {
+    await withTempDir("afora-device-auth-", async (stateDir) => {
       const env = createEnv(stateDir);
       const legacyPath = path.join(stateDir, "identity", "device-auth.json");
       fs.mkdirSync(path.dirname(legacyPath), { recursive: true });
       fs.writeFileSync(legacyPath, '{"version":1}');
-      openOpenClawStateDatabase({ env })
+      openAforaStateDatabase({ env })
         .db.prepare(
           "INSERT INTO device_auth_tokens (device_id, role, token, scopes_json, updated_at_ms) VALUES (?, ?, ?, ?, ?)",
         )
         .run("device-1", "operator", "sqlite-token", "[]", 1);
-      openOpenClawStateDatabase({ env }).db.exec("DROP TABLE gateway_origin_device_tokens;");
+      openAforaStateDatabase({ env }).db.exec("DROP TABLE gateway_origin_device_tokens;");
 
       expect(() => loadDeviceAuthToken({ deviceId: "device-1", role: "operator", env })).toThrow(
-        "openclaw doctor --fix",
+        "afora doctor --fix",
       );
       expect(() =>
         storeDeviceAuthToken({
@@ -326,7 +326,7 @@ describe("infra/device-auth-store", () => {
           token: "replacement",
           env,
         }),
-      ).toThrow("openclaw doctor --fix");
+      ).toThrow("afora doctor --fix");
       expect(() =>
         loadOriginDeviceToken({
           gatewayScope: "wss://one.example",
@@ -334,7 +334,7 @@ describe("infra/device-auth-store", () => {
           role: "operator",
           env,
         }),
-      ).toThrow("openclaw doctor --fix");
+      ).toThrow("afora doctor --fix");
       expect(() =>
         storeOriginDeviceToken({
           gatewayScope: "wss://one.example",
@@ -343,7 +343,7 @@ describe("infra/device-auth-store", () => {
           token: "origin-token",
           env,
         }),
-      ).toThrow("openclaw doctor --fix");
+      ).toThrow("afora doctor --fix");
       expect(() =>
         clearOriginDeviceToken({
           gatewayScope: "wss://one.example",
@@ -351,9 +351,9 @@ describe("infra/device-auth-store", () => {
           role: "operator",
           env,
         }),
-      ).toThrow("openclaw doctor --fix");
+      ).toThrow("afora doctor --fix");
       expect(
-        openOpenClawStateDatabase({ env })
+        openAforaStateDatabase({ env })
           .db.prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = ?")
           .get("gateway_origin_device_tokens"),
       ).toBeUndefined();
@@ -361,7 +361,7 @@ describe("infra/device-auth-store", () => {
   });
 
   it("clears only the requested role and device", async () => {
-    await withTempDir("openclaw-device-auth-", async (stateDir) => {
+    await withTempDir("afora-device-auth-", async (stateDir) => {
       const env = createEnv(stateDir);
       storeDeviceAuthToken({ deviceId: "device-1", role: "operator", token: "operator", env });
       storeDeviceAuthToken({ deviceId: "device-1", role: "node", token: "node", env });
@@ -378,7 +378,7 @@ describe("infra/device-auth-store", () => {
   });
 
   it("keeps credentials rotated after a stale request snapshot", async () => {
-    await withTempDir("openclaw-device-auth-rotation-", async (stateDir) => {
+    await withTempDir("afora-device-auth-rotation-", async (stateDir) => {
       const env = createEnv(stateDir);
       const targets = [
         {

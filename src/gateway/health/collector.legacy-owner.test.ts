@@ -1,16 +1,16 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChannelPlugin } from "../../channels/plugins/types.public.js";
 import { retainLegacyDefaultAgentId } from "../../config/legacy.default-agent-owner.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
-let testConfig: OpenClawConfig = {};
+let testConfig: AforaConfig = {};
 let healthPluginsForTest: ChannelPlugin[] = [];
 
 let collectGatewayHealthSnapshot: typeof import("./collector.js").collectGatewayHealthSnapshot;
 let createChannelTestPluginBase: typeof import("../../test-utils/channel-plugins.js").createChannelTestPluginBase;
 
 function createHealthPlugin(): ChannelPlugin {
-  const resolveAccount = (_cfg: OpenClawConfig, accountId?: string | null) => ({
+  const resolveAccount = (_cfg: AforaConfig, accountId?: string | null) => ({
     accountId: accountId?.trim() || "default",
     enabled: true,
     configured: true,
@@ -80,7 +80,7 @@ describe("collectGatewayHealthSnapshot legacy owner projection", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     testConfig = retainLegacyDefaultAgentId(migratedConfig, "ops");
 
     const migrated = await collectGatewayHealthSnapshot({ audience: "admin", probe: false });

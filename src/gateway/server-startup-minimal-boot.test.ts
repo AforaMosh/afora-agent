@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { resetConfigRuntimeState } from "../config/runtime-snapshot.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { clearPluginMetadataLifecycleCaches } from "../plugins/plugin-metadata-lifecycle.js";
-import { createOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { createAforaTestState } from "../test-utils/afora-test-state.js";
 import { getFreePort } from "../test-utils/ports.js";
 
 // Local boot completes in ~10s; the budget only buys headroom for loaded CI
@@ -23,17 +23,17 @@ afterEach(() => {
 describe("gateway minimal boot smoke", () => {
   it("suppresses ambient channel triggers when the server option is omitted", async () => {
     const port = await getFreePort();
-    const state = await createOpenClawTestState({
+    const state = await createAforaTestState({
       label: "gateway-bootstrap-ambient-default",
       layout: "home",
       env: {
-        OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-        OPENCLAW_SKIP_CANVAS_HOST: "1",
-        OPENCLAW_SKIP_CHANNELS: "1",
-        OPENCLAW_SKIP_CRON: "1",
-        OPENCLAW_SKIP_GMAIL_WATCHER: "1",
-        OPENCLAW_SKIP_PROVIDERS: "1",
-        OPENCLAW_TEST_MINIMAL_GATEWAY: "1",
+        AFORA_SKIP_BROWSER_CONTROL_SERVER: "1",
+        AFORA_SKIP_CANVAS_HOST: "1",
+        AFORA_SKIP_CHANNELS: "1",
+        AFORA_SKIP_CRON: "1",
+        AFORA_SKIP_GMAIL_WATCHER: "1",
+        AFORA_SKIP_PROVIDERS: "1",
+        AFORA_TEST_MINIMAL_GATEWAY: "1",
         VITEST: "1",
       },
     });
@@ -67,19 +67,19 @@ describe("gateway minimal boot smoke", () => {
 
   it("boots a minimal test gateway within budget", { timeout: BOOT_BUDGET_MS }, async () => {
     const port = await getFreePort();
-    const state = await createOpenClawTestState({
+    const state = await createAforaTestState({
       label: "gateway-minimal-boot-smoke",
       layout: "home",
       env: {
-        OPENCLAW_GATEWAY_PASSWORD: undefined,
-        OPENCLAW_GATEWAY_TOKEN: undefined,
-        OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-        OPENCLAW_SKIP_CANVAS_HOST: "1",
-        OPENCLAW_SKIP_CHANNELS: "1",
-        OPENCLAW_SKIP_CRON: "1",
-        OPENCLAW_SKIP_GMAIL_WATCHER: "1",
-        OPENCLAW_SKIP_PROVIDERS: "1",
-        OPENCLAW_TEST_MINIMAL_GATEWAY: "1",
+        AFORA_GATEWAY_PASSWORD: undefined,
+        AFORA_GATEWAY_TOKEN: undefined,
+        AFORA_SKIP_BROWSER_CONTROL_SERVER: "1",
+        AFORA_SKIP_CANVAS_HOST: "1",
+        AFORA_SKIP_CHANNELS: "1",
+        AFORA_SKIP_CRON: "1",
+        AFORA_SKIP_GMAIL_WATCHER: "1",
+        AFORA_SKIP_PROVIDERS: "1",
+        AFORA_TEST_MINIMAL_GATEWAY: "1",
         VITEST: "1",
       },
     });

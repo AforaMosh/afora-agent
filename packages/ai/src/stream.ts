@@ -8,7 +8,7 @@ import type {
   ProviderStreamOptions,
   SimpleStreamOptions,
   StreamOptions,
-} from "@openclaw/llm-core";
+} from "@afora/llm-core";
 import { createApiRegistry, type ApiRegistry } from "./api-registry.js";
 
 /** Creates an isolated LLM runtime backed by the supplied provider registry. */

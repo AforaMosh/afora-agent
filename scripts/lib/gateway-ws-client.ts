@@ -1,4 +1,4 @@
-// Gateway Ws Client script supports OpenClaw repository automation.
+// Gateway Ws Client script supports Afora repository automation.
 import { randomUUID } from "node:crypto";
 import WebSocket from "ws";
 import { rawDataToString } from "../../packages/gateway-client/src/websocket-data.ts";

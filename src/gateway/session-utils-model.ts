@@ -2,7 +2,7 @@ import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { readAcpSessionMeta } from "../acp/runtime/session-meta.js";
 import { resolveModelAgentRuntimeMetadata } from "../agents/agent-runtime-metadata.js";
 import { resolveAgentConfig, resolveSessionAgentId } from "../agents/agent-scope.js";
@@ -38,7 +38,7 @@ import {
 import { tryResolveLegacyCompatibilityAgentId } from "../config/legacy.default-agent-owner.js";
 import { resolveAgentMainSessionKey, type SessionEntry } from "../config/sessions.js";
 import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/session-sqlite-target.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { LEGACY_IMPLICIT_AGENT_ID, normalizeAgentId } from "../routing/session-key.js";
 import type { GatewayModelCatalogSnapshot } from "./server-model-catalog.types.js";
 import {
@@ -100,7 +100,7 @@ function resolveGatewaySessionThinkingLevel(params: {
 }
 
 function resolveGatewaySessionThinkingDefault(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: string;
   model: string;
   agentId?: string;
@@ -136,7 +136,7 @@ function resolveGatewaySessionThinkingDefault(params: {
 }
 
 export function resolveGatewayModelThinkingProfile(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   provider: string;
   model: string;
@@ -214,7 +214,7 @@ export function resolveGatewayModelThinkingProfile(params: {
 }
 
 type GatewaySessionThinkingProjectionParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: string;
   model: string;
   agentId: string;
@@ -308,7 +308,7 @@ export function resolveGatewaySessionThinkingProjectionInternal(
 }
 
 export function getSessionDefaults(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   modelCatalog?: ModelCatalogEntry[],
   options?: { agentId?: string; allowPluginNormalization?: boolean },
 ): GatewaySessionsDefaults {
@@ -574,7 +574,7 @@ export async function resolveGatewayModelSupportsImages(params: {
 }
 
 export function resolveSessionDisplayModelIdentityRefCached(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   provider?: string;
   model?: string;
@@ -598,7 +598,7 @@ export function resolveSessionDisplayModelIdentityRefCached(params: {
 }
 
 function resolveSessionDisplayModelIdentityRef(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   provider?: string;
   model?: string;
@@ -638,7 +638,7 @@ function resolveSessionDisplayModelIdentityRef(params: {
 
 export async function projectSessionPatchResult(params: {
   canonicalKey: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   entry: SessionEntry;
   modelCatalogByAgent: ReadonlyMap<string, Promise<ModelCatalogEntry[]>>;
   storePath: string;

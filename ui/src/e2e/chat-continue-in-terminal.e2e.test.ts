@@ -9,7 +9,7 @@ const suite = createControlUiE2eSuite({
   name: "Control UI continue in terminal mocked Gateway E2E",
   startServerBeforeBrowser: true,
   unavailableMessage: (executablePath) =>
-    `Playwright Chromium is not installed at ${executablePath}. Run \`pnpm --dir ui exec playwright install chromium\`, or set OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
+    `Playwright Chromium is not installed at ${executablePath}. Run \`pnpm --dir ui exec playwright install chromium\`, or set AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
 });
 
 const artifactDir = path.resolve(process.cwd(), ".artifacts/control-ui-e2e/continue-in-terminal");
@@ -64,7 +64,7 @@ suite.define(() => {
           origin: pageUrl.origin,
         });
         await page.goto(controlUiSessionUrl(suite.server.baseUrl, sessionKey));
-        const activePane = page.locator("openclaw-chat-pane.chat-pane-cache__pane--active");
+        const activePane = page.locator("afora-chat-pane.chat-pane-cache__pane--active");
         await activePane.getByText("Ready for terminal continuation.").waitFor({ timeout: 10_000 });
 
         const menuTrigger = activePane.getByRole("button", {
@@ -80,12 +80,12 @@ suite.define(() => {
         await page.screenshot({ path: path.join(artifactDir, "01-menu.png"), fullPage: true });
         await action.click();
 
-        const dialog = page.locator("openclaw-modal-dialog.continue-in-terminal-dialog");
+        const dialog = page.locator("afora-modal-dialog.continue-in-terminal-dialog");
         await dialog.waitFor({ state: "visible" });
         await action.waitFor({ state: "hidden" });
         const command = (await dialog.locator("code").textContent()) ?? "";
-        expect(command).toMatch(/^openclaw resume --handoff [A-Za-z0-9_-]+$/u);
-        const encoded = command.slice("openclaw resume --handoff ".length);
+        expect(command).toMatch(/^afora resume --handoff [A-Za-z0-9_-]+$/u);
+        const encoded = command.slice("afora resume --handoff ".length);
         expect(decodeResumeHandoff(encoded)).toEqual({
           version: 1,
           sessionKey,

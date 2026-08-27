@@ -20,9 +20,9 @@ import {
   stopDiagnosticStabilityRecorder,
 } from "../../../../src/logging/diagnostic-stability.js";
 import {
-  createOpenClawTestInstance,
-  type OpenClawTestInstance,
-} from "../../../helpers/openclaw-test-instance.js";
+  createAforaTestInstance,
+  type AforaTestInstance,
+} from "../../../helpers/afora-test-instance.js";
 import {
   type GatewayStabilityRuntimeOptions,
   parseGatewayStabilityRuntimeOptions,
@@ -72,7 +72,7 @@ type GatewayStabilitySummary = {
 
 function parseCliJson<T>(
   label: string,
-  result: Awaited<ReturnType<OpenClawTestInstance["cli"]>>,
+  result: Awaited<ReturnType<AforaTestInstance["cli"]>>,
   parse: (value: unknown) => T = (value) => value as T,
 ): T {
   if (result.code !== 0) {
@@ -166,9 +166,9 @@ export async function runGatewayStabilityRuntime(options: GatewayStabilityRuntim
   await fs.mkdir(options.artifactBase, { recursive: true });
   const writer = createWriter(options);
   const startedAt = Date.now();
-  let instance: OpenClawTestInstance | undefined;
+  let instance: AforaTestInstance | undefined;
   try {
-    instance = await createOpenClawTestInstance({
+    instance = await createAforaTestInstance({
       name: "qa-gateway-stability",
       config: {
         diagnostics: { enabled: true },

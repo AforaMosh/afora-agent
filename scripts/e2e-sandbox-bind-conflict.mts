@@ -4,15 +4,15 @@
  *
  * Prerequisites: Docker or Podman, Node >=22.19, pnpm install, and the selected image.
  * Usage:
- *   OPENCLAW_SANDBOX_E2E_ENGINE=podman \
- *   OPENCLAW_SANDBOX_E2E_IMAGE=alpine:3.20 \
+ *   AFORA_SANDBOX_E2E_ENGINE=podman \
+ *   AFORA_SANDBOX_E2E_IMAGE=alpine:3.20 \
  *   node --import tsx scripts/e2e-sandbox-bind-conflict.mts
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { resolveRepoRoot } from "./lib/repo-root.mjs";
 
 type WorkspaceMountModule = Pick<
@@ -23,14 +23,14 @@ type WorkspaceMountModule = Pick<
 >;
 
 const repoRoot = resolveRepoRoot(import.meta.url);
-const engine = process.env.OPENCLAW_SANDBOX_E2E_ENGINE?.trim() || "docker";
-const image = process.env.OPENCLAW_SANDBOX_E2E_IMAGE?.trim() || "e2e-sleep:latest";
-const useSudo = process.env.OPENCLAW_SANDBOX_E2E_SUDO === "1";
+const engine = process.env.AFORA_SANDBOX_E2E_ENGINE?.trim() || "docker";
+const image = process.env.AFORA_SANDBOX_E2E_IMAGE?.trim() || "e2e-sleep:latest";
+const useSudo = process.env.AFORA_SANDBOX_E2E_SUDO === "1";
 if (engine !== "docker" && engine !== "podman") {
   throw new Error(`Unsupported container engine "${engine}". Use docker or podman.`);
 }
 
-const workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-e2e-"));
+const workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-e2e-"));
 const skillsDir = path.join(workspaceDir, "skills", "demo");
 fs.mkdirSync(skillsDir, { recursive: true });
 fs.writeFileSync(path.join(skillsDir, "SKILL.md"), "# E2E demo\n");
@@ -99,7 +99,7 @@ const createArgs = [
   "--name",
   containerName,
   "--label",
-  "openclaw.e2e=1",
+  "afora.e2e=1",
   "--workdir",
   "/workspace",
   "-v",

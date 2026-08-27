@@ -3,24 +3,24 @@ import path from "node:path";
 
 export type FleetContainerRuntimeName = "docker" | "podman";
 
-export const DEFAULT_FLEET_IMAGE = "ghcr.io/openclaw/openclaw:latest";
+export const DEFAULT_FLEET_IMAGE = "ghcr.io/AforaMosh/afora-agent:latest";
 const FLEET_BASE_PORT = 19_100;
 export const FLEET_GATEWAY_PORT = 18_789;
 const FLEET_CONTAINER_HOME = "/home/node";
-const FLEET_CONTAINER_STATE_DIR = "/home/node/.openclaw";
-const FLEET_CONTAINER_AUTH_SECRET_DIR = "/home/node/.config/openclaw";
-export const FLEET_TENANT_LABEL = "openclaw.fleet.tenant";
-export const FLEET_OWNER_LABEL = "openclaw.fleet.owner";
-export const FLEET_ATTEMPT_LABEL = "openclaw.fleet.attempt";
-export const FLEET_ENV_KEYS_LABEL = "openclaw.fleet.env-keys";
-export const FLEET_DISK_LIMIT_LABEL = "openclaw.fleet.disk-limit";
+const FLEET_CONTAINER_STATE_DIR = "/home/node/.afora";
+const FLEET_CONTAINER_AUTH_SECRET_DIR = "/home/node/.config/afora";
+export const FLEET_TENANT_LABEL = "afora.fleet.tenant";
+export const FLEET_OWNER_LABEL = "afora.fleet.owner";
+export const FLEET_ATTEMPT_LABEL = "afora.fleet.attempt";
+export const FLEET_ENV_KEYS_LABEL = "afora.fleet.env-keys";
+export const FLEET_DISK_LIMIT_LABEL = "afora.fleet.disk-limit";
 const FLEET_MANAGED_ENV_KEYS = [
   "HOME",
-  "OPENCLAW_HOME",
-  "OPENCLAW_STATE_DIR",
-  "OPENCLAW_CONFIG_PATH",
-  "OPENCLAW_WORKSPACE_DIR",
-  "OPENCLAW_GATEWAY_TOKEN",
+  "AFORA_HOME",
+  "AFORA_STATE_DIR",
+  "AFORA_CONFIG_PATH",
+  "AFORA_WORKSPACE_DIR",
+  "AFORA_GATEWAY_TOKEN",
 ] as const;
 
 const FLEET_TENANT_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;
@@ -155,17 +155,17 @@ export function buildCellEnvironment(
   }
   return {
     HOME: FLEET_CONTAINER_HOME,
-    OPENCLAW_HOME: FLEET_CONTAINER_HOME,
-    OPENCLAW_STATE_DIR: FLEET_CONTAINER_STATE_DIR,
-    OPENCLAW_CONFIG_PATH: `${FLEET_CONTAINER_STATE_DIR}/openclaw.json`,
-    OPENCLAW_WORKSPACE_DIR: `${FLEET_CONTAINER_STATE_DIR}/workspace`,
-    OPENCLAW_GATEWAY_TOKEN: token,
+    AFORA_HOME: FLEET_CONTAINER_HOME,
+    AFORA_STATE_DIR: FLEET_CONTAINER_STATE_DIR,
+    AFORA_CONFIG_PATH: `${FLEET_CONTAINER_STATE_DIR}/afora.json`,
+    AFORA_WORKSPACE_DIR: `${FLEET_CONTAINER_STATE_DIR}/workspace`,
+    AFORA_GATEWAY_TOKEN: token,
     ...userEnv,
   };
 }
 
 export function cellContainerName(tenantId: string): string {
-  return `openclaw-cell-${validateTenantId(tenantId)}`;
+  return `afora-cell-${validateTenantId(tenantId)}`;
 }
 
 export function cellNetworkName(tenantId: string): string {

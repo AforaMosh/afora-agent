@@ -135,7 +135,7 @@ describe("Anthropic OAuth token responses", () => {
 
 describe("Anthropic OAuth callback host", () => {
   it("rejects non-loopback callback bind hosts", async () => {
-    vi.stubEnv("OPENCLAW_OAUTH_CALLBACK_HOST", "0.0.0.0");
+    vi.stubEnv("AFORA_OAUTH_CALLBACK_HOST", "0.0.0.0");
 
     await expect(
       anthropicOAuthProvider.login({
@@ -146,7 +146,7 @@ describe("Anthropic OAuth callback host", () => {
   });
 
   it("binds IPv4 loopback while keeping Anthropic's registered localhost redirect", async () => {
-    vi.stubEnv("OPENCLAW_OAUTH_CALLBACK_HOST", "127.0.0.1");
+    vi.stubEnv("AFORA_OAUTH_CALLBACK_HOST", "127.0.0.1");
     startOAuthLoopbackCallbackServer.mockImplementationOnce(async (params) => ({
       waitForCallback: async () => ({
         type: "authorization_code" as const,
@@ -190,7 +190,7 @@ describe("Anthropic OAuth callback host", () => {
   });
 
   it("settles an OAuth error callback immediately", async () => {
-    vi.stubEnv("OPENCLAW_OAUTH_CALLBACK_HOST", "127.0.0.1");
+    vi.stubEnv("AFORA_OAUTH_CALLBACK_HOST", "127.0.0.1");
     startOAuthLoopbackCallbackServer.mockResolvedValueOnce({
       waitForCallback: async () => ({ type: "oauth_error", error: "access_denied" }),
       close: async () => undefined,

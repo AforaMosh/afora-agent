@@ -10,7 +10,7 @@ import type { SessionSnapshotStore } from "./session-snapshot-store.ts";
 const SESSION_PREFETCH_COUNT = 5;
 const SESSION_PREFETCH_INITIAL_DELAY_MS = 1_500;
 const SESSION_PREFETCH_COOLDOWN_MS = 30_000;
-const SESSION_PREFETCH_LOCK_NAME = "openclaw-chat-prefetch";
+const SESSION_PREFETCH_LOCK_NAME = "afora-chat-prefetch";
 
 type ChatSnapshotKeyHost = Parameters<typeof resolveChatSnapshotKey>[0];
 
@@ -350,7 +350,7 @@ class SessionPrefetchController implements ReactiveController {
       return;
     }
     const panes = this.host.querySelectorAll<Element & { sessionKey?: string }>(
-      "openclaw-chat-pane",
+      "afora-chat-pane",
     );
     const openSessionKeys = [...panes].flatMap((pane) =>
       pane.sessionKey ? [pane.sessionKey] : [],

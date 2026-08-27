@@ -1,7 +1,7 @@
 // Prove authoritative Mattermost channel kinds over the real Bot API transport.
-import { withServer } from "openclaw/plugin-sdk/test-env";
+import { withServer } from "afora-agent/plugin-sdk/test-env";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 import { resolveMattermostOutboundSessionRoute } from "../session-route.js";
 import { resolveMattermostOpaqueTarget } from "./target-resolution.js";
 
@@ -52,7 +52,7 @@ describe("Mattermost opaque channel resolution over real HTTP", () => {
               network: { dangerouslyAllowPrivateNetwork: true },
             },
           },
-        } as OpenClawConfig;
+        } as AforaConfig;
 
         const cases = [
           { id: PUBLIC_CHANNEL_ID, kind: "channel" },

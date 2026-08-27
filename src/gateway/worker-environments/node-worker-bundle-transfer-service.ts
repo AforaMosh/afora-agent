@@ -113,7 +113,7 @@ export function createNodeWorkerBundleTransferService(
           ...(params.bundlePrewarm ? { bundlePrewarm: params.bundlePrewarm } : {}),
           build: {
             bundleHash: params.artifact.bundleHash,
-            openclawVersion: params.artifact.openclawVersion,
+            aforaVersion: params.artifact.aforaVersion,
             protocolFeatures: [...params.artifact.protocolFeatures],
           },
           archive: {

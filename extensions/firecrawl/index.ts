@@ -1,5 +1,5 @@
-// Firecrawl plugin entrypoint registers its OpenClaw integration.
-import { definePluginEntry, type AnyAgentTool } from "openclaw/plugin-sdk/plugin-entry";
+// Firecrawl plugin entrypoint registers its Afora integration.
+import { definePluginEntry, type AnyAgentTool } from "afora-agent/plugin-sdk/plugin-entry";
 import { createFirecrawlWebFetchProvider } from "./src/firecrawl-fetch-provider.js";
 import { createFirecrawlFreeWebSearchProvider } from "./src/firecrawl-free-search-provider.js";
 import { createFirecrawlScrapeTool } from "./src/firecrawl-scrape-tool.js";

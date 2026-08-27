@@ -13,7 +13,7 @@ import type { InternalSessionEntry } from "./types.js";
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 async function createFixture() {
-  const root = tempDirs.make("openclaw-session-recovery-");
+  const root = tempDirs.make("afora-session-recovery-");
   const storePath = path.join(root, "sessions.json");
   const sourceKey = "agent:main:dashboard:tombstoned";
   const successorKey = "agent:main:dashboard:recovered";

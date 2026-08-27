@@ -13,7 +13,7 @@ const profileMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./chrome.js", () => ({
-  resolveOpenClawUserDataDir: () => profileMocks.managedUserDataDir,
+  resolveAforaUserDataDir: () => profileMocks.managedUserDataDir,
 }));
 
 vi.mock("./pw-ai-module.js", () => ({
@@ -54,7 +54,7 @@ function encryptV10(value: string, host: string): Buffer {
 }
 
 function createSystemProfileFixture(): string {
-  const homeDir = tempDirs.make("openclaw-system-profile-test-");
+  const homeDir = tempDirs.make("afora-system-profile-test-");
   const root = path.join(homeDir, "Library", "Application Support", "Google", "Chrome");
   const profileDir = path.join(root, "Default", "Network");
   fs.mkdirSync(profileDir, { recursive: true });
@@ -94,16 +94,16 @@ function createSystemProfileFixture(): string {
 }
 
 function createManagedProfileFixture() {
-  profileMocks.managedUserDataDir = tempDirs.make("openclaw-managed-profile-test-");
+  profileMocks.managedUserDataDir = tempDirs.make("afora-managed-profile-test-");
   fs.writeFileSync(
     path.join(profileMocks.managedUserDataDir, "Local State"),
     JSON.stringify({
-      profile: { info_cache: { Default: { openclaw_mock_keychain: true } } },
+      profile: { info_cache: { Default: { afora_mock_keychain: true } } },
     }),
   );
   const profile = {
     name: "imported",
-    driver: "openclaw" as const,
+    driver: "afora" as const,
     cdpUrl: "http://127.0.0.1:18800",
     cdpIsLoopback: true,
     attachOnly: false,

@@ -6,7 +6,7 @@ const { isWSL2SyncMock, runExecMock } = vi.hoisted(() => ({
   runExecMock: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/runtime-env", () => ({
+vi.mock("afora-agent/plugin-sdk/runtime-env", () => ({
   isWSL2Sync: isWSL2SyncMock,
 }));
 
@@ -14,7 +14,7 @@ vi.mock("node:fs/promises", () => ({
   access: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/process-runtime", () => ({ runExec: runExecMock }));
+vi.mock("afora-agent/plugin-sdk/process-runtime", () => ({ runExec: runExecMock }));
 
 import { access } from "node:fs/promises";
 import { checkWsl2CrashLoopRisk } from "./wsl2-crash-loop-check.js";

@@ -618,7 +618,7 @@ export async function killSshdProcessTree(process: SshdProcess) {
   const pid = process.daemonPid;
   const descendants = await processTree(pid);
   const worker = descendants.find((entry) =>
-    /(?:^|\/)(?:openclaw-worker|openclaw\.mjs\s+worker)\b/u.test(entry.command),
+    /(?:^|\/)(?:afora-worker|afora\.mjs\s+worker)\b/u.test(entry.command),
   );
   if (!worker) {
     throw new Error(`proof sshd tree had no worker process: ${JSON.stringify(descendants)}`);
@@ -652,8 +652,8 @@ export async function initializeRepository(root: string): Promise<string> {
   await fs.mkdir(repo, { recursive: true });
   const git = (...args: string[]) => execFileAsync("git", ["-C", repo, ...args]);
   await git("init", "-b", "main");
-  await git("config", "user.name", "OpenClaw QA");
-  await git("config", "user.email", "openclaw-qa@example.invalid");
+  await git("config", "user.name", "Afora QA");
+  await git("config", "user.email", "afora-qa@example.invalid");
   await fs.writeFile(path.join(repo, "checkpoint-1.txt"), "CLOUD-MIDTURN-TOOL-1\n");
   await fs.writeFile(path.join(repo, "checkpoint-2.txt"), "CLOUD-MIDTURN-TOOL-2\n");
   await git("add", ".");

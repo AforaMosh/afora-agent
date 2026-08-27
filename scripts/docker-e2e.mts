@@ -1,7 +1,7 @@
 // Docker E2E CI helper.
 // Converts scheduler JSON into GitHub Actions outputs and compact markdown
 // summaries so the workflow does not duplicate Docker E2E planning logic.
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
 import { readDockerE2eJsonArtifact } from "./lib/docker-e2e-json-artifacts.mts";
 
 function recordOrEmpty(value: unknown) {

@@ -12,13 +12,13 @@ type NativeGatewaysMessage =
   | { type: "select" | "open-window" | "set-primary"; id: string }
   | { type: "open-settings" };
 type NativeGatewaysWindow = Window & {
-  __OPENCLAW_NATIVE_GATEWAYS__?: unknown;
+  __AFORA_NATIVE_GATEWAYS__?: unknown;
   webkit?: {
-    messageHandlers?: { openclawGateways?: { postMessage(message: NativeGatewaysMessage): void } };
+    messageHandlers?: { aforaGateways?: { postMessage(message: NativeGatewaysMessage): void } };
   };
 };
 
-const NATIVE_GATEWAYS_CHANGED_EVENT = "openclaw:native-gateways-changed";
+const NATIVE_GATEWAYS_CHANGED_EVENT = "afora:native-gateways-changed";
 
 export type NativeGatewaysCapability = {
   readonly snapshot: NativeGatewaysSnapshot | null;
@@ -45,14 +45,14 @@ function createNativeGatewaysCapability(): NativeGatewaysCapability | null {
     return null;
   }
   const nativeWindow = window as NativeGatewaysWindow;
-  const handler = nativeWindow.webkit?.messageHandlers?.openclawGateways;
+  const handler = nativeWindow.webkit?.messageHandlers?.aforaGateways;
   if (!handler?.postMessage) {
     return null;
   }
   const post = handler.postMessage.bind(handler);
   const postWithId = (type: "select" | "open-window" | "set-primary", id: string) =>
     post({ type, id });
-  let snapshot = snapshotFrom(nativeWindow["__OPENCLAW_NATIVE_GATEWAYS__"]);
+  let snapshot = snapshotFrom(nativeWindow["__AFORA_NATIVE_GATEWAYS__"]);
   const listeners = new Set<(snapshot: NativeGatewaysSnapshot) => void>();
   const onChange = (event: Event) => {
     const next = snapshotFrom((event as CustomEvent<unknown>).detail);

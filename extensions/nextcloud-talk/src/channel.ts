@@ -1,17 +1,17 @@
 // Nextcloud Talk plugin module implements channel behavior.
-import { describeWebhookAccountSnapshot } from "openclaw/plugin-sdk/account-helpers";
-import { createChatChannelPlugin } from "openclaw/plugin-sdk/channel-core";
-import { createLoggedPairingApprovalNotifier } from "openclaw/plugin-sdk/channel-pairing";
+import { describeWebhookAccountSnapshot } from "afora-agent/plugin-sdk/account-helpers";
+import { createChatChannelPlugin } from "afora-agent/plugin-sdk/channel-core";
+import { createLoggedPairingApprovalNotifier } from "afora-agent/plugin-sdk/channel-pairing";
 import {
   createAllowlistProviderRouteAllowlistWarningCollector,
   createConditionalWarningCollector,
-} from "openclaw/plugin-sdk/channel-policy";
+} from "afora-agent/plugin-sdk/channel-policy";
 import {
   buildWebhookChannelStatusSummary,
   createComputedAccountStatusAdapter,
   createDefaultChannelRuntimeState,
-} from "openclaw/plugin-sdk/status-helpers";
-import { sanitizeAssistantVisibleText } from "openclaw/plugin-sdk/text-chunking";
+} from "afora-agent/plugin-sdk/status-helpers";
+import { sanitizeAssistantVisibleText } from "afora-agent/plugin-sdk/text-chunking";
 import type { ResolvedNextcloudTalkAccount } from "./accounts.js";
 import { nextcloudTalkApprovalAuth } from "./approval-auth.js";
 import { probeNextcloudTalkBotResponseFeature } from "./bot-preflight.js";

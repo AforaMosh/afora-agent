@@ -1,16 +1,16 @@
 {
-  "name": "@openclaw/llm-task",
+  "name": "@afora/llm-task",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw JSON-only LLM task plugin",
+  "description": "Afora JSON-only LLM task plugin",
   "type": "module",
   "dependencies": {
     "typebox": "1.3.6"
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

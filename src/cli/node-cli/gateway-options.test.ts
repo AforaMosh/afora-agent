@@ -8,8 +8,8 @@ describe("node gateway options", () => {
   it("preserves ordered pairing endpoint candidates and pins only the direct endpoint", () => {
     const pair = resolveNodePairGatewayOptions(
       encodePairingSetupCode({
-        url: "wss://192.168.1.20:8443/openclaw-gw",
-        urls: ["wss://192.168.1.20:8443/openclaw-gw", "wss://gateway.tailnet.example/tailnet-gw"],
+        url: "wss://192.168.1.20:8443/afora-gw",
+        urls: ["wss://192.168.1.20:8443/afora-gw", "wss://gateway.tailnet.example/tailnet-gw"],
         bootstrapToken: "bootstrap-123",
         tlsFingerprint: `sha256:${TLS_FINGERPRINT.toUpperCase()}`,
       }),
@@ -19,7 +19,7 @@ describe("node gateway options", () => {
       {
         host: "192.168.1.20",
         port: 8443,
-        contextPath: "/openclaw-gw",
+        contextPath: "/afora-gw",
         tls: true,
         tlsFingerprint: TLS_FINGERPRINT,
       },
@@ -30,7 +30,7 @@ describe("node gateway options", () => {
         tls: true,
       },
     ]);
-    expect(resolveNodeGatewayOptions({}, null, pair).contextPath).toBe("/openclaw-gw");
+    expect(resolveNodeGatewayOptions({}, null, pair).contextPath).toBe("/afora-gw");
   });
 
   it("keeps origin-only pairing endpoints pathless", () => {

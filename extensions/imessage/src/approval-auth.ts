@@ -1,5 +1,5 @@
 // Imessage plugin module implements approval auth behavior.
-import { createChannelApprovalAuth } from "openclaw/plugin-sdk/approval-auth-runtime";
+import { createChannelApprovalAuth } from "afora-agent/plugin-sdk/approval-auth-runtime";
 import { resolveIMessageAccount } from "./accounts.js";
 import { normalizeIMessageHandle } from "./targets.js";
 

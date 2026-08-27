@@ -1,7 +1,7 @@
 // Tests execution approval policy matching and persistence.
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { LEGACY_IMPLICIT_AGENT_ID as DEFAULT_AGENT_ID } from "../routing/session-key.js";
 import {
   makeMockCommandResolution,
@@ -106,7 +106,7 @@ function expectMalformedAgentAskUsesDefaults(agentAsk: unknown): void {
   expectFields(summary.ask, {
     requested: "off",
     host: "always",
-    hostSource: "~/.openclaw/state/openclaw.sqlite#exec_approvals_config defaults.ask",
+    hostSource: "~/.afora/state/afora.sqlite#exec_approvals_config defaults.ask",
     effective: "always",
     note: "more aggressive ask wins",
   });
@@ -447,19 +447,19 @@ describe("exec approvals policy helpers", () => {
       requested: "full",
       host: "allowlist",
       effective: "allowlist",
-      hostSource: "~/.openclaw/state/openclaw.sqlite#exec_approvals_config defaults.security",
+      hostSource: "~/.afora/state/afora.sqlite#exec_approvals_config defaults.security",
       note: "stricter host security wins",
     });
     expectFields(summary.ask, {
       requested: "off",
       host: "always",
       effective: "always",
-      hostSource: "~/.openclaw/state/openclaw.sqlite#exec_approvals_config defaults.ask",
+      hostSource: "~/.afora/state/afora.sqlite#exec_approvals_config defaults.ask",
       note: "more aggressive ask wins",
     });
     expect(summary.askFallback).toEqual({
       effective: "deny",
-      source: "~/.openclaw/state/openclaw.sqlite#exec_approvals_config defaults.askFallback",
+      source: "~/.afora/state/afora.sqlite#exec_approvals_config defaults.askFallback",
     });
   });
 
@@ -610,10 +610,10 @@ describe("exec approvals policy helpers", () => {
     });
   });
 
-  it("uses OPENCLAW_STATE_DIR when reporting default host sources", () => {
-    const originalOpenClawStateDir = process.env.OPENCLAW_STATE_DIR;
-    const stateDir = path.join(process.cwd(), ".tmp-openclaw-state");
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+  it("uses AFORA_STATE_DIR when reporting default host sources", () => {
+    const originalAforaStateDir = process.env.AFORA_STATE_DIR;
+    const stateDir = path.join(process.cwd(), ".tmp-afora-state");
+    process.env.AFORA_STATE_DIR = stateDir;
     try {
       const summary = summarizeExecPolicyScopeSnapshot({
         approvals: {
@@ -630,13 +630,13 @@ describe("exec approvals policy helpers", () => {
       });
 
       expect(summary.security.hostSource).toBe(
-        `${path.join(stateDir, "state", "openclaw.sqlite#exec_approvals_config")} defaults.security`,
+        `${path.join(stateDir, "state", "afora.sqlite#exec_approvals_config")} defaults.security`,
       );
     } finally {
-      if (originalOpenClawStateDir === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+      if (originalAforaStateDir === undefined) {
+        delete process.env.AFORA_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = originalOpenClawStateDir;
+        process.env.AFORA_STATE_DIR = originalAforaStateDir;
       }
     }
   });
@@ -684,7 +684,7 @@ describe("exec approvals policy helpers", () => {
 
     expect(summary.askFallback).toEqual({
       effective: "allowlist",
-      source: "~/.openclaw/state/openclaw.sqlite#exec_approvals_config defaults.askFallback",
+      source: "~/.afora/state/afora.sqlite#exec_approvals_config defaults.askFallback",
     });
   });
 
@@ -728,15 +728,15 @@ describe("exec approvals policy helpers", () => {
 
     expectFields(summary.security, {
       host: "allowlist",
-      hostSource: "~/.openclaw/state/openclaw.sqlite#exec_approvals_config agents.*.security",
+      hostSource: "~/.afora/state/afora.sqlite#exec_approvals_config agents.*.security",
     });
     expectFields(summary.ask, {
       host: "always",
-      hostSource: "~/.openclaw/state/openclaw.sqlite#exec_approvals_config agents.*.ask",
+      hostSource: "~/.afora/state/afora.sqlite#exec_approvals_config agents.*.ask",
     });
     expect(summary.askFallback).toEqual({
       effective: "deny",
-      source: "~/.openclaw/state/openclaw.sqlite#exec_approvals_config agents.*.askFallback",
+      source: "~/.afora/state/afora.sqlite#exec_approvals_config agents.*.askFallback",
     });
   });
 
@@ -774,7 +774,7 @@ describe("exec approvals policy helpers", () => {
     });
   });
 
-  it("reports askFallback from the OpenClaw default when approvals omit it", () => {
+  it("reports askFallback from the Afora default when approvals omit it", () => {
     const summary = summarizeExecPolicyScopeSnapshot({
       approvals: {
         version: 1,
@@ -786,7 +786,7 @@ describe("exec approvals policy helpers", () => {
 
     expect(summary.askFallback).toEqual({
       effective: "deny",
-      source: "OpenClaw default (deny)",
+      source: "Afora default (deny)",
     });
   });
 
@@ -831,7 +831,7 @@ describe("exec approvals policy helpers", () => {
         agents: {
           entries: { runner: { default: true } },
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       approvals: {
         version: 1,
         agents: {
@@ -870,7 +870,7 @@ describe("exec approvals policy helpers", () => {
           },
         },
         agents: { entries: { [DEFAULT_AGENT_ID]: { default: true } } },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       approvals: {
         version: 1,
         agents: {
@@ -885,11 +885,11 @@ describe("exec approvals policy helpers", () => {
     expect(snapshots.map((snapshot) => snapshot.scopeLabel)).toEqual(["tools.exec"]);
     expectFields(snapshots[0]?.security, {
       host: "allowlist",
-      hostSource: "~/.openclaw/state/openclaw.sqlite#exec_approvals_config agents.main.security",
+      hostSource: "~/.afora/state/afora.sqlite#exec_approvals_config agents.main.security",
     });
     expectFields(snapshots[0]?.ask, {
       host: "always",
-      hostSource: "~/.openclaw/state/openclaw.sqlite#exec_approvals_config agents.main.ask",
+      hostSource: "~/.afora/state/afora.sqlite#exec_approvals_config agents.main.ask",
     });
   });
 
@@ -914,7 +914,7 @@ describe("exec approvals policy helpers", () => {
             },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       approvals: {
         version: 1,
       },
@@ -936,7 +936,7 @@ describe("exec approvals policy helpers", () => {
             runner: { tools: { exec: { ask: "always" } } },
           },
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       approvals: { version: 1 },
     });
 

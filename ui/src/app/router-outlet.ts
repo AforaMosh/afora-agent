@@ -6,7 +6,7 @@ import { renderLazyViewError } from "../components/lazy-view-error.ts";
 import { renderLoadingState } from "../components/loading-state.ts";
 import { McpAppUnmountGate } from "../components/mcp-app-unmount.ts";
 import { t } from "../i18n/index.ts";
-import { OpenClawLightDomElement } from "../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../lit/afora-element.ts";
 import {
   RouterOutletController,
   selectRenderedRouteMatch,
@@ -46,7 +46,7 @@ function measureRoutedRender<T>(routeId: string, render: () => T): T {
   const result = render();
   const durationMs = Math.round((globalThis.performance?.now() ?? startedAt) - startedAt);
   if (durationMs >= 16) {
-    console.debug("[openclaw] routed render", { routeId, durationMs });
+    console.debug("[afora] routed render", { routeId, durationMs });
   }
   return result;
 }
@@ -208,12 +208,12 @@ class LitRouterOutletController<
   }
 }
 
-class OpenClawRouterOutlet<
+class AforaRouterOutlet<
   TRouteId extends string = string,
   TLoadContext = unknown,
   TModule = unknown,
   TData = unknown,
-> extends OpenClawLightDomElement {
+> extends AforaLightDomElement {
   @property({ attribute: false }) router?: Router<TRouteId, TLoadContext, TModule, TData>;
   @property({ attribute: false }) retryContext?: TLoadContext;
   @property({ attribute: false }) onNotFound?: () => boolean | void;
@@ -251,6 +251,6 @@ class OpenClawRouterOutlet<
   }
 }
 
-if (!customElements.get("openclaw-router-outlet")) {
-  customElements.define("openclaw-router-outlet", OpenClawRouterOutlet);
+if (!customElements.get("afora-router-outlet")) {
+  customElements.define("afora-router-outlet", AforaRouterOutlet);
 }

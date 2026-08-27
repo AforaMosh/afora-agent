@@ -3,12 +3,12 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { DEFAULT_SECRET_FILE_MAX_BYTES } from "openclaw/plugin-sdk/secret-file-runtime";
+import { DEFAULT_SECRET_FILE_MAX_BYTES } from "afora-agent/plugin-sdk/secret-file-runtime";
 import {
-  resolvePreferredOpenClawTmpDir,
+  resolvePreferredAforaTmpDir,
   tempWorkspaceSync,
   type TempWorkspaceSync,
-} from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/temp-path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { encodeOnePasswordSecretId } from "../onepassword-secret-id.js";
 import { createTrustedNodeFixture } from "./trusted-node.test-support.js";
@@ -21,7 +21,7 @@ const sourceStaticAssetPaths = [
   fileURLToPath(new URL("../onepassword-op-path.js", import.meta.url)),
   fileURLToPath(new URL("../onepassword-secret-id.js", import.meta.url)),
 ];
-const manifestPath = fileURLToPath(new URL("../openclaw.plugin.json", import.meta.url));
+const manifestPath = fileURLToPath(new URL("../afora.plugin.json", import.meta.url));
 const packagePath = fileURLToPath(new URL("../package.json", import.meta.url));
 const tsxCliPath = fileURLToPath(import.meta.resolve("tsx/cli"));
 const rootTsconfigPath = path.resolve("tsconfig.json");
@@ -53,7 +53,7 @@ beforeAll(() => {
         fs
           .readFileSync(sourcePath, "utf8")
           .replace(
-            '"openclaw/plugin-sdk/secret-ref-runtime"',
+            '"afora-agent/plugin-sdk/secret-ref-runtime"',
             JSON.stringify(secretRefRuntimeSourceUrl),
           ),
       );
@@ -76,7 +76,7 @@ beforeAll(() => {
   fs.writeFileSync(timeoutResolverPath, timeoutResolverSource);
   // The fake op paths remain per-test; only their trusted Node interpreter is shared.
   // Re-copying the runtime does not strengthen path-ownership coverage.
-  trustedNodeRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-1password-node-"));
+  trustedNodeRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-1password-node-"));
   trustedNodePath = createTrustedNodeFixture(trustedNodeRoot);
 });
 
@@ -131,11 +131,11 @@ function runResolver(params: {
   resolverExecutablePath?: string;
   token?: string | null;
 }): Promise<{ stdout: string; stderr: string; code: number | null }> {
-  let stateDir = params.env?.OPENCLAW_STATE_DIR;
+  let stateDir = params.env?.AFORA_STATE_DIR;
   if (!stateDir) {
     const workspace = tempWorkspaceSync({
-      rootDir: resolvePreferredOpenClawTmpDir(),
-      prefix: "openclaw-1password-test-",
+      rootDir: resolvePreferredAforaTmpDir(),
+      prefix: "afora-1password-test-",
     });
     resolverStateWorkspaces.push(workspace);
     stateDir = workspace.dir;
@@ -160,7 +160,7 @@ function runResolver(params: {
           ...process.env,
           OP_SERVICE_ACCOUNT_TOKEN: "",
           CLAW_1PASSWORD_OP: "",
-          OPENCLAW_STATE_DIR: stateDir,
+          AFORA_STATE_DIR: stateDir,
           ...params.env,
         },
       },
@@ -185,8 +185,8 @@ function runResolver(params: {
 
 beforeEach(() => {
   fixtureWorkspace = tempWorkspaceSync({
-    rootDir: resolvePreferredOpenClawTmpDir(),
-    prefix: "openclaw-1password-test-",
+    rootDir: resolvePreferredAforaTmpDir(),
+    prefix: "afora-1password-test-",
   });
 });
 
@@ -218,7 +218,7 @@ describe("plugin manifest", () => {
       secretProviderIntegrations?: Record<string, Record<string, unknown>>;
     };
     const packageJson = JSON.parse(fs.readFileSync(packagePath, "utf8")) as {
-      openclaw?: {
+      afora?: {
         build?: {
           staticAssets?: Array<{ source?: string; output?: string }>;
         };
@@ -247,8 +247,8 @@ describe("plugin manifest", () => {
         "LOCALAPPDATA",
         "TEMP",
         "TMP",
-        "OPENCLAW_STATE_DIR",
-        "OPENCLAW_PROFILE",
+        "AFORA_STATE_DIR",
+        "AFORA_PROFILE",
         "PATH",
         "SYSTEMROOT",
         "WINDIR",
@@ -265,15 +265,15 @@ describe("plugin manifest", () => {
     expect(integration?.maxOutputBytes).toBeGreaterThan(
       maxRefsPerRequest * worstCaseEscapedValueBytes,
     );
-    expect(packageJson.openclaw?.build?.staticAssets).toContainEqual({
+    expect(packageJson.afora?.build?.staticAssets).toContainEqual({
       source: "./onepassword-op-path.js",
       output: "onepassword-op-path.js",
     });
-    expect(packageJson.openclaw?.build?.staticAssets).toContainEqual({
+    expect(packageJson.afora?.build?.staticAssets).toContainEqual({
       source: "./onepassword-secret-ref-resolver.js",
       output: "onepassword-secret-ref-resolver.js",
     });
-    expect(packageJson.openclaw?.build?.staticAssets).toContainEqual({
+    expect(packageJson.afora?.build?.staticAssets).toContainEqual({
       source: "./onepassword-secret-id.js",
       output: "onepassword-secret-id.js",
     });
@@ -388,7 +388,7 @@ process.stdout.write("not-a-real-value \\t");
       const tempDir = fixtureWorkspace.dir;
       const opPath = path.join(tempDir, "op");
       const logPath = path.join(tempDir, "op-args.json");
-      const nativeRef = "op://Personal/OpenClaw QA API Key/password?attribute=value%20one";
+      const nativeRef = "op://Personal/Afora QA API Key/password?attribute=value%20one";
       fs.writeFileSync(
         opPath,
         `#!${getTrustedNodePath()}
@@ -591,7 +591,7 @@ process.stdout.write("not-a-real-value");
         provider: "onepassword",
         ids: ["op://Engineering/OpenRouter/apiKey"],
       },
-      env: { CLAW_1PASSWORD_OP: process.execPath, OPENCLAW_STATE_DIR: stateDir },
+      env: { CLAW_1PASSWORD_OP: process.execPath, AFORA_STATE_DIR: stateDir },
       token: null,
     });
 
@@ -625,7 +625,7 @@ process.stdout.write("not-a-real-value");
           provider: "onepassword",
           ids: ["op://Engineering/OpenRouter/apiKey"],
         },
-        env: { CLAW_1PASSWORD_OP: opPath, OPENCLAW_STATE_DIR: stateDir },
+        env: { CLAW_1PASSWORD_OP: opPath, AFORA_STATE_DIR: stateDir },
         token: null,
       });
 
@@ -640,8 +640,8 @@ process.stdout.write("not-a-real-value");
     "reads the service token from the selected profile state directory",
     async () => {
       const home = fixtureWorkspace.dir;
-      const profileTokenDir = path.join(home, ".openclaw-work", "credentials", "onepassword");
-      const defaultTokenDir = path.join(home, ".openclaw", "credentials", "onepassword");
+      const profileTokenDir = path.join(home, ".afora-work", "credentials", "onepassword");
+      const defaultTokenDir = path.join(home, ".afora", "credentials", "onepassword");
       const opPath = path.join(home, "op");
       fs.mkdirSync(profileTokenDir, { recursive: true });
       fs.mkdirSync(defaultTokenDir, { recursive: true });
@@ -666,9 +666,9 @@ process.stdout.write("not-a-real-value");
         env: {
           CLAW_1PASSWORD_OP: opPath,
           HOME: home,
-          OPENCLAW_HOME: "",
-          OPENCLAW_PROFILE: "work",
-          OPENCLAW_STATE_DIR: "",
+          AFORA_HOME: "",
+          AFORA_PROFILE: "work",
+          AFORA_STATE_DIR: "",
         },
         token: null,
       });

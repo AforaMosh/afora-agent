@@ -79,7 +79,7 @@ export type PluginsConfig = {
   /**
    * Internal transient carrier for plugin install records during command flows.
    * This is intentionally omitted from the config schema and must not be
-   * persisted to openclaw.json.
+   * persisted to afora.json.
    */
   installs?: Record<string, PluginInstallRecord>;
 };

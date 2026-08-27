@@ -1,5 +1,5 @@
 // Channel setup tests cover setup wizard finalize behavior and config write contracts.
-import { runSetupWizardFinalize } from "openclaw/plugin-sdk/plugin-test-runtime";
+import { runSetupWizardFinalize } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { ChannelSetupInput } from "./channel-setup.js";
 import { createOptionalChannelSetupSurface } from "./channel-setup.js";
@@ -36,7 +36,7 @@ describe("createOptionalChannelSetupSurface", () => {
     const setup = createOptionalChannelSetupSurface({
       channel: "example",
       label: "Example",
-      npmSpec: "@openclaw/example",
+      npmSpec: "@afora/example",
       docsPath: "/channels/example",
     });
 
@@ -48,11 +48,11 @@ describe("createOptionalChannelSetupSurface", () => {
         input: {},
       }),
     ).toBe(
-      "Example setup requires @openclaw/example to be installed. Docs: https://docs.openclaw.ai/channels/example",
+      "Example setup requires @afora/example to be installed. Docs: https://docs.afora.ai/channels/example",
     );
     expect(setup.setupWizard.channel).toBe("example");
     expect(setup.setupWizard.status.unconfiguredHint).toBe(
-      "Example setup requires @openclaw/example to be installed. Docs: https://docs.openclaw.ai/channels/example",
+      "Example setup requires @afora/example to be installed. Docs: https://docs.afora.ai/channels/example",
     );
     await expect(
       runSetupWizardFinalize({
@@ -63,6 +63,6 @@ describe("createOptionalChannelSetupSurface", () => {
           exit: async () => {},
         },
       }),
-    ).rejects.toThrow("@openclaw/example");
+    ).rejects.toThrow("@afora/example");
   });
 });

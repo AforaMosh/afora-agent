@@ -1,7 +1,7 @@
 import {
   buildProviderReplayFamilyHooks,
   defineSelfHostedOpenAICompatibleProvider,
-} from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/provider-model-shared";
 import {
   SGLANG_DEFAULT_API_KEY_ENV_VAR,
   SGLANG_DEFAULT_BASE_URL,

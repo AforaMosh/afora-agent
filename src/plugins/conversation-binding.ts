@@ -1,6 +1,6 @@
 // Binds plugin conversations to stable channel and agent identifiers.
 import crypto from "node:crypto";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { ReplyPayload } from "../auto-reply/reply-payload.js";
 import {
   createConversationBindingRecord,
@@ -13,11 +13,11 @@ import { executeSqliteQuerySync, getNodeSqliteKysely } from "../infra/kysely-syn
 import type { ConversationRef } from "../infra/outbound/session-binding-service.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { resolveGlobalMap, resolveGlobalSingleton } from "../shared/global-singleton.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../state/afora-state-db.js";
 import {
   buildPluginBindingSessionKey,
   normalizeChannel,
@@ -37,8 +37,8 @@ const log = createSubsystemLogger("plugins/binding");
 const PLUGIN_BINDING_CUSTOM_ID_PREFIX = "pluginbind";
 const PLUGIN_BINDING_OWNER = "plugin";
 const LEGACY_CODEX_PLUGIN_SESSION_PREFIXES = [
-  "openclaw-app-server:thread:",
-  "openclaw-codex-app-server:thread:",
+  "afora-app-server:thread:",
+  "afora-codex-app-server:thread:",
 ] as const;
 
 // Runtime plugin conversation bindings are approval-driven and distinct from
@@ -55,7 +55,7 @@ type PluginBindingApprovalEntry = {
 };
 
 type PluginBindingApprovalsState = { approvals: PluginBindingApprovalEntry[] };
-type PluginBindingApprovalsDatabase = Pick<OpenClawStateKyselyDatabase, "plugin_binding_approvals">;
+type PluginBindingApprovalsDatabase = Pick<AforaStateKyselyDatabase, "plugin_binding_approvals">;
 
 type PluginBindingConversation = {
   channel: string;
@@ -124,7 +124,7 @@ type PluginBindingResolveResult =
 const PENDING_PLUGIN_BINDING_REQUEST_TTL_MS = 30 * 60_000;
 const MAX_PENDING_PLUGIN_BINDING_REQUESTS = 512;
 const pendingRequests = resolveGlobalMap<string, PendingPluginBindingRequestEntry>(
-  Symbol.for("openclaw.pluginBindingPendingRequests"),
+  Symbol.for("afora.pluginBindingPendingRequests"),
   (requests) => {
     for (const entry of requests.values()) {
       clearTimeout(entry.timeoutId);
@@ -191,7 +191,7 @@ type PluginConversationBindingState = {
   isLegacyForeignBinding: boolean;
 };
 
-const pluginBindingGlobalStateKey = Symbol.for("openclaw.plugins.binding.global-state");
+const pluginBindingGlobalStateKey = Symbol.for("afora.plugins.binding.global-state");
 const pluginBindingGlobalState = resolveGlobalSingleton<PluginBindingGlobalState>(
   pluginBindingGlobalStateKey,
   () => ({
@@ -364,7 +364,7 @@ function createApprovalRequestId(): string {
 }
 
 function openApprovalsDatabase() {
-  return openOpenClawStateDatabase();
+  return openAforaStateDatabase();
 }
 
 function loadApprovalsFromDatabase(): PluginBindingApprovalsState {
@@ -409,7 +409,7 @@ async function persistApprovalEntry(entry: PluginBindingApprovalEntry): Promise<
   const writeApprovals = state.approvalsSaveChain
     .catch(() => undefined)
     .then(() => {
-      runOpenClawStateWriteTransaction(({ db }) => {
+      runAforaStateWriteTransaction(({ db }) => {
         const approvalsDb = getNodeSqliteKysely<PluginBindingApprovalsDatabase>(db);
         executeSqliteQuerySync(
           db,
@@ -708,7 +708,7 @@ function buildDetachHintSuffix(detachHint?: string): string {
 }
 
 export function buildPluginBindingUnavailableText(binding: PluginConversationBinding): string {
-  return `The bound plugin ${resolvePluginBindingDisplayName(binding)} is not currently loaded. Routing this message to OpenClaw instead. If this started after an update, run "openclaw doctor --fix"; otherwise reinstall or enable the plugin.${buildDetachHintSuffix(binding.detachHint)}`;
+  return `The bound plugin ${resolvePluginBindingDisplayName(binding)} is not currently loaded. Routing this message to Afora instead. If this started after an update, run "afora doctor --fix"; otherwise reinstall or enable the plugin.${buildDetachHintSuffix(binding.detachHint)}`;
 }
 
 export function buildPluginBindingDeclinedText(binding: PluginConversationBinding): string {

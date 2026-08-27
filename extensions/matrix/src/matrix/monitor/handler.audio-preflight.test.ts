@@ -22,9 +22,9 @@ vi.mock("./media.js", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/media-understanding-runtime", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/media-understanding-runtime", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("openclaw/plugin-sdk/media-understanding-runtime")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/media-understanding-runtime")>();
   return {
     ...actual,
     createChannelPreflightAudio: (
@@ -53,7 +53,7 @@ function createAudioPreflightHarness(
       channel: "matrix",
       matchedBy: "binding.account",
     }),
-    resolveStorePath: () => "/tmp/openclaw-test-session.json",
+    resolveStorePath: () => "/tmp/afora-test-session.json",
     getRoomInfo: async () => ({
       name: "Audio Room",
       canonicalAlias: "#audio:example.org",

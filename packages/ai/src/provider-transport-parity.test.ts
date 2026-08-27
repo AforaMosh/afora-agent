@@ -1,6 +1,6 @@
 import path from "node:path";
 import { APIError as AnthropicAPIError } from "@anthropic-ai/sdk/core/error.js";
-import type { AssistantMessageEventStreamLike, Context, Model } from "@openclaw/llm-core";
+import type { AssistantMessageEventStreamLike, Context, Model } from "@afora/llm-core";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { configureAiTransportHost, getAiTransportHost } from "./host.js";
 
@@ -330,7 +330,7 @@ async function observeStream(stream: AssistantMessageEventStreamLike): Promise<{
       "model",
       "responseId",
       "responseModel",
-      "openclawDelivery",
+      "aforaDelivery",
       "usage",
       "stopReason",
       "diagnostics",
@@ -625,7 +625,7 @@ describe("provider and transport observable parity fixtures", () => {
           textSignature: '{"v":1,"id":"final-answer-0","phase":"final_answer"}',
         },
       ]);
-      expect(hiddenReasoningResult.terminal.openclawDelivery).toEqual({
+      expect(hiddenReasoningResult.terminal.aforaDelivery).toEqual({
         textPhaseRequiresTerminal: true,
       });
 

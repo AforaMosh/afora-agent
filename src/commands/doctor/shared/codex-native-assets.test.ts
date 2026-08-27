@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { collectCodexNativeAssetInfoNotes } from "./codex-native-assets.js";
 import { scanCodexNativeAssets } from "./codex-native-assets.test-support.js";
 
@@ -14,7 +14,7 @@ async function writeFile(filePath: string, content = ""): Promise<void> {
   await fs.writeFile(filePath, content, "utf8");
 }
 
-function codexConfig(): OpenClawConfig {
+function codexConfig(): AforaConfig {
   return {
     plugins: {
       entries: {
@@ -28,7 +28,7 @@ function codexConfig(): OpenClawConfig {
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function hasAsset(hits: Array<{ kind: string; path: string }>, kind: string, assetPath: string) {
@@ -37,7 +37,7 @@ function hasAsset(hits: Array<{ kind: string; path: string }>, kind: string, ass
 
 describe("scanCodexNativeAssets", () => {
   it("finds personal Codex CLI assets that isolated agents will not load implicitly", async () => {
-    const root = tempDirs.make("openclaw-doctor-codex-assets-");
+    const root = tempDirs.make("afora-doctor-codex-assets-");
     const codexHome = path.join(root, ".codex");
     await writeFile(path.join(codexHome, "skills", "tweet-helper", "SKILL.md"));
     await writeFile(path.join(root, ".agents", "skills", "agent-helper", "SKILL.md"));
@@ -82,14 +82,14 @@ describe("scanCodexNativeAssets", () => {
   });
 
   it("does not scan when Codex is not configured", async () => {
-    const root = tempDirs.make("openclaw-doctor-codex-assets-");
+    const root = tempDirs.make("afora-doctor-codex-assets-");
     const codexHome = path.join(root, ".codex");
     await writeFile(path.join(codexHome, "skills", "tweet-helper", "SKILL.md"));
     await writeFile(path.join(root, ".agents", "skills", "agent-helper", "SKILL.md"));
 
     await expect(
       scanCodexNativeAssets({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         env: { CODEX_HOME: codexHome, HOME: root },
       }),
     ).resolves.toStrictEqual([]);
@@ -98,7 +98,7 @@ describe("scanCodexNativeAssets", () => {
 
 describe("collectCodexNativeAssetInfoNotes", () => {
   it("points users at explicit Codex migration planning", async () => {
-    const root = tempDirs.make("openclaw-doctor-codex-assets-");
+    const root = tempDirs.make("afora-doctor-codex-assets-");
     const codexHome = path.join(root, ".codex");
     await writeFile(path.join(root, ".agents", "skills", "agent-helper", "SKILL.md"));
 
@@ -110,13 +110,13 @@ describe("collectCodexNativeAssetInfoNotes", () => {
     expect(notes).toStrictEqual([
       [
         `- Personal Codex CLI assets found (1 skill, 0 plugins, 0 config files, 0 hook files) in ${codexHome} and ${path.join(root, ".agents", "skills")}; native Codex-mode agents use isolated per-agent homes and will not load them.`,
-        "- To review or promote them: install the Codex plugin (openclaw plugins install npm:@openclaw/codex), then run openclaw migrate plan codex.",
+        "- To review or promote them: install the Codex plugin (afora plugins install npm:@afora/codex), then run afora migrate plan codex.",
       ].join("\n"),
     ]);
   });
 
   it("returns empty when no Codex assets are found", async () => {
-    const root = tempDirs.make("openclaw-doctor-codex-assets-");
+    const root = tempDirs.make("afora-doctor-codex-assets-");
     const codexHome = path.join(root, ".codex");
 
     const notes = await collectCodexNativeAssetInfoNotes({

@@ -4,7 +4,7 @@ import CoreLocation
 import CoreMotion
 import EventKit
 import Foundation
-import OpenClawKit
+import AforaKit
 import ReplayKit
 import Speech
 import UIKit
@@ -93,7 +93,7 @@ extension GatewayConnectionController {
         if manualClientId?.isEmpty == false {
             return manualClientId!
         }
-        return "openclaw-ios"
+        return "afora-ios"
     }
 
     private func resolvedDisplayName(defaults: UserDefaults) -> String {
@@ -112,8 +112,8 @@ extension GatewayConnectionController {
 
     private func currentCaps() -> [String] {
         var caps = [
-            OpenClawCapability.canvas.rawValue,
-            OpenClawCapability.screen.rawValue,
+            AforaCapability.canvas.rawValue,
+            AforaCapability.screen.rawValue,
         ]
 
         // Default-on: if the key doesn't exist yet, treat it as enabled.
@@ -121,29 +121,29 @@ extension GatewayConnectionController {
             UserDefaults.standard.object(forKey: "camera.enabled") == nil
                 ? true
                 : UserDefaults.standard.bool(forKey: "camera.enabled")
-        if cameraEnabled { caps.append(OpenClawCapability.camera.rawValue) }
+        if cameraEnabled { caps.append(AforaCapability.camera.rawValue) }
 
         let voiceWakeEnabled = UserDefaults.standard.bool(forKey: VoiceWakePreferences.enabledKey)
-        if voiceWakeEnabled { caps.append(OpenClawCapability.voiceWake.rawValue) }
+        if voiceWakeEnabled { caps.append(AforaCapability.voiceWake.rawValue) }
 
         let locationModeRaw = UserDefaults.standard.string(forKey: "location.enabledMode") ?? "off"
-        let locationMode = OpenClawLocationMode(rawValue: locationModeRaw) ?? .off
-        if locationMode != .off { caps.append(OpenClawCapability.location.rawValue) }
+        let locationMode = AforaLocationMode(rawValue: locationModeRaw) ?? .off
+        if locationMode != .off { caps.append(AforaCapability.location.rawValue) }
 
-        caps.append(OpenClawCapability.device.rawValue)
-        caps.append(OpenClawCapability.talk.rawValue)
+        caps.append(AforaCapability.device.rawValue)
+        caps.append(AforaCapability.talk.rawValue)
         if WatchMessagingService.isSupportedOnDevice() {
-            caps.append(OpenClawCapability.watch.rawValue)
+            caps.append(AforaCapability.watch.rawValue)
         }
-        caps.append(OpenClawCapability.photos.rawValue)
-        caps.append(OpenClawCapability.contacts.rawValue)
-        caps.append(OpenClawCapability.calendar.rawValue)
-        caps.append(OpenClawCapability.reminders.rawValue)
+        caps.append(AforaCapability.photos.rawValue)
+        caps.append(AforaCapability.contacts.rawValue)
+        caps.append(AforaCapability.calendar.rawValue)
+        caps.append(AforaCapability.reminders.rawValue)
         if Self.motionAvailable() {
-            caps.append(OpenClawCapability.motion.rawValue)
+            caps.append(AforaCapability.motion.rawValue)
         }
         if HealthAuthorization.isEnabled {
-            caps.append(OpenClawCapability.health.rawValue)
+            caps.append(AforaCapability.health.rawValue)
         }
 
         return caps
@@ -151,61 +151,61 @@ extension GatewayConnectionController {
 
     private func currentCommands() -> [String] {
         var commands: [String] = [
-            OpenClawCanvasCommand.present.rawValue,
-            OpenClawCanvasCommand.hide.rawValue,
-            OpenClawCanvasCommand.navigate.rawValue,
-            OpenClawCanvasCommand.evalJS.rawValue,
-            OpenClawCanvasCommand.snapshot.rawValue,
-            OpenClawCanvasA2UICommand.push.rawValue,
-            OpenClawCanvasA2UICommand.pushJSONL.rawValue,
-            OpenClawCanvasA2UICommand.reset.rawValue,
-            OpenClawScreenCommand.record.rawValue,
-            OpenClawSystemCommand.notify.rawValue,
-            OpenClawChatCommand.push.rawValue,
-            OpenClawTalkCommand.pttStart.rawValue,
-            OpenClawTalkCommand.pttStop.rawValue,
-            OpenClawTalkCommand.pttCancel.rawValue,
-            OpenClawTalkCommand.pttOnce.rawValue,
+            AforaCanvasCommand.present.rawValue,
+            AforaCanvasCommand.hide.rawValue,
+            AforaCanvasCommand.navigate.rawValue,
+            AforaCanvasCommand.evalJS.rawValue,
+            AforaCanvasCommand.snapshot.rawValue,
+            AforaCanvasA2UICommand.push.rawValue,
+            AforaCanvasA2UICommand.pushJSONL.rawValue,
+            AforaCanvasA2UICommand.reset.rawValue,
+            AforaScreenCommand.record.rawValue,
+            AforaSystemCommand.notify.rawValue,
+            AforaChatCommand.push.rawValue,
+            AforaTalkCommand.pttStart.rawValue,
+            AforaTalkCommand.pttStop.rawValue,
+            AforaTalkCommand.pttCancel.rawValue,
+            AforaTalkCommand.pttOnce.rawValue,
         ]
 
         let caps = Set(self.currentCaps())
-        if caps.contains(OpenClawCapability.camera.rawValue) {
-            commands.append(OpenClawCameraCommand.list.rawValue)
-            commands.append(OpenClawCameraCommand.snap.rawValue)
-            commands.append(OpenClawCameraCommand.clip.rawValue)
+        if caps.contains(AforaCapability.camera.rawValue) {
+            commands.append(AforaCameraCommand.list.rawValue)
+            commands.append(AforaCameraCommand.snap.rawValue)
+            commands.append(AforaCameraCommand.clip.rawValue)
         }
-        if caps.contains(OpenClawCapability.location.rawValue) {
-            commands.append(OpenClawLocationCommand.get.rawValue)
+        if caps.contains(AforaCapability.location.rawValue) {
+            commands.append(AforaLocationCommand.get.rawValue)
         }
-        if caps.contains(OpenClawCapability.device.rawValue) {
-            commands.append(OpenClawDeviceCommand.status.rawValue)
-            commands.append(OpenClawDeviceCommand.info.rawValue)
+        if caps.contains(AforaCapability.device.rawValue) {
+            commands.append(AforaDeviceCommand.status.rawValue)
+            commands.append(AforaDeviceCommand.info.rawValue)
         }
-        if caps.contains(OpenClawCapability.watch.rawValue) {
-            commands.append(OpenClawWatchCommand.status.rawValue)
-            commands.append(OpenClawWatchCommand.notify.rawValue)
+        if caps.contains(AforaCapability.watch.rawValue) {
+            commands.append(AforaWatchCommand.status.rawValue)
+            commands.append(AforaWatchCommand.notify.rawValue)
         }
-        if caps.contains(OpenClawCapability.photos.rawValue) {
-            commands.append(OpenClawPhotosCommand.latest.rawValue)
+        if caps.contains(AforaCapability.photos.rawValue) {
+            commands.append(AforaPhotosCommand.latest.rawValue)
         }
-        if caps.contains(OpenClawCapability.contacts.rawValue) {
-            commands.append(OpenClawContactsCommand.search.rawValue)
-            commands.append(OpenClawContactsCommand.add.rawValue)
+        if caps.contains(AforaCapability.contacts.rawValue) {
+            commands.append(AforaContactsCommand.search.rawValue)
+            commands.append(AforaContactsCommand.add.rawValue)
         }
-        if caps.contains(OpenClawCapability.calendar.rawValue) {
-            commands.append(OpenClawCalendarCommand.events.rawValue)
-            commands.append(OpenClawCalendarCommand.add.rawValue)
+        if caps.contains(AforaCapability.calendar.rawValue) {
+            commands.append(AforaCalendarCommand.events.rawValue)
+            commands.append(AforaCalendarCommand.add.rawValue)
         }
-        if caps.contains(OpenClawCapability.reminders.rawValue) {
-            commands.append(OpenClawRemindersCommand.list.rawValue)
-            commands.append(OpenClawRemindersCommand.add.rawValue)
+        if caps.contains(AforaCapability.reminders.rawValue) {
+            commands.append(AforaRemindersCommand.list.rawValue)
+            commands.append(AforaRemindersCommand.add.rawValue)
         }
-        if caps.contains(OpenClawCapability.motion.rawValue) {
-            commands.append(OpenClawMotionCommand.activity.rawValue)
-            commands.append(OpenClawMotionCommand.pedometer.rawValue)
+        if caps.contains(AforaCapability.motion.rawValue) {
+            commands.append(AforaMotionCommand.activity.rawValue)
+            commands.append(AforaMotionCommand.pedometer.rawValue)
         }
-        if caps.contains(OpenClawCapability.health.rawValue) {
-            commands.append(OpenClawHealthCommand.summary.rawValue)
+        if caps.contains(AforaCapability.health.rawValue) {
+            commands.append(AforaHealthCommand.summary.rawValue)
         }
 
         return commands

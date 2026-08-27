@@ -9,15 +9,15 @@ import { promisify } from "node:util";
 import { afterAll, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { resolveGatewayLockDir } from "../config/paths.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { hasActiveStartupMigrationLease } from "../infra/startup-migration-checkpoint.js";
 import { getFileLockProcessStartTime } from "../shared/pid-alive.js";
-import { ensureOpenClawAgentDatabaseSchema } from "../state/openclaw-agent-db.js";
+import { ensureAforaAgentDatabaseSchema } from "../state/afora-agent-db.js";
 
 const STARTUP_REFUSAL =
-  "OpenClaw startup migrations did not complete cleanly; refusing to report the gateway ready.";
+  "Afora startup migrations did not complete cleanly; refusing to report the gateway ready.";
 const STARTUP_RECOVERY =
-  'Run "openclaw doctor --fix" against the same state/config, then restart the gateway.';
+  'Run "afora doctor --fix" against the same state/config, then restart the gateway.';
 const tempDirs = useAutoCleanupTempDirTracker(afterAll);
 const execFileAsync = promisify(execFile);
 
@@ -67,7 +67,7 @@ function createSourceRuntime(root: string): string {
 }
 
 function seedPluginStateConflict(stateDir: string): void {
-  const sharedPath = path.join(stateDir, "state", "openclaw.sqlite");
+  const sharedPath = path.join(stateDir, "state", "afora.sqlite");
   const sidecarPath = path.join(stateDir, "plugin-state", "state.sqlite");
   fs.mkdirSync(path.dirname(sharedPath), { recursive: true });
   fs.mkdirSync(path.dirname(sidecarPath), { recursive: true });
@@ -123,13 +123,13 @@ function seedPluginStateConflict(stateDir: string): void {
 }
 
 function seedOwnerlessSchemaOnlyAgentDatabase(stateDir: string): string {
-  const databasePath = path.join(stateDir, "agent", "openclaw-agent.sqlite");
+  const databasePath = path.join(stateDir, "agent", "afora-agent.sqlite");
   fs.mkdirSync(path.dirname(databasePath), { recursive: true });
   const database = new DatabaseSync(databasePath);
   try {
-    ensureOpenClawAgentDatabaseSchema(database, {
-      agentId: "openclaw",
-      env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+    ensureAforaAgentDatabaseSchema(database, {
+      agentId: "afora",
+      env: { ...process.env, AFORA_STATE_DIR: stateDir },
       path: databasePath,
       register: false,
     });
@@ -142,27 +142,27 @@ function seedOwnerlessSchemaOnlyAgentDatabase(stateDir: string): string {
 
 describe("doctor invalid config process exit", () => {
   it("exits after a complete best-effort report for an unparseable config", () => {
-    const root = fs.realpathSync(tempDirs.make("openclaw-doctor-invalid-config-exit-"));
+    const root = fs.realpathSync(tempDirs.make("afora-doctor-invalid-config-exit-"));
     const stateDir = path.join(root, "state");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       HOME: root,
       USERPROFILE: root,
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_NO_RESPAWN: "1",
-      OPENCLAW_SKIP_CHANNELS: "1",
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_TEST_FAST: "1",
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_NO_RESPAWN: "1",
+      AFORA_SKIP_CHANNELS: "1",
+      AFORA_STATE_DIR: stateDir,
+      AFORA_TEST_FAST: "1",
       NO_COLOR: "1",
     };
     delete env.NODE_ENV;
     delete env.NODE_OPTIONS;
-    delete env.OPENCLAW_GATEWAY_PASSWORD;
-    delete env.OPENCLAW_GATEWAY_TOKEN;
-    delete env.OPENCLAW_GATEWAY_URL;
-    delete env.OPENCLAW_HOME;
+    delete env.AFORA_GATEWAY_PASSWORD;
+    delete env.AFORA_GATEWAY_TOKEN;
+    delete env.AFORA_GATEWAY_URL;
+    delete env.AFORA_HOME;
     delete env.VITEST;
     delete env.VITEST_POOL_ID;
     delete env.VITEST_WORKER_ID;
@@ -199,9 +199,9 @@ describe("doctor invalid config process exit", () => {
 
 describe.concurrent("gateway startup-migration refusal", () => {
   it("refuses readiness for a schema-only legacy agent database without an owner", () => {
-    const root = fs.realpathSync(tempDirs.make("openclaw-ownerless-agent-refusal-"));
+    const root = fs.realpathSync(tempDirs.make("afora-ownerless-agent-refusal-"));
     const stateDir = path.join(root, "state");
-    const configPath = path.join(root, "openclaw.json");
+    const configPath = path.join(root, "afora.json");
     const config = {
       gateway: { mode: "local", auth: { mode: "none" } },
       agents: {
@@ -209,19 +209,19 @@ describe.concurrent("gateway startup-migration refusal", () => {
         defaults: { systemAgent: { agentId: "main" } },
         entries: { main: {}, blocker: {}, digest: {} },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       HOME: root,
       USERPROFILE: root,
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_TEST_FAST: "1",
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_STATE_DIR: stateDir,
+      AFORA_TEST_FAST: "1",
       NO_COLOR: "1",
     };
     delete env.NODE_ENV;
-    delete env.OPENCLAW_HOME;
+    delete env.AFORA_HOME;
     delete env.VITEST;
 
     fs.mkdirSync(stateDir, { recursive: true });
@@ -263,9 +263,9 @@ describe.concurrent("gateway startup-migration refusal", () => {
   }, 75_000);
 
   it("reaches readiness with unresolved legacy agent files left for Doctor", async () => {
-    const root = await fs.promises.realpath(tempDirs.make("openclaw-unresolved-agent-ready-"));
+    const root = await fs.promises.realpath(tempDirs.make("afora-unresolved-agent-ready-"));
     const stateDir = path.join(root, "state");
-    const configPath = path.join(root, "openclaw.json");
+    const configPath = path.join(root, "afora.json");
     const legacyPath = path.join(stateDir, "agent", "settings.json");
     const config = {
       gateway: { mode: "local", auth: { mode: "none" } },
@@ -273,19 +273,19 @@ describe.concurrent("gateway startup-migration refusal", () => {
         ownership: "explicit",
         entries: { main: {}, blocker: {}, digest: {} },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       HOME: root,
       USERPROFILE: root,
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_TEST_FAST: "1",
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_STATE_DIR: stateDir,
+      AFORA_TEST_FAST: "1",
       NO_COLOR: "1",
     };
     delete env.NODE_ENV;
-    delete env.OPENCLAW_HOME;
+    delete env.AFORA_HOME;
     delete env.VITEST;
 
     fs.mkdirSync(path.dirname(legacyPath), { recursive: true });
@@ -314,23 +314,23 @@ describe.concurrent("gateway startup-migration refusal", () => {
 
   it("exits cleanly after reporting the refusal once and releasing its lease", async () => {
     const temporaryRoot = await fs.promises.mkdtemp(
-      path.join(os.tmpdir(), "openclaw-startup-migration-exit-"),
+      path.join(os.tmpdir(), "afora-startup-migration-exit-"),
     );
     const root = await fs.promises.realpath(temporaryRoot);
     const stateDir = path.join(root, "state");
-    const configPath = path.join(root, "openclaw.json");
+    const configPath = path.join(root, "afora.json");
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       HOME: root,
       USERPROFILE: root,
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_TEST_FAST: "1",
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_STATE_DIR: stateDir,
+      AFORA_TEST_FAST: "1",
       NO_COLOR: "1",
     };
     delete env.NODE_ENV;
-    delete env.OPENCLAW_HOME;
+    delete env.AFORA_HOME;
     delete env.VITEST;
 
     try {
@@ -359,7 +359,7 @@ describe.concurrent("gateway startup-migration refusal", () => {
       expect(result.stderr).toContain(STARTUP_REFUSAL);
       expect(result.stderr).toContain(STARTUP_RECOVERY);
       expect(result.stderr.split(STARTUP_REFUSAL)).toHaveLength(2);
-      expect(result.stderr).not.toContain("[openclaw] Could not start the CLI.");
+      expect(result.stderr).not.toContain("[afora] Could not start the CLI.");
       expect(hasActiveStartupMigrationLease({ env })).toBe(false);
     } finally {
       await fs.promises.rm(root, { recursive: true, force: true });
@@ -376,23 +376,23 @@ describe.concurrent("gateway startup-migration refusal", () => {
       { cwd: path.resolve("."), stdio: "ignore" },
     );
     const temporaryRoot = await fs.promises.mkdtemp(
-      path.join(os.tmpdir(), "openclaw-live-owner-refusal-"),
+      path.join(os.tmpdir(), "afora-live-owner-refusal-"),
     );
     const root = await fs.promises.realpath(temporaryRoot);
     const stateDir = path.join(root, "state");
-    const configPath = path.join(root, "openclaw.json");
+    const configPath = path.join(root, "afora.json");
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       HOME: root,
       USERPROFILE: root,
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_TEST_FAST: "1",
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_STATE_DIR: stateDir,
+      AFORA_TEST_FAST: "1",
       NO_COLOR: "1",
     };
     delete env.NODE_ENV;
-    delete env.OPENCLAW_HOME;
+    delete env.AFORA_HOME;
     delete env.VITEST;
 
     try {
@@ -412,7 +412,7 @@ describe.concurrent("gateway startup-migration refusal", () => {
       // sidecar quarantine unless the live-owner refusal runs first.
       const sharedStateDbDir = path.join(stateDir, "state");
       fs.mkdirSync(sharedStateDbDir, { recursive: true });
-      const orphanWalPath = path.join(sharedStateDbDir, "openclaw.sqlite-wal");
+      const orphanWalPath = path.join(sharedStateDbDir, "afora.sqlite-wal");
       fs.writeFileSync(orphanWalPath, Buffer.alloc(64, 1));
       // A live gateway owner: the spawned gateway-shaped child is alive with a
       // matching start time, which is exactly how a real concurrent gateway verifies.
@@ -450,7 +450,7 @@ describe.concurrent("gateway startup-migration refusal", () => {
       expect(fs.existsSync(legacyArtifactPath), output).toBe(true);
       expect(fs.existsSync(path.join(stateDir, "agents", "main", "agent")), output).toBe(false);
       // No orphan-sidecar quarantine copy either: write admission never ran.
-      expect(fs.readdirSync(sharedStateDbDir), output).toEqual(["openclaw.sqlite-wal"]);
+      expect(fs.readdirSync(sharedStateDbDir), output).toEqual(["afora.sqlite-wal"]);
       expect(result.status, output).toBe(1);
       expect(result.stderr, output).toContain("already owns this state directory");
       expect(hasActiveStartupMigrationLease({ env })).toBe(false);
@@ -461,23 +461,23 @@ describe.concurrent("gateway startup-migration refusal", () => {
   }, 45_000);
 
   it("skips state-only checkpoint work when config and state remain absent", async () => {
-    const root = await fs.promises.realpath(tempDirs.make("openclaw-configless-checkpoint-"));
+    const root = await fs.promises.realpath(tempDirs.make("afora-configless-checkpoint-"));
     const runtimeRoot = createSourceRuntime(root);
     const stateDir = path.join(root, "state");
-    const configPath = path.join(root, "openclaw.json");
+    const configPath = path.join(root, "afora.json");
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       HOME: root,
       USERPROFILE: root,
-      OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(root, "bundled"),
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_TEST_FAST: "1",
+      AFORA_BUNDLED_PLUGINS_DIR: path.join(root, "bundled"),
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_STATE_DIR: stateDir,
+      AFORA_TEST_FAST: "1",
       NO_COLOR: "1",
     };
     delete env.NODE_ENV;
-    delete env.OPENCLAW_HOME;
+    delete env.AFORA_HOME;
     delete env.VITEST;
     delete env.VITEST_POOL_ID;
     delete env.VITEST_WORKER_ID;
@@ -535,32 +535,32 @@ describe.concurrent("gateway startup-migration refusal", () => {
   }, 150_000);
 
   it("reloads tool ownership after updater-managed manifest repair", async () => {
-    const root = await fs.promises.realpath(tempDirs.make("openclaw-updater-manifest-repair-"));
+    const root = await fs.promises.realpath(tempDirs.make("afora-updater-manifest-repair-"));
     const stateDir = path.join(root, "state");
-    const configPath = path.join(root, "openclaw.json");
+    const configPath = path.join(root, "afora.json");
     const pluginId = "updater-tool-owner";
     const pluginDir = path.join(root, "plugins", pluginId);
-    const manifestPath = path.join(pluginDir, "openclaw.plugin.json");
+    const manifestPath = path.join(pluginDir, "afora.plugin.json");
     const config = {
       gateway: { mode: "local", auth: { mode: "none" } },
       plugins: {
         load: { paths: [pluginDir] },
         entries: { [pluginId]: { enabled: true } },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       HOME: root,
       USERPROFILE: root,
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_TEST_FAST: "1",
-      OPENCLAW_UPDATE_IN_PROGRESS: "1",
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_STATE_DIR: stateDir,
+      AFORA_TEST_FAST: "1",
+      AFORA_UPDATE_IN_PROGRESS: "1",
       NO_COLOR: "1",
     };
     delete env.NODE_ENV;
-    delete env.OPENCLAW_HOME;
+    delete env.AFORA_HOME;
     delete env.VITEST;
     delete env.VITEST_POOL_ID;
     delete env.VITEST_WORKER_ID;
@@ -570,9 +570,9 @@ describe.concurrent("gateway startup-migration refusal", () => {
     fs.writeFileSync(
       path.join(pluginDir, "package.json"),
       JSON.stringify({
-        name: `@openclaw/${pluginId}`,
+        name: `@afora/${pluginId}`,
         version: "1.0.0",
-        openclaw: { extensions: ["./index.js"] },
+        afora: { extensions: ["./index.js"] },
       }),
     );
     fs.writeFileSync(path.join(pluginDir, "index.js"), "export default {};\n");

@@ -6,9 +6,9 @@ import {
   getAgentHarnessHookRunner,
   resolveContextEngineOwnerPluginId,
   runHarnessContextEngineMaintenance,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
-  buildCodexOpenClawPromptContext,
+  buildCodexAforaPromptContext,
   buildCodexWatchedSessionsContext,
   buildCodexWorkspaceBootstrapContext,
   getCodexWorkspaceMemoryToolNames,
@@ -150,7 +150,7 @@ export async function prepareCodexAttemptContext(
   const baseDeveloperInstructions = buildDeveloperInstructions(runtimeParams, {
     dynamicTools: toolBridge.availableSpecs,
   });
-  const openClawPromptContext = buildCodexOpenClawPromptContext({
+  const aforaPromptContext = buildCodexAforaPromptContext({
     params: runtimeParams,
     workspacePromptContext: workspaceBootstrapContext.promptContext,
     watchedSessionsContext: buildCodexWatchedSessionsContext({
@@ -190,7 +190,7 @@ export async function prepareCodexAttemptContext(
     buildActiveContextEngineRuntimeContext,
     workspaceBootstrapContext,
     baseDeveloperInstructions,
-    openClawPromptContext,
+    aforaPromptContext,
     skillsCollaborationInstructions,
     promptState,
     codexContextProjectionMaxChars,

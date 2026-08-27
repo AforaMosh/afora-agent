@@ -1,5 +1,5 @@
 // Openai tests cover default models plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/provider-onboard";
+import type { AforaConfig } from "afora-agent/plugin-sdk/provider-onboard";
 import { describe, expect, it } from "vitest";
 import { applyOpenAIConfig, applyOpenAIProviderConfig, OPENAI_DEFAULT_MODEL } from "./api.js";
 
@@ -65,7 +65,7 @@ describe("openai default models", () => {
   it("preserves an explicit primary and its fallbacks", () => {
     const next = applyOpenAIConfig({
       agents: { defaults: { model: { primary: "anthropic/claude-opus-4-6", fallbacks: [] } } },
-    } as OpenClawConfig);
+    } as AforaConfig);
     expect(next.agents?.defaults?.model).toEqual({
       primary: "anthropic/claude-opus-4-6",
       fallbacks: [],
@@ -79,7 +79,7 @@ describe("openai default models", () => {
   it("fills a missing object-form primary while preserving fallbacks", () => {
     const next = applyOpenAIConfig({
       agents: { defaults: { model: { fallbacks: ["anthropic/claude-opus-4-6"] } } },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(next.agents?.defaults?.model).toEqual({
       primary: OPENAI_DEFAULT_MODEL,

@@ -111,7 +111,7 @@ describe("config form rejection integrity", () => {
     const arrays = Array.from(container.querySelectorAll<HTMLElement>(".cfg-array"));
     const secondGroup = expectElement(arrays[2], "second nested array");
     const draft = expectElement(
-      secondGroup.querySelector<ConfigFormCollectionDraft>("openclaw-config-form-collection-draft"),
+      secondGroup.querySelector<ConfigFormCollectionDraft>("afora-config-form-collection-draft"),
       "second nested array draft",
     );
     await draft.updateComplete;
@@ -179,7 +179,7 @@ describe("config form rejection integrity", () => {
     const arrays = Array.from(container.querySelectorAll<HTMLElement>(".cfg-array"));
     const secondGroup = expectElement(arrays[2], "second auto-default array");
     const draft = expectElement(
-      secondGroup.querySelector<ConfigFormCollectionDraft>("openclaw-config-form-collection-draft"),
+      secondGroup.querySelector<ConfigFormCollectionDraft>("afora-config-form-collection-draft"),
       "second auto-default array draft",
     );
     await draft.updateComplete;
@@ -239,7 +239,7 @@ describe("config form rejection integrity", () => {
     const maps = Array.from(container.querySelectorAll<HTMLElement>(".cfg-map"));
     const secondMap = expectElement(maps[1], "second auto-default map");
     const draft = expectElement(
-      secondMap.querySelector<ConfigFormCollectionDraft>("openclaw-config-form-collection-draft"),
+      secondMap.querySelector<ConfigFormCollectionDraft>("afora-config-form-collection-draft"),
       "second auto-default map draft",
     );
     await draft.updateComplete;
@@ -322,7 +322,7 @@ describe("config form rejection integrity", () => {
             type: "object",
             additionalProperties: { type: "string" },
           },
-          value: { primary: "__OPENCLAW_REDACTED__", plain: "visible" },
+          value: { primary: "__AFORA_REDACTED__", plain: "visible" },
           path: ["secrets"],
           hints: {},
           unsupported: new Set(),
@@ -353,7 +353,7 @@ describe("config form rejection integrity", () => {
     plainKey.value = "renamed";
     plainKey.dispatchEvent(new Event("change", { bubbles: true }));
     expect(onPatch).toHaveBeenCalledWith(["secrets"], {
-      primary: "__OPENCLAW_REDACTED__",
+      primary: "__AFORA_REDACTED__",
       renamed: "visible",
     });
     container.remove();
@@ -402,7 +402,7 @@ describe("config form rejection integrity", () => {
     renderValue();
     const draft = expectElement(
       container.querySelector<ConfigFormStructuredDraftElement>(
-        "openclaw-config-form-structured-draft",
+        "afora-config-form-structured-draft",
       ),
       "optional object draft",
     );
@@ -440,7 +440,7 @@ describe("config form rejection integrity", () => {
     expect(currentValue).toEqual({
       connection: { host: "gateway.local", port: 18789 },
     });
-    expect(container.querySelector("openclaw-config-form-structured-draft")).toBeNull();
+    expect(container.querySelector("afora-config-form-structured-draft")).toBeNull();
     container.remove();
   });
 
@@ -482,7 +482,7 @@ describe("config form rejection integrity", () => {
     renderValue();
     const draft = expectElement(
       container.querySelector<ConfigFormStructuredDraftElement>(
-        "openclaw-config-form-structured-draft",
+        "afora-config-form-structured-draft",
       ),
       "rejected optional object draft",
     );
@@ -580,7 +580,7 @@ describe("config form rejection integrity", () => {
     renderValue();
     const draft = expectElement(
       container.querySelector<ConfigFormStructuredDraftElement>(
-        "openclaw-config-form-structured-draft",
+        "afora-config-form-structured-draft",
       ),
       "large-minimum array draft",
     );

@@ -1,5 +1,5 @@
 // Lazy-load this boundary to avoid store -> fetch -> store; saveRemoteMedia owns ingestion.
-import { getFileExtension } from "@openclaw/media-core/mime";
+import { getFileExtension } from "@afora/media-core/mime";
 import {
   fetchWithRuntimeDispatcherOrMockedGlobal,
   type DispatcherAwareRequestInit,

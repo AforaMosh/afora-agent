@@ -1,14 +1,14 @@
 // Xai provider module implements model/runtime integration.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/provider-auth";
-import { resolveApiKeyForProvider } from "openclaw/plugin-sdk/provider-auth-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/provider-auth";
+import { resolveApiKeyForProvider } from "afora-agent/plugin-sdk/provider-auth-runtime";
 import {
   createRealtimeTranscriptionWebSocketSession,
   type RealtimeTranscriptionProviderPlugin,
   type RealtimeTranscriptionSession,
   type RealtimeTranscriptionSessionCreateRequest,
   type RealtimeTranscriptionWebSocketTransport,
-} from "openclaw/plugin-sdk/realtime-transcription";
-import { isRecord, normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/realtime-transcription";
+import { isRecord, normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   createXaiRealtimeTranscriptionProviderMetadata,
   normalizeXaiRealtimeTranscriptionProviderConfig,
@@ -199,7 +199,7 @@ export function buildXaiRealtimeTranscriptionProvider(): RealtimeTranscriptionPr
 // 3. xAI OAuth auth profile (cfg-scoped)
 async function resolveXaiRealtimeApiKey(
   configApiKey: string | undefined,
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
 ): Promise<string> {
   const direct =
     normalizeOptionalString(configApiKey) ?? normalizeOptionalString(process.env.XAI_API_KEY);
@@ -212,6 +212,6 @@ async function resolveXaiRealtimeApiKey(
     return oauthKey;
   }
   throw new Error(
-    "xAI credentials missing for realtime STT. Sign in with `openclaw onboard --auth-choice xai-oauth`, or run `openclaw onboard --auth-choice xai-api-key`, or set XAI_API_KEY.",
+    "xAI credentials missing for realtime STT. Sign in with `afora onboard --auth-choice xai-oauth`, or run `afora onboard --auth-choice xai-api-key`, or set XAI_API_KEY.",
   );
 }

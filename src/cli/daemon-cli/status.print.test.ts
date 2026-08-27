@@ -53,9 +53,9 @@ vi.mock("../../daemon/restart-logs.js", () => ({
     stderrPath: "/tmp/gateway.err.log",
   }),
   resolveGatewaySupervisorLogPaths: () => ({
-    logDir: "/Users/test/Library/Logs/openclaw",
-    stdoutPath: "/Users/test/Library/Logs/openclaw/gateway.log",
-    stderrPath: "/Users/test/Library/Logs/openclaw/gateway.err.log",
+    logDir: "/Users/test/Library/Logs/afora",
+    stdoutPath: "/Users/test/Library/Logs/afora/gateway.log",
+    stderrPath: "/Users/test/Library/Logs/afora/gateway.err.log",
   }),
   resolveGatewayRestartLogPath: () => "/tmp/gateway-restart.log",
 }));
@@ -122,7 +122,7 @@ describe("printDaemonStatus", () => {
             loaded: true,
             loadedText: "loaded",
             notLoadedText: "not loaded",
-            command: { programArguments: ["node"], environment: { OPENCLAW_STATE_DIR: "/tmp" } },
+            command: { programArguments: ["node"], environment: { AFORA_STATE_DIR: "/tmp" } },
           },
           rpc: { ok: true, server },
           extraServices: [],
@@ -213,14 +213,14 @@ describe("printDaemonStatus", () => {
   it.skipIf(process.platform !== "win32")(
     "shortens real Windows home casing aliases in human status",
     async () => {
-      await withTestDir({ prefix: "openclaw-home-display-" }, async (home) => {
+      await withTestDir({ prefix: "afora-home-display-" }, async (home) => {
         const logFile = path.join(home, "logs", "gateway.log");
         await fs.promises.mkdir(path.dirname(logFile), { recursive: true });
         await fs.promises.writeFile(logFile, "ready", "utf8");
         const logFileAlias = logFile.toUpperCase();
         expect(fs.statSync(logFileAlias).isFile()).toBe(true);
 
-        await withEnv({ OPENCLAW_HOME: home }, async () => {
+        await withEnv({ AFORA_HOME: home }, async () => {
           printDaemonStatus(
             {
               service: {
@@ -238,7 +238,7 @@ describe("printDaemonStatus", () => {
 
         expectMockLineContains(
           runtime.log,
-          `File logs: $OPENCLAW_HOME${path.sep}LOGS${path.sep}GATEWAY.LOG`,
+          `File logs: $AFORA_HOME${path.sep}LOGS${path.sep}GATEWAY.LOG`,
         );
         expect(runtime.log.mock.calls.flat().join("\n")).not.toContain(home.toUpperCase());
       });
@@ -255,7 +255,7 @@ describe("printDaemonStatus", () => {
           notLoadedText: "not loaded",
           runtime: { status: "running", pid: 8000 },
         },
-        logFile: "/tmp/openclaw.log",
+        logFile: "/tmp/afora.log",
         gateway: {
           bindMode: "loopback",
           bindHost: "127.0.0.1",
@@ -284,7 +284,7 @@ describe("printDaemonStatus", () => {
     );
 
     expectMockLineContains(runtime.error, "Gateway runtime PID does not own the listening port");
-    expectMockLineContains(runtime.error, formatCliCommand("openclaw gateway restart"));
+    expectMockLineContains(runtime.error, formatCliCommand("afora gateway restart"));
   });
 
   it("prints established gateway client guidance gathered by deep status", () => {
@@ -311,7 +311,7 @@ describe("printDaemonStatus", () => {
               pid: 4242,
               ppid: 1,
               command: "node",
-              commandLine: "/tmp/newer-openclaw/bin/openclaw logs --follow",
+              commandLine: "/tmp/newer-afora/bin/afora logs --follow",
               address: "TCP 127.0.0.1:50123->127.0.0.1:18789 (ESTABLISHED)",
               direction: "client",
             },
@@ -324,7 +324,7 @@ describe("printDaemonStatus", () => {
 
     expectMockLineContains(runtime.log, "Established clients: 1");
     expectMockLineContains(runtime.log, "pid=4242");
-    expectMockLineContains(runtime.log, "newer-openclaw");
+    expectMockLineContains(runtime.log, "newer-afora");
     expectMockLineContains(runtime.log, "client");
     expectMockLineContains(runtime.log, "protocol mismatch after rollback");
   });
@@ -418,11 +418,11 @@ describe("printDaemonStatus", () => {
           runtime: { status: "running", pid: 8000 },
           staleUpdateLaunchdJobs: [
             {
-              label: "ai.openclaw.update.2026.5.12",
+              label: "ai.afora.update.2026.5.12",
               lastExitStatus: 127,
             },
             {
-              label: "ai.openclaw.manual-update.1717168800",
+              label: "ai.afora.manual-update.1717168800",
               lastExitStatus: 0,
             },
           ],
@@ -439,11 +439,11 @@ describe("printDaemonStatus", () => {
       { json: false },
     );
 
-    expectMockLineContains(runtime.error, "Stale OpenClaw updater launchd job(s) detected.");
-    expectMockLineContains(runtime.error, "ai.openclaw.update.2026.5.12");
-    expectMockLineContains(runtime.error, "ai.openclaw.manual-update.1717168800");
+    expectMockLineContains(runtime.error, "Stale Afora updater launchd job(s) detected.");
+    expectMockLineContains(runtime.error, "ai.afora.update.2026.5.12");
+    expectMockLineContains(runtime.error, "ai.afora.manual-update.1717168800");
     expectMockLineContains(runtime.error, "launchctl remove <label>");
-    expectMockLineContains(runtime.error, formatCliCommand("openclaw gateway restart"));
+    expectMockLineContains(runtime.error, formatCliCommand("afora gateway restart"));
   });
 
   it("prints macOS launchd stdout and suppressed stderr when gateway is not listening", () => {
@@ -490,7 +490,7 @@ describe("printDaemonStatus", () => {
     }
 
     expectMockLineContains(runtime.error, "Gateway port 18789 is not listening");
-    expectMockLineContains(runtime.error, "/Users/test/Library/Logs/openclaw/gateway.log");
+    expectMockLineContains(runtime.error, "/Users/test/Library/Logs/afora/gateway.log");
     expectMockLineContains(runtime.error, "Errors: suppressed");
     const errors = runtime.error.mock.calls.map(([line]) => line).join("\n");
     expect(errors.match(/Last gateway error:/g)).toHaveLength(1);
@@ -641,7 +641,7 @@ describe("printDaemonStatus", () => {
       {
         cli: {
           version: "2026.4.23",
-          entrypoint: "/usr/local/bin/openclaw",
+          entrypoint: "/usr/local/bin/afora",
         },
         service: {
           label: "LaunchAgent",
@@ -669,12 +669,12 @@ describe("printDaemonStatus", () => {
       { json: false },
     );
 
-    expectMockLineContains(runtime.log, "CLI version: 2026.4.23 (/usr/local/bin/openclaw)");
+    expectMockLineContains(runtime.log, "CLI version: 2026.4.23 (/usr/local/bin/afora)");
     expectMockLineContains(runtime.log, "Gateway version: 2026.5.6");
-    expectMockLineContains(runtime.error, "this OpenClaw command is version 2026.4.23");
+    expectMockLineContains(runtime.error, "this Afora command is version 2026.4.23");
     expectMockLineContains(
       runtime.error,
-      "if this mismatch is unexpected, update PATH so `openclaw` points to the version you want",
+      "if this mismatch is unexpected, update PATH so `afora` points to the version you want",
     );
   });
 
@@ -683,7 +683,7 @@ describe("printDaemonStatus", () => {
       {
         cli: {
           version: "2026.4.23",
-          entrypoint: "/usr/local/bin/openclaw",
+          entrypoint: "/usr/local/bin/afora",
         },
         service: {
           label: "LaunchAgent",
@@ -713,7 +713,7 @@ describe("printDaemonStatus", () => {
     );
 
     expectMockLineContains(runtime.log, "Gateway version: 2026.5.7");
-    expectMockLineContains(runtime.error, "this OpenClaw command is version 2026.4.23");
+    expectMockLineContains(runtime.error, "this Afora command is version 2026.4.23");
   });
 
   it("prints restart handoff diagnostics when deep status gathered one", () => {
@@ -759,12 +759,12 @@ describe("printDaemonStatus", () => {
         },
         config: {
           cli: {
-            path: "/tmp/openclaw-cli/openclaw.json",
+            path: "/tmp/afora-cli/afora.json",
             exists: true,
             valid: true,
           },
           daemon: {
-            path: "/tmp/openclaw-daemon/openclaw.json",
+            path: "/tmp/afora-daemon/afora.json",
             exists: true,
             valid: true,
             controlUi: { basePath: "/ui" },
@@ -810,12 +810,12 @@ describe("printDaemonStatus", () => {
         },
         config: {
           cli: {
-            path: "/tmp/openclaw-cli/openclaw.json",
+            path: "/tmp/afora-cli/afora.json",
             exists: true,
             valid: true,
           },
           daemon: {
-            path: "/tmp/openclaw-daemon/openclaw.json",
+            path: "/tmp/afora-daemon/afora.json",
             exists: true,
             valid: true,
             controlUi: { basePath: "/ui" },
@@ -855,7 +855,7 @@ describe("printDaemonStatus", () => {
         },
         config: {
           cli: {
-            path: "/tmp/openclaw-cli/openclaw.json",
+            path: "/tmp/afora-cli/afora.json",
             exists: true,
             valid: true,
             warnings: [
@@ -901,7 +901,7 @@ describe("printDaemonStatus", () => {
         extraServices: [
           {
             platform: "darwin",
-            label: "ai.openclaw.gateway.rescue",
+            label: "ai.afora.gateway.rescue",
             scope: "user",
             detail: "loaded",
           },
@@ -911,20 +911,20 @@ describe("printDaemonStatus", () => {
     );
 
     expectMockLineContains(runtime.log, "Other gateway-like services detected");
-    expectMockLineContains(runtime.log, "ai.openclaw.gateway.rescue");
+    expectMockLineContains(runtime.log, "ai.afora.gateway.rescue");
     expect(runtime.error).not.toHaveBeenCalled();
   });
 
   it("renders cleanup hints for the detected extra gateway without targeting the active gateway", () => {
     const extraService = {
       platform: "darwin" as const,
-      label: "com.example.openclaw-gateway",
+      label: "com.example.afora-gateway",
       scope: "user" as const,
-      detail: "plist: /Users/test/Library/LaunchAgents/com.example.openclaw-gateway.plist",
+      detail: "plist: /Users/test/Library/LaunchAgents/com.example.afora-gateway.plist",
     };
     renderGatewayServiceCleanupHintsMock.mockReturnValue([
-      "launchctl bootout gui/$UID/com.example.openclaw-gateway",
-      "rm /Users/test/Library/LaunchAgents/com.example.openclaw-gateway.plist",
+      "launchctl bootout gui/$UID/com.example.afora-gateway",
+      "rm /Users/test/Library/LaunchAgents/com.example.afora-gateway.plist",
     ]);
 
     printDaemonStatus(
@@ -944,10 +944,10 @@ describe("printDaemonStatus", () => {
     expect(renderGatewayServiceCleanupHintsMock).toHaveBeenCalledWith([extraService]);
     expectMockLineContains(
       runtime.log,
-      "Cleanup hint: launchctl bootout gui/$UID/com.example.openclaw-gateway",
+      "Cleanup hint: launchctl bootout gui/$UID/com.example.afora-gateway",
     );
     expect(runtime.log.mock.calls.map(([line]) => line).join("\n")).not.toContain(
-      "ai.openclaw.gateway",
+      "ai.afora.gateway",
     );
   });
 
@@ -978,7 +978,7 @@ describe("printDaemonStatus", () => {
     );
 
     expectMockLineContains(runtime.log, "Plugin version drift: 1 active official plugin");
-    expectMockLineContains(runtime.log, "openclaw gateway status --deep");
+    expectMockLineContains(runtime.log, "afora gateway status --deep");
     expect(runtime.log.mock.calls.map(([line]) => line).join("\n")).not.toContain("whatsapp:");
   });
 
@@ -1009,8 +1009,8 @@ describe("printDaemonStatus", () => {
     );
 
     expectMockLineContains(runtime.log, "- whatsapp: 2026.5.3 (clawhub)");
-    expectMockLineContains(runtime.log, "openclaw plugins update whatsapp");
-    expectMockLineContains(runtime.log, "openclaw gateway restart");
+    expectMockLineContains(runtime.log, "afora plugins update whatsapp");
+    expectMockLineContains(runtime.log, "afora gateway restart");
   });
 
   it("prints exact package update commands for pinned npm plugin drift in deep mode", () => {
@@ -1031,8 +1031,8 @@ describe("printDaemonStatus", () => {
               installedVersion: "2026.6.9",
               gatewayVersion: "2026.6.10-beta.1",
               source: "npm",
-              packageName: "@openclaw/brave-plugin",
-              spec: "@openclaw/brave-plugin@2026.6.9",
+              packageName: "@afora/brave-plugin",
+              spec: "@afora/brave-plugin@2026.6.9",
             },
           ],
         },
@@ -1044,9 +1044,9 @@ describe("printDaemonStatus", () => {
     expectMockLineContains(runtime.log, "- brave: 2026.6.9 (npm)");
     expectMockLineContains(
       runtime.log,
-      "openclaw plugins update @openclaw/brave-plugin@2026.6.10-beta.1",
+      "afora plugins update @afora/brave-plugin@2026.6.10-beta.1",
     );
-    expectMockLineContains(runtime.log, "openclaw gateway restart");
+    expectMockLineContains(runtime.log, "afora gateway restart");
   });
 
   it("does not print systemd user-service hints when a gateway responds", () => {

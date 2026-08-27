@@ -1,5 +1,5 @@
-import type { OpenClawPluginNodeHostCommand } from "openclaw/plugin-sdk/plugin-entry";
-import { asNonArrayRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { AforaPluginNodeHostCommand } from "afora-agent/plugin-sdk/plugin-entry";
+import { asNonArrayRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { LinuxCanvasIpcClient, type LinuxCanvasIpcTransport } from "./ipc-client.js";
 import {
   linuxCanvasSocketExists,
@@ -96,7 +96,7 @@ function bindActionRelay(
 
 export function createLinuxCanvasCommands(
   options: LinuxCanvasCommandsOptions = {},
-): OpenClawPluginNodeHostCommand[] {
+): AforaPluginNodeHostCommand[] {
   const platform = options.platform ?? process.platform;
   const env = options.env ?? process.env;
   const socketPath = resolveLinuxCanvasSocketPath(env);
@@ -122,7 +122,7 @@ export function createLinuxCanvasCommands(
   };
 
   return LINUX_CANVAS_COMMANDS.map((command, index) => {
-    const registration: OpenClawPluginNodeHostCommand = {
+    const registration: AforaPluginNodeHostCommand = {
       command,
       cap: "canvas",
       dangerous: false,

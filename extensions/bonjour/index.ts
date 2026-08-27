@@ -2,24 +2,24 @@
  * Bonjour gateway-discovery plugin entry. It advertises the local gateway over
  * mDNS and lazily loads the ciao-based advertiser.
  */
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 
 function formatBonjourInstanceName(displayName: string) {
   const trimmed = displayName.trim();
   if (!trimmed) {
-    return "OpenClaw";
+    return "Afora";
   }
-  if (/openclaw/i.test(trimmed)) {
+  if (/afora/i.test(trimmed)) {
     return trimmed;
   }
-  return `${trimmed} (OpenClaw)`;
+  return `${trimmed} (Afora)`;
 }
 
 /** Plugin entry for Bonjour/mDNS gateway discovery. */
 export default definePluginEntry({
   id: "bonjour",
   name: "Bonjour Gateway Discovery",
-  description: "Advertise the local OpenClaw gateway over Bonjour/mDNS.",
+  description: "Advertise the local Afora gateway over Bonjour/mDNS.",
   register(api) {
     api.registerGatewayDiscoveryService({
       id: "bonjour",
@@ -29,7 +29,7 @@ export default definePluginEntry({
           { registerUncaughtExceptionHandler, registerUnhandledRejectionHandler },
         ] = await Promise.all([
           import("./src/advertiser.js"),
-          import("openclaw/plugin-sdk/runtime"),
+          import("afora-agent/plugin-sdk/runtime"),
         ]);
         const advertiser = await startGatewayBonjourAdvertiser(
           {

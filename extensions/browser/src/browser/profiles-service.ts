@@ -6,12 +6,12 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { getRuntimeConfig, getRuntimeConfigSourceSnapshot } from "../config/config.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { resolveUserPath } from "../utils.js";
 import { assertCdpEndpointAllowed, redactCdpUrl } from "./cdp.helpers.js";
-import { resolveOpenClawUserDataDir } from "./chrome.js";
+import { resolveAforaUserDataDir } from "./chrome.js";
 import {
   createBrowserProfileConfig,
   deleteBrowserProfileConfig,
@@ -52,7 +52,7 @@ type CreateProfileParams = {
   color?: string;
   cdpUrl?: string;
   userDataDir?: string;
-  driver?: "openclaw" | "existing-session";
+  driver?: "afora" | "existing-session";
 };
 
 /** Result returned after creating a browser profile. */
@@ -258,8 +258,8 @@ export function createBrowserProfilesService(ctx: BrowserRouteContext) {
       await deleteBrowserProfileConfig({ name, expected });
       delete state.resolved.profiles[name];
       try {
-        if (resolved?.cdpIsLoopback && resolved.driver === "openclaw" && !resolved.attachOnly) {
-          const userDataDir = resolveOpenClawUserDataDir(name);
+        if (resolved?.cdpIsLoopback && resolved.driver === "afora" && !resolved.attachOnly) {
+          const userDataDir = resolveAforaUserDataDir(name);
           const profileDir = path.dirname(userDataDir);
           if (fs.existsSync(profileDir)) {
             try {

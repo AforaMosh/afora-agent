@@ -1,7 +1,7 @@
 // Sandbox tool policy tests cover effective allow/deny merging and blocked-tool
 // guidance for sandboxed agent sessions.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { migratePersistedImplicitMainRoster } from "../../config/legacy.roster.js";
 import { resolveSandboxConfigForAgent as resolveSandboxConfigForAgentBase } from "./config.js";
 import {
@@ -13,15 +13,15 @@ import {
   resolveSandboxToolPolicyForAgent as resolveSandboxToolPolicyForAgentBase,
 } from "./tool-policy.js";
 
-function loadedConfig(config: OpenClawConfig | undefined): OpenClawConfig {
-  return migratePersistedImplicitMainRoster(config ?? {}).config as OpenClawConfig;
+function loadedConfig(config: AforaConfig | undefined): AforaConfig {
+  return migratePersistedImplicitMainRoster(config ?? {}).config as AforaConfig;
 }
 
-function resolveSandboxConfigForAgent(config: OpenClawConfig, agentId: string) {
+function resolveSandboxConfigForAgent(config: AforaConfig, agentId: string) {
   return resolveSandboxConfigForAgentBase(loadedConfig(config), agentId);
 }
 
-function resolveSandboxToolPolicyForAgent(config: OpenClawConfig, agentId: string) {
+function resolveSandboxToolPolicyForAgent(config: AforaConfig, agentId: string) {
   return resolveSandboxToolPolicyForAgentBase(loadedConfig(config), agentId);
 }
 
@@ -45,7 +45,7 @@ function formatSandboxToolPolicyBlockedMessage(
 
 describe("sandbox/tool-policy", () => {
   it("merges sandbox alsoAllow into the default sandbox allowlist", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           sandbox: { mode: "all", scope: "agent" },
@@ -75,7 +75,7 @@ describe("sandbox/tool-policy", () => {
   });
 
   it("lets explicit sandbox allow remove entries from the default sandbox denylist", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           sandbox: { mode: "all", scope: "agent" },
@@ -107,7 +107,7 @@ describe("sandbox/tool-policy", () => {
   it.each([["image"], ["image*"]] as const)(
     "keeps legacy %s denies fail-closed for view_image until Doctor migrates them",
     (legacyDeny) => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: { defaults: { sandbox: { mode: "all", scope: "agent" } } },
         tools: { sandbox: { tools: { allow: ["read"], deny: [legacyDeny] } } },
       };
@@ -121,7 +121,7 @@ describe("sandbox/tool-policy", () => {
   it("preserves allow-all semantics for allow: [] plus alsoAllow", () => {
     // An empty allowlist means allow all except denies; alsoAllow should only
     // remove matching default denies, not turn allow-all into allow-some.
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           sandbox: { mode: "all", scope: "agent" },
@@ -171,7 +171,7 @@ describe("sandbox/tool-policy", () => {
   });
 
   it("keeps canonical sandbox config and runtime status aligned with the effective resolver", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           sandbox: { mode: "all", scope: "agent" },
@@ -215,7 +215,7 @@ describe("sandbox/tool-policy", () => {
   });
 
   it("treats channel direct sessions as sandboxed in non-main mode", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           sandbox: { mode: "non-main", scope: "agent" },
@@ -250,7 +250,7 @@ describe("sandbox/tool-policy", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const runtime = resolveSandboxRuntimeStatus({
       cfg,
@@ -279,7 +279,7 @@ describe("sandbox/tool-policy", () => {
           worker: { sandbox: { mode: "non-main", scope: "agent" } },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const runtime = resolveSandboxRuntimeStatus({
       cfg,
@@ -300,7 +300,7 @@ describe("sandbox/tool-policy", () => {
         ownership: "explicit",
         entries: { main: {}, worker: {} },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(() =>
       resolveSandboxRuntimeStatus({
@@ -319,7 +319,7 @@ describe("sandbox/tool-policy", () => {
         ownership: "explicit",
         entries: { main: { sandbox: { mode: "non-main", scope: "agent" } } },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const runtime = resolveSandboxRuntimeStatus({
       cfg,
@@ -337,7 +337,7 @@ describe("sandbox/tool-policy", () => {
   });
 
   it("keeps the agent main session sandboxed in all mode", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           sandbox: { mode: "all", scope: "agent" },
@@ -355,7 +355,7 @@ describe("sandbox/tool-policy", () => {
   });
 
   it("keeps explicit sandbox deny precedence over allow and alsoAllow", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           sandbox: { mode: "all", scope: "agent" },
@@ -396,7 +396,7 @@ describe("sandbox/tool-policy", () => {
   });
 
   it("uses the effective sandbox policy when formatting blocked-tool guidance", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           sandbox: { mode: "all", scope: "agent" },
@@ -431,7 +431,7 @@ describe("sandbox/tool-policy", () => {
     // The guidance embeds a copy-paste command; quote the real session key while
     // keeping the displayed session line compact and terminal-safe.
     const sessionKey = "agent:main:weird session;rm -rf /";
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           sandbox: { mode: "all", scope: "agent" },
@@ -457,7 +457,7 @@ describe("sandbox/tool-policy", () => {
     expect(message).not.toContain(`Session: ${sessionKey}`);
     expect(message).toContain("Session: agent:… -rf /");
     expect(message).toContain(
-      "openclaw sandbox explain --session 'agent:main:weird session;rm -rf /'",
+      "afora sandbox explain --session 'agent:main:weird session;rm -rf /'",
     );
   });
 
@@ -480,7 +480,7 @@ describe("sandbox/tool-policy", () => {
   ])(
     "keeps redacted session keys UTF-16 safe at the $boundary boundary",
     ({ sessionKey, expectedLabel }) => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           defaults: {
             sandbox: { mode: "all", scope: "agent" },
@@ -508,13 +508,13 @@ describe("sandbox/tool-policy", () => {
       expect(sessionLabel).not.toMatch(
         /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u,
       );
-      expect(message).toContain(`openclaw sandbox explain --session '${sessionKey}'`);
+      expect(message).toContain(`afora sandbox explain --session '${sessionKey}'`);
     },
   );
 
   it("avoids terminal injection for control-character session keys", () => {
     const sessionKey = "agent:main:abcde\n12345";
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           sandbox: { mode: "all", scope: "agent" },
@@ -539,7 +539,7 @@ describe("sandbox/tool-policy", () => {
     expect(sessionLine).toBe("Session: agent:…\\n12345");
     expect(sessionLine).not.toContain(sessionKey);
     expect(sessionLine).toContain("\\n");
-    expect(message).toContain("openclaw sandbox explain --agent main");
+    expect(message).toContain("afora sandbox explain --agent main");
     expect(message).not.toContain("--session");
   });
 });

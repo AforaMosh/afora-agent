@@ -1,6 +1,6 @@
 /** Tests block streaming behavior for auto-reply output delivery. */
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { withFastReplyConfig } from "./reply/get-reply-fast-path.test-support.js";
 import { loadGetReplyModuleForTest } from "./reply/get-reply.test-loader.js";
 import { createMockTypingController } from "./reply/reply.test-helpers.js";
@@ -104,7 +104,7 @@ function createTelegramMessage(messageSid: string): MsgContext {
   };
 }
 
-function createReplyConfig(streamMode?: "block"): OpenClawConfig {
+function createReplyConfig(streamMode?: "block"): AforaConfig {
   return withFastReplyConfig({
     agents: {
       defaults: {
@@ -119,7 +119,7 @@ function createReplyConfig(streamMode?: "block"): OpenClawConfig {
       },
     },
     session: { store: "/tmp/sessions.json" },
-  } as OpenClawConfig);
+  } as AforaConfig);
 }
 
 function createContinueDirectivesResult() {
@@ -178,7 +178,7 @@ describe("block streaming", () => {
   });
 
   beforeEach(() => {
-    vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+    vi.stubEnv("AFORA_TEST_FAST", "1");
     mocks.resolveReplyDirectives.mockReset();
     mocks.handleInlineActions.mockReset();
     mocks.initSessionState.mockReset();

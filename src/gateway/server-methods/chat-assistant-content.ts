@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import {
   appendReplyMediaFailureWarning,
   readPairingQrReplyChannelData,
@@ -169,10 +169,10 @@ async function buildPairingQrAssistantContentBlock(
     renderQrTerminal(qr.setupCode, { small: true }),
   ]);
   return {
-    type: "openclaw_pairing_qr",
+    type: "afora_pairing_qr",
     image_url: imageUrl,
     terminalText,
-    alt: "OpenClaw pairing QR code",
+    alt: "Afora pairing QR code",
     expiresAtMs: qr.expiresAtMs,
     sensitive: true,
   };
@@ -438,7 +438,7 @@ export function hasManagedOutgoingAssistantContent(
 export function scheduleChatHistoryManagedMediaCleanup(params: {
   sessionKey: string;
   agentId?: string;
-  cfg: import("../../config/types.openclaw.js").OpenClawConfig;
+  cfg: import("../../config/types.afora.js").AforaConfig;
   context: Pick<GatewayRequestContext, "chatAbortControllers" | "logGateway">;
 }) {
   const cleanupKey = params.agentId

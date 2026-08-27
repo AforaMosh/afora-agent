@@ -49,7 +49,7 @@ export async function executeBashWithOperations(
   options?: BashExecutorOptions,
 ): Promise<BashResult> {
   const output = new OutputAccumulator({
-    tempFilePrefix: "openclaw-bash",
+    tempFilePrefix: "afora-bash",
     createTextTransform: () => {
       const sanitizeOutput = createStreamingBinaryOutputSanitizer();
       return (text) => sanitizeOutput(text).replace(/\r/g, "");

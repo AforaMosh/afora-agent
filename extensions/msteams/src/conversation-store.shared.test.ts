@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { resetPluginStateStoreForTests } from "openclaw/plugin-sdk/plugin-state-test-runtime";
+import { resetPluginStateStoreForTests } from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   findPreferredDmConversationByUserId,
@@ -60,9 +60,9 @@ const storeFactories: StoreFactory[] = [
   {
     name: "state",
     createStore: async () => {
-      const stateDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "openclaw-msteams-store-"));
+      const stateDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "afora-msteams-store-"));
       return createMSTeamsConversationStoreState({
-        env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+        env: { ...process.env, AFORA_STATE_DIR: stateDir },
         ttlMs: 60_000,
       });
     },

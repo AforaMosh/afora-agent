@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { formatCliOperatorError } from "../cli/failure-output.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -62,7 +62,7 @@ describe("backup commands", () => {
     vi.spyOn(backupShared, "resolveBackupPlanFromDisk").mockResolvedValue(
       await resolveBackupPlanFromPaths({
         stateDir,
-        configPath: path.join(stateDir, "openclaw.json"),
+        configPath: path.join(stateDir, "afora.json"),
         oauthDir: path.join(stateDir, "credentials"),
         workspaceDirs: [workspaceDir],
         includeWorkspace: true,
@@ -74,7 +74,7 @@ describe("backup commands", () => {
   }
 
   beforeAll(async () => {
-    tempHome = await createTempHomeEnv("openclaw-backup-test-");
+    tempHome = await createTempHomeEnv("afora-backup-test-");
   });
 
   beforeEach(async () => {
@@ -102,13 +102,13 @@ describe("backup commands", () => {
   });
 
   async function withInvalidWorkspaceBackupConfig<T>(fn: (runtime: RuntimeEnv) => Promise<T>) {
-    const stateDir = path.join(tempHome.home, ".openclaw");
+    const stateDir = path.join(tempHome.home, ".afora");
     const configPath = path.join(tempHome.home, "custom-config.json");
-    await fs.writeFile(path.join(stateDir, "openclaw.json"), JSON.stringify({}), "utf8");
+    await fs.writeFile(path.join(stateDir, "afora.json"), JSON.stringify({}), "utf8");
     await fs.writeFile(configPath, '{"agents": { defaults: { workspace: ', "utf8");
 
-    const envSnapshot = captureEnv(["OPENCLAW_CONFIG_PATH"]);
-    setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
+    const envSnapshot = captureEnv(["AFORA_CONFIG_PATH"]);
+    setTestEnvValue("AFORA_CONFIG_PATH", configPath);
     const runtime = createBackupTestRuntime();
     try {
       return await fn(runtime);
@@ -166,11 +166,11 @@ describe("backup commands", () => {
     try {
       setTestEnvValue("TZ", "Asia/Shanghai");
       expect(buildBackupArchiveRoot(Date.UTC(2026, 2, 14, 1, 2, 3, 456))).toBe(
-        "2026-03-14T09-02-03.456+08-00-openclaw-backup",
+        "2026-03-14T09-02-03.456+08-00-afora-backup",
       );
       setTestEnvValue("TZ", "America/New_York");
       expect(buildBackupArchiveRoot(Date.UTC(2026, 2, 14, 1, 2, 3, 456))).toBe(
-        "2026-03-13T21-02-03.456-04-00-openclaw-backup",
+        "2026-03-13T21-02-03.456-04-00-afora-backup",
       );
     } finally {
       envSnapshot.restore();
@@ -178,8 +178,8 @@ describe("backup commands", () => {
   });
 
   it("collapses default config, credentials, and workspace into the state backup root", async () => {
-    const stateDir = path.join(tempHome.home, ".openclaw");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const stateDir = path.join(tempHome.home, ".afora");
+    const configPath = path.join(stateDir, "afora.json");
     const oauthDir = path.join(stateDir, "credentials");
     const workspaceDir = path.join(stateDir, "workspace");
     await fs.writeFile(configPath, JSON.stringify({}), "utf8");
@@ -206,9 +206,9 @@ describe("backup commands", () => {
       return;
     }
 
-    const stateDir = path.join(tempHome.home, ".openclaw");
+    const stateDir = path.join(tempHome.home, ".afora");
     const workspaceDir = path.join(stateDir, "workspace");
-    const symlinkDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-workspace-link-"));
+    const symlinkDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-workspace-link-"));
     const workspaceLink = path.join(symlinkDir, "ws-link");
     try {
       await fs.mkdir(workspaceDir, { recursive: true });
@@ -216,7 +216,7 @@ describe("backup commands", () => {
       await fs.symlink(workspaceDir, workspaceLink);
       const plan = await resolveBackupPlanFromPaths({
         stateDir,
-        configPath: path.join(stateDir, "openclaw.json"),
+        configPath: path.join(stateDir, "afora.json"),
         oauthDir: path.join(stateDir, "credentials"),
         workspaceDirs: [workspaceLink],
         includeWorkspace: true,
@@ -231,16 +231,16 @@ describe("backup commands", () => {
   });
 
   it("creates an archive with a manifest and external workspace payload", async () => {
-    const stateDir = path.join(tempHome.home, ".openclaw");
-    const externalWorkspace = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-workspace-"));
+    const stateDir = path.join(tempHome.home, ".afora");
+    const externalWorkspace = await fs.mkdtemp(path.join(os.tmpdir(), "afora-workspace-"));
     const configPath = path.join(tempHome.home, "custom-config.json");
-    const backupDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-backups-"));
+    const backupDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-backups-"));
     let capturedManifest: CapturedBackupManifest | null = null;
     let capturedEntryPaths: string[] = [];
     let capturedOnWriteEntry: ((entry: { path: string }) => void) | null = null;
-    const envSnapshot = captureEnv(["OPENCLAW_CONFIG_PATH"]);
+    const envSnapshot = captureEnv(["AFORA_CONFIG_PATH"]);
     try {
-      setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
+      setTestEnvValue("AFORA_CONFIG_PATH", configPath);
       await fs.writeFile(
         configPath,
         JSON.stringify({
@@ -358,8 +358,8 @@ describe("backup commands", () => {
   });
 
   it("keeps volatile-skip notices out of json output", async () => {
-    const stateDir = path.join(tempHome.home, ".openclaw");
-    const backupDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-backups-json-"));
+    const stateDir = path.join(tempHome.home, ".afora");
+    const backupDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-backups-json-"));
     try {
       const runtime = createBackupTestRuntime();
       await mockStateOnlyBackupPlan(stateDir);
@@ -400,8 +400,8 @@ describe("backup commands", () => {
   });
 
   it("rejects output paths that would be created inside a backed-up directory", async () => {
-    const stateDir = path.join(tempHome.home, ".openclaw");
-    await fs.writeFile(path.join(stateDir, "openclaw.json"), JSON.stringify({}), "utf8");
+    const stateDir = path.join(tempHome.home, ".afora");
+    await fs.writeFile(path.join(stateDir, "afora.json"), JSON.stringify({}), "utf8");
 
     const runtime = createBackupTestRuntime();
     await mockStateOnlyBackupPlan(stateDir);
@@ -414,7 +414,7 @@ describe("backup commands", () => {
   });
 
   it("creates missing output parent directories", async () => {
-    const stateDir = path.join(tempHome.home, ".openclaw");
+    const stateDir = path.join(tempHome.home, ".afora");
     const outputPath = path.join(tempHome.home, "backups", "daily", "backup.tar.gz");
     await mockStateOnlyBackupPlan(stateDir);
 
@@ -428,27 +428,27 @@ describe("backup commands", () => {
     {
       code: "ENOENT",
       detail: "Backup output directory could not be created",
-      recovery: "Check the path and run `openclaw backup create --output <archive>` again.",
+      recovery: "Check the path and run `afora backup create --output <archive>` again.",
     },
     {
       code: "EACCES",
       detail: "Backup output directory is not writable",
       recovery:
-        "Check the path and directory permissions, then run `openclaw backup create --output <archive>` again.",
+        "Check the path and directory permissions, then run `afora backup create --output <archive>` again.",
     },
     {
       code: "ENOSPC",
       detail: "The destination does not have enough free space",
-      recovery: "Free up disk space and run `openclaw backup create --output <archive>` again.",
+      recovery: "Free up disk space and run `afora backup create --output <archive>` again.",
     },
     {
       code: "EIO",
       detail: "The output path could not be prepared",
       recovery:
-        "Check the path and filesystem, then run `openclaw backup create --output <archive>` again.",
+        "Check the path and filesystem, then run `afora backup create --output <archive>` again.",
     },
   ])("reports an actionable $code output-parent failure", async ({ code, detail, recovery }) => {
-    const stateDir = path.join(tempHome.home, ".openclaw");
+    const stateDir = path.join(tempHome.home, ".afora");
     const outputParent = path.join(tempHome.home, "missing-parent", "daily");
     const outputPath = path.join(outputParent, "backup.tar.gz");
     await mockStateOnlyBackupPlan(stateDir);
@@ -468,13 +468,13 @@ describe("backup commands", () => {
     const operatorMessage = `Backup archive creation failed: ${outputPath}. ${detail}: ${outputParent}. ${recovery}`;
     expect(formatCliOperatorError(error, { argv: [], env: {} })).toBe(operatorMessage);
     const debugMessage = `${operatorMessage} | ${code}: filesystem error, mkdir '${outputParent}' | ${code}`;
-    expect(formatCliOperatorError(error, { argv: [], env: { OPENCLAW_DEBUG: "1" } })).toBe(
+    expect(formatCliOperatorError(error, { argv: [], env: { AFORA_DEBUG: "1" } })).toBe(
       debugMessage,
     );
   });
 
   it("does not describe an output parent file as a missing directory", async () => {
-    const stateDir = path.join(tempHome.home, ".openclaw");
+    const stateDir = path.join(tempHome.home, ".afora");
     const outputParent = path.join(tempHome.home, "not-a-directory");
     const outputPath = path.join(outputParent, "backup.tar.gz");
     await fs.writeFile(outputParent, "file\n", "utf8");
@@ -485,9 +485,9 @@ describe("backup commands", () => {
     }).catch((caught: unknown) => caught);
 
     expect(error).toBeInstanceOf(Error);
-    const operatorMessage = `Backup archive creation failed: ${outputPath}. Backup output parent is not a directory: ${outputParent}. Choose a directory path and run \`openclaw backup create --output <archive>\` again.`;
+    const operatorMessage = `Backup archive creation failed: ${outputPath}. Backup output parent is not a directory: ${outputParent}. Choose a directory path and run \`afora backup create --output <archive>\` again.`;
     expect(formatCliOperatorError(error, { argv: [], env: {} })).toBe(operatorMessage);
-    expect(formatCliOperatorError(error, { argv: [], env: { OPENCLAW_DEBUG: "1" } })).toMatch(
+    expect(formatCliOperatorError(error, { argv: [], env: { AFORA_DEBUG: "1" } })).toMatch(
       /\| EEXIST: .*mkdir.*\| EEXIST/u,
     );
   });
@@ -497,11 +497,11 @@ describe("backup commands", () => {
       return;
     }
 
-    const stateDir = path.join(tempHome.home, ".openclaw");
-    const symlinkDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-backup-link-"));
+    const stateDir = path.join(tempHome.home, ".afora");
+    const symlinkDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-backup-link-"));
     const symlinkPath = path.join(symlinkDir, "linked-state");
     try {
-      await fs.writeFile(path.join(stateDir, "openclaw.json"), JSON.stringify({}), "utf8");
+      await fs.writeFile(path.join(stateDir, "afora.json"), JSON.stringify({}), "utf8");
       await fs.symlink(stateDir, symlinkPath);
 
       const runtime = createBackupTestRuntime();
@@ -518,9 +518,9 @@ describe("backup commands", () => {
   });
 
   it("falls back to the home directory when cwd is inside a backed-up source tree", async () => {
-    const stateDir = path.join(tempHome.home, ".openclaw");
+    const stateDir = path.join(tempHome.home, ".afora");
     const workspaceDir = path.join(stateDir, "workspace");
-    await fs.writeFile(path.join(stateDir, "openclaw.json"), JSON.stringify({}), "utf8");
+    await fs.writeFile(path.join(stateDir, "afora.json"), JSON.stringify({}), "utf8");
     await fs.mkdir(workspaceDir, { recursive: true });
     await fs.writeFile(path.join(workspaceDir, "SOUL.md"), "# soul\n", "utf8");
     vi.spyOn(process, "cwd").mockReturnValue(workspaceDir);
@@ -537,7 +537,7 @@ describe("backup commands", () => {
     await fs.rm(result.archivePath, { force: true });
 
     if (process.platform !== "win32") {
-      const linkParent = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-backup-cwd-link-"));
+      const linkParent = await fs.mkdtemp(path.join(os.tmpdir(), "afora-backup-cwd-link-"));
       const workspaceLink = path.join(linkParent, "workspace-link");
       try {
         await fs.symlink(workspaceDir, workspaceLink);
@@ -558,14 +558,14 @@ describe("backup commands", () => {
   });
 
   it("allows dry-run preview even when the target archive already exists", async () => {
-    const stateDir = path.join(tempHome.home, ".openclaw");
+    const stateDir = path.join(tempHome.home, ".afora");
     const existingArchive = path.join(tempHome.home, "existing-backup.tar.gz");
-    await fs.writeFile(path.join(stateDir, "openclaw.json"), JSON.stringify({}), "utf8");
+    await fs.writeFile(path.join(stateDir, "afora.json"), JSON.stringify({}), "utf8");
     await fs.writeFile(existingArchive, "already here", "utf8");
     vi.spyOn(backupShared, "resolveBackupPlanFromDisk").mockResolvedValue(
       await resolveBackupPlanFromPaths({
         stateDir,
-        configPath: path.join(stateDir, "openclaw.json"),
+        configPath: path.join(stateDir, "afora.json"),
         oauthDir: path.join(stateDir, "credentials"),
         includeWorkspace: false,
         configInsideState: true,
@@ -610,8 +610,8 @@ describe("backup commands", () => {
   });
 
   it("backs up only the active config file when --only-config is requested", async () => {
-    const stateDir = path.join(tempHome.home, ".openclaw");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const stateDir = path.join(tempHome.home, ".afora");
+    const configPath = path.join(stateDir, "afora.json");
     await fs.mkdir(path.join(stateDir, "credentials"), { recursive: true });
     await fs.writeFile(configPath, JSON.stringify({ theme: "config-only" }), "utf8");
     await fs.writeFile(path.join(stateDir, "state.txt"), "state\n", "utf8");

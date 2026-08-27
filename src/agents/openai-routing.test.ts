@@ -1,6 +1,6 @@
-// Verifies OpenAI model selections route between OpenClaw and Codex runtimes.
+// Verifies OpenAI model selections route between Afora and Codex runtimes.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   listOpenAIAuthProfileProvidersForAgentRuntime,
   modelSelectionShouldEnsureCodexPlugin,
@@ -31,7 +31,7 @@ describe("OpenAI runtime routing policy", () => {
     expect(
       modelSelectionShouldEnsureCodexPlugin({
         model: "openai/gpt-5.5",
-        config: {} as OpenClawConfig,
+        config: {} as AforaConfig,
       }),
     ).toBe(true);
   });
@@ -55,7 +55,7 @@ describe("OpenAI runtime routing policy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       resolveOpenAIImplicitAgentRuntime({
@@ -71,7 +71,7 @@ describe("OpenAI runtime routing policy", () => {
     ["provider-native thinking", { thinking: { type: "enabled", budget_tokens: 2_048 } }],
     ["invalid fast mode", { fastMode: { enabled: true } }],
     ["invalid fast cutoff", { fastAutoOnSeconds: "30" }],
-  ])("keeps %s values on the OpenClaw runtime", (_label, params) => {
+  ])("keeps %s values on the Afora runtime", (_label, params) => {
     const config = {
       agents: {
         defaults: {
@@ -80,7 +80,7 @@ describe("OpenAI runtime routing policy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       resolveOpenAIImplicitAgentRuntime({
@@ -89,7 +89,7 @@ describe("OpenAI runtime routing policy", () => {
         config,
         env: {},
       }),
-    ).toBe("openclaw");
+    ).toBe("afora");
   });
 
   it("maps provider route facts onto a closed implicit runtime", () => {
@@ -121,14 +121,14 @@ describe("OpenAI runtime routing policy", () => {
         },
         env: {},
       }),
-    ).toBe("openclaw");
+    ).toBe("afora");
     expect(
       resolveOpenAIImplicitAgentRuntime({
         provider: "openai",
         baseUrl: "https://direct.example.test/v1",
         env: {},
       }),
-    ).toBe("openclaw");
+    ).toBe("afora");
   });
 
   it("lets the provider owner interpret its environment", () => {
@@ -137,13 +137,13 @@ describe("OpenAI runtime routing policy", () => {
         provider: "openai",
         env: { OPENAI_BASE_URL: "https://relay.example.test/v1" },
       }),
-    ).toBe("openclaw");
+    ).toBe("afora");
   });
 
-  it("fails closed to OpenClaw when the provider artifact is unavailable", () => {
-    vi.stubEnv("OPENCLAW_DISABLE_BUNDLED_PLUGINS", "1");
+  it("fails closed to Afora when the provider artifact is unavailable", () => {
+    vi.stubEnv("AFORA_DISABLE_BUNDLED_PLUGINS", "1");
     expect(resolveOpenAIImplicitAgentRuntime({ provider: "openai", modelId: "gpt-5.5" })).toBe(
-      "openclaw",
+      "afora",
     );
     expect(modelSelectionShouldEnsureCodexPlugin({ model: "openai/gpt-5.5" })).toBe(false);
   });
@@ -159,9 +159,9 @@ describe("OpenAI runtime routing policy", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
-    expect(resolveOpenAIImplicitAgentRuntime({ provider: "openai", config })).toBe("openclaw");
+    expect(resolveOpenAIImplicitAgentRuntime({ provider: "openai", config })).toBe("afora");
     expect(modelSelectionShouldEnsureCodexPlugin({ model: "openai/gpt-5.5", config })).toBe(false);
     expect(
       resolveContextConfigProviderForRuntime({
@@ -183,7 +183,7 @@ describe("OpenAI runtime routing policy", () => {
           research: { params: { store: false } },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(
       resolveOpenAIImplicitAgentRuntime({
@@ -193,7 +193,7 @@ describe("OpenAI runtime routing policy", () => {
         sessionKey: "global",
         env: {},
       }),
-    ).toBe("openclaw");
+    ).toBe("afora");
     expect(() =>
       resolveOpenAIImplicitAgentRuntime({
         provider: "openai",
@@ -223,16 +223,16 @@ describe("OpenAI runtime routing policy", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
-    const officialOpenClawConfig = {
+    } satisfies AforaConfig;
+    const officialAforaConfig = {
       agents: {
         defaults: {
           models: {
-            "openai/gpt-5.5": { agentRuntime: { id: "openclaw" } },
+            "openai/gpt-5.5": { agentRuntime: { id: "afora" } },
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(
       modelSelectionShouldEnsureCodexPlugin({
@@ -243,18 +243,18 @@ describe("OpenAI runtime routing policy", () => {
     expect(
       modelSelectionShouldEnsureCodexPlugin({
         model: "openai/gpt-5.5",
-        config: officialOpenClawConfig,
+        config: officialAforaConfig,
       }),
     ).toBe(false);
   });
 
-  it("honors the deprecated whole-agent OpenClaw runtime opt-out", () => {
+  it("honors the deprecated whole-agent Afora runtime opt-out", () => {
     const config = {
       agents: {
-        defaults: { agentRuntime: { id: "openclaw" } },
-        list: [{ id: "worker", agentRuntime: { id: "openclaw" } }],
+        defaults: { agentRuntime: { id: "afora" } },
+        list: [{ id: "worker", agentRuntime: { id: "afora" } }],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(modelSelectionShouldEnsureCodexPlugin({ model: "openai/gpt-5.5", config })).toBe(false);
     expect(
@@ -266,32 +266,32 @@ describe("OpenAI runtime routing policy", () => {
     ).toBe(false);
   });
 
-  it("keeps per-model Codex policy above the whole-agent OpenClaw opt-out", () => {
+  it("keeps per-model Codex policy above the whole-agent Afora opt-out", () => {
     const config = {
       agents: {
         defaults: {
-          agentRuntime: { id: "openclaw" },
+          agentRuntime: { id: "afora" },
           models: {
             "openai/gpt-5.5": { agentRuntime: { id: "codex" } },
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(modelSelectionShouldEnsureCodexPlugin({ model: "openai/gpt-5.5", config })).toBe(true);
   });
 
-  it("keeps per-model auto policy above the whole-agent OpenClaw opt-out", () => {
+  it("keeps per-model auto policy above the whole-agent Afora opt-out", () => {
     const config = {
       agents: {
         defaults: {
-          agentRuntime: { id: "openclaw" },
+          agentRuntime: { id: "afora" },
           models: {
             "openai/gpt-5.5": { agentRuntime: { id: "auto" } },
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(modelSelectionShouldEnsureCodexPlugin({ model: "openai/gpt-5.5", config })).toBe(true);
   });
@@ -306,9 +306,9 @@ describe("OpenAI runtime routing policy", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
-    expect(resolveOpenAIImplicitAgentRuntime({ provider: "openai", config })).toBe("openclaw");
+    expect(resolveOpenAIImplicitAgentRuntime({ provider: "openai", config })).toBe("afora");
     expect(modelSelectionShouldEnsureCodexPlugin({ model: "openai/gpt-5.5", config })).toBe(false);
   });
 
@@ -331,7 +331,7 @@ describe("OpenAI runtime routing policy", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(
       resolveContextConfigProviderForRuntime({
@@ -342,18 +342,18 @@ describe("OpenAI runtime routing policy", () => {
     ).toBe("openai");
   });
 
-  it("keeps explicit OpenClaw plus Codex auth profile under the unified OpenAI provider", () => {
+  it("keeps explicit Afora plus Codex auth profile under the unified OpenAI provider", () => {
     // OpenAI auth now stays canonical even when the runtime is not Codex.
     expect(
       listOpenAIAuthProfileProvidersForAgentRuntime({
         provider: "openai",
-        harnessRuntime: "openclaw",
+        harnessRuntime: "afora",
       }),
     ).toEqual(["openai"]);
     expect(
       resolveOpenAIRuntimeProvider({
         provider: "openai",
-        harnessRuntime: "openclaw",
+        harnessRuntime: "afora",
         authProfileProvider: "openai",
         authProfileId: "openai:work",
       }),
@@ -367,26 +367,26 @@ describe("OpenAI runtime routing policy", () => {
           openai: ["openai:work", "openai:backup"],
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(
       listOpenAIAuthProfileProvidersForAgentRuntime({
         provider: "openai",
-        harnessRuntime: "openclaw",
+        harnessRuntime: "afora",
         config,
       }),
     ).toEqual(["openai"]);
     expect(
       resolveSelectedOpenAIRuntimeProvider({
         provider: "openai",
-        harnessRuntime: "openclaw",
+        harnessRuntime: "afora",
         config,
       }),
     ).toBe("openai");
     expect(
       resolveOpenAIRuntimeProvider({
         provider: "openai",
-        harnessRuntime: "openclaw",
+        harnessRuntime: "afora",
         config,
       }),
     ).toBe("openai");
@@ -399,43 +399,43 @@ describe("OpenAI runtime routing policy", () => {
           openai: ["openai:work", "openai:backup"],
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(
       listOpenAIAuthProfileProvidersForAgentRuntime({
         provider: "openai",
-        harnessRuntime: "openclaw",
+        harnessRuntime: "afora",
         config,
       }),
     ).toEqual(["openai"]);
   });
 
-  it("keeps explicit OpenAI OpenClaw API-key auth order ahead of Codex backups", () => {
+  it("keeps explicit OpenAI Afora API-key auth order ahead of Codex backups", () => {
     const config = {
       auth: {
         order: {
           openai: ["openai:backup", "openai:work"],
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(
       listOpenAIAuthProfileProvidersForAgentRuntime({
         provider: "openai",
-        harnessRuntime: "openclaw",
+        harnessRuntime: "afora",
         config,
       }),
     ).toEqual(["openai"]);
     expect(
       resolveSelectedOpenAIRuntimeProvider({
         provider: "openai",
-        harnessRuntime: "openclaw",
+        harnessRuntime: "afora",
         config,
       }),
     ).toBe("openai");
   });
 
-  it("does not route custom OpenAI-compatible OpenClaw configs through Codex auth order", () => {
+  it("does not route custom OpenAI-compatible Afora configs through Codex auth order", () => {
     const config = {
       models: {
         providers: {
@@ -450,19 +450,19 @@ describe("OpenAI runtime routing policy", () => {
           openai: ["openai:work", "openai:backup"],
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(
       listOpenAIAuthProfileProvidersForAgentRuntime({
         provider: "openai",
-        harnessRuntime: "openclaw",
+        harnessRuntime: "afora",
         config,
       }),
     ).toEqual(["openai"]);
     expect(
       resolveSelectedOpenAIRuntimeProvider({
         provider: "openai",
-        harnessRuntime: "openclaw",
+        harnessRuntime: "afora",
         config,
       }),
     ).toBe("openai");

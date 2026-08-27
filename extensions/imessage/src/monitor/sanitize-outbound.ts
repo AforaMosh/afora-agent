@@ -6,7 +6,7 @@ import {
   stripMarkdown,
   tokenizeHtmlTags,
   type CodeRegion,
-} from "openclaw/plugin-sdk/text-chunking";
+} from "afora-agent/plugin-sdk/text-chunking";
 import { extractMarkdownFormatRuns } from "../markdown-format.js";
 
 /**
@@ -57,11 +57,11 @@ const PRIVATE_PROVIDER_TAG_NAMES = [
 const PRIVATE_PROVIDER_TAG_NAME_SET = new Set<string>(PRIVATE_PROVIDER_TAG_NAMES);
 // The canonical private runtime context block can erase an inline hidden-tag name fragment.
 const OPAQUE_PRIVATE_RUNTIME_CONTEXT_BLOCK_RE =
-  /^<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>(?:(?!<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>)[\s\S])*<<<END_OPENCLAW_INTERNAL_CONTEXT>>>/;
+  /^<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>(?:(?!<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>)[\s\S])*<<<END_AFORA_INTERNAL_CONTEXT>>>/;
 const PRIVATE_RUNTIME_CONTEXT_BLOCK_RE =
-  /<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>(?:(?!<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>)[\s\S])*<<<END_OPENCLAW_INTERNAL_CONTEXT>>>/g;
+  /<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>(?:(?!<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>)[\s\S])*<<<END_AFORA_INTERNAL_CONTEXT>>>/g;
 const NESTED_PRIVATE_MARKUP_START_RE =
-  /<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>|<\s*\/?\s*[A-Za-z][A-Za-z0-9_.:-]*(?=\s|\/?>)/g;
+  /<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>|<\s*\/?\s*[A-Za-z][A-Za-z0-9_.:-]*(?=\s|\/?>)/g;
 const OUTER_PRIVATE_TAG_FRAGMENT_RE = /^\s*\/?\s*([a-z][a-z0-9_.:-]*)?$/i;
 const OPAQUE_PRIVATE_MARKUP_BLOCK_RE =
   /^<\s*(system-reminder|previous_response|details|summary)\b[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/i;

@@ -45,11 +45,11 @@ interface RegistryServer {
 }
 
 function stateDir(env: ProbeEnv = process.env) {
-  return env.OPENCLAW_STATE_DIR || path.join(env.HOME ?? os.homedir(), ".openclaw");
+  return env.AFORA_STATE_DIR || path.join(env.HOME ?? os.homedir(), ".afora");
 }
 
 function configPath(env: ProbeEnv = process.env) {
-  return env.OPENCLAW_CONFIG_PATH || path.join(stateDir(env), "openclaw.json");
+  return env.AFORA_CONFIG_PATH || path.join(stateDir(env), "afora.json");
 }
 
 function readJson(file: string) {
@@ -269,32 +269,32 @@ export function parseDurationMs(value: string | undefined, fallback: string) {
 
 function createMatrixStateEnv(resourceDir: string): MatrixEnv {
   const home = fs.mkdtempSync(path.join(resourceDir, "home."));
-  const stateDir = path.join(home, ".openclaw");
+  const stateDir = path.join(home, ".afora");
   const workspaceDir = path.join(home, "workspace");
-  const configFile = path.join(stateDir, "openclaw.json");
+  const configFile = path.join(stateDir, "afora.json");
   fs.mkdirSync(stateDir, { recursive: true });
   fs.mkdirSync(workspaceDir, { recursive: true });
   return {
     ...process.env,
     HOME: home,
     USERPROFILE: home,
-    OPENCLAW_HOME: home,
-    OPENCLAW_STATE_DIR: stateDir,
-    OPENCLAW_CONFIG_PATH: configFile,
-    OPENCLAW_TEST_WORKSPACE_DIR: workspaceDir,
-    OPENCLAW_AUTH_PROFILE_SECRET_KEY: randomBytes(32).toString("hex"),
+    AFORA_HOME: home,
+    AFORA_STATE_DIR: stateDir,
+    AFORA_CONFIG_PATH: configFile,
+    AFORA_TEST_WORKSPACE_DIR: workspaceDir,
+    AFORA_AUTH_PROFILE_SECRET_KEY: randomBytes(32).toString("hex"),
   };
 }
 
 function packageEntrypoint(prefix: string) {
-  const packageRoot = path.join(prefix, "lib", "node_modules", "openclaw");
+  const packageRoot = path.join(prefix, "lib", "node_modules", "afora");
   for (const entry of ["dist/index.mjs", "dist/index.js"]) {
     const candidate = path.join(packageRoot, entry);
     if (fs.existsSync(candidate)) {
       return candidate;
     }
   }
-  throw new Error(`OpenClaw package entrypoint not found under ${packageRoot}/dist/`);
+  throw new Error(`Afora package entrypoint not found under ${packageRoot}/dist/`);
 }
 
 async function runCommand(command: string, args: readonly string[], options: CommandOptions = {}) {
@@ -437,18 +437,18 @@ async function runCommand(command: string, args: readonly string[], options: Com
   }
 }
 
-async function installOpenClawPackage(prefix: string, env: MatrixEnv) {
-  const packageTgz = env.OPENCLAW_CURRENT_PACKAGE_TGZ;
-  assertProbe(packageTgz, "OPENCLAW_CURRENT_PACKAGE_TGZ is required");
-  const installLog = "/tmp/openclaw-plugin-lifecycle-install.log";
-  process.stdout.write("Installing mounted OpenClaw package...\n");
+async function installAforaPackage(prefix: string, env: MatrixEnv) {
+  const packageTgz = env.AFORA_CURRENT_PACKAGE_TGZ;
+  assertProbe(packageTgz, "AFORA_CURRENT_PACKAGE_TGZ is required");
+  const installLog = "/tmp/afora-plugin-lifecycle-install.log";
+  process.stdout.write("Installing mounted Afora package...\n");
   await runCommand(
     "npm",
     ["install", "-g", "--prefix", prefix, packageTgz, "--no-fund", "--no-audit"],
     {
       env,
       outputFile: installLog,
-      timeoutMs: parseDurationMs(env.OPENCLAW_E2E_NPM_INSTALL_TIMEOUT, "600s"),
+      timeoutMs: parseDurationMs(env.AFORA_E2E_NPM_INSTALL_TIMEOUT, "600s"),
     },
   );
 }
@@ -591,14 +591,14 @@ async function runRuntimeInspect(params: {
 
 async function runPluginLifecycleMatrix() {
   const pluginId = "lifecycle-claw";
-  const packageName = "@openclaw/lifecycle-claw";
+  const packageName = "@afora/lifecycle-claw";
   const packOwner = "lifecycle-pack";
-  const packPackageName = "@openclaw/lifecycle-pack";
+  const packPackageName = "@afora/lifecycle-pack";
   const packOne = `${packOwner}/one`;
   const packTwo = `${packOwner}/two`;
   const packOld = `${packOwner}/old`;
   const packRenamed = `${packOwner}/renamed`;
-  const resourceDir = tempDirs.make("openclaw-plugin-lifecycle-matrix-");
+  const resourceDir = tempDirs.make("afora-plugin-lifecycle-matrix-");
   const npmPrefix = "/tmp/npm-prefix";
   const env = createMatrixStateEnv(resourceDir);
   const tarballV1 = path.join(resourceDir, "lifecycle-claw-1.0.0.tgz");
@@ -625,7 +625,7 @@ async function runPluginLifecycleMatrix() {
   fs.rmSync(npmPrefix, { recursive: true, force: true });
 
   try {
-    await installOpenClawPackage(npmPrefix, env);
+    await installAforaPackage(npmPrefix, env);
     const entry = packageEntrypoint(npmPrefix);
     const matrixEnv: MatrixEnv = {
       ...env,

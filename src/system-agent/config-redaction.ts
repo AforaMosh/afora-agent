@@ -3,8 +3,8 @@ import {
   hasSensitiveUrlHintTag,
   isSensitiveUrlConfigPath,
   redactSensitiveUrlLikeString,
-} from "@openclaw/net-policy/redact-sensitive-url";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+} from "@afora/net-policy/redact-sensitive-url";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { CHANNEL_IDS } from "../channels/ids.js";
 import { parseConfigSetPath, parseConfigSetValue } from "../cli/config-cli-path.js";
 import {
@@ -21,7 +21,7 @@ import {
 } from "../config/schema.js";
 import { findWildcardHintMatch } from "../config/schema.shared.js";
 import { isSensitiveConfigPath } from "../config/sensitive-paths.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { ChannelsSchema } from "../config/zod-schema.channels-config.js";
 import { getCurrentPluginMetadataSnapshot } from "../plugins/current-plugin-metadata-snapshot.js";
 import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.types.js";
@@ -29,7 +29,7 @@ import { normalizePluginPolicyId } from "../plugins/plugin-policy-id.js";
 import type { ConfigUiHint, ConfigUiHints } from "../shared/config-ui-hints-types.js";
 
 type SystemAgentConfigRedactionSource = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   valid?: boolean;
 };
 

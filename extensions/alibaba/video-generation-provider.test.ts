@@ -4,24 +4,24 @@ import path from "node:path";
 import {
   clearRuntimeAuthProfileStoreSnapshots,
   saveAuthProfileStore,
-} from "openclaw/plugin-sdk/agent-runtime";
+} from "afora-agent/plugin-sdk/agent-runtime";
 import {
   getProviderHttpMocks,
   installProviderHttpMockCleanup,
   requireFirstPostJsonRecordRequest as requireFirstPostJsonRequest,
-} from "openclaw/plugin-sdk/provider-http-test-mocks";
+} from "afora-agent/plugin-sdk/provider-http-test-mocks";
 import {
   expectDashscopeVideoTaskPoll,
   expectExplicitVideoGenerationCapabilities,
   expectSuccessfulDashscopeVideoResult,
   mockSuccessfulDashscopeVideoTask,
-} from "openclaw/plugin-sdk/provider-test-contracts";
+} from "afora-agent/plugin-sdk/provider-test-contracts";
 // Alibaba tests cover video generation provider plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import {
   DASHSCOPE_WAN_VIDEO_MODELS,
   DEFAULT_DASHSCOPE_WAN_VIDEO_MODEL,
-} from "openclaw/plugin-sdk/video-generation";
+} from "afora-agent/plugin-sdk/video-generation";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 const {
@@ -207,7 +207,7 @@ describe("alibaba video generation provider", () => {
   ])("preserves actual profile precedence for %s", async (profileKey, envKey, expected) => {
     clearAlibabaAuthEnvironment();
     vi.stubEnv("QWEN_API_KEY", envKey);
-    const agentDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-alibaba-wan-auth-"));
+    const agentDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-alibaba-wan-auth-"));
 
     try {
       saveAuthProfileStore(

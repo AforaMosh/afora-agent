@@ -10,8 +10,8 @@ import {
   type CommandArgDefinition,
   type CommandArgValues,
   type CommandArgs,
-} from "openclaw/plugin-sdk/command-auth-native";
-import { chunkItems } from "openclaw/plugin-sdk/text-chunking";
+} from "afora-agent/plugin-sdk/command-auth-native";
+import { chunkItems } from "afora-agent/plugin-sdk/text-chunking";
 import { decodeCustomIdComponent, encodeCustomIdComponent } from "../custom-id-codec.js";
 import {
   Button,

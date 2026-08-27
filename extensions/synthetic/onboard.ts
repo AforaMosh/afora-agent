@@ -1,5 +1,5 @@
 // Synthetic setup module handles plugin onboarding behavior.
-import { createModelCatalogPresetAppliers } from "openclaw/plugin-sdk/provider-onboard";
+import { createModelCatalogPresetAppliers } from "afora-agent/plugin-sdk/provider-onboard";
 import {
   buildSyntheticModelDefinition,
   SYNTHETIC_BASE_URL,

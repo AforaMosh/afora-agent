@@ -1,5 +1,5 @@
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString as readString } from "@openclaw/normalization-core/string-coerce";
+import { asNullableRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString as readString } from "@afora/normalization-core/string-coerce";
 import type { OperatorScope } from "../gateway/operator-scopes.js";
 import { renderExecUpdateText } from "./bash-tools.exec-output.js";
 import type { ExecToolDetails } from "./bash-tools.exec-types.js";

@@ -3,7 +3,7 @@ import {
   createPluginRegistryFixture,
   registerTestPlugin,
   registerVirtualTestPlugin,
-} from "openclaw/plugin-sdk/plugin-test-contracts";
+} from "afora-agent/plugin-sdk/plugin-test-contracts";
 import { describe, expect, it } from "vitest";
 import { resolveMemoryCapabilityRegistration } from "./memory-state.js";
 import { createPluginRecord } from "./status.test-fixtures.js";

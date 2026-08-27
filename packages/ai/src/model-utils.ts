@@ -2,7 +2,7 @@
 import {
   resolveClaudeNativeThinkingLevelMap,
   requiresClaudeMandatoryAdaptiveThinking,
-} from "@openclaw/llm-core";
+} from "@afora/llm-core";
 import type { Api, Model, ModelThinkingLevel, Usage } from "./types.js";
 
 /** Calculates and stores model cost fields from token usage and per-million pricing. */

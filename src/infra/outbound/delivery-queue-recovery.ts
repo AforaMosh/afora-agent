@@ -4,7 +4,7 @@ import type {
   ChannelMessageSendCommitContext,
   ChannelMessageUnknownSendReconciliationResult,
 } from "../../channels/message/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import {
   createDeliveryRecoveryCoordinator,
@@ -281,7 +281,7 @@ export async function withActiveDeliveryClaim<T>(
 
 function buildRecoveryDeliverParams(
   entry: QueuedDelivery,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   stateDir?: string,
   producerClaimId?: string,
 ) {
@@ -323,7 +323,7 @@ function buildRecoveryDeliverParams(
 }
 
 async function terminalizeWithMediaRetention(
-  params: { entry: QueuedDelivery; cfg: OpenClawConfig; log: RecoveryLogger; stateDir?: string },
+  params: { entry: QueuedDelivery; cfg: AforaConfig; log: RecoveryLogger; stateDir?: string },
   operation: (spoolPaths: string[]) => Promise<readonly string[] | false>,
 ): Promise<boolean> {
   const spoolPaths = collectEntrySpoolPaths(queuedDeliveryPayloads(params.entry), params.stateDir);
@@ -370,7 +370,7 @@ async function terminalizeWithMediaRetention(
 
 async function applyRecoveryDeliveryAdmission(params: {
   entry: QueuedDelivery;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   log: RecoveryLogger;
   stateDir?: string;
   logLabel: string;
@@ -412,7 +412,7 @@ async function applyRecoveryDeliveryAdmission(params: {
 
 async function moveEntryToFailedAndCleanup(params: {
   entry: QueuedDelivery;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   log: RecoveryLogger;
   stateDir?: string;
   attemptId?: string | null;
@@ -441,7 +441,7 @@ function buildReconciledSentResult(
 
 function buildReconciledCommitContext(params: {
   entry: QueuedDelivery;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   result: OutboundDeliveryResult;
 }): ChannelMessageSendCommitContext {
   const payload = queuedDeliveryPayloads(params.entry)[0] ?? {};
@@ -502,7 +502,7 @@ function buildReconciledCommitContext(params: {
 
 async function runReconciledSentCommitHooks(params: {
   entry: QueuedDelivery;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   reconciliation: Extract<ChannelMessageUnknownSendReconciliationResult, { status: "sent" }>;
   log: RecoveryLogger;
 }): Promise<void> {
@@ -537,7 +537,7 @@ async function runReconciledSentCommitHooks(params: {
 
 async function moveEntryToFailedWithLogging(
   entry: QueuedDelivery,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   log: RecoveryLogger,
   stateDir?: string,
 ): Promise<boolean> {
@@ -614,7 +614,7 @@ async function markDurableDeliveryFailedBestEffort(
 
 async function resolveCompletedOwnerBeforeRecovery(opts: {
   entry: QueuedDelivery;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   log: RecoveryLogger;
   stateDir?: string;
   onRecovered?: (entry: QueuedDelivery) => void;
@@ -736,7 +736,7 @@ async function persistRecoveredPostSendState(opts: {
 
 async function drainQueuedEntry(opts: {
   entry: QueuedDelivery;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   deliver: DeliverFn;
   log: RecoveryLogger;
   stateDir?: string;
@@ -1225,7 +1225,7 @@ async function drainQueuedEntry(opts: {
 export async function drainPendingDeliveriesCore(opts: {
   drainKey: string;
   logLabel: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   log: RecoveryLogger;
   stateDir?: string;
   deliver: DeliverFn;
@@ -1345,7 +1345,7 @@ export async function drainPendingDeliveriesCore(opts: {
 export async function recoverPendingDeliveries(opts: {
   deliver: DeliverFn;
   log: RecoveryLogger;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   stateDir?: string;
   /** Maximum wall-clock time for recovery in ms. Remaining entries are deferred to next startup. Default: 60 000. */
   maxRecoveryMs?: number;

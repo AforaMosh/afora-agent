@@ -1,10 +1,10 @@
 // Talk client methods create browser-owned realtime voice sessions and route
-// client tool calls back into OpenClaw agent consult/control flows.
+// client tool calls back into Afora agent consult/control flows.
 import { randomUUID } from "node:crypto";
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   ErrorCodes,
   errorShape,
@@ -97,7 +97,7 @@ function pruneLegacyVoiceBindings(now = Date.now()): void {
  * Gateway methods for browser-owned realtime Talk sessions.
  *
  * These handlers create provider browser sessions and bridge client-owned tool
- * calls back into OpenClaw agent consult runs.
+ * calls back into Afora agent consult runs.
  */
 export const talkClientHandlers: GatewayRequestHandlers = {
   "talk.client.create": async ({ params, respond, context, client }) => {

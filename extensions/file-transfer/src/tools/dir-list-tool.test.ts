@@ -3,11 +3,11 @@ import {
   callGatewayTool,
   listNodes,
   resolveNodeIdFromList,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createDirListTool } from "./dir-list-tool.js";
 
-vi.mock("openclaw/plugin-sdk/agent-harness-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/agent-harness-runtime", () => ({
   callGatewayTool: vi.fn(),
   listNodes: vi.fn(),
   resolveNodeIdFromList: vi.fn(),

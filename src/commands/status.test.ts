@@ -8,8 +8,8 @@ import { captureEnv, deleteTestEnvValue, setTestEnvValue } from "../test-utils/e
 let envSnapshot: ReturnType<typeof captureEnv>;
 
 beforeAll(() => {
-  envSnapshot = captureEnv(["OPENCLAW_PROFILE"]);
-  process.env.OPENCLAW_PROFILE = "isolated";
+  envSnapshot = captureEnv(["AFORA_PROFILE"]);
+  process.env.AFORA_PROFILE = "isolated";
 });
 
 afterAll(() => {
@@ -207,12 +207,12 @@ async function createStatusServiceSummary(
     label: service.label,
     installed: Boolean(command) || runtime?.status === "running",
     loaded,
-    managedByOpenClaw: Boolean(command),
+    managedByAfora: Boolean(command),
     externallyManaged: !command && runtime?.status === "running",
     loadedText: service.loadedText,
     runtime,
     runtimeShort: runtime?.pid ? `pid ${runtime.pid}` : null,
-    wrapperPath: command?.environment?.OPENCLAW_WRAPPER?.trim() || undefined,
+    wrapperPath: command?.environment?.AFORA_WRAPPER?.trim() || undefined,
   };
 }
 
@@ -339,11 +339,11 @@ async function createMockStatusScanResult(params: { includePluginCompatibility?:
     tailscaleDns: null,
     tailscaleHttpsUrl: null,
     update: {
-      root: "/tmp/openclaw",
+      root: "/tmp/afora",
       installKind: "git",
       packageManager: "pnpm",
       git: {
-        root: "/tmp/openclaw",
+        root: "/tmp/afora",
         branch: "main",
         upstream: "origin/main",
         dirty: false,
@@ -354,16 +354,16 @@ async function createMockStatusScanResult(params: { includePluginCompatibility?:
       deps: {
         manager: "pnpm",
         status: "ok",
-        lockfilePath: "/tmp/openclaw/pnpm-lock.yaml",
-        markerPath: "/tmp/openclaw/node_modules/.modules.yaml",
+        lockfilePath: "/tmp/afora/pnpm-lock.yaml",
+        markerPath: "/tmp/afora/node_modules/.modules.yaml",
       },
       registry: { latestVersion: "0.0.0" },
     },
     gatewayConnection: { url: "ws://127.0.0.1:18789" },
     remoteUrlMissing: false,
     gatewayMode: "local" as const,
-    gatewayProbeAuth: process.env.OPENCLAW_GATEWAY_TOKEN
-      ? { token: process.env.OPENCLAW_GATEWAY_TOKEN }
+    gatewayProbeAuth: process.env.AFORA_GATEWAY_TOKEN
+      ? { token: process.env.AFORA_GATEWAY_TOKEN }
       : {},
     gatewayProbeAuthWarning: gatewayAuthWarning,
     gatewayProbe,
@@ -498,7 +498,7 @@ const mocks = vi.hoisted(() => ({
     readRuntime: async () => ({ status: "running", pid: 1234 }),
     readCommand: async () => ({
       programArguments: ["node", "dist/entry.js", "gateway"],
-      sourcePath: "/tmp/Library/LaunchAgents/ai.openclaw.gateway.plist",
+      sourcePath: "/tmp/Library/LaunchAgents/ai.afora.gateway.plist",
     }),
   }),
   resolveNodeService: vi.fn().mockReturnValue({
@@ -514,7 +514,7 @@ const mocks = vi.hoisted(() => ({
     readRuntime: async () => ({ status: "running", pid: 4321 }),
     readCommand: async () => ({
       programArguments: ["node", "dist/entry.js", "node-host"],
-      sourcePath: "/tmp/Library/LaunchAgents/ai.openclaw.node.plist",
+      sourcePath: "/tmp/Library/LaunchAgents/ai.afora.node.plist",
     }),
   }),
 }));
@@ -540,7 +540,7 @@ vi.mock("../plugins/memory-runtime.js", () => ({
         files: 2,
         chunks: 3,
         dirty: false,
-        workspaceDir: "/tmp/openclaw",
+        workspaceDir: "/tmp/afora",
         dbPath: "/tmp/memory.sqlite",
         provider: "openai",
         model: "text-embedding-3-small",
@@ -690,7 +690,7 @@ vi.mock("../gateway/call.js", () => ({
           path: "gateway.auth.token",
         });
       }
-      const envToken = process.env.OPENCLAW_GATEWAY_TOKEN?.trim();
+      const envToken = process.env.AFORA_GATEWAY_TOKEN?.trim();
       return envToken ? { token: envToken } : {};
     },
   ),
@@ -698,9 +698,9 @@ vi.mock("../gateway/call.js", () => ({
 vi.mock("../gateway/agent-list.js", () => ({
   listGatewayAgentsBasic: mocks.listGatewayAgentsBasic,
 }));
-vi.mock("../infra/openclaw-root.js", () => ({
-  resolveOpenClawPackageRoot: vi.fn().mockResolvedValue("/tmp/openclaw"),
-  resolveOpenClawPackageRootSync: vi.fn(() => "/tmp/openclaw"),
+vi.mock("../infra/afora-root.js", () => ({
+  resolveAforaPackageRoot: vi.fn().mockResolvedValue("/tmp/afora"),
+  resolveAforaPackageRootSync: vi.fn(() => "/tmp/afora"),
 }));
 vi.mock("../infra/os-summary.js", () => ({
   resolveOsSummary: () => ({
@@ -712,11 +712,11 @@ vi.mock("../infra/os-summary.js", () => ({
 }));
 vi.mock("../infra/update-check.js", () => ({
   checkUpdateStatus: vi.fn().mockResolvedValue({
-    root: "/tmp/openclaw",
+    root: "/tmp/afora",
     installKind: "git",
     packageManager: "pnpm",
     git: {
-      root: "/tmp/openclaw",
+      root: "/tmp/afora",
       branch: "main",
       upstream: "origin/main",
       dirty: false,
@@ -727,8 +727,8 @@ vi.mock("../infra/update-check.js", () => ({
     deps: {
       manager: "pnpm",
       status: "ok",
-      lockfilePath: "/tmp/openclaw/pnpm-lock.yaml",
-      markerPath: "/tmp/openclaw/node_modules/.modules.yaml",
+      lockfilePath: "/tmp/afora/pnpm-lock.yaml",
+      markerPath: "/tmp/afora/node_modules/.modules.yaml",
     },
     registry: { latestVersion: "0.0.0" },
   }),
@@ -890,7 +890,7 @@ vi.mock("./status.daemon.js", () => ({
       label: service.label,
       installed: Boolean(command) || runtimeValue?.status === "running",
       loaded,
-      managedByOpenClaw: Boolean(command),
+      managedByAfora: Boolean(command),
       externallyManaged: !command && runtimeValue?.status === "running",
       loadedText: loaded ? service.loadedText : service.notLoadedText,
       runtimeShort: runtimeValue?.pid ? `pid ${runtimeValue.pid}` : null,
@@ -905,7 +905,7 @@ vi.mock("./status.daemon.js", () => ({
       label: service.label,
       installed: Boolean(command) || runtimeLocal?.status === "running",
       loaded,
-      managedByOpenClaw: Boolean(command),
+      managedByAfora: Boolean(command),
       externallyManaged: !command && runtimeLocal?.status === "running",
       loadedText: loaded ? service.loadedText : service.notLoadedText,
       runtimeShort: runtimeLocal?.pid ? `pid ${runtimeLocal.pid}` : null,
@@ -994,7 +994,7 @@ describe("statusCommand", () => {
       readRuntime: async () => ({ status: "running", pid: 1234 }),
       readCommand: async () => ({
         programArguments: ["node", "dist/entry.js", "gateway"],
-        sourcePath: "/tmp/Library/LaunchAgents/ai.openclaw.gateway.plist",
+        sourcePath: "/tmp/Library/LaunchAgents/ai.afora.gateway.plist",
       }),
     });
     mocks.resolveNodeService.mockReset();
@@ -1011,7 +1011,7 @@ describe("statusCommand", () => {
       readRuntime: async () => ({ status: "running", pid: 4321 }),
       readCommand: async () => ({
         programArguments: ["node", "dist/entry.js", "node-host"],
-        sourcePath: "/tmp/Library/LaunchAgents/ai.openclaw.node.plist",
+        sourcePath: "/tmp/Library/LaunchAgents/ai.afora.node.plist",
       }),
     });
     runtimeLogMock.mockClear();
@@ -1156,7 +1156,7 @@ describe("statusCommand", () => {
     ]);
     const logs = await runStatusAndGetLogs({ verbose: true });
     for (const token of [
-      "OpenClaw status",
+      "Afora status",
       "Overview",
       "Security audit",
       "Skipped in fast status",
@@ -1180,7 +1180,7 @@ describe("statusCommand", () => {
       expectLogsInclude(logs, token);
     }
     expectLogsInclude(logs, "legacy-plugin is hook-only");
-    expectLogsMatch(logs, /openclaw (?:--profile isolated )?status --all/);
+    expectLogsMatch(logs, /afora (?:--profile isolated )?status --all/);
     expectLogsInclude(logs, "Cache");
     expectLogsInclude(logs, "40% hit");
     expectLogsInclude(logs, "read 2.0k");
@@ -1297,7 +1297,7 @@ describe("statusCommand", () => {
     const joined = await runStatusAndGetJoinedLogs();
     expect(joined).toContain("node → gateway.example.com:19000 · no local gateway");
     expect(joined).not.toContain("Gateway: local · ws://127.0.0.1:18789");
-    expect(joined).toContain("openclaw --profile isolated node status");
+    expect(joined).toContain("afora --profile isolated node status");
     expect(joined).not.toContain("Fix reachability first");
   });
 
@@ -1306,7 +1306,7 @@ describe("statusCommand", () => {
       session: {},
       channels: { whatsapp: { allowFrom: ["*"] } },
     });
-    await withEnvVar("OPENCLAW_GATEWAY_TOKEN", "abcd1234", async () => {
+    await withEnvVar("AFORA_GATEWAY_TOKEN", "abcd1234", async () => {
       mockProbeGatewayResult({
         ok: true,
         connectLatencyMs: 123,
@@ -1351,14 +1351,14 @@ describe("statusCommand", () => {
   });
 
   it("notes when secret diagnostics may come from a CLI process outside the service wrapper context", async () => {
-    const wrapperPath = "/usr/local/bin/openclaw-doppler";
+    const wrapperPath = "/usr/local/bin/afora-doppler";
     const service = mocks.resolveGatewayService();
     mocks.resolveGatewayService.mockReturnValue({
       ...service,
       readCommand: async () => ({
         programArguments: [wrapperPath, "node", "dist/entry.js", "gateway"],
-        environment: { OPENCLAW_WRAPPER: wrapperPath },
-        sourcePath: "/tmp/Library/LaunchAgents/ai.openclaw.gateway.plist",
+        environment: { AFORA_WRAPPER: wrapperPath },
+        sourcePath: "/tmp/Library/LaunchAgents/ai.afora.gateway.plist",
       }),
     });
     mocks.loadConfig.mockReturnValue({
@@ -1376,15 +1376,15 @@ describe("statusCommand", () => {
       },
     });
 
-    await withOptionalEnvVar("OPENCLAW_WRAPPER", undefined, async () => {
+    await withOptionalEnvVar("AFORA_WRAPPER", undefined, async () => {
       const logs = await runStatusAndGetLogs();
       expectLogsInclude(logs, "Secret diagnostics:");
-      expectLogsInclude(logs, "installed gateway service uses OPENCLAW_WRAPPER");
+      expectLogsInclude(logs, "installed gateway service uses AFORA_WRAPPER");
       expectLogsInclude(logs, "not running with that same wrapper");
       expectLogsInclude(logs, "current CLI process rather than the installed gateway service");
     });
 
-    await withEnvVar("OPENCLAW_WRAPPER", wrapperPath, async () => {
+    await withEnvVar("AFORA_WRAPPER", wrapperPath, async () => {
       const logs = await runStatusAndGetLogs();
       expectLogsInclude(logs, "Secret diagnostics:");
       expectLogsExclude(logs, "not running with that same wrapper");

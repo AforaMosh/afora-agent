@@ -1,5 +1,5 @@
 import Darwin
-import OpenClawKit
+import AforaKit
 import SwiftUI
 import UIKit
 import UserNotifications
@@ -21,7 +21,7 @@ enum SettingsRoute: Hashable {
 }
 
 enum SettingsLayout {
-    static let cardRadius: CGFloat = OpenClawProMetric.cardRadius
+    static let cardRadius: CGFloat = AforaProMetric.cardRadius
     static let rowHeight: CGFloat = 58
 }
 
@@ -30,9 +30,9 @@ enum SettingsLayout {
 /// plain `LabeledContent(String, value:)` renders unbranded system fonts.
 struct SettingsDetailRow: View {
     let label: LocalizedStringKey
-    let value: OpenClawTextValue
+    let value: AforaTextValue
 
-    init(_ label: LocalizedStringKey, value: OpenClawTextValue) {
+    init(_ label: LocalizedStringKey, value: AforaTextValue) {
         self.label = label
         self.value = value
     }
@@ -40,12 +40,12 @@ struct SettingsDetailRow: View {
     var body: some View {
         LabeledContent {
             self.value.text
-                .font(OpenClawType.subhead)
+                .font(AforaType.subhead)
                 .lineLimit(1)
                 .truncationMode(.middle)
         } label: {
             Text(self.label)
-                .font(OpenClawType.body)
+                .font(AforaType.body)
         }
     }
 }
@@ -98,14 +98,14 @@ struct SettingsBuildMetadataStrip: View {
                     self.copyCommit()
                 } label: {
                     Text("Copy full commit hash")
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                 }
             }
             Button {
                 self.copyBuildInfo()
             } label: {
                 Text("Copy build info")
-                    .font(OpenClawType.subheadSemiBold)
+                    .font(AforaType.subheadSemiBold)
             }
         }
         .contextMenu {
@@ -115,7 +115,7 @@ struct SettingsBuildMetadataStrip: View {
                 } label: {
                     Label {
                         Text("Copy Commit")
-                            .font(OpenClawType.subheadSemiBold)
+                            .font(AforaType.subheadSemiBold)
                     } icon: {
                         Image(systemName: "number")
                     }
@@ -126,7 +126,7 @@ struct SettingsBuildMetadataStrip: View {
             } label: {
                 Label {
                     Text("Copy Build Info")
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                 } icon: {
                     Image(systemName: "doc.on.doc")
                 }
@@ -160,7 +160,7 @@ struct SettingsBuildMetadataStrip: View {
     private func metadataField(_ field: Field, alignment: HorizontalAlignment) -> some View {
         VStack(alignment: alignment, spacing: 1) {
             Text(field.title)
-                .font(OpenClawType.caption2SemiBold)
+                .font(AforaType.caption2SemiBold)
                 .textCase(.uppercase)
             Group {
                 if let value = field.value {
@@ -169,7 +169,7 @@ struct SettingsBuildMetadataStrip: View {
                     Text("Unavailable")
                 }
             }
-            .font(OpenClawType.monoSmall)
+            .font(AforaType.monoSmall)
             .lineLimit(1)
             .minimumScaleFactor(0.72)
             .environment(
@@ -226,9 +226,9 @@ struct SettingsBuildMetadataStrip: View {
 struct SettingsApprovalItem: Identifiable {
     let id: String
     let icon: String
-    let title: OpenClawTextValue
-    let detail: OpenClawTextValue
-    let priority: OpenClawTextValue
+    let title: AforaTextValue
+    let detail: AforaTextValue
+    let priority: AforaTextValue
     let color: Color
 }
 
@@ -238,7 +238,7 @@ struct SettingsApprovalRow: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: self.item.icon)
-                .font(OpenClawType.captionBold)
+                .font(AforaType.captionBold)
                 .foregroundStyle(.white)
                 .frame(width: 30, height: 30)
                 .background {
@@ -247,16 +247,16 @@ struct SettingsApprovalRow: View {
                 }
             VStack(alignment: .leading, spacing: 2) {
                 self.item.title.text
-                    .font(OpenClawType.subheadSemiBold)
+                    .font(AforaType.subheadSemiBold)
                     .lineLimit(1)
                 self.item.detail.text
-                    .font(OpenClawType.caption2Medium)
+                    .font(AforaType.caption2Medium)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
             Spacer(minLength: 8)
             self.item.priority.text
-                .font(OpenClawType.captionBold)
+                .font(AforaType.captionBold)
                 .foregroundStyle(self.item.color)
                 .padding(.horizontal, 9)
                 .padding(.vertical, 5)
@@ -321,9 +321,9 @@ enum SettingsNotificationPresentation: Equatable {
             String(localized: "Checking iOS notification permission.")
         case .enabled:
             String(
-                localized: "OpenClaw can show approval prompts and event alerts when the app is not active.")
+                localized: "Afora can show approval prompts and event alerts when the app is not active.")
         case .off:
-            String(localized: "OpenClaw notifications are off.")
+            String(localized: "Afora notifications are off.")
         case .setup:
             String(
                 localized: "Finish notification setup to receive alerts when the app is not active.")
@@ -333,16 +333,16 @@ enum SettingsNotificationPresentation: Equatable {
             String(
                 localized: "Enable notifications to receive approval prompts and event alerts outside the app.")
         case .unknown:
-            String(localized: "OpenClaw cannot determine the current notification permission state.")
+            String(localized: "Afora cannot determine the current notification permission state.")
         }
     }
 
     var color: Color {
         switch self {
         case .enabled:
-            OpenClawBrand.ok
+            AforaBrand.ok
         case .denied, .setup, .unknown:
-            OpenClawBrand.warn
+            AforaBrand.warn
         case .checking, .notSet, .off:
             .secondary
         }
@@ -453,18 +453,18 @@ extension SettingsProTab {
 private struct SettingsGatewayStatesPreview: View {
     var body: some View {
         ZStack {
-            OpenClawProBackground()
+            AforaProBackground()
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     self.stateSection("Connected") {
                         self.gatewayStatusCard(
                             title: "Gateway online",
-                            detail: "Connected to openclaw-gateway.tailnet.ts.net.",
+                            detail: "Connected to afora-gateway.tailnet.ts.net.",
                             value: "online",
-                            color: OpenClawBrand.ok)
+                            color: AforaBrand.ok)
                         self.gatewayFactsCard(
                             address: "100.88.41.20:18789",
-                            server: "openclaw-gateway",
+                            server: "afora-gateway",
                             discovered: "3",
                             agent: "Aiden")
                     }
@@ -474,7 +474,7 @@ private struct SettingsGatewayStatesPreview: View {
                             title: "Checking gateway",
                             detail: "Refreshing connection, discovery, and device trust state.",
                             value: "loading",
-                            color: OpenClawBrand.accent)
+                            color: AforaBrand.accent)
                         self.gatewayActionsCard(isBusy: true)
                     }
 
@@ -492,10 +492,10 @@ private struct SettingsGatewayStatesPreview: View {
                             title: "Tailscale warning",
                             detail: "Tailscale is off on this device. Turn it on, then try again.",
                             value: "network",
-                            color: OpenClawBrand.warn)
+                            color: AforaBrand.warn)
                     }
                 }
-                .padding(.horizontal, OpenClawProMetric.pagePadding)
+                .padding(.horizontal, AforaProMetric.pagePadding)
                 .padding(.vertical, 18)
             }
         }
@@ -507,7 +507,7 @@ private struct SettingsGatewayStatesPreview: View {
     {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(OpenClawType.subheadSemiBold)
+                .font(AforaType.subheadSemiBold)
                 .foregroundStyle(.secondary)
             content()
         }
@@ -553,11 +553,11 @@ private struct SettingsGatewayStatesPreview: View {
     private func factRow(_ label: String, value: String) -> some View {
         HStack {
             Text(label)
-                .font(OpenClawType.caption)
+                .font(AforaType.caption)
                 .foregroundStyle(.secondary)
             Spacer(minLength: 8)
             Text(value)
-                .font(OpenClawType.captionMedium)
+                .font(AforaType.captionMedium)
                 .lineLimit(1)
                 .truncationMode(.middle)
         }
@@ -581,7 +581,7 @@ private struct SettingsGatewayStatesPreview: View {
                     self.previewButton("Connect", systemImage: "link", isBusy: false)
                 }
                 Text("Discovered gateways and manual setup live here when the gateway has not connected yet.")
-                    .font(OpenClawType.caption)
+                    .font(AforaType.caption)
                     .foregroundStyle(.secondary)
             }
         }
@@ -594,10 +594,10 @@ private struct SettingsGatewayStatesPreview: View {
     {
         Button {} label: {
             Label(title, systemImage: systemImage)
-                .font(OpenClawType.captionSemiBold)
+                .font(AforaType.captionSemiBold)
                 .frame(maxWidth: .infinity)
         }
-        .font(OpenClawType.captionSemiBold)
+        .font(AforaType.captionSemiBold)
         .buttonStyle(.bordered)
         .controlSize(.small)
         .disabled(isBusy)

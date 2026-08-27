@@ -171,7 +171,7 @@ describe("node-host worker supervisor commands", () => {
     if (method === "launch") {
       expect(mocks.launch.mock.calls[0]?.[1]).toEqual({
         kind: "websocket",
-        url: "wss://gateway.example/tenant/__openclaw__/worker",
+        url: "wss://gateway.example/tenant/__afora__/worker",
       });
     }
     if (method === "cancel") {
@@ -199,7 +199,7 @@ describe("node-host worker supervisor commands", () => {
   it("dispatches bundle installation before a colliding plugin command", async () => {
     const build = {
       bundleHash: "a".repeat(64),
-      openclawVersion: "2026.8.1",
+      aforaVersion: "2026.8.1",
       protocolFeatures: [],
     };
     const input = {
@@ -426,7 +426,7 @@ describe("node-host worker supervisor commands", () => {
 
     expect(supervisorMocks(supervisor).launch.mock.calls[0]?.[1]).toEqual({
       kind: "websocket",
-      url: "wss://gateway.example/tenant/__openclaw__/worker",
+      url: "wss://gateway.example/tenant/__afora__/worker",
       tlsFingerprint: "aa".repeat(32),
       cloudflareAccess: {
         clientId: "cf-worker-id",
@@ -704,7 +704,7 @@ describe("node-host worker supervisor commands", () => {
         environmentId: "environment-1",
         sessionId: "session-1",
         generation: 4,
-        argv: ["openclaw-internal-workspace-transfer"],
+        argv: ["afora-internal-workspace-transfer"],
       }),
       workspace,
     });

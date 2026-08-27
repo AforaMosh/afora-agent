@@ -1,5 +1,5 @@
 /** Tests runtime cache touch semantics and idle-candidate collection. */
-import type { AcpRuntime, AcpRuntimeHandle } from "@openclaw/acp-core/runtime/types";
+import type { AcpRuntime, AcpRuntimeHandle } from "@afora/acp-core/runtime/types";
 import { describe, expect, it } from "vitest";
 import { RuntimeCache, type CachedRuntimeState } from "./runtime-cache.js";
 

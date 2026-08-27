@@ -1,8 +1,8 @@
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-harness-runtime";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-harness-runtime";
 
 const UPSTREAM_USER_TEXT_META_KEY = "upstreamUserText" as const;
 const MIRROR_IDENTITY_META_KEY = "mirrorIdentity" as const;
-const CODEX_META_KEY = "__openclaw";
+const CODEX_META_KEY = "__afora";
 
 export function attachCodexMirrorIdentity<T extends AgentMessage>(message: T, identity: string): T {
   const existing = CODEX_META_KEY in message ? message[CODEX_META_KEY] : undefined;
@@ -12,7 +12,7 @@ export function attachCodexMirrorIdentity<T extends AgentMessage>(message: T, id
       : {};
   return {
     ...message,
-    __openclaw: { ...baseMeta, [MIRROR_IDENTITY_META_KEY]: identity },
+    __afora: { ...baseMeta, [MIRROR_IDENTITY_META_KEY]: identity },
   };
 }
 
@@ -33,7 +33,7 @@ export function attachUpstreamUserText<T extends AgentMessage>(message: T, text:
       : {};
   return {
     ...message,
-    __openclaw: { ...baseMeta, [UPSTREAM_USER_TEXT_META_KEY]: text },
+    __afora: { ...baseMeta, [UPSTREAM_USER_TEXT_META_KEY]: text },
   };
 }
 

@@ -1,7 +1,7 @@
 import process from "node:process";
-import { expectDefined } from "@openclaw/normalization-core";
-import { toErrorObject } from "@openclaw/normalization-core/error-coercion";
-import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
+import { expectDefined } from "@afora/normalization-core";
+import { toErrorObject } from "@afora/normalization-core/error-coercion";
+import { resolveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
 import {
   decodeWindowsOutputBuffer,
   resolveWindowsConsoleEncoding,

@@ -1,9 +1,9 @@
 // Builds portable APNs payloads for alerts, wakes, and approval lifecycle events.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import type { ChannelApprovalKind } from "./approval-types.js";
 
-const EXEC_APPROVAL_GENERIC_ALERT_BODY = "Open OpenClaw to review this request.";
+const EXEC_APPROVAL_GENERIC_ALERT_BODY = "Open Afora to review this request.";
 const PLUGIN_APPROVAL_ALERT_BODY_MAX_LENGTH = 256;
 
 function toPushMetadata(params: {
@@ -32,7 +32,7 @@ export function createApnsAlertPayload(params: {
       },
       sound: "default",
     },
-    openclaw: toPushMetadata({
+    afora: toPushMetadata({
       kind: "push.test",
       nodeId: params.nodeId,
     }),
@@ -47,7 +47,7 @@ export function createApnsBackgroundPayload(params: {
     aps: {
       "content-available": 1,
     },
-    openclaw: toPushMetadata({
+    afora: toPushMetadata({
       kind: "node.wake",
       reason: params.wakeReason ?? "node.invoke",
       nodeId: params.nodeId,
@@ -77,7 +77,7 @@ export function createApnsApprovalAlertPayload(params: {
       category: params.category,
       "content-available": 1,
     },
-    openclaw: {
+    afora: {
       kind: `${params.kind}.approval.requested`,
       approvalId: params.approvalId,
       gatewayDeviceId: params.gatewayDeviceId,
@@ -103,7 +103,7 @@ export function createApnsApprovalResolvedPayload(params: {
     aps: {
       "content-available": 1,
     },
-    openclaw: {
+    afora: {
       kind: `${params.kind}.approval.resolved`,
       approvalId: params.approvalId,
       gatewayDeviceId: params.gatewayDeviceId,

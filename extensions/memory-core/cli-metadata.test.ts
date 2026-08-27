@@ -1,7 +1,7 @@
 // Memory Core tests cover metadata-only CLI host propagation.
 import { Command } from "commander";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/core";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/core";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import { describe, expect, it, vi } from "vitest";
 
 const registerMemoryCliMock = vi.hoisted(() => vi.fn());
@@ -14,7 +14,7 @@ import plugin from "./cli-metadata.js";
 
 describe("memory-core CLI metadata", () => {
   it("passes the SQLite state host to the standalone CLI", async () => {
-    let registrar: Parameters<OpenClawPluginApi["registerCli"]>[0] | undefined;
+    let registrar: Parameters<AforaPluginApi["registerCli"]>[0] | undefined;
     const keyedStore = {};
     const openKeyedStore = vi.fn(() => keyedStore);
     const acquireLocalService = vi.fn(async () => undefined);
@@ -23,7 +23,7 @@ describe("memory-core CLI metadata", () => {
         runtime: {
           llm: { acquireLocalService },
           state: { openKeyedStore },
-        } as unknown as OpenClawPluginApi["runtime"],
+        } as unknown as AforaPluginApi["runtime"],
         registerCli(nextRegistrar) {
           registrar = nextRegistrar;
         },

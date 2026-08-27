@@ -25,7 +25,7 @@ async function mountPet(params: {
   seed: number;
 }) {
   await page.evaluate(async (fixture) => {
-    const pet = document.createElement("openclaw-lobster-pet") as BrowserLobsterPet;
+    const pet = document.createElement("afora-lobster-pet") as BrowserLobsterPet;
     pet.seed = fixture.seed;
     pet.mode = fixture.mode;
     pet.runOutcome = fixture.outcome;
@@ -36,7 +36,7 @@ async function mountPet(params: {
 
 async function settlePet() {
   await page.evaluate(
-    () => (document.querySelector("openclaw-lobster-pet") as BrowserLobsterPet).updateComplete,
+    () => (document.querySelector("afora-lobster-pet") as BrowserLobsterPet).updateComplete,
   );
 }
 
@@ -47,7 +47,7 @@ suite.define(() => {
     await page.clock.install({ time: new Date("2026-07-09T12:00:00") });
     await installMockGateway(page);
     await page.goto(suite.server.baseUrl);
-    await page.waitForFunction(() => Boolean(customElements.get("openclaw-lobster-pet")));
+    await page.waitForFunction(() => Boolean(customElements.get("afora-lobster-pet")));
     const loadedAt = await page.evaluate(() => Date.now());
     await page.clock.pauseAt(loadedAt + 1_000);
   });
@@ -65,7 +65,7 @@ suite.define(() => {
     await settlePet();
     expect(await page.locator(".lobster-pet--vigil").count()).toBe(1);
     await page.evaluate(async () => {
-      const pet = document.querySelector("openclaw-lobster-pet") as BrowserLobsterPet;
+      const pet = document.querySelector("afora-lobster-pet") as BrowserLobsterPet;
       pet.mode = "idle";
       await pet.updateComplete;
     });
@@ -107,7 +107,7 @@ suite.define(() => {
   it("shows a clickable dismissal menu above the clipped footer ledge", async () => {
     await mountPet({ mode: "offline", outcome: "ok", seed: 42 });
     await page.evaluate(() => {
-      const pet = document.querySelector<HTMLElement>("openclaw-lobster-pet");
+      const pet = document.querySelector<HTMLElement>("afora-lobster-pet");
       if (pet) {
         Object.assign(pet.style, { bottom: "0", height: "64px", position: "fixed" });
       }

@@ -1,7 +1,7 @@
 /**
  * Normalizes and classifies compaction failure reasons for diagnostics.
  */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { sanitizeForLog } from "../../../packages/terminal-core/src/ansi.js";
 import { extractFailoverHttpStatus } from "../failover/retry-evidence.js";
 

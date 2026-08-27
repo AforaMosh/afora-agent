@@ -1,6 +1,6 @@
 # Motion
 
-OpenClaw uses a three-step duration scale with purpose-matched easing functions. Every animation should serve a functional goal — transitions that exist only for aesthetics add cognitive load without benefit.
+Afora uses a three-step duration scale with purpose-matched easing functions. Every animation should serve a functional goal — transitions that exist only for aesthetics add cognitive load without benefit.
 
 ---
 

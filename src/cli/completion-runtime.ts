@@ -6,7 +6,7 @@ import path from "node:path";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { resolveStateDir } from "../config/paths.js";
 import { isErrno } from "../infra/errors.js";
 import { pathExists } from "../utils.js";
@@ -14,7 +14,7 @@ import { publishOutputFileAtomically } from "./output-file.runtime.js";
 
 export const COMPLETION_SHELLS = ["zsh", "bash", "powershell", "fish"] as const;
 export type CompletionShell = (typeof COMPLETION_SHELLS)[number];
-export const COMPLETION_SKIP_PLUGIN_COMMANDS_ENV = "OPENCLAW_COMPLETION_SKIP_PLUGIN_COMMANDS";
+export const COMPLETION_SKIP_PLUGIN_COMMANDS_ENV = "AFORA_COMPLETION_SKIP_PLUGIN_COMMANDS";
 
 /** Narrows an arbitrary shell label to a completion shell supported by installer logic. */
 export function isCompletionShell(value: string): value is CompletionShell {
@@ -57,7 +57,7 @@ export function resolveShellFromEnv(
 function sanitizeCompletionBasename(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) {
-    return "openclaw";
+    return "afora";
   }
   return trimmed.replace(/[^a-zA-Z0-9._-]/g, "-");
 }
@@ -80,7 +80,7 @@ export function resolveCompletionCachePath(shell: CompletionShell, binName: stri
 /** Check if the completion cache file exists for the given shell. */
 export async function completionCacheExists(
   shell: CompletionShell,
-  binName = "openclaw",
+  binName = "afora",
 ): Promise<boolean> {
   const cachePath = resolveCompletionCachePath(shell, binName);
   return pathExists(cachePath);
@@ -127,7 +127,7 @@ export function formatCompletionReloadCommand(shell: CompletionShell, profilePat
 }
 
 function isCompletionProfileHeader(line: string): boolean {
-  return line.trim() === "# OpenClaw Completion";
+  return line.trim() === "# Afora Completion";
 }
 
 function isCompletionProfileLine(line: string, binName: string, cachePath: string | null): boolean {
@@ -271,7 +271,7 @@ function updateCompletionProfile(
   }
 
   const trimmed = filtered.join("\n").trimEnd();
-  const block = `# OpenClaw Completion\n${sourceLine}`;
+  const block = `# Afora Completion\n${sourceLine}`;
   const next = trimmed ? `${trimmed}\n\n${block}\n` : `${block}\n`;
   return { next, changed: next !== content, hadExisting };
 }
@@ -308,7 +308,7 @@ async function resolveCompletionProfileWritePath(profilePath: string): Promise<s
   return path.join(await fs.realpath(targetDir), path.basename(targetPath));
 }
 
-/** Resolves the shell startup profile path that should contain the OpenClaw completion block. */
+/** Resolves the shell startup profile path that should contain the Afora completion block. */
 export function resolveCompletionProfilePath(
   shell: CompletionShell,
   options: {
@@ -380,10 +380,10 @@ export function resolveCompletionProfileHint(shell: CompletionShell): string {
     : profilePath;
 }
 
-/** Returns whether a shell profile already contains an OpenClaw completion block or source line. */
+/** Returns whether a shell profile already contains an Afora completion block or source line. */
 export async function isCompletionInstalled(
   shell: CompletionShell,
-  binName = "openclaw",
+  binName = "afora",
 ): Promise<boolean> {
   const profilePath = resolveCompletionProfilePath(shell);
 
@@ -399,11 +399,11 @@ export async function isCompletionInstalled(
 
 /**
  * Check if the profile uses the slow dynamic completion pattern.
- * Returns true if profile has `source <(openclaw completion ...)` instead of cached file.
+ * Returns true if profile has `source <(afora completion ...)` instead of cached file.
  */
 export async function usesSlowDynamicCompletion(
   shell: CompletionShell,
-  binName = "openclaw",
+  binName = "afora",
 ): Promise<boolean> {
   const profilePath = resolveCompletionProfilePath(shell);
 
@@ -432,7 +432,7 @@ export function findCompletionProfileWriteError(err: unknown): NodeJS.ErrnoExcep
   return err instanceof Error ? findCompletionProfileWriteError(err.cause) : undefined;
 }
 
-export async function installCompletion(shell: string, yes: boolean, binName = "openclaw") {
+export async function installCompletion(shell: string, yes: boolean, binName = "afora") {
   const isShellSupported = isCompletionShell(shell);
   if (!isShellSupported) {
     throw new Error(`Automated installation not supported for ${shell} yet.`);
@@ -478,7 +478,7 @@ export async function installCompletion(shell: string, yes: boolean, binName = "
 
     await publishOutputFileAtomically({
       filePath: await resolveCompletionProfileWritePath(profilePath),
-      tempPrefix: ".openclaw-completion-profile",
+      tempPrefix: ".afora-completion-profile",
       durable: true,
       writeTemp: async (tempPath) => {
         await fs.writeFile(tempPath, update.next, { encoding: "utf-8", flag: "wx" });

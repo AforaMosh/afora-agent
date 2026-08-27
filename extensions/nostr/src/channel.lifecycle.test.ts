@@ -1,4 +1,4 @@
-import { buildChannelInboundEventContext } from "openclaw/plugin-sdk/channel-inbound";
+import { buildChannelInboundEventContext } from "afora-agent/plugin-sdk/channel-inbound";
 // Nostr tests cover channel.lifecycle plugin behavior.
 import {
   createStartAccountContext,
@@ -6,7 +6,7 @@ import {
   expectStopPendingUntilAbort,
   startAccountAndTrackLifecycle,
   waitForStartedMocks,
-} from "openclaw/plugin-sdk/channel-test-helpers";
+} from "afora-agent/plugin-sdk/channel-test-helpers";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getActiveNostrBuses, startNostrGatewayAccount } from "./gateway.js";
 import { setNostrRuntime } from "./runtime.js";

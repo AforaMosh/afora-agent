@@ -180,7 +180,7 @@ describe("gateway startup import boundaries", () => {
     }
     expect(serverImpl).not.toContain('from "../plugins/worker-provider-registry.js"');
     expect(readSource("src/gateway/server-reload-managed.ts")).toContain(
-      'import("../state/openclaw-database-preflight.js")',
+      'import("../state/afora-database-preflight.js")',
     );
     expect(workerStartup).toContain('import("../plugins/worker-provider-registry.js")');
     expect(serverImpl).not.toContain(

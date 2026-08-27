@@ -1,5 +1,5 @@
 ---
-summary: "Use OpenShell as a managed sandbox backend for OpenClaw agents"
+summary: "Use OpenShell as a managed sandbox backend for Afora agents"
 title: OpenShell
 read_when:
   - You want cloud-managed sandboxes instead of local Docker
@@ -8,7 +8,7 @@ read_when:
 ---
 
 OpenShell is a managed sandbox backend: instead of running Docker containers
-locally, OpenClaw delegates sandbox lifecycle to the `openshell` CLI, which
+locally, Afora delegates sandbox lifecycle to the `openshell` CLI, which
 provisions remote environments and executes commands over SSH.
 
 The plugin reuses the same SSH transport and remote filesystem bridge as the
@@ -18,18 +18,18 @@ workspace sync mode.
 
 ## Prerequisites
 
-- OpenShell plugin installed (`openclaw plugins install @openclaw/openshell-sandbox`)
+- OpenShell plugin installed (`afora plugins install @afora/openshell-sandbox`)
 - `openshell` CLI on `PATH` (or a custom path via
   `plugins.entries.openshell.config.command`)
 - OpenSSH client available on the Gateway host
 - OpenShell `v0.0.88` or newer when configuring an OpenShell workspace
 - An OpenShell account with sandbox access
-- OpenClaw Gateway running on the host
+- Afora Gateway running on the host
 
 ## Quick start
 
 ```bash
-openclaw plugins install @openclaw/openshell-sandbox
+afora plugins install @afora/openshell-sandbox
 ```
 
 ```json5
@@ -49,7 +49,7 @@ openclaw plugins install @openclaw/openshell-sandbox
       openshell: {
         enabled: true,
         config: {
-          from: "openclaw",
+          from: "afora",
           mode: "remote",
         },
       },
@@ -58,12 +58,12 @@ openclaw plugins install @openclaw/openshell-sandbox
 }
 ```
 
-Restart the Gateway. On the next agent turn OpenClaw creates an OpenShell
+Restart the Gateway. On the next agent turn Afora creates an OpenShell
 sandbox and routes tool execution through it. Verify with:
 
 ```bash
-openclaw sandbox list
-openclaw sandbox explain
+afora sandbox list
+afora sandbox explain
 ```
 
 ## Workspace modes
@@ -84,12 +84,12 @@ fallback when no ambient selection exists.
 `plugins.entries.openshell.config.mode: "mirror"` keeps the **local workspace
 canonical**:
 
-- Before `exec`, OpenClaw syncs the local workspace into the sandbox.
-- After `exec`, OpenClaw syncs the remote workspace back to local.
+- Before `exec`, Afora syncs the local workspace into the sandbox.
+- After `exec`, Afora syncs the remote workspace back to local.
 - File tools go through the sandbox bridge, but local stays source of truth
   between turns.
 
-Best for development workflows: local edits outside OpenClaw show up on the
+Best for development workflows: local edits outside Afora show up on the
 next exec, and the sandbox behaves close to the Docker backend.
 
 Tradeoff: upload + download cost on every exec turn.
@@ -98,10 +98,10 @@ Tradeoff: upload + download cost on every exec turn.
 
 `mode: "remote"` makes the **OpenShell workspace canonical**:
 
-- On first sandbox creation, OpenClaw seeds the remote workspace from local
+- On first sandbox creation, Afora seeds the remote workspace from local
   once.
 - After that, `exec`, `read`, `write`, `edit`, and `apply_patch` operate
-  directly on the remote workspace. OpenClaw does **not** sync remote changes
+  directly on the remote workspace. Afora does **not** sync remote changes
   back to local.
 - Prompt-time media reads still work (file/media tools read through the
   sandbox bridge).
@@ -110,7 +110,7 @@ Best for long-running agents and CI: lower per-turn overhead, and host-local
 edits cannot silently clobber remote state.
 
 <Warning>
-Editing files on the host outside OpenClaw after the initial seed is invisible to the remote sandbox. Run `openclaw sandbox recreate` to re-seed.
+Editing files on the host outside Afora after the initial seed is invisible to the remote sandbox. Run `afora sandbox recreate` to re-seed.
 </Warning>
 
 ### Choosing a mode
@@ -131,7 +131,7 @@ All OpenShell config lives under `plugins.entries.openshell.config`:
 | ------------------------- | ------------------------ | ------------- | -------------------------------------------------------------------------------------- |
 | `mode`                    | `"mirror"` or `"remote"` | `"mirror"`    | Workspace sync mode                                                                    |
 | `command`                 | `string`                 | `"openshell"` | Path or name of the `openshell` CLI                                                    |
-| `from`                    | `string`                 | `"openclaw"`  | Sandbox source for first-time create                                                   |
+| `from`                    | `string`                 | `"afora"`  | Sandbox source for first-time create                                                   |
 | `gateway`                 | `string`                 | unset         | OpenShell gateway name (top-level `--gateway`)                                         |
 | `gatewayEndpoint`         | `string`                 | unset         | OpenShell gateway endpoint (top-level `--gateway-endpoint`)                            |
 | `workspace`               | `string`                 | unset         | Existing OpenShell control-plane workspace used for every CLI operation                |
@@ -155,8 +155,8 @@ operations when the selected workspace does not exist or is being deleted.
 Set it to `"default"` to override an ambient non-default Workspace explicitly.
 
 The setting applies to every OpenShell sandbox managed by this plugin instance;
-it cannot select different OpenShell workspaces per OpenClaw agent or session.
-Changing it does not migrate existing sandboxes. Delete OpenClaw's OpenShell
+it cannot select different OpenShell workspaces per Afora agent or session.
+Changing it does not migrate existing sandboxes. Delete Afora's OpenShell
 sandboxes while the old workspace is still configured, then change the setting
 and restart the Gateway.
 
@@ -183,7 +183,7 @@ Sandbox-level settings (`mode`, `scope`, `workspaceAccess`) live under
       openshell: {
         enabled: true,
         config: {
-          from: "openclaw",
+          from: "afora",
           mode: "remote",
         },
       },
@@ -211,7 +211,7 @@ Sandbox-level settings (`mode`, `scope`, `workspaceAccess`) live under
       openshell: {
         enabled: true,
         config: {
-          from: "openclaw",
+          from: "afora",
           mode: "mirror",
           gpu: true,
           providers: ["openai"],
@@ -248,7 +248,7 @@ Sandbox-level settings (`mode`, `scope`, `workspaceAccess`) live under
       openshell: {
         enabled: true,
         config: {
-          from: "openclaw",
+          from: "afora",
           mode: "remote",
           gateway: "lab",
           gatewayEndpoint: "https://lab.example",
@@ -265,13 +265,13 @@ Sandbox-level settings (`mode`, `scope`, `workspaceAccess`) live under
 
 ```bash
 # List all sandbox runtimes (Docker + OpenShell)
-openclaw sandbox list
+afora sandbox list
 
 # Inspect effective policy
-openclaw sandbox explain
+afora sandbox explain
 
 # Recreate (deletes remote workspace, re-seeds on next use)
-openclaw sandbox recreate --all
+afora sandbox recreate --all
 ```
 
 For `remote` mode, recreate is especially important: it deletes the canonical
@@ -279,15 +279,15 @@ remote workspace for that scope, and the next use seeds a fresh one from
 local. For `mirror` mode, recreate mainly resets the remote execution
 environment since local stays canonical.
 
-OpenClaw keeps a registered sandbox's shipped legacy runtime name after an
+Afora keeps a registered sandbox's shipped legacy runtime name after an
 upgrade so its remote workspace remains addressable. Recreating that scope
 deletes the legacy runtime; the next use creates the current 19-character
 runtime name.
 
 OpenShell v0.0.92 can still locate a sandbox record created by v0.0.68, but a
 Docker-backed sandbox may remain in a non-Ready phase after the gateway
-upgrade. OpenClaw preserves the registered runtime identity, refuses to create
-a replacement implicitly, and reports the scoped `openclaw sandbox recreate`
+upgrade. Afora preserves the registered runtime identity, refuses to create
+a replacement implicitly, and reports the scoped `afora sandbox recreate`
 command. Treat that recreation as destructive in `remote` mode because the
 remote workspace is canonical.
 
@@ -308,10 +308,10 @@ cannot redirect file access outside the mirrored tree.
 ## Custom image contract
 
 The OpenShell source image owns the remote operating system and package set.
-OpenClaw does not apply Docker image, root-filesystem, network, user, or package
+Afora does not apply Docker image, root-filesystem, network, user, or package
 settings to this backend.
 
-Custom images used with the OpenClaw filesystem bridge must provide:
+Custom images used with the Afora filesystem bridge must provide:
 
 - `/bin/sh`
 - `python3` or `python` for pinned write, edit, rename, and remove operations
@@ -340,13 +340,13 @@ filesystem must permit the writes. `sandbox.docker.network`,
 
 ## How it works
 
-1. OpenClaw runs `sandbox get` for the sandbox name (with the selected
+1. Afora runs `sandbox get` for the sandbox name (with the selected
    OpenShell workspace and any configured `--gateway`/`--gateway-endpoint`); if
    that fails it creates one in the same OpenShell workspace with
    `sandbox create`, passing `--name`, `--from`, `--policy` when set, `--gpu`
    when enabled, `--auto-providers`/`--no-auto-providers`, and one
    `--provider` flag per configured provider.
-2. OpenClaw runs `sandbox ssh-config` for the sandbox name to fetch SSH
+2. Afora runs `sandbox ssh-config` for the sandbox name to fetch SSH
    connection details.
 3. Core writes the SSH config to a temp file and opens an SSH session through
    the same remote filesystem bridge as the generic SSH backend.
@@ -359,4 +359,4 @@ filesystem must permit the writes. `sandbox.docker.network`,
 - [Sandboxing](/gateway/sandboxing) - modes, scopes, and backend comparison
 - [Sandbox vs Tool Policy vs Elevated](/gateway/sandbox-vs-tool-policy-vs-elevated) - debugging blocked tools
 - [Multi-Agent Sandbox and Tools](/tools/multi-agent-sandbox-tools) - per-agent overrides
-- [Sandbox CLI](/cli/sandbox) - `openclaw sandbox` commands
+- [Sandbox CLI](/cli/sandbox) - `afora sandbox` commands

@@ -6,12 +6,12 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { recordAcpParentStreamEvents } from "../../agents/subagents/spawn/acp-parent-stream-store.sqlite.js";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../../infra/kysely-sync.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
+import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.generated.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-} from "../../state/openclaw-agent-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+} from "../../state/afora-agent-db.js";
 import { appendSqliteTrajectoryRuntimeEvents } from "../../trajectory/runtime-store.sqlite.js";
 import type { TrajectoryEvent } from "../../trajectory/types.js";
 import { decodeSessionArchiveBytes, readSessionArchiveContentSync } from "./archive-compression.js";
@@ -41,12 +41,12 @@ describe("SQLite transcript archive worker", () => {
   let storePath: string;
 
   beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-sqlite-archive-worker-"));
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-sqlite-archive-worker-"));
     storePath = path.join(tempDir, "agents", "main", "sessions", "sessions.json");
   });
 
   afterEach(() => {
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
@@ -376,7 +376,7 @@ describe("SQLite transcript archive worker", () => {
       runId: "archive-worker-lifecycle-failure-run",
       events: [{ event: { type: "output", text: "preserve ACP state" }, createdAt: Date.now() }],
     });
-    const db = getNodeSqliteKysely<OpenClawAgentKyselyDatabase>(database.db);
+    const db = getNodeSqliteKysely<AforaAgentKyselyDatabase>(database.db);
     const readLifecycleCounts = () => ({
       acp: executeSqliteQuerySync(
         database.db,
@@ -478,7 +478,7 @@ describe("SQLite transcript archive worker", () => {
       createTranscriptEvent(sessionId, "archived snapshot"),
     ]);
     const database = openLifecycleTestDatabase(storePath);
-    const db = getNodeSqliteKysely<OpenClawAgentKyselyDatabase>(database.db);
+    const db = getNodeSqliteKysely<AforaAgentKyselyDatabase>(database.db);
     const plan = planSessionStateDeleteIfUnreferenced({
       archiveDirectory: path.dirname(storePath),
       database,
@@ -518,7 +518,7 @@ describe("SQLite transcript archive worker", () => {
         createTranscriptEvent(sessionId, "archived transcript"),
       ]);
       const database = openLifecycleTestDatabase(storePath);
-      const db = getNodeSqliteKysely<OpenClawAgentKyselyDatabase>(database.db);
+      const db = getNodeSqliteKysely<AforaAgentKyselyDatabase>(database.db);
       const plan = planArchiveWorker(database, path.dirname(storePath), sessionId);
       expect(plan.snapshot.generation).not.toBeNull();
       expect(plan.snapshot.sessionUpdatedAt).not.toBeNull();
@@ -577,7 +577,7 @@ describe("SQLite transcript archive worker", () => {
       createTranscriptEvent(sessionId, "planned transcript"),
     ]);
     const database = openLifecycleTestDatabase(storePath);
-    const db = getNodeSqliteKysely<OpenClawAgentKyselyDatabase>(database.db);
+    const db = getNodeSqliteKysely<AforaAgentKyselyDatabase>(database.db);
     const plan = planSessionStateDeleteIfUnreferenced({
       archiveDirectory: path.dirname(storePath),
       archiveTranscript: false,
@@ -612,7 +612,7 @@ describe("SQLite transcript archive worker", () => {
         createTranscriptEvent(sessionId, "archived transcript"),
       ]);
       const database = openLifecycleTestDatabase(storePath);
-      const db = getNodeSqliteKysely<OpenClawAgentKyselyDatabase>(database.db);
+      const db = getNodeSqliteKysely<AforaAgentKyselyDatabase>(database.db);
       const plan = planArchiveWorker(database, path.dirname(storePath), sessionId);
       const materialized = await materializeSessionStateDeletePlans([plan]);
 
@@ -664,7 +664,7 @@ function createTranscriptEventLine(sessionId: string, content: string): string {
 
 function createTestTrajectoryEvent(sessionId: string): TrajectoryEvent {
   return {
-    traceSchema: "openclaw-trajectory",
+    traceSchema: "afora-trajectory",
     schemaVersion: 1,
     traceId: sessionId,
     source: "runtime",
@@ -691,7 +691,7 @@ function openLifecycleTestDatabase(storePath: string) {
   if (!target.path) {
     throw new Error(`Could not resolve SQLite database path for ${storePath}`);
   }
-  return openOpenClawAgentDatabase({
+  return openAforaAgentDatabase({
     agentId: target.agentId ?? "main",
     path: target.path,
   });
@@ -718,9 +718,9 @@ function appendTranscriptEvent(
   database: ReturnType<typeof openLifecycleTestDatabase>,
   sessionId: string,
 ): void {
-  runOpenClawAgentWriteTransaction(
+  runAforaAgentWriteTransaction(
     (transactionDb) => {
-      const db = getNodeSqliteKysely<OpenClawAgentKyselyDatabase>(transactionDb.db);
+      const db = getNodeSqliteKysely<AforaAgentKyselyDatabase>(transactionDb.db);
       executeSqliteQuerySync(
         transactionDb.db,
         db.insertInto("transcript_events").values({
@@ -741,7 +741,7 @@ function deleteMaterializedPlans(
   plans: Parameters<typeof deleteMaterializedSessionStatePlans>[1],
   excludedSessionKey: string,
 ): void {
-  runOpenClawAgentWriteTransaction(
+  runAforaAgentWriteTransaction(
     (transactionDb) =>
       deleteMaterializedSessionStatePlans(
         transactionDb,

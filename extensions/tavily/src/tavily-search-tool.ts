@@ -1,11 +1,11 @@
 // Tavily plugin module implements tavily search tool behavior.
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-runtime";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-runtime";
 import {
   jsonResult,
   readPositiveIntegerParam,
   readStringArrayParam,
   readStringParam,
-} from "openclaw/plugin-sdk/provider-web-search";
+} from "afora-agent/plugin-sdk/provider-web-search";
 import { Type } from "typebox";
 import { runTavilySearch } from "./tavily-client.js";
 import { resolveTavilyToolConfig, type TavilyToolConfigContext } from "./tavily-tool-config.js";
@@ -49,7 +49,7 @@ const TavilySearchToolSchema = Type.Object(
   { additionalProperties: false },
 );
 
-export function createTavilySearchTool(api: OpenClawPluginApi, ctx?: TavilyToolConfigContext) {
+export function createTavilySearchTool(api: AforaPluginApi, ctx?: TavilyToolConfigContext) {
   return {
     name: "tavily_search",
     label: "Tavily Search",

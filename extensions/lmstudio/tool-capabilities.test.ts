@@ -1,5 +1,5 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/plugin-entry";
-import { capturePluginRegistration } from "openclaw/plugin-sdk/plugin-test-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/plugin-entry";
+import { capturePluginRegistration } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { describe, expect, it } from "vitest";
 import plugin from "./index.js";
 
@@ -13,12 +13,12 @@ function augmentConfiguredLmstudioCompat(compat: Record<string, unknown>) {
         },
       },
     },
-  } as unknown as OpenClawConfig;
+  } as unknown as AforaConfig;
 
   expect(provider?.id).toBe("lmstudio");
   return provider?.augmentModelCatalog?.({
     config,
-    agentDir: "/tmp/openclaw",
+    agentDir: "/tmp/afora",
     env: {},
     entries: [],
   });
@@ -49,13 +49,13 @@ describe("LM Studio configured model tool capabilities", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expect(provider?.id).toBe("lmstudio");
     expect(
       provider?.augmentModelCatalog?.({
         config,
-        agentDir: "/tmp/openclaw",
+        agentDir: "/tmp/afora",
         env: {},
         entries: [],
       }),

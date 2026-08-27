@@ -40,7 +40,7 @@ function deferred<T>(): Deferred<T> {
 }
 
 function createOutlet(router: TestRouter, context: TestContext): RouterOutletElement {
-  const outlet = document.createElement("openclaw-router-outlet") as RouterOutletElement;
+  const outlet = document.createElement("afora-router-outlet") as RouterOutletElement;
   outlet.router = router;
   outlet.retryContext = context;
   document.body.append(outlet);
@@ -59,7 +59,7 @@ async function settleOutlet(outlet: RouterOutletElement): Promise<void> {
   await settleLitElement(outlet);
 }
 
-describe("openclaw-router-outlet", () => {
+describe("afora-router-outlet", () => {
   it("retains MCP Apps across route IDs that share an explicit owner", async () => {
     const teardownView = vi.fn(async () => undefined);
     const nextData = deferred<TestData>();
@@ -147,7 +147,7 @@ describe("openclaw-router-outlet", () => {
 
     const loadingState = outlet.querySelector('[role="status"]');
     expect(loadingState?.getAttribute("aria-label")).toBe("Loading…");
-    expect(loadingState?.querySelector("openclaw-mascot")?.getAttribute("mood")).toBe("thinking");
+    expect(loadingState?.querySelector("afora-mascot")?.getAttribute("mood")).toBe("thinking");
     expect(loadingState?.textContent?.trim()).toBe("");
     expect(outlet.textContent).not.toContain("Loading panel");
 
@@ -159,7 +159,7 @@ describe("openclaw-router-outlet", () => {
 
     expect(outlet.querySelector('[data-testid="route-page"]')?.textContent).toBe("loaded");
     expect(outlet.querySelector('[role="status"]')).toBeNull();
-    expect(outlet.querySelector("openclaw-mascot")).toBeNull();
+    expect(outlet.querySelector("afora-mascot")).toBeNull();
     outlet.remove();
     router.stop();
   });

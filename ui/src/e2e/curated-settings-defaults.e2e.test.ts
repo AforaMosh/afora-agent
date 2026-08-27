@@ -10,10 +10,10 @@ const suite = createControlUiE2eSuite({
   name: "Control UI curated settings defaults mocked Gateway E2E",
   startServerBeforeBrowser: true,
   unavailableMessage: (executablePath) =>
-    `Playwright Chromium is not installed or cannot start at ${executablePath}. Run \`pnpm --dir ui exec playwright install --with-deps chromium\`, or set OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
+    `Playwright Chromium is not installed or cannot start at ${executablePath}. Run \`pnpm --dir ui exec playwright install --with-deps chromium\`, or set AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
 });
 
-const captureUiProofEnabled = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+const captureUiProofEnabled = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 const uiProofArtifactDir = path.join(
   process.cwd(),
   ".artifacts",
@@ -176,7 +176,7 @@ suite.define(() => {
           })
           .toBe(true);
         await expect
-          .poll(() => page.locator("openclaw-settings-save-indicator").textContent())
+          .poll(() => page.locator("afora-settings-save-indicator").textContent())
           .toContain("Saved");
 
         if (captureUiProofEnabled) {
@@ -234,7 +234,7 @@ suite.define(() => {
           })
           .toBe(true);
         await expect
-          .poll(() => page.locator("openclaw-settings-save-indicator").textContent())
+          .poll(() => page.locator("afora-settings-save-indicator").textContent())
           .toContain("Saved");
 
         if (captureUiProofEnabled) {

@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 // Signal tests cover alias target resolution behavior.
 import { describe, expect, it } from "vitest";
 import { listSignalAliasDirectoryEntries, resolveSignalTarget } from "./aliases.js";
@@ -13,7 +13,7 @@ describe("resolveSignalTarget aliases", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveSignalTarget({ cfg, input: "signal:home" })).toEqual({
       kind: "user",
@@ -39,7 +39,7 @@ describe("resolveSignalTarget aliases", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveSignalTarget({ cfg, accountId: "work", input: "ops" })).toEqual({
       kind: "group",
@@ -60,7 +60,7 @@ describe("resolveSignalTarget aliases", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(() => resolveSignalTarget({ cfg, input: "home" })).toThrow(
       'Signal alias "home" resolves recursively through "home".',
@@ -76,7 +76,7 @@ describe("resolveSignalTarget aliases", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(() => resolveSignalTarget({ cfg, input: "jane" })).toThrow(
       'Signal alias "jane" must point to an E.164 number, uuid:<id>, username:<name>, or group:<id>.',
@@ -93,7 +93,7 @@ describe("resolveSignalTarget aliases", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveSignalTarget({ cfg, input: "home" })).toEqual({
       kind: "user",
@@ -113,7 +113,7 @@ describe("resolveSignalTarget aliases", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveSignalTarget({ cfg, input: "constructor" })).toEqual({
       kind: "user",
@@ -136,7 +136,7 @@ describe("resolveSignalTarget aliases", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveSignalTarget({ cfg: ordinaryCfg, input: "constructor" })).toBeNull();
   });
@@ -153,7 +153,7 @@ describe("resolveSignalTarget", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveSignalTarget({ cfg, input: "signal:me" })).toEqual({
       kind: "user",
@@ -187,7 +187,7 @@ describe("listSignalAliasDirectoryEntries", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(listSignalAliasDirectoryEntries({ cfg, kind: "user" })).toEqual([
       { kind: "user", id: "+15551234567", name: "me" },
@@ -214,7 +214,7 @@ describe("listSignalAliasDirectoryEntries", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(listSignalAliasDirectoryEntries({ cfg, kind: "user" })).toEqual([
       { kind: "user", id: "+15551234567", name: "me" },
@@ -232,7 +232,7 @@ describe("listSignalAliasDirectoryEntries", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(listSignalAliasDirectoryEntries({ cfg, kind: "user", query: "ops" })).toEqual([]);
     expect(listSignalAliasDirectoryEntries({ cfg, kind: "group", query: "ops" })).toEqual([
@@ -254,7 +254,7 @@ describe("listSignalAliasDirectoryEntries", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(() => listSignalAliasDirectoryEntries({ cfg, kind: "user", query: "ops" })).toThrow(
       'Signal alias "ops" must point to an E.164 number, uuid:<id>, username:<name>, or group:<id>.',

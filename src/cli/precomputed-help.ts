@@ -100,7 +100,7 @@ export async function tryOutputPrecomputedCommandHelp(
   deps: PrecomputedCommandHelpDeps = {},
 ): Promise<boolean> {
   const env = deps.env ?? process.env;
-  if (env.OPENCLAW_DISABLE_CLI_STARTUP_HELP_FAST_PATH === "1") {
+  if (env.AFORA_DISABLE_CLI_STARTUP_HELP_FAST_PATH === "1") {
     return false;
   }
 

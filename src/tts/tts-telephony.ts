@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import type { TtsDirectiveOverrides } from "./provider-types.js";
 import { assertSpeechRuntimeAvailable } from "./runtime-availability.js";
 import type { TtsTelephonyResult } from "./tts-runtime-types.js";
@@ -6,7 +6,7 @@ import { executeTtsProviderAttempts, resolveTtsRequestSetup } from "./tts-synthe
 
 export async function textToSpeechTelephony(params: {
   text: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   prefsPath?: string;
   overrides?: TtsDirectiveOverrides;
   timeoutMs?: number;

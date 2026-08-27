@@ -12,7 +12,7 @@ function plan(
   ownerAction: "install" | "reuse" = "install",
 ): ClawAddPlan {
   return {
-    schemaVersion: "openclaw.clawAddPlan.v1",
+    schemaVersion: "afora.clawAddPlan.v1",
     manifestSchemaVersion: 1,
     stability: "experimental",
     dryRun: true,
@@ -84,7 +84,7 @@ function pluginPackageRef(
   overrides: Partial<PersistedClawPackageRef> = {},
 ): PersistedClawPackageRef {
   return {
-    schemaVersion: "openclaw.clawPackageRef.v1",
+    schemaVersion: "afora.clawPackageRef.v1",
     agentId: "incident-2",
     clawName: "incident-claw",
     kind: "plugin",
@@ -131,7 +131,7 @@ describe("preflightClawPackage plugin setup requirements", () => {
       },
     ],
   };
-  const artifactInspection = { format: "openclaw" as const, mapped: ["plugin"], unavailable: [] };
+  const artifactInspection = { format: "afora" as const, mapped: ["plugin"], unavailable: [] };
   const preflightPlugin = vi.fn().mockResolvedValue({ ok: true, action: "install" });
   const probePluginSetup = vi.fn().mockResolvedValue({
     ok: true,
@@ -370,7 +370,7 @@ describe("preflightClawPackage isolated plugin inspection", () => {
       detectedFormat: "claude",
       mapped: ["commands", "skills"],
       unavailable: ["agents"],
-      adapterIdentity: expect.stringMatching(/^openclaw\//),
+      adapterIdentity: expect.stringMatching(/^afora\//),
     });
   });
 
@@ -385,7 +385,7 @@ describe("preflightClawPackage isolated plugin inspection", () => {
       targetDir: "/tmp/claw-plugin-probe/audit",
       extensions: [],
       artifactInspection: {
-        format: "openclaw" as const,
+        format: "afora" as const,
         mapped: ["plugin"],
         unavailable: [],
       },
@@ -421,7 +421,7 @@ describe("preflightClawPackage isolated plugin inspection", () => {
       installId: "audit",
       installedIntegrity: integrity,
       installedAt: "2026-08-06T00:00:00.000Z",
-      detectedFormat: "openclaw",
+      detectedFormat: "afora",
       mapped: ["plugin"],
       unavailable: [],
     });

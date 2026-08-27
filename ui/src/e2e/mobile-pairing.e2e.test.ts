@@ -12,12 +12,12 @@ const suite = createControlUiE2eSuite({
   name: "Control UI mobile pairing mocked Gateway E2E",
   startServerBeforeBrowser: true,
   unavailableMessage: (executablePath) =>
-    `Playwright Chromium is not installed or cannot start at ${executablePath}. Run \`pnpm --dir ui exec playwright install --with-deps chromium\`, or set OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
+    `Playwright Chromium is not installed or cannot start at ${executablePath}. Run \`pnpm --dir ui exec playwright install --with-deps chromium\`, or set AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
 });
 
 // Visual proof rides the behavioral scenario so every captured state is one the
 // assertions above it already proved, at whatever SHA the lane ran.
-const captureUiProofEnabled = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+const captureUiProofEnabled = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 const uiProofArtifactDir = path.join(
   process.cwd(),
   ".artifacts",
@@ -196,7 +196,7 @@ suite.define(() => {
         await pairFromSettings.click();
 
         const dialog = page.getByRole("dialog", { name: "Pair a device" });
-        const qr = page.getByAltText("OpenClaw mobile pairing QR code");
+        const qr = page.getByAltText("Afora mobile pairing QR code");
         await dialog.waitFor();
         await page.getByRole("button", { name: "Create setup code" }).waitFor();
         const dialogBox = await page.locator(".device-pair-setup").boundingBox();
@@ -214,8 +214,8 @@ suite.define(() => {
         await help.hover();
         await captureUiProof(page, "10-mobile-pairing-help-focus-hover.png");
         const [helpPopup] = await Promise.all([page.waitForEvent("popup"), help.click()]);
-        await helpPopup.waitForURL(/docs\.openclaw\.ai\/channels\/pairing/u);
-        expect(helpPopup.url()).toContain("docs.openclaw.ai/channels/pairing");
+        await helpPopup.waitForURL(/docs\.afora\.ai\/channels\/pairing/u);
+        expect(helpPopup.url()).toContain("docs.afora.ai/channels/pairing");
         await helpPopup.close();
 
         await gateway.deferNext("device.pair.setupCode");
@@ -407,7 +407,7 @@ suite.define(() => {
           includeQr: false,
         });
         await page
-          .getByText('openclaw node run --pair "oc-pair://Node_AbC123"', { exact: true })
+          .getByText('afora node run --pair "oc-pair://Node_AbC123"', { exact: true })
           .waitFor();
         expect(await qr.count()).toBe(0);
         await page.getByRole("button", { name: "Manage devices" }).click();

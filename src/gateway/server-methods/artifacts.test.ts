@@ -424,7 +424,7 @@ describe("artifacts RPC handlers", () => {
     },
     { data: "", sizeBytes: 0, title: "untyped.bin" },
   ])("lists, gets, and downloads the zero-byte $title artifact", async (block) => {
-    mockedMessages([{ role: "assistant", content: [block], __openclaw: { seq: 2 } }]);
+    mockedMessages([{ role: "assistant", content: [block], __afora: { seq: 2 } }]);
     const artifact = expectFirstArtifact(
       (await listArtifacts({ sessionKey: "agent:main:main" })).calls,
     );
@@ -444,7 +444,7 @@ describe("artifacts RPC handlers", () => {
   it.each([null, 0, false, {}])(
     "does not discover untyped non-string data as an artifact: %j",
     async (data) => {
-      mockedMessages([{ role: "assistant", content: [{ data }], __openclaw: { seq: 2 } }]);
+      mockedMessages([{ role: "assistant", content: [{ data }], __afora: { seq: 2 } }]);
       const listed = await listArtifacts({ sessionKey: "agent:main:main" });
       expect(expectArtifactList(listed.calls)).toEqual({ artifacts: [] });
     },
@@ -465,7 +465,7 @@ describe("artifacts RPC handlers", () => {
             sizeBytes: 14,
           },
         ],
-        __openclaw: { seq: 2 },
+        __afora: { seq: 2 },
       },
     ]);
     hoisted.resolveManagedArtifactDownload.mockResolvedValue({
@@ -503,7 +503,7 @@ describe("artifacts RPC handlers", () => {
       {
         role: "assistant",
         content: [{ type, data, mimeType, fileName: `result.${type}` }],
-        __openclaw: { seq: 2 },
+        __afora: { seq: 2 },
       },
     ]);
     const listed = await listArtifacts({ sessionKey: "agent:main:main" });
@@ -534,7 +534,7 @@ describe("artifacts RPC handlers", () => {
       {
         role: "assistant",
         content: [{ type, artifactId, url, openUrl: url, fileName, mimeType, sizeBytes: 10 }],
-        __openclaw: { seq: 2 },
+        __afora: { seq: 2 },
       },
     ]);
     hoisted.resolveManagedArtifactDownload.mockResolvedValue({
@@ -570,7 +570,7 @@ describe("artifacts RPC handlers", () => {
             alt: "result.png",
           },
         ],
-        __openclaw: { seq: 2 },
+        __afora: { seq: 2 },
       },
     ]);
 
@@ -604,7 +604,7 @@ describe("artifacts RPC handlers", () => {
             alt: "second.png",
           },
         ],
-        __openclaw: { seq: 2 },
+        __afora: { seq: 2 },
       },
     ];
     mockedMessages(messages);
@@ -680,17 +680,17 @@ describe("artifacts RPC handlers", () => {
       {
         role: "assistant",
         content: [{ type: "image", data: "dGFyZ2V0", alt: "task-result.png" }],
-        __openclaw: { seq: 2, messageTaskId: "task-1" },
+        __afora: { seq: 2, messageTaskId: "task-1" },
       },
       {
         role: "assistant",
         content: [{ type: "image", data: "b3RoZXI=", alt: "other-task.png" }],
-        __openclaw: { seq: 3, messageTaskId: "task-2" },
+        __afora: { seq: 3, messageTaskId: "task-2" },
       },
       {
         role: "assistant",
         content: [{ type: "image", data: "dW50YWdnZWQ=", alt: "untagged.png" }],
-        __openclaw: { seq: 4 },
+        __afora: { seq: 4 },
       },
     ]);
 
@@ -888,7 +888,7 @@ describe("artifacts RPC handlers", () => {
             alt: "uploaded.png",
           },
         ],
-        __openclaw: { seq: 3 },
+        __afora: { seq: 3 },
       },
     ]);
     const { calls } = await listArtifacts({ sessionKey: "agent:main:main" }, { id: "image-url" });
@@ -916,7 +916,7 @@ describe("artifacts RPC handlers", () => {
             alt: "uploaded.txt",
           },
         ],
-        __openclaw: { seq: 4 },
+        __afora: { seq: 4 },
       },
     ]);
 
@@ -942,7 +942,7 @@ describe("artifacts RPC handlers", () => {
             title: "plain.txt",
           },
         ],
-        __openclaw: { seq: 5 },
+        __afora: { seq: 5 },
       },
     ]);
 
@@ -967,7 +967,7 @@ describe("artifacts RPC handlers", () => {
             title: "bad.txt",
           },
         ],
-        __openclaw: { seq: 6 },
+        __afora: { seq: 6 },
       },
     ]);
 
@@ -992,7 +992,7 @@ describe("artifacts RPC handlers", () => {
             title: "report.pdf",
           },
         ],
-        __openclaw: { seq: 7 },
+        __afora: { seq: 7 },
       },
     ]);
 
@@ -1027,7 +1027,7 @@ describe("artifacts RPC handlers", () => {
             alt: "bad.png",
           },
         ],
-        __openclaw: { seq: 7 },
+        __afora: { seq: 7 },
       },
     ]);
 
@@ -1052,7 +1052,7 @@ describe("artifacts RPC handlers", () => {
             alt: "tiny.gif",
           },
         ],
-        __openclaw: { seq: 8 },
+        __afora: { seq: 8 },
       },
     ]);
 
@@ -1082,7 +1082,7 @@ describe("artifacts RPC handlers", () => {
       {
         role: "assistant",
         content: [{ type: "file", title: "secret.txt", url: "file:///etc/passwd" }],
-        __openclaw: { seq: 4 },
+        __afora: { seq: 4 },
       },
     ]);
 

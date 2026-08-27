@@ -7,7 +7,7 @@ import {
   applySessionStoreProjection,
   replaceSessionEntrySync,
 } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { callGateway as gatewayCall } from "../../gateway/call.js";
 import { createSessionVisibilityChecker } from "../../plugin-sdk/session-visibility.js";
 import { describeSessionLinkRule } from "../tool-description-presets.js";
@@ -445,7 +445,7 @@ describe("sessions_search tool", () => {
     const requesterSessionKey = "agent:main:clickclack:discussion-race";
     const targetSessionKey = "agent:main:main";
     const expectedSessionId = "old-incarnation";
-    const storePath = path.join(tempDirs.make("openclaw-sessions-search-"), "sessions.sqlite");
+    const storePath = path.join(tempDirs.make("afora-sessions-search-"), "sessions.sqlite");
     await applySessionStoreProjection({
       storePath,
       skipMaintenance: true,
@@ -476,7 +476,7 @@ describe("sessions_search tool", () => {
           session: { store: storePath },
           tools: { sessions: { visibility: "self" } },
           agents: { defaults: { sandbox: { sessionToolsVisibility: "spawned" } } },
-        } as OpenClawConfig,
+        } as AforaConfig,
         callGateway: async <T = Record<string, unknown>>(
           request: CallGatewayRequest,
         ): Promise<T> => {

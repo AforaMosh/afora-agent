@@ -1,5 +1,5 @@
 // Talk logging helpers write voice session logs and diagnostic entries.
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
 import { getChildLogger } from "../logging/logger.js";
 import { firstFiniteTalkEventNumber } from "./event-metrics.js";
 import type { TalkEvent, TalkEventType } from "./talk-events.js";

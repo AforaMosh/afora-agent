@@ -7,7 +7,7 @@ read_when:
 title: "The main session"
 ---
 
-OpenClaw is a personal agent first. Out of the box, every direct message you
+Afora is a personal agent first. Out of the box, every direct message you
 send it — from Telegram, WhatsApp, iMessage, Slack DMs, the web app, anywhere —
 lands in **one rolling conversation**: the main session. Ask something on your
 phone, follow up from your laptop, and the agent has the same context in both
@@ -80,7 +80,7 @@ making the model carry its entire history at once:
 - Session lists show the current live conversation, not every historical
   session id behind it.
 - When the per-agent store's physical database, WAL, and session artifacts
-  exceed the disk budget (default 10 GB), OpenClaw extracts the oldest
+  exceed the disk budget (default 10 GB), Afora extracts the oldest
   unreferenced history to a verified compressed archive before removing its
   database rows. Live, routed, and in-flight sessions are never budget victims.
 
@@ -99,7 +99,7 @@ to. If several people can message your agent, isolate DMs:
 
 With an isolating scope, each sender gets their own session, group watching
 from the main session is disabled, and cross-conversation memory recall
-defaults off. `openclaw security audit` recommends isolation when it detects
+defaults off. `afora security audit` recommends isolation when it detects
 multiple DM senders. The full scope matrix, identity linking, and per-route
 overrides are covered in [Session management](/concepts/session) and
 [Channel routing](/channels/channel-routing).

@@ -1,4 +1,4 @@
-// Shared dry-run result contract for `openclaw config set` validation-only paths.
+// Shared dry-run result contract for `afora config set` validation-only paths.
 /** Config-set input mode that produced the simulated operation. */
 export type ConfigSetDryRunInputMode = "value" | "json" | "builder" | "unset";
 

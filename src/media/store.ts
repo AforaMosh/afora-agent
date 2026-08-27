@@ -7,15 +7,15 @@ import {
   basenameFromAnyPath,
   extnameFromAnyPath,
   nameFromAnyPath,
-} from "@openclaw/media-core/file-name";
+} from "@afora/media-core/file-name";
 import {
   detectMime,
   extensionForMime,
   getFileExtension,
   normalizeMimeType,
-} from "@openclaw/media-core/mime";
-import { hasHttpUrlPrefix } from "@openclaw/net-policy/url-protocol";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+} from "@afora/media-core/mime";
+import { hasHttpUrlPrefix } from "@afora/net-policy/url-protocol";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { fileStore } from "../infra/file-store.js";
 import { sanitizeUntrustedFileName } from "../infra/fs-safe-advanced.js";
 import { isPathInside } from "../infra/fs-safe.js";
@@ -57,7 +57,7 @@ function setMediaStoreNetworkDepsForTest(deps?: {
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.mediaStoreTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.mediaStoreTestApi")] = {
     enforcePlaybackTranscodeCacheLimit,
     PLAYBACK_TRANSCODE_MAX_CACHE_BYTES,
     PLAYBACK_TRANSCODE_TTL_MS,

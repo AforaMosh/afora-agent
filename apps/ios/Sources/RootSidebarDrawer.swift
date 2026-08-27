@@ -67,7 +67,7 @@ struct RootSidebarDrawer<Sidebar: View, Detail: View>: View {
         self.sidebar
             .frame(width: self.sidebarWidth, alignment: .topLeading)
             .frame(maxHeight: .infinity, alignment: .topLeading)
-            .background(OpenClawSidebarPalette.background)
+            .background(AforaSidebarPalette.background)
             .ignoresSafeArea(.container, edges: .vertical)
     }
 
@@ -80,13 +80,13 @@ struct RootSidebarDrawer<Sidebar: View, Detail: View>: View {
             // RootTabs always supplies its shared NavigationStack here. Expanding
             // that stack paints destination backgrounds through the rounded safe
             // areas while navigation chrome keeps destination content inset.
-            .background(OpenClawProBackground())
+            .background(AforaProBackground())
             .ignoresSafeArea(.container, edges: .vertical)
             .allowsHitTesting(!self.isPresented)
             .clipShape(shape)
             .overlay {
                 shape.strokeBorder(
-                    OpenClawSidebarPalette.hairline.opacity(Double(progress)),
+                    AforaSidebarPalette.hairline.opacity(Double(progress)),
                     lineWidth: 1)
             }
             .offset(x: offset)

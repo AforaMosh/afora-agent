@@ -1,8 +1,8 @@
 // Telegram plugin module implements polling lease behavior.
-import { resolveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
+import { resolveTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
 import { fingerprintTelegramBotToken } from "./token-fingerprint.js";
 
-const TELEGRAM_POLLING_LEASES_KEY = Symbol.for("openclaw.telegram.pollingLeases");
+const TELEGRAM_POLLING_LEASES_KEY = Symbol.for("afora.telegram.pollingLeases");
 const DEFAULT_TELEGRAM_POLLING_LEASE_WAIT_MS = 5_000;
 
 type TelegramPollingLeaseEntry = {
@@ -54,7 +54,7 @@ function createDuplicatePollingError(params: {
   const ageMs = Math.max(0, Date.now() - params.existing.startedAt);
   const ageSeconds = Math.round(ageMs / 1000);
   return new Error(
-    `Telegram polling already active for bot token ${params.tokenFingerprint} on account "${params.existing.accountId}" (${ageSeconds}s old); refusing duplicate poller for account "${params.accountId}". Stop the existing OpenClaw gateway/poller or use a different bot token.`,
+    `Telegram polling already active for bot token ${params.tokenFingerprint} on account "${params.existing.accountId}" (${ageSeconds}s old); refusing duplicate poller for account "${params.accountId}". Stop the existing Afora gateway/poller or use a different bot token.`,
   );
 }
 

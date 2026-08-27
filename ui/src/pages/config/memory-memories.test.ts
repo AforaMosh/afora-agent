@@ -25,7 +25,7 @@ function deferred<T>() {
 }
 
 function createElement(request: Request, advertised = true) {
-  const element = document.createElement("openclaw-memory-memories") as MemoryMemoriesTestElement;
+  const element = document.createElement("afora-memory-memories") as MemoryMemoriesTestElement;
   element.client = { request } as unknown as GatewayBrowserClient;
   element.connected = true;
   element.methodAdvertised = advertised;
@@ -153,7 +153,7 @@ describe("MemoryMemoriesElement", () => {
   });
 
   it("loads a row file once, highlights the matched range, and keeps one row open", async () => {
-    const second = { ...result, path: "memory/projects/Open Claw.md", startLine: 1, endLine: 1 };
+    const second = { ...result, path: "memory/projects/Afora.md", startLine: 1, endLine: 1 };
     const request = vi.fn((method: string) => {
       if (method === "memory.search") {
         return Promise.resolve({

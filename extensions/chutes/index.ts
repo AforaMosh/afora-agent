@@ -1,18 +1,18 @@
 /**
  * Chutes provider plugin entrypoint with OAuth and API-key auth methods.
  */
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   resolveOAuthApiKeyMarker,
   type ProviderAuthContext,
   type ProviderAuthResult,
   buildOauthProviderAuthResult,
-} from "openclaw/plugin-sdk/provider-auth";
-import { createProviderApiKeyAuthMethod } from "openclaw/plugin-sdk/provider-auth-api-key";
+} from "afora-agent/plugin-sdk/provider-auth";
+import { createProviderApiKeyAuthMethod } from "afora-agent/plugin-sdk/provider-auth-api-key";
 import {
   normalizeOptionalString,
   readStringValue,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { loginChutes, refreshChutesOAuthCredential } from "./oauth.js";
 import {
   CHUTES_DEFAULT_MODEL_REF,

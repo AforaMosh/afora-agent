@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { saveAuthProfileStore } from "../agents/auth-profiles/store.js";
 import type { SessionEntry } from "../config/sessions.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginManifestRecord } from "../plugins/manifest-registry.js";
 import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.types.js";
 import {
@@ -22,7 +22,7 @@ const workspaceAliasPlugin = {
   origin: "workspace",
   rootDir: "/plugins/fixture-provider",
   source: "test",
-  manifestPath: "/plugins/fixture-provider/openclaw.plugin.json",
+  manifestPath: "/plugins/fixture-provider/afora.plugin.json",
   providerAuthAliases: { "fixture-provider-plan": "fixture-provider" },
 } satisfies PluginManifestRecord;
 
@@ -40,12 +40,12 @@ describe("shouldPreserveSessionAuthProfileOverride", () => {
   it("uses config trust when resolving workspace provider aliases", () => {
     const allowedConfig = {
       plugins: { entries: { "fixture-provider": { enabled: true } } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(
       shouldPreserveSessionAuthProfileOverride({
         cfg: allowedConfig,
-        agentDir: "/tmp/openclaw-auth-profile-preservation-allowed",
+        agentDir: "/tmp/afora-auth-profile-preservation-allowed",
         entry,
         currentProvider: "fixture-provider",
         provider: "fixture-provider-plan",
@@ -55,7 +55,7 @@ describe("shouldPreserveSessionAuthProfileOverride", () => {
     expect(
       shouldPreserveSessionAuthProfileOverride({
         cfg: {},
-        agentDir: "/tmp/openclaw-auth-profile-preservation-denied",
+        agentDir: "/tmp/afora-auth-profile-preservation-denied",
         entry,
         currentProvider: "fixture-provider",
         provider: "fixture-provider-plan",
@@ -65,7 +65,7 @@ describe("shouldPreserveSessionAuthProfileOverride", () => {
   });
 
   it("uses the recorded provider for an arbitrary stored profile id", () => {
-    const agentDir = tempDirs.make("openclaw-auth-profile-preservation-");
+    const agentDir = tempDirs.make("afora-auth-profile-preservation-");
     saveAuthProfileStore(
       {
         version: 1,
@@ -102,7 +102,7 @@ describe("shouldPreserveSessionAuthProfileOverride", () => {
         cfg: {
           auth: { profiles: { "team:prod": { provider: "openai", mode: "api_key" } } },
         },
-        agentDir: tempDirs.make("openclaw-auth-profile-config-"),
+        agentDir: tempDirs.make("afora-auth-profile-config-"),
         entry: { ...entry, authProfileOverride: "team:prod" },
         currentProvider: "openai",
         provider: "openai",
@@ -142,7 +142,7 @@ describe("shouldPreserveSessionAuthProfileOverride", () => {
       cfg: {
         auth: { profiles: { "team:prod": { provider: "openai", mode: "api_key" } } },
       },
-      agentDir: tempDirs.make("openclaw-auth-profile-default-"),
+      agentDir: tempDirs.make("afora-auth-profile-default-"),
       entry: sessionEntry,
       currentProvider: "openai",
       selection: { provider, model, isDefault: true },

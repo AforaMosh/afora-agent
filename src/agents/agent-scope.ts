@@ -6,7 +6,7 @@ import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
   resolvePrimaryStringValue,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { resolveAgentModelFallbackValues } from "../config/model-input.js";
 import { resolveSessionAuthProfileOverrideSource } from "../config/sessions/auth-profile-override-provenance.js";
 import { hasSessionAutoModelFallbackProvenance } from "../config/sessions/model-override-provenance.js";
@@ -15,7 +15,7 @@ import type { SessionEntry } from "../config/sessions/types.js";
 import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
 import type { AgentModelConfig } from "../config/types.agents-shared.js";
 import type { AgentConfig } from "../config/types.agents.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { isPathInside } from "../infra/path-guards.js";
 import {
   isSubagentSessionKey,
@@ -308,7 +308,7 @@ export { resolveAgentIdFromSessionKey };
 
 export function resolveSessionAgentIds(params: {
   sessionKey?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string | undefined;
   fallbackAgentId?: string;
 }): {
@@ -365,7 +365,7 @@ export function resolveSessionAgentIds(params: {
 
 export function resolveSessionAgentId(params: {
   sessionKey?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   fallbackAgentId?: string;
 }): string {
@@ -373,7 +373,7 @@ export function resolveSessionAgentId(params: {
 }
 
 export function resolveAgentExecutionContract(
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
   agentId?: string | null,
 ): NonNullable<NonNullable<AgentDefaultsConfig["embeddedAgent"]>["executionContract"]> | undefined {
   const defaultContract = cfg?.agents?.defaults?.embeddedAgent?.executionContract;
@@ -386,14 +386,14 @@ export function resolveAgentExecutionContract(
 }
 
 export function resolveAgentSkillsFilter(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
 ): string[] | undefined {
   return resolveEffectiveAgentSkillFilter(cfg, agentId);
 }
 
 export function resolveAgentExplicitModelPrimary(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
 ): string | undefined {
   const raw = resolveAgentConfig(cfg, agentId)?.model;
@@ -401,7 +401,7 @@ export function resolveAgentExplicitModelPrimary(
 }
 
 export function resolveAgentEffectiveModelPrimary(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
 ): string | undefined {
   return (
@@ -423,7 +423,7 @@ function updateAgentModelPrimary(
 export type AgentModelPrimaryWriteTarget = "agent" | "defaults";
 
 export function setAgentEffectiveModelPrimary(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
   primary: string,
   options: { forceAgent?: boolean } = {},
@@ -448,7 +448,7 @@ export function setAgentEffectiveModelPrimary(
 }
 
 export function resolveAgentModelFallbacksOverride(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
 ): string[] | undefined {
   return resolveSelectedModelFallbacksOverride(resolveAgentConfig(cfg, agentId)?.model);
@@ -490,7 +490,7 @@ export type SubagentModelConfigSelectionResult = {
 };
 
 export function resolveSubagentModelConfigSelectionResult(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
   agentConfigOverride?: Pick<AgentConfig, "model" | "subagents">;
 }): SubagentModelConfigSelectionResult | undefined {
@@ -517,7 +517,7 @@ export function resolveSubagentModelConfigSelectionResult(params: {
 }
 
 export function resolveSubagentModelFallbacksOverride(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
 ): string[] | undefined {
   const agentConfig = resolveAgentConfig(cfg, agentId);
@@ -536,7 +536,7 @@ export function resolveSubagentModelFallbacksOverride(
 }
 
 function resolveSubagentSpawnModelFallbacksOverride(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
 ): string[] | undefined {
   const agentConfig = resolveAgentConfig(cfg, agentId);
@@ -548,7 +548,7 @@ function resolveSubagentSpawnModelFallbacksOverride(
 }
 
 export function resolveRunModelFallbacksOverride(params: {
-  cfg: OpenClawConfig | undefined;
+  cfg: AforaConfig | undefined;
   agentId?: string | null;
   sessionKey?: string | null;
 }): string[] | undefined {
@@ -568,7 +568,7 @@ export function resolveRunModelFallbacksOverride(params: {
 }
 
 export function hasConfiguredModelFallbacks(params: {
-  cfg: OpenClawConfig | undefined;
+  cfg: AforaConfig | undefined;
   agentId?: string | null;
   sessionKey?: string | null;
 }): boolean {
@@ -578,7 +578,7 @@ export function hasConfiguredModelFallbacks(params: {
 }
 
 export function resolveEffectiveModelFallbacks(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   sessionKey?: string | null;
   hasSessionModelOverride: boolean;
@@ -622,7 +622,7 @@ function normalizePathForComparison(input: string): string {
 }
 
 export function resolveAgentIdByWorkspacePath(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   workspacePath: string,
 ): string | undefined {
   const normalizedWorkspacePath = normalizePathForComparison(workspacePath);

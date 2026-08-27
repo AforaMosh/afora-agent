@@ -21,7 +21,7 @@ describe("normalizeExternalChannelSetupConfig", () => {
           appId: "app-id",
           clientSecret: "secret",
           dmPolicy: "open",
-          allowFrom: ["openclaw:approval-disabled"],
+          allowFrom: ["afora:approval-disabled"],
         },
       },
     });

@@ -1,10 +1,10 @@
 // Covers loader precedence between a plugin's flat project dir and newer
-// `__openclaw-generation__` dirs when reconciling persisted install records.
+// `__afora-generation__` dirs when reconciling persisted install records.
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import {
   resolvePluginNpmGenerationProjectDir,
   resolvePluginNpmProjectDir,
@@ -21,7 +21,7 @@ import {
 } from "./managed-npm-retention.js";
 import { writeManagedNpmPlugin } from "./test-helpers/managed-npm-plugin.js";
 
-const PACKAGE_NAME = "@openclaw/discord";
+const PACKAGE_NAME = "@afora/discord";
 const PLUGIN_ID = "discord";
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
@@ -36,7 +36,7 @@ function expectRecordFields(record: unknown, expected: Record<string, unknown>) 
   return actual;
 }
 
-/** Writes a managed plugin version into an `__openclaw-generation__` dir. */
+/** Writes a managed plugin version into an `__afora-generation__` dir. */
 function writeManagedGeneration(params: {
   stateDir: string;
   version: string;
@@ -91,13 +91,13 @@ function setInstallTimestamp(packageDir: string, timestampMs: number): void {
 
 afterEach(() => {
   vi.restoreAllMocks();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   clearLoadInstalledPluginIndexInstallRecordsCache();
 });
 
 describe("managed npm generation-dir loader precedence", () => {
   it("loads the authoritative generation after an upgrade leaves the old flat install", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-generation-precedence-");
+    const stateDir = tempDirs.make("afora-plugin-generation-precedence-");
     const staleVersion = "2026.6.11";
     const activeVersion = "2026.7.1";
 
@@ -147,7 +147,7 @@ describe("managed npm generation-dir loader precedence", () => {
   });
 
   it("preserves an intentional downgrade when a newer generation lingers", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-generation-precedence-");
+    const stateDir = tempDirs.make("afora-plugin-generation-precedence-");
     const newerPackageDir = writeManagedGeneration({
       stateDir,
       version: "3.0.0",
@@ -180,7 +180,7 @@ describe("managed npm generation-dir loader precedence", () => {
 
   it("matches the authoritative generation case-insensitively on Windows", async () => {
     vi.spyOn(process, "platform", "get").mockReturnValue("win32");
-    const stateDir = tempDirs.make("openclaw-plugin-generation-precedence-");
+    const stateDir = tempDirs.make("afora-plugin-generation-precedence-");
     const newerPackageDir = writeManagedGeneration({
       stateDir,
       version: "3.0.0",
@@ -217,7 +217,7 @@ describe("managed npm generation-dir loader precedence", () => {
   });
 
   it("uses install recency with a structured warning when no authority exists", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-generation-precedence-");
+    const stateDir = tempDirs.make("afora-plugin-generation-precedence-");
     const recentPackageDir = writeManagedGeneration({
       stateDir,
       version: "1.0.0",
@@ -236,14 +236,14 @@ describe("managed npm generation-dir loader precedence", () => {
     expect(emitWarning).toHaveBeenCalledWith(
       expect.stringContaining("without an authoritative active path"),
       expect.objectContaining({
-        code: "OPENCLAW_PLUGIN_INSTALL_RECOVERY_FALLBACK",
-        type: "OpenClawPluginRecoveryWarning",
+        code: "AFORA_PLUGIN_INSTALL_RECOVERY_FALLBACK",
+        type: "AforaPluginRecoveryWarning",
       }),
     );
   });
 
   it("warns when install recency replaces a dangling managed authority", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-generation-precedence-");
+    const stateDir = tempDirs.make("afora-plugin-generation-precedence-");
     const npmDir = path.join(stateDir, "npm");
     const recentPackageDir = writeManagedGeneration({
       stateDir,
@@ -283,12 +283,12 @@ describe("managed npm generation-dir loader precedence", () => {
     });
     expect(emitWarning).toHaveBeenCalledWith(
       expect.stringContaining("without an authoritative active path"),
-      expect.objectContaining({ code: "OPENCLAW_PLUGIN_INSTALL_RECOVERY_FALLBACK" }),
+      expect.objectContaining({ code: "AFORA_PLUGIN_INSTALL_RECOVERY_FALLBACK" }),
     );
   });
 
   it("does not treat unrelated legacy-root metadata changes as plugin recency", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-generation-precedence-");
+    const stateDir = tempDirs.make("afora-plugin-generation-precedence-");
     const recentPackageDir = writeManagedGeneration({
       stateDir,
       version: "1.0.0",
@@ -299,7 +299,7 @@ describe("managed npm generation-dir loader precedence", () => {
     setInstallTimestamp(recentPackageDir, Date.UTC(2026, 0, 2));
     writeManagedNpmPlugin({
       stateDir,
-      packageName: "@openclaw/unrelated",
+      packageName: "@afora/unrelated",
       pluginId: "unrelated",
       version: "1.0.0",
       layout: "legacy",
@@ -314,7 +314,7 @@ describe("managed npm generation-dir loader precedence", () => {
   });
 
   it("excludes doctor-retired generations when recovering without authority", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-generation-precedence-");
+    const stateDir = tempDirs.make("afora-plugin-generation-precedence-");
     const retiredPackageDir = writeManagedGeneration({
       stateDir,
       version: "3.0.0",
@@ -335,7 +335,7 @@ describe("managed npm generation-dir loader precedence", () => {
   });
 
   it("excludes a doctor-retired legacy-root package when recovering without authority", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-generation-precedence-");
+    const stateDir = tempDirs.make("afora-plugin-generation-precedence-");
     const retiredPackageDir = writeManagedLegacy(stateDir, "3.0.0");
     const recoveredPackageDir = writeManagedGeneration({
       stateDir,
@@ -356,11 +356,11 @@ describe("managed npm generation-dir loader precedence", () => {
   });
 
   it("does not repoint an intentional custom npm install outside the managed root", async () => {
-    const stateDir = tempDirs.make("openclaw-plugin-generation-precedence-");
+    const stateDir = tempDirs.make("afora-plugin-generation-precedence-");
     // A managed generation with a higher version exists on disk...
     writeManagedGeneration({ stateDir, version: "2.0.0", generationKey: "discord-managed" });
     // ...but the persisted record points at a custom install outside the npm root.
-    const customInstallPath = path.join(stateDir, "custom", "node_modules", "@openclaw", "discord");
+    const customInstallPath = path.join(stateDir, "custom", "node_modules", "@afora", "discord");
 
     await writePersistedInstalledPluginIndexInstallRecords(
       {

@@ -12,11 +12,11 @@ describe("appendRawStream", () => {
   };
 
   beforeAll(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-raw-stream-test-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-raw-stream-test-"));
   });
 
   beforeEach(() => {
-    vi.stubEnv("OPENCLAW_RAW_STREAM", "true");
+    vi.stubEnv("AFORA_RAW_STREAM", "true");
     process.on("unhandledRejection", onUnhandledRejection);
   });
 
@@ -40,7 +40,7 @@ describe("appendRawStream", () => {
   it("contains a real rejected append without leaking an unhandled rejection", async () => {
     const directoryTarget = path.join(tmpDir, "directory-target");
     fs.mkdirSync(directoryTarget);
-    vi.stubEnv("OPENCLAW_RAW_STREAM_PATH", directoryTarget);
+    vi.stubEnv("AFORA_RAW_STREAM_PATH", directoryTarget);
 
     expect(() => appendRawStream({ event: "test", ts: 1 })).not.toThrow();
     await drainAsyncWrites();
@@ -50,7 +50,7 @@ describe("appendRawStream", () => {
 
   it("appends exact JSONL through the real dependency", async () => {
     const rawStreamPath = path.join(tmpDir, "raw.jsonl");
-    vi.stubEnv("OPENCLAW_RAW_STREAM_PATH", rawStreamPath);
+    vi.stubEnv("AFORA_RAW_STREAM_PATH", rawStreamPath);
 
     appendRawStream({ event: "test", ts: 1 });
     await vi.waitFor(() => {
@@ -63,8 +63,8 @@ describe("appendRawStream", () => {
 
   it("does nothing when raw streaming is disabled", async () => {
     const rawStreamPath = path.join(tmpDir, "disabled.jsonl");
-    vi.stubEnv("OPENCLAW_RAW_STREAM", "");
-    vi.stubEnv("OPENCLAW_RAW_STREAM_PATH", rawStreamPath);
+    vi.stubEnv("AFORA_RAW_STREAM", "");
+    vi.stubEnv("AFORA_RAW_STREAM_PATH", rawStreamPath);
 
     appendRawStream({ event: "test", ts: 1 });
     await drainAsyncWrites();
@@ -77,7 +77,7 @@ describe("appendRawStream", () => {
     const rawStreamPath = path.join(tmpDir, "cyclic.jsonl");
     const payload: Record<string, unknown> = {};
     payload.self = payload;
-    vi.stubEnv("OPENCLAW_RAW_STREAM_PATH", rawStreamPath);
+    vi.stubEnv("AFORA_RAW_STREAM_PATH", rawStreamPath);
 
     expect(() => appendRawStream(payload)).not.toThrow();
     expect(fs.existsSync(rawStreamPath)).toBe(false);

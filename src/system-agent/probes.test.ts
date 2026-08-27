@@ -1,9 +1,9 @@
-// OpenClaw probe tests cover timeout handling and probe result formatting.
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+// Afora probe tests cover timeout handling and probe result formatting.
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { probeGatewayUrl, probeLocalCommand } from "./probes.js";
 
-describe("openclaw probes", () => {
+describe("afora probes", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();

@@ -1,12 +1,12 @@
-# OpenClaw Baseten Provider
+# Afora Baseten Provider
 
-Official OpenClaw provider plugin for Baseten Model APIs, including Thinking Machines Lab's Inkling.
+Official Afora provider plugin for Baseten Model APIs, including Thinking Machines Lab's Inkling.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/baseten-provider
-openclaw gateway restart
+afora plugins install @afora/baseten-provider
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/providers/baseten> for setup and configuration.
+See <https://docs.afora.ai/providers/baseten> for setup and configuration.

@@ -1,4 +1,4 @@
-import type { MeetingBrowserCandidateTab } from "openclaw/plugin-sdk/meeting-runtime";
+import type { MeetingBrowserCandidateTab } from "afora-agent/plugin-sdk/meeting-runtime";
 
 type TeamsMeetingIdentity = { kind: "work"; key: string } | { kind: "consumer"; key: string };
 

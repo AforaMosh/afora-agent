@@ -1,5 +1,5 @@
 // Line tests cover download plugin behavior.
-import { MediaFetchError } from "openclaw/plugin-sdk/media-runtime";
+import { MediaFetchError } from "afora-agent/plugin-sdk/media-runtime";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const fetchMock = vi.hoisted(() => vi.fn());
@@ -33,7 +33,7 @@ function cancellableResponse(
   return { response: new Response(body, { status }), cancel };
 }
 
-vi.mock("openclaw/plugin-sdk/runtime-env", () => ({
+vi.mock("afora-agent/plugin-sdk/runtime-env", () => ({
   createSubsystemLogger: () => {
     const logger = {
       debug: () => {},
@@ -47,7 +47,7 @@ vi.mock("openclaw/plugin-sdk/runtime-env", () => ({
   logVerbose: () => {},
 }));
 
-vi.mock("openclaw/plugin-sdk/media-store", () => ({
+vi.mock("afora-agent/plugin-sdk/media-store", () => ({
   saveMediaStream: saveMediaStreamMock,
 }));
 
@@ -87,8 +87,8 @@ describe("downloadLineMedia", () => {
 
   afterAll(() => {
     vi.doUnmock("node:timers/promises");
-    vi.doUnmock("openclaw/plugin-sdk/runtime-env");
-    vi.doUnmock("openclaw/plugin-sdk/media-store");
+    vi.doUnmock("afora-agent/plugin-sdk/runtime-env");
+    vi.doUnmock("afora-agent/plugin-sdk/media-store");
     vi.unstubAllGlobals();
     vi.resetModules();
   });
@@ -111,7 +111,7 @@ describe("downloadLineMedia", () => {
         }
         const buffer = Buffer.concat(chunksLocal);
         return {
-          path: `/home/user/.openclaw/media/${subdir ?? "unknown"}/saved-media`,
+          path: `/home/user/.afora/media/${subdir ?? "unknown"}/saved-media`,
           contentType: detectMockContentType(buffer, contentType),
           size: buffer.length,
         };
@@ -139,7 +139,7 @@ describe("downloadLineMedia", () => {
     expect(call[2]).toBe("inbound");
     expect(call[3]).toBe(10 * 1024 * 1024);
     expect(result).toEqual({
-      path: "/home/user/.openclaw/media/inbound/saved-media",
+      path: "/home/user/.afora/media/inbound/saved-media",
       contentType: "image/jpeg",
       size: jpeg.length,
     });

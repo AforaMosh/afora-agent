@@ -1,4 +1,4 @@
-import type { MarkdownIR } from "openclaw/plugin-sdk/text-chunking";
+import type { MarkdownIR } from "afora-agent/plugin-sdk/text-chunking";
 import type { InputRichBlock, InputRichBlockListItem } from "./rich-block-model.js";
 
 type MarkdownRichListItemSource = {

@@ -9,7 +9,7 @@ const tempDirs: string[] = [];
 const scriptPath = "scripts/package-mac-dist.sh";
 
 function makePlist(): string {
-  const dir = mkdtempSync(path.join(tmpdir(), "openclaw-dist-plist-"));
+  const dir = mkdtempSync(path.join(tmpdir(), "afora-dist-plist-"));
   tempDirs.push(dir);
   const plist = path.join(dir, "Info.plist");
   writeFileSync(
@@ -59,7 +59,7 @@ describe("package-mac-dist plist validation", () => {
     const script = readFileSync(scriptPath, "utf8");
     const readBlock = script.slice(
       script.indexOf("VERSION="),
-      script.indexOf('ZIP="$ROOT_DIR/dist/OpenClaw-$VERSION.zip"'),
+      script.indexOf('ZIP="$ROOT_DIR/dist/Afora-$VERSION.zip"'),
     );
 
     expect(script).toContain('source "$ROOT_DIR/scripts/lib/plistbuddy.sh"');
@@ -93,7 +93,7 @@ describe("package-mac-dist plist validation", () => {
 
   it("marks the distributed Control UI as an official release artifact", () => {
     const script = readFileSync(scriptPath, "utf8");
-    const releaseMarkerIndex = script.indexOf("export OPENCLAW_CONTROL_UI_RELEASE_BUILD=1");
+    const releaseMarkerIndex = script.indexOf("export AFORA_CONTROL_UI_RELEASE_BUILD=1");
     const packageAppIndex = script.indexOf('"$ROOT_DIR/scripts/package-mac-app.sh"');
 
     expect(releaseMarkerIndex).toBeGreaterThanOrEqual(0);
@@ -141,7 +141,7 @@ describe("package-mac-dist plist validation", () => {
   });
 
   it("fails on old Swift before reading package metadata", () => {
-    const toolsDir = mkdtempSync(path.join(tmpdir(), "openclaw-dist-swift-tools-"));
+    const toolsDir = mkdtempSync(path.join(tmpdir(), "afora-dist-swift-tools-"));
     tempDirs.push(toolsDir);
 
     writeFileSync(
@@ -184,16 +184,16 @@ describe("package-mac-dist plist validation", () => {
     `);
 
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain("OpenClaw macOS app packaging requires Swift tools 6.2+");
+    expect(result.stderr).toContain("Afora macOS app packaging requires Swift tools 6.2+");
     expect(result.stderr).toContain("Current Swift is 6.0");
     expect(result.stderr).not.toContain("node should not run before Swift preflight");
   });
 
   it("prefers repo Corepack pnpm over a global pnpm shim", () => {
     const helperBlock = getPackageManagerHelperBlock();
-    const tempRoot = mkdtempSync(path.join(tmpdir(), "openclaw-dist-pnpm-root-"));
-    const outerRoot = mkdtempSync(path.join(tmpdir(), "openclaw-dist-pnpm-outer-"));
-    const toolsDir = mkdtempSync(path.join(tmpdir(), "openclaw-dist-pnpm-tools-"));
+    const tempRoot = mkdtempSync(path.join(tmpdir(), "afora-dist-pnpm-root-"));
+    const outerRoot = mkdtempSync(path.join(tmpdir(), "afora-dist-pnpm-outer-"));
+    const toolsDir = mkdtempSync(path.join(tmpdir(), "afora-dist-pnpm-tools-"));
     const logPath = path.join(tempRoot, "pnpm.log");
     tempDirs.push(tempRoot, outerRoot, toolsDir);
 
@@ -210,7 +210,7 @@ describe("package-mac-dist plist validation", () => {
       [
         "#!/usr/bin/env bash",
         "set -euo pipefail",
-        'printf "global|%s|%s\\n" "$PWD" "$*" >> "$OPENCLAW_TEST_LOG"',
+        'printf "global|%s|%s\\n" "$PWD" "$*" >> "$AFORA_TEST_LOG"',
         'if [[ "${1:-}" == "--version" ]]; then echo "11.8.0"; fi',
         "",
       ].join("\n"),
@@ -221,7 +221,7 @@ describe("package-mac-dist plist validation", () => {
       [
         "#!/usr/bin/env bash",
         "set -euo pipefail",
-        'printf "corepack|%s|%s\\n" "$PWD" "$*" >> "$OPENCLAW_TEST_LOG"',
+        'printf "corepack|%s|%s\\n" "$PWD" "$*" >> "$AFORA_TEST_LOG"',
         'if [[ "${1:-}" == "pnpm" && "${2:-}" == "--version" ]]; then',
         '  if grep -q "pnpm@11.2.2" package.json 2>/dev/null; then echo "11.2.2"; else echo "11.8.0"; fi',
         "fi",
@@ -235,8 +235,8 @@ describe("package-mac-dist plist validation", () => {
     const result = runHelper(`
       set -euo pipefail
       ROOT_DIR=${JSON.stringify(tempRoot)}
-      OPENCLAW_TEST_LOG=${JSON.stringify(logPath)}
-      export OPENCLAW_TEST_LOG
+      AFORA_TEST_LOG=${JSON.stringify(logPath)}
+      export AFORA_TEST_LOG
       PATH=${JSON.stringify(`${toolsDir}:/usr/bin:/bin`)}
       cd ${JSON.stringify(outerRoot)}
       ${helperBlock}
@@ -257,7 +257,7 @@ describe("package-mac-dist plist validation", () => {
       script.indexOf("DIST_PNPM_CMD=()"),
       script.indexOf("correction_build_from_exact_tag()"),
     );
-    const dir = mkdtempSync(path.join(tmpdir(), "openclaw-dist-sparkle-"));
+    const dir = mkdtempSync(path.join(tmpdir(), "afora-dist-sparkle-"));
     tempDirs.push(dir);
     const tools = path.join(dir, "tools");
     const marker = path.join(dir, "installed");
@@ -270,11 +270,11 @@ describe("package-mac-dist plist validation", () => {
       [
         "#!/usr/bin/env bash",
         "set -euo pipefail",
-        'if [[ "$PWD" != "$OPENCLAW_ROOT" ]]; then',
+        'if [[ "$PWD" != "$AFORA_ROOT" ]]; then',
         '  echo "node ran outside repo root: $PWD" >&2',
         "  exit 1",
         "fi",
-        'if [[ ! -f "$OPENCLAW_MARKER" ]]; then',
+        'if [[ ! -f "$AFORA_MARKER" ]]; then',
         '  echo "Cannot find package tsx" >&2',
         "  exit 1",
         "fi",
@@ -291,7 +291,7 @@ describe("package-mac-dist plist validation", () => {
         "#!/usr/bin/env bash",
         "set -euo pipefail",
         "echo 'Already up to date'",
-        'touch "$OPENCLAW_MARKER"',
+        'touch "$AFORA_MARKER"',
         "",
       ].join("\n"),
       "utf8",
@@ -301,10 +301,10 @@ describe("package-mac-dist plist validation", () => {
     const result = runHelper(`
       set -euo pipefail
       ROOT_DIR=${JSON.stringify(process.cwd())}
-      OPENCLAW_ROOT=${JSON.stringify(process.cwd())}
-      OPENCLAW_MARKER=${JSON.stringify(marker)}
+      AFORA_ROOT=${JSON.stringify(process.cwd())}
+      AFORA_MARKER=${JSON.stringify(marker)}
       PATH=${JSON.stringify(tools)}:/usr/bin:/bin
-      export OPENCLAW_MARKER OPENCLAW_ROOT PATH
+      export AFORA_MARKER AFORA_ROOT PATH
       ${helpers}
       require_canonical_sparkle_build 2026.6.2
     `);
@@ -322,7 +322,7 @@ describe("package-mac-dist plist validation", () => {
       script.indexOf("DIST_PNPM_CMD=()"),
       script.indexOf("correction_build_from_exact_tag()"),
     );
-    const dir = mkdtempSync(path.join(tmpdir(), "openclaw-dist-sparkle-"));
+    const dir = mkdtempSync(path.join(tmpdir(), "afora-dist-sparkle-"));
     tempDirs.push(dir);
     const tools = path.join(dir, "tools");
     const marker = path.join(dir, "installed");
@@ -335,11 +335,11 @@ describe("package-mac-dist plist validation", () => {
       [
         "#!/usr/bin/env bash",
         "set -euo pipefail",
-        'if [[ "$PWD" != "$OPENCLAW_ROOT" ]]; then',
+        'if [[ "$PWD" != "$AFORA_ROOT" ]]; then',
         '  echo "node ran outside repo root: $PWD" >&2',
         "  exit 1",
         "fi",
-        'if [[ ! -f "$OPENCLAW_MARKER" ]]; then',
+        'if [[ ! -f "$AFORA_MARKER" ]]; then',
         '  echo "Cannot find package tsx" >&2',
         "  exit 1",
         "fi",
@@ -355,7 +355,7 @@ describe("package-mac-dist plist validation", () => {
       [
         "#!/usr/bin/env bash",
         "set -euo pipefail",
-        'touch "$OPENCLAW_MARKER"',
+        'touch "$AFORA_MARKER"',
         'echo "pnpm failed" >&2',
         "exit 42",
         "",
@@ -367,10 +367,10 @@ describe("package-mac-dist plist validation", () => {
     const result = runHelper(`
       set -euo pipefail
       ROOT_DIR=${JSON.stringify(process.cwd())}
-      OPENCLAW_ROOT=${JSON.stringify(process.cwd())}
-      OPENCLAW_MARKER=${JSON.stringify(marker)}
+      AFORA_ROOT=${JSON.stringify(process.cwd())}
+      AFORA_MARKER=${JSON.stringify(marker)}
       PATH=${JSON.stringify(tools)}:/usr/bin:/bin
-      export OPENCLAW_MARKER OPENCLAW_ROOT PATH
+      export AFORA_MARKER AFORA_ROOT PATH
       ${helpers}
       require_canonical_sparkle_build 2026.6.2
     `);

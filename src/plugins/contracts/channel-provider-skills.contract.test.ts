@@ -29,7 +29,7 @@ const RETIRED_SKILL_PATTERNS = [
   { pattern: /## 备用方案（直接使用 `cron` 工具）/u, replacement: "qqbot_remind only" },
   {
     pattern: /github\.com\/steipete\/wacli\/cmd\/wacli@latest/u,
-    replacement: "github.com/openclaw/wacli/cmd/wacli@latest",
+    replacement: "github.com/afora/wacli/cmd/wacli@latest",
   },
 ] as const;
 
@@ -39,7 +39,7 @@ function listRepositoryOwnedChannelSkillFiles(): string[] {
   const skillFiles = new Set<string>();
 
   for (const manifestPath of trackedFiles.filter((file) =>
-    /^extensions\/[^/]+\/openclaw\.plugin\.json$/u.test(file),
+    /^extensions\/[^/]+\/afora\.plugin\.json$/u.test(file),
   )) {
     const manifest = JSON.parse(
       readFileSync(resolve(process.cwd(), manifestPath), "utf8"),

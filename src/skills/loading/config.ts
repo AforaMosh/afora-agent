@@ -2,9 +2,9 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+} from "@afora/normalization-core/string-coerce";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { hasConfiguredSecretInput } from "../../config/types.secrets.js";
 import type { SkillConfig } from "../../config/types.skills.js";
 import {
@@ -28,7 +28,7 @@ const DEFAULT_CONFIG_VALUES: Record<string, boolean> = {
 /** Platform helpers re-exported for skill loading callers and tests. */
 export { hasBinary };
 
-export function resolveSkillsInstallPreferences(config?: OpenClawConfig): SkillsInstallPreferences {
+export function resolveSkillsInstallPreferences(config?: AforaConfig): SkillsInstallPreferences {
   const raw = config?.skills?.install;
   const preferBrew = raw?.preferBrew ?? true;
   const manager = normalizeLowercaseStringOrEmpty(normalizeOptionalString(raw?.nodeManager));
@@ -40,14 +40,14 @@ export function resolveSkillsInstallPreferences(config?: OpenClawConfig): Skills
 }
 
 export function isSkillConfigPathTruthy(
-  config: OpenClawConfig | undefined,
+  config: AforaConfig | undefined,
   pathStr: string,
 ): boolean {
   return isConfigPathTruthyWithDefaults(config, pathStr, DEFAULT_CONFIG_VALUES);
 }
 
 export function resolveSkillConfig(
-  config: OpenClawConfig | undefined,
+  config: AforaConfig | undefined,
   skillKey: string,
 ): SkillConfig | undefined {
   const skills = config?.skills?.entries;
@@ -100,13 +100,13 @@ function normalizeAllowlist(input: unknown): ReadonlySet<string> | undefined {
   return normalized.length > 0 ? new Set(normalized) : undefined;
 }
 
-const BUNDLED_SOURCES = new Set(["openclaw-bundled"]);
+const BUNDLED_SOURCES = new Set(["afora-bundled"]);
 
 function isBundledSkill(entry: SkillEntry): boolean {
   return BUNDLED_SOURCES.has(resolveSkillSource(entry.skill));
 }
 
-export function resolveBundledAllowlist(config?: OpenClawConfig): ReadonlySet<string> | undefined {
+export function resolveBundledAllowlist(config?: AforaConfig): ReadonlySet<string> | undefined {
   return normalizeAllowlist(config?.skills?.allowBundled);
 }
 
@@ -123,7 +123,7 @@ export function isBundledSkillAllowed(entry: SkillEntry, allowlist?: ReadonlySet
 
 export function shouldIncludeSkill(params: {
   entry: SkillEntry;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   bundledAllowlist: ReadonlySet<string> | undefined;
   eligibility?: SkillEligibilityContext;
 }): boolean {

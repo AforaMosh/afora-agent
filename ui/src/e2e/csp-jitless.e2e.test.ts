@@ -16,7 +16,7 @@ import {
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightBrowser(chromiumExecutablePath);
 const firefoxExecutablePath = firefox.executablePath();
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
 
 const browsers: Array<{ name: string; launch: () => Promise<Browser> }> = [
@@ -55,7 +55,7 @@ describeControlUiE2e("Control UI strict CSP E2E", () => {
       context = await browser.newContext({ serviceWorkers: "block" });
       await context.addInitScript(() => {
         const violations: Array<{ blockedUri: string; effectiveDirective: string }> = [];
-        Object.assign(globalThis, { __openclawCspViolations: violations });
+        Object.assign(globalThis, { __aforaCspViolations: violations });
         document.addEventListener("securitypolicyviolation", (event) => {
           violations.push({
             blockedUri: event.blockedURI,
@@ -90,7 +90,7 @@ describeControlUiE2e("Control UI strict CSP E2E", () => {
 
       const cspState = await page.evaluate(() => {
         const runtime = globalThis as typeof globalThis & {
-          __openclawCspViolations?: Array<{
+          __aforaCspViolations?: Array<{
             blockedUri: string;
             effectiveDirective: string;
           }>;
@@ -98,7 +98,7 @@ describeControlUiE2e("Control UI strict CSP E2E", () => {
         };
         return {
           jitless: runtime["__zod_globalConfig"]?.jitless === true,
-          evalViolations: (runtime["__openclawCspViolations"] ?? []).filter(
+          evalViolations: (runtime["__aforaCspViolations"] ?? []).filter(
             (violation) =>
               violation.blockedUri === "eval" &&
               violation.effectiveDirective.startsWith("script-src"),

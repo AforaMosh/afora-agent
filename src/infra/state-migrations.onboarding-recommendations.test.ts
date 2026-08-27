@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { createOnboardingRecommendationsStore } from "../state/onboarding-recommendations.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  runOpenClawStateWriteTransaction,
-} from "../state/openclaw-state-db.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+  closeAforaStateDatabaseForTest,
+  runAforaStateWriteTransaction,
+} from "../state/afora-state-db.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
@@ -15,7 +15,7 @@ import {
 import { migrateLegacyOnboardingRecommendationsScope } from "./state-migrations.onboarding-recommendations.js";
 
 type OnboardingRecommendationsMigrationDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "onboarding_recommendations"
 >;
 
@@ -24,7 +24,7 @@ function insertRecommendationRow(params: {
   configKey: string;
   inventoryHash: string;
 }): void {
-  runOpenClawStateWriteTransaction(({ db: sqlite }) => {
+  runAforaStateWriteTransaction(({ db: sqlite }) => {
     const db = getNodeSqliteKysely<OnboardingRecommendationsMigrationDatabase>(sqlite);
     executeSqliteQuerySync(
       sqlite,
@@ -44,7 +44,7 @@ function readRecommendationKey(
   database: { env: NodeJS.ProcessEnv },
   configKey: string,
 ): { config_key: string } | undefined {
-  return runOpenClawStateWriteTransaction(({ db: sqlite }) => {
+  return runAforaStateWriteTransaction(({ db: sqlite }) => {
     const db = getNodeSqliteKysely<OnboardingRecommendationsMigrationDatabase>(sqlite);
     return executeSqliteQueryTakeFirstSync(
       sqlite,
@@ -57,12 +57,12 @@ function readRecommendationKey(
 }
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 describe("onboarding recommendations scope migration", () => {
   it("moves the legacy singleton row to the default workspace", async () => {
-    await withOpenClawTestState(
+    await withAforaTestState(
       { label: "onboarding-recommendations-migration" },
       async (state) => {
         const database = { env: state.env };
@@ -78,7 +78,7 @@ describe("onboarding recommendations scope migration", () => {
               defaults: { workspace: state.workspaceDir },
               entries: { main: { default: true } },
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
           env: state.env,
         });
 
@@ -106,7 +106,7 @@ describe("onboarding recommendations scope migration", () => {
   });
 
   it("keeps an existing scoped row when legacy state is also present", async () => {
-    await withOpenClawTestState(
+    await withAforaTestState(
       { label: "onboarding-recommendations-migration-conflict" },
       async (state) => {
         const database = { env: state.env };
@@ -132,7 +132,7 @@ describe("onboarding recommendations scope migration", () => {
               defaults: { workspace: state.workspaceDir },
               entries: { main: { default: true } },
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
           env: state.env,
         });
 

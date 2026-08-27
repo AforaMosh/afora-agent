@@ -1,12 +1,12 @@
 // Resolves and checks packaged Control UI assets.
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import * as controlUiFsRuntime from "./control-ui-assets.fs.runtime.js";
-import { resolveOpenClawPackageRoot, resolveOpenClawPackageRootSync } from "./openclaw-root.js";
+import { resolveAforaPackageRoot, resolveAforaPackageRootSync } from "./afora-root.js";
 
 const CONTROL_UI_DIST_PATH_SEGMENTS = ["dist", "control-ui", "index.html"] as const;
 
@@ -48,12 +48,12 @@ function resolveControlUiRepoRoot(opts: {
   const roots = opts.root
     ? [path.resolve(opts.root)]
     : [
-        resolveOpenClawPackageRootSync({
+        resolveAforaPackageRootSync({
           argv1: opts.argv1 ?? process.argv[1],
           moduleUrl: opts.moduleUrl ?? import.meta.url,
           cwd,
         }),
-        resolveOpenClawPackageRootSync({ cwd }),
+        resolveAforaPackageRootSync({ cwd }),
       ];
   return (
     roots.find(
@@ -92,12 +92,12 @@ async function resolveControlUiDistIndexPath(
     }
   }
 
-  const packageRoot = await resolveOpenClawPackageRoot({ argv1: normalized, moduleUrl });
+  const packageRoot = await resolveAforaPackageRoot({ argv1: normalized, moduleUrl });
   if (packageRoot) {
     return path.join(packageRoot, "dist", "control-ui", "index.html");
   }
 
-  // Fallback: traverse up and find package.json with name "openclaw" + dist/control-ui/index.html
+  // Fallback: traverse up and find package.json with name "afora" + dist/control-ui/index.html
   // This handles global installs where path-based resolution might fail.
   const fallbackStartDirs = new Set(
     entrypointCandidates.map((candidate) => path.dirname(candidate)),
@@ -111,7 +111,7 @@ async function resolveControlUiDistIndexPath(
         try {
           const raw = controlUiFsRuntime.readFileSync(pkgJsonPath, "utf-8");
           const parsed = JSON.parse(raw) as { name?: unknown };
-          if (parsed.name === "openclaw") {
+          if (parsed.name === "afora") {
             return controlUiFsRuntime.existsSync(indexPath) ? indexPath : null;
           }
           // Stop at the first package boundary to avoid resolving through unrelated ancestors.
@@ -203,7 +203,7 @@ export function resolveControlUiRootSync(opts: ControlUiRootResolveOptions = {})
       return null;
     }
   })();
-  const packageRoot = resolveOpenClawPackageRootSync({
+  const packageRoot = resolveAforaPackageRootSync({
     argv1,
     moduleUrl: opts.moduleUrl,
     cwd,
@@ -221,12 +221,12 @@ export function resolveControlUiRootSync(opts: ControlUiRootResolveOptions = {})
     addCandidate(candidates, path.join(moduleDir, "../../dist/control-ui"));
   }
   if (argv1Dir) {
-    // openclaw.mjs or dist/<bundle>.js
+    // afora.mjs or dist/<bundle>.js
     addCandidate(candidates, path.join(argv1Dir, "dist", "control-ui"));
     addCandidate(candidates, path.join(argv1Dir, "control-ui"));
   }
   if (argv1RealpathDir && argv1RealpathDir !== argv1Dir) {
-    // Symlinked wrappers (e.g. ~/.bun/bin/openclaw -> .../dist/index.js)
+    // Symlinked wrappers (e.g. ~/.bun/bin/afora -> .../dist/index.js)
     addCandidate(candidates, path.join(argv1RealpathDir, "dist", "control-ui"));
     addCandidate(candidates, path.join(argv1RealpathDir, "control-ui"));
   }
@@ -250,7 +250,7 @@ export function isPackageProvenControlUiRootSync(
 ): boolean {
   const argv1 = opts.argv1 ?? process.argv[1];
   const cwd = opts.cwd ?? process.cwd();
-  const packageRoot = resolveOpenClawPackageRootSync({
+  const packageRoot = resolveAforaPackageRootSync({
     argv1,
     moduleUrl: opts.moduleUrl,
     cwd,
@@ -374,7 +374,7 @@ export async function ensureControlUiAssetsBuilt(
         ? `Missing Control UI assets at ${indexFromDist}`
         : "Missing Control UI assets";
     return controlUiAssetsFailure(
-      `${hint}. Reinstall OpenClaw to restore bundled Control UI assets.`,
+      `${hint}. Reinstall Afora to restore bundled Control UI assets.`,
     );
   }
 

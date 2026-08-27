@@ -1,6 +1,6 @@
 // Speaker-selection compatibility helpers for plugins that renamed voice fields
 // over time but still need one normalized config object.
-import { normalizeOptionalString as readString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString as readString } from "@afora/normalization-core/string-coerce";
 
 type SpeakerSelectionConfig = Record<string, unknown>;
 

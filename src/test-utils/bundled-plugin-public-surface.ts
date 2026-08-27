@@ -2,14 +2,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { loadBundledPluginPublicSurfaceModule } from "../plugin-sdk/facade-loader.js";
 import { resolveBundledPluginsDir } from "../plugins/bundled-dir.js";
 import { findBundledPluginMetadataById } from "../plugins/bundled-plugin-metadata.js";
 import { normalizeBundledPluginArtifactSubpath } from "../plugins/public-surface-runtime.js";
 import { resolveLoaderPackageRoot } from "../plugins/sdk-alias.js";
 
-const OPENCLAW_PACKAGE_ROOT =
+const AFORA_PACKAGE_ROOT =
   resolveLoaderPackageRoot({
     modulePath: fileURLToPath(import.meta.url),
     moduleUrl: import.meta.url,
@@ -25,7 +25,7 @@ function isSafeBundledPluginDirName(pluginId: string): boolean {
 
 function readPluginManifestId(pluginDir: string): string | undefined {
   try {
-    const manifestPath = path.join(pluginDir, "openclaw.plugin.json");
+    const manifestPath = path.join(pluginDir, "afora.plugin.json");
     const parsed = JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as { id?: unknown };
     return typeof parsed.id === "string" ? parsed.id : undefined;
   } catch {
@@ -41,9 +41,9 @@ function findBundledPluginMetadataFast(
   }
   const rawRoots = [
     resolveBundledPluginsDir(),
-    path.resolve(OPENCLAW_PACKAGE_ROOT, "extensions"),
-    path.resolve(OPENCLAW_PACKAGE_ROOT, "dist-runtime", "extensions"),
-    path.resolve(OPENCLAW_PACKAGE_ROOT, "dist", "extensions"),
+    path.resolve(AFORA_PACKAGE_ROOT, "extensions"),
+    path.resolve(AFORA_PACKAGE_ROOT, "dist-runtime", "extensions"),
+    path.resolve(AFORA_PACKAGE_ROOT, "dist", "extensions"),
   ].filter((entry): entry is string => Boolean(entry));
   const roots = uniqueStrings(rawRoots);
 
@@ -84,7 +84,7 @@ export function resolveBundledPluginPublicModulePath(params: {
 }): string {
   const metadata = findBundledPluginMetadata(params.pluginId);
   return path.resolve(
-    OPENCLAW_PACKAGE_ROOT,
+    AFORA_PACKAGE_ROOT,
     "extensions",
     metadata.dirName,
     normalizeBundledPluginArtifactSubpath(params.artifactBasename),

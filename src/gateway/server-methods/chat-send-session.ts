@@ -6,7 +6,7 @@ import {
   resolveAgentMainSessionKey,
   resolveSessionRoutingContract,
 } from "../../config/sessions/main-session.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { measureDiagnosticsTimelineSpanSync } from "../../infra/diagnostics-timeline.js";
 import { isIncognitoSessionKey } from "../../routing/session-key.js";
 import { resolveMissingAgentHarnessSessionError } from "../../sessions/agent-harness-session-key.js";
@@ -81,7 +81,7 @@ function loadChatSendSessionContext(params: {
   const expectedLeafEntryId =
     p.expectedLeafEntryId === null ? null : normalizeOptionalChatText(p.expectedLeafEntryId);
   const expectedRunId = normalizeOptionalChatText(p.expectedRunId);
-  const sessionRoutingChanged = (candidateConfig: OpenClawConfig) =>
+  const sessionRoutingChanged = (candidateConfig: AforaConfig) =>
     expectedSessionRoutingContract !== undefined &&
     expectedSessionRoutingContract.toLowerCase() !== resolveSessionRoutingContract(candidateConfig);
   return {

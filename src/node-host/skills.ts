@@ -94,7 +94,7 @@ export function scanNodeHostedSkills(
     const candidatePath = path.resolve(candidate);
     const loaded = loadSkillsFromDirSafe({
       dir: path.dirname(candidate),
-      source: "openclaw-node",
+      source: "afora-node",
       maxBytes: NODE_SKILL_MAX_CONTENT_BYTES,
       onDiagnostic: (diagnostic) => {
         if (path.resolve(diagnostic.path) === candidatePath) {

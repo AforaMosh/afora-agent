@@ -1,7 +1,7 @@
 // Durable ingress drain contract tests for lifecycle reliability invariants.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import {
   createChannelIngressDrain,
   DEFAULT_INGRESS_ADOPTION_STALL_MS,
@@ -29,7 +29,7 @@ describe("channel ingress drain", () => {
 
   afterEach(() => {
     vi.useRealTimers();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
   });
 
   it("crash-window: lost claim is recovered and dispatched exactly once", async () => {

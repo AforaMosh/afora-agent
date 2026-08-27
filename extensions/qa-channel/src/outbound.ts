@@ -4,7 +4,7 @@ import path from "node:path";
 import {
   loadOutboundMediaFromUrl,
   type OutboundMediaLoadOptions,
-} from "openclaw/plugin-sdk/outbound-media";
+} from "afora-agent/plugin-sdk/outbound-media";
 import { resolveQaChannelAccount } from "./accounts.js";
 import { buildQaTarget, resolveQaTargetThread, sendQaBusMessage } from "./bus-client.js";
 import type { QaBusAttachment } from "./protocol.js";

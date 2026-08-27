@@ -822,7 +822,7 @@ describe("validateTalkClientToolCallParams", () => {
       talkClient({
         relaySessionId: "relay-1",
         callId: "call-1",
-        name: "openclaw_agent_consult",
+        name: "afora_agent_consult",
         args: { question: "what now" },
       }),
     ]);

@@ -1,8 +1,8 @@
 import Foundation
-import OpenClawKit
+import AforaKit
 
 extension NodeAppModel {
-    static func normalizeWatchNotifyParams(_ params: OpenClawWatchNotifyParams) -> OpenClawWatchNotifyParams {
+    static func normalizeWatchNotifyParams(_ params: AforaWatchNotifyParams) -> AforaWatchNotifyParams {
         var normalized = params
         normalized.title = params.title.trimmingCharacters(in: .whitespacesAndNewlines)
         normalized.body = params.body.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -23,15 +23,15 @@ extension NodeAppModel {
     }
 
     static func normalizeWatchActions(
-        _ actions: [OpenClawWatchAction]?,
+        _ actions: [AforaWatchAction]?,
         kind: String?,
-        promptId: String?) -> [OpenClawWatchAction]
+        promptId: String?) -> [AforaWatchAction]
     {
-        let provided = (actions ?? []).compactMap { action -> OpenClawWatchAction? in
+        let provided = (actions ?? []).compactMap { action -> AforaWatchAction? in
             let id = action.id.trimmingCharacters(in: .whitespacesAndNewlines)
             let label = action.label.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !id.isEmpty, !label.isEmpty else { return nil }
-            return OpenClawWatchAction(
+            return AforaWatchAction(
                 id: id,
                 label: label,
                 style: self.trimmedOrNil(action.style))
@@ -48,24 +48,24 @@ extension NodeAppModel {
         let normalizedKind = kind?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
         if normalizedKind.contains("approval") || normalizedKind.contains("approve") {
             return [
-                OpenClawWatchAction(id: "approve", label: "Approve"),
-                OpenClawWatchAction(id: "decline", label: "Decline", style: "destructive"),
-                OpenClawWatchAction(id: "open_phone", label: "Open iPhone"),
-                OpenClawWatchAction(id: "escalate", label: "Escalate"),
+                AforaWatchAction(id: "approve", label: "Approve"),
+                AforaWatchAction(id: "decline", label: "Decline", style: "destructive"),
+                AforaWatchAction(id: "open_phone", label: "Open iPhone"),
+                AforaWatchAction(id: "escalate", label: "Escalate"),
             ]
         }
 
         return [
-            OpenClawWatchAction(id: "done", label: "Done"),
-            OpenClawWatchAction(id: "snooze_10m", label: "Snooze 10m"),
-            OpenClawWatchAction(id: "open_phone", label: "Open iPhone"),
-            OpenClawWatchAction(id: "escalate", label: "Escalate"),
+            AforaWatchAction(id: "done", label: "Done"),
+            AforaWatchAction(id: "snooze_10m", label: "Snooze 10m"),
+            AforaWatchAction(id: "open_phone", label: "Open iPhone"),
+            AforaWatchAction(id: "escalate", label: "Escalate"),
         ]
     }
 
     static func normalizedWatchRisk(
-        _ risk: OpenClawWatchRisk?,
-        priority: OpenClawNotificationPriority?) -> OpenClawWatchRisk?
+        _ risk: AforaWatchRisk?,
+        priority: AforaNotificationPriority?) -> AforaWatchRisk?
     {
         if let risk { return risk }
         switch priority {
@@ -81,8 +81,8 @@ extension NodeAppModel {
     }
 
     static func normalizedWatchPriority(
-        _ priority: OpenClawNotificationPriority?,
-        risk: OpenClawWatchRisk?) -> OpenClawNotificationPriority?
+        _ priority: AforaNotificationPriority?,
+        risk: AforaWatchRisk?) -> AforaNotificationPriority?
     {
         if let priority { return priority }
         switch risk {

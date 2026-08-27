@@ -52,31 +52,31 @@ describe("gateway network client", () => {
   it("rejects loose client timeout env values instead of parsing prefixes", () => {
     expect(() =>
       readGatewayNetworkClientConnectTimeoutMs({
-        OPENCLAW_GATEWAY_NETWORK_CLIENT_CONNECT_TIMEOUT_MS: "100ms",
+        AFORA_GATEWAY_NETWORK_CLIENT_CONNECT_TIMEOUT_MS: "100ms",
       }),
-    ).toThrow("invalid OPENCLAW_GATEWAY_NETWORK_CLIENT_CONNECT_TIMEOUT_MS: 100ms");
+    ).toThrow("invalid AFORA_GATEWAY_NETWORK_CLIENT_CONNECT_TIMEOUT_MS: 100ms");
     expect(() =>
       readGatewayNetworkClientConnectTimeoutMs({
-        OPENCLAW_GATEWAY_NETWORK_CONNECT_READY_TIMEOUT_MS: "1e3",
+        AFORA_GATEWAY_NETWORK_CONNECT_READY_TIMEOUT_MS: "1e3",
       }),
-    ).toThrow("invalid OPENCLAW_GATEWAY_NETWORK_CONNECT_READY_TIMEOUT_MS: 1e3");
+    ).toThrow("invalid AFORA_GATEWAY_NETWORK_CONNECT_READY_TIMEOUT_MS: 1e3");
     expect(() =>
       readGatewayNetworkClientConnectTimeoutMs({
-        OPENCLAW_GATEWAY_NETWORK_CLIENT_CONNECT_TIMEOUT_MS: "0",
+        AFORA_GATEWAY_NETWORK_CLIENT_CONNECT_TIMEOUT_MS: "0",
       }),
-    ).toThrow("invalid OPENCLAW_GATEWAY_NETWORK_CLIENT_CONNECT_TIMEOUT_MS: 0");
+    ).toThrow("invalid AFORA_GATEWAY_NETWORK_CLIENT_CONNECT_TIMEOUT_MS: 0");
   });
 
   it("prefers the explicit client timeout over the connect-ready fallback", () => {
     expect(
       readGatewayNetworkClientConnectTimeoutMs({
-        OPENCLAW_GATEWAY_NETWORK_CLIENT_CONNECT_TIMEOUT_MS: "5000",
-        OPENCLAW_GATEWAY_NETWORK_CONNECT_READY_TIMEOUT_MS: "1000",
+        AFORA_GATEWAY_NETWORK_CLIENT_CONNECT_TIMEOUT_MS: "5000",
+        AFORA_GATEWAY_NETWORK_CONNECT_READY_TIMEOUT_MS: "1000",
       }),
     ).toBe(5000);
     expect(
       readGatewayNetworkClientConnectTimeoutMs({
-        OPENCLAW_GATEWAY_NETWORK_CONNECT_READY_TIMEOUT_MS: "3000",
+        AFORA_GATEWAY_NETWORK_CONNECT_READY_TIMEOUT_MS: "3000",
       }),
     ).toBe(3000);
   });
@@ -218,7 +218,7 @@ describe("gateway network client", () => {
   });
 
   it("bounds a stalled post-restart admin request by the client deadline", async () => {
-    const workDir = tempDirs.make("openclaw-gateway-network-post-restart-");
+    const workDir = tempDirs.make("afora-gateway-network-post-restart-");
     const statePath = join(workDir, "suspension.json");
     writeFileSync(
       statePath,

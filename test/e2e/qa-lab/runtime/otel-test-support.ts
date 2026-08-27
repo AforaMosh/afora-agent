@@ -1,8 +1,8 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { Socket } from "node:net";
 import { gunzipSync } from "node:zlib";
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import type { DiagnosticTraceContext } from "openclaw/plugin-sdk/diagnostic-runtime";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import type { DiagnosticTraceContext } from "afora-agent/plugin-sdk/diagnostic-runtime";
 import { wrapStreamFnWithDiagnosticModelCallEvents } from "../../../../src/agents/embedded-agent-runner/run/attempt.model-diagnostic-events.js";
 
 export type OtlpSignal = "logs" | "metrics" | "traces";
@@ -110,15 +110,15 @@ const OTLP_SIGNAL_PATHS = new Map<string, OtlpSignal>([
 ]);
 const POSITIVE_INTEGER_PATTERN = /^[1-9]\d*$/u;
 const MAX_OTLP_COMPRESSED_BODY_BYTES = readPositiveIntegerEnv(
-  "OPENCLAW_QA_OTEL_MAX_COMPRESSED_BODY_BYTES",
+  "AFORA_QA_OTEL_MAX_COMPRESSED_BODY_BYTES",
   2 * 1024 * 1024,
 );
 const MAX_OTLP_DECODED_BODY_BYTES = readPositiveIntegerEnv(
-  "OPENCLAW_QA_OTEL_MAX_DECODED_BODY_BYTES",
+  "AFORA_QA_OTEL_MAX_DECODED_BODY_BYTES",
   8 * 1024 * 1024,
 );
 const MAX_CAPTURED_BODY_TEXT_BYTES = readPositiveIntegerEnv(
-  "OPENCLAW_QA_OTEL_MAX_CAPTURED_BODY_TEXT_BYTES",
+  "AFORA_QA_OTEL_MAX_CAPTURED_BODY_TEXT_BYTES",
   512 * 1024,
 );
 

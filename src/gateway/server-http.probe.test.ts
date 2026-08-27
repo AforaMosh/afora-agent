@@ -43,7 +43,7 @@ async function sendGatewayRequest(server: GatewayServerHarness, options: Gateway
 }
 
 async function withMarkedControlUiRoot(run: (root: string) => Promise<void>): Promise<void> {
-  const root = await fs.mkdtemp(nodePath.join(os.tmpdir(), "openclaw-http-routing-"));
+  const root = await fs.mkdtemp(nodePath.join(os.tmpdir(), "afora-http-routing-"));
   try {
     await fs.writeFile(nodePath.join(root, "index.html"), "<html>spa fallback</html>\n");
     await run(root);
@@ -180,17 +180,17 @@ describe("standalone MCP App HTTP routing", () => {
     {
       name: "disabled shell",
       enabled: false,
-      requestPath: "/__openclaw__/mcp-app",
+      requestPath: "/__afora__/mcp-app",
     },
     {
       name: "disabled view",
       enabled: false,
-      requestPath: "/__openclaw__/mcp-app/view",
+      requestPath: "/__afora__/mcp-app/view",
     },
     {
       name: "enabled malformed child",
       enabled: true,
-      requestPath: "/__openclaw__/mcp-app/other",
+      requestPath: "/__afora__/mcp-app/other",
     },
   ])(
     "returns 404 for the $name instead of Control UI HTML",
@@ -223,8 +223,8 @@ describe("standalone MCP App HTTP routing", () => {
   );
 
   it.each([
-    { name: "disabled endpoint", enabled: false, requestPath: "/__openclaw__/mcp-app" },
-    { name: "malformed child", enabled: true, requestPath: "/__openclaw__/mcp-app/other" },
+    { name: "disabled endpoint", enabled: false, requestPath: "/__afora__/mcp-app" },
+    { name: "malformed child", enabled: true, requestPath: "/__afora__/mcp-app/other" },
   ])("preserves plugin precedence for a $name", async ({ enabled, requestPath }) => {
     const handlePluginRequest = vi.fn(async (_req: IncomingMessage, res: ServerResponse) => {
       res.statusCode = 204;
@@ -384,7 +384,7 @@ describe("gateway probe endpoints", () => {
           });
 
           const blockedBoard = await sendGatewayRequest(server, {
-            path: "/__openclaw__/board/agent%3Amain%3Amain/status/index.html?bt=garbage",
+            path: "/__afora__/board/agent%3Amain%3Amain/status/index.html?bt=garbage",
           });
           expect(blockedBoard.res.statusCode).toBe(503);
           expect(JSON.parse(blockedBoard.getBody())).toMatchObject({

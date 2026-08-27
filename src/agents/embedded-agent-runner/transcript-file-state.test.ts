@@ -66,7 +66,7 @@ afterEach(async () => {
 
 describe("readTranscriptState", () => {
   it("normalizes appended session names to one line", async () => {
-    const sessionFile = await writeTranscriptFixture("openclaw-transcript-state-name-", [], {
+    const sessionFile = await writeTranscriptFixture("afora-transcript-state-name-", [], {
       timestamp: "2026-07-16T00:00:00.000Z",
     });
     const state = await readTranscriptState(sessionFile);
@@ -80,7 +80,7 @@ describe("readTranscriptState", () => {
   it("skips malformed session entries without moving the active leaf", async () => {
     // Bad rows are ignored for branch construction, but valid legacy orphan
     // roots remain reachable so partial imports can still be replayed.
-    const sessionFile = await writeTranscriptFixture("openclaw-transcript-state-malformed-", [
+    const sessionFile = await writeTranscriptFixture("afora-transcript-state-malformed-", [
       JSON.stringify({
         type: "message",
         id: "user-1",
@@ -197,7 +197,7 @@ describe("readTranscriptState", () => {
 
   it("keeps assistant rows with legacy string content", async () => {
     const sessionFile = await writeTranscriptFixture(
-      "openclaw-transcript-state-assistant-string-",
+      "afora-transcript-state-assistant-string-",
       [
         JSON.stringify({
           type: "message",
@@ -226,7 +226,7 @@ describe("readTranscriptState", () => {
   });
 
   it("preserves repair-supported assistant tool call payload shapes", async () => {
-    const sessionFile = await writeTranscriptFixture("openclaw-transcript-state-tool-input-", [
+    const sessionFile = await writeTranscriptFixture("afora-transcript-state-tool-input-", [
       JSON.stringify({
         type: "message",
         id: "user-1",
@@ -285,8 +285,8 @@ describe("readTranscriptState", () => {
     ]);
   });
 
-  it("preserves OpenClaw-authored non-model content blocks", async () => {
-    const sessionFile = await writeTranscriptFixture("openclaw-transcript-state-openclaw-blocks-", [
+  it("preserves Afora-authored non-model content blocks", async () => {
+    const sessionFile = await writeTranscriptFixture("afora-transcript-state-afora-blocks-", [
       JSON.stringify({
         type: "message",
         id: "user-1",
@@ -346,7 +346,7 @@ describe("readTranscriptState", () => {
 
   it("preserves empty compaction summary entries as the active leaf", async () => {
     const sessionFile = await writeTranscriptFixture(
-      "openclaw-transcript-state-empty-compaction-",
+      "afora-transcript-state-empty-compaction-",
       [
         JSON.stringify({
           type: "message",
@@ -385,7 +385,7 @@ describe("readTranscriptState", () => {
   });
 
   it("skips JSON-valid non-object rows", async () => {
-    const sessionFile = await writeTranscriptFixture("openclaw-transcript-state-null-row-", [
+    const sessionFile = await writeTranscriptFixture("afora-transcript-state-null-row-", [
       "null",
       "false",
       JSON.stringify({
@@ -406,7 +406,7 @@ describe("readTranscriptState", () => {
 
   it("skips JSON-valid non-object rows before legacy migration", async () => {
     const sessionFile = await writeTranscriptFixture(
-      "openclaw-transcript-state-v1-null-row-",
+      "afora-transcript-state-v1-null-row-",
       [
         "null",
         JSON.stringify({
@@ -436,7 +436,7 @@ describe("readTranscriptState", () => {
 
   it("canonicalizes opaque append parents before a legacy migration rewrite", async () => {
     const sessionFile = await writeTranscriptFixture(
-      "openclaw-transcript-state-v1-opaque-parent-",
+      "afora-transcript-state-v1-opaque-parent-",
       [
         {
           type: "message",
@@ -471,7 +471,7 @@ describe("readTranscriptState", () => {
 
   it("preserves legacy compaction keep indexes across JSON-valid non-object rows", async () => {
     const sessionFile = await writeTranscriptFixture(
-      "openclaw-transcript-state-v1-compaction-null-row-",
+      "afora-transcript-state-v1-compaction-null-row-",
       [
         JSON.stringify({
           type: "message",
@@ -515,7 +515,7 @@ describe("readTranscriptState", () => {
   });
 
   it("relinks valid current rows past malformed parents", async () => {
-    const sessionFile = await writeTranscriptFixture("openclaw-transcript-state-current-suffix-", [
+    const sessionFile = await writeTranscriptFixture("afora-transcript-state-current-suffix-", [
       JSON.stringify({
         type: "message",
         id: "user-1",
@@ -548,7 +548,7 @@ describe("readTranscriptState", () => {
 
   it("remaps compaction keep markers past malformed rows", async () => {
     const sessionFile = await writeTranscriptFixture(
-      "openclaw-transcript-state-compaction-marker-",
+      "afora-transcript-state-compaction-marker-",
       [
         JSON.stringify({
           type: "message",
@@ -596,7 +596,7 @@ describe("readTranscriptState", () => {
 
   it("keeps valid suffixes when a compaction marker points at a malformed root", async () => {
     const sessionFile = await writeTranscriptFixture(
-      "openclaw-transcript-state-compaction-root-marker-",
+      "afora-transcript-state-compaction-root-marker-",
       [
         JSON.stringify({
           type: "message",
@@ -644,7 +644,7 @@ describe("readTranscriptState", () => {
 
   it("remaps compaction keep markers through consecutive malformed rows", async () => {
     const sessionFile = await writeTranscriptFixture(
-      "openclaw-transcript-state-compaction-chain-marker-",
+      "afora-transcript-state-compaction-chain-marker-",
       [
         JSON.stringify({
           type: "message",
@@ -699,7 +699,7 @@ describe("readTranscriptState", () => {
 
   it("remaps malformed compaction markers to descendants on the active branch", async () => {
     const sessionFile = await writeTranscriptFixture(
-      "openclaw-transcript-state-compaction-branch-marker-",
+      "afora-transcript-state-compaction-branch-marker-",
       [
         JSON.stringify({
           type: "message",
@@ -753,7 +753,7 @@ describe("readTranscriptState", () => {
   });
 
   it("does not hang on rejected parent cycles", async () => {
-    const sessionFile = await writeTranscriptFixture("openclaw-transcript-state-rejected-cycle-", [
+    const sessionFile = await writeTranscriptFixture("afora-transcript-state-rejected-cycle-", [
       JSON.stringify({
         type: "message",
         id: "bad-message",
@@ -780,7 +780,7 @@ describe("readTranscriptState", () => {
 
   it("breaks cycles between canonical and opaque rows", async () => {
     const sessionFile = await writeTranscriptFixture(
-      "openclaw-transcript-state-canonical-opaque-cycle-",
+      "afora-transcript-state-canonical-opaque-cycle-",
       [
         {
           type: "message",
@@ -816,7 +816,7 @@ describe("readTranscriptState", () => {
 
   it("drops missing parents reached through rejected rows before rewrite replay", async () => {
     const sessionFile = await writeTranscriptFixture(
-      "openclaw-transcript-state-rejected-missing-parent-",
+      "afora-transcript-state-rejected-missing-parent-",
       [
         JSON.stringify({
           type: "message",
@@ -844,7 +844,7 @@ describe("readTranscriptState", () => {
   });
 
   it("drops labels targeting rejected entries before transcript rewrite replay", async () => {
-    const sessionFile = await writeTranscriptFixture("openclaw-transcript-state-rejected-label-", [
+    const sessionFile = await writeTranscriptFixture("afora-transcript-state-rejected-label-", [
       JSON.stringify({
         type: "message",
         id: "user-1",
@@ -918,7 +918,7 @@ describe("readTranscriptState", () => {
       targetId: rootEntry.id,
     };
     const sessionFile = await writeTranscriptFixture(
-      "openclaw-transcript-state-leaf-",
+      "afora-transcript-state-leaf-",
       [rootEntry, abandonedEntry, leafEntry].map((entry) => JSON.stringify(entry)),
     );
 
@@ -947,7 +947,7 @@ describe("readTranscriptState", () => {
 
   it("keeps parentless canonical ancestry through rewrite replay", async () => {
     const sessionFile = await writeTranscriptFixture(
-      "openclaw-transcript-state-parentless-leaf-",
+      "afora-transcript-state-parentless-leaf-",
       [
         {
           type: "message",
@@ -978,7 +978,7 @@ describe("readTranscriptState", () => {
 
   it("preserves marked side ancestry without capturing the next active append", async () => {
     const sessionFile = await writeTranscriptFixture(
-      "openclaw-transcript-state-side-append-",
+      "afora-transcript-state-side-append-",
       [
         {
           type: "message",
@@ -1038,7 +1038,7 @@ describe("readTranscriptState", () => {
 
   it("keeps a terminal leaf control's opaque append parent", async () => {
     const sessionFile = await writeTranscriptFixture(
-      "openclaw-transcript-state-opaque-append-parent-",
+      "afora-transcript-state-opaque-append-parent-",
       [
         {
           type: "message",
@@ -1094,7 +1094,7 @@ describe("readTranscriptState", () => {
 
   it("ignores leaf controls with dangling target or append references", async () => {
     const sessionFile = await writeTranscriptFixture(
-      "openclaw-transcript-state-invalid-leaf-",
+      "afora-transcript-state-invalid-leaf-",
       [
         {
           type: "message",
@@ -1146,7 +1146,7 @@ describe("readTranscriptState", () => {
   });
 
   it("keeps legacy roots that are missing tree metadata", async () => {
-    const sessionFile = await writeTranscriptFixture("openclaw-transcript-state-legacy-root-", [
+    const sessionFile = await writeTranscriptFixture("afora-transcript-state-legacy-root-", [
       JSON.stringify({
         type: "message",
         id: "legacy-root",
@@ -1170,7 +1170,7 @@ describe("readTranscriptState", () => {
 
   it("relinks migrated legacy suffixes past malformed rows", async () => {
     const sessionFile = await writeTranscriptFixture(
-      "openclaw-transcript-state-legacy-suffix-",
+      "afora-transcript-state-legacy-suffix-",
       [
         JSON.stringify({
           type: "message",

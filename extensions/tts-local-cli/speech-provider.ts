@@ -1,22 +1,22 @@
 // Tts Local Cli provider module implements model/runtime integration.
 import { readdirSync } from "node:fs";
 import path from "node:path";
-import { runFfmpeg } from "openclaw/plugin-sdk/media-runtime";
-import { runCommandBuffered } from "openclaw/plugin-sdk/process-runtime";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
+import { runFfmpeg } from "afora-agent/plugin-sdk/media-runtime";
+import { runCommandBuffered } from "afora-agent/plugin-sdk/process-runtime";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/runtime-env";
 import {
   readRegularFileSync,
   writeExternalFileWithinRoot,
-} from "openclaw/plugin-sdk/security-runtime";
+} from "afora-agent/plugin-sdk/security-runtime";
 import type {
   SpeechProviderConfig,
   SpeechProviderPlugin,
   SpeechSynthesisRequest,
   SpeechTelephonySynthesisRequest,
-} from "openclaw/plugin-sdk/speech-core";
-import { asOptionalRecord, filterStringRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { tempWorkspace, resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/speech-core";
+import { asOptionalRecord, filterStringRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { tempWorkspace, resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 
 const log = createSubsystemLogger("tts-local-cli");
 
@@ -325,8 +325,8 @@ export function buildCliSpeechProvider(): SpeechProviderPlugin {
       log.debug(`synthesize: text=${truncateUtf16Safe(req.text, 50)}...`);
 
       const temp = await tempWorkspace({
-        rootDir: resolvePreferredOpenClawTmpDir(),
-        prefix: "openclaw-cli-tts-",
+        rootDir: resolvePreferredAforaTmpDir(),
+        prefix: "afora-cli-tts-",
       });
       const tempDir = temp.dir;
 
@@ -378,8 +378,8 @@ export function buildCliSpeechProvider(): SpeechProviderPlugin {
       log.debug(`synthesizeTelephony: text=${truncateUtf16Safe(req.text, 50)}...`);
 
       const temp = await tempWorkspace({
-        rootDir: resolvePreferredOpenClawTmpDir(),
-        prefix: "openclaw-cli-tts-",
+        rootDir: resolvePreferredAforaTmpDir(),
+        prefix: "afora-cli-tts-",
       });
       const tempDir = temp.dir;
 

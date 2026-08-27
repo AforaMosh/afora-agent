@@ -1,6 +1,6 @@
 // Tests message preprocessing hooks before reply dispatch.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { clearInternalHooks, registerInternalHook } from "../../hooks/internal-hooks.js";
 import type { FinalizedMsgContext } from "../templating.js";
 import { emitPreAgentMessageHooks } from "./message-preprocess-hooks.js";
@@ -38,7 +38,7 @@ describe("emitPreAgentMessageHooks", () => {
 
     emitPreAgentMessageHooks({
       ctx: makeCtx(),
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       isFastTestEnv: false,
     });
     await Promise.resolve();
@@ -55,7 +55,7 @@ describe("emitPreAgentMessageHooks", () => {
 
     emitPreAgentMessageHooks({
       ctx: makeCtx({ Transcript: undefined }),
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       isFastTestEnv: false,
     });
     await Promise.resolve();
@@ -70,7 +70,7 @@ describe("emitPreAgentMessageHooks", () => {
 
     emitPreAgentMessageHooks({
       ctx: makeCtx(),
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       isFastTestEnv: true,
     });
     await Promise.resolve();
@@ -84,7 +84,7 @@ describe("emitPreAgentMessageHooks", () => {
 
     emitPreAgentMessageHooks({
       ctx: makeCtx({ SessionKey: " " }),
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       isFastTestEnv: false,
     });
     await Promise.resolve();

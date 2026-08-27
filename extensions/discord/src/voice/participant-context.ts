@@ -1,5 +1,5 @@
-import type { DiscordAccountConfig, OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import type { DiscordAccountConfig, AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import type { APIVoiceState, Client } from "../internal/discord.js";
 import type { GatewayPlugin } from "../internal/gateway.js";
 import { type DiscordVoiceIngressContext, resolveDiscordVoiceIngressContext } from "./ingress.js";
@@ -268,7 +268,7 @@ export async function resolveDiscordVoiceIngressContextWithParticipants(params: 
   entry: VoiceSessionEntry;
   userId: string;
   client: Client;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   discordConfig: DiscordAccountConfig;
   admissionAllowFrom?: string[];
   botUserId?: string;

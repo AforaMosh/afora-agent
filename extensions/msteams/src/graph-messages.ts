@@ -1,5 +1,5 @@
 // Msteams plugin module implements graph messages behavior.
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 import { createMSTeamsConversationStoreState } from "./conversation-store-state.js";
 import { stripHtmlFromTeamsMessage } from "./graph-thread.js";
 import {
@@ -125,7 +125,7 @@ export function resolveConversationPath(to: string): {
 }
 
 type GetMessageMSTeamsParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   to: string;
   messageId: string;
 };
@@ -157,7 +157,7 @@ export async function getMessageMSTeams(
 }
 
 type PinMessageMSTeamsParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   to: string;
   messageId: string;
 };
@@ -203,7 +203,7 @@ export async function pinMessageMSTeams(
 }
 
 type UnpinMessageMSTeamsParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   to: string;
   /** The pinned-message resource ID returned by pin or list-pins (not the message ID). */
   pinnedMessageId: string;
@@ -235,7 +235,7 @@ export async function unpinMessageMSTeams(
 }
 
 type ListPinsMSTeamsParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   to: string;
 };
 
@@ -311,14 +311,14 @@ type GraphMessageWithReactions = GraphMessage & {
 };
 
 type ReactMessageMSTeamsParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   to: string;
   messageId: string;
   reactionType: string;
 };
 
 type ListReactionsMSTeamsParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   to: string;
   messageId: string;
 };
@@ -437,7 +437,7 @@ export async function listReactionsMSTeams(
 // ---------------------------------------------------------------------------
 
 type SearchMessagesMSTeamsParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   to: string;
   query: string;
   from?: string;

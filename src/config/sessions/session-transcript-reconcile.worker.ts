@@ -1,9 +1,9 @@
 /** Worker entrypoint for transcript parsing and active-branch resolution only. */
 import { parentPort, workerData } from "node:worker_threads";
 import {
-  closeOpenClawAgentDatabaseByPath,
-  openOpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  closeAforaAgentDatabaseByPath,
+  openAforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import { listSessionsNeedingTranscriptIndexReconcile } from "./session-transcript-index.js";
 import {
   prepareSessionTranscriptProjection,
@@ -170,7 +170,7 @@ async function streamPreparedProjection(plan: PreparedSessionTranscriptProjectio
 
 async function run(): Promise<void> {
   try {
-    const database = openOpenClawAgentDatabase({
+    const database = openAforaAgentDatabase({
       agentId: reconcileInput.agentId,
       path: reconcileInput.path,
     });
@@ -191,7 +191,7 @@ async function run(): Promise<void> {
       error: error instanceof Error ? error.message : String(error),
     } satisfies SessionTranscriptReconcileWorkerMessage);
   } finally {
-    closeOpenClawAgentDatabaseByPath(reconcileInput.path);
+    closeAforaAgentDatabaseByPath(reconcileInput.path);
     port.close();
   }
 }

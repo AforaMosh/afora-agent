@@ -2,14 +2,14 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { createInboundDebouncer } from "openclaw/plugin-sdk/channel-inbound-debounce";
-import { DEFAULT_INGRESS_RETRY_MAX_ATTEMPTS } from "openclaw/plugin-sdk/channel-outbound";
-import { createTestInboundDebounceFlush } from "openclaw/plugin-sdk/channel-test-helpers";
+import { createInboundDebouncer } from "afora-agent/plugin-sdk/channel-inbound-debounce";
+import { DEFAULT_INGRESS_RETRY_MAX_ATTEMPTS } from "afora-agent/plugin-sdk/channel-outbound";
+import { createTestInboundDebounceFlush } from "afora-agent/plugin-sdk/channel-test-helpers";
 import {
-  closeOpenClawStateDatabaseForTest,
+  closeAforaStateDatabaseForTest,
   createChannelIngressQueueForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import { createNonExitingRuntimeEnv } from "openclaw/plugin-sdk/plugin-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import { createNonExitingRuntimeEnv } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ClawdbotConfig, PluginRuntime, RuntimeEnv } from "../runtime-api.js";
 import * as dedup from "./dedup.js";
@@ -183,7 +183,7 @@ describe("Feishu durable ingress debounce lifecycle", () => {
       {
         key: "@_bot_1",
         id: { open_id: "ou-bot" },
-        name: "OpenClaw",
+        name: "Afora",
       },
     ];
 
@@ -384,7 +384,7 @@ describe("Feishu durable ingress debounce lifecycle", () => {
     vi.useFakeTimers();
     const now = Date.UTC(2026, 0, 2);
     vi.setSystemTime(now);
-    const created = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-feishu-abandon-"));
+    const created = await fs.mkdtemp(path.join(os.tmpdir(), "afora-feishu-abandon-"));
     const stateDir = await fs.realpath(created);
     type Queue = NonNullable<Parameters<typeof createFeishuDurableIngress>[0]["queue"]>;
     type Payload = Parameters<Queue["enqueue"]>[1];
@@ -514,7 +514,7 @@ describe("Feishu durable ingress debounce lifecycle", () => {
       expect(handleMessage).toHaveBeenCalledTimes(4);
       await blockedRestart.stop();
     } finally {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       await fs.rm(stateDir, { recursive: true, force: true });
       vi.useRealTimers();
     }

@@ -1,5 +1,5 @@
 /** Baseten model-specific thinking controls. */
-import type { ProviderThinkingProfile } from "openclaw/plugin-sdk/plugin-entry";
+import type { ProviderThinkingProfile } from "afora-agent/plugin-sdk/plugin-entry";
 import { usesBasetenChatTemplateThinking } from "./models.js";
 
 const BASETEN_BINARY_THINKING_PROFILE = {

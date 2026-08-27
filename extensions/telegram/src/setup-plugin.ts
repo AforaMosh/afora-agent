@@ -1,6 +1,6 @@
 // Telegram plugin module composes the setup-safe channel surface.
-import type { ChannelPlugin } from "openclaw/plugin-sdk/channel-core";
-import { getChatChannelMeta } from "openclaw/plugin-sdk/channel-plugin-common";
+import type { ChannelPlugin } from "afora-agent/plugin-sdk/channel-core";
+import { getChatChannelMeta } from "afora-agent/plugin-sdk/channel-plugin-common";
 import type { ResolvedTelegramAccount } from "./accounts.js";
 import { createTelegramPluginConfig } from "./config-adapter.js";
 import { TelegramChannelConfigSchema } from "./config-schema.js";

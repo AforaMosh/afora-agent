@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 // Isolated agent test setup centralizes common mocks for cron agent tests.
 import { vi } from "vitest";
 import { runEmbeddedAgent } from "../agents/embedded-agent.js";
@@ -165,7 +165,7 @@ telegramOutboundForTest.sendMedia = async ({
 
 export function setupIsolatedAgentTurnMocks(params?: { fast?: boolean }): void {
   if (params?.fast) {
-    vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+    vi.stubEnv("AFORA_TEST_FAST", "1");
   }
   vi.mocked(runEmbeddedAgent).mockReset();
   vi.mocked(loadPreparedModelCatalog).mockResolvedValue([]);

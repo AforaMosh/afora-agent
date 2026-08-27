@@ -1,11 +1,11 @@
 // Msteams plugin module implements runtime behavior.
 import os from "node:os";
 import path from "node:path";
-import type { OpenKeyedStoreOptions } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { OpenKeyedStoreOptions } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateKeyedStoreForTests,
   createPluginStateSyncKeyedStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import type { PluginRuntime } from "../../runtime-api.js";
 
 export const msteamsRuntimeStub = {
@@ -15,12 +15,12 @@ export const msteamsRuntimeStub = {
     openSyncKeyedStore: (options: OpenKeyedStoreOptions) =>
       createPluginStateSyncKeyedStoreForTests("msteams", options),
     resolveStateDir: (env: NodeJS.ProcessEnv = process.env, homedir?: () => string) => {
-      const override = env.OPENCLAW_STATE_DIR?.trim() || env.OPENCLAW_STATE_DIR?.trim();
+      const override = env.AFORA_STATE_DIR?.trim() || env.AFORA_STATE_DIR?.trim();
       if (override) {
         return override;
       }
       const resolvedHome = homedir ? homedir() : os.homedir();
-      return path.join(resolvedHome, ".openclaw");
+      return path.join(resolvedHome, ".afora");
     },
   },
 } as unknown as PluginRuntime;

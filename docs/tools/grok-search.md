@@ -6,7 +6,7 @@ read_when:
 title: "Grok search"
 ---
 
-OpenClaw supports Grok as a `web_search` provider, using xAI web-grounded
+Afora supports Grok as a `web_search` provider, using xAI web-grounded
 responses to produce AI-synthesized answers backed by live search results
 with citations.
 
@@ -14,7 +14,7 @@ Grok web search prefers an existing xAI OAuth sign-in when one is available.
 If no OAuth profile exists, the same xAI API key also powers the built-in
 `x_search` tool for X (formerly Twitter) post search and the `code_execution`
 tool. Storing the key at `plugins.entries.xai.config.webSearch.apiKey` also
-lets OpenClaw reuse it as a fallback for the bundled xAI model provider.
+lets Afora reuse it as a fallback for the bundled xAI model provider.
 
 For post-level X metrics (reposts, replies, bookmarks, views), use
 [`x_search`](/tools/web#x_search) with the exact post URL or status ID
@@ -22,11 +22,11 @@ instead of a broad search query.
 
 ## Onboarding and configure
 
-Choosing **Grok** during `openclaw onboard` or `openclaw configure --section
-web` lets OpenClaw reuse an existing xAI OAuth profile without prompting for
+Choosing **Grok** during `afora onboard` or `afora configure --section
+web` lets Afora reuse an existing xAI OAuth profile without prompting for
 a separate web-search key. Without OAuth, it falls back to xAI API-key setup.
 
-OpenClaw then offers a follow-up step to enable `x_search` with the same xAI
+Afora then offers a follow-up step to enable `x_search` with the same xAI
 credential. That follow-up:
 
 - only appears after you choose Grok for `web_search`
@@ -43,8 +43,8 @@ Skip it to enable or change `x_search` later in config.
     Grok as the `web_search` provider. No separate API key is required:
 
     ```bash
-    openclaw onboard --auth-choice xai-oauth
-    openclaw config set tools.web.search.provider grok
+    afora onboard --auth-choice xai-oauth
+    afora config set tools.web.search.provider grok
     ```
 
   </Step>
@@ -56,7 +56,7 @@ Skip it to enable or change `x_search` later in config.
     Set `XAI_API_KEY` in the Gateway environment, or configure via:
 
     ```bash
-    openclaw configure --section web
+    afora configure --section web
     ```
 
   </Step>
@@ -88,10 +88,10 @@ Skip it to enable or change `x_search` later in config.
 }
 ```
 
-**Credential alternatives:** `openclaw models auth login --provider xai
+**Credential alternatives:** `afora models auth login --provider xai
 --method oauth`, `XAI_API_KEY` in the Gateway environment, or
 `plugins.entries.xai.config.webSearch.apiKey`. For a gateway install, put env
-vars in `~/.openclaw/.env`.
+vars in `~/.afora/.env`.
 
 ## How it works
 
@@ -111,7 +111,7 @@ with `tools.web.search.timeoutSeconds`.
 ## Base URL overrides
 
 Set `plugins.entries.xai.config.webSearch.baseUrl` to route Grok web search
-through an operator proxy or xAI-compatible Responses endpoint. OpenClaw
+through an operator proxy or xAI-compatible Responses endpoint. Afora
 posts to `<baseUrl>/responses` after trimming trailing slashes. `x_search`
 falls back to the same `webSearch.baseUrl` unless
 `plugins.entries.xai.config.xSearch.baseUrl` is set.

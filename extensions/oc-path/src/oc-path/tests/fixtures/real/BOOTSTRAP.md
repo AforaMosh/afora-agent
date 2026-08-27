@@ -8,7 +8,7 @@ BOOTSTRAP.md gets removed and the workspace is "live."
 
 - review SOUL.md and add personal context
 - review USER.md and add role/preferences
-- run `openclaw doctor` to verify config + workspace are valid
+- run `afora doctor` to verify config + workspace are valid
 - confirm the gateway can reach your providers
 
 ## Removing this file

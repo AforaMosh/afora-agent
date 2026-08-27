@@ -10,7 +10,7 @@ import type { InternalGetReplyOptions } from "../auto-reply/reply/get-reply.type
 import type { MsgContext } from "../auto-reply/templating.js";
 import type { AgentBinding } from "../config/types.agents.js";
 import type { HooksConfig } from "../config/types.hooks.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { RunCronAgentTurnResult } from "../cron/isolated-agent/run.types.js";
 import type { TailscaleWhoisIdentity } from "../infra/tailscale.js";
 import { resolveGlobalSingleton } from "../shared/global-singleton.js";
@@ -21,7 +21,7 @@ import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 export type GetReplyFromConfigFn = (
   ctx: MsgContext,
   opts?: InternalGetReplyOptions,
-  configOverride?: OpenClawConfig,
+  configOverride?: AforaConfig,
 ) => Promise<ReplyPayload | ReplyPayload[] | undefined>;
 type CronIsolatedRunFn = (...args: unknown[]) => Promise<RunCronAgentTurnResult>;
 type AgentCommandFn = (...args: unknown[]) => Promise<void>;
@@ -30,7 +30,7 @@ export type RunBtwSideQuestionFn = (...args: unknown[]) => Promise<unknown>;
 type DispatchInboundMessageFn = (...args: unknown[]) => Promise<unknown>;
 type CompactEmbeddedAgentSessionFn = (...args: unknown[]) => Promise<unknown>;
 
-const GATEWAY_TEST_CONFIG_ROOT_KEY = Symbol.for("openclaw.gatewayTestHelpers.configRoot");
+const GATEWAY_TEST_CONFIG_ROOT_KEY = Symbol.for("afora.gatewayTestHelpers.configRoot");
 
 type GatewayTestHoistedState = {
   testTailnetIPv4: { value: string | undefined };
@@ -87,7 +87,7 @@ type GatewayTestHoistedState = {
 };
 
 const gatewayTestHoisted = vi.hoisted(() => {
-  const key = Symbol.for("openclaw.gatewayTestHelpers.hoisted");
+  const key = Symbol.for("afora.gatewayTestHelpers.hoisted");
   const store = globalThis as Record<PropertyKey, unknown>;
   if (Object.hasOwn(store, key)) {
     return store[key] as GatewayTestHoistedState;
@@ -172,11 +172,11 @@ export const testIsNixMode = gatewayTestHoisted.testIsNixMode;
 export const embeddedRunMock = gatewayTestHoisted.embeddedRunMock;
 
 export const testConfigRoot = resolveGlobalSingleton(GATEWAY_TEST_CONFIG_ROOT_KEY, () => ({
-  value: path.join(os.tmpdir(), `openclaw-gateway-test-${process.pid}-${crypto.randomUUID()}`),
+  value: path.join(os.tmpdir(), `afora-gateway-test-${process.pid}-${crypto.randomUUID()}`),
 }));
 
 /** Updates the config root used by gateway config-module mocks. */
 export function setTestConfigRoot(root: string): void {
   testConfigRoot.value = root;
-  process.env.OPENCLAW_CONFIG_PATH = path.join(root, "openclaw.json");
+  process.env.AFORA_CONFIG_PATH = path.join(root, "afora.json");
 }

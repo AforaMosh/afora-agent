@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { mutateConfigFileWithRetry } from "../config/config.js";
 import { resolveIsNixMode } from "../config/paths.js";
 import { formatErrorMessage } from "../infra/errors.js";
@@ -45,7 +45,7 @@ export function persistStickyModelSelectionBestEffort(params: {
     if (!warnedImmutableConfig) {
       warnedImmutableConfig = true;
       log.warn(
-        `skipped sticky model persistence agentId=${params.agentId} model=${params.model} reason=config is immutable in OPENCLAW_NIX_MODE`,
+        `skipped sticky model persistence agentId=${params.agentId} model=${params.model} reason=config is immutable in AFORA_NIX_MODE`,
       );
     }
     return "skipped-immutable";

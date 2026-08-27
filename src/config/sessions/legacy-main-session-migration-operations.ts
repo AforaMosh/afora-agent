@@ -2,12 +2,12 @@ import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { executeSqliteQuerySync } from "../../infra/kysely-sync.js";
 import { parseAgentSessionKey } from "../../routing/session-key.js";
-import { withOpenClawAgentDatabaseReadOnly } from "../../state/openclaw-agent-db-readonly.js";
-import { isSameOpenClawAgentDatabasePath } from "../../state/openclaw-agent-db-registry.js";
+import { withAforaAgentDatabaseReadOnly } from "../../state/afora-agent-db-readonly.js";
+import { isSameAforaAgentDatabasePath } from "../../state/afora-agent-db-registry.js";
 import {
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import type {
   LegacyMainSessionMigrationMode,
   LegacyMainSessionMigrationOutcome,
@@ -57,7 +57,7 @@ export function claimsMatch(left: SessionClaim, right: SessionClaim): boolean {
 }
 
 export function readClaim(
-  database: Pick<OpenClawAgentDatabase, "agentId" | "db" | "path">,
+  database: Pick<AforaAgentDatabase, "agentId" | "db" | "path">,
   store: PhysicalStore,
   key: string,
   canonicalKey: string,
@@ -85,7 +85,7 @@ export function readClaim(
 }
 
 export function samePhysicalStore(left: PhysicalStore, right: PhysicalStore): boolean {
-  return isSameOpenClawAgentDatabasePath(left.path, right.path);
+  return isSameAforaAgentDatabasePath(left.path, right.path);
 }
 
 function freshestClaim(claims: readonly SessionClaim[]): SessionClaim {
@@ -105,7 +105,7 @@ export function warningForDivergence(
   claims: readonly SessionClaim[],
 ): string {
   const claimsText = claims.map((claim) => `${claim.store.path}#${claim.key}`).join(", ");
-  return `session: ${kind} for ${canonicalKey}; preserved claims ${claimsText}. Run openclaw doctor --fix to quarantine the losing claims.`;
+  return `session: ${kind} for ${canonicalKey}; preserved claims ${claimsText}. Run afora doctor --fix to quarantine the losing claims.`;
 }
 
 function migrateClaimsInPlace(params: {
@@ -117,7 +117,7 @@ function migrateClaimsInPlace(params: {
   winner: SessionClaim;
 }): boolean {
   let committed = false;
-  runOpenClawAgentWriteTransaction(
+  runAforaAgentWriteTransaction(
     (database) => {
       const currentAliases = params.aliases.map((claim) =>
         readClaim(database, params.store, claim.key, params.canonicalKey),
@@ -173,7 +173,7 @@ async function copyClaimCrossStore(params: {
       }
     },
   });
-  const destination = withOpenClawAgentDatabaseReadOnly(
+  const destination = withAforaAgentDatabaseReadOnly(
     (database) => readClaim(database, params.destination, params.canonicalKey, params.canonicalKey),
     {
       agentId: params.destination.databaseAgentId,
@@ -207,7 +207,7 @@ function quarantineClaim(params: {
   ownerAgentId: string;
 }): string | undefined {
   let quarantineKey: string | undefined;
-  runOpenClawAgentWriteTransaction(
+  runAforaAgentWriteTransaction(
     (database) => {
       const fresh = readClaim(
         database,
@@ -289,7 +289,7 @@ export async function processIdenticalClaims(params: {
         detail: "source aliases changed during the in-place transaction",
       };
     }
-    const result = withOpenClawAgentDatabaseReadOnly(
+    const result = withAforaAgentDatabaseReadOnly(
       (database) =>
         readClaim(database, params.destination, params.canonicalKey, params.canonicalKey),
       {
@@ -308,7 +308,7 @@ export async function processIdenticalClaims(params: {
       env: params.env,
       source: sourceBefore,
     });
-    const sourceAfter = withOpenClawAgentDatabaseReadOnly(
+    const sourceAfter = withAforaAgentDatabaseReadOnly(
       (database) => readClaim(database, sourceBefore.store, sourceBefore.key, params.canonicalKey),
       {
         agentId: sourceBefore.store.databaseAgentId,
@@ -404,7 +404,7 @@ export async function repairDivergentClaims(params: {
       return { quarantinedKeys: [], resolved: false };
     }
   }
-  const canonicalResult = withOpenClawAgentDatabaseReadOnly(
+  const canonicalResult = withAforaAgentDatabaseReadOnly(
     (database) => readClaim(database, params.destination, params.canonicalKey, params.canonicalKey),
     {
       agentId: params.destination.databaseAgentId,

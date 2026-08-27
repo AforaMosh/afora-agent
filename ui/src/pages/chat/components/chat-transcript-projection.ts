@@ -1,5 +1,5 @@
 // Chat-item projection, expansion, reply hydration, and guarded row rendering.
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { html, nothing, type TemplateResult } from "lit";
 import { guard } from "lit/directives/guard.js";
 import { classifySessionKind } from "../../../../../src/sessions/classify-session-kind.js";

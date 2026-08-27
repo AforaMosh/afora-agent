@@ -29,12 +29,12 @@ const {
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
-function makeTempDir(prefix = "openclaw-install-scan-") {
+function makeTempDir(prefix = "afora-install-scan-") {
   return tempDirs.make(prefix);
 }
 
 async function addEscapingDependencyLink(rootDir: string) {
-  const outsideRoot = makeTempDir("openclaw-install-outside-");
+  const outsideRoot = makeTempDir("afora-install-outside-");
   const dependencyLink = path.join(rootDir, "node_modules", "outside-package");
   await fs.mkdir(path.dirname(dependencyLink), { recursive: true });
   await fs.symlink(outsideRoot, dependencyLink, "junction");
@@ -74,13 +74,13 @@ beforeEach(() => {
 });
 
 describe("install security scan official bypass", () => {
-  it("bypasses plugin install friction for bundled OpenClaw sources", async () => {
+  it("bypasses plugin install friction for bundled Afora sources", async () => {
     const sourceDir = makeTempDir();
     const result = await scanBundleInstallSourceRuntime({
       logger: {},
-      pluginId: "openclaw/kitchen-sink",
+      pluginId: "afora-agent/kitchen-sink",
       sourceDir,
-      source: { kind: "bundled", authority: "openclaw", mutable: false, network: false },
+      source: { kind: "bundled", authority: "afora", mutable: false, network: false },
     });
 
     expect(result).toBeUndefined();
@@ -91,7 +91,7 @@ describe("install security scan official bypass", () => {
     const sourceDir = makeTempDir();
     const result = await scanBundleInstallSourceRuntime({
       logger: {},
-      pluginId: "@openclaw/matrix",
+      pluginId: "@afora/matrix",
       sourceDir,
       source: { kind: "clawhub", authority: "official", mutable: false, network: true },
     });
@@ -100,18 +100,18 @@ describe("install security scan official bypass", () => {
     expectOnlyOperatorPolicyRan();
   });
 
-  it("bypasses skill install friction for bundled OpenClaw sources", async () => {
+  it("bypasses skill install friction for bundled Afora sources", async () => {
     const result = await evaluateSkillInstallPolicyRuntime({
       installId: "node",
       logger: {},
       origin: {
-        type: "openclaw-bundled",
+        type: "afora-bundled",
         skillName: "peekaboo",
         installId: "node",
       },
-      source: { kind: "bundled", authority: "openclaw", mutable: false, network: false },
+      source: { kind: "bundled", authority: "afora", mutable: false, network: false },
       skillName: "peekaboo",
-      sourceDir: "/tmp/openclaw-bundled-skill/peekaboo",
+      sourceDir: "/tmp/afora-bundled-skill/peekaboo",
     });
 
     expect(result).toBeUndefined();
@@ -121,10 +121,10 @@ describe("install security scan official bypass", () => {
   it("runs only operator policy for official immutable npm sources", async () => {
     const result = await preflightPluginNpmInstallPolicyRuntime({
       logger: {},
-      packageName: "@openclaw/matrix",
-      requestedSpecifier: "@openclaw/matrix@latest",
+      packageName: "@afora/matrix",
+      requestedSpecifier: "@afora/matrix@latest",
       source: { kind: "npm", authority: "official", mutable: false, network: true },
-      sourcePath: "/tmp/openclaw-official-npm",
+      sourcePath: "/tmp/afora-official-npm",
       sourcePathKind: "directory",
     });
 
@@ -143,7 +143,7 @@ describe("install security scan official bypass", () => {
     const sourceDir = makeTempDir();
     const result = await scanBundleInstallSourceRuntime({
       logger: {},
-      pluginId: "@openclaw/matrix",
+      pluginId: "@afora/matrix",
       sourceDir,
       source: { kind: "clawhub", authority: "official", mutable: false, network: true },
     });
@@ -164,7 +164,7 @@ describe("install security scan official bypass", () => {
     await expect(
       scanBundleInstallSourceRuntime({
         logger: {},
-        pluginId: "@openclaw/matrix",
+        pluginId: "@afora/matrix",
         sourceDir,
         source: { kind: "clawhub", authority: "official", mutable: false, network: true },
       }),
@@ -181,7 +181,7 @@ describe("install security scan official bypass", () => {
         extensions: ["index.js"],
         logger: {},
         packageDir,
-        pluginId: "@openclaw/matrix",
+        pluginId: "@afora/matrix",
         source: { kind: "npm", authority: "official", mutable: false, network: true },
         trustedSourceLinkedOfficialInstall: true,
       }),
@@ -224,13 +224,13 @@ describe("installed dependency tree scan", () => {
   it("accepts a managed host link declared as a runtime dependency", async () => {
     const npmRoot = makeTempDir();
     const packageDir = path.join(npmRoot, "node_modules", "runtime-plugin");
-    const hostLink = path.join(packageDir, "node_modules", "openclaw");
+    const hostLink = path.join(packageDir, "node_modules", "afora");
     await fs.mkdir(path.dirname(hostLink), { recursive: true });
     await fs.writeFile(
       path.join(packageDir, "package.json"),
       JSON.stringify({
         name: "runtime-plugin",
-        dependencies: { openclaw: "2026.7.1" },
+        dependencies: { afora: "2026.7.1" },
       }),
       "utf8",
     );
@@ -248,21 +248,21 @@ describe("installed dependency tree scan", () => {
     expect(runInstallPolicyMock).toHaveBeenCalledTimes(1);
   });
 
-  it("rejects an openclaw dependency symlink that does not target the trusted host", async () => {
+  it("rejects an afora dependency symlink that does not target the trusted host", async () => {
     const npmRoot = makeTempDir();
-    const outsideRoot = makeTempDir("openclaw-install-outside-");
+    const outsideRoot = makeTempDir("afora-install-outside-");
     const packageDir = path.join(npmRoot, "node_modules", "runtime-plugin");
-    const hostLink = path.join(packageDir, "node_modules", "openclaw");
+    const hostLink = path.join(packageDir, "node_modules", "afora");
     await fs.mkdir(path.dirname(hostLink), { recursive: true });
     await fs.writeFile(
       path.join(packageDir, "package.json"),
       JSON.stringify({
         name: "runtime-plugin",
-        dependencies: { openclaw: "2026.7.1" },
+        dependencies: { afora: "2026.7.1" },
       }),
       "utf8",
     );
-    await fs.writeFile(path.join(outsideRoot, "package.json"), '{"name":"openclaw"}', "utf8");
+    await fs.writeFile(path.join(outsideRoot, "package.json"), '{"name":"afora-agent"}', "utf8");
     await fs.symlink(outsideRoot, hostLink, "junction");
 
     await expect(
@@ -304,7 +304,7 @@ describe("installed dependency tree scan", () => {
 describe("package dependency boundaries", () => {
   it("rejects dependency symlinks outside the staged package", async () => {
     const packageDir = makeTempDir();
-    const outsideRoot = makeTempDir("openclaw-install-outside-");
+    const outsideRoot = makeTempDir("afora-install-outside-");
     const dependencyLink = path.join(packageDir, "node_modules", "outside-package");
     await fs.mkdir(path.dirname(dependencyLink), { recursive: true });
     await fs.symlink(outsideRoot, dependencyLink, "junction");
@@ -451,7 +451,7 @@ describe("legacy file install scan compatibility", () => {
         guidance: [
           "This invocation cannot approve install policy warnings.",
           "To continue:",
-          "  • Run the matching direct `openclaw plugins ...` or `openclaw skills ...` command interactively.",
+          "  • Run the matching direct `afora plugins ...` or `afora skills ...` command interactively.",
           "  • For reviewed direct CLI automation, add --acknowledge-install-policy-warning.",
           "  • If no equivalent direct command exists, change security.installPolicy to allow this reviewed request, then retry.",
           "  • --force does not approve install policy warnings.",
@@ -630,7 +630,7 @@ describe("legacy file install scan compatibility", () => {
       const guidance = [
         "This invocation cannot approve install policy warnings.",
         "To continue:",
-        "  • Run the matching direct `openclaw plugins ...` or `openclaw skills ...` command interactively.",
+        "  • Run the matching direct `afora plugins ...` or `afora skills ...` command interactively.",
         "  • For reviewed direct CLI automation, add --acknowledge-install-policy-warning.",
         "  • If no equivalent direct command exists, change security.installPolicy to allow this reviewed request, then retry.",
         "  • --force does not approve install policy warnings.",

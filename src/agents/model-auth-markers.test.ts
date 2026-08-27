@@ -8,12 +8,12 @@ import { withEnv, withEnvAsync } from "../test-utils/env.js";
 
 const BUNDLED_PLUGINS_DIR = fileURLToPath(new URL("../../extensions/", import.meta.url));
 const PLUGIN_MANIFEST_ENV_KEYS = [
-  "OPENCLAW_BUNDLED_PLUGINS_DIR",
-  "OPENCLAW_DISABLE_BUNDLED_PLUGINS",
-  "OPENCLAW_SKIP_PROVIDERS",
-  "OPENCLAW_SKIP_CHANNELS",
-  "OPENCLAW_SKIP_CRON",
-  "OPENCLAW_TEST_MINIMAL_GATEWAY",
+  "AFORA_BUNDLED_PLUGINS_DIR",
+  "AFORA_DISABLE_BUNDLED_PLUGINS",
+  "AFORA_SKIP_PROVIDERS",
+  "AFORA_SKIP_CHANNELS",
+  "AFORA_SKIP_CRON",
+  "AFORA_TEST_MINIMAL_GATEWAY",
 ] as const;
 
 function cleanPluginManifestEnv(): Record<
@@ -21,12 +21,12 @@ function cleanPluginManifestEnv(): Record<
   string | undefined
 > {
   return {
-    OPENCLAW_BUNDLED_PLUGINS_DIR: BUNDLED_PLUGINS_DIR,
-    OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
-    OPENCLAW_SKIP_PROVIDERS: undefined,
-    OPENCLAW_SKIP_CHANNELS: undefined,
-    OPENCLAW_SKIP_CRON: undefined,
-    OPENCLAW_TEST_MINIMAL_GATEWAY: undefined,
+    AFORA_BUNDLED_PLUGINS_DIR: BUNDLED_PLUGINS_DIR,
+    AFORA_DISABLE_BUNDLED_PLUGINS: undefined,
+    AFORA_SKIP_PROVIDERS: undefined,
+    AFORA_SKIP_CHANNELS: undefined,
+    AFORA_SKIP_CRON: undefined,
+    AFORA_TEST_MINIMAL_GATEWAY: undefined,
   };
 }
 
@@ -74,7 +74,7 @@ describe("model auth markers", () => {
   });
 
   it("recognizes the Codex app-server marker without bundled plugin discovery", async () => {
-    await withEnvAsync({ OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1" }, async () => {
+    await withEnvAsync({ AFORA_DISABLE_BUNDLED_PLUGINS: "1" }, async () => {
       await loadMarkerModules();
       expect(isNonSecretApiKeyMarker(CODEX_APP_SERVER_AUTH_MARKER)).toBe(true);
     });
@@ -84,7 +84,7 @@ describe("model auth markers", () => {
   it("reads bundled plugin-owned non-secret markers from manifests", () => {
     withEnv(cleanPluginManifestEnv(), () => {
       expect(isNonSecretApiKeyMarker("codex-app-server")).toBe(true);
-      expect(isNonSecretApiKeyMarker(["openclaw", "claude-cli-api-key-helper"].join(":"))).toBe(
+      expect(isNonSecretApiKeyMarker(["afora", "claude-cli-api-key-helper"].join(":"))).toBe(
         true,
       );
       expect(isNonSecretApiKeyMarker("gcp-vertex-credentials")).toBe(true);

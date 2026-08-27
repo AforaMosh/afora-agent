@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { writeSiblingTempFile } from "../infra/sibling-temp-file.js";
 
-const DEFAULT_CLI_OUTPUT_TEMP_PREFIX = ".openclaw-media-output";
+const DEFAULT_CLI_OUTPUT_TEMP_PREFIX = ".afora-media-output";
 
 async function resolveExistingOutputMode(filePath: string): Promise<number | undefined> {
   try {

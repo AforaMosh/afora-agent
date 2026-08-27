@@ -1,7 +1,7 @@
 // Plugin hook helpers discover hooks contributed by installed plugins.
 import fs from "node:fs";
 import path from "node:path";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
   normalizePluginsConfigWithResolver,
@@ -22,7 +22,7 @@ type PluginHookDirEntry = {
 /** Resolve hook directories declared by active plugin manifests. */
 export function resolvePluginHookDirs(params: {
   workspaceDir: string | undefined;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): PluginHookDirEntry[] {
   const workspaceDir = (params.workspaceDir ?? "").trim();
   if (!workspaceDir) {

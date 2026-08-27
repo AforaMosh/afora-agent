@@ -4,7 +4,7 @@
  * Gathers channel-owned doctor migration rules from public artifacts and plugin hooks.
  */
 import type { LegacyConfigRule } from "../../config/legacy.shared.js";
-import type { OpenClawConfig } from "../../config/types.js";
+import type { AforaConfig } from "../../config/types.js";
 import { listPluginDoctorLegacyConfigRules } from "../../plugins/doctor-contract-registry.js";
 import { isChannelConfigMetadataKey } from "../config-metadata.js";
 import { getBootstrapChannelPlugin } from "./bootstrap-registry.js";
@@ -118,7 +118,7 @@ export function collectChannelLegacyConfigRules(
   if (unresolvedChannelIds.length > 0) {
     rules.push(
       ...listPluginDoctorLegacyConfigRules({
-        config: raw as OpenClawConfig,
+        config: raw as AforaConfig,
         pluginIds: unresolvedChannelIds,
       }),
     );

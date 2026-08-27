@@ -1,6 +1,6 @@
 import { resolveAgentIdentity } from "../../agents/identity.js";
 import { deriveContextPromptTokens, type NormalizedUsage } from "../../agents/usage.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { pruneMapToMaxSize } from "../../infra/map-size.js";
 import type { PluginHookReplyUsageState } from "../../plugins/hook-types.js";
 import { estimateUsageCost, resolveModelCostConfig } from "../../utils/usage-format.js";
@@ -11,7 +11,7 @@ const MAX_REPLY_USAGE_STATE_ENTRIES = 1_024;
 const store = new Map<string, { snapshot: PluginHookReplyUsageState; expiresAt: number }>();
 
 export function buildReplyUsageState(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentDir: string;
   provider?: string;
   model?: string;

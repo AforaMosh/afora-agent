@@ -13,7 +13,7 @@ import {
 const roots: string[] = [];
 
 function makeRoot(): string {
-  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-control-plane-"));
+  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-control-plane-"));
   roots.push(rootDir);
   fs.writeFileSync(path.join(rootDir, "package.json"), '{"type":"module"}\n');
   return rootDir;

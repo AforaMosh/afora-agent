@@ -1,5 +1,5 @@
 // Telegram tests cover lane delivery plugin behavior.
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-runtime";
 import { describe, expect, it, vi } from "vitest";
 import { createTelegramDraftStream } from "./draft-stream.js";
 import { createTestDraftStream } from "./draft-stream.test-helpers.js";

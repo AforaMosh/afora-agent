@@ -14,7 +14,7 @@ describe("extractCanvasFromText", () => {
           kind: "canvas",
           view: {
             id: "cv_status",
-            url: "/__openclaw__/canvas/documents/cv_status/index.html",
+            url: "/__afora__/canvas/documents/cv_status/index.html",
             boardWidgetName: "release-status",
           },
         }),

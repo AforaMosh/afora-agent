@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 const tempRoots: string[] = [];
 
 function mkTempRoot() {
-  const root = mkdtempSync(join(tmpdir(), "openclaw-test-hotspots-"));
+  const root = mkdtempSync(join(tmpdir(), "afora-test-hotspots-"));
   tempRoots.push(root);
   return root;
 }

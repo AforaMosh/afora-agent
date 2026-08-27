@@ -1,5 +1,5 @@
 // Destructive session deletion and lifecycle cleanup.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   ErrorCodes,
   errorShape,

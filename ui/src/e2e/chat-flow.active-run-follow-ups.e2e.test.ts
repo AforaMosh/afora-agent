@@ -83,7 +83,7 @@ suite.define(() => {
         clientRunId: activeRunId,
         hasActiveRun: true,
         message: {
-          __openclaw: {
+          __afora: {
             id: "persisted-original-user",
             idempotencyKey: `${activeRunId}:user`,
             seq: 1,
@@ -126,7 +126,7 @@ suite.define(() => {
         clientRunId: "queued-run",
         hasActiveRun: true,
         message: {
-          __openclaw: {
+          __afora: {
             id: "persisted-queued-user",
             idempotencyKey: "queued-run:user",
             seq: 3,
@@ -185,7 +185,7 @@ suite.define(() => {
         clientRunId: activeRunId,
         hasActiveRun: true,
         message: {
-          __openclaw: {
+          __afora: {
             id: "persisted-steer-user",
             idempotencyKey: `${steerRunId}:user`,
             seq: 4,
@@ -233,7 +233,7 @@ suite.define(() => {
       await expectChatBubbleAbove(page, followUp, postSteerReply);
       const authoritativeMessages = [
         {
-          __openclaw: {
+          __afora: {
             id: "persisted-original-user",
             idempotencyKey: `${activeRunId}:user`,
             seq: 1,
@@ -243,13 +243,13 @@ suite.define(() => {
           timestamp: 100,
         },
         {
-          __openclaw: { id: "persisted-pre-steer", idempotencyKey: activeRunId, seq: 2 },
+          __afora: { id: "persisted-pre-steer", idempotencyKey: activeRunId, seq: 2 },
           content: [{ text: preSteerReply, type: "text" }],
           role: "assistant",
           timestamp: 200,
         },
         {
-          __openclaw: {
+          __afora: {
             id: "persisted-queued-user",
             idempotencyKey: "queued-run:user",
             seq: 3,
@@ -259,7 +259,7 @@ suite.define(() => {
           timestamp: 250,
         },
         {
-          __openclaw: {
+          __afora: {
             id: "persisted-steer-user",
             idempotencyKey: `${steerRunId}:user`,
             seq: 4,
@@ -270,7 +270,7 @@ suite.define(() => {
           timestamp: 50,
         },
         {
-          __openclaw: { id: "persisted-post-steer", idempotencyKey: activeRunId, seq: 5 },
+          __afora: { id: "persisted-post-steer", idempotencyKey: activeRunId, seq: 5 },
           content: [{ text: terminalPostSteerReply, type: "text" }],
           role: "assistant",
           timestamp: 300,
@@ -569,7 +569,7 @@ suite.define(() => {
         clientRunId: activeRunId,
         hasActiveRun: true,
         message: {
-          __openclaw: {
+          __afora: {
             id: "persisted-notice-original-user",
             idempotencyKey: `${activeRunId}:user`,
             seq: 1,

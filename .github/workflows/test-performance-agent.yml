@@ -25,7 +25,7 @@ env:
 jobs:
   optimize-tests:
     if: >
-      github.repository == 'openclaw/openclaw' &&
+      github.repository == 'AforaMosh/afora-agent' &&
       (github.event_name == 'workflow_dispatch' ||
         (github.event.workflow_run.conclusion == 'success' &&
           github.event.workflow_run.event == 'push' &&
@@ -115,11 +115,11 @@ jobs:
       - name: Ensure test performance agent key exists
         if: steps.gate.outputs.run_agent == 'true'
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENCLAW_TEST_PERF_AGENT_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.AFORA_TEST_PERF_AGENT_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
         run: |
           set -euo pipefail
           if [ -z "${OPENAI_API_KEY:-}" ]; then
-            echo "Missing OPENCLAW_TEST_PERF_AGENT_OPENAI_API_KEY or OPENAI_API_KEY secret." >&2
+            echo "Missing AFORA_TEST_PERF_AGENT_OPENAI_API_KEY or OPENAI_API_KEY secret." >&2
             exit 1
           fi
 
@@ -131,9 +131,9 @@ jobs:
         if: steps.gate.outputs.run_agent == 'true'
         uses: openai/codex-action@52fe01ec70a42f454c9d2ebd47598f9fd6893d56
         with:
-          openai-api-key: ${{ secrets.OPENCLAW_TEST_PERF_AGENT_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
+          openai-api-key: ${{ secrets.AFORA_TEST_PERF_AGENT_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
           prompt-file: .github/codex/prompts/test-performance-agent.md
-          model: ${{ vars.OPENCLAW_CI_OPENAI_MODEL_BARE }}
+          model: ${{ vars.AFORA_CI_OPENAI_MODEL_BARE }}
           effort: high
           sandbox: workspace-write
           safety-strategy: drop-sudo
@@ -238,8 +238,8 @@ jobs:
             exit 0
           fi
 
-          git config user.name "openclaw-test-performance-agent[bot]"
-          git config user.email "openclaw-test-performance-agent[bot]@users.noreply.github.com"
+          git config user.name "afora-test-performance-agent[bot]"
+          git config user.email "afora-test-performance-agent[bot]@users.noreply.github.com"
           git add apps extensions packages scripts src test ui
           git commit --no-verify -m "test: optimize slow tests"
 

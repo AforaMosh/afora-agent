@@ -1,6 +1,6 @@
-import { bufferedOversizedJsonResponse as oversizedJsonResponse } from "openclaw/plugin-sdk/test-fixtures";
+import { bufferedOversizedJsonResponse as oversizedJsonResponse } from "afora-agent/plugin-sdk/test-fixtures";
 // Vydra tests cover image generation provider plugin behavior.
-import { installPinnedHostnameTestHooks } from "openclaw/plugin-sdk/test-media-understanding";
+import { installPinnedHostnameTestHooks } from "afora-agent/plugin-sdk/test-media-understanding";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildVydraImageGenerationProvider } from "./image-generation-provider.js";
 import {

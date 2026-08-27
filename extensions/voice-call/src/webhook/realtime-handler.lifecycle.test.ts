@@ -1,7 +1,7 @@
 import type {
   RealtimeVoiceBridge,
   RealtimeVoiceProviderPlugin,
-} from "openclaw/plugin-sdk/realtime-voice";
+} from "afora-agent/plugin-sdk/realtime-voice";
 import { describe, expect, it, vi } from "vitest";
 import type { WebSocket as WebSocketType } from "ws";
 import { WebSocket } from "ws";
@@ -659,7 +659,7 @@ describe("RealtimeCallHandler lifecycle", () => {
       "/voice/webhook",
     );
     const consult = vi.fn(async () => ({ text: "This should not run." }));
-    handler.registerToolHandler("openclaw_agent_consult", consult);
+    handler.registerToolHandler("afora_agent_consult", consult);
     const { streamUrl } = handler.issueStreamSession();
     const server = await startUpgradeWsServer({
       urlPath: new URL(streamUrl).pathname,
@@ -684,7 +684,7 @@ describe("RealtimeCallHandler lifecycle", () => {
       onToolCall?.({
         itemId: "item-settling-consult",
         callId: "tool-settling-consult",
-        name: "openclaw_agent_consult",
+        name: "afora_agent_consult",
         args: { question: "Check the deployment." },
       });
       const consults = (
@@ -773,7 +773,7 @@ describe("RealtimeCallHandler lifecycle", () => {
       makeCallRegistrationResolver(makeRealtimeProvider(createBridgeForCall)),
       "/voice/webhook",
     );
-    handler.registerToolHandler("openclaw_agent_consult", async (_args, _callId, context) => {
+    handler.registerToolHandler("afora_agent_consult", async (_args, _callId, context) => {
       consultSignal = context.abortSignal;
       return await new Promise<unknown>((_resolve, reject) => {
         context.abortSignal?.addEventListener(
@@ -806,7 +806,7 @@ describe("RealtimeCallHandler lifecycle", () => {
       onToolCall?.({
         itemId: "item-consult",
         callId: "tool-consult",
-        name: "openclaw_agent_consult",
+        name: "afora_agent_consult",
         args: { question: "Check the deployment." },
       });
       await vi.waitFor(() => {

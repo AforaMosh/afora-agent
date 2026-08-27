@@ -7,7 +7,7 @@ import {
   upsertSessionEntryCore,
 } from "../../../config/sessions/session-accessor.js";
 import { createUserTurnTranscriptRecorder } from "../../../sessions/user-turn-transcript.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../../state/openclaw-agent-db.js";
+import { closeAforaAgentDatabasesForTest } from "../../../state/afora-agent-db.js";
 import { SessionManager } from "../../sessions/session-manager.js";
 
 const hoisted = vi.hoisted(() => ({
@@ -40,7 +40,7 @@ describe("embedded attempt phase lifecycle state", () => {
   });
 
   afterEach(() => {
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
   });
 
   it("re-reads compaction timeout state after the retry wait", async () => {
@@ -307,7 +307,7 @@ describe("embedded attempt phase lifecycle state", () => {
   });
 
   it("emits the persisted terminal boundary to the outer fallback owner", async () => {
-    const dir = tempDirs.make("openclaw-attempt-terminal-anchor-");
+    const dir = tempDirs.make("afora-attempt-terminal-anchor-");
     const target = {
       agentId: "main",
       sessionId: "session-1",

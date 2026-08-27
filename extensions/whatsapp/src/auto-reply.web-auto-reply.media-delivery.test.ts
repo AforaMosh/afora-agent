@@ -1,6 +1,6 @@
 // WhatsApp web auto-reply media delivery behavior.
 import fs from "node:fs/promises";
-import { createNoisyPngBuffer, createSolidPngBuffer } from "openclaw/plugin-sdk/test-fixtures";
+import { createNoisyPngBuffer, createSolidPngBuffer } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import {
   createMockWebListener,

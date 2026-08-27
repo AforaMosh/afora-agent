@@ -15,7 +15,7 @@ export function authorizeLegacyV1Resume(params: {
   const record = readClawInstallRecord(finalAgentId);
   if (
     !record ||
-    record.schemaVersion !== "openclaw.clawInstallRecord.v1" ||
+    record.schemaVersion !== "afora.clawInstallRecord.v1" ||
     record.status === "complete" ||
     record.planIntegrity !== consentPlanIntegrity ||
     record.claw.kind !== params.source.kind ||

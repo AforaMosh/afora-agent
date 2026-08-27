@@ -10,8 +10,8 @@ import {
   type MessagePresentation,
   type MessagePresentationInteractiveBlock,
   type MessagePresentationTableBlock,
-} from "openclaw/plugin-sdk/interactive-runtime";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
+} from "afora-agent/plugin-sdk/interactive-runtime";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-runtime";
 import {
   buildTelegramPresentationButtons,
   resolveTelegramInlineButtons,

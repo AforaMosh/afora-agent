@@ -3,10 +3,10 @@ import crypto from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import zlib from "node:zlib";
-import { expectDefined } from "@openclaw/normalization-core";
-import { estimateTokensFromChars } from "@openclaw/normalization-core/cjk-chars";
+import { expectDefined } from "@afora/normalization-core";
+import { estimateTokensFromChars } from "@afora/normalization-core/cjk-chars";
 import type { SessionSystemPromptReport } from "../../config/sessions/types.js";
-import { resolvePreferredOpenClawTmpDir } from "../../infra/tmp-openclaw-dir.js";
+import { resolvePreferredAforaTmpDir } from "../../infra/tmp-afora-dir.js";
 
 /** PNG treemap renderer for visualizing prompt context size by section. */
 type Rect = {
@@ -500,8 +500,8 @@ export async function renderContextTreemapPng(params: {
     1,
   );
   const outPath = path.join(
-    resolvePreferredOpenClawTmpDir(),
-    `openclaw-context-map-${crypto.randomUUID()}.png`,
+    resolvePreferredAforaTmpDir(),
+    `afora-context-map-${crypto.randomUUID()}.png`,
   );
   await writeFile(outPath, encodePng(canvas.data));
   const caption = [

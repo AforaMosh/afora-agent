@@ -24,7 +24,7 @@ ready so it can tell the user and attach the finished audio. The completion
 agent follows the session's visible-reply contract: automatic final reply
 when configured, or `message(action="send")` when the session requires the
 message tool. If the requester session is inactive or its wake fails and
-generated audio is still missing from the reply, OpenClaw sends an
+generated audio is still missing from the reply, Afora sends an
 idempotent direct fallback with just the missing audio.
 
 ## Quick start
@@ -174,16 +174,16 @@ shared live sweep:
 <ParamField path="filename" type="string">Output filename hint.</ParamField>
 
 <Note>
-Not all providers support all parameters. OpenClaw still validates hard
+Not all providers support all parameters. Afora still validates hard
 limits such as input counts before submission. When a provider supports
-duration but uses a shorter maximum than the requested value, OpenClaw
+duration but uses a shorter maximum than the requested value, Afora
 clamps to the closest supported duration. Truly unsupported optional hints
 are ignored with a warning when the selected provider or model cannot honor
 them. Tool results report applied settings; `details.normalization`
 captures any requested-to-applied mapping.
 </Note>
 
-Provider request timeouts are operator configuration only. OpenClaw uses
+Provider request timeouts are operator configuration only. Afora uses
 `agents.defaults.mediaModels.music.timeoutMs` when configured, raises
 values below 120000ms to 120000ms, and otherwise defaults provider requests
 to 300000ms.
@@ -199,9 +199,9 @@ Session-backed music generation runs as a background task:
   `music_generate` calls in the same session return task status instead of
   starting another generation. Use `action: "status"` to check explicitly.
   A recently completed matching request is also deduplicated for 2 minutes.
-- **Status lookup:** `openclaw tasks list` or `openclaw tasks show <taskId>`
+- **Status lookup:** `afora tasks list` or `afora tasks show <taskId>`
   inspects queued, running, and terminal status.
-- **Completion wake:** OpenClaw injects an internal completion event back
+- **Completion wake:** Afora injects an internal completion event back
   into the same session so the model can write the user-facing follow-up
   itself.
 - **Prompt hint:** later user/manual turns in the same session get a small
@@ -227,9 +227,9 @@ move through:
 Check status from the CLI:
 
 ```bash
-openclaw tasks list
-openclaw tasks show <taskId>
-openclaw tasks cancel <taskId>
+afora tasks list
+afora tasks show <taskId>
+afora tasks cancel <taskId>
 ```
 
 ## Configuration
@@ -253,7 +253,7 @@ openclaw tasks cancel <taskId>
 
 ### Provider selection order
 
-OpenClaw tries providers in this order:
+Afora tries providers in this order:
 
 1. `model` parameter from the tool call (if the agent specifies one).
 2. `agents.defaults.mediaModels.music.primary` from config.
@@ -354,7 +354,7 @@ Opt-in live coverage for the shared bundled providers (fal, Google, MiniMax,
 OpenRouter):
 
 ```bash
-OPENCLAW_LIVE_TEST=1 pnpm test:live -- extensions/music-generation-providers.live.test.ts
+AFORA_LIVE_TEST=1 pnpm test:live -- extensions/music-generation-providers.live.test.ts
 ```
 
 Equivalent repo wrapper, which drives the same test file:
@@ -376,7 +376,7 @@ the provider enables edit mode. Coverage today:
 Opt-in live coverage for the bundled ComfyUI music path:
 
 ```bash
-OPENCLAW_LIVE_TEST=1 COMFY_LIVE_TEST=1 pnpm test:live -- extensions/comfy/comfy.live.test.ts
+AFORA_LIVE_TEST=1 COMFY_LIVE_TEST=1 pnpm test:live -- extensions/comfy/comfy.live.test.ts
 ```
 
 The Comfy live file also covers comfy image and video workflows when those

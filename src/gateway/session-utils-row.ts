@@ -1,5 +1,5 @@
-import { asNonNegativeFiniteNumber } from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { asNonNegativeFiniteNumber } from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type {
   SessionCreatedActor,
   SessionOwner,
@@ -30,7 +30,7 @@ import {
   type SessionEntry,
 } from "../config/sessions.js";
 import { sessionEntryForkedFromParent } from "../config/sessions/session-entry-lineage.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { projectPluginSessionExtensionsSync } from "../plugins/host-hook-state.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
 import { classifySessionKind } from "../sessions/classify-session-kind.js";
@@ -78,7 +78,7 @@ import type { GatewaySessionRow } from "./session-utils.types.js";
 export function projectSessionActor(
   actor: SessionEntry["createdActor"],
   userProfileIdentityById: Map<string, SessionActorProfileIdentity | undefined> = new Map(),
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): SessionCreatedActor | undefined {
   if (!actor) {
     return undefined;
@@ -120,7 +120,7 @@ export function projectSessionActor(
 function projectSessionOwner(
   entry: SessionEntry | undefined,
   userProfileIdentityById: Map<string, SessionActorProfileIdentity | undefined> | undefined,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): SessionOwner | undefined {
   const persisted = entry?.owner;
   const actor = projectSessionActor(
@@ -142,7 +142,7 @@ function projectSessionOwner(
 function projectSessionParticipants(
   entry: SessionEntry | undefined,
   userProfileIdentityById: Map<string, SessionActorProfileIdentity | undefined> | undefined,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): SessionCreatedActor[] | undefined {
   const participants = entry?.participants?.flatMap((participant) => {
     const projected = projectSessionActor(participant, userProfileIdentityById, cfg);
@@ -152,7 +152,7 @@ function projectSessionParticipants(
 }
 
 export function buildGatewaySessionRow(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   storePath: string;
   store: Record<string, SessionEntry>;
   key: string;

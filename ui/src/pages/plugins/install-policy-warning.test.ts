@@ -9,7 +9,7 @@ describe("readPluginInstallPolicyWarning", () => {
       message: "Install requires approval",
       details: {
         installPolicyCode: "install_policy_warning_acknowledgement_required",
-        targetName: " openclaw-kitchen-sink-fixture ",
+        targetName: " afora-kitchen-sink-fixture ",
         targetType: "plugin",
         requestMode: "install",
         reason: " ClawScan found issues to review. ",
@@ -28,7 +28,7 @@ describe("readPluginInstallPolicyWarning", () => {
 
     expect(readPluginInstallPolicyWarning(error)).toEqual({
       installPolicyCode: "install_policy_warning_acknowledgement_required",
-      targetName: "openclaw-kitchen-sink-fixture",
+      targetName: "afora-kitchen-sink-fixture",
       targetType: "plugin",
       requestMode: "install",
       reason: "ClawScan found issues to review.",

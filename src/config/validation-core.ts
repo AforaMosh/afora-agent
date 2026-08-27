@@ -1,6 +1,6 @@
 import path from "node:path";
-import { isCanonicalDottedDecimalIPv4, isLoopbackIpAddress } from "@openclaw/net-policy/ip";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { isCanonicalDottedDecimalIPv4, isLoopbackIpAddress } from "@afora/net-policy/ip";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { sanitizeForLog } from "../../packages/terminal-core/src/ansi.js";
 import {
   listAgentEntriesWithSource,
@@ -34,7 +34,7 @@ import {
   isValidExactModelPolicyRef,
   parseModelPolicyWildcardRef,
 } from "./model-policy-ref.js";
-import type { ConfigValidationIssue, OpenClawConfig } from "./types.js";
+import type { ConfigValidationIssue, AforaConfig } from "./types.js";
 import { collectRawBundledChannelConfigIssues } from "./validation-channel-rules.js";
 import {
   collectUnsupportedSecretRefPolicyIssues,
@@ -43,10 +43,10 @@ import {
   withConfigIssuePath,
 } from "./validation-issues.js";
 import { isBuiltInModelProviderOverlayId } from "./zod-schema.core.js";
-import { OpenClawSchema } from "./zod-schema.js";
+import { AforaSchema } from "./zod-schema.js";
 import { McpServerNameSchema, NodeHostMcpServerNameSchema } from "./zod-schema.root-support.js";
 
-function materializeBundledModelProviderOverlays(config: OpenClawConfig): OpenClawConfig {
+function materializeBundledModelProviderOverlays(config: AforaConfig): AforaConfig {
   const providers = config.models?.providers;
   if (!providers) {
     return config;
@@ -143,7 +143,7 @@ function createIdentityAvatarIssue(
 }
 
 function validateIdentityAvatar(
-  config: OpenClawConfig,
+  config: AforaConfig,
   env?: NodeJS.ProcessEnv,
 ): ConfigValidationIssue[] {
   const agents = listAgentEntriesWithSource(config);
@@ -192,7 +192,7 @@ function validateIdentityAvatar(
   return issues;
 }
 
-function validateGatewayTailscaleBind(config: OpenClawConfig): ConfigValidationIssue[] {
+function validateGatewayTailscaleBind(config: AforaConfig): ConfigValidationIssue[] {
   const tailscaleMode = config.gateway?.tailscale?.mode ?? "off";
   if (tailscaleMode !== "serve" && tailscaleMode !== "funnel") {
     return [];
@@ -219,7 +219,7 @@ function validateGatewayTailscaleBind(config: OpenClawConfig): ConfigValidationI
   ];
 }
 
-function validateGatewayTailscaleAuth(config: OpenClawConfig): ConfigValidationIssue[] {
+function validateGatewayTailscaleAuth(config: AforaConfig): ConfigValidationIssue[] {
   const tailscaleMode = config.gateway?.tailscale?.mode ?? "off";
   if (!isUnsafeGatewayTailscaleNoAuth({ authMode: config.gateway?.auth?.mode, tailscaleMode })) {
     return [];
@@ -232,7 +232,7 @@ function validateGatewayTailscaleAuth(config: OpenClawConfig): ConfigValidationI
   ];
 }
 
-function collectModelPolicyAllowIssues(config: OpenClawConfig): ConfigValidationIssue[] {
+function collectModelPolicyAllowIssues(config: AforaConfig): ConfigValidationIssue[] {
   const issues: ConfigValidationIssue[] = [];
   const defaultModels = config.agents?.defaults?.models;
   const collectAliases = (...modelMaps: Array<typeof defaultModels | undefined>): Set<string> => {
@@ -302,9 +302,9 @@ export function validateConfigObjectRaw(
     preservedLegacyRootKeys?: readonly string[];
     env?: NodeJS.ProcessEnv;
   },
-): { ok: true; config: OpenClawConfig } | { ok: false; issues: ConfigValidationIssue[] } {
+): { ok: true; config: AforaConfig } | { ok: false; issues: ConfigValidationIssue[] } {
   const legacyDefaultAgentId = isRecord(raw)
-    ? tryGetLegacyDefaultAgentId(raw as OpenClawConfig)
+    ? tryGetLegacyDefaultAgentId(raw as AforaConfig)
     : undefined;
   let normalizedRaw = stripPreservedLegacyRootKeysForValidation(raw, opts?.preservedLegacyRootKeys);
   let syntheticLegacyOwnership = false;
@@ -333,7 +333,7 @@ export function validateConfigObjectRaw(
     (issue) => !normalizedMcpServerNameIssueKeys.has(JSON.stringify([issue.path, issue.message])),
   );
   const policyIssues = collectUnsupportedSecretRefPolicyIssues(normalizedRaw);
-  const validated = OpenClawSchema.safeParse(normalizedRaw);
+  const validated = AforaSchema.safeParse(normalizedRaw);
   if (!validated.success || mcpServerNameIssues.length > 0) {
     const schemaIssues = validated.success
       ? mcpServerNameIssues
@@ -343,14 +343,14 @@ export function validateConfigObjectRaw(
       issues: mergeUnsupportedMutableSecretRefIssues(policyIssues, schemaIssues),
     };
   }
-  let parsedConfig = validated.data as OpenClawConfig;
+  let parsedConfig = validated.data as AforaConfig;
   if (syntheticLegacyOwnership && parsedConfig.agents) {
     const agents = { ...parsedConfig.agents };
     delete agents.ownership;
     parsedConfig = { ...parsedConfig, agents };
   }
   const validatedConfig = inheritLegacyDefaultAgentId(
-    raw as OpenClawConfig,
+    raw as AforaConfig,
     attachAgentListProjection(materializeBundledModelProviderOverlays(parsedConfig)),
   );
   const channelIssues =
@@ -398,7 +398,7 @@ export function validateConfigObject(
     manifestRegistry?: Pick<PluginMetadataSnapshot, "manifestRegistry">["manifestRegistry"];
     sourceRaw?: unknown;
   },
-): { ok: true; config: OpenClawConfig } | { ok: false; issues: ConfigValidationIssue[] } {
+): { ok: true; config: AforaConfig } | { ok: false; issues: ConfigValidationIssue[] } {
   const result = validateConfigObjectRaw(migratePersistedImplicitMainRoster(raw).config, opts);
   if (!result.ok) {
     return result;

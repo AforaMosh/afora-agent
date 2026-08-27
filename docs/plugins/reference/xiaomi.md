@@ -1,5 +1,5 @@
 ---
-summary: "Adds Xiaomi, Xiaomi Token Plan model provider support to OpenClaw."
+summary: "Adds Xiaomi, Xiaomi Token Plan model provider support to Afora."
 read_when:
   - You are installing, configuring, or auditing the xiaomi plugin
 title: "Xiaomi plugin"
@@ -7,12 +7,12 @@ title: "Xiaomi plugin"
 
 # Xiaomi plugin
 
-Adds Xiaomi, Xiaomi Token Plan model provider support to OpenClaw.
+Adds Xiaomi, Xiaomi Token Plan model provider support to Afora.
 
 ## Distribution
 
-- Package: `@openclaw/xiaomi-provider`
-- Install route: npm; ClawHub: `clawhub:@openclaw/xiaomi-provider`
+- Package: `@afora/xiaomi-provider`
+- Install route: npm; ClawHub: `clawhub:@afora/xiaomi-provider`
 
 ## Surface
 

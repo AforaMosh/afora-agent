@@ -1,5 +1,5 @@
-import { readSessionMessageIdentity } from "@openclaw/gateway-client/browser";
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
+import { readSessionMessageIdentity } from "@afora/gateway-client/browser";
+import { asNullableRecord } from "@afora/normalization-core/record-coerce";
 import { areUiSessionKeysEquivalent } from "../../lib/sessions/session-key.ts";
 
 type LiveTerminalIdentity = { runId: string; afterBoundaryRunId?: string };

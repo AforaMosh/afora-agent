@@ -1,6 +1,6 @@
 // Slack tests cover actionsownload file plugin behavior.
 import type { WebClient } from "@slack/web-api";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const resolveSlackMedia = vi.fn();
@@ -259,7 +259,7 @@ describe("downloadSlackFile", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const result = await downloadSlackFile("F123", {
       cfg,

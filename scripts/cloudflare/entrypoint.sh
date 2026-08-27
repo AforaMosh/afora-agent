@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-STATE_ROOT=/home/node/.openclaw
+STATE_ROOT=/home/node/.afora
 CONFIG=/etc/litestream.yml
 
 mkdir -p "$STATE_ROOT/state" "$STATE_ROOT/agents"
@@ -19,7 +19,7 @@ replica_url_for_db() {
       replica_path="replicas/state/$relative_path"
       ;;
     # case globs match "/" (fnmatch without FNM_PATHNAME), so this accepts the
-    # nested canonical layout agents/<id>/agent/openclaw-agent.sqlite.
+    # nested canonical layout agents/<id>/agent/afora-agent.sqlite.
     "$STATE_ROOT"/agents/*.sqlite)
       relative_path=${resolved_path#"$STATE_ROOT/agents/"}
       replica_path="replicas/agents/$relative_path"
@@ -152,7 +152,7 @@ function localDatabasePath(key) {
   if (segments.some((segment) => !segment || segment === "." || segment === ".." || /\s/.test(segment))) {
     throw new Error(`unsafe replica database path in R2 listing: ${key}`);
   }
-  return `/home/node/.openclaw/${root}/${segments.join("/")}`;
+  return `/home/node/.afora/${root}/${segments.join("/")}`;
 }
 
 const databasePaths = new Set();
@@ -192,6 +192,6 @@ else
   log "sqlite state already present; restore skipped"
 fi
 
-log "starting Litestream replication with OpenClaw gateway child"
+log "starting Litestream replication with Afora gateway child"
 exec litestream replicate -config "$CONFIG" \
-  -exec "node openclaw.mjs gateway --allow-unconfigured --bind lan --port 8080 --auth token"
+  -exec "node afora.mjs gateway --allow-unconfigured --bind lan --port 8080 --auth token"

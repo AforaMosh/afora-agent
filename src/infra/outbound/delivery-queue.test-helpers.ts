@@ -4,10 +4,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
-import { resolvePreferredOpenClawTmpDir } from "../tmp-openclaw-dir.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../../state/afora-state-db.js";
+import { resolvePreferredAforaTmpDir } from "../tmp-afora-dir.js";
 import { OUTBOUND_DELIVERY_QUEUE_NAME } from "./delivery-queue-media-staging.js";
 import type { DeliverFn, RecoveryLogger } from "./delivery-queue-recovery.js";
 
@@ -18,7 +18,7 @@ export function installDeliveryQueueTmpDirHooks(): { readonly tmpDir: () => stri
   let fixtureCount = 0;
 
   beforeAll(() => {
-    fixtureRoot = fs.mkdtempSync(path.join(resolvePreferredOpenClawTmpDir(), "openclaw-dq-suite-"));
+    fixtureRoot = fs.mkdtempSync(path.join(resolvePreferredAforaTmpDir(), "afora-dq-suite-"));
   });
 
   beforeEach(() => {
@@ -27,7 +27,7 @@ export function installDeliveryQueueTmpDirHooks(): { readonly tmpDir: () => stri
   });
 
   afterEach(() => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     if (tmpDir) {
       fs.rmSync(tmpDir, { recursive: true, force: true });
       tmpDir = "";
@@ -35,7 +35,7 @@ export function installDeliveryQueueTmpDirHooks(): { readonly tmpDir: () => stri
   });
 
   afterAll(() => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     if (!fixtureRoot) {
       return;
     }
@@ -49,7 +49,7 @@ export function installDeliveryQueueTmpDirHooks(): { readonly tmpDir: () => stri
 }
 
 export function readQueuedEntry(tmpDir: string, id: string): Record<string, unknown> {
-  const { db } = openOpenClawStateDatabase({ env: { ...process.env, OPENCLAW_STATE_DIR: tmpDir } });
+  const { db } = openAforaStateDatabase({ env: { ...process.env, AFORA_STATE_DIR: tmpDir } });
   const row = db
     .prepare("SELECT entry_json FROM delivery_queue_entries WHERE queue_name = ? AND id = ?")
     .get(OUTBOUND_DELIVERY_QUEUE_NAME, id) as { entry_json?: string } | undefined;
@@ -60,7 +60,7 @@ export function readQueuedEntry(tmpDir: string, id: string): Record<string, unkn
 }
 
 export function readQueuedEntries(tmpDir: string): Record<string, unknown>[] {
-  const { db } = openOpenClawStateDatabase({ env: { ...process.env, OPENCLAW_STATE_DIR: tmpDir } });
+  const { db } = openAforaStateDatabase({ env: { ...process.env, AFORA_STATE_DIR: tmpDir } });
   const rows = db
     .prepare(
       `
@@ -115,7 +115,7 @@ export function setQueuedEntryState(
   if (state.availableAt !== undefined) {
     entry.availableAt = state.availableAt;
   }
-  const { db } = openOpenClawStateDatabase({ env: { ...process.env, OPENCLAW_STATE_DIR: tmpDir } });
+  const { db } = openAforaStateDatabase({ env: { ...process.env, AFORA_STATE_DIR: tmpDir } });
   db.prepare(
     `
       UPDATE delivery_queue_entries

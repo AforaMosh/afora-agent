@@ -8,7 +8,7 @@ type DiagnosticTestApi = {
 
 function getTestApi(): DiagnosticTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.diagnosticTestApi")
+    Symbol.for("afora.diagnosticTestApi")
   ] as DiagnosticTestApi;
 }
 

@@ -3,9 +3,9 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { writeWorkspaceSkills } from "../../skills/test-support/e2e-test-helpers.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../../test-utils/afora-test-state.js";
 import { createTrackedTempDirs } from "../../test-utils/tracked-temp-dirs.js";
 import { createSkillWorkshopTool } from "./skill-workshop-tool.js";
 
@@ -34,14 +34,14 @@ vi.mock("../../skills/workshop/target-lock.js", () => ({
 }));
 
 const tempDirs = createTrackedTempDirs();
-let testState: OpenClawTestState;
+let testState: AforaTestState;
 
 beforeEach(async () => {
   commitLockState.active = false;
   commitLockState.calls = 0;
-  testState = await createOpenClawTestState({
+  testState = await createAforaTestState({
     layout: "state-only",
-    prefix: "openclaw-skill-workshop-list-state-",
+    prefix: "afora-skill-workshop-list-state-",
   });
 });
 
@@ -54,7 +54,7 @@ describe("skill_workshop list", () => {
   it.each([0, 1.5, "1.5", "25items", "many"])(
     "rejects invalid list limit %s before touching proposal state",
     async (limit) => {
-      const workspaceDir = await tempDirs.make("openclaw-skill-workshop-list-");
+      const workspaceDir = await tempDirs.make("afora-skill-workshop-list-");
       const tool = createSkillWorkshopTool({
         workspaceDir,
         config: {},
@@ -70,7 +70,7 @@ describe("skill_workshop list", () => {
   );
 
   it("reconciles a full pending page while preserving list limits through 50", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-list-");
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-list-");
     const tool = createSkillWorkshopTool({
       workspaceDir,
       config: { skills: { workshop: { maxPending: 200 } } },

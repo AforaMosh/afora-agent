@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { createDeferredCore } from "../../shared/deferred.js";
 import {
   replyMessageInjectionTargetOperation,

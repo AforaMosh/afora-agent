@@ -125,7 +125,7 @@ function renderStatusRow(overrides: Partial<BackgroundTasksProps>) {
 
 it("uses the shared surface empty state when no background tasks exist", async () => {
   const container = renderTaskRail({ tasks: [] });
-  const empty = container.querySelector("openclaw-panel-empty-state");
+  const empty = container.querySelector("afora-panel-empty-state");
   await empty?.updateComplete;
 
   expect(empty?.shadowRoot?.querySelector(".empty-state__title")?.textContent).toBe("Tasks");
@@ -688,12 +688,12 @@ describe("background tasks rail rendering", () => {
     const running = container.querySelector('[data-task-id="task-1"]');
     expect(running?.textContent).toContain("12 tool uses");
     expect(running?.textContent).toContain("read");
-    expect(running?.querySelector("openclaw-elapsed-time")).not.toBeNull();
+    expect(running?.querySelector("afora-elapsed-time")).not.toBeNull();
 
     const finished = container.querySelector('[data-task-id="task-2"]');
     expect(finished?.textContent).toContain("1 tool use");
     expect(finished?.textContent).toContain("1m 5s");
-    expect(finished?.querySelector("openclaw-elapsed-time")).toBeNull();
+    expect(finished?.querySelector("afora-elapsed-time")).toBeNull();
   });
 
   it("collapses the finished section", () => {
@@ -728,7 +728,7 @@ describe("running-tasks status row", () => {
     });
 
     const elapsed = container.querySelector<HTMLElement & { startMs: number | null }>(
-      "openclaw-elapsed-time",
+      "afora-elapsed-time",
     );
     expect(elapsed?.startMs).toBe(4_000);
     expect(
@@ -745,10 +745,10 @@ describe("running-tasks status row", () => {
 
     const row = container.querySelector(".chat-tasks-status");
     expect(row).not.toBeNull();
-    expect(row?.querySelector("openclaw-elapsed-time")).not.toBeNull();
+    expect(row?.querySelector("afora-elapsed-time")).not.toBeNull();
     const liveStatus = row?.querySelector('[role="status"]');
     expect(liveStatus?.textContent?.trim()).toBe("1 running task");
-    expect(liveStatus?.querySelector("openclaw-elapsed-time")).toBeNull();
+    expect(liveStatus?.querySelector("afora-elapsed-time")).toBeNull();
     const link = row?.querySelector<HTMLButtonElement>(".chat-tasks-status__link");
     expect(link?.textContent?.trim()).toBe("1 running task");
     link?.click();
@@ -806,7 +806,7 @@ describe("running-tasks status row", () => {
       ],
     });
 
-    const preview = container.querySelector("openclaw-tooltip.chat-tasks-status__preview");
+    const preview = container.querySelector("afora-tooltip.chat-tasks-status__preview");
     expect(preview?.firstElementChild?.classList.contains("chat-tasks-status__link")).toBe(true);
     expect(container.querySelector(".chat-tasks-status")?.id).toBe("chat-tasks-status-test");
     expect(preview?.querySelector('.chat-tasks-preview[slot="content"]')).not.toBeNull();

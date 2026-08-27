@@ -28,7 +28,7 @@ describe("disk-space helpers", () => {
   });
 
   it("reads disk space from the nearest existing ancestor", () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-disk-space-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-disk-space-"));
     try {
       const statfs = vi.spyOn(fs, "statfsSync").mockReturnValue(
         statfsFixture({
@@ -53,7 +53,7 @@ describe("disk-space helpers", () => {
   });
 
   it("formats low disk warnings without making them hard errors", () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-disk-space-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-disk-space-"));
     try {
       vi.spyOn(fs, "statfsSync").mockReturnValue(
         statfsFixture({

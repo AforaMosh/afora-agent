@@ -10,7 +10,7 @@ import {
   unsetConfigOverride,
 } from "./runtime-overrides.js";
 import { resolveMainSessionKey, resolveSessionRoutingContract } from "./sessions/main-session.js";
-import type { OpenClawConfig } from "./types.js";
+import type { AforaConfig } from "./types.js";
 import { validateConfigObject } from "./validation.js";
 
 describe("runtime overrides", () => {
@@ -42,8 +42,8 @@ describe("runtime overrides", () => {
 
   it("sets and applies nested overrides", () => {
     const cfg = {
-      channels: { whatsapp: { responsePrefix: "[openclaw]" } },
-    } as OpenClawConfig;
+      channels: { whatsapp: { responsePrefix: "[afora]" } },
+    } as AforaConfig;
     setConfigOverride("channels.whatsapp.responsePrefix", "[debug]");
     const next = applyConfigOverrides(cfg);
     expect(next.channels?.whatsapp?.responsePrefix).toBe("[debug]");
@@ -99,7 +99,7 @@ describe("runtime overrides", () => {
   it("merges object overrides without clobbering siblings", () => {
     const cfg = {
       channels: { whatsapp: { dmPolicy: "pairing", allowFrom: ["+1"] } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     setConfigOverride("channels.whatsapp.dmPolicy", "open");
     const next = applyConfigOverrides(cfg);
     expect(next.channels?.whatsapp?.dmPolicy).toBe("open");
@@ -123,7 +123,7 @@ describe("runtime overrides", () => {
   });
 
   it("blocks __proto__ keys inside override object values", () => {
-    const cfg = { commands: {} } as OpenClawConfig;
+    const cfg = { commands: {} } as AforaConfig;
     setConfigOverride("commands", JSON.parse('{"__proto__":{"bash":true}}'));
 
     const next = applyConfigOverrides(cfg);
@@ -132,7 +132,7 @@ describe("runtime overrides", () => {
   });
 
   it("blocks constructor/prototype keys inside override object values", () => {
-    const cfg = { commands: {} } as OpenClawConfig;
+    const cfg = { commands: {} } as AforaConfig;
     setConfigOverride("commands", JSON.parse('{"constructor":{"prototype":{"bash":true}}}'));
 
     const next = applyConfigOverrides(cfg);

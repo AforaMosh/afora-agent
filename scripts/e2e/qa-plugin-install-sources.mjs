@@ -77,8 +77,8 @@ const runScript = (script, env = {}) =>
 
 const startedAt = Date.now();
 let status = await runScript("scripts/e2e/plugins-docker.sh", {
-  OPENCLAW_PLUGINS_E2E_CLAWHUB: "1",
-  OPENCLAW_PLUGINS_E2E_LIVE_CLAWHUB: "0",
+  AFORA_PLUGINS_E2E_CLAWHUB: "1",
+  AFORA_PLUGINS_E2E_LIVE_CLAWHUB: "0",
 });
 if (status === 0) {
   status = await runScript("scripts/e2e/bundled-plugin-install-uninstall-docker.sh");

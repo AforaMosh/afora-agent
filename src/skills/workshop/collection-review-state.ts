@@ -1,23 +1,23 @@
 import path from "node:path";
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord } from "@afora/normalization-core/record-coerce";
 import { sha256Hex } from "../../infra/crypto-digest.js";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../../infra/kysely-sync.js";
-import type { DB as OpenClawStateDatabase } from "../../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateDatabase } from "../../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../../state/openclaw-state-db.js";
-import { withOpenClawStateLease } from "../../state/openclaw-state-lease.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../../state/afora-state-db.js";
+import { withAforaStateLease } from "../../state/afora-state-lease.js";
 
 const CURATOR_STATE_ID = 1;
 const REVIEW_INTERVAL_MS = 24 * 60 * 60_000;
 const REVIEW_CLAIM_MS = 11 * 60_000;
-type CollectionReviewDatabase = Pick<OpenClawStateDatabase, "skill_curator_state">;
+type CollectionReviewDatabase = Pick<AforaStateDatabase, "skill_curator_state">;
 
 function workspaceKey(workspaceDir: string): string {
   return sha256Hex(path.resolve(workspaceDir));
@@ -26,9 +26,9 @@ function workspaceKey(workspaceDir: string): string {
 export async function withSkillCollectionReviewClaim<T>(
   workspaceDir: string,
   run: () => Promise<T>,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): Promise<T> {
-  return await withOpenClawStateLease(
+  return await withAforaStateLease(
     {
       scope: "skill-collection-review",
       key: workspaceKey(workspaceDir),
@@ -66,9 +66,9 @@ function parseReviewTimes(value: string | null | undefined): Record<string, numb
 export function isSkillCollectionReviewDue(
   workspaceDir: string,
   nowMs: number,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): boolean {
-  const database = openOpenClawStateDatabase(options);
+  const database = openAforaStateDatabase(options);
   const kysely = getNodeSqliteKysely<CollectionReviewDatabase>(database.db);
   const state = executeSqliteQueryTakeFirstSync(
     database.db,
@@ -84,9 +84,9 @@ export function isSkillCollectionReviewDue(
 export function recordSkillCollectionReviewSuccess(
   workspaceDir: string,
   nowMs: number,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): void {
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     const kysely = getNodeSqliteKysely<CollectionReviewDatabase>(db);
     const current = executeSqliteQueryTakeFirstSync(
       db,

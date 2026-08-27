@@ -7,8 +7,8 @@ scenario:
   coverage:
     primary:
       - observability.bounded-in-process-stability-recorder
-      - observability.openclaw-gateway-stability
-      - observability.openclaw-gateway-stability-bundle
+      - observability.afora-gateway-stability
+      - observability.afora-gateway-stability-bundle
   objective: Prove the live Gateway stability RPC, bounded recorder, persisted bundle filtering, and export-from-bundle CLI paths as one operator workflow.
   successCriteria:
     - A real child CLI reads the live Gateway diagnostics.stability RPC through authenticated WebSocket transport.

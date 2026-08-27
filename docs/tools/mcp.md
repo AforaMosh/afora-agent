@@ -1,16 +1,16 @@
 ---
-summary: "Connect MCP servers to OpenClaw from the Control UI, CLI, or config"
+summary: "Connect MCP servers to Afora from the Control UI, CLI, or config"
 title: "Connect MCP servers"
 read_when:
-  - Adding an MCP server for OpenClaw agents
-  - Choosing between Settings and `openclaw mcp`
+  - Adding an MCP server for Afora agents
+  - Choosing between Settings and `afora mcp`
   - Troubleshooting MCP transport, OAuth, or tool discovery
 ---
 
-The Model Context Protocol (MCP) is how an agent borrows tools from another program: an MCP server exposes tools, resources, and prompts, and OpenClaw connects to it and makes those tools available to your agents. Server definitions live under `mcp.servers` in config, and the tools they expose go through the same tool-profile and tool-policy controls as everything else — connecting a server does not bypass your policy.
+The Model Context Protocol (MCP) is how an agent borrows tools from another program: an MCP server exposes tools, resources, and prompts, and Afora connects to it and makes those tools available to your agents. Server definitions live under `mcp.servers` in config, and the tools they expose go through the same tool-profile and tool-policy controls as everything else — connecting a server does not bypass your policy.
 
 <Note>
-This guide is about connecting third-party MCP servers **to OpenClaw**. For the reverse — exposing OpenClaw channel conversations to another MCP client — use [`openclaw mcp serve`](/cli/mcp#openclaw-as-an-mcp-server).
+This guide is about connecting third-party MCP servers **to Afora**. For the reverse — exposing Afora channel conversations to another MCP client — use [`afora mcp serve`](/cli/mcp#afora-as-an-mcp-server).
 </Note>
 
 ## Add a server from Settings
@@ -26,7 +26,7 @@ That writes the new `mcp.servers` entry through the Gateway. For anything beyond
 Once the server is saved, verify it actually answers:
 
 ```bash
-openclaw mcp doctor <name> --probe
+afora mcp doctor <name> --probe
 ```
 
 Saving a definition proves nothing about reachability — the probe does. Note that already-running Gateway or agent processes may need a restart or runtime reload before they pick up the new definition.
@@ -39,7 +39,7 @@ Choose **This session** for session-only enablement or **Everywhere** for global
 
 From an active conversation, open **+ → Connectors → Tool access** to inspect
 or deny individual tools for that session. The view follows the session's
-actual runtime owner: built-in OpenClaw sessions read the in-process MCP
+actual runtime owner: built-in Afora sessions read the in-process MCP
 catalog, while native agent harnesses can contribute their thread-owned
 catalog. Session server and tool denials are enforced by either runtime before
 the next turn starts.
@@ -49,24 +49,24 @@ the next turn starts.
 A local stdio server:
 
 ```bash
-openclaw mcp add local-tools \
+afora mcp add local-tools \
   --command node \
   --arg ./dist/mcp-server.js \
-  --cwd /srv/openclaw-tools
-openclaw mcp doctor local-tools --probe
+  --cwd /srv/afora-tools
+afora mcp doctor local-tools --probe
 ```
 
 A remote Streamable HTTP server, exposing only some of its tools:
 
 ```bash
-openclaw mcp add docs \
+afora mcp add docs \
   --url https://mcp.example.com/mcp \
   --transport streamable-http \
   --include 'search,read_*'
-openclaw mcp doctor docs --probe
+afora mcp doctor docs --probe
 ```
 
-Useful companions: `openclaw mcp status --verbose` for a config-only summary, `openclaw mcp probe <name>` for live capabilities, and `openclaw mcp login <name>` when an HTTP server uses OAuth. The [MCP CLI reference](/cli/mcp) documents every command, flag, and output shape, plus the separate `mcp serve` bridge.
+Useful companions: `afora mcp status --verbose` for a config-only summary, `afora mcp probe <name>` for live capabilities, and `afora mcp login <name>` when an HTTP server uses OAuth. The [MCP CLI reference](/cli/mcp) documents every command, flag, and output shape, plus the separate `mcp serve` bridge.
 
 ## Configure a server directly
 
@@ -97,7 +97,7 @@ An enabled server needs either a command (stdio) or a URL (SSE or Streamable HTT
 
 ### The server appears in Settings but exposes no tools
 
-Run `openclaw mcp doctor <name> --probe`. Doctor validates the saved definition first, then opens a live connection and reports the tools and other capabilities the server advertises. If it connects but expected tools are missing, check `toolFilter.include` and `toolFilter.exclude`.
+Run `afora mcp doctor <name> --probe`. Doctor validates the saved definition first, then opens a live connection and reports the tools and other capabilities the server advertises. If it connects but expected tools are missing, check `toolFilter.include` and `toolFilter.exclude`.
 
 ### A stdio server does not start
 
@@ -108,14 +108,14 @@ Confirm the `command` resolves in the Gateway process environment and that `cwd`
 Set `auth: "oauth"` plus any required `oauth` metadata, then:
 
 ```bash
-openclaw mcp login <name>
+afora mcp login <name>
 ```
 
-Follow the printed authorization URL. OpenClaw normally captures the loopback redirect and saves the credentials automatically; use the printed `--code` command when the browser cannot reach the callback listener.
+Follow the printed authorization URL. Afora normally captures the loopback redirect and saves the credentials automatically; use the printed `--code` command when the browser cannot reach the callback listener.
 
 ### Changes do not reach an active agent
 
-`openclaw mcp reload` refreshes runtimes owned by the current CLI process. A Gateway or agent running elsewhere needs its own reload, config publish, or restart.
+`afora mcp reload` refreshes runtimes owned by the current CLI process. A Gateway or agent running elsewhere needs its own reload, config publish, or restart.
 
 ## Related
 

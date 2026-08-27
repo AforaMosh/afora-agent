@@ -57,7 +57,7 @@ function planFor(
 }
 
 function writeCandidatePackage(scripts: Record<string, string>): string {
-  const root = tempDirs.make("openclaw-docker-plan-candidate-");
+  const root = tempDirs.make("afora-docker-plan-candidate-");
   writeFileSync(join(root, "package.json"), JSON.stringify({ scripts }));
   return root;
 }
@@ -90,7 +90,7 @@ function trustedUpgradeSurvivorCommand(
 ): string {
   const prefix = envPrefix ? `${envPrefix} ` : "";
   const prelude = shellPrelude ? `${shellPrelude}; ` : "";
-  return `OPENCLAW_DOCKER_E2E_REPO_ROOT="\${OPENCLAW_DOCKER_E2E_REPO_ROOT:-$PWD}" ${prefix}OPENCLAW_SKIP_DOCKER_BUILD=1 bash -c '${prelude}harness="\${OPENCLAW_DOCKER_E2E_TRUSTED_HARNESS_DIR:-${harnessDir}}"; OPENCLAW_LIVE_DOCKER_REPO_ROOT="\${OPENCLAW_DOCKER_E2E_REPO_ROOT:-$PWD}" bash "$harness/scripts/e2e/upgrade-survivor-docker.sh"'`;
+  return `AFORA_DOCKER_E2E_REPO_ROOT="\${AFORA_DOCKER_E2E_REPO_ROOT:-$PWD}" ${prefix}AFORA_SKIP_DOCKER_BUILD=1 bash -c '${prelude}harness="\${AFORA_DOCKER_E2E_TRUSTED_HARNESS_DIR:-${harnessDir}}"; AFORA_LIVE_DOCKER_REPO_ROOT="\${AFORA_DOCKER_E2E_REPO_ROOT:-$PWD}" bash "$harness/scripts/e2e/upgrade-survivor-docker.sh"'`;
 }
 
 function publishedUpgradeSurvivorLane(
@@ -99,11 +99,11 @@ function publishedUpgradeSurvivorLane(
   scenario?: string,
 ): ReturnType<typeof summarizeLane> {
   return {
-    command: `OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_DIR="$PWD/.artifacts/upgrade-survivor/${name}" OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC='${baselineSpec}' ${
-      scenario ? `OPENCLAW_UPGRADE_SURVIVOR_SCENARIO='${scenario}' ` : ""
+    command: `AFORA_UPGRADE_SURVIVOR_ARTIFACT_DIR="$PWD/.artifacts/upgrade-survivor/${name}" AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC='${baselineSpec}' ${
+      scenario ? `AFORA_UPGRADE_SURVIVOR_SCENARIO='${scenario}' ` : ""
     }${trustedUpgradeSurvivorCommand(
-      "OPENCLAW_UPGRADE_SURVIVOR_PUBLISHED_BASELINE=1",
-      'export OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC="${OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC:-openclaw@latest}"; export OPENCLAW_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT="${OPENCLAW_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT:-1500s}"',
+      "AFORA_UPGRADE_SURVIVOR_PUBLISHED_BASELINE=1",
+      'export AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC="${AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC:-afora@latest}"; export AFORA_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT="${AFORA_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT:-1500s}"',
     )}`,
     imageKind: "bare",
     live: false,
@@ -117,9 +117,9 @@ function publishedUpgradeSurvivorLane(
 
 function updateMigrationLane(name: string, baselineSpec: string): ReturnType<typeof summarizeLane> {
   return {
-    command: `OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_DIR="$PWD/.artifacts/upgrade-survivor/${name}" OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC='${baselineSpec}' OPENCLAW_UPGRADE_SURVIVOR_SCENARIO='plugin-deps-cleanup' ${trustedUpgradeSurvivorCommand(
-      "OPENCLAW_UPGRADE_SURVIVOR_PUBLISHED_BASELINE=1",
-      'export OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC="${OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC:-openclaw@2026.4.23}"; export OPENCLAW_UPGRADE_SURVIVOR_SCENARIO="${OPENCLAW_UPGRADE_SURVIVOR_SCENARIO:-plugin-deps-cleanup}"',
+    command: `AFORA_UPGRADE_SURVIVOR_ARTIFACT_DIR="$PWD/.artifacts/upgrade-survivor/${name}" AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC='${baselineSpec}' AFORA_UPGRADE_SURVIVOR_SCENARIO='plugin-deps-cleanup' ${trustedUpgradeSurvivorCommand(
+      "AFORA_UPGRADE_SURVIVOR_PUBLISHED_BASELINE=1",
+      'export AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC="${AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC:-afora@2026.4.23}"; export AFORA_UPGRADE_SURVIVOR_SCENARIO="${AFORA_UPGRADE_SURVIVOR_SCENARIO:-plugin-deps-cleanup}"',
     )}`,
     imageKind: "bare",
     live: false,
@@ -133,7 +133,7 @@ function updateMigrationLane(name: string, baselineSpec: string): ReturnType<typ
 
 function bundledPluginSweepLane(index: number): ReturnType<typeof summarizeLane> {
   return {
-    command: `OPENCLAW_BUNDLED_PLUGIN_SWEEP_TOTAL=24 OPENCLAW_BUNDLED_PLUGIN_SWEEP_INDEX=${index} OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:bundled-plugin-install-uninstall`,
+    command: `AFORA_BUNDLED_PLUGIN_SWEEP_TOTAL=24 AFORA_BUNDLED_PLUGIN_SWEEP_INDEX=${index} AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:bundled-plugin-install-uninstall`,
     imageKind: "functional",
     live: false,
     name: `bundled-plugin-install-uninstall-${index}`,
@@ -187,14 +187,14 @@ describe("scripts/lib/docker-e2e-plan", () => {
   it("fails when the selected candidate package manifest is missing", () => {
     expect(() =>
       planFor({
-        candidatePackageRoot: tempDirs.make("openclaw-docker-plan-missing-package-"),
+        candidatePackageRoot: tempDirs.make("afora-docker-plan-missing-package-"),
         selectedLaneNames: ["update-run-package-self-upgrade"],
       }),
     ).toThrow(/package\.json/);
   });
 
   it("fails when the selected candidate package manifest is malformed", () => {
-    const root = tempDirs.make("openclaw-docker-plan-malformed-package-");
+    const root = tempDirs.make("afora-docker-plan-malformed-package-");
     writeFileSync(join(root, "package.json"), "{");
 
     expect(() =>
@@ -218,7 +218,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
 
     expect(plan.lanes.map(summarizeLane)).toEqual([
       {
-        command: "OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:sandbox-browser-sidecar",
+        command: "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:sandbox-browser-sidecar",
         imageKind: "functional",
         live: false,
         name: "sandbox-browser-sidecar",
@@ -246,7 +246,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
           .map((candidate) => [candidate.name, candidate]),
       ).values(),
     ];
-    const tempRoot = tempDirs.make("openclaw-release-harness-");
+    const tempRoot = tempDirs.make("afora-release-harness-");
     const nestedModule = join(
       tempRoot,
       ".release-harness",
@@ -258,7 +258,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
     expect(sourceLanes).toHaveLength(trustedScripts.size);
     for (const sourceLane of sourceLanes) {
       expect(sourceLane.command).toContain(
-        'harness="${OPENCLAW_DOCKER_E2E_TRUSTED_HARNESS_DIR:-.}"',
+        'harness="${AFORA_DOCKER_E2E_TRUSTED_HARNESS_DIR:-.}"',
       );
     }
 
@@ -292,7 +292,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
         encoding: "utf8",
         env: {
           ...process.env,
-          OPENCLAW_DOCKER_E2E_REPO_ROOT: tempRoot,
+          AFORA_DOCKER_E2E_REPO_ROOT: tempRoot,
         },
       },
     );
@@ -301,7 +301,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
     expect(lanes).toHaveLength(trustedScripts.size);
     for (const lane of lanes) {
       expect(lane.command).toContain(
-        'harness="${OPENCLAW_DOCKER_E2E_TRUSTED_HARNESS_DIR:-.release-harness}"',
+        'harness="${AFORA_DOCKER_E2E_TRUSTED_HARNESS_DIR:-.release-harness}"',
       );
       expect(lane.command).toContain(`bash "$harness/scripts/${trustedScripts.get(lane.name)}"`);
       expect(lane.command).not.toContain(`pnpm test:docker:${lane.name}`);
@@ -309,7 +309,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
   });
 
   it("preserves expanded survivor env through the trusted harness wrapper", () => {
-    const root = tempDirs.make("openclaw-survivor-wrapper-");
+    const root = tempDirs.make("afora-survivor-wrapper-");
     const harnessRoot = join(root, ".release-harness");
     const script = join(harnessRoot, "scripts/e2e/upgrade-survivor-docker.sh");
     const output = join(root, "survivor-env.txt");
@@ -318,7 +318,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
       script,
       [
         "#!/usr/bin/env bash",
-        'printf "%s|%s\\n" "$OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC" "$OPENCLAW_UPGRADE_SURVIVOR_SCENARIO" > "$OPENCLAW_TEST_OUTPUT"',
+        'printf "%s|%s\\n" "$AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC" "$AFORA_UPGRADE_SURVIVOR_SCENARIO" > "$AFORA_TEST_OUTPUT"',
       ].join("\n"),
     );
     chmodSync(script, 0o755);
@@ -334,13 +334,13 @@ describe("scripts/lib/docker-e2e-plan", () => {
       cwd: root,
       env: {
         ...process.env,
-        OPENCLAW_DOCKER_E2E_REPO_ROOT: root,
-        OPENCLAW_DOCKER_E2E_TRUSTED_HARNESS_DIR: harnessRoot,
-        OPENCLAW_TEST_OUTPUT: output,
+        AFORA_DOCKER_E2E_REPO_ROOT: root,
+        AFORA_DOCKER_E2E_TRUSTED_HARNESS_DIR: harnessRoot,
+        AFORA_TEST_OUTPUT: output,
       },
     });
 
-    expect(readFileSync(output, "utf8")).toBe("openclaw@2026.7.2|feishu-channel\n");
+    expect(readFileSync(output, "utf8")).toBe("afora@2026.7.2|feishu-channel\n");
   });
 
   it("plans package-backed installer, Compose, and package artifact proofs", () => {
@@ -350,7 +350,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
 
     expect(plan.lanes.map(summarizeLane)).toEqual([
       {
-        command: "OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:cli-installer-distribution",
+        command: "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:cli-installer-distribution",
         imageKind: "bare",
         live: false,
         name: "cli-installer-distribution",
@@ -360,7 +360,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
         weight: 3,
       },
       {
-        command: "OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:compose-setup",
+        command: "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:compose-setup",
         imageKind: "functional",
         live: false,
         name: "compose-setup",
@@ -370,7 +370,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
         weight: 3,
       },
       {
-        command: "OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:package-install",
+        command: "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:package-install",
         imageKind: "bare",
         live: false,
         name: "docker-package-install",
@@ -435,7 +435,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
     expect(plan.selectedLanes).toEqual([]);
     expect(codeModeLanes.map(summarizeLane)).toEqual([
       {
-        command: "OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:mcp-code-mode-gateway",
+        command: "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:mcp-code-mode-gateway",
         imageKind: "functional",
         live: false,
         name: "mcp-code-mode-gateway",
@@ -599,7 +599,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
         .map(summarizeLane),
     ).toEqual([
       {
-        command: "OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:release-typed-onboarding",
+        command: "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:release-typed-onboarding",
         imageKind: "bare",
         live: false,
         name: "release-typed-onboarding",
@@ -611,7 +611,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
     ]);
     expect(packageUpdateCore.lanes.map(summarizeLane)).toEqual([
       {
-        command: "OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:npm-onboard-channel-agent",
+        command: "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:npm-onboard-channel-agent",
         imageKind: "bare",
         live: false,
         name: "npm-onboard-channel-agent",
@@ -621,7 +621,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
       },
       {
         command:
-          "OPENCLAW_NPM_ONBOARD_CHANNEL=discord OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:npm-onboard-channel-agent",
+          "AFORA_NPM_ONBOARD_CHANNEL=discord AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:npm-onboard-channel-agent",
         imageKind: "bare",
         live: false,
         name: "npm-onboard-discord-channel-agent",
@@ -631,7 +631,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
       },
       {
         command:
-          "OPENCLAW_NPM_ONBOARD_CHANNEL=slack OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:npm-onboard-channel-agent",
+          "AFORA_NPM_ONBOARD_CHANNEL=slack AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:npm-onboard-channel-agent",
         imageKind: "bare",
         live: false,
         name: "npm-onboard-slack-channel-agent",
@@ -640,7 +640,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
         weight: 3,
       },
       {
-        command: "OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:doctor-switch",
+        command: "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:doctor-switch",
         imageKind: "bare",
         live: false,
         name: "doctor-switch",
@@ -649,7 +649,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
         weight: 3,
       },
       {
-        command: "OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:update-channel-switch",
+        command: "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:update-channel-switch",
         imageKind: "bare",
         live: false,
         name: "update-channel-switch",
@@ -659,7 +659,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
         weight: 3,
       },
       {
-        command: "OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:skill-install",
+        command: "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:skill-install",
         imageKind: "bare",
         live: false,
         name: "skill-install",
@@ -680,8 +680,8 @@ describe("scripts/lib/docker-e2e-plan", () => {
       },
       {
         command: trustedUpgradeSurvivorCommand(
-          "OPENCLAW_UPGRADE_SURVIVOR_PUBLISHED_BASELINE=1",
-          'export OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC="${OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC:-openclaw@latest}"; export OPENCLAW_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT="${OPENCLAW_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT:-1500s}"',
+          "AFORA_UPGRADE_SURVIVOR_PUBLISHED_BASELINE=1",
+          'export AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC="${AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC:-afora@latest}"; export AFORA_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT="${AFORA_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT:-1500s}"',
         ),
         imageKind: "bare",
         live: false,
@@ -693,8 +693,8 @@ describe("scripts/lib/docker-e2e-plan", () => {
       },
       {
         command: trustedUpgradeSurvivorCommand(
-          "OPENCLAW_UPGRADE_SURVIVOR_PUBLISHED_BASELINE=1 OPENCLAW_UPGRADE_SURVIVOR_ROOT_MANAGED_VPS=1",
-          'export OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC="${OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC:-openclaw@2026.5.7}"; export OPENCLAW_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT="${OPENCLAW_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT:-1500s}"',
+          "AFORA_UPGRADE_SURVIVOR_PUBLISHED_BASELINE=1 AFORA_UPGRADE_SURVIVOR_ROOT_MANAGED_VPS=1",
+          'export AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC="${AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC:-afora@2026.5.7}"; export AFORA_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT="${AFORA_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT:-1500s}"',
         ),
         imageKind: "bare",
         live: false,
@@ -706,8 +706,8 @@ describe("scripts/lib/docker-e2e-plan", () => {
       },
       {
         command: trustedUpgradeSurvivorCommand(
-          "OPENCLAW_UPGRADE_SURVIVOR_PUBLISHED_BASELINE=1 OPENCLAW_UPGRADE_SURVIVOR_UPDATE_RESTART_MODE=auto-auth",
-          'export OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC="${OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC:-openclaw@latest}"; export OPENCLAW_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT="${OPENCLAW_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT:-1500s}"',
+          "AFORA_UPGRADE_SURVIVOR_PUBLISHED_BASELINE=1 AFORA_UPGRADE_SURVIVOR_UPDATE_RESTART_MODE=auto-auth",
+          'export AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC="${AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC:-afora@latest}"; export AFORA_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT="${AFORA_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT:-1500s}"',
         ),
         imageKind: "bare",
         live: false,
@@ -719,7 +719,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
       },
       {
         command:
-          "OPENCLAW_QA_ALLOW_UPDATE_RUN_SELF=1 OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:update-run-package-self-upgrade",
+          "AFORA_QA_ALLOW_UPDATE_RUN_SELF=1 AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:update-run-package-self-upgrade",
         imageKind: "bare",
         live: false,
         name: "update-run-package-self-upgrade",
@@ -732,7 +732,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
     expect(pluginsRuntimePlugins.lanes.map((lane) => lane.name)).toEqual(["plugins"]);
     expect(pluginsRuntimeServices.lanes.map(summarizeLane)).toEqual([
       {
-        command: "OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:cron-mcp-cleanup",
+        command: "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:cron-mcp-cleanup",
         imageKind: "functional",
         live: false,
         name: "cron-mcp-cleanup",
@@ -741,7 +741,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
         weight: 3,
       },
       {
-        command: "OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:kitchen-sink-rpc",
+        command: "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:kitchen-sink-rpc",
         imageKind: "functional",
         live: false,
         name: "kitchen-sink-rpc",
@@ -751,7 +751,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
         weight: 3,
       },
       {
-        command: "OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:openai-web-search-minimal",
+        command: "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:openai-web-search-minimal",
         imageKind: "functional",
         live: false,
         name: "openai-web-search-minimal",
@@ -762,7 +762,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
       },
       {
         command:
-          "OPENCLAW_LIVE_PLUGIN_TOOL_TIMEOUT_SECONDS=300 OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:live-plugin-tool",
+          "AFORA_LIVE_PLUGIN_TOOL_TIMEOUT_SECONDS=300 AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:live-plugin-tool",
         imageKind: "bare",
         live: true,
         name: "live-plugin-tool",
@@ -775,7 +775,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
     expect(openWebUI.lanes.map(summarizeLane)).toEqual([
       {
         command:
-          "OPENCLAW_OPENWEBUI_MODEL=openai/gpt-5.4-mini OPENCLAW_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS=300 OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:openwebui",
+          "AFORA_OPENWEBUI_MODEL=openai/gpt-5.4-mini AFORA_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS=300 AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:openwebui",
         imageKind: "functional",
         live: true,
         name: "openwebui",
@@ -939,15 +939,15 @@ describe("scripts/lib/docker-e2e-plan", () => {
     const plan = planFor({
       selectedLaneNames: ["published-upgrade-survivor"],
       upgradeSurvivorBaselines:
-        "openclaw@2026.4.29 2026.4.23 openclaw@2026.4.23 openclaw@2026.3.13-1",
+        "afora@2026.4.29 2026.4.23 afora@2026.4.23 afora@2026.3.13-1",
     });
 
     expect(plan.lanes.map(summarizeLane)).toEqual([
-      publishedUpgradeSurvivorLane("published-upgrade-survivor-2026.4.29", "openclaw@2026.4.29"),
-      publishedUpgradeSurvivorLane("published-upgrade-survivor-2026.4.23", "openclaw@2026.4.23"),
+      publishedUpgradeSurvivorLane("published-upgrade-survivor-2026.4.29", "afora@2026.4.29"),
+      publishedUpgradeSurvivorLane("published-upgrade-survivor-2026.4.23", "afora@2026.4.23"),
       publishedUpgradeSurvivorLane(
         "published-upgrade-survivor-2026.3.13-1",
-        "openclaw@2026.3.13-1",
+        "afora@2026.3.13-1",
       ),
     ]);
   });
@@ -962,32 +962,32 @@ describe("scripts/lib/docker-e2e-plan", () => {
     expect(plan.lanes.map(summarizeLane)).toEqual([
       publishedUpgradeSurvivorLane(
         "published-upgrade-survivor-2026.4.29",
-        "openclaw@2026.4.29",
+        "afora@2026.4.29",
         "base",
       ),
       publishedUpgradeSurvivorLane(
         "published-upgrade-survivor-2026.4.29-feishu-channel",
-        "openclaw@2026.4.29",
+        "afora@2026.4.29",
         "feishu-channel",
       ),
       publishedUpgradeSurvivorLane(
         "published-upgrade-survivor-2026.4.29-tilde-log-path",
-        "openclaw@2026.4.29",
+        "afora@2026.4.29",
         "tilde-log-path",
       ),
       publishedUpgradeSurvivorLane(
         "published-upgrade-survivor-2026.4.23",
-        "openclaw@2026.4.23",
+        "afora@2026.4.23",
         "base",
       ),
       publishedUpgradeSurvivorLane(
         "published-upgrade-survivor-2026.4.23-feishu-channel",
-        "openclaw@2026.4.23",
+        "afora@2026.4.23",
         "feishu-channel",
       ),
       publishedUpgradeSurvivorLane(
         "published-upgrade-survivor-2026.4.23-tilde-log-path",
-        "openclaw@2026.4.23",
+        "afora@2026.4.23",
         "tilde-log-path",
       ),
     ]);
@@ -1002,7 +1002,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
 
     expect(plan.lanes.map((lane) => lane.name)).toEqual([
       "published-upgrade-survivor-2026.4.29",
-      "published-upgrade-survivor-2026.4.29-acpx-openclaw-tools-bridge",
+      "published-upgrade-survivor-2026.4.29-acpx-afora-tools-bridge",
       "published-upgrade-survivor-2026.4.29-feishu-channel",
       "published-upgrade-survivor-2026.4.29-bootstrap-persona",
       "published-upgrade-survivor-2026.4.29-channel-post-core-restore",
@@ -1017,7 +1017,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
   });
 
   it("omits trusted-current scenarios unsupported by a frozen target harness", () => {
-    const targetRoot = tempDirs.make("openclaw-frozen-upgrade-harness-");
+    const targetRoot = tempDirs.make("afora-frozen-upgrade-harness-");
     writeFrozenScenarioContract(targetRoot, [
       "base",
       "feishu-channel",
@@ -1048,14 +1048,14 @@ describe("scripts/lib/docker-e2e-plan", () => {
       "published-upgrade-survivor-2026.6.11-versioned-runtime-deps",
     ]);
     expect(plan.omittedUnsupportedLanes).toEqual([
-      "published-upgrade-survivor-2026.6.11-acpx-openclaw-tools-bridge",
+      "published-upgrade-survivor-2026.6.11-acpx-afora-tools-bridge",
       "published-upgrade-survivor-2026.6.11-meeting-transcripts-sqlite",
       "published-upgrade-survivor-2026.6.11-cron-scheduled-authority",
     ]);
   });
 
   it("reads content-addressed scenario catalogs from pre-command frozen targets", () => {
-    const targetRoot = tempDirs.make("openclaw-legacy-frozen-upgrade-harness-");
+    const targetRoot = tempDirs.make("afora-legacy-frozen-upgrade-harness-");
     const assertionsFile = join(targetRoot, "scripts/e2e/lib/upgrade-survivor/assertions.mjs");
     const legacyScenarios = [
       "base",
@@ -1087,14 +1087,14 @@ describe("scripts/lib/docker-e2e-plan", () => {
     });
 
     expect(plan.omittedUnsupportedLanes).toEqual([
-      "published-upgrade-survivor-2026.6.11-acpx-openclaw-tools-bridge",
+      "published-upgrade-survivor-2026.6.11-acpx-afora-tools-bridge",
       "published-upgrade-survivor-2026.6.11-meeting-transcripts-sqlite",
       "published-upgrade-survivor-2026.6.11-cron-scheduled-authority",
     ]);
   });
 
   it("omits survivor lanes when the target exposes none of the requested scenarios", () => {
-    const targetRoot = tempDirs.make("openclaw-frozen-empty-upgrade-harness-");
+    const targetRoot = tempDirs.make("afora-frozen-empty-upgrade-harness-");
     writeFrozenScenarioContract(targetRoot, ["unrelated"]);
 
     const plan = planFor({
@@ -1113,7 +1113,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
   });
 
   it("omits baseline-only survivor lanes when the target lacks the implicit base scenario", () => {
-    const targetRoot = tempDirs.make("openclaw-frozen-no-base-upgrade-harness-");
+    const targetRoot = tempDirs.make("afora-frozen-no-base-upgrade-harness-");
     writeFrozenScenarioContract(targetRoot, ["unrelated"]);
 
     const plan = planFor({
@@ -1127,7 +1127,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
   });
 
   it("omits an unconfigured survivor lane when the target lacks the implicit base scenario", () => {
-    const targetRoot = tempDirs.make("openclaw-frozen-default-base-harness-");
+    const targetRoot = tempDirs.make("afora-frozen-default-base-harness-");
     writeFrozenScenarioContract(targetRoot, ["unrelated"]);
 
     const plan = planFor({
@@ -1140,7 +1140,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
   });
 
   it("reports an unsupported survivor lane beside runnable selected lanes", () => {
-    const targetRoot = tempDirs.make("openclaw-frozen-mixed-upgrade-harness-");
+    const targetRoot = tempDirs.make("afora-frozen-mixed-upgrade-harness-");
     writeFrozenScenarioContract(targetRoot, ["unrelated"]);
 
     const plan = planFor({
@@ -1158,7 +1158,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
   });
 
   it("reports an explicitly selected expanded survivor lane as unsupported", () => {
-    const targetRoot = tempDirs.make("openclaw-frozen-expanded-upgrade-harness-");
+    const targetRoot = tempDirs.make("afora-frozen-expanded-upgrade-harness-");
     writeFrozenScenarioContract(targetRoot, ["unrelated"]);
 
     const selectedLane = "published-upgrade-survivor-2026.6.11";
@@ -1173,7 +1173,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
   });
 
   it("omits unsupported scenario-only survivor lanes without explicit baselines", () => {
-    const targetRoot = tempDirs.make("openclaw-frozen-scenario-only-harness-");
+    const targetRoot = tempDirs.make("afora-frozen-scenario-only-harness-");
     writeFrozenScenarioContract(targetRoot, ["unrelated"]);
 
     const plan = planFor({
@@ -1186,13 +1186,13 @@ describe("scripts/lib/docker-e2e-plan", () => {
   });
 
   it("does not fall back to base when an unsupported scenario is baseline-incompatible", () => {
-    const targetRoot = tempDirs.make("openclaw-frozen-incompatible-scenario-harness-");
+    const targetRoot = tempDirs.make("afora-frozen-incompatible-scenario-harness-");
     writeFrozenScenarioContract(targetRoot, ["unrelated"]);
 
     const plan = planFor({
       selectedLaneNames: ["published-upgrade-survivor"],
       upgradeSurvivorBaselines: "2026.4.21",
-      upgradeSurvivorScenarios: "acpx-openclaw-tools-bridge",
+      upgradeSurvivorScenarios: "acpx-afora-tools-bridge",
       upgradeSurvivorTargetRoot: targetRoot,
     });
 
@@ -1201,7 +1201,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
   });
 
   it("fails closed when an unknown legacy scenario catalog lacks the command", () => {
-    const targetRoot = tempDirs.make("openclaw-frozen-failed-scenario-harness-");
+    const targetRoot = tempDirs.make("afora-frozen-failed-scenario-harness-");
     const assertionsFile = join(targetRoot, "scripts/e2e/lib/upgrade-survivor/assertions.mjs");
     mkdirSync(dirname(assertionsFile), { recursive: true });
     writeFileSync(
@@ -1222,7 +1222,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
   });
 
   it("fails closed when a frozen target scenario command returns non-JSON output", () => {
-    const targetRoot = tempDirs.make("openclaw-frozen-non-json-scenario-harness-");
+    const targetRoot = tempDirs.make("afora-frozen-non-json-scenario-harness-");
     const assertionsFile = join(targetRoot, "scripts/e2e/lib/upgrade-survivor/assertions.mjs");
     mkdirSync(dirname(assertionsFile), { recursive: true });
     writeFileSync(assertionsFile, 'process.stdout.write("base");\n');
@@ -1237,7 +1237,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
   });
 
   it("fails closed when a frozen target scenario command returns an invalid catalog", () => {
-    const targetRoot = tempDirs.make("openclaw-frozen-invalid-scenario-harness-");
+    const targetRoot = tempDirs.make("afora-frozen-invalid-scenario-harness-");
     const assertionsFile = join(targetRoot, "scripts/e2e/lib/upgrade-survivor/assertions.mjs");
     mkdirSync(dirname(assertionsFile), { recursive: true });
     writeFileSync(assertionsFile, 'process.stdout.write("[\\"base\\",\\"base\\"]");\n');
@@ -1252,7 +1252,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
   });
 
   it("does not inspect a frozen survivor contract for unrelated selected lanes", () => {
-    const targetRoot = tempDirs.make("openclaw-frozen-unrelated-lane-harness-");
+    const targetRoot = tempDirs.make("afora-frozen-unrelated-lane-harness-");
     const assertionsFile = join(targetRoot, "scripts/e2e/lib/upgrade-survivor/assertions.mjs");
     mkdirSync(dirname(assertionsFile), { recursive: true });
     writeFileSync(assertionsFile, 'throw new Error("must not run");\n');
@@ -1276,7 +1276,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
 
     expect(plan.lanes.map((lane) => lane.name)).toEqual([
       "published-upgrade-survivor-2026.4.29",
-      "published-upgrade-survivor-2026.4.29-acpx-openclaw-tools-bridge",
+      "published-upgrade-survivor-2026.4.29-acpx-afora-tools-bridge",
       "published-upgrade-survivor-2026.4.29-feishu-channel",
       "published-upgrade-survivor-2026.4.29-bootstrap-persona",
       "published-upgrade-survivor-2026.4.29-channel-post-core-restore",
@@ -1288,7 +1288,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
       "published-upgrade-survivor-2026.4.29-versioned-runtime-deps",
       "published-upgrade-survivor-2026.4.29-cron-scheduled-authority",
       "published-upgrade-survivor-2026.4.22",
-      "published-upgrade-survivor-2026.4.22-acpx-openclaw-tools-bridge",
+      "published-upgrade-survivor-2026.4.22-acpx-afora-tools-bridge",
       "published-upgrade-survivor-2026.4.22-feishu-channel",
       "published-upgrade-survivor-2026.4.22-bootstrap-persona",
       "published-upgrade-survivor-2026.4.22-channel-post-core-restore",
@@ -1329,8 +1329,8 @@ describe("scripts/lib/docker-e2e-plan", () => {
     });
 
     expect(plan.lanes.map(summarizeLane)).toEqual([
-      updateMigrationLane("update-migration-2026.4.29-plugin-deps-cleanup", "openclaw@2026.4.29"),
-      updateMigrationLane("update-migration-2026.4.23-plugin-deps-cleanup", "openclaw@2026.4.23"),
+      updateMigrationLane("update-migration-2026.4.29-plugin-deps-cleanup", "afora@2026.4.29"),
+      updateMigrationLane("update-migration-2026.4.23-plugin-deps-cleanup", "afora@2026.4.23"),
     ]);
   });
 
@@ -1377,10 +1377,10 @@ describe("scripts/lib/docker-e2e-plan", () => {
     const plan = planFor({ selectedLaneNames: ["live-cli-backend-gemini"] });
     const lane = requireFirstLane(plan);
 
-    expect(lane.command).toContain("OPENCLAW_LIVE_CLI_BACKEND_ADVISORY=1");
-    expect(lane.command).toContain("OPENCLAW_LIVE_CLI_BACKEND_ALLOW_PROVIDER_SKIP=1");
+    expect(lane.command).toContain("AFORA_LIVE_CLI_BACKEND_ADVISORY=1");
+    expect(lane.command).toContain("AFORA_LIVE_CLI_BACKEND_ALLOW_PROVIDER_SKIP=1");
     expect(lane.command).toContain(
-      "OPENCLAW_LIVE_CLI_BACKEND_MODEL=google-gemini-cli/gemini-3-flash-preview",
+      "AFORA_LIVE_CLI_BACKEND_MODEL=google-gemini-cli/gemini-3-flash-preview",
     );
   });
 
@@ -1390,7 +1390,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
       const lane = requireFirstLane(plan);
 
       expect(plan.credentials, name).toEqual(["openai"]);
-      expect(lane.command, name).toContain("OPENCLAW_LIVE_CODEX_HARNESS_AUTH=api-key");
+      expect(lane.command, name).toContain("AFORA_LIVE_CODEX_HARNESS_AUTH=api-key");
       expect(lane.resources, name).toContain("live:openai");
       expect(lane.resources, name).not.toContain("live:codex");
     }
@@ -1403,7 +1403,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
     expect(plan.lanes.map(summarizeLane)).toEqual([
       {
         command:
-          'OPENCLAW_SKIP_DOCKER_BUILD=1 bash -c \'harness="${OPENCLAW_DOCKER_E2E_TRUSTED_HARNESS_DIR:-.}"; OPENCLAW_LIVE_DOCKER_REPO_ROOT="${OPENCLAW_DOCKER_E2E_REPO_ROOT:-$PWD}" bash "$harness/scripts/e2e/codex-npm-plugin-live-docker.sh"\'',
+          'AFORA_SKIP_DOCKER_BUILD=1 bash -c \'harness="${AFORA_DOCKER_E2E_TRUSTED_HARNESS_DIR:-.}"; AFORA_LIVE_DOCKER_REPO_ROOT="${AFORA_DOCKER_E2E_REPO_ROOT:-$PWD}" bash "$harness/scripts/e2e/codex-npm-plugin-live-docker.sh"\'',
         imageKind: "bare",
         live: true,
         name: "live-codex-npm-plugin",
@@ -1428,7 +1428,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
 
     expect(plan.lanes).toHaveLength(1);
     const lane = requireFirstLane(plan);
-    expect(lane.command).toBe("OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:codex-on-demand");
+    expect(lane.command).toBe("AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:codex-on-demand");
     expect(lane.imageKind).toBe("bare");
     expect(lane.live).toBe(false);
     expect(lane.name).toBe("codex-on-demand");
@@ -1445,7 +1445,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
     expect(plan.lanes).toHaveLength(1);
     const lane = requireFirstLane(plan);
     expect(lane.command).toBe(
-      "OPENCLAW_SKIP_DOCKER_BUILD=0 pnpm test:docker:plugin-binding-command-escape",
+      "AFORA_SKIP_DOCKER_BUILD=0 pnpm test:docker:plugin-binding-command-escape",
     );
     expect(lane.imageKind).toBeUndefined();
     expect(lane.live).toBe(false);
@@ -1463,7 +1463,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
     expect(plan.lanes).toHaveLength(1);
     const lane = requireFirstLane(plan);
     expect(lane.command).toBe(
-      "OPENCLAW_LIVE_PLUGIN_TOOL_TIMEOUT_SECONDS=300 OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:live-plugin-tool",
+      "AFORA_LIVE_PLUGIN_TOOL_TIMEOUT_SECONDS=300 AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:live-plugin-tool",
     );
     expect(lane.imageKind).toBe("bare");
     expect(lane.live).toBe(true);
@@ -1499,7 +1499,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
     expect(plan.lanes).toHaveLength(1);
     const lane = requireFirstLane(plan);
     expect(lane.command).toBe(
-      'OPENCLAW_LIVE_ACP_BIND_AGENT=droid OPENCLAW_LIVE_ACP_BIND_REQUIRE_TRANSCRIPT=1 OPENCLAW_SKIP_DOCKER_BUILD=1 bash -c \'harness="${OPENCLAW_DOCKER_E2E_TRUSTED_HARNESS_DIR:-.}"; OPENCLAW_LIVE_DOCKER_REPO_ROOT="${OPENCLAW_DOCKER_E2E_REPO_ROOT:-$PWD}" bash "$harness/scripts/test-live-acp-bind-docker.sh"\'',
+      'AFORA_LIVE_ACP_BIND_AGENT=droid AFORA_LIVE_ACP_BIND_REQUIRE_TRANSCRIPT=1 AFORA_SKIP_DOCKER_BUILD=1 bash -c \'harness="${AFORA_DOCKER_E2E_TRUSTED_HARNESS_DIR:-.}"; AFORA_LIVE_DOCKER_REPO_ROOT="${AFORA_DOCKER_E2E_REPO_ROOT:-$PWD}" bash "$harness/scripts/test-live-acp-bind-docker.sh"\'',
     );
     expect(lane.imageKind).toBeUndefined();
     expect(lane.live).toBe(true);
@@ -1527,7 +1527,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
         weight: 3,
       },
       {
-        command: "OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:multi-node-update",
+        command: "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:multi-node-update",
         imageKind: "bare",
         live: false,
         name: "multi-node-update",
@@ -1537,7 +1537,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
         weight: 3,
       },
       {
-        command: "OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:npm-telegram-live",
+        command: "AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:npm-telegram-live",
         imageKind: "bare",
         live: true,
         name: "npm-telegram-live",
@@ -1566,7 +1566,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
     expect(plan.lanes.map(summarizeLane)).toEqual([
       {
         command:
-          "OPENCLAW_OPENWEBUI_MODEL=openai/gpt-5.4-mini OPENCLAW_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS=300 OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:openwebui",
+          "AFORA_OPENWEBUI_MODEL=openai/gpt-5.4-mini AFORA_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS=300 AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:openwebui",
         imageKind: "functional",
         live: true,
         name: "openwebui",
@@ -1659,9 +1659,9 @@ describe("scripts/lib/docker-e2e-plan", () => {
     ]) {
       const plan = planFor({ selectedLaneNames: [laneName] });
       expect(plan.requiredPrepublishPluginPackages).toEqual([
-        "@openclaw/codex",
-        "@openclaw/discord",
-        "@openclaw/whatsapp",
+        "@afora/codex",
+        "@afora/discord",
+        "@afora/whatsapp",
       ]);
       expect(plan.needs.prepublishPluginRegistry).toBe(true);
     }
@@ -1672,10 +1672,10 @@ describe("scripts/lib/docker-e2e-plan", () => {
       upgradeSurvivorScenarios: "base feishu-channel",
     });
     expect(feishuPlan.requiredPrepublishPluginPackages).toEqual([
-      "@openclaw/codex",
-      "@openclaw/discord",
-      "@openclaw/feishu",
-      "@openclaw/whatsapp",
+      "@afora/codex",
+      "@afora/discord",
+      "@afora/feishu",
+      "@afora/whatsapp",
     ]);
     const legacyFeishuPlan = planFor({
       selectedLaneNames: ["published-upgrade-survivor"],
@@ -1683,9 +1683,9 @@ describe("scripts/lib/docker-e2e-plan", () => {
       upgradeSurvivorScenarios: "feishu-channel",
     });
     expect(legacyFeishuPlan.requiredPrepublishPluginPackages).toEqual([
-      "@openclaw/codex",
-      "@openclaw/discord",
-      "@openclaw/whatsapp",
+      "@afora/codex",
+      "@afora/discord",
+      "@afora/whatsapp",
     ]);
     const selfUpgradeLane = findLaneByName("update-run-package-self-upgrade");
     expect(selfUpgradeLane).toBeDefined();
@@ -1762,7 +1762,7 @@ describe("scripts/lib/docker-e2e-plan", () => {
 
   it("rejects unknown selected lanes with the available lane names", () => {
     expect(() => planFor({ selectedLaneNames: ["missing-lane"] })).toThrow(
-      /OPENCLAW_DOCKER_ALL_LANES unknown lane\(s\): missing-lane/u,
+      /AFORA_DOCKER_ALL_LANES unknown lane\(s\): missing-lane/u,
     );
   });
 });

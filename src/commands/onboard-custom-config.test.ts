@@ -1,7 +1,7 @@
 // Onboard custom config tests cover provider-specific config merging and context-window bounds.
 import { describe, expect, it } from "vitest";
 import { CONTEXT_WINDOW_HARD_MIN_TOKENS } from "../agents/context-window-guard.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import {
   applyCustomApiConfig,
   buildAnthropicVerificationProbeRequest,
@@ -14,7 +14,7 @@ const EXPECTED_CUSTOM_PROVIDER_DEFAULT_CONTEXT_WINDOW_TOKENS = 128_000;
 
 function buildCustomProviderConfig(contextWindow?: number) {
   if (contextWindow === undefined) {
-    return {} as OpenClawConfig;
+    return {} as AforaConfig;
   }
   return {
     models: {
@@ -36,7 +36,7 @@ function buildCustomProviderConfig(contextWindow?: number) {
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function applyCustomModelConfigWithContextWindow(contextWindow?: number) {
@@ -440,7 +440,7 @@ describe("applyCustomApiConfig", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       baseUrl: "https://llm.example.com/v1",
       modelId: "foo-large",
       compatibility: "openai",
@@ -470,7 +470,7 @@ describe("applyCustomApiConfig", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       baseUrl: "https://my-resource.openai.azure.com",
       modelId: "o3-mini",
       compatibility: "openai",

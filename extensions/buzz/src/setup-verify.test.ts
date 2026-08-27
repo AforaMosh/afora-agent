@@ -1,9 +1,9 @@
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ callGatewayFromCli: vi.fn() }));
 
-vi.mock("openclaw/plugin-sdk/gateway-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/gateway-runtime", () => ({
   callGatewayFromCli: mocks.callGatewayFromCli,
 }));
 
@@ -106,7 +106,7 @@ describe("verifyBuzzAfterSetup", () => {
     });
 
     expect(runtime.log).toHaveBeenCalledWith(
-      "Buzz config was saved. Start OpenClaw to connect: openclaw gateway",
+      "Buzz config was saved. Start Afora to connect: afora gateway",
     );
   });
 

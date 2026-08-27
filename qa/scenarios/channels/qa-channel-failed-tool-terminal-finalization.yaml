@@ -7,7 +7,7 @@ scenario:
     primary: [agent-runtime.failure-recovery-empty-response-recovery]
     secondary: [channels.qa-channel-final-reply, agent-runtime.failure-recovery-retry-policy]
   regressionRefs:
-    - openclaw/openclaw#118274
+    - AforaMosh/afora-agent#118274
   gatewayConfigPatch:
     tools:
       codeMode:
@@ -70,7 +70,7 @@ flow:
               kind: group
             senderId: qa-driver
             senderName: QA Driver
-            text: "@openclaw Failed tool terminal recovery QA check: read the missing workspace file, then respond with exact marker: `QA-FAILED-TOOL-FINALIZED-OK`."
+            text: "@afora Failed tool terminal recovery QA check: read the missing workspace file, then respond with exact marker: `QA-FAILED-TOOL-FINALIZED-OK`."
         - waitForOutbound:
             conversation:
               id:

@@ -10,7 +10,7 @@ const { writeSessionExportFile } = await vi.importActual<
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 function makeWorkspace(): string {
-  return tempDirs.make("openclaw-session-export-");
+  return tempDirs.make("afora-session-export-");
 }
 
 async function writeExport(params: {
@@ -78,7 +78,7 @@ describe("writeSessionExportFile", () => {
     "accepts an absolute path written through a symlinked workspace root",
     async () => {
       const workspaceDir = makeWorkspace();
-      const aliasParent = tempDirs.make("openclaw-session-export-alias-");
+      const aliasParent = tempDirs.make("afora-session-export-alias-");
       const workspaceAlias = path.join(aliasParent, "workspace");
       await fs.symlink(workspaceDir, workspaceAlias, "dir");
       const requestedPath = path.join(workspaceAlias, "exports", "session.html");
@@ -97,7 +97,7 @@ describe("writeSessionExportFile", () => {
     "rejects a symlink target without changing the linked file",
     async () => {
       const workspaceDir = makeWorkspace();
-      const outsideDir = tempDirs.make("openclaw-session-export-outside-");
+      const outsideDir = tempDirs.make("afora-session-export-outside-");
       const outsidePath = path.join(outsideDir, "outside.html");
       const linkedPath = path.join(workspaceDir, "session.html");
       await fs.writeFile(outsidePath, "outside", "utf-8");

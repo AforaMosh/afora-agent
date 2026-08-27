@@ -16,7 +16,7 @@ sidebarTitle: "Broadcast groups"
 
 Broadcast groups run **multiple agents** on the same inbound message. Each agent processes the message in its own isolated session and posts its own reply, so one WhatsApp number can host a team of specialized agents in a single group chat or DM.
 
-Broadcast groups are evaluated after channel allowlists and group activation rules. In WhatsApp groups, broadcasts happen when OpenClaw would normally reply (for example: on mention, depending on your group settings). They only change **which agents run**, never whether a message is eligible for processing.
+Broadcast groups are evaluated after channel allowlists and group activation rules. In WhatsApp groups, broadcasts happen when Afora would normally reply (for example: on mention, depending on your group settings). They only change **which agents run**, never whether a message is eligible for processing.
 
 The live WhatsApp QA lane includes `whatsapp-broadcast-group-fanout`, which verifies that one mentioned group message can produce distinct visible replies from two configured agents.
 
@@ -37,7 +37,7 @@ Add a top-level `broadcast` section (next to `bindings`). Keys are WhatsApp peer
 }
 ```
 
-**Result:** when OpenClaw would reply in this chat, it runs all three agents.
+**Result:** when Afora would reply in this chat, it runs all three agents.
 
 Every listed agent id must exist in `agents.entries`: config validation reports unknown ids, and the runtime skips them with a `Broadcast agent <id> not found in agents.entries; skipping` warning.
 
@@ -101,10 +101,10 @@ Every listed agent id must exist in `agents.entries`: config validation reports 
     A WhatsApp group or DM message arrives.
   </Step>
   <Step title="Route and admission">
-    OpenClaw applies channel allowlists, group activation rules, and configured ACP binding ownership.
+    Afora applies channel allowlists, group activation rules, and configured ACP binding ownership.
   </Step>
   <Step title="Broadcast check">
-    If no configured ACP binding owns the route, OpenClaw checks whether the peer ID is in `broadcast`.
+    If no configured ACP binding owns the route, Afora checks whether the peer ID is in `broadcast`.
   </Step>
   <Step title="If broadcast applies">
     - All listed agents process the message.
@@ -114,7 +114,7 @@ Every listed agent id must exist in `agents.entries`: config validation reports 
 
   </Step>
   <Step title="If broadcast does not apply">
-    OpenClaw dispatches the ordinary route or the configured ACP session route selected during routing.
+    Afora dispatches the ordinary route or the configured ACP session route selected during routing.
   </Step>
 </Steps>
 
@@ -145,7 +145,7 @@ In group `120363403215116621@g.us` with agents `["alfred", "baerbel"]`:
     ```text
     Session: agent:alfred:whatsapp:group:120363403215116621@g.us
     History: [user message, alfred's previous responses]
-    Workspace: ~/openclaw-alfred/
+    Workspace: ~/afora-alfred/
     Tools: read, write, exec
     ```
   </Tab>
@@ -153,7 +153,7 @@ In group `120363403215116621@g.us` with agents `["alfred", "baerbel"]`:
     ```text
     Session: agent:baerbel:whatsapp:group:120363403215116621@g.us
     History: [user message, baerbel's previous responses]
-    Workspace: ~/openclaw-baerbel/
+    Workspace: ~/afora-baerbel/
     Tools: read only
     ```
   </Tab>
@@ -239,7 +239,7 @@ Broadcast groups work alongside existing routing:
 - `GROUP_B`: agent1 AND agent2 respond (broadcast).
 
 <Note>
-**Precedence:** `broadcast` takes priority over ordinary route bindings. Configured ACP bindings (`bindings[].type="acp"`) are exclusive: when one matches, OpenClaw dispatches to the configured ACP session instead of fan-out broadcast.
+**Precedence:** `broadcast` takes priority over ordinary route bindings. Configured ACP bindings (`bindings[].type="acp"`) are exclusive: when one matches, Afora dispatches to the configured ACP session instead of fan-out broadcast.
 </Note>
 
 ## Troubleshooting
@@ -255,7 +255,7 @@ Broadcast groups work alongside existing routing:
     **Debug:**
 
     ```bash
-    openclaw logs --follow | grep -i broadcast
+    afora logs --follow | grep -i broadcast
     ```
 
     A successful fan-out logs `Broadcasting message to <n> agents (<strategy>)`.
@@ -335,7 +335,7 @@ Broadcast groups work alongside existing routing:
 ### Config schema
 
 ```typescript
-interface OpenClawConfig {
+interface AforaConfig {
   broadcast?: {
     strategy?: "parallel" | "sequential";
     [peerId: string]: string[];

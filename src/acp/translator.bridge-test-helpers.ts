@@ -6,7 +6,7 @@ import type {
   SetSessionConfigOptionRequest,
   SetSessionModeRequest,
 } from "@agentclientprotocol/sdk";
-import { createInMemorySessionStore } from "@openclaw/acp-core/session";
+import { createInMemorySessionStore } from "@afora/acp-core/session";
 import { expect, vi } from "vitest";
 import type { EventFrame } from "../../packages/gateway-protocol/src/index.js";
 import type { GatewayClient } from "../gateway/client.js";

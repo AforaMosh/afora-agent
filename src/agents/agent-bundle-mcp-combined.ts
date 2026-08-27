@@ -7,7 +7,7 @@ import type {
   SessionMcpRuntime,
 } from "./agent-bundle-mcp-types.js";
 
-const COMBINED_SESSION_MCP_RUNTIME = Symbol.for("openclaw.combinedSessionMcpRuntime");
+const COMBINED_SESSION_MCP_RUNTIME = Symbol.for("afora.combinedSessionMcpRuntime");
 
 type CombinedSessionMcpRuntime = SessionMcpRuntime & {
   [COMBINED_SESSION_MCP_RUNTIME]: true;

@@ -1,13 +1,13 @@
 {
-  "name": "@openclaw/elevenlabs-speech",
+  "name": "@afora/elevenlabs-speech",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw ElevenLabs speech plugin",
+  "description": "Afora ElevenLabs speech plugin",
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

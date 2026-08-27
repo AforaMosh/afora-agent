@@ -1,6 +1,6 @@
 // QA Lab WhatsApp conversation and reply-context scenarios.
 import { randomUUID } from "node:crypto";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import {
   toWhatsAppQaError,
   type WhatsAppQaMessageScenarioRun,
@@ -20,7 +20,7 @@ function buildWhatsAppQuoteReplyRun(target: "dm" | "group"): WhatsAppQaMessageSc
   const token = `WHATSAPP_QA_REPLY_TO_${target.toUpperCase()}_${randomUUID().slice(0, 8).toUpperCase()}`;
   const input =
     target === "group"
-      ? `openclawqa reply with only this exact marker: ${token}`
+      ? `aforaqa reply with only this exact marker: ${token}`
       : `Reply with only this exact marker: ${token}`;
   return {
     configMode: "allowlist",
@@ -64,7 +64,7 @@ export const whatsappQaMentionGatingScenario: WhatsAppQaScenarioImplementation =
     return {
       configMode: "allowlist",
       expectReply: true,
-      input: `openclawqa reply with only this exact marker: ${replyToken}`,
+      input: `aforaqa reply with only this exact marker: ${replyToken}`,
       matchText: replyToken,
       quietInput: `This group message is intentionally unmentioned. If you respond, include ${quietToken}.`,
       quietMatchText: quietToken,
@@ -94,7 +94,7 @@ export const whatsappQaGroupPendingHistoryContextScenario: WhatsAppQaScenarioImp
       expectReply: true,
       expectedSutMessageCount: 1,
       input:
-        `openclawqa pending history context check ${triggerMarker}. ` +
+        `aforaqa pending history context check ${triggerMarker}. ` +
         `Reply with only ${okMarker} only if the previous quiet group message is present ` +
         `in prior group context with its context-only sentinel. ` +
         "Do not use current-message text as proof.",
@@ -136,7 +136,7 @@ export const whatsappQaBroadcastGroupFanoutScenario: WhatsAppQaScenarioImplement
       },
       configMode: "open",
       expectReply: true,
-      input: `openclawqa broadcast fanout check ${token}`,
+      input: `aforaqa broadcast fanout check ${token}`,
       matchText: mainMarker,
       target: "group",
     };
@@ -278,7 +278,7 @@ export const whatsappQaGroupReplyToBotTriggersScenario: WhatsAppQaScenarioImplem
       },
       configMode: "allowlist",
       expectReply: true,
-      input: `openclawqa Mentioned group seed marker ${seedMarker}`,
+      input: `aforaqa Mentioned group seed marker ${seedMarker}`,
       matchText: seedMarker,
       target: "group",
     };

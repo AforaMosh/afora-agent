@@ -1,5 +1,5 @@
 // Session model override helpers normalize per-session provider model choices.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { SessionEntry } from "../config/sessions.js";
 
 /** User or automatic model/provider override selection for a session entry. */

@@ -2,7 +2,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadSessionEntry, replaceSessionEntry } from "../../config/sessions/session-accessor.js";
 import type { InternalSessionEntry } from "../../config/sessions/types.js";
-import { withOpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../../test-utils/afora-test-state.js";
 import { testing } from "./runs.test-support.js";
 
 describe("embedded-agent runner persistence", () => {
@@ -11,8 +11,8 @@ describe("embedded-agent runner persistence", () => {
   });
 
   it("clears lifecycle ownership when a forced run clear persists killed state", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-force-clear-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-force-clear-" },
       async (state) => {
         const storePath = path.join(state.sessionsDir(), "sessions.json");
         const sessionKey = "agent:main:main";

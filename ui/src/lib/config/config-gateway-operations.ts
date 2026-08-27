@@ -1,5 +1,5 @@
-import { ErrorCodes } from "@openclaw/gateway-client/browser";
-import { asNullableRecord as asConfigRecord } from "@openclaw/normalization-core/record-coerce";
+import { ErrorCodes } from "@afora/gateway-client/browser";
+import { asNullableRecord as asConfigRecord } from "@afora/normalization-core/record-coerce";
 import { GatewayRequestError, type GatewayBrowserClient } from "../../api/gateway.ts";
 import type { ConfigSchemaResponse, ConfigSnapshot } from "../../api/types.ts";
 import { copyToClipboard } from "../clipboard.ts";
@@ -32,7 +32,7 @@ function readAckHash(ack: unknown): string | null {
  * Gateway contract: requireConfigBaseHash in
  * src/gateway/server-methods/config.ts rejects writes whose baseHash no
  * longer matches the file with exactly this message. A conflict means another
- * writer changed openclaw.json; retrying the whole-form draft would clobber
+ * writer changed afora.json; retrying the whole-form draft would clobber
  * their edit, so callers surface a reload affordance instead.
  */
 function isConfigBaseHashConflictError(err: unknown): boolean {

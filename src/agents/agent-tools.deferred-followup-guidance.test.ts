@@ -1,5 +1,5 @@
 /** Tests model-facing descriptions selected from the final authorized tool set. */
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import { getPluginToolMeta, setPluginToolMeta } from "../plugins/tools.js";
 import { applyToolAvailabilityDescriptions } from "./agent-tools.deferred-followup.js";
@@ -19,7 +19,7 @@ function findToolDescription(toolName: string, includeCron: boolean) {
   };
 }
 
-describe("createOpenClawCodingTools availability guidance", () => {
+describe("createAforaCodingTools availability guidance", () => {
   it("keeps cron-specific guidance when cron survives filtering", () => {
     const exec = findToolDescription("exec", true);
     const process = findToolDescription("process", true);

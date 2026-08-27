@@ -2,29 +2,29 @@
 import {
   listNativeCommandSpecsForConfig,
   listSkillCommandsForAgents,
-} from "openclaw/plugin-sdk/command-auth-native";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+} from "afora-agent/plugin-sdk/command-auth-native";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 import {
   mergeNativeCommandSpecs,
   type NativeCommandSpec,
-} from "openclaw/plugin-sdk/native-command-registry";
+} from "afora-agent/plugin-sdk/native-command-registry";
 import type {
   PluginCommandNativeCandidate,
   PluginCommandRuntime,
-} from "openclaw/plugin-sdk/plugin-command-runtime";
-import { danger, warn, type RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/plugin-command-runtime";
+import { danger, warn, type RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { DISCORD_VOICE_COMMAND_SPEC } from "../voice/command.js";
 
 export type DiscordProviderCommandSpec = NativeCommandSpec | PluginCommandNativeCandidate;
 
 const loadPluginCommandRuntime = createLazyRuntimeModule(
-  () => import("openclaw/plugin-sdk/plugin-command-runtime"),
+  () => import("afora-agent/plugin-sdk/plugin-command-runtime"),
 );
 
 export async function resolveDiscordProviderCommandSpecs(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   runtime: RuntimeEnv;
   nativeEnabled: boolean;
   nativeSkillsEnabled: boolean;

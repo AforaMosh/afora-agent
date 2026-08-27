@@ -1,6 +1,6 @@
 // Codex tests cover run attempt thread cleanup plugin behavior.
 import path from "node:path";
-import type { EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams } from "openclaw/plugin-sdk/agent-harness-runtime";
+import type { EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readAttemptTerminal } from "./attempt-terminal.test-helper.js";
 import { CodexAppServerClient } from "./client.js";
@@ -206,7 +206,7 @@ describe("Codex app-server main thread cleanup", () => {
         const initialize = await waitForHarnessRequest(harness, "initialize", requestStart);
         harness.send({
           id: initialize.id,
-          result: { userAgent: `openclaw/${CODEX_APP_SERVER_VERSION} (macOS; test)` },
+          result: { userAgent: `afora/${CODEX_APP_SERVER_VERSION} (macOS; test)` },
         });
       }
       const threadId = `thread-${label}`;
@@ -305,7 +305,7 @@ describe("Codex app-server main thread cleanup", () => {
     const initialize = await waitForHarnessRequest(physical, "initialize");
     physical.send({
       id: initialize.id,
-      result: { userAgent: `openclaw/${CODEX_APP_SERVER_VERSION} (macOS; test)` },
+      result: { userAgent: `afora/${CODEX_APP_SERVER_VERSION} (macOS; test)` },
     });
     const firstThreadStart = await waitForHarnessRequest(physical, "thread/start");
     physical.send({ id: firstThreadStart.id, result: threadStartResult("thread-1") });
@@ -447,7 +447,7 @@ describe("Codex app-server main thread cleanup", () => {
     const initialize = await waitForHarnessRequest(harness, "initialize");
     harness.send({
       id: initialize.id,
-      result: { userAgent: `openclaw/${CODEX_APP_SERVER_VERSION} (macOS; test)` },
+      result: { userAgent: `afora/${CODEX_APP_SERVER_VERSION} (macOS; test)` },
     });
     const start = await waitForHarnessRequest(harness, "thread/start");
     expect(start.params).toEqual(expect.objectContaining({ ephemeral: true }));
@@ -560,7 +560,7 @@ describe("Codex app-server main thread cleanup", () => {
       const initialize = await waitForHarnessRequest(harness, "initialize");
       harness.send({
         id: initialize.id,
-        result: { userAgent: `openclaw/${CODEX_APP_SERVER_VERSION} (macOS; test)` },
+        result: { userAgent: `afora/${CODEX_APP_SERVER_VERSION} (macOS; test)` },
       });
       const threadStart = await waitForHarnessRequest(harness, "thread/start");
       harness.send({ id: threadStart.id, result: threadStartResult() });
@@ -664,7 +664,7 @@ describe("Codex app-server main thread cleanup", () => {
     const initialize = await waitForHarnessRequest(harness, "initialize");
     harness.send({
       id: initialize.id,
-      result: { userAgent: `openclaw/${CODEX_APP_SERVER_VERSION} (macOS; test)` },
+      result: { userAgent: `afora/${CODEX_APP_SERVER_VERSION} (macOS; test)` },
     });
     const threadStart = await waitForHarnessRequest(harness, "thread/start");
     harness.send({ id: threadStart.id, result: threadStartResult() });
@@ -736,7 +736,7 @@ describe("Codex app-server main thread cleanup", () => {
     const initialize = await waitForHarnessRequest(contaminated, "initialize");
     contaminated.send({
       id: initialize.id,
-      result: { userAgent: `openclaw/${CODEX_APP_SERVER_VERSION} (macOS; test)` },
+      result: { userAgent: `afora/${CODEX_APP_SERVER_VERSION} (macOS; test)` },
     });
     const threadStart = await waitForHarnessRequest(contaminated, "thread/start");
     contaminated.send({ id: threadStart.id, result: threadStartResult() });
@@ -769,7 +769,7 @@ describe("Codex app-server main thread cleanup", () => {
     const replacementInitialize = await waitForHarnessRequest(replacement, "initialize");
     replacement.send({
       id: replacementInitialize.id,
-      result: { userAgent: `openclaw/${CODEX_APP_SERVER_VERSION} (macOS; test)` },
+      result: { userAgent: `afora/${CODEX_APP_SERVER_VERSION} (macOS; test)` },
     });
     const replacementThread = await waitForHarnessRequest(replacement, "thread/start");
     replacement.send({ id: replacementThread.id, result: threadStartResult("thread-2") });

@@ -1,6 +1,6 @@
-// Fish Audio provider maps OpenClaw speech contracts to the hosted S2.1 API.
-import { resolveGeneratedMediaMaxBytes } from "openclaw/plugin-sdk/media-generation-runtime";
-import { normalizeResolvedSecretInputString } from "openclaw/plugin-sdk/secret-input";
+// Fish Audio provider maps Afora speech contracts to the hosted S2.1 API.
+import { resolveGeneratedMediaMaxBytes } from "afora-agent/plugin-sdk/media-generation-runtime";
+import { normalizeResolvedSecretInputString } from "afora-agent/plugin-sdk/secret-input";
 import type {
   SpeechDirectiveTokenParseContext,
   SpeechProviderConfig,
@@ -8,18 +8,18 @@ import type {
   SpeechProviderPlugin,
   SpeechSynthesisRequest,
   SpeechSynthesisTarget,
-} from "openclaw/plugin-sdk/speech";
+} from "afora-agent/plugin-sdk/speech";
 import {
   asBoolean,
   parseSpeechDirectiveNumberOverride,
   resolveSpeechProviderApiKey,
   trimToUndefined,
-} from "openclaw/plugin-sdk/speech-core";
+} from "afora-agent/plugin-sdk/speech-core";
 import {
   asFiniteNumberInRange,
   asOptionalRecord,
   parseBooleanValue,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   FISH_AUDIO_STREAM_MAX_BYTES,
   type FishAudioFormat,

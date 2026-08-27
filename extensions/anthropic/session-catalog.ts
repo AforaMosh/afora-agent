@@ -1,10 +1,10 @@
-import { resolveSessionAgentIds } from "openclaw/plugin-sdk/agent-runtime";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
+import { resolveSessionAgentIds } from "afora-agent/plugin-sdk/agent-runtime";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
 import type {
   SessionCatalogHost,
   SessionCatalogProvider,
   SessionCatalogTranscriptItem,
-} from "openclaw/plugin-sdk/session-catalog";
+} from "afora-agent/plugin-sdk/session-catalog";
 import { adoptedSourceKey, CLAUDE_LOCAL_SESSION_HOST_ID } from "./session-catalog-adoption.js";
 import { continueClaudeSession } from "./session-catalog-continue.js";
 import { listClaudeSessions } from "./session-catalog-discovery.js";
@@ -116,7 +116,7 @@ type ClaudeSessionCatalogRuntime = Required<
 >;
 
 export function createClaudeSessionCatalogRuntime(
-  api: OpenClawPluginApi,
+  api: AforaPluginApi,
 ): ClaudeSessionCatalogRuntime {
   return {
     list: async (query) => {

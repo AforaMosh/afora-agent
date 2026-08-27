@@ -1,4 +1,4 @@
-import type { LiveTransportQaCommandOptions } from "openclaw/plugin-sdk/qa-runtime";
+import type { LiveTransportQaCommandOptions } from "afora-agent/plugin-sdk/qa-runtime";
 import { runQaSuiteCommand } from "../../cli.runtime.js";
 import type { QaProviderMode } from "../../providers/index.js";
 import { defaultQaModelForMode, normalizeQaProviderMode } from "../../run-config.js";
@@ -21,7 +21,7 @@ export async function runLiveTransportQaSuiteCommand(params: {
 }) {
   const options = params.options;
   const credentialSource =
-    options.credentialSource?.trim() || process.env.OPENCLAW_QA_CREDENTIAL_SOURCE?.trim();
+    options.credentialSource?.trim() || process.env.AFORA_QA_CREDENTIAL_SOURCE?.trim();
   if (params.credentialMode === "env-only") {
     const laneLabel = params.laneLabel ?? params.channelId;
     if (credentialSource && credentialSource.toLowerCase() !== "env") {

@@ -11,7 +11,7 @@ on:
         default: false
         type: boolean
       update_baseline_version:
-        description: Baseline openclaw version or dist-tag for installer update smoke
+        description: Baseline afora version or dist-tag for installer update smoke
         required: false
         default: latest
         type: string

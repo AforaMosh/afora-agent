@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ModelCatalogEntry } from "../../agents/model-catalog.js";
 import type { ModelAliasIndex } from "../../agents/model-selection.js";
 import { persistStickyModelSelectionBestEffort } from "../../agents/sticky-model-selection.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { triggerSessionPatchHook } from "../../gateway/session-patch-hooks.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
@@ -63,7 +63,7 @@ function createSessionEntry(overrides?: Partial<SessionEntry>): SessionEntry {
 
 async function applyMixedDirectives(params: {
   body: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   sessionEntry?: SessionEntry;
   sessionKey?: string;
   storePath?: string;
@@ -80,7 +80,7 @@ async function applyMixedDirectives(params: {
   directives?: InlineDirectives;
 }) {
   const cfg =
-    params.cfg ?? ({ commands: { text: true }, agents: { defaults: {} } } as OpenClawConfig);
+    params.cfg ?? ({ commands: { text: true }, agents: { defaults: {} } } as AforaConfig);
   const provider = params.provider ?? "anthropic";
   const model = params.model ?? "claude-opus-4-6";
   const channel = params.channel ?? "telegram";
@@ -220,7 +220,7 @@ describe("mixed inline directives", () => {
       agents: {
         defaults: { models: { "openai/gpt-5.6-luna": { agentRuntime: { id: "codex" } } } },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const { result, sessionEntry } = await applyMixedDirectives({
       body: "please reply /model openai/gpt-5.6-luna",
       cfg,
@@ -258,7 +258,7 @@ describe("mixed inline directives", () => {
     { label: "list", body: "please reply /model list" },
     { label: "status", body: "please reply /model status" },
   ])("does not acknowledge or mutate a mixed $label model info directive", async ({ body }) => {
-    const cfg = { commands: { text: true }, agents: { defaults: {} } } as OpenClawConfig;
+    const cfg = { commands: { text: true }, agents: { defaults: {} } } as AforaConfig;
     const directives = resolveReplyDirectiveRouting({
       commandText: body,
       agentText: body,
@@ -395,7 +395,7 @@ describe("mixed inline directives", () => {
 
   it("preserves a mixed alias named list as a model selection", async () => {
     const body = "please reply /list -s";
-    const cfg = { commands: { text: true }, agents: { defaults: {} } } as OpenClawConfig;
+    const cfg = { commands: { text: true }, agents: { defaults: {} } } as AforaConfig;
     const aliasIndex: ModelAliasIndex = {
       byAlias: new Map([
         [

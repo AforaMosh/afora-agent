@@ -13,7 +13,7 @@ import {
 } from "./bundled-plugin-scan.js";
 import type { PluginConfigUiHint } from "./manifest-types.js";
 import type {
-  OpenClawPackageManifest,
+  AforaPackageManifest,
   PluginManifest,
   PluginManifestChannelConfig,
 } from "./manifest.js";
@@ -137,9 +137,9 @@ function loadChannelConfigSurfaceModuleSync(modulePath: string): ChannelConfigSu
 }
 
 function resolvePackageChannelMeta(
-  packageManifest: OpenClawPackageManifest | undefined,
+  packageManifest: AforaPackageManifest | undefined,
   channelId: string,
-): OpenClawPackageManifest["channel"] | undefined {
+): AforaPackageManifest["channel"] | undefined {
   const channelMeta = packageManifest?.channel;
   return channelMeta?.id?.trim() === channelId ? channelMeta : undefined;
 }
@@ -147,7 +147,7 @@ function resolvePackageChannelMeta(
 export function collectBundledChannelConfigsCore(params: {
   pluginDir: string;
   manifest: PluginManifest;
-  packageManifest?: OpenClawPackageManifest;
+  packageManifest?: AforaPackageManifest;
 }): Record<string, PluginManifestChannelConfig> | undefined {
   const channelIds = normalizeBundledPluginStringList(params.manifest.channels);
   const existingChannelConfigs: Record<string, PluginManifestChannelConfig> =

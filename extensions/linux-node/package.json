@@ -1,15 +1,15 @@
 {
-  "name": "@openclaw/linux-node",
+  "name": "@afora/linux-node",
   "version": "2026.8.1",
-  "description": "OpenClaw Linux node device capabilities",
+  "description": "Afora Linux node device capabilities",
   "type": "module",
   "dependencies": {
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

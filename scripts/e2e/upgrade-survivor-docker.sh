@@ -1,37 +1,37 @@
 #!/usr/bin/env bash
-# Installs the packed OpenClaw tarball over dirty old-user state. When
-# OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC is set, installs that published
+# Installs the packed Afora tarball over dirty old-user state. When
+# AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC is set, installs that published
 # baseline first and upgrades it to the selected candidate.
 set -euo pipefail
 
 HARNESS_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-ROOT_DIR="$(cd "${OPENCLAW_DOCKER_E2E_REPO_ROOT:-$HARNESS_ROOT_DIR}" && pwd)"
+ROOT_DIR="$(cd "${AFORA_DOCKER_E2E_REPO_ROOT:-$HARNESS_ROOT_DIR}" && pwd)"
 DOCKER_E2E_HARNESS_ROOT_DIR="$HARNESS_ROOT_DIR"
 source "$HARNESS_ROOT_DIR/scripts/lib/docker-e2e-image.sh"
 source "$HARNESS_ROOT_DIR/scripts/lib/docker-e2e-package.sh"
-source "$HARNESS_ROOT_DIR/scripts/lib/openclaw-e2e-instance.sh"
+source "$HARNESS_ROOT_DIR/scripts/lib/afora-e2e-instance.sh"
 
-IMAGE_NAME="$(docker_e2e_resolve_image "openclaw-upgrade-survivor-e2e" OPENCLAW_UPGRADE_SURVIVOR_E2E_IMAGE)"
-SKIP_BUILD="${OPENCLAW_UPGRADE_SURVIVOR_E2E_SKIP_BUILD:-0}"
-DOCKER_RUN_TIMEOUT="${OPENCLAW_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT:-1200s}"
-BASELINE_SPEC="${OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC:-}"
-SCENARIO="${OPENCLAW_UPGRADE_SURVIVOR_SCENARIO:-base}"
-UPDATE_RESTART_MODE="${OPENCLAW_UPGRADE_SURVIVOR_UPDATE_RESTART_MODE:-manual}"
-COMMAND_TIMEOUT="${OPENCLAW_UPGRADE_SURVIVOR_COMMAND_TIMEOUT:-900s}"
-START_BUDGET_SECONDS="$(openclaw_e2e_read_positive_int_env OPENCLAW_UPGRADE_SURVIVOR_START_BUDGET_SECONDS 90)"
-STATUS_BUDGET_SECONDS="$(openclaw_e2e_read_positive_int_env OPENCLAW_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS 30)"
-PROBE_TIMEOUT_MS="$(openclaw_e2e_read_nonnegative_int_env OPENCLAW_UPGRADE_SURVIVOR_PROBE_TIMEOUT_MS 60000)"
+IMAGE_NAME="$(docker_e2e_resolve_image "afora-upgrade-survivor-e2e" AFORA_UPGRADE_SURVIVOR_E2E_IMAGE)"
+SKIP_BUILD="${AFORA_UPGRADE_SURVIVOR_E2E_SKIP_BUILD:-0}"
+DOCKER_RUN_TIMEOUT="${AFORA_UPGRADE_SURVIVOR_DOCKER_RUN_TIMEOUT:-1200s}"
+BASELINE_SPEC="${AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC:-}"
+SCENARIO="${AFORA_UPGRADE_SURVIVOR_SCENARIO:-base}"
+UPDATE_RESTART_MODE="${AFORA_UPGRADE_SURVIVOR_UPDATE_RESTART_MODE:-manual}"
+COMMAND_TIMEOUT="${AFORA_UPGRADE_SURVIVOR_COMMAND_TIMEOUT:-900s}"
+START_BUDGET_SECONDS="$(afora_e2e_read_positive_int_env AFORA_UPGRADE_SURVIVOR_START_BUDGET_SECONDS 90)"
+STATUS_BUDGET_SECONDS="$(afora_e2e_read_positive_int_env AFORA_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS 30)"
+PROBE_TIMEOUT_MS="$(afora_e2e_read_nonnegative_int_env AFORA_UPGRADE_SURVIVOR_PROBE_TIMEOUT_MS 60000)"
 PROBE_ATTEMPT_TIMEOUT_MS="$(
-  openclaw_e2e_read_positive_int_env OPENCLAW_UPGRADE_SURVIVOR_PROBE_ATTEMPT_TIMEOUT_MS 5000
+  afora_e2e_read_positive_int_env AFORA_UPGRADE_SURVIVOR_PROBE_ATTEMPT_TIMEOUT_MS 5000
 )"
 PROBE_MAX_BODY_BYTES="$(
-  openclaw_e2e_read_positive_int_env OPENCLAW_UPGRADE_SURVIVOR_PROBE_MAX_BODY_BYTES 1048576
+  afora_e2e_read_positive_int_env AFORA_UPGRADE_SURVIVOR_PROBE_MAX_BODY_BYTES 1048576
 )"
-ROOT_MANAGED_VPS="${OPENCLAW_UPGRADE_SURVIVOR_ROOT_MANAGED_VPS:-0}"
+ROOT_MANAGED_VPS="${AFORA_UPGRADE_SURVIVOR_ROOT_MANAGED_VPS:-0}"
 
 resolve_lane_artifact_suffix() {
-  if [ -n "${OPENCLAW_DOCKER_ALL_LANE_NAME:-}" ]; then
-    printf "%s" "$OPENCLAW_DOCKER_ALL_LANE_NAME"
+  if [ -n "${AFORA_DOCKER_ALL_LANE_NAME:-}" ]; then
+    printf "%s" "$AFORA_DOCKER_ALL_LANE_NAME"
     return
   fi
 
@@ -39,7 +39,7 @@ resolve_lane_artifact_suffix() {
     printf "root-managed-vps-upgrade"
   elif [ "$UPDATE_RESTART_MODE" = "auto-auth" ]; then
     printf "update-restart-auth"
-  elif [ "${OPENCLAW_UPGRADE_SURVIVOR_PUBLISHED_BASELINE:-0}" = "1" ]; then
+  elif [ "${AFORA_UPGRADE_SURVIVOR_PUBLISHED_BASELINE:-0}" = "1" ]; then
     printf "published-upgrade-survivor"
   else
     printf "upgrade-survivor"
@@ -55,23 +55,23 @@ resolve_lane_artifact_suffix() {
 
 LANE_ARTIFACT_SUFFIX="$(resolve_lane_artifact_suffix)"
 LANE_ARTIFACT_SUFFIX="${LANE_ARTIFACT_SUFFIX//[^A-Za-z0-9_.-]/_}"
-ARTIFACT_DIR="${OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_DIR:-$ROOT_DIR/.artifacts/upgrade-survivor/$LANE_ARTIFACT_SUFFIX}"
+ARTIFACT_DIR="${AFORA_UPGRADE_SURVIVOR_ARTIFACT_DIR:-$ROOT_DIR/.artifacts/upgrade-survivor/$LANE_ARTIFACT_SUFFIX}"
 DOCKER_RUN_USER_ARGS=()
 PREPUBLISH_PLUGIN_REGISTRY_ARGS=()
 AUTO_PREPUBLISH_PLUGIN_REGISTRY_ROOT=""
 PROBE_ENV_ARGS=(
-  -e OPENCLAW_UPGRADE_SURVIVOR_PROBE_TIMEOUT_MS="$PROBE_TIMEOUT_MS"
-  -e OPENCLAW_UPGRADE_SURVIVOR_PROBE_ATTEMPT_TIMEOUT_MS="$PROBE_ATTEMPT_TIMEOUT_MS"
-  -e OPENCLAW_UPGRADE_SURVIVOR_PROBE_MAX_BODY_BYTES="$PROBE_MAX_BODY_BYTES"
+  -e AFORA_UPGRADE_SURVIVOR_PROBE_TIMEOUT_MS="$PROBE_TIMEOUT_MS"
+  -e AFORA_UPGRADE_SURVIVOR_PROBE_ATTEMPT_TIMEOUT_MS="$PROBE_ATTEMPT_TIMEOUT_MS"
+  -e AFORA_UPGRADE_SURVIVOR_PROBE_MAX_BODY_BYTES="$PROBE_MAX_BODY_BYTES"
 )
-if [ -n "${OPENCLAW_UPGRADE_SURVIVOR_READYZ_ALLOW_FAILING:-}" ]; then
+if [ -n "${AFORA_UPGRADE_SURVIVOR_READYZ_ALLOW_FAILING:-}" ]; then
   PROBE_ENV_ARGS+=(
-    -e OPENCLAW_UPGRADE_SURVIVOR_READYZ_ALLOW_FAILING="$OPENCLAW_UPGRADE_SURVIVOR_READYZ_ALLOW_FAILING"
+    -e AFORA_UPGRADE_SURVIVOR_READYZ_ALLOW_FAILING="$AFORA_UPGRADE_SURVIVOR_READYZ_ALLOW_FAILING"
   )
 fi
-if [ -n "${OPENCLAW_UPGRADE_SURVIVOR_READYZ_ALLOW_DEGRADED:-}" ]; then
+if [ -n "${AFORA_UPGRADE_SURVIVOR_READYZ_ALLOW_DEGRADED:-}" ]; then
   PROBE_ENV_ARGS+=(
-    -e OPENCLAW_UPGRADE_SURVIVOR_READYZ_ALLOW_DEGRADED="$OPENCLAW_UPGRADE_SURVIVOR_READYZ_ALLOW_DEGRADED"
+    -e AFORA_UPGRADE_SURVIVOR_READYZ_ALLOW_DEGRADED="$AFORA_UPGRADE_SURVIVOR_READYZ_ALLOW_DEGRADED"
   )
 fi
 configure_prepublish_plugin_registry() {
@@ -84,12 +84,12 @@ configure_prepublish_plugin_registry() {
     exit 1
   fi
   PREPUBLISH_PLUGIN_REGISTRY_ARGS=(
-    -e OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_DIR=/tmp/openclaw-prepublish-plugin-registry
-    -v "$PREPUBLISH_PLUGIN_REGISTRY_DIR:/tmp/openclaw-prepublish-plugin-registry:ro"
+    -e AFORA_PREPUBLISH_PLUGIN_REGISTRY_DIR=/tmp/afora-prepublish-plugin-registry
+    -v "$PREPUBLISH_PLUGIN_REGISTRY_DIR:/tmp/afora-prepublish-plugin-registry:ro"
   )
 }
-if [ -n "${OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_DIR:-}" ]; then
-  configure_prepublish_plugin_registry "$OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_DIR"
+if [ -n "${AFORA_PREPUBLISH_PLUGIN_REGISTRY_DIR:-}" ]; then
+  configure_prepublish_plugin_registry "$AFORA_PREPUBLISH_PLUGIN_REGISTRY_DIR"
 fi
 cleanup_outer() {
   docker_e2e_cleanup_package_tgz "${PACKAGE_TGZ:-}"
@@ -100,8 +100,8 @@ cleanup_outer() {
 trap cleanup_outer EXIT
 
 if [ "$ROOT_MANAGED_VPS" = "1" ]; then
-  if [ "${OPENCLAW_UPGRADE_SURVIVOR_PUBLISHED_BASELINE:-0}" != "1" ]; then
-    echo "OPENCLAW_UPGRADE_SURVIVOR_ROOT_MANAGED_VPS=1 requires OPENCLAW_UPGRADE_SURVIVOR_PUBLISHED_BASELINE=1" >&2
+  if [ "${AFORA_UPGRADE_SURVIVOR_PUBLISHED_BASELINE:-0}" != "1" ]; then
+    echo "AFORA_UPGRADE_SURVIVOR_ROOT_MANAGED_VPS=1 requires AFORA_UPGRADE_SURVIVOR_PUBLISHED_BASELINE=1" >&2
     exit 1
   fi
   DOCKER_RUN_USER_ARGS+=(--user root -e HOME=/root -e USER=root)
@@ -111,24 +111,24 @@ normalize_npm_candidate() {
   local raw="$1"
   case "$raw" in
     latest | beta)
-      printf 'openclaw@%s\n' "$raw"
+      printf 'afora@%s\n' "$raw"
       ;;
-    openclaw@*)
+    afora@*)
       printf '%s\n' "$raw"
       ;;
     *@*)
-      echo "OPENCLAW_UPGRADE_SURVIVOR_CANDIDATE must be current, latest, beta, openclaw@<version>, a bare version, or a .tgz path." >&2
+      echo "AFORA_UPGRADE_SURVIVOR_CANDIDATE must be current, latest, beta, afora@<version>, a bare version, or a .tgz path." >&2
       return 1
       ;;
     *)
-      printf 'openclaw@%s\n' "$raw"
+      printf 'afora@%s\n' "$raw"
       ;;
   esac
 }
 
-if [ "${OPENCLAW_UPGRADE_SURVIVOR_PUBLISHED_BASELINE:-0}" = "1" ]; then
+if [ "${AFORA_UPGRADE_SURVIVOR_PUBLISHED_BASELINE:-0}" = "1" ]; then
   if [ -z "${BASELINE_SPEC// }" ]; then
-    echo "OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPEC is required for published upgrade survivor" >&2
+    echo "AFORA_UPGRADE_SURVIVOR_BASELINE_SPEC is required for published upgrade survivor" >&2
     exit 1
   fi
 
@@ -136,52 +136,52 @@ if [ "${OPENCLAW_UPGRADE_SURVIVOR_PUBLISHED_BASELINE:-0}" = "1" ]; then
   chmod -R a+rwX "$ARTIFACT_DIR" || true
 
   DOCKER_E2E_PACKAGE_ARGS=()
-  CANDIDATE_RAW="${OPENCLAW_UPGRADE_SURVIVOR_CANDIDATE:-current}"
+  CANDIDATE_RAW="${AFORA_UPGRADE_SURVIVOR_CANDIDATE:-current}"
   CANDIDATE_KIND="npm"
   CANDIDATE_IS_CURRENT=0
   CANDIDATE_SPEC=""
 
-  if [ -n "${OPENCLAW_CURRENT_PACKAGE_TGZ:-}" ]; then
-    PACKAGE_TGZ="$(docker_e2e_prepare_package_tgz upgrade-survivor "$OPENCLAW_CURRENT_PACKAGE_TGZ")"
+  if [ -n "${AFORA_CURRENT_PACKAGE_TGZ:-}" ]; then
+    PACKAGE_TGZ="$(docker_e2e_prepare_package_tgz upgrade-survivor "$AFORA_CURRENT_PACKAGE_TGZ")"
     docker_e2e_package_mount_args "$PACKAGE_TGZ"
     CANDIDATE_KIND="tarball"
     CANDIDATE_IS_CURRENT=1
-    CANDIDATE_SPEC="/tmp/openclaw-current.tgz"
+    CANDIDATE_SPEC="/tmp/afora-current.tgz"
   elif [ "$CANDIDATE_RAW" = "current" ]; then
     PACKAGE_TGZ="$(docker_e2e_prepare_package_tgz upgrade-survivor)"
     docker_e2e_package_mount_args "$PACKAGE_TGZ"
     CANDIDATE_KIND="tarball"
     CANDIDATE_IS_CURRENT=1
-    CANDIDATE_SPEC="/tmp/openclaw-current.tgz"
+    CANDIDATE_SPEC="/tmp/afora-current.tgz"
   elif [[ "$CANDIDATE_RAW" == *.tgz ]]; then
     if [ ! -f "$CANDIDATE_RAW" ]; then
-      echo "OpenClaw candidate tarball does not exist: $CANDIDATE_RAW" >&2
+      echo "Afora candidate tarball does not exist: $CANDIDATE_RAW" >&2
       exit 1
     fi
     PACKAGE_TGZ="$(docker_e2e_prepare_package_tgz upgrade-survivor "$CANDIDATE_RAW")"
     docker_e2e_package_mount_args "$PACKAGE_TGZ"
     CANDIDATE_KIND="tarball"
-    CANDIDATE_SPEC="/tmp/openclaw-current.tgz"
+    CANDIDATE_SPEC="/tmp/afora-current.tgz"
   else
     CANDIDATE_KIND="npm"
     CANDIDATE_SPEC="$(normalize_npm_candidate "$CANDIDATE_RAW")"
   fi
 
-  if [ "$CANDIDATE_IS_CURRENT" = "1" ] && [ -z "${OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_DIR:-}" ]; then
+  if [ "$CANDIDATE_IS_CURRENT" = "1" ] && [ -z "${AFORA_PREPUBLISH_PLUGIN_REGISTRY_DIR:-}" ]; then
     AUTO_PREPUBLISH_PLUGIN_REGISTRY_ROOT="$(
-      mktemp -d "${TMPDIR:-/tmp}/openclaw-upgrade-survivor-plugin-registry.XXXXXX"
+      mktemp -d "${TMPDIR:-/tmp}/afora-upgrade-survivor-plugin-registry.XXXXXX"
     )"
-    OPENCLAW_DOCKER_ALL_LANES=published-upgrade-survivor \
-      OPENCLAW_DOCKER_ALL_LOG_DIR="$AUTO_PREPUBLISH_PLUGIN_REGISTRY_ROOT" \
-      OPENCLAW_DOCKER_ALL_TIMINGS=0 \
-      OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SPECS="$BASELINE_SPEC" \
-      OPENCLAW_UPGRADE_SURVIVOR_SCENARIOS="$SCENARIO" \
+    AFORA_DOCKER_ALL_LANES=published-upgrade-survivor \
+      AFORA_DOCKER_ALL_LOG_DIR="$AUTO_PREPUBLISH_PLUGIN_REGISTRY_ROOT" \
+      AFORA_DOCKER_ALL_TIMINGS=0 \
+      AFORA_UPGRADE_SURVIVOR_BASELINE_SPECS="$BASELINE_SPEC" \
+      AFORA_UPGRADE_SURVIVOR_SCENARIOS="$SCENARIO" \
       node "$HARNESS_ROOT_DIR/scripts/test-docker-all.mjs" --prepare-plugin-registry
     configure_prepublish_plugin_registry \
       "$AUTO_PREPUBLISH_PLUGIN_REGISTRY_ROOT/prepublish-plugin-registry"
   fi
 
-  OPENCLAW_TEST_STATE_FUNCTION_B64="$(docker_e2e_test_state_function_b64)"
+  AFORA_TEST_STATE_FUNCTION_B64="$(docker_e2e_test_state_function_b64)"
   TRUSTED_TSX_NODE_MODULES="$HARNESS_ROOT_DIR/node_modules"
   TRUSTED_TSX_IMPORT="$TRUSTED_TSX_NODE_MODULES/tsx/dist/loader.mjs"
   if [ ! -f "$TRUSTED_TSX_IMPORT" ]; then
@@ -195,36 +195,36 @@ if [ "${OPENCLAW_UPGRADE_SURVIVOR_PUBLISHED_BASELINE:-0}" = "1" ]; then
   # Keep candidate images from selecting an older copy of the trusted release runner.
   docker_e2e_run_with_harness \
     -e COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
-    -e OPENCLAW_TEST_STATE_FUNCTION_B64="$OPENCLAW_TEST_STATE_FUNCTION_B64" \
-    -e OPENCLAW_UPGRADE_SURVIVOR_BASELINE="$BASELINE_SPEC" \
-    -e OPENCLAW_UPGRADE_SURVIVOR_CANDIDATE_KIND="$CANDIDATE_KIND" \
-    -e OPENCLAW_UPGRADE_SURVIVOR_CANDIDATE_SPEC="$CANDIDATE_SPEC" \
-    -e OPENCLAW_UPGRADE_SURVIVOR_SCENARIO="$SCENARIO" \
-    -e OPENCLAW_UPGRADE_SURVIVOR_UPDATE_RESTART_MODE="$UPDATE_RESTART_MODE" \
-    -e OPENCLAW_UPGRADE_SURVIVOR_COMMAND_TIMEOUT="$COMMAND_TIMEOUT" \
-    -e OPENCLAW_UPGRADE_SURVIVOR_LEGACY_RUNTIME_DEPS_SYMLINK="${OPENCLAW_UPGRADE_SURVIVOR_LEGACY_RUNTIME_DEPS_SYMLINK:-}" \
-    -e OPENCLAW_UPGRADE_SURVIVOR_ROOT_MANAGED_VPS="$ROOT_MANAGED_VPS" \
-    -e OPENCLAW_UPGRADE_SURVIVOR_TSX_IMPORT=/tmp/openclaw-release-harness/node_modules/tsx/dist/loader.mjs \
-    -e OPENCLAW_UPGRADE_SURVIVOR_SUMMARY_JSON=/tmp/openclaw-upgrade-survivor-artifacts/summary.json \
-    -e OPENCLAW_UPGRADE_SURVIVOR_START_BUDGET_SECONDS="$START_BUDGET_SECONDS" \
-    -e OPENCLAW_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS="$STATUS_BUDGET_SECONDS" \
-    -e OPENCLAW_UPGRADE_SURVIVOR_CLAWHUB_FIXTURE_SERVER=/tmp/openclaw-clawhub-fixture-server.cjs \
+    -e AFORA_TEST_STATE_FUNCTION_B64="$AFORA_TEST_STATE_FUNCTION_B64" \
+    -e AFORA_UPGRADE_SURVIVOR_BASELINE="$BASELINE_SPEC" \
+    -e AFORA_UPGRADE_SURVIVOR_CANDIDATE_KIND="$CANDIDATE_KIND" \
+    -e AFORA_UPGRADE_SURVIVOR_CANDIDATE_SPEC="$CANDIDATE_SPEC" \
+    -e AFORA_UPGRADE_SURVIVOR_SCENARIO="$SCENARIO" \
+    -e AFORA_UPGRADE_SURVIVOR_UPDATE_RESTART_MODE="$UPDATE_RESTART_MODE" \
+    -e AFORA_UPGRADE_SURVIVOR_COMMAND_TIMEOUT="$COMMAND_TIMEOUT" \
+    -e AFORA_UPGRADE_SURVIVOR_LEGACY_RUNTIME_DEPS_SYMLINK="${AFORA_UPGRADE_SURVIVOR_LEGACY_RUNTIME_DEPS_SYMLINK:-}" \
+    -e AFORA_UPGRADE_SURVIVOR_ROOT_MANAGED_VPS="$ROOT_MANAGED_VPS" \
+    -e AFORA_UPGRADE_SURVIVOR_TSX_IMPORT=/tmp/afora-release-harness/node_modules/tsx/dist/loader.mjs \
+    -e AFORA_UPGRADE_SURVIVOR_SUMMARY_JSON=/tmp/afora-upgrade-survivor-artifacts/summary.json \
+    -e AFORA_UPGRADE_SURVIVOR_START_BUDGET_SECONDS="$START_BUDGET_SECONDS" \
+    -e AFORA_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS="$STATUS_BUDGET_SECONDS" \
+    -e AFORA_UPGRADE_SURVIVOR_CLAWHUB_FIXTURE_SERVER=/tmp/afora-clawhub-fixture-server.cjs \
     "${PROBE_ENV_ARGS[@]}" \
-    -v "$ARTIFACT_DIR:/tmp/openclaw-upgrade-survivor-artifacts" \
-    -v "$TRUSTED_TSX_NODE_MODULES:/tmp/openclaw-release-harness/node_modules:ro" \
-    -v "$HARNESS_ROOT_DIR/scripts/e2e/lib/clawhub-fixture-server.cjs:/tmp/openclaw-clawhub-fixture-server.cjs:ro" \
-    -v "$HARNESS_ROOT_DIR/scripts/e2e/lib/upgrade-survivor/run.sh:/tmp/openclaw-upgrade-survivor-run.sh:ro" \
+    -v "$ARTIFACT_DIR:/tmp/afora-upgrade-survivor-artifacts" \
+    -v "$TRUSTED_TSX_NODE_MODULES:/tmp/afora-release-harness/node_modules:ro" \
+    -v "$HARNESS_ROOT_DIR/scripts/e2e/lib/clawhub-fixture-server.cjs:/tmp/afora-clawhub-fixture-server.cjs:ro" \
+    -v "$HARNESS_ROOT_DIR/scripts/e2e/lib/upgrade-survivor/run.sh:/tmp/afora-upgrade-survivor-run.sh:ro" \
     "${PREPUBLISH_PLUGIN_REGISTRY_ARGS[@]}" \
     "${DOCKER_E2E_PACKAGE_ARGS[@]}" \
     "${DOCKER_RUN_USER_ARGS[@]}" \
     "$IMAGE_NAME" \
-    timeout --kill-after=30s "$DOCKER_RUN_TIMEOUT" bash /tmp/openclaw-upgrade-survivor-run.sh
+    timeout --kill-after=30s "$DOCKER_RUN_TIMEOUT" bash /tmp/afora-upgrade-survivor-run.sh
   exit 0
 fi
 
-PACKAGE_TGZ="$(docker_e2e_prepare_package_tgz upgrade-survivor "${OPENCLAW_CURRENT_PACKAGE_TGZ:-}")"
+PACKAGE_TGZ="$(docker_e2e_prepare_package_tgz upgrade-survivor "${AFORA_CURRENT_PACKAGE_TGZ:-}")"
 docker_e2e_package_mount_args "$PACKAGE_TGZ"
-OPENCLAW_TEST_STATE_SCRIPT_B64="$(docker_e2e_test_state_shell_b64 upgrade-survivor upgrade-survivor)"
+AFORA_TEST_STATE_SCRIPT_B64="$(docker_e2e_test_state_shell_b64 upgrade-survivor upgrade-survivor)"
 mkdir -p "$ARTIFACT_DIR"
 chmod -R a+rwX "$ARTIFACT_DIR" || true
 
@@ -233,86 +233,86 @@ docker_e2e_build_or_reuse "$IMAGE_NAME" upgrade-survivor "$ROOT_DIR/scripts/e2e/
 echo "Running upgrade survivor Docker E2E..."
 docker_e2e_run_with_harness \
   -e COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
-  -e OPENCLAW_TEST_STATE_SCRIPT_B64="$OPENCLAW_TEST_STATE_SCRIPT_B64" \
-  -e OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_ROOT=/tmp/openclaw-upgrade-survivor-artifacts \
-  -e OPENCLAW_UPGRADE_SURVIVOR_ROOT_MANAGED_VPS="$ROOT_MANAGED_VPS" \
-  -e OPENCLAW_UPGRADE_SURVIVOR_SCENARIO="$SCENARIO" \
-  -e OPENCLAW_UPGRADE_SURVIVOR_UPDATE_RESTART_MODE="$UPDATE_RESTART_MODE" \
-  -e OPENCLAW_UPGRADE_SURVIVOR_COMMAND_TIMEOUT="$COMMAND_TIMEOUT" \
-  -e OPENCLAW_UPGRADE_SURVIVOR_START_BUDGET_SECONDS="$START_BUDGET_SECONDS" \
-  -e OPENCLAW_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS="$STATUS_BUDGET_SECONDS" \
-  -e OPENCLAW_UPGRADE_SURVIVOR_CLAWHUB_FIXTURE_SERVER=/tmp/openclaw-clawhub-fixture-server.cjs \
+  -e AFORA_TEST_STATE_SCRIPT_B64="$AFORA_TEST_STATE_SCRIPT_B64" \
+  -e AFORA_UPGRADE_SURVIVOR_ARTIFACT_ROOT=/tmp/afora-upgrade-survivor-artifacts \
+  -e AFORA_UPGRADE_SURVIVOR_ROOT_MANAGED_VPS="$ROOT_MANAGED_VPS" \
+  -e AFORA_UPGRADE_SURVIVOR_SCENARIO="$SCENARIO" \
+  -e AFORA_UPGRADE_SURVIVOR_UPDATE_RESTART_MODE="$UPDATE_RESTART_MODE" \
+  -e AFORA_UPGRADE_SURVIVOR_COMMAND_TIMEOUT="$COMMAND_TIMEOUT" \
+  -e AFORA_UPGRADE_SURVIVOR_START_BUDGET_SECONDS="$START_BUDGET_SECONDS" \
+  -e AFORA_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS="$STATUS_BUDGET_SECONDS" \
+  -e AFORA_UPGRADE_SURVIVOR_CLAWHUB_FIXTURE_SERVER=/tmp/afora-clawhub-fixture-server.cjs \
   "${PROBE_ENV_ARGS[@]}" \
-  -v "$ARTIFACT_DIR:/tmp/openclaw-upgrade-survivor-artifacts" \
-  -v "$HARNESS_ROOT_DIR/scripts/e2e/lib/clawhub-fixture-server.cjs:/tmp/openclaw-clawhub-fixture-server.cjs:ro" \
+  -v "$ARTIFACT_DIR:/tmp/afora-upgrade-survivor-artifacts" \
+  -v "$HARNESS_ROOT_DIR/scripts/e2e/lib/clawhub-fixture-server.cjs:/tmp/afora-clawhub-fixture-server.cjs:ro" \
   "${PREPUBLISH_PLUGIN_REGISTRY_ARGS[@]}" \
   "${DOCKER_E2E_PACKAGE_ARGS[@]}" \
   "${DOCKER_RUN_USER_ARGS[@]}" \
   "$IMAGE_NAME" \
   timeout --kill-after=30s "$DOCKER_RUN_TIMEOUT" bash -lc 'set -euo pipefail
-source scripts/lib/openclaw-e2e-instance.sh
+source scripts/lib/afora-e2e-instance.sh
 
 export npm_config_loglevel=error
 export npm_config_fund=false
 export npm_config_audit=false
-export OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_ROOT="${OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_ROOT:-/tmp/openclaw-upgrade-survivor-artifacts}"
-export OPENCLAW_UPGRADE_SURVIVOR_RUNTIME_ROOT="${OPENCLAW_UPGRADE_SURVIVOR_RUNTIME_ROOT:-/tmp/openclaw-upgrade-survivor-runtime}"
-mkdir -p "$OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_ROOT"
-export TMPDIR="${OPENCLAW_UPGRADE_SURVIVOR_TMPDIR:-$OPENCLAW_UPGRADE_SURVIVOR_RUNTIME_ROOT/tmp}"
-export OPENCLAW_TEST_STATE_TMPDIR="${OPENCLAW_UPGRADE_SURVIVOR_TEST_STATE_TMPDIR:-$OPENCLAW_UPGRADE_SURVIVOR_RUNTIME_ROOT/state-tmp}"
-export npm_config_prefix="$OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_ROOT/npm-prefix"
+export AFORA_UPGRADE_SURVIVOR_ARTIFACT_ROOT="${AFORA_UPGRADE_SURVIVOR_ARTIFACT_ROOT:-/tmp/afora-upgrade-survivor-artifacts}"
+export AFORA_UPGRADE_SURVIVOR_RUNTIME_ROOT="${AFORA_UPGRADE_SURVIVOR_RUNTIME_ROOT:-/tmp/afora-upgrade-survivor-runtime}"
+mkdir -p "$AFORA_UPGRADE_SURVIVOR_ARTIFACT_ROOT"
+export TMPDIR="${AFORA_UPGRADE_SURVIVOR_TMPDIR:-$AFORA_UPGRADE_SURVIVOR_RUNTIME_ROOT/tmp}"
+export AFORA_TEST_STATE_TMPDIR="${AFORA_UPGRADE_SURVIVOR_TEST_STATE_TMPDIR:-$AFORA_UPGRADE_SURVIVOR_RUNTIME_ROOT/state-tmp}"
+export npm_config_prefix="$AFORA_UPGRADE_SURVIVOR_ARTIFACT_ROOT/npm-prefix"
 export NPM_CONFIG_PREFIX="$npm_config_prefix"
-export npm_config_cache="${OPENCLAW_UPGRADE_SURVIVOR_NPM_CACHE:-$OPENCLAW_UPGRADE_SURVIVOR_RUNTIME_ROOT/npm-cache}"
+export npm_config_cache="${AFORA_UPGRADE_SURVIVOR_NPM_CACHE:-$AFORA_UPGRADE_SURVIVOR_RUNTIME_ROOT/npm-cache}"
 export NPM_CONFIG_CACHE="$npm_config_cache"
 export npm_config_tmp="$TMPDIR"
-mkdir -p "$OPENCLAW_UPGRADE_SURVIVOR_RUNTIME_ROOT" "$TMPDIR" "$OPENCLAW_TEST_STATE_TMPDIR" "$npm_config_prefix" "$npm_config_cache"
+mkdir -p "$AFORA_UPGRADE_SURVIVOR_RUNTIME_ROOT" "$TMPDIR" "$AFORA_TEST_STATE_TMPDIR" "$npm_config_prefix" "$npm_config_cache"
 chmod 700 "$npm_config_cache" || true
 export PATH="$npm_config_prefix/bin:$PATH"
 export CI=true
-export OPENCLAW_NO_ONBOARD=1
-export OPENCLAW_NO_PROMPT=1
-export OPENCLAW_SKIP_PROVIDERS=1
-export OPENCLAW_SKIP_CHANNELS=1
-export OPENCLAW_DISABLE_BONJOUR=1
+export AFORA_NO_ONBOARD=1
+export AFORA_NO_PROMPT=1
+export AFORA_SKIP_PROVIDERS=1
+export AFORA_SKIP_CHANNELS=1
+export AFORA_DISABLE_BONJOUR=1
 export GATEWAY_AUTH_TOKEN_REF="upgrade-survivor-token"
-export OPENAI_API_KEY="sk-openclaw-upgrade-survivor"
+export OPENAI_API_KEY="sk-afora-upgrade-survivor"
 export DISCORD_BOT_TOKEN="upgrade-survivor-discord-token"
 export TELEGRAM_BOT_TOKEN="123456:upgrade-survivor-telegram-token"
-if [ "${OPENCLAW_UPGRADE_SURVIVOR_SCENARIO:-base}" = "feishu-channel" ]; then
+if [ "${AFORA_UPGRADE_SURVIVOR_SCENARIO:-base}" = "feishu-channel" ]; then
   export FEISHU_APP_SECRET="upgrade-survivor-feishu-secret"
 fi
 export BRAVE_API_KEY="BSA_upgrade_survivor_brave_key"
 
-UPDATE_RESTART_MODE="${OPENCLAW_UPGRADE_SURVIVOR_UPDATE_RESTART_MODE:-manual}"
-command_timeout="${OPENCLAW_UPGRADE_SURVIVOR_COMMAND_TIMEOUT:-900s}"
+UPDATE_RESTART_MODE="${AFORA_UPGRADE_SURVIVOR_UPDATE_RESTART_MODE:-manual}"
+command_timeout="${AFORA_UPGRADE_SURVIVOR_COMMAND_TIMEOUT:-900s}"
 PORT=18789
-START_BUDGET="$(openclaw_e2e_read_positive_int_env OPENCLAW_UPGRADE_SURVIVOR_START_BUDGET_SECONDS 90)"
-STATUS_BUDGET="$(openclaw_e2e_read_positive_int_env OPENCLAW_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS 30)"
-GATEWAY_LOG="$OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_ROOT/gateway.log"
-SYSTEMCTL_SHIM_LOG="$OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_ROOT/systemctl-shim.log"
-SYSTEMCTL_SHIM_PID_FILE="$OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_ROOT/systemctl-shim.pid"
-SYSTEMCTL_SHIM_DAEMON_LOG="$OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_ROOT/systemctl-shim-gateway.log"
-BASELINE_SERVICE_INSTALL_JSON="$OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_ROOT/baseline-service-install.json"
-BASELINE_SERVICE_INSTALL_ERR="$OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_ROOT/baseline-service-install.err"
-export OPENCLAW_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_LOG="$SYSTEMCTL_SHIM_LOG"
-export OPENCLAW_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_PID_FILE="$SYSTEMCTL_SHIM_PID_FILE"
-export OPENCLAW_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_DAEMON_LOG="$SYSTEMCTL_SHIM_DAEMON_LOG"
-export OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SERVICE_INSTALL_JSON="$BASELINE_SERVICE_INSTALL_JSON"
-export OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SERVICE_INSTALL_ERR="$BASELINE_SERVICE_INSTALL_ERR"
+START_BUDGET="$(afora_e2e_read_positive_int_env AFORA_UPGRADE_SURVIVOR_START_BUDGET_SECONDS 90)"
+STATUS_BUDGET="$(afora_e2e_read_positive_int_env AFORA_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS 30)"
+GATEWAY_LOG="$AFORA_UPGRADE_SURVIVOR_ARTIFACT_ROOT/gateway.log"
+SYSTEMCTL_SHIM_LOG="$AFORA_UPGRADE_SURVIVOR_ARTIFACT_ROOT/systemctl-shim.log"
+SYSTEMCTL_SHIM_PID_FILE="$AFORA_UPGRADE_SURVIVOR_ARTIFACT_ROOT/systemctl-shim.pid"
+SYSTEMCTL_SHIM_DAEMON_LOG="$AFORA_UPGRADE_SURVIVOR_ARTIFACT_ROOT/systemctl-shim-gateway.log"
+BASELINE_SERVICE_INSTALL_JSON="$AFORA_UPGRADE_SURVIVOR_ARTIFACT_ROOT/baseline-service-install.json"
+BASELINE_SERVICE_INSTALL_ERR="$AFORA_UPGRADE_SURVIVOR_ARTIFACT_ROOT/baseline-service-install.err"
+export AFORA_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_LOG="$SYSTEMCTL_SHIM_LOG"
+export AFORA_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_PID_FILE="$SYSTEMCTL_SHIM_PID_FILE"
+export AFORA_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_DAEMON_LOG="$SYSTEMCTL_SHIM_DAEMON_LOG"
+export AFORA_UPGRADE_SURVIVOR_BASELINE_SERVICE_INSTALL_JSON="$BASELINE_SERVICE_INSTALL_JSON"
+export AFORA_UPGRADE_SURVIVOR_BASELINE_SERVICE_INSTALL_ERR="$BASELINE_SERVICE_INSTALL_ERR"
 
 gateway_pid=""
 plugin_registry_pid=""
 clawhub_fixture_pid=""
 cleanup() {
   if [ -s "$SYSTEMCTL_SHIM_PID_FILE" ]; then
-    systemctl --user stop openclaw-gateway.service >/dev/null 2>&1 || true
+    systemctl --user stop afora-gateway.service >/dev/null 2>&1 || true
   fi
-  openclaw_e2e_terminate_gateways "${gateway_pid:-}"
+  afora_e2e_terminate_gateways "${gateway_pid:-}"
   if [ -s "$SYSTEMCTL_SHIM_PID_FILE" ]; then
-    openclaw_e2e_terminate_gateways "$(cat "$SYSTEMCTL_SHIM_PID_FILE" 2>/dev/null || true)"
+    afora_e2e_terminate_gateways "$(cat "$SYSTEMCTL_SHIM_PID_FILE" 2>/dev/null || true)"
   fi
-  openclaw_e2e_stop_process "${plugin_registry_pid:-}"
-  openclaw_e2e_stop_process "${clawhub_fixture_pid:-}"
+  afora_e2e_stop_process "${plugin_registry_pid:-}"
+  afora_e2e_stop_process "${clawhub_fixture_pid:-}"
 }
 trap cleanup EXIT
 
@@ -320,39 +320,39 @@ wait_for_fixture_port() {
   local pid="$1" port_file="$2" log_file="$3" label="$4"
   for _ in $(seq 1 100); do
     [ -s "$port_file" ] && return 0
-    openclaw_e2e_process_alive "$pid" || break
+    afora_e2e_process_alive "$pid" || break
     sleep 0.1
   done
-  openclaw_e2e_print_log "$log_file" >&2
+  afora_e2e_print_log "$log_file" >&2
   echo "Timed out waiting for upgrade survivor $label." >&2
   return 1
 }
 
 configure_clawhub_fixture() {
-  unset OPENCLAW_CLAWHUB_URL CLAWHUB_URL
-  [ -z "${OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_DIR:-}" ] && return 0
-  local fixture_root="$OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_ROOT/clawhub-fixture" port_file log_file
+  unset AFORA_CLAWHUB_URL CLAWHUB_URL
+  [ -z "${AFORA_PREPUBLISH_PLUGIN_REGISTRY_DIR:-}" ] && return 0
+  local fixture_root="$AFORA_UPGRADE_SURVIVOR_ARTIFACT_ROOT/clawhub-fixture" port_file log_file
   port_file="$fixture_root/port"
   log_file="$fixture_root/server.log"
   mkdir -p "$fixture_root"
-  node "$OPENCLAW_UPGRADE_SURVIVOR_CLAWHUB_FIXTURE_SERVER" \
+  node "$AFORA_UPGRADE_SURVIVOR_CLAWHUB_FIXTURE_SERVER" \
     prepublish-artifacts "$port_file" \
-    "$OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_DIR/prepublish-plugin-registry.json" >"$log_file" 2>&1 &
+    "$AFORA_PREPUBLISH_PLUGIN_REGISTRY_DIR/prepublish-plugin-registry.json" >"$log_file" 2>&1 &
   clawhub_fixture_pid="$!"
   wait_for_fixture_port "$clawhub_fixture_pid" "$port_file" "$log_file" "ClawHub fixture"
-  export OPENCLAW_CLAWHUB_URL="http://127.0.0.1:$(cat "$port_file")"
+  export AFORA_CLAWHUB_URL="http://127.0.0.1:$(cat "$port_file")"
 }
 
 configure_plugin_registry() {
-  local fixture_root="$OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_ROOT/plugin-registry"
+  local fixture_root="$AFORA_UPGRADE_SURVIVOR_ARTIFACT_ROOT/plugin-registry"
   local package_dir="$fixture_root/package"
-  local tarball="$fixture_root/openclaw-brave-plugin-2026.5.2.tgz"
+  local tarball="$fixture_root/afora-brave-plugin-2026.5.2.tgz"
   local port_file="$fixture_root/npm-registry-port"
   local log_file="$fixture_root/npm-registry.log"
   local registry_args=()
 
-  if [ -n "${OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_DIR:-}" ]; then
-    local manifest="$OPENCLAW_PREPUBLISH_PLUGIN_REGISTRY_DIR/prepublish-plugin-registry.json"
+  if [ -n "${AFORA_PREPUBLISH_PLUGIN_REGISTRY_DIR:-}" ]; then
+    local manifest="$AFORA_PREPUBLISH_PLUGIN_REGISTRY_DIR/prepublish-plugin-registry.json"
     local registry_rows
     registry_rows="$(
       PREPUBLISH_PLUGIN_REGISTRY_MANIFEST="$manifest" node <<'"'"'NODE'"'"'
@@ -383,7 +383,7 @@ NODE
     done <<<"$registry_rows"
   fi
 
-  if [ "${OPENCLAW_UPGRADE_SURVIVOR_SCENARIO:-base}" = "configured-plugin-installs" ]; then
+  if [ "${AFORA_UPGRADE_SURVIVOR_SCENARIO:-base}" = "configured-plugin-installs" ]; then
     mkdir -p "$package_dir"
     FIXTURE_PACKAGE_DIR="$package_dir" node <<'"'"'NODE'"'"'
 const fs = require("node:fs");
@@ -394,16 +394,16 @@ fs.writeFileSync(
   path.join(root, "package.json"),
   `${JSON.stringify(
     {
-      name: "@openclaw/brave-plugin",
+      name: "@afora/brave-plugin",
       version: "2026.5.2",
-      openclaw: { extensions: ["./index.js"] },
+      afora: { extensions: ["./index.js"] },
     },
     null,
     2,
   )}\n`,
 );
 fs.writeFileSync(
-  path.join(root, "openclaw.plugin.json"),
+  path.join(root, "afora.plugin.json"),
   `${JSON.stringify(
     {
       id: "brave",
@@ -436,7 +436,7 @@ fs.writeFileSync(
 );
 NODE
     tar -czf "$tarball" -C "$fixture_root" package
-    registry_args+=("@openclaw/brave-plugin" "2026.5.2" "$tarball")
+    registry_args+=("@afora/brave-plugin" "2026.5.2" "$tarball")
   fi
 
   if [ "${#registry_args[@]}" -eq 0 ]; then
@@ -444,8 +444,8 @@ NODE
   fi
 
   mkdir -p "$fixture_root"
-  OPENCLAW_NPM_REGISTRY_DIST_TAGS="beta=$package_version" \
-  OPENCLAW_NPM_REGISTRY_UPSTREAM=https://registry.npmjs.org \
+  AFORA_NPM_REGISTRY_DIST_TAGS="beta=$package_version" \
+  AFORA_NPM_REGISTRY_UPSTREAM=https://registry.npmjs.org \
     node scripts/e2e/lib/plugins/npm-registry-server.mjs \
     "$port_file" \
     "${registry_args[@]}" \
@@ -457,20 +457,20 @@ NODE
   export npm_config_registry="$NPM_CONFIG_REGISTRY"
 }
 
-openclaw_e2e_eval_test_state_from_b64 "${OPENCLAW_TEST_STATE_SCRIPT_B64:?missing OPENCLAW_TEST_STATE_SCRIPT_B64}"
+afora_e2e_eval_test_state_from_b64 "${AFORA_TEST_STATE_SCRIPT_B64:?missing AFORA_TEST_STATE_SCRIPT_B64}"
 node scripts/e2e/lib/upgrade-survivor/assertions.mjs seed
 
-openclaw_e2e_install_package "$OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_ROOT/install.log" "upgrade survivor package" "$npm_config_prefix"
-command -v openclaw >/dev/null
-package_version="$(node -p "JSON.parse(require(\"node:fs\").readFileSync(process.argv[1] + \"/lib/node_modules/openclaw/package.json\", \"utf8\")).version" "$npm_config_prefix")"
-OPENCLAW_PACKAGE_ACCEPTANCE_LEGACY_COMPAT="$(
+afora_e2e_install_package "$AFORA_UPGRADE_SURVIVOR_ARTIFACT_ROOT/install.log" "upgrade survivor package" "$npm_config_prefix"
+command -v afora >/dev/null
+package_version="$(node -p "JSON.parse(require(\"node:fs\").readFileSync(process.argv[1] + \"/lib/node_modules/afora/package.json\", \"utf8\")).version" "$npm_config_prefix")"
+AFORA_PACKAGE_ACCEPTANCE_LEGACY_COMPAT="$(
   node scripts/e2e/lib/package-compat.mjs "$package_version"
 )"
-export OPENCLAW_PACKAGE_ACCEPTANCE_LEGACY_COMPAT
+export AFORA_PACKAGE_ACCEPTANCE_LEGACY_COMPAT
 
 echo "Checking dirty-state config before update..."
-OPENCLAW_UPGRADE_SURVIVOR_ASSERT_STAGE=baseline node scripts/e2e/lib/upgrade-survivor/assertions.mjs assert-config
-OPENCLAW_UPGRADE_SURVIVOR_ASSERT_STAGE=baseline node scripts/e2e/lib/upgrade-survivor/assertions.mjs assert-state
+AFORA_UPGRADE_SURVIVOR_ASSERT_STAGE=baseline node scripts/e2e/lib/upgrade-survivor/assertions.mjs assert-config
+AFORA_UPGRADE_SURVIVOR_ASSERT_STAGE=baseline node scripts/e2e/lib/upgrade-survivor/assertions.mjs assert-state
 configure_clawhub_fixture
 if [ "$UPDATE_RESTART_MODE" = "auto-auth" ]; then
   # shellcheck disable=SC1091
@@ -480,42 +480,42 @@ fi
 
 configure_plugin_registry
 echo "Running package update against the mounted tarball..."
-update_args=(update --tag "${OPENCLAW_CURRENT_PACKAGE_TGZ:?missing OPENCLAW_CURRENT_PACKAGE_TGZ}" --yes --json)
+update_args=(update --tag "${AFORA_CURRENT_PACKAGE_TGZ:?missing AFORA_CURRENT_PACKAGE_TGZ}" --yes --json)
 if [ "$UPDATE_RESTART_MODE" != "auto-auth" ]; then
   update_args+=(--no-restart)
 fi
 set +e
-openclaw_e2e_maybe_timeout "$command_timeout" env -u OPENCLAW_GATEWAY_TOKEN -u OPENCLAW_GATEWAY_PASSWORD OPENCLAW_ALLOW_ROOT=1 openclaw "${update_args[@]}" >/tmp/openclaw-upgrade-survivor-update.json 2>/tmp/openclaw-upgrade-survivor-update.err
+afora_e2e_maybe_timeout "$command_timeout" env -u AFORA_GATEWAY_TOKEN -u AFORA_GATEWAY_PASSWORD AFORA_ALLOW_ROOT=1 afora "${update_args[@]}" >/tmp/afora-upgrade-survivor-update.json 2>/tmp/afora-upgrade-survivor-update.err
 update_status=$?
 set -e
 if [ "$update_status" -ne 0 ]; then
-  echo "openclaw update failed" >&2
+  echo "afora update failed" >&2
   validate_status=0
-  openclaw_e2e_maybe_timeout "$command_timeout" openclaw config validate --json >/tmp/openclaw-upgrade-survivor-post-update-validate.json 2>/tmp/openclaw-upgrade-survivor-post-update-validate.err || validate_status=$?
+  afora_e2e_maybe_timeout "$command_timeout" afora config validate --json >/tmp/afora-upgrade-survivor-post-update-validate.json 2>/tmp/afora-upgrade-survivor-post-update-validate.err || validate_status=$?
   echo "post-update config validation probe status=$validate_status" >&2
-  openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-post-update-validate.err >&2 || true
-  openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-post-update-validate.json >&2 || true
-  openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-update.err >&2 || true
-  openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-update.json >&2 || true
+  afora_e2e_print_log /tmp/afora-upgrade-survivor-post-update-validate.err >&2 || true
+  afora_e2e_print_log /tmp/afora-upgrade-survivor-post-update-validate.json >&2 || true
+  afora_e2e_print_log /tmp/afora-upgrade-survivor-update.err >&2 || true
+  afora_e2e_print_log /tmp/afora-upgrade-survivor-update.json >&2 || true
   exit "$update_status"
 fi
-if [ -n "${OPENCLAW_CLAWHUB_URL:-}" ]; then
-  node "$OPENCLAW_UPGRADE_SURVIVOR_CLAWHUB_FIXTURE_SERVER" \
-    assert-prepublish-requests "$OPENCLAW_CLAWHUB_URL" "@openclaw/whatsapp" "$package_version"
+if [ -n "${AFORA_CLAWHUB_URL:-}" ]; then
+  node "$AFORA_UPGRADE_SURVIVOR_CLAWHUB_FIXTURE_SERVER" \
+    assert-prepublish-requests "$AFORA_CLAWHUB_URL" "@afora/whatsapp" "$package_version"
 fi
 
 if [ "$UPDATE_RESTART_MODE" = "auto-auth" ]; then
   echo "Skipping doctor repair until after restart proof."
 else
   echo "Running non-interactive doctor repair..."
-  if ! openclaw_e2e_maybe_timeout "$command_timeout" openclaw doctor --fix --non-interactive >/tmp/openclaw-upgrade-survivor-doctor.log 2>&1; then
-    echo "openclaw doctor failed" >&2
-    openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-doctor.log >&2
+  if ! afora_e2e_maybe_timeout "$command_timeout" afora doctor --fix --non-interactive >/tmp/afora-upgrade-survivor-doctor.log 2>&1; then
+    echo "afora doctor failed" >&2
+    afora_e2e_print_log /tmp/afora-upgrade-survivor-doctor.log >&2
     exit 1
   fi
-  if ! openclaw_e2e_maybe_timeout "$command_timeout" openclaw config validate >>/tmp/openclaw-upgrade-survivor-doctor.log 2>&1; then
+  if ! afora_e2e_maybe_timeout "$command_timeout" afora config validate >>/tmp/afora-upgrade-survivor-doctor.log 2>&1; then
     echo "post-doctor config validation failed" >&2
-    openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-doctor.log >&2
+    afora_e2e_print_log /tmp/afora-upgrade-survivor-doctor.log >&2
     exit 1
   fi
 fi
@@ -526,18 +526,18 @@ node scripts/e2e/lib/upgrade-survivor/assertions.mjs assert-state
 
 startup_summary="n/a"
 if [ "$UPDATE_RESTART_MODE" = "auto-auth" ]; then
-  echo "Gateway restart was handled by openclaw update."
+  echo "Gateway restart was handled by afora update."
 else
   echo "Starting gateway from upgraded state..."
   start_epoch="$(node -e "process.stdout.write(String(Date.now()))")"
-  openclaw gateway --port "$PORT" --bind loopback --allow-unconfigured >"$GATEWAY_LOG" 2>&1 &
+  afora gateway --port "$PORT" --bind loopback --allow-unconfigured >"$GATEWAY_LOG" 2>&1 &
   gateway_pid="$!"
-  openclaw_e2e_wait_gateway_ready "$gateway_pid" "$GATEWAY_LOG" 360 "$PORT"
+  afora_e2e_wait_gateway_ready "$gateway_pid" "$GATEWAY_LOG" 360 "$PORT"
   ready_epoch="$(node -e "process.stdout.write(String(Date.now()))")"
   start_seconds=$(((ready_epoch - start_epoch + 999) / 1000))
   if [ "$start_seconds" -gt "$START_BUDGET" ]; then
     echo "gateway startup exceeded survivor budget: ${start_seconds}s > ${START_BUDGET}s" >&2
-    openclaw_e2e_print_log "$GATEWAY_LOG" >&2
+    afora_e2e_print_log "$GATEWAY_LOG" >&2
     exit 1
   fi
   startup_summary="${start_seconds}s"
@@ -548,39 +548,39 @@ node scripts/e2e/lib/upgrade-survivor/probe-gateway.mjs \
   --base-url "http://127.0.0.1:$PORT" \
   --path /healthz \
   --expect live \
-  --out /tmp/openclaw-upgrade-survivor-healthz.json
+  --out /tmp/afora-upgrade-survivor-healthz.json
 
 readyz_probe_args=(
   --base-url "http://127.0.0.1:$PORT"
   --path /readyz
   --expect ready
 )
-if [ -n "${OPENCLAW_UPGRADE_SURVIVOR_READYZ_ALLOW_FAILING:-}" ]; then
-  readyz_probe_args+=(--allow-failing "$OPENCLAW_UPGRADE_SURVIVOR_READYZ_ALLOW_FAILING")
+if [ -n "${AFORA_UPGRADE_SURVIVOR_READYZ_ALLOW_FAILING:-}" ]; then
+  readyz_probe_args+=(--allow-failing "$AFORA_UPGRADE_SURVIVOR_READYZ_ALLOW_FAILING")
 fi
-if [ "${OPENCLAW_UPGRADE_SURVIVOR_READYZ_ALLOW_DEGRADED:-}" = "1" ]; then
+if [ "${AFORA_UPGRADE_SURVIVOR_READYZ_ALLOW_DEGRADED:-}" = "1" ]; then
   readyz_probe_args+=(--allow-degraded-ready)
 fi
-readyz_probe_args+=(--out /tmp/openclaw-upgrade-survivor-readyz.json)
+readyz_probe_args+=(--out /tmp/afora-upgrade-survivor-readyz.json)
 node scripts/e2e/lib/upgrade-survivor/probe-gateway.mjs "${readyz_probe_args[@]}"
 
 echo "Checking gateway RPC status..."
 status_start="$(node -e "process.stdout.write(String(Date.now()))")"
-if ! openclaw_e2e_maybe_timeout "$command_timeout" openclaw gateway status --url "ws://127.0.0.1:$PORT" --token "$GATEWAY_AUTH_TOKEN_REF" --require-rpc --timeout 30000 --json >/tmp/openclaw-upgrade-survivor-status.json 2>/tmp/openclaw-upgrade-survivor-status.err; then
+if ! afora_e2e_maybe_timeout "$command_timeout" afora gateway status --url "ws://127.0.0.1:$PORT" --token "$GATEWAY_AUTH_TOKEN_REF" --require-rpc --timeout 30000 --json >/tmp/afora-upgrade-survivor-status.json 2>/tmp/afora-upgrade-survivor-status.err; then
   echo "gateway status failed" >&2
-  openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-status.err >&2
-  openclaw_e2e_print_log "$GATEWAY_LOG" >&2
-  openclaw_e2e_print_log "$SYSTEMCTL_SHIM_DAEMON_LOG" >&2
+  afora_e2e_print_log /tmp/afora-upgrade-survivor-status.err >&2
+  afora_e2e_print_log "$GATEWAY_LOG" >&2
+  afora_e2e_print_log "$SYSTEMCTL_SHIM_DAEMON_LOG" >&2
   exit 1
 fi
 status_end="$(node -e "process.stdout.write(String(Date.now()))")"
 status_seconds=$(((status_end - status_start + 999) / 1000))
 if [ "$status_seconds" -gt "$STATUS_BUDGET" ]; then
   echo "gateway status exceeded survivor budget: ${status_seconds}s > ${STATUS_BUDGET}s" >&2
-  openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-status.json >&2
+  afora_e2e_print_log /tmp/afora-upgrade-survivor-status.json >&2
   exit 1
 fi
-node scripts/e2e/lib/upgrade-survivor/assertions.mjs assert-status-json /tmp/openclaw-upgrade-survivor-status.json
+node scripts/e2e/lib/upgrade-survivor/assertions.mjs assert-status-json /tmp/afora-upgrade-survivor-status.json
 
-echo "Upgrade survivor Docker E2E passed scenario=${OPENCLAW_UPGRADE_SURVIVOR_SCENARIO:-base} updateRestartMode=${UPDATE_RESTART_MODE} startup=${startup_summary} status=${status_seconds}s."
+echo "Upgrade survivor Docker E2E passed scenario=${AFORA_UPGRADE_SURVIVOR_SCENARIO:-base} updateRestartMode=${UPDATE_RESTART_MODE} startup=${startup_summary} status=${status_seconds}s."
 '

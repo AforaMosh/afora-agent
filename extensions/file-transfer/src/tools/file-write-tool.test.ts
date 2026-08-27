@@ -4,20 +4,20 @@ import {
   callGatewayTool,
   listNodes,
   resolveNodeIdFromList,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { readMediaBuffer } from "openclaw/plugin-sdk/media-store";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { readMediaBuffer } from "afora-agent/plugin-sdk/media-store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { humanSize } from "../shared/params.js";
 import { FILE_TRANSFER_SUBDIR, FILE_WRITE_HARD_MAX_BYTES } from "./descriptors.js";
 import { createFileWriteTool } from "./file-write-tool.js";
 
-vi.mock("openclaw/plugin-sdk/agent-harness-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/agent-harness-runtime", () => ({
   callGatewayTool: vi.fn(),
   listNodes: vi.fn(),
   resolveNodeIdFromList: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/media-store", () => ({
+vi.mock("afora-agent/plugin-sdk/media-store", () => ({
   readMediaBuffer: vi.fn(),
 }));
 

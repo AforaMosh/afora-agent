@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { isBackgroundExecTask } from "./background-exec-task-contract.js";
 import { CRON_TASK_KIND } from "./cron-task-contract.js";
@@ -35,7 +35,7 @@ function ensureTaskCancellationReady(task: TaskRecord): void {
 }
 
 export async function cancelTaskById(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   taskId: string;
   reason?: string;
 }): Promise<{ found: boolean; cancelled: boolean; reason?: string; task?: TaskRecord }> {
@@ -118,7 +118,7 @@ export async function cancelTaskById(params: {
         // The live cron service owns the abort signal; registry finalization below
         // keeps CLI/Gateway callers aligned while the run unwinds.
       } else if (!childSessionKey) {
-        // Harness-mirrored rows have no OpenClaw child session to terminate.
+        // Harness-mirrored rows have no Afora child session to terminate.
         // Cancellation clears only their task-registry record.
       } else if (task.runtime === "acp") {
         const { getAcpSessionManager } = await loadTaskRegistryControlRuntime();

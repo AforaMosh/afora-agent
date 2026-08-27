@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import type { AssistantMessage, Context, Model } from "@openclaw/ai";
-import { streamOpenAICompletions } from "@openclaw/ai/internal/openai";
+import type { AssistantMessage, Context, Model } from "@afora/ai";
+import { streamOpenAICompletions } from "@afora/ai/internal/openai";
 import { describe, expect, it } from "vitest";
 import { classifyAssistantFailoverReason } from "./embedded-agent-helpers/assistant-message-failures.js";
 import { formatAssistantErrorText } from "./embedded-agent-helpers/error-text.js";

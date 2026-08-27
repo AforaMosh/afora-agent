@@ -60,7 +60,7 @@ describe("openEditor", () => {
 
 describe("markdown sidebar", () => {
   it("opens workspace files from markdown preview clicks", async () => {
-    const panel = document.createElement("openclaw-chat-detail-panel") as HTMLElement & {
+    const panel = document.createElement("afora-chat-detail-panel") as HTMLElement & {
       content: unknown;
       onOpenWorkspaceFile?: (target: { path: string; line?: number | null }) => void;
       updateComplete?: Promise<unknown>;
@@ -84,7 +84,7 @@ describe("markdown sidebar", () => {
   });
 
   it.each(["Enter", " "])("opens focused markdown preview file links with %j", async (key) => {
-    const panel = document.createElement("openclaw-chat-detail-panel") as HTMLElement & {
+    const panel = document.createElement("afora-chat-detail-panel") as HTMLElement & {
       content: unknown;
       onOpenWorkspaceFile?: (target: { path: string; line?: number | null }) => void;
       updateComplete?: Promise<unknown>;
@@ -113,7 +113,7 @@ describe("markdown sidebar", () => {
   it.each(["click", "Ctrl+click", "Enter", " "])(
     "handles markdown preview session links with %j",
     async (action) => {
-      const panel = document.createElement("openclaw-chat-detail-panel") as HTMLElement & {
+      const panel = document.createElement("afora-chat-detail-panel") as HTMLElement & {
         content: unknown;
         onOpenSessionLink?: (target: { sessionKey: string; agentId: string }) => void;
         updateComplete?: Promise<unknown>;
@@ -161,7 +161,7 @@ describe("markdown sidebar", () => {
   it.each(["click", "Enter"])(
     "SPA-routes markdown preview session hrefs with %s",
     async (action) => {
-      const panel = document.createElement("openclaw-chat-detail-panel") as HTMLElement & {
+      const panel = document.createElement("afora-chat-detail-panel") as HTMLElement & {
         basePath?: string;
         content: unknown;
         onOpenSessionLink?: (target: unknown) => void;
@@ -193,7 +193,7 @@ describe("markdown sidebar", () => {
   );
 
   it("activates Markdown images only when a chat owner opts in", async () => {
-    const panel = document.createElement("openclaw-chat-detail-panel") as HTMLElement & {
+    const panel = document.createElement("afora-chat-detail-panel") as HTMLElement & {
       content: unknown;
       onOpenImage?: (item: { src: string; title: string }) => void;
       updateComplete?: Promise<unknown>;
@@ -211,7 +211,7 @@ describe("markdown sidebar", () => {
     });
     panel.remove();
 
-    const fallbackPanel = document.createElement("openclaw-chat-detail-panel") as HTMLElement & {
+    const fallbackPanel = document.createElement("afora-chat-detail-panel") as HTMLElement & {
       content: unknown;
       updateComplete?: Promise<unknown>;
     };
@@ -226,7 +226,7 @@ describe("markdown sidebar", () => {
   });
 
   it("opens image artifacts through the shared lightbox callback", async () => {
-    const panel = document.createElement("openclaw-chat-detail-panel") as HTMLElement & {
+    const panel = document.createElement("afora-chat-detail-panel") as HTMLElement & {
       content: unknown;
       onOpenImage?: (item: { src: string; title: string }) => void;
       updateComplete?: Promise<unknown>;
@@ -249,7 +249,7 @@ describe("markdown sidebar", () => {
     });
     panel.remove();
 
-    const fallbackPanel = document.createElement("openclaw-chat-detail-panel") as HTMLElement & {
+    const fallbackPanel = document.createElement("afora-chat-detail-panel") as HTMLElement & {
       content: unknown;
       updateComplete?: Promise<unknown>;
     };
@@ -274,7 +274,7 @@ describe("markdown sidebar", () => {
   });
 
   it("keeps a canvas scripts ceiling under a trusted global sandbox", async () => {
-    const panel = document.createElement("openclaw-chat-detail-panel") as HTMLElement & {
+    const panel = document.createElement("afora-chat-detail-panel") as HTMLElement & {
       content: unknown;
       embedSandboxMode: "trusted";
       canvasPluginSurfaceUrl: string;
@@ -314,7 +314,7 @@ describe("file sidebar clipboard feedback", () => {
   };
 
   async function mountFilePanel(): Promise<FilePanel> {
-    const panel = document.createElement("openclaw-chat-detail-panel") as FilePanel;
+    const panel = document.createElement("afora-chat-detail-panel") as FilePanel;
     panel.content = {
       kind: "file",
       path: "src/example.ts",

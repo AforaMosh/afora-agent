@@ -1,11 +1,11 @@
 // Feishu plugin module implements comment shared behavior.
-import { retryAsync } from "openclaw/plugin-sdk/retry-runtime";
+import { retryAsync } from "afora-agent/plugin-sdk/retry-runtime";
 import {
   isRecord,
   normalizeOptionalString as normalizeString,
   normalizeStringEntries,
   readStringValue as readString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { FEISHU_COMMENT_FILE_TYPES, type CommentFileType } from "./comment-target.js";
 import {
   getFeishuSendRateLimitCode,

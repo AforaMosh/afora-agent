@@ -1,7 +1,7 @@
 /**
  * Handles lifecycle and compaction events from subscribed embedded-agent sessions.
  */
-import { isPromiseLike } from "@openclaw/normalization-core/promise-like";
+import { isPromiseLike } from "@afora/normalization-core/promise-like";
 import { createInlineCodeState } from "../../packages/markdown-core/src/code-spans.js";
 import { emitAgentEvent } from "../infra/agent-events.js";
 import { hasAcceptedSessionSpawn } from "./accepted-session-spawn.js";

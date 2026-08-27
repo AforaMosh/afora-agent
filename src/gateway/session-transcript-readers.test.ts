@@ -11,10 +11,10 @@ import {
 } from "../config/sessions/session-accessor.js";
 import { waitForSessionTranscriptIndexReconcile } from "../config/sessions/session-transcript-reconcile.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { captureEnv, setTestEnvValue } from "../test-utils/env.js";
 import { readSessionMessagesAroundIdWithStatsAsync } from "./session-transcript-anchor-reader.js";
 import {
@@ -51,15 +51,15 @@ describe("session transcript reader facade", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
-    tempDir = tempDirs.make("openclaw-transcript-readers-");
+    envSnapshot = captureEnv(["AFORA_STATE_DIR"]);
+    tempDir = tempDirs.make("afora-transcript-readers-");
     storePath = path.join(tempDir, "sessions.json");
-    setTestEnvValue("OPENCLAW_STATE_DIR", tempDir);
+    setTestEnvValue("AFORA_STATE_DIR", tempDir);
   });
 
   afterEach(() => {
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     envSnapshot.restore();
   });
 
@@ -95,9 +95,9 @@ describe("session transcript reader facade", () => {
   }
 
   function markProjectionNeedsRebuild(sessionId: string): void {
-    openOpenClawAgentDatabase({
+    openAforaAgentDatabase({
       agentId: "main",
-      path: path.join(tempDir, "openclaw-agent.sqlite"),
+      path: path.join(tempDir, "afora-agent.sqlite"),
     })
       .db.prepare(
         "UPDATE session_transcript_index_state SET needs_rebuild = 1 WHERE session_id = ?",
@@ -224,8 +224,8 @@ describe("session transcript reader facade", () => {
     await expect(
       readSessionMessagesAsync(scope, { mode: "full", reason: "timestamp contract test" }),
     ).resolves.toMatchObject([
-      { __openclaw: { recordTimestampMs: Date.parse("0") } },
-      { __openclaw: { recordTimestampMs: Date.parse("2026") } },
+      { __afora: { recordTimestampMs: Date.parse("0") } },
+      { __afora: { recordTimestampMs: Date.parse("2026") } },
     ]);
   });
 
@@ -353,7 +353,7 @@ describe("session transcript reader facade", () => {
     ]);
     await expect(
       readSessionMessagesAsync(scope, { mode: "recent", maxMessages: 1 }),
-    ).resolves.toMatchObject([{ content: "sqlite follow-up", __openclaw: { seq: 3 } }]);
+    ).resolves.toMatchObject([{ content: "sqlite follow-up", __afora: { seq: 3 } }]);
     await expect(readSessionMessageCountAsync(scope)).resolves.toBe(3);
   });
 
@@ -498,7 +498,7 @@ describe("session transcript reader facade", () => {
     } finally {
       await waitForSessionTranscriptIndexReconcile({
         agentId: "main",
-        path: path.join(tempDir, "openclaw-agent.sqlite"),
+        path: path.join(tempDir, "afora-agent.sqlite"),
       });
     }
     expect(fields).toEqual({
@@ -517,7 +517,7 @@ describe("session transcript reader facade", () => {
         ]),
       );
     }
-    const databasePath = path.join(tempDir, "openclaw-agent.sqlite");
+    const databasePath = path.join(tempDir, "afora-agent.sqlite");
     markProjectionNeedsRebuild("reader-title-rebuilding");
 
     expect(readSessionTitleFieldsFromTranscriptBatch(scopes)).toEqual([
@@ -812,9 +812,9 @@ describe("session transcript reader facade", () => {
       { role: "assistant", content: "generation reply" },
     ]);
     expect(readSessionTitleFieldsFromTranscript(scope).firstUserMessage).toBe("generation prompt");
-    openOpenClawAgentDatabase({
+    openAforaAgentDatabase({
       agentId: "main",
-      path: path.join(tempDir, "openclaw-agent.sqlite"),
+      path: path.join(tempDir, "afora-agent.sqlite"),
     })
       .db.prepare("UPDATE transcript_rewrite_watermarks SET generation = ? WHERE session_id = ?")
       .run("f".repeat(32), sessionId);
@@ -876,7 +876,7 @@ describe("session transcript reader facade", () => {
     ).resolves.toMatchObject([
       {
         idempotencyKey: "initial-send:user",
-        __openclaw: {
+        __afora: {
           id: "sqlite-user-message",
           idempotencyKey: "initial-send:user",
           seq: 1,
@@ -976,7 +976,7 @@ describe("session transcript reader facade", () => {
     });
     await waitForSessionTranscriptIndexReconcile({
       agentId: "main",
-      path: path.join(tempDir, "openclaw-agent.sqlite"),
+      path: path.join(tempDir, "afora-agent.sqlite"),
     });
 
     const messages = await readSessionMessagesAsync(scope, {
@@ -986,10 +986,10 @@ describe("session transcript reader facade", () => {
 
     expect(messages).toMatchObject([{ content: "branch prompt" }, { content: "active branch" }]);
     expect(
-      messages.map((message) => (message as { __openclaw?: { id?: string } })["__openclaw"]?.id),
+      messages.map((message) => (message as { __afora?: { id?: string } })["__afora"]?.id),
     ).toEqual(["root", "active"]);
     expect(
-      messages.map((message) => (message as { __openclaw?: { seq?: number } })["__openclaw"]?.seq),
+      messages.map((message) => (message as { __afora?: { seq?: number } })["__afora"]?.seq),
     ).toEqual([1, 2]);
     await expect(readSessionMessageCountAsync(scope)).resolves.toBe(2);
   });
@@ -1024,7 +1024,7 @@ describe("session transcript reader facade", () => {
     ]);
     expect(
       page.messages.map(
-        (message) => (message as { __openclaw?: { seq?: number } })["__openclaw"]?.seq,
+        (message) => (message as { __afora?: { seq?: number } })["__afora"]?.seq,
       ),
     ).toEqual([2, 3]);
   });

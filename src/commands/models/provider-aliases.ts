@@ -1,8 +1,8 @@
 /** Provider alias canonicalization for model catalog rows. */
 import fs from "node:fs";
 import path from "node:path";
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   loadPluginManifestRegistryCore,
   type PluginManifestRecord,
@@ -11,7 +11,7 @@ import { loadPluginManifest, type PluginManifestModelCatalog } from "../../plugi
 import type { PluginMetadataSnapshot } from "../../plugins/plugin-metadata-snapshot.js";
 
 type ProviderAliasSource = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   metadataSnapshot?: Pick<PluginMetadataSnapshot, "manifestRegistry">;
 };
 
@@ -45,7 +45,7 @@ function resolveSourcePeerPluginRoot(
   }
   const packageRoot = parts.slice(0, -3).join(path.sep) || path.sep;
   const sourceRoot = path.join(packageRoot, "extensions", plugin.id);
-  return fs.existsSync(path.join(sourceRoot, "openclaw.plugin.json")) ? sourceRoot : undefined;
+  return fs.existsSync(path.join(sourceRoot, "afora.plugin.json")) ? sourceRoot : undefined;
 }
 
 function loadSourcePeerModelCatalog(

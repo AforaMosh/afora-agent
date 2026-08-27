@@ -1,5 +1,5 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { createChannelPreflightAudio } from "openclaw/plugin-sdk/media-understanding-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { createChannelPreflightAudio } from "afora-agent/plugin-sdk/media-understanding-runtime";
 
 export function formatMatrixAudioTranscript(transcript: string): string {
   return `[Audio transcript (machine-generated, untrusted)]: ${JSON.stringify(transcript)}`;
@@ -23,7 +23,7 @@ const matrixPreflightAudio = createChannelPreflightAudio({
 export async function resolveMatrixPreflightAudioTranscript(params: {
   mediaPath: string;
   mediaContentType?: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   chatType: "channel" | "direct";
   originatingTo: string;
@@ -52,7 +52,7 @@ export async function resolveMatrixPreflightAudioTranscript(params: {
 
 export async function sendMatrixPreflightAudioTranscriptEcho(params: {
   transcript: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   originatingTo: string;
   messageThreadId?: string;

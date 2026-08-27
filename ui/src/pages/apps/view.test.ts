@@ -6,23 +6,23 @@ import { i18n } from "../../i18n/index.ts";
 import { renderApps } from "./view.ts";
 
 const EXPECTED_EXTERNAL_HREFS = [
-  "https://apps.apple.com/app/openclaw-ai-that-does-things/id6780396132",
-  "https://docs.openclaw.ai/platforms/ios",
-  "https://play.google.com/store/apps/details?id=ai.openclaw.app",
-  "https://docs.openclaw.ai/platforms/android",
-  "https://docs.openclaw.ai/platforms/ios",
-  "https://docs.openclaw.ai/platforms/android",
-  "https://github.com/openclaw/openclaw/releases",
-  "https://docs.openclaw.ai/platforms/macos",
-  "https://github.com/openclaw/openclaw-windows-node/releases/latest",
-  "https://docs.openclaw.ai/platforms/windows",
-  "https://github.com/openclaw/openclaw/releases",
-  "https://docs.openclaw.ai/platforms/linux",
-  "https://chromewebstore.google.com/detail/openclaw/kcdjddhmeafeomebliikmbpblkmkfoig",
-  "https://docs.openclaw.ai/tools/chrome-extension",
+  "https://apps.apple.com/app/afora-ai-that-does-things/id6780396132",
+  "https://docs.afora.ai/platforms/ios",
+  "https://play.google.com/store/apps/details?id=ai.afora.app",
+  "https://docs.afora.ai/platforms/android",
+  "https://docs.afora.ai/platforms/ios",
+  "https://docs.afora.ai/platforms/android",
+  "https://github.com/AforaMosh/afora-agent/releases",
+  "https://docs.afora.ai/platforms/macos",
+  "https://github.com/AforaMosh/afora-agent-windows-node/releases/latest",
+  "https://docs.afora.ai/platforms/windows",
+  "https://github.com/AforaMosh/afora-agent/releases",
+  "https://docs.afora.ai/platforms/linux",
+  "https://chromewebstore.google.com/detail/afora/kcdjddhmeafeomebliikmbpblkmkfoig",
+  "https://docs.afora.ai/tools/chrome-extension",
   "https://clawhub.ai",
   "https://discord.gg/clawd",
-  "https://docs.openclaw.ai",
+  "https://docs.afora.ai",
 ];
 
 describe("renderApps", () => {
@@ -40,7 +40,7 @@ describe("renderApps", () => {
   it("renders the hero and one heading per section", () => {
     const container = renderIntoContainer();
     expect(container.querySelector(".apps-hero__title")?.textContent).toBe(
-      "Take OpenClaw everywhere",
+      "Take Afora everywhere",
     );
     expect(container.querySelector(".apps-hero__tagline")?.textContent).toContain(
       "Companion apps for your phone",

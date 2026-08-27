@@ -3,7 +3,7 @@ import type {
   HealthFinding,
   HealthRepairContext,
   HealthRepairResult,
-} from "openclaw/plugin-sdk/health";
+} from "afora-agent/plugin-sdk/health";
 import { describe, expect, it, vi } from "vitest";
 import { createPolicyScopedChecks } from "./check-factory.js";
 import { CHECK_IDS } from "./check-ids.js";

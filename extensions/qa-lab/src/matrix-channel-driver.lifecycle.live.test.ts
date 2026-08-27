@@ -1,6 +1,6 @@
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { withTempDir } from "openclaw/plugin-sdk/test-env";
+import { withTempDir } from "afora-agent/plugin-sdk/test-env";
 import { describe, expect, it } from "vitest";
 import type { QaChannelDriverRuntime } from "./channel-driver-lifecycle.js";
 import type { QaTransportDriver } from "./qa-transport-registry.js";

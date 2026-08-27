@@ -24,7 +24,7 @@ export function resolveCodexAppServerLocalHomeDir(
     : resolveCodexAppServerHomeDir(agentDir);
 }
 
-/** Forces OpenClaw-owned Codex auth to remain process-local. */
+/** Forces Afora-owned Codex auth to remain process-local. */
 export function withEphemeralCodexAuthStore(params: {
   startOptions: CodexAppServerStartOptions;
   preparedAuth?: unknown;

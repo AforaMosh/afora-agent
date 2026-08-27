@@ -1,11 +1,11 @@
 // Migrate Hermes tests cover model.apply plugin behavior.
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/provider-auth";
+import type { AforaConfig } from "afora-agent/plugin-sdk/provider-auth";
 import {
-  resolvePreferredOpenClawTmpDir,
+  resolvePreferredAforaTmpDir,
   tempWorkspace,
   type TempWorkspace,
-} from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/temp-path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   HERMES_REASON_DEFAULT_MODEL_CONFIGURED,
@@ -31,8 +31,8 @@ function defaultModelItem(status: "migrated" | "conflict") {
 describe("Hermes migration model apply", () => {
   beforeEach(async () => {
     testWorkspace = await tempWorkspace({
-      rootDir: resolvePreferredOpenClawTmpDir(),
-      prefix: "openclaw-migrate-hermes-",
+      rootDir: resolvePreferredAforaTmpDir(),
+      prefix: "afora-migrate-hermes-",
     });
   });
 
@@ -61,8 +61,8 @@ describe("Hermes migration model apply", () => {
           },
         },
       },
-    } as OpenClawConfig;
-    let writtenConfig: OpenClawConfig | undefined;
+    } as AforaConfig;
+    let writtenConfig: AforaConfig | undefined;
     const provider = buildHermesMigrationProvider({
       runtime: makeConfigRuntime(existingConfig, (next) => {
         writtenConfig = next;
@@ -118,8 +118,8 @@ describe("Hermes migration model apply", () => {
           },
         ],
       },
-    } as OpenClawConfig;
-    let writtenConfig: OpenClawConfig | undefined;
+    } as AforaConfig;
+    let writtenConfig: AforaConfig | undefined;
     const provider = buildHermesMigrationProvider({
       runtime: makeConfigRuntime(existingConfig, (next) => {
         writtenConfig = next;
@@ -162,7 +162,7 @@ describe("Hermes migration model apply", () => {
           model: "anthropic/claude-sonnet-4.6",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const provider = buildHermesMigrationProvider({
       runtime: makeConfigRuntime(lateConfig),
     });
@@ -206,7 +206,7 @@ describe("Hermes migration model apply", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const provider = buildHermesMigrationProvider({ runtime: makeConfigRuntime(lateConfig) });
     const ctx = makeContext({ source, stateDir, workspaceDir, reportDir });
     const plan = await provider.plan(ctx);

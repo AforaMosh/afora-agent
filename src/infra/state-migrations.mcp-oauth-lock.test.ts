@@ -74,7 +74,7 @@ describe("legacy MCP OAuth lock recovery", () => {
   });
 
   it("reports a stale sidecar without unlinking a replacement-prone path", async () => {
-    const stateDir = tempDirs.make("openclaw-mcp-oauth-stale-lock-");
+    const stateDir = tempDirs.make("afora-mcp-oauth-stale-lock-");
     const targetRelativePath = path.join("mcp-oauth", "server-0123456789abcdef.json");
     const lockPath = path.join(stateDir, `${targetRelativePath}.lock`);
     await fs.mkdir(path.dirname(lockPath), { recursive: true });

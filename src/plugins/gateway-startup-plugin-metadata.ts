@@ -1,7 +1,7 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 // Builds deterministic metadata scopes for startup and config validation.
 import type { AmbientEnvTriggerPolicy } from "../channels/config-presence.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { addRequiredAgentHarnessPluginIds } from "./gateway-startup-plugin-activation.js";
 import {
   addConfiguredActivationPathPluginIds,
@@ -28,8 +28,8 @@ import { collectConfiguredWorkerProviderIds } from "./worker-provider-config.js"
 import { normalizeWorkerProviderIds } from "./worker-provider-id.js";
 
 export function resolveGatewayStartupMetadataPluginIds(params: {
-  config: OpenClawConfig;
-  activationSourceConfig?: OpenClawConfig;
+  config: AforaConfig;
+  activationSourceConfig?: AforaConfig;
   env: NodeJS.ProcessEnv;
   index: InstalledPluginIndex;
   workerProviderIds?: readonly string[];
@@ -168,8 +168,8 @@ export function resolveGatewayStartupMetadataPluginIds(params: {
 }
 
 export function createGatewayStartupMetadataPluginIdScope(params: {
-  config: OpenClawConfig;
-  activationSourceConfig?: OpenClawConfig;
+  config: AforaConfig;
+  activationSourceConfig?: AforaConfig;
   env: NodeJS.ProcessEnv;
   workerProviderIds?: readonly string[];
   platform?: NodeJS.Platform;
@@ -213,7 +213,7 @@ export function createGatewayStartupMetadataPluginIdScope(params: {
 function addValidationPluginConfigReferences(
   target: Set<string>,
   params: {
-    config: OpenClawConfig;
+    config: AforaConfig;
     pluginsConfig: ReturnType<typeof normalizePluginsConfigForInstalledIndex>;
     normalizePluginId: (pluginId: string) => string;
   },
@@ -243,7 +243,7 @@ function addValidationPluginConfigReferences(
 }
 
 export function resolveConfigValidationMetadataPluginIds(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
   index: InstalledPluginIndex;
   platform?: NodeJS.Platform;
@@ -312,7 +312,7 @@ export function resolveConfigValidationMetadataPluginIds(params: {
 }
 
 export function createConfigValidationMetadataPluginIdScope(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
   platform?: NodeJS.Platform;
 }): PluginMetadataSnapshotPluginIdScope {

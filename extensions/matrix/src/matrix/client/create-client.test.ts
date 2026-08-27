@@ -30,10 +30,10 @@ let createMatrixClient: typeof import("./create-client.js").createMatrixClient;
 
 describe("createMatrixClient", () => {
   const storagePaths = {
-    rootDir: "/tmp/openclaw-matrix-create-client-test",
-    storagePath: "/tmp/openclaw-matrix-create-client-test/storage.json",
-    recoveryKeyPath: "/tmp/openclaw-matrix-create-client-test/recovery.key",
-    idbSnapshotPath: "/tmp/openclaw-matrix-create-client-test/idb.snapshot",
+    rootDir: "/tmp/afora-matrix-create-client-test",
+    storagePath: "/tmp/afora-matrix-create-client-test/storage.json",
+    recoveryKeyPath: "/tmp/afora-matrix-create-client-test/recovery.key",
+    idbSnapshotPath: "/tmp/afora-matrix-create-client-test/idb.snapshot",
     accountKey: "default",
     tokenHash: "token-hash",
   };
@@ -79,7 +79,7 @@ describe("createMatrixClient", () => {
       storageRootDir: storagePaths.rootDir,
       recoveryKeyPath: storagePaths.recoveryKeyPath,
       idbSnapshotPath: storagePaths.idbSnapshotPath,
-      cryptoDatabasePrefix: "openclaw-matrix-default-token-hash",
+      cryptoDatabasePrefix: "afora-matrix-default-token-hash",
       autoBootstrapCrypto: undefined,
       ssrfPolicy: undefined,
       dispatcherPolicy: undefined,

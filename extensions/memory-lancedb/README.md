@@ -1,13 +1,13 @@
-# @openclaw/memory-lancedb
+# @afora/memory-lancedb
 
-Official LanceDB-backed long-term memory plugin for OpenClaw.
+Official LanceDB-backed long-term memory plugin for Afora.
 
 This plugin adds persistent memory tools backed by LanceDB, vector search, auto-recall, and auto-capture.
 
 ## Install
 
 ```bash
-openclaw plugins install @openclaw/memory-lancedb
+afora plugins install @afora/memory-lancedb
 ```
 
 Restart the Gateway after installing or updating the plugin.
@@ -23,10 +23,10 @@ Restart the Gateway after installing or updating the plugin.
 
 Use the memory plugin docs for embedding provider setup, storage paths, indexing, and recall behavior:
 
-- https://docs.openclaw.ai/plugins/memory-lancedb
+- https://docs.afora.ai/plugins/memory-lancedb
 
 ## Package
 
 - Plugin id: `memory-lancedb`
-- Package: `@openclaw/memory-lancedb`
-- Minimum OpenClaw host: `2026.4.10`
+- Package: `@afora/memory-lancedb`
+- Minimum Afora host: `2026.4.10`

@@ -6,13 +6,13 @@ import type { DiffViewerPayload, DiffLayout, DiffTheme } from "./types.js";
 import { parseViewerPayloadJson } from "./viewer-payload.js";
 
 // oxlint-disable-next-line eslint/no-underscore-dangle -- Bundled builds replace this compile-time define identifier.
-declare const __OPENCLAW_DIFFS_LANGUAGE_PACK__: boolean | undefined;
+declare const __AFORA_DIFFS_LANGUAGE_PACK__: boolean | undefined;
 
 // Build-time esbuild define; the typeof guard keeps the module loadable when
 // the define is absent under Vitest or direct Node execution.
 function readInjectedLanguagePackFlag(): boolean | undefined {
-  return typeof __OPENCLAW_DIFFS_LANGUAGE_PACK__ === "boolean"
-    ? __OPENCLAW_DIFFS_LANGUAGE_PACK__
+  return typeof __AFORA_DIFFS_LANGUAGE_PACK__ === "boolean"
+    ? __AFORA_DIFFS_LANGUAGE_PACK__
     : undefined;
 }
 
@@ -54,8 +54,8 @@ function parsePayload(element: HTMLScriptElement): DiffViewerPayload {
 function getCards(): Array<{ host: HTMLElement; payload: DiffViewerPayload }> {
   const cards: Array<{ host: HTMLElement; payload: DiffViewerPayload }> = [];
   for (const card of document.querySelectorAll<HTMLElement>(".oc-diff-card")) {
-    const host = card.querySelector<HTMLElement>("[data-openclaw-diff-host]");
-    const payloadNode = card.querySelector<HTMLScriptElement>("[data-openclaw-diff-payload]");
+    const host = card.querySelector<HTMLElement>("[data-afora-diff-host]");
+    const payloadNode = card.querySelector<HTMLScriptElement>("[data-afora-diff-payload]");
     if (!host || !payloadNode) {
       continue;
     }
@@ -332,14 +332,14 @@ export async function hydrateViewer(): Promise<void> {
 async function main(): Promise<void> {
   try {
     await hydrateViewer();
-    document.documentElement.dataset.openclawDiffsReady = "true";
+    document.documentElement.dataset.aforaDiffsReady = "true";
   } catch (error) {
-    document.documentElement.dataset.openclawDiffsError = "true";
+    document.documentElement.dataset.aforaDiffsError = "true";
     console.error("Failed to hydrate diff viewer", error);
   }
 }
 
-const disableAutoStartKey = Symbol.for("openclaw.diffs.disableAutoStart");
+const disableAutoStartKey = Symbol.for("afora.diffs.disableAutoStart");
 
 const autoStartDisabled = Boolean(
   (globalThis as typeof globalThis & Record<symbol, unknown>)[disableAutoStartKey],

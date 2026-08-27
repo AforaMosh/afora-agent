@@ -1,5 +1,5 @@
-// Telegram plugin entrypoint registers its OpenClaw integration.
-import { defineBundledChannelEntry } from "openclaw/plugin-sdk/channel-entry-contract";
+// Telegram plugin entrypoint registers its Afora integration.
+import { defineBundledChannelEntry } from "afora-agent/plugin-sdk/channel-entry-contract";
 import { registerTelegramMiniApp } from "./miniapp-api.js";
 
 export default defineBundledChannelEntry({

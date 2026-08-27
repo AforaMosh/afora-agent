@@ -1,11 +1,11 @@
 // Google tests cover default model plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/provider-onboard";
+import type { AforaConfig } from "afora-agent/plugin-sdk/provider-onboard";
 import { describe, expect, it } from "vitest";
 import { applyGoogleGeminiModelDefault, GOOGLE_GEMINI_DEFAULT_MODEL } from "./api.js";
 
 describe("google default model", () => {
   it("sets defaults when model is unset", () => {
-    const cfg: OpenClawConfig = { agents: { defaults: {} } };
+    const cfg: AforaConfig = { agents: { defaults: {} } };
     const applied = applyGoogleGeminiModelDefault(cfg);
     expect(applied.changed).toBe(true);
     expect(applied.next.agents?.defaults?.model).toEqual({ primary: GOOGLE_GEMINI_DEFAULT_MODEL });
@@ -14,7 +14,7 @@ describe("google default model", () => {
   it("overrides existing models", () => {
     const applied = applyGoogleGeminiModelDefault({
       agents: { defaults: { model: { primary: "anthropic/claude-opus-4-6" } } },
-    } as OpenClawConfig);
+    } as AforaConfig);
     expect(applied.changed).toBe(true);
     expect(applied.next.agents?.defaults?.model).toEqual({ primary: GOOGLE_GEMINI_DEFAULT_MODEL });
   });
@@ -32,7 +32,7 @@ describe("google default model", () => {
           },
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(applied.changed).toBe(true);
     expect(applied.next.agents?.defaults?.model).toEqual({
@@ -57,7 +57,7 @@ describe("google default model", () => {
           },
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(applied.changed).toBe(true);
     expect(applied.next.agents?.defaults?.model).toEqual({
@@ -97,7 +97,7 @@ describe("google default model", () => {
           },
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(applied.changed).toBe(true);
     expect(applied.next.models?.providers?.google?.models?.map((model) => model.id)).toEqual([
@@ -108,7 +108,7 @@ describe("google default model", () => {
   it("no-ops when already on the target default", () => {
     const cfg = {
       agents: { defaults: { model: { primary: GOOGLE_GEMINI_DEFAULT_MODEL } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const applied = applyGoogleGeminiModelDefault(cfg);
     expect(applied.changed).toBe(false);
     expect(applied.next).toEqual(cfg);

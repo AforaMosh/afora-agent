@@ -3,9 +3,9 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
-import { SessionManager } from "openclaw/plugin-sdk/agent-sessions";
+import { expectDefined } from "@afora/normalization-core";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
+import { SessionManager } from "afora-agent/plugin-sdk/agent-sessions";
 import { beforeAll, describe, expect, it } from "vitest";
 import { formatSqliteSessionFileMarker } from "../../config/sessions/legacy-sqlite-marker.js";
 import {
@@ -295,7 +295,7 @@ describe("rewriteTranscriptEntriesInSessionManager", () => {
   });
 
   it("preserves original SQLite rows on the abandoned branch", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-transcript-rewrite-runtime-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-transcript-rewrite-runtime-"));
     const storePath = path.join(dir, "sessions.json");
     const sessionId = "runtime-sqlite-branch-rewrite";
     const sessionKey = "agent:main:test";

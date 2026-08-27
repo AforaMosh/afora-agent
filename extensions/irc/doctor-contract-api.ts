@@ -2,9 +2,9 @@
 import type {
   ChannelDoctorConfigMutation,
   ChannelDoctorLegacyConfigRule,
-} from "openclaw/plugin-sdk/channel-contract";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { defineChannelAliasMigration } from "openclaw/plugin-sdk/runtime-doctor-migrations";
+} from "afora-agent/plugin-sdk/channel-contract";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { defineChannelAliasMigration } from "afora-agent/plugin-sdk/runtime-doctor-migrations";
 
 // IRC's nested streaming schema is delivery-only ({chunkMode, block}); it has
 // no preview mode, so only the delivery flat aliases are legal legacy input.
@@ -23,7 +23,7 @@ export const legacyConfigRules: ChannelDoctorLegacyConfigRule[] =
 export function normalizeCompatibilityConfig({
   cfg,
 }: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }): ChannelDoctorConfigMutation {
   return streamingAliasMigration.normalizeChannelConfig({ cfg });
 }

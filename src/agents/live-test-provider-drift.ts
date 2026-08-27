@@ -4,7 +4,7 @@
  * Live lanes call real providers, so these helpers separate acceptable account,
  * quota, model, or upstream drift from product regressions.
  */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { isCloudflareOrHtmlErrorPage } from "../shared/assistant-error-format.js";
 import {
   isAuthErrorMessage,

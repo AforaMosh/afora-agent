@@ -1,7 +1,7 @@
 /**
  * Shared parameter types for embedded-agent run orchestration.
  */
-import type { FastMode } from "@openclaw/normalization-core/string-coerce";
+import type { FastMode } from "@afora/normalization-core/string-coerce";
 import type {
   BlockReplyContext,
   PartialReplyPayload,
@@ -14,7 +14,7 @@ import type { ReasoningLevel, ThinkLevel, VerboseLevel } from "../../../auto-rep
 import type { ChatType } from "../../../channels/chat-type.js";
 import type { InboundEventKind } from "../../../channels/inbound-event/kind.js";
 import type { SessionEntry, SessionToolOverrides } from "../../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import type { GroupToolPolicyConfig } from "../../../config/types.tools.js";
 import type { CronRuntimeAuthority } from "../../../cron/runtime-authority.js";
 import type { ImageContent } from "../../../llm/types.js";
@@ -218,7 +218,7 @@ export type RunEmbeddedAgentParams = {
    * the live global config, NOT from this object — per-run plugin-config
    * overrides are unsupported; use an explicit run param instead.
    */
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   toolOverrides?: SessionToolOverrides;
   skillsSnapshot?: SkillSnapshot;
   prompt: string;
@@ -247,7 +247,7 @@ export type RunEmbeddedAgentParams = {
   agentHarnessId?: string;
   /** True when the pinned non-default harness owns model selection for this session. */
   modelSelectionLocked?: boolean;
-  /** Explicit runtime override selected for this turn. Unlike agentHarnessId, this may force OpenClaw. */
+  /** Explicit runtime override selected for this turn. Unlike agentHarnessId, this may force Afora. */
   agentHarnessRuntimeOverride?: string;
   /** Verified setup continuation: pin both the harness and its local implementation. */
   expectedAgentHarnessRuntimeArtifact?: ExpectedAgentHarnessRuntimeArtifact;

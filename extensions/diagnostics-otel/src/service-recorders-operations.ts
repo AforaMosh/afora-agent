@@ -2,7 +2,7 @@ import { SpanStatusCode } from "@opentelemetry/api";
 import {
   normalizeDiagnosticValue,
   normalizeDiagnosticLane,
-} from "openclaw/plugin-sdk/diagnostic-runtime";
+} from "afora-agent/plugin-sdk/diagnostic-runtime";
 import { redactSensitiveText } from "../api.js";
 import type {
   DiagnosticEventMetadata,
@@ -53,7 +53,7 @@ export function createOperationsRecorders(runtime: DiagnosticsRecorderRuntime) {
   const recordLaneEnqueue = (
     evt: Extract<DiagnosticEventPayload, { type: "queue.lane.enqueue" }>,
   ) => {
-    const attrs = { "openclaw.lane": normalizeDiagnosticLane(evt.lane) };
+    const attrs = { "afora.lane": normalizeDiagnosticLane(evt.lane) };
     laneEnqueueCounter.add(1, attrs);
     queueDepthHistogram.record(evt.queueSize, attrs);
   };
@@ -61,7 +61,7 @@ export function createOperationsRecorders(runtime: DiagnosticsRecorderRuntime) {
   const recordLaneDequeue = (
     evt: Extract<DiagnosticEventPayload, { type: "queue.lane.dequeue" }>,
   ) => {
-    const attrs = { "openclaw.lane": normalizeDiagnosticLane(evt.lane) };
+    const attrs = { "afora.lane": normalizeDiagnosticLane(evt.lane) };
     laneDequeueCounter.add(1, attrs);
     queueDepthHistogram.record(evt.queueSize, attrs);
     if (typeof evt.waitMs === "number") {
@@ -70,9 +70,9 @@ export function createOperationsRecorders(runtime: DiagnosticsRecorderRuntime) {
   };
 
   const recordSessionState = (evt: Extract<DiagnosticEventPayload, { type: "session.state" }>) => {
-    const attrs: Record<string, string> = { "openclaw.state": evt.state };
+    const attrs: Record<string, string> = { "afora.state": evt.state };
     if (evt.reason) {
-      attrs["openclaw.reason"] = redactSensitiveText(evt.reason);
+      attrs["afora.reason"] = redactSensitiveText(evt.reason);
     }
     sessionStateCounter.add(1, attrs);
   };
@@ -81,14 +81,14 @@ export function createOperationsRecorders(runtime: DiagnosticsRecorderRuntime) {
     evt: Extract<DiagnosticEventPayload, { type: "session.turn.created" }>,
   ) => {
     sessionTurnCreatedCounter.add(1, {
-      "openclaw.agent": normalizeDiagnosticValue(evt.agentId, "unknown"),
-      "openclaw.channel": normalizeDiagnosticValue(evt.channel, "unknown"),
-      "openclaw.trigger": evt.trigger,
+      "afora.agent": normalizeDiagnosticValue(evt.agentId, "unknown"),
+      "afora.channel": normalizeDiagnosticValue(evt.channel, "unknown"),
+      "afora.trigger": evt.trigger,
     });
   };
 
   const recordSessionStuck = (evt: Extract<DiagnosticEventPayload, { type: "session.stuck" }>) => {
-    const attrs: Record<string, string> = { "openclaw.state": evt.state };
+    const attrs: Record<string, string> = { "afora.state": evt.state };
     sessionStuckCounter.add(1, attrs);
     if (typeof evt.ageMs === "number") {
       sessionStuckAgeHistogram.record(evt.ageMs, attrs);
@@ -97,20 +97,20 @@ export function createOperationsRecorders(runtime: DiagnosticsRecorderRuntime) {
       return;
     }
     const spanAttrs: Record<string, string | number> = { ...attrs };
-    spanAttrs["openclaw.queueDepth"] = evt.queueDepth ?? 0;
-    spanAttrs["openclaw.ageMs"] = evt.ageMs;
-    const span = tracer.startSpan("openclaw.session.stuck", { attributes: spanAttrs });
+    spanAttrs["afora.queueDepth"] = evt.queueDepth ?? 0;
+    spanAttrs["afora.ageMs"] = evt.ageMs;
+    const span = tracer.startSpan("afora.session.stuck", { attributes: spanAttrs });
     span.setStatus({ code: SpanStatusCode.ERROR, message: "session stuck" });
     span.end();
   };
 
   const sessionRecoveryAttrs = (evt: SessionRecoveryDiagnosticEvent) => {
-    const attrs: Record<string, string> = { "openclaw.state": evt.state };
+    const attrs: Record<string, string> = { "afora.state": evt.state };
     if (evt.reason) {
-      attrs["openclaw.reason"] = redactSensitiveText(evt.reason);
+      attrs["afora.reason"] = redactSensitiveText(evt.reason);
     }
     if (evt.activeWorkKind) {
-      attrs["openclaw.active_work_kind"] = evt.activeWorkKind;
+      attrs["afora.active_work_kind"] = evt.activeWorkKind;
     }
     return attrs;
   };
@@ -119,7 +119,7 @@ export function createOperationsRecorders(runtime: DiagnosticsRecorderRuntime) {
     evt: Extract<DiagnosticEventPayload, { type: "session.recovery.requested" }>,
   ) => {
     const attrs = sessionRecoveryAttrs(evt);
-    attrs["openclaw.action"] = evt.allowActiveAbort ? "abort" : "recover";
+    attrs["afora.action"] = evt.allowActiveAbort ? "abort" : "recover";
     sessionRecoveryRequestedCounter.add(1, attrs);
     sessionRecoveryAgeHistogram.record(evt.ageMs, attrs);
   };
@@ -128,21 +128,21 @@ export function createOperationsRecorders(runtime: DiagnosticsRecorderRuntime) {
     evt: Extract<DiagnosticEventPayload, { type: "session.recovery.completed" }>,
   ) => {
     const attrs = sessionRecoveryAttrs(evt);
-    attrs["openclaw.status"] = evt.status;
-    attrs["openclaw.action"] = normalizeDiagnosticValue(evt.action, "unknown");
+    attrs["afora.status"] = evt.status;
+    attrs["afora.action"] = normalizeDiagnosticValue(evt.action, "unknown");
     if (evt.outcomeReason) {
-      attrs["openclaw.reason"] = redactSensitiveText(evt.outcomeReason);
+      attrs["afora.reason"] = redactSensitiveText(evt.outcomeReason);
     }
     sessionRecoveryCompletedCounter.add(1, attrs);
     sessionRecoveryAgeHistogram.record(evt.ageMs, attrs);
   };
 
   const talkEventAttrs = (evt: TalkDiagnosticEvent): Record<string, string> => ({
-    "openclaw.talk.brain": normalizeDiagnosticValue(evt.brain),
-    "openclaw.talk.event_type": normalizeDiagnosticValue(evt.talkEventType),
-    "openclaw.talk.mode": normalizeDiagnosticValue(evt.mode),
-    "openclaw.talk.provider": normalizeDiagnosticValue(evt.provider),
-    "openclaw.talk.transport": normalizeDiagnosticValue(evt.transport),
+    "afora.talk.brain": normalizeDiagnosticValue(evt.brain),
+    "afora.talk.event_type": normalizeDiagnosticValue(evt.talkEventType),
+    "afora.talk.mode": normalizeDiagnosticValue(evt.mode),
+    "afora.talk.provider": normalizeDiagnosticValue(evt.provider),
+    "afora.talk.transport": normalizeDiagnosticValue(evt.transport),
   });
 
   const recordTalkEvent = (evt: TalkDiagnosticEvent, metadata: DiagnosticEventMetadata) => {
@@ -160,19 +160,19 @@ export function createOperationsRecorders(runtime: DiagnosticsRecorderRuntime) {
   };
 
   const recordRunAttempt = (evt: Extract<DiagnosticEventPayload, { type: "run.attempt" }>) => {
-    runAttemptCounter.add(1, { "openclaw.attempt": evt.attempt });
+    runAttemptCounter.add(1, { "afora.attempt": evt.attempt });
   };
 
   const toolLoopAttrs = (
     evt: Extract<DiagnosticEventPayload, { type: "tool.loop" }>,
   ): Record<string, string | number> => ({
-    "openclaw.toolName": normalizeDiagnosticValue(evt.toolName, "tool"),
-    "openclaw.loop.level": evt.level,
-    "openclaw.loop.action": evt.action,
-    "openclaw.loop.detector": evt.detector,
-    "openclaw.loop.count": evt.count,
+    "afora.toolName": normalizeDiagnosticValue(evt.toolName, "tool"),
+    "afora.loop.level": evt.level,
+    "afora.loop.action": evt.action,
+    "afora.loop.detector": evt.detector,
+    "afora.loop.count": evt.count,
     ...(evt.pairedToolName
-      ? { "openclaw.loop.paired_tool": normalizeDiagnosticValue(evt.pairedToolName, "tool") }
+      ? { "afora.loop.paired_tool": normalizeDiagnosticValue(evt.pairedToolName, "tool") }
       : {}),
   });
 
@@ -182,7 +182,7 @@ export function createOperationsRecorders(runtime: DiagnosticsRecorderRuntime) {
     if (!tracesEnabled) {
       return;
     }
-    const span = spanWithDuration("openclaw.tool.loop", attrs, 0, { endTimeMs: evt.ts });
+    const span = spanWithDuration("afora.tool.loop", attrs, 0, { endTimeMs: evt.ts });
     if (evt.level === "critical" || evt.action === "block") {
       span.setStatus({
         code: SpanStatusCode.ERROR,
@@ -216,8 +216,8 @@ export function createOperationsRecorders(runtime: DiagnosticsRecorderRuntime) {
     evt: Extract<DiagnosticEventPayload, { type: "diagnostic.memory.pressure" }>,
   ) => {
     const attrs = {
-      "openclaw.memory.level": evt.level,
-      "openclaw.memory.reason": evt.reason,
+      "afora.memory.level": evt.level,
+      "afora.memory.reason": evt.reason,
     };
     memoryPressureCounter.add(1, attrs);
     recordMemoryUsageMetrics(evt, attrs);
@@ -226,20 +226,20 @@ export function createOperationsRecorders(runtime: DiagnosticsRecorderRuntime) {
     }
     const spanAttrs: Record<string, string | number | boolean> = {
       ...attrs,
-      "openclaw.memory.rss_bytes": evt.memory.rssBytes,
-      "openclaw.memory.heap_used_bytes": evt.memory.heapUsedBytes,
-      "openclaw.memory.heap_total_bytes": evt.memory.heapTotalBytes,
-      "openclaw.memory.external_bytes": evt.memory.externalBytes,
-      "openclaw.memory.array_buffers_bytes": evt.memory.arrayBuffersBytes,
+      "afora.memory.rss_bytes": evt.memory.rssBytes,
+      "afora.memory.heap_used_bytes": evt.memory.heapUsedBytes,
+      "afora.memory.heap_total_bytes": evt.memory.heapTotalBytes,
+      "afora.memory.external_bytes": evt.memory.externalBytes,
+      "afora.memory.array_buffers_bytes": evt.memory.arrayBuffersBytes,
       ...(evt.thresholdBytes !== undefined
-        ? { "openclaw.memory.threshold_bytes": evt.thresholdBytes }
+        ? { "afora.memory.threshold_bytes": evt.thresholdBytes }
         : {}),
       ...(evt.rssGrowthBytes !== undefined
-        ? { "openclaw.memory.rss_growth_bytes": evt.rssGrowthBytes }
+        ? { "afora.memory.rss_growth_bytes": evt.rssGrowthBytes }
         : {}),
-      ...(evt.windowMs !== undefined ? { "openclaw.memory.window_ms": evt.windowMs } : {}),
+      ...(evt.windowMs !== undefined ? { "afora.memory.window_ms": evt.windowMs } : {}),
     };
-    const span = spanWithDuration("openclaw.memory.pressure", spanAttrs, 0, {
+    const span = spanWithDuration("afora.memory.pressure", spanAttrs, 0, {
       endTimeMs: evt.ts,
     });
     if (evt.level === "critical") {
@@ -255,21 +255,21 @@ export function createOperationsRecorders(runtime: DiagnosticsRecorderRuntime) {
     evt: Extract<DiagnosticEventPayload, { type: "diagnostic.async_queue.dropped" }>,
   ) => {
     asyncQueueDroppedCounter.add(evt.droppedEvents, {
-      "openclaw.diagnostic.async_queue.drop_class": "total",
+      "afora.diagnostic.async_queue.drop_class": "total",
     });
     if (evt.droppedTrustedEvents !== undefined) {
       asyncQueueDroppedCounter.add(evt.droppedTrustedEvents, {
-        "openclaw.diagnostic.async_queue.drop_class": "trusted",
+        "afora.diagnostic.async_queue.drop_class": "trusted",
       });
     }
     if (evt.droppedUntrustedEvents !== undefined) {
       asyncQueueDroppedCounter.add(evt.droppedUntrustedEvents, {
-        "openclaw.diagnostic.async_queue.drop_class": "untrusted",
+        "afora.diagnostic.async_queue.drop_class": "untrusted",
       });
     }
     if (evt.droppedPriorityEvents !== undefined) {
       asyncQueueDroppedCounter.add(evt.droppedPriorityEvents, {
-        "openclaw.diagnostic.async_queue.drop_class": "priority",
+        "afora.diagnostic.async_queue.drop_class": "priority",
       });
     }
   };
@@ -280,34 +280,34 @@ export function createOperationsRecorders(runtime: DiagnosticsRecorderRuntime) {
     privateData: DiagnosticEventPrivateData,
   ) => {
     const attrs: Record<string, string | number> = {
-      "openclaw.outcome": evt.outcome,
-      "openclaw.provider": evt.provider ?? "unknown",
-      "openclaw.model": evt.model ?? "unknown",
+      "afora.outcome": evt.outcome,
+      "afora.provider": evt.provider ?? "unknown",
+      "afora.model": evt.model ?? "unknown",
     };
     if (evt.channel) {
-      attrs["openclaw.channel"] = evt.channel;
+      attrs["afora.channel"] = evt.channel;
     }
     if (evt.blockedBy) {
-      attrs["openclaw.blocked_by"] = normalizeDiagnosticValue(evt.blockedBy, "unknown");
+      attrs["afora.blocked_by"] = normalizeDiagnosticValue(evt.blockedBy, "unknown");
     }
     durationHistogram.record(evt.durationMs, attrs);
     if (!tracesEnabled) {
       return;
     }
     const spanAttrs: Record<string, string | number | boolean> = {
-      "openclaw.outcome": evt.outcome,
+      "afora.outcome": evt.outcome,
     };
     addRunAttrs(spanAttrs, evt);
     if (evt.blockedBy) {
-      spanAttrs["openclaw.blocked_by"] = normalizeDiagnosticValue(evt.blockedBy, "unknown");
+      spanAttrs["afora.blocked_by"] = normalizeDiagnosticValue(evt.blockedBy, "unknown");
     }
     if (evt.errorCategory) {
-      spanAttrs["openclaw.errorCategory"] = normalizeDiagnosticValue(evt.errorCategory, "other");
+      spanAttrs["afora.errorCategory"] = normalizeDiagnosticValue(evt.errorCategory, "other");
     }
     // Redacted message goes on the span only, never the low-cardinality metric attrs.
     const redactedError = normalizeOtelErrorMessage(privateData.errorMessage);
     if (redactedError) {
-      spanAttrs["openclaw.error"] = redactedError;
+      spanAttrs["afora.error"] = redactedError;
     }
     const trustedTrace = trustedTraceContext(evt, metadata);
     const trackedSpan = trustedTrace?.spanId
@@ -315,7 +315,7 @@ export function createOperationsRecorders(runtime: DiagnosticsRecorderRuntime) {
       : undefined;
     const span =
       trackedSpan ??
-      spanWithDuration("openclaw.run", spanAttrs, evt.durationMs, {
+      spanWithDuration("afora.run", spanAttrs, evt.durationMs, {
         parentContext: activeTrustedParentContext(evt, metadata),
         endTimeMs: evt.ts,
       });

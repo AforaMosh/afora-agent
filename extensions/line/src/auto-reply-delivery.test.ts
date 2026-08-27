@@ -1,5 +1,5 @@
-import { expectDefined } from "@openclaw/normalization-core";
-import { chunkMarkdownText } from "openclaw/plugin-sdk/reply-runtime";
+import { expectDefined } from "@afora/normalization-core";
+import { chunkMarkdownText } from "afora-agent/plugin-sdk/reply-runtime";
 // Line tests cover auto reply delivery plugin behavior.
 import { describe, expect, it, vi } from "vitest";
 import { deliverLineAutoReply } from "./auto-reply-delivery.js";

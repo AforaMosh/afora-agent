@@ -18,7 +18,7 @@ describe("readStateDirDotEnvFromStateDir", () => {
   });
 
   async function withDotEnv<T>(content: string, run: (dir: string) => T | Promise<T>): Promise<T> {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-dotenv-test-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-dotenv-test-"));
     await fs.writeFile(path.join(dir, ".env"), content, "utf8");
     try {
       return await run(dir);
@@ -36,8 +36,8 @@ describe("readStateDirDotEnvFromStateDir", () => {
 
   it("skips values that are unresolved shell variable references", async () => {
     const content = [
-      'SUPERMEMORY_OPENCLAW_API_KEY="${SUPERMEMORY_OPENCLAW_KEY}"',
-      "QUOTED_SUPERMEMORY_OPENCLAW_API_KEY='\"$SUPERMEMORY_OPENCLAW_KEY\"'",
+      'SUPERMEMORY_AFORA_API_KEY="${SUPERMEMORY_AFORA_KEY}"',
+      "QUOTED_SUPERMEMORY_AFORA_API_KEY='\"$SUPERMEMORY_AFORA_KEY\"'",
       "QUOTED_CURLY_KEY=\"'${ANOTHER_VAR}'\"",
       "BRACE_DEFAULT_KEY=${ANOTHER_VAR:-fallback}",
       "QUOTED_BRACE_DEFAULT_KEY='\"${ANOTHER_VAR:-fallback}\"'",
@@ -52,8 +52,8 @@ describe("readStateDirDotEnvFromStateDir", () => {
 
     await withDotEnv(content, async (dir) => {
       const result = readStateDirDotEnvFromStateDir(dir).entries;
-      expect(Object.keys(result)).not.toContain("SUPERMEMORY_OPENCLAW_API_KEY");
-      expect(Object.keys(result)).not.toContain("QUOTED_SUPERMEMORY_OPENCLAW_API_KEY");
+      expect(Object.keys(result)).not.toContain("SUPERMEMORY_AFORA_API_KEY");
+      expect(Object.keys(result)).not.toContain("QUOTED_SUPERMEMORY_AFORA_API_KEY");
       expect(Object.keys(result)).not.toContain("QUOTED_CURLY_KEY");
       expect(Object.keys(result)).not.toContain("BRACE_DEFAULT_KEY");
       expect(Object.keys(result)).not.toContain("QUOTED_BRACE_DEFAULT_KEY");
@@ -95,7 +95,7 @@ describe("readStateDirDotEnvFromStateDir", () => {
   });
 
   it("returns empty object when .env is missing", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-dotenv-missing-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-dotenv-missing-"));
     try {
       expect(readStateDirDotEnvFromStateDir(dir).entries).toEqual({});
     } finally {
@@ -104,7 +104,7 @@ describe("readStateDirDotEnvFromStateDir", () => {
   });
 
   it("reads a symlinked .env file", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-dotenv-symlink-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-dotenv-symlink-"));
     try {
       const realPath = path.join(dir, "real.env");
       await fs.writeFile(realPath, "REAL_KEY=from_symlink_target\n", "utf8");
@@ -117,7 +117,7 @@ describe("readStateDirDotEnvFromStateDir", () => {
   });
 
   it("warns when an oversized .env is skipped", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-dotenv-oversized-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-dotenv-oversized-"));
     try {
       const large = Buffer.alloc(2 * 1024 * 1024, "x");
       large.write("KEY=value\n", 0, "utf8");

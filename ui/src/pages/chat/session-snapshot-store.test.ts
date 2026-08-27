@@ -230,7 +230,7 @@ describe("persistent chat session snapshots", () => {
     try {
       await clearStoredChatSnapshots();
       expect(setItem).toHaveBeenCalledWith(
-        "openclaw.control.chatSnapshots.invalidate.v1",
+        "afora.control.chatSnapshots.invalidate.v1",
         expect.any(String),
       );
 
@@ -243,7 +243,7 @@ describe("persistent chat session snapshots", () => {
       await store.flush();
       window.dispatchEvent(
         new StorageEvent("storage", {
-          key: "openclaw.control.chatSnapshots.invalidate.v1",
+          key: "afora.control.chatSnapshots.invalidate.v1",
           newValue: "other-tab",
         }),
       );

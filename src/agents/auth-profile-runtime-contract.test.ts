@@ -9,9 +9,9 @@ import {
   AUTH_PROFILE_RUNTIME_CONTRACT,
   createAuthAliasManifestRegistry,
   expectedForwardedAuthProfile,
-} from "openclaw/plugin-sdk/agent-runtime-test-contracts";
+} from "afora-agent/plugin-sdk/agent-runtime-test-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveOpenAIRuntimeProvider } from "./openai-routing.js";
 import { resolveProviderIdForAuth } from "./provider-auth-aliases.js";
 import { resetProviderAuthAliasMapCacheForTest } from "./provider-auth-aliases.test-support.js";
@@ -30,12 +30,12 @@ vi.mock("../plugins/plugin-metadata-snapshot.js", () => ({
   loadPluginMetadataSnapshot: pluginMetadataMocks.loadPluginMetadataSnapshot,
 }));
 
-const workspaceDir = "/tmp/openclaw-auth-contract";
+const workspaceDir = "/tmp/afora-auth-contract";
 const authAliasMetadata = {
   plugins: createAuthAliasManifestRegistry().plugins,
 };
 
-function authAliasLookupParams(config: OpenClawConfig = {}) {
+function authAliasLookupParams(config: AforaConfig = {}) {
   return {
     config,
     workspaceDir,
@@ -46,7 +46,7 @@ function resolveContractPlan(params: {
   provider: string;
   authProfileProvider: string;
   authProfileId: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   harnessRuntime?: string;
   authProfileSource?: "auto" | "user";
 }) {
@@ -75,21 +75,21 @@ function resolveContractPlan(params: {
   };
 }
 
-function providerRuntimeConfig(provider: string, runtime: string): OpenClawConfig {
+function providerRuntimeConfig(provider: string, runtime: string): AforaConfig {
   return {
     models: {
       providers: {
         [provider]: {
-          baseUrl: "https://api.openclaw.test/v1",
+          baseUrl: "https://api.afora.test/v1",
           agentRuntime: { id: runtime },
           models: [],
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
-describe("Auth profile runtime contract - embedded OpenClaw and CLI adapter", () => {
+describe("Auth profile runtime contract - embedded Afora and CLI adapter", () => {
   beforeEach(() => {
     resetProviderAuthAliasMapCacheForTest();
     pluginMetadataMocks.getCurrentPluginMetadataSnapshot.mockClear();
@@ -188,7 +188,7 @@ describe("Auth profile runtime contract - embedded OpenClaw and CLI adapter", ()
     expect(plan.forwardedAuthProfileId).toBeUndefined();
   });
 
-  it("forwards a legacy OpenAI Codex auth profile through the embedded OpenClaw plan", () => {
+  it("forwards a legacy OpenAI Codex auth profile through the embedded Afora plan", () => {
     const { plan } = resolveContractPlan({
       provider: AUTH_PROFILE_RUNTIME_CONTRACT.openAiCodexProvider,
       authProfileProvider: AUTH_PROFILE_RUNTIME_CONTRACT.openAiCodexProvider,
@@ -215,13 +215,13 @@ describe("Auth profile runtime contract - embedded OpenClaw and CLI adapter", ()
     );
   });
 
-  it("forwards an OpenAI auth profile through an explicit OpenClaw plan", () => {
+  it("forwards an OpenAI auth profile through an explicit Afora plan", () => {
     const { embeddedProvider, plan } = resolveContractPlan({
       provider: AUTH_PROFILE_RUNTIME_CONTRACT.openAiProvider,
       authProfileProvider: AUTH_PROFILE_RUNTIME_CONTRACT.openAiProvider,
       authProfileId: AUTH_PROFILE_RUNTIME_CONTRACT.openAiProfileId,
-      cfg: providerRuntimeConfig(AUTH_PROFILE_RUNTIME_CONTRACT.openAiProvider, "openclaw"),
-      harnessRuntime: "openclaw",
+      cfg: providerRuntimeConfig(AUTH_PROFILE_RUNTIME_CONTRACT.openAiProvider, "afora"),
+      harnessRuntime: "afora",
     });
 
     expect(embeddedProvider).toBe(AUTH_PROFILE_RUNTIME_CONTRACT.openAiProvider);
@@ -239,13 +239,13 @@ describe("Auth profile runtime contract - embedded OpenClaw and CLI adapter", ()
     expect(plan.forwardedAuthProfileId).toBe(AUTH_PROFILE_RUNTIME_CONTRACT.openAiCodexProfileId);
   });
 
-  it("routes explicit OpenAI OpenClaw plans with legacy Codex OAuth through OpenAI transport", () => {
+  it("routes explicit OpenAI Afora plans with legacy Codex OAuth through OpenAI transport", () => {
     const { embeddedProvider, plan } = resolveContractPlan({
       provider: AUTH_PROFILE_RUNTIME_CONTRACT.openAiProvider,
       authProfileProvider: AUTH_PROFILE_RUNTIME_CONTRACT.openAiCodexProvider,
       authProfileId: AUTH_PROFILE_RUNTIME_CONTRACT.openAiCodexProfileId,
-      cfg: providerRuntimeConfig(AUTH_PROFILE_RUNTIME_CONTRACT.openAiProvider, "openclaw"),
-      harnessRuntime: "openclaw",
+      cfg: providerRuntimeConfig(AUTH_PROFILE_RUNTIME_CONTRACT.openAiProvider, "afora"),
+      harnessRuntime: "afora",
     });
 
     expect(embeddedProvider).toBe(AUTH_PROFILE_RUNTIME_CONTRACT.openAiProvider);

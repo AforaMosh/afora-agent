@@ -2,7 +2,7 @@
 import {
   normalizeSortedUniqueTrimmedStringList,
   uniqueStrings,
-} from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-normalization";
 import {
   buildPairingConnectCloseReason,
   buildPairingConnectErrorDetails,

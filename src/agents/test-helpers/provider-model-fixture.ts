@@ -1,5 +1,5 @@
 /** Complete provider model fixtures with typed scenario overrides. */
-import type { Api, Model } from "openclaw/plugin-sdk/llm";
+import type { Api, Model } from "afora-agent/plugin-sdk/llm";
 
 type ProviderModelFixture<TApi extends Api> = Partial<
   Omit<Model<TApi>, "id" | "provider" | "api" | "baseUrl">

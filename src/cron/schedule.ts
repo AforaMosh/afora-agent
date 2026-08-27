@@ -1,6 +1,6 @@
 /** Computes at/every/cron schedule timestamps with bounded Croner caching. */
-import { asDateTimestampMs } from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { asDateTimestampMs } from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { Cron, CronDate } from "croner";
 import { parseOffsetlessIsoDateTimeInTimeZone } from "../infra/format-time/parse-offsetless-zoned-datetime.js";
 import { pruneMapToMaxSize } from "../infra/map-size.js";
@@ -366,7 +366,7 @@ function hasCronInCacheForTest(expr: string, tz: string): boolean {
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.cronScheduleTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.cronScheduleTestApi")] = {
     clearCronScheduleCacheForTest,
     getCronScheduleCacheSizeForTest,
     getCronScheduleCacheMaxForTest,

@@ -1,5 +1,5 @@
 import type { CommandOptions } from "../process/exec.js";
-import type { OpenClawSchemaVersions } from "../state/openclaw-schema-versions.js";
+import type { AforaSchemaVersions } from "../state/afora-schema-versions.js";
 import type { PackageUpdateStepAdvisory } from "./package-update-steps.js";
 import type { UpdateChannel } from "./update-channels.js";
 import type { DevUpdateTarget } from "./update-dev-target.js";
@@ -134,7 +134,7 @@ export type UpdateRunnerOptions = {
   allowGatewayServiceRepair?: boolean;
   allowGatewayActivation?: boolean;
   beforeGitMutation?: (target: {
-    schemaVersions?: OpenClawSchemaVersions;
+    schemaVersions?: AforaSchemaVersions;
     metadataUnreadable?: string;
   }) => Promise<{
     allowGatewayServiceRepair?: boolean;

@@ -2,17 +2,17 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
-import { toErrorObject as toLintErrorObject } from "openclaw/plugin-sdk/error-runtime";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
-import type { OpenKeyedStoreOptions } from "openclaw/plugin-sdk/plugin-state-runtime";
+import { expectDefined } from "@afora/normalization-core";
+import { toErrorObject as toLintErrorObject } from "afora-agent/plugin-sdk/error-runtime";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
+import type { OpenKeyedStoreOptions } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import { parseAgentSessionKey } from "openclaw/plugin-sdk/routing";
-import { parseSqliteSessionFileMarker } from "openclaw/plugin-sdk/session-store-runtime";
-import { appendSessionTranscriptMessageByIdentity } from "openclaw/plugin-sdk/session-transcript-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import { parseAgentSessionKey } from "afora-agent/plugin-sdk/routing";
+import { parseSqliteSessionFileMarker } from "afora-agent/plugin-sdk/session-store-runtime";
+import { appendSessionTranscriptMessageByIdentity } from "afora-agent/plugin-sdk/session-transcript-runtime";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { applyCliRuntimeRecallTimeoutDefault } from "./config.js";
 import plugin, { testing } from "./index.js";
@@ -68,14 +68,14 @@ const hoisted = vi.hoisted(() => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/memory-host-search", () => ({
+vi.mock("afora-agent/plugin-sdk/memory-host-search", () => ({
   closeActiveMemorySearchManager: hoisted.closeActiveMemorySearchManager,
   getActiveMemorySearchManager: hoisted.getActiveMemorySearchManager,
 }));
 
-vi.mock("openclaw/plugin-sdk/session-store-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/session-store-runtime")>(
-    "openclaw/plugin-sdk/session-store-runtime",
+vi.mock("afora-agent/plugin-sdk/session-store-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/session-store-runtime")>(
+    "afora-agent/plugin-sdk/session-store-runtime",
   );
   return {
     ...actual,
@@ -85,10 +85,10 @@ vi.mock("openclaw/plugin-sdk/session-store-runtime", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/session-transcript-runtime", async () => {
+vi.mock("afora-agent/plugin-sdk/session-transcript-runtime", async () => {
   const actual = await vi.importActual<
-    typeof import("openclaw/plugin-sdk/session-transcript-runtime")
-  >("openclaw/plugin-sdk/session-transcript-runtime");
+    typeof import("afora-agent/plugin-sdk/session-transcript-runtime")
+  >("afora-agent/plugin-sdk/session-transcript-runtime");
   return {
     ...actual,
     readSessionTranscriptRawDelta: async (
@@ -360,7 +360,7 @@ describe("active-memory plugin", () => {
         openKeyedStore: (options: OpenKeyedStoreOptions) =>
           createPluginStateKeyedStoreForTests("active-memory", {
             ...options,
-            env: { ...process.env, OPENCLAW_STATE_DIR: pluginStateDir },
+            env: { ...process.env, AFORA_STATE_DIR: pluginStateDir },
           }),
       },
       config: {
@@ -577,14 +577,14 @@ describe("active-memory plugin", () => {
   };
   const registerPluginConfig = (overrides: Record<string, unknown>) => {
     api.pluginConfig = { agents: ["main"], mode: "always", ...overrides };
-    plugin.register(api as unknown as OpenClawPluginApi);
+    plugin.register(api as unknown as AforaPluginApi);
   };
   const seedSession = (sessionKey: string, sessionId: string, updatedAt = 0) => {
     hoisted.sessionStore[sessionKey] = { sessionId, updatedAt };
   };
 
   beforeAll(async () => {
-    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-active-memory-test-"));
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-active-memory-test-"));
     pluginStateDir = path.join(fixtureRoot, "plugin-state");
     stateDir = path.join(fixtureRoot, "state");
   });
@@ -597,7 +597,7 @@ describe("active-memory plugin", () => {
     await createPluginStateKeyedStoreForTests("active-memory", {
       namespace: "session-toggles",
       maxEntries: 10_000,
-      env: { ...process.env, OPENCLAW_STATE_DIR: pluginStateDir },
+      env: { ...process.env, AFORA_STATE_DIR: pluginStateDir },
     }).clear();
     runEmbeddedAgent.mockReset();
     configFile = {
@@ -699,7 +699,7 @@ describe("active-memory plugin", () => {
     );
     testing.resetActiveRecallCacheForTests();
     testing.setTimeoutPartialDataGraceMsForTests(5);
-    plugin.register(api as unknown as OpenClawPluginApi);
+    plugin.register(api as unknown as AforaPluginApi);
   });
 
   afterEach(() => {
@@ -1127,7 +1127,7 @@ describe("active-memory plugin", () => {
 
     expect(result).toBeUndefined();
     expect(hoisted.cleanupSessionLifecycleArtifacts).toHaveBeenCalledTimes(3);
-    expect(rmSpy).toHaveBeenCalledWith(expect.stringMatching(/openclaw-active-memory-.*/), {
+    expect(rmSpy).toHaveBeenCalledWith(expect.stringMatching(/afora-active-memory-.*/), {
       recursive: true,
       force: true,
     });
@@ -4468,7 +4468,7 @@ describe("active-memory plugin", () => {
           resolveLookup = resolve;
         }),
     });
-    plugin.register(api as unknown as OpenClawPluginApi);
+    plugin.register(api as unknown as AforaPluginApi);
 
     const resultPromise = runPromptBuild(
       { prompt: "what food do i usually order? stalled toggle lookup" },
@@ -4505,7 +4505,7 @@ describe("active-memory plugin", () => {
           setTimeout(() => resolve(undefined), 1_490);
         }),
     });
-    plugin.register(api as unknown as OpenClawPluginApi);
+    plugin.register(api as unknown as AforaPluginApi);
     runEmbeddedAgent.mockImplementationOnce(() => new Promise<never>(() => {}));
 
     const resultPromise = runPromptBuild(
@@ -5456,7 +5456,7 @@ describe("active-memory plugin", () => {
     await runPromptBuild({ prompt: "what wings should i order? temp transcript path" });
 
     expect(mkdtempSpy).toHaveBeenCalled();
-    expect(rmSpy).toHaveBeenCalledWith(expect.stringMatching(/openclaw-active-memory-.*/), {
+    expect(rmSpy).toHaveBeenCalledWith(expect.stringMatching(/afora-active-memory-.*/), {
       recursive: true,
       force: true,
     });

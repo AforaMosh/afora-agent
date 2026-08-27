@@ -28,8 +28,8 @@ function readJsonFile(filePath: string, fsImpl: typeof fs) {
 }
 
 function readPackageSection(pkg: Record<string, unknown>, section: "assetScripts" | "build") {
-  const openclaw = isRecord(pkg.openclaw) ? pkg.openclaw : {};
-  const value = openclaw[section];
+  const afora = isRecord(pkg.afora) ? pkg.afora : {};
+  const value = afora[section];
   return isRecord(value) ? value : {};
 }
 

@@ -19,7 +19,7 @@ for argument in "$@"; do
 done
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PLAN_FILE="$(mktemp "${TMPDIR:-/tmp}/openclaw-ios-release-cut.XXXXXX")"
+PLAN_FILE="$(mktemp "${TMPDIR:-/tmp}/afora-ios-release-cut.XXXXXX")"
 trap 'rm -f "${PLAN_FILE}"' EXIT
 
 bash "${ROOT_DIR}/scripts/ios-release-plan.sh" --json "$@" >"${PLAN_FILE}"

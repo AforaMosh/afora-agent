@@ -1,17 +1,17 @@
 import { resolveSystemAgentTargetAgentId } from "../agents/agent-scope-config.js";
-// OpenClaw overview gathers config, agent, tool, docs, source, and gateway status.
+// Afora overview gathers config, agent, tool, docs, source, and gateway status.
 import { listAgentEntries, resolveAgentEffectiveModelPrimary } from "../agents/agent-scope.js";
 import {
-  OPENCLAW_DOCS_URL,
-  OPENCLAW_SOURCE_URL,
-  resolveOpenClawReferencePaths,
+  AFORA_DOCS_URL,
+  AFORA_SOURCE_URL,
+  resolveAforaReferencePaths,
 } from "../agents/docs-path.js";
 import {
   readConfigFileSnapshot,
   resolveConfigPath,
   resolveGatewayPort,
   type ConfigFileSnapshot,
-  type OpenClawConfig,
+  type AforaConfig,
 } from "../config/config.js";
 import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
 import { isFastTestRuntimeEnv } from "../infra/env.js";
@@ -60,7 +60,7 @@ export type SystemAgentOverview = {
   };
 };
 
-type OpenClawReferencePaths = Awaited<ReturnType<typeof resolveOpenClawReferencePaths>>;
+type AforaReferencePaths = Awaited<ReturnType<typeof resolveAforaReferencePaths>>;
 
 type GatewayConnectionDetails = {
   url: string;
@@ -73,12 +73,12 @@ type SystemAgentOverviewDependencies = {
   resolveConfigPath?: typeof resolveConfigPath;
   resolveGatewayPort?: typeof resolveGatewayPort;
   buildGatewayConnectionDetails?: (input: {
-    config: OpenClawConfig;
+    config: AforaConfig;
     configPath: string;
   }) => GatewayConnectionDetails;
   probeLocalCommand?: typeof probeLocalCommand;
   probeGatewayUrl?: typeof probeGatewayUrl;
-  resolveOpenClawReferencePaths?: typeof resolveOpenClawReferencePaths;
+  resolveAforaReferencePaths?: typeof resolveAforaReferencePaths;
 };
 
 function issueMessages(snapshot: ConfigFileSnapshot): string[] {
@@ -88,7 +88,7 @@ function issueMessages(snapshot: ConfigFileSnapshot): string[] {
   });
 }
 
-function buildAgentSummaries(cfg: OpenClawConfig, defaultAgentId: string): SystemAgentSummary[] {
+function buildAgentSummaries(cfg: AforaConfig, defaultAgentId: string): SystemAgentSummary[] {
   const entries = listAgentEntries(cfg);
   if (entries.length === 0) {
     return [
@@ -127,7 +127,7 @@ function buildAgentSummaries(cfg: OpenClawConfig, defaultAgentId: string): Syste
   return summaries;
 }
 
-function resolveFastTestReferences(env: NodeJS.ProcessEnv): OpenClawReferencePaths | undefined {
+function resolveFastTestReferences(env: NodeJS.ProcessEnv): AforaReferencePaths | undefined {
   if (!isFastTestRuntimeEnv(env)) {
     return undefined;
   }
@@ -165,7 +165,7 @@ export async function loadSystemAgentOverview(
   } catch (err) {
     gatewayError = err instanceof Error ? err.message : String(err);
   }
-  const resolveReferences = deps.resolveOpenClawReferencePaths ?? resolveOpenClawReferencePaths;
+  const resolveReferences = deps.resolveAforaReferencePaths ?? resolveAforaReferencePaths;
   const commandProbe = deps.probeLocalCommand ?? probeLocalCommand;
   const [codex, claude, gemini, gateway, references] = await Promise.all([
     // Probes run in parallel; each individual probe is timeout-bounded in probes.ts.
@@ -208,9 +208,9 @@ export async function loadSystemAgentOverview(
     },
     references: {
       docsPath: references.docsPath ?? undefined,
-      docsUrl: OPENCLAW_DOCS_URL,
+      docsUrl: AFORA_DOCS_URL,
       sourcePath: references.sourcePath ?? undefined,
-      sourceUrl: OPENCLAW_SOURCE_URL,
+      sourceUrl: AFORA_SOURCE_URL,
     },
   };
 }
@@ -246,7 +246,7 @@ export function formatSystemAgentOverview(overview: SystemAgentOverview): string
       ? ["Config issues:", ...overview.config.issues.map((issue) => `  - ${issue}`)]
       : [];
   return [
-    "OpenClaw online. Little claws, typed tools.",
+    "Afora online. Little claws, typed tools.",
     "",
     `Config: ${configStatus}`,
     `Path: ${overview.config.path}`,
@@ -263,7 +263,7 @@ export function formatSystemAgentOverview(overview: SystemAgentOverview): string
     `AI: ${
       overview.defaultModel
         ? `conversation runs on ${overview.defaultModel}`
-        : "inference unavailable; run openclaw onboard before starting OpenClaw"
+        : "inference unavailable; run afora onboard before starting Afora"
     }`,
     `Docs: ${overview.references.docsPath ?? overview.references.docsUrl}`,
     overview.references.sourcePath
@@ -280,13 +280,13 @@ export function formatSystemAgentOverview(overview: SystemAgentOverview): string
 
 function recommendSystemAgentNextStep(overview: SystemAgentOverview): string {
   if (!overview.config.exists) {
-    return 'run "openclaw onboard" to establish inference';
+    return 'run "afora onboard" to establish inference';
   }
   if (!overview.config.valid) {
     return 'run "validate config" or "doctor" to inspect the config';
   }
   if (!overview.defaultModel) {
-    return 'run "openclaw onboard" to establish inference';
+    return 'run "afora onboard" to establish inference';
   }
   if (!overview.gateway.reachable) {
     return 'run "gateway status" or "restart gateway"';
@@ -313,13 +313,13 @@ function formatStartupAction(overview: SystemAgentOverview): string | undefined 
     return "Config needs attention. Run `doctor` to inspect it.";
   }
   if (!overview.defaultModel) {
-    return "Inference is unavailable. Run `openclaw onboard` and complete a live model check.";
+    return "Inference is unavailable. Run `afora onboard` and complete a live model check.";
   }
   return undefined;
 }
 
 /**
- * Welcome shown right after inference activation. OpenClaw owns the
+ * Welcome shown right after inference activation. Afora owns the
  * remaining workspace, Gateway, channel, and agent setup.
  */
 export function formatSystemAgentOnboardingWelcome(overview: SystemAgentOverview): string {
@@ -341,7 +341,7 @@ export function formatSystemAgentStartupMessage(overview: SystemAgentOverview): 
     ? `${overview.defaultAgentId} (${agent.name})`
     : overview.defaultAgentId;
   return [
-    "Hi, I'm OpenClaw — caretaker of this gateway, config, channels, and agents.",
+    "Hi, I'm Afora — caretaker of this gateway, config, channels, and agents.",
     // Inference status stays independent of the recovery action line: with an
     // invalid config AND no model, both problems must be visible.
     overview.defaultModel ? `Model: ${overview.defaultModel}.` : "Inference is unavailable.",

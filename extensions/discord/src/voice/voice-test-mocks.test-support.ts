@@ -1,4 +1,4 @@
-import type { RealtimeVoiceAgentControlResult } from "openclaw/plugin-sdk/realtime-voice";
+import type { RealtimeVoiceAgentControlResult } from "afora-agent/plugin-sdk/realtime-voice";
 import { vi } from "vitest";
 const {
   createConnectionMock,
@@ -179,7 +179,7 @@ const {
         active: false,
         queued: false,
         reason: "no_active_run",
-        message: "There is no active OpenClaw run to steer.",
+        message: "There is no active Afora run to steer.",
         speak: true,
         show: true,
         suppress: false,
@@ -240,9 +240,9 @@ vi.mock("./sdk-runtime.js", () => ({
   }),
 }));
 
-vi.mock("openclaw/plugin-sdk/routing", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/routing")>(
-    "openclaw/plugin-sdk/routing",
+vi.mock("afora-agent/plugin-sdk/routing", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/routing")>(
+    "afora-agent/plugin-sdk/routing",
   );
   return {
     ...actual,
@@ -250,30 +250,30 @@ vi.mock("openclaw/plugin-sdk/routing", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/agent-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/agent-runtime")>(
-    "openclaw/plugin-sdk/agent-runtime",
+vi.mock("afora-agent/plugin-sdk/agent-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/agent-runtime")>(
+    "afora-agent/plugin-sdk/agent-runtime",
   );
   return {
     ...actual,
     agentCommandFromIngress: agentCommandMock,
-    resolveAgentDir: vi.fn(() => "/tmp/openclaw-agent"),
+    resolveAgentDir: vi.fn(() => "/tmp/afora-agent"),
   };
 });
 
-vi.mock("openclaw/plugin-sdk/realtime-bootstrap-context", async () => {
+vi.mock("afora-agent/plugin-sdk/realtime-bootstrap-context", async () => {
   const actual = await vi.importActual<
-    typeof import("openclaw/plugin-sdk/realtime-bootstrap-context")
-  >("openclaw/plugin-sdk/realtime-bootstrap-context");
+    typeof import("afora-agent/plugin-sdk/realtime-bootstrap-context")
+  >("afora-agent/plugin-sdk/realtime-bootstrap-context");
   return {
     ...actual,
     resolveRealtimeBootstrapContextInstructions: resolveRealtimeBootstrapContextInstructionsMock,
   };
 });
 
-vi.mock("openclaw/plugin-sdk/runtime-env", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/runtime-env")>(
-    "openclaw/plugin-sdk/runtime-env",
+vi.mock("afora-agent/plugin-sdk/runtime-env", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/runtime-env")>(
+    "afora-agent/plugin-sdk/runtime-env",
   );
   return {
     ...actual,
@@ -281,7 +281,7 @@ vi.mock("openclaw/plugin-sdk/runtime-env", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/system-event-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/system-event-runtime", () => ({
   enqueueRoutedSystemEvent: (
     text: unknown,
     route: { sessionKey: unknown },
@@ -289,9 +289,9 @@ vi.mock("openclaw/plugin-sdk/system-event-runtime", () => ({
   ) => enqueueSystemEventMock(text, { ...options, sessionKey: route.sessionKey }),
 }));
 
-vi.mock("openclaw/plugin-sdk/realtime-voice", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/realtime-voice")>(
-    "openclaw/plugin-sdk/realtime-voice",
+vi.mock("afora-agent/plugin-sdk/realtime-voice", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/realtime-voice")>(
+    "afora-agent/plugin-sdk/realtime-voice",
   );
   return {
     ...actual,

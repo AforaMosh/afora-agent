@@ -2,18 +2,18 @@
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { confirm, select, text } from "@clack/prompts";
-import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-coercion";
+import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
   normalizeStringifiedOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import { normalizeCsvOrLooseStringList } from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-coerce";
+import { normalizeCsvOrLooseStringList } from "@afora/normalization-core/string-normalization";
 import { listAgentIds, resolveAgentDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { AUTH_STORE_VERSION } from "../agents/auth-profiles/constants.js";
 import { loadPersistedAuthProfileStore } from "../agents/auth-profiles/persisted.js";
 import type { AuthProfileStore } from "../agents/auth-profiles/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   isValidEnvSecretRefId,
   type ManualExecSecretProviderConfig,
@@ -82,7 +82,7 @@ function parseOptionalPositiveInt(value: string, max: number): number | undefine
   return parsed;
 }
 
-function getSecretProviders(config: OpenClawConfig): Record<string, SecretProviderConfig> {
+function getSecretProviders(config: AforaConfig): Record<string, SecretProviderConfig> {
   if (!isRecord(config.secrets?.providers)) {
     return {};
   }
@@ -90,7 +90,7 @@ function getSecretProviders(config: OpenClawConfig): Record<string, SecretProvid
 }
 
 function setSecretProvider(
-  config: OpenClawConfig,
+  config: AforaConfig,
   providerAlias: string,
   providerConfig: SecretProviderConfig,
 ): void {
@@ -101,7 +101,7 @@ function setSecretProvider(
   config.secrets.providers[providerAlias] = providerConfig;
 }
 
-function removeSecretProvider(config: OpenClawConfig, providerAlias: string): boolean {
+function removeSecretProvider(config: AforaConfig, providerAlias: string): boolean {
   if (!isRecord(config.secrets?.providers)) {
     return false;
   }
@@ -167,7 +167,7 @@ function providerPresetHint(preset: SecretProviderIntegrationPreset): string {
 }
 
 function loadSecretProviderIntegrationPresets(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
 }): SecretProviderIntegrationPreset[] {
   const manifestRegistry = loadPluginManifestRegistryCore({
@@ -181,7 +181,7 @@ function loadSecretProviderIntegrationPresets(params: {
   });
 }
 
-function toSourceChoices(config: OpenClawConfig): Array<{ value: SecretRefSource; label: string }> {
+function toSourceChoices(config: AforaConfig): Array<{ value: SecretRefSource; label: string }> {
   const hasSource = (source: SecretRefSource) =>
     Object.values(config.secrets?.providers ?? {}).some((provider) => provider?.source === source);
   const choices: Array<{ value: SecretRefSource; label: string }> = [
@@ -265,14 +265,14 @@ async function promptOptionalPositiveInt(params: {
 }
 
 function configureCandidateKey(candidate: {
-  configFile: "openclaw.json" | "auth-profiles.json";
+  configFile: "afora.json" | "auth-profiles.json";
   path: string;
   agentId?: string;
 }): string {
   if (candidate.configFile === "auth-profiles.json") {
     return `auth-profiles:${normalizeOptionalString(candidate.agentId) ?? ""}:${candidate.path}`;
   }
-  return `openclaw:${candidate.path}`;
+  return `afora:${candidate.path}`;
 }
 
 function hasSourceChoice(
@@ -301,7 +301,7 @@ function resolveSuggestedEnvSecretId(candidate: ConfigureCandidate): string | un
   return envCandidates[0];
 }
 
-function resolveConfigureAgentId(config: OpenClawConfig, explicitAgentId?: string): string {
+function resolveConfigureAgentId(config: AforaConfig, explicitAgentId?: string): string {
   const knownAgentIds = new Set(listAgentIds(config));
   if (!explicitAgentId) {
     return resolveDefaultAgentId(config);
@@ -317,7 +317,7 @@ function resolveConfigureAgentId(config: OpenClawConfig, explicitAgentId?: strin
 }
 
 function loadAuthProfileStoreForConfigure(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentId: string;
 }): AuthProfileStore {
   const agentDir = resolveAgentDir(params.config, params.agentId);
@@ -641,7 +641,7 @@ async function promptProviderConfig(
 }
 
 async function configureProvidersInteractive(
-  config: OpenClawConfig,
+  config: AforaConfig,
   env: NodeJS.ProcessEnv,
 ): Promise<void> {
   const presets = loadSecretProviderIntegrationPresets({ config, env });
@@ -840,7 +840,7 @@ export async function runSecretsConfigureInteractive(
     });
     const candidates = buildConfigureCandidatesForScope({
       config: stagedConfig,
-      authoredOpenClawConfig: snapshot.resolved,
+      authoredAforaConfig: snapshot.resolved,
       authProfiles: {
         agentId: configureAgentId,
         store: authStore,
@@ -862,7 +862,7 @@ export async function runSecretsConfigureInteractive(
         value: configureCandidateKey(candidate),
         label: candidate.label,
         hint: [
-          candidate.configFile === "auth-profiles.json" ? "auth-profiles.json" : "openclaw.json",
+          candidate.configFile === "auth-profiles.json" ? "auth-profiles.json" : "afora.json",
           candidate.isDerived === true ? "derived" : undefined,
         ]
           .filter(Boolean)

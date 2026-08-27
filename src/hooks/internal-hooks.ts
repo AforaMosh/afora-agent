@@ -1,5 +1,5 @@
 /**
- * Hook system for OpenClaw agent events
+ * Hook system for Afora agent events
  *
  * Provides an extensible event-driven hook system for agent events
  * like command processing, session lifecycle, etc.
@@ -9,7 +9,7 @@ import type { SessionsPatchParams } from "../../packages/gateway-protocol/src/sc
 import type { WorkspaceBootstrapFile } from "../agents/workspace.js";
 import type { CliDeps } from "../cli/outbound-send-deps.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
@@ -29,7 +29,7 @@ export type { InternalHookEvent, InternalHookEventType, InternalHookHandler };
 export type AgentBootstrapHookContext = {
   workspaceDir: string;
   bootstrapFiles: WorkspaceBootstrapFile[];
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   sessionKey?: string;
   sessionId?: string;
   agentId?: string;
@@ -42,7 +42,7 @@ export type AgentBootstrapHookEvent = InternalHookEvent & {
 };
 
 export type GatewayStartupHookContext = {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   deps?: CliDeps;
   workspaceDir?: string;
 };
@@ -185,7 +185,7 @@ export type MessagePreprocessedHookEvent = InternalHookEvent & {
 export type SessionPatchHookContext = {
   sessionEntry: SessionEntry;
   patch: SessionsPatchParams;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 };
 
 export type SessionPatchHookEvent = InternalHookEvent & {
@@ -204,12 +204,12 @@ export type SessionPatchHookEvent = InternalHookEvent & {
  * are invisible to triggerInternalHook in another chunk, causing hooks
  * to silently fire with zero handlers.
  */
-const INTERNAL_HOOK_HANDLERS_KEY = Symbol.for("openclaw.internalHookHandlers");
+const INTERNAL_HOOK_HANDLERS_KEY = Symbol.for("afora.internalHookHandlers");
 const handlers = resolveGlobalSingleton<Map<string, InternalHookHandler[]>>(
   INTERNAL_HOOK_HANDLERS_KEY,
   () => new Map<string, InternalHookHandler[]>(),
 );
-const INTERNAL_HOOKS_ENABLED_KEY = Symbol.for("openclaw.internalHooksEnabled");
+const INTERNAL_HOOKS_ENABLED_KEY = Symbol.for("afora.internalHooksEnabled");
 const internalHooksEnabledState = resolveGlobalSingleton<{ enabled: boolean }>(
   INTERNAL_HOOKS_ENABLED_KEY,
   () => ({ enabled: true }),

@@ -2,9 +2,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { installQaParentWatchdog } from "./qa-parent-watchdog.js";
 
-const QA_PARENT_PID_ENV = "OPENCLAW_QA_PARENT_PID";
-const QA_TEMP_ROOT_ENV = "OPENCLAW_QA_TEMP_ROOT";
-const QA_STAGED_RUNTIME_ROOT_ENV = "OPENCLAW_QA_STAGED_RUNTIME_ROOT";
+const QA_PARENT_PID_ENV = "AFORA_QA_PARENT_PID";
+const QA_TEMP_ROOT_ENV = "AFORA_QA_TEMP_ROOT";
+const QA_STAGED_RUNTIME_ROOT_ENV = "AFORA_QA_STAGED_RUNTIME_ROOT";
 
 describe("installQaParentWatchdog", () => {
   it("does not install without a QA parent pid", () => {
@@ -38,11 +38,11 @@ describe("installQaParentWatchdog", () => {
     const handle = installQaParentWatchdog({
       chdir,
       clearInterval: clearIntervalMock,
-      cwd: () => "/tmp/openclaw-qa-suite-test",
+      cwd: () => "/tmp/afora-qa-suite-test",
       env: {
         [QA_PARENT_PID_ENV]: "12345",
-        [QA_STAGED_RUNTIME_ROOT_ENV]: "/repo/.artifacts/qa-runtime/openclaw-qa-suite-test",
-        [QA_TEMP_ROOT_ENV]: "/tmp/openclaw-qa-suite-test",
+        [QA_STAGED_RUNTIME_ROOT_ENV]: "/repo/.artifacts/qa-runtime/afora-qa-suite-test",
+        [QA_TEMP_ROOT_ENV]: "/tmp/afora-qa-suite-test",
       },
       exit,
       kill,
@@ -65,8 +65,8 @@ describe("installQaParentWatchdog", () => {
     expect(clearIntervalMock).toHaveBeenCalledWith(timer);
     await vi.waitFor(() => {
       expect(chdir).toHaveBeenCalledWith("/tmp");
-      expect(rm).toHaveBeenCalledWith("/tmp/openclaw-qa-suite-test");
-      expect(rm).toHaveBeenCalledWith("/repo/.artifacts/qa-runtime/openclaw-qa-suite-test");
+      expect(rm).toHaveBeenCalledWith("/tmp/afora-qa-suite-test");
+      expect(rm).toHaveBeenCalledWith("/repo/.artifacts/qa-runtime/afora-qa-suite-test");
       expect(exit).toHaveBeenCalledWith(0);
     });
   });

@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"OpenClaw"</string>
+    <string name="app_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Afora"</string>
     <string name="chat" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"แชท"</string>
     <string name="session" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"เซสชัน"</string>
     <string name="model" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"โมเดล"</string>
@@ -39,7 +39,7 @@
     <string name="agent" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"เอเจนต์"</string>
     <string name="system" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ระบบ"</string>
     <string name="start_conversation" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"เริ่มการสนทนา"</string>
-    <string name="start_conversation_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"พูดหรือพิมพ์บนนาฬิกาของคุณ โทรศัพท์ที่จับคู่ไว้จะส่งข้อความผ่านเซสชัน OpenClaw ที่ผ่านการยืนยันตัวตน"</string>
+    <string name="start_conversation_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"พูดหรือพิมพ์บนนาฬิกาของคุณ โทรศัพท์ที่จับคู่ไว้จะส่งข้อความผ่านเซสชัน Afora ที่ผ่านการยืนยันตัวตน"</string>
     <string name="current_session" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"เซสชันปัจจุบัน"</string>
     <string name="appearance" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"รูปลักษณ์"</string>
     <string name="theme_dark" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"มืด"</string>
@@ -61,28 +61,28 @@
     <string name="phone_ready" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"โทรศัพท์พร้อมใช้งาน"</string>
     <string name="gateway_connected" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"เชื่อมต่อ Gateway แล้ว"</string>
     <string name="gateway_offline" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Gateway ออฟไลน์"</string>
-    <string name="gateway_offline_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"เชื่อมต่อ Gateway อีกครั้งใน OpenClaw บนโทรศัพท์ที่จับคู่ไว้"</string>
-    <string name="open_phone_app" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"เปิด OpenClaw บนโทรศัพท์"</string>
+    <string name="gateway_offline_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"เชื่อมต่อ Gateway อีกครั้งใน Afora บนโทรศัพท์ที่จับคู่ไว้"</string>
+    <string name="open_phone_app" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"เปิด Afora บนโทรศัพท์"</string>
     <string name="phone_not_ready_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"นาฬิกาจะไม่เริ่มต้นหรือตรวจสอบสิทธิ์ Gateway ด้วยตัวเอง"</string>
     <string name="phone_unavailable" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ไม่สามารถติดต่อโทรศัพท์ได้"</string>
-    <string name="phone_unavailable_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"วางโทรศัพท์ที่จับคู่ไว้ใกล้ ๆ และติดตั้งแอป OpenClaw เวอร์ชันที่ตรงกัน"</string>
+    <string name="phone_unavailable_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"วางโทรศัพท์ที่จับคู่ไว้ใกล้ ๆ และติดตั้งแอป Afora เวอร์ชันที่ตรงกัน"</string>
     <string name="selection_not_found" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ตัวเลือกนี้ไม่พร้อมใช้งานแล้ว"</string>
     <string name="message_not_sent" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ไม่ยอมรับการดำเนินการ"</string>
     <string name="something_went_wrong" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"เกิดข้อผิดพลาดบางอย่าง"</string>
     <string name="refresh_and_try_again" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"รีเฟรชรายการแล้วลองอีกครั้ง"</string>
     <string name="try_again" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ลองอีกครั้งจากนาฬิกา"</string>
     <string name="update_required" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"จำเป็นต้องอัปเดต"</string>
-    <string name="update_required_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"อัปเดต OpenClaw ทั้งบนโทรศัพท์และนาฬิกา"</string>
+    <string name="update_required_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"อัปเดต Afora ทั้งบนโทรศัพท์และนาฬิกา"</string>
     <string name="refresh" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"รีเฟรช"</string>
     <string name="retry" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ลองอีกครั้ง"</string>
-    <string name="notification_channel_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"การตอบกลับจาก OpenClaw"</string>
+    <string name="notification_channel_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"การตอบกลับจาก Afora"</string>
     <string name="notification_reply" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ตอบกลับ"</string>
-    <string name="notification_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"การตอบกลับจาก OpenClaw"</string>
+    <string name="notification_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"การตอบกลับจาก Afora"</string>
     <string name="notification_reply_failed_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ไม่ได้ส่งการตอบกลับ"</string>
     <string name="notification_reply_failed_text" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"โทรศัพท์ไม่พร้อมใช้งาน แตะตอบกลับเพื่อลองอีกครั้ง"</string>
-    <string name="notification_phone_changed_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"เปิด OpenClaw เพื่อตอบกลับ"</string>
+    <string name="notification_phone_changed_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"เปิด Afora เพื่อตอบกลับ"</string>
     <string name="notification_phone_changed_text" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"โทรศัพท์ที่คุณเลือกใช้มีการเปลี่ยนแปลง เปิดแอปเพื่อโหลดเซสชันใหม่ก่อนตอบกลับ"</string>
-    <string name="tile_label" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"OpenClaw"</string>
+    <string name="tile_label" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Afora"</string>
     <string name="tile_description" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"เปิดเซสชันและตอบกลับผ่านโทรศัพท์ที่จับคู่ไว้"</string>
     <string name="tile_open" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"เปิด"</string>
     <string name="tile_phone_proxy" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"พร็อกซีโทรศัพท์"</string>

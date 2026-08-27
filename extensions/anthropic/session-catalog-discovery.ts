@@ -1,12 +1,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { parseDateFirstTimestampMs } from "openclaw/plugin-sdk/number-runtime";
-import type { SessionCatalogPullRequestSummary } from "openclaw/plugin-sdk/session-catalog";
+import { parseDateFirstTimestampMs } from "afora-agent/plugin-sdk/number-runtime";
+import type { SessionCatalogPullRequestSummary } from "afora-agent/plugin-sdk/session-catalog";
 import {
   asPositiveSafeInteger as pullRequestNumber,
   isRecord,
   normalizeBoundedOptionalString as readBoundedString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { readClaudeDesktopCustomGroups } from "./claude-desktop-groups.js";
 import {
   CLAUDE_CATALOG_IO_CONCURRENCY,

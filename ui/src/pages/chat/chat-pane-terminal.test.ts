@@ -52,8 +52,8 @@ describe("chat pane terminal action", () => {
       const command =
         container.querySelector(".continue-in-terminal-dialog .login-gate__command code")
           ?.textContent ?? "";
-      expect(command).toMatch(/^openclaw resume --handoff [A-Za-z0-9_-]+$/u);
-      expect(decodeResumeHandoff(command.slice("openclaw resume --handoff ".length))).toEqual({
+      expect(command).toMatch(/^afora resume --handoff [A-Za-z0-9_-]+$/u);
+      expect(decodeResumeHandoff(command.slice("afora resume --handoff ".length))).toEqual({
         version: 1,
         sessionKey: "agent:row-agent:bare-session",
         gatewayUrl: "wss://gateway.example/control",
@@ -79,9 +79,9 @@ describe("chat pane terminal action", () => {
         paint(replacementRow);
       }
 
-      expect(container.querySelector("openclaw-modal-dialog")).toBeNull();
+      expect(container.querySelector("afora-modal-dialog")).toBeNull();
       paint(row);
-      expect(container.querySelector("openclaw-modal-dialog")).toBeNull();
+      expect(container.querySelector("afora-modal-dialog")).toBeNull();
     },
   );
 
@@ -114,7 +114,7 @@ describe("chat pane terminal action", () => {
       HTMLElement & {
         actionDisabledReasons: Record<string, string>;
       }
-    >("openclaw-chat-header-session-menu");
+    >("afora-chat-header-session-menu");
     expect(menu?.actionDisabledReasons["continue-in-terminal"]).toBe(
       "Query-routed Gateway URLs cannot create credential-free continuation commands because authentication and stored device scope are not query-aware. Use a manually authenticated CLI target or a queryless configured Gateway URL.",
     );
@@ -150,7 +150,7 @@ describe("chat pane terminal action", () => {
     const panelActions = () =>
       container.querySelector<
         HTMLElement & { panelActions: Array<{ id: string; onActivate: () => void }> }
-      >("openclaw-chat-header-session-menu")?.panelActions ?? [];
+      >("afora-chat-header-session-menu")?.panelActions ?? [];
 
     renderHeader();
     expect(container.querySelector('[aria-label="Toggle terminal"]')).toBeNull();
@@ -189,7 +189,7 @@ describe("chat pane terminal action", () => {
     const panelActionIds = () =>
       container
         .querySelector<HTMLElement & { panelActions: Array<{ id: string }> }>(
-          "openclaw-chat-header-session-menu",
+          "afora-chat-header-session-menu",
         )
         ?.panelActions.map((action) => action.id) ?? [];
     const snapshot = pane.context.gateway.snapshot;
@@ -251,7 +251,7 @@ describe("chat pane terminal action", () => {
         expect(panelActionIds(), testCase.name).toContain("desktop");
         const menu = container.querySelector<
           HTMLElement & { panelActions: Array<{ id: string; onActivate: () => void }> }
-        >("openclaw-chat-header-session-menu");
+        >("afora-chat-header-session-menu");
         menu?.panelActions.find((action) => action.id === "desktop")?.onActivate();
         expect(onToggleDesktop, testCase.name).toHaveBeenCalledTimes(1);
         onToggleDesktop.mockClear();
@@ -304,7 +304,7 @@ describe("chat pane terminal action", () => {
     const panelActionIds = () =>
       container
         .querySelector<HTMLElement & { panelActions: Array<{ id: string }> }>(
-          "openclaw-chat-header-session-menu",
+          "afora-chat-header-session-menu",
         )
         ?.panelActions.map((action) => action.id) ?? [];
 
@@ -333,7 +333,7 @@ describe("chat pane terminal action", () => {
     expect(panelActionIds()).toContain("browser");
     container
       .querySelector<HTMLElement & { panelActions: Array<{ id: string; onActivate: () => void }> }>(
-        "openclaw-chat-header-session-menu",
+        "afora-chat-header-session-menu",
       )
       ?.panelActions.find((action) => action.id === "browser")
       ?.onActivate();

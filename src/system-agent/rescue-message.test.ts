@@ -1,10 +1,10 @@
-// OpenClaw rescue message tests cover generated rescue message content.
+// Afora rescue message tests cover generated rescue message content.
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CommandContext } from "../auto-reply/reply/commands-types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   createCorePluginStateSyncKeyedStore,
   resetPluginStateStoreForTests,
@@ -27,7 +27,7 @@ const runPluginInstallCommandMock = vi.hoisted(() => vi.fn(async () => undefined
 
 const mockConfig = vi.hoisted(() => {
   const state = {
-    path: "/tmp/openclaw.json",
+    path: "/tmp/afora.json",
     config: {} as TestConfig,
     hash: "mock-hash-0" as string | undefined,
   };
@@ -52,7 +52,7 @@ const mockConfig = vi.hoisted(() => {
   };
   return {
     reset() {
-      state.path = "/tmp/openclaw.json";
+      state.path = "/tmp/afora.json";
       state.config = {};
       state.hash = "mock-hash-0";
     },
@@ -146,7 +146,7 @@ async function withRescueStateDir(
   const stateDir = await makeStateDir(prefix);
   resetPluginStateStoreForTests();
   try {
-    await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => await run(stateDir));
+    await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => await run(stateDir));
   } finally {
     resetPluginStateStoreForTests();
   }
@@ -162,8 +162,8 @@ function commandContext(overrides: Partial<CommandContext> = {}): CommandContext
     senderIsOwner: true,
     isAuthorizedSender: true,
     senderId: "user:owner",
-    rawBodyNormalized: "/openclaw models",
-    commandBodyNormalized: "/openclaw models",
+    rawBodyNormalized: "/afora models",
+    commandBodyNormalized: "/afora models",
     from: "user:owner",
     to: "account:default",
     ...overrides,
@@ -189,7 +189,7 @@ function requireFirstMockCall<T>(mock: { mock: { calls: T[][] } }, label: string
 
 async function runRescue(
   commandBody: string,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   ctx = commandContext(),
   deps?: Parameters<typeof runSystemAgentRescueMessage>[0]["deps"],
 ) {
@@ -202,7 +202,7 @@ async function runRescue(
   });
 }
 
-describe("OpenClaw rescue message", () => {
+describe("Afora rescue message", () => {
   beforeAll(async () => {
     tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "system-agent-rescue-"));
   });
@@ -223,22 +223,22 @@ describe("OpenClaw rescue message", () => {
     resetPluginStateStoreForTests();
   });
 
-  it("recognizes the OpenClaw rescue command", () => {
-    expect(extractSystemAgentRescueMessage("/openclaw status")).toBe("status");
-    expect(extractSystemAgentRescueMessage("/openclaw")).toBe("");
+  it("recognizes the Afora rescue command", () => {
+    expect(extractSystemAgentRescueMessage("/afora status")).toBe("status");
+    expect(extractSystemAgentRescueMessage("/afora")).toBe("");
     expect(extractSystemAgentRescueMessage("/status")).toBeNull();
   });
 
   it("denies rescue when sandboxing is active", async () => {
     await expect(
-      runRescue("/openclaw status", {
+      runRescue("/afora status", {
         agents: { defaults: { sandbox: { mode: "all" } } },
       }),
     ).resolves.toContain("sandboxing is active");
   });
 
   it("refuses TUI handoff from remote rescue", async () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: AforaConfig = {};
     const deps = {
       runTui: vi.fn(async () => {
         throw new Error("remote rescue must not open the TUI");
@@ -246,16 +246,16 @@ describe("OpenClaw rescue message", () => {
     };
 
     await expect(
-      runRescue("/openclaw talk to agent", cfg, commandContext(), deps),
+      runRescue("/afora talk to agent", cfg, commandContext(), deps),
     ).resolves.toContain("cannot open the local TUI");
-    await expect(runRescue("/openclaw chat", cfg, commandContext(), deps)).resolves.toContain(
+    await expect(runRescue("/afora chat", cfg, commandContext(), deps)).resolves.toContain(
       "cannot open the local TUI",
     );
     expect(deps.runTui).not.toHaveBeenCalled();
   });
 
   it("rejects natural language instead of guessing an operation", async () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: AforaConfig = {};
     const deps = {
       runGatewayStop: vi.fn(async () => {}),
       runGatewayRestart: vi.fn(async () => {}),
@@ -264,44 +264,44 @@ describe("OpenClaw rescue message", () => {
     // Questions must never become mutation plans (previously "why did my
     // gateway stop" keyword-matched into a gateway-stop proposal).
     await expect(
-      runRescue("/openclaw why did my gateway stop", cfg, commandContext(), deps),
+      runRescue("/afora why did my gateway stop", cfg, commandContext(), deps),
     ).resolves.toContain("I can run doctor/status/health");
     await expect(
-      runRescue("/openclaw explain how restart gateway works", cfg, commandContext(), deps),
+      runRescue("/afora explain how restart gateway works", cfg, commandContext(), deps),
     ).resolves.toContain("I can run doctor/status/health");
     expect(deps.runGatewayStop).not.toHaveBeenCalled();
     expect(deps.runGatewayRestart).not.toHaveBeenCalled();
   });
 
   it("refuses channel setup from remote rescue with a local pointer", async () => {
-    const cfg: OpenClawConfig = {};
-    await expect(runRescue("/openclaw connect telegram", cfg)).resolves.toContain(
+    const cfg: AforaConfig = {};
+    await expect(runRescue("/afora connect telegram", cfg)).resolves.toContain(
       "cannot host the interactive channel setup",
     );
   });
 
   it("refuses model provider setup from remote rescue with a local pointer", async () => {
-    const cfg: OpenClawConfig = {};
-    const reply = await runRescue("/openclaw configure model provider", cfg);
+    const cfg: AforaConfig = {};
+    const reply = await runRescue("/afora configure model provider", cfg);
     expect(reply).toContain("cannot host model-provider credential setup");
-    expect(reply).toContain("openclaw onboard");
+    expect(reply).toContain("afora onboard");
   });
 
   it("refuses doctor repairs without creating a pending approval", async () => {
     await withRescueStateDir("doctor-fix-refused-", async () => {
-      const cfg: OpenClawConfig = {};
+      const cfg: AforaConfig = {};
       const deps = {
         runDoctor: vi.fn(async () => {
           throw new Error("remote rescue must not run doctor repair");
         }),
       };
 
-      const reply = await runRescue("/openclaw doctor fix", cfg, commandContext(), deps);
-      expect(reply).toContain("machine running OpenClaw");
-      expect(reply).toContain("with OpenClaw stopped");
-      expect(reply).toContain("run `openclaw doctor --fix`");
-      await expect(runRescue("/openclaw yes", cfg, commandContext(), deps)).resolves.toBe(
-        "No pending OpenClaw rescue change is waiting for approval.",
+      const reply = await runRescue("/afora doctor fix", cfg, commandContext(), deps);
+      expect(reply).toContain("machine running Afora");
+      expect(reply).toContain("with Afora stopped");
+      expect(reply).toContain("run `afora doctor --fix`");
+      await expect(runRescue("/afora yes", cfg, commandContext(), deps)).resolves.toBe(
+        "No pending Afora rescue change is waiting for approval.",
       );
       expect(deps.runDoctor).not.toHaveBeenCalled();
     });
@@ -309,17 +309,17 @@ describe("OpenClaw rescue message", () => {
 
   it("drops a pending rescue change on decline", async () => {
     await withRescueStateDir("decline-", async () => {
-      const cfg: OpenClawConfig = {};
+      const cfg: AforaConfig = {};
       const deps = { runGatewayRestart: vi.fn(async () => {}) };
 
       await expect(
-        runRescue("/openclaw restart gateway", cfg, commandContext(), deps),
-      ).resolves.toContain("Reply /openclaw yes to apply");
-      await expect(runRescue("/openclaw no", cfg, commandContext(), deps)).resolves.toContain(
-        "Dropped the pending OpenClaw rescue change",
+        runRescue("/afora restart gateway", cfg, commandContext(), deps),
+      ).resolves.toContain("Reply /afora yes to apply");
+      await expect(runRescue("/afora no", cfg, commandContext(), deps)).resolves.toContain(
+        "Dropped the pending Afora rescue change",
       );
-      await expect(runRescue("/openclaw yes", cfg, commandContext(), deps)).resolves.toBe(
-        "No pending OpenClaw rescue change is waiting for approval.",
+      await expect(runRescue("/afora yes", cfg, commandContext(), deps)).resolves.toBe(
+        "No pending Afora rescue change is waiting for approval.",
       );
       expect(deps.runGatewayRestart).not.toHaveBeenCalled();
     });
@@ -327,20 +327,20 @@ describe("OpenClaw rescue message", () => {
 
   it("revokes a pending write when a fresh read-only command arrives", async () => {
     await withRescueStateDir("read-revokes-", async () => {
-      const cfg: OpenClawConfig = {};
+      const cfg: AforaConfig = {};
       const deps = {
         runGatewayRestart: vi.fn(async () => {}),
         runPluginsList: vi.fn(async (runtime: RuntimeEnv) => runtime.log("plugin rows")),
       };
 
       await expect(
-        runRescue("/openclaw restart gateway", cfg, commandContext(), deps),
-      ).resolves.toContain("Reply /openclaw yes to apply");
-      await expect(runRescue("/openclaw plugins list", cfg, commandContext(), deps)).resolves.toBe(
+        runRescue("/afora restart gateway", cfg, commandContext(), deps),
+      ).resolves.toContain("Reply /afora yes to apply");
+      await expect(runRescue("/afora plugins list", cfg, commandContext(), deps)).resolves.toBe(
         "plugin rows",
       );
-      await expect(runRescue("/openclaw yes", cfg, commandContext(), deps)).resolves.toBe(
-        "No pending OpenClaw rescue change is waiting for approval.",
+      await expect(runRescue("/afora yes", cfg, commandContext(), deps)).resolves.toBe(
+        "No pending Afora rescue change is waiting for approval.",
       );
       expect(deps.runGatewayRestart).not.toHaveBeenCalled();
     });
@@ -348,18 +348,18 @@ describe("OpenClaw rescue message", () => {
 
   it("consumes a pending approval at most once under concurrent approvals", async () => {
     await withRescueStateDir("concurrent-approve-", async () => {
-      const cfg: OpenClawConfig = {};
+      const cfg: AforaConfig = {};
       const deps = { runGatewayRestart: vi.fn(async () => {}) };
 
-      await runRescue("/openclaw restart gateway", cfg, commandContext(), deps);
+      await runRescue("/afora restart gateway", cfg, commandContext(), deps);
       const replies = await Promise.all([
-        runRescue("/openclaw yes", cfg, commandContext(), deps),
-        runRescue("/openclaw yes", cfg, commandContext(), deps),
+        runRescue("/afora yes", cfg, commandContext(), deps),
+        runRescue("/afora yes", cfg, commandContext(), deps),
       ]);
 
       expect(deps.runGatewayRestart).toHaveBeenCalledTimes(1);
-      expect(replies).toContain("No pending OpenClaw rescue change is waiting for approval.");
-      expect(replies.some((reply) => reply?.includes("[openclaw] done: gateway.restart"))).toBe(
+      expect(replies).toContain("No pending Afora rescue change is waiting for approval.");
+      expect(replies.some((reply) => reply?.includes("[afora] done: gateway.restart"))).toBe(
         true,
       );
     });
@@ -367,19 +367,19 @@ describe("OpenClaw rescue message", () => {
 
   it("keeps failed execution consumed", async () => {
     await withRescueStateDir("failed-consumed-", async () => {
-      const cfg: OpenClawConfig = {};
+      const cfg: AforaConfig = {};
       const deps = {
         runGatewayRestart: vi.fn(async () => {
           throw new Error("restart failed");
         }),
       };
 
-      await runRescue("/openclaw restart gateway", cfg, commandContext(), deps);
-      await expect(runRescue("/openclaw yes", cfg, commandContext(), deps)).rejects.toThrow(
+      await runRescue("/afora restart gateway", cfg, commandContext(), deps);
+      await expect(runRescue("/afora yes", cfg, commandContext(), deps)).rejects.toThrow(
         "restart failed",
       );
-      await expect(runRescue("/openclaw yes", cfg, commandContext(), deps)).resolves.toBe(
-        "No pending OpenClaw rescue change is waiting for approval.",
+      await expect(runRescue("/afora yes", cfg, commandContext(), deps)).resolves.toBe(
+        "No pending Afora rescue change is waiting for approval.",
       );
       expect(deps.runGatewayRestart).toHaveBeenCalledTimes(1);
     });
@@ -387,7 +387,7 @@ describe("OpenClaw rescue message", () => {
 
   it("preserves a new plan created while the consumed plan executes", async () => {
     await withRescueStateDir("replacement-during-execute-", async () => {
-      const cfg: OpenClawConfig = {};
+      const cfg: AforaConfig = {};
       let releaseRestart: (() => void) | undefined;
       let noteRestartEntered: (() => void) | undefined;
       const restartEntered = new Promise<void>((resolve) => {
@@ -404,14 +404,14 @@ describe("OpenClaw rescue message", () => {
         runGatewayStart: vi.fn(async () => {}),
       };
 
-      await runRescue("/openclaw restart gateway", cfg, commandContext(), deps);
-      const approval = runRescue("/openclaw yes", cfg, commandContext(), deps);
+      await runRescue("/afora restart gateway", cfg, commandContext(), deps);
+      const approval = runRescue("/afora yes", cfg, commandContext(), deps);
       await restartEntered;
-      await runRescue("/openclaw start gateway", cfg, commandContext(), deps);
+      await runRescue("/afora start gateway", cfg, commandContext(), deps);
       releaseRestart?.();
-      await expect(approval).resolves.toContain("[openclaw] done: gateway.restart");
-      await expect(runRescue("/openclaw yes", cfg, commandContext(), deps)).resolves.toContain(
-        "[openclaw] done: gateway.start",
+      await expect(approval).resolves.toContain("[afora] done: gateway.restart");
+      await expect(runRescue("/afora yes", cfg, commandContext(), deps)).resolves.toContain(
+        "[afora] done: gateway.start",
       );
       expect(deps.runGatewayRestart).toHaveBeenCalledTimes(1);
       expect(deps.runGatewayStart).toHaveBeenCalledTimes(1);
@@ -420,18 +420,18 @@ describe("OpenClaw rescue message", () => {
 
   it("publishes concurrently invoked persistent plans in call order", async () => {
     await withRescueStateDir("latest-plan-", async () => {
-      const cfg: OpenClawConfig = {};
+      const cfg: AforaConfig = {};
       const deps = {
         runGatewayRestart: vi.fn(async () => {}),
         runGatewayStart: vi.fn(async () => {}),
       };
 
-      const olderPlan = runRescue("/openclaw restart gateway", cfg, commandContext(), deps);
-      const newerPlan = runRescue("/openclaw start gateway", cfg, commandContext(), deps);
+      const olderPlan = runRescue("/afora restart gateway", cfg, commandContext(), deps);
+      const newerPlan = runRescue("/afora start gateway", cfg, commandContext(), deps);
       await expect(olderPlan).resolves.toContain("restart the Gateway");
       await expect(newerPlan).resolves.toContain("start the Gateway");
-      await expect(runRescue("/openclaw yes", cfg, commandContext(), deps)).resolves.toContain(
-        "[openclaw] done: gateway.start",
+      await expect(runRescue("/afora yes", cfg, commandContext(), deps)).resolves.toContain(
+        "[afora] done: gateway.start",
       );
       expect(deps.runGatewayRestart).not.toHaveBeenCalled();
       expect(deps.runGatewayStart).toHaveBeenCalledTimes(1);
@@ -440,17 +440,17 @@ describe("OpenClaw rescue message", () => {
 
   it("persists a pending approval only in SQLite across store reopen", async () => {
     await withRescueStateDir("sqlite-reopen-", async (stateDir) => {
-      const cfg: OpenClawConfig = {};
+      const cfg: AforaConfig = {};
       const deps = { runGatewayRestart: vi.fn(async () => {}) };
 
-      await runRescue("/openclaw restart gateway", cfg, commandContext(), deps);
+      await runRescue("/afora restart gateway", cfg, commandContext(), deps);
       resetPluginStateStoreForTests();
 
-      await expect(runRescue("/openclaw yes", cfg, commandContext(), deps)).resolves.toContain(
-        "[openclaw] done: gateway.restart",
+      await expect(runRescue("/afora yes", cfg, commandContext(), deps)).resolves.toContain(
+        "[afora] done: gateway.restart",
       );
       expect(deps.runGatewayRestart).toHaveBeenCalledTimes(1);
-      await expect(fs.access(path.join(stateDir, "openclaw", "rescue-pending"))).rejects.toThrow(
+      await expect(fs.access(path.join(stateDir, "afora", "rescue-pending"))).rejects.toThrow(
         /ENOENT/,
       );
     });
@@ -458,22 +458,22 @@ describe("OpenClaw rescue message", () => {
 
   it("isolates pending approvals by account, channel, and sender", async () => {
     await withRescueStateDir("route-isolation-", async () => {
-      const cfg: OpenClawConfig = {};
+      const cfg: AforaConfig = {};
       const deps = { runGatewayRestart: vi.fn(async () => {}) };
       const original = commandContext();
 
-      await runRescue("/openclaw restart gateway", cfg, original, deps);
+      await runRescue("/afora restart gateway", cfg, original, deps);
       for (const isolated of [
         commandContext({ accountId: "secondary" }),
         commandContext({ channelId: "telegram" }),
         commandContext({ from: "user:other", senderId: "user:other" }),
       ]) {
-        await expect(runRescue("/openclaw yes", cfg, isolated, deps)).resolves.toBe(
-          "No pending OpenClaw rescue change is waiting for approval.",
+        await expect(runRescue("/afora yes", cfg, isolated, deps)).resolves.toBe(
+          "No pending Afora rescue change is waiting for approval.",
         );
       }
-      await expect(runRescue("/openclaw yes", cfg, original, deps)).resolves.toContain(
-        "[openclaw] done: gateway.restart",
+      await expect(runRescue("/afora yes", cfg, original, deps)).resolves.toContain(
+        "[afora] done: gateway.restart",
       );
       expect(deps.runGatewayRestart).toHaveBeenCalledTimes(1);
     });
@@ -481,37 +481,37 @@ describe("OpenClaw rescue message", () => {
 
   it("falls back to the channel destination when account id is absent", async () => {
     await withRescueStateDir("route-account-fallback-", async () => {
-      const cfg: OpenClawConfig = {};
+      const cfg: AforaConfig = {};
       const deps = { runGatewayRestart: vi.fn(async () => {}) };
       const original = commandContext({ accountId: undefined, to: "bot:primary" });
 
-      await runRescue("/openclaw restart gateway", cfg, original, deps);
+      await runRescue("/afora restart gateway", cfg, original, deps);
       await expect(
         runRescue(
-          "/openclaw yes",
+          "/afora yes",
           cfg,
           commandContext({ accountId: undefined, to: "bot:secondary" }),
           deps,
         ),
-      ).resolves.toBe("No pending OpenClaw rescue change is waiting for approval.");
-      await expect(runRescue("/openclaw yes", cfg, original, deps)).resolves.toContain(
-        "[openclaw] done: gateway.restart",
+      ).resolves.toBe("No pending Afora rescue change is waiting for approval.");
+      await expect(runRescue("/afora yes", cfg, original, deps)).resolves.toContain(
+        "[afora] done: gateway.restart",
       );
       expect(deps.runGatewayRestart).toHaveBeenCalledTimes(1);
     });
   });
 
   it("refuses plugin install from remote rescue", async () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: AforaConfig = {};
 
     await expect(
-      runRescue("/openclaw plugin install clawhub:openclaw-demo", cfg),
+      runRescue("/afora plugin install clawhub:afora-demo", cfg),
     ).resolves.toContain("cannot install plugins from a message channel");
     expect(runPluginInstallCommandMock).not.toHaveBeenCalled();
   });
 
   it("allows plugin list and search from remote rescue", async () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: AforaConfig = {};
     const deps = {
       runPluginsList: vi.fn(async (runtime: RuntimeEnv) => {
         runtime.log("plugin rows");
@@ -522,10 +522,10 @@ describe("OpenClaw rescue message", () => {
     };
 
     await expect(
-      runRescue("/openclaw plugins list", cfg, commandContext(), deps),
+      runRescue("/afora plugins list", cfg, commandContext(), deps),
     ).resolves.toContain("plugin rows");
     await expect(
-      runRescue("/openclaw plugins search calendar", cfg, commandContext(), deps),
+      runRescue("/afora plugins search calendar", cfg, commandContext(), deps),
     ).resolves.toContain("search rows: calendar");
     expect(deps.runPluginsList).toHaveBeenCalledTimes(1);
     expect(deps.runPluginsSearch).toHaveBeenCalledTimes(1);
@@ -539,7 +539,7 @@ describe("OpenClaw rescue message", () => {
 
   it("queues and applies persistent writes through conversational approval", async () => {
     await withRescueStateDir("models-", async () => {
-      const cfg: OpenClawConfig = {};
+      const cfg: AforaConfig = {};
       const deps = {
         verifyInferenceConfig: vi.fn(async () => ({
           ok: true as const,
@@ -548,9 +548,9 @@ describe("OpenClaw rescue message", () => {
         })),
       };
       await expect(
-        runRescue("/openclaw set default model openai/gpt-5.2", cfg, commandContext(), deps),
-      ).resolves.toContain("Reply /openclaw yes to apply");
-      await expect(runRescue("/openclaw yes", cfg, commandContext(), deps)).resolves.toContain(
+        runRescue("/afora set default model openai/gpt-5.2", cfg, commandContext(), deps),
+      ).resolves.toContain("Reply /afora yes to apply");
+      await expect(runRescue("/afora yes", cfg, commandContext(), deps)).resolves.toContain(
         "Default model: openai/gpt-5.2",
       );
 
@@ -571,14 +571,14 @@ describe("OpenClaw rescue message", () => {
 
   it("queues and applies gateway restart through conversational approval", async () => {
     await withRescueStateDir("gateway-", async () => {
-      const cfg: OpenClawConfig = {};
+      const cfg: AforaConfig = {};
       const deps = { runGatewayRestart: vi.fn(async () => {}) };
 
       await expect(
-        runRescue("/openclaw restart gateway", cfg, commandContext(), deps),
-      ).resolves.toBe("Plan: restart the Gateway. Reply /openclaw yes to apply.");
-      await expect(runRescue("/openclaw yes", cfg, commandContext(), deps)).resolves.toContain(
-        "[openclaw] done: gateway.restart",
+        runRescue("/afora restart gateway", cfg, commandContext(), deps),
+      ).resolves.toBe("Plan: restart the Gateway. Reply /afora yes to apply.");
+      await expect(runRescue("/afora yes", cfg, commandContext(), deps)).resolves.toContain(
+        "[afora] done: gateway.restart",
       );
 
       expect(deps.runGatewayRestart).toHaveBeenCalledTimes(1);
@@ -598,13 +598,13 @@ describe("OpenClaw rescue message", () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date(8_640_000_000_000_000));
       try {
-        const cfg: OpenClawConfig = {};
+        const cfg: AforaConfig = {};
 
         await expect(
-          runRescue("/openclaw restart gateway", cfg, commandContext()),
+          runRescue("/afora restart gateway", cfg, commandContext()),
         ).resolves.toContain("expiry clock is invalid");
 
-        await expect(fs.readdir(path.join(tempDir, "openclaw", "rescue-pending"))).rejects.toThrow(
+        await expect(fs.readdir(path.join(tempDir, "afora", "rescue-pending"))).rejects.toThrow(
           /ENOENT/,
         );
       } finally {
@@ -617,14 +617,14 @@ describe("OpenClaw rescue message", () => {
     await withRescueStateDir("expired-", async () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
-      const cfg: OpenClawConfig = {};
+      const cfg: AforaConfig = {};
       const deps = { runGatewayRestart: vi.fn(async () => {}) };
 
-      await runRescue("/openclaw restart gateway", {}, commandContext(), deps);
+      await runRescue("/afora restart gateway", {}, commandContext(), deps);
       vi.advanceTimersByTime(15 * 60_000 + 1);
 
-      await expect(runRescue("/openclaw yes", cfg, commandContext(), deps)).resolves.toBe(
-        "No pending OpenClaw rescue change is waiting for approval.",
+      await expect(runRescue("/afora yes", cfg, commandContext(), deps)).resolves.toBe(
+        "No pending Afora rescue change is waiting for approval.",
       );
       expect(deps.runGatewayRestart).not.toHaveBeenCalled();
     });
@@ -632,10 +632,10 @@ describe("OpenClaw rescue message", () => {
 
   it("consumes malformed pending rows without executing them", async () => {
     await withRescueStateDir("malformed-", async () => {
-      const cfg: OpenClawConfig = {};
+      const cfg: AforaConfig = {};
       const deps = { runGatewayRestart: vi.fn(async () => {}) };
 
-      await runRescue("/openclaw restart gateway", cfg, commandContext(), deps);
+      await runRescue("/afora restart gateway", cfg, commandContext(), deps);
       const store = openRescuePendingTestStore();
       const [entry] = store.entries();
       if (!entry) {
@@ -647,11 +647,11 @@ describe("OpenClaw rescue message", () => {
         { ttlMs: 60_000 },
       );
 
-      await expect(runRescue("/openclaw yes", cfg, commandContext(), deps)).resolves.toBe(
-        "No pending OpenClaw rescue change is waiting for approval.",
+      await expect(runRescue("/afora yes", cfg, commandContext(), deps)).resolves.toBe(
+        "No pending Afora rescue change is waiting for approval.",
       );
-      await expect(runRescue("/openclaw yes", cfg, commandContext(), deps)).resolves.toBe(
-        "No pending OpenClaw rescue change is waiting for approval.",
+      await expect(runRescue("/afora yes", cfg, commandContext(), deps)).resolves.toBe(
+        "No pending Afora rescue change is waiting for approval.",
       );
       expect(deps.runGatewayRestart).not.toHaveBeenCalled();
     });
@@ -659,7 +659,7 @@ describe("OpenClaw rescue message", () => {
 
   it("queues and applies agent creation through conversational approval", async () => {
     await withRescueStateDir("agent-", async () => {
-      const cfg: OpenClawConfig = {};
+      const cfg: AforaConfig = {};
       const deps = {
         createAgent: vi.fn(async () => ({
           status: "created" as const,
@@ -672,12 +672,12 @@ describe("OpenClaw rescue message", () => {
       };
 
       await expect(
-        runRescue("/openclaw create agent work workspace /tmp/work", cfg, commandContext(), deps),
+        runRescue("/afora create agent work workspace /tmp/work", cfg, commandContext(), deps),
       ).resolves.toBe(
-        "Plan: create agent work with workspace /tmp/work. Reply /openclaw yes to apply.",
+        "Plan: create agent work with workspace /tmp/work. Reply /afora yes to apply.",
       );
-      await expect(runRescue("/openclaw yes", cfg, commandContext(), deps)).resolves.toContain(
-        "[openclaw] done: agents.create",
+      await expect(runRescue("/afora yes", cfg, commandContext(), deps)).resolves.toContain(
+        "[afora] done: agents.create",
       );
 
       expect(deps.createAgent).toHaveBeenCalledTimes(1);
@@ -691,7 +691,7 @@ describe("OpenClaw rescue message", () => {
       expect(agentParams).toEqual({
         name: "work",
         workspace: "/tmp/work",
-        provenance: { createdVia: "agent", creatorAgentId: "openclaw" },
+        provenance: { createdVia: "agent", creatorAgentId: "afora" },
       });
       const audit = readLastAuditEntry() as {
         operation?: string;

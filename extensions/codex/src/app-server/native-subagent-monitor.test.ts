@@ -1,10 +1,10 @@
-import { onAgentEvent } from "openclaw/plugin-sdk/agent-harness-runtime";
+import { onAgentEvent } from "afora-agent/plugin-sdk/agent-harness-runtime";
 // Codex tests cover native subagent monitor plugin behavior.
 import type {
   AgentHarnessScopedSetDeliveryStatusParams,
   AgentHarnessTaskRecord,
   AgentHarnessTaskRuntimeScope,
-} from "openclaw/plugin-sdk/agent-harness-task-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-task-runtime";
 import { describe, expect, it, vi } from "vitest";
 import {
   claimCodexAppServerLiveThread,

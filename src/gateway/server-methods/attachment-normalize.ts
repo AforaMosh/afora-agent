@@ -1,6 +1,6 @@
 // Attachment normalization accepts permissive RPC attachment payloads and turns
 // them into the bounded chat attachment shape used by gateway chat methods.
-import { asNonNegativeFiniteNumber as normalizeAttachmentNumber } from "@openclaw/normalization-core/number-coercion";
+import { asNonNegativeFiniteNumber as normalizeAttachmentNumber } from "@afora/normalization-core/number-coercion";
 import type { ChatAttachment } from "../chat-attachments.js";
 
 /** RPC attachment payload shape accepted by chat-like gateway methods. */
@@ -35,7 +35,7 @@ function normalizeAttachmentContent(content: unknown): string | undefined {
 export function normalizeRpcAttachmentsToChatAttachments(
   attachments: RpcAttachmentInput[] | undefined,
 ): ChatAttachment[] {
-  // Accept both the OpenClaw attachment fields and Anthropic-style
+  // Accept both the Afora attachment fields and Anthropic-style
   // source:{type:"base64",media_type,data} payloads used by some clients.
   return (
     attachments

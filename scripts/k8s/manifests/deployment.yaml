@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: openclaw
+  name: afora
   labels:
-    app: openclaw
+    app: afora
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: openclaw
+      app: afora
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: openclaw
+        app: afora
     spec:
       automountServiceAccountToken: false
       securityContext:
@@ -30,11 +30,11 @@ spec:
             - -c
             - |
               # Seed-if-missing: the PVC copy owns config after first boot so edits made
-              # through OpenClaw (onboard, channels add, doctor --fix, Control UI) survive
+              # through Afora (onboard, channels add, doctor --fix, Control UI) survive
               # restarts. ConfigMap edits need an explicit reseed (see docs/install/kubernetes.md).
-              [ -f /home/node/.openclaw/openclaw.json ] || cp /config/openclaw.json /home/node/.openclaw/openclaw.json
-              mkdir -p /home/node/.openclaw/workspace
-              [ -f /home/node/.openclaw/workspace/AGENTS.md ] || cp /config/AGENTS.md /home/node/.openclaw/workspace/AGENTS.md
+              [ -f /home/node/.AforaMosh/afora-agent.json ] || cp /config/afora.json /home/node/.AforaMosh/afora-agent.json
+              mkdir -p /home/node/.afora/workspace
+              [ -f /home/node/.afora/workspace/AGENTS.md ] || cp /config/AGENTS.md /home/node/.afora/workspace/AGENTS.md
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
@@ -46,14 +46,14 @@ spec:
               memory: 64Mi
               cpu: 100m
           volumeMounts:
-            - name: openclaw-home
-              mountPath: /home/node/.openclaw
+            - name: afora-home
+              mountPath: /home/node/.afora
             - name: config
               mountPath: /config
       containers:
         - name: gateway
-          # Bump this immutable versioned tag when upgrading OpenClaw.
-          image: ghcr.io/openclaw/openclaw:2026.7.1-2-slim
+          # Bump this immutable versioned tag when upgrading Afora.
+          image: ghcr.io/AforaMosh/afora-agent:2026.7.1-2-slim
           imagePullPolicy: IfNotPresent
           command:
             - node
@@ -67,37 +67,37 @@ spec:
           env:
             - name: HOME
               value: /home/node
-            - name: OPENCLAW_CONFIG_DIR
-              value: /home/node/.openclaw
+            - name: AFORA_CONFIG_DIR
+              value: /home/node/.afora
             - name: NODE_ENV
               value: production
-            - name: OPENCLAW_GATEWAY_TOKEN
+            - name: AFORA_GATEWAY_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: openclaw-secrets
-                  key: OPENCLAW_GATEWAY_TOKEN
+                  name: afora-secrets
+                  key: AFORA_GATEWAY_TOKEN
             - name: ANTHROPIC_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: openclaw-secrets
+                  name: afora-secrets
                   key: ANTHROPIC_API_KEY
                   optional: true
             - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: openclaw-secrets
+                  name: afora-secrets
                   key: OPENAI_API_KEY
                   optional: true
             - name: GEMINI_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: openclaw-secrets
+                  name: afora-secrets
                   key: GEMINI_API_KEY
                   optional: true
             - name: OPENROUTER_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: openclaw-secrets
+                  name: afora-secrets
                   key: OPENROUTER_API_KEY
                   optional: true
           resources:
@@ -142,8 +142,8 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
           volumeMounts:
-            - name: openclaw-home
-              mountPath: /home/node/.openclaw
+            - name: afora-home
+              mountPath: /home/node/.afora
             - name: tmp-volume
               mountPath: /tmp
           securityContext:
@@ -156,11 +156,11 @@ spec:
               drop:
                 - ALL
       volumes:
-        - name: openclaw-home
+        - name: afora-home
           persistentVolumeClaim:
-            claimName: openclaw-home-pvc
+            claimName: afora-home-pvc
         - name: config
           configMap:
-            name: openclaw-config
+            name: afora-config
         - name: tmp-volume
           emptyDir: {}

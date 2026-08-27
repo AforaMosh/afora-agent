@@ -1,6 +1,6 @@
 // Daemon lifecycle core tests cover service lifecycle transitions and platform adapters.
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import type { GatewayServiceControlArgs } from "../../daemon/service-types.js";
 import type { GatewayService } from "../../daemon/service.js";
 import {
@@ -12,7 +12,7 @@ import {
   stubEmptyGatewayEnv,
 } from "./test-helpers/lifecycle-core-harness.js";
 
-const loadConfig = vi.fn<() => OpenClawConfig>(() => ({
+const loadConfig = vi.fn<() => AforaConfig>(() => ({
   gateway: {
     auth: {
       token: "config-token",
@@ -112,7 +112,7 @@ function stubServiceGatewayTokenEnv() {
   service.readCommand.mockResolvedValue({
     programArguments: [],
     environment: {
-      OPENCLAW_GATEWAY_TOKEN: "service-token",
+      AFORA_GATEWAY_TOKEN: "service-token",
       SERVICE_GATEWAY_TOKEN: "service-token",
     },
   });
@@ -160,7 +160,7 @@ describe("runServiceRestart token drift", () => {
     clearGatewayRestartIntentSync.mockClear();
     service.readCommand.mockResolvedValue({
       programArguments: [],
-      environment: { OPENCLAW_GATEWAY_TOKEN: "service-token" },
+      environment: { AFORA_GATEWAY_TOKEN: "service-token" },
     });
     stubEmptyGatewayEnv();
   });
@@ -177,7 +177,7 @@ describe("runServiceRestart token drift", () => {
         runServiceStart({
           serviceNoun: "Gateway",
           service: unsupportedService,
-          renderStartHints: () => ["openclaw gateway install"],
+          renderStartHints: () => ["afora gateway install"],
           opts: { json: true },
           onNotLoaded,
         }),
@@ -221,7 +221,7 @@ describe("runServiceRestart token drift", () => {
         runServiceRestart({
           serviceNoun: "Gateway",
           service: unsupportedService,
-          renderStartHints: () => ["openclaw gateway install"],
+          renderStartHints: () => ["afora gateway install"],
           opts: { json: true },
           onNotLoaded,
           postRestartCheck,
@@ -238,15 +238,15 @@ describe("runServiceRestart token drift", () => {
     service.isLoaded.mockResolvedValue(false);
     service.readCommand.mockResolvedValue(null);
     const hasInstalledDefinition = vi.fn(async () => false);
-    vi.stubEnv("OPENCLAW_CONTAINER_HINT", "openclaw-demo-container");
+    vi.stubEnv("AFORA_CONTAINER_HINT", "afora-demo-container");
 
     await expect(
       runServiceRestart({
         serviceNoun: "Gateway",
         service: { ...service, hasInstalledDefinition } as GatewayService,
         renderStartHints: () => [
-          "Restart the container or the service that manages it for openclaw-demo-container.",
-          "openclaw gateway install",
+          "Restart the container or the service that manages it for afora-demo-container.",
+          "afora gateway install",
         ],
         opts: { json: true },
       }),
@@ -265,7 +265,7 @@ describe("runServiceRestart token drift", () => {
       error: "Gateway service not loaded.",
     });
     expect(payload.hints).toContain(
-      "Restart the container or the service that manages it for openclaw-demo-container.",
+      "Restart the container or the service that manages it for afora-demo-container.",
     );
     expect(payload.hintItems).toContainEqual(
       expect.objectContaining({ kind: "container-restart" }),
@@ -277,7 +277,7 @@ describe("runServiceRestart token drift", () => {
     service.isLoaded.mockResolvedValue(false);
     const hasInstalledDefinition = vi.fn(async () => true);
     const onNotLoaded = vi.fn(async () => null);
-    const renderStartHints = vi.fn(() => ["openclaw gateway install"]);
+    const renderStartHints = vi.fn(() => ["afora gateway install"]);
     service.restart.mockImplementationOnce(async (args?: GatewayServiceControlArgs) => {
       args?.onMutation?.({ mode: "systemctl-restart" });
       return { outcome: "completed" };
@@ -387,8 +387,8 @@ describe("runServiceRestart token drift", () => {
   it("repairs managed port drift before restarting", async () => {
     service.readRuntime.mockResolvedValue({ status: "running", pid: 1234 });
     service.readCommand.mockResolvedValue({
-      programArguments: ["openclaw", "gateway", "--port", "18789"],
-      environment: { OPENCLAW_GATEWAY_PORT: "18789" },
+      programArguments: ["afora", "gateway", "--port", "18789"],
+      environment: { AFORA_GATEWAY_PORT: "18789" },
     });
     type RepairLoadedService = NonNullable<
       Parameters<typeof runServiceRestart>[0]["repairLoadedService"]
@@ -450,9 +450,9 @@ describe("runServiceRestart token drift", () => {
     });
     service.readCommand.mockResolvedValue({
       programArguments: [],
-      environment: { OPENCLAW_GATEWAY_TOKEN: "env-token" },
+      environment: { AFORA_GATEWAY_TOKEN: "env-token" },
     });
-    vi.stubEnv("OPENCLAW_GATEWAY_TOKEN", "env-token");
+    vi.stubEnv("AFORA_GATEWAY_TOKEN", "env-token");
 
     await runServiceRestart(createServiceRunArgs(true));
 
@@ -734,7 +734,7 @@ describe("runServiceRestart token drift", () => {
   it("warns in json when an already-running gateway definition needs repair", async () => {
     service.readRuntime.mockResolvedValue({ status: "running", pid: 4242 });
     service.readCommand.mockResolvedValue({
-      programArguments: ["openclaw", "gateway", "--port", "18789"],
+      programArguments: ["afora", "gateway", "--port", "18789"],
     });
 
     await runServiceStart({ ...createServiceRunArgs(), expectedPort: 19_001 });
@@ -743,7 +743,7 @@ describe("runServiceRestart token drift", () => {
     expect(payload.result).toBe("already-running");
     expect(payload.warnings).toEqual([
       expect.stringMatching(
-        /^Gateway service already running, but its installed service definition needs repair: service port 18789 does not match current gateway config port 19001; run `openclaw gateway restart` to apply\.$/,
+        /^Gateway service already running, but its installed service definition needs repair: service port 18789 does not match current gateway config port 19001; run `afora gateway restart` to apply\.$/,
       ),
     ]);
     expect(service.start).not.toHaveBeenCalled();
@@ -752,7 +752,7 @@ describe("runServiceRestart token drift", () => {
   it("prints one warning line when an already-running gateway definition needs repair", async () => {
     service.readRuntime.mockResolvedValue({ status: "running", pid: 4242 });
     service.readCommand.mockResolvedValue({
-      programArguments: ["openclaw", "gateway", "--port", "18789"],
+      programArguments: ["afora", "gateway", "--port", "18789"],
     });
 
     await runServiceStart({
@@ -768,7 +768,7 @@ describe("runServiceRestart token drift", () => {
       ),
     );
     expect(repairWarnings).toHaveLength(1);
-    expect(repairWarnings[0]).toContain("run `openclaw gateway restart` to apply.");
+    expect(repairWarnings[0]).toContain("run `afora gateway restart` to apply.");
     expect(service.start).not.toHaveBeenCalled();
   });
 
@@ -845,7 +845,7 @@ describe("runServiceRestart token drift", () => {
 
   it("repairs loaded services with port drift during start before reporting success", async () => {
     service.readCommand.mockResolvedValue({
-      programArguments: ["openclaw", "gateway", "--port", "18789"],
+      programArguments: ["afora", "gateway", "--port", "18789"],
     });
     type RepairLoadedService = NonNullable<
       Parameters<typeof runServiceStart>[0]["repairLoadedService"]
@@ -892,7 +892,7 @@ describe("runServiceRestart token drift", () => {
 
   it("fails start with an install hint when port drift has no repair callback", async () => {
     service.readCommand.mockResolvedValue({
-      programArguments: ["openclaw", "gateway", "--port", "18789"],
+      programArguments: ["afora", "gateway", "--port", "18789"],
     });
 
     await expect(
@@ -902,7 +902,7 @@ describe("runServiceRestart token drift", () => {
     const payload = readJsonLog<{ ok?: boolean; error?: string; hints?: string[] }>();
     expect(payload.ok).toBe(false);
     expect(payload.error).toContain("service needs repair");
-    expect(payload.hints).toEqual(["openclaw gateway install --force"]);
+    expect(payload.hints).toEqual(["afora gateway install --force"]);
     expect(service.start).not.toHaveBeenCalled();
   });
 
@@ -925,7 +925,7 @@ describe("runServiceRestart token drift", () => {
       runServiceStart({
         serviceNoun: "Gateway",
         service,
-        renderStartHints: () => ["openclaw gateway install"],
+        renderStartHints: () => ["afora gateway install"],
         opts: { json: true },
       }),
     ).rejects.toThrow("__exit__:1");
@@ -938,10 +938,10 @@ describe("runServiceRestart token drift", () => {
     }>();
     expect(payload.ok).toBe(false);
     expect(payload.error).toBe("Gateway service not loaded.");
-    expect(payload.hints?.includes("openclaw gateway install")).toBe(true);
+    expect(payload.hints?.includes("afora gateway install")).toBe(true);
     expect(
       payload.hintItems?.some(
-        (item) => item.kind === "install" && item.text === "openclaw gateway install",
+        (item) => item.kind === "install" && item.text === "afora gateway install",
       ),
     ).toBe(true);
     expect(service.start).not.toHaveBeenCalled();

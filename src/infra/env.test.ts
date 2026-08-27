@@ -70,14 +70,14 @@ describe("isTruthyEnvValue", () => {
 });
 
 describe("isFastTestRuntimeEnv", () => {
-  it("ignores OPENCLAW_TEST_FAST outside a test runtime", () => {
+  it("ignores AFORA_TEST_FAST outside a test runtime", () => {
     withEnv(
       {
         NODE_ENV: "production",
         VITEST: undefined,
         VITEST_POOL_ID: undefined,
         VITEST_WORKER_ID: undefined,
-        OPENCLAW_TEST_FAST: "1",
+        AFORA_TEST_FAST: "1",
       },
       () => {
         expect(isFastTestRuntimeEnv()).toBe(false);
@@ -85,8 +85,8 @@ describe("isFastTestRuntimeEnv", () => {
     );
   });
 
-  it("honors OPENCLAW_TEST_FAST inside a detected test runtime", () => {
-    expect(isFastTestRuntimeEnv({ VITEST: "1", OPENCLAW_TEST_FAST: "1" })).toBe(true);
+  it("honors AFORA_TEST_FAST inside a detected test runtime", () => {
+    expect(isFastTestRuntimeEnv({ VITEST: "1", AFORA_TEST_FAST: "1" })).toBe(true);
   });
 });
 
@@ -98,16 +98,16 @@ describe("logAcceptedEnvOption", () => {
       {
         VITEST: "",
         NODE_ENV: "development",
-        OPENCLAW_TEST_ENV: "  line one\nline two  ",
+        AFORA_TEST_ENV: "  line one\nline two  ",
       },
       () => {
         logAcceptedEnvOption({
-          key: "OPENCLAW_TEST_ENV",
+          key: "AFORA_TEST_ENV",
           description: "test option",
           redact: true,
         });
         logAcceptedEnvOption({
-          key: "OPENCLAW_TEST_ENV",
+          key: "AFORA_TEST_ENV",
           description: "test option",
           redact: true,
         });
@@ -118,7 +118,7 @@ describe("logAcceptedEnvOption", () => {
       expect(loggerMocks.info).toHaveBeenCalledTimes(1);
     });
     expect(loggerMocks.info).toHaveBeenCalledWith(
-      "env: OPENCLAW_TEST_ENV=<redacted> (test option)",
+      "env: AFORA_TEST_ENV=<redacted> (test option)",
     );
   });
 
@@ -129,11 +129,11 @@ describe("logAcceptedEnvOption", () => {
       {
         VITEST: "1",
         NODE_ENV: "development",
-        OPENCLAW_BLANK_ENV: "value",
+        AFORA_BLANK_ENV: "value",
       },
       () => {
         logAcceptedEnvOption({
-          key: "OPENCLAW_BLANK_ENV",
+          key: "AFORA_BLANK_ENV",
           description: "skipped in vitest",
         });
       },
@@ -143,11 +143,11 @@ describe("logAcceptedEnvOption", () => {
       {
         VITEST: "",
         NODE_ENV: "development",
-        OPENCLAW_BLANK_ENV: "   ",
+        AFORA_BLANK_ENV: "   ",
       },
       () => {
         logAcceptedEnvOption({
-          key: "OPENCLAW_BLANK_ENV",
+          key: "AFORA_BLANK_ENV",
           description: "blank value",
         });
       },
@@ -161,11 +161,11 @@ describe("logAcceptedEnvOption", () => {
       {
         VITEST: "",
         NODE_ENV: "development",
-        OPENCLAW_UTF16_TEST_ENV: `${"x".repeat(159)}🚀tail`,
+        AFORA_UTF16_TEST_ENV: `${"x".repeat(159)}🚀tail`,
       },
       () => {
         logAcceptedEnvOption({
-          key: "OPENCLAW_UTF16_TEST_ENV",
+          key: "AFORA_UTF16_TEST_ENV",
           description: "UTF-16 test",
         });
       },
@@ -173,7 +173,7 @@ describe("logAcceptedEnvOption", () => {
 
     await vi.waitFor(() => expect(loggerMocks.info).toHaveBeenCalledTimes(1));
     expect(loggerMocks.info).toHaveBeenCalledWith(
-      `env: OPENCLAW_UTF16_TEST_ENV=${"x".repeat(159)}… (UTF-16 test)`,
+      `env: AFORA_UTF16_TEST_ENV=${"x".repeat(159)}… (UTF-16 test)`,
     );
   });
 });

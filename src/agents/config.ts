@@ -37,7 +37,7 @@ export const isBunBinary =
  */
 function getPackageDir(): string {
   // Allow override via environment variable (useful for Nix/Guix where store paths tokenize poorly)
-  const envDir = process.env.OPENCLAW_PACKAGE_DIR;
+  const envDir = process.env.AFORA_PACKAGE_DIR;
   if (envDir) {
     if (envDir === "~") {
       return homedir();
@@ -85,13 +85,13 @@ export function getExamplesPath(): string {
 }
 
 // =============================================================================
-// App Config (from package.json openclawConfig)
+// App Config (from package.json aforaConfig)
 // =============================================================================
 
 interface PackageJson {
   name?: string;
   version?: string;
-  openclawConfig?: {
+  aforaConfig?: {
     name?: string;
     configDir?: string;
   };
@@ -99,12 +99,12 @@ interface PackageJson {
 
 const workerVersion = typeof WORKER_DEPLOY_VERSION === "string" ? WORKER_DEPLOY_VERSION : undefined;
 const pkg: PackageJson = workerVersion
-  ? { name: "openclaw", version: workerVersion }
+  ? { name: "afora", version: workerVersion }
   : (JSON.parse(readFileSync(getPackageJsonPath(), "utf-8")) as PackageJson);
 
-const openClawConfigName: string | undefined = pkg.openclawConfig?.name;
-export const APP_NAME: string = openClawConfigName || "openclaw";
-export const CONFIG_DIR_NAME: string = pkg.openclawConfig?.configDir || ".openclaw";
+const aforaConfigName: string | undefined = pkg.aforaConfig?.name;
+export const APP_NAME: string = aforaConfigName || "afora";
+export const CONFIG_DIR_NAME: string = pkg.aforaConfig?.configDir || ".afora";
 export const PACKAGE_MANIFEST_VERSION: string = pkg.version || "0.0.0";
 
 const ENV_AGENT_DIR = `${APP_NAME.toUpperCase()}_AGENT_DIR`;
@@ -120,10 +120,10 @@ function expandTildePath(path: string): string {
 }
 
 // =============================================================================
-// User Config Paths (~/.openclaw/agent/*)
+// User Config Paths (~/.afora/agent/*)
 // =============================================================================
 
-/** Get the agent config directory (e.g., ~/.openclaw/agent/) */
+/** Get the agent config directory (e.g., ~/.afora/agent/) */
 export function getAgentDir(): string {
   const envDir = process.env[ENV_AGENT_DIR];
   if (envDir) {

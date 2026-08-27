@@ -360,14 +360,14 @@ describe("handleMatrixAction pollVote", () => {
         threadId: "$thread",
       },
       cfg,
-      { mediaLocalRoots: ["/tmp/openclaw-matrix-test"] },
+      { mediaLocalRoots: ["/tmp/afora-matrix-test"] },
     );
 
     expect(mocks.sendMatrixMessage).toHaveBeenCalledWith("room:!room:example", "hello", {
       cfg,
       accountId: "ops",
       mediaUrl: undefined,
-      mediaLocalRoots: ["/tmp/openclaw-matrix-test"],
+      mediaLocalRoots: ["/tmp/afora-matrix-test"],
       replyToId: undefined,
       threadId: "$thread",
     });
@@ -470,9 +470,9 @@ describe("handleMatrixAction pollVote", () => {
   it("accepts media-only message sends", async () => {
     const cfg = { channels: { matrix: { actions: { messages: true } } } } as CoreConfig;
     const mediaAccess = {
-      localRoots: ["/tmp/openclaw-matrix-test"],
+      localRoots: ["/tmp/afora-matrix-test"],
       readFile: async () => Buffer.from("chart"),
-      workspaceDir: "/tmp/openclaw-matrix-test",
+      workspaceDir: "/tmp/afora-matrix-test",
     };
     await handleMatrixAction(
       {
@@ -490,7 +490,7 @@ describe("handleMatrixAction pollVote", () => {
       accountId: "ops",
       mediaUrl: "chart.png",
       mediaAccess,
-      mediaLocalRoots: ["/tmp/openclaw-matrix-test"],
+      mediaLocalRoots: ["/tmp/afora-matrix-test"],
       replyToId: undefined,
       threadId: undefined,
     });
@@ -508,14 +508,14 @@ describe("handleMatrixAction pollVote", () => {
         asVoice: true,
       },
       cfg,
-      { mediaLocalRoots: ["/tmp/openclaw-matrix-test"] },
+      { mediaLocalRoots: ["/tmp/afora-matrix-test"] },
     );
 
     expect(mocks.sendMatrixMessage).toHaveBeenCalledWith("room:!room:example", undefined, {
       cfg,
       accountId: "ops",
       mediaUrl: "/tmp/clip.mp3",
-      mediaLocalRoots: ["/tmp/openclaw-matrix-test"],
+      mediaLocalRoots: ["/tmp/afora-matrix-test"],
       replyToId: undefined,
       threadId: undefined,
       audioAsVoice: true,
@@ -531,7 +531,7 @@ describe("handleMatrixAction pollVote", () => {
         avatarPath: "/tmp/avatar.jpg",
       },
       cfg,
-      { mediaLocalRoots: ["/tmp/openclaw-matrix-test"] },
+      { mediaLocalRoots: ["/tmp/afora-matrix-test"] },
     );
 
     expect(mocks.applyMatrixProfileUpdate).toHaveBeenCalledWith({
@@ -540,7 +540,7 @@ describe("handleMatrixAction pollVote", () => {
       displayName: undefined,
       avatarUrl: undefined,
       avatarPath: "/tmp/avatar.jpg",
-      mediaLocalRoots: ["/tmp/openclaw-matrix-test"],
+      mediaLocalRoots: ["/tmp/afora-matrix-test"],
     });
   });
 

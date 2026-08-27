@@ -1,4 +1,4 @@
-// Bench Gateway Startup script supports OpenClaw repository automation.
+// Bench Gateway Startup script supports Afora repository automation.
 import { spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -138,13 +138,13 @@ const GATEWAY_CASES: readonly GatewayBenchCase[] = [
   {
     id: "skipChannels",
     name: "gateway, skip channels",
-    env: { OPENCLAW_SKIP_CHANNELS: "1" },
+    env: { AFORA_SKIP_CHANNELS: "1" },
     config: BASE_CONFIG,
   },
   {
     id: "preparedRuntimeCatalogStall",
     name: "gateway, prepared runtime with CPU-stalling live catalog",
-    env: { OPENCLAW_SKIP_CHANNELS: "1" },
+    env: { AFORA_SKIP_CHANNELS: "1" },
     providerCatalogStallMs: 2_000,
     config: {
       ...BASE_CONFIG,
@@ -153,7 +153,7 @@ const GATEWAY_CASES: readonly GatewayBenchCase[] = [
           model: { primary: `${STALLED_CATALOG_PROVIDER_ID}/${STALLED_CATALOG_MODEL_ID}` },
           models: {
             [`${STALLED_CATALOG_PROVIDER_ID}/${STALLED_CATALOG_MODEL_ID}`]: {
-              agentRuntime: { id: "openclaw" },
+              agentRuntime: { id: "afora" },
             },
           },
         },
@@ -165,7 +165,7 @@ const GATEWAY_CASES: readonly GatewayBenchCase[] = [
     name: "gateway, prepared runtime scale with one agent",
     agentTopology: "single",
     completionTracePhase: "sidecars.ready",
-    env: { OPENCLAW_SKIP_CHANNELS: "1" },
+    env: { AFORA_SKIP_CHANNELS: "1" },
     providerStaticCatalogModelCount: 64,
     providerStaticCatalogStallMs: 100,
     config: {
@@ -175,7 +175,7 @@ const GATEWAY_CASES: readonly GatewayBenchCase[] = [
           model: { primary: `${STALLED_CATALOG_PROVIDER_ID}/${STALLED_CATALOG_MODEL_ID}` },
           models: {
             [`${STALLED_CATALOG_PROVIDER_ID}/${STALLED_CATALOG_MODEL_ID}`]: {
-              agentRuntime: { id: "openclaw" },
+              agentRuntime: { id: "afora" },
             },
           },
         },
@@ -187,7 +187,7 @@ const GATEWAY_CASES: readonly GatewayBenchCase[] = [
     name: "gateway, prepared runtime scale with 11 shared-workspace agents and one distinct",
     agentTopology: "shared-eleven-plus-distinct-one",
     completionTracePhase: "sidecars.ready",
-    env: { OPENCLAW_SKIP_CHANNELS: "1" },
+    env: { AFORA_SKIP_CHANNELS: "1" },
     providerStaticCatalogModelCount: 64,
     providerStaticCatalogStallMs: 100,
     config: {
@@ -197,7 +197,7 @@ const GATEWAY_CASES: readonly GatewayBenchCase[] = [
           model: { primary: `${STALLED_CATALOG_PROVIDER_ID}/${STALLED_CATALOG_MODEL_ID}` },
           models: {
             [`${STALLED_CATALOG_PROVIDER_ID}/${STALLED_CATALOG_MODEL_ID}`]: {
-              agentRuntime: { id: "openclaw" },
+              agentRuntime: { id: "afora" },
             },
           },
         },
@@ -207,7 +207,7 @@ const GATEWAY_CASES: readonly GatewayBenchCase[] = [
   {
     id: "oneInternalHook",
     name: "gateway, one configured internal hook",
-    env: { OPENCLAW_SKIP_CHANNELS: "1" },
+    env: { AFORA_SKIP_CHANNELS: "1" },
     config: {
       ...BASE_CONFIG,
       hooks: {
@@ -222,7 +222,7 @@ const GATEWAY_CASES: readonly GatewayBenchCase[] = [
   {
     id: "allInternalHooks",
     name: "gateway, all internal hooks",
-    env: { OPENCLAW_SKIP_CHANNELS: "1" },
+    env: { AFORA_SKIP_CHANNELS: "1" },
     config: {
       ...BASE_CONFIG,
       hooks: {
@@ -235,7 +235,7 @@ const GATEWAY_CASES: readonly GatewayBenchCase[] = [
   {
     id: "fiftyPlugins",
     name: "gateway, 50 manifest plugins",
-    env: { OPENCLAW_SKIP_CHANNELS: "1" },
+    env: { AFORA_SKIP_CHANNELS: "1" },
     pluginActivationOnStartup: true,
     pluginCount: 50,
     config: BASE_CONFIG,
@@ -243,7 +243,7 @@ const GATEWAY_CASES: readonly GatewayBenchCase[] = [
   {
     id: "fiftyStartupLazyPlugins",
     name: "gateway, 50 startup-lazy manifest plugins",
-    env: { OPENCLAW_SKIP_CHANNELS: "1" },
+    env: { AFORA_SKIP_CHANNELS: "1" },
     pluginActivationOnStartup: false,
     pluginCount: 50,
     config: BASE_CONFIG,
@@ -289,7 +289,7 @@ function parseOptions(argv: string[] = process.argv.slice(2)): CliOptions {
 }
 
 function printUsage(): void {
-  console.log(`OpenClaw Gateway startup benchmark
+  console.log(`Afora Gateway startup benchmark
 
 Usage:
   pnpm test:startup:gateway -- [options]
@@ -550,7 +550,7 @@ async function runGatewaySample(options: {
   sampleIndex: number;
   timeoutMs: number;
 }): Promise<GatewaySample> {
-  const root = mkdtempSync(path.join(tmpdir(), "openclaw-gateway-bench-"));
+  const root = mkdtempSync(path.join(tmpdir(), "afora-gateway-bench-"));
   const port = await getFreePort();
   const configPath = writeConfig(root, options.benchCase);
   const env = sanitizedEnv(root, configPath, options.benchCase);
@@ -574,7 +574,7 @@ async function runGatewaySample(options: {
           "--cpu-prof-dir",
           options.cpuProfDir,
           "--cpu-prof-name",
-          `openclaw-gateway-${options.benchCase.id}-${options.sampleIndex}-${Date.now()}.cpuprofile`,
+          `afora-gateway-${options.benchCase.id}-${options.sampleIndex}-${Date.now()}.cpuprofile`,
         ]
       : []),
     ...(options.heapProfDir ? ["--heap-prof", "--heap-prof-dir", options.heapProfDir] : []),

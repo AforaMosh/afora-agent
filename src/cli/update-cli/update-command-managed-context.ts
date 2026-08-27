@@ -1,5 +1,5 @@
 import { readConfigFileSnapshot } from "../../config/config.js";
-import type { ConfigFileSnapshot } from "../../config/types.openclaw.js";
+import type { ConfigFileSnapshot } from "../../config/types.afora.js";
 import type { PluginInstallRecord } from "../../config/types.plugins.js";
 import { loadInstalledPluginIndexInstallRecords } from "../../plugins/installed-plugin-index-records.js";
 import { resolveOwnedManagedUpdateEnv } from "./update-command-service-env.js";

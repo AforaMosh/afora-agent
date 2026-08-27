@@ -4,7 +4,7 @@
  * This adapter applies the generic capability-provider resolver to Talk
  * providers, including default model injection and per-call config overrides.
  */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveConfiguredCapabilityProvider } from "../plugin-sdk/provider-selection-runtime.js";
 import type { RealtimeVoiceProviderPlugin } from "../plugins/types.js";
 import {
@@ -29,9 +29,9 @@ export type ResolveConfiguredRealtimeVoiceProviderParams = {
   providerConfigs?: Record<string, Record<string, unknown> | undefined>;
   /** Last-mile overrides from a session/client request. */
   providerConfigOverrides?: Record<string, unknown>;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   /** Alternate config object used by generic provider selection internals. */
-  cfgForResolve?: OpenClawConfig;
+  cfgForResolve?: AforaConfig;
   /** Agent whose browser-session auth store should be inspected. */
   agentId?: string;
   /** Test/runtime override for the provider list. */
@@ -46,7 +46,7 @@ export type ResolveConfiguredRealtimeVoiceProviderParams = {
 export function resolveRealtimeVoiceProviderCapabilities(params: {
   provider: RealtimeVoiceProviderPlugin;
   providerConfig: RealtimeVoiceProviderConfig;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   /** Host-selected agent scope for provider capability evaluation. */
   agentId?: string;
   /** Effective per-session model after request overrides. */
@@ -70,7 +70,7 @@ export function resolveRealtimeVoiceProviderCapabilities(params: {
 
 export function isRealtimeVoiceProviderConfigured(params: {
   provider: RealtimeVoiceProviderPlugin;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   providerConfig: RealtimeVoiceProviderConfig;
   agentId?: string;
   surface?: "browser-session" | "gateway-relay" | "bridge";
@@ -95,7 +95,7 @@ export function isRealtimeVoiceProviderConfigured(params: {
 export function resolveConfiguredRealtimeVoiceProvider(
   params: ResolveConfiguredRealtimeVoiceProviderParams,
 ): ResolvedRealtimeVoiceProvider {
-  const cfgForResolve = params.cfgForResolve ?? params.cfg ?? ({} as OpenClawConfig);
+  const cfgForResolve = params.cfgForResolve ?? params.cfg ?? ({} as AforaConfig);
   const providers = params.providers ?? listRealtimeVoiceProviders(params.cfg);
   const resolution = resolveConfiguredCapabilityProvider({
     configuredProviderId: params.configuredProviderId,

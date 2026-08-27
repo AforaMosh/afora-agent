@@ -1,5 +1,5 @@
-import { matchesContextOverflowMessage } from "@openclaw/ai/internal/runtime";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { matchesContextOverflowMessage } from "@afora/ai/internal/runtime";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { resolveNodeRequireFromMeta } from "../../logging/node-require.js";
 import { isRateLimitErrorMessage } from "./message-patterns.js";
 import { FAILOVER_REASONS, type FailoverReason } from "./signal.js";

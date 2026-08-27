@@ -1,4 +1,4 @@
-import { readStringValue } from "@openclaw/normalization-core/string-coerce";
+import { readStringValue } from "@afora/normalization-core/string-coerce";
 // Setup command registration: system-agent chat for configured systems, onboarding otherwise.
 import { Option, type Command } from "commander";
 import { formatDocsLink } from "../../../packages/terminal-core/src/links.js";
@@ -178,7 +178,7 @@ async function runOnboardingEntry(
 
 function addSystemAgentOptions(command: Command): Command {
   return command
-    .option("-m, --message <text>", "Run one OpenClaw request")
+    .option("-m, --message <text>", "Run one Afora request")
     .option("--yes", "Approve persistent config writes for one --message request", false)
     .option("--json", "Output system overview or onboarding summary as JSON", false);
 }
@@ -187,18 +187,18 @@ function addSystemAgentOptions(command: Command): Command {
 export function registerSetupCommand(program: Command): void {
   const command = program
     .command("setup")
-    .description("Chat with OpenClaw; onboard when setup is incomplete")
+    .description("Chat with Afora; onboard when setup is incomplete")
     .addHelpText(
       "after",
       () =>
         `\n${theme.heading("Examples:")}\n` +
-        `  ${theme.command("openclaw setup")}\n` +
-        `    ${theme.muted("Chat with OpenClaw, or onboard when setup is incomplete.")}\n` +
-        `  ${theme.command('openclaw setup -m "status"')}\n` +
+        `  ${theme.command("afora setup")}\n` +
+        `    ${theme.muted("Chat with Afora, or onboard when setup is incomplete.")}\n` +
+        `  ${theme.command('afora setup -m "status"')}\n` +
         `    ${theme.muted("Run one system-agent request.")}\n` +
-        `  ${theme.command("openclaw setup --wizard")}\n` +
+        `  ${theme.command("afora setup --wizard")}\n` +
         `    ${theme.muted("Run full onboarding.")}\n\n` +
-        `${theme.muted("Docs:")} ${formatDocsLink("/cli/setup", "docs.openclaw.ai/cli/setup")}\n`,
+        `${theme.muted("Docs:")} ${formatDocsLink("/cli/setup", "docs.afora.ai/cli/setup")}\n`,
     )
     .option(
       "--workspace <dir>",
@@ -236,7 +236,7 @@ export function registerSetupCommand(program: Command): void {
     .option("--gateway-token <token>", "Gateway token (token auth)")
     .option(
       "--gateway-token-ref-env <name>",
-      "Gateway token SecretRef env var name (token auth; e.g. OPENCLAW_GATEWAY_TOKEN)",
+      "Gateway token SecretRef env var name (token auth; e.g. AFORA_GATEWAY_TOKEN)",
     )
     .option("--gateway-password <password>", "Gateway password (password auth)")
     .option("--tailscale <mode>", "Tailscale: off|serve|funnel")
@@ -287,7 +287,7 @@ export function registerSetupCommand(program: Command): void {
   addSystemAgentOptions(
     program
       .command("crestodian", { hidden: true }) // hidden alias
-      .description("Deprecated: use openclaw setup"),
+      .description("Deprecated: use afora setup"),
   ).action(async (options) => {
     const { defaultRuntime } = await import("../../runtime.js");
     await runCommandWithRuntime(defaultRuntime, async () => {

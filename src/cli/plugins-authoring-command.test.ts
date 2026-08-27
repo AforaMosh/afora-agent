@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { Type } from "typebox";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
@@ -79,7 +79,7 @@ function writeSourceToolPluginProject(params: {
       {
         name: params.packageName,
         type: "module",
-        openclaw: { extensions: ["./src/index.ts"] },
+        afora: { extensions: ["./src/index.ts"] },
       },
       null,
       2,
@@ -88,7 +88,7 @@ function writeSourceToolPluginProject(params: {
   const entryPath = path.join(sourceDir, "index.ts");
   fs.writeFileSync(
     entryPath,
-    `import { defineToolPlugin } from "openclaw/plugin-sdk/tool-plugin";
+    `import { defineToolPlugin } from "afora-agent/plugin-sdk/tool-plugin";
 
 export default defineToolPlugin({
   id: ${JSON.stringify(params.pluginId)},
@@ -110,11 +110,11 @@ export default defineToolPlugin({
 
 describe("plugin authoring commands", () => {
   beforeAll(async () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-source-warm-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-source-warm-"));
     try {
       const entryPath = writeSourceToolPluginProject({
         tmpDir,
-        packageName: "openclaw-plugin-source-warm",
+        packageName: "afora-plugin-source-warm",
         pluginId: "source-warm",
         toolName: "source_warm_echo",
       });
@@ -212,14 +212,14 @@ describe("plugin authoring commands", () => {
         metadata,
         entry: "./src/index.ts",
         manifest,
-        packageManifest: { version: "1.2.3", openclaw: { extensions: ["./src/index.ts"] } },
+        packageManifest: { version: "1.2.3", afora: { extensions: ["./src/index.ts"] } },
       }),
     ).toEqual([]);
   });
 
   it("drops stale manifest-owned tool metadata when no generated metadata remains", () => {
     const metadata = createDemoMetadata();
-    const packageManifest = { version: "1.2.3", openclaw: { extensions: ["./src/index.ts"] } };
+    const packageManifest = { version: "1.2.3", afora: { extensions: ["./src/index.ts"] } };
     const manifest = buildToolPluginManifest({
       metadata,
       packageManifest,
@@ -248,13 +248,13 @@ describe("plugin authoring commands", () => {
       buildToolPluginPackageManifest({
         packageManifest: {
           name: "demo",
-          openclaw: { setupEntry: "./setup.ts", extensions: ["./src/other.ts"] },
+          afora: { setupEntry: "./setup.ts", extensions: ["./src/other.ts"] },
         },
         entry: "./src/index.ts",
       }),
     ).toEqual({
       name: "demo",
-      openclaw: {
+      afora: {
         setupEntry: "./setup.ts",
         extensions: ["./src/other.ts", "./src/index.ts"],
       },
@@ -263,7 +263,7 @@ describe("plugin authoring commands", () => {
 
   it("validates manifest tools and package entry metadata", () => {
     const metadata = createDemoMetadata();
-    const packageManifest = { version: "1.2.3", openclaw: { extensions: ["./src/index.ts"] } };
+    const packageManifest = { version: "1.2.3", afora: { extensions: ["./src/index.ts"] } };
 
     expect(
       validateToolPluginProject({
@@ -276,10 +276,10 @@ describe("plugin authoring commands", () => {
   });
 
   it("emits a stable JSON validation result without human output", async () => {
-    const tmpDir = tempDirs.make("openclaw-plugin-valid-json-");
+    const tmpDir = tempDirs.make("afora-plugin-valid-json-");
     const entryPath = writeSourceToolPluginProject({
       tmpDir,
-      packageName: "openclaw-plugin-valid-json",
+      packageName: "afora-plugin-valid-json",
       pluginId: "valid-json",
       toolName: "valid_json_echo",
     });
@@ -303,7 +303,7 @@ describe("plugin authoring commands", () => {
   });
 
   it("keeps validation errors on stderr and sanitizes JSON paths", async () => {
-    const homeDir = tempDirs.make("openclaw-plugin-invalid-json-home-");
+    const homeDir = tempDirs.make("afora-plugin-invalid-json-home-");
     const rootDir = path.join(homeDir, "plugins", "invalid-json");
     fs.mkdirSync(rootDir, { recursive: true });
     fs.writeFileSync(path.join(rootDir, "package.json"), "{}\n");
@@ -316,7 +316,7 @@ describe("plugin authoring commands", () => {
 
     try {
       await expect(
-        withEnvAsync({ OPENCLAW_HOME: homeDir }, async () => {
+        withEnvAsync({ AFORA_HOME: homeDir }, async () => {
           await runPluginsValidateCommand({ root: rootDir, json: true });
         }),
       ).rejects.toThrow("expected runtime exit 1");
@@ -324,11 +324,11 @@ describe("plugin authoring commands", () => {
       expect(writeJson).toHaveBeenCalledWith({
         valid: false,
         errors: [
-          "plugin manifest not found: $OPENCLAW_HOME/plugins/invalid-json/openclaw.plugin.json",
+          "plugin manifest not found: $AFORA_HOME/plugins/invalid-json/afora.plugin.json",
         ],
       });
       expect(error).toHaveBeenCalledWith(
-        `plugin manifest not found: ${rootDir}/openclaw.plugin.json`,
+        `plugin manifest not found: ${rootDir}/afora.plugin.json`,
       );
       expect(log).not.toHaveBeenCalled();
       expect(exit).toHaveBeenCalledWith(1, { resetStream: process.stderr });
@@ -343,16 +343,16 @@ describe("plugin authoring commands", () => {
   it.each(["validate", "build --check"] as const)(
     "accepts reordered JSON object keys without rewriting files in %s",
     async (command) => {
-      const tmpDir = tempDirs.make("openclaw-plugin-reordered-json-");
+      const tmpDir = tempDirs.make("afora-plugin-reordered-json-");
       const entryPath = writeSourceToolPluginProject({
         tmpDir,
-        packageName: "openclaw-plugin-reordered-json",
+        packageName: "afora-plugin-reordered-json",
         pluginId: "reordered-json",
         toolName: "reordered_json_echo",
       });
       await runPluginsBuildCommand({ root: tmpDir, entry: entryPath });
 
-      const manifestPath = path.join(tmpDir, "openclaw.plugin.json");
+      const manifestPath = path.join(tmpDir, "afora.plugin.json");
       const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as Record<string, unknown>;
       const configSchema = manifest.configSchema as Record<string, unknown>;
       fs.writeFileSync(
@@ -406,7 +406,7 @@ describe("plugin authoring commands", () => {
       name: "demo_extra",
     };
     const metadataWithTools = { ...metadata, tools: [...metadata.tools, extraTool] };
-    const packageManifest = { version: "1.2.3", openclaw: { extensions: ["./src/index.ts"] } };
+    const packageManifest = { version: "1.2.3", afora: { extensions: ["./src/index.ts"] } };
     const generated = buildToolPluginManifest({ metadata: metadataWithTools, packageManifest });
     const manifest = {
       ...generated,
@@ -420,7 +420,7 @@ describe("plugin authoring commands", () => {
         manifest,
         packageManifest,
       }),
-    ).toEqual(["openclaw.plugin.json generated metadata is stale. Run openclaw plugins build."]);
+    ).toEqual(["afora.plugin.json generated metadata is stale. Run afora plugins build."]);
   });
 
   it("projects undefined TypeBox options into the persisted manifest shape", () => {
@@ -450,7 +450,7 @@ describe("plugin authoring commands", () => {
     expect(Object.hasOwn(runtimeSchema, "description")).toBe(true);
     expect(Object.hasOwn(runtimeProperties.value as object, "description")).toBe(true);
 
-    const packageManifest = { version: "1.2.3", openclaw: { extensions: ["./src/index.ts"] } };
+    const packageManifest = { version: "1.2.3", afora: { extensions: ["./src/index.ts"] } };
     const manifest = buildToolPluginManifest({ metadata, packageManifest });
     const persistedSchema = manifest.configSchema as Record<string, unknown>;
     const persistedProperties = persistedSchema.properties as Record<string, unknown>;
@@ -487,7 +487,7 @@ describe("plugin authoring commands", () => {
     },
   ])("compares $label in generated schemas", ({ expected, actual, stale }) => {
     const metadata = createDemoMetadata();
-    const packageManifest = { version: "1.2.3", openclaw: { extensions: ["./src/index.ts"] } };
+    const packageManifest = { version: "1.2.3", afora: { extensions: ["./src/index.ts"] } };
     const metadataWithSchema = {
       ...metadata,
       configSchema: { type: "object", properties: JSON.parse(expected) as Record<string, unknown> },
@@ -507,14 +507,14 @@ describe("plugin authoring commands", () => {
       }),
     ).toEqual(
       stale
-        ? ["openclaw.plugin.json generated metadata is stale. Run openclaw plugins build."]
+        ? ["afora.plugin.json generated metadata is stale. Run afora plugins build."]
         : [],
     );
   });
 
   it("still rejects a changed generated config schema", () => {
     const metadata = createDemoMetadata();
-    const packageManifest = { version: "1.2.3", openclaw: { extensions: ["./src/index.ts"] } };
+    const packageManifest = { version: "1.2.3", afora: { extensions: ["./src/index.ts"] } };
     const generated = buildToolPluginManifest({ metadata, packageManifest });
     const manifest = {
       ...generated,
@@ -531,14 +531,14 @@ describe("plugin authoring commands", () => {
         manifest,
         packageManifest,
       }),
-    ).toEqual(["openclaw.plugin.json generated metadata is stale. Run openclaw plugins build."]);
+    ).toEqual(["afora.plugin.json generated metadata is stale. Run afora plugins build."]);
   });
 
   it("rejects a missing generated manifest without changing package metadata", async () => {
-    const tmpDir = tempDirs.make("openclaw-plugin-missing-generated-manifest-");
+    const tmpDir = tempDirs.make("afora-plugin-missing-generated-manifest-");
     const entryPath = writeSourceToolPluginProject({
       tmpDir,
-      packageName: "openclaw-plugin-missing-generated-manifest",
+      packageName: "afora-plugin-missing-generated-manifest",
       pluginId: "missing-generated-manifest",
       toolName: "missing_generated_manifest_echo",
     });
@@ -554,10 +554,10 @@ describe("plugin authoring commands", () => {
         runPluginsBuildCommand({ root: tmpDir, entry: entryPath, check: true }),
       ).rejects.toThrow("runtime exit 1");
       expect(error).toHaveBeenCalledWith(
-        "Generated plugin metadata is out of date. Run openclaw plugins build.",
+        "Generated plugin metadata is out of date. Run afora plugins build.",
       );
       expect(fs.readFileSync(packagePath, "utf8")).toBe(packageBefore);
-      expect(fs.existsSync(path.join(tmpDir, "openclaw.plugin.json"))).toBe(false);
+      expect(fs.existsSync(path.join(tmpDir, "afora.plugin.json"))).toBe(false);
     } finally {
       exit.mockRestore();
       error.mockRestore();
@@ -576,17 +576,17 @@ describe("plugin authoring commands", () => {
           configSchema: {},
           contracts: { tools: ["other_tool"] },
         },
-        packageManifest: { openclaw: { extensions: ["./src/index.ts"] } },
+        packageManifest: { afora: { extensions: ["./src/index.ts"] } },
       }),
     ).toEqual([
-      "openclaw.plugin.json generated metadata is stale. Run openclaw plugins build.",
-      "openclaw.plugin.json contracts.tools is missing: demo_echo",
-      "openclaw.plugin.json contracts.tools has no matching defineToolPlugin tool: other_tool",
+      "afora.plugin.json generated metadata is stale. Run afora plugins build.",
+      "afora.plugin.json contracts.tools is missing: demo_echo",
+      "afora.plugin.json contracts.tools has no matching defineToolPlugin tool: other_tool",
     ]);
   });
 
   it("reports missing entries with an author-facing path", async () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-missing-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-missing-"));
 
     await expect(
       loadToolPlugin({ rootDir: tmpDir, entryPath: path.join(tmpDir, "dist/index.js") }),
@@ -594,11 +594,11 @@ describe("plugin authoring commands", () => {
   });
 
   it("throws a user-friendly error when package.json is malformed JSON", async () => {
-    const tmpDir = tempDirs.make("openclaw-plugin-bad-json-");
+    const tmpDir = tempDirs.make("afora-plugin-bad-json-");
     const packagePath = path.join(tmpDir, "package.json");
     const entryPath = writeSourceToolPluginProject({
       tmpDir,
-      packageName: "openclaw-plugin-bad-json",
+      packageName: "afora-plugin-bad-json",
       pluginId: "bad-json",
       toolName: "bad_json_echo",
     });
@@ -609,11 +609,11 @@ describe("plugin authoring commands", () => {
     );
   });
 
-  it("loads source entries that import the OpenClaw plugin SDK package subpath", async () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-source-"));
+  it("loads source entries that import the Afora plugin SDK package subpath", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-source-"));
     const entryPath = writeSourceToolPluginProject({
       tmpDir,
-      packageName: "openclaw-plugin-source-demo",
+      packageName: "afora-plugin-source-demo",
       pluginId: "source-demo",
       toolName: "source_echo",
     });
@@ -628,11 +628,11 @@ describe("plugin authoring commands", () => {
   });
 
   it("finishes a build from an absolute root after the launch directory is removed", async () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-deleted-cwd-build-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-deleted-cwd-build-"));
     const packagePath = path.join(tmpDir, "package.json");
     const entryPath = writeSourceToolPluginProject({
       tmpDir,
-      packageName: "openclaw-plugin-deleted-cwd-build",
+      packageName: "afora-plugin-deleted-cwd-build",
       pluginId: "deleted-cwd-build",
       toolName: "deleted_cwd_echo",
     });
@@ -658,8 +658,8 @@ describe("plugin authoring commands", () => {
     try {
       await runPluginsBuildCommand({ root: tmpDir, entry: entryPath });
 
-      expect(fs.existsSync(path.join(tmpDir, "openclaw.plugin.json"))).toBe(true);
-      expect(log).toHaveBeenCalledWith(`Wrote ${path.join(tmpDir, "openclaw.plugin.json")}`);
+      expect(fs.existsSync(path.join(tmpDir, "afora.plugin.json"))).toBe(true);
+      expect(log).toHaveBeenCalledWith(`Wrote ${path.join(tmpDir, "afora.plugin.json")}`);
       expect(log).toHaveBeenCalledWith(`Updated ${packagePath}`);
     } finally {
       writeFileSync.mockRestore();
@@ -670,7 +670,7 @@ describe("plugin authoring commands", () => {
   });
 
   it("finishes init with an absolute directory after the launch directory is removed", async () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-deleted-cwd-init-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-deleted-cwd-init-"));
     const projectDir = path.join(tmpDir, "demo");
     const log = vi.spyOn(defaultRuntime, "log").mockImplementation(() => {});
     const cwd = vi.spyOn(process, "cwd").mockImplementation(() => {
@@ -690,7 +690,7 @@ describe("plugin authoring commands", () => {
   });
 
   it("scaffolds a dist-entry tool plugin project", async () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-init-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-init-"));
     const projectDir = path.join(tmpDir, "stock-quotes");
 
     await runPluginsInitCommand("stock-quotes", {
@@ -708,24 +708,24 @@ describe("plugin authoring commands", () => {
         typebox: "^1.1.38",
       },
       peerDependencies: {
-        openclaw: ">=2026.5.17",
+        afora: ">=2026.5.17",
       },
       devDependencies: {
-        openclaw: "latest",
+        afora: "latest",
         typescript: "^5.9.0",
         vitest: "^3.2.0",
       },
       scripts: {
-        "plugin:build": "npm run build && openclaw plugins build --entry ./dist/index.js",
-        "plugin:validate": "npm run build && openclaw plugins validate --entry ./dist/index.js",
+        "plugin:build": "npm run build && afora plugins build --entry ./dist/index.js",
+        "plugin:validate": "npm run build && afora plugins validate --entry ./dist/index.js",
         test: "vitest run --config ./vitest.config.ts",
       },
-      openclaw: {
+      afora: {
         extensions: ["./dist/index.js"],
       },
     });
     expect(
-      JSON.parse(fs.readFileSync(path.join(projectDir, "openclaw.plugin.json"), "utf8")),
+      JSON.parse(fs.readFileSync(path.join(projectDir, "afora.plugin.json"), "utf8")),
     ).toMatchObject({
       id: "stock-quotes",
       name: 'Stock "Quotes"',
@@ -745,7 +745,7 @@ describe("plugin authoring commands", () => {
   });
 
   it("scaffolds a provider plugin project with ClawHub validation and release metadata", async () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-provider-init-"));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-provider-init-"));
     const projectDir = path.join(tmpDir, "plugin-init-test");
 
     await runPluginsInitCommand("plugin-init-test", {
@@ -758,25 +758,25 @@ describe("plugin authoring commands", () => {
       fs.readFileSync(path.join(projectDir, "package.json"), "utf8"),
     );
     expect(packageManifest).toMatchObject({
-      name: "openclaw-plugin-plugin-init-test",
+      name: "afora-plugin-plugin-init-test",
       scripts: {
         build: "tsc -p tsconfig.json",
         test: "vitest run --config ./vitest.config.ts",
         validate: "npm run build && clawhub package validate . --out .clawhub-validation",
       },
       peerDependencies: {
-        openclaw: `>=${VERSION}`,
+        afora: `>=${VERSION}`,
       },
       devDependencies: {
         clawhub: "latest",
-        openclaw: "latest",
+        afora: "latest",
         typescript: "^5.9.0",
         vitest: "^3.2.0",
       },
-      openclaw: {
+      afora: {
         extensions: ["./dist/index.js"],
         install: {
-          clawhubSpec: "clawhub:openclaw-plugin-plugin-init-test",
+          clawhubSpec: "clawhub:afora-plugin-plugin-init-test",
           defaultChoice: "clawhub",
           minHostVersion: `>=${VERSION}`,
         },
@@ -784,7 +784,7 @@ describe("plugin authoring commands", () => {
           pluginApi: `>=${VERSION}`,
         },
         build: {
-          openclawVersion: VERSION,
+          aforaVersion: VERSION,
         },
         release: {
           publishToClawHub: true,
@@ -795,7 +795,7 @@ describe("plugin authoring commands", () => {
     expect(packageManifest.scripts).not.toHaveProperty("plugin:validate");
 
     const manifest = JSON.parse(
-      fs.readFileSync(path.join(projectDir, "openclaw.plugin.json"), "utf8"),
+      fs.readFileSync(path.join(projectDir, "afora.plugin.json"), "utf8"),
     );
     expect(manifest).toMatchObject({
       id: "plugin-init-test",
@@ -823,7 +823,7 @@ describe("plugin authoring commands", () => {
     expect(indexSource).toContain("buildSingleProviderApiKeyCatalog");
 
     expect(fs.readFileSync(path.join(projectDir, "src/index.test.ts"), "utf8")).toContain(
-      "OpenClawPluginApi",
+      "AforaPluginApi",
     );
     expect(fs.readFileSync(path.join(projectDir, "vitest.config.ts"), "utf8")).toContain(
       'include: ["src/**/*.test.ts"]',
@@ -842,7 +842,7 @@ describe("plugin authoring commands", () => {
     expect(workflow).not.toContain("secrets: inherit");
     expect(workflow).toContain("workflow_dispatch:");
     expect(workflow).toContain(
-      "openclaw/clawhub/.github/workflows/package-publish.yml@9d49df109d4ad3dc8a6ecf05d26b39f46d294721",
+      "afora-agent/clawhub/.github/workflows/package-publish.yml@9d49df109d4ad3dc8a6ecf05d26b39f46d294721",
     );
   });
 });

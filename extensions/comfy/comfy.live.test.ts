@@ -1,8 +1,8 @@
 // Comfy tests cover comfy plugin behavior.
-import { resolveDefaultAgentDir } from "openclaw/plugin-sdk/agent-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
-import { isLiveTestEnabled, readLiveTestConfig } from "openclaw/plugin-sdk/test-live";
+import { resolveDefaultAgentDir } from "afora-agent/plugin-sdk/agent-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
+import { isLiveTestEnabled, readLiveTestConfig } from "afora-agent/plugin-sdk/test-live";
 import { beforeAll, describe, expect, it } from "vitest";
 import plugin from "./index.js";
 import { isComfyCapabilityConfigured } from "./workflow-runtime.js";
@@ -40,7 +40,7 @@ function requireProvider<T extends { id: string }>(providers: T[], id: string): 
 }
 
 describeLive("comfy live", () => {
-  let cfg = {} as OpenClawConfig;
+  let cfg = {} as AforaConfig;
   let agentDir = "";
   const imageProviders: Array<{ id: string; generateImage: Function; isConfigured?: Function }> =
     [];

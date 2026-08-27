@@ -9,7 +9,7 @@ export function renderCustodianQuestionCard(params: {
   onSkip: () => void;
 }) {
   return html`<div class="custodian__option-card">
-    <openclaw-option-card
+    <afora-option-card
       .props=${{
         header: params.question.header,
         question: params.question.question,
@@ -23,6 +23,6 @@ export function renderCustodianQuestionCard(params: {
         onSelect: params.onSelect,
         onSkip: params.onSkip,
       }}
-    ></openclaw-option-card>
+    ></afora-option-card>
   </div>`;
 }

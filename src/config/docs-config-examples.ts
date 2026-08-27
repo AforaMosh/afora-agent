@@ -1,13 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import JSON5 from "json5";
 import {
   loadPluginMetadataSnapshot,
   type PluginMetadataSnapshot,
 } from "../plugins/plugin-metadata-snapshot.js";
 import { validateConfigObjectRaw, validateConfigObjectRawWithPlugins } from "./validation.js";
-import { OpenClawSchemaShape } from "./zod-schema.root-shape.js";
+import { AforaSchemaShape } from "./zod-schema.root-shape.js";
 
 type DocsConfigFinding = {
   filePath: string;
@@ -44,7 +44,7 @@ type DocsConfigValidationContext = {
   pluginMetadataSnapshot: Pick<PluginMetadataSnapshot, "manifestRegistry">;
 };
 
-const ROOT_CONFIG_KEYS = new Set(Object.keys(OpenClawSchemaShape));
+const ROOT_CONFIG_KEYS = new Set(Object.keys(AforaSchemaShape));
 
 function emptyStats(filesScanned = 0): DocsConfigStats {
   return {
@@ -127,7 +127,7 @@ function stripIncludeKeys(value: unknown): unknown {
 function createDocsConfigValidationContext(): DocsConfigValidationContext {
   const env = {
     ...process.env,
-    OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(process.cwd(), "extensions"),
+    AFORA_BUNDLED_PLUGINS_DIR: path.join(process.cwd(), "extensions"),
   };
   return {
     env,

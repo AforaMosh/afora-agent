@@ -9,9 +9,9 @@ export const page = definePage({
   component: () =>
     import("./skill-workshop-page.ts").then(() => ({
       render: (data: unknown) => html`
-        <openclaw-skill-workshop-page
+        <afora-skill-workshop-page
           .data=${data as SkillWorkshopRouteData | undefined}
-        ></openclaw-skill-workshop-page>
+        ></afora-skill-workshop-page>
       `,
     })),
   loader: async (context: ApplicationContext) => {

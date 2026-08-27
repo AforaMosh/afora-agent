@@ -1,5 +1,5 @@
 import type { SecretRef } from "../config/types.secrets.js";
-import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
+import type { AforaStateDatabaseOptions } from "../state/afora-state-db.js";
 import { providerResolutionError, refResolutionError } from "./resolve-errors.js";
 import { readSecretStoreValue, SECRET_STORE_VALUE_MAX_BYTES } from "./store/secret-store.js";
 
@@ -10,7 +10,7 @@ const STORE_SECRET_REF_BATCH_MAX_BYTES = 512 * SECRET_STORE_VALUE_MAX_BYTES;
 export function resolveStoreRefs(params: {
   refs: SecretRef[];
   providerName: string;
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): Map<string, unknown> {
   const resolved = new Map<string, unknown>();
   let resolvedBytes = 0;

@@ -16,7 +16,7 @@ import {
 installGatewayTestHooks({ scope: "suite" });
 
 const ORIGINAL_GATEWAY_AUTH = testState.gatewayAuth;
-const SECRET_REF_TOKEN_ID = "OPENCLAW_SHARED_TOKEN_HOT_RELOAD_SECRET_REF";
+const SECRET_REF_TOKEN_ID = "AFORA_SHARED_TOKEN_HOT_RELOAD_SECRET_REF";
 const OLD_TOKEN = "shared-token-hot-reload-old";
 const NEW_TOKEN = "shared-token-hot-reload-new";
 
@@ -38,9 +38,9 @@ function buildSharedTokenReloadConfig(): Record<string, unknown> {
 }
 
 beforeAll(async () => {
-  const configPath = process.env.OPENCLAW_CONFIG_PATH;
+  const configPath = process.env.AFORA_CONFIG_PATH;
   if (!configPath) {
-    throw new Error("OPENCLAW_CONFIG_PATH missing in gateway test environment");
+    throw new Error("AFORA_CONFIG_PATH missing in gateway test environment");
   }
   port = await getGatewayTestPort();
   testState.gatewayAuth = undefined;

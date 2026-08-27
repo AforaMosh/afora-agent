@@ -40,7 +40,7 @@ function expectSpawned(expectedArgs: string[]): SpawnOptions {
 describe("launchTuiCli", () => {
   beforeEach(() => {
     process.argv = [...originalArgv];
-    process.argv[1] = "/repo/openclaw.mjs";
+    process.argv[1] = "/repo/afora.mjs";
     process.execArgv.length = 0;
     spawnMock.mockReset();
     detachMock.mockReset();
@@ -86,7 +86,7 @@ describe("launchTuiCli", () => {
       "--import",
       "tsx",
       "--no-warnings",
-      "/repo/openclaw.mjs",
+      "/repo/afora.mjs",
       "tui",
       "--url",
       "ws://127.0.0.1:18789",
@@ -107,7 +107,7 @@ describe("launchTuiCli", () => {
 
     await launchTuiCli({ local: true, deliver: false });
 
-    const options = expectSpawned(["/repo/openclaw.mjs", "tui", "--local"]);
+    const options = expectSpawned(["/repo/afora.mjs", "tui", "--local"]);
     expect(options.stdio).toBe("inherit");
   });
 
@@ -126,7 +126,7 @@ describe("launchTuiCli", () => {
     });
 
     const options = expectSpawned([
-      "/repo/openclaw.mjs",
+      "/repo/afora.mjs",
       "tui",
       "--local",
       "--message",
@@ -178,7 +178,7 @@ describe("launchTuiCli", () => {
     });
 
     const options = expectSpawned([
-      "/repo/openclaw.mjs",
+      "/repo/afora.mjs",
       "tui",
       "--url",
       "ws://127.0.0.1:18789",

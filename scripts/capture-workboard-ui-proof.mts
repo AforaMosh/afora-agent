@@ -40,7 +40,7 @@ page.setDefaultTimeout(30_000);
 
 const gatewayUrl = new URL(baseUrl);
 gatewayUrl.protocol = gatewayUrl.protocol === "https:" ? "wss:" : "ws:";
-const settingsKey = `openclaw.control.settings.v1:${gatewayUrl.origin}`;
+const settingsKey = `afora.control.settings.v1:${gatewayUrl.origin}`;
 await page.addInitScript(
   ({ key, sessionKey }) => {
     localStorage.setItem(

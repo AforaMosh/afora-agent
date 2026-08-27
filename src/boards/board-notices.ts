@@ -1,4 +1,4 @@
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { enqueueSystemEvent } from "../infra/system-events.js";
 
 const BOARD_EVENT_MAX_BYTES = 8 * 1024;

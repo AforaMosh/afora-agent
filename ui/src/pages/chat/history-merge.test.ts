@@ -2,7 +2,7 @@
 import {
   reduceSessionProjection,
   type SessionProjectionScope,
-} from "@openclaw/gateway-client/browser";
+} from "@afora/gateway-client/browser";
 import { describe, expect, it } from "vitest";
 import { createInitialUserMessageHandoff } from "../../app/initial-user-message-handoff.ts";
 import {
@@ -24,7 +24,7 @@ function createHistoryMessage(
   return {
     role,
     content: [{ type: "text", text }],
-    ...(metadata === undefined ? {} : { __openclaw: metadata }),
+    ...(metadata === undefined ? {} : { __afora: metadata }),
   };
 }
 
@@ -77,7 +77,7 @@ function createAuthoritativeInitialMessage(sequence = 1) {
     content: [{ type: "image", source: { type: "url", url: "/persisted.png" } }],
     timestamp: 456,
     serverField: "authoritative",
-    __openclaw: {
+    __afora: {
       id: "persisted-initial-user",
       idempotencyKey: "initial-run:user",
       seq: sequence,
@@ -181,13 +181,13 @@ describe("pane-owned canonical session projection", () => {
       role: "user",
       timestamp: 456,
       serverField: "authoritative",
-      __openclaw: {
+      __afora: {
         id: "persisted-initial-user",
         idempotencyKey: "initial-run:user",
         seq: 1,
       },
     });
-    expect((adopted["__openclaw"] as Record<string, unknown>).media).toBeUndefined();
+    expect((adopted["__afora"] as Record<string, unknown>).media).toBeUndefined();
 
     if (admitFirst) {
       expect(initialUserMessage.read(sessionKey, client)).not.toBeNull();
@@ -557,12 +557,12 @@ describe("pane-owned canonical session projection", () => {
     const pending = {
       role: "user",
       content: "",
-      __openclaw: { idempotencyKey: "attachment-run:user" },
+      __afora: { idempotencyKey: "attachment-run:user" },
     };
     const persisted = {
       role: "user",
       content: "",
-      __openclaw: {
+      __afora: {
         id: "attachment-user",
         idempotencyKey: "attachment-run:user",
         seq: 4,

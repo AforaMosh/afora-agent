@@ -4,19 +4,19 @@
  */
 import {
   CLAUDE_CLI_PROFILE_ID,
-  type OpenClawConfig,
+  type AforaConfig,
   type ProviderAuthResult,
-} from "openclaw/plugin-sdk/provider-auth";
+} from "afora-agent/plugin-sdk/provider-auth";
 import {
   isRecord,
   normalizeLowercaseStringOrEmpty,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveClaudeCliAnthropicModelRefs } from "./claude-model-refs.js";
 import type { readClaudeCliCredentialsForSetup } from "./cli-auth-seam.js";
 import { CLAUDE_CLI_BACKEND_ID, CLAUDE_CLI_DEFAULT_ALLOWLIST_REFS } from "./cli-shared.js";
 
-type AgentDefaultsModel = NonNullable<NonNullable<OpenClawConfig["agents"]>["defaults"]>["model"];
-type AgentDefaultsModels = NonNullable<NonNullable<OpenClawConfig["agents"]>["defaults"]>["models"];
+type AgentDefaultsModel = NonNullable<NonNullable<AforaConfig["agents"]>["defaults"]>["model"];
+type AgentDefaultsModels = NonNullable<NonNullable<AforaConfig["agents"]>["defaults"]>["models"];
 type ClaudeCliCredential = NonNullable<ReturnType<typeof readClaudeCliCredentialsForSetup>>;
 
 function toAnthropicModelRef(raw: string): string | null {
@@ -218,7 +218,7 @@ function buildClaudeCliAuthProfiles(
 
 /** Build the config migration result for adopting Claude CLI-backed Anthropic defaults. */
 export function buildAnthropicCliMigrationResult(
-  config: OpenClawConfig,
+  config: AforaConfig,
   credential?: ClaudeCliCredential | null,
 ): ProviderAuthResult {
   const defaults = config.agents?.defaults;

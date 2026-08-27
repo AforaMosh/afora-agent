@@ -98,7 +98,7 @@ function writeTsxFixture(modulesDir: string, marker: string) {
   );
   writeFileSync(
     path.join(packageDir, "loader.mjs"),
-    `process.env.OPENCLAW_TSX_FIXTURE_LOADER = ${JSON.stringify(marker)};\n`,
+    `process.env.AFORA_TSX_FIXTURE_LOADER = ${JSON.stringify(marker)};\n`,
   );
 }
 
@@ -109,7 +109,7 @@ function runShimFixture(
     fixtureRoot: string;
   }) => ModulesEnv = () => ({}),
 ) {
-  const fixtureRoot = realpathSync(mkdtempSync(path.join(tmpdir(), "openclaw-tsx-cli-shim-")));
+  const fixtureRoot = realpathSync(mkdtempSync(path.join(tmpdir(), "afora-tsx-cli-shim-")));
   const checkoutRoot = path.join(fixtureRoot, "checkout");
   const wrapperPath = path.join(checkoutRoot, wrapper);
   const implementationPath = wrapperPath.replace(/\.mjs$/u, ".mts");
@@ -124,7 +124,7 @@ function runShimFixture(
     writeFileSync(path.join(checkoutRoot, "pnpm-lock.yaml"), "lockfileVersion: '9.0'\n");
     writeFileSync(
       implementationPath,
-      "process.stdout.write(JSON.stringify({ loader: process.env.OPENCLAW_TSX_FIXTURE_LOADER, args: process.argv.slice(2) }));\n",
+      "process.stdout.write(JSON.stringify({ loader: process.env.AFORA_TSX_FIXTURE_LOADER, args: process.argv.slice(2) }));\n",
     );
     writeTsxFixture(path.join(checkoutRoot, "node_modules"), "checkout");
     const modulesEnv = configureModules({ checkoutRoot, fixtureRoot });

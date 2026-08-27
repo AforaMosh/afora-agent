@@ -3,10 +3,10 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../state/afora-state-db.js";
 import {
   markLegacyMigrationSourceRemoved,
   readLegacyMigrationReceipt,
@@ -19,15 +19,15 @@ import {
 describe("shared legacy migration receipts", () => {
   const tempDirs = useAutoCleanupTempDirTracker((cleanup) => {
     afterEach(() => {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       cleanup();
     });
   });
 
   function createFixture() {
-    const stateDir = tempDirs.make("openclaw-migration-receipts-");
+    const stateDir = tempDirs.make("afora-migration-receipts-");
     const sourcePath = path.join(stateDir, "legacy.json");
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
     const receipt = {
       sourceKey: resolveLegacyMigrationSourceKey("test-json", sourcePath),
       migrationKind: "legacy-test-json",
@@ -64,7 +64,7 @@ describe("shared legacy migration receipts", () => {
 
   it("records one typed receipt, rejects duplicates, and marks verified source removal", () => {
     const { env, receipt } = createFixture();
-    runOpenClawStateWriteTransaction(({ db }) => recordLegacyMigrationReceipt(db, receipt), {
+    runAforaStateWriteTransaction(({ db }) => recordLegacyMigrationReceipt(db, receipt), {
       env,
     });
 
@@ -75,7 +75,7 @@ describe("shared legacy migration receipts", () => {
       reportJson: receipt.reportJson,
     });
     expect(() =>
-      runOpenClawStateWriteTransaction(({ db }) => recordLegacyMigrationReceipt(db, receipt), {
+      runAforaStateWriteTransaction(({ db }) => recordLegacyMigrationReceipt(db, receipt), {
         env,
       }),
     ).toThrow();
@@ -83,7 +83,7 @@ describe("shared legacy migration receipts", () => {
     markLegacyMigrationSourceRemoved(receipt.sourceKey, env, "test migration cleanup");
 
     expect(readLegacyMigrationReceipt(receipt.sourceKey, env)?.removedSource).toBe(true);
-    const { db } = openOpenClawStateDatabase({ env });
+    const { db } = openAforaStateDatabase({ env });
     expect(
       db
         .prepare(
@@ -102,12 +102,12 @@ describe("shared legacy migration receipts", () => {
 
   it("upserts resumed runs and sources without replacing a preserved receipt report", () => {
     const { env, receipt } = createFixture();
-    runOpenClawStateWriteTransaction(({ db }) => recordLegacyMigrationReceipt(db, receipt), {
+    runAforaStateWriteTransaction(({ db }) => recordLegacyMigrationReceipt(db, receipt), {
       env,
     });
     markLegacyMigrationSourceRemoved(receipt.sourceKey, env);
 
-    runOpenClawStateWriteTransaction(
+    runAforaStateWriteTransaction(
       ({ db }) => {
         recordLegacyMigrationRun(db, {
           runId: receipt.runId,
@@ -132,7 +132,7 @@ describe("shared legacy migration receipts", () => {
       { env },
     );
 
-    const { db } = openOpenClawStateDatabase({ env });
+    const { db } = openAforaStateDatabase({ env });
     expect(
       db
         .prepare(

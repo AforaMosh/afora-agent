@@ -1,9 +1,9 @@
-import { oversizedJsonResponse } from "openclaw/plugin-sdk/test-fixtures";
+import { oversizedJsonResponse } from "afora-agent/plugin-sdk/test-fixtures";
 // Moonshot tests cover media understanding provider plugin behavior.
 import {
   createRequestCaptureJsonFetch,
   installPinnedHostnameTestHooks,
-} from "openclaw/plugin-sdk/test-media-understanding";
+} from "afora-agent/plugin-sdk/test-media-understanding";
 import { describe, expect, it } from "vitest";
 import { moonshotMediaUnderstandingProvider } from "./media-understanding-provider.js";
 

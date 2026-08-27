@@ -1,6 +1,6 @@
 // Fetch timeout helpers wrap fetch calls with timeout and abort behavior.
-import { redactSensitiveUrlLikeString } from "@openclaw/net-policy/redact-sensitive-url";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { redactSensitiveUrlLikeString } from "@afora/net-policy/redact-sensitive-url";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { resolveSafeTimeoutDelayMs } from "./timer-delay.js";
 

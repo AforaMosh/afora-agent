@@ -2,8 +2,8 @@
 import { randomUUID } from "node:crypto";
 import { chmod, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
-import { runMatrixQaOpenClawCli, startMatrixQaOpenClawCli } from "./scenario-runtime-cli.js";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
+import { runMatrixQaAforaCli, startMatrixQaAforaCli } from "./scenario-runtime-cli.js";
 import {
   assertMatrixQaPrivatePathMode,
   buildMatrixQaEmptyMatrixCliConfig,
@@ -23,7 +23,7 @@ export async function createMatrixQaCliSelfVerificationRuntime(params: {
 }) {
   const outputDir = requireMatrixQaE2eeOutputDir(params.context);
   const rootDir = await mkdtemp(
-    path.join(resolvePreferredOpenClawTmpDir(), "openclaw-matrix-cli-qa-"),
+    path.join(resolvePreferredAforaTmpDir(), "afora-matrix-cli-qa-"),
   );
   const artifactDir = path.join(
     outputDir,
@@ -81,19 +81,19 @@ export async function createMatrixQaCliSelfVerificationRuntime(params: {
     ...requireMatrixQaCliRuntimeEnv(params.context),
     FORCE_COLOR: "0",
     NO_COLOR: "1",
-    OPENCLAW_CONFIG_PATH: configPath,
-    OPENCLAW_NO_AUTO_UPDATE: "1",
-    OPENCLAW_STATE_DIR: stateDir,
+    AFORA_CONFIG_PATH: configPath,
+    AFORA_NO_AUTO_UPDATE: "1",
+    AFORA_STATE_DIR: stateDir,
   };
   const run = async (args: string[], timeoutMs = params.context.timeoutMs, stdin?: string) =>
-    await runMatrixQaOpenClawCli({
+    await runMatrixQaAforaCli({
       args,
       env,
       stdin,
       timeoutMs,
     });
   const start = (args: string[], timeoutMs = params.context.timeoutMs) =>
-    startMatrixQaOpenClawCli({
+    startMatrixQaAforaCli({
       args,
       env,
       timeoutMs,
@@ -117,7 +117,7 @@ export async function createMatrixQaCliE2eeSetupRuntime(params: {
 }) {
   const outputDir = requireMatrixQaE2eeOutputDir(params.context);
   const rootDir = await mkdtemp(
-    path.join(resolvePreferredOpenClawTmpDir(), "openclaw-matrix-e2ee-setup-qa-"),
+    path.join(resolvePreferredAforaTmpDir(), "afora-matrix-e2ee-setup-qa-"),
   );
   const artifactDir = path.join(
     outputDir,
@@ -144,19 +144,19 @@ export async function createMatrixQaCliE2eeSetupRuntime(params: {
     ...requireMatrixQaCliRuntimeEnv(params.context),
     FORCE_COLOR: "0",
     NO_COLOR: "1",
-    OPENCLAW_CONFIG_PATH: configPath,
-    OPENCLAW_NO_AUTO_UPDATE: "1",
-    OPENCLAW_STATE_DIR: stateDir,
+    AFORA_CONFIG_PATH: configPath,
+    AFORA_NO_AUTO_UPDATE: "1",
+    AFORA_STATE_DIR: stateDir,
   };
   const run = async (args: string[], timeoutMs = params.context.timeoutMs, stdin?: string) =>
-    await runMatrixQaOpenClawCli({
+    await runMatrixQaAforaCli({
       args,
       env,
       stdin,
       timeoutMs,
     });
   const start = (args: string[], timeoutMs = params.context.timeoutMs) =>
-    startMatrixQaOpenClawCli({
+    startMatrixQaAforaCli({
       args,
       env,
       timeoutMs,
@@ -190,10 +190,10 @@ export async function createMatrixQaCliGatewayRuntime(params: {
     ...requireMatrixQaCliRuntimeEnv(params.context),
     FORCE_COLOR: "0",
     NO_COLOR: "1",
-    OPENCLAW_NO_AUTO_UPDATE: "1",
+    AFORA_NO_AUTO_UPDATE: "1",
   };
   const run = async (args: string[], timeoutMs = params.context.timeoutMs) =>
-    await runMatrixQaOpenClawCli({
+    await runMatrixQaAforaCli({
       args,
       env,
       timeoutMs,

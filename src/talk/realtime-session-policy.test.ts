@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   isRealtimeVoiceWakeNameRequired,
   resolveRealtimeVoiceBargeIn,
@@ -10,7 +10,7 @@ import {
 
 const cfg = {
   agents: { list: [{ id: "agent-1", identity: { name: "Molty" } }] },
-} as OpenClawConfig;
+} as AforaConfig;
 
 describe("realtime voice session policy", () => {
   it("defaults agent-proxy sessions to owner consults and adaptive wake names", () => {
@@ -30,7 +30,7 @@ describe("realtime voice session policy", () => {
       consultToolsAllow: undefined,
       consultPolicy: "always",
       wakeNamePolicy: "automatic",
-      wakeNames: ["openclaw", "molty"],
+      wakeNames: ["afora", "molty"],
       autoRespondToAudio: false,
     });
   });

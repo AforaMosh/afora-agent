@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 // Enforces release-train metadata on core gateway methods.
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import ts from "typescript";
 import { resolveRepoRoot } from "./lib/repo-root.mjs";
 

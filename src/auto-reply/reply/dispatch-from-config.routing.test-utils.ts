@@ -1,6 +1,6 @@
 // Imported by dispatch-from-config.test.ts to keep its mocked suite in one Vitest module graph.
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { normalizeSessionDeliveryState } from "../../utils/delivery-context.shared.js";
 import type { MsgContext } from "../templating.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
@@ -51,7 +51,7 @@ describe("dispatchReplyFromConfig", () => {
           rules: [{ action: "deny", match: { channel: "telegram" } }],
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const dispatcher = createDispatcher();
     const ctx = buildTestCtx({
       Provider: "exec-event",
@@ -293,7 +293,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       _opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => ({ text: "hi" }) satisfies ReplyPayload;
     await dispatchReplyFromConfig({ ctx, cfg, dispatcher, replyResolver });
 
@@ -318,7 +318,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       _opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => ({ text: "hi" }) satisfies ReplyPayload;
     await dispatchReplyFromConfig({ ctx, cfg, dispatcher, replyResolver });
 
@@ -348,7 +348,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       const onToolResult = requireToolResultHandler(opts?.onToolResult);
       await onToolResult({
@@ -378,7 +378,7 @@ describe("dispatchReplyFromConfig", () => {
     const cfg = {
       ...emptyConfig,
       agents: { defaults: { verboseDefault: "on" } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const dispatcher = createDispatcher();
     const ctx = buildTestCtx({
       Provider: "telegram",
@@ -388,7 +388,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       const onToolResult = requireToolResultHandler(opts?.onToolResult);
       await onToolResult({ text: "tool output" });
@@ -411,7 +411,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       await requireToolResultHandler(opts?.onToolResult)(payload);
       return undefined;
@@ -498,7 +498,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       await requireToolResultHandler(opts?.onToolResult)(payload);
       return undefined;
@@ -521,7 +521,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       await requireToolResultHandler(opts?.onToolResult)(payload);
       return undefined;
@@ -545,7 +545,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       await requireToolResultHandler(opts?.onToolResult)(payload);
       return undefined;
@@ -569,7 +569,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       await requireToolResultHandler(opts?.onToolResult)(payload);
       return undefined;
@@ -596,7 +596,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       const onToolResult = requireToolResultHandler(opts?.onToolResult);
       await onToolResult({ text: "tool output" });
@@ -627,7 +627,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       lateToolResult = requireToolResultHandler(opts?.onToolResult);
       return { text: "done" } satisfies ReplyPayload;
@@ -652,7 +652,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       const onToolResult = requireToolResultHandler(opts?.onToolResult);
       await onToolResult({ text: "🔧 exec: ls" });
@@ -693,7 +693,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       const onToolResult = requireToolResultHandler(opts?.onToolResult);
       await onToolResult({ text: "🔧 exec: ls" });
@@ -724,7 +724,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       const onToolResult = requireToolResultHandler(opts?.onToolResult);
       await onToolResult({ text: "🔧 exec: ls" });
@@ -747,7 +747,7 @@ describe("dispatchReplyFromConfig", () => {
           verboseDefault: "on",
         },
       },
-    } as const satisfies OpenClawConfig;
+    } as const satisfies AforaConfig;
     const dispatcher = createDispatcher();
     const ctx = buildTestCtx({
       Provider: "matrix",
@@ -759,7 +759,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       const onToolResult = requireToolResultHandler(opts?.onToolResult);
       await onToolResult({ text: "🔧 exec: pwd" });
@@ -785,7 +785,7 @@ describe("dispatchReplyFromConfig", () => {
           verboseDefault: "on",
         },
       },
-    } as const satisfies OpenClawConfig;
+    } as const satisfies AforaConfig;
     const dispatcher = createDispatcher();
     const ctx = buildTestCtx({
       Provider: "whatsapp",
@@ -798,7 +798,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       const onToolResult = requireToolResultHandler(opts?.onToolResult);
       await onToolResult({ text: "🔧 exec: date" });
@@ -835,7 +835,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       const onToolResult = requireToolResultHandler(opts?.onToolResult);
       sessionStoreMocks.currentEntry = {
@@ -877,7 +877,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       receivedOptions = opts;
       const onToolResult = requireToolResultHandler(opts?.onToolResult);
@@ -929,7 +929,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       await opts?.onToolStart?.({ name: "exec", phase: "start" });
       await opts?.onItemEvent?.({ itemId: "1", kind: "tool", progressText: "running exec" });
@@ -1013,7 +1013,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       await opts?.onToolStart?.({ name: "exec", phase: "start" });
       await opts?.onItemEvent?.({ itemId: "1", kind: "tool", progressText: "running exec" });
@@ -1063,7 +1063,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       await opts?.onCompactionStart?.();
       await opts?.onCompactionEnd?.();
@@ -1105,7 +1105,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       commentaryEnabled = opts?.commentaryProgressEnabled;
       await opts?.onItemEvent?.({
@@ -1190,7 +1190,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       await opts?.onItemEvent?.({
         itemId: "c1",
@@ -1232,7 +1232,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       await opts?.onItemEvent?.({ itemId: "c1", kind: "preamble", progressText: "drafting" });
       await opts?.onItemEvent?.({
@@ -1270,7 +1270,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       await opts?.onItemEvent?.({
         itemId: "commentary-stream",
@@ -1313,7 +1313,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       await opts?.onItemEvent?.({ itemId: "c1", kind: "preamble", progressText: "first block" });
       await opts?.onItemEvent?.({ itemId: "c2", kind: "preamble", progressText: "second block" });
@@ -1350,7 +1350,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       await opts?.onItemEvent?.({ itemId: "c1", kind: "preamble", progressText: "scratch that" });
       await opts?.onItemEvent?.({ itemId: "c1", kind: "preamble", progressText: "" });
@@ -1383,7 +1383,7 @@ describe("dispatchReplyFromConfig", () => {
     const replyResolver = async (
       _ctx: MsgContext,
       opts?: GetReplyOptions,
-      _cfg?: OpenClawConfig,
+      _cfg?: AforaConfig,
     ) => {
       commentaryEnabled = opts?.commentaryProgressEnabled;
       await opts?.onItemEvent?.({

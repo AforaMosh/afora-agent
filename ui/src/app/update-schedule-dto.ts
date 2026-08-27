@@ -17,7 +17,7 @@
 // canonical schemas; typebox stays out of this module because it sits in the
 // Control UI startup graph, which has a hard gzip budget
 // (scripts/check-control-ui-performance.mts).
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { isNonEmptyProtocolString } from "../../../packages/gateway-protocol/src/protocol-value-normalization.js";
 import type { GatewayHelloOk } from "../api/gateway.ts";
 import type { UpdateAvailable, UpdateScheduleState } from "../api/types.ts";

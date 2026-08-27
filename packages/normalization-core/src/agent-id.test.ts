@@ -2,7 +2,7 @@ import {
   isValidAgentId,
   normalizeAgentId,
   normalizeAgentIdStrict,
-} from "@openclaw/normalization-core/agent-id";
+} from "@afora/normalization-core/agent-id";
 import { describe, expect, it } from "vitest";
 
 describe("normalization-core/agent-id", () => {

@@ -1,4 +1,4 @@
-import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-coercion";
+import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
 // Hidden machine-facing gateway restart-handoff commands for external supervisors.
 import type { Command } from "commander";
 import {

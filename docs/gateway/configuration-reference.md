@@ -1,5 +1,5 @@
 ---
-summary: "Gateway config reference for core OpenClaw keys, defaults, and links to dedicated subsystem references"
+summary: "Gateway config reference for core Afora keys, defaults, and links to dedicated subsystem references"
 title: "Configuration reference"
 read_when:
   - You need exact field-level config semantics or defaults
@@ -7,13 +7,13 @@ read_when:
 doc-schema-version: 1
 ---
 
-Field-level reference for `~/.openclaw/openclaw.json`: keys, defaults, and links to deeper subsystem pages. For task-oriented setup guidance, see [Configuration](/gateway/configuration). Channel- and plugin-owned command catalogs and deep memory knobs live on their own pages, not here.
+Field-level reference for `~/.AforaMosh/afora-agent.json`: keys, defaults, and links to deeper subsystem pages. For task-oriented setup guidance, see [Configuration](/gateway/configuration). Channel- and plugin-owned command catalogs and deep memory knobs live on their own pages, not here.
 
-Config format is **JSON5** (comments + trailing commas allowed). All fields are optional; OpenClaw uses safe defaults when omitted.
+Config format is **JSON5** (comments + trailing commas allowed). All fields are optional; Afora uses safe defaults when omitted.
 
 Code truth beats this page:
 
-- `openclaw config schema` prints the live JSON Schema used for validation and Control UI, with bundled/plugin/channel metadata merged in.
+- `afora config schema` prints the live JSON Schema used for validation and Control UI, with bundled/plugin/channel metadata merged in.
 - Agents should call the `gateway` tool action `config.schema.lookup` for one exact path-scoped schema node before editing config.
 - `pnpm config:docs:check` / `pnpm config:docs:gen` validate this doc's baseline hash against the current schema surface.
 
@@ -44,11 +44,11 @@ See [Configuration - agents](/gateway/config-agents) for:
 - `session.*` (session lifecycle, compaction, pruning)
 - `messages.*` (message delivery, TTS, markdown rendering)
 - `talk.*` (Talk mode)
-  - `talk.consultThinkingLevel`: thinking level override for the full OpenClaw agent run behind Control UI Talk realtime consults
+  - `talk.consultThinkingLevel`: thinking level override for the full Afora agent run behind Control UI Talk realtime consults
   - `talk.consultFastMode`: one-shot fast-mode override for Control UI Talk realtime consults
   - `talk.speechLocale`: optional BCP 47 locale id for Talk speech recognition on Android, iOS, and macOS, and for iOS system-voice fallback
   - `talk.silenceTimeoutMs`: when unset, Talk keeps the platform default pause window before sending the transcript (`700 ms on macOS and Android, 900 ms on iOS`)
-  - `talk.realtime.consultRouting`: Gateway relay fallback for finalized realtime Talk transcripts that skip `openclaw_agent_consult`
+  - `talk.realtime.consultRouting`: Gateway relay fallback for finalized realtime Talk transcripts that skip `afora_agent_consult`
 
 ## Tools and custom providers
 
@@ -68,7 +68,7 @@ The `models` root also owns global model-catalog behavior.
     // Optional. Hosted catalog updates default on.
     catalogRefresh: {
       enabled: true,
-      // url: "https://catalog.example.com/openclaw/catalog.json",
+      // url: "https://catalog.example.com/afora/catalog.json",
     },
   },
 }
@@ -77,7 +77,7 @@ The `models` root also owns global model-catalog behavior.
 - `models.mode`: provider catalog behavior (`merge` or `replace`).
 - `models.providers`: custom provider map keyed by provider id.
 - `models.providers.*.localService`: optional on-demand process manager for
-  local model servers. OpenClaw probes the configured health endpoint, starts
+  local model servers. Afora probes the configured health endpoint, starts
   the absolute `command` when needed, waits for readiness, then sends the model
   request. See [Local model services](/gateway/local-model-services).
 - `models.catalogRefresh.enabled`: controls the hosted model catalog refresh
@@ -91,14 +91,14 @@ The `models` root also owns global model-catalog behavior.
   always wins.
 
 Pricing updates ship in the same hosted catalog file as model metadata. The
-retired `models.pricing` toggle is removed automatically by `openclaw doctor
---fix`; use `models.catalogRefresh.enabled: false` when OpenClaw must avoid all
+retired `models.pricing` toggle is removed automatically by `afora doctor
+--fix`; use `models.catalogRefresh.enabled: false` when Afora must avoid all
 hosted catalog traffic.
 
 ## MCP
 
-OpenClaw-managed MCP server definitions live under `mcp.servers` and are
-consumed by embedded OpenClaw and other runtime adapters. The `openclaw mcp list`,
+Afora-managed MCP server definitions live under `mcp.servers` and are
+consumed by embedded Afora and other runtime adapters. The `afora mcp list`,
 `show`, `set`, and `unset` commands manage this block without connecting to the
 target server during config edits.
 
@@ -145,16 +145,16 @@ target server during config edits.
 - `mcp.servers`: named stdio or remote MCP server definitions for runtimes that
   expose configured MCP tools.
   Remote entries use `transport: "streamable-http"` or `transport: "sse"`;
-  `type: "http"` is a CLI-native alias that `openclaw mcp set` and
-  `openclaw doctor --fix` normalize into the canonical `transport` field.
+  `type: "http"` is a CLI-native alias that `afora mcp set` and
+  `afora doctor --fix` normalize into the canonical `transport` field.
 - `mcp.servers.<name>.enabled`: set `false` to keep a saved server definition
-  while excluding it from embedded OpenClaw MCP discovery and tool projection.
+  while excluding it from embedded Afora MCP discovery and tool projection.
 - `mcp.servers.<name>.requestTimeoutMs`: per-server MCP request timeout in milliseconds.
 - `mcp.servers.<name>.connectionTimeoutMs`: per-server connection timeout in milliseconds.
 - `mcp.servers.<name>.supportsParallelToolCalls`: optional concurrency hint for
   adapters that can choose whether to issue parallel MCP tool calls.
 - `mcp.servers.<name>.auth`: set `"oauth"` for HTTP MCP servers that require
-  OAuth. Run `openclaw mcp login <name>` to store tokens under OpenClaw state.
+  OAuth. Run `afora mcp login <name>` to store tokens under Afora state.
 - `mcp.servers.<name>.oauth`: optional OAuth scope, redirect URL, and client
   metadata URL overrides.
 - `mcp.servers.<name>.oauth.identity`: credential ownership. Omit it or set
@@ -171,13 +171,13 @@ target server during config edits.
   `resources_read`, `prompts_list`, `prompts_get`), and those names use the
   same filter.
 - `mcp.servers.<name>.codex`: optional Codex app-server projection controls.
-  This block is OpenClaw metadata for Codex app-server threads only; it does not
+  This block is Afora metadata for Codex app-server threads only; it does not
   affect ACP sessions, generic Codex harness config, or other runtime adapters.
-  Non-empty `codex.agents` limits the server to the listed OpenClaw agent ids.
+  Non-empty `codex.agents` limits the server to the listed Afora agent ids.
   Empty, blank, or invalid scoped agent lists are rejected by config validation
   and omitted by the runtime projection path instead of becoming global.
   `codex.defaultToolsApprovalMode` emits Codex's native
-  `default_tools_approval_mode` for that server. OpenClaw strips the `codex`
+  `default_tools_approval_mode` for that server. Afora strips the `codex`
   block before passing native `mcp_servers` config to Codex. Omit the block to
   keep the server projected for every Codex app-server agent with Codex's
   default MCP approval behavior.
@@ -192,7 +192,7 @@ target server during config edits.
   prompts. Repeated tool-call failures pause the affected server briefly before
   another call is attempted.
 
-See [MCP](/cli/mcp#openclaw-as-an-mcp-client-registry) and
+See [MCP](/cli/mcp#afora-as-an-mcp-client-registry) and
 [CLI backends](/gateway/cli-backends#bundle-mcp-overlays) for runtime behavior.
 
 ## Skills
@@ -233,7 +233,7 @@ See [MCP](/cli/mcp#openclaw-as-an-mcp-client-registry) and
   through already-trusted symlink targets (default: false).
 - `install.preferBrew`: when true, prefer Homebrew installers when `brew` is
   available before falling back to other installer kinds.
-- `install.nodeManager`: node installer preference for `metadata.openclaw.install`
+- `install.nodeManager`: node installer preference for `metadata.afora.install`
   specs (`npm` | `pnpm` | `yarn` | `bun`).
 - `install.allowUploadedArchives`: allow trusted `operator.admin` Gateway
   clients to install private zip archives staged through `skills.upload.*`
@@ -270,9 +270,9 @@ See [MCP](/cli/mcp#openclaw-as-an-mcp-client-registry) and
 }
 ```
 
-- Loaded from package or bundle directories under `~/.openclaw/extensions` and `<workspace>/.openclaw/extensions`, plus files or directories listed in `plugins.load.paths`.
+- Loaded from package or bundle directories under `~/.afora/extensions` and `<workspace>/.afora/extensions`, plus files or directories listed in `plugins.load.paths`.
 - Put standalone plugin files in `plugins.load.paths`; auto-discovered extension roots ignore top-level `.js`, `.mjs`, and `.ts` files so helper scripts in those roots do not block startup.
-- Discovery accepts native OpenClaw plugins plus compatible Codex bundles and Claude bundles, including manifestless Claude default-layout bundles.
+- Discovery accepts native Afora plugins plus compatible Codex bundles and Claude bundles, including manifestless Claude default-layout bundles.
 - **Config changes require a gateway restart.**
 - `allow`: optional allowlist (only listed plugins load). `deny` wins.
 - `plugins.entries.<id>.apiKey`: plugin-level API key convenience field (when supported by the plugin).
@@ -286,8 +286,8 @@ See [MCP](/cli/mcp#openclaw-as-an-mcp-client-registry) and
 - `plugins.entries.<id>.llm.allowedCompletionModels`: optional allowlist applied to every plugin LLM completion, including host-resolved defaults and overrides. Use `"*"` only when you intentionally want to allow any model.
 - `plugins.entries.<id>.llm.allowAuthProfileOverride`: explicitly trust this plugin to select a non-default auth profile for isolated `api.runtime.llm.complete` execution. Direct `model@profile` calls remain governed by model-override policy.
 - `plugins.entries.<id>.llm.allowAgentIdOverride`: explicitly trust this plugin to run `api.runtime.llm.complete` against a non-default agent id.
-- `plugins.entries.<id>.config`: plugin-defined config object (validated by native OpenClaw plugin schema when available).
-- Channel plugin account/runtime settings live under `channels.<id>` and should be described by the owning plugin's manifest `channelConfigs` metadata, not by a central OpenClaw option registry.
+- `plugins.entries.<id>.config`: plugin-defined config object (validated by native Afora plugin schema when available).
+- Channel plugin account/runtime settings live under `channels.<id>` and should be described by the owning plugin's manifest `channelConfigs` metadata, not by a central Afora option registry.
 
 ### Codex harness plugin config
 
@@ -297,7 +297,7 @@ The bundled `codex` plugin owns native Codex app-server harness settings under
 surface and [Codex harness](/plugins/codex-harness) for the runtime model.
 
 `codexPlugins` applies only to sessions that select the native Codex harness.
-It does not enable Codex plugins for OpenClaw provider runs, ACP
+It does not enable Codex plugins for Afora provider runs, ACP
 conversation bindings, or any non-Codex harness.
 
 ```json5
@@ -335,7 +335,7 @@ conversation bindings, or any non-Codex harness.
 - `plugins.entries.codex.config.codexPlugins.allow_destructive_actions`:
   default destructive-action policy for configured plugin app elicitations.
   Use `true` to accept safe Codex approval schemas without prompting, `false`
-  to decline them, `"auto"` to route Codex-required approvals through OpenClaw
+  to decline them, `"auto"` to route Codex-required approvals through Afora
   plugin approvals, or `"ask"` to prompt for every plugin write/destructive
   action without durable approval. The `"ask"` mode clears durable Codex
   per-tool approval overrides for the affected app and selects the human
@@ -408,7 +408,7 @@ cannot be read, account-wide exposure fails closed.
   - `agents.entries.*.memory.search.*` for per-agent overrides
   - `memory.citations`
   - `plugins.entries.memory-core.config.dreaming`
-- Enabled Claude bundle plugins can also contribute embedded OpenClaw defaults from `settings.json`; OpenClaw applies those as sanitized agent settings, not as raw OpenClaw config patches.
+- Enabled Claude bundle plugins can also contribute embedded Afora defaults from `settings.json`; Afora applies those as sanitized agent settings, not as raw Afora config patches.
 - `plugins.slots.memory`: pick the active memory plugin id, or `"none"` to disable memory plugins.
 - `plugins.slots.contextEngine`: pick the active context engine plugin id; defaults to `"legacy"` unless you install and select another engine.
 
@@ -436,7 +436,7 @@ See [Plugins](/tools/plugin).
       allowLegacyAuth: true,
     },
     profiles: {
-      openclaw: { cdpPort: 18800 },
+      afora: { cdpPort: 18800 },
       work: {
         cdpPort: 18801,
         executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -474,7 +474,7 @@ See [Plugins](/tools/plugin).
   remain eligible for idle and cap cleanup after restart. Chrome MCP uses
   process-local target handles, so cold existing-session records wait for
   lifecycle cleanup rather than risking an idle sweep against unattributable
-  post-restart activity. OpenClaw verifies the profile and browser instance
+  post-restart activity. Afora verifies the profile and browser instance
   before closing. Chrome MCP auto-connect, missing `/json/version` browser
   identity, and unresolved native targets remain fully process-local, so they
   are not automatically closed after a restart. Older untracked tabs require
@@ -487,27 +487,27 @@ See [Plugins](/tools/plugin).
 - In strict mode, use the wildcard-aware `ssrfPolicy.allowedHostnames` for exact-host and pattern exceptions.
 - Remote profiles are attach-only (start/stop/reset disabled).
 - `profiles.*.cdpUrl` accepts `http://`, `https://`, `ws://`, and `wss://`.
-  Use HTTP(S) when you want OpenClaw to discover `/json/version`; use WS(S)
+  Use HTTP(S) when you want Afora to discover `/json/version`; use WS(S)
   when your provider gives you a direct DevTools WebSocket URL.
 - If an externally managed CDP service is reachable through loopback, set that
-  profile's `attachOnly: true`; otherwise OpenClaw treats the loopback port as a
+  profile's `attachOnly: true`; otherwise Afora treats the loopback port as a
   local managed browser profile and may report local port ownership errors.
 - `existing-session` profiles use Chrome MCP instead of CDP and can attach on
   the selected host or through a connected browser node.
-- `extension` profiles use the authenticated OpenClaw Chrome extension relay.
+- `extension` profiles use the authenticated Afora Chrome extension relay.
   The relay owns its loopback endpoint, so these profiles do not accept
   `cdpUrl`. See [Chrome extension](/tools/chrome-extension).
 - `existing-session` profiles can set `userDataDir` to target a specific
   Chromium-based browser profile such as Brave or Edge.
 - `existing-session` profiles can set `cdpUrl` when Chrome is already running
   behind a DevTools HTTP(S) discovery endpoint or direct WS(S) endpoint. In that
-  mode OpenClaw passes the endpoint to Chrome MCP instead of using auto-connect;
+  mode Afora passes the endpoint to Chrome MCP instead of using auto-connect;
   `userDataDir` is ignored for Chrome MCP launch arguments.
 - `existing-session` profiles keep the current Chrome MCP route limits:
   snapshot/ref-driven actions instead of CSS-selector targeting, one-file upload
   hooks, no dialog timeout overrides, no `wait --load networkidle`, and no
   `responsebody`, PDF export, download interception, or batch actions.
-- Local managed `openclaw` profiles auto-assign `cdpPort` and `cdpUrl`; set
+- Local managed `afora` profiles auto-assign `cdpPort` and `cdpUrl`; set
   `cdpUrl` explicitly only for remote CDP profiles or existing-session endpoint
   attach.
 - Local managed profiles can set `executablePath` to override the global
@@ -530,7 +530,7 @@ See [Plugins](/tools/plugin).
   ui: {
     seamColor: "#FF4500",
     assistant: {
-      name: "OpenClaw",
+      name: "Afora",
       avatar: "CB", // emoji, short text, image URL, or data URI
     },
     prefs: {
@@ -599,7 +599,7 @@ default.
   memory for that connection. Managed mode always creates its own ephemeral
   password.
 
-OpenClaw connects only through loopback. An explicit `port` always selects
+Afora connects only through loopback. An explicit `port` always selects
 attach mode, and an existing RFB listener on port `5900` takes precedence over
 managed mode. Managed mode requires `Xtigervnc`, `tigervncpasswd`, and
 `startxfce4`; on Debian/Ubuntu, install
@@ -616,7 +616,7 @@ On macOS, enable **System Settings → General → Sharing → Screen Sharing**.
 Modern Screen Sharing uses ARD account authentication, so the Gateway performs
 that handshake and gives the browser an already-authenticated no-auth RFB
 stream. The macOS account password is not returned in the observe result, URL,
-or logs. `openclaw doctor` can offer an explicitly confirmed `sudo launchctl`
+or logs. `afora doctor` can offer an explicitly confirmed `sudo launchctl`
 repair when Screen Sharing is off; enabling the macOS system service may expose
 it on other network interfaces according to macOS Sharing settings.
 
@@ -661,8 +661,8 @@ On the Gateway, explicitly arm the dangerous command and restart:
 ```
 
 The node reconnect advertises `desktop.stream` as a pairing-surface upgrade.
-Inspect `openclaw nodes pending`, then approve the new request with
-`openclaw nodes approve <requestId>`. The node appears in the Desktop picker
+Inspect `afora nodes pending`, then approve the new request with
+`afora nodes approve <requestId>`. The node appears in the Desktop picker
 only while it is connected and the effective approved command remains allowed.
 
 For VncAuth, `desktop.host.passwordFile` stays on the node and is delivered only
@@ -682,7 +682,7 @@ Gateway, and reconnect the node.
 If the node is missing from the picker, verify all four gates: the node-local
 desktop config, the loopback RFB listener, the approved pairing update, and the
 Gateway allow/deny policy. After changing any of them, restart the affected
-Gateway or node host and check `openclaw nodes pending` again.
+Gateway or node host and check `afora nodes pending` again.
 
 ---
 
@@ -698,7 +698,7 @@ Gateway or node host and check `openclaw nodes pending` again.
     auth: {
       mode: "token", // none | token | password | trusted-proxy
       token: "your-token",
-      // password: "your-password", // or OPENCLAW_GATEWAY_PASSWORD
+      // password: "your-password", // or AFORA_GATEWAY_PASSWORD
       // trustedProxy: { userHeader: "x-forwarded-user" }, // for mode=trusted-proxy; see /gateway/trusted-proxy-auth
       allowTailscale: true,
       identityScopes: {
@@ -716,7 +716,7 @@ Gateway or node host and check `openclaw nodes pending` again.
     },
     controlUi: {
       enabled: true,
-      basePath: "/openclaw",
+      basePath: "/afora",
       // root: "dist/control-ui",
       // github: { token: { source: "store", provider: "default", id: "CONTROL_UI_GITHUB" } },
       // toolTitles: false, // opt-in AI purpose titles for tool calls (spends utility-model tokens)
@@ -781,7 +781,7 @@ Gateway or node host and check `openclaw nodes pending` again.
 <Accordion title="Gateway field details">
 
 - `mode`: `local` (run gateway) or `remote` (connect to remote gateway). Gateway refuses to start unless `local`.
-- `port`: single multiplexed port for WS + HTTP. Precedence: `--port` > `OPENCLAW_GATEWAY_PORT` > `gateway.port` > `18789`.
+- `port`: single multiplexed port for WS + HTTP. Precedence: `--port` > `AFORA_GATEWAY_PORT` > `gateway.port` > `18789`.
 - `publicOrigin`: optional externally reachable HTTPS origin of the Gateway,
   without a path, query, or credentials. HTTP is accepted only for literal
   loopback hosts (`localhost`, `127.0.0.1`, or `[::1]`) during local development.
@@ -798,7 +798,7 @@ Gateway or node host and check `openclaw nodes pending` again.
 - `gateway.auth.mode: "none"`: explicit no-auth mode. Use only for trusted local loopback setups; this is intentionally not offered by onboarding prompts.
 - `gateway.auth.mode: "trusted-proxy"`: delegate browser/user auth to an identity-aware reverse proxy and trust identity headers from `gateway.trustedProxies` (see [Trusted Proxy Auth](/gateway/trusted-proxy-auth)). This mode expects a **non-loopback** proxy source by default; same-host loopback reverse proxies require explicit `gateway.auth.trustedProxy.allowLoopback = true`. Internal same-host callers can use `gateway.auth.password` as a local direct fallback; `gateway.auth.token` remains mutually exclusive with trusted-proxy mode.
 - `gateway.auth.allowTailscale`: when `true`, Tailscale Serve identity headers can satisfy Control UI/WebSocket auth (verified via `tailscale whois`). HTTP API endpoints do **not** use that Tailscale header auth; they follow the gateway's normal HTTP auth mode instead. This tokenless flow assumes the gateway host is trusted. Defaults to `true` when `tailscale.mode = "serve"`.
-- `gateway.auth.identityScopes`: maps a verified trusted-proxy user or Tailscale WhoIs login to connection-only operator scopes. Email keys match case-insensitively; other identities match exactly. For trusted-proxy Control UI connections, `x-openclaw-scopes` caps device enrollment or upgrade requests and the final device-plus-identity session scopes. Grants do not create or modify pairing records. Token, password, and no-auth connections have no verified identity and receive no grant.
+- `gateway.auth.identityScopes`: maps a verified trusted-proxy user or Tailscale WhoIs login to connection-only operator scopes. Email keys match case-insensitively; other identities match exactly. For trusted-proxy Control UI connections, `x-afora-scopes` caps device enrollment or upgrade requests and the final device-plus-identity session scopes. Grants do not create or modify pairing records. Token, password, and no-auth connections have no verified identity and receive no grant.
 - `gateway.auth.rateLimit`: optional failed-auth limiter. Applies per client IP and per auth scope (shared-secret and device-token are tracked independently). Blocked attempts return `429` + `Retry-After`.
   - On the async Tailscale Serve Control UI path, failed attempts for the same `{scope, clientIp}` are serialized before the failure write. Concurrent bad attempts from the same client can therefore trip the limiter on the second request instead of both racing through as plain mismatches.
   - `gateway.auth.rateLimit.exemptLoopback` defaults to `true`; set `false` when you intentionally want localhost traffic rate-limited too (for test setups or strict proxy deployments).
@@ -807,22 +807,22 @@ Gateway or node host and check `openclaw nodes pending` again.
   value, so repeated failures from one localhost origin do not automatically
   lock out a different origin.
 - `tailscale.mode`: `serve` (tailnet only, loopback bind) or `funnel` (public, requires auth).
-  OpenClaw holds the route as a foreground claim, so startup fails unless the
+  Afora holds the route as a foreground claim, so startup fails unless the
   route is active and the route is released when the Gateway stops. Named
   Tailscale Services are unsupported because the Tailscale CLI permits them
   only as persistent background routes.
 - `tailscale.preserveFunnel`: deprecated migration guard. When `true` and
-  `tailscale.mode = "serve"`, OpenClaw checks `tailscale funnel status` before
+  `tailscale.mode = "serve"`, Afora checks `tailscale funnel status` before
   re-applying Serve at startup. If that status cannot be inspected, startup
   fails before the ordinary Gateway listener opens. An external Funnel that
   still targets the ordinary Gateway port cannot provide request provenance.
-  OpenClaw leaves the
+  Afora leaves the
   external route unchanged and warns; plugin-authenticated webhooks retain
   their own authentication, while Gateway-authenticated routes reject that
   ingress. First configure `gateway.auth.password` (prefer a SecretRef) or
-  `OPENCLAW_GATEWAY_PASSWORD`, and set `gateway.auth.mode` to `password`. Then
-  run `openclaw config set gateway.tailscale.mode funnel`, followed by
-  `openclaw config unset gateway.tailscale.preserveFunnel`. Default `false`.
+  `AFORA_GATEWAY_PASSWORD`, and set `gateway.auth.mode` to `password`. Then
+  run `afora config set gateway.tailscale.mode funnel`, followed by
+  `afora config unset gateway.tailscale.preserveFunnel`. Default `false`.
 - `controlUi.allowedOrigins`: explicit browser-origin allowlist for Gateway WebSocket connects. Required for public non-loopback browser origins. Private same-origin LAN/Tailnet UI loads from loopback, RFC1918/link-local, `.local`, `.ts.net`, or Tailscale CGNAT hosts are accepted without enabling Host-header fallback.
 - `controlUi.github.token`: optional SecretRef-backed service credential for Control UI GitHub previews and project discovery. Prefer this explicit setting when the Gateway should own GitHub service access independently of its shared process environment. When omitted, the shipped `GH_TOKEN` then `GITHUB_TOKEN` process-environment fallback remains active. An explicitly configured but unavailable credential fails closed instead of using that fallback. SecretRef ownership does not create an OS-user security boundary.
 - `controlUi.toolTitles`: opt in to AI-generated purpose titles for tool calls in Control UI chat. Default: `false` (tool rendering stays fully deterministic with no background model calls). When enabled, the `chat.toolTitles` method labels complex calls through standard utility-model routing — the agent's `utilityModel` (an operator decision that may send bounded tool arguments to the chosen provider, like every utility task), or the session provider's declared small-model default (OpenAI → `gpt-5.6-luna`, Anthropic → `claude-haiku-4-5`) — and caches results in the per-agent state database so repeat views never re-bill. `utilityModel: \"\"` disables titles like every other utility task; titles never fall back to the primary model.
@@ -832,19 +832,19 @@ Gateway or node host and check `openclaw nodes pending` again.
   Catalog providers can also advertise terminal-based session creation. The method is available only when Labs `cliAgents.enabled` is on, the Gateway terminal is available, and the selected provider exposes the capability. Callers supply `cwd`; create a fresh worktree first with `worktrees.create` when needed, because terminal start does not provision one.
 
 - `terminal.enabled`: the admin-scoped operator terminal. Default: `true`; set `false` to opt out. The terminal starts a host PTY in the selected agent workspace, inherits the Gateway process environment, and is refused for agents with `sandbox.mode: "all"`. Disable it on deployments where admin operators should not get a host shell; changing it restarts the Gateway and updates the Control UI content security policy.
-- `terminal.shell`: optional shell executable. When unset, OpenClaw uses `$SHELL` on Unix and `%ComSpec%` on Windows.
+- `terminal.shell`: optional shell executable. When unset, Afora uses `$SHELL` on Unix and `%ComSpec%` on Windows.
 - `terminal.detachedSessionTimeoutSeconds`: how long a terminal session survives after its connection drops (page reload, laptop sleep), staying reattachable via `terminal.attach` with its recent output replayed. Default: `300`. Set `0` to kill sessions the moment their connection drops. Detached sessions keep running their commands, so shorten this on shared or exposed hosts.
 - `remote.transport`: `ssh` (default) or `direct` (ws/wss). For `direct`, `remote.url` must be `wss://` for public hosts; plaintext `ws://` is accepted only for loopback, LAN, link-local, `.local`, `.ts.net`, and Tailscale CGNAT hosts.
 - `remote.remotePort`: gateway port on the remote SSH host. Defaults to `18789`; use this when the local tunnel port differs from the remote gateway port.
 - `remote.tlsFingerprint`: expected SHA-256 certificate fingerprint for a remote `wss://` Gateway. The macOS app applies it to both operator/control and companion-node connections. Without an explicit value, macOS records a first-use pin only after normal system trust succeeds.
 - `remote.sshHostKeyPolicy`: macOS SSH tunnel host-key policy. `strict` is the default and requires an already trusted key. `openssh` is an explicit opt-in to the effective OpenSSH configuration for managed aliases; review matching user and system SSH settings before using it. The macOS app and `configure-remote` reset this policy to `strict` when changing targets unless explicitly opted in again.
 - `gateway.remote.token` / `.password` are remote-client credential fields. They do not configure gateway auth by themselves.
-- `gateway.push.apns.relay.baseUrl`: base HTTPS URL for the external APNs relay used after relay-backed iOS builds publish registrations to the gateway. Public App Store builds use the hosted OpenClaw relay. Custom relay URLs must match a deliberately separate iOS build/deployment path whose relay URL points at that relay.
+- `gateway.push.apns.relay.baseUrl`: base HTTPS URL for the external APNs relay used after relay-backed iOS builds publish registrations to the gateway. Public App Store builds use the hosted Afora relay. Custom relay URLs must match a deliberately separate iOS build/deployment path whose relay URL points at that relay.
 - `gateway.push.apns.relay.timeoutMs`: gateway-to-relay send timeout in milliseconds. Defaults to `10000`.
 - Relay-backed registrations are delegated to a specific gateway identity. The paired iOS app fetches `gateway.identity.get`, includes that identity in the relay registration, and forwards a registration-scoped send grant to the gateway. Another gateway cannot reuse that stored registration.
-- `OPENCLAW_APNS_RELAY_BASE_URL` / `OPENCLAW_APNS_RELAY_TIMEOUT_MS`: temporary env overrides for the relay config above.
-- `OPENCLAW_APNS_RELAY_ALLOW_HTTP=true`: development-only escape hatch for loopback HTTP relay URLs. Production relay URLs should stay on HTTPS.
-- `OPENCLAW_HANDSHAKE_TIMEOUT_MS`: optional environment override for the built-in pre-auth Gateway WebSocket handshake timeout.
+- `AFORA_APNS_RELAY_BASE_URL` / `AFORA_APNS_RELAY_TIMEOUT_MS`: temporary env overrides for the relay config above.
+- `AFORA_APNS_RELAY_ALLOW_HTTP=true`: development-only escape hatch for loopback HTTP relay URLs. Production relay URLs should stay on HTTPS.
+- `AFORA_HANDSHAKE_TIMEOUT_MS`: optional environment override for the built-in pre-auth Gateway WebSocket handshake timeout.
 - `channels.<provider>.healthMonitor.enabled`: per-channel opt-out for health-monitor restarts while keeping the global monitor enabled.
 - `channels.<provider>.accounts.<accountId>.healthMonitor.enabled`: per-account override for multi-account channels. When set, it takes precedence over the channel-level override.
 - Local gateway call paths can use `gateway.remote.*` as fallback only when `gateway.auth.*` is unset.
@@ -853,7 +853,7 @@ Gateway or node host and check `openclaw nodes pending` again.
 - `allowRealIpFallback`: when `true`, the gateway accepts `X-Real-IP` if `X-Forwarded-For` is missing. Default `false` for fail-closed behavior.
 - `gateway.nodes.pairing.autoApproveLocal`: silently approves pairing, role upgrades, and scope upgrades from trusted local connections (default: `true`). Scope upgrades additionally require the connection itself to prove local-grade credentials (auth mode `none`, or the shared token/password); Tailscale, trusted-proxy, and device-token connects keep their paired scopes as a durable cap. Set `false` to require explicit approval for every device; metadata-only reconnect refreshes remain automatic.
 - `gateway.nodes.pairing.autoApproveCidrs`: optional CIDR/IP allowlist for auto-approving first-time node device pairing with no requested scopes. It is disabled when unset. This does not auto-approve operator/browser/Control UI/WebChat pairing, and it does not auto-approve role, scope, metadata, or public-key upgrades.
-- `gateway.nodes.pairing.sshVerify`: SSH-verified auto-approval for first-time node device pairing (default: enabled). The gateway SSHes back to the pairing host (BatchMode, strict host keys) and approves only on an exact `openclaw node identity` device-key match. Same eligibility floor as `autoApproveCidrs`; probes are limited to private/CGNAT source addresses unless `cidrs` overrides them. Set `false` to disable, or `{ user, identity, timeoutMs, cidrs }` to tune. See [Node pairing](/gateway/pairing#ssh-verified-device-auto-approval-default).
+- `gateway.nodes.pairing.sshVerify`: SSH-verified auto-approval for first-time node device pairing (default: enabled). The gateway SSHes back to the pairing host (BatchMode, strict host keys) and approves only on an exact `afora node identity` device-key match. Same eligibility floor as `autoApproveCidrs`; probes are limited to private/CGNAT source addresses unless `cidrs` overrides them. Set `false` to disable, or `{ user, identity, timeoutMs, cidrs }` to tune. See [Node pairing](/gateway/pairing#ssh-verified-device-auto-approval-default).
 - `gateway.nodes.commands.allow` / `gateway.nodes.commands.deny`: global allow/deny shaping for declared node commands after pairing and platform allowlist evaluation. `commands.allow` is the one-time persistent enable for classified commands such as `camera.snap`, `camera.clip`, `desktop.stream`, `screen.record`, `health.summary`, `sms.search`, and `sms.send`; `commands.deny` removes a command even if a platform default or explicit allow would otherwise include it. Computer and mobile UI control instead rely on default-off node-local enablement plus pairing. iOS Health permission, Android SMS permission, and Gateway command authorization are independent. After a node changes its declared command list, reject and re-approve that device pairing so the gateway stores the updated command snapshot.
 - `gateway.tools.deny`: extra tool names blocked for HTTP `POST /tools/invoke` (extends default deny list).
 - `gateway.tools.allow`: remove tool names from the default HTTP deny list for
@@ -882,12 +882,12 @@ Gateway or node host and check `openclaw nodes pending` again.
 Run multiple gateways on one host with unique ports and state dirs:
 
 ```bash
-OPENCLAW_CONFIG_PATH=~/.openclaw/a.json \
-OPENCLAW_STATE_DIR=~/.openclaw-a \
-openclaw gateway --port 19001
+AFORA_CONFIG_PATH=~/.afora/a.json \
+AFORA_STATE_DIR=~/.afora-a \
+afora gateway --port 19001
 ```
 
-Convenience flags: `--dev` (uses `~/.openclaw-dev` + port `19001`), `--profile <name>` (uses `~/.openclaw-<name>`).
+Convenience flags: `--dev` (uses `~/.afora-dev` + port `19001`), `--profile <name>` (uses `~/.afora-<name>`).
 
 See [Multiple Gateways](/gateway/multiple-gateways).
 
@@ -899,9 +899,9 @@ See [Multiple Gateways](/gateway/multiple-gateways).
     tls: {
       enabled: false,
       autoGenerate: false,
-      certPath: "/etc/openclaw/tls/server.crt",
-      keyPath: "/etc/openclaw/tls/server.key",
-      caPath: "/etc/openclaw/tls/ca-bundle.crt",
+      certPath: "/etc/afora/tls/server.crt",
+      keyPath: "/etc/afora/tls/server.key",
+      caPath: "/etc/afora/tls/ca-bundle.crt",
     },
   },
 }
@@ -929,15 +929,15 @@ See [Multiple Gateways](/gateway/multiple-gateways).
   - `"off"`: ignore live edits; changes require an explicit restart.
   - `"hybrid"` (default): apply hot-safe changes in-process, then restart when a change requires it.
 
-The earlier `"restart"` and `"hot"` values are retired; [`openclaw doctor --fix`](/cli/doctor) maps both to `"hybrid"`.
+The earlier `"restart"` and `"hot"` values are retired; [`afora doctor --fix`](/cli/doctor) maps both to `"hybrid"`.
 
-Reload debounce and in-flight operation deferral are no longer configurable and run behind built-in defaults. [`openclaw doctor --fix`](/cli/doctor) removes the retired `debounceMs` and `deferralTimeoutMs` keys from older config files.
+Reload debounce and in-flight operation deferral are no longer configurable and run behind built-in defaults. [`afora doctor --fix`](/cli/doctor) removes the retired `debounceMs` and `deferralTimeoutMs` keys from older config files.
 
 ---
 
 ## Cloud worker environments
 
-Cloud workers are opt-in. If `cloudWorkers` is absent, or `profiles` is empty, OpenClaw accepts no new worker creation and does not advertise `sessions.dispatch` or a Cloud destination. The config schema and read-only `environments.list` and `environments.status` methods remain available. Durable records created earlier still reconcile and remain visible; the existing gateway/node projection is unchanged.
+Cloud workers are opt-in. If `cloudWorkers` is absent, or `profiles` is empty, Afora accepts no new worker creation and does not advertise `sessions.dispatch` or a Cloud destination. The config schema and read-only `environments.list` and `environments.status` methods remain available. Durable records created earlier still reconcile and remain visible; the existing gateway/node projection is unchanged.
 
 Every worker provider must return an SSH `hostKey` from trusted provisioning output as exactly `algorithm base64`, without a hostname or comment. Bootstrap writes that key to an isolated `known_hosts` file, uses `StrictHostKeyChecking=yes`, and fails before opening a connection when the provider omits it. There is no trust-on-first-use fallback.
 
@@ -947,7 +947,7 @@ Control traffic and workspace transfer use separate SSH connections. Both reuse 
 
 ### Crabbox profile
 
-The bundled `crabbox` provider provisions an SSH-capable lease through the local Crabbox CLI. The inner `settings.provider` selects the Crabbox backend; it is separate from the outer OpenClaw provider id.
+The bundled `crabbox` provider provisions an SSH-capable lease through the local Crabbox CLI. The inner `settings.provider` selects the Crabbox backend; it is separate from the outer Afora provider id.
 
 ```json5
 {
@@ -973,16 +973,16 @@ The bundled `crabbox` provider provisions an SSH-capable lease through the local
 - `settings.provider` (required): Crabbox backend passed through `--provider`. Use a backend whose inspect output includes an SSH endpoint; `aws` selects the direct AWS backend.
 - `settings.class` (required): Crabbox machine class passed to `--class`.
 - `settings.ttl` and `settings.idleTimeout` (required): positive Go duration strings passed to `--ttl` and `--idle-timeout` as provider-side failsafes.
-- `settings.binary`: optional absolute Crabbox executable path. Without it, OpenClaw checks the sibling Crabbox checkout, then executable entries on `PATH`, and finally invokes `crabbox` so a missing CLI remains a visible provider error.
+- `settings.binary`: optional absolute Crabbox executable path. Without it, Afora checks the sibling Crabbox checkout, then executable entries on `PATH`, and finally invokes `crabbox` so a missing CLI remains a visible provider error.
 
-Unknown settings are rejected. Crabbox credentials and backend-specific account configuration remain owned by Crabbox; do not place them in `settings`. OpenClaw invokes only the local CLI and makes no provider network calls from this plugin. Provisioning passes one deterministic canonical lease ID through `--lease-id`, keeps `--slug` as display metadata only, and always passes `--keep=true`; OpenClaw owns the external lifecycle and destroys the lease with `crabbox stop --id <canonical-id>`. After an ambiguous result, Gateway reconciliation repeats the same fixed-ID operation. Crabbox must return the exactly attested lease or fail closed; OpenClaw never falls back to slug adoption or replacement allocation.
+Unknown settings are rejected. Crabbox credentials and backend-specific account configuration remain owned by Crabbox; do not place them in `settings`. Afora invokes only the local CLI and makes no provider network calls from this plugin. Provisioning passes one deterministic canonical lease ID through `--lease-id`, keeps `--slug` as display metadata only, and always passes `--keep=true`; Afora owns the external lifecycle and destroys the lease with `crabbox stop --id <canonical-id>`. After an ambiguous result, Gateway reconciliation repeats the same fixed-ID operation. Crabbox must return the exactly attested lease or fail closed; Afora never falls back to slug adoption or replacement allocation.
 
-For coordinator-backed AWS, Crabbox's own `aws.sshCIDRs` should include the Gateway host's outbound IPv4 as a `/32`. Verify it with `crabbox config show --json` and `crabbox doctor --provider aws --json` before provisioning; do not place this provider-ingress setting in OpenClaw `settings`. See [Coordinator-backed Crabbox](/gateway/cloud-workers#coordinator-backed-crabbox).
+For coordinator-backed AWS, Crabbox's own `aws.sshCIDRs` should include the Gateway host's outbound IPv4 as a `/32`. Verify it with `crabbox config show --json` and `crabbox doctor --provider aws --json` before provisioning; do not place this provider-ingress setting in Afora `settings`. See [Coordinator-backed Crabbox](/gateway/cloud-workers#coordinator-backed-crabbox).
 
-Crabbox inspect may expose ordered `sshFallbackPorts` in addition to its primary `sshPort`. OpenClaw persists the advertised order across Gateway restarts. The shared pinned SSH transport rotates candidates only for replay-safe operations: idempotent probes, content-addressed transfers, receipt/lock-guarded artifact installation, convergent managed-worktree mirroring, and tunnel reconnects. Ambiguous unguarded stateful commands fail closed on their current candidate and are not replayed on another port. Network policies must allow at least one advertised candidate.
+Crabbox inspect may expose ordered `sshFallbackPorts` in addition to its primary `sshPort`. Afora persists the advertised order across Gateway restarts. The shared pinned SSH transport rotates candidates only for replay-safe operations: idempotent probes, content-addressed transfers, receipt/lock-guarded artifact installation, convergent managed-worktree mirroring, and tunnel reconnects. Ambiguous unguarded stateful commands fail closed on their current candidate and are not replayed on another port. Network policies must allow at least one advertised candidate.
 
 <Note>
-  OpenClaw resolves Crabbox's lease-local `sshKey` path through the provider-owned secret resolver and pins the authoritative `sshHostKey` returned by `crabbox inspect --json`. AWS admission also requires `providerMetadata.instanceProfileAttached`. Install Crabbox 0.41.1 or newer for the fixed-ID replay and closed inspection contracts.
+  Afora resolves Crabbox's lease-local `sshKey` path through the provider-owned secret resolver and pins the authoritative `sshHostKey` returned by `crabbox inspect --json`. AWS admission also requires `providerMetadata.instanceProfileAttached`. Install Crabbox 0.41.1 or newer for the fixed-ID replay and closed inspection contracts.
 </Note>
 
 ### Static SSH development profile
@@ -996,12 +996,12 @@ Crabbox inspect may expose ordered `sshFallbackPorts` in addition to its primary
         settings: {
           host: "worker.example.test",
           port: 22,
-          user: "openclaw",
+          user: "afora",
           hostKey: "ssh-ed25519 <base64-public-host-key>",
           keyRef: {
             source: "env",
             provider: "default",
-            id: "OPENCLAW_WORKER_SSH_KEY",
+            id: "AFORA_WORKER_SSH_KEY",
           },
         },
       },
@@ -1012,13 +1012,13 @@ Crabbox inspect may expose ordered `sshFallbackPorts` in addition to its primary
 
 - `profiles`: named worker profiles with non-empty, whitespace-trimmed ids. Each profile selects a provider registered by a plugin.
 - `provider`: non-empty worker provider id. The examples use the bundled `crabbox` provider and the QA Lab `static-ssh` provider.
-- `install`: worker installation method. `"bundle"` (default) transfers a content-hashed bundle of the gateway's installed build and supports released, development, and unreleased versions. `"npm"` is an opt-in optimization for an unmodified packaged release; it installs `openclaw@<exact gateway version>` from the public npm registry and never installs `latest`.
+- `install`: worker installation method. `"bundle"` (default) transfers a content-hashed bundle of the gateway's installed build and supports released, development, and unreleased versions. `"npm"` is an opt-in optimization for an unmodified packaged release; it installs `afora@<exact gateway version>` from the public npm registry and never installs `latest`.
 - Bundled provider plugins are selected automatically when configured, but explicit disables and `plugins.allow` still apply. Include the provider id (for example, `crabbox`) when an allowlist is configured. External provider plugins must also be installed and explicitly enabled.
 - `settings`: provider-owned bounded JSON. The selected plugin defines and validates its keys; use [SecretRef objects](/gateway/secrets) for secret-bearing values. The static SSH provider requires `host`, `user`, `hostKey`, and `keyRef`; `port` defaults to `22`. `hostKey` must be one OpenSSH public host-key line (`algorithm base64`) obtained from the known host or another trusted channel, with no options prefix.
 
 A supported Node runtime (22.22.3+, 24.15+, or 25.9+) with WAL-reset-safe SQLite must already be installed on the worker. The opt-in `"npm"` method also requires `npm` and outbound HTTPS access to the public npm registry. Networked toolchain setup is provider policy; bootstrap reports an actionable error instead of installing toolchains itself.
 
-The Gateway installs and verifies the selected OpenClaw build, launches the self-contained worker loop, proxies model inference through the Gateway, and reconciles the session workspace and transcript through the durable placement lifecycle.
+The Gateway installs and verifies the selected Afora build, launches the self-contained worker loop, proxies model inference through the Gateway, and reconciles the session workspace and transcript through the durable placement lifecycle.
 
 Each durable environment record retains its validated provider settings and resolved install method in a creation-time profile snapshot. Changing or removing a named profile affects new creates; existing records continue lifecycle reconciliation with that snapshot, provided the owning plugin remains available.
 
@@ -1026,8 +1026,8 @@ Profile changes require a Gateway restart. With the default `gateway.reload.mode
 
 <Warning>
   The `static-ssh` provider is a source-tree QA Lab development harness and is excluded from packaged distributions. A worker running on its shared host can read unrelated host data, so do not use this provider as a production isolation boundary.
-  Its operator must supply the expected `hostKey`; OpenClaw will not learn or accept a key from the first connection.
-  Destroying its lease only releases OpenClaw's logical record; it does not stop or clean the host.
+  Its operator must supply the expected `hostKey`; Afora will not learn or accept a key from the first connection.
+  Destroying its lease only releases Afora's logical record; it does not stop or clean the host.
 </Warning>
 
 ---
@@ -1045,7 +1045,7 @@ Profile changes require a Gateway restart. With the default `gateway.reload.mode
     allowedSessionKeyPrefixes: ["hook:", "hook:gmail:"],
     allowedAgentIds: ["hooks", "main"],
     presets: ["gmail"],
-    transformsDir: "~/.openclaw/hooks/transforms",
+    transformsDir: "~/.afora/hooks/transforms",
     mappings: [
       {
         match: { path: "gmail" },
@@ -1067,14 +1067,14 @@ Profile changes require a Gateway restart. With the default `gateway.reload.mode
 }
 ```
 
-Auth: `Authorization: Bearer <token>` or `x-openclaw-token: <token>`.
+Auth: `Authorization: Bearer <token>` or `x-afora-token: <token>`.
 Query-string hook tokens are rejected.
 
 Validation and safety notes:
 
 - `hooks.enabled=true` requires a non-empty `hooks.token`.
-- `hooks.token` should be distinct from active Gateway shared-secret auth (`gateway.auth.token` / `OPENCLAW_GATEWAY_TOKEN` or `gateway.auth.password` / `OPENCLAW_GATEWAY_PASSWORD`); startup logs a non-fatal security warning when it detects reuse.
-- `openclaw security audit` flags hook/Gateway auth reuse as a critical finding, including Gateway password auth supplied only at audit time (`--auth password --password <password>`). Run `openclaw doctor --fix` to rotate a persisted reused `hooks.token`, then update external hook senders to use the new hook token.
+- `hooks.token` should be distinct from active Gateway shared-secret auth (`gateway.auth.token` / `AFORA_GATEWAY_TOKEN` or `gateway.auth.password` / `AFORA_GATEWAY_PASSWORD`); startup logs a non-fatal security warning when it detects reuse.
+- `afora security audit` flags hook/Gateway auth reuse as a critical finding, including Gateway password auth supplied only at audit time (`--auth password --password <password>`). Run `afora doctor --fix` to rotate a persisted reused `hooks.token`, then update external hook senders to use the new hook token.
 - `hooks.path` cannot be `/`; use a dedicated subpath such as `/hooks`.
 - If `hooks.allowRequestSessionKey=true`, constrain `hooks.allowedSessionKeyPrefixes` (for example `["hook:"]`).
 - If a mapping or preset uses a templated `sessionKey`, set `hooks.allowedSessionKeyPrefixes` and `hooks.allowRequestSessionKey=true`. Static mapping keys do not require that opt-in.
@@ -1101,7 +1101,7 @@ Validation and safety notes:
 - Templates like `{{messages[0].subject}}` read from the payload.
 - `transform` can point to a JS/TS module returning a hook action.
   - `transform.module` must be a relative path and stays within `hooks.transformsDir` (absolute paths and traversal are rejected).
-  - Keep `hooks.transformsDir` under `~/.openclaw/hooks/transforms`; workspace skill directories are rejected. If `openclaw doctor` reports this path as invalid, move the transform module into the hooks transforms directory or remove `hooks.transformsDir`.
+  - Keep `hooks.transformsDir` under `~/.afora/hooks/transforms`; workspace skill directories are rejected. If `afora doctor` reports this path as invalid, move the transform module into the hooks transforms directory or remove `hooks.transformsDir`.
 - `agentId` routes to a specific agent; unknown IDs fall back to the default agent.
 - `allowedAgentIds`: restricts effective agent routing, including the default-agent path when `agentId` is omitted (`*` or omitted = allow all, `[]` = deny all).
 - `defaultSessionKey`: optional fixed session key for hook agent runs without explicit `sessionKey`.
@@ -1127,7 +1127,7 @@ Validation and safety notes:
 {
   hooks: {
     gmail: {
-      account: "openclaw@gmail.com",
+      account: "afora@gmail.com",
       topic: "projects/<project-id>/topics/gog-gmail-watch",
       subscription: "gog-gmail-watch-push",
       pushToken: "shared-push-token",
@@ -1144,7 +1144,7 @@ Validation and safety notes:
 }
 ```
 
-- Gateway auto-starts `gog gmail watch serve` on boot when configured. Set `OPENCLAW_SKIP_GMAIL_WATCHER=1` to disable.
+- Gateway auto-starts `gog gmail watch serve` on boot when configured. Set `AFORA_SKIP_GMAIL_WATCHER=1` to disable.
 - Don't run a separate `gog gmail watch serve` alongside the Gateway.
 
 ---
@@ -1158,9 +1158,9 @@ Validation and safety notes:
       canvas: {
         config: {
           host: {
-            root: "~/.openclaw/workspace/canvas",
+            root: "~/.afora/workspace/canvas",
             liveReload: true,
-            // enabled: false, // or OPENCLAW_SKIP_CANVAS_HOST=1
+            // enabled: false, // or AFORA_SKIP_CANVAS_HOST=1
           },
         },
       },
@@ -1170,15 +1170,15 @@ Validation and safety notes:
 ```
 
 - Serves agent-editable HTML/CSS/JS and A2UI over HTTP under the Gateway port:
-  - `http://<gateway-host>:<gateway.port>/__openclaw__/canvas/`
-  - `http://<gateway-host>:<gateway.port>/__openclaw__/a2ui/`
+  - `http://<gateway-host>:<gateway.port>/__afora__/canvas/`
+  - `http://<gateway-host>:<gateway.port>/__afora__/a2ui/`
 - Local-only: keep `gateway.bind: "loopback"` (default).
 - Non-loopback binds: canvas routes require Gateway auth (token/password/trusted-proxy), same as other Gateway HTTP surfaces.
 - Node WebViews typically don't send auth headers; after a node is paired and connected, the Gateway advertises node-scoped capability URLs for canvas/A2UI access.
 - Capability URLs are bound to the active node WS session and expire quickly. IP-based fallback is not used.
 - Injects live-reload client into served HTML.
 - Auto-creates starter `index.html` when empty.
-- Also serves A2UI at `/__openclaw__/a2ui/`.
+- Also serves A2UI at `/__afora__/a2ui/`.
 - Changes require a gateway restart.
 - Disable live reload for large directories or `EMFILE` errors.
 
@@ -1202,22 +1202,22 @@ Validation and safety notes:
 - `full`: include `cliPath` + `sshPort`; LAN multicast advertising still requires the bundled `bonjour` plugin to be enabled.
 - `off`: suppress LAN multicast advertising without changing plugin enablement.
 - The bundled `bonjour` plugin auto-starts on macOS hosts and is opt-in on Linux, Windows, and containerized Gateway deployments.
-- Hostname defaults to the system hostname when it is a valid DNS label, falling back to `openclaw`. Override with `OPENCLAW_MDNS_HOSTNAME`.
-- `OPENCLAW_DISABLE_BONJOUR=1` disables mDNS advertising outright, overriding `discovery.mdns.mode`.
+- Hostname defaults to the system hostname when it is a valid DNS label, falling back to `afora`. Override with `AFORA_MDNS_HOSTNAME`.
+- `AFORA_DISABLE_BONJOUR=1` disables mDNS advertising outright, overriding `discovery.mdns.mode`.
 
 ### Wide-area (DNS-SD)
 
 ```json5
 {
   discovery: {
-    wideArea: { domain: "openclaw.internal" },
+    wideArea: { domain: "afora.internal" },
   },
 }
 ```
 
-Setting `discovery.wideArea.domain` enables wide-area discovery and writes a unicast DNS-SD zone under `~/.openclaw/dns/`. For cross-network discovery, pair with a DNS server (CoreDNS recommended) + Tailscale split DNS.
+Setting `discovery.wideArea.domain` enables wide-area discovery and writes a unicast DNS-SD zone under `~/.afora/dns/`. For cross-network discovery, pair with a DNS server (CoreDNS recommended) + Tailscale split DNS.
 
-Setup: `openclaw dns setup --apply`.
+Setup: `afora dns setup --apply`.
 
 ---
 
@@ -1241,7 +1241,7 @@ Setup: `openclaw dns setup --apply`.
 ```
 
 - Inline env vars are only applied if the process env is missing the key.
-- `.env` files: CWD `.env` + `~/.openclaw/.env` (neither overrides existing vars).
+- `.env` files: CWD `.env` + `~/.afora/.env` (neither overrides existing vars).
 - `shellEnv`: imports missing expected keys from your login shell profile.
 - See [Environment](/help/environment) for full precedence.
 
@@ -1252,7 +1252,7 @@ Reference env vars in any config string with `${VAR_NAME}`:
 ```json5
 {
   gateway: {
-    auth: { token: "${OPENCLAW_GATEWAY_TOKEN}" },
+    auth: { token: "${AFORA_GATEWAY_TOKEN}" },
   },
 }
 ```
@@ -1307,7 +1307,7 @@ Validation:
 ### Supported credential surface
 
 - Canonical matrix: [SecretRef Credential Surface](/reference/secretref-credential-surface)
-- `secrets apply` targets supported `openclaw.json` credential paths.
+- `secrets apply` targets supported `afora.json` credential paths.
 - `auth-profiles.json` refs are included in runtime resolution and audit coverage.
 
 ### Secret providers config
@@ -1319,13 +1319,13 @@ Validation:
       default: { source: "env" }, // optional explicit env provider
       filemain: {
         source: "file",
-        path: "~/.openclaw/secrets.json",
+        path: "~/.afora/secrets.json",
         mode: "json",
         timeoutMs: 5000,
       },
       vault: {
         source: "exec",
-        command: "/usr/local/bin/openclaw-vault-resolver",
+        command: "/usr/local/bin/afora-vault-resolver",
         passEnv: ["PATH", "VAULT_ADDR"],
       },
     },
@@ -1341,7 +1341,7 @@ Validation:
 Notes:
 
 - `file` provider supports `mode: "json"` and `mode: "singleValue"` (`id` must be `"value"` in singleValue mode).
-- File and exec provider paths fail closed when Windows ACL verification is unavailable. Use paths whose ACLs OpenClaw can verify; there is no provider-level bypass.
+- File and exec provider paths fail closed when Windows ACL verification is unavailable. Use paths whose ACLs Afora can verify; there is no provider-level bypass.
 - `exec` provider requires an absolute `command` path and uses protocol payloads on stdin/stdout.
 - Symlink command paths are rejected. Configure the resolved absolute binary path instead.
 - If `trustedDirs` is configured, the command path must be inside an approved directory.
@@ -1371,10 +1371,10 @@ Notes:
 
 - Per-agent profiles are stored at `<agentDir>/auth-profiles.json`.
 - `auth-profiles.json` supports value-level refs (`keyRef` for `api_key`, `tokenRef` for `token`) for static credential modes.
-- Legacy flat `auth-profiles.json` maps such as `{ "provider": { "apiKey": "..." } }` are not a runtime format; `openclaw doctor --fix` rewrites them to canonical `provider:default` API-key profiles with a `.legacy-flat.*.bak` backup.
+- Legacy flat `auth-profiles.json` maps such as `{ "provider": { "apiKey": "..." } }` are not a runtime format; `afora doctor --fix` rewrites them to canonical `provider:default` API-key profiles with a `.legacy-flat.*.bak` backup.
 - OAuth-mode profiles (`auth.profiles.<id>.mode = "oauth"`) do not support SecretRef-backed auth-profile credentials.
 - Static runtime credentials come from in-memory resolved snapshots; legacy static `auth.json` entries are scrubbed when discovered.
-- Legacy OAuth imports from `~/.openclaw/credentials/oauth.json`.
+- Legacy OAuth imports from `~/.afora/credentials/oauth.json`.
 - See [OAuth](/concepts/oauth).
 - Secrets runtime behavior and `audit/configure/apply` tooling: [Secrets Management](/gateway/secrets).
 
@@ -1402,7 +1402,7 @@ error text. Message rows do not store raw platform account, conversation,
 message, and target ids. Run/tool session keys remain available for correlation
 and can themselves contain platform account or peer ids. Records
 expire after 30 days and the ledger is capped at 100,000 rows. Query them with
-[`openclaw audit`](/cli/audit) or the
+[`afora audit`](/cli/audit) or the
 [`audit.activity.list`](/gateway/protocol#audit-ledger-rpc) Gateway RPC. See
 [Audit history](/gateway/audit) for the full data model, privacy semantics,
 and coverage limits.
@@ -1415,7 +1415,7 @@ and coverage limits.
 - `executionIdentity`: retain bounded attribution context for exact execution
   inspection (default: `false`). This privacy-sensitive metadata is disabled
   on fresh installs and upgrades. Collection requires `enabled: true`; use
-  `openclaw config set logging.audit.executionIdentity true`, then restart the
+  `afora config set logging.audit.executionIdentity true`, then restart the
   Gateway. There is no environment-variable alias.
 - `messages`: message metadata scope (default: `"off"`). `"direct"` records
   known direct conversations only. `"all"` also records group, channel, and
@@ -1426,7 +1426,7 @@ and coverage limits.
 
 A root-level `audit` block is retired; the canonical path is `logging.audit`.
 The root config object is strict, so an old top-level `audit` block is rejected.
-Run [`openclaw doctor --fix`](/cli/doctor) to move it to `logging.audit`.
+Run [`afora doctor --fix`](/cli/doctor) to move it to `logging.audit`.
 
 The running Gateway captures `logging.audit.enabled`,
 `logging.audit.executionIdentity`, and `logging.audit.messages` at startup;
@@ -1445,7 +1445,7 @@ writer is best-effort, not a lossless compliance archive.
 {
   logging: {
     level: "info",
-    file: "/tmp/openclaw/openclaw.log",
+    file: "/tmp/AforaMosh/afora-agent.log",
     consoleLevel: "info",
     consoleStyle: "pretty", // pretty | json
     redactPatterns: ["\\bTOKEN\\b\\s*[=:]\\s*([\"']?)([^\\s\"']+)\\1"],
@@ -1453,13 +1453,13 @@ writer is best-effort, not a lossless compliance archive.
 }
 ```
 
-- Default log file: `/tmp/openclaw/openclaw-YYYY-MM-DD.log`; named profiles use `/tmp/openclaw/openclaw-<profile>-YYYY-MM-DD.log`.
+- Default log file: `/tmp/AforaMosh/afora-agent-YYYY-MM-DD.log`; named profiles use `/tmp/AforaMosh/afora-agent-<profile>-YYYY-MM-DD.log`.
 - Set `logging.file` for a stable path.
 - `consoleLevel` bumps to `debug` when `--verbose`.
-- `consoleStyle`: `"pretty"` or `"json"`. The earlier `"compact"` value is retired; [`openclaw doctor --fix`](/cli/doctor) maps it to `"pretty"`.
-- `maxFileBytes`: maximum active log file size in bytes before rotation (positive integer; default: `104857600` = 100 MB). OpenClaw keeps up to five numbered archives beside the active file.
+- `consoleStyle`: `"pretty"` or `"json"`. The earlier `"compact"` value is retired; [`afora doctor --fix`](/cli/doctor) maps it to `"pretty"`.
+- `maxFileBytes`: maximum active log file size in bytes before rotation (positive integer; default: `104857600` = 100 MB). Afora keeps up to five numbered archives beside the active file.
 - `redactPatterns`: regexes for best-effort masking of console output, file logs, OTLP log records, and persisted session transcript text. Setting this **replaces** the built-in default patterns for log and transcript output, so include the defaults you still want; omitting them also turns off form-body and structured auth-header redaction. Tool payload redaction is separate and always merges your patterns with the defaults.
-- Redaction is always on and is no longer configurable. [`openclaw doctor --fix`](/cli/doctor) removes the retired switch from older config files; the runtime always applies `tools`-mode redaction to logs and transcripts. UI, tool, and diagnostic safety surfaces redact secrets independently of this policy.
+- Redaction is always on and is no longer configurable. [`afora doctor --fix`](/cli/doctor) removes the retired switch from older config files; the runtime always applies `tools`-mode redaction to logs and transcripts. UI, tool, and diagnostic safety surfaces redact secrets independently of this policy.
 
 ---
 
@@ -1479,7 +1479,7 @@ writer is best-effort, not a lossless compliance archive.
       logsEndpoint: "https://logs.example.com/v1/logs",
       protocol: "http/protobuf",
       headers: { "x-tenant-id": "my-org" },
-      serviceName: "openclaw-gateway",
+      serviceName: "afora-gateway",
       traces: true,
       metrics: true,
       logs: false,
@@ -1501,7 +1501,7 @@ writer is best-effort, not a lossless compliance archive.
 - `otel.enabled`: enables the OpenTelemetry export pipeline (default: `false`). For the full configuration, signal catalog, and privacy model, see [OpenTelemetry export](/gateway/opentelemetry).
 - `otel.endpoint`: collector URL for OTel export.
 - `otel.tracesEndpoint` / `otel.metricsEndpoint` / `otel.logsEndpoint`: optional signal-specific OTLP endpoints. When set, they override `otel.endpoint` for that signal only.
-- `otel.protocol`: `"http/protobuf"` (default). gRPC export is retired; run [`openclaw doctor --fix`](/cli/doctor) to repair a persisted legacy value or get source-specific manual-edit guidance.
+- `otel.protocol`: `"http/protobuf"` (default). gRPC export is retired; run [`afora doctor --fix`](/cli/doctor) to repair a persisted legacy value or get source-specific manual-edit guidance.
 - `otel.headers`: extra HTTP request headers sent with OTel export requests.
 - `otel.serviceName`: service name for resource attributes.
 - `otel.traces` / `otel.metrics` / `otel.logs`: enable trace, metrics, or log export.
@@ -1509,8 +1509,8 @@ writer is best-effort, not a lossless compliance archive.
 - `otel.sampleRate`: trace sampling rate `0`-`1`.
 - `otel.flushIntervalMs`: periodic telemetry flush interval in ms.
 - `otel.captureContent`: opt-in content capture for OTEL span attributes. Defaults to off. `true` captures non-system visible message, tool, and tool-definition content plus OTLP log bodies; provider-internal thinking payloads remain excluded.
-- `OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental`: environment toggle for latest experimental GenAI inference span shape, including `{gen_ai.operation.name} {gen_ai.request.model}` span names, `CLIENT` span kind, and `gen_ai.provider.name` instead of legacy `gen_ai.system`. By default spans keep `openclaw.model.call` and `gen_ai.system` for compatibility; GenAI metrics use bounded semantic attributes.
-- `OPENCLAW_OTEL_PRELOADED=1`: environment toggle for hosts that already registered a global OpenTelemetry SDK. OpenClaw then skips plugin-owned SDK startup/shutdown while keeping diagnostic listeners active.
+- `OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental`: environment toggle for latest experimental GenAI inference span shape, including `{gen_ai.operation.name} {gen_ai.request.model}` span names, `CLIENT` span kind, and `gen_ai.provider.name` instead of legacy `gen_ai.system`. By default spans keep `afora.model.call` and `gen_ai.system` for compatibility; GenAI metrics use bounded semantic attributes.
+- `AFORA_OTEL_PRELOADED=1`: environment toggle for hosts that already registered a global OpenTelemetry SDK. Afora then skips plugin-owned SDK startup/shutdown while keeping diagnostic listeners active.
 - `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`, and `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT`: signal-specific endpoint env vars used when the matching config key is unset.
 - `OTEL_EXPORTER_OTLP_TRACES_PROTOCOL`, `OTEL_EXPORTER_OTLP_METRICS_PROTOCOL`, and `OTEL_EXPORTER_OTLP_LOGS_PROTOCOL`: signal-specific protocol fallbacks used when `otel.protocol` is unset. Each overrides `OTEL_EXPORTER_OTLP_PROTOCOL` for its signal.
 - `OTEL_EXPORTER_OTLP_PROTOCOL`: shared protocol fallback used when neither `otel.protocol` nor the matching signal-specific variable is set. Only `http/protobuf` is supported. Protocol validation is isolated per signal, so an unsupported resolved value disables that signal's OTLP exporter without blocking supported sibling signals. Doctor does not rewrite environment variables.
@@ -1605,7 +1605,7 @@ See `agents.entries` identity fields under [Agent defaults](/gateway/config-agen
 
 ## Bridge (legacy, removed)
 
-Current builds no longer include the TCP bridge. Nodes connect over the Gateway WebSocket. `bridge.*` keys are no longer part of the config schema (validation fails until removed; `openclaw doctor --fix` can strip unknown keys).
+Current builds no longer include the TCP bridge. Nodes connect over the Gateway WebSocket. `bridge.*` keys are no longer part of the config schema (validation fails until removed; `afora doctor --fix` can strip unknown keys).
 
 <Accordion title="Legacy bridge config (historical reference)">
 
@@ -1656,7 +1656,7 @@ The `cron` block is strict; `cron.enabled`, `cron.triggers`, `cron.webhookToken`
 `cron.webhookSsrfPolicy`, `cron.sessionRetention`, and `cron.failureAlert` are the only accepted keys. The
 retired `cron.webhook` fallback URL is gone: runtime delivery uses per-job
 `delivery.mode = "webhook"` plus `delivery.to`, or `delivery.completionDestination`
-when preserving announce delivery. `openclaw doctor --fix` strips a leftover
+when preserving announce delivery. `afora doctor --fix` strips a leftover
 `cron.webhook` from existing config files.
 
 ### `cron.failureAlert`
@@ -1680,7 +1680,7 @@ when preserving announce delivery. `openclaw doctor --fix` strips a leftover
 
 `cron.failureAlert` owns both the alert threshold and the default failure
 destination for every job. The retired `cron.failureDestination` block is merged
-into it by [`openclaw doctor --fix`](/cli/doctor).
+into it by [`afora doctor --fix`](/cli/doctor).
 
 - `enabled`: enable failure alerts for automation jobs (default: `false`).
 - `after`: consecutive failures before an alert fires (positive integer, min: `1`; default: `2`).
@@ -1736,7 +1736,7 @@ deprecated. New configuration should use the `Attachment*` variables.
 Split config into multiple files:
 
 ```json5
-// ~/.openclaw/openclaw.json
+// ~/.AforaMosh/afora-agent.json
 {
   gateway: { port: 18789 },
   agents: { $include: "./agents.json5" },
@@ -1752,10 +1752,10 @@ Split config into multiple files:
 - Array of files: deep-merged in order (later overrides earlier).
 - Sibling keys: merged after includes (override included values).
 - Nested includes: up to 10 levels deep.
-- Paths: resolved relative to the including file, but must stay inside the top-level config directory (`dirname` of `openclaw.json`). Absolute/`../` forms are allowed only when they still resolve inside that boundary. Set `OPENCLAW_INCLUDE_ROOTS` (absolute paths) to allow additional roots outside the config directory.
+- Paths: resolved relative to the including file, but must stay inside the top-level config directory (`dirname` of `afora.json`). Absolute/`../` forms are allowed only when they still resolve inside that boundary. Set `AFORA_INCLUDE_ROOTS` (absolute paths) to allow additional roots outside the config directory.
 - Limits: paths must not contain null bytes and must be strictly shorter than 4096 characters before and after resolution; each included file is capped at 2 MB.
-- OpenClaw-owned writes that change only one top-level section backed by a single-file include write through to that included file. For example, `plugins install` updates `plugins: { $include: "./plugins.json5" }` in `plugins.json5` and leaves `openclaw.json` intact.
-- Root includes, include arrays, and includes with sibling overrides are read-only for OpenClaw-owned writes; those writes fail closed instead of flattening the config.
+- Afora-owned writes that change only one top-level section backed by a single-file include write through to that included file. For example, `plugins install` updates `plugins: { $include: "./plugins.json5" }` in `plugins.json5` and leaves `afora.json` intact.
+- Root includes, include arrays, and includes with sibling overrides are read-only for Afora-owned writes; those writes fail closed instead of flattening the config.
 - Errors: clear messages for missing files, parse errors, circular includes, invalid path format, and excessive length.
 
 ---

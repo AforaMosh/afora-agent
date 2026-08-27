@@ -1,18 +1,18 @@
-// Featherless plugin entrypoint registers its OpenClaw integration.
+// Featherless plugin entrypoint registers its Afora integration.
 import type {
   ProviderResolveDynamicModelContext,
   ProviderRuntimeModel,
-} from "openclaw/plugin-sdk/plugin-entry";
-import { readConfiguredProviderCatalogEntries } from "openclaw/plugin-sdk/provider-catalog-shared";
-import { defineSingleProviderPluginEntry } from "openclaw/plugin-sdk/provider-entry";
+} from "afora-agent/plugin-sdk/plugin-entry";
+import { readConfiguredProviderCatalogEntries } from "afora-agent/plugin-sdk/provider-catalog-shared";
+import { defineSingleProviderPluginEntry } from "afora-agent/plugin-sdk/provider-entry";
 import {
   buildProviderReplayFamilyHooks,
   cloneFirstTemplateModel,
   normalizeModelCompat,
-} from "openclaw/plugin-sdk/provider-model-shared";
-import { buildProviderToolCompatFamilyHooks } from "openclaw/plugin-sdk/provider-tools";
+} from "afora-agent/plugin-sdk/provider-model-shared";
+import { buildProviderToolCompatFamilyHooks } from "afora-agent/plugin-sdk/provider-tools";
 import { applyFeatherlessConfig, FEATHERLESS_DEFAULT_MODEL_REF } from "./onboard.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 import {
   FEATHERLESS_BASE_URL,
   FEATHERLESS_DEFAULT_MODEL_ID,
@@ -94,7 +94,7 @@ export default defineSingleProviderPluginEntry({
         endpointPath: "models?capabilities=chat",
         buildRequestHeaders: ({ apiKey }) => ({
           Accept: "application/json",
-          "User-Agent": "openclaw",
+          "User-Agent": "afora",
           ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
         }),
       },

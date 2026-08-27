@@ -1,6 +1,6 @@
 // Client-side trigger script loading for cron create/edit commands.
 import { createReadStream } from "node:fs";
-import { readByteStreamWithLimit } from "@openclaw/media-core/read-byte-stream-with-limit";
+import { readByteStreamWithLimit } from "@afora/media-core/read-byte-stream-with-limit";
 import { CRON_JOB_SCRATCH_MAX_BYTES } from "../../cron/scratch-contract.js";
 
 const MAX_CRON_TRIGGER_SCRIPT_BYTES = 65_536;

@@ -3,13 +3,13 @@
  * Collects provider/profile ids from configured models, runtimes, auth order,
  * and agent defaults to limit CLI credential probing.
  */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import {
   resolveAgentModelFallbackValues,
   resolveAgentModelPrimaryValue,
 } from "../../config/model-input.js";
 import type { AgentModelConfig } from "../../config/types.agents-shared.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { listAgentEntries } from "../agent-scope-config.js";
 
 /** Provider/profile ids that may need external CLI auth discovery. */
@@ -83,7 +83,7 @@ function addExternalCliRuntimeScopeFromModelMap(
 
 /** Resolves external CLI auth discovery scope from configured auth/model surfaces. */
 export function resolveExternalCliAuthScopeFromConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): ExternalCliAuthScope | undefined {
   const providerIds = new Set<string>();
   const profileIds = new Set<string>();

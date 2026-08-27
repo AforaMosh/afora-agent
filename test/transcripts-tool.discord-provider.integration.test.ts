@@ -6,10 +6,10 @@ import {
 } from "../extensions/discord/test-api.js";
 import { activeSessions } from "../src/agents/tools/transcripts-tool-runtime.js";
 import { createTranscriptsTool } from "../src/agents/tools/transcripts-tool.js";
-import type { OpenClawConfig } from "../src/config/types.openclaw.js";
+import type { AforaConfig } from "../src/config/types.afora.js";
 import { createEmptyPluginRegistry } from "../src/plugins/registry-empty.js";
 import { setActivePluginRegistry } from "../src/plugins/runtime.js";
-import { closeOpenClawStateDatabaseForTest } from "../src/state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../src/state/afora-state-db.js";
 import { TranscriptsStore } from "../src/transcripts/store.js";
 import { createTempDirTracker } from "./helpers/temp-dir.js";
 
@@ -38,7 +38,7 @@ function createTool(params: {
         groupSpace?: string;
         roleIds: readonly string[];
       };
-  config: OpenClawConfig;
+  config: AforaConfig;
   stateDir: string;
 }) {
   return createTranscriptsTool({
@@ -53,7 +53,7 @@ function createTool(params: {
 
 function storeFor(stateDir: string): TranscriptsStore {
   return new TranscriptsStore(path.join(stateDir, "transcripts"), {
-    env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+    env: { ...process.env, AFORA_STATE_DIR: stateDir },
   });
 }
 
@@ -73,12 +73,12 @@ describe("transcripts tool with the registered Discord provider", () => {
     setDiscordTranscriptsVoiceManager({ accountId: "account-a", manager: null });
     setDiscordTranscriptsVoiceManager({ accountId: "account-b", manager: null });
     setActivePluginRegistry(createEmptyPluginRegistry(), "discord-transcripts-tool-test-cleanup");
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     tempDirs.cleanup();
   });
 
   it("keeps a model-requested account switch on the trusted Discord account", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-discord-provider-");
+    const stateDir = tempDirs.make("afora-transcripts-discord-provider-");
     const accountAJoin = vi.fn(async () => ({ ok: true, message: "joined account-a" }));
     const accountALeave = vi.fn(async () => ({ ok: true, message: "left account-a" }));
     const accountBJoin = vi.fn(async () => ({ ok: true, message: "joined account-b" }));
@@ -115,7 +115,7 @@ describe("transcripts tool with the registered Discord provider", () => {
         },
       },
       transcripts: { enabled: true },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const ownerTool = createTool({
       accountId: "account-a",
       caller: {
@@ -214,7 +214,7 @@ describe("transcripts tool with the registered Discord provider", () => {
   });
 
   it("rejects a Discord sender that the voice command policy denies", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-discord-provider-denied-");
+    const stateDir = tempDirs.make("afora-transcripts-discord-provider-denied-");
     const join = vi.fn(async () => ({ ok: true, message: "joined" }));
     setDiscordTranscriptsVoiceManager({
       accountId: "account-a",
@@ -237,7 +237,7 @@ describe("transcripts tool with the registered Discord provider", () => {
         },
       },
       transcripts: { enabled: true },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const deniedTool = createTool({
       accountId: "account-a",
       caller: {

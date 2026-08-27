@@ -1,6 +1,6 @@
 // Chutes tests cover implicit provider plugin behavior.
-import { registerSingleProviderPlugin } from "openclaw/plugin-sdk/plugin-test-runtime";
-import { resolveOAuthApiKeyMarker } from "openclaw/plugin-sdk/provider-auth";
+import { registerSingleProviderPlugin } from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { resolveOAuthApiKeyMarker } from "afora-agent/plugin-sdk/provider-auth";
 import { describe, expect, it, vi } from "vitest";
 import plugin from "./index.js";
 import { CHUTES_BASE_URL } from "./models.js";

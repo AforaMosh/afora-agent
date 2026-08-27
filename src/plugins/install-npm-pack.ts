@@ -34,7 +34,7 @@ import {
 } from "./install-types.js";
 import { hasRetainedManagedNpmInstallMarker } from "./managed-npm-retention.js";
 
-const MANAGED_NPM_PACK_ARCHIVE_DIR = "_openclaw-pack-archives";
+const MANAGED_NPM_PACK_ARCHIVE_DIR = "_afora-pack-archives";
 
 function resolveTrustedNpmPackPackageName(packageName: string | undefined):
   | {
@@ -113,7 +113,7 @@ async function stageNpmPackArchiveInManagedRoot(params: {
 
   try {
     await fs.access(stableArchivePath);
-    backupTempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-npm-pack-archive-"));
+    backupTempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-npm-pack-archive-"));
     previousArchiveBackupPath = path.join(backupTempDir, archiveFileName);
     await fs.copyFile(stableArchivePath, previousArchiveBackupPath);
   } catch (error) {

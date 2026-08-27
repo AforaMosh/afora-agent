@@ -5,7 +5,7 @@ import {
   noopLogger,
   setupCronRegressionFixtures,
 } from "../../../test/helpers/cron/service-regression-fixtures.js";
-import { openOpenClawStateDatabase } from "../../state/openclaw-state-db.js";
+import { openAforaStateDatabase } from "../../state/afora-state-db.js";
 import { markCronJobActive } from "../active-jobs.js";
 import { loadCronStore, saveCronStore } from "../store.js";
 import { cronStoreKey } from "../store/key.js";
@@ -134,7 +134,7 @@ describe("cron failure alert persistence", () => {
       nowMs: () => dueAt + 10,
       sendCronFailureAlert,
     });
-    const database = openOpenClawStateDatabase().db;
+    const database = openAforaStateDatabase().db;
     database.exec(`
       CREATE TEMP TRIGGER reject_failure_alert_terminal_write
       BEFORE UPDATE ON cron_jobs

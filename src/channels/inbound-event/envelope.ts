@@ -5,7 +5,7 @@ import {
 } from "../../auto-reply/envelope.js";
 import { resolveSessionStorePathCore } from "../../config/sessions/paths.js";
 import { readSessionUpdatedAtCore } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   resolveAgentRoute,
   type ResolvedAgentRoute,
@@ -17,7 +17,7 @@ export type ChannelInboundEnvelopeInput = Omit<AgentEnvelopeParams, "previousTim
 };
 
 export function createChannelInboundEnvelopeBuilder(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   route: Pick<ResolvedAgentRoute, "agentId" | "sessionKey">;
 }) {
   const storePath = resolveSessionStorePathCore(params.cfg.session?.store, {

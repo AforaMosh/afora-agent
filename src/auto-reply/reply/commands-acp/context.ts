@@ -1,5 +1,5 @@
 // Implements ACP context commands for session metadata and prompt state.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { normalizeConversationText } from "../../../acp/conversation-id.js";
 import { normalizeConversationTargetRef } from "../../../infra/outbound/session-binding-normalization.js";
 import type { HandleCommandsParams } from "../commands-types.js";

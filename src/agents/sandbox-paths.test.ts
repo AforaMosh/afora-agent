@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, it, vi } from "vitest";
-import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import { resolvePreferredAforaTmpDir } from "../infra/tmp-afora-dir.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import {
   assertSandboxPath,
@@ -37,9 +37,9 @@ function makeTmpProbePath(prefix: string): string {
 }
 
 async function withManagedMediaRoot<T>(run: (ctx: { stateDir: string }) => Promise<T>) {
-  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-managed-media-"));
+  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-managed-media-"));
   try {
-    return await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+    return await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
       await fs.mkdir(path.join(stateDir, "media", "outbound"), { recursive: true });
       await fs.mkdir(path.join(stateDir, "media", "tool-file-transfer"), { recursive: true });
       await fs.mkdir(path.join(stateDir, "media", "tool-image-generation"), { recursive: true });
@@ -50,9 +50,9 @@ async function withManagedMediaRoot<T>(run: (ctx: { stateDir: string }) => Promi
   }
 }
 
-async function withOutsideHardlinkInOpenClawTmp<T>(
+async function withOutsideHardlinkInAforaTmp<T>(
   params: {
-    openClawTmpDir: string;
+    aforaTmpDir: string;
     hardlinkPrefix: string;
     symlinkPrefix?: string;
   },
@@ -61,16 +61,16 @@ async function withOutsideHardlinkInOpenClawTmp<T>(
   // Hardlinks in allowed temp roots must still be rejected when inode points outside.
   const outsideDir = await fs.mkdtemp(path.join(process.cwd(), "sandbox-media-hardlink-outside-"));
   const outsideFile = path.join(outsideDir, "outside-secret.txt");
-  const hardlinkPath = path.join(params.openClawTmpDir, makeTmpProbePath(params.hardlinkPrefix));
+  const hardlinkPath = path.join(params.aforaTmpDir, makeTmpProbePath(params.hardlinkPrefix));
   const symlinkPath = params.symlinkPrefix
-    ? path.join(params.openClawTmpDir, makeTmpProbePath(params.symlinkPrefix))
+    ? path.join(params.aforaTmpDir, makeTmpProbePath(params.symlinkPrefix))
     : undefined;
   try {
-    if (isPathInside(params.openClawTmpDir, outsideFile)) {
+    if (isPathInside(params.aforaTmpDir, outsideFile)) {
       return;
     }
     await fs.writeFile(outsideFile, "secret", "utf8");
-    await fs.mkdir(params.openClawTmpDir, { recursive: true });
+    await fs.mkdir(params.aforaTmpDir, { recursive: true });
     try {
       await fs.link(outsideFile, hardlinkPath);
     } catch (err) {
@@ -95,7 +95,7 @@ async function withOutsideHardlinkInOpenClawTmp<T>(
 describe("resolveSandboxPath", () => {
   it("keeps home-sibling roots absolute in escape diagnostics", async () => {
     const home = path.join(os.homedir(), "test-home");
-    await withEnvAsync({ HOME: home, OPENCLAW_HOME: undefined }, async () => {
+    await withEnvAsync({ HOME: home, AFORA_HOME: undefined }, async () => {
       const root = path.resolve(`${home}-sibling`);
       const outside = path.dirname(root);
 
@@ -107,12 +107,12 @@ describe("resolveSandboxPath", () => {
 
   it("still shortens roots beneath the home directory", async () => {
     const home = path.join(os.homedir(), "test-home");
-    await withEnvAsync({ HOME: home, OPENCLAW_HOME: undefined }, async () => {
-      const root = path.join(home, "openclaw-sandbox");
+    await withEnvAsync({ HOME: home, AFORA_HOME: undefined }, async () => {
+      const root = path.join(home, "afora-sandbox");
       const outside = path.dirname(root);
 
       expect(() => resolveSandboxPath({ filePath: outside, cwd: root, root })).toThrow(
-        `Path escapes sandbox root (~${path.sep}openclaw-sandbox): ${outside}`,
+        `Path escapes sandbox root (~${path.sep}afora-sandbox): ${outside}`,
       );
     });
   });
@@ -233,24 +233,24 @@ describe("assertSandboxPath", () => {
 });
 
 describe("resolveSandboxedMediaSource", () => {
-  const openClawTmpDir = resolvePreferredOpenClawTmpDir();
+  const aforaTmpDir = resolvePreferredAforaTmpDir();
 
   // Group 1: /tmp paths (the bug fix)
   it.each([
     {
-      name: "absolute paths under preferred OpenClaw tmp root",
-      media: path.join(openClawTmpDir, "image.png"),
-      expected: path.join(openClawTmpDir, "image.png"),
+      name: "absolute paths under preferred Afora tmp root",
+      media: path.join(aforaTmpDir, "image.png"),
+      expected: path.join(aforaTmpDir, "image.png"),
     },
     {
-      name: "file:// URLs pointing to preferred OpenClaw tmp root",
-      media: pathToFileURL(path.join(openClawTmpDir, "photo.png")).href,
-      expected: path.join(openClawTmpDir, "photo.png"),
+      name: "file:// URLs pointing to preferred Afora tmp root",
+      media: pathToFileURL(path.join(aforaTmpDir, "photo.png")).href,
+      expected: path.join(aforaTmpDir, "photo.png"),
     },
     {
-      name: "nested paths under preferred OpenClaw tmp root",
-      media: path.join(openClawTmpDir, "subdir", "deep", "file.png"),
-      expected: path.join(openClawTmpDir, "subdir", "deep", "file.png"),
+      name: "nested paths under preferred Afora tmp root",
+      media: path.join(aforaTmpDir, "subdir", "deep", "file.png"),
+      expected: path.join(aforaTmpDir, "subdir", "deep", "file.png"),
     },
   ])("allows $name", async ({ media, expected }) => {
     await withSandboxRoot(async (sandboxDir) => {
@@ -378,12 +378,12 @@ describe("resolveSandboxedMediaSource", () => {
     },
     {
       name: "path traversal through tmpdir",
-      media: path.join(openClawTmpDir, "..", "etc", "passwd"),
+      media: path.join(aforaTmpDir, "..", "etc", "passwd"),
       expected: /sandbox/i,
     },
     {
-      name: "absolute paths under host tmp outside openclaw tmp root",
-      media: path.join(os.tmpdir(), "outside-openclaw", "passwd"),
+      name: "absolute paths under host tmp outside afora tmp root",
+      media: path.join(os.tmpdir(), "outside-afora", "passwd"),
       expected: /sandbox/i,
     },
     {
@@ -427,19 +427,19 @@ describe("resolveSandboxedMediaSource", () => {
     });
   });
 
-  it("rejects symlinked OpenClaw tmp paths escaping tmp root", async () => {
+  it("rejects symlinked Afora tmp paths escaping tmp root", async () => {
     if (process.platform === "win32") {
       return;
     }
     const outsideTmpTarget = path.resolve(process.cwd(), "package.json");
-    if (isPathInside(openClawTmpDir, outsideTmpTarget)) {
+    if (isPathInside(aforaTmpDir, outsideTmpTarget)) {
       return;
     }
 
     await withSandboxRoot(async (sandboxDir) => {
       await fs.access(outsideTmpTarget);
-      await fs.mkdir(openClawTmpDir, { recursive: true });
-      const symlinkPath = path.join(openClawTmpDir, `tmp-link-escape-${process.pid}`);
+      await fs.mkdir(aforaTmpDir, { recursive: true });
+      const symlinkPath = path.join(aforaTmpDir, `tmp-link-escape-${process.pid}`);
       await fs.symlink(outsideTmpTarget, symlinkPath);
       try {
         await expectSandboxRejection(symlinkPath, sandboxDir, /symlink|sandbox/i);
@@ -469,13 +469,13 @@ describe("resolveSandboxedMediaSource", () => {
     });
   });
 
-  it("rejects hardlinked OpenClaw tmp paths to outside files", async () => {
+  it("rejects hardlinked Afora tmp paths to outside files", async () => {
     if (process.platform === "win32") {
       return;
     }
-    await withOutsideHardlinkInOpenClawTmp(
+    await withOutsideHardlinkInAforaTmp(
       {
-        openClawTmpDir,
+        aforaTmpDir,
         hardlinkPrefix: "sandbox-media-hardlink",
       },
       async ({ hardlinkPath }) => {
@@ -486,13 +486,13 @@ describe("resolveSandboxedMediaSource", () => {
     );
   });
 
-  it("rejects symlinked OpenClaw tmp paths to hardlinked outside files", async () => {
+  it("rejects symlinked Afora tmp paths to hardlinked outside files", async () => {
     if (process.platform === "win32") {
       return;
     }
-    await withOutsideHardlinkInOpenClawTmp(
+    await withOutsideHardlinkInAforaTmp(
       {
-        openClawTmpDir,
+        aforaTmpDir,
         hardlinkPrefix: "sandbox-media-hardlink-target",
         symlinkPrefix: "sandbox-media-hardlink-symlink",
       },

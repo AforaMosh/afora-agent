@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it, vi } from "vitest";
 import { TerminalSessionManager } from "./session-manager.js";
 import { baseOpenRequest, makeFakePty, taskAgentOwner } from "./session-manager.test-helpers.js";

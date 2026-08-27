@@ -51,8 +51,8 @@ export const WorkerDesktopAppIdSchema = Type.Union([
 export const RuntimeTargetIssueSchema = closedObject({
   code: Type.Literal("update-required"),
   action: Type.Literal("update-and-reconnect"),
-  updateCommand: Type.Literal("openclaw update"),
-  headlessReconnectCommand: Type.Literal("openclaw node restart"),
+  updateCommand: Type.Literal("afora update"),
+  headlessReconnectCommand: Type.Literal("afora node restart"),
 });
 
 const NodeWorkerBundleStatusSchema = Type.Union([

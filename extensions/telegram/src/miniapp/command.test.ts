@@ -1,9 +1,9 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import type {
-  OpenClawPluginCommandDefinition,
+  AforaPluginCommandDefinition,
   PluginCommandContext,
-} from "openclaw/plugin-sdk/plugin-entry";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+} from "afora-agent/plugin-sdk/plugin-entry";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const resolveTelegramMiniAppUrls = vi.hoisted(() => vi.fn());
@@ -21,8 +21,8 @@ const { registerTelegramMiniAppCommand } = await import("./command.js");
 
 function registerDashboardCommand(
   api: Parameters<typeof registerTelegramMiniAppCommand>[0],
-): OpenClawPluginCommandDefinition {
-  const commands: OpenClawPluginCommandDefinition[] = [];
+): AforaPluginCommandDefinition {
+  const commands: AforaPluginCommandDefinition[] = [];
   registerTelegramMiniAppCommand(
     {
       ...api,
@@ -81,8 +81,8 @@ describe("registerTelegramMiniAppCommand", () => {
 
   it("returns a web app button for owner DM invocations", async () => {
     resolveTelegramMiniAppUrls.mockResolvedValue({
-      pageUrl: "https://host.tailnet.ts.net/__openclaw_tg_miniapp/",
-      controlUiUrl: "https://host.tailnet.ts.net/openclaw",
+      pageUrl: "https://host.tailnet.ts.net/__afora_tg_miniapp/",
+      controlUiUrl: "https://host.tailnet.ts.net/afora",
       gatewayUrl: "wss://host.tailnet.ts.net",
     });
     const command = registerDashboardCommand(
@@ -108,7 +108,7 @@ describe("registerTelegramMiniAppCommand", () => {
       }),
     );
 
-    expect(result.text).toBe("Open OpenClaw dashboard.");
+    expect(result.text).toBe("Open Afora dashboard.");
     expect(result.presentation?.blocks).toEqual([
       {
         type: "buttons",
@@ -116,7 +116,7 @@ describe("registerTelegramMiniAppCommand", () => {
           {
             label: "Open dashboard",
             webApp: {
-              url: "https://host.tailnet.ts.net/__openclaw_tg_miniapp/?accountId=ops#launchTicket=launch-ticket",
+              url: "https://host.tailnet.ts.net/__afora_tg_miniapp/?accountId=ops#launchTicket=launch-ticket",
             },
           },
         ],

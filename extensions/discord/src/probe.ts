@@ -1,9 +1,9 @@
 // Discord plugin module implements probe behavior.
-import type { BaseProbeResult } from "openclaw/plugin-sdk/channel-contract";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { resolveFetch } from "openclaw/plugin-sdk/fetch-runtime";
-import { readResponseWithLimit } from "openclaw/plugin-sdk/response-limit-runtime";
-import { fetchWithTimeout, runChannelProbe } from "openclaw/plugin-sdk/text-utility-runtime";
+import type { BaseProbeResult } from "afora-agent/plugin-sdk/channel-contract";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { resolveFetch } from "afora-agent/plugin-sdk/fetch-runtime";
+import { readResponseWithLimit } from "afora-agent/plugin-sdk/response-limit-runtime";
+import { fetchWithTimeout, runChannelProbe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { DiscordApiError, fetchDiscord } from "./api.js";
 import { normalizeDiscordToken } from "./token.js";
 

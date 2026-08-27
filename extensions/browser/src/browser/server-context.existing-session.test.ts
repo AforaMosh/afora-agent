@@ -1,6 +1,6 @@
 // Browser tests cover server context.existing session plugin behavior.
 import fs from "node:fs";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "../test-support/browser-security.mock.js";
 import type { BrowserServerState } from "./server-context.js";
@@ -162,7 +162,7 @@ describe("browser server-context existing-session profile", () => {
 
     await expect(live.listTabs()).rejects.toThrow(/Chrome MCP cannot carry that pinned transport/);
     await expect(live.openTab("https://93.184.216.34")).rejects.toThrow(
-      /Use driver "openclaw" for guarded CDP endpoints/,
+      /Use driver "afora" for guarded CDP endpoints/,
     );
     await expect(live.ensureBrowserAvailable()).rejects.toThrow(
       /remove cdpUrl and browserUrl\/wsEndpoint mcpArgs/,
@@ -224,7 +224,7 @@ describe("browser server-context existing-session profile", () => {
     state.resolved.ssrfPolicy = undefined;
     state.resolved.profiles["chrome-live"] = {
       ...chromeLiveProfile,
-      cdpUrl: "http://openclaw:relay-token@127.0.0.1:9222",
+      cdpUrl: "http://afora:relay-token@127.0.0.1:9222",
     };
     const ctx = createBrowserRouteContext({ getState: () => state });
 
@@ -240,7 +240,7 @@ describe("browser server-context existing-session profile", () => {
           [string, ChromeLiveProfile, { ephemeral?: boolean; timeoutMs?: number }]
         >
       )[0] ?? [];
-    expect(ensuredProfile?.cdpUrl).toBe("http://openclaw:relay-token@127.0.0.1:9222");
+    expect(ensuredProfile?.cdpUrl).toBe("http://afora:relay-token@127.0.0.1:9222");
   });
 
   it("keeps the next real attach on the normal sticky session path after an idle status probe", async () => {
@@ -692,7 +692,7 @@ describe("browser server-context existing-session profile", () => {
 
     const pending = live.ensureBrowserAvailable();
     const assertion = expect(pending).rejects.toThrow(
-      /could not connect to Chrome.*managed "openclaw" profile.*DevToolsActivePort/s,
+      /could not connect to Chrome.*managed "afora" profile.*DevToolsActivePort/s,
     );
     await vi.advanceTimersByTimeAsync(8_000);
     await assertion;

@@ -1,6 +1,6 @@
 // Builds structured context reports for context command responses.
-import { estimateTokensFromChars } from "@openclaw/normalization-core/cjk-chars";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { estimateTokensFromChars } from "@afora/normalization-core/cjk-chars";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { resolveSessionAgentIds } from "../../agents/agent-scope.js";
 import { analyzeBootstrapBudget } from "../../agents/bootstrap-budget.js";
 import { isRealConversationMessage } from "../../agents/compaction-real-conversation.js";

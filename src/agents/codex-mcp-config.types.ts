@@ -2,7 +2,7 @@ import type { SessionToolOverrides } from "../config/sessions/types.js";
 /**
  * Shared types for projecting bundle MCP config into Codex app-server threads.
  */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { BundleMcpDiagnostic } from "../plugins/bundle-mcp.js";
 import type { PluginManifestRegistry } from "../plugins/manifest-registry.js";
 
@@ -26,7 +26,7 @@ export type CodexBundleMcpThreadConfig = {
 /** Inputs used to load a Codex bundle-MCP thread config patch. */
 export type LoadCodexBundleMcpThreadConfigParams = {
   workspaceDir: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   toolsEnabled?: boolean;
   disableTools?: boolean;
   toolsAllow?: string[];

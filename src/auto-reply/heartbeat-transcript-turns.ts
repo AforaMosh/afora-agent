@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { isHeartbeatUserMessage, isRealNonHeartbeatUserMessage } from "./heartbeat-filter.js";
 
 /** Remove complete scheduled heartbeat turns, including visible work, from a shared transcript. */

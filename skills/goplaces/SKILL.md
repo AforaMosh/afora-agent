@@ -4,7 +4,7 @@ description: "Query Google Places for text search, place details, resolve, revie
 homepage: https://github.com/steipete/goplaces
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "emoji": "📍",
         "requires": { "bins": ["goplaces"], "env": ["GOOGLE_PLACES_API_KEY"] },

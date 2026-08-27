@@ -18,7 +18,7 @@ function filesystemRejectsChmod(target: string): boolean {
   let probePath: string;
   try {
     const probeDir = statSync(target).isDirectory() ? target : path.dirname(target);
-    probePath = path.join(probeDir, `.openclaw-chmod-probe-${randomUUID()}`);
+    probePath = path.join(probeDir, `.afora-chmod-probe-${randomUUID()}`);
     writeFileSync(probePath, "", { flag: "wx", mode: PRIVATE_PROBE_FILE_MODE });
   } catch {
     return false;

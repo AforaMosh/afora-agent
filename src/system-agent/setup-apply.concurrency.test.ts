@@ -1,10 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { withTempHome } from "openclaw/plugin-sdk/test-env";
+import { withTempHome } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, describe, expect, it } from "vitest";
 import { resolveAgentDir } from "../agents/agent-scope.js";
 import { readConfigFileSnapshot, resetConfigRuntimeState } from "../config/config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { applySystemAgentSetup } from "./setup-apply.js";
 
@@ -18,7 +18,7 @@ const runtime: RuntimeEnv = {
 
 const sourceConfig = {
   agents: { defaults: { model: "openai/gpt-5.5" } },
-} satisfies OpenClawConfig;
+} satisfies AforaConfig;
 
 async function writeConcurrentRoster(pathname: string, agentId: string): Promise<void> {
   await fs.writeFile(
@@ -55,7 +55,7 @@ describe("applySystemAgentSetup first-agent concurrency", () => {
       await expect(
         applySystemAgentSetup(
           {
-            workspace: "/tmp/openclaw-first-agent-race",
+            workspace: "/tmp/afora-first-agent-race",
             firstAgent: { name: "robby" },
             expectedAgentId: "main",
             expectedAgentDir: resolveAgentDir(initialRuntime, "main"),
@@ -87,7 +87,7 @@ describe("applySystemAgentSetup first-agent concurrency", () => {
       await expect(
         applySystemAgentSetup(
           {
-            workspace: "/tmp/openclaw-first-agent-race",
+            workspace: "/tmp/afora-first-agent-race",
             firstAgent: { name: "robby" },
             expectedConfigHash: initial.hash ?? null,
             surface: "gateway",

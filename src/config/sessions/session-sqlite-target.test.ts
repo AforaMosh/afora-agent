@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
-import { resolveIncognitoOpenClawAgentSqlitePath } from "../../state/openclaw-agent-db.js";
+import { resolveIncognitoAforaAgentSqlitePath } from "../../state/afora-agent-db.js";
 import { resolveSqliteTargetFromSessionStorePath } from "./session-sqlite-target.js";
 
 describe("resolveSqliteTargetFromSessionStorePath", () => {
@@ -43,8 +43,8 @@ describe("resolveSqliteTargetFromSessionStorePath", () => {
   });
 
   it("keeps an incognito sentinel owned by its requested agent", () => {
-    const env = { OPENCLAW_STATE_DIR: tempDirs.make("openclaw-incognito-target-") };
-    const databasePath = resolveIncognitoOpenClawAgentSqlitePath({ agentId: "ops", env });
+    const env = { AFORA_STATE_DIR: tempDirs.make("afora-incognito-target-") };
+    const databasePath = resolveIncognitoAforaAgentSqlitePath({ agentId: "ops", env });
 
     expect(
       resolveSqliteTargetFromSessionStorePath(databasePath, {
@@ -215,7 +215,7 @@ describe("resolveSqliteTargetFromSessionStorePath", () => {
   });
 
   it.runIf(process.platform !== "win32")("treats dangling suffix symlinks as occupied", () => {
-    const dir = tempDirs.make("openclaw-session-suffix-symlink-");
+    const dir = tempDirs.make("afora-session-suffix-symlink-");
     const storePath = path.join(dir, "shared.json");
     fs.symlinkSync(path.join(dir, "missing-target.sqlite"), path.join(dir, "shared.worker.sqlite"));
 
@@ -230,7 +230,7 @@ describe("resolveSqliteTargetFromSessionStorePath", () => {
   it.runIf(process.platform !== "win32")(
     "does not assign a dangling unsuffixed symlink to the default",
     () => {
-      const dir = tempDirs.make("openclaw-session-unsuffixed-symlink-");
+      const dir = tempDirs.make("afora-session-unsuffixed-symlink-");
       const storePath = path.join(dir, "shared.json");
       fs.symlinkSync(path.join(dir, "missing-target.sqlite"), path.join(dir, "shared.sqlite"));
 
@@ -244,7 +244,7 @@ describe("resolveSqliteTargetFromSessionStorePath", () => {
   );
 
   it("propagates non-missing target-directory inspection errors", () => {
-    const dir = tempDirs.make("openclaw-session-suffix-inspection-");
+    const dir = tempDirs.make("afora-session-suffix-inspection-");
     const blocker = path.join(dir, "not-a-directory");
     fs.writeFileSync(blocker, "blocked\n");
 
@@ -260,10 +260,10 @@ describe("resolveSqliteTargetFromSessionStorePath", () => {
     const storePath = path.join("tmp", "stores", "sessions.json");
 
     expect(resolveSqliteTargetFromSessionStorePath(storePath, { agentId: "main" })).toMatchObject({
-      path: path.resolve("tmp", "stores", "openclaw-agent.sqlite"),
+      path: path.resolve("tmp", "stores", "afora-agent.sqlite"),
     });
     expect(resolveSqliteTargetFromSessionStorePath(storePath, { agentId: "work" })).toMatchObject({
-      path: path.resolve("tmp", "stores", "openclaw-agent.work.sqlite"),
+      path: path.resolve("tmp", "stores", "afora-agent.work.sqlite"),
     });
   });
 });

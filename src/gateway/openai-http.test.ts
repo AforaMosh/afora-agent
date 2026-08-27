@@ -85,9 +85,9 @@ async function startSharedSecretServer(
 }
 
 async function writeGatewayConfig(config: Record<string, unknown>) {
-  const configPath = process.env.OPENCLAW_CONFIG_PATH;
+  const configPath = process.env.AFORA_CONFIG_PATH;
   if (!configPath) {
-    throw new Error("OPENCLAW_CONFIG_PATH is required for gateway config tests");
+    throw new Error("AFORA_CONFIG_PATH is required for gateway config tests");
   }
   await fs.mkdir(path.dirname(configPath), { recursive: true });
   await fs.writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
@@ -98,7 +98,7 @@ async function postChatCompletions(port: number, body: unknown, headers?: Record
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-openclaw-scopes": "operator.write",
+      "x-afora-scopes": "operator.write",
       ...headers,
     },
     body: JSON.stringify(body),
@@ -111,7 +111,7 @@ async function postRawChatCompletions(port: number, body: string) {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-openclaw-scopes": "operator.write",
+      "x-afora-scopes": "operator.write",
     },
     body,
   });
@@ -121,7 +121,7 @@ function createOpenAiChatClient(port: number): OpenAI {
   return new OpenAI({
     apiKey: "test",
     baseURL: `http://127.0.0.1:${port}/v1`,
-    defaultHeaders: { "x-openclaw-scopes": "operator.write" },
+    defaultHeaders: { "x-afora-scopes": "operator.write" },
     maxRetries: 0,
   });
 }
@@ -178,7 +178,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       agentCommandMock.mockClear();
 
       const missing = await postChatCompletions(enabledPort, {
-        model: "openclaw",
+        model: "afora",
         messages: [{ role: "user", content: "hi" }],
       });
       expect(missing.status).toBe(400);
@@ -190,8 +190,8 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       agentCommandMock.mockResolvedValueOnce({ payloads: [{ text: "hello" }] } as never);
       const selected = await postChatCompletions(
         enabledPort,
-        { model: "openclaw/default", messages: [{ role: "user", content: "hi" }] },
-        { "x-openclaw-agent-id": "main" },
+        { model: "afora-agent/default", messages: [{ role: "user", content: "hi" }] },
+        { "x-afora-agent-id": "main" },
       );
       expect(selected.status).toBe(200);
       expect(firstAgentCommandOptions()?.sessionKey ?? "").toMatch(/^agent:main:/);
@@ -238,7 +238,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     const expectInvalidRequestNoDispatch = async (messages: unknown[]) => {
       agentCommandMock.mockClear();
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "afora",
         messages,
       });
       expect(res.status).toBe(400);
@@ -251,7 +251,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     const postSyncUserMessage = async (message: string) => {
       const res = await postChatCompletions(port, {
         stream: false,
-        model: "openclaw",
+        model: "afora",
         messages: [{ role: "user", content: message }],
       });
       expect(res.status).toBe(200);
@@ -277,7 +277,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
           method: "POST",
           headers: {
             "content-type": "application/json",
-            "x-openclaw-agent-id": "main",
+            "x-afora-agent-id": "main",
           },
           body: JSON.stringify({ messages: [{ role: "user", content: "hi" }] }),
         });
@@ -293,14 +293,14 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       };
       resetConfigRuntimeState();
       await expectAgentSessionKeyMatch({
-        body: { model: "openclaw", messages: [{ role: "user", content: "hi" }] },
-        headers: { "x-openclaw-agent-id": "beta" },
+        body: { model: "afora", messages: [{ role: "user", content: "hi" }] },
+        headers: { "x-afora-agent-id": "beta" },
         matcher: /^agent:beta:/,
       });
 
       await expectAgentSessionKeyMatch({
         body: {
-          model: "openclaw/beta",
+          model: "afora-agent/beta",
           messages: [{ role: "user", content: "hi" }],
         },
         matcher: /^agent:beta:/,
@@ -311,10 +311,10 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
       await expectAgentSessionKeyMatch({
         body: {
-          model: "openclaw/default",
+          model: "afora-agent/default",
           messages: [{ role: "user", content: "hi" }],
         },
-        headers: { "x-openclaw-agent-id": "main" },
+        headers: { "x-afora-agent-id": "main" },
         matcher: /^agent:main:/,
       });
 
@@ -322,8 +322,8 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         agentCommandMock.mockClear();
         const res = await postChatCompletions(
           port,
-          { model: "openclaw", messages: [{ role: "user", content: "hi" }] },
-          { "x-openclaw-agent-id": "missing-agent" },
+          { model: "afora", messages: [{ role: "user", content: "hi" }] },
+          { "x-afora-agent-id": "missing-agent" },
         );
         expect(res.status).toBe(400);
         const json = (await res.json()) as { error?: { type?: string; message?: string } };
@@ -335,7 +335,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         agentCommandMock.mockClear();
         const res = await postChatCompletions(port, {
-          model: "openclaw/missing-agent",
+          model: "afora-agent/missing-agent",
           messages: [{ role: "user", content: "hi" }],
         });
         expect(res.status).toBe(400);
@@ -349,16 +349,16 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         agentCommandMock.mockClear();
         const res = await postChatCompletions(
           port,
-          { model: "openclaw", messages: [{ role: "user", content: "hi" }] },
+          { model: "afora", messages: [{ role: "user", content: "hi" }] },
           {
-            "x-openclaw-session-key": "agent:main:harness:codex:supervision:spoofed-native-thread",
+            "x-afora-session-key": "agent:main:harness:codex:supervision:spoofed-native-thread",
           },
         );
         expect(res.status).toBe(400);
         const json = (await res.json()) as { error?: { type?: string; message?: string } };
         expect(json.error?.type).toBe("invalid_request_error");
         expect(json.error?.message).toBe(
-          "`x-openclaw-session-key` cannot use reserved internal session namespaces.",
+          "`x-afora-session-key` cannot use reserved internal session namespaces.",
         );
         expect(agentCommandMock).toHaveBeenCalledTimes(0);
       }
@@ -372,10 +372,10 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         mockAgentOnce([{ text: "hello" }]);
         const res = await postChatCompletions(
           port,
-          { model: "openclaw", messages: [{ role: "user", content: "hi" }] },
+          { model: "afora", messages: [{ role: "user", content: "hi" }] },
           {
-            "x-openclaw-agent-id": "beta",
-            "x-openclaw-session-key": "agent:beta:openai:custom",
+            "x-afora-agent-id": "beta",
+            "x-afora-session-key": "agent:beta:openai:custom",
           },
         );
         expect(res.status).toBe(200);
@@ -390,14 +390,14 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         agentCommandMock.mockClear();
         const res = await postChatCompletions(
           port,
-          { model: "openclaw", messages: [{ role: "user", content: "hi" }] },
-          { "x-openclaw-session-key": "agent:main:subagent:spoofed" },
+          { model: "afora", messages: [{ role: "user", content: "hi" }] },
+          { "x-afora-session-key": "agent:main:subagent:spoofed" },
         );
         expect(res.status).toBe(400);
         const json = (await res.json()) as { error?: { type?: string; message?: string } };
         expect(json.error?.type).toBe("invalid_request_error");
         expect(json.error?.message).toBe(
-          "`x-openclaw-session-key` cannot use reserved internal session namespaces.",
+          "`x-afora-session-key` cannot use reserved internal session namespaces.",
         );
         expect(agentCommandMock).toHaveBeenCalledTimes(0);
       }
@@ -406,7 +406,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         mockAgentOnce([{ text: "hello" }]);
         const res = await postChatCompletions(port, {
           user: "alice",
-          model: "openclaw",
+          model: "afora",
           messages: [{ role: "user", content: "hi" }],
         });
         expect(res.status).toBe(200);
@@ -420,10 +420,10 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const res = await postChatCompletions(
           port,
           {
-            model: "openclaw",
+            model: "afora",
             messages: [{ role: "user", content: "hi" }],
           },
-          { "x-openclaw-message-channel": "custom-client-channel" },
+          { "x-afora-message-channel": "custom-client-channel" },
         );
         expect(res.status).toBe(200);
         expect(getFirstAgentCall()?.messageChannel).toBe("custom-client-channel");
@@ -435,12 +435,12 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const res = await postChatCompletions(
           port,
           {
-            model: "openclaw",
+            model: "afora",
             messages: [{ role: "user", content: "hi" }],
           },
           {
-            "x-openclaw-model": "openai/gpt-5.4",
-            "x-openclaw-scopes": "operator.admin, operator.write",
+            "x-afora-model": "openai/gpt-5.4",
+            "x-afora-scopes": "operator.admin, operator.write",
           },
         );
         expect(res.status).toBe(200);
@@ -463,12 +463,12 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const res = await postChatCompletions(
           port,
           {
-            model: "openclaw",
+            model: "afora",
             messages: [{ role: "user", content: "hi" }],
           },
           {
-            "x-openclaw-model": "gpt-5.4",
-            "x-openclaw-scopes": "operator.admin, operator.write",
+            "x-afora-model": "gpt-5.4",
+            "x-afora-scopes": "operator.admin, operator.write",
           },
         );
         expect(res.status).toBe(200);
@@ -487,7 +487,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const json = (await res.json()) as { error?: { type?: string; message?: string } };
         expect(json.error?.type).toBe("invalid_request_error");
         expect(json.error?.message).toBe(
-          "Invalid `model`. Use `openclaw` or `openclaw/<agentId>`.",
+          "Invalid `model`. Use `afora` or `afora/<agentId>`.",
         );
         expect(agentCommandMock).toHaveBeenCalledTimes(0);
       }
@@ -497,10 +497,10 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const res = await postChatCompletions(
           port,
           {
-            model: "openclaw",
+            model: "afora",
             messages: [{ role: "user", content: "hi" }],
           },
-          { "x-openclaw-model": "openai/gpt-5.4" },
+          { "x-afora-model": "openai/gpt-5.4" },
         );
         expect(res.status).toBe(403);
         const json = (await res.json()) as { error?: { message?: string; type?: string } };
@@ -514,25 +514,25 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const res = await postChatCompletions(
           port,
           {
-            model: "openclaw",
+            model: "afora",
             messages: [{ role: "user", content: "hi" }],
           },
           {
-            "x-openclaw-model": "openai/",
-            "x-openclaw-scopes": "operator.admin, operator.write",
+            "x-afora-model": "openai/",
+            "x-afora-scopes": "operator.admin, operator.write",
           },
         );
         expect(res.status).toBe(400);
         const json = (await res.json()) as { error?: { type?: string; message?: string } };
         expect(json.error?.type).toBe("invalid_request_error");
-        expect(json.error?.message).toBe("Invalid `x-openclaw-model`.");
+        expect(json.error?.message).toBe("Invalid `x-afora-model`.");
         expect(agentCommandMock).toHaveBeenCalledTimes(0);
       }
 
       {
         mockAgentOnce([{ text: "hello" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           messages: [
             {
               role: "user",
@@ -553,7 +553,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const imageData = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAA";
         mockAgentOnce([{ text: "looks good" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           messages: [
             {
               role: "user",
@@ -581,7 +581,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const imageData = "QUJDRA==";
         mockAgentOnce([{ text: "supports data-uri params" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           messages: [
             {
               role: "user",
@@ -661,7 +661,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         mockAgentOnce([{ text: "I can see the image" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           messages: [
             {
               role: "user",
@@ -687,7 +687,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         mockAgentOnce([{ text: "follow up answer" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           messages: [
             {
               role: "user",
@@ -717,7 +717,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         ]) {
           mockAgentOnce([{ text: "follow up answer" }]);
           const res = await postChatCompletions(port, {
-            model: "openclaw",
+            model: "afora",
             messages: [
               {
                 role: "user",
@@ -737,7 +737,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         mockAgentOnce([{ text: "latest image only" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           messages: [
             {
               role: "user",
@@ -769,7 +769,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const largeMessage = "x".repeat(1_200_000);
         mockAgentOnce([{ text: "accepted" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           messages: [{ role: "user", content: largeMessage }],
         });
         expect(res.status).toBe(200);
@@ -804,7 +804,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         mockAgentOnce([{ text: "I am Claude" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           messages: [
             { role: "system", content: "You are a helpful assistant." },
             { role: "user", content: "Hello, who are you?" },
@@ -825,7 +825,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         mockAgentOnce([{ text: "hello" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           messages: [
             { role: "system", content: "You are a helpful assistant." },
             { role: "user", content: "Hello" },
@@ -843,7 +843,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         mockAgentOnce([{ text: "hello" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           messages: [
             { role: "developer", content: "You are a helpful assistant." },
             { role: "user", content: "Hello" },
@@ -859,7 +859,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         mockAgentOnce([{ text: "ok" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           messages: [
             { role: "system", content: "You are a helpful assistant." },
             { role: "user", content: "What's the weather?" },
@@ -880,7 +880,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         mockAgentOnce([{ text: "tool follow-up ok" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           messages: [
             {
               role: "user",
@@ -909,7 +909,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         mockAgentOnce([{ text: "tool choice none" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           tool_choice: "none",
           tools: [
             {
@@ -932,7 +932,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         mockAgentOnce([{ text: "tool choice auto" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           tool_choice: "auto",
           tools: [
             {
@@ -974,7 +974,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
           },
         } as never);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           tool_choice: { type: "function", function: { name: "get_weather" } },
           tools: [
             {
@@ -1026,7 +1026,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
           },
         } as never);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           tool_choice: "required",
           tools: [
             {
@@ -1059,7 +1059,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         mockAgentOnce([{ text: "plain text despite required" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           tool_choice: "required",
           tools: [
             {
@@ -1089,7 +1089,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
           },
         } as never);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           tool_choice: { type: "function", function: { name: "get_weather" } },
           tools: [
             {
@@ -1120,7 +1120,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         agentCommandMock.mockClear();
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           tool_choice: "required",
           messages: [{ role: "user", content: "weather?" }],
         });
@@ -1134,7 +1134,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         agentCommandMock.mockClear();
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           tool_choice: { type: "function", function: { name: "missing_tool" } },
           tools: [
             {
@@ -1158,7 +1158,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         agentCommandMock.mockClear();
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           tool_choice: {
             type: "allowed_tools",
             tools: [{ type: "function", function: { name: "x" } }],
@@ -1185,7 +1185,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         agentCommandMock.mockClear();
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           tools: [
             {
               type: "function",
@@ -1205,7 +1205,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         mockAgentOnce([{ text: "ok" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           messages: [
             { role: "user", content: "What's the weather?" },
             { role: "assistant", content: "Checking the weather." },
@@ -1228,7 +1228,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       {
         mockAgentOnce([{ text: "ok" }]);
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           messages: [
             { role: "user", content: "What's the weather?" },
             {
@@ -1269,7 +1269,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         agentCommandMock.mockRejectedValueOnce(createClientToolNameConflictError(["exec"]));
         const res = await postChatCompletions(port, {
           stream: false,
-          model: "openclaw",
+          model: "afora",
           tools: [
             {
               type: "function",
@@ -1317,7 +1317,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         } as never);
         const res = await postChatCompletions(port, {
           stream: false,
-          model: "openclaw",
+          model: "afora",
           tool_choice: "auto",
           tools: [
             {
@@ -1393,7 +1393,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         } as never);
         const res = await postChatCompletions(port, {
           stream: false,
-          model: "openclaw",
+          model: "afora",
           tool_choice: "auto",
           tools: [
             {
@@ -1446,7 +1446,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
         const splitFinalRes = await postChatCompletions(port, {
           stream: true,
-          model: "openclaw",
+          model: "afora",
           messages: [{ role: "user", content: "hi" }],
         });
         expect(splitFinalRes.status).toBe(200);
@@ -1644,12 +1644,12 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const json = await postSyncUserMessage("hi");
         const choice0 = (json.choices as Array<Record<string, unknown>>)[0] ?? {};
         const msg = (choice0.message as Record<string, unknown> | undefined) ?? {};
-        expect(msg.content).toBe("No response from OpenClaw.");
+        expect(msg.content).toBe("No response from Afora.");
       }
 
       {
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           messages: [{ role: "system", content: "yo" }],
         });
         expect(res.status).toBe(400);
@@ -1705,7 +1705,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     for (const testCase of validCases) {
       mockAgentOnce();
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "afora",
         ...testCase.body,
         messages: [{ role: "user", content: "hi" }],
       });
@@ -1718,7 +1718,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     mockAgentOnce();
     const client = createOpenAiChatClient(port);
     await client.chat.completions.create({
-      model: "openclaw",
+      model: "afora",
       max_completion_tokens: null,
       max_tokens: null,
       messages: [{ role: "user", content: "hi" }],
@@ -1743,7 +1743,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       for (const testCase of invalidValues) {
         agentCommandMock.mockClear();
         const res = await postChatCompletions(port, {
-          model: "openclaw",
+          model: "afora",
           [field]: testCase.value,
           messages: [{ role: "user", content: "hi" }],
         });
@@ -1757,7 +1757,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       agentCommandMock.mockClear();
       const res = await postRawChatCompletions(
         port,
-        `{"model":"openclaw","messages":[{"role":"user","content":"hi"}],"${field}":1e309}`,
+        `{"model":"afora","messages":[{"role":"user","content":"hi"}],"${field}":1e309}`,
       );
       expect(res.status, `${field}: non-finite raw number`).toBe(400);
       const json = (await res.json()) as { error?: { type?: string; message?: string } };
@@ -1781,7 +1781,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     for (const testCase of shadowedCases) {
       agentCommandMock.mockClear();
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "afora",
         ...testCase.body,
         messages: [{ role: "user", content: "hi" }],
       });
@@ -1804,7 +1804,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     {
       mockAgentOnce([{ text: "hello" }]);
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "afora",
         temperature: 0.3,
         top_p: 0.95,
         messages: [{ role: "user", content: "hi" }],
@@ -1817,7 +1817,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     {
       mockAgentOnce([{ text: "hello" }]);
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "afora",
         temperature: 0,
         messages: [{ role: "user", content: "hi" }],
       });
@@ -1831,7 +1831,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     {
       mockAgentOnce([{ text: "hello" }]);
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "afora",
         messages: [{ role: "user", content: "hi" }],
       });
       expect(res.status).toBe(200);
@@ -1842,7 +1842,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     {
       agentCommandMock.mockClear();
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "afora",
         temperature: 999,
         messages: [{ role: "user", content: "hi" }],
       });
@@ -1856,7 +1856,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     {
       agentCommandMock.mockClear();
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "afora",
         top_p: 5,
         messages: [{ role: "user", content: "hi" }],
       });
@@ -1879,7 +1879,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     {
       mockAgentOnce([{ text: "hello" }]);
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "afora",
         frequency_penalty: -0.5,
         presence_penalty: 1.25,
         seed: 12345,
@@ -1897,7 +1897,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     for (const body of [{ frequency_penalty: 3 }, { presence_penalty: -3 }, { seed: 1.5 }]) {
       agentCommandMock.mockClear();
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "afora",
         ...body,
         messages: [{ role: "user", content: "hi" }],
       });
@@ -1919,7 +1919,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     {
       mockAgentOnce([{ text: "hello" }]);
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "afora",
         stop: "\n\n",
         messages: [{ role: "user", content: "hi" }],
       });
@@ -1931,7 +1931,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     {
       mockAgentOnce([{ text: "hello" }]);
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "afora",
         stop: ["User:", "Assistant:"],
         messages: [{ role: "user", content: "hi" }],
       });
@@ -1943,7 +1943,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     {
       mockAgentOnce([{ text: "hello" }]);
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "afora",
         messages: [{ role: "user", content: "hi" }],
       });
       expect(res.status).toBe(200);
@@ -1954,7 +1954,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     for (const stop of [["a", "b", "c", "d", "e"], [""], [123], {}]) {
       agentCommandMock.mockClear();
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "afora",
         stop,
         messages: [{ role: "user", content: "hi" }],
       });
@@ -1984,7 +1984,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     );
 
     const res = await postChatCompletions(port, {
-      model: "openclaw",
+      model: "afora",
       messages: [{ role: "user", content: "hi" }],
     });
     expect(res.status).toBe(400);
@@ -2006,7 +2006,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     } as never);
 
     const res = await postChatCompletions(enabledPort, {
-      model: "openclaw",
+      model: "afora",
       messages: [{ role: "user", content: "hi" }],
     });
     const body = await res.text();
@@ -2025,7 +2025,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     } as never);
 
     const res = await postChatCompletions(enabledPort, {
-      model: "openclaw",
+      model: "afora",
       messages: [{ role: "user", content: "hi" }],
     });
     expect(res.status).toBe(500);
@@ -2042,7 +2042,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     {
       mockAgentOnce([{ text: "{}" }]);
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "afora",
         response_format: { type: "json_object" },
         messages: [{ role: "user", content: "hi" }],
       });
@@ -2054,7 +2054,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     {
       mockAgentOnce([{ text: "{}" }]);
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "afora",
         response_format: {
           type: "json_schema",
           json_schema: { name: "test", schema: { type: "object" } },
@@ -2071,7 +2071,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     {
       mockAgentOnce([{ text: "hello" }]);
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "afora",
         response_format: { type: "text" },
         messages: [{ role: "user", content: "hi" }],
       });
@@ -2083,7 +2083,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     {
       mockAgentOnce([{ text: "hello" }]);
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "afora",
         messages: [{ role: "user", content: "hi" }],
       });
       expect(res.status).toBe(200);
@@ -2094,7 +2094,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     {
       agentCommandMock.mockClear();
       const res = await postChatCompletions(port, {
-        model: "openclaw",
+        model: "afora",
         response_format: { type: "xml" },
         messages: [{ role: "user", content: "hi" }],
       });
@@ -2119,7 +2119,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
           authorization: "Bearer wrong",
         };
         const body = {
-          model: "openclaw",
+          model: "afora",
           messages: [{ role: "user", content: "hi" }],
         };
 
@@ -2173,7 +2173,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     }) as never);
 
     const stream = await createOpenAiChatClient(enabledPort).chat.completions.create({
-      model: "openclaw",
+      model: "afora",
       messages: [{ role: "user", content: "Preserve the literal output." }],
       stream: true,
     });
@@ -2210,7 +2210,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     }) as never);
 
     const stream = await createOpenAiChatClient(enabledPort).chat.completions.create({
-      model: "openclaw",
+      model: "afora",
       messages: [{ role: "user", content: "Preserve the full snapshot." }],
       stream: true,
     });
@@ -2246,7 +2246,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
     const res = await postChatCompletions(enabledPort, {
       stream: true,
-      model: "openclaw",
+      model: "afora",
       messages: [{ role: "user", content: "Finish the streamed response." }],
     });
     expect(res.status).toBe(200);
@@ -2306,7 +2306,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       const client = new OpenAI({
         apiKey: "test",
         baseURL: `http://127.0.0.1:${enabledPort}/v1`,
-        defaultHeaders: { "x-openclaw-scopes": "operator.write" },
+        defaultHeaders: { "x-afora-scopes": "operator.write" },
         maxRetries: 0,
         fetch: async (input, init) => {
           const response = await fetch(input, init);
@@ -2315,7 +2315,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         },
       });
       const stream = await client.chat.completions.create({
-        model: "openclaw",
+        model: "afora",
         messages: [{ role: "user", content: "Report the provider failure." }],
         stream: true,
       });
@@ -2377,7 +2377,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     }) as never);
 
     const stream = await createOpenAiChatClient(enabledPort).chat.completions.create({
-      model: "openclaw",
+      model: "afora",
       messages: [{ role: "user", content: "Reject an incompatible replacement snapshot." }],
       stream: true,
     });
@@ -2445,7 +2445,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       }) as never);
 
       const stream = await createOpenAiChatClient(enabledPort).chat.completions.create({
-        model: "openclaw",
+        model: "afora",
         messages: [{ role: "user", content: "Preserve an append-compatible replacement." }],
         stream: true,
       });
@@ -2551,7 +2551,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const client = new OpenAI({
           apiKey: "test",
           baseURL: `http://127.0.0.1:${enabledPort}/v1`,
-          defaultHeaders: { "x-openclaw-scopes": "operator.write" },
+          defaultHeaders: { "x-afora-scopes": "operator.write" },
           maxRetries: 0,
           fetch: async (input, init) => {
             const response = await fetch(input, init);
@@ -2560,7 +2560,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
           },
         });
         const stream = await client.chat.completions.create({
-          model: "openclaw",
+          model: "afora",
           messages: [{ role: "user", content: "Return a complete streamed response." }],
           stream: true,
         });
@@ -2632,7 +2632,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
         const res = await postChatCompletions(port, {
           stream: true,
-          model: "openclaw",
+          model: "afora",
           messages: [{ role: "user", content: "hi" }],
         });
         expect(res.status).toBe(200);
@@ -2680,7 +2680,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
         const repeatedRes = await postChatCompletions(port, {
           stream: true,
-          model: "openclaw",
+          model: "afora",
           messages: [{ role: "user", content: "hi" }],
         });
         expect(repeatedRes.status).toBe(200);
@@ -2705,7 +2705,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
         const fallbackRes = await postChatCompletions(port, {
           stream: true,
-          model: "openclaw",
+          model: "afora",
           messages: [{ role: "user", content: "hi" }],
         });
         expect(fallbackRes.status).toBe(200);
@@ -2726,7 +2726,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
         const requiredFailureRes = await postChatCompletions(port, {
           stream: true,
-          model: "openclaw",
+          model: "afora",
           tool_choice: "required",
           tools: [
             {
@@ -2765,7 +2765,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
         const toolCallRes = await postChatCompletions(port, {
           stream: true,
-          model: "openclaw",
+          model: "afora",
           messages: [{ role: "user", content: "hi" }],
         });
         expect(toolCallRes.status).toBe(200);
@@ -2840,7 +2840,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         const toolCallUsageRes = await postChatCompletions(port, {
           stream: true,
           stream_options: { include_usage: true },
-          model: "openclaw",
+          model: "afora",
           messages: [{ role: "user", content: "hi" }],
         });
         expect(toolCallUsageRes.status).toBe(200);
@@ -2885,7 +2885,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
         const lateToolCallRes = await postChatCompletions(port, {
           stream: true,
-          model: "openclaw",
+          model: "afora",
           messages: [{ role: "user", content: "hi" }],
         });
         expect(lateToolCallRes.status).toBe(200);
@@ -2949,7 +2949,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
         const toolConflictRes = await postChatCompletions(port, {
           stream: true,
-          model: "openclaw",
+          model: "afora",
           tools: [
             {
               type: "function",
@@ -2991,7 +2991,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
         const errorRes = await postChatCompletions(port, {
           stream: true,
-          model: "openclaw",
+          model: "afora",
           messages: [{ role: "user", content: "hi" }],
         });
         expect(errorRes.status).toBe(200);
@@ -3049,7 +3049,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
       const res = await postChatCompletions(enabledPort, {
         stream: true,
-        model: "openclaw",
+        model: "afora",
         messages: [{ role: "user", content: "read the value" }],
       });
       expect(res.status).toBe(200);
@@ -3146,7 +3146,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         clientReq.end(
           JSON.stringify({
             stream: true,
-            model: "openclaw",
+            model: "afora",
             messages: [{ role: "user", content: "hi" }],
           }),
         );
@@ -3178,7 +3178,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
     const res = await postChatCompletions(enabledPort, {
       stream: true,
-      model: "openclaw",
+      model: "afora",
       messages: [{ role: "user", content: "hi" }],
     });
     await new Promise<void>((resolve) => {
@@ -3214,7 +3214,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
     const res = await postChatCompletions(port, {
       stream: true,
-      model: "openclaw",
+      model: "afora",
       messages: [{ role: "user", content: "hi" }],
     });
 
@@ -3249,7 +3249,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
     const res = await postChatCompletions(port, {
       stream: true,
-      model: "openclaw",
+      model: "afora",
       messages: [{ role: "user", content: "hi" }],
     });
 
@@ -3310,7 +3310,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     const res = await postChatCompletions(port, {
       stream: true,
       stream_options: { include_usage: true },
-      model: "openclaw",
+      model: "afora",
       messages: [{ role: "user", content: "hi" }],
     });
     expect(res.status).toBe(200);
@@ -3348,7 +3348,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     const res = await postChatCompletions(port, {
       stream: true,
       stream_options: { include_usage: true },
-      model: "openclaw",
+      model: "afora",
       messages: [{ role: "user", content: "hi" }],
     });
     expect(res.status).toBe(200);
@@ -3392,7 +3392,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     const res = await postChatCompletions(port, {
       stream: true,
       stream_options: { include_usage: true },
-      model: "openclaw",
+      model: "afora",
       messages: [{ role: "user", content: "hi" }],
     });
     expect(res.status).toBe(200);
@@ -3450,7 +3450,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         JSON.stringify({
           stream: true,
           stream_options: { include_usage: true },
-          model: "openclaw",
+          model: "afora",
           messages: [{ role: "user", content: "hi" }],
         }),
       );
@@ -3487,7 +3487,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
     const res = await postChatCompletions(port, {
       stream: true,
-      model: "openclaw",
+      model: "afora",
       messages: [{ role: "user", content: "hi" }],
     });
     expect(res.status).toBe(200);
@@ -3515,12 +3515,12 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
           enabledPort,
           {
             stream,
-            model: "openclaw",
+            model: "afora",
             messages: [{ role: "user", content: "hi" }],
           },
           {
-            "x-openclaw-scopes": scopes,
-            "x-openclaw-sender-is-owner": "true",
+            "x-afora-scopes": scopes,
+            "x-afora-sender-is-owner": "true",
           },
         );
 
@@ -3534,7 +3534,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
 
   it("preserves verified trusted-proxy owner identity for both response modes", async () => {
     await withEnvAsync(
-      { OPENCLAW_GATEWAY_TOKEN: undefined, OPENCLAW_GATEWAY_PASSWORD: undefined },
+      { AFORA_GATEWAY_TOKEN: undefined, AFORA_GATEWAY_PASSWORD: undefined },
       async () => {
         const port = await getGatewayTestPort();
         let server: Awaited<ReturnType<typeof startGatewayServer>> | undefined;
@@ -3575,15 +3575,15 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
                 port,
                 {
                   stream,
-                  model: "openclaw",
+                  model: "afora",
                   messages: [{ role: "user", content: "hi" }],
                 },
                 {
                   "x-forwarded-for": "198.51.100.42",
                   "x-forwarded-proto": "https",
                   "x-forwarded-user": "operator@example.com",
-                  "x-openclaw-scopes": scopes,
-                  "x-openclaw-sender-is-owner": "true",
+                  "x-afora-scopes": scopes,
+                  "x-afora-sender-is-owner": "true",
                 },
               );
 
@@ -3597,12 +3597,12 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
           agentCommandMock.mockClear();
           const unauthorized = await postChatCompletions(
             port,
-            { model: "openclaw", messages: [{ role: "user", content: "hi" }] },
+            { model: "afora", messages: [{ role: "user", content: "hi" }] },
             {
               "x-forwarded-for": "198.51.100.42",
               "x-forwarded-proto": "https",
-              "x-openclaw-scopes": "operator.admin, operator.write",
-              "x-openclaw-sender-is-owner": "true",
+              "x-afora-scopes": "operator.admin, operator.write",
+              "x-afora-sender-is-owner": "true",
             },
           );
           expect(unauthorized.status).toBe(401);
@@ -3632,13 +3632,13 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
             port,
             {
               stream,
-              model: "openclaw",
+              model: "afora",
               messages: [{ role: "user", content: "hi" }],
             },
             {
               authorization: "Bearer secret",
-              "x-openclaw-scopes": "operator.approvals",
-              "x-openclaw-sender-is-owner": "false",
+              "x-afora-scopes": "operator.approvals",
+              "x-afora-sender-is-owner": "false",
             },
           );
 
@@ -3651,8 +3651,8 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
         agentCommandMock.mockClear();
         const unauthorized = await postChatCompletions(
           port,
-          { model: "openclaw", messages: [{ role: "user", content: "hi" }] },
-          { authorization: "Bearer wrong", "x-openclaw-sender-is-owner": "true" },
+          { model: "afora", messages: [{ role: "user", content: "hi" }] },
+          { authorization: "Bearer wrong", "x-afora-sender-is-owner": "true" },
         );
         expect(unauthorized.status).toBe(401);
         await unauthorized.text();
@@ -3700,7 +3700,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
     clientReq.end(
       JSON.stringify({
         stream: true,
-        model: "openclaw",
+        model: "afora",
         messages: [{ role: "user", content: "hi" }],
       }),
     );
@@ -3766,7 +3766,7 @@ describe("OpenAI-compatible HTTP API (e2e)", () => {
       clientReq.on("error", () => {});
       clientReq.end(
         JSON.stringify({
-          model: "openclaw",
+          model: "afora",
           messages: [{ role: "user", content: "hi" }],
         }),
       );

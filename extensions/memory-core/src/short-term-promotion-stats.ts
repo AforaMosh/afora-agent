@@ -1,6 +1,6 @@
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
-import { isSameMemoryDreamingDay } from "openclaw/plugin-sdk/memory-core-host-status";
-import { normalizeStringEntries, uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
+import { isSameMemoryDreamingDay } from "afora-agent/plugin-sdk/memory-core-host-status";
+import { normalizeStringEntries, uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { formatErrorMessage } from "./dreaming-shared.js";
 import {
   emptyPhaseSignalStore,

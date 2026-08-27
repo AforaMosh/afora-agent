@@ -3,22 +3,22 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 
-const { TEST_STATE_DIR, PREVIOUS_OPENCLAW_STATE_DIR, SANDBOX_REGISTRY_PATH } = vi.hoisted(() => {
+const { TEST_STATE_DIR, PREVIOUS_AFORA_STATE_DIR, SANDBOX_REGISTRY_PATH } = vi.hoisted(() => {
   const nodePath = require("node:path");
   const { mkdtempSync } = require("node:fs");
   const { tmpdir } = require("node:os");
-  const baseDir = mkdtempSync(nodePath.join(tmpdir(), "openclaw-sandbox-registry-"));
-  const previousStateDir = process.env.OPENCLAW_STATE_DIR;
-  Reflect.set(process.env, "OPENCLAW_STATE_DIR", baseDir);
+  const baseDir = mkdtempSync(nodePath.join(tmpdir(), "afora-sandbox-registry-"));
+  const previousStateDir = process.env.AFORA_STATE_DIR;
+  Reflect.set(process.env, "AFORA_STATE_DIR", baseDir);
 
   return {
     TEST_STATE_DIR: baseDir,
-    PREVIOUS_OPENCLAW_STATE_DIR: previousStateDir,
+    PREVIOUS_AFORA_STATE_DIR: previousStateDir,
     SANDBOX_REGISTRY_PATH: nodePath.join(baseDir, "containers.json"),
   };
 });
 
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { deleteTestEnvValue, setTestEnvValue } from "../../test-utils/env.js";
 import {
   readBrowserRegistry,
@@ -35,18 +35,18 @@ type SandboxBrowserRegistryEntry = import("./registry.js").SandboxBrowserRegistr
 type SandboxRegistryEntry = import("./registry.js").SandboxRegistryEntry;
 
 afterEach(async () => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   await fs.rm(path.join(TEST_STATE_DIR, "state"), { recursive: true, force: true });
   await fs.rm(SANDBOX_REGISTRY_PATH, { force: true });
 });
 
 afterAll(async () => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   await fs.rm(TEST_STATE_DIR, { recursive: true, force: true });
-  if (PREVIOUS_OPENCLAW_STATE_DIR === undefined) {
-    deleteTestEnvValue("OPENCLAW_STATE_DIR");
+  if (PREVIOUS_AFORA_STATE_DIR === undefined) {
+    deleteTestEnvValue("AFORA_STATE_DIR");
   } else {
-    setTestEnvValue("OPENCLAW_STATE_DIR", PREVIOUS_OPENCLAW_STATE_DIR);
+    setTestEnvValue("AFORA_STATE_DIR", PREVIOUS_AFORA_STATE_DIR);
   }
 });
 
@@ -58,7 +58,7 @@ function browserEntry(
     sessionKey: "agent:main",
     createdAtMs: 1,
     lastUsedAtMs: 1,
-    image: "openclaw-browser:test",
+    image: "afora-browser:test",
     cdpPort: 9222,
     ...overrides,
   };
@@ -70,7 +70,7 @@ function containerEntry(overrides: Partial<SandboxRegistryEntry> = {}): SandboxR
     sessionKey: "agent:main",
     createdAtMs: 1,
     lastUsedAtMs: 1,
-    image: "openclaw-sandbox:test",
+    image: "afora-sandbox:test",
     ...overrides,
   };
 }
@@ -99,7 +99,7 @@ describe("registry race safety", () => {
     await expect(readRegistry()).resolves.toEqual({ entries: [] });
     await expect(readRegistryEntry("legacy-container")).resolves.toBeNull();
     await expect(fs.access(SANDBOX_REGISTRY_PATH)).resolves.toBeUndefined();
-    await expectPathMissing(path.join(TEST_STATE_DIR, "state", "openclaw.sqlite"));
+    await expectPathMissing(path.join(TEST_STATE_DIR, "state", "afora.sqlite"));
   });
 
   it("reads a single SQLite entry without scanning the full registry", async () => {

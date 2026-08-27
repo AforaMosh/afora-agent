@@ -200,11 +200,11 @@ describe("session message cache", () => {
   it("does not retain history across backing session changes", () => {
     const { host, cache } = createCacheContext();
     cacheHomeSnapshot(cache, host, {
-      messages: [{ content: "old", __openclaw: { seq: 1 } }],
+      messages: [{ content: "old", __afora: { seq: 1 } }],
       pagination: { hasMore: false, totalMessages: 1 },
       sessionId: "session-1",
     });
-    const replacement = [{ content: "new", __openclaw: { seq: 1 } }];
+    const replacement = [{ content: "new", __afora: { seq: 1 } }];
 
     cacheHomeSnapshot(cache, host, {
       messages: replacement,
@@ -254,9 +254,9 @@ describe("session message cache", () => {
     const content = "x".repeat(4 * 1024 * 1024);
     cacheHomeSnapshot(cache, host, {
       messages: [
-        { content, __openclaw: { seq: 1 } },
-        { content, projection: "sibling", __openclaw: { seq: 1 } },
-        { content, __openclaw: { seq: 2 } },
+        { content, __afora: { seq: 1 } },
+        { content, projection: "sibling", __afora: { seq: 1 } },
+        { content, __afora: { seq: 2 } },
       ],
       pagination: { hasMore: false, totalMessages: 2 },
       sessionId: "session-1",
@@ -280,7 +280,7 @@ describe("session message cache", () => {
         host,
         { sessionKey },
         {
-          messages: [{ content, __openclaw: { seq: 1 } }],
+          messages: [{ content, __afora: { seq: 1 } }],
           pagination: { hasMore: false, totalMessages: 1 },
           sessionId: sessionKey,
         },

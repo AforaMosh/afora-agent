@@ -8,7 +8,7 @@ type CronActiveJobState = {
   emptyWaiters: Set<() => void>;
 };
 
-const CRON_ACTIVE_JOB_STATE_KEY = Symbol.for("openclaw.cron.activeJobs");
+const CRON_ACTIVE_JOB_STATE_KEY = Symbol.for("afora.cron.activeJobs");
 
 export type CronActiveJobMarker = {
   jobId: string;

@@ -1,63 +1,63 @@
 ---
-summary: "Run OpenClaw embedded agent turns through the external GitHub Copilot SDK harness"
+summary: "Run Afora embedded agent turns through the external GitHub Copilot SDK harness"
 title: "Copilot SDK harness"
 read_when:
   - You want to use the GitHub Copilot SDK harness for an agent
   - You need configuration examples for the `copilot` runtime
-  - You are wiring an agent to subscription Copilot (github / openclaw / copilot) and want it to run through the Copilot CLI
+  - You are wiring an agent to subscription Copilot (github / afora / copilot) and want it to run through the Copilot CLI
 ---
 
-The external `@openclaw/copilot` plugin runs embedded subscription Copilot
+The external `@afora/copilot` plugin runs embedded subscription Copilot
 agent turns through the GitHub Copilot CLI (`@github/copilot-sdk`) instead of
-OpenClaw's built-in harness. The Copilot CLI session owns the low-level
+Afora's built-in harness. The Copilot CLI session owns the low-level
 agent loop: native tool execution, native compaction (`infiniteSessions`), and
-CLI-managed thread state under `copilotHome`. OpenClaw still owns chat
+CLI-managed thread state under `copilotHome`. Afora still owns chat
 channels, session files, model selection, dynamic tools (bridged), approvals,
 media delivery, the visible transcript mirror, `/btw` side questions (see
-[Side questions (`/btw`)](/plugins/copilot#side-questions-%2Fbtw)), and `openclaw doctor`.
+[Side questions (`/btw`)](/plugins/copilot#side-questions-%2Fbtw)), and `afora doctor`.
 
 For the broader model/provider/runtime split, start with
 [Agent runtimes](/concepts/agent-runtimes).
 
 ## Requirements
 
-- OpenClaw with the `@openclaw/copilot` plugin installed.
+- Afora with the `@afora/copilot` plugin installed.
 - If your config uses `plugins.allow`, include `copilot` (the manifest id the
   plugin declares). An allowlist entry for the npm package name
-  `@openclaw/copilot` will not match and leaves the plugin blocked, even with
+  `@afora/copilot` will not match and leaves the plugin blocked, even with
   `agentRuntime.id: "copilot"` set.
 - A GitHub Copilot subscription that can drive the Copilot CLI, or a
   `gitHubToken` env var / auth-profile entry for headless or cron runs.
 - A writable `copilotHome` directory. Defaults to `<agentDir>/copilot` when
-  OpenClaw provides an agent directory, otherwise
-  `~/.openclaw/agents/<agentId>/copilot`.
+  Afora provides an agent directory, otherwise
+  `~/.afora/agents/<agentId>/copilot`.
 
-`openclaw doctor` runs the plugin's [doctor contract](#doctor) for
+`afora doctor` runs the plugin's [doctor contract](#doctor) for
 session-state ownership and future config migrations. It does not probe the
 Copilot CLI environment.
 
 ## Install
 
-The Copilot runtime ships as an external plugin so the core `openclaw`
+The Copilot runtime ships as an external plugin so the core `afora`
 package does not carry `@github/copilot-sdk` or its platform-specific
 `@github/copilot-<platform>-<arch>` CLI binary (roughly 260 MB together).
 Install it only for agents that opt into this runtime:
 
 ```bash
-openclaw plugins install @openclaw/copilot
+afora plugins install @afora/copilot
 ```
 
 The setup wizard installs the plugin automatically the first time you select
 a `github-copilot/*` model **and** your config routes that model (or its
 provider) to the Copilot runtime via `agentRuntime: { id: "copilot" }`; see
-[Quickstart](#quickstart). Without that opt-in, OpenClaw uses its built-in
+[Quickstart](#quickstart). Without that opt-in, Afora uses its built-in
 GitHub Copilot provider and never installs this plugin.
 
 The runtime resolves the SDK in this order:
 
-1. `import("@github/copilot-sdk")` from the installed `@openclaw/copilot`
+1. `import("@github/copilot-sdk")` from the installed `@afora/copilot`
    package.
-2. The fallback dir `~/.openclaw/npm-runtime/copilot/` (legacy on-demand
+2. The fallback dir `~/.afora/npm-runtime/copilot/` (legacy on-demand
    install target).
 
 A missing SDK surfaces one error with code `COPILOT_SDK_MISSING` and the
@@ -107,13 +107,13 @@ through Copilot BYOK instead.
 
 Copilot BYOK endpoints must be public HTTPS URLs. The harness gives the
 Copilot SDK a per-attempt loopback proxy, then forwards provider traffic
-through OpenClaw's guarded fetch path so DNS pinning and SSRF policy stay
-owned by OpenClaw. Use the native OpenClaw runtime for local Ollama, LM
+through Afora's guarded fetch path so DNS pinning and SSRF policy stay
+owned by Afora. Use the native Afora runtime for local Ollama, LM
 Studio, or LAN model servers.
 
 ## BYOK
 
-Copilot BYOK uses the SDK's session-level custom provider contract. OpenClaw
+Copilot BYOK uses the SDK's session-level custom provider contract. Afora
 passes the resolved model endpoint, API key, bearer-token mode, headers, model
 id, and context/output limits; provider transport logic stays in the SDK, not
 core.
@@ -166,8 +166,8 @@ Precedence, applied per agent during `runCopilotAttempt`:
 4. **Env-var fallback**, checked in this order (first non-empty value wins,
    empty strings count as absent; mirrors the shipped `github-copilot`
    provider precedence in `extensions/github-copilot/auth.ts`):
-   1. `OPENCLAW_GITHUB_TOKEN` — harness-specific override; lets you pin a
-      token for the OpenClaw harness without disturbing system-wide `gh` /
+   1. `AFORA_GITHUB_TOKEN` — harness-specific override; lets you pin a
+      token for the Afora harness without disturbing system-wide `gh` /
       Copilot CLI config.
    2. `COPILOT_GITHUB_TOKEN` — standard Copilot SDK / CLI env var.
    3. `GH_TOKEN` — standard `gh` CLI env var.
@@ -182,12 +182,12 @@ Precedence, applied per agent during `runCopilotAttempt`:
 Each agent gets its own `copilotHome` so Copilot CLI tokens, sessions, and
 config never leak between agents on the same machine. Default:
 `<agentDir>/copilot` (keeps SDK state out of the same directory as
-OpenClaw's `models.json` / `auth-profiles.json`), or
-`~/.openclaw/agents/<agentId>/copilot` when no agent directory is supplied.
+Afora's `models.json` / `auth-profiles.json`), or
+`~/.afora/agents/<agentId>/copilot` when no agent directory is supplied.
 Override with `copilotHome: <path>` on the attempt input for a custom
 location (for example, a shared mount for migration).
 
-Live harness tests use `OPENCLAW_COPILOT_AGENT_LIVE_TOKEN` for a direct
+Live harness tests use `AFORA_COPILOT_AGENT_LIVE_TOKEN` for a direct
 token. The shared live-test setup scrubs `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`,
 and `GITHUB_TOKEN` after staging real auth profiles into the isolated test
 home, so a `gh auth token` value passed through the dedicated variable avoids
@@ -202,20 +202,20 @@ plus a small set of env defaults inside `extensions/copilot/src/`:
 | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `copilotHome`            | Per-agent CLI state directory (defaults above).                                                                                                                                                                                                                                                 |
 | `model`                  | String or `{ provider, id, api?, baseUrl?, headers?, authHeader? }`. Omit to use the agent's normal model selection; the harness verifies the resolved provider is supported.                                                                                                                   |
-| `reasoningEffort`        | `"low" \| "medium" \| "high" \| "xhigh"`. Maps from OpenClaw's `ThinkLevel` / `ReasoningLevel` resolution in `auto-reply/thinking.ts`.                                                                                                                                                          |
+| `reasoningEffort`        | `"low" \| "medium" \| "high" \| "xhigh"`. Maps from Afora's `ThinkLevel` / `ReasoningLevel` resolution in `auto-reply/thinking.ts`.                                                                                                                                                          |
 | `infiniteSessionConfig`  | Optional override for the SDK `infiniteSessions` block driven by `harness.compact`. Safe to leave as-is.                                                                                                                                                                                        |
-| `hooksConfig`            | Optional native Copilot SDK `SessionHooks` config for tool/MCP, user-prompt, session, and error callbacks. Separate from OpenClaw's portable lifecycle hooks.                                                                                                                                   |
+| `hooksConfig`            | Optional native Copilot SDK `SessionHooks` config for tool/MCP, user-prompt, session, and error callbacks. Separate from Afora's portable lifecycle hooks.                                                                                                                                   |
 | `permissionPolicy`       | Optional override for the SDK's `onPermissionRequest` handler for built-in SDK tool kinds (`shell`, `write`, `read`, `url`, `mcp`, `memory`, `hook`). Defaults to `rejectAllPolicy` as a safety net; see [Permissions and ask_user](#permissions-and-ask_user) for why it never actually fires. |
 | `enableSessionTelemetry` | Optional SDK session telemetry flag.                                                                                                                                                                                                                                                            |
 
-OpenClaw plugin hooks need no Copilot-specific attempt configuration. The
+Afora plugin hooks need no Copilot-specific attempt configuration. The
 harness runs `before_prompt_build`, `llm_input`, `llm_output`, and `agent_end` through the
 standard harness helpers. Successful SDK compactions also run
-`before_compaction` and `after_compaction`. Bridged OpenClaw tools run
+`before_compaction` and `after_compaction`. Bridged Afora tools run
 `before_tool_call` and report `after_tool_call`; `hooksConfig` remains for
 native SDK-only callbacks with no portable equivalent.
 
-Nothing else in OpenClaw needs to know about these fields. Other plugins,
+Nothing else in Afora needs to know about these fields. Other plugins,
 channels, and core code see only the standard `AgentHarnessAttemptParams` /
 `AgentHarnessAttemptResult` shape.
 
@@ -228,13 +228,13 @@ When `harness.compact` runs, the Copilot SDK harness:
 3. Returns the SDK compaction outcome without writing compatibility marker
    files under the workspace.
 
-The OpenClaw-side transcript mirror (below) keeps receiving post-compaction
+The Afora-side transcript mirror (below) keeps receiving post-compaction
 messages, so user-facing chat history stays consistent.
 
 ## Transcript mirroring
 
 `runCopilotAttempt` dual-writes each turn's mirrorable messages into the
-OpenClaw audit transcript via
+Afora audit transcript via
 `extensions/copilot/src/dual-write-transcripts.ts`. The mirror is scoped per
 session (`copilot:${sessionId}`) and keyed per message
 (`${role}:${sha256_16(role,content)}`), so re-emitted prior-turn entries
@@ -250,7 +250,7 @@ surfaced.
 `/btw` is **not** native on this harness. `createCopilotAgentHarness()`
 deliberately leaves `harness.runSideQuestion` undefined
 (asserted in `extensions/copilot/harness.test.ts`, `describe("runSideQuestion")`),
-so OpenClaw's `/btw` dispatcher (`src/agents/btw.ts`) falls through to the
+so Afora's `/btw` dispatcher (`src/agents/btw.ts`) falls through to the
 same path it uses for every non-Codex runtime: the configured model provider
 is called directly with a short side-question prompt and streamed back via
 `streamSimple` (no CLI session, no extra pool slot).
@@ -279,17 +279,17 @@ doctor contract:
 - PI session state does not migrate when an agent switches to `copilot`.
   Selection is per attempt; existing PI sessions remain valid.
 - `ask_user` uses the provider-neutral gateway question runtime. The Control
-  UI shows the same question card as other OpenClaw questions, supported
+  UI shows the same question card as other Afora questions, supported
   channels render choice buttons, and the next queued plain-text message
   resolves that gateway record before the SDK request returns.
 
 ## Permissions and ask_user
 
-Permission enforcement for bridged OpenClaw tools happens **inside the tool
+Permission enforcement for bridged Afora tools happens **inside the tool
 wrapper**, not via the SDK's `onPermissionRequest` callback. The same
 `wrapToolWithBeforeToolCallHook` that PI uses
 (`src/agents/agent-tools.before-tool-call.ts`) is applied by
-`createOpenClawCodingTools` to every coding tool: loop detection, trusted
+`createAforaCodingTools` to every coding tool: loop detection, trusted
 plugin policies, before-tool-call hooks, and two-phase plugin approvals via
 the gateway (`plugin.approval.request`) all run through the exact same code
 path as native PI attempts.
@@ -298,15 +298,15 @@ Each SDK tool returned by the Copilot tool bridge is marked with:
 
 - `overridesBuiltInTool: true` — replaces the Copilot CLI's built-in tool of
   the same name (edit, read, write, bash, ...) so every tool call routes back
-  to OpenClaw.
+  to Afora.
 - `skipPermission: true` — tells the SDK not to fire
   `onPermissionRequest({kind: "custom-tool"})` before invoking the tool. The
-  wrapped `execute()` already performs the richer OpenClaw policy check; an
-  SDK-level prompt would either short-circuit OpenClaw's enforcement
+  wrapped `execute()` already performs the richer Afora policy check; an
+  SDK-level prompt would either short-circuit Afora's enforcement
   (allow-all) or block every tool call (reject-all) — neither matches PI
   parity.
 
-The in-tree Codex harness uses the same split: bridged OpenClaw tools are
+The in-tree Codex harness uses the same split: bridged Afora tools are
 wrapped (`extensions/codex/src/app-server/dynamic-tools.ts`) and the
 codex-app-server's own native approval kinds
 (`item/commandExecution/requestApproval`, `item/fileChange/requestApproval`,
@@ -319,7 +319,7 @@ built-in.
 
 For the wrapped-tool layer to make policy decisions equivalent to PI, the
 harness forwards the full PI attempt-tool context to
-`createOpenClawCodingTools`: identity (`senderIsOwner`, `memberRoleIds`,
+`createAforaCodingTools`: identity (`senderIsOwner`, `memberRoleIds`,
 `ownerOnlyToolAllowlist`, ...), channel/routing (`groupId`,
 `currentChannelId`, `replyToMode`, message-tool toggles), auth
 (`authProfileStore`), run identity (`sessionKey` / `runSessionKey` derived
@@ -338,9 +338,9 @@ can enforce at the SDK boundary: `includeCoreTools`, the runtime tool
 allowlist, and `toolConstructionPlan`.
 
 The bridge also uses the shared harness tool-surface helper from
-`openclaw/plugin-sdk/agent-harness-tool-runtime` for PI parity. When
+`afora/plugin-sdk/agent-harness-tool-runtime` for PI parity. When
 tool-search is enabled, the SDK sees compact control tools plus a hidden
-catalog executor instead of every OpenClaw tool schema. When code mode is
+catalog executor instead of every Afora tool schema. When code mode is
 enabled, the helper builds the same code-mode control surface and catalog
 lifecycle used by other agent harnesses. Local-model lean defaults,
 runtime-compatible schema filtering, directory hydration, and catalog
@@ -363,7 +363,7 @@ deriving identity from the logged-in identity.
 `ask_user` uses `SessionConfig.onUserInputRequest`. The bridge registers SDK
 choices or option-less free-text prompts as gateway questions, accepts choice
 indexes or labels for fixed-choice requests, and accepts free-form answers
-when the SDK request allows them. Aborting the OpenClaw attempt cancels the
+when the SDK request allows them. Aborting the Afora attempt cancels the
 gateway record and returns an empty SDK answer.
 
 ## Related

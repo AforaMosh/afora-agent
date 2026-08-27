@@ -5,9 +5,9 @@ import type { lookup as dnsLookupCb } from "node:dns";
  * Provides screenshots, target creation, JavaScript evaluation, ARIA/role
  * snapshots, DOM text, and selector lookup on top of the CDP socket helpers.
  */
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
-import { resolveIntegerOption } from "openclaw/plugin-sdk/number-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
+import { resolveIntegerOption } from "afora-agent/plugin-sdk/number-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import type { SsrFPolicy } from "../infra/net/ssrf.js";
 import {
   prepareCdpPageSession,
@@ -616,7 +616,7 @@ async function findCursorInteractiveElements(
   send: CdpSendFn,
   sessionId?: string,
 ): Promise<Map<number, CursorInteractiveInfo>> {
-  const attr = "data-openclaw-cdp-ci";
+  const attr = "data-afora-cdp-ci";
   const evaluated = (await send(
     "Runtime.evaluate",
     {

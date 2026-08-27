@@ -1,8 +1,8 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 export const SESSION_COMPANION_TOOLS = ["read", "sessions_history", "sessions_search"] as const;
 
-export function buildSessionCompanionRunConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function buildSessionCompanionRunConfig(cfg: AforaConfig): AforaConfig {
   const toolSearch = cfg.tools?.toolSearch;
   const codeMode = cfg.tools?.codeMode;
   return {

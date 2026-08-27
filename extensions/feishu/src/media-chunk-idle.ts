@@ -1,5 +1,5 @@
 // Feishu inbound media chunk-idle timeout helper.
-import { saveMediaStream, type SavedMedia } from "openclaw/plugin-sdk/media-store";
+import { saveMediaStream, type SavedMedia } from "afora-agent/plugin-sdk/media-store";
 
 class FeishuInboundMediaTimeoutError extends Error {
   readonly chunkTimeoutMs: number;

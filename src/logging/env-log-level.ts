@@ -1,12 +1,12 @@
 // Env log level helpers normalize log level values from environment variables.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { formatConsoleDiagnosticLine } from "./json-console-line.js";
 import { ALLOWED_LOG_LEVELS, type LogLevel, tryParseLogLevel } from "./levels.js";
 import { loggingState } from "./state.js";
 
-/** Resolves OPENCLAW_LOG_LEVEL once per value, warning only when the invalid value changes. */
+/** Resolves AFORA_LOG_LEVEL once per value, warning only when the invalid value changes. */
 export function resolveEnvLogLevelOverride(): LogLevel | undefined {
-  const trimmed = normalizeOptionalString(process.env.OPENCLAW_LOG_LEVEL) ?? "";
+  const trimmed = normalizeOptionalString(process.env.AFORA_LOG_LEVEL) ?? "";
   if (!trimmed) {
     loggingState.invalidEnvLogLevelValue = null;
     return undefined;
@@ -18,7 +18,7 @@ export function resolveEnvLogLevelOverride(): LogLevel | undefined {
   }
   if (loggingState.invalidEnvLogLevelValue !== trimmed) {
     loggingState.invalidEnvLogLevelValue = trimmed;
-    const message = `[openclaw] Ignoring invalid OPENCLAW_LOG_LEVEL="${trimmed}" (allowed: ${ALLOWED_LOG_LEVELS.join("|")}).`;
+    const message = `[afora] Ignoring invalid AFORA_LOG_LEVEL="${trimmed}" (allowed: ${ALLOWED_LOG_LEVELS.join("|")}).`;
     process.stderr.write(`${formatConsoleDiagnosticLine({ level: "warn", message })}\n`);
   }
   return undefined;

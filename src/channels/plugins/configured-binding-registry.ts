@@ -3,7 +3,7 @@
  *
  * Primes, counts, and resolves compiled binding records from config and conversation facts.
  */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ConversationRef } from "../../infra/outbound/session-binding-service.js";
 import type {
   ConfiguredBindingRecordResolution,
@@ -19,7 +19,7 @@ import {
 import { resolveConfiguredBindingRecordBySessionKeyFromRegistry } from "./configured-binding-session-lookup.js";
 
 function resolveMaterializedConfiguredBinding(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   conversation: ConversationRef;
 }) {
   const conversation = toConfiguredBindingConversationRef(params.conversation);
@@ -53,7 +53,7 @@ function resolveMaterializedConfiguredBinding(params: {
 /**
  * Warms and counts the compiled configured binding registry for a config snapshot.
  */
-export function primeConfiguredBindingRegistry(params: { cfg: OpenClawConfig }): {
+export function primeConfiguredBindingRegistry(params: { cfg: AforaConfig }): {
   bindingCount: number;
   channelCount: number;
 } {
@@ -69,7 +69,7 @@ export function primeConfiguredBindingRegistry(params: { cfg: OpenClawConfig }):
  * Resolves a configured binding record from explicit channel/account/conversation ids.
  */
 export function resolveConfiguredBindingRecord(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   accountId: string;
   conversationId: string;
@@ -93,7 +93,7 @@ export function resolveConfiguredBindingRecord(params: {
  * Resolves the full configured binding match, including compiled rule and match diagnostics.
  */
 export function resolveConfiguredBinding(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   conversation: ConversationRef;
 }): ConfiguredBindingResolution | null {
   ensureConfiguredBindingBuiltinsRegistered();
@@ -113,7 +113,7 @@ export function resolveConfiguredBinding(params: {
  * Resolves a configured binding record by the stateful target session key.
  */
 export function resolveConfiguredBindingRecordBySessionKey(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
 }): ConfiguredBindingRecordResolution | null {
   ensureConfiguredBindingBuiltinsRegistered();

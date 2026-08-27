@@ -1,7 +1,7 @@
 import type {
   SystemAgentChatHistoryResult,
   SystemAgentChatHistoryTurn,
-} from "@openclaw/gateway-protocol";
+} from "@afora/gateway-protocol";
 import { html, nothing } from "lit";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import type { WizardStep } from "../../api/types.ts";
@@ -89,7 +89,7 @@ export async function readCustodianTranscript(
   try {
     return (
       await client.request<SystemAgentChatHistoryResult>(
-        "openclaw.chat.history",
+        "afora.chat.history",
         {},
         {
           timeoutMs: CUSTODIAN_TRANSCRIPT_TIMEOUT_MS,

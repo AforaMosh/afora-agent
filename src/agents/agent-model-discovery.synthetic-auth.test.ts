@@ -41,7 +41,7 @@ vi.mock("./agent-auth-discovery-core.js", () => ({
 let resolveAgentDiscoveryAuthFacts: typeof import("./agent-auth-discovery.js").resolveAgentDiscoveryAuthFacts;
 
 async function withAgentDir(run: (agentDir: string) => Promise<void>): Promise<void> {
-  const agentDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-agent-synthetic-auth-"));
+  const agentDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-agent-synthetic-auth-"));
   try {
     await run(agentDir);
   } finally {

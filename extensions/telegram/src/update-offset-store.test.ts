@@ -1,10 +1,10 @@
 // Telegram tests cover update offset store plugin behavior.
-import type { PluginStateKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { PluginStateKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import { withStateDirEnv } from "openclaw/plugin-sdk/test-env";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import { withStateDirEnv } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { setTelegramRuntime } from "./runtime.js";
 import { clearTelegramRuntimeForTest } from "./runtime.test-support.js";
@@ -53,7 +53,7 @@ describe("deleteTelegramUpdateOffset", () => {
   });
 
   it("removes the offset row so a new bot starts fresh", async () => {
-    await withStateDirEnv("openclaw-tg-offset-", async () => {
+    await withStateDirEnv("afora-tg-offset-", async () => {
       await writeTelegramUpdateOffset({ accountId: "default", updateId: 432_000_000 });
       expect(await readTelegramUpdateOffset({ accountId: "default" })).toBe(432_000_000);
 
@@ -63,14 +63,14 @@ describe("deleteTelegramUpdateOffset", () => {
   });
 
   it("keeps a missing offset row absent after delete", async () => {
-    await withStateDirEnv("openclaw-tg-offset-", async () => {
+    await withStateDirEnv("afora-tg-offset-", async () => {
       await deleteTelegramUpdateOffset({ accountId: "nonexistent" });
       expect(await readTelegramUpdateOffset({ accountId: "nonexistent" })).toBeNull();
     });
   });
 
   it("only removes the targeted account offset, leaving others intact", async () => {
-    await withStateDirEnv("openclaw-tg-offset-", async () => {
+    await withStateDirEnv("afora-tg-offset-", async () => {
       await writeTelegramUpdateOffset({ accountId: "default", updateId: 100 });
       await writeTelegramUpdateOffset({ accountId: "alerts", updateId: 200 });
 
@@ -82,7 +82,7 @@ describe("deleteTelegramUpdateOffset", () => {
   });
 
   it("surfaces plugin-state write failures", async () => {
-    await withStateDirEnv("openclaw-tg-offset-", async () => {
+    await withStateDirEnv("afora-tg-offset-", async () => {
       installStore({
         ...createPluginStateKeyedStoreForTests<TelegramUpdateOffsetState>("telegram", {
           namespace: TELEGRAM_UPDATE_OFFSET_NAMESPACE,
@@ -100,7 +100,7 @@ describe("deleteTelegramUpdateOffset", () => {
   });
 
   it("returns null when stored offset was written by a different bot token", async () => {
-    await withStateDirEnv("openclaw-tg-offset-", async () => {
+    await withStateDirEnv("afora-tg-offset-", async () => {
       await writeTelegramUpdateOffset({
         accountId: "default",
         updateId: 321,
@@ -123,7 +123,7 @@ describe("deleteTelegramUpdateOffset", () => {
   });
 
   it("invokes onRotationDetected when the stored bot id no longer matches", async () => {
-    await withStateDirEnv("openclaw-tg-offset-", async () => {
+    await withStateDirEnv("afora-tg-offset-", async () => {
       await writeTelegramUpdateOffset({
         accountId: "default",
         updateId: 1500,
@@ -152,7 +152,7 @@ describe("deleteTelegramUpdateOffset", () => {
   });
 
   it("invokes onRotationDetected for imported legacy offsets without bot identity", async () => {
-    await withStateDirEnv("openclaw-tg-offset-", async () => {
+    await withStateDirEnv("afora-tg-offset-", async () => {
       await updateOffsetStore.register("default", {
         version: 1,
         lastUpdateId: 777,
@@ -180,7 +180,7 @@ describe("deleteTelegramUpdateOffset", () => {
   });
 
   it("returns null when the plugin-state read fails", async () => {
-    await withStateDirEnv("openclaw-tg-offset-", async () => {
+    await withStateDirEnv("afora-tg-offset-", async () => {
       installStore({
         ...createPluginStateKeyedStoreForTests<TelegramUpdateOffsetState>("telegram", {
           namespace: TELEGRAM_UPDATE_OFFSET_NAMESPACE,
@@ -257,7 +257,7 @@ describe("deleteTelegramUpdateOffset", () => {
   });
 
   it("detects same-bot token rotation via the persisted fingerprint", async () => {
-    await withStateDirEnv("openclaw-tg-offset-", async () => {
+    await withStateDirEnv("afora-tg-offset-", async () => {
       const original = "111111:original-secret";
       const rotated = "111111:rotated-secret";
 
@@ -296,7 +296,7 @@ describe("deleteTelegramUpdateOffset", () => {
   });
 
   it("treats imported v2 bot-id-only offsets as stale when token identity cannot be verified", async () => {
-    await withStateDirEnv("openclaw-tg-offset-", async () => {
+    await withStateDirEnv("afora-tg-offset-", async () => {
       await updateOffsetStore.register("default", {
         version: 2,
         lastUpdateId: 999,
@@ -325,7 +325,7 @@ describe("deleteTelegramUpdateOffset", () => {
   });
 
   it("awaits rotation cleanup before returning", async () => {
-    await withStateDirEnv("openclaw-tg-offset-", async () => {
+    await withStateDirEnv("afora-tg-offset-", async () => {
       await writeTelegramUpdateOffset({
         accountId: "default",
         updateId: 42,
@@ -350,7 +350,7 @@ describe("deleteTelegramUpdateOffset", () => {
   });
 
   it("treats imported legacy offset records without bot identity as stale when token is provided", async () => {
-    await withStateDirEnv("openclaw-tg-offset-", async () => {
+    await withStateDirEnv("afora-tg-offset-", async () => {
       await updateOffsetStore.register("default", {
         version: 1,
         lastUpdateId: 777,
@@ -366,7 +366,7 @@ describe("deleteTelegramUpdateOffset", () => {
   });
 
   it("ignores invalid persisted update IDs from plugin-state", async () => {
-    await withStateDirEnv("openclaw-tg-offset-", async () => {
+    await withStateDirEnv("afora-tg-offset-", async () => {
       await updateOffsetStore.register("default", {
         version: 2,
         lastUpdateId: -1,
@@ -384,7 +384,7 @@ describe("deleteTelegramUpdateOffset", () => {
   });
 
   it("rejects writing invalid update IDs", async () => {
-    await withStateDirEnv("openclaw-tg-offset-", async () => {
+    await withStateDirEnv("afora-tg-offset-", async () => {
       await expect(
         writeTelegramUpdateOffset({ accountId: "default", updateId: -1 as number }),
       ).rejects.toThrow(/non-negative safe integer/i);

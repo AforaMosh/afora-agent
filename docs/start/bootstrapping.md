@@ -14,18 +14,18 @@ onboarding, on the agent's first real turn.
 
 ## What happens
 
-On the first run against a brand-new workspace (default `~/.openclaw/workspace`),
-OpenClaw:
+On the first run against a brand-new workspace (default `~/.afora/workspace`),
+Afora:
 
 - Seeds `AGENTS.md`, `SOUL.md`, `IDENTITY.md`, `USER.md`, and `BOOTSTRAP.md`. Environment-specific tool notes belong in the `## Tools` section of `AGENTS.md`.
 - Has the agent follow a capped three-beat birth sequence: it asks what you want
   to call it, shares one short soul/vibe line, and asks whether you want the
   minimal recommended plugin set or maximum convenience.
 - Persists the agreed identity twice: into `IDENTITY.md` and `SOUL.md` (what the
-  agent reads about itself) and via `openclaw agents set-identity` (what channels
+  agent reads about itself) and via `afora agents set-identity` (what channels
   and the UI display).
 - Reads app recommendations already stored during onboarding without rescanning.
-  Official plugins use `openclaw plugins install <id>`; third-party ClawHub
+  Official plugins use `afora plugins install <id>`; third-party ClawHub
   skills remain explicit opt-ins. After the choice is handled, the agent
   acknowledges the stored offer so it never asks again.
 - Deletes `BOOTSTRAP.md` once the workspace looks configured, so the ritual only runs once.
@@ -40,7 +40,7 @@ diverged from its starter template, or a `memory/` folder exists.
 
 ## Embedded and local model runs
 
-For embedded or local-model runs, OpenClaw keeps `BOOTSTRAP.md` out of the
+For embedded or local-model runs, Afora keeps `BOOTSTRAP.md` out of the
 privileged system context. On the primary interactive first run it still
 passes the file contents through the user prompt, so models that don't
 reliably call the `read` tool can still complete the ritual. If the current
@@ -52,7 +52,7 @@ note instead of a generic greeting.
 To skip this on a pre-seeded workspace, run:
 
 ```bash
-openclaw onboard --skip-bootstrap
+afora onboard --skip-bootstrap
 ```
 
 ## Where it runs
@@ -63,7 +63,7 @@ machine, not on the Mac.
 
 <Note>
 When the Gateway runs on another machine, edit workspace files on the gateway
-host (for example, `user@gateway-host:~/.openclaw/workspace`).
+host (for example, `user@gateway-host:~/.afora/workspace`).
 </Note>
 
 ## Related docs

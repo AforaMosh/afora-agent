@@ -1,8 +1,8 @@
 // Slack plugin module implements captionless audio mention preflight behavior.
 import fs from "node:fs/promises";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { mimeTypeFromFilePath } from "openclaw/plugin-sdk/media-mime";
-import { createChannelPreflightAudio } from "openclaw/plugin-sdk/media-understanding-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { mimeTypeFromFilePath } from "afora-agent/plugin-sdk/media-mime";
+import { createChannelPreflightAudio } from "afora-agent/plugin-sdk/media-understanding-runtime";
 import type { SlackFile, SlackMessageEvent } from "../../types.js";
 import { MAX_SLACK_MEDIA_FILES, type SlackMediaResult } from "../media-types.js";
 
@@ -39,7 +39,7 @@ export function formatSlackAudioTranscriptForAgent(params: {
 
 export async function resolveSlackPreflightAudioTranscript(params: {
   media: readonly SlackMediaResult[];
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   originatingTo: string;
   sessionKey: string;
@@ -72,7 +72,7 @@ export async function resolveSlackPreflightAudioTranscript(params: {
 
 export async function sendSlackPreflightAudioTranscriptEcho(params: {
   transcript: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   originatingTo: string;
   messageThreadId?: string;

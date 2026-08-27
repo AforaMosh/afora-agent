@@ -1,4 +1,4 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { measureUtf8AppendBytes } from "./openai-transport-shared.js";
 
 export type RecoveredDeepSeekDsmlToolCall = {

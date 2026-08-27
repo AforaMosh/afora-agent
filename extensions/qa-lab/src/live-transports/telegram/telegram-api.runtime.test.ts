@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const fetchWithSsrFGuard = vi.hoisted(() => vi.fn());
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({ fetchWithSsrFGuard }));
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ({ fetchWithSsrFGuard }));
 
 import {
   buildTelegramQaConfig,
@@ -28,9 +28,9 @@ describe("Telegram QA API boundary", () => {
   it("parses env and leased credential payloads", () => {
     expect(
       resolveTelegramQaRuntimeEnv({
-        OPENCLAW_QA_TELEGRAM_GROUP_ID: "-100123",
-        OPENCLAW_QA_TELEGRAM_DRIVER_BOT_TOKEN: "placeholder",
-        OPENCLAW_QA_TELEGRAM_SUT_BOT_TOKEN: "placeholder",
+        AFORA_QA_TELEGRAM_GROUP_ID: "-100123",
+        AFORA_QA_TELEGRAM_DRIVER_BOT_TOKEN: "placeholder",
+        AFORA_QA_TELEGRAM_SUT_BOT_TOKEN: "placeholder",
       }),
     ).toEqual({
       groupId: "-100123",

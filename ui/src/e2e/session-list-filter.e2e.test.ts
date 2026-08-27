@@ -235,7 +235,7 @@ suite.define(() => {
     expect(sidebarParams).not.toHaveProperty("activeMinutes");
 
     await currentPage.goto(`${suite.server?.baseUrl ?? ""}sessions`);
-    const sessionsPage = currentPage.locator("openclaw-sessions-page");
+    const sessionsPage = currentPage.locator("afora-sessions-page");
     await sessionsPage.getByText(sessionLabel, { exact: true }).waitFor({ timeout: 10_000 });
     const initialPageRequests = await gateway.getRequests("sessions.list");
     const initialPageParams = initialPageRequests.find(

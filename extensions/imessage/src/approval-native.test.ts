@@ -1,17 +1,17 @@
-import type { ChannelApprovalKind } from "openclaw/plugin-sdk/approval-handler-runtime";
+import type { ChannelApprovalKind } from "afora-agent/plugin-sdk/approval-handler-runtime";
 // Imessage tests cover approval native plugin behavior.
 import type {
   ExecApprovalRequest,
   PluginApprovalRequest,
-} from "openclaw/plugin-sdk/approval-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+} from "afora-agent/plugin-sdk/approval-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import {
   imessageApprovalCapability,
   shouldSuppressLocalIMessageExecApprovalPrompt,
 } from "./approval-native.js";
 
-type IMessageConfig = NonNullable<NonNullable<OpenClawConfig["channels"]>["imessage"]>;
+type IMessageConfig = NonNullable<NonNullable<AforaConfig["channels"]>["imessage"]>;
 
 const DEFAULT_ACCOUNT_ID = "default";
 const DIRECT_TARGET = "+15551230000";
@@ -20,9 +20,9 @@ const GROUP_TARGET = "chat_guid:iMessage;+;chat42";
 function buildConfig(
   params: {
     imessage?: Partial<IMessageConfig>;
-    approvals?: OpenClawConfig["approvals"];
+    approvals?: AforaConfig["approvals"];
   } = {},
-): OpenClawConfig {
+): AforaConfig {
   return {
     channels: {
       imessage: {
@@ -31,7 +31,7 @@ function buildConfig(
       },
     },
     approvals: params.approvals,
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function buildTargetModeConfig(
@@ -93,7 +93,7 @@ function buildPluginRequest(
 }
 
 function nativeShouldHandle(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   approvalKind: ChannelApprovalKind;
   request: ExecApprovalRequest | PluginApprovalRequest;
   accountId?: string | null;
@@ -108,7 +108,7 @@ function nativeShouldHandle(params: {
 }
 
 function getAvailability(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   accountId = DEFAULT_ACCOUNT_ID,
   approvalKind: ChannelApprovalKind = "exec",
 ) {
@@ -121,7 +121,7 @@ function getAvailability(
 }
 
 function describeDelivery(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   request: ExecApprovalRequest | PluginApprovalRequest,
   approvalKind: ChannelApprovalKind = "exec",
 ) {
@@ -133,7 +133,7 @@ function describeDelivery(
   });
 }
 
-function resolveExecOrigin(cfg: OpenClawConfig, request: ExecApprovalRequest) {
+function resolveExecOrigin(cfg: AforaConfig, request: ExecApprovalRequest) {
   return imessageApprovalCapability.native?.resolveOriginTarget?.({
     cfg,
     accountId: DEFAULT_ACCOUNT_ID,
@@ -153,7 +153,7 @@ function suppressForwardingFallback(params: ForwardingSuppressionParams) {
 }
 
 function suppressTargetForwarding(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   to: string,
   request = buildExecRequest(DIRECT_TARGET),
 ) {
@@ -206,7 +206,7 @@ function suppressLocalPrompt(
 }
 
 function suppressLocalSessionPrompt(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   sessionKey: string,
   params: { accountId?: string; agentId?: string | null } = {},
 ) {

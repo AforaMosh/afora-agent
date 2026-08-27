@@ -1,14 +1,14 @@
 // Covers bundling rules encoded in the root tsdown config.
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { bundledPluginRoot } from "openclaw/plugin-sdk/test-fixtures";
+import { bundledPluginRoot } from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, it } from "vitest";
 import tsdownConfig, {
   createStateSchemaInlinePlugin,
   STATE_SCHEMA_INLINE_PLUGIN_NAME,
 } from "../../tsdown.config.ts";
-import { OPENCLAW_AGENT_SCHEMA_SQL } from "../state/openclaw-agent-schema.js";
-import { OPENCLAW_STATE_SCHEMA_SQL } from "../state/openclaw-state-schema.js";
+import { AFORA_AGENT_SCHEMA_SQL } from "../state/afora-agent-schema.js";
+import { AFORA_STATE_SCHEMA_SQL } from "../state/afora-state-schema.js";
 
 type TsdownConfigEntry = {
   deps?: {
@@ -96,16 +96,16 @@ function readAgentAuthDiscoverySource(): string {
 describe("tsdown config", () => {
   it.each([
     {
-      exportName: "OPENCLAW_STATE_SCHEMA_SQL",
-      modulePath: "src/state/openclaw-state-schema.ts",
-      schemaPath: "src/state/openclaw-state-schema.sql",
-      sourceValue: OPENCLAW_STATE_SCHEMA_SQL,
+      exportName: "AFORA_STATE_SCHEMA_SQL",
+      modulePath: "src/state/afora-state-schema.ts",
+      schemaPath: "src/state/afora-state-schema.sql",
+      sourceValue: AFORA_STATE_SCHEMA_SQL,
     },
     {
-      exportName: "OPENCLAW_AGENT_SCHEMA_SQL",
-      modulePath: "src/state/openclaw-agent-schema.ts",
-      schemaPath: "src/state/openclaw-agent-schema.sql",
-      sourceValue: OPENCLAW_AGENT_SCHEMA_SQL,
+      exportName: "AFORA_AGENT_SCHEMA_SQL",
+      modulePath: "src/state/afora-agent-schema.ts",
+      schemaPath: "src/state/afora-agent-schema.sql",
+      sourceValue: AFORA_AGENT_SCHEMA_SQL,
     },
   ])("inlines canonical schema bytes for $modulePath", (schema) => {
     const rootDir = process.cwd();
@@ -177,7 +177,7 @@ describe("tsdown config", () => {
       "agents/compaction-planning.worker",
       "agents/model-provider-auth.worker",
       "config/sessions/session-accessor.sqlite-archive.worker",
-      "state/openclaw-database-verify.worker",
+      "state/afora-database-verify.worker",
       "system-agent/setup-inference-detection.worker",
       "plugins/memory-state",
       "subagent-registry.runtime",
@@ -194,7 +194,7 @@ describe("tsdown config", () => {
       "plugins/runtime/index",
       "plugins/synthetic-auth.runtime",
       "web-fetch/runtime",
-      "mcp/openclaw-tools-serve",
+      "mcp/afora-tools-serve",
       "mcp/plugin-tools-serve",
       bundledEntry("active-memory"),
       "bundled/boot-md/handler",
@@ -363,8 +363,8 @@ describe("tsdown config", () => {
 
     expect(alwaysBundle("@openclaw/fs-safe")).toBe(true);
     expect(alwaysBundle("@openclaw/fs-safe/path")).toBe(true);
-    expect(alwaysBundle("openclaw/plugin-sdk/ssrf-runtime-internal")).toBe(true);
-    expect(alwaysBundle("openclaw/plugin-sdk/ssrf-runtime")).toBe(false);
+    expect(alwaysBundle("afora-agent/plugin-sdk/ssrf-runtime-internal")).toBe(true);
+    expect(alwaysBundle("afora-agent/plugin-sdk/ssrf-runtime")).toBe(false);
     expect(alwaysBundle("zod")).toBe(true);
     expect(alwaysBundle("zod/v4/core")).toBe(true);
     expect(alwaysBundle("not-a-runtime-dependency")).toBe(false);

@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   killPidIfAlive,
   readPidFile,
@@ -73,7 +73,7 @@ function baseRequest(sourcePath: string): InstallPolicyRequest {
     targetName: "weather",
     sourcePath,
     sourcePathKind: "directory",
-    source: { kind: "clawhub", authority: "openclaw", mutable: false, network: true },
+    source: { kind: "clawhub", authority: "afora", mutable: false, network: true },
     origin: { type: "clawhub", slug: "weather", version: "1.0.0" },
     request: {
       kind: "skill-install",
@@ -86,7 +86,7 @@ function baseRequest(sourcePath: string): InstallPolicyRequest {
   };
 }
 
-function configWithPolicy(scriptPath: string, env: Record<string, string>): OpenClawConfig {
+function configWithPolicy(scriptPath: string, env: Record<string, string>): AforaConfig {
   return {
     security: {
       installPolicy: {
@@ -110,7 +110,7 @@ describe("runInstallPolicy", () => {
   let scriptPath: string;
 
   beforeEach(async () => {
-    sourceDir = tempDirs.make("openclaw-install-policy-");
+    sourceDir = tempDirs.make("afora-install-policy-");
     scriptPath = await writePolicyScript(sourceDir);
   });
 
@@ -150,12 +150,12 @@ describe("runInstallPolicy", () => {
     expect(result).toEqual({});
     const captured = JSON.parse(await fs.readFile(capturePath, "utf8")) as Record<string, unknown>;
     expect(captured.protocolVersion).toBe(1);
-    expect(captured.openclawVersion).toEqual(expect.any(String));
+    expect(captured.aforaVersion).toEqual(expect.any(String));
     expect(captured.targetType).toBe("skill");
     expect(captured.sourcePath).toBe(sourceDir);
     expect(captured.source).toEqual({
       kind: "clawhub",
-      authority: "openclaw",
+      authority: "afora",
       mutable: false,
       network: true,
     });
@@ -286,7 +286,7 @@ describe("runInstallPolicy", () => {
   });
 
   it("skips skill requests when targets only include plugins", async () => {
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       security: {
         installPolicy: {
           enabled: true,
@@ -328,7 +328,7 @@ describe("runInstallPolicy", () => {
       reason: "blocked by install policy: unapproved registry",
     });
     expect(debugLogs.join("\n")).toContain("target=skill:weather");
-    expect(debugLogs.join("\n")).toContain("source=clawhub/openclaw");
+    expect(debugLogs.join("\n")).toContain("source=clawhub/afora");
     expect(debugLogs.join("\n")).toContain("blocked by install policy");
   });
 
@@ -774,7 +774,7 @@ describe("runInstallPolicy", () => {
     if (process.platform === "win32") {
       return;
     }
-    const dir = tempDirs.make("openclaw-install-policy-");
+    const dir = tempDirs.make("afora-install-policy-");
     const writableDir = path.join(dir, "writable-parent");
     await fs.mkdir(writableDir, { recursive: true });
     await fs.chmod(writableDir, 0o777);
@@ -801,7 +801,7 @@ describe("runInstallPolicy", () => {
     if (process.platform === "win32") {
       return;
     }
-    const dir = tempDirs.make("openclaw-install-policy-");
+    const dir = tempDirs.make("afora-install-policy-");
     const writableDir = path.join(dir, "writable-parent");
     await fs.mkdir(writableDir, { recursive: true });
     await fs.chmod(writableDir, 0o777);
@@ -829,7 +829,7 @@ describe("runInstallPolicy", () => {
     if (process.platform === "win32") {
       return;
     }
-    const dir = tempDirs.make("openclaw-install-policy-");
+    const dir = tempDirs.make("afora-install-policy-");
     const writableDir = path.join(dir, "writable-parent");
     await fs.mkdir(writableDir, { recursive: true });
     await fs.chmod(writableDir, 0o777);
@@ -857,7 +857,7 @@ describe("runInstallPolicy", () => {
     if (process.platform === "win32") {
       return;
     }
-    const dir = tempDirs.make("openclaw-install-policy-");
+    const dir = tempDirs.make("afora-install-policy-");
     const writableDir = path.join(dir, "writable-parent");
     await fs.mkdir(writableDir, { recursive: true });
     await fs.chmod(writableDir, 0o777);
@@ -882,7 +882,7 @@ describe("runInstallPolicy", () => {
   });
 
   it.runIf(process.platform !== "win32")("rejects symlinked interpreter script args", async () => {
-    const dir = tempDirs.make("openclaw-install-policy-");
+    const dir = tempDirs.make("afora-install-policy-");
     const realScriptPath = await writePolicyScript(dir);
     const symlinkScriptPath = path.join(dir, "policy-link.cjs");
     await fs.symlink(realScriptPath, symlinkScriptPath);

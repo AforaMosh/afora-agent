@@ -2,7 +2,7 @@
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { GatewayClient } from "openclaw/plugin-sdk/gateway-runtime";
+import { GatewayClient } from "afora-agent/plugin-sdk/gateway-runtime";
 import { describe, expect, it, vi } from "vitest";
 import { startQaGatewayChild } from "../../../../extensions/qa-lab/api.js";
 import {
@@ -62,10 +62,10 @@ describe("Gateway node pending work", () => {
         transportBaseUrl: "http://127.0.0.1",
         controlUiEnabled: false,
         runtimeEnvPatch: {
-          OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-          OPENCLAW_SKIP_CHANNELS: "1",
-          OPENCLAW_SKIP_PROVIDERS: "1",
-          OPENCLAW_TEST_MINIMAL_GATEWAY: "1",
+          AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+          AFORA_SKIP_CHANNELS: "1",
+          AFORA_SKIP_PROVIDERS: "1",
+          AFORA_TEST_MINIMAL_GATEWAY: "1",
         },
         mutateConfig: (cfg) => {
           const { plugins: _plugins, ...withoutPlugins } = cfg;

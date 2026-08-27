@@ -5,7 +5,7 @@ import { collectShellCompletionCommandTree } from "./completion-command-tree.js"
 describe("shell completion command tree", () => {
   it("collects root command aliases and parsed short and long option flags", () => {
     const program = new Command()
-      .name("openclaw")
+      .name("afora")
       .option("-p, --profile <name>", "Profile")
       .option("-v, --verbose", "Verbose output");
     program.command("infer").alias("capability");
@@ -25,7 +25,7 @@ describe("shell completion command tree", () => {
   });
 
   it("expands aliases across every ancestor and inherits value-taking options", () => {
-    const program = new Command().name("openclaw").option("-p, --profile <name>", "Profile");
+    const program = new Command().name("afora").option("-p, --profile <name>", "Profile");
     const cron = program.command("cron").alias("schedule").option("-z, --timezone <zone>");
     cron.command("add").alias("create").option("--at <time>");
 
@@ -54,7 +54,7 @@ describe("shell completion command tree", () => {
   });
 
   it("deduplicates inherited option flags without treating boolean options as values", () => {
-    const program = new Command().name("openclaw").option("--profile <name>").option("--verbose");
+    const program = new Command().name("afora").option("--profile <name>").option("--verbose");
     program.command("agent").option("--profile <name>").option("--force");
 
     const tree = collectShellCompletionCommandTree(program);
@@ -65,7 +65,7 @@ describe("shell completion command tree", () => {
 
   it("preserves inherited Commander option choices by their short and long aliases", () => {
     const program = new Command()
-      .name("openclaw")
+      .name("afora")
       .addOption(new Option("-p, --profile <name>").choices(["work", "personal"]));
     program
       .command("completion")
@@ -88,7 +88,7 @@ describe("shell completion command tree", () => {
 
   it("keeps unshadowed inherited aliases when a child reuses one option flag", () => {
     const program = new Command()
-      .name("openclaw")
+      .name("afora")
       .addOption(new Option("-p, --profile <name>").choices(["work", "personal"]));
     program.command("gateway").option("-p, --port <port>", "Gateway port");
 
@@ -101,7 +101,7 @@ describe("shell completion command tree", () => {
 
   it("preserves the optional Commander argument contract for constrained choices", () => {
     const program = new Command()
-      .name("openclaw")
+      .name("afora")
       .addOption(new Option("-c, --color [when]").choices(["always", "never"]));
     program.command("gateway");
 
@@ -117,7 +117,7 @@ describe("shell completion command tree", () => {
   });
 
   it("keeps commandless roots valid for every shell", () => {
-    const tree = collectShellCompletionCommandTree(new Command().name("openclaw"));
+    const tree = collectShellCompletionCommandTree(new Command().name("afora"));
 
     expect(tree.root.completions).toEqual([]);
     expect(tree.root.valueOptions).toEqual([]);

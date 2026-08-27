@@ -1,9 +1,9 @@
 // Verifies guarded session managers emit transcript update events with stable sequence ids.
 import path from "node:path";
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
-import { SessionManager } from "openclaw/plugin-sdk/agent-sessions";
-import { upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
-import { closeOpenClawAgentDatabasesForTest } from "openclaw/plugin-sdk/sqlite-runtime-testing";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
+import { SessionManager } from "afora-agent/plugin-sdk/agent-sessions";
+import { upsertSessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
+import { closeAforaAgentDatabasesForTest } from "afora-agent/plugin-sdk/sqlite-runtime-testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { appendTranscriptMessage } from "../config/sessions/session-accessor.js";
@@ -23,13 +23,13 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 let fixtureId = 0;
 
 async function openPersistedSessionManager() {
-  const root = tempDirs.make("openclaw-transcript-events-");
+  const root = tempDirs.make("afora-transcript-events-");
   const sessionId = `session-${fixtureId++}`;
   const target = {
     agentId: "main",
     sessionId,
     sessionKey: `agent:main:${sessionId}`,
-    storePath: path.join(root, "agents", "main", "agent", "openclaw-agent.sqlite"),
+    storePath: path.join(root, "agents", "main", "agent", "afora-agent.sqlite"),
   };
   await upsertSessionEntry({
     ...target,
@@ -43,7 +43,7 @@ afterEach(() => {
   while (listeners.length > 0) {
     listeners.pop()?.();
   }
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
 });
 
 describe("guardSessionManager transcript updates", () => {

@@ -1,7 +1,7 @@
 ---
-summary: "Use MiniMax models in OpenClaw"
+summary: "Use MiniMax models in Afora"
 read_when:
-  - You want MiniMax models in OpenClaw
+  - You want MiniMax models in Afora
   - You need MiniMax setup guidance
 title: "MiniMax"
 ---
@@ -42,14 +42,14 @@ Model refs follow the auth path: `minimax/<model>` for API-key setups, `minimax-
         <Steps>
           <Step title="Run onboarding">
             ```bash
-            openclaw onboard --auth-choice minimax-global-oauth
+            afora onboard --auth-choice minimax-global-oauth
             ```
 
             Resulting provider base URL: `api.minimax.io`.
           </Step>
           <Step title="Verify the model is available">
             ```bash
-            openclaw models list --provider minimax-portal
+            afora models list --provider minimax-portal
             ```
           </Step>
         </Steps>
@@ -58,14 +58,14 @@ Model refs follow the auth path: `minimax/<model>` for API-key setups, `minimax-
         <Steps>
           <Step title="Run onboarding">
             ```bash
-            openclaw onboard --auth-choice minimax-cn-oauth
+            afora onboard --auth-choice minimax-cn-oauth
             ```
 
             Resulting provider base URL: `api.minimaxi.com`.
           </Step>
           <Step title="Verify the model is available">
             ```bash
-            openclaw models list --provider minimax-portal
+            afora models list --provider minimax-portal
             ```
           </Step>
         </Steps>
@@ -86,14 +86,14 @@ Model refs follow the auth path: `minimax/<model>` for API-key setups, `minimax-
         <Steps>
           <Step title="Run onboarding">
             ```bash
-            openclaw onboard --auth-choice minimax-global-api
+            afora onboard --auth-choice minimax-global-api
             ```
 
             This configures `api.minimax.io` as the base URL.
           </Step>
           <Step title="Verify the model is available">
             ```bash
-            openclaw models list --provider minimax
+            afora models list --provider minimax
             ```
           </Step>
         </Steps>
@@ -102,14 +102,14 @@ Model refs follow the auth path: `minimax/<model>` for API-key setups, `minimax-
         <Steps>
           <Step title="Run onboarding">
             ```bash
-            openclaw onboard --auth-choice minimax-cn-api
+            afora onboard --auth-choice minimax-cn-api
             ```
 
             This configures `api.minimaxi.com` as the base URL.
           </Step>
           <Step title="Verify the model is available">
             ```bash
-            openclaw models list --provider minimax
+            afora models list --provider minimax
             ```
           </Step>
         </Steps>
@@ -165,7 +165,7 @@ Model refs follow the auth path: `minimax/<model>` for API-key setups, `minimax-
     ```
 
     <Warning>
-    MiniMax-M2.x's Anthropic-compatible streaming endpoint emits `reasoning_content` in OpenAI-style delta chunks instead of native Anthropic thinking blocks, which leaks internal reasoning into visible output if thinking is left enabled implicitly. OpenClaw disables M2.x thinking by default unless you explicitly set `thinking` yourself. MiniMax-M3 (and forward-compatible M3.x) is exempt: M3 emits proper Anthropic thinking blocks and requires thinking active to produce visible content, so OpenClaw keeps M3 on the provider's adaptive thinking path. See the Thinking defaults section under Advanced configuration below.
+    MiniMax-M2.x's Anthropic-compatible streaming endpoint emits `reasoning_content` in OpenAI-style delta chunks instead of native Anthropic thinking blocks, which leaks internal reasoning into visible output if thinking is left enabled implicitly. Afora disables M2.x thinking by default unless you explicitly set `thinking` yourself. MiniMax-M3 (and forward-compatible M3.x) is exempt: M3 emits proper Anthropic thinking blocks and requires thinking active to produce visible content, so Afora keeps M3 on the provider's adaptive thinking path. See the Thinking defaults section under Advanced configuration below.
     </Warning>
 
     <Note>
@@ -175,12 +175,12 @@ Model refs follow the auth path: `minimax/<model>` for API-key setups, `minimax-
   </Tab>
 </Tabs>
 
-## Configure via `openclaw configure`
+## Configure via `afora configure`
 
 <Steps>
   <Step title="Launch the wizard">
     ```bash
-    openclaw configure
+    afora configure
     ```
   </Step>
   <Step title="Select Model/auth">
@@ -233,9 +233,9 @@ The bundled `minimax` plugin registers MiniMax T2A v2 as a speech provider for `
 - Default voice: `English_expressive_narrator`
 - Bundled model ids: `speech-2.8-hd`, `speech-2.8-turbo`, `speech-2.6-hd`, `speech-2.6-turbo`, `speech-02-hd`, `speech-02-turbo`, `speech-01-hd`, `speech-01-turbo`
 - Auth resolution order: `tts.providers.minimax.apiKey`, then `minimax-portal` OAuth/token auth profiles, then Token Plan environment keys (`MINIMAX_OAUTH_TOKEN`, `MINIMAX_CODE_PLAN_KEY`, `MINIMAX_CODING_API_KEY`), then `MINIMAX_API_KEY`
-- If no TTS host is configured, OpenClaw reuses the configured `minimax-portal` OAuth host and strips Anthropic-compatible path suffixes such as `/anthropic`
+- If no TTS host is configured, Afora reuses the configured `minimax-portal` OAuth host and strips Anthropic-compatible path suffixes such as `/anthropic`
 - Normal audio attachments stay MP3. Voice-note targets (Feishu, Telegram, and other channels that request a voice-note-compatible attachment) are transcoded from MiniMax MP3 to 48kHz Opus with `ffmpeg`, because e.g. the Feishu/Lark file API only accepts `file_type: "opus"` for native audio messages
-- MiniMax T2A accepts fractional `speed` and `vol`, but `pitch` is sent as an integer; OpenClaw truncates fractional `pitch` values before the API request
+- MiniMax T2A accepts fractional `speed` and `vol`, but `pitch` is sent as an integer; Afora truncates fractional `pitch` values before the API request
 
 | Setting                         | Env var                | Default                       | Description                      |
 | ------------------------------- | ---------------------- | ----------------------------- | -------------------------------- |
@@ -338,9 +338,9 @@ See [MiniMax Search](/tools/minimax-search) for full web search configuration an
   </Accordion>
 
   <Accordion title="Thinking defaults">
-    On `api: "anthropic-messages"`, OpenClaw injects `thinking: { type: "disabled" }` for MiniMax M2.x models unless an earlier wrapper already set the `thinking` field in the payload. This prevents M2.x's streaming endpoint from emitting `reasoning_content` in OpenAI-style delta chunks, which would leak internal reasoning into visible output.
+    On `api: "anthropic-messages"`, Afora injects `thinking: { type: "disabled" }` for MiniMax M2.x models unless an earlier wrapper already set the `thinking` field in the payload. This prevents M2.x's streaming endpoint from emitting `reasoning_content` in OpenAI-style delta chunks, which would leak internal reasoning into visible output.
 
-    MiniMax-M3 (and M3.x) is exempt: M3 returns an empty `content` array with `stop_reason: "end_turn"` when thinking is disabled, so OpenClaw removes the implicit disabled default for M3 and, when a thinking level is set, forces `thinking: { type: "adaptive" }` instead.
+    MiniMax-M3 (and M3.x) is exempt: M3 returns an empty `content` array with `stop_reason: "end_turn"` when thinking is disabled, so Afora removes the implicit disabled default for M3 and, when a thinking level is set, forces `thinking: { type: "adaptive" }` instead.
 
     Available thinking levels per model family:
 
@@ -381,8 +381,8 @@ See [MiniMax Search](/tools/minimax-search) for full web search configuration an
   <Accordion title="Coding Plan usage details">
     - Coding Plan usage API: `https://api.minimaxi.com/v1/token_plan/remains` or `https://api.minimax.io/v1/token_plan/remains` (requires a coding plan key).
     - Usage polling derives the host from `models.providers.minimax-portal.baseUrl` or `models.providers.minimax.baseUrl` when configured, so global setups using `https://api.minimax.io/anthropic` poll `api.minimax.io`. Missing or malformed base URLs keep the CN fallback for compatibility.
-    - OpenClaw normalizes MiniMax coding-plan usage to the same `% left` display used by other providers. MiniMax's raw `usage_percent` / `usagePercent` fields are remaining quota, not consumed quota, so OpenClaw inverts them. Count-based fields win when present.
-    - When the API returns `model_remains`, OpenClaw prefers the chat-model entry, derives the window label from `start_time` / `end_time` when needed, and includes the selected model name in the plan label so coding-plan windows are easier to distinguish.
+    - Afora normalizes MiniMax coding-plan usage to the same `% left` display used by other providers. MiniMax's raw `usage_percent` / `usagePercent` fields are remaining quota, not consumed quota, so Afora inverts them. Count-based fields win when present.
+    - When the API returns `model_remains`, Afora prefers the chat-model entry, derives the window label from `start_time` / `end_time` when needed, and includes the selected model name in the plan label so coding-plan windows are easier to distinguish.
     - Usage snapshots treat `minimax`, `minimax-cn`, `minimax-portal`, and `minimax-portal-cn` as the same MiniMax quota surface, and prefer stored MiniMax OAuth before falling back to Coding Plan key env vars.
 
   </Accordion>
@@ -394,7 +394,7 @@ See [MiniMax Search](/tools/minimax-search) for full web search configuration an
 - Onboarding and direct API-key setup write model definitions for M3 and both M2.7 variants
 - Image understanding uses the plugin-owned `MiniMax-VL-01` media provider
 - Update pricing values in `models.json` if you need exact cost tracking
-- Use `openclaw models list` to confirm the current provider id, then switch with `openclaw models set minimax/MiniMax-M3` or `openclaw models set minimax-portal/MiniMax-M3`
+- Use `afora models list` to confirm the current provider id, then switch with `afora models set minimax/MiniMax-M3` or `afora models set minimax-portal/MiniMax-M3`
 
 <Note>
 See [Model providers](/concepts/model-providers) for provider rules.
@@ -406,7 +406,7 @@ See [Model providers](/concepts/model-providers) for provider rules.
   <Accordion title='"Unknown model: minimax/MiniMax-M3"'>
     This usually means the **MiniMax provider is not configured** (no matching provider entry and no MiniMax auth profile/env key found). Fix by:
 
-    - Running `openclaw configure` and selecting a **MiniMax** auth option, or
+    - Running `afora configure` and selecting a **MiniMax** auth option, or
     - Adding the matching `models.providers.minimax` or `models.providers.minimax-portal` block manually, or
     - Setting `MINIMAX_API_KEY`, `MINIMAX_OAUTH_TOKEN`, or a MiniMax auth profile so the matching provider can be injected.
 
@@ -418,7 +418,7 @@ See [Model providers](/concepts/model-providers) for provider rules.
     Then recheck with:
 
     ```bash
-    openclaw models list
+    afora models list
     ```
 
   </Accordion>

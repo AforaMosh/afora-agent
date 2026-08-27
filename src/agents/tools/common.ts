@@ -3,14 +3,14 @@
  *
  * Defines erased tool types, parameter readers, JSON results, progress blocks, and media sanitization.
  */
-import { detectMime } from "@openclaw/media-core/mime";
+import { detectMime } from "@afora/media-core/mime";
 import {
   asPositiveSafeInteger,
   asSafeIntegerInRange,
   parseStrictFiniteNumber,
-} from "@openclaw/normalization-core/number-coercion";
-import { asNonArrayRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/number-coercion";
+import { asNonArrayRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 import type { TSchema } from "typebox";
 import { readLocalFileSafely } from "../../infra/fs-safe.js";
 import { readSnakeCaseParamRaw } from "../../param-key.js";

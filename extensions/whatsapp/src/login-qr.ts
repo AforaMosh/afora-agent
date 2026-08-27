@@ -1,15 +1,15 @@
 // Whatsapp plugin module implements login qr behavior.
 import { randomUUID } from "node:crypto";
-import { logInfo } from "openclaw/plugin-sdk/logging-core";
-import { resolveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
-import { getRuntimeConfig } from "openclaw/plugin-sdk/runtime-config-snapshot";
+import { logInfo } from "afora-agent/plugin-sdk/logging-core";
+import { resolveTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
+import { getRuntimeConfig } from "afora-agent/plugin-sdk/runtime-config-snapshot";
 import {
   danger,
   info,
   success,
   defaultRuntime,
   type RuntimeEnv,
-} from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/runtime-env";
 import { resolveWhatsAppAccount } from "./accounts.js";
 import { getActiveWebListener } from "./active-listener.js";
 import {

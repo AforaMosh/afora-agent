@@ -18,7 +18,7 @@ export function renderLobsterPetDismissMenu(params: {
   // relocating it, so top-start is forced directly since the footer always
   // has clear room above — leaving it to flip risks a shrunk-in-place menu.
   return html`
-    <openclaw-menu-surface>
+    <afora-menu-surface>
       <wa-dropdown
         class="session-menu lobster-pet-dismiss-menu"
         .open=${true}
@@ -50,6 +50,6 @@ export function renderLobsterPetDismissMenu(params: {
           >${t("common.dismissAndDontShowAgain")}</wa-dropdown-item
         >
       </wa-dropdown>
-    </openclaw-menu-surface>
+    </afora-menu-surface>
   `;
 }

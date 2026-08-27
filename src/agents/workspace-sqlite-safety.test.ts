@@ -4,14 +4,14 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { makeTempWorkspace } from "../test-helpers/workspace.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../test-utils/afora-test-state.js";
 import { resetLegacyWorkspaceStateCheckForTest } from "./workspace-legacy-state.test-support.js";
 import {
   mergeWorkspaceSetupState,
@@ -25,18 +25,18 @@ import {
   WORKSPACE_VANISHED_ERROR_CODE,
 } from "./workspace.js";
 
-let testState: OpenClawTestState | undefined;
+let testState: AforaTestState | undefined;
 
 beforeEach(async () => {
   resetLegacyWorkspaceStateCheckForTest();
-  testState = await createOpenClawTestState({
+  testState = await createAforaTestState({
     layout: "state-only",
-    prefix: "openclaw-workspace-sqlite-safety-",
+    prefix: "afora-workspace-sqlite-safety-",
   });
 });
 
 afterEach(async () => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   resetLegacyWorkspaceStateCheckForTest();
   await testState?.cleanup();
   testState = undefined;
@@ -44,19 +44,19 @@ afterEach(async () => {
 
 function deleteWorkspaceAttestation(workspaceDir: string): void {
   const identity = resolveWorkspaceStateIdentity(workspaceDir);
-  openOpenClawStateDatabase()
+  openAforaStateDatabase()
     .db.prepare("DELETE FROM workspace_attestations WHERE workspace_key = ?")
     .run(identity.workspaceKey);
 }
 
 describe("workspace setup-only SQLite safety", () => {
   it("clears expired setup-only state when one generated remnant survives", async () => {
-    const tempDir = await makeTempWorkspace("openclaw-workspace-");
+    const tempDir = await makeTempWorkspace("afora-workspace-");
     await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
     const generatedAgents = await fs.readFile(path.join(tempDir, DEFAULT_AGENTS_FILENAME), "utf8");
     const identity = resolveWorkspaceStateIdentity(tempDir);
     const expiredAtMs = Date.now() - 25 * 60 * 60 * 1000;
-    const db = openOpenClawStateDatabase().db;
+    const db = openAforaStateDatabase().db;
     deleteWorkspaceAttestation(tempDir);
     db.prepare("UPDATE workspace_setup_state SET updated_at = ? WHERE workspace_key = ?").run(
       expiredAtMs,
@@ -75,12 +75,12 @@ describe("workspace setup-only SQLite safety", () => {
   });
 
   it("clears expired state when only one generated bootstrap file survives", async () => {
-    const tempDir = await makeTempWorkspace("openclaw-workspace-");
+    const tempDir = await makeTempWorkspace("afora-workspace-");
     await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
     const generatedAgents = await fs.readFile(path.join(tempDir, DEFAULT_AGENTS_FILENAME), "utf-8");
     const identity = resolveWorkspaceStateIdentity(tempDir);
     const expiredAtMs = Date.now() - 25 * 60 * 60 * 1000;
-    const db = openOpenClawStateDatabase().db;
+    const db = openAforaStateDatabase().db;
     db.prepare(
       "UPDATE workspace_attestations SET attested_at_ms = ?, updated_at_ms = ? WHERE workspace_key = ?",
     ).run(expiredAtMs, expiredAtMs, identity.workspaceKey);
@@ -101,7 +101,7 @@ describe("workspace setup-only SQLite safety", () => {
   });
 
   it("refuses an empty recent setup-only workspace when bootstrap creation is disabled", async () => {
-    const tempDir = await makeTempWorkspace("openclaw-workspace-");
+    const tempDir = await makeTempWorkspace("afora-workspace-");
     mergeWorkspaceSetupState(tempDir, {
       bootstrapSeededAt: new Date().toISOString(),
     });
@@ -115,7 +115,7 @@ describe("workspace setup-only SQLite safety", () => {
   });
 
   it("does not mistake an old generated template for setup-only customization", async () => {
-    const tempDir = await makeTempWorkspace("openclaw-workspace-");
+    const tempDir = await makeTempWorkspace("afora-workspace-");
     await fs.writeFile(path.join(tempDir, DEFAULT_AGENTS_FILENAME), "old generated agents\n");
     mergeWorkspaceSetupState(tempDir, {
       bootstrapSeededAt: "2026-07-15T10:00:00.000Z",
@@ -135,7 +135,7 @@ describe("workspace setup-only SQLite safety", () => {
   });
 
   it("refuses to reseed a missing workspace with recent setup-only state", async () => {
-    const tempDir = await makeTempWorkspace("openclaw-workspace-");
+    const tempDir = await makeTempWorkspace("afora-workspace-");
     mergeWorkspaceSetupState(tempDir, {
       bootstrapSeededAt: new Date().toISOString(),
     });
@@ -151,7 +151,7 @@ describe("workspace setup-only SQLite safety", () => {
   });
 
   it("refuses to trust setup-only state after only generated remnants survive", async () => {
-    const tempDir = await makeTempWorkspace("openclaw-workspace-");
+    const tempDir = await makeTempWorkspace("afora-workspace-");
     await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
     const generatedAgents = await fs.readFile(path.join(tempDir, DEFAULT_AGENTS_FILENAME), "utf-8");
     deleteWorkspaceAttestation(tempDir);
@@ -173,7 +173,7 @@ describe("workspace setup-only SQLite safety", () => {
   });
 
   it("accepts an intact generated workspace with setup-only state", async () => {
-    const tempDir = await makeTempWorkspace("openclaw-workspace-");
+    const tempDir = await makeTempWorkspace("afora-workspace-");
     await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });
     await fs.rm(path.join(tempDir, DEFAULT_BOOTSTRAP_FILENAME));
     await ensureAgentWorkspace({ dir: tempDir, ensureBootstrapFiles: true });

@@ -1,7 +1,7 @@
 // Tencent plugin module implements models behavior.
-import { buildManifestModelDefinition } from "openclaw/plugin-sdk/provider-catalog-shared";
-import type { ModelDefinitionConfig } from "openclaw/plugin-sdk/provider-model-shared";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import { buildManifestModelDefinition } from "afora-agent/plugin-sdk/provider-catalog-shared";
+import type { ModelDefinitionConfig } from "afora-agent/plugin-sdk/provider-model-shared";
+import manifest from "./afora.plugin.json" with { type: "json" };
 
 // ---------- TokenHub provider ----------
 

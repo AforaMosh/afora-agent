@@ -1,6 +1,6 @@
 // Gateway Talk relay session lifecycle helpers.
 // Enforces TTL and connection ownership for process-local relay sessions.
-import { asDateTimestampMs } from "@openclaw/normalization-core/number-coercion";
+import { asDateTimestampMs } from "@afora/normalization-core/number-coercion";
 
 /**
  * Shared TTL and connection-ownership checks for Talk relay session maps.

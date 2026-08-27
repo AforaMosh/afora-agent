@@ -1,19 +1,19 @@
 // Native GPT-Live browser sessions: WebRTC offer broker plus gateway-owned sideband control.
 import { randomBytes, randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { PluginLogger } from "openclaw/plugin-sdk/plugin-entry";
-import { resolveProviderAuthProfileApiKey } from "openclaw/plugin-sdk/provider-auth";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { PluginLogger } from "afora-agent/plugin-sdk/plugin-entry";
+import { resolveProviderAuthProfileApiKey } from "afora-agent/plugin-sdk/provider-auth";
 import type {
   RealtimeVoiceBridge,
   RealtimeVoiceBrowserSession,
   RealtimeVoiceBrowserSessionCreateRequest,
   RealtimeVoiceProviderCapabilities,
-} from "openclaw/plugin-sdk/realtime-voice";
+} from "afora-agent/plugin-sdk/realtime-voice";
 import {
   readRequestBodyWithLimit,
   resolveAcceptedBrowserOrigin,
-} from "openclaw/plugin-sdk/webhook-request-guards";
+} from "afora-agent/plugin-sdk/webhook-request-guards";
 import WebSocket, { type RawData } from "ws";
 import { resolveCodexAuthIdentity } from "./openai-chatgpt-auth-identity.js";
 import { OpenAIQuicksilverDelegationController } from "./realtime-quicksilver-delegation-controller.js";
@@ -131,7 +131,7 @@ function respondText(res: ServerResponse, statusCode: number, body: string): voi
 function applyRealtimeOfferCorsHeaders(
   req: IncomingMessage,
   res: ServerResponse,
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
 ): boolean {
   if (!req.headers.origin) {
     return true;
@@ -151,7 +151,7 @@ function readBearerToken(req: IncomingMessage): string | undefined {
 }
 
 export async function resolveOpenAIChatGptSubscriptionAuth(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentDir?: string;
 }): Promise<Extract<OpenAIQuicksilverAuth, { type: "oauth" }> | undefined> {
   const token = await resolveProviderAuthProfileApiKey({
@@ -172,7 +172,7 @@ export async function resolveOpenAIChatGptSubscriptionAuth(params: {
 }
 
 export function createOpenAIQuicksilverBrowserSessionBroker(params: {
-  getConfig: () => OpenClawConfig | undefined;
+  getConfig: () => AforaConfig | undefined;
   logger: Pick<PluginLogger, "debug" | "warn">;
   fetchImpl?: typeof fetch;
   webSocketFactory?: OpenAIQuicksilverSocketFactory;

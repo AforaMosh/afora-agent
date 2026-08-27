@@ -2,7 +2,7 @@
 import type { FileContents, FileDiffMetadata, SupportedLanguages } from "@pierre/diffs";
 import { parsePatchFiles } from "@pierre/diffs";
 import { preloadDiffHTML, type PreloadDiffOptions } from "@pierre/diffs/ssr";
-import { escapeHtml } from "openclaw/plugin-sdk/text-utility-runtime";
+import { escapeHtml } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { normalizeDiffFontSize, normalizeDiffLineSpacing } from "./config.js";
 import {
   collectDiffPayloadLanguageHints,
@@ -196,10 +196,10 @@ function buildRenderVariants(params: { options: DiffRenderOptions; target: DiffR
 
 function renderDiffCard(payload: DiffViewerPayload, anchorId?: string): string {
   return `<section class="oc-diff-card"${anchorId ? ` id="${anchorId}"` : ""}>
-    <diffs-container class="oc-diff-host" data-openclaw-diff-host>
+    <diffs-container class="oc-diff-host" data-afora-diff-host>
       <template shadowrootmode="open">${payload.prerenderedHTML}</template>
     </diffs-container>
-    <script type="application/json" data-openclaw-diff-payload>${escapeJsonScript(payload)}</script>
+    <script type="application/json" data-afora-diff-payload>${escapeJsonScript(payload)}</script>
   </section>`;
 }
 
@@ -355,7 +355,7 @@ function buildHtmlDocument(params: {
       }
 ${imageTypographyCss}
 
-      [data-openclaw-diff-root] {
+      [data-afora-diff-root] {
         display: grid;
         gap: 18px;
       }
@@ -471,7 +471,7 @@ ${imageTypographyCss}
           padding: 12px;
         }
 
-        [data-openclaw-diff-root] {
+        [data-afora-diff-root] {
           gap: 12px;
         }
       }
@@ -479,7 +479,7 @@ ${imageTypographyCss}
   </head>
   <body data-theme="${params.theme}">
     <main class="oc-frame" data-render-mode="${params.runtimeMode}">
-      <div data-openclaw-diff-root>
+      <div data-afora-diff-root>
         ${params.bodyHtml}
       </div>
     </main>

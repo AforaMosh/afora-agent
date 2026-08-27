@@ -1,7 +1,7 @@
 // Qa Lab plugin module implements mock auth behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { applyAuthProfileConfig } from "openclaw/plugin-sdk/provider-auth-api-key";
-import { uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { applyAuthProfileConfig } from "afora-agent/plugin-sdk/provider-auth-api-key";
+import { uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { writeQaAuthProfiles } from "./auth-store.js";
 
 /** Providers the mock harness stages placeholder credentials for by default. */
@@ -34,11 +34,11 @@ export function buildQaMockProfileId(provider: string): string {
  * serializer; anything beyond that is ignored by the mock.
  */
 export async function stageQaMockAuthProfiles(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   stateDir: string;
   agentIds?: readonly string[];
   providers?: readonly string[];
-}): Promise<OpenClawConfig> {
+}): Promise<AforaConfig> {
   const agentIds = uniqueStrings(params.agentIds ?? QA_MOCK_AUTH_AGENT_IDS);
   const providers = uniqueStrings(params.providers ?? QA_MOCK_AUTH_PROVIDERS);
   let next = params.cfg;

@@ -15,7 +15,7 @@ vi.mock("./install-source-utils.js", async () => {
     ...actual,
     withInstallWorkspace: vi.fn(
       async (_prefix: string, fn: (tmpDir: string) => Promise<unknown>) => {
-        return await fn("/tmp/openclaw-npm-pack-install-test");
+        return await fn("/tmp/afora-npm-pack-install-test");
       },
     ),
     packNpmSpecToArchive: vi.fn(),
@@ -23,8 +23,8 @@ vi.mock("./install-source-utils.js", async () => {
 });
 
 describe("installFromNpmSpecArchiveWithInstaller", () => {
-  const baseSpec = "@openclaw/test@1.0.0";
-  const baseArchivePath = "/tmp/openclaw-test.tgz";
+  const baseSpec = "@afora/test@1.0.0";
+  const baseArchivePath = "/tmp/afora-test.tgz";
 
   const mockPackedSuccess = (overrides?: {
     resolvedSpec?: string;
@@ -54,7 +54,7 @@ describe("installFromNpmSpecArchiveWithInstaller", () => {
     }) => Promise<{ ok: boolean; [key: string]: unknown }>;
   }) =>
     await installFromNpmSpecArchiveWithInstaller({
-      tempDirPrefix: "openclaw-test-",
+      tempDirPrefix: "afora-test-",
       spec: overrides.spec ?? baseSpec,
       timeoutMs: 1000,
       expectedIntegrity: overrides.expectedIntegrity,
@@ -89,14 +89,14 @@ describe("installFromNpmSpecArchiveWithInstaller", () => {
 
     expect(result).toEqual({ ok: false, error: "pack failed" });
     expect(installFromArchive).not.toHaveBeenCalled();
-    expect(withInstallWorkspace).toHaveBeenCalledWith("openclaw-test-", expect.any(Function));
+    expect(withInstallWorkspace).toHaveBeenCalledWith("afora-test-", expect.any(Function));
   });
 
   it("rejects unsupported npm specs before packing", async () => {
     const installFromArchive = vi.fn(async () => ({ ok: true as const }));
 
     const result = await runInstall({
-      spec: "file:/tmp/openclaw.tgz",
+      spec: "file:/tmp/afora.tgz",
       installFromArchive,
     });
 
@@ -106,7 +106,7 @@ describe("installFromNpmSpecArchiveWithInstaller", () => {
   });
 
   it("returns resolution metadata and installer result on success", async () => {
-    mockPackedSuccess({ name: "@openclaw/test", version: "1.0.0" });
+    mockPackedSuccess({ name: "@afora/test", version: "1.0.0" });
     const installFromArchive = vi.fn(async () => ({ ok: true as const, target: "done" }));
 
     const result = await runInstall({
@@ -156,7 +156,7 @@ describe("installFromNpmSpecArchiveWithInstaller", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: "aborted: npm package integrity drift detected for @openclaw/test@1.0.0",
+      error: "aborted: npm package integrity drift detected for @afora/test@1.0.0",
     });
     expect(installFromArchive).not.toHaveBeenCalled();
   });
@@ -174,10 +174,10 @@ describe("installFromNpmSpecArchiveWithInstaller", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: "aborted: npm package integrity drift detected for @openclaw/test@1.0.0",
+      error: "aborted: npm package integrity drift detected for @afora/test@1.0.0",
     });
     expect(warn).toHaveBeenCalledWith(
-      "Integrity drift detected for @openclaw/test@1.0.0: expected sha512-old, got sha512-new",
+      "Integrity drift detected for @afora/test@1.0.0: expected sha512-old, got sha512-new",
     );
     expect(installFromArchive).not.toHaveBeenCalled();
   });
@@ -197,13 +197,13 @@ describe("installFromNpmSpecArchiveWithInstaller", () => {
 
   it("rejects prerelease resolutions unless explicitly requested", async () => {
     mockPackedSuccess({
-      resolvedSpec: "@openclaw/test@latest",
+      resolvedSpec: "@afora/test@latest",
       version: "1.1.0-beta.1",
     });
     const installFromArchive = vi.fn(async () => ({ ok: true as const }));
 
     const result = await runInstall({
-      spec: "@openclaw/test@latest",
+      spec: "@afora/test@latest",
       installFromArchive,
     });
 
@@ -217,13 +217,13 @@ describe("installFromNpmSpecArchiveWithInstaller", () => {
 
   it("allows prerelease resolutions when explicitly requested by tag", async () => {
     mockPackedSuccess({
-      resolvedSpec: "@openclaw/test@beta",
+      resolvedSpec: "@afora/test@beta",
       version: "1.1.0-beta.1",
     });
     const installFromArchive = vi.fn(async () => ({ ok: true as const, pluginId: "beta-plugin" }));
 
     const result = await runInstall({
-      spec: "@openclaw/test@beta",
+      spec: "@afora/test@beta",
       installFromArchive,
     });
 
@@ -234,9 +234,9 @@ describe("installFromNpmSpecArchiveWithInstaller", () => {
   it("passes archive path and installer params to installFromArchive", async () => {
     vi.mocked(packNpmSpecToArchive).mockResolvedValue({
       ok: true,
-      archivePath: "/tmp/openclaw-plugin.tgz",
+      archivePath: "/tmp/afora-plugin.tgz",
       metadata: {
-        resolvedSpec: "@openclaw/voice-call@1.0.0",
+        resolvedSpec: "@afora/voice-call@1.0.0",
         integrity: "sha512-same",
       },
     });
@@ -246,8 +246,8 @@ describe("installFromNpmSpecArchiveWithInstaller", () => {
     );
 
     const result = await installFromNpmSpecArchiveWithInstaller({
-      tempDirPrefix: "openclaw-test-",
-      spec: "@openclaw/voice-call@1.0.0",
+      tempDirPrefix: "afora-test-",
+      spec: "@afora/voice-call@1.0.0",
       timeoutMs: 1000,
       installFromArchive,
       archiveInstallParams: { pluginId: "voice-call" },
@@ -258,7 +258,7 @@ describe("installFromNpmSpecArchiveWithInstaller", () => {
       return;
     }
     expect(installFromArchive).toHaveBeenCalledWith({
-      archivePath: "/tmp/openclaw-plugin.tgz",
+      archivePath: "/tmp/afora-plugin.tgz",
       pluginId: "voice-call",
     });
     expect(result.installResult).toEqual({ ok: true, pluginId: "voice-call" });
@@ -280,7 +280,7 @@ describe("finalizeNpmSpecArchiveInstall", () => {
       ok: true,
       installResult: { ok: false, error: "install failed" },
       npmResolution: {
-        resolvedSpec: "@openclaw/test@1.0.0",
+        resolvedSpec: "@afora/test@1.0.0",
         integrity: "sha512-same",
         resolvedAt: "2026-01-01T00:00:00.000Z",
       },
@@ -296,7 +296,7 @@ describe("finalizeNpmSpecArchiveInstall", () => {
       ok: true,
       installResult: { ok: true, pluginId: "voice-call" },
       npmResolution: {
-        resolvedSpec: "@openclaw/voice-call@1.0.0",
+        resolvedSpec: "@afora/voice-call@1.0.0",
         integrity: "sha512-same",
         resolvedAt: "2026-01-01T00:00:00.000Z",
       },
@@ -310,7 +310,7 @@ describe("finalizeNpmSpecArchiveInstall", () => {
       ok: true,
       pluginId: "voice-call",
       npmResolution: {
-        resolvedSpec: "@openclaw/voice-call@1.0.0",
+        resolvedSpec: "@afora/voice-call@1.0.0",
         integrity: "sha512-same",
         resolvedAt: "2026-01-01T00:00:00.000Z",
       },

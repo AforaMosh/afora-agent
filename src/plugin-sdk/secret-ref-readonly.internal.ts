@@ -1,9 +1,9 @@
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { resolveDefaultSecretProviderAlias } from "../secrets/ref-contract.js";
 
 /** Checks whether a read-only plugin path may resolve a secret through an env provider. */
 export function canResolveEnvSecretRefInReadOnlyPath(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   provider: string;
   id: string;
 }): boolean {

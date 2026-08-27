@@ -28,7 +28,7 @@ You can answer from any supported conversation surface:
 - A plain-text reply works on any channel. Reply with a number, an option label,
   or your own answer.
 
-OpenClaw always enables a free-text **Other** answer. The agent must not add an
+Afora always enables a free-text **Other** answer. The agent must not add an
 `Other` option to the authored option list.
 
 ## Platform behavior

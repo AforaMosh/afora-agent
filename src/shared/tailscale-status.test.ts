@@ -13,9 +13,9 @@ describe("shared/tailscale-status", () => {
       resolveTailscalePublishedHost({
         tailscaleMode: "serve",
         tailnetHost: "node.tailnet.ts.net",
-        serviceName: "svc:openclaw",
+        serviceName: "svc:afora",
       }),
-    ).toBe("openclaw.tailnet.ts.net");
+    ).toBe("afora.tailnet.ts.net");
   });
 
   it("returns null when no runner is provided", async () => {
@@ -133,7 +133,7 @@ describe("shared/tailscale-status", () => {
             Handlers: { "/": { Proxy: "http://127.0.0.1:18789" } },
           },
           "mac.tail.ts.net:443": {
-            Handlers: { "/openclaw": { Proxy: "http://127.0.0.1:18789" } },
+            Handlers: { "/afora": { Proxy: "http://127.0.0.1:18789" } },
           },
           "other.tail.ts.net:443": {
             Handlers: { "/": { Proxy: "http://192.168.1.20:18789" } },
@@ -157,10 +157,10 @@ describe("shared/tailscale-status", () => {
         },
         AllowFunnel: { "mac.tail.ts.net:443": true },
         Services: {
-          "svc:openclaw": {
+          "svc:afora": {
             TCP: { "443": { HTTPS: true } },
             Web: {
-              "openclaw.tail.ts.net:443": {
+              "afora.tail.ts.net:443": {
                 Handlers: { "/": { Proxy: "127.0.0.1:18789" } },
               },
             },

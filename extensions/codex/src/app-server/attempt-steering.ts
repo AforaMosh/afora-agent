@@ -6,7 +6,7 @@ import {
   embeddedAgentLog,
   type EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams,
   type queueAgentHarnessMessage,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   isCodexAppServerIndeterminateRequestCancellationError,
   isCodexAppServerIndeterminateTransportError,
@@ -173,7 +173,7 @@ export function createCodexSteeringQueue(params: {
       }
       throw unavailableError;
     }
-    const clientUserMessageId = `openclaw:${params.turnId}:steer:${++batchSequence}`;
+    const clientUserMessageId = `afora:${params.turnId}:steer:${++batchSequence}`;
     const batch = { items: liveItems };
     // RPC acceptance is not delivery: interrupt clears accepted pending input.
     // Keep the batch unsettled until Codex echoes this id on userMessage completion.

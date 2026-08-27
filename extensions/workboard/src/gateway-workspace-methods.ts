@@ -1,6 +1,6 @@
-import type { WorkboardCard } from "@openclaw/workboard-contract";
+import type { WorkboardCard } from "@afora/workboard-contract";
 // Workboard Gateway methods that can persist workspace-bearing card metadata.
-import type { OpenClawPluginApi } from "../api.js";
+import type { AforaPluginApi } from "../api.js";
 import {
   readId,
   readPatch,
@@ -36,7 +36,7 @@ async function resolveGatewayWorkspaceMutationAccess(
 }
 
 type WorkspaceGatewayMethodParams = {
-  api: OpenClawPluginApi;
+  api: AforaPluginApi;
   store: WorkboardStore;
   redactCard: (card: WorkboardCard) => WorkboardCard;
 };

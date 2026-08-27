@@ -48,7 +48,7 @@ function snapshotDiagnostic(snapshot) {
 }
 
 const snapshotMaxBytes = readPositiveIntEnv(
-  "OPENCLAW_BROWSER_CDP_SNAPSHOT_MAX_BYTES",
+  "AFORA_BROWSER_CDP_SNAPSHOT_MAX_BYTES",
   DEFAULT_SNAPSHOT_MAX_BYTES,
 );
 const snapshot = readBoundedSnapshot(snapshotPath, snapshotMaxBytes);
@@ -56,7 +56,7 @@ const snapshot = readBoundedSnapshot(snapshotPath, snapshotMaxBytes);
 for (const needle of [
   'button "Save"',
   'link "Docs"',
-  "https://docs.openclaw.ai/browser-cdp-live",
+  "https://docs.afora.ai/browser-cdp-live",
   'generic "Clickable Card"',
   "cursor:pointer",
   'Iframe "Child"',

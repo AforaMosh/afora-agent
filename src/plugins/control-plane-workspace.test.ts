@@ -11,7 +11,7 @@ describe("resolvePluginControlPlaneWorkspace", () => {
             entries: { alpha: {}, beta: {} },
           },
         },
-        env: { OPENCLAW_STATE_DIR: "/tmp/openclaw-control-plane" },
+        env: { AFORA_STATE_DIR: "/tmp/afora-control-plane" },
       }),
     ).toMatchObject({
       workspaceScope: "omitted",

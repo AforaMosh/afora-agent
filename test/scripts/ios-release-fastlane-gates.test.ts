@@ -12,7 +12,7 @@ const snapshotUITestPath = path.join(
   "apps",
   "ios",
   "UITests",
-  "OpenClawSnapshotUITests.swift",
+  "AforaSnapshotUITests.swift",
 );
 const rootTabsPath = path.join(process.cwd(), "apps", "ios", "Sources", "RootTabs.swift");
 const ciWorkflowPath = path.join(process.cwd(), ".github", "workflows", "ci.yml");
@@ -73,7 +73,7 @@ describe("iOS Fastlane release upload gates", () => {
   it("routes the package upload wrapper through the guarded Fastlane lane", () => {
     const script = readFileSync(uploadScriptPath, "utf8");
 
-    expect(script).toContain("OPENCLAW_IOS_RELEASE_WRAPPER=1");
+    expect(script).toContain("AFORA_IOS_RELEASE_WRAPPER=1");
     expect(script).not.toContain("Missing required --version.");
     expect(script).not.toContain("Missing required --revision.");
     expect(script).toContain('"release_version:${RELEASE_VERSION}"');
@@ -99,7 +99,7 @@ describe("iOS Fastlane release upload gates", () => {
     const releaseUpload = laneBody(fastfile, "release_upload");
     const prepareContext = laneBody(fastfile, "prepare_app_store_context");
 
-    expect(releaseUpload).toContain('ENV["OPENCLAW_IOS_RELEASE_WRAPPER"] == "1"');
+    expect(releaseUpload).toContain('ENV["AFORA_IOS_RELEASE_WRAPPER"] == "1"');
     expect(releaseUpload).toContain("Use `pnpm ios:release:upload`");
     expect(prepareContext).toContain("options[:release_version]");
     expect(prepareContext).toContain("options[:app_store_revision]");
@@ -237,7 +237,7 @@ describe("iOS Fastlane release upload gates", () => {
       "result_bundle_archive_directory: result_bundle_archive_directory",
     );
     expect(capture).toContain(
-      'only_testing: ["OpenClawUITests/OpenClawSnapshotUITests/#{test_name}"]',
+      'only_testing: ["AforaUITests/AforaSnapshotUITests/#{test_name}"]',
     );
     expect(capture).toContain("test_without_building: true");
     expect(capture).toContain("result_bundle: true");

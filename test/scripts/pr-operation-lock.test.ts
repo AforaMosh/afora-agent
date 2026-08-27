@@ -22,7 +22,7 @@ import {
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../helpers/temp-dir.js";
 
@@ -48,7 +48,7 @@ const lockScript = join(repoRoot, "scripts/pr-lib/operation-lock.sh");
 const processGroupRunner = join(repoRoot, "scripts/pr-lib/process-group-runner.mjs");
 const managedChildUrl = pathToFileURL(join(repoRoot, "scripts/lib/managed-child-process.mts")).href;
 const worktreeScript = join(repoRoot, "scripts/pr-lib/worktree.sh");
-const lockRef = "refs/openclaw/pr-operation-locks/42";
+const lockRef = "refs/afora/pr-operation-locks/42";
 const detachedChildren = new WeakSet<ChildProcess>();
 const goneProcessGroups = new Set<number>();
 let templateRepo = "";
@@ -56,7 +56,7 @@ let templateRepo = "";
 // Direct preload affects only the supervisor; operation fixtures keep real clocks.
 // The source assertions below pin the production safety durations being accelerated.
 function createProcessGroupTimingPreload() {
-  const dir = tempDirs.make("openclaw-pr-operation-lock-timing-");
+  const dir = tempDirs.make("afora-pr-operation-lock-timing-");
   const preloadPath = join(dir, "preload.cjs");
   writeFileSync(
     preloadPath,
@@ -82,10 +82,10 @@ function spawnDetached(command: string, args: readonly string[], options: SpawnO
 }
 
 function createTemplateRepo() {
-  const dir = mkdtempSync(join(tmpdir(), "openclaw-pr-operation-lock-template-"));
+  const dir = mkdtempSync(join(tmpdir(), "afora-pr-operation-lock-template-"));
   execFileSync("git", ["init", "-q", "-b", "main"], { cwd: dir });
-  execFileSync("git", ["config", "user.name", "OpenClaw Test"], { cwd: dir });
-  execFileSync("git", ["config", "user.email", "test@openclaw.invalid"], { cwd: dir });
+  execFileSync("git", ["config", "user.name", "Afora Test"], { cwd: dir });
+  execFileSync("git", ["config", "user.email", "test@afora.invalid"], { cwd: dir });
   writeFileSync(join(dir, "base.txt"), "base\n");
   execFileSync("git", ["add", "base.txt"], { cwd: dir });
   execFileSync("git", ["commit", "-qm", "base"], { cwd: dir });
@@ -101,7 +101,7 @@ afterAll(() => {
 });
 
 function createRepo(nestedName?: string) {
-  const tempRoot = tempDirs.make("openclaw-pr-operation-lock-");
+  const tempRoot = tempDirs.make("afora-pr-operation-lock-");
   const dir = nestedName ? join(tempRoot, nestedName) : tempRoot;
   if (nestedName) {
     mkdirSync(dir);
@@ -160,7 +160,7 @@ function bashSource(repoDir: string, supervised = false) {
     "set -euo pipefail",
     ...(supervised
       ? []
-      : ["unset OPENCLAW_PR_LOCK_NOTIFY_FD", "unset OPENCLAW_PR_LOCK_SUPERVISOR_PID"]),
+      : ["unset AFORA_PR_LOCK_NOTIFY_FD", "unset AFORA_PR_LOCK_SUPERVISOR_PID"]),
     `source '${worktreeScript}'`,
     `source '${lockScript}'`,
     `source '${commonScript}'`,
@@ -654,9 +654,9 @@ describe("scripts/pr process-group platform guard", () => {
         cwd: repoDir,
         env: {
           ...process.env,
-          OPENCLAW_PR_DEDICATED_PROCESS_GROUP: "1",
-          OPENCLAW_PR_LOCK_NOTIFY_FD: "3",
-          OPENCLAW_PR_LOCK_SUPERVISOR_PID: String(process.pid),
+          AFORA_PR_DEDICATED_PROCESS_GROUP: "1",
+          AFORA_PR_LOCK_NOTIFY_FD: "3",
+          AFORA_PR_LOCK_SUPERVISOR_PID: String(process.pid),
         },
         stdio: "ignore",
       });
@@ -891,11 +891,11 @@ describePosix("scripts/pr per-PR operation lock", () => {
     }
     const env: NodeJS.ProcessEnv = {
       ...process.env,
-      OPENCLAW_PR_DEDICATED_PROCESS_GROUP: "1",
+      AFORA_PR_DEDICATED_PROCESS_GROUP: "1",
       PATH: `${binDir}:${process.env.PATH ?? ""}`,
     };
-    delete env.OPENCLAW_PR_LOCK_NOTIFY_FD;
-    delete env.OPENCLAW_PR_LOCK_SUPERVISOR_PID;
+    delete env.AFORA_PR_LOCK_NOTIFY_FD;
+    delete env.AFORA_PR_LOCK_SUPERVISOR_PID;
     const result = spawnSync(cli, ["review-init", "42"], {
       cwd: repoDir,
       encoding: "utf8",
@@ -1193,7 +1193,7 @@ describePosix("scripts/pr per-PR operation lock", () => {
   });
   it("releases the lock after the operation deletes its runner worktree", async () => {
     const repoDir = createRepo();
-    const doomedDir = tempDirs.make("openclaw-pr-self-deleting-runner-");
+    const doomedDir = tempDirs.make("afora-pr-self-deleting-runner-");
     const copiedLibDir = join(doomedDir, "pr-lib");
     mkdirSync(copiedLibDir, { recursive: true });
     for (const file of ["operation-lock.sh", "process-group-runner.mjs"]) {
@@ -1234,7 +1234,7 @@ describePosix("scripts/pr per-PR operation lock", () => {
     const sleepPath = join(binDir, "sleep");
     writeFileSync(sleepPath, "#!/bin/sh\nexit 0\n");
     chmodSync(sleepPath, 0o755);
-    const refLock = join(repoDir, ".git/refs/openclaw/pr-operation-locks/42.lock");
+    const refLock = join(repoDir, ".git/refs/afora/pr-operation-locks/42.lock");
     const result = await runSupervisedOperation(
       repoDir,
       "blocked-release.sh",
@@ -1254,7 +1254,7 @@ describePosix("scripts/pr per-PR operation lock", () => {
   it("reports exact recovery when lock notification fails", () => {
     const repoDir = createRepo();
     const result = runLockShell(repoDir, [
-      "OPENCLAW_PR_LOCK_NOTIFY_FD=9",
+      "AFORA_PR_LOCK_NOTIFY_FD=9",
       "set +e",
       "acquire_pr_operation_lock 42",
       "lock_status=$?",
@@ -1271,7 +1271,7 @@ describePosix("scripts/pr per-PR operation lock", () => {
   });
   it("rejects a notification for a lock owned by another process group", async () => {
     const repoDir = createRepo();
-    const foreignRef = "refs/openclaw/pr-operation-locks/43";
+    const foreignRef = "refs/afora/pr-operation-locks/43";
     const foreignHeld = join(repoDir, "foreign-held");
     const foreignHolder = spawnHolder(repoDir, foreignHeld, 43);
     try {
@@ -1279,7 +1279,7 @@ describePosix("scripts/pr per-PR operation lock", () => {
       const foreignOid = refOid(repoDir, foreignRef);
       const result = await runSupervisedOperation(repoDir, "forged-notification.sh", [
         "acquire_pr_operation_lock 42",
-        `printf '%s\\t%s\\n' '${foreignRef}' '${foreignOid}' >&"$OPENCLAW_PR_LOCK_NOTIFY_FD"`,
+        `printf '%s\\t%s\\n' '${foreignRef}' '${foreignOid}' >&"$AFORA_PR_LOCK_NOTIFY_FD"`,
       ]);
       expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(1);
       expect(refOid(repoDir, foreignRef)).toBe(foreignOid);
@@ -1314,7 +1314,7 @@ describePosix("scripts/pr per-PR operation lock", () => {
     const repoDir = createRepo();
     const result = await runSupervisedOperation(repoDir, fixture, [
       "acquire_pr_operation_lock 42",
-      `${command} >&"$OPENCLAW_PR_LOCK_NOTIFY_FD"`,
+      `${command} >&"$AFORA_PR_LOCK_NOTIFY_FD"`,
     ]);
     const ownerOid = refOid(repoDir);
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(1);
@@ -1986,7 +1986,7 @@ describePosix("scripts/pr per-PR operation lock", () => {
     try {
       expect(await waitFor(() => existsSync(held))).toBe(true);
       const result = runLockShell(repoDir, [
-        "gh() { if [ \"$1 $2\" = 'repo view' ]; then printf 'openclaw/openclaw\\n'; else printf 'MERGED\\n'; fi; }",
+        "gh() { if [ \"$1 $2\" = 'repo view' ]; then printf 'AforaMosh/afora-agent\\n'; else printf 'MERGED\\n'; fi; }",
         "gc_pr_worktrees false",
       ]);
       expect(result.status).toBe(0);

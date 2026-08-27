@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import * as sessionAccessor from "../config/sessions/session-accessor.js";
 import { replaceSessionEntry } from "../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveHeartbeatMonitorSpecs } from "../cron/heartbeat-monitor.js";
 import { heartbeatTaskDeclarationKey, isHeartbeatTaskCronJob } from "../cron/heartbeat-task.js";
 import { readCronJobScratchState, writeCronJobScratch } from "../cron/scratch-store.js";
@@ -13,9 +13,9 @@ import { CronService } from "../cron/service.js";
 import { loadCronJobsStore, resolveCronJobsStorePathFromConfig } from "../cron/store.js";
 import { resolveHeartbeatSession } from "../infra/heartbeat-runner.js";
 import { openNodeSqliteDatabase } from "../infra/node-sqlite.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import {
   collectHeartbeatTaskMigrationFindings,
   maybeMigrateHeartbeatTasksToCron,
@@ -25,7 +25,7 @@ const tempDirs: string[] = [];
 let originalHome: string | undefined;
 let originalStateDir: string | undefined;
 
-function createTestCronService(storePath: string, cfg: OpenClawConfig, nowMs: number): CronService {
+function createTestCronService(storePath: string, cfg: AforaConfig, nowMs: number): CronService {
   const noop = () => {};
   const log = { debug: noop, info: noop, warn: noop, error: noop };
   return new CronService({
@@ -46,22 +46,22 @@ function createTestCronService(storePath: string, cfg: OpenClawConfig, nowMs: nu
 
 beforeEach(() => {
   originalHome = process.env.HOME;
-  originalStateDir = process.env.OPENCLAW_STATE_DIR;
+  originalStateDir = process.env.AFORA_STATE_DIR;
 });
 
 afterEach(async () => {
   vi.restoreAllMocks();
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   if (originalHome === undefined) {
     delete process.env.HOME;
   } else {
     process.env.HOME = originalHome;
   }
   if (originalStateDir === undefined) {
-    delete process.env.OPENCLAW_STATE_DIR;
+    delete process.env.AFORA_STATE_DIR;
   } else {
-    process.env.OPENCLAW_STATE_DIR = originalStateDir;
+    process.env.AFORA_STATE_DIR = originalStateDir;
   }
   await Promise.all(tempDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })));
 });
@@ -81,14 +81,14 @@ tasks:
 # Keep alerts concise
 `,
 ) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-heartbeat-task-migration-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-heartbeat-task-migration-"));
   tempDirs.push(root);
-  const env = { ...process.env, HOME: path.join(root, "home"), OPENCLAW_STATE_DIR: root };
+  const env = { ...process.env, HOME: path.join(root, "home"), AFORA_STATE_DIR: root };
   process.env.HOME = env.HOME;
-  process.env.OPENCLAW_STATE_DIR = env.OPENCLAW_STATE_DIR;
+  process.env.AFORA_STATE_DIR = env.AFORA_STATE_DIR;
   const cfg = {
     agents: { defaults: { heartbeat: { every: "30m" } }, list: [{ id: "main" }] },
-  } as OpenClawConfig;
+  } as AforaConfig;
   const storePath = resolveCronJobsStorePathFromConfig(cfg, env);
   const cron = createTestCronService(storePath, cfg, nowMs);
   const spec = resolveHeartbeatMonitorSpecs(cfg, [])[0];
@@ -149,23 +149,23 @@ async function createExistingInboxJob(fixture: Awaited<ReturnType<typeof createF
 
 describe("heartbeat scratch task cron migration", () => {
   it("does not create shared state while detecting heartbeat tasks", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-heartbeat-task-detect-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-heartbeat-task-detect-"));
     tempDirs.push(root);
-    const env = { ...process.env, HOME: path.join(root, "home"), OPENCLAW_STATE_DIR: root };
+    const env = { ...process.env, HOME: path.join(root, "home"), AFORA_STATE_DIR: root };
     const cfg = {
       agents: { defaults: { heartbeat: { every: "30m" } }, list: [{ id: "main" }] },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await expect(collectHeartbeatTaskMigrationFindings(cfg, env)).resolves.toEqual([]);
-    await expect(fs.stat(resolveOpenClawStateSqlitePath(env))).rejects.toMatchObject({
+    await expect(fs.stat(resolveAforaStateSqlitePath(env))).rejects.toMatchObject({
       code: "ENOENT",
     });
   });
 
   it("does not migrate older shared state while detecting heartbeat tasks", async () => {
     const fixture = await createFixture(2_000_000_000_000);
-    closeOpenClawStateDatabaseForTest();
-    const statePath = resolveOpenClawStateSqlitePath(fixture.env);
+    closeAforaStateDatabaseForTest();
+    const statePath = resolveAforaStateSqlitePath(fixture.env);
     const older = openNodeSqliteDatabase(statePath);
     older.exec(`
       PRAGMA user_version = 7;
@@ -642,11 +642,11 @@ tasks:
   it("uses the supplied environment for legacy session timing and cleanup", async () => {
     const fixture = await createFixture(2_000_000_000_000);
     const suppliedHome = await fs.mkdtemp(
-      path.join(os.tmpdir(), "openclaw-heartbeat-task-migration-supplied-home-"),
+      path.join(os.tmpdir(), "afora-heartbeat-task-migration-supplied-home-"),
     );
     tempDirs.push(suppliedHome);
     fixture.cfg.session = {
-      store: "~/.openclaw/agents/{agentId}/sessions/sessions.json",
+      store: "~/.afora/agents/{agentId}/sessions/sessions.json",
     };
     const suppliedEnv = { ...fixture.env, HOME: suppliedHome };
     const suppliedSession = resolveHeartbeatSession(

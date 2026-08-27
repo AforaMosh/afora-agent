@@ -1,7 +1,7 @@
 // Implements identity metadata updates for configured agents.
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { expectDefined } from "@afora/normalization-core";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { sanitizeTerminalText } from "../../packages/terminal-core/src/safe-text.js";
 import {
   listAgentIds,
@@ -14,7 +14,7 @@ import { replaceConfigFile } from "../config/config.js";
 import { migratePersistedImplicitMainRoster } from "../config/legacy.roster.js";
 import { logConfigUpdated } from "../config/logging.js";
 import type { AgentConfig, IdentityConfig } from "../config/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { normalizeAgentId, normalizeAgentIdStrict } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv, writeRuntimeJson } from "../runtime.js";
@@ -67,7 +67,7 @@ export async function agentsSetIdentityCommand(
   }
   const cfg = migratePersistedImplicitMainRoster(
     configSnapshot.sourceConfig ?? configSnapshot.config,
-  ).config as OpenClawConfig;
+  ).config as AforaConfig;
   const baseHash = configSnapshot.hash;
 
   const nameRaw = normalizeOptionalString(opts.name);
@@ -81,7 +81,7 @@ export async function agentsSetIdentityCommand(
   const wantsIdentityFile = Boolean(opts.fromIdentity || identityFileRaw || !hasExplicitIdentity);
   const normalizedAgent = opts.agent === undefined ? null : normalizeAgentIdStrict(opts.agent);
   if (normalizedAgent && !normalizedAgent.ok) {
-    runtime.error(`Agent "${opts.agent}" not found. Create it with \`openclaw agents add\`.`);
+    runtime.error(`Agent "${opts.agent}" not found. Create it with \`afora agents add\`.`);
     runtime.exit(1);
     return;
   }
@@ -128,7 +128,7 @@ export async function agentsSetIdentityCommand(
   const resolvedAgentId = expectDefined(agentId, "agent id");
   const resolvedAgentIds = listAgentIds(cfg).map((id) => normalizeAgentId(id));
   if (!resolvedAgentIds.includes(resolvedAgentId)) {
-    runtime.error(`Agent "${resolvedAgentId}" not found. Create it with \`openclaw agents add\`.`);
+    runtime.error(`Agent "${resolvedAgentId}" not found. Create it with \`afora agents add\`.`);
     runtime.exit(1);
     return;
   }

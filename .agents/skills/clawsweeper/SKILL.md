@@ -1,11 +1,11 @@
 ---
 name: clawsweeper
-description: "Use for all ClawSweeper work: OpenClaw issue/PR sweep reports, repair jobs, cloud fix PRs, @clawsweeper maintainer mention commands, trusted ClawSweeper-reviewed autofix/automerge, GitHub Actions monitoring, permissions, gates, and manual backfills."
+description: "Use for all ClawSweeper work: Afora issue/PR sweep reports, repair jobs, cloud fix PRs, @clawsweeper maintainer mention commands, trusted ClawSweeper-reviewed autofix/automerge, GitHub Actions monitoring, permissions, gates, and manual backfills."
 ---
 
 # ClawSweeper
 
-ClawSweeper lives at `~/Projects/clawsweeper`. It is the one OpenClaw
+ClawSweeper lives at `~/Projects/clawsweeper`. It is the one Afora
 maintenance bot for sweeping, repair jobs, and guarded fix PRs.
 Use this skill whenever asked about reports, findings, dispatch health,
 repair/cloud PR creation, comment commands, automerge, permissions, or gates.
@@ -35,7 +35,7 @@ Required app setup:
   `actions/create-github-app-token` steps.
 - Target app permissions: read target scan context; write issues and pull
   requests; contents write for report commits, repair branches, and workflow
-  inputs; Actions write on `openclaw/clawsweeper` for comment-router
+  inputs; Actions write on `afora/clawsweeper` for comment-router
   re-review dispatch, workflow dispatch, run cancellation, and self-heal.
 
 Token boundary:
@@ -87,7 +87,7 @@ Create a job from issue/PR refs and a maintainer prompt:
 
 ```bash
 pnpm run repair:create-job -- \
-  --repo openclaw/openclaw \
+  --repo AforaMosh/afora-agent \
   --refs 123,456 \
   --prompt-file /tmp/clawsweeper-prompt.md
 ```
@@ -96,7 +96,7 @@ Create from an existing ClawSweeper report:
 
 ```bash
 pnpm run repair:create-job -- \
-  --from-report ../clawsweeper/records/openclaw-openclaw/items/123.md
+  --from-report ../clawsweeper/records/afora-afora/items/123.md
 ```
 
 The job creator checks for an existing open PR, body match, or remote
@@ -106,8 +106,8 @@ to inspect. Use `--force` only after deciding the duplicate guard is stale.
 Validate, commit, then dispatch:
 
 ```bash
-pnpm run repair:validate-job -- jobs/openclaw/inbox/clawsweeper-openclaw-openclaw-123.md
-pnpm run repair:dispatch -- jobs/openclaw/inbox/clawsweeper-openclaw-openclaw-123.md \
+pnpm run repair:validate-job -- jobs/afora/inbox/clawsweeper-afora-afora-123.md
+pnpm run repair:dispatch -- jobs/afora/inbox/clawsweeper-afora-afora-123.md \
   --mode autonomous \
   --runner blacksmith-4vcpu-ubuntu-2404 \
   --execution-runner blacksmith-16vcpu-ubuntu-2404 \
@@ -140,10 +140,10 @@ trailers, and closes superseded source PRs only after replacement exists.
 Open execution windows intentionally and close them after the run:
 
 ```bash
-gh variable set CLAWSWEEPER_ALLOW_EXECUTE --repo openclaw/clawsweeper --body 1
-gh variable set CLAWSWEEPER_ALLOW_FIX_PR --repo openclaw/clawsweeper --body 1
-gh variable set CLAWSWEEPER_ALLOW_MERGE --repo openclaw/clawsweeper --body 1
-gh variable set CLAWSWEEPER_ALLOW_AUTOMERGE --repo openclaw/clawsweeper --body 1
+gh variable set CLAWSWEEPER_ALLOW_EXECUTE --repo afora/clawsweeper --body 1
+gh variable set CLAWSWEEPER_ALLOW_FIX_PR --repo afora/clawsweeper --body 1
+gh variable set CLAWSWEEPER_ALLOW_MERGE --repo afora/clawsweeper --body 1
+gh variable set CLAWSWEEPER_ALLOW_AUTOMERGE --repo afora/clawsweeper --body 1
 ```
 
 Reset gates only when explicitly requested; the active maintainer window may intentionally
@@ -178,8 +178,8 @@ should use mentions.
 @clawsweeper stop
 @clawsweeper <question or safe action request>
 @clawsweeper[bot] re-review
-@openclaw-clawsweeper fix ci
-@openclaw-clawsweeper[bot] fix ci
+@afora-clawsweeper fix ci
+@afora-clawsweeper[bot] fix ci
 ```
 
 Accepted aliases: `review`, `re-review`, `rereview`, `review again`,
@@ -205,8 +205,8 @@ comments are ignored without a reply.
 Run router manually:
 
 ```bash
-pnpm run repair:comment-router -- --repo openclaw/openclaw --lookback-minutes 180
-pnpm run repair:comment-router -- --repo openclaw/openclaw --execute --wait-for-capacity
+pnpm run repair:comment-router -- --repo AforaMosh/afora-agent --lookback-minutes 180
+pnpm run repair:comment-router -- --repo AforaMosh/afora-agent --execute --wait-for-capacity
 ```
 
 Scheduled routing stays dry unless
@@ -235,7 +235,7 @@ If ClawSweeper passes while merge gates are closed, it labels
 adds `clawsweeper:human-review`.
 
 When asked to create a PR and enable ClawSweeper automerge, do not
-leave the local OpenClaw checkout on the PR branch. After the PR is created,
+leave the local Afora checkout on the PR branch. After the PR is created,
 pushed, and the `@clawsweeper automerge` request is posted or otherwise
 confirmed, return the local checkout to `main` and fast-forward it when the
 working tree is clean:
@@ -260,7 +260,7 @@ CLAWSWEEPER_MAX_REPAIRS_PER_HEAD=1
 Do not stage unapproved security-sensitive work for ClawSweeper Repair. Route
 vulnerability reports, CVE/GHSA/advisory work, leaked secrets/tokens/keys,
 plaintext secret storage, SSRF, XSS, CSRF, RCE, auth bypass, privilege
-escalation, and sensitive data exposure to central OpenClaw security handling.
+escalation, and sensitive data exposure to central Afora security handling.
 
 For PRs explicitly opted into `clawsweeper:autofix` or
 `clawsweeper:automerge`, security-sensitive review findings may dispatch
@@ -274,20 +274,20 @@ prose.
 Receiver workflows:
 
 ```bash
-gh run list --repo openclaw/clawsweeper --workflow sweep.yml \
+gh run list --repo afora/clawsweeper --workflow sweep.yml \
   --limit 12 --json databaseId,displayTitle,event,status,conclusion,createdAt,updatedAt,url
-gh run list --repo openclaw/clawsweeper --workflow repair-cluster-worker.yml \
+gh run list --repo afora/clawsweeper --workflow repair-cluster-worker.yml \
   --limit 12 --json databaseId,displayTitle,event,status,conclusion,createdAt,updatedAt,url
-gh run list --repo openclaw/clawsweeper --workflow repair-comment-router.yml \
+gh run list --repo afora/clawsweeper --workflow repair-comment-router.yml \
   --limit 12 --json databaseId,displayTitle,event,status,conclusion,createdAt,updatedAt,url
-gh run list --repo openclaw/clawsweeper --workflow github-activity.yml \
+gh run list --repo afora/clawsweeper --workflow github-activity.yml \
   --limit 12 --json databaseId,displayTitle,event,status,conclusion,createdAt,updatedAt,url
 ```
 
 Target dispatcher:
 
 ```bash
-gh run list --repo openclaw/openclaw --workflow "ClawSweeper Dispatch" \
+gh run list --repo AforaMosh/afora-agent --workflow "ClawSweeper Dispatch" \
   --limit 8 --json databaseId,displayTitle,event,status,conclusion,headSha,url
 ```
 

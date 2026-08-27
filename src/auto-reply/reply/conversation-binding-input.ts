@@ -1,8 +1,8 @@
 // Builds normalized conversation binding inputs from channel and routing facts.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { normalizeConversationText } from "../../acp/conversation-id.js";
 import { resolveConversationBindingContext } from "../../channels/conversation-binding-context.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { getActivePluginChannelRegistry } from "../../plugins/runtime.js";
 import type { MsgContext } from "../templating.js";
 import type { HandleCommandsParams } from "./commands-types.js";
@@ -32,7 +32,7 @@ function resolveBindingChannel(ctx: BindingMsgContext, commandChannel?: string |
 
 function resolveBindingAccountId(params: {
   ctx: BindingMsgContext;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   commandChannel?: string | null;
 }): string {
   const channel = resolveBindingChannel(params.ctx, params.commandChannel);
@@ -53,7 +53,7 @@ function resolveBindingThreadId(threadId: string | number | null | undefined): s
 }
 
 export function resolveConversationBindingContextFromMessage(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   ctx: BindingMsgContext;
   senderId?: string | null;
   sessionKey?: string | null;
@@ -105,7 +105,7 @@ export function resolveConversationBindingChannelFromMessage(
 
 export function resolveConversationBindingAccountIdFromMessage(params: {
   ctx: BindingMsgContext;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   commandChannel?: string | null;
 }): string {
   return resolveBindingAccountId(params);

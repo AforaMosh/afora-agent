@@ -1,7 +1,7 @@
-import { defineSingleProviderPluginEntry } from "openclaw/plugin-sdk/provider-entry";
+import { defineSingleProviderPluginEntry } from "afora-agent/plugin-sdk/provider-entry";
 import { isModernCohereModelId } from "./models.js";
 import { applyCohereConfig } from "./onboard.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 import { COHERE_LIVE_MODEL_DISCOVERY } from "./provider-catalog.js";
 import { wrapCohereProviderStream } from "./stream.js";
 

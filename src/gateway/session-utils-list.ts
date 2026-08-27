@@ -1,8 +1,8 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import type { SessionsListParams } from "../../packages/gateway-protocol/src/index.js";
 import { readAcpSessionMetaBatch } from "../acp/runtime/session-meta.js";
 import type { ModelCatalogEntry } from "../agents/model-catalog.js";
@@ -12,7 +12,7 @@ import {
 } from "../agents/subagents/registry/subagent-registry-read.js";
 import { shouldKeepSubagentRunChildLink } from "../agents/subagents/registry/subagent-run-liveness.js";
 import type { SessionEntry } from "../config/sessions.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { withPinnedActivePluginRegistryWorkspaceDir } from "../plugins/runtime-workspace-state.js";
 import {
   isIncognitoSessionKey,
@@ -66,7 +66,7 @@ const SESSIONS_LIST_TRANSCRIPT_FIELD_ROWS = 100;
 const SESSIONS_LIST_TRANSCRIPT_USAGE_MAX_BYTES = 64 * 1024;
 
 type ListSessionsFromStoreParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   durableStorePath?: string;
   entryFilter?: (key: string, entry: SessionEntry) => boolean;
   storePath: string;
@@ -101,7 +101,7 @@ function addSessionCreatorIdentity(
   creators: Map<string, { id: string; label?: string; avatarUrl?: string }>,
   entry: SessionEntry,
   userProfileIdentityById: Map<string, SessionActorProfileIdentity | undefined>,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): void {
   const actor = projectSessionActor(
     entry.owner?.actor ?? entry.createdActor,
@@ -136,7 +136,7 @@ function sortSessionCreatorIdentities(
 }
 
 function populateSessionListAcpMetadata(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   entries: readonly SessionEntryPair[];
   opts: SessionsListParams;
   rowContext?: SessionListRowContext;
@@ -191,7 +191,7 @@ function resolveSessionsListWindowLimit(limit: number | undefined, offset: numbe
 }
 
 function filterSessionEntries(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   store: Record<string, SessionEntry>;
   opts: SessionsListParams;
   now: number;
@@ -357,7 +357,7 @@ function isPhantomAgentStoreListEntry(key: string, entry: SessionEntry | undefin
 }
 
 function selectSessionEntries(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   store: Record<string, SessionEntry>;
   opts: SessionsListParams;
   now: number;
@@ -460,7 +460,7 @@ function prepareSessionList(params: ListSessionsFromStoreParams) {
 }
 
 function buildSessionsListResult(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
   list: ReturnType<typeof prepareSessionList>;
   modelCatalog?: ModelCatalogEntry[];
@@ -486,7 +486,7 @@ function buildSessionsListResult(params: {
 }
 
 export function filterAndSortSessionEntries(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   store: Record<string, SessionEntry>;
   opts: SessionsListParams;
   now: number;

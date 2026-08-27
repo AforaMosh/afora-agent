@@ -2,7 +2,7 @@
 import { createServer, type IncomingMessage, type Server } from "node:http";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { zaloPlugin } from "./channel.js";
-import type { OpenClawConfig } from "./runtime-api.js";
+import type { AforaConfig } from "./runtime-api.js";
 
 type RecordedZaloRequest = {
   body: Record<string, unknown>;
@@ -20,7 +20,7 @@ const cfg = {
       },
     },
   },
-} as OpenClawConfig;
+} as AforaConfig;
 
 async function readJsonBody(request: IncomingMessage): Promise<Record<string, unknown>> {
   let body = "";

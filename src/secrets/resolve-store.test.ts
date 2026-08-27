@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { describeSecretResolutionError } from "./resolve-errors.js";
 import { resolveSecretRefString } from "./resolve.js";
 import { isRetryableSecretDegradationReason } from "./runtime-degraded-state.js";
@@ -11,13 +11,13 @@ import { writeSecretStoreEntry } from "./store/secret-store.js";
 const roots: string[] = [];
 
 async function createStateEnv(): Promise<NodeJS.ProcessEnv> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-resolve-store-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-resolve-store-"));
   roots.push(root);
-  return { OPENCLAW_STATE_DIR: path.join(root, "state") };
+  return { AFORA_STATE_DIR: path.join(root, "state") };
 }
 
 afterEach(async () => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   await Promise.all(roots.splice(0).map((root) => fs.rm(root, { recursive: true, force: true })));
 });
 
@@ -127,8 +127,8 @@ describe("store SecretRef resolution", () => {
 
   it("maps database access failures to provider unavailable", async () => {
     const env = await createStateEnv();
-    await fs.mkdir(path.dirname(env.OPENCLAW_STATE_DIR as string), { recursive: true });
-    await fs.writeFile(env.OPENCLAW_STATE_DIR as string, "not a directory", "utf8");
+    await fs.mkdir(path.dirname(env.AFORA_STATE_DIR as string), { recursive: true });
+    await fs.writeFile(env.AFORA_STATE_DIR as string, "not a directory", "utf8");
     const error = await resolveSecretRefString(
       { source: "store", provider: "default", id: "STORED_API_KEY" },
       { config: {}, env },

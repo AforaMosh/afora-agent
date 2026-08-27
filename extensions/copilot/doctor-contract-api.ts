@@ -1,16 +1,16 @@
 /**
  * Doctor contract for the copilot extension.
  *
- * Mirrors {@link ../codex/doctor-contract-api.ts} so `openclaw doctor`
+ * Mirrors {@link ../codex/doctor-contract-api.ts} so `afora doctor`
  * can detect retired config fields and migrate them
  *     (legacyConfigRules + normalizeCompatibilityConfig). No retired
  *     fields exist for copilot yet; the array is empty by design
  *     and normalizeCompatibilityConfig is a structural no-op so
  *     future retirements have a stable in-tree home. Session-route ownership
- *     is static manifest metadata in openclaw.plugin.json.
+ *     is static manifest metadata in afora.plugin.json.
  */
 
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 
 type LegacyConfigRule = {
   path: string[];
@@ -20,8 +20,8 @@ type LegacyConfigRule = {
 
 export const legacyConfigRules: LegacyConfigRule[] = [];
 
-export function normalizeCompatibilityConfig({ cfg }: { cfg: OpenClawConfig }): {
-  config: OpenClawConfig;
+export function normalizeCompatibilityConfig({ cfg }: { cfg: AforaConfig }): {
+  config: AforaConfig;
   changes: string[];
 } {
   return { config: cfg, changes: [] };

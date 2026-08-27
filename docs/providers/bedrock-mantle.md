@@ -1,13 +1,13 @@
 ---
-summary: "Use Amazon Bedrock Mantle OpenAI-compatible and Claude Messages models with OpenClaw"
+summary: "Use Amazon Bedrock Mantle OpenAI-compatible and Claude Messages models with Afora"
 read_when:
-  - You want to use Bedrock Mantle hosted OSS models with OpenClaw
+  - You want to use Bedrock Mantle hosted OSS models with Afora
   - You need the Mantle OpenAI-compatible endpoint for GPT-OSS, Qwen, Kimi, or GLM
   - You want to use Claude Opus 5, Sonnet 5, or Mythos 5 through Amazon Bedrock Mantle
 title: "Amazon Bedrock Mantle"
 ---
 
-OpenClaw includes a bundled **Amazon Bedrock Mantle** provider that connects to
+Afora includes a bundled **Amazon Bedrock Mantle** provider that connects to
 the Mantle OpenAI-compatible endpoint. Mantle hosts open-source and
 third-party models (GPT-OSS, Qwen, Kimi, GLM, and similar) through a standard
 `/v1/chat/completions` surface backed by Bedrock infrastructure. Mantle also
@@ -42,7 +42,7 @@ Choose your preferred auth method and follow the setup steps.
       </Step>
       <Step title="Verify models are discovered">
         ```bash
-        openclaw models list
+        afora models list
         ```
 
         Discovered models appear under the `amazon-bedrock-mantle` provider. No
@@ -66,15 +66,15 @@ Choose your preferred auth method and follow the setup steps.
       </Step>
       <Step title="Verify models are discovered">
         ```bash
-        openclaw models list
+        afora models list
         ```
 
-        OpenClaw generates a Mantle bearer token from the credential chain automatically.
+        Afora generates a Mantle bearer token from the credential chain automatically.
       </Step>
     </Steps>
 
     <Tip>
-    When `AWS_BEARER_TOKEN_BEDROCK` is not set, OpenClaw mints the bearer token for you from the AWS default credential chain, including shared credentials/config profiles, SSO, web identity, and instance or task roles.
+    When `AWS_BEARER_TOKEN_BEDROCK` is not set, Afora mints the bearer token for you from the AWS default credential chain, including shared credentials/config profiles, SSO, web identity, and instance or task roles.
     </Tip>
 
   </Tab>
@@ -82,8 +82,8 @@ Choose your preferred auth method and follow the setup steps.
 
 ## Automatic model discovery
 
-When `AWS_BEARER_TOKEN_BEDROCK` is set, OpenClaw uses it directly. Otherwise,
-OpenClaw attempts to generate a Mantle bearer token from the AWS default
+When `AWS_BEARER_TOKEN_BEDROCK` is set, Afora uses it directly. Otherwise,
+Afora attempts to generate a Mantle bearer token from the AWS default
 credential chain. It then discovers available Mantle models by querying the
 region's `/v1/models` endpoint.
 
@@ -96,7 +96,7 @@ To keep the Mantle plugin enabled but suppress automatic discovery and IAM
 bearer-token generation, disable the plugin-owned discovery toggle:
 
 ```bash
-openclaw config set plugins.entries.amazon-bedrock-mantle.config.discovery.enabled false
+afora config set plugins.entries.amazon-bedrock-mantle.config.discovery.enabled false
 ```
 
 <Note>
@@ -150,19 +150,19 @@ want to use.
   <Accordion title="Reasoning support">
     Reasoning support is inferred from model IDs containing patterns like
     `thinking`, `reasoner`, `reasoning`, `deepseek.r`, `gpt-oss-120b`, or
-    `gpt-oss-safeguard-120b`. OpenClaw sets `reasoning: true` automatically for
+    `gpt-oss-safeguard-120b`. Afora sets `reasoning: true` automatically for
     matching models during discovery.
   </Accordion>
 
   <Accordion title="Endpoint unavailability">
     If the Mantle endpoint is unavailable, returns no models, or bearer-token
     resolution fails, discovery returns an empty result and the implicit
-    provider is skipped. OpenClaw does not error; other configured providers
+    provider is skipped. Afora does not error; other configured providers
     continue to work normally.
   </Accordion>
 
   <Accordion title="Claude via the Anthropic Messages route">
-    When automatic discovery owns the model list, OpenClaw appends five Claude
+    When automatic discovery owns the model list, Afora appends five Claude
     models after a successful lookup, regardless of what `/v1/models` returns:
     `amazon-bedrock-mantle/anthropic.claude-opus-5` (Claude Opus 5),
     `amazon-bedrock-mantle/anthropic.claude-sonnet-5` (Claude Sonnet 5),
@@ -177,12 +177,12 @@ want to use.
     Claude Opus 5 publishes a 1,000,000-token context window, 128,000-token
     output limit, image input, and `$5/$25` input/output pricing. Adaptive
     thinking defaults to `high`; `/think off` disables thinking, and
-    `/think xhigh|max` uses the model's native effort levels. OpenClaw omits
+    `/think xhigh|max` uses the model's native effort levels. Afora omits
     caller-selected sampling parameters.
 
     Claude Sonnet 5 always uses adaptive thinking and defaults to `high`
     effort. `/think off` and `/think minimal` map to `low` because the Mantle
-    route cannot disable thinking. OpenClaw also omits custom temperature for
+    route cannot disable thinking. Afora also omits custom temperature for
     Sonnet 5 requests.
 
     Claude Mythos 5 is limited access. It publishes a 1,000,000-token context
@@ -193,7 +193,7 @@ want to use.
     Claude Mythos Preview always requests reasoning, defaulting to `high`
     effort when no `/think` level is set (mapped from `xhigh`/`max` down to
     `high`, and `minimal` up to `low`). Opus 4.7 on Mantle streams without
-    model-provided reasoning, and OpenClaw omits its `temperature` parameter
+    model-provided reasoning, and Afora omits its `temperature` parameter
     since Opus 4.7 does not accept sampling overrides on this route; Mythos
     Preview accepts a `temperature` override normally.
 

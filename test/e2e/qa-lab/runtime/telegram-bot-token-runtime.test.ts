@@ -37,11 +37,11 @@ describe("telegram bot token runtime evidence", () => {
   it("resolves only dedicated leased credentials", () => {
     expect(
       testing.resolveLeasedToken({
-        OPENCLAW_QA_TELEGRAM_SUT_BOT_TOKEN: "leased-token",
+        AFORA_QA_TELEGRAM_SUT_BOT_TOKEN: "leased-token",
         TELEGRAM_E2E_SUT_BOT_TOKEN: "secondary-leased-token",
         TELEGRAM_BOT_TOKEN: "generic-token",
       }),
-    ).toEqual({ key: "OPENCLAW_QA_TELEGRAM_SUT_BOT_TOKEN", token: "leased-token" });
+    ).toEqual({ key: "AFORA_QA_TELEGRAM_SUT_BOT_TOKEN", token: "leased-token" });
   });
 
   it("writes blocked evidence without a dedicated credential", async () => {
@@ -49,7 +49,7 @@ describe("telegram bot token runtime evidence", () => {
     tempDirs.push(artifactBase);
     const evidence = await runTelegramBotTokenRuntime(
       { artifactBase, repoRoot: process.cwd(), startupTimeoutMs: 100 },
-      { OPENCLAW_QA_CREDENTIAL_SOURCE: "env", TELEGRAM_BOT_TOKEN: "generic-token" },
+      { AFORA_QA_CREDENTIAL_SOURCE: "env", TELEGRAM_BOT_TOKEN: "generic-token" },
     );
 
     expect(evidence.entries[0]?.result.status).toBe("blocked");
@@ -72,7 +72,7 @@ describe("telegram bot token runtime evidence", () => {
 
     const evidence = await runTelegramBotTokenRuntime(
       { artifactBase, repoRoot: process.cwd(), startupTimeoutMs: 100 },
-      { OPENCLAW_QA_TELEGRAM_SUT_BOT_TOKEN: leasedToken },
+      { AFORA_QA_TELEGRAM_SUT_BOT_TOKEN: leasedToken },
       {
         ...credential.dependencies,
         createInstance: async (options) => {
@@ -107,9 +107,9 @@ describe("telegram bot token runtime evidence", () => {
         },
       },
       env: {
-        OPENCLAW_SKIP_CHANNELS: undefined,
-        OPENCLAW_SKIP_PROVIDERS: undefined,
-        OPENCLAW_TEST_MINIMAL_GATEWAY: undefined,
+        AFORA_SKIP_CHANNELS: undefined,
+        AFORA_SKIP_PROVIDERS: undefined,
+        AFORA_TEST_MINIMAL_GATEWAY: undefined,
       },
     });
     const log = await fs.readFile(
@@ -144,7 +144,7 @@ describe("telegram bot token runtime evidence", () => {
 
     const evidence = await runTelegramBotTokenRuntime(
       { artifactBase, repoRoot: process.cwd(), startupTimeoutMs: 100 },
-      { OPENCLAW_QA_TELEGRAM_SUT_BOT_TOKEN: leasedToken },
+      { AFORA_QA_TELEGRAM_SUT_BOT_TOKEN: leasedToken },
       {
         ...credential.dependencies,
         createInstance: async () => ({
@@ -184,7 +184,7 @@ describe("telegram bot token runtime evidence", () => {
 
     const evidence = await runTelegramBotTokenRuntime(
       { artifactBase, repoRoot: process.cwd(), startupTimeoutMs: 100 },
-      { OPENCLAW_QA_CREDENTIAL_SOURCE: "convex" },
+      { AFORA_QA_CREDENTIAL_SOURCE: "convex" },
       { ...credential.dependencies, createInstance },
     );
 

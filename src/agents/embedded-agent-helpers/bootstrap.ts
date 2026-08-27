@@ -1,8 +1,8 @@
 /**
  * Builds and sanitizes bootstrap context inserted into embedded-agent sessions.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { sanitizeGoogleAssistantFirstOrdering } from "../../shared/google-turn-ordering.js";
 import { sliceUtf16Safe, truncateUtf16Safe } from "../../utils.js";
 import { resolveAgentConfig } from "../agent-scope.js";
@@ -118,7 +118,7 @@ type PolicyDigest = {
   omittedLines: number;
 };
 
-export function resolveBootstrapMaxChars(cfg?: OpenClawConfig, agentId?: string | null): number {
+export function resolveBootstrapMaxChars(cfg?: AforaConfig, agentId?: string | null): number {
   const raw =
     cfg && agentId
       ? (resolveAgentConfig(cfg, agentId)?.bootstrapMaxChars ??
@@ -131,7 +131,7 @@ export function resolveBootstrapMaxChars(cfg?: OpenClawConfig, agentId?: string 
 }
 
 export function resolveBootstrapTotalMaxChars(
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
   agentId?: string | null,
 ): number {
   const raw =

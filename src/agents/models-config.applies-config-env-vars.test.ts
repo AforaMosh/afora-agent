@@ -1,6 +1,6 @@
 // Verifies models.json planning applies config env vars and discovery scope.
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { createConfigRuntimeEnv } from "../config/env-vars.js";
 import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.js";
 import { withEnvAsync } from "../test-utils/env.js";
@@ -11,7 +11,7 @@ import {
 } from "./auth-profiles/runtime-snapshots.js";
 import { unsetEnv, withTempEnv } from "./models-config.e2e-harness.js";
 import {
-  planOpenClawModelsJsonWithDeps,
+  planAforaModelsJsonWithDeps,
   resolveProvidersForModelsJsonWithDeps,
 } from "./models-config.plan.test-support.js";
 import type { ProviderConfig } from "./models-config.providers.secrets.js";
@@ -58,7 +58,7 @@ vi.mock("./model-auth-env-vars.js", () => ({
   }),
 }));
 
-const TEST_ENV_VAR = "OPENCLAW_MODELS_CONFIG_TEST_ENV";
+const TEST_ENV_VAR = "AFORA_MODELS_CONFIG_TEST_ENV";
 
 afterEach(() => {
   providerRuntimeMocks.normalizeProviderConfigWithPlugin.mockReset();
@@ -126,7 +126,7 @@ function createImplicitGoogleVertexProvider(): ProviderConfig {
 }
 
 async function resolveProvidersForConfigEnvTest(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   onResolveImplicitProviders: (env: NodeJS.ProcessEnv) => void;
 }) {
   // Config env vars are materialized into the discovery env before implicit
@@ -135,7 +135,7 @@ async function resolveProvidersForConfigEnvTest(params: {
   return await resolveProvidersForModelsJsonWithDeps(
     {
       cfg: params.cfg,
-      agentDir: "/tmp/openclaw-models-config-env-vars-test",
+      agentDir: "/tmp/afora-models-config-env-vars-test",
       env,
     },
     {
@@ -149,7 +149,7 @@ async function resolveProvidersForConfigEnvTest(params: {
   );
 }
 
-function createConfigEnvVarsConfig(): OpenClawConfig {
+function createConfigEnvVarsConfig(): AforaConfig {
   return {
     models: { providers: {} },
     env: {
@@ -161,7 +161,7 @@ function createConfigEnvVarsConfig(): OpenClawConfig {
   };
 }
 
-async function resolveProvidersAndCaptureDiscoveryEnv(cfg: OpenClawConfig) {
+async function resolveProvidersAndCaptureDiscoveryEnv(cfg: AforaConfig) {
   let discoveryEnv: NodeJS.ProcessEnv | undefined;
   const providers = await resolveProvidersForConfigEnvTest({
     cfg,
@@ -172,12 +172,12 @@ async function resolveProvidersAndCaptureDiscoveryEnv(cfg: OpenClawConfig) {
   return { discoveryEnv, providers };
 }
 
-let unauthenticatedProviderWritePlan: Awaited<ReturnType<typeof planOpenClawModelsJsonWithDeps>>;
+let unauthenticatedProviderWritePlan: Awaited<ReturnType<typeof planAforaModelsJsonWithDeps>>;
 let unauthenticatedProviderParsed: { providers?: Record<string, unknown> };
 let googleVertexProfileCatalogPlan: Awaited<ReturnType<typeof planGoogleVertexProfileCatalog>>;
 
 async function planGoogleVertexProfileCatalog() {
-  const agentDir = "/tmp/openclaw-google-vertex-models-profile";
+  const agentDir = "/tmp/afora-google-vertex-models-profile";
   try {
     externalAuthTesting.setResolveExternalAuthProfilesForTest(() => []);
     replaceRuntimeAuthProfileStoreSnapshots([
@@ -199,7 +199,7 @@ async function planGoogleVertexProfileCatalog() {
       },
     ]);
 
-    return await planOpenClawModelsJsonWithDeps(
+    return await planAforaModelsJsonWithDeps(
       {
         cfg: {
           agents: {
@@ -232,10 +232,10 @@ async function planGoogleVertexProfileCatalog() {
 beforeAll(async () => {
   // Reused no-auth write plan proves generated providers stay serializable
   // even when discovery returns auth-only provider shells.
-  unauthenticatedProviderWritePlan = await planOpenClawModelsJsonWithDeps(
+  unauthenticatedProviderWritePlan = await planAforaModelsJsonWithDeps(
     {
       cfg: { models: { providers: {} } },
-      agentDir: "/tmp/openclaw-models-config-env-vars-test",
+      agentDir: "/tmp/afora-models-config-env-vars-test",
       env: {},
       existingRaw: "",
       existingParsed: null,
@@ -264,7 +264,7 @@ beforeAll(async () => {
 
 describe("models-config", () => {
   it("keeps the implicit provider catalog when explicit baseUrl is blank", async () => {
-    let observedConfig: OpenClawConfig | undefined;
+    let observedConfig: AforaConfig | undefined;
     const providers = await resolveProvidersForModelsJsonWithDeps(
       {
         cfg: {
@@ -278,7 +278,7 @@ describe("models-config", () => {
             },
           },
         },
-        agentDir: "/tmp/openclaw-models-config-env-vars-test",
+        agentDir: "/tmp/afora-models-config-env-vars-test",
         env: {},
       },
       {
@@ -309,7 +309,7 @@ describe("models-config", () => {
     await resolveProvidersForModelsJsonWithDeps(
       {
         cfg: { models: { providers: {} } },
-        agentDir: "/tmp/openclaw-models-config-env-vars-test",
+        agentDir: "/tmp/afora-models-config-env-vars-test",
         env: {},
         pluginMetadataSnapshot,
       },
@@ -330,9 +330,9 @@ describe("models-config", () => {
     await resolveProvidersForModelsJsonWithDeps(
       {
         cfg: { models: { providers: {} } },
-        agentDir: "/tmp/openclaw-models-config-env-vars-test",
+        agentDir: "/tmp/afora-models-config-env-vars-test",
         env: {},
-        workspaceDir: "/tmp/openclaw-workspace",
+        workspaceDir: "/tmp/afora-workspace",
       },
       {
         resolveImplicitProviders: async ({ workspaceDir }) => {
@@ -342,7 +342,7 @@ describe("models-config", () => {
       },
     );
 
-    expect(observedWorkspaceDir).toBe("/tmp/openclaw-workspace");
+    expect(observedWorkspaceDir).toBe("/tmp/afora-workspace");
   });
 
   it("threads startup provider discovery scope into implicit provider discovery", async () => {
@@ -353,7 +353,7 @@ describe("models-config", () => {
     await resolveProvidersForModelsJsonWithDeps(
       {
         cfg: { models: { providers: {} } },
-        agentDir: "/tmp/openclaw-models-config-env-vars-test",
+        agentDir: "/tmp/afora-models-config-env-vars-test",
         env: {},
         providerDiscoveryProviderIds: ["openai"],
         providerDiscoveryEntriesOnly: true,
@@ -389,10 +389,10 @@ describe("models-config", () => {
       | Pick<PluginMetadataSnapshot, "index" | "manifestRegistry" | "owners">
       | undefined;
 
-    await planOpenClawModelsJsonWithDeps(
+    await planAforaModelsJsonWithDeps(
       {
         cfg: { models: { providers: {} } },
-        agentDir: "/tmp/openclaw-models-config-env-vars-test",
+        agentDir: "/tmp/afora-models-config-env-vars-test",
         env: {},
         existingRaw: "",
         existingParsed: null,
@@ -433,10 +433,10 @@ describe("models-config", () => {
         "POLICY_ALIAS_API_KEY",
       );
 
-      await planOpenClawModelsJsonWithDeps(
+      await planAforaModelsJsonWithDeps(
         {
           cfg: { models: { providers: {} } },
-          agentDir: "/tmp/openclaw-models-config-policy-registry-test",
+          agentDir: "/tmp/afora-models-config-policy-registry-test",
           env: {},
           existingRaw: "",
           existingParsed: null,
@@ -474,10 +474,10 @@ describe("models-config", () => {
   });
 
   it("treats empty replace-mode provider sets as authoritative", async () => {
-    const plan = await planOpenClawModelsJsonWithDeps(
+    const plan = await planAforaModelsJsonWithDeps(
       {
         cfg: { models: { mode: "replace", providers: {} } },
-        agentDir: "/tmp/openclaw-models-config-env-vars-test",
+        agentDir: "/tmp/afora-models-config-env-vars-test",
         env: {},
         existingRaw: `${JSON.stringify({ providers: { stale: {} } }, null, 2)}\n`,
         existingParsed: { providers: { stale: {} } },
@@ -506,10 +506,10 @@ describe("models-config", () => {
         setupProviders: new Map(),
       },
     } as unknown as Pick<PluginMetadataSnapshot, "index" | "manifestRegistry" | "owners">;
-    const plan = await planOpenClawModelsJsonWithDeps(
+    const plan = await planAforaModelsJsonWithDeps(
       {
         cfg: { models: { providers: {} } },
-        agentDir: "/tmp/openclaw-models-config-env-vars-test",
+        agentDir: "/tmp/afora-models-config-env-vars-test",
         env: { ZAI_API_KEY: "sk-test" } as NodeJS.ProcessEnv,
         existingRaw: "",
         existingParsed: null,
@@ -546,10 +546,10 @@ describe("models-config", () => {
   });
 
   it("falls back to canonical env markers when provider runtime has no api-key policy", async () => {
-    const plan = await planOpenClawModelsJsonWithDeps(
+    const plan = await planAforaModelsJsonWithDeps(
       {
         cfg: { models: { providers: {} } },
-        agentDir: "/tmp/openclaw-models-config-env-vars-test",
+        agentDir: "/tmp/afora-models-config-env-vars-test",
         env: { OPENAI_API_KEY: "sk-test" } as NodeJS.ProcessEnv,
         existingRaw: "",
         existingParsed: null,
@@ -572,10 +572,10 @@ describe("models-config", () => {
   });
 
   it("normalizes retired Gemini ids preserved from existing models.json rows", async () => {
-    const plan = await planOpenClawModelsJsonWithDeps(
+    const plan = await planAforaModelsJsonWithDeps(
       {
         cfg: { models: { mode: "merge", providers: {} } },
-        agentDir: "/tmp/openclaw-models-config-env-vars-test",
+        agentDir: "/tmp/afora-models-config-env-vars-test",
         env: {},
         existingRaw: "",
         existingParsed: {
@@ -650,7 +650,7 @@ describe("models-config", () => {
   });
 
   it("keeps google-vertex static catalog rows when discovery supplies the ADC marker", async () => {
-    const plan = await planOpenClawModelsJsonWithDeps(
+    const plan = await planAforaModelsJsonWithDeps(
       {
         cfg: {
           agents: {
@@ -663,7 +663,7 @@ describe("models-config", () => {
           },
           models: { providers: {} },
         },
-        agentDir: "/tmp/openclaw-google-vertex-adc-models",
+        agentDir: "/tmp/afora-google-vertex-adc-models",
         env: {},
         existingRaw: "",
         existingParsed: null,

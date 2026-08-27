@@ -24,8 +24,8 @@ describe("normalizeBrowserUrlDraft", () => {
   });
   it("prefixes bare hosts with https", () => {
     expect(normalizeBrowserUrlDraft("example.com")).toBe("https://example.com/");
-    expect(normalizeBrowserUrlDraft("  github.com/openclaw/openclaw ")).toBe(
-      "https://github.com/openclaw/openclaw",
+    expect(normalizeBrowserUrlDraft("  github.com/AforaMosh/afora-agent ")).toBe(
+      "https://github.com/AforaMosh/afora-agent",
     );
   });
 
@@ -47,7 +47,7 @@ describe("normalizeBrowserUrlDraft", () => {
 
   it("restores persisted open state when a mounted tag upgrades lazily", async () => {
     localStorage.setItem(
-      "openclaw.browser.panel.v1",
+      "afora.browser.panel.v1",
       JSON.stringify({ open: true, dock: "right", height: 420, width: 560 }),
     );
     const tagName = `test-lazy-browser-panel-${crypto.randomUUID()}`;
@@ -55,7 +55,7 @@ describe("normalizeBrowserUrlDraft", () => {
     element.available = true;
     document.body.append(element);
 
-    const BrowserPanel = customElements.get("openclaw-browser-panel");
+    const BrowserPanel = customElements.get("afora-browser-panel");
     if (!BrowserPanel) {
       throw new Error("expected browser panel registration");
     }
@@ -70,7 +70,7 @@ describe("normalizeBrowserUrlDraft", () => {
   });
 
   it("uses the shared surface empty state when the embedded browser has no tabs", async () => {
-    const panel = document.createElement("openclaw-browser-panel") as unknown as HTMLElement & {
+    const panel = document.createElement("afora-browser-panel") as unknown as HTMLElement & {
       available: boolean;
       embedded: boolean;
       renderRoot: ShadowRoot;
@@ -81,7 +81,7 @@ describe("normalizeBrowserUrlDraft", () => {
     document.body.append(panel);
     await panel.updateComplete;
 
-    const empty = panel.renderRoot.querySelector("openclaw-panel-empty-state");
+    const empty = panel.renderRoot.querySelector("afora-panel-empty-state");
     await empty?.updateComplete;
     expect(empty?.shadowRoot?.querySelector(".empty-state__title")?.textContent).toBe("Browser");
     expect(empty?.querySelector("svg")).not.toBeNull();
@@ -89,10 +89,10 @@ describe("normalizeBrowserUrlDraft", () => {
 
   it("suppresses an open dock without overwriting its persisted preference", async () => {
     localStorage.setItem(
-      "openclaw.browser.panel.v1",
+      "afora.browser.panel.v1",
       JSON.stringify({ open: true, dock: "right", height: 420, width: 560 }),
     );
-    const panel = document.createElement("openclaw-browser-panel") as unknown as HTMLElement & {
+    const panel = document.createElement("afora-browser-panel") as unknown as HTMLElement & {
       available: boolean;
       suppressed: boolean;
       renderRoot: ShadowRoot;
@@ -109,7 +109,7 @@ describe("normalizeBrowserUrlDraft", () => {
     expect(document.documentElement.style.getPropertyValue("--oc-browser-reserve-right")).toBe(
       "0px",
     );
-    expect(JSON.parse(localStorage.getItem("openclaw.browser.panel.v1") ?? "{}")).toMatchObject({
+    expect(JSON.parse(localStorage.getItem("afora.browser.panel.v1") ?? "{}")).toMatchObject({
       open: true,
     });
 
@@ -121,10 +121,10 @@ describe("normalizeBrowserUrlDraft", () => {
 
   it("waits for availability before restoring after suppression", async () => {
     localStorage.setItem(
-      "openclaw.browser.panel.v1",
+      "afora.browser.panel.v1",
       JSON.stringify({ open: true, dock: "right", height: 420, width: 560 }),
     );
-    const panel = document.createElement("openclaw-browser-panel") as unknown as HTMLElement & {
+    const panel = document.createElement("afora-browser-panel") as unknown as HTMLElement & {
       available: boolean;
       suppressed: boolean;
       browserPanelIsOpen(): boolean;
@@ -144,7 +144,7 @@ describe("normalizeBrowserUrlDraft", () => {
 
   it("mounts closed inside a takeover instead of refreshing a hidden dock", async () => {
     localStorage.setItem(
-      "openclaw.browser.panel.v1",
+      "afora.browser.panel.v1",
       JSON.stringify({ open: true, dock: "right", height: 420, width: 560 }),
     );
     const requests: string[] = [];
@@ -154,7 +154,7 @@ describe("normalizeBrowserUrlDraft", () => {
         return {} as T;
       },
     } as GatewayBrowserClient;
-    const panel = document.createElement("openclaw-browser-panel") as unknown as HTMLElement & {
+    const panel = document.createElement("afora-browser-panel") as unknown as HTMLElement & {
       client: GatewayBrowserClient | null;
       available: boolean;
       suppressed: boolean;
@@ -176,7 +176,7 @@ describe("normalizeBrowserUrlDraft", () => {
   });
 
   it("keeps an already closed panel closed for an explicit close request", () => {
-    const panel = document.createElement("openclaw-browser-panel") as unknown as HTMLElement & {
+    const panel = document.createElement("afora-browser-panel") as unknown as HTMLElement & {
       available: boolean;
       browserPanelIsOpen: () => boolean;
       handleToggleRequest: (event: Event) => void;
@@ -185,14 +185,14 @@ describe("normalizeBrowserUrlDraft", () => {
     document.body.append(panel);
 
     panel.handleToggleRequest(
-      new CustomEvent("openclaw:browser-toggle", { detail: { open: false } }),
+      new CustomEvent("afora:browser-toggle", { detail: { open: false } }),
     );
 
     expect(panel.browserPanelIsOpen()).toBe(false);
   });
 
   it("treats an embedded panel as open while the side panel owns visibility", async () => {
-    const panel = document.createElement("openclaw-browser-panel") as unknown as HTMLElement & {
+    const panel = document.createElement("afora-browser-panel") as unknown as HTMLElement & {
       embedded: boolean;
       browserPanelIsOpen: () => boolean;
       updateComplete: Promise<unknown>;
@@ -205,7 +205,7 @@ describe("normalizeBrowserUrlDraft", () => {
   });
 
   it("starts a fresh browser tab draft when an embedded panel receives a new-tab request", async () => {
-    const panel = document.createElement("openclaw-browser-panel") as unknown as HTMLElement & {
+    const panel = document.createElement("afora-browser-panel") as unknown as HTMLElement & {
       available: boolean;
       embedded: boolean;
       handleToggleRequest: (event: Event) => void;
@@ -218,7 +218,7 @@ describe("normalizeBrowserUrlDraft", () => {
     await panel.updateComplete;
 
     panel.handleToggleRequest(
-      new CustomEvent("openclaw:browser-toggle", { detail: { open: true, newTab: true } }),
+      new CustomEvent("afora:browser-toggle", { detail: { open: true, newTab: true } }),
     );
     await panel.updateComplete;
     await Promise.resolve();

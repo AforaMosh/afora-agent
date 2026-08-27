@@ -1,6 +1,6 @@
 // Detects Windows console/OEM code pages and decodes console output encodings.
 import { spawnSync } from "node:child_process";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { getWindowsCmdExePath, queryWindowsRegistryValue } from "./windows-install-roots.js";
 
 const WINDOWS_CODEPAGE_ENCODING_MAP: Record<number, string> = {

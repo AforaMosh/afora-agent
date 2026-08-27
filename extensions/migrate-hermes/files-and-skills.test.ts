@@ -2,13 +2,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { loadAuthProfileStoreWithoutExternalProfiles } from "openclaw/plugin-sdk/agent-runtime";
-import { MIGRATION_REASON_TARGET_EXISTS } from "openclaw/plugin-sdk/migration";
+import { loadAuthProfileStoreWithoutExternalProfiles } from "afora-agent/plugin-sdk/agent-runtime";
+import { MIGRATION_REASON_TARGET_EXISTS } from "afora-agent/plugin-sdk/migration";
 import {
-  resolvePreferredOpenClawTmpDir,
+  resolvePreferredAforaTmpDir,
   tempWorkspace,
   type TempWorkspace,
-} from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/temp-path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildAuthItems } from "./auth.js";
 import { buildHermesMigrationProvider } from "./provider.js";
@@ -21,8 +21,8 @@ let testWorkspace: TempWorkspace;
 describe("Hermes migration file and skill items", () => {
   beforeEach(async () => {
     testWorkspace = await tempWorkspace({
-      rootDir: resolvePreferredOpenClawTmpDir(),
-      prefix: "openclaw-migrate-hermes-",
+      rootDir: resolvePreferredAforaTmpDir(),
+      prefix: "afora-migrate-hermes-",
     });
   });
 
@@ -234,7 +234,7 @@ describe("Hermes migration file and skill items", () => {
     ]);
   });
 
-  it("maps supported OAuth model providers and requests fresh OpenClaw authentication", async () => {
+  it("maps supported OAuth model providers and requests fresh Afora authentication", async () => {
     const root = testWorkspace.dir;
     const source = path.join(root, "hermes");
     const xaiProvider = ["xai", "oauth"].join("-");
@@ -271,11 +271,11 @@ describe("Hermes migration file and skill items", () => {
       (item) => item.kind === "manual" && item.message?.includes("credentials cannot be reused"),
     );
     expect(reauthItems.map((item) => item.reason)).toEqual([
-      "Authenticate anthropic in OpenClaw after migration.",
-      "Authenticate nous in OpenClaw after migration.",
-      "Authenticate qwen with an API key after migration: openclaw onboard --auth-choice qwen-api-key.",
-      "Authenticate minimax-portal in OpenClaw after migration.",
-      "Authenticate xai in OpenClaw after migration.",
+      "Authenticate anthropic in Afora after migration.",
+      "Authenticate nous in Afora after migration.",
+      "Authenticate qwen with an API key after migration: afora onboard --auth-choice qwen-api-key.",
+      "Authenticate minimax-portal in Afora after migration.",
+      "Authenticate xai in Afora after migration.",
     ]);
   });
 
@@ -415,10 +415,10 @@ describe("Hermes migration file and skill items", () => {
     const copiedAgentsItem = result.items.find((item) => item.id === "workspace:AGENTS.md");
     expect(String(copiedAgentsItem?.details?.backupPath)).toContain("AGENTS.md");
     const agentDir = path.join(stateDir, "agents", "main", "agent");
-    const previousStateDir = process.env.OPENCLAW_STATE_DIR;
-    const previousAgentDir = process.env.OPENCLAW_AGENT_DIR;
-    process.env.OPENCLAW_STATE_DIR = stateDir;
-    process.env.OPENCLAW_AGENT_DIR = agentDir;
+    const previousStateDir = process.env.AFORA_STATE_DIR;
+    const previousAgentDir = process.env.AFORA_AGENT_DIR;
+    process.env.AFORA_STATE_DIR = stateDir;
+    process.env.AFORA_AGENT_DIR = agentDir;
     try {
       const authStore = loadAuthProfileStoreWithoutExternalProfiles(agentDir);
       expect(authStore.profiles?.["openai:hermes-import"]).toEqual(
@@ -430,14 +430,14 @@ describe("Hermes migration file and skill items", () => {
       );
     } finally {
       if (previousStateDir === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.AFORA_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = previousStateDir;
+        process.env.AFORA_STATE_DIR = previousStateDir;
       }
       if (previousAgentDir === undefined) {
-        delete process.env.OPENCLAW_AGENT_DIR;
+        delete process.env.AFORA_AGENT_DIR;
       } else {
-        process.env.OPENCLAW_AGENT_DIR = previousAgentDir;
+        process.env.AFORA_AGENT_DIR = previousAgentDir;
       }
     }
   });
@@ -516,7 +516,7 @@ describe("Hermes migration file and skill items", () => {
     }
     expect(plan.items.find((item) => item.id === "archive:auth.json")).toBeUndefined();
     expect(plan.warnings).toEqual([
-      "Some Hermes files are archive-only. They will be copied into the migration report for manual review, not loaded into OpenClaw.",
+      "Some Hermes files are archive-only. They will be copied into the migration report for manual review, not loaded into Afora.",
     ]);
 
     const result = await provider.apply(makeContext({ source, stateDir, workspaceDir, reportDir }));
@@ -739,7 +739,7 @@ describe("Hermes migration file and skill items", () => {
       }),
     );
     expect(plan.warnings).toContain(
-      "Hermes and OpenClaw must not keep using the same imported OpenAI OAuth refresh grant after migration; reauthenticate one side before running both.",
+      "Hermes and Afora must not keep using the same imported OpenAI OAuth refresh grant after migration; reauthenticate one side before running both.",
     );
   });
 

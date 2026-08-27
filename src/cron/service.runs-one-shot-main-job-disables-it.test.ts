@@ -25,7 +25,7 @@ import type { CronServiceDeps } from "./service/state.js";
 const noopLogger = createNoopLogger();
 installCronTestHooks({ logger: noopLogger });
 const { makeStorePath } = createCronStoreHarness({
-  prefix: "openclaw-cron-runs-one-shot-",
+  prefix: "afora-cron-runs-one-shot-",
 });
 
 function createCronEventHarness() {

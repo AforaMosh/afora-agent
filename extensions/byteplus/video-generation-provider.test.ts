@@ -1,6 +1,6 @@
 // Byteplus tests cover video generation provider plugin behavior.
-import { expectExplicitVideoGenerationCapabilities } from "openclaw/plugin-sdk/provider-test-contracts";
-import { streamedJsonResponse } from "openclaw/plugin-sdk/test-fixtures";
+import { expectExplicitVideoGenerationCapabilities } from "afora-agent/plugin-sdk/provider-test-contracts";
+import { streamedJsonResponse } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 // Submit/poll transport is mocked locally so each test can inject the BytePlus task JSON
@@ -14,12 +14,12 @@ const { postJsonRequestMock, fetchWithTimeoutMock, resolveApiKeyForProviderMock 
   }),
 );
 
-vi.mock("openclaw/plugin-sdk/provider-auth-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/provider-auth-runtime", () => ({
   resolveApiKeyForProvider: resolveApiKeyForProviderMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/provider-http", async (importActual) => {
-  const actual = await importActual<typeof import("openclaw/plugin-sdk/provider-http")>();
+vi.mock("afora-agent/plugin-sdk/provider-http", async (importActual) => {
+  const actual = await importActual<typeof import("afora-agent/plugin-sdk/provider-http")>();
   return {
     // REAL byte-bounded JSON reader under test — not stubbed.
     assertProviderBinaryResponseContent: actual.assertProviderBinaryResponseContent,

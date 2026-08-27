@@ -1,5 +1,5 @@
-import type { OpenClawPluginNodeHostCommandAvailabilityContext } from "openclaw/plugin-sdk/plugin-entry";
-import { buildPluginConfigSchema } from "openclaw/plugin-sdk/plugin-entry";
+import type { AforaPluginNodeHostCommandAvailabilityContext } from "afora-agent/plugin-sdk/plugin-entry";
+import { buildPluginConfigSchema } from "afora-agent/plugin-sdk/plugin-entry";
 import { z } from "zod";
 
 const CapabilityConfigSchema = z.strictObject({
@@ -37,7 +37,7 @@ export function resolveLinuxNodePluginConfig(value: unknown): ResolvedLinuxNodeP
 }
 
 export function resolveLinuxNodePluginConfigFromHost(
-  config: OpenClawPluginNodeHostCommandAvailabilityContext["config"],
+  config: AforaPluginNodeHostCommandAvailabilityContext["config"],
 ): ResolvedLinuxNodePluginConfig | null {
   try {
     return resolveLinuxNodePluginConfig(config.plugins?.entries?.["linux-node"]?.config);

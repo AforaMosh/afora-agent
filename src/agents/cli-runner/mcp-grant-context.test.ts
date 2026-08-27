@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { buildCliMcpGrantContext } from "./mcp-grant-context.js";
 import type { RunCliAgentParams } from "./types.js";
 
@@ -14,13 +14,13 @@ function buildGrant(overrides: Partial<RunCliAgentParams> = {}) {
     sourceReplyDeliveryMode: "message_tool_only",
     messageProvider: "telegram",
     currentChannelId: "telegram:chat123",
-    cliToolAvailability: { native: [], openClaw: ["message"] },
+    cliToolAvailability: { native: [], afora: ["message"] },
     ...overrides,
   } as RunCliAgentParams;
 
   return buildCliMcpGrantContext({
     run,
-    config: {} as OpenClawConfig,
+    config: {} as AforaConfig,
     requireExplicitMessageTarget: false,
     agentId: "main",
     modelProvider: "openai",
@@ -69,7 +69,7 @@ describe("buildCliMcpGrantContext source-reply authority", () => {
     },
     {
       label: "additional granted tools",
-      overrides: { cliToolAvailability: { native: [], openClaw: ["message", "read"] } },
+      overrides: { cliToolAvailability: { native: [], afora: ["message", "read"] } },
     },
   ])("does not stamp source-only authority for $label", ({ overrides }) => {
     expect(buildGrant(overrides as Partial<RunCliAgentParams>).sourceReplyOnly).toBeUndefined();

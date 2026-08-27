@@ -1,5 +1,5 @@
 import type { LogRecord } from "@opentelemetry/api-logs";
-import { normalizeDiagnosticValue } from "openclaw/plugin-sdk/diagnostic-runtime";
+import { normalizeDiagnosticValue } from "afora-agent/plugin-sdk/diagnostic-runtime";
 import type { DiagnosticEventPayload, DiagnosticTraceContext } from "../api.js";
 import { redactSensitiveText } from "../api.js";
 import {
@@ -66,7 +66,7 @@ export function writeStdoutDiagnosticLogRecord(params: {
   const { logRecord, serviceName, traceContext } = params;
   const line = {
     ts: otelLogTimestampIso(logRecord.timestamp),
-    signal: "openclaw.diagnostic.log",
+    signal: "afora.diagnostic.log",
     "service.name": serviceName,
     severityText: logRecord.severityText,
     severityNumber: logRecord.severityNumber,
@@ -140,7 +140,7 @@ export function assignOtelLogEventAttributes(
   attributes: Record<string, string | number | boolean>,
   eventAttributes: Record<string, string | number | boolean> | undefined,
 ): void {
-  assignOtelEventAttributes(attributes, eventAttributes, "openclaw.");
+  assignOtelEventAttributes(attributes, eventAttributes, "afora.");
 }
 
 function assignOtelSecurityEventAttributes(
@@ -150,7 +150,7 @@ function assignOtelSecurityEventAttributes(
   assignOtelEventAttributes(
     attributes,
     eventAttributes,
-    "openclaw.security.attribute.",
+    "afora.security.attribute.",
     normalizeDiagnosticValue,
   );
 }
@@ -177,80 +177,80 @@ export function assignOtelSecurityAttributes(
   attributes: Record<string, string | number | boolean>,
   evt: Extract<DiagnosticEventPayload, { type: "security.event" }>,
 ): void {
-  assignOtelLogAttribute(attributes, "openclaw.security.event_id", evt.eventId);
-  assignOtelLogAttribute(attributes, "openclaw.security.category", evt.category);
+  assignOtelLogAttribute(attributes, "afora.security.event_id", evt.eventId);
+  assignOtelLogAttribute(attributes, "afora.security.category", evt.category);
   assignOtelLogAttribute(
     attributes,
-    "openclaw.security.action",
+    "afora.security.action",
     normalizeDiagnosticValue(evt.action),
   );
-  assignOtelLogAttribute(attributes, "openclaw.security.outcome", evt.outcome);
-  assignOtelLogAttribute(attributes, "openclaw.security.severity", evt.severity);
+  assignOtelLogAttribute(attributes, "afora.security.outcome", evt.outcome);
+  assignOtelLogAttribute(attributes, "afora.security.severity", evt.severity);
   if (evt.reason) {
     assignOtelLogAttribute(
       attributes,
-      "openclaw.security.reason",
+      "afora.security.reason",
       normalizeDiagnosticValue(evt.reason),
     );
   }
   if (evt.actor) {
-    assignOtelLogAttribute(attributes, "openclaw.security.actor.kind", evt.actor.kind);
+    assignOtelLogAttribute(attributes, "afora.security.actor.kind", evt.actor.kind);
     if (evt.actor.idHash) {
       assignOtelLogAttribute(
         attributes,
-        "openclaw.security.actor.id_hash",
+        "afora.security.actor.id_hash",
         normalizeDiagnosticValue(evt.actor.idHash),
       );
     }
     if (evt.actor.deviceIdHash) {
       assignOtelLogAttribute(
         attributes,
-        "openclaw.security.actor.device_id_hash",
+        "afora.security.actor.device_id_hash",
         normalizeDiagnosticValue(evt.actor.deviceIdHash),
       );
     }
     if (evt.actor.channel) {
       assignOtelLogAttribute(
         attributes,
-        "openclaw.security.actor.channel",
+        "afora.security.actor.channel",
         normalizeDiagnosticValue(evt.actor.channel),
       );
     }
     if (evt.actor.role) {
       assignOtelLogAttribute(
         attributes,
-        "openclaw.security.actor.role",
+        "afora.security.actor.role",
         normalizeDiagnosticValue(evt.actor.role),
       );
     }
     if (evt.actor.scopes?.length) {
       assignOtelLogAttribute(
         attributes,
-        "openclaw.security.actor.scopes",
+        "afora.security.actor.scopes",
         evt.actor.scopes.map((scope) => normalizeDiagnosticValue(scope)).join(","),
       );
     }
   }
   if (evt.target) {
-    assignOtelLogAttribute(attributes, "openclaw.security.target.kind", evt.target.kind);
+    assignOtelLogAttribute(attributes, "afora.security.target.kind", evt.target.kind);
     if (evt.target.idHash) {
       assignOtelLogAttribute(
         attributes,
-        "openclaw.security.target.id_hash",
+        "afora.security.target.id_hash",
         normalizeDiagnosticValue(evt.target.idHash),
       );
     }
     if (evt.target.name) {
       assignOtelLogAttribute(
         attributes,
-        "openclaw.security.target.name",
+        "afora.security.target.name",
         securityTargetNameAttr(evt.target.name),
       );
     }
     if (evt.target.owner) {
       assignOtelLogAttribute(
         attributes,
-        "openclaw.security.target.owner",
+        "afora.security.target.owner",
         normalizeDiagnosticValue(evt.target.owner),
       );
     }
@@ -259,17 +259,17 @@ export function assignOtelSecurityAttributes(
     if (evt.policy.id) {
       assignOtelLogAttribute(
         attributes,
-        "openclaw.security.policy.id",
+        "afora.security.policy.id",
         normalizeDiagnosticValue(evt.policy.id),
       );
     }
     if (evt.policy.decision) {
-      assignOtelLogAttribute(attributes, "openclaw.security.policy.decision", evt.policy.decision);
+      assignOtelLogAttribute(attributes, "afora.security.policy.decision", evt.policy.decision);
     }
     if (evt.policy.reason) {
       assignOtelLogAttribute(
         attributes,
-        "openclaw.security.policy.reason",
+        "afora.security.policy.reason",
         normalizeDiagnosticValue(evt.policy.reason),
       );
     }
@@ -278,12 +278,12 @@ export function assignOtelSecurityAttributes(
     if (evt.control.id) {
       assignOtelLogAttribute(
         attributes,
-        "openclaw.security.control.id",
+        "afora.security.control.id",
         normalizeDiagnosticValue(evt.control.id),
       );
     }
     if (evt.control.family) {
-      assignOtelLogAttribute(attributes, "openclaw.security.control.family", evt.control.family);
+      assignOtelLogAttribute(attributes, "afora.security.control.family", evt.control.family);
     }
   }
   assignOtelSecurityEventAttributes(attributes, evt.attributes);

@@ -218,7 +218,7 @@ suite.define(() => {
             toggleFocused: true,
           });
 
-        const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+        const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
         if (artifactDir) {
           await fs.mkdir(artifactDir, { recursive: true });
           await header.screenshot({
@@ -315,7 +315,7 @@ suite.define(() => {
         chevronOpacity: "0.75",
       });
 
-      const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+      const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
       if (artifactDir) {
         await fs.mkdir(artifactDir, { recursive: true });
         await page.screenshot({
@@ -369,7 +369,7 @@ suite.define(() => {
       await connecting.waitFor();
       expect(await page.locator(".tabstrip-tab.is-connecting").count()).toBe(1);
 
-      const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+      const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
       if (artifactDir) {
         await fs.mkdir(artifactDir, { recursive: true });
         await page.screenshot({ path: path.join(artifactDir, "claude-terminal-connecting.png") });
@@ -436,7 +436,7 @@ suite.define(() => {
         );
       await page.getByRole("status").filter({ hasText: "Connecting to session" }).waitFor();
       await page
-        .locator("openclaw-terminal-panel .tabstrip-tab", {
+        .locator("afora-terminal-panel .tabstrip-tab", {
           hasText: "claude --resume claude-termi…",
         })
         .waitFor();
@@ -450,7 +450,7 @@ suite.define(() => {
       await page.getByText("Session did not connect within 30 seconds.", { exact: true }).waitFor();
       const close = await gateway.waitForRequest("terminal.close");
       expect(close.params).toEqual({ sessionId: "claude-terminal-timeout" });
-      expect(await page.locator("openclaw-terminal-panel .tabstrip-tab").count()).toBe(0);
+      expect(await page.locator("afora-terminal-panel .tabstrip-tab").count()).toBe(0);
     });
   });
 
@@ -563,7 +563,7 @@ suite.define(() => {
     await page.getByText("Older remote review", { exact: true }).waitFor();
     await page.getByText("Remote architecture review", { exact: true }).click();
     await expect.poll(() => page.getByText("newer answer", { exact: true }).count()).toBe(1);
-    const catalogPane = page.locator('openclaw-chat-pane[aria-hidden="false"]');
+    const catalogPane = page.locator('afora-chat-pane[aria-hidden="false"]');
     const thread = catalogPane.locator(".chat-thread");
     await expect
       .poll(() => thread.evaluate((element) => element.scrollHeight > element.clientHeight + 100))
@@ -616,7 +616,7 @@ suite.define(() => {
     await expect
       .poll(() => page.getByText("This session is on a paired device and is view-only.").count())
       .toBe(1);
-    const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+    const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
     const expectCenteredLayout = async (screenshotName: string) => {
       const [workbenchBox, threadBox, composerBox] = await Promise.all([
         catalogPane.locator(".chat-workbench").boundingBox(),
@@ -662,7 +662,7 @@ suite.define(() => {
   });
 
   it("auto-pages an underfilled native transcript until it becomes scrollable", async () => {
-    const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+    const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
     if (artifactDir) {
       await fs.mkdir(artifactDir, { recursive: true });
     }
@@ -676,7 +676,7 @@ suite.define(() => {
     const page = await context.newPage();
     const proofVideo = page.video();
     const historyMessage = (seq: number, role: "assistant" | "user", text: string) => ({
-      __openclaw: { seq },
+      __afora: { seq },
       content: [{ type: role === "assistant" ? "output_text" : "input_text", text }],
       role,
       timestamp: 1_800_000_000_000 + seq,
@@ -742,7 +742,7 @@ suite.define(() => {
 
     try {
       await page.goto(`${suite.server.baseUrl}chat`);
-      const pane = page.locator('openclaw-chat-pane[aria-hidden="false"]');
+      const pane = page.locator('afora-chat-pane[aria-hidden="false"]');
       const thread = pane.locator(".chat-thread");
       await page.getByText("Recent answer", { exact: true }).waitFor();
       await expect
@@ -813,9 +813,9 @@ suite.define(() => {
 
   it("shows loaded native history before fetching and revealing an earlier page", async () => {
     const page = await suite.browser.newPage({ viewport: { width: 1280, height: 800 } });
-    const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+    const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
     const historyMessage = (seq: number, prefix: string) => ({
-      __openclaw: { seq },
+      __afora: { seq },
       content: [
         {
           type: "text",
@@ -925,7 +925,7 @@ suite.define(() => {
     await expect
       .poll(() =>
         page
-          .locator("openclaw-chat-pane")
+          .locator("afora-chat-pane")
           .evaluate(
             (element) =>
               (element as HTMLElement & { state: { chatMessages: unknown[] } }).state.chatMessages
@@ -978,7 +978,7 @@ suite.define(() => {
   it("keeps a focused message action mounted while its row scrolls out of view", async () => {
     const page = await suite.browser.newPage({ viewport: { width: 1280, height: 800 } });
     const messages = Array.from({ length: 200 }, (_, index) => ({
-      __openclaw: { seq: index + 1 },
+      __afora: { seq: index + 1 },
       content: [
         {
           type: "text",

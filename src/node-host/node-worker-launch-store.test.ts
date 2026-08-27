@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { NodeWorkerLaunchStore } from "./node-worker-launch-store.js";
 import { requireNodeWorkerProcessIdentity } from "./node-worker-process-identity.js";
 import { createNodeWorkerSupervisor } from "./node-worker-supervisor.js";
@@ -14,18 +14,18 @@ const NOW_MS = 10 * DAY_MS;
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 function fixture() {
-  const env = { OPENCLAW_STATE_DIR: tempDirs.make("node-worker-launch-store-") };
+  const env = { AFORA_STATE_DIR: tempDirs.make("node-worker-launch-store-") };
   const store = new NodeWorkerLaunchStore({ env });
   store.get("schema-probe");
-  return { database: openOpenClawStateDatabase({ env }).db, env, store };
+  return { database: openAforaStateDatabase({ env }).db, env, store };
 }
 
 function insertLaunch(params: {
-  database: ReturnType<typeof openOpenClawStateDatabase>["db"];
+  database: ReturnType<typeof openAforaStateDatabase>["db"];
   launchId: string;
   state: "pending" | "running" | "completed" | "failed" | "interrupted" | "cancelled";
   completedAtMs?: number;
@@ -63,7 +63,7 @@ function insertLaunch(params: {
 }
 
 function hasTerminalExpiryIndex(
-  database: ReturnType<typeof openOpenClawStateDatabase>["db"],
+  database: ReturnType<typeof openAforaStateDatabase>["db"],
 ): boolean {
   return Boolean(
     database
@@ -72,7 +72,7 @@ function hasTerminalExpiryIndex(
   );
 }
 
-function launchIds(database: ReturnType<typeof openOpenClawStateDatabase>["db"]): string[] {
+function launchIds(database: ReturnType<typeof openAforaStateDatabase>["db"]): string[] {
   return (
     database
       .prepare("SELECT launch_id FROM node_worker_launches ORDER BY launch_id")
@@ -88,11 +88,11 @@ describe("node worker launch store pruning", () => {
     expect(hasTerminalExpiryIndex(database)).toBe(true);
     database.exec("DROP INDEX idx_node_worker_launches_terminal_completed");
     expect(hasTerminalExpiryIndex(database)).toBe(false);
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
 
     const reopenedStore = new NodeWorkerLaunchStore({ env });
     reopenedStore.get("schema-probe");
-    const reopened = openOpenClawStateDatabase({ env }).db;
+    const reopened = openAforaStateDatabase({ env }).db;
 
     expect(hasTerminalExpiryIndex(reopened)).toBe(true);
   });
@@ -146,7 +146,7 @@ describe("node worker launch store pruning", () => {
     const workerFixture = writeNodeWorkerFixture(tempDirs.make("node-worker-launch-restart-"));
     const store = new NodeWorkerLaunchStore({ env: workerFixture.env });
     store.get("schema-probe");
-    const database = openOpenClawStateDatabase({ env: workerFixture.env }).db;
+    const database = openAforaStateDatabase({ env: workerFixture.env }).db;
     insertLaunch({
       database,
       launchId: "expired-after-restart",

@@ -1,12 +1,12 @@
 // Matrix plugin module implements create client behavior.
 import fs from "node:fs";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
-import type { PinnedDispatcherPolicy } from "openclaw/plugin-sdk/ssrf-dispatcher";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
+import type { PinnedDispatcherPolicy } from "afora-agent/plugin-sdk/ssrf-dispatcher";
 import {
   ssrfPolicyFromDangerouslyAllowPrivateNetwork,
   type SsrFPolicy,
-} from "openclaw/plugin-sdk/ssrf-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/ssrf-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { MatrixClient } from "../sdk.js";
 import { resolveValidatedMatrixHomeserverUrl } from "./config.js";
 import {
@@ -74,7 +74,7 @@ export async function createMatrixClient(params: {
   }
 
   const cryptoDatabasePrefix = storagePaths
-    ? `openclaw-matrix-${storagePaths.accountKey}-${storagePaths.tokenHash}`
+    ? `afora-matrix-${storagePaths.accountKey}-${storagePaths.tokenHash}`
     : undefined;
 
   return new MatrixClient(homeserver, params.accessToken, {

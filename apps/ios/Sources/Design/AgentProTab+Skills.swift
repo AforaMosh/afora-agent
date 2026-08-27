@@ -1,5 +1,5 @@
-import OpenClawKit
-import OpenClawProtocol
+import AforaKit
+import AforaProtocol
 import SwiftUI
 
 extension AgentProTab {
@@ -9,15 +9,15 @@ extension AgentProTab {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(self.activeAgentName)
-                            .font(OpenClawType.headline)
+                            .font(AforaType.headline)
                         Text(self.skillPolicySummary)
-                            .font(OpenClawType.caption)
+                            .font(AforaType.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 8)
                     ProValuePill(
                         value: self.agentSkillFilter == nil ? "all" : "\(self.agentSkillFilter?.count ?? 0)",
-                        color: OpenClawBrand.accent)
+                        color: AforaBrand.accent)
                 }
 
                 HStack(spacing: 8) {
@@ -25,7 +25,7 @@ extension AgentProTab {
                         Task { await self.enableAllSkills() }
                     } label: {
                         Text("Enable All")
-                            .font(OpenClawType.captionSemiBold)
+                            .font(AforaType.captionSemiBold)
                     }
                     .disabled(self.skillMutationBusy)
 
@@ -33,7 +33,7 @@ extension AgentProTab {
                         Task { await self.disableAllSkills() }
                     } label: {
                         Text("Disable All")
-                            .font(OpenClawType.captionSemiBold)
+                            .font(AforaType.captionSemiBold)
                     }
                     .disabled(self.skillMutationBusy)
 
@@ -41,7 +41,7 @@ extension AgentProTab {
                         Task { await self.resetSkillPolicy() }
                     } label: {
                         Text("Reset")
-                            .font(OpenClawType.captionSemiBold)
+                            .font(AforaType.captionSemiBold)
                     }
                     .disabled(self.skillMutationBusy || self.agentSkillFilter == nil)
                 }
@@ -50,17 +50,17 @@ extension AgentProTab {
 
                 if let skillMutationStatusText {
                     Text(skillMutationStatusText)
-                        .font(OpenClawType.caption2)
-                        .foregroundStyle(OpenClawBrand.accent)
+                        .font(AforaType.caption2)
+                        .foregroundStyle(AforaBrand.accent)
                 }
                 if let skillMutationErrorText {
                     Text(skillMutationErrorText)
-                        .font(OpenClawType.caption2)
-                        .foregroundStyle(OpenClawBrand.warn)
+                        .font(AforaType.caption2)
+                        .foregroundStyle(AforaBrand.warn)
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, AforaProMetric.pagePadding)
     }
 
     var skillsFilterField: some View {
@@ -68,12 +68,12 @@ extension AgentProTab {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 10) {
                     Image(systemName: "magnifyingglass")
-                        .font(OpenClawType.captionSemiBold)
+                        .font(AforaType.captionSemiBold)
                         .foregroundStyle(.secondary)
                     TextField("Search skills", text: self.$skillFilter)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                        .font(OpenClawType.subhead)
+                        .font(AforaType.subhead)
                     if !self.skillFilter.isEmpty {
                         Button {
                             self.skillFilter = ""
@@ -87,30 +87,30 @@ extension AgentProTab {
                 Picker(selection: self.$skillStatusFilter) {
                     ForEach(SkillStatusFilter.allCases) { filter in
                         Text(filter.title)
-                            .font(OpenClawType.captionSemiBold)
+                            .font(AforaType.captionSemiBold)
                             .tag(filter)
                     }
                 } label: {
                     Text("Status")
-                        .font(OpenClawType.captionSemiBold)
+                        .font(AforaType.captionSemiBold)
                 }
                 .pickerStyle(.segmented)
                 .controlSize(.small)
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, AforaProMetric.pagePadding)
     }
 
     var clawHubSearchCard: some View {
         ProCard(radius: AgentLayout.cardRadius) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 10) {
-                    ProIconBadge(systemName: "square.and.arrow.down", color: OpenClawBrand.accent)
+                    ProIconBadge(systemName: "square.and.arrow.down", color: AforaBrand.accent)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Install Skills")
-                            .font(OpenClawType.headline)
+                            .font(AforaType.headline)
                         Text("Search ClawHub and install into this workspace.")
-                            .font(OpenClawType.caption)
+                            .font(AforaType.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 8)
@@ -128,7 +128,7 @@ extension AgentProTab {
                 TextField("Search ClawHub", text: self.$clawHubQuery)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    .font(OpenClawType.subhead)
+                    .font(AforaType.subhead)
                     .submitLabel(.search)
                     .onSubmit {
                         Task { await self.searchClawHubSkills() }
@@ -140,8 +140,8 @@ extension AgentProTab {
                 }
                 if let clawHubErrorText {
                     Text(clawHubErrorText)
-                        .font(OpenClawType.caption2)
-                        .foregroundStyle(OpenClawBrand.warn)
+                        .font(AforaType.caption2)
+                        .foregroundStyle(AforaBrand.warn)
                 }
                 if !self.clawHubResults.isEmpty {
                     VStack(spacing: 0) {
@@ -156,28 +156,28 @@ extension AgentProTab {
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, AforaProMetric.pagePadding)
     }
 
     func clawHubResultRow(_ result: ClawHubSearchResultLite) -> some View {
         let installing = clawHubInstallSlug == result.reference
         return HStack(alignment: .top, spacing: 10) {
-            ProIconBadge(systemName: "sparkles", color: OpenClawBrand.accent)
+            ProIconBadge(systemName: "sparkles", color: AforaBrand.accent)
             VStack(alignment: .leading, spacing: 3) {
                 Text(result.displayName)
-                    .font(OpenClawType.subheadSemiBold)
+                    .font(AforaType.subheadSemiBold)
                     .lineLimit(1)
                 // This surface installs directly, so the publisher reference always shows:
                 // same-slug rows are otherwise identical and the button would look ambiguous.
                 Text(result.summary.map { "\($0) · \(result.reference)" } ?? result.reference)
-                    .font(OpenClawType.caption)
+                    .font(AforaType.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
                 if result.isUnscannedSource {
                     // No review card on this surface, so the trust warning has to live in the row.
                     Text("Not scanned by ClawHub")
-                        .font(OpenClawType.caption)
-                        .foregroundStyle(OpenClawBrand.warn)
+                        .font(AforaType.caption)
+                        .foregroundStyle(AforaBrand.warn)
                 }
             }
             Spacer(minLength: 8)
@@ -221,7 +221,7 @@ extension AgentProTab {
                     }
                 }
             }
-            .padding(.horizontal, OpenClawProMetric.pagePadding)
+            .padding(.horizontal, AforaProMetric.pagePadding)
         }
     }
 
@@ -302,27 +302,27 @@ extension AgentProTab {
             ProIconBadge(systemName: self.isSkillAllowed(skill) ? "checkmark.circle" : "nosign", color: status.color)
             VStack(alignment: .leading, spacing: 4) {
                 Text(skill.displayName)
-                    .font(OpenClawType.subheadSemiBold)
+                    .font(AforaType.subheadSemiBold)
                     .lineLimit(1)
                 Text(verbatim: self.normalized(skill.description)
                     ?? self.normalized(skill.source)
                     ?? String(localized: "Workspace skill"))
-                    .font(OpenClawType.caption)
+                    .font(AforaType.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
                 if let missing = skill.missingSummary {
                     Text(verbatim: String(
                         format: String(localized: "Missing: %@"),
                         missing))
-                        .font(OpenClawType.caption2)
-                        .foregroundStyle(OpenClawBrand.warn)
+                        .font(AforaType.caption2)
+                        .foregroundStyle(AforaBrand.warn)
                         .lineLimit(1)
                 }
                 if let install = skill.installSummary {
                     Text(verbatim: String(
                         format: String(localized: "Setup: %@"),
                         install))
-                        .font(OpenClawType.caption2)
+                        .font(AforaType.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
@@ -360,7 +360,7 @@ extension AgentProTab {
                 Text(verbatim: busy
                     ? String(localized: "saving")
                     : self.localizedSkillStatus(status.text))
-                    .font(OpenClawType.caption2SemiBold)
+                    .font(AforaType.caption2SemiBold)
                     .foregroundStyle(status.color)
                     .lineLimit(1)
             }
@@ -376,7 +376,7 @@ extension AgentProTab {
                 Task { await self.setSkillAllowed(skill, enabled: enabled) }
             })) {
                 Text(title)
-                    .font(OpenClawType.body)
+                    .font(AforaType.body)
             }
             .labelsHidden()
                 .disabled(self.skillMutationBusy)
@@ -418,17 +418,17 @@ extension AgentProTab {
     var missingSkillEditorSheet: some View {
         NavigationStack {
             ZStack {
-                OpenClawProBackground()
+                AforaProBackground()
                 VStack(spacing: 12) {
                     ProIconBadge(systemName: "sparkles", color: .secondary)
                     Text("Skill unavailable")
-                        .font(OpenClawType.headline)
+                        .font(AforaType.headline)
                     Text("Return to the skills list and choose another skill.")
-                        .font(OpenClawType.subhead)
+                        .font(AforaType.subhead)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
-                .padding(OpenClawSpacing.space6)
+                .padding(AforaSpacing.space6)
             }
             .navigationTitle("Skill")
             .toolbar {
@@ -437,7 +437,7 @@ extension AgentProTab {
                         self.skillEditorSelection = nil
                     } label: {
                         Text("Close")
-                            .font(OpenClawType.subheadSemiBold)
+                            .font(AforaType.subheadSemiBold)
                     }
                 }
             }
@@ -447,7 +447,7 @@ extension AgentProTab {
     func skillEditorSheet(_ skill: SkillStatusEntryLite) -> some View {
         NavigationStack {
             ZStack {
-                OpenClawProBackground()
+                AforaProBackground()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         self.skillEditorHeader(skill)
@@ -466,7 +466,7 @@ extension AgentProTab {
                         self.skillEditorSelection = nil
                     } label: {
                         Text("Close")
-                            .font(OpenClawType.subheadSemiBold)
+                            .font(AforaType.subheadSemiBold)
                     }
                 }
             }
@@ -482,11 +482,11 @@ extension AgentProTab {
                     color: status.color)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(skill.displayName)
-                        .font(OpenClawType.headline)
+                        .font(AforaType.headline)
                     Text(verbatim: self.normalized(skill.description)
                         ?? self.normalized(skill.source)
                         ?? String(localized: "Workspace skill"))
-                        .font(OpenClawType.caption)
+                        .font(AforaType.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(3)
                 }
@@ -494,7 +494,7 @@ extension AgentProTab {
                 ProValuePill(value: self.localizedSkillStatus(status.text), color: status.color)
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, AforaProMetric.pagePadding)
     }
 
     func skillEditorControls(_ skill: SkillStatusEntryLite) -> some View {
@@ -511,7 +511,7 @@ extension AgentProTab {
                 if let primaryEnv = skill.primaryEnv, !primaryEnv.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("API key")
-                            .font(OpenClawType.subheadSemiBold)
+                            .font(AforaType.subheadSemiBold)
                         self.skillSecureField(primaryEnv, text: self.skillAPIKeyBinding(for: skill))
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
@@ -519,42 +519,42 @@ extension AgentProTab {
                             Task { await self.saveSkillAPIKey(skill) }
                         } label: {
                             Label("Save key", systemImage: "key")
-                                .font(OpenClawType.captionSemiBold)
+                                .font(AforaType.captionSemiBold)
                         }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
                         .disabled(self.isSkillConfigBusy(skill))
                         if let homepage = skill.homepageURL {
                             Link("Get key", destination: homepage)
-                                .font(OpenClawType.caption)
+                                .font(AforaType.caption)
                         }
                     }
                 }
 
                 if let message = self.skillConfigMessages[skill.effectiveSkillKey] {
                     Text(message.text)
-                        .font(OpenClawType.caption2)
-                        .foregroundStyle(message.kind == .success ? OpenClawBrand.accent : OpenClawBrand.warn)
+                        .font(AforaType.caption2)
+                        .foregroundStyle(message.kind == .success ? AforaBrand.accent : AforaBrand.warn)
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, AforaProMetric.pagePadding)
     }
 
     private func skillSecureField(_ placeholder: String, text: Binding<String>) -> some View {
         ZStack(alignment: .leading) {
             SecureField("", text: text)
-                .font(OpenClawType.subhead)
+                .font(AforaType.subhead)
                 .accessibilityLabel(placeholder)
             if text.wrappedValue.isEmpty {
                 Text(placeholder)
-                    .font(OpenClawType.subheadSemiBold)
+                    .font(AforaType.subheadSemiBold)
                     .foregroundStyle(.tertiary)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
             }
         }
-        .font(OpenClawType.subhead)
+        .font(AforaType.subhead)
     }
 
     func skillEditorToggleRow(
@@ -570,9 +570,9 @@ extension AgentProTab {
         } label: {
             HStack {
                 Text(title)
-                    .font(OpenClawType.subhead)
+                    .font(AforaType.subhead)
                 Spacer(minLength: 8)
-                OpenClawToggleIndicator(isOn: isOn)
+                AforaToggleIndicator(isOn: isOn)
             }
             .contentShape(Rectangle())
         }
@@ -586,16 +586,16 @@ extension AgentProTab {
         ProCard(radius: AgentLayout.cardRadius) {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Setup")
-                    .font(OpenClawType.headline)
+                    .font(AforaType.headline)
                 if let missing = skill.missingSummary {
                     Text(verbatim: String(
                         format: String(localized: "Missing: %@"),
                         missing))
-                        .font(OpenClawType.caption)
-                        .foregroundStyle(OpenClawBrand.warn)
+                        .font(AforaType.caption)
+                        .foregroundStyle(AforaBrand.warn)
                 } else {
                     Text("No missing requirements reported.")
-                        .font(OpenClawType.caption)
+                        .font(AforaType.caption)
                         .foregroundStyle(.secondary)
                 }
                 if let install = skill.install?.first {
@@ -603,7 +603,7 @@ extension AgentProTab {
                         Task { await self.installSkillRequirements(skill) }
                     } label: {
                         Label(install.label, systemImage: "wrench.and.screwdriver")
-                            .font(OpenClawType.captionSemiBold)
+                            .font(AforaType.captionSemiBold)
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
@@ -611,7 +611,7 @@ extension AgentProTab {
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, AforaProMetric.pagePadding)
     }
 
     func skillEditorMetadata(_ skill: SkillStatusEntryLite) -> some View {
@@ -621,13 +621,13 @@ extension AgentProTab {
                 self.detailMetric(label: "Source", value: self.normalized(skill.source) ?? "unknown")
                 if let filePath = self.normalized(skill.filePath) {
                     Text(filePath)
-                        .font(OpenClawType.monoCaption2)
+                        .font(AforaType.monoCaption2)
                         .foregroundStyle(.secondary)
                         .textSelection(.enabled)
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, AforaProMetric.pagePadding)
     }
 
     @MainActor
@@ -874,9 +874,9 @@ extension AgentProTab {
             return ("disabled", .secondary)
         }
         if skill.hasMissingRequirements {
-            return ("setup", OpenClawBrand.warn)
+            return ("setup", AforaBrand.warn)
         }
-        return ("enabled", OpenClawBrand.accent)
+        return ("enabled", AforaBrand.accent)
     }
 
     func localizedSkillStatus(_ status: String) -> String {

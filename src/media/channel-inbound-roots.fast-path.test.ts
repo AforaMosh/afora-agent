@@ -1,7 +1,7 @@
 // Channel inbound root fast-path tests cover cached media root resolution.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MsgContext } from "../auto-reply/templating.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { clearPluginMetadataLifecycleCaches } from "../plugins/plugin-metadata-lifecycle.js";
 
 const publicSurfaceLoaderMocks = vi.hoisted(() => ({
@@ -18,7 +18,7 @@ import {
 
 const cfg = {
   channels: {},
-} as OpenClawConfig;
+} as AforaConfig;
 
 function unableToResolve(dirName: string, artifactBasename: string): Error {
   return new Error(

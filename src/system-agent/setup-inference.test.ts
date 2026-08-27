@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { listAgentEntries, resolveAgentDir } from "../agents/agent-scope-config.js";
 import { readAuthProfileStoreForTest } from "../agents/auth-profiles/oauth-test-utils.js";
@@ -16,7 +16,7 @@ import {
 import { ensureSelectedAgentHarnessPlugin } from "../agents/harness/runtime-plugin.js";
 import { detectInferenceBackends } from "../commands/onboard-inference.js";
 import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { withoutPluginInstallRecords } from "../plugins/installed-plugin-index-records.js";
 import { hasRetainedManagedNpmInstallMarker } from "../plugins/managed-npm-retention.js";
@@ -37,9 +37,9 @@ import {
 import { ensurePluginRegistryLoaded } from "../plugins/runtime/runtime-registry-loader.js";
 import type { ProviderPlugin } from "../plugins/types.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  disposeOpenClawAgentDatabaseByPath,
-} from "../state/openclaw-agent-db.js";
+  closeAforaAgentDatabasesForTest,
+  disposeAforaAgentDatabaseByPath,
+} from "../state/afora-agent-db.js";
 import { createSuiteTempRootTracker } from "../test-helpers/temp-dir.js";
 import { cleanupSystemAgentSession, createSystemAgentSession } from "./agent-turn.js";
 import { runSystemAgentTurnWithDeps } from "./agent-turn.test-support.js";
@@ -95,7 +95,7 @@ vi.mock("../config/config.js", async (importOriginal) => {
     readConfigFileSnapshot: vi.fn(async () => ({
       exists: false,
       valid: false,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       issues: [],
       config: {},
       sourceConfig: {},
@@ -128,7 +128,7 @@ vi.mock("../commands/onboard-inference.js", async (importActual) => {
 });
 
 const runtime = { log: () => {}, error: () => {}, exit: () => {} } as never;
-const materializedMainRuntimeConfig: OpenClawConfig = {
+const materializedMainRuntimeConfig: AforaConfig = {
   agents: { entries: { main: { default: true } } },
 };
 const testCliRuntimeArtifactFingerprint = "test-cli-runtime-artifact";
@@ -175,7 +175,7 @@ beforeAll(async () => {
 afterAll(async () => {
   try {
     try {
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
     } finally {
       await suiteTempRootTracker.cleanup();
     }
@@ -195,12 +195,12 @@ async function createMainAgentFixture() {
   const agentDir = path.join(stateDir, "agent");
   const initialConfig = {
     agents: { list: [{ id: "main", default: true, agentDir }] },
-  } satisfies OpenClawConfig;
+  } satisfies AforaConfig;
   return { stateDir, agentDir, initialConfig };
 }
 
 function mockConfigSnapshot(
-  config: OpenClawConfig,
+  config: AforaConfig,
   options: {
     exists?: boolean;
     valid?: boolean;
@@ -208,15 +208,15 @@ function mockConfigSnapshot(
     path?: string;
     hash?: string;
     issues?: Array<{ path: string; message: string }>;
-    sourceConfig?: OpenClawConfig;
-    runtimeConfig?: OpenClawConfig;
+    sourceConfig?: AforaConfig;
+    runtimeConfig?: AforaConfig;
   } = {},
 ) {
   const { includeMetadata, ...snapshot } = options;
   return vi.fn(async () => ({
     exists: true,
     valid: true,
-    ...(includeMetadata ? { path: "/tmp/openclaw.json", issues: [] } : {}),
+    ...(includeMetadata ? { path: "/tmp/afora.json", issues: [] } : {}),
     config,
     ...snapshot,
   })) as never;
@@ -224,7 +224,7 @@ function mockConfigSnapshot(
 
 const deferSuiteTempDirCleanup = async () => {};
 
-function canonicalizeAgentEntriesForTest(config: OpenClawConfig): OpenClawConfig {
+function canonicalizeAgentEntriesForTest(config: AforaConfig): AforaConfig {
   const next = structuredClone(config);
   const list = next.agents?.list;
   if (!list) {
@@ -238,7 +238,7 @@ function canonicalizeAgentEntriesForTest(config: OpenClawConfig): OpenClawConfig
   return next;
 }
 
-function materializeRuntimeAgentListForTest(config: OpenClawConfig): OpenClawConfig {
+function materializeRuntimeAgentListForTest(config: AforaConfig): AforaConfig {
   const next = canonicalizeAgentEntriesForTest(config);
   if (!next.agents?.entries) {
     return next;
@@ -446,14 +446,14 @@ type SuccessfulRunParams = {
   onSuccessfulAuthBinding?: (binding: AgentExecutionAuthBinding) => void;
   authProfileId?: string;
   agentHarnessRuntimeOverride?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   reportedModel?: string;
 };
 
 function successfulAgentHarnessBinding(params?: SuccessfulRunParams): AgentExecutionAuthBinding {
   const requestedHarnessId = params?.agentHarnessRuntimeOverride?.trim();
   const agentHarnessId =
-    !requestedHarnessId || requestedHarnessId === "auto" ? "openclaw" : requestedHarnessId;
+    !requestedHarnessId || requestedHarnessId === "auto" ? "afora" : requestedHarnessId;
   return {
     agentHarnessId,
     ...(agentHarnessId === "codex"
@@ -515,7 +515,7 @@ function openAiOAuthCredential(token: string, lifetimeMs = 3_600_000) {
 }
 
 function mockCodexRuntimeInstall(installRecord?: PluginInstallRecord) {
-  return vi.fn(async ({ cfg }: { cfg: OpenClawConfig }) => ({
+  return vi.fn(async ({ cfg }: { cfg: AforaConfig }) => ({
     cfg: installRecord
       ? {
           ...cfg,
@@ -546,25 +546,25 @@ function activateCodexSetup(params: Omit<TestSetupInferenceActivationParams, "ki
 
 type TestConfigTransformInput = {
   transform: (
-    config: OpenClawConfig,
+    config: AforaConfig,
     context: {
       snapshot: {
         exists: true;
         valid: true;
         path: string;
-        config: OpenClawConfig;
-        sourceConfig: OpenClawConfig;
-        runtimeConfig: OpenClawConfig;
+        config: AforaConfig;
+        sourceConfig: AforaConfig;
+        runtimeConfig: AforaConfig;
       };
       previousHash: string | null;
       attempt: number;
     },
-  ) => Promise<{ nextConfig: OpenClawConfig }> | { nextConfig: OpenClawConfig };
+  ) => Promise<{ nextConfig: AforaConfig }> | { nextConfig: AforaConfig };
 };
 
 function createConfigTransformHarness(
-  sourceConfig: OpenClawConfig = {},
-  runtimeConfig: OpenClawConfig = sourceConfig,
+  sourceConfig: AforaConfig = {},
+  runtimeConfig: AforaConfig = sourceConfig,
 ) {
   const state = {
     sourceConfig: canonicalizeAgentEntriesForTest(sourceConfig),
@@ -575,7 +575,7 @@ function createConfigTransformHarness(
       snapshot: {
         exists: true,
         valid: true,
-        path: "/tmp/openclaw.json",
+        path: "/tmp/afora.json",
         config: state.runtimeConfig,
         sourceConfig: state.sourceConfig,
         runtimeConfig: state.runtimeConfig,
@@ -618,12 +618,12 @@ describe("applySystemAgentModelSelection", () => {
           ops: {
             default: true,
             models: {
-              "openai/gpt-5.5": { agentRuntime: { id: "openclaw" } },
+              "openai/gpt-5.5": { agentRuntime: { id: "afora" } },
             },
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const result = await applySystemAgentModelSelection({
       config,
@@ -636,7 +636,7 @@ describe("applySystemAgentModelSelection", () => {
       models: { "openai/gpt-5.5": { agentRuntime: { id: "codex" } } },
     });
     expect(config.agents.entries.ops?.models?.["openai/gpt-5.5"]?.agentRuntime?.id).toBe(
-      "openclaw",
+      "afora",
     );
   });
 });
@@ -657,7 +657,7 @@ describe("detectSetupInference", () => {
     ]);
     const detection = await detectSetupInference({
       resolveManifestProviderAuthChoices,
-      enablePluginInConfig: ((config: OpenClawConfig) => ({ enabled: true, config })) as never,
+      enablePluginInConfig: ((config: AforaConfig) => ({ enabled: true, config })) as never,
       probeLocalCommand: vi.fn(async (command) => ({ command, found: false })),
     });
     expect(detection.candidates).toHaveLength(2);
@@ -745,7 +745,7 @@ describe("detectSetupInference", () => {
           website: "https://local.example.com/download",
         },
       ],
-      enablePluginInConfig: ((config: OpenClawConfig) => ({ enabled: true, config })) as never,
+      enablePluginInConfig: ((config: AforaConfig) => ({ enabled: true, config })) as never,
       resolvePluginProviders: () => [provider],
     });
 
@@ -784,13 +784,13 @@ describe("detectSetupInference", () => {
     vi.mocked(readConfigFileSnapshot).mockResolvedValueOnce({
       exists: true,
       valid: false,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       issues: [{ path: "agents.defaults.model", message: "Expected a model reference" }],
       config: {},
     } as never);
 
     await expect(detectSetupInference()).rejects.toThrow(
-      "OpenClaw config /tmp/openclaw.json is invalid (agents.defaults.model: Expected a model reference)",
+      "Afora config /tmp/afora.json is invalid (agents.defaults.model: Expected a model reference)",
     );
   });
 
@@ -1057,7 +1057,7 @@ describe("detectSetupInference", () => {
 
   it("detects the explicitly selected owner in a multi-agent fleet", async () => {
     const { readConfigFileSnapshot } = await import("../config/config.js");
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       agents: {
         ownership: "explicit",
         entries: {
@@ -1069,7 +1069,7 @@ describe("detectSetupInference", () => {
     vi.mocked(readConfigFileSnapshot).mockResolvedValueOnce({
       exists: true,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       issues: [],
       config,
       sourceConfig: config,
@@ -1102,7 +1102,7 @@ describe("detectSetupInference", () => {
 
   it("does not re-offer the configured Codex route as a setup candidate", async () => {
     const { readConfigFileSnapshot } = await import("../config/config.js");
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       agents: {
         defaults: { model: "openai/gpt-5.6-sol" },
         entries: {
@@ -1118,7 +1118,7 @@ describe("detectSetupInference", () => {
     vi.mocked(readConfigFileSnapshot).mockResolvedValueOnce({
       exists: true,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       issues: [],
       config,
       sourceConfig: config,
@@ -1161,7 +1161,7 @@ describe("detectSetupInference", () => {
 
   it("keeps a Codex candidate when it would switch the configured model", async () => {
     const { readConfigFileSnapshot } = await import("../config/config.js");
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       agents: {
         defaults: { model: "openai/gpt-5.5" },
         entries: {
@@ -1177,7 +1177,7 @@ describe("detectSetupInference", () => {
     vi.mocked(readConfigFileSnapshot).mockResolvedValueOnce({
       exists: true,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       issues: [],
       config,
       sourceConfig: config,
@@ -1281,7 +1281,7 @@ describe("detectSetupInference", () => {
         modelRef: "claude-cli/claude-opus-5",
         label: "Claude Code",
         detail:
-          "logged in; Claude Code 2.1.206 is the first published build known to advertise msg_lifecycle_v1; found 2.1.205. OpenClaw verifies this capability at runtime.",
+          "logged in; Claude Code 2.1.206 is the first published build known to advertise msg_lifecycle_v1; found 2.1.205. Afora verifies this capability at runtime.",
         credentials: true,
       },
     ]);
@@ -1296,7 +1296,7 @@ describe("detectSetupInference", () => {
         brandId: "claude",
         credentials: true,
         detail:
-          "logged in; Claude Code 2.1.206 is the first published build known to advertise msg_lifecycle_v1; found 2.1.205. OpenClaw verifies this capability at runtime.",
+          "logged in; Claude Code 2.1.206 is the first published build known to advertise msg_lifecycle_v1; found 2.1.205. Afora verifies this capability at runtime.",
         kind: "claude-cli",
         label: "Claude Code",
         modelRef: "claude-cli/claude-opus-5",
@@ -1308,10 +1308,10 @@ describe("detectSetupInference", () => {
 });
 
 async function runCodexSetupWithFinalConfig(params: {
-  initialConfig?: OpenClawConfig;
-  currentConfig: OpenClawConfig;
-  currentRuntimeConfig?: OpenClawConfig;
-  sourceConfig: OpenClawConfig;
+  initialConfig?: AforaConfig;
+  currentConfig: AforaConfig;
+  currentRuntimeConfig?: AforaConfig;
+  sourceConfig: AforaConfig;
 }) {
   const initialConfig = params.initialConfig ?? params.sourceConfig;
   let persistedConfig = structuredClone(params.currentConfig);
@@ -1323,7 +1323,7 @@ async function runCodexSetupWithFinalConfig(params: {
       snapshot: {
         exists: true,
         valid: true,
-        path: "/tmp/openclaw.json",
+        path: "/tmp/afora.json",
         config: runtimeConfig,
         sourceConfig: persistedConfig,
         runtimeConfig,
@@ -1341,7 +1341,7 @@ async function runCodexSetupWithFinalConfig(params: {
     return {
       exists: true,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       hash: committed ? "after-setup" : "before-setup",
       issues: [],
       config: runtimeConfig,
@@ -1350,7 +1350,7 @@ async function runCodexSetupWithFinalConfig(params: {
     };
   });
   const result = await activateCodexSetup({
-    workspace: "/tmp/openclaw-workspace",
+    workspace: "/tmp/afora-workspace",
     deps: {
       readConfigFileSnapshot: readConfigFileSnapshot as never,
       transformConfigWithPendingPluginInstalls: transformConfig as never,
@@ -1363,7 +1363,7 @@ async function runCodexSetupWithFinalConfig(params: {
 describe("activateSetupInference", () => {
   it("omits the token cap when harness selection is automatic", () => {
     expect(resolveSetupInferenceProbeStreamParams("auto")).toEqual({});
-    expect(resolveSetupInferenceProbeStreamParams("openclaw")).toEqual({
+    expect(resolveSetupInferenceProbeStreamParams("afora")).toEqual({
       streamParams: { maxTokens: 32 },
     });
   });
@@ -1380,7 +1380,7 @@ describe("activateSetupInference", () => {
     vi.restoreAllMocks();
   });
 
-  function createGroqSetupProvider(configPatch?: Partial<OpenClawConfig>): ProviderPlugin {
+  function createGroqSetupProvider(configPatch?: Partial<AforaConfig>): ProviderPlugin {
     return {
       id: "groq",
       label: "Groq",
@@ -1449,7 +1449,7 @@ describe("activateSetupInference", () => {
             {},
             {
               valid: false,
-              path: "/tmp/openclaw.json",
+              path: "/tmp/afora.json",
               issues: [{ path: "gateway.port", message: "Expected a number" }],
             },
           ),
@@ -1458,7 +1458,7 @@ describe("activateSetupInference", () => {
         },
       }),
     ).rejects.toThrow(
-      "OpenClaw config /tmp/openclaw.json is invalid (gateway.port: Expected a number). Fix it before running setup.",
+      "Afora config /tmp/afora.json is invalid (gateway.port: Expected a number). Fix it before running setup.",
     );
     expect(runEmbeddedAgent).not.toHaveBeenCalled();
     expect(transformConfig).not.toHaveBeenCalled();
@@ -1476,7 +1476,7 @@ describe("activateSetupInference", () => {
         readConfigFileSnapshot: mockConfigSnapshot(
           {},
           {
-            path: "/tmp/openclaw.json",
+            path: "/tmp/afora.json",
             hash: "setup-config-hash",
             runtimeConfig: materializedMainRuntimeConfig,
           },
@@ -1490,11 +1490,11 @@ describe("activateSetupInference", () => {
       ok: true,
       lines: [
         "Inference verified: claude-cli/claude-opus-5",
-        "Inference setup completed, but OpenClaw could not record its audit entry: audit directory is read-only",
+        "Inference setup completed, but Afora could not record its audit entry: audit directory is read-only",
       ],
     });
     expect(error).toHaveBeenCalledWith(
-      "Inference setup completed, but OpenClaw could not record its audit entry: audit directory is read-only",
+      "Inference setup completed, but Afora could not record its audit entry: audit directory is read-only",
     );
   });
 
@@ -1525,18 +1525,18 @@ describe("activateSetupInference", () => {
           {
             id: "ops",
             default: true,
-            agentDir: "/tmp/openclaw-ops-agent",
+            agentDir: "/tmp/afora-ops-agent",
             params: { temperature: 0.2 },
             tools: { allow: ["read"], deny: ["exec"] },
           },
           {
-            id: "openclaw",
+            id: "afora",
             params: { temperature: 1.7 },
             tools: { allow: ["exec"] },
           },
         ],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const configHarness = createConfigTransformHarness(initialConfig);
     const runCliAgent = vi.fn(successfulRunner("claude-cli", "claude-opus-5"));
     const resolveRouteMetadata = vi.fn(resolvePluginMetadataSnapshot);
@@ -1558,19 +1558,19 @@ describe("activateSetupInference", () => {
     expect(runCliAgent).toHaveBeenCalledWith(
       expect.objectContaining({
         agentId: "ops",
-        agentDir: "/tmp/openclaw-ops-agent",
+        agentDir: "/tmp/afora-ops-agent",
         executionMode: "side-question",
         disableTools: true,
         cleanupCliLiveSessionOnRunEnd: true,
       }),
     );
     const probeConfig = runCliAgent.mock.calls[0]?.[0].config;
-    expect(listAgentEntries(probeConfig ?? {}).find((agent) => agent.id === "openclaw")).toEqual({
-      id: "openclaw",
+    expect(listAgentEntries(probeConfig ?? {}).find((agent) => agent.id === "afora")).toEqual({
+      id: "afora",
       params: { temperature: 0.2 },
       tools: { allow: ["read"], deny: ["exec"] },
     });
-    expect(configHarness.current().agents?.entries?.openclaw).toEqual({
+    expect(configHarness.current().agents?.entries?.afora).toEqual({
       params: { temperature: 1.7 },
       tools: { allow: ["exec"] },
     });
@@ -1585,14 +1585,14 @@ describe("activateSetupInference", () => {
         ownership: "explicit",
         defaults: { systemAgent: { agentId: "ops" } },
         entries: {
-          ops: { agentDir: "/tmp/openclaw-ops-agent", model: "openai/gpt-5.5" },
+          ops: { agentDir: "/tmp/afora-ops-agent", model: "openai/gpt-5.5" },
           research: {
-            agentDir: "/tmp/openclaw-research-agent",
+            agentDir: "/tmp/afora-research-agent",
             model: "openai/broken",
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const configHarness = createConfigTransformHarness(initialConfig);
     const runCliAgent = vi.fn(successfulRunner("claude-cli", "claude-opus-5"));
 
@@ -1610,7 +1610,7 @@ describe("activateSetupInference", () => {
     expect(runCliAgent).toHaveBeenCalledWith(
       expect.objectContaining({
         agentId: "research",
-        agentDir: "/tmp/openclaw-research-agent",
+        agentDir: "/tmp/afora-research-agent",
       }),
     );
     expect(configHarness.current().agents).toMatchObject({
@@ -1642,10 +1642,10 @@ describe("activateSetupInference", () => {
     expect(configHarness.current()).toEqual({});
   });
 
-  it("rejects an unattested existing route before handing off to OpenClaw", async () => {
+  it("rejects an unattested existing route before handing off to Afora", async () => {
     const config = {
       agents: { defaults: { model: "openai/gpt-5.5" } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const configHarness = createPreRosterConfigTransformHarness();
     const result = await activateSetupInference({
       kind: "existing-model",
@@ -1673,7 +1673,7 @@ describe("activateSetupInference", () => {
       deps: {
         runCliAgent: vi.fn(successfulRunner("claude-cli", "claude-opus-5")) as never,
         transformConfigWithPendingPluginInstalls: configHarness.transform as never,
-        createTempDir: async () => "/tmp/openclaw-setup-cleanup-fixture",
+        createTempDir: async () => "/tmp/afora-setup-cleanup-fixture",
         removeTempDir: async () => {
           throw new Error("simulated cleanup failure");
         },
@@ -1686,11 +1686,11 @@ describe("activateSetupInference", () => {
 
   it("disposes the temporary auth database before Windows-style removal", async () => {
     const tempDir = await suiteTempRootTracker.make("case");
-    const databasePath = path.join(tempDir, "agent", "openclaw-agent.sqlite");
+    const databasePath = path.join(tempDir, "agent", "afora-agent.sqlite");
     let disposed = false;
     const disposeDatabase = vi.fn((pathname: string) => {
       expect(pathname).toBe(databasePath);
-      disposed = disposeOpenClawAgentDatabaseByPath(pathname);
+      disposed = disposeAforaAgentDatabaseByPath(pathname);
       return disposed;
     });
     const removeTempDir = vi.fn(async (dir: string) => {
@@ -1709,7 +1709,7 @@ describe("activateSetupInference", () => {
         runEmbeddedAgent: vi.fn(async () => {
           throw new Error("401 invalid_api_key");
         }) as never,
-        disposeOpenClawAgentDatabaseByPath: disposeDatabase,
+        disposeAforaAgentDatabaseByPath: disposeDatabase,
         createTempDir: async () => tempDir,
         removeTempDir,
       },
@@ -1722,7 +1722,7 @@ describe("activateSetupInference", () => {
   });
 
   it("reconciles a config write that committed before its writer threw", async () => {
-    let committedConfig: OpenClawConfig | undefined;
+    let committedConfig: AforaConfig | undefined;
     const readConfigFileSnapshot = vi.fn(async () => {
       const sourceConfig = committedConfig ?? {};
       return {
@@ -1739,9 +1739,9 @@ describe("activateSetupInference", () => {
     const transformConfig = vi.fn(
       async (params: {
         transform: (
-          config: OpenClawConfig,
-          context: { snapshot: { config: OpenClawConfig; runtimeConfig: OpenClawConfig } },
-        ) => Promise<{ nextConfig: OpenClawConfig }>;
+          config: AforaConfig,
+          context: { snapshot: { config: AforaConfig; runtimeConfig: AforaConfig } },
+        ) => Promise<{ nextConfig: AforaConfig }>;
       }) => {
         committedConfig = (
           await params.transform(
@@ -1771,7 +1771,7 @@ describe("activateSetupInference", () => {
     expect(committedConfig?.agents?.defaults?.model).toBe("claude-cli/claude-opus-5");
   });
 
-  it("persists only the verified model before OpenClaw configures the rest", async () => {
+  it("persists only the verified model before Afora configures the rest", async () => {
     const configHarness = createPreRosterConfigTransformHarness();
 
     const result = await activateSetupInference({
@@ -1796,14 +1796,14 @@ describe("activateSetupInference", () => {
   });
 
   it("exposes the locked authored config before committing the verified model", async () => {
-    const probedConfig: OpenClawConfig = {
+    const probedConfig: AforaConfig = {
       wizard: { securityAcknowledgedAt: "2026-08-02T00:00:00.000Z" },
     };
-    const lockedConfig: OpenClawConfig = {
+    const lockedConfig: AforaConfig = {
       wizard: { securityAcknowledgedAt: "2026-08-03T00:00:00.000Z" },
     };
     const configHarness = createConfigTransformHarness(lockedConfig);
-    const onCommitStarted = vi.fn((sourceConfig: OpenClawConfig) => {
+    const onCommitStarted = vi.fn((sourceConfig: AforaConfig) => {
       expect(sourceConfig.wizard?.securityAcknowledgedAt).toBe("2026-08-03T00:00:00.000Z");
       expect(configHarness.current().agents?.defaults?.model).toBeUndefined();
     });
@@ -1828,7 +1828,7 @@ describe("activateSetupInference", () => {
   });
 
   it("uses the materialized runtime roster when activating from a missing config file", async () => {
-    const runtimeConfig: OpenClawConfig = {
+    const runtimeConfig: AforaConfig = {
       agents: { entries: { main: { default: true } } },
     };
     const configHarness = createConfigTransformHarness(runtimeConfig, runtimeConfig);
@@ -1839,7 +1839,7 @@ describe("activateSetupInference", () => {
       deps: {
         readConfigFileSnapshot: mockConfigSnapshot(runtimeConfig, {
           exists: false,
-          path: "/tmp/openclaw.json",
+          path: "/tmp/afora.json",
         }),
         runCliAgent: vi.fn(successfulRunner("claude-cli", "claude-opus-5")) as never,
         transformConfigWithPendingPluginInstalls: configHarness.transform as never,
@@ -1858,7 +1858,7 @@ describe("activateSetupInference", () => {
   it.each([
     {
       name: "auto-enables the lean surface for a verified local model",
-      initialConfig: {} satisfies OpenClawConfig,
+      initialConfig: {} satisfies AforaConfig,
       expectedLean: true,
       expectedAnnouncement: true,
     },
@@ -1866,7 +1866,7 @@ describe("activateSetupInference", () => {
       name: "preserves an explicit localModelLean=false",
       initialConfig: {
         agents: { defaults: { experimental: { localModelLean: false } } },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       expectedLean: false,
       expectedAnnouncement: false,
     },
@@ -1967,10 +1967,10 @@ describe("activateSetupInference", () => {
   });
 
   it("rebases model persistence on concurrent default-agent edits", async () => {
-    const probedConfig: OpenClawConfig = {
+    const probedConfig: AforaConfig = {
       agents: { list: [{ id: "work", default: true, model: "openai/broken" }] },
     };
-    const concurrentConfig: OpenClawConfig = {
+    const concurrentConfig: AforaConfig = {
       agents: {
         defaults: { systemAgent: { agentId: "work" } },
         list: [
@@ -2021,7 +2021,7 @@ describe("activateSetupInference", () => {
             { id: "other", agentDir: "/tmp/other", model: "openai/broken" },
           ],
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
     },
     {
       name: "system agent",
@@ -2033,7 +2033,7 @@ describe("activateSetupInference", () => {
             { id: "other", agentDir: "/tmp/other", model: "openai/broken" },
           ],
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
     },
     {
       name: "default agent directory",
@@ -2048,7 +2048,7 @@ describe("activateSetupInference", () => {
             },
           ],
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
     },
     {
       name: "system agent execution settings",
@@ -2067,7 +2067,7 @@ describe("activateSetupInference", () => {
             { id: "other", agentDir: "/tmp/other", model: "openai/broken" },
           ],
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
     },
   ])("rejects a changed $name after the live probe", async ({ concurrent }) => {
     const probedConfig = {
@@ -2078,7 +2078,7 @@ describe("activateSetupInference", () => {
           { id: "other", agentDir: "/tmp/other", model: "openai/broken" },
         ],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const configHarness = createConfigTransformHarness(concurrent);
 
     await expect(
@@ -2102,11 +2102,11 @@ describe("activateSetupInference", () => {
         defaults: {
           model: "openai/gpt-5.4",
           models: {
-            "anthropic/claude-opus-5": { agentRuntime: { id: "openclaw" } },
+            "anthropic/claude-opus-5": { agentRuntime: { id: "afora" } },
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const concurrentConfig = structuredClone(initialConfig);
     concurrentConfig.agents!.defaults!.models!["anthropic/claude-opus-5"] = {
       agentRuntime: { id: "codex" },
@@ -2154,8 +2154,8 @@ describe("activateSetupInference", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
-    const runtimeConfig: OpenClawConfig = structuredClone(sourceConfig);
+    } satisfies AforaConfig;
+    const runtimeConfig: AforaConfig = structuredClone(sourceConfig);
     runtimeConfig.models!.providers!.openai!.models = [
       {
         id: "gpt-5.6",
@@ -2194,10 +2194,10 @@ describe("activateSetupInference", () => {
   it("rejects an existing route that changes after its live probe", async () => {
     const initialConfig = {
       agents: { defaults: { model: "openai/gpt-5.5" } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const changedConfig = {
       agents: { defaults: { model: "anthropic/claude-opus-5" } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const readConfigFileSnapshot = vi
       .fn()
       .mockResolvedValueOnce({ exists: true, valid: true, config: initialConfig })
@@ -2271,7 +2271,7 @@ describe("activateSetupInference", () => {
           model: "claude-cli/claude-opus-5",
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const result = await activateSetupInference({
       kind: "existing-model",
       deps: {
@@ -2335,7 +2335,7 @@ describe("activateSetupInference", () => {
   });
 
   it("does not configure Codex while selecting Claude as the primary backend", async () => {
-    const sourceConfig = {} satisfies OpenClawConfig;
+    const sourceConfig = {} satisfies AforaConfig;
     const configHarness = createConfigTransformHarness(sourceConfig);
     const ensureCodexRuntimePlugin = vi.fn();
     const runCliAgent = vi.fn(async (params: SuccessfulRunParams) => {
@@ -2371,7 +2371,7 @@ describe("activateSetupInference", () => {
   it.each([
     [
       "an explicitly disabled Codex plugin",
-      { plugins: { entries: { codex: { enabled: false } } } } satisfies OpenClawConfig,
+      { plugins: { entries: { codex: { enabled: false } } } } satisfies AforaConfig,
     ],
     [
       "an explicit supervision opt-out",
@@ -2379,9 +2379,9 @@ describe("activateSetupInference", () => {
         plugins: {
           entries: { codex: { config: { supervision: { enabled: false } } } },
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
     ],
-    ["plugin policy", { plugins: { deny: ["codex"] } } satisfies OpenClawConfig],
+    ["plugin policy", { plugins: { deny: ["codex"] } } satisfies AforaConfig],
   ])("preserves %s while selecting another backend", async (_label, config) => {
     const ensureCodexRuntimePlugin = vi.fn();
     const configHarness = createConfigTransformHarness(config);
@@ -2600,7 +2600,7 @@ describe("activateSetupInference", () => {
           },
         ],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const runEmbeddedAgent = vi.fn(successfulRunner("anthropic", "claude-opus-5"));
     const configHarness = createConfigTransformHarness(initialConfig);
 
@@ -2619,7 +2619,7 @@ describe("activateSetupInference", () => {
         agentId: "ops",
         provider: "anthropic",
         model: "claude-opus-5",
-        agentHarnessRuntimeOverride: "openclaw",
+        agentHarnessRuntimeOverride: "afora",
         config: expect.objectContaining({
           agents: expect.objectContaining({
             entries: expect.objectContaining({
@@ -2627,7 +2627,7 @@ describe("activateSetupInference", () => {
                 model: { primary: "anthropic/claude-opus-5" },
                 models: {
                   "anthropic/claude-opus-5": {
-                    agentRuntime: { id: "openclaw" },
+                    agentRuntime: { id: "afora" },
                   },
                 },
               }),
@@ -2659,7 +2659,7 @@ describe("activateSetupInference", () => {
         ...initialConfig.agents,
         defaults: { models: { "openai/gpt-5.4": {} } },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     resolveAgentDir(initialConfig, "main");
     const runAuth = vi.fn(async () => ({
       profiles: [
@@ -2696,7 +2696,7 @@ describe("activateSetupInference", () => {
         kind: "provider-auth",
         authChoice: "openai",
         useRealAuthProfileStore: true,
-        workspace: "/tmp/openclaw-workspace",
+        workspace: "/tmp/afora-workspace",
         prompter: { note: vi.fn(async () => {}) } as never,
         deps: {
           readConfigFileSnapshot: mockConfigSnapshot(initialConfig, {
@@ -2797,7 +2797,7 @@ describe("activateSetupInference", () => {
       const result = await activateSetupInference({
         kind: "provider-auth",
         authChoice: "local-test",
-        workspace: "/tmp/openclaw-workspace",
+        workspace: "/tmp/afora-workspace",
         prompter: { note: vi.fn(async () => {}) } as never,
         deps: {
           readConfigFileSnapshot: mockConfigSnapshot(initialConfig, {
@@ -2879,7 +2879,7 @@ describe("activateSetupInference", () => {
             "groq:legacy": { provider: "groq", mode: credentialType },
           },
         },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       // Custom agent directories must be bound to their configured owner before
       // the shared per-agent database is created.
       resolveAgentDir(initialConfig, "main");
@@ -2921,7 +2921,7 @@ describe("activateSetupInference", () => {
         ],
       };
       const resolvePluginProviders = vi.fn(() => [provider]);
-      const enablePluginInConfig = vi.fn((config: OpenClawConfig, pluginId: string) => ({
+      const enablePluginInConfig = vi.fn((config: AforaConfig, pluginId: string) => ({
         config: {
           ...config,
           plugins: { entries: { [pluginId]: { enabled: true } } },
@@ -2937,7 +2937,7 @@ describe("activateSetupInference", () => {
       try {
         const result = await activateGroqSetup({
           apiKey: "test-groq-key",
-          workspace: "/tmp/openclaw-workspace",
+          workspace: "/tmp/afora-workspace",
           deps: {
             readConfigFileSnapshot: mockConfigSnapshot(initialConfig, { includeMetadata: true }),
             resolvePluginProviders,
@@ -2954,7 +2954,7 @@ describe("activateSetupInference", () => {
               plugins: { entries: { groq: { enabled: true } } },
             }),
             onlyPluginIds: ["groq"],
-            workspaceDir: "/tmp/openclaw-workspace",
+            workspaceDir: "/tmp/afora-workspace",
           }),
         );
         expect(runAuth).toHaveBeenCalledWith(
@@ -3070,7 +3070,7 @@ describe("activateSetupInference", () => {
       plugins: {
         entries: { operator: { enabled: true, config: { revision: "initial" } } },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const concurrentConfig = structuredClone(initialConfig);
     concurrentConfig.gateway = { port: 19_000 };
     concurrentConfig.agents!.defaults!.workspace = "/operator/concurrent";
@@ -3139,7 +3139,7 @@ describe("activateSetupInference", () => {
         },
       ],
     };
-    const enablePluginInConfig = (config: OpenClawConfig, pluginId: string) => ({
+    const enablePluginInConfig = (config: AforaConfig, pluginId: string) => ({
       enabled: true as const,
       config: {
         ...config,
@@ -3153,7 +3153,7 @@ describe("activateSetupInference", () => {
       },
     });
     const runEmbeddedAgent = vi.fn(
-      async (params: SuccessfulRunParams & { config: OpenClawConfig }) =>
+      async (params: SuccessfulRunParams & { config: AforaConfig }) =>
         successfulRun("groq", "llama-3.3-70b-versatile", params),
     );
     const configHarness = createConfigTransformHarness(concurrentConfig);
@@ -3185,7 +3185,7 @@ describe("activateSetupInference", () => {
         },
       });
       expect(probeConfig.agents?.entries?.main?.models).toMatchObject({
-        "groq/llama-3.3-70b-versatile": { agentRuntime: { id: "openclaw" } },
+        "groq/llama-3.3-70b-versatile": { agentRuntime: { id: "afora" } },
       });
       expect(probeConfig.plugins?.entries?.groq).toEqual({
         enabled: true,
@@ -3299,7 +3299,7 @@ describe("activateSetupInference", () => {
     const initialConfig = {
       agents: { list: [{ id: "main", default: true, agentDir }] },
       auth: { profiles: { "groq:default": { provider: "groq", mode: "api_key" } } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     resolveAgentDir(initialConfig, "main");
     seedInMemoryAuthProfileStore(agentDir, {
       version: 1,
@@ -3413,7 +3413,7 @@ describe("activateSetupInference", () => {
         ...initialConfig.agents,
         defaults: { model: "openai/gpt-5.5" },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     resolveAgentDir(initialConfig, "main");
     const readConfigFileSnapshot = vi
       .fn()
@@ -3442,7 +3442,7 @@ describe("activateSetupInference", () => {
       await expect(
         activateGroqSetup({
           apiKey: "candidate-key",
-          workspace: "/tmp/openclaw-workspace",
+          workspace: "/tmp/afora-workspace",
           deps: {
             readConfigFileSnapshot: readConfigFileSnapshot as never,
             transformConfigWithPendingPluginInstalls: transformConfig as never,
@@ -3464,7 +3464,7 @@ describe("activateSetupInference", () => {
   it("retains a credential when a post-write concurrent edit still references it", async () => {
     const { stateDir, agentDir, initialConfig } = await createMainAgentFixture();
     resolveAgentDir(initialConfig, "main");
-    let currentConfig: OpenClawConfig = initialConfig;
+    let currentConfig: AforaConfig = initialConfig;
     const readConfigFileSnapshot = vi.fn(async () => ({
       exists: true,
       valid: true,
@@ -3565,7 +3565,7 @@ describe("activateSetupInference", () => {
         ...initialConfig.agents,
         defaults: { model: "openai/gpt-5.5" },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     let realStoreWrites = 0;
     const updateAuthProfileStore = vi.fn(async (params) => {
       if (params.agentDir === agentDir) {
@@ -3595,7 +3595,7 @@ describe("activateSetupInference", () => {
     try {
       const error = await activateGroqSetup({
         apiKey: "candidate-key",
-        workspace: "/tmp/openclaw-workspace",
+        workspace: "/tmp/afora-workspace",
         deps: {
           readConfigFileSnapshot: mockConfigSnapshot(initialConfig),
           transformConfigWithPendingPluginInstalls: transformConfig as never,
@@ -3638,7 +3638,7 @@ describe("activateSetupInference", () => {
       const activate = () =>
         activateGroqSetup({
           apiKey: "candidate-key",
-          workspace: "/tmp/openclaw-workspace",
+          workspace: "/tmp/afora-workspace",
           deps: {
             readConfigFileSnapshot: mockConfigSnapshot(initialConfig),
             transformConfigWithPendingPluginInstalls: transformConfig as never,
@@ -3682,8 +3682,8 @@ describe("activateSetupInference", () => {
     const initialConfig = {
       agents: { list: [{ id: "main", default: true, agentDir }] },
       models: { providers: { aux: auxProvider } },
-    } satisfies OpenClawConfig;
-    const concurrentConfig: OpenClawConfig = {
+    } satisfies AforaConfig;
+    const concurrentConfig: AforaConfig = {
       ...initialConfig,
       models: {
         providers: {
@@ -3796,7 +3796,7 @@ describe("activateSetupInference", () => {
       async (ctx: {
         agentDir?: string;
         opts: { githubCopilotToken?: unknown };
-        config: OpenClawConfig;
+        config: AforaConfig;
       }) => {
         const token =
           typeof ctx.opts.githubCopilotToken === "string" ? ctx.opts.githubCopilotToken : "";
@@ -3816,7 +3816,7 @@ describe("activateSetupInference", () => {
               },
             },
           },
-        } satisfies OpenClawConfig;
+        } satisfies AforaConfig;
       },
     );
     const provider: ProviderPlugin = {
@@ -3844,14 +3844,14 @@ describe("activateSetupInference", () => {
         defaults: { model: { primary: existingModel } },
         list: [{ id: "main", default: true, agentDir }],
       },
-    } satisfies OpenClawConfig;
-    const concurrentConfig: OpenClawConfig = {
+    } satisfies AforaConfig;
+    const concurrentConfig: AforaConfig = {
       gateway: { port: 19000 },
       agents: {
         defaults: { model: { primary: existingModel } },
         list: [{ id: "main", default: true, agentDir }],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const configHarness = createConfigTransformHarness(concurrentConfig);
 
     try {
@@ -3859,7 +3859,7 @@ describe("activateSetupInference", () => {
         kind: "api-key",
         authChoice: "github-copilot",
         apiKey: "github-token",
-        workspace: "/tmp/openclaw-workspace",
+        workspace: "/tmp/afora-workspace",
         deps: {
           readConfigFileSnapshot: mockConfigSnapshot(initialConfig, { includeMetadata: true }),
           resolvePluginProviders: () => [provider],
@@ -3928,7 +3928,7 @@ describe("activateSetupInference", () => {
     try {
       const result = await activateGroqSetup({
         apiKey: "bad-groq-key",
-        workspace: "/tmp/openclaw-workspace",
+        workspace: "/tmp/afora-workspace",
         deps: {
           readConfigFileSnapshot: mockConfigSnapshot(initialConfig),
           runEmbeddedAgent: vi.fn(async () => {
@@ -4066,7 +4066,7 @@ describe("activateSetupInference", () => {
               fallbacks: ["google/gemini-3.1-pro-preview"],
             },
             models: {
-              "openai/gpt-5.5": { agentRuntime: { id: "openclaw" } },
+              "openai/gpt-5.5": { agentRuntime: { id: "afora" } },
             },
           },
         ],
@@ -4086,8 +4086,8 @@ describe("activateSetupInference", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
-    const ensureCodex = vi.fn(async (params: { cfg: OpenClawConfig }) => {
+    } satisfies AforaConfig;
+    const ensureCodex = vi.fn(async (params: { cfg: AforaConfig }) => {
       events.push("install-plugin");
       return {
         cfg: {
@@ -4105,7 +4105,7 @@ describe("activateSetupInference", () => {
               ...params.cfg.plugins?.installs,
               codex: {
                 source: "npm" as const,
-                spec: "@openclaw/codex",
+                spec: "@afora/codex",
                 installPath: "/tmp/plugins/codex",
               },
             },
@@ -4120,7 +4120,7 @@ describe("activateSetupInference", () => {
       events.push("live-test");
       return successfulRun("openai", "gpt-5.6-sol", params);
     });
-    let persistedConfig: OpenClawConfig = {
+    let persistedConfig: AforaConfig = {
       ...initialConfig,
       gateway: { port: 19000 },
     };
@@ -4129,15 +4129,15 @@ describe("activateSetupInference", () => {
     const transformConfig = vi.fn(
       async (params: {
         transform: (
-          config: OpenClawConfig,
+          config: AforaConfig,
           context: {
             snapshot: {
-              config: OpenClawConfig;
-              sourceConfig: OpenClawConfig;
-              runtimeConfig: OpenClawConfig;
+              config: AforaConfig;
+              sourceConfig: AforaConfig;
+              runtimeConfig: AforaConfig;
             };
           },
-        ) => Promise<{ nextConfig: OpenClawConfig }> | { nextConfig: OpenClawConfig };
+        ) => Promise<{ nextConfig: AforaConfig }> | { nextConfig: AforaConfig };
       }) => {
         const transformed = (
           await params.transform(persistedConfig, {
@@ -4178,7 +4178,7 @@ describe("activateSetupInference", () => {
       },
     );
     const result = await activateCodexSetup({
-      workspace: "/tmp/openclaw-workspace",
+      workspace: "/tmp/afora-workspace",
       runtime: { log: runtimeLog, error: () => {}, exit: () => {} } as never,
       deps: {
         readConfigFileSnapshot: vi.fn(async () => {
@@ -4186,7 +4186,7 @@ describe("activateSetupInference", () => {
           return {
             exists: true,
             valid: true,
-            path: "/tmp/openclaw.json",
+            path: "/tmp/afora.json",
             issues: [],
             config,
             sourceConfig: config,
@@ -4217,7 +4217,7 @@ describe("activateSetupInference", () => {
                   fallbacks: ["google/gemini-3.1-pro-preview"],
                 },
                 models: {
-                  "openai/gpt-5.5": { agentRuntime: { id: "openclaw" } },
+                  "openai/gpt-5.5": { agentRuntime: { id: "afora" } },
                   "openai/gpt-5.6-sol": { agentRuntime: { id: "codex" } },
                 },
               }),
@@ -4248,8 +4248,8 @@ describe("activateSetupInference", () => {
       expect.objectContaining({
         reason: "source-changed",
         policyPluginIds: ["codex"],
-        traceCommand: "openclaw-setup-probe",
-        workspaceDir: "/tmp/openclaw-workspace",
+        traceCommand: "afora-setup-probe",
+        workspaceDir: "/tmp/afora-workspace",
       }),
     );
     expect(refreshPluginRegistry).toHaveBeenCalledTimes(2);
@@ -4275,7 +4275,7 @@ describe("activateSetupInference", () => {
     expect(refreshPluginRegistry).toHaveBeenCalledWith({
       config: persistedConfig,
       reason: "source-changed",
-      workspaceDir: "/tmp/openclaw-workspace",
+      workspaceDir: "/tmp/afora-workspace",
       logger: expect.objectContaining({ warn: expect.any(Function) }),
     });
     expect(ensureRegistryLoaded).toHaveBeenCalledWith(
@@ -4289,7 +4289,7 @@ describe("activateSetupInference", () => {
           agents: expect.objectContaining({ entries: persistedConfig.agents?.entries }),
           gateway: { port: 19_000 },
         }),
-        workspaceDir: "/tmp/openclaw-workspace",
+        workspaceDir: "/tmp/afora-workspace",
       }),
     );
     // Harness selection: codex tests run embedded with the codex harness.
@@ -4310,7 +4310,7 @@ describe("activateSetupInference", () => {
                 fallbacks: ["google/gemini-3.1-pro-preview"],
               },
               models: {
-                "openai/gpt-5.5": { agentRuntime: { id: "openclaw" } },
+                "openai/gpt-5.5": { agentRuntime: { id: "afora" } },
                 "openai/gpt-5.6-sol": { agentRuntime: { id: "codex" } },
               },
             }),
@@ -4356,7 +4356,7 @@ describe("activateSetupInference", () => {
               fallbacks: ["google/gemini-3.1-pro-preview"],
             },
             models: {
-              "openai/gpt-5.5": { agentRuntime: { id: "openclaw" } },
+              "openai/gpt-5.5": { agentRuntime: { id: "afora" } },
               "openai/gpt-5.6-sol": { agentRuntime: { id: "codex" } },
             },
           }),
@@ -4381,16 +4381,16 @@ describe("activateSetupInference", () => {
     expect(persistedConfig.plugins?.installs).toBeUndefined();
     expect(pendingCodexInstalls[0]).toMatchObject({
       source: "npm",
-      spec: "@openclaw/codex",
+      spec: "@afora/codex",
       installPath: "/tmp/plugins/codex",
     });
     expect(pendingCodexInstalls).toHaveLength(1);
   });
 
   it("probes and persists an exact non-default model through the Codex route", async () => {
-    const initialConfig: OpenClawConfig = {};
+    const initialConfig: AforaConfig = {};
     const configHarness = createConfigTransformHarness(initialConfig);
-    const ensureCodex = vi.fn(async ({ cfg }: { cfg: OpenClawConfig }) => ({
+    const ensureCodex = vi.fn(async ({ cfg }: { cfg: AforaConfig }) => ({
       cfg: {
         ...cfg,
         plugins: {
@@ -4440,7 +4440,7 @@ describe("activateSetupInference", () => {
       expect.objectContaining({
         reason: "source-changed",
         policyPluginIds: ["codex"],
-        traceCommand: "openclaw-setup-probe",
+        traceCommand: "afora-setup-probe",
         workspaceDir: "/tmp/work",
       }),
     );
@@ -4559,39 +4559,39 @@ describe("activateSetupInference", () => {
     const staleAuthoredRecords = {
       codex: {
         source: "npm" as const,
-        spec: "@openclaw/codex@1.0.0",
+        spec: "@afora/codex@1.0.0",
         installPath: "/tmp/plugins/codex-v1",
       },
       unrelated: {
         source: "npm" as const,
-        spec: "@openclaw/unrelated@1.0.0",
+        spec: "@afora/unrelated@1.0.0",
         installPath: "/tmp/plugins/unrelated-v1",
       },
     };
     const canonicalRecords = {
       codex: {
         source: "npm" as const,
-        spec: "@openclaw/codex@2.0.0",
+        spec: "@afora/codex@2.0.0",
         installPath: "/tmp/plugins/codex-v2",
       },
       unrelated: {
         source: "npm" as const,
-        spec: "@openclaw/unrelated@2.0.0",
+        spec: "@afora/unrelated@2.0.0",
         installPath: "/tmp/plugins/unrelated-v2",
       },
     };
     const refreshedCodexRecord = {
       source: "npm" as const,
-      spec: "@openclaw/codex@3.0.0",
+      spec: "@afora/codex@3.0.0",
       installPath: "/tmp/plugins/codex-v3",
     };
     const sourceConfig = {
       plugins: { installs: staleAuthoredRecords },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const runtimeConfig = {
       plugins: { installs: canonicalRecords },
-    } satisfies OpenClawConfig;
-    const ensureCodex = vi.fn(async (params: { cfg: OpenClawConfig }) => ({
+    } satisfies AforaConfig;
+    const ensureCodex = vi.fn(async (params: { cfg: AforaConfig }) => ({
       cfg: {
         ...params.cfg,
         plugins: {
@@ -4603,21 +4603,21 @@ describe("activateSetupInference", () => {
       installed: true,
       status: "installed" as const,
     }));
-    let persistedConfig: OpenClawConfig = sourceConfig;
+    let persistedConfig: AforaConfig = sourceConfig;
     let installIndex: Record<string, PluginInstallRecord> = structuredClone(canonicalRecords);
     const pendingInstallRecords: unknown[] = [];
     const transformConfig = vi.fn(
       async (params: {
         transform: (
-          config: OpenClawConfig,
+          config: AforaConfig,
           context: {
             snapshot: {
-              config: OpenClawConfig;
-              sourceConfig: OpenClawConfig;
-              runtimeConfig: OpenClawConfig;
+              config: AforaConfig;
+              sourceConfig: AforaConfig;
+              runtimeConfig: AforaConfig;
             };
           },
-        ) => Promise<{ nextConfig: OpenClawConfig }> | { nextConfig: OpenClawConfig };
+        ) => Promise<{ nextConfig: AforaConfig }> | { nextConfig: AforaConfig };
       }) => {
         const transformed = (
           await params.transform(persistedConfig, {
@@ -4633,7 +4633,7 @@ describe("activateSetupInference", () => {
     );
 
     const result = await activateCodexSetup({
-      workspace: "/tmp/openclaw-workspace",
+      workspace: "/tmp/afora-workspace",
       deps: {
         readConfigFileSnapshot: mockConfigSnapshot(sourceConfig, {
           includeMetadata: true,
@@ -4688,7 +4688,7 @@ describe("activateSetupInference", () => {
   it("fails closed before inference when the staged Codex package cannot be retained", async () => {
     const installRecord: PluginInstallRecord = {
       source: "npm",
-      spec: "@openclaw/codex",
+      spec: "@afora/codex",
       installPath: "/tmp/plugins/codex-unretained",
     };
     const runEmbeddedAgent = vi.fn();
@@ -4699,7 +4699,7 @@ describe("activateSetupInference", () => {
     const clearDiscovery = vi.fn(async () => {});
     const refreshPluginRegistry = vi.fn(async () => {});
     const result = await activateCodexSetup({
-      workspace: "/tmp/openclaw-workspace",
+      workspace: "/tmp/afora-workspace",
       deps: {
         readConfigFileSnapshot: mockConfigSnapshot({}, { includeMetadata: true }),
         ensureCodexRuntimePlugin: mockCodexRuntimeInstall(installRecord),
@@ -4727,7 +4727,7 @@ describe("activateSetupInference", () => {
     expect(refreshPluginRegistry).toHaveBeenCalledWith({
       config: {},
       reason: "source-changed",
-      workspaceDir: "/tmp/openclaw-workspace",
+      workspaceDir: "/tmp/afora-workspace",
       logger: expect.objectContaining({ warn: expect.any(Function) }),
     });
   });
@@ -4735,14 +4735,14 @@ describe("activateSetupInference", () => {
   it("reports an indeterminate activation when final Codex retention fails", async () => {
     const installRecord: PluginInstallRecord = {
       source: "npm",
-      spec: "@openclaw/codex",
+      spec: "@afora/codex",
       installPath: "/tmp/plugins/codex-final-retention-failure",
     };
     const markRetainedInstall = vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false);
     const refreshPluginRegistry = vi.fn(async () => {});
     let tempDir: string | undefined;
     const activation = activateCodexSetup({
-      workspace: "/tmp/openclaw-workspace",
+      workspace: "/tmp/afora-workspace",
       deps: {
         readConfigFileSnapshot: mockConfigSnapshot({}, { includeMetadata: true }),
         ensureCodexRuntimePlugin: mockCodexRuntimeInstall(installRecord),
@@ -4775,10 +4775,10 @@ describe("activateSetupInference", () => {
     resetPluginRuntimeStateForTest();
     const installRecord: PluginInstallRecord = {
       source: "npm",
-      spec: "@openclaw/codex",
+      spec: "@afora/codex",
       installPath: "/tmp/plugins/codex-staged-registry",
     };
-    const persistedConfig = { plugins: { enabled: false } } satisfies OpenClawConfig;
+    const persistedConfig = { plugins: { enabled: false } } satisfies AforaConfig;
     const stagedRegistry = createEmptyPluginRegistry();
     stagedRegistry.plugins.push({
       id: "codex",
@@ -4795,14 +4795,14 @@ describe("activateSetupInference", () => {
 
     try {
       const result = await activateCodexSetup({
-        workspace: "/tmp/openclaw-workspace",
+        workspace: "/tmp/afora-workspace",
         deps: {
           readConfigFileSnapshot: vi.fn(async () => {
             const config = snapshotRead++ === 0 ? {} : persistedConfig;
             return {
               exists: true,
               valid: true,
-              path: "/tmp/openclaw.json",
+              path: "/tmp/afora.json",
               issues: [],
               config,
               sourceConfig: config,
@@ -4833,14 +4833,14 @@ describe("activateSetupInference", () => {
         scope: "all",
         config: persistedConfig,
         activationSourceConfig: persistedConfig,
-        workspaceDir: "/tmp/openclaw-workspace",
+        workspaceDir: "/tmp/afora-workspace",
       });
       expect(getActivePluginRegistry()).not.toBe(stagedRegistry);
       expect(getActivePluginRegistry()?.plugins.some((plugin) => plugin.id === "codex")).toBe(
         false,
       );
       expect(getActivePluginRegistryKey()).not.toBe("staged-codex-registry");
-      expect(getActivePluginRegistryWorkspaceDir()).toBe("/tmp/openclaw-workspace");
+      expect(getActivePluginRegistryWorkspaceDir()).toBe("/tmp/afora-workspace");
     } finally {
       resetPluginRuntimeStateForTest();
     }
@@ -4851,7 +4851,7 @@ describe("activateSetupInference", () => {
     const runEmbeddedAgent = vi.fn();
     const transformConfig = vi.fn();
     const refreshPluginRegistry = vi.fn();
-    const blockedConfig: OpenClawConfig = { plugins: { allow: ["other"] } };
+    const blockedConfig: AforaConfig = { plugins: { allow: ["other"] } };
     const result = await activateCodexSetup({
       deps: {
         readConfigFileSnapshot: mockConfigSnapshot(blockedConfig, { includeMetadata: true }),
@@ -4875,7 +4875,7 @@ describe("activateSetupInference", () => {
 
   it("marks an unowned Codex package generation retained when the live test fails", async () => {
     const installProjectDir = await suiteTempRootTracker.make("case");
-    const packageDir = path.join(installProjectDir, "node_modules", "@openclaw", "codex");
+    const packageDir = path.join(installProjectDir, "node_modules", "@afora", "codex");
     await fs.mkdir(packageDir, { recursive: true });
     const transformConfig = vi.fn();
     const refreshPluginRegistry = vi.fn();
@@ -4887,7 +4887,7 @@ describe("activateSetupInference", () => {
         deps: {
           ensureCodexRuntimePlugin: mockCodexRuntimeInstall({
             source: "npm",
-            spec: "@openclaw/codex",
+            spec: "@afora/codex",
             installPath: packageDir,
           }),
           runEmbeddedAgent: runEmbeddedAgent as never,
@@ -4922,12 +4922,12 @@ describe("activateSetupInference", () => {
     const installRecords = [
       {
         source: "npm" as const,
-        spec: "@openclaw/codex@generation-1",
+        spec: "@afora/codex@generation-1",
         installPath: "/tmp/plugins/codex-generation-1",
       },
       {
         source: "npm" as const,
-        spec: "@openclaw/codex@generation-2",
+        spec: "@afora/codex@generation-2",
         installPath: "/tmp/plugins/codex-generation-2",
       },
     ];
@@ -4935,7 +4935,7 @@ describe("activateSetupInference", () => {
     let installedRecordCache: PluginInstallRecord | undefined;
     let metadataCache: PluginInstallRecord | undefined;
     let discoveryCache: PluginInstallRecord | undefined;
-    const ensureCodex = vi.fn(async ({ cfg }: { cfg: OpenClawConfig }) => {
+    const ensureCodex = vi.fn(async ({ cfg }: { cfg: AforaConfig }) => {
       const cachedRecord = installedRecordCache ?? metadataCache ?? discoveryCache;
       if (cachedRecord) {
         return {
@@ -4984,9 +4984,9 @@ describe("activateSetupInference", () => {
     const transformConfig = vi.fn(
       async (params: {
         transform: (
-          config: OpenClawConfig,
-          context: { snapshot: { config: OpenClawConfig; runtimeConfig: OpenClawConfig } },
-        ) => Promise<{ nextConfig: OpenClawConfig }>;
+          config: AforaConfig,
+          context: { snapshot: { config: AforaConfig; runtimeConfig: AforaConfig } },
+        ) => Promise<{ nextConfig: AforaConfig }>;
       }) => {
         const transformed = await params.transform(
           {},
@@ -5029,17 +5029,17 @@ describe("activateSetupInference", () => {
     expect(markRetained).toHaveBeenNthCalledWith(1, {
       packageDir: expectDefined(installRecords[0], "installRecords[0] test invariant").installPath,
       pluginId: "codex",
-      reason: "openclaw-inference-activation-not-committed",
+      reason: "afora-inference-activation-not-committed",
     });
     expect(markRetained).toHaveBeenNthCalledWith(2, {
       packageDir: expectDefined(installRecords[0], "installRecords[0] test invariant").installPath,
       pluginId: "codex",
-      reason: "openclaw-inference-activation-not-committed",
+      reason: "afora-inference-activation-not-committed",
     });
     expect(markRetained).toHaveBeenNthCalledWith(3, {
       packageDir: expectDefined(installRecords[1], "installRecords[1] test invariant").installPath,
       pluginId: "codex",
-      reason: "openclaw-inference-activation-not-committed",
+      reason: "afora-inference-activation-not-committed",
     });
     expect(clearInstallRecords).toHaveBeenCalledTimes(3);
     expect(clearMetadata).toHaveBeenCalledTimes(3);
@@ -5055,7 +5055,7 @@ describe("activateSetupInference", () => {
       installRecords: {
         codex: {
           source: "npm" as const,
-          spec: "@openclaw/codex@other",
+          spec: "@afora/codex@other",
           installPath: "/tmp/plugins/codex-other",
         },
       },
@@ -5069,11 +5069,11 @@ describe("activateSetupInference", () => {
   ])("reconciles a post-write Codex error only with an $name install record", async (testCase) => {
     const installRecord: PluginInstallRecord = {
       source: "npm",
-      spec: "@openclaw/codex",
+      spec: "@afora/codex",
       installPath: "/tmp/plugins/codex",
     };
     const installRecords = testCase.installRecords ?? { codex: installRecord };
-    let committedConfig: OpenClawConfig | undefined;
+    let committedConfig: AforaConfig | undefined;
     const readConfigFileSnapshot = vi.fn(async () => {
       const sourceConfig = committedConfig ?? {};
       return {
@@ -5087,9 +5087,9 @@ describe("activateSetupInference", () => {
     const transformConfig = vi.fn(
       async (params: {
         transform: (
-          config: OpenClawConfig,
-          context: { snapshot: { config: OpenClawConfig; runtimeConfig: OpenClawConfig } },
-        ) => Promise<{ nextConfig: OpenClawConfig }>;
+          config: AforaConfig,
+          context: { snapshot: { config: AforaConfig; runtimeConfig: AforaConfig } },
+        ) => Promise<{ nextConfig: AforaConfig }>;
       }) => {
         const transformed = await params.transform(
           {},
@@ -5135,7 +5135,7 @@ describe("resolvePersistentApplyInference", () => {
       modelLabel: "openai/gpt-5.5",
       provider: "openai",
       model: "gpt-5.5",
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       agentId: "main",
       agentHarnessRuntimeOverride: "codex",
     };
@@ -5246,7 +5246,7 @@ describe("resolvePersistentApplyInference", () => {
     if (changedBinding.execution.runner !== "embedded") {
       throw new Error("expected embedded fixture");
     }
-    changedBinding.execution.agentHarnessRuntimeOverride = "openclaw";
+    changedBinding.execution.agentHarnessRuntimeOverride = "afora";
     const resolveVerifiedInferenceRoute = vi.fn(async () => binding.execution);
 
     await expect(
@@ -5299,7 +5299,7 @@ describe("activateSetupInference Codex configuration", () => {
   it.each([
     {
       name: "omitted",
-      config: {} satisfies OpenClawConfig,
+      config: {} satisfies AforaConfig,
       expectedSupervision: undefined,
     },
     {
@@ -5308,7 +5308,7 @@ describe("activateSetupInference Codex configuration", () => {
         plugins: {
           entries: { codex: { config: { supervision: {} } } },
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       expectedSupervision: {},
     },
   ])("does not add Codex supervision when it is $name", async (testCase) => {
@@ -5343,7 +5343,7 @@ describe("activateSetupInference Codex configuration", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const { result, persistedConfig } = await runCodexSetupWithFinalConfig({
       currentConfig: config,
@@ -5374,7 +5374,7 @@ describe("activateSetupInference Codex configuration", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const { result, persistedConfig } = await runCodexSetupWithFinalConfig({
       currentConfig: config,
@@ -5401,7 +5401,7 @@ describe("activateSetupInference Codex configuration", () => {
           codex: { config: { supervision: { enabled: false } } },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const { result, persistedConfig } = await runCodexSetupWithFinalConfig({
       initialConfig: resolvedSource,
@@ -5418,7 +5418,7 @@ describe("activateSetupInference Codex configuration", () => {
   });
 
   it("fails closed when effective plugin policy changes before the success commit", async () => {
-    const denied = { plugins: { deny: ["codex"] } } satisfies OpenClawConfig;
+    const denied = { plugins: { deny: ["codex"] } } satisfies AforaConfig;
     const { result, refreshPluginRegistry, transformConfig } = await runCodexSetupWithFinalConfig({
       initialConfig: {},
       currentConfig: denied,
@@ -5477,7 +5477,7 @@ describe("verifySetupInference", () => {
           {},
           {
             valid: false,
-            path: "/tmp/openclaw.json",
+            path: "/tmp/afora.json",
             issues: [{ path: "agents.defaults.model", message: "Expected a model reference" }],
           },
         ),
@@ -5506,12 +5506,12 @@ describe("verifySetupInference", () => {
     expect(result).toMatchObject({ ok: true, modelRef: "openai/gpt-5.5" });
   });
 
-  it("locks the exact winning profile into a bound OpenClaw session", async () => {
+  it("locks the exact winning profile into a bound Afora session", async () => {
     const config = {
       agents: {
         defaults: {
           model: { primary: "openai/gpt-5.5" },
-          models: { "openai/gpt-5.5": { agentRuntime: { id: "openclaw" } } },
+          models: { "openai/gpt-5.5": { agentRuntime: { id: "afora" } } },
         },
       },
       auth: {
@@ -5520,7 +5520,7 @@ describe("verifySetupInference", () => {
           "openai:p2": { provider: "openai", mode: "api_key" },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const profiles = {
       "openai:p1": { type: "api_key" as const, provider: "openai", key: "key-1" },
       "openai:p2": { type: "api_key" as const, provider: "openai", key: "key-2" },
@@ -5549,7 +5549,7 @@ describe("verifySetupInference", () => {
       }) => {
         params.onSuccessfulAuthBinding?.({
           authProfileId: "openai:p2",
-          agentHarnessId: "openclaw",
+          agentHarnessId: "afora",
           authFingerprint: verifiedAuthFingerprint,
           modelId: "gpt-5.5",
           modelApi: "openai-responses",
@@ -5598,7 +5598,7 @@ describe("verifySetupInference", () => {
     const config = {
       agents: { defaults: { model: `openai/gpt-5.5@${profileId}` } },
       auth: { profiles: { [profileId]: { provider: "openai", mode: "api_key" } } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const captureSystemAgentOwnerPluginArtifacts = vi.fn(() => ({
       ownerPluginIds: ["openai"],
       ownerPluginArtifacts: [{ pluginId: "openai", fingerprint: "openai-runtime-v1" }],
@@ -5651,9 +5651,9 @@ describe("verifySetupInference", () => {
     expect(createChangedVerifiedInferenceBinding).toHaveBeenCalledOnce();
   });
 
-  it("binds a runtime-only Codex profile after activation and runs the first OpenClaw turn", async () => {
+  it("binds a runtime-only Codex profile after activation and runs the first Afora turn", async () => {
     const stateDir = await suiteTempRootTracker.make("case");
-    vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+    vi.stubEnv("AFORA_STATE_DIR", stateDir);
     const profileId = "openai:default";
     const credential = {
       type: "oauth" as const,
@@ -5678,7 +5678,7 @@ describe("verifySetupInference", () => {
         },
       },
       plugins: { entries: { codex: { enabled: true } } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const externalStore = vi.fn(
       (_agentDir?: string, options?: { externalCliProviderIds?: Iterable<string> }) => {
         const exposeCodexProfile = Array.from(options?.externalCliProviderIds ?? []).includes(
@@ -5776,12 +5776,12 @@ describe("verifySetupInference", () => {
         authProfileId: profileId,
         authProfileIdSource: "user",
         agentHarnessRuntimeOverride: "codex",
-        agentId: "openclaw",
-        toolsAllow: ["openclaw"],
+        agentId: "afora",
+        toolsAllow: ["afora"],
       });
       const systemAgentTurnParams = runEmbeddedAgent.mock.calls[2]?.[0];
       expect(systemAgentTurnParams).toBeDefined();
-      expect((systemAgentTurnParams as { config?: OpenClawConfig }).config).toBe(
+      expect((systemAgentTurnParams as { config?: AforaConfig }).config).toBe(
         verification.binding.execution.runConfig,
       );
       expect(validateAgentHarnessRuntimeArtifact).toHaveBeenCalledWith({
@@ -5812,7 +5812,7 @@ describe("verifySetupInference", () => {
           "openai:p2": { provider: "openai", mode: "api_key" },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const profiles = {
       "openai:p1": { type: "api_key" as const, provider: "openai", key: "key-1" },
       "openai:p2": { type: "api_key" as const, provider: "openai", key: "key-2" },
@@ -6040,10 +6040,10 @@ describe("verifySetupInference", () => {
   it("rejects a configured route that changes during its live check", async () => {
     const initialConfig = {
       agents: { defaults: { model: { primary: "openai/gpt-5.5" } } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const changedConfig = {
       agents: { defaults: { model: { primary: "anthropic/claude-opus-5" } } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const readConfigFileSnapshot = vi
       .fn()
       .mockResolvedValueOnce({ exists: true, valid: true, config: initialConfig })
@@ -6242,7 +6242,7 @@ describe("verifySetupInference", () => {
       successfulRun("google-gemini-cli", "gemini-3.1-pro-preview"),
     );
     const modelRef = "google/gemini-3.1-pro-preview";
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       auth: {
         order: { [testCase.profileProvider]: [testCase.profileId] },
       },

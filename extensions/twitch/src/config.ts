@@ -1,11 +1,11 @@
-import { createAccountListHelpers } from "openclaw/plugin-sdk/account-helpers";
+import { createAccountListHelpers } from "afora-agent/plugin-sdk/account-helpers";
 // Twitch helper module supports config behavior.
 import {
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
   resolveNormalizedAccountEntry,
-} from "openclaw/plugin-sdk/account-resolution";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+} from "afora-agent/plugin-sdk/account-resolution";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { resolveTwitchToken, type TwitchTokenResolution } from "./token.js";
 import type { TwitchAccountConfig } from "./types.js";
 import { isAccountConfigured } from "./utils/twitch.js";
@@ -56,7 +56,7 @@ export function getAccountConfig(
     return null;
   }
 
-  const cfg = coreConfig as OpenClawConfig;
+  const cfg = coreConfig as AforaConfig;
   const normalizedAccountId = normalizeAccountId(accountId);
   const twitch = cfg.channels?.twitch;
   // Access accounts via unknown to handle union type (single-account vs multi-account)
@@ -122,7 +122,7 @@ export function getAccountConfig(
 }
 
 export function resolveTwitchAccountContext(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   accountId?: string | null,
 ): ResolvedTwitchAccountContext {
   const resolvedAccountId = accountId?.trim()
@@ -141,7 +141,7 @@ export function resolveTwitchAccountContext(
 
 /** Keep runtime and setup on the same normalized, account-scoped credential path. */
 function resolveTwitchAccount(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   accountId?: string | null,
 ): ResolvedTwitchAccount {
   const resolvedAccountId = normalizeAccountId(accountId ?? resolveDefaultTwitchAccountId(cfg));
@@ -163,13 +163,13 @@ export const twitchConfigAdapter = {
   listAccountIds,
   resolveAccount: resolveTwitchAccount,
   defaultAccountId: resolveDefaultTwitchAccountId,
-  isConfigured: (account: ResolvedTwitchAccount, cfg: OpenClawConfig) =>
+  isConfigured: (account: ResolvedTwitchAccount, cfg: AforaConfig) =>
     resolveTwitchAccountContext(cfg, account.accountId).configured,
   isEnabled: (account: ResolvedTwitchAccount | undefined) => account?.enabled !== false,
 };
 
 export function resolveTwitchSnapshotAccountId(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   account: TwitchAccountConfig,
 ): string {
   const twitch = (cfg as Record<string, unknown>).channels as Record<string, unknown> | undefined;

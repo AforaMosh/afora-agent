@@ -180,7 +180,7 @@ describe("recent session prefetch", () => {
     current = update;
     host.replaceChildren(
       ...update.openSessionKeys.map((sessionKey) =>
-        Object.assign(document.createElement("openclaw-chat-pane"), { sessionKey }),
+        Object.assign(document.createElement("afora-chat-pane"), { sessionKey }),
       ),
     );
     controller.hostUpdated?.();
@@ -205,7 +205,7 @@ describe("recent session prefetch", () => {
         _name: string,
         _options: LockOptions,
         callback: (lock: Lock | null) => Promise<void>,
-      ) => await callback({ name: "openclaw-chat-prefetch", mode: "exclusive" } as Lock),
+      ) => await callback({ name: "afora-chat-prefetch", mode: "exclusive" } as Lock),
     );
     Object.defineProperty(navigator, "locks", {
       configurable: true,
@@ -255,7 +255,7 @@ describe("recent session prefetch", () => {
       true,
     );
     expect(locksRequest).toHaveBeenCalledWith(
-      "openclaw-chat-prefetch",
+      "afora-chat-prefetch",
       { ifAvailable: true },
       expect.any(Function),
     );

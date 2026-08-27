@@ -1,7 +1,7 @@
 // Doctor-only reader and writer for retired sessions.json stores.
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { normalizeRestartRecoveryEntryFields } from "../config/sessions/restart-recovery-state.js";
 import {
   ensureSessionStorePromptBlobsForPersistence,

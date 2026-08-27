@@ -1,6 +1,6 @@
 // Session snapshot helpers capture and restore runtime skill state for sessions.
-import { stableStringify } from "@openclaw/normalization-core";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import { stableStringify } from "@afora/normalization-core";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { pruneMapToMaxSize } from "../../infra/map-size.js";
 import { matchesSkillFilter } from "../discovery/filter.js";
 import { buildSkillSnapshot } from "../loading/workspace-skill-prompt.js";
@@ -19,7 +19,7 @@ const RESOLVED_SKILLS_CACHE_MAX = 10;
 /** Inputs that make a resolved skill snapshot reusable within a process. */
 type ReusableSkillSnapshotParams = {
   workspaceDir: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentId?: string;
   skillFilter?: string[];
   skillOverrides?: Record<string, boolean>;

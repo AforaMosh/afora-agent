@@ -1,15 +1,15 @@
 // QA Lab WhatsApp credential, config, and channel setup.
-import { normalizeE164 } from "openclaw/plugin-sdk/account-resolution";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { normalizeStringEntries, uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeE164 } from "afora-agent/plugin-sdk/account-resolution";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { normalizeStringEntries, uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { z } from "zod";
 import type { WhatsAppQaConfigOverrides, WhatsAppQaRuntimeEnv } from "./whatsapp-live.contracts.js";
 
 const WHATSAPP_QA_ENV_KEYS = [
-  "OPENCLAW_QA_WHATSAPP_DRIVER_PHONE_E164",
-  "OPENCLAW_QA_WHATSAPP_SUT_PHONE_E164",
-  "OPENCLAW_QA_WHATSAPP_DRIVER_AUTH_ARCHIVE_BASE64",
-  "OPENCLAW_QA_WHATSAPP_SUT_AUTH_ARCHIVE_BASE64",
+  "AFORA_QA_WHATSAPP_DRIVER_PHONE_E164",
+  "AFORA_QA_WHATSAPP_SUT_PHONE_E164",
+  "AFORA_QA_WHATSAPP_DRIVER_AUTH_ARCHIVE_BASE64",
+  "AFORA_QA_WHATSAPP_SUT_AUTH_ARCHIVE_BASE64",
 ] as const;
 const whatsappQaCredentialPayloadSchema = z.object({
   driverPhoneE164: z.string().trim().min(1),
@@ -56,16 +56,16 @@ export function resolveWhatsAppQaRuntimeEnv(
 ): WhatsAppQaRuntimeEnv {
   return validateWhatsAppQaRuntimeEnv(
     {
-      driverPhoneE164: resolveEnvValue(env, "OPENCLAW_QA_WHATSAPP_DRIVER_PHONE_E164"),
-      sutPhoneE164: resolveEnvValue(env, "OPENCLAW_QA_WHATSAPP_SUT_PHONE_E164"),
+      driverPhoneE164: resolveEnvValue(env, "AFORA_QA_WHATSAPP_DRIVER_PHONE_E164"),
+      sutPhoneE164: resolveEnvValue(env, "AFORA_QA_WHATSAPP_SUT_PHONE_E164"),
       driverAuthArchiveBase64: resolveEnvValue(
         env,
-        "OPENCLAW_QA_WHATSAPP_DRIVER_AUTH_ARCHIVE_BASE64",
+        "AFORA_QA_WHATSAPP_DRIVER_AUTH_ARCHIVE_BASE64",
       ),
-      sutAuthArchiveBase64: resolveEnvValue(env, "OPENCLAW_QA_WHATSAPP_SUT_AUTH_ARCHIVE_BASE64"),
-      groupJid: env.OPENCLAW_QA_WHATSAPP_GROUP_JID?.trim() || undefined,
+      sutAuthArchiveBase64: resolveEnvValue(env, "AFORA_QA_WHATSAPP_SUT_AUTH_ARCHIVE_BASE64"),
+      groupJid: env.AFORA_QA_WHATSAPP_GROUP_JID?.trim() || undefined,
     },
-    "OPENCLAW_QA_WHATSAPP",
+    "AFORA_QA_WHATSAPP",
   );
 }
 
@@ -89,7 +89,7 @@ function buildNonMatchingWhatsAppQaAllowFrom(existingAllowFrom: string[]) {
   throw new Error("Unable to derive a WhatsApp QA groupAllowFrom entry outside allowFrom.");
 }
 
-type WhatsAppQaAgentConfig = NonNullable<NonNullable<OpenClawConfig["agents"]>["list"]>[number];
+type WhatsAppQaAgentConfig = NonNullable<NonNullable<AforaConfig["agents"]>["list"]>[number];
 
 function buildWhatsAppQaScenarioAgent(agentId: string): WhatsAppQaAgentConfig {
   const identityName =
@@ -107,9 +107,9 @@ function buildWhatsAppQaScenarioAgent(agentId: string): WhatsAppQaAgentConfig {
 }
 
 function appendWhatsAppQaAgents(
-  agents: OpenClawConfig["agents"],
+  agents: AforaConfig["agents"],
   agentIds: readonly string[],
-): OpenClawConfig["agents"] {
+): AforaConfig["agents"] {
   if (agentIds.length === 0) {
     return agents;
   }
@@ -128,12 +128,12 @@ function appendWhatsAppQaAgents(
 }
 
 function buildWhatsAppQaBroadcastConfig(
-  baseCfg: OpenClawConfig,
+  baseCfg: AforaConfig,
   params: {
     broadcast?: WhatsAppQaConfigOverrides["broadcast"];
     groupJid?: string;
   },
-): Pick<OpenClawConfig, "agents" | "broadcast"> {
+): Pick<AforaConfig, "agents" | "broadcast"> {
   if (!params.broadcast) {
     return {};
   }
@@ -157,7 +157,7 @@ function buildWhatsAppQaBroadcastConfig(
 }
 
 export function buildWhatsAppQaConfig(
-  baseCfg: OpenClawConfig,
+  baseCfg: AforaConfig,
   params: {
     allowFrom: string[];
     authDir: string;
@@ -167,7 +167,7 @@ export function buildWhatsAppQaConfig(
     overrides?: WhatsAppQaConfigOverrides;
     sutAccountId: string;
   },
-): OpenClawConfig {
+): AforaConfig {
   const pluginAllow = uniqueStrings([...(baseCfg.plugins?.allow ?? []), "whatsapp"]);
   const approvalOverrides = params.overrides?.approvals;
   const groupPolicy = params.overrides?.groupPolicy ?? "open";
@@ -263,7 +263,7 @@ export function buildWhatsAppQaConfig(
             mentionPatterns: [
               ...new Set([
                 ...(baseCfg.messages?.groupChat?.mentionPatterns ?? []),
-                "\\bopenclawqa\\b",
+                "\\baforaqa\\b",
               ]),
             ],
           },

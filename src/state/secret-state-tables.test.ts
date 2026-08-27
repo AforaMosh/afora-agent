@@ -46,13 +46,13 @@ describe("secret state table policy", () => {
   it("classifies every schema table with credential-suggestive columns", async () => {
     const schemas = [
       {
-        name: "openclaw-state-schema.sql",
-        sql: await fs.readFile(new URL("./openclaw-state-schema.sql", import.meta.url), "utf8"),
+        name: "afora-state-schema.sql",
+        sql: await fs.readFile(new URL("./afora-state-schema.sql", import.meta.url), "utf8"),
         secretTables: new Set<string>(STATE_SECRET_TABLE_NAMES),
       },
       {
-        name: "openclaw-agent-schema.sql",
-        sql: await fs.readFile(new URL("./openclaw-agent-schema.sql", import.meta.url), "utf8"),
+        name: "afora-agent-schema.sql",
+        sql: await fs.readFile(new URL("./afora-agent-schema.sql", import.meta.url), "utf8"),
         secretTables: new Set<string>(AGENT_SECRET_TABLE_NAMES),
       },
     ];

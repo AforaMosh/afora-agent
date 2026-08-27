@@ -2,7 +2,7 @@ import {
   embeddedAgentLog,
   formatErrorMessage,
   type AgentMessage,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import type { EmbeddedRunAttemptResult } from "./attempt-terminal.js";
 import {
   readCodexMirroredSessionHistoryMessages,
@@ -66,13 +66,13 @@ function adoptPersistedHostPrompt(params: {
   );
   const persistedPrompt = matches.length === 1 ? matches[0] : undefined;
   const persistedMetadata = persistedPrompt?.message as
-    | { __openclaw?: { mirrorOrigin?: unknown } }
+    | { __afora?: { mirrorOrigin?: unknown } }
     | undefined;
   if (
     !persistedPrompt ||
     readMirrorIdentity(persistedPrompt.message) !== undefined ||
     readCodexMirrorSourceFingerprint(persistedPrompt.message) !== undefined ||
-    persistedMetadata?.["__openclaw"]?.mirrorOrigin === "codex-app-server"
+    persistedMetadata?.["__afora"]?.mirrorOrigin === "codex-app-server"
   ) {
     return params;
   }
@@ -176,7 +176,7 @@ function buildCodexSettledTurnFinalizationContext(params: {
   const messages = Object.freeze(
     structuredClone(params.historyMessages.slice(0, historyBoundaryIndex + 1)),
   );
-  return { source: "openclaw-transcript", messages };
+  return { source: "afora-transcript", messages };
 }
 
 /** Reads and freezes the current active transcript branch after mirroring has settled. */

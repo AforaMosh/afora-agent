@@ -96,7 +96,7 @@ describe("plugin loader records", () => {
     { diagnostics: "", expected: "Error: boom" },
     { diagnostics: "1", expected: "Error: boom\n    at plugin-entry.ts:1:1" },
   ])("uses lifecycle tracing for loader error stacks", ({ diagnostics, expected }) => {
-    vi.stubEnv("OPENCLAW_PLUGIN_LIFECYCLE_TRACE", diagnostics);
+    vi.stubEnv("AFORA_PLUGIN_LIFECYCLE_TRACE", diagnostics);
     const registry = createEmptyPluginRegistry();
     const record = createPluginRecord({
       id: "broken-plugin",

@@ -1,5 +1,5 @@
 ---
-summary: "How OpenClaw resolves provider/model refs, config keys, and the `/model` chat command"
+summary: "How Afora resolves provider/model refs, config keys, and the `/model` chat command"
 read_when:
   - Changing model fallback behavior or selection UX
   - Debugging "model is not allowed" or a stale default provider fallback
@@ -16,7 +16,7 @@ sidebarTitle: "Models CLI"
     Quick provider overview and examples.
   </Card>
   <Card title="Models CLI reference" href="/cli/models">
-    Full `openclaw models` command and flag reference.
+    Full `afora models` command and flag reference.
   </Card>
   <Card title="Configuration reference" href="/gateway/config-agents#agent-defaults">
     Model config keys, defaults, and examples.
@@ -28,7 +28,7 @@ agent runtime. With runtime policy unset or `auto`, OpenAI's provider-owned
 route policy may select Codex only for an exact official HTTPS Platform
 Responses or ChatGPT Responses route with no authored request override; the
 `openai/*` prefix alone never selects Codex. Completions adapters, custom
-endpoints, and authored request behavior stay on OpenClaw. Plaintext official
+endpoints, and authored request behavior stay on Afora. Plaintext official
 HTTP endpoints are rejected. See [OpenAI implicit agent runtime](/providers/openai#implicit-agent-runtime).
 
 Subscription Copilot refs (`github-copilot/*`) can be opted into the external
@@ -49,7 +49,7 @@ OpenAI API-key and ChatGPT/Codex subscription credentials remain distinct. See
     `agents.defaults.model.fallbacks`, tried in order.
   </Step>
   <Step title="Auth failover">
-    Auth-profile rotation happens inside a provider before OpenClaw moves to the next fallback model.
+    Auth-profile rotation happens inside a provider before Afora moves to the next fallback model.
   </Step>
 </Steps>
 
@@ -57,7 +57,7 @@ Related model-config surfaces:
 
 - `agents.defaults.models` stores aliases and per-model settings. Adding an entry does not restrict model overrides.
 - `agents.defaults.modelPolicy.allow` is the optional override allowlist. Use exact refs or trailing prefix wildcards such as `provider/*` and `provider/namespace/*`; omit it or set `[]` to allow any model. Per-agent `agents.entries.*.modelPolicy.allow` replaces the default policy for that agent.
-- `agents.defaults.utilityModel` is an optional lower-cost model for short internal tasks such as generated dashboard session titles, supported channel thread/topic titles, and progress narration. Per-agent `agents.entries.*.utilityModel` overrides it. When unset, OpenClaw uses the primary provider's declared small-model default when one exists (OpenAI → `gpt-5.6-luna`, Anthropic → `claude-haiku-4-5`), otherwise the agent's primary model; set it to an empty string to disable utility routing. Generated titles retry once with the primary model when a distinct utility model fails. For dashboard titles, automatic utility derivation and the regular fallback follow the effective session provider and auth profile; an explicit utility model keeps its configured provider/auth. An empty utility model skips only the alternate small-model route, not dashboard title generation. Utility tasks are separate model calls and may send bounded task content to the selected model provider.
+- `agents.defaults.utilityModel` is an optional lower-cost model for short internal tasks such as generated dashboard session titles, supported channel thread/topic titles, and progress narration. Per-agent `agents.entries.*.utilityModel` overrides it. When unset, Afora uses the primary provider's declared small-model default when one exists (OpenAI → `gpt-5.6-luna`, Anthropic → `claude-haiku-4-5`), otherwise the agent's primary model; set it to an empty string to disable utility routing. Generated titles retry once with the primary model when a distinct utility model fails. For dashboard titles, automatic utility derivation and the regular fallback follow the effective session provider and auth profile; an explicit utility model keeps its configured provider/auth. An empty utility model skips only the alternate small-model route, not dashboard title generation. Utility tasks are separate model calls and may send bounded task content to the selected model provider.
 - `agents.defaults.imageModel` is used only when the primary model cannot accept images.
 - `agents.defaults.pdfModel` is used by the `pdf` tool. If unset, the tool falls back to `imageModel`, then the resolved session/default model.
 - `agents.defaults.mediaModels.{image,music,video}` backs the shared media-generation tools. If unset, each tool infers an auth-backed provider default: current default provider first, then the remaining registered providers for that capability in provider-id order. Cross-provider fallback is the fixed default behavior.
@@ -72,7 +72,7 @@ The same `provider/model` behaves differently depending on where it came from:
 | Source                                                                  | Behavior                                                                                                                                                                                                                                                       |
 | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Configured default (`agents.defaults.model.primary`, per-agent primary) | Normal starting point; uses `agents.defaults.model.fallbacks`.                                                                                                                                                                                                 |
-| Auto fallback                                                           | Temporary recovery state, stored as `modelOverrideSource: "auto"`. OpenClaw periodically reprobes the original primary, clears the auto selection on recovery, and announces fallback/recovery transitions once per state change.                              |
+| Auto fallback                                                           | Temporary recovery state, stored as `modelOverrideSource: "auto"`. Afora periodically reprobes the original primary, clears the auto selection on recovery, and announces fallback/recovery transitions once per state change.                              |
 | User session selection                                                  | Exact and strict. `/model`, the model picker, `session_status(model=...)`, and `sessions.patch` store `modelOverrideSource: "user"`. If that provider/model becomes unreachable, the run fails visibly instead of falling through to another configured model. |
 | Cron `--model` / payload `model`                                        | Per-job primary. Still uses configured fallbacks unless the job supplies its own payload `fallbacks` (`fallbacks: []` forces a strict run).                                                                                                                    |
 
@@ -80,7 +80,7 @@ Other selection rules:
 
 - Changing `agents.defaults.model.primary` does not rewrite existing session pins. If status reports `This session is pinned to X; config primary Y will apply to new/unpinned sessions.`, run `/model default` to clear the pin.
 - CLI default-model and allowlist pickers respect `models.mode: "replace"` by listing only `models.providers.*.models` instead of the full built-in catalog.
-- The Control UI starts from the Gateway's prepared configured model view, so opening chat does not start provider discovery. Opening or refreshing a model picker may discover models required by a trailing `provider/*` policy entry. Default and configured picker views hide catalog rows marked `deprecated` or `disabled` unless that exact model is configured as a primary, fallback, utility/tool model, alias/settings key, or exact policy entry. Hidden rows remain selectable by exact `provider/model` ref. The full built-in catalog, including hidden rows, is reserved for explicit browse views (`models.list` with `view: "all"`, or `openclaw models list --all`).
+- The Control UI starts from the Gateway's prepared configured model view, so opening chat does not start provider discovery. Opening or refreshing a model picker may discover models required by a trailing `provider/*` policy entry. Default and configured picker views hide catalog rows marked `deprecated` or `disabled` unless that exact model is configured as a primary, fallback, utility/tool model, alias/settings key, or exact policy entry. Hidden rows remain selectable by exact `provider/model` ref. The full built-in catalog, including hidden rows, is reserved for explicit browse views (`models.list` with `view: "all"`, or `afora models list --all`).
 - Provider inventory UIs use `models.list` with `view: "provider-config"` to show source-authored `models.providers.*.models` rows without applying picker allowlists.
 
 Full mechanics: [Model failover](/concepts/model-failover).
@@ -94,7 +94,7 @@ Full mechanics: [Model failover](/concepts/model-failover).
 ## Onboarding
 
 ```bash
-openclaw onboard
+afora onboard
 ```
 
 Sets up model and auth for common providers without hand-editing config, including OpenAI Codex subscription OAuth and Anthropic (API key or Claude CLI reuse).
@@ -104,7 +104,7 @@ setup select the exact `openai/gpt-5.6-sol` catalog ref. The bare direct-API
 `openai/gpt-5.6` alias remains supported and resolves to the Sol tier.
 Reauthentication preserves an existing explicit primary model, including
 `openai/gpt-5.5`. If GPT-5.6 is unavailable to the account, select
-`openai/gpt-5.5` explicitly; OpenClaw does not silently downgrade it.
+`openai/gpt-5.5` explicitly; Afora does not silently downgrade it.
 
 ## "Model is not allowed" (and why replies stop)
 
@@ -117,7 +117,7 @@ Add "provider/model", "provider/*", or a narrower "provider/namespace/*" prefix 
 
 Fix it by adding the model or a provider wildcard to the named `modelPolicy.allow` key, removing/emptying that list, or picking a model from `/model list`. If the rejected command included a runtime override such as `/model openai/gpt-5.5 --runtime codex`, fix the allowlist first, then retry the same command.
 
-For local/GGUF models, the allowlist needs the full provider-prefixed ref, for example `ollama/gemma4:26b` or `lmstudio/Gemma4-26b-a4-it-gguf` — check `openclaw models list --provider <provider>` for the exact string. Bare filenames or display names are not enough once the allowlist is active.
+For local/GGUF models, the allowlist needs the full provider-prefixed ref, for example `ollama/gemma4:26b` or `lmstudio/Gemma4-26b-a4-it-gguf` — check `afora models list --provider <provider>` for the exact string. Bare filenames or display names are not enough once the allowlist is active.
 
 To limit providers without listing every model, use trailing prefix wildcard entries. A provider-wide `provider/*` matches every model under that provider; a narrower prefix such as `clawrouter/anthropic/*` matches only that namespace:
 
@@ -158,10 +158,10 @@ Example allowlist with aliases and per-model settings:
 Set the complete list directly:
 
 ```bash
-openclaw config set agents.defaults.modelPolicy.allow '["openai/gpt-5.4","anthropic/*"]' --strict-json
+afora config set agents.defaults.modelPolicy.allow '["openai/gpt-5.4","anthropic/*"]' --strict-json
 ```
 
-`openclaw models set`, provider setup, and `openclaw models aliases add` can add entries under `agents.defaults.models`, but they never change `modelPolicy.allow`. This keeps model metadata and aliases independent from override policy.
+`afora models set`, provider setup, and `afora models aliases add` can add entries under `agents.defaults.models`, but they never change `modelPolicy.allow`. This keeps model metadata and aliases independent from override policy.
 </Accordion>
 
 ## Choose a model for a session
@@ -202,13 +202,13 @@ Direct owner/admin `/model <model>` requests **default scope**: it changes this 
 ```
 
 - `/model` and `/model list` show a compact numbered picker (model family + available providers); `/model <#>` selects from it. The Telegram callback picker is session-only. The Discord picker follows the direct command flow, so an owner/admin submission requests a configured-default update. `/models add` is deprecated and returns a message instead of registering models from chat.
-- **Configured default:** Direct owner/admin `/model <model>` changes the current session and requests a best-effort update of the effective configured default. OpenClaw targets the agent's explicit primary when one exists; otherwise it targets the shared `agents.defaults.model` fallback. Immutable configuration is left unchanged, and asynchronous write failures are logged without reverting the session selection.
+- **Configured default:** Direct owner/admin `/model <model>` changes the current session and requests a best-effort update of the effective configured default. Afora targets the agent's explicit primary when one exists; otherwise it targets the shared `agents.defaults.model` fallback. Immutable configuration is left unchanged, and asynchronous write failures are logged without reverting the session selection.
 - **Current session only:** `/model <model> -s` (or `--session`) changes the current session without changing either configured default. A non-owner's bare `/model <model>` is also session-only because that caller cannot write configured defaults. An explicit user-selected model and auth profile stay pinned across `/new`, `/reset`, session rollover, compaction, and cooldown windows while they remain valid for the provider; automatic profile pins may rotate or clear.
 - **Use the configured default:** `/model default` (with or without `-s`) clears the current session model selection so it inherits the current effective configured default. A compatible auth-profile pin remains; an incompatible pin is cleared. It does not restore an older configured default that a previous owner/admin `/model <model>` replaced.
 - If the agent is idle, a model change applies to the next run immediately. If a run is already active, the switch is queued for the next clean retry point (or a later one, if tool activity or reply output already started).
 - A user-selected `/model` ref is strict for that session: if it becomes unreachable, the reply fails visibly instead of silently falling back through `agents.defaults.model.fallbacks`. Configured defaults and cron job primaries still use fallback chains.
 - `/model status` is the detailed view: auth candidates per provider, and (when configured) the provider endpoint `baseUrl` plus `api` mode.
-- Model refs are parsed by splitting on the first `/`; type `provider/model`. If the model ID itself contains `/` (OpenRouter-style), include the provider prefix, e.g. `/model openrouter/moonshotai/kimi-k2`. If you omit the provider, OpenClaw tries: (1) alias match, (2) unique configured-provider match for that exact unprefixed model id, (3) the configured default provider (deprecated fallback) — and if that provider no longer exposes the configured default model, the first configured provider/model instead, to avoid surfacing a stale removed-provider default.
+- Model refs are parsed by splitting on the first `/`; type `provider/model`. If the model ID itself contains `/` (OpenRouter-style), include the provider prefix, e.g. `/model openrouter/moonshotai/kimi-k2`. If you omit the provider, Afora tries: (1) alias match, (2) unique configured-provider match for that exact unprefixed model id, (3) the configured default provider (deprecated fallback) — and if that provider no longer exposes the configured default model, the first configured provider/model instead, to avoid surfacing a stale removed-provider default.
 - Model refs are normalized to lowercase; provider IDs are otherwise exact, so use the ID advertised by the plugin.
 
 Full command behavior and config: [Slash commands](/tools/slash-commands).
@@ -216,22 +216,22 @@ Full command behavior and config: [Slash commands](/tools/slash-commands).
 ## CLI
 
 ```bash
-openclaw models status
-openclaw models list
-openclaw models set <provider/model>
-openclaw models set-image <provider/model>
-openclaw models scan
-openclaw models aliases list|add|remove
-openclaw models fallbacks list|add|remove|clear
-openclaw models image-fallbacks list|add|remove|clear
-openclaw models auth list|add|login|paste-api-key|paste-token|setup-token|order
+afora models status
+afora models list
+afora models set <provider/model>
+afora models set-image <provider/model>
+afora models scan
+afora models aliases list|add|remove
+afora models fallbacks list|add|remove|clear
+afora models image-fallbacks list|add|remove|clear
+afora models auth list|add|login|paste-api-key|paste-token|setup-token|order
 ```
 
-`openclaw models` with no subcommand is a shortcut for `models status`, which also surfaces OAuth expiry for auth-store profiles (warns within 24h by default). Full flags, JSON shapes, and auth-profile subcommands: [Models CLI reference](/cli/models).
+`afora models` with no subcommand is a shortcut for `models status`, which also surfaces OAuth expiry for auth-store profiles (warns within 24h by default). Full flags, JSON shapes, and auth-profile subcommands: [Models CLI reference](/cli/models).
 
 <AccordionGroup>
   <Accordion title="Scanning (OpenRouter free models)">
-    `openclaw models scan` inspects OpenRouter's public free-model catalog and can probe candidates for tool and image support live. The catalog itself is public, so metadata-only scans (`--no-probe`) need no key; live probing and `--set-default`/`--set-image` require an OpenRouter API key (auth profile or `OPENROUTER_API_KEY`) and fail closed to metadata-only output without one.
+    `afora models scan` inspects OpenRouter's public free-model catalog and can probe candidates for tool and image support live. The catalog itself is public, so metadata-only scans (`--no-probe`) need no key; live probing and `--set-default`/`--set-image` require an OpenRouter API key (auth profile or `OPENROUTER_API_KEY`) and fail closed to metadata-only output without one.
 
     Results rank by: image support, then tool latency, then context size, then parameter count. In a TTY, probed results prompt an interactive fallback selection; non-interactive mode needs `--yes` to accept defaults.
 
@@ -242,8 +242,8 @@ openclaw models auth list|add|login|paste-api-key|paste-token|setup-token|order
 
 ### Hosted catalog updates
 
-OpenClaw can refresh the model metadata shipped by installed provider plugins
-without waiting for a new OpenClaw release. The Gateway makes one background
+Afora can refresh the model metadata shipped by installed provider plugins
+without waiting for a new Afora release. The Gateway makes one background
 JSON `GET` at startup and then checks at most every six hours. The request sends
 no prompts, credentials, model usage, or configuration payload beyond the
 normal HTTP user agent and conditional cache headers.
@@ -255,18 +255,18 @@ base URLs or request headers, and a catalog older than the installed release's
 build stamp is ignored.
 
 The hosted file is published from the public
-[`openclaw/catalog`](https://github.com/openclaw/catalog) GitHub repository.
-Its scheduled workflow refreshes from OpenClaw's shipped plugin manifests and
+[`afora/catalog`](https://github.com/afora/catalog) GitHub repository.
+Its scheduled workflow refreshes from Afora's shipped plugin manifests and
 pricing sources; every catalog content change is preserved as a public commit.
 
-Run `openclaw models refresh` for an immediate metadata and pricing check, or
+Run `afora models refresh` for an immediate metadata and pricing check, or
 disable every hosted catalog request with `models.catalogRefresh.enabled:
 false`. When disabled, pricing stays at bundled and explicitly configured
 values. A self-hosted mirror can be selected with an HTTPS
 `models.catalogRefresh.url` (or localhost HTTP for testing); see
 [configuration reference](/gateway/configuration-reference#models).
 
-Custom providers configured under `models.providers` are written into `models.json` under the agent directory (default `~/.openclaw/agents/<agentId>/agent/models.json`). Provider-plugin catalogs are stored separately as generated plugin-owned catalog shards and load automatically. This file is merged with config by default; set `models.mode: "replace"` to use only your configured providers.
+Custom providers configured under `models.providers` are written into `models.json` under the agent directory (default `~/.afora/agents/<agentId>/agent/models.json`). Provider-plugin catalogs are stored separately as generated plugin-owned catalog shards and load automatically. This file is merged with config by default; set `models.mode: "replace"` to use only your configured providers.
 
 <AccordionGroup>
   <Accordion title="Merge mode precedence">
@@ -282,11 +282,11 @@ Custom providers configured under `models.providers` are written into `models.js
   </Accordion>
 </AccordionGroup>
 
-Marker persistence is source-authoritative: OpenClaw writes markers from the active source config snapshot (pre-resolution), not from resolved runtime secret values, whenever it regenerates `models.json` — including command-driven paths like `openclaw agent`.
+Marker persistence is source-authoritative: Afora writes markers from the active source config snapshot (pre-resolution), not from resolved runtime secret values, whenever it regenerates `models.json` — including command-driven paths like `afora agent`.
 
 ## Related
 
-- [Agent runtimes](/concepts/agent-runtimes) — OpenClaw, Codex, and other agent loop runtimes
+- [Agent runtimes](/concepts/agent-runtimes) — Afora, Codex, and other agent loop runtimes
 - [Configuration reference](/gateway/config-agents#agent-defaults) — model config keys
 - [Image generation](/tools/image-generation) — image model configuration
 - [Model failover](/concepts/model-failover) — fallback chains

@@ -3,23 +3,23 @@ import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import { assertSqliteSchemaContains } from "../../infra/sqlite-schema-contract.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
-import { getOpenClawStateRuntimeSchema } from "../../state/openclaw-state-schema-compatibility.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../../state/afora-state-db.js";
+import { getAforaStateRuntimeSchema } from "../../state/afora-state-schema-compatibility.js";
 import { createWorkerSessionPlacementStore } from "./placement-store.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 describe("worker placement move schema", () => {
   it("survives a same-version previous reader and candidate reopen", () => {
-    const stateDir = tempDirs.make("openclaw-placement-move-schema-");
-    const options = { env: { OPENCLAW_STATE_DIR: stateDir } };
-    const database = openOpenClawStateDatabase(options);
+    const stateDir = tempDirs.make("afora-placement-move-schema-");
+    const options = { env: { AFORA_STATE_DIR: stateDir } };
+    const database = openAforaStateDatabase(options);
     const versionBefore = database.db.prepare("PRAGMA user_version").get();
     const metadataBefore = database.db
       .prepare("SELECT schema_version, updated_at FROM schema_meta WHERE meta_key = 'primary'")
@@ -53,14 +53,14 @@ describe("worker placement move schema", () => {
       target: { kind: "profile", profileId: "profile-destination" },
     });
     const databasePath = database.path;
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
 
     const previousReader = new DatabaseSync(databasePath);
     expect(() =>
       assertSqliteSchemaContains(
         previousReader,
         "previous state schema",
-        getOpenClawStateRuntimeSchema({ includeVersionLazyAdditiveTables: false }),
+        getAforaStateRuntimeSchema({ includeVersionLazyAdditiveTables: false }),
       ),
     ).not.toThrow();
     expect(
@@ -72,7 +72,7 @@ describe("worker placement move schema", () => {
     ).toEqual({ state: "draining", transition_generation: 5 });
     previousReader.close();
 
-    const reopened = openOpenClawStateDatabase(options);
+    const reopened = openAforaStateDatabase(options);
     const reopenedStore = createWorkerSessionPlacementStore({ database: reopened });
     expect(reopenedStore.getPlacementMove("session-move")).toEqual(begun.intent);
     expect(reopened.db.prepare("PRAGMA user_version").get()).toEqual(versionBefore);

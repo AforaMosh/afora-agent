@@ -27,7 +27,7 @@ import {
 
 describe("setup admission", () => {
   beforeEach(() => {
-    mocks.stateDir = tempDirs.make("openclaw-setup-admission-");
+    mocks.stateDir = tempDirs.make("afora-setup-admission-");
   });
 
   afterEach(() => {

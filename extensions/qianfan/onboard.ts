@@ -2,8 +2,8 @@
 import {
   createDefaultModelsPresetAppliers,
   type ModelApi,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/provider-onboard";
+  type AforaConfig,
+} from "afora-agent/plugin-sdk/provider-onboard";
 import {
   buildQianfanProvider,
   QIANFAN_BASE_URL,
@@ -12,7 +12,7 @@ import {
 
 export const QIANFAN_DEFAULT_MODEL_REF = `qianfan/${QIANFAN_DEFAULT_MODEL_ID}`;
 
-function resolveQianfanPreset(cfg: OpenClawConfig): {
+function resolveQianfanPreset(cfg: AforaConfig): {
   api: ModelApi;
   baseUrl: string;
   defaultModels: NonNullable<ReturnType<typeof buildQianfanProvider>["models"]>;
@@ -40,7 +40,7 @@ function resolveQianfanPreset(cfg: OpenClawConfig): {
 
 export const { applyConfig: applyQianfanConfig } = createDefaultModelsPresetAppliers<[]>({
   primaryModelRef: QIANFAN_DEFAULT_MODEL_REF,
-  resolveParams: (cfg: OpenClawConfig) => {
+  resolveParams: (cfg: AforaConfig) => {
     const preset = resolveQianfanPreset(cfg);
     return {
       providerId: "qianfan",

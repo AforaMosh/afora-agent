@@ -1,13 +1,13 @@
 // Runtime plan tool tests cover schema normalization and diagnostics when the
 // runtime plan owns tool policy, with legacy provider fallback still available.
 
-import { expectDefined } from "@openclaw/normalization-core";
-import type { AgentTool } from "openclaw/plugin-sdk/agent-core";
+import { expectDefined } from "@afora/normalization-core";
+import type { AgentTool } from "afora-agent/plugin-sdk/agent-core";
 import {
   createNativeOpenAIResponsesModel,
   createParameterFreeTool,
   normalizedParameterFreeSchema,
-} from "openclaw/plugin-sdk/agent-runtime-test-contracts";
+} from "afora-agent/plugin-sdk/agent-runtime-test-contracts";
 import { Type } from "typebox";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getPluginToolMeta, setPluginToolMeta } from "../../plugins/tools.js";
@@ -59,12 +59,12 @@ describe("AgentRuntimePlan tool policy helpers", () => {
         provider: "openai",
         modelId: "gpt-5.4",
         modelApi: "openai-responses",
-        workspaceDir: "/tmp/openclaw-runtime-plan-tools",
+        workspaceDir: "/tmp/afora-runtime-plan-tools",
         model,
       }),
     ).toBe(normalized);
     expect(normalize).toHaveBeenCalledWith(tools, {
-      workspaceDir: "/tmp/openclaw-runtime-plan-tools",
+      workspaceDir: "/tmp/afora-runtime-plan-tools",
       modelApi: "openai-responses",
       model,
     });
@@ -186,7 +186,7 @@ describe("AgentRuntimePlan tool policy helpers", () => {
       provider: "openai",
       modelId: "gpt-5.4",
       modelApi: "openai-responses",
-      workspaceDir: "/tmp/openclaw-runtime-plan-tools",
+      workspaceDir: "/tmp/afora-runtime-plan-tools",
       model: createNativeOpenAIResponsesModel() as never,
     });
 
@@ -196,7 +196,7 @@ describe("AgentRuntimePlan tool policy helpers", () => {
       tools: [createParameterFreeTool()],
       provider: "openai",
       config: undefined,
-      workspaceDir: "/tmp/openclaw-runtime-plan-tools",
+      workspaceDir: "/tmp/afora-runtime-plan-tools",
       env: process.env,
       modelId: "gpt-5.4",
       modelApi: "openai-responses",
@@ -441,12 +441,12 @@ describe("AgentRuntimePlan tool policy helpers", () => {
       provider: "openai",
       modelId: "gpt-5.4",
       modelApi: "openai-responses",
-      workspaceDir: "/tmp/openclaw-runtime-plan-tools",
+      workspaceDir: "/tmp/afora-runtime-plan-tools",
       model,
     });
 
     expect(logDiagnostics).toHaveBeenCalledWith(tools, {
-      workspaceDir: "/tmp/openclaw-runtime-plan-tools",
+      workspaceDir: "/tmp/afora-runtime-plan-tools",
       modelApi: "openai-responses",
       model,
     });

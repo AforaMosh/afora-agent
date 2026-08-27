@@ -54,7 +54,7 @@ jobs:
               "HEAD",
               "--",
               "apps/ios/",
-              "apps/shared/OpenClawKit/Sources/",
+              "apps/shared/AforaKit/Sources/",
               "apps/swabble/Sources/SwabbleKit/",
               ".github/workflows/ios-periphery.yml",
               ".github/workflows/ios-periphery-comment.yml",
@@ -76,7 +76,7 @@ jobs:
     name: Scan iOS dead code
     needs: scope
     if: ${{ needs.scope.outputs.should-scan == 'true' }}
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' || github.run_attempt > 1) && 'macos-26' || (github.repository == 'openclaw/openclaw' && 'blacksmith-12vcpu-macos-26' || 'macos-26') }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' || github.run_attempt > 1) && 'macos-26' || (github.repository == 'AforaMosh/afora-agent' && 'blacksmith-12vcpu-macos-26' || 'macos-26') }}
     timeout-minutes: 45
     steps:
       - name: Checkout
@@ -113,7 +113,7 @@ jobs:
         run: |
           brew update
           brew install periphery
-          swift_tools_dir="$RUNNER_TEMP/openclaw-swift-tools"
+          swift_tools_dir="$RUNNER_TEMP/afora-swift-tools"
           # Homebrew's xcodegen bottle can arrive corrupted on runner images;
           # use the repo's pinned, checksummed release installer like ci.yml.
           ./scripts/install-xcodegen.sh "$swift_tools_dir"

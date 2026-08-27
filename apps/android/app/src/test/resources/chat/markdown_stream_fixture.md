@@ -11,7 +11,7 @@ JSON event pipeline.
 - unordered item one
 - unordered item two
   - nested child with `code`
-  - nested child with a [link](https://docs.openclaw.ai)
+  - nested child with a [link](https://docs.afora.ai)
 - unordered item three
 
 1. ordered first

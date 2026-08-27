@@ -18,11 +18,11 @@ vi.mock("ws", () => ({
   default: mocks.FakeWebSocket,
 }));
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ({
   fetchWithSsrFGuard: mocks.fetchWithSsrFGuardMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/provider-auth", () => ({
+vi.mock("afora-agent/plugin-sdk/provider-auth", () => ({
   isProviderAuthProfileConfigured: mocks.isProviderAuthProfileConfiguredMock,
   resolveProviderAuthProfileApiKey: mocks.resolveProviderAuthProfileApiKeyMock,
 }));
@@ -59,14 +59,14 @@ describe("OpenAI realtime voice bridge tools", () => {
     emitServerEvent(socket, {
       type: "response.function_call_arguments.delta",
       item_id: "item_tool_1",
-      name: "openclaw_agent_consult",
+      name: "afora_agent_consult",
       call_id: "call_1",
       delta: '{"question":"provisional',
     });
     emitServerEvent(socket, {
       type: "response.function_call_arguments.done",
       item_id: "item_tool_1",
-      name: "openclaw_agent_consult",
+      name: "afora_agent_consult",
       call_id: "call_1",
       arguments: '{"question":"still provisional"}',
     });
@@ -75,7 +75,7 @@ describe("OpenAI realtime voice bridge tools", () => {
       item: {
         id: "item_tool_1",
         type: "function_call",
-        name: "openclaw_agent_consult",
+        name: "afora_agent_consult",
         call_id: "call_1",
         arguments: '{"question":"not terminal"}',
       },
@@ -92,7 +92,7 @@ describe("OpenAI realtime voice bridge tools", () => {
             id: "item_tool_1",
             type: "function_call",
             status: "completed",
-            name: "openclaw_agent_consult",
+            name: "afora_agent_consult",
             call_id: "call_1",
             arguments: '{"question":"delegate this"}',
           },
@@ -106,7 +106,7 @@ describe("OpenAI realtime voice bridge tools", () => {
     expect(onToolCall).toHaveBeenCalledWith({
       itemId: "item_tool_1",
       callId: "call_1",
-      name: "openclaw_agent_consult",
+      name: "afora_agent_consult",
       args: { question: "delegate this" },
     });
   });
@@ -128,7 +128,7 @@ describe("OpenAI realtime voice bridge tools", () => {
             id: "item_tool_1",
             type: "function_call",
             status: "incomplete",
-            name: "openclaw_agent_consult",
+            name: "afora_agent_consult",
             call_id: "call_1",
             arguments: '{"question":"unfinished"}',
           },

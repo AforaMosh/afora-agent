@@ -3,16 +3,16 @@ import { StickerFormatType, type APIAttachment, type APIStickerItem } from "disc
 import {
   formatMediaPlaceholderText,
   type MediaPlaceholderTextFact,
-} from "openclaw/plugin-sdk/channel-inbound";
-import { getFileExtension, normalizeMimeType } from "openclaw/plugin-sdk/media-mime";
-import { saveRemoteMedia, type FetchLike } from "openclaw/plugin-sdk/media-runtime";
-import { getChildLogger, logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import type { SsrFPolicy } from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/channel-inbound";
+import { getFileExtension, normalizeMimeType } from "afora-agent/plugin-sdk/media-mime";
+import { saveRemoteMedia, type FetchLike } from "afora-agent/plugin-sdk/media-runtime";
+import { getChildLogger, logVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import type { SsrFPolicy } from "afora-agent/plugin-sdk/ssrf-runtime";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
   uniqueStrings,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { Message } from "../internal/discord.js";
 import {
   resolveDiscordMessageSnapshots,

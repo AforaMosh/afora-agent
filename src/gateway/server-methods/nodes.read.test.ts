@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it, vi } from "vitest";
 import type { PairedDevice } from "../../infra/device-pairing.js";
 import { resolveNodePairingState } from "../../infra/device-pairing.js";

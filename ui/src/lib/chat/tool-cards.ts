@@ -2,8 +2,8 @@ import {
   asNullableObjectRecord as readRecord,
   asNullableRecord,
   isRecord,
-} from "@openclaw/normalization-core/record-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+} from "@afora/normalization-core/record-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 // Control UI chat domain owns pure tool-card extraction rules.
 import {
   extractCanvasFromDetails,
@@ -25,8 +25,8 @@ function resolveTranscriptMessageId(message: Record<string, unknown>): string | 
   if (typeof message.messageId === "string" && message.messageId.trim()) {
     return message.messageId;
   }
-  const openClawMeta = message["__openclaw"];
-  const transcriptMeta = asNullableRecord(openClawMeta);
+  const aforaMeta = message["__afora"];
+  const transcriptMeta = asNullableRecord(aforaMeta);
   return typeof transcriptMeta?.id === "string" && transcriptMeta.id.trim()
     ? transcriptMeta.id
     : undefined;
@@ -299,8 +299,8 @@ function extractToolCards(message: unknown, prefix = "tool"): ToolCard[] {
   const m = message as Record<string, unknown>;
   const content = normalizeContent(m.content);
   const messageIsError = readToolErrorFlag(m);
-  const isLiveToolStream = m["__openclawToolStreamLive"] === true;
-  const liveDiff = readRecord(m["__openclawToolStreamDiffStat"]);
+  const isLiveToolStream = m["__aforaToolStreamLive"] === true;
+  const liveDiff = readRecord(m["__aforaToolStreamDiffStat"]);
   const liveDiffStat =
     typeof liveDiff?.added === "number" &&
     Number.isInteger(liveDiff.added) &&
@@ -330,7 +330,7 @@ function extractToolCards(message: unknown, prefix = "tool"): ToolCard[] {
         args,
         inputText: serializeToolInput(args),
         ...(isLiveToolStream
-          ? { live: true, completed: m["__openclawToolStreamResultReceived"] === true }
+          ? { live: true, completed: m["__aforaToolStreamResultReceived"] === true }
           : {}),
         ...(liveDiffStat ? { liveDiffStat } : {}),
         messageId: transcriptMessageId,

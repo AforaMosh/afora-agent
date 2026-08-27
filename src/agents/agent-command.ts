@@ -1,6 +1,6 @@
 /** Main agent command orchestration for sessions, model selection, delivery, and attempts. */
-import { coerceErrorMessage } from "@openclaw/normalization-core/error-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { coerceErrorMessage } from "@afora/normalization-core/error-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { VerboseLevel } from "../auto-reply/thinking.js";
 import type { CliDeps } from "../cli/deps.types.js";
 import {

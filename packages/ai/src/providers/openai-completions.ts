@@ -431,9 +431,9 @@ export const streamOpenAICompletions: StreamFunction<
         finishTextBlock();
       };
       const beginReasoning = (hasFollowingVisibleText: boolean, forceStrict = false) => {
-        if (!output.openclawDelivery?.textPhaseRequiresTerminal) {
-          output.openclawDelivery = {
-            ...output.openclawDelivery,
+        if (!output.aforaDelivery?.textPhaseRequiresTerminal) {
+          output.aforaDelivery = {
+            ...output.aforaDelivery,
             textPhaseRequiresTerminal: true,
           };
         }
@@ -455,7 +455,7 @@ export const streamOpenAICompletions: StreamFunction<
         stage: "completions",
         abort: firstEventAbort.abort,
         onTimeout: getFirstStreamEventTimeoutHandler(options),
-        hint: "The provider may be stalled while parsing the tool payload; retry with a smaller tool surface or enable OPENCLAW_DEBUG_MODEL_PAYLOAD=tools to inspect exposed tools.",
+        hint: "The provider may be stalled while parsing the tool payload; retry with a smaller tool surface or enable AFORA_DEBUG_MODEL_PAYLOAD=tools to inspect exposed tools.",
       });
 
       for await (const chunk of guardedOpenaiStream) {

@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import { buildControlUiSessionPath } from "@openclaw/session-url-contract";
+import { buildControlUiSessionPath } from "@afora/session-url-contract";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GatewayBrowserClient } from "../api/gateway.ts";
 import type { GatewaySessionRow } from "../api/types.ts";
@@ -9,7 +9,7 @@ import type { ApplicationContext } from "../app/context.ts";
 import { i18n } from "../i18n/index.ts";
 import { SessionLinkHovercardProvider } from "./session-link-hovercard.runtime.ts";
 
-const ELEMENT_NAME = `test-openclaw-session-link-hovercard-provider-${crypto.randomUUID()}`;
+const ELEMENT_NAME = `test-afora-session-link-hovercard-provider-${crypto.randomUUID()}`;
 const SESSION_KEY = "agent:main:research";
 
 customElements.define(ELEMENT_NAME, class extends SessionLinkHovercardProvider {});
@@ -79,7 +79,7 @@ async function hover(anchor: HTMLAnchorElement): Promise<void> {
   await vi.advanceTimersByTimeAsync(250);
 }
 
-describe("openclaw-session-link-hovercard-provider", () => {
+describe("afora-session-link-hovercard-provider", () => {
   beforeEach(() => {
     setSessionPathBuilder(buildControlUiSessionPath);
     vi.useFakeTimers();

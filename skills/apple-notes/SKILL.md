@@ -4,7 +4,7 @@ description: "Create, view, edit, delete, search, move, or export Apple Notes vi
 homepage: https://github.com/antoniorodr/memo
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "emoji": "📝",
         "os": ["darwin"],

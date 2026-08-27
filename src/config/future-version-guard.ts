@@ -1,11 +1,11 @@
 // Rejects config files written by unsupported future versions.
 import { VERSION } from "../version.js";
-import type { ConfigFileSnapshot, OpenClawConfig } from "./types.js";
+import type { ConfigFileSnapshot, AforaConfig } from "./types.js";
 import { shouldWarnOnTouchedVersion } from "./version.js";
 
 /** Override env var for intentional older-binary destructive config actions. */
 export const ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS_ENV =
-  "OPENCLAW_ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS";
+  "AFORA_ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS";
 
 /** Block payload shown when an older binary would mutate newer-written config. */
 export type FutureConfigActionBlock = {
@@ -19,7 +19,7 @@ export type FutureConfigActionBlock = {
 type FutureConfigGuardParams = {
   action: string;
   snapshot?: Pick<ConfigFileSnapshot, "config" | "sourceConfig"> | null;
-  config?: OpenClawConfig | null;
+  config?: AforaConfig | null;
   currentVersion?: string;
   env?: Record<string, string | undefined>;
 };
@@ -68,9 +68,9 @@ export function resolveFutureConfigActionBlock(
     action: params.action,
     currentVersion,
     touchedVersion,
-    message: `Refusing to ${params.action} because this OpenClaw binary (${currentVersion}) is older than the config last written by OpenClaw ${touchedVersion}.`,
+    message: `Refusing to ${params.action} because this Afora binary (${currentVersion}) is older than the config last written by Afora ${touchedVersion}.`,
     hints: [
-      "Run the newer openclaw binary on PATH, or reinstall the intended gateway service from the newer install.",
+      "Run the newer afora binary on PATH, or reinstall the intended gateway service from the newer install.",
       `Set ${ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS_ENV}=1 only for an intentional downgrade or recovery action.`,
     ],
   };

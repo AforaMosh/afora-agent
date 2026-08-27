@@ -1,4 +1,4 @@
-import type { SessionCatalogTranscriptItem } from "openclaw/plugin-sdk/session-catalog";
+import type { SessionCatalogTranscriptItem } from "afora-agent/plugin-sdk/session-catalog";
 import type { CodexThreadItem } from "./app-server/protocol.js";
 
 const CODEX_MESSAGE_TYPES = new Map<string, SessionCatalogTranscriptItem["type"]>([

@@ -1,5 +1,5 @@
 import type { Message } from "grammy/types";
-import { questionGatewayRuntime } from "openclaw/plugin-sdk/question-gateway-runtime";
+import { questionGatewayRuntime } from "afora-agent/plugin-sdk/question-gateway-runtime";
 import type { RegisterTelegramHandlerParams } from "./bot-handlers.types.js";
 import { buildTelegramThreadParams, resolveTelegramMessageThreadSpec } from "./bot/helpers.js";
 import type { TelegramQuestionCallback } from "./question-callback-data.js";

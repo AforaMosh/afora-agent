@@ -521,7 +521,7 @@ describe("handleAssistantFailover", () => {
     });
   });
 
-  describe("surface_error branch (openclaw#70124)", () => {
+  describe("surface_error branch (afora#70124)", () => {
     it("throws a billing FailoverError so the webchat can render the provider failure", async () => {
       const logDecision = vi.fn();
       const outcome = await handleAssistantFailover(

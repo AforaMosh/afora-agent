@@ -40,19 +40,19 @@ export function loadVitestExperimentalConfig(
   } = {};
   const windowsEnv = isWindowsEnv(env, platform);
 
-  if (!windowsEnv && !isDisabled(env.OPENCLAW_VITEST_FS_MODULE_CACHE)) {
+  if (!windowsEnv && !isDisabled(env.AFORA_VITEST_FS_MODULE_CACHE)) {
     experimental.fsModuleCache = true;
   }
-  if (windowsEnv && isEnabled(env.OPENCLAW_VITEST_FS_MODULE_CACHE)) {
+  if (windowsEnv && isEnabled(env.AFORA_VITEST_FS_MODULE_CACHE)) {
     experimental.fsModuleCache = true;
   }
-  if (experimental.fsModuleCache && env.OPENCLAW_VITEST_FS_MODULE_CACHE_PATH?.trim()) {
-    experimental.fsModuleCachePath = env.OPENCLAW_VITEST_FS_MODULE_CACHE_PATH.trim();
+  if (experimental.fsModuleCache && env.AFORA_VITEST_FS_MODULE_CACHE_PATH?.trim()) {
+    experimental.fsModuleCachePath = env.AFORA_VITEST_FS_MODULE_CACHE_PATH.trim();
   }
-  if (isEnabled(env.OPENCLAW_VITEST_IMPORT_DURATIONS)) {
+  if (isEnabled(env.AFORA_VITEST_IMPORT_DURATIONS)) {
     experimental.importDurations = { print: true };
   }
-  if (isEnabled(env.OPENCLAW_VITEST_PRINT_IMPORT_BREAKDOWN)) {
+  if (isEnabled(env.AFORA_VITEST_PRINT_IMPORT_BREAKDOWN)) {
     experimental.printImportBreakdown = true;
   }
 

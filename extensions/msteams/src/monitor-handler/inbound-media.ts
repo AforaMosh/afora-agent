@@ -2,7 +2,7 @@
 import {
   formatInboundMediaUnavailableText,
   type MediaPlaceholderTextFact,
-} from "openclaw/plugin-sdk/channel-inbound";
+} from "afora-agent/plugin-sdk/channel-inbound";
 import {
   buildMSTeamsGraphMessageUrl,
   downloadMSTeamsAttachments,

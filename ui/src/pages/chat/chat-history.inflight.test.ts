@@ -227,12 +227,12 @@ describe("chat history in-flight assistant recovery", () => {
       {
         role: "assistant",
         content: "Saved opening.",
-        __openclaw: { idempotencyKey: "run-reconnected" },
+        __afora: { idempotencyKey: "run-reconnected" },
       },
       {
         role: "user",
         content: "Also check the result.",
-        __openclaw: {
+        __afora: {
           idempotencyKey: "run-steer:user",
           steerTargetRunId: "run-reconnected",
         },
@@ -253,12 +253,12 @@ describe("chat history in-flight assistant recovery", () => {
     const originalUser = {
       role: "user",
       content: "Start working.",
-      __openclaw: { idempotencyKey: "run-reconnected:user" },
+      __afora: { idempotencyKey: "run-reconnected:user" },
     };
     const steerUser = {
       role: "user",
       content: "Also check the result.",
-      __openclaw: {
+      __afora: {
         idempotencyKey: "run-steer:user",
         steerTargetRunId: "run-reconnected",
       },
@@ -268,7 +268,7 @@ describe("chat history in-flight assistant recovery", () => {
       {
         role: "assistant",
         content: "Saved opening.",
-        __openclaw: { idempotencyKey: "run-reconnected" },
+        __afora: { idempotencyKey: "run-reconnected" },
       },
       steerUser,
     ];
@@ -329,17 +329,17 @@ describe("chat history in-flight assistant recovery", () => {
       {
         role: "user",
         content: "Start working.",
-        __openclaw: { idempotencyKey: "run-reconnected:user", seq: 1 },
+        __afora: { idempotencyKey: "run-reconnected:user", seq: 1 },
       },
       {
         role: "assistant",
         content: "Saved opening.",
-        __openclaw: { id: "saved-opening", idempotencyKey: "run-reconnected", seq: 2 },
+        __afora: { id: "saved-opening", idempotencyKey: "run-reconnected", seq: 2 },
       },
       {
         role: "user",
         content: "Also check the result.",
-        __openclaw: {
+        __afora: {
           idempotencyKey: "run-steer:user",
           seq: 3,
           steerTargetRunId: "run-reconnected",
@@ -348,7 +348,7 @@ describe("chat history in-flight assistant recovery", () => {
       {
         role: "user",
         content: "Queued follow-up.",
-        __openclaw: { idempotencyKey: "queued-run:user", seq: 4 },
+        __afora: { idempotencyKey: "queued-run:user", seq: 4 },
       },
     ];
     history.inFlightRun!.text = "Saved opening. Trimmed live tail.";
@@ -415,7 +415,7 @@ describe("chat history in-flight assistant recovery", () => {
         message: {
           role: "user",
           content: "Later authoritative user.",
-          __openclaw: {
+          __afora: {
             id: "later-authoritative-user",
             idempotencyKey: "later-run:user",
             seq: 6,
@@ -447,7 +447,7 @@ describe("chat history in-flight assistant recovery", () => {
       {
         role: "assistant",
         content: "Saved opening.",
-        __openclaw: { idempotencyKey: "run-earlier" },
+        __afora: { idempotencyKey: "run-earlier" },
       },
       { role: "user", content: "Start the next request." },
     ];
@@ -469,7 +469,7 @@ describe("chat history in-flight assistant recovery", () => {
       {
         role: "assistant",
         content: "OK.",
-        __openclaw: { idempotencyKey: "run-reconnected" },
+        __afora: { idempotencyKey: "run-reconnected" },
       },
     ];
     history.inFlightRun!.text = "OK. Finished. New details";
@@ -698,12 +698,12 @@ describe("chat history in-flight assistant recovery", () => {
         {
           role: "assistant",
           content: "Saved opening. Buffered",
-          __openclaw: { idempotencyKey: "run-reconnected" },
+          __afora: { idempotencyKey: "run-reconnected" },
         },
         {
           role: "user",
           content: "Also check the result.",
-          __openclaw: { idempotencyKey: "run-steer:user" },
+          __afora: { idempotencyKey: "run-steer:user" },
         },
       ],
     },

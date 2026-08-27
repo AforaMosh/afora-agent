@@ -8,7 +8,7 @@ import {
   type ResolveQuestionOverGatewayResult,
 } from "./question-gateway-resolver.js";
 
-const QUESTION_REACTION_CHANNEL_DATA_KEY = "openclawQuestionReaction";
+const QUESTION_REACTION_CHANNEL_DATA_KEY = "aforaQuestionReaction";
 
 export const QUESTION_REACTION_EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"] as const;
 

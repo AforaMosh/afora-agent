@@ -1,7 +1,7 @@
 // Discord tests cover channel actions plugin behavior.
-import type { ChannelMessageActionContext } from "openclaw/plugin-sdk/channel-contract";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { withEnv } from "openclaw/plugin-sdk/test-env";
+import type { ChannelMessageActionContext } from "afora-agent/plugin-sdk/channel-contract";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { withEnv } from "afora-agent/plugin-sdk/test-env";
 import { describe, expect, it, vi } from "vitest";
 
 const handleDiscordMessageActionMock = vi.hoisted(() =>
@@ -24,7 +24,7 @@ describe("discordMessageActions", () => {
               enabled: true,
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
       });
 
       expect(discovery).toEqual({
@@ -50,7 +50,7 @@ describe("discordMessageActions", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(discovery?.capabilities).toEqual(["presentation"]);
@@ -98,7 +98,7 @@ describe("discordMessageActions", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
     });
 
     expect(discovery?.capabilities).toEqual(["presentation"]);
@@ -188,7 +188,7 @@ describe("discordMessageActions", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       accountId: "ops",
     });
 
@@ -249,7 +249,7 @@ describe("discordMessageActions", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const defaultDiscovery = discordMessageActions.describeMessageTool?.({
       cfg,
@@ -341,7 +341,7 @@ describe("discordMessageActions", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(discovery?.actions).toContain("send");
@@ -359,7 +359,7 @@ describe("discordMessageActions", () => {
             token: "Bot token-main",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
     expect(discovery?.schema).toBeUndefined();
   });
@@ -410,7 +410,7 @@ describe("discordMessageActions", () => {
       ctx: {
         channel: "discord",
         action: "send",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         params: {
           components: {
             text: "Choose",
@@ -454,7 +454,7 @@ describe("discordMessageActions", () => {
       ctx: {
         channel: "discord",
         action: "send",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         params: {},
         sessionKey: "agent:main:discord:channel:c1",
         inboundEventKind: "room_event",
@@ -467,7 +467,7 @@ describe("discordMessageActions", () => {
       text: "hello",
       channelData: {
         discord: {
-          __openclawInboundEventDelivery: {
+          __aforaInboundEventDelivery: {
             sessionKey: "agent:main:discord:channel:c1",
             inboundEventKind: "room_event",
           },
@@ -481,7 +481,7 @@ describe("discordMessageActions", () => {
       ctx: {
         channel: "discord",
         action: "send",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         params: {
           components: () => [],
         },
@@ -500,7 +500,7 @@ describe("discordMessageActions", () => {
           token: "Bot token-main",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const toolContext: ChannelMessageActionContext["toolContext"] = {
       currentChannelProvider: "discord",
     };

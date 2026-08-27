@@ -2,14 +2,14 @@
  * Extracts native Codex subagent completion notifications from trusted
  * inter-agent commentary messages emitted by the app-server.
  */
-import { readStringField as readString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { readStringField as readString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { CodexServerNotification, JsonObject, JsonValue } from "./protocol.js";
 import { isJsonObject } from "./protocol.js";
 
 const CODEX_SUBAGENT_NOTIFICATION_START = "<subagent_notification>";
 const CODEX_SUBAGENT_NOTIFICATION_END = "</subagent_notification>";
 
-/** Terminal status values OpenClaw accepts for Codex native subagent completion. */
+/** Terminal status values Afora accepts for Codex native subagent completion. */
 type CodexNativeSubagentCompletionStatus = "succeeded" | "failed" | "cancelled";
 
 type CodexNativeSubagentCompletionDetails = {

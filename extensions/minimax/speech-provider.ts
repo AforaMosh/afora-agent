@@ -1,23 +1,23 @@
 // Minimax provider module implements model/runtime integration.
-import { transcodeAudioBufferToOpus } from "openclaw/plugin-sdk/media-runtime";
+import { transcodeAudioBufferToOpus } from "afora-agent/plugin-sdk/media-runtime";
 import {
   isProviderAuthProfileConfigured,
-  type OpenClawConfig,
+  type AforaConfig,
   resolveProviderAuthProfileApiKey,
-} from "openclaw/plugin-sdk/provider-auth";
-import { normalizeResolvedSecretInputString } from "openclaw/plugin-sdk/secret-input";
+} from "afora-agent/plugin-sdk/provider-auth";
+import { normalizeResolvedSecretInputString } from "afora-agent/plugin-sdk/secret-input";
 import type {
   SpeechDirectiveTokenParseContext,
   SpeechProviderConfig,
   SpeechProviderOverrides,
   SpeechProviderPlugin,
-} from "openclaw/plugin-sdk/speech-core";
+} from "afora-agent/plugin-sdk/speech-core";
 import {
   parseSpeechDirectiveNumberOverride,
   resolveSpeechProviderApiKey,
   trimToUndefined,
-} from "openclaw/plugin-sdk/speech-core";
-import { asFiniteNumberInRange, asOptionalRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/speech-core";
+import { asFiniteNumberInRange, asOptionalRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   DEFAULT_MINIMAX_TTS_BASE_URL,
   MINIMAX_TTS_MODELS,
@@ -51,7 +51,7 @@ type MinimaxTtsProviderOverrides = {
   pitch?: number;
 };
 
-function resolveConfiguredPortalTtsBaseUrl(cfg: OpenClawConfig | undefined): string | undefined {
+function resolveConfiguredPortalTtsBaseUrl(cfg: AforaConfig | undefined): string | undefined {
   const providers = asOptionalRecord(asOptionalRecord(cfg?.models)?.providers);
   const portalProvider = asOptionalRecord(providers?.[MINIMAX_PORTAL_PROVIDER_ID]);
   const portalBaseUrl = trimToUndefined(portalProvider?.baseUrl);
@@ -65,7 +65,7 @@ function resolveMinimaxTokenPlanEnvKey(): string | undefined {
 }
 
 async function resolveMinimaxPortalProfileToken(
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
 ): Promise<string | undefined> {
   return await resolveProviderAuthProfileApiKey({
     cfg,
@@ -74,7 +74,7 @@ async function resolveMinimaxPortalProfileToken(
 }
 
 async function resolveMinimaxTtsApiKey(params: {
-  cfg: OpenClawConfig | undefined;
+  cfg: AforaConfig | undefined;
   configApiKey?: string;
 }): Promise<string | undefined> {
   return resolveSpeechProviderApiKey(
@@ -94,7 +94,7 @@ function resolveMinimaxDirectTtsApiKey(configApiKey?: string): string | undefine
 
 function normalizeMinimaxProviderConfig(
   rawConfig: Record<string, unknown>,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): MinimaxTtsProviderConfig {
   const providers = asOptionalRecord(rawConfig.providers);
   const raw = asOptionalRecord(providers?.minimax) ?? asOptionalRecord(rawConfig.minimax);
@@ -138,7 +138,7 @@ function normalizeMinimaxPitch(value: unknown): number | undefined {
 
 function readMinimaxProviderConfig(
   config: SpeechProviderConfig,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): MinimaxTtsProviderConfig {
   const normalized = normalizeMinimaxProviderConfig({}, cfg);
   return {

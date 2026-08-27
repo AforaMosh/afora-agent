@@ -393,8 +393,8 @@ describe("DraftSubmissionFlow", () => {
     place.setAgentsHydrated(true);
     place.adoptAgentDefaults();
     place.selectRemoteProject({
-      identity: "openclaw/openclaw",
-      cloneUrl: "https://github.com/openclaw/openclaw.git",
+      identity: "AforaMosh/afora-agent",
+      cloneUrl: "https://github.com/AforaMosh/afora-agent.git",
     });
     flow.setMessage("keep this prompt");
     flow.attachmentDraft.replace([
@@ -418,8 +418,8 @@ describe("DraftSubmissionFlow", () => {
     expect(flow.message).toBe("keep this prompt");
     expect(flow.attachmentDraft.attachments).toHaveLength(1);
     expect(place.browser.remoteProject).toMatchObject({
-      identity: "openclaw/openclaw",
-      cloneUrl: "https://github.com/openclaw/openclaw.git",
+      identity: "AforaMosh/afora-agent",
+      cloneUrl: "https://github.com/AforaMosh/afora-agent.git",
     });
     expect(context.sessions.createResult).not.toHaveBeenCalled();
   });

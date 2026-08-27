@@ -4,7 +4,7 @@
  */
 
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it, vi } from "vitest";
 import {
   getPreparedRuntimeAuthMaterializations,
@@ -69,7 +69,7 @@ function expectOpenAICodexSnapshotCredential(
 
 describe("runtime auth profile snapshots", () => {
   it("carries the canonical database identity through snapshot enumeration", () => {
-    const databasePath = "/tmp/openclaw-auth-runtime-enumeration/custom.sqlite";
+    const databasePath = "/tmp/afora-auth-runtime-enumeration/custom.sqlite";
     const store = createStore("enumerated");
     replaceRuntimeAuthProfileStoreSnapshots([
       {
@@ -113,7 +113,7 @@ describe("runtime auth profile snapshots", () => {
   });
 
   it("publishes successful-auth facts without impersonating credential rotation", () => {
-    const agentDir = "/tmp/openclaw-auth-runtime-materialized";
+    const agentDir = "/tmp/afora-auth-runtime-materialized";
     const pluginStoreListener = vi.fn();
     const materializationListener = vi.fn();
     setRuntimeAuthProfileStoreSnapshot(createStore("materialized"), agentDir);
@@ -183,7 +183,7 @@ describe("runtime auth profile snapshots", () => {
   });
 
   it("notifies listeners only when credential ownership changes", () => {
-    const agentDir = "/tmp/openclaw-auth-runtime-listener";
+    const agentDir = "/tmp/afora-auth-runtime-listener";
     const listener = vi.fn();
     const unregister = registerRuntimeAuthProfileStoreMutationListener(listener);
     try {
@@ -214,7 +214,7 @@ describe("runtime auth profile snapshots", () => {
   });
 
   it("notifies when provider credential order changes", () => {
-    const agentDir = "/tmp/openclaw-auth-runtime-order";
+    const agentDir = "/tmp/afora-auth-runtime-order";
     const store = createStore("order");
     setRuntimeAuthProfileStoreSnapshot(store, agentDir);
     const listener = vi.fn();
@@ -241,7 +241,7 @@ describe("runtime auth profile snapshots", () => {
   });
 
   it("notifies when identical external credentials change from CLI to plugin ownership", () => {
-    const agentDir = "/tmp/openclaw-auth-runtime-external-owner";
+    const agentDir = "/tmp/afora-auth-runtime-external-owner";
     const store: RuntimeAuthProfileStore = {
       ...createStore("same-credential"),
       runtimeExternalProfileIds: ["openai:default"],
@@ -271,7 +271,7 @@ describe("runtime auth profile snapshots", () => {
   });
 
   it("notifies when an empty runtime snapshot starts or stops shadowing persisted auth", () => {
-    const agentDir = "/tmp/openclaw-auth-runtime-empty-owner";
+    const agentDir = "/tmp/afora-auth-runtime-empty-owner";
     const listener = vi.fn();
     const unregister = registerRuntimeAuthProfileStoreMutationListener(listener);
     const emptyStore: AuthProfileStore = { version: 1, profiles: {} };
@@ -313,7 +313,7 @@ describe("runtime auth profile snapshots", () => {
 
   it("isolates set/get/replace snapshot mutations without structuredClone", () => {
     const structuredCloneSpy = vi.spyOn(globalThis, "structuredClone");
-    const agentDir = "/tmp/openclaw-auth-runtime-snapshot-agent";
+    const agentDir = "/tmp/afora-auth-runtime-snapshot-agent";
     try {
       const stored = createStore("access-1");
       setRuntimeAuthProfileStoreSnapshot(stored, agentDir);
@@ -360,8 +360,8 @@ describe("runtime auth profile snapshots", () => {
   });
 
   it("merges inherited and agent prepared stores without persisted fallback", () => {
-    const inheritedAuthDir = "/tmp/openclaw-auth-runtime-inherited";
-    const agentDir = "/tmp/openclaw-auth-runtime-agent";
+    const inheritedAuthDir = "/tmp/afora-auth-runtime-inherited";
+    const agentDir = "/tmp/afora-auth-runtime-agent";
     try {
       setRuntimeAuthProfileStoreSnapshot(
         {
@@ -389,8 +389,8 @@ describe("runtime auth profile snapshots", () => {
       });
       expect(
         getPreparedRuntimeAuthProfileStoreSnapshotCore(
-          "/tmp/openclaw-auth-runtime-missing",
-          "/tmp/openclaw-auth-runtime-also-missing",
+          "/tmp/afora-auth-runtime-missing",
+          "/tmp/afora-auth-runtime-also-missing",
         ),
       ).toBeUndefined();
     } finally {
@@ -399,8 +399,8 @@ describe("runtime auth profile snapshots", () => {
   });
 
   it("clears one agent snapshot without disturbing other stores", () => {
-    const firstAgentDir = "/tmp/openclaw-auth-runtime-snapshot-first";
-    const secondAgentDir = "/tmp/openclaw-auth-runtime-snapshot-second";
+    const firstAgentDir = "/tmp/afora-auth-runtime-snapshot-first";
+    const secondAgentDir = "/tmp/afora-auth-runtime-snapshot-second";
     try {
       setRuntimeAuthProfileStoreSnapshot(createStore("main"));
       setRuntimeAuthProfileStoreSnapshot(createStore("first"), firstAgentDir);
@@ -422,14 +422,14 @@ describe("runtime auth profile snapshots", () => {
 
   it("bounds persisted mutation lineage by owner and profile", () => {
     for (let index = 0; index <= testing.MAX_PERSISTED_MUTATION_OWNERS; index += 1) {
-      noteRuntimeAuthProfileStorePersistedMutation(`/tmp/openclaw-mutation-owner-${index}`, {
+      noteRuntimeAuthProfileStorePersistedMutation(`/tmp/afora-mutation-owner-${index}`, {
         credentialsChanged: true,
         stateChanged: false,
         profileIds: ["openai:default"],
       });
     }
     for (let index = 0; index <= testing.MAX_PERSISTED_MUTATION_PROFILES_PER_OWNER; index += 1) {
-      noteRuntimeAuthProfileStorePersistedMutation("/tmp/openclaw-mutation-profile-owner", {
+      noteRuntimeAuthProfileStorePersistedMutation("/tmp/afora-mutation-profile-owner", {
         credentialsChanged: true,
         stateChanged: false,
         profileIds: [`openai:${index}`],

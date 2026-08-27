@@ -4,7 +4,7 @@ import type { WorkerSessionTurnClaim } from "./placement-record.js";
 type TurnClaimReleaseWaiter = (error?: Error) => void;
 
 const turnClaimReleaseWaiters = resolveGlobalMap<string, Map<string, Set<TurnClaimReleaseWaiter>>>(
-  Symbol.for("openclaw.turnClaimReleaseWaiters"),
+  Symbol.for("afora.turnClaimReleaseWaiters"),
   (waitersByPath) => {
     const error = new Error("Gateway lifecycle ended while waiting for turn claim release");
     for (const bySession of waitersByPath.values()) {
@@ -21,7 +21,7 @@ const turnClaimReleaseWaiters = resolveGlobalMap<string, Map<string, Set<TurnCla
 const workerTurnClaimClosedHandlers = resolveGlobalMap<
   string,
   Set<(claim: WorkerSessionTurnClaim) => void>
->(Symbol.for("openclaw.workerTurnClaimClosedHandlers"), (handlersByPath) => {
+>(Symbol.for("afora.workerTurnClaimClosedHandlers"), (handlersByPath) => {
   handlersByPath.clear();
 });
 

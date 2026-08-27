@@ -4,19 +4,19 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing stable OpenClaw release tag to receive the signed Android APK
+        description: Existing stable Afora release tag to receive the signed Android APK
         required: true
         type: string
       release_publish_run_id:
-        description: OpenClaw Release Publish run that approved this release
+        description: Afora Release Publish run that approved this release
         required: true
         type: string
       release_publish_branch:
-        description: Branch used by the approving OpenClaw Release Publish run
+        description: Branch used by the approving Afora Release Publish run
         required: true
         type: string
       release_target_sha:
-        description: Exact release tag commit resolved by OpenClaw Release Publish
+        description: Exact release tag commit resolved by Afora Release Publish
         required: true
         type: string
       direct_release_recovery:
@@ -75,7 +75,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ ! "${RELEASE_TAG}" =~ ^v[0-9]{4}\.[1-9][0-9]*\.[1-9][0-9]*(-[1-9][0-9]*)?$ ]]; then
-            echo "Android APK publishing requires a final or correction OpenClaw release tag: ${RELEASE_TAG}" >&2
+            echo "Android APK publishing requires a final or correction Afora release tag: ${RELEASE_TAG}" >&2
             exit 1
           fi
           if [[ "${EXPECTED_WORKFLOW_BRANCH}" != "main" && ! "${EXPECTED_WORKFLOW_BRANCH}" =~ ^release/[0-9]{4}\.[1-9][0-9]*\.[1-9][0-9]*$ ]]; then
@@ -95,7 +95,7 @@ jobs:
 
           gh attestation verify "${APPROVAL_PATH}" \
             --repo "${GITHUB_REPOSITORY}" \
-            --signer-workflow "${GITHUB_REPOSITORY}/.github/workflows/openclaw-release-publish.yml" \
+            --signer-workflow "${GITHUB_REPOSITORY}/.github/workflows/afora-release-publish.yml" \
             --source-ref "refs/heads/${EXPECTED_WORKFLOW_BRANCH}" \
             --deny-self-hosted-runners
           run_json="$(gh run view "${RELEASE_PUBLISH_RUN_ID}" --repo "${GITHUB_REPOSITORY}" --json workflowName,headBranch,event,status,conclusion,url)"
@@ -122,7 +122,7 @@ jobs:
           release_created_at="$(printf '%s' "${release_json}" | jq -er '.createdAt')"
           build_timestamp="$(date -u -d "${release_created_at}" +%Y-%m-%dT%H:%M:%SZ)"
           echo "build_timestamp=${build_timestamp}" >> "${GITHUB_OUTPUT}"
-          unexpected_assets="$(printf '%s' "${release_json}" | jq -r '[.assets[]? | select(.name | startswith("OpenClaw-Android")) | .name] | join(", ")')"
+          unexpected_assets="$(printf '%s' "${release_json}" | jq -r '[.assets[]? | select(.name | startswith("Afora-Android")) | .name] | join(", ")')"
           if [[ -n "${unexpected_assets}" ]]; then
             echo "Target release already contains Android assets: ${unexpected_assets}. Immutable recovery accepts them only after rebuilding identical bytes." >&2
           fi
@@ -179,7 +179,7 @@ jobs:
         with:
           app-id: "2729701"
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-          owner: openclaw
+          owner: afora
           repositories: apps-signing
           permission-contents: read
 
@@ -187,7 +187,7 @@ jobs:
         if: ${{ steps.release_source.outputs.fallback_base_tag == '' }}
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          repository: openclaw/apps-signing
+          repository: afora/apps-signing
           ref: main
           path: apps/android/build/release-signing/apps-signing
           token: ${{ steps.apps-signing-token.outputs.token }}
@@ -209,7 +209,7 @@ jobs:
         env:
           GIT_COMMIT: ${{ inputs.release_target_sha }}
           GH_TOKEN: ${{ github.token }}
-          OPENCLAW_BUILD_TIMESTAMP: ${{ steps.release_approval.outputs.build_timestamp }}
+          AFORA_BUILD_TIMESTAMP: ${{ steps.release_approval.outputs.build_timestamp }}
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
@@ -218,23 +218,23 @@ jobs:
             base_dir="${RUNNER_TEMP}/fallback-android-release"
             mkdir -p "${base_dir}"
             gh release download "${FALLBACK_ANDROID_BASE_TAG}" --repo "${GITHUB_REPOSITORY}" \
-              --pattern OpenClaw-Android.apk \
-              --pattern OpenClaw-Android-SHA256SUMS.txt \
+              --pattern Afora-Android.apk \
+              --pattern Afora-Android-SHA256SUMS.txt \
               --dir "${base_dir}"
             (
               cd "${base_dir}"
-              sha256sum --strict --check OpenClaw-Android-SHA256SUMS.txt
+              sha256sum --strict --check Afora-Android-SHA256SUMS.txt
             )
-            gh attestation verify "${base_dir}/OpenClaw-Android.apk" \
+            gh attestation verify "${base_dir}/Afora-Android.apk" \
               --repo "${GITHUB_REPOSITORY}" \
               --signer-workflow "${GITHUB_REPOSITORY}/.github/workflows/android-release.yml" \
               --source-ref "refs/tags/${FALLBACK_ANDROID_BASE_TAG}" \
               --source-digest "${FALLBACK_ANDROID_BASE_SHA}" \
               --deny-self-hosted-runners
             bun apps/android/scripts/build-release-artifacts.ts \
-              --verify-apk "${base_dir}/OpenClaw-Android.apk"
-            cp "${base_dir}/OpenClaw-Android.apk" dist/OpenClaw-Android.apk
-            cp "${base_dir}/OpenClaw-Android-SHA256SUMS.txt" dist/OpenClaw-Android-SHA256SUMS.txt
+              --verify-apk "${base_dir}/Afora-Android.apk"
+            cp "${base_dir}/Afora-Android.apk" dist/Afora-Android.apk
+            cp "${base_dir}/Afora-Android-SHA256SUMS.txt" dist/Afora-Android-SHA256SUMS.txt
           else
             node --input-type=module <<'NODE'
           import { readFileSync } from "node:fs";
@@ -242,10 +242,10 @@ jobs:
 
           const path = "apps/android/build/release-signing/gradle.properties";
           const expected = new Set([
-            "OPENCLAW_ANDROID_STORE_FILE",
-            "OPENCLAW_ANDROID_STORE_PASSWORD",
-            "OPENCLAW_ANDROID_KEY_ALIAS",
-            "OPENCLAW_ANDROID_KEY_PASSWORD",
+            "AFORA_ANDROID_STORE_FILE",
+            "AFORA_ANDROID_STORE_PASSWORD",
+            "AFORA_ANDROID_KEY_ALIAS",
+            "AFORA_ANDROID_KEY_PASSWORD",
           ]);
           const properties = new Map();
           for (const rawLine of readFileSync(path, "utf8").split(/\r?\n/u)) {
@@ -269,24 +269,24 @@ jobs:
           NODE
 
             version="$(node -p 'require("./apps/android/version.json").version')"
-            source_apk="apps/android/build/release-artifacts/openclaw-${version}-third-party-release.apk"
+            source_apk="apps/android/build/release-artifacts/afora-${version}-third-party-release.apk"
             source_checksum="${source_apk}.sha256"
             test -s "${source_apk}"
             test -s "${source_checksum}"
-            cp "${source_apk}" dist/OpenClaw-Android.apk
+            cp "${source_apk}" dist/Afora-Android.apk
             (
               cd dist
-              sha256sum OpenClaw-Android.apk > OpenClaw-Android-SHA256SUMS.txt
+              sha256sum Afora-Android.apk > Afora-Android-SHA256SUMS.txt
             )
           fi
 
           expected_version_name="${RELEASE_TAG#v}"
           expected_version_name="${expected_version_name%%-*}"
           expected_version_code="$(node -p 'require("./apps/android/version.json").versionCode')"
-          actual_app_id="$(apkanalyzer manifest application-id dist/OpenClaw-Android.apk)"
-          actual_version_name="$(apkanalyzer manifest version-name dist/OpenClaw-Android.apk)"
-          actual_version_code="$(apkanalyzer manifest version-code dist/OpenClaw-Android.apk)"
-          if [[ "${actual_app_id}" != "ai.openclaw.app" ]]; then
+          actual_app_id="$(apkanalyzer manifest application-id dist/Afora-Android.apk)"
+          actual_version_name="$(apkanalyzer manifest version-name dist/Afora-Android.apk)"
+          actual_version_code="$(apkanalyzer manifest version-code dist/Afora-Android.apk)"
+          if [[ "${actual_app_id}" != "ai.afora.app" ]]; then
             echo "Standalone APK has unexpected application ID ${actual_app_id}." >&2
             exit 1
           fi
@@ -306,8 +306,8 @@ jobs:
                 [
                   .[][]
                   | select(.draft == false and .prerelease == false)
-                  | select(any(.assets[]?; .name == "OpenClaw-Android.apk"))
-                  | select(any(.assets[]?; .name == "OpenClaw-Android-SHA256SUMS.txt"))
+                  | select(any(.assets[]?; .name == "Afora-Android.apk"))
+                  | select(any(.assets[]?; .name == "Afora-Android-SHA256SUMS.txt"))
                   | if .tag_name == $base_tag then
                       { tag: .tag_name, number: 0 }
                     elif (.tag_name | startswith($base_tag + "-")) then
@@ -325,21 +325,21 @@ jobs:
               previous_dir="${RUNNER_TEMP}/previous-android-release"
               mkdir -p "${previous_dir}"
               gh release download "${previous_tag}" --repo "${GITHUB_REPOSITORY}" \
-                --pattern OpenClaw-Android.apk \
-                --pattern OpenClaw-Android-SHA256SUMS.txt \
+                --pattern Afora-Android.apk \
+                --pattern Afora-Android-SHA256SUMS.txt \
                 --dir "${previous_dir}"
               (
                 cd "${previous_dir}"
-                sha256sum --strict --check OpenClaw-Android-SHA256SUMS.txt
+                sha256sum --strict --check Afora-Android-SHA256SUMS.txt
               )
-              gh attestation verify "${previous_dir}/OpenClaw-Android.apk" \
+              gh attestation verify "${previous_dir}/Afora-Android.apk" \
                 --repo "${GITHUB_REPOSITORY}" \
                 --signer-workflow "${GITHUB_REPOSITORY}/.github/workflows/android-release.yml" \
                 --source-ref "refs/tags/${previous_tag}" \
                 --deny-self-hosted-runners
               bun apps/android/scripts/build-release-artifacts.ts \
-                --verify-apk "${previous_dir}/OpenClaw-Android.apk"
-              previous_version_code="$(apkanalyzer manifest version-code "${previous_dir}/OpenClaw-Android.apk")"
+                --verify-apk "${previous_dir}/Afora-Android.apk"
+              previous_version_code="$(apkanalyzer manifest version-code "${previous_dir}/Afora-Android.apk")"
               if (( actual_version_code <= previous_version_code )); then
                 echo "Android correction versionCode ${actual_version_code} must exceed ${previous_tag} versionCode ${previous_version_code}." >&2
                 exit 1
@@ -352,7 +352,7 @@ jobs:
       - name: Attest Android APK provenance
         uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
         with:
-          subject-path: dist/OpenClaw-Android.apk
+          subject-path: dist/Afora-Android.apk
 
       - name: Upload immutable Android release assets
         env:
@@ -379,8 +379,8 @@ jobs:
             gh release upload "${RELEASE_TAG}" "${source_path}#${asset_name}" --repo "${GITHUB_REPOSITORY}"
           }
 
-          attach_or_verify_asset dist/OpenClaw-Android.apk OpenClaw-Android.apk
-          attach_or_verify_asset dist/OpenClaw-Android-SHA256SUMS.txt OpenClaw-Android-SHA256SUMS.txt
+          attach_or_verify_asset dist/Afora-Android.apk Afora-Android.apk
+          attach_or_verify_asset dist/Afora-Android-SHA256SUMS.txt Afora-Android-SHA256SUMS.txt
 
       - name: Verify published Android release assets
         env:
@@ -391,24 +391,24 @@ jobs:
           verify_dir="${RUNNER_TEMP}/verify-android-release"
           mkdir -p "${verify_dir}"
           gh release download "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" \
-            --pattern OpenClaw-Android.apk \
-            --pattern OpenClaw-Android-SHA256SUMS.txt \
+            --pattern Afora-Android.apk \
+            --pattern Afora-Android-SHA256SUMS.txt \
             --dir "${verify_dir}"
           (
             cd "${verify_dir}"
-            sha256sum --strict --check OpenClaw-Android-SHA256SUMS.txt
+            sha256sum --strict --check Afora-Android-SHA256SUMS.txt
           )
-          gh attestation verify "${verify_dir}/OpenClaw-Android.apk" \
+          gh attestation verify "${verify_dir}/Afora-Android.apk" \
             --repo "${GITHUB_REPOSITORY}" \
             --signer-workflow "${GITHUB_REPOSITORY}/.github/workflows/android-release.yml" \
             --source-ref "refs/tags/${RELEASE_TAG}" \
             --deny-self-hosted-runners
           bun apps/android/scripts/build-release-artifacts.ts \
-            --verify-apk "${verify_dir}/OpenClaw-Android.apk"
+            --verify-apk "${verify_dir}/Afora-Android.apk"
 
           release_json="$(gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" --json assets)"
-          expected_names='["OpenClaw-Android-SHA256SUMS.txt","OpenClaw-Android.apk"]'
-          actual_names="$(printf '%s' "${release_json}" | jq -c '[.assets[]? | select(.name | startswith("OpenClaw-Android")) | .name] | sort')"
+          expected_names='["Afora-Android-SHA256SUMS.txt","Afora-Android.apk"]'
+          actual_names="$(printf '%s' "${release_json}" | jq -c '[.assets[]? | select(.name | startswith("Afora-Android")) | .name] | sort')"
           if [[ "${actual_names}" != "${expected_names}" ]]; then
             echo "Android release asset names do not match the canonical contract." >&2
             exit 1
@@ -425,7 +425,7 @@ jobs:
           {
             echo "## Signed Android APK published"
             echo
-            echo "- APK: https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/OpenClaw-Android.apk"
-            echo "- Checksums: https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/OpenClaw-Android-SHA256SUMS.txt"
-            echo "- Provenance: \`gh attestation verify OpenClaw-Android.apk --repo ${GITHUB_REPOSITORY} --signer-workflow ${GITHUB_REPOSITORY}/.github/workflows/android-release.yml\`"
+            echo "- APK: https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/Afora-Android.apk"
+            echo "- Checksums: https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/Afora-Android-SHA256SUMS.txt"
+            echo "- Provenance: \`gh attestation verify Afora-Android.apk --repo ${GITHUB_REPOSITORY} --signer-workflow ${GITHUB_REPOSITORY}/.github/workflows/android-release.yml\`"
           } >> "${GITHUB_STEP_SUMMARY}"

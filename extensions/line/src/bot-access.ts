@@ -1,5 +1,5 @@
 // Line plugin module implements bot access behavior.
-import { firstDefined } from "openclaw/plugin-sdk/allow-from";
+import { firstDefined } from "afora-agent/plugin-sdk/allow-from";
 
 export type NormalizedAllowFrom = {
   entries: string[];

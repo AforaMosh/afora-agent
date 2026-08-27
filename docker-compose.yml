@@ -1,29 +1,29 @@
 services:
-  openclaw-gateway:
-    image: ${OPENCLAW_IMAGE:-openclaw:local}
+  afora-gateway:
+    image: ${AFORA_IMAGE:-afora:local}
     build: .
     env_file:
       - path: .env
         required: false
     environment:
       HOME: /home/node
-      OPENCLAW_HOME: /home/node
+      AFORA_HOME: /home/node
       TERM: xterm-256color
       # Pin container-side state, workspace, and config paths so host values written to
       # `.env` (used by Compose for the bind-mount source below) cannot leak
       # into runtime code that resolves these env vars inside the container.
-      # Without this override, a macOS host path like /Users/<you>/.openclaw/...
+      # Without this override, a macOS host path like /Users/<you>/.afora/...
       # imported from .env caused first-reply `mkdir '/Users'` EACCES failures
       # in Linux Docker (#77436).
-      OPENCLAW_STATE_DIR: /home/node/.openclaw
-      OPENCLAW_CONFIG_PATH: /home/node/.openclaw/openclaw.json
-      OPENCLAW_CONFIG_DIR: /home/node/.openclaw
-      OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
-      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-}
-      OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ${OPENCLAW_ALLOW_INSECURE_PRIVATE_WS:-}
+      AFORA_STATE_DIR: /home/node/.afora
+      AFORA_CONFIG_PATH: /home/node/.AforaMosh/afora-agent.json
+      AFORA_CONFIG_DIR: /home/node/.afora
+      AFORA_WORKSPACE_DIR: /home/node/.afora/workspace
+      AFORA_GATEWAY_TOKEN: ${AFORA_GATEWAY_TOKEN:-}
+      AFORA_ALLOW_INSECURE_PRIVATE_WS: ${AFORA_ALLOW_INSECURE_PRIVATE_WS:-}
       # Empty means auto: Bonjour disables itself in detected containers.
       # Set 0 only on host/macvlan/mDNS-capable networks; set 1 to force off.
-      OPENCLAW_DISABLE_BONJOUR: ${OPENCLAW_DISABLE_BONJOUR:-}
+      AFORA_DISABLE_BONJOUR: ${AFORA_DISABLE_BONJOUR:-}
       # OpenTelemetry export is outbound OTLP/HTTP from the Gateway. Prometheus
       # uses the existing authenticated Gateway route; it does not need a port.
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
@@ -36,19 +36,19 @@ services:
       OTEL_EXPORTER_OTLP_LOGS_PROTOCOL: ${OTEL_EXPORTER_OTLP_LOGS_PROTOCOL:-}
       OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-}
       OTEL_SEMCONV_STABILITY_OPT_IN: ${OTEL_SEMCONV_STABILITY_OPT_IN:-}
-      OPENCLAW_OTEL_PRELOADED: ${OPENCLAW_OTEL_PRELOADED:-}
+      AFORA_OTEL_PRELOADED: ${AFORA_OTEL_PRELOADED:-}
       CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY:-}
       CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
-      TZ: ${OPENCLAW_TZ:-UTC}
+      TZ: ${AFORA_TZ:-UTC}
     volumes:
-      - "${OPENCLAW_CONFIG_DIR:-${HOME:-/tmp}/.openclaw}:/home/node/.openclaw"
-      - "${OPENCLAW_WORKSPACE_DIR:-${HOME:-/tmp}/.openclaw/workspace}:/home/node/.openclaw/workspace"
-      - "${OPENCLAW_AUTH_PROFILE_SECRET_DIR:-${HOME:-/tmp}/.openclaw-auth-profile-secrets}:/home/node/.config/openclaw"
+      - "${AFORA_CONFIG_DIR:-${HOME:-/tmp}/.afora}:/home/node/.afora"
+      - "${AFORA_WORKSPACE_DIR:-${HOME:-/tmp}/.afora/workspace}:/home/node/.afora/workspace"
+      - "${AFORA_AUTH_PROFILE_SECRET_DIR:-${HOME:-/tmp}/.afora-auth-profile-secrets}:/home/node/.config/afora"
       ## Uncomment the lines below to enable sandbox isolation
       ## (agents.defaults.sandbox). Requires Docker CLI in the image
-      ## (build with --build-arg OPENCLAW_INSTALL_DOCKER_CLI=1) or use
-      ## scripts/docker/setup.sh with OPENCLAW_SANDBOX=1 for automated setup.
+      ## (build with --build-arg AFORA_INSTALL_DOCKER_CLI=1) or use
+      ## scripts/docker/setup.sh with AFORA_SANDBOX=1 for automated setup.
       ## Set DOCKER_GID to the host's docker group GID (run: stat -c '%g' /var/run/docker.sock).
       # - /var/run/docker.sock:/var/run/docker.sock
     # group_add:
@@ -64,9 +64,9 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "${OPENCLAW_GATEWAY_PORT:-18789}:18789"
-      - "${OPENCLAW_BRIDGE_PORT:-18790}:18790"
-      - "${OPENCLAW_MSTEAMS_PORT:-3978}:3978"
+      - "${AFORA_GATEWAY_PORT:-18789}:18789"
+      - "${AFORA_BRIDGE_PORT:-18790}:18790"
+      - "${AFORA_MSTEAMS_PORT:-3978}:3978"
     init: true
     restart: unless-stopped
     command:
@@ -75,7 +75,7 @@ services:
         "dist/index.js",
         "gateway",
         "--bind",
-        "${OPENCLAW_GATEWAY_BIND:-lan}",
+        "${AFORA_GATEWAY_BIND:-lan}",
         "--port",
         "18789",
       ]
@@ -91,9 +91,9 @@ services:
       retries: 5
       start_period: 20s
 
-  openclaw-cli:
-    image: ${OPENCLAW_IMAGE:-openclaw:local}
-    network_mode: "service:openclaw-gateway"
+  afora-cli:
+    image: ${AFORA_IMAGE:-afora:local}
+    network_mode: "service:afora-gateway"
     env_file:
       - path: .env
         required: false
@@ -104,28 +104,28 @@ services:
       - no-new-privileges:true
     environment:
       HOME: /home/node
-      OPENCLAW_HOME: /home/node
+      AFORA_HOME: /home/node
       TERM: xterm-256color
       # Pin container-side state, workspace, and config paths so host values written to
       # `.env` cannot leak into runtime code via the env_file import (#77436).
-      OPENCLAW_STATE_DIR: /home/node/.openclaw
-      OPENCLAW_CONFIG_PATH: /home/node/.openclaw/openclaw.json
-      OPENCLAW_CONFIG_DIR: /home/node/.openclaw
-      OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
-      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-}
-      OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ${OPENCLAW_ALLOW_INSECURE_PRIVATE_WS:-}
+      AFORA_STATE_DIR: /home/node/.afora
+      AFORA_CONFIG_PATH: /home/node/.AforaMosh/afora-agent.json
+      AFORA_CONFIG_DIR: /home/node/.afora
+      AFORA_WORKSPACE_DIR: /home/node/.afora/workspace
+      AFORA_GATEWAY_TOKEN: ${AFORA_GATEWAY_TOKEN:-}
+      AFORA_ALLOW_INSECURE_PRIVATE_WS: ${AFORA_ALLOW_INSECURE_PRIVATE_WS:-}
       BROWSER: echo
       CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY:-}
       CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
-      TZ: ${OPENCLAW_TZ:-UTC}
+      TZ: ${AFORA_TZ:-UTC}
     volumes:
-      - "${OPENCLAW_CONFIG_DIR:-${HOME:-/tmp}/.openclaw}:/home/node/.openclaw"
-      - "${OPENCLAW_WORKSPACE_DIR:-${HOME:-/tmp}/.openclaw/workspace}:/home/node/.openclaw/workspace"
-      - "${OPENCLAW_AUTH_PROFILE_SECRET_DIR:-${HOME:-/tmp}/.openclaw-auth-profile-secrets}:/home/node/.config/openclaw"
+      - "${AFORA_CONFIG_DIR:-${HOME:-/tmp}/.afora}:/home/node/.afora"
+      - "${AFORA_WORKSPACE_DIR:-${HOME:-/tmp}/.afora/workspace}:/home/node/.afora/workspace"
+      - "${AFORA_AUTH_PROFILE_SECRET_DIR:-${HOME:-/tmp}/.afora-auth-profile-secrets}:/home/node/.config/afora"
     stdin_open: true
     tty: true
     init: true
     entrypoint: ["node", "dist/index.js"]
     depends_on:
-      - openclaw-gateway
+      - afora-gateway

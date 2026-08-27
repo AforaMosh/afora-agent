@@ -1,5 +1,5 @@
 // Markdown Core module implements ir behavior.
-import { avoidTrailingHighSurrogateBreak } from "@openclaw/normalization-core/utf16-slice";
+import { avoidTrailingHighSurrogateBreak } from "@afora/normalization-core/utf16-slice";
 import MarkdownIt from "markdown-it";
 import markdownItCjkFriendly from "markdown-it-cjk-friendly";
 import { HTML_TAG_RE } from "markdown-it/lib/common/html_re.mjs";

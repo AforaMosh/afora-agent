@@ -1,15 +1,15 @@
 {
-  "name": "@openclaw/memory-host-sdk",
+  "name": "@afora/memory-host-sdk",
   "version": "0.0.0-private",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@openclaw/normalization-core": "workspace:*",
-    "@openclaw/retry": "workspace:*",
+    "@afora/normalization-core": "workspace:*",
+    "@afora/retry": "workspace:*",
     "p-map": "7.0.6"
   },
   "devDependencies": {
-    "openclaw": "workspace:*"
+    "afora-agent": "workspace:*"
   },
   "exports": {
     "./runtime-core": "./src/runtime-core.ts",

@@ -2,7 +2,7 @@
  * Activates and injects OpenAI/Codex native web-search tools when config,
  * model API, and auth state allow it.
  */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isRecord } from "../utils.js";
 import { externalCliDiscoveryForProviderAuth } from "./auth-profiles/external-cli-discovery.js";
 import { listProfilesForProvider } from "./auth-profiles/profile-list.js";
@@ -63,7 +63,7 @@ function hasCodexNativeWebSearchTool(tools: unknown): boolean {
 
 /** Checks whether OpenAI/Codex auth is available for native web search. */
 export function hasAvailableCodexAuth(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentDir?: string;
 }): boolean {
   if (
@@ -102,7 +102,7 @@ export function hasAvailableCodexAuth(params: {
 /** Resolves whether native search is active or why managed search should remain. */
 export function resolveCodexNativeSearchActivation(params: {
   webSearchEnabled?: boolean;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   modelProvider?: string;
   modelApi?: string;
   modelId?: string;
@@ -207,7 +207,7 @@ export function isNativeWebSearchAllowedByToolPolicy(
 
 /** Builds the OpenAI Responses `web_search` tool payload from config. */
 export function buildCodexNativeWebSearchTool(
-  config: OpenClawConfig | undefined,
+  config: AforaConfig | undefined,
 ): Record<string, unknown> {
   const nativeConfig = resolveCodexNativeWebSearchConfig(config);
   const tool: Record<string, unknown> = {
@@ -238,7 +238,7 @@ export function buildCodexNativeWebSearchTool(
 /** Injects a native Codex web-search tool into a mutable provider payload. */
 export function patchCodexNativeWebSearchPayload(params: {
   payload: unknown;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): CodexNativeSearchPayloadPatchResult {
   if (!isRecord(params.payload)) {
     return { status: "payload_not_object" };
@@ -255,10 +255,10 @@ export function patchCodexNativeWebSearchPayload(params: {
   return { status: "injected" };
 }
 
-/** Returns whether the managed OpenClaw web-search tool should be hidden. */
+/** Returns whether the managed Afora web-search tool should be hidden. */
 export function shouldSuppressManagedWebSearchTool(params: {
   webSearchEnabled?: boolean;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   modelProvider?: string;
   modelApi?: string;
   modelId?: string;

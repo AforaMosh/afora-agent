@@ -10,7 +10,7 @@ scenario:
       - clawhub.version-bump-gates
       - clawhub.npm-trusted-publishing-provenance
       - clawhub.external-code-plugin-package-contract-required
-  objective: Verify the real OpenClaw ClawHub and npm release checks enforce publishable plugin identity, provenance, compatibility metadata, and version bumps.
+  objective: Verify the real Afora ClawHub and npm release checks enforce publishable plugin identity, provenance, compatibility metadata, and version bumps.
   successCriteria:
     - Valid publishable metadata passes both release checks with the expected package name, version, and extension id.
     - A noncanonical repository URL fails the npm trusted-publishing provenance gate.

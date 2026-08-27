@@ -1,7 +1,7 @@
-import type { EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams } from "openclaw/plugin-sdk/agent-harness-runtime";
-import type { AssistantMessage } from "openclaw/plugin-sdk/llm";
-import { isSilentReplyPayloadText } from "openclaw/plugin-sdk/reply-chunking";
-import { readStringField as readString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams } from "afora-agent/plugin-sdk/agent-harness-runtime";
+import type { AssistantMessage } from "afora-agent/plugin-sdk/llm";
+import { isSilentReplyPayloadText } from "afora-agent/plugin-sdk/reply-chunking";
+import { readStringField as readString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   createAssistantCommentaryMessage as buildAssistantCommentaryMessage,
   createAssistantMessage as buildAssistantMessage,

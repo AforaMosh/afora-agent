@@ -113,7 +113,7 @@ describe("classifyProviderRuntimeFailureKind", () => {
       ),
     ).toBe("refresh_timeout");
     expect(
-      classifyProviderRuntimeFailureKind("file lock timeout for /tmp/openclaw-oauth-refresh.lock"),
+      classifyProviderRuntimeFailureKind("file lock timeout for /tmp/afora-oauth-refresh.lock"),
     ).toBe("refresh_contention");
     expect(
       classifyProviderRuntimeFailureKind({

@@ -188,7 +188,7 @@ export async function probeRfbServer(params: {
   }
 }
 
-/** Maps standard RFB security numbers into the credential UX supported by OpenClaw. */
+/** Maps standard RFB security numbers into the credential UX supported by Afora. */
 export function classifyRfbSecurity(
   securityTypes: readonly number[],
 ): "none" | "vnc-password" | "ard-account" | "unsupported" {

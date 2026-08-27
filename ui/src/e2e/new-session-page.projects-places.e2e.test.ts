@@ -33,12 +33,12 @@ suite.define(() => {
     await prepareProjectUiProof();
     const context = await suite.browser.newContext({ locale: "en-US", serviceWorkers: "block" });
     const page = await context.newPage();
-    const repoRoot = "/recorded/openclaw";
+    const repoRoot = "/recorded/afora";
     const registeredProject = {
-      id: "recorded-openclaw",
-      displayName: "openclaw",
+      id: "recorded-afora",
+      displayName: "afora",
       repoRoot,
-      originUrl: "https://github.com/openclaw/openclaw.git",
+      originUrl: "https://github.com/AforaMosh/afora-agent.git",
       source: "registered",
     };
     const gateway = await installMockGateway(page, {
@@ -96,8 +96,8 @@ suite.define(() => {
       const request = await gateway.waitForRequest("projects.register");
       expect(request.params).toEqual({ path: repoRoot });
       await expect.poll(async () => (await gateway.getRequests("projects.list")).length).toBe(2);
-      await pollLocatorText(trigger.locator(".new-session-page__trigger-label")).toBe("openclaw");
-      expect(await trigger.getAttribute("data-project-id")).toBe("recorded-openclaw");
+      await pollLocatorText(trigger.locator(".new-session-page__trigger-label")).toBe("afora");
+      expect(await trigger.getAttribute("data-project-id")).toBe("recorded-afora");
     } finally {
       await context.close();
     }
@@ -404,8 +404,8 @@ suite.define(() => {
           defaults: SESSION_LIST_DEFAULTS,
           path: "",
           sessions: [
-            { key: "agent:main:a", kind: "direct", updatedAt: 2, execCwd: "/a/openclaw" },
-            { key: "agent:main:b", kind: "direct", updatedAt: 1, execCwd: "/b/openclaw" },
+            { key: "agent:main:a", kind: "direct", updatedAt: 2, execCwd: "/a/afora" },
+            { key: "agent:main:b", kind: "direct", updatedAt: 1, execCwd: "/b/afora" },
           ],
           ts: Date.now(),
         },
@@ -418,8 +418,8 @@ suite.define(() => {
       await gateway.waitForRequest("node.list");
       const trigger = page.locator("#new-session-project-trigger");
       await trigger.click();
-      const first = page.locator('[data-value="recent::/a/openclaw"]');
-      const second = page.locator('[data-value="recent::/b/openclaw"]');
+      const first = page.locator('[data-value="recent::/a/afora"]');
+      const second = page.locator('[data-value="recent::/b/afora"]');
       await first.waitFor();
       await second.waitFor();
       await pollLocatorText(first.locator(".session-menu__sub")).toBe("a");
@@ -427,13 +427,13 @@ suite.define(() => {
       const recentValues = await page
         .locator('[data-value^="recent::"]')
         .evaluateAll((items) => items.map((item) => item.getAttribute("data-value")));
-      expect(recentValues).toEqual(["recent::/a/openclaw", "recent::/b/openclaw"]);
+      expect(recentValues).toEqual(["recent::/a/afora", "recent::/b/afora"]);
       await second.click();
       await page.locator(".new-session-page__message").fill("continue in work checkout");
       await page.getByRole("button", { name: "Start session" }).click();
       const create = await gateway.waitForRequest("sessions.create");
       expect(create.params).toMatchObject({
-        cwd: "/b/openclaw",
+        cwd: "/b/afora",
         message: "continue in work checkout",
       });
     } finally {
@@ -757,7 +757,7 @@ suite.define(() => {
 
       // A node cwd belongs to the selected agent's draft and must not leak
       // across an agent change, even though the execution node stays selected.
-      const agentPicker = page.locator(".new-session-page__select--agent openclaw-agent-select");
+      const agentPicker = page.locator(".new-session-page__select--agent afora-agent-select");
       await agentPicker.locator(".agent-select__trigger").click();
       await agentPicker
         .locator("wa-dropdown-item[data-agent-option]")

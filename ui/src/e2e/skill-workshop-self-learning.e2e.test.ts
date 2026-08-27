@@ -14,7 +14,7 @@ import {
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
 const artifactDir = path.resolve(
   process.cwd(),
@@ -40,7 +40,7 @@ function configSnapshot(enabled: boolean, hash: string) {
 
 function emptyProposalManifest() {
   return {
-    schema: "openclaw.skill-workshop.proposals-manifest.v1",
+    schema: "afora.skill-workshop.proposals-manifest.v1",
     updatedAt: "2026-07-13T12:00:00.000Z",
     proposals: [],
   };

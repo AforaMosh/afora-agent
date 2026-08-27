@@ -1,6 +1,6 @@
 // @vitest-environment node
 // Control UI tests cover translate behavior.
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createStorageMock } from "../../test-helpers/storage.ts";
 import * as translate from "../lib/translate.ts";
@@ -106,8 +106,8 @@ describe("i18n", () => {
   });
 
   it("should replace parameters correctly", () => {
-    expect(translate.t("connection.help.copyCommandAria", { command: "openclaw dashboard" })).toBe(
-      "Copy command: openclaw dashboard",
+    expect(translate.t("connection.help.copyCommandAria", { command: "afora dashboard" })).toBe(
+      "Copy command: afora dashboard",
     );
   });
 
@@ -140,7 +140,7 @@ describe("i18n", () => {
   it("loads saved non-English locale on startup", async () => {
     vi.stubGlobal("localStorage", createStorageMock());
     vi.stubGlobal("navigator", { language: "en-US" } as Navigator);
-    localStorage.setItem("openclaw.i18n.locale", "zh-CN");
+    localStorage.setItem("afora.i18n.locale", "zh-CN");
     const fresh = await importFreshTranslate();
     await vi.waitFor(() => {
       expect(fresh.i18n.getLocale()).toBe("zh-CN");
@@ -152,24 +152,24 @@ describe("i18n", () => {
   it("syncs canonical document locale metadata on startup", async () => {
     const documentElement = stubDocumentLocaleMetadata();
     vi.stubGlobal("navigator", { language: "fa-IR" } as Navigator);
-    localStorage.removeItem("openclaw.i18n.locale");
+    localStorage.removeItem("afora.i18n.locale");
 
     const fresh = await importFreshTranslate();
 
     await vi.waitFor(() => expect(fresh.i18n.getLocale()).toBe("fa"));
     expect(documentElement).toEqual({ lang: "fa", dir: "rtl" });
-    expect(localStorage.getItem("openclaw.i18n.locale")).toBeNull();
+    expect(localStorage.getItem("afora.i18n.locale")).toBeNull();
   });
 
   it("clears an explicit locale when returning to the system language", async () => {
     vi.stubGlobal("navigator", { language: "de-DE" } as Navigator);
     await translate.i18n.setLocale("fr");
-    expect(localStorage.getItem("openclaw.i18n.locale")).toBe("fr");
+    expect(localStorage.getItem("afora.i18n.locale")).toBe("fr");
 
     await translate.i18n.useSystemLocale();
 
     expect(translate.i18n.getLocale()).toBe("de");
-    expect(localStorage.getItem("openclaw.i18n.locale")).toBeNull();
+    expect(localStorage.getItem("afora.i18n.locale")).toBeNull();
   });
 
   it("syncs document locale metadata when the locale changes", async () => {
@@ -195,7 +195,7 @@ describe("i18n", () => {
     "loads the %s browser language as the registered %s locale on startup",
     async (browserLanguage, expectedLocale) => {
       vi.stubGlobal("navigator", { language: browserLanguage } as Navigator);
-      localStorage.removeItem("openclaw.i18n.locale");
+      localStorage.removeItem("afora.i18n.locale");
 
       const fresh = await importFreshTranslate();
 

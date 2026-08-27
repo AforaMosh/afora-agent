@@ -1,7 +1,7 @@
 /** Tests web-tool secret metadata resolution from config and plugins. */
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import type {
   PluginWebFetchProviderEntry,
   PluginWebSearchProviderEntry,
@@ -103,8 +103,8 @@ vi.mock("../plugins/installed-plugin-index-records.js", () => ({
   loadInstalledPluginIndexInstallRecordsSync: loadInstalledPluginIndexInstallRecordsSyncMock,
 }));
 
-function asConfig(value: unknown): OpenClawConfig {
-  return value as OpenClawConfig;
+function asConfig(value: unknown): AforaConfig {
+  return value as AforaConfig;
 }
 
 function providerPluginId(provider: ProviderUnderTest): string {
@@ -133,7 +133,7 @@ function ensureRecord(target: Record<string, unknown>, key: string): Record<stri
 }
 
 function setConfiguredProviderKey(
-  configTarget: OpenClawConfig,
+  configTarget: AforaConfig,
   pluginId: string,
   value: unknown,
 ): void {
@@ -145,7 +145,7 @@ function setConfiguredProviderKey(
   webSearch.apiKey = value;
 }
 
-function setConfiguredFetchProviderKey(configTarget: OpenClawConfig, value: unknown): void {
+function setConfiguredFetchProviderKey(configTarget: AforaConfig, value: unknown): void {
   const plugins = ensureRecord(configTarget as Record<string, unknown>, "plugins");
   const entries = ensureRecord(plugins, "entries");
   const pluginEntry = ensureRecord(entries, "firecrawl");
@@ -267,7 +267,7 @@ function buildTestWebFetchProviders(): PluginWebFetchProviderEntry[] {
 }
 
 async function runRuntimeWebTools(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
   allowUnavailableSecretOwners?: boolean;
 }) {
@@ -287,7 +287,7 @@ async function runRuntimeWebTools(params: {
 }
 
 function activateRuntimeWebToolsResult(
-  sourceConfig: OpenClawConfig,
+  sourceConfig: AforaConfig,
   result: Awaited<ReturnType<typeof runRuntimeWebTools>>,
 ): void {
   activateSecretsRuntimeSnapshotState({
@@ -309,7 +309,7 @@ function activateRuntimeWebToolsResult(
 function createProviderSecretRefConfig(
   provider: ProviderUnderTest,
   envRefId: string,
-): OpenClawConfig {
+): AforaConfig {
   return asConfig({
     tools: {
       web: {
@@ -334,7 +334,7 @@ function createProviderSecretRefConfig(
   });
 }
 
-function readProviderKey(config: OpenClawConfig, provider: ProviderUnderTest): unknown {
+function readProviderKey(config: AforaConfig, provider: ProviderUnderTest): unknown {
   const pluginConfig = config.plugins?.entries?.[providerPluginId(provider)]?.config as
     | { webSearch?: { apiKey?: unknown } }
     | undefined;
@@ -738,7 +738,7 @@ describe("runtime web tools resolution", () => {
     };
     resolvePluginWebSearchProvidersMock.mockReturnValue([dottedProvider]);
     loadInstalledPluginIndexInstallRecordsSyncMock.mockReturnValue({
-      [pluginId]: { source: "npm", spec: "@openclaw/external-search" },
+      [pluginId]: { source: "npm", spec: "@afora/external-search" },
     });
     resolveManifestContractOwnerPluginIdMock.mockReturnValue(undefined);
     const sourceConfig = asConfig({
@@ -755,7 +755,7 @@ describe("runtime web tools resolution", () => {
         },
       },
     });
-    const readDottedKey = (config: OpenClawConfig) =>
+    const readDottedKey = (config: AforaConfig) =>
       (
         config.plugins?.entries?.[pluginId]?.config as
           | { webSearch?: { apiKey?: unknown } }
@@ -798,7 +798,7 @@ describe("runtime web tools resolution", () => {
     };
     resolvePluginWebSearchProvidersMock.mockReturnValue([provider]);
     loadInstalledPluginIndexInstallRecordsSyncMock.mockReturnValue({
-      [pluginId]: { source: "npm", spec: "@openclaw/external-search" },
+      [pluginId]: { source: "npm", spec: "@afora/external-search" },
     });
     resolveManifestContractOwnerPluginIdMock.mockImplementation(
       ({ value, origin }: { value: string; origin?: string }) =>
@@ -854,7 +854,7 @@ describe("runtime web tools resolution", () => {
     };
     resolvePluginWebFetchProvidersMock.mockReturnValueOnce([provider]);
     loadInstalledPluginIndexInstallRecordsSyncMock.mockReturnValue({
-      [pluginId]: { source: "npm", spec: "@openclaw/external-fetch" },
+      [pluginId]: { source: "npm", spec: "@afora/external-fetch" },
     });
     resolveManifestContractOwnerPluginIdMock.mockImplementation(
       ({ value, origin }: { value: string; origin?: string }) =>
@@ -898,7 +898,7 @@ describe("runtime web tools resolution", () => {
     };
     resolvePluginWebSearchProvidersMock.mockReturnValue([provider]);
     loadInstalledPluginIndexInstallRecordsSyncMock.mockReturnValue({
-      [pluginId]: { source: "npm", spec: "@openclaw/external-search" },
+      [pluginId]: { source: "npm", spec: "@afora/external-search" },
     });
     resolveManifestContractOwnerPluginIdMock.mockReturnValue(undefined);
     const config = (baseUrl: string) =>
@@ -1629,7 +1629,7 @@ describe("runtime web tools resolution", () => {
     loadInstalledPluginIndexInstallRecordsSyncMock.mockReturnValue({
       "external-search": {
         source: "npm",
-        spec: "@openclaw/external-search",
+        spec: "@afora/external-search",
       },
     });
 
@@ -1677,7 +1677,7 @@ describe("runtime web tools resolution", () => {
     loadInstalledPluginIndexInstallRecordsSyncMock.mockReturnValue({
       firecrawl: {
         source: "npm",
-        spec: "@openclaw/firecrawl-plugin",
+        spec: "@afora/firecrawl-plugin",
       },
     });
     resolveManifestContractOwnerPluginIdMock.mockReturnValueOnce(undefined);
@@ -2095,7 +2095,7 @@ describe("runtime web tools resolution", () => {
 
     beforeEach(() => {
       loadInstalledPluginIndexInstallRecordsSyncMock.mockReturnValue({
-        brave: { source: "npm", spec: "@openclaw/brave-search" },
+        brave: { source: "npm", spec: "@afora/brave-search" },
       });
       resolveManifestContractOwnerPluginIdMock.mockImplementation(externalBraveImpl);
     });

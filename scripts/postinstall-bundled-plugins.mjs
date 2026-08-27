@@ -27,7 +27,7 @@ import { expandPackageDistImportClosure } from "./lib/package-dist-imports.mjs";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_PACKAGE_ROOT = join(scriptDir, "..");
-const DISABLE_POSTINSTALL_ENV = "OPENCLAW_DISABLE_BUNDLED_PLUGIN_POSTINSTALL";
+const DISABLE_POSTINSTALL_ENV = "AFORA_DISABLE_BUNDLED_PLUGIN_POSTINSTALL";
 const DIST_INVENTORY_PATH = "dist/postinstall-inventory.json";
 // One budget covers all three prune walks (legacy-deps prepass, file listing,
 // empty-dir sweep). npm upgrades transiently hold old+new content-hashed dist
@@ -131,14 +131,14 @@ function resolvePostinstallTildePath(input, homeDir) {
   return input;
 }
 
-function resolvePostinstallOpenClawHomeDir(env, getHomedir = homedir) {
+function resolvePostinstallAforaHomeDir(env, getHomedir = homedir) {
   const osHome = resolvePostinstallOsHomeDir(env, getHomedir);
-  const override = env?.OPENCLAW_HOME?.trim();
+  const override = env?.AFORA_HOME?.trim();
   return override ? pathResolve(resolvePostinstallTildePath(override, osHome)) : osHome;
 }
 
-function resolvePostinstallUserPath(input, openClawHome) {
-  return pathResolve(resolvePostinstallTildePath(input, openClawHome));
+function resolvePostinstallUserPath(input, aforaHome) {
+  return pathResolve(resolvePostinstallTildePath(input, aforaHome));
 }
 
 function readInstalledDistInventory(params = {}) {
@@ -347,7 +347,7 @@ function pruneEmptyDistDirectories(params = {}) {
 }
 
 function isLegacyInstalledPluginDependencyDirName(name) {
-  return name === "node_modules" || /^\.openclaw-install-stage(?:-[^/]+)?$/iu.test(name);
+  return name === "node_modules" || /^\.afora-install-stage(?:-[^/]+)?$/iu.test(name);
 }
 
 function pruneLegacyInstalledPluginDependencyDirs(params) {
@@ -408,7 +408,7 @@ const pathDelimiter = process.platform === "win32" ? ";" : ":";
 export function collectLegacyPluginRuntimeDepsStateRoots(params = {}) {
   const env = params.env ?? process.env;
   const getHomedir = params.homedir ?? homedir;
-  const openClawHome = resolvePostinstallOpenClawHomeDir(env, getHomedir);
+  const aforaHome = resolvePostinstallAforaHomeDir(env, getHomedir);
   const stateRoots = [];
   const addStateRoot = (root) => {
     if (root) {
@@ -416,19 +416,19 @@ export function collectLegacyPluginRuntimeDepsStateRoots(params = {}) {
     }
   };
 
-  const stateOverride = env?.OPENCLAW_STATE_DIR?.trim();
+  const stateOverride = env?.AFORA_STATE_DIR?.trim();
   if (stateOverride) {
-    addStateRoot(resolvePostinstallUserPath(stateOverride, openClawHome));
+    addStateRoot(resolvePostinstallUserPath(stateOverride, aforaHome));
   }
-  const configPath = env?.OPENCLAW_CONFIG_PATH?.trim();
+  const configPath = env?.AFORA_CONFIG_PATH?.trim();
   if (configPath) {
-    addStateRoot(dirname(resolvePostinstallUserPath(configPath, openClawHome)));
+    addStateRoot(dirname(resolvePostinstallUserPath(configPath, aforaHome)));
   }
-  addStateRoot(join(openClawHome, ".openclaw"));
-  addStateRoot(join(openClawHome, ".clawdbot"));
+  addStateRoot(join(aforaHome, ".afora"));
+  addStateRoot(join(aforaHome, ".clawdbot"));
 
   for (const entry of splitPostinstallPathList(env?.STATE_DIRECTORY)) {
-    addStateRoot(resolvePostinstallUserPath(entry, openClawHome));
+    addStateRoot(resolvePostinstallUserPath(entry, aforaHome));
   }
 
   return [...new Set(stateRoots.map((root) => pathResolve(root)))].toSorted((left, right) =>
@@ -649,7 +649,7 @@ export function applyBaileysEncryptedStreamFinishHotfix(params = {}) {
     ((unsafeTargetPath) =>
       join(
         dirname(unsafeTargetPath),
-        `.${basename(unsafeTargetPath)}.openclaw-hotfix-${randomUUID()}`,
+        `.${basename(unsafeTargetPath)}.afora-hotfix-${randomUUID()}`,
       ));
   const writeFile =
     params.writeFileSync ?? ((filePath, value) => writeFileSync(filePath, value, "utf8"));

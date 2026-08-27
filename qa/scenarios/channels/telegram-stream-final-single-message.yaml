@@ -8,7 +8,7 @@ scenario:
     primary:
       - telegram.conversation-routing-and-delivery
   regressionRefs:
-    - openclaw/openclaw#39905
+    - AforaMosh/afora-agent#39905
   objective: Verify Telegram quiet streaming finalizes one preview without a duplicate reply.
   successCriteria:
     - The scripted streaming reply contains the exact marker.
@@ -37,7 +37,7 @@ flow:
             senderId: qa-stream-operator
             senderName: QA Stream Operator
             text:
-              expr: "`@openclaw Quiet streaming QA check. Reply exactly: ${config.marker}`"
+              expr: "`@afora Quiet streaming QA check. Reply exactly: ${config.marker}`"
         - waitForOutbound:
             conversation: { id: telegram-stream-room, kind: channel }
             sinceIndex: { ref: outboundStartIndex }

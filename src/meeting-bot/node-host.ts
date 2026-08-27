@@ -1,8 +1,8 @@
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { asPositiveFiniteNumber } from "@openclaw/normalization-core/number-coercion";
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
-import { readNonEmptyStringPreservingWhitespace as readNonEmptyString } from "@openclaw/normalization-core/string-coerce";
+import { asPositiveFiniteNumber } from "@afora/normalization-core/number-coercion";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
+import { readNonEmptyStringPreservingWhitespace as readNonEmptyString } from "@afora/normalization-core/string-coerce";
 import { formatErrorMessage } from "../infra/errors.js";
 import type { MeetingAudioBackendSelection, MeetingAudioRuntime } from "./audio-backend.js";
 import { decodeMeetingAudioBase64 } from "./audio-base64.js";
@@ -524,7 +524,7 @@ export function createMeetingNodeHost(options: MeetingNodeHostOptions): {
       if (bridgeCommand) {
         if (mode === options.agentMode) {
           throw new Error(
-            "Chrome agent mode requires audioInputCommand and audioOutputCommand so OpenClaw can run STT and regular TTS directly.",
+            "Chrome agent mode requires audioInputCommand and audioOutputCommand so Afora can run STT and regular TTS directly.",
           );
         }
         const bridge = runCommandWithTimeout(bridgeCommand, timeoutMs);

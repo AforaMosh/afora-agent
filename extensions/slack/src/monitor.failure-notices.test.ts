@@ -1,7 +1,7 @@
-import type { OpenKeyedStoreOptions } from "openclaw/plugin-sdk/plugin-state-runtime";
-import { createPluginStateKeyedStoreForTests } from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import { setReplyPayloadMetadata } from "openclaw/plugin-sdk/reply-payload-testing";
-import { resetInboundDedupe } from "openclaw/plugin-sdk/reply-runtime";
+import type { OpenKeyedStoreOptions } from "afora-agent/plugin-sdk/plugin-state-runtime";
+import { createPluginStateKeyedStoreForTests } from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import { setReplyPayloadMetadata } from "afora-agent/plugin-sdk/reply-payload-testing";
+import { resetInboundDedupe } from "afora-agent/plugin-sdk/reply-runtime";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   getSlackTestState,

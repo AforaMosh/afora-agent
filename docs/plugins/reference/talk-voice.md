@@ -11,14 +11,14 @@ Manage Talk voice selection (list/set).
 
 ## Distribution
 
-- Package: `openclaw`
-- Install route: included in OpenClaw
+- Package: `afora`
+- Install route: included in Afora
 
 ## Surface
 
 commands: `/voice`
 
-<!-- openclaw-plugin-reference:manual-start -->
+<!-- afora-plugin-reference:manual-start -->
 
 ## Configure a Talk voice from chat
 
@@ -32,4 +32,4 @@ Discord registers the native command as `/talkvoice`; its subcommands and argume
 
 Failures are returned visibly in chat. Missing Talk configuration identifies the required keys; provider lookup errors include the provider error; unknown voices suggest listing available voices; and unauthorized writes state the required permission.
 
-<!-- openclaw-plugin-reference:manual-end -->
+<!-- afora-plugin-reference:manual-end -->

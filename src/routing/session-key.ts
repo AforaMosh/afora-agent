@@ -2,12 +2,12 @@ import {
   isValidAgentId,
   normalizeAgentId,
   normalizeAgentIdStrict,
-} from "@openclaw/normalization-core/agent-id";
+} from "@afora/normalization-core/agent-id";
 // Routing session key helpers build stable session keys from route targets.
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import type { ChatType } from "../channels/chat-type.js";
 import {
   isCronRunSessionKey,

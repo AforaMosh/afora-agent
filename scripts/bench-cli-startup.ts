@@ -1,4 +1,4 @@
-// Bench Cli Startup script supports OpenClaw repository automation.
+// Bench Cli Startup script supports Afora repository automation.
 import { spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
@@ -117,11 +117,11 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_TIMEOUT_KILL_GRACE_MS = 1_000;
 const TIMEOUT_KILL_GRACE_MS = resolveTimeoutKillGraceMs(process.env);
 const PROCESS_GROUP_EXIT_POLL_MS = 25;
-const DEFAULT_ENTRY = "openclaw.mjs";
-const MAX_RSS_MARKER = "__OPENCLAW_MAX_RSS_KB__=";
+const DEFAULT_ENTRY = "afora.mjs";
+const MAX_RSS_MARKER = "__AFORA_MAX_RSS_KB__=";
 
 function resolveTimeoutKillGraceMs(env: NodeJS.ProcessEnv): number {
-  const raw = env.VITEST ? env.OPENCLAW_TEST_CLI_STARTUP_TIMEOUT_KILL_GRACE_MS : undefined;
+  const raw = env.VITEST ? env.AFORA_TEST_CLI_STARTUP_TIMEOUT_KILL_GRACE_MS : undefined;
   if (!raw || !/^\d+$/u.test(raw)) {
     return DEFAULT_TIMEOUT_KILL_GRACE_MS;
   }
@@ -564,7 +564,7 @@ function parseGatewayPortEnv(raw: string | undefined): number {
   }
   const bracketHostMatch = /^\[[^\]]+\]:(\d+)$/u.exec(value);
   if (bracketHostMatch) {
-    return parsePositiveInt(bracketHostMatch[1], 32123, "OPENCLAW_GATEWAY_PORT");
+    return parsePositiveInt(bracketHostMatch[1], 32123, "AFORA_GATEWAY_PORT");
   }
   if (value.startsWith("[") && value.endsWith("]")) {
     return 32123;
@@ -574,7 +574,7 @@ function parseGatewayPortEnv(raw: string | undefined): number {
     return 32123;
   }
   const portRaw = colonCount === 1 ? value.split(":")[1] : value;
-  return parsePositiveInt(portRaw, 32123, "OPENCLAW_GATEWAY_PORT");
+  return parsePositiveInt(portRaw, 32123, "AFORA_GATEWAY_PORT");
 }
 
 function parsePresets(raw: string | undefined): string[] {
@@ -699,7 +699,7 @@ function buildConfigFixture(commandCase: CommandCase): Record<string, unknown> |
   ) {
     return null;
   }
-  const port = parseGatewayPortEnv(process.env.OPENCLAW_GATEWAY_PORT);
+  const port = parseGatewayPortEnv(process.env.AFORA_GATEWAY_PORT);
   return {
     gateway: {
       auth: { mode: "none" },
@@ -764,10 +764,10 @@ async function runSample(params: {
   rssHookPath: string;
   runRoot?: string;
 }): Promise<Sample> {
-  const runRoot = params.runRoot ?? mkdtempSync(path.join(os.tmpdir(), "openclaw-cli-bench-home-"));
+  const runRoot = params.runRoot ?? mkdtempSync(path.join(os.tmpdir(), "afora-cli-bench-home-"));
   const ownsRunRoot = params.runRoot == null;
-  const stateDir = path.join(runRoot, ".openclaw");
-  const configPath = path.join(stateDir, "openclaw.json");
+  const stateDir = path.join(runRoot, ".afora");
+  const configPath = path.join(stateDir, "afora.json");
   const configFixture = buildConfigFixture(params.commandCase);
   if (configFixture) {
     mkdirSync(stateDir, { recursive: true });
@@ -804,10 +804,10 @@ async function runSample(params: {
           ...process.env,
           HOME: runRoot,
           USERPROFILE: runRoot,
-          OPENCLAW_HOME: runRoot,
-          OPENCLAW_STATE_DIR: stateDir,
-          OPENCLAW_CONFIG_PATH: configPath,
-          OPENCLAW_HIDE_BANNER: "1",
+          AFORA_HOME: runRoot,
+          AFORA_STATE_DIR: stateDir,
+          AFORA_CONFIG_PATH: configPath,
+          AFORA_HIDE_BANNER: "1",
           NO_COLOR: "1",
           FORCE_COLOR: "0",
         },
@@ -994,7 +994,7 @@ async function runCase(params: {
   const totalRuns = params.warmup + params.runs;
   const caseRunRoot =
     params.commandCase.stateScope === "case"
-      ? mkdtempSync(path.join(os.tmpdir(), "openclaw-cli-bench-home-"))
+      ? mkdtempSync(path.join(os.tmpdir(), "afora-cli-bench-home-"))
       : undefined;
   try {
     for (let i = 0; i < totalRuns; i += 1) {
@@ -1201,7 +1201,7 @@ function parseOptions(): CliOptions {
 }
 
 function printUsage(): void {
-  console.log(`OpenClaw CLI benchmark
+  console.log(`Afora CLI benchmark
 
 Usage:
   pnpm tsx scripts/bench-cli-startup.ts [options]
@@ -1210,7 +1210,7 @@ Options:
   --preset <startup|real|response|all>
                                Command preset to run (default: startup)
   --case <id>                  Specific case id to run; repeatable
-  --entry <path>               Primary entry file (default: openclaw.mjs)
+  --entry <path>               Primary entry file (default: afora.mjs)
   --entry-secondary <path>     Secondary entry file for avg delta comparison
   --runs <n>                   Measured runs per case (default: ${DEFAULT_RUNS})
   --warmup <n>                 Warmup runs per case (default: ${DEFAULT_WARMUP})
@@ -1287,7 +1287,7 @@ async function main(): Promise<void> {
     printDelta(baseline, candidate);
     return;
   }
-  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "openclaw-cli-bench-"));
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "afora-cli-bench-"));
   const rssHookPath = buildRssHook(tmpDir);
   try {
     const primary = await buildSuiteResult({

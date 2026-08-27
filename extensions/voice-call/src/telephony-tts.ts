@@ -1,7 +1,7 @@
 // Voice Call plugin module implements telephony tts behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { resolveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
-import type { TtsDirectiveOverrides, TtsDirectiveParseResult } from "openclaw/plugin-sdk/speech";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { resolveTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
+import type { TtsDirectiveOverrides, TtsDirectiveParseResult } from "afora-agent/plugin-sdk/speech";
 import type { VoiceCallTtsConfig } from "./config.js";
 import { convertPcmToMulaw8k } from "./telephony-audio.js";
 
@@ -10,16 +10,16 @@ import { convertPcmToMulaw8k } from "./telephony-audio.js";
 /** Core runtime TTS API used by the telephony adapter. */
 export type TelephonyTtsRuntime = {
   prepareTtsRequest: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     override?: VoiceCallTtsConfig;
     text: string;
   }) => Promise<{
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     directives: TtsDirectiveParseResult;
   }>;
   textToSpeechTelephony: (params: {
     text: string;
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     prefsPath?: string;
     overrides?: TtsDirectiveOverrides;
   }) => Promise<{
@@ -44,7 +44,7 @@ export const TELEPHONY_DEFAULT_TTS_TIMEOUT_MS = 8000;
 
 /** Create a TTS provider that honors voice-call overrides and converts PCM to mulaw. */
 export async function createTelephonyTtsProvider(params: {
-  coreConfig: OpenClawConfig;
+  coreConfig: AforaConfig;
   ttsOverride?: VoiceCallTtsConfig;
   runtime: TelephonyTtsRuntime;
   logger?: {

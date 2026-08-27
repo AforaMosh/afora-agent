@@ -8,7 +8,7 @@ scenario:
     primary:
       - telegram.built-in-commands
   regressionRefs:
-    - openclaw/openclaw#116688
+    - AforaMosh/afora-agent#116688
   objective: Verify native Telegram settings commands validate their complete arguments without invoking the model or synthesizing a model-failure fallback.
   successCriteria:
     - Telegram accepts the native queue command with its complete trailing argument text.

@@ -183,7 +183,7 @@ describe("Beam receiver", () => {
         resolveClient: writeClient,
         resolveControlUiTarget: () => ({
           agentId: "research",
-          basePath: "/admin/openclaw/",
+          basePath: "/admin/afora/",
         }),
       }),
     );
@@ -197,7 +197,7 @@ describe("Beam receiver", () => {
     expect(await response.json()).toEqual({
       ok: true,
       beamId: "0123456789abcdef0123456789abcdef",
-      url: "/admin/openclaw/chat/research?catalog=beam&host=gateway&thread=0123456789abcdef0123456789abcdef",
+      url: "/admin/afora/chat/research?catalog=beam&host=gateway&thread=0123456789abcdef0123456789abcdef",
     });
   });
 

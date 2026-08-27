@@ -1,11 +1,11 @@
-// Volcengine plugin entrypoint registers its OpenClaw integration.
-import { buildOpenAICompatibleProviderFamilyCatalog } from "openclaw/plugin-sdk/provider-catalog-live-runtime";
-import { readManifestProviderDefaultModelRef } from "openclaw/plugin-sdk/provider-catalog-shared";
-import { defineSingleProviderPluginEntry } from "openclaw/plugin-sdk/provider-entry";
-import { ensureModelAllowlistEntry } from "openclaw/plugin-sdk/provider-onboard";
+// Volcengine plugin entrypoint registers its Afora integration.
+import { buildOpenAICompatibleProviderFamilyCatalog } from "afora-agent/plugin-sdk/provider-catalog-live-runtime";
+import { readManifestProviderDefaultModelRef } from "afora-agent/plugin-sdk/provider-catalog-shared";
+import { defineSingleProviderPluginEntry } from "afora-agent/plugin-sdk/provider-entry";
+import { ensureModelAllowlistEntry } from "afora-agent/plugin-sdk/provider-onboard";
 import { applyVolcengineToolSchemaCompat } from "./api.js";
 import { VOLCENGINE_PROVIDER_CATALOG } from "./models.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 import { buildVolcengineSpeechProvider } from "./speech-provider.js";
 
 const PROVIDER_ID = "volcengine";

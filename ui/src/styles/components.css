@@ -22,7 +22,7 @@
   font-size: 14px;
 }
 
-openclaw-session-owner-chip {
+afora-session-owner-chip {
   display: inline-flex;
   flex: 0 0 auto;
 }
@@ -798,15 +798,15 @@ openclaw-session-owner-chip {
   stroke-linejoin: round;
 }
 
-openclaw-github-link-hovercard-provider {
+afora-github-link-hovercard-provider {
   display: contents;
 }
 
-openclaw-session-link-hovercard-provider {
+afora-session-link-hovercard-provider {
   display: contents;
 }
 
-openclaw-session-progress-hovercard-provider {
+afora-session-progress-hovercard-provider {
   display: contents;
 }
 
@@ -1866,7 +1866,7 @@ openclaw-session-progress-hovercard-provider {
   }
 }
 
-openclaw-chat-session-rail {
+afora-chat-session-rail {
   display: contents;
 }
 
@@ -3816,7 +3816,7 @@ td.data-table-key-col {
   white-space: nowrap;
 }
 
-.agent-scope-control openclaw-agent-select {
+.agent-scope-control afora-agent-select {
   min-width: 150px;
   max-width: min(240px, 40vw);
 }
@@ -3835,7 +3835,7 @@ td.data-table-key-col {
     display: none;
   }
 
-  .agent-scope-control openclaw-agent-select {
+  .agent-scope-control afora-agent-select {
     min-width: 128px;
     max-width: 44vw;
   }

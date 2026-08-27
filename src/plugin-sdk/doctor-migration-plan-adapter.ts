@@ -1,10 +1,10 @@
 import { buildLegacyMigrationPreview } from "../channels/plugins/legacy-state-migration-preview.js";
 import type { ChannelLegacyStateMigrationPlan } from "../channels/plugins/legacy-state-migration.types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginDoctorStateMigration } from "../plugins/doctor-contract-module.js";
 
 type PluginDoctorPlanResolver = (params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   stateDir: string;
   oauthDir: string;
@@ -22,7 +22,7 @@ export function definePluginDoctorMigrationFromPlans(params: {
   resolvePlans: PluginDoctorPlanResolver;
 }): PluginDoctorStateMigration {
   const resolvePlans = async (input: {
-    config: OpenClawConfig;
+    config: AforaConfig;
     env: NodeJS.ProcessEnv;
     stateDir: string;
     oauthDir: string;

@@ -1,4 +1,4 @@
-import { parseRetryAfterHttpDateMs } from "@openclaw/ai/internal/retry-after";
+import { parseRetryAfterHttpDateMs } from "@afora/ai/internal/retry-after";
 import milliseconds from "ms";
 import { isTransientNetworkError } from "../../infra/retryable-network-errors.js";
 import {

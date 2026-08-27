@@ -7,7 +7,7 @@ import {
   getRuntimeConfig,
   resetConfigRuntimeState,
   setRuntimeConfigSnapshot,
-  type OpenClawConfig,
+  type AforaConfig,
 } from "../config/config.js";
 import { startHeartbeatRunner } from "./heartbeat-runner.js";
 import { computeNextHeartbeatPhaseDueMs, resolveHeartbeatPhaseMs } from "./heartbeat-schedule.js";
@@ -38,14 +38,14 @@ describe("startHeartbeatRunner", () => {
   }
 
   function heartbeatConfig(
-    list?: NonNullable<NonNullable<OpenClawConfig["agents"]>["list"]>,
-  ): OpenClawConfig {
+    list?: NonNullable<NonNullable<AforaConfig["agents"]>["list"]>,
+  ): AforaConfig {
     return {
       agents: {
         defaults: { heartbeat: { every: "30m" } },
         ...(list ? { list } : {}),
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
   }
 
   it("does not self-fire when cron is disabled", async () => {
@@ -54,7 +54,7 @@ describe("startHeartbeatRunner", () => {
     const disabledCfg = {
       ...heartbeatConfig(),
       cron: { enabled: false },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const runner = startHeartbeatRunner({
       cfg: disabledCfg,
       runOnce,
@@ -250,7 +250,7 @@ describe("startHeartbeatRunner", () => {
   }
 
   async function expectWakeDispatch(params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     runSpy: MockRunOnce;
     wake: Parameters<typeof requestHeartbeat>[0];
     expectedCall: Record<string, unknown>;
@@ -298,7 +298,7 @@ describe("startHeartbeatRunner", () => {
           { id: "ops", heartbeat: { every: "15m" } },
         ],
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     const nowAfterReload = Date.now();
     const nextMainDueMs = resolveDueFromNow(nowAfterReload, 10 * 60_000, "main");
@@ -412,11 +412,11 @@ describe("startHeartbeatRunner", () => {
   it("reads the latest runtime config for heartbeat wakes after no-op reload commits", async () => {
     useFakeHeartbeatTime();
 
-    const initialConfig: OpenClawConfig = {
+    const initialConfig: AforaConfig = {
       ...heartbeatConfig(),
       messages: { visibleReplies: "automatic" },
     };
-    const nextConfig: OpenClawConfig = {
+    const nextConfig: AforaConfig = {
       ...heartbeatConfig(),
       messages: { visibleReplies: "message_tool" },
     };
@@ -435,7 +435,7 @@ describe("startHeartbeatRunner", () => {
 
     expect(runSpy).toHaveBeenCalledTimes(1);
     const options = getRunCall(runSpy, 0);
-    expect((options.cfg as OpenClawConfig).messages?.visibleReplies).toBe("message_tool");
+    expect((options.cfg as AforaConfig).messages?.visibleReplies).toBe("message_tool");
     expect((options.heartbeat as { every?: string }).every).toBe("30m");
     runner.stop();
   });
@@ -499,7 +499,7 @@ describe("startHeartbeatRunner", () => {
 
     const cfg = {
       agents: { defaults: { heartbeat: { every: "30m" } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const firstDueMs = resolveDueFromNow(0, 30 * 60_000, "main");
 
     // Start runner A
@@ -693,7 +693,7 @@ describe("startHeartbeatRunner", () => {
           { id: "main", heartbeat: { every: "30m" } },
           { id: "ops", heartbeat: { every: "15m" } },
         ]),
-      } as OpenClawConfig,
+      } as AforaConfig,
       runSpy,
       wake: {
         source: "cron",
@@ -755,7 +755,7 @@ describe("startHeartbeatRunner", () => {
             },
           },
         ]),
-      } as OpenClawConfig,
+      } as AforaConfig,
       runSpy,
       wake: {
         source: "cron",
@@ -798,7 +798,7 @@ describe("startHeartbeatRunner", () => {
             },
           },
         ]),
-      } as OpenClawConfig,
+      } as AforaConfig,
       runSpy,
       wake: {
         source: "hook",
@@ -834,7 +834,7 @@ describe("startHeartbeatRunner", () => {
           { id: "main", heartbeat: { every: "30m" } },
           { id: "finance", heartbeat: { every: "30m" } },
         ]),
-      } as OpenClawConfig,
+      } as AforaConfig,
       runSpy,
       wake: {
         source: "exec-event",
@@ -956,7 +956,7 @@ describe("startHeartbeatRunner", () => {
   });
 
   it("preserves immediate delivery for repeated bare wake reasons", async () => {
-    // 'wake' is the immediate-path reason from `openclaw system event --mode now`
+    // 'wake' is the immediate-path reason from `afora system event --mode now`
     // and must NOT be deferred. Verify the runner allows multiple back-to-back
     // wake requests through (subject only to the flood guard backstop).
     useFakeHeartbeatTime();
@@ -989,7 +989,7 @@ describe("startHeartbeatRunner", () => {
       name: "an agent without a heartbeat schedule",
       cfg: {
         agents: { list: [{ id: "main", heartbeat: { every: "30m" } }, { id: "ops" }] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       agentId: "ops",
       sessionKey: "agent:ops:main",
       heartbeat: { target: "last" },
@@ -999,7 +999,7 @@ describe("startHeartbeatRunner", () => {
       cfg: {
         agents: { defaults: { heartbeat: { every: "0m" } }, list: [{ id: "main" }] },
         session: { scope: "global" },
-      } as OpenClawConfig,
+      } as AforaConfig,
       agentId: "main",
       sessionKey: "global",
       heartbeat: { every: "0m", target: "last" },
@@ -1035,7 +1035,7 @@ describe("startHeartbeatRunner", () => {
     useFakeHeartbeatTime();
     const runSpy = vi.fn().mockResolvedValue({ status: "ran", durationMs: 1 });
     const runner = startHeartbeatRunner({
-      cfg: { agents: { list: [{ id: "main", heartbeat: { every: "30m" } }] } } as OpenClawConfig,
+      cfg: { agents: { list: [{ id: "main", heartbeat: { every: "30m" } }] } } as AforaConfig,
       runOnce: runSpy,
       stableSchedulerSeed: TEST_SCHEDULER_SEED,
     });

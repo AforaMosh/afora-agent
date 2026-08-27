@@ -4,7 +4,7 @@ import { context, metrics, propagation, ROOT_CONTEXT, trace } from "@opentelemet
 import { logs } from "@opentelemetry/api-logs";
 import { AsyncLocalStorageContextManager } from "@opentelemetry/context-async-hooks";
 import { W3CTraceContextPropagator } from "@opentelemetry/core";
-import { resetDiagnosticEventsForTest } from "openclaw/plugin-sdk/diagnostic-runtime";
+import { resetDiagnosticEventsForTest } from "afora-agent/plugin-sdk/diagnostic-runtime";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { startLocalOtlpReceiver } from "../../../test/e2e/qa-lab/runtime/otel-test-support.js";
 import {
@@ -14,7 +14,7 @@ import {
   stopStartedOtelServices,
 } from "./service.test-helpers.js";
 
-const ENV_KEYS = ["OPENCLAW_OTEL_PRELOADED", "OTEL_PROPAGATORS", "OTEL_SDK_DISABLED"] as const;
+const ENV_KEYS = ["AFORA_OTEL_PRELOADED", "OTEL_PROPAGATORS", "OTEL_SDK_DISABLED"] as const;
 const OTEL_GLOBAL_API_KEY = Symbol.for("opentelemetry.js.api.1");
 const OTEL_GLOBAL_LOGS_KEY = Symbol.for("io.opentelemetry.js.api.logs");
 const JAEGER_DEPRECATION_WARNING =
@@ -104,7 +104,7 @@ beforeEach(() => {
   metrics.disable();
   propagation.disable();
   trace.disable();
-  process.env.OPENCLAW_OTEL_PRELOADED = "0";
+  process.env.AFORA_OTEL_PRELOADED = "0";
   delete process.env.OTEL_PROPAGATORS;
   delete process.env.OTEL_SDK_DISABLED;
 });
@@ -146,7 +146,7 @@ afterEach(async () => {
   resetDiagnosticEventsForTest();
 });
 
-test("disables every OpenClaw route while preserving W3C propagation", async () => {
+test("disables every Afora route while preserving W3C propagation", async () => {
   const receiver = startLocalOtlpReceiver();
   const port = await receiver.listen();
   const stdoutWrites: string[] = [];

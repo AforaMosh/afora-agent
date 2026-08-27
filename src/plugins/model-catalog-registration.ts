@@ -2,7 +2,7 @@
 import type {
   UnifiedModelCatalogEntry,
   UnifiedModelCatalogSource,
-} from "@openclaw/model-catalog-core/model-catalog-types";
+} from "@afora/model-catalog-core/model-catalog-types";
 import {
   synthesizeMediaGenerationCatalogEntries,
   type MediaGenerationCatalogKind,

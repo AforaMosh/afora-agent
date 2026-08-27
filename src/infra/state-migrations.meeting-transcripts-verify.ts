@@ -1,6 +1,6 @@
 // Verifies staged legacy transcript rows against the committed canonical store.
 import type { DatabaseSync } from "node:sqlite";
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import type { TranscriptUtterance } from "../transcripts/provider-types.js";
 import { transcriptSessionSelector, TranscriptsStore } from "../transcripts/store.js";
 import {

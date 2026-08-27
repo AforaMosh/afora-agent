@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
 vi.mock("../model-fallback-candidates.js", () => ({
   resolveModelCandidateChain: (params: { provider: string; model: string }) => [
@@ -33,7 +33,7 @@ vi.mock("./direct-compaction.js", () => ({
 vi.mock("../prepared-model-runtime.js", () => ({
   acquireAgentRunPreparedModelRuntime: vi.fn(
     async (input: {
-      config: OpenClawConfig;
+      config: AforaConfig;
       agentId?: string;
       agentDir: string;
       workspaceDir?: string;
@@ -79,7 +79,7 @@ const baseParams = {
   workspaceDir: "/tmp",
 };
 
-function configWithFallbacks(fallbacks: string[]): OpenClawConfig {
+function configWithFallbacks(fallbacks: string[]): AforaConfig {
   return {
     agents: {
       defaults: {
@@ -89,7 +89,7 @@ function configWithFallbacks(fallbacks: string[]): OpenClawConfig {
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 describe("compactEmbeddedAgentSessionDirect abortSignal threading", () => {

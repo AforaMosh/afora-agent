@@ -1,10 +1,10 @@
 import Foundation
-import OpenClawKit
+import AforaKit
 import Testing
 
 @Suite struct ShareToAgentDeepLinkTests {
-    @Test func appGroupIdentifierUsesCanonicalOpenClawGroup() {
-        #expect(OpenClawAppGroup.canonicalIdentifier == "group.ai.openclawfoundation.app.shared")
+    @Test func appGroupIdentifierUsesCanonicalAforaGroup() {
+        #expect(AforaAppGroup.canonicalIdentifier == "group.ai.aforafoundation.app.shared")
     }
 
     @Test func buildMessageIncludesSharedFields() {
@@ -32,7 +32,7 @@ import Testing
         let url = ShareToAgentDeepLink.buildURL(from: payload)
         let parsed = url.flatMap { DeepLinkParser.parse($0) }
         guard case let .agent(agent)? = parsed else {
-            Issue.record("Expected openclaw://agent deep link")
+            Issue.record("Expected afora://agent deep link")
             return
         }
 

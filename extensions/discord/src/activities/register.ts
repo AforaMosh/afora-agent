@@ -1,5 +1,5 @@
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/channel-plugin-common";
-import type { OpenKeyedStoreOptions } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/channel-plugin-common";
+import type { OpenKeyedStoreOptions } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   isDiscordAccountEnabledForRuntime,
   listDiscordAccountIds,
@@ -12,7 +12,7 @@ import { DISCORD_ACTIVITY_ROUTE_PREFIX } from "./shell.js";
 import { DiscordActivityStore, openDiscordActivityStores } from "./store.js";
 import { createDiscordShowWidgetTool, createDiscordWidgetTool } from "./tool.js";
 
-export function registerDiscordActivities(api: OpenClawPluginApi): void {
+export function registerDiscordActivities(api: AforaPluginApi): void {
   setDiscordActivitiesRuntime(undefined);
   const enabledAccountIds: string[] = [];
   for (const accountId of listDiscordAccountIds(api.config)) {

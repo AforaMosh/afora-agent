@@ -1,12 +1,12 @@
 // Artifact gateway methods collect generated artifacts from session transcripts
 // and expose list/get/download RPCs scoped by session, run, task, or agent.
 import { createHash } from "node:crypto";
-import { isHttpUrl } from "@openclaw/net-policy/url-protocol";
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
+import { isHttpUrl } from "@afora/net-policy/url-protocol";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
 import {
   normalizeOptionalString as asNonEmptyString,
   readStringValue,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   ErrorCodes,
   errorShape,
@@ -19,7 +19,7 @@ import {
 import { AgentSelectionRequiredError } from "../../agents/agent-scope-config.js";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import { resolvePersistedSessionStoreOwnerForKey } from "../../config/sessions/session-store-owner.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   normalizeAgentId,
   parseAgentSessionKey,
@@ -78,7 +78,7 @@ type ResolvedArtifactSession = {
 
 function admitArtifactQuery<T extends ArtifactQuery>(
   query: T,
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
   respond: RespondFn,
 ): T | undefined {
   const sessionKey = asNonEmptyString(query.sessionKey);
@@ -104,7 +104,7 @@ function artifactError(type: string, message: string, details?: Record<string, u
 
 function resolveArtifactSessionAgentId(
   sessionKey: string | undefined,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): string | undefined {
   const key = asNonEmptyString(sessionKey);
   if (!key) {
@@ -131,7 +131,7 @@ function resolveArtifactSessionAgentId(
 function resolveScopedArtifactSessionKey(
   sessionKey: string | undefined,
   agentId: string | undefined,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): string | undefined {
   const key = asNonEmptyString(sessionKey);
   if (!key) {
@@ -220,18 +220,18 @@ function artifactId(parts: {
 }
 
 function resolveMessageSeq(message: Record<string, unknown>, fallback: number): number {
-  const meta = asOptionalRecord(message["__openclaw"]);
+  const meta = asOptionalRecord(message["__afora"]);
   const seq = meta?.seq;
   return typeof seq === "number" && Number.isInteger(seq) && seq > 0 ? seq : fallback;
 }
 
 function resolveMessageRunId(message: Record<string, unknown>): string | undefined {
-  const meta = asOptionalRecord(message["__openclaw"]);
+  const meta = asOptionalRecord(message["__afora"]);
   return asNonEmptyString(meta?.runId) ?? asNonEmptyString(message.runId);
 }
 
 function resolveMessageTaskId(message: Record<string, unknown>): string | undefined {
-  const meta = asOptionalRecord(message["__openclaw"]);
+  const meta = asOptionalRecord(message["__afora"]);
   return (
     asNonEmptyString(meta?.messageTaskId) ??
     asNonEmptyString(meta?.taskId) ??
@@ -386,7 +386,7 @@ function collectArtifactsFromMessage(params: {
 
 function resolveQuerySession(
   query: ArtifactQuery,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): ResolvedArtifactSession | undefined {
   if (query.sessionKey) {
     const sessionKey = resolveScopedArtifactSessionKey(query.sessionKey, query.agentId, cfg);
@@ -465,7 +465,7 @@ class ArtifactSessionResolutionError extends Error {
 /** Loads artifacts from the transcript selected by sessionKey, runId, or taskId. */
 async function loadArtifacts(
   query: ArtifactQuery,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
   opts: ArtifactCollectionOptions = {},
 ): Promise<{ artifacts: ArtifactRecord[]; sessionKey?: string }> {
   const resolved = resolveQuerySession(query, cfg);
@@ -560,7 +560,7 @@ async function runArtifactSessionOperation<T>(
 
 async function findArtifact(
   params: ArtifactsGetParams,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
   opts: ArtifactCollectionOptions = {},
 ): Promise<{
   artifact?: ArtifactRecord;

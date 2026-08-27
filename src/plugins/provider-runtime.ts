@@ -2,9 +2,9 @@
 import {
   findNormalizedProviderValue,
   normalizeProviderId,
-} from "@openclaw/model-catalog-core/provider-id";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+} from "@afora/model-catalog-core/provider-id";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import type { AuthProfileCredential, OAuthCredential } from "../agents/auth-profiles/types.js";
 import { resolveGpt5SystemPromptContribution } from "../agents/gpt5-prompt-overlay.js";
 import { getRegisteredAgentHarness } from "../agents/harness/registry.js";
@@ -15,7 +15,7 @@ import {
 import { unwrapSecretSentinelsForProviderEgress } from "../agents/provider-secret-egress.js";
 import type { ProviderSystemPromptContribution } from "../agents/system-prompt-contribution.js";
 import type { ModelProviderConfig } from "../config/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { UsageProviderId } from "../infra/provider-usage.types.js";
 import { getCurrentPluginMetadataSnapshot } from "./current-plugin-metadata-snapshot.js";
 import { normalizeProviderModelIdWithManifest } from "./manifest-model-id-normalization.js";
@@ -110,7 +110,7 @@ function matchesAnyProviderPluginRef(provider: ProviderPlugin, providerRefs: rea
 
 function hasExplicitProviderRuntimePluginActivation(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
 }): boolean {
@@ -134,7 +134,7 @@ function hasExplicitProviderRuntimePluginActivation(params: {
 
 function hasConfiguredModelProvider(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): boolean {
   return (
     findNormalizedProviderValue(params.config?.models?.providers, params.provider) !== undefined
@@ -152,7 +152,7 @@ export {
 };
 
 function resolveProviderPluginsForCatalogHooks(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   metadataSnapshot?: PluginMetadataSnapshot;
@@ -182,7 +182,7 @@ function resolveProviderPluginsForCatalogHooks(params: {
 
 export function runProviderDynamicModel(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderResolveDynamicModelContext;
@@ -192,7 +192,7 @@ export function runProviderDynamicModel(params: {
 
 export function resolveProviderSystemPromptContribution(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   runtimeHandle?: ProviderRuntimePluginHandle;
@@ -247,7 +247,7 @@ function mergeUniquePromptSections(...sections: Array<string | undefined>): stri
 
 export function transformProviderSystemPrompt(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   runtimeHandle?: ProviderRuntimePluginHandle;
@@ -265,7 +265,7 @@ export function transformProviderSystemPrompt(params: {
 
 export function resolveProviderTextTransforms(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   runtimeHandle?: ProviderRuntimePluginHandle;
@@ -278,7 +278,7 @@ export function resolveProviderTextTransforms(params: {
 
 export async function prepareProviderDynamicModel(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderPrepareDynamicModelContext;
@@ -288,7 +288,7 @@ export async function prepareProviderDynamicModel(params: {
 
 export function shouldPreferProviderRuntimeResolvedModel(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderPreferRuntimeResolvedModelContext;
@@ -301,12 +301,12 @@ export function shouldPreferProviderRuntimeResolvedModel(params: {
 export function normalizeProviderResolvedModelWithPlugin(params: {
   provider: string;
   modelId?: string | null;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   pluginMetadataSnapshot?: PluginMetadataRegistryView;
   context: {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     agentDir?: string;
     workspaceDir?: string;
     provider: string;
@@ -334,7 +334,7 @@ export function normalizeProviderResolvedModelWithPlugin(params: {
 export function applyProviderResolvedTransportWithPlugin(params: {
   provider: string;
   modelId?: string | null;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderNormalizeResolvedModelContext;
@@ -375,7 +375,7 @@ export function applyProviderResolvedTransportWithPlugin(params: {
 
 export function normalizeProviderModelIdWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   plugins?: readonly Pick<PluginManifestRecord, "modelIdNormalization">[];
@@ -391,7 +391,7 @@ export function normalizeProviderModelIdWithPlugin(params: {
 export function normalizeProviderTransportWithPlugin(params: {
   provider: string;
   modelId?: string | null;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderNormalizeTransportContext;
@@ -432,7 +432,7 @@ export function normalizeProviderTransportWithPlugin(params: {
 
 export function normalizeProviderConfigWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
@@ -461,7 +461,7 @@ export function normalizeProviderConfigWithPlugin(params: {
 
 export function applyProviderNativeStreamingUsageCompatWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderNormalizeConfigContext;
@@ -478,7 +478,7 @@ export function applyProviderNativeStreamingUsageCompatWithPlugin(params: {
 
 export function resolveProviderConfigApiKeyWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
@@ -501,7 +501,7 @@ export function resolveProviderConfigApiKeyWithPlugin(params: {
 
 export async function sanitizeProviderReplayHistoryWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderSanitizeReplayHistoryContext;
@@ -511,7 +511,7 @@ export async function sanitizeProviderReplayHistoryWithPlugin(params: {
 
 export async function validateProviderReplayTurnsWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderValidateReplayTurnsContext;
@@ -521,7 +521,7 @@ export async function validateProviderReplayTurnsWithPlugin(params: {
 
 export function normalizeProviderToolSchemasWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   runtimeHandle?: ProviderRuntimePluginHandle;
@@ -537,7 +537,7 @@ export function normalizeProviderToolSchemasWithPlugin(params: {
 
 export function inspectProviderToolSchemasWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   runtimeHandle?: ProviderRuntimePluginHandle;
@@ -553,7 +553,7 @@ export function inspectProviderToolSchemasWithPlugin(params: {
 
 export function resolveProviderReasoningOutputModeWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   runtimeHandle?: ProviderRuntimePluginHandle;
@@ -572,7 +572,7 @@ export function resolveProviderReasoningOutputModeWithPlugin(params: {
 
 export function resolveProviderStreamFn(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   allowRuntimePluginLoad?: boolean;
@@ -588,7 +588,7 @@ export function resolveProviderStreamFn(params: {
 export function resolveProviderTransportTurnStateWithPlugin(params: {
   provider: string;
   modelId?: string | null;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   runtimeHandle?: ProviderRuntimePluginHandle;
@@ -619,7 +619,7 @@ export function resolveProviderTransportTurnStateWithPlugin(params: {
 
 export async function prepareProviderRuntimeAuth(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderPrepareRuntimeAuthContext;
@@ -642,7 +642,7 @@ export async function prepareProviderRuntimeAuth(params: {
 
 export async function resolveProviderUsageAuthWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderResolveUsageAuthContext;
@@ -660,7 +660,7 @@ export async function resolveProviderUsageAuthWithPlugin(params: {
 
 export async function resolveProviderUsageSnapshotWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderFetchUsageSnapshotContext;
@@ -715,7 +715,7 @@ export type ProviderUsagePluginDescriptor = {
 
 /** Lists provider plugins that own the complete usage auth + fetch lifecycle. */
 export function listProviderUsagePluginDescriptors(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
 }): ProviderUsagePluginDescriptor[] {
@@ -748,7 +748,7 @@ export function listProviderUsagePluginDescriptors(params: {
 
 export function classifyProviderFailoverSignalWithPlugin(params: {
   provider?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderFailoverErrorContext;
@@ -768,7 +768,7 @@ export function classifyProviderFailoverSignalWithPlugin(params: {
 
 function resolveProviderPluginsForScopedHook(params: {
   provider?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderFailoverErrorContext;
@@ -798,7 +798,7 @@ function hasStructuredFailoverDescriptor(context: ProviderFailoverErrorContext):
 
 export function formatProviderAuthProfileApiKeyWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: AuthProfileCredential;
@@ -808,7 +808,7 @@ export function formatProviderAuthProfileApiKeyWithPlugin(params: {
 
 export async function loginProviderOAuthWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: Parameters<NonNullable<ProviderPlugin["loginOAuth"]>>[0];
@@ -828,7 +828,7 @@ export async function loginProviderOAuthWithPlugin(params: {
 
 export async function resolveProviderOAuthCredentialWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   credential: OAuthCredential;
@@ -861,7 +861,7 @@ export async function resolveProviderOAuthCredentialWithPlugin(params: {
 
 export async function refreshProviderOAuthCredentialWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: OAuthCredential;
@@ -871,7 +871,7 @@ export async function refreshProviderOAuthCredentialWithPlugin(params: {
 
 export async function buildProviderAuthDoctorHintWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderAuthDoctorHintContext;
@@ -881,7 +881,7 @@ export async function buildProviderAuthDoctorHintWithPlugin(params: {
 
 export function resolveProviderCacheTtlEligibility(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderCacheTtlEligibilityContext;
@@ -891,7 +891,7 @@ export function resolveProviderCacheTtlEligibility(params: {
 
 export function resolveProviderModernModelRef(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderModernModelPolicyContext;
@@ -901,7 +901,7 @@ export function resolveProviderModernModelRef(params: {
 
 export function buildProviderMissingAuthMessageWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderBuildMissingAuthMessageContext;
@@ -913,7 +913,7 @@ export function buildProviderMissingAuthMessageWithPlugin(params: {
 
 export function buildProviderUnknownModelHintWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderBuildUnknownModelHintContext;
@@ -923,7 +923,7 @@ export function buildProviderUnknownModelHintWithPlugin(params: {
 
 export function resolveProviderSyntheticAuthWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderResolveSyntheticAuthContext;
@@ -999,7 +999,7 @@ export function resolveProviderSyntheticAuthWithPlugin(params: {
 }
 
 export function resolveExternalAuthProfilesWithPlugins(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderResolveExternalAuthProfilesContext;
@@ -1049,7 +1049,7 @@ export function resolveExternalAuthProfilesWithPlugins(params: {
 
 export function shouldDeferProviderSyntheticProfileAuthWithPlugin(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   context: ProviderDeferSyntheticProfileAuthContext;
@@ -1073,7 +1073,7 @@ export function shouldDeferProviderSyntheticProfileAuthWithPlugin(params: {
 }
 
 export async function augmentModelCatalogWithProviderPlugins(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   metadataSnapshot?: PluginMetadataSnapshot;

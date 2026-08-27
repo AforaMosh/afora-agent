@@ -234,7 +234,7 @@ describe("Claude live process approvals", () => {
   });
 
   it("denies Claude Bash when an approved script operand changes before release", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-claude-drift-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-claude-drift-"));
     const scriptPath = path.join(workspaceDir, "script.sh");
     try {
       await fs.writeFile(scriptPath, "#!/bin/sh\necho approved\n");
@@ -274,7 +274,7 @@ describe("Claude live process approvals", () => {
   });
 
   it("releases Claude Bash when the approved script operand is unchanged", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-claude-stable-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-claude-stable-"));
     const scriptPath = path.join(workspaceDir, "script.sh");
     try {
       await fs.writeFile(scriptPath, "#!/bin/sh\necho approved\n");
@@ -385,7 +385,7 @@ describe("Claude live process approvals", () => {
     expectClaudeControlDecision(live, {
       behavior: "deny",
       requestId: "req-approval-unavailable",
-      messageIncludes: "OpenClaw approval was not granted",
+      messageIncludes: "Afora approval was not granted",
     });
   });
 
@@ -463,7 +463,7 @@ describe("Claude live process approvals", () => {
                   {
                     type: "mcp_tool_use",
                     id: "tool-live-blocked",
-                    name: "mcp__openclaw__message",
+                    name: "mcp__afora__message",
                     input: { action: "react" },
                   },
                 ],
@@ -498,7 +498,7 @@ describe("Claude live process approvals", () => {
         onStdout?: (chunk: string) => void;
       };
       stdoutListener = input.onStdout;
-      captureKey = input.env?.OPENCLAW_MCP_CLI_CAPTURE_KEY ?? "";
+      captureKey = input.env?.AFORA_MCP_CLI_CAPTURE_KEY ?? "";
       return { pid: 3061, startedAtMs: Date.now(), stdin, ...liveRunLifecycle };
     });
     const context = buildClaudeLiveRunContext({

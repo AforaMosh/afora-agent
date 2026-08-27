@@ -5,15 +5,15 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
-  closeOpenClawStateDatabaseForTest,
+  closeAforaStateDatabaseForTest,
   createChannelIngressQueueForTests,
   createPluginStateKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import type { MsgContext } from "openclaw/plugin-sdk/reply-runtime";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import type { MsgContext } from "afora-agent/plugin-sdk/reply-runtime";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TelegramBotDeps } from "./bot-deps.js";
 import { telegramBotInfoForTest } from "./bot.create-telegram-bot.test-support.js";
@@ -38,8 +38,8 @@ vi.mock("./fetch.js", () => ({
   shouldRetryTelegramTransportFallback: () => false,
 }));
 
-vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/channel-inbound")>();
+vi.mock("afora-agent/plugin-sdk/channel-inbound", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/channel-inbound")>();
   return {
     ...actual,
     runChannelInboundEvent: async (params: Parameters<typeof actual.runChannelInboundEvent>[0]) =>
@@ -78,7 +78,7 @@ vi.mock("./bot-message-dispatch.agent.runtime.js", () => ({
 }));
 
 const { createTelegramBot } = await import("./bot.js");
-const { resetInboundDedupe } = await import("openclaw/plugin-sdk/reply-runtime");
+const { resetInboundDedupe } = await import("afora-agent/plugin-sdk/reply-runtime");
 const { createTelegramTransportIngressMonitor } =
   await import("./telegram-ingress-drain-factory.js");
 const { setTelegramRuntime } = await import("./runtime.js");
@@ -89,7 +89,7 @@ const { writeTelegramSpooledUpdate } = await import("./telegram-ingress-spool.te
 
 const cfg = {
   channels: { telegram: { dmPolicy: "open", allowFrom: ["*"] } },
-} as OpenClawConfig;
+} as AforaConfig;
 
 function photoUpdate(params: { updateId: number; messageId: number; caption?: string }) {
   return {
@@ -240,7 +240,7 @@ async function assertAlbumTurnAndTombstones(params: { spoolDir: string; updateId
 }
 
 describe("Telegram durable ingress coalescing", () => {
-  const originalStateDir = process.env.OPENCLAW_STATE_DIR;
+  const originalStateDir = process.env.AFORA_STATE_DIR;
   let stateDir: string;
   let spoolDir: string;
   let activeResources: Array<{
@@ -250,8 +250,8 @@ describe("Telegram durable ingress coalescing", () => {
   }>;
 
   beforeEach(async () => {
-    stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-telegram-album-ingress-"));
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+    stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-telegram-album-ingress-"));
+    process.env.AFORA_STATE_DIR = stateDir;
     spoolDir = path.join(stateDir, "telegram", "ingress-spool-default");
     activeResources = [];
     downstreamTurns
@@ -285,12 +285,12 @@ describe("Telegram durable ingress coalescing", () => {
         await telegramTransport.close();
       }),
     );
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     resetPluginStateStoreForTests({ closeDatabase: false });
     if (originalStateDir === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.AFORA_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = originalStateDir;
+      process.env.AFORA_STATE_DIR = originalStateDir;
     }
     await fs.rm(stateDir, { recursive: true, force: true });
   });

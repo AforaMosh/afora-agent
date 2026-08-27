@@ -1,7 +1,7 @@
 import { Type } from "typebox";
 import { describe, expect, it, vi } from "vitest";
 import { jsonResult } from "../agents/tools/common.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveMcpLoopbackScopedTools } from "./mcp-http.runtime.js";
 
 const pluginTools = vi.hoisted(() => ({
@@ -39,7 +39,7 @@ describe("MCP loopback OAuth tools", () => {
       cfg: {
         auth: { order: { xai: ["xai:oauth"] } },
         plugins: { allow: ["xai"] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       sessionKey: "agent:main:main",
       agentId: "main",
       modelProvider: "anthropic",

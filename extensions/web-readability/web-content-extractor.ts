@@ -1,5 +1,5 @@
 // Web Readability plugin module implements web content extractor behavior.
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 import {
   htmlToMarkdown,
   normalizeWhitespace,
@@ -7,7 +7,7 @@ import {
   stripInvisibleUnicode,
   type WebContentExtractionRequest,
   type WebContentExtractorPlugin,
-} from "openclaw/plugin-sdk/web-content-extractor";
+} from "afora-agent/plugin-sdk/web-content-extractor";
 
 const READABILITY_MAX_HTML_CHARS = 1_000_000;
 const READABILITY_MAX_ESTIMATED_NESTING_DEPTH = 3_000;

@@ -28,7 +28,7 @@ type DiagnosticTracePropagationState = {
 };
 
 const DIAGNOSTIC_TRACE_PROPAGATION_STATE_KEY = Symbol.for(
-  "openclaw.diagnosticTracePropagation.state.v1",
+  "afora.diagnosticTracePropagation.state.v1",
 );
 
 function createDiagnosticTracePropagationState(): DiagnosticTracePropagationState {

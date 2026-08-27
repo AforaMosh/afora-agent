@@ -9,15 +9,15 @@ import { openNodeSqliteDatabase } from "../../src/infra/node-sqlite.js";
 import { createLocalSqliteSnapshotProvider } from "../../src/snapshot/local-repository.js";
 import type { SnapshotDatabaseIdentity } from "../../src/snapshot/snapshot-provider.js";
 import {
-  assertOpenClawAgentDatabaseForMaintenance,
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../../src/state/openclaw-agent-db.js";
+  assertAforaAgentDatabaseForMaintenance,
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../../src/state/afora-agent-db.js";
 import {
-  assertOpenClawStateDatabaseForMaintenance,
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../../src/state/openclaw-state-db.js";
+  assertAforaStateDatabaseForMaintenance,
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../../src/state/afora-state-db.js";
 import { runVacuumInterruptionProof } from "./sqlite-reliability-compaction.js";
 import {
   COMMITTED_WAL_SENTINEL,
@@ -101,23 +101,23 @@ function fileSize(pathname: string): number {
 
 function resolveTargetDatabase(options: CliOptions, env: NodeJS.ProcessEnv): TargetDatabase {
   if (options.agentId) {
-    const database = openOpenClawAgentDatabase({ agentId: options.agentId, env });
+    const database = openAforaAgentDatabase({ agentId: options.agentId, env });
     const target = {
       identity: { role: "agent", agentId: database.agentId } as const,
       label: `agent:${database.agentId}`,
       path: database.path,
     };
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     return target;
   }
-  const database = openOpenClawStateDatabase({ env });
+  const database = openAforaStateDatabase({ env });
   const target = {
     identity: { role: "global" } as const,
     label: "global",
     path: database.path,
   };
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   return target;
 }
 
@@ -127,9 +127,9 @@ function setupStressTable(databasePath: string): void {
     database.exec("PRAGMA journal_mode = WAL;");
     database.exec("PRAGMA busy_timeout = 30000;");
     database.exec(STRESS_TABLE_SQL);
-    database.exec("DROP TABLE IF EXISTS openclaw_reliability_compaction_bloat;");
-    database.prepare("DELETE FROM openclaw_reliability_entries").run();
-    database.prepare("DELETE FROM openclaw_reliability_sentinel").run();
+    database.exec("DROP TABLE IF EXISTS afora_reliability_compaction_bloat;");
+    database.prepare("DELETE FROM afora_reliability_entries").run();
+    database.prepare("DELETE FROM afora_reliability_sentinel").run();
   } finally {
     database.close();
   }
@@ -166,7 +166,7 @@ function readReliabilityState(database: DatabaseSync, rowsPerBatch: number): Rel
   const partial = database
     .prepare(
       `SELECT batch, COUNT(*) AS row_count
-         FROM openclaw_reliability_entries
+         FROM afora_reliability_entries
         GROUP BY batch
        HAVING COUNT(*) <> ?
         LIMIT 1`,
@@ -184,7 +184,7 @@ function readReliabilityState(database: DatabaseSync, rowsPerBatch: number): Rel
   const entries = database
     .prepare(
       `SELECT batch, ordinal, payload
-         FROM openclaw_reliability_entries
+         FROM afora_reliability_entries
         ORDER BY batch, ordinal`,
     )
     .iterate() as Iterable<{ batch?: unknown; ordinal?: unknown; payload?: unknown }>;
@@ -242,15 +242,15 @@ function verifyRestoredDatabase(params: {
       throw new Error(`foreign_key_check failed with ${foreignKeys.length} row(s)`);
     }
     if (params.identity.role === "global") {
-      assertOpenClawStateDatabaseForMaintenance(database, { pathname: params.path });
+      assertAforaStateDatabaseForMaintenance(database, { pathname: params.path });
     } else if (params.identity.role === "agent") {
-      assertOpenClawAgentDatabaseForMaintenance(database, {
+      assertAforaAgentDatabaseForMaintenance(database, {
         agentId: params.identity.agentId,
         pathname: params.path,
       });
     }
     const sentinel = database
-      .prepare("SELECT payload FROM openclaw_reliability_sentinel WHERE id = 1")
+      .prepare("SELECT payload FROM afora_reliability_sentinel WHERE id = 1")
       .get() as { payload?: unknown } | undefined;
     if (sentinel?.payload !== COMMITTED_WAL_SENTINEL) {
       throw new Error("committed WAL sentinel is missing after restore");
@@ -258,7 +258,7 @@ function verifyRestoredDatabase(params: {
     const state = readReliabilityState(database, params.rowsPerBatch);
     if (params.uncommittedBatch !== null) {
       const held = database
-        .prepare("SELECT COUNT(*) AS rows FROM openclaw_reliability_entries WHERE batch = ?")
+        .prepare("SELECT COUNT(*) AS rows FROM afora_reliability_entries WHERE batch = ?")
         .get(params.uncommittedBatch) as { rows?: unknown };
       if (Number(held.rows) !== 0) {
         throw new Error(
@@ -289,8 +289,8 @@ function writeCompactionBloatRange(
     database.exec("PRAGMA busy_timeout = 30000;");
     if (reset) {
       database.exec(`
-        DROP TABLE IF EXISTS openclaw_reliability_compaction_bloat;
-        CREATE TABLE openclaw_reliability_compaction_bloat (
+        DROP TABLE IF EXISTS afora_reliability_compaction_bloat;
+        CREATE TABLE afora_reliability_compaction_bloat (
           id INTEGER PRIMARY KEY,
           payload TEXT NOT NULL
         );
@@ -298,7 +298,7 @@ function writeCompactionBloatRange(
     }
     database.exec("BEGIN IMMEDIATE;");
     const insert = database.prepare(
-      "INSERT INTO openclaw_reliability_compaction_bloat (id, payload) VALUES (?, ?)",
+      "INSERT INTO afora_reliability_compaction_bloat (id, payload) VALUES (?, ?)",
     );
     try {
       for (let id = firstId; id <= lastId; id += 1) {
@@ -328,7 +328,7 @@ function readCompactionPayload(databasePath: string): {
            COUNT(*) AS rows,
            COALESCE(SUM(id), 0) AS id_sum,
            COALESCE(SUM(length(payload)), 0) AS bytes
-         FROM openclaw_reliability_compaction_bloat`,
+         FROM afora_reliability_compaction_bloat`,
       )
       .get() as { bytes?: unknown; id_sum?: unknown; rows?: unknown };
     return {
@@ -345,10 +345,10 @@ function deleteCompactionBloat(databasePath: string, retainThroughId?: number): 
   const database = openNodeSqliteDatabase(databasePath);
   try {
     if (retainThroughId === undefined) {
-      database.exec("DELETE FROM openclaw_reliability_compaction_bloat;");
+      database.exec("DELETE FROM afora_reliability_compaction_bloat;");
     } else {
       database
-        .prepare("DELETE FROM openclaw_reliability_compaction_bloat WHERE id > ?")
+        .prepare("DELETE FROM afora_reliability_compaction_bloat WHERE id > ?")
         .run(retainThroughId);
     }
     database.exec("PRAGMA wal_checkpoint(TRUNCATE);");
@@ -690,13 +690,13 @@ export async function runReliabilityStress(options: CliOptions): Promise<Reliabi
   const ownsStateDir = options.stateDir === null;
   const cleanupIterationArtifacts = ownsStateDir && options.repository === null;
   const stateDir =
-    options.stateDir ?? fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-sqlite-reliability-"));
+    options.stateDir ?? fs.mkdtempSync(path.join(os.tmpdir(), "afora-sqlite-reliability-"));
   const repository = options.repository ?? path.join(stateDir, "snapshots");
   const runScratch = path.join(stateDir, "sqlite-reliability-runs", randomUUID());
   const syncedRepository = path.join(runScratch, "synced-snapshots");
   const validationRoot = path.join(runScratch, "snapshot-validation");
   const restoreRoot = path.join(runScratch, "restored");
-  const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+  const env = { ...process.env, AFORA_STATE_DIR: stateDir };
   const started = nowMs();
   let writer: WriterHandle | undefined;
   try {
@@ -877,8 +877,8 @@ export async function runReliabilityStress(options: CliOptions): Promise<Reliabi
     if (writer && !writer.stopped) {
       await terminateWriter(writer);
     }
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     if (ownsStateDir) {
       fs.rmSync(stateDir, { force: true, recursive: true });
     }

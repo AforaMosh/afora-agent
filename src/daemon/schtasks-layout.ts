@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { getWindowsCmdExePath } from "../infra/windows-install-roots.js";
 import {
   decodeWindowsLauncherScript,
@@ -19,11 +19,11 @@ import type {
 } from "./service-types.js";
 
 export function resolveTaskName(env: GatewayServiceEnv): string {
-  const override = env.OPENCLAW_WINDOWS_TASK_NAME?.trim();
+  const override = env.AFORA_WINDOWS_TASK_NAME?.trim();
   if (override) {
     return override;
   }
-  return resolveGatewayWindowsTaskName(env.OPENCLAW_PROFILE);
+  return resolveGatewayWindowsTaskName(env.AFORA_PROFILE);
 }
 
 export function shouldFallbackToStartupEntry(params: { code: number; detail: string }): boolean {
@@ -159,7 +159,7 @@ export function buildScheduledTaskXml(params: {
 }
 
 export async function writeTaskXmlTempFile(xml: string): Promise<string> {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-task-xml-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-task-xml-"));
   const xmlPath = path.join(tmpDir, "task.xml");
   // Task Scheduler `/XML` expects UTF-16 LE with a BOM on every locale.
   const bom = Buffer.from([0xff, 0xfe]);
@@ -198,7 +198,7 @@ export function resolveSchtasksCreateUser(
 }
 
 export function shouldUseHiddenWindowsTaskLauncher(env: GatewayServiceEnv): boolean {
-  const value = normalizeLowercaseStringOrEmpty(env.OPENCLAW_WINDOWS_TASK_HIDDEN_LAUNCHER);
+  const value = normalizeLowercaseStringOrEmpty(env.AFORA_WINDOWS_TASK_HIDDEN_LAUNCHER);
   return value === "1" || value === "true" || value === "yes";
 }
 

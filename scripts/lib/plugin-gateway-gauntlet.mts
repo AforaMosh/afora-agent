@@ -26,9 +26,9 @@ type QaThresholds = {
   cpuRegressionMultiplier?: number;
   wallRegressionMultiplier?: number;
 };
-const MANIFEST_NAMES = ["openclaw.plugin.json", "openclaw.plugin.json5"];
+const MANIFEST_NAMES = ["afora.plugin.json", "afora.plugin.json5"];
 const ANSI_PATTERN = new RegExp(String.raw`\u001B\[[0-9;]*m`, "gu");
-const QA_SUMMARY_MAX_BYTES_ENV = "OPENCLAW_PLUGIN_GATEWAY_GAUNTLET_QA_SUMMARY_MAX_BYTES";
+const QA_SUMMARY_MAX_BYTES_ENV = "AFORA_PLUGIN_GATEWAY_GAUNTLET_QA_SUMMARY_MAX_BYTES";
 const DEFAULT_QA_SUMMARY_MAX_BYTES = 2 * 1024 * 1024;
 
 function readPositiveIntEnv(name: string, fallback: number) {
@@ -446,7 +446,7 @@ function buildGauntletPrebuildEnv(
 ) {
   const buildIds = new Set(normalizeStringArray(options.buildIds));
   const runtimeOnlyPrebuildEnv = options.skipDeclarationBuild
-    ? { OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: "1" }
+    ? { AFORA_RUN_NODE_SKIP_DTS_BUILD: "1" }
     : {};
   const hasRuntimeOnlyPrebuildEnv = Object.keys(runtimeOnlyPrebuildEnv).length > 0;
   if (options.includePrivateQa) {
@@ -463,7 +463,7 @@ function buildGauntletPrebuildEnv(
           ...runtimeOnlyPrebuildEnv,
           ...(buildIds.size > 0
             ? {
-                OPENCLAW_BUNDLED_PLUGIN_BUILD_IDS: [...buildIds]
+                AFORA_BUNDLED_PLUGIN_BUILD_IDS: [...buildIds]
                   .toSorted((left, right) => left.localeCompare(right))
                   .join(","),
               }
@@ -474,11 +474,11 @@ function buildGauntletPrebuildEnv(
     ...env,
     PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: env.PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN ?? "false",
     ...runtimeOnlyPrebuildEnv,
-    OPENCLAW_BUILD_PRIVATE_QA: "1",
-    OPENCLAW_ENABLE_PRIVATE_QA_CLI: "1",
+    AFORA_BUILD_PRIVATE_QA: "1",
+    AFORA_ENABLE_PRIVATE_QA_CLI: "1",
     ...(buildIds.size > 0
       ? {
-          OPENCLAW_BUNDLED_PLUGIN_BUILD_IDS: [...buildIds]
+          AFORA_BUNDLED_PLUGIN_BUILD_IDS: [...buildIds]
             .toSorted((left, right) => left.localeCompare(right))
             .join(","),
         }

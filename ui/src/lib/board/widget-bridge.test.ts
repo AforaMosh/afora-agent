@@ -5,7 +5,7 @@ type BoardWidgetBridgeRequest = Parameters<BoardWidgetBridgeController["handle"]
 
 function request(method: string, params: Record<string, unknown>): BoardWidgetBridgeRequest {
   return {
-    type: "openclaw:widget-bridge-request",
+    type: "afora:widget-bridge-request",
     id: crypto.randomUUID(),
     method,
     params,

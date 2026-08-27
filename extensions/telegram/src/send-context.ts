@@ -1,12 +1,12 @@
 import { type ApiClientOptions, Bot, HttpError } from "grammy";
-import { isDiagnosticFlagEnabled } from "openclaw/plugin-sdk/diagnostic-runtime";
-import { formatUncaughtError } from "openclaw/plugin-sdk/error-runtime";
-import { redactSensitiveText } from "openclaw/plugin-sdk/logging-core";
-import { parseStrictInteger } from "openclaw/plugin-sdk/number-runtime";
-import { createChannelApiRetryRunner, type RetryConfig } from "openclaw/plugin-sdk/retry-runtime";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
-import { formatErrorMessage } from "openclaw/plugin-sdk/ssrf-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { isDiagnosticFlagEnabled } from "afora-agent/plugin-sdk/diagnostic-runtime";
+import { formatUncaughtError } from "afora-agent/plugin-sdk/error-runtime";
+import { redactSensitiveText } from "afora-agent/plugin-sdk/logging-core";
+import { parseStrictInteger } from "afora-agent/plugin-sdk/number-runtime";
+import { createChannelApiRetryRunner, type RetryConfig } from "afora-agent/plugin-sdk/retry-runtime";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/runtime-env";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/ssrf-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveTelegramAccountOwnerAgentId } from "./account-owner.js";
 import { getOrCreateAccountThrottler } from "./account-throttler.js";
 import { type ResolvedTelegramAccount, resolveTelegramAccount } from "./accounts.js";
@@ -24,7 +24,7 @@ import {
 } from "./reply-parameters.js";
 import { TELEGRAM_OUTBOUND_RETRY_AFTER_CAP_MS } from "./retry-after.js";
 import type { TelegramRichMessageContextParams } from "./rich-message.js";
-import { requireRuntimeConfig, type OpenClawConfig } from "./send.runtime.js";
+import { requireRuntimeConfig, type AforaConfig } from "./send.runtime.js";
 import { maybePersistResolvedTelegramTarget } from "./target-writeback.js";
 import { normalizeTelegramChatId, normalizeTelegramLookupTarget } from "./targets.js";
 
@@ -150,7 +150,7 @@ export function resetTelegramClientOptionsCacheForTests(): void {
   telegramClientOptionsCache.clear();
 }
 
-function createTelegramHttpLogger(cfg: OpenClawConfig) {
+function createTelegramHttpLogger(cfg: AforaConfig) {
   const enabled = isDiagnosticFlagEnabled("telegram.http", cfg);
   if (!enabled) {
     return () => {};
@@ -339,7 +339,7 @@ async function resolveChatId(
 }
 
 export async function resolveAndPersistChatId(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   api: TelegramApiOverride;
   lookupTarget: string;
   persistTarget: string;
@@ -426,7 +426,7 @@ export async function withTelegramNativeQuoteFallback<T>(params: {
 }
 
 export type TelegramApiContext = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   account: ResolvedTelegramAccount;
   ownerAgentId: string;
   api: TelegramApi;
@@ -437,7 +437,7 @@ export function resolveTelegramApiContext(opts: {
   token?: string;
   accountId?: string;
   api?: TelegramApiOverride;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }): TelegramApiContext {
   const cfg = requireRuntimeConfig(opts.cfg, "Telegram API context");
   const account = resolveTelegramAccount({
@@ -481,7 +481,7 @@ type TelegramRequestWithDiag = <T>(
 ) => Promise<T>;
 
 export function createTelegramRequestWithDiag(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   account: ResolvedTelegramAccount;
   retry?: RetryConfig;
   verbose?: boolean;
@@ -568,7 +568,7 @@ export function createRequestWithChatNotFound(params: {
 }
 
 export function createTelegramNonIdempotentRequestWithDiag(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   account: ResolvedTelegramAccount;
   retry?: RetryConfig;
   verbose?: boolean;

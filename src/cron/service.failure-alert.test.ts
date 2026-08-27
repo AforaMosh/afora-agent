@@ -10,7 +10,7 @@ type IsolatedAgentRunResult = Awaited<ReturnType<RunIsolatedAgentJob>>;
 type FailureAlertConfig = NonNullable<CronServiceParams["cronConfig"]>["failureAlert"];
 
 const { logger: noopLogger, makeStorePath } = setupCronServiceSuite({
-  prefix: "openclaw-cron-failure-alert-",
+  prefix: "afora-cron-failure-alert-",
   baseTimeIso: "2026-01-01T00:00:00.000Z",
 });
 

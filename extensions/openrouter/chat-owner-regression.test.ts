@@ -1,6 +1,6 @@
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import { createAssistantMessageEventStream } from "openclaw/plugin-sdk/llm";
-import { registerSingleProviderPlugin } from "openclaw/plugin-sdk/plugin-test-runtime";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import { createAssistantMessageEventStream } from "afora-agent/plugin-sdk/llm";
+import { registerSingleProviderPlugin } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { describe, expect, it, vi } from "vitest";
 import openrouterPlugin from "./index.js";
 

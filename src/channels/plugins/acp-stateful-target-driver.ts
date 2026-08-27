@@ -11,7 +11,7 @@ import { resolveConfiguredAcpBindingSpecBySessionKey } from "../../acp/persisten
 import { resolveConfiguredAcpBindingSpecFromRecord } from "../../acp/persistent-bindings.types.js";
 import { readAcpSessionEntry } from "../../acp/runtime/session-meta.js";
 import { resolveSessionEntryAccessTarget } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { performGatewaySessionReset } from "../../gateway/session-reset-service.js";
 import { isAcpSessionKey, resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
 import type {
@@ -26,7 +26,7 @@ import type {
 } from "./stateful-target-drivers.js";
 
 function toAcpStatefulBindingTargetDescriptor(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
 }): StatefulBindingTargetDescriptor | null {
   const sessionKey = params.sessionKey.trim();
@@ -74,7 +74,7 @@ function toAcpStatefulBindingTargetDescriptor(params: {
 }
 
 async function ensureAcpTargetReady(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   bindingResolution: ConfiguredBindingResolution;
 }): Promise<StatefulBindingTargetReadyResult> {
   const configuredBinding = resolveConfiguredAcpBindingSpecFromRecord(
@@ -96,7 +96,7 @@ async function ensureAcpTargetReady(params: {
 }
 
 async function ensureAcpTargetSession(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   bindingResolution: ConfiguredBindingResolution;
 }): Promise<StatefulBindingTargetSessionResult> {
   const spec = resolveConfiguredAcpBindingSpecFromRecord(params.bindingResolution.record);
@@ -114,7 +114,7 @@ async function ensureAcpTargetSession(params: {
 }
 
 async function resetAcpTargetInPlace(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   bindingTarget: StatefulBindingTargetDescriptor;
   reason: "new" | "reset";

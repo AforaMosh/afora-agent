@@ -7,10 +7,10 @@ import {
   type ChannelIngressQueue,
   type ChannelIngressMonitorDeliveryResult,
   type ChannelIngressMonitorLifecycle,
-} from "openclaw/plugin-sdk/channel-outbound";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { danger, type RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import { normalizeNullableString as nonEmptyString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { danger, type RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+import { normalizeNullableString as nonEmptyString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { Client } from "../internal/discord.js";
 import { mapGatewayDispatchData } from "../internal/gateway-dispatch.js";
 import { getDiscordRuntime } from "../runtime.js";

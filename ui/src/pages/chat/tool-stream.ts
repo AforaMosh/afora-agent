@@ -1,9 +1,9 @@
 // Control UI module implements app tool stream behavior.
-import { asNullableObjectRecord as readRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableObjectRecord as readRecord } from "@afora/normalization-core/record-coerce";
 import {
   normalizeNullableString as toTrimmedString,
   normalizeLowercaseStringOrEmpty,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { stripInlineDirectiveTagsForDelivery } from "../../../../src/utils/directive-tags.js";
 import type { ExecApprovalRequest } from "../../app/exec-approval.ts";
 import type {
@@ -292,12 +292,12 @@ function buildToolStreamMessage(entry: ToolStreamEntry): Record<string, unknown>
     // and completion comes from the result event — partial `update` output
     // must not end the running state. Transcript messages never carry these,
     // so historical output-less calls (aborted runs) stay inert.
-    __openclawToolStreamLive: true,
-    __openclawToolStreamResultReceived: entry.resultReceived === true,
+    __aforaToolStreamLive: true,
+    __aforaToolStreamResultReceived: entry.resultReceived === true,
     ...(entry.resultReceived !== true && entry.liveDiffStat
-      ? { __openclawToolStreamDiffStat: entry.liveDiffStat }
+      ? { __aforaToolStreamDiffStat: entry.liveDiffStat }
       : {}),
-    __openclawToolStreamReceivedAt: entry.receivedAt,
+    __aforaToolStreamReceivedAt: entry.receivedAt,
   };
 }
 

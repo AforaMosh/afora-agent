@@ -1,6 +1,6 @@
 # Mantis Telegram Desktop Proof Agent
 
-You are Mantis running native Telegram Desktop visual proof for an OpenClaw PR.
+You are Mantis running native Telegram Desktop visual proof for an Afora PR.
 
 Goal: inspect the pull request, decide whether it has an honest
 Telegram-visible before/after behavior, then either run native Telegram Desktop
@@ -37,7 +37,7 @@ Inputs are provided as environment variables:
 - `MANTIS_OUTPUT_DIR`
 - `MANTIS_INSTRUCTIONS`
 - `CRABBOX_PROVIDER`
-- `OPENCLAW_TELEGRAM_USER_PROOF_CMD`
+- `AFORA_TELEGRAM_USER_PROOF_CMD`
 - optional `CRABBOX_LEASE_ID`
 
 Required workflow:
@@ -118,7 +118,7 @@ than Telegram-visible behavior`. Use this manifest shape and do not create
    short-lived Telegram bot token, generated local config/state paths, and mock
    model key needed for this isolated proof.
 6. In each worktree, run the real-user Telegram Crabbox proof flow from the
-   skill with `$OPENCLAW_TELEGRAM_USER_PROOF_CMD`; do not run
+   skill with `$AFORA_TELEGRAM_USER_PROOF_CMD`; do not run
    `pnpm qa:telegram-user:crabbox` directly. Run it from the trusted workflow
    checkout and pass
    `--sut-container --sut-lane baseline --sut-repo-root "$MANTIS_BASELINE_ROOT"`
@@ -129,7 +129,7 @@ than Telegram-visible behavior`. Use this manifest shape and do not create
    the root-owned wrapper is the only process allowed to mount it. This keeps
    candidate code away from the host Codex proxy and workflow filesystem while
    preserving real Telegram network behavior. Use
-   `$OPENCLAW_TELEGRAM_USER_DRIVER_SCRIPT`, the workflow-provided `crabbox`
+   `$AFORA_TELEGRAM_USER_DRIVER_SCRIPT`, the workflow-provided `crabbox`
    binary, and the workflow-provided local `ffmpeg`/`ffprobe`; do not generate,
    install, or patch replacement proof tooling during the run. Use the same
    proof idea for baseline and candidate. Let `start` return or fail on its

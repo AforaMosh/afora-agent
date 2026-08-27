@@ -1,13 +1,13 @@
 // Release Workflow Matrix Plan tests cover release workflow matrix plan script behavior.
 import { readFileSync } from "node:fs";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { createReleaseWorkflowMatrixPlan } from "../../scripts/plan-release-workflow-matrix.mjs";
 
 function workflow(): WorkflowDocument {
   return parse(
-    readFileSync(".github/workflows/openclaw-live-and-e2e-checks-reusable.yml", "utf8"),
+    readFileSync(".github/workflows/afora-live-and-e2e-checks-reusable.yml", "utf8"),
   ) as WorkflowDocument;
 }
 
@@ -193,11 +193,11 @@ describe("scripts/plan-release-workflow-matrix.mjs", () => {
       required: false,
       type: "boolean",
     });
-    expect(definition.env.OPENCLAW_DOCKER_E2E_ALLOW_UNRELEASED_CHANGELOG).toBe(
+    expect(definition.env.AFORA_DOCKER_E2E_ALLOW_UNRELEASED_CHANGELOG).toBe(
       "${{ inputs.allow_unreleased_changelog }}",
     );
     const packageStep = requiredJob(definition, "prepare_docker_e2e_image").steps.find(
-      (step: WorkflowStep) => step.name === "Pack OpenClaw package for Docker E2E",
+      (step: WorkflowStep) => step.name === "Pack Afora package for Docker E2E",
     );
     const requiredPackageStep = expectDefined(packageStep, "Docker E2E package step");
     expect(requiredPackageStep.env?.ALLOW_UNRELEASED_CHANGELOG).toBe(
@@ -350,8 +350,8 @@ describe("scripts/plan-release-workflow-matrix.mjs", () => {
     expect(liveModels.strategy.matrix).toBe(
       "${{ fromJson(needs.plan_release_workflow_matrices.outputs.live_models_matrix) }}",
     );
-    expect(liveModels.env.OPENCLAW_LIVE_MODELS).toBe("${{ matrix.models || 'modern' }}");
-    expect(liveModels.env.OPENCLAW_LIVE_MAX_MODELS).toBe("${{ matrix.max_models || '6' }}");
+    expect(liveModels.env.AFORA_LIVE_MODELS).toBe("${{ matrix.models || 'modern' }}");
+    expect(liveModels.env.AFORA_LIVE_MAX_MODELS).toBe("${{ matrix.max_models || '6' }}");
   });
 
   it("requires new release-profile matrices to use a planner or an explicit allowlist", () => {

@@ -1,4 +1,4 @@
-import { setReplyPayloadMetadata } from "openclaw/plugin-sdk/reply-payload-testing";
+import { setReplyPayloadMetadata } from "afora-agent/plugin-sdk/reply-payload-testing";
 import { expect, it } from "vitest";
 import {
   describeTelegramDispatch,

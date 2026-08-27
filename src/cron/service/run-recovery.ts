@@ -1,7 +1,7 @@
 import {
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
+  runAforaStateWriteTransaction,
+  type AforaStateDatabase,
+} from "../../state/afora-state-db.js";
 import { noteCronJobsStoreCommit } from "../store.js";
 import { cronStoreKey } from "../store/key.js";
 import {
@@ -65,7 +65,7 @@ function exactReceiptMatches(
 
 function repairInDatabase(params: {
   state: CronServiceState;
-  database: OpenClawStateDatabase;
+  database: AforaStateDatabase;
   proposal: CronRunRecoveryProposal;
   proposedReceiptIsStale: boolean;
 }): CronRunRecoveryResult {
@@ -289,7 +289,7 @@ export function recoverCronRunProposal(
   const proposedReceiptIsStale = proposal.receipt
     ? isCronRunReceiptOwnerDefinitelyStale(proposal.receipt)
     : true;
-  const result = runOpenClawStateWriteTransaction(
+  const result = runAforaStateWriteTransaction(
     (database) => repairInDatabase({ state, database, proposal, proposedReceiptIsStale }),
     {},
     { operationLabel: "cron.run-recovery" },
@@ -311,7 +311,7 @@ export function recomputeUnownedCronSchedules(
 } {
   const storeKey = cronStoreKey(state.deps.storePath);
   const nowMs = state.deps.nowMs();
-  const result = runOpenClawStateWriteTransaction(
+  const result = runAforaStateWriteTransaction(
     ({ db }) => {
       const notifications: DeferredCronNotifications = [];
       let changed = false;

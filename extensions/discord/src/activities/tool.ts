@@ -1,12 +1,12 @@
-import { jsonResult, readStringParam } from "openclaw/plugin-sdk/channel-actions";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { AnyAgentTool, OpenClawPluginToolContext } from "openclaw/plugin-sdk/plugin-entry";
-import { escapeHtml } from "openclaw/plugin-sdk/text-utility-runtime";
+import { jsonResult, readStringParam } from "afora-agent/plugin-sdk/channel-actions";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { AnyAgentTool, AforaPluginToolContext } from "afora-agent/plugin-sdk/plugin-entry";
+import { escapeHtml } from "afora-agent/plugin-sdk/text-utility-runtime";
 import {
   assertWidgetHtmlSize,
   isCompleteHtmlDocument,
   WidgetHtmlInputError,
-} from "openclaw/plugin-sdk/widget-html";
+} from "afora-agent/plugin-sdk/widget-html";
 import { Type } from "typebox";
 import { resolveDiscordAccount } from "../accounts.js";
 import { sendDiscordComponentMessage } from "../send.components.js";
@@ -28,7 +28,7 @@ const ShowWidgetParameters = Type.Object({
   button_label: Type.Optional(Type.String({ minLength: 1, maxLength: 80 })),
 });
 
-function currentConfig(context: OpenClawPluginToolContext, runtime: DiscordActivitiesRuntime) {
+function currentConfig(context: AforaPluginToolContext, runtime: DiscordActivitiesRuntime) {
   return (
     context.getRuntimeConfig?.() ??
     context.runtimeConfig ??
@@ -37,7 +37,7 @@ function currentConfig(context: OpenClawPluginToolContext, runtime: DiscordActiv
   );
 }
 
-function resolveDiscordChannelId(context: OpenClawPluginToolContext): string | undefined {
+function resolveDiscordChannelId(context: AforaPluginToolContext): string | undefined {
   const raw = context.nativeChannelId?.trim() || context.deliveryContext?.to?.trim();
   if (!raw) {
     return undefined;
@@ -91,7 +91,7 @@ const SHOW_WIDGET_VARIANT: DiscordWidgetToolVariant = {
 };
 
 function createDiscordWidgetToolVariant(
-  context: OpenClawPluginToolContext,
+  context: AforaPluginToolContext,
   deps: DiscordWidgetToolDeps,
   variant: DiscordWidgetToolVariant,
 ): AnyAgentTool | null {
@@ -187,7 +187,7 @@ function createDiscordWidgetToolVariant(
           `channel:${channelId}`,
           { ...components, text: title },
           {
-            cfg: cfg as OpenClawConfig,
+            cfg: cfg as AforaConfig,
             accountId: account.accountId,
             allowedMentions: { parse: [] },
             onDeliveryResult: recordDelivery,
@@ -212,14 +212,14 @@ function createDiscordWidgetToolVariant(
 }
 
 export function createDiscordWidgetTool(
-  context: OpenClawPluginToolContext,
+  context: AforaPluginToolContext,
   deps: DiscordWidgetToolDeps,
 ): AnyAgentTool | null {
   return createDiscordWidgetToolVariant(context, deps, DISCORD_WIDGET_VARIANT);
 }
 
 export function createDiscordShowWidgetTool(
-  context: OpenClawPluginToolContext,
+  context: AforaPluginToolContext,
   deps: DiscordWidgetToolDeps,
 ): AnyAgentTool | null {
   return createDiscordWidgetToolVariant(context, deps, SHOW_WIDGET_VARIANT);

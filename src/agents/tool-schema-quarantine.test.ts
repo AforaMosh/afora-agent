@@ -60,7 +60,7 @@ describe("runtime tool schema quarantine logging", () => {
   });
 
   it("clears this process's persisted quarantine after the tool schema recovers", async () => {
-    await withStateDirEnv("openclaw-tool-schema-quarantine-recovery-", async () => {
+    await withStateDirEnv("afora-tool-schema-quarantine-recovery-", async () => {
       recordPersistedRuntimeToolSchemaQuarantine({
         toolName: "recovered_tool",
         reason: 'recovered_tool.parameters.type must be "object"',

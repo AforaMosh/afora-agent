@@ -2,12 +2,12 @@ import { createHash, randomUUID } from "node:crypto";
 import type {
   PluginStateKeyedStore,
   PluginStateSyncKeyedStore,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-runtime";
 import type {
   PluginHookBeforeToolCallEvent,
   PluginHookBeforeToolCallResult,
   PluginHookToolContext,
-} from "openclaw/plugin-sdk/types";
+} from "afora-agent/plugin-sdk/types";
 import {
   SLUG_PATTERN,
   type OnePasswordConfig,

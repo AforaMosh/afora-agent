@@ -61,7 +61,7 @@ fi
 }
 
 function makeRepo() {
-  const dir = makeTempRepoRoot(tempDirs, "openclaw-dependency-pins-");
+  const dir = makeTempRepoRoot(tempDirs, "afora-dependency-pins-");
   git(dir, ["init", "-q", "--initial-branch=main"]);
   return dir;
 }
@@ -182,7 +182,7 @@ packageExtensions:
   });
 
   itUnix("terminates a SIGTERM-resistant git ls-files at the dependency-pin timeout", () => {
-    const dir = makeTempRepoRoot(tempDirs, "openclaw-dependency-pins-ls-files-timeout-");
+    const dir = makeTempRepoRoot(tempDirs, "afora-dependency-pins-ls-files-timeout-");
     stubHangingGit(dir, "ls-files");
 
     expect(() =>

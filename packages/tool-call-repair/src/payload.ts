@@ -1,4 +1,4 @@
-import { safeParseJsonRecord } from "@openclaw/normalization-core";
+import { safeParseJsonRecord } from "@afora/normalization-core";
 import {
   isOffsetInProtectedRanges,
   type PlainTextToolCallNameMatcher,

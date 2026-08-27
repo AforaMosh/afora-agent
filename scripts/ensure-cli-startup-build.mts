@@ -27,7 +27,7 @@ type StartupBuildParams = Partial<{
  * Resolves the CLI startup build timeout from environment.
  */
 export function resolveCliStartupBuildTimeoutMs(env: NodeJS.ProcessEnv = process.env) {
-  return readPositiveEnvInt("OPENCLAW_CLI_STARTUP_BUILD_TIMEOUT_MS", env, DEFAULT_BUILD_TIMEOUT_MS);
+  return readPositiveEnvInt("AFORA_CLI_STARTUP_BUILD_TIMEOUT_MS", env, DEFAULT_BUILD_TIMEOUT_MS);
 }
 
 /**

@@ -17,7 +17,7 @@ const BASE_RUN_PARAMS = {
     agentId: "main",
     sessionId: "test-session",
     sessionKey: "agent:main:test-key",
-    storePath: "/tmp/openclaw-test.sqlite",
+    storePath: "/tmp/afora-test.sqlite",
   },
   workspaceDir: "/tmp/workspace",
   prompt: "hello",
@@ -134,7 +134,7 @@ describe("embedded run session prompt state", () => {
   it("persists before_agent_run block markers through the blocked path", async () => {
     const blockedMessage = {
       ...makeUserMessage("[blocked by before_agent_run]"),
-      __openclaw: {
+      __afora: {
         beforeAgentRunBlocked: {
           blockedBy: "before_agent_run",
           blockedAt: 123,

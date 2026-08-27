@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/runtime-env";
 
 const log = createSubsystemLogger("linux-canvas");
 
@@ -16,9 +16,9 @@ export function resolveLinuxCanvasSocketPath(
 ): string {
   const runtimeDir = env.XDG_RUNTIME_DIR?.trim();
   if (runtimeDir) {
-    return path.join(runtimeDir, "openclaw-canvas.sock");
+    return path.join(runtimeDir, "afora-canvas.sock");
   }
-  return path.join("/tmp", `openclaw-canvas-${uid ?? "unknown"}.sock`);
+  return path.join("/tmp", `afora-canvas-${uid ?? "unknown"}.sock`);
 }
 
 export function linuxCanvasSocketExists(socketPath: string): boolean {

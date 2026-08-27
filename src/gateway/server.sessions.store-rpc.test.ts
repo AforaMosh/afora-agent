@@ -3,7 +3,7 @@
  */
 import fs from "node:fs/promises";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { expect, test, vi } from "vitest";
 import * as sessionDirs from "../agents/session-dirs.js";
 import {
@@ -570,7 +570,7 @@ test("lists and patches session store via sessions.* RPC", async () => {
   expect(modelPatched.payload?.resolved?.modelProvider).toBe("openai");
   expect(modelPatched.payload?.resolved?.model).toBe("gpt-test-a");
   expect(modelPatched.payload?.resolved?.agentRuntime).toEqual({
-    id: "openclaw",
+    id: "afora",
     source: "implicit",
   });
 
@@ -588,7 +588,7 @@ test("lists and patches session store via sessions.* RPC", async () => {
   );
   expect(mainAfterModelPatch?.modelProvider).toBe("openai");
   expect(mainAfterModelPatch?.model).toBe("gpt-test-a");
-  expect(mainAfterModelPatch?.agentRuntime).toEqual({ id: "openclaw", source: "implicit" });
+  expect(mainAfterModelPatch?.agentRuntime).toEqual({ id: "afora", source: "implicit" });
 
   const compacted = await directSessionReq<{ ok: true; compacted: boolean }>("sessions.compact", {
     key: "agent:main:main",
@@ -670,12 +670,12 @@ test("lists and patches session store via sessions.* RPC", async () => {
 });
 
 test("sessions.list configuredAgentsOnly keeps configured-agent children and hides unrelated stores", async () => {
-  const rootStateDir = expectDefined(process.env.OPENCLAW_STATE_DIR, "OPENCLAW_STATE_DIR");
+  const rootStateDir = expectDefined(process.env.AFORA_STATE_DIR, "AFORA_STATE_DIR");
   const stateDir = path.join(rootStateDir, "configured-list-regression");
-  await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+  await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
     testState.agentsConfig = { ownership: "explicit", list: [{ id: "ops" }] };
     testState.agentConfig = { sessionStore: { agentId: "ops" } };
-    const configPath = expectDefined(process.env.OPENCLAW_CONFIG_PATH, "OPENCLAW_CONFIG_PATH");
+    const configPath = expectDefined(process.env.AFORA_CONFIG_PATH, "AFORA_CONFIG_PATH");
     const configJson = '{"acp":{"defaultAgent":"claude","allowedAgents":["gemini"]}}';
     await fs.writeFile(configPath, configJson, "utf-8");
     const agentsDir = path.join(stateDir, "agents");

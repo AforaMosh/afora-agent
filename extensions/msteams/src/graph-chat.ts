@@ -1,5 +1,5 @@
 // Msteams plugin module implements graph chat behavior.
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { DriveItemProperties } from "./graph-upload.js";
 
 export function buildTeamsFileInfoCard(file: DriveItemProperties): {

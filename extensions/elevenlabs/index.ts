@@ -1,5 +1,5 @@
-// Elevenlabs plugin entrypoint registers its OpenClaw integration.
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+// Elevenlabs plugin entrypoint registers its Afora integration.
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import { elevenLabsMediaUnderstandingProvider } from "./media-understanding-provider.js";
 import { buildElevenLabsRealtimeTranscriptionProvider } from "./realtime-transcription-provider.js";
 import { buildElevenLabsSpeechProvider } from "./speech-provider.js";

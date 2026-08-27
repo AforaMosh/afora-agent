@@ -1,5 +1,5 @@
-import { estimateBase64DecodedBytes } from "@openclaw/media-core/base64";
-import { extractBalancedJsonFragments, stableStringify } from "@openclaw/normalization-core";
+import { estimateBase64DecodedBytes } from "@afora/media-core/base64";
+import { extractBalancedJsonFragments, stableStringify } from "@afora/normalization-core";
 
 const NON_CREDENTIAL_FIELD_NAMES = new Set([
   "passwordfile",

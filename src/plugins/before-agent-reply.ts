@@ -11,7 +11,7 @@ import type {
 } from "./hook-types.js";
 import { isPluginHookAgentTrigger } from "./hook-types.js";
 
-const BEFORE_AGENT_REPLY_OBSERVER_KEY = Symbol.for("openclaw.beforeAgentReply.observer");
+const BEFORE_AGENT_REPLY_OBSERVER_KEY = Symbol.for("afora.beforeAgentReply.observer");
 
 type BeforeAgentReplyObserver = {
   beforeDispatch: () => Promise<boolean | void>;

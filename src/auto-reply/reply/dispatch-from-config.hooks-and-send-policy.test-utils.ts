@@ -1,7 +1,7 @@
 // Imported by dispatch-from-config.test.ts to keep its mocked suite in one Vitest module graph.
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { PROVIDER_CONVERSATION_STATE_ERROR_USER_MESSAGE } from "../../agents/failover/user-copy.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import type { SessionBindingRecord } from "../../infra/outbound/session-binding-service.js";
 import type { PluginSubagentRequesterContext } from "../../plugins/runtime/subagent-requester-context.js";
 import { setReplyPayloadMetadata } from "../reply-payload.js";
@@ -336,7 +336,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
 
     await dispatchReplyFromConfig({
       ctx,
-      cfg: { diagnostics: { enabled: true } } as OpenClawConfig,
+      cfg: { diagnostics: { enabled: true } } as AforaConfig,
       dispatcher,
       replyResolver: async () => ({ text: "agent reply" }),
     });
@@ -468,7 +468,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     },
   ])("records explicit NO_REPLY without a generic fallback in $name", async ({ ctx, cfg }) => {
     setNoAbort();
@@ -542,7 +542,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
 
     const result = await dispatchReplyFromConfig({
       ctx: buildTestCtx({ ChatType: "direct", SessionKey: "test:queue-cap" }),
-      cfg: { diagnostics: { enabled: true } } as OpenClawConfig,
+      cfg: { diagnostics: { enabled: true } } as AforaConfig,
       dispatcher,
       replyResolver,
     });
@@ -610,7 +610,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyResolver,
     });
@@ -650,7 +650,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyResolver,
     });
@@ -714,7 +714,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyResolver,
     });
@@ -752,7 +752,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyResolver,
     });
@@ -835,7 +835,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyResolver,
     });
@@ -876,7 +876,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyResolver,
     });
@@ -947,7 +947,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyResolver,
       replyOptions: {
@@ -992,7 +992,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyResolver,
     });
@@ -1034,7 +1034,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyResolver,
     });
@@ -1070,7 +1070,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyResolver,
     });
@@ -1112,7 +1112,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyResolver,
     });
@@ -1154,7 +1154,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyResolver,
     });
@@ -1184,7 +1184,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       ctx,
       cfg: {
         agents: { defaults: { silentReply: { group: "disallow" } } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyResolver: vi.fn(async () => ({ text: "Legacy final answer." })),
     });
@@ -1221,7 +1221,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyResolver,
     });
@@ -1255,7 +1255,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyResolver,
     });
@@ -1300,7 +1300,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyResolver,
     });
@@ -1347,7 +1347,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyResolver,
     });
@@ -1388,7 +1388,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyResolver,
     });
@@ -1427,7 +1427,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       dispatcher,
       replyResolver,
     });
@@ -1449,7 +1449,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     const dispatcher = createDispatcher();
     let capturedOnToolResult: ((payload: ReplyPayload) => Promise<void>) | undefined;
     const replyResolver = vi.fn(
-      async (_ctx: MsgContext, opts?: GetReplyOptions, _cfg?: OpenClawConfig) => {
+      async (_ctx: MsgContext, opts?: GetReplyOptions, _cfg?: AforaConfig) => {
         capturedOnToolResult = opts?.onToolResult as
           | ((payload: ReplyPayload) => Promise<void>)
           | undefined;
@@ -1482,7 +1482,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       | ((payload: ReplyPayload, context?: unknown) => Promise<void>)
       | undefined;
     const replyResolver = vi.fn(
-      async (_ctx: MsgContext, opts?: GetReplyOptions, _cfg?: OpenClawConfig) => {
+      async (_ctx: MsgContext, opts?: GetReplyOptions, _cfg?: AforaConfig) => {
         capturedOnBlockReply = opts?.onBlockReply as
           | ((payload: ReplyPayload, context?: unknown) => Promise<void>)
           | undefined;
@@ -1653,7 +1653,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     hookMocks.runner.hasHooks.mockImplementation(
       ((hookName?: string) => hookName === "inbound_claim") as () => boolean,
     );
-    hookMocks.registry.plugins = [{ id: "openclaw-codex-app-server", status: "loaded" }];
+    hookMocks.registry.plugins = [{ id: "afora-codex-app-server", status: "loaded" }];
     hookMocks.runner.runInboundClaimForPluginOutcome.mockResolvedValue({
       status: "handled",
       result: { handled: true, reply: { text: "must not send" } },
@@ -1671,7 +1671,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       boundAt: 1710000000000,
       metadata: {
         pluginBindingOwner: "plugin",
-        pluginId: "openclaw-codex-app-server",
+        pluginId: "afora-codex-app-server",
         pluginRoot: "/tmp/plugin",
       },
     } satisfies SessionBindingRecord);
@@ -1710,7 +1710,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       ((hookName?: string) =>
         hookName === "inbound_claim" || hookName === "message_received") as () => boolean,
     );
-    hookMocks.registry.plugins = [{ id: "openclaw-codex-app-server", status: "loaded" }];
+    hookMocks.registry.plugins = [{ id: "afora-codex-app-server", status: "loaded" }];
     hookMocks.runner.runInboundClaimForPluginOutcome.mockResolvedValue({
       status: "handled",
       result: { handled: true },
@@ -1728,7 +1728,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       boundAt: 1710000000000,
       metadata: {
         pluginBindingOwner: "plugin",
-        pluginId: "openclaw-codex-app-server",
+        pluginId: "afora-codex-app-server",
         pluginRoot: "/tmp/plugin",
       },
     } satisfies SessionBindingRecord);
@@ -1814,7 +1814,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
         messages: {
           groupChat: { visibleReplies: "message_tool" },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       expectedClaim: { channel: "discord" },
       pluginReply: { text: "Codex native reply" },
       expectPluginReplyDelivered: true,
@@ -1849,7 +1849,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     bindingId: string;
     conversation: SessionBindingRecord["conversation"];
     ctx: Partial<MsgContext>;
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     replyOptions?: { sourceReplyDeliveryMode: "message_tool_only" };
     expectedClaim: Record<string, unknown>;
     pluginReply?: ReplyPayload;
@@ -1862,7 +1862,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
         ((hookName?: string) =>
           hookName === "inbound_claim" || hookName === "message_received") as () => boolean,
       );
-      hookMocks.registry.plugins = [{ id: "openclaw-codex-app-server", status: "loaded" }];
+      hookMocks.registry.plugins = [{ id: "afora-codex-app-server", status: "loaded" }];
       hookMocks.runner.runInboundClaimForPluginOutcome.mockResolvedValue({
         status: "handled",
         result: params.pluginReply
@@ -1878,7 +1878,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
         boundAt: 1710000000000,
         metadata: {
           pluginBindingOwner: "plugin",
-          pluginId: "openclaw-codex-app-server",
+          pluginId: "afora-codex-app-server",
           pluginRoot: "/tmp/plugin",
         },
       } satisfies SessionBindingRecord);
@@ -1905,7 +1905,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       });
       expect(sessionBindingMocks.touch).toHaveBeenCalledWith(params.bindingId);
       expect(hookMocks.runner.runInboundClaimForPluginOutcome).toHaveBeenCalledWith(
-        "openclaw-codex-app-server",
+        "afora-codex-app-server",
         expect.objectContaining({
           content: "observed message",
           ...params.expectedClaim,
@@ -1929,7 +1929,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       ((hookName?: string) =>
         hookName === "inbound_claim" || hookName === "message_received") as () => boolean,
     );
-    hookMocks.registry.plugins = [{ id: "openclaw-codex-app-server", status: "loaded" }];
+    hookMocks.registry.plugins = [{ id: "afora-codex-app-server", status: "loaded" }];
     hookMocks.runner.runInboundClaimForPluginOutcome.mockResolvedValue({
       status: "no_handler",
     });
@@ -1948,7 +1948,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       boundAt: 1710000000000,
       metadata: {
         pluginBindingOwner: "plugin",
-        pluginId: "openclaw-codex-app-server",
+        pluginId: "afora-codex-app-server",
         pluginRoot: "/tmp/plugin",
       },
     } satisfies SessionBindingRecord);
@@ -1992,7 +1992,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       hookMocks.runner.runInboundClaimForPluginOutcome,
       "plugin inbound claim",
     );
-    expect(claimCall[0]).toBe("openclaw-codex-app-server");
+    expect(claimCall[0]).toBe("afora-codex-app-server");
     expect(claimCall[1]).toMatchObject({
       channel: "telegram",
       content: "observed message",
@@ -2024,7 +2024,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       ((hookName?: string) =>
         hookName === "inbound_claim" || hookName === "message_received") as () => boolean,
     );
-    hookMocks.registry.plugins = [{ id: "openclaw-codex-app-server", status: "loaded" }];
+    hookMocks.registry.plugins = [{ id: "afora-codex-app-server", status: "loaded" }];
     hookMocks.runner.runInboundClaimForPluginOutcome.mockResolvedValue({
       status: "no_handler",
     });
@@ -2043,7 +2043,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       boundAt: 1710000000000,
       metadata: {
         pluginBindingOwner: "plugin",
-        pluginId: "openclaw-codex-app-server",
+        pluginId: "afora-codex-app-server",
         pluginRoot: "/tmp/plugin",
       },
     } satisfies SessionBindingRecord);
@@ -2084,7 +2084,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       hookMocks.runner.runInboundClaimForPluginOutcome,
       "plugin inbound claim",
     );
-    expect(claimCall[0]).toBe("openclaw-codex-app-server");
+    expect(claimCall[0]).toBe("afora-codex-app-server");
     expect(claimCall[1]).toMatchObject({
       channel: "imessage",
       content: "observed message",
@@ -2107,7 +2107,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       ((hookName?: string) =>
         hookName === "inbound_claim" || hookName === "message_received") as () => boolean,
     );
-    hookMocks.registry.plugins = [{ id: "openclaw-codex-app-server", status: "loaded" }];
+    hookMocks.registry.plugins = [{ id: "afora-codex-app-server", status: "loaded" }];
     hookMocks.runner.runInboundClaimForPluginOutcome.mockResolvedValue({
       status: "no_handler",
     });
@@ -2126,7 +2126,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       boundAt: 1710000000000,
       metadata: {
         pluginBindingOwner: "plugin",
-        pluginId: "openclaw-codex-app-server",
+        pluginId: "afora-codex-app-server",
         pluginRoot: "/tmp/plugin",
       },
     } satisfies SessionBindingRecord);
@@ -2135,7 +2135,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       updatedAt: 0,
       sendPolicy: "allow",
     };
-    const cfg = { messages: { visibleReplies: "message_tool" } } as OpenClawConfig;
+    const cfg = { messages: { visibleReplies: "message_tool" } } as AforaConfig;
     const dispatcher = createDispatcher();
     const replyResolver = vi.fn(async () => ({ text: "reset ack" }) satisfies ReplyPayload);
     const ctx = buildTestCtx({
@@ -2148,10 +2148,10 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       MessageThreadId: 11,
       ChatType: "group",
       GroupSubject: "Dev",
-      Body: "/reset@openclaw",
-      RawBody: "/reset@openclaw",
-      CommandBody: "/reset@openclaw",
-      BotUsername: "openclaw",
+      Body: "/reset@afora",
+      RawBody: "/reset@afora",
+      CommandBody: "/reset@afora",
+      BotUsername: "afora",
       CommandSource: undefined,
       CommandAuthorized: true,
       WasMentioned: false,
@@ -2175,7 +2175,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       ((hookName?: string) =>
         hookName === "inbound_claim" || hookName === "message_received") as () => boolean,
     );
-    hookMocks.registry.plugins = [{ id: "openclaw-codex-app-server", status: "loaded" }];
+    hookMocks.registry.plugins = [{ id: "afora-codex-app-server", status: "loaded" }];
     hookMocks.runner.runInboundClaimForPluginOutcome.mockResolvedValue({
       status: "handled",
       result: { handled: true },
@@ -2195,7 +2195,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       boundAt: 1710000000000,
       metadata: {
         pluginBindingOwner: "plugin",
-        pluginId: "openclaw-codex-app-server",
+        pluginId: "afora-codex-app-server",
         pluginRoot: "/tmp/plugin",
       },
     } satisfies SessionBindingRecord);
@@ -2235,7 +2235,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       hookMocks.runner.runInboundClaimForPluginOutcome,
       "plugin inbound claim",
     );
-    expect(claimCall[0]).toBe("openclaw-codex-app-server");
+    expect(claimCall[0]).toBe("afora-codex-app-server");
     expect(claimCall[1]).toMatchObject({
       channel: "telegram",
       content: "/status",
@@ -2251,7 +2251,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       ((hookName?: string) =>
         hookName === "inbound_claim" || hookName === "message_received") as () => boolean,
     );
-    hookMocks.registry.plugins = [{ id: "openclaw-codex-app-server", status: "loaded" }];
+    hookMocks.registry.plugins = [{ id: "afora-codex-app-server", status: "loaded" }];
     hookMocks.runner.runInboundClaimForPluginOutcome.mockResolvedValue({
       status: "handled",
       result: { handled: true },
@@ -2271,7 +2271,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       boundAt: 1710000000000,
       metadata: {
         pluginBindingOwner: "plugin",
-        pluginId: "openclaw-codex-app-server",
+        pluginId: "afora-codex-app-server",
         pluginRoot: "/tmp/plugin",
       },
     } satisfies SessionBindingRecord);
@@ -2316,7 +2316,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
       hookMocks.runner.runInboundClaimForPluginOutcome,
       "plugin inbound claim",
     );
-    expect(claimCall[0]).toBe("openclaw-codex-app-server");
+    expect(claimCall[0]).toBe("afora-codex-app-server");
     expect(claimCall[1]).toMatchObject({
       channel: "telegram",
       content: "/think high through this",
@@ -2500,7 +2500,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     const replyResolver = vi.fn(async (_ctx: MsgContext, opts?: GetReplyOptions) => {
       await opts?.onToolResult?.({
         text: "💨Fast: auto-off(75s>=60s)",
-        channelData: { openclawProgressKind: "fast-mode-auto" },
+        channelData: { aforaProgressKind: "fast-mode-auto" },
       });
       return { text: "NO_REPLY" } satisfies ReplyPayload;
     });
@@ -2522,7 +2522,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     expect(dispatcher.sendToolResult).toHaveBeenCalledWith(
       expect.objectContaining({
         text: "💨Fast: auto-off(75s>=60s)",
-        channelData: { openclawProgressKind: "fast-mode-auto" },
+        channelData: { aforaProgressKind: "fast-mode-auto" },
       }),
     );
     expect(dispatcher.sendFinalReply).not.toHaveBeenCalled();
@@ -2539,7 +2539,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     const replyResolver = vi.fn(async (_ctx: MsgContext, opts?: GetReplyOptions) => {
       await opts?.onToolResult?.({
         text: "💨Fast: auto-off(75s>=60s)",
-        channelData: { openclawProgressKind: "fast-mode-auto" },
+        channelData: { aforaProgressKind: "fast-mode-auto" },
       });
       return { text: "NO_REPLY" } satisfies ReplyPayload;
     });
@@ -2577,7 +2577,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     const replyResolver = vi.fn(async (_ctx: MsgContext, opts?: GetReplyOptions) => {
       await opts?.onToolResult?.({
         text: "💨Fast: auto-off(75s>=60s)",
-        channelData: { openclawProgressKind: "fast-mode-auto" },
+        channelData: { aforaProgressKind: "fast-mode-auto" },
       });
       return { text: "NO_REPLY" } satisfies ReplyPayload;
     });
@@ -2609,7 +2609,7 @@ describe("sendPolicy deny — suppress delivery, not processing (#53328)", () =>
     const onToolResult = vi.fn();
     const payload = {
       text: "💨Fast: auto-on",
-      channelData: { openclawProgressKind: "fast-mode-auto" },
+      channelData: { aforaProgressKind: "fast-mode-auto" },
     } satisfies ReplyPayload;
     const replyResolver = vi.fn(async (_ctx: MsgContext, opts?: GetReplyOptions) => {
       await opts?.onToolResult?.(payload);

@@ -7,7 +7,7 @@ import {
   validateSessionsCatalogStartTerminalParams,
 } from "../../../packages/gateway-protocol/src/index.js";
 import { allowsProcessHomeSessionScan } from "../../config/paths.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { SessionCatalogProvider } from "../../plugins/session-catalog.js";
 import type { GatewayRequestHandlers } from "./types.js";
 import { assertValidParams } from "./validation.js";
@@ -16,7 +16,7 @@ type SessionCatalogProviderResolver = (catalogId: string) => SessionCatalogProvi
 type SessionCatalogCreateTargetResolver = (
   catalogId: string,
   agentId: string,
-  config: OpenClawConfig,
+  config: AforaConfig,
 ) => { ok: true } | { ok: false; message: string };
 
 /** Builds the catalog terminal-start handler around the active provider registry. */

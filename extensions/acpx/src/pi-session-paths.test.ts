@@ -41,8 +41,8 @@ describe("Pi session paths", () => {
   });
 
   it("resolves relative project and global session directories like Pi", async () => {
-    const projectDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-pi-project-"));
-    const agentDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-pi-agent-"));
+    const projectDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "afora-pi-project-"));
+    const agentDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "afora-pi-agent-"));
     temporaryDirectories.push(projectDirectory, agentDirectory);
     await fs.mkdir(path.join(projectDirectory, ".pi"), { recursive: true });
     await fs.writeFile(

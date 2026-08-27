@@ -2,7 +2,7 @@
  * Activates legacy curated Codex plugins while requiring owner-managed
  * installation for every other marketplace.
  */
-import { coerceErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { coerceErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import type { CodexAppInventoryCache, CodexAppInventoryRequest } from "./app-inventory-cache.js";
 import {
   CODEX_PLUGINS_MARKETPLACE_NAME,
@@ -74,7 +74,7 @@ export async function ensureCodexPluginActivation(
   if (params.identity.marketplaceName === CODEX_PLUGINS_WORKSPACE_MARKETPLACE_NAME) {
     return activationFailure(params.identity, "disabled", {
       message:
-        "workspace-directory plugins must be installed and enabled outside OpenClaw before use.",
+        "workspace-directory plugins must be installed and enabled outside Afora before use.",
     });
   }
   if (!isOpenAiCuratedMarketplaceName(params.identity.marketplaceName)) {

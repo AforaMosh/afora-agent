@@ -1,5 +1,5 @@
-import { adaptMemoryEmbeddingProviderAdapter } from "openclaw/plugin-sdk/memory-core-host-engine-embeddings";
-import { defineSingleProviderPluginEntry } from "openclaw/plugin-sdk/provider-entry";
+import { adaptMemoryEmbeddingProviderAdapter } from "afora-agent/plugin-sdk/memory-core-host-engine-embeddings";
+import { defineSingleProviderPluginEntry } from "afora-agent/plugin-sdk/provider-entry";
 import {
   applyMistralModelCompat,
   MISTRAL_MEDIUM_3_5_ID,
@@ -9,7 +9,7 @@ import {
 import { mistralMediaUnderstandingProvider } from "./media-understanding-provider.js";
 import { mistralMemoryEmbeddingProviderAdapter } from "./memory-embedding-adapter.js";
 import { applyMistralConfig } from "./onboard.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 import { buildMistralRealtimeTranscriptionProvider } from "./realtime-transcription-provider.js";
 
 const PROVIDER_ID = "mistral";

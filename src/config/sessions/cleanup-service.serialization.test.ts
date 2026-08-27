@@ -4,7 +4,7 @@ import { resolveSqliteTargetFromSessionStorePath } from "./session-sqlite-target
 
 describe("serializeSessionCleanupResult", () => {
   it("reports the physical SQLite store path", () => {
-    const storePath = "/tmp/openclaw-cleanup-sessions.json";
+    const storePath = "/tmp/afora-cleanup-sessions.json";
     const result = serializeSessionCleanupResult({
       mode: "enforce",
       dryRun: false,

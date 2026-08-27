@@ -4,8 +4,8 @@ import {
   type GatewayPresenceUpdate,
   PresenceUpdateStatus,
 } from "discord-api-types/v10";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { PluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { PluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Client } from "../internal/discord.js";
 import { clearPresences } from "./presence-cache.js";
@@ -21,11 +21,11 @@ const mocks = vi.hoisted(() => ({
   })),
 }));
 
-vi.mock("openclaw/plugin-sdk/heartbeat-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/heartbeat-runtime", () => ({
   requestHeartbeat: mocks.requestHeartbeat,
 }));
-vi.mock("openclaw/plugin-sdk/routing", () => ({ resolveAgentRoute: mocks.resolveAgentRoute }));
-vi.mock("openclaw/plugin-sdk/system-event-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/routing", () => ({ resolveAgentRoute: mocks.resolveAgentRoute }));
+vi.mock("afora-agent/plugin-sdk/system-event-runtime", () => ({
   enqueueRoutedSystemEvent: (
     text: unknown,
     route: { agentId: unknown; sessionKey: unknown },
@@ -104,7 +104,7 @@ function createPresenceListener({
   ...overrides
 }: PresenceListenerOverrides = {}): DiscordPresenceListener {
   return new DiscordPresenceListener({
-    cfg: {} as OpenClawConfig,
+    cfg: {} as AforaConfig,
     accountId: "molty",
     guildEntries: {
       "guild-1": { presenceEvents: { channelId: "channel-1", ...presenceEvents } },

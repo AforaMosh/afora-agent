@@ -1,7 +1,7 @@
 // Gateway credential resolver tests document token/password precedence for local,
 // remote, CLI override, env override, and config-secret connection flows.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { resolveGatewayCredentialsWithSecretInputs } from "./credentials-secret-inputs.js";
 
 type ResolvedAuth = { token?: string; password?: string };
@@ -9,14 +9,14 @@ type GatewayConnectionAuthOptions = Parameters<typeof resolveGatewayCredentialsW
 
 type ConnectionAuthCase = {
   name: string;
-  cfgLocal: OpenClawConfig;
+  cfgLocal: AforaConfig;
   env: NodeJS.ProcessEnv;
   options?: Partial<Omit<GatewayConnectionAuthOptions, "config" | "env">>;
   expected: ResolvedAuth;
 };
 
-function cfg(input: Partial<OpenClawConfig>): OpenClawConfig {
-  return input as OpenClawConfig;
+function cfg(input: Partial<AforaConfig>): AforaConfig {
+  return input as AforaConfig;
 }
 
 function createRemoteModeConfig() {
@@ -37,8 +37,8 @@ function createRemoteModeConfig() {
 }
 
 const DEFAULT_ENV = {
-  OPENCLAW_GATEWAY_TOKEN: "env-token",
-  OPENCLAW_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
+  AFORA_GATEWAY_TOKEN: "env-token",
+  AFORA_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
 } as NodeJS.ProcessEnv;
 
 describe("resolveGatewayCredentialsWithSecretInputs", () => {
@@ -169,7 +169,7 @@ describe("resolveGatewayCredentialsWithSecretInputs", () => {
     expect(asyncResolved).toEqual(expected);
   });
 
-  it("resolves local SecretRef token when OPENCLAW env is absent", async () => {
+  it("resolves local SecretRef token when AFORA env is absent", async () => {
     const config = cfg({
       gateway: {
         mode: "local",
@@ -203,15 +203,15 @@ describe("resolveGatewayCredentialsWithSecretInputs", () => {
         config: cfg({
           gateway: {
             mode: "local",
-            auth: { mode: "token", token: "${OPENCLAW_GATEWAY_TOKEN}" },
+            auth: { mode: "token", token: "${AFORA_GATEWAY_TOKEN}" },
           },
         }),
-        env: { OPENCLAW_GATEWAY_TOKEN: "env-token" },
+        env: { AFORA_GATEWAY_TOKEN: "env-token" },
       }),
     ).resolves.toEqual({ token: "env-token", password: undefined });
   });
 
-  it("resolves config-first token SecretRef even when OPENCLAW env token exists", async () => {
+  it("resolves config-first token SecretRef even when AFORA env token exists", async () => {
     const config = cfg({
       gateway: {
         mode: "local",
@@ -226,7 +226,7 @@ describe("resolveGatewayCredentialsWithSecretInputs", () => {
       },
     });
     const env = {
-      OPENCLAW_GATEWAY_TOKEN: "env-token",
+      AFORA_GATEWAY_TOKEN: "env-token",
       CONFIG_FIRST_TOKEN: "config-first-token",
     } as NodeJS.ProcessEnv;
 
@@ -240,7 +240,7 @@ describe("resolveGatewayCredentialsWithSecretInputs", () => {
     });
   });
 
-  it("resolves config-first password SecretRef even when OPENCLAW env password exists", async () => {
+  it("resolves config-first password SecretRef even when AFORA env password exists", async () => {
     const config = cfg({
       gateway: {
         mode: "local",
@@ -256,7 +256,7 @@ describe("resolveGatewayCredentialsWithSecretInputs", () => {
       },
     });
     const env = {
-      OPENCLAW_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
+      AFORA_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
       CONFIG_FIRST_PASSWORD: "config-first-password", // pragma: allowlist secret
     } as NodeJS.ProcessEnv;
 
@@ -285,7 +285,7 @@ describe("resolveGatewayCredentialsWithSecretInputs", () => {
       },
     });
     const env = {
-      OPENCLAW_GATEWAY_TOKEN: "env-token",
+      AFORA_GATEWAY_TOKEN: "env-token",
     } as NodeJS.ProcessEnv;
 
     await expect(
@@ -312,7 +312,7 @@ describe("resolveGatewayCredentialsWithSecretInputs", () => {
       },
     });
     const env = {
-      OPENCLAW_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
+      AFORA_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
     } as NodeJS.ProcessEnv;
 
     await expect(

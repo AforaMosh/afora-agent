@@ -4,7 +4,7 @@ import {
   normalizeOptionalString,
 } from "../../packages/normalization-core/src/string-coerce.js";
 import type {
-  OpenClawConfig,
+  AforaConfig,
   ResolvedTtsPersona,
   TtsConfig,
   TtsProvider,
@@ -61,7 +61,7 @@ export function resolveSpeechProviderTimeoutMs(params: {
 }
 
 function sortSpeechProvidersForAutoSelection(
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
   providers?: readonly SpeechProviderPlugin[],
 ) {
   return [...(providers ?? listSpeechProviders(cfg))].toSorted((left, right) => {
@@ -76,7 +76,7 @@ function sortSpeechProvidersForAutoSelection(
 
 function canonicalizeSpeechProviderIdFromInventory(
   providerId: string | undefined,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
   providers?: readonly SpeechProviderPlugin[],
 ): string | undefined {
   const normalized = normalizeSpeechProviderId(providerId);
@@ -97,7 +97,7 @@ function canonicalizeSpeechProviderIdFromInventory(
 }
 
 function resolveConfiguredSpeechVoiceModelRefs(
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
   providers?: readonly SpeechProviderPlugin[],
 ): VoiceModelRef[] {
   const effectiveCfg = cfg ? resolveTtsRuntimeConfig(cfg) : undefined;
@@ -108,7 +108,7 @@ function resolveConfiguredSpeechVoiceModelRefs(
 }
 
 function resolveConfiguredSpeechVoiceModelForProvider(params: {
-  cfg: OpenClawConfig | undefined;
+  cfg: AforaConfig | undefined;
   providerId: string;
   provider?: VoiceModelProvider;
   voiceModel?: VoiceModelRef;
@@ -127,7 +127,7 @@ function resolveConfiguredSpeechVoiceModelForProvider(params: {
 }
 
 function applyVoiceModelToSpeechProviderConfig(params: {
-  cfg: OpenClawConfig | undefined;
+  cfg: AforaConfig | undefined;
   providerId: string;
   providerConfig: SpeechProviderConfig;
   provider?: VoiceModelProvider;
@@ -213,7 +213,7 @@ function resolveRawProviderConfig(
 function resolveLazyProviderConfig(
   config: ResolvedTtsConfig,
   providerId: string,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
   voiceModel?: VoiceModelRef,
   provider?: SpeechProviderPlugin,
 ): SpeechProviderConfig {
@@ -293,7 +293,7 @@ function resolveLazyProviderConfig(
 export function getResolvedSpeechProviderConfig(
   config: ResolvedTtsConfig,
   providerId: string,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): SpeechProviderConfig {
   const effectiveCfg = cfg ? resolveTtsRuntimeConfig(cfg) : config.sourceConfig;
   const canonical =
@@ -306,7 +306,7 @@ export function getResolvedSpeechProviderConfig(
 function getResolvedSpeechProviderConfigFromInventory(params: {
   config: ResolvedTtsConfig;
   provider: SpeechProviderPlugin;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): SpeechProviderConfig {
   const effectiveCfg = params.cfg
     ? resolveTtsRuntimeConfig(params.cfg)
@@ -323,7 +323,7 @@ function getResolvedSpeechProviderConfigFromInventory(params: {
 export function getResolvedSpeechProviderConfigForVoiceModel(params: {
   config: ResolvedTtsConfig;
   providerId: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   voiceModel?: VoiceModelRef;
 }): SpeechProviderConfig {
   if (!params.voiceModel) {
@@ -423,7 +423,7 @@ export function resolvePreparedTtsProvider(params: {
 
 export function resolveTtsProviderOrder(
   primary: TtsProvider,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
   providers?: readonly SpeechProviderPlugin[],
 ): TtsProvider[] {
   const effectiveCfg = cfg ? resolveTtsRuntimeConfig(cfg) : undefined;
@@ -449,7 +449,7 @@ export function resolveTtsProviderOrder(
 
 export function resolveTtsProviderCandidates(
   primary: TtsProvider,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): VoiceProviderCandidate[] {
   const effectiveCfg = cfg ? resolveTtsRuntimeConfig(cfg) : undefined;
   const normalizedPrimary = canonicalizeSpeechProviderId(primary, effectiveCfg) ?? primary;
@@ -462,7 +462,7 @@ export function resolveTtsProviderCandidates(
 
 export function resolvePrimaryTtsProviderCandidate(
   primary: TtsProvider,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): VoiceProviderCandidate {
   const effectiveCfg = cfg ? resolveTtsRuntimeConfig(cfg) : undefined;
   return resolvePrimaryVoiceProviderCandidate({
@@ -475,7 +475,7 @@ export function resolvePrimaryTtsProviderCandidate(
 export function isTtsProviderConfigured(
   config: ResolvedTtsConfig,
   provider: TtsProvider | SpeechProviderPlugin,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): boolean {
   try {
     const effectiveCfg = cfg ? resolveTtsRuntimeConfig(cfg) : config.sourceConfig;

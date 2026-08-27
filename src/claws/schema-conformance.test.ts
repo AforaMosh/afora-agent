@@ -225,7 +225,7 @@ describe("portable Claw schema conformance", () => {
 
 describe("development snapshot integrity", () => {
   it("rejects oversized manifests and package metadata before parsing", async () => {
-    const root = await mkdtemp(join(tmpdir(), "openclaw-claw-bounded-read-"));
+    const root = await mkdtemp(join(tmpdir(), "afora-claw-bounded-read-"));
     const manifestPath = join(root, "oversized.claw.json");
     await writeFile(manifestPath, Buffer.alloc(1024 * 1024 + 1, 0x20));
 
@@ -247,14 +247,14 @@ describe("development snapshot integrity", () => {
     ["Demo", "1.0.0"],
     ["demo", "01.0.0"],
   ])("rejects noncanonical package metadata %s@%s", async (name, version) => {
-    const root = await mkdtemp(join(tmpdir(), "openclaw-claw-package-metadata-"));
+    const root = await mkdtemp(join(tmpdir(), "afora-claw-package-metadata-"));
     await writeFile(
       join(root, "package.json"),
-      JSON.stringify({ name, version, openclaw: { claw: "openclaw.claw.json" } }),
+      JSON.stringify({ name, version, afora: { claw: "afora.claw.json" } }),
       "utf8",
     );
     await writeFile(
-      join(root, "openclaw.claw.json"),
+      join(root, "afora.claw.json"),
       JSON.stringify({ schemaVersion: 1, agent: { id: "demo-agent" } }),
       "utf8",
     );
@@ -268,7 +268,7 @@ describe("development snapshot integrity", () => {
   });
 
   it("binds every referenced workspace source", async () => {
-    const root = await mkdtemp(join(tmpdir(), "openclaw-claw-snapshot-"));
+    const root = await mkdtemp(join(tmpdir(), "afora-claw-snapshot-"));
     await mkdir(join(root, "workspace"));
     const manifestPath = join(root, "demo.claw.json");
     const sourcePath = join(root, "workspace", "SOUL.md");

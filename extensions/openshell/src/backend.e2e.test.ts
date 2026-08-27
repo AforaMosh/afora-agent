@@ -9,18 +9,18 @@ import {
   createSandboxBrowserConfig,
   createSandboxPruneConfig,
   createSandboxSshConfig,
-} from "openclaw/plugin-sdk/test-fixtures";
+} from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, it } from "vitest";
 import { createOpenShellSandboxBackendFactory } from "./backend.js";
 import { resolveOpenShellPluginConfig } from "./config.js";
 
-const OPENCLAW_OPENSHELL_E2E = process.env.OPENCLAW_E2E_OPENSHELL === "1";
-const OPENCLAW_OPENSHELL_E2E_TIMEOUT_MS = 12 * 60_000;
-const OPENCLAW_OPENSHELL_COMMAND =
-  process.env.OPENCLAW_E2E_OPENSHELL_COMMAND?.trim() || "openshell";
-const OPENCLAW_OPENSHELL_CONFIG_HOME =
-  process.env.OPENCLAW_E2E_OPENSHELL_CONFIG_HOME?.trim() || null;
-const OPENCLAW_OPENSHELL_HOST_IP = process.env.OPENCLAW_E2E_OPENSHELL_HOST_IP?.trim() || null;
+const AFORA_OPENSHELL_E2E = process.env.AFORA_E2E_OPENSHELL === "1";
+const AFORA_OPENSHELL_E2E_TIMEOUT_MS = 12 * 60_000;
+const AFORA_OPENSHELL_COMMAND =
+  process.env.AFORA_E2E_OPENSHELL_COMMAND?.trim() || "openshell";
+const AFORA_OPENSHELL_CONFIG_HOME =
+  process.env.AFORA_E2E_OPENSHELL_CONFIG_HOME?.trim() || null;
+const AFORA_OPENSHELL_HOST_IP = process.env.AFORA_E2E_OPENSHELL_HOST_IP?.trim() || null;
 
 const CUSTOM_IMAGE_DOCKERFILE = `FROM python:3.13-slim
 
@@ -32,7 +32,7 @@ RUN groupadd -g 1000660000 sandbox && \\
     useradd -m -u 1000660000 -g sandbox sandbox && \\
     install -d -o sandbox -g sandbox /sandbox
 
-RUN echo "openclaw-openshell-e2e" > /opt/openshell-e2e-marker.txt
+RUN echo "afora-openshell-e2e" > /opt/openshell-e2e-marker.txt
 
 USER sandbox
 WORKDIR /sandbox
@@ -203,8 +203,8 @@ async function dockerReady(): Promise<boolean> {
 }
 
 async function resolveOpenShellHostIp(): Promise<string> {
-  if (OPENCLAW_OPENSHELL_HOST_IP) {
-    return OPENCLAW_OPENSHELL_HOST_IP;
+  if (AFORA_OPENSHELL_HOST_IP) {
+    return AFORA_OPENSHELL_HOST_IP;
   }
   const networks = await runCommand({
     command: "docker",
@@ -233,7 +233,7 @@ async function resolveOpenShellHostIp(): Promise<string> {
     }
   }
   throw new Error(
-    "OpenShell E2E could not resolve the OpenShell Docker network gateway; set OPENCLAW_E2E_OPENSHELL_HOST_IP",
+    "OpenShell E2E could not resolve the OpenShell Docker network gateway; set AFORA_E2E_OPENSHELL_HOST_IP",
   );
 }
 
@@ -474,24 +474,24 @@ describe("OpenShell gateway discovery", () => {
 });
 
 describe("openshell sandbox backend e2e", () => {
-  it.runIf(process.platform !== "win32" && OPENCLAW_OPENSHELL_E2E)(
+  it.runIf(process.platform !== "win32" && AFORA_OPENSHELL_E2E)(
     "creates a remote-canonical sandbox through OpenShell and executes over SSH",
-    { timeout: OPENCLAW_OPENSHELL_E2E_TIMEOUT_MS },
+    { timeout: AFORA_OPENSHELL_E2E_TIMEOUT_MS },
     async () => {
       if (!(await dockerReady())) {
         throw new Error("OpenShell E2E requires a working Docker daemon");
       }
-      if (!(await commandAvailable(OPENCLAW_OPENSHELL_COMMAND))) {
-        throw new Error(`OpenShell CLI is unavailable: ${OPENCLAW_OPENSHELL_COMMAND}`);
+      if (!(await commandAvailable(AFORA_OPENSHELL_COMMAND))) {
+        throw new Error(`OpenShell CLI is unavailable: ${AFORA_OPENSHELL_COMMAND}`);
       }
-      if (!OPENCLAW_OPENSHELL_CONFIG_HOME) {
+      if (!AFORA_OPENSHELL_CONFIG_HOME) {
         throw new Error(
-          "OpenShell E2E requires OPENCLAW_E2E_OPENSHELL_CONFIG_HOME because tests isolate HOME and XDG_CONFIG_HOME",
+          "OpenShell E2E requires AFORA_E2E_OPENSHELL_CONFIG_HOME because tests isolate HOME and XDG_CONFIG_HOME",
         );
       }
-      const openshellConfigHome = OPENCLAW_OPENSHELL_CONFIG_HOME;
+      const openshellConfigHome = AFORA_OPENSHELL_CONFIG_HOME;
       const hostIp = await resolveOpenShellHostIp();
-      const gatewayName = await activeOpenShellGateway(OPENCLAW_OPENSHELL_COMMAND, {
+      const gatewayName = await activeOpenShellGateway(AFORA_OPENSHELL_COMMAND, {
         ...process.env,
         XDG_CONFIG_HOME: openshellConfigHome,
       });
@@ -499,7 +499,7 @@ describe("openshell sandbox backend e2e", () => {
         throw new Error("OpenShell E2E requires an active local registered gateway");
       }
 
-      const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-openshell-e2e-"));
+      const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-openshell-e2e-"));
       const env = openshellEnv(rootDir);
       const previousHome = process.env.HOME;
       const previousXdgConfigHome = process.env.XDG_CONFIG_HOME;
@@ -522,8 +522,8 @@ describe("openshell sandbox backend e2e", () => {
         workspaceRoot: path.join(rootDir, "sandboxes"),
         dockerTmpfsSource: "configured" as const,
         docker: {
-          image: "openclaw-sandbox:bookworm-slim",
-          containerPrefix: "openclaw-sbx-",
+          image: "afora-sandbox:bookworm-slim",
+          containerPrefix: "afora-sbx-",
           workdir: "/workspace",
           readOnlyRoot: true,
           tmpfs: ["/tmp"],
@@ -531,14 +531,14 @@ describe("openshell sandbox backend e2e", () => {
           capDrop: ["ALL"],
           env: {},
         },
-        ssh: createSandboxSshConfig("/tmp/openclaw-sandboxes"),
+        ssh: createSandboxSshConfig("/tmp/afora-sandboxes"),
         browser: createSandboxBrowserConfig(),
         tools: { allow: [], deny: [] },
         prune: createSandboxPruneConfig(),
       };
 
       const pluginConfig = resolveOpenShellPluginConfig({
-        command: OPENCLAW_OPENSHELL_COMMAND,
+        command: AFORA_OPENSHELL_COMMAND,
         gateway: gatewayName,
         from: dockerfilePath,
         mode: "remote",
@@ -604,7 +604,7 @@ describe("openshell sandbox backend e2e", () => {
         expect(execResult.code).toBe(0);
         const stdout = execResult.stdout.trim();
         expect(stdout).toContain("/sandbox");
-        expect(stdout).toContain("openclaw-openshell-e2e");
+        expect(stdout).toContain("afora-openshell-e2e");
         expect(stdout).toContain("seed-from-local");
 
         const curlPathResult = await runBackendExec({
@@ -645,7 +645,7 @@ describe("openshell sandbox backend e2e", () => {
         );
 
         const verifyResult = await runCommand({
-          command: OPENCLAW_OPENSHELL_COMMAND,
+          command: AFORA_OPENSHELL_COMMAND,
           args: ["sandbox", "ssh-config", backend.runtimeId],
           env,
           timeoutMs: 60_000,
@@ -663,7 +663,7 @@ describe("openshell sandbox backend e2e", () => {
         expect(`${blockedGetResult.stdout}\n${blockedGetResult.stderr}`).toMatch(/403|deny/i);
 
         const allowedGetResult = await runCommand({
-          command: OPENCLAW_OPENSHELL_COMMAND,
+          command: AFORA_OPENSHELL_COMMAND,
           args: [
             "sandbox",
             "create",
@@ -691,14 +691,14 @@ describe("openshell sandbox backend e2e", () => {
         expect(allowedGetResult.stdout).toContain('"message":"hello-from-host"');
       } finally {
         await runCommand({
-          command: OPENCLAW_OPENSHELL_COMMAND,
+          command: AFORA_OPENSHELL_COMMAND,
           args: ["sandbox", "delete", backend.runtimeId],
           env,
           allowFailure: true,
           timeoutMs: 2 * 60_000,
         });
         await runCommand({
-          command: OPENCLAW_OPENSHELL_COMMAND,
+          command: AFORA_OPENSHELL_COMMAND,
           args: ["sandbox", "delete", allowSandboxName],
           env,
           allowFailure: true,

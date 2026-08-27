@@ -1,9 +1,9 @@
 // Discord provider module implements model/runtime integration.
-import { createTransportActivityStatusPatch } from "openclaw/plugin-sdk/gateway-runtime";
-import { asDateTimestampMs, parseStrictPositiveInteger } from "openclaw/plugin-sdk/number-runtime";
-import { danger, sleepWithAbort } from "openclaw/plugin-sdk/runtime-env";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import { formatErrorMessage } from "openclaw/plugin-sdk/ssrf-runtime";
+import { createTransportActivityStatusPatch } from "afora-agent/plugin-sdk/gateway-runtime";
+import { asDateTimestampMs, parseStrictPositiveInteger } from "afora-agent/plugin-sdk/number-runtime";
+import { danger, sleepWithAbort } from "afora-agent/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { attachDiscordGatewayLogging } from "../gateway-logging.js";
 import { isFatalGatewayCloseCode } from "../internal/gateway-close-codes.js";
 import { GatewayCloseCodes } from "../internal/gateway.js";
@@ -24,8 +24,8 @@ import { createDiscordReadyStatusPatch, type DiscordMonitorStatusSink } from "./
 const DEFAULT_DISCORD_GATEWAY_READY_TIMEOUT_MS = 15_000;
 const DEFAULT_DISCORD_GATEWAY_RUNTIME_READY_TIMEOUT_MS = 30_000;
 const MAX_DISCORD_GATEWAY_READY_TIMEOUT_MS = 120_000;
-const DISCORD_GATEWAY_READY_TIMEOUT_ENV = "OPENCLAW_DISCORD_READY_TIMEOUT_MS";
-const DISCORD_GATEWAY_RUNTIME_READY_TIMEOUT_ENV = "OPENCLAW_DISCORD_RUNTIME_READY_TIMEOUT_MS";
+const DISCORD_GATEWAY_READY_TIMEOUT_ENV = "AFORA_DISCORD_READY_TIMEOUT_MS";
+const DISCORD_GATEWAY_RUNTIME_READY_TIMEOUT_ENV = "AFORA_DISCORD_RUNTIME_READY_TIMEOUT_MS";
 const DISCORD_GATEWAY_READY_POLL_MS = 250;
 const DISCORD_GATEWAY_READY_RETRY_BACKOFF_MS = 2_000;
 const DISCORD_GATEWAY_STARTUP_DISCONNECT_DRAIN_TIMEOUT_MS = 5_000;

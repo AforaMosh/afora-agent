@@ -15,9 +15,9 @@ function normalizeApprovalMode(value: unknown): McpCodexToolApprovalMode | undef
     : undefined;
 }
 
-function isOpenClawLoopbackServer(name: string, server: McpServerConfig): boolean {
+function isAforaLoopbackServer(name: string, server: McpServerConfig): boolean {
   return (
-    name === "openclaw" &&
+    name === "afora" &&
     typeof server.url === "string" &&
     /^https?:\/\/(?:127\.0\.0\.1|localhost):\d+\/mcp(?:[?#].*)?$/.test(server.url)
   );
@@ -35,7 +35,7 @@ export function resolveProjectedMcpCodexToolApprovalMode(
   return (
     normalizeApprovalMode(codex.defaultToolsApprovalMode) ??
     normalizeApprovalMode(codex.default_tools_approval_mode) ??
-    (isOpenClawLoopbackServer(serverName, server) ? "approve" : undefined)
+    (isAforaLoopbackServer(serverName, server) ? "approve" : undefined)
   );
 }
 

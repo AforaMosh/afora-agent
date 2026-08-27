@@ -1,13 +1,13 @@
-# Venice OpenClaw provider
+# Venice Afora provider
 
-Official OpenClaw provider plugin for Venice.
+Official Afora provider plugin for Venice.
 
 ## Install
 
 ```sh
-openclaw plugins install @openclaw/venice-provider
+afora plugins install @afora/venice-provider
 ```
 
 ## Docs
 
-See `docs/providers/venice.md` in the OpenClaw repository, or the published docs at `https://docs.openclaw.ai/providers/venice`.
+See `docs/providers/venice.md` in the Afora repository, or the published docs at `https://docs.afora.ai/providers/venice`.

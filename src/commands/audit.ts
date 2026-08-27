@@ -2,8 +2,8 @@
 import {
   parseStrictPositiveInteger,
   timestampMsToIsoString,
-} from "@openclaw/normalization-core/number-coercion";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+} from "@afora/normalization-core/number-coercion";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import type {
   AuditActivityListParams,
   AuditActivityListResult,

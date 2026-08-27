@@ -1,12 +1,12 @@
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CloseTab, RegistryModule } from "./session-tab-registry.sqlite.test-helpers.js";
 
 const processStateSymbols = [
-  "openclaw.browser.session-tabs.volatile",
-  "openclaw.browser.session-tabs.volatile-cleanup",
-  "openclaw.browser.session-tabs.volatile-aliases",
-  "openclaw.browser.session-tabs.exact-volatile-aliases",
+  "afora.browser.session-tabs.volatile",
+  "afora.browser.session-tabs.volatile-cleanup",
+  "afora.browser.session-tabs.volatile-aliases",
+  "afora.browser.session-tabs.exact-volatile-aliases",
 ];
 
 function clearProcessLocalTabState(): void {

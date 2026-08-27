@@ -1,23 +1,23 @@
 // Sessions ACP runtime metadata tests cover session-owned runtime overlays.
 import { describe, expect, it } from "vitest";
 import { resolveModelAgentRuntimeMetadata } from "../agents/agent-runtime-metadata.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { parseAgentSessionKey } from "../routing/session-key.js";
 
 const ACP_SESSION_KEY = "agent:copilot:acp:86b7b5af-3773-4a56-b244-069d6c5d3db9";
 const NON_ACP_SESSION_KEY = "agent:main:main";
 
-function buildConfigWithoutAgentRuntimePolicy(): OpenClawConfig {
+function buildConfigWithoutAgentRuntimePolicy(): AforaConfig {
   return {
     agents: {
       list: [{ id: "copilot" }, { id: "main", default: true }],
       defaults: {},
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function computeSessionAgentRuntime(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   fallbackAgentId: string;
   acpRuntime?: boolean;
@@ -69,24 +69,24 @@ describe("session ACP runtime metadata", () => {
     expect(agentRuntime.source).not.toBe("session-key");
   });
 
-  it("preserves locked Codex ownership ahead of stale OpenClaw session metadata", () => {
+  it("preserves locked Codex ownership ahead of stale Afora session metadata", () => {
     const agentRuntime = resolveModelAgentRuntimeMetadata({
       cfg: {
         agents: {
           defaults: {
             models: {
-              "openai/gpt-5.5": { agentRuntime: { id: "openclaw" } },
+              "openai/gpt-5.5": { agentRuntime: { id: "afora" } },
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       agentId: "main",
       provider: "openai",
       model: "gpt-5.5",
       sessionKey: NON_ACP_SESSION_KEY,
       sessionEntry: {
         agentHarnessId: "codex",
-        agentRuntimeOverride: "openclaw",
+        agentRuntimeOverride: "afora",
         modelSelectionLocked: true,
       },
     });

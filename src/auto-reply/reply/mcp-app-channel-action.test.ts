@@ -18,7 +18,7 @@ const presentation = {
           label: "Open app",
           action: {
             type: "web-app" as const,
-            url: "https://node.tailnet.ts.net/__openclaw__/mcp-app#opaque-ticket",
+            url: "https://node.tailnet.ts.net/__afora__/mcp-app#opaque-ticket",
           },
         },
       ],
@@ -51,7 +51,7 @@ describe("attachMcpAppChannelAction", () => {
       throw new Error("expected final payload");
     }
     expect(renderMessagePresentationFallbackText(finalPayload)).toBe(
-      "Final answer\n\n- Open app: https://node.tailnet.ts.net/__openclaw__/mcp-app#opaque-ticket",
+      "Final answer\n\n- Open app: https://node.tailnet.ts.net/__afora__/mcp-app#opaque-ticket",
     );
   });
 

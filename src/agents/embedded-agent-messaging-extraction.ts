@@ -1,15 +1,15 @@
 /** Extracts message delivery evidence from embedded-agent tool calls and results. */
-import { asOptionalRecord as readRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalRecord as readRecord } from "@afora/normalization-core/record-coerce";
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
   normalizeOptionalStringifiedId,
   readStringValue,
-} from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-coerce";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { getChannelPlugin, normalizeChannelId } from "../channels/plugins/index.js";
 import type { ChannelMessageActionName } from "../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizeTargetForProvider } from "../infra/outbound/target-normalization.js";
 import {
   normalizeLegacyInteractiveReply,
@@ -117,7 +117,7 @@ function resolveMessagingToolThreadEvidence(params: {
   allowImplicitThread: boolean;
   threadSuppressed: boolean;
   options?: {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     currentChannelId?: string;
     currentMessagingTarget?: string;
     currentThreadId?: string;
@@ -186,7 +186,7 @@ export function extractMessagingToolSend(
   toolName: string,
   args: Record<string, unknown>,
   options?: {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     currentChannelId?: string;
     currentMessagingTarget?: string;
     currentThreadId?: string;

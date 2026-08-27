@@ -221,7 +221,7 @@ describe("secrets runtime degraded-owner attribution", () => {
     if (process.platform === "win32") {
       return;
     }
-    const root = tempDirs.make("openclaw-secret-provider-owner-match-");
+    const root = tempDirs.make("afora-secret-provider-owner-match-");
     const healthyPath = path.join(root, "healthy.json");
     await fs.writeFile(healthyPath, JSON.stringify({ shared: "healthy" }), "utf8");
     await fs.chmod(healthyPath, 0o600);
@@ -267,7 +267,7 @@ describe("secrets runtime degraded-owner attribution", () => {
     if (process.platform === "win32") {
       return;
     }
-    const root = tempDirs.make("openclaw-secret-provider-active-co-owner-");
+    const root = tempDirs.make("afora-secret-provider-active-co-owner-");
     const provider = "missing";
     const apiKeyRef = { source: "file" as const, provider, id: "/candidate" };
     const activeRef = { source: "file" as const, provider, id: "/active" };
@@ -394,7 +394,7 @@ describe("secrets runtime degraded-owner attribution", () => {
     if (process.platform === "win32") {
       return;
     }
-    const root = tempDirs.make("openclaw-invalid-web-co-owner-");
+    const root = tempDirs.make("afora-invalid-web-co-owner-");
     const secretsPath = path.join(root, "secrets.json");
     await fs.writeFile(secretsPath, JSON.stringify({ shared: "dummy" }), "utf8");
     await fs.chmod(secretsPath, 0o600);
@@ -446,7 +446,7 @@ describe("secrets runtime degraded-owner attribution", () => {
     if (process.platform === "win32") {
       return;
     }
-    const root = tempDirs.make("openclaw-invalid-web-sibling-");
+    const root = tempDirs.make("afora-invalid-web-sibling-");
     const secretsPath = path.join(root, "secrets.json");
     await fs.writeFile(secretsPath, JSON.stringify({ shared: "dummy" }), "utf8");
     await fs.chmod(secretsPath, 0o600);
@@ -500,7 +500,7 @@ describe("secrets runtime degraded-owner attribution", () => {
     if (process.platform === "win32") {
       return;
     }
-    const root = tempDirs.make("openclaw-tts-secretref-object-");
+    const root = tempDirs.make("afora-tts-secretref-object-");
     const secretsPath = path.join(root, "secrets.json");
     await fs.writeFile(
       secretsPath,
@@ -582,7 +582,7 @@ describe("secrets runtime degraded-owner attribution", () => {
     if (process.platform === "win32") {
       return;
     }
-    const root = tempDirs.make("openclaw-shared-invalid-secretref-");
+    const root = tempDirs.make("afora-shared-invalid-secretref-");
     const secretsPath = path.join(root, "secrets.json");
     await fs.writeFile(secretsPath, JSON.stringify({ shared: { invalid: true } }), "utf8");
     await fs.chmod(secretsPath, 0o600);

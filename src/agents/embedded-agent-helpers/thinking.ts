@@ -1,7 +1,7 @@
 /**
  * Resolves fallback thinking levels for providers that require reasoning.
  */
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 import { normalizeThinkLevel, type ThinkLevel } from "../../auto-reply/thinking.js";
 import { isReasoningConstraintErrorMessage } from "../failover/classify.js";
 

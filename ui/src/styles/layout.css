@@ -142,36 +142,36 @@
 
 /* Reserve notice space only while the corresponding in-page chrome remains visible. */
 :is(
-    html:not(.openclaw-native-nav, .openclaw-native-web-chrome)
+    html:not(.afora-native-nav, .afora-native-web-chrome)
       .shell:not(.shell--mobile-nav, .shell--settings),
-    html.openclaw-native-nav:not(.openclaw-native-web-chrome)
+    html.afora-native-nav:not(.afora-native-web-chrome)
       .shell:not(.shell--mobile-nav, .shell--nav-collapsed, .shell--settings)
   )
   .content
-  > :is(openclaw-update-banner, openclaw-device-scope-upgrade-banner)
+  > :is(afora-update-banner, afora-device-scope-upgrade-banner)
   .callout {
   margin-left: var(--shell-chrome-safe-area-left);
 }
 
-html.openclaw-native-macos .shell-chrome-controls {
+html.afora-native-macos .shell-chrome-controls {
   top: 52px;
 }
 
 /* Newer Mac apps host a native sidebar toggle in the titlebar next to
-   back/forward and add openclaw-native-nav; the in-page nav toggles would
+   back/forward and add afora-native-nav; the in-page nav toggles would
    duplicate it, so they disappear (⌘B and the accessible titlebar button
    cover keyboard/screen-reader use). Search stays: native-nav-only hosts
    provide native search/new-thread controls only while the rail is
    collapsed, so the expanded cluster keeps the pointer path to the palette.
-   Older apps only add openclaw-native-macos and keep all web controls. */
-html.openclaw-native-nav .shell-chrome-controls__nav-toggle,
-html.openclaw-native-nav .shell--nav-collapsed .shell-chrome-controls,
-html.openclaw-native-nav .topbar .topbar-nav-toggle {
+   Older apps only add afora-native-macos and keep all web controls. */
+html.afora-native-nav .shell-chrome-controls__nav-toggle,
+html.afora-native-nav .shell--nav-collapsed .shell-chrome-controls,
+html.afora-native-nav .topbar .topbar-nav-toggle {
   display: none;
 }
 
 /* Web-chrome hosts provide this entire cluster in the native titlebar. */
-html.openclaw-native-web-chrome .shell-chrome-controls {
+html.afora-native-web-chrome .shell-chrome-controls {
   display: none;
 }
 
@@ -187,7 +187,7 @@ html.openclaw-native-web-chrome .shell-chrome-controls {
   align-items: center;
   gap: 4px;
   width: 156px;
-  height: var(--openclaw-native-titlebar-height, 50px);
+  height: var(--afora-native-titlebar-height, 50px);
 }
 
 .macos-titlebar-controls__button.topbar-icon-btn {
@@ -624,7 +624,7 @@ html.openclaw-native-web-chrome .shell-chrome-controls {
   color: var(--muted);
 }
 
-openclaw-settings-save-indicator {
+afora-settings-save-indicator {
   min-width: 0;
 }
 
@@ -1159,11 +1159,11 @@ openclaw-settings-save-indicator {
 }
 
 /* Native hosts hide the web cluster; onboarding never mounts it. */
-html.openclaw-native-nav
+html.afora-native-nav
   .shell:not(.shell--mobile-nav)
   .sidebar-update-card--floating
   .sidebar-update-card,
-html.openclaw-native-web-chrome
+html.afora-native-web-chrome
   .shell:not(.shell--mobile-nav)
   .sidebar-update-card--floating
   .sidebar-update-card,
@@ -1173,11 +1173,11 @@ html.openclaw-native-web-chrome
 }
 
 /* Native dashboard actions must also clear AppKit's drag strip. */
-html.openclaw-native-macos
+html.afora-native-macos
   .shell:not(.shell--mobile-nav)
   .sidebar-update-card--floating
   .sidebar-update-card {
-  margin-top: calc(var(--openclaw-native-titlebar-height, 50px) + 2px);
+  margin-top: calc(var(--afora-native-titlebar-height, 50px) + 2px);
 }
 
 .sidebar-update-card__action {
@@ -2167,7 +2167,7 @@ body.update-dialog-open .sidebar-update-card__status {
   letter-spacing: -0.02em;
 }
 
-.viewer-facepile > openclaw-tooltip:not(:first-child) .viewer-avatar {
+.viewer-facepile > afora-tooltip:not(:first-child) .viewer-avatar {
   margin-left: -5px;
 }
 
@@ -2177,7 +2177,7 @@ body.update-dialog-open .sidebar-update-card__status {
   display: inline-flex;
 }
 
-.viewer-facepile > openclaw-viewer-avatar:not(:first-child) .viewer-avatar,
+.viewer-facepile > afora-viewer-avatar:not(:first-child) .viewer-avatar,
 .viewer-facepile > .viewer-avatar:not(:first-child) {
   margin-left: -5px;
 }
@@ -2606,9 +2606,9 @@ wa-dropdown.session-menu::part(menu) {
 /* Popover hosts live in the top layer so menus escape in-page stacking
    contexts (e.g. the sidebar resizer above the nav); the host itself must
    stay a zero-size shell around its fixed-position menu. */
-openclaw-menu-surface[popover],
-openclaw-native-link-menu[popover],
-openclaw-session-menu[popover] {
+afora-menu-surface[popover],
+afora-native-link-menu[popover],
+afora-session-menu[popover] {
   width: 0;
   height: 0;
   margin: 0;
@@ -3470,8 +3470,8 @@ wa-dropdown-item.session-menu__item::part(submenu-icon) {
   stroke-linejoin: round;
 }
 
-openclaw-tooltip.sidebar-hover-tooltip {
-  --openclaw-tooltip-max-width: min(340px, calc(100vw - 24px));
+afora-tooltip.sidebar-hover-tooltip {
+  --afora-tooltip-max-width: min(340px, calc(100vw - 24px));
 }
 
 .sidebar-hover-card {
@@ -3842,7 +3842,7 @@ wa-dropdown.sidebar-identity-menu::part(menu) {
   margin-top: 20px;
 }
 
-.content > openclaw-device-scope-upgrade-banner:has(.scope-upgrade-chip-row) + * {
+.content > afora-device-scope-upgrade-banner:has(.scope-upgrade-chip-row) + * {
   margin-top: 8px;
 }
 
@@ -3868,7 +3868,7 @@ wa-dropdown.sidebar-identity-menu::part(menu) {
   margin-top: 0;
 }
 
-.content--chat > openclaw-router-outlet {
+.content--chat > afora-router-outlet {
   display: flex;
   flex: 1 1 0;
   min-width: 0;
@@ -3886,7 +3886,7 @@ wa-dropdown.sidebar-identity-menu::part(menu) {
   margin-top: 0;
 }
 
-.content--custodian > openclaw-router-outlet {
+.content--custodian > afora-router-outlet {
   display: flex;
   flex: 1 1 0;
   min-width: 0;
@@ -3904,15 +3904,15 @@ wa-dropdown.sidebar-identity-menu::part(menu) {
   margin-top: 14px;
 }
 
-.content--workboard > openclaw-router-outlet,
-.content--workboard openclaw-workboard-page {
+.content--workboard > afora-router-outlet,
+.content--workboard afora-workboard-page {
   display: flex;
   flex: 1 1 0;
   flex-direction: column;
   min-height: 0;
 }
 
-.content--workboard openclaw-workboard-page {
+.content--workboard afora-workboard-page {
   gap: 14px;
 }
 
@@ -3939,14 +3939,14 @@ wa-dropdown.sidebar-identity-menu::part(menu) {
 
 /* The fixed web chrome sits over the top-left of ordinary page headers too.
    Settings, mobile drawers, and native hosts own different chrome. */
-html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-web-chrome)
+html:not(.afora-native-macos):not(.afora-native-nav):not(.afora-native-web-chrome)
   .shell:not(.shell--nav-collapsed):not(.shell--mobile-nav):not(.shell--settings)
   .content:not(.content--chat)
   .content-header {
   padding-left: 88px;
 }
 
-html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-web-chrome)
+html:not(.afora-native-macos):not(.afora-native-nav):not(.afora-native-web-chrome)
   .shell--nav-collapsed:not(.shell--mobile-nav):not(.shell--settings)
   .content:not(.content--chat)
   .content-header {

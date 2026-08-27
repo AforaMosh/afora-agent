@@ -10,7 +10,7 @@ describe("runtime-postbuild-stamp script", () => {
   const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
   it("writes dist/.runtime-postbuildstamp with the current git head", () => {
-    const rootDir = tempDirs.make("openclaw-runtime-postbuild-stamp-");
+    const rootDir = tempDirs.make("afora-runtime-postbuild-stamp-");
     const stampPath = writeRuntimePostBuildStamp({
       cwd: rootDir,
       now: () => 123,

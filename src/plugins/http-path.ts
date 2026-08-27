@@ -1,5 +1,5 @@
 // Normalizes HTTP path values used by plugin manifests and routes.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 
 /** Normalizes plugin HTTP paths to leading-slash form with optional fallback. */
 export function normalizePluginHttpPath(

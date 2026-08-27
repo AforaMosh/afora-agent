@@ -1,5 +1,5 @@
 // Retry policy: backoff, attempt floor + age gate for dead-letter.
-import { coerceErrorMessage } from "@openclaw/normalization-core/error-coercion";
+import { coerceErrorMessage } from "@afora/normalization-core/error-coercion";
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_INGRESS_RETRY_DEAD_LETTER_MIN_AGE_MS,

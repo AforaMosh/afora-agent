@@ -2,7 +2,7 @@
 import { fromMarkdown } from "mdast-util-from-markdown";
 import { gfmTableFromMarkdown } from "mdast-util-gfm-table";
 import { gfmTable } from "micromark-extension-gfm-table";
-import { chunkMarkdownTextWithMode, type ChunkMode } from "openclaw/plugin-sdk/reply-chunking";
+import { chunkMarkdownTextWithMode, type ChunkMode } from "afora-agent/plugin-sdk/reply-chunking";
 import type { MentionTarget } from "./mention-target.types.js";
 
 export type FeishuMarkdownNode = {

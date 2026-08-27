@@ -12,7 +12,7 @@ sidebarTitle: "ACP lifecycle refactor"
 ACP session ownership is now explicit in session rows, and generated ACPX
 wrapper launches are lease-backed. The remaining process-cleanup heuristics are
 not the target design: they are temporary coverage for launch paths that the
-published `acpx` runtime does not yet expose to OpenClaw.
+published `acpx` runtime does not yet expose to Afora.
 
 This page records the current boundary and the work that remains. It is not a
 proposal for a second lifecycle controller.
@@ -47,28 +47,28 @@ type AcpxProcessLease = {
 };
 ```
 
-Before entering an upstream launch that uses an OpenClaw-generated wrapper, the
+Before entering an upstream launch that uses an Afora-generated wrapper, the
 plugin writes a pending lease with `rootPid: 0`. The wrapper command receives
 the lease id and Gateway instance id as arguments:
 
 ```sh
---openclaw-acpx-lease-id <lease-id> \
---openclaw-gateway-instance-id <gateway-instance-id>
+--afora-acpx-lease-id <lease-id> \
+--afora-gateway-instance-id <gateway-instance-id>
 ```
 
 The ACPX session-store save promotes the pending lease with the wrapper PID.
 Generated-wrapper availability and doctor probes use the same lease-first
-ordering. Delegate fulfillment does not prove a probe wrapper exited: OpenClaw
+ordering. Delegate fulfillment does not prove a probe wrapper exited: Afora
 checks the exact live lease identity and reaps a surviving tree, but retains the
 lease even when the wrapper is absent. The wrapper strips lease arguments before
 spawning its detached adapter, so wrapper absence cannot prove reparented
 descendants are gone. The probe lease stays open until stable descendant identity
-can prove the whole tree absent. If delegate entry throws, OpenClaw likewise
+can prove the whole tree absent. If delegate entry throws, Afora likewise
 cannot distinguish a pre-spawn failure from a post-spawn failure.
 
 Direct agent commands are different. Published `acpx` resolves and spawns those
 processes internally and exposes neither a pre-spawn identity hook nor a
-post-spawn ownership callback. OpenClaw does not duplicate that launch policy;
+post-spawn ownership callback. Afora does not duplicate that launch policy;
 direct-agent sessions and direct-agent probes therefore remain outside complete
 lease coverage.
 
@@ -117,7 +117,7 @@ requester's tree, and `all` is not less capable than `tree`.
 ### Upstream launch ownership
 
 `acpx` owns probe, initial session, reconnect, and control-operation process
-creation. OpenClaw needs upstream pre-spawn identity injection plus a post-spawn
+creation. Afora needs upstream pre-spawn identity injection plus a post-spawn
 callback that reports the root PID or an equivalent launch primitive. Without
 that contract, locally wrapping direct launches would duplicate `acpx` command
 resolution and platform behavior.

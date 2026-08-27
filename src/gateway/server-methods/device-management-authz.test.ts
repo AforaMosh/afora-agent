@@ -8,7 +8,7 @@ function client(overrides: Partial<GatewayClient>): GatewayClient {
       minProtocol: 1,
       maxProtocol: 1,
       client: {
-        id: "openclaw-control-ui",
+        id: "afora-control-ui",
         version: "test",
         platform: "browser",
         mode: "webchat",

@@ -25,7 +25,7 @@ describe("node worker bundle transfer", () => {
   let server: http.Server | undefined;
 
   beforeEach(async () => {
-    root = await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()), "openclaw-bundle-wire-"));
+    root = await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()), "afora-bundle-wire-"));
   });
 
   afterEach(async () => {
@@ -73,7 +73,7 @@ describe("node worker bundle transfer", () => {
       artifact: {
         install: "bundle",
         bundleHash,
-        openclawVersion: "2026.8.1",
+        aforaVersion: "2026.8.1",
         protocolFeatures: [],
         tarballBytes: tarball.byteLength,
         tarballSha256: createHash("sha256").update(tarball).digest("hex"),

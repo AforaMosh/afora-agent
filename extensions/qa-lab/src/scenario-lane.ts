@@ -1,4 +1,4 @@
-import { normalizeOptionalString as normalizeQaConfigString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString as normalizeQaConfigString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { QaCliBackendAuthMode } from "./gateway-child.js";
 import { splitQaModelRef, type QaProviderMode } from "./model-selection.js";
 import {

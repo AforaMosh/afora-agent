@@ -1,21 +1,21 @@
-// ClawRouter provider catalog maps credential-scoped routes to OpenClaw transports.
-import type { ProviderRuntimeModel } from "openclaw/plugin-sdk/plugin-entry";
+// ClawRouter provider catalog maps credential-scoped routes to Afora transports.
+import type { ProviderRuntimeModel } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   getCachedLiveProviderModelRows,
   type LiveModelCatalogFetchGuard,
-} from "openclaw/plugin-sdk/provider-catalog-live-runtime";
+} from "afora-agent/plugin-sdk/provider-catalog-live-runtime";
 import type {
   ModelDefinitionConfig,
   ModelProviderConfig,
-} from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/provider-model-shared";
 import {
   asFiniteNumberInRange,
   asOptionalRecord,
   asPositiveSafeInteger,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 
-const CLAWROUTER_DEFAULT_BASE_URL = "https://clawrouter.openclaw.ai";
+const CLAWROUTER_DEFAULT_BASE_URL = "https://clawrouter.afora.ai";
 
 const PROVIDER_ID = "clawrouter";
 const CATALOG_CACHE_TTL_MS = 60_000;

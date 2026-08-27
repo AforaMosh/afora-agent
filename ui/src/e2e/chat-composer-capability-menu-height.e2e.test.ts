@@ -15,8 +15,8 @@ function skill(index: number) {
     name,
     description: `${name} skill`,
     source: "test",
-    filePath: `/tmp/openclaw-e2e/skills/${name}/SKILL.md`,
-    baseDir: `/tmp/openclaw-e2e/skills/${name}`,
+    filePath: `/tmp/afora-e2e/skills/${name}/SKILL.md`,
+    baseDir: `/tmp/afora-e2e/skills/${name}`,
     skillKey: name.toLowerCase().replaceAll(" ", "-"),
     always: false,
     disabled: false,
@@ -122,8 +122,8 @@ suite.define(() => {
           "config.get": configResponse(),
           "sessions.list": sessionsList(),
           "skills.status": {
-            workspaceDir: "/tmp/openclaw-e2e/workspace",
-            managedSkillsDir: "/tmp/openclaw-e2e/skills",
+            workspaceDir: "/tmp/afora-e2e/workspace",
+            managedSkillsDir: "/tmp/afora-e2e/skills",
             skills: Array.from({ length: 36 }, (_, index) => skill(index + 1)),
           },
           "tools.effective": toolsEffectiveResponse(),
@@ -141,8 +141,8 @@ suite.define(() => {
       await dropdown.locator('[value="open-skills"]').click();
       await expect.poll(() => dropdown.getAttribute("data-view")).toBe("skills");
 
-      const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
-      const captureStage = process.env.OPENCLAW_UI_E2E_CAPTURE_STAGE?.trim();
+      const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
+      const captureStage = process.env.AFORA_UI_E2E_CAPTURE_STAGE?.trim();
       const capture = async (view: string, theme: "dark" | "light") => {
         if (!artifactDir || !captureStage) {
           return;

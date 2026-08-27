@@ -1,8 +1,8 @@
 // Feishu plugin module implements comment handler behavior.
-import { resolveInboundReplyDispatchCounts } from "openclaw/plugin-sdk/channel-inbound";
-import { bindIngressLifecycleToReplyOptions } from "openclaw/plugin-sdk/channel-outbound";
-import { parseStrictNonNegativeInteger } from "openclaw/plugin-sdk/number-runtime";
-import type { ResolvedAgentRoute } from "openclaw/plugin-sdk/routing";
+import { resolveInboundReplyDispatchCounts } from "afora-agent/plugin-sdk/channel-inbound";
+import { bindIngressLifecycleToReplyOptions } from "afora-agent/plugin-sdk/channel-outbound";
+import { parseStrictNonNegativeInteger } from "afora-agent/plugin-sdk/number-runtime";
+import type { ResolvedAgentRoute } from "afora-agent/plugin-sdk/routing";
 import { resolveFeishuRuntimeAccount } from "./accounts.js";
 import { createFeishuClient } from "./client.js";
 import { createFeishuCommentReplyDispatcher } from "./comment-dispatcher.js";

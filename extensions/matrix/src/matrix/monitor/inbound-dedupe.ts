@@ -5,7 +5,7 @@
 import {
   createChannelReplayGuard,
   resolvePersistentDedupePluginStateNamespace,
-} from "openclaw/plugin-sdk/persistent-dedupe";
+} from "afora-agent/plugin-sdk/persistent-dedupe";
 import type { MatrixAuth } from "../client/types.js";
 import { LogService } from "../sdk/logger.js";
 

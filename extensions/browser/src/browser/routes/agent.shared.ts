@@ -4,7 +4,7 @@
  * Centralizes body/query parsing, profile resolution, error mapping, Playwright
  * availability checks, and tab-context guards for route modules.
  */
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveBrowserNavigationProxyMode } from "../browser-proxy-mode.js";
 import { redactCdpErrorText } from "../cdp.helpers.js";
 import { toBrowserErrorResponse } from "../errors.js";
@@ -117,7 +117,7 @@ export async function requirePwAi(
     501,
     [
       `Playwright is not available in this gateway build; '${feature}' is unsupported.`,
-      "Reinstall or update OpenClaw so the core browser runtime dependency is present, then restart the gateway. In Docker, also install Chromium with the bundled playwright-core CLI.",
+      "Reinstall or update Afora so the core browser runtime dependency is present, then restart the gateway. In Docker, also install Chromium with the bundled playwright-core CLI.",
       "Docs: /tools/browser-control#playwright-requirement",
     ].join("\n"),
   );

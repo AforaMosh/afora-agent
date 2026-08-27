@@ -35,7 +35,7 @@ describe("gateway OpenAI-compatible disabled HTTP routes", () => {
           "/v1",
           "/v1/",
           "/v1/models",
-          "/v1/models/openclaw",
+          "/v1/models/afora",
           "/v1/chat/completions",
           "/v1/responses",
           "/v1/embeddings",
@@ -65,13 +65,13 @@ describe("gateway OpenAI-compatible disabled HTTP routes", () => {
         const { res, getBody } = await sendRequest(server, {
           path: "/v1/models",
           method: "GET",
-          headers: { "x-openclaw-scopes": "operator.read" },
+          headers: { "x-afora-scopes": "operator.read" },
         });
 
         expect(res.statusCode).toBe(200);
         expect(JSON.parse(getBody())).toMatchObject({
           object: "list",
-          data: expect.arrayContaining([expect.objectContaining({ id: "openclaw/default" })]),
+          data: expect.arrayContaining([expect.objectContaining({ id: "afora-agent/default" })]),
         });
       },
     });

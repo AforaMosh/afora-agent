@@ -37,7 +37,7 @@ type ButtonPropsInput = {
 };
 
 function buildButtonAttachmentsForTest(params: ButtonPropsInput): ButtonAttachments {
-  const signedChannelId = params.buttons[0]?.context?.["__openclaw_channel_id"];
+  const signedChannelId = params.buttons[0]?.context?.["__afora_channel_id"];
   const props = buildButtonProps({
     ...params,
     channelId: typeof signedChannelId === "string" ? signedChannelId : "test-channel",
@@ -270,12 +270,12 @@ describe("resolveInteractionCallbackUrl", () => {
       channels: {
         mattermost: {
           interactions: {
-            callbackBaseUrl: "https://gateway.example.com/openclaw",
+            callbackBaseUrl: "https://gateway.example.com/afora",
           },
         },
       },
     });
-    expect(url).toBe("https://gateway.example.com/openclaw/mattermost/interactions/default");
+    expect(url).toBe("https://gateway.example.com/afora/mattermost/interactions/default");
   });
 
   it("trims trailing slashes from callbackBaseUrl", () => {
@@ -605,7 +605,7 @@ describe("createMattermostInteractionHandler", () => {
   }
 
   function createActionContext(actionId = "approve", channelId = "chan-1") {
-    const context = { action_id: actionId, __openclaw_channel_id: channelId };
+    const context = { action_id: actionId, __afora_channel_id: channelId };
     return { context, token: generateInteractionToken(context, "acct") };
   }
 

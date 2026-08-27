@@ -1,6 +1,6 @@
 // Avatar policy helpers resolve avatar paths and provider fallback rules.
 import path from "node:path";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { isPathInside } from "../infra/path-guards.js";
 export { AVATAR_MAX_BYTES } from "./avatar-limits.js";
 

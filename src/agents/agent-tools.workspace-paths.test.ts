@@ -5,17 +5,17 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { createReadTool } from "openclaw/plugin-sdk/agent-sessions";
+import { createReadTool } from "afora-agent/plugin-sdk/agent-sessions";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "./test-helpers/fast-coding-tools.js";
-import "./test-helpers/fast-openclaw-tools.js";
-import type { OpenClawConfig } from "../config/config.js";
+import "./test-helpers/fast-afora-tools.js";
+import type { AforaConfig } from "../config/config.js";
 import { createCanonicalFixtureSkill } from "../skills/test-support/test-helpers.js";
-import { createOpenClawCodingTools } from "./agent-tools.js";
+import { createAforaCodingTools } from "./agent-tools.js";
 import {
   createHostWorkspaceEditTool,
   createHostWorkspaceWriteTool,
-  createOpenClawReadTool,
+  createAforaReadTool,
   createSandboxedEditTool,
   createSandboxedReadTool,
   createSandboxedWriteTool,
@@ -50,7 +50,7 @@ async function withTempDir<T>(prefix: string, fn: (dir: string) => Promise<T>) {
 }
 
 function createExecTool(workspaceDir: string) {
-  const tools = createOpenClawCodingTools({
+  const tools = createAforaCodingTools({
     workspaceDir,
     exec: { host: "gateway", ask: "off", security: "full" },
   });
@@ -84,9 +84,9 @@ async function expectExecCwdResolvesTo(
 
 describe("workspace path resolution", () => {
   it("uses cwd for coding filesystem tools while workspaceDir remains the agent workspace", async () => {
-    await withTempDir("openclaw-agent-ws-", async (workspaceDir) => {
-      await withTempDir("openclaw-task-cwd-", async (cwd) => {
-        const tools = createOpenClawCodingTools({ workspaceDir, cwd });
+    await withTempDir("afora-agent-ws-", async (workspaceDir) => {
+      await withTempDir("afora-task-cwd-", async (cwd) => {
+        const tools = createAforaCodingTools({ workspaceDir, cwd });
         const { readTool, writeTool } = expectReadWriteEditTools(tools);
 
         await fs.writeFile(path.join(cwd, "task.txt"), "task cwd read ok", "utf8");
@@ -101,11 +101,11 @@ describe("workspace path resolution", () => {
   });
 
   it("resolves relative read/write/edit paths against workspaceDir even after cwd changes", async () => {
-    await withTempDir("openclaw-ws-", async (workspaceDir) => {
-      await withTempDir("openclaw-cwd-", async (otherDir) => {
+    await withTempDir("afora-ws-", async (workspaceDir) => {
+      await withTempDir("afora-cwd-", async (otherDir) => {
         const cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(otherDir);
         try {
-          const tools = createOpenClawCodingTools({ workspaceDir });
+          const tools = createAforaCodingTools({ workspaceDir });
           const { readTool, writeTool, editTool } = expectReadWriteEditTools(tools);
 
           const readFile = "read.txt";
@@ -126,10 +126,10 @@ describe("workspace path resolution", () => {
           await fs.writeFile(path.join(workspaceDir, editFile), "hello world", "utf8");
           await editTool.execute("ws-edit", {
             path: editFile,
-            edits: [{ oldText: "world", newText: "openclaw" }],
+            edits: [{ oldText: "world", newText: "afora" }],
           });
           expect(await fs.readFile(path.join(workspaceDir, editFile), "utf8")).toBe(
-            "hello openclaw",
+            "hello afora",
           );
         } finally {
           cwdSpy.mockRestore();
@@ -141,9 +141,9 @@ describe("workspace path resolution", () => {
   it.runIf(process.platform === "win32")(
     "preserves mixed-case and Unicode names for workspace-only writes on Windows",
     async () => {
-      await withTempDir("openclaw-windows-case-", async (workspaceDir) => {
-        const cfg: OpenClawConfig = { tools: { fs: { workspaceOnly: true } } };
-        const tools = createOpenClawCodingTools({ workspaceDir, config: cfg });
+      await withTempDir("afora-windows-case-", async (workspaceDir) => {
+        const cfg: AforaConfig = { tools: { fs: { workspaceOnly: true } } };
+        const tools = createAforaCodingTools({ workspaceDir, config: cfg });
         const { writeTool } = expectReadWriteEditTools(tools);
 
         await writeTool.execute("windows-case-write", {
@@ -161,14 +161,14 @@ describe("workspace path resolution", () => {
   );
 
   it("allows deletion edits with empty newText", async () => {
-    await withTempDir("openclaw-ws-", async (workspaceDir) => {
-      await withTempDir("openclaw-cwd-", async (otherDir) => {
+    await withTempDir("afora-ws-", async (workspaceDir) => {
+      await withTempDir("afora-cwd-", async (otherDir) => {
         const testFile = "delete.txt";
         await fs.writeFile(path.join(workspaceDir, testFile), "hello world", "utf8");
 
         const cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(otherDir);
         try {
-          const tools = createOpenClawCodingTools({ workspaceDir });
+          const tools = createAforaCodingTools({ workspaceDir });
           const { editTool } = expectReadWriteEditTools(tools);
 
           await editTool.execute("ws-edit-delete", {
@@ -185,19 +185,19 @@ describe("workspace path resolution", () => {
   });
 
   it("defaults exec cwd to workspaceDir when workdir is omitted", async () => {
-    await withTempDir("openclaw-ws-", async (workspaceDir) => {
+    await withTempDir("afora-ws-", async (workspaceDir) => {
       const execTool = createExecTool(workspaceDir);
       await expectExecCwdResolvesTo(execTool, "ws-exec", { command: "echo ok" }, workspaceDir);
     });
   });
 
   it("rejects @-prefixed absolute paths outside workspace when workspaceOnly is enabled", async () => {
-    await withTempDir("openclaw-ws-", async (workspaceDir) => {
-      const cfg: OpenClawConfig = { tools: { fs: { workspaceOnly: true } } };
-      const tools = createOpenClawCodingTools({ workspaceDir, config: cfg });
+    await withTempDir("afora-ws-", async (workspaceDir) => {
+      const cfg: AforaConfig = { tools: { fs: { workspaceOnly: true } } };
+      const tools = createAforaCodingTools({ workspaceDir, config: cfg });
       const { readTool } = expectReadWriteEditTools(tools);
 
-      const outsideAbsolute = path.resolve(path.parse(workspaceDir).root, "outside-openclaw.txt");
+      const outsideAbsolute = path.resolve(path.parse(workspaceDir).root, "outside-afora.txt");
       await expect(
         readTool.execute("ws-read-at-prefix", { path: `@${outsideAbsolute}` }),
       ).rejects.toThrow(/Path escapes sandbox root/i);
@@ -208,9 +208,9 @@ describe("workspace path resolution", () => {
     if (process.platform === "win32") {
       return;
     }
-    await withTempDir("openclaw-ws-", async (workspaceDir) => {
-      const cfg: OpenClawConfig = { tools: { fs: { workspaceOnly: true } } };
-      const tools = createOpenClawCodingTools({ workspaceDir, config: cfg });
+    await withTempDir("afora-ws-", async (workspaceDir) => {
+      const cfg: AforaConfig = { tools: { fs: { workspaceOnly: true } } };
+      const tools = createAforaCodingTools({ workspaceDir, config: cfg });
       const { readTool, writeTool } = expectReadWriteEditTools(tools);
       const outsidePath = path.join(
         path.dirname(workspaceDir),
@@ -247,14 +247,14 @@ describe("workspace path resolution", () => {
   it.runIf(process.platform !== "win32")(
     "writes through in-workspace symlink parents when workspaceOnly is enabled",
     async () => {
-      await withTempDir("openclaw-ws-symlink-write-", async (workspaceDir) => {
+      await withTempDir("afora-ws-symlink-write-", async (workspaceDir) => {
         const realDir = path.join(workspaceDir, "oc_system", "memory");
         const aliasDir = path.join(workspaceDir, "memory");
         await fs.mkdir(realDir, { recursive: true });
         await fs.symlink(realDir, aliasDir);
 
-        const cfg: OpenClawConfig = { tools: { fs: { workspaceOnly: true } } };
-        const tools = createOpenClawCodingTools({ workspaceDir, config: cfg });
+        const cfg: AforaConfig = { tools: { fs: { workspaceOnly: true } } };
+        const tools = createAforaCodingTools({ workspaceDir, config: cfg });
         const { writeTool } = expectReadWriteEditTools(tools);
 
         await writeTool.execute("ws-write-symlink-parent", {
@@ -272,7 +272,7 @@ describe("workspace path resolution", () => {
   it.runIf(process.platform !== "win32")(
     "edits through in-workspace symlink parents when workspaceOnly is enabled",
     async () => {
-      await withTempDir("openclaw-ws-symlink-edit-", async (workspaceDir) => {
+      await withTempDir("afora-ws-symlink-edit-", async (workspaceDir) => {
         const realDir = path.join(workspaceDir, "oc_system", "memory");
         const aliasDir = path.join(workspaceDir, "memory");
         const targetPath = path.join(realDir, "2026-05-20.md");
@@ -280,8 +280,8 @@ describe("workspace path resolution", () => {
         await fs.symlink(realDir, aliasDir);
         await fs.writeFile(targetPath, "old memory\n", "utf8");
 
-        const cfg: OpenClawConfig = { tools: { fs: { workspaceOnly: true } } };
-        const tools = createOpenClawCodingTools({ workspaceDir, config: cfg });
+        const cfg: AforaConfig = { tools: { fs: { workspaceOnly: true } } };
+        const tools = createAforaCodingTools({ workspaceDir, config: cfg });
         const { editTool } = expectReadWriteEditTools(tools);
 
         await editTool.execute("ws-edit-symlink-parent", {
@@ -297,7 +297,7 @@ describe("workspace path resolution", () => {
   it.runIf(process.platform !== "win32")(
     "rejects writes through symlink parents that resolve outside the workspace",
     async () => {
-      await withTempDir("openclaw-ws-symlink-escape-", async (rootDir) => {
+      await withTempDir("afora-ws-symlink-escape-", async (rootDir) => {
         const workspaceDir = path.join(rootDir, "workspace");
         const outsideDir = path.join(rootDir, "outside");
         const aliasDir = path.join(workspaceDir, "memory");
@@ -305,8 +305,8 @@ describe("workspace path resolution", () => {
         await fs.mkdir(outsideDir, { recursive: true });
         await fs.symlink(outsideDir, aliasDir);
 
-        const cfg: OpenClawConfig = { tools: { fs: { workspaceOnly: true } } };
-        const tools = createOpenClawCodingTools({ workspaceDir, config: cfg });
+        const cfg: AforaConfig = { tools: { fs: { workspaceOnly: true } } };
+        const tools = createAforaCodingTools({ workspaceDir, config: cfg });
         const { writeTool } = expectReadWriteEditTools(tools);
 
         await expect(
@@ -325,14 +325,14 @@ describe("workspace path resolution", () => {
   it.runIf(process.platform !== "win32")(
     "rejects writes to final symlinks when workspaceOnly is enabled",
     async () => {
-      await withTempDir("openclaw-ws-symlink-leaf-", async (workspaceDir) => {
+      await withTempDir("afora-ws-symlink-leaf-", async (workspaceDir) => {
         const targetPath = path.join(workspaceDir, "target.md");
         const linkPath = path.join(workspaceDir, "memory.md");
         await fs.writeFile(targetPath, "original\n", "utf8");
         await fs.symlink(targetPath, linkPath);
 
-        const cfg: OpenClawConfig = { tools: { fs: { workspaceOnly: true } } };
-        const tools = createOpenClawCodingTools({ workspaceDir, config: cfg });
+        const cfg: AforaConfig = { tools: { fs: { workspaceOnly: true } } };
+        const tools = createAforaCodingTools({ workspaceDir, config: cfg });
         const { writeTool } = expectReadWriteEditTools(tools);
 
         await expect(
@@ -347,7 +347,7 @@ describe("workspace path resolution", () => {
   );
 
   it("allows workspaceOnly reads for resolved skill roots without allowing other filesystem access", async () => {
-    await withTempDir("openclaw-skill-read-", async (rootDir) => {
+    await withTempDir("afora-skill-read-", async (rootDir) => {
       const workspaceDir = path.join(rootDir, "workspace");
       const skillDir = path.join(rootDir, "global-skills", "demo");
       const siblingDir = path.join(rootDir, "global-skills", "other");
@@ -363,8 +363,8 @@ describe("workspace path resolution", () => {
       await fs.writeFile(siblingFile, "sibling skill", "utf8");
       await fs.writeFile(outsideFile, "outside secret", "utf8");
 
-      const cfg: OpenClawConfig = { tools: { fs: { workspaceOnly: true } } };
-      const tools = createOpenClawCodingTools({
+      const cfg: AforaConfig = { tools: { fs: { workspaceOnly: true } } };
+      const tools = createAforaCodingTools({
         workspaceDir,
         config: cfg,
         skillsSnapshot: {
@@ -412,7 +412,7 @@ describe("workspace path resolution", () => {
     if (process.platform === "win32") {
       return;
     }
-    await withTempDir("openclaw-skill-read-symlink-", async (rootDir) => {
+    await withTempDir("afora-skill-read-symlink-", async (rootDir) => {
       const workspaceDir = path.join(rootDir, "workspace");
       const skillDir = path.join(rootDir, "global-skills", "demo");
       await fs.mkdir(workspaceDir, { recursive: true });
@@ -424,8 +424,8 @@ describe("workspace path resolution", () => {
       await fs.writeFile(outsideFile, "outside secret", "utf8");
       await fs.symlink(outsideFile, linkPath);
 
-      const cfg: OpenClawConfig = { tools: { fs: { workspaceOnly: true } } };
-      const tools = createOpenClawCodingTools({
+      const cfg: AforaConfig = { tools: { fs: { workspaceOnly: true } } };
+      const tools = createAforaCodingTools({
         workspaceDir,
         config: cfg,
         skillsSnapshot: {
@@ -453,8 +453,8 @@ describe("workspace path resolution", () => {
 
 describe("sandboxed workspace paths", () => {
   it("uses sandbox workspace for relative read/write/edit", async () => {
-    await withTempDir("openclaw-sandbox-", async (sandboxDir) => {
-      await withTempDir("openclaw-workspace-", async (workspaceDir) => {
+    await withTempDir("afora-sandbox-", async (sandboxDir) => {
+      await withTempDir("afora-workspace-", async (workspaceDir) => {
         const sandbox = createAgentToolsSandboxContext({
           workspaceDir: sandboxDir,
           agentWorkspaceDir: workspaceDir,
@@ -467,7 +467,7 @@ describe("sandboxed workspace paths", () => {
         await fs.writeFile(path.join(sandboxDir, testFile), "sandbox read", "utf8");
         await fs.writeFile(path.join(workspaceDir, testFile), "workspace read", "utf8");
 
-        const tools = createOpenClawCodingTools({ workspaceDir, sandbox });
+        const tools = createAforaCodingTools({ workspaceDir, sandbox });
         const { readTool, writeTool, editTool } = expectReadWriteEditTools(tools);
 
         const result = await readTool?.execute("sbx-read", { path: testFile });
@@ -500,7 +500,7 @@ const APPLY_PATCH_PAYLOAD = `*** Begin Patch
 +owned-by-apply-patch
 *** End Patch`;
 
-function resolveApplyPatchTool(params: { sandbox: UnsafeMountedSandbox; config: OpenClawConfig }) {
+function resolveApplyPatchTool(params: { sandbox: UnsafeMountedSandbox; config: AforaConfig }) {
   return createApplyPatchTool({
     cwd: params.sandbox.workspaceDir,
     sandbox: { root: params.sandbox.workspaceDir, bridge: params.sandbox.fsBridge! },
@@ -728,7 +728,7 @@ describe("tools.fs.workspaceOnly", () => {
         const skillDir = path.join(skillsWorkspaceDir!, "skills", "demo");
         const userOwnedShadowDir = path.join(
           sandbox.workspaceDir,
-          ".openclaw",
+          ".afora",
           "sandbox-skills",
           "skills",
           "demo",
@@ -744,18 +744,18 @@ describe("tools.fs.workspaceOnly", () => {
 
         const tools = createSandboxFsTools({ sandbox, workspaceOnly: true });
         const { readTool } = expectReadWriteEditTools(tools);
-        const containerSkillPath = "/workspace/.openclaw/sandbox-skills/skills/demo/SKILL.md";
+        const containerSkillPath = "/workspace/.afora/sandbox-skills/skills/demo/SKILL.md";
 
         const readResult = await readTool?.execute("t1", { path: containerSkillPath });
         expect(getTextContent(readResult)).toContain("materialized");
         expect(getTextContent(readResult)).not.toContain("user-owned shadow");
         const relativeReadResult = await readTool?.execute("t2", {
-          path: ".openclaw/sandbox-skills/skills/demo/SKILL.md",
+          path: ".afora/sandbox-skills/skills/demo/SKILL.md",
         });
         expect(getTextContent(relativeReadResult)).toContain("materialized");
         expect(getTextContent(relativeReadResult)).not.toContain("user-owned shadow");
         const fileUrlReadResult = await readTool?.execute("t3", {
-          path: "file:///workspace/.openclaw/sandbox-skills/skills/demo/SKILL.md",
+          path: "file:///workspace/.afora/sandbox-skills/skills/demo/SKILL.md",
         });
         expect(getTextContent(fileUrlReadResult)).toContain("materialized");
         expect(getTextContent(fileUrlReadResult)).not.toContain("user-owned shadow");
@@ -779,7 +779,7 @@ describe("tools.fs.workspaceOnly", () => {
             allow: ["read", "write", "exec"],
             exec: { applyPatch: {} },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
       });
 
       await expect(applyPatchTool.execute("t1", { input: APPLY_PATCH_PAYLOAD })).rejects.toThrow(
@@ -801,7 +801,7 @@ describe("tools.fs.workspaceOnly", () => {
             allow: ["read", "write", "exec"],
             exec: { applyPatch: { workspaceOnly: false } },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
       });
 
       await applyPatchTool.execute("t2", { input: APPLY_PATCH_PAYLOAD });
@@ -812,9 +812,9 @@ describe("tools.fs.workspaceOnly", () => {
   });
 });
 
-vi.mock("openclaw/plugin-sdk/llm", async () => {
+vi.mock("afora-agent/plugin-sdk/llm", async () => {
   const original =
-    await vi.importActual<typeof import("openclaw/plugin-sdk/llm")>("openclaw/plugin-sdk/llm");
+    await vi.importActual<typeof import("afora-agent/plugin-sdk/llm")>("afora-agent/plugin-sdk/llm");
   return {
     ...original,
   };
@@ -834,7 +834,7 @@ describe("FS tools with workspaceOnly=false", () => {
     });
 
   const toolsFor = (workspaceOnly: boolean | undefined): AnyAgentTool[] => {
-    const read = createOpenClawReadTool(createReadTool(workspaceDir) as unknown as AnyAgentTool);
+    const read = createAforaReadTool(createReadTool(workspaceDir) as unknown as AnyAgentTool);
     const write = createHostWorkspaceWriteTool(workspaceDir, { workspaceOnly });
     const edit = createHostWorkspaceEditTool(workspaceDir, { workspaceOnly });
     const tools = [read, write, edit];
@@ -864,7 +864,7 @@ describe("FS tools with workspaceOnly=false", () => {
   };
 
   beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-test-"));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-test-"));
     workspaceDir = path.join(tmpDir, "workspace");
     await fs.mkdir(workspaceDir);
     outsideFile = path.join(tmpDir, "outside.txt");

@@ -4,9 +4,9 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import * as path from "node:path";
-import { canonicalizeBase64 } from "openclaw/plugin-sdk/media-runtime";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/security-runtime";
-import { asRecord, readStringValue } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { canonicalizeBase64 } from "afora-agent/plugin-sdk/media-runtime";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/security-runtime";
+import { asRecord, readStringValue } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 type CanvasSnapshotPayload = {
   format: CanvasSnapshotFormat;
@@ -69,7 +69,7 @@ export function parseCanvasSnapshotPayload(value: unknown): CanvasSnapshotPayloa
 }
 
 function resolveCliName(): string {
-  return "openclaw";
+  return "afora";
 }
 
 function resolveCanvasSnapshotId(id: string): string {
@@ -80,7 +80,7 @@ function resolveCanvasSnapshotId(id: string): string {
 }
 
 function resolveTempPathParts(opts: { ext: string; tmpDir?: string; id?: string }) {
-  const tmpDir = opts.tmpDir ?? resolvePreferredOpenClawTmpDir();
+  const tmpDir = opts.tmpDir ?? resolvePreferredAforaTmpDir();
   if (!opts.tmpDir) {
     fs.mkdirSync(tmpDir, { recursive: true, mode: 0o700 });
   }

@@ -17,7 +17,7 @@ import {
   withEnvAsync,
   createCodexTestBindingStore,
   CODEX_LOCAL_SESSION_HOST_ID,
-  type OpenClawConfig,
+  type AforaConfig,
   originalPath,
   tempDirs,
   fs,
@@ -303,7 +303,7 @@ describe("Codex supervision actions", () => {
           };
           runtimeConfig = {
             agents: { defaults: { workspace: "/workspace/b" } },
-          } as OpenClawConfig;
+          } as AforaConfig;
           return {
             data: [idleThread({ source: "cli" })],
           };
@@ -382,7 +382,7 @@ describe("Codex supervision actions", () => {
     expect(pinnedConnectionMocks.releaseClient).toHaveBeenCalledWith(pinnedConnectionMocks.client);
   });
 
-  it("rejects archive while another OpenClaw session owns the native thread", async () => {
+  it("rejects archive while another Afora session owns the native thread", async () => {
     const bindingStore = createCodexTestBindingStore();
     await bindingStore.mutate(
       { kind: "conversation", bindingId: "bound-chat" },
@@ -394,13 +394,13 @@ describe("Codex supervision actions", () => {
     const control = createEligibleControl();
 
     await expect(archiveTestSession({ bindingStore, control })).rejects.toThrow(
-      "attached to an OpenClaw session",
+      "attached to an Afora session",
     );
     expect(control.readThread).toHaveBeenCalledWith("thread-1", false);
     expect(control.archiveThread).not.toHaveBeenCalled();
   });
 
-  it("rejects archive when a paginated spawned descendant has an OpenClaw owner", async () => {
+  it("rejects archive when a paginated spawned descendant has an Afora owner", async () => {
     const bindingStore = createCodexTestBindingStore();
     await bindingStore.mutate(
       { kind: "conversation", bindingId: "descendant-chat" },
@@ -421,7 +421,7 @@ describe("Codex supervision actions", () => {
     });
 
     await expect(archiveTestSession({ bindingStore, control })).rejects.toThrow(
-      "spawned descendant is owned by an OpenClaw session",
+      "spawned descendant is owned by an Afora session",
     );
     expect(control.listDescendantPage).toHaveBeenNthCalledWith(1, {
       ancestorThreadId: "thread-1",

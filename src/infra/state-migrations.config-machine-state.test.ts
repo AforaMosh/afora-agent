@@ -3,17 +3,17 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { readConfigMachineState, writeConfigMachineState } from "../state/config-machine-state.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { migrateLegacyConfigMachineState } from "./state-migrations.config-machine-state.js";
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 describe("legacy config machine-state migration", () => {
   it("imports machine-owned values and keeps existing database state", () => {
-    const stateDir = mkdtempSync(join(tmpdir(), "openclaw-config-machine-state-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = mkdtempSync(join(tmpdir(), "afora-config-machine-state-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
     writeConfigMachineState("config.lastTouchedAt", "canonical", { env });
 
     const result = migrateLegacyConfigMachineState({
@@ -39,8 +39,8 @@ describe("legacy config machine-state migration", () => {
   });
 
   it("merges legacy hook installs while canonical records win conflicts", () => {
-    const stateDir = mkdtempSync(join(tmpdir(), "openclaw-config-machine-state-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = mkdtempSync(join(tmpdir(), "afora-config-machine-state-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
     writeConfigMachineState(
       "hooks.internal.installs",
       { canonical: { source: "npm" }, shared: { source: "path" } },
@@ -69,8 +69,8 @@ describe("legacy config machine-state migration", () => {
   });
 
   it("conservatively preserves compatibility for an unstamped plugin allowlist", () => {
-    const stateDir = mkdtempSync(join(tmpdir(), "openclaw-config-machine-state-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = mkdtempSync(join(tmpdir(), "afora-config-machine-state-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
 
     migrateLegacyConfigMachineState({ env, config: { plugins: { allow: ["telegram"] } } });
 
@@ -78,8 +78,8 @@ describe("legacy config machine-state migration", () => {
   });
 
   it("preserves compatibility discovery for a pre-cutover plugin allowlist", () => {
-    const stateDir = mkdtempSync(join(tmpdir(), "openclaw-config-machine-state-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = mkdtempSync(join(tmpdir(), "afora-config-machine-state-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
 
     migrateLegacyConfigMachineState({
       env,
@@ -93,8 +93,8 @@ describe("legacy config machine-state migration", () => {
   });
 
   it("does not infer compatibility discovery after the fixed cutover release", () => {
-    const stateDir = mkdtempSync(join(tmpdir(), "openclaw-config-machine-state-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = mkdtempSync(join(tmpdir(), "afora-config-machine-state-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
 
     migrateLegacyConfigMachineState({
       env,
@@ -108,8 +108,8 @@ describe("legacy config machine-state migration", () => {
   });
 
   it("does not re-report inferred bundledDiscovery on second pass with beta version", () => {
-    const stateDir = mkdtempSync(join(tmpdir(), "openclaw-config-machine-state-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = mkdtempSync(join(tmpdir(), "afora-config-machine-state-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
 
     // First pass: infer compat and write to SQLite
     const firstResult = migrateLegacyConfigMachineState({

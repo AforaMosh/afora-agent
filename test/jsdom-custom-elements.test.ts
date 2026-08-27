@@ -13,8 +13,8 @@ describe("jsdom custom element tracking", () => {
     // flake, because the shared runner would stop dropping repo-owned tags.
     const definitions = jsdomCustomElementDefinitions(customElements);
     expect(Array.isArray(definitions)).toBe(true);
-    customElements.define("openclaw-jsdom-contract-probe", class extends HTMLElement {});
-    expect(definitions?.some((entry) => entry.name === "openclaw-jsdom-contract-probe")).toBe(true);
+    customElements.define("afora-jsdom-contract-probe", class extends HTMLElement {});
+    expect(definitions?.some((entry) => entry.name === "afora-jsdom-contract-probe")).toBe(true);
   });
 
   it("drops repo-owned tags and keeps dependency-owned ones", () => {
@@ -22,18 +22,18 @@ describe("jsdom custom element tracking", () => {
     if (!tracking) {
       throw new Error("expected a jsdom registry");
     }
-    customElements.define("openclaw-repo-owned-probe", class extends HTMLElement {});
+    customElements.define("afora-repo-owned-probe", class extends HTMLElement {});
     // Dependency packages are externalized and register once per worker, so their
     // definitions must survive a reset that the module graph cannot replay.
     tracking.definitions.push({ name: "wa-dependency-probe" });
 
     dropRepoOwnedCustomElements(tracking);
 
-    expect(customElements.get("openclaw-repo-owned-probe")).toBeUndefined();
+    expect(customElements.get("afora-repo-owned-probe")).toBeUndefined();
     expect(tracking.definitions.some((entry) => entry.name === "wa-dependency-probe")).toBe(true);
     // A repo module re-evaluated by the next file must be able to register again.
     expect(() =>
-      customElements.define("openclaw-repo-owned-probe", class extends HTMLElement {}),
+      customElements.define("afora-repo-owned-probe", class extends HTMLElement {}),
     ).not.toThrow();
   });
 

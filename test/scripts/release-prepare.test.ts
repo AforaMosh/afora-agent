@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 // Release prepare tests cover shadow planning, cutover commands, and candidate manifests.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import {
   buildReleasePreparationManifest,
@@ -164,13 +164,13 @@ describe("release preparation plan", () => {
 
 describe("release preparation manifest", () => {
   it("fingerprints generated diffs larger than Node's default child buffer", () => {
-    const rootDir = mkdtempSync(path.join(tmpdir(), "openclaw-release-prepare-"));
+    const rootDir = mkdtempSync(path.join(tmpdir(), "afora-release-prepare-"));
     try {
       execFileSync("git", ["init", "-q"], { cwd: rootDir });
-      execFileSync("git", ["config", "user.email", "release-test@openclaw.invalid"], {
+      execFileSync("git", ["config", "user.email", "release-test@afora.invalid"], {
         cwd: rootDir,
       });
-      execFileSync("git", ["config", "user.name", "OpenClaw Release Test"], { cwd: rootDir });
+      execFileSync("git", ["config", "user.name", "Afora Release Test"], { cwd: rootDir });
       writeFileSync(path.join(rootDir, "package.json"), '{"version":"2026.7.2"}\n');
       writeFileSync(path.join(rootDir, "generated.txt"), `${"a".repeat(2 * 1024 * 1024)}\n`);
       execFileSync("git", ["add", "."], { cwd: rootDir });

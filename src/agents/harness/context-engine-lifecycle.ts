@@ -1,11 +1,11 @@
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { runWithSessionTranscriptReadFence } from "../../config/sessions/session-transcript-read-fence.js";
 /**
  * Manages context-engine lifecycle hooks for native agent harnesses.
  */
 import type { MemoryCitationsMode } from "../../config/types.memory.js";
 import {
-  OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST,
+  AFORA_EMBEDDED_CONTEXT_ENGINE_HOST,
   type ContextEngineHostSupport,
 } from "../../context-engine/host-compat.js";
 import { buildContextEngineRuntimeSettings } from "../../context-engine/runtime-settings.js";
@@ -70,7 +70,7 @@ function buildHarnessContextEngineRuntimeSettings(
     (() => {
       const selectedId = params.contextEngine?.info.id;
       return buildContextEngineRuntimeSettings({
-        contextEngineHost: params.contextEngineHostSupport ?? OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST,
+        contextEngineHost: params.contextEngineHostSupport ?? AFORA_EMBEDDED_CONTEXT_ENGINE_HOST,
         harnessId: params.harnessId,
         runtimeId: params.runtimeId,
         provider: params.providerId,
@@ -116,7 +116,7 @@ export async function bootstrapHarnessContextEngine(params: {
   fallbackReason?: string | null;
   degradedReason?: string | null;
   runMaintenance?: typeof runHarnessContextEngineMaintenance;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   warn: (message: string) => void;
 }): Promise<void> {
   if (
@@ -287,7 +287,7 @@ export async function finalizeHarnessContextEngineTurn(params: {
   degradedReason?: string | null;
   runMaintenance?: typeof runHarnessContextEngineMaintenance;
   sessionManager?: unknown;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   warn: (message: string) => void;
   /** True when this turn belongs to a heartbeat run. */
   isHeartbeat?: boolean;
@@ -443,7 +443,7 @@ export async function runHarnessContextEngineMaintenance(params: {
   executionMode?: "foreground" | "background";
   onDeferredMaintenance?: (promise: Promise<void>) => void;
   withSessionManagerRewriteLock?: <T>(operation: () => Promise<T> | T) => Promise<T>;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }) {
   const runtimeSettings = buildHarnessContextEngineRuntimeSettings(params);
   return await runContextEngineMaintenance({

@@ -57,7 +57,7 @@ describe("runEmbeddedAgent Codex server_error fallback handoff", () => {
     const promise = runEmbeddedAgent({
       ...overflowBaseRunParams,
       runId: "run-codex-server-error-fallback",
-      agentHarnessRuntimeOverride: "openclaw",
+      agentHarnessRuntimeOverride: "afora",
       config: makeModelFallbackCfg({
         agents: {
           defaults: {

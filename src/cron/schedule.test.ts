@@ -1,5 +1,5 @@
 // Cron schedule tests cover schedule parsing and next-run calculations.
-import { MAX_DATE_TIMESTAMP_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_DATE_TIMESTAMP_MS } from "@afora/normalization-core/number-coercion";
 import { Cron } from "croner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { coerceFiniteScheduleNumber } from "./schedule-number.js";

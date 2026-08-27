@@ -4,7 +4,7 @@ import path from "node:path";
 import {
   isRecord,
   normalizeBoundedOptionalString as readBoundedString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 function piHome(env: NodeJS.ProcessEnv): string {
   const configured = process.platform === "win32" ? env.USERPROFILE?.trim() : env.HOME?.trim();

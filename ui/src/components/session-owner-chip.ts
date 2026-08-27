@@ -4,7 +4,7 @@ import type { SessionCreatedActor as ProtocolSessionCreatedActor } from "../../.
 import { t } from "../i18n/index.ts";
 import { takeGraphemes } from "../lib/graphemes.ts";
 import { resolveAvatar } from "../lib/identity-avatar.ts";
-import { OpenClawLightDomElement } from "../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../lit/afora-element.ts";
 import "./viewer-facepile.ts";
 
 export type SessionCreatedActor = ProtocolSessionCreatedActor;
@@ -111,14 +111,14 @@ export function renderSessionOwnerChip(
   participantCount?: number,
 ) {
   return createdActor?.id
-    ? html`<openclaw-session-owner-chip
+    ? html`<afora-session-owner-chip
         .createdActor=${createdActor}
         size=${size}
         attribution=${attribution}
         .viewingNow=${viewingNow}
         .participants=${participants ?? []}
         .participantCount=${participantCount ?? participants?.length ?? 0}
-      ></openclaw-session-owner-chip>`
+      ></afora-session-owner-chip>`
     : nothing;
 }
 
@@ -148,7 +148,7 @@ function ownerHue(id: string): number {
 }
 
 export function renderSessionOwnerMenuAvatar(owner: SessionOwnerOption) {
-  return html`<openclaw-viewer-avatar
+  return html`<afora-viewer-avatar
     .user=${{
       id: owner.id,
       name: owner.label,
@@ -158,7 +158,7 @@ export function renderSessionOwnerMenuAvatar(owner: SessionOwnerOption) {
     .markAsViewer=${false}
     variant="session"
     aria-hidden="true"
-  ></openclaw-viewer-avatar>`;
+  ></afora-viewer-avatar>`;
 }
 
 /**
@@ -168,7 +168,7 @@ export function renderSessionOwnerMenuAvatar(owner: SessionOwnerOption) {
  * attribution chrome). Human actors use the durable profile projection carried
  * by the session record; actors without it keep stable initials.
  */
-class SessionOwnerChip extends OpenClawLightDomElement {
+class SessionOwnerChip extends AforaLightDomElement {
   @property({ attribute: false }) createdActor: SessionCreatedActor | null = null;
   @property({ type: String }) size: "row" | "header" = "row";
   @property({ type: String }) attribution: "created" | "owned" | "archived" = "created";
@@ -214,7 +214,7 @@ class SessionOwnerChip extends OpenClawLightDomElement {
         <span class="session-owner-stack" role="group" aria-label=${combinedLabel}>
           <span class="session-owner-stack__back" aria-hidden="true">
             ${this.participantCount === 1 && participant?.id
-              ? html`<openclaw-viewer-avatar
+              ? html`<afora-viewer-avatar
                   .user=${{
                     id: participant.id,
                     name: participant.label,
@@ -223,7 +223,7 @@ class SessionOwnerChip extends OpenClawLightDomElement {
                   }}
                   .markAsViewer=${false}
                   variant="session"
-                ></openclaw-viewer-avatar>`
+                ></afora-viewer-avatar>`
               : html`<span class="session-owner-stack__overflow">+${this.participantCount}</span>`}
           </span>
           <span
@@ -235,7 +235,7 @@ class SessionOwnerChip extends OpenClawLightDomElement {
             aria-label=${accessibleLabel}
             title=${accessibleLabel}
             >${avatar?.kind === "profile"
-              ? html`<openclaw-viewer-avatar
+              ? html`<afora-viewer-avatar
                   .user=${{
                     id: createdActor.id,
                     name: createdActor.label,
@@ -245,7 +245,7 @@ class SessionOwnerChip extends OpenClawLightDomElement {
                   .markAsViewer=${false}
                   variant="session"
                   aria-hidden="true"
-                ></openclaw-viewer-avatar>`
+                ></afora-viewer-avatar>`
               : initials}</span
           >
         </span>
@@ -261,7 +261,7 @@ class SessionOwnerChip extends OpenClawLightDomElement {
         aria-label=${accessibleLabel}
         title=${accessibleLabel}
         >${avatar?.kind === "profile"
-          ? html`<openclaw-viewer-avatar
+          ? html`<afora-viewer-avatar
               .user=${{
                 id: createdActor.id,
                 name: createdActor.label,
@@ -271,19 +271,19 @@ class SessionOwnerChip extends OpenClawLightDomElement {
               .markAsViewer=${false}
               variant="session"
               aria-hidden="true"
-            ></openclaw-viewer-avatar>`
+            ></afora-viewer-avatar>`
           : initials}</span
       >
     `;
   }
 }
 
-if (!customElements.get("openclaw-session-owner-chip")) {
-  customElements.define("openclaw-session-owner-chip", SessionOwnerChip);
+if (!customElements.get("afora-session-owner-chip")) {
+  customElements.define("afora-session-owner-chip", SessionOwnerChip);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "openclaw-session-owner-chip": SessionOwnerChip;
+    "afora-session-owner-chip": SessionOwnerChip;
   }
 }

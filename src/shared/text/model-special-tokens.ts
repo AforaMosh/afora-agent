@@ -20,7 +20,7 @@ function shouldInsertSeparator(before: string | undefined, after: string | undef
  * Strips leaked model control tokens like `<|assistant|>` or full-width pipe variants.
  * Code examples are preserved; remove this when providers stop emitting these tokens.
  *
- * @see https://github.com/openclaw/openclaw/issues/40020
+ * @see https://github.com/AforaMosh/afora-agent/issues/40020
  */
 export function stripModelSpecialTokens(text: string): string {
   if (!text) {

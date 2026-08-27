@@ -5,7 +5,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadSessionEntry, replaceSessionEntry } from "../../config/sessions/session-accessor.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { takeCommandSessionMetadataChanges } from "./command-session-metadata.js";
 import { handleGoalCommand, parseGoalCommand } from "./commands-goal.js";
 import type { HandleCommandsParams } from "./commands-types.js";
@@ -20,7 +20,7 @@ afterEach(async () => {
 });
 
 async function createStorePath(): Promise<string> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-goal-command-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-goal-command-"));
   tempRoots.push(root);
   return path.join(root, "sessions.json");
 }
@@ -47,7 +47,7 @@ function getSessionEntry(params: {
 
 function buildGoalParams(commandBodyNormalized: string, storePath: string): HandleCommandsParams {
   return {
-    cfg: {} as OpenClawConfig,
+    cfg: {} as AforaConfig,
     ctx: {
       Provider: "web",
       Surface: "web",

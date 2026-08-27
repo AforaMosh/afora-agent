@@ -42,7 +42,7 @@ const shippedProposal = {
     skillKey: "shipped-workshop",
     skillDir: "/workspace/skills/shipped-workshop",
     skillFile: "/workspace/skills/shipped-workshop/SKILL.md",
-    source: "openclaw-workspace",
+    source: "afora-workspace",
     currentContentHash: "d".repeat(64),
   },
   scan: {

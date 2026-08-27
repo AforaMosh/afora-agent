@@ -8,13 +8,13 @@ import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
   normalizeSingleOrTrimmedStringList,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import YAML from "yaml";
 
 const WIKI_PAGE_KINDS = ["entity", "concept", "source", "synthesis", "report"] as const;
-export const WIKI_RELATED_START_MARKER = "<!-- openclaw:wiki:related:start -->";
-export const WIKI_RELATED_END_MARKER = "<!-- openclaw:wiki:related:end -->";
-export const WIKI_RAW_SOURCE_MARKER = "<!-- openclaw:wiki:raw-source -->";
+export const WIKI_RELATED_START_MARKER = "<!-- afora:wiki:related:start -->";
+export const WIKI_RELATED_END_MARKER = "<!-- afora:wiki:related:end -->";
+export const WIKI_RAW_SOURCE_MARKER = "<!-- afora:wiki:raw-source -->";
 
 export type WikiPageKind = (typeof WIKI_PAGE_KINDS)[number];
 type GeneratedSourceBody = "bridge" | "unsafe-local" | "local-file" | "chatgpt-export";
@@ -138,8 +138,8 @@ const MAX_WIKI_SAFE_WRITE_FILENAME_COMPONENT_BYTES =
   Buffer.byteLength(".");
 const WIKI_SEGMENT_HASH_BYTES = 12;
 const WIKI_RESERVED_PAGE_STEMS = new Set(["index"]);
-const HUMAN_START_MARKER = "<!-- openclaw:human:start -->";
-const HUMAN_END_MARKER = "<!-- openclaw:human:end -->";
+const HUMAN_START_MARKER = "<!-- afora:human:start -->";
+const HUMAN_END_MARKER = "<!-- afora:human:end -->";
 
 function truncateUtf8CodePointSafe(value: string, maxBytes: number): string {
   let result = "";

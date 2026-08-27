@@ -15,10 +15,10 @@ afterEach(() => {
 
 describe("listAuthProfileStoresRequiringMigration", () => {
   it("reports only credential sources without marking runtime migration state", async () => {
-    await withTestDir({ prefix: "openclaw-auth-migration-diagnostic-" }, async (root) => {
+    await withTestDir({ prefix: "afora-auth-migration-diagnostic-" }, async (root) => {
       const credentialAgentDir = path.join(root, "credential-agent");
       const authStateAgentDir = path.join(root, "auth-state-agent");
-      const env = { OPENCLAW_STATE_DIR: path.join(root, "state") };
+      const env = { AFORA_STATE_DIR: path.join(root, "state") };
       await fs.mkdir(credentialAgentDir, { recursive: true });
       await fs.mkdir(authStateAgentDir, { recursive: true });
       const credentialPath = path.join(credentialAgentDir, "auth-profiles.json");

@@ -44,7 +44,7 @@ export function openLegacyAuditRawCheckpointStore(stateDir: string) {
   return createSqliteAuditRecordStore<LegacyAuditRawCheckpoint>({
     scope: LEGACY_AUDIT_RAW_CHECKPOINT_SCOPE,
     maxEntries: LEGACY_AUDIT_RAW_CHECKPOINT_MAX_ENTRIES,
-    env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+    env: { ...process.env, AFORA_STATE_DIR: stateDir },
   });
 }
 

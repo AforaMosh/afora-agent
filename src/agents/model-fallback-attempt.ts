@@ -1,7 +1,7 @@
 /** Shared attempt, error, and harness helpers for model fallback execution. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { TRANSCRIPT_NOT_CONTINUABLE_ERROR_CODE } from "../../packages/agent-core/src/errors.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isCronTerminalAbortReasonText } from "../cron/service/execution-errors.js";
 import { formatErrorMessage, toErrorObject } from "../infra/errors.js";
 import { isCommandLaneTaskTimeoutError } from "../process/command-queue.js";
@@ -9,7 +9,7 @@ import { findAgentRunTerminalOutcome } from "./agent-run-terminal-error.js";
 import { isDefaultAgentRuntimeId, normalizeOptionalAgentRuntimeId } from "./agent-runtime-id.js";
 import { externalCliDiscoveryForProviders } from "./auth-profiles/external-cli-discovery.js";
 import type { AuthProfileStore } from "./auth-profiles/types.js";
-import { isOpenClawAbortableWrapper } from "./embedded-agent-runner/run/abortable.js";
+import { isAforaAbortableWrapper } from "./embedded-agent-runner/run/abortable.js";
 import {
   FailoverError,
   buildFailoverRemediationHint,
@@ -64,7 +64,7 @@ export type ModelFallbackRunOptions = {
 };
 
 type ModelFallbackRuntimeContext = {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentId?: string;
   sessionKey?: string;
   resolveAgentHarnessRuntimeOverride?: (provider: string, model: string) => string | undefined;
@@ -195,7 +195,7 @@ function isTerminalAbortFromError(err: unknown): boolean {
   if (causeCandidates.some(isAgentRunRestartAbortReason)) {
     return true;
   }
-  return isOpenClawAbortableWrapper(err) && causeCandidates.some(isTerminalAbortCandidate);
+  return isAforaAbortableWrapper(err) && causeCandidates.some(isTerminalAbortCandidate);
 }
 
 function isCallerAbortSignal(signal: AbortSignal | undefined): boolean {
@@ -385,7 +385,7 @@ export function resolveNextFallbackCandidateIndex(params: {
   return params.candidates.length;
 }
 
-function isCliAgentRuntime(runtime: string | undefined, cfg: OpenClawConfig | undefined): boolean {
+function isCliAgentRuntime(runtime: string | undefined, cfg: AforaConfig | undefined): boolean {
   const normalized = normalizeOptionalString(runtime);
   if (!normalized) {
     return false;
@@ -412,7 +412,7 @@ export async function resolveModelFallbackCandidateHarnessAuthPrecheck(
     return result(false);
   }
   if (
-    runtime === "openclaw" ||
+    runtime === "afora" ||
     runtime === "auto" ||
     (runtime === "codex" && runtimeSource === "implicit")
   ) {
@@ -429,7 +429,7 @@ export async function resolveModelFallbackCandidateHarnessAuthPrecheck(
     return result(true);
   }
   if (isCliAgentRuntime(runtime, params.cfg)) {
-    // CLI runtimes own their transport/auth, so stale OpenClaw provider
+    // CLI runtimes own their transport/auth, so stale Afora provider
     // profile state must not block the candidate before the CLI starts.
     return result(true);
   }
@@ -591,7 +591,7 @@ export function throwFallbackFailureSummary(params: {
   formatAttempt: (attempt: FallbackAttempt) => string;
   soonestCooldownExpiry?: number | null;
   attribution?: FailoverAttribution;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentId?: string;
   agentDir?: string;
 }): never {
@@ -638,7 +638,7 @@ export function resolveFallbackSoonestCooldownExpiry(params: {
   authRuntime: ModelFallbackAuthRuntime | null;
   authStore: AuthProfileStore | null;
   agentDir?: string;
-  cfg: OpenClawConfig | undefined;
+  cfg: AforaConfig | undefined;
   candidates: ModelCandidate[];
 }): number | null {
   if (!params.authRuntime || !params.authStore) {

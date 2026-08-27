@@ -1,8 +1,8 @@
 // Matrix plugin module implements shared behavior.
-import { normalizeOptionalAccountId } from "openclaw/plugin-sdk/account-id";
-import { toStringifiedError as toRetirementError } from "openclaw/plugin-sdk/error-runtime";
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+import { normalizeOptionalAccountId } from "afora-agent/plugin-sdk/account-id";
+import { toStringifiedError as toRetirementError } from "afora-agent/plugin-sdk/error-runtime";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 import type { CoreConfig } from "../../types.js";
 import type { MatrixClient } from "../sdk.js";
 import { LogService } from "../sdk/logger.js";

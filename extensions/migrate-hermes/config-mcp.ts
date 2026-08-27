@@ -1,12 +1,12 @@
 // Hermes MCP config mapping and manual follow-up planning.
-import { createMigrationManualItem } from "openclaw/plugin-sdk/migration";
-import type { MigrationItem } from "openclaw/plugin-sdk/plugin-entry";
+import { createMigrationManualItem } from "afora-agent/plugin-sdk/migration";
+import type { MigrationItem } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   asBoolean,
   isRecord,
   normalizeOptionalString,
   parseBooleanValue,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { mcpValueHasEnvReferences, resolveMcpEnvReferences } from "./config-env.js";
 import { readPositiveNumber } from "./config-provider-contract.js";
 import { sanitizeName } from "./helpers.js";
@@ -254,7 +254,7 @@ export function mcpManualItems(params: {
     add(
       "unresolved-secrets",
       `Hermes MCP server "${name}" references environment values that were not found in its .env file.`,
-      "Define the missing values in OpenClaw's MCP server environment or headers manually.",
+      "Define the missing values in Afora's MCP server environment or headers manually.",
     );
   }
 
@@ -263,7 +263,7 @@ export function mcpManualItems(params: {
   if (Array.isArray(cert) && cert.length === 3) {
     add(
       "client-cert-password",
-      `Hermes MCP server "${name}" uses a password-protected client key, which OpenClaw cannot represent in MCP config.`,
+      `Hermes MCP server "${name}" uses a password-protected client key, which Afora cannot represent in MCP config.`,
       "Configure an unencrypted protected key path or an equivalent TLS proxy manually.",
     );
   } else if (
@@ -279,13 +279,13 @@ export function mcpManualItems(params: {
     add(
       "client-cert",
       `Hermes MCP server "${name}" uses a combined or invalid client-certificate shape that was not imported.`,
-      "Configure separate OpenClaw clientCert and clientKey file paths manually.",
+      "Configure separate Afora clientCert and clientKey file paths manually.",
     );
   }
   if (typeof (raw.sslVerify ?? raw.ssl_verify) === "string") {
     add(
       "tls-ca",
-      `Hermes MCP server "${name}" uses a CA bundle path for TLS verification, which OpenClaw MCP config cannot represent.`,
+      `Hermes MCP server "${name}" uses a CA bundle path for TLS verification, which Afora MCP config cannot represent.`,
       "Install the CA in the host trust store or configure an equivalent TLS proxy manually.",
     );
   }
@@ -295,7 +295,7 @@ export function mcpManualItems(params: {
     add(
       "transport",
       `Hermes MCP server "${name}" uses unsupported transport "${transport}".`,
-      "Configure an equivalent OpenClaw MCP transport manually.",
+      "Configure an equivalent Afora MCP transport manually.",
     );
   }
 
@@ -304,15 +304,15 @@ export function mcpManualItems(params: {
     add(
       "auth",
       `Hermes MCP server "${name}" uses unsupported authentication mode "${auth}".`,
-      "Configure an equivalent OpenClaw MCP authentication mode manually.",
+      "Configure an equivalent Afora MCP authentication mode manually.",
     );
   }
   const oauth = isRecord(raw.oauth) ? raw.oauth : undefined;
   if (auth === "oauth" || oauth) {
     add(
       "oauth-login",
-      `Hermes MCP server "${name}" requires OAuth login in OpenClaw.`,
-      `Run "openclaw mcp login ${name}" after migration.`,
+      `Hermes MCP server "${name}" requires OAuth login in Afora.`,
+      `Run "afora mcp login ${name}" after migration.`,
     );
   }
   if (
@@ -324,8 +324,8 @@ export function mcpManualItems(params: {
   ) {
     add(
       "oauth-client",
-      `Hermes MCP server "${name}" uses pre-registered OAuth client settings that were not copied into OpenClaw config.`,
-      `Run "openclaw mcp login ${name}" and configure supported OAuth metadata manually.`,
+      `Hermes MCP server "${name}" uses pre-registered OAuth client settings that were not copied into Afora config.`,
+      `Run "afora mcp login ${name}" and configure supported OAuth metadata manually.`,
     );
   }
 
@@ -365,7 +365,7 @@ export function mcpManualItems(params: {
     if (configured) {
       add(
         feature,
-        `Hermes MCP server "${name}" uses ${feature} behavior that OpenClaw MCP config does not expose.`,
+        `Hermes MCP server "${name}" uses ${feature} behavior that Afora MCP config does not expose.`,
         "Review the server requirement and configure an equivalent deployment or runtime policy manually.",
       );
     }

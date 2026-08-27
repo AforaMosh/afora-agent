@@ -1,5 +1,5 @@
 // Transcript persistence and source-reply rewrites shared by chat send and abort.
-import { asOptionalRecord as transcriptEventRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalRecord as transcriptEventRecord } from "@afora/normalization-core/record-coerce";
 import { getReplyPayloadMetadata } from "../../auto-reply/reply-payload.js";
 import {
   findTranscriptEvent,
@@ -14,7 +14,7 @@ import {
 } from "../../config/sessions/session-accessor.js";
 import { applyAssistantDeliveryDirectives } from "../../config/sessions/transcript-assistant-delivery.js";
 import { resolveMirroredTranscriptText } from "../../config/sessions/transcript-mirror.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { normalizeMediaReferenceForComparison } from "../../media/media-reference-comparison.js";
 import { splitMediaFromOutput } from "../../media/parse.js";
 import {
@@ -175,7 +175,7 @@ function findSourceReplyTranscriptMirrorByIdempotencyKeyInEvents(
   idempotencyKey: string,
 ): { messageId: string; message: Record<string, unknown> } | null {
   const found = findAssistantTranscriptMessageByIdempotencyKeyInEvents(events, idempotencyKey);
-  if (found?.message.provider !== "openclaw" || found.message.model !== "delivery-mirror") {
+  if (found?.message.provider !== "afora" || found.message.model !== "delivery-mirror") {
     return null;
   }
   return found;
@@ -225,7 +225,7 @@ function findSourceReplyTranscriptMirrorByMetadataInEvents(params: {
     return (
       typeof transcriptEventId(event) === "string" &&
       message?.role === "assistant" &&
-      message.provider === "openclaw" &&
+      message.provider === "afora" &&
       message.model === "delivery-mirror" &&
       extractAssistantTranscriptText(message) === expectedText
     );
@@ -268,7 +268,7 @@ export async function appendAssistantTranscriptMessage(params: {
     runId: string;
   };
   ttsSupplement?: GatewayInjectedTtsSupplementMarker;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): Promise<TranscriptAppendResult> {
   const scope = assistantTranscriptScope(params);
   if (!scope) {

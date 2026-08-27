@@ -1,17 +1,17 @@
 // Loads gateway dispatch config from runtime state and files.
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { parseJsonWithJson5Fallback } from "../utils/parse-json-compat.js";
 import { applyConfigEnvVars } from "./config-env-vars.js";
 import { resolveConfigEnvVars } from "./env-substitution.js";
 import { readConfigIncludeFileWithGuards, resolveConfigIncludes } from "./includes.js";
 import { resolveConfigPath, resolveIncludeRoots } from "./paths.js";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import type { AforaConfig } from "./types.afora.js";
 
 const GATEWAY_DISPATCH_SHELL_ENV_EXPECTED_KEYS = [
-  "OPENCLAW_GATEWAY_TOKEN",
-  "OPENCLAW_GATEWAY_PASSWORD",
+  "AFORA_GATEWAY_TOKEN",
+  "AFORA_GATEWAY_PASSWORD",
 ] as const;
 
 const GATEWAY_DISPATCH_TOP_LEVEL_KEYS = [
@@ -44,7 +44,7 @@ function cloneConfigValue(value: unknown): unknown {
   return out;
 }
 
-function projectGatewayDispatchConfig(value: unknown): OpenClawConfig {
+function projectGatewayDispatchConfig(value: unknown): AforaConfig {
   if (!isRecord(value)) {
     return {};
   }
@@ -54,11 +54,11 @@ function projectGatewayDispatchConfig(value: unknown): OpenClawConfig {
       projected[key] = cloneConfigValue(value[key]);
     }
   }
-  return projected as OpenClawConfig;
+  return projected as AforaConfig;
 }
 
 // Main session keys are process-local; Gateway dispatch always sees the canonical main key.
-function applyGatewayDispatchSessionDefaults(config: OpenClawConfig): OpenClawConfig {
+function applyGatewayDispatchSessionDefaults(config: AforaConfig): AforaConfig {
   if (config.session?.mainKey === undefined) {
     return config;
   }
@@ -93,13 +93,13 @@ function resolveIncludesForGatewayDispatch(
 
 function resolveGatewayDispatchEnvVars(config: unknown, env: NodeJS.ProcessEnv): unknown {
   if (isRecord(config) && Object.hasOwn(config, "env")) {
-    applyConfigEnvVars(config as OpenClawConfig, env);
+    applyConfigEnvVars(config as AforaConfig, env);
   }
   return resolveConfigEnvVars(config, env, { onMissing: () => undefined });
 }
 
 function readRawGatewayDispatchConfig(options: GatewayDispatchConfigReadOptions = {}): {
-  config: OpenClawConfig;
+  config: AforaConfig;
   configPath: string;
 } {
   const env = options.env ?? process.env;
@@ -120,13 +120,13 @@ function readRawGatewayDispatchConfig(options: GatewayDispatchConfigReadOptions 
 
 export function readGatewayDispatchConfig(
   options: GatewayDispatchConfigReadOptions = {},
-): OpenClawConfig {
+): AforaConfig {
   return readRawGatewayDispatchConfig(options).config;
 }
 
 export async function readGatewayDispatchConfigWithShellEnvFallback(
   options: GatewayDispatchConfigReadOptions = {},
-): Promise<OpenClawConfig> {
+): Promise<AforaConfig> {
   const env = options.env ?? process.env;
   const firstRead = readRawGatewayDispatchConfig(options);
   const {

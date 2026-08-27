@@ -1,6 +1,6 @@
 // Verifies configured model selection uses manifest policy only in scoped contexts.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 const loadManifestMetadataSnapshotMock = vi.hoisted(() => vi.fn());
 const getCurrentPluginMetadataSnapshotMock = vi.hoisted(() => vi.fn());
@@ -56,7 +56,7 @@ describe("configured model manifest workspace scope", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expect(buildConfiguredModelCatalog({ cfg })).toMatchObject([
       {
@@ -81,7 +81,7 @@ describe("configured model manifest workspace scope", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expect(buildConfiguredModelCatalog({ cfg, workspaceDir: "/workspace/a" })).toMatchObject([
       {
@@ -120,7 +120,7 @@ describe("configured model manifest workspace scope", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expect(buildConfiguredModelCatalog({ cfg })).toMatchObject([
       {
@@ -140,7 +140,7 @@ describe("configured model manifest workspace scope", () => {
           custom: { models: [{ id: "fast-model" }] },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expect(
       buildAllowedModelSetWithFallbacks({
@@ -158,7 +158,7 @@ describe("configured model manifest workspace scope", () => {
     // Alias indexing is a hot config path. Empty inputs should avoid manifest
     // scans entirely.
     const { buildModelAliasIndex } = await import("./model-selection-shared.js");
-    const cfg = {} as unknown as OpenClawConfig;
+    const cfg = {} as unknown as AforaConfig;
 
     const aliases = buildModelAliasIndex({ cfg, defaultProvider: "anthropic" });
 
@@ -178,7 +178,7 @@ describe("configured model manifest workspace scope", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const aliases = buildModelAliasIndex({ cfg, defaultProvider: "anthropic" });
 
@@ -198,7 +198,7 @@ describe("configured model manifest workspace scope", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const aliases = buildModelAliasIndex({ cfg, defaultProvider: "anthropic" });
 
@@ -210,18 +210,18 @@ describe("configured model manifest workspace scope", () => {
 
   it("does not load manifest metadata for statically resolved primary models", async () => {
     const { resolveConfiguredModelRef } = await import("./model-selection-shared.js");
-    const cases: Array<{ cfg: OpenClawConfig; expected: { provider: string; model: string } }> = [
+    const cases: Array<{ cfg: AforaConfig; expected: { provider: string; model: string } }> = [
       {
         cfg: {
           agents: { defaults: { model: { primary: "sonnet-4.6" } } },
-        } as unknown as OpenClawConfig,
+        } as unknown as AforaConfig,
         expected: { provider: "anthropic", model: "sonnet-4.6" },
       },
       {
         cfg: {
           agents: { defaults: { model: { primary: "gpt-5.5" } } },
           models: { providers: { openai: { models: [{ id: "gpt-5.5" }] } } },
-        } as unknown as OpenClawConfig,
+        } as unknown as AforaConfig,
         expected: { provider: "openai", model: "gpt-5.5" },
       },
     ];
@@ -252,7 +252,7 @@ describe("configured model manifest workspace scope", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expect(
       resolveConfiguredModelRef({
@@ -291,7 +291,7 @@ describe("configured model manifest workspace scope", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expect(
       resolveConfiguredModelRef({
@@ -333,7 +333,7 @@ describe("configured model manifest workspace scope", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expect(
       resolveConfiguredModelRef({
@@ -374,7 +374,7 @@ describe("configured model manifest workspace scope", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expect(
       resolveConfiguredModelRef({

@@ -2,36 +2,36 @@
 import {
   resolveApprovalOverGateway,
   type ApprovalResolveResult,
-} from "openclaw/plugin-sdk/approval-gateway-runtime";
-import type { ChannelApprovalKind } from "openclaw/plugin-sdk/approval-handler-runtime";
-import type { ExecApprovalReplyDecision } from "openclaw/plugin-sdk/approval-reply-runtime";
-import { recordChannelActivity } from "openclaw/plugin-sdk/channel-activity-runtime";
-import { buildChannelInboundEventContext } from "openclaw/plugin-sdk/channel-inbound";
+} from "afora-agent/plugin-sdk/approval-gateway-runtime";
+import type { ChannelApprovalKind } from "afora-agent/plugin-sdk/approval-handler-runtime";
+import type { ExecApprovalReplyDecision } from "afora-agent/plugin-sdk/approval-reply-runtime";
+import { recordChannelActivity } from "afora-agent/plugin-sdk/channel-activity-runtime";
+import { buildChannelInboundEventContext } from "afora-agent/plugin-sdk/channel-inbound";
 import {
   createChannelMessageReplyPipeline,
   deliverInboundReplyWithMessageSendContext,
-} from "openclaw/plugin-sdk/channel-outbound";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   readChannelAllowFromStore,
   recordInboundSession,
   upsertChannelPairingRequest,
-} from "openclaw/plugin-sdk/conversation-runtime";
-import { buildModelsProviderData } from "openclaw/plugin-sdk/models-provider-runtime";
-import { dispatchReplyWithBufferedBlockDispatcher } from "openclaw/plugin-sdk/reply-dispatch-runtime";
-import { resolveInboundLastRouteSessionKey } from "openclaw/plugin-sdk/routing";
-import { getRuntimeConfig } from "openclaw/plugin-sdk/runtime-config-snapshot";
-import { resolvePinnedMainDmOwnerFromAllowlist } from "openclaw/plugin-sdk/security-runtime";
+} from "afora-agent/plugin-sdk/conversation-runtime";
+import { buildModelsProviderData } from "afora-agent/plugin-sdk/models-provider-runtime";
+import { dispatchReplyWithBufferedBlockDispatcher } from "afora-agent/plugin-sdk/reply-dispatch-runtime";
+import { resolveInboundLastRouteSessionKey } from "afora-agent/plugin-sdk/routing";
+import { getRuntimeConfig } from "afora-agent/plugin-sdk/runtime-config-snapshot";
+import { resolvePinnedMainDmOwnerFromAllowlist } from "afora-agent/plugin-sdk/security-runtime";
 import {
   getSessionEntry,
   readSessionUpdatedAt,
   readAmbientTranscriptWatermark,
   resolveAmbientTranscriptWatermarkKey,
   resolveStorePath,
-} from "openclaw/plugin-sdk/session-store-runtime";
-import { listSkillCommandsForAgents } from "openclaw/plugin-sdk/skill-commands-runtime";
-import { enqueueSystemEvent } from "openclaw/plugin-sdk/system-event-runtime";
-import { loadWebMedia } from "openclaw/plugin-sdk/web-media";
+} from "afora-agent/plugin-sdk/session-store-runtime";
+import { listSkillCommandsForAgents } from "afora-agent/plugin-sdk/skill-commands-runtime";
+import { enqueueSystemEvent } from "afora-agent/plugin-sdk/system-event-runtime";
+import { loadWebMedia } from "afora-agent/plugin-sdk/web-media";
 import { syncTelegramMenuCommands } from "./bot-native-command-menu.js";
 import { deliverReplies, emitTelegramMessageSentHooks } from "./bot/delivery.js";
 import { createTelegramDraftStream } from "./draft-stream.js";
@@ -40,7 +40,7 @@ import { editMessageTelegram } from "./send.js";
 import { wasSentByBot } from "./sent-message-cache.js";
 
 type ResolveTelegramApprovalParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   approvalId: string;
   decision: ExecApprovalReplyDecision;
   channel: "telegram";

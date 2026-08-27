@@ -19,7 +19,7 @@ afterEach(() => {
 });
 
 function makeTempRepo() {
-  const dir = mkdtempSync(path.join(tmpdir(), "openclaw-root-deps-audit-"));
+  const dir = mkdtempSync(path.join(tmpdir(), "afora-root-deps-audit-"));
   tempDirs.push(dir);
   return dir;
 }
@@ -304,7 +304,7 @@ describe("collectRootDependencyOwnershipCheckErrors", () => {
       "extensions/internal/package.json",
       JSON.stringify({ dependencies: { "vendor-sdk": "^1.0.0" } }),
     );
-    writeRepoFile(repoRoot, "extensions/internal/openclaw.plugin.json", JSON.stringify({}));
+    writeRepoFile(repoRoot, "extensions/internal/afora.plugin.json", JSON.stringify({}));
     writeRepoFile(
       repoRoot,
       "extensions/internal/src/setup.ts",
@@ -345,7 +345,7 @@ describe("collectRootDependencyOwnershipCheckErrors", () => {
       "extensions/externalized/package.json",
       JSON.stringify({ dependencies: { "vendor-sdk": "^1.0.0" } }),
     );
-    writeRepoFile(repoRoot, "extensions/externalized/openclaw.plugin.json", JSON.stringify({}));
+    writeRepoFile(repoRoot, "extensions/externalized/afora.plugin.json", JSON.stringify({}));
     writeRepoFile(
       repoRoot,
       "extensions/externalized/src/setup.ts",

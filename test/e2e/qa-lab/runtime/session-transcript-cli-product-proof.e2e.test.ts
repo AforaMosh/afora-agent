@@ -3,8 +3,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { upsertSessionEntryCore } from "../../../../src/config/sessions/session-accessor.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../../../src/state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../../../../src/state/openclaw-state-db.js";
+import { closeAforaAgentDatabasesForTest } from "../../../../src/state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../../../../src/state/afora-state-db.js";
 import type {
   TranscriptSessionDescriptor,
   TranscriptUtterance,
@@ -12,9 +12,9 @@ import type {
 import { TranscriptsStore } from "../../../../src/transcripts/store.js";
 import { summarizeTranscripts } from "../../../../src/transcripts/summary.js";
 import {
-  createOpenClawTestInstance,
-  type OpenClawTestInstance,
-} from "../../../helpers/openclaw-test-instance.js";
+  createAforaTestInstance,
+  type AforaTestInstance,
+} from "../../../helpers/afora-test-instance.js";
 
 const SESSION_KEY = "agent:main:qa:missing-transcript";
 const SESSION_ID = "qa-missing-transcript";
@@ -22,7 +22,7 @@ const TRANSCRIPT_ID = "qa-cli-transcript";
 const TRANSCRIPT_STARTED_AT = "2026-08-03T12:00:00.000Z";
 const TRANSCRIPT_TEXT = "Action item: preserve the CLI transcript artifact.";
 
-type CommandResult = Awaited<ReturnType<OpenClawTestInstance["cli"]>>;
+type CommandResult = Awaited<ReturnType<AforaTestInstance["cli"]>>;
 
 type SessionsJson = {
   count: number;
@@ -57,11 +57,11 @@ type TranscriptPathJson = {
   sessionId: string;
 };
 
-let instance: OpenClawTestInstance | undefined;
+let instance: AforaTestInstance | undefined;
 
 afterEach(async () => {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   await instance?.cleanup();
   instance = undefined;
 });
@@ -107,7 +107,7 @@ describe("session and transcript child CLI product proof", () => {
     "reads canonical SQLite state, delegates cleanup, and materializes transcript artifacts",
     { timeout: 180_000 },
     async () => {
-      instance = await createOpenClawTestInstance({
+      instance = await createAforaTestInstance({
         name: "qa-session-transcript-cli",
       });
       instance.state.applyEnv();
@@ -123,8 +123,8 @@ describe("session and transcript child CLI product proof", () => {
         },
       );
       const transcriptSession = await seedTranscript(instance.stateDir, instance.env);
-      closeOpenClawAgentDatabasesForTest();
-      closeOpenClawStateDatabaseForTest();
+      closeAforaAgentDatabasesForTest();
+      closeAforaStateDatabaseForTest();
 
       const sessionsBefore = parseCommandJson<SessionsJson>(
         "sessions --json",

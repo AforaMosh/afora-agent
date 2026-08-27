@@ -3,7 +3,7 @@
  * Verifies agent scope, default flags, preserve lists, and message-tool overrides.
  */
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { retainLegacyDefaultAgentId } from "../config/legacy.default-agent-owner.js";
 import type { AnyAgentTool } from "./agent-tools.types.js";
 import {
@@ -19,7 +19,7 @@ function tools(names: string[]): AnyAgentTool[] {
 
 describe("local model lean tool filtering", () => {
   it("filters heavyweight tools for one configured agent", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         list: [
           {
@@ -54,7 +54,7 @@ describe("local model lean tool filtering", () => {
   });
 
   it("keeps explicitly preserved tools when lean mode is enabled", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         entries: { main: { default: true } },
         defaults: {
@@ -97,7 +97,7 @@ describe("local model lean tool filtering", () => {
   });
 
   it("keeps image understanding while trimming optional media production tools", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         entries: { main: { default: true } },
         defaults: {
@@ -136,7 +136,7 @@ describe("local model lean tool filtering", () => {
   });
 
   it("does not treat wildcard preservation as disabling lean mode", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         entries: { main: { default: true } },
         defaults: {
@@ -157,7 +157,7 @@ describe("local model lean tool filtering", () => {
   });
 
   it("matches wildcard preservation without treating a bare wildcard as an override", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: { experimental: { localModelLean: true } },
         entries: { main: { default: true } },
@@ -173,7 +173,7 @@ describe("local model lean tool filtering", () => {
   });
 
   it("lets an agent opt out of an inherited global lean setting", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           experimental: {
@@ -202,7 +202,7 @@ describe("local model lean tool filtering", () => {
   });
 
   it("inherits global lean mode when an agent experimental block omits the flag", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           experimental: {
@@ -229,7 +229,7 @@ describe("local model lean tool filtering", () => {
   });
 
   it("keeps global lean mode for an agent id without an agent entry", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           experimental: {
@@ -250,7 +250,7 @@ describe("local model lean tool filtering", () => {
   });
 
   it("uses the configured default agent when no agent id is explicit", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         list: [
           {
@@ -291,7 +291,7 @@ describe("local model lean tool filtering", () => {
   });
 
   it("uses the agent from an agent session key", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         list: [
           {
@@ -321,7 +321,7 @@ describe("local model lean tool filtering", () => {
   });
 
   it("uses the configured fixed-store owner for an unscoped session key", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       session: { store: "/stores/shared.sqlite" },
       agents: {
         ownership: "explicit",
@@ -340,7 +340,7 @@ describe("local model lean tool filtering", () => {
   });
 
   it("defaults lean runs to structured Tool Search controls", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           experimental: {
@@ -363,7 +363,7 @@ describe("local model lean tool filtering", () => {
   });
 
   it("preserves explicit Tool Search operator config", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           experimental: {

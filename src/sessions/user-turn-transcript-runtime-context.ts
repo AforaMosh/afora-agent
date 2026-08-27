@@ -6,10 +6,10 @@ import type {
 } from "./user-turn-transcript.types.js";
 
 const RUNTIME_USER_TURN_TRANSCRIPT_CONTEXT = Symbol.for(
-  "openclaw.runtimeUserTurnTranscriptContext",
+  "afora.runtimeUserTurnTranscriptContext",
 );
 const RUNTIME_USER_TURN_TRANSCRIPT_RECORDER = Symbol.for(
-  "openclaw.runtimeUserTurnTranscriptRecorder",
+  "afora.runtimeUserTurnTranscriptRecorder",
 );
 
 type RuntimeUserTurnTranscriptContext = {

@@ -1,12 +1,12 @@
 /** Process-local identity for the non-secret config that an owner may use with a credential. */
 import { createHash } from "node:crypto";
-import { stableStringify } from "@openclaw/normalization-core";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { stableStringify } from "@afora/normalization-core";
+import type { AforaConfig } from "../config/types.afora.js";
 import { coerceSecretRef } from "../config/types.secrets.js";
 import { secretRefKey } from "./ref-contract.js";
 import { isRecord } from "./shared.js";
 
-type SecretDefaults = NonNullable<OpenClawConfig["secrets"]>["defaults"];
+type SecretDefaults = NonNullable<AforaConfig["secrets"]>["defaults"];
 
 /** Normalizes equivalent SecretRef input forms before hashing owner config. */
 export function canonicalizeSecretRefsForOwnerContract(
@@ -52,7 +52,7 @@ export function digestRuntimeWebOwnerContract(params: {
   toolConfig: unknown;
   providers: Array<{ id: string; pluginId?: string }>;
   providerId: string;
-  sourceConfig: OpenClawConfig;
+  sourceConfig: AforaConfig;
 }): string {
   const provider = params.providers.find((entry) => entry.id === params.providerId);
   const pluginId = provider?.pluginId;

@@ -1,14 +1,14 @@
 // Memory Wiki doctor contract owns legacy state cleanup and migrations.
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/plugin-entry";
+import type { AforaConfig } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   archiveLegacyStateSource,
   legacyStateFileExists,
   type PluginDoctorStateMigration,
-} from "openclaw/plugin-sdk/runtime-doctor-migrations";
-import { FsSafeError, root as fsRoot } from "openclaw/plugin-sdk/security-runtime";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/runtime-doctor-migrations";
+import { FsSafeError, root as fsRoot } from "afora-agent/plugin-sdk/security-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { LEGACY_MEMORY_WIKI_COMPILED_CACHE_PATHS } from "./src/compiled-cache.js";
 import {
   resolveMemoryWikiAgentConfig,
@@ -74,7 +74,7 @@ async function openExistingVaultRoot(vaultRoot: string) {
   }
 }
 
-function readConfiguredPluginConfig(config: OpenClawConfig): MemoryWikiPluginConfig | undefined {
+function readConfiguredPluginConfig(config: AforaConfig): MemoryWikiPluginConfig | undefined {
   const entries = config.plugins?.entries;
   const pluginEntry = isRecord(entries) ? entries["memory-wiki"] : undefined;
   if (!isRecord(pluginEntry) || !isRecord(pluginEntry.config)) {
@@ -84,7 +84,7 @@ function readConfiguredPluginConfig(config: OpenClawConfig): MemoryWikiPluginCon
 }
 
 function resolveConfiguredVaultRoots(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
 }): string[] {
   const homeDir = resolveHomeDir(params.env);

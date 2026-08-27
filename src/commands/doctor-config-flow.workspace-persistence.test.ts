@@ -1,27 +1,27 @@
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readConfigFileSnapshot } from "../config/config.js";
-import { withEnvOverride, withTempHome, writeOpenClawConfig } from "../config/test-helpers.js";
+import { withEnvOverride, withTempHome, writeAforaConfig } from "../config/test-helpers.js";
 import {
   runInitialConfigWriteHealth,
   runWriteConfigHealth,
 } from "../flows/doctor-health-contribution-runners.config.js";
 import type { DoctorHealthFlowContext } from "../flows/doctor-health-contribution-types.js";
 import type { RuntimeEnv } from "../runtime.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { loadAndMaybeMigrateDoctorConfig } from "./doctor-config-flow.js";
 import { createDoctorPrompter, type DoctorOptions } from "./doctor-prompter.js";
 
 describe("Doctor workspace persistence", () => {
   afterEach(() => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
   });
 
   it("keeps the legacy owner on the shared workspace across later health writes", async () => {
     await withTempHome(async (home) => {
-      await withEnvOverride({ OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1" }, async () => {
+      await withEnvOverride({ AFORA_DISABLE_BUNDLED_PLUGINS: "1" }, async () => {
         const workspace = path.join(home, "shared-workspace");
-        const configPath = await writeOpenClawConfig(home, {
+        const configPath = await writeAforaConfig(home, {
           agents: {
             defaults: { workspace },
             entries: {

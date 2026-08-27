@@ -347,13 +347,13 @@ export const POLICY_RULE_METADATA = [
   },
   {
     // Redaction is unconditional in src/logging/redact.ts, so no doctor check can fail for
-    // this rule. The key stays a policy contract: `openclaw policy compare` still enforces
+    // this rule. The key stays a policy contract: `afora policy compare` still enforces
     // baseline strictness, and policy state records the invariant below as satisfied.
     policyPath: ["dataHandling", "sensitiveLogging", "requireRedaction"],
     strictness: "requires-true",
     valueType: "boolean",
     checkIds: [],
-    satisfiedByInvariant: "oc://openclaw.invariant/logging/redaction",
+    satisfiedByInvariant: "oc://afora.invariant/logging/redaction",
   },
   {
     policyPath: ["dataHandling", "telemetry", "denyContentCapture"],

@@ -7,7 +7,7 @@ import { note } from "../../packages/terminal-core/src/note.js";
 import { DEFAULT_AGENTS_FILENAME, DEFAULT_TOOLS_FILENAME } from "../agents/workspace.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { resolveStateDir } from "../config/paths.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { HealthFinding } from "../flows/health-checks.js";
 import { publishFileNoClobber, syncDirectoryIfSupported } from "../infra/directory-durability.js";
 import { formatErrorMessage as errorMessage } from "../infra/errors.js";
@@ -370,12 +370,12 @@ function migrationFinding(params: {
     path: params.path,
     target: params.agentId,
     requirement: params.requirement,
-    fixHint: `Run ${formatCliCommand("openclaw doctor --fix")} to merge TOOLS.md into AGENTS.md.`,
+    fixHint: `Run ${formatCliCommand("afora doctor --fix")} to merge TOOLS.md into AGENTS.md.`,
   };
 }
 
 export async function collectToolsMdMigrationFindings(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): Promise<readonly HealthFinding[]> {
   const findings: HealthFinding[] = [];
   for (const target of resolveToolsMdMigrationWorkspaceTargets(cfg)) {
@@ -432,7 +432,7 @@ export async function collectToolsMdMigrationFindings(
 }
 
 export async function maybeMigrateToolsMd(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   shouldRepair: boolean;
   env?: NodeJS.ProcessEnv;
 }): Promise<ToolsMdMigrationResult> {

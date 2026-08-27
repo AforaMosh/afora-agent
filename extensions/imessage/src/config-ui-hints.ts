@@ -1,6 +1,6 @@
-import { createChannelConfigUiHints } from "openclaw/plugin-sdk/channel-core";
+import { createChannelConfigUiHints } from "afora-agent/plugin-sdk/channel-core";
 // Imessage helper module supports config ui hints behavior.
-import type { ChannelConfigUiHint } from "openclaw/plugin-sdk/core";
+import type { ChannelConfigUiHint } from "afora-agent/plugin-sdk/core";
 
 export const iMessageChannelConfigUiHints = {
   "": {

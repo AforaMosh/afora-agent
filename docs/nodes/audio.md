@@ -6,12 +6,12 @@ title: "Audio and voice notes"
 ---
 
 This page covers inbound transcription and voice-note handling. For inline
-audio and video players in OpenClaw chat clients, see
+audio and video players in Afora chat clients, see
 [Media playback](/nodes/media-playback).
 
 ## What it does
 
-When audio understanding is enabled (or auto-detected), OpenClaw:
+When audio understanding is enabled (or auto-detected), Afora:
 
 1. Locates the first audio attachment (local path or URL) and downloads it if needed.
 2. Enforces `maxBytes` before sending to each model entry.
@@ -22,20 +22,20 @@ When transcription succeeds, `CommandBody`/`RawBody` are also set to the transcr
 
 ## Auto-detection (default)
 
-If you have not configured models and `tools.media.audio.enabled` is not `false`, OpenClaw auto-detects in this order and stops at the first working option:
+If you have not configured models and `tools.media.audio.enabled` is not `false`, Afora auto-detects in this order and stops at the first working option:
 
 1. **Active reply model**, when its provider supports audio understanding.
 2. **Configured provider auth** — any `models.providers.*` entry with auth available for a provider that supports audio transcription. This is checked before local CLIs, so a configured API key always wins over a local binary on `PATH`.
    Provider priority when multiple are configured: Groq, OpenAI, xAI, Deepgram, Google, SenseAudio, ElevenLabs, Mistral.
-3. **Local CLIs** (only if no provider auth resolved). OpenClaw builds an ordered fallback list:
+3. **Local CLIs** (only if no provider auth resolved). Afora builds an ordered fallback list:
    - `whisper-cli`, before CPU defaults only when an earlier model invocation in the current process observed Metal or CUDA
    - `sherpa-onnx-offline` on its default CPU provider (requires `SHERPA_ONNX_MODEL_DIR` with `tokens.txt`, `encoder.onnx`, `decoder.onnx`, and `joiner.onnx`)
    - `whisper-cli` when Metal/CUDA is only build-capable or the selected backend is otherwise unobserved
    - `parakeet-mlx` on Apple Silicon (MLX-capable; device use remains unobserved)
    - `whisper` (Python CLI; downloads models automatically)
 
-Install/link provenance is capability evidence, not execution evidence. It never moves a candidate ahead of CPU sherpa by itself. OpenClaw does not load a model during setup or status checks just to probe a backend.
-Auto-detected whisper.cpp keeps its normal model-run logs enabled so OpenClaw can record the upstream `using … backend` line. Explicit CLI entries keep their configured output flags.
+Install/link provenance is capability evidence, not execution evidence. It never moves a candidate ahead of CPU sherpa by itself. Afora does not load a model during setup or status checks just to probe a backend.
+Auto-detected whisper.cpp keeps its normal model-run logs enabled so Afora can record the upstream `using … backend` line. Explicit CLI entries keep their configured output flags.
 
 Gemini CLI and Antigravity are not auto-detected for media understanding. Audio
 does not use a CLI fallback beyond the local binaries above.
@@ -49,8 +49,8 @@ Binary detection is best-effort across macOS/Linux/Windows. Make sure the CLI is
 Inspect the local selection without transcribing audio:
 
 ```bash
-openclaw capability audio providers
-openclaw doctor --lint --only core/doctor/local-audio-acceleration --severity-min info
+afora capability audio providers
+afora doctor --lint --only core/doctor/local-audio-acceleration --severity-min info
 ```
 
 The provider inventory reports the local fallback winner separately from global provider selection, plus capable, requested, and observed backend fields. After transcription runs, `/status` reports the requested or observed backend in the media line. Explicit audio-capable `tools.media.models` CLI entries still bypass auto-selection; use their backend-specific flags such as sherpa `--provider=cuda` or whisper.cpp `--no-gpu`/`--device`.
@@ -155,12 +155,12 @@ The provider inventory reports the local fallback winner separately from global 
 - Transcript is available to templates as `{{Transcript}}`.
 - `tools.media.audio.echoTranscript` is off by default; `echoFormat` accepts a `{transcript}` placeholder.
 - CLI stdout is capped at 5MB; keep CLI output concise.
-- CLI `args` should use `{{AttachmentPath}}` for the local audio file path. Run `openclaw doctor --fix` to migrate deprecated `{input}` placeholders from older `audio.transcription.command` configs (retired key: `audio.transcription`, replaced by `tools.media.models`). `{{MediaPath}}` remains a deprecated compatibility alias.
+- CLI `args` should use `{{AttachmentPath}}` for the local audio file path. Run `afora doctor --fix` to migrate deprecated `{input}` placeholders from older `audio.transcription.command` configs (retired key: `audio.transcription`, replaced by `tools.media.models`). `{{MediaPath}}` remains a deprecated compatibility alias.
 - `tools.media.concurrency` bounds media tasks; it is not a GPU scheduler.
 
 ### Resident local STT
 
-Auto-detected local STT remains process-per-request. OpenClaw does not currently manage a resident whisper.cpp server because the standard Homebrew `whisper-cpp` package disables that server, while the upstream example has no configured bounded admission queue. A plugin-owned resident lifecycle needs a maintained packaged worker with health/startup, model residency, bounded queueing, cancellation/timeout, loopback-only no-auth operation, and no cloud fallback before it can be enabled safely.
+Auto-detected local STT remains process-per-request. Afora does not currently manage a resident whisper.cpp server because the standard Homebrew `whisper-cpp` package disables that server, while the upstream example has no configured bounded admission queue. A plugin-owned resident lifecycle needs a maintained packaged worker with health/startup, model residency, bounded queueing, cancellation/timeout, loopback-only no-auth operation, and no cloud fallback before it can be enabled safely.
 
 ### Proxy environment support
 
@@ -170,15 +170,15 @@ Provider-based audio transcription honors standard outbound proxy env vars, matc
 - `HTTP_PROXY` / `http_proxy`
 - `ALL_PROXY` / `all_proxy`
 
-Lowercase variables take precedence over uppercase; `NO_PROXY`/`no_proxy` entries (hostnames, `*.suffix`, or `host:port`) bypass the proxy. If no proxy env vars are set, direct egress is used. If proxy setup fails (malformed URL), OpenClaw logs a warning and falls back to direct fetch.
+Lowercase variables take precedence over uppercase; `NO_PROXY`/`no_proxy` entries (hostnames, `*.suffix`, or `host:port`) bypass the proxy. If no proxy env vars are set, direct egress is used. If proxy setup fails (malformed URL), Afora logs a warning and falls back to direct fetch.
 
 ## Mention detection in groups
 
-On channels that support audio preflight, OpenClaw transcribes audio **before** checking for mentions when `requireMention: true` is set for a group chat. This lets a captionless voice note pass the mention gate when its transcript contains a configured mention pattern. Channel-specific docs describe transports that require a typed mention instead.
+On channels that support audio preflight, Afora transcribes audio **before** checking for mentions when `requireMention: true` is set for a group chat. This lets a captionless voice note pass the mention gate when its transcript contains a configured mention pattern. Channel-specific docs describe transports that require a typed mention instead.
 
 **How it works:**
 
-1. If a voice message has no text body and the group requires mentions, OpenClaw performs a preflight transcription of the first audio attachment.
+1. If a voice message has no text body and the group requires mentions, Afora performs a preflight transcription of the first audio attachment.
 2. The transcript is checked for mention patterns (for example `@BotName`, emoji triggers).
 3. If a mention is found, the message proceeds through the full reply pipeline.
 
@@ -197,7 +197,7 @@ On channels that support audio preflight, OpenClaw transcribes audio **before** 
 - Scope rules use first-match-wins; `chatType` is normalized to `direct`, `group`, or `channel`.
 - Ensure your CLI exits 0 and prints plain text; JSON output needs to be massaged via `jq -r .text`.
 - Known file-output modes are authoritative: an empty or missing inferred transcript file produces no transcript instead of falling back to CLI progress output.
-- For `parakeet-mlx`, use `--output-format txt` (or `all`) with `--output-dir` and the default `{filename}` output template. The upstream `PARAKEET_OUTPUT_FORMAT` and `PARAKEET_OUTPUT_TEMPLATE` environment variables are also honored. OpenClaw reads `<output-dir>/<media-basename>.txt`; the default `srt` format, other formats, and custom output templates continue to use stdout.
+- For `parakeet-mlx`, use `--output-format txt` (or `all`) with `--output-dir` and the default `{filename}` output template. The upstream `PARAKEET_OUTPUT_FORMAT` and `PARAKEET_OUTPUT_TEMPLATE` environment variables are also honored. Afora reads `<output-dir>/<media-basename>.txt`; the default `srt` format, other formats, and custom output templates continue to use stdout.
 - Keep timeouts reasonable (`timeoutSeconds`, default 60s) to avoid blocking the reply queue.
 - Preflight transcription only processes the **first** audio attachment for mention detection. Additional audio attachments are processed during the main media-understanding phase.
 

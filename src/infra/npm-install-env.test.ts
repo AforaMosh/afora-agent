@@ -37,7 +37,7 @@ describe("npm project install env", () => {
         expect(
           createNpmProjectInstallEnv(
             {
-              PATH: "/tmp/openclaw-npm-global/bin",
+              PATH: "/tmp/afora-npm-global/bin",
             },
             {},
             FROZEN_NOW,
@@ -45,7 +45,7 @@ describe("npm project install env", () => {
         ).toEqual({
           ...EXPECTED_FRESHNESS_ENV,
           NPM_CONFIG_SCRIPT_SHELL: "/bin/sh",
-          PATH: "/tmp/openclaw-npm-global/bin",
+          PATH: "/tmp/afora-npm-global/bin",
           npm_config_dry_run: "false",
           npm_config_fetch_retries: "5",
           npm_config_fetch_retry_maxtimeout: "120000",
@@ -107,7 +107,7 @@ describe("npm project install env", () => {
     });
   });
 
-  it("bypasses npm release-age filters for OpenClaw-managed installs", () => {
+  it("bypasses npm release-age filters for Afora-managed installs", () => {
     const env = createNpmProjectInstallEnv(
       {
         NPM_CONFIG_BEFORE: "2026-01-01T00:00:00.000Z",
@@ -147,7 +147,7 @@ describe("npm project install env", () => {
   });
 
   it("uses a current before override for explicit npm before policy", () => {
-    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "openclaw-npmrc-"));
+    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "afora-npmrc-"));
     try {
       const baseEnv = createIsolatedNpmConfigEnv(dir);
       const npmrc = path.join(dir, "npmrc");
@@ -187,7 +187,7 @@ describe("npm project install env", () => {
   });
 
   it("uses before args for stale npm before policies", () => {
-    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "openclaw-npmrc-"));
+    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "afora-npmrc-"));
     try {
       const baseEnv = createIsolatedNpmConfigEnv(dir);
       const npmrc = path.join(dir, "npmrc");
@@ -208,7 +208,7 @@ describe("npm project install env", () => {
   });
 
   it("uses before args for expanded npm userconfig paths", () => {
-    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "openclaw-home-npmrc-"));
+    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "afora-home-npmrc-"));
     try {
       const baseEnv = createIsolatedNpmConfigEnv(dir);
       fsSync.writeFileSync(path.join(dir, ".npmrc"), "before=2026-01-01T00:00:00.000Z\n", "utf-8");
@@ -239,7 +239,7 @@ describe("npm project install env", () => {
   });
 
   it("uses before args for npm default globalconfig before policies", () => {
-    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "openclaw-npm-prefix-"));
+    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "afora-npm-prefix-"));
     try {
       const home = path.join(dir, "home");
       const npmrcDir = path.join(dir, "etc");
@@ -266,7 +266,7 @@ describe("npm project install env", () => {
   });
 
   it("uses before args for command project npmrc before policies", () => {
-    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "openclaw-project-npmrc-"));
+    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "afora-project-npmrc-"));
     try {
       const baseEnv = createIsolatedNpmConfigEnv(dir);
       fsSync.writeFileSync(path.join(dir, ".npmrc"), "before=2026-01-01T00:00:00.000Z\n", "utf-8");
@@ -284,7 +284,7 @@ describe("npm project install env", () => {
   });
 
   it("uses before args for the current project npmrc by default", () => {
-    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "openclaw-current-npmrc-"));
+    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "afora-current-npmrc-"));
     try {
       const baseEnv = createIsolatedNpmConfigEnv(dir);
       fsSync.writeFileSync(path.join(dir, ".npmrc"), "before=2026-01-01T00:00:00.000Z\n", "utf-8");
@@ -300,7 +300,7 @@ describe("npm project install env", () => {
   });
 
   it("uses before args for scoped npm prefix before policies", () => {
-    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "openclaw-prefix-npmrc-"));
+    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "afora-prefix-npmrc-"));
     try {
       const baseEnv = createIsolatedNpmConfigEnv(dir);
       const npmrcDir = path.join(dir, "etc");
@@ -320,7 +320,7 @@ describe("npm project install env", () => {
   });
 
   it("prefers scoped npm prefix policy over parent npm prefix policy", () => {
-    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "openclaw-prefix-npmrc-"));
+    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "afora-prefix-npmrc-"));
     try {
       const baseEnv = createIsolatedNpmConfigEnv(dir);
       const scopedPrefix = path.join(dir, "scoped-prefix");
@@ -350,7 +350,7 @@ describe("npm project install env", () => {
   });
 
   it("overrides stale npmrc before config without emitting release-age config", () => {
-    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "openclaw-npmrc-"));
+    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "afora-npmrc-"));
     try {
       const baseEnv = createIsolatedNpmConfigEnv(dir);
       const npmrc = path.join(dir, "npmrc");
@@ -373,7 +373,7 @@ describe("npm project install env", () => {
   });
 
   it("uses release-age args for npmrc release-age policies", () => {
-    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "openclaw-npmrc-"));
+    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "afora-npmrc-"));
     try {
       const baseEnv = createIsolatedNpmConfigEnv(dir);
       const npmrc = path.join(dir, "npmrc");
@@ -394,7 +394,7 @@ describe("npm project install env", () => {
   });
 
   it("overrides npmrc release-age config without emitting before config", () => {
-    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "openclaw-npmrc-"));
+    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "afora-npmrc-"));
     try {
       const baseEnv = createIsolatedNpmConfigEnv(dir);
       const npmrc = path.join(dir, "npmrc");

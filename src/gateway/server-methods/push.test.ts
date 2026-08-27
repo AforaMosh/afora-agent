@@ -1,7 +1,7 @@
 // Push method tests cover APNs direct/relay registrations, Web Push delivery
 // outcomes, stale registration cleanup, config resolution, and error mapping.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ErrorCodes } from "../../../packages/gateway-protocol/src/index.js";
 import { pushHandlers } from "./push.js";
@@ -52,7 +52,7 @@ const DEFAULT_DIRECT_REGISTRATION = {
   nodeId: "ios-node-1",
   transport: "direct",
   token: "abcd",
-  topic: "ai.openclaw.ios",
+  topic: "ai.afora.ios",
   environment: "sandbox",
   updatedAtMs: 1,
 } as const;
@@ -63,7 +63,7 @@ const DEFAULT_RELAY_REGISTRATION = {
   relayHandle: "relay-handle-123",
   sendGrant: "send-grant-123",
   installationId: "install-123",
-  topic: "ai.openclaw.ios",
+  topic: "ai.afora.ios",
   environment: "production",
   distribution: "official",
   updatedAtMs: 1,
@@ -98,7 +98,7 @@ function apnsResult(overrides: Partial<ApnsPushResult>): ApnsPushResult {
     ok: true,
     status: 200,
     tokenSuffix: "1234abcd",
-    topic: "ai.openclaw.ios",
+    topic: "ai.afora.ios",
     environment: "sandbox",
     transport: "direct",
     ...overrides,

@@ -1,16 +1,16 @@
 // Runtime LLM helpers adapt plugin provider hooks into the core model runtime.
-import { parseModelCatalogRef } from "@openclaw/model-catalog-core/model-catalog-refs";
+import { parseModelCatalogRef } from "@afora/model-catalog-core/model-catalog-refs";
 import {
   normalizeBuiltInProviderModelId,
   stripSelfProviderModelPrefix,
-} from "@openclaw/model-catalog-core/provider-model-id-normalization";
-import { asFiniteNumber, asFiniteNumberInRange } from "@openclaw/normalization-core";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+} from "@afora/model-catalog-core/provider-model-id-normalization";
+import { asFiniteNumber, asFiniteNumberInRange } from "@afora/normalization-core";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { splitTrailingAuthProfile } from "../../agents/model-ref-profile.js";
 import { normalizeModelRef } from "../../agents/model-ref-shared.js";
 import type { NormalizedUsage, UsageLike } from "../../agents/usage.js";
 import { normalizeUsage } from "../../agents/usage.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { emitTrustedDiagnosticEvent, isDiagnosticsEnabled } from "../../infra/diagnostic-events.js";
 import { markHostPluginUsageDiagnosticEvent } from "../../infra/diagnostic-plugin-usage-provenance.js";
 import type { Api, Message } from "../../llm/types.js";
@@ -53,7 +53,7 @@ export type RuntimeLlmAuthority = {
 };
 
 export type CreateRuntimeLlmOptions = {
-  getConfig?: () => OpenClawConfig | undefined;
+  getConfig?: () => AforaConfig | undefined;
   authority?: RuntimeLlmAuthority;
   logger?: RuntimeLogger;
 };
@@ -123,7 +123,7 @@ function resolveTrustedCaller(authority?: RuntimeLlmAuthority): LlmCompleteCalle
   return normalizeCaller(authority?.caller);
 }
 
-function resolveRuntimeConfig(options: CreateRuntimeLlmOptions): OpenClawConfig {
+function resolveRuntimeConfig(options: CreateRuntimeLlmOptions): AforaConfig {
   const cfg = options.getConfig?.();
   if (!cfg) {
     throw new Error("Plugin LLM completion requires an injected runtime config scope.");
@@ -133,7 +133,7 @@ function resolveRuntimeConfig(options: CreateRuntimeLlmOptions): OpenClawConfig 
 
 async function resolveAgentId(params: {
   request: LlmCompleteParams;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   authority?: RuntimeLlmAuthority;
   allowAgentIdOverride: boolean;
 }): Promise<string> {
@@ -235,7 +235,7 @@ function readExplicitCostUsd(raw: unknown): number | undefined {
 function buildUsage(params: {
   rawUsage: unknown;
   normalized: NormalizedUsage | undefined;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: string;
   model: string;
 }): LlmCompleteUsage {
@@ -262,7 +262,7 @@ function buildUsage(params: {
 }
 
 function finalizeCompletion(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   hostPluginId?: string;
   suppressUsage?: boolean;
   rawUsage: unknown;
@@ -404,7 +404,7 @@ function resolvePluginPolicyId(
 }
 
 function resolvePluginLlmPolicy(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   pluginId: string | undefined,
 ): RuntimeLlmPolicy | undefined {
   if (!pluginId) {

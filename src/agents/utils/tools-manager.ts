@@ -38,7 +38,7 @@ const CONTENT_LENGTH_RE = /^\d+$/;
 const GITHUB_RELEASE_JSON_MAX_BYTES = 1024 * 1024;
 
 function isOfflineModeEnabled(): boolean {
-  return isTruthyEnvValue(process.env.OPENCLAW_OFFLINE);
+  return isTruthyEnvValue(process.env.AFORA_OFFLINE);
 }
 
 interface ToolConfig {
@@ -422,7 +422,7 @@ const testing = {
 };
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.toolsManagerTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.toolsManagerTestApi")] = {
     testing,
   };
 }

@@ -10,9 +10,9 @@ export function resetAppHostTestGlobals(): void {
   vi.useRealTimers();
   Reflect.deleteProperty(window, "webkit");
   document.documentElement.classList.remove(
-    "openclaw-native-macos",
-    "openclaw-native-nav",
-    "openclaw-native-web-chrome",
+    "afora-native-macos",
+    "afora-native-nav",
+    "afora-native-web-chrome",
   );
   vi.unstubAllGlobals();
 }
@@ -27,7 +27,7 @@ let lazyElementSequence = 0;
 
 export function createLazyElementSpec(label: string): TestOptionalCustomElement {
   lazyElementSequence += 1;
-  const tagName = `openclaw-app-host-lazy-${lazyElementSequence}`;
+  const tagName = `afora-app-host-lazy-${lazyElementSequence}`;
   return {
     tagName,
     label,

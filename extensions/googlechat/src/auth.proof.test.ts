@@ -1,7 +1,7 @@
 // Proof: verifyGoogleChatRequest → fetchChatCerts through the REAL
 // fetchWithSsrFGuard, exercised against a real hanging node:http loopback.
 //
-// This file does NOT mock openclaw/plugin-sdk/ssrf-runtime, so the production
+// This file does NOT mock afora/plugin-sdk/ssrf-runtime, so the production
 // timeout composition and hostname policy run for every call. The auth runtime
 // stays hermetic, while globalThis.fetch redirects the guarded request onto a
 // loopback server that never responds. That fetch interception bypasses pinned

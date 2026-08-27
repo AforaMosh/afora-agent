@@ -1,4 +1,4 @@
-import type { DesktopSource, EnvironmentSummary } from "@openclaw/gateway-protocol";
+import type { DesktopSource, EnvironmentSummary } from "@afora/gateway-protocol";
 import type { GatewaySessionRow } from "../../api/types.ts";
 import type { DesktopDocumentOptions } from "../../app/desktop-document-mode.ts";
 import { resolveChatPaneDesktopTarget } from "../../pages/chat/chat-pane-placement.ts";

@@ -42,7 +42,7 @@ function renderSessionRowBadge(
   diskSpaceStatus?: SessionPlacementDiskSpace["status"],
   workspaceConflictCount = 0,
 ) {
-  return html`<openclaw-tooltip .content=${label}>
+  return html`<afora-tooltip .content=${label}>
     <span
       class=${`session-row-badge${modifier ? ` ${modifier}` : ""}`}
       data-pull-request-state=${pullRequestState ?? nothing}
@@ -53,7 +53,7 @@ function renderSessionRowBadge(
       aria-label=${label}
       >${icon}${count ? html`<span aria-hidden="true">${count}</span>` : nothing}</span
     >
-  </openclaw-tooltip>`;
+  </afora-tooltip>`;
 }
 
 export function renderSessionRowBadges(params: {
@@ -200,7 +200,7 @@ export function renderOfflineSidebarStatus(props: {
   const offline = t("common.offline");
   const count = props.queuedOutboxCount;
   const queued = count ? t("connection.queuedCount", { count: String(count) }) : null;
-  return html`<openclaw-tooltip .content=${props.title ?? ""}>
+  return html`<afora-tooltip .content=${props.title ?? ""}>
     <button
       type="button"
       class="sidebar-footer-bar__status"
@@ -215,5 +215,5 @@ export function renderOfflineSidebarStatus(props: {
         ? html`<span class="sidebar-footer-bar__status-detail">· ${queued}</span>`
         : nothing}
     </button>
-  </openclaw-tooltip>`;
+  </afora-tooltip>`;
 }

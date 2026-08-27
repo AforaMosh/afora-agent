@@ -1,5 +1,5 @@
 // Fetches and normalizes DeepSeek provider usage records.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { fetchUsageJson, parseFiniteNumber } from "./provider-usage.fetch.shared.js";
 import { PROVIDER_LABELS } from "./provider-usage.shared.js";
 import type { ProviderUsageSnapshot } from "./provider-usage.types.js";

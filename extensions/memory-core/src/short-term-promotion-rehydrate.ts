@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import { sliceUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { sliceUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { resolveShortTermSourcePathCandidates } from "./short-term-promotion-record.js";
 import type { PromotionCandidate } from "./short-term-promotion-types.js";
 import { normalizeSnippet, SHORT_TERM_BASENAME_RE } from "./short-term-promotion-utils.js";
@@ -263,8 +263,8 @@ function relocateCandidateRange(
   };
 }
 
-const DREAMING_FENCE_START_RE = /<!--\s*openclaw:dreaming:[a-z][a-z0-9-]*:start\s*-->/i;
-const DREAMING_FENCE_END_RE = /<!--\s*openclaw:dreaming:[a-z][a-z0-9-]*:end\s*-->/i;
+const DREAMING_FENCE_START_RE = /<!--\s*afora:dreaming:[a-z][a-z0-9-]*:start\s*-->/i;
+const DREAMING_FENCE_END_RE = /<!--\s*afora:dreaming:[a-z][a-z0-9-]*:end\s*-->/i;
 
 function lineRangeOverlapsDreamingFence(
   lines: string[],
@@ -284,7 +284,7 @@ function lineRangeOverlapsDreamingFence(
     const isEnd = DREAMING_FENCE_END_RE.test(line);
     if (isStart || isEnd) {
       // The marker line itself is managed-block content. A relocated range
-      // that includes a `<!-- openclaw:dreaming:*:start/end -->` marker would
+      // that includes a `<!-- afora:dreaming:*:start/end -->` marker would
       // build its snippet from raw lines that contain that marker text and
       // leak it into MEMORY.md alongside any adjacent fenced content captured
       // by the same window. (#80613)
@@ -323,7 +323,7 @@ export async function rehydratePromotionCandidate(
       continue;
     }
     // Managed dreaming blocks in daily memory files are scratchwork, not durable
-    // content. If rehydration lands inside an openclaw:dreaming fence (for example
+    // content. If rehydration lands inside an afora:dreaming fence (for example
     // because file edits shifted lines between ranking and apply), refuse the
     // candidate so dream artifacts cannot be promoted into MEMORY.md.
     if (lineRangeOverlapsDreamingFence(lines, relocated.startLine, relocated.endLine)) {

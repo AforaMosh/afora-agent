@@ -1,5 +1,5 @@
 ---
-summary: "Adds GitHub Copilot model provider support to OpenClaw."
+summary: "Adds GitHub Copilot model provider support to Afora."
 read_when:
   - You are installing, configuring, or auditing the github-copilot plugin
 title: "GitHub Copilot plugin"
@@ -7,12 +7,12 @@ title: "GitHub Copilot plugin"
 
 # GitHub Copilot plugin
 
-Adds GitHub Copilot model provider support to OpenClaw.
+Adds GitHub Copilot model provider support to Afora.
 
 ## Distribution
 
-- Package: `@openclaw/github-copilot-provider`
-- Install route: included in OpenClaw
+- Package: `@afora/github-copilot-provider`
+- Install route: included in Afora
 
 ## Surface
 

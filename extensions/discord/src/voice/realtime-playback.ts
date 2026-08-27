@@ -1,14 +1,14 @@
 import { PassThrough, pipeline } from "node:stream";
-import type { DiscordAccountConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { DiscordAccountConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   resolveRealtimeVoiceBargeIn,
   type RealtimeVoiceActivationNameTranscriptResult,
   type RealtimeVoiceBridgeEvent,
   type RealtimeVoiceBridgeSession,
   type RealtimeVoiceSessionHarness,
-} from "openclaw/plugin-sdk/realtime-voice";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
-import { formatErrorMessage } from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/realtime-voice";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/runtime-env";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/ssrf-runtime";
 import {
   createDiscordOpusEncodeStream,
   convertRealtimePcm24kMonoToDiscordPcm48kStereo,

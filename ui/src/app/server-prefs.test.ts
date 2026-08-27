@@ -155,7 +155,7 @@ describe("applyServerUiPrefs", () => {
 
     pushServerUiPrefs(client, { themeMode: "dark" });
     await vi.waitFor(() =>
-      expect(localStorage.getItem(`openclaw.control.serverPrefs.pending.v1:${scope}`)).toBeNull(),
+      expect(localStorage.getItem(`afora.control.serverPrefs.pending.v1:${scope}`)).toBeNull(),
     );
 
     expect(applyServerUiPrefs(oldSnapshot, { scope, onApplied })).toBe(false);
@@ -172,7 +172,7 @@ describe("applyServerUiPrefs", () => {
     const client = createServerPrefsWriter(request, scope);
     pushServerUiPrefs(client, { themeMode: "dark" });
     await vi.waitFor(() =>
-      expect(localStorage.getItem(`openclaw.control.serverPrefs.pending.v1:${scope}`)).toBeNull(),
+      expect(localStorage.getItem(`afora.control.serverPrefs.pending.v1:${scope}`)).toBeNull(),
     );
 
     // A new post-bump snapshot object represents a genuine foreign restore and is LWW-correct.
@@ -189,7 +189,7 @@ describe("applyServerUiPrefs", () => {
     expect(applyServerUiPrefs(snapshot, { scope, onApplied })).toBe(true);
     patchSettings({ themeMode: "light" });
     localStorage.setItem(
-      `openclaw.control.serverPrefs.v1:${scope}`,
+      `afora.control.serverPrefs.v1:${scope}`,
       JSON.stringify({ themeMode: "light" }),
     );
     expect(applyServerUiPrefs(snapshot, { scope, onApplied })).toBe(false);
@@ -410,7 +410,7 @@ describe("clearable pref removal from the server", () => {
     });
     expect(reset.chatSendShortcut).toBe("enter");
     const persisted = JSON.parse(
-      localStorage.getItem(`openclaw.control.settings.v1:${reset.gatewayUrl}`) ?? "{}",
+      localStorage.getItem(`afora.control.settings.v1:${reset.gatewayUrl}`) ?? "{}",
     ) as Record<string, unknown>;
     expect(Object.hasOwn(persisted, "chatSendShortcut")).toBe(false);
   });
@@ -426,8 +426,8 @@ describe("pushServerUiPrefs", () => {
     });
     return { promise, reject, resolve };
   };
-  const pendingKey = (scope: string) => `openclaw.control.serverPrefs.pending.v1:${scope}`;
-  const lastSeenKey = (scope: string) => `openclaw.control.serverPrefs.v1:${scope}`;
+  const pendingKey = (scope: string) => `afora.control.serverPrefs.pending.v1:${scope}`;
+  const lastSeenKey = (scope: string) => `afora.control.serverPrefs.v1:${scope}`;
   const readPending = (scope: string) =>
     JSON.parse(localStorage.getItem(pendingKey(scope)) ?? "{}") as Record<string, unknown>;
   const createClient = createServerPrefsWriter;

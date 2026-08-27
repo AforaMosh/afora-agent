@@ -232,7 +232,7 @@ suite.define(() => {
       await expect
         .poll(() =>
           page
-            .locator("openclaw-chat-pane")
+            .locator("afora-chat-pane")
             .evaluate(
               (pane) =>
                 (pane as HTMLElement & { taskSuggestions?: unknown[] }).taskSuggestions?.length ??

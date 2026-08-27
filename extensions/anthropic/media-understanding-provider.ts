@@ -6,7 +6,7 @@ import {
   describeImageWithModel,
   describeImagesWithModel,
   type MediaUnderstandingProvider,
-} from "openclaw/plugin-sdk/media-understanding";
+} from "afora-agent/plugin-sdk/media-understanding";
 
 /** Media-understanding provider for Anthropic Claude models. */
 export const anthropicMediaUnderstandingProvider: MediaUnderstandingProvider = {

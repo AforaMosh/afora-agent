@@ -1,6 +1,6 @@
 /** Tests Code Mode restart-safe replay. */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setPluginToolMeta } from "../plugins/tools.js";
 import { applyCodeModeCatalog } from "./code-mode.js";

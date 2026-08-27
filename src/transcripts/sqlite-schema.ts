@@ -1,10 +1,10 @@
 // Additive meeting-transcript schema used by the feature's one-time lazy ensure.
 import type { DatabaseSync } from "node:sqlite";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
 
 const ensuredDatabases = new WeakSet<DatabaseSync>();
 const MEETING_TRANSCRIPTS_SCHEMA_SQL = `
@@ -72,12 +72,12 @@ CREATE TABLE IF NOT EXISTS meeting_transcript_summaries (
 ) STRICT;
 `;
 
-export function ensureMeetingTranscriptsSchema(options: OpenClawStateDatabaseOptions = {}): void {
-  const database = openOpenClawStateDatabase(options);
+export function ensureMeetingTranscriptsSchema(options: AforaStateDatabaseOptions = {}): void {
+  const database = openAforaStateDatabase(options);
   if (ensuredDatabases.has(database.db)) {
     return;
   }
-  runOpenClawStateWriteTransaction(({ db }) => db.exec(MEETING_TRANSCRIPTS_SCHEMA_SQL), options, {
+  runAforaStateWriteTransaction(({ db }) => db.exec(MEETING_TRANSCRIPTS_SCHEMA_SQL), options, {
     operationLabel: "meeting-transcripts.schema.ensure",
   });
   ensuredDatabases.add(database.db);

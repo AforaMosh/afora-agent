@@ -1,6 +1,6 @@
 // Outbound bridge tests cover channel message handoff from core to outbound adapters.
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { createChannelMessageAdapterFromOutbound } from "./outbound-bridge.js";
 import type {
   ChannelMessageSendPayloadContext,
@@ -16,7 +16,7 @@ type ChannelMessageOutboundBridgeResult = Awaited<
   ReturnType<NonNullable<OutboundBridgeAdapter["sendText"]>>
 >;
 
-const cfg = {} as OpenClawConfig;
+const cfg = {} as AforaConfig;
 
 function requireFirstCallArg(mock: {
   mock: { calls: readonly unknown[][] };

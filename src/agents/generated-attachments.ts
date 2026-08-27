@@ -1,9 +1,9 @@
 /**
  * Formats generated attachment references for agent-visible output.
  */
-import { basenameFromAnyPath } from "@openclaw/media-core/file-name";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { basenameFromAnyPath } from "@afora/media-core/file-name";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { sanitizeForPromptLiteral } from "./sanitize-for-prompt.js";
 
 // Shared helpers for generated media/file attachments returned by tools or

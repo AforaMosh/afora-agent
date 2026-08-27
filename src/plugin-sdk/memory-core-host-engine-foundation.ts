@@ -13,7 +13,7 @@ export {
   resolveMemorySearchSyncConfig,
 } from "../agents/memory-search.js";
 export type { ResolvedMemorySearchConfig } from "../agents/memory-search.js";
-export type { OpenClawConfig } from "../config/config.js";
+export type { AforaConfig } from "../config/config.js";
 export { resolveStateDir } from "../config/paths.js";
 export { resolveSessionTranscriptsDirForAgent } from "../config/sessions/paths.js";
 

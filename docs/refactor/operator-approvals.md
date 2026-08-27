@@ -9,7 +9,7 @@ title: "Multi-surface operator approvals"
 
 # Multi-surface operator approvals
 
-This design tracks [#103505](https://github.com/openclaw/openclaw/issues/103505). It replaces process-local approval authority with one Gateway-owned, SQLite-backed lifecycle. Every Gateway-owned exec or plugin/tool approval gets one stable ID, one authenticated Control UI route, atomic first-answer-wins resolution, and operator-only projections to its source and ancestor session streams.
+This design tracks [#103505](https://github.com/AforaMosh/afora-agent/issues/103505). It replaces process-local approval authority with one Gateway-owned, SQLite-backed lifecycle. Every Gateway-owned exec or plugin/tool approval gets one stable ID, one authenticated Control UI route, atomic first-answer-wins resolution, and operator-only projections to its source and ancestor session streams.
 
 Inline actions and deep links coexist. There is no approval-mode toggle.
 
@@ -51,7 +51,7 @@ This table records the implementation state when #103505 was opened. The rollout
 | Telegram          | `extensions/telegram/src/approval-handler.runtime.ts`, `extensions/telegram/src/button-types.ts`                                                                | The renderer parses command text to recognize approval semantics before producing private callback data.                                                                                     |
 | Control UI        | `ui/src/app/exec-approval.ts`, `ui/src/app/overlays.ts`, `ui/src/components/exec-approval.ts`                                                                   | Approval UI is a global modal. `ui/src/app-route-paths.ts` and `ui/src/app-routes.ts` use exact routes and rewrite unknown paths to Chat.                                                    |
 | Session ownership | `src/agents/subagents/registry/subagent-registry.types.ts`, `src/agents/subagents/registry/subagent-registry-read.ts`, `src/config/sessions/types.ts`           | Controller, requester, explicit parent, and legacy spawn ownership exist, but approval events are not projected to those session streams.                                                    |
-| Shared state      | `src/state/openclaw-state-schema.sql`, `src/state/openclaw-state-db.ts`                                                                                         | Existing immediate transactions and Kysely conditional updates support durable compare-and-set in `state/openclaw.sqlite`.                                                                   |
+| Shared state      | `src/state/afora-state-schema.sql`, `src/state/afora-state-db.ts`                                                                                         | Existing immediate transactions and Kysely conditional updates support durable compare-and-set in `state/afora.sqlite`.                                                                   |
 
 Representative current tests include `src/gateway/exec-approval-manager.test.ts`, `src/gateway/server-methods/approval-shared.test.ts`, `src/agents/bash-tools.exec-gateway-approval.e2e.test.ts`, `extensions/telegram/src/approval-handler.runtime.test.ts`, and `ui/src/e2e/approval-flow.e2e.test.ts`.
 
@@ -65,7 +65,7 @@ Omnigent provides useful UX and failure semantics:
 - [`sessions.py`](https://github.com/omnigent-ai/omnigent/blob/46e3cd9754c3b8567f7b09f4d19b6249dabe0e80/omnigent/server/routes/sessions.py) contains the server-side native harness gate and ancestor request/resolution projection.
 - [`ApprovePage.tsx`](https://github.com/omnigent-ai/omnigent/blob/46e3cd9754c3b8567f7b09f4d19b6249dabe0e80/web/src/pages/ApprovePage.tsx) provides the standalone mobile approval page.
 
-Do not copy its storage claim uncritically. Current active pending state is process-local in [`_elicitation_registry.py`](https://github.com/omnigent-ai/omnigent/blob/46e3cd9754c3b8567f7b09f4d19b6249dabe0e80/omnigent/server/_elicitation_registry.py), and the unused pending table is removed by [`e3b1f2a4c9d7_drop_pending_tool_calls_table.py`](https://github.com/omnigent-ai/omnigent/blob/46e3cd9754c3b8567f7b09f4d19b6249dabe0e80/omnigent/db/migrations/versions/e3b1f2a4c9d7_drop_pending_tool_calls_table.py). OpenClaw deliberately goes further: SQLite is authoritative and every terminal transition is a database compare-and-set.
+Do not copy its storage claim uncritically. Current active pending state is process-local in [`_elicitation_registry.py`](https://github.com/omnigent-ai/omnigent/blob/46e3cd9754c3b8567f7b09f4d19b6249dabe0e80/omnigent/server/_elicitation_registry.py), and the unused pending table is removed by [`e3b1f2a4c9d7_drop_pending_tool_calls_table.py`](https://github.com/omnigent-ai/omnigent/blob/46e3cd9754c3b8567f7b09f4d19b6249dabe0e80/omnigent/db/migrations/versions/e3b1f2a4c9d7_drop_pending_tool_calls_table.py). Afora deliberately goes further: SQLite is authoritative and every terminal transition is a database compare-and-set.
 
 ## Architecture and ownership
 

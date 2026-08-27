@@ -1,5 +1,5 @@
-import type { GatewayRequestHandlerOptions } from "openclaw/plugin-sdk/gateway-runtime";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
+import type { GatewayRequestHandlerOptions } from "afora-agent/plugin-sdk/gateway-runtime";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
 import { expect, it, vi } from "vitest";
 import { registerSessionBackfillGatewayMethods } from "./session-backfill-gateway.js";
 
@@ -38,7 +38,7 @@ it("loads session backfill execution only for the first valid request", async ()
     ) {
       methods.set(method, handler);
     },
-  } as unknown as OpenClawPluginApi;
+  } as unknown as AforaPluginApi;
 
   registerSessionBackfillGatewayMethods(api);
   expect(backfillModule.loadCount).toBe(0);

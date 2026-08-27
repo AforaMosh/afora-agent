@@ -1,9 +1,9 @@
 // Matrix tests cover current subagent delivery and cleanup hooks.
-import type { OpenClawPluginApi as MatrixEntryPluginApi } from "openclaw/plugin-sdk/channel-entry-contract";
+import type { AforaPluginApi as MatrixEntryPluginApi } from "afora-agent/plugin-sdk/channel-entry-contract";
 import {
   getRequiredHookHandler,
   registerHookHandlersForTest,
-} from "openclaw/plugin-sdk/channel-test-helpers";
+} from "afora-agent/plugin-sdk/channel-test-helpers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { registerMatrixSubagentHooks } from "../../subagent-hooks-api.js";
 
@@ -13,7 +13,7 @@ const listAllBindingsMock = vi.hoisted(() => vi.fn((): any[] => []));
 const listBindingsForAccountMock = vi.hoisted(() => vi.fn((): any[] => []));
 const removeBindingRecordMock = vi.hoisted(() => vi.fn(() => false));
 
-vi.mock("openclaw/plugin-sdk/conversation-binding-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/conversation-binding-runtime", () => ({
   getSessionBindingService: () => ({ unbind: unbindMock }),
 }));
 

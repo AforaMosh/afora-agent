@@ -2,7 +2,7 @@
  * MCP client transport factory.
  *
  * This module turns normalized MCP server config into stdio, SSE, or
- * streamable-HTTP SDK transports with OpenClaw auth, redirect, and logging rules.
+ * streamable-HTTP SDK transports with Afora auth, redirect, and logging rules.
  */
 import {
   SSEClientTransport,
@@ -10,8 +10,8 @@ import {
 } from "@modelcontextprotocol/sdk/client/sse.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { FetchLike, Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import { logDebug } from "../logger.js";
 import type { SessionMcpRequesterScope } from "./agent-bundle-mcp-types.js";
 import { resolveMcpAuthProfileId, withMcpAuthProfileBearer } from "./mcp-auth-profile.js";
@@ -22,7 +22,7 @@ import {
 } from "./mcp-http-fetch.js";
 import { withMcpOAuthBearer } from "./mcp-oauth-fetch.js";
 import { operatorMcpOAuthIdentity, requesterMcpOAuthIdentity } from "./mcp-oauth-identity.js";
-import { OpenClawStdioClientTransport } from "./mcp-stdio-transport.js";
+import { AforaStdioClientTransport } from "./mcp-stdio-transport.js";
 import { resolveMcpTransportConfig } from "./mcp-transport-config.js";
 
 type ResolvedMcpTransport = {
@@ -35,7 +35,7 @@ type ResolvedMcpTransport = {
   detachStderr?: () => void;
 };
 
-function attachStderrLogging(serverName: string, transport: OpenClawStdioClientTransport) {
+function attachStderrLogging(serverName: string, transport: AforaStdioClientTransport) {
   const stderr = transport.stderr;
   if (!stderr || typeof stderr.on !== "function") {
     return undefined;
@@ -94,7 +94,7 @@ export function resolveMcpTransport(
   serverName: string,
   rawServer: unknown,
   options?: {
-    cfg?: OpenClawConfig;
+    cfg?: AforaConfig;
     agentDir?: string;
     prepareDataDir?: string;
     requesterScope?: SessionMcpRequesterScope;
@@ -105,7 +105,7 @@ export function resolveMcpTransport(
     return null;
   }
   if (resolved.kind === "stdio") {
-    const transport = new OpenClawStdioClientTransport({
+    const transport = new AforaStdioClientTransport({
       command: resolved.command,
       args: resolved.args,
       env: resolved.env,

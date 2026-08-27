@@ -24,7 +24,7 @@ function officialEntry(params: {
   return {
     id: params.id,
     description: params.description,
-    openclaw: {
+    afora: {
       plugin: { id: params.id, label: params.label },
       ...(params.kind === "channel" ? { channel: { id: params.id, label: params.label } } : {}),
       ...(params.kind === "provider" ? { providers: [{ id: params.id, name: params.label }] } : {}),

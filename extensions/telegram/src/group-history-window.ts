@@ -1,5 +1,5 @@
 // Telegram plugin module implements group history window behavior.
-import { createChannelHistoryWindow, type HistoryEntry } from "openclaw/plugin-sdk/reply-history";
+import { createChannelHistoryWindow, type HistoryEntry } from "afora-agent/plugin-sdk/reply-history";
 import type {
   TelegramAmbientTranscriptWatermark,
   TelegramPromptContextEntry,
@@ -15,7 +15,7 @@ export function buildTelegramSelfSenderName(
     configuredName?.trim() ||
     telegramIdentity?.first_name?.trim() ||
     telegramIdentity?.username?.trim() ||
-    "OpenClaw";
+    "Afora";
   return `${name}${TELEGRAM_SELF_SENDER_SUFFIX}`;
 }
 

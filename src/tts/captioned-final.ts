@@ -4,14 +4,14 @@ import {
   type ReplyPayload,
 } from "../auto-reply/reply-payload.js";
 import { resolveChannelTtsVoiceDelivery } from "../channels/plugins/tts-capabilities.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { TtsAutoMode } from "../config/types.tts.js";
 import { createTtsDirectiveTextStreamCleaner } from "./directives.js";
 import { resolveStatusTtsSnapshot } from "./status-config.js";
 import { resolveConfiguredTtsMode } from "./tts-config.js";
 
 export function shouldDeferFinalTtsText(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   ttsAuto?: TtsAutoMode;
   agentId?: string;
   channelId?: string;

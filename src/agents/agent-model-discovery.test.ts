@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { clearPluginMetadataLifecycleCaches } from "../plugins/plugin-metadata-lifecycle.js";
 import {
   discoverAuthStorage,
@@ -16,7 +16,7 @@ import {
 // authored models.json api values, making these assertions machine-dependent.
 // The ambient plugin metadata snapshot is cleared for the same reason.
 beforeEach(() => {
-  vi.stubEnv("OPENCLAW_DISABLE_BUNDLED_PLUGINS", "1");
+  vi.stubEnv("AFORA_DISABLE_BUNDLED_PLUGINS", "1");
   clearPluginMetadataLifecycleCaches();
 });
 
@@ -40,8 +40,8 @@ function writeModelsJson(agentDir: string, modelId: string): void {
 
 describe("discoverModels", () => {
   it("uses a directory-independent source label for lifecycle-captured catalogs", () => {
-    const firstAgentDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-agent-models-first-"));
-    const secondAgentDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-agent-models-second-"));
+    const firstAgentDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-agent-models-first-"));
+    const secondAgentDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-agent-models-second-"));
     try {
       const createRegistry = (agentDir: string) =>
         discoverModelsFromCapturedSources(
@@ -67,7 +67,7 @@ describe("discoverModels", () => {
   });
 
   it("clears cached find results when the agent model registry refreshes", () => {
-    const agentDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-agent-models-"));
+    const agentDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-agent-models-"));
     writeModelsJson(agentDir, "old-model");
     const authStorage = discoverAuthStorage(agentDir, { skipCredentials: true });
     const registry = discoverModels(authStorage, agentDir, { normalizeModels: false });
@@ -82,7 +82,7 @@ describe("discoverModels", () => {
   });
 
   it("preserves authored OpenAI Completions while normalizing models.json entries", () => {
-    const agentDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-agent-models-"));
+    const agentDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-agent-models-"));
     fs.writeFileSync(
       path.join(agentDir, "models.json"),
       JSON.stringify({
@@ -118,7 +118,7 @@ describe("discoverModels", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const authStorage = discoverAuthStorage(agentDir, { skipCredentials: true });
     const registry = discoverModels(authStorage, agentDir, { config });
 

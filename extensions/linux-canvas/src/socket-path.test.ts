@@ -8,7 +8,7 @@ import { linuxCanvasSocketExists, watchLinuxCanvasSocket } from "./socket-path.j
 
 const loggerMocks = vi.hoisted(() => ({ warn: vi.fn() }));
 
-vi.mock("openclaw/plugin-sdk/runtime-env", () => ({
+vi.mock("afora-agent/plugin-sdk/runtime-env", () => ({
   createSubsystemLogger: () => loggerMocks,
 }));
 
@@ -26,7 +26,7 @@ describe("Linux Canvas socket availability", () => {
   it.runIf(process.platform === "linux")(
     "requires a live, user-only socket instead of a stale inode or symlink",
     async () => {
-      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-linux-canvas-path-"));
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-linux-canvas-path-"));
       tempDirs.push(dir);
       const socketPath = path.join(dir, "canvas.sock");
       const symlinkPath = path.join(dir, "canvas-link.sock");
@@ -52,7 +52,7 @@ describe("Linux Canvas socket availability", () => {
   );
 
   it("reports synchronous and asynchronous watcher failures before falling back to polling", () => {
-    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-linux-canvas-watch-"));
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "afora-linux-canvas-watch-"));
     tempDirs.push(directory);
     const socketPath = path.join(directory, "canvas.sock");
     const watcher = Object.assign(new EventEmitter(), { close: vi.fn() });

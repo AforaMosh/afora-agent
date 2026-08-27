@@ -1,13 +1,13 @@
 import fs from "node:fs";
 /** Doctor warnings for heartbeat.session values that resolve to missing delivery sessions. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { listAgentEntries, listAgentIds, resolveAgentConfig } from "../agents/agent-scope.js";
 import { canonicalizeMainSessionAlias } from "../config/sessions/main-session.js";
 import { resolveSessionStorePathCore } from "../config/sessions/paths.js";
 import { loadSessionEntryReadOnly } from "../config/sessions/session-accessor.js";
 import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/session-sqlite-target.js";
 import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveHeartbeatIntervalMs } from "../infra/heartbeat-summary.js";
 import { resolveHeartbeatDeliveryTarget } from "../infra/outbound/targets.js";
 import { loadLegacySessionStore } from "../infra/state-migrations.legacy-session-store.js";
@@ -20,17 +20,17 @@ import { isSubagentSessionKey } from "../sessions/session-key-utils.js";
 
 type HeartbeatConfig = AgentDefaultsConfig["heartbeat"];
 
-function hasExplicitHeartbeatAgents(cfg: OpenClawConfig) {
+function hasExplicitHeartbeatAgents(cfg: AforaConfig) {
   return listAgentEntries(cfg).some((entry) => Boolean(entry?.heartbeat));
 }
 
-function resolveHeartbeatConfig(cfg: OpenClawConfig, agentId: string): HeartbeatConfig | undefined {
+function resolveHeartbeatConfig(cfg: AforaConfig, agentId: string): HeartbeatConfig | undefined {
   const defaults = cfg.agents?.defaults?.heartbeat;
   const overrides = resolveAgentConfig(cfg, agentId)?.heartbeat;
   return defaults || overrides ? { ...defaults, ...overrides } : undefined;
 }
 
-function listHeartbeatDoctorAgents(cfg: OpenClawConfig) {
+function listHeartbeatDoctorAgents(cfg: AforaConfig) {
   if (hasExplicitHeartbeatAgents(cfg)) {
     return listAgentEntries(cfg)
       .filter((entry) => entry?.heartbeat)
@@ -55,7 +55,7 @@ function listHeartbeatDoctorAgents(cfg: OpenClawConfig) {
  * Warning only — repair would mean rewriting the config, which is the
  * operator's intent to express.
  */
-export function describeHeartbeatSessionTargetIssues(cfg: OpenClawConfig): string[] {
+export function describeHeartbeatSessionTargetIssues(cfg: AforaConfig): string[] {
   const warnings: string[] = [];
   const sessionScope = cfg.session?.scope ?? "per-sender";
   for (const agentId of listHeartbeatDoctorAgents(cfg)) {

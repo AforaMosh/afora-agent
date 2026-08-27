@@ -1,7 +1,7 @@
 import { resolveStaticSessionMcpServerNames } from "../../agents/agent-bundle-mcp-runtime-config.js";
 import { resolveCodexMcpToolOverridesForAgent } from "../../agents/cli-runner/bundle-mcp-codex.js";
 /** Delivery planning, prompt policy, and delivery trace construction for cron runs. */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type {
   SourceDeliveryOutcome,
   SourceDeliveryVisibleDelivery,
@@ -150,7 +150,7 @@ export function buildCronDeliveryTrace(params: {
 }
 
 export async function createCronToolsAllowPreflightDiagnostics(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   jobId: string;
   provider: string;
   model: string;
@@ -181,7 +181,7 @@ export async function createCronToolsAllowPreflightDiagnostics(params: {
     ) {
       return createCronRunDiagnosticsFromError(
         "cron-preflight",
-        `This automation's inherited tool cap predates final configured-MCP capture, so it continues with its stored finite tools and may omit MCP capabilities. Reauthorize in place with an exact explicit cap: openclaw automations edit ${params.jobId} --tools <tool,...>.`,
+        `This automation's inherited tool cap predates final configured-MCP capture, so it continues with its stored finite tools and may omit MCP capabilities. Reauthorize in place with an exact explicit cap: afora automations edit ${params.jobId} --tools <tool,...>.`,
         { severity: "warn" },
       );
     }
@@ -233,7 +233,7 @@ export async function createCronToolsAllowPreflightDiagnostics(params: {
 
 /** Resolves the delivery plan and concrete target for one isolated cron run. */
 export async function resolveCronDeliveryContext(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   job: CronJob;
   agentId: string;
 }) {

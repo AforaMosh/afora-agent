@@ -22,7 +22,7 @@ export function createBundleMcpTempHarness() {
 }
 
 export function resolveBundlePluginRoot(homeDir: string, pluginId: string) {
-  return path.join(homeDir, ".openclaw", "extensions", pluginId);
+  return path.join(homeDir, ".afora", "extensions", pluginId);
 }
 
 export async function writeBundleTextFiles(
@@ -98,8 +98,8 @@ export async function withBundleHomeEnv<T>(
     {
       HOME: homeDir,
       USERPROFILE: homeDir,
-      OPENCLAW_HOME: undefined,
-      OPENCLAW_STATE_DIR: undefined,
+      AFORA_HOME: undefined,
+      AFORA_STATE_DIR: undefined,
     },
     () => run({ homeDir, workspaceDir }),
   );

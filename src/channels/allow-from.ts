@@ -3,7 +3,7 @@
  *
  * Merges DM/group allowlists and checks normalized sender entries.
  */
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 
 /**
  * Prefix that marks an allowFrom entry as an access-group reference instead of a sender id.

@@ -1,7 +1,7 @@
 // Qa Channel plugin module implements gateway behavior.
-import type { PluginRuntime } from "openclaw/plugin-sdk/channel-core";
-import { buildChannelInboundEventContext } from "openclaw/plugin-sdk/channel-inbound";
-import { channelReadyPatch, channelStoppedPatch } from "openclaw/plugin-sdk/gateway-runtime";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/channel-core";
+import { buildChannelInboundEventContext } from "afora-agent/plugin-sdk/channel-inbound";
+import { channelReadyPatch, channelStoppedPatch } from "afora-agent/plugin-sdk/gateway-runtime";
 import { pollQaBus } from "./bus-client.js";
 import { handleQaInbound } from "./inbound.js";
 import type { ChannelGatewayContext } from "./runtime-api.js";

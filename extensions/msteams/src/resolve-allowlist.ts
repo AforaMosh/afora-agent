@@ -1,6 +1,6 @@
 // Msteams plugin module implements resolve allowlist behavior.
-import { mapAllowlistResolutionInputs } from "openclaw/plugin-sdk/allow-from";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { mapAllowlistResolutionInputs } from "afora-agent/plugin-sdk/allow-from";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { MSTeamsConfig } from "../runtime-api.js";
 import { findGraphUsersByExactIdentity } from "./graph-users.js";
 import {

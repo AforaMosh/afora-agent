@@ -1,11 +1,11 @@
 // Signal tests cover doctor contract api plugin behavior.
-import { expectDefined } from "@openclaw/normalization-core";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import { expectDefined } from "@afora/normalization-core";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it, vi } from "vitest";
 import { legacyConfigRules, normalizeCompatibilityConfig } from "./doctor-contract-api.js";
 import { migrateLegacySignalTransportConfig } from "./src/config-compat.js";
 
-function signalConfig(entry: Record<string, unknown>): OpenClawConfig {
+function signalConfig(entry: Record<string, unknown>): AforaConfig {
   return { channels: { signal: entry } } as never;
 }
 
@@ -315,7 +315,7 @@ describe("signal transport compatibility", () => {
     expect(result.config).toBe(cfg);
     expect(result.changes).toEqual([]);
     expect(result.warnings).toEqual([
-      "- channels.signal: legacy container transport requires an account number; add channels.signal.account (or the relevant channels.signal.accounts.*.account) and rerun openclaw doctor --fix.",
+      "- channels.signal: legacy container transport requires an account number; add channels.signal.account (or the relevant channels.signal.accounts.*.account) and rerun afora doctor --fix.",
     ]);
   });
 
@@ -503,7 +503,7 @@ describe("signal transport compatibility", () => {
     expect(result.config).toBe(cfg);
     expect(result.changes).toEqual([]);
     expect(result.warnings).toEqual([
-      "- channels.signal: legacy container transport requires an account number; add channels.signal.account (or the relevant channels.signal.accounts.*.account) and rerun openclaw doctor --fix.",
+      "- channels.signal: legacy container transport requires an account number; add channels.signal.account (or the relevant channels.signal.accounts.*.account) and rerun afora doctor --fix.",
     ]);
   });
 
@@ -672,7 +672,7 @@ describe("signal transport compatibility", () => {
     expect(result.config).toBe(cfg);
     expect(result.changes).toEqual([]);
     expect(result.warnings).toEqual([
-      "- channels.signal: legacy httpUrl is invalid; keep the current config, correct httpUrl, then run openclaw doctor --fix.",
+      "- channels.signal: legacy httpUrl is invalid; keep the current config, correct httpUrl, then run afora doctor --fix.",
     ]);
   });
 
@@ -687,7 +687,7 @@ describe("signal transport compatibility", () => {
     expect(result.config).toBe(cfg);
     expect(result.changes).toEqual([]);
     expect(result.warnings).toEqual([
-      "- channels.signal: legacy httpPort must be an integer between 1 and 65535; correct httpPort, then run openclaw doctor --fix.",
+      "- channels.signal: legacy httpPort must be an integer between 1 and 65535; correct httpPort, then run afora doctor --fix.",
     ]);
   });
 
@@ -702,7 +702,7 @@ describe("signal transport compatibility", () => {
     expect(result.config).toBe(cfg);
     expect(result.changes).toEqual([]);
     expect(result.warnings).toEqual([
-      "- channels.signal: legacy httpPort must be an integer between 1 and 65535; correct httpPort, then run openclaw doctor --fix.",
+      "- channels.signal: legacy httpPort must be an integer between 1 and 65535; correct httpPort, then run afora doctor --fix.",
     ]);
   });
 
@@ -721,7 +721,7 @@ describe("signal transport compatibility", () => {
       expect(result.config).toBe(cfg);
       expect(result.changes).toEqual([]);
       expect(result.warnings).toEqual([
-        "- channels.signal: legacy httpHost is invalid; keep the current config, correct httpHost, then run openclaw doctor --fix.",
+        "- channels.signal: legacy httpHost is invalid; keep the current config, correct httpHost, then run afora doctor --fix.",
       ]);
     },
   );
@@ -803,7 +803,7 @@ describe("signal transport compatibility", () => {
     expect(result.config).toBe(cfg);
     expect(result.changes).toEqual([]);
     expect(result.warnings).toEqual([
-      "- channels.signal: legacy httpUrl is invalid; keep the current config, correct httpUrl, then run openclaw doctor --fix.",
+      "- channels.signal: legacy httpUrl is invalid; keep the current config, correct httpUrl, then run afora doctor --fix.",
     ]);
   });
 
@@ -817,7 +817,7 @@ describe("signal transport compatibility", () => {
     expect(result.config).toBe(cfg);
     expect(result.changes).toEqual([]);
     expect(result.warnings).toEqual([
-      "- channels.signal: legacy auto transport is ambiguous while its endpoint is unavailable; bring the endpoint online and rerun openclaw doctor --fix, or replace the retired fields with an explicit account-owned transport in openclaw.json.",
+      "- channels.signal: legacy auto transport is ambiguous while its endpoint is unavailable; bring the endpoint online and rerun afora doctor --fix, or replace the retired fields with an explicit account-owned transport in afora.json.",
     ]);
   });
 

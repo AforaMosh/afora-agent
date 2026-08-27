@@ -1,5 +1,5 @@
-import { asPositiveSafeInteger } from "@openclaw/normalization-core/number-coercion";
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
+import { asPositiveSafeInteger } from "@afora/normalization-core/number-coercion";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
 import { resolveSessionTranscriptActiveLeafEntryId } from "../../config/sessions/session-accessor.js";
 import {
   dropPreSessionStartAnnouncePairs,
@@ -26,12 +26,12 @@ import {
 import type { loadSessionEntry } from "../session-utils.js";
 
 export function readChatHistoryMessageId(message: unknown): string | undefined {
-  const metadata = asOptionalRecord(asOptionalRecord(message)?.["__openclaw"]);
+  const metadata = asOptionalRecord(asOptionalRecord(message)?.["__afora"]);
   return typeof metadata?.id === "string" ? metadata.id : undefined;
 }
 
 export function readChatHistoryMessageSeq(message: unknown): number | undefined {
-  const metadata = asOptionalRecord(asOptionalRecord(message)?.["__openclaw"]);
+  const metadata = asOptionalRecord(asOptionalRecord(message)?.["__afora"]);
   return asPositiveSafeInteger(metadata?.seq);
 }
 
@@ -81,7 +81,7 @@ export function enrichChatHistoryCompactionMarkers(
   let changed = false;
   const enriched = messages.map((message) => {
     const record = asOptionalRecord(message);
-    const metadata = asOptionalRecord(record?.["__openclaw"]);
+    const metadata = asOptionalRecord(record?.["__afora"]);
     if (metadata?.kind !== "compaction" || typeof metadata.id !== "string") {
       return message;
     }
@@ -100,7 +100,7 @@ export function enrichChatHistoryCompactionMarkers(
     changed = true;
     return {
       ...record,
-      __openclaw: {
+      __afora: {
         ...metadata,
         ...(typeof tokensBefore === "number" && Number.isFinite(tokensBefore)
           ? { tokensBefore }

@@ -1,10 +1,10 @@
 // Signal plugin module tracks native-reply quote authors for durable sends.
-import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/account-id";
-import type { MediaPlaceholderTextFact } from "openclaw/plugin-sdk/channel-inbound";
+import { DEFAULT_ACCOUNT_ID } from "afora-agent/plugin-sdk/account-id";
+import type { MediaPlaceholderTextFact } from "afora-agent/plugin-sdk/channel-inbound";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { normalizeSignalMessagingTarget } from "./normalize.js";
 import { signalReplyAuthorState, type SignalReplyContextRecord } from "./reply-authors-state.js";
 import { getOptionalSignalRuntime } from "./runtime.js";

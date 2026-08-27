@@ -4,7 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { replaceSessionEntry } from "../../config/sessions/session-accessor.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { setPluginToolMeta } from "../../plugins/tools.js";
 import { resolveConversationCapabilityProfile } from "../conversation-capability-profile.js";
 import type { AnyAgentTool } from "../tools/common.js";
@@ -31,7 +31,7 @@ function makeTool(name: string): AnyAgentTool {
 function applyFinalPolicy(
   params: {
     bundledTools: AnyAgentTool[];
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     warn?: (message: string) => void;
   } & Pick<
     ConversationCapabilityProfileParams,
@@ -86,7 +86,7 @@ describe("applyFinalEffectiveToolPolicy", () => {
     // so parsing and lookup match production policy application.
     const agentId = `bundled-inherited-allow-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const sessionKey = `agent:${agentId}:subagent:limited`;
-    const storePath = createSessionStorePath("openclaw-bundled-inherited-allow", agentId);
+    const storePath = createSessionStorePath("afora-bundled-inherited-allow", agentId);
     await writeSessionEntries(storePath, {
       [sessionKey]: {
         sessionId: "limited-session",
@@ -115,7 +115,7 @@ describe("applyFinalEffectiveToolPolicy", () => {
   it("honors configured plugin allow entries alongside inherited bundled tool allows", async () => {
     const agentId = `bundled-plugin-allow-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const sessionKey = `agent:${agentId}:subagent:limited`;
-    const storePath = createSessionStorePath("openclaw-bundled-plugin-allow", agentId);
+    const storePath = createSessionStorePath("afora-bundled-plugin-allow", agentId);
     await writeSessionEntries(storePath, {
       [sessionKey]: {
         sessionId: "limited-session",

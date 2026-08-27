@@ -235,8 +235,8 @@ describe("resolveSandboxFsPathWithMounts", () => {
   });
 
   it("omits binds that collide with protected skill mounts", () => {
-    const workspaceDir = tempDirs.make("openclaw-fs-mounts-");
-    const customRoot = tempDirs.make("openclaw-fs-mounts-");
+    const workspaceDir = tempDirs.make("afora-fs-mounts-");
+    const customRoot = tempDirs.make("afora-fs-mounts-");
     fs.mkdirSync(path.join(workspaceDir, "skills", "demo"), { recursive: true });
     const sandbox = createSandbox({
       workspaceDir,

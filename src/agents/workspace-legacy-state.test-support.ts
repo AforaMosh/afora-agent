@@ -6,7 +6,7 @@ type WorkspaceLegacyStateTestApi = {
 
 function getTestApi(): WorkspaceLegacyStateTestApi {
   const api = (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.workspaceLegacyStateTestApi")
+    Symbol.for("afora.workspaceLegacyStateTestApi")
   ];
   if (!api) {
     throw new Error("workspace legacy state test API is unavailable");

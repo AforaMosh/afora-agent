@@ -1,6 +1,6 @@
 // Slack tests cover listener-scoped Enterprise Grid delivery through the canonical sender.
 import type { WebClient } from "@slack/web-api";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { registerSlackInstallationState } from "./installation-identity-state.js";
 import {
@@ -18,10 +18,10 @@ const loadOutboundMediaFromUrl = vi.hoisted(() =>
 const fetchWithSsrFGuard = vi.hoisted(() => vi.fn());
 const getSlackWriteClientMock = vi.hoisted(() => vi.fn());
 
-vi.mock("openclaw/plugin-sdk/fetch-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/fetch-runtime", () => ({
   withTrustedEnvProxyGuardedFetchMode: (value: unknown) => value,
 }));
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({ fetchWithSsrFGuard }));
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ({ fetchWithSsrFGuard }));
 vi.mock("./runtime-api.js", async () => {
   const actual = await vi.importActual<typeof import("./runtime-api.js")>("./runtime-api.js");
   return { ...actual, loadOutboundMediaFromUrl };
@@ -42,7 +42,7 @@ type EnterpriseTestClient = WebClient & {
   };
 };
 
-const ENTERPRISE_CFG: OpenClawConfig = {
+const ENTERPRISE_CFG: AforaConfig = {
   channels: {
     slack: {},
   },

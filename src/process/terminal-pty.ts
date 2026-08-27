@@ -31,7 +31,7 @@ type TerminalPtyHandle = {
 };
 
 function resolveTerminalNodeExecutable(env: NodeJS.ProcessEnv): string {
-  // Packaged OpenClaw/Bun hosts cannot interpret npm's JavaScript entrypoint.
+  // Packaged Afora/Bun hosts cannot interpret npm's JavaScript entrypoint.
   // Use the running binary only when it is Node; otherwise require PATH node.exe.
   const candidate =
     path.win32.basename(process.execPath).toLowerCase() === "node.exe"

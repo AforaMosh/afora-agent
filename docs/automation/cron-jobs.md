@@ -2,22 +2,22 @@
 summary: "Automations: scheduled jobs, webhooks, and Gmail PubSub triggers for the Gateway scheduler"
 read_when:
   - Scheduling background jobs or wakeups
-  - Wiring external triggers (webhooks, Gmail) into OpenClaw
+  - Wiring external triggers (webhooks, Gmail) into Afora
   - Deciding between heartbeat and automations for scheduled work
 title: "Automations"
 sidebarTitle: "Automations"
 ---
 
-Automations are OpenClaw's built-in scheduler. The scheduler persists jobs, wakes the agent at the right time, and can deliver output to a chat channel, a webhook, or nowhere.
+Automations are Afora's built-in scheduler. The scheduler persists jobs, wakes the agent at the right time, and can deliver output to a chat channel, a webhook, or nowhere.
 
-Manage automations with the `openclaw automations` CLI; `openclaw cron` remains an alias for the same commands.
+Manage automations with the `afora automations` CLI; `afora cron` remains an alias for the same commands.
 
 ## Quick start
 
 <Steps>
   <Step title="Add a one-shot reminder">
     ```bash
-    openclaw automations create "2027-02-01T16:00:00Z" \
+    afora automations create "2027-02-01T16:00:00Z" \
       --name "Reminder" \
       --session main \
       --system-event "Reminder: check the automations docs draft" \
@@ -27,14 +27,14 @@ Manage automations with the `openclaw automations` CLI; `openclaw cron` remains 
   </Step>
   <Step title="Check your jobs">
     ```bash
-    openclaw automations list
-    openclaw automations get <job-id>
-    openclaw automations show <job-id>
+    afora automations list
+    afora automations get <job-id>
+    afora automations show <job-id>
     ```
   </Step>
   <Step title="See run history">
     ```bash
-    openclaw automations runs --id <job-id>
+    afora automations runs --id <job-id>
     ```
   </Step>
 </Steps>
@@ -42,18 +42,18 @@ Manage automations with the `openclaw automations` CLI; `openclaw cron` remains 
 ## How automations work
 
 - Automations run **inside the Gateway process**, not inside the model. The Gateway must be running for schedules to fire.
-- Job definitions, runtime state, and run history persist in OpenClaw's shared SQLite state database, so restarts do not lose schedules.
+- Job definitions, runtime state, and run history persist in Afora's shared SQLite state database, so restarts do not lose schedules.
 - Every automation run creates a [background task](/automation/tasks) record.
 - One-shot jobs (`--at`) auto-delete after success by default; pass `--keep-after-run` to keep them.
 - Per-run wall-clock budget: `--timeout-seconds` when set. Otherwise, isolated/detached agent-turn jobs are bounded by the scheduler's own 60-minute watchdog before the underlying agent-turn timeout (`agents.defaults.timeoutSeconds`, default 48 hours) would ever apply; command jobs default to 10 minutes, and script payloads default to 5 minutes.
 - On Gateway startup, overdue isolated agent-turn jobs are rescheduled instead of replayed immediately, keeping model/tool bootstrap work out of the channel-connect window.
-- If you drive `openclaw agent` from system cron or another external scheduler, wrap it with a hard-kill escalation even though the CLI already handles `SIGTERM`/`SIGINT`. Gateway-backed runs ask the Gateway to abort accepted runs; `--local` runs get the same abort signal. For GNU `timeout`, prefer `timeout -k 60 600 openclaw agent ...` over plain `timeout 600 ...` — the `-k` value is the backstop if the process cannot drain in time. For systemd units, use a `SIGTERM` stop signal with a grace window (`TimeoutStopSec`) before the final kill. Reusing a `--run-id` while the original Gateway run is still active reports the duplicate as in-flight instead of starting a second run.
+- If you drive `afora agent` from system cron or another external scheduler, wrap it with a hard-kill escalation even though the CLI already handles `SIGTERM`/`SIGINT`. Gateway-backed runs ask the Gateway to abort accepted runs; `--local` runs get the same abort signal. For GNU `timeout`, prefer `timeout -k 60 600 afora agent ...` over plain `timeout 600 ...` — the `-k` value is the backstop if the process cannot drain in time. For systemd units, use a `SIGTERM` stop signal with a grace window (`TimeoutStopSec`) before the final kill. Reusing a `--run-id` while the original Gateway run is still active reports the duplicate as in-flight instead of starting a second run.
 
 <AccordionGroup>
   <Accordion title="Isolated run hardening">
     - Isolated runs best-effort close tracked browser tabs/processes for their `cron:<jobId>` session on completion, and dispose any bundled MCP runtime instances created for the job through the same shared teardown path used by main-session and custom-session runs. Cleanup failures are ignored so the run result still wins.
     - Isolated runs with the narrow automation self-cleanup grant can read scheduler status, a self-filtered list containing only their own job, and that job's run history, and may remove only their own job.
-    - Isolated runs guard against stale acknowledgement replies: if the first result is only an interim status update (`on it`, `pulling everything together`, and similar hints) and no descendant subagent is still responsible for the final answer, OpenClaw re-prompts once for the actual result before delivery.
+    - Isolated runs guard against stale acknowledgement replies: if the first result is only an interim status update (`on it`, `pulling everything together`, and similar hints) and no descendant subagent is still responsible for the final answer, Afora re-prompts once for the actual result before delivery.
     - Structured execution-denial metadata (including node-host `UNAVAILABLE` wrappers whose nested error starts with `SYSTEM_RUN_DENIED` or `INVALID_REQUEST`) is recognized so a blocked command is not reported as a green run, while ordinary assistant prose is not mistaken for a denial.
     - Run-level agent failures count as job errors even with no reply payload, so model/provider failures increment error counters and trigger failure notifications instead of clearing the job as successful.
     - When a job hits `timeoutSeconds`, the scheduler aborts the run and gives it a short cleanup window. If it does not drain, Gateway-owned cleanup force-clears that run's session ownership before the scheduler records the timeout, so queued chat work is not stuck behind a stale processing session.
@@ -81,9 +81,9 @@ Recurring top-of-hour expressions (minute `0` with a wildcard hour field) are au
 
 ### Heartbeat task migration
 
-Older heartbeat scratch supported a structured `tasks:` block. Run `openclaw doctor --fix` after upgrading to convert each entry into an ordinary editable main-session automation job. Doctor preserves the interval and previous last-run timing, creates the jobs before removing the block, and safely converges the same declaration keys on rerun.
+Older heartbeat scratch supported a structured `tasks:` block. Run `afora doctor --fix` after upgrading to convert each entry into an ordinary editable main-session automation job. Doctor preserves the interval and previous last-run timing, creates the jobs before removing the block, and safely converges the same declaration keys on rerun.
 
-These migrated jobs carry public `systemEvent` payloads, so `openclaw automations list`, `get`, `edit`, and `remove` plus the `automations` agent tool manage them like other jobs (the tool still accepts its legacy `cron` name as a compatibility alias). Their execution uses the guarded heartbeat task wake: active hours, minimum spacing, flood control, and busy retries still apply, while the scheduler owns each task's independent cadence. Jobs due in the same coalescing window can share one heartbeat turn. A scheduled occurrence outside heartbeat active hours is skipped and retried at the job's next occurrence.
+These migrated jobs carry public `systemEvent` payloads, so `afora automations list`, `get`, `edit`, and `remove` plus the `automations` agent tool manage them like other jobs (the tool still accepts its legacy `cron` name as a compatibility alias). Their execution uses the guarded heartbeat task wake: active hours, minimum spacing, flood control, and busy retries still apply, while the scheduler owns each task's independent cadence. Jobs due in the same coalescing window can share one heartbeat turn. A scheduled occurrence outside heartbeat active hours is skipped and retried at the job's next occurrence.
 
 Heartbeat scratch is now monitor prose only. Runtime heartbeats do not parse `tasks:` text as schedules; create new recurring work as automations.
 
@@ -92,7 +92,7 @@ Heartbeat scratch is now monitor prose only. Runtime heartbeats do not parse `ta
 A stream schedule keeps an operator-authored argv command running under the Gateway and fires the job from its stdout and stderr lines. Stream schedules are event-driven, never time-due, and are available by default. Set `cron.triggers.enabled: false` to disable them together with condition-trigger scripts and script payloads. Disabling or removing the job stops the process; Gateway shutdown waits for process-tree teardown. Fast failures restart with the scheduler's built-in error backoff. Five consecutive runs shorter than 60 seconds leave the job in an error state and use the normal failure-alert path; manually re-enable the job to clear the restart cap.
 
 ```bash
-openclaw automations add \
+afora automations add \
   --name "Build event stream" \
   --stream-command '["node","scripts/build-events.mjs"]' \
   --stream-mode match \
@@ -112,7 +112,7 @@ When a stream job also has `trigger.script`, the gate runs once per closed batch
 
 Recurring jobs can set `pacing.min` and/or `pacing.max` to duration strings such as `15m` or `4h`; at least one bound is required. Use `--pacing-min` and `--pacing-max` with `automations add|edit` (`--clear-pacing` removes both bounds).
 
-During an agent-turn run, a paced job can call the `automations` tool with `action: "next_check"` and `in: "30m"`. The proposal applies only to that currently running job and is measured from successful run completion. OpenClaw silently clamps it to the configured bounds.
+During an agent-turn run, a paced job can call the `automations` tool with `action: "next_check"` and `in: "30m"`. The proposal applies only to that currently running job and is measured from successful run completion. Afora silently clamps it to the configured bounds.
 
 Pacing without a proposal leaves the normal schedule unchanged. Failed, timed-out, and skipped runs discard the proposal, so existing retry and error-backoff behavior takes precedence. Manually forcing a recurring job is out-of-band and preserves its pending natural or paced slot. For condition-triggered jobs, the built-in minimum interval remains a lower bound even when a proposal requests an earlier check.
 
@@ -161,7 +161,7 @@ Condition-trigger scripts and `script` payloads run unattended by default with t
 Create a watcher from a local script file (`-` reads the script from stdin):
 
 ```bash
-openclaw automations add \
+afora automations add \
   --name "PR CI watcher" \
   --every 30s \
   --trigger-script ./watch-pr-ci.js \
@@ -180,7 +180,7 @@ Every job carries exactly one payload kind, chosen by flag:
 | Command       | `--command <shell>` or `--command-argv <json>` | A shell/process on the Gateway host, no model call         |
 | Script        | `--script <file\|->`                           | A headless code-mode script using the owning agent's tools |
 
-One additional payload kind, `heartbeat`, is system-owned: the gateway converges one heartbeat monitor job per heartbeat-enabled agent (see [Heartbeat](/gateway/heartbeat)). It appears in `automations list --all` but cannot be created or edited through the CLI or API. Heartbeat config is written through to the persisted monitor schedule at startup, on config reload, or by `openclaw doctor --fix`. When automations are disabled, the monitor does not tick and no fallback heartbeat timer runs.
+One additional payload kind, `heartbeat`, is system-owned: the gateway converges one heartbeat monitor job per heartbeat-enabled agent (see [Heartbeat](/gateway/heartbeat)). It appears in `automations list --all` but cannot be created or edited through the CLI or API. Heartbeat config is written through to the persisted monitor schedule at startup, on config reload, or by `afora doctor --fix`. When automations are disabled, the monitor does not tick and no fallback heartbeat timer runs.
 
 ### Agent-turn options
 
@@ -219,7 +219,7 @@ unrestricted `*` policy; `automations edit --clear-tools` restores that explicit
 policy. Existing jobs that predate an explicit tool policy retain their current behavior
 until their tool policy is explicitly edited or the job is recreated.
 
-`--model` sets the job's primary model; it does not replace a session `/model` override, so configured fallback chains still apply on top of it. An unresolved or disallowed model fails the run with an explicit validation error rather than silently falling back to the default. If a job has `--model` but no explicit or configured fallback list, OpenClaw passes an empty fallback override instead of silently appending the agent primary as a hidden retry target.
+`--model` sets the job's primary model; it does not replace a session `/model` override, so configured fallback chains still apply on top of it. An unresolved or disallowed model fails the run with an explicit validation error rather than silently falling back to the default. If a job has `--model` but no explicit or configured fallback list, Afora passes an empty fallback override instead of silently appending the agent primary as a hidden retry target.
 
 Pick the model for the job's difficulty, not the agent's default. Routine
 automation - summaries, triage, classification, status checks - runs well on a
@@ -238,7 +238,7 @@ Fast mode follows the resolved live selection. Isolated automation resolves it i
 
 If a run hits a live model-switch handoff, the scheduler retries with the switched provider/model and persists that selection (and any new auth profile) for the active run. Retries are bounded: after the initial attempt plus 2 switch retries, the scheduler aborts instead of looping.
 
-Before an isolated run starts, OpenClaw checks reachable local endpoints for configured `api: "ollama"` and `api: "openai-completions"` providers whose `baseUrl` is loopback, private-network, or `.local`. This preflight walks the job's configured fallback chain and only marks the run `skipped` once every candidate is unreachable; `--fallbacks ""` keeps that walk strict to just the primary model. A down endpoint records the run as `skipped` with a clear error instead of starting a model call. The result is cached for 5 minutes per endpoint (not per job or model), so many due jobs sharing a dead local Ollama/vLLM/SGLang/LM Studio server cost one probe instead of a request storm. Skipped preflight runs do not increment execution-error backoff; set `failureAlert.includeSkipped` to opt into repeated skip alerts.
+Before an isolated run starts, Afora checks reachable local endpoints for configured `api: "ollama"` and `api: "openai-completions"` providers whose `baseUrl` is loopback, private-network, or `.local`. This preflight walks the job's configured fallback chain and only marks the run `skipped` once every candidate is unreachable; `--fallbacks ""` keeps that walk strict to just the primary model. A down endpoint records the run as `skipped` with a clear error instead of starting a model call. The result is cached for 5 minutes per endpoint (not per job or model), so many due jobs sharing a dead local Ollama/vLLM/SGLang/LM Studio server cost one probe instead of a request storm. Skipped preflight runs do not increment execution-error backoff; set `failureAlert.includeSkipped` to opt into repeated skip alerts.
 
 ### Command payloads
 
@@ -249,7 +249,7 @@ Command payloads are an operator-admin Gateway automation surface, not an agent 
 </Note>
 
 ```bash
-openclaw automations create "*/15 * * * *" \
+afora automations create "*/15 * * * *" \
   --name "Queue depth probe" \
   --command "scripts/check-queue.sh" \
   --command-cwd "/srv/app" \
@@ -267,7 +267,7 @@ Delivered text is derived from process output: non-empty stdout wins; if stdout 
 Script payloads run headlessly in the same code-mode executor as trigger scripts, without starting a conversational agent turn. They are available by default; setting `cron.triggers.enabled: false` disables creation and execution of script payloads together with condition-trigger scripts and stream schedules. Script jobs support only `main` and `isolated` session targets.
 
 ```bash
-openclaw automations create "0 * * * *" \
+afora automations create "0 * * * *" \
   --name "Hourly queue check" \
   --script ./automation/check-queue.js \
   --script-timeout-seconds 300 \
@@ -292,7 +292,7 @@ Throws, timeouts, exhausted tool budgets, invalid results, and `nextCheck` witho
 ### Codex apps in scheduled automations
 
 Codex-created automations can retain the app IDs and permission ceiling
-available to the authenticated creator thread. At execution, OpenClaw requires
+available to the authenticated creator thread. At execution, Afora requires
 the same prepared Codex profile and account, then narrows the stored cap against
 current app policy. Revoked apps, account/runtime changes, and interactive
 approval requirements fail closed with a recovery message; they never fall
@@ -318,7 +318,7 @@ Agent-turn jobs default to the creating conversation when the create request car
 
   </Accordion>
   <Accordion title="What 'fresh session' means for isolated jobs">
-    A new transcript/session id per run. OpenClaw carries safe preferences (thinking/fast/verbose settings, labels, explicit user-selected model/auth overrides), but does not inherit ambient conversation context from an older automation session row: channel/group routing, send or queue policy, elevation, origin, or ACP runtime binding. Use `current` or `session:<id>` when a recurring job should deliberately build on the same conversation context.
+    A new transcript/session id per run. Afora carries safe preferences (thinking/fast/verbose settings, labels, explicit user-selected model/auth overrides), but does not inherit ambient conversation context from an older automation session row: channel/group routing, send or queue policy, elevation, origin, or ACP runtime binding. Use `current` or `session:<id>` when a recurring job should deliberately build on the same conversation context.
   </Accordion>
   <Accordion title="Unattended run contract">
     Isolated automation and hook agent turns are explicitly unattended: no one is present to clarify or approve. The final reply must be the deliverable rather than a plan, acknowledgement, or request for input. The agent returns `HEARTBEAT_OK` when nothing needs doing and states failures plainly; the scheduler owns retry and failure-alert policy.
@@ -327,9 +327,9 @@ Agent-turn jobs default to the creating conversation when the create request car
 
   </Accordion>
   <Accordion title="Subagent and Discord delivery">
-    When isolated automation runs orchestrate subagents, delivery prefers the final descendant output over stale parent interim text. If descendants are still running, OpenClaw suppresses that partial parent update instead of announcing it.
+    When isolated automation runs orchestrate subagents, delivery prefers the final descendant output over stale parent interim text. If descendants are still running, Afora suppresses that partial parent update instead of announcing it.
 
-    For text-only Discord announce targets, OpenClaw sends the canonical final assistant text once instead of replaying both streamed/intermediate text and the final answer. Media and structured Discord payloads are still delivered separately so attachments and components are not dropped.
+    For text-only Discord announce targets, Afora sends the canonical final assistant text once instead of replaying both streamed/intermediate text and the final answer. Media and structured Discord payloads are still delivered separately so attachments and components are not dropped.
 
   </Accordion>
 </AccordionGroup>
@@ -365,15 +365,15 @@ every configured automation webhook may reach trusted private-network
 services. Leaving the policy unset keeps strict behavior.
 </Warning>
 
-Use `--announce --channel telegram --to "-1001234567890"` for channel delivery. For Telegram forum topics, use `-1001234567890:topic:123`; OpenClaw also accepts the Telegram-owned `-1001234567890:123` shorthand. Direct RPC/config callers may pass `delivery.threadId` as a string or number. Slack/Discord/Mattermost targets use explicit prefixes (`channel:<id>`, `user:<id>`). Matrix room IDs are case-sensitive; use the exact room ID or `room:!room:server` form from Matrix.
+Use `--announce --channel telegram --to "-1001234567890"` for channel delivery. For Telegram forum topics, use `-1001234567890:topic:123`; Afora also accepts the Telegram-owned `-1001234567890:123` shorthand. Direct RPC/config callers may pass `delivery.threadId` as a string or number. Slack/Discord/Mattermost targets use explicit prefixes (`channel:<id>`, `user:<id>`). Matrix room IDs are case-sensitive; use the exact room ID or `room:!room:server` form from Matrix.
 
 On hosts with multiple configured channels, isolated announce jobs created with `automations add|create` or changed with `automations edit` must set `--channel <id>` unless a provider-prefixed `--to` or a preserved session route selects the channel. Use `--best-effort-deliver` only when unresolved fallback delivery is acceptable; it does not choose a channel, and a delivery failure does not fail the job.
 
 When announce delivery uses `channel: "last"` or omits `channel`, a provider-prefixed target such as `telegram:123` can select the channel before the scheduler falls back to session history or a single configured channel. Only prefixes advertised by the loaded plugin are provider selectors. If `delivery.channel` is explicit, the target prefix must name the same provider; `channel: "whatsapp"` with `to: "telegram:123"` is rejected instead of letting WhatsApp interpret the Telegram ID as a phone number. Target-kind and service prefixes (`channel:<id>`, `user:<id>`, `imessage:<handle>`, `sms:<number>`) stay channel-owned target syntax, not provider selectors.
 
-For isolated jobs, chat delivery is shared: if a chat route is available, the agent can use the `message` tool even with `--no-deliver`. If the agent sends to the configured/current target, OpenClaw skips the fallback announce. Otherwise `announce`, `webhook`, and `none` only control what the runner does with the final reply after the agent turn.
+For isolated jobs, chat delivery is shared: if a chat route is available, the agent can use the `message` tool even with `--no-deliver`. If the agent sends to the configured/current target, Afora skips the fallback announce. Otherwise `announce`, `webhook`, and `none` only control what the runner does with the final reply after the agent turn.
 
-When an agent creates an isolated reminder from an active chat, OpenClaw stores the preserved live delivery target for the fallback announce route. Internal session keys may be lowercase; provider delivery targets are not reconstructed from those keys when current chat context is available.
+When an agent creates an isolated reminder from an active chat, Afora stores the preserved live delivery target for the fallback announce route. Internal session keys may be lowercase; provider delivery targets are not reconstructed from those keys when current chat context is available.
 
 Implicit announce delivery uses configured channel allowlists to validate and reroute stale targets. DM pairing-store approvals are not fallback automation recipients; set `delivery.to` or configure the channel `allowFrom` entry when a scheduled job should proactively send to a DM.
 
@@ -381,24 +381,24 @@ Implicit announce delivery uses configured channel allowlists to validate and re
 
 Failure notifications follow a separate destination path:
 
-- The destination fields on `cron.failureAlert` (`mode`, `channel`, `to`, `accountId`) set a global default for failure notifications. The retired `cron.failureDestination` block is merged into them by `openclaw doctor --fix`.
+- The destination fields on `cron.failureAlert` (`mode`, `channel`, `to`, `accountId`) set a global default for failure notifications. The retired `cron.failureDestination` block is merged into them by `afora doctor --fix`.
 - `job.delivery.failureDestination` overrides that per job.
 - If neither is set and the job already delivers via `announce`, failure notifications fall back to that primary announce target.
 - `delivery.failureDestination` is only supported on `sessionTarget="isolated"` jobs unless the primary delivery mode is `webhook`.
 - `failureAlert.includeSkipped: true` opts a job or global automation alert policy into repeated skipped-run alerts. Skipped runs keep a separate consecutive-skip counter, so they do not affect execution-error backoff.
-- `openclaw automations edit` exposes per-job alert tuning: `--failure-alert`/`--no-failure-alert`, `--failure-alert-after <n>`, `--failure-alert-channel`, `--failure-alert-to`, `--failure-alert-cooldown`, `--failure-alert-include-skipped`/`--failure-alert-exclude-skipped`, `--failure-alert-mode`, and `--failure-alert-account-id`.
+- `afora automations edit` exposes per-job alert tuning: `--failure-alert`/`--no-failure-alert`, `--failure-alert-after <n>`, `--failure-alert-channel`, `--failure-alert-to`, `--failure-alert-cooldown`, `--failure-alert-include-skipped`/`--failure-alert-exclude-skipped`, `--failure-alert-mode`, and `--failure-alert-account-id`.
 
 Chat failure notifications include the run start time in the agent's configured user timezone. Webhook message text stays stable; integrations can read the same instant from the structured `runAtMs` field.
 Chat notifications show the normalized failure cause when one is available and keep raw commands, paths, and provider errors in automation history. Failure webhooks retain the structured raw error for diagnostic integrations.
 
-Failure alerts are opt-in, but the scheduler also provides an unconditional safety backstop. A time-based recurring job is auto-disabled after 10 consecutive execution failures; a successful run resets that streak. Repeated schedule-computation failures auto-disable after 3 errors. The job records `state.autoDisabled.reason` as `consecutive-failures` or `schedule-errors`, and the owning agent receives a notification with a safe cause and recovery command. Raw errors stay in automation history. After fixing the cause, run `openclaw automations enable <jobId>`; enabling clears the recorded reason and failure streaks. Because disabled jobs are hidden by the default list, use `openclaw automations list --all` to inspect them.
+Failure alerts are opt-in, but the scheduler also provides an unconditional safety backstop. A time-based recurring job is auto-disabled after 10 consecutive execution failures; a successful run resets that streak. Repeated schedule-computation failures auto-disable after 3 errors. The job records `state.autoDisabled.reason` as `consecutive-failures` or `schedule-errors`, and the owning agent receives a notification with a safe cause and recovery command. Raw errors stay in automation history. After fixing the cause, run `afora automations enable <jobId>`; enabling clears the recorded reason and failure streaks. Because disabled jobs are hidden by the default list, use `afora automations list --all` to inspect them.
 
 ### Output language
 
 Automation jobs do not infer a reply language from channel, locale, or previous messages. Put the language rule in the scheduled message or template:
 
 ```bash
-openclaw automations edit <jobId> \
+afora automations edit <jobId> \
   --message "Summarize the updates. Respond in Chinese; keep URLs, code, and product names unchanged."
 ```
 
@@ -409,7 +409,7 @@ For template files, keep the language instruction in the rendered prompt and ver
 <Tabs>
   <Tab title="One-shot reminder">
     ```bash
-    openclaw automations add \
+    afora automations add \
       --name "Calendar check" \
       --at "20m" \
       --session main \
@@ -419,7 +419,7 @@ For template files, keep the language instruction in the rendered prompt and ver
   </Tab>
   <Tab title="Recurring isolated job">
     ```bash
-    openclaw automations create "0 7 * * *" \
+    afora automations create "0 7 * * *" \
       "Summarize overnight updates." \
       --name "Morning brief" \
       --tz "America/Los_Angeles" \
@@ -431,7 +431,7 @@ For template files, keep the language instruction in the rendered prompt and ver
   </Tab>
   <Tab title="Model and thinking override">
     ```bash
-    openclaw automations add \
+    afora automations add \
       --name "Deep analysis" \
       --cron "0 6 * * 1" \
       --tz "America/Los_Angeles" \
@@ -444,15 +444,15 @@ For template files, keep the language instruction in the rendered prompt and ver
   </Tab>
   <Tab title="Webhook output">
     ```bash
-    openclaw automations create "0 18 * * 1-5" \
+    afora automations create "0 18 * * 1-5" \
       "Summarize today's deploys as JSON." \
       --name "Deploy digest" \
-      --webhook "https://example.invalid/openclaw/cron"
+      --webhook "https://example.invalid/afora/cron"
     ```
   </Tab>
   <Tab title="Command output">
     ```bash
-    openclaw automations create "*/15 * * * *" \
+    afora automations create "*/15 * * * *" \
       --name "Queue depth probe" \
       --command "scripts/check-queue.sh" \
       --command-cwd "/srv/app" \
@@ -467,69 +467,69 @@ For template files, keep the language instruction in the rendered prompt and ver
 
 ```bash
 # List enabled jobs
-openclaw automations list
+afora automations list
 
 # Include disabled jobs
-openclaw automations list --all
+afora automations list --all
 
 # Get one stored job as JSON
-openclaw automations get <jobId>
+afora automations get <jobId>
 
 # Show one job, including resolved delivery route
-openclaw automations show <jobId>
+afora automations show <jobId>
 
 # Enable/disable without deleting
-openclaw automations enable <jobId>
-openclaw automations disable <jobId>
+afora automations enable <jobId>
+afora automations disable <jobId>
 
 # Edit a job
-openclaw automations edit <jobId> --message "Updated prompt" --model "opus"
+afora automations edit <jobId> --message "Updated prompt" --model "opus"
 
 # Force run a job now
-openclaw automations run <jobId>
+afora automations run <jobId>
 
 # Force run a job now and wait for its terminal status
-openclaw automations run <jobId> --wait --wait-timeout 10m --poll-interval 2s
+afora automations run <jobId> --wait --wait-timeout 10m --poll-interval 2s
 
 # Run only if due
-openclaw automations run <jobId> --due
+afora automations run <jobId> --due
 
 # View run history
-openclaw automations runs --id <jobId> --limit 50
+afora automations runs --id <jobId> --limit 50
 
 # View one exact run
-openclaw automations runs --id <jobId> --run-id <runId>
+afora automations runs --id <jobId> --run-id <runId>
 
 # Delete a job
-openclaw automations remove <jobId>
+afora automations remove <jobId>
 
 # Agent selection (multi-agent setups)
-openclaw automations create "0 6 * * *" "Check ops queue" --name "Ops sweep" --session isolated --agent ops
-openclaw automations edit <jobId> --clear-agent
+afora automations create "0 6 * * *" "Check ops queue" --name "Ops sweep" --session isolated --agent ops
+afora automations edit <jobId> --clear-agent
 ```
 
-Archiving a session (Control UI, or `sessions.patch { key, archived: true, expectedSessionId }` using the durable ID from `sessions.list`) disables every enabled automation job bound to that session: its isolated `cron:<jobId>` session, a `session:<key>` target, or a delivery/wake `sessionKey` lane. Restoring the session requires the same observed identity and does not re-enable those jobs; use `openclaw automations enable <jobId>`. Sessions with an enabled bound job show a clock badge in the Control UI sidebar.
+Archiving a session (Control UI, or `sessions.patch { key, archived: true, expectedSessionId }` using the durable ID from `sessions.list`) disables every enabled automation job bound to that session: its isolated `cron:<jobId>` session, a `session:<key>` target, or a delivery/wake `sessionKey` lane. Restoring the session requires the same observed identity and does not re-enable those jobs; use `afora automations enable <jobId>`. Sessions with an enabled bound job show a clock badge in the Control UI sidebar.
 
-`openclaw automations run <jobId>` returns after enqueueing the manual run. Use `--wait` for shutdown hooks, maintenance scripts, or other automation that must block until the queued run finishes; it polls the returned `runId` (default timeout `10m`, poll interval `2s`) and exits `0` for status `ok`, non-zero for `error`, `skipped`, or a wait timeout.
+`afora automations run <jobId>` returns after enqueueing the manual run. Use `--wait` for shutdown hooks, maintenance scripts, or other automation that must block until the queued run finishes; it polls the returned `runId` (default timeout `10m`, poll interval `2s`) and exits `0` for status `ok`, non-zero for `error`, `skipped`, or a wait timeout.
 
 Direct Gateway event sources can use `cron.run` with `mode: "if-enabled"` to run immediately without overriding an operator-disabled or auto-disabled job. Explicit operator run-now commands continue to use `force`.
 
 The agent `automations` tool returns compact job summaries (`id`, `name`, `enabled`, `nextRunAtMs`, `scheduleKind`, `lastRunStatus`) from `automations(action: "list")`; use `automations(action: "get", jobId: "...")` for one full job definition. Direct Gateway callers can pass `compact: true` to `cron.list`; omitting it preserves the full response with delivery previews.
 
-`openclaw automations create` is an alias for `openclaw automations add`. New jobs can use a positional schedule (`"0 9 * * 1"`, `"every 1h"`, `"20m"`, or an ISO timestamp) followed by a positional agent prompt. Use `--webhook <url>` on `automations add|create` or `automations edit` to POST the finished run payload to an HTTP endpoint; webhook delivery cannot combine with chat delivery flags (`--announce`, `--channel`, `--to`, `--thread-id`, `--account`). On `automations edit`, `--clear-channel`, `--clear-to`, `--clear-thread-id`, and `--clear-account` unset those routing fields individually (each rejected alongside its matching set flag) — distinct from `--no-deliver`, which only disables runner fallback delivery.
+`afora automations create` is an alias for `afora automations add`. New jobs can use a positional schedule (`"0 9 * * 1"`, `"every 1h"`, `"20m"`, or an ISO timestamp) followed by a positional agent prompt. Use `--webhook <url>` on `automations add|create` or `automations edit` to POST the finished run payload to an HTTP endpoint; webhook delivery cannot combine with chat delivery flags (`--announce`, `--channel`, `--to`, `--thread-id`, `--account`). On `automations edit`, `--clear-channel`, `--clear-to`, `--clear-thread-id`, and `--clear-account` unset those routing fields individually (each rejected alongside its matching set flag) — distinct from `--no-deliver`, which only disables runner fallback delivery.
 
 The webhook URL remains subject to the strict outbound policy above; configure `cron.webhookSsrfPolicy` for an intentional local or private receiver.
 
 <Note>
 Model override note:
 
-- `openclaw automations add|edit --model ...` changes the job's selected model.
+- `afora automations add|edit --model ...` changes the job's selected model.
 - If the model is allowed, that exact provider/model reaches the isolated agent run.
 - If it is not allowed or cannot be resolved, the scheduler fails the run with an explicit validation error.
 - API `cron.update` payload patches can set `model: null` to clear a stored job model override.
-- `openclaw automations edit <job-id> --clear-model` clears that override from the CLI (same effect as the `model: null` patch) and cannot combine with `--model`.
+- `afora automations edit <job-id> --clear-model` clears that override from the CLI (same effect as the `model: null` patch) and cannot combine with `--model`.
 - Configured fallback chains still apply because the automation `--model` is a job primary, not a session `/model` override.
-- `openclaw automations add|edit --fallbacks ...` sets payload `fallbacks`, replacing configured fallbacks for that job; `--fallbacks ""` disables fallback and makes the run strict. `openclaw automations edit <job-id> --clear-fallbacks` clears the per-job override.
+- `afora automations add|edit --fallbacks ...` sets payload `fallbacks`, replacing configured fallbacks for that job; `--fallbacks ""` disables fallback and makes the run strict. `afora automations edit <job-id> --clear-fallbacks` clears the per-job override.
 - A plain `--model` with no explicit or configured fallback list does not fall through to the agent primary as a silent extra retry target.
 
 </Note>
@@ -553,7 +553,7 @@ Gateway can expose HTTP webhook endpoints for external triggers. Enable in confi
 Every request must include the hook token via header:
 
 - `Authorization: Bearer <token>` (recommended)
-- `x-openclaw-token: <token>`
+- `x-afora-token: <token>`
 
 Query-string tokens are rejected.
 
@@ -632,10 +632,10 @@ Keep hook endpoints behind loopback, tailnet, or a trusted reverse proxy.
 
 ## Gmail PubSub integration
 
-Wire Gmail inbox triggers to OpenClaw via Google PubSub.
+Wire Gmail inbox triggers to Afora via Google PubSub.
 
 <Note>
-**Prerequisites:** `gcloud` CLI, `gog` (gogcli), OpenClaw hooks enabled, Tailscale for the public HTTPS endpoint, and a working sandbox backend. The example below uses the default Docker backend; build its image first by following [Sandbox images and setup](/gateway/sandboxing#images-and-setup), or configure another supported backend.
+**Prerequisites:** `gcloud` CLI, `gog` (gogcli), Afora hooks enabled, Tailscale for the public HTTPS endpoint, and a working sandbox backend. The example below uses the default Docker backend; build its image first by following [Sandbox images and setup](/gateway/sandboxing#images-and-setup), or configure another supported backend.
 </Note>
 
 ### Configure a restricted Gmail reader (recommended)
@@ -651,7 +651,7 @@ Before connecting Gmail transport, merge a dedicated reader and hook policy into
     entries: {
       main: {},
       mail_reader: {
-        workspace: "~/.openclaw/workspace-mail-reader",
+        workspace: "~/.afora/workspace-mail-reader",
         model: "openai/gpt-5.6-sol",
         sandbox: {
           mode: "all",
@@ -689,7 +689,7 @@ Before connecting Gmail transport, merge a dedicated reader and hook policy into
 }
 ```
 
-Before restart, run `openclaw agents list --bindings`; replace every placeholder and verify each channel owner.
+Before restart, run `afora agents list --bindings`; replace every placeholder and verify each channel owner.
 
 Why this shape is safer:
 
@@ -709,9 +709,9 @@ If you intentionally route Gmail to a more capable agent, treat that as a securi
 Each agent has its own auth store. Authenticate the provider selected by `mail_reader`, or ensure it can use a supported shared environment/config credential, then verify the effective route before connecting Gmail:
 
 ```bash
-openclaw models auth --agent mail_reader login --provider openai
-openclaw models status --agent mail_reader --check --probe --probe-provider openai
-openclaw agent --agent mail_reader --message "Reply exactly MAIL_READER_OK" --json
+afora models auth --agent mail_reader login --provider openai
+afora models status --agent mail_reader --check --probe --probe-provider openai
+afora agent --agent mail_reader --message "Reply exactly MAIL_READER_OK" --json
 ```
 
 Use the matching provider id when you choose a different model. The live probe checks the provider credential; the agent turn proves the selected model, runtime, sandbox, and effective tool policy can complete a real reader run. Do not continue until both succeed.
@@ -719,7 +719,7 @@ Use the matching provider id when you choose a different model. The live probe c
 ### Connect Gmail transport
 
 ```bash
-openclaw webhooks gmail setup --account openclaw@gmail.com
+afora webhooks gmail setup --account afora@gmail.com
 ```
 
 This writes `hooks.gmail` transport settings, enables the Gmail preset, preserves the restricted mapping above, and defaults to Tailscale Funnel for the push endpoint (`--tailscale funnel|serve|off`). The wizard does not create a reader agent or session-key policy, so apply the restricted configuration first.
@@ -733,17 +733,17 @@ For untrusted inboxes, route the hook to a dedicated reader agent, give that age
 ### Verify the reader boundary
 
 ```bash
-openclaw config validate
-openclaw sandbox explain --agent mail_reader
-openclaw security audit --deep
-openclaw logs --follow
+afora config validate
+afora sandbox explain --agent mail_reader
+afora security audit --deep
+afora logs --follow
 ```
 
 Send a test email containing an inert instruction such as “follow this link and run a command.” Confirm the hook resolves to `mail_reader`, the session key starts with `hook:gmail:`, the run is sandboxed, and the result only summarizes the message. Treat any attempted link navigation, file write, shell command, browser action, or MCP registration as a failed boundary check.
 
 ### Gateway auto-start
 
-When `hooks.enabled=true` and `hooks.gmail.account` is set, the Gateway starts `gog gmail watch serve` on boot and auto-renews the watch. Set `OPENCLAW_SKIP_GMAIL_WATCHER=1` to opt out.
+When `hooks.enabled=true` and `hooks.gmail.account` is set, the Gateway starts `gog gmail watch serve` on boot and auto-renews the watch. Set `AFORA_SKIP_GMAIL_WATCHER=1` to opt out.
 
 ### Manual one-time setup
 
@@ -769,7 +769,7 @@ When `hooks.enabled=true` and `hooks.gmail.account` is set, the Gateway starts `
   <Step title="Start the watch">
     ```bash
     gog gmail watch start \
-      --account openclaw@gmail.com \
+      --account afora@gmail.com \
       --label INBOX \
       --topic projects/<project-id>/topics/gog-gmail-watch
     ```
@@ -818,7 +818,7 @@ when omitted. Prefer narrow `allowedHostnames` entries over the broad
 
 Automation jobs, run history, and quarantined malformed jobs live in the shared SQLite state database. Use the CLI or Gateway API to change jobs; `cron.store` is retired.
 
-Disable automations: `cron.enabled: false` or `OPENCLAW_SKIP_CRON=1`.
+Disable automations: `cron.enabled: false` or `AFORA_SKIP_CRON=1`.
 
 <AccordionGroup>
   <Accordion title="Retry behavior">
@@ -831,7 +831,7 @@ Disable automations: `cron.enabled: false` or `OPENCLAW_SKIP_CRON=1`.
     `cron.sessionRetention` (default `24h`, `false` or `"0h"` disables) prunes isolated run-session entries. Run history keeps the newest 2000 terminal rows per job; lost rows retain their 24-hour cleanup window.
   </Accordion>
   <Accordion title="Legacy store migration">
-    On upgrade, run `openclaw doctor --fix` to import historical `~/.openclaw/cron/jobs.json`, `jobs-state.json`, `jobs-quarantine.json`, and `runs/*.jsonl` files into SQLite and archive the originals with a `.migrated` suffix. Malformed job rows remain recoverable in SQLite while valid jobs keep running.
+    On upgrade, run `afora doctor --fix` to import historical `~/.afora/cron/jobs.json`, `jobs-state.json`, `jobs-quarantine.json`, and `runs/*.jsonl` files into SQLite and archive the originals with a `.migrated` suffix. Malformed job rows remain recoverable in SQLite while valid jobs keep running.
   </Accordion>
 </AccordionGroup>
 
@@ -840,22 +840,22 @@ Disable automations: `cron.enabled: false` or `OPENCLAW_SKIP_CRON=1`.
 ### Command ladder
 
 ```bash
-openclaw status
-openclaw gateway status
-openclaw automations status
-openclaw automations list
-openclaw automations runs --id <jobId> --limit 20
-openclaw system heartbeat last
-openclaw logs --follow
-openclaw doctor
+afora status
+afora gateway status
+afora automations status
+afora automations list
+afora automations runs --id <jobId> --limit 20
+afora system heartbeat last
+afora logs --follow
+afora doctor
 ```
 
 <AccordionGroup>
   <Accordion title="Automations not firing">
-    - Check `cron.enabled` and the `OPENCLAW_SKIP_CRON` env var.
+    - Check `cron.enabled` and the `AFORA_SKIP_CRON` env var.
     - Confirm the Gateway is running continuously.
     - For `cron` schedules, verify timezone (`--tz`) vs the host timezone.
-    - `reason: not-due` in run output means the manual run was checked with `openclaw automations run <jobId> --due` and the job was not due yet.
+    - `reason: not-due` in run output means the manual run was checked with `afora automations run <jobId> --due` and the job was not due yet.
 
   </Accordion>
   <Accordion title="Job fired but no delivery">
@@ -863,14 +863,14 @@ openclaw doctor
     - Delivery target missing/invalid (`channel`/`to`) means outbound was skipped.
     - For Matrix, copied or legacy jobs with lowercased `delivery.to` room IDs can fail because Matrix room IDs are case-sensitive. Edit the job to the exact `!room:server` or `room:!room:server` value from Matrix.
     - Channel auth errors (`unauthorized`, `Forbidden`) mean delivery was blocked by credentials.
-    - If the isolated run returns only the silent token (`NO_REPLY` / `no_reply`), OpenClaw suppresses direct outbound delivery and the fallback queued-summary path, so nothing is posted back to chat.
+    - If the isolated run returns only the silent token (`NO_REPLY` / `no_reply`), Afora suppresses direct outbound delivery and the fallback queued-summary path, so nothing is posted back to chat.
     - If the agent should message the user itself, check that the job has a usable route (`channel: "last"` with a previous chat, or an explicit channel/target).
 
   </Accordion>
   <Accordion title="Automations or heartbeat appear to prevent /new-style rollover">
     - Daily and idle reset freshness is not based on `updatedAt`; see [Session management](/concepts/session#session-lifecycle).
     - Automation wakeups, heartbeat runs, exec notifications, and gateway bookkeeping may update the session row for routing/status, but they do not extend `sessionStartedAt` or `lastInteractionAt`.
-    - For legacy rows created before those fields existed, OpenClaw can recover `sessionStartedAt` from the transcript JSONL session header when the file is still available. Legacy idle rows without `lastInteractionAt` use that recovered start time as their idle baseline.
+    - For legacy rows created before those fields existed, Afora can recover `sessionStartedAt` from the transcript JSONL session header when the file is still available. Legacy idle rows without `lastInteractionAt` use that recovered start time as their idle baseline.
 
   </Accordion>
   <Accordion title="Timezone gotchas">

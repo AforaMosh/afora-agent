@@ -2,7 +2,7 @@
 // Deliberately no write/delete/upload surface: mutations need their own
 // reviewed contract; see the allowlisted agents.files.* API for edits.
 import path from "node:path";
-import { detectMime } from "@openclaw/media-core/mime";
+import { detectMime } from "@afora/media-core/mime";
 import {
   ErrorCodes,
   errorShape,
@@ -11,7 +11,7 @@ import {
   validateAgentsWorkspaceListParams,
 } from "../../../packages/gateway-protocol/src/index.js";
 import { listAgentIds, resolveAgentWorkspaceDir } from "../../agents/agent-scope.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { normalizeAgentIdStrict } from "../../routing/session-key.js";
 import type { GatewayRequestHandlers, RespondFn } from "./types.js";
 import { assertValidParams } from "./validation.js";
@@ -67,7 +67,7 @@ function workspaceError(type: string, message: string, details?: Record<string, 
 
 function resolveWorkspaceScopeOrRespond(
   params: { agentId: string; path?: string },
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   respond: RespondFn,
 ): { agentId: string; workspaceDir: string; browserPath: string } | null {
   const normalized = normalizeAgentIdStrict(params.agentId);

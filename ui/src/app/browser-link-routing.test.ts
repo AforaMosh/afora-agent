@@ -121,7 +121,7 @@ describe("Control UI browser link routing", () => {
     const postMessage = vi.fn();
     Object.defineProperty(window, "webkit", {
       configurable: true,
-      value: { messageHandlers: { openclawLink: { postMessage } } },
+      value: { messageHandlers: { aforaLink: { postMessage } } },
     });
     startBrowserLinkRouting(false);
     const event = mouseEvent("click");

@@ -1,12 +1,12 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { OpenKeyedStoreOptions } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { OpenKeyedStoreOptions } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateSyncKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import { createPluginRuntimeMock } from "openclaw/plugin-sdk/plugin-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import { createPluginRuntimeMock } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { generateIdentity } from "../protocol/index.js";
 import { ReefChannelConfigSchema } from "./config-schema.js";
@@ -25,7 +25,7 @@ function runtime() {
   mockRuntime.state.openSyncKeyedStore = <T>(options: OpenKeyedStoreOptions) =>
     createPluginStateSyncKeyedStoreForTests<T>("reef", {
       ...options,
-      env: { OPENCLAW_STATE_DIR: stateDir },
+      env: { AFORA_STATE_DIR: stateDir },
     });
   return mockRuntime;
 }
@@ -73,7 +73,7 @@ describe("ReefTrustStore", () => {
       opened.push(options);
       return createPluginStateSyncKeyedStoreForTests<T>("reef", {
         ...options,
-        env: { OPENCLAW_STATE_DIR: stateDir },
+        env: { AFORA_STATE_DIR: stateDir },
       });
     };
 
@@ -96,7 +96,7 @@ describe("ReefTrustStore", () => {
       safetyNumberChanged: false,
     });
     expect(reopened.list().map((entry) => entry.peer)).toEqual(["clawd"]);
-    expect(fs.existsSync(path.join(stateDir, "state", "openclaw.sqlite"))).toBe(true);
+    expect(fs.existsSync(path.join(stateDir, "state", "afora.sqlite"))).toBe(true);
   });
 
   it("isolates trust by relay identity instead of machine-specific key paths", () => {

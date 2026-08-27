@@ -24,7 +24,7 @@ describe("scripts/embedded-run-abort-leak", () => {
   };
 
   beforeAll(() => {
-    const snapDir = tempRoots.make("openclaw-embedded-abort-leak-test-");
+    const snapDir = tempRoots.make("afora-embedded-abort-leak-test-");
     looseThresholdProbe = {
       result: runHarness(["--snap-dir", snapDir, "--iters", "1e3", "--quiet"]),
       snapDir,
@@ -41,7 +41,7 @@ describe("scripts/embedded-run-abort-leak", () => {
   });
 
   it("rejects duplicate thresholds before writing heap snapshots", () => {
-    const snapDir = tempRoots.make("openclaw-embedded-abort-leak-test-");
+    const snapDir = tempRoots.make("afora-embedded-abort-leak-test-");
     const result = runHarness(["--snap-dir", snapDir, "--iters", "1", "--iters", "2", "--quiet"]);
 
     expect(result.status).toBe(2);

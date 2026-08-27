@@ -16,17 +16,17 @@ describe("voice-call CLI output mode", () => {
     "status",
     "tail",
   ])("detects %s as machine output", (command) => {
-    expect(isMachineOutput({ argv: ["node", "openclaw", "voicecall", command] })).toBe(true);
+    expect(isMachineOutput({ argv: ["node", "afora", "voicecall", command] })).toBe(true);
   });
 
   it("leaves setup human-readable without --json", () => {
-    expect(isMachineOutput({ argv: ["node", "openclaw", "voicecall", "setup"] })).toBe(false);
+    expect(isMachineOutput({ argv: ["node", "afora", "voicecall", "setup"] })).toBe(false);
   });
 
   it("accepts a post-root log level", () => {
     expect(
       isMachineOutput({
-        argv: ["node", "openclaw", "voicecall", "--log-level", "debug", "status"],
+        argv: ["node", "afora", "voicecall", "--log-level", "debug", "status"],
       }),
     ).toBe(true);
   });

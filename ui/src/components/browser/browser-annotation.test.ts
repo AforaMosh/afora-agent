@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it, vi } from "vitest";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import { buildBrowserAnnotationContent, composeAnnotatedImage } from "./browser-annotation.ts";
@@ -20,7 +20,7 @@ function node(overrides: Partial<BrowserInspectedNode> = {}): BrowserInspectedNo
 describe("buildBrowserAnnotationContent", () => {
   it("describes the page, marked regions, and inspected element", () => {
     const { modelContext, card } = buildBrowserAnnotationContent({
-      url: "https://github.com/openclaw/openclaw/pull/103853",
+      url: "https://github.com/AforaMosh/afora-agent/pull/103853",
       title: "feat(ui): collapse session PR chips",
       strokes: [
         {
@@ -32,7 +32,7 @@ describe("buildBrowserAnnotationContent", () => {
       ],
       element: node({ name: "Merge", role: "button" }),
     });
-    expect(modelContext).toContain("https://github.com/openclaw/openclaw/pull/103853");
+    expect(modelContext).toContain("https://github.com/AforaMosh/afora-agent/pull/103853");
     expect(modelContext).toContain("Marked region 1");
     expect(modelContext).toContain("30% across / 60% down");
     expect(modelContext).toContain('button "Merge" (role=button)');

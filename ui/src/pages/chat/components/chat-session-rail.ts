@@ -1,4 +1,4 @@
-import type { ProgressCard } from "@openclaw/gateway-protocol";
+import type { ProgressCard } from "@afora/gateway-protocol";
 import { html, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
 import { ref } from "lit/directives/ref.js";
@@ -14,7 +14,7 @@ import "../../../components/web-awesome.ts";
 import { t } from "../../../i18n/index.ts";
 import { formatDurationCompact, formatTimeAgo, formatTimeMs } from "../../../lib/format.ts";
 import { detectTextDirection } from "../../../lib/text-direction.ts";
-import { OpenClawLightDomElement } from "../../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../../lit/afora-element.ts";
 import {
   type ChatObserverDisplayPreference,
   loadChatObserverDisplayPreference,
@@ -212,7 +212,7 @@ function companionHintKey(
   return COMPANION_HINT_KEYS[hint];
 }
 
-export class ChatSessionRailElement extends OpenClawLightDomElement {
+export class ChatSessionRailElement extends AforaLightDomElement {
   @property({ attribute: false }) sessionKey = "";
   @property({ attribute: false }) digest: SessionObserverDigest | null = null;
   @property({ attribute: false }) running = false;
@@ -670,6 +670,6 @@ export class ChatSessionRailElement extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-chat-session-rail")) {
-  customElements.define("openclaw-chat-session-rail", ChatSessionRailElement);
+if (!customElements.get("afora-chat-session-rail")) {
+  customElements.define("afora-chat-session-rail", ChatSessionRailElement);
 }

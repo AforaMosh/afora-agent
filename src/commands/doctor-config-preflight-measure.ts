@@ -7,7 +7,7 @@ async function measureGatewayStartupPreflightStep<T>(
   name: string,
   run: () => T | Promise<T>,
 ): Promise<T> {
-  if (!isTruthyEnvValue(process.env.OPENCLAW_GATEWAY_STARTUP_TRACE)) {
+  if (!isTruthyEnvValue(process.env.AFORA_GATEWAY_STARTUP_TRACE)) {
     return await run();
   }
   const startedAt = performance.now();

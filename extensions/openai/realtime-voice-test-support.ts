@@ -4,8 +4,8 @@ import type {
   RealtimeVoiceBrowserSession,
   RealtimeVoiceProviderPlugin,
   RealtimeVoiceTool,
-} from "openclaw/plugin-sdk/realtime-voice";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/realtime-voice";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { expect, vi } from "vitest";
 
 type Listener = (...args: unknown[]) => void;
@@ -131,7 +131,7 @@ type InternalRealtimeVoiceProviderApi = {
   }) => string | undefined;
 };
 
-const INTERNAL_REALTIME_VOICE_PROVIDER = Symbol.for("openclaw.internal.realtime-voice-provider.v1");
+const INTERNAL_REALTIME_VOICE_PROVIDER = Symbol.for("afora.internal.realtime-voice-provider.v1");
 const OPENAI_REALTIME_REJECTED_KEY_MESSAGE =
   "OpenAI Realtime rejected the selected API key. Update or remove the active OpenAI API-key source";
 
@@ -329,14 +329,14 @@ export function createOpenAIRealtimeTestSupport<T extends FakeWebSocketLike>(dep
   function expectedResponseCreateEvent() {
     return expect.objectContaining({
       type: "response.create",
-      event_id: expect.stringMatching(/^openclaw-response-create-/),
+      event_id: expect.stringMatching(/^afora-response-create-/),
     });
   }
 
   function expectedResponseCancelEvent() {
     return expect.objectContaining({
       type: "response.cancel",
-      event_id: expect.stringMatching(/^openclaw-response-cancel-/),
+      event_id: expect.stringMatching(/^afora-response-cancel-/),
     });
   }
 

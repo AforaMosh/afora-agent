@@ -1,12 +1,12 @@
 import {
   asPositiveFiniteNumber as readPositiveNumber,
   asSafeIntegerInRange,
-} from "@openclaw/normalization-core/number-coercion";
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
-import { readNonEmptyStringPreservingWhitespace as readNonEmptyString } from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/number-coercion";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
+import { readNonEmptyStringPreservingWhitespace as readNonEmptyString } from "@afora/normalization-core/string-coerce";
 import type {
-  OpenClawPluginNodeInvokePolicy,
-  OpenClawPluginNodeInvokePolicyResult,
+  AforaPluginNodeInvokePolicy,
+  AforaPluginNodeInvokePolicyResult,
 } from "../plugins/plugin-registration.types.js";
 import type { MeetingAudioBackendSelection } from "./audio-backend.js";
 import { isMeetingAudioBase64 } from "./audio-base64.js";
@@ -40,7 +40,7 @@ export type MeetingBrowserNodePolicyOptions = {
 
 type PolicyDecision =
   | { approved: true; params: Record<string, unknown> }
-  | { approved: false; result: OpenClawPluginNodeInvokePolicyResult };
+  | { approved: false; result: AforaPluginNodeInvokePolicyResult };
 
 function readOutputGeneration(value: unknown): number | undefined {
   return asSafeIntegerInRange(value, { min: 0 });
@@ -284,7 +284,7 @@ function buildForwardParams(
 
 export function createMeetingBrowserNodeInvokePolicy(
   options: MeetingBrowserNodePolicyOptions,
-): OpenClawPluginNodeInvokePolicy {
+): AforaPluginNodeInvokePolicy {
   return {
     commands: [options.commandName],
     dangerous: true,

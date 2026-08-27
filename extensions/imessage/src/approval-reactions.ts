@@ -1,6 +1,6 @@
 // Imessage plugin module implements approval reactions behavior.
-import type { ApprovalResolveResult } from "openclaw/plugin-sdk/approval-gateway-runtime";
-import type { ChannelApprovalKind } from "openclaw/plugin-sdk/approval-handler-runtime";
+import type { ApprovalResolveResult } from "afora-agent/plugin-sdk/approval-gateway-runtime";
+import type { ChannelApprovalKind } from "afora-agent/plugin-sdk/approval-handler-runtime";
 import {
   addApprovalReactionHintToText,
   approvalReactionDecisionSetsMatch,
@@ -15,14 +15,14 @@ import {
   resolveTypedApprovalReactionTarget,
   type ApprovalReactionDeliveryBinding,
   type ApprovalReactionTargetRecord,
-} from "openclaw/plugin-sdk/approval-reaction-runtime";
-import type { ExecApprovalReplyDecision } from "openclaw/plugin-sdk/approval-reply-runtime";
-import type { OutboundDeliveryResult } from "openclaw/plugin-sdk/channel-send-result";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { isApprovalNotFoundError } from "openclaw/plugin-sdk/error-runtime";
-import { createLazyRuntimeSurface } from "openclaw/plugin-sdk/lazy-runtime";
-import { createPluginStateErrorReporter } from "openclaw/plugin-sdk/plugin-state-runtime";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
+} from "afora-agent/plugin-sdk/approval-reaction-runtime";
+import type { ExecApprovalReplyDecision } from "afora-agent/plugin-sdk/approval-reply-runtime";
+import type { OutboundDeliveryResult } from "afora-agent/plugin-sdk/channel-send-result";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { isApprovalNotFoundError } from "afora-agent/plugin-sdk/error-runtime";
+import { createLazyRuntimeSurface } from "afora-agent/plugin-sdk/lazy-runtime";
+import { createPluginStateErrorReporter } from "afora-agent/plugin-sdk/plugin-state-runtime";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-runtime";
 import { getIMessageApprovalApprovers, imessageApprovalAuth } from "./approval-auth.js";
 import type { IMessageApprovalGatewayRuntime } from "./approval-gateway-types.js";
 import {
@@ -67,7 +67,7 @@ type IMessageApprovalReactionTarget = ApprovalReactionTargetRecord & {
 export type { IMessageApprovalConversationKey } from "./approval-target-keys.js";
 
 const loadResolveApprovalOverGateway = createLazyRuntimeSurface(
-  () => import("openclaw/plugin-sdk/approval-gateway-runtime"),
+  () => import("afora-agent/plugin-sdk/approval-gateway-runtime"),
   (runtime) => runtime.resolveApprovalOverGateway,
 );
 const reportPersistentApprovalReactionError = createPluginStateErrorReporter(
@@ -476,7 +476,7 @@ function readApprovalReactionEvent(
 }
 
 export async function handleIMessageApprovalReaction(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   message: IMessagePayload;
   bodyText: string;
@@ -578,7 +578,7 @@ export async function handleIMessageApprovalReaction(params: {
       return { handled: true, stopPolling: true, stopPollingReason: "not-found" };
     }
     // Surface non-NotFound errors at warn level so a gateway 5xx / network
-    // outage / auth failure is visible without OPENCLAW_LOG_LEVEL=debug.
+    // outage / auth failure is visible without AFORA_LOG_LEVEL=debug.
     try {
       getOptionalIMessageRuntime()
         ?.logging.getChildLogger({ plugin: "imessage", feature: "approval-reactions" })
@@ -598,7 +598,7 @@ export async function handleIMessageApprovalReaction(params: {
 }
 
 export async function maybeResolveIMessageApprovalReaction(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   message: IMessagePayload;
   bodyText: string;

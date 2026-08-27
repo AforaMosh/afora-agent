@@ -17,7 +17,7 @@ it("loads plugin metadata from the explicit system-owner workspace", async () =>
       entries: { main: {}, research: { workspace: "~/research-workspace" } },
     },
   };
-  const env = { HOME: "/tmp/openclaw-managed-plugin-home" };
+  const env = { HOME: "/tmp/afora-managed-plugin-home" };
   metadata.mockReturnValue({
     index: { plugins: [], installRecords: {} },
     byPluginId: new Map(),
@@ -30,7 +30,7 @@ it("loads plugin metadata from the explicit system-owner workspace", async () =>
   expect(metadata).toHaveBeenCalledWith({
     config,
     env,
-    workspaceDir: "/tmp/openclaw-managed-plugin-home/research-workspace",
+    workspaceDir: "/tmp/afora-managed-plugin-home/research-workspace",
   });
 });
 
@@ -45,7 +45,7 @@ it("reports partial managed inventory without selecting an explicit roster entry
       },
     },
   };
-  const env = { HOME: "/tmp/openclaw-managed-plugin-home" };
+  const env = { HOME: "/tmp/afora-managed-plugin-home" };
   metadata.mockReturnValue({
     index: { plugins: [], installRecords: {} },
     byPluginId: new Map(),

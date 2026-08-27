@@ -92,7 +92,7 @@ describe("tsdown config", () => {
   it("keeps public SDK declarations together and isolates private runtime declarations", () => {
     const [publicDeclarationSources = [], privateDeclarationSources = []] =
       TSDOWN_UNIFIED_DTS_CONFIG_GROUPS.filter((name) =>
-        name.startsWith("openclaw-dts-plugin-sdk-"),
+        name.startsWith("afora-dts-plugin-sdk-"),
       ).map((name) => {
         const dts = configs.find((entry) => entry.name === name)?.dts;
         return dts && typeof dts === "object" && Array.isArray(dts.entry) ? dts.entry : [];
@@ -135,7 +135,7 @@ describe("tsdown config", () => {
     expect(workerConfig?.outDir).toBe("dist");
     expect(workerConfig?.shims).toBe(true);
     expect(workerConfig?.plugins).toEqual(
-      expect.arrayContaining([expect.objectContaining({ name: "openclaw:worker-deploy" })]),
+      expect.arrayContaining([expect.objectContaining({ name: "afora:worker-deploy" })]),
     );
     expect(workerConfig?.outputOptions).toMatchObject({
       codeSplitting: false,

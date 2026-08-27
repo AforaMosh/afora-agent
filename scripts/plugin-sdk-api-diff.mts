@@ -162,7 +162,7 @@ async function runAbortableChild(params: {
 async function installRevisionDependencies(repoRoot: string, signal: AbortSignal): Promise<void> {
   await runAbortableChild({
     command: "pnpm",
-    args: ["install", "--frozen-lockfile", "--ignore-scripts", "--filter", "openclaw"],
+    args: ["install", "--frozen-lockfile", "--ignore-scripts", "--filter", "afora"],
     cwd: repoRoot,
     failureMessage: "Plugin SDK revision install failed",
     signal,
@@ -219,7 +219,7 @@ async function main(): Promise<void> {
   const temporaryParent = process.env.RUNNER_TEMP ?? os.tmpdir();
   await fs.mkdir(temporaryParent, { recursive: true });
   const temporaryRoot = await fs.mkdtemp(
-    path.join(temporaryParent, "openclaw-plugin-sdk-api-diff-"),
+    path.join(temporaryParent, "afora-plugin-sdk-api-diff-"),
   );
   const roots = [
     { commit: baseCommit, name: "base" },

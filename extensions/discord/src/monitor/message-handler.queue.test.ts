@@ -4,17 +4,17 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { APIMessage } from "discord-api-types/v10";
-import { fanInChannelIngressLifecycles } from "openclaw/plugin-sdk/channel-ingress-runtime";
+import { fanInChannelIngressLifecycles } from "afora-agent/plugin-sdk/channel-ingress-runtime";
 import {
   type ChannelIngressQueue,
   DEFAULT_INGRESS_RETRY_MAX_ATTEMPTS,
-} from "openclaw/plugin-sdk/channel-outbound";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
 import {
-  closeOpenClawStateDatabaseForTest,
+  closeAforaStateDatabaseForTest,
   createChannelIngressQueueForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildDiscordInboundJob } from "./inbound-job.js";
 import { createDiscordIngressMonitor, type DiscordIngressLifecycle } from "./ingress.js";
@@ -76,7 +76,7 @@ type DiscordIngressPayload = {
 async function withDiscordQueue<T>(
   run: (queue: ChannelIngressQueue<DiscordIngressPayload>) => Promise<T>,
 ): Promise<T> {
-  const created = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-discord-handler-"));
+  const created = await fs.mkdtemp(path.join(os.tmpdir(), "afora-discord-handler-"));
   const stateDir = await fs.realpath(created);
   const queue = createChannelIngressQueueForTests<DiscordIngressPayload>({
     channelId: "discord",
@@ -86,7 +86,7 @@ async function withDiscordQueue<T>(
   try {
     return await run(queue);
   } finally {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(stateDir, { recursive: true, force: true });
   }
 }
@@ -148,7 +148,7 @@ function createPreflightContext(channelId = "ch-1") {
     token: "test-token",
     groupPolicy: "allowlist" as const,
   };
-  const cfg: OpenClawConfig = {
+  const cfg: AforaConfig = {
     channels: {
       discord: discordConfig,
     },

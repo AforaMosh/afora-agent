@@ -1,5 +1,5 @@
-// Diagnostics Otel plugin entrypoint registers its OpenClaw integration.
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+// Diagnostics Otel plugin entrypoint registers its Afora integration.
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import { createDiagnosticsOtelService } from "./runtime-api.js";
 
 export default definePluginEntry({

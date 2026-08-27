@@ -1,7 +1,7 @@
 // Diffs Language Pack API module exposes the plugin public contract.
 export {
   definePluginEntry,
-  type OpenClawPluginApi,
-  type OpenClawPluginHttpRouteHandler,
+  type AforaPluginApi,
+  type AforaPluginHttpRouteHandler,
   type PluginLogger,
-} from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/plugin-entry";

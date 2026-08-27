@@ -5,7 +5,7 @@ import { mockProcessPlatform } from "../test-utils/vitest-spies.js";
 import { SUPERVISOR_HINT_ENV_VARS } from "./supervisor-markers.js";
 
 const spawnMock = vi.hoisted(() => vi.fn());
-const triggerOpenClawRestartMock = vi.hoisted(() => vi.fn());
+const triggerAforaRestartMock = vi.hoisted(() => vi.fn());
 const scheduleLaunchdHandoffMock = vi.hoisted(() =>
   vi.fn(
     (
@@ -19,7 +19,7 @@ const scheduleLaunchdHandoffMock = vi.hoisted(() =>
 const isContainerEnvironmentMock = vi.hoisted(() => vi.fn(() => false));
 
 vi.mock("node:child_process", async () => {
-  const { mockNodeBuiltinModule } = await import("openclaw/plugin-sdk/test-node-mocks");
+  const { mockNodeBuiltinModule } = await import("afora-agent/plugin-sdk/test-node-mocks");
   return mockNodeBuiltinModule(
     () => vi.importActual<typeof import("node:child_process")>("node:child_process"),
     {
@@ -28,7 +28,7 @@ vi.mock("node:child_process", async () => {
   );
 });
 vi.mock("./restart.js", () => ({
-  triggerOpenClawRestart: (...args: unknown[]) => triggerOpenClawRestartMock(...args),
+  triggerAforaRestart: (...args: unknown[]) => triggerAforaRestartMock(...args),
 }));
 vi.mock("../daemon/launchd-restart-handoff.js", () => ({
   scheduleDetachedLaunchdRestartHandoff: (...args: unknown[]) =>
@@ -56,7 +56,7 @@ afterEach(() => {
   process.argv = [...originalArgv];
   process.execArgv = [...originalExecArgv];
   spawnMock.mockClear();
-  triggerOpenClawRestartMock.mockClear();
+  triggerAforaRestartMock.mockClear();
   scheduleLaunchdHandoffMock.mockReset();
   scheduleLaunchdHandoffMock.mockReturnValue({
     ok: true,
@@ -87,7 +87,7 @@ function expectLaunchdSupervisedWithHandoff(params?: { launchJobLabel?: string }
   if (params?.launchJobLabel) {
     process.env.LAUNCH_JOB_LABEL = params.launchJobLabel;
   }
-  process.env.OPENCLAW_LAUNCHD_LABEL = "ai.openclaw.gateway";
+  process.env.AFORA_LAUNCHD_LABEL = "ai.afora.gateway";
   const result = restartGatewayProcessWithFreshPid();
   expect(result.mode).toBe("supervised");
   expect(result.handoffSpawned).toBeInstanceOf(Promise);
@@ -95,70 +95,70 @@ function expectLaunchdSupervisedWithHandoff(params?: { launchJobLabel?: string }
     mode: "start-after-exit",
     waitForPid: process.pid,
   });
-  expect(triggerOpenClawRestartMock).not.toHaveBeenCalled();
+  expect(triggerAforaRestartMock).not.toHaveBeenCalled();
   expect(spawnMock).not.toHaveBeenCalled();
 }
 
 describe("restartGatewayProcessWithFreshPid", () => {
-  it("returns disabled when OPENCLAW_NO_RESPAWN is set", () => {
-    process.env.OPENCLAW_NO_RESPAWN = "1";
+  it("returns disabled when AFORA_NO_RESPAWN is set", () => {
+    process.env.AFORA_NO_RESPAWN = "1";
     const result = restartGatewayProcessWithFreshPid();
     expect(result.mode).toBe("disabled");
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
-  it("keeps OPENCLAW_NO_RESPAWN ahead of inherited supervisor hints", () => {
+  it("keeps AFORA_NO_RESPAWN ahead of inherited supervisor hints", () => {
     clearSupervisorHints();
     setPlatform("darwin");
-    process.env.OPENCLAW_NO_RESPAWN = "1";
-    process.env.LAUNCH_JOB_LABEL = "ai.openclaw.gateway";
+    process.env.AFORA_NO_RESPAWN = "1";
+    process.env.LAUNCH_JOB_LABEL = "ai.afora.gateway";
 
     const result = restartGatewayProcessWithFreshPid();
 
     expect(result).toEqual({ mode: "disabled" });
-    expect(triggerOpenClawRestartMock).not.toHaveBeenCalled();
+    expect(triggerAforaRestartMock).not.toHaveBeenCalled();
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
-  it("actively schedules relaunch when OpenClaw launchd markers are present on macOS", () => {
+  it("actively schedules relaunch when Afora launchd markers are present on macOS", () => {
     clearSupervisorHints();
-    expectLaunchdSupervisedWithHandoff({ launchJobLabel: "ai.openclaw.gateway" });
+    expectLaunchdSupervisedWithHandoff({ launchJobLabel: "ai.afora.gateway" });
   });
 
   it("returns supervised for a real gateway launchd job without the injected marker", () => {
     clearSupervisorHints();
     setPlatform("darwin");
-    process.env.LAUNCH_JOB_LABEL = "ai.openclaw.gateway";
+    process.env.LAUNCH_JOB_LABEL = "ai.afora.gateway";
 
     const result = restartGatewayProcessWithFreshPid();
 
     expect(result.mode).toBe("supervised");
     expect(scheduleLaunchdHandoffMock).toHaveBeenCalledOnce();
-    expect(triggerOpenClawRestartMock).not.toHaveBeenCalled();
+    expect(triggerAforaRestartMock).not.toHaveBeenCalled();
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
   it("returns supervised for a real gateway XPC launchd job without the injected marker", () => {
     clearSupervisorHints();
     setPlatform("darwin");
-    process.env.XPC_SERVICE_NAME = "ai.openclaw.gateway";
+    process.env.XPC_SERVICE_NAME = "ai.afora.gateway";
 
     const result = restartGatewayProcessWithFreshPid();
 
     expect(result.mode).toBe("supervised");
     expect(scheduleLaunchdHandoffMock).toHaveBeenCalledOnce();
-    expect(triggerOpenClawRestartMock).not.toHaveBeenCalled();
+    expect(triggerAforaRestartMock).not.toHaveBeenCalled();
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
   it("returns supervised on macOS when launchd label is set", () => {
-    expectLaunchdSupervisedWithHandoff({ launchJobLabel: "ai.openclaw.gateway" });
+    expectLaunchdSupervisedWithHandoff({ launchJobLabel: "ai.afora.gateway" });
   });
 
   it("returns failed when the launchd handoff cannot be scheduled", () => {
     clearSupervisorHints();
     setPlatform("darwin");
-    process.env.OPENCLAW_LAUNCHD_LABEL = "ai.openclaw.gateway";
+    process.env.AFORA_LAUNCHD_LABEL = "ai.afora.gateway";
     scheduleLaunchdHandoffMock.mockReturnValue({ ok: false, error: "spawn EPERM" });
 
     expect(restartGatewayProcessWithFreshPid()).toEqual({
@@ -167,12 +167,12 @@ describe("restartGatewayProcessWithFreshPid", () => {
     });
   });
 
-  it("launchd supervisor never returns failed regardless of triggerOpenClawRestart outcome", () => {
+  it("launchd supervisor never returns failed regardless of triggerAforaRestart outcome", () => {
     clearSupervisorHints();
     setPlatform("darwin");
-    process.env.OPENCLAW_LAUNCHD_LABEL = "ai.openclaw.gateway";
-    // Even if triggerOpenClawRestart *would* fail, launchd path must not call it.
-    triggerOpenClawRestartMock.mockReturnValue({
+    process.env.AFORA_LAUNCHD_LABEL = "ai.afora.gateway";
+    // Even if triggerAforaRestart *would* fail, launchd path must not call it.
+    triggerAforaRestartMock.mockReturnValue({
       ok: false,
       method: "launchctl",
       detail: "Bootstrap failed: 5: Input/output error",
@@ -181,27 +181,27 @@ describe("restartGatewayProcessWithFreshPid", () => {
     expect(result.mode).toBe("supervised");
     expect(result.mode).not.toBe("failed");
     expect(scheduleLaunchdHandoffMock).toHaveBeenCalledOnce();
-    expect(triggerOpenClawRestartMock).not.toHaveBeenCalled();
+    expect(triggerAforaRestartMock).not.toHaveBeenCalled();
   });
 
   it("does not schedule kickstart on non-darwin platforms", () => {
     setPlatform("linux");
     process.env.INVOCATION_ID = "abc123";
-    process.env.OPENCLAW_LAUNCHD_LABEL = "ai.openclaw.gateway";
+    process.env.AFORA_LAUNCHD_LABEL = "ai.afora.gateway";
 
     const result = restartGatewayProcessWithFreshPid();
 
     expect(result.mode).toBe("supervised");
     expect(scheduleLaunchdHandoffMock).not.toHaveBeenCalled();
-    expect(triggerOpenClawRestartMock).not.toHaveBeenCalled();
+    expect(triggerAforaRestartMock).not.toHaveBeenCalled();
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
   it("does not treat inherited XPC_SERVICE_NAME as launchd supervision", () => {
     clearSupervisorHints();
     setPlatform("darwin");
-    process.env.XPC_SERVICE_NAME = "ai.openclaw.mac";
-    process.env.OPENCLAW_PROFILE = "mac";
+    process.env.XPC_SERVICE_NAME = "ai.afora.mac";
+    process.env.AFORA_PROFILE = "mac";
 
     const result = restartGatewayProcessWithFreshPid();
 
@@ -209,12 +209,12 @@ describe("restartGatewayProcessWithFreshPid", () => {
       mode: "disabled",
       detail: "unmanaged: use in-process restart to keep custom supervisor PID tracking stable",
     });
-    expect(triggerOpenClawRestartMock).not.toHaveBeenCalled();
+    expect(triggerAforaRestartMock).not.toHaveBeenCalled();
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
   it("uses in-process restart on unmanaged Unix so custom supervisors keep the tracked PID", () => {
-    delete process.env.OPENCLAW_NO_RESPAWN;
+    delete process.env.AFORA_NO_RESPAWN;
     clearSupervisorHints();
     setPlatform("linux");
     process.execArgv = ["--import", "tsx"];
@@ -230,15 +230,15 @@ describe("restartGatewayProcessWithFreshPid", () => {
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
-  it("returns supervised when OPENCLAW_LAUNCHD_LABEL is set (stock launchd plist)", () => {
+  it("returns supervised when AFORA_LAUNCHD_LABEL is set (stock launchd plist)", () => {
     clearSupervisorHints();
     expectLaunchdSupervisedWithHandoff();
   });
 
-  it("returns supervised when OPENCLAW_SYSTEMD_UNIT is set", () => {
+  it("returns supervised when AFORA_SYSTEMD_UNIT is set", () => {
     clearSupervisorHints();
     setPlatform("linux");
-    process.env.OPENCLAW_SYSTEMD_UNIT = "openclaw-gateway.service";
+    process.env.AFORA_SYSTEMD_UNIT = "afora-gateway.service";
     const result = restartGatewayProcessWithFreshPid();
     expect(result.mode).toBe("supervised");
     expect(spawnMock).not.toHaveBeenCalled();
@@ -247,33 +247,33 @@ describe("restartGatewayProcessWithFreshPid", () => {
   it("exits to external supervision without invoking inherited native restart hooks", () => {
     clearSupervisorHints();
     setPlatform("win32");
-    process.env.OPENCLAW_SUPERVISOR_MODE = "external";
-    process.env.OPENCLAW_WINDOWS_TASK_NAME = "OpenClaw Gateway";
+    process.env.AFORA_SUPERVISOR_MODE = "external";
+    process.env.AFORA_WINDOWS_TASK_NAME = "Afora Gateway";
 
     const result = restartGatewayProcessWithFreshPid();
 
     expect(result).toEqual({ mode: "supervised" });
-    expect(triggerOpenClawRestartMock).not.toHaveBeenCalled();
+    expect(triggerAforaRestartMock).not.toHaveBeenCalled();
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
-  it("returns supervised when OpenClaw gateway task markers are set on Windows", () => {
+  it("returns supervised when Afora gateway task markers are set on Windows", () => {
     clearSupervisorHints();
     setPlatform("win32");
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
-    process.env.OPENCLAW_SERVICE_KIND = "gateway";
-    triggerOpenClawRestartMock.mockReturnValue({ ok: true, method: "schtasks" });
+    process.env.AFORA_SERVICE_MARKER = "afora";
+    process.env.AFORA_SERVICE_KIND = "gateway";
+    triggerAforaRestartMock.mockReturnValue({ ok: true, method: "schtasks" });
     const result = restartGatewayProcessWithFreshPid();
     expect(result.mode).toBe("supervised");
-    expect(triggerOpenClawRestartMock).toHaveBeenCalledOnce();
+    expect(triggerAforaRestartMock).toHaveBeenCalledOnce();
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
   it("keeps generic service markers out of non-Windows supervisor detection", () => {
     clearSupervisorHints();
     setPlatform("linux");
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
-    process.env.OPENCLAW_SERVICE_KIND = "gateway";
+    process.env.AFORA_SERVICE_MARKER = "afora";
+    process.env.AFORA_SERVICE_KIND = "gateway";
 
     const result = restartGatewayProcessWithFreshPid();
 
@@ -281,7 +281,7 @@ describe("restartGatewayProcessWithFreshPid", () => {
       mode: "disabled",
       detail: "unmanaged: use in-process restart to keep custom supervisor PID tracking stable",
     });
-    expect(triggerOpenClawRestartMock).not.toHaveBeenCalled();
+    expect(triggerAforaRestartMock).not.toHaveBeenCalled();
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
@@ -297,7 +297,7 @@ describe("restartGatewayProcessWithFreshPid", () => {
   });
 
   it("returns disabled in containers so PID 1 stays alive for in-process restart", () => {
-    delete process.env.OPENCLAW_NO_RESPAWN;
+    delete process.env.AFORA_NO_RESPAWN;
     clearSupervisorHints();
     setPlatform("linux");
     isContainerEnvironmentMock.mockReturnValue(true);
@@ -314,20 +314,20 @@ describe("restartGatewayProcessWithFreshPid", () => {
   it("ignores node task script hints for gateway restart detection on Windows", () => {
     clearSupervisorHints();
     setPlatform("win32");
-    process.env.OPENCLAW_TASK_SCRIPT = "C:\\openclaw\\node.cmd";
-    process.env.OPENCLAW_TASK_SCRIPT_NAME = "node.cmd";
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
-    process.env.OPENCLAW_SERVICE_KIND = "node";
+    process.env.AFORA_TASK_SCRIPT = "C:\\afora\\node.cmd";
+    process.env.AFORA_TASK_SCRIPT_NAME = "node.cmd";
+    process.env.AFORA_SERVICE_MARKER = "afora";
+    process.env.AFORA_SERVICE_KIND = "node";
 
     const result = restartGatewayProcessWithFreshPid();
 
     expect(result.mode).toBe("disabled");
-    expect(triggerOpenClawRestartMock).not.toHaveBeenCalled();
+    expect(triggerAforaRestartMock).not.toHaveBeenCalled();
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
   it("does not attempt detached spawn on unmanaged Unix even if spawn would throw", () => {
-    delete process.env.OPENCLAW_NO_RESPAWN;
+    delete process.env.AFORA_NO_RESPAWN;
     clearSupervisorHints();
     setPlatform("linux");
 
@@ -344,21 +344,21 @@ describe("restartGatewayProcessWithFreshPid", () => {
 });
 
 describe("respawnGatewayProcessForUpdate", () => {
-  it("keeps OPENCLAW_NO_RESPAWN semantics for update restarts", () => {
+  it("keeps AFORA_NO_RESPAWN semantics for update restarts", () => {
     clearSupervisorHints();
-    process.env.OPENCLAW_NO_RESPAWN = "1";
+    process.env.AFORA_NO_RESPAWN = "1";
 
     const result = respawnGatewayProcessForUpdate();
 
-    expect(result).toEqual({ mode: "disabled", detail: "OPENCLAW_NO_RESPAWN" });
+    expect(result).toEqual({ mode: "disabled", detail: "AFORA_NO_RESPAWN" });
     expect(spawnMock).not.toHaveBeenCalled();
   });
 
   it("actively schedules launchd update relaunch before exiting", () => {
     clearSupervisorHints();
     setPlatform("darwin");
-    process.env.OPENCLAW_LAUNCHD_LABEL = "ai.openclaw.gateway";
-    process.env.OPENCLAW_NO_RESPAWN = "1";
+    process.env.AFORA_LAUNCHD_LABEL = "ai.afora.gateway";
+    process.env.AFORA_NO_RESPAWN = "1";
 
     const result = respawnGatewayProcessForUpdate();
 
@@ -376,7 +376,7 @@ describe("respawnGatewayProcessForUpdate", () => {
     process.execArgv = [];
     process.argv = [
       "C:\\Program Files\\node.exe",
-      "C:\\openclaw\\node_modules\\.pnpm\\openclaw@2026.6.5\\node_modules\\openclaw\\dist\\index.js",
+      "C:\\afora\\node_modules\\.pnpm\\openclaw@2026.6.5\\node_modules\\afora\\dist\\index.js",
       "gateway",
       "run",
     ];
@@ -388,7 +388,7 @@ describe("respawnGatewayProcessForUpdate", () => {
     expect(result.pid).toBe(5151);
     expect(spawnMock).toHaveBeenCalledWith(
       process.execPath,
-      ["C:\\openclaw\\node_modules\\openclaw\\openclaw.mjs", "gateway", "run"],
+      ["C:\\afora\\node_modules\\afora\\afora.mjs", "gateway", "run"],
       {
         detached: true,
         env: process.env,
@@ -400,22 +400,22 @@ describe("respawnGatewayProcessForUpdate", () => {
   it("delegates update restarts to external supervision without spawning", () => {
     clearSupervisorHints();
     setPlatform("linux");
-    process.env.OPENCLAW_SUPERVISOR_MODE = "external";
+    process.env.AFORA_SUPERVISOR_MODE = "external";
 
     const result = respawnGatewayProcessForUpdate();
 
     expect(result).toEqual({ mode: "supervised" });
     expect(spawnMock).not.toHaveBeenCalled();
-    expect(triggerOpenClawRestartMock).not.toHaveBeenCalled();
+    expect(triggerAforaRestartMock).not.toHaveBeenCalled();
   });
 
-  it("rewrites a pnpm-versioned OpenClaw entry before detached update respawn", () => {
+  it("rewrites a pnpm-versioned Afora entry before detached update respawn", () => {
     clearSupervisorHints();
     setPlatform("linux");
     process.execArgv = [];
     process.argv = [
       "/usr/local/bin/node",
-      "/app/node_modules/.pnpm/openclaw@2026.6.5/node_modules/openclaw/dist/entry.js",
+      "/app/node_modules/.pnpm/openclaw@2026.6.5/node_modules/afora/dist/entry.js",
       "gateway",
       "run",
     ];
@@ -426,7 +426,7 @@ describe("respawnGatewayProcessForUpdate", () => {
     expect(result.mode).toBe("spawned");
     expect(spawnMock).toHaveBeenCalledWith(
       process.execPath,
-      ["/app/node_modules/openclaw/openclaw.mjs", "gateway", "run"],
+      ["/app/node_modules/AforaMosh/afora-agent.mjs", "gateway", "run"],
       {
         detached: true,
         env: process.env,
@@ -456,7 +456,7 @@ describe("respawnGatewayProcessForUpdate", () => {
   it("spawns a detached update process when macOS only has inherited XPC state", () => {
     clearSupervisorHints();
     setPlatform("darwin");
-    process.env.XPC_SERVICE_NAME = "ai.openclaw.mac";
+    process.env.XPC_SERVICE_NAME = "ai.afora.mac";
     process.execArgv = [];
     process.argv = ["/usr/local/bin/node", "/repo/dist/index.js", "gateway", "run"];
     spawnMock.mockReturnValue(mockDetachedChild(6161));
@@ -500,9 +500,9 @@ describe("respawnGatewayProcessForUpdate", () => {
   it("exits to a managed supervisor for updates even when respawn is disabled", () => {
     clearSupervisorHints();
     setPlatform("linux");
-    process.env.OPENCLAW_NO_RESPAWN = "1";
-    process.env.OPENCLAW_SERVICE_MARKER = "openclaw";
-    process.env.OPENCLAW_SERVICE_KIND = "gateway";
+    process.env.AFORA_NO_RESPAWN = "1";
+    process.env.AFORA_SERVICE_MARKER = "afora";
+    process.env.AFORA_SERVICE_KIND = "gateway";
 
     const result = respawnGatewayProcessForUpdate();
 
@@ -511,7 +511,7 @@ describe("respawnGatewayProcessForUpdate", () => {
   });
 
   it("returns failed when update detached respawn throws", () => {
-    delete process.env.OPENCLAW_NO_RESPAWN;
+    delete process.env.AFORA_NO_RESPAWN;
     clearSupervisorHints();
     setPlatform("linux");
 

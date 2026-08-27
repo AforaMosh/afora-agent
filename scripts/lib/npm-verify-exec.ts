@@ -1,4 +1,4 @@
-// Npm Verify Exec script supports OpenClaw repository automation.
+// Npm Verify Exec script supports Afora repository automation.
 import { execFileSync, type ExecFileSyncOptionsWithStringEncoding } from "node:child_process";
 import { readPositiveEnvInt } from "./numeric-options.mjs";
 
@@ -23,14 +23,14 @@ export function runNpmVerifyCommand(
   const timeoutMs =
     options.timeoutMs ??
     readPositiveEnvInt(
-      "OPENCLAW_NPM_VERIFY_COMMAND_TIMEOUT_MS",
+      "AFORA_NPM_VERIFY_COMMAND_TIMEOUT_MS",
       process.env,
       DEFAULT_NPM_VERIFY_COMMAND_TIMEOUT_MS,
     );
   const maxBuffer =
     options.maxBufferBytes ??
     readPositiveEnvInt(
-      "OPENCLAW_NPM_VERIFY_COMMAND_MAX_BUFFER_BYTES",
+      "AFORA_NPM_VERIFY_COMMAND_MAX_BUFFER_BYTES",
       process.env,
       DEFAULT_NPM_VERIFY_COMMAND_MAX_BUFFER_BYTES,
     );

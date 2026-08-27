@@ -1,4 +1,4 @@
-openclaw-board-view {
+afora-board-view {
   display: block;
   min-width: 0;
   width: 100%;
@@ -145,7 +145,7 @@ openclaw-board-view {
   z-index: 7;
 }
 
-openclaw-board-widget-cell {
+afora-board-widget-cell {
   display: contents;
 }
 
@@ -333,9 +333,9 @@ openclaw-board-widget-cell {
   color: var(--text);
 }
 
-openclaw-workboard-card-widget,
-openclaw-workboard-mini-widget,
-openclaw-workboard-board-widget {
+afora-workboard-card-widget,
+afora-workboard-mini-widget,
+afora-workboard-board-widget {
   display: block;
   max-width: 100%;
   min-height: 100%;

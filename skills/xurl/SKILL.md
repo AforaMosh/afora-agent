@@ -3,7 +3,7 @@ name: xurl
 description: "xurl CLI for authenticated X posts, replies, reads/search, DMs, media upload, followers, auth status, or raw v2 API calls."
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "emoji": "🐦",
         "requires": { "bins": ["xurl"] },
@@ -106,7 +106,7 @@ xurl --auth oauth2 /2/users/me
 ```bash
 xurl /2/users/me
 xurl -X POST /2/tweets -d '{"text":"Hello world!"}'
-xurl '/2/tweets/search/recent?query=openclaw&max_results=10'
+xurl '/2/tweets/search/recent?query=afora&max_results=10'
 ```
 
 Use raw mode when shortcuts do not cover the endpoint. Keep payloads in temp files for complex JSON.

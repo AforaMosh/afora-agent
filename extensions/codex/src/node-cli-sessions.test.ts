@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import process from "node:process";
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createCodexCliSessionNodeHostCommands,
@@ -17,7 +17,7 @@ let previousCodexHome: string | undefined;
 
 describe("codex cli node sessions", () => {
   beforeEach(async () => {
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-cli-sessions-"));
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-cli-sessions-"));
     previousCodexHome = process.env.CODEX_HOME;
     process.env.CODEX_HOME = tempDir;
   });

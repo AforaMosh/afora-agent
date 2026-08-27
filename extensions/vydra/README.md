@@ -1,13 +1,13 @@
-# OpenClaw Vydra Provider
+# Afora Vydra Provider
 
-Official OpenClaw provider plugin for Vydra image, video, and speech generation.
+Official Afora provider plugin for Vydra image, video, and speech generation.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/vydra-provider
-openclaw gateway restart
+afora plugins install @afora/vydra-provider
+afora gateway restart
 ```
 
 Set `VYDRA_API_KEY`, then configure an image, video, or speech model. See
-<https://docs.openclaw.ai/providers/vydra> for capability details and examples.
+<https://docs.afora.ai/providers/vydra> for capability details and examples.

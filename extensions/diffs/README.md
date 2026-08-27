@@ -1,11 +1,11 @@
-# @openclaw/diffs
+# @afora/diffs
 
-Read-only diff viewer plugin for **OpenClaw** agents.
+Read-only diff viewer plugin for **Afora** agents.
 
 ## Install
 
 ```bash
-openclaw plugins install @openclaw/diffs
+afora plugins install @afora/diffs
 ```
 
 Restart the Gateway after installing or updating the plugin.
@@ -84,7 +84,7 @@ Input safety limits:
 
 ## Plugin Defaults
 
-Set plugin-wide defaults in `~/.openclaw/openclaw.json`:
+Set plugin-wide defaults in `~/.AforaMosh/afora-agent.json`:
 
 ```json5
 {
@@ -121,13 +121,13 @@ Explicit tool parameters still win over these defaults.
 
 ## Docs
 
-- https://docs.openclaw.ai/tools/diffs
+- https://docs.afora.ai/tools/diffs
 
 ## Package
 
 - Plugin id: `diffs`
-- Package: `@openclaw/diffs`
-- Minimum OpenClaw host: `2026.4.30`
+- Package: `@afora/diffs`
+- Minimum Afora host: `2026.4.30`
 
 Security options:
 
@@ -144,7 +144,7 @@ Example:
       diffs: {
         enabled: true,
         config: {
-          viewerBaseUrl: "https://gateway.example.com/openclaw",
+          viewerBaseUrl: "https://gateway.example.com/afora",
         },
       },
     },
@@ -180,10 +180,10 @@ Use the `diffs` tool in `file` mode for this before and after input. After it re
 Path: README.md
 
 Before:
-OpenClaw supports plugins.
+Afora supports plugins.
 
 After:
-OpenClaw supports plugins and hosted diff views.
+Afora supports plugins and hosted diff views.
 ```
 
 Do both:
@@ -221,7 +221,7 @@ diff --git a/src/example.ts b/src/example.ts
 - Rendered PNG/PDF files keep the per-file header counts but omit the interactive view toggles.
 - The viewer is hosted locally through the gateway under `/plugins/diffs/...`.
 - Viewer HTML and metadata are ephemeral SQLite plugin blobs. The URL token is returned to the caller while SQLite stores only its SHA-256 hash.
-- Rendered PNG/PDF files remain temporary materializations in `$TMPDIR/openclaw-diffs` because delivery APIs require a file path. No JSON metadata sidecars are written or imported.
+- Rendered PNG/PDF files remain temporary materializations in `$TMPDIR/afora-diffs` because delivery APIs require a file path. No JSON metadata sidecars are written or imported.
 - Default viewer URLs use `gateway.publicOrigin` when configured, then the existing bind-aware Gateway fallback. Plugin `viewerBaseUrl` and per-call `baseUrl` take precedence.
 - If `gateway.trustedProxies` includes loopback for a same-host proxy (for example Tailscale Serve), raw `127.0.0.1` viewer requests without forwarded client-IP headers fail closed by design.
 - In that topology, prefer `mode=file` / `mode=both` for attachments, or intentionally enable remote viewers and set plugin `viewerBaseUrl` (or pass a proxy/public `baseUrl`) when you need a shareable viewer URL.

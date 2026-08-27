@@ -1,10 +1,10 @@
 /** Redaction-safe projection from live agent events into durable audit metadata. */
 import { createHash } from "node:crypto";
-import { asDateTimestampMs } from "@openclaw/normalization-core/number-coercion";
+import { asDateTimestampMs } from "@afora/normalization-core/number-coercion";
 import {
   normalizeOptionalLowercaseString,
   readNonEmptyStringPreservingWhitespace as nonEmptyString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   AGENT_RUN_TERMINAL_RETRY_GRACE_MS,
   buildAgentRunTerminalOutcomeFromLifecycleEvent,

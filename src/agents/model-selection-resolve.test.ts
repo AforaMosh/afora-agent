@@ -1,6 +1,6 @@
 // Verifies configured model ref resolution and OpenRouter compatibility aliases.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import {
   resolveAllowedModelRefCore,
   resolveConfiguredModelRef,
@@ -26,7 +26,7 @@ describe("model-selection-resolve OpenRouter compat aliases", () => {
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const catalog = [
       { provider: "openai", id: "gpt-5.5", name: "GPT 5.5" },
       { provider: "anthropic", id: "claude-sonnet-4-6", name: "Claude Sonnet 4.6" },
@@ -71,7 +71,7 @@ describe("model-selection-resolve OpenRouter compat aliases", () => {
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const catalog = [
       { provider: "openai", id: "gpt-5.5", name: "GPT 5.5" },
       { provider: "anthropic", id: "claude-sonnet-4-6", name: "Claude Sonnet 4.6" },
@@ -120,7 +120,7 @@ describe("model-selection-resolve OpenRouter compat aliases", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expect(
       resolveAllowedModelRefCore({
@@ -144,7 +144,7 @@ describe("model-selection-resolve OpenRouter compat aliases", () => {
           model: { primary: "openrouter:auto" },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       resolveConfiguredModelRef({
@@ -164,7 +164,7 @@ describe("model-selection-resolve OpenRouter compat aliases", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const catalog = [
       {

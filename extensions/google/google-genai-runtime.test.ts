@@ -34,6 +34,6 @@ describe("createGoogleGenAI", () => {
     expect(options.httpOptions?.headers).toMatchObject({
       "X-Test": "value",
     });
-    expect(options.httpOptions?.headers?.["x-goog-api-client"]).toMatch(/^openclaw\//u);
+    expect(options.httpOptions?.headers?.["x-goog-api-client"]).toMatch(/^afora\//u);
   });
 });

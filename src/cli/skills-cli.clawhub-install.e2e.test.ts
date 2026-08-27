@@ -15,7 +15,7 @@ async function readRequestBody(req: IncomingMessage): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
-async function spawnOpenClaw(
+async function spawnAfora(
   args: string[],
   options: { cwd: string; env: NodeJS.ProcessEnv },
 ): Promise<{ status: number | null; stdout: string; stderr: string }> {
@@ -48,7 +48,7 @@ async function buildGitHubSkillZip(): Promise<Buffer> {
   return await zip.generateAsync({ type: "nodebuffer" });
 }
 
-describe("openclaw skills install ClawHub GitHub-backed E2E", () => {
+describe("afora skills install ClawHub GitHub-backed E2E", () => {
   it("installs from the install resolver and reports install telemetry", async () => {
     const commit = "c".repeat(40);
     const telemetryBodies: unknown[] = [];
@@ -106,22 +106,22 @@ describe("openclaw skills install ClawHub GitHub-backed E2E", () => {
     });
 
     const registry = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-clawhub-cli-e2e-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-clawhub-cli-e2e-"));
     try {
-      const result = await spawnOpenClaw(
+      const result = await spawnAfora(
         ["skills", "install", "@demo-owner/aiq-deploy", "--global"],
         {
           cwd: process.cwd(),
           env: {
             ...process.env,
-            OPENCLAW_STATE_DIR: stateDir,
-            OPENCLAW_CONFIG_PATH: path.join(stateDir, "openclaw.json"),
-            OPENCLAW_CLAWHUB_URL: registry,
+            AFORA_STATE_DIR: stateDir,
+            AFORA_CONFIG_PATH: path.join(stateDir, "afora.json"),
+            AFORA_CLAWHUB_URL: registry,
             CLAWHUB_TOKEN: "test-token",
             CLAWHUB_GITHUB_CODELOAD_BASE_URL: registry,
             CLAWHUB_DISABLE_TELEMETRY: "",
             CLAWDHUB_DISABLE_TELEMETRY: "",
-            OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
+            AFORA_DISABLE_BUNDLED_PLUGINS: "1",
           },
         },
       );

@@ -7,28 +7,28 @@ read_when:
 title: "Resume"
 ---
 
-# `openclaw resume`
+# `afora resume`
 
 Attach the terminal UI to an existing Gateway session. The session stays on
 the Gateway; `resume` selects it and opens the existing [TUI](/cli/tui).
 
 ```bash
-openclaw resume
-openclaw resume <query>
-openclaw resume --handoff <payload>
+afora resume
+afora resume <query>
+afora resume --handoff <payload>
 ```
 
-With no query, OpenClaw displays up to 50 sessions active in the last seven
-days. With a query, an exact session key wins; otherwise OpenClaw requires a
+With no query, Afora displays up to 50 sessions active in the last seven
+days. With a query, an exact session key wins; otherwise Afora requires a
 unique substring or fuzzy match across session keys, display names, and labels.
 
 The picker omits bare `global` rows because they do not identify an owning
 agent. To attach one, pass a fully qualified key such as
-`openclaw resume agent:main:global`.
+`afora resume agent:main:global`.
 
-If a query is ambiguous, OpenClaw prints the matching candidates and exits with
+If a query is ambiguous, Afora prints the matching candidates and exits with
 status 1. If no recent session matches, it suggests the picker and
-[`openclaw sessions`](/cli/sessions), then exits with status 1.
+[`afora sessions`](/cli/sessions), then exits with status 1.
 
 ## Options
 
@@ -52,14 +52,14 @@ unavailable, start or repair it and rerun the command.
 when possible (`env`/`file`/`exec`/`store` providers).
 
 When present, `--handoff` supplies the target Gateway URL. Otherwise, Gateway
-target precedence is explicit `--url`, then `OPENCLAW_GATEWAY_URL`, then
+target precedence is explicit `--url`, then `AFORA_GATEWAY_URL`, then
 `gateway.remote.url` when `gateway.mode` is `remote`, then the local loopback
-Gateway. For that local Gateway, `OPENCLAW_GATEWAY_PORT` takes precedence over
+Gateway. For that local Gateway, `AFORA_GATEWAY_PORT` takes precedence over
 the active port recorded by a running Gateway, which takes precedence over the
 configured or default `gateway.port`.
 
 An explicit target normally requires an explicit `--token` or `--password`;
-OpenClaw does not borrow credentials or a TLS pin from a different configured
+Afora does not borrow credentials or a TLS pin from a different configured
 target. `resume` has one narrow exception for a handoff copied from the Control
 UI: when its Gateway URL byte-for-byte matches a canonical target of the current
 profile, it may reuse that profile's configured interactive auth, SecretRef,
@@ -72,16 +72,16 @@ local Gateway certificate fingerprint, and an exact configured remote target
 may reuse `gateway.remote.tlsFingerprint`; a public-origin target never inherits
 the local listener's pin. Pass `--tls-fingerprint` explicitly when that public
 origin needs a pin. A host, port, path, profile, query, or fragment mismatch
-fails closed under the normal explicit-target policy. OpenClaw never scans
+fails closed under the normal explicit-target policy. Afora never scans
 other profiles for a match. Handoff connections also ignore ambient
-`OPENCLAW_GATEWAY_TOKEN` and `OPENCLAW_GATEWAY_PASSWORD` fallback, so shell
+`AFORA_GATEWAY_TOKEN` and `AFORA_GATEWAY_PASSWORD` fallback, so shell
 credentials for another Gateway cannot cross into the selected target. Explicit
 flags and credentials owned by an exact configured target remain eligible.
 
 ## Continue from the Control UI
 
 Open the selected session's header menu and choose **Continue in terminal…**.
-The dialog shows one copyable `openclaw resume --handoff <payload>` command.
+The dialog shows one copyable `afora resume --handoff <payload>` command.
 The opaque payload is versioned, bounded, and encoded with an unpadded URL-safe
 base64 alphabet, so the command needs no quoting and is safe to paste in common
 POSIX shells, PowerShell, and `cmd.exe`. The encoded argument is limited to 4096
@@ -93,11 +93,11 @@ credential, or bootstrap credential, and the browser does not execute it.
 
 The Control UI does not offer this command when the selected Gateway URL uses a
 query string. Gateway authentication and stored device scope are origin-based,
-not query-aware, so OpenClaw never strips or copies that query into a
+not query-aware, so Afora never strips or copies that query into a
 credential-free handoff. Use a manually authenticated CLI target with explicit
 `--token` or `--password`, or configure a queryless Gateway URL.
 
-Run the command in an already configured OpenClaw terminal. The terminal
+Run the command in an already configured Afora terminal. The terminal
 authenticates independently. Before opening the TUI, `resume` asks that Gateway
 to resolve the qualified key and uses the returned canonical key. A deleted or
 stale session stops with guidance to copy a fresh command; it never starts a new
@@ -105,7 +105,7 @@ session. The Gateway's session access controls remain authoritative. This flow
 continues an existing session; it does not delegate first-use authentication
 from the browser.
 
-If OpenClaw reports an invalid `--handoff` payload, return to the session's
+If Afora reports an invalid `--handoff` payload, return to the session's
 Control UI menu and copy a fresh command. Do not edit or reuse a truncated
 payload.
 
@@ -113,19 +113,19 @@ payload.
 
 ```bash
 # Choose from recent sessions
-openclaw resume
+afora resume
 
 # Exact key
-openclaw resume agent:main:bugfix
+afora resume agent:main:bugfix
 
 # Unique display-name or label fragment
-openclaw resume bugfix
+afora resume bugfix
 
 # Remote Gateway override
-openclaw resume bugfix --url wss://gateway.example.com --token <token>
+afora resume bugfix --url wss://gateway.example.com --token <token>
 
 # Opaque command copied from the Control UI
-openclaw resume --handoff <payload>
+afora resume --handoff <payload>
 ```
 
 ## Related

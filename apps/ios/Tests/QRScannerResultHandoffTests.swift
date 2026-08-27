@@ -1,6 +1,6 @@
-import OpenClawKit
+import AforaKit
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 @MainActor
 struct QRScannerResultHandoffTests {

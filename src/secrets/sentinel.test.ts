@@ -11,7 +11,7 @@ import {
 
 describe("secret sentinels", () => {
   afterEach(() => {
-    delete process.env.OPENCLAW_SECRET_SENTINELS;
+    delete process.env.AFORA_SECRET_SENTINELS;
     resetSecretRedactionRegistryForTest();
   });
 
@@ -76,7 +76,7 @@ describe("secret sentinels", () => {
   it.each(["off", " OFF ", "0", "false", "False"])(
     "returns plaintext when the kill switch is %s",
     (value) => {
-      process.env.OPENCLAW_SECRET_SENTINELS = value;
+      process.env.AFORA_SECRET_SENTINELS = value;
       expect(mintSecretSentinel("kill-switch-secret", { label: "model-auth:test" })).toBe(
         "kill-switch-secret",
       );

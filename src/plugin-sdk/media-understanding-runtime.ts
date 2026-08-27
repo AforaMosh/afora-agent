@@ -1,7 +1,7 @@
 /**
  * Runtime SDK subpath for media understanding, image description, and audio transcription.
  */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { logVerbose } from "../globals.js";
 import { sendTranscriptEcho } from "../media-understanding/echo-transcript.js";
 import { createLazyRuntimeModule } from "../shared/lazy-runtime.js";
@@ -25,7 +25,7 @@ export function createChannelPreflightAudio<TAudio>(params: {
 }) {
   const deferTranscriptEcho = params.deferTranscriptEcho ?? true;
 
-  const suppress = (cfg: OpenClawConfig): OpenClawConfig => {
+  const suppress = (cfg: AforaConfig): AforaConfig => {
     if (!deferTranscriptEcho) {
       return cfg;
     }
@@ -84,7 +84,7 @@ export function createChannelPreflightAudio<TAudio>(params: {
 
     async send(sendParams: {
       transcript: string;
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       accountId: string;
       originatingTo: string;
       messageThreadId?: string;

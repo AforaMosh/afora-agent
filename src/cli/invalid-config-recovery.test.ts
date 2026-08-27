@@ -50,7 +50,7 @@ describe("offerInvalidConfigRecovery", () => {
       }),
     ).resolves.toEqual({ status: "declined" });
 
-    expect(runtime.error).toHaveBeenCalledWith(expect.stringContaining("openclaw doctor --fix"));
+    expect(runtime.error).toHaveBeenCalledWith(expect.stringContaining("afora doctor --fix"));
     expect(runDoctor).not.toHaveBeenCalled();
     expect(retry).not.toHaveBeenCalled();
   });
@@ -70,7 +70,7 @@ describe("offerInvalidConfigRecovery", () => {
     ).resolves.toEqual({ status: "declined" });
 
     expect(runtime.error).toHaveBeenCalledTimes(1);
-    expect(runtime.error).toHaveBeenCalledWith(expect.stringContaining("openclaw doctor --fix"));
+    expect(runtime.error).toHaveBeenCalledWith(expect.stringContaining("afora doctor --fix"));
     expect(confirm).not.toHaveBeenCalled();
     expect(runDoctor).not.toHaveBeenCalled();
     expect(retry).not.toHaveBeenCalled();
@@ -80,7 +80,7 @@ describe("offerInvalidConfigRecovery", () => {
     const runtime = createRuntime();
     const runDoctor = vi.fn(async () => {});
     const retry = vi.fn(async () => {
-      throw createInvalidConfigError("/tmp/openclaw.json", "- gateway.port: invalid");
+      throw createInvalidConfigError("/tmp/afora.json", "- gateway.port: invalid");
     });
 
     await expect(

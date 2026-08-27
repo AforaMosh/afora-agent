@@ -1,6 +1,6 @@
-// Implements `openclaw channels status` with gateway status and config-only fallback.
-import { redactSensitiveUrlLikeString } from "@openclaw/net-policy/redact-sensitive-url";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+// Implements `afora channels status` with gateway status and config-only fallback.
+import { redactSensitiveUrlLikeString } from "@afora/net-policy/redact-sensitive-url";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { parseTimeoutMsWithFallback } from "../../cli/parse-timeout.js";
 import { withProgress } from "../../cli/progress.js";
 import { callGateway } from "../../gateway/call.js";

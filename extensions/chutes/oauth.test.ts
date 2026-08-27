@@ -1,6 +1,6 @@
 // Chutes tests cover oauth plugin behavior.
-import type { OAuthCredential } from "openclaw/plugin-sdk/provider-auth";
-import { jsonResponse } from "openclaw/plugin-sdk/test-env";
+import type { OAuthCredential } from "afora-agent/plugin-sdk/provider-auth";
+import { jsonResponse } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { loginChutes, refreshChutesOAuthCredential } from "./oauth.js";
 

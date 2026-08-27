@@ -1,6 +1,6 @@
 // Onboard skills tests cover skill setup prompts, package manager config, and skip behavior.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 
@@ -68,7 +68,7 @@ function createBundledSkill(params: {
   return {
     name: params.name,
     description: params.description,
-    source: "openclaw-bundled",
+    source: "afora-bundled",
     bundled: true,
     filePath: `/tmp/skills/${params.name}`,
     baseDir: `/tmp/skills/${params.name}`,
@@ -108,7 +108,7 @@ function createWorkspaceSkill(
 ): ReturnType<typeof createBundledSkill> {
   return {
     ...createBundledSkill(params),
-    source: "openclaw-workspace",
+    source: "afora-workspace",
     bundled: false,
   };
 }
@@ -218,7 +218,7 @@ describe("setupSkills", () => {
     const { prompter } = createPrompter({ multiselect: ["node-helper"] });
     vi.mocked(prompter.progress).mockReturnValue({ update: vi.fn(), stop });
 
-    await setupSkills({} as OpenClawConfig, "/tmp/ws", runtime, prompter);
+    await setupSkills({} as AforaConfig, "/tmp/ws", runtime, prompter);
 
     const options = vi.mocked(prompter.multiselect).mock.calls[0]?.[0].options ?? [];
     expect(options.find((option) => option.value === "node-helper")?.hint).toBe(`${hintPrefix}…`);
@@ -238,7 +238,7 @@ describe("setupSkills", () => {
       mocks.isContainerEnvironment.mockReturnValue(true);
 
       const { prompter, notes } = createPrompter({});
-      await setupSkills({} as OpenClawConfig, "/tmp/ws", runtime, prompter);
+      await setupSkills({} as AforaConfig, "/tmp/ws", runtime, prompter);
 
       expect(prompter.multiselect).not.toHaveBeenCalled();
       expect(mocks.installSkill).not.toHaveBeenCalled();
@@ -264,7 +264,7 @@ describe("setupSkills", () => {
       mocks.resolveBrewExecutable.mockReturnValue("/home/linuxbrew/.linuxbrew/bin/brew");
 
       const { prompter, notes } = createPrompter({ multiselect: ["video-frames"] });
-      await setupSkills({} as OpenClawConfig, "/tmp/ws", runtime, prompter);
+      await setupSkills({} as AforaConfig, "/tmp/ws", runtime, prompter);
 
       expect(prompter.multiselect).toHaveBeenCalled();
       expect(mocks.installSkill).toHaveBeenCalledWith(
@@ -293,7 +293,7 @@ describe("setupSkills", () => {
     ]);
 
     const { prompter } = createPrompter({});
-    await setupSkills({} as OpenClawConfig, "/tmp/ws", runtime, prompter);
+    await setupSkills({} as AforaConfig, "/tmp/ws", runtime, prompter);
 
     expect(prompter.multiselect).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -322,7 +322,7 @@ describe("setupSkills", () => {
     ]);
 
     const { prompter } = createPrompter({ multiselect: ["__skip__", "node-helper"] });
-    await setupSkills({} as OpenClawConfig, "/tmp/ws", runtime, prompter);
+    await setupSkills({} as AforaConfig, "/tmp/ws", runtime, prompter);
 
     expect(mocks.installSkill).toHaveBeenCalledOnce();
     expect(mocks.installSkill).toHaveBeenCalledWith(
@@ -360,7 +360,7 @@ describe("setupSkills", () => {
       );
 
       const { prompter, notes } = createPrompter({ multiselect: ["nano-pdf"] });
-      await setupSkills({} as OpenClawConfig, "/tmp/ws", runtime, prompter);
+      await setupSkills({} as AforaConfig, "/tmp/ws", runtime, prompter);
 
       const options = vi.mocked(prompter.multiselect).mock.calls[0]?.[0].options ?? [];
       expect(options).toEqual(
@@ -405,7 +405,7 @@ describe("setupSkills", () => {
     ]);
 
     const { prompter } = createPrompter({ multiselect: ["node-helper"] });
-    await setupSkills({} as OpenClawConfig, "/tmp/ws", runtime, prompter);
+    await setupSkills({} as AforaConfig, "/tmp/ws", runtime, prompter);
 
     expect(mocks.installSkill).toHaveBeenCalledTimes(1);
     expect(mocks.installSkill).toHaveBeenCalledWith(
@@ -426,7 +426,7 @@ describe("setupSkills", () => {
     const beforePersistentEffect = vi.fn(async () => {});
 
     const { prompter } = createPrompter({ multiselect: ["node-helper"] });
-    await setupSkills({} as OpenClawConfig, "/tmp/ws", runtime, prompter, {
+    await setupSkills({} as AforaConfig, "/tmp/ws", runtime, prompter, {
       beforePersistentEffect,
     });
 
@@ -448,7 +448,7 @@ describe("setupSkills", () => {
     ]);
 
     const { prompter } = createPrompter({ multiselect: ["node-helper"] });
-    const next = await setupSkills({} as OpenClawConfig, "/tmp/ws", runtime, prompter, {
+    const next = await setupSkills({} as AforaConfig, "/tmp/ws", runtime, prompter, {
       nodeManager: "pnpm",
     });
 
@@ -489,7 +489,7 @@ describe("setupSkills", () => {
     mocks.resolveInstallerKindReadiness.mockResolvedValue({ ready: false, reason: "brew" });
 
     const { prompter, notes } = createPrompter({ multiselect: ["__skip__"] });
-    await setupSkills({} as OpenClawConfig, "/tmp/ws", runtime, prompter);
+    await setupSkills({} as AforaConfig, "/tmp/ws", runtime, prompter);
 
     // OS-mismatched skill should be counted as unsupported, not installable/missing.
     expect(notes.find((n) => n.title === "Skills status")).toStrictEqual({
@@ -528,7 +528,7 @@ describe("setupSkills", () => {
     mocks.resolveInstallerKindReadiness.mockResolvedValue({ ready: false, reason: "brew" });
 
     const { prompter, notes } = createPrompter({ multiselect: ["video-frames"] });
-    await setupSkills({} as OpenClawConfig, "/tmp/ws", runtime, prompter);
+    await setupSkills({} as AforaConfig, "/tmp/ws", runtime, prompter);
 
     const brewNote = notes.find((n) => n.title === "Homebrew recommended");
     expect(brewNote?.title).toBe("Homebrew recommended");
@@ -569,7 +569,7 @@ describe("setupSkills", () => {
       const { prompter, notes } = createPrompter({
         multiselect: ["blogwatcher", "nano-pdf", "mcporter"],
       });
-      await setupSkills({} as OpenClawConfig, "/tmp/ws", runtime, prompter);
+      await setupSkills({} as AforaConfig, "/tmp/ws", runtime, prompter);
 
       expect(mocks.installSkill).toHaveBeenCalledTimes(1);
       expect(mocks.installSkill).toHaveBeenCalledWith(
@@ -603,7 +603,7 @@ describe("setupSkills", () => {
       });
 
       const { prompter, notes } = createPrompter({ multiselect: ["blogwatcher"] });
-      await setupSkills({} as OpenClawConfig, "/tmp/ws", runtime, prompter);
+      await setupSkills({} as AforaConfig, "/tmp/ws", runtime, prompter);
 
       expect(mocks.installSkill).toHaveBeenCalledTimes(1);
       const manualNote = notes.find((n) => n.title === "Manual skill prerequisites");
@@ -619,13 +619,13 @@ describe("setupSkills", () => {
     mockMissingBrewStatus([]);
 
     const { prompter, notes } = createPrompter({});
-    await setupSkills({} as OpenClawConfig, "/tmp/ws", runtime, prompter);
+    await setupSkills({} as AforaConfig, "/tmp/ws", runtime, prompter);
 
     expect(prompter.multiselect).not.toHaveBeenCalled();
     const emptyStateNote = notes.find((n) => n.title === "All skills ready");
     expect(emptyStateNote?.message).toContain("No missing skill dependencies to install");
-    expect(emptyStateNote?.message).toContain("openclaw skills list --verbose");
-    expect(emptyStateNote?.message).toContain("openclaw skills check");
+    expect(emptyStateNote?.message).toContain("afora skills list --verbose");
+    expect(emptyStateNote?.message).toContain("afora skills check");
   });
 
   it("does not recommend Homebrew on FreeBSD", async () => {
@@ -640,7 +640,7 @@ describe("setupSkills", () => {
       ]);
 
       const { prompter, notes } = createPrompter({ multiselect: ["video-frames"] });
-      await setupSkills({} as OpenClawConfig, "/tmp/ws", runtime, prompter);
+      await setupSkills({} as AforaConfig, "/tmp/ws", runtime, prompter);
 
       const brewNote = notes.find((n) => n.title === "Homebrew recommended");
       expect(brewNote).toBeUndefined();
@@ -661,7 +661,7 @@ describe("setupSkills", () => {
     ]);
 
     const { prompter } = createPrompter({});
-    const next = await setupSkills({} as OpenClawConfig, "/tmp/ws", runtime, prompter);
+    const next = await setupSkills({} as AforaConfig, "/tmp/ws", runtime, prompter);
 
     expect(next).toEqual({});
     expect(prompter.confirm).not.toHaveBeenCalled();

@@ -2,7 +2,7 @@
 import {
   asNullableRecord,
   normalizeStringEntries,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 const MEMORY_DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 

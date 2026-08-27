@@ -35,7 +35,7 @@ describe("provider env vars", () => {
     expect(secretNames).toContain("OPENAI_ADMIN_KEY");
     expect(secretNames).toContain("ANTHROPIC_ADMIN_KEY");
     expect(secretNames).toContain("ANTHROPIC_ADMIN_API_KEY");
-    expect(listKnownSecretEnvVarNames()).not.toContain("OPENCLAW_API_KEY");
+    expect(listKnownSecretEnvVarNames()).not.toContain("AFORA_API_KEY");
   });
 
   it("omits env keys case-insensitively", () => {
@@ -43,14 +43,14 @@ describe("provider env vars", () => {
       {
         OpenAI_Api_Key: "openai-secret",
         Github_Token: "gh-secret",
-        OPENCLAW_API_KEY: "keep-me",
+        AFORA_API_KEY: "keep-me",
       },
       ["OPENAI_API_KEY", "GITHUB_TOKEN"],
     );
 
     expect(env.OpenAI_Api_Key).toBeUndefined();
     expect(env.Github_Token).toBeUndefined();
-    expect(env.OPENCLAW_API_KEY).toBe("keep-me");
+    expect(env.AFORA_API_KEY).toBe("keep-me");
   });
 
   it("ignores prototype-chain keys when resolving provider env vars", () => {

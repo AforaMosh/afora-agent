@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeEach, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { clearPluginMetadataLifecycleCaches } from "./plugin-metadata-lifecycle.js";
 import type { PluginMetadataSnapshot } from "./plugin-metadata-snapshot.types.js";
 import { createColdPluginFixture } from "./test-helpers/cold-plugin-fixtures.js";
@@ -28,9 +28,9 @@ vi.mock("./discovery.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./discovery.js")>();
   return {
     ...actual,
-    discoverOpenClawPlugins: (...args: Parameters<typeof actual.discoverOpenClawPlugins>) => {
+    discoverAforaPlugins: (...args: Parameters<typeof actual.discoverAforaPlugins>) => {
       counters.discoveryScans += 1;
-      return actual.discoverOpenClawPlugins(...args);
+      return actual.discoverAforaPlugins(...args);
     },
   };
 });
@@ -39,7 +39,7 @@ const { buildPluginDiagnosticsReport } = await import("./status.js");
 const { resolveEffectivePluginIds } = await import("./effective-plugin-ids.js");
 const { loadPluginMetadataSnapshot } = await import("./plugin-metadata-snapshot.js");
 
-const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-effective-plugin-ids-"));
+const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-effective-plugin-ids-"));
 
 function coldPluginRoot(pluginId: string, channelId: string): string {
   const rootDir = path.join(tempRoot, pluginId);
@@ -57,13 +57,13 @@ function coldPluginRoot(pluginId: string, channelId: string): string {
 const channelOwnerRoot = coldPluginRoot("cold-plugin", "cold-channel");
 const otherRoot = coldPluginRoot("other-plugin", "other-channel");
 
-const config: OpenClawConfig = {
+const config: AforaConfig = {
   channels: { "cold-channel": { enabled: true } },
   plugins: {
     load: { paths: [channelOwnerRoot, otherRoot] },
     entries: { "cold-plugin": { enabled: true }, "other-plugin": { enabled: true } },
   },
-} as OpenClawConfig;
+} as AforaConfig;
 
 function countReport(params: { effectiveOnly: boolean; onlyPluginIds?: readonly string[] }): {
   rebuilds: number;
@@ -91,9 +91,9 @@ function countResolve(metadataSnapshot: PluginMetadataSnapshot): {
 
 beforeEach(() => {
   clearPluginMetadataLifecycleCaches();
-  vi.stubEnv("OPENCLAW_DISABLE_BUNDLED_PLUGINS", "1");
-  vi.stubEnv("OPENCLAW_HOME", path.join(tempRoot, "home"));
-  vi.stubEnv("OPENCLAW_STATE_DIR", path.join(tempRoot, "state"));
+  vi.stubEnv("AFORA_DISABLE_BUNDLED_PLUGINS", "1");
+  vi.stubEnv("AFORA_HOME", path.join(tempRoot, "home"));
+  vi.stubEnv("AFORA_STATE_DIR", path.join(tempRoot, "state"));
 });
 
 afterEach(() => {

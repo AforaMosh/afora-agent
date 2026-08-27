@@ -1,11 +1,11 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
 import {
   readSessionTranscriptVisibleMessageDelta,
   type SessionTranscriptTargetParams,
-} from "openclaw/plugin-sdk/session-transcript-runtime";
+} from "afora-agent/plugin-sdk/session-transcript-runtime";
 import { describe, expect, it } from "vitest";
 import {
   appendTranscriptMessage,
@@ -46,7 +46,7 @@ function readMessageContent(message: AgentMessage): unknown {
 
 describe("context engine transcript cursor contract", () => {
   it("bootstraps, resumes appends, and rebuilds after replacement through the public SDK", async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-context-engine-cursor-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-context-engine-cursor-"));
     const storePath = path.join(tempDir, "sessions.json");
     const target = {
       agentId: "main",

@@ -1,5 +1,5 @@
 // File-backed TTS output is owned by the canonical media store.
-import { mimeTypeFromFilePath } from "@openclaw/media-core/mime";
+import { mimeTypeFromFilePath } from "@afora/media-core/mime";
 import { resolveGeneratedMediaMaxBytes } from "../media/configured-max-bytes.js";
 import { saveMediaBuffer } from "../media/store.js";
 import type { TtsAudioPersistence } from "./tts-synthesis.js";

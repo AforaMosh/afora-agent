@@ -29,13 +29,13 @@ const LINK_FORMS = [
   {
     className: "markdown-bare-url markdown-github-link",
     id: "human-ref",
-    label: "openclaw/openclaw#123309",
+    label: "AforaMosh/afora-agent#123309",
     lead: "then follow-up tracked in ",
   },
   {
     className: "markdown-bare-url markdown-github-link",
     id: "bare-url",
-    label: "https://github.com/openclaw/openclaw/blob/main/ui/src/styles/chat/text.css#L254",
+    label: "https://github.com/AforaMosh/afora-agent/blob/main/ui/src/styles/chat/text.css#L254",
     lead: "then the owning rule lives at ",
   },
   {
@@ -52,7 +52,7 @@ function fixtureDocument(themeMode: "dark" | "light"): string {
   const columns = LINK_FORMS.map(
     ({ className, id, label, lead }) => `
       <div class="chat-text" id="column-${id}">Reproduce the failing run and read the notes
-        first, ${lead}<a id="${id}" class="${className}" href="https://github.com/openclaw/openclaw"
+        first, ${lead}<a id="${id}" class="${className}" href="https://github.com/AforaMosh/afora-agent"
         >${label}</a> before landing the fix.</div>`,
   ).join("");
   return `<!doctype html><html ${themeAttributes}><head><style>${readChatCss()}</style></head>

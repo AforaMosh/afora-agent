@@ -98,10 +98,10 @@ suite.define(() => {
           credential: "missing",
           projects: [
             {
-              name: "openclaw",
-              fullName: "openclaw/openclaw",
-              cloneUrl: "https://github.com/openclaw/openclaw.git",
-              webUrl: "https://github.com/openclaw/openclaw",
+              name: "afora",
+              fullName: "AforaMosh/afora-agent",
+              cloneUrl: "https://github.com/AforaMosh/afora-agent.git",
+              webUrl: "https://github.com/AforaMosh/afora-agent",
               private: false,
             },
           ],
@@ -113,10 +113,10 @@ suite.define(() => {
       await gateway.waitForRequest("projects.list");
       await page.locator("#new-session-project-trigger").click();
       const place = page.locator("wa-popover.new-session-page__project-popover");
-      await place.getByRole("searchbox").fill("openclaw");
+      await place.getByRole("searchbox").fill("afora");
       await gateway.waitForRequest("projects.searchRemote");
 
-      const remote = place.getByRole("button", { name: /openclaw\/openclaw/u });
+      const remote = place.getByRole("button", { name: /afora\/afora/u });
       await expect.poll(() => remote.isDisabled()).toBe(true);
       await remote.click({ force: true });
       expect(await gateway.getRequests("projects.add")).toHaveLength(0);
@@ -128,7 +128,7 @@ suite.define(() => {
   it("lets write-scoped operators browse and restore only workspace-contained folders", async () => {
     const context = await suite.browser.newContext({ locale: "en-US", serviceWorkers: "block" });
     const page = await context.newPage();
-    const workspace = "/home/peter/openclaw";
+    const workspace = "/home/peter/afora";
     const contained = `${workspace}/packages/app`;
     const gateway = await installMockGateway(page, {
       workspace,
@@ -188,7 +188,7 @@ suite.define(() => {
   it("explains when browsing outside the workspace requires admin scope", async () => {
     const context = await suite.browser.newContext({ locale: "en-US", serviceWorkers: "block" });
     const page = await context.newPage();
-    const workspace = "/home/peter/openclaw";
+    const workspace = "/home/peter/afora";
     const gateway = await installMockGateway(page, {
       workspace,
       workspaceGit: true,
@@ -240,8 +240,8 @@ suite.define(() => {
   it("keeps a canonical browser selection submittable for a symlinked workspace alias", async () => {
     const context = await suite.browser.newContext({ locale: "en-US", serviceWorkers: "block" });
     const page = await context.newPage();
-    const workspaceAlias = "/var/folders/openclaw/workspace-alias";
-    const canonicalWorkspace = "/private/var/folders/openclaw/workspace";
+    const workspaceAlias = "/var/folders/afora/workspace-alias";
+    const canonicalWorkspace = "/private/var/folders/afora/workspace";
     const canonicalFolder = `${canonicalWorkspace}/packages`;
     const gateway = await installMockGateway(page, {
       workspace: workspaceAlias,
@@ -307,7 +307,7 @@ suite.define(() => {
   it("submits an unvalidated typed folder so the Gateway error stays actionable", async () => {
     const context = await suite.browser.newContext({ locale: "en-US", serviceWorkers: "block" });
     const page = await context.newPage();
-    const workspace = "/home/peter/openclaw";
+    const workspace = "/home/peter/afora";
     const typedFolder = "/private/repo";
     const gateway = await installMockGateway(page, {
       workspace,
@@ -405,7 +405,7 @@ suite.define(() => {
       await expect
         .poll(() =>
           page.evaluate(() => {
-            const app = document.querySelector("openclaw-app") as HTMLElement & {
+            const app = document.querySelector("afora-app") as HTMLElement & {
               runtime?: { context: { gateway: { snapshot: { phase: string } } } };
             };
             return app.runtime?.context.gateway.snapshot.phase;

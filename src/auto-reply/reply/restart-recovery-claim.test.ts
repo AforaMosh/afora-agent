@@ -49,7 +49,7 @@ describe("createReplyRestartRecoveryClaimController", () => {
   ])(
     "clears lifecycle ownership when claim cleanup settles $expectedStatus",
     async ({ receiptState, expectedStatus }) => {
-      const root = tempDirs.make(`openclaw-reply-claim-${expectedStatus}-`);
+      const root = tempDirs.make(`afora-reply-claim-${expectedStatus}-`);
       const storePath = path.join(root, "sessions.json");
       const sessionKey = "agent:main:main";
       const sessionId = "session";
@@ -94,7 +94,7 @@ describe("createReplyRestartRecoveryClaimController", () => {
   );
 
   it("retargets durable user-turn admission to the prepared reply session", async () => {
-    const root = tempDirs.make("openclaw-reply-admission-");
+    const root = tempDirs.make("afora-reply-admission-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "plugin-binding:codex:target";
     const sessionId = "bound-session-id";
@@ -163,7 +163,7 @@ describe("createReplyRestartRecoveryClaimController", () => {
   });
 
   it("keeps claim adoption valid across unrelated same-session metadata writes", async () => {
-    const root = tempDirs.make("openclaw-reply-admission-metadata-");
+    const root = tempDirs.make("afora-reply-admission-metadata-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:main:telegram:group:chat:topic:thread";
     const sessionId = "channel-session-id";
@@ -241,7 +241,7 @@ describe("createReplyRestartRecoveryClaimController", () => {
   });
 
   it("rejects claim adoption when a recovery cycle starts after the snapshot", async () => {
-    const root = tempDirs.make("openclaw-reply-admission-cycle-");
+    const root = tempDirs.make("afora-reply-admission-cycle-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:main:telegram:group:chat:topic:thread";
     const sessionId = "channel-session-id";
@@ -340,7 +340,7 @@ describe("createReplyRestartRecoveryClaimController", () => {
   });
 
   it("rejects durable admission when the captured recovery owner releases", async () => {
-    const root = tempDirs.make("openclaw-reply-admission-owner-release-");
+    const root = tempDirs.make("afora-reply-admission-owner-release-");
     const storePath = path.join(root, "sessions.json");
     const sessionKey = "agent:main:telegram:group:chat:topic:owner-release";
     const sessionId = "channel-session-id";

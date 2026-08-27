@@ -59,8 +59,8 @@ function makeSkippedWebFetchSummary(runtimeErrorClass?: string) {
           drift: "failure-mode" as const,
           driftDetails: "runtime-pair cell status differs (pass vs skip)",
           cells: {
-            openclaw: {
-              runtime: "openclaw" as const,
+            afora: {
+              runtime: "afora" as const,
               status: "pass" as const,
               transcriptBytes: "",
               toolCalls: [{ tool: "web_fetch", argsHash: "a", resultHash: "ok" }],
@@ -122,7 +122,7 @@ describe("qa tool coverage report", () => {
         capabilityLayer: "codex-native-workspace",
         required: true,
         fixtureCount: 1,
-        openclaw: "not-run",
+        afora: "not-run",
         codex: "not-run",
         drift: "not-run",
       }),
@@ -166,9 +166,9 @@ describe("qa tool coverage report", () => {
       scenarios: [
         makeScenario("tool-read", "read", {
           toolCoverage: {
-            bucket: "openclaw-dynamic-integration",
-            expectedLayer: "openclaw-dynamic",
-            capabilityLayer: "openclaw-dynamic-direct",
+            bucket: "afora-dynamic-integration",
+            expectedLayer: "afora-dynamic",
+            capabilityLayer: "afora-dynamic-direct",
             required: true,
             tracking: "#80236",
           },
@@ -183,8 +183,8 @@ describe("qa tool coverage report", () => {
               scenarioId: "tool-read",
               drift: "none",
               cells: {
-                openclaw: {
-                  runtime: "openclaw",
+                afora: {
+                  runtime: "afora",
                   status: "pass",
                   transcriptBytes: "",
                   toolCalls: [{ tool: "read", argsHash: "a", resultHash: "r" }],
@@ -245,8 +245,8 @@ describe("qa tool coverage report", () => {
               scenarioId: "tool-read",
               drift: "none",
               cells: {
-                openclaw: {
-                  runtime: "openclaw",
+                afora: {
+                  runtime: "afora",
                   status: "pass",
                   transcriptBytes: "",
                   toolCalls: [{ tool: "read", argsHash: "a", resultHash: "r" }],
@@ -276,8 +276,8 @@ describe("qa tool coverage report", () => {
               drift: "tool-result-shape",
               driftDetails: "tool result differs",
               cells: {
-                openclaw: {
-                  runtime: "openclaw",
+                afora: {
+                  runtime: "afora",
                   status: "pass",
                   transcriptBytes: "",
                   toolCalls: [{ tool: "write", argsHash: "a", resultHash: "r1" }],
@@ -301,7 +301,7 @@ describe("qa tool coverage report", () => {
           },
         ],
         run: {
-          runtimePair: ["openclaw", "codex"],
+          runtimePair: ["afora", "codex"],
         },
       },
       generatedAt: "2026-05-10T00:00:00.000Z",
@@ -339,8 +339,8 @@ describe("qa tool coverage report", () => {
               scenarioId: "tool-optional",
               drift: "tool-call-shape",
               cells: {
-                openclaw: {
-                  runtime: "openclaw",
+                afora: {
+                  runtime: "afora",
                   status: "pass",
                   transcriptBytes: "",
                   toolCalls: [],
@@ -379,15 +379,15 @@ describe("qa tool coverage report", () => {
     );
   });
 
-  it("keeps searchable OpenClaw dynamic tool rows report-only by default", () => {
+  it("keeps searchable Afora dynamic tool rows report-only by default", () => {
     const report = buildQaToolCoverageReport({
       scenarios: [
         makeScenario("tool-searchable-web-search", "web-search", {
           toolName: "web_search",
           toolCoverage: {
-            bucket: "openclaw-dynamic-integration",
-            expectedLayer: "openclaw-dynamic",
-            capabilityLayer: "openclaw-dynamic-searchable",
+            bucket: "afora-dynamic-integration",
+            expectedLayer: "afora-dynamic",
+            capabilityLayer: "afora-dynamic-searchable",
           },
         }),
       ],
@@ -401,8 +401,8 @@ describe("qa tool coverage report", () => {
               drift: "tool-call-shape",
               driftDetails: "searchable discovery was report-only",
               cells: {
-                openclaw: {
-                  runtime: "openclaw",
+                afora: {
+                  runtime: "afora",
                   status: "pass",
                   transcriptBytes: "",
                   toolCalls: [{ tool: "web_search", argsHash: "a", resultHash: "r" }],
@@ -436,22 +436,22 @@ describe("qa tool coverage report", () => {
     expect(report.searchableDynamicTools).toBe(1);
     expect(report.rows[0]).toEqual(
       expect.objectContaining({
-        capabilityLayer: "openclaw-dynamic-searchable",
+        capabilityLayer: "afora-dynamic-searchable",
         required: false,
         drift: "tool-call-shape",
       }),
     );
   });
 
-  it("passes required OpenClaw dynamic tool coverage when both runtimes exercise the tool", () => {
+  it("passes required Afora dynamic tool coverage when both runtimes exercise the tool", () => {
     const report = buildQaToolCoverageReport({
       scenarios: [
         makeScenario("tool-web-search", "web-search", {
           toolName: "web_search",
           toolCoverage: {
-            bucket: "openclaw-dynamic-integration",
-            expectedLayer: "openclaw-dynamic",
-            capabilityLayer: "openclaw-dynamic-direct",
+            bucket: "afora-dynamic-integration",
+            expectedLayer: "afora-dynamic",
+            capabilityLayer: "afora-dynamic-direct",
             required: true,
           },
         }),
@@ -466,8 +466,8 @@ describe("qa tool coverage report", () => {
               drift: "tool-result-shape",
               driftDetails: "runtime envelopes differ",
               cells: {
-                openclaw: {
-                  runtime: "openclaw",
+                afora: {
+                  runtime: "afora",
                   status: "pass",
                   transcriptBytes: "",
                   toolCalls: [{ tool: "web_search", argsHash: "a", resultHash: "r1" }],
@@ -499,15 +499,15 @@ describe("qa tool coverage report", () => {
     expect(report.passingTools).toBe(1);
   });
 
-  it("passes required OpenClaw dynamic tool coverage when Codex reports a soft tool error", () => {
+  it("passes required Afora dynamic tool coverage when Codex reports a soft tool error", () => {
     const report = buildQaToolCoverageReport({
       scenarios: [
         makeScenario("tool-web-search", "web-search", {
           toolName: "web_search",
           toolCoverage: {
-            bucket: "openclaw-dynamic-integration",
-            expectedLayer: "openclaw-dynamic",
-            capabilityLayer: "openclaw-dynamic-direct",
+            bucket: "afora-dynamic-integration",
+            expectedLayer: "afora-dynamic",
+            capabilityLayer: "afora-dynamic-direct",
             required: true,
           },
         }),
@@ -522,8 +522,8 @@ describe("qa tool coverage report", () => {
               drift: "tool-result-shape",
               driftDetails: "Codex maps the controlled tool fault differently",
               cells: {
-                openclaw: {
-                  runtime: "openclaw",
+                afora: {
+                  runtime: "afora",
                   status: "pass",
                   transcriptBytes: "",
                   toolCalls: [{ tool: "web_search", argsHash: "a", resultHash: "r1" }],
@@ -561,15 +561,15 @@ describe("qa tool coverage report", () => {
     );
   });
 
-  it("fails required OpenClaw dynamic tool coverage when a runtime skips the tool", () => {
+  it("fails required Afora dynamic tool coverage when a runtime skips the tool", () => {
     const report = buildQaToolCoverageReport({
       scenarios: [
         makeScenario("tool-web-search", "web-search", {
           toolName: "web_search",
           toolCoverage: {
-            bucket: "openclaw-dynamic-integration",
-            expectedLayer: "openclaw-dynamic",
-            capabilityLayer: "openclaw-dynamic-direct",
+            bucket: "afora-dynamic-integration",
+            expectedLayer: "afora-dynamic",
+            capabilityLayer: "afora-dynamic-direct",
             required: true,
           },
         }),
@@ -584,8 +584,8 @@ describe("qa tool coverage report", () => {
               drift: "tool-call-shape",
               driftDetails: "Codex emitted no web_search call",
               cells: {
-                openclaw: {
-                  runtime: "openclaw",
+                afora: {
+                  runtime: "afora",
                   status: "pass",
                   transcriptBytes: "",
                   toolCalls: [{ tool: "web_search", argsHash: "a", resultHash: "r" }],
@@ -624,9 +624,9 @@ describe("qa tool coverage report", () => {
         makeScenario("tool-web-search", "web-search", {
           toolName: "web_search",
           toolCoverage: {
-            bucket: "openclaw-dynamic-integration",
-            expectedLayer: "openclaw-dynamic",
-            capabilityLayer: "openclaw-dynamic-direct",
+            bucket: "afora-dynamic-integration",
+            expectedLayer: "afora-dynamic",
+            capabilityLayer: "afora-dynamic-direct",
             required: true,
           },
         }),
@@ -640,8 +640,8 @@ describe("qa tool coverage report", () => {
               scenarioId: "tool-web-search",
               drift: "tool-result-shape",
               cells: {
-                openclaw: {
-                  runtime: "openclaw",
+                afora: {
+                  runtime: "afora",
                   status: "pass",
                   transcriptBytes: "",
                   toolCalls: [{ tool: "web_search", argsHash: "a", resultHash: "ok" }],
@@ -697,9 +697,9 @@ describe("qa tool coverage report", () => {
         makeScenario("tool-web-fetch", "web-fetch", {
           toolName: "web_fetch",
           toolCoverage: {
-            bucket: "openclaw-dynamic-integration",
-            expectedLayer: "openclaw-dynamic",
-            capabilityLayer: "openclaw-dynamic-direct",
+            bucket: "afora-dynamic-integration",
+            expectedLayer: "afora-dynamic",
+            capabilityLayer: "afora-dynamic-direct",
             required: true,
           },
         }),
@@ -709,8 +709,8 @@ describe("qa tool coverage report", () => {
     });
 
     expect(report.pass).toBe(false);
-    expect(report.rows[0]).toMatchObject({ openclaw: "pass", codex: "skip" });
-    expect(report.failures).toEqual(["web-fetch status openclaw=pass codex=skip"]);
+    expect(report.rows[0]).toMatchObject({ afora: "pass", codex: "skip" });
+    expect(report.failures).toEqual(["web-fetch status afora=pass codex=skip"]);
   });
 
   it("does not let skipped execution hide a runtime cell failure", () => {
@@ -719,9 +719,9 @@ describe("qa tool coverage report", () => {
         makeScenario("tool-web-fetch", "web-fetch", {
           toolName: "web_fetch",
           toolCoverage: {
-            bucket: "openclaw-dynamic-integration",
-            expectedLayer: "openclaw-dynamic",
-            capabilityLayer: "openclaw-dynamic-direct",
+            bucket: "afora-dynamic-integration",
+            expectedLayer: "afora-dynamic",
+            capabilityLayer: "afora-dynamic-direct",
             required: true,
           },
         }),
@@ -730,8 +730,8 @@ describe("qa tool coverage report", () => {
       generatedAt: "2026-05-10T00:00:00.000Z",
     });
 
-    expect(report.rows[0]).toMatchObject({ openclaw: "pass", codex: "fail" });
-    expect(report.failures).toEqual(["web-fetch status openclaw=pass codex=fail"]);
+    expect(report.rows[0]).toMatchObject({ afora: "pass", codex: "fail" });
+    expect(report.failures).toEqual(["web-fetch status afora=pass codex=fail"]);
   });
 
   it("fails closed when a decoded result cell omits its required status", () => {
@@ -742,9 +742,9 @@ describe("qa tool coverage report", () => {
         makeScenario("tool-web-fetch", "web-fetch", {
           toolName: "web_fetch",
           toolCoverage: {
-            bucket: "openclaw-dynamic-integration",
-            expectedLayer: "openclaw-dynamic",
-            capabilityLayer: "openclaw-dynamic-direct",
+            bucket: "afora-dynamic-integration",
+            expectedLayer: "afora-dynamic",
+            capabilityLayer: "afora-dynamic-direct",
             required: true,
           },
         }),
@@ -754,19 +754,19 @@ describe("qa tool coverage report", () => {
     });
 
     expect(report.pass).toBe(false);
-    expect(report.rows[0]).toMatchObject({ openclaw: "pass", codex: "fail" });
-    expect(report.failures).toEqual(["web-fetch status openclaw=pass codex=fail"]);
+    expect(report.rows[0]).toMatchObject({ afora: "pass", codex: "fail" });
+    expect(report.failures).toEqual(["web-fetch status afora=pass codex=fail"]);
   });
 
-  it("fails required OpenClaw dynamic tool coverage when the fixture failure mode is preserved", () => {
+  it("fails required Afora dynamic tool coverage when the fixture failure mode is preserved", () => {
     const report = buildQaToolCoverageReport({
       scenarios: [
         makeScenario("tool-web-search", "web-search", {
           toolName: "web_search",
           toolCoverage: {
-            bucket: "openclaw-dynamic-integration",
-            expectedLayer: "openclaw-dynamic",
-            capabilityLayer: "openclaw-dynamic-direct",
+            bucket: "afora-dynamic-integration",
+            expectedLayer: "afora-dynamic",
+            capabilityLayer: "afora-dynamic-direct",
             required: true,
           },
         }),
@@ -781,8 +781,8 @@ describe("qa tool coverage report", () => {
               drift: "failure-mode",
               driftDetails: "at least one runtime failed",
               cells: {
-                openclaw: {
-                  runtime: "openclaw",
+                afora: {
+                  runtime: "afora",
                   status: "pass",
                   transcriptBytes: "",
                   toolCalls: [{ tool: "web_search", argsHash: "a", resultHash: "r" }],
@@ -820,9 +820,9 @@ describe("qa tool coverage report", () => {
       scenarios: [
         makeScenario("tool-web-search", "web-search", {
           toolCoverage: {
-            bucket: "openclaw-dynamic-integration",
-            expectedLayer: "openclaw-dynamic",
-            capabilityLayer: "openclaw-dynamic-direct",
+            bucket: "afora-dynamic-integration",
+            expectedLayer: "afora-dynamic",
+            capabilityLayer: "afora-dynamic-direct",
             required: true,
           },
         }),
@@ -857,7 +857,7 @@ describe("qa tool coverage report", () => {
         scenarios: [
           makeScenario("tool-bad-layer", "bad", {
             toolCoverage: {
-              bucket: "openclaw-dynamic-integration",
+              bucket: "afora-dynamic-integration",
               capabilityLayer: "everything-everywhere",
             },
           }),
@@ -913,8 +913,8 @@ describe("qa tool coverage report", () => {
     );
     expect(report.rows.find((row) => row.tool === "image_generate")).toEqual(
       expect.objectContaining({
-        bucket: "openclaw-dynamic-integration",
-        expectedLayer: "openclaw-dynamic",
+        bucket: "afora-dynamic-integration",
+        expectedLayer: "afora-dynamic",
         required: false,
       }),
     );
@@ -926,8 +926,8 @@ describe("qa tool coverage report", () => {
     );
     expect(report.rows.find((row) => row.tool === "web_search")).toEqual(
       expect.objectContaining({
-        bucket: "openclaw-dynamic-integration",
-        capabilityLayer: "openclaw-dynamic-direct",
+        bucket: "afora-dynamic-integration",
+        capabilityLayer: "afora-dynamic-direct",
         required: true,
       }),
     );

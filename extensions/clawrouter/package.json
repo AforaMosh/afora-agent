@@ -1,13 +1,13 @@
 {
-  "name": "@openclaw/clawrouter",
+  "name": "@afora/clawrouter",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw ClawRouter plugin",
+  "description": "Afora ClawRouter plugin",
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

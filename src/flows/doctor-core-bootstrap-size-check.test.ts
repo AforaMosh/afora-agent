@@ -29,10 +29,10 @@ describe("core/doctor/bootstrap-size", () => {
   });
 
   it("does not create shared state while inspecting bootstrap files", async () => {
-    tmp = await fs.mkdtemp(join(tmpdir(), "openclaw-health-bootstrap-readonly-"));
+    tmp = await fs.mkdtemp(join(tmpdir(), "afora-health-bootstrap-readonly-"));
     await fs.writeFile(join(tmp, "AGENTS.md"), "bootstrap", "utf-8");
     const stateDir = join(tmp, "state-root");
-    vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+    vi.stubEnv("AFORA_STATE_DIR", stateDir);
 
     await expect(
       getBootstrapSizeCheck().detect({
@@ -42,13 +42,13 @@ describe("core/doctor/bootstrap-size", () => {
         cwd: tmp,
       }),
     ).resolves.toEqual([]);
-    await expect(fs.stat(join(stateDir, "state", "openclaw.sqlite"))).rejects.toMatchObject({
+    await expect(fs.stat(join(stateDir, "state", "afora.sqlite"))).rejects.toMatchObject({
       code: "ENOENT",
     });
   });
 
   it("honors the per-agent bootstrapMaxChars override in health findings", async () => {
-    tmp = await fs.mkdtemp(join(tmpdir(), "openclaw-health-bootstrap-"));
+    tmp = await fs.mkdtemp(join(tmpdir(), "afora-health-bootstrap-"));
     await fs.writeFile(join(tmp, "AGENTS.md"), "a".repeat(15_000), "utf-8");
 
     const check = getBootstrapSizeCheck();

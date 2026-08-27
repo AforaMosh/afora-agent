@@ -87,10 +87,10 @@ describe("runCronIsolatedAgentTurn sandbox config preserved", () => {
     const runCfg = buildRunCfg("specialist", {
       sandbox: {
         docker: {
-          image: "ghcr.io/openclaw/sandbox:custom",
+          image: "ghcr.io/afora/sandbox:custom",
         },
         browser: {
-          image: "ghcr.io/openclaw/browser:custom",
+          image: "ghcr.io/afora/browser:custom",
         },
         prune: {
           idleHours: 1,
@@ -102,12 +102,12 @@ describe("runCronIsolatedAgentTurn sandbox config preserved", () => {
     expectDefaultSandboxPreserved(runCfg);
     expect(resolvedSandbox.mode).toBe("all");
     expect(resolvedSandbox.workspaceAccess).toBe("rw");
-    expect(resolvedSandbox.docker.image).toBe("ghcr.io/openclaw/sandbox:custom");
+    expect(resolvedSandbox.docker.image).toBe("ghcr.io/afora/sandbox:custom");
     expect(resolvedSandbox.docker.network).toBe("none");
     expect(resolvedSandbox.docker.dangerouslyAllowContainerNamespaceJoin).toBe(true);
     expect(resolvedSandbox.docker.dangerouslyAllowExternalBindSources).toBe(true);
     expect(resolvedSandbox.browser.enabled).toBe(true);
-    expect(resolvedSandbox.browser.image).toBe("ghcr.io/openclaw/browser:custom");
+    expect(resolvedSandbox.browser.image).toBe("ghcr.io/afora/browser:custom");
     expect(resolvedSandbox.browser.autoStart).toBe(false);
     expect(resolvedSandbox.prune.idleHours).toBe(1);
     expect(resolvedSandbox.prune.maxAgeDays).toBe(7);

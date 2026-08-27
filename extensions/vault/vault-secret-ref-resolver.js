@@ -74,7 +74,7 @@ function readVaultCredentialFile(filePath, label, emptyMessage) {
 }
 
 function resolveVaultAuthMethod() {
-  const method = normalizeVaultOptionalString(process.env.OPENCLAW_VAULT_AUTH_METHOD) ?? "token";
+  const method = normalizeVaultOptionalString(process.env.AFORA_VAULT_AUTH_METHOD) ?? "token";
   if (
     method === "token" ||
     method === "token_file" ||
@@ -83,7 +83,7 @@ function resolveVaultAuthMethod() {
   ) {
     return method;
   }
-  throw new Error("OPENCLAW_VAULT_AUTH_METHOD must be token, token_file, jwt, or kubernetes.");
+  throw new Error("AFORA_VAULT_AUTH_METHOD must be token, token_file, jwt, or kubernetes.");
 }
 
 function resolveVaultTokenEnv() {
@@ -107,18 +107,18 @@ function resolveVaultTokenFile() {
 }
 
 function resolveKvMount() {
-  return process.env.OPENCLAW_VAULT_KV_MOUNT?.trim().replace(/^\/+|\/+$/gu, "") || "secret";
+  return process.env.AFORA_VAULT_KV_MOUNT?.trim().replace(/^\/+|\/+$/gu, "") || "secret";
 }
 
 function resolveKvVersion() {
-  const raw = process.env.OPENCLAW_VAULT_KV_VERSION?.trim();
+  const raw = process.env.AFORA_VAULT_KV_VERSION?.trim();
   if (!raw || raw === "2") {
     return 2;
   }
   if (raw === "1") {
     return 1;
   }
-  throw new Error("OPENCLAW_VAULT_KV_VERSION must be 1 or 2.");
+  throw new Error("AFORA_VAULT_KV_VERSION must be 1 or 2.");
 }
 
 function encodePath(pathValue) {
@@ -225,28 +225,28 @@ function addVaultNamespaceHeader(headers) {
 }
 
 function resolveVaultAuthMount(method) {
-  return process.env.OPENCLAW_VAULT_AUTH_MOUNT?.trim().replace(/^\/+|\/+$/gu, "") || method;
+  return process.env.AFORA_VAULT_AUTH_MOUNT?.trim().replace(/^\/+|\/+$/gu, "") || method;
 }
 
 function resolveVaultAuthRole(method) {
-  const role = normalizeVaultOptionalString(process.env.OPENCLAW_VAULT_AUTH_ROLE);
+  const role = normalizeVaultOptionalString(process.env.AFORA_VAULT_AUTH_ROLE);
   if (!role) {
-    throw new Error(`OPENCLAW_VAULT_AUTH_ROLE is required for ${method} auth.`);
+    throw new Error(`AFORA_VAULT_AUTH_ROLE is required for ${method} auth.`);
   }
   return role;
 }
 
 function resolveVaultJwt(method) {
   const jwtFile =
-    normalizeVaultOptionalString(process.env.OPENCLAW_VAULT_JWT_FILE) ??
+    normalizeVaultOptionalString(process.env.AFORA_VAULT_JWT_FILE) ??
     (method === "kubernetes" ? KUBERNETES_SERVICE_ACCOUNT_TOKEN_PATH : undefined);
   if (!jwtFile) {
-    throw new Error("OPENCLAW_VAULT_JWT_FILE is required for jwt auth.");
+    throw new Error("AFORA_VAULT_JWT_FILE is required for jwt auth.");
   }
   return readVaultCredentialFile(
     jwtFile,
     "Vault JWT",
-    "OPENCLAW_VAULT_JWT_FILE did not contain a JWT.",
+    "AFORA_VAULT_JWT_FILE did not contain a JWT.",
   );
 }
 
@@ -375,7 +375,7 @@ async function resolveFromVault(ids) {
     return response;
   }
   // Address and authentication are provider-wide. Let those failures terminate the
-  // subprocess so OpenClaw fans one provider diagnostic out to every affected owner.
+  // subprocess so Afora fans one provider diagnostic out to every affected owner.
   const baseUrl = normalizeVaultAddress();
   const vaultToken = await resolveVaultClientToken(baseUrl);
   const results = await Promise.all(

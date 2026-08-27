@@ -5,11 +5,11 @@ import {
   normalizeLegacyStreamingAliases,
   resolveLegacyAliasStreamingMode,
 } from "../config/channel-compat-normalization.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { normalizeLegacyBrowserConfig } from "./doctor/shared/legacy-config-core-normalizers.js";
 
-function asLegacyConfig(value: unknown): OpenClawConfig {
-  return value as OpenClawConfig;
+function asLegacyConfig(value: unknown): AforaConfig {
+  return value as AforaConfig;
 }
 
 function getLegacyProperty(value: unknown, key: string): unknown {

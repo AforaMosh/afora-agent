@@ -17,7 +17,7 @@ const tempDirs = useAutoCleanupTempDirTracker((cleanup) => {
 });
 
 function createTempDatabasePath(): string {
-  const tempDir = tempDirs.make("openclaw-sqlite-readonly-");
+  const tempDir = tempDirs.make("afora-sqlite-readonly-");
   return path.join(tempDir, "state.sqlite");
 }
 

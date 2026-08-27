@@ -1,5 +1,5 @@
 // ClawHub lifecycle facade: public API plus install/update coordination.
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   downloadClawHubSkillArchive,
   normalizeClawHubSha256Integrity,
@@ -316,7 +316,7 @@ export async function installSkillFromClawHub(params: {
   acknowledgeClawHubRisk?: boolean;
   onClawHubRisk?: (request: ClawHubRiskAcknowledgementRequest) => boolean | Promise<boolean>;
   logger?: Logger;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   onInstallPolicyWarning?: InstallSafetyOverrides["onInstallPolicyWarning"];
   /** True when a Claw lifecycle caller already owns package coordination. */
   clawManaged?: boolean;
@@ -338,7 +338,7 @@ export async function updateSkillsFromClawHub(params: {
   acknowledgeClawHubRisk?: boolean;
   onClawHubRisk?: (request: ClawHubRiskAcknowledgementRequest) => boolean | Promise<boolean>;
   logger?: Logger;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   onInstallPolicyWarning?: InstallSafetyOverrides["onInstallPolicyWarning"];
 }): Promise<UpdateClawHubSkillResult[]> {
   const lock = await readClawHubSkillsLockfile(params.workspaceDir);

@@ -1,11 +1,11 @@
 // GPT-Live backend bridge over the Frameless Bidi WebSocket protocol used by Codex realtime v3.
 import { randomUUID } from "node:crypto";
-import { canonicalizeBase64 } from "openclaw/plugin-sdk/media-runtime";
+import { canonicalizeBase64 } from "afora-agent/plugin-sdk/media-runtime";
 import {
   captureWsEvent,
   createDebugProxyWebSocketAgent,
   resolveDebugProxySettings,
-} from "openclaw/plugin-sdk/proxy-capture";
+} from "afora-agent/plugin-sdk/proxy-capture";
 import {
   convertPcmToMulaw8k,
   mulawToPcm,
@@ -16,8 +16,8 @@ import {
   type RealtimeVoiceBridgeCreateRequest,
   type RealtimeVoiceSessionConnection,
   type RealtimeVoiceToolResultOptions,
-} from "openclaw/plugin-sdk/realtime-voice";
-import { rawDataToString } from "openclaw/plugin-sdk/webhook-ingress";
+} from "afora-agent/plugin-sdk/realtime-voice";
+import { rawDataToString } from "afora-agent/plugin-sdk/webhook-ingress";
 import WebSocket, { type RawData } from "ws";
 import {
   connectOpenAIQuicksilverSideband,

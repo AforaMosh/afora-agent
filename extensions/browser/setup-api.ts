@@ -1,14 +1,14 @@
-import { listAgentIds, resolveAgentConfig } from "openclaw/plugin-sdk/agent-scope-runtime";
+import { listAgentIds, resolveAgentConfig } from "afora-agent/plugin-sdk/agent-scope-runtime";
 /**
  * Browser setup entry. It auto-enables the Browser plugin when config or tool
  * policies reference browser control.
  */
-import type { OpenClawConfig } from "openclaw/plugin-sdk/plugin-entry";
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import type { AforaConfig } from "afora-agent/plugin-sdk/plugin-entry";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   isRecord,
   normalizeOptionalLowercaseString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 function listContainsBrowser(value: unknown): boolean {
   return (
@@ -23,7 +23,7 @@ function toolPolicyReferencesBrowser(value: unknown): boolean {
   );
 }
 
-function hasBrowserToolReference(config: OpenClawConfig): boolean {
+function hasBrowserToolReference(config: AforaConfig): boolean {
   if (toolPolicyReferencesBrowser(config.tools)) {
     return true;
   }

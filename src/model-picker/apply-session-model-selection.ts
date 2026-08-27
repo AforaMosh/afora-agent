@@ -28,7 +28,7 @@ import {
   sessionModelOverrideChangesApplied,
 } from "../config/sessions/session-snapshot-merge.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { triggerSessionPatchHook } from "../gateway/session-patch-hooks.js";
 import { enqueueSystemEvent } from "../infra/system-events.js";
 import { applyModelOverrideWithAuthProfileCompatibility } from "../sessions/auth-profile-preservation.js";
@@ -47,7 +47,7 @@ export type SessionModelSelectionRequest = {
 };
 
 export type ApplySessionModelSelectionParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   sessionKey: string;
   storePath?: string;
@@ -104,7 +104,7 @@ type ApplySessionModelSelectionToEntryResult = {
 
 /** Applies the model transaction field family to one caller-owned snapshot. */
 function applySessionModelSelectionToEntry(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentDir: string;
   entry: SessionEntry;
   currentProvider: string;
@@ -131,7 +131,7 @@ function applySessionModelSelectionToEntry(params: {
 }
 
 function resolveRuntimeDirective(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   entry: SessionEntry;
   provider: string;
   request: SessionModelSelectionRequest["runtime"];

@@ -1,13 +1,13 @@
 // Replay, restart-adoption, and serialization coverage for worker provider provisioning.
 // Split from provider-provisioning.test.ts to stay under the max-lines cap.
-import { expectDefined } from "@openclaw/normalization-core";
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { expectDefined } from "@afora/normalization-core";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { describe, expect, it, vi } from "vitest";
 import { WorkerProviderError } from "../../plugins/types.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../../state/afora-state-db.js";
 import * as support from "./service.test-support.js";
 import { createWorkerEnvironmentStore } from "./store.js";
 
@@ -66,9 +66,9 @@ describe("worker environment service provision replay", () => {
 
     await first.stop();
     support.testState.service = undefined;
-    closeOpenClawStateDatabaseForTest();
-    support.testState.stateDb = openOpenClawStateDatabase({
-      env: { OPENCLAW_STATE_DIR: support.testState.root },
+    closeAforaStateDatabaseForTest();
+    support.testState.stateDb = openAforaStateDatabase({
+      env: { AFORA_STATE_DIR: support.testState.root },
     });
     support.testState.store = createWorkerEnvironmentStore({
       database: support.testState.stateDb,
@@ -372,7 +372,7 @@ describe("worker environment service provision replay", () => {
           apps: [
             {
               id: "browser",
-              executablePath: "/usr/local/bin/openclaw-worker-browser",
+              executablePath: "/usr/local/bin/afora-worker-browser",
               cdpPort: 9222,
               command: "chromium",
             },

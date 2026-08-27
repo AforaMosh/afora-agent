@@ -2,4 +2,4 @@
 export {
   buildSecretInputSchema,
   normalizeResolvedSecretInputString,
-} from "openclaw/plugin-sdk/secret-input";
+} from "afora-agent/plugin-sdk/secret-input";

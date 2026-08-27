@@ -2,11 +2,11 @@ import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
 } from "../../infra/kysely-sync.js";
-import { withOpenClawAgentDatabaseReadOnly } from "../../state/openclaw-agent-db-readonly.js";
+import { withAforaAgentDatabaseReadOnly } from "../../state/afora-agent-db-readonly.js";
 import {
-  resolveOpenClawAgentSqlitePath,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  resolveAforaAgentSqlitePath,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import type { ExactSessionEntry, SessionAccessScope } from "./session-accessor.sqlite-contract.js";
 import {
   parseReadableSqliteSessionEntryRow,
@@ -51,7 +51,7 @@ export function loadExactSessionEntryReadOnlyResult(
     | { found: true; value: { entry: SessionEntry | undefined; rowExists: boolean } }
     | { found: false; reason: "database-missing" | "schema-missing" | "table-missing" };
   try {
-    result = withOpenClawAgentDatabaseReadOnly((database) => {
+    result = withAforaAgentDatabaseReadOnly((database) => {
       const entry = readExactSessionEntryRowValidated(database, sessionKey)?.entry;
       const rowExists = entry
         ? true
@@ -116,7 +116,7 @@ type SessionIdentityEvidenceRow = {
 };
 
 function readSessionIdentityEvidenceRows(
-  database: Pick<OpenClawAgentDatabase, "agentId" | "db">,
+  database: Pick<AforaAgentDatabase, "agentId" | "db">,
   items: readonly SessionIdentityEvidenceItem[],
 ): SessionIdentityEvidenceResult[] {
   assertCanonicalSqliteSessionKeysCurrent(database);
@@ -208,7 +208,7 @@ export function readSessionIdentityEvidenceBatch(
     try {
       const resolved = resolveSqliteReadScope(probe, targetCache);
       const options = toDatabaseOptions(resolved);
-      const databasePath = resolveOpenClawAgentSqlitePath(options);
+      const databasePath = resolveAforaAgentSqlitePath(options);
       const group = groups.get(databasePath) ?? { items: [], options };
       group.items.push({
         index,
@@ -225,7 +225,7 @@ export function readSessionIdentityEvidenceBatch(
       | { found: true; value: SessionIdentityEvidenceResult[] }
       | { found: false; reason: "database-missing" | "schema-missing" | "table-missing" };
     try {
-      read = withOpenClawAgentDatabaseReadOnly(
+      read = withAforaAgentDatabaseReadOnly(
         (database) => readSessionIdentityEvidenceRows(database, group.items),
         group.options,
       );

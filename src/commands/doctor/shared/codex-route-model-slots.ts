@@ -1,5 +1,5 @@
-import { asOptionalRecord as asMutableRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalLowercaseString as normalizeString } from "@openclaw/normalization-core/string-coerce";
+import { asOptionalRecord as asMutableRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalLowercaseString as normalizeString } from "@afora/normalization-core/string-coerce";
 import {
   isBlockedLegacyCodexModelRef,
   isOpenAICodexModelRef,

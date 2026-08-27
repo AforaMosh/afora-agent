@@ -12,7 +12,7 @@ import {
   terminalOpenResult,
   type CreateGhosttyTerminalMock,
 } from "./terminal-panel.test-support.ts";
-import { OpenClawTerminalPanel } from "./terminal-panel.ts";
+import { AforaTerminalPanel } from "./terminal-panel.ts";
 
 vi.mock("../../app/sw-refresh.runtime.ts", () => ({
   refreshControlUiServiceWorker: vi.fn(async () => false),
@@ -21,7 +21,7 @@ vi.mock("../../app/sw-refresh.runtime.ts", () => ({
 const createGhosttyTerminalMock: CreateGhosttyTerminalMock = vi.fn();
 const TERMINAL_PANEL_ELEMENT_NAME = defineTestTerminalPanelElement(createGhosttyTerminalMock);
 
-describe("OpenClawTerminalPanel reconnect", () => {
+describe("AforaTerminalPanel reconnect", () => {
   beforeEach(async () => {
     vi.stubGlobal("localStorage", createStorageMock());
     vi.stubGlobal("sessionStorage", createStorageMock());
@@ -91,7 +91,7 @@ describe("OpenClawTerminalPanel reconnect", () => {
       },
       addEventListener: () => () => {},
     };
-    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as OpenClawTerminalPanel;
+    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as AforaTerminalPanel;
     panel.client = client;
     panel.available = true;
     document.body.append(panel);
@@ -132,7 +132,7 @@ describe("OpenClawTerminalPanel reconnect", () => {
       "detached history",
     );
     expect(panel.renderRoot.querySelector(".tabstrip-tab__badge")?.textContent).toBe("agent");
-    expect(sessionStorage.getItem("openclaw.terminal.sessions.v1")).toBe(
+    expect(sessionStorage.getItem("afora.terminal.sessions.v1")).toBe(
       JSON.stringify(["current-1", "detached-1"]),
     );
   });
@@ -196,14 +196,14 @@ describe("OpenClawTerminalPanel reconnect", () => {
         };
       },
     };
-    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as OpenClawTerminalPanel;
+    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as AforaTerminalPanel;
     panel.client = client;
     panel.available = true;
     document.body.append(panel);
     panel.toggle();
 
     await waitForFast(() => {
-      expect(sessionStorage.getItem("openclaw.terminal.sessions.v1")).toContain(
+      expect(sessionStorage.getItem("afora.terminal.sessions.v1")).toContain(
         "surviving-session",
       );
     });
@@ -293,7 +293,7 @@ describe("OpenClawTerminalPanel reconnect", () => {
       },
       addEventListener: () => () => {},
     };
-    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as OpenClawTerminalPanel;
+    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as AforaTerminalPanel;
     panel.agentId = "research";
     panel.client = client;
     panel.available = true;
@@ -313,7 +313,7 @@ describe("OpenClawTerminalPanel reconnect", () => {
     await vi.waitFor(() => expect(refreshControlUiServiceWorker).toHaveBeenCalledOnce());
 
     const catalog = { catalogId: "codex", hostId: "gateway:local", threadId: "thread-1" };
-    const requested = new CustomEvent("openclaw:terminal-toggle", {
+    const requested = new CustomEvent("afora:terminal-toggle", {
       detail: { open: true, terminalSessionId: "requested-terminal" },
     });
     panel.handleToggleRequest(requested);
@@ -335,10 +335,10 @@ describe("OpenClawTerminalPanel reconnect", () => {
     newSession?.click();
     newSession?.click();
     panel.handleToggleRequest(
-      new CustomEvent("openclaw:terminal-toggle", { detail: { open: true, catalog } }),
+      new CustomEvent("afora:terminal-toggle", { detail: { open: true, catalog } }),
     );
     panel.handleToggleRequest(
-      new CustomEvent("openclaw:terminal-toggle", { detail: { open: true, catalog } }),
+      new CustomEvent("afora:terminal-toggle", { detail: { open: true, catalog } }),
     );
     panel.agentId = "main";
 
@@ -384,7 +384,7 @@ describe("OpenClawTerminalPanel reconnect", () => {
       },
       addEventListener: () => () => {},
     };
-    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as OpenClawTerminalPanel;
+    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as AforaTerminalPanel;
     panel.client = client;
     panel.available = true;
     document.body.append(panel);
@@ -409,7 +409,7 @@ describe("OpenClawTerminalPanel reconnect", () => {
     await panel.updateComplete;
     await vi.waitFor(() => expect(refreshControlUiServiceWorker).toHaveBeenCalledOnce());
     panel.handleToggleRequest(
-      new CustomEvent("openclaw:terminal-toggle", {
+      new CustomEvent("afora:terminal-toggle", {
         detail: { open: true, terminalSessionId: "cancelled-terminal" },
       }),
     );
@@ -421,7 +421,7 @@ describe("OpenClawTerminalPanel reconnect", () => {
 
     expect(panel.terminalPanelOpen).toBe(false);
     expect(requests).toHaveLength(0);
-    expect(sessionStorage.getItem("openclaw.terminal.actions.v1")).toBeNull();
+    expect(sessionStorage.getItem("afora.terminal.actions.v1")).toBeNull();
   });
 
   it("retires an older refresh generation without losing its queued action", async () => {
@@ -449,7 +449,7 @@ describe("OpenClawTerminalPanel reconnect", () => {
           releases.push(resolve);
         }),
     );
-    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as OpenClawTerminalPanel;
+    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as AforaTerminalPanel;
     panel.client = client;
     panel.available = true;
     document.body.append(panel);
@@ -462,7 +462,7 @@ describe("OpenClawTerminalPanel reconnect", () => {
     await panel.updateComplete;
     await vi.waitFor(() => expect(releases).toHaveLength(1));
     panel.handleToggleRequest(
-      new CustomEvent("openclaw:terminal-toggle", {
+      new CustomEvent("afora:terminal-toggle", {
         detail: { open: true, terminalSessionId: "generation-terminal" },
       }),
     );
@@ -495,7 +495,7 @@ describe("OpenClawTerminalPanel reconnect", () => {
       addEventListener: () => () => {},
     };
     vi.mocked(refreshControlUiServiceWorker).mockReturnValueOnce(new Promise<boolean>(() => {}));
-    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as OpenClawTerminalPanel;
+    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as AforaTerminalPanel;
     panel.catalogReadyTimeoutMs = 10;
     panel.client = client;
     panel.available = true;
@@ -509,7 +509,7 @@ describe("OpenClawTerminalPanel reconnect", () => {
     await panel.updateComplete;
     await vi.waitFor(() => expect(refreshControlUiServiceWorker).toHaveBeenCalledOnce());
     panel.handleToggleRequest(
-      new CustomEvent("openclaw:terminal-toggle", {
+      new CustomEvent("afora:terminal-toggle", {
         detail: { open: true, terminalSessionId: "stalled-terminal" },
       }),
     );
@@ -540,7 +540,7 @@ describe("OpenClawTerminalPanel reconnect", () => {
       },
       addEventListener: () => () => {},
     };
-    const stalePanel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as OpenClawTerminalPanel;
+    const stalePanel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as AforaTerminalPanel;
     stalePanel.client = client;
     stalePanel.available = true;
     document.body.append(stalePanel);
@@ -560,7 +560,7 @@ describe("OpenClawTerminalPanel reconnect", () => {
     await stalePanel.updateComplete;
     await vi.waitFor(() => expect(refreshControlUiServiceWorker).toHaveBeenCalledOnce());
     stalePanel.handleToggleRequest(
-      new CustomEvent("openclaw:terminal-toggle", {
+      new CustomEvent("afora:terminal-toggle", {
         detail: { open: true, terminalSessionId: "requested-after-reload" },
       }),
     );
@@ -571,7 +571,7 @@ describe("OpenClawTerminalPanel reconnect", () => {
     stalePanel.remove();
     const currentPanel = document.createElement(
       TERMINAL_PANEL_ELEMENT_NAME,
-    ) as OpenClawTerminalPanel;
+    ) as AforaTerminalPanel;
     currentPanel.client = client;
     currentPanel.available = true;
     document.body.append(currentPanel);

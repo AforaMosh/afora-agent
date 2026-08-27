@@ -11,12 +11,12 @@ type CoreCliCommandDescriptor = NamedCommandDescriptor;
 const coreCliCommandCatalog = defineCommandDescriptorCatalog([
   {
     name: "setup",
-    description: "Chat with OpenClaw; onboard when setup is incomplete",
+    description: "Chat with Afora; onboard when setup is incomplete",
     hasSubcommands: false,
   },
   {
     name: "crestodian", // hidden alias
-    description: "Deprecated: use openclaw setup",
+    description: "Deprecated: use afora setup",
     hasSubcommands: false,
     hidden: true,
   },
@@ -39,7 +39,7 @@ const coreCliCommandCatalog = defineCommandDescriptorCatalog([
   },
   {
     name: "claws",
-    description: "Inspect and add experimental OpenClaw Claws",
+    description: "Inspect and add experimental Afora Claws",
     hasSubcommands: true,
     parentDefaultHelp: true,
   },
@@ -87,7 +87,7 @@ const coreCliCommandCatalog = defineCommandDescriptorCatalog([
   },
   {
     name: "mcp",
-    description: "Manage OpenClaw mcp.servers config and channel bridge",
+    description: "Manage Afora mcp.servers config and channel bridge",
     hasSubcommands: true,
     parentDefaultHelp: true,
   },

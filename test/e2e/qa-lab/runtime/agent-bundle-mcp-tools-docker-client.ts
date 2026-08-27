@@ -1,4 +1,4 @@
-// OpenClaw bundle MCP tools Docker harness.
+// Afora bundle MCP tools Docker harness.
 // Imports packaged dist modules so tool materialization is verified against the
 // npm tarball installed in the functional image.
 import { randomUUID } from "node:crypto";
@@ -13,7 +13,7 @@ import {
 import { resolveConversationCapabilityProfile } from "../../../../dist/agents/conversation-capability-profile.js";
 import { applyFinalEffectiveToolPolicy } from "../../../../dist/agents/embedded-agent-runner/effective-tool-policy.js";
 import { splitSdkTools } from "../../../../dist/agents/embedded-agent-runner/tool-split.js";
-import type { OpenClawConfig } from "../../../../dist/config/types.openclaw.js";
+import type { AforaConfig } from "../../../../dist/config/types.afora.js";
 import { getPluginToolMeta } from "../../../../dist/plugins/tools.js";
 import { createE2eStateDir } from "../../../../scripts/e2e/lib/temp-state-dir.ts";
 
@@ -36,7 +36,7 @@ import { McpServer } from ${JSON.stringify(sdkMcpServerPath)};
 import { StdioServerTransport } from ${JSON.stringify(sdkStdioServerPath)};
 
 const server = new McpServer({ name: "agent-bundle-mcp-tools-probe", version: "1.0.0" });
-const probeTool = server.tool("docker_probe", "Docker OpenClaw MCP tool availability probe", async () => ({
+const probeTool = server.tool("docker_probe", "Docker Afora MCP tool availability probe", async () => ({
   content: [{ type: "text", text: "agent-bundle-mcp-tools-ok" }],
 }));
 probeTool.update({ _meta: { ui: { resourceUri: ${JSON.stringify(APP_URI)} } } });
@@ -66,7 +66,7 @@ await server.connect(new StdioServerTransport());
 
 function applyPolicy(params: {
   tools: Awaited<ReturnType<typeof materializeBundleMcpToolsForRun>>["tools"];
-  config: OpenClawConfig;
+  config: AforaConfig;
 }) {
   const warnings: string[] = [];
   return {
@@ -87,7 +87,7 @@ function applyPolicy(params: {
 }
 
 async function main() {
-  const tempState = await createE2eStateDir("openclaw-agent-bundle-mcp-");
+  const tempState = await createE2eStateDir("afora-agent-bundle-mcp-");
   tempState.registerExitCleanup();
   const stateDir = tempState.stateDir;
   const probeDir = path.join(stateDir, "agent-bundle-mcp-tools");
@@ -95,7 +95,7 @@ async function main() {
   await fs.mkdir(probeDir, { recursive: true });
   await writeProbeServer(serverPath);
 
-  const cfg: OpenClawConfig = {
+  const cfg: AforaConfig = {
     tools: {
       profile: "coding",
     },

@@ -1,5 +1,5 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { hasOutboundReplyContent } from "openclaw/plugin-sdk/reply-payload";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { hasOutboundReplyContent } from "afora-agent/plugin-sdk/reply-payload";
 import { appendCronStyleCurrentTimeLine } from "../agents/current-time.js";
 import { resolveEmbeddedSessionLane } from "../agents/embedded-agent-runner/lanes.js";
 import { listActiveEmbeddedRunSessionKeys } from "../agents/embedded-agent-runner/run-state.js";
@@ -32,7 +32,7 @@ import {
   loadExactSessionEntry,
   type SessionEntryLifecycleRemoval,
 } from "../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   hasActiveCronJobs,
   hasActiveCronJobsExceptMarker,
@@ -130,7 +130,7 @@ function hasActiveRunForSession(
 }
 
 export type HeartbeatRunOptions = {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentId?: string;
   sessionKey?: string;
   heartbeat?: HeartbeatConfig;

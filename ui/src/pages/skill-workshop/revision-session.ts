@@ -1,4 +1,4 @@
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import type { GatewaySessionRow, SessionsListResult } from "../../api/types.ts";
 import { loadSettings } from "../../app/settings.ts";
 import { readSessionMethodAccess } from "../../lib/session-method-access.ts";

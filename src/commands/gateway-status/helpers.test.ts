@@ -18,7 +18,7 @@ import { createSecretRefGatewayConfig } from "./test-support.js";
 describe("extractConfigSummary", () => {
   it("marks SecretRef-backed gateway auth credentials as configured", () => {
     const summary = extractConfigSummary({
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       exists: true,
       valid: true,
       issues: [],
@@ -34,7 +34,7 @@ describe("extractConfigSummary", () => {
 
   it("still treats empty plaintext auth values as not configured", () => {
     const summary = extractConfigSummary({
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       exists: true,
       valid: true,
       issues: [],
@@ -96,8 +96,8 @@ describe("resolveAuthForTarget", () => {
   it("resolves local auth token SecretRef before probing local targets", async () => {
     await withEnvAsync(
       {
-        OPENCLAW_GATEWAY_TOKEN: undefined,
-        OPENCLAW_GATEWAY_PASSWORD: undefined,
+        AFORA_GATEWAY_TOKEN: undefined,
+        AFORA_GATEWAY_PASSWORD: undefined,
         LOCAL_GATEWAY_TOKEN: "resolved-local-token",
       },
       async () => {
@@ -164,7 +164,7 @@ describe("resolveAuthForTarget", () => {
 
   it("does not force remote auth type from local auth mode", async () => {
     await withEnvAsync(
-      { OPENCLAW_GATEWAY_PASSWORD: "ambient-password" }, // pragma: allowlist secret
+      { AFORA_GATEWAY_PASSWORD: "ambient-password" }, // pragma: allowlist secret
       async () => {
         const auth = await resolveAuthForTarget(
           {
@@ -195,8 +195,8 @@ describe("resolveAuthForTarget", () => {
   it("redacts resolver internals from unresolved SecretRef diagnostics", async () => {
     await withEnvAsync(
       {
-        OPENCLAW_GATEWAY_PASSWORD: undefined,
-        OPENCLAW_GATEWAY_TOKEN: undefined,
+        AFORA_GATEWAY_PASSWORD: undefined,
+        AFORA_GATEWAY_TOKEN: undefined,
         MISSING_GATEWAY_TOKEN: undefined,
       },
       async () => {

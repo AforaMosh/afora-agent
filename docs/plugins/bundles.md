@@ -1,19 +1,19 @@
 ---
-summary: "Install and use Agent Plugins, Codex, Claude, and Cursor bundles as OpenClaw plugins"
+summary: "Install and use Agent Plugins, Codex, Claude, and Cursor bundles as Afora plugins"
 read_when:
   - You want to install an Agent Plugins, Codex, Claude, or Cursor-compatible bundle
-  - You need to understand how OpenClaw maps bundle content into native features
+  - You need to understand how Afora maps bundle content into native features
   - You are debugging bundle detection or missing capabilities
 title: "Plugin bundles"
 ---
 
-OpenClaw can install plugins from four external ecosystems: the vendor-neutral
+Afora can install plugins from four external ecosystems: the vendor-neutral
 [**Agent Plugins**](https://agent-plugins.org) standard, plus **Codex**,
 **Claude**, and **Cursor**. These are called **bundles** - content and metadata
-packs that OpenClaw maps into native features like skills, hooks, and MCP tools.
+packs that Afora maps into native features like skills, hooks, and MCP tools.
 
 <Info>
-  Bundles are **not** the same as native OpenClaw plugins. Native plugins run
+  Bundles are **not** the same as native Afora plugins. Native plugins run
   in-process and can register any capability. Bundles are content packs with
   selective feature mapping and a narrower trust boundary.
 </Info>
@@ -21,8 +21,8 @@ packs that OpenClaw maps into native features like skills, hooks, and MCP tools.
 ## Why bundles exist
 
 Many useful plugins are published in the Agent Plugins, Codex, Claude, or
-Cursor format. Instead of requiring authors to rewrite them as native OpenClaw
-plugins, OpenClaw detects these formats and maps their supported content into
+Cursor format. Instead of requiring authors to rewrite them as native Afora
+plugins, Afora detects these formats and maps their supported content into
 the native feature set. You can install an Agent Plugins package, a Claude
 command pack, or a Codex skill bundle and use it immediately.
 
@@ -32,14 +32,14 @@ command pack, or a Codex skill bundle and use it immediately.
   <Step title="Install from a directory, archive, or marketplace">
     ```bash
     # Local directory
-    openclaw plugins install ./my-bundle
+    afora plugins install ./my-bundle
 
     # Archive
-    openclaw plugins install ./my-bundle.tgz
+    afora plugins install ./my-bundle.tgz
 
     # Claude marketplace
-    openclaw plugins marketplace list <source>
-    openclaw plugins install <plugin> --marketplace <source>
+    afora plugins marketplace list <source>
+    afora plugins install <plugin> --marketplace <source>
     ```
 
     `<source>` is a local marketplace path/repo or a git/GitHub source.
@@ -48,8 +48,8 @@ command pack, or a Codex skill bundle and use it immediately.
 
   <Step title="Verify detection">
     ```bash
-    openclaw plugins list
-    openclaw plugins inspect <id>
+    afora plugins list
+    afora plugins inspect <id>
     ```
 
     Bundles show `Format: bundle` plus a `Bundle format:` value of
@@ -59,7 +59,7 @@ command pack, or a Codex skill bundle and use it immediately.
 
   <Step title="Restart and use">
     ```bash
-    openclaw gateway restart
+    afora gateway restart
     ```
 
     Mapped features (skills, hooks, MCP tools, LSP defaults) are available in the next session.
@@ -67,44 +67,44 @@ command pack, or a Codex skill bundle and use it immediately.
   </Step>
 </Steps>
 
-## What OpenClaw maps from bundles
+## What Afora maps from bundles
 
-Not every bundle feature runs in OpenClaw today. Here is what works and what
+Not every bundle feature runs in Afora today. Here is what works and what
 is detected but not yet wired.
 
 ### Supported now
 
 | Feature       | How it maps                                                                                       | Applies to     |
 | ------------- | ------------------------------------------------------------------------------------------------- | -------------- |
-| Skill content | Bundle skill roots load as normal OpenClaw skills                                                 | All formats    |
+| Skill content | Bundle skill roots load as normal Afora skills                                                 | All formats    |
 | Commands      | `commands/` and `.cursor/commands/` treated as skill roots                                        | Claude, Cursor |
-| Hook packs    | OpenClaw-style `HOOK.md` + `handler.ts` layouts                                                   | Codex          |
-| MCP tools     | Bundle MCP config merged into embedded OpenClaw settings; supported stdio and HTTP servers loaded | All formats    |
+| Hook packs    | Afora-style `HOOK.md` + `handler.ts` layouts                                                   | Codex          |
+| MCP tools     | Bundle MCP config merged into embedded Afora settings; supported stdio and HTTP servers loaded | All formats    |
 | Env contract  | `PLUGIN_ROOT` and `PLUGIN_DATA` env vars plus placeholder expansion for stdio MCP servers         | Agent Plugins  |
-| LSP servers   | Claude `.lsp.json` and manifest-declared `lspServers` merged into embedded OpenClaw LSP defaults  | Claude         |
-| Settings      | Claude `settings.json` imported as embedded OpenClaw defaults                                     | Claude         |
+| LSP servers   | Claude `.lsp.json` and manifest-declared `lspServers` merged into embedded Afora LSP defaults  | Claude         |
+| Settings      | Claude `settings.json` imported as embedded Afora defaults                                     | Claude         |
 
 #### Skill content
 
-- Bundle skill roots load as normal OpenClaw skill roots.
+- Bundle skill roots load as normal Afora skill roots.
 - Claude `commands/` roots are treated as additional skill roots.
 - Cursor `.cursor/commands/` roots are treated as additional skill roots.
 
 Claude markdown command files and Cursor command markdown both work through the
-normal OpenClaw skill loader.
+normal Afora skill loader.
 
 #### Hook packs
 
-Bundle hook roots work **only** when they use the normal OpenClaw hook-pack
+Bundle hook roots work **only** when they use the normal Afora hook-pack
 layout: `HOOK.md` plus `handler.ts` or `handler.js`. Today this is primarily
 the Codex-compatible case.
 
-#### MCP for embedded OpenClaw
+#### MCP for embedded Afora
 
 - Enabled bundles can contribute MCP server config.
-- OpenClaw merges bundle MCP config into the effective embedded OpenClaw
+- Afora merges bundle MCP config into the effective embedded Afora
   settings as `mcpServers`.
-- OpenClaw exposes supported bundle MCP tools during embedded OpenClaw agent
+- Afora exposes supported bundle MCP tools during embedded Afora agent
   turns by launching stdio servers or connecting to HTTP servers.
 - The `coding` and `messaging` tool profiles include bundle MCP tools by
   default; use `tools.deny: ["bundle-mcp"]` to opt out for an agent or gateway.
@@ -154,7 +154,7 @@ MCP servers can use stdio or HTTP transport.
 ```
 
 - `transport` accepts `"streamable-http"` or `"sse"`; omitted defaults to `sse`.
-- `type: "http"` is a CLI-native downstream shape; use `transport: "streamable-http"` in OpenClaw config. `openclaw mcp set` and `openclaw doctor --fix` normalize the common alias.
+- `type: "http"` is a CLI-native downstream shape; use `transport: "streamable-http"` in Afora config. `afora mcp set` and `afora doctor --fix` normalize the common alias.
 - Only `http:` and `https:` URL schemes are allowed.
 - `headers` values support `${ENV_VAR}` interpolation.
 - A server entry with both `command` and `url` is rejected.
@@ -166,7 +166,7 @@ MCP servers can use stdio or HTTP transport.
 
 ##### Tool naming
 
-OpenClaw registers bundle MCP tools with provider-safe names in the form
+Afora registers bundle MCP tools with provider-safe names in the form
 `serverName__toolName`. For example, a server keyed `"vigil-harbor"` exposing a
 `memory_search` tool registers as `vigil-harbor__memory_search`.
 
@@ -183,27 +183,27 @@ OpenClaw registers bundle MCP tools with provider-safe names in the form
   plugin-owned by `bundle-mcp`, so profile allow/deny lists can reference
   either individual exposed tool names or the `bundle-mcp` plugin key.
 
-#### Embedded OpenClaw settings
+#### Embedded Afora settings
 
-Claude `settings.json` is imported as default embedded OpenClaw settings when
-the bundle is enabled. OpenClaw sanitizes shell override keys before applying
+Claude `settings.json` is imported as default embedded Afora settings when
+the bundle is enabled. Afora sanitizes shell override keys before applying
 them:
 
 - `shellPath`
 - `shellCommandPrefix`
 
-#### Embedded OpenClaw LSP
+#### Embedded Afora LSP
 
 - Enabled Claude bundles can contribute LSP server config.
-- OpenClaw loads `.lsp.json` plus any manifest-declared `lspServers` paths.
-- Bundle LSP config is merged into the effective embedded OpenClaw LSP
+- Afora loads `.lsp.json` plus any manifest-declared `lspServers` paths.
+- Bundle LSP config is merged into the effective embedded Afora LSP
   defaults.
 - Only supported stdio-backed LSP servers are runnable today; unsupported
-  transports still show up in `openclaw plugins inspect <id>`.
+  transports still show up in `afora plugins inspect <id>`.
 
 ### Detected but not executed
 
-These are recognized and shown in diagnostics, but OpenClaw does not run them:
+These are recognized and shown in diagnostics, but Afora does not run them:
 
 - Claude `agents`, `hooks/hooks.json` automation, `outputStyles`
 - Cursor `.cursor/agents`, `.cursor/hooks.json`, `.cursor/rules`
@@ -220,7 +220,7 @@ These are recognized and shown in diagnostics, but OpenClaw does not run them:
 
     Format behavior:
 
-    - The manifest is strict JSON (not JSON5). OpenClaw requires a non-empty
+    - The manifest is strict JSON (not JSON5). Afora requires a non-empty
       `name`; other manifest fields are optional and unknown fields are ignored
     - Immediate child directories of `skills/` that contain a `SKILL.md` load as
       skills; children without one are skipped with a warning, and deeper
@@ -229,7 +229,7 @@ These are recognized and shown in diagnostics, but OpenClaw does not run them:
       only; `stdio`, `streamable-http`, and legacy `sse` transports are
       supported
     - stdio servers launch with `PLUGIN_ROOT` (the plugin root) and
-      `PLUGIN_DATA` (a persistent per-plugin data directory OpenClaw creates
+      `PLUGIN_DATA` (a persistent per-plugin data directory Afora creates
       under its state dir) in their environment; `${PLUGIN_ROOT}` and
       `${PLUGIN_DATA}` placeholders expand in `args`, `env` values, and `cwd`
       in a single pass
@@ -239,7 +239,7 @@ These are recognized and shown in diagnostics, but OpenClaw does not run them:
       skills keep loading; invalid individual server entries are skipped
     - `.mcp.json` (dot-prefixed) and inline manifest `mcpServers` are **not**
       read for this format; the standard's closed schema wins
-    - OpenClaw reads `extensions["ai.openclaw"]`; it currently supports
+    - Afora reads `extensions["ai.afora"]`; it currently supports
       `activation` with the same semantics as other bundle manifests
     - Other manifest extension namespaces are ignored and reserved for their
       clients
@@ -252,7 +252,7 @@ These are recognized and shown in diagnostics, but OpenClaw does not run them:
 
     Optional content: `skills/`, `hooks/`, `.mcp.json`, `.app.json`
 
-    Codex bundles fit OpenClaw best when they use skill roots and OpenClaw-style
+    Codex bundles fit Afora best when they use skill roots and Afora-style
     hook-pack directories (`HOOK.md` + `handler.ts`).
 
   </Accordion>
@@ -266,9 +266,9 @@ These are recognized and shown in diagnostics, but OpenClaw does not run them:
     Claude-specific behavior:
 
     - `commands/` is treated as skill content
-    - `settings.json` is imported into embedded OpenClaw settings (shell override keys are sanitized)
-    - `.mcp.json` exposes supported stdio tools to embedded OpenClaw
-    - `.lsp.json` plus manifest-declared `lspServers` paths load into embedded OpenClaw LSP defaults
+    - `settings.json` is imported into embedded Afora settings (shell override keys are sanitized)
+    - `.mcp.json` exposes supported stdio tools to embedded Afora
+    - `.lsp.json` plus manifest-declared `lspServers` paths load into embedded Afora LSP defaults
     - `hooks/hooks.json` is detected but not executed
     - Custom component paths in the manifest are additive; they extend defaults, not replace them
 
@@ -287,9 +287,9 @@ These are recognized and shown in diagnostics, but OpenClaw does not run them:
 
 ## Detection precedence
 
-OpenClaw checks for native plugin format first:
+Afora checks for native plugin format first:
 
-1. `openclaw.plugin.json` or a valid `package.json` with `openclaw.extensions` - treated as a **native plugin**
+1. `afora.plugin.json` or a valid `package.json` with `afora.extensions` - treated as a **native plugin**
 2. Client-specific bundle markers (`.codex-plugin/`, `.cursor-plugin/`, `.claude-plugin/`) - treated as a **bundle** in that format
 3. A root `plugin.json` - treated as an **Agent Plugins bundle**
 4. Default manifestless Claude layout (`skills/`, `commands/`, `.mcp.json`, ...) - treated as a **Claude bundle**
@@ -297,18 +297,18 @@ OpenClaw checks for native plugin format first:
 If a package carries both a client-specific marker and a root `plugin.json`,
 the client-specific format wins so its richer mappings (commands, hooks,
 settings) are preserved. If a directory contains both a native manifest and
-bundle markers, OpenClaw uses the native path. This prevents dual-format
+bundle markers, Afora uses the native path. This prevents dual-format
 packages from being partially installed as bundles.
 
 ## Runtime dependencies and cleanup
 
 - Third-party compatible bundles do not get startup `npm install` repair. They
-  should be installed through `openclaw plugins install` and ship everything
+  should be installed through `afora plugins install` and ship everything
   they need in the installed plugin directory.
-- OpenClaw-owned bundled plugins are either shipped lightweight in core or
+- Afora-owned bundled plugins are either shipped lightweight in core or
   downloadable through the plugin installer. Gateway startup never runs a
   package manager for them.
-- `openclaw doctor --fix` removes stale local bundled-plugin install records
+- `afora doctor --fix` removes stale local bundled-plugin install records
   and can recover downloadable plugins that are missing from the local plugin
   index when config still references them.
 
@@ -316,7 +316,7 @@ packages from being partially installed as bundles.
 
 Bundles have a narrower trust boundary than native plugins:
 
-- OpenClaw does **not** load arbitrary bundle runtime modules in-process.
+- Afora does **not** load arbitrary bundle runtime modules in-process.
 - Skills and hook-pack paths must stay inside the plugin root (boundary-checked).
 - Settings files are read with the same boundary checks.
 - Supported stdio MCP servers may be launched as subprocesses.
@@ -328,7 +328,7 @@ bundles as trusted content for the features they do expose.
 
 <AccordionGroup>
   <Accordion title="Bundle is detected but capabilities do not run">
-    Run `openclaw plugins inspect <id>`. If a capability is listed but marked as
+    Run `afora plugins inspect <id>`. If a capability is listed but marked as
     not wired, that is a product limit, not a broken install.
   </Accordion>
 
@@ -338,13 +338,13 @@ bundles as trusted content for the features they do expose.
   </Accordion>
 
   <Accordion title="Claude settings do not apply">
-    Only embedded OpenClaw settings from `settings.json` are supported. OpenClaw does
+    Only embedded Afora settings from `settings.json` are supported. Afora does
     not treat bundle settings as raw config patches.
   </Accordion>
 
   <Accordion title="Claude hooks do not execute">
     `hooks/hooks.json` is detect-only. If you need runnable hooks, use the
-    OpenClaw hook-pack layout or ship a native plugin.
+    Afora hook-pack layout or ship a native plugin.
   </Accordion>
 </AccordionGroup>
 

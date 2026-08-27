@@ -1,29 +1,29 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { recordMessageToolRunOutcome } from "./message-tool-run-outcome-store.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 function createEnv(): NodeJS.ProcessEnv {
-  return { OPENCLAW_STATE_DIR: tempDirs.make("openclaw-message-tool-outcome-") };
+  return { AFORA_STATE_DIR: tempDirs.make("afora-message-tool-outcome-") };
 }
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 describe("message-tool run outcome store", () => {
   it("lazily records typed completion facts in an existing same-version database", () => {
     const env = createEnv();
-    const database = openOpenClawAgentDatabase({ agentId: "main", env });
+    const database = openAforaAgentDatabase({ agentId: "main", env });
     database.db.exec("DROP TABLE message_tool_run_outcomes;");
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
 
     for (const [runId, outcome, runStatus] of [
       ["run-delivered", "tool_delivered", "completed"],
@@ -44,7 +44,7 @@ describe("message-tool run outcome store", () => {
     }
 
     expect(
-      openOpenClawAgentDatabase({ agentId: "main", env })
+      openAforaAgentDatabase({ agentId: "main", env })
         .db.prepare("SELECT run_id, outcome, run_status FROM message_tool_run_outcomes ORDER BY id")
         .all(),
     ).toEqual([
@@ -56,7 +56,7 @@ describe("message-tool run outcome store", () => {
 
   it("prunes the per-agent operational history to 10,000 newest rows", () => {
     const env = createEnv();
-    const database = openOpenClawAgentDatabase({ agentId: "main", env });
+    const database = openAforaAgentDatabase({ agentId: "main", env });
     database.db.exec(`
       WITH RECURSIVE rows(value) AS (
         SELECT 1

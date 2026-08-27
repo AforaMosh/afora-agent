@@ -4,7 +4,7 @@ declare module "*security/opengrep/check-rule-metadata.mjs" {
   ): string[];
 }
 
-declare module "*openclaw-changelog-update/scripts/verify-release-notes.mjs" {
+declare module "*afora-changelog-update/scripts/verify-release-notes.mjs" {
   type ContributionRecord = {
     externalReferences?: string[];
     references: number[];

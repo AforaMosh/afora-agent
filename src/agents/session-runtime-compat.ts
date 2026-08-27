@@ -5,7 +5,7 @@
  */
 import type { CliSessionBinding, SessionEntry } from "../config/sessions.js";
 import { getCliSessionBinding } from "../config/sessions/cli-session-binding.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isDefaultAgentRuntimeId, normalizeOptionalAgentRuntimeId } from "./agent-runtime-id.js";
 import { isCliRuntimeAliasForProvider } from "./model-runtime-aliases.js";
 
@@ -56,17 +56,17 @@ export function resolvePersistedSessionRuntimeId(
 export function resolveCompatibleAgentRuntimeForProvider(params: {
   provider?: string | null;
   runtime?: string | null;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): string | undefined {
   const runtime = normalizeOptionalAgentRuntimeId(params.runtime);
   if (!runtime || isDefaultAgentRuntimeId(runtime)) {
     return undefined;
   }
-  if (runtime === "openclaw") {
+  if (runtime === "afora") {
     return runtime;
   }
   const provider = params.provider?.trim().toLowerCase() ?? "";
-  // The Codex harness owns both OpenClaw's virtual Codex namespace and canonical OpenAI routes.
+  // The Codex harness owns both Afora's virtual Codex namespace and canonical OpenAI routes.
   if (runtime === "codex" && (provider === "codex" || provider === "openai")) {
     return runtime;
   }
@@ -76,7 +76,7 @@ export function resolveCompatibleAgentRuntimeForProvider(params: {
 export function resolveSessionRuntimeOverrideForProvider(params: {
   provider?: string | null;
   entry?: SessionRuntimeOverrideEntry;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): string | undefined {
   const lockedHarness = normalizeOptionalAgentRuntimeId(params.entry?.agentHarnessId);
   if (
@@ -102,7 +102,7 @@ export function resolveSessionRuntimeOverrideForProvider(params: {
 export function resolveManualCompactionCliTarget(params: {
   provider?: string | null;
   entry?: ManualCompactionRuntimeEntry;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): ManualCompactionCliTarget {
   const runtimeOverride = normalizeOptionalAgentRuntimeId(params.entry?.agentRuntimeOverride);
   const runtimeConfig =

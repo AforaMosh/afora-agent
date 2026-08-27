@@ -1,19 +1,19 @@
 // Copilot tests cover harness plugin behavior.
 import type { CopilotClient } from "@github/copilot-sdk";
-import { attachModelProviderRequestTransport } from "openclaw/plugin-sdk/agent-harness-runtime";
+import { attachModelProviderRequestTransport } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import type {
   AgentHarness,
   AgentHarnessAttemptParamsV2 as AgentHarnessAttemptParams,
   AgentHarnessAttemptResult,
   AgentHarnessCompactParams,
   AgentHarnessV2,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
 import {
   initializeGlobalHookRunner,
   resetGlobalHookRunner,
-} from "openclaw/plugin-sdk/hook-runtime";
-import { createMockPluginRegistry } from "openclaw/plugin-sdk/plugin-test-runtime";
+} from "afora-agent/plugin-sdk/hook-runtime";
+import { createMockPluginRegistry } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createCopilotAgentHarness, type CopilotSessionBinding } from "./harness.js";
 import type { resolvePoolAcquire } from "./src/attempt.js";
@@ -352,7 +352,7 @@ describe("createCopilotAgentHarness", () => {
       ["deepinfra", ["deepinfra"]],
       ["fireworks", ["fireworks"]],
       ["github", ["github"]],
-      ["openclaw", ["openclaw"]],
+      ["afora", ["afora"]],
       ["sglang", ["sglang"]],
       ["together", ["together"]],
       ["vllm", ["vllm"]],
@@ -462,7 +462,7 @@ describe("createCopilotAgentHarness", () => {
       onAgentEvent: vi.fn(),
       onAssistantDelta: vi.fn(),
       onPartialReply: vi.fn(),
-      sessionId: "openclaw-session-finalize",
+      sessionId: "afora-session-finalize",
     });
     mocks.runCopilotAttempt
       .mockImplementationOnce(async (_params, deps) => {
@@ -488,7 +488,7 @@ describe("createCopilotAgentHarness", () => {
     expect(mocks.runCopilotAttempt.mock.calls[1]?.[0]).toMatchObject({
       disableTools: true,
       initialReplayState: { sdkSessionId: "sdk-session-finalize" },
-      sessionId: "openclaw-session-finalize",
+      sessionId: "afora-session-finalize",
     });
     expect(mocks.runCopilotAttempt.mock.calls[1]?.[0]?.initialReplayState).not.toHaveProperty(
       "replayInvalid",
@@ -509,7 +509,7 @@ describe("createCopilotAgentHarness", () => {
     const harness = createCopilotAgentHarness({ pool: makePoolMock() });
     const params = asAttemptParams({
       ...ATTEMPT_PARAMS,
-      sessionId: "openclaw-session-missing",
+      sessionId: "afora-session-missing",
     });
 
     await expect(
@@ -1140,7 +1140,7 @@ describe("createCopilotAgentHarness", () => {
       expect(deleteSession).toHaveBeenCalledTimes(1);
     });
 
-    it("does not invoke deleteSession for a session belonging to a different openclawSessionId", async () => {
+    it("does not invoke deleteSession for a session belonging to a different aforaSessionId", async () => {
       const pool = makePoolMock();
       const deleteSession = vi.fn().mockResolvedValue(undefined);
       const client = createMockCopilotClient({ deleteSession });
@@ -1204,7 +1204,7 @@ describe("createCopilotAgentHarness", () => {
     expect(abort).toHaveBeenCalledTimes(1);
   });
 
-  it("aborts deferred compaction cleanup when the OpenClaw session resets", async () => {
+  it("aborts deferred compaction cleanup when the Afora session resets", async () => {
     const cleanup = createDeferred<"aborted" | "completed" | "deadline">();
     const abort = vi.fn(() => cleanup.resolve("aborted"));
     mocks.runCopilotAttempt.mockImplementation(async (_params, deps) => {
@@ -1345,7 +1345,7 @@ describe("createCopilotAgentHarness", () => {
 
   describe("session reuse across turns (dogfood finding #4)", () => {
     // These tests pin the harness's session-reuse contract: subsequent
-    // `runAttempt` calls within the same OpenClaw session should pass
+    // `runAttempt` calls within the same Afora session should pass
     // the tracked `sdkSessionId` to the attempt via `initialReplayState`
     // so the SDK can `resumeSession` and keep its prompt cache + thread
     // history warm. Compatibility-fingerprint mismatch (provider/model/

@@ -1,4 +1,4 @@
-// Protocol Gen script supports OpenClaw repository automation.
+// Protocol Gen script supports Afora repository automation.
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -42,8 +42,8 @@ async function writeJsonSchema(jsonSchemaPath: string) {
 
   const rootSchema = {
     $schema: "http://json-schema.org/draft-07/schema#",
-    $id: "https://openclaw.ai/protocol.schema.json",
-    title: "OpenClaw Gateway Protocol",
+    $id: "https://afora.ai/protocol.schema.json",
+    title: "Afora Gateway Protocol",
     description: "Handshake, request/response, and event frames for the Gateway WebSocket.",
     oneOf: [
       { $ref: "#/definitions/RequestFrame" },

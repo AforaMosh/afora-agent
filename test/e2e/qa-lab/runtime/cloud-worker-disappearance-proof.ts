@@ -15,9 +15,9 @@ import {
 import { WORKER_LAUNCH_V2_PROTOCOL_FEATURE } from "../../../../packages/gateway-protocol/src/schema/worker-admission.js";
 import { createWorkerSessionPlacementStore } from "../../../../src/gateway/worker-environments/placement-store.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../../../../src/state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../../../../src/state/afora-state-db.js";
 import { createQaScriptEvidenceWriter } from "./script-evidence.js";
 
 const SCENARIO_ID = "cloud-worker-disappearance";
@@ -156,7 +156,7 @@ function seedUnknownWorkerState(
   lost: SessionIdentity,
   isolated: SessionIdentity,
 ) {
-  const databasePath = path.join(stateDir, "state", "openclaw.sqlite");
+  const databasePath = path.join(stateDir, "state", "afora.sqlite");
   const raw = new DatabaseSync(databasePath);
   try {
     raw
@@ -164,7 +164,7 @@ function seedUnknownWorkerState(
         `INSERT INTO worker_environments (
           environment_id, provider_id, profile_id, profile_snapshot_json,
           provision_operation_id, lease_id, shared_host, ssh_host, ssh_port, ssh_user,
-          ssh_host_key, ssh_key_ref_json, bootstrap_bundle_hash, bootstrap_openclaw_version,
+          ssh_host_key, ssh_key_ref_json, bootstrap_bundle_hash, bootstrap_afora_version,
           bootstrap_protocol_features_json, owner_epoch, teardown_terminal_state,
           attached_session_ids_json, state, created_at_ms, updated_at_ms, state_changed_at_ms,
           idle_since_at_ms, destroy_requested_at_ms, last_error
@@ -183,7 +183,7 @@ function seedUnknownWorkerState(
     raw.close();
   }
 
-  const database = openOpenClawStateDatabase({ path: databasePath });
+  const database = openAforaStateDatabase({ path: databasePath });
   try {
     const store = createWorkerSessionPlacementStore({ database, now: () => 1_000 });
     seedPlacement(store, lost);
@@ -201,7 +201,7 @@ function seedUnknownWorkerState(
       recoveryError: INDEPENDENT_REASON,
     });
   } finally {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
   }
 }
 

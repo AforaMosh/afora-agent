@@ -72,7 +72,7 @@ function writeFixtureServerShims(binDir: string, pidPath: string): void {
     path.join(binDir, "node"),
     [
       "#!/bin/bash",
-      'printf "%s\\n" "$$" >"$OPENCLAW_TEST_FIXTURE_SERVER_PID"',
+      'printf "%s\\n" "$$" >"$AFORA_TEST_FIXTURE_SERVER_PID"',
       "trap 'exit 0' TERM",
       "while true; do /bin/sleep 1; done",
       "",
@@ -90,7 +90,7 @@ function writeStubbornFixtureServerShims(binDir: string, pidPath: string): void 
     path.join(binDir, "node"),
     [
       "#!/bin/bash",
-      'printf "%s\\n" "$$" >"$OPENCLAW_TEST_FIXTURE_SERVER_PID"',
+      'printf "%s\\n" "$$" >"$AFORA_TEST_FIXTURE_SERVER_PID"',
       "trap ':' TERM",
       "while true; do /bin/sleep 1; done",
       "",
@@ -199,26 +199,26 @@ describe("plugins Docker assertions", () => {
       encoding: "utf8",
       env: {
         ...process.env,
-        CLAWHUB_PLUGIN_SPEC: "clawhub:@openclaw/kitchen-sink",
-        OPENCLAW_PLUGINS_E2E_CLAWHUB_PREFLIGHT_TIMEOUT_MS: "1e3",
+        CLAWHUB_PLUGIN_SPEC: "clawhub:@afora/kitchen-sink",
+        AFORA_PLUGINS_E2E_CLAWHUB_PREFLIGHT_TIMEOUT_MS: "1e3",
       },
     });
     expect(timeoutResult.status).not.toBe(0);
     expect(timeoutResult.stderr).toContain(
-      "invalid OPENCLAW_PLUGINS_E2E_CLAWHUB_PREFLIGHT_TIMEOUT_MS: 1e3",
+      "invalid AFORA_PLUGINS_E2E_CLAWHUB_PREFLIGHT_TIMEOUT_MS: 1e3",
     );
 
     const bodyLimitResult = spawnSync(process.execPath, [ASSERTIONS_SCRIPT, "clawhub-preflight"], {
       encoding: "utf8",
       env: {
         ...process.env,
-        CLAWHUB_PLUGIN_SPEC: "clawhub:@openclaw/kitchen-sink",
-        OPENCLAW_PLUGINS_E2E_CLAWHUB_PREFLIGHT_BODY_MAX_BYTES: "1000bytes",
+        CLAWHUB_PLUGIN_SPEC: "clawhub:@afora/kitchen-sink",
+        AFORA_PLUGINS_E2E_CLAWHUB_PREFLIGHT_BODY_MAX_BYTES: "1000bytes",
       },
     });
     expect(bodyLimitResult.status).not.toBe(0);
     expect(bodyLimitResult.stderr).toContain(
-      "invalid OPENCLAW_PLUGINS_E2E_CLAWHUB_PREFLIGHT_BODY_MAX_BYTES: 1000bytes",
+      "invalid AFORA_PLUGINS_E2E_CLAWHUB_PREFLIGHT_BODY_MAX_BYTES: 1000bytes",
     );
   });
 
@@ -232,29 +232,29 @@ describe("plugins Docker assertions", () => {
     for (const scriptPath of scripts) {
       const script = readFileSync(scriptPath, "utf8");
       const scriptWithoutDefaultScratch = script.replace(
-        'mktemp -d "/tmp/openclaw-plugins.XXXXXX"',
+        'mktemp -d "/tmp/afora-plugins.XXXXXX"',
         "",
       );
-      expect(script).toContain("OPENCLAW_PLUGINS_TMP_DIR");
+      expect(script).toContain("AFORA_PLUGINS_TMP_DIR");
       expect(scriptWithoutDefaultScratch).not.toMatch(
-        /\/tmp\/(?:plugins|marketplace|demo-plugin|is-number|openclaw-plugin|openclaw-clawhub)/,
+        /\/tmp\/(?:plugins|marketplace|demo-plugin|is-number|afora-plugin|afora-clawhub)/,
       );
     }
   });
 
   it("cleans the default plugin sweep scratch root", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-plugin-sweep-cleanup-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-plugin-sweep-cleanup-"));
     const marker = path.join(root, "scratch-path.txt");
     try {
       const result = runPluginsSweepShell(
         `
 set -euo pipefail
-export OPENCLAW_PLUGINS_SWEEP_SOURCE_ONLY=1
+export AFORA_PLUGINS_SWEEP_SOURCE_ONLY=1
 source scripts/e2e/lib/plugins/sweep.sh
-printf '%s\\n' "$OPENCLAW_PLUGINS_TMP_DIR" > "$MARKER"
-test -d "$OPENCLAW_PLUGINS_TMP_DIR"
-cleanup_openclaw_plugins_sweep
-test ! -e "$OPENCLAW_PLUGINS_TMP_DIR"
+printf '%s\\n' "$AFORA_PLUGINS_TMP_DIR" > "$MARKER"
+test -d "$AFORA_PLUGINS_TMP_DIR"
+cleanup_afora_plugins_sweep
+test ! -e "$AFORA_PLUGINS_TMP_DIR"
 `,
         { MARKER: marker },
       );
@@ -263,7 +263,7 @@ test ! -e "$OPENCLAW_PLUGINS_TMP_DIR"
       expect(result.stderr).toBe("");
       expect(result.status).toBe(0);
       const scratchRoot = readFileSync(marker, "utf8").trim();
-      expect(scratchRoot).toContain("/tmp/openclaw-plugins.");
+      expect(scratchRoot).toContain("/tmp/afora-plugins.");
       expect(existsSync(scratchRoot)).toBe(false);
     } finally {
       rmSync(root, { force: true, recursive: true });
@@ -271,18 +271,18 @@ test ! -e "$OPENCLAW_PLUGINS_TMP_DIR"
   });
 
   it("preserves caller-provided plugin sweep scratch roots", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-plugin-sweep-caller-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-plugin-sweep-caller-"));
     const scratchRoot = path.join(root, "scratch");
     try {
       const result = runPluginsSweepShell(
         `
 set -euo pipefail
-export OPENCLAW_PLUGINS_SWEEP_SOURCE_ONLY=1
-export OPENCLAW_PLUGINS_TMP_DIR="$SCRATCH_ROOT"
+export AFORA_PLUGINS_SWEEP_SOURCE_ONLY=1
+export AFORA_PLUGINS_TMP_DIR="$SCRATCH_ROOT"
 source scripts/e2e/lib/plugins/sweep.sh
-test -d "$OPENCLAW_PLUGINS_TMP_DIR"
-cleanup_openclaw_plugins_sweep
-test -d "$OPENCLAW_PLUGINS_TMP_DIR"
+test -d "$AFORA_PLUGINS_TMP_DIR"
+cleanup_afora_plugins_sweep
+test -d "$AFORA_PLUGINS_TMP_DIR"
 `,
         { SCRATCH_ROOT: scratchRoot },
       );
@@ -305,7 +305,7 @@ test -d "$OPENCLAW_PLUGINS_TMP_DIR"
   )(
     "bounds $mode diagnostics with exit $status and lifecycle tracing $traceEnabled",
     (testCase) => {
-      const root = mkdtempSync(path.join(tmpdir(), "openclaw-plugin-sweep-diagnostics-"));
+      const root = mkdtempSync(path.join(tmpdir(), "afora-plugin-sweep-diagnostics-"));
       const outputFile = path.join(root, "plugins-git-inspect.json");
       const capturedOutput = `DO_NOT_DUMP_CAPTURED_PLUGIN_OUTPUT\n${"x".repeat(32 * 1024)}\nCAPTURED_PLUGIN_OUTPUT_TAIL`;
       const fixtureApiKey = ["sk", "proj", "plugin", "fixture", "secret"].join("-");
@@ -316,8 +316,8 @@ test -d "$OPENCLAW_PLUGINS_TMP_DIR"
       const capturedError = `DO_NOT_DUMP_PLUGIN_STDERR_PREFIX\n${"y".repeat(32 * 1024)}\n${startOfLineApiKey}\nPLUGIN_STDERR_TAIL_MARKER task-runner risk-score disk-space Authorization: Bearer plugin-fixture-bearer OPENAI_API_KEY=${fixtureApiKey} [${punctuationApiKey}]\n${boundaryApiKey}`;
       const command =
         testCase.mode === "capture"
-          ? 'run_plugins_openclaw_capture "$OUTPUT_FILE" plugins inspect demo-plugin --runtime --json'
-          : 'run_plugins_openclaw_logged install-git plugins install "git:file:///tmp/fixture@revision" --force';
+          ? 'run_plugins_afora_capture "$OUTPUT_FILE" plugins inspect demo-plugin --runtime --json'
+          : 'run_plugins_afora_logged install-git plugins install "git:file:///tmp/fixture@revision" --force';
 
       try {
         const unredactedTail = Buffer.from(`${capturedError}\n`, "utf8")
@@ -329,16 +329,16 @@ test -d "$OPENCLAW_PLUGINS_TMP_DIR"
         const result = runPluginsSweepShell(
           `
 set -euo pipefail
-export OPENCLAW_PLUGINS_SWEEP_SOURCE_ONLY=1
-export OPENCLAW_PLUGINS_TMP_DIR="$SCRATCH_ROOT"
-export OPENCLAW_PLUGINS_CLI_TIMEOUT=1s
-export OPENCLAW_ENTRY=fixture-entry
+export AFORA_PLUGINS_SWEEP_SOURCE_ONLY=1
+export AFORA_PLUGINS_TMP_DIR="$SCRATCH_ROOT"
+export AFORA_PLUGINS_CLI_TIMEOUT=1s
+export AFORA_ENTRY=fixture-entry
 source scripts/e2e/lib/plugins/sweep.sh
 umask 000
-openclaw_e2e_maybe_timeout() {
+afora_e2e_maybe_timeout() {
   local raw_stderr_file
   local raw_stderr_mode
-  for raw_stderr_file in "$SCRATCH_ROOT"/openclaw-plugin-stderr.*; do
+  for raw_stderr_file in "$SCRATCH_ROOT"/afora-plugin-stderr.*; do
     [[ -f "$raw_stderr_file" ]] || return 86
     if raw_stderr_mode="$(stat -f '%Lp' "$raw_stderr_file" 2>/dev/null)"; then
       :
@@ -351,7 +351,7 @@ openclaw_e2e_maybe_timeout() {
   done
   printf '%s\\n' "$CAPTURED_OUTPUT"
   printf '%s\\n' "$CAPTURED_STDERR" >&2
-  if [[ "\${OPENCLAW_PLUGIN_LIFECYCLE_TRACE:-}" == "1" ]]; then
+  if [[ "\${AFORA_PLUGIN_LIFECYCLE_TRACE:-}" == "1" ]]; then
     printf '%s\\n' '[plugins:lifecycle] shim' >&2
   fi
   return "$CAPTURE_STATUS"
@@ -362,8 +362,8 @@ ${command}
             CAPTURED_OUTPUT: capturedOutput,
             CAPTURED_STDERR: capturedError,
             CAPTURE_STATUS: String(testCase.status),
-            OPENCLAW_DOCKER_E2E_LOG_PRINT_BYTES: "192",
-            OPENCLAW_PLUGIN_LIFECYCLE_TRACE: testCase.traceEnabled ? "1" : "0",
+            AFORA_DOCKER_E2E_LOG_PRINT_BYTES: "192",
+            AFORA_PLUGIN_LIFECYCLE_TRACE: testCase.traceEnabled ? "1" : "0",
             OUTPUT_FILE: outputFile,
             SCRATCH_ROOT: root,
           },
@@ -386,7 +386,7 @@ ${command}
         expect(result.stderr).not.toContain(boundaryApiKey);
         expect(
           readdirSync(root).filter(
-            (name) => name.startsWith("openclaw-plugin-") || name.endsWith(".stderr.log"),
+            (name) => name.startsWith("afora-plugin-") || name.endsWith(".stderr.log"),
           ),
         ).toEqual([]);
 
@@ -426,7 +426,7 @@ ${command}
   );
 
   it("scans plugin assertion logs without echoing whole files on failure", async () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-plugin-update-log-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-plugin-update-log-"));
     try {
       const passRoot = path.join(root, "pass");
       mkdirSync(passRoot, { recursive: true });
@@ -436,7 +436,7 @@ ${command}
         "utf8",
       );
       const pass = await runAssertionAsync(["plugin-dir-update-skipped"], {
-        OPENCLAW_PLUGINS_TMP_DIR: passRoot,
+        AFORA_PLUGINS_TMP_DIR: passRoot,
       });
       expect(pass.status).toBe(0);
 
@@ -448,7 +448,7 @@ ${command}
         "utf8",
       );
       const fail = await runAssertionAsync(["plugin-dir-update-skipped"], {
-        OPENCLAW_PLUGINS_TMP_DIR: failRoot,
+        AFORA_PLUGINS_TMP_DIR: failRoot,
       });
       expect(fail.status).toBe(1);
       expect(fail.stderr).toContain("Output tail:");
@@ -460,16 +460,16 @@ ${command}
       mkdirSync(invalidRoot, { recursive: true });
       mkdirSync(invalidHome, { recursive: true });
       writeFileSync(
-        path.join(invalidRoot, "plugins-invalid-openclaw-extensions.log"),
-        `openclaw.extensions[1]\n${"x".repeat(256 * 1024)}\nmissing validation tail`,
+        path.join(invalidRoot, "plugins-invalid-afora-extensions.log"),
+        `afora.extensions[1]\n${"x".repeat(256 * 1024)}\nmissing validation tail`,
         "utf8",
       );
-      writeJson(path.join(invalidRoot, "plugins-invalid-openclaw-extensions-list.json"), {
+      writeJson(path.join(invalidRoot, "plugins-invalid-afora-extensions-list.json"), {
         plugins: [],
       });
-      const invalid = await runAssertionAsync(["invalid-openclaw-extensions"], {
+      const invalid = await runAssertionAsync(["invalid-afora-extensions"], {
         HOME: invalidHome,
-        OPENCLAW_PLUGINS_TMP_DIR: invalidRoot,
+        AFORA_PLUGINS_TMP_DIR: invalidRoot,
       });
       expect(invalid.status).toBe(1);
       expect(invalid.stderr).toContain("malformed metadata install output");
@@ -481,7 +481,7 @@ ${command}
   });
 
   it("cleans npm fixture registry children when readiness times out", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-plugin-npm-fixture-cleanup-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-plugin-npm-fixture-cleanup-"));
     try {
       const binDir = path.join(root, "bin");
       const fixtureDir = path.join(root, "fixture");
@@ -509,7 +509,7 @@ ${command}
           encoding: "utf8",
           env: {
             ...process.env,
-            OPENCLAW_TEST_FIXTURE_SERVER_PID: pidPath,
+            AFORA_TEST_FIXTURE_SERVER_PID: pidPath,
             PATH: `${binDir}${path.delimiter}/usr/bin${path.delimiter}/bin`,
           },
         },
@@ -526,7 +526,7 @@ ${command}
   });
 
   it("force-kills stubborn npm fixture registry children during cleanup", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-plugin-npm-fixture-kill-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-plugin-npm-fixture-kill-"));
     try {
       const binDir = path.join(root, "bin");
       const fixtureDir = path.join(root, "fixture");
@@ -553,9 +553,9 @@ ${command}
           encoding: "utf8",
           env: {
             ...process.env,
-            OPENCLAW_PLUGINS_FIXTURE_STOP_ATTEMPTS: "2",
-            OPENCLAW_PLUGINS_FIXTURE_STOP_INTERVAL_SECONDS: "0.05",
-            OPENCLAW_TEST_FIXTURE_SERVER_PID: pidPath,
+            AFORA_PLUGINS_FIXTURE_STOP_ATTEMPTS: "2",
+            AFORA_PLUGINS_FIXTURE_STOP_INTERVAL_SECONDS: "0.05",
+            AFORA_TEST_FIXTURE_SERVER_PID: pidPath,
             PATH: `${binDir}${path.delimiter}/usr/bin${path.delimiter}/bin`,
           },
         },
@@ -578,10 +578,10 @@ ${command}
         [
           "set -euo pipefail",
           "source scripts/e2e/lib/plugins/fixtures.sh",
-          "openclaw_plugins_signal_fixture_process() { echo signal; }",
-          "openclaw_plugins_fixture_process_alive() { echo probe; return 1; }",
+          "afora_plugins_signal_fixture_process() { echo signal; }",
+          "afora_plugins_fixture_process_alive() { echo probe; return 1; }",
           "set +e",
-          "openclaw_plugins_stop_fixture_process 12345",
+          "afora_plugins_stop_fixture_process 12345",
           'status="$?"',
           "set -e",
           'exit "$status"',
@@ -592,13 +592,13 @@ ${command}
         encoding: "utf8",
         env: {
           ...process.env,
-          OPENCLAW_PLUGINS_FIXTURE_STOP_ATTEMPTS: "2x",
+          AFORA_PLUGINS_FIXTURE_STOP_ATTEMPTS: "2x",
         },
       },
     );
 
     expect(result.status).toBe(2);
-    expect(result.stderr).toContain("invalid OPENCLAW_PLUGINS_FIXTURE_STOP_ATTEMPTS: 2x");
+    expect(result.stderr).toContain("invalid AFORA_PLUGINS_FIXTURE_STOP_ATTEMPTS: 2x");
     expect(result.stdout).not.toContain("signal");
     expect(result.stdout).not.toContain("probe");
   });
@@ -611,10 +611,10 @@ ${command}
         [
           "set -euo pipefail",
           "source scripts/e2e/lib/plugins/fixtures.sh",
-          "openclaw_plugins_signal_fixture_process() { echo signal; }",
-          "openclaw_plugins_fixture_process_alive() { echo probe; return 1; }",
+          "afora_plugins_signal_fixture_process() { echo signal; }",
+          "afora_plugins_fixture_process_alive() { echo probe; return 1; }",
           "set +e",
-          "openclaw_plugins_stop_fixture_process 12345",
+          "afora_plugins_stop_fixture_process 12345",
           'status="$?"',
           "set -e",
           'exit "$status"',
@@ -625,20 +625,20 @@ ${command}
         encoding: "utf8",
         env: {
           ...process.env,
-          OPENCLAW_PLUGINS_FIXTURE_STOP_ATTEMPTS: "2",
-          OPENCLAW_PLUGINS_FIXTURE_STOP_INTERVAL_SECONDS: "soon",
+          AFORA_PLUGINS_FIXTURE_STOP_ATTEMPTS: "2",
+          AFORA_PLUGINS_FIXTURE_STOP_INTERVAL_SECONDS: "soon",
         },
       },
     );
 
     expect(result.status).toBe(2);
-    expect(result.stderr).toContain("invalid OPENCLAW_PLUGINS_FIXTURE_STOP_INTERVAL_SECONDS: soon");
+    expect(result.stderr).toContain("invalid AFORA_PLUGINS_FIXTURE_STOP_INTERVAL_SECONDS: soon");
     expect(result.stdout).not.toContain("signal");
     expect(result.stdout).not.toContain("probe");
   });
 
   it("bounds npm fixture registry logs when readiness fails", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-plugin-npm-fixture-log-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-plugin-npm-fixture-log-"));
     try {
       const binDir = path.join(root, "bin");
       const fixtureDir = path.join(root, "fixture");
@@ -665,7 +665,7 @@ ${command}
           encoding: "utf8",
           env: {
             ...process.env,
-            OPENCLAW_DOCKER_E2E_LOG_PRINT_BYTES: "80",
+            AFORA_DOCKER_E2E_LOG_PRINT_BYTES: "80",
             PATH: `${binDir}${path.delimiter}/usr/bin${path.delimiter}/bin`,
           },
         },
@@ -681,7 +681,7 @@ ${command}
   });
 
   it("keeps npm fixture registry alive after malformed package paths", async () => {
-    const root = autoCleanupTempDirs.make("openclaw-plugin-npm-fixture-request-");
+    const root = autoCleanupTempDirs.make("afora-plugin-npm-fixture-request-");
     const portFile = path.join(root, "port");
     const tarballPath = path.join(root, "demo-plugin.tgz");
     writeFileSync(tarballPath, "fixture package archive", "utf8");
@@ -691,7 +691,7 @@ ${command}
       [
         "scripts/e2e/lib/plugins/npm-registry-server.mjs",
         portFile,
-        "@openclaw/demo-plugin-npm",
+        "@afora/demo-plugin-npm",
         "1.0.0",
         tarballPath,
       ],
@@ -714,11 +714,11 @@ ${command}
       expect(malformed.body).toContain("not found");
       expect(child.exitCode, stderr.text()).toBeNull();
 
-      const valid = await requestFixtureRegistry(port, "/@openclaw%2Fdemo-plugin-npm");
+      const valid = await requestFixtureRegistry(port, "/@afora%2Fdemo-plugin-npm");
 
       expect(valid.statusCode, stderr.text()).toBe(200);
       expect(JSON.parse(valid.body)).toMatchObject({
-        name: "@openclaw/demo-plugin-npm",
+        name: "@afora/demo-plugin-npm",
         "dist-tags": { latest: "1.0.0" },
       });
     } finally {
@@ -732,16 +732,16 @@ ${command}
   });
 
   it("serves tarball dependencies using the request-visible registry origin", async () => {
-    const root = autoCleanupTempDirs.make("openclaw-plugin-npm-fixture-package-");
+    const root = autoCleanupTempDirs.make("afora-plugin-npm-fixture-package-");
     const packageDir = path.join(root, "package");
     const portFile = path.join(root, "port");
-    const tarballPath = path.join(root, "openclaw.tgz");
+    const tarballPath = path.join(root, "afora.tgz");
     mkdirSync(packageDir);
     writeJson(path.join(packageDir, "package.json"), {
-      name: "openclaw",
+      name: "afora",
       version: "2026.7.1-beta.3",
       dependencies: {
-        "@openclaw/ai": "2026.7.1-beta.3",
+        "@afora/ai": "2026.7.1-beta.3",
         zod: "4.3.6",
       },
       optionalDependencies: {
@@ -758,7 +758,7 @@ ${command}
       [
         "scripts/e2e/lib/plugins/npm-registry-server.mjs",
         portFile,
-        "openclaw",
+        "afora",
         "2026.7.1-beta.3",
         tarballPath,
       ],
@@ -766,7 +766,7 @@ ${command}
         cwd: process.cwd(),
         env: {
           ...process.env,
-          OPENCLAW_NPM_REGISTRY_DIST_TAGS: "latest=0.0.0,beta=2026.7.1-beta.3",
+          AFORA_NPM_REGISTRY_DIST_TAGS: "latest=0.0.0,beta=2026.7.1-beta.3",
         },
         stdio: ["ignore", "pipe", "pipe"],
       },
@@ -774,7 +774,7 @@ ${command}
 
     try {
       const port = await waitForPortFile(portFile);
-      const response = await requestFixtureRegistry(port, "/openclaw", {
+      const response = await requestFixtureRegistry(port, "/afora", {
         host: `192.0.2.2:${port}`,
       });
       const metadata = JSON.parse(response.body);
@@ -785,14 +785,14 @@ ${command}
         beta: "2026.7.1-beta.3",
       });
       expect(metadata.versions["2026.7.1-beta.3"].dependencies).toEqual({
-        "@openclaw/ai": "2026.7.1-beta.3",
+        "@afora/ai": "2026.7.1-beta.3",
         zod: "4.3.6",
       });
       expect(metadata.versions["2026.7.1-beta.3"].optionalDependencies).toEqual({
         "sqlite-vec": "0.1.7-alpha.2",
       });
       expect(metadata.versions["2026.7.1-beta.3"].dist.tarball).toBe(
-        `http://192.0.2.2:${port}/openclaw/-/openclaw.tgz`,
+        `http://192.0.2.2:${port}/afora/-/afora.tgz`,
       );
     } finally {
       if (child.exitCode === null) {
@@ -805,7 +805,7 @@ ${command}
   });
 
   it("recomputes proxied content length after fetch decodes the response", async () => {
-    const root = autoCleanupTempDirs.make("openclaw-plugin-npm-fixture-proxy-");
+    const root = autoCleanupTempDirs.make("afora-plugin-npm-fixture-proxy-");
     const portFile = path.join(root, "port");
     const tarballPath = path.join(root, "demo-plugin.tgz");
     const upstreamBody = JSON.stringify({ payload: "x".repeat(1_000) });
@@ -833,7 +833,7 @@ ${command}
       [
         "scripts/e2e/lib/plugins/npm-registry-server.mjs",
         portFile,
-        "@openclaw/demo-plugin-npm",
+        "@afora/demo-plugin-npm",
         "1.0.0",
         tarballPath,
       ],
@@ -841,7 +841,7 @@ ${command}
         cwd: process.cwd(),
         env: {
           ...process.env,
-          OPENCLAW_NPM_REGISTRY_UPSTREAM: `http://127.0.0.1:${upstreamAddress.port}`,
+          AFORA_NPM_REGISTRY_UPSTREAM: `http://127.0.0.1:${upstreamAddress.port}`,
         },
         stdio: ["ignore", "pipe", "pipe"],
       },
@@ -868,7 +868,7 @@ ${command}
   });
 
   it("streams proxied npm tarballs without buffering a content length", async () => {
-    const root = autoCleanupTempDirs.make("openclaw-plugin-npm-fixture-tarball-proxy-");
+    const root = autoCleanupTempDirs.make("afora-plugin-npm-fixture-tarball-proxy-");
     const portFile = path.join(root, "port");
     const tarballPath = path.join(root, "demo-plugin.tgz");
     const upstreamBody = "x".repeat(1024 * 1024);
@@ -892,7 +892,7 @@ ${command}
       [
         "scripts/e2e/lib/plugins/npm-registry-server.mjs",
         portFile,
-        "@openclaw/demo-plugin-npm",
+        "@afora/demo-plugin-npm",
         "1.0.0",
         tarballPath,
       ],
@@ -900,7 +900,7 @@ ${command}
         cwd: process.cwd(),
         env: {
           ...process.env,
-          OPENCLAW_NPM_REGISTRY_UPSTREAM: `http://127.0.0.1:${upstreamAddress.port}`,
+          AFORA_NPM_REGISTRY_UPSTREAM: `http://127.0.0.1:${upstreamAddress.port}`,
         },
         stdio: ["ignore", "pipe", "pipe"],
       },
@@ -930,7 +930,7 @@ ${command}
   });
 
   it("rejects oversized upstream bodies without stopping the fixture registry", async () => {
-    const root = autoCleanupTempDirs.make("openclaw-plugin-npm-fixture-proxy-limit-");
+    const root = autoCleanupTempDirs.make("afora-plugin-npm-fixture-proxy-limit-");
     const portFile = path.join(root, "port");
     const tarballPath = path.join(root, "demo-plugin.tgz");
     writeFileSync(tarballPath, "fixture package archive", "utf8");
@@ -955,7 +955,7 @@ ${command}
       [
         "scripts/e2e/lib/plugins/npm-registry-server.mjs",
         portFile,
-        "@openclaw/demo-plugin-npm",
+        "@afora/demo-plugin-npm",
         "1.0.0",
         tarballPath,
       ],
@@ -963,7 +963,7 @@ ${command}
         cwd: process.cwd(),
         env: {
           ...process.env,
-          OPENCLAW_NPM_REGISTRY_UPSTREAM: `http://127.0.0.1:${upstreamAddress.port}`,
+          AFORA_NPM_REGISTRY_UPSTREAM: `http://127.0.0.1:${upstreamAddress.port}`,
         },
         stdio: ["ignore", "pipe", "pipe"],
       },
@@ -983,7 +983,7 @@ ${command}
         "npm registry upstream response body exceeded 67108864 bytes",
       );
 
-      const local = await requestFixtureRegistry(port, "/@openclaw%2Fdemo-plugin-npm");
+      const local = await requestFixtureRegistry(port, "/@afora%2Fdemo-plugin-npm");
 
       expect(local.statusCode, stderr.text()).toBe(200);
       expect(child.exitCode, stderr.text()).toBeNull();
@@ -1002,7 +1002,7 @@ ${command}
   });
 
   it("times out stalled upstream response bodies without stopping the fixture registry", async () => {
-    const root = autoCleanupTempDirs.make("openclaw-plugin-npm-fixture-proxy-timeout-");
+    const root = autoCleanupTempDirs.make("afora-plugin-npm-fixture-proxy-timeout-");
     const portFile = path.join(root, "port");
     const preloadPath = path.join(root, "shorten-abort-timeout.mjs");
     const tarballPath = path.join(root, "demo-plugin.tgz");
@@ -1065,7 +1065,7 @@ ${command}
         pathToFileURL(preloadPath).href,
         "scripts/e2e/lib/plugins/npm-registry-server.mjs",
         portFile,
-        "@openclaw/demo-plugin-npm",
+        "@afora/demo-plugin-npm",
         "1.0.0",
         tarballPath,
       ],
@@ -1073,7 +1073,7 @@ ${command}
         cwd: process.cwd(),
         env: {
           ...process.env,
-          OPENCLAW_NPM_REGISTRY_UPSTREAM: `http://127.0.0.1:${upstreamAddress.port}`,
+          AFORA_NPM_REGISTRY_UPSTREAM: `http://127.0.0.1:${upstreamAddress.port}`,
         },
         stdio: ["ignore", "pipe", "pipe"],
       },
@@ -1092,7 +1092,7 @@ ${command}
       expect(stalled.body).toContain("upstream registry request failed");
       expect(upstreamHits).toBe(1);
 
-      const local = await requestFixtureRegistry(port, "/@openclaw%2Fdemo-plugin-npm");
+      const local = await requestFixtureRegistry(port, "/@afora%2Fdemo-plugin-npm");
 
       expect(local.statusCode, stderr.text()).toBe(200);
       expect(child.exitCode, stderr.text()).toBeNull();
@@ -1111,7 +1111,7 @@ ${command}
   });
 
   it("does not let absolute-form request targets escape the configured upstream", async () => {
-    const root = autoCleanupTempDirs.make("openclaw-plugin-npm-fixture-proxy-origin-");
+    const root = autoCleanupTempDirs.make("afora-plugin-npm-fixture-proxy-origin-");
     const portFile = path.join(root, "port");
     const tarballPath = path.join(root, "demo-plugin.tgz");
     let configuredUpstreamHits = 0;
@@ -1154,7 +1154,7 @@ ${command}
       [
         "scripts/e2e/lib/plugins/npm-registry-server.mjs",
         portFile,
-        "@openclaw/demo-plugin-npm",
+        "@afora/demo-plugin-npm",
         "1.0.0",
         tarballPath,
       ],
@@ -1162,7 +1162,7 @@ ${command}
         cwd: process.cwd(),
         env: {
           ...process.env,
-          OPENCLAW_NPM_REGISTRY_UPSTREAM: `http://127.0.0.1:${configuredAddress.port}`,
+          AFORA_NPM_REGISTRY_UPSTREAM: `http://127.0.0.1:${configuredAddress.port}`,
         },
         stdio: ["ignore", "pipe", "pipe"],
       },
@@ -1206,7 +1206,7 @@ ${command}
   });
 
   it("rejects invalid plugin fixture log byte limits before npm fixture setup", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-plugin-npm-fixture-log-invalid-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-plugin-npm-fixture-log-invalid-"));
     try {
       const binDir = path.join(root, "bin");
       const fixtureDir = path.join(root, "fixture");
@@ -1237,14 +1237,14 @@ ${command}
           encoding: "utf8",
           env: {
             ...process.env,
-            OPENCLAW_DOCKER_E2E_LOG_PRINT_BYTES: "64kb",
+            AFORA_DOCKER_E2E_LOG_PRINT_BYTES: "64kb",
             PATH: `${binDir}${path.delimiter}/usr/bin${path.delimiter}/bin`,
           },
         },
       );
 
       expect(result.status).toBe(2);
-      expect(result.stderr).toContain("invalid OPENCLAW_DOCKER_E2E_LOG_PRINT_BYTES: 64kb");
+      expect(result.stderr).toContain("invalid AFORA_DOCKER_E2E_LOG_PRINT_BYTES: 64kb");
       expect(result.stderr).not.toContain("node should not run");
     } finally {
       rmSync(root, { force: true, recursive: true });
@@ -1252,7 +1252,7 @@ ${command}
   });
 
   it("cleans ClawHub fixture children when readiness times out", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-plugin-clawhub-fixture-cleanup-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-plugin-clawhub-fixture-cleanup-"));
     try {
       const binDir = path.join(root, "bin");
       const cleanupPath = path.join(root, "caller-cleanup");
@@ -1281,9 +1281,9 @@ ${command}
           encoding: "utf8",
           env: {
             ...process.env,
-            OPENCLAW_PLUGINS_E2E_LIVE_CLAWHUB: "0",
-            OPENCLAW_PLUGINS_TMP_DIR: tmpDir,
-            OPENCLAW_TEST_FIXTURE_SERVER_PID: pidPath,
+            AFORA_PLUGINS_E2E_LIVE_CLAWHUB: "0",
+            AFORA_PLUGINS_TMP_DIR: tmpDir,
+            AFORA_TEST_FIXTURE_SERVER_PID: pidPath,
             PATH: `${binDir}${path.delimiter}/usr/bin${path.delimiter}/bin`,
           },
         },
@@ -1300,7 +1300,7 @@ ${command}
   });
 
   it("rejects invalid plugin fixture log byte limits before ClawHub fixture setup", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-plugin-clawhub-fixture-log-invalid-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-plugin-clawhub-fixture-log-invalid-"));
     try {
       const binDir = path.join(root, "bin");
       const tmpDir = path.join(root, "scratch");
@@ -1332,16 +1332,16 @@ ${command}
           encoding: "utf8",
           env: {
             ...process.env,
-            OPENCLAW_DOCKER_E2E_LOG_PRINT_BYTES: "64kb",
-            OPENCLAW_PLUGINS_E2E_LIVE_CLAWHUB: "0",
-            OPENCLAW_PLUGINS_TMP_DIR: tmpDir,
+            AFORA_DOCKER_E2E_LOG_PRINT_BYTES: "64kb",
+            AFORA_PLUGINS_E2E_LIVE_CLAWHUB: "0",
+            AFORA_PLUGINS_TMP_DIR: tmpDir,
             PATH: `${binDir}${path.delimiter}/usr/bin${path.delimiter}/bin`,
           },
         },
       );
 
       expect(result.status).toBe(2);
-      expect(result.stderr).toContain("invalid OPENCLAW_DOCKER_E2E_LOG_PRINT_BYTES: 64kb");
+      expect(result.stderr).toContain("invalid AFORA_DOCKER_E2E_LOG_PRINT_BYTES: 64kb");
       expect(result.stderr).not.toContain("node should not run");
     } finally {
       rmSync(root, { force: true, recursive: true });
@@ -1349,7 +1349,7 @@ ${command}
   });
 
   it("bounds ClawHub fixture server logs when readiness fails", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-plugin-clawhub-fixture-log-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-plugin-clawhub-fixture-log-"));
     try {
       const binDir = path.join(root, "bin");
       const tmpDir = path.join(root, "scratch");
@@ -1377,9 +1377,9 @@ ${command}
           encoding: "utf8",
           env: {
             ...process.env,
-            OPENCLAW_DOCKER_E2E_LOG_PRINT_BYTES: "80",
-            OPENCLAW_PLUGINS_E2E_LIVE_CLAWHUB: "0",
-            OPENCLAW_PLUGINS_TMP_DIR: tmpDir,
+            AFORA_DOCKER_E2E_LOG_PRINT_BYTES: "80",
+            AFORA_PLUGINS_E2E_LIVE_CLAWHUB: "0",
+            AFORA_PLUGINS_TMP_DIR: tmpDir,
             PATH: `${binDir}${path.delimiter}/usr/bin${path.delimiter}/bin`,
           },
         },
@@ -1395,7 +1395,7 @@ ${command}
   });
 
   it("uses the configured scratch root and resolves Windows home-relative install paths", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-plugins-assertions-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-plugins-assertions-"));
     const home = path.join(root, "home");
     const scratchRoot = path.join(root, "scratch");
     const installPath = path.join(home, "managed-plugin");
@@ -1408,7 +1408,7 @@ ${command}
       writeJson(path.join(scratchRoot, "plugins2-inspect.json"), {
         gatewayMethods: ["demo.tgz"],
       });
-      writeJson(path.join(home, ".openclaw", "plugins", "installs.json"), {
+      writeJson(path.join(home, ".afora", "plugins", "installs.json"), {
         installRecords: {
           "demo-plugin-tgz": {
             source: "archive",
@@ -1422,8 +1422,8 @@ ${command}
         env: {
           ...process.env,
           HOME: home,
-          OPENCLAW_PLUGINS_E2E_CLAWHUB_PREFLIGHT_TIMEOUT_MS: "1e3",
-          OPENCLAW_PLUGINS_TMP_DIR: scratchRoot,
+          AFORA_PLUGINS_E2E_CLAWHUB_PREFLIGHT_TIMEOUT_MS: "1e3",
+          AFORA_PLUGINS_TMP_DIR: scratchRoot,
         },
       });
 
@@ -1434,13 +1434,13 @@ ${command}
   });
 
   it("compares local plugin source paths by canonical path", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-plugins-assertions-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-plugins-assertions-"));
     const home = path.join(root, "home");
     const scratchRoot = path.join(root, "scratch");
     const sourceParent = path.join(root, "source");
     const sourcePath = `${sourceParent}//plugin`;
     const normalizedSourcePath = path.join(sourceParent, "plugin");
-    const installPath = path.join(home, ".openclaw", "extensions", "demo-plugin-dir");
+    const installPath = path.join(home, ".afora", "extensions", "demo-plugin-dir");
     mkdirSync(sourcePath, { recursive: true });
     mkdirSync(installPath, { recursive: true });
 
@@ -1451,7 +1451,7 @@ ${command}
       writeJson(path.join(scratchRoot, "plugins3-inspect.json"), {
         gatewayMethods: ["demo.dir"],
       });
-      writeJson(path.join(home, ".openclaw", "plugins", "installs.json"), {
+      writeJson(path.join(home, ".afora", "plugins", "installs.json"), {
         installRecords: {
           "demo-plugin-dir": {
             source: "path",
@@ -1466,7 +1466,7 @@ ${command}
         env: {
           ...process.env,
           HOME: home,
-          OPENCLAW_PLUGINS_TMP_DIR: scratchRoot,
+          AFORA_PLUGINS_TMP_DIR: scratchRoot,
         },
       });
 
@@ -1477,16 +1477,16 @@ ${command}
   });
 
   it("still requires archive managed install directories to be removed", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-plugins-assertions-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-plugins-assertions-"));
     const home = path.join(root, "home");
     const scratchRoot = path.join(root, "scratch");
-    const installPath = path.join(home, ".openclaw", "extensions", "demo-plugin-tgz");
+    const installPath = path.join(home, ".afora", "extensions", "demo-plugin-tgz");
     mkdirSync(installPath, { recursive: true });
 
     try {
       writeJson(path.join(scratchRoot, "plugins2-uninstalled.json"), { plugins: [] });
       writeFileSync(path.join(scratchRoot, "plugins2-install-path.txt"), installPath, "utf8");
-      writeJson(path.join(home, ".openclaw", "plugins", "installs.json"), {
+      writeJson(path.join(home, ".afora", "plugins", "installs.json"), {
         installRecords: {},
       });
 
@@ -1495,7 +1495,7 @@ ${command}
         env: {
           ...process.env,
           HOME: home,
-          OPENCLAW_PLUGINS_TMP_DIR: scratchRoot,
+          AFORA_PLUGINS_TMP_DIR: scratchRoot,
         },
       });
 
@@ -1507,10 +1507,10 @@ ${command}
   });
 
   it("rejects unreadable config during plugin uninstall proof", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-plugins-assertions-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-plugins-assertions-"));
     const home = path.join(root, "home");
     const scratchRoot = path.join(root, "scratch");
-    const removedInstallPath = path.join(home, ".openclaw", "extensions", "demo-plugin-tgz");
+    const removedInstallPath = path.join(home, ".afora", "extensions", "demo-plugin-tgz");
 
     try {
       writeJson(path.join(scratchRoot, "plugins2-uninstalled.json"), { plugins: [] });
@@ -1519,52 +1519,52 @@ ${command}
         removedInstallPath,
         "utf8",
       );
-      writeJson(path.join(home, ".openclaw", "plugins", "installs.json"), {
+      writeJson(path.join(home, ".afora", "plugins", "installs.json"), {
         installRecords: {},
       });
-      writeFileSync(path.join(home, ".openclaw", "openclaw.json"), "{ malformed\n", "utf8");
+      writeFileSync(path.join(home, ".afora", "afora.json"), "{ malformed\n", "utf8");
 
       const result = spawnSync(process.execPath, [ASSERTIONS_SCRIPT, "plugin-tgz-removed"], {
         encoding: "utf8",
         env: {
           ...process.env,
           HOME: home,
-          OPENCLAW_PLUGINS_TMP_DIR: scratchRoot,
+          AFORA_PLUGINS_TMP_DIR: scratchRoot,
         },
       });
 
       expect(result.status).not.toBe(0);
-      expect(result.stderr).toContain("failed to read OpenClaw config");
+      expect(result.stderr).toContain("failed to read Afora config");
     } finally {
       rmSync(root, { force: true, recursive: true });
     }
   });
 
   it("rejects ClawHub install paths that resolve outside the managed extensions root", () => {
-    const root = autoCleanupTempDirs.make("openclaw-plugins-clawhub-path-");
+    const root = autoCleanupTempDirs.make("afora-plugins-clawhub-path-");
     const home = path.join(root, "home");
     const scratchRoot = path.join(root, "scratch");
-    const extensionsRoot = path.join(home, ".openclaw", "extensions");
+    const extensionsRoot = path.join(home, ".afora", "extensions");
     const escapedInstallPath = `${extensionsRoot}${path.sep}..${path.sep}escaped-clawhub`;
     mkdirSync(extensionsRoot, { recursive: true });
     mkdirSync(escapedInstallPath, { recursive: true });
 
     writeJson(path.join(scratchRoot, "plugins-clawhub-installed.json"), {
-      plugins: [{ id: "openclaw-kitchen-sink-fixture", status: "loaded" }],
+      plugins: [{ id: "afora-kitchen-sink-fixture", status: "loaded" }],
     });
     writeJson(path.join(scratchRoot, "plugins-clawhub-inspect.json"), {
-      plugin: { id: "openclaw-kitchen-sink-fixture" },
+      plugin: { id: "afora-kitchen-sink-fixture" },
     });
-    writeJson(path.join(home, ".openclaw", "plugins", "installs.json"), {
+    writeJson(path.join(home, ".afora", "plugins", "installs.json"), {
       installRecords: {
-        "openclaw-kitchen-sink-fixture": {
+        "afora-kitchen-sink-fixture": {
           artifactFormat: "zip",
           artifactKind: "legacy-zip",
           clawhubFamily: "code-plugin",
-          clawhubPackage: "@openclaw/kitchen-sink",
+          clawhubPackage: "@afora/kitchen-sink",
           installPath: escapedInstallPath,
           source: "clawhub",
-          spec: "clawhub:@openclaw/kitchen-sink",
+          spec: "clawhub:@afora/kitchen-sink",
         },
       },
     });
@@ -1573,10 +1573,10 @@ ${command}
       encoding: "utf8",
       env: {
         ...process.env,
-        CLAWHUB_PLUGIN_ID: "openclaw-kitchen-sink-fixture",
-        CLAWHUB_PLUGIN_SPEC: "clawhub:@openclaw/kitchen-sink",
+        CLAWHUB_PLUGIN_ID: "afora-kitchen-sink-fixture",
+        CLAWHUB_PLUGIN_SPEC: "clawhub:@afora/kitchen-sink",
         HOME: home,
-        OPENCLAW_PLUGINS_TMP_DIR: scratchRoot,
+        AFORA_PLUGINS_TMP_DIR: scratchRoot,
       },
     });
 
@@ -1596,15 +1596,15 @@ ${command}
         throw new Error("expected TCP server address");
       }
       const result = await runAssertionAsync(["clawhub-preflight"], {
-        CLAWHUB_PLUGIN_ID: "openclaw-kitchen-sink-fixture",
-        CLAWHUB_PLUGIN_SPEC: "clawhub:@openclaw/kitchen-sink",
-        OPENCLAW_CLAWHUB_URL: `http://127.0.0.1:${address.port}`,
-        OPENCLAW_PLUGINS_E2E_CLAWHUB_PREFLIGHT_TIMEOUT_MS: "25",
+        CLAWHUB_PLUGIN_ID: "afora-kitchen-sink-fixture",
+        CLAWHUB_PLUGIN_SPEC: "clawhub:@afora/kitchen-sink",
+        AFORA_CLAWHUB_URL: `http://127.0.0.1:${address.port}`,
+        AFORA_PLUGINS_E2E_CLAWHUB_PREFLIGHT_TIMEOUT_MS: "25",
       });
 
       expect(result.status).not.toBe(0);
       expect(result.stderr).toContain(
-        "ClawHub package preflight for @openclaw/kitchen-sink timed out after 25ms",
+        "ClawHub package preflight for @afora/kitchen-sink timed out after 25ms",
       );
     } finally {
       await new Promise<void>((resolve) => {
@@ -1629,15 +1629,15 @@ ${command}
         throw new Error("expected TCP server address");
       }
       const result = await runAssertionAsync(["clawhub-preflight"], {
-        CLAWHUB_PLUGIN_ID: "openclaw-kitchen-sink-fixture",
-        CLAWHUB_PLUGIN_SPEC: "clawhub:@openclaw/kitchen-sink",
-        OPENCLAW_CLAWHUB_URL: `http://127.0.0.1:${address.port}`,
-        OPENCLAW_PLUGINS_E2E_CLAWHUB_PREFLIGHT_TIMEOUT_MS: "75",
+        CLAWHUB_PLUGIN_ID: "afora-kitchen-sink-fixture",
+        CLAWHUB_PLUGIN_SPEC: "clawhub:@afora/kitchen-sink",
+        AFORA_CLAWHUB_URL: `http://127.0.0.1:${address.port}`,
+        AFORA_PLUGINS_E2E_CLAWHUB_PREFLIGHT_TIMEOUT_MS: "75",
       });
 
       expect(result.status).not.toBe(0);
       expect(result.stderr).toContain(
-        "ClawHub package preflight response for @openclaw/kitchen-sink timed out after 75ms",
+        "ClawHub package preflight response for @afora/kitchen-sink timed out after 75ms",
       );
     } finally {
       await new Promise<void>((resolve) => {
@@ -1661,16 +1661,16 @@ ${command}
         throw new Error("expected TCP server address");
       }
       const result = await runAssertionAsync(["clawhub-preflight"], {
-        CLAWHUB_PLUGIN_ID: "openclaw-kitchen-sink-fixture",
-        CLAWHUB_PLUGIN_SPEC: "clawhub:@openclaw/kitchen-sink",
-        OPENCLAW_CLAWHUB_URL: `http://127.0.0.1:${address.port}`,
-        OPENCLAW_PLUGINS_E2E_CLAWHUB_PREFLIGHT_BODY_MAX_BYTES: "16",
-        OPENCLAW_PLUGINS_E2E_CLAWHUB_PREFLIGHT_TIMEOUT_MS: "1000",
+        CLAWHUB_PLUGIN_ID: "afora-kitchen-sink-fixture",
+        CLAWHUB_PLUGIN_SPEC: "clawhub:@afora/kitchen-sink",
+        AFORA_CLAWHUB_URL: `http://127.0.0.1:${address.port}`,
+        AFORA_PLUGINS_E2E_CLAWHUB_PREFLIGHT_BODY_MAX_BYTES: "16",
+        AFORA_PLUGINS_E2E_CLAWHUB_PREFLIGHT_TIMEOUT_MS: "1000",
       });
 
       expect(result.status).not.toBe(0);
       expect(result.stderr).toContain(
-        "ClawHub package preflight response for @openclaw/kitchen-sink response body exceeded 16 bytes",
+        "ClawHub package preflight response for @afora/kitchen-sink response body exceeded 16 bytes",
       );
       expect(result.stderr).not.toContain("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
     } finally {

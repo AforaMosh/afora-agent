@@ -6,7 +6,7 @@ import { PLUGIN_INSTALL_ERROR_CODE } from "./install-types.js";
 import { createSyncSuiteTempRootTracker } from "./test-helpers/fs-fixtures.js";
 
 describe("installPluginDirectoryIntoExtensions", () => {
-  const tempRoots = createSyncSuiteTempRootTracker("openclaw-install-shared");
+  const tempRoots = createSyncSuiteTempRootTracker("afora-install-shared");
 
   afterAll(() => tempRoots.cleanup());
 

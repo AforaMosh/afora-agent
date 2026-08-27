@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { GatewayClient } from "./server-methods/types.js";
 import { resolveSessionGroupMutationTargetsByName } from "./session-group-mutation-targets.js";
 import {
@@ -13,7 +13,7 @@ import type {
 
 /** Keep shared group settings visible only where every member session is mutable. */
 export function filterMutableSessionGroupRecords<T extends { name: string }>(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   client: GatewayClient | null;
   records: readonly T[];
 }): T[] {

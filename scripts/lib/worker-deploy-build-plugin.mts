@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const WORKER_DEPLOY_BUILD_PLUGIN_NAME = "openclaw:worker-deploy";
+const WORKER_DEPLOY_BUILD_PLUGIN_NAME = "afora:worker-deploy";
 export const WORKER_DEPLOY_OPTIONAL_NATIVE_MODULE_ID = `${path.resolve("src/worker/worker-deploy-runtime.ts")}?optional-native`;
 
 const PLAYWRIGHT_PACKAGE_INIT = `    packageRoot = import_path9.default.join(__dirname, "..");

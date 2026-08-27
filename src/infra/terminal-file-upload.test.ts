@@ -21,7 +21,7 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("terminal file upload", () => {
   it("stages arbitrary bytes under a private temporary directory", async () => {
-    const root = tempDirs.make("openclaw-terminal-upload-test-");
+    const root = tempDirs.make("afora-terminal-upload-test-");
     const content = Buffer.from([0, 1, 2, 255]);
 
     const result = await stageTerminalUpload(
@@ -40,20 +40,20 @@ describe("terminal file upload", () => {
   });
 
   it("uses the user-profile ACL boundary instead of a configurable Windows temp directory", async () => {
-    const homeDir = tempDirs.make("openclaw-terminal-upload-windows-home-");
-    const sharedTemp = tempDirs.make("openclaw-terminal-upload-windows-shared-");
+    const homeDir = tempDirs.make("afora-terminal-upload-windows-home-");
+    const sharedTemp = tempDirs.make("afora-terminal-upload-windows-shared-");
 
     const result = await stageTerminalUpload(
       { name: "report.pdf", contentBase64: "" },
       { platform: "win32", homeDir, tempDir: sharedTemp },
     );
 
-    expect(result.path.startsWith(path.join(homeDir, ".openclaw", "tmp"))).toBe(true);
+    expect(result.path.startsWith(path.join(homeDir, ".afora", "tmp"))).toBe(true);
     expect(result.path.startsWith(sharedTemp)).toBe(false);
   });
 
   it("normalizes hostile and oversized names", async () => {
-    const root = tempDirs.make("openclaw-terminal-upload-name-test-");
+    const root = tempDirs.make("afora-terminal-upload-name-test-");
     const stagedName = async (name: string) =>
       path.basename(
         (
@@ -74,8 +74,8 @@ describe("terminal file upload", () => {
   });
 
   it("recovers expired upload directories after restart", async () => {
-    const root = tempDirs.make("openclaw-terminal-upload-recovery-test-");
-    const directory = path.join(root, "openclaw-terminal-upload-stale");
+    const root = tempDirs.make("afora-terminal-upload-recovery-test-");
+    const directory = path.join(root, "afora-terminal-upload-stale");
     await mkdir(directory, { mode: 0o700 });
     await writeFile(path.join(directory, "report.pdf"), "stale");
     await utimes(directory, new Date(0), new Date(0));
@@ -87,9 +87,9 @@ describe("terminal file upload", () => {
 
   it("retries a recovery scan after a transient root failure", async () => {
     vi.useFakeTimers();
-    const parent = tempDirs.make("openclaw-terminal-upload-retry-test-");
+    const parent = tempDirs.make("afora-terminal-upload-retry-test-");
     const root = path.join(parent, "root");
-    const directory = path.join(root, "openclaw-terminal-upload-stale");
+    const directory = path.join(root, "afora-terminal-upload-stale");
     try {
       await writeFile(root, "temporarily not a directory");
       await ensureTerminalUploadCleanup({ tempRoot: root, retentionMs: 1 });
@@ -110,7 +110,7 @@ describe("terminal file upload", () => {
 
   it("retries partial upload cleanup without replacing the write error", async () => {
     vi.useFakeTimers();
-    const root = tempDirs.make("openclaw-terminal-upload-write-failure-test-");
+    const root = tempDirs.make("afora-terminal-upload-write-failure-test-");
     const writeError = new Error("write failed");
     const writeMock = vi.mocked(writeFile);
     const rmMock = vi.mocked(rm);
@@ -133,7 +133,7 @@ describe("terminal file upload", () => {
   });
 
   it("rejects malformed and oversized payloads", async () => {
-    const root = tempDirs.make("openclaw-terminal-upload-test-");
+    const root = tempDirs.make("afora-terminal-upload-test-");
     expect(isCanonicalTerminalUploadBase64("AB==")).toBe(false);
     expect(isCanonicalTerminalUploadBase64("AAB=")).toBe(false);
     expect(isCanonicalTerminalUploadBase64("AA==")).toBe(true);

@@ -1,4 +1,4 @@
-// Check File Utils helper supports OpenClaw script workflows.
+// Check File Utils helper supports Afora script workflows.
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";

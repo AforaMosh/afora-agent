@@ -10,7 +10,7 @@ import {
   isPluginModelCatalogMigrationFile,
   migrateLegacyPluginModelCatalogs,
 } from "../agents/plugin-model-catalog.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { privateFileStore } from "../infra/private-file-store.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { shortenHomePath } from "../utils.js";
@@ -24,7 +24,7 @@ type LegacyPluginModelCatalogMigration = {
 };
 
 function resolveMigrationAgentDirs(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   agentDirs?: readonly string[];
 }): string[] {
@@ -48,9 +48,9 @@ async function readLegacyPluginCatalogContents(params: {
   return await privateFileStore(pluginDir).readTextIfExists(path.basename(params.relativePath));
 }
 
-/** Detects only marker-backed catalogs produced by tagged OpenClaw releases. */
+/** Detects only marker-backed catalogs produced by tagged Afora releases. */
 async function collectLegacyPluginModelCatalogMigrations(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   agentDirs?: readonly string[];
   warnings?: string[];
@@ -152,7 +152,7 @@ async function collectLegacyPluginModelCatalogMigrations(params: {
 
 /** Imports and verifies released sidecars before Doctor removes any legacy bytes. */
 export async function maybeMigrateLegacyPluginModelCatalogs(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   agentDirs?: readonly string[];
   prompter: DoctorPrompter;
@@ -176,7 +176,7 @@ export async function maybeMigrateLegacyPluginModelCatalogs(params: {
         (migration) =>
           `- ${shortenHomePath(path.join(migration.agentDir, migration.relativePath))}`,
       ),
-      "Run openclaw doctor --fix to verify and migrate these catalogs into agent SQLite.",
+      "Run afora doctor --fix to verify and migrate these catalogs into agent SQLite.",
     ].join("\n"),
     "Plugin model catalogs",
   );

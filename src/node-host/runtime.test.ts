@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NODE_DEVICE_APPS_COMMAND } from "../infra/node-commands.js";
-import type { OpenClawPluginNodeHostCommandIo } from "../plugins/types.js";
+import type { AforaPluginNodeHostCommandIo } from "../plugins/types.js";
 import { NODE_DESKTOP_STREAM_COMMAND } from "../shared/node-desktop-stream.js";
 import type { NodeHostClient } from "./client.js";
 import { listRegisteredNodeHostCapsAndCommands } from "./plugin-node-host.js";
@@ -24,7 +24,7 @@ const mocks = vi.hoisted(() => {
 });
 
 vi.mock("../infra/path-env.js", () => ({
-  ensureOpenClawCliOnPath: vi.fn(),
+  ensureAforaCliOnPath: vi.fn(),
 }));
 
 vi.mock("./invoke.js", () => ({
@@ -100,7 +100,7 @@ async function startRuntime() {
 }
 
 function holdInvoke() {
-  let io: OpenClawPluginNodeHostCommandIo | undefined;
+  let io: AforaPluginNodeHostCommandIo | undefined;
   let signal: AbortSignal | undefined;
   let release: (() => void) | undefined;
   const held = new Promise<void>((resolve) => {
@@ -108,7 +108,7 @@ function holdInvoke() {
   });
   mocks.handleInvoke.mockImplementationOnce(async (...args: unknown[]) => {
     const runtime = args[4] as {
-      pluginCommandIo?: OpenClawPluginNodeHostCommandIo;
+      pluginCommandIo?: AforaPluginNodeHostCommandIo;
       signal?: AbortSignal;
     };
     io = runtime.pluginCommandIo;

@@ -1,5 +1,5 @@
 import { InteractionResponseType, MessageFlags } from "discord-api-types/v10";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildDiscordComponentCustomId } from "../component-custom-id.js";
 import {
@@ -63,7 +63,7 @@ describe("Discord modal presentation failures", () => {
       if (!createButton) {
         throw new Error("expected Discord component button factory");
       }
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         channels: { discord: { replyToMode: "first" } },
       };
       const button = createButton({

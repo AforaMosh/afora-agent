@@ -25,7 +25,7 @@ type CoordinatorOptions = {
 
 export function resolveStateLifecycleRuntimeDirectory(): string {
   return process.platform === "win32"
-    ? path.join(os.homedir(), "AppData", "Local", "OpenClaw", "locks")
+    ? path.join(os.homedir(), "AppData", "Local", "Afora", "locks")
     : "/tmp";
 }
 
@@ -38,7 +38,7 @@ function resolveLifecycleCoordinatorPath(
   // The predecessor state-local coordinator shipped only in v2026.8.1-beta.2.
   // Keep one current stable runtime path; beta-only peers are not upgrade-compatible.
   const suffix =
-    params.uid === undefined ? "openclaw-state-locks" : `openclaw-state-locks-${params.uid}`;
+    params.uid === undefined ? "afora-state-locks" : `afora-state-locks-${params.uid}`;
   return path.join(
     canonicalRuntimeDirectory,
     suffix,
@@ -74,7 +74,7 @@ function acquireLifecycleCoordinator(
       busyTimeoutMs: params.busyTimeoutMs,
     });
     if (!coordinator) {
-      throw new SqliteCoordinatorError(`another OpenClaw process owns ${family}`);
+      throw new SqliteCoordinatorError(`another Afora process owns ${family}`);
     }
     heldCoordinators.set(coordinatorPath, { coordinator, references: 1 });
   }

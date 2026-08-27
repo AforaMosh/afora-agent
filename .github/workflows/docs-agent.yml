@@ -22,7 +22,7 @@ env:
 jobs:
   update-docs:
     if: >
-      github.repository == 'openclaw/openclaw' &&
+      github.repository == 'AforaMosh/afora-agent' &&
       github.actor != 'github-actions[bot]' &&
       (github.event_name != 'workflow_run' ||
         (github.event.workflow_run.conclusion == 'success' &&
@@ -139,11 +139,11 @@ jobs:
       - name: Ensure docs agent key exists
         if: steps.gate.outputs.run_agent == 'true'
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENCLAW_DOCS_AGENT_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.AFORA_DOCS_AGENT_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
         run: |
           set -euo pipefail
           if [ -z "${OPENAI_API_KEY:-}" ]; then
-            echo "Missing OPENCLAW_DOCS_AGENT_OPENAI_API_KEY or OPENAI_API_KEY secret." >&2
+            echo "Missing AFORA_DOCS_AGENT_OPENAI_API_KEY or OPENAI_API_KEY secret." >&2
             exit 1
           fi
 
@@ -154,9 +154,9 @@ jobs:
           DOCS_AGENT_BASE_SHA: ${{ steps.gate.outputs.review_base_sha }}
           DOCS_AGENT_HEAD_SHA: ${{ steps.gate.outputs.review_head_sha }}
         with:
-          openai-api-key: ${{ secrets.OPENCLAW_DOCS_AGENT_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
+          openai-api-key: ${{ secrets.AFORA_DOCS_AGENT_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
           prompt-file: .github/codex/prompts/docs-agent.md
-          model: ${{ vars.OPENCLAW_CI_OPENAI_MODEL_BARE }}
+          model: ${{ vars.AFORA_CI_OPENAI_MODEL_BARE }}
           effort: medium
           sandbox: workspace-write
           safety-strategy: drop-sudo
@@ -224,8 +224,8 @@ jobs:
             exit 0
           fi
 
-          git config user.name "openclaw-docs-agent[bot]"
-          git config user.email "openclaw-docs-agent[bot]@users.noreply.github.com"
+          git config user.name "afora-docs-agent[bot]"
+          git config user.email "afora-docs-agent[bot]@users.noreply.github.com"
           git add docs README.md CHANGELOG.md
           git commit --no-verify -m "docs: refresh documentation"
 

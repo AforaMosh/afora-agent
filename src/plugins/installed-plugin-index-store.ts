@@ -1,7 +1,7 @@
 /** Persists, inspects, and refreshes the installed plugin index in the state database. */
 import { existsSync } from "node:fs";
 import type { DatabaseSync } from "node:sqlite";
-import { safeParseJson } from "@openclaw/normalization-core";
+import { safeParseJson } from "@afora/normalization-core";
 import { z } from "zod";
 import {
   createPluginInstallRecordMap,
@@ -13,8 +13,8 @@ import {
   setPluginInstallRecordMapEntry,
 } from "../config/plugin-install-record-map.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../state/openclaw-state-db-readonly.js";
-import { runOpenClawStateWriteTransaction } from "../state/openclaw-state-db.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../state/afora-state-db-readonly.js";
+import { runAforaStateWriteTransaction } from "../state/afora-state-db.js";
 import { safeParseWithSchema } from "../utils/zod-parse.js";
 import { resolveCompatibilityHostVersion } from "../version.js";
 import { normalizePluginsConfig, resolveEffectiveEnableState } from "./config-state.js";
@@ -214,7 +214,7 @@ function assertWritableInstalledPluginIndexStoreOptions(
 ): void {
   if (options.filePath?.endsWith(".json")) {
     throw new Error(
-      "Explicit JSON installed plugin index paths are retired. Use the shared SQLite state DB or run openclaw doctor --fix to migrate legacy plugins/installs.json.",
+      "Explicit JSON installed plugin index paths are retired. Use the shared SQLite state DB or run afora doctor --fix to migrate legacy plugins/installs.json.",
     );
   }
 }
@@ -350,7 +350,7 @@ function readPersistedInstalledPluginIndexFromSqlite(
   }
   try {
     return (
-      withExistingOpenClawStateDatabaseReadOnly(
+      withExistingAforaStateDatabaseReadOnly(
         ({ db }) => parseInstalledPluginIndexSqliteRow(readInstalledPluginIndexRow(db)),
         resolveInstalledPluginIndexStateDatabaseOptions(options),
       ) ?? null
@@ -367,7 +367,7 @@ function writePersistedInstalledPluginIndexToSqlite(
 ): InstalledPluginIndexWriteReceipt {
   assertWritableInstalledPluginIndexStoreOptions(options);
   const persisted = preparePersistedInstalledPluginIndex(index);
-  return runOpenClawStateWriteTransaction(({ db }) => {
+  return runAforaStateWriteTransaction(({ db }) => {
     const previousRow = readInstalledPluginIndexRow(db);
     if (previousRow) {
       const previousInstallRecords = safeParseJson(previousRow.install_records_json);
@@ -429,7 +429,7 @@ export async function restorePersistedInstalledPluginIndexIfCurrent(
   if (!existsSync(resolveInstalledPluginIndexStorePath(storeOptions))) {
     return false;
   }
-  const restored = runOpenClawStateWriteTransaction(({ db }) => {
+  const restored = runAforaStateWriteTransaction(({ db }) => {
     lease.assertOwnedInTransaction(db);
     const currentRow = readInstalledPluginIndexRow(db);
     const currentRevision = currentRow ? Number(currentRow.updated_at_ms) : null;

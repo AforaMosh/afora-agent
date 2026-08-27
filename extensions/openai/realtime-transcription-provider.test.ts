@@ -68,12 +68,12 @@ vi.mock("ws", () => ({
   default: FakeWebSocket,
 }));
 
-vi.mock("openclaw/plugin-sdk/provider-auth", () => ({
+vi.mock("afora-agent/plugin-sdk/provider-auth", () => ({
   isProviderAuthProfileConfigured: providerAuthMocks.isProviderAuthProfileConfigured,
   resolveProviderAuthProfileApiKey: providerAuthMocks.resolveProviderAuthProfileApiKey,
 }));
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ({
   fetchWithSsrFGuard: ssrfMocks.fetchWithSsrFGuard,
 }));
 
@@ -167,7 +167,7 @@ describe("buildOpenAIRealtimeTranscriptionProvider", () => {
           openai: {
             language: "en",
             model: "gpt-4o-transcribe",
-            prompt: "expect OpenClaw product names",
+            prompt: "expect Afora product names",
             silenceDurationMs: 900,
             vadThreshold: 0.45,
           },
@@ -178,7 +178,7 @@ describe("buildOpenAIRealtimeTranscriptionProvider", () => {
     expect(resolved).toEqual({
       language: "en",
       model: "gpt-4o-transcribe",
-      prompt: "expect OpenClaw product names",
+      prompt: "expect Afora product names",
       silenceDurationMs: 900,
       vadThreshold: 0.45,
     });
@@ -383,7 +383,7 @@ describe("buildOpenAIRealtimeTranscriptionProvider", () => {
         apiKey: "sk-test", // pragma: allowlist secret
         language: "en",
         model: "gpt-4o-transcribe",
-        prompt: "expect OpenClaw product names",
+        prompt: "expect Afora product names",
         silenceDurationMs: 900,
         vadThreshold: 0.45,
       },
@@ -408,7 +408,7 @@ describe("buildOpenAIRealtimeTranscriptionProvider", () => {
             transcription: {
               model: "gpt-4o-transcribe",
               language: "en",
-              prompt: "expect OpenClaw product names",
+              prompt: "expect Afora product names",
             },
             turn_detection: {
               type: "server_vad",

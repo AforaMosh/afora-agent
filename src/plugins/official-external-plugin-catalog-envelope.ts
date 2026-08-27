@@ -9,7 +9,7 @@ import {
 } from "./official-external-plugin-catalog.js";
 
 const OFFICIAL_EXTERNAL_PLUGIN_CATALOG_FEED_PAYLOAD_TYPE =
-  "openclaw.official-external-plugin-catalog-feed.v1";
+  "afora.official-external-plugin-catalog-feed.v1";
 const OFFICIAL_EXTERNAL_PLUGIN_CATALOG_MAX_SIGNATURES = 16;
 
 type OfficialExternalPluginCatalogEnvelopeSignature = {

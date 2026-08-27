@@ -1,14 +1,14 @@
 ---
-summary: "Uninstall OpenClaw completely (CLI, service, state, workspace)"
+summary: "Uninstall Afora completely (CLI, service, state, workspace)"
 read_when:
-  - You want to remove OpenClaw from a machine
+  - You want to remove Afora from a machine
   - The gateway service is still running after uninstall
 title: "Uninstall"
 ---
 
 Two paths:
 
-- **Easy path** if `openclaw` is still installed.
+- **Easy path** if `afora` is still installed.
 - **Manual service removal** if the CLI is gone but the service is still running.
 
 ## Easy path (CLI still installed)
@@ -16,7 +16,7 @@ Two paths:
 Recommended: use the built-in uninstaller:
 
 ```bash
-openclaw uninstall
+afora uninstall
 ```
 
 State removal preserves configured workspace directories unless you also select `--workspace`.
@@ -24,39 +24,39 @@ State removal preserves configured workspace directories unless you also select 
 Preview what will be removed (safe):
 
 ```bash
-openclaw uninstall --dry-run --all
+afora uninstall --dry-run --all
 ```
 
 Non-interactive (automation / npx). Use with caution and only after confirming scopes:
 
 ```bash
-openclaw uninstall --all --yes --non-interactive
-npx -y openclaw uninstall --all --yes --non-interactive
+afora uninstall --all --yes --non-interactive
+npx -y afora uninstall --all --yes --non-interactive
 ```
 
 Flags: `--service`, `--state`, `--workspace`, `--app` select individual scopes; `--all` selects all four.
 
 Manual steps provide a complete removal path, but a raw state-directory deletion
 does not have the built-in uninstaller's workspace-preservation behavior. If
-you want the equivalent of `openclaw uninstall --state`, preserve every
+you want the equivalent of `afora uninstall --state`, preserve every
 configured workspace before deleting state.
 
 1. Stop the gateway service:
 
 ```bash
-openclaw gateway stop
+afora gateway stop
 ```
 
 2. Uninstall the gateway service (launchd/systemd/schtasks):
 
 ```bash
-openclaw gateway uninstall
+afora gateway uninstall
 ```
 
 3. Decide whether to preserve the workspace.
 
-`openclaw uninstall --state` deliberately preserves configured workspace
-directories, including the default `~/.openclaw/workspace`. Before using the
+`afora uninstall --state` deliberately preserves configured workspace
+directories, including the default `~/.afora/workspace`. Before using the
 manual `rm -rf` below, move any workspace you want to keep outside the state
 directory. If you want to remove it too, no separate deletion is needed when it
 lives inside the state directory.
@@ -64,10 +64,10 @@ lives inside the state directory.
 4. Delete state + config:
 
 ```bash
-rm -rf "${OPENCLAW_STATE_DIR:-$HOME/.openclaw}"
+rm -rf "${AFORA_STATE_DIR:-$HOME/.afora}"
 ```
 
-If you set `OPENCLAW_CONFIG_PATH` to a custom location outside the state dir, delete that file too.
+If you set `AFORA_CONFIG_PATH` to a custom location outside the state dir, delete that file too.
 Restore any preserved workspace to its configured path after recreating the
 parent directory, or update the workspace path in your next installation.
 
@@ -81,72 +81,72 @@ rm -rf /path/to/external/workspace
 6. Remove the CLI install (pick the one you used):
 
 ```bash
-npm rm -g openclaw
-pnpm remove -g openclaw
-bun remove -g openclaw
+npm rm -g afora
+pnpm remove -g afora
+bun remove -g afora
 ```
 
 7. If you installed the macOS app:
 
 ```bash
-rm -rf /Applications/OpenClaw.app
+rm -rf /Applications/Afora.app
 ```
 
 Notes:
 
-- If you used profiles (`--profile` / `OPENCLAW_PROFILE`), repeat steps 3-4 for each state dir (defaults are `~/.openclaw-<profile>`).
+- If you used profiles (`--profile` / `AFORA_PROFILE`), repeat steps 3-4 for each state dir (defaults are `~/.afora-<profile>`).
 - In remote mode, the state dir lives on the **gateway host**, so run steps 1-4 there too.
 
 ## Manual service removal (CLI not installed)
 
-Use this if the gateway service keeps running but `openclaw` is missing.
+Use this if the gateway service keeps running but `afora` is missing.
 
 ### macOS (launchd)
 
-Default label is `ai.openclaw.gateway` (or `ai.openclaw.<profile>` with a profile):
+Default label is `ai.afora.gateway` (or `ai.afora.<profile>` with a profile):
 
 ```bash
-launchctl bootout gui/$UID/ai.openclaw.gateway
-rm -f ~/Library/LaunchAgents/ai.openclaw.gateway.plist
+launchctl bootout gui/$UID/ai.afora.gateway
+rm -f ~/Library/LaunchAgents/ai.afora.gateway.plist
 ```
 
-If you used a profile, replace the label and plist name with `ai.openclaw.<profile>`.
+If you used a profile, replace the label and plist name with `ai.afora.<profile>`.
 
 ### Linux (systemd user unit)
 
-Default unit name is `openclaw-gateway.service` (or `openclaw-gateway-<profile>.service`). A pre-rename `clawdbot-gateway.service` unit may still exist on machines upgraded from very old installs; `openclaw uninstall` / `openclaw gateway uninstall` detects and removes it automatically.
+Default unit name is `afora-gateway.service` (or `afora-gateway-<profile>.service`). A pre-rename `clawdbot-gateway.service` unit may still exist on machines upgraded from very old installs; `afora uninstall` / `afora gateway uninstall` detects and removes it automatically.
 
 ```bash
-systemctl --user disable --now openclaw-gateway.service
-rm -f ~/.config/systemd/user/openclaw-gateway.service
+systemctl --user disable --now afora-gateway.service
+rm -f ~/.config/systemd/user/afora-gateway.service
 systemctl --user daemon-reload
 ```
 
 ### Windows (Scheduled Task)
 
-Default task name is `OpenClaw Gateway` (or `OpenClaw Gateway (<profile>)`).
+Default task name is `Afora Gateway` (or `Afora Gateway (<profile>)`).
 The task launches a windowless `gateway.vbs` script under your state dir, which in turn
 runs `gateway.cmd`; remove both.
 
 ```powershell
-schtasks /Delete /F /TN "OpenClaw Gateway"
-Remove-Item -Force "$env:USERPROFILE\.openclaw\gateway.cmd" -ErrorAction SilentlyContinue
-Remove-Item -Force "$env:USERPROFILE\.openclaw\gateway.vbs" -ErrorAction SilentlyContinue
+schtasks /Delete /F /TN "Afora Gateway"
+Remove-Item -Force "$env:USERPROFILE\.afora\gateway.cmd" -ErrorAction SilentlyContinue
+Remove-Item -Force "$env:USERPROFILE\.afora\gateway.vbs" -ErrorAction SilentlyContinue
 ```
 
 If you used a profile, delete the matching task name and the `gateway.cmd` /
-`gateway.vbs` files under `~\.openclaw-<profile>`.
+`gateway.vbs` files under `~\.afora-<profile>`.
 
 ## Normal install vs source checkout
 
 ### Normal install (install.sh / npm / pnpm / bun)
 
-If you used `https://openclaw.ai/install.sh` or `install.ps1`, the CLI was installed with `npm install -g openclaw@latest`.
-Remove it with `npm rm -g openclaw` (or `pnpm remove -g` / `bun remove -g` if you installed that way).
+If you used `https://afora.ai/install.sh` or `install.ps1`, the CLI was installed with `npm install -g afora@latest`.
+Remove it with `npm rm -g afora` (or `pnpm remove -g` / `bun remove -g` if you installed that way).
 
 ### Source checkout (git clone)
 
-If you run from a repo checkout (`git clone` + `openclaw ...` / `bun run openclaw ...`):
+If you run from a repo checkout (`git clone` + `afora ...` / `bun run afora ...`):
 
 1. Uninstall the gateway service **before** deleting the repo (use the easy path above or manual service removal).
 2. Delete the repo directory.

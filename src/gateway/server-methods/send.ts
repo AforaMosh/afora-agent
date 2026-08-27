@@ -4,7 +4,7 @@ import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
   readStringValue,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   ErrorCodes,
   errorShape,
@@ -28,7 +28,7 @@ import {
   getRuntimeConfigSourceSnapshot,
   selectApplicableRuntimeConfig,
 } from "../../config/runtime-snapshot.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveOutboundChannelPlugin } from "../../infra/outbound/channel-resolution.js";
 import { resolveMessageChannelSelection } from "../../infra/outbound/channel-selection.js";
 import { validateExplicitMessageAccountSelection } from "../../infra/outbound/message-account-selection.js";
@@ -484,7 +484,7 @@ function replayReservedMessageOperationRoute(params: {
 }
 
 function resolveMessageOperationAccountRoute(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   plugin: ChannelPlugin;
   accountIds: readonly unknown[];
@@ -518,7 +518,7 @@ function resolveMessageOperationAccountRoute(params: {
 
 async function withMessageOperationRoute<
   T extends {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     channel: string;
     plugin: ChannelPlugin;
   },
@@ -673,8 +673,8 @@ async function resolveRequestedChannel(params: {
   rejectWebchatAsInternalOnly?: boolean;
 }): Promise<
   | {
-      cfg: OpenClawConfig;
-      sourceCfg: OpenClawConfig;
+      cfg: AforaConfig;
+      sourceCfg: AforaConfig;
       channel: string;
     }
   | {
@@ -717,8 +717,8 @@ async function resolveInternalDeliveryChannel(
 ): Promise<
   | {
       kind: "ready";
-      cfg: OpenClawConfig;
-      sourceCfg: OpenClawConfig;
+      cfg: AforaConfig;
+      sourceCfg: AforaConfig;
       channel: string;
     }
   | {
@@ -744,7 +744,7 @@ async function resolveInternalDeliveryChannel(
 function resolveGatewayOutboundTarget(params: {
   channel: string;
   to: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string;
 }):
   | {
@@ -772,9 +772,9 @@ function resolveGatewayOutboundTarget(params: {
 }
 
 function resolveMessageActionRuntimeConfig(params: {
-  cfg: OpenClawConfig;
-  sourceCfg: OpenClawConfig;
-}): OpenClawConfig {
+  cfg: AforaConfig;
+  sourceCfg: AforaConfig;
+}): AforaConfig {
   const runtimeConfig = getRuntimeConfigSnapshot();
   const runtimeSourceConfig = getRuntimeConfigSourceSnapshot();
   if (!runtimeConfig || !runtimeSourceConfig) {
@@ -1238,7 +1238,7 @@ export const sendHandlers: GatewayRequestHandlers = {
           });
           const deliveryTarget = idLikeTarget?.to ?? resolvedTarget.to;
           // Preserve opaque, case-sensitive peer IDs (e.g. Matrix room ids) on an
-          // explicit session key instead of raw-lowercasing it (openclaw#75670).
+          // explicit session key instead of raw-lowercasing it (afora#75670).
           // Non-enrolled channels still canonicalize to lowercase via the registry.
           const providedSessionKey =
             normalizeSessionKeyPreservingOpaquePeerIds(request.sessionKey) || undefined;

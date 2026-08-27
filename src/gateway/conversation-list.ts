@@ -14,7 +14,7 @@ import {
   type ConversationRecord,
   type ConversationRegistryScope,
 } from "../config/sessions/conversation-registry.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { resolveOutboundChannelPlugin } from "../infra/outbound/channel-resolution.js";
 import { resolveOutboundSessionRoute } from "../infra/outbound/outbound-session.js";
@@ -71,7 +71,7 @@ async function listLiveDirectoryEntries(params: {
 }
 
 async function listDirectoryEntries(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   accountId: string;
   query?: string;
   limit: number;
@@ -117,7 +117,7 @@ async function listDirectoryEntries(params: {
 }
 
 async function discoverChannelAddresses(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentId: string;
   channel: string;
   query?: string;
@@ -212,7 +212,7 @@ function matchesConversationQuery(conversation: ConversationRecord, rawQuery: st
 /** Lists persisted and channel-directory addresses from the Gateway's live plugin runtime. */
 export async function runGatewayConversationList(
   params: {
-    config: OpenClawConfig;
+    config: AforaConfig;
     agentId: string;
     channel?: string;
     query?: string;

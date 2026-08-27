@@ -1,18 +1,18 @@
 // Update-phase helpers that gate doctor repairs during package swaps and convergence.
 import { isTruthyEnvValue } from "../../../infra/env.js";
 
-export const UPDATE_IN_PROGRESS_ENV = "OPENCLAW_UPDATE_IN_PROGRESS";
-export const UPDATE_POST_CORE_CONVERGENCE_ENV = "OPENCLAW_UPDATE_POST_CORE_CONVERGENCE";
+export const UPDATE_IN_PROGRESS_ENV = "AFORA_UPDATE_IN_PROGRESS";
+export const UPDATE_POST_CORE_CONVERGENCE_ENV = "AFORA_UPDATE_POST_CORE_CONVERGENCE";
 export const UPDATE_DEFER_CONFIGURED_PLUGIN_INSTALL_REPAIR_ENV =
-  "OPENCLAW_UPDATE_DEFER_CONFIGURED_PLUGIN_INSTALL_REPAIR";
+  "AFORA_UPDATE_DEFER_CONFIGURED_PLUGIN_INSTALL_REPAIR";
 export const UPDATE_PARENT_SUPPORTS_DOCTOR_CONFIG_WRITE_ENV =
-  "OPENCLAW_UPDATE_PARENT_SUPPORTS_DOCTOR_CONFIG_WRITE";
+  "AFORA_UPDATE_PARENT_SUPPORTS_DOCTOR_CONFIG_WRITE";
 export const UPDATE_PARENT_SUPPORTS_GATEWAY_RESTART_ENV =
-  "OPENCLAW_UPDATE_PARENT_SUPPORTS_GATEWAY_RESTART";
+  "AFORA_UPDATE_PARENT_SUPPORTS_GATEWAY_RESTART";
 export const UPDATE_PARENT_ALLOWS_GATEWAY_SERVICE_REPAIR_ENV =
-  "OPENCLAW_UPDATE_PARENT_ALLOWS_GATEWAY_SERVICE_REPAIR";
+  "AFORA_UPDATE_PARENT_ALLOWS_GATEWAY_SERVICE_REPAIR";
 export const UPDATE_PARENT_ALLOWS_GATEWAY_ACTIVATION_ENV =
-  "OPENCLAW_UPDATE_PARENT_ALLOWS_GATEWAY_ACTIVATION";
+  "AFORA_UPDATE_PARENT_ALLOWS_GATEWAY_ACTIVATION";
 
 /**
  * True iff the caller is the doctor pass that runs WHILE the core package
@@ -28,7 +28,7 @@ export const UPDATE_PARENT_ALLOWS_GATEWAY_ACTIVATION_ENV =
  *
  * NOTE: only consumers that route through this helper observe the
  * "post-core wins" semantics. Files that still read
- * `OPENCLAW_UPDATE_IN_PROGRESS` directly (`commands/doctor-update.ts`,
+ * `AFORA_UPDATE_IN_PROGRESS` directly (`commands/doctor-update.ts`,
  * `commands/doctor-repair-mode.ts`, `commands/doctor.e2e-harness.ts`,
  * `flows/doctor-health-contributions.ts`) treat both flags as
  * "update-in-progress". This is intentional: those paths are control-flow
@@ -77,7 +77,7 @@ export function isLegacyParentWritableUpdateDoctorPass(env: NodeJS.ProcessEnv): 
 /**
  * True iff this newer doctor is running under an older updater that does not
  * advertise any post-core handoff marker. Those parents set only
- * `OPENCLAW_UPDATE_IN_PROGRESS`, so configured plugin repair must happen now.
+ * `AFORA_UPDATE_IN_PROGRESS`, so configured plugin repair must happen now.
  */
 export function isLegacyPackageUpdateDoctorPass(env: NodeJS.ProcessEnv): boolean {
   return isUpdatePackageSwapInProgress(env) && !shouldDeferConfiguredPluginInstallRepair(env);

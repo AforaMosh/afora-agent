@@ -191,7 +191,7 @@ describe("Chrome MCP durable tab ownership", () => {
       cdpUrl: fixtureCdpEndpoint("http:"),
     });
 
-    expect(events[0]).toMatch(/^new:about:blank#openclaw-/);
+    expect(events[0]).toMatch(/^new:about:blank#afora-/);
     expect(events.indexOf("json-list")).toBeLessThan(
       events.findIndex((event) => event.startsWith("navigate:")),
     );
@@ -299,7 +299,7 @@ describe("Chrome MCP durable tab ownership", () => {
     expect(abortedSession.pages).toEqual([
       { id: 1, nativeTargetId: "NATIVE-EXISTING", url: "about:blank" },
     ]);
-    expect(abortedSession.events.at(-1)).toMatch(/^close:about:blank#openclaw-/);
+    expect(abortedSession.events.at(-1)).toMatch(/^close:about:blank#afora-/);
 
     await resetChromeMcpSessionsForTest();
     const blockedSession = createMarkerSession();

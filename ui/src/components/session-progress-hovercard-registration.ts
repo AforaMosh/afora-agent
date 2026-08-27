@@ -1,7 +1,7 @@
 import type { ApplicationGateway } from "../app/gateway.ts";
 import { ensureCustomElementDefined } from "../app/lazy-custom-element.ts";
 
-const HOVERCARD_TAG = "openclaw-session-progress-hovercard-provider";
+const HOVERCARD_TAG = "afora-session-progress-hovercard-provider";
 
 type HovercardProviderElement = HTMLElement & { gateway?: ApplicationGateway | null };
 

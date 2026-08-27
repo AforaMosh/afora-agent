@@ -116,9 +116,9 @@ describe("resolveChannelSetupSelectionContributions", () => {
         ownership: "explicit",
         defaults: { systemAgent: { agentId: "main" } },
         entries: {
-          main: { workspace: "/tmp/openclaw-main-workspace" },
-          helper: { workspace: "/tmp/openclaw-helper-workspace" },
-          third: { workspace: "/tmp/openclaw-third-workspace" },
+          main: { workspace: "/tmp/afora-main-workspace" },
+          helper: { workspace: "/tmp/afora-helper-workspace" },
+          third: { workspace: "/tmp/afora-third-workspace" },
         },
       },
     } as const;
@@ -132,11 +132,11 @@ describe("resolveChannelSetupSelectionContributions", () => {
 
     expect(resolveChannelSetupEntries).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ workspaceDir: "/tmp/openclaw-main-workspace" }),
+      expect.objectContaining({ workspaceDir: "/tmp/afora-main-workspace" }),
     );
     expect(resolveChannelSetupEntries).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({ workspaceDir: "/tmp/openclaw-main-workspace" }),
+      expect.objectContaining({ workspaceDir: "/tmp/afora-main-workspace" }),
     );
   });
 
@@ -409,7 +409,7 @@ describe("resolveChannelSetupSelectionContributions", () => {
       }),
     );
 
-    await withEnvAsync({ OPENCLAW_LOCALE: "zh-CN" }, async () => {
+    await withEnvAsync({ AFORA_LOCALE: "zh-CN" }, async () => {
       const summary = await collectChannelStatus({
         cfg: {} as never,
         accountOverrides: {},
@@ -430,7 +430,7 @@ describe("resolveChannelSetupSelectionContributions", () => {
     listChatChannels.mockReturnValue([makeMeta("discord", "Discord")]);
     isChannelConfigured.mockReturnValue(true);
 
-    await withEnvAsync({ OPENCLAW_LOCALE: "zh-CN" }, async () => {
+    await withEnvAsync({ AFORA_LOCALE: "zh-CN" }, async () => {
       await noteChannelStatus({
         cfg: {} as never,
         prompter: { note } as never,
@@ -464,10 +464,10 @@ describe("resolveChannelSetupSelectionContributions", () => {
     expect(note).toHaveBeenCalledWith(
       [
         "Inbound DM safety defaults to pairing: unknown senders get a pairing code first.",
-        "Approve with: openclaw pairing approve <channel> <code>",
+        "Approve with: afora pairing approve <channel> <code>",
         'Open/public DMs require dmPolicy="open" plus allowFrom=["*"].',
-        'For multi-user DMs, isolate sessions with: openclaw config set session.dmScope "per-channel-peer" (or "per-account-channel-peer" for multi-account channels).',
-        "Docs: https://docs.openclaw.ai/channels/pairing",
+        'For multi-user DMs, isolate sessions with: afora config set session.dmScope "per-channel-peer" (or "per-account-channel-peer" for multi-account channels).',
+        "Docs: https://docs.afora.ai/channels/pairing",
         "",
         "bad\\nid: Blurb\\nline",
       ].join("\n"),
@@ -478,7 +478,7 @@ describe("resolveChannelSetupSelectionContributions", () => {
   it("localizes built-in channel primer copy", async () => {
     const note = vi.fn(async () => undefined);
 
-    await withEnvAsync({ OPENCLAW_LOCALE: "zh-CN" }, async () => {
+    await withEnvAsync({ AFORA_LOCALE: "zh-CN" }, async () => {
       await noteChannelPrimer(
         { note } as never,
         [
@@ -543,7 +543,7 @@ describe("resolveChannelSetupSelectionContributions", () => {
     if (typeof docsLink !== "function") {
       throw new Error("Expected docs link formatter");
     }
-    expect(docsLink("/channels/zalo", "Docs")).toBe("https://docs.openclaw.ai/channels/zalo");
+    expect(docsLink("/channels/zalo", "Docs")).toBe("https://docs.afora.ai/channels/zalo");
     expect(lines).toEqual(["Zalo\\nBot — Setup\\nhelp"]);
   });
 
@@ -566,7 +566,7 @@ describe("resolveChannelSetupSelectionContributions", () => {
       }),
     );
 
-    withEnv({ OPENCLAW_LOCALE: "zh-CN" }, () => {
+    withEnv({ AFORA_LOCALE: "zh-CN" }, () => {
       const lines = resolveChannelSelectionNoteLines({
         cfg: {} as never,
         installedPlugins: [],

@@ -1,8 +1,8 @@
 // Doctor-only import of legacy channel pairing JSON into shared SQLite state.
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { CHANNEL_IDS } from "../channels/ids.js";
 import { getPairingAdapter } from "../channels/plugins/pairing.js";
 import {

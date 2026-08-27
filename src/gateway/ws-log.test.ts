@@ -43,7 +43,7 @@ describe("gateway ws log helpers", () => {
     expect(formatForLog(input)).toBe(expected);
   });
 
-  test("formatForLog walks cause chain so the underlying error is not hidden (openclaw-4a8)", () => {
+  test("formatForLog walks cause chain so the underlying error is not hidden (afora-4a8)", () => {
     const root = Object.assign(new Error('"Method not found": nes/close (-32601)'), {
       name: "RequestError",
     });

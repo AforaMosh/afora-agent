@@ -1,5 +1,5 @@
 // Command path policy tests cover allowed CLI command path shapes and lazy imports.
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CliCommandCatalogEntry, CliCommandPathPolicy } from "./command-catalog.js";
 import {
@@ -100,7 +100,7 @@ describe("command-path-policy", () => {
         networkProxy: "bypass",
       });
     }
-    // Bare `openclaw nodes` still resolves plugin subcommands from validated config.
+    // Bare `afora nodes` still resolves plugin subcommands from validated config.
     expectResolvedPolicy(["nodes"], { networkProxy: "bypass" });
     expectResolvedPolicy(["nodes", "pair"], { networkProxy: "bypass" });
   });
@@ -164,13 +164,13 @@ describe("command-path-policy", () => {
     expectNetworkProxyResolver(channelsStatusPolicy);
     expect(
       channelsStatusPolicy.networkProxy({
-        argv: ["node", "openclaw", "channels", "status"],
+        argv: ["node", "afora", "channels", "status"],
         commandPath: ["channels", "status"],
       }),
     ).toBe("bypass");
     expect(
       channelsStatusPolicy.networkProxy({
-        argv: ["node", "openclaw", "channels", "status", "--probe"],
+        argv: ["node", "afora", "channels", "status", "--probe"],
         commandPath: ["channels", "status"],
       }),
     ).toBe("default");
@@ -211,46 +211,46 @@ describe("command-path-policy", () => {
     expectNetworkProxyResolver(agentPolicy);
     expect(
       agentPolicy.loadPlugins({
-        argv: ["node", "openclaw", "agent"],
+        argv: ["node", "afora", "agent"],
         commandPath: ["agent"],
         jsonOutputMode: false,
       }),
     ).toBe(false);
     expect(
       agentPolicy.loadPlugins({
-        argv: ["node", "openclaw", "agent", "--json"],
+        argv: ["node", "afora", "agent", "--json"],
         commandPath: ["agent"],
         jsonOutputMode: true,
       }),
     ).toBe(false);
     expect(
       agentPolicy.loadPlugins({
-        argv: ["node", "openclaw", "agent", "--local"],
+        argv: ["node", "afora", "agent", "--local"],
         commandPath: ["agent"],
         jsonOutputMode: true,
       }),
     ).toBe(true);
     expect(
       agentPolicy.configGuard({
-        argv: ["node", "openclaw", "agent"],
+        argv: ["node", "afora", "agent"],
         commandPath: ["agent"],
       }),
     ).toBe("skip");
     expect(
       agentPolicy.configGuard({
-        argv: ["node", "openclaw", "agent", "--local"],
+        argv: ["node", "afora", "agent", "--local"],
         commandPath: ["agent"],
       }),
     ).toBe("run");
     expect(
       agentPolicy.networkProxy({
-        argv: ["node", "openclaw", "agent"],
+        argv: ["node", "afora", "agent"],
         commandPath: ["agent"],
       }),
     ).toBe("bypass");
     expect(
       agentPolicy.networkProxy({
-        argv: ["node", "openclaw", "agent", "--local"],
+        argv: ["node", "afora", "agent", "--local"],
         commandPath: ["agent"],
       }),
     ).toBe("default");
@@ -351,13 +351,13 @@ describe("command-path-policy", () => {
     });
     expect(
       doctorPolicy.networkProxy({
-        argv: ["node", "openclaw", "doctor"],
+        argv: ["node", "afora", "doctor"],
         commandPath: ["doctor"],
       }),
     ).toBe("default");
     expect(
       doctorPolicy.networkProxy({
-        argv: ["node", "openclaw", "doctor", "--state-sqlite=compact"],
+        argv: ["node", "afora", "doctor", "--state-sqlite=compact"],
         commandPath: ["doctor"],
       }),
     ).toBe("bypass");
@@ -443,14 +443,14 @@ describe("command-path-policy", () => {
     expect(memoryStatusPolicy.pluginRegistry).toEqual({ scope: "memory" });
     expect(
       memoryStatusPolicy.configGuard({
-        argv: ["node", "openclaw", "memory", "status"],
+        argv: ["node", "afora", "memory", "status"],
         commandPath: ["memory", "status"],
       }),
     ).toBe("skip");
     for (const flag of ["--index", "--fix"]) {
       expect(
         memoryStatusPolicy.configGuard({
-          argv: ["node", "openclaw", "memory", "status", flag],
+          argv: ["node", "afora", "memory", "status", flag],
           commandPath: ["memory", "status"],
         }),
       ).toBe("run");
@@ -467,44 +467,44 @@ describe("command-path-policy", () => {
   });
 
   it("defaults unknown command paths to network proxy routing", () => {
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "googlemeet", "login"])).toBe(
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "googlemeet", "login"])).toBe(
       "default",
     );
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "tool", "image_generate"])).toBe(
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "tool", "image_generate"])).toBe(
       "bypass",
     );
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "tools", "effective"])).toBe("bypass");
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "tools", "effective"])).toBe("bypass");
   });
 
   it("resolves static network proxy bypass policies from the catalog", () => {
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "status"])).toBe("bypass");
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "status"])).toBe("bypass");
     expect(
-      resolveCliNetworkProxyPolicy(["node", "openclaw", "config", "get", "proxy.enabled"]),
+      resolveCliNetworkProxyPolicy(["node", "afora", "config", "get", "proxy.enabled"]),
     ).toBe("bypass");
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "proxy", "start"])).toBe("bypass");
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "proxy", "start"])).toBe("bypass");
   });
 
   it("resolves mixed network proxy policies from argv-sensitive catalog entries", () => {
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "gateway"])).toBe("default");
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "gateway", "run"])).toBe("default");
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "gateway", "health"])).toBe("bypass");
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "node", "run"])).toBe("default");
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "node", "status"])).toBe("bypass");
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "agent", "--local"])).toBe("default");
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "agent", "run"])).toBe("bypass");
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "channels", "status"])).toBe("bypass");
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "gateway"])).toBe("default");
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "gateway", "run"])).toBe("default");
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "gateway", "health"])).toBe("bypass");
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "node", "run"])).toBe("default");
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "node", "status"])).toBe("bypass");
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "agent", "--local"])).toBe("default");
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "agent", "run"])).toBe("bypass");
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "channels", "status"])).toBe("bypass");
     expect(
-      resolveCliNetworkProxyPolicy(["node", "openclaw", "channels", "status", "--probe"]),
+      resolveCliNetworkProxyPolicy(["node", "afora", "channels", "status", "--probe"]),
     ).toBe("default");
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "models", "status"])).toBe("bypass");
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "models", "status", "--probe"])).toBe(
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "models", "status"])).toBe("bypass");
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "models", "status", "--probe"])).toBe(
       "default",
     );
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "models", "--json"])).toBe("bypass");
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "models", "--json"])).toBe("bypass");
     expect(
       resolveCliNetworkProxyPolicy([
         "node",
-        "openclaw",
+        "afora",
         "models",
         "--agent",
         "main",
@@ -512,21 +512,21 @@ describe("command-path-policy", () => {
       ]),
     ).toBe("bypass");
     expect(
-      resolveCliNetworkProxyPolicy(["node", "openclaw", "models", "--agent", "main", "auth"]),
+      resolveCliNetworkProxyPolicy(["node", "afora", "models", "--agent", "main", "auth"]),
     ).toBe("default");
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "skills", "info", "browser"])).toBe(
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "skills", "info", "browser"])).toBe(
       "bypass",
     );
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "skills", "check"])).toBe("bypass");
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "skills", "list"])).toBe("bypass");
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "skills", "search", "browser"])).toBe(
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "skills", "check"])).toBe("bypass");
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "skills", "list"])).toBe("bypass");
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "skills", "search", "browser"])).toBe(
       "default",
     );
   });
 
   it("routes ClawHub skill verification through the network proxy", () => {
     expect(
-      resolveCliNetworkProxyPolicy(["node", "openclaw", "skills", "verify", "@demo-owner/weather"]),
+      resolveCliNetworkProxyPolicy(["node", "afora", "skills", "verify", "@demo-owner/weather"]),
     ).toBe("default");
   });
 
@@ -550,51 +550,51 @@ describe("command-path-policy", () => {
         "./command-path-policy.js?catalog-overrides",
       );
 
-    expect(resolveCliNetworkProxyPolicyLocal(["node", "openclaw", "nodes", "camera", "snap"])).toBe(
+    expect(resolveCliNetworkProxyPolicyLocal(["node", "afora", "nodes", "camera", "snap"])).toBe(
       "default",
     );
-    expect(resolveCliNetworkProxyPolicyLocal(["node", "openclaw", "nodes", "camera", "list"])).toBe(
+    expect(resolveCliNetworkProxyPolicyLocal(["node", "afora", "nodes", "camera", "list"])).toBe(
       "bypass",
     );
   });
 
   it("stops catalog policy resolution before positional arguments", () => {
     expect(
-      resolveCliNetworkProxyPolicy(["node", "openclaw", "config", "get", "proxy.enabled"]),
+      resolveCliNetworkProxyPolicy(["node", "afora", "config", "get", "proxy.enabled"]),
     ).toBe("bypass");
     expect(
-      resolveCliNetworkProxyPolicy(["node", "openclaw", "message", "send", "--to", "demo"]),
+      resolveCliNetworkProxyPolicy(["node", "afora", "message", "send", "--to", "demo"]),
     ).toBe("default");
   });
 
   it("treats bare gateway invocations with options as the gateway runtime", () => {
-    const argv = ["node", "openclaw", "gateway", "--port", "1234"];
+    const argv = ["node", "afora", "gateway", "--port", "1234"];
 
     expect(resolveCliNetworkProxyPolicy(argv)).toBe("default");
   });
 
   it("resolves gateway runs after root options with values", () => {
-    const argv = ["node", "openclaw", "--log-level", "debug", "gateway", "run"];
+    const argv = ["node", "afora", "--log-level", "debug", "gateway", "run"];
 
     expect(resolveCliNetworkProxyPolicy(argv)).toBe("default");
   });
 
   it("does not let gateway run option values spoof bypass subcommands", () => {
     for (const argv of [
-      ["node", "openclaw", "gateway", "--token", "status"],
-      ["node", "openclaw", "gateway", "--token=status"],
-      ["node", "openclaw", "gateway", "--password", "health"],
-      ["node", "openclaw", "gateway", "--password-file", "status"],
-      ["node", "openclaw", "gateway", "--ws-log", "compact"],
+      ["node", "afora", "gateway", "--token", "status"],
+      ["node", "afora", "gateway", "--token=status"],
+      ["node", "afora", "gateway", "--password", "health"],
+      ["node", "afora", "gateway", "--password-file", "status"],
+      ["node", "afora", "gateway", "--ws-log", "compact"],
     ]) {
       expect(resolveCliNetworkProxyPolicy(argv), argv.join(" ")).toBe("default");
     }
   });
 
   it("still resolves real gateway bypass subcommands after their command token", () => {
-    expect(resolveCliNetworkProxyPolicy(["node", "openclaw", "gateway", "status"])).toBe("bypass");
+    expect(resolveCliNetworkProxyPolicy(["node", "afora", "gateway", "status"])).toBe("bypass");
     expect(
-      resolveCliNetworkProxyPolicy(["node", "openclaw", "gateway", "status", "--token", "secret"]),
+      resolveCliNetworkProxyPolicy(["node", "afora", "gateway", "status", "--token", "secret"]),
     ).toBe("bypass");
   });
 });

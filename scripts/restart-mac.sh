@@ -1,35 +1,35 @@
 #!/usr/bin/env bash
-# Reset OpenClaw like Trimmy: kill running instances, rebuild, repackage, relaunch, verify.
+# Reset Afora like Trimmy: kill running instances, rebuild, repackage, relaunch, verify.
 
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${ROOT_DIR}/scripts/lib/restart-mac-gateway.sh"
-APP_BUNDLE="${OPENCLAW_APP_BUNDLE:-}"
-APP_EXECUTABLE_RELATIVE_PATH="Contents/MacOS/OpenClaw"
-DEBUG_PROCESS_PATTERN="${ROOT_DIR}/apps/macos/.build/debug/OpenClaw"
-LOCAL_PROCESS_PATTERN="${ROOT_DIR}/apps/macos/.build-local/debug/OpenClaw"
-RELEASE_PROCESS_PATTERN="${ROOT_DIR}/apps/macos/.build/release/OpenClaw"
-LAUNCH_AGENT="${HOME}/Library/LaunchAgents/ai.openclaw.mac.plist"
+APP_BUNDLE="${AFORA_APP_BUNDLE:-}"
+APP_EXECUTABLE_RELATIVE_PATH="Contents/MacOS/Afora"
+DEBUG_PROCESS_PATTERN="${ROOT_DIR}/apps/macos/.build/debug/Afora"
+LOCAL_PROCESS_PATTERN="${ROOT_DIR}/apps/macos/.build-local/debug/Afora"
+RELEASE_PROCESS_PATTERN="${ROOT_DIR}/apps/macos/.build/release/Afora"
+LAUNCH_AGENT="${HOME}/Library/LaunchAgents/ai.afora.mac.plist"
 LOCK_KEY="$(printf '%s' "${ROOT_DIR}" | shasum -a 256 | cut -c1-8)"
-LOCK_DIR="${TMPDIR:-/tmp}/openclaw-restart-${LOCK_KEY}"
+LOCK_DIR="${TMPDIR:-/tmp}/afora-restart-${LOCK_KEY}"
 LOCK_PID_FILE="${LOCK_DIR}/pid"
 LOCK_HELD=0
 WAIT_FOR_LOCK=0
-LOG_PATH="${OPENCLAW_RESTART_LOG:-${TMPDIR:-/tmp}/openclaw-restart-${LOCK_KEY}.log}"
+LOG_PATH="${AFORA_RESTART_LOG:-${TMPDIR:-/tmp}/afora-restart-${LOCK_KEY}.log}"
 NO_SIGN=0
 SIGN=0
 AUTO_DETECT_SIGNING=1
-GATEWAY_WAIT_SECONDS="${OPENCLAW_GATEWAY_WAIT_SECONDS:-0}"
-LAUNCHAGENT_DISABLE_MARKER="${HOME}/.openclaw/disable-launchagent"
+GATEWAY_WAIT_SECONDS="${AFORA_GATEWAY_WAIT_SECONDS:-0}"
+LAUNCHAGENT_DISABLE_MARKER="${HOME}/.afora/disable-launchagent"
 ATTACH_ONLY=1
 BACKGROUND_ONLY=0
 TARGET_ONLY=0
-TARGET_APP_BUNDLE="${ROOT_DIR}/dist/OpenClaw.app"
+TARGET_APP_BUNDLE="${ROOT_DIR}/dist/Afora.app"
 TARGET_EXECUTABLE="${TARGET_APP_BUNDLE}/${APP_EXECUTABLE_RELATIVE_PATH}"
-INSTALLED_EXECUTABLE="/Applications/OpenClaw.app/${APP_EXECUTABLE_RELATIVE_PATH}"
-STAGED_APP_DIR="${ROOT_DIR}/dist/.openclaw-replacement-${LOCK_KEY}-$$"
-STAGED_APP_BUNDLE="${STAGED_APP_DIR}/OpenClaw.app"
+INSTALLED_EXECUTABLE="/Applications/Afora.app/${APP_EXECUTABLE_RELATIVE_PATH}"
+STAGED_APP_DIR="${ROOT_DIR}/dist/.afora-replacement-${LOCK_KEY}-$$"
+STAGED_APP_BUNDLE="${STAGED_APP_DIR}/Afora.app"
 
 log()  { printf '%s\n' "$*"; }
 fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
@@ -100,7 +100,7 @@ canonicalize_app_bundle() {
     return 0
   fi
   if [[ ! -d "${APP_BUNDLE}" ]]; then
-    fail "OPENCLAW_APP_BUNDLE does not exist: ${APP_BUNDLE}"
+    fail "AFORA_APP_BUNDLE does not exist: ${APP_BUNDLE}"
   fi
   APP_BUNDLE="$(cd "${APP_BUNDLE}" && pwd -P)"
 }
@@ -124,17 +124,17 @@ for arg in "$@"; do
       log "  --attach-only    Launch app with --attach-only (skip launchd install)"
       log "  --no-attach-only Launch app without attach-only override"
       log "  --background-only Launch app without automatic windows or prompts"
-      log "  --target-only    Restart only this checkout's dist app; fail if another OpenClaw app is active"
+      log "  --target-only    Restart only this checkout's dist app; fail if another Afora app is active"
       log ""
       log "Env:"
-      log "  OPENCLAW_GATEWAY_WAIT_SECONDS=0  Wait time before gateway port check (unsigned only)"
+      log "  AFORA_GATEWAY_WAIT_SECONDS=0  Wait time before gateway port check (unsigned only)"
       log ""
       log "Unsigned recovery:"
-      log "  node openclaw.mjs daemon install --force --runtime node"
-      log "  node openclaw.mjs daemon restart"
+      log "  node afora.mjs daemon install --force --runtime node"
+      log "  node afora.mjs daemon restart"
       log ""
       log "Reset unsigned overrides:"
-      log "  rm ~/.openclaw/disable-launchagent"
+      log "  rm ~/.afora/disable-launchagent"
       log ""
       log "Default behavior: Auto-detect signing keys, fallback to --no-sign if none found"
       exit 0
@@ -151,10 +151,10 @@ if [[ "$TARGET_ONLY" -eq 1 && "$ATTACH_ONLY" -ne 1 ]]; then
   fail "--target-only requires --attach-only"
 fi
 if [[ "$TARGET_ONLY" -eq 1 && -n "$APP_BUNDLE" ]]; then
-  fail "--target-only does not accept OPENCLAW_APP_BUNDLE"
+  fail "--target-only does not accept AFORA_APP_BUNDLE"
 fi
-if [[ -n "${OPENCLAW_PROFILE:-}" ]]; then
-  normalized_profile="$(printf '%s' "${OPENCLAW_PROFILE}" | tr '[:upper:]' '[:lower:]')"
+if [[ -n "${AFORA_PROFILE:-}" ]]; then
+  normalized_profile="$(printf '%s' "${AFORA_PROFILE}" | tr '[:upper:]' '[:lower:]')"
   if [[ "${normalized_profile}" != "default" ]]; then
     fail "restart-mac.sh cannot safely target one app profile; launch that profile directly instead"
   fi
@@ -177,14 +177,14 @@ fi
 
 acquire_lock
 
-kill_all_openclaw() {
+kill_all_afora() {
   local max_attempts=20
   local poll_seconds=0.3
   # The app's signal watcher forces exit after 3s. Keep a scheduling margin, then
   # fail closed if a truly stuck process still survives the bounded grace period.
   for ((attempt=0; attempt<max_attempts; attempt++)); do
     local pids=""
-    pids="$(openclaw_process_pids)"
+    pids="$(afora_process_pids)"
     if [[ -z "${pids}" ]]; then
       return 0
     fi
@@ -193,27 +193,27 @@ kill_all_openclaw() {
     done <<< "${pids}"
     sleep "${poll_seconds}"
   done
-  [[ -z "$(openclaw_process_pids)" ]]
+  [[ -z "$(afora_process_pids)" ]]
 }
 
-known_openclaw_executables() {
+known_afora_executables() {
   if [[ -n "${APP_BUNDLE}" ]]; then
     printf '%s\n' "${APP_BUNDLE}/${APP_EXECUTABLE_RELATIVE_PATH}"
   fi
   printf '%s\n' \
-    "${ROOT_DIR}/dist/OpenClaw.app/${APP_EXECUTABLE_RELATIVE_PATH}" \
-    "/Applications/OpenClaw.app/${APP_EXECUTABLE_RELATIVE_PATH}" \
+    "${ROOT_DIR}/dist/Afora.app/${APP_EXECUTABLE_RELATIVE_PATH}" \
+    "/Applications/Afora.app/${APP_EXECUTABLE_RELATIVE_PATH}" \
     "${DEBUG_PROCESS_PATTERN}" \
     "${LOCAL_PROCESS_PATTERN}" \
     "${RELEASE_PROCESS_PATTERN}"
 }
 
-openclaw_process_pids() {
+afora_process_pids() {
   local pattern=""
   while IFS= read -r pattern; do
     [[ -n "${pattern}" ]] || continue
     process_pids_matching "${pattern}"
-  done < <(known_openclaw_executables) | sort -u
+  done < <(known_afora_executables) | sort -u
 }
 
 process_pids_matching() {
@@ -227,7 +227,7 @@ process_pids_matching() {
       done
 }
 
-foreign_openclaw_process_pids() {
+foreign_afora_process_pids() {
   ps axww -o pid=,command= 2>/dev/null \
     | while read -r pid command_line; do
         [[ "${pid}" =~ ^[0-9]+$ ]] || continue
@@ -235,10 +235,10 @@ foreign_openclaw_process_pids() {
         local executable="${command_line%% *}"
         [[ "${executable}" == "${TARGET_EXECUTABLE}" ]] && continue
         [[ "${executable}" == "${INSTALLED_EXECUTABLE}" ]] && continue
-        if [[ "${executable}" == *"/OpenClaw.app/${APP_EXECUTABLE_RELATIVE_PATH}" \
-          || "${executable}" == *"/apps/macos/.build/debug/OpenClaw" \
-          || "${executable}" == *"/apps/macos/.build-local/debug/OpenClaw" \
-          || "${executable}" == *"/apps/macos/.build/release/OpenClaw" ]]; then
+        if [[ "${executable}" == *"/Afora.app/${APP_EXECUTABLE_RELATIVE_PATH}" \
+          || "${executable}" == *"/apps/macos/.build/debug/Afora" \
+          || "${executable}" == *"/apps/macos/.build-local/debug/Afora" \
+          || "${executable}" == *"/apps/macos/.build/release/Afora" ]]; then
           printf '%s\n' "${pid}"
         fi
       done
@@ -255,7 +255,7 @@ process_pids_for_executable() {
       done
 }
 
-managed_openclaw_process_pids() {
+managed_afora_process_pids() {
   {
     process_pids_for_executable "${TARGET_EXECUTABLE}"
     process_pids_for_executable "${INSTALLED_EXECUTABLE}"
@@ -293,7 +293,7 @@ launch_job_snapshot() {
 # A launchd-owned app will immediately respawn after target-only cleanup. Find
 # exact managed executables before the expensive Swift build so the operator
 # can stop the owning job instead of waiting for an inevitable switch failure.
-print_managed_openclaw_supervisor_label() {
+print_managed_afora_supervisor_label() {
   local domain="$1"
   local label="$2"
   local job=""
@@ -313,7 +313,7 @@ print_managed_openclaw_supervisor_label() {
   fi
 }
 
-managed_openclaw_supervisor_labels() {
+managed_afora_supervisor_labels() {
   local jobs=""
   if ! jobs="$(loaded_launch_jobs)"; then
     return 1
@@ -323,7 +323,7 @@ managed_openclaw_supervisor_labels() {
   local label=""
   while IFS='|' read -r domain label; do
     [[ -n "${domain}" && -n "${label}" ]] || continue
-    print_managed_openclaw_supervisor_label "${domain}" "${label}" &
+    print_managed_afora_supervisor_label "${domain}" "${label}" &
     batch_size=$((batch_size + 1))
     if [[ "${batch_size}" -ge 16 ]]; then
       wait
@@ -333,10 +333,10 @@ managed_openclaw_supervisor_labels() {
   wait
 }
 
-kill_managed_openclaw() {
+kill_managed_afora() {
   for _ in {1..10}; do
     local pids=""
-    pids="$(managed_openclaw_process_pids)"
+    pids="$(managed_afora_process_pids)"
     if [[ -z "${pids}" ]]; then
       return 0
     fi
@@ -348,37 +348,37 @@ kill_managed_openclaw() {
   # The app can keep handling SIGTERM while shutting down. Escalate only for
   # the two exact executables target-only mode has already classified as safe.
   local remaining_pids=""
-  remaining_pids="$(managed_openclaw_process_pids)"
+  remaining_pids="$(managed_afora_process_pids)"
   while IFS= read -r pid; do
     [[ -n "${pid}" ]] || continue
     kill -KILL "${pid}" 2>/dev/null || true
   done <<< "${remaining_pids}"
   sleep 0.3
-  [[ -z "$(managed_openclaw_process_pids)" ]]
+  [[ -z "$(managed_afora_process_pids)" ]]
 }
 
 stop_launch_agent() {
-  launchctl bootout gui/"$UID"/ai.openclaw.mac 2>/dev/null || true
+  launchctl bootout gui/"$UID"/ai.afora.mac 2>/dev/null || true
 }
 
 # 1) Validate the process set selected by the requested mode. Target-only keeps
 # the current managed app alive while the replacement builds and signs.
 if [[ "$TARGET_ONLY" -eq 1 ]]; then
-  if ! managed_supervisors="$(managed_openclaw_supervisor_labels | sort -u | /usr/bin/paste -sd, -)"; then
+  if ! managed_supervisors="$(managed_afora_supervisor_labels | sort -u | /usr/bin/paste -sd, -)"; then
     fail "Unable to inspect loaded launchd jobs before target-only restart"
   fi
   if [[ -n "${managed_supervisors}" ]]; then
-    fail "Managed OpenClaw app is supervised by launchd job(s): ${managed_supervisors}; stop those jobs before a target-only restart"
+    fail "Managed Afora app is supervised by launchd job(s): ${managed_supervisors}; stop those jobs before a target-only restart"
   fi
-  if [[ -n "$(foreign_openclaw_process_pids)" ]]; then
-    fail "Another OpenClaw app or test process is active; target-only restart deferred"
+  if [[ -n "$(foreign_afora_process_pids)" ]]; then
+    fail "Another Afora app or test process is active; target-only restart deferred"
   fi
-  log "==> Keeping managed OpenClaw running while the replacement builds"
+  log "==> Keeping managed Afora running while the replacement builds"
 else
   stop_launch_agent
-  log "==> Killing existing OpenClaw instances"
-  if ! kill_all_openclaw; then
-    fail "OpenClaw instances did not exit after cleanup attempts"
+  log "==> Killing existing Afora instances"
+  if ! kill_all_afora; then
+    fail "Afora instances did not exit after cleanup attempts"
   fi
 fi
 
@@ -398,7 +398,7 @@ fi
 if [ "$NO_SIGN" -eq 1 ]; then
   export ALLOW_ADHOC_SIGNING=1
   export SIGN_IDENTITY="-"
-  mkdir -p "${HOME}/.openclaw"
+  mkdir -p "${HOME}/.afora"
   run_step "disable launchagent writes" /usr/bin/touch "${LAUNCHAGENT_DISABLE_MARKER}"
 elif [ "$SIGN" -eq 1 ]; then
   if ! check_signing_keys; then
@@ -411,12 +411,12 @@ fi
 # must leave the currently running and on-disk app untouched.
 run_step "package app" env \
   SKIP_TSC="${SKIP_TSC:-1}" \
-  OPENCLAW_PACKAGE_APP_ROOT="${STAGED_APP_BUNDLE}" \
+  AFORA_PACKAGE_APP_ROOT="${STAGED_APP_BUNDLE}" \
   "${ROOT_DIR}/scripts/package-mac-app.sh"
 run_step "verify packaged app" /usr/bin/codesign --verify --deep --strict "${STAGED_APP_BUNDLE}"
 
 install_staged_app() {
-  local previous="${ROOT_DIR}/dist/.OpenClaw.app.previous-$$"
+  local previous="${ROOT_DIR}/dist/.Afora.app.previous-$$"
   rm -rf "${previous}"
   if [[ -d "${TARGET_APP_BUNDLE}" ]]; then
     mv "${TARGET_APP_BUNDLE}" "${previous}"
@@ -436,20 +436,20 @@ choose_app_bundle() {
     return 0
   fi
 
-  if [[ -d "${ROOT_DIR}/dist/OpenClaw.app" ]]; then
-    APP_BUNDLE="$(cd "${ROOT_DIR}/dist/OpenClaw.app" && pwd -P)"
+  if [[ -d "${ROOT_DIR}/dist/Afora.app" ]]; then
+    APP_BUNDLE="$(cd "${ROOT_DIR}/dist/Afora.app" && pwd -P)"
     if [[ ! -d "${APP_BUNDLE}/Contents/Frameworks/Sparkle.framework" ]]; then
-      fail "dist/OpenClaw.app missing Sparkle after packaging"
+      fail "dist/Afora.app missing Sparkle after packaging"
     fi
     return 0
   fi
 
-  if [[ -d "/Applications/OpenClaw.app" ]]; then
-    APP_BUNDLE="$(cd "/Applications/OpenClaw.app" && pwd -P)"
+  if [[ -d "/Applications/Afora.app" ]]; then
+    APP_BUNDLE="$(cd "/Applications/Afora.app" && pwd -P)"
     return 0
   fi
 
-  fail "App bundle not found. Set OPENCLAW_APP_BUNDLE to your installed OpenClaw.app"
+  fail "App bundle not found. Set AFORA_APP_BUNDLE to your installed Afora.app"
 }
 
 # When signed, clear any previous launchagent override marker.
@@ -460,8 +460,8 @@ fi
 # When unsigned, ensure the gateway LaunchAgent targets the repo CLI (before the app launches).
 # This reduces noisy "could not connect" errors during app startup.
 if [ "$NO_SIGN" -eq 1 ] && [ "$ATTACH_ONLY" -ne 1 ]; then
-  run_step "install gateway launch agent (unsigned)" bash -c "cd '${ROOT_DIR}' && node openclaw.mjs daemon install --force --runtime node"
-  run_step "restart gateway daemon (unsigned)" bash -c "cd '${ROOT_DIR}' && node openclaw.mjs daemon restart"
+  run_step "install gateway launch agent (unsigned)" bash -c "cd '${ROOT_DIR}' && node afora.mjs daemon install --force --runtime node"
+  run_step "restart gateway daemon (unsigned)" bash -c "cd '${ROOT_DIR}' && node afora.mjs daemon restart"
   if [[ "${GATEWAY_WAIT_SECONDS}" -gt 0 ]]; then
     run_step "wait for gateway (unsigned)" sleep "${GATEWAY_WAIT_SECONDS}"
   fi
@@ -470,7 +470,7 @@ if [ "$NO_SIGN" -eq 1 ] && [ "$ATTACH_ONLY" -ne 1 ]; then
       const fs = require("node:fs");
       const path = require("node:path");
       try {
-        const raw = fs.readFileSync(path.join(process.env.HOME, ".openclaw", "openclaw.json"), "utf8");
+        const raw = fs.readFileSync(path.join(process.env.HOME, ".afora", "afora.json"), "utf8");
         const cfg = JSON.parse(raw);
         const port = cfg && cfg.gateway && typeof cfg.gateway.port === "number" ? cfg.gateway.port : 18789;
         process.stdout.write(String(port));
@@ -491,12 +491,12 @@ if [[ "$BACKGROUND_ONLY" -eq 1 ]]; then
 fi
 
 if [[ "$TARGET_ONLY" -eq 1 ]]; then
-  if [[ -n "$(foreign_openclaw_process_pids)" ]]; then
-    fail "Another OpenClaw app or test process appeared during build; target-only restart deferred"
+  if [[ -n "$(foreign_afora_process_pids)" ]]; then
+    fail "Another Afora app or test process appeared during build; target-only restart deferred"
   fi
-  log "==> Switching managed installed and exact target OpenClaw instances"
-  if ! kill_managed_openclaw; then
-    fail "Managed OpenClaw instances did not exit after cleanup attempts"
+  log "==> Switching managed installed and exact target Afora instances"
+  if ! kill_managed_afora; then
+    fail "Managed Afora instances did not exit after cleanup attempts"
   fi
 fi
 
@@ -523,11 +523,11 @@ run_step "launch app" env -i "${LAUNCH_ENV[@]}" /usr/bin/open "${OPEN_ARGS[@]}"
 # 5) Verify the app is alive.
 sleep 1.5
 if [[ -n "$(process_pids_matching "${APP_BUNDLE}/${APP_EXECUTABLE_RELATIVE_PATH}")" ]]; then
-  log "OK: OpenClaw is running."
+  log "OK: Afora is running."
 else
   fail "App exited immediately. Check ${LOG_PATH} or Console.app (User Reports)."
 fi
 
 if [ "$NO_SIGN" -eq 1 ] && [ "$ATTACH_ONLY" -ne 1 ]; then
-  run_step "show gateway launch agent args (unsigned)" bash -c "/usr/bin/plutil -p '${HOME}/Library/LaunchAgents/ai.openclaw.gateway.plist' | head -n 40 || true"
+  run_step "show gateway launch agent args (unsigned)" bash -c "/usr/bin/plutil -p '${HOME}/Library/LaunchAgents/ai.afora.gateway.plist' | head -n 40 || true"
 fi

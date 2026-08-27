@@ -1,15 +1,15 @@
 // Ollama tests cover stream plugin behavior.
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { fetchWithSsrFGuardMock } = vi.hoisted(() => ({
   fetchWithSsrFGuardMock: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/ssrf-runtime")>()),
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/ssrf-runtime")>()),
   fetchWithSsrFGuard: fetchWithSsrFGuardMock,
 }));
 
@@ -580,8 +580,8 @@ describe("createOllamaStreamFn thinking events", () => {
 
     try {
       const { fetchWithSsrFGuard } = await vi.importActual<
-        typeof import("openclaw/plugin-sdk/ssrf-runtime")
-      >("openclaw/plugin-sdk/ssrf-runtime");
+        typeof import("afora-agent/plugin-sdk/ssrf-runtime")
+      >("afora-agent/plugin-sdk/ssrf-runtime");
       fetchWithSsrFGuardMock.mockImplementation(fetchWithSsrFGuard);
 
       const address = server.address() as AddressInfo;
@@ -626,8 +626,8 @@ describe("createOllamaStreamFn thinking events", () => {
 
     try {
       const { fetchWithSsrFGuard } = await vi.importActual<
-        typeof import("openclaw/plugin-sdk/ssrf-runtime")
-      >("openclaw/plugin-sdk/ssrf-runtime");
+        typeof import("afora-agent/plugin-sdk/ssrf-runtime")
+      >("afora-agent/plugin-sdk/ssrf-runtime");
       fetchWithSsrFGuardMock.mockImplementation(fetchWithSsrFGuard);
 
       const address = server.address() as AddressInfo;

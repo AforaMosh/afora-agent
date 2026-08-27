@@ -1,7 +1,7 @@
 // In-process gateway run loop, restart signaling, drain, and update respawn handling.
 import { randomUUID } from "node:crypto";
 import net from "node:net";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { clearRuntimeConfigSnapshot } from "../../config/runtime-snapshot.js";
 import {
   captureGatewayRestartTraceHandoff,
@@ -24,9 +24,9 @@ import type { RuntimeEnv } from "../../runtime.js";
 import { drainGlobalSingletonLifecycleState } from "../../shared/global-singleton.js";
 import { createLazyImportLoader } from "../../shared/lazy-promise.js";
 import {
-  findOpenClawAgentDatabaseMediaMigrationRequiredError,
+  findAforaAgentDatabaseMediaMigrationRequiredError,
   GATEWAY_AGENT_MEDIA_MIGRATION_REQUIRED_REASON,
-} from "../../state/openclaw-agent-db-migration-required.js";
+} from "../../state/afora-agent-db-migration-required.js";
 import { formatActiveTaskRestartBlocker } from "../../tasks/task-restart-blocker.js";
 const gatewayLog = createSubsystemLogger("gateway");
 const LAUNCHD_SUPERVISED_RESTART_EXIT_DELAY_MS = 1500;
@@ -117,15 +117,15 @@ export async function runGatewayLoop(params: {
 }) {
   // macOS/BSD process inspection reports process.title instead of the original
   // argv. Give the long-running Gateway a verifiable identity for lock readers.
-  if (process.title === "openclaw") {
-    process.title = "openclaw-gateway";
+  if (process.title === "afora") {
+    process.title = "afora-gateway";
   }
   let startupStartedAt: number;
   // Eagerly resolve the lifecycle runtime module before installing signal
   // listeners. Without this, every subsequent lifecycle path (SIGUSR1,
   // SIGTERM-with-intent, restart iteration hook, stability bundle writer)
   // depends on a dynamic import() call. After an in-place package upgrade
-  // (e.g. `npm install -g openclaw@latest` triggered via update.run),
+  // (e.g. `npm install -g afora-agent@latest` triggered via update.run),
   // dist/ chunk hashes rotate while the process is still running. The next
   // SIGUSR1 — including the one update.run schedules for itself — would
   // hit ERR_MODULE_NOT_FOUND from inside its async IIFE, reject silently,
@@ -337,7 +337,7 @@ export async function runGatewayLoop(params: {
         });
       } else {
         gatewayLog.info(
-          `restart mode: in-process restart (${respawn.detail ?? "OPENCLAW_NO_RESPAWN"})`,
+          `restart mode: in-process restart (${respawn.detail ?? "AFORA_NO_RESPAWN"})`,
         );
       }
       if (!(await reacquireLockForInProcessRestart())) {
@@ -415,7 +415,7 @@ export async function runGatewayLoop(params: {
       );
     } else {
       gatewayLog.info(
-        `restart mode: in-process restart (${respawn.detail ?? "OPENCLAW_NO_RESPAWN"})`,
+        `restart mode: in-process restart (${respawn.detail ?? "AFORA_NO_RESPAWN"})`,
       );
     }
     if (isUpdateProcessRestartReason(activeRestartRequest?.restartReason)) {
@@ -937,7 +937,7 @@ export async function runGatewayLoop(params: {
           gatewayLog.warn("SIGUSR1 restart ignored (not authorized; commands.restart=false).");
           gatewayLog.warn(
             "An unauthorized SIGUSR1 restart signal was received and ignored. " +
-              "If a pending gateway restart needs to be applied, run `openclaw gateway restart` " +
+              "If a pending gateway restart needs to be applied, run `afora gateway restart` " +
               "or restart the gateway through your service manager.",
           );
           return;
@@ -1075,7 +1075,7 @@ export async function runGatewayLoop(params: {
       } catch (err) {
         const failedServer = server;
         server = null;
-        const mediaMigrationRequired = findOpenClawAgentDatabaseMediaMigrationRequiredError(err);
+        const mediaMigrationRequired = findAforaAgentDatabaseMediaMigrationRequiredError(err);
         params.completeBoot?.({
           outcome: "startup_failed",
           reason: truncateUtf16Safe(

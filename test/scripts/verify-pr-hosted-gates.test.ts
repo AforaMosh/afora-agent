@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import {
   collectHostedGateEvidence as collectHostedGateEvidenceRaw,
@@ -24,7 +24,7 @@ const nowMs = Date.parse("2026-06-17T10:55:00Z");
 const BUILD_ARTIFACTS_WORKFLOW = "Blacksmith Build Artifacts Testbox";
 const requiredCliArgs = [
   "--repo",
-  "openclaw/openclaw",
+  "AforaMosh/afora-agent",
   "--sha",
   sha,
   "--pr",
@@ -61,12 +61,12 @@ function successfulRun(name: string, id: number, updatedAt: string): WorkflowRun
     conclusion: "success",
     head_sha: sha,
     head_branch: "codex/clean-expanded-tool-calls",
-    head_repository: { full_name: "openclaw/openclaw" },
+    head_repository: { full_name: "AforaMosh/afora-agent" },
     pull_requests: [{ number: pr }],
     path: ".github/workflows/ci.yml",
     created_at: "2026-06-17T10:46:24Z",
     updated_at: updatedAt,
-    html_url: `https://github.com/openclaw/openclaw/actions/runs/${id}`,
+    html_url: `https://github.com/AforaMosh/afora-agent/actions/runs/${id}`,
   };
 }
 
@@ -175,7 +175,7 @@ function patchReuseOptions(
 
 describe("verify-pr-hosted-gates", () => {
   it("starts from an older target cwd without current normalization helpers", () => {
-    const targetRoot = mkdtempSync(join(tmpdir(), "openclaw-hosted-gates-old-cwd-"));
+    const targetRoot = mkdtempSync(join(tmpdir(), "afora-hosted-gates-old-cwd-"));
     try {
       const normalizationRoot = join(targetRoot, "packages/normalization-core/src");
       mkdirSync(normalizationRoot, { recursive: true });
@@ -185,7 +185,7 @@ describe("verify-pr-hosted-gates", () => {
           compilerOptions: {
             baseUrl: ".",
             paths: {
-              "@openclaw/normalization-core/*": ["packages/normalization-core/src/*"],
+              "@afora/normalization-core/*": ["packages/normalization-core/src/*"],
             },
           },
         }),
@@ -446,7 +446,7 @@ describe("verify-pr-hosted-gates", () => {
       run_attempt: 2,
     };
     const gateJob = {
-      name: "openclaw/ci-gate",
+      name: "afora-agent/ci-gate",
       run_id: 42,
       run_attempt: 2,
       status: "completed",
@@ -505,7 +505,7 @@ describe("verify-pr-hosted-gates", () => {
       created_at: "2026-06-17T10:50:00Z",
     };
     const gateJob = {
-      name: "openclaw/ci-gate",
+      name: "afora-agent/ci-gate",
       run_id: 42,
       run_attempt: 1,
       status: "completed",
@@ -654,7 +654,7 @@ describe("verify-pr-hosted-gates", () => {
 
   it("accepts a recent green fork head when GitHub omits pull request links", () => {
     const headBranch = "fix/token-listener";
-    const headRepository = "contributor/openclaw";
+    const headRepository = "contributor/afora";
     const priorRun = {
       ...successfulRun("CI", 1, "2026-06-17T10:50:00Z"),
       head_sha: previousSha,
@@ -695,13 +695,13 @@ describe("verify-pr-hosted-gates", () => {
         sha,
         pullRequestCommitShas: [sha],
         pullRequestHeadBranch: "fix/token-listener",
-        pullRequestHeadRepository: "other/openclaw",
+        pullRequestHeadRepository: "other/afora",
         workflowRuns: [
           {
             ...successfulRun("CI", 1, "2026-06-17T10:50:00Z"),
             head_sha: previousSha,
             head_branch: "fix/token-listener",
-            head_repository: { full_name: "other/openclaw" },
+            head_repository: { full_name: "other/afora" },
             pull_requests: [],
           },
           {
@@ -719,7 +719,7 @@ describe("verify-pr-hosted-gates", () => {
         sha,
         pullRequestCommitShas: [previousSha, sha],
         pullRequestHeadBranch: "fix/token-listener",
-        pullRequestHeadRepository: "contributor/openclaw",
+        pullRequestHeadRepository: "contributor/afora",
         workflowRuns: [
           {
             ...successfulRun("CI", 1, "2026-06-17T10:50:00Z"),
@@ -789,7 +789,7 @@ describe("verify-pr-hosted-gates", () => {
   });
 
   it("keeps complete membership when the PR head is behind the current base", () => {
-    const fixtureRoot = realpathSync(mkdtempSync(join(tmpdir(), "openclaw-pr-commit-set-")));
+    const fixtureRoot = realpathSync(mkdtempSync(join(tmpdir(), "afora-pr-commit-set-")));
     const git = (args: string[]) => {
       const result = spawnSync("git", args, { cwd: fixtureRoot, encoding: "utf8" });
       expect(result.status, `git ${args.join(" ")}\n${result.stderr}`).toBe(0);
@@ -797,7 +797,7 @@ describe("verify-pr-hosted-gates", () => {
     };
     try {
       git(["init", "-q", "-b", "main"]);
-      git(["config", "user.name", "OpenClaw Test"]);
+      git(["config", "user.name", "Afora Test"]);
       git(["config", "user.email", "test@example.invalid"]);
       git(["commit", "-q", "--allow-empty", "-m", "root"]);
       git(["branch", "feature"]);
@@ -1499,14 +1499,14 @@ describe("verify-pr-hosted-gates", () => {
 
   it("parses required CLI arguments", () => {
     expect(parseArgs(requiredCliArgs)).toEqual({
-      repo: "openclaw/openclaw",
+      repo: "AforaMosh/afora-agent",
       sha,
       pr,
       recentSha: "",
       output: ".local/gates-hosted-checks.json",
       changelogOnly: false,
     });
-    expect(() => parseArgs(["--repo", "openclaw/openclaw"])).toThrow("Usage:");
+    expect(() => parseArgs(["--repo", "AforaMosh/afora-agent"])).toThrow("Usage:");
     expect(() => parseArgs(requiredCliArgs.with(1, "-h"))).toThrow("Expected --repo <value>.");
     expect(() => parseArgs(requiredCliArgs.with(3, "-h"))).toThrow("Expected --sha <value>.");
     expect(() => parseArgs(requiredCliArgs.with(5, "zero"))).toThrow(
@@ -1519,7 +1519,7 @@ describe("verify-pr-hosted-gates", () => {
 
   it("rejects duplicate hosted gate verifier CLI arguments", () => {
     const duplicateCases = [
-      ["--repo", [...requiredCliArgs, "--repo", "fork/openclaw"]],
+      ["--repo", [...requiredCliArgs, "--repo", "fork/afora"]],
       ["--sha", [...requiredCliArgs, "--sha", "other-sha"]],
       ["--pr", [...requiredCliArgs, "--pr", "7"]],
       ["--recent-sha", [...requiredCliArgs, "--recent-sha", "one", "--recent-sha", "other"]],
@@ -1542,27 +1542,27 @@ describe("verify-pr-hosted-gates", () => {
 
   it("queries the target and recorded pre-rebase SHAs", () => {
     expect(
-      workflowRunQueryPaths("openclaw/openclaw", {
+      workflowRunQueryPaths("AforaMosh/afora-agent", {
         sha,
         recentSha: previousSha,
       }),
     ).toEqual([
-      `repos/openclaw/openclaw/actions/runs?head_sha=${sha}&per_page=30&page=1`,
-      `repos/openclaw/openclaw/actions/runs?head_sha=${previousSha}&per_page=30&page=1`,
+      `repos/AforaMosh/afora-agent/actions/runs?head_sha=${sha}&per_page=30&page=1`,
+      `repos/AforaMosh/afora-agent/actions/runs?head_sha=${previousSha}&per_page=30&page=1`,
     ]);
     expect(HOSTED_GATE_MAX_AGE_HOURS).toBe(24);
   });
 
   it("queries recent pull-request runs for the head branch", () => {
     expect(
-      workflowRunQueryPaths("openclaw/openclaw", {
+      workflowRunQueryPaths("AforaMosh/afora-agent", {
         sha,
         recentSha: "",
         headBranch: "codex/relax hosted gates",
       }),
     ).toEqual([
-      `repos/openclaw/openclaw/actions/runs?head_sha=${sha}&per_page=30&page=1`,
-      "repos/openclaw/openclaw/actions/runs?branch=codex%2Frelax%20hosted%20gates&event=pull_request&per_page=30&page=1",
+      `repos/AforaMosh/afora-agent/actions/runs?head_sha=${sha}&per_page=30&page=1`,
+      "repos/AforaMosh/afora-agent/actions/runs?branch=codex%2Frelax%20hosted%20gates&event=pull_request&per_page=30&page=1",
     ]);
   });
 
@@ -1570,8 +1570,8 @@ describe("verify-pr-hosted-gates", () => {
     expect(workflowRunPageCount(0)).toBe(0);
     expect(workflowRunPageCount(101)).toBe(4);
     expect(workflowRunPageCount(10_000)).toBe(34);
-    expect(workflowRunQueryPaths("openclaw/openclaw", { sha, recentSha: "" }, 34)).toEqual([
-      `repos/openclaw/openclaw/actions/runs?head_sha=${sha}&per_page=30&page=34`,
+    expect(workflowRunQueryPaths("AforaMosh/afora-agent", { sha, recentSha: "" }, 34)).toEqual([
+      `repos/AforaMosh/afora-agent/actions/runs?head_sha=${sha}&per_page=30&page=34`,
     ]);
   });
 });

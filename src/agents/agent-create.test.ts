@@ -145,7 +145,7 @@ describe("createAgent", () => {
       status: "error",
       reason: "invalid-name",
     });
-    for (const name of ["OpenClaw", "crestodian"]) {
+    for (const name of ["Afora", "crestodian"]) {
       await expect(createAgent({ name })).resolves.toMatchObject({
         status: "error",
         reason: "reserved-id",
@@ -186,7 +186,7 @@ describe("createAgent", () => {
     await expect(createAgent({ name: "main" })).resolves.toMatchObject({
       status: "error",
       reason: "legacy-session-migration-required",
-      message: expect.stringContaining("openclaw doctor --fix"),
+      message: expect.stringContaining("afora doctor --fix"),
     });
     expect(mocks.transformConfigFileWithRetry).not.toHaveBeenCalled();
   });
@@ -228,7 +228,7 @@ describe("createAgent", () => {
     await expect(createAgent({ name: "main" })).resolves.toMatchObject({
       status: "error",
       reason: "shared-auth-store-owned-by-main",
-      message: expect.stringContaining("openclaw doctor --fix"),
+      message: expect.stringContaining("afora doctor --fix"),
     });
     expect(mocks.transformConfigFileWithRetry).not.toHaveBeenCalled();
   });

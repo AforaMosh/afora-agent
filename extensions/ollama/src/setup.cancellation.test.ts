@@ -1,5 +1,5 @@
-import type { WizardPrompter } from "openclaw/plugin-sdk/setup";
-import { requestUrl } from "openclaw/plugin-sdk/test-env";
+import type { WizardPrompter } from "afora-agent/plugin-sdk/setup";
+import { requestUrl } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { promptAndConfigureOllama } from "./setup.js";
 

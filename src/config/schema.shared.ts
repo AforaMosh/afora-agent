@@ -1,5 +1,5 @@
 // Provides shared JSON schema helpers for generated config metadata.
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord } from "@afora/normalization-core/record-coerce";
 
 export type ConfigJsonSchemaObject = Record<string, unknown> & {
   type?: string | string[];

@@ -1,4 +1,4 @@
-import { asOptionalRecord as readRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalRecord as readRecord } from "@afora/normalization-core/record-coerce";
 import { extractCanvasFromDetails, extractCanvasFromText } from "../chat/canvas-render.js";
 import { truncateChatHistoryText } from "./chat-display-projection.helpers.js";
 

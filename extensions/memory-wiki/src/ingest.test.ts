@@ -1,7 +1,7 @@
 // Memory Wiki tests cover ingest plugin behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { KeyedAsyncQueue } from "openclaw/plugin-sdk/keyed-async-queue";
+import { KeyedAsyncQueue } from "afora-agent/plugin-sdk/keyed-async-queue";
 import { describe, expect, it, vi } from "vitest";
 import { ingestMemoryWikiSource } from "./ingest.js";
 import { withMemoryWikiVaultMutation } from "./mutation-coordinator.js";
@@ -62,13 +62,13 @@ hello from source
 \`\`\`
 
 ## Notes
-<!-- openclaw:human:start -->
-<!-- openclaw:human:end -->
+<!-- afora:human:start -->
+<!-- afora:human:end -->
 
 ## Related
-<!-- openclaw:wiki:related:start -->
+<!-- afora:wiki:related:start -->
 - No related pages yet.
-<!-- openclaw:wiki:related:end -->
+<!-- afora:wiki:related:end -->
 `);
     await expect(fs.readFile(path.join(config.vault.path, "index.md"), "utf8")).resolves.toContain(
       "[meeting notes](sources/meeting-notes.md)",

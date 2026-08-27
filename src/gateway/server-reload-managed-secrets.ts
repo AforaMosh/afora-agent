@@ -4,7 +4,7 @@ import {
   getRuntimeConfigSnapshotMetadata,
   getRuntimeConfigSourceSnapshot,
 } from "../config/config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   clearSecretsRuntimeSnapshotState,
   getActiveSecretsRuntimeSnapshotState,
@@ -52,7 +52,7 @@ async function activateSecretsRuntimeSnapshotIfCurrent(
   options?: {
     canActivate?: () => boolean;
     onActivated?: () => void;
-    runtimeSourceConfig?: OpenClawConfig;
+    runtimeSourceConfig?: AforaConfig;
   },
 ): Promise<boolean> {
   const runtime = await import("../secrets/runtime.js");
@@ -74,7 +74,7 @@ async function restoreSecretsRuntimeSnapshotIfCurrent(
   snapshot: PreparedSecretsRuntimeSnapshot,
   expectedRevision: number,
   ownedSnapshot: PreparedSecretsRuntimeSnapshot,
-  options?: { onActivated?: () => void; runtimeSourceConfig?: OpenClawConfig },
+  options?: { onActivated?: () => void; runtimeSourceConfig?: AforaConfig },
 ): Promise<boolean> {
   const runtime = await import("../secrets/runtime.js");
   if (
@@ -89,13 +89,13 @@ async function restoreSecretsRuntimeSnapshotIfCurrent(
 }
 
 type PrepareRuntimeCandidate = (
-  runtimeConfig: OpenClawConfig,
-  sourceConfig: OpenClawConfig,
+  runtimeConfig: AforaConfig,
+  sourceConfig: AforaConfig,
   ownership?: GatewayConfigReloadTransactionOwnership,
-) => OpenClawConfig;
+) => AforaConfig;
 
 type TryPrepareRuntimeSecrets = (
-  config: OpenClawConfig,
+  config: AforaConfig,
   transactionOwnership: GatewayConfigReloadTransactionOwnership,
   activationParams: RuntimeSecretsPreflightParams,
 ) => Promise<CurrentRuntimeSecretsPreparation | null>;

@@ -1,5 +1,5 @@
 // Github Copilot API module exposes the plugin public contract.
-import type { ProviderDefaultThinkingPolicyContext } from "openclaw/plugin-sdk/core";
+import type { ProviderDefaultThinkingPolicyContext } from "afora-agent/plugin-sdk/core";
 import { resolveCopilotExtendedThinkingLevels } from "./model-metadata.js";
 
 export function resolveThinkingProfile(context: ProviderDefaultThinkingPolicyContext) {

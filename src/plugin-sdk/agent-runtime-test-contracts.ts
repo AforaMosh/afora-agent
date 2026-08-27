@@ -16,11 +16,11 @@ export {
   createOwnerBackedContractTool,
   createTerminalPresentationContractTool,
   installCodexToolResultMiddleware,
-  installOpenClawOwnedToolHooks,
+  installAforaOwnedToolHooks,
   mediaToolResult,
-  resetOpenClawOwnedToolHooks,
+  resetAforaOwnedToolHooks,
   textToolResult,
-} from "./test-helpers/agents/openclaw-owned-tool-runtime-contract.js";
+} from "./test-helpers/agents/afora-owned-tool-runtime-contract.js";
 export {
   createContractFallbackConfig,
   createContractRunResult,

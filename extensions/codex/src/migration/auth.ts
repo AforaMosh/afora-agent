@@ -1,5 +1,5 @@
 // Codex plugin module implements auth behavior.
-import { loadAuthProfileStoreWithoutExternalProfiles } from "openclaw/plugin-sdk/agent-runtime";
+import { loadAuthProfileStoreWithoutExternalProfiles } from "afora-agent/plugin-sdk/agent-runtime";
 import {
   createMigrationItem,
   markMigrationItemConflict,
@@ -7,8 +7,8 @@ import {
   markMigrationItemSkipped,
   mergeMigrationConfigValue,
   resolveMigrationConfigRuntime,
-} from "openclaw/plugin-sdk/migration";
-import type { MigrationItem, MigrationProviderContext } from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/migration";
+import type { MigrationItem, MigrationProviderContext } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   applyAuthProfileConfig,
   buildApiKeyCredential,
@@ -20,13 +20,13 @@ import {
   updateAuthProfileStoreWithLock,
   type AuthProfileStore,
   type OAuthCredential,
-  type OpenClawConfig,
+  type AforaConfig,
   type ProviderAuthResult,
-} from "openclaw/plugin-sdk/provider-auth";
+} from "afora-agent/plugin-sdk/provider-auth";
 import {
   isRecord,
   normalizeOptionalString as readString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { readJsonObject } from "./helpers.js";
 import type { CodexSource } from "./source.js";
 import type { resolveCodexMigrationTargets } from "./targets.js";
@@ -112,7 +112,7 @@ async function buildCodexOAuthCredential(
         models: Object.fromEntries(modelRefs.map((modelRef) => [modelRef, {}])),
       },
     },
-  } satisfies Partial<OpenClawConfig>;
+  } satisfies Partial<AforaConfig>;
   const result = buildOauthProviderAuthResult({
     providerId: OPENAI_PROVIDER_ID,
     defaultModel: OPENAI_CODEX_DEFAULT_MODEL,
@@ -210,15 +210,15 @@ function itemProfileTarget(
   return { profileId: matched ?? credential.profileId, matchedExisting: Boolean(matched) };
 }
 
-function replaceConfigDraft(draft: OpenClawConfig, next: OpenClawConfig): void {
-  for (const key of Object.keys(draft) as Array<keyof OpenClawConfig>) {
+function replaceConfigDraft(draft: AforaConfig, next: AforaConfig): void {
+  for (const key of Object.keys(draft) as Array<keyof AforaConfig>) {
     delete draft[key];
   }
   Object.assign(draft, next);
 }
 
 function existingAuthProfileConfigIsCompatible(
-  existing: NonNullable<NonNullable<OpenClawConfig["auth"]>["profiles"]>[string],
+  existing: NonNullable<NonNullable<AforaConfig["auth"]>["profiles"]>[string],
   profile: CodexAuthProfileConfig,
 ): boolean {
   if (existing.provider !== profile.provider || existing.mode !== profile.mode) {
@@ -231,7 +231,7 @@ function existingAuthProfileConfigIsCompatible(
 }
 
 function hasAuthProfileConfigConflict(
-  config: OpenClawConfig,
+  config: AforaConfig,
   profile: CodexAuthProfileConfig,
   overwrite: boolean,
 ): boolean {
@@ -249,14 +249,14 @@ function hasCurrentAuthProfileConfigConflict(
   let config = ctx.config;
   try {
     config =
-      (resolveMigrationConfigRuntime(ctx)?.current?.() as OpenClawConfig | undefined) ?? config;
+      (resolveMigrationConfigRuntime(ctx)?.current?.() as AforaConfig | undefined) ?? config;
   } catch {
     // Fall back to the planning snapshot; direct config writes recheck inside mutate.
   }
   return hasAuthProfileConfigConflict(config, profile, Boolean(ctx.overwrite));
 }
 
-function applyDefaultModelIfMissing(cfg: OpenClawConfig): OpenClawConfig {
+function applyDefaultModelIfMissing(cfg: AforaConfig): AforaConfig {
   const currentModel = cfg.agents?.defaults?.model;
   const primary =
     typeof currentModel === "string"
@@ -283,11 +283,11 @@ function applyDefaultModelIfMissing(cfg: OpenClawConfig): OpenClawConfig {
 }
 
 function applyOAuthConfigToConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   credential: Extract<CodexAuthCredential, { kind: "oauth" }>,
   profileId: string,
-): OpenClawConfig {
-  let next = mergeMigrationConfigValue(cfg, credential.result.configPatch) as OpenClawConfig;
+): AforaConfig {
+  let next = mergeMigrationConfigValue(cfg, credential.result.configPatch) as AforaConfig;
   const profile = credential.result.profiles[0];
   if (profile) {
     next = applyAuthProfileConfig(next, {
@@ -307,10 +307,10 @@ function applyOAuthConfigToConfig(
 }
 
 function applyApiKeyConfigToConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   credential: Extract<CodexAuthCredential, { kind: "api_key" }>,
   profileId: string,
-): OpenClawConfig {
+): AforaConfig {
   return applyAuthProfileConfig(cfg, {
     profileId,
     provider: credential.provider,
@@ -352,7 +352,7 @@ function authProfileConfigForCredential(
 async function applyCodexAuthProfileConfig(
   ctx: MigrationProviderContext,
   profile: CodexAuthProfileConfig,
-  applyConfig: (config: OpenClawConfig) => OpenClawConfig,
+  applyConfig: (config: AforaConfig) => AforaConfig,
 ): Promise<CodexAuthConfigApplyResult> {
   const configApi = resolveMigrationConfigRuntime(ctx);
   if (!configApi?.current || !configApi.mutateConfigFile) {
@@ -392,10 +392,10 @@ async function applyCodexAuthConfig(
 }
 
 function applyCredentialConfig(
-  config: OpenClawConfig,
+  config: AforaConfig,
   credential: CodexAuthCredential,
   profileId: string,
-): OpenClawConfig {
+): AforaConfig {
   return credential.kind === "oauth"
     ? applyOAuthConfigToConfig(config, credential, profileId)
     : applyApiKeyConfigToConfig(config, credential, profileId);

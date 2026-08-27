@@ -1,5 +1,5 @@
-import type { Context, Model } from "@openclaw/llm-core";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import type { Context, Model } from "@afora/llm-core";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { detectOpenAICompletionsCompat } from "./openai-completions-compat.js";
 import {
   GEMINI_THOUGHT_SIGNATURE_VALIDATOR_SKIP,

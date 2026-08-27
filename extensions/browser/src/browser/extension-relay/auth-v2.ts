@@ -12,9 +12,9 @@ import {
   type BrowserRelayProofFields,
 } from "./auth-v2-crypto.js";
 
-export const BROWSER_RELAY_EXTENSION_SUBPROTOCOL = "openclaw-extension-relay.v2";
-export const BROWSER_RELAY_AUTH_CHALLENGE_PATH = "/_openclaw/relay/auth/v2/challenge";
-export const BROWSER_RELAY_AUTH_COMPLETE_PATH = "/_openclaw/relay/auth/v2/complete";
+export const BROWSER_RELAY_EXTENSION_SUBPROTOCOL = "afora-extension-relay.v2";
+export const BROWSER_RELAY_AUTH_CHALLENGE_PATH = "/_afora/relay/auth/v2/challenge";
+export const BROWSER_RELAY_AUTH_COMPLETE_PATH = "/_afora/relay/auth/v2/complete";
 export const BROWSER_RELAY_CHALLENGE_TTL_MS = 10_000;
 
 const MAX_PENDING_AUTH_CONNECTIONS = 128;

@@ -6,7 +6,7 @@ import {
   emitAgentEvent as emitGlobalAgentEvent,
   runAgentEndSideEffects,
   type EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import { attemptTerminal, type EmbeddedRunAttemptResult } from "./attempt-terminal.js";
 import type { CodexAppServerRuntimeOptions } from "./config.js";
 import { codexWorkspaceDirCache } from "./workspace-dir-cache.js";

@@ -46,7 +46,7 @@ const saveResponseMediaMock = vi.hoisted(() =>
   }),
 );
 
-vi.mock("openclaw/plugin-sdk/media-runtime", async () => ({
+vi.mock("afora-agent/plugin-sdk/media-runtime", async () => ({
   saveResponseMedia: saveResponseMediaMock,
 }));
 

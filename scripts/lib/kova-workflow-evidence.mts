@@ -87,7 +87,7 @@ function validateLiveRecord(record: Record<string, unknown>, key: string, expect
     `live record ${displayPair(key)} provider evidence was not environment-dependent`,
   );
   check(
-    provider.source === "openclaw-timeline",
+    provider.source === "afora-timeline",
     `live record ${displayPair(key)} provider source was ${displayValue(provider.source)}`,
   );
   check(

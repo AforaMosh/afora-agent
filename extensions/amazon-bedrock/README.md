@@ -1,11 +1,11 @@
-# OpenClaw Amazon Bedrock Provider
+# Afora Amazon Bedrock Provider
 
-Official OpenClaw provider plugin for Amazon Bedrock. It adds Bedrock model discovery, text generation, embeddings, and guardrail-aware provider routing for agents that use AWS-hosted models.
+Official Afora provider plugin for Amazon Bedrock. It adds Bedrock model discovery, text generation, embeddings, and guardrail-aware provider routing for agents that use AWS-hosted models.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/amazon-bedrock-provider
+afora plugins install @afora/amazon-bedrock-provider
 ```
 
-Configure AWS credentials and region through your normal OpenClaw credential/profile setup, then select Bedrock models with the `amazon-bedrock/...` provider prefix.
+Configure AWS credentials and region through your normal Afora credential/profile setup, then select Bedrock models with the `amazon-bedrock/...` provider prefix.

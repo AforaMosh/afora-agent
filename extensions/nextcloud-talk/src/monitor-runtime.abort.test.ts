@@ -1,6 +1,6 @@
 // Nextcloud Talk monitor shutdown tests cover composite abort ownership.
-import { createPluginRuntimeMock } from "openclaw/plugin-sdk/channel-test-helpers";
-import type { PluginRuntime } from "openclaw/plugin-sdk/runtime-store";
+import { createPluginRuntimeMock } from "afora-agent/plugin-sdk/channel-test-helpers";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/runtime-store";
 import { describe, expect, it, vi } from "vitest";
 import { monitorNextcloudTalkProvider } from "./monitor-runtime.js";
 import { setNextcloudTalkRuntime } from "./runtime.js";

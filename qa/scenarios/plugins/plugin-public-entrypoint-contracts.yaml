@@ -12,7 +12,7 @@ scenario:
       - plugins.migration-shims
   objective: Verify plugin authors can discover and import the supported root, focused, and migration Plugin SDK entrypoints.
   successCriteria:
-    - The supported top-level contract resolves through `openclaw/plugin-sdk/core`.
+    - The supported top-level contract resolves through `afora/plugin-sdk/core`.
     - Focused Plugin SDK subpaths resolve through their published package exports.
     - Deprecated public subpaths remain importable while plugin authors migrate.
     - Every public SDK catalog entry has a published package export.

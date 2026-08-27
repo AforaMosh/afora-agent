@@ -1,4 +1,4 @@
-// Sync Codex Model Prompt Fixture script supports OpenClaw repository automation.
+// Sync Codex Model Prompt Fixture script supports Afora repository automation.
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";

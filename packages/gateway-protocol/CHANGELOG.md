@@ -1,6 +1,6 @@
-# Changelog — @openclaw/gateway-protocol
+# Changelog — @afora/gateway-protocol
 
-Wire-protocol and schema contracts for the OpenClaw Gateway (WebSocket JSON-RPC-style
+Wire-protocol and schema contracts for the Afora Gateway (WebSocket JSON-RPC-style
 frames, handshake, and method/event payload schemas). Protocol version is negotiated
 per connection via `minProtocol`/`maxProtocol`. This log covers the wire protocol
 version and the additive schema surface. Dates are authoring dates (2026).
@@ -75,7 +75,7 @@ the old tree.
 - Add browser realtime Talk and transports — origin of the talk/voice families.
 - Add Control UI PWA web push support (#44590).
 - Add plugins and artifacts schema modules.
-- Add OpenClaw SDK package and authenticated iOS background presence beacon (#73330).
+- Add Afora SDK package and authenticated iOS background presence beacon (#73330).
 
 ### 2026-05
 
@@ -129,8 +129,8 @@ Enhancement-only month (no new schema modules):
 - Add cron event triggers via polled condition-watcher scripts (#101195) and native
   mobile Automations parity (#106355).
 - Add system-agent conversational onboarding (#99935); rename `crestodian.*` methods to
-  `openclaw.chat` / `openclaw.setup.*` (2026-07-14, `a6a0716`); add typed hosted-wizard
-  steps and answers to `openclaw.chat` (#114631).
+  `afora.chat` / `afora.setup.*` (2026-07-14, `a6a0716`); add typed hosted-wizard
+  steps and answers to `afora.chat` (#114631).
 - Add typed structured questions / `ask_user` with live option cards (#109922, #110242)
   and the questions schema module.
 - Add ui-command / screen-tool Control UI layout control and capability-gated
@@ -141,7 +141,7 @@ Enhancement-only month (no new schema modules):
 ## Notes for external versioning
 
 - Post-v4 changes are additive except: the transient v5 rename (reverted, net-zero) and
-  the 2026-07-14 `crestodian.*` -> `openclaw.*` method rename. The renamed feature was
+  the 2026-07-14 `crestodian.*` -> `afora.*` method rename. The renamed feature was
   introduced only 9 days earlier (2026-07-05, #99935), never left the v4 window, and
   predates public publish, so no released method name changed under v4.
 - `schema/types.ts` was removed 2026-07-11 (#103679); it re-exported compile-time type

@@ -1,5 +1,5 @@
 // Account lookup helpers resolve route accounts from normalized account ids.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { isBlockedObjectKey } from "../infra/prototype-keys.js";
 import { normalizeOptionalAccountId } from "./account-id.js";
 

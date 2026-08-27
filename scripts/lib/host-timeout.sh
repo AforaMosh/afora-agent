@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-openclaw_host_timeout_bin() {
+afora_host_timeout_bin() {
   if command -v timeout >/dev/null 2>&1; then
     printf '%s\n' timeout
   elif command -v gtimeout >/dev/null 2>&1; then
@@ -10,11 +10,11 @@ openclaw_host_timeout_bin() {
   fi
 }
 
-openclaw_host_timeout_cmd() {
+afora_host_timeout_cmd() {
   local timeout_value="$1"
   shift
   local timeout_bin
-  if ! timeout_bin="$(openclaw_host_timeout_bin)"; then
+  if ! timeout_bin="$(afora_host_timeout_bin)"; then
     "$@"
     return
   fi

@@ -8,7 +8,7 @@ export const kyselyByDatabase = new WeakMap<DatabaseSync, unknown>();
 export const queryErrorHandlerByDatabase = new WeakMap<DatabaseSync, (error: unknown) => void>();
 // Cached statements retain their database. Per-instance lifecycle wrappers clear
 // both caches before the native database handle closes.
-export const statementCacheSymbol = Symbol("openclaw.kyselySyncStatementCache");
+export const statementCacheSymbol = Symbol("afora.kyselySyncStatementCache");
 
 /** Drop cached Kysely state for a DatabaseSync. */
 export function clearNodeSqliteKyselyCacheForDatabase(db: DatabaseSync): void {

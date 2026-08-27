@@ -1,4 +1,4 @@
-// Env Limits script supports OpenClaw repository automation.
+// Env Limits script supports Afora repository automation.
 import { die } from "./host-command.ts";
 
 const positiveIntPattern = /^[1-9]\d*$/u;

@@ -2,15 +2,15 @@
 import { fileURLToPath } from "node:url";
 import { getRuntimeConfig } from "./config/config.js";
 import { resolveGatewayPort } from "./config/paths.js";
-import type { OpenClawConfig } from "./config/types.js";
+import type { AforaConfig } from "./config/types.js";
 import { readActiveGatewayLockPort } from "./infra/gateway-lock.js";
 import { isMainModule } from "./infra/is-main.js";
 
 type DockerHealthcheckPortDeps = {
   env: NodeJS.ProcessEnv;
-  getRuntimeConfig: () => OpenClawConfig;
+  getRuntimeConfig: () => AforaConfig;
   readActiveGatewayLockPort: (opts: { env: NodeJS.ProcessEnv }) => Promise<number | undefined>;
-  resolveGatewayPort: (config: OpenClawConfig, env: NodeJS.ProcessEnv) => number;
+  resolveGatewayPort: (config: AforaConfig, env: NodeJS.ProcessEnv) => number;
 };
 
 type DockerHealthcheckDeps = Partial<DockerHealthcheckPortDeps> & {

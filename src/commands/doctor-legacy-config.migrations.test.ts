@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import {
   createPluginMetadataSnapshot,
   makeRegistry,
@@ -26,7 +26,7 @@ vi.mock("../plugins/setup-registry.js", () => ({
     autoEnableProbes: [],
     diagnostics: [],
   }),
-  runPluginSetupConfigMigrations: ({ config }: { config: OpenClawConfig }) => ({
+  runPluginSetupConfigMigrations: ({ config }: { config: AforaConfig }) => ({
     config,
     changes: [],
   }),
@@ -46,7 +46,7 @@ vi.mock("../plugins/manifest-registry.js", () => {
       contracts: { webSearchProviders: [webSearchProvider] },
       rootDir,
       source: `${rootDir}/index.ts`,
-      manifestPath: `${rootDir}/openclaw.plugin.json`,
+      manifestPath: `${rootDir}/afora.plugin.json`,
     };
   };
   return {
@@ -67,12 +67,12 @@ vi.mock("../plugins/manifest-registry.js", () => {
   };
 });
 
-function legacyConfig(value: unknown): OpenClawConfig {
-  return value as OpenClawConfig;
+function legacyConfig(value: unknown): AforaConfig {
+  return value as AforaConfig;
 }
 
 vi.mock("./doctor/shared/channel-legacy-config-migrate.js", () => ({
-  applyChannelDoctorCompatibilityMigrations: (cfg: OpenClawConfig) => ({
+  applyChannelDoctorCompatibilityMigrations: (cfg: AforaConfig) => ({
     next: cfg,
     changes: [],
   }),
@@ -80,11 +80,11 @@ vi.mock("./doctor/shared/channel-legacy-config-migrate.js", () => ({
 
 vi.mock("../secrets/target-registry.js", async () => {
   const { asNullableRecord: readRecord } =
-    await import("@openclaw/normalization-core/record-coerce");
+    await import("@afora/normalization-core/record-coerce");
   const entry = {
     id: "channels.discord.token",
     targetType: "channels.discord.token",
-    configFile: "openclaw.json",
+    configFile: "afora.json",
     pathPattern: "channels.discord.token",
     secretShape: "secret_input",
     expectedResolvedValue: "string",
@@ -94,7 +94,7 @@ vi.mock("../secrets/target-registry.js", async () => {
   };
 
   return {
-    discoverConfigSecretTargets: (cfg: OpenClawConfig) => {
+    discoverConfigSecretTargets: (cfg: AforaConfig) => {
       const targets: Array<{
         entry: typeof entry;
         path: string;
@@ -163,9 +163,9 @@ describe("normalizeCompatibilityConfigValues", () => {
   });
 
   beforeAll(() => {
-    previousOauthDir = process.env.OPENCLAW_OAUTH_DIR;
-    tempOauthDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-oauth-"));
-    process.env.OPENCLAW_OAUTH_DIR = tempOauthDir;
+    previousOauthDir = process.env.AFORA_OAUTH_DIR;
+    tempOauthDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-oauth-"));
+    process.env.AFORA_OAUTH_DIR = tempOauthDir;
   });
 
   beforeEach(() => {
@@ -176,9 +176,9 @@ describe("normalizeCompatibilityConfigValues", () => {
 
   afterAll(() => {
     if (previousOauthDir === undefined) {
-      delete process.env.OPENCLAW_OAUTH_DIR;
+      delete process.env.AFORA_OAUTH_DIR;
     } else {
-      process.env.OPENCLAW_OAUTH_DIR = previousOauthDir;
+      process.env.AFORA_OAUTH_DIR = previousOauthDir;
     }
     fs.rmSync(tempOauthDir, { recursive: true, force: true });
   });
@@ -186,12 +186,12 @@ describe("normalizeCompatibilityConfigValues", () => {
   it("drops reserved MCP server names without touching sibling servers", () => {
     const raw = JSON.parse(
       '{"mcp":{"servers":{"__proto__":{"command":"bad"},"docs":{"command":"docs"}}},"nodeHost":{"mcp":{"servers":{"__proto__":{"command":"bad-node"},"local":{"command":"local"}}}}}',
-    ) as OpenClawConfig;
+    ) as AforaConfig;
 
     const normalized = {
       mcp: { servers: { docs: { command: "docs" } } },
       nodeHost: { mcp: { servers: { local: { command: "local" } } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const migrated = normalizeCompatibilityConfigValues(normalized, { sourceRaw: raw });
 
     expect(migrated.config.mcp?.servers).toStrictEqual({ docs: { command: "docs" } });
@@ -224,13 +224,13 @@ describe("normalizeCompatibilityConfigValues", () => {
       },
       messages: {
         groupChat: {
-          mentionPatterns: ["@openclaw"],
+          mentionPatterns: ["@afora"],
         },
       },
     });
 
     expect(res.config.messages?.groupChat).toEqual({
-      mentionPatterns: ["@openclaw"],
+      mentionPatterns: ["@afora"],
     });
     expect(res.changes.some((change) => change.includes("messages.groupChat.visibleReplies"))).toBe(
       false,
@@ -371,7 +371,7 @@ describe("normalizeCompatibilityConfigValues", () => {
       normalizeCompatibilityConfigValues({
         messages: {
           groupChat: {
-            mentionPatterns: ["@openclaw"],
+            mentionPatterns: ["@afora"],
           },
         },
       }).changes,
@@ -561,7 +561,7 @@ describe("normalizeCompatibilityConfigValues", () => {
           plugin: {
             ...createChannelTestPluginBase({ id: "undeclared-demo", label: "Undeclared Demo" }),
             setup: {
-              applyAccountConfig: ({ cfg }: { cfg: OpenClawConfig }) => cfg,
+              applyAccountConfig: ({ cfg }: { cfg: AforaConfig }) => cfg,
             },
           },
         },
@@ -601,7 +601,7 @@ describe("normalizeCompatibilityConfigValues", () => {
           plugin: {
             ...createChannelTestPluginBase({ id: "late-demo", label: "Late Demo" }),
             setup: {
-              applyAccountConfig: ({ cfg }: { cfg: OpenClawConfig }) => cfg,
+              applyAccountConfig: ({ cfg }: { cfg: AforaConfig }) => cfg,
               singleAccountKeysToMove: ["customAuth"],
             },
           },
@@ -939,7 +939,7 @@ describe("normalizeCompatibilityConfigValues", () => {
             },
           ],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       {
         pluginProviderIds: new Set(["plugin-provider"]),
         persistedProviderIdsByAgentId: new Map(),
@@ -983,7 +983,7 @@ describe("normalizeCompatibilityConfigValues", () => {
             { id: "core", model: "anthropic/claude-sonnet-4-6" },
           ],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       {
         pluginProviderIds: new Set(["anthropic", "my-cli"]),
         persistedProviderIdsByAgentId: new Map([["worker", new Set(["agent-local"])]]),
@@ -1003,7 +1003,7 @@ describe("normalizeCompatibilityConfigValues", () => {
           model: "my-cli/model",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const baseSnapshot = createPluginMetadataSnapshot({
       config,
       manifestRegistry: makeRegistry([
@@ -1043,7 +1043,7 @@ describe("normalizeCompatibilityConfigValues", () => {
             model: { primary: "mistral/mistral-large-latest" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       {
         pluginProviderIds: new Set(),
         persistedProviderIdsByAgentId: new Map(),
@@ -1063,7 +1063,7 @@ describe("normalizeCompatibilityConfigValues", () => {
           defaults: { model: "agent-local/model" },
           list: [{ id: "main" }, { id: "worker" }],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       {
         pluginProviderIds: new Set(),
         persistedProviderIdsByAgentId: new Map([
@@ -1089,7 +1089,7 @@ describe("normalizeCompatibilityConfigValues", () => {
             worker: { model: "deleted/worker" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       {
         pluginProviderIds: new Set(),
         persistedProviderIdsByAgentId: new Map([
@@ -1115,7 +1115,7 @@ describe("normalizeCompatibilityConfigValues", () => {
             models: { "deleted/main": {} },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       { pluginProviderIds: new Set(), persistedProviderIdsByAgentId: new Map() },
     );
 
@@ -1428,7 +1428,7 @@ describe("normalizeCompatibilityConfigValues", () => {
     for (const migration of LEGACY_CONFIG_MIGRATIONS) {
       migration.apply(migrated, migrationChanges);
     }
-    const normalized = normalizeCompatibilityConfigValues(migrated as OpenClawConfig);
+    const normalized = normalizeCompatibilityConfigValues(migrated as AforaConfig);
     const repaired = maybeRepairCodexRoutes({ cfg: normalized.config, shouldRepair: true });
 
     expect(repaired.cfg.agents?.defaults?.model).toEqual({
@@ -1533,7 +1533,7 @@ describe("normalizeCompatibilityConfigValues", () => {
               agentRuntime: { id: "claude-cli" },
               model: "anthropic/claude-opus-4-7",
               models: {
-                "anthropic/claude-opus-4-7": { agentRuntime: { id: "openclaw" } },
+                "anthropic/claude-opus-4-7": { agentRuntime: { id: "afora" } },
               },
             },
           ],
@@ -1543,7 +1543,7 @@ describe("normalizeCompatibilityConfigValues", () => {
 
     expect(res.config.agents?.list?.[0]?.agentRuntime).toEqual({ id: "claude-cli" });
     expect(res.config.agents?.list?.[0]?.models).toEqual({
-      "anthropic/claude-opus-4-7": { agentRuntime: { id: "openclaw" } },
+      "anthropic/claude-opus-4-7": { agentRuntime: { id: "afora" } },
     });
     expect(res.changes).toStrictEqual([]);
   });
@@ -2000,7 +2000,7 @@ describe("normalizeCompatibilityConfigValues", () => {
           },
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(res.config.plugins?.entries?.firecrawl).toEqual({
       enabled: true,

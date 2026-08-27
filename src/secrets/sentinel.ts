@@ -21,7 +21,7 @@ export const SECRET_SENTINEL_MAX_LENGTH =
 export const SECRET_SENTINEL_PATTERN = new RegExp(SECRET_SENTINEL_SOURCE, "g");
 
 type SecretSentinelKeyState = { keys: Buffer };
-const SECRET_SENTINEL_KEY_STATE = Symbol.for("openclaw.secretSentinel.keys");
+const SECRET_SENTINEL_KEY_STATE = Symbol.for("afora.secretSentinel.keys");
 // Bundled runtime chunks can instantiate this module independently. A process-global
 // key keeps their sentinels interoperable without retaining a plaintext registry.
 const secretSentinelKeys = resolveGlobalSingleton<SecretSentinelKeyState>(
@@ -32,7 +32,7 @@ const secretSentinelCipherKey = secretSentinelKeys.subarray(0, 32);
 const secretSentinelNonceKey = secretSentinelKeys.subarray(32);
 
 function secretSentinelsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  const configured = env.OPENCLAW_SECRET_SENTINELS?.trim().toLowerCase();
+  const configured = env.AFORA_SECRET_SENTINELS?.trim().toLowerCase();
   return configured !== "off" && configured !== "0" && configured !== "false";
 }
 

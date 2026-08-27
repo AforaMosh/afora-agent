@@ -1,4 +1,4 @@
-import type { AssistantMessage } from "openclaw/plugin-sdk/llm";
+import type { AssistantMessage } from "afora-agent/plugin-sdk/llm";
 import { describe, expect, it } from "vitest";
 import { getReplyPayloadMetadata } from "../../../auto-reply/reply-payload.js";
 import { buildPayloads } from "./payloads.test-helpers.js";
@@ -10,7 +10,7 @@ describe("buildEmbeddedRunPayloads delivery recovery", () => {
         role: "assistant",
         stopReason: "stop",
         content: [{ type: "text", text: "Recovered answer" }],
-        openclawDelivery: {
+        aforaDelivery: {
           audioAsVoice: true,
           replyToCurrent: true,
           replyToId: "message-7",

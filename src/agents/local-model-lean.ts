@@ -4,7 +4,7 @@
  * preserving explicitly required delivery tools.
  */
 import { messageToolOwnsVisibleReply } from "../auto-reply/source-reply-delivery-mode.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
 import { resolveAgentConfig } from "./agent-scope-config.js";
 import { resolveSessionAgentIds } from "./agent-scope.js";
@@ -56,7 +56,7 @@ export function resolveLocalModelLeanPreserveToolNames(params?: {
 // Agent id may arrive explicitly, through the session key, or via config default.
 // Resolve once so default/agent experimental flags use the same scope.
 function resolveLocalModelLeanAgentId(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   sessionKey?: string;
 }): string | undefined {
@@ -79,7 +79,7 @@ function resolveLocalModelLeanAgentId(params: {
 
 /** Returns true when local-model lean mode is enabled for the selected agent. */
 export function isLocalModelLeanEnabled(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   sessionKey?: string;
 }): boolean {
@@ -95,7 +95,7 @@ export function isLocalModelLeanEnabled(params: {
 /** Filters tools for local-model lean mode while preserving required delivery tools. */
 export function filterLocalModelLeanTools(params: {
   tools: AnyAgentTool[];
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   sessionKey?: string;
   preserveToolNames?: Iterable<string>;
@@ -114,10 +114,10 @@ export function filterLocalModelLeanTools(params: {
 }
 
 export function applyLocalModelLeanToolSearchDefaults(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   sessionKey?: string;
-}): OpenClawConfig | undefined {
+}): AforaConfig | undefined {
   if (!params.config || !isLocalModelLeanEnabled(params)) {
     return params.config;
   }

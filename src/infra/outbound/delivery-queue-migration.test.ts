@@ -5,7 +5,7 @@ import { createMessageReceiptFromOutboundResults } from "../../channels/message/
 import type { ChannelOutboundAdapter } from "../../channels/plugins/types.public.js";
 import { createEmptyPluginRegistry } from "../../plugins/registry.js";
 import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "../../plugins/runtime.js";
-import { openOpenClawStateDatabase } from "../../state/openclaw-state-db.js";
+import { openAforaStateDatabase } from "../../state/afora-state-db.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../../test-utils/channel-plugins.js";
 import {
   getDeliveryQueueEntryStatus,
@@ -108,8 +108,8 @@ function legacyEntry(id: string, text: string) {
 }
 
 function readQueueEntryJson(queueName: string, id: string, stateDir: string): string | undefined {
-  const { db } = openOpenClawStateDatabase({
-    env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+  const { db } = openAforaStateDatabase({
+    env: { ...process.env, AFORA_STATE_DIR: stateDir },
   });
   return (
     db

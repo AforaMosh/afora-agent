@@ -20,7 +20,7 @@ async function writeFixture(
   await fs.writeFile(
     path.join(packageRoot, "package.json"),
     `${JSON.stringify({
-      name: "openclaw",
+      name: "afora",
       version: "1.2.3",
       type: "module",
       dependencies: { json5: "2.2.3" },
@@ -54,25 +54,25 @@ function bundleArtifact(overrides: Partial<WorkerBundleArtifact> = {}): WorkerBu
   return {
     install: "bundle",
     bundleHash: "a".repeat(64),
-    openclawVersion: "1.2.3",
+    aforaVersion: "1.2.3",
     protocolFeatures: [],
     tarballBytes: 1,
     tarballSha256: "b".repeat(64),
-    tarballPath: "/tmp/openclaw-worker.tgz",
+    tarballPath: "/tmp/afora-worker.tgz",
     ...overrides,
   };
 }
 
 describe("worker bundle producer", () => {
   it("stages the workspace rsync receiver at the path used by transfers", async () => {
-    await withTestDir({ prefix: "openclaw-worker-bundle-receiver-" }, async (root) => {
+    await withTestDir({ prefix: "afora-worker-bundle-receiver-" }, async (root) => {
       const packageRoot = path.join(root, "package");
       await writeFixture(packageRoot);
       const artifact = await createWorkerBundleProducer({
         packageRoot,
         cacheDir: path.join(root, "cache"),
       }).prepare();
-      const installPrefix = `.openclaw-worker/${artifact.bundleHash}/`;
+      const installPrefix = `.afora-worker/${artifact.bundleHash}/`;
       const receiverPath = workerWorkspaceRsyncReceiverEntryPath(artifact.bundleHash);
 
       expect(receiverPath.startsWith(installPrefix)).toBe(true);
@@ -83,7 +83,7 @@ describe("worker bundle producer", () => {
   });
 
   it("hashes and archives only the dedicated deploy artifacts", async () => {
-    await withTestDir({ prefix: "openclaw-worker-bundle-" }, async (root) => {
+    await withTestDir({ prefix: "afora-worker-bundle-" }, async (root) => {
       const packageA = path.join(root, "package-a");
       const packageB = path.join(root, "package-b");
       await writeFixture(packageA);
@@ -108,12 +108,12 @@ describe("worker bundle producer", () => {
       const first = await createWorkerBundleProducer({
         packageRoot: packageA,
         cacheDir: path.join(root, "cache-a"),
-        openclawVersion: "1.2.3",
+        aforaVersion: "1.2.3",
       }).prepare();
       const second = await createWorkerBundleProducer({
         packageRoot: packageB,
         cacheDir: path.join(root, "cache-b"),
-        openclawVersion: "1.2.3",
+        aforaVersion: "1.2.3",
       }).prepare();
       expect(first.bundleHash).toMatch(/^[a-f0-9]{64}$/u);
       expect(second.bundleHash).toBe(first.bundleHash);
@@ -136,7 +136,7 @@ describe("worker bundle producer", () => {
   });
 
   it("changes identity only when the deploy artifact changes", async () => {
-    await withTestDir({ prefix: "openclaw-worker-bundle-change-" }, async (root) => {
+    await withTestDir({ prefix: "afora-worker-bundle-change-" }, async (root) => {
       const packageRoot = path.join(root, "package");
       const cacheDir = path.join(root, "cache");
       await writeFixture(packageRoot, "export const value = 1;\n");
@@ -166,7 +166,7 @@ describe("worker bundle producer", () => {
   });
 
   it("prunes only unretained bundles for an exclusive cache owner", async () => {
-    await withTestDir({ prefix: "openclaw-worker-bundle-prune-" }, async (root) => {
+    await withTestDir({ prefix: "afora-worker-bundle-prune-" }, async (root) => {
       const packageRoot = path.join(root, "package");
       const cacheDir = path.join(root, "cache");
       await writeFixture(packageRoot, "export const value = 1;\n");
@@ -193,7 +193,7 @@ describe("worker bundle producer", () => {
   });
 
   it("reclaims recognized crash artifacts but preserves unknown cache entries", async () => {
-    await withTestDir({ prefix: "openclaw-worker-bundle-crash-cleanup-" }, async (root) => {
+    await withTestDir({ prefix: "afora-worker-bundle-crash-cleanup-" }, async (root) => {
       const packageRoot = path.join(root, "package");
       const cacheDir = path.join(root, "cache");
       await writeFixture(packageRoot);
@@ -223,7 +223,7 @@ describe("worker bundle producer", () => {
   });
 
   it("keeps custom caches non-destructive after failed preparation", async () => {
-    await withTestDir({ prefix: "openclaw-worker-bundle-shared-cache-" }, async (root) => {
+    await withTestDir({ prefix: "afora-worker-bundle-shared-cache-" }, async (root) => {
       const cacheDir = path.join(root, "cache");
       await fs.mkdir(cacheDir);
       const historical = path.join(cacheDir, `${"c".repeat(64)}.tgz`);
@@ -240,7 +240,7 @@ describe("worker bundle producer", () => {
   });
 
   it("archives staged bytes when the source changes during packaging", async () => {
-    await withTestDir({ prefix: "openclaw-worker-bundle-mutation-" }, async (root) => {
+    await withTestDir({ prefix: "afora-worker-bundle-mutation-" }, async (root) => {
       const baselineRoot = path.join(root, "baseline");
       const packageRoot = path.join(root, "package");
       const originalContents = "export const value = 'before';\n";
@@ -285,7 +285,7 @@ describe("worker bundle producer", () => {
   });
 
   it("owns one immutable build snapshot and retries failed preparation", async () => {
-    await withTestDir({ prefix: "openclaw-worker-bundle-cache-" }, async (root) => {
+    await withTestDir({ prefix: "afora-worker-bundle-cache-" }, async (root) => {
       const packageRoot = path.join(root, "package");
       const producer = createWorkerBundleProducer({
         packageRoot,
@@ -306,7 +306,7 @@ describe("worker bundle producer", () => {
   });
 
   it("replaces a corrupt content-addressed cache entry", async () => {
-    await withTestDir({ prefix: "openclaw-worker-bundle-corrupt-" }, async (root) => {
+    await withTestDir({ prefix: "afora-worker-bundle-corrupt-" }, async (root) => {
       const packageRoot = path.join(root, "package");
       const cacheDir = path.join(root, "cache");
       await writeFixture(packageRoot);
@@ -325,7 +325,7 @@ describe("worker bundle producer", () => {
 
   it.skipIf(process.platform === "win32")("rejects symlinked deploy artifacts", async () => {
     for (const artifactName of ["worker.mjs", "workspace-rsync-receiver.mjs"]) {
-      await withTestDir({ prefix: "openclaw-worker-bundle-symlink-" }, async (root) => {
+      await withTestDir({ prefix: "afora-worker-bundle-symlink-" }, async (root) => {
         const packageRoot = path.join(root, "package");
         await writeFixture(packageRoot);
         const artifactPath = path.join(packageRoot, "dist", "worker", artifactName);
@@ -345,7 +345,7 @@ describe("worker bundle producer", () => {
 
 describe("worker npm installation artifact", () => {
   it("uses an exact registry-proven gateway package", async () => {
-    await withTestDir({ prefix: "openclaw-worker-npm-release-" }, async (packageRoot) => {
+    await withTestDir({ prefix: "afora-worker-npm-release-" }, async (packageRoot) => {
       await writeFixture(packageRoot);
       const packageIntegrity = `sha512-${Buffer.alloc(64).toString("base64")}`;
       const verifyRelease = vi.fn(async () => packageIntegrity);
@@ -363,21 +363,21 @@ describe("worker npm installation artifact", () => {
       expect(artifact).toEqual({
         install: "npm",
         bundleHash: "a".repeat(64),
-        openclawVersion: "1.2.3",
+        aforaVersion: "1.2.3",
         packageIntegrity,
         protocolFeatures: ["admission"],
-        packageSpec: "openclaw@1.2.3",
+        packageSpec: "afora@1.2.3",
       });
     });
   });
 
   it("rejects dev and packages that fail release verification", async () => {
     const verifyRelease = vi.fn(async (): Promise<string> => {
-      throw new Error("OpenClaw 1.2.3 is not published; use the worker bundle install");
+      throw new Error("Afora 1.2.3 is not published; use the worker bundle install");
     });
     await expect(
       resolveWorkerNpmInstallationArtifact({
-        bundle: bundleArtifact({ openclawVersion: "dev" }),
+        bundle: bundleArtifact({ aforaVersion: "dev" }),
         isPackageInstall: async () => true,
         verifyRelease,
       }),
@@ -393,7 +393,7 @@ describe("worker npm installation artifact", () => {
   });
 
   it("rejects a source checkout even when its version is published", async () => {
-    await withTestDir({ prefix: "openclaw-worker-npm-source-" }, async (packageRoot) => {
+    await withTestDir({ prefix: "afora-worker-npm-source-" }, async (packageRoot) => {
       await writeFixture(packageRoot);
       await fs.mkdir(path.join(packageRoot, ".git"));
       const verifyRelease = vi.fn(async () => `sha512-${Buffer.alloc(64).toString("base64")}`);

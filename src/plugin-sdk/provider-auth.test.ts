@@ -10,7 +10,7 @@ import {
 } from "../agents/auth-profiles.js";
 import type { AuthProfileCredential, AuthProfileStore } from "../agents/auth-profiles/types.js";
 import { clearRuntimeConfigSnapshot, setRuntimeConfigSnapshot } from "../config/config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   COPILOT_INTEGRATION_ID,
   deriveCopilotApiBaseUrlFromToken,
@@ -89,7 +89,7 @@ async function runFallbackStoreCase(): Promise<FallbackStoreCaseResult> {
   );
 
   vi.doMock("../agents/agent-scope-config.js", () => ({
-    resolveDefaultAgentDir: () => "/tmp/openclaw-agent",
+    resolveDefaultAgentDir: () => "/tmp/afora-agent",
   }));
   vi.doMock("../agents/auth-profiles/oauth.js", () => ({
     resolveApiKeyForProfile,
@@ -127,7 +127,7 @@ describe("provider API-key readiness", () => {
     vi.unstubAllEnvs();
   });
 
-  function configuredProvider(apiKey: unknown, providerId = provider): OpenClawConfig {
+  function configuredProvider(apiKey: unknown, providerId = provider): AforaConfig {
     return {
       models: {
         providers: {
@@ -138,7 +138,7 @@ describe("provider API-key readiness", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
   }
 
   it.each([provider, ` ${provider.toUpperCase()} `])(
@@ -244,7 +244,7 @@ describe("provider API-key readiness", () => {
     "applies credential acceptance to the higher-priority auth profile %s",
     async (profileKey, envKey, expected) => {
       vi.stubEnv("GOOGLE_API_KEY", envKey);
-      const agentDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-media-key-policy-"));
+      const agentDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-media-key-policy-"));
 
       try {
         saveAuthProfileStore(
@@ -402,7 +402,7 @@ describe("provider API-key readiness", () => {
     async ({ credential, expected, profileTypes }) => {
       vi.stubEnv("MEDIA_PROFILE_MISSING_SECRET", "");
       const profileId = `${provider}:selected`;
-      const agentDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-media-profile-binding-"));
+      const agentDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-media-profile-binding-"));
       try {
         saveAuthProfileStore({ version: 1, profiles: { [profileId]: credential } }, agentDir, {
           filterExternalAuthProfiles: false,
@@ -425,7 +425,7 @@ describe("provider API-key readiness", () => {
   );
 
   it("preserves API-key-only profile filters while accepting actual config API keys", async () => {
-    const agentDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-media-auth-readiness-"));
+    const agentDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-media-auth-readiness-"));
     try {
       saveAuthProfileStore(
         {
@@ -493,7 +493,7 @@ describe("provider auth profile helpers", () => {
     expect(fallbackStoreCase.resolvedKey).toBe("fallback-key");
     expect(fallbackStoreCase.resolveApiKeyCalls).toContainEqual([
       expect.objectContaining({
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         profileId: "openai:default",
         store: expect.objectContaining({
           profiles: expect.objectContaining({
@@ -548,7 +548,7 @@ describe("provider auth profile helpers", () => {
     );
 
     vi.doMock("../agents/agent-scope-config.js", () => ({
-      resolveDefaultAgentDir: () => "/tmp/openclaw-agent",
+      resolveDefaultAgentDir: () => "/tmp/afora-agent",
     }));
     vi.doMock("../agents/auth-profiles/oauth.js", () => ({
       resolveApiKeyForProfile,
@@ -613,7 +613,7 @@ describe("provider auth profile helpers", () => {
     );
 
     vi.doMock("../agents/agent-scope-config.js", () => ({
-      resolveDefaultAgentDir: () => "/tmp/openclaw-agent",
+      resolveDefaultAgentDir: () => "/tmp/afora-agent",
     }));
     vi.doMock("../agents/auth-profiles/external-cli-discovery.js", () => ({
       externalCliDiscoveryForProviderAuth: vi.fn(() => externalCli),
@@ -650,10 +650,10 @@ describe("provider auth profile helpers", () => {
         includeExternalCliAuth: true,
       }),
     ).toBe(true);
-    expect(loadAuthProfileStoreForSecretsRuntime).toHaveBeenNthCalledWith(1, "/tmp/openclaw-agent");
+    expect(loadAuthProfileStoreForSecretsRuntime).toHaveBeenNthCalledWith(1, "/tmp/afora-agent");
     expect(loadAuthProfileStoreForSecretsRuntime).toHaveBeenNthCalledWith(
       2,
-      "/tmp/openclaw-agent",
+      "/tmp/afora-agent",
       { externalCli },
     );
   });
@@ -1147,7 +1147,7 @@ describe("provider auth profile helpers", () => {
   });
 
   it("retains valid Copilot exchanges across A to B to A profile rotation", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-copilot-cache-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-copilot-cache-"));
     try {
       const fetchImpl = vi.fn(async (_url: string, init?: RequestInit) => {
         const authorization = new Headers(init?.headers).get("authorization");
@@ -1166,7 +1166,7 @@ describe("provider auth profile helpers", () => {
           { status: 200, headers: { "content-type": "application/json" } },
         );
       });
-      const env = { OPENCLAW_STATE_DIR: stateDir } as NodeJS.ProcessEnv;
+      const env = { AFORA_STATE_DIR: stateDir } as NodeJS.ProcessEnv;
 
       const firstA = await resolveCopilotApiToken({
         githubToken: "test-auth-token",

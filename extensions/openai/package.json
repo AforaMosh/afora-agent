@@ -1,8 +1,8 @@
 {
-  "name": "@openclaw/openai-provider",
+  "name": "@afora/openai-provider",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw OpenAI provider plugins",
+  "description": "Afora OpenAI provider plugins",
   "type": "module",
   "dependencies": {
     "libopus-wasm": "0.2.0",
@@ -11,9 +11,9 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

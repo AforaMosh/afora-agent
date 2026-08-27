@@ -1,5 +1,5 @@
 // Voice Call plugin module implements twiml policy behavior.
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { WebhookContext } from "../../types.js";
 
 // Twilio webhook policy for deciding whether to stream, pause, queue, or serve stored TwiML.

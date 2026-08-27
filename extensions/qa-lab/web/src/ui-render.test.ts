@@ -106,7 +106,7 @@ describe("QA Lab UI evidence render", () => {
               direction: "outbound",
               id: "selected-message",
               reactions: [],
-              senderId: "openclaw",
+              senderId: "afora",
               text: "selected account message",
               timestamp: 1,
             },
@@ -116,7 +116,7 @@ describe("QA Lab UI evidence render", () => {
               direction: "outbound",
               id: "foreign-account-message",
               reactions: [],
-              senderId: "openclaw",
+              senderId: "afora",
               text: "foreign account message",
               timestamp: 2,
             },
@@ -126,7 +126,7 @@ describe("QA Lab UI evidence render", () => {
               direction: "outbound",
               id: "foreign-kind-message",
               reactions: [],
-              senderId: "openclaw",
+              senderId: "afora",
               text: "foreign kind message",
               timestamp: 3,
             },
@@ -136,7 +136,7 @@ describe("QA Lab UI evidence render", () => {
               accountId: "account-a",
               conversationId: "shared",
               createdAt: 0,
-              createdBy: "openclaw",
+              createdBy: "afora",
               id: "selected-thread",
               title: "Selected thread",
             },
@@ -144,7 +144,7 @@ describe("QA Lab UI evidence render", () => {
               accountId: "account-b",
               conversationId: "shared",
               createdAt: 0,
-              createdBy: "openclaw",
+              createdBy: "afora",
               id: "foreign-thread",
               title: "Foreign thread",
             },
@@ -232,7 +232,7 @@ describe("QA Lab UI evidence render", () => {
               direction: "outbound",
               id: "same-id-channel-message",
               reactions: [],
-              senderId: "openclaw",
+              senderId: "afora",
               text: "same-id channel message",
               timestamp: 3,
             },
@@ -267,7 +267,7 @@ describe("QA Lab UI evidence render", () => {
           direction: "outbound",
           id: "root-message",
           reactions: [],
-          senderId: "openclaw",
+          senderId: "afora",
           text: "root timeline message",
           timestamp: 1,
         },
@@ -277,7 +277,7 @@ describe("QA Lab UI evidence render", () => {
           direction: "outbound",
           id: "thread-message",
           reactions: [],
-          senderId: "openclaw",
+          senderId: "afora",
           text: "thread-only reply",
           threadId: "owned-thread",
           timestamp: 2,
@@ -288,7 +288,7 @@ describe("QA Lab UI evidence render", () => {
           direction: "outbound",
           id: "external-thread-message",
           reactions: [],
-          senderId: "openclaw",
+          senderId: "afora",
           text: "externally observed thread reply",
           threadId: "external-thread",
           timestamp: 3,
@@ -299,7 +299,7 @@ describe("QA Lab UI evidence render", () => {
           accountId: "default",
           conversationId: "qa-room",
           createdAt: 0,
-          createdBy: "openclaw",
+          createdBy: "afora",
           id: "owned-thread",
           title: "Owned thread",
         },
@@ -339,7 +339,7 @@ describe("QA Lab UI evidence render", () => {
   it("renders capture startup commands without personal home paths", () => {
     const html = renderQaLabUi(evidenceState({ activeTab: "capture" }));
 
-    expect(html).toContain("$HOME/.openclaw/debug-proxy/certs/root-ca.pem");
+    expect(html).toContain("$HOME/.afora/debug-proxy/certs/root-ca.pem");
     expect(html).not.toContain("/Users/");
   });
 

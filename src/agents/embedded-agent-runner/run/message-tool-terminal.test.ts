@@ -1,7 +1,7 @@
 // Message-tool delivery tests cover message_tool_only delivery, where a
 // successful source message send records source reply evidence without ending
 // the run before the model can observe the tool result.
-import type { Agent, AfterToolCallContext } from "openclaw/plugin-sdk/agent-core";
+import type { Agent, AfterToolCallContext } from "afora-agent/plugin-sdk/agent-core";
 import { describe, expect, it, vi } from "vitest";
 import { installMessageToolOnlyTerminalHook } from "./message-tool-terminal.js";
 

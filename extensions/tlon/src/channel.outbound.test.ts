@@ -1,4 +1,4 @@
-import type { ChannelOutboundAdapter } from "openclaw/plugin-sdk/channel-send-result";
+import type { ChannelOutboundAdapter } from "afora-agent/plugin-sdk/channel-send-result";
 // Tlon outbound chunking tests cover the declared text delivery limit.
 import { describe, expect, it } from "vitest";
 import { tlonPlugin } from "./channel.js";

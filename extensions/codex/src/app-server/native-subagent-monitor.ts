@@ -1,12 +1,12 @@
 /**
- * Mirrors Codex native subagent lifecycle and completion into OpenClaw task
+ * Mirrors Codex native subagent lifecycle and completion into Afora task
  * runtime records, with app-server history as the recovery source.
  */
 import {
   embeddedAgentLog,
   emitAgentEvent,
   formatErrorMessage,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   createAgentHarnessTaskRuntime,
   deliverAgentHarnessTaskCompletion,
@@ -14,13 +14,13 @@ import {
   type AgentHarnessTaskRecord,
   type AgentHarnessTaskRuntime,
   type AgentHarnessTaskRuntimeScope,
-} from "openclaw/plugin-sdk/agent-harness-task-runtime";
-import { KeyedAsyncQueue } from "openclaw/plugin-sdk/keyed-async-queue";
+} from "afora-agent/plugin-sdk/agent-harness-task-runtime";
+import { KeyedAsyncQueue } from "afora-agent/plugin-sdk/keyed-async-queue";
 import {
   asFiniteNumber,
   normalizeOptionalString,
   readStringField as readString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   claimCodexAppServerLiveThread,
   releaseCodexAppServerLiveThread,

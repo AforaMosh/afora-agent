@@ -1,6 +1,6 @@
 // SQLite trajectory runtime store owns session-scoped runtime event rows.
 
-import { parseDateStringTimestampMs } from "@openclaw/normalization-core/number-coercion";
+import { parseDateStringTimestampMs } from "@afora/normalization-core/number-coercion";
 import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/session-sqlite-target.js";
 import {
   executeSqliteQuerySync,
@@ -8,18 +8,18 @@ import {
   getNodeSqliteKysely,
 } from "../infra/kysely-sync.js";
 import { normalizeAgentId } from "../routing/session-key.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../state/openclaw-agent-db.generated.js";
+import type { DB as AforaAgentKyselyDatabase } from "../state/afora-agent-db.generated.js";
 import {
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-  type OpenClawAgentDatabaseOptions,
-} from "../state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabase,
+  type AforaAgentDatabaseOptions,
+} from "../state/afora-agent-db.js";
 import { TRAJECTORY_RUNTIME_CAPTURE_MAX_BYTES } from "./paths.js";
 import type { TrajectoryEvent } from "./types.js";
 
 type SqliteTrajectoryRuntimeDatabase = Pick<
-  OpenClawAgentKyselyDatabase,
+  AforaAgentKyselyDatabase,
   "trajectory_runtime_events"
 >;
 
@@ -61,7 +61,7 @@ type TrajectoryRuntimeRun = {
 
 // The runtime store owns this process-local cadence. Database handles are cached,
 // so a WeakMap rate-limits work without retaining closed agent databases.
-const lastGlobalSweepAtByDatabase = new WeakMap<OpenClawAgentDatabase, number>();
+const lastGlobalSweepAtByDatabase = new WeakMap<AforaAgentDatabase, number>();
 
 /** Appends runtime trajectory events to the per-agent SQLite session store. */
 export function appendSqliteTrajectoryRuntimeEvents(
@@ -81,8 +81,8 @@ export function appendSqliteTrajectoryRuntimeEvents(
     Math.floor(scope.maxGlobalRuntimeBytes ?? TRAJECTORY_RUNTIME_GLOBAL_MAX_BYTES),
   );
   const sweepAt = Date.now();
-  let sweptDatabase: OpenClawAgentDatabase | undefined;
-  runOpenClawAgentWriteTransaction((database) => {
+  let sweptDatabase: AforaAgentDatabase | undefined;
+  runAforaAgentWriteTransaction((database) => {
     const db = getTrajectoryKysely(database.db);
     let seq = readNextTrajectorySeq(database, scope.sessionId);
     for (const event of events) {
@@ -142,7 +142,7 @@ export function loadSqliteTrajectoryRuntimeEventRowsSync(
     tailEvents?: number;
   },
 ): SqliteTrajectoryRuntimeEventRow[] {
-  const database = openOpenClawAgentDatabase(toDatabaseOptions(scope));
+  const database = openAforaAgentDatabase(toDatabaseOptions(scope));
   const db = getTrajectoryKysely(database.db);
   const tailEvents =
     scope.tailEvents !== undefined && Number.isFinite(scope.tailEvents)
@@ -178,7 +178,7 @@ export function loadSqliteTrajectoryRuntimeEventRowsSync(
 }
 
 function sweepSqliteTrajectoryRuntimeRetention(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   currentSessionId: string,
   now: number,
   maxGlobalRuntimeBytes: number,
@@ -208,7 +208,7 @@ function sweepSqliteTrajectoryRuntimeRetention(
   deleteSqliteTrajectoryRuntimeRuns(database, [...deletedRuns]);
 }
 
-function readSqliteTrajectoryRuntimeRuns(database: OpenClawAgentDatabase): TrajectoryRuntimeRun[] {
+function readSqliteTrajectoryRuntimeRuns(database: AforaAgentDatabase): TrajectoryRuntimeRun[] {
   const db = getTrajectoryKysely(database.db);
   const rows = executeSqliteQuerySync(
     database.db,
@@ -232,7 +232,7 @@ function readSqliteTrajectoryRuntimeRuns(database: OpenClawAgentDatabase): Traje
 }
 
 function deleteSqliteTrajectoryRuntimeRuns(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   runs: readonly TrajectoryRuntimeRun[],
 ): void {
   const db = getTrajectoryKysely(database.db);
@@ -275,7 +275,7 @@ function toDatabaseOptions(scope: {
   agentId?: string;
   env?: NodeJS.ProcessEnv;
   storePath: string;
-}): OpenClawAgentDatabaseOptions {
+}): AforaAgentDatabaseOptions {
   const requestedAgentId = scope.agentId ? normalizeAgentId(scope.agentId) : undefined;
   const target = resolveSqliteTargetFromSessionStorePath(
     scope.storePath,
@@ -297,7 +297,7 @@ function toDatabaseOptions(scope: {
   };
 }
 
-function readNextTrajectorySeq(database: OpenClawAgentDatabase, sessionId: string): number {
+function readNextTrajectorySeq(database: AforaAgentDatabase, sessionId: string): number {
   const db = getTrajectoryKysely(database.db);
   const row = executeSqliteQueryTakeFirstSync(
     database.db,
@@ -313,7 +313,7 @@ function readNextTrajectorySeq(database: OpenClawAgentDatabase, sessionId: strin
 }
 
 function trimSqliteTrajectoryRuntimeWindow(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionId: string,
   maxRuntimeBytes: number,
 ): void {

@@ -218,7 +218,7 @@ describe("resolveAllowAlwaysPatterns", () => {
   }
 
   it("returns direct executable paths for non-shell segments", () => {
-    const exe = path.join("/tmp", "openclaw-tool");
+    const exe = path.join("/tmp", "afora-tool");
     const patterns = resolveAllowAlwaysPatterns({
       segments: [
         {
@@ -228,7 +228,7 @@ describe("resolveAllowAlwaysPatterns", () => {
             execution: makeMockExecutableResolution({
               rawExecutable: exe,
               resolvedPath: exe,
-              executableName: "openclaw-tool",
+              executableName: "afora-tool",
             }),
           }),
         },
@@ -647,15 +647,15 @@ describe("resolveAllowAlwaysPatterns", () => {
       return;
     }
     const dir = makeExecApprovalsTempDir();
-    const tool = makeExecutable(dir, "openclaw-ok");
+    const tool = makeExecutable(dir, "afora-ok");
     makeExecutable(dir, "yash");
     const env = { PATH: `${dir}${path.delimiter}${process.env.PATH ?? ""}` };
     const safeBins = resolveSafeBins(undefined);
 
     for (const command of [
-      `bash --login -c "openclaw-ok && openclaw-ok"`,
-      `bash -i -c "openclaw-ok && openclaw-ok"`,
-      `bash -lc "openclaw-ok && openclaw-ok"`,
+      `bash --login -c "afora-ok && afora-ok"`,
+      `bash -i -c "afora-ok && afora-ok"`,
+      `bash -lc "afora-ok && afora-ok"`,
       `bash --login -c '$0 "$1"' ${tool} marker`,
       `bash -i -c '$0 "$1"' ${tool} marker`,
       `bash -lc '$0 "$1"' ${tool} marker`,

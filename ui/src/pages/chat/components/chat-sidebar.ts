@@ -30,7 +30,7 @@ import { copyToClipboard } from "../../../lib/clipboard.ts";
 import { type EditorId, openEditor } from "../../../lib/editor-links.ts";
 import { formatUiError } from "../../../lib/format-error.ts";
 import { shouldHandleNavigationClick } from "../../../lib/navigation-click.ts";
-import { OpenClawLightDomElement } from "../../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../../lit/afora-element.ts";
 import { openInlineChatImage } from "./chat-image-lightbox.ts";
 import { openResolvedImage } from "./chat-message-image-open.ts";
 import "./session-diff-panel.ts";
@@ -307,7 +307,7 @@ function renderFileCopyButton(action: FileCopyAction, controls?: FileViewControl
           : "chat.detailPanel.copyContents",
   );
   return html`
-    <openclaw-tooltip .content=${label}>
+    <afora-tooltip .content=${label}>
       <button
         class="btn btn--sm sidebar-file-view__action ${feedback === "copied" ? "copied" : ""}"
         type="button"
@@ -316,7 +316,7 @@ function renderFileCopyButton(action: FileCopyAction, controls?: FileViewControl
       >
         ${feedback === "copied" ? icons.check : icons.copy}
       </button>
-    </openclaw-tooltip>
+    </afora-tooltip>
   `;
 }
 
@@ -359,7 +359,7 @@ function renderFileSidebarContent(
                   : html`
                       ${content.edit
                         ? html`
-                            <openclaw-tooltip .content=${t("chat.detailPanel.editFile")}>
+                            <afora-tooltip .content=${t("chat.detailPanel.editFile")}>
                               <button
                                 class="btn btn--sm sidebar-file-view__action"
                                 type="button"
@@ -369,10 +369,10 @@ function renderFileSidebarContent(
                               >
                                 ${icons.edit}
                               </button>
-                            </openclaw-tooltip>
+                            </afora-tooltip>
                           `
                         : nothing}
-                      <openclaw-tooltip .content=${t("chat.detailPanel.searchInFile")}>
+                      <afora-tooltip .content=${t("chat.detailPanel.searchInFile")}>
                         <button
                           class="btn btn--sm sidebar-file-view__action"
                           type="button"
@@ -382,10 +382,10 @@ function renderFileSidebarContent(
                         >
                           ${icons.search}
                         </button>
-                      </openclaw-tooltip>
+                      </afora-tooltip>
                       ${controls.onReveal
                         ? html`
-                            <openclaw-tooltip .content=${t("chat.detailPanel.showInFiles")}>
+                            <afora-tooltip .content=${t("chat.detailPanel.showInFiles")}>
                               <button
                                 class="btn btn--sm sidebar-file-view__action"
                                 type="button"
@@ -394,7 +394,7 @@ function renderFileSidebarContent(
                               >
                                 ${icons.folder}
                               </button>
-                            </openclaw-tooltip>
+                            </afora-tooltip>
                           `
                         : nothing}
                       ${renderChatSidebarEditorMenu({
@@ -563,7 +563,7 @@ function renderMarkdownSidebar(props: MarkdownSidebarProps) {
         : html`<div class="sidebar-header">
             <div class="sidebar-title">${title}</div>
             <div class="sidebar-header__actions">
-              <openclaw-tooltip .content=${t("chat.detailPanel.close")}>
+              <afora-tooltip .content=${t("chat.detailPanel.close")}>
                 <button
                   @click=${props.onClose}
                   class="btn"
@@ -572,7 +572,7 @@ function renderMarkdownSidebar(props: MarkdownSidebarProps) {
                 >
                   ${icons.x}
                 </button>
-              </openclaw-tooltip>
+              </afora-tooltip>
             </div>
           </div> `}
       <div class="sidebar-content">
@@ -596,12 +596,12 @@ function renderMarkdownSidebar(props: MarkdownSidebarProps) {
             ? content.kind === "file"
               ? renderFileSidebarContent(content, props.onViewRawText, props.fileView)
               : content.kind === "session-diff"
-                ? html`<openclaw-session-diff
+                ? html`<afora-session-diff
                     .loader=${content.load}
                     .loadFileText=${content.loadFileText ?? null}
                     .openFile=${content.openFile ?? null}
                     .revealFile=${content.revealFile ?? null}
-                  ></openclaw-session-diff>`
+                  ></afora-session-diff>`
                 : content.kind === "canvas"
                   ? html`
                       <div class="chat-tool-card__preview" data-kind="canvas">
@@ -698,7 +698,7 @@ function renderMarkdownSidebar(props: MarkdownSidebarProps) {
   `;
 }
 
-class ChatDetailPanel extends OpenClawLightDomElement {
+class ChatDetailPanel extends AforaLightDomElement {
   @property({ attribute: false }) content: ChatDetailContent | null = null;
   @property({ attribute: false }) loadFullMessage?: SidebarFullMessageLoader | null = null;
   @property() basePath = "";
@@ -1408,7 +1408,7 @@ class ChatDetailPanel extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-chat-detail-panel")) {
-  customElements.define("openclaw-chat-detail-panel", ChatDetailPanel);
+if (!customElements.get("afora-chat-detail-panel")) {
+  customElements.define("afora-chat-detail-panel", ChatDetailPanel);
 }
 /* oxlint-disable max-lines -- TODO: split this grandfathered oversized file. */

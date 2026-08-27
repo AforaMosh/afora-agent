@@ -1,11 +1,11 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { AcpTurnAttachment } from "../../../acp/control-plane/manager.types.js";
 import {
   formatConversationTarget,
   routeFromBindingRecord,
   routeToDeliveryFields,
 } from "../../../channels/route-projection.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import type { SessionBindingRecord } from "../../../infra/outbound/session-binding-service.js";
 import {
   resolveConversationRefForThreadBinding,
@@ -47,7 +47,7 @@ export type AcpSpawnBootstrapDeliveryPlan = {
 };
 
 export function resolveAcpSpawnBootstrapDeliveryPlan(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   spawnMode: "run" | "session";
   requestThreadBinding: boolean;
   effectiveStreamToParent: boolean;

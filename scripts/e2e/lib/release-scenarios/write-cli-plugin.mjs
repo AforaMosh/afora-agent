@@ -15,9 +15,9 @@ fs.writeFileSync(
   path.join(dir, "package.json"),
   `${JSON.stringify(
     {
-      name: `@openclaw/${id}`,
+      name: `@afora/${id}`,
       version,
-      openclaw: { extensions: ["./index.js"] },
+      afora: { extensions: ["./index.js"] },
     },
     null,
     2,
@@ -28,6 +28,6 @@ fs.writeFileSync(
   `module.exports = { id: ${JSON.stringify(id)}, name: ${JSON.stringify(name)}, register(api) { api.registerGatewayMethod(${JSON.stringify(method)}, async () => ({ ok: true, version: ${JSON.stringify(version)} })); api.registerCli(({ program }) => { const root = program.command(${JSON.stringify(cliRoot)}).description(${JSON.stringify(`${name} fixture command`)}); root.command("ping").description("Print fixture ping output").action(() => { console.log(${JSON.stringify(cliOutput)}); }); }, { descriptors: [{ name: ${JSON.stringify(cliRoot)}, description: ${JSON.stringify(`${name} fixture command`)}, hasSubcommands: true }] }); }, };\n`,
 );
 fs.writeFileSync(
-  path.join(dir, "openclaw.plugin.json"),
+  path.join(dir, "afora.plugin.json"),
   `${JSON.stringify({ id, configSchema: { type: "object", properties: {} } }, null, 2)}\n`,
 );

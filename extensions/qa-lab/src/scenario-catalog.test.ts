@@ -546,18 +546,18 @@ describe("qa scenario catalog", () => {
     expect(readQaScenarioExecutionConfig(webSearch.id)).toMatchObject({
       toolName: "web_search",
       toolCoverage: {
-        bucket: "openclaw-dynamic-integration",
-        expectedLayer: "openclaw-dynamic",
-        capabilityLayer: "openclaw-dynamic-direct",
+        bucket: "afora-dynamic-integration",
+        expectedLayer: "afora-dynamic",
+        capabilityLayer: "afora-dynamic-direct",
         required: true,
       },
     });
     expect(readQaScenarioExecutionConfig(sessionsSpawn.id)).toMatchObject({
       toolName: "sessions_spawn",
       toolCoverage: {
-        bucket: "openclaw-dynamic-integration",
-        expectedLayer: "openclaw-dynamic",
-        capabilityLayer: "openclaw-dynamic-direct",
+        bucket: "afora-dynamic-integration",
+        expectedLayer: "afora-dynamic",
+        capabilityLayer: "afora-dynamic-direct",
         required: true,
       },
     });
@@ -586,9 +586,9 @@ describe("qa scenario catalog", () => {
       requiredProviderMode: "mock-openai",
       toolName: "image_generate",
       toolCoverage: {
-        bucket: "openclaw-dynamic-integration",
-        expectedLayer: "openclaw-dynamic",
-        capabilityLayer: "openclaw-dynamic-direct",
+        bucket: "afora-dynamic-integration",
+        expectedLayer: "afora-dynamic",
+        capabilityLayer: "afora-dynamic-direct",
         required: false,
       },
     });
@@ -670,7 +670,7 @@ describe("qa scenario catalog", () => {
 
   it("keeps the update.run producer blocked without destructive opt-in", async () => {
     const outputDir = await fs.promises.mkdtemp(
-      path.join(os.tmpdir(), "openclaw-update-run-blocked-"),
+      path.join(os.tmpdir(), "afora-update-run-blocked-"),
     );
     try {
       const result = await runQaTestFileScenarios({
@@ -680,8 +680,8 @@ describe("qa scenario catalog", () => {
         primaryModel: "mock-openai/gpt-5.6-luna",
         scenarios: [readQaScenarioById("update-run-package-self-upgrade")],
         env: {
-          OPENCLAW_QA_ALLOW_UPDATE_RUN_SELF: "0",
-          OPENCLAW_QA_REF: "blocked-evidence-test",
+          AFORA_QA_ALLOW_UPDATE_RUN_SELF: "0",
+          AFORA_QA_REF: "blocked-evidence-test",
         },
       });
 
@@ -695,7 +695,7 @@ describe("qa scenario catalog", () => {
                 status: "blocked",
                 failure: {
                   reason:
-                    "blocked destructive package self-upgrade; set OPENCLAW_QA_ALLOW_UPDATE_RUN_SELF=1 to run",
+                    "blocked destructive package self-upgrade; set AFORA_QA_ALLOW_UPDATE_RUN_SELF=1 to run",
                 },
               },
             },

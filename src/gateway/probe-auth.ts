@@ -1,7 +1,7 @@
 // Gateway probe auth resolver.
 // Adapts gateway credential precedence for local/remote reachability checks.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveGatewayProbeSurfaceAuth } from "./auth-surface-resolution.js";
 import { resolveGatewayCredentialsWithSecretInputs } from "./credentials-secret-inputs.js";
 import {
@@ -16,7 +16,7 @@ export type { GatewayProbeTargetResolution } from "./probe-target.js";
 // checks. Local probes must not accidentally consume remote gateway credentials
 // from config when they are only checking the embedded/local gateway.
 function buildGatewayProbeCredentialPolicy(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   mode: "local" | "remote";
   env?: NodeJS.ProcessEnv;
   explicitAuth?: ExplicitGatewayAuth;
@@ -38,9 +38,9 @@ function buildGatewayProbeCredentialPolicy(params: {
 }
 
 export function resolveGatewayProbeCredentialConfig(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   mode: "local" | "remote";
-}): OpenClawConfig {
+}): AforaConfig {
   const gateway = params.cfg.gateway;
   const credentials = params.mode === "local" ? gateway?.remote : gateway?.auth;
   if (!credentials || (credentials.token === undefined && credentials.password === undefined)) {
@@ -89,7 +89,7 @@ function resolveGatewayProbeWarning(error: unknown): string | undefined {
 
 /** Resolves synchronous probe auth, throwing when configured secrets cannot be read. */
 export function resolveGatewayProbeAuth(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   mode: "local" | "remote";
   env?: NodeJS.ProcessEnv;
   urlOverride?: string;
@@ -100,7 +100,7 @@ export function resolveGatewayProbeAuth(params: {
 }
 
 async function resolveGatewayProbeAuthResolutionWithSecretInputs(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   mode: "local" | "remote";
   env?: NodeJS.ProcessEnv;
   explicitAuth?: ExplicitGatewayAuth;
@@ -154,7 +154,7 @@ async function resolveGatewayProbeAuthResolutionWithSecretInputs(params: {
 
 /** Resolves probe auth with async SecretRef support. */
 export async function resolveGatewayProbeAuthWithSecretInputs(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   mode: "local" | "remote";
   env?: NodeJS.ProcessEnv;
   explicitAuth?: ExplicitGatewayAuth;
@@ -166,7 +166,7 @@ export async function resolveGatewayProbeAuthWithSecretInputs(params: {
 
 /** Resolves probe auth without throwing for unavailable SecretRefs, returning a warning. */
 export async function resolveGatewayProbeAuthSafeWithSecretInputs(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   mode: "local" | "remote";
   env?: NodeJS.ProcessEnv;
   explicitAuth?: ExplicitGatewayAuth;
@@ -195,7 +195,7 @@ export async function resolveGatewayProbeAuthSafeWithSecretInputs(params: {
 
 /** Synchronous safe probe auth wrapper for config-only credential paths. */
 export function resolveGatewayProbeAuthSafe(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   mode: "local" | "remote";
   env?: NodeJS.ProcessEnv;
   explicitAuth?: ExplicitGatewayAuth;

@@ -1,6 +1,6 @@
 /** Tests media-generation provider registry aliases and plugin capability integration. */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import type {
   ImageGenerationProviderPlugin,
   VideoGenerationProviderPlugin,
@@ -80,7 +80,7 @@ beforeEach(() => {
 
 describe("image-generation provider registry", () => {
   it("delegates provider resolution to the capability provider boundary", async () => {
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
     const { listImageGenerationProviders } = await loadProviderRegistry();
 
     expect(listImageGenerationProviders(cfg)).toStrictEqual([]);

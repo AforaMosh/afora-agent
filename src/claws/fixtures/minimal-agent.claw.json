@@ -9,6 +9,6 @@
     }
   },
   "metadata": {
-    "openclaw.config": "profiles/minimal-agent.openclaw.yml"
+    "afora.config": "profiles/minimal-agent.afora.yml"
   }
 }

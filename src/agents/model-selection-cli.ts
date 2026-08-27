@@ -1,7 +1,7 @@
 /**
  * Detects providers whose model selections are backed by CLI runtimes.
  */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveRuntimeCliBackends } from "../plugins/cli-backends.runtime.js";
 import {
   resolvePluginSetupCliBackendDescriptor,
@@ -12,7 +12,7 @@ import { normalizeProviderId } from "./model-ref-shared.js";
 export type CliProviderClassifier = (provider: string) => boolean;
 
 /** Prepare one CLI-provider lookup for request paths that classify multiple models. */
-export function prepareCliProviderClassifier(cfg?: OpenClawConfig): CliProviderClassifier {
+export function prepareCliProviderClassifier(cfg?: AforaConfig): CliProviderClassifier {
   const providers = new Set(
     [
       ...resolveRuntimeCliBackends().map((backend) => backend.id),
@@ -23,7 +23,7 @@ export function prepareCliProviderClassifier(cfg?: OpenClawConfig): CliProviderC
 }
 
 /** Return true when a provider id resolves to a configured or plugin CLI backend. */
-export function isCliProvider(provider: string, cfg?: OpenClawConfig): boolean {
+export function isCliProvider(provider: string, cfg?: AforaConfig): boolean {
   const normalized = normalizeProviderId(provider);
   const cliBackends = resolveRuntimeCliBackends();
   if (cliBackends.some((backend) => normalizeProviderId(backend.id) === normalized)) {

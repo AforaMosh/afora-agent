@@ -1,13 +1,13 @@
 import {
   defineBundledChannelEntry,
-  type OpenClawPluginApi,
-} from "openclaw/plugin-sdk/channel-entry-contract";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+  type AforaPluginApi,
+} from "afora-agent/plugin-sdk/channel-entry-contract";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 import { registerReefCliMetadata } from "./cli-metadata.js";
 
 const loadReefCommandsRuntime = createLazyRuntimeModule(() => import("./commands.runtime.js"));
 
-function registerReefFullRuntime(api: OpenClawPluginApi): void {
+function registerReefFullRuntime(api: AforaPluginApi): void {
   api.registerCommand({
     name: "reef",
     description: "Manage Reef friends and owner review approvals",

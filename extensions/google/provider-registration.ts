@@ -1,10 +1,10 @@
 // Google provider module implements model/runtime integration.
 import type {
-  OpenClawPluginApi,
+  AforaPluginApi,
   ProviderReasoningOutputModeContext,
-} from "openclaw/plugin-sdk/plugin-entry";
-import { createProviderApiKeyAuthMethod } from "openclaw/plugin-sdk/provider-auth-api-key";
-import type { ProviderPlugin } from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/plugin-entry";
+import { createProviderApiKeyAuthMethod } from "afora-agent/plugin-sdk/provider-auth-api-key";
+import type { ProviderPlugin } from "afora-agent/plugin-sdk/provider-model-shared";
 import { normalizeGoogleModelId } from "./model-id.js";
 import { GOOGLE_GEMINI_DEFAULT_MODEL, applyGoogleGeminiModelDefault } from "./onboard.js";
 import {
@@ -146,6 +146,6 @@ export function buildGoogleProvider(): ProviderPlugin {
   };
 }
 
-export function registerGoogleProvider(api: OpenClawPluginApi) {
+export function registerGoogleProvider(api: AforaPluginApi) {
   api.registerProvider(buildGoogleProvider());
 }

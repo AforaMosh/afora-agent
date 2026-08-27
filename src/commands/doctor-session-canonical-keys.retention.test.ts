@@ -9,28 +9,28 @@ import {
   replaceSessionEntrySync,
 } from "../config/sessions/session-accessor.js";
 import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/session-sqlite-target.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../state/openclaw-agent-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../state/afora-agent-db.js";
 import { withStateDirEnv } from "../test-helpers/state-dir-env.js";
 import { repairCanonicalSessionKeys } from "./doctor-session-canonical-keys.js";
 import { insertLegacySession } from "./doctor-session-canonical-keys.test-support.js";
 
-afterEach(() => closeOpenClawAgentDatabasesForTest());
+afterEach(() => closeAforaAgentDatabasesForTest());
 
 describe("doctor canonical session-key retention repair", () => {
   it("copies only a cross-store winner and archives its stale same-store duplicate", async () => {
-    await withStateDirEnv("openclaw-doctor-canonical-cross-store-", async ({ stateDir }) => {
-      const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    await withStateDirEnv("afora-doctor-canonical-cross-store-", async ({ stateDir }) => {
+      const env = { ...process.env, AFORA_STATE_DIR: stateDir };
       const storeTemplate = path.join(stateDir, "agents", "{agentId}", "sessions.json");
       const mainStore = resolveSessionStorePathCore(storeTemplate, { agentId: "main", env });
       const opsStore = resolveSessionStorePathCore(storeTemplate, { agentId: "ops", env });
       const cfg = {
         agents: { list: [{ id: "main", default: true }, { id: "ops" }] },
         session: { mainKey: "shared", store: storeTemplate },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       replaceSessionEntrySync(
         {
@@ -45,7 +45,7 @@ describe("doctor canonical session-key retention repair", () => {
           updatedAt: 5,
         },
       );
-      const destinationDatabase = openOpenClawAgentDatabase({
+      const destinationDatabase = openAforaAgentDatabase({
         agentId: "main",
         env,
         path: resolveSqliteTargetFromSessionStorePath(mainStore, { agentId: "main", env }).path,
@@ -80,7 +80,7 @@ describe("doctor canonical session-key retention repair", () => {
         sessionKey: "agent:main:main ",
         storePath: opsStore,
       });
-      const sourceDatabase = openOpenClawAgentDatabase({
+      const sourceDatabase = openAforaAgentDatabase({
         agentId: "ops",
         env,
         path: resolveSqliteTargetFromSessionStorePath(opsStore, { agentId: "ops", env }).path,
@@ -210,16 +210,16 @@ describe("doctor canonical session-key retention repair", () => {
 
   it("copies a lone cross-store winner's normalized delivery key", async () => {
     await withStateDirEnv(
-      "openclaw-doctor-canonical-cross-store-delivery-",
+      "afora-doctor-canonical-cross-store-delivery-",
       async ({ stateDir }) => {
-        const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+        const env = { ...process.env, AFORA_STATE_DIR: stateDir };
         const storeTemplate = path.join(stateDir, "agents", "{agentId}", "sessions.json");
         const mainStore = resolveSessionStorePathCore(storeTemplate, { agentId: "main", env });
         const opsStore = resolveSessionStorePathCore(storeTemplate, { agentId: "ops", env });
         const cfg = {
           agents: { list: [{ id: "main", default: true }, { id: "ops" }] },
           session: { mainKey: "work", store: storeTemplate },
-        } as OpenClawConfig;
+        } as AforaConfig;
         insertLegacySession({
           agentId: "ops",
           entry: { sessionId: "winner", updatedAt: 20 },
@@ -227,7 +227,7 @@ describe("doctor canonical session-key retention repair", () => {
           sessionKey: "agent:main:main ",
           storePath: opsStore,
         });
-        const sourceDatabase = openOpenClawAgentDatabase({
+        const sourceDatabase = openAforaAgentDatabase({
           agentId: "ops",
           env,
           path: resolveSqliteTargetFromSessionStorePath(opsStore, { agentId: "ops", env }).path,
@@ -257,7 +257,7 @@ describe("doctor canonical session-key retention repair", () => {
           foundGroups: 1,
           repairedGroups: 1,
         });
-        const destinationDatabase = openOpenClawAgentDatabase({
+        const destinationDatabase = openAforaAgentDatabase({
           agentId: "main",
           env,
           path: resolveSqliteTargetFromSessionStorePath(mainStore, { agentId: "main", env }).path,

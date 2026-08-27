@@ -1,5 +1,5 @@
 ---
-summary: "Publish redacted local coding sessions into a shared read-only OpenClaw catalog"
+summary: "Publish redacted local coding sessions into a shared read-only Afora catalog"
 read_when:
   - Sharing a Claude Code or Codex session with trusted Gateway operators
   - Configuring an authenticated session-ingest endpoint without connecting a node
@@ -7,9 +7,9 @@ read_when:
 title: "Beam plugin"
 ---
 
-The bundled `beam` plugin receives a sanitized coding-session snapshot over authenticated HTTP and presents it in the Control UI's existing external-session catalog. The source computer sends text out; OpenClaw never connects back to that computer and receives no filesystem, terminal, tool, or node capability.
+The bundled `beam` plugin receives a sanitized coding-session snapshot over authenticated HTTP and presents it in the Control UI's existing external-session catalog. The source computer sends text out; Afora never connects back to that computer and receives no filesystem, terminal, tool, or node capability.
 
-Beam ships with OpenClaw but is disabled by default. When enabled, it registers:
+Beam ships with Afora but is disabled by default. When enabled, it registers:
 
 - `POST /api/v1/beam/sessions`
 - the read-only **Beam** session catalog in the Control UI sidebar
@@ -17,8 +17,8 @@ Beam ships with OpenClaw but is disabled by default. When enabled, it registers:
 ## Enable
 
 ```bash
-openclaw plugins enable beam
-openclaw gateway restart
+afora plugins enable beam
+afora gateway restart
 ```
 
 Equivalent config:
@@ -36,8 +36,8 @@ Equivalent config:
 Disable the plugin when the ingest route is not needed:
 
 ```bash
-openclaw plugins disable beam
-openclaw gateway restart
+afora plugins disable beam
+afora gateway restart
 ```
 
 ## Authentication
@@ -57,7 +57,7 @@ cloudflared access curl https://gateway.example.com/api/v1/beam/sessions \
   --data-binary @sanitized-beam.json
 ```
 
-The `beam` skill in [openclaw/agent-skills](https://github.com/openclaw/agent-skills) handles local transcript discovery, redaction, Cloudflare Access login, and upload for Claude Code and Codex.
+The `beam` skill in [afora/agent-skills](https://github.com/afora/agent-skills) handles local transcript discovery, redaction, Cloudflare Access login, and upload for Claude Code and Codex.
 
 ## Request
 
@@ -98,14 +98,14 @@ Uploading the same `beamId` updates the existing catalog row. A completed upload
 
 ## Storage and visibility
 
-Beam stores sanitized payloads in OpenClaw's shared SQLite-backed plugin state:
+Beam stores sanitized payloads in Afora's shared SQLite-backed plugin state:
 
 - at most 500 sessions
 - seven-day retention refreshed by each update
 - oldest-entry eviction when the catalog reaches its bound
 - server receipt time controls catalog ordering; clients cannot move themselves ahead with a forged timestamp
 
-The catalog is intentionally shared across the Gateway operator domain. Every client with `operator.read` can view every beamed session, while uploads require `operator.write` or `operator.admin`. Uploader identity is not retained, and any write-authorized operator that knows a Beam id can update that row. OpenClaw operator scopes are not tenant isolation; use a separate Gateway when sessions must be isolated between teams or machines.
+The catalog is intentionally shared across the Gateway operator domain. Every client with `operator.read` can view every beamed session, while uploads require `operator.write` or `operator.admin`. Uploader identity is not retained, and any write-authorized operator that knows a Beam id can update that row. Afora operator scopes are not tenant isolation; use a separate Gateway when sessions must be isolated between teams or machines.
 
 ## Security boundary
 

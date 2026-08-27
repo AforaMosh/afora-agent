@@ -1,7 +1,7 @@
 import Foundation
-import OpenClawProtocol
+import AforaProtocol
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 struct AgentAutomationModelsTests {
     @Test func `draft decodes editable gateway fields`() throws {
@@ -42,11 +42,11 @@ struct AgentAutomationModelsTests {
         let job = Self.job(
             payload: AnyCodable([
                 "kind": AnyCodable("command"),
-                "argv": AnyCodable([AnyCodable("openclaw"), AnyCodable("status")]),
+                "argv": AnyCodable([AnyCodable("afora"), AnyCodable("status")]),
                 "cwd": AnyCodable("/tmp"),
             ]))
         var draft = try #require(AgentAutomationDraft(job: job))
-        draft.payload = .command(argvJSON: "[ \"openclaw\", \"status\" ]", cwd: "/tmp")
+        draft.payload = .command(argvJSON: "[ \"afora\", \"status\" ]", cwd: "/tmp")
 
         #expect(throws: AgentAutomationEditError.self) {
             _ = try buildAgentAutomationUpdateParams(job: job, draft: draft)
@@ -190,7 +190,7 @@ struct AgentAutomationModelsTests {
         #expect(source.contains("guard self.pendingRunID == runID else { return }"))
         #expect(models.contains("expectedConfigRevision"))
         #expect(source.contains("Delete Automation"))
-        #expect(source.contains("OpenClawType.subheadSemiBold"))
+        #expect(source.contains("AforaType.subheadSemiBold"))
         #expect(source.contains("!self.hasUnsavedChanges"))
 
         let tabSource = try String(

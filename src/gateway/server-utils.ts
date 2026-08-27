@@ -1,7 +1,7 @@
 // Gateway generic server utilities.
 // Normalizes voice-wake triggers and formats unknown errors for logs/responses.
-import { normalizeTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { normalizeTrimmedStringList } from "@afora/normalization-core/string-normalization";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { defaultVoiceWakeTriggers } from "../infra/voicewake.js";
 
 export { formatErrorMessage as formatError } from "../infra/errors.js";

@@ -6,7 +6,7 @@ import { CliUsageError, parseSqliteReliabilityCli } from "./lib/sqlite-reliabili
 import type { ReliabilityReport } from "./lib/sqlite-reliability-contract.js";
 
 function printUsage(): void {
-  console.log(`OpenClaw SQLite reliability stress proof
+  console.log(`Afora SQLite reliability stress proof
 
 Usage:
   node --import tsx scripts/bench-sqlite-reliability.ts [options]

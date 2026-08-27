@@ -1,4 +1,4 @@
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import { normalizeToolPolicyName } from "../tool-policy.js";
 import { codexNativeHookRelayResponseCodec } from "./native-hook-relay-response-codec.js";
 import type {
@@ -182,7 +182,7 @@ function readCodexToolResponse(rawPayload: JsonValue): unknown {
 
 export function readNativeHookRelayApprovalMode(rawPayload: JsonValue): "report" | undefined {
   const payload = isJsonObject(rawPayload) ? rawPayload : {};
-  return payload.openclaw_approval_mode === "report" ? "report" : undefined;
+  return payload.afora_approval_mode === "report" ? "report" : undefined;
 }
 
 export function normalizeNativeHookToolName(toolName: string | undefined): string {

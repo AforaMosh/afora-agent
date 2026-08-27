@@ -1,24 +1,24 @@
 // Memory Core plugin module implements session search visibility behavior.
-import { buildSessionEntry } from "openclaw/plugin-sdk/memory-core-host-engine-sessions";
+import { buildSessionEntry } from "afora-agent/plugin-sdk/memory-core-host-engine-sessions";
 import {
   resolveCanonicalMainSessionKey,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/memory-core-host-runtime-core";
-import type { MemorySearchResult } from "openclaw/plugin-sdk/memory-core-host-runtime-files";
-import { resolveSessionAgentId } from "openclaw/plugin-sdk/memory-host-core";
-import type { OpenClawPluginToolContext } from "openclaw/plugin-sdk/plugin-entry";
-import { sessionDeliveryOrigin } from "openclaw/plugin-sdk/session-store-runtime";
+  type AforaConfig,
+} from "afora-agent/plugin-sdk/memory-core-host-runtime-core";
+import type { MemorySearchResult } from "afora-agent/plugin-sdk/memory-core-host-runtime-files";
+import { resolveSessionAgentId } from "afora-agent/plugin-sdk/memory-host-core";
+import type { AforaPluginToolContext } from "afora-agent/plugin-sdk/plugin-entry";
+import { sessionDeliveryOrigin } from "afora-agent/plugin-sdk/session-store-runtime";
 import {
   extractTranscriptIdentityFromSessionsMemoryHit,
   loadCombinedSessionStoreForGateway,
   resolveTranscriptStemToSessionKeys,
-} from "openclaw/plugin-sdk/session-transcript-hit";
+} from "afora-agent/plugin-sdk/session-transcript-hit";
 import {
   createAgentToAgentPolicy,
   createSessionVisibilityGuard,
   resolveEffectiveSessionToolsVisibility,
   resolveSandboxSessionToolsVisibility,
-} from "openclaw/plugin-sdk/session-visibility";
+} from "afora-agent/plugin-sdk/session-visibility";
 import {
   readSessionArchiveReasonFromHitPath,
   readSessionResetRecallCutoffMetadata,
@@ -29,11 +29,11 @@ function normalizeAgentIdForCompare(value: string | undefined): string | undefin
   return value?.trim().toLowerCase() || undefined;
 }
 
-function isGlobalSessionKeyForSharedScope(cfg: OpenClawConfig, key: string): boolean {
+function isGlobalSessionKeyForSharedScope(cfg: AforaConfig, key: string): boolean {
   return cfg.session?.scope === "global" && key.trim().toLowerCase() === "global";
 }
 
-type ConversationRecallContext = NonNullable<OpenClawPluginToolContext["conversationRecall"]>;
+type ConversationRecallContext = NonNullable<AforaPluginToolContext["conversationRecall"]>;
 
 type SessionStore = ReturnType<typeof loadCombinedSessionStoreForGateway>["store"];
 
@@ -145,7 +145,7 @@ function isTrustedRecallRequester(params: {
 }
 
 function filterSessionKeysByScopedAgent(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   keys: string[];
   scopedAgentId: string | undefined;
 }): string[] {
@@ -166,7 +166,7 @@ function filterSessionKeysByScopedAgent(params: {
 }
 
 export async function filterMemorySearchHitsBySessionVisibility(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
   requesterSessionKey: string | undefined;
   sandboxed: boolean;

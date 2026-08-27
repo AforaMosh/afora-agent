@@ -1,5 +1,5 @@
 // Matrix API module exposes the plugin public contract.
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveMatrixTargetIdentity } from "./matrix/target-ids.js";
 
 export const defaultTopLevelPlacement = "child" as const;

@@ -5,9 +5,9 @@ import {
   setPluginInstallRecordMapEntry,
 } from "../config/plugin-install-record-map.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  runOpenClawStateWriteTransaction,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  runAforaStateWriteTransaction,
+} from "../state/afora-state-db.js";
 import {
   readPersistedInstalledPluginIndex,
   writePersistedInstalledPluginIndex,
@@ -18,12 +18,12 @@ import { cleanupTrackedTempDirs, makeTrackedTempDir } from "./test-helpers/fs-fi
 const tempDirs: string[] = [];
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   cleanupTrackedTempDirs(tempDirs);
 });
 
 function makeStateDir(): string {
-  return makeTrackedTempDir("openclaw-installed-plugin-index-record-map", tempDirs);
+  return makeTrackedTempDir("afora-installed-plugin-index-record-map", tempDirs);
 }
 
 function createIndex(installRecords: InstalledPluginIndex["installRecords"]): InstalledPluginIndex {
@@ -44,7 +44,7 @@ function readInstallRecordRow(stateDir: string): {
   install_records_json: string;
   updated_at_ms: number | bigint;
 } {
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db }) =>
       db
         .prepare(
@@ -53,7 +53,7 @@ function readInstallRecordRow(stateDir: string): {
             WHERE index_key = 'installed-plugin-index'`,
         )
         .get() as { install_records_json: string; updated_at_ms: number | bigint },
-    { env: { ...process.env, OPENCLAW_STATE_DIR: stateDir } },
+    { env: { ...process.env, AFORA_STATE_DIR: stateDir } },
   );
 }
 

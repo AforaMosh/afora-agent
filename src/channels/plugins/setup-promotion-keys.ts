@@ -5,7 +5,7 @@ const COMMON_SINGLE_ACCOUNT_PROMOTION_KEYS = [
   "name",
   "token",
   "tokenFile",
-  // Tencent's out-of-tree @wecom/wecom-openclaw-plugin still writes root
+  // Tencent's out-of-tree @wecom/wecom-afora-plugin still writes root
   // botId/secret. Keep promoting them until WeCom publishes plugin declarations.
   "botId",
   "secret",

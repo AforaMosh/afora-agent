@@ -1,4 +1,4 @@
-// Credentials module supports OpenClaw QA credential workflows.
+// Credentials module supports Afora QA credential workflows.
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -14,7 +14,7 @@ const MIN_LEASE_TTL_MS = 30_000;
 const MAX_LIST_LIMIT = 500;
 const PAYLOAD_CHUNK_SIZE = 256_000;
 const MIN_LIST_LIMIT = 1;
-const CHUNKED_PAYLOAD_MARKER = "__openclawQaCredentialPayloadChunksV1";
+const CHUNKED_PAYLOAD_MARKER = "__aforaQaCredentialPayloadChunksV1";
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 30_000;
 const DEFAULT_LEASE_TTL_MS = 20 * 60 * 1_000;

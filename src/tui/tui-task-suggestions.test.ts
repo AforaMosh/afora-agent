@@ -1,5 +1,5 @@
 import type { Component, OverlayHandle, SelectItem } from "@earendil-works/pi-tui";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it, vi } from "vitest";
 import { stripAnsi } from "../../packages/terminal-core/src/ansi.js";
 import { createTuiTaskSuggestionController } from "./tui-task-suggestions.js";

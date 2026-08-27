@@ -29,7 +29,7 @@ import { testing as updateCommandServiceTesting } from "./update-command-service
 
 describe("resolveGatewayInstallEntrypoint", () => {
   it("prefers dist/index.js over dist/entry.js when both exist", async () => {
-    const root = "/tmp/openclaw-root";
+    const root = "/tmp/afora-root";
     const indexPath = path.join(root, "dist", "index.js");
     const entryPath = path.join(root, "dist", "entry.js");
 
@@ -42,7 +42,7 @@ describe("resolveGatewayInstallEntrypoint", () => {
   });
 
   it("falls back to dist/entry.js when index.js is missing", async () => {
-    const root = "/tmp/openclaw-root";
+    const root = "/tmp/afora-root";
     const entryPath = path.join(root, "dist", "entry.js");
 
     await expect(
@@ -73,7 +73,7 @@ describe("applyPostPluginConfigValidation", () => {
       reason: "post-plugin-doctor-invalid-config",
       warnings: [
         {
-          guidance: ["Run `openclaw doctor --fix`, then rerun `openclaw update repair`."],
+          guidance: ["Run `afora doctor --fix`, then rerun `afora update repair`."],
         },
       ],
     });
@@ -165,8 +165,8 @@ describe("resolveUpdatedGatewayRestartPort", () => {
     expect(
       resolveUpdatedGatewayRestartPort({
         config: { gateway: { port: 19000 } } as never,
-        processEnv: { OPENCLAW_GATEWAY_PORT: "19001" },
-        serviceEnv: { OPENCLAW_GATEWAY_PORT: "19002" },
+        processEnv: { AFORA_GATEWAY_PORT: "19001" },
+        serviceEnv: { AFORA_GATEWAY_PORT: "19002" },
       }),
     ).toBe(19002);
   });
@@ -210,12 +210,12 @@ describe("maybeRestartService", () => {
 describe("resolvePostUpdateServiceStateReadEnv", () => {
   it("keeps package restart preparation anchored to the pre-update service env", () => {
     const processEnv = {
-      OPENCLAW_STATE_DIR: "/source/state",
-      OPENCLAW_CONFIG_PATH: "/source/openclaw.json",
+      AFORA_STATE_DIR: "/source/state",
+      AFORA_CONFIG_PATH: "/source/afora.json",
     } as NodeJS.ProcessEnv;
     const prePackageServiceEnv = {
-      OPENCLAW_STATE_DIR: "/managed/state",
-      OPENCLAW_CONFIG_PATH: "/managed/openclaw.json",
+      AFORA_STATE_DIR: "/managed/state",
+      AFORA_CONFIG_PATH: "/managed/afora.json",
     } as NodeJS.ProcessEnv;
 
     expect(
@@ -228,8 +228,8 @@ describe("resolvePostUpdateServiceStateReadEnv", () => {
   });
 
   it("keeps git updates tied to the caller environment", () => {
-    const processEnv = { OPENCLAW_STATE_DIR: "/source/state" } as NodeJS.ProcessEnv;
-    const prePackageServiceEnv = { OPENCLAW_STATE_DIR: "/managed/state" } as NodeJS.ProcessEnv;
+    const processEnv = { AFORA_STATE_DIR: "/source/state" } as NodeJS.ProcessEnv;
+    const prePackageServiceEnv = { AFORA_STATE_DIR: "/managed/state" } as NodeJS.ProcessEnv;
 
     expect(
       resolvePostUpdateServiceStateReadEnv({
@@ -241,8 +241,8 @@ describe("resolvePostUpdateServiceStateReadEnv", () => {
   });
 
   it("uses the managed service environment for git updates stopped by this updater", () => {
-    const processEnv = { OPENCLAW_STATE_DIR: "/source/state" } as NodeJS.ProcessEnv;
-    const preManagedServiceEnv = { OPENCLAW_STATE_DIR: "/managed/state" } as NodeJS.ProcessEnv;
+    const processEnv = { AFORA_STATE_DIR: "/source/state" } as NodeJS.ProcessEnv;
+    const preManagedServiceEnv = { AFORA_STATE_DIR: "/managed/state" } as NodeJS.ProcessEnv;
 
     expect(
       resolvePostUpdateServiceStateReadEnv({
@@ -257,65 +257,65 @@ describe("resolvePostUpdateServiceStateReadEnv", () => {
 describe("resolvePostInstallDoctorEnv", () => {
   it("uses the managed service profile paths for post-install doctor", () => {
     const env = resolvePostInstallDoctorEnv({
-      invocationCwd: "/srv/openclaw",
+      invocationCwd: "/srv/afora",
       baseEnv: {
         PATH: "/bin",
-        OPENCLAW_STATE_DIR: "/wrong/state",
-        OPENCLAW_CONFIG_PATH: "/wrong/openclaw.json",
-        OPENCLAW_PROFILE: "wrong",
-        OPENCLAW_SYSTEMD_UNIT: "wrong.service",
+        AFORA_STATE_DIR: "/wrong/state",
+        AFORA_CONFIG_PATH: "/wrong/afora.json",
+        AFORA_PROFILE: "wrong",
+        AFORA_SYSTEMD_UNIT: "wrong.service",
       },
       serviceEnv: {
-        OPENCLAW_STATE_DIR: "daemon-state",
-        OPENCLAW_CONFIG_PATH: "daemon-state/openclaw.json",
-        OPENCLAW_PROFILE: "work",
-        OPENCLAW_SYSTEMD_UNIT: "openclaw-gateway-work.service",
+        AFORA_STATE_DIR: "daemon-state",
+        AFORA_CONFIG_PATH: "daemon-state/afora.json",
+        AFORA_PROFILE: "work",
+        AFORA_SYSTEMD_UNIT: "afora-gateway-work.service",
       },
     });
 
     expect(env.PATH).toBe("/bin");
     expect(env.NODE_DISABLE_COMPILE_CACHE).toBe("1");
-    expect(env.OPENCLAW_STATE_DIR).toBe(path.join("/srv/openclaw", "daemon-state"));
-    expect(env.OPENCLAW_CONFIG_PATH).toBe(
-      path.join("/srv/openclaw", "daemon-state", "openclaw.json"),
+    expect(env.AFORA_STATE_DIR).toBe(path.join("/srv/afora", "daemon-state"));
+    expect(env.AFORA_CONFIG_PATH).toBe(
+      path.join("/srv/afora", "daemon-state", "afora.json"),
     );
-    expect(env.OPENCLAW_PROFILE).toBe("work");
-    expect(env.OPENCLAW_SYSTEMD_UNIT).toBe("openclaw-gateway-work.service");
+    expect(env.AFORA_PROFILE).toBe("work");
+    expect(env.AFORA_SYSTEMD_UNIT).toBe("afora-gateway-work.service");
   });
 
   it("keeps the caller env when no managed service env is available", () => {
     const env = resolvePostInstallDoctorEnv({
       baseEnv: {
         PATH: "/bin",
-        OPENCLAW_STATE_DIR: "/caller/state",
-        OPENCLAW_PROFILE: "caller",
+        AFORA_STATE_DIR: "/caller/state",
+        AFORA_PROFILE: "caller",
       },
     });
 
     expect(env.PATH).toBe("/bin");
     expect(env.NODE_DISABLE_COMPILE_CACHE).toBe("1");
-    expect(env.OPENCLAW_STATE_DIR).toBe("/caller/state");
-    expect(env.OPENCLAW_PROFILE).toBe("caller");
+    expect(env.AFORA_STATE_DIR).toBe("/caller/state");
+    expect(env.AFORA_PROFILE).toBe("caller");
   });
 });
 
 describe("resolveUpdatedInstallCommandEnv", () => {
   it("keeps runtime SecretRef inputs while applying managed service overrides", () => {
     const env = resolveUpdatedInstallCommandEnv({
-      invocationCwd: "/srv/openclaw",
+      invocationCwd: "/srv/afora",
       processEnv: {
-        OPENCLAW_GATEWAY_AUTH_TOKEN: "runtime-token",
-        OPENCLAW_STATE_DIR: "/wrong/state",
+        AFORA_GATEWAY_AUTH_TOKEN: "runtime-token",
+        AFORA_STATE_DIR: "/wrong/state",
         PATH: "/caller/bin",
       },
       serviceEnv: {
-        OPENCLAW_STATE_DIR: "daemon-state",
+        AFORA_STATE_DIR: "daemon-state",
         PATH: "/daemon/bin",
       },
     });
 
-    expect(env.OPENCLAW_GATEWAY_AUTH_TOKEN).toBe("runtime-token");
-    expect(env.OPENCLAW_STATE_DIR).toBe(path.join("/srv/openclaw", "daemon-state"));
+    expect(env.AFORA_GATEWAY_AUTH_TOKEN).toBe("runtime-token");
+    expect(env.AFORA_STATE_DIR).toBe(path.join("/srv/afora", "daemon-state"));
     expect(env.PATH).toBe("/daemon/bin");
     expect(env.NODE_DISABLE_COMPILE_CACHE).toBe("1");
   });
@@ -324,48 +324,48 @@ describe("resolveUpdatedInstallCommandEnv", () => {
     const env = resolveOwnedManagedUpdateEnv({
       processEnv: {
         HOME: "/home/operator",
-        OPENCLAW_HOME: "/home/operator/openclaw-home",
-        OPENCLAW_PROFILE: "personal",
-        OPENCLAW_STATE_DIR: "/home/operator/.openclaw-personal",
-        OPENCLAW_CONFIG_PATH: "/home/operator/.openclaw-personal/openclaw.json",
-        OPENCLAW_GATEWAY_PORT: "19111",
+        AFORA_HOME: "/home/operator/afora-home",
+        AFORA_PROFILE: "personal",
+        AFORA_STATE_DIR: "/home/operator/.afora-personal",
+        AFORA_CONFIG_PATH: "/home/operator/.afora-personal/afora.json",
+        AFORA_GATEWAY_PORT: "19111",
       },
       serviceEnv: {
         HOME: "/home/operator",
-        OPENCLAW_HOME: "/home/operator/openclaw-home",
-        OPENCLAW_PROFILE: "personal",
-        OPENCLAW_STATE_DIR: "/home/operator/.openclaw-personal",
-        OPENCLAW_CONFIG_PATH: "/home/operator/.openclaw-personal/openclaw.json",
-        OPENCLAW_GATEWAY_PORT: "19111",
+        AFORA_HOME: "/home/operator/afora-home",
+        AFORA_PROFILE: "personal",
+        AFORA_STATE_DIR: "/home/operator/.afora-personal",
+        AFORA_CONFIG_PATH: "/home/operator/.afora-personal/afora.json",
+        AFORA_GATEWAY_PORT: "19111",
       },
       serviceDefinitionEnv: {},
     });
 
     expect(env.HOME).toBe("/home/operator");
-    expect(env.OPENCLAW_HOME).toBeUndefined();
-    expect(env.OPENCLAW_PROFILE).toBeUndefined();
-    expect(env.OPENCLAW_STATE_DIR).toBeUndefined();
-    expect(env.OPENCLAW_CONFIG_PATH).toBeUndefined();
-    expect(env.OPENCLAW_GATEWAY_PORT).toBeUndefined();
+    expect(env.AFORA_HOME).toBeUndefined();
+    expect(env.AFORA_PROFILE).toBeUndefined();
+    expect(env.AFORA_STATE_DIR).toBeUndefined();
+    expect(env.AFORA_CONFIG_PATH).toBeUndefined();
+    expect(env.AFORA_GATEWAY_PORT).toBeUndefined();
   });
 });
 
 describe("collectMissingPluginInstallPayloads", () => {
   it("reports tracked npm install records whose package payload is absent", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-update-plugin-payload-"));
-    const presentDir = path.join(tmpDir, "state", "npm", "node_modules", "@openclaw", "present");
-    const missingDir = path.join(tmpDir, "state", "npm", "node_modules", "@openclaw", "missing");
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-update-plugin-payload-"));
+    const presentDir = path.join(tmpDir, "state", "npm", "node_modules", "@afora", "present");
+    const missingDir = path.join(tmpDir, "state", "npm", "node_modules", "@afora", "missing");
     const noPackageJsonDir = path.join(
       tmpDir,
       "state",
       "npm",
       "node_modules",
-      "@openclaw",
+      "@afora",
       "no-package-json",
     );
     try {
       await fs.mkdir(presentDir, { recursive: true });
-      await fs.writeFile(path.join(presentDir, "package.json"), '{"name":"@openclaw/present"}\n');
+      await fs.writeFile(path.join(presentDir, "package.json"), '{"name":"@afora/present"}\n');
       await fs.mkdir(noPackageJsonDir, { recursive: true });
 
       await expect(
@@ -374,22 +374,22 @@ describe("collectMissingPluginInstallPayloads", () => {
           records: {
             present: {
               source: "npm",
-              spec: "@openclaw/present@beta",
+              spec: "@afora/present@beta",
               installPath: presentDir,
             },
             missing: {
               source: "npm",
-              spec: "@openclaw/missing@beta",
+              spec: "@afora/missing@beta",
               installPath: missingDir,
             },
             "no-package-json": {
               source: "npm",
-              spec: "@openclaw/no-package-json@beta",
+              spec: "@afora/no-package-json@beta",
               installPath: noPackageJsonDir,
             },
             "missing-install-path": {
               source: "npm",
-              spec: "@openclaw/missing-install-path@beta",
+              spec: "@afora/missing-install-path@beta",
             },
             local: {
               source: "path",
@@ -420,7 +420,7 @@ describe("collectMissingPluginInstallPayloads", () => {
   });
 
   it("accepts tracked bundle records validated by the shared bundle loader", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-update-plugin-payload-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-update-plugin-payload-"));
     const bundleDir = path.join(tmpDir, "state", "clawhub", "cursor-bundle");
     try {
       await fs.mkdir(path.join(bundleDir, ".cursor-plugin"), { recursive: true });
@@ -447,7 +447,7 @@ describe("collectMissingPluginInstallPayloads", () => {
   });
 
   it("accepts persisted marketplace bundle records without transient format metadata", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-update-plugin-payload-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-update-plugin-payload-"));
     const bundleDir = path.join(tmpDir, "state", "marketplace", "cursor-bundle");
     try {
       await fs.mkdir(path.join(bundleDir, ".cursor-plugin"), { recursive: true });
@@ -476,7 +476,7 @@ describe("collectMissingPluginInstallPayloads", () => {
   });
 
   it("keeps dual-format bundle records on the native package payload path", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-update-plugin-payload-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-update-plugin-payload-"));
     const bundleDir = path.join(tmpDir, "state", "clawhub", "dual-format-bundle");
     try {
       await fs.mkdir(path.join(bundleDir, ".codex-plugin"), { recursive: true });
@@ -489,7 +489,7 @@ describe("collectMissingPluginInstallPayloads", () => {
         path.join(bundleDir, "package.json"),
         JSON.stringify({
           name: "dual-format-bundle",
-          openclaw: { extensions: ["./missing-extension.js"] },
+          afora: { extensions: ["./missing-extension.js"] },
         }),
         "utf8",
       );
@@ -511,7 +511,7 @@ describe("collectMissingPluginInstallPayloads", () => {
   });
 
   it("keeps corrupt tracked bundle records eligible for payload repair", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-update-plugin-payload-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-update-plugin-payload-"));
     const bundleDir = path.join(tmpDir, "state", "clawhub", "bad-bundle");
     try {
       await fs.mkdir(path.join(bundleDir, ".codex-plugin"), { recursive: true });
@@ -540,8 +540,8 @@ describe("collectMissingPluginInstallPayloads", () => {
   });
 
   it("skips disabled tracked records when requested", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-update-plugin-payload-"));
-    const missingDir = path.join(tmpDir, "state", "npm", "node_modules", "@openclaw", "missing");
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-update-plugin-payload-"));
+    const missingDir = path.join(tmpDir, "state", "npm", "node_modules", "@afora", "missing");
     try {
       await expect(
         updateCommandPluginsTesting.collectMissingPluginInstallPayloads({
@@ -559,7 +559,7 @@ describe("collectMissingPluginInstallPayloads", () => {
           records: {
             missing: {
               source: "npm",
-              spec: "@openclaw/missing@beta",
+              spec: "@afora/missing@beta",
               installPath: missingDir,
             },
           },
@@ -571,8 +571,8 @@ describe("collectMissingPluginInstallPayloads", () => {
   });
 
   it("keeps disabled trusted official npm records eligible for payload repair when requested", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-update-plugin-payload-"));
-    const missingDir = path.join(tmpDir, "state", "npm", "node_modules", "@openclaw", "codex");
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-update-plugin-payload-"));
+    const missingDir = path.join(tmpDir, "state", "npm", "node_modules", "@afora", "codex");
     try {
       await expect(
         updateCommandPluginsTesting.collectMissingPluginInstallPayloads({
@@ -591,9 +591,9 @@ describe("collectMissingPluginInstallPayloads", () => {
           records: {
             codex: {
               source: "npm",
-              spec: "@openclaw/codex@2026.5.3",
-              resolvedName: "@openclaw/codex",
-              resolvedSpec: "@openclaw/codex@2026.5.3",
+              spec: "@afora/codex@2026.5.3",
+              resolvedName: "@afora/codex",
+              resolvedSpec: "@afora/codex@2026.5.3",
               installPath: missingDir,
             },
           },
@@ -611,7 +611,7 @@ describe("collectMissingPluginInstallPayloads", () => {
   });
 
   it("keeps disabled trusted official ClawHub records eligible for payload repair when requested", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-update-plugin-payload-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-update-plugin-payload-"));
     const missingDir = path.join(tmpDir, "state", "clawhub", "diagnostics-otel");
     try {
       await expect(
@@ -631,7 +631,7 @@ describe("collectMissingPluginInstallPayloads", () => {
           records: {
             "diagnostics-otel": {
               source: "clawhub",
-              spec: "clawhub:@openclaw/diagnostics-otel@2026.5.3",
+              spec: "clawhub:@afora/diagnostics-otel@2026.5.3",
               installPath: missingDir,
             },
           },
@@ -701,9 +701,9 @@ describe("formatPostUpdateGatewayRecoveryInstructions", () => {
     );
 
     expect(line).toContain("the systemd user service");
-    expect(line).toContain("openclaw gateway restart");
-    expect(line).toContain("openclaw gateway install --force");
-    expect(line).toContain("openclaw gateway status --deep");
+    expect(line).toContain("afora gateway restart");
+    expect(line).toContain("afora gateway install --force");
+    expect(line).toContain("afora gateway status --deep");
     expect(line).not.toContain("Linux reports");
     expect(line).not.toContain("macOS");
     expect(line).not.toContain("LaunchAgent");
@@ -746,8 +746,8 @@ describe("formatPostUpdateGatewayRecoveryInstructions", () => {
 describe("recoverInstalledLaunchAgentAfterUpdate", () => {
   it("re-bootstraps an installed-but-not-loaded macOS LaunchAgent after update", async () => {
     const service = {} as never;
-    const serviceEnv = { OPENCLAW_PROFILE: "stomme" } as NodeJS.ProcessEnv;
-    const recoveredEnv = { ...serviceEnv, OPENCLAW_PORT: "18790" } as NodeJS.ProcessEnv;
+    const serviceEnv = { AFORA_PROFILE: "stomme" } as NodeJS.ProcessEnv;
+    const recoveredEnv = { ...serviceEnv, AFORA_PORT: "18790" } as NodeJS.ProcessEnv;
     const readState = vi.fn(async () => ({
       installed: true,
       loaded: false,
@@ -806,7 +806,7 @@ describe("recoverInstalledLaunchAgentAfterUpdate", () => {
       installed: true,
       loaded: true,
       running: true,
-      env: { OPENCLAW_PROFILE: "stomme" } as NodeJS.ProcessEnv,
+      env: { AFORA_PROFILE: "stomme" } as NodeJS.ProcessEnv,
       command: null,
       runtime: { status: "running" },
     }));
@@ -831,7 +831,7 @@ describe("recoverInstalledLaunchAgentAfterUpdate", () => {
       installed: true,
       loaded: false,
       running: false,
-      env: { OPENCLAW_PROFILE: "stomme" } as NodeJS.ProcessEnv,
+      env: { AFORA_PROFILE: "stomme" } as NodeJS.ProcessEnv,
       command: null,
       runtime: { status: "unknown", missingSupervision: true },
     }));
@@ -859,12 +859,12 @@ describe("recoverInstalledLaunchAgentAfterUpdate", () => {
       installed: true,
       loaded: false,
       running: false,
-      env: { OPENCLAW_PROFILE: "stomme" } as NodeJS.ProcessEnv,
+      env: { AFORA_PROFILE: "stomme" } as NodeJS.ProcessEnv,
       command: null,
       runtime: { status: "unknown", missingSupervision: true },
     }));
     const recover = vi.fn(async () => {
-      throw new Error("System LaunchDaemon system/ai.openclaw.stomme owns this label");
+      throw new Error("System LaunchDaemon system/ai.afora.stomme owns this label");
     });
 
     await expect(
@@ -879,7 +879,7 @@ describe("recoverInstalledLaunchAgentAfterUpdate", () => {
     ).resolves.toEqual({
       attempted: true,
       recovered: false,
-      detail: "System LaunchDaemon system/ai.openclaw.stomme owns this label",
+      detail: "System LaunchDaemon system/ai.afora.stomme owns this label",
     });
   });
 });
@@ -915,7 +915,7 @@ describe("recoverLaunchAgentAndRecheckGatewayHealth", () => {
         service,
         port: 18790,
         expectedVersion: "2026.5.3",
-        env: { OPENCLAW_PROFILE: "stomme", OPENCLAW_PORT: "18790" },
+        env: { AFORA_PROFILE: "stomme", AFORA_PORT: "18790" },
         deps: { recoverLaunchAgent, waitForHealthy },
       }),
     ).resolves.toEqual({
@@ -932,7 +932,7 @@ describe("recoverLaunchAgentAndRecheckGatewayHealth", () => {
       service,
       port: 18790,
       expectedVersion: "2026.5.3",
-      env: { OPENCLAW_PROFILE: "stomme", OPENCLAW_PORT: "18790" },
+      env: { AFORA_PROFILE: "stomme", AFORA_PORT: "18790" },
       supervisorKeepsAlive: true,
     });
   });
@@ -981,7 +981,7 @@ describe("hasLoadedLaunchdKeepAliveSupervisor", () => {
     await expect(
       updateCommandServiceTesting.hasLoadedLaunchdKeepAliveSupervisor({
         service,
-        env: { OPENCLAW_PROFILE: "work" },
+        env: { AFORA_PROFILE: "work" },
       }),
     ).resolves.toBe(false);
     isLoaded.mockResolvedValue(true);
@@ -1011,7 +1011,7 @@ describe("resolvePostCoreUpdateChildStdio", () => {
   it('returns "pipe" on Windows so the child never inherits the parent console handles', () => {
     // On Windows, stdio:"inherit" passes the parent's console HANDLE to the child process.
     // PowerShell/CMD will not return the prompt until every holder of those handles exits,
-    // causing the terminal to hang after `openclaw update` completes (#78445).
+    // causing the terminal to hang after `afora update` completes (#78445).
     expect(resolvePostCoreUpdateChildStdio("win32")).toBe("pipe");
   });
 
@@ -1034,7 +1034,7 @@ describe("updatePluginsAfterCoreUpdate (invalid config end-to-end)", () => {
     // config is sufficient to prove the gate fires end-to-end. We pass
     // `json: true` to suppress logging side-effects without mocking.
     const result = await updatePluginsAfterCoreUpdate({
-      root: "/tmp/openclaw-test",
+      root: "/tmp/afora-test",
       channel: "stable",
       configSnapshot: {
         valid: false,
@@ -1055,8 +1055,8 @@ describe("updatePluginsAfterCoreUpdate (invalid config end-to-end)", () => {
         message:
           "Plugin post-update convergence skipped because the config is invalid; refusing to restart the gateway with an unverified plugin set.",
         guidance: [
-          "Run `openclaw doctor` to inspect the config validation errors.",
-          "Once the config parses, rerun `openclaw update repair`.",
+          "Run `afora doctor` to inspect the config validation errors.",
+          "Once the config parses, rerun `afora update repair`.",
         ],
       },
     ]);
@@ -1074,8 +1074,8 @@ describe("buildInvalidConfigPostCoreUpdateResult", () => {
   it("surfaces actionable repair guidance in both the structural warnings and the message string", () => {
     const built = updateCommandPluginsTesting.buildInvalidConfigPostCoreUpdateResult();
     expect(built.guidance).toStrictEqual([
-      "Run `openclaw doctor` to inspect the config validation errors.",
-      "Once the config parses, rerun `openclaw update repair`.",
+      "Run `afora doctor` to inspect the config validation errors.",
+      "Once the config parses, rerun `afora update repair`.",
     ]);
     expect(built.result.warnings).toStrictEqual([
       {

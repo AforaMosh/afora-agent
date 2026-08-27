@@ -1,9 +1,9 @@
 /** Integration tests for the public Bash/process tool barrel and shared tool factory. */
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { drainFormattedSystemEvents } from "../auto-reply/reply/session-system-events.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { requestHeartbeat, setHeartbeatWakeHandler } from "../infra/heartbeat-wake.js";
 import { applyPathPrepend, findPathKey } from "../infra/path-prepend.js";
 import {
@@ -153,14 +153,14 @@ vi.mock("../process/supervisor/index.js", () => {
     return commands;
   };
   const applySegmentShellEffects = (segment: string, env: NodeJS.ProcessEnv) => {
-    if (segment === 'export PATH="${OPENCLAW_PREPEND_PATH}${PATH:+:$PATH}"') {
-      const prepend = env.OPENCLAW_PREPEND_PATH ?? "";
+    if (segment === 'export PATH="${AFORA_PREPEND_PATH}${PATH:+:$PATH}"') {
+      const prepend = env.AFORA_PREPEND_PATH ?? "";
       const current = readEnvPath(env);
       writeEnvPath(env, `${prepend}${current ? `:${current}` : ""}`);
       return;
     }
-    if (segment === "unset OPENCLAW_PREPEND_PATH") {
-      delete env.OPENCLAW_PREPEND_PATH;
+    if (segment === "unset AFORA_PREPEND_PATH") {
+      delete env.AFORA_PREPEND_PATH;
     }
   };
   const stdoutForSegment = (segment: string, env: NodeJS.ProcessEnv) => {
@@ -236,7 +236,7 @@ vi.mock("../process/supervisor/index.js", () => {
 const isWin = process.platform === "win32";
 const defaultShell = isWin
   ? undefined
-  : process.env.OPENCLAW_TEST_SHELL || getBashShellConfig().shell;
+  : process.env.AFORA_TEST_SHELL || getBashShellConfig().shell;
 // PowerShell: Start-Sleep for delays, ; for command separation, $null for null device
 const shortDelayCmd = isWin ? "Start-Sleep -Milliseconds 4" : "sleep 0.004";
 const POLL_INTERVAL_MS = isWin ? 15 : 2;
@@ -250,8 +250,8 @@ const NOTIFY_POLL_OPTIONS = {
   timeout: NOTIFY_EVENT_TIMEOUT_MS,
   interval: POLL_INTERVAL_MS,
 };
-const SHELL_ENV_KEYS = ["OPENCLAW_EXEC_SHELL_SNAPSHOT", "SHELL"] as const;
-const PATH_SHELL_ENV_KEYS = ["OPENCLAW_EXEC_SHELL_SNAPSHOT", "PATH", "SHELL"] as const;
+const SHELL_ENV_KEYS = ["AFORA_EXEC_SHELL_SNAPSHOT", "SHELL"] as const;
+const PATH_SHELL_ENV_KEYS = ["AFORA_EXEC_SHELL_SNAPSHOT", "PATH", "SHELL"] as const;
 const PROCESS_STATUS_RUNNING = "running";
 const PROCESS_STATUS_COMPLETED = "completed";
 const PROCESS_STATUS_FAILED = "failed";
@@ -275,7 +275,7 @@ const DEFAULT_NOTIFY_SESSION_KEY = "agent:main:main";
 const ECHO_HI_COMMAND = shellEcho("hi");
 let callIdCounter = 0;
 const nextCallId = () => `call${++callIdCounter}`;
-const notifyCfg = {} as OpenClawConfig;
+const notifyCfg = {} as AforaConfig;
 type ExecToolInstance = ReturnType<typeof createExecTool>;
 type ProcessToolInstance = ReturnType<typeof createProcessTool>;
 type ExecToolArgs = Parameters<ExecToolInstance["execute"]>[1];
@@ -384,7 +384,7 @@ async function pollProcessSession(params: {
   };
 }
 function applyDefaultShellEnv() {
-  process.env.OPENCLAW_EXEC_SHELL_SNAPSHOT = "0";
+  process.env.AFORA_EXEC_SHELL_SNAPSHOT = "0";
   if (!isWin && defaultShell) {
     process.env.SHELL = defaultShell;
   }

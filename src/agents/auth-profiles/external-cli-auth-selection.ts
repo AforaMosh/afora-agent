@@ -6,8 +6,8 @@
 import {
   findNormalizedProviderValue,
   normalizeProviderId,
-} from "@openclaw/model-catalog-core/provider-id";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+} from "@afora/model-catalog-core/provider-id";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveCliRuntimeExecutionProvider } from "../model-runtime-aliases.js";
 import { resolveProviderIdForAuth } from "../provider-auth-aliases.js";
 import { CLAUDE_CLI_PROFILE_ID } from "./constants.js";
@@ -18,7 +18,7 @@ const CLAUDE_CLI_PROVIDER_ID = "claude-cli";
 /** Resolve external CLI overlay scope from the user's auth/model selection. */
 export function resolveExternalCliAuthOverlayScopeFromSelection(params: {
   provider: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentId?: string;
   modelId?: string;
   workspaceDir?: string;
@@ -63,7 +63,7 @@ export function resolveExternalCliAuthOverlayScopeFromSelection(params: {
 
 function resolveExternalCliAuthScopeFromAuthSelection(params: {
   provider: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   workspaceDir?: string;
   store?: AuthProfileStore;
   userPinnedAuthProfileId?: string;
@@ -125,7 +125,7 @@ function resolveExternalCliAuthScopeFromAuthSelection(params: {
 
 function resolveConfiguredAuthProfileOrder(params: {
   provider: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   workspaceDir?: string;
   store?: AuthProfileStore;
 }): string[] {
@@ -169,7 +169,7 @@ function resolveAuthProfileOrderEntries(params: {
 
 function resolveExternalCliProviderIdForCompatibleAuthProfile(params: {
   provider: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   workspaceDir?: string;
   store?: AuthProfileStore;
   profileId: string;

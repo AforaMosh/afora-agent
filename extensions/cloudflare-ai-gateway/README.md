@@ -1,12 +1,12 @@
-# OpenClaw Cloudflare AI Gateway Provider
+# Afora Cloudflare AI Gateway Provider
 
-Official OpenClaw provider plugin for Cloudflare AI Gateway.
+Official Afora provider plugin for Cloudflare AI Gateway.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/cloudflare-ai-gateway-provider
-openclaw gateway restart
+afora plugins install @afora/cloudflare-ai-gateway-provider
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/providers/cloudflare-ai-gateway> for setup and configuration.
+See <https://docs.afora.ai/providers/cloudflare-ai-gateway> for setup and configuration.

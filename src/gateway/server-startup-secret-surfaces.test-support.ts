@@ -1,9 +1,9 @@
 /** Secret-surface projection coverage loaded by the startup SecretRef suite. */
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveGatewayStartupSecretProjection } from "./server-startup-secret-surfaces.js";
 
-function channelConfig(): OpenClawConfig {
+function channelConfig(): AforaConfig {
   return {
     channels: {
       telegram: {
@@ -68,7 +68,7 @@ describe("gateway startup secret surfaces", () => {
     const projection = resolveGatewayStartupSecretProjection({
       config: channelConfig(),
       reason: "startup",
-      env: { OPENCLAW_SKIP_CHANNELS: "1" },
+      env: { AFORA_SKIP_CHANNELS: "1" },
     });
 
     expect(projection.sourceConfig.channels).toBeUndefined();

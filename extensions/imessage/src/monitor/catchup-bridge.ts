@@ -1,6 +1,6 @@
 // Imessage plugin module implements catchup bridge behavior.
-import { timestampMsToIsoString } from "openclaw/plugin-sdk/number-runtime";
-import { warn } from "openclaw/plugin-sdk/runtime-env";
+import { timestampMsToIsoString } from "afora-agent/plugin-sdk/number-runtime";
+import { warn } from "afora-agent/plugin-sdk/runtime-env";
 import type { IMessageRpcClient } from "../client.js";
 import {
   type CatchupDispatchFn,

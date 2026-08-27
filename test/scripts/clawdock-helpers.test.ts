@@ -26,10 +26,10 @@ describe("scripts/clawdock/clawdock-helpers.sh", () => {
     it.runIf(available)(
       `preserves caller state while auto-detecting the checkout in ${shell}`,
       async () => {
-        const tempDir = await mkdtemp(path.join(tmpdir(), "openclaw-clawdock-"));
+        const tempDir = await mkdtemp(path.join(tmpdir(), "afora-clawdock-"));
         try {
           const homeDir = path.join(tempDir, "home");
-          const projectDir = path.join(homeDir, "openclaw");
+          const projectDir = path.join(homeDir, "afora");
           const confirmFile = path.join(tempDir, "confirm.txt");
           await mkdir(projectDir, { recursive: true });
           await writeFile(path.join(projectDir, "docker-compose.yml"), "services: {}\n");
@@ -48,7 +48,7 @@ describe("scripts/clawdock/clawdock-helpers.sh", () => {
                 '[[ "$PATH" == "$path_before" ]] || exit 1',
                 '[[ "$candidate" == "caller-value" ]] || exit 1',
                 '[[ "$response" == "caller-response" ]] || exit 1',
-                '[[ "$CLAWDOCK_DIR" == "$HOME/openclaw" ]] || exit 1',
+                '[[ "$CLAWDOCK_DIR" == "$HOME/afora" ]] || exit 1',
               ].join("\n"),
             ],
             {
@@ -73,7 +73,7 @@ describe("scripts/clawdock/clawdock-helpers.sh", () => {
   }
 
   it("loads the standard docker-compose.override.yml before ClawDock extra overrides", async () => {
-    const tempDir = await mkdtemp(path.join(tmpdir(), "openclaw-clawdock-"));
+    const tempDir = await mkdtemp(path.join(tmpdir(), "afora-clawdock-"));
     try {
       const projectDir = path.join(tempDir, "project");
       const binDir = path.join(tempDir, "bin");
@@ -124,7 +124,7 @@ printf '%s\\n' "$@" > "$CLAWDOCK_DOCKER_ARGS_FILE"
   });
 
   it("opens dashboard URLs through the published gateway port without starting dependencies", async () => {
-    const tempDir = await mkdtemp(path.join(tmpdir(), "openclaw-clawdock-"));
+    const tempDir = await mkdtemp(path.join(tmpdir(), "afora-clawdock-"));
     try {
       const projectDir = path.join(tempDir, "project");
       const binDir = path.join(tempDir, "bin");
@@ -138,7 +138,7 @@ printf '%s\\n' "$@" > "$CLAWDOCK_DOCKER_ARGS_FILE"
         `#!/usr/bin/env bash
 printf '%s\\n' "$@" >> "$CLAWDOCK_DOCKER_ARGS_FILE"
 printf '%s\\n' '---' >> "$CLAWDOCK_DOCKER_ARGS_FILE"
-if [[ "$*" == *" port openclaw-gateway 18789" ]]; then
+if [[ "$*" == *" port afora-gateway 18789" ]]; then
   printf '%s\\n' '0.0.0.0:19001'
 else
   printf '%s\\n' 'Dashboard: http://127.0.0.1:18789/?token=test-token'
@@ -179,7 +179,7 @@ printf '%s\\n' "$1" > "$CLAWDOCK_OPENED_URL_FILE"
           "run",
           "--rm",
           "--no-deps",
-          "openclaw-cli",
+          "afora-cli",
           "dashboard",
           "--no-open",
           "---",
@@ -187,7 +187,7 @@ printf '%s\\n' "$1" > "$CLAWDOCK_OPENED_URL_FILE"
           "-f",
           path.join(projectDir, "docker-compose.yml"),
           "port",
-          "openclaw-gateway",
+          "afora-gateway",
           "18789",
           "---",
           "",

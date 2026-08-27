@@ -1,6 +1,6 @@
-import type { resolveApiKeyForProvider } from "openclaw/plugin-sdk/provider-auth-runtime";
-import type { fetchWithTimeoutGuarded, postJsonRequest } from "openclaw/plugin-sdk/provider-http";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { resolveApiKeyForProvider } from "afora-agent/plugin-sdk/provider-auth-runtime";
+import type { fetchWithTimeoutGuarded, postJsonRequest } from "afora-agent/plugin-sdk/provider-http";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export const DEFAULT_MINIMAX_MEDIA_BASE_URL = "https://api.minimax.io";
 

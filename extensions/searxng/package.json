@@ -1,18 +1,18 @@
 {
-  "name": "@openclaw/searxng-plugin",
+  "name": "@afora/searxng-plugin",
   "version": "2026.8.1",
-  "description": "OpenClaw SearXNG plugin",
+  "description": "Afora SearXNG plugin",
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
     "install": {
-      "clawhubSpec": "clawhub:@openclaw/searxng-plugin",
-      "npmSpec": "@openclaw/searxng-plugin",
+      "clawhubSpec": "clawhub:@afora/searxng-plugin",
+      "npmSpec": "@afora/searxng-plugin",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.6.9",
       "allowInvalidConfigRecovery": true
@@ -21,7 +21,7 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1",
+      "aforaVersion": "2026.8.1",
       "bundledDist": false
     },
     "release": {
@@ -31,6 +31,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   }
 }

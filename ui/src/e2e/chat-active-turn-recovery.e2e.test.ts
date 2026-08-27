@@ -17,7 +17,7 @@ const suite = createControlUiE2eSuite({
 });
 
 const proofDir = path.resolve(".artifacts/control-ui-e2e/active-turn-recovery");
-const captureProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+const captureProof = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 type ActiveRunSnapshotOptions = {
   events?: unknown[];
   messages?: unknown[];
@@ -62,7 +62,7 @@ function activeRunSnapshot(
     },
     messages: opts?.messages ?? [
       {
-        __openclaw: { idempotencyKey: `${runId}:user` },
+        __afora: { idempotencyKey: `${runId}:user` },
         content: [{ text: prompt, type: "text" }],
         role: "user",
         timestamp: 900,
@@ -174,7 +174,7 @@ async function assertActiveTurnVisible(page: Page, streamText: string): Promise<
 }
 
 async function readWorkingStartedAts(page: Page): Promise<number[]> {
-  return page.locator(".chat-working-indicator openclaw-elapsed-time").evaluateAll((elements) =>
+  return page.locator(".chat-working-indicator afora-elapsed-time").evaluateAll((elements) =>
     elements.flatMap((element) => {
       const value = (element as HTMLElement & { startMs?: unknown }).startMs;
       return typeof value === "number" ? [value] : [];
@@ -187,7 +187,7 @@ async function waitForGatewayConnected(page: Page): Promise<void> {
     .poll(
       () =>
         page.evaluate(() => {
-          const app = document.querySelector("openclaw-app") as HTMLElement & {
+          const app = document.querySelector("afora-app") as HTMLElement & {
             runtime?: { context: { gateway: { snapshot: { phase: string } } } };
           };
           return app.runtime?.context.gateway.snapshot.phase;
@@ -288,7 +288,7 @@ suite.define(() => {
       await installActiveRunSnapshot(gateway, runId, prompt, streamText, { startedAt });
       await capture(page, "01-navigation-before");
 
-      const sidebar = page.locator("openclaw-app-sidebar");
+      const sidebar = page.locator("afora-app-sidebar");
       await sidebar.locator(".sidebar-identity-card").click();
       await sidebar
         .locator('wa-dropdown.sidebar-identity-menu wa-dropdown-item[value="command:usage"]')
@@ -299,7 +299,7 @@ suite.define(() => {
       await assertActiveTurnVisible(page, streamText);
       expect(await readWorkingStartedAts(page)).toContain(startedAt);
       await expect(
-        page.locator(".chat-working-indicator openclaw-elapsed-time").filter({ hasText: "10m" }),
+        page.locator(".chat-working-indicator afora-elapsed-time").filter({ hasText: "10m" }),
       ).not.toHaveCount(0);
       await capture(page, "02-navigation-after");
       await finishRecoveredTurn(page, gateway, runId, "Navigation delivery complete.");
@@ -328,7 +328,7 @@ suite.define(() => {
       await assertActiveTurnVisible(page, streamText);
       expect(await readWorkingStartedAts(page)).toContain(startedAt);
       await expect(
-        page.locator(".chat-working-indicator openclaw-elapsed-time").filter({ hasText: "10m" }),
+        page.locator(".chat-working-indicator afora-elapsed-time").filter({ hasText: "10m" }),
       ).not.toHaveCount(0);
       await capture(page, "04-reconnect-after");
       await finishRecoveredTurn(page, gateway, runId, "Reconnect delivery complete.");
@@ -354,7 +354,7 @@ suite.define(() => {
       await assertActiveTurnVisible(page, streamText);
       expect(await readWorkingStartedAts(page)).toContain(startedAt);
       await expect(
-        page.locator(".chat-working-indicator openclaw-elapsed-time").filter({ hasText: "10m" }),
+        page.locator(".chat-working-indicator afora-elapsed-time").filter({ hasText: "10m" }),
       ).not.toHaveCount(0);
       await capture(page, "06-reload-after");
       await finishRecoveredTurn(page, gateway, runId, "Reload delivery complete.");
@@ -376,7 +376,7 @@ suite.define(() => {
       startedAt: fixtureNow,
       messages: [
         {
-          __openclaw: {
+          __afora: {
             id: "fixture-original-user",
             idempotencyKey: `${runId}:user`,
             seq: 1,
@@ -386,7 +386,7 @@ suite.define(() => {
           timestamp: fixtureNow,
         },
         {
-          __openclaw: {
+          __afora: {
             id: "fixture-steering-user",
             idempotencyKey: "fixture-steer:user",
             seq: 2,

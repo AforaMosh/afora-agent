@@ -17,7 +17,7 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("hook install policy warnings", () => {
   it("passes acknowledgement through both scan stages", async () => {
-    const root = tempDirs.make("openclaw-hook-policy-");
+    const root = tempDirs.make("afora-hook-policy-");
     const source = path.join(root, "source");
     fs.mkdirSync(source);
     fs.writeFileSync(path.join(source, "HOOK.md"), "---\nname: my-hook\n---\n");

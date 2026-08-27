@@ -12,8 +12,8 @@ export {
   resolveMemoryFtsState,
   resolveMemoryVectorState,
   type Tone,
-} from "openclaw/plugin-sdk/memory-core-host-status";
-export { hasConfiguredMemorySecretInput } from "openclaw/plugin-sdk/memory-core-host-secret";
+} from "afora-agent/plugin-sdk/memory-core-host-status";
+export { hasConfiguredMemorySecretInput } from "afora-agent/plugin-sdk/memory-core-host-secret";
 export { auditDreamingArtifacts, repairDreamingArtifacts } from "./src/dreaming-repair.js";
 export { configureMemoryCoreDreamingState } from "./src/dreaming-state.js";
 export {

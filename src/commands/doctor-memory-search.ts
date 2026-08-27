@@ -2,8 +2,8 @@ import fsSync from "node:fs";
 import {
   findNormalizedProviderValue,
   normalizeProviderId,
-} from "@openclaw/model-catalog-core/provider-id";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+} from "@afora/model-catalog-core/provider-id";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { note } from "../../packages/terminal-core/src/note.js";
 import {
   listAgentIds,
@@ -23,7 +23,7 @@ import {
   resolveUsableCustomProviderApiKey,
 } from "../agents/model-auth.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { DoctorMemoryEmbeddingRuntimePayload } from "../gateway/server-methods/doctor.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import {
@@ -62,7 +62,7 @@ type MemoryDoctorAgentScope = {
   workspaceDir: string;
 };
 
-function resolveMemoryDoctorAgentScopes(cfg: OpenClawConfig): MemoryDoctorAgentScope[] {
+function resolveMemoryDoctorAgentScopes(cfg: AforaConfig): MemoryDoctorAgentScope[] {
   return listAgentIds(cfg).map((agentId) => ({
     agentId,
     agentDir: resolveAgentDir(cfg, agentId),
@@ -184,7 +184,7 @@ function resolveSuggestedRemoteMemoryProvider(): string | undefined {
   )?.providerId;
 }
 
-function hasConfiguredAwsSdkAuthForProvider(provider: string, cfg: OpenClawConfig): boolean {
+function hasConfiguredAwsSdkAuthForProvider(provider: string, cfg: AforaConfig): boolean {
   const providerConfig = findNormalizedProviderValue(cfg.models?.providers, provider);
   if (providerConfig?.auth === "aws-sdk") {
     return true;
@@ -197,7 +197,7 @@ function hasConfiguredAwsSdkAuthForProvider(provider: string, cfg: OpenClawConfi
   );
 }
 
-function isOpenAICompatibleMemoryProvider(providerId: string, cfg: OpenClawConfig): boolean {
+function isOpenAICompatibleMemoryProvider(providerId: string, cfg: AforaConfig): boolean {
   const normalizedProviderId = normalizeProviderId(providerId);
   if (normalizedProviderId === OPENAI_COMPATIBLE_MEMORY_EMBEDDING_PROVIDER) {
     return true;
@@ -225,7 +225,7 @@ function isOpenAICompatibleMemoryProvider(providerId: string, cfg: OpenClawConfi
 
 function resolveOpenAICompatibleMemoryBaseUrl(
   providerId: string,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   remoteBaseUrl: string | undefined,
 ): string | undefined {
   return (
@@ -234,7 +234,7 @@ function resolveOpenAICompatibleMemoryBaseUrl(
   );
 }
 
-function isKeyOptionalMemoryProvider(providerId: string, cfg: OpenClawConfig): boolean {
+function isKeyOptionalMemoryProvider(providerId: string, cfg: AforaConfig): boolean {
   return (
     providerId === "local" ||
     providerId === "ollama" ||
@@ -244,7 +244,7 @@ function isKeyOptionalMemoryProvider(providerId: string, cfg: OpenClawConfig): b
 }
 
 async function resolveRuntimeMemoryAuditContext(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
 ): Promise<RuntimeMemoryAuditContext | null> {
   const result = await getActiveMemorySearchManagerCore({
@@ -273,8 +273,8 @@ function buildMemoryRecallIssueNote(audit: ShortTermAuditSummary): string | null
   const issueLines = audit.issues.map((issue) => `- ${issue.message}`);
   const hasFixableIssue = audit.issues.some((issue) => issue.fixable);
   const guidance = hasFixableIssue
-    ? `Fix: ${formatCliCommand("openclaw doctor --fix")} or ${formatCliCommand("openclaw memory status --fix")}`
-    : `Verify: ${formatCliCommand("openclaw memory status --deep")}`;
+    ? `Fix: ${formatCliCommand("afora doctor --fix")} or ${formatCliCommand("afora memory status --fix")}`
+    : `Verify: ${formatCliCommand("afora memory status --deep")}`;
   return [
     "Memory recall artifacts need attention:",
     ...issueLines,
@@ -294,12 +294,12 @@ function buildDreamingArtifactIssueNote(audit: DreamingArtifactsAuditSummary): s
     ...issueLines,
     `Dream corpus: ${audit.sessionCorpusDir}`,
     hasFixableIssue
-      ? `Fix: ${formatCliCommand("openclaw doctor --fix")} or ${formatCliCommand("openclaw memory status --fix")}`
-      : `Verify: ${formatCliCommand("openclaw memory status --deep")}`,
+      ? `Fix: ${formatCliCommand("afora doctor --fix")} or ${formatCliCommand("afora memory status --fix")}`
+      : `Verify: ${formatCliCommand("afora memory status --deep")}`,
   ].join("\n");
 }
 
-export async function noteMemoryRecallHealth(cfg: OpenClawConfig): Promise<void> {
+export async function noteMemoryRecallHealth(cfg: AforaConfig): Promise<void> {
   const scopes = resolveMemoryDoctorAgentScopes(cfg);
   const labelAgents = scopes.length > 1;
   const dreaming = resolveMemoryDreamingConfig({
@@ -346,7 +346,7 @@ export async function noteMemoryRecallHealth(cfg: OpenClawConfig): Promise<void>
 }
 
 export async function maybeRepairMemoryRecallHealth(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   prompter: DoctorPrompter;
 }): Promise<void> {
   const scopes = resolveMemoryDoctorAgentScopes(params.cfg);
@@ -398,7 +398,7 @@ export async function maybeRepairMemoryRecallHealth(params: {
                 ? `- rewrote recall store${details ? ` (${details})` : ""}`
                 : null,
               repair.removedStaleLock ? "- removed stale promotion lock" : null,
-              `Verify: ${formatCliCommand("openclaw memory status --deep")}`,
+              `Verify: ${formatCliCommand("afora memory status --deep")}`,
             ].filter(Boolean);
             note(
               formatAgentMessage(scope.agentId, labelAgents, lines.join("\n")),
@@ -435,7 +435,7 @@ export async function maybeRepairMemoryRecallHealth(params: {
         dreamingRepair.archivedDreamsDiary ? "- archived dream diary" : null,
         dreamingRepair.archiveDir ? `- archive dir: ${dreamingRepair.archiveDir}` : null,
         ...dreamingRepair.warnings.map((warning) => `- warning: ${warning}`),
-        `Verify: ${formatCliCommand("openclaw memory status --deep")}`,
+        `Verify: ${formatCliCommand("afora memory status --deep")}`,
       ].filter(Boolean);
       note(formatAgentMessage(scope.agentId, labelAgents, lines.join("\n")), "Doctor changes");
     } catch (err) {
@@ -451,7 +451,7 @@ export async function maybeRepairMemoryRecallHealth(params: {
   }
 }
 
-function hasActiveAlternateMemoryPluginSlot(cfg: OpenClawConfig): boolean {
+function hasActiveAlternateMemoryPluginSlot(cfg: AforaConfig): boolean {
   const plugins = normalizePluginsConfig(cfg.plugins);
   if (!plugins.enabled) {
     return false;
@@ -476,7 +476,7 @@ function hasActiveAlternateMemoryPluginSlot(cfg: OpenClawConfig): boolean {
   return entry.enabled === true || entry.config !== undefined;
 }
 
-function isActiveMemoryPluginAvailable(cfg: OpenClawConfig): boolean {
+function isActiveMemoryPluginAvailable(cfg: AforaConfig): boolean {
   const plugins = normalizePluginsConfig(cfg.plugins);
   if (!plugins.enabled || plugins.deny.includes("active-memory")) {
     return false;
@@ -492,7 +492,7 @@ function isActiveMemoryPluginAvailable(cfg: OpenClawConfig): boolean {
   return pluginConfig?.enabled !== false;
 }
 
-function resolveActiveMemoryConversationRecallSupport(cfg: OpenClawConfig): {
+function resolveActiveMemoryConversationRecallSupport(cfg: AforaConfig): {
   providerSupported: boolean;
   memorySearchAllowed: boolean;
 } {
@@ -513,7 +513,7 @@ function resolveActiveMemoryConversationRecallSupport(cfg: OpenClawConfig): {
 }
 
 function noteRememberAcrossConversationsHealth(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   noteFn: typeof note;
 }): { enabled: boolean } {
@@ -545,7 +545,7 @@ function noteRememberAcrossConversationsHealth(params: {
 
 /**
  * Check whether memory search has a usable embedding provider.
- * Runs as part of `openclaw doctor` using config-only checks where possible.
+ * Runs as part of `afora doctor` using config-only checks where possible.
  */
 type MemorySearchHealthOptions = {
   gatewayMemoryProbe?: {
@@ -561,7 +561,7 @@ type MemorySearchHealthOptions = {
 };
 
 export async function noteMemorySearchHealth(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   opts?: MemorySearchHealthOptions,
 ): Promise<void> {
   const scopes = resolveMemoryDoctorAgentScopes(cfg);
@@ -588,7 +588,7 @@ export async function noteMemorySearchHealth(
 }
 
 async function noteMemorySearchHealthForAgent(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   scope: MemoryDoctorAgentScope,
   opts: MemorySearchHealthOptions,
 ): Promise<void> {
@@ -656,13 +656,13 @@ async function noteMemorySearchHealthForAgent(
         gatewayDetail ? `Gateway probe: ${gatewayDetail}` : null,
         "",
         "Fix (pick one):",
-        `- Install the llama.cpp provider plugin: ${formatCliCommand("openclaw plugins install @openclaw/llama-cpp-provider")}`,
+        `- Install the llama.cpp provider plugin: ${formatCliCommand("afora plugins install @afora/llama-cpp-provider")}`,
         `- Set a local GGUF model path in config`,
         suggestedRemoteProvider
-          ? `- Switch to a remote provider: ${formatCliCommand(`openclaw config set memory.search.provider ${suggestedRemoteProvider}`)}`
+          ? `- Switch to a remote provider: ${formatCliCommand(`afora config set memory.search.provider ${suggestedRemoteProvider}`)}`
           : `- Switch to a remote embedding provider in config`,
         "",
-        `Verify: ${formatCliCommand("openclaw memory status --deep")}`,
+        `Verify: ${formatCliCommand("afora memory status --deep")}`,
       ]
         .filter(Boolean)
         .join("\n"),
@@ -681,9 +681,9 @@ async function noteMemorySearchHealthForAgent(
         "Set memory.search.remote.baseUrl to the /v1 endpoint for your embeddings server.",
         "",
         "Fix:",
-        `- ${formatCliCommand("openclaw config set memory.search.remote.baseUrl http://127.0.0.1:1234/v1")}`,
+        `- ${formatCliCommand("afora config set memory.search.remote.baseUrl http://127.0.0.1:1234/v1")}`,
         "",
-        `Verify: ${formatCliCommand("openclaw memory status --deep")}`,
+        `Verify: ${formatCliCommand("afora memory status --deep")}`,
       ].join("\n"),
       "Memory search",
     );
@@ -697,9 +697,9 @@ async function noteMemorySearchHealthForAgent(
         "Set memory.search.model to the embedding model id your server expects.",
         "",
         "Fix:",
-        `- ${formatCliCommand("openclaw config set memory.search.model text-embedding-bge-m3")}`,
+        `- ${formatCliCommand("afora config set memory.search.model text-embedding-bge-m3")}`,
         "",
-        `Verify: ${formatCliCommand("openclaw memory status --deep")}`,
+        `Verify: ${formatCliCommand("afora memory status --deep")}`,
       ].join("\n"),
       "Memory search",
     );
@@ -712,7 +712,7 @@ async function noteMemorySearchHealthForAgent(
     }
     // When the probe was intentionally skipped (skipped: true / checked: false
     // due to probe:false path), we have no embedding status information — do
-    // not warn. A skipped probe means the user ran `openclaw doctor` without
+    // not warn. A skipped probe means the user ran `afora doctor` without
     // --deep; it does not mean embeddings are unavailable.
     // NOTE: a transport timeout also sets checked: false, but skipped stays
     // false/absent — a timeout is a real diagnostic signal and should fall
@@ -727,7 +727,7 @@ async function noteMemorySearchHealthForAgent(
           ? `Memory search provider "${provider}" is configured, but the gateway reports embeddings are not ready.`
           : `Memory search provider "${provider}" is configured, but the gateway could not confirm embeddings are ready.`,
         gatewayProbeWarning,
-        `Verify: ${formatCliCommand("openclaw memory status --deep")}`,
+        `Verify: ${formatCliCommand("afora memory status --deep")}`,
       ]
         .filter(Boolean)
         .join("\n"),
@@ -751,7 +751,7 @@ async function noteMemorySearchHealthForAgent(
       [
         `Memory search provider is set to "${provider}" but the API key was not found in the CLI environment.`,
         "The running gateway reports memory embeddings are ready for the default agent.",
-        `Verify: ${formatCliCommand("openclaw memory status --deep")}`,
+        `Verify: ${formatCliCommand("afora memory status --deep")}`,
       ].join("\n"),
       "Memory search",
     );
@@ -768,10 +768,10 @@ async function noteMemorySearchHealthForAgent(
       "",
       "Fix (pick one):",
       `- Set ${envVar} in your environment`,
-      `- Configure credentials: ${formatCliCommand("openclaw configure --section model")}`,
-      `- To disable: ${formatCliCommand("openclaw config set memory.search.enabled false")}`,
+      `- Configure credentials: ${formatCliCommand("afora configure --section model")}`,
+      `- To disable: ${formatCliCommand("afora config set memory.search.enabled false")}`,
       "",
-      `Verify: ${formatCliCommand("openclaw memory status --deep")}`,
+      `Verify: ${formatCliCommand("afora memory status --deep")}`,
     ].join("\n"),
     "Memory search",
   );
@@ -802,7 +802,7 @@ function hasLocalEmbeddings(local: { modelPath?: string }): boolean {
 
 async function hasApiKeyForProvider(
   provider: string,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentDir: string,
   opts?: { skipProfileResolution?: boolean },
 ): Promise<boolean> {

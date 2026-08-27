@@ -1,7 +1,7 @@
 // Control UI tests cover plugin catalog browsing and lifecycle mutations.
 import { mkdir, rm } from "node:fs/promises";
 import path from "node:path";
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PluginsSearchResult } from "../../../../packages/gateway-protocol/src/schema/plugins.ts";
@@ -23,9 +23,9 @@ import {
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
-const updateScreenshots = process.env.OPENCLAW_UPDATE_E2E_SCREENSHOTS === "1";
+const updateScreenshots = process.env.AFORA_UPDATE_E2E_SCREENSHOTS === "1";
 const artifactDir = path.resolve(process.cwd(), ".artifacts/control-ui-e2e/plugins");
 const desktopViewport = { height: 1000, width: 1440 };
 const mobileViewport = { height: 852, width: 393 };
@@ -40,7 +40,7 @@ const pluginMethods = [
 const workboardDisabled = {
   id: "workboard",
   name: "Workboard",
-  packageName: "@openclaw/workboard",
+  packageName: "@afora/workboard",
   description: "Dashboard workboard for agent-owned issues and sessions.",
   version: "2026.7.9",
   kind: ["productivity"],
@@ -71,12 +71,12 @@ const lobsterPlugin = {
   state: "not-installed",
   featured: true,
   order: 50,
-  install: { source: "clawhub", packageName: "@openclaw/lobster" },
+  install: { source: "clawhub", packageName: "@afora/lobster" },
 } satisfies PluginCatalogItem;
 
 const installedLobsterPlugin = {
   ...lobsterPlugin,
-  packageName: "@openclaw/lobster",
+  packageName: "@afora/lobster",
   version: "2026.8.10",
   origin: "global",
   installed: true,
@@ -97,7 +97,7 @@ const remoteIconPlugin = {
   featured: true,
   order: 60,
   hasIcon: true,
-  install: { source: "clawhub", packageName: "@openclaw/firecrawl" },
+  install: { source: "clawhub", packageName: "@afora/firecrawl" },
 } satisfies PluginCatalogItem;
 
 const calendarPlugin = {
@@ -154,7 +154,7 @@ const lobsterSearchResponse = {
     {
       score: 1,
       package: {
-        name: "@openclaw/lobster",
+        name: "@afora/lobster",
         displayName: "Lobster",
         family: "code-plugin",
         channel: "official",
@@ -180,7 +180,7 @@ const installResult = {
 
 const installPolicyWarning = {
   installPolicyCode: "install_policy_warning_acknowledgement_required",
-  targetName: "@openclaw/lobster",
+  targetName: "@afora/lobster",
   targetType: "plugin",
   requestMode: "install",
   reason: "ClawScan found issues to review.",
@@ -234,7 +234,7 @@ function configSnapshot(isWorkboardEnabled: boolean) {
     config,
     hash: isWorkboardEnabled ? "plugins-config-enabled" : "plugins-config-disabled",
     issues: [],
-    path: "/tmp/openclaw-e2e/openclaw.json",
+    path: "/tmp/afora-e2e/afora.json",
     raw: JSON.stringify(config, null, 2),
     resolved: config,
     sourceConfig: config,
@@ -364,7 +364,7 @@ describeControlUiE2e("Control UI Plugins mocked Gateway E2E", () => {
   beforeAll(async () => {
     if (!chromiumAvailable) {
       throw new Error(
-        `Playwright Chromium is not installed at ${chromiumExecutablePath}. Run \`pnpm --dir ui exec playwright install chromium\`, or set OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
+        `Playwright Chromium is not installed at ${chromiumExecutablePath}. Run \`pnpm --dir ui exec playwright install chromium\`, or set AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
       );
     }
     if (updateScreenshots) {
@@ -403,14 +403,14 @@ describeControlUiE2e("Control UI Plugins mocked Gateway E2E", () => {
           await workboardCard.waitFor({ state: "visible" });
         }
 
-        await page.getByRole("searchbox", { name: "Search plugins" }).fill("@openclaw/workboard");
+        await page.getByRole("searchbox", { name: "Search plugins" }).fill("@afora/workboard");
         await workboardCard.waitFor({ state: "visible", timeout: 5_000 });
         await captureScreenshot(page, `08-scoped-package-${tab}.png`);
 
         if (tab === "discover") {
           const searchRequest = await gateway.waitForRequest("plugins.search");
           expect(requestParams(searchRequest)).toEqual({
-            query: "@openclaw/workboard",
+            query: "@afora/workboard",
             limit: 20,
           });
         }
@@ -425,7 +425,7 @@ describeControlUiE2e("Control UI Plugins mocked Gateway E2E", () => {
     const page = await context.newPage();
     await page.addInitScript(
       ({ gatewayUrl }) => {
-        window["__OPENCLAW_NATIVE_CONTROL_AUTH__"] = { gatewayUrl };
+        window["__AFORA_NATIVE_CONTROL_AUTH__"] = { gatewayUrl };
       },
       { gatewayUrl: server.baseUrl.replace(/^http/u, "ws") },
     );
@@ -434,7 +434,7 @@ describeControlUiE2e("Control UI Plugins mocked Gateway E2E", () => {
       methodResponses: pluginMethodResponses(),
     });
     let pluginIconAuth = "";
-    await page.route("**/__openclaw__/plugin-icon/remote-icon", async (route) => {
+    await page.route("**/__afora__/plugin-icon/remote-icon", async (route) => {
       pluginIconAuth = route.request().headers().authorization ?? "";
       await route.fulfill({
         body: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="#f97316" d="M4 3h16v18H4z"/></svg>`,
@@ -677,7 +677,7 @@ describeControlUiE2e("Control UI Plugins mocked Gateway E2E", () => {
       if (await settingsSidebar.isVisible()) {
         await settingsSidebar.getByRole("button", { name: "Back to app" }).click();
       }
-      const sidebar = page.locator("openclaw-app-sidebar");
+      const sidebar = page.locator("afora-app-sidebar");
       await sidebar.waitFor({ state: "visible" });
       const workboardSidebarItem = sidebar.locator(
         '.sidebar-zone-entry[data-sidebar-entry="route:workboard"] > .nav-item',
@@ -718,7 +718,7 @@ describeControlUiE2e("Control UI Plugins mocked Gateway E2E", () => {
       await row.getByRole("button", { name: "Install Lobster", exact: true }).click();
       expect(requestParams(await gateway.waitForRequest("plugins.install"))).toEqual({
         source: "clawhub",
-        packageName: "@openclaw/lobster",
+        packageName: "@afora/lobster",
       });
       await gateway.rejectDeferred("plugins.install", {
         code: "INVALID_REQUEST",
@@ -742,7 +742,7 @@ describeControlUiE2e("Control UI Plugins mocked Gateway E2E", () => {
       expect(await review.textContent()).not.toContain("raw terminal install-policy output");
       await page.getByRole("searchbox", { name: "Search plugins" }).fill("lobster");
       await gateway.waitForRequest("plugins.search");
-      const searchRow = page.locator('[data-package-name="@openclaw/lobster"]');
+      const searchRow = page.locator('[data-package-name="@afora/lobster"]');
       const searchReview = searchRow.getByRole("alert");
       await searchReview.waitFor({ state: "visible" });
       expect(
@@ -787,7 +787,7 @@ describeControlUiE2e("Control UI Plugins mocked Gateway E2E", () => {
       const retry = await waitForNextRequest(gateway, "plugins.install", installCountBeforeRetry);
       expect(requestParams(retry)).toEqual({
         source: "clawhub",
-        packageName: "@openclaw/lobster",
+        packageName: "@afora/lobster",
         acknowledgeInstallPolicyWarning: true,
       });
       const pendingRetry = review.getByRole("button", { name: "Installing…", exact: true });
@@ -818,7 +818,7 @@ describeControlUiE2e("Control UI Plugins mocked Gateway E2E", () => {
       );
       expect(requestParams(secondRetry)).toEqual({
         source: "clawhub",
-        packageName: "@openclaw/lobster",
+        packageName: "@afora/lobster",
         acknowledgeInstallPolicyWarning: true,
       });
 

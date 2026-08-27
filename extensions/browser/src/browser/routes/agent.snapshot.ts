@@ -5,7 +5,7 @@
  * navigation policy checks, media storage, and screenshot normalization.
  */
 import path from "node:path";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { getImageMetadata } from "../../media/media-services.js";
 import { ensureMediaDir, saveMediaBuffer } from "../../media/store.js";
 import { resolveBrowserNavigationTimeoutMs } from "../act-policy.js";
@@ -70,7 +70,7 @@ import { readRoutePositiveInteger, readRouteTimerTimeoutMs } from "./route-numer
 import type { BrowserResponse, BrowserRouteRegistrar } from "./types.js";
 import { jsonError, runProfileRouteOperation, toBoolean, toStringOrEmpty } from "./utils.js";
 
-const CHROME_MCP_OVERLAY_ATTR = "data-openclaw-mcp-overlay";
+const CHROME_MCP_OVERLAY_ATTR = "data-afora-mcp-overlay";
 
 type ChromeMcpSnapshotOperation = ChromeMcpOperationOptions & {
   profileName: string;

@@ -1,5 +1,5 @@
 // Synology Chat plugin module reports attachment-route setup gaps without blocking text/inbound use.
-import type { ChannelDoctorAdapter } from "openclaw/plugin-sdk/channel-contract";
+import type { ChannelDoctorAdapter } from "afora-agent/plugin-sdk/channel-contract";
 import { listAccountIds, resolveAccount } from "./accounts.js";
 import { resolveSynologyHostedMediaRoute } from "./hosted-media-route.js";
 

@@ -11,8 +11,8 @@ import type {
   SnapshotSummary,
 } from "../snapshot/snapshot-provider.js";
 import { recordBackupRunOutcome } from "../state/backup-run-records.js";
-import { resolveOpenClawAgentSqlitePath } from "../state/openclaw-agent-db.paths.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+import { resolveAforaAgentSqlitePath } from "../state/afora-agent-db.paths.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import { resolveUserPath, shortenHomePath } from "../utils.js";
 
 type BackupSqliteCreateOptions = {
@@ -66,7 +66,7 @@ type ResolvedSnapshotDatabase = {
   identity: { role: "global" } | { role: "agent"; agentId: string };
 };
 
-const OPENCLAW_SNAPSHOT_READ_OPTIONS = {
+const AFORA_SNAPSHOT_READ_OPTIONS = {
   allowedDatabaseRoles: ["global", "agent"],
 } as const;
 
@@ -119,7 +119,7 @@ export async function backupSqliteListCommand(
   const repositoryPath = resolveRequiredPath(options.repository, "--repository");
   const snapshots = await createLocalSqliteSnapshotProvider({
     repositoryPath,
-    ...OPENCLAW_SNAPSHOT_READ_OPTIONS,
+    ...AFORA_SNAPSHOT_READ_OPTIONS,
   }).list();
   const report: BackupSqliteListResult = {
     ok: true,
@@ -176,13 +176,13 @@ async function resolveSnapshotDatabase(
   }
   if (options.global === true) {
     return {
-      path: await fs.realpath(resolveOpenClawStateSqlitePath()),
+      path: await fs.realpath(resolveAforaStateSqlitePath()),
       identity: { role: "global" },
     };
   }
   const agentId = normalizeAgentId(rawAgentId);
   return {
-    path: await fs.realpath(resolveOpenClawAgentSqlitePath({ agentId })),
+    path: await fs.realpath(resolveAforaAgentSqlitePath({ agentId })),
     identity: { role: "agent", agentId },
   };
 }
@@ -203,7 +203,7 @@ function resolveSnapshot(
     provider: createLocalSqliteSnapshotProvider({
       repositoryPath,
       validationRootPath,
-      ...OPENCLAW_SNAPSHOT_READ_OPTIONS,
+      ...AFORA_SNAPSHOT_READ_OPTIONS,
     }),
     ref: { path: snapshotPath },
   };

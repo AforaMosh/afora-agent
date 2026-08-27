@@ -90,13 +90,13 @@
 }
 
 /* Plain-browser chat owns the only narrow chrome row in its pane header. */
-html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-web-chrome)
+html:not(.afora-native-macos):not(.afora-native-nav):not(.afora-native-web-chrome)
   .shell--mobile-nav.shell--merged-chat-chrome {
   --shell-topbar-height: 0px;
   grid-template-rows: 0px minmax(0, 1fr);
 }
 
-html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-web-chrome)
+html:not(.afora-native-macos):not(.afora-native-nav):not(.afora-native-web-chrome)
   .shell--mobile-nav.shell--merged-chat-chrome
   .topbar {
   display: none;
@@ -237,28 +237,28 @@ html:not(.openclaw-native-macos):not(.openclaw-native-nav):not(.openclaw-native-
    brand moves first, clears the traffic lights, and stays non-interactive
    under the AppKit drag region (x 78-254, y < 46); the drawer toggle and
    search sit to its right. */
-html.openclaw-native-macos body .shell--mobile-nav {
+html.afora-native-macos body .shell--mobile-nav {
   --shell-topbar-height: 58px;
 }
 
-html.openclaw-native-macos body .shell--mobile-nav .topbar {
+html.afora-native-macos body .shell--mobile-nav .topbar {
   padding: 0 12px 0 92px !important;
 }
 
-html.openclaw-native-macos body .shell--mobile-nav .topnav-shell {
+html.afora-native-macos body .shell--mobile-nav .topnav-shell {
   display: flex;
   gap: 8px;
   min-height: 58px;
 }
 
-html.openclaw-native-macos body .shell--mobile-nav .topnav-shell__content {
+html.afora-native-macos body .shell--mobile-nav .topnav-shell__content {
   order: -1;
   flex: 0 0 auto;
   min-width: 176px;
   justify-content: flex-start;
 }
 
-html.openclaw-native-macos body .shell--mobile-nav .topnav-shell__actions {
+html.afora-native-macos body .shell--mobile-nav .topnav-shell__actions {
   margin-left: auto;
 }
 
@@ -558,13 +558,13 @@ html.openclaw-native-macos body .shell--mobile-nav .topnav-shell__actions {
     max-height: 380px;
   }
 
-  .content:has(openclaw-logs-page) {
+  .content:has(afora-logs-page) {
     display: block;
     overflow-y: auto;
   }
 
-  .content:has(openclaw-logs-page) > openclaw-router-outlet,
-  .content openclaw-logs-page,
+  .content:has(afora-logs-page) > afora-router-outlet,
+  .content afora-logs-page,
   .content .settings-workspace--fill-height,
   .content .settings-workspace--fill-height > .settings-workspace__body,
   .content .settings-workspace--fill-height .logs-card {

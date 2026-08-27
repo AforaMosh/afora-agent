@@ -2,7 +2,7 @@
  * Tests web.start gateway method behavior and backend launch responses.
  */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChannelRuntimeSnapshot } from "../server-channel-runtime.types.js";
 import type { GatewayRequestHandlerOptions } from "./types.js";
@@ -90,11 +90,11 @@ describe("webHandlers web.login.start", () => {
         pluginId: "whatsapp",
         channelId: "whatsapp",
         label: "WhatsApp",
-        installSpec: "clawhub:@openclaw/whatsapp",
-        installCommand: "openclaw plugins install clawhub:@openclaw/whatsapp",
-        doctorFixCommand: "openclaw doctor --fix",
+        installSpec: "clawhub:@afora/whatsapp",
+        installCommand: "afora plugins install clawhub:@afora/whatsapp",
+        doctorFixCommand: "afora doctor --fix",
         repairHint:
-          "Install the official external plugin with: openclaw plugins install clawhub:@openclaw/whatsapp, or run: openclaw doctor --fix.",
+          "Install the official external plugin with: afora plugins install clawhub:@afora/whatsapp, or run: afora doctor --fix.",
       },
     ]);
     const respond = vi.fn();
@@ -117,7 +117,7 @@ describe("webHandlers web.login.start", () => {
       expect.objectContaining({
         code: "INVALID_REQUEST",
         message:
-          "web login provider is not available. Install the official external plugin with: openclaw plugins install clawhub:@openclaw/whatsapp, or run: openclaw doctor --fix.",
+          "web login provider is not available. Install the official external plugin with: afora plugins install clawhub:@afora/whatsapp, or run: afora doctor --fix.",
       }),
     );
     expect(mocks.resolveMissingOfficialExternalChannelPluginRepairHints).toHaveBeenCalledWith({
@@ -137,11 +137,11 @@ describe("webHandlers web.login.start", () => {
                   pluginId: "whatsapp",
                   channelId: "whatsapp",
                   label: "WhatsApp",
-                  installSpec: "clawhub:@openclaw/whatsapp",
-                  installCommand: "openclaw plugins install clawhub:@openclaw/whatsapp",
-                  doctorFixCommand: "openclaw doctor --fix",
+                  installSpec: "clawhub:@afora/whatsapp",
+                  installCommand: "afora plugins install clawhub:@afora/whatsapp",
+                  doctorFixCommand: "afora doctor --fix",
                   repairHint:
-                    "Install the official external plugin with: openclaw plugins install clawhub:@openclaw/whatsapp, or run: openclaw doctor --fix.",
+                    "Install the official external plugin with: afora plugins install clawhub:@afora/whatsapp, or run: afora doctor --fix.",
                 },
               ]
             : channelId === "signal"
@@ -150,11 +150,11 @@ describe("webHandlers web.login.start", () => {
                     pluginId: "signal",
                     channelId: "signal",
                     label: "Signal",
-                    installSpec: "clawhub:@openclaw/signal",
-                    installCommand: "openclaw plugins install clawhub:@openclaw/signal",
-                    doctorFixCommand: "openclaw doctor --fix",
+                    installSpec: "clawhub:@afora/signal",
+                    installCommand: "afora plugins install clawhub:@afora/signal",
+                    doctorFixCommand: "afora doctor --fix",
                     repairHint:
-                      "Install the official external plugin with: openclaw plugins install clawhub:@openclaw/signal, or run: openclaw doctor --fix.",
+                      "Install the official external plugin with: afora plugins install clawhub:@afora/signal, or run: afora doctor --fix.",
                   },
                 ]
               : [],
@@ -191,7 +191,7 @@ describe("webHandlers web.login.start", () => {
       expect.objectContaining({
         code: "INVALID_REQUEST",
         message:
-          "web login provider is not available. Configured official external channel plugins are missing for WhatsApp, Signal. Install them with: openclaw plugins install clawhub:@openclaw/whatsapp; openclaw plugins install clawhub:@openclaw/signal, or run: openclaw doctor --fix.",
+          "web login provider is not available. Configured official external channel plugins are missing for WhatsApp, Signal. Install them with: afora plugins install clawhub:@afora/whatsapp; afora plugins install clawhub:@afora/signal, or run: afora doctor --fix.",
       }),
     );
   });

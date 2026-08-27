@@ -3,30 +3,30 @@ import { EventEmitter } from "node:events";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { connect, type Socket } from "node:net";
 import { Readable } from "node:stream";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createTelegramMiniAppLaunchTickets,
   type TelegramMiniAppLaunchTickets,
 } from "./launch-ticket.js";
 
-type OpenClawPluginHttpRouteParams = Parameters<OpenClawPluginApi["registerHttpRoute"]>[0];
+type AforaPluginHttpRouteParams = Parameters<AforaPluginApi["registerHttpRoute"]>[0];
 
 const issueDeviceBootstrapToken = vi.hoisted(() =>
   vi.fn(async () => ({ token: "issued", expiresAtMs: Date.now() + 600_000 })),
 );
 const resolveTelegramMiniAppUrls = vi.hoisted(() =>
   vi.fn(async () => ({
-    pageUrl: "https://host.tailnet.ts.net/__openclaw_tg_miniapp/",
-    controlUiUrl: "https://host.tailnet.ts.net/openclaw",
+    pageUrl: "https://host.tailnet.ts.net/__afora_tg_miniapp/",
+    controlUiUrl: "https://host.tailnet.ts.net/afora",
     gatewayUrl: "wss://host.tailnet.ts.net",
   })),
 );
 
-vi.mock("openclaw/plugin-sdk/device-bootstrap", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/device-bootstrap")>()),
+vi.mock("afora-agent/plugin-sdk/device-bootstrap", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/device-bootstrap")>()),
   issueDeviceBootstrapToken,
 }));
 
@@ -76,8 +76,8 @@ class MockResponse extends EventEmitter {
   }
 }
 
-function createRoute(cfg: OpenClawConfig): OpenClawPluginHttpRouteParams {
-  let route: OpenClawPluginHttpRouteParams | null = null;
+function createRoute(cfg: AforaConfig): AforaPluginHttpRouteParams {
+  let route: AforaPluginHttpRouteParams | null = null;
   const api = createTestPluginApi({
     config: cfg,
     registerHttpRoute(params) {
@@ -92,7 +92,7 @@ function createRoute(cfg: OpenClawConfig): OpenClawPluginHttpRouteParams {
 }
 
 async function callRoute(params: {
-  route: OpenClawPluginHttpRouteParams;
+  route: AforaPluginHttpRouteParams;
   method: string;
   url: string;
   body?: string;
@@ -109,7 +109,7 @@ async function callRoute(params: {
   return await callRouteRequest(params.route, req);
 }
 
-async function callRouteRequest(route: OpenClawPluginHttpRouteParams, req: IncomingMessage) {
+async function callRouteRequest(route: AforaPluginHttpRouteParams, req: IncomingMessage) {
   const res = new MockResponse() as ServerResponse & MockResponse;
   await route.handler(req, res);
   return res;
@@ -122,7 +122,7 @@ function createPendingAuthRequest(ip: string): IncomingMessage {
     },
   }) as IncomingMessage;
   req.method = "POST";
-  req.url = "/__openclaw_tg_miniapp/auth";
+  req.url = "/__afora_tg_miniapp/auth";
   req.headers = { "content-type": "application/json" };
   Object.defineProperty(req, "socket", { value: { remoteAddress: ip } });
   return req;
@@ -163,13 +163,13 @@ async function readSocketResponse(socket: Socket): Promise<string> {
   });
 }
 
-function createRouteServer(route: OpenClawPluginHttpRouteParams): Server {
+function createRouteServer(route: AforaPluginHttpRouteParams): Server {
   return createServer((req, res) => {
     void route.handler(req, res);
   });
 }
 
-function config(allowFrom: string[] = ["123456"]): OpenClawConfig {
+function config(allowFrom: string[] = ["123456"]): AforaConfig {
   return {
     channels: {
       telegram: {
@@ -216,7 +216,7 @@ describe("registerTelegramMiniAppRoutes", () => {
     const res = await callRoute({
       route,
       method: "GET",
-      url: "/__openclaw_tg_miniapp/?accountId=ops",
+      url: "/__afora_tg_miniapp/?accountId=ops",
     });
 
     expect(res.statusCode).toBe(200);
@@ -230,7 +230,7 @@ describe("registerTelegramMiniAppRoutes", () => {
     const res = await callRoute({
       route,
       method: "POST",
-      url: "/__openclaw_tg_miniapp/auth",
+      url: "/__afora_tg_miniapp/auth",
       contentType: "application/json; charset=utf-8",
       body: authBody({ nonce: "success" }),
     });
@@ -238,7 +238,7 @@ describe("registerTelegramMiniAppRoutes", () => {
     expect(res.statusCode).toBe(200);
     expect(JSON.parse(res.body)).toEqual({
       bootstrapToken: "issued",
-      controlUiUrl: "https://host.tailnet.ts.net/openclaw",
+      controlUiUrl: "https://host.tailnet.ts.net/afora",
       gatewayUrl: "wss://host.tailnet.ts.net",
     });
     expect(issueDeviceBootstrapToken).toHaveBeenCalledWith({
@@ -263,7 +263,7 @@ describe("registerTelegramMiniAppRoutes", () => {
     await callRoute({
       route,
       method: "POST",
-      url: "/__openclaw_tg_miniapp/auth",
+      url: "/__afora_tg_miniapp/auth",
       contentType: "application/json",
       body: JSON.stringify({ initData, launchTicket }),
       ip: "203.0.113.20",
@@ -271,7 +271,7 @@ describe("registerTelegramMiniAppRoutes", () => {
     const replay = await callRoute({
       route,
       method: "POST",
-      url: "/__openclaw_tg_miniapp/auth",
+      url: "/__afora_tg_miniapp/auth",
       contentType: "application/json",
       body: JSON.stringify({ initData, launchTicket }),
       ip: "203.0.113.20",
@@ -291,7 +291,7 @@ describe("registerTelegramMiniAppRoutes", () => {
       callRoute({
         route,
         method: "POST",
-        url: "/__openclaw_tg_miniapp/auth",
+        url: "/__afora_tg_miniapp/auth",
         contentType: "application/json",
         body: JSON.stringify({ initData, launchTicket }),
         ip: "203.0.113.21",
@@ -299,7 +299,7 @@ describe("registerTelegramMiniAppRoutes", () => {
       callRoute({
         route,
         method: "POST",
-        url: "/__openclaw_tg_miniapp/auth",
+        url: "/__afora_tg_miniapp/auth",
         contentType: "application/json",
         body: JSON.stringify({ initData, launchTicket }),
         ip: "203.0.113.22",
@@ -316,7 +316,7 @@ describe("registerTelegramMiniAppRoutes", () => {
     const res = await callRoute({
       route,
       method: "POST",
-      url: "/__openclaw_tg_miniapp/auth",
+      url: "/__afora_tg_miniapp/auth",
       contentType: "application/json",
       body: JSON.stringify({
         initData: signedInitData("123456", "non-owner"),
@@ -338,7 +338,7 @@ describe("registerTelegramMiniAppRoutes", () => {
     const res = await callRoute({
       route,
       method: "POST",
-      url: "/__openclaw_tg_miniapp/auth",
+      url: "/__afora_tg_miniapp/auth",
       contentType: "application/json",
       body: JSON.stringify({
         initData: signedInitData("123456", "missing-ticket"),
@@ -360,7 +360,7 @@ describe("registerTelegramMiniAppRoutes", () => {
     const request = {
       route,
       method: "POST",
-      url: "/__openclaw_tg_miniapp/auth",
+      url: "/__afora_tg_miniapp/auth",
       contentType: "application/json",
       body: JSON.stringify({ initData, launchTicket }),
       ip: "203.0.113.32",
@@ -381,7 +381,7 @@ describe("registerTelegramMiniAppRoutes", () => {
       last = await callRoute({
         route,
         method: "POST",
-        url: "/__openclaw_tg_miniapp/auth",
+        url: "/__afora_tg_miniapp/auth",
         contentType: "application/json",
         body: authBody({ nonce: `rate-${i}` }),
         ip: "203.0.113.40",
@@ -397,7 +397,7 @@ describe("registerTelegramMiniAppRoutes", () => {
     const res = await callRoute({
       route,
       method: "POST",
-      url: "/__openclaw_tg_miniapp/auth",
+      url: "/__afora_tg_miniapp/auth",
       contentType: "application/json",
       body: "{",
       ip: "203.0.113.49",
@@ -412,7 +412,7 @@ describe("registerTelegramMiniAppRoutes", () => {
     const route = createRoute(config());
     const req = Readable.from(["x".repeat(4097)]) as IncomingMessage;
     req.method = "POST";
-    req.url = "/__openclaw_tg_miniapp/auth";
+    req.url = "/__afora_tg_miniapp/auth";
     req.headers = { "content-type": "application/json" };
     Object.defineProperty(req, "socket", { value: { remoteAddress: "203.0.113.50" } });
 
@@ -437,7 +437,7 @@ describe("registerTelegramMiniAppRoutes", () => {
 
       socket.write(
         [
-          "POST /__openclaw_tg_miniapp/auth HTTP/1.1",
+          "POST /__afora_tg_miniapp/auth HTTP/1.1",
           "Host: 127.0.0.1",
           "Content-Type: application/json",
           `Content-Length: ${AUTH_BODY_MAX_BYTES + 1}`,
@@ -513,7 +513,7 @@ describe("registerTelegramMiniAppRoutes", () => {
 
       socket.write(
         [
-          "POST /__openclaw_tg_miniapp/auth HTTP/1.1",
+          "POST /__afora_tg_miniapp/auth HTTP/1.1",
           "Host: 127.0.0.1",
           "Content-Type: application/json",
           "Content-Length: 64",

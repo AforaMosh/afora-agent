@@ -1,7 +1,7 @@
 // Matrix helper module prepares and chunks outbound formatted text.
-import type { MarkdownTableMode } from "openclaw/plugin-sdk/markdown-table-runtime";
-import { requireRuntimeConfig } from "openclaw/plugin-sdk/plugin-config-runtime";
-import { findCodeRegions, isInsideCode, tokenizeHtmlTags } from "openclaw/plugin-sdk/text-chunking";
+import type { MarkdownTableMode } from "afora-agent/plugin-sdk/markdown-table-runtime";
+import { requireRuntimeConfig } from "afora-agent/plugin-sdk/plugin-config-runtime";
+import { findCodeRegions, isInsideCode, tokenizeHtmlTags } from "afora-agent/plugin-sdk/text-chunking";
 import { getMatrixRuntime } from "../../runtime.js";
 import type { CoreConfig } from "../../types.js";
 import {

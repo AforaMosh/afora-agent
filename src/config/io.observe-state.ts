@@ -1,5 +1,5 @@
 import type fs from "node:fs";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { snapshotConfigAuditProcessInfo, type ConfigObserveAuditRecord } from "./io.audit.js";
 import type {
   ConfigHealthEntry,

@@ -4,7 +4,7 @@ import path from "node:path";
 import type { LegacyRescuePendingDetection, MigrationMessages } from "./state-migrations.types.js";
 
 function resolveLegacyRescuePendingPaths(stateDir: string): string[] {
-  return ["crestodian", "openclaw"].map((owner) => path.join(stateDir, owner, "rescue-pending"));
+  return ["crestodian", "afora"].map((owner) => path.join(stateDir, owner, "rescue-pending"));
 }
 
 function isSafeLegacyOwnerDirectory(stateDir: string, sourcePath: string): boolean {

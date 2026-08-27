@@ -1,4 +1,4 @@
-import { addTimerTimeoutGraceMs } from "@openclaw/normalization-core/number-coercion";
+import { addTimerTimeoutGraceMs } from "@afora/normalization-core/number-coercion";
 import { sanitizeExecApprovalWarningTextWithStatus } from "../../infra/exec-approval-command-display.js";
 import type { ExecAsk, ExecSecurity } from "../../infra/exec-approvals.js";
 import {
@@ -261,7 +261,7 @@ export async function requestClaudeNativeToolApproval(params: {
       return { kind: "deny", reason: "unavailable" };
     }
     if ((decision === "allow-once" || decision === "allow-always") && mutableFileBinding) {
-      // This control response is OpenClaw's last boundary before Claude owns
+      // This control response is Afora's last boundary before Claude owns
       // spawn, so reject bytes that changed during the approval wait.
       const binding = await revalidateSystemRunMutableFileBinding({
         binding: mutableFileBinding,

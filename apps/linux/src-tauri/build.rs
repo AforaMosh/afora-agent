@@ -60,11 +60,11 @@ fn stage_canvas_a2ui() {
         "Canvas A2UI resource staging failed; run pnpm install from the repository root"
     );
     println!(
-        "cargo:rustc-env=OPENCLAW_CANVAS_A2UI_INDEX_HTML={}",
+        "cargo:rustc-env=AFORA_CANVAS_A2UI_INDEX_HTML={}",
         output_dir.join("index.html").display()
     );
     println!(
-        "cargo:rustc-env=OPENCLAW_CANVAS_A2UI_BUNDLE_JS={}",
+        "cargo:rustc-env=AFORA_CANVAS_A2UI_BUNDLE_JS={}",
         output_dir.join("a2ui.bundle.js").display()
     );
 }

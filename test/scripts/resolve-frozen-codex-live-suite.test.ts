@@ -20,7 +20,7 @@ function runResolver(params: {
   selectedSha?: string;
   suiteId: string;
 }) {
-  const root = mkdtempSync(join(tmpdir(), "openclaw-frozen-codex-"));
+  const root = mkdtempSync(join(tmpdir(), "afora-frozen-codex-"));
   tempRoots.push(root);
   if (params.catalog !== false) {
     const catalogDir = join(root, "extensions/codex");
@@ -38,7 +38,7 @@ function runResolver(params: {
     mkdirSync(scriptsDir, { recursive: true });
     writeFileSync(
       join(scriptsDir, "test-live-codex-harness-docker.sh"),
-      `model="\${OPENCLAW_LIVE_CODEX_HARNESS_MODEL:-${params.harnessModel}}"\n`,
+      `model="\${AFORA_LIVE_CODEX_HARNESS_MODEL:-${params.harnessModel}}"\n`,
     );
   }
   const output = join(root, "output");
@@ -54,11 +54,11 @@ function runResolver(params: {
       GITHUB_ENV: envFile,
       GITHUB_OUTPUT: output,
       GITHUB_STEP_SUMMARY: summary,
-      OPENCLAW_ALLOW_FROZEN_TARGET_SCENARIO_OMISSIONS: params.allow === false ? "0" : "1",
-      OPENCLAW_FROZEN_CODEX_SUITE_ID: params.suiteId,
-      OPENCLAW_FROZEN_TARGET_ROOT: root,
-      OPENCLAW_SELECTED_SHA: params.selectedSha ?? "a".repeat(40),
-      OPENCLAW_WORKFLOW_SHA: "b".repeat(40),
+      AFORA_ALLOW_FROZEN_TARGET_SCENARIO_OMISSIONS: params.allow === false ? "0" : "1",
+      AFORA_FROZEN_CODEX_SUITE_ID: params.suiteId,
+      AFORA_FROZEN_TARGET_ROOT: root,
+      AFORA_SELECTED_SHA: params.selectedSha ?? "a".repeat(40),
+      AFORA_WORKFLOW_SHA: "b".repeat(40),
     },
   });
   return {
@@ -75,7 +75,7 @@ describe("frozen Codex live-suite resolver", () => {
 
     expect(result.status).toBe(0);
     expect(result.output).toBe("run_lane=true\n");
-    expect(result.envFile).toBe("OPENCLAW_LIVE_CODEX_HARNESS_MODEL=openai/gpt-5.5\n");
+    expect(result.envFile).toBe("AFORA_LIVE_CODEX_HARNESS_MODEL=openai/gpt-5.5\n");
     expect(result.summary).toContain("uses `openai/gpt-5.5`");
   });
 
@@ -99,7 +99,7 @@ describe("frozen Codex live-suite resolver", () => {
     expect(dedicated.status).toBe(0);
     expect(dedicated.output).toBe("run_lane=true\n");
     expect(generic.status).toBe(0);
-    expect(generic.envFile).toBe("OPENCLAW_LIVE_CODEX_HARNESS_MODEL=openai/gpt-5.6-luna\n");
+    expect(generic.envFile).toBe("AFORA_LIVE_CODEX_HARNESS_MODEL=openai/gpt-5.6-luna\n");
   });
 
   it("uses the frozen harness contract after the target catalog was removed", () => {
@@ -111,7 +111,7 @@ describe("frozen Codex live-suite resolver", () => {
 
     expect(result.status).toBe(0);
     expect(result.output).toBe("run_lane=true\n");
-    expect(result.envFile).toBe("OPENCLAW_LIVE_CODEX_HARNESS_MODEL=openai/gpt-5.6-luna\n");
+    expect(result.envFile).toBe("AFORA_LIVE_CODEX_HARNESS_MODEL=openai/gpt-5.6-luna\n");
   });
 
   it("does not infer specialized GPT-5.6 support from a catalog-free harness default", () => {

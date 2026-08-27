@@ -1,9 +1,9 @@
-import * as engineSessions from "openclaw/plugin-sdk/memory-core-host-engine-sessions";
-import type { MemorySearchResult } from "openclaw/plugin-sdk/memory-core-host-runtime-files";
-import * as sessionTranscriptHit from "openclaw/plugin-sdk/session-transcript-hit";
+import * as engineSessions from "afora-agent/plugin-sdk/memory-core-host-engine-sessions";
+import type { MemorySearchResult } from "afora-agent/plugin-sdk/memory-core-host-runtime-files";
+import * as sessionTranscriptHit from "afora-agent/plugin-sdk/session-transcript-hit";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { filterMemorySearchHitsBySessionVisibility } from "./session-search-visibility.js";
-import { asOpenClawConfig } from "./tools.test-helpers.js";
+import { asAforaConfig } from "./tools.test-helpers.js";
 
 type TestSessionEntry = {
   sessionId: string;
@@ -16,25 +16,25 @@ let combinedSessionStore: Record<string, TestSessionEntry> = {};
 
 function entryWithCutoff(cutoff: unknown) {
   const entry = {};
-  Object.defineProperty(entry, Symbol.for("openclaw.memory.sessionResetRecallCutoff"), {
+  Object.defineProperty(entry, Symbol.for("afora.memory.sessionResetRecallCutoff"), {
     enumerable: false,
     value: cutoff,
   });
   return entry;
 }
 
-vi.mock("openclaw/plugin-sdk/memory-core-host-engine-sessions", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/memory-core-host-engine-sessions", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("openclaw/plugin-sdk/memory-core-host-engine-sessions")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/memory-core-host-engine-sessions")>();
   return {
     ...actual,
     buildSessionEntry: vi.fn(async () => entryWithCutoff({ state: "absent" })),
   };
 });
 
-vi.mock("openclaw/plugin-sdk/session-transcript-hit", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/session-transcript-hit", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("openclaw/plugin-sdk/session-transcript-hit")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/session-transcript-hit")>();
   return {
     ...actual,
     loadCombinedSessionStoreForGateway: vi.fn(() => ({
@@ -86,7 +86,7 @@ describe("reset-generation session search visibility", () => {
       };
 
       const filtered = await filterMemorySearchHitsBySessionVisibility({
-        cfg: asOpenClawConfig({ tools: { sessions: { visibility: "self" } } }),
+        cfg: asAforaConfig({ tools: { sessions: { visibility: "self" } } }),
         agentId: "main",
         requesterSessionKey: `${anchorSessionKey}:active-memory:123456abcdef`,
         sandboxed: false,
@@ -131,7 +131,7 @@ describe("reset-generation session search visibility", () => {
     ];
 
     const filtered = await filterMemorySearchHitsBySessionVisibility({
-      cfg: asOpenClawConfig({ tools: { sessions: { visibility: "self" } } }),
+      cfg: asAforaConfig({ tools: { sessions: { visibility: "self" } } }),
       agentId: "main",
       requesterSessionKey: `${anchorSessionKey}:active-memory:123456abcdef`,
       sandboxed: false,
@@ -172,7 +172,7 @@ describe("reset-generation session search visibility", () => {
       };
 
       const filtered = await filterMemorySearchHitsBySessionVisibility({
-        cfg: asOpenClawConfig({ tools: { sessions: { visibility: "self" } } }),
+        cfg: asAforaConfig({ tools: { sessions: { visibility: "self" } } }),
         agentId: "main",
         requesterSessionKey: `${anchorSessionKey}:active-memory:123456abcdef`,
         sandboxed: false,
@@ -241,7 +241,7 @@ describe("reset-generation session search visibility", () => {
       };
 
       const filtered = await filterMemorySearchHitsBySessionVisibility({
-        cfg: asOpenClawConfig({ tools: { sessions: { visibility: "self" } } }),
+        cfg: asAforaConfig({ tools: { sessions: { visibility: "self" } } }),
         agentId: "main",
         requesterSessionKey: `${anchorSessionKey}:active-memory:123456abcdef`,
         sandboxed: false,

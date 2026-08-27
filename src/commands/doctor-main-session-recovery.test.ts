@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import type { InternalSessionEntry } from "../config/sessions.js";
 import { loadSessionEntry, upsertSessionEntryCore } from "../config/sessions/session-accessor.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
 import { noteMainSessionRecoveryIntegrity } from "./doctor-main-session-recovery.js";
 
 const agentId = "main";
@@ -19,11 +19,11 @@ describe("doctor main-session recovery integrity", () => {
   let storePath = "";
 
   beforeEach(() => {
-    storePath = path.join(tempDirs.make("openclaw-doctor-main-recovery-"), "sessions.json");
+    storePath = path.join(tempDirs.make("afora-doctor-main-recovery-"), "sessions.json");
   });
 
   afterEach(() => {
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
   });
 
   async function writeTombstone(abortedLastRun: boolean): Promise<void> {

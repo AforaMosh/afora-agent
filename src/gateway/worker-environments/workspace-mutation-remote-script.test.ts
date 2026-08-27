@@ -45,14 +45,14 @@ describe("remote workspace mutation receiver script", () => {
   it.skipIf(process.platform === "win32")(
     "keeps receiver ownership after its controller dies while a descendant can still mutate",
     async () => {
-      const root = tempDirs.make("openclaw-workspace-receiver-lock-");
+      const root = tempDirs.make("afora-workspace-receiver-lock-");
       let home = path.join(root, "home");
       const bin = path.join(root, "bin");
       const gate = path.join(root, "receiver-gate");
       const receiverMarker = path.join(root, "receiver-marker");
       const contenderMarker = path.join(root, "contender-marker");
       const preload = path.join(root, "contender-preload.cjs");
-      const relative = ".openclaw-worker/workspaces/env/session/1";
+      const relative = ".afora-worker/workspaces/env/session/1";
       await Promise.all([fs.mkdir(home), fs.mkdir(bin)]);
       home = await fs.realpath(home);
       const workspace = path.join(home, relative);
@@ -65,7 +65,7 @@ describe("remote workspace mutation receiver script", () => {
       expect(fifo.code).toBe(0);
       await fs.writeFile(
         path.join(bin, "rsync"),
-        '#!/bin/sh\nset -eu\n( : > "$OPENCLAW_TEST_RECEIVER_MARKER"; read -r _ < "$OPENCLAW_TEST_RECEIVER_GATE"; printf "late\\n" > "$OPENCLAW_TEST_RECEIVER_WORKSPACE/late.txt" ) </dev/null >/dev/null 2>&1 &\nexit 0\n',
+        '#!/bin/sh\nset -eu\n( : > "$AFORA_TEST_RECEIVER_MARKER"; read -r _ < "$AFORA_TEST_RECEIVER_GATE"; printf "late\\n" > "$AFORA_TEST_RECEIVER_WORKSPACE/late.txt" ) </dev/null >/dev/null 2>&1 &\nexit 0\n',
         { mode: 0o755 },
       );
       await fs.writeFile(
@@ -73,8 +73,8 @@ describe("remote workspace mutation receiver script", () => {
         String.raw`const fs = require("node:fs");
 const kill = process.kill.bind(process);
 process.kill = function(pid, signal) {
-  if (signal === 0 && pid < 0 && process.argv[4] === process.env.OPENCLAW_TEST_RESET_NONCE) {
-    fs.writeFileSync(process.env.OPENCLAW_TEST_CONTENDER_MARKER, "");
+  if (signal === 0 && pid < 0 && process.argv[4] === process.env.AFORA_TEST_RESET_NONCE) {
+    fs.writeFileSync(process.env.AFORA_TEST_CONTENDER_MARKER, "");
   }
   return kill(pid, signal);
 };
@@ -86,11 +86,11 @@ process.kill = function(pid, signal) {
         ...process.env,
         HOME: home,
         PATH: `${bin}:${process.env.PATH ?? ""}`,
-        OPENCLAW_TEST_RECEIVER_GATE: gate,
-        OPENCLAW_TEST_RECEIVER_MARKER: receiverMarker,
-        OPENCLAW_TEST_RECEIVER_WORKSPACE: workspace,
-        OPENCLAW_TEST_RESET_NONCE: resetNonce,
-        OPENCLAW_TEST_CONTENDER_MARKER: contenderMarker,
+        AFORA_TEST_RECEIVER_GATE: gate,
+        AFORA_TEST_RECEIVER_MARKER: receiverMarker,
+        AFORA_TEST_RECEIVER_WORKSPACE: workspace,
+        AFORA_TEST_RESET_NONCE: resetNonce,
+        AFORA_TEST_CONTENDER_MARKER: contenderMarker,
       };
       const receiverCommand = createWorkerWorkspaceRsyncReceiverPathFactory({
         receiverEntryPath: workerWorkspaceRsyncReceiverEntryPath(BUNDLE_HASH),
@@ -128,7 +128,7 @@ process.kill = function(pid, signal) {
         await waitForFile(receiverMarker, 10_000);
         receiverGateReady = true;
         const workspaceKey = createHash("sha256").update(workspace).digest("hex");
-        const lock = path.join(path.dirname(workspace), `.openclaw-accepted-lock-${workspaceKey}`);
+        const lock = path.join(path.dirname(workspace), `.afora-accepted-lock-${workspaceKey}`);
         const [ownerName] = await fs.readdir(lock);
         const { receiverPid, controllerPid } = parseReceiverOwner(ownerName!);
         expect(Number.isSafeInteger(receiverPid)).toBe(true);
@@ -167,7 +167,7 @@ process.kill = function(pid, signal) {
         );
         expect(
           (await fs.readdir(path.dirname(workspace))).filter((name) =>
-            name.startsWith(".openclaw-accepted-"),
+            name.startsWith(".afora-accepted-"),
           ),
         ).toEqual([]);
       } finally {
@@ -187,14 +187,14 @@ process.kill = function(pid, signal) {
   it.skipIf(process.platform === "win32")(
     "keeps receiver ownership while its live controller is releasing a dead receiver group",
     async () => {
-      const root = tempDirs.make("openclaw-workspace-receiver-controller-lock-");
+      const root = tempDirs.make("afora-workspace-receiver-controller-lock-");
       let home = path.join(root, "home");
       const bin = path.join(root, "bin");
       const releaseGate = path.join(root, "release-gate");
       const releaseMarker = path.join(root, "release-marker");
       const contenderMarker = path.join(root, "contender-marker");
       const preload = path.join(root, "release-preload.cjs");
-      const relative = ".openclaw-worker/workspaces/env/session/1";
+      const relative = ".afora-worker/workspaces/env/session/1";
       await Promise.all([fs.mkdir(home), fs.mkdir(bin)]);
       home = await fs.realpath(home);
       const workspace = path.join(home, relative);
@@ -212,11 +212,11 @@ process.kill = function(pid, signal) {
 const renameSync = fs.renameSync.bind(fs);
 fs.renameSync = function(source, destination) {
   if (
-    process.argv[4] === process.env.OPENCLAW_TEST_RECEIVER_NONCE &&
+    process.argv[4] === process.env.AFORA_TEST_RECEIVER_NONCE &&
     destination.includes(".released.")
   ) {
-    fs.writeFileSync(process.env.OPENCLAW_TEST_RELEASE_MARKER, "");
-    if (fs.readFileSync(process.env.OPENCLAW_TEST_RELEASE_GATE, "utf8").trim() !== "release") {
+    fs.writeFileSync(process.env.AFORA_TEST_RELEASE_MARKER, "");
+    if (fs.readFileSync(process.env.AFORA_TEST_RELEASE_GATE, "utf8").trim() !== "release") {
       throw new Error("invalid receiver controller release gate");
     }
   }
@@ -227,10 +227,10 @@ process.kill = function(pid, signal) {
   const result = kill(pid, signal);
   if (
     signal === 0 &&
-    process.argv[4] === process.env.OPENCLAW_TEST_RESET_NONCE &&
-    pid === Number(process.env.OPENCLAW_TEST_CONTROLLER_PID)
+    process.argv[4] === process.env.AFORA_TEST_RESET_NONCE &&
+    pid === Number(process.env.AFORA_TEST_CONTROLLER_PID)
   ) {
-    fs.writeFileSync(process.env.OPENCLAW_TEST_CONTENDER_MARKER, "");
+    fs.writeFileSync(process.env.AFORA_TEST_CONTENDER_MARKER, "");
   }
   return result;
 };
@@ -242,11 +242,11 @@ process.kill = function(pid, signal) {
         ...process.env,
         HOME: home,
         PATH: `${bin}:${process.env.PATH ?? ""}`,
-        OPENCLAW_TEST_RECEIVER_NONCE: receiverNonce,
-        OPENCLAW_TEST_RESET_NONCE: resetNonce,
-        OPENCLAW_TEST_RELEASE_GATE: releaseGate,
-        OPENCLAW_TEST_RELEASE_MARKER: releaseMarker,
-        OPENCLAW_TEST_CONTENDER_MARKER: contenderMarker,
+        AFORA_TEST_RECEIVER_NONCE: receiverNonce,
+        AFORA_TEST_RESET_NONCE: resetNonce,
+        AFORA_TEST_RELEASE_GATE: releaseGate,
+        AFORA_TEST_RELEASE_MARKER: releaseMarker,
+        AFORA_TEST_CONTENDER_MARKER: contenderMarker,
       };
       const receiverCommand = createWorkerWorkspaceRsyncReceiverPathFactory({
         receiverEntryPath: workerWorkspaceRsyncReceiverEntryPath(BUNDLE_HASH),
@@ -285,7 +285,7 @@ process.kill = function(pid, signal) {
       try {
         await waitForFile(releaseMarker, 10_000);
         const workspaceKey = createHash("sha256").update(workspace).digest("hex");
-        const lock = path.join(path.dirname(workspace), `.openclaw-accepted-lock-${workspaceKey}`);
+        const lock = path.join(path.dirname(workspace), `.afora-accepted-lock-${workspaceKey}`);
         const [ownerName] = await fs.readdir(lock);
         const owner = parseReceiverOwner(ownerName!);
         receiverPid = owner.receiverPid;
@@ -307,7 +307,7 @@ process.kill = function(pid, signal) {
           ],
           {
             timeoutMs: 10_000,
-            baseEnv: { ...env, OPENCLAW_TEST_CONTROLLER_PID: String(owner.controllerPid) },
+            baseEnv: { ...env, AFORA_TEST_CONTROLLER_PID: String(owner.controllerPid) },
           },
         );
         void reset.then(
@@ -337,7 +337,7 @@ process.kill = function(pid, signal) {
         );
         expect(
           (await fs.readdir(path.dirname(workspace))).filter((name) =>
-            name.startsWith(".openclaw-accepted-"),
+            name.startsWith(".afora-accepted-"),
           ),
         ).toEqual([]);
       } finally {

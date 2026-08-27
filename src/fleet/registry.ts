@@ -6,10 +6,10 @@ import {
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../infra/kysely-sync.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../state/openclaw-state-db-readonly.js";
-import { tableExists } from "../state/openclaw-state-db-schema-helpers.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
-import { runOpenClawStateWriteTransaction } from "../state/openclaw-state-db.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../state/afora-state-db-readonly.js";
+import { tableExists } from "../state/afora-state-db-schema-helpers.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
+import { runAforaStateWriteTransaction } from "../state/afora-state-db.js";
 import { allocateHostPort } from "./cell-profile.js";
 
 export type FleetCellRecord = {
@@ -26,9 +26,9 @@ type ReserveFleetCellParams = Omit<FleetCellRecord, "hostPort"> & {
   requestedPort?: number;
 };
 
-type FleetCellsTable = OpenClawStateKyselyDatabase["fleet_cells"];
+type FleetCellsTable = AforaStateKyselyDatabase["fleet_cells"];
 type FleetCellRow = Selectable<FleetCellsTable>;
-type FleetRegistryDatabase = Pick<OpenClawStateKyselyDatabase, "fleet_cells" | "state_leases">;
+type FleetRegistryDatabase = Pick<AforaStateKyselyDatabase, "fleet_cells" | "state_leases">;
 
 const FLEET_OPERATION_LEASE_SCOPE = "fleet-cell-operation";
 const FLEET_OPERATION_LEASE_TTL_MS = 5 * 60_000;
@@ -87,7 +87,7 @@ function recordToRow(record: FleetCellRecord): Insertable<FleetCellsTable> {
 export function listFleetCells(env: NodeJS.ProcessEnv = process.env): FleetCellRecord[] {
   // CLI reads must not join the Gateway's writable SQLite lifecycle (#101290).
   return (
-    withExistingOpenClawStateDatabaseReadOnly(
+    withExistingAforaStateDatabaseReadOnly(
       ({ db }) => {
         if (!tableExists(db, "fleet_cells")) {
           return [];
@@ -108,7 +108,7 @@ export function getFleetCell(
   tenantId: string,
 ): FleetCellRecord | undefined {
   // CLI reads must not join the Gateway's writable SQLite lifecycle (#101290).
-  return withExistingOpenClawStateDatabaseReadOnly(
+  return withExistingAforaStateDatabaseReadOnly(
     ({ db }) => {
       if (!tableExists(db, "fleet_cells")) {
         return undefined;
@@ -127,7 +127,7 @@ export function reserveFleetCell(
   env: NodeJS.ProcessEnv,
   params: ReserveFleetCellParams,
 ): FleetCellRecord {
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db }) => {
       const kysely = kyselyFor(db);
       const existing = executeSqliteQueryTakeFirstSync(
@@ -168,7 +168,7 @@ export function updateFleetCellImage(
   tenantId: string,
   image: string,
 ): void {
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       const result = executeSqliteQuerySync(
         db,
@@ -192,7 +192,7 @@ export function acquireFleetCellOperation(params: {
   const nowMs = params.nowMs ?? Date.now();
   const expiresAt = nowMs + FLEET_OPERATION_LEASE_TTL_MS;
   const owner = params.owner ?? crypto.randomUUID();
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       const kysely = kyselyFor(db);
       executeSqliteQuerySync(
@@ -253,7 +253,7 @@ export function acquireFleetCellOperation(params: {
     owner,
     heartbeat: (heartbeatNowMs = Date.now()) => {
       const heartbeatExpiresAt = heartbeatNowMs + FLEET_OPERATION_LEASE_TTL_MS;
-      runOpenClawStateWriteTransaction(
+      runAforaStateWriteTransaction(
         ({ db }) => {
           const result = executeSqliteQuerySync(
             db,
@@ -277,7 +277,7 @@ export function acquireFleetCellOperation(params: {
       );
     },
     release: () => {
-      runOpenClawStateWriteTransaction(
+      runAforaStateWriteTransaction(
         ({ db }) => {
           executeSqliteQuerySync(
             db,
@@ -295,7 +295,7 @@ export function acquireFleetCellOperation(params: {
 }
 
 export function deleteFleetCell(env: NodeJS.ProcessEnv, tenantId: string): void {
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       executeSqliteQuerySync(
         db,

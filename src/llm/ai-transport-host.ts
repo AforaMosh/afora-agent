@@ -1,7 +1,7 @@
-// Installs OpenClaw-owned transport and diagnostic policy before package helpers;
+// Installs Afora-owned transport and diagnostic policy before package helpers;
 // direct imports need the same wiring as the process-default stream facade.
-import { configureAiTransportHost } from "@openclaw/ai";
-import { configureProviderErrorRedactor } from "@openclaw/ai/diagnostics";
+import { configureAiTransportHost } from "@afora/ai";
+import { configureProviderErrorRedactor } from "@afora/ai/diagnostics";
 import { resolveOpenAIStrictToolSetting } from "../agents/openai-strict-tool-setting.js";
 import {
   buildGuardedModelFetch,

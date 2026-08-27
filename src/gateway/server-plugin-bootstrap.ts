@@ -3,7 +3,7 @@
 import type { AmbientEnvTriggerPolicy } from "../channels/config-presence.js";
 import { primeConfiguredBindingRegistry } from "../channels/plugins/configured-binding-registry.js";
 import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { ChannelPluginLoadIntent } from "../plugins/loader-types.js";
 import type { PluginLookUpTable } from "../plugins/plugin-lookup-table.js";
 import type { PluginRegistryParams } from "../plugins/registry-types.js";
@@ -31,8 +31,8 @@ type GatewayStartupTrace = {
 };
 
 type GatewayPluginBootstrapParams = {
-  cfg: OpenClawConfig;
-  activationSourceConfig?: OpenClawConfig;
+  cfg: AforaConfig;
+  activationSourceConfig?: AforaConfig;
   workspaceDir?: string;
   log: GatewayPluginBootstrapLog;
   coreGatewayHandlers?: Record<string, GatewayRequestHandler>;
@@ -48,7 +48,7 @@ type GatewayPluginBootstrapParams = {
   ambientEnvTriggers?: AmbientEnvTriggerPolicy;
 };
 
-function installGatewayPluginRuntimeEnvironment(cfg: OpenClawConfig) {
+function installGatewayPluginRuntimeEnvironment(cfg: AforaConfig) {
   setPluginSubagentOverridePolicies(cfg);
 }
 

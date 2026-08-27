@@ -258,7 +258,7 @@ describe("detectInferenceBackends", () => {
         kind: "claude-cli",
         credentials: true,
         detail:
-          "logged in · Claude subscription; Claude Code 2.1.206 is the first published build known to advertise msg_lifecycle_v1; found 2.1.205. OpenClaw verifies this capability at runtime. If this build is rejected, run `claude update`, restart OpenClaw, and retry.",
+          "logged in · Claude subscription; Claude Code 2.1.206 is the first published build known to advertise msg_lifecycle_v1; found 2.1.205. Afora verifies this capability at runtime. If this build is rejected, run `claude update`, restart Afora, and retry.",
       },
     ]);
   });

@@ -52,7 +52,7 @@ function presentConfirmDialog(options: ConfirmDialogOptions): Promise<boolean> {
     const title = options.title ?? t("common.confirm");
     render(
       html`
-        <openclaw-modal-dialog
+        <afora-modal-dialog
           label=${title}
           description=${options.message}
           @modal-cancel=${() => finish(false)}
@@ -98,7 +98,7 @@ function presentConfirmDialog(options: ConfirmDialogOptions): Promise<boolean> {
               </button>
             </div>
           </div>
-        </openclaw-modal-dialog>
+        </afora-modal-dialog>
       `,
       host,
     );

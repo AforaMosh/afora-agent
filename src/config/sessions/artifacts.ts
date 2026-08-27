@@ -1,7 +1,7 @@
 // Session artifact filename classifiers and archive timestamp helpers.
 // Cleanup, disk-budget, and usage accounting use these predicates to avoid deleting live transcripts.
 
-import { timestampMsToIsoFileStamp } from "@openclaw/normalization-core/number-coercion";
+import { timestampMsToIsoFileStamp } from "@afora/normalization-core/number-coercion";
 import { escapeRegExp } from "../../shared/regexp.js";
 import { stripSessionArchiveCompressionSuffix } from "./archive-compression.js";
 

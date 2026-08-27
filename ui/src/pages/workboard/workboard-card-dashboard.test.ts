@@ -9,7 +9,7 @@ import {
 } from "../../lib/board/provider.ts";
 import "./workboard-card-dashboard.ts";
 
-type DashboardElement = HTMLElementTagNameMap["openclaw-workboard-card-dashboard"] & {
+type DashboardElement = HTMLElementTagNameMap["afora-workboard-card-dashboard"] & {
   updateComplete: Promise<boolean>;
 };
 
@@ -43,7 +43,7 @@ async function mountDashboard(
   client: GatewayBrowserClient,
   capabilities: { canMutate?: boolean; canGrant?: boolean } = {},
 ): Promise<DashboardElement> {
-  const element = document.createElement("openclaw-workboard-card-dashboard");
+  const element = document.createElement("afora-workboard-card-dashboard");
   element.sessionKey = sessionKey;
   element.client = client;
   element.connected = true;
@@ -111,7 +111,7 @@ describe("Workboard card dashboard", () => {
         element.querySelector(".workboard-card-dashboard__toggle")?.getAttribute("aria-expanded"),
       ).toBe("true"),
     );
-    expect(element.querySelector("openclaw-board-view")).not.toBeNull();
+    expect(element.querySelector("afora-board-view")).not.toBeNull();
   });
 
   it("updates mounted dashboard controls immediately when gateway permissions change", async () => {
@@ -133,8 +133,8 @@ describe("Workboard card dashboard", () => {
       canGrant: true,
     });
 
-    await vi.waitFor(() => expect(element.querySelector("openclaw-board-view")).not.toBeNull());
-    const board = element.querySelector("openclaw-board-view")!;
+    await vi.waitFor(() => expect(element.querySelector("afora-board-view")).not.toBeNull());
+    const board = element.querySelector("afora-board-view")!;
     await board.updateComplete;
     await vi.waitFor(() =>
       expect(board.querySelector('[data-test-id="board-grant-allow"]')).not.toBeNull(),
@@ -149,7 +149,7 @@ describe("Workboard card dashboard", () => {
     element.canGrant = false;
     await element.updateComplete;
     await board.updateComplete;
-    await board.querySelector("openclaw-board-widget-cell")?.updateComplete;
+    await board.querySelector("afora-board-widget-cell")?.updateComplete;
 
     expect(board.canMutate).toBe(false);
     expect(board.canGrant).toBe(false);
@@ -159,7 +159,7 @@ describe("Workboard card dashboard", () => {
     element.canGrant = true;
     await element.updateComplete;
     await board.updateComplete;
-    await board.querySelector("openclaw-board-widget-cell")?.updateComplete;
+    await board.querySelector("afora-board-widget-cell")?.updateComplete;
 
     expect(board.canMutate).toBe(true);
     expect(board.canGrant).toBe(true);
@@ -252,7 +252,7 @@ describe("Workboard card dashboard", () => {
         element.querySelector(".workboard-card-dashboard__toggle")?.getAttribute("aria-expanded"),
       ).toBe("true"),
     );
-    expect(element.querySelector("openclaw-board-view")).not.toBeNull();
+    expect(element.querySelector("afora-board-view")).not.toBeNull();
   });
 
   it("pauses the board while the dashboard is collapsed", async () => {
@@ -272,8 +272,8 @@ describe("Workboard card dashboard", () => {
       },
     ]);
     const element = await mountDashboard("agent:main:workboard-collapse", client);
-    await vi.waitFor(() => expect(element.querySelector("openclaw-board-view")).not.toBeNull());
-    const board = element.querySelector("openclaw-board-view")!;
+    await vi.waitFor(() => expect(element.querySelector("afora-board-view")).not.toBeNull());
+    const board = element.querySelector("afora-board-view")!;
     expect(board.active).toBe(true);
 
     element.querySelector<HTMLButtonElement>(".workboard-card-dashboard__toggle")?.click();

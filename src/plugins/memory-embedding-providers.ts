@@ -11,7 +11,7 @@ import type {
   MemoryEmbeddingProviderCreateOptions,
 } from "./registry-contribution-types.js";
 
-const LOCAL_EMBEDDING_RUNTIME_FACTS = Symbol.for("openclaw.localEmbeddingRuntimeFacts");
+const LOCAL_EMBEDDING_RUNTIME_FACTS = Symbol.for("afora.localEmbeddingRuntimeFacts");
 
 export type {
   MemoryEmbeddingBatchChunk,

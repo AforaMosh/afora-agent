@@ -33,7 +33,7 @@ and [Kimi K2.7 Code](https://platform.kimi.ai/docs/pricing/chat-k27-code)
 before making cost decisions.
 
 Kimi K3 always reasons and accepts `reasoning_effort` values `low`, `high`,
-and `max` (the default). OpenClaw exposes those exact levels and maps `/think
+and `max` (the default). Afora exposes those exact levels and maps `/think
 xhigh` to `max`; it omits the K2-only `thinking` field and removes sampling
 overrides (`temperature`, `top_p`, `n`, `presence_penalty`, and
 `frequency_penalty`) that K3 fixes to provider defaults. Kimi K2.7 Code also
@@ -54,8 +54,8 @@ onboarding.
     <Steps>
       <Step title="Install the plugin">
         ```bash
-        openclaw plugins install @openclaw/moonshot-provider
-        openclaw gateway restart
+        afora plugins install @afora/moonshot-provider
+        afora gateway restart
         ```
       </Step>
       <Step title="Choose your endpoint region">
@@ -66,25 +66,25 @@ onboarding.
       </Step>
       <Step title="Run onboarding">
         ```bash
-        openclaw onboard --auth-choice moonshot-api-key
+        afora onboard --auth-choice moonshot-api-key
         ```
 
         Or for the China endpoint:
 
         ```bash
-        openclaw onboard --auth-choice moonshot-api-key-cn
+        afora onboard --auth-choice moonshot-api-key-cn
         ```
       </Step>
       <Step title="Confirm the Kimi K3 default">
         Fresh onboarding selects Kimi K3. Existing installations can switch explicitly:
 
         ```bash
-        openclaw models set moonshot/kimi-k3
+        afora models set moonshot/kimi-k3
         ```
       </Step>
       <Step title="Verify models are available">
         ```bash
-        openclaw models list --provider moonshot
+        afora models list --provider moonshot
         ```
       </Step>
       <Step title="Run a live smoke test">
@@ -92,9 +92,9 @@ onboarding.
         tracking without touching your normal sessions:
 
         ```bash
-        OPENCLAW_CONFIG_PATH=/tmp/openclaw-kimi/openclaw.json \
-        OPENCLAW_STATE_DIR=/tmp/openclaw-kimi \
-        openclaw agent --local \
+        AFORA_CONFIG_PATH=/tmp/afora-kimi/afora.json \
+        AFORA_STATE_DIR=/tmp/afora-kimi \
+        afora agent --local \
           --session-id live-kimi-cost \
           --message 'Reply exactly: KIMI_LIVE_OK' \
           --thinking max \
@@ -206,13 +206,13 @@ onboarding.
     <Steps>
       <Step title="Install the plugin">
         ```bash
-        openclaw plugins install @openclaw/kimi-provider
-        openclaw gateway restart
+        afora plugins install @afora/kimi-provider
+        afora gateway restart
         ```
       </Step>
       <Step title="Run onboarding">
         ```bash
-        openclaw onboard --auth-choice kimi-code-api-key
+        afora onboard --auth-choice kimi-code-api-key
         ```
       </Step>
       <Step title="Set a default model">
@@ -228,7 +228,7 @@ onboarding.
       </Step>
       <Step title="Verify the model is available">
         ```bash
-        openclaw models list --provider kimi
+        afora models list --provider kimi
         ```
       </Step>
     </Steps>
@@ -266,7 +266,7 @@ The Moonshot plugin also registers **Kimi** as a `web_search` provider, backed b
 <Steps>
   <Step title="Run interactive web search setup">
     ```bash
-    openclaw configure --section web
+    afora configure --section web
     ```
 
     Choose **Kimi** in the web-search section to store
@@ -315,7 +315,7 @@ Config lives under `plugins.entries.moonshot.config.webSearch`:
 
 <AccordionGroup>
   <Accordion title="Native thinking mode">
-    Moonshot API Kimi K3 always reasons at maximum effort. OpenClaw exposes only
+    Moonshot API Kimi K3 always reasons at maximum effort. Afora exposes only
     `/think max`, sends `reasoning_effort: "max"`, and ignores stale lower or
     `off` settings.
 
@@ -326,14 +326,14 @@ Config lives under `plugins.entries.moonshot.config.webSearch`:
     effort. This applies to both `kimi/k3` and `kimi/k3-256k`. Legacy
     `kimi/k3[1m]` normalizes to `kimi/k3`.
     Moonshot API K3 supports `auto`, `none`, `required`, and pinned tool choices,
-    so OpenClaw preserves the requested `tool_choice`. For multi-turn tool use,
-    OpenClaw preserves the assistant reasoning content required by Moonshot's
+    so Afora preserves the requested `tool_choice`. For multi-turn tool use,
+    Afora preserves the assistant reasoning content required by Moonshot's
     replay contract.
 
     Kimi K2.7 Code always uses native thinking. Moonshot requires clients to
-    omit the `thinking` field for this model, so OpenClaw exposes only `on` and
+    omit the `thinking` field for this model, so Afora exposes only `on` and
     ignores stale `off` settings. K2.7 also fixes `temperature`, `top_p`, `n`,
-    `presence_penalty`, and `frequency_penalty`; OpenClaw omits configured
+    `presence_penalty`, and `frequency_penalty`; Afora omits configured
     overrides for those fields.
 
     Other Moonshot Kimi models support binary native thinking:
@@ -359,7 +359,7 @@ Config lives under `plugins.entries.moonshot.config.webSearch`:
     }
     ```
 
-    OpenClaw maps runtime `/think` levels for those models:
+    Afora maps runtime `/think` levels for those models:
 
     | `/think` level       | Moonshot behavior          |
     | -------------------- | -------------------------- |
@@ -373,9 +373,9 @@ Config lives under `plugins.entries.moonshot.config.webSearch`:
     Kimi K2.6 also accepts an optional `thinking.keep` field that controls
     multi-turn retention of `reasoning_content`. Set it to `"all"` to keep full
     reasoning across turns; omit it (or leave it `null`) to use the server
-    default strategy. OpenClaw only forwards `thinking.keep` for
+    default strategy. Afora only forwards `thinking.keep` for
     `moonshot/kimi-k2.6` and strips it from other models. Kimi K2.7 Code
-    preserves full reasoning history by default while OpenClaw omits the entire
+    preserves full reasoning history by default while Afora omits the entire
     `thinking` field.
 
     ```json5
@@ -397,13 +397,13 @@ Config lives under `plugins.entries.moonshot.config.webSearch`:
   </Accordion>
 
   <Accordion title="Tool call id sanitization">
-    Moonshot Kimi serves native tool_call ids shaped like `functions.<name>:<index>`. OpenClaw preserves the first occurrence of each native Kimi id and rewrites later duplicates to deterministic OpenAI-style `call_*` ids. Matching tool results are remapped with the same id so replay remains unique without stripping Kimi's first native id. This behavior is wired into the bundled Moonshot provider and is not a user-configurable setting.
+    Moonshot Kimi serves native tool_call ids shaped like `functions.<name>:<index>`. Afora preserves the first occurrence of each native Kimi id and rewrites later duplicates to deterministic OpenAI-style `call_*` ids. Matching tool results are remapped with the same id so replay remains unique without stripping Kimi's first native id. This behavior is wired into the bundled Moonshot provider and is not a user-configurable setting.
   </Accordion>
 
   <Accordion title="Streaming usage compatibility">
     Native Moonshot endpoints (`https://api.moonshot.ai/v1` and
     `https://api.moonshot.cn/v1`) advertise streaming usage compatibility.
-    OpenClaw keys this off the endpoint host, not the provider id, so a custom
+    Afora keys this off the endpoint host, not the provider id, so a custom
     provider id pointed at the same native Moonshot host inherits the same
     streaming-usage behavior.
 

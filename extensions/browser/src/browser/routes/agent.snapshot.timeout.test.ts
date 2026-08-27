@@ -16,8 +16,8 @@ const tabLookup = vi.hoisted(() => vi.fn());
 
 const profileContext = vi.hoisted(() => ({
   profile: {
-    name: "openclaw",
-    driver: "openclaw" as const,
+    name: "afora",
+    driver: "afora" as const,
     cdpPort: 18_800,
     cdpUrl: "http://127.0.0.1:18800",
     cdpHost: "127.0.0.1",

@@ -2,7 +2,7 @@ import {
   FormatCapabilityProfile,
   markdownToIR,
   renderMarkdownWithAttributedRanges,
-} from "openclaw/plugin-sdk/text-chunking";
+} from "afora-agent/plugin-sdk/text-chunking";
 
 type IMessageFormatStyle = "bold" | "italic" | "underline" | "strikethrough";
 

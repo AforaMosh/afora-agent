@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const singleton = vi.hoisted(() => ({ reset: undefined as (() => void) | undefined }));
 
-vi.mock("openclaw/plugin-sdk/global-singleton", () => ({
+vi.mock("afora-agent/plugin-sdk/global-singleton", () => ({
   resolveGlobalSingleton: <T>(_key: symbol, create: () => T, reset?: (value: T) => void): T => {
     const value = create();
     singleton.reset = () => reset?.(value);

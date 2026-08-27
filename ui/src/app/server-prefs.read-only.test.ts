@@ -40,7 +40,7 @@ const deferred = () => {
   });
   return { promise, reject, resolve };
 };
-const pendingKey = (scope: string) => `openclaw.control.serverPrefs.pending.v1:${scope}`;
+const pendingKey = (scope: string) => `afora.control.serverPrefs.pending.v1:${scope}`;
 const readPending = (scope: string) =>
   JSON.parse(localStorage.getItem(pendingKey(scope)) ?? "{}") as Record<string, unknown>;
 const createClient = createServerPrefsWriter;
@@ -131,7 +131,7 @@ describe("read-only server preference lifecycle", () => {
     expect(applyServerUiPrefs(initial, { scope, onApplied: vi.fn() })).toBe(false);
     expect(loadSettings().theme).toBe("knot");
     expect(
-      localStorage.getItem(`openclaw.control.serverPrefs.retained-local.v1:${scope}`),
+      localStorage.getItem(`afora.control.serverPrefs.retained-local.v1:${scope}`),
     ).toBeNull();
 
     resetServerUiPrefsSync();
@@ -171,7 +171,7 @@ describe("read-only server preference lifecycle", () => {
     );
 
     expect(
-      localStorage.getItem(`openclaw.control.serverPrefs.retained-local.v1:${scope}`),
+      localStorage.getItem(`afora.control.serverPrefs.retained-local.v1:${scope}`),
     ).toBeNull();
     expect(
       applyServerUiPrefs(configWithPrefs({ theme: "dash" }), {

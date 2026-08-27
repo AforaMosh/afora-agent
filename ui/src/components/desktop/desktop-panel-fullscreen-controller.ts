@@ -1,7 +1,7 @@
 import { html, type ReactiveController, type TemplateResult } from "lit";
 import { t } from "../../i18n/index.ts";
 import { formatUiError } from "../../lib/format-error.ts";
-import type { OpenClawLitElement } from "../../lit/openclaw-element.ts";
+import type { AforaLitElement } from "../../lit/afora-element.ts";
 import { icons } from "../icons.ts";
 
 type DesktopPanelFullscreenOptions = {
@@ -17,7 +17,7 @@ export class DesktopPanelFullscreenController implements ReactiveController {
   private readonly onFullscreenChange = () => this.handleFullscreenChange();
 
   constructor(
-    private readonly host: OpenClawLitElement,
+    private readonly host: AforaLitElement,
     private readonly options: DesktopPanelFullscreenOptions,
   ) {
     host.addController(this);
@@ -42,7 +42,7 @@ export class DesktopPanelFullscreenController implements ReactiveController {
       : supported
         ? t("desktop.enterFullscreen")
         : t("desktop.fullscreenUnavailable");
-    return html`<openclaw-tooltip .content=${label}>
+    return html`<afora-tooltip .content=${label}>
       <button
         class="bp-icon desktop-fullscreen-button"
         type="button"
@@ -55,7 +55,7 @@ export class DesktopPanelFullscreenController implements ReactiveController {
           ${this.active ? icons.minimize : icons.maximize}
         </span>
       </button>
-    </openclaw-tooltip>`;
+    </afora-tooltip>`;
   }
 
   private fullscreenElement(): Element | null {

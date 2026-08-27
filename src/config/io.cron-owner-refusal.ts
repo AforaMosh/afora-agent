@@ -1,7 +1,7 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { formatErrorMessage } from "../infra/errors.js";
 import { parseAgentSessionKey } from "../routing/session-key.js";
-import type { OpenClawConfig } from "./types.js";
+import type { AforaConfig } from "./types.js";
 
 type CronOwnerRefusalDeps = Pick<
   typeof import("../infra/gateway-lock.js"),
@@ -12,7 +12,7 @@ type CronOwnerRefusalDeps = Pick<
     typeof import("../cron/legacy-default-agent-owner-migration.js"),
     "materializeLegacyDefaultCronJobOwners"
   >;
-const RETRY = ' Run "openclaw doctor --fix", then retry.';
+const RETRY = ' Run "afora doctor --fix", then retry.';
 const CRON_OWNER_REFUSAL = "cron-owner-safety";
 
 function refused(message: string, cause?: unknown): Error {
@@ -54,7 +54,7 @@ async function loadDefaultDeps(): Promise<CronOwnerRefusalDeps> {
 }
 
 async function assertSafe(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   storePath: string,
   env: NodeJS.ProcessEnv,
   deps: CronOwnerRefusalDeps,
@@ -99,7 +99,7 @@ async function assertSafe(
   }
   if (active && active.pid !== process.pid && active.cronOwnerProjection !== "dynamic-default-v1") {
     throw refused(
-      `Config write refused: live external Gateway pid ${active.pid} does not prove compatibility with the current cron ownership projection. Restart it with this OpenClaw version, or stop it, then retry.`,
+      `Config write refused: live external Gateway pid ${active.pid} does not prove compatibility with the current cron ownership projection. Restart it with this Afora version, or stop it, then retry.`,
     );
   }
   if ((unresolved > 0 || projectedDynamicDefaults > 0) && provenOwnerAgentId) {
@@ -120,7 +120,7 @@ async function assertSafe(
 }
 
 export async function prepareCronOwnerWriteRefusal(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   params: {
     storePath: string;
     provenOwnerAgentId?: string;

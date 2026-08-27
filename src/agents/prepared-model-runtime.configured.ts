@@ -1,14 +1,14 @@
 import {
   collectConfiguredModelRefs,
   type ConfiguredModelRef,
-} from "@openclaw/model-catalog-core/configured-model-refs";
+} from "@afora/model-catalog-core/configured-model-refs";
 import {
   buildModelCatalogMergeKey,
   parseModelCatalogRef,
-} from "@openclaw/model-catalog-core/model-catalog-refs";
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+} from "@afora/model-catalog-core/model-catalog-refs";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import { MODEL_APIS } from "../config/types.models.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.types.js";
 import {
   normalizePluginDiscoveryResult,
@@ -29,7 +29,7 @@ export type PreparedConfiguredRuntimeModel = Readonly<{
 
 /** Collects defaults, global refs, and only the selected agent's overrides. */
 export function collectPreparedModelRuntimeConfiguredRefs(
-  config: OpenClawConfig,
+  config: AforaConfig,
   agentId: string | undefined,
 ): ConfiguredModelRef[] {
   if (!agentId) {
@@ -69,7 +69,7 @@ export function toStaticCatalogEntry(model: ProviderRuntimeModel): ModelCatalogE
 }
 
 export function collectPreparedModelRuntimeProviderIds(
-  config: OpenClawConfig,
+  config: AforaConfig,
   credentials: Readonly<AuthStorageData>,
   includeCredentialProviders: boolean,
   configuredModelRefs: readonly ConfiguredModelRef[] = collectConfiguredModelRefs(config),
@@ -99,7 +99,7 @@ export function collectPreparedModelRuntimeProviderIds(
 }
 
 function hasConfiguredInlineProviderModel(
-  config: OpenClawConfig,
+  config: AforaConfig,
   provider: string,
   modelId: string,
   matchesStaticModelId: StaticModelIdMatcher,
@@ -119,7 +119,7 @@ function hasConfiguredInlineProviderModel(
 }
 
 export function collectConfiguredProviderIdsNeedingStaticCatalog(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   configuredModelRefs?: readonly ConfiguredModelRef[];
   resolveStaticCatalogModel: (lookup: {
     provider: string;
@@ -151,7 +151,7 @@ export function collectConfiguredProviderIdsNeedingStaticCatalog(params: {
 }
 
 export function prepareConfiguredRuntimeModels(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   configuredModelRefs?: readonly ConfiguredModelRef[];
   metadataSnapshot: PluginMetadataSnapshot;
   preparedStaticProviderCatalog?: PreparedProviderStaticCatalog;

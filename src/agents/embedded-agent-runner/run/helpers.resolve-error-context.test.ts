@@ -25,15 +25,15 @@ describe("resolveActiveErrorContext", () => {
     expect(result).toEqual({ provider: "openai", model: "gpt-5.4-codex" });
   });
 
-  it("ignores the embedded OpenClaw harness provider when the model provider is known", () => {
-    // The OpenClaw harness id is a transport wrapper, not the provider users
+  it("ignores the embedded Afora harness provider when the model provider is known", () => {
+    // The Afora harness id is a transport wrapper, not the provider users
     // need in diagnostics when a concrete upstream model ref is available.
     const result = resolveActiveErrorContext({
       provider: "openrouter",
       model: "openai/gpt-5.4",
       assistant: {
-        provider: "openclaw",
-        model: "openclaw",
+        provider: "afora",
+        model: "afora",
       },
     });
 

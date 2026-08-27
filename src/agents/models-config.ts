@@ -6,13 +6,13 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { stableStringify } from "@openclaw/normalization-core";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { stableStringify } from "@afora/normalization-core";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
   getRuntimeConfig,
   getRuntimeConfigSourceSnapshot,
   projectConfigOntoRuntimeSourceSnapshot,
-  type OpenClawConfig,
+  type AforaConfig,
 } from "../config/config.js";
 import { createConfigRuntimeEnv } from "../config/env-vars.js";
 import { hashRuntimeConfigValue } from "../config/runtime-snapshot.js";
@@ -36,7 +36,7 @@ import {
   type ModelsJsonReadyResult,
   type ModelsJsonReadyState,
 } from "./models-config-state.js";
-import { planOpenClawModelsJson, type PreparedModelsConfigContext } from "./models-config.plan.js";
+import { planAforaModelsJson, type PreparedModelsConfigContext } from "./models-config.plan.js";
 import { repairPluginModelCatalogTransportMetadata } from "./plugin-model-catalog-repair.js";
 import {
   decodePluginModelCatalogRelativePathPluginId,
@@ -48,7 +48,7 @@ import {
   type PersistedPluginModelCatalog,
 } from "./plugin-model-catalog.js";
 
-type PreparedOpenClawModelsJsonSource = ModelsJsonReadyResult & {
+type PreparedAforaModelsJsonSource = ModelsJsonReadyResult & {
   fingerprint: string;
   workspaceDir?: string;
 };
@@ -58,7 +58,7 @@ type ModelsConfigPluginMetadataSnapshot = Pick<
   "index" | "manifestRegistry" | "owners" | "pluginIds"
 >;
 
-type EnsureOpenClawModelsJsonOptions = {
+type EnsureAforaModelsJsonOptions = {
   env?: NodeJS.ProcessEnv;
   pluginMetadataSnapshot?: ModelsConfigPluginMetadataSnapshot;
   preparedStaticProviderCatalog?: PreparedProviderStaticCatalog;
@@ -69,11 +69,11 @@ type EnsureOpenClawModelsJsonOptions = {
   onProviderCatalogOutcome?: (outcome: ProviderCatalogOutcome) => void;
 };
 
-type PlanOpenClawModelsJsonSourceOptions = EnsureOpenClawModelsJsonOptions & {
+type PlanAforaModelsJsonSourceOptions = EnsureAforaModelsJsonOptions & {
   authStore?: AuthProfileStore;
 };
 
-type PlannedOpenClawModelsJsonSource = Readonly<{
+type PlannedAforaModelsJsonSource = Readonly<{
   agentDir: string;
   modelsJsonContents: string | null;
   pluginCatalogs: readonly PersistedPluginModelCatalog[];
@@ -83,7 +83,7 @@ function listPreparedPluginModelCatalogs(agentDir: string) {
   const { catalogs, warnings } = loadPersistedPluginModelCatalogs(agentDir);
   if (warnings.length > 0) {
     throw new Error(
-      `Cannot safely prepare provider models until legacy catalog migration succeeds: ${warnings.join("; ")}. Run openclaw doctor --fix.`,
+      `Cannot safely prepare provider models until legacy catalog migration succeeds: ${warnings.join("; ")}. Run afora doctor --fix.`,
     );
   }
   return catalogs;
@@ -176,7 +176,7 @@ async function writeModelsFileAtomicForModelsJson(
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.modelsConfigTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.modelsConfigTestApi")] = {
     ensureModelsFileModeForModelsJson,
     writeModelsFileAtomicForModelsJson,
   };
@@ -254,10 +254,10 @@ function writePluginCatalogsForModelsJson(params: {
   });
 }
 
-function resolveModelsConfigInput(config?: OpenClawConfig): {
-  config: OpenClawConfig;
-  discoveryAuthConfig: OpenClawConfig;
-  sourceConfigForSecrets: OpenClawConfig;
+function resolveModelsConfigInput(config?: AforaConfig): {
+  config: AforaConfig;
+  discoveryAuthConfig: AforaConfig;
+  sourceConfigForSecrets: AforaConfig;
 } {
   const runtimeSource = getRuntimeConfigSourceSnapshot();
   if (!config) {
@@ -286,9 +286,9 @@ function resolveModelsConfigInput(config?: OpenClawConfig): {
 }
 
 function prepareModelsConfigContext(
-  config?: OpenClawConfig,
+  config?: AforaConfig,
   agentDirOverride?: string,
-  options: EnsureOpenClawModelsJsonOptions = {},
+  options: EnsureAforaModelsJsonOptions = {},
 ): PreparedModelsConfigContext {
   const resolved = resolveModelsConfigInput(config);
   const cfg = resolved.config;
@@ -341,11 +341,11 @@ async function withModelsJsonWriteLock<T>(targetPath: string, run: () => Promise
 }
 
 /** Ensures models.json and the agent SQLite catalog cache are current. */
-async function prepareOpenClawModelsJsonSource(
-  config?: OpenClawConfig,
+async function prepareAforaModelsJsonSource(
+  config?: AforaConfig,
   agentDirOverride?: string,
-  options: EnsureOpenClawModelsJsonOptions = {},
-): Promise<PreparedOpenClawModelsJsonSource> {
+  options: EnsureAforaModelsJsonOptions = {},
+): Promise<PreparedAforaModelsJsonSource> {
   const context = prepareModelsConfigContext(config, agentDirOverride, options);
   const { agentDir, pluginMetadataSnapshot, workspaceDir } = context;
   const targetPath = path.join(agentDir, "models.json");
@@ -371,7 +371,7 @@ async function prepareOpenClawModelsJsonSource(
       existingParsed: existingModelsFile.parsed,
       ...(pluginMetadataSnapshot ? { pluginMetadataSnapshot } : {}),
     });
-    const plan = await planOpenClawModelsJson({
+    const plan = await planAforaModelsJson({
       context,
       existingRaw: existingModelsFile.raw,
       existingParsed: existingParsedForMerge,
@@ -436,11 +436,11 @@ async function prepareOpenClawModelsJsonSource(
  * Plans the complete root/plugin catalog generation without mutating agent-owned state.
  * Control-plane inventory reads use this when their lifecycle generation may be superseded.
  */
-export async function planOpenClawModelsJsonSource(
-  config?: OpenClawConfig,
+export async function planAforaModelsJsonSource(
+  config?: AforaConfig,
   agentDirOverride?: string,
-  options: PlanOpenClawModelsJsonSourceOptions = {},
-): Promise<PlannedOpenClawModelsJsonSource> {
+  options: PlanAforaModelsJsonSourceOptions = {},
+): Promise<PlannedAforaModelsJsonSource> {
   const context = prepareModelsConfigContext(config, agentDirOverride, options);
   const { agentDir, pluginMetadataSnapshot } = context;
   const existingModelsFile = await readExistingModelsFile(path.join(agentDir, "models.json"));
@@ -451,7 +451,7 @@ export async function planOpenClawModelsJsonSource(
     pluginCatalogs: existingPluginCatalogs,
     ...(pluginMetadataSnapshot ? { pluginMetadataSnapshot } : {}),
   });
-  const plan = await planOpenClawModelsJson({
+  const plan = await planAforaModelsJson({
     context,
     ...(options.authStore ? { authStore: options.authStore } : {}),
     existingRaw: existingModelsFile.raw,
@@ -470,11 +470,11 @@ export async function planOpenClawModelsJsonSource(
 }
 
 /** Ensures models.json and the agent SQLite catalog cache are current. */
-export async function ensureOpenClawModelsJson(
-  config?: OpenClawConfig,
+export async function ensureAforaModelsJson(
+  config?: AforaConfig,
   agentDirOverride?: string,
-  options: EnsureOpenClawModelsJsonOptions = {},
+  options: EnsureAforaModelsJsonOptions = {},
 ): Promise<ModelsJsonReadyResult> {
-  const prepared = await prepareOpenClawModelsJsonSource(config, agentDirOverride, options);
+  const prepared = await prepareAforaModelsJsonSource(config, agentDirOverride, options);
   return { agentDir: prepared.agentDir, wrote: prepared.wrote };
 }

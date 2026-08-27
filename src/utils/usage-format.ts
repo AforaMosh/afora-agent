@@ -4,8 +4,8 @@
  */
 import { createHash } from "node:crypto";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { expectDefined } from "@afora/normalization-core";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   listAgentEntries,
   resolveAgentDir,
@@ -15,7 +15,7 @@ import { modelKey, normalizeModelRef, normalizeProviderId } from "../agents/mode
 import type { NormalizedUsage } from "../agents/usage.js";
 import { resolveStateDir } from "../config/paths.js";
 import type { ModelProviderConfig } from "../config/types.models.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { tryReadJsonSync } from "../infra/json-files.js";
 import { pruneMapToMaxSize } from "../infra/map-size.js";
 import {
@@ -312,7 +312,7 @@ function loadModelsJsonCostIndex(options?: {
   }
 }
 
-function resolveCostAgentDir(config?: OpenClawConfig, agentDir?: string): string | undefined {
+function resolveCostAgentDir(config?: AforaConfig, agentDir?: string): string | undefined {
   if (agentDir) {
     return agentDir;
   }
@@ -328,7 +328,7 @@ function resolveCostAgentDir(config?: OpenClawConfig, agentDir?: string): string
 function findConfiguredProviderCost(params: {
   provider?: string;
   model?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   allowPluginNormalization?: boolean;
 }): ModelCostConfig | undefined {
   const key = toResolvedModelKey(params);
@@ -523,7 +523,7 @@ function serializeCostIndex(
  * Consumers cache this value to know when resolved cost entries need recomputation.
  */
 export function resolveModelCostConfigFingerprint(
-  config?: OpenClawConfig,
+  config?: AforaConfig,
   agentDir?: string,
 ): string {
   const resolvedAgentDir = resolveCostAgentDir(config, agentDir);
@@ -553,7 +553,7 @@ export function resolveModelCostConfigFingerprint(
 export function resolveModelCostConfig(params: {
   provider?: string;
   model?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentDir?: string;
   allowPluginNormalization?: boolean;
 }): ModelCostConfig | undefined {

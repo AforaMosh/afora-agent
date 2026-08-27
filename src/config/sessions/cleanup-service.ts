@@ -5,8 +5,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { getLogger } from "../../logging/logger.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../../routing/session-key.js";
-import { resolveOpenClawAgentSqlitePath } from "../../state/openclaw-agent-db.js";
-import type { OpenClawConfig } from "../types.openclaw.js";
+import { resolveAforaAgentSqlitePath } from "../../state/afora-agent-db.js";
+import type { AforaConfig } from "../types.afora.js";
 import {
   pruneUnreferencedSessionArtifacts,
   resolveSessionArtifactCanonicalPathsForEntry,
@@ -106,7 +106,7 @@ type SessionsCleanupRunResult = {
 function resolveCleanupSqlitePath(target: SessionStoreTarget): string {
   return (
     resolveSqliteTargetFromSessionStorePath(target.storePath, { agentId: target.agentId }).path ??
-    resolveOpenClawAgentSqlitePath({ agentId: target.agentId })
+    resolveAforaAgentSqlitePath({ agentId: target.agentId })
   );
 }
 
@@ -195,7 +195,7 @@ export function resolveSessionCleanupAction(params: {
 }
 
 function isMainScopeStaleDirectSessionKey(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   targetAgentId: string;
   key: string;
   activeKey?: string;
@@ -227,7 +227,7 @@ function isMainScopeStaleDirectSessionKey(params: {
 }
 
 function retireMainScopeDirectSessionEntries(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   store: Record<string, SessionEntry>;
   targetAgentId: string;
   activeKey?: string;
@@ -351,7 +351,7 @@ function addEntryArtifactPathsToSet(params: {
 }
 
 async function previewStoreCleanup(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   target: SessionStoreTarget;
   maintenance: ResolvedSessionMaintenanceConfig;
   mode: ResolvedSessionMaintenanceConfig["mode"];
@@ -514,7 +514,7 @@ async function previewStoreCleanup(params: {
 
 /** Runs session cleanup preview/apply for the selected store targets. */
 export async function runSessionsCleanup(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   opts: SessionsCleanupOptions;
   targets?: SessionStoreTarget[];
 }): Promise<SessionsCleanupRunResult> {
@@ -667,7 +667,7 @@ export async function runSessionsCleanup(params: {
 
 /** Purge session store entries for a deleted agent (#65524). Best-effort. */
 export async function purgeAgentSessionStoreEntries(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
 ): Promise<boolean> {
   const normalizedAgentId = normalizeAgentId(agentId);

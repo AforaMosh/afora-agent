@@ -30,15 +30,15 @@ export type SessionIdentityMutationListener = (mutation: SessionIdentityMutation
 type SessionLifecycleListener = (event: SessionLifecycleEvent) => void;
 
 const SESSION_LIFECYCLE_LISTENERS = resolveGlobalSet<SessionLifecycleListener>(
-  Symbol.for("openclaw.sessionLifecycleEventListeners"),
+  Symbol.for("afora.sessionLifecycleEventListeners"),
   "close-and-restart",
 );
 const SESSION_IDENTITY_MUTATION_LISTENERS = resolveGlobalSet<SessionIdentityMutationListener>(
-  Symbol.for("openclaw.sessionIdentityMutationListeners"),
+  Symbol.for("afora.sessionIdentityMutationListeners"),
   "close-and-restart",
 );
 const SESSION_IDENTITY_MUTATION_STATE = resolveGlobalSingleton(
-  Symbol.for("openclaw.sessionIdentityMutationState"),
+  Symbol.for("afora.sessionIdentityMutationState"),
   () => ({ version: 0 }),
 );
 

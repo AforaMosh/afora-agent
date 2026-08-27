@@ -19,7 +19,7 @@ vi.mock("../../daemon/launchd.js", () => ({
   repairLaunchAgentBootstrap: (args: { env?: Record<string, string | undefined> }) =>
     repairLaunchAgentBootstrap(args),
   resolveLaunchAgentLabel: (env: Record<string, string | undefined>) =>
-    env.OPENCLAW_LAUNCHD_LABEL ?? "ai.openclaw.gateway",
+    env.AFORA_LAUNCHD_LABEL ?? "ai.afora.gateway",
 }));
 
 vi.mock("../../daemon/launchd-system.js", () => ({
@@ -56,7 +56,7 @@ describe("recoverInstalledLaunchAgent", () => {
     launchAgentPlistExists.mockResolvedValue(false);
 
     await expect(recoverInstalledLaunchAgent({ result: "started" })).resolves.toBeNull();
-    expect(assertNoSystemLaunchDaemonOwnership).toHaveBeenCalledWith("ai.openclaw.gateway");
+    expect(assertNoSystemLaunchDaemonOwnership).toHaveBeenCalledWith("ai.afora.gateway");
     expect(repairLaunchAgentBootstrap).not.toHaveBeenCalled();
   });
 
@@ -104,11 +104,11 @@ describe("recoverInstalledLaunchAgent", () => {
     vi.spyOn(process, "platform", "get").mockReturnValue("darwin");
     launchAgentPlistExists.mockResolvedValue(false);
     assertNoSystemLaunchDaemonOwnership.mockRejectedValue(
-      new Error("System LaunchDaemon system/ai.openclaw.gateway owns this label"),
+      new Error("System LaunchDaemon system/ai.afora.gateway owns this label"),
     );
 
     await expect(recoverInstalledLaunchAgent({ result: "started" })).rejects.toThrow(
-      "System LaunchDaemon system/ai.openclaw.gateway owns this label",
+      "System LaunchDaemon system/ai.afora.gateway owns this label",
     );
     expect(launchAgentPlistExists).not.toHaveBeenCalled();
   });

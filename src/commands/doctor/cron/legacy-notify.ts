@@ -2,7 +2,7 @@
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { normalizeHttpWebhookUrl } from "../../../cron/webhook-url.js";
 
 type LegacyNotifyMigrationOutcome = {

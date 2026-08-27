@@ -1,5 +1,5 @@
-import { createApiRegistry, type ApiRegistry } from "@openclaw/ai";
-import { resetApiProviders } from "@openclaw/ai/providers";
+import { createApiRegistry, type ApiRegistry } from "@afora/ai";
+import { resetApiProviders } from "@afora/ai/providers";
 // Covers dynamic registration of custom model API providers.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createAssistantMessageEventStream } from "../llm/utils/event-stream.js";

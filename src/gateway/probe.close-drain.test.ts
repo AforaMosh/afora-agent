@@ -13,7 +13,7 @@ import {
 } from "./minimal-gateway.test-helpers.js";
 import { probeGateway } from "./probe.js";
 
-const tempDirs = createSuiteTempRootTracker({ prefix: "openclaw-probe-close-drain-" });
+const tempDirs = createSuiteTempRootTracker({ prefix: "afora-probe-close-drain-" });
 
 function activeClientSocketsToPort(port: number): Socket[] {
   // Node has no public active-handle API; this regression must prove the probe
@@ -73,7 +73,7 @@ describe("probeGateway close drain", () => {
         auth: { token: "secret" },
         timeoutMs: 1_000,
         includeDetails: false,
-        env: { ...process.env, OPENCLAW_STATE_DIR: await createTempStateDir() },
+        env: { ...process.env, AFORA_STATE_DIR: await createTempStateDir() },
       });
 
       expect(result.ok).toBe(true);

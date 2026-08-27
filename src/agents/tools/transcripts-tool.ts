@@ -4,11 +4,11 @@
  * Manages live capture, manual import, summarization, and process-local transcript sessions.
  */
 import path from "node:path";
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { Type } from "typebox";
 import { resolveStateDir } from "../../config/paths.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   type ResolvedTranscriptsAutoStartConfig,
   resolveTranscriptsConfig,
@@ -104,7 +104,7 @@ const TranscriptsSchema = Type.Object(
 
 function createStore(ctx: TranscriptsRuntimeContext): TranscriptsStore {
   return new TranscriptsStore(path.join(ctx.stateDir, "transcripts"), {
-    env: { ...process.env, OPENCLAW_STATE_DIR: ctx.stateDir },
+    env: { ...process.env, AFORA_STATE_DIR: ctx.stateDir },
   });
 }
 
@@ -427,7 +427,7 @@ export function createTranscriptsTool(options?: {
   agentAccountId?: string;
   caller?: TranscriptToolCaller;
   assertCallerActive?: () => void;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   stateDir?: string;
   logger?: TranscriptsLogger;
 }): AnyAgentTool {

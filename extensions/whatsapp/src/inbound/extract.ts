@@ -5,9 +5,9 @@ import {
   formatLocationText,
   type ChannelInboundMediaInput,
   type NormalizedLocation,
-} from "openclaw/plugin-sdk/channel-inbound";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { isRecord, uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/channel-inbound";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { isRecord, uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveComparableIdentity, type WhatsAppReplyContext } from "../identity.js";
 import { jidToE164 } from "../text-runtime.js";
 import { parseVcard } from "../vcard.js";

@@ -67,7 +67,7 @@ describe("promosListCommand", () => {
     const output = lines.join("\n");
     expect(output).toContain("Free Example models — Example");
     expect(output).toContain("openrouter/example/model-alpha (Model Alpha) — suggested default");
-    expect(output).toContain("openclaw promos claim spring-models");
+    expect(output).toContain("afora promos claim spring-models");
   });
 
   it("prints an empty-state line when nothing is live", async () => {

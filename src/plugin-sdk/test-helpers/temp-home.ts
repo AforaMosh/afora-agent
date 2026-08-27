@@ -1,8 +1,8 @@
-// Temp home test helpers create isolated OpenClaw home directories for plugin tests.
+// Temp home test helpers create isolated Afora home directories for plugin tests.
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { deleteTestEnvValue, setTestEnvValue } from "../../test-utils/env.js";
 import { cleanupSessionStateForTest } from "../../test-utils/session-state-cleanup.js";
 
@@ -13,7 +13,7 @@ type EnvSnapshot = {
   userProfile: string | undefined;
   homeDrive: string | undefined;
   homePath: string | undefined;
-  openclawHome: string | undefined;
+  aforaHome: string | undefined;
   stateDir: string | undefined;
 };
 
@@ -30,8 +30,8 @@ function snapshotEnv(): EnvSnapshot {
     userProfile: process.env.USERPROFILE,
     homeDrive: process.env.HOMEDRIVE,
     homePath: process.env.HOMEPATH,
-    openclawHome: process.env.OPENCLAW_HOME,
-    stateDir: process.env.OPENCLAW_STATE_DIR,
+    aforaHome: process.env.AFORA_HOME,
+    stateDir: process.env.AFORA_STATE_DIR,
   };
 }
 
@@ -47,8 +47,8 @@ function restoreEnv(snapshot: EnvSnapshot) {
   restoreKey("USERPROFILE", snapshot.userProfile);
   restoreKey("HOMEDRIVE", snapshot.homeDrive);
   restoreKey("HOMEPATH", snapshot.homePath);
-  restoreKey("OPENCLAW_HOME", snapshot.openclawHome);
-  restoreKey("OPENCLAW_STATE_DIR", snapshot.stateDir);
+  restoreKey("AFORA_HOME", snapshot.aforaHome);
+  restoreKey("AFORA_STATE_DIR", snapshot.stateDir);
 }
 
 function snapshotExtraEnv(keys: string[]): Record<string, string | undefined> {
@@ -72,9 +72,9 @@ function restoreExtraEnv(snapshot: Record<string, string | undefined>) {
 function setTempHome(base: string) {
   setTestEnvValue("HOME", base);
   setTestEnvValue("USERPROFILE", base);
-  // Ensure tests using HOME isolation aren't affected by leaked OPENCLAW_HOME.
-  deleteTestEnvValue("OPENCLAW_HOME");
-  setTestEnvValue("OPENCLAW_STATE_DIR", path.join(base, ".openclaw"));
+  // Ensure tests using HOME isolation aren't affected by leaked AFORA_HOME.
+  deleteTestEnvValue("AFORA_HOME");
+  setTestEnvValue("AFORA_STATE_DIR", path.join(base, ".afora"));
 
   if (process.platform !== "win32") {
     return;
@@ -111,7 +111,7 @@ export async function withTempHomeCore<T>(
     skipSessionCleanup?: boolean;
   } = {},
 ): Promise<T> {
-  const prefix = opts.prefix ?? "openclaw-test-home-";
+  const prefix = opts.prefix ?? "afora-test-home-";
   const base = await allocateTempHomeBase(prefix);
   const snapshot = snapshotEnv();
   const envKeys = Object.keys(opts.env ?? {});
@@ -123,7 +123,7 @@ export async function withTempHomeCore<T>(
   const envSnapshot = snapshotExtraEnv(envKeys);
 
   setTempHome(base);
-  await fs.mkdir(path.join(base, ".openclaw", "agents", "main", "sessions"), { recursive: true });
+  await fs.mkdir(path.join(base, ".afora", "agents", "main", "sessions"), { recursive: true });
   if (opts.env) {
     for (const [key, raw] of Object.entries(opts.env)) {
       const value = typeof raw === "function" ? raw(base) : raw;

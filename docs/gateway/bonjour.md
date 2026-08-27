@@ -6,47 +6,47 @@ read_when:
 title: "Bonjour discovery"
 ---
 
-OpenClaw can use Bonjour (mDNS/DNS-SD) to discover an active gateway (WebSocket endpoint). Multicast `local.` browsing is a **LAN-only convenience**: the bundled `bonjour` plugin owns LAN advertising, auto-starting on macOS hosts and opt-in on Linux, Windows, and containerized gateway deployments. The same beacon can also publish through a configured wide-area DNS-SD domain for cross-network discovery. Discovery is best-effort and does **not** replace SSH or Tailnet-based connectivity.
+Afora can use Bonjour (mDNS/DNS-SD) to discover an active gateway (WebSocket endpoint). Multicast `local.` browsing is a **LAN-only convenience**: the bundled `bonjour` plugin owns LAN advertising, auto-starting on macOS hosts and opt-in on Linux, Windows, and containerized gateway deployments. The same beacon can also publish through a configured wide-area DNS-SD domain for cross-network discovery. Discovery is best-effort and does **not** replace SSH or Tailnet-based connectivity.
 
 ## Wide-area Bonjour (Unicast DNS-SD) over Tailscale
 
 If the node and gateway are on different networks, multicast mDNS can't cross the boundary. Keep the same discovery UX by switching to **unicast DNS-SD** ("Wide-Area Bonjour") over Tailscale:
 
 1. Run a DNS server on the gateway host, reachable over the Tailnet.
-2. Publish DNS-SD records for `_openclaw-gw._tcp` under a dedicated zone (example: `openclaw.internal.`).
+2. Publish DNS-SD records for `_afora-gw._tcp` under a dedicated zone (example: `afora.internal.`).
 3. Configure Tailscale **split DNS** so your chosen domain resolves via that DNS server for clients, including iOS.
 
-`openclaw.internal.` above is just an example — OpenClaw supports any discovery domain. iOS/Android nodes browse both `local.` and your configured wide-area domain.
+`afora.internal.` above is just an example — Afora supports any discovery domain. iOS/Android nodes browse both `local.` and your configured wide-area domain.
 
 ### Gateway config
 
 ```json5
 {
   gateway: { bind: "tailnet" }, // tailnet-only (recommended)
-  discovery: { wideArea: { domain: "openclaw.internal" } },
+  discovery: { wideArea: { domain: "afora.internal" } },
 }
 ```
 
-Setting `discovery.wideArea.domain` enables wide-area discovery. OpenClaw also accepts the `OPENCLAW_WIDE_AREA_DOMAIN` env var as a fallback when the config key is unset.
+Setting `discovery.wideArea.domain` enables wide-area discovery. Afora also accepts the `AFORA_WIDE_AREA_DOMAIN` env var as a fallback when the config key is unset.
 
 ### One-time DNS server setup (gateway host, macOS only)
 
 ```bash
-openclaw dns setup --apply
+afora dns setup --apply
 ```
 
 This command is macOS-only and requires Homebrew and a running Tailscale connection. It installs CoreDNS (`brew install coredns`) and configures it to:
 
 - listen on port 53 only on the gateway's Tailscale interfaces
-- serve your chosen domain (example: `openclaw.internal.`) from `~/.openclaw/dns/<domain>.db`
+- serve your chosen domain (example: `afora.internal.`) from `~/.afora/dns/<domain>.db`
 
 Run without `--apply` first to preview the plan (domain, zone file path, detected Tailnet IP, recommended config) without installing anything.
 
 Validate from a Tailnet-connected machine:
 
 ```bash
-dns-sd -B _openclaw-gw._tcp openclaw.internal.
-dig @<TAILNET_IPV4> -p 53 _openclaw-gw._tcp.openclaw.internal PTR +short
+dns-sd -B _afora-gw._tcp afora.internal.
+dig @<TAILNET_IPV4> -p 53 _afora-gw._tcp.afora.internal PTR +short
 ```
 
 ### Tailscale DNS settings
@@ -56,19 +56,19 @@ In the Tailscale admin console:
 - Add a nameserver pointing at the gateway's Tailnet IP (UDP/TCP 53).
 - Add split DNS so your discovery domain uses that nameserver.
 
-Once clients accept Tailnet DNS, iOS nodes and CLI discovery can browse `_openclaw-gw._tcp` in your discovery domain without multicast.
+Once clients accept Tailnet DNS, iOS nodes and CLI discovery can browse `_afora-gw._tcp` in your discovery domain without multicast.
 
 ### Gateway listener security
 
-The gateway WS port (default `18789`) binds to loopback by default. For LAN/Tailnet access, bind explicitly and keep auth enabled. For Tailnet-only setups, set `gateway.bind: "tailnet"` in `~/.openclaw/openclaw.json` and restart the gateway (or the macOS menubar app).
+The gateway WS port (default `18789`) binds to loopback by default. For LAN/Tailnet access, bind explicitly and keep auth enabled. For Tailnet-only setups, set `gateway.bind: "tailnet"` in `~/.AforaMosh/afora-agent.json` and restart the gateway (or the macOS menubar app).
 
 ## What advertises
 
-Only the gateway advertises `_openclaw-gw._tcp`. LAN multicast advertising comes from the bundled `bonjour` plugin when enabled; wide-area DNS-SD publishing stays gateway-owned.
+Only the gateway advertises `_afora-gw._tcp`. LAN multicast advertising comes from the bundled `bonjour` plugin when enabled; wide-area DNS-SD publishing stays gateway-owned.
 
 ## Service types
 
-- `_openclaw-gw._tcp` - gateway transport beacon, used by macOS/iOS/Android nodes.
+- `_afora-gw._tcp` - gateway transport beacon, used by macOS/iOS/Android nodes.
 
 ## TXT keys (non-secret hints)
 
@@ -101,10 +101,10 @@ Built-in tools:
 
 ```bash
 # Browse instances
-dns-sd -B _openclaw-gw._tcp local.
+dns-sd -B _afora-gw._tcp local.
 
 # Resolve one instance (replace <instance>)
-dns-sd -L "<instance>" _openclaw-gw._tcp local.
+dns-sd -L "<instance>" _afora-gw._tcp local.
 ```
 
 If browsing works but resolving fails, you're usually hitting a LAN policy or mDNS resolver issue.
@@ -117,15 +117,15 @@ The gateway writes a rolling log file (printed on startup as `gateway log file: 
 - `bonjour: suppressing ciao netmask assertion ...`
 - `bonjour: ... name conflict resolved` / `hostname conflict resolved`
 
-OpenClaw starts each Bonjour service once and leaves probing, retry, name-conflict resolution, and interface-change republishing to the mDNS responder. This avoids overlapping publish attempts during normal network churn. Repeated internal self-probe messages are suppressed so they cannot flood the gateway log.
+Afora starts each Bonjour service once and leaves probing, retry, name-conflict resolution, and interface-change republishing to the mDNS responder. This avoids overlapping publish attempts during normal network churn. Repeated internal self-probe messages are suppressed so they cannot flood the gateway log.
 
-When multiple OpenClaw gateways advertise from the same host, Bonjour may append suffixes such as `(2)` or `(3)` to keep service instance names unique. Those suffixes are normal conflict resolution and do not indicate duplicate OCM supervision.
+When multiple Afora gateways advertise from the same host, Bonjour may append suffixes such as `(2)` or `(3)` to keep service instance names unique. Those suffixes are normal conflict resolution and do not indicate duplicate OCM supervision.
 
-Bonjour uses the system hostname for the advertised `.local` host when it's a valid DNS label. If the system hostname contains spaces, underscores, or another invalid DNS-label character, OpenClaw falls back to `openclaw.local`. Set `OPENCLAW_MDNS_HOSTNAME=<name>` before starting the gateway when you need an explicit host label.
+Bonjour uses the system hostname for the advertised `.local` host when it's a valid DNS label. If the system hostname contains spaces, underscores, or another invalid DNS-label character, Afora falls back to `afora.local`. Set `AFORA_MDNS_HOSTNAME=<name>` before starting the gateway when you need an explicit host label.
 
 ## Debugging on iOS node
 
-The iOS node uses `NWBrowser` to discover `_openclaw-gw._tcp`.
+The iOS node uses `NWBrowser` to discover `_afora-gw._tcp`.
 
 To capture logs: Settings -> Gateway -> Advanced -> **Discovery Debug Logs**, then Settings -> Gateway -> Advanced -> **Discovery Logs** -> reproduce -> **Copy**. The log includes browser state transitions and result-set changes.
 
@@ -136,7 +136,7 @@ Bonjour auto-starts for empty-config gateway startup on macOS hosts, since the l
 Enable it explicitly when same-LAN auto-discovery is useful on Linux, Windows, or another non-macOS host:
 
 ```bash
-openclaw plugins enable bonjour
+afora plugins enable bonjour
 ```
 
 When enabled, Bonjour uses `discovery.mdns.mode` to decide how much TXT metadata to publish; the same mode controls optional TXT hints in wide-area DNS-SD records. Modes:
@@ -154,26 +154,26 @@ Leave Bonjour disabled when LAN multicast advertising is unnecessary, unavailabl
 Use the env override for deployment-scoped problems (safe for Docker images, service files, launch scripts, one-off debugging — it disappears when the environment does):
 
 ```bash
-OPENCLAW_DISABLE_BONJOUR=1
+AFORA_DISABLE_BONJOUR=1
 ```
 
-Use plugin configuration when you intentionally want to turn off the bundled LAN discovery plugin for that OpenClaw config:
+Use plugin configuration when you intentionally want to turn off the bundled LAN discovery plugin for that Afora config:
 
 ```bash
-openclaw plugins disable bonjour
+afora plugins disable bonjour
 ```
 
 ## Docker gotchas
 
-The bundled Bonjour plugin auto-disables LAN multicast advertising in detected containers when `OPENCLAW_DISABLE_BONJOUR` is unset. Docker bridge networks usually don't forward mDNS multicast (`224.0.0.251:5353`) between the container and the LAN, so advertising from the container rarely makes discovery work.
+The bundled Bonjour plugin auto-disables LAN multicast advertising in detected containers when `AFORA_DISABLE_BONJOUR` is unset. Docker bridge networks usually don't forward mDNS multicast (`224.0.0.251:5353`) between the container and the LAN, so advertising from the container rarely makes discovery work.
 
 Gotchas:
 
 - Bonjour auto-starts on macOS hosts and is opt-in elsewhere. Leaving it disabled doesn't stop the gateway — it only skips LAN multicast advertising.
-- Disabling Bonjour doesn't change `gateway.bind`; Docker still defaults to `OPENCLAW_GATEWAY_BIND=lan` so the published host port works.
+- Disabling Bonjour doesn't change `gateway.bind`; Docker still defaults to `AFORA_GATEWAY_BIND=lan` so the published host port works.
 - Disabling Bonjour doesn't disable wide-area DNS-SD. Use wide-area discovery or Tailnet when the gateway and node aren't on the same LAN.
-- Reusing the same `OPENCLAW_CONFIG_DIR` outside Docker doesn't persist the container auto-disable policy.
-- Set `OPENCLAW_DISABLE_BONJOUR=0` only for host networking, macvlan, or another network where mDNS multicast is known to pass; set it to `1` to force-disable.
+- Reusing the same `AFORA_CONFIG_DIR` outside Docker doesn't persist the container auto-disable policy.
+- Set `AFORA_DISABLE_BONJOUR=0` only for host networking, macvlan, or another network where mDNS multicast is known to pass; set it to `1` to force-disable.
 
 ## Troubleshooting disabled Bonjour
 
@@ -182,7 +182,7 @@ If a node no longer auto-discovers the gateway after Docker setup:
 1. Confirm whether the gateway is running in auto, forced-on, or forced-off mode:
 
    ```bash
-   docker compose config | grep OPENCLAW_DISABLE_BONJOUR
+   docker compose config | grep AFORA_DISABLE_BONJOUR
    ```
 
 2. Confirm the gateway itself is reachable through the published port:
@@ -196,20 +196,20 @@ If a node no longer auto-discovers the gateway after Docker setup:
    - LAN clients: `http://<gateway-host>:18789`
    - Cross-network clients: Tailnet MagicDNS, Tailnet IP, SSH tunnel, or wide-area DNS-SD
 
-4. If you deliberately enabled the Bonjour plugin in Docker and forced advertising with `OPENCLAW_DISABLE_BONJOUR=0`, test multicast from the host:
+4. If you deliberately enabled the Bonjour plugin in Docker and forced advertising with `AFORA_DISABLE_BONJOUR=0`, test multicast from the host:
 
    ```bash
-   dns-sd -B _openclaw-gw._tcp local.
+   dns-sd -B _afora-gw._tcp local.
    ```
 
-   If browsing is empty, or Gateway logs show repeated ciao probe failures, restore `OPENCLAW_DISABLE_BONJOUR=1` and use a direct or Tailnet route.
+   If browsing is empty, or Gateway logs show repeated ciao probe failures, restore `AFORA_DISABLE_BONJOUR=1` and use a direct or Tailnet route.
 
 ## Common failure modes
 
 - **Bonjour doesn't cross networks**: use Tailnet or SSH.
 - **Multicast blocked**: some Wi-Fi networks disable mDNS.
-- **Advertiser stuck in probing/announcing**: hosts with blocked multicast, container bridges, WSL, or interface churn can leave the responder in a non-announced state. The gateway remains available through direct, SSH, Tailnet, or wide-area DNS-SD routes; disable LAN Bonjour with `discovery.mdns.mode: "off"` or `OPENCLAW_DISABLE_BONJOUR=1` when multicast is unavailable.
-- **Docker bridge networking**: Bonjour auto-disables in detected containers. Set `OPENCLAW_DISABLE_BONJOUR=0` only for host, macvlan, or another mDNS-capable network.
+- **Advertiser stuck in probing/announcing**: hosts with blocked multicast, container bridges, WSL, or interface churn can leave the responder in a non-announced state. The gateway remains available through direct, SSH, Tailnet, or wide-area DNS-SD routes; disable LAN Bonjour with `discovery.mdns.mode: "off"` or `AFORA_DISABLE_BONJOUR=1` when multicast is unavailable.
+- **Docker bridge networking**: Bonjour auto-disables in detected containers. Set `AFORA_DISABLE_BONJOUR=0` only for host, macvlan, or another mDNS-capable network.
 - **Sleep/interface churn**: macOS may temporarily drop mDNS results; retry.
 - **Browse works but resolve fails**: keep machine names simple (avoid emojis or punctuation), then restart the gateway. The service instance name derives from the host name, so overly complex names can confuse some resolvers.
 
@@ -221,17 +221,17 @@ Bonjour/DNS-SD often escapes bytes in service instance names as decimal `\DDD` s
 
 | Setting                                              | Effect                                                                            |
 | ---------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `openclaw plugins enable bonjour`                    | Enables the bundled LAN discovery plugin on hosts where it isn't default-enabled. |
-| `openclaw plugins disable bonjour`                   | Disables LAN multicast advertising by disabling the bundled plugin.               |
-| `OPENCLAW_DISABLE_BONJOUR=1` (or `true`/`yes`/`on`)  | Disables LAN multicast advertising without changing plugin config.                |
-| `OPENCLAW_DISABLE_BONJOUR=0` (or `false`/`no`/`off`) | Forces LAN multicast advertising on, including inside detected containers.        |
+| `afora plugins enable bonjour`                    | Enables the bundled LAN discovery plugin on hosts where it isn't default-enabled. |
+| `afora plugins disable bonjour`                   | Disables LAN multicast advertising by disabling the bundled plugin.               |
+| `AFORA_DISABLE_BONJOUR=1` (or `true`/`yes`/`on`)  | Disables LAN multicast advertising without changing plugin config.                |
+| `AFORA_DISABLE_BONJOUR=0` (or `false`/`no`/`off`) | Forces LAN multicast advertising on, including inside detected containers.        |
 | `discovery.mdns.mode`                                | `off` \| `minimal` (default) \| `full` — see modes above.                         |
-| `gateway.bind`                                       | Controls the gateway bind mode in `~/.openclaw/openclaw.json`.                    |
-| `OPENCLAW_SSH_PORT`                                  | Overrides the SSH port when `sshPort` is advertised (full mode).                  |
-| `OPENCLAW_TAILNET_DNS`                               | Publishes a MagicDNS hint in TXT when mDNS full mode is enabled.                  |
-| `OPENCLAW_CLI_PATH`                                  | Overrides the advertised CLI path (full mode).                                    |
+| `gateway.bind`                                       | Controls the gateway bind mode in `~/.AforaMosh/afora-agent.json`.                    |
+| `AFORA_SSH_PORT`                                  | Overrides the SSH port when `sshPort` is advertised (full mode).                  |
+| `AFORA_TAILNET_DNS`                               | Publishes a MagicDNS hint in TXT when mDNS full mode is enabled.                  |
+| `AFORA_CLI_PATH`                                  | Overrides the advertised CLI path (full mode).                                    |
 
-macOS hosts auto-start the bundled LAN discovery plugin by default. When the Bonjour plugin is enabled and `OPENCLAW_DISABLE_BONJOUR` is unset, Bonjour advertises on normal hosts and auto-disables inside detected containers (Docker, Fly.io machines, and common container runtimes).
+macOS hosts auto-start the bundled LAN discovery plugin by default. When the Bonjour plugin is enabled and `AFORA_DISABLE_BONJOUR` is unset, Bonjour advertises on normal hosts and auto-disables inside detected containers (Docker, Fly.io machines, and common container runtimes).
 
 ## Related docs
 

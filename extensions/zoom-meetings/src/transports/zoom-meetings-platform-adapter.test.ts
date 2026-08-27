@@ -1,5 +1,5 @@
 import { runInNewContext } from "node:vm";
-import { MeetingPlatformAdapter } from "openclaw/plugin-sdk/meeting-runtime";
+import { MeetingPlatformAdapter } from "afora-agent/plugin-sdk/meeting-runtime";
 import { describe, expect, it, vi } from "vitest";
 import { zoomMeetingLeaveScript, zoomMeetingStatusScript } from "./zoom-meetings-page-scripts.js";
 import { ZOOM_MEETINGS_PLATFORM_ADAPTER } from "./zoom-meetings-platform-adapter.js";
@@ -119,7 +119,7 @@ async function runStatusFixture(params: {
       allowSessionAdoption: true,
       autoJoin: true,
       captureCaptions: false,
-      guestName: "OpenClaw Agent",
+      guestName: "Afora Agent",
       meetingSessionId: "session-1",
       meetingUrl: URL,
       readOnly: params.readOnly,
@@ -204,7 +204,7 @@ describe("Zoom meeting platform adapter", () => {
       allowSessionAdoption: true,
       autoJoin: true,
       captureCaptions: true,
-      guestName: "OpenClaw Agent",
+      guestName: "Afora Agent",
       meetingSessionId: "session-1",
       meetingUrl: URL,
       waitForInCallMs: 60_000,
@@ -225,7 +225,7 @@ describe("Zoom meeting platform adapter", () => {
     expect(script).toContain("host will let you in soon");
     expect(script).toContain("setSinkId");
     expect(script).toContain("blackhole 2ch");
-    expect(script).toContain("openclaw meeting audio");
+    expect(script).toContain("afora meeting audio");
   });
 
   it("enables caption snapshots for durable notes in every mode", () => {
@@ -270,7 +270,7 @@ describe("Zoom meeting platform adapter", () => {
         URL: globalThis.URL,
         document,
         location: new globalThis.URL("https://app.zoom.us/wc?ref_from=waffle_zwa"),
-        window: { __openclawZoomMeeting: state },
+        window: { __aforaZoomMeeting: state },
       },
     );
 
@@ -305,7 +305,7 @@ describe("Zoom meeting platform adapter", () => {
         document,
         location: new globalThis.URL("https://app.zoom.us/wc"),
         window: {
-          __openclawZoomMeeting: {
+          __aforaZoomMeeting: {
             identity: "zoom:12345678901",
             inCallControl: leave,
             inCallUrl: "https://app.zoom.us/wc",
@@ -354,7 +354,7 @@ describe("Zoom meeting platform adapter", () => {
     expect(JSON.parse(result)).toMatchObject({ leaveAction: "leave", urlMatched: true });
     expect(leave.click).toHaveBeenCalledOnce();
     expect(window).toMatchObject({
-      __openclawZoomMeeting: { identity: "zoom:12345678901", sessionId: "session-1" },
+      __aforaZoomMeeting: { identity: "zoom:12345678901", sessionId: "session-1" },
     });
   });
 
@@ -395,7 +395,7 @@ describe("Zoom meeting platform adapter", () => {
       }),
     });
 
-    expect(guest.value).toBe("OpenClaw Agent");
+    expect(guest.value).toBe("Afora Agent");
     expect(guest.dispatchEvent).toHaveBeenCalledTimes(2);
     expect(join.click).toHaveBeenCalledOnce();
     expect(result.clickedJoin).toBe(true);
@@ -433,7 +433,7 @@ describe("Zoom meeting platform adapter", () => {
       cameraOff: true,
       micMuted: true,
     });
-    expect(window["__openclawZoomMeeting"]).toMatchObject({ devicesDisabled: true });
+    expect(window["__aforaZoomMeeting"]).toMatchObject({ devicesDisabled: true });
   });
 
   it("re-mutes an observe-only session after admission", async () => {
@@ -515,7 +515,7 @@ describe("Zoom meeting platform adapter", () => {
       currentUrl: "https://app.zoom.us/wc",
       document: statusDocument({ bodyText: "" }),
       window: {
-        __openclawZoomMeeting: {
+        __aforaZoomMeeting: {
           identity: "zoom:12345678901",
           inCallControl: { isConnected: false },
           inCallControlLostAt: Date.now() - 6_000,
@@ -540,7 +540,7 @@ describe("Zoom meeting platform adapter", () => {
       }),
       readOnly: true,
       window: {
-        __openclawZoomMeeting: {
+        __aforaZoomMeeting: {
           identity: "zoom:12345678901",
           inCallControl: { isConnected: false },
           inCallUrl: "https://app.zoom.us/wc/12345678901/join",
@@ -575,7 +575,7 @@ describe("Zoom meeting platform adapter", () => {
         },
       },
       readOnly: true,
-      window: { __openclawZoomMeeting: meetingState },
+      window: { __aforaZoomMeeting: meetingState },
     });
 
     expect(result).toMatchObject({
@@ -585,7 +585,7 @@ describe("Zoom meeting platform adapter", () => {
     expect(meetingState).not.toHaveProperty("audioInputDeviceId");
   });
 
-  it.each(["BlackHole 2ch", "BlackHole 2ch (Virtual)", "OpenClaw Meeting Audio"])(
+  it.each(["BlackHole 2ch", "BlackHole 2ch (Virtual)", "Afora Meeting Audio"])(
     "recognizes the exact virtual audio input label %s",
     async (deviceLabel) => {
       const result = await runStatusFixture({
@@ -611,14 +611,14 @@ describe("Zoom meeting platform adapter", () => {
         audioInputRouted: false,
         manualAction: {
           message:
-            "Verify the OpenClaw virtual audio device is selected as both the Zoom microphone and speaker before starting talk-back.",
+            "Verify the Afora virtual audio device is selected as both the Zoom microphone and speaker before starting talk-back.",
           reason: "zoom-audio-choice-required",
         },
       });
     },
   );
 
-  it.each(["OpenClaw Meeting Audio (Virtual)", "Monitor of OpenClaw Meeting Audio"])(
+  it.each(["Afora Meeting Audio (Virtual)", "Monitor of Afora Meeting Audio"])(
     "rejects the non-contract virtual audio input label %s",
     async (deviceLabel) => {
       const result = await runStatusFixture({
@@ -653,7 +653,7 @@ describe("Zoom meeting platform adapter", () => {
       document: statusDocument({ bodyText: "The host will let you in soon" }),
       window,
     });
-    const marker = window["__openclawZoomMeeting"] as Record<string, unknown>;
+    const marker = window["__aforaZoomMeeting"] as Record<string, unknown>;
     marker.verifiedAt = 0;
 
     const admitted = await runStatusFixture({
@@ -671,7 +671,7 @@ describe("Zoom meeting platform adapter", () => {
       manualAction: { reason: "zoom-admission-required" },
     });
     expect(admitted).toMatchObject({ inCall: true, micMuted: true });
-    expect(window["__openclawZoomMeeting"]).toMatchObject({
+    expect(window["__aforaZoomMeeting"]).toMatchObject({
       awaitingAdmission: false,
       identity: "zoom:12345678901",
       sessionId: "session-1",

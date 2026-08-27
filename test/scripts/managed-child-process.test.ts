@@ -230,7 +230,7 @@ describe("managed-child-process", () => {
   });
 
   it("times out and kills managed command descendants", async () => {
-    const dir = createTempDir("openclaw-managed-timeout-");
+    const dir = createTempDir("afora-managed-timeout-");
     const childPath = path.join(dir, "child.mjs");
     const childPidPath = path.join(dir, "child.pid");
     const descendantPidPath = path.join(dir, "descendant.pid");
@@ -495,7 +495,7 @@ setInterval(() => {}, 1_000);
   });
 
   posixIt("rejects and drains descendants left after a successful leader exit", async () => {
-    const dir = createTempDir("openclaw-managed-lingering-");
+    const dir = createTempDir("afora-managed-lingering-");
     const descendantPidPath = path.join(dir, "descendant.pid");
     let descendantPid = 0;
     try {
@@ -531,7 +531,7 @@ fs.writeFileSync(process.argv[1], String(child.pid));
   posixIt(
     "kills managed child process group descendants when the runner is terminated",
     async () => {
-      const dir = createTempDir("openclaw-managed-child-");
+      const dir = createTempDir("afora-managed-child-");
       const childPath = path.join(dir, "child.mjs");
       const runnerPath = path.join(dir, "runner.mjs");
       const childPidPath = path.join(dir, "child.pid");

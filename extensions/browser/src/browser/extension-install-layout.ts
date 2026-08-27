@@ -3,11 +3,11 @@ import { constants as fsConstants, type Dirent } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { resolveStateDir } from "openclaw/plugin-sdk/state-paths";
+import { resolveStateDir } from "afora-agent/plugin-sdk/state-paths";
 
 const EXTENSION_ID_PATTERN = /^[a-p]{32}$/;
 const UNPACKED_MANIFEST_LOCATION = 4;
-const OWNED_COPY_MARKER = ".openclaw-owned.json";
+const OWNED_COPY_MARKER = ".afora-owned.json";
 const SECURE_PREFERENCES_MAX_BYTES = 32 * 1024 * 1024;
 
 export type ChromeProduct = "chrome" | "chrome-for-testing" | "chromium";
@@ -276,7 +276,7 @@ export async function installStableChromeExtension(
     await copyRuntimeTree(source, temporary);
     await fs.writeFile(
       path.join(temporary, OWNED_COPY_MARKER),
-      `${JSON.stringify({ v: 1, owner: "openclaw" })}\n`,
+      `${JSON.stringify({ v: 1, owner: "afora" })}\n`,
       { mode: 0o600, flag: "wx" },
     );
     if (existing.present) {

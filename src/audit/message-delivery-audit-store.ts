@@ -6,10 +6,10 @@ import {
   getNodeSqliteKysely,
 } from "../infra/kysely-sync.js";
 import { normalizeSqliteNumber } from "../infra/sqlite-number.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../state/openclaw-state-db-readonly.js";
-import { tableExists } from "../state/openclaw-state-db-schema-helpers.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
-import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../state/afora-state-db-readonly.js";
+import { tableExists } from "../state/afora-state-db-schema-helpers.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
+import type { AforaStateDatabaseOptions } from "../state/afora-state-db.js";
 import { AUDIT_EVENT_RETENTION_MS, rowToAuditEvent } from "./audit-event-store.js";
 import type { OutboundMessageAuditEventRecord } from "./audit-event-types.js";
 import {
@@ -20,7 +20,7 @@ import {
 import { selectMessageExecutionBinding } from "./message-execution-binding.js";
 
 type MessageDeliveryAuditDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "audit_events" | "outbound_message_execution_bindings"
 >;
 
@@ -90,10 +90,10 @@ function readTerminalEventsForRun(params: {
   after?: { occurredAt: number; sequence: number };
   limit: number;
   now?: number;
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): OutboundMessageAuditEventRecord[] {
   return (
-    withExistingOpenClawStateDatabaseReadOnly(({ db }) => {
+    withExistingAforaStateDatabaseReadOnly(({ db }) => {
       const exact = selectMessageExecutionBinding(params);
       if (exact && !tableExists(db, "outbound_message_execution_bindings")) {
         return [];
@@ -158,7 +158,7 @@ function fillMessageStream(
   stream: MessageStream,
   params: MessageExecutionSelector & {
     now: number;
-    database?: OpenClawStateDatabaseOptions;
+    database?: AforaStateDatabaseOptions;
   },
 ): void {
   if (stream.buffered.length > 0 || stream.exhausted) {
@@ -193,7 +193,7 @@ function takeNextMessageEvent(
   streams: MessageStream[],
   params: MessageExecutionSelector & {
     now: number;
-    database?: OpenClawStateDatabaseOptions;
+    database?: AforaStateDatabaseOptions;
   },
 ): OwnedMessageEvent | undefined {
   for (const stream of streams) {
@@ -216,10 +216,10 @@ function hasTerminalCursor(params: {
   executionId?: string;
   occurredAt: number;
   sequence: number;
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): boolean {
   return (
-    withExistingOpenClawStateDatabaseReadOnly(({ db }) => {
+    withExistingAforaStateDatabaseReadOnly(({ db }) => {
       const exact = selectMessageExecutionBinding(params);
       if (exact && !tableExists(db, "outbound_message_execution_bindings")) {
         return false;
@@ -247,10 +247,10 @@ export function countOutboundMessageAuditEventsForRun(params: {
   contextId?: string;
   executionId?: string;
   now?: number;
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): number {
   return (
-    (withExistingOpenClawStateDatabaseReadOnly(({ db }) => {
+    (withExistingAforaStateDatabaseReadOnly(({ db }) => {
       const exact = selectMessageExecutionBinding(params);
       if (exact && !tableExists(db, "outbound_message_execution_bindings")) {
         return 0;
@@ -281,7 +281,7 @@ export function pageOutboundMessageAuditEventsForRun(params: {
   offset?: number;
   limit: number;
   now?: number;
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): { events: OutboundMessageAuditEventRecord[]; nextCursor?: OutboundMessageAuditEventCursor } {
   if (params.after) {
     const stage = Math.floor(params.after.rowId / MESSAGE_CURSOR_STAGE_SPAN);

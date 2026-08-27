@@ -1,5 +1,5 @@
-import { readManifestProviderDefaultModelRef } from "openclaw/plugin-sdk/provider-catalog-shared";
-import { createModelCatalogPresetAppliers } from "openclaw/plugin-sdk/provider-onboard";
+import { readManifestProviderDefaultModelRef } from "afora-agent/plugin-sdk/provider-catalog-shared";
+import { createModelCatalogPresetAppliers } from "afora-agent/plugin-sdk/provider-onboard";
 import {
   TOKENHUB_BASE_URL,
   TOKENHUB_MODEL_CATALOG,
@@ -8,7 +8,7 @@ import {
   TOKENPLAN_MODEL_CATALOG,
   TOKENPLAN_PROVIDER_ID,
 } from "./models.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 
 const TOKENHUB_PREVIEW_MODEL_REF = `${TOKENHUB_PROVIDER_ID}/hy3-preview`;
 export const TOKENHUB_DEFAULT_MODEL_REF = readManifestProviderDefaultModelRef(

@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { isRecord, isStringRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord, isStringRecord } from "@afora/normalization-core/record-coerce";
 import { attachChildProcessBridge } from "../process/child-process-bridge.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import {
@@ -706,7 +706,7 @@ export function createFleetContainerRuntime(
 
     async run(profile: CellContainerProfile, start: boolean): Promise<void> {
       const tempRoot = await fs.realpath(os.tmpdir());
-      const tempDir = await fs.mkdtemp(path.join(tempRoot, "openclaw-fleet-env-"));
+      const tempDir = await fs.mkdtemp(path.join(tempRoot, "afora-fleet-env-"));
       const environmentFile = path.join(tempDir, "cell.env");
       try {
         const args = start

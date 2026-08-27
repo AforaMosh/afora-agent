@@ -524,39 +524,39 @@ describe("buildServiceEnvironment", () => {
     } else {
       expect(env.PATH).toContain("/usr/bin");
     }
-    expect(env.OPENCLAW_GATEWAY_PORT).toBe("18789");
-    expect(env.OPENCLAW_GATEWAY_TOKEN).toBeUndefined();
-    expect(env.OPENCLAW_SERVICE_MARKER).toBe("openclaw");
-    expect(env.OPENCLAW_SERVICE_KIND).toBe("gateway");
-    expect(env).not.toHaveProperty("OPENCLAW_SERVICE_VERSION");
-    expect(env.OPENCLAW_SYSTEMD_UNIT).toBe("openclaw-gateway.service");
-    expect(env.OPENCLAW_WINDOWS_TASK_NAME).toBe("OpenClaw Gateway");
-    expect(env.OPENCLAW_WINDOWS_TASK_HIDDEN_LAUNCHER).toBe("1");
+    expect(env.AFORA_GATEWAY_PORT).toBe("18789");
+    expect(env.AFORA_GATEWAY_TOKEN).toBeUndefined();
+    expect(env.AFORA_SERVICE_MARKER).toBe("afora");
+    expect(env.AFORA_SERVICE_KIND).toBe("gateway");
+    expect(env).not.toHaveProperty("AFORA_SERVICE_VERSION");
+    expect(env.AFORA_SYSTEMD_UNIT).toBe("afora-gateway.service");
+    expect(env.AFORA_WINDOWS_TASK_NAME).toBe("Afora Gateway");
+    expect(env.AFORA_WINDOWS_TASK_HIDDEN_LAUNCHER).toBe("1");
     if (process.platform === "darwin") {
-      expect(env.OPENCLAW_LAUNCHD_LABEL).toBe("ai.openclaw.gateway");
+      expect(env.AFORA_LAUNCHD_LABEL).toBe("ai.afora.gateway");
     }
   });
 
-  it("sets the OpenClaw-owned launchd marker for macOS gateway services", () => {
+  it("sets the Afora-owned launchd marker for macOS gateway services", () => {
     const env = buildServiceEnvironment({
       env: { HOME: "/Users/user" },
       port: 18789,
       platform: "darwin",
     });
 
-    expect(env.OPENCLAW_LAUNCHD_LABEL).toBe("ai.openclaw.gateway");
+    expect(env.AFORA_LAUNCHD_LABEL).toBe("ai.afora.gateway");
   });
 
-  it("passes through OPENCLAW_WRAPPER for gateway services", () => {
+  it("passes through AFORA_WRAPPER for gateway services", () => {
     const env = buildServiceEnvironment({
       env: {
         HOME: "/home/user",
-        OPENCLAW_WRAPPER: " /usr/local/bin/openclaw-doppler ",
+        AFORA_WRAPPER: " /usr/local/bin/afora-doppler ",
       },
       port: 18789,
     });
 
-    expect(env.OPENCLAW_WRAPPER).toBe("/usr/local/bin/openclaw-doppler");
+    expect(env.AFORA_WRAPPER).toBe("/usr/local/bin/afora-doppler");
   });
 
   it("forwards TMPDIR from the host environment on Linux", () => {
@@ -574,7 +574,7 @@ describe("buildServiceEnvironment", () => {
       port: 18789,
       platform: "darwin",
     });
-    expect(env.TMPDIR).toBe(path.join("/Users/user", ".openclaw", "tmp"));
+    expect(env.TMPDIR).toBe(path.join("/Users/user", ".afora", "tmp"));
   });
 
   it("uses a canonical system PATH for macOS LaunchAgents", () => {
@@ -606,13 +606,13 @@ describe("buildServiceEnvironment", () => {
 
   it("uses profile-specific unit and label", () => {
     const env = buildServiceEnvironment({
-      env: { HOME: "/home/user", OPENCLAW_PROFILE: "work" },
+      env: { HOME: "/home/user", AFORA_PROFILE: "work" },
       port: 18789,
     });
-    expect(env.OPENCLAW_SYSTEMD_UNIT).toBe("openclaw-gateway-work.service");
-    expect(env.OPENCLAW_WINDOWS_TASK_NAME).toBe("OpenClaw Gateway (work)");
+    expect(env.AFORA_SYSTEMD_UNIT).toBe("afora-gateway-work.service");
+    expect(env.AFORA_WINDOWS_TASK_NAME).toBe("Afora Gateway (work)");
     if (process.platform === "darwin") {
-      expect(env.OPENCLAW_LAUNCHD_LABEL).toBe("ai.openclaw.work");
+      expect(env.AFORA_LAUNCHD_LABEL).toBe("ai.afora.work");
     }
   });
 
@@ -620,37 +620,37 @@ describe("buildServiceEnvironment", () => {
     const env = buildServiceEnvironment({
       env: {
         HOME: "/home/user",
-        OPENCLAW_PROFILE: "work",
-        OPENCLAW_SYSTEMD_UNIT: "openclaw-gateway-maintenance",
+        AFORA_PROFILE: "work",
+        AFORA_SYSTEMD_UNIT: "afora-gateway-maintenance",
       },
       port: 18789,
       platform: "linux",
     });
 
-    expect(env.OPENCLAW_SYSTEMD_UNIT).toBe("openclaw-gateway-maintenance.service");
+    expect(env.AFORA_SYSTEMD_UNIT).toBe("afora-gateway-maintenance.service");
   });
 
   it("preserves explicit systemd unit overrides with service suffix", () => {
     const env = buildServiceEnvironment({
       env: {
         HOME: "/home/user",
-        OPENCLAW_SYSTEMD_UNIT: "openclaw-gateway-maintenance.service",
+        AFORA_SYSTEMD_UNIT: "afora-gateway-maintenance.service",
       },
       port: 18789,
       platform: "linux",
     });
 
-    expect(env.OPENCLAW_SYSTEMD_UNIT).toBe("openclaw-gateway-maintenance.service");
+    expect(env.AFORA_SYSTEMD_UNIT).toBe("afora-gateway-maintenance.service");
   });
 
   it("sets a profile-specific launchd marker for macOS gateway services", () => {
     const env = buildServiceEnvironment({
-      env: { HOME: "/Users/user", OPENCLAW_PROFILE: "work" },
+      env: { HOME: "/Users/user", AFORA_PROFILE: "work" },
       port: 18789,
       platform: "darwin",
     });
 
-    expect(env.OPENCLAW_LAUNCHD_LABEL).toBe("ai.openclaw.work");
+    expect(env.AFORA_LAUNCHD_LABEL).toBe("ai.afora.work");
   });
 
   it("does not persist ambient proxy environment variables for launchd/systemd runtime", () => {
@@ -677,12 +677,12 @@ describe("buildServiceEnvironment", () => {
     const env = buildServiceEnvironment({
       env: {
         HOME: "/home/user",
-        OPENCLAW_PROXY_URL: " http://127.0.0.1:3128 ",
+        AFORA_PROXY_URL: " http://127.0.0.1:3128 ",
       },
       port: 18789,
     });
 
-    expect(env.OPENCLAW_PROXY_URL).toBe("http://127.0.0.1:3128");
+    expect(env.AFORA_PROXY_URL).toBe("http://127.0.0.1:3128");
   });
 
   it("omits PATH on Windows so Scheduled Tasks can inherit the current shell path", () => {
@@ -696,7 +696,7 @@ describe("buildServiceEnvironment", () => {
     });
 
     expect(env).not.toHaveProperty("PATH");
-    expect(env.OPENCLAW_WINDOWS_TASK_NAME).toBe("OpenClaw Gateway");
+    expect(env.AFORA_WINDOWS_TASK_NAME).toBe("Afora Gateway");
   });
 
   it("prepends extra runtime directories to the gateway service PATH", () => {
@@ -772,30 +772,30 @@ describe("buildNodeServiceEnvironment", () => {
       env: { HOME: "/home/user" },
     });
     expect(env.HOME).toBe("/home/user");
-    expect(env).not.toHaveProperty("OPENCLAW_SERVICE_VERSION");
+    expect(env).not.toHaveProperty("AFORA_SERVICE_VERSION");
   });
 
-  it("sets the OpenClaw-owned launchd marker for macOS node services", () => {
+  it("sets the Afora-owned launchd marker for macOS node services", () => {
     const env = buildNodeServiceEnvironment({
       env: { HOME: "/Users/user" },
       platform: "darwin",
     });
 
-    expect(env.OPENCLAW_LAUNCHD_LABEL).toBe("ai.openclaw.node");
+    expect(env.AFORA_LAUNCHD_LABEL).toBe("ai.afora.node");
   });
 
-  it("passes through OPENCLAW_GATEWAY_TOKEN for node services", () => {
+  it("passes through AFORA_GATEWAY_TOKEN for node services", () => {
     const env = buildNodeServiceEnvironment({
-      env: { HOME: "/home/user", OPENCLAW_GATEWAY_TOKEN: " node-token " },
+      env: { HOME: "/home/user", AFORA_GATEWAY_TOKEN: " node-token " },
     });
-    expect(env.OPENCLAW_GATEWAY_TOKEN).toBe("node-token");
+    expect(env.AFORA_GATEWAY_TOKEN).toBe("node-token");
   });
 
-  it("passes through OPENCLAW_GATEWAY_PASSWORD for node services", () => {
+  it("passes through AFORA_GATEWAY_PASSWORD for node services", () => {
     const env = buildNodeServiceEnvironment({
-      env: { HOME: "/home/user", OPENCLAW_GATEWAY_PASSWORD: " node-password " },
+      env: { HOME: "/home/user", AFORA_GATEWAY_PASSWORD: " node-password " },
     });
-    expect(env.OPENCLAW_GATEWAY_PASSWORD).toBe("node-password");
+    expect(env.AFORA_GATEWAY_PASSWORD).toBe("node-password");
   });
 
   it("passes through the Cloudflare Access service-token pair for node services", () => {
@@ -810,21 +810,21 @@ describe("buildNodeServiceEnvironment", () => {
     expect(env.CF_ACCESS_CLIENT_SECRET).toBe("cf-client-secret");
   });
 
-  it("passes through OPENCLAW_ALLOW_INSECURE_PRIVATE_WS for node services", () => {
+  it("passes through AFORA_ALLOW_INSECURE_PRIVATE_WS for node services", () => {
     const env = buildNodeServiceEnvironment({
-      env: { HOME: "/home/user", OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: " 1 " },
+      env: { HOME: "/home/user", AFORA_ALLOW_INSECURE_PRIVATE_WS: " 1 " },
     });
-    expect(env.OPENCLAW_ALLOW_INSECURE_PRIVATE_WS).toBe("1");
+    expect(env.AFORA_ALLOW_INSECURE_PRIVATE_WS).toBe("1");
   });
 
-  it("omits OPENCLAW_GATEWAY_TOKEN when the env var is empty", () => {
+  it("omits AFORA_GATEWAY_TOKEN when the env var is empty", () => {
     const env = buildNodeServiceEnvironment({
       env: {
         HOME: "/home/user",
-        OPENCLAW_GATEWAY_TOKEN: "   ",
+        AFORA_GATEWAY_TOKEN: "   ",
       },
     });
-    expect(env.OPENCLAW_GATEWAY_TOKEN).toBeUndefined();
+    expect(env.AFORA_GATEWAY_TOKEN).toBeUndefined();
   });
 
   it("does not persist ambient proxy environment variables for node services", () => {
@@ -844,11 +844,11 @@ describe("buildNodeServiceEnvironment", () => {
     const env = buildNodeServiceEnvironment({
       env: {
         HOME: "/home/user",
-        OPENCLAW_PROXY_URL: " http://127.0.0.1:3128 ",
+        AFORA_PROXY_URL: " http://127.0.0.1:3128 ",
       },
     });
 
-    expect(env.OPENCLAW_PROXY_URL).toBe("http://127.0.0.1:3128");
+    expect(env.AFORA_PROXY_URL).toBe("http://127.0.0.1:3128");
   });
 
   it("forwards TMPDIR for node services on Linux", () => {
@@ -864,7 +864,7 @@ describe("buildNodeServiceEnvironment", () => {
       env: { HOME: "/Users/user", TMPDIR: "/var/folders/xw/abc123/T/" },
       platform: "darwin",
     });
-    expect(env.TMPDIR).toBe(path.join("/Users/user", ".openclaw", "tmp"));
+    expect(env.TMPDIR).toBe(path.join("/Users/user", ".afora", "tmp"));
   });
 
   it("falls back to os.tmpdir for node services when TMPDIR is not set on Linux", () => {
@@ -893,9 +893,9 @@ describe("buildNodeServiceEnvironment", () => {
       platform: "win32",
     });
 
-    expect(env.OPENCLAW_WINDOWS_TASK_NAME).toBe("OpenClaw Node");
-    expect(env.OPENCLAW_WINDOWS_TASK_HIDDEN_LAUNCHER).toBe("1");
-    expect(env.OPENCLAW_TASK_SCRIPT_NAME).toBe("node.cmd");
+    expect(env.AFORA_WINDOWS_TASK_NAME).toBe("Afora Node");
+    expect(env.AFORA_WINDOWS_TASK_HIDDEN_LAUNCHER).toBe("1");
+    expect(env.AFORA_TASK_SCRIPT_NAME).toBe("node.cmd");
   });
 });
 
@@ -947,32 +947,32 @@ describe("shared Node TLS env defaults matrix", () => {
 describe("resolveGatewayStateDir", () => {
   it("uses the default state dir when no overrides are set", () => {
     const env = { HOME: "/Users/test" };
-    expect(resolveGatewayStateDir(env)).toBe(path.join("/Users/test", ".openclaw"));
+    expect(resolveGatewayStateDir(env)).toBe(path.join("/Users/test", ".afora"));
   });
 
   it("appends the profile suffix when set", () => {
-    const env = { HOME: "/Users/test", OPENCLAW_PROFILE: "rescue" };
-    expect(resolveGatewayStateDir(env)).toBe(path.join("/Users/test", ".openclaw-rescue"));
+    const env = { HOME: "/Users/test", AFORA_PROFILE: "rescue" };
+    expect(resolveGatewayStateDir(env)).toBe(path.join("/Users/test", ".afora-rescue"));
   });
 
   it("treats default profiles as the base state dir", () => {
-    const env = { HOME: "/Users/test", OPENCLAW_PROFILE: "Default" };
-    expect(resolveGatewayStateDir(env)).toBe(path.join("/Users/test", ".openclaw"));
+    const env = { HOME: "/Users/test", AFORA_PROFILE: "Default" };
+    expect(resolveGatewayStateDir(env)).toBe(path.join("/Users/test", ".afora"));
   });
 
-  it("uses OPENCLAW_STATE_DIR when provided", () => {
-    const env = { HOME: "/Users/test", OPENCLAW_STATE_DIR: "/var/lib/openclaw" };
-    expect(resolveGatewayStateDir(env)).toBe(path.resolve("/var/lib/openclaw"));
+  it("uses AFORA_STATE_DIR when provided", () => {
+    const env = { HOME: "/Users/test", AFORA_STATE_DIR: "/var/lib/afora" };
+    expect(resolveGatewayStateDir(env)).toBe(path.resolve("/var/lib/afora"));
   });
 
-  it("expands ~ in OPENCLAW_STATE_DIR", () => {
-    const env = { HOME: "/Users/test", OPENCLAW_STATE_DIR: "~/openclaw-state" };
-    expect(resolveGatewayStateDir(env)).toBe(path.resolve("/Users/test/openclaw-state"));
+  it("expands ~ in AFORA_STATE_DIR", () => {
+    const env = { HOME: "/Users/test", AFORA_STATE_DIR: "~/afora-state" };
+    expect(resolveGatewayStateDir(env)).toBe(path.resolve("/Users/test/afora-state"));
   });
 
   it("preserves Windows absolute paths without HOME", () => {
-    const env = { OPENCLAW_STATE_DIR: "C:\\State\\openclaw" };
-    expect(resolveGatewayStateDir(env)).toBe("C:\\State\\openclaw");
+    const env = { AFORA_STATE_DIR: "C:\\State\\afora" };
+    expect(resolveGatewayStateDir(env)).toBe("C:\\State\\afora");
   });
 });
 

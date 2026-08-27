@@ -2,7 +2,7 @@ import type {
   InternalBeforeToolBatchResult,
   InternalToolBatchCall,
   ToolLoopIntervention,
-} from "@openclaw/agent-core";
+} from "@afora/agent-core";
 import type { SessionState } from "../logging/diagnostic-session-state.js";
 import {
   beforeToolCallLog as log,

@@ -1,5 +1,5 @@
 // Feishu plugin module implements card interaction behavior.
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export const FEISHU_CARD_INTERACTION_VERSION = "ocf1";
 

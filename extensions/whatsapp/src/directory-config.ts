@@ -4,7 +4,7 @@ import {
   listResolvedDirectoryUserEntriesFromAllowFrom,
   type ChannelDirectoryEntry,
   type DirectoryConfigParams,
-} from "openclaw/plugin-sdk/directory-config-runtime";
+} from "afora-agent/plugin-sdk/directory-config-runtime";
 import { resolveMergedWhatsAppAccountConfig } from "./account-config.js";
 import type { WhatsAppAccountConfig } from "./account-types.js";
 import { resolveWhatsAppAuthDir } from "./accounts.js";
@@ -138,7 +138,7 @@ async function completeStandaloneCleanup(cleanup: ManagedStandaloneCleanup): Pro
   if (cleanup.sock && !cleanup.socketClosed) {
     await closeWhatsAppSocketAndWait(
       cleanup.sock,
-      "OpenClaw WhatsApp standalone directory socket close",
+      "Afora WhatsApp standalone directory socket close",
     );
     cleanup.socketClosed = true;
   }

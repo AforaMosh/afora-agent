@@ -1,4 +1,4 @@
-import { normalizeOptionalString as normalizeRunId } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString as normalizeRunId } from "@afora/normalization-core/string-coerce";
 import type { SessionState } from "../logging/diagnostic-session-state.js";
 import { getArgumentChurnNoProgressStreak } from "./tool-loop-argument-churn.js";
 import { hashToolCall } from "./tool-loop-detection.js";

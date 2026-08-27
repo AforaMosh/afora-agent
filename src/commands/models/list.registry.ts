@@ -3,9 +3,9 @@ import {
   shouldSuppressBuiltInModelCore,
   shouldSuppressBuiltInModelFromManifest,
 } from "../../agents/model-suppression.js";
-/** Model registry access helpers for `openclaw models list`. */
+/** Model registry access helpers for `afora models list`. */
 import { loadPreparedAgentModelRegistry as loadAgentModelRegistry } from "../../agents/prepared-model-registry.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ModelRegistry } from "../../llm/model-registry.js";
 import type { Model } from "../../llm/types.js";
 import {
@@ -54,7 +54,7 @@ function validateAvailableModels(availableModels: unknown): Model[] {
 
 function loadAvailableModels(
   registry: ModelRegistry,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   opts?: { runtimeSuppression?: boolean },
 ): Model[] {
   let availableModels: unknown;
@@ -86,7 +86,7 @@ function loadAvailableModels(
 
 /** Loads registry models and optional availability keys with suppression applied. */
 export async function loadModelRegistry(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   opts?: {
     agentId?: string;
     agentDir?: string;

@@ -10,7 +10,7 @@ function createSkillWorkshopHistoryScanState() {
 
 function result(overrides: Partial<SkillWorkshopHistoryScanResult> = {}) {
   return {
-    schema: "openclaw.skill-workshop.history-scan.v1" as const,
+    schema: "afora.skill-workshop.history-scan.v1" as const,
     hasScanned: false,
     reviewedSessions: 0,
     ideasFound: 0,

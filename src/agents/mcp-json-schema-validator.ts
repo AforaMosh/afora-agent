@@ -4,7 +4,7 @@ import type {
   JsonSchemaValidator,
   jsonSchemaValidator,
 } from "@modelcontextprotocol/sdk/validation/types.js";
-import { normalizeJsonSchemaForTypeBox } from "@openclaw/normalization-core/json-schema";
+import { normalizeJsonSchemaForTypeBox } from "@afora/normalization-core/json-schema";
 import { Compile } from "typebox/compile";
 import { toErrorObject } from "../infra/errors.js";
 import { findJsonSchemaShapeError } from "../shared/json-schema-defaults.js";

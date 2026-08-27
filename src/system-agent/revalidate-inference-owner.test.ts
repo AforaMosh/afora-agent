@@ -16,12 +16,12 @@ function embeddedRoute(agentHarnessRuntimeOverride: string): SystemAgentConfigur
     model: "gpt-5.6-sol",
     modelLabel: "openai/gpt-5.6-sol",
     agentId: "main",
-    agentDir: "/tmp/openclaw-agent",
+    agentDir: "/tmp/afora-agent",
     agentHarnessRuntimeOverride,
     runConfig: {
       agents: {
         defaults: {
-          workspace: "/tmp/openclaw-workspace",
+          workspace: "/tmp/afora-workspace",
         },
       },
     },
@@ -59,21 +59,21 @@ describe("revalidateSetupInferenceOwner", () => {
     expect(order).toEqual(["load", "validate"]);
     expect(mocks.loadAgentRuntimePluginRegistryHandle).toHaveBeenCalledWith({
       config: route.runConfig,
-      workspaceDir: "/tmp/openclaw-workspace",
+      workspaceDir: "/tmp/afora-workspace",
       selections: [
         { provider: "openai", modelId: "gpt-5.6-sol", runtime: "codex", agentId: "main" },
       ],
     });
   });
 
-  it("does not reload the built-in OpenClaw harness", async () => {
+  it("does not reload the built-in Afora harness", async () => {
     const binding = {} as SystemAgentVerifiedInferenceBinding;
     mocks.loadAgentRuntimePluginRegistryHandle.mockClear();
 
     await expect(
       revalidateSetupInferenceOwner({
         route: embeddedRoute("auto"),
-        auth: { agentHarnessId: "openclaw", authFingerprint: "auth" },
+        auth: { agentHarnessId: "afora", authFingerprint: "auth" },
         deps: {
           createSystemAgentVerifiedInferenceBinding: vi.fn(async () => binding),
         },

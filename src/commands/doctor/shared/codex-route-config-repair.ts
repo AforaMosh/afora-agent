@@ -1,6 +1,6 @@
-import { AGENT_MODEL_CONFIG_KEYS } from "@openclaw/model-catalog-core/configured-model-refs";
-import { asOptionalRecord as asMutableRecord } from "@openclaw/normalization-core/record-coerce";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import { AGENT_MODEL_CONFIG_KEYS } from "@afora/model-catalog-core/configured-model-refs";
+import { asOptionalRecord as asMutableRecord } from "@afora/normalization-core/record-coerce";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { listMutableCodexRouteAgentEntries } from "./codex-route-agent-entries.js";
 import {
   maybeMigrateLegacyLosslessCompactionConfig,
@@ -61,8 +61,8 @@ function rewriteModelPolicyAllowRefs(params: {
 }
 
 function rewriteAgentModelRefs(params: {
-  cfg: OpenClawConfig;
-  preRepairCfg: OpenClawConfig;
+  cfg: AforaConfig;
+  preRepairCfg: AforaConfig;
   hits: CodexRouteHit[];
   agent: MutableRecord | undefined;
   path: string;
@@ -194,7 +194,7 @@ function rewriteAgentModelRefs(params: {
 }
 
 function rewriteConfigModelRefsWithCompactionPolicy(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   preserveSharedDefaultCompactionOverrides: SharedDefaultCompactionOverrideConsumers;
   ignoreLegacyAgentRuntimePins?: boolean;
   blockedModelIdentities?: ReadonlySet<LegacyCodexModelIdentity>;
@@ -302,7 +302,7 @@ function rewriteConfigModelRefsWithCompactionPolicy(params: {
 }
 
 function rewriteNonAgentModelRefs(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   hits: CodexRouteHit[];
   blockedModelIdentities?: ReadonlySet<LegacyCodexModelIdentity>;
   env?: NodeJS.ProcessEnv;
@@ -366,7 +366,7 @@ function rewriteNonAgentModelRefs(params: {
 }
 
 export function configRepairWouldClearLegacyRuntimePins(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   blockedModelIdentities?: ReadonlySet<LegacyCodexModelIdentity>;
   env?: NodeJS.ProcessEnv;
 }): boolean {
@@ -381,7 +381,7 @@ export function configRepairWouldClearLegacyRuntimePins(params: {
 }
 
 export function rewriteConfigModelRefs(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   blockedModelIdentities?: ReadonlySet<LegacyCodexModelIdentity>;
 }): ConfigRouteRepairResult {

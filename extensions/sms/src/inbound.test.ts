@@ -1,6 +1,6 @@
 // Sms tests cover inbound plugin behavior.
-import { expectDefined } from "@openclaw/normalization-core";
-import type { unlinkIfExists as unlinkIfExistsType } from "openclaw/plugin-sdk/media-runtime";
+import { expectDefined } from "@afora/normalization-core";
+import type { unlinkIfExists as unlinkIfExistsType } from "afora-agent/plugin-sdk/media-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { dispatchSmsInboundEvent, type SmsChannelRuntime } from "./inbound.js";
 import type { sendSmsViaTwilio as sendSmsViaTwilioType } from "./twilio.js";
@@ -17,7 +17,7 @@ vi.mock("./twilio.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./twilio.js")>()),
   sendSmsViaTwilio,
 }));
-vi.mock("openclaw/plugin-sdk/media-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/media-runtime", () => ({
   unlinkIfExists: unlinkIfExistsMock,
 }));
 

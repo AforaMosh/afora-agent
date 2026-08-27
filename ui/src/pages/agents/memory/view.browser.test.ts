@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { render } from "lit";
 import { afterEach, describe, expect, it } from "vitest";
 import { createDreamingViewState, renderDreaming } from "./view.ts";

@@ -13,7 +13,7 @@ import type {
 } from "../../skills/types.js";
 import type { SandboxContext } from "../sandbox/types.js";
 
-const MATERIALIZED_SKILLS_WORKSPACE_CONTAINER_PARTS = [".openclaw", "sandbox-skills"] as const;
+const MATERIALIZED_SKILLS_WORKSPACE_CONTAINER_PARTS = [".afora", "sandbox-skills"] as const;
 type SandboxSkillRuntimeContext = Pick<SandboxContext, "enabled"> &
   Partial<
     Pick<

@@ -1,5 +1,5 @@
 // LongCat tests cover the plugin-owned persisted catalog repair.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import { legacyConfigRules, normalizeCompatibilityConfig } from "./doctor-contract-api.js";
 
@@ -23,7 +23,7 @@ const LEGACY_STOCK_MODEL = {
   },
 };
 
-function longcatConfig(models: unknown[]): OpenClawConfig {
+function longcatConfig(models: unknown[]): AforaConfig {
   return {
     models: {
       providers: {
@@ -34,7 +34,7 @@ function longcatConfig(models: unknown[]): OpenClawConfig {
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 describe("LongCat doctor contract", () => {

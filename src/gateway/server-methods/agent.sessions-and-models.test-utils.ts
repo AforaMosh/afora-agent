@@ -188,7 +188,7 @@ describe("gateway agent handler", () => {
   });
 
   it("terminalizes successful async gateway agent runs in the shared task registry", async () => {
-    await withTestDir({ prefix: "openclaw-gateway-agent-task-" }, async (root) => {
+    await withTestDir({ prefix: "afora-gateway-agent-task-" }, async (root) => {
       useTestStateDir(root);
       resetAgentTaskRegistryForTests();
       primeMainAgentRun();
@@ -219,7 +219,7 @@ describe("gateway agent handler", () => {
     { identity: "astral suffix", runId: "x".repeat(10) + "😀abc" },
     { identity: "astral prefix and suffix", runId: "abc😀" + "x".repeat(10) + "😀xyz" },
   ])("tracks plugin subagent $identity runs through the registry", async ({ runId }) => {
-    await withTestDir({ prefix: "openclaw-gateway-plugin-subagent-task-" }, async (root) => {
+    await withTestDir({ prefix: "afora-gateway-plugin-subagent-task-" }, async (root) => {
       useTestStateDir(root);
       resetAgentTaskRegistryForTests();
       resetSubagentRegistryForTests({ persist: false });
@@ -360,7 +360,7 @@ describe("gateway agent handler", () => {
   });
 
   it("registers host-owned requester lineage for plugin subagent completion", async () => {
-    await withTestDir({ prefix: "openclaw-gateway-plugin-subagent-requester-" }, async (root) => {
+    await withTestDir({ prefix: "afora-gateway-plugin-subagent-requester-" }, async (root) => {
       useTestStateDir(root);
       resetSubagentRegistryForTests({ persist: false });
       const childSessionKey = "agent:work:subagent:plugin-completion";
@@ -406,7 +406,7 @@ describe("gateway agent handler", () => {
 
   it("registers normally when a follow-up to a paused session names its own requester", async () => {
     await withTestDir(
-      { prefix: "openclaw-gateway-plugin-subagent-own-requester-" },
+      { prefix: "afora-gateway-plugin-subagent-own-requester-" },
       async (root) => {
         useTestStateDir(root);
         resetSubagentRegistryForTests({ persist: false });
@@ -455,7 +455,7 @@ describe("gateway agent handler", () => {
 
   it("still adopts the paused owner for a default follow-up after a requester-bound sibling", async () => {
     await withTestDir(
-      { prefix: "openclaw-gateway-plugin-subagent-mixed-delivery-" },
+      { prefix: "afora-gateway-plugin-subagent-mixed-delivery-" },
       async (root) => {
         useTestStateDir(root);
         resetSubagentRegistryForTests({ persist: false });
@@ -517,7 +517,7 @@ describe("gateway agent handler", () => {
 
   it("rejects plugin SDK subagent registration and adoption when persistence fails", async () => {
     await withTestDir(
-      { prefix: "openclaw-gateway-plugin-subagent-registry-fail-" },
+      { prefix: "afora-gateway-plugin-subagent-registry-fail-" },
       async (root) => {
         useTestStateDir(root);
         resetAgentTaskRegistryForTests();
@@ -682,7 +682,7 @@ describe("gateway agent handler", () => {
   });
 
   it("terminalizes failed async gateway agent runs in the shared task registry", async () => {
-    await withTestDir({ prefix: "openclaw-gateway-agent-task-error-" }, async (root) => {
+    await withTestDir({ prefix: "afora-gateway-agent-task-error-" }, async (root) => {
       useTestStateDir(root);
       resetAgentTaskRegistryForTests();
       primeMainAgentRun();
@@ -709,7 +709,7 @@ describe("gateway agent handler", () => {
   });
 
   it("preserves aborted async gateway agent runs as cancelled", async () => {
-    await withTestDir({ prefix: "openclaw-gateway-agent-task-aborted-" }, async (root) => {
+    await withTestDir({ prefix: "afora-gateway-agent-task-aborted-" }, async (root) => {
       useTestStateDir(root);
       resetAgentTaskRegistryForTests();
       primeMainAgentRun();
@@ -1058,7 +1058,7 @@ describe("gateway agent handler", () => {
   });
 
   it("classifies RPC-aborted async gateway agent rejections as cancelled", async () => {
-    await withTestDir({ prefix: "openclaw-gateway-agent-task-abort-error-" }, async (root) => {
+    await withTestDir({ prefix: "afora-gateway-agent-task-abort-error-" }, async (root) => {
       useTestStateDir(root);
       resetAgentTaskRegistryForTests();
       primeMainAgentRun();
@@ -1104,7 +1104,7 @@ describe("gateway agent handler", () => {
   });
 
   it("classifies an unsignaled AbortError task as cancelled without changing failure status", async () => {
-    await withTestDir({ prefix: "openclaw-gateway-agent-task-plain-abort-" }, async (root) => {
+    await withTestDir({ prefix: "afora-gateway-agent-task-plain-abort-" }, async (root) => {
       useTestStateDir(root);
       resetAgentTaskRegistryForTests();
       primeMainAgentRun();
@@ -1141,7 +1141,7 @@ describe("gateway agent handler", () => {
   });
 
   it("preserves restart ownership for aborted async gateway agent rejections", async () => {
-    await withTestDir({ prefix: "openclaw-gateway-agent-task-restart-abort-" }, async (root) => {
+    await withTestDir({ prefix: "afora-gateway-agent-task-restart-abort-" }, async (root) => {
       useTestStateDir(root);
       resetAgentTaskRegistryForTests();
       primeMainAgentRun();
@@ -1182,7 +1182,7 @@ describe("gateway agent handler", () => {
   });
 
   it("classifies timeout async gateway agent rejections as timed out", async () => {
-    await withTestDir({ prefix: "openclaw-gateway-agent-task-timeout-error-" }, async (root) => {
+    await withTestDir({ prefix: "afora-gateway-agent-task-timeout-error-" }, async (root) => {
       useTestStateDir(root);
       resetAgentTaskRegistryForTests();
       primeMainAgentRun();
@@ -1229,7 +1229,7 @@ describe("gateway agent handler", () => {
 
   it("classifies wrapped rejections after gateway timeout as timed out", async () => {
     await withTestDir(
-      { prefix: "openclaw-gateway-agent-task-wrapped-timeout-error-" },
+      { prefix: "afora-gateway-agent-task-wrapped-timeout-error-" },
       async (root) => {
         useTestStateDir(root);
         resetAgentTaskRegistryForTests();
@@ -1279,7 +1279,7 @@ describe("gateway agent handler", () => {
   });
 
   it("does not hide provider timeout async gateway agent rejections", async () => {
-    await withTestDir({ prefix: "openclaw-gateway-agent-task-provider-timeout-" }, async (root) => {
+    await withTestDir({ prefix: "afora-gateway-agent-task-provider-timeout-" }, async (root) => {
       useTestStateDir(root);
       resetAgentTaskRegistryForTests();
       primeMainAgentRun();
@@ -1499,7 +1499,7 @@ describe("gateway agent handler", () => {
   });
 
   it("does not overwrite operator-cancelled async gateway agent tasks after late completion", async () => {
-    await withTestDir({ prefix: "openclaw-gateway-agent-task-cancelled-" }, async (root) => {
+    await withTestDir({ prefix: "afora-gateway-agent-task-cancelled-" }, async (root) => {
       useTestStateDir(root);
       resetAgentTaskRegistryForTests();
       primeMainAgentRun();
@@ -1607,7 +1607,7 @@ describe("gateway agent handler", () => {
   });
 
   it("uses an agent-scoped to value as the gateway session selector", async () => {
-    const sessionKey = "agent:main:openclaw-weixin:direct:o9cq802hhmfc@im.wechat";
+    const sessionKey = "agent:main:afora-weixin:direct:o9cq802hhmfc@im.wechat";
     mocks.resolveExplicitAgentSessionKey.mockReturnValue("agent:main:main");
     mocks.loadSessionEntry.mockImplementation((key: string) => ({
       cfg: {},
@@ -2593,7 +2593,7 @@ describe("gateway agent handler", () => {
   });
 
   it("dispatches async gateway agent task creation through the detached task runtime seam", async () => {
-    await withTestDir({ prefix: "openclaw-gateway-agent-seam-" }, async (root) => {
+    await withTestDir({ prefix: "afora-gateway-agent-seam-" }, async (root) => {
       useTestStateDir(root);
       resetAgentTaskRegistryForTests();
       primeMainAgentRun();
@@ -2664,7 +2664,7 @@ describe("gateway agent handler", () => {
     };
 
     it("suppresses the gateway CLI task row for confirmed ACP manual-spawn child turns", async () => {
-      await withTestDir({ prefix: "openclaw-gateway-acp-suppress-" }, async (root) => {
+      await withTestDir({ prefix: "afora-gateway-acp-suppress-" }, async (root) => {
         useTestStateDir(root);
         resetAgentTaskRegistryForTests();
         const childSessionKey = "agent:main:acp:child-confirmed";
@@ -2689,7 +2689,7 @@ describe("gateway agent handler", () => {
     });
 
     it("keeps a host-owned subagent run to its pre-registered task row", async () => {
-      await withTestDir({ prefix: "openclaw-gateway-subagent-owner-" }, async (root) => {
+      await withTestDir({ prefix: "afora-gateway-subagent-owner-" }, async (root) => {
         useTestStateDir(root);
         resetAgentTaskRegistryForTests();
         const childSessionKey = "agent:main:subagent:owned";
@@ -2721,7 +2721,7 @@ describe("gateway agent handler", () => {
     });
 
     it("keeps CLI tracking when a non-backend operator-write caller sets acpTurnSource", async () => {
-      await withTestDir({ prefix: "openclaw-gateway-acp-operator-write-" }, async (root) => {
+      await withTestDir({ prefix: "afora-gateway-acp-operator-write-" }, async (root) => {
         useTestStateDir(root);
         resetAgentTaskRegistryForTests();
         const childSessionKey = "agent:main:acp:child-operator-write";
@@ -2761,7 +2761,7 @@ describe("gateway agent handler", () => {
     });
 
     it("keeps CLI tracking for ACP-shaped manual-spawn turns without persisted ACP metadata", async () => {
-      await withTestDir({ prefix: "openclaw-gateway-acp-no-meta-" }, async (root) => {
+      await withTestDir({ prefix: "afora-gateway-acp-no-meta-" }, async (root) => {
         useTestStateDir(root);
         resetAgentTaskRegistryForTests();
         const childSessionKey = "agent:main:acp:child-missing-meta";
@@ -2796,7 +2796,7 @@ describe("gateway agent handler", () => {
     });
 
     it("keeps dispatch and CLI tracking when ACP metadata read fails", async () => {
-      await withTestDir({ prefix: "openclaw-gateway-acp-meta-throw-" }, async (root) => {
+      await withTestDir({ prefix: "afora-gateway-acp-meta-throw-" }, async (root) => {
         useTestStateDir(root);
         resetAgentTaskRegistryForTests();
         const childSessionKey = "agent:main:acp:child-meta-throw";
@@ -2847,7 +2847,7 @@ describe("gateway agent handler", () => {
     });
 
     it("keeps CLI tracking for ACP-shaped turns that are not manual spawns", async () => {
-      await withTestDir({ prefix: "openclaw-gateway-acp-not-manual-spawn-" }, async (root) => {
+      await withTestDir({ prefix: "afora-gateway-acp-not-manual-spawn-" }, async (root) => {
         useTestStateDir(root);
         resetAgentTaskRegistryForTests();
         const childSessionKey = "agent:main:acp:child-not-spawn";
@@ -2877,7 +2877,7 @@ describe("gateway agent handler", () => {
     });
 
     it("does not affect plugin-subagent tracking for confirmed ACP conditions", async () => {
-      await withTestDir({ prefix: "openclaw-gateway-acp-plugin-subagent-" }, async (root) => {
+      await withTestDir({ prefix: "afora-gateway-acp-plugin-subagent-" }, async (root) => {
         useTestStateDir(root);
         resetAgentTaskRegistryForTests();
         resetSubagentRegistryForTests({ persist: false });
@@ -2939,7 +2939,7 @@ describe("gateway agent handler", () => {
     }
 
     it("suppresses the gateway CLI task row for native subagent child runs", async () => {
-      await withTestDir({ prefix: "openclaw-gateway-native-subagent-" }, async (root) => {
+      await withTestDir({ prefix: "afora-gateway-native-subagent-" }, async (root) => {
         useTestStateDir(root);
         resetAgentTaskRegistryForTests();
         const childSessionKey = "agent:main:subagent:native-child";
@@ -2964,7 +2964,7 @@ describe("gateway agent handler", () => {
     });
 
     it("keeps CLI tracking for an unmarked backend turn on a subagent session", async () => {
-      await withTestDir({ prefix: "openclaw-gateway-native-subagent-unmarked-" }, async (root) => {
+      await withTestDir({ prefix: "afora-gateway-native-subagent-unmarked-" }, async (root) => {
         useTestStateDir(root);
         resetAgentTaskRegistryForTests();
         const childSessionKey = "agent:main:subagent:unmarked-child";
@@ -2991,7 +2991,7 @@ describe("gateway agent handler", () => {
   });
 
   it("logs a swallowed finalize error without blocking the background run", async () => {
-    await withTestDir({ prefix: "openclaw-gateway-agent-finalize-throw-" }, async (root) => {
+    await withTestDir({ prefix: "afora-gateway-agent-finalize-throw-" }, async (root) => {
       useTestStateDir(root);
       resetAgentTaskRegistryForTests();
       primeMainAgentRun();

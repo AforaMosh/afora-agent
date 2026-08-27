@@ -6,7 +6,7 @@ import { findDuplicateAgentDirs } from "./agent-dirs.js";
 
 describe("agent directory filesystem identity", () => {
   it("keeps case-distinct directories separate on a case-sensitive volume", async () => {
-    await withTestDir({ prefix: "openclaw-agent-dirs-case-" }, async (root) => {
+    await withTestDir({ prefix: "afora-agent-dirs-case-" }, async (root) => {
       const upper = path.join(root, "AgentState");
       const lower = path.join(root, "agentstate");
       await fs.mkdir(upper);
@@ -33,7 +33,7 @@ describe("agent directory filesystem identity", () => {
     if (process.platform === "win32") {
       return;
     }
-    await withTestDir({ prefix: "openclaw-agent-dirs-alias-" }, async (root) => {
+    await withTestDir({ prefix: "afora-agent-dirs-alias-" }, async (root) => {
       const target = path.join(root, "target");
       const alias = path.join(root, "alias");
       await fs.mkdir(target);
@@ -53,7 +53,7 @@ describe("agent directory filesystem identity", () => {
   });
 
   it("does not create configured missing directories or leave probe entries", async () => {
-    await withTestDir({ prefix: "openclaw-agent-dirs-missing-" }, async (root) => {
+    await withTestDir({ prefix: "afora-agent-dirs-missing-" }, async (root) => {
       const upper = path.join(root, "FutureState");
       const lower = path.join(root, "futurestate");
 

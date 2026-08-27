@@ -1,10 +1,10 @@
 {
-  "name": "@openclaw/lmstudio-provider",
+  "name": "@afora/lmstudio-provider",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw LM Studio provider plugin",
+  "description": "Afora LM Studio provider plugin",
   "type": "module",
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

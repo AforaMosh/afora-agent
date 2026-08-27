@@ -4,10 +4,10 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { Message } from "grammy/types";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { resetPluginStateStoreForTests } from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import { buildLegacyMigrationPreview } from "openclaw/plugin-sdk/runtime-doctor-migrations";
-import { resolveStorePath } from "openclaw/plugin-sdk/session-store-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { resetPluginStateStoreForTests } from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import { buildLegacyMigrationPreview } from "afora-agent/plugin-sdk/runtime-doctor-migrations";
+import { resolveStorePath } from "afora-agent/plugin-sdk/session-store-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { stateMigrations } from "../doctor-contract-api.js";
 import { resolveTelegramBotInfoCachePath } from "./bot-info-cache.js";
@@ -51,15 +51,15 @@ afterEach(() => {
 
 describe("telegram state migrations", () => {
   it("does not require a migration owner when multi-agent startup has no legacy artifacts", async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), "openclaw-telegram-state-migration-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: dir };
+    const dir = await mkdtemp(path.join(os.tmpdir(), "afora-telegram-state-migration-"));
+    const env = { ...process.env, AFORA_STATE_DIR: dir };
     try {
       const cfg = {
         agents: {
           ownership: "explicit",
           entries: { main: {}, ops: {}, research: {} },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       await expect(detectTelegramLegacyStateMigrations({ cfg, env })).resolves.toEqual([]);
     } finally {
@@ -68,8 +68,8 @@ describe("telegram state migrations", () => {
   });
 
   it("uses the materialized Telegram binding as legacy-state owner after H2 normalization", async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), "openclaw-telegram-state-migration-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: dir };
+    const dir = await mkdtemp(path.join(os.tmpdir(), "afora-telegram-state-migration-"));
+    const env = { ...process.env, AFORA_STATE_DIR: dir };
     const legacyStorePath = path.join(dir, "sessions", "sessions.json");
     const messageCachePath = resolveTelegramMessageCachePath(legacyStorePath);
     const sentMessagePath = `${legacyStorePath}.telegram-sent-messages.json`;
@@ -94,7 +94,7 @@ describe("telegram state migrations", () => {
           entries: { main: {}, ops: {}, research: {} },
         },
         bindings: [{ agentId: "main", match: { channel: "telegram", accountId: "*" } }],
-      } as OpenClawConfig;
+      } as AforaConfig;
       const plans = await detectTelegramLegacyStateMigrations({ cfg, env });
       const messagePlan = plans.find((plan) => plan.sourcePath === messageCachePath);
       const sentPlan = plans.find((plan) => plan.sourcePath === sentMessagePath);
@@ -120,8 +120,8 @@ describe("telegram state migrations", () => {
   });
 
   it("retains raw legacy default-marker ownership during rollback compatibility", async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), "openclaw-telegram-state-migration-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: dir };
+    const dir = await mkdtemp(path.join(os.tmpdir(), "afora-telegram-state-migration-"));
+    const env = { ...process.env, AFORA_STATE_DIR: dir };
     const legacyStorePath = path.join(dir, "sessions", "sessions.json");
     const sentMessagePath = `${legacyStorePath}.telegram-sent-messages.json`;
     const ownerStorePath = resolveStorePath(undefined, { env, agentId: "ops" });
@@ -131,7 +131,7 @@ describe("telegram state migrations", () => {
 
       const cfg = {
         agents: { list: [{ id: "main" }, { id: "ops", default: true }] },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const plans = await detectTelegramLegacyStateMigrations({ cfg, env });
       const sentPlan = plans.find((plan) => plan.sourcePath === sentMessagePath);
       if (!sentPlan || sentPlan.kind !== "plugin-state-import") {
@@ -146,8 +146,8 @@ describe("telegram state migrations", () => {
   });
 
   it("fails closed when legacy Telegram state has no explicit multi-agent owner", async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), "openclaw-telegram-state-migration-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: dir };
+    const dir = await mkdtemp(path.join(os.tmpdir(), "afora-telegram-state-migration-"));
+    const env = { ...process.env, AFORA_STATE_DIR: dir };
     const legacyStorePath = path.join(dir, "sessions", "sessions.json");
     const sentMessagePath = `${legacyStorePath}.telegram-sent-messages.json`;
     try {
@@ -156,7 +156,7 @@ describe("telegram state migrations", () => {
 
       const cfg = {
         agents: { ownership: "explicit", entries: { main: {}, ops: {}, research: {} } },
-      } as OpenClawConfig;
+      } as AforaConfig;
       await expect(detectTelegramLegacyStateMigrations({ cfg, env })).rejects.toMatchObject({
         name: "AgentSelectionRequiredError",
         code: "AGENT_SELECTION_REQUIRED",
@@ -167,8 +167,8 @@ describe("telegram state migrations", () => {
   });
 
   it("fails closed when global legacy state spans multiple Telegram route owners", async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), "openclaw-telegram-state-migration-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: dir };
+    const dir = await mkdtemp(path.join(os.tmpdir(), "afora-telegram-state-migration-"));
+    const env = { ...process.env, AFORA_STATE_DIR: dir };
     const legacyStorePath = path.join(dir, "sessions", "sessions.json");
     const sentMessagePath = `${legacyStorePath}.telegram-sent-messages.json`;
     try {
@@ -189,7 +189,7 @@ describe("telegram state migrations", () => {
           { agentId: "main", match: { channel: "telegram", accountId: "primary" } },
           { agentId: "ops", match: { channel: "telegram", accountId: "alerts" } },
         ],
-      } as OpenClawConfig;
+      } as AforaConfig;
       await expect(detectTelegramLegacyStateMigrations({ cfg, env })).rejects.toThrow(
         /^Legacy Telegram state has multiple routed owners \((?:main, ops|ops, main)\)/,
       );
@@ -199,8 +199,8 @@ describe("telegram state migrations", () => {
   });
 
   it("imports an account-scoped topic cache without requiring a global migration owner", async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), "openclaw-telegram-state-migration-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: dir };
+    const dir = await mkdtemp(path.join(os.tmpdir(), "afora-telegram-state-migration-"));
+    const env = { ...process.env, AFORA_STATE_DIR: dir };
     const opsStorePath = resolveStorePath(undefined, { env, agentId: "ops" });
     const topicNamePath = resolveTopicNameCachePath(opsStorePath);
     try {
@@ -213,7 +213,7 @@ describe("telegram state migrations", () => {
       const cfg = {
         agents: { ownership: "explicit", entries: { main: {}, ops: {} } },
         channels: { telegram: { accounts: { ops: { botToken: "123456:ops" } } } },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const plans = await detectTelegramLegacyStateMigrations({ cfg, env });
 
       expect(plans.find((plan) => plan.sourcePath === topicNamePath)).toMatchObject({
@@ -226,8 +226,8 @@ describe("telegram state migrations", () => {
   });
 
   it("detects legacy bot-info cache import", async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), "openclaw-telegram-state-migration-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: dir };
+    const dir = await mkdtemp(path.join(os.tmpdir(), "afora-telegram-state-migration-"));
+    const env = { ...process.env, AFORA_STATE_DIR: dir };
     const persistedPath = resolveTelegramBotInfoCachePath("ops", env);
     try {
       await mkdir(path.dirname(persistedPath), { recursive: true });
@@ -240,8 +240,8 @@ describe("telegram state migrations", () => {
           botInfo: {
             id: 123456,
             is_bot: true,
-            first_name: "OpenClaw",
-            username: "openclaw_bot",
+            first_name: "Afora",
+            username: "afora_bot",
           },
         }),
       );
@@ -256,7 +256,7 @@ describe("telegram state migrations", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const plans = await detectTelegramLegacyStateMigrations({ cfg, env });
       const botInfoPlan = plans.find(
         (plan) =>
@@ -284,7 +284,7 @@ describe("telegram state migrations", () => {
           fetchedAt: "2026-05-24T11:00:00.000Z",
           botInfo: {
             id: 123456,
-            username: "openclaw_bot",
+            username: "afora_bot",
           },
         },
       });
@@ -294,8 +294,8 @@ describe("telegram state migrations", () => {
   });
 
   it("detects legacy message-cache import for the runtime sidecar path", async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), "openclaw-telegram-state-migration-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: dir };
+    const dir = await mkdtemp(path.join(os.tmpdir(), "afora-telegram-state-migration-"));
+    const env = { ...process.env, AFORA_STATE_DIR: dir };
     const storePath = resolveStorePath(undefined, { env, agentId: "main" });
     const persistedPath = resolveTelegramMessageCachePath(storePath);
     try {
@@ -304,7 +304,7 @@ describe("telegram state migrations", () => {
       arrayEntry.key = "default:7:9999";
       arrayEntry.node.sourceMessage = {
         ...arrayEntry.node.sourceMessage,
-        openclaw_prompt_context_projection: {
+        afora_prompt_context_projection: {
           transcriptMessageId: "must-not-be-inferred",
           partIndex: 0,
           finalPart: true,
@@ -333,7 +333,7 @@ describe("telegram state migrations", () => {
         agents: {
           list: [{ id: "ops", default: true }],
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const plans = await detectTelegramLegacyStateMigrations({ cfg, env });
       const messageCachePlan = plans.find(
         (plan) =>
@@ -366,7 +366,7 @@ describe("telegram state migrations", () => {
         },
       });
       expect(entries[0]?.value).not.toHaveProperty(
-        "sourceMessage.openclaw_prompt_context_projection",
+        "sourceMessage.afora_prompt_context_projection",
       );
     } finally {
       await rm(dir, { recursive: true, force: true });
@@ -374,8 +374,8 @@ describe("telegram state migrations", () => {
   });
 
   it("detects legacy topic-name cache import for an account-scoped runtime sidecar path", async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), "openclaw-telegram-state-migration-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: dir };
+    const dir = await mkdtemp(path.join(os.tmpdir(), "afora-telegram-state-migration-"));
+    const env = { ...process.env, AFORA_STATE_DIR: dir };
     const storePath = resolveStorePath(undefined, { env, agentId: "ops" });
     const persistedPath = resolveTopicNameCachePath(storePath);
     const namespace = resolveTopicNameCacheNamespace(resolveTopicNameCacheScope(storePath));
@@ -402,7 +402,7 @@ describe("telegram state migrations", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const plans = await detectTelegramLegacyStateMigrations({ cfg, env });
       const topicNamePlan = plans.find(
         (plan) =>
@@ -438,8 +438,8 @@ describe("telegram state migrations", () => {
   });
 
   it("detects legacy topic-name cache import for the global sidecar path", async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), "openclaw-telegram-state-migration-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: dir };
+    const dir = await mkdtemp(path.join(os.tmpdir(), "afora-telegram-state-migration-"));
+    const env = { ...process.env, AFORA_STATE_DIR: dir };
     const legacyStorePath = path.join(dir, "sessions", "sessions.json");
     const persistedPath = resolveTopicNameCachePath(legacyStorePath);
     const defaultAccountStorePath = resolveStorePath(undefined, { env, agentId: "ops" });
@@ -469,7 +469,7 @@ describe("telegram state migrations", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const plans = await detectTelegramLegacyStateMigrations({ cfg, env });
       const topicNamePlan = plans.find(
         (plan) =>
@@ -505,8 +505,8 @@ describe("telegram state migrations", () => {
   });
 
   it("detects remaining Telegram JSON sidecars for plugin-state import", async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), "openclaw-telegram-state-migration-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: dir };
+    const dir = await mkdtemp(path.join(os.tmpdir(), "afora-telegram-state-migration-"));
+    const env = { ...process.env, AFORA_STATE_DIR: dir };
     const storePath = resolveStorePath(undefined, { env, agentId: "main" });
     const now = Date.now();
     const updateOffsetPath = path.join(dir, "telegram", "update-offset-ops.json");
@@ -534,7 +534,7 @@ describe("telegram state migrations", () => {
           version: 1,
           tokenFingerprint: "token:fingerprint",
           fetchedAt: "2026-05-24T11:00:00.000Z",
-          botInfo: { id: 123456, is_bot: true, first_name: "OpenClaw" },
+          botInfo: { id: 123456, is_bot: true, first_name: "Afora" },
         }),
       );
       await writeFile(
@@ -583,7 +583,7 @@ describe("telegram state migrations", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const plans = await detectTelegramLegacyStateMigrations({ cfg, env });
 
       expect(
@@ -698,8 +698,8 @@ describe("telegram state migrations", () => {
   it("cleans up expired and boundary Telegram sent-message cache sidecars", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-15T12:00:00.000Z"));
-    const dir = await mkdtemp(path.join(os.tmpdir(), "openclaw-telegram-state-migration-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: dir };
+    const dir = await mkdtemp(path.join(os.tmpdir(), "afora-telegram-state-migration-"));
+    const env = { ...process.env, AFORA_STATE_DIR: dir };
     const storePath = resolveStorePath(undefined, { env, agentId: "main" });
     const sentMessagePath = `${storePath}.telegram-sent-messages.json`;
     const expiredAt = Date.now() - 8 * 24 * 60 * 60 * 1000;
@@ -718,7 +718,7 @@ describe("telegram state migrations", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const plans = await detectTelegramLegacyStateMigrations({ cfg, env });
       const expiredPlans = plans.filter(
         (plan) => plan.kind === "plugin-state-import" && plan.sourcePath === sentMessagePath,
@@ -739,8 +739,8 @@ describe("telegram state migrations", () => {
   });
 
   it("detects Telegram account sidecars even after the account was removed from config", async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), "openclaw-telegram-state-migration-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: dir };
+    const dir = await mkdtemp(path.join(os.tmpdir(), "afora-telegram-state-migration-"));
+    const env = { ...process.env, AFORA_STATE_DIR: dir };
     const updateOffsetPath = path.join(dir, "telegram", "update-offset-oldbot.json");
     const threadBindingsPath = path.join(dir, "telegram", "thread-bindings-oldbot.json");
     const now = Date.now();
@@ -800,8 +800,8 @@ describe("telegram state migrations", () => {
   });
 
   it("imports legacy sent-message sidecars into the current runtime scope", async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), "openclaw-telegram-state-migration-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: dir };
+    const dir = await mkdtemp(path.join(os.tmpdir(), "afora-telegram-state-migration-"));
+    const env = { ...process.env, AFORA_STATE_DIR: dir };
     const storePath = resolveStorePath(undefined, { env, agentId: "main" });
     const legacyStorePath = path.join(dir, "sessions", "sessions.json");
     const currentSentPath = `${storePath}.telegram-sent-messages.json`;
@@ -824,7 +824,7 @@ describe("telegram state migrations", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const plans = await detectTelegramLegacyStateMigrations({ cfg, env });
       const importPlans = plans.filter((plan) => plan.kind === "plugin-state-import");
       const currentSentPlan = importPlans.find(

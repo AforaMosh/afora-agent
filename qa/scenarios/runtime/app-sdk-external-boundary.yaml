@@ -10,8 +10,8 @@ scenario:
       - app-sdk.custom-transport
   objective: Verify a clean external consumer can install the packed preview App SDK, import only its exported entrypoint, inject a custom transport, and execute its operations without plugin-internal imports.
   successCriteria:
-    - A clean temporary consumer installs the packed @openclaw/sdk tarball and its packed workspace dependencies.
-    - The preview package root exports GatewayClientTransport, OpenClaw, and normalizeGatewayEvent, and event normalization executes from the installed artifact.
+    - A clean temporary consumer installs the packed @afora/sdk tarball and its packed workspace dependencies.
+    - The preview package root exports GatewayClientTransport, Afora, and normalizeGatewayEvent, and event normalization executes from the installed artifact.
     - A hand-written custom transport serves agent, run, artifact, and environment operations through the public client.
     - Run wait parameters and transport-level timeout ownership remain intact.
     - Closing the SDK client closes the injected transport.

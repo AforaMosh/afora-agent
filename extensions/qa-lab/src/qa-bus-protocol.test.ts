@@ -1,7 +1,7 @@
 import {
   parseQaTarget as parseCanonicalQaTarget,
   sanitizeQaBusToolCalls as sanitizeCanonicalQaBusToolCalls,
-} from "openclaw/plugin-sdk/qa-channel-protocol";
+} from "afora-agent/plugin-sdk/qa-channel-protocol";
 import { describe, expect, it } from "vitest";
 import { parseQaTarget, sanitizeQaBusToolCalls } from "./qa-bus-protocol.js";
 

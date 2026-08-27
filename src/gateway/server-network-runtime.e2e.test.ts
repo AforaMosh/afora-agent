@@ -16,17 +16,17 @@ import { GATEWAY_STARTUP_MUTATED_ENV_KEYS } from "./test-helpers.env.js";
 const NETWORK_GATEWAY_ENV_KEYS = [
   "HOME",
   ...GATEWAY_STARTUP_MUTATED_ENV_KEYS,
-  "OPENCLAW_STATE_DIR",
-  "OPENCLAW_CONFIG_PATH",
-  "OPENCLAW_GATEWAY_TOKEN",
-  "OPENCLAW_SKIP_CHANNELS",
-  "OPENCLAW_SKIP_GMAIL_WATCHER",
-  "OPENCLAW_SKIP_CRON",
-  "OPENCLAW_SKIP_CANVAS_HOST",
-  "OPENCLAW_SKIP_BROWSER_CONTROL_SERVER",
-  "OPENCLAW_SKIP_PROVIDERS",
-  "OPENCLAW_BUNDLED_PLUGINS_DIR",
-  "OPENCLAW_TEST_MINIMAL_GATEWAY",
+  "AFORA_STATE_DIR",
+  "AFORA_CONFIG_PATH",
+  "AFORA_GATEWAY_TOKEN",
+  "AFORA_SKIP_CHANNELS",
+  "AFORA_SKIP_GMAIL_WATCHER",
+  "AFORA_SKIP_CRON",
+  "AFORA_SKIP_CANVAS_HOST",
+  "AFORA_SKIP_BROWSER_CONTROL_SERVER",
+  "AFORA_SKIP_PROVIDERS",
+  "AFORA_BUNDLED_PLUGINS_DIR",
+  "AFORA_TEST_MINIMAL_GATEWAY",
   ...PROXY_ENV_KEYS,
   "NO_PROXY",
   "no_proxy",
@@ -65,7 +65,7 @@ describe("gateway network runtime", () => {
   it("bootstraps env proxy dispatching when the gateway starts directly", async () => {
     const envSnapshot = captureEnv([...NETWORK_GATEWAY_ENV_KEYS]);
     const originalDispatcher = getGlobalDispatcher();
-    const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gw-proxy-home-"));
+    const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "afora-gw-proxy-home-"));
     let server: Awaited<ReturnType<typeof startGatewayServer>> | undefined;
 
     try {
@@ -77,26 +77,26 @@ describe("gateway network runtime", () => {
       process.env.HTTPS_PROXY = "http://127.0.0.1:9";
 
       setTestEnvValue("HOME", tempHome);
-      setTestEnvValue("OPENCLAW_STATE_DIR", path.join(tempHome, ".openclaw"));
-      process.env.OPENCLAW_SKIP_CHANNELS = "1";
-      process.env.OPENCLAW_SKIP_GMAIL_WATCHER = "1";
-      process.env.OPENCLAW_SKIP_CRON = "1";
-      process.env.OPENCLAW_SKIP_CANVAS_HOST = "1";
-      process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER = "1";
-      process.env.OPENCLAW_SKIP_PROVIDERS = "1";
-      process.env.OPENCLAW_TEST_MINIMAL_GATEWAY = "1";
-      process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = path.join(tempHome, "empty-bundled-plugins");
-      await fs.mkdir(process.env.OPENCLAW_BUNDLED_PLUGINS_DIR, { recursive: true });
+      setTestEnvValue("AFORA_STATE_DIR", path.join(tempHome, ".afora"));
+      process.env.AFORA_SKIP_CHANNELS = "1";
+      process.env.AFORA_SKIP_GMAIL_WATCHER = "1";
+      process.env.AFORA_SKIP_CRON = "1";
+      process.env.AFORA_SKIP_CANVAS_HOST = "1";
+      process.env.AFORA_SKIP_BROWSER_CONTROL_SERVER = "1";
+      process.env.AFORA_SKIP_PROVIDERS = "1";
+      process.env.AFORA_TEST_MINIMAL_GATEWAY = "1";
+      process.env.AFORA_BUNDLED_PLUGINS_DIR = path.join(tempHome, "empty-bundled-plugins");
+      await fs.mkdir(process.env.AFORA_BUNDLED_PLUGINS_DIR, { recursive: true });
 
       const token = `proxy-token-${process.pid}-${process.env.VITEST_POOL_ID ?? "0"}`;
-      process.env.OPENCLAW_GATEWAY_TOKEN = token;
-      const configPath = path.join(tempHome, ".openclaw", "openclaw.json");
+      process.env.AFORA_GATEWAY_TOKEN = token;
+      const configPath = path.join(tempHome, ".afora", "afora.json");
       await fs.mkdir(path.dirname(configPath), { recursive: true });
       await fs.writeFile(
         configPath,
         `${JSON.stringify({ gateway: { auth: { mode: "token", token } } }, null, 2)}\n`,
       );
-      setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
+      setTestEnvValue("AFORA_CONFIG_PATH", configPath);
 
       server = await startGatewayServer(await getGatewayE2ePortBlock(), {
         bind: "loopback",
@@ -121,7 +121,7 @@ describe("gateway network runtime", () => {
     "starts with persisted canonical bind %s without rewriting config",
     async (bind) => {
       const envSnapshot = captureEnv([...NETWORK_GATEWAY_ENV_KEYS]);
-      const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gw-bind-home-"));
+      const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "afora-gw-bind-home-"));
       let server: Awaited<ReturnType<typeof startGatewayServer>> | undefined;
 
       try {
@@ -129,20 +129,20 @@ describe("gateway network runtime", () => {
           deleteTestEnvValue(key);
         }
         setTestEnvValue("HOME", tempHome);
-        setTestEnvValue("OPENCLAW_STATE_DIR", path.join(tempHome, ".openclaw"));
-        process.env.OPENCLAW_SKIP_CHANNELS = "1";
-        process.env.OPENCLAW_SKIP_GMAIL_WATCHER = "1";
-        process.env.OPENCLAW_SKIP_CRON = "1";
-        process.env.OPENCLAW_SKIP_CANVAS_HOST = "1";
-        process.env.OPENCLAW_SKIP_BROWSER_CONTROL_SERVER = "1";
-        process.env.OPENCLAW_SKIP_PROVIDERS = "1";
-        process.env.OPENCLAW_TEST_MINIMAL_GATEWAY = "1";
-        process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = path.join(tempHome, "empty-bundled-plugins");
-        await fs.mkdir(process.env.OPENCLAW_BUNDLED_PLUGINS_DIR, { recursive: true });
+        setTestEnvValue("AFORA_STATE_DIR", path.join(tempHome, ".afora"));
+        process.env.AFORA_SKIP_CHANNELS = "1";
+        process.env.AFORA_SKIP_GMAIL_WATCHER = "1";
+        process.env.AFORA_SKIP_CRON = "1";
+        process.env.AFORA_SKIP_CANVAS_HOST = "1";
+        process.env.AFORA_SKIP_BROWSER_CONTROL_SERVER = "1";
+        process.env.AFORA_SKIP_PROVIDERS = "1";
+        process.env.AFORA_TEST_MINIMAL_GATEWAY = "1";
+        process.env.AFORA_BUNDLED_PLUGINS_DIR = path.join(tempHome, "empty-bundled-plugins");
+        await fs.mkdir(process.env.AFORA_BUNDLED_PLUGINS_DIR, { recursive: true });
 
         const token = `bind-token-${process.pid}-${process.env.VITEST_POOL_ID ?? "0"}`;
-        process.env.OPENCLAW_GATEWAY_TOKEN = token;
-        const configPath = path.join(tempHome, ".openclaw", "openclaw.json");
+        process.env.AFORA_GATEWAY_TOKEN = token;
+        const configPath = path.join(tempHome, ".afora", "afora.json");
         const gateway = {
           mode: "local" as const,
           auth: { mode: "token" as const, token },
@@ -152,7 +152,7 @@ describe("gateway network runtime", () => {
         const raw = `${JSON.stringify({ gateway }, null, 2)}\n`;
         await fs.mkdir(path.dirname(configPath), { recursive: true });
         await fs.writeFile(configPath, raw, { mode: 0o600 });
-        setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
+        setTestEnvValue("AFORA_CONFIG_PATH", configPath);
 
         server = await startGatewayServer(await getGatewayE2ePortBlock(), {
           controlUiEnabled: false,

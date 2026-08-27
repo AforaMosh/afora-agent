@@ -28,18 +28,18 @@ function requireMockArg(mock: { mock: { calls: unknown[][] } }, label: string): 
 }
 
 describe("readServiceStatusSummary", () => {
-  it("marks OpenClaw-managed services as installed", async () => {
+  it("marks Afora-managed services as installed", async () => {
     const summary = await readServiceStatusSummary(
       createService({
         isLoaded: vi.fn(async () => true),
-        readCommand: vi.fn(async () => ({ programArguments: ["openclaw", "gateway", "run"] })),
+        readCommand: vi.fn(async () => ({ programArguments: ["afora", "gateway", "run"] })),
         readRuntime: vi.fn(async () => ({ status: "running" })),
       }),
       "Daemon",
     );
 
     expect(summary.installed).toBe(true);
-    expect(summary.managedByOpenClaw).toBe(true);
+    expect(summary.managedByAfora).toBe(true);
     expect(summary.externallyManaged).toBe(false);
     expect(summary.loadedText).toBe("enabled");
   });
@@ -53,7 +53,7 @@ describe("readServiceStatusSummary", () => {
     );
 
     expect(summary.installed).toBe(true);
-    expect(summary.managedByOpenClaw).toBe(false);
+    expect(summary.managedByAfora).toBe(false);
     expect(summary.externallyManaged).toBe(true);
     expect(summary.loadedText).toBe("running (externally managed)");
   });
@@ -62,7 +62,7 @@ describe("readServiceStatusSummary", () => {
     const summary = await readServiceStatusSummary(createService({}), "Daemon");
 
     expect(summary.installed).toBe(false);
-    expect(summary.managedByOpenClaw).toBe(false);
+    expect(summary.managedByAfora).toBe(false);
     expect(summary.externallyManaged).toBe(false);
     expect(summary.loadedText).toBe("disabled");
   });
@@ -76,7 +76,7 @@ describe("readServiceStatusSummary", () => {
       const summary = await readServiceStatusSummary(
         createService({
           isLoaded: vi.fn(async () => true),
-          readCommand: vi.fn(async () => ({ programArguments: ["openclaw", "gateway", "run"] })),
+          readCommand: vi.fn(async () => ({ programArguments: ["afora", "gateway", "run"] })),
           readRuntime: vi.fn(async () => ({ status: "running", pid: 1234 })),
         }),
         "Daemon",
@@ -87,7 +87,7 @@ describe("readServiceStatusSummary", () => {
         label: "systemd",
         installed: true,
         loaded: true,
-        managedByOpenClaw: true,
+        managedByAfora: true,
         externallyManaged: false,
         loadedText: "enabled",
         runtime: { status: "running", pid: 1234 },
@@ -105,7 +105,7 @@ describe("readServiceStatusSummary", () => {
       expect(summary.label).toBe("Gateway service");
       expect(summary.installed).toBe(false);
       expect(summary.loaded).toBe(false);
-      expect(summary.managedByOpenClaw).toBe(false);
+      expect(summary.managedByAfora).toBe(false);
       expect(summary.externallyManaged).toBe(false);
       expect(summary.loadedText).toBe("not installed");
       expect(summary.runtime).toEqual({
@@ -117,18 +117,18 @@ describe("readServiceStatusSummary", () => {
 
   it("passes command environment to runtime and loaded checks", async () => {
     const isLoaded = vi.fn(async ({ env }: GatewayServiceEnvArgs) => {
-      return env?.OPENCLAW_GATEWAY_PORT === "18789";
+      return env?.AFORA_GATEWAY_PORT === "18789";
     });
     const readRuntime = vi.fn(async (env?: NodeJS.ProcessEnv) => ({
-      status: env?.OPENCLAW_GATEWAY_PORT === "18789" ? ("running" as const) : ("unknown" as const),
+      status: env?.AFORA_GATEWAY_PORT === "18789" ? ("running" as const) : ("unknown" as const),
     }));
 
     const summary = await readServiceStatusSummary(
       createService({
         isLoaded,
         readCommand: vi.fn(async () => ({
-          programArguments: ["openclaw", "gateway", "run", "--port", "18789"],
-          environment: { OPENCLAW_GATEWAY_PORT: "18789" },
+          programArguments: ["afora", "gateway", "run", "--port", "18789"],
+          environment: { AFORA_GATEWAY_PORT: "18789" },
         })),
         readRuntime,
       }),
@@ -136,27 +136,27 @@ describe("readServiceStatusSummary", () => {
     );
 
     const loadedArgs = requireMockArg(isLoaded, "isLoaded") as GatewayServiceEnvArgs;
-    expect(loadedArgs?.env?.OPENCLAW_GATEWAY_PORT).toBe("18789");
+    expect(loadedArgs?.env?.AFORA_GATEWAY_PORT).toBe("18789");
     const runtimeEnv = requireMockArg(readRuntime, "readRuntime") as NodeJS.ProcessEnv;
-    expect(runtimeEnv?.OPENCLAW_GATEWAY_PORT).toBe("18789");
+    expect(runtimeEnv?.AFORA_GATEWAY_PORT).toBe("18789");
     expect(summary.installed).toBe(true);
     expect(summary.loaded).toBe(true);
     expect(summary.runtime?.status).toBe("running");
   });
 
   it("includes service layout diagnostics and flags source checkout entrypoints", async () => {
-    await withTestDir({ prefix: "openclaw-status-service-layout-" }, async (root) => {
+    await withTestDir({ prefix: "afora-status-service-layout-" }, async (root) => {
       await fs.mkdir(path.join(root, ".git"), { recursive: true });
       await fs.mkdir(path.join(root, "src"), { recursive: true });
       await fs.mkdir(path.join(root, "extensions"), { recursive: true });
       await fs.mkdir(path.join(root, "dist"), { recursive: true });
       await fs.writeFile(
         path.join(root, "package.json"),
-        JSON.stringify({ name: "openclaw", version: "0.0.0-test" }),
+        JSON.stringify({ name: "afora", version: "0.0.0-test" }),
         "utf8",
       );
       const entrypoint = path.join(root, "dist", "index.js");
-      const serviceFile = path.join(root, "openclaw-gateway.service");
+      const serviceFile = path.join(root, "afora-gateway.service");
       await fs.writeFile(entrypoint, "export {};\n", "utf8");
       await fs.writeFile(serviceFile, "[Service]\n", "utf8");
       const realRoot = await fs.realpath(root);
@@ -178,7 +178,7 @@ describe("readServiceStatusSummary", () => {
         throw new Error("Expected service layout diagnostics");
       }
       expect(layout.sourcePath).toBe(serviceFile);
-      expect(layout.sourcePathReal).toBe(path.join(realRoot, "openclaw-gateway.service"));
+      expect(layout.sourcePathReal).toBe(path.join(realRoot, "afora-gateway.service"));
       expect(layout.entrypoint).toBe(entrypoint);
       expect(layout.entrypointReal).toBe(path.join(realRoot, "dist", "index.js"));
       expect(layout.packageRoot).toBe(realRoot);

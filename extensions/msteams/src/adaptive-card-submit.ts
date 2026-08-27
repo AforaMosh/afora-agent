@@ -3,7 +3,7 @@ import {
   isRecord,
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 function extractAdaptiveCardSubmittedData(value: unknown): unknown {
   if (!isRecord(value)) {

@@ -215,7 +215,7 @@ describe("secrets store CLI", () => {
   });
 
   it("imports quoted and multiline dotenv values without exposing them", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-store-import-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-store-import-"));
     const dotenvPath = path.join(root, "values.env");
     await fs.writeFile(
       dotenvPath,

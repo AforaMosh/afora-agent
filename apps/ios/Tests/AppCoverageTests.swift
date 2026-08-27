@@ -1,7 +1,7 @@
-import OpenClawKit
+import AforaKit
 import SwiftUI
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 struct AppCoverageTests {
     @Test @MainActor func `node app model updates backgrounded state`() {
@@ -28,7 +28,7 @@ struct AppCoverageTests {
         #expect(appModel.voiceWake._test_isSuppressedForBackground())
         let blocked = await appModel.handleInvoke(BridgeInvokeRequest(
             id: "initial-scene-blocked",
-            command: OpenClawTalkCommand.pttStart.rawValue))
+            command: AforaTalkCommand.pttStart.rawValue))
         #expect(!blocked.ok)
 
         appModel.setScenePhase(.active)
@@ -37,11 +37,11 @@ struct AppCoverageTests {
         #expect(!appModel.voiceWake._test_isSuppressedForBackground())
         let admitted = await appModel.handleInvoke(BridgeInvokeRequest(
             id: "initial-scene-active",
-            command: OpenClawTalkCommand.pttStart.rawValue))
+            command: AforaTalkCommand.pttStart.rawValue))
         #expect(admitted.ok)
         _ = await appModel.handleInvoke(BridgeInvokeRequest(
             id: "initial-scene-cleanup",
-            command: OpenClawTalkCommand.pttCancel.rawValue))
+            command: AforaTalkCommand.pttCancel.rawValue))
     }
 
     @Test @MainActor func `voice wake start reports unsupported on simulator`() async {

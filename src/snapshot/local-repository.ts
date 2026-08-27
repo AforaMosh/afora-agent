@@ -48,9 +48,9 @@ import {
 } from "./manifest.js";
 import {
   buildSnapshotValidator,
-  createOpenClawSnapshotCopy,
+  createAforaSnapshotCopy,
   normalizeSnapshotIdentity,
-} from "./openclaw-snapshot-copy.js";
+} from "./afora-snapshot-copy.js";
 import {
   SNAPSHOT_MANIFEST_FILENAME,
   SNAPSHOT_SQLITE_FILENAME,
@@ -284,7 +284,7 @@ class LocalSqliteSnapshotProvider implements SqliteSnapshotProvider {
       applyPrivateModeSync(stagingDir, SNAPSHOT_DIRECTORY_MODE);
       await assertPrivateStagingDirectory(stagingIdentity, stagingDir);
       await assertDirectoryIdentity(trustedRepositoryPath, repositoryIdentity);
-      const result = await createOpenClawSnapshotCopy({
+      const result = await createAforaSnapshotCopy({
         database: { path: sourcePath, identity },
         targetPath: artifactPath,
       });
@@ -600,14 +600,14 @@ class LocalSqliteSnapshotProvider implements SqliteSnapshotProvider {
     const repositoryStat = await lstatIfExists(this.#repositoryPath);
     if (!repositoryStat) {
       throw new Error(
-        `SQLite snapshot repository does not exist: ${this.#repositoryPath}. Check the snapshot path or create a snapshot with \`openclaw backup sqlite create\`.`,
+        `SQLite snapshot repository does not exist: ${this.#repositoryPath}. Check the snapshot path or create a snapshot with \`afora backup sqlite create\`.`,
       );
     }
     assertDirectory(repositoryStat, this.#repositoryPath, "SQLite snapshot repository");
     const snapshotStat = await lstatIfExists(snapshotDir);
     if (!snapshotStat) {
       throw new Error(
-        `SQLite snapshot does not exist: ${snapshotDir}. Run \`openclaw backup sqlite list --repository ${this.#repositoryPath}\` to inspect available snapshots.`,
+        `SQLite snapshot does not exist: ${snapshotDir}. Run \`afora backup sqlite list --repository ${this.#repositoryPath}\` to inspect available snapshots.`,
       );
     }
     assertDirectory(snapshotStat, snapshotDir, "SQLite snapshot");

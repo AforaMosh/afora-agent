@@ -3,7 +3,7 @@
  *
  * Combines live registry runs and persisted session metadata for sessions_list/subagents views.
  */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import {
   resolveSubagentLabel,
   sortSubagentRuns,
@@ -11,7 +11,7 @@ import {
 import { resolveSessionStorePathCore } from "../../../config/sessions/paths.js";
 import { listSessionEntriesReadOnly } from "../../../config/sessions/session-accessor.js";
 import type { SessionEntry } from "../../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { formatDurationCompact } from "../../../infra/format-time/format-duration.js";
 import { parseAgentSessionKey, type ParsedAgentSessionKey } from "../../../routing/session-key.js";
 import {
@@ -65,7 +65,7 @@ type SessionEntryResolution = {
   entry: SessionEntry | undefined;
 };
 
-function resolveStorePathForKey(cfg: OpenClawConfig, parsed?: ParsedAgentSessionKey | null) {
+function resolveStorePathForKey(cfg: AforaConfig, parsed?: ParsedAgentSessionKey | null) {
   return resolveSessionStorePathCore(cfg.session?.store, {
     agentId: parsed?.agentId,
   });
@@ -73,7 +73,7 @@ function resolveStorePathForKey(cfg: OpenClawConfig, parsed?: ParsedAgentSession
 
 /** Resolve persisted session metadata for a session key, caching per store path. */
 export function resolveSessionEntryForKey(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   key: string;
   cache: Map<string, Record<string, SessionEntry>>;
 }): SessionEntryResolution {
@@ -191,7 +191,7 @@ function buildListText(params: {
 
 /** Build structured and text views for active and recent subagent runs. */
 export function buildSubagentList(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   runs: SubagentRunRecord[];
   recentMinutes: number;
   taskMaxChars?: number;

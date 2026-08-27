@@ -3,13 +3,13 @@
 import type { MediaUnderstandingCapability } from "../../packages/media-understanding-common/src/types.js";
 import type { AuthProfileStore } from "../agents/auth-profiles/types.js";
 import type { ModelProviderConfig } from "../config/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 /** Agent-owned runtime handle carried opaquely through media provider requests. */
 type MediaPreparedModelRuntime = Readonly<{
   agentDir: string;
   workspaceDir?: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   createStores: () => unknown;
 }>;
 
@@ -157,7 +157,7 @@ export type ImageDescriptionRequest = {
   agentDir: string;
   workspaceDir?: string;
   preparedModelRuntime?: MediaPreparedModelRuntime;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   model: string;
   provider: string;
 };
@@ -183,7 +183,7 @@ export type ImagesDescriptionRequest = {
   agentDir: string;
   workspaceDir?: string;
   preparedModelRuntime?: MediaPreparedModelRuntime;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 };
 
 export type ImageDescriptionResult = {
@@ -225,7 +225,7 @@ export type StructuredExtractionRequest = {
   preferredProfile?: string;
   authStore?: AuthProfileStore;
   agentDir: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   model: string;
   provider: string;
 };
@@ -244,7 +244,7 @@ type MediaUnderstandingDocumentModelDefaults = {
 };
 
 export type MediaUnderstandingProviderAuthContext = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   provider: string;
   providerConfig?: ModelProviderConfig;
 };

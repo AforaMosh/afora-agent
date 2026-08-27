@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 const DEFAULT_SESSION_WRITE_LOCK_ACQUIRE_TIMEOUT_MS = 60_000;
 const DEFAULT_SESSION_WRITE_LOCK_STALE_MS = 30 * 60 * 1000;
@@ -8,7 +8,7 @@ const DEFAULT_SESSION_WRITE_LOCK_MAX_HOLD_MS = 5 * 60 * 1000;
  * @deprecated Session write leases were removed. This compatibility type is scheduled for
  * removal in the 2026.10 release train; use the session lane and durable writer claim/fence.
  */
-export type SessionWriteLockAcquireTimeoutConfig = OpenClawConfig;
+export type SessionWriteLockAcquireTimeoutConfig = AforaConfig;
 
 type LockParams = {
   sessionFile: string;

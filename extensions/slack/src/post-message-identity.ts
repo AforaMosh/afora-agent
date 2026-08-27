@@ -1,10 +1,10 @@
 // Slack plugin module implements best-effort custom identity fallback for chat.postMessage.
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
   normalizeTrimmedStringList,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type {
   SlackBasePostMessagePayload,
   SlackPostMessagePayload,

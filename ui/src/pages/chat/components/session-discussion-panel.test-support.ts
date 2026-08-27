@@ -29,7 +29,7 @@ export function resetDiscussionPanelTestState(): void {
 export function expectedEmbedUrl(url: string, mode: "light" | "dark" = "dark"): string {
   const resolved = new URL(url);
   if (
-    resolved.searchParams.get("openclawHostTheme") !== "1" ||
+    resolved.searchParams.get("aforaHostTheme") !== "1" ||
     !/^\/embed\/(?:channel|thread)\/[^/]+\/[^/]+\/?$/u.test(resolved.pathname)
   ) {
     return resolved.href;
@@ -45,7 +45,7 @@ export function mount(params: {
   onStateChange?: SessionDiscussionStateListener;
   canOpen?: boolean;
 }): DiscussionPanelElement {
-  const panel = document.createElement("openclaw-session-discussion") as DiscussionPanelElement;
+  const panel = document.createElement("afora-session-discussion") as DiscussionPanelElement;
   panel.sessionKey = "agent:main:first";
   panel.loadInfo = params.loadInfo;
   panel.openDiscussion = params.openDiscussion;

@@ -1,6 +1,6 @@
 // Package script tests validate root package script invariants.
 import fs from "node:fs";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 
 type RootPackageJson = {
@@ -154,13 +154,13 @@ describe("package scripts", () => {
 
   it("enables live cache validation in the package script", () => {
     expect(readPackageJson().scripts["test:live:cache"]).toBe(
-      "node --import tsx scripts/run-with-env.mts OPENCLAW_LIVE_TEST=1 OPENCLAW_LIVE_CACHE_TEST=1 -- node --import tsx scripts/check-live-cache.ts",
+      "node --import tsx scripts/run-with-env.mts AFORA_LIVE_TEST=1 AFORA_LIVE_CACHE_TEST=1 -- node --import tsx scripts/check-live-cache.ts",
     );
   });
 
   it("runs browser extension bootstrap E2E against real Chromium", () => {
     expect(readPackageJson().scripts["test:e2e:browser-extension"]).toBe(
-      "node --import tsx scripts/run-with-env.mts PLAYWRIGHT_BROWSERS_PATH=.artifacts/playwright-browsers -- node --import tsx scripts/ensure-playwright-chromium.mts --require-playwright-chromium && node --import tsx scripts/run-with-env.mts PLAYWRIGHT_BROWSERS_PATH=.artifacts/playwright-browsers OPENCLAW_BROWSER_EXTENSION_E2E=1 OPENCLAW_E2E_WORKERS=1 -- node scripts/run-vitest.mjs extensions/browser/chrome-extension/bootstrap.chromium.test.ts",
+      "node --import tsx scripts/run-with-env.mts PLAYWRIGHT_BROWSERS_PATH=.artifacts/playwright-browsers -- node --import tsx scripts/ensure-playwright-chromium.mts --require-playwright-chromium && node --import tsx scripts/run-with-env.mts PLAYWRIGHT_BROWSERS_PATH=.artifacts/playwright-browsers AFORA_BROWSER_EXTENSION_E2E=1 AFORA_E2E_WORKERS=1 -- node scripts/run-vitest.mjs extensions/browser/chrome-extension/bootstrap.chromium.test.ts",
     );
   });
 
@@ -178,12 +178,12 @@ describe("package scripts", () => {
 
   it("runs runtime postbuild before plugin SDK strict export checks", () => {
     expect(readPackageJson().scripts["build:plugin-sdk:strict-smoke"]).toBe(
-      "node --import tsx scripts/tsdown-build.mts && node scripts/runtime-postbuild.mjs && node --import tsx scripts/run-with-env.mts OPENCLAW_PLUGIN_SDK_CANONICAL_DTS=1 -- node --import tsx scripts/write-plugin-sdk-entry-dts.ts && node --import tsx scripts/check-plugin-sdk-exports.mts",
+      "node --import tsx scripts/tsdown-build.mts && node scripts/runtime-postbuild.mjs && node --import tsx scripts/run-with-env.mts AFORA_PLUGIN_SDK_CANONICAL_DTS=1 -- node --import tsx scripts/write-plugin-sdk-entry-dts.ts && node --import tsx scripts/check-plugin-sdk-exports.mts",
     );
   });
 
   it("uses the shipped package launcher for npm start", () => {
-    expect(readPackageJson().scripts.start).toBe("node openclaw.mjs");
+    expect(readPackageJson().scripts.start).toBe("node afora.mjs");
   });
 
   it("builds iOS against a generic simulator by default", () => {
@@ -237,7 +237,7 @@ describe("package scripts", () => {
 
   it("runs Docker package process-tree coverage in Windows CI", () => {
     expect(readWindowsCiCoverageScript()).toContain(
-      "test/e2e/qa-lab/runtime/package-openclaw-for-docker.e2e.test.ts",
+      "test/e2e/qa-lab/runtime/package-afora-for-docker.e2e.test.ts",
     );
   });
 
@@ -258,7 +258,7 @@ describe("package scripts", () => {
   });
 
   it("runs shared-state ownership coverage in Windows CI", () => {
-    expect(readWindowsCiCoverageScript()).toContain("src/state/openclaw-state-ownership.test.ts");
+    expect(readWindowsCiCoverageScript()).toContain("src/state/afora-state-ownership.test.ts");
   });
 
   it("runs mixed-case local media file URL coverage in Windows CI", () => {
@@ -298,7 +298,7 @@ describe("package scripts", () => {
   });
 
   it("runs shared test-state cleanup coverage in Windows CI", () => {
-    expect(readWindowsCiCoverageScript()).toContain("src/test-utils/openclaw-test-state.test.ts");
+    expect(readWindowsCiCoverageScript()).toContain("src/test-utils/afora-test-state.test.ts");
   });
 
   it("runs snapshot repository verification coverage in Windows CI", () => {
@@ -320,7 +320,7 @@ describe("package scripts", () => {
 
   it("runs cross-OS installer behavior coverage in Windows CI", () => {
     expect(readWindowsCiCoverageScript()).toContain(
-      "test/scripts/openclaw-cross-os-installer.windows.test.ts",
+      "test/scripts/afora-cross-os-installer.windows.test.ts",
     );
   });
 

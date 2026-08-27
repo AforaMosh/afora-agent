@@ -20,7 +20,7 @@ function identifiedClient(profileId: string, scopes: string[] = ["operator.read"
       minProtocol: 1,
       maxProtocol: 1,
       client: {
-        id: "openclaw-control-ui",
+        id: "afora-control-ui",
         version: "test",
         platform: "test",
         mode: "webchat",

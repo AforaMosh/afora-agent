@@ -1,13 +1,13 @@
 ---
-summary: "fal image, video, and music generation setup in OpenClaw"
+summary: "fal image, video, and music generation setup in Afora"
 title: "Fal"
 read_when:
-  - You want to use fal image generation in OpenClaw
+  - You want to use fal image generation in Afora
   - You need the FAL_KEY auth flow
   - You want fal defaults for image_generate, video_generate, or music_generate
 ---
 
-OpenClaw ships a bundled `fal` provider for hosted image, video, and music
+Afora ships a bundled `fal` provider for hosted image, video, and music
 generation.
 
 | Property | Value                                                                           |
@@ -22,7 +22,7 @@ generation.
 <Steps>
   <Step title="Set the API key">
     ```bash
-    openclaw onboard --auth-choice fal-api-key
+    afora onboard --auth-choice fal-api-key
     ```
 
     Non-interactive setups can pass `--fal-api-key <key>` or export `FAL_KEY`.
@@ -83,7 +83,7 @@ aspect-ratio subset. Grok Imagine has its own ratio list (including `2:1`,
 legacy Nano Banana and Nano Banana 2 Lite reject `resolution` overrides.
 </Warning>
 
-Krea 2 models use fal's native Krea payload schema. OpenClaw sends
+Krea 2 models use fal's native Krea payload schema. Afora sends
 `aspect_ratio`, `creativity`, and `image_style_references` instead of the
 generic `image_size` / edit-endpoint payload used by Flux. The model refs are:
 
@@ -96,15 +96,15 @@ looks. Krea defaults to `fal.creativity: "medium"`; supported values are
 `raw`, `low`, `medium`, and `high`.
 
 Krea 2 exposes aspect ratio, not `image_size`, in fal's request schema. Prefer
-`aspectRatio`; OpenClaw maps `size` to the closest supported Krea aspect ratio
+`aspectRatio`; Afora maps `size` to the closest supported Krea aspect ratio
 and rejects `resolution` for Krea rather than dropping it.
 
 Use `outputFormat: "png"` when you want PNG output from fal models that expose
 `output_format`. fal does not declare an explicit transparent-background
-control in OpenClaw, so `background: "transparent"` is reported as an ignored
+control in Afora, so `background: "transparent"` is reported as an ignored
 override for fal models.
 Krea 2 endpoints do not expose an `output_format` request field through fal, so
-OpenClaw rejects `outputFormat` overrides for Krea requests.
+Afora rejects `outputFormat` overrides for Krea requests.
 
 To use Krea 2 Medium:
 

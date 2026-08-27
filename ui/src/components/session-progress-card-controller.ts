@@ -1,4 +1,4 @@
-import type { ProgressCard } from "@openclaw/gateway-protocol";
+import type { ProgressCard } from "@afora/gateway-protocol";
 import type { ReactiveController, ReactiveControllerHost } from "lit";
 import type { ApplicationGateway } from "../app/gateway.ts";
 import {

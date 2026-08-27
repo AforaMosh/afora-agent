@@ -465,7 +465,7 @@ export async function runPreparedCliAgent(
       lastAssistant,
       sourceReplyWasDelivered: sourceReplyMirror.delivered,
       usedHistoryPrompt:
-        cliSessionIdToUse === undefined && context.openClawHistoryPrompt !== undefined,
+        cliSessionIdToUse === undefined && context.aforaHistoryPrompt !== undefined,
     };
   };
 

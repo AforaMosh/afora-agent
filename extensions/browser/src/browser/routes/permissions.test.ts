@@ -50,11 +50,11 @@ const { registerBrowserPermissionRoutes } = await import("./permissions.js");
 function createProfileContext(overrides: Record<string, unknown> = {}) {
   return {
     profile: {
-      name: "openclaw",
+      name: "afora",
       cdpUrl: "http://127.0.0.1:18800",
       cdpHost: "127.0.0.1",
       cdpIsLoopback: true,
-      driver: "openclaw",
+      driver: "afora",
       ...overrides,
     },
     ensureBrowserAvailable: vi.fn(async () => {}),
@@ -183,12 +183,12 @@ describe("browser permission routes", () => {
 
   it("preserves structured browser availability errors", async () => {
     const error = new BrowserProfileUnavailableError(
-      'Managed browser profile "openclaw" requires a display.',
+      'Managed browser profile "afora" requires a display.',
       {
         metadata: {
           reason: BROWSER_ERROR_REASONS.noDisplayForHeadedProfile,
           details: {
-            profile: "openclaw",
+            profile: "afora",
             requestedHeadless: false,
             headlessSource: "config",
             displayPresent: false,
@@ -213,7 +213,7 @@ describe("browser permission routes", () => {
       error: error.message,
       reason: BROWSER_ERROR_REASONS.noDisplayForHeadedProfile,
       details: {
-        profile: "openclaw",
+        profile: "afora",
         requestedHeadless: false,
         headlessSource: "config",
         displayPresent: false,

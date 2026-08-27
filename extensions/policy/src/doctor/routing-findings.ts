@@ -1,5 +1,5 @@
-import type { HealthFinding } from "openclaw/plugin-sdk/health";
-import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
+import type { HealthFinding } from "afora-agent/plugin-sdk/health";
+import { normalizeAgentId } from "afora-agent/plugin-sdk/routing";
 import { policyRoutingRules } from "../policy-routing.js";
 import type { PolicyEvidence } from "../policy-state.js";
 import { CHECK_IDS } from "./check-ids.js";
@@ -29,7 +29,7 @@ export function routingFindings(
         "Routing policy requires at least one channel route binding, but none are configured.",
       source: "policy",
       path: policyPath,
-      target: "oc://openclaw.config/bindings",
+      target: "oc://afora.config/bindings",
       requirement: `oc://${policyDocName}/routing/requireBindings`,
       fixHint: "Add an intentional route binding or update the policy after review.",
     });
@@ -46,7 +46,7 @@ export function routingFindings(
         message: `Route binding ${binding.index} names unconfigured channel ${binding.channel}.`,
         source: "policy",
         path: policyPath,
-        target: `oc://openclaw.config/bindings/#${binding.index}`,
+        target: `oc://afora.config/bindings/#${binding.index}`,
         requirement: `oc://${policyDocName}/routing/requireConfiguredChannels`,
         fixHint: `Configure channels.${binding.channel}, correct the binding channel, or update the policy after review.`,
       });

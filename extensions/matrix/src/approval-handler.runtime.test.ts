@@ -2,7 +2,7 @@
 import type {
   ExecApprovalRequest,
   PluginApprovalRequest,
-} from "openclaw/plugin-sdk/approval-runtime";
+} from "afora-agent/plugin-sdk/approval-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { matrixApprovalNativeRuntime } from "./approval-handler.runtime.js";
 import {
@@ -34,7 +34,7 @@ type MatrixPendingPluginApprovalView = Extract<
   { approvalKind: "plugin" }
 >;
 
-const MATRIX_APPROVAL_METADATA_KEY = "com.openclaw.approval";
+const MATRIX_APPROVAL_METADATA_KEY = "com.afora.approval";
 
 function expectRecordFields(value: unknown, expected: Record<string, unknown>) {
   if (!value || typeof value !== "object") {

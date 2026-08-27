@@ -117,7 +117,7 @@ describe("control ui plugin frame auth route boundaries", () => {
     const path = `/secure-hook?${CONTROL_UI_PLUGIN_AUTH_PROBE_QUERY}=${nonce}&${CONTROL_UI_PLUGIN_AUTH_PROBE_ORIGIN_QUERY}=${encodeURIComponent(targetOrigin)}`;
 
     await withGatewayServer({
-      prefix: "openclaw-plugin-http-runtime-scope-cookie-probe-test-",
+      prefix: "afora-plugin-http-runtime-scope-cookie-probe-test-",
       resolvedAuth: AUTH_TOKEN,
       overrides: {
         handlePluginRequest,
@@ -172,7 +172,7 @@ describe("control ui plugin frame auth route boundaries", () => {
     });
 
     await withGatewayServer({
-      prefix: "openclaw-plugin-http-runtime-scope-cookie-route-bound-test-",
+      prefix: "afora-plugin-http-runtime-scope-cookie-route-bound-test-",
       resolvedAuth: AUTH_TOKEN,
       overrides: {
         handlePluginRequest,
@@ -218,7 +218,7 @@ describe("control ui plugin frame auth route boundaries", () => {
     });
 
     await withGatewayServer({
-      prefix: "openclaw-plugin-http-cookie-exact-bound-test-",
+      prefix: "afora-plugin-http-cookie-exact-bound-test-",
       resolvedAuth: AUTH_TOKEN,
       overrides: {
         handlePluginRequest,
@@ -271,7 +271,7 @@ describe("control ui plugin frame auth route boundaries", () => {
     });
 
     await withGatewayServer({
-      prefix: "openclaw-plugin-http-cookie-canonical-path-test-",
+      prefix: "afora-plugin-http-cookie-canonical-path-test-",
       resolvedAuth: AUTH_TOKEN,
       overrides: {
         handlePluginRequest,
@@ -308,7 +308,7 @@ describe("control ui plugin frame auth route boundaries", () => {
     const cookie = createControlUiPluginAuthCookieForTest(["operator.read", "operator.write"]);
 
     await withGatewayServer({
-      prefix: "openclaw-plugin-http-runtime-scope-cookie-test-",
+      prefix: "afora-plugin-http-runtime-scope-cookie-test-",
       resolvedAuth: AUTH_TOKEN,
       overrides: {
         handlePluginRequest,
@@ -343,7 +343,7 @@ describe("control ui plugin frame auth route boundaries", () => {
     });
 
     await withGatewayServer({
-      prefix: "openclaw-plugin-http-runtime-scope-cookie-route-child-test-",
+      prefix: "afora-plugin-http-runtime-scope-cookie-route-child-test-",
       resolvedAuth: AUTH_TOKEN,
       overrides: {
         handlePluginRequest,
@@ -370,7 +370,7 @@ describe("control ui plugin frame auth route boundaries", () => {
     });
 
     await withGatewayServer({
-      prefix: "openclaw-plugin-http-cookie-read-only-test-",
+      prefix: "afora-plugin-http-cookie-read-only-test-",
       resolvedAuth: AUTH_TOKEN,
       overrides: {
         handlePluginRequest,
@@ -428,7 +428,7 @@ describe("control ui plugin frame auth route boundaries", () => {
     });
 
     await withGatewayServer({
-      prefix: "openclaw-plugin-http-runtime-scope-cookie-generation-bound-test-",
+      prefix: "afora-plugin-http-runtime-scope-cookie-generation-bound-test-",
       resolvedAuth: AUTH_TOKEN,
       overrides: {
         handlePluginRequest,
@@ -465,7 +465,7 @@ describe("control ui plugin frame auth route boundaries", () => {
     });
 
     await withGatewayServer({
-      prefix: "openclaw-plugin-http-runtime-scope-cookie-trusted-operator-test-",
+      prefix: "afora-plugin-http-runtime-scope-cookie-trusted-operator-test-",
       resolvedAuth: AUTH_TOKEN,
       overrides: {
         handlePluginRequest,
@@ -517,7 +517,7 @@ describe("control ui plugin frame auth route boundaries", () => {
     });
 
     await withGatewayServer({
-      prefix: "openclaw-plugin-http-cookie-plugin-bound-test-",
+      prefix: "afora-plugin-http-cookie-plugin-bound-test-",
       resolvedAuth: AUTH_TOKEN,
       overrides: {
         handlePluginRequest,
@@ -558,7 +558,7 @@ describe("control ui plugin frame auth route boundaries", () => {
     });
 
     await withGatewayServer({
-      prefix: "openclaw-plugin-http-cookie-specificity-test-",
+      prefix: "afora-plugin-http-cookie-specificity-test-",
       resolvedAuth: AUTH_TOKEN,
       overrides: {
         handlePluginRequest,
@@ -629,7 +629,7 @@ describe("control ui plugin frame auth route boundaries", () => {
     });
 
     await withGatewayServer({
-      prefix: "openclaw-plugin-http-cookie-dispatch-owner-test-",
+      prefix: "afora-plugin-http-cookie-dispatch-owner-test-",
       resolvedAuth: AUTH_TOKEN,
       overrides: {
         handlePluginRequest,
@@ -681,7 +681,7 @@ describe("control ui plugin frame auth route boundaries", () => {
     });
 
     await withGatewayServer({
-      prefix: "openclaw-plugin-http-cookie-fallthrough-test-",
+      prefix: "afora-plugin-http-cookie-fallthrough-test-",
       resolvedAuth: AUTH_TOKEN,
       overrides: {
         handlePluginRequest,

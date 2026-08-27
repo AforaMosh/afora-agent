@@ -1,20 +1,20 @@
 // File Transfer tests cover policy plugin behavior.
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock the plugin-sdk runtime-config surface so we can drive the policy
 // reader from the test without booting a gateway. mutateConfigFile is also
 // mocked so persistAllowAlways tests can assert what would have been written
-// without touching ~/.openclaw/openclaw.json.
+// without touching ~/.AforaMosh/afora-agent.json.
 const getRuntimeConfigMock = vi.fn();
 const mutateConfigFileMock = vi.fn();
 
-vi.mock("openclaw/plugin-sdk/runtime-config-snapshot", () => ({
+vi.mock("afora-agent/plugin-sdk/runtime-config-snapshot", () => ({
   getRuntimeConfig: () => getRuntimeConfigMock(),
 }));
-vi.mock("openclaw/plugin-sdk/config-mutation", () => ({
+vi.mock("afora-agent/plugin-sdk/config-mutation", () => ({
   mutateConfigFile: (input: unknown) => mutateConfigFileMock(input),
 }));
 
@@ -31,8 +31,8 @@ afterEach(() => {
 });
 
 afterAll(() => {
-  vi.doUnmock("openclaw/plugin-sdk/runtime-config-snapshot");
-  vi.doUnmock("openclaw/plugin-sdk/config-mutation");
+  vi.doUnmock("afora-agent/plugin-sdk/runtime-config-snapshot");
+  vi.doUnmock("afora-agent/plugin-sdk/config-mutation");
   vi.resetModules();
 });
 

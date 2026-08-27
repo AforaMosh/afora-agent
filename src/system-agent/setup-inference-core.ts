@@ -9,7 +9,7 @@ import {
   detectInferenceBackends,
   type InferenceBackendKind,
 } from "../commands/onboard-inference.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { enablePluginInConfig } from "../plugins/enable.js";
 import {
@@ -194,7 +194,7 @@ export type ActivateSetupInferenceParams = {
   /** Session cancellation gate; interactive credentials must never persist after cancel. */
   isCancelled?: () => boolean;
   /** Observe the authored config held by the inference writer before it commits. */
-  onCommitStarted?: (sourceConfig: OpenClawConfig) => void;
+  onCommitStarted?: (sourceConfig: AforaConfig) => void;
   deps?: ActivateSetupInferenceDeps;
 };
 
@@ -273,7 +273,7 @@ export type ActivateSetupInferenceDeps = {
   clearLoadInstalledPluginIndexInstallRecordsCache?: typeof import("../plugins/installed-plugin-index-records.js").clearLoadInstalledPluginIndexInstallRecordsCache;
   clearPluginMetadataLifecycleCaches?: typeof import("../plugins/plugin-metadata-lifecycle.js").clearPluginMetadataLifecycleCaches;
   invalidatePluginRuntimeDiscoveryAfterConfigMutation?: typeof import("../plugins/registry-refresh.js").invalidatePluginRuntimeDiscoveryAfterConfigMutation;
-  disposeOpenClawAgentDatabaseByPath?: typeof import("../state/openclaw-agent-db.js").disposeOpenClawAgentDatabaseByPath;
+  disposeAforaAgentDatabaseByPath?: typeof import("../state/afora-agent-db.js").disposeAforaAgentDatabaseByPath;
   createTempDir?: () => Promise<string>;
   removeTempDir?: (dir: string) => Promise<void>;
   timeoutMs?: number;
@@ -312,7 +312,7 @@ export function invalidSetupConfigError(snapshot: {
 }): string {
   const issue = snapshot.issues?.[0];
   const detail = issue ? ` (${issue.path ? `${issue.path}: ` : ""}${issue.message})` : "";
-  return `OpenClaw config ${snapshot.path} is invalid${detail}. Fix it before running setup.`;
+  return `Afora config ${snapshot.path} is invalid${detail}. Fix it before running setup.`;
 }
 
 export function resolveCandidatePresentation(

@@ -73,7 +73,7 @@ const SESSION_TARGET_PAGE_SIZE = 200;
 
 function listHint(agent?: string): string {
   const agentFlag = agent ? ` --agent ${agent}` : "";
-  return formatCliCommand(`openclaw sessions list${agentFlag} --json`);
+  return formatCliCommand(`afora sessions list${agentFlag} --json`);
 }
 
 function notFoundResult(key: string, agent?: string): SessionsLifecycleResult {

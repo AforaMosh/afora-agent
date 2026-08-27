@@ -1,7 +1,7 @@
 // Xai plugin module implements web search shared behavior.
-import { readProviderJsonObjectResponse } from "openclaw/plugin-sdk/provider-http";
-import { postTrustedWebToolsJson, wrapWebContent } from "openclaw/plugin-sdk/provider-web-search";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { readProviderJsonObjectResponse } from "afora-agent/plugin-sdk/provider-http";
+import { postTrustedWebToolsJson, wrapWebContent } from "afora-agent/plugin-sdk/provider-web-search";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { XAI_DEFAULT_MODEL_ID } from "../model-definitions.js";
 import { normalizeXaiModelId } from "../model-id.js";
 import {

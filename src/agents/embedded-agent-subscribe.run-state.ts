@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { createInlineCodeState } from "../../packages/markdown-core/src/code-spans.js";
 import { createEmbeddedRunReplayState } from "./embedded-agent-runner/replay-state.js";
 import type { EmbeddedAgentSubscribeState } from "./embedded-agent-subscribe.handlers.types.js";

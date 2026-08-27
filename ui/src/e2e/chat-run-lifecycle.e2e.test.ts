@@ -61,7 +61,7 @@ suite.define(() => {
 
   it("restores only the unpersisted assistant response after reconnecting", async () => {
     const artifactDir = path.resolve(".artifacts/control-ui-e2e/chat-inflight-reconnect");
-    const captureProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+    const captureProof = process.env.AFORA_CAPTURE_UI_PROOF === "1";
     if (captureProof) {
       await mkdir(artifactDir, { recursive: true });
     }
@@ -117,7 +117,7 @@ suite.define(() => {
         {
           role: "system",
           timestamp: Date.now() - 1_000,
-          __openclaw: {
+          __afora: {
             kind: "compaction",
             id: "compact-entry-1",
             tokensBefore: 900_000,
@@ -372,7 +372,7 @@ suite.define(() => {
 
   it("renders a safe self-abort diagnostic while preserving interrupted status", async () => {
     const artifactDir = path.resolve(".artifacts/control-ui-e2e/chat-abort-diagnostic");
-    const captureProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+    const captureProof = process.env.AFORA_CAPTURE_UI_PROOF === "1";
     if (captureProof) {
       await mkdir(artifactDir, { recursive: true });
     }

@@ -22,9 +22,9 @@ export function cleanupTempDirs(tempDirs: string[]): void {
 /** Restores the private QA CLI env flag after a test mutates it. */
 export function restorePrivateQaCliEnv(originalPrivateQaCli: string | undefined): void {
   if (originalPrivateQaCli === undefined) {
-    delete process.env.OPENCLAW_ENABLE_PRIVATE_QA_CLI;
+    delete process.env.AFORA_ENABLE_PRIVATE_QA_CLI;
   } else {
-    process.env.OPENCLAW_ENABLE_PRIVATE_QA_CLI = originalPrivateQaCli;
+    process.env.AFORA_ENABLE_PRIVATE_QA_CLI = originalPrivateQaCli;
   }
 }
 
@@ -35,7 +35,7 @@ export function makePrivateQaSourceRoot(tempDirs: string[], prefix: string): str
   fs.mkdirSync(path.join(sourceRoot, "src"), { recursive: true });
   fs.mkdirSync(path.join(sourceRoot, "extensions"), { recursive: true });
   fs.writeFileSync(path.join(sourceRoot, ".git"), "gitdir: /tmp/mock\n", "utf8");
-  process.env.OPENCLAW_ENABLE_PRIVATE_QA_CLI = "1";
+  process.env.AFORA_ENABLE_PRIVATE_QA_CLI = "1";
   return sourceRoot;
 }
 
@@ -68,10 +68,10 @@ export async function expectPrivateQaLabRuntimeSurfaceLoad(params: {
   tempDirs: string[];
   importRuntime: () => Promise<QaRuntimeModule>;
   loadBundledPluginPublicSurfaceModuleSync: SurfaceLoaderMock;
-  resolveOpenClawPackageRootSync: SurfaceLoaderMock;
+  resolveAforaPackageRootSync: SurfaceLoaderMock;
 }) {
-  const sourceRoot = makePrivateQaSourceRoot(params.tempDirs, "openclaw-qa-runtime-root-");
-  params.resolveOpenClawPackageRootSync.mockReturnValue(sourceRoot);
+  const sourceRoot = makePrivateQaSourceRoot(params.tempDirs, "afora-qa-runtime-root-");
+  params.resolveAforaPackageRootSync.mockReturnValue(sourceRoot);
 
   const runtimeSurface = makeQaRuntimeSurface();
   params.loadBundledPluginPublicSurfaceModuleSync.mockReturnValue(runtimeSurface);
@@ -83,8 +83,8 @@ export async function expectPrivateQaLabRuntimeSurfaceLoad(params: {
     dirName: "qa-lab",
     artifactBasename: "runtime-api.js",
     env: expect.objectContaining({
-      OPENCLAW_ENABLE_PRIVATE_QA_CLI: "1",
-      OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(sourceRoot, "extensions"),
+      AFORA_ENABLE_PRIVATE_QA_CLI: "1",
+      AFORA_BUNDLED_PLUGINS_DIR: path.join(sourceRoot, "extensions"),
     }),
   });
 }

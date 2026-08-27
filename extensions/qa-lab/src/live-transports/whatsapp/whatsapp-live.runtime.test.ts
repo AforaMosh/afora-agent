@@ -4,12 +4,12 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import {
   resolveWhatsAppAccount,
   type WhatsAppQaDriverObservedMessage,
   type WhatsAppQaDriverSession,
-} from "@openclaw/whatsapp/api.js";
+} from "@afora/whatsapp/api.js";
 import { describe, expect, it, vi } from "vitest";
 import { fingerprintQaCredentialId } from "../../qa-credentials-fingerprint.runtime.js";
 import { readQaScenarioById } from "../../scenario-catalog.js";
@@ -43,11 +43,11 @@ import * as whatsappUserPathScenarios from "./whatsapp-live.scenario-implementat
 import { unpackWhatsAppAuthArchive } from "./whatsapp-live.setup.js";
 
 const runExecSpy = vi.hoisted(() =>
-  vi.fn<typeof import("openclaw/plugin-sdk/process-runtime").runExec>(),
+  vi.fn<typeof import("afora-agent/plugin-sdk/process-runtime").runExec>(),
 );
 
-vi.mock("openclaw/plugin-sdk/process-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/process-runtime")>();
+vi.mock("afora-agent/plugin-sdk/process-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/process-runtime")>();
   runExecSpy.mockImplementation(actual.runExec);
   return { ...actual, runExec: runExecSpy };
 });
@@ -147,7 +147,7 @@ function createWhatsAppScenarioGateway(
   return {
     call: async () => ({}),
     restart: async () => {},
-    workspaceDir: "/tmp/openclaw-whatsapp-qa",
+    workspaceDir: "/tmp/afora-whatsapp-qa",
     ...overrides,
   };
 }
@@ -159,7 +159,7 @@ function createWhatsAppScenarioContext(
   } = {},
 ): WhatsAppScenarioContext {
   const { recordedMessages, scenario, ...contextOverrides } = overrides;
-  const workspaceDir = contextOverrides.gatewayWorkspaceDir ?? "/tmp/openclaw-whatsapp-qa";
+  const workspaceDir = contextOverrides.gatewayWorkspaceDir ?? "/tmp/afora-whatsapp-qa";
   return {
     driver: createWhatsAppQaDriverMock(),
     driverPhoneE164: "+15550000001",
@@ -194,7 +194,7 @@ function buildWhatsAppQaConfigFixture(
 ) {
   return testing.buildWhatsAppQaConfig(base, {
     allowFrom: ["+15550000001"],
-    authDir: "/tmp/openclaw-whatsapp-qa-auth",
+    authDir: "/tmp/afora-whatsapp-qa-auth",
     dmPolicy: "allowlist",
     ownerAllowFrom: ["+15550000001"],
     sutAccountId: "sut",
@@ -381,7 +381,7 @@ function createWhatsAppAgentReactionFixture(params: {
     driver: createWhatsAppQaDriverMock({ waitForMessage: params.waitForMessage }),
     ...(params.groupJid
       ? { gatewayTarget: params.groupJid, target: params.groupJid, targetKind: "group" as const }
-      : { gatewayWorkspaceDir: "/tmp/openclaw-whatsapp-qa-gateway" }),
+      : { gatewayWorkspaceDir: "/tmp/afora-whatsapp-qa-gateway" }),
     recordedMessages,
     scenarioId,
     scenarioTitle: params.groupJid
@@ -516,7 +516,7 @@ describe("WhatsApp QA live runtime", () => {
   });
 
   it("unpacks auth archives into a caller-provided temp directory", async () => {
-    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-wa-qa-test-"));
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-wa-qa-test-"));
     try {
       runExecSpy.mockClear();
       const archiveBase64 = await createTgz({
@@ -550,7 +550,7 @@ describe("WhatsApp QA live runtime", () => {
   });
 
   it("can remove copied Signal sessions while preserving other auth archive state", async () => {
-    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-wa-qa-test-"));
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-wa-qa-test-"));
     try {
       const archiveBase64 = await createTgz({
         root: tempRoot,
@@ -776,10 +776,10 @@ describe("WhatsApp QA live runtime", () => {
           }
           return {};
         },
-        workspaceDir: "/tmp/openclaw-whatsapp-qa-gateway",
+        workspaceDir: "/tmp/afora-whatsapp-qa-gateway",
       }),
       gatewayTarget: groupJid,
-      gatewayWorkspaceDir: "/tmp/openclaw-whatsapp-qa-gateway",
+      gatewayWorkspaceDir: "/tmp/afora-whatsapp-qa-gateway",
       scenario: mediaScenario,
       target: groupJid,
       targetKind: "group",
@@ -850,9 +850,9 @@ describe("WhatsApp QA live runtime", () => {
           gatewayCalls.push({ method, payload: payload as Record<string, unknown> });
           return {};
         },
-        workspaceDir: "/tmp/openclaw-whatsapp-qa-gateway",
+        workspaceDir: "/tmp/afora-whatsapp-qa-gateway",
       }),
-      gatewayWorkspaceDir: "/tmp/openclaw-whatsapp-qa-gateway",
+      gatewayWorkspaceDir: "/tmp/afora-whatsapp-qa-gateway",
       scenario,
       sent: { messageId: "driver-message-1" },
     });
@@ -1063,7 +1063,7 @@ describe("WhatsApp QA live runtime", () => {
       expect(scenario.requiresGroupJid).toBe(true);
       expect(run.target).toBe("group");
       expect(run.configMode).toBe("open");
-      expect(run.input).toContain("openclawqa");
+      expect(run.input).toContain("aforaqa");
     }
   });
 
@@ -1247,7 +1247,7 @@ describe("WhatsApp QA live runtime", () => {
         const latestProbe = sentTextCalls.findLast(
           ({ text }) =>
             /\bWHATSAPP_QA_ACTIVATION_ALWAYS_[A-Z0-9]+\b/u.test(text) &&
-            !/\bopenclawqa\b/iu.test(text),
+            !/\baforaqa\b/iu.test(text),
         );
         if (latestProbe) {
           expect(
@@ -1293,7 +1293,7 @@ describe("WhatsApp QA live runtime", () => {
     const context = createWhatsAppScenarioContext({
       driver,
       gatewayTarget: groupJid,
-      gatewayWorkspaceDir: "/tmp/openclaw-whatsapp-qa-workspace",
+      gatewayWorkspaceDir: "/tmp/afora-whatsapp-qa-workspace",
       scenario,
       sent: { messageId: "activation-command-message" },
       target: groupJid,
@@ -1321,7 +1321,7 @@ describe("WhatsApp QA live runtime", () => {
       /\bWHATSAPP_QA_ACTIVATION_ALWAYS_[A-Z0-9]+\b/u.test(text),
     );
     expect(alwaysProbe?.to).toBe(groupJid);
-    expect(alwaysProbe?.text).not.toMatch(/\bopenclawqa\b/i);
+    expect(alwaysProbe?.text).not.toMatch(/\baforaqa\b/i);
     expect(alwaysModeReplyMatched).toBe(true);
     const restoreIndex = sentTextCalls.findIndex(
       ({ text, to }) => to === groupJid && text.trim() === "/activation mention",
@@ -1331,7 +1331,7 @@ describe("WhatsApp QA live runtime", () => {
       .slice(restoreIndex + 1)
       .find(({ text }) => /\bWHATSAPP_QA_ACTIVATION_QUIET_[A-Z0-9]+\b/u.test(text));
     expect(restoredQuietProbe?.to).toBe(groupJid);
-    expect(restoredQuietProbe?.text).not.toMatch(/\bopenclawqa\b/i);
+    expect(restoredQuietProbe?.text).not.toMatch(/\baforaqa\b/i);
     expect(restoredQuietObservationReads).toBeGreaterThan(0);
   });
 
@@ -1381,7 +1381,7 @@ describe("WhatsApp QA live runtime", () => {
         createWhatsAppScenarioContext({
           driver,
           gatewayTarget: groupJid,
-          gatewayWorkspaceDir: "/tmp/openclaw-whatsapp-qa-workspace",
+          gatewayWorkspaceDir: "/tmp/afora-whatsapp-qa-workspace",
           scenarioId: scenario.id,
           scenarioTitle: scenario.title,
           sent: { messageId: "activation-command-message" },
@@ -1400,7 +1400,7 @@ describe("WhatsApp QA live runtime", () => {
     );
 
     expect(run.target).toBe("group");
-    expect(run.input).toMatch(/\bopenclawqa\b/iu);
+    expect(run.input).toMatch(/\baforaqa\b/iu);
     expect(run.input).toMatch(/\bWHATSAPP_QA_REPLY_TO_BOT_SEED_[A-Z0-9]+\b/u);
     expect(run.afterReply).toEqual(expect.any(Function));
 
@@ -1465,7 +1465,7 @@ describe("WhatsApp QA live runtime", () => {
       createWhatsAppScenarioContext({
         driver,
         gatewayTarget: groupJid,
-        gatewayWorkspaceDir: "/tmp/openclaw-whatsapp-qa-workspace",
+        gatewayWorkspaceDir: "/tmp/afora-whatsapp-qa-workspace",
         scenario,
         sent: { messageId: "driver-seed-message" },
         target: groupJid,
@@ -1475,7 +1475,7 @@ describe("WhatsApp QA live runtime", () => {
     const quotedSend = sendTextCalls.find((call) => call.options?.quotedMessageKey);
     expect(quotedSend?.to).toBe(groupJid);
     expect(quotedSend?.text).toMatch(/\bWHATSAPP_QA_REPLY_TO_BOT_TRIGGER_[A-Z0-9]+\b/u);
-    expect(quotedSend?.text).not.toMatch(/\bopenclawqa\b/i);
+    expect(quotedSend?.text).not.toMatch(/\baforaqa\b/i);
     expect(quotedSend?.text).not.toMatch(/@\d/u);
     expect(quotedSend?.options?.quotedMessageKey).toMatchObject({
       fromMe: false,
@@ -1516,8 +1516,8 @@ describe("WhatsApp QA live runtime", () => {
         target: "group",
       },
     ]);
-    expect(runs[0]?.run.input).not.toContain("openclawqa");
-    expect(runs[1]?.run.input).toMatch(/^openclawqa\b/u);
+    expect(runs[0]?.run.input).not.toContain("aforaqa");
+    expect(runs[1]?.run.input).toMatch(/^aforaqa\b/u);
 
     for (const { run } of runs) {
       expect(() =>
@@ -1621,7 +1621,7 @@ describe("WhatsApp QA live runtime", () => {
     const recorded: unknown[] = [];
     const context = createWhatsAppScenarioContext({
       driver,
-      gatewayWorkspaceDir: "/tmp/openclaw-whatsapp-qa-gateway",
+      gatewayWorkspaceDir: "/tmp/afora-whatsapp-qa-gateway",
       recordedMessages: recorded,
       requestStartedAt: new Date("2026-06-05T01:00:00.000Z"),
       scenarioId: "whatsapp-canary",
@@ -1654,7 +1654,7 @@ describe("WhatsApp QA live runtime", () => {
     const context = createWhatsAppScenarioContext({
       driver,
       gatewayTarget: "120363000000000000@g.us",
-      gatewayWorkspaceDir: "/tmp/openclaw-whatsapp-qa-gateway",
+      gatewayWorkspaceDir: "/tmp/afora-whatsapp-qa-gateway",
       recordedMessages: recorded,
       requestStartedAt: new Date("2026-06-05T01:00:00.000Z"),
       scenarioId: "whatsapp-mention-gating",
@@ -1726,9 +1726,9 @@ describe("WhatsApp QA live runtime", () => {
     const context = createWhatsAppScenarioContext({
       driver,
       gateway: createWhatsAppScenarioGateway({
-        workspaceDir: "/tmp/openclaw-whatsapp-qa-gateway",
+        workspaceDir: "/tmp/afora-whatsapp-qa-gateway",
       }),
-      gatewayWorkspaceDir: "/tmp/openclaw-whatsapp-qa-gateway",
+      gatewayWorkspaceDir: "/tmp/afora-whatsapp-qa-gateway",
       requestStartedAt: new Date("2026-06-05T01:00:00.000Z"),
       scenarioId: "whatsapp-reply-delivery-shape",
       scenarioTitle: "WhatsApp gateway send chunks long replies",
@@ -1882,7 +1882,7 @@ describe("WhatsApp QA live runtime", () => {
 
   it("defines group audio gating as captionless audio driven by mock transcription sentinel", () => {
     const { run: scenarioRun } = requireWhatsAppMessageScenario("whatsapp-group-audio-gating");
-    const triggerSentinel = Buffer.from("OPENCLAW_QA_GROUP_AUDIO_TRIGGER", "utf8");
+    const triggerSentinel = Buffer.from("AFORA_QA_GROUP_AUDIO_TRIGGER", "utf8");
 
     expect(scenarioRun.input).toBe("");
     expect(scenarioRun.matchText).toBe("WHATSAPP_QA_GROUP_AUDIO_TRANSCRIPT_OK");
@@ -2046,14 +2046,14 @@ describe("WhatsApp QA live runtime", () => {
   });
   it("uses automatic visible replies for WhatsApp group mention gating", () => {
     const { run: scenarioRun } = requireWhatsAppMessageScenario("whatsapp-mention-gating");
-    expect(scenarioRun.input).toContain("openclawqa reply with only this exact marker");
+    expect(scenarioRun.input).toContain("aforaqa reply with only this exact marker");
     expect(scenarioRun.input).not.toContain("visible reply tool check");
 
     const cfg = buildWhatsAppQaConfigFixture({
       groupJid: "120363000000000000@g.us",
     });
     expect(cfg.messages?.groupChat?.visibleReplies).toBe("automatic");
-    expect(cfg.messages?.groupChat?.mentionPatterns).toContain("\\bopenclawqa\\b");
+    expect(cfg.messages?.groupChat?.mentionPatterns).toContain("\\baforaqa\\b");
   });
   it("classifies WhatsApp driver connection closures as retryable", () => {
     expect(testing.isTransientWhatsAppQaDriverError(new Error("Connection Closed"))).toBe(true);

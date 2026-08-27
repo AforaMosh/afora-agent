@@ -10,29 +10,29 @@ describe("resolveMemoryHostAgentWorkspaceDir", () => {
     expect(
       resolveMemoryHostAgentWorkspaceDir({}, "main", {
         HOME: "/home/peter",
-        OPENCLAW_PROFILE: "work",
-        OPENCLAW_STATE_DIR: "/home/peter/.openclaw-work",
+        AFORA_PROFILE: "work",
+        AFORA_STATE_DIR: "/home/peter/.afora-work",
       }),
-    ).toBe("/home/peter/.openclaw-work/workspace");
+    ).toBe("/home/peter/.afora-work/workspace");
   });
 
   it("keeps the default agent workspace inside an overridden state directory", () => {
     expect(
       resolveMemoryHostAgentWorkspaceDir({}, "main", {
         HOME: "/home/peter",
-        OPENCLAW_STATE_DIR: "/srv/openclaw-scratch",
+        AFORA_STATE_DIR: "/srv/afora-scratch",
       }),
-    ).toBe("/srv/openclaw-scratch/workspace");
+    ).toBe("/srv/afora-scratch/workspace");
   });
 
   it("prefers an explicit workspace override to the state directory", () => {
     expect(
       resolveMemoryHostAgentWorkspaceDir({}, "main", {
         HOME: "/home/peter",
-        OPENCLAW_STATE_DIR: "/srv/openclaw-scratch",
-        OPENCLAW_WORKSPACE_DIR: "/srv/openclaw-workspace",
+        AFORA_STATE_DIR: "/srv/afora-scratch",
+        AFORA_WORKSPACE_DIR: "/srv/afora-workspace",
       }),
-    ).toBe("/srv/openclaw-workspace");
+    ).toBe("/srv/afora-workspace");
   });
 });
 

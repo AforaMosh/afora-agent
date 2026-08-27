@@ -30,7 +30,7 @@ scenario:
     - src/auto-reply/reply/restart-recovery-claim.ts
   execution:
     kind: flow
-    runtime: openclaw
+    runtime: afora
     summary: Force a memory-flush child before a synthetic channel turn, then verify parent lifecycle and delivery.
     channel: qa-channel
     config:

@@ -1,6 +1,6 @@
 /** Process-wide registry for ACP runtime backends contributed by plugins. */
-import type { AcpRuntime } from "@openclaw/acp-core/runtime/types";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import type { AcpRuntime } from "@afora/acp-core/runtime/types";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { resolveGlobalSingleton } from "../../shared/global-singleton.js";
 import { AcpRuntimeError } from "./errors.js";
 
@@ -15,7 +15,7 @@ type AcpRuntimeRegistryGlobalState = {
   backendsById: Map<string, AcpRuntimeBackend>;
 };
 
-const ACP_RUNTIME_REGISTRY_STATE_KEY = Symbol.for("openclaw.acpRuntimeRegistryState");
+const ACP_RUNTIME_REGISTRY_STATE_KEY = Symbol.for("afora.acpRuntimeRegistryState");
 
 function resolveAcpRuntimeRegistryGlobalState(): AcpRuntimeRegistryGlobalState {
   const processStore = process as NodeJS.Process & Record<PropertyKey, unknown>;

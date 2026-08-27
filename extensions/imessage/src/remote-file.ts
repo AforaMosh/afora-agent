@@ -1,14 +1,14 @@
 // Stages gateway-local outbound files into a private directory on the Messages Mac.
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { normalizeScpRemoteHost } from "openclaw/plugin-sdk/host-runtime";
+import { normalizeScpRemoteHost } from "afora-agent/plugin-sdk/host-runtime";
 import {
   type CommandOptions,
   runCommandWithTimeout,
   type SpawnResult,
-} from "openclaw/plugin-sdk/process-runtime";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
-import { sanitizeTempFileName } from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/process-runtime";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/runtime-env";
+import { sanitizeTempFileName } from "afora-agent/plugin-sdk/temp-path";
 
 const TOKEN_PATTERN = /^[a-f0-9]{32}$/u;
 const SSH_OPTIONS = [
@@ -87,7 +87,7 @@ export async function withIMessageRemoteFile<T>(params: {
   }
   const run = params.deps?.runCommand ?? runCommandWithTimeout;
   const token = requireToken(params.deps?.createToken ?? randomUUID);
-  const remoteDir = `/tmp/openclaw-imessage-${token}`;
+  const remoteDir = `/tmp/afora-imessage-${token}`;
   const remotePath = `${remoteDir}/${sanitizeTempFileName(path.basename(params.localPath))}`;
   const createScript = `set -eu
 umask 077

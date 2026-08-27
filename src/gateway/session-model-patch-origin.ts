@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { resolveSessionModelRef } from "../agents/session-model-ref.js";
 import type { SessionEntry } from "../config/sessions.js";
 import { createAgentPatchedSessionModelFallback } from "../config/sessions/session-model-fallback.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 const agentSessionModelPatch = new AsyncLocalStorage<boolean>();
 
@@ -15,7 +15,7 @@ export function isAgentSessionModelPatchOrigin(): boolean {
 }
 
 export function snapshotAgentModelFallback(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   entry: SessionEntry,
   agentId: string,
   now: number,

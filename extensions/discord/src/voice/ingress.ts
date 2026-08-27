@@ -1,9 +1,9 @@
 // Discord plugin module implements ingress behavior.
-import { agentCommandFromIngress } from "openclaw/plugin-sdk/agent-runtime";
-import type { DiscordAccountConfig, OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { resolveRealtimeBootstrapContextInstructions } from "openclaw/plugin-sdk/realtime-bootstrap-context";
-import { createSubsystemLogger, type RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { agentCommandFromIngress } from "afora-agent/plugin-sdk/agent-runtime";
+import type { DiscordAccountConfig, AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { resolveRealtimeBootstrapContextInstructions } from "afora-agent/plugin-sdk/realtime-bootstrap-context";
+import { createSubsystemLogger, type RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { formatMention } from "../mentions.js";
 import { normalizeDiscordSlug } from "../monitor/allow-list.js";
 import { buildDiscordGroupSystemPrompt } from "../monitor/inbound-context.js";
@@ -65,7 +65,7 @@ function summarizeAgentTurnPayloads(payloads: readonly unknown[]): string {
 export async function resolveDiscordVoiceIngressContext(params: {
   entry: VoiceSessionEntry;
   userId: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   discordConfig: DiscordAccountConfig;
   admissionAllowFrom?: string[];
   fetchGuildName: (guildId: string) => Promise<string | undefined>;
@@ -109,7 +109,7 @@ export async function runDiscordVoiceAgentTurn(params: {
   accountId: string;
   userId: string;
   message: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   discordConfig: DiscordAccountConfig;
   runtime: RuntimeEnv;
   context?: DiscordVoiceIngressContext;
@@ -169,7 +169,7 @@ export async function runDiscordVoiceAgentTurn(params: {
 
 export async function resolveDiscordVoiceRealtimeBootstrapContext(params: {
   entry: VoiceSessionEntry;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   discordConfig: DiscordAccountConfig;
 }): Promise<string | undefined> {
   const realtimeConfig = params.discordConfig.voice?.realtime;

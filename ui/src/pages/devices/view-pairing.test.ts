@@ -7,15 +7,15 @@ describe("device pairing dialog", () => {
   it.each([
     {
       access: "full" as const,
-      href: "https://docs.openclaw.ai/channels/pairing#pair-from-the-control-ui-recommended",
+      href: "https://docs.afora.ai/channels/pairing#pair-from-the-control-ui-recommended",
     },
     {
       access: "limited" as const,
-      href: "https://docs.openclaw.ai/channels/pairing#pair-from-the-control-ui-recommended",
+      href: "https://docs.afora.ai/channels/pairing#pair-from-the-control-ui-recommended",
     },
     {
       access: "node" as const,
-      href: "https://docs.openclaw.ai/gateway/pairing#one-paste-node-pairing",
+      href: "https://docs.afora.ai/gateway/pairing#one-paste-node-pairing",
     },
   ])("links $access setup help to the matching workflow", ({ access, href }) => {
     const container = document.createElement("div");
@@ -73,7 +73,7 @@ describe("device pairing dialog", () => {
 
     expect(container.querySelectorAll('input[name="device-pair-access"]')).toHaveLength(3);
     expect(container.querySelector(".device-pair-setup__command code")?.textContent).toBe(
-      'openclaw node run --pair "oc-pair://AbC_123"',
+      'afora node run --pair "oc-pair://AbC_123"',
     );
     expect(container.querySelector('[role="timer"]')?.textContent?.trim()).toBe(
       "This setup link expires in 1:00.",

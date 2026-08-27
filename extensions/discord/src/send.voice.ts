@@ -1,16 +1,16 @@
 // Discord plugin module implements send.voice behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { recordChannelActivity } from "openclaw/plugin-sdk/channel-activity-runtime";
+import { recordChannelActivity } from "afora-agent/plugin-sdk/channel-activity-runtime";
 import {
   buildOutboundMediaLoadOptions,
   extensionForMime,
   maxBytesForKind,
   unlinkIfExists,
-} from "openclaw/plugin-sdk/media-runtime";
-import { requireRuntimeConfig } from "openclaw/plugin-sdk/plugin-config-runtime";
-import { withTempWorkspace, resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
-import { loadWebMediaRaw } from "openclaw/plugin-sdk/web-media";
+} from "afora-agent/plugin-sdk/media-runtime";
+import { requireRuntimeConfig } from "afora-agent/plugin-sdk/plugin-config-runtime";
+import { withTempWorkspace, resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
+import { loadWebMediaRaw } from "afora-agent/plugin-sdk/web-media";
 import { resolveDiscordAccount } from "./accounts.js";
 import type { RequestClient } from "./internal/discord.js";
 import { parseAndResolveChannelRecipient } from "./recipient-resolution.js";
@@ -75,7 +75,7 @@ async function withMaterializedVoiceMessageInput<T>(
   const ext = extFromName || extFromMime || ".bin";
   return await withTempWorkspace(
     {
-      rootDir: resolvePreferredOpenClawTmpDir(),
+      rootDir: resolvePreferredAforaTmpDir(),
       prefix: "voice-src-",
     },
     async (workspace) => await run(await workspace.write(`input${ext}`, media.buffer)),

@@ -2,7 +2,7 @@
 import { spawn } from "node:child_process";
 import { StringDecoder } from "node:string_decoder";
 import type { Component, OverlayHandle, SelectItem } from "@earendil-works/pi-tui";
-import { sliceUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { sliceUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { tryProcessCwd } from "../infra/safe-cwd.js";
 import { createSearchableSelectList } from "./components/selectors.js";
 import { formatTuiErrorMessage } from "./tui-formatters.js";
@@ -126,7 +126,7 @@ export function createLocalShellRunner(deps: LocalShellDeps) {
         // and is gated behind an explicit in-session approval prompt.
         shell: true,
         cwd,
-        env: { ...env, OPENCLAW_SHELL: "tui-local" },
+        env: { ...env, AFORA_SHELL: "tui-local" },
       });
 
       let stdout = "";

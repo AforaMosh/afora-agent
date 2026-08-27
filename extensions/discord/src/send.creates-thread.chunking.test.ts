@@ -1,5 +1,5 @@
 import { ChannelType, Routes } from "discord-api-types/v10";
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { hasDiscordMessageCreateAmbiguity } from "./retry.js";
 import {

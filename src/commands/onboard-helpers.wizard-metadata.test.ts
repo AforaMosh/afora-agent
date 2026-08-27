@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { tryResolveLegacyCompatibilityAgentId } from "../config/legacy.default-agent-owner.js";
 import { migratePersistedImplicitMainRoster } from "../config/legacy.roster.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { applyWizardMetadata } from "./onboard-helpers.js";
 
 describe("applyWizardMetadata", () => {
@@ -10,7 +10,7 @@ describe("applyWizardMetadata", () => {
       agents: {
         list: [{ id: "main", default: true }, { id: "ops" }],
       },
-    }).config as OpenClawConfig;
+    }).config as AforaConfig;
     expect(tryResolveLegacyCompatibilityAgentId(cfg)).toBe("main");
 
     const result = applyWizardMetadata(cfg, { command: "doctor", mode: "local" });

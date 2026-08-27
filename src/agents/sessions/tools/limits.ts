@@ -4,7 +4,7 @@
  * Tail storage is byte-bounded but decoded as UTF-8, so truncation avoids
  * splitting multi-byte characters in display output.
  */
-import { resolveIntegerOption } from "@openclaw/normalization-core/number-coercion";
+import { resolveIntegerOption } from "@afora/normalization-core/number-coercion";
 import { truncateUtf8Suffix } from "../../../utils/utf8-truncate.js";
 
 /** Normalizes optional positive numeric limits to a finite integer. */

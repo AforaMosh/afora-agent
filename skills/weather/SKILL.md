@@ -4,7 +4,7 @@ description: "Current weather and forecasts with web_fetch, falling back to wttr
 homepage: https://wttr.in/:help
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "emoji": "☔",
         "install":

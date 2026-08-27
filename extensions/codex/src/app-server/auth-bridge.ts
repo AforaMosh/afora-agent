@@ -6,7 +6,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
-import { AgentHarnessPreflightError } from "openclaw/plugin-sdk/agent-harness-runtime";
+import { AgentHarnessPreflightError } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   ensureAuthProfileStore,
   findPersistedAuthProfileCredential,
@@ -20,9 +20,9 @@ import {
   type AuthProfileCredential,
   type AuthProfileStore,
   type OAuthCredential,
-} from "openclaw/plugin-sdk/agent-runtime";
-import { hasUsableOAuthCredential } from "openclaw/plugin-sdk/provider-auth";
-import { readSecretFile } from "openclaw/plugin-sdk/secret-file";
+} from "afora-agent/plugin-sdk/agent-runtime";
+import { hasUsableOAuthCredential } from "afora-agent/plugin-sdk/provider-auth";
+import { readSecretFile } from "afora-agent/plugin-sdk/secret-file";
 import {
   resolveCodexAppServerHomeDir,
   resolveCodexAppServerLocalHomeDir,
@@ -169,7 +169,7 @@ function resolveUnimportedAgentCodexAuthMessage(params: {
     return undefined;
   }
   const targetAgentId = params.agentId?.trim() || "<agent-id>";
-  return `A Codex auth file exists at ${authPath}, but agent-scoped Codex runs use OpenClaw's auth store and do not read that file. Preview only that credential import with \`openclaw migrate plan codex --from <codex-home> --agent ${targetAgentId} --include-secrets --item auth:openai\`, then run \`openclaw migrate apply codex --from <codex-home> --agent ${targetAgentId} --include-secrets --item auth:openai --yes\`. If the plan finds no credentials, remove the stale auth file.`;
+  return `A Codex auth file exists at ${authPath}, but agent-scoped Codex runs use Afora's auth store and do not read that file. Preview only that credential import with \`afora migrate plan codex --from <codex-home> --agent ${targetAgentId} --include-secrets --item auth:openai\`, then run \`afora migrate apply codex --from <codex-home> --agent ${targetAgentId} --include-secrets --item auth:openai --yes\`. If the plan finds no credentials, remove the stale auth file.`;
 }
 
 export function resolveCodexAppServerAuthProfileId(params: {
@@ -331,7 +331,7 @@ export async function resolveCodexAppServerPreparedAuthHandoff(params: {
 }) {
   // A user-home app-server owns the operator's native Codex account. Codex persists
   // api-key logins into CODEX_HOME/auth.json and swaps the live account for external
-  // token logins, so a prepared OpenClaw handoff here would rewrite the account that
+  // token logins, so a prepared Afora handoff here would rewrite the account that
   // Codex CLI and Desktop share. Native homes are verified, never logged into.
   const usesNativeHome = params.homeScope === "user";
   if (params.requirePreparedAuth && usesNativeHome) {
@@ -456,7 +456,7 @@ function resolveCodexAppServerEnvApiKeyCacheKey(params: {
     return undefined;
   }
   const hash = createHash("sha256");
-  hash.update("openclaw:codex:app-server-env-api-key:v1");
+  hash.update("afora:codex:app-server-env-api-key:v1");
   hash.update("\0");
   hash.update(apiKey.key);
   hash.update("\0");
@@ -488,7 +488,7 @@ export function resolveCodexAppServerPreparedApiKeyCacheKey(
 
 function fingerprintApiKeyAuthProfileCacheKey(apiKey: string): string {
   const hash = createHash("sha256");
-  hash.update("openclaw:codex:app-server-auth-profile-api-key:v1");
+  hash.update("afora:codex:app-server-auth-profile-api-key:v1");
   hash.update("\0");
   hash.update(apiKey);
   return `api_key:sha256:${hash.digest("hex")}`;
@@ -496,7 +496,7 @@ function fingerprintApiKeyAuthProfileCacheKey(apiKey: string): string {
 
 function fingerprintTokenAuthProfileCacheKey(accessToken: string): string {
   const hash = createHash("sha256");
-  hash.update("openclaw:codex:app-server-auth-profile-token:v1");
+  hash.update("afora:codex:app-server-auth-profile-token:v1");
   hash.update("\0");
   hash.update(accessToken);
   return `token:sha256:${hash.digest("hex")}`;
@@ -504,7 +504,7 @@ function fingerprintTokenAuthProfileCacheKey(accessToken: string): string {
 
 function fingerprintCodexCliAuthFileApiKeyCacheKey(apiKey: string): string {
   const hash = createHash("sha256");
-  hash.update("openclaw:codex:app-server-cli-auth-json-api-key:v1");
+  hash.update("afora:codex:app-server-cli-auth-json-api-key:v1");
   hash.update("\0");
   hash.update(apiKey);
   return `CODEX_AUTH_JSON:sha256:${hash.digest("hex")}`;
@@ -672,7 +672,7 @@ async function assertNativeCodexAccountMatchesRoute(
   }
   if (accountType === "chatgpt") {
     throw createCodexAppServerAuthError(
-      'Codex Platform route requires an API-key account, but the native Codex home is signed in with a ChatGPT subscription. Sign that home in with `codex login --with-api-key`, or set appServer.homeScope="agent" so OpenClaw can inject its own key.',
+      'Codex Platform route requires an API-key account, but the native Codex home is signed in with a ChatGPT subscription. Sign that home in with `codex login --with-api-key`, or set appServer.homeScope="agent" so Afora can inject its own key.',
     );
   }
 }
@@ -704,7 +704,7 @@ async function resolveCodexAppServerAuthProfileLoginParams(params: {
   }
   if (profileId && profile && !isCodexAppServerAuthProfileCredential(profile)) {
     throw new CodexAppServerAuthProfileUnavailableError(
-      `Codex app-server auth profile "${profileId}" must use the canonical OpenAI auth provider; run "openclaw doctor --fix" to migrate legacy provider IDs.`,
+      `Codex app-server auth profile "${profileId}" must use the canonical OpenAI auth provider; run "afora doctor --fix" to migrate legacy provider IDs.`,
     );
   }
   return await resolveCodexAppServerAuthProfileLoginParamsInternal({
@@ -760,7 +760,7 @@ async function resolveCodexAppServerAuthProfileLoginParamsInternal(params: {
   }
   if (!isCodexAppServerAuthProfileCredential(credential)) {
     throw new Error(
-      `Codex app-server auth profile "${profileId}" must use the canonical OpenAI auth provider; run "openclaw doctor --fix" to migrate legacy provider IDs.`,
+      `Codex app-server auth profile "${profileId}" must use the canonical OpenAI auth provider; run "afora doctor --fix" to migrate legacy provider IDs.`,
     );
   }
   const loginParams = await resolveLoginParamsForCredential(profileId, credential, {

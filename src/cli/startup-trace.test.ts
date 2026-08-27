@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createGatewayDispatchStartupTrace } from "./startup-trace.js";
 
 function readTimelineEvents(timelinePath: string): Record<string, unknown>[] {
@@ -19,13 +19,13 @@ describe("CLI startup trace", () => {
   });
 
   it("records entry marks and measured spans in the diagnostics timeline", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-startup-trace-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-startup-trace-"));
     const timelinePath = path.join(dir, "timeline.jsonl");
-    vi.stubEnv("OPENCLAW_DIAGNOSTICS", "timeline");
-    vi.stubEnv("OPENCLAW_DIAGNOSTICS_TIMELINE_PATH", timelinePath);
+    vi.stubEnv("AFORA_DIAGNOSTICS", "timeline");
+    vi.stubEnv("AFORA_DIAGNOSTICS_TIMELINE_PATH", timelinePath);
 
     const trace = createGatewayDispatchStartupTrace(
-      ["node", "openclaw", "agent", "--local"],
+      ["node", "afora", "agent", "--local"],
       "entry",
     );
     trace.mark("bootstrap");
@@ -69,13 +69,13 @@ describe("CLI startup trace", () => {
   });
 
   it("flushes buffered startup phases when config enables the timeline", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-startup-trace-config-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-startup-trace-config-"));
     const timelinePath = path.join(dir, "timeline.jsonl");
-    vi.stubEnv("OPENCLAW_DIAGNOSTICS", "");
-    vi.stubEnv("OPENCLAW_DIAGNOSTICS_TIMELINE_PATH", timelinePath);
+    vi.stubEnv("AFORA_DIAGNOSTICS", "");
+    vi.stubEnv("AFORA_DIAGNOSTICS_TIMELINE_PATH", timelinePath);
 
     const trace = createGatewayDispatchStartupTrace(
-      ["node", "openclaw", "agent", "--local"],
+      ["node", "afora", "agent", "--local"],
       "entry",
     );
     trace.mark("bootstrap");
@@ -86,7 +86,7 @@ describe("CLI startup trace", () => {
 
     await trace.configureDiagnosticsTimeline({
       diagnostics: { flags: ["timeline"] },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(readTimelineEvents(timelinePath)).toEqual(
       expect.arrayContaining([

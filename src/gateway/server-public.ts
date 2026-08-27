@@ -11,7 +11,7 @@ export type GatewayCloseOptions = {
 };
 
 export type GatewayServer = {
-  /** Process-local endpoint used by OpenClaw-managed Tailscale proxying. */
+  /** Process-local endpoint used by Afora-managed Tailscale proxying. */
   getTailscaleIngressEndpoint: () => GatewayTailscaleIngressEndpoint | undefined;
   close: (opts?: GatewayCloseOptions) => Promise<void>;
   /**
@@ -67,7 +67,7 @@ export type GatewayServerOptions = {
   startupStartedAt?: number;
   /**
    * Config snapshot already read by the CLI gateway preflight. Passing it avoids
-   * reparsing openclaw.json during server startup.
+   * reparsing afora.json during server startup.
    */
   startupConfigSnapshotRead?: import("../config/io.js").ReadConfigFileSnapshotWithPluginMetadataResult;
   /** Restart request override; direct servers fail closed on restart-required reloads. */

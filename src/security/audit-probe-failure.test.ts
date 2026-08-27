@@ -19,7 +19,7 @@ describe("security audit deep probe failure", () => {
     const querySecret = "audit-query-sentinel";
     const url = `wss://${user}:${password}@gateway.example.test/socket?client_secret=${querySecret}`;
 
-    const report = await withEnvAsync({ OPENCLAW_GATEWAY_URL: undefined }, async () =>
+    const report = await withEnvAsync({ AFORA_GATEWAY_URL: undefined }, async () =>
       runSecurityAuditCore({
         config: { gateway: { mode: "remote", remote: { url } } },
         sourceConfig: { gateway: { mode: "remote", remote: { url } } },

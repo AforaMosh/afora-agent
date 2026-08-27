@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-  validateOpenClawPackageInstallCompatibility,
+  validateAforaPackageInstallCompatibility,
   type PluginInstallRuntime,
 } from "./install-shared.js";
 import { PLUGIN_INSTALL_ERROR_CODE } from "./install-types.js";
-import type { OpenClawPackageManifest } from "./manifest.js";
+import type { AforaPackageManifest } from "./manifest.js";
 import { checkMinHostVersion } from "./min-host-version.js";
 
 function createCompatibilityRuntime(
@@ -18,7 +18,7 @@ function createCompatibilityRuntime(
 
 describe("plugin package install compatibility", () => {
   it("accepts independent package compatibility floors without requiring package-host equality", () => {
-    const result = validateOpenClawPackageInstallCompatibility({
+    const result = validateAforaPackageInstallCompatibility({
       runtime: createCompatibilityRuntime("2026.5.21"),
       pluginId: "example-plugin",
       packageMetadata: {
@@ -31,7 +31,7 @@ describe("plugin package install compatibility", () => {
   });
 
   it("rejects a package whose minimum host floor exceeds the current host", () => {
-    const result = validateOpenClawPackageInstallCompatibility({
+    const result = validateAforaPackageInstallCompatibility({
       runtime: createCompatibilityRuntime("2026.5.21"),
       pluginId: "example-plugin",
       packageMetadata: { install: { minHostVersion: ">=2026.5.22" } },
@@ -41,11 +41,11 @@ describe("plugin package install compatibility", () => {
       ok: false,
       code: PLUGIN_INSTALL_ERROR_CODE.INCOMPATIBLE_HOST_VERSION,
     });
-    expect(result?.error).toContain("requires OpenClaw >=2026.5.22");
+    expect(result?.error).toContain("requires Afora >=2026.5.22");
   });
 
   it("rejects a package whose plugin API range excludes the current runtime", () => {
-    const result = validateOpenClawPackageInstallCompatibility({
+    const result = validateAforaPackageInstallCompatibility({
       runtime: createCompatibilityRuntime("2026.5.21"),
       pluginId: "example-plugin",
       packageMetadata: { compat: { pluginApi: ">=2026.5.22" } },
@@ -68,10 +68,10 @@ describe("plugin package install compatibility", () => {
       code: PLUGIN_INSTALL_ERROR_CODE.INVALID_PLUGIN_API,
     },
   ])("rejects malformed compatibility metadata with $code", ({ packageMetadata, code }) => {
-    const result = validateOpenClawPackageInstallCompatibility({
+    const result = validateAforaPackageInstallCompatibility({
       runtime: createCompatibilityRuntime("2026.5.21"),
       pluginId: "example-plugin",
-      packageMetadata: packageMetadata as OpenClawPackageManifest,
+      packageMetadata: packageMetadata as AforaPackageManifest,
     });
 
     expect(result).toMatchObject({ ok: false, code });

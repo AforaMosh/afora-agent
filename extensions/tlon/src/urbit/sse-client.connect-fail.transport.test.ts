@@ -1,7 +1,7 @@
 // Real-transport proof: failed SSE connects cancel unread response bodies.
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import type { LookupFn } from "openclaw/plugin-sdk/ssrf-runtime";
+import type { LookupFn } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { describe, expect, it } from "vitest";
 import { UrbitSSEClient } from "./sse-client.js";
 

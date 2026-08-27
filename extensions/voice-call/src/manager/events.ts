@@ -1,9 +1,9 @@
 // Voice Call plugin module implements events behavior.
 import crypto from "node:crypto";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { redactIdentifier } from "openclaw/plugin-sdk/logging-core";
-import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { redactIdentifier } from "afora-agent/plugin-sdk/logging-core";
+import { normalizeAgentId } from "afora-agent/plugin-sdk/routing";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/runtime-env";
 import { isAllowlistedCaller, normalizePhoneNumber } from "../allowlist.js";
 import { resolveVoiceCallEffectiveConfig, resolveVoiceCallSessionKey } from "../config.js";
 import type { CallRecord, NormalizedEvent } from "../types.js";

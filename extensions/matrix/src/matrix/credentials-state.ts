@@ -1,7 +1,7 @@
 // Pure Matrix credential record shapes and normalizers, split from
 // credentials-read so the doctor contract closure never loads the sync
 // plugin-state store (which pulls the heavy state-db graph via runtime-doctor).
-import { normalizeAccountId } from "openclaw/plugin-sdk/account-id";
+import { normalizeAccountId } from "afora-agent/plugin-sdk/account-id";
 
 export type MatrixStoredCredentials = {
   homeserver: string;

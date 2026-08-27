@@ -74,15 +74,15 @@ async function withIsolatedCompletionState(
   run: () => Promise<void>,
   env: Record<string, string | undefined> = {},
 ): Promise<void> {
-  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-completion-state-"));
-  const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-completion-home-"));
+  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-completion-state-"));
+  const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-completion-home-"));
 
   try {
     await withEnvAsync(
       {
         HOME: homeDir,
         USERPROFILE: homeDir,
-        OPENCLAW_STATE_DIR: stateDir,
+        AFORA_STATE_DIR: stateDir,
         XDG_CONFIG_HOME: undefined,
         ZDOTDIR: undefined,
         ...env,
@@ -97,7 +97,7 @@ async function withIsolatedCompletionState(
 
 async function writeCompletionCacheForShell(shell: CompletionShell): Promise<string> {
   const { getCompletionScript, registerCompletionCli } = await import("./completion-cli.js");
-  const program = new Command().name("openclaw");
+  const program = new Command().name("afora");
   registerCompletionCli(program);
   await program.parseAsync(["completion", "--shell", shell, "--write-state"], {
     from: "user",
@@ -150,7 +150,7 @@ describe("completion-cli write-state", () => {
     "publishes %s completion atomically without changing existing file or directory modes",
     async (shell) => {
       await withIsolatedCompletionState(async () => {
-        const cachePath = resolveCompletionCachePath(shell, "openclaw");
+        const cachePath = resolveCompletionCachePath(shell, "afora");
         const cacheDir = path.dirname(cachePath);
         await fs.mkdir(cacheDir, { recursive: true });
         await fs.writeFile(cachePath, "# previous completion\n", "utf8");
@@ -165,7 +165,7 @@ describe("completion-cli write-state", () => {
         expect(outputFileMocks.publishOutputFileAtomically).toHaveBeenCalledWith(
           expect.objectContaining({
             filePath: cachePath,
-            tempPrefix: ".openclaw-completion-cache",
+            tempPrefix: ".afora-completion-cache",
           }),
         );
         expect(await fs.readdir(cacheDir)).toEqual([path.basename(cachePath)]);
@@ -184,7 +184,7 @@ describe("completion-cli write-state", () => {
         "./output-file.runtime.js",
       );
       await withIsolatedCompletionState(async () => {
-        const cachePath = resolveCompletionCachePath(shell, "openclaw");
+        const cachePath = resolveCompletionCachePath(shell, "afora");
         const cacheDir = path.dirname(cachePath);
         await fs.mkdir(cacheDir, { recursive: true });
         await fs.writeFile(cachePath, "# previous completion\n", "utf8");
@@ -221,7 +221,7 @@ describe("completion-cli write-state", () => {
     "replaces a completion cache symlink without overwriting its target",
     async () => {
       await withIsolatedCompletionState(async () => {
-        const cachePath = resolveCompletionCachePath("zsh", "openclaw");
+        const cachePath = resolveCompletionCachePath("zsh", "afora");
         const cacheDir = path.dirname(cachePath);
         const protectedPath = path.join(path.dirname(cacheDir), "protected-script");
         await fs.mkdir(cacheDir, { recursive: true });
@@ -245,7 +245,7 @@ describe("completion-cli write-state", () => {
         "./output-file.runtime.js",
       );
       await withIsolatedCompletionState(async () => {
-        const cachePath = resolveCompletionCachePath("zsh", "openclaw");
+        const cachePath = resolveCompletionCachePath("zsh", "afora");
         const cacheDir = path.dirname(cachePath);
         const protectedPath = path.join(path.dirname(cacheDir), "protected-script");
         await fs.mkdir(cacheDir, { recursive: true });
@@ -274,7 +274,7 @@ describe("completion-cli write-state", () => {
     "rejects a symlinked completion cache directory without writing into its target",
     async () => {
       await withIsolatedCompletionState(async () => {
-        const cachePath = resolveCompletionCachePath("zsh", "openclaw");
+        const cachePath = resolveCompletionCachePath("zsh", "afora");
         const cacheDir = path.dirname(cachePath);
         const protectedDir = path.join(path.dirname(cacheDir), "protected-directory");
         await fs.mkdir(protectedDir, { recursive: true });
@@ -296,11 +296,11 @@ describe("completion-cli write-state", () => {
       const { registerCompletionCli } = await import("./completion-cli.js");
 
       await withIsolatedCompletionState(async () => {
-        const cachePath = resolveCompletionCachePath(shell, "openclaw");
+        const cachePath = resolveCompletionCachePath(shell, "afora");
         await fs.mkdir(path.dirname(cachePath), { recursive: true });
         await fs.writeFile(cachePath, "# cached completion\n", "utf8");
 
-        const program = new Command().name("openclaw");
+        const program = new Command().name("afora");
         registerCompletionCli(program);
         await program.parseAsync(["completion", "--shell", shell, "--install", "--yes"], {
           from: "user",
@@ -321,9 +321,9 @@ describe("completion-cli write-state", () => {
       const { registerCompletionCli } = await import("./completion-cli.js");
 
       await withIsolatedCompletionState(async () => {
-        const cachePath = resolveCompletionCachePath(shell, "openclaw");
+        const cachePath = resolveCompletionCachePath(shell, "afora");
         const profilePath = resolveCompletionProfilePath(shell);
-        const program = new Command().name("openclaw");
+        const program = new Command().name("afora");
         registerCompletionCli(program);
 
         await expect(
@@ -331,7 +331,7 @@ describe("completion-cli write-state", () => {
             from: "user",
           }),
         ).rejects.toThrow(
-          `Completion cache not found at ${cachePath}. Run \`openclaw completion --write-state\` first.`,
+          `Completion cache not found at ${cachePath}. Run \`afora completion --write-state\` first.`,
         );
 
         await expect(fs.access(profilePath)).rejects.toThrow();
@@ -345,11 +345,11 @@ describe("completion-cli write-state", () => {
 
     await withIsolatedCompletionState(
       async () => {
-        const cachePath = resolveCompletionCachePath("fish", "openclaw");
+        const cachePath = resolveCompletionCachePath("fish", "afora");
         await fs.mkdir(path.dirname(cachePath), { recursive: true });
         await fs.writeFile(cachePath, "# fish completion\n", "utf8");
 
-        const program = new Command().name("openclaw");
+        const program = new Command().name("afora");
         registerCompletionCli(program);
         await program.parseAsync(["completion", "--install", "--yes"], { from: "user" });
 
@@ -366,15 +366,15 @@ describe("completion-cli write-state", () => {
     const { registerCompletionCli } = await import("./completion-cli.js");
 
     await withIsolatedCompletionState(async () => {
-      const program = new Command().name("openclaw");
+      const program = new Command().name("afora");
       registerCompletionCli(program);
       await program.parseAsync(
         ["completion", "--shell", "zsh", "--write-state", "--install", "--yes"],
         { from: "user" },
       );
 
-      const cachePath = resolveCompletionCachePath("zsh", "openclaw");
-      await expect(fs.readFile(cachePath, "utf8")).resolves.toContain("#compdef openclaw");
+      const cachePath = resolveCompletionCachePath("zsh", "afora");
+      await expect(fs.readFile(cachePath, "utf8")).resolves.toContain("#compdef afora");
       await expect(fs.readFile(resolveCompletionProfilePath("zsh"), "utf8")).resolves.toContain(
         cachePath,
       );
@@ -392,23 +392,23 @@ describe("completion-cli write-state", () => {
 
   it("keeps completion cache generation alive when a subcli fails to register", async () => {
     const { registerCompletionCli } = await import("./completion-cli.js");
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-completion-state-"));
-    const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-completion-home-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-completion-state-"));
+    const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-completion-home-"));
 
     try {
-      await withEnvAsync({ HOME: homeDir, OPENCLAW_STATE_DIR: stateDir }, async () => {
+      await withEnvAsync({ HOME: homeDir, AFORA_STATE_DIR: stateDir }, async () => {
         const program = new Command();
-        program.name("openclaw");
+        program.name("afora");
         registerCompletionCli(program);
 
         await program.parseAsync(["completion", "--write-state"], { from: "user" });
 
         const cacheDir = path.join(stateDir, "completions");
         expect((await fs.readdir(cacheDir)).toSorted()).toEqual([
-          "openclaw.bash",
-          "openclaw.fish",
-          "openclaw.ps1",
-          "openclaw.zsh",
+          "afora.bash",
+          "afora.fish",
+          "afora.ps1",
+          "afora.zsh",
         ]);
         expect(registerSubCliByNameMock.mock.calls).toEqual([
           [program, "qa", process.argv, { purpose: "completion" }],
@@ -431,14 +431,14 @@ describe("completion-cli write-state", () => {
       import("./completion-cli.js"),
       import("../logging.js"),
     ]);
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-completion-state-json-"));
-    const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-completion-home-json-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-completion-state-json-"));
+    const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-completion-home-json-"));
 
     try {
       logging.setLoggerOverride({ level: "silent", consoleLevel: "info", consoleStyle: "json" });
-      await withEnvAsync({ HOME: homeDir, OPENCLAW_STATE_DIR: stateDir }, async () => {
+      await withEnvAsync({ HOME: homeDir, AFORA_STATE_DIR: stateDir }, async () => {
         const program = new Command();
-        program.name("openclaw");
+        program.name("afora");
         registerCompletionCli(program);
 
         await program.parseAsync(["completion", "--write-state"], { from: "user" });
@@ -461,19 +461,19 @@ describe("completion-cli write-state", () => {
       import("./completion-runtime.js"),
       import("./completion-cli.js"),
     ]);
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-completion-state-"));
-    const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-completion-home-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-completion-state-"));
+    const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-completion-home-"));
 
     try {
       await withEnvAsync(
         {
           HOME: homeDir,
-          OPENCLAW_STATE_DIR: stateDir,
+          AFORA_STATE_DIR: stateDir,
           [COMPLETION_SKIP_PLUGIN_COMMANDS_ENV]: "1",
         },
         async () => {
           const program = new Command();
-          program.name("openclaw");
+          program.name("afora");
           registerCompletionCli(program);
 
           await program.parseAsync(["completion", "--write-state"], { from: "user" });
@@ -483,10 +483,10 @@ describe("completion-cli write-state", () => {
           ]);
           expect(registerPluginCliCommandsFromValidatedConfigMock).not.toHaveBeenCalled();
           expect((await fs.readdir(path.join(stateDir, "completions"))).toSorted()).toEqual([
-            "openclaw.bash",
-            "openclaw.fish",
-            "openclaw.ps1",
-            "openclaw.zsh",
+            "afora.bash",
+            "afora.fish",
+            "afora.ps1",
+            "afora.zsh",
           ]);
         },
       );

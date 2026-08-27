@@ -1,4 +1,4 @@
-import { MeetingPlatformAdapter } from "openclaw/plugin-sdk/meeting-runtime";
+import { MeetingPlatformAdapter } from "afora-agent/plugin-sdk/meeting-runtime";
 
 export const TEAMS_MEETINGS_CLI_METADATA = MeetingPlatformAdapter.createCliMetadata({
   commandName: "teamsmeetings",

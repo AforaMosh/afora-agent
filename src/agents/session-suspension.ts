@@ -7,10 +7,10 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import {
   resolveExpiresAtMsFromDurationMs,
   resolveTimerTimeoutMs,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import { patchSessionEntryCore } from "../config/sessions/session-accessor.js";
 import type { QuotaSuspension } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 import { resolveRegisteredAgentIdForDir } from "./agent-dir-registry.js";
@@ -40,7 +40,7 @@ type SessionSuspensionRuntimeState = {
  * Keep timer shutdown state process-global so bundled gateway chunks cannot
  * leave one module copy scheduling lane resumes after another copy cleaned up.
  */
-const SESSION_SUSPENSION_STATE_KEY = Symbol.for("openclaw.sessionSuspensionRuntimeState");
+const SESSION_SUSPENSION_STATE_KEY = Symbol.for("afora.sessionSuspensionRuntimeState");
 
 function getSessionSuspensionState(): SessionSuspensionRuntimeState {
   const state = resolveGlobalSingleton<SessionSuspensionRuntimeState>(
@@ -87,7 +87,7 @@ type SessionSuspensionTarget =
   | { mode: "defer"; defer: (params: SessionSuspensionParams) => void }
   | { mode: "suspend" };
 export type SessionSuspensionParams = {
-  cfg: OpenClawConfig | undefined;
+  cfg: AforaConfig | undefined;
   agentId?: string;
   agentDir?: string;
   sessionId: string;
@@ -291,7 +291,7 @@ function isSessionSuspensionWriteCleanupActiveForTest(): boolean {
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.sessionSuspensionTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.sessionSuspensionTestApi")] = {
     isSessionSuspensionWriteCleanupActiveForTest,
     resetSessionSuspensionStateForTest,
   };

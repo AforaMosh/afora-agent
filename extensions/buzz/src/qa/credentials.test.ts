@@ -89,7 +89,7 @@ describe("Buzz QA credentials", () => {
   });
 
   it("reads a repo-relative private JSON credential file", async () => {
-    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-buzz-qa-"));
+    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-buzz-qa-"));
     tempDirs.push(repoRoot);
     const filePath = path.join("private", "buzz.json");
     await fs.mkdir(path.join(repoRoot, "private"));
@@ -112,7 +112,7 @@ describe("Buzz QA credentials", () => {
   });
 
   it("does not echo malformed file contents", async () => {
-    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-buzz-qa-"));
+    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-buzz-qa-"));
     tempDirs.push(repoRoot);
     const filePath = "buzz.json";
     const secret = "private-key-material-must-not-leak";

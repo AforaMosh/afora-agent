@@ -380,7 +380,7 @@ describe("runReplyAgent runtime config", () => {
   });
 
   it("rotates, rebinds, and optionally notifies when memory flush is exhausted", async () => {
-    await withTestDir({ prefix: "openclaw-direct-runtime-" }, async (tempDir) => {
+    await withTestDir({ prefix: "afora-direct-runtime-" }, async (tempDir) => {
       const { replyParams, followupRun } = createDirectRuntimeReplyParams({
         shouldFollowup: false,
         isActive: false,

@@ -1,5 +1,5 @@
-// Discord plugin entrypoint registers its OpenClaw integration.
-import { defineBundledChannelEntry } from "openclaw/plugin-sdk/channel-entry-contract";
+// Discord plugin entrypoint registers its Afora integration.
+import { defineBundledChannelEntry } from "afora-agent/plugin-sdk/channel-entry-contract";
 import { registerDiscordActivities } from "./activities-api.js";
 import { registerDiscordSubagentHooks } from "./subagent-hooks-api.js";
 import { registerDiscordTranscriptSourceProvider } from "./transcripts-source-api.js";

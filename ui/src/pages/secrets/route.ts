@@ -7,6 +7,6 @@ export const page = definePage({
   component: () =>
     import("./secrets-page.ts").then(() => ({
       header: true,
-      render: () => html`<openclaw-secrets-page></openclaw-secrets-page>`,
+      render: () => html`<afora-secrets-page></afora-secrets-page>`,
     })),
 });

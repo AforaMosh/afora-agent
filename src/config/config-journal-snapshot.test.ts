@@ -14,7 +14,7 @@ import {
 
 describe("config journal snapshots", () => {
   const suiteRootTracker = createSuiteTempRootTracker({
-    prefix: "openclaw-config-journal-snapshot-",
+    prefix: "afora-config-journal-snapshot-",
   });
 
   beforeAll(async () => {
@@ -23,13 +23,13 @@ describe("config journal snapshots", () => {
 
   it("fingerprints every snapshot leaf with a per-install key", async () => {
     const home = await suiteRootTracker.make("fingerprint-home");
-    const stateDir = path.join(home, ".openclaw");
+    const stateDir = path.join(home, ".afora");
     const fingerprinted = fingerprintConfigSnapshotAuthoredConfig(
       {
         gateway: { auth: { token: "test-token" }, port: 18789 },
       },
       {
-        env: { OPENCLAW_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
+        env: { AFORA_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
         homedir: () => home,
       },
     );
@@ -47,7 +47,7 @@ describe("config journal snapshots", () => {
 
     // Type-only edits must change the fingerprint: "1" vs 1 vs true vs "true".
     const context = {
-      env: { OPENCLAW_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
+      env: { AFORA_STATE_DIR: stateDir } as NodeJS.ProcessEnv,
       homedir: () => home,
     };
     const fingerprintOf = (value: unknown) =>
@@ -64,10 +64,10 @@ describe("config journal snapshots", () => {
 
   it("hands the snapshot slot to another config path via the unfiltered CAS token", async () => {
     const home = await suiteRootTracker.make("snapshot-path-transfer");
-    const env = { OPENCLAW_STATE_DIR: path.join(home, ".openclaw") } as NodeJS.ProcessEnv;
+    const env = { AFORA_STATE_DIR: path.join(home, ".afora") } as NodeJS.ProcessEnv;
     const context = { env, homedir: () => home };
-    const pathA = path.join(home, ".openclaw", "config-a.json");
-    const pathB = path.join(home, ".openclaw", "config-b.json");
+    const pathA = path.join(home, ".afora", "config-a.json");
+    const pathB = path.join(home, ".afora", "config-b.json");
     upsertConfigSnapshotAuditRecord({
       ...context,
       configPath: pathA,
@@ -94,8 +94,8 @@ describe("config journal snapshots", () => {
 
   it("does not restore a snapshot slot after another writer replaces it", async () => {
     const home = await suiteRootTracker.make("snapshot-compare-and-set");
-    const configPath = path.join(home, ".openclaw", "openclaw.json");
-    const env = { OPENCLAW_STATE_DIR: path.join(home, ".openclaw") } as NodeJS.ProcessEnv;
+    const configPath = path.join(home, ".afora", "afora.json");
+    const env = { AFORA_STATE_DIR: path.join(home, ".afora") } as NodeJS.ProcessEnv;
     const context = { env, homedir: () => home };
     const prior = upsertConfigSnapshotAuditRecord({
       ...context,
@@ -135,7 +135,7 @@ describe("config journal snapshots", () => {
     expect(
       fingerprintConfigSnapshotAuthoredConfig(
         { gateway: { auth: { token: "test-token" } } },
-        { env: { OPENCLAW_STATE_DIR: statePath } as NodeJS.ProcessEnv, homedir: () => home },
+        { env: { AFORA_STATE_DIR: statePath } as NodeJS.ProcessEnv, homedir: () => home },
       ),
     ).toEqual({ gateway: { auth: { token: "***" } } });
   });

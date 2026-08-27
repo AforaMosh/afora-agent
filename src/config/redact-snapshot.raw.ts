@@ -1,6 +1,6 @@
 // Applies low-level redaction transforms to raw config snapshot data.
 import { isDeepStrictEqual } from "node:util";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import JSON5 from "json5";
 
 /** Replaces known sensitive values in raw config text while preserving parseable structure. */

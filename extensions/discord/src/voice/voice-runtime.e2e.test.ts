@@ -93,7 +93,7 @@ defineDiscordVoiceTests(
         manager: (client: ReturnType<typeof createClient>) =>
           createManager({ groupPolicy: "open", allowFrom: ["discord:u-owner"] }, client),
         expectedOwner: false,
-        toolNames: { include: ["exec"], exclude: ["gateway", "nodes", "openclaw"] },
+        toolNames: { include: ["exec"], exclude: ["gateway", "nodes", "afora"] },
       },
       ...["*", " * "].map((allowFrom, index) => ({
         name:
@@ -118,7 +118,7 @@ defineDiscordVoiceTests(
             commands: { ownerAllowFrom: ["discord:100000000000000001"] },
           }),
         expectedOwner: true,
-        toolNames: { include: ["gateway", "nodes", "openclaw"], exclude: [] },
+        toolNames: { include: ["gateway", "nodes", "afora"], exclude: [] },
       },
       {
         name: "admits the Discord command-owner wildcard without owner voice authority",
@@ -129,7 +129,7 @@ defineDiscordVoiceTests(
             commands: { ownerAllowFrom: ["discord:*"] },
           }),
         expectedOwner: false,
-        toolNames: { include: ["exec"], exclude: ["gateway", "nodes", "openclaw"] },
+        toolNames: { include: ["exec"], exclude: ["gateway", "nodes", "afora"] },
       },
       {
         name: "does not use another provider's command owners for Discord voice",
@@ -287,7 +287,7 @@ defineDiscordVoiceTests(
     });
 
     it("runs voice replies under Discord voice output policy", async () => {
-      const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-discord-voice-"));
+      const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-discord-voice-"));
       const audioPath = path.join(tempDir, "reply.mp3");
       await fs.writeFile(audioPath, "voice");
       textToSpeechMock.mockResolvedValueOnce({ success: true, audioPath });
@@ -833,7 +833,7 @@ defineDiscordVoiceTests(
         {
           itemId: "item-stale-consult",
           callId: "call-stale-consult",
-          name: "openclaw_agent_consult",
+          name: "afora_agent_consult",
           args: { question: "check stale state" },
         },
         realtimeSessionMock,

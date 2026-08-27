@@ -7,10 +7,10 @@ import type { ExecApprovalRequest } from "../../infra/exec-approvals.js";
 import type { ReplyPayload } from "../types.js";
 import { parseExportCommandOutputPath } from "./commands-export-common.js";
 import {
-  buildCurrentOpenClawCliArgv,
-  buildCurrentOpenClawCliCommand,
-  buildCurrentOpenClawCliExecEnv,
-} from "./commands-openclaw-cli.js";
+  buildCurrentAforaCliArgv,
+  buildCurrentAforaCliCommand,
+  buildCurrentAforaCliExecEnv,
+} from "./commands-afora-cli.js";
 import {
   deliverPrivateCommandReply,
   readCommandDeliveryTarget,
@@ -22,7 +22,7 @@ import {
 } from "./commands-private-route.js";
 import type { HandleCommandsParams } from "./commands-types.js";
 
-const EXPORT_TRAJECTORY_DOCS_URL = "https://docs.openclaw.ai/tools/trajectory";
+const EXPORT_TRAJECTORY_DOCS_URL = "https://docs.afora.ai/tools/trajectory";
 const EXPORT_TRAJECTORY_EXEC_SCOPE_KEY = "chat:export-trajectory";
 const MAX_TRAJECTORY_EXPORT_ENCODED_REQUEST_CHARS = 8192;
 const EXPORT_TRAJECTORY_PRIVATE_ROUTE_UNAVAILABLE =
@@ -200,7 +200,7 @@ async function requestTrajectoryExportApproval(
     });
     const result = await execTool.execute("chat-export-trajectory", {
       command: request.command,
-      env: buildCurrentOpenClawCliExecEnv(),
+      env: buildCurrentAforaCliExecEnv(),
       security: "allowlist",
       ask: "always",
       background: true,
@@ -295,9 +295,9 @@ function buildTrajectoryExportExecRequest(
   }
   const args = ["sessions", "export-trajectory", "--request-json-base64", encodedRequest, "--json"];
   return {
-    argv: buildCurrentOpenClawCliArgv(args),
-    command: buildCurrentOpenClawCliCommand(args),
-    displayCommand: ["openclaw", ...args].join(" "),
+    argv: buildCurrentAforaCliArgv(args),
+    command: buildCurrentAforaCliCommand(args),
+    displayCommand: ["afora", ...args].join(" "),
     encodedRequest,
     request,
   };

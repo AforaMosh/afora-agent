@@ -22,7 +22,7 @@ let nativeEsmGraphProbe: NativeEsmGraphProbe;
 
 describe("tryNativeRequireJavaScriptModule", () => {
   it("loads native CommonJS modules", () => {
-    const dir = tempDirs.make("openclaw-native-require-");
+    const dir = tempDirs.make("afora-native-require-");
     const modulePath = path.join(dir, "plugin.cjs");
     fs.writeFileSync(modulePath, 'module.exports = { marker: "native" };\n', "utf8");
 
@@ -32,7 +32,7 @@ describe("tryNativeRequireJavaScriptModule", () => {
   });
 
   it("declines modules that need source-transform fallback", () => {
-    const dir = tempDirs.make("openclaw-native-require-");
+    const dir = tempDirs.make("afora-native-require-");
     const modulePath = path.join(dir, "plugin.mjs");
     fs.writeFileSync(
       modulePath,
@@ -70,7 +70,7 @@ describe("tryNativeRequireJavaScriptModule", () => {
   });
 
   it("declines missing target modules so callers can try source fallback", () => {
-    const modulePath = path.join(tempDirs.make("openclaw-native-require-"), "missing.cjs");
+    const modulePath = path.join(tempDirs.make("afora-native-require-"), "missing.cjs");
 
     expect(tryNativeRequireJavaScriptModule(modulePath, { allowWindows: true })).toEqual({
       ok: false,
@@ -78,7 +78,7 @@ describe("tryNativeRequireJavaScriptModule", () => {
   });
 
   it("propagates missing dependency errors from existing modules", () => {
-    const dir = tempDirs.make("openclaw-native-require-");
+    const dir = tempDirs.make("afora-native-require-");
     const modulePath = path.join(dir, "plugin.cjs");
     fs.writeFileSync(modulePath, 'require("./missing-dependency.cjs");\n', "utf8");
 
@@ -88,9 +88,9 @@ describe("tryNativeRequireJavaScriptModule", () => {
   });
 
   it("declines missing dependency errors when source-transform fallback is available", () => {
-    const dir = tempDirs.make("openclaw-native-require-");
+    const dir = tempDirs.make("afora-native-require-");
     const modulePath = path.join(dir, "plugin.cjs");
-    fs.writeFileSync(modulePath, 'require("openclaw/plugin-sdk/core");\n', "utf8");
+    fs.writeFileSync(modulePath, 'require("afora-agent/plugin-sdk/core");\n', "utf8");
 
     expect(
       tryNativeRequireJavaScriptModule(modulePath, {
@@ -101,7 +101,7 @@ describe("tryNativeRequireJavaScriptModule", () => {
   });
 
   beforeAll(() => {
-    const dir = tempDirs.make("openclaw-native-require-");
+    const dir = tempDirs.make("afora-native-require-");
     const sdkPath = path.join(dir, "sdk.js");
     const modulePath = path.join(dir, "plugin.mjs");
     const probePath = path.join(dir, "probe.mjs");
@@ -115,7 +115,7 @@ describe("tryNativeRequireJavaScriptModule", () => {
     );
     fs.writeFileSync(
       modulePath,
-      'import { defineChannelMessageAdapter } from "openclaw/plugin-sdk/channel-outbound";\nexport const marker = defineChannelMessageAdapter();\n',
+      'import { defineChannelMessageAdapter } from "afora-agent/plugin-sdk/channel-outbound";\nexport const marker = defineChannelMessageAdapter();\n',
       "utf8",
     );
     fs.writeFileSync(
@@ -124,7 +124,7 @@ describe("tryNativeRequireJavaScriptModule", () => {
         `import { tryNativeRequireJavaScriptModule } from ${JSON.stringify(nativeRequireModuleUrl)};`,
         `const result = tryNativeRequireJavaScriptModule(${JSON.stringify(modulePath)}, {`,
         "  allowWindows: true,",
-        `  aliasMap: { "openclaw/plugin-sdk/channel-outbound": ${JSON.stringify(sdkPath)} },`,
+        `  aliasMap: { "afora-agent/plugin-sdk/channel-outbound": ${JSON.stringify(sdkPath)} },`,
         "});",
         "if (!result.ok) {",
         '  throw new Error("native require declined ESM graph");',
@@ -153,7 +153,7 @@ describe("tryNativeRequireJavaScriptModule", () => {
   });
 
   it("declines missing dependency errors when the caller can use source transform fallback", () => {
-    const dir = tempDirs.make("openclaw-native-require-");
+    const dir = tempDirs.make("afora-native-require-");
     const modulePath = path.join(dir, "plugin.cjs");
     fs.writeFileSync(modulePath, 'require("./helper.js");\n', "utf8");
     fs.writeFileSync(path.join(dir, "helper.ts"), "export const loaded = true;\n", "utf8");
@@ -167,7 +167,7 @@ describe("tryNativeRequireJavaScriptModule", () => {
   });
 
   it("propagates real module evaluation errors instead of falling back", () => {
-    const dir = tempDirs.make("openclaw-native-require-");
+    const dir = tempDirs.make("afora-native-require-");
     const modulePath = path.join(dir, "plugin.cjs");
     fs.writeFileSync(
       modulePath,
@@ -181,7 +181,7 @@ describe("tryNativeRequireJavaScriptModule", () => {
   });
 
   it("declines real module evaluation errors when the caller can use source transform fallback", () => {
-    const dir = tempDirs.make("openclaw-native-require-");
+    const dir = tempDirs.make("afora-native-require-");
     const modulePath = path.join(dir, "plugin.cjs");
     fs.writeFileSync(
       modulePath,
@@ -198,7 +198,7 @@ describe("tryNativeRequireJavaScriptModule", () => {
   });
 
   it("clears loaded JavaScript modules from the native require cache", () => {
-    const dir = tempDirs.make("openclaw-native-require-");
+    const dir = tempDirs.make("afora-native-require-");
     const modulePath = path.join(dir, "plugin.cjs");
     fs.writeFileSync(modulePath, 'module.exports = { marker: "before" };\n', "utf8");
     expect(tryNativeRequireJavaScriptModule(modulePath, { allowWindows: true })).toEqual({
@@ -216,7 +216,7 @@ describe("tryNativeRequireJavaScriptModule", () => {
   });
 
   it("clears local dependencies loaded by a native JavaScript module", () => {
-    const dir = tempDirs.make("openclaw-native-require-");
+    const dir = tempDirs.make("afora-native-require-");
     const modulePath = path.join(dir, "plugin.cjs");
     const helperPath = path.join(dir, "helper.cjs");
     fs.writeFileSync(modulePath, 'module.exports = require("./helper.cjs");\n', "utf8");

@@ -148,13 +148,13 @@ const GATEWAY_STARTUP_CORE_RUNNER = DEFAULT_NODE_TEST_RUNNER;
 // This cold gateway graph can stall after warming Vitest's module cache; its
 // retry completes in seconds, so do not spend the global five-minute timeout.
 const GATEWAY_STARTUP_HEALTH_RUNTIME_ENV = {
-  OPENCLAW_VITEST_NO_OUTPUT_TIMEOUT_MS: "60000",
+  AFORA_VITEST_NO_OUTPUT_TIMEOUT_MS: "60000",
 };
 // The first embedded-agent file owns 157 serial tests and can stay quiet for
 // more than five minutes on a cold GitHub-hosted fork runner. Keep the outer
 // watchdog above the scoped 600-second hook budget so it cannot preempt Vitest.
 const AGENTS_EMBEDDED_AGENT_ENV = {
-  OPENCLAW_VITEST_NO_OUTPUT_TIMEOUT_MS: "660000",
+  AFORA_VITEST_NO_OUTPUT_TIMEOUT_MS: "660000",
 };
 const COMPACT_EMBEDDED_GROUP_NAMES = [
   "agentic-agents-embedded-base",
@@ -586,7 +586,7 @@ const STRIPE_FILE_SECONDS_HINTS = new Map<string, number>([
   ["test/scripts/find-reusable-release-validation.test.ts", 8],
   ["test/scripts/install-sh.test.ts", 6],
   ["test/scripts/kitchen-sink-rpc-walk.test.ts", 5],
-  ["test/scripts/openclaw-live-updater.test.ts", 18],
+  ["test/scripts/afora-live-updater.test.ts", 18],
   ["test/scripts/parallels-smoke-model.test.ts", 8],
   ["test/scripts/plugin-clawhub-release.test.ts", 5],
   ["test/scripts/plugin-gateway-gauntlet.test.ts", 5],
@@ -624,7 +624,7 @@ function isExclusiveCompactGroup(group: NodeTestShardGroup): boolean {
 // and hit worker-startup timeouts under contention before serialization.
 const PINNED_WORKER_COMPACT_GROUP_RE =
   /^core-tooling(?:-\d+(?:-hosted-\d+)?|-isolated)$|^core-runtime-tui-pty$|^core-runtime-infra-process$|^core-runtime-config$|^core-runtime-media-ui-(?:\d+|support)$|^agentic-cli(?:-process)?$|^agentic-gateway-(?:core-\d+|methods)$/u;
-const PINNED_COMPACT_GROUP_ENV = { OPENCLAW_VITEST_MAX_WORKERS: "2" };
+const PINNED_COMPACT_GROUP_ENV = { AFORA_VITEST_MAX_WORKERS: "2" };
 
 function applyCompactGroupWorkerPins(group: NodeTestShardGroup): NodeTestShardGroup {
   if (!PINNED_WORKER_COMPACT_GROUP_RE.test(group.shard_name)) {
@@ -991,7 +991,7 @@ function resolveAgentCoreShardName(file: string): string {
   }
   if (
     name.startsWith("agent-tools") ||
-    name.startsWith("openclaw-tools") ||
+    name.startsWith("afora-tools") ||
     name.startsWith("bash-tools") ||
     name.startsWith("tool") ||
     name.startsWith("apply-patch") ||
@@ -1307,7 +1307,7 @@ function resolveInfraShardName(file: string): string {
     name.startsWith("json") ||
     name.startsWith("path") ||
     name.startsWith("shell") ||
-    name.startsWith("tmp-openclaw-dir")
+    name.startsWith("tmp-afora-dir")
   ) {
     return "core-runtime-infra-files-commands";
   }
@@ -1350,7 +1350,7 @@ function resolveInfraShardName(file: string): string {
     name.startsWith("google-api") ||
     name.startsWith("home-dir") ||
     name.startsWith("host-env") ||
-    name.startsWith("openclaw-exec-env") ||
+    name.startsWith("afora-exec-env") ||
     name.startsWith("secret") ||
     name.startsWith("secure-random")
   ) {
@@ -1362,7 +1362,7 @@ function resolveInfraShardName(file: string): string {
     name.startsWith("clawhub") ||
     name.startsWith("detect-package-manager") ||
     name.startsWith("git-") ||
-    name.startsWith("openclaw-root") ||
+    name.startsWith("afora-root") ||
     name.startsWith("tsdown") ||
     name.startsWith("vitest")
   ) {
@@ -1700,8 +1700,8 @@ const SPLIT_NODE_SHARDS = new Map<string, NodeTestSplitShard[]>([
         shardName: "core-runtime-tui-pty",
         configs: ["test/vitest/vitest.tui-pty.config.ts"],
         env: {
-          OPENCLAW_TUI_PTY_INCLUDE_LOCAL: "1",
-          OPENCLAW_TUI_PTY_USE_BUILT_CLI: "1",
+          AFORA_TUI_PTY_INCLUDE_LOCAL: "1",
+          AFORA_TUI_PTY_USE_BUILT_CLI: "1",
         },
         requiresDist: true,
         runner: "blacksmith-4vcpu-ubuntu-2404",

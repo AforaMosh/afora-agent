@@ -1,10 +1,10 @@
 // Regresses ACP binding cutover config compatibility behavior.
 import { describe, expect, it } from "vitest";
-import { OpenClawSchema } from "./zod-schema.js";
+import { AforaSchema } from "./zod-schema.js";
 
 describe("ACP binding cutover schema", () => {
   it("accepts top-level typed ACP bindings with per-agent runtime defaults", () => {
-    const parsed = OpenClawSchema.safeParse({
+    const parsed = AforaSchema.safeParse({
       agents: {
         entries: {
           main: { default: true, runtime: { type: "embedded" } },
@@ -15,7 +15,7 @@ describe("ACP binding cutover schema", () => {
                 agent: "codex",
                 backend: "acpx",
                 mode: "persistent",
-                cwd: "/workspace/openclaw",
+                cwd: "/workspace/afora",
               },
             },
           },
@@ -47,7 +47,7 @@ describe("ACP binding cutover schema", () => {
   });
 
   it("accepts global and route-binding session scope overrides", () => {
-    const parsed = OpenClawSchema.safeParse({
+    const parsed = AforaSchema.safeParse({
       session: { groupScope: "per-group" },
       bindings: [
         {
@@ -70,7 +70,7 @@ describe("ACP binding cutover schema", () => {
   });
 
   it("rejects legacy Discord channel-local ACP binding fields", () => {
-    const parsed = OpenClawSchema.safeParse({
+    const parsed = AforaSchema.safeParse({
       channels: {
         discord: {
           guilds: {
@@ -95,7 +95,7 @@ describe("ACP binding cutover schema", () => {
   });
 
   it("rejects legacy Telegram topic-local ACP binding fields", () => {
-    const parsed = OpenClawSchema.safeParse({
+    const parsed = AforaSchema.safeParse({
       channels: {
         telegram: {
           groups: {
@@ -119,7 +119,7 @@ describe("ACP binding cutover schema", () => {
   });
 
   it("rejects ACP bindings without a peer conversation target", () => {
-    const parsed = OpenClawSchema.safeParse({
+    const parsed = AforaSchema.safeParse({
       bindings: [
         {
           type: "acp",
@@ -133,7 +133,7 @@ describe("ACP binding cutover schema", () => {
   });
 
   it("accepts ACP bindings for arbitrary channel ids when the peer target is explicit", () => {
-    const parsed = OpenClawSchema.safeParse({
+    const parsed = AforaSchema.safeParse({
       bindings: [
         {
           type: "acp",
@@ -151,7 +151,7 @@ describe("ACP binding cutover schema", () => {
   });
 
   it("accepts ACP bindings for generic direct and group peer kinds", () => {
-    const parsed = OpenClawSchema.safeParse({
+    const parsed = AforaSchema.safeParse({
       bindings: [
         {
           type: "acp",
@@ -178,7 +178,7 @@ describe("ACP binding cutover schema", () => {
   });
 
   it("accepts the canonical direct peer kind", () => {
-    const parsed = OpenClawSchema.safeParse({
+    const parsed = AforaSchema.safeParse({
       bindings: [
         {
           type: "acp",

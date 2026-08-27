@@ -1,4 +1,4 @@
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 const FEISHU_SEND_RATE_LIMIT_CODES = new Set([230020, 11232]);
 

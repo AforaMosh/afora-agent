@@ -112,7 +112,7 @@ describe("registerDirectoryCli", () => {
       configChanged: true,
     });
 
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
     registerDirectoryCli(program);
 
     await program.parseAsync(["directory", "self", "--channel", "demo-directory", "--json"], {
@@ -155,7 +155,7 @@ describe("registerDirectoryCli", () => {
       source: "single-configured",
     });
 
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
     registerDirectoryCli(program);
 
     await program.parseAsync(["directory", "self", "--json"], { from: "user" });
@@ -202,7 +202,7 @@ describe("registerDirectoryCli", () => {
       configChanged: false,
     });
 
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
     registerDirectoryCli(program);
 
     await program.parseAsync(args, { from: "user" });
@@ -251,7 +251,7 @@ describe("registerDirectoryCli", () => {
       configChanged: false,
     });
 
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
     registerDirectoryCli(program);
 
     await program.parseAsync(args, { from: "user" });
@@ -284,7 +284,7 @@ describe("registerDirectoryCli", () => {
       configChanged: false,
     });
 
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
     registerDirectoryCli(program);
 
     await program.parseAsync(
@@ -326,7 +326,7 @@ describe("registerDirectoryCli", () => {
       configChanged: false,
     });
 
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
     registerDirectoryCli(program);
 
     await program.parseAsync(["directory", "groups", "list", "--channel", "slack", "--json"], {
@@ -389,7 +389,7 @@ describe("registerDirectoryCli", () => {
       configChanged: false,
     });
 
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
     registerDirectoryCli(program);
 
     await program.parseAsync(args, { from: "user" });
@@ -414,7 +414,7 @@ describe("registerDirectoryCli", () => {
       configChanged: false,
     });
 
-    const textProgram = new Command().name("openclaw");
+    const textProgram = new Command().name("afora");
     registerDirectoryCli(textProgram);
     await textProgram.parseAsync(["directory", "peers", "list", "--channel", "slack"], {
       from: "user",
@@ -428,7 +428,7 @@ describe("registerDirectoryCli", () => {
     expect(textOutput).toContain("🦞");
 
     runtimeState.defaultRuntime.writeJson.mockClear();
-    const jsonProgram = new Command().name("openclaw");
+    const jsonProgram = new Command().name("afora");
     registerDirectoryCli(jsonProgram);
     await jsonProgram.parseAsync(["directory", "peers", "list", "--channel", "slack", "--json"], {
       from: "user",
@@ -439,32 +439,32 @@ describe("registerDirectoryCli", () => {
 
   it("reports unsupported directory capability instead of continuing setup for installed plugins", async () => {
     mocks.resolveInstallableChannelPlugin.mockResolvedValue({
-      cfg: { channels: { "openclaw-weixin": {} } },
-      channelId: "openclaw-weixin",
+      cfg: { channels: { "afora-weixin": {} } },
+      channelId: "afora-weixin",
       plugin: {
-        id: "openclaw-weixin",
+        id: "afora-weixin",
       },
       configChanged: false,
       pluginInstalled: false,
     });
 
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
     registerDirectoryCli(program);
 
     await expect(
-      program.parseAsync(["directory", "peers", "list", "--channel", "openclaw-weixin"], {
+      program.parseAsync(["directory", "peers", "list", "--channel", "afora-weixin"], {
         from: "user",
       }),
     ).rejects.toThrow("exit:1");
 
     expect(mocks.resolveInstallableChannelPlugin).toHaveBeenCalledTimes(1);
     const installArgs = firstRecordArg(mocks.resolveInstallableChannelPlugin);
-    expect(installArgs.rawChannel).toBe("openclaw-weixin");
+    expect(installArgs.rawChannel).toBe("afora-weixin");
     expect(installArgs.allowInstall).toBe(true);
     expect(mocks.replaceConfigFile).not.toHaveBeenCalled();
     expect(
       runtimeErrors().some((message) =>
-        message.includes("Channel openclaw-weixin does not support directory peers"),
+        message.includes("Channel afora-weixin does not support directory peers"),
       ),
     ).toBe(true);
   });
@@ -510,7 +510,7 @@ describe("registerDirectoryCli", () => {
       configChanged: false,
     });
 
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
     registerDirectoryCli(program);
 
     await expect(program.parseAsync(args, { from: "user" })).rejects.toThrow(expectedError);
@@ -537,7 +537,7 @@ describe("registerDirectoryCli", () => {
       configChanged: false,
     });
 
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
     registerDirectoryCli(program);
 
     if (mode === "JSON") {
@@ -586,7 +586,7 @@ describe("registerDirectoryCli", () => {
       configChanged: false,
     });
 
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
     registerDirectoryCli(program);
 
     await expect(program.parseAsync(args, { from: "user" })).rejects.toThrow("exit:1");

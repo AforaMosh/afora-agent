@@ -1,7 +1,7 @@
 // Curated Updates settings presentation. The existing update config remains
 // the source of authored policy; the Gateway schedule DTO owns runtime status.
-import { parseDateStringTimestampMs } from "@openclaw/normalization-core/number-coercion";
-import { asNullableRecord as asConfigRecord } from "@openclaw/normalization-core/record-coerce";
+import { parseDateStringTimestampMs } from "@afora/normalization-core/number-coercion";
+import { asNullableRecord as asConfigRecord } from "@afora/normalization-core/record-coerce";
 import { html, nothing, type TemplateResult } from "lit";
 import type { UpdateAvailable, UpdateScheduleState } from "../../api/types.ts";
 import type { ApplicationStatusBanner } from "../../app/update-overlay-helpers.ts";

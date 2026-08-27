@@ -3,13 +3,13 @@ import {
   executeSqliteQueryTakeFirstSync,
 } from "../../infra/kysely-sync.js";
 import {
-  deferOpenClawAgentPostCommitPublication,
-  runOpenClawAgentWriteTransaction,
-} from "../../state/openclaw-agent-db.js";
+  deferAforaAgentPostCommitPublication,
+  runAforaAgentWriteTransaction,
+} from "../../state/afora-agent-db.js";
 import {
   confirmSessionParticipantsSchemaEnsured,
   ensureSessionParticipantsSchema,
-} from "../../state/openclaw-agent-session-participants-schema.js";
+} from "../../state/afora-agent-session-participants-schema.js";
 import type { SessionAccessScope } from "./session-accessor.sqlite-contract.js";
 import { publishSessionEntryCacheInvalidation } from "./session-accessor.sqlite-entry-cache.js";
 import {
@@ -47,10 +47,10 @@ export function recordSessionParticipant(
   const resolved = resolveSqliteScope(scope);
   const options = toDatabaseOptions(resolved);
   const promptedAt = params.promptedAt ?? Date.now();
-  const result = runOpenClawAgentWriteTransaction(
+  const result = runAforaAgentWriteTransaction(
     (database) => {
       if (ensureSessionParticipantsSchema(database.db)) {
-        deferOpenClawAgentPostCommitPublication(database, () =>
+        deferAforaAgentPostCommitPublication(database, () =>
           confirmSessionParticipantsSchemaEnsured(database.db),
         );
       }

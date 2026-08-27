@@ -1,6 +1,6 @@
 // Gateway live tool probe utilities.
 // Classifies nonce probe replies and retry conditions for live provider checks.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 
 /** Returns true when both expected tool-read nonces are present. */
 export function hasExpectedToolNonce(text: string, nonceA: string, nonceB: string): boolean {
@@ -33,9 +33,9 @@ const NONCE_REFUSAL_MARKERS = [
   "no read tool available",
   "won't output",
   "won’t output",
-  "isn't a real openclaw probe",
-  "is not a real openclaw probe",
-  "not a real openclaw probe",
+  "isn't a real afora probe",
+  "is not a real afora probe",
+  "not a real afora probe",
   "no part of the system asks me",
 ];
 

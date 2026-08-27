@@ -1,5 +1,5 @@
 // Session lifecycle timestamps prefer store metadata and fall back to transcript headers.
-import { asDateTimestampMs } from "@openclaw/normalization-core/number-coercion";
+import { asDateTimestampMs } from "@afora/normalization-core/number-coercion";
 import { resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
 import { canonicalizeMainSessionAlias } from "./main-session.js";
 import { loadTranscriptHeaderSync, readTranscriptStatsSync } from "./session-accessor.js";

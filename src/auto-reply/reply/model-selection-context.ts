@@ -1,10 +1,10 @@
 import { resolveContextTokensForModel } from "../../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
 /** Resolves the context window token count for the selected provider/model. */
 export function resolveContextTokens(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: string;
   model: string;
   modelContextWindow?: number;

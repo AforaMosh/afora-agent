@@ -54,7 +54,7 @@ function makeIndex(pluginId = "demo"): InstalledPluginIndex {
     plugins: [
       {
         pluginId,
-        manifestPath: `${rootDir}/openclaw.plugin.json`,
+        manifestPath: `${rootDir}/afora.plugin.json`,
         manifestHash: `${pluginId}-manifest`,
         rootDir,
         origin: "global",
@@ -82,7 +82,7 @@ function makeManifestRegistry(pluginId = "demo"): PluginManifestRegistry {
     commandAliases: [{ name: `${pluginId}-command` }],
     rootDir: `/plugins/${pluginId}`,
     source: `/plugins/${pluginId}/index.js`,
-    manifestPath: `/plugins/${pluginId}/openclaw.plugin.json`,
+    manifestPath: `/plugins/${pluginId}/afora.plugin.json`,
     origin: "global",
   };
   return { plugins: [plugin], diagnostics: [] };

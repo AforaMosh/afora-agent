@@ -2,13 +2,13 @@ import { stat } from "node:fs/promises";
 import path from "node:path";
 import { createInterface } from "node:readline/promises";
 import { format } from "node:util";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { callGatewayFromCli } from "openclaw/plugin-sdk/gateway-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { callGatewayFromCli } from "afora-agent/plugin-sdk/gateway-runtime";
 import {
   clampTimerTimeoutMs,
   parseStrictPositiveInteger,
-} from "openclaw/plugin-sdk/number-runtime";
-import { replaceFileAtomic } from "openclaw/plugin-sdk/security-runtime";
+} from "afora-agent/plugin-sdk/number-runtime";
+import { replaceFileAtomic } from "afora-agent/plugin-sdk/security-runtime";
 import prettyMilliseconds from "pretty-ms";
 import type { GoogleMeetCalendarLookupResult } from "./calendar.js";
 import type { GoogleMeetModeInput, GoogleMeetTransport } from "./config.js";

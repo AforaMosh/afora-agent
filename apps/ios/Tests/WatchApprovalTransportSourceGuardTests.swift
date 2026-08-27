@@ -1,17 +1,17 @@
 import Foundation
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 struct WatchApprovalTransportSourceGuardTests {
     @Test func `watch approval loading and screenshot proof are visible`() throws {
-        let appSource = try Self.readWatchSource("OpenClawWatchApp.swift")
+        let appSource = try Self.readWatchSource("AforaWatchApp.swift")
         let viewSource = try Self.readWatchSource("WatchInboxView.swift")
         let approvalFace = try Self.extract(
             viewSource,
             from: "private var approvalsFace: some View",
             to: "private var connectionFace: some View")
 
-        #expect(appSource.contains("--openclaw-watch-approval-screenshot-mode"))
+        #expect(appSource.contains("--afora-watch-approval-screenshot-mode"))
         #expect(appSource.contains("includeApproval: WatchScreenshotMode.approvals"))
         #expect(viewSource.contains("selectedFace = WatchScreenshotMode.approvals ? 2 : 0"))
         #expect(appSource.contains("id: \"watch-screenshot-approval\""))
@@ -26,7 +26,7 @@ struct WatchApprovalTransportSourceGuardTests {
     }
 
     @Test func `watch distinguishes unsent approval from uncertain delivery`() throws {
-        let source = try Self.readWatchSource("OpenClawWatchApp.swift")
+        let source = try Self.readWatchSource("AforaWatchApp.swift")
         let storeSource = try Self.readWatchSource("WatchInboxStore.swift")
         let resolveFlow = try Self.extract(
             source,
@@ -62,7 +62,7 @@ struct WatchApprovalTransportSourceGuardTests {
     }
 
     @Test func `forced watch refresh waits for its exact request and owner snapshot`() throws {
-        let appSource = try Self.readWatchSource("OpenClawWatchApp.swift")
+        let appSource = try Self.readWatchSource("AforaWatchApp.swift")
         let receiverSource = try Self.readWatchSource("WatchConnectivityReceiver.swift")
         let storeSource = try Self.readWatchSource("WatchInboxStore.swift")
         let refresh = try Self.extract(

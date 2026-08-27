@@ -1,6 +1,6 @@
 // Resolves inbound attachment text-extraction limits for media-understanding.
-import { asPositiveFiniteNumber as positiveExtractionLimit } from "@openclaw/normalization-core/number-coercion";
-import type { OpenClawConfig } from "../config/types.js";
+import { asPositiveFiniteNumber as positiveExtractionLimit } from "@afora/normalization-core/number-coercion";
+import type { AforaConfig } from "../config/types.js";
 import {
   type InputFileLimits,
   type InputFileLimitsConfig,
@@ -46,7 +46,7 @@ function resolveInboundFileExtractionMaxPages(
 }
 
 /** Builds inbound attachment extraction limits, sized to the agent's media/PDF config. */
-export function resolveFileExtractionLimits(cfg: OpenClawConfig): FileExtractionLimits {
+export function resolveFileExtractionLimits(cfg: AforaConfig): FileExtractionLimits {
   const files = cfg.gateway?.http?.endpoints?.responses?.files;
   const allowedMimesConfigured = Boolean(files?.allowedMimes?.length);
   const defaults = cfg.agents?.defaults;

@@ -1,5 +1,5 @@
 // Tlon plugin module implements targets behavior.
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
 type TlonTarget =
   | { kind: "dm"; ship: string }
   | { kind: "group"; nest: string; hostShip: string; channelName: string };

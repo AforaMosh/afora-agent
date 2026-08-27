@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { flowsCancelCommand, flowsListCommand, flowsShowCommand } from "../commands/flows.js";
 import { resetConfigRuntimeState } from "../config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import {
   completeTaskRunByRunIdCore as completeTaskRunByRunId,
   createRunningTaskRunCore as createRunningTaskRunOrNull,
@@ -89,10 +89,10 @@ afterEach(() => {
 
 describe("task-flow registry product boundary", () => {
   it("runs managed, mirrored, CLI, audit, and maintenance lifecycles through SQLite", async () => {
-    await withOpenClawTestState(
+    await withAforaTestState(
       {
         layout: "state-only",
-        prefix: "openclaw-task-flow-registry-e2e-",
+        prefix: "afora-task-flow-registry-e2e-",
       },
       async () => {
         resetFlowTestState();

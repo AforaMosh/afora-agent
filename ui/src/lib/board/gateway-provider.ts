@@ -5,7 +5,7 @@ import type {
   BoardSnapshot,
   BoardWidget,
   BoardWidgetAppViewResult,
-} from "@openclaw/gateway-protocol";
+} from "@afora/gateway-protocol";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import { normalizeSessionKeyForUiComparison } from "../sessions/session-key.ts";
 import { BoardMcpAppViewCache } from "./mcp-app-view-cache.ts";

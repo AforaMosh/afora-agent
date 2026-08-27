@@ -1,4 +1,4 @@
-import { MeetingPlatformAdapter } from "openclaw/plugin-sdk/meeting-runtime";
+import { MeetingPlatformAdapter } from "afora-agent/plugin-sdk/meeting-runtime";
 
 type MeetingStatusPreludeParams = Parameters<
   typeof MeetingPlatformAdapter.createStatusPreludeSource
@@ -99,7 +99,7 @@ export function teamsMeetingStatusPreludeSource(params: MeetingStatusPreludePara
   }
   if (canMutateSession && !inCall && !identityAwaitingRerender) retireOwnedAudioBridges();
   if (canMutateSession && (identityVerifiedBeforeCall || identityPreservedInCall)) {
-    window.__openclawTeamsMeeting = {
+    window.__aforaTeamsMeeting = {
       ...(priorMeeting?.identity === expectedIdentity && !meetingOwnerConflict ? priorMeeting : {}),
       identity: expectedIdentity,
       sessionId: sessionId || priorMeeting?.sessionId,
@@ -113,7 +113,7 @@ export function teamsMeetingStatusPreludeSource(params: MeetingStatusPreludePara
     !identityAwaitingRerender &&
     (priorMeeting.inCallControl || markerAgeMs >= identityRetentionMs)
   ) {
-    delete window.__openclawTeamsMeeting;
+    delete window.__aforaTeamsMeeting;
   }
   const microphone = first(selectors.microphone) || findTextButton(/mute|unmute|microphone/i);
   let microphoneState = identityVerified ? toggleState(microphone, "microphone") : undefined;
@@ -134,7 +134,7 @@ export function teamsMeetingStatusPreludeSource(params: MeetingStatusPreludePara
     controlManualAction = manualActionFor("teams-camera-required", "Turn the Teams camera off and verify the camera control shows it is off, then retry joining.");
   }
   const isVirtualAudioDevice = (value) =>
-    /^(?:blackhole 2ch(?: \\(virtual\\))?|openclaw meeting audio)$/i.test(
+    /^(?:blackhole 2ch(?: \\(virtual\\))?|afora meeting audio)$/i.test(
       String(value || "").replace(/\\s+/g, " ").trim()
     );
   const isVirtualAudioDeviceNode = (node) => [
@@ -189,7 +189,7 @@ export function teamsMeetingStatusPreludeSource(params: MeetingStatusPreludePara
       // Teams hides the selected-device control after admission. Reopen the in-call audio
       // options and verify the current selection before unmuting; installed devices alone
       // do not prove which microphone Teams is using.
-      const preparedInput = window.__openclawTeamsMeeting;
+      const preparedInput = window.__aforaTeamsMeeting;
       const preparedSelection = Boolean(
         readOnly &&
         preparedInput?.identity === expectedIdentity &&
@@ -228,8 +228,8 @@ export function teamsMeetingStatusPreludeSource(params: MeetingStatusPreludePara
         }
         selected = Boolean(selectedMicrophoneLabel());
       }
-      if (selected && window.__openclawTeamsMeeting?.identity === expectedIdentity) {
-        window.__openclawTeamsMeeting.audioInputDeviceId = input.deviceId;
+      if (selected && window.__aforaTeamsMeeting?.identity === expectedIdentity) {
+        window.__aforaTeamsMeeting.audioInputDeviceId = input.deviceId;
       }
       return selected;
     } catch (error) {
@@ -246,7 +246,7 @@ export function teamsMeetingStatusPreludeSource(params: MeetingStatusPreludePara
         const currentMicrophone = first(selectors.microphone) || findTextButton(/mute|unmute|microphone/i);
         microphoneState = toggleState(currentMicrophone, "microphone");
       }
-      controlManualAction = manualActionFor("teams-audio-choice-required", "Select the OpenClaw virtual audio device as the Teams microphone and verify it is selected before enabling talk-back.");
+      controlManualAction = manualActionFor("teams-audio-choice-required", "Select the Afora virtual audio device as the Teams microphone and verify it is selected before enabling talk-back.");
     } else if (canMutateSession && microphoneState === "off") {
       microphone.click();
       await waitForUi();
@@ -298,7 +298,7 @@ export function teamsMeetingStatusPreludeSource(params: MeetingStatusPreludePara
     if (!microphone) {
       controlManualAction = manualActionFor("teams-microphone-required", "Open Teams device settings and verify the microphone control before enabling talk-back.");
     } else if (audioInputRouted !== true) {
-      controlManualAction = manualActionFor("teams-audio-choice-required", "Select the OpenClaw virtual audio device as the Teams microphone and verify it is selected before enabling talk-back.");
+      controlManualAction = manualActionFor("teams-audio-choice-required", "Select the Afora virtual audio device as the Teams microphone and verify it is selected before enabling talk-back.");
     } else if (microphoneState !== "on") {
       controlManualAction = manualActionFor("teams-microphone-required", "Unmute the Teams microphone and verify the microphone control shows it is on, then retry joining.");
     }
@@ -332,11 +332,11 @@ export function teamsMeetingStatusPreludeSource(params: MeetingStatusPreludePara
   if (committedOwnerConflict && !canMutateSession) {
     manualAction = manualActionFor("teams-session-conflict", "This Teams tab is owned by another active meeting session.");
   } else if (!inCall && loginRequired) {
-    manualAction = manualActionFor("teams-login-required", tenantLoginRequired ? "This Teams tenant requires sign-in or email verification. Complete it in the OpenClaw browser profile, then retry." : "Sign in to Microsoft Teams in the OpenClaw browser profile, then retry the meeting join.");
+    manualAction = manualActionFor("teams-login-required", tenantLoginRequired ? "This Teams tenant requires sign-in or email verification. Complete it in the Afora browser profile, then retry." : "Sign in to Microsoft Teams in the Afora browser profile, then retry the meeting join.");
   } else if (!inCall && lobbyWaiting) {
-    manualAction = manualActionFor("teams-admission-required", "Admit the OpenClaw guest from the Microsoft Teams lobby, then retry speech.");
+    manualAction = manualActionFor("teams-admission-required", "Admit the Afora guest from the Microsoft Teams lobby, then retry speech.");
   } else if (!inCall && permissionRequired) {
-    manualAction = manualActionFor("teams-permission-required", allowMicrophone ? "Allow microphone permission for Teams in the OpenClaw browser profile, then retry." : "Dismiss the Teams device-permission prompt or continue without devices, then retry.");
+    manualAction = manualActionFor("teams-permission-required", allowMicrophone ? "Allow microphone permission for Teams in the Afora browser profile, then retry." : "Dismiss the Teams device-permission prompt or continue without devices, then retry.");
   } else if (!inCall && controlManualAction) {
     manualAction = controlManualAction;
   }
@@ -349,10 +349,10 @@ export function teamsMeetingStatusPreludeSource(params: MeetingStatusPreludePara
     platform: {
       displayName: "Teams",
       globals: {
-        audioOutputs: "__openclawTeamsAudioOutputs",
-        captionArchive: "__openclawTeamsCaptionArchive",
-        captions: "__openclawTeamsCaptions",
-        meeting: "__openclawTeamsMeeting",
+        audioOutputs: "__aforaTeamsAudioOutputs",
+        captionArchive: "__aforaTeamsCaptionArchive",
+        captions: "__aforaTeamsCaptions",
+        meeting: "__aforaTeamsMeeting",
       },
       manualActionReasonPrefix: "teams",
     },

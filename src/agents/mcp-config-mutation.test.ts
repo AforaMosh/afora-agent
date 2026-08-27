@@ -1,9 +1,9 @@
 import path from "node:path";
-import { withTempHome } from "openclaw/plugin-sdk/test-env";
+import { withTempHome } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createDeferred } from "../../test/helpers/promise.js";
 import { mcpConfigInternal } from "../config/mcp-config.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import {
   setConfiguredMcpServer,
   unsetConfiguredMcpServer,
@@ -45,25 +45,25 @@ function seedOAuthState(name: string) {
 
 afterEach(() => {
   vi.restoreAllMocks();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 async function withMcpConfigHome(run: () => Promise<void>): Promise<void> {
   await withTempHome(
     async () => {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       try {
         await run();
       } finally {
-        closeOpenClawStateDatabaseForTest();
+        closeAforaStateDatabaseForTest();
       }
     },
     {
-      prefix: "openclaw-mcp-config-oauth-",
+      prefix: "afora-mcp-config-oauth-",
       skipSessionCleanup: true,
       env: {
-        OPENCLAW_CONFIG_PATH: undefined,
-        OPENCLAW_STATE_DIR: (home) => path.join(home, ".openclaw"),
+        AFORA_CONFIG_PATH: undefined,
+        AFORA_STATE_DIR: (home) => path.join(home, ".afora"),
       },
     },
   );

@@ -2,7 +2,7 @@ import type {
   PluginStateEntry,
   PluginStateKeyedStore,
   PluginStateSyncKeyedStore,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-runtime";
 
 export class MemoryKeyedStore<T> implements PluginStateKeyedStore<T> {
   private readonly values = new Map<string, PluginStateEntry<T>>();

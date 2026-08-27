@@ -11,8 +11,8 @@ require "rubygems/version"
 
 default_platform(:ios)
 
-APP_STORE_APP_IDENTIFIER = "ai.openclawfoundation.app"
-DEFAULT_APP_STORE_CONNECT_KEYCHAIN_SERVICE = "openclaw-app-store-connect-key"
+APP_STORE_APP_IDENTIFIER = "ai.aforafoundation.app"
+DEFAULT_APP_STORE_CONNECT_KEYCHAIN_SERVICE = "afora-app-store-connect-key"
 DEFAULT_SNAPSHOT_DEVICE_FAMILIES = [
   {
     label: "iPhone",
@@ -32,7 +32,7 @@ DEFAULT_SNAPSHOT_DEVICE_FAMILIES = [
   }
 ].freeze
 DEFAULT_WATCH_SNAPSHOT_DEVICE = "Apple Watch Ultra 3 (49mm)"
-WATCH_SCREENSHOT_MODE_DEFAULTS_KEY = "openclaw.watch.screenshotMode"
+WATCH_SCREENSHOT_MODE_DEFAULTS_KEY = "afora.watch.screenshotMode"
 WATCH_SNAPSHOT_STATUS_BAR_TIME = "09:41"
 SNAPSHOT_STATUS_BAR_ARGUMENTS = "--time 09:41 --dataNetwork wifi --wifiMode active --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100".freeze
 REQUIRED_SCREENSHOT_FAMILIES = {
@@ -162,7 +162,7 @@ def verify_release_ios_screenshot_manifest!(output_directory:, devices:)
 end
 
 def snapshot_devices
-  raw = ENV["OPENCLAW_SNAPSHOT_DEVICES"].to_s.strip
+  raw = ENV["AFORA_SNAPSHOT_DEVICES"].to_s.strip
   return default_snapshot_devices if raw.empty?
 
   raw.split(",").map(&:strip).reject(&:empty?)
@@ -181,7 +181,7 @@ def default_snapshot_devices
 end
 
 def watch_snapshot_device
-  raw = ENV["OPENCLAW_WATCH_SNAPSHOT_DEVICE"].to_s.strip
+  raw = ENV["AFORA_WATCH_SNAPSHOT_DEVICE"].to_s.strip
   raw.empty? ? DEFAULT_WATCH_SNAPSHOT_DEVICE : raw
 end
 
@@ -216,16 +216,16 @@ def install_ready_for_review_edit_state_lookup!
 
   app_class = Spaceship::ConnectAPI::App
   app_class.class_eval do
-    unless method_defined?(:openclaw_get_edit_app_store_version_without_ready_for_review)
-      alias_method :openclaw_get_edit_app_store_version_without_ready_for_review, :get_edit_app_store_version
+    unless method_defined?(:afora_get_edit_app_store_version_without_ready_for_review)
+      alias_method :afora_get_edit_app_store_version_without_ready_for_review, :get_edit_app_store_version
     end
 
-    unless method_defined?(:openclaw_fetch_edit_app_info_without_ready_for_review)
-      alias_method :openclaw_fetch_edit_app_info_without_ready_for_review, :fetch_edit_app_info
+    unless method_defined?(:afora_fetch_edit_app_info_without_ready_for_review)
+      alias_method :afora_fetch_edit_app_info_without_ready_for_review, :fetch_edit_app_info
     end
 
     def get_edit_app_store_version(client: nil, platform: nil, includes: Spaceship::ConnectAPI::AppStoreVersion::ESSENTIAL_INCLUDES)
-      version = openclaw_get_edit_app_store_version_without_ready_for_review(client: client, platform: platform, includes: includes)
+      version = afora_get_edit_app_store_version_without_ready_for_review(client: client, platform: platform, includes: includes)
       return version if version
 
       # First public releases can leave the only version in READY_FOR_REVIEW.
@@ -244,7 +244,7 @@ def install_ready_for_review_edit_state_lookup!
     end
 
     def fetch_edit_app_info(client: nil, includes: Spaceship::ConnectAPI::AppInfo::ESSENTIAL_INCLUDES)
-      app_info = openclaw_fetch_edit_app_info_without_ready_for_review(client: client, includes: includes)
+      app_info = afora_fetch_edit_app_info_without_ready_for_review(client: client, includes: includes)
       return app_info if app_info
 
       client ||= Spaceship::ConnectAPI
@@ -427,7 +427,7 @@ def normalize_watch_screenshot_status_bar(path)
     }
   SWIFT
 
-  Tempfile.create(["openclaw-watch-status-bar", ".swift"]) do |file|
+  Tempfile.create(["afora-watch-status-bar", ".swift"]) do |file|
     file.write(script)
     file.flush
     sh(shell_join(["xcrun", "swift", file.path, path, "9:41"]))
@@ -441,7 +441,7 @@ def capture_watch_screenshot
   output_dir = File.join(ios_root, "fastlane", "screenshots", "en-US")
   output_path = File.join(output_dir, "#{device_name}-01-now-face.png")
   derived_data_path = File.join(ios_root, "build", "WatchScreenshotDerivedData")
-  app_path = File.join(derived_data_path, "Build", "Products", "Debug-watchsimulator", "OpenClawWatchApp.app")
+  app_path = File.join(derived_data_path, "Build", "Products", "Debug-watchsimulator", "AforaWatchApp.app")
 
   FileUtils.mkdir_p(output_dir)
   Dir[File.join(output_dir, "Apple Watch*-*.png")].each { |path| FileUtils.rm_f(path) }
@@ -453,9 +453,9 @@ def capture_watch_screenshot
     xcodebuild_shell_join([
       "xcodebuild",
       "-project",
-      File.join(ios_root, "OpenClaw.xcodeproj"),
+      File.join(ios_root, "Afora.xcodeproj"),
       "-scheme",
-      "OpenClawWatchApp",
+      "AforaWatchApp",
       "-configuration",
       "Debug",
       "-destination",
@@ -479,13 +479,13 @@ def capture_watch_screenshot
     write_watch_screenshot_mode_defaults(udid, screenshot_mode_bundle_identifiers)
     status_bar_overridden = set_watch_status_bar_override(udid)
     sh(
-      "SIMCTL_CHILD_OPENCLAW_WATCH_SCREENSHOT_MODE=1 #{shell_join([
+      "SIMCTL_CHILD_AFORA_WATCH_SCREENSHOT_MODE=1 #{shell_join([
         "xcrun",
         "simctl",
         "launch",
         udid,
         watch_app_identifier,
-        "--openclaw-watch-screenshot-mode",
+        "--afora-watch-screenshot-mode",
       ])}"
     )
     sleep(3)
@@ -725,7 +725,7 @@ def match_profile_env_key(target, suffix)
 end
 
 def profile_plist_value(profile_path, key_path)
-  Tempfile.create(["openclaw-profile", ".plist"]) do |file|
+  Tempfile.create(["afora-profile", ".plist"]) do |file|
     stdout, stderr, status = Open3.capture3("security", "cms", "-D", "-i", profile_path)
     unless status.success?
       detail = stderr.to_s.strip
@@ -834,7 +834,7 @@ def render_ios_release_notes(release_version:, app_store_revision:)
 end
 
 def release_notes_metadata_path(release_version:, app_store_revision:)
-  temp_root = Dir.mktmpdir("openclaw-release-notes")
+  temp_root = Dir.mktmpdir("afora-release-notes")
   target_dir = File.join(temp_root, "en-US")
   FileUtils.mkdir_p(target_dir)
   File.write(
@@ -877,7 +877,7 @@ end
 
 def public_metadata_path(release_version: nil, app_store_revision: nil)
   source = File.join(__dir__, "metadata")
-  temp_root = Dir.mktmpdir("openclaw-app-store-metadata")
+  temp_root = Dir.mktmpdir("afora-app-store-metadata")
   Dir.children(source).each do |entry|
     source_entry = File.join(source, entry)
     next unless File.directory?(source_entry)
@@ -1328,7 +1328,7 @@ def resolve_ios_release_plan!(release_version: nil, app_store_revision: nil, bui
   stdout = ""
   stderr = ""
   status = nil
-  Tempfile.create(["openclaw-ios-release-plan", ".json"]) do |file|
+  Tempfile.create(["afora-ios-release-plan", ".json"]) do |file|
     file.write(JSON.generate(input))
     file.flush
     stdout, stderr, status = Open3.capture3(
@@ -1510,14 +1510,14 @@ end
 
 def pin_release_build_provenance!
   commit = [ENV["GIT_COMMIT"], ENV["GIT_SHA"]].find { |value| env_present?(value) } || release_git_sha
-  timestamp = env_present?(ENV["OPENCLAW_BUILD_TIMESTAMP"]) ? ENV["OPENCLAW_BUILD_TIMESTAMP"] : Time.now.utc.iso8601(3)
+  timestamp = env_present?(ENV["AFORA_BUILD_TIMESTAMP"]) ? ENV["AFORA_BUILD_TIMESTAMP"] : Time.now.utc.iso8601(3)
   normalized_commit = normalize_release_git_sha(commit)
   verify_apple_release_source!(normalized_commit)
   ENV["GIT_COMMIT"] = normalized_commit
-  ENV["OPENCLAW_BUILD_TIMESTAMP"] = normalize_release_build_timestamp(timestamp)
+  ENV["AFORA_BUILD_TIMESTAMP"] = normalize_release_build_timestamp(timestamp)
   {
     git_commit: ENV.fetch("GIT_COMMIT"),
-    build_timestamp: ENV.fetch("OPENCLAW_BUILD_TIMESTAMP")
+    build_timestamp: ENV.fetch("AFORA_BUILD_TIMESTAMP")
   }
 end
 
@@ -1639,12 +1639,12 @@ def capture_release_ios_screenshot!(
       # xcodebuild/TestManager session and reboots the selected simulator.
       capture_ios_screenshots(
         project: project,
-        scheme: "OpenClawUITests",
+        scheme: "AforaUITests",
         configuration: "Debug",
         devices: [device],
         languages: ["en-US"],
-        only_testing: ["OpenClawUITests/OpenClawSnapshotUITests/#{test_name}"],
-        launch_arguments: ["--openclaw-screenshot-mode"],
+        only_testing: ["AforaUITests/AforaSnapshotUITests/#{test_name}"],
+        launch_arguments: ["--afora-screenshot-mode"],
         output_directory: output_directory,
         clear_previous_screenshots: clear_previous_screenshots && attempt == 1,
         derived_data_path: derived_data_path,
@@ -1690,11 +1690,11 @@ end
 
 def build_app_store_release(context)
   version = context[:version]
-  project_path = File.join(ios_root, "OpenClaw.xcodeproj")
+  project_path = File.join(ios_root, "Afora.xcodeproj")
   output_directory = File.join(ios_root, "build", "app-store")
-  archive_path = File.join(output_directory, "OpenClaw-#{version}.xcarchive")
+  archive_path = File.join(output_directory, "Afora-#{version}.xcarchive")
   export_options_path = File.join(output_directory, "ExportOptions.plist")
-  output_name = "OpenClaw-#{version}.ipa"
+  output_name = "Afora-#{version}.ipa"
   expected_ipa_path = File.join(output_directory, output_name)
 
   verify_apple_release_source!(context[:git_commit])
@@ -1709,7 +1709,7 @@ def build_app_store_release(context)
       "-project",
       project_path,
       "-scheme",
-      "OpenClaw",
+      "Afora",
       "-configuration",
       "Release",
       "-destination",
@@ -1941,7 +1941,7 @@ platform :ios do
 
   desc "Generate screenshots, update App Store metadata and review attachment, then upload an App Store build"
   lane :release_upload do |options|
-    unless ENV["OPENCLAW_IOS_RELEASE_WRAPPER"] == "1"
+    unless ENV["AFORA_IOS_RELEASE_WRAPPER"] == "1"
       UI.user_error!("Use `pnpm ios:release:upload`; direct Fastlane upload is disabled.")
     end
 
@@ -2063,7 +2063,7 @@ platform :ios do
       api_key: api_key,
       force: true,
       app_version: version_metadata[:short_version],
-      copyright: "2026 OpenClaw",
+      copyright: "2026 Afora",
       primary_category: "PRODUCTIVITY",
       secondary_category: "UTILITIES",
       metadata_path: metadata_path,
@@ -2110,17 +2110,17 @@ platform :ios do
     sh(shell_join(["xcodegen", "generate", "--spec", File.join(ios_root, "project.yml"), "--project", ios_root]))
 
     output_directory = File.join(ios_root, "fastlane", "screenshots")
-    result_bundle_path = File.join(output_directory, "test_output", "en-US", "OpenClawUITests.xcresult")
+    result_bundle_path = File.join(output_directory, "test_output", "en-US", "AforaUITests.xcresult")
     result_bundle_archive_directory = File.join(ios_root, "build", "SnapshotTestResults")
     derived_data_path = File.join(ios_root, "build", "SnapshotDerivedData")
     FileUtils.rm_rf(result_bundle_archive_directory)
     FileUtils.mkdir_p(result_bundle_archive_directory)
     FileUtils.rm_rf(derived_data_path)
     devices = snapshot_devices
-    project = File.join(ios_root, "OpenClaw.xcodeproj")
+    project = File.join(ios_root, "Afora.xcodeproj")
     run_tests(
       project: project,
-      scheme: "OpenClawUITests",
+      scheme: "AforaUITests",
       configuration: "Debug",
       devices: [devices.first],
       derived_data_path: derived_data_path,

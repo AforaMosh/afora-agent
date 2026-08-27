@@ -6,7 +6,7 @@ import {
   collectMessagingMediaUrlsFromRecord,
   collectMessagingMediaUrlsFromToolResult,
 } from "../embedded-agent-tool-media.js";
-import { stripOpenClawMcpToolPrefix } from "./tool-policy.js";
+import { stripAforaMcpToolPrefix } from "./tool-policy.js";
 import type { PreparedCliRunContext } from "./types.js";
 
 export const CLI_MESSAGING_EVIDENCE_MAX_CALLS = 64;
@@ -14,7 +14,7 @@ export const CLI_MESSAGING_EVIDENCE_MAX_CALLS = 64;
 // One canonical prefix-strip implementation: the loopback transport prefix is
 // a tool-policy concept shared with the embedded CLI-dispatch bridge, and
 // drifting copies would desync tool-name correlation across those surfaces.
-export const normalizeCliMessagingToolName = stripOpenClawMcpToolPrefix;
+export const normalizeCliMessagingToolName = stripAforaMcpToolPrefix;
 
 export function extractCliMessagingTarget(
   context: PreparedCliRunContext,

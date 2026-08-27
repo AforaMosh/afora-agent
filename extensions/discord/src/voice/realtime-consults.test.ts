@@ -1,5 +1,5 @@
 import type { PassThrough } from "node:stream";
-import type { RealtimeVoiceSessionHarness } from "openclaw/plugin-sdk/realtime-voice";
+import type { RealtimeVoiceSessionHarness } from "afora-agent/plugin-sdk/realtime-voice";
 import { defineDiscordVoiceTests } from "./voice-test-harness.test-support.js";
 
 defineDiscordVoiceTests(
@@ -253,7 +253,7 @@ defineDiscordVoiceTests(
           {
             itemId: "item-owner",
             callId: "call-owner",
-            name: "openclaw_agent_consult",
+            name: "afora_agent_consult",
             args: { question: "owner question" },
           },
           realtimeSessionMock,
@@ -283,7 +283,7 @@ defineDiscordVoiceTests(
         {
           itemId: "item-late",
           callId: "call-late",
-          name: "openclaw_agent_consult",
+          name: "afora_agent_consult",
           args: { question: "late question" },
         },
         realtimeSessionMock,
@@ -297,7 +297,7 @@ defineDiscordVoiceTests(
         "call-late",
         {
           status: "already_delivered",
-          message: "OpenClaw already delivered this answer to Discord voice. Do not repeat it.",
+          message: "Afora already delivered this answer to Discord voice. Do not repeat it.",
         },
         { suppressResponse: true },
       );
@@ -307,7 +307,7 @@ defineDiscordVoiceTests(
         {
           itemId: "item-late-unsuppressed",
           callId: "call-late-unsuppressed",
-          name: "openclaw_agent_consult",
+          name: "afora_agent_consult",
           args: { question: "late question" },
         },
         realtimeSessionMock,
@@ -320,7 +320,7 @@ defineDiscordVoiceTests(
           "call-late-unsuppressed",
           {
             status: "already_delivered",
-            message: "OpenClaw already delivered this answer to Discord voice. Do not repeat it.",
+            message: "Afora already delivered this answer to Discord voice. Do not repeat it.",
           },
         ]);
       });
@@ -342,7 +342,7 @@ defineDiscordVoiceTests(
         {
           itemId: "item-cancelled",
           callId: "call-cancelled",
-          name: "openclaw_agent_consult",
+          name: "afora_agent_consult",
           args: { question: "cancelled question" },
         },
         realtimeSessionMock,
@@ -353,7 +353,7 @@ defineDiscordVoiceTests(
         "call-cancelled",
         {
           status: "cancelled",
-          message: "OpenClaw cancelled this consult before completion. Do not restart it.",
+          message: "Afora cancelled this consult before completion. Do not restart it.",
         },
         { suppressResponse: true },
       );
@@ -375,7 +375,7 @@ defineDiscordVoiceTests(
         {
           itemId: "item-late",
           callId: "call-late",
-          name: "openclaw_agent_consult",
+          name: "afora_agent_consult",
           args: { question: "late question" },
         },
         realtimeSessionMock,
@@ -404,7 +404,7 @@ defineDiscordVoiceTests(
         {
           itemId: "item-retry",
           callId: "call-retry",
-          name: "openclaw_agent_consult",
+          name: "afora_agent_consult",
           args: { question: "retry question" },
         },
         realtimeSessionMock,
@@ -431,7 +431,7 @@ defineDiscordVoiceTests(
         {
           itemId: "item-late",
           callId: "call-late",
-          name: "openclaw_agent_consult",
+          name: "afora_agent_consult",
           args: { question: "late question" },
         },
         realtimeSessionMock,
@@ -442,7 +442,7 @@ defineDiscordVoiceTests(
           "call-late",
           {
             status: "already_delivered",
-            message: "OpenClaw already delivered this answer to Discord voice. Do not repeat it.",
+            message: "Afora already delivered this answer to Discord voice. Do not repeat it.",
           },
           { suppressResponse: true },
         ),
@@ -467,7 +467,7 @@ defineDiscordVoiceTests(
         {
           itemId: "item-late",
           callId: "call-late",
-          name: "openclaw_agent_consult",
+          name: "afora_agent_consult",
           args: { question: "late question" },
         },
         realtimeSessionMock,
@@ -501,7 +501,7 @@ defineDiscordVoiceTests(
         {
           itemId: "item-old",
           callId: "call-old",
-          name: "openclaw_agent_consult",
+          name: "afora_agent_consult",
           args: { question: "repeat question" },
         },
         realtimeSessionMock,
@@ -519,7 +519,7 @@ defineDiscordVoiceTests(
         {
           itemId: "item-new",
           callId: "call-new",
-          name: "openclaw_agent_consult",
+          name: "afora_agent_consult",
           args: { question: "repeat question" },
         },
         realtimeSessionMock,
@@ -533,7 +533,7 @@ defineDiscordVoiceTests(
         "call-new",
         {
           status: "already_delivered",
-          message: "OpenClaw already delivered this answer to Discord voice. Do not repeat it.",
+          message: "Afora already delivered this answer to Discord voice. Do not repeat it.",
         },
         { suppressResponse: true },
       );
@@ -583,14 +583,14 @@ defineDiscordVoiceTests(
 
       expect(bridgeParams?.autoRespondToAudio).toBe(true);
       expect(bridgeParams?.interruptResponseOnInputAudio).toBe(false);
-      expect(bridgeParams?.instructions).toContain("Call openclaw_agent_consult");
-      expect(bridgeParams?.tools?.map((tool) => tool.name)).toContain("openclaw_agent_consult");
+      expect(bridgeParams?.instructions).toContain("Call afora_agent_consult");
+      expect(bridgeParams?.tools?.map((tool) => tool.name)).toContain("afora_agent_consult");
 
       void bridgeParams?.onToolCall?.(
         {
           itemId: "item-1",
           callId: "call-1",
-          name: "openclaw_agent_consult",
+          name: "afora_agent_consult",
           args: { question: "check my Discord" },
         },
         realtimeSessionMock,
@@ -619,7 +619,7 @@ defineDiscordVoiceTests(
         sessionKey: "agent:main:discord:channel:1001",
       });
       resolveRealtimeBootstrapContextInstructionsMock.mockResolvedValue(
-        "OpenClaw realtime voice profile context:\n\n### IDENTITY.md\nName: Wilfred",
+        "Afora realtime voice profile context:\n\n### IDENTITY.md\nName: Wilfred",
       );
       const { bridgeParams } = await createJoinedBidiFixture({
         voice: { realtime: { consultPolicy: "always" } },
@@ -632,10 +632,10 @@ defineDiscordVoiceTests(
         files: undefined,
         warn: expect.any(Function),
       });
-      expect(bridgeParams?.instructions).toContain("OpenClaw realtime voice profile context");
+      expect(bridgeParams?.instructions).toContain("Afora realtime voice profile context");
       expect(bridgeParams?.instructions).toContain("Name: Wilfred");
       expect(bridgeParams?.instructions).toContain("short natural backchannel");
-      expect(bridgeParams?.instructions).toContain("Call openclaw_agent_consult");
+      expect(bridgeParams?.instructions).toContain("Call afora_agent_consult");
     });
 
     it("routes bidi realtime consults through a configured voice agent session target", async () => {
@@ -670,7 +670,7 @@ defineDiscordVoiceTests(
         {
           itemId: "item-1",
           callId: "call-1",
-          name: "openclaw_agent_consult",
+          name: "afora_agent_consult",
           args: { question: "check the maintainer channel context" },
         },
         realtimeSessionMock,
@@ -709,7 +709,7 @@ defineDiscordVoiceTests(
         {
           itemId: "item-guest",
           callId: "call-guest",
-          name: "openclaw_agent_consult",
+          name: "afora_agent_consult",
           args: { question: "guest question" },
         },
         realtimeSessionMock,
@@ -746,7 +746,7 @@ defineDiscordVoiceTests(
         {
           itemId: "item-guest",
           callId: "call-guest",
-          name: "openclaw_agent_consult",
+          name: "afora_agent_consult",
           args: { question: "guest question" },
         },
         realtimeSessionMock,

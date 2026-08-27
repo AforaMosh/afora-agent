@@ -1,7 +1,7 @@
 ---
 summary: "Build a third-party operator or WebChat client for the Gateway WebSocket protocol"
 read_when:
-  - Building an operator, dashboard, or WebChat client outside the OpenClaw repository
+  - Building an operator, dashboard, or WebChat client outside the Afora repository
   - Implementing Gateway reconnect, history, approvals, or device pairing
   - Updating a third-party client for a new Gateway wire version
 title: "Building a Gateway client"
@@ -13,29 +13,29 @@ the wire contract: authentication, capabilities, reconnect recovery, history,
 subscriptions, and version upgrades.
 
 For frame shapes, the handshake, errors, and the complete method surface, read the
-[Gateway protocol specification](https://docs.openclaw.ai/gateway/protocol).
+[Gateway protocol specification](https://docs.afora.ai/gateway/protocol).
 
 ## Install the packages
 
 ```bash
-npm install @openclaw/gateway-client @openclaw/gateway-protocol
+npm install @afora/gateway-client @afora/gateway-protocol
 ```
 
 <Note>
-These packages ship with OpenClaw release trains. During the initial rollout, npm
-may return `E404` until the first package-bearing OpenClaw release is published;
+These packages ship with Afora release trains. During the initial rollout, npm
+may return `E404` until the first package-bearing Afora release is published;
 install them only after the registry pages below resolve.
 </Note>
 
-- [`@openclaw/gateway-protocol`](https://www.npmjs.com/package/@openclaw/gateway-protocol)
+- [`@afora/gateway-protocol`](https://www.npmjs.com/package/@afora/gateway-protocol)
   provides schemas, runtime validators, TypeScript types, client identity and
   capability registries, structured error readers, and protocol version constants.
   Its npm tarball also includes the generated
-  [`protocol.schema.json`](https://unpkg.com/@openclaw/gateway-protocol@beta/protocol.schema.json)
+  [`protocol.schema.json`](https://unpkg.com/@afora/gateway-protocol@beta/protocol.schema.json)
   machine-readable contract.
-- [`@openclaw/gateway-client`](https://www.npmjs.com/package/@openclaw/gateway-client)
+- [`@afora/gateway-client`](https://www.npmjs.com/package/@afora/gateway-client)
   is the reference connection implementation. Import the package root for the Node
-  client and `@openclaw/gateway-client/browser` for the browser-safe protocol,
+  client and `@afora/gateway-client/browser` for the browser-safe protocol,
   device-auth, and reconnect helpers.
 
 The Node entry owns its WebSocket transport. A browser host supplies a WebSocket
@@ -56,12 +56,12 @@ A full interactive chat client that also renders approval prompts should request
 Add `operator.questions` only if the client handles interactive questions,
 `operator.pairing` only if it manages paired devices or nodes, and
 `operator.admin` only for administrative operations such as `config.patch`.
-The [operator scopes reference](https://docs.openclaw.ai/gateway/operator-scopes)
+The [operator scopes reference](https://docs.afora.ai/gateway/operator-scopes)
 defines the complete method and approval-time rules.
 
-Do not create a per-client bearer token by hand-editing `openclaw.json`. Configure
-the Gateway's shared bootstrap authentication with `openclaw configure --section
-gateway` or the `openclaw onboard --gateway-auth ...` options, then let device
+Do not create a per-client bearer token by hand-editing `afora.json`. Configure
+the Gateway's shared bootstrap authentication with `afora configure --section
+gateway` or the `afora onboard --gateway-auth ...` options, then let device
 pairing mint the client token:
 
 1. Persist an Ed25519 device identity in the client.
@@ -73,14 +73,14 @@ pairing mint the client token:
    `connect.challenge` existed may use local time only on their no-challenge path.
 3. If the Gateway returns structured `PAIRING_REQUIRED` details, show the request
    ID and pause or retry according to `error.details.recommendedNextStep`.
-4. On the Gateway host, review the request with `openclaw devices list`, then
-   approve that exact current request with `openclaw devices approve <requestId>`.
+4. On the Gateway host, review the request with `afora devices list`, then
+   approve that exact current request with `afora devices approve <requestId>`.
 5. Reconnect and persist `hello-ok.auth.deviceToken` with the negotiated role and
    scopes. Use that device token for later connections.
 
 Scope or role upgrades create a new pending pairing request. Token rotation cannot
 expand the approved pairing contract. See the
-[Devices CLI](https://docs.openclaw.ai/cli/devices) for approval, rotation, and
+[Devices CLI](https://docs.afora.ai/cli/devices) for approval, rotation, and
 revocation commands.
 
 ## Advertise client capabilities
@@ -90,7 +90,7 @@ not grant authorization. Import names from `GATEWAY_CLIENT_CAPS` instead of
 duplicating string literals:
 
 ```ts
-import { GATEWAY_CLIENT_CAPS } from "@openclaw/gateway-protocol/client-info";
+import { GATEWAY_CLIENT_CAPS } from "@afora/gateway-protocol/client-info";
 
 const caps = [GATEWAY_CLIENT_CAPS.TOOL_EVENTS];
 ```
@@ -185,7 +185,7 @@ than forward a shared owner credential.
 
 ## Use history metadata and stable anchors
 
-Rows returned by `chat.history` can carry an `__openclaw` metadata envelope:
+Rows returned by `chat.history` can carry an `__afora` metadata envelope:
 
 - `id` is the transcript entry identity. Use it for anchored history requests,
   but not as a unique display-row key.
@@ -201,7 +201,7 @@ Rows returned by `chat.history` can carry an `__openclaw` metadata envelope:
 
 Page backward with the response's `hasMore` and `nextOffset` values. Numeric
 offsets describe the current transcript projection, so do not persist them as
-long-lived bookmarks across reset or compaction. Persist `__openclaw.id` instead.
+long-lived bookmarks across reset or compaction. Persist `__afora.id` instead.
 To restore around a known row, call `chat.history` with `messageId` and the
 `sessionId` that returned it. The Gateway can resolve that anchor from reset
 archive history; anchored responses intentionally omit numeric paging metadata.
@@ -239,12 +239,12 @@ release-vintage metadata and required scope metadata for core methods, but a wir
 version bump is still an explicit breaking event for third-party clients. Pin the
 package versions you test, upgrade the client and Gateway together when the wire
 version changes, and review the
-[OpenClaw changelog](https://github.com/openclaw/openclaw/blob/main/CHANGELOG.md)
+[Afora changelog](https://github.com/AforaMosh/afora-agent/blob/main/CHANGELOG.md)
 before each upgrade.
 
 ## Related
 
-- [Gateway protocol](https://docs.openclaw.ai/gateway/protocol)
-- [Embedding OpenClaw](https://docs.openclaw.ai/gateway/embedding)
-- [Gateway RPC reference](https://docs.openclaw.ai/reference/rpc)
-- [Gateway integrations for external apps](https://docs.openclaw.ai/gateway/external-apps)
+- [Gateway protocol](https://docs.afora.ai/gateway/protocol)
+- [Embedding Afora](https://docs.afora.ai/gateway/embedding)
+- [Gateway RPC reference](https://docs.afora.ai/reference/rpc)
+- [Gateway integrations for external apps](https://docs.afora.ai/gateway/external-apps)

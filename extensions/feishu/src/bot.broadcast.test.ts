@@ -1,5 +1,5 @@
 // Feishu tests cover bot.broadcast plugin behavior.
-import { buildChannelInboundEventContext } from "openclaw/plugin-sdk/channel-inbound";
+import { buildChannelInboundEventContext } from "afora-agent/plugin-sdk/channel-inbound";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClawdbotConfig, PluginRuntime } from "../runtime-api.js";
 import { feishuGroupNameCache } from "./bot-group-name-state.js";
@@ -62,9 +62,9 @@ const {
   ),
 }));
 
-vi.mock("openclaw/plugin-sdk/channel-inbound", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/channel-inbound")>(
-    "openclaw/plugin-sdk/channel-inbound",
+vi.mock("afora-agent/plugin-sdk/channel-inbound", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/channel-inbound")>(
+    "afora-agent/plugin-sdk/channel-inbound",
   );
   return {
     ...actual,
@@ -81,9 +81,9 @@ vi.mock("openclaw/plugin-sdk/channel-inbound", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/session-store-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/session-store-runtime")>(
-    "openclaw/plugin-sdk/session-store-runtime",
+vi.mock("afora-agent/plugin-sdk/session-store-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/session-store-runtime")>(
+    "afora-agent/plugin-sdk/session-store-runtime",
   );
   return { ...actual, resolveStorePath: mockResolveStorePath };
 });

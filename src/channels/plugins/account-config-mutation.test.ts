@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { createChannelTestPluginBase } from "../../test-utils/channel-plugins.js";
 import {
   applyPreparedChannelAccountConfiguration,
@@ -29,7 +29,7 @@ describe("channel account config mutations", () => {
           token: "old-token",
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const plugin = {
       ...createChannelTestPluginBase({ id: "test-chat" }),
       setup: {
@@ -246,7 +246,7 @@ describe("channel account config mutations", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const plugin = {
       ...createChannelTestPluginBase({
         id: "test-chat",

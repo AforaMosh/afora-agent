@@ -1,4 +1,4 @@
-import { SYSTEM_PROMPT_CACHE_BOUNDARY } from "@openclaw/ai/internal/shared";
+import { SYSTEM_PROMPT_CACHE_BOUNDARY } from "@afora/ai/internal/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createReplyOperation } from "../../auto-reply/reply/reply-run-registry.js";
 import { testing as replyRunTesting } from "../../auto-reply/reply/reply-run-registry.test-support.js";
@@ -95,14 +95,14 @@ async function captureClaudeLiveArgs(params: {
 describe("Claude live process arguments", () => {
   it("normalizes the live protocol while retaining resume state", async () => {
     const args = await captureClaudeLiveArgs({
-      args: ["-p", "--resume", "claude-session", "--session-id", "openclaw-session"],
+      args: ["-p", "--resume", "claude-session", "--session-id", "afora-session"],
       backend: baseBackend,
       useResume: true,
     });
 
     expect(args).toContain("--resume");
     expect(args).toContain("claude-session");
-    expect(args).not.toContain("openclaw-session");
+    expect(args).not.toContain("afora-session");
     expect(args).toEqual(
       expect.arrayContaining([
         "--input-format",
@@ -292,13 +292,13 @@ describe("runClaudeTurn", () => {
     await executePreparedCliRun(
       buildPreparedCliRunContext({
         backend,
-        systemPrompt: `# OpenClaw\n\n## Stable Instructions\nFirst instructions${SYSTEM_PROMPT_CACHE_BOUNDARY}Metadata`,
+        systemPrompt: `# Afora\n\n## Stable Instructions\nFirst instructions${SYSTEM_PROMPT_CACHE_BOUNDARY}Metadata`,
       }),
     );
     const second = await executePreparedCliRun(
       buildPreparedCliRunContext({
         backend,
-        systemPrompt: `# OpenClaw\n\n## Stable Instructions\nSecond instructions${SYSTEM_PROMPT_CACHE_BOUNDARY}Metadata`,
+        systemPrompt: `# Afora\n\n## Stable Instructions\nSecond instructions${SYSTEM_PROMPT_CACHE_BOUNDARY}Metadata`,
       }),
       "live-stable-prompt",
     );

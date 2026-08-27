@@ -1,8 +1,8 @@
 import { PassThrough } from "node:stream";
 import { DAVESession } from "@discordjs/voice";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { VoiceOpcodes, type VoiceSendPayload } from "discord-api-types/voice/v8";
-import { createOpenClawCodingTools } from "openclaw/plugin-sdk/agent-harness";
+import { createAforaCodingTools } from "afora-agent/plugin-sdk/agent-harness";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ChannelType } from "../internal/discord.js";
 import { createVoiceCaptureState } from "./capture-state.js";
@@ -112,7 +112,7 @@ function buildVoiceTestHarness() {
       active: false,
       queued: false,
       reason: "no_active_run",
-      message: "There is no active OpenClaw run to steer.",
+      message: "There is no active Afora run to steer.",
       speak: true,
       show: true,
       suppress: false,
@@ -361,12 +361,12 @@ function buildVoiceTestHarness() {
     if (typeof args.senderIsOwner !== "boolean") {
       throw new Error("expected agent command owner identity");
     }
-    return createOpenClawCodingTools({
+    return createAforaCodingTools({
       config: {},
       senderIsOwner: args.senderIsOwner,
       messageProvider: "discord",
-      workspaceDir: "/tmp/openclaw-discord-voice-tools",
-      agentDir: "/tmp/openclaw-discord-voice-agent",
+      workspaceDir: "/tmp/afora-discord-voice-tools",
+      agentDir: "/tmp/afora-discord-voice-agent",
     }).map((tool) => tool.name);
   };
 
@@ -586,7 +586,7 @@ function buildVoiceTestHarness() {
     DAVESession,
     expectDefined,
     VoiceOpcodes,
-    createOpenClawCodingTools,
+    createAforaCodingTools,
     expect,
     it,
     vi,

@@ -10,7 +10,7 @@ The Gateway serves a small **browser Control UI** (Vite + Lit) from the same por
 
 - default: `http://<host>:18789/`
 - with `gateway.tls.enabled: true`: `https://<host>:18789/`
-- optional prefix: set `gateway.controlUi.basePath` (e.g. `/openclaw`)
+- optional prefix: set `gateway.controlUi.basePath` (e.g. `/afora`)
 
 Capabilities live in [Control UI](/web/control-ui). This page covers bind modes, security, and other web-facing surfaces.
 
@@ -21,7 +21,7 @@ Control UI is **enabled by default** when assets are present (`dist/control-ui`)
 ```json5
 {
   gateway: {
-    controlUi: { enabled: true, basePath: "/openclaw" }, // basePath optional
+    controlUi: { enabled: true, basePath: "/afora" }, // basePath optional
   },
 }
 ```
@@ -52,7 +52,7 @@ When `hooks.enabled=true`, the Gateway also exposes a webhook endpoint on the sa
     Start the gateway:
 
     ```bash
-    openclaw gateway
+    afora gateway
     ```
 
     Open `https://<magicdns>/` (or your configured `gateway.controlUi.basePath`).
@@ -64,7 +64,7 @@ When `hooks.enabled=true`, the Gateway also exposes a webhook endpoint on the sa
       gateway: {
         bind: "loopback",
         tailscale: { mode: "funnel" },
-        auth: { mode: "password" }, // or OPENCLAW_GATEWAY_PASSWORD
+        auth: { mode: "password" }, // or AFORA_GATEWAY_PASSWORD
       },
     }
     ```

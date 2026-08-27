@@ -9,13 +9,13 @@ import type { AuthProfileStore } from "../../agents/auth-profiles.js";
 import type { ModelCatalogEntry } from "../../agents/model-catalog.types.js";
 import { setPreparedModelRuntimeAuthStore } from "../../agents/prepared-model-runtime-auth.js";
 import type { PreparedModelRuntimeSnapshot } from "../../agents/prepared-model-runtime.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
-import { withOpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+import type { AforaConfig } from "../../config/types.afora.js";
+import { withAforaTestState } from "../../test-utils/afora-test-state.js";
 import { createGatewayChatMetadataRuntime } from "./chat-metadata-runtime.js";
 import type { GatewayRequestContext } from "./types.js";
 
 function createOwner(
-  config: OpenClawConfig,
+  config: AforaConfig,
   id: string,
   credentials: AgentCredentialMap = {},
   provider = "test",
@@ -56,7 +56,7 @@ function createOwner(
 }
 
 function createHarness(
-  initialConfig: OpenClawConfig = { agents: { list: [{ id: "main", default: true }] } },
+  initialConfig: AforaConfig = { agents: { list: [{ id: "main", default: true }] } },
   runtimeOptions: {
     beforeRefresh?: () => Promise<void>;
     refreshOnRead?: boolean;
@@ -134,7 +134,7 @@ function createHarness(
     getPreparedOwner,
     getSkillsVersion,
     runtime,
-    setConfig(next: OpenClawConfig) {
+    setConfig(next: AforaConfig) {
       config = next;
     },
     setAuthStore(next: AuthProfileStore | undefined) {
@@ -358,7 +358,7 @@ describe("gateway chat metadata runtime", () => {
   });
 
   test("keeps disk-only roster rows without projecting them", async () => {
-    await withOpenClawTestState(
+    await withAforaTestState(
       {
         layout: "state-only",
         scenario: "minimal",
@@ -473,7 +473,7 @@ describe("gateway chat metadata runtime", () => {
         },
         list: [{ id: "main", default: true }],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const harness = createHarness(config, { useDefaultProjection: true });
     const credentials: AgentCredentialMap = {
       openai: {

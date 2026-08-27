@@ -1,8 +1,8 @@
 // File Transfer plugin module implements dir fetch behavior.
 import crypto from "node:crypto";
 import path from "node:path";
-import { runCommandBuffered } from "openclaw/plugin-sdk/process-runtime";
-import { root as fsRoot } from "openclaw/plugin-sdk/security-runtime";
+import { runCommandBuffered } from "afora-agent/plugin-sdk/process-runtime";
+import { root as fsRoot } from "afora-agent/plugin-sdk/security-runtime";
 import {
   classifyFsSafeReadError,
   readAbsolutePath,

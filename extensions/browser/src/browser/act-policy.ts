@@ -10,8 +10,8 @@ import {
   MAX_TIMER_TIMEOUT_MS,
   parseStrictInteger,
   resolveTimerTimeoutMs,
-} from "openclaw/plugin-sdk/number-runtime";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/number-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { BrowserActRequest } from "./client-actions.types.js";
 import { DEFAULT_BROWSER_ACTION_TIMEOUT_MS } from "./constants.js";
 

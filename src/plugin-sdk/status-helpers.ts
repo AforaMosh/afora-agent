@@ -7,7 +7,7 @@ import {
   applyChannelAccountState,
   resolveChannelAccountState,
 } from "../channels/status/account-state.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 // Preserve the shipped Plugin SDK name while the implementation stays canonical.
 export { normalizeOptionalString as asString };
 export type { ChannelAccountSnapshot } from "../channels/plugins/types.core.js";
@@ -69,7 +69,7 @@ type ComputedAccountStatusBase = {
 
 type ComputedAccountStatusAdapterParams<ResolvedAccount, Probe, Audit> = {
   account: ResolvedAccount;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   runtime?: ChannelAccountSnapshot;
   probe?: Probe;
   audit?: Audit;

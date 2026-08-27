@@ -3,15 +3,15 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
+import { expectDefined } from "@afora/normalization-core";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import { createDeferred } from "../../../test/helpers/promise.js";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import { createReplyOperation } from "../../auto-reply/reply/reply-run-registry.js";
 import { upsertSessionEntryCore } from "../../config/sessions/session-accessor.js";
 import type { PluginManifestRecord } from "../../plugins/manifest-registry.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
+import { closeAforaAgentDatabasesForTest } from "../../state/afora-agent-db.js";
 import {
   acquireAgentRunPreparedModelRuntimeMock,
   attemptServerEndpointCompactionMock,
@@ -25,7 +25,7 @@ import {
   compactWithSafetyTimeoutMock,
   createAgentSessionMock,
   createPreparedEmbeddedAgentSettingsManagerMock,
-  createOpenClawCodingToolsMock,
+  createAforaCodingToolsMock,
   enqueueCommandInLaneMock,
   ensureAuthProfileStoreMock,
   estimateTokensMock,
@@ -534,7 +534,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
     expectRecordFields(fallbackPlanCall[0], {
       provider: "anthropic",
       modelId: "claude-fallback",
-      harnessId: "openclaw",
+      harnessId: "afora",
       modelRoute: undefined,
     });
   });
@@ -635,7 +635,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
           auth: { order: { openai: ["openai:subscription", "openai:platform"] } },
           agents: {
             defaults: {
-              models: { "openai/gpt-5.5": { agentRuntime: { id: "openclaw" } } },
+              models: { "openai/gpt-5.5": { agentRuntime: { id: "afora" } } },
             },
           },
         },
@@ -705,7 +705,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
           },
           agents: {
             defaults: {
-              models: { "openai/gpt-5.5": { agentRuntime: { id: "openclaw" } } },
+              models: { "openai/gpt-5.5": { agentRuntime: { id: "afora" } } },
             },
           },
         },
@@ -753,8 +753,8 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
       runAttempt: vi.fn(),
     } as never);
     selectAgentHarnessForPreparedModelProvidersMock.mockReturnValue({
-      id: "openclaw",
-      label: "OpenClaw test harness",
+      id: "afora",
+      label: "Afora test harness",
       supports: () => ({ supported: true }),
       runAttempt: vi.fn(),
     } as never);
@@ -766,7 +766,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
     expect(result.ok).toBe(true);
     expect(selectAgentHarnessForPreparedModelProvidersMock).toHaveBeenCalledTimes(2);
     expect(buildAgentRuntimePlanMock).toHaveBeenCalledWith(
-      expect.objectContaining({ harnessId: "openclaw", harnessRuntime: "openclaw" }),
+      expect.objectContaining({ harnessId: "afora", harnessRuntime: "afora" }),
     );
   });
 
@@ -1163,7 +1163,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
       senderE164: "+15551234567",
     });
 
-    expectRecordFields(mockCallArg(createOpenClawCodingToolsMock), {
+    expectRecordFields(mockCallArg(createAforaCodingToolsMock), {
       senderId: "sender-1",
       senderName: "Alice",
       senderUsername: "alice_u",
@@ -1187,7 +1187,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
           origin: "workspace",
           rootDir: "/tmp/workspace/profiled-plugin",
           source: "/tmp/workspace/profiled-plugin/index.js",
-          manifestPath: "/tmp/workspace/profiled-plugin/openclaw.plugin.json",
+          manifestPath: "/tmp/workspace/profiled-plugin/afora.plugin.json",
           contracts: { tools: [toolName] },
           toolMetadata: { [toolName]: { profiles: ["coding"] } },
         } satisfies PluginManifestRecord,
@@ -1207,7 +1207,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
       snapshot: preparedModelRuntime,
       release: vi.fn(),
     });
-    createOpenClawCodingToolsMock.mockReturnValueOnce([
+    createAforaCodingToolsMock.mockReturnValueOnce([
       {
         name: toolName,
         label: "Profiled plugin tool",
@@ -1226,7 +1226,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
     });
 
     expect(result.ok).toBe(true);
-    const toolOptions = expectRecordFields(mockCallArg(createOpenClawCodingToolsMock), {});
+    const toolOptions = expectRecordFields(mockCallArg(createAforaCodingToolsMock), {});
     expect(
       (toolOptions.preparedModelRuntime as { metadataSnapshot?: unknown }).metadataSnapshot,
     ).toBe(metadataSnapshot);
@@ -1259,7 +1259,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
         workspaceDir: "/tmp/workspace",
       });
 
-      expectRecordFields(mockCallArg(createOpenClawCodingToolsMock), { modelHasVision });
+      expectRecordFields(mockCallArg(createAforaCodingToolsMock), { modelHasVision });
     },
   );
 
@@ -1272,7 +1272,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
       cwd: "/tmp/task-repo",
     });
 
-    expectRecordFields(mockCallArg(createOpenClawCodingToolsMock), {
+    expectRecordFields(mockCallArg(createAforaCodingToolsMock), {
       cwd: "/tmp/task-repo",
       workspaceDir: "/tmp/workspace",
       spawnWorkspaceDir: "/tmp/workspace",
@@ -1292,7 +1292,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
       contextTokenBudget: 64_000,
     });
 
-    expectRecordFields(mockCallArg(createOpenClawCodingToolsMock), {
+    expectRecordFields(mockCallArg(createAforaCodingToolsMock), {
       modelContextWindowTokens: 64_000,
     });
     expectRecordFields(mockCallArg(guardSessionManagerMock, 0, 1), {
@@ -1316,7 +1316,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
       workspaceDir: "/tmp/workspace",
     });
 
-    expect(createOpenClawCodingToolsMock).not.toHaveBeenCalled();
+    expect(createAforaCodingToolsMock).not.toHaveBeenCalled();
   });
 
   it("quarantines unsupported tool schemas before creating the compaction model session", async () => {
@@ -1330,7 +1330,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
       authStorage: { setRuntimeApiKey: vi.fn() },
       modelRegistry: {},
     });
-    createOpenClawCodingToolsMock.mockReturnValueOnce([
+    createAforaCodingToolsMock.mockReturnValueOnce([
       {
         name: "healthy_lookup",
         label: "Healthy Lookup",
@@ -1373,7 +1373,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
       contextTokenBudget: 64_000,
     });
 
-    expectRecordFields(mockCallArg(createOpenClawCodingToolsMock), {
+    expectRecordFields(mockCallArg(createAforaCodingToolsMock), {
       modelContextWindowTokens: 32_000,
     });
   });
@@ -1485,7 +1485,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
                 origin: "workspace",
                 rootDir: TEST_WORKSPACE_DIR,
                 source: `${TEST_WORKSPACE_DIR}/index.js`,
-                manifestPath: `${TEST_WORKSPACE_DIR}/openclaw.plugin.json`,
+                manifestPath: `${TEST_WORKSPACE_DIR}/afora.plugin.json`,
                 modelIdNormalization: {
                   providers: {
                     anthropic: {
@@ -1527,7 +1527,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
     );
   });
 
-  it("keeps model-locked OpenClaw compaction on its exact model without fallbacks", async () => {
+  it("keeps model-locked Afora compaction on its exact model without fallbacks", async () => {
     sessionCompactImpl.mockRejectedValueOnce(
       Object.assign(new Error("primary compaction rate limited"), { status: 429 }),
     );
@@ -1539,7 +1539,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
       workspaceDir: "/tmp/workspace",
       provider: "openai",
       model: "gpt-primary",
-      agentHarnessId: "openclaw",
+      agentHarnessId: "afora",
       modelSelectionLocked: true,
       modelFallbacksOverride: ["anthropic/claude-fallback"],
       config: {
@@ -1562,7 +1562,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
   });
 
   it("revalidates immutable Ultra for each compaction fallback candidate", async () => {
-    resolveAgentHarnessPolicyMock.mockReturnValue({ runtime: "openclaw" });
+    resolveAgentHarnessPolicyMock.mockReturnValue({ runtime: "afora" });
     sessionCompactImpl
       .mockRejectedValueOnce(
         Object.assign(new Error("primary compaction rate limited"), {
@@ -1590,7 +1590,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
         agents: {
           defaults: {
             models: {
-              "openai/gpt-5.6-sol": { agentRuntime: { id: "openclaw" } },
+              "openai/gpt-5.6-sol": { agentRuntime: { id: "afora" } },
             },
           },
         },
@@ -1686,7 +1686,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
       runtimeSource: "implicit",
     } as never);
     // Only ChatGPT OAuth is available — no API-key profile. Auth-aware
-    // selection must pick codex (harness-owned) instead of forced openclaw.
+    // selection must pick codex (harness-owned) instead of forced afora.
     ensureAuthProfileStoreMock.mockReturnValue({
       version: 1,
       profiles: {
@@ -1835,7 +1835,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
         modelProviders: expect.arrayContaining([
           expect.objectContaining({
             preparedAuth: expect.objectContaining({ source: "profile" }),
-            runtimePolicy: expect.objectContaining({ compatibleIds: ["openclaw", "codex"] }),
+            runtimePolicy: expect.objectContaining({ compatibleIds: ["afora", "codex"] }),
           }),
         ]),
       }),
@@ -1847,8 +1847,8 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
     });
   });
 
-  it("preserves direct OpenAI API-key compaction when OpenClaw runtime is active", async () => {
-    resolveAgentHarnessPolicyMock.mockReturnValue({ runtime: "openclaw" });
+  it("preserves direct OpenAI API-key compaction when Afora runtime is active", async () => {
+    resolveAgentHarnessPolicyMock.mockReturnValue({ runtime: "afora" });
 
     const result = await compactEmbeddedAgentSessionDirect({
       sessionId: "session-1",
@@ -1948,7 +1948,7 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
   });
 
   it("materializes subscription-auth OpenAI compaction while preserving logical context", async () => {
-    resolveAgentHarnessPolicyMock.mockReturnValue({ runtime: "openclaw" });
+    resolveAgentHarnessPolicyMock.mockReturnValue({ runtime: "afora" });
     mockResolvedModel({ contextWindow: 1_000_000 });
     ensureAuthProfileStoreMock.mockReturnValue({
       version: 1,
@@ -2735,7 +2735,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
   });
 
   it("resolves the durable session key before invoking an owning context engine", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "openclaw-compaction-session-key-"));
+    const dir = await mkdtemp(join(tmpdir(), "afora-compaction-session-key-"));
     const storePath = join(dir, "sessions.json");
     const sessionId = "9d6c8436-7cb2-4bd5-a302-e33305bfc8c4";
     const sessionKey = "agent:main:telegram:direct:reporter";
@@ -2769,7 +2769,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
       expectRecordFields(mockCallArg(hookRunner.runBeforeCompaction, 0, 1), { sessionKey });
       expectRecordFields(mockCallArg(hookRunner.runAfterCompaction, 0, 1), { sessionKey });
     } finally {
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
       await rm(dir, { force: true, recursive: true });
     }
   });
@@ -2947,7 +2947,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
 
   it("fails closed for a fallback-owned legacy compaction target", async () => {
     const legacySessionId = "legacy-session-47";
-    const legacyStorePath = join(tempDirs.make("openclaw-legacy-compaction-"), "openclaw.sqlite");
+    const legacyStorePath = join(tempDirs.make("afora-legacy-compaction-"), "afora.sqlite");
     resolveSessionAgentIdsMock.mockReturnValueOnce({
       defaultAgentId: "main",
       sessionAgentId: "lossless-agent",
@@ -3012,7 +3012,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
           agentId: "lossless-agent",
           sessionId: legacySessionId,
           sessionKey: "legacy-topic-48",
-          storePath: join(tempDirs.make("openclaw-explicit-legacy-compaction-"), "openclaw.sqlite"),
+          storePath: join(tempDirs.make("afora-explicit-legacy-compaction-"), "afora.sqlite"),
         },
       }),
     );
@@ -3523,7 +3523,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
           },
           agents: {
             defaults: {
-              models: { "openai/gpt-5.5": { agentRuntime: { id: "openclaw" } } },
+              models: { "openai/gpt-5.5": { agentRuntime: { id: "afora" } } },
             },
           },
         },
@@ -3592,7 +3592,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
   });
 
   it("routes a queued manual CLI session to backend-owned compaction", async () => {
-    const agentDir = await mkdtemp(join(tmpdir(), "openclaw-native-compaction-queued-"));
+    const agentDir = await mkdtemp(join(tmpdir(), "afora-native-compaction-queued-"));
     try {
       resolveCliBackendConfigMock.mockReturnValue({
         id: "claude-cli",
@@ -3633,13 +3633,13 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
       );
       expect(resolveContextEngineMock).not.toHaveBeenCalled();
     } finally {
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
       await rm(agentDir, { force: true, recursive: true });
     }
   });
 
   it("normalizes an omitted manual target before native harness compaction", async () => {
-    const agentDir = await mkdtemp(join(tmpdir(), "openclaw-native-compaction-target-"));
+    const agentDir = await mkdtemp(join(tmpdir(), "afora-native-compaction-target-"));
     try {
       resolveAgentHarnessPolicyMock.mockReturnValue({
         runtime: "codex",
@@ -3686,12 +3686,12 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
         { nativeCompactionRequest: "after_context_engine" },
       );
     } finally {
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
       await rm(agentDir, { force: true, recursive: true });
     }
   });
 
-  it("preserves concrete OpenClaw pins over explicit Codex policy for queued compaction", async () => {
+  it("preserves concrete Afora pins over explicit Codex policy for queued compaction", async () => {
     resolveAgentHarnessPolicyMock.mockReturnValue({
       runtime: "codex",
       runtimeSource: "model",
@@ -3710,7 +3710,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
       wrappedCompactionArgs({
         provider: "openai",
         model: "gpt-5.5",
-        agentHarnessId: "openclaw",
+        agentHarnessId: "afora",
         config: {
           models: {
             providers: {
@@ -3892,7 +3892,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
         modelProviders: expect.arrayContaining([
           expect.objectContaining({
             preparedAuth: expect.objectContaining({ source: "harness" }),
-            runtimePolicy: expect.objectContaining({ compatibleIds: ["openclaw", "codex"] }),
+            runtimePolicy: expect.objectContaining({ compatibleIds: ["afora", "codex"] }),
           }),
         ]),
       }),
@@ -4011,9 +4011,9 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
     );
   });
 
-  it("keeps unbound api-key queued compaction on openclaw without native harness compaction", async () => {
+  it("keeps unbound api-key queued compaction on afora without native harness compaction", async () => {
     resolveAgentHarnessPolicyMock.mockReturnValue({
-      runtime: "openclaw",
+      runtime: "afora",
       runtimeSource: "implicit",
     } as never);
 
@@ -4040,13 +4040,13 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
       }),
     );
     expect(selectAgentHarnessMock.mock.results[0]?.value).toEqual(
-      expect.objectContaining({ id: "openclaw" }),
+      expect.objectContaining({ id: "afora" }),
     );
   });
 
   it("resolves reusable queued direct auth without a stored profile", async () => {
     resolveAgentHarnessPolicyMock.mockReturnValue({
-      runtime: "openclaw",
+      runtime: "afora",
       runtimeSource: "implicit",
     } as never);
 
@@ -4155,7 +4155,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
 
   it("keeps queued custom OpenAI Responses compaction embedded without a harness binding", async () => {
     resolveAgentHarnessPolicyMock.mockReturnValue({
-      runtime: "openclaw",
+      runtime: "afora",
       runtimeSource: "implicit",
     } as never);
 
@@ -4271,7 +4271,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
   ])(
     "fails model-locked Codex compaction on %s without a context-engine fallback",
     async (failureReason, reason) => {
-      resolveAgentHarnessPolicyMock.mockReturnValue({ runtime: "openclaw" });
+      resolveAgentHarnessPolicyMock.mockReturnValue({ runtime: "afora" });
       maybeCompactAgentHarnessSessionMock.mockResolvedValueOnce({
         ok: false,
         compacted: false,
@@ -4520,7 +4520,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
   });
 
   it("runs native manual compaction before generic model auth preparation", async () => {
-    const agentDir = await mkdtemp(join(tmpdir(), "openclaw-native-compaction-authless-"));
+    const agentDir = await mkdtemp(join(tmpdir(), "afora-native-compaction-authless-"));
     try {
       resolveCliBackendConfigMock.mockReturnValue({
         id: "claude-cli",
@@ -4568,7 +4568,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
       expect(acquireAgentRunPreparedModelRuntimeMock).not.toHaveBeenCalled();
       expect(contextEngineCompactMock).not.toHaveBeenCalled();
     } finally {
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
       await rm(agentDir, { force: true, recursive: true });
     }
   });
@@ -5164,7 +5164,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
   it("rejects a deprecated session-key successor outside the active binding", async () => {
     const delegatedSessionId = "delegated-key-session";
     const delegatedSessionKey = "agent:main:delegated-key-session";
-    const dir = await mkdtemp(join(tmpdir(), "openclaw-compaction-successor-"));
+    const dir = await mkdtemp(join(tmpdir(), "afora-compaction-successor-"));
     const storePath = join(dir, "sessions.json");
     resolveContextEngineMock.mockResolvedValue({
       info: { ownsCompaction: false },
@@ -5200,13 +5200,13 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
         ),
       ).rejects.toThrow("successor target changed the active session binding");
     } finally {
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
       await rm(dir, { force: true, recursive: true });
     }
   });
 
   it("rejects a deprecated session-key successor with a mismatched stored id", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "openclaw-compaction-successor-mismatch-"));
+    const dir = await mkdtemp(join(tmpdir(), "afora-compaction-successor-mismatch-"));
     const storePath = join(dir, "sessions.json");
     const delegatedSessionKey = "agent:main:delegated-key-mismatch";
     resolveContextEngineMock.mockResolvedValue({
@@ -5240,7 +5240,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
         ),
       ).rejects.toThrow("successor identity is inconsistent");
     } finally {
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
       await rm(dir, { force: true, recursive: true });
     }
   });
@@ -5306,7 +5306,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
       rewrittenEntries: 0,
     }));
     const delegatedSessionId = "delegated-marker-session";
-    const dir = await mkdtemp(join(tmpdir(), "openclaw-compaction-marker-successor-"));
+    const dir = await mkdtemp(join(tmpdir(), "afora-compaction-marker-successor-"));
     const storePath = join(dir, "sessions.json");
     const marker = `sqlite:main:${delegatedSessionId}:${storePath}`;
     resolveContextEngineMock.mockResolvedValue({
@@ -5349,7 +5349,7 @@ describe("compactEmbeddedAgentSession hooks (ownsCompaction engine)", () => {
         }),
       });
     } finally {
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
       await rm(dir, { force: true, recursive: true });
     }
   });

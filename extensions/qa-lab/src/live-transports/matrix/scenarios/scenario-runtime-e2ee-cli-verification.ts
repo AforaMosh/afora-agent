@@ -27,7 +27,7 @@ export async function runMatrixQaE2eeCliSelfVerificationScenario(
   const accountId = "cli";
   const account = await registerMatrixQaCliE2eeAccount({
     context,
-    deviceName: "OpenClaw Matrix QA CLI Self Verification Owner",
+    deviceName: "Afora Matrix QA CLI Self Verification Owner",
     scenarioId: "matrix-e2ee-cli-self-verification",
   });
   const owner = await createMatrixQaE2eeCliOwnerClient({
@@ -48,7 +48,7 @@ export async function runMatrixQaE2eeCliSelfVerificationScenario(
       baseUrl: context.baseUrl,
     });
     const cliDevice = await loginClient.loginWithPassword({
-      deviceName: "OpenClaw Matrix QA CLI Self Verification Device",
+      deviceName: "Afora Matrix QA CLI Self Verification Device",
       password: account.password,
       userId: account.userId,
     });
@@ -139,7 +139,7 @@ export async function runMatrixQaE2eeCliSelfVerificationScenario(
         );
         const cliSas = parseMatrixQaCliSasText(
           sasOutput.text,
-          "interactive openclaw matrix verify self",
+          "interactive afora matrix verify self",
         );
         const ownerSas = await waitForMatrixQaVerificationSummary({
           client: owner,
@@ -235,7 +235,7 @@ export async function runMatrixQaE2eeCliSelfVerificationScenario(
             secondaryDeviceId: cliDevice.deviceId,
           },
           details: [
-            "Matrix CLI self-verification established full Matrix identity trust through interactive openclaw matrix verify self",
+            "Matrix CLI self-verification established full Matrix identity trust through interactive afora matrix verify self",
             "cli secret config cleaned after run: yes",
             `cli backup restore stdout: ${restoreArtifacts.stdoutPath}`,
             `cli backup restore stderr: ${restoreArtifacts.stderrPath}`,

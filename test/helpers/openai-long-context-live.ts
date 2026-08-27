@@ -1,19 +1,19 @@
 import { createHash } from "node:crypto";
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
+import { asFiniteNumber } from "@afora/normalization-core/number-coercion";
 import { SessionManager } from "../../src/agents/sessions/session-manager.js";
-import type { OpenClawConfig } from "../../src/config/config.js";
+import type { AforaConfig } from "../../src/config/config.js";
 import { resolveAgentModelPrimaryValue } from "../../src/config/model-input.js";
 
-export const OPENAI_LONG_CONTEXT_LIVE_ENV = "OPENCLAW_LIVE_OPENAI_LONG_CONTEXT";
-export const OPENAI_LONG_CONTEXT_PROFILE_ENV = "OPENCLAW_LIVE_OPENAI_LONG_CONTEXT_PROFILE";
-export const OPENAI_LONG_CONTEXT_METRICS_ENV = "OPENCLAW_LIVE_OPENAI_LONG_CONTEXT_METRICS";
-export const OPENAI_LONG_OUTPUT_ENV = "OPENCLAW_LIVE_OPENAI_LONG_CONTEXT_OUTPUT";
-const OPENAI_LONG_TOOL_OUTPUT_ENV = "OPENCLAW_LIVE_OPENAI_LONG_CONTEXT_TOOL_OUTPUT";
-export const OPENAI_LONG_TOOL_BYTES_ENV = "OPENCLAW_LIVE_OPENAI_LONG_CONTEXT_TOOL_BYTES";
+export const OPENAI_LONG_CONTEXT_LIVE_ENV = "AFORA_LIVE_OPENAI_LONG_CONTEXT";
+export const OPENAI_LONG_CONTEXT_PROFILE_ENV = "AFORA_LIVE_OPENAI_LONG_CONTEXT_PROFILE";
+export const OPENAI_LONG_CONTEXT_METRICS_ENV = "AFORA_LIVE_OPENAI_LONG_CONTEXT_METRICS";
+export const OPENAI_LONG_OUTPUT_ENV = "AFORA_LIVE_OPENAI_LONG_CONTEXT_OUTPUT";
+const OPENAI_LONG_TOOL_OUTPUT_ENV = "AFORA_LIVE_OPENAI_LONG_CONTEXT_TOOL_OUTPUT";
+export const OPENAI_LONG_TOOL_BYTES_ENV = "AFORA_LIVE_OPENAI_LONG_CONTEXT_TOOL_BYTES";
 
 const OFFICIAL_OPENAI_BASE_URL = "https://api.openai.com/v1";
 const OPENAI_RESPONSES_API = "openai-responses";
-const OPENCLAW_RUNTIME = "openclaw";
+const AFORA_RUNTIME = "afora";
 const TOOL_BYTES_MIN = 300_000;
 const TOOL_BYTES_MAX = 800_000;
 
@@ -24,7 +24,7 @@ export type OpenAILongContextProfile = {
   modelRef: string;
   api: typeof OPENAI_RESPONSES_API;
   baseUrl: typeof OFFICIAL_OPENAI_BASE_URL;
-  runtime: typeof OPENCLAW_RUNTIME;
+  runtime: typeof AFORA_RUNTIME;
   contextWindow: number;
   contextTokens: number;
   maxTokens: number;
@@ -44,7 +44,7 @@ const PROFILES = {
     modelRef: "openai/gpt-5.6-luna",
     api: OPENAI_RESPONSES_API,
     baseUrl: OFFICIAL_OPENAI_BASE_URL,
-    runtime: OPENCLAW_RUNTIME,
+    runtime: AFORA_RUNTIME,
     contextWindow: 48_000,
     contextTokens: 48_000,
     maxTokens: 8_192,
@@ -65,7 +65,7 @@ const PROFILES = {
     modelRef: "openai/gpt-5.6-sol",
     api: OPENAI_RESPONSES_API,
     baseUrl: OFFICIAL_OPENAI_BASE_URL,
-    runtime: OPENCLAW_RUNTIME,
+    runtime: AFORA_RUNTIME,
     contextWindow: 1_050_000,
     contextTokens: 922_000,
     maxTokens: 128_000,
@@ -135,7 +135,7 @@ export function resolveOpenAILongContextLiveSettings(
     return { enabled: false };
   }
   if (!liveEnabled) {
-    throw new Error(`${OPENAI_LONG_CONTEXT_LIVE_ENV}=1 also requires OPENCLAW_LIVE_TEST=1`);
+    throw new Error(`${OPENAI_LONG_CONTEXT_LIVE_ENV}=1 also requires AFORA_LIVE_TEST=1`);
   }
   const rawProfile = env[OPENAI_LONG_CONTEXT_PROFILE_ENV]?.trim();
   if (rawProfile !== "reduced" && rawProfile !== "full") {
@@ -170,7 +170,7 @@ export function buildOpenAILongContextConfig(params: {
   profile: OpenAILongContextProfile;
   workspace: string;
   agentId: string;
-}): OpenClawConfig {
+}): AforaConfig {
   const { profile } = params;
   return {
     secrets: { providers: { default: { source: "env" } } },
@@ -243,7 +243,7 @@ function expectConfigValue(path: string, actual: unknown, expected: unknown): vo
 }
 
 export function assertOpenAILongContextConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   profile: OpenAILongContextProfile,
 ): void {
   const providers = cfg.models?.providers ?? {};

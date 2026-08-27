@@ -2,7 +2,7 @@
 // account, and target peer from the parent request context.
 import { describe, expect, it } from "vitest";
 import type { AgentBindingMatch } from "../config/types.agents.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveRequesterOriginForChild } from "./spawn-requester-origin.js";
 
 describe("resolveRequesterOriginForChild", () => {
@@ -11,7 +11,7 @@ describe("resolveRequesterOriginForChild", () => {
   }
 
   function resolveAccount(params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     targetAgentId?: string;
     requesterAgentId?: string;
     requesterChannel: string;
@@ -55,7 +55,7 @@ describe("resolveRequesterOriginForChild", () => {
             accountId: "bot-alpha-qa",
           }),
         ],
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       expectOrigin(
         resolveRequesterOriginForChild({
@@ -199,7 +199,7 @@ describe("resolveRequesterOriginForChild", () => {
     // matches must beat broad channel defaults without losing same-agent calls.
     expect(
       resolveAccount({
-        cfg: { bindings: [...scenario.bindings] } as OpenClawConfig,
+        cfg: { bindings: [...scenario.bindings] } as AforaConfig,
         requesterChannel: scenario.requesterChannel,
         requesterAccountId: scenario.requesterAccountId,
         requesterAgentId: scenario.requesterAgentId,
@@ -225,7 +225,7 @@ describe("resolveRequesterOriginForChild", () => {
           accountId: "bot-alpha-teams",
         }),
       ],
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expectOrigin(
       resolveRequesterOriginForChild({
@@ -257,7 +257,7 @@ describe("resolveRequesterOriginForChild", () => {
           accountId: "bot-alpha-qa",
         }),
       ],
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expectOrigin(
       resolveRequesterOriginForChild({
@@ -299,7 +299,7 @@ describe("resolveRequesterOriginForChild", () => {
           accountId: "bot-alpha-current-guild",
         }),
       ],
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expectOrigin(
       resolveRequesterOriginForChild({
@@ -332,7 +332,7 @@ describe("resolveRequesterOriginForChild", () => {
           accountId: "bot-alpha-line",
         }),
       ],
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     // Some channel adapters prefix both channel id and peer kind; the resolver
     // has to strip wrappers without treating canonical colon ids as wrappers.

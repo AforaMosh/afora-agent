@@ -1,5 +1,5 @@
 // Google Meet plugin module implements shared Meet URL contracts.
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export function normalizeMeetUrl(input: unknown): string {
   const raw = normalizeOptionalString(input);

@@ -12,19 +12,19 @@ import {
 } from "../config/sessions/session-accessor.sqlite-read.js";
 import { appendTranscriptEventsInTransaction } from "../config/sessions/session-accessor.sqlite-transcript-store.js";
 import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/session-sqlite-target.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-  type OpenClawAgentDatabaseOptions,
-} from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabase,
+  type AforaAgentDatabaseOptions,
+} from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../test-utils/afora-test-state.js";
 
 const note = vi.hoisted(() => vi.fn());
 
@@ -35,7 +35,7 @@ import { noteSessionTranscriptLabelHealth } from "./doctor-session-transcript-la
 const AGENT_ID = "main";
 const SESSION_ID = "legacy-label-session";
 const SESSION_KEY = "agent:main:legacy-label-session";
-const CFG: OpenClawConfig = { agents: { list: [{ id: AGENT_ID }] } };
+const CFG: AforaConfig = { agents: { list: [{ id: AGENT_ID }] } };
 const SESSION_TIMESTAMP = "2026-04-25T00:00:00Z";
 
 type MessageFixture = {
@@ -59,11 +59,11 @@ function createMessageEvent(fixture: MessageFixture): TranscriptEvent {
 }
 
 function appendTranscriptFixture(
-  databaseOptions: OpenClawAgentDatabaseOptions,
+  databaseOptions: AforaAgentDatabaseOptions,
   events: readonly TranscriptEvent[],
   scope: { sessionId?: string; sessionKey?: string } = {},
-): OpenClawAgentDatabase {
-  runOpenClawAgentWriteTransaction((database) => {
+): AforaAgentDatabase {
+  runAforaAgentWriteTransaction((database) => {
     expect(
       appendTranscriptEventsInTransaction(
         database,
@@ -76,14 +76,14 @@ function appendTranscriptFixture(
       ),
     ).toBe(events.length);
   }, databaseOptions);
-  return openOpenClawAgentDatabase(databaseOptions);
+  return openAforaAgentDatabase(databaseOptions);
 }
 
 function seedMessageTranscript(
-  databaseOptions: OpenClawAgentDatabaseOptions,
+  databaseOptions: AforaAgentDatabaseOptions,
   messages: readonly MessageFixture[],
   scope: { sessionId?: string; sessionKey?: string } = {},
-): OpenClawAgentDatabase {
+): AforaAgentDatabase {
   const sessionId = scope.sessionId ?? SESSION_ID;
   return appendTranscriptFixture(
     databaseOptions,
@@ -111,9 +111,9 @@ function findMessageContent(events: readonly unknown[], eventId: string): unknow
 }
 
 async function runTranscriptLabelHealth(
-  state: OpenClawTestState,
+  state: AforaTestState,
   shouldRepair: boolean,
-  cfg: OpenClawConfig = CFG,
+  cfg: AforaConfig = CFG,
 ): Promise<void> {
   await noteSessionTranscriptLabelHealth({ cfg, env: state.env, shouldRepair });
 }
@@ -179,8 +179,8 @@ function createLegacyLabelEvents(): {
 }
 
 function seedLegacyLabelTranscript(
-  databaseOptions: OpenClawAgentDatabaseOptions,
-): OpenClawAgentDatabase {
+  databaseOptions: AforaAgentDatabaseOptions,
+): AforaAgentDatabase {
   const { events } = createLegacyLabelEvents();
   return appendTranscriptFixture(databaseOptions, events);
 }
@@ -200,19 +200,19 @@ function findEventJson(
 }
 
 describe("doctor SQLite session transcript label migration", () => {
-  let state: OpenClawTestState;
+  let state: AforaTestState;
 
   beforeEach(async () => {
     note.mockClear();
-    state = await createOpenClawTestState({
+    state = await createAforaTestState({
       layout: "state-only",
-      prefix: "openclaw-doctor-transcript-labels-",
+      prefix: "afora-doctor-transcript-labels-",
     });
   });
 
   afterEach(async () => {
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     await state.cleanup();
   });
 
@@ -227,7 +227,7 @@ describe("doctor SQLite session transcript label migration", () => {
 
     expect(readTranscriptSnapshot(database, SESSION_ID).rows).toEqual(before.rows);
     expect(note).toHaveBeenCalledWith(
-      '- Found 1 session with legacy inbound-context labels.\n- Run "openclaw doctor --fix" to rewrite them.',
+      '- Found 1 session with legacy inbound-context labels.\n- Run "afora doctor --fix" to rewrite them.',
       "Session transcript labels",
     );
 
@@ -337,7 +337,7 @@ describe("doctor SQLite session transcript label migration", () => {
     const customSqlitePath = resolveSqliteTargetFromSessionStorePath(customStorePath, {
       agentId: AGENT_ID,
     }).path;
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: { list: [{ id: AGENT_ID }] },
       session: { store: customStorePath },
     };
@@ -351,7 +351,7 @@ describe("doctor SQLite session transcript label migration", () => {
     await runTranscriptLabelHealth(state, false, cfg);
 
     expect(note).toHaveBeenCalledWith(
-      '- Found 1 session with legacy inbound-context labels.\n- Run "openclaw doctor --fix" to rewrite them.',
+      '- Found 1 session with legacy inbound-context labels.\n- Run "afora doctor --fix" to rewrite them.',
       "Session transcript labels",
     );
 
@@ -381,7 +381,7 @@ describe("doctor SQLite session transcript label migration", () => {
       "",
       // Fenced but NON-enumerated heading: the ```json fence does not prove provenance, so an
       // arbitrary user heading must NOT be marked (marking it would let the marker-only strippers
-      // hide the user's own JSON). Only the fixed OpenClaw labels in rule 1 are migrated.
+      // hide the user's own JSON). Only the fixed Afora labels in rule 1 are migrated.
       "Here is my own data:",
       "Notes (untrusted metadata):",
       "```json",
@@ -472,7 +472,7 @@ describe("doctor SQLite session transcript label migration", () => {
     // Pin an explicitly OLD activity timestamp so we can prove the maintenance rewrite preserves
     // recency instead of jumping the session to repair-time.
     const OLD_UPDATED_AT = 1_000_000;
-    runOpenClawAgentWriteTransaction((db) => {
+    runAforaAgentWriteTransaction((db) => {
       db.db
         .prepare(
           "UPDATE session_windows SET transcript_updated_at = ?, transcript_observed_at = ? WHERE session_id = ?",
@@ -519,7 +519,7 @@ describe("doctor SQLite session transcript label migration", () => {
     // Force the message row to a distinctly OLD created_at, well before repair-time Date.now(). The
     // append-time FTS timestamp still holds the (recent) append value until the repair rebuilds it.
     const OLD_CREATED_AT = 1_000_000;
-    runOpenClawAgentWriteTransaction((db) => {
+    runAforaAgentWriteTransaction((db) => {
       db.db
         .prepare("UPDATE transcript_events SET created_at = ? WHERE session_id = ?")
         .run(OLD_CREATED_AT, SESSION_ID);
@@ -685,7 +685,7 @@ describe("doctor SQLite session transcript label migration", () => {
 
     // Corrupt the sibling row's event_json in place. transcript_events has no type/id columns,
     // so match on the encoded event body.
-    runOpenClawAgentWriteTransaction((writeDatabase) => {
+    runAforaAgentWriteTransaction((writeDatabase) => {
       const changed = writeDatabase.db
         .prepare(
           "UPDATE transcript_events SET event_json = ? WHERE session_id = ? AND event_json LIKE ?",

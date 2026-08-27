@@ -89,7 +89,7 @@ describe("gateway host desktop source", () => {
 
   it("returns a loopback attachment and redacted password-file value for VncAuth", async () => {
     const port = await listenRfb({ securityTypes: [2] });
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-host-desktop-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-host-desktop-"));
     const passwordFile = path.join(root, "passwd");
     const password = "desktop-secret";
     await fs.writeFile(passwordFile, `${password}\n`);

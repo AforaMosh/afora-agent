@@ -64,7 +64,7 @@ export async function loadAuthoredSetupConfig(params: {
   configExists: boolean;
   configValid: boolean;
 }): Promise<{
-  authoredConfig?: import("../config/types.openclaw.js").OpenClawConfig;
+  authoredConfig?: import("../config/types.afora.js").AforaConfig;
   hasAuthoredSetup: boolean;
 }> {
   const authoredConfig = await (async () => {
@@ -135,7 +135,7 @@ export async function buildOnboardingWelcome(params: {
   }
   if (!defaultModel) {
     throw new Error(
-      "OpenClaw onboarding requires working inference first. Run `openclaw onboard` on the machine running OpenClaw to configure and verify a default model.",
+      "Afora onboarding requires working inference first. Run `afora onboard` on the machine running Afora to configure and verify a default model.",
     );
   }
 
@@ -152,7 +152,7 @@ export async function buildOnboardingWelcome(params: {
     ...(params.agentName ? { agentName: params.agentName } : {}),
   });
   const welcome = [
-    "## Hi, I'm OpenClaw — let's hatch your agent.",
+    "## Hi, I'm Afora — let's hatch your agent.",
     "",
     "No menus here: tell me what you want and I'll do the configuring. I looked around this machine:",
     "",
@@ -162,7 +162,7 @@ export async function buildOnboardingWelcome(params: {
     "",
     "Say **yes** and I'll set all of that up now.",
     "",
-    "Heads up: your agent gets real access to this machine — https://docs.openclaw.ai/security",
+    "Heads up: your agent gets real access to this machine — https://docs.afora.ai/security",
     "Afterwards: `connect discord`, `connect slack`, `connect telegram`, `connect whatsapp` (or `channels` for the full list), then `talk to agent` to meet your agent.",
   ].join("\n");
   params.engine.noteAssistantMessage(welcome);

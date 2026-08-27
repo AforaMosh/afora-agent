@@ -10,7 +10,7 @@ import type {
 import { formatCliCommand } from "../cli/command-format.js";
 import type { ChannelChoice } from "../commands/onboard-types.js";
 import type { DmPolicy } from "../config/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
 import { t } from "../wizard/i18n/index.js";
 import type { WizardPrompter, WizardSelectOption } from "../wizard/prompts.js";
@@ -66,7 +66,7 @@ export async function promptConfiguredAction(params: {
 
 /** Selects the account to remove/update when a channel supports multiple accounts. */
 export async function promptRemovalAccountId(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   prompter: WizardPrompter;
   label: string;
   channel: ChannelChoice;
@@ -95,12 +95,12 @@ export async function promptRemovalAccountId(params: {
 
 /** Optionally configures DM access policies for selected channel setup adapters. */
 export async function maybeConfigureDmPolicies(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   selection: ChannelChoice[];
   prompter: WizardPrompter;
   accountIdsByChannel?: Map<ChannelChoice, string>;
   resolveAdapter?: (channel: ChannelChoice) => ChannelSetupWizardAdapter | undefined;
-}): Promise<OpenClawConfig> {
+}): Promise<AforaConfig> {
   const { selection, prompter, accountIdsByChannel } = params;
   const resolve = params.resolveAdapter ?? (() => undefined);
   const dmPolicies = selection
@@ -130,12 +130,12 @@ export async function maybeConfigureDmPolicies(params: {
       [
         t("wizard.channels.dmPolicyDefault"),
         t("wizard.channels.dmPolicyApprove", {
-          command: formatCliCommand(`openclaw pairing approve ${policy.channel} <code>`),
+          command: formatCliCommand(`afora pairing approve ${policy.channel} <code>`),
         }),
         t("wizard.channels.dmPolicyAllowlist", { allowFromKey, policyKey }),
         t("wizard.channels.dmPolicyOpen", { allowFromKey, policyKey }),
         t("wizard.channels.dmPolicyMultiUser", {
-          command: formatCliCommand('openclaw config set session.dmScope "per-channel-peer"'),
+          command: formatCliCommand('afora config set session.dmScope "per-channel-peer"'),
         }),
         t("wizard.channels.docs", {
           link: formatDocsLink("/channels/pairing", "channels/pairing"),

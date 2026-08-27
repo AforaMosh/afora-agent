@@ -18,7 +18,7 @@ type EmbeddedSessionPromptState = {
 
 const MAX_SESSION_PROMPT_STATES = 64;
 const MAX_ACTIVE_PROJECT_KEYS = 4;
-const SESSION_PROMPT_STATES_KEY = Symbol.for("openclaw.embeddedSessionPromptStates");
+const SESSION_PROMPT_STATES_KEY = Symbol.for("afora.embeddedSessionPromptStates");
 const sessionPromptStates = resolveGlobalSingleton(
   SESSION_PROMPT_STATES_KEY,
   () => new Map<string, EmbeddedSessionPromptState>(),

@@ -5,8 +5,8 @@ import { isTruthyEnvValue } from "../infra/env.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 
 const restartTraceLog = createSubsystemLogger("gateway");
-const RESTART_TRACE_HANDOFF_STARTED_AT_ENV = "OPENCLAW_GATEWAY_RESTART_TRACE_STARTED_AT_MS";
-const RESTART_TRACE_HANDOFF_LAST_AT_ENV = "OPENCLAW_GATEWAY_RESTART_TRACE_LAST_AT_MS";
+const RESTART_TRACE_HANDOFF_STARTED_AT_ENV = "AFORA_GATEWAY_RESTART_TRACE_STARTED_AT_MS";
+const RESTART_TRACE_HANDOFF_LAST_AT_ENV = "AFORA_GATEWAY_RESTART_TRACE_LAST_AT_MS";
 const RESTART_TRACE_HANDOFF_MAX_AGE_MS = 10 * 60_000;
 
 // Restart trace is an opt-in timing logger for gateway restart handoff paths.
@@ -30,7 +30,7 @@ function nowMs(): number {
 }
 
 function isRestartTraceEnabled(): boolean {
-  return isTruthyEnvValue(process.env.OPENCLAW_GATEWAY_RESTART_TRACE);
+  return isTruthyEnvValue(process.env.AFORA_GATEWAY_RESTART_TRACE);
 }
 
 function normalizeMetricEntries(
@@ -104,7 +104,7 @@ function emitRestartTraceDetail(name: string, metrics: RestartTraceMetrics): voi
   restartTraceLog.info(`restart trace: ${name} ${formatted}`);
 }
 
-/** Starts a restart trace sequence when OPENCLAW_GATEWAY_RESTART_TRACE is enabled. */
+/** Starts a restart trace sequence when AFORA_GATEWAY_RESTART_TRACE is enabled. */
 export function startGatewayRestartTrace(name: string, metrics?: RestartTraceMetrics): void {
   if (!isRestartTraceEnabled()) {
     active = false;

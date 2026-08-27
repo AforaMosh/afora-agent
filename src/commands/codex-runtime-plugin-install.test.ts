@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 const mocks = vi.hoisted(() => ({
   loadInstalledPluginIndexInstallRecords: vi.fn(),
@@ -107,7 +107,7 @@ describe("Codex runtime plugin install repair", () => {
     mocks.loadInstalledPluginIndexInstallRecords.mockResolvedValue({
       codex: { source: "npm", installPath: process.cwd() },
     });
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       plugins: {
         allow: ["codex"],
         entries: { codex: { enabled: false } },
@@ -137,7 +137,7 @@ describe("Codex runtime plugin install repair", () => {
       installed: false,
       pluginId: "codex",
       status: "failed",
-      error: "npm registry returned EAI_AGAIN while fetching @openclaw/codex",
+      error: "npm registry returned EAI_AGAIN while fetching @afora/codex",
     });
     const { ensureCodexRuntimePluginForModelSelection } =
       await import("./codex-runtime-plugin-install.js");
@@ -153,7 +153,7 @@ describe("Codex runtime plugin install repair", () => {
       required: true,
       installed: false,
       status: "failed",
-      reason: "npm registry returned EAI_AGAIN while fetching @openclaw/codex",
+      reason: "npm registry returned EAI_AGAIN while fetching @afora/codex",
     });
   });
 
@@ -173,7 +173,7 @@ describe("Codex runtime plugin install repair", () => {
         entry: {
           pluginId: "codex",
           label: "Codex",
-          install: { npmSpec: "@openclaw/codex", defaultChoice: "npm" },
+          install: { npmSpec: "@afora/codex", defaultChoice: "npm" },
           trustedSourceLinkedOfficialInstall: true,
         },
       }),

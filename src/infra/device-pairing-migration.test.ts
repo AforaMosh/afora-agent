@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { createSuiteTempRootTracker } from "../test-helpers/temp-dir.js";
 import { approveDevicePairing } from "./device-pairing-approval.js";
 import { migrateLegacyDevicePairingStore } from "./device-pairing-migration.js";
@@ -15,7 +15,7 @@ import {
 import { migrateLegacyNodePairingStore } from "./node-pairing-migration.js";
 
 const suiteRootTracker = createSuiteTempRootTracker({
-  prefix: "openclaw-device-pairing-migration-",
+  prefix: "afora-device-pairing-migration-",
 });
 
 beforeAll(async () => {
@@ -23,7 +23,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   await suiteRootTracker.cleanup();
 });
 
@@ -32,7 +32,7 @@ function legacyPairedDevice(deviceId: string, extra: Partial<PairedDevice> = {})
     deviceId,
     publicKey: `pk-${deviceId}`,
     displayName: `Device ${deviceId}`,
-    clientId: "openclaw-ios",
+    clientId: "afora-ios",
     clientMode: "node",
     role: "node",
     roles: ["node"],

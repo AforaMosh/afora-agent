@@ -4,12 +4,12 @@ import type {
   WorkboardPriority,
   WorkboardStatus,
   WorkboardTemplateId,
-} from "@openclaw/workboard-contract";
+} from "@afora/workboard-contract";
 import type { GatewaySessionRow } from "../../api/types.ts";
 import type { TaskSummary } from "../tasks/task-summary.ts";
 
-export * from "@openclaw/workboard-contract";
-export type { WorkboardBoardSummary } from "@openclaw/workboard-contract";
+export * from "@afora/workboard-contract";
+export type { WorkboardBoardSummary } from "@afora/workboard-contract";
 
 type WorkboardLifecycleState =
   | "unlinked"

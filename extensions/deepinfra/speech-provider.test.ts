@@ -1,5 +1,5 @@
 // Deepinfra tests cover speech provider plugin behavior.
-import { requireFirstPostJsonRequest } from "openclaw/plugin-sdk/test-fixtures";
+import { requireFirstPostJsonRequest } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { buildDeepInfraSpeechProvider } from "./speech-provider.js";
 
@@ -22,7 +22,7 @@ const {
   })),
 }));
 
-vi.mock("openclaw/plugin-sdk/provider-http", () => ({
+vi.mock("afora-agent/plugin-sdk/provider-http", () => ({
   assertOkOrThrowHttpError: assertOkOrThrowHttpErrorMock,
   postJsonRequest: postJsonRequestMock,
   readProviderBinaryResponse: readProviderBinaryResponseMock,
@@ -30,7 +30,7 @@ vi.mock("openclaw/plugin-sdk/provider-http", () => ({
 }));
 
 afterAll(() => {
-  vi.doUnmock("openclaw/plugin-sdk/provider-http");
+  vi.doUnmock("afora-agent/plugin-sdk/provider-http");
   vi.resetModules();
 });
 

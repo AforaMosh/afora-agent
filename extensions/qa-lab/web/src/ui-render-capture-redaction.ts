@@ -1,4 +1,4 @@
-import { sliceUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { sliceUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 
 const NON_SECRET_CAPTURE_TOKEN_FIELDS = new Set([
   "completiontokens",

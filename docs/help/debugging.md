@@ -15,7 +15,7 @@ Debugging helpers for streaming output, gateway iteration, and startup profiling
 
 ```text
 /debug show
-/debug set channels.whatsapp.responsePrefix="[openclaw]"
+/debug set channels.whatsapp.responsePrefix="[afora]"
 /debug unset channels.whatsapp.responsePrefix
 /debug reset
 ```
@@ -34,11 +34,11 @@ Debugging helpers for streaming output, gateway iteration, and startup profiling
 
 ## Plugin lifecycle trace
 
-Set `OPENCLAW_PLUGIN_LIFECYCLE_TRACE=1` for a phase-by-phase breakdown of plugin metadata, discovery, registry, runtime mirror, config mutation, and refresh work. Writes to stderr, so JSON command output stays parseable.
+Set `AFORA_PLUGIN_LIFECYCLE_TRACE=1` for a phase-by-phase breakdown of plugin metadata, discovery, registry, runtime mirror, config mutation, and refresh work. Writes to stderr, so JSON command output stays parseable.
 Plugin load failures include their stack trace while this trace is enabled.
 
 ```bash
-OPENCLAW_PLUGIN_LIFECYCLE_TRACE=1 openclaw plugins install tokenjuice --force
+AFORA_PLUGIN_LIFECYCLE_TRACE=1 afora plugins install tokenjuice --force
 ```
 
 ```text
@@ -47,12 +47,12 @@ OPENCLAW_PLUGIN_LIFECYCLE_TRACE=1 openclaw plugins install tokenjuice --force
 [plugins:lifecycle] phase="registry refresh" ms=51.56 status=ok command="install" reason="source-changed"
 ```
 
-Use this before reaching for a CPU profiler. From a source checkout, measure the built runtime with `node dist/entry.js ...` after `pnpm build`; `pnpm openclaw ...` also measures source-runner overhead.
+Use this before reaching for a CPU profiler. From a source checkout, measure the built runtime with `node dist/entry.js ...` after `pnpm build`; `pnpm afora ...` also measures source-runner overhead.
 
 For synchronous module-load timings, use the shared diagnostics surface instead of a separate plugin-only environment switch:
 
 ```bash
-OPENCLAW_DIAGNOSTICS=plugin.load-profile openclaw plugins list
+AFORA_DIAGNOSTICS=plugin.load-profile afora plugins list
 ```
 
 ## CLI startup and command profiling
@@ -65,10 +65,10 @@ pnpm tsx scripts/bench-cli-startup.ts --preset real --case status --runs 3
 pnpm tsx scripts/bench-cli-startup.ts --preset real --cpu-prof-dir .artifacts/cli-cpu
 ```
 
-For one-off profiling through the normal source runner, set `OPENCLAW_RUN_NODE_CPU_PROF_DIR`:
+For one-off profiling through the normal source runner, set `AFORA_RUN_NODE_CPU_PROF_DIR`:
 
 ```bash
-OPENCLAW_RUN_NODE_CPU_PROF_DIR=.artifacts/cli-cpu pnpm openclaw status
+AFORA_RUN_NODE_CPU_PROF_DIR=.artifacts/cli-cpu pnpm afora status
 ```
 
 The source runner adds Node CPU profile flags and writes a `.cpuprofile` for the command. Use this before adding temporary instrumentation to command code.
@@ -76,10 +76,10 @@ The source runner adds Node CPU profile flags and writes a `.cpuprofile` for the
 For startup stalls that look like synchronous filesystem or module-loader work, add Node's sync I/O trace flag through the source runner:
 
 ```bash
-OPENCLAW_TRACE_SYNC_IO=1 pnpm openclaw gateway --force
+AFORA_TRACE_SYNC_IO=1 pnpm afora gateway --force
 ```
 
-`pnpm gateway:watch` leaves this flag disabled by default for the watched Gateway child; set `OPENCLAW_TRACE_SYNC_IO=1` when you want sync I/O trace output in watch mode too.
+`pnpm gateway:watch` leaves this flag disabled by default for the watched Gateway child; set `AFORA_TRACE_SYNC_IO=1` when you want sync I/O trace output in watch mode too.
 
 ## Gateway watch mode
 
@@ -87,12 +87,12 @@ OPENCLAW_TRACE_SYNC_IO=1 pnpm openclaw gateway --force
 pnpm gateway:watch
 ```
 
-By default this starts or restarts a tmux session named `openclaw-gateway-watch-<profile>` (for example `openclaw-gateway-watch-main`), with a port suffix such as `openclaw-gateway-watch-dev-19001` added only when `OPENCLAW_GATEWAY_PORT` differs from the default port `18789`. It auto-attaches from interactive terminals; non-interactive shells, CI, and agent exec calls stay detached and print attach instructions instead:
+By default this starts or restarts a tmux session named `afora-gateway-watch-<profile>` (for example `afora-gateway-watch-main`), with a port suffix such as `afora-gateway-watch-dev-19001` added only when `AFORA_GATEWAY_PORT` differs from the default port `18789`. It auto-attaches from interactive terminals; non-interactive shells, CI, and agent exec calls stay detached and print attach instructions instead:
 
 ```bash
-tmux attach -t openclaw-gateway-watch-main
+tmux attach -t afora-gateway-watch-main
 # Read recent output without attaching
-tmux capture-pane -ep -t openclaw-gateway-watch-main -S -200
+tmux capture-pane -ep -t afora-gateway-watch-main -S -200
 ```
 
 The pane uses tmux `remain-on-exit`, so startup failures stay available for attach or capture instead of deleting the session. Re-running `pnpm gateway:watch` respawns that pane.
@@ -106,25 +106,25 @@ node scripts/watch-node.mjs gateway --force
 Before watching the configured/default port, the tmux wrapper stops the active profile's installed Gateway service. This hands the port to the source watcher without launchd, systemd, or Scheduled Task respawning and replacing it. The service stays installed; restore it after the watch session with:
 
 ```bash
-pnpm openclaw gateway start
+pnpm afora gateway start
 ```
 
-When an explicit `--port` or `OPENCLAW_GATEWAY_PORT` differs from the installed service's effective port, the wrapper leaves the service running so both Gateways can run side by side.
+When an explicit `--port` or `AFORA_GATEWAY_PORT` differs from the installed service's effective port, the wrapper leaves the service running so both Gateways can run side by side.
 
 Foreground mode without tmux:
 
 ```bash
 pnpm gateway:watch:raw
 # or
-OPENCLAW_GATEWAY_WATCH_TMUX=0 pnpm gateway:watch
+AFORA_GATEWAY_WATCH_TMUX=0 pnpm gateway:watch
 ```
 
-Raw mode does not manage the installed service. Run `pnpm openclaw gateway stop` first when it uses the same port.
+Raw mode does not manage the installed service. Run `pnpm afora gateway stop` first when it uses the same port.
 
 Keep tmux management but disable auto-attach:
 
 ```bash
-OPENCLAW_GATEWAY_WATCH_ATTACH=0 pnpm gateway:watch
+AFORA_GATEWAY_WATCH_ATTACH=0 pnpm gateway:watch
 ```
 
 Profile watched Gateway CPU time when debugging startup/runtime hotspots:
@@ -142,15 +142,15 @@ npx speedscope .artifacts/gateway-watch-profiles/*.cpuprofile
 - `--benchmark-dir <path>`: write profiles somewhere else.
 - `--benchmark-no-force`: skip the default `--force` port cleanup and fail fast if the Gateway port is already in use.
 
-Benchmark mode suppresses sync-I/O trace spam by default. Set `OPENCLAW_TRACE_SYNC_IO=1` with `--benchmark` to get both CPU profiles and sync-I/O stack traces; in benchmark mode those trace blocks go to `gateway-watch-output.log` under the benchmark directory (filtered from the terminal pane), while normal Gateway logs stay visible.
+Benchmark mode suppresses sync-I/O trace spam by default. Set `AFORA_TRACE_SYNC_IO=1` with `--benchmark` to get both CPU profiles and sync-I/O stack traces; in benchmark mode those trace blocks go to `gateway-watch-output.log` under the benchmark directory (filtered from the terminal pane), while normal Gateway logs stay visible.
 
-The tmux wrapper carries common non-secret runtime selectors into the pane, including `OPENCLAW_PROFILE`, `OPENCLAW_CONFIG_PATH`, `OPENCLAW_STATE_DIR`, `OPENCLAW_GATEWAY_PORT`, and `OPENCLAW_SKIP_CHANNELS`. Put provider credentials in your normal profile/config, or use raw foreground mode for one-off ephemeral secrets.
+The tmux wrapper carries common non-secret runtime selectors into the pane, including `AFORA_PROFILE`, `AFORA_CONFIG_PATH`, `AFORA_STATE_DIR`, `AFORA_GATEWAY_PORT`, and `AFORA_SKIP_CHANNELS`. Put provider credentials in your normal profile/config, or use raw foreground mode for one-off ephemeral secrets.
 
-If the watched Gateway exits during startup, the watcher runs `openclaw doctor --fix --non-interactive` once and restarts the Gateway child. Set `OPENCLAW_GATEWAY_WATCH_AUTO_DOCTOR=0` to see the original startup failure without the dev-only repair pass.
+If the watched Gateway exits during startup, the watcher runs `afora doctor --fix --non-interactive` once and restarts the Gateway child. Set `AFORA_GATEWAY_WATCH_AUTO_DOCTOR=0` to see the original startup failure without the dev-only repair pass.
 
 The managed tmux pane defaults to colored Gateway logs; set `FORCE_COLOR=0` when starting `pnpm gateway:watch` to disable ANSI output.
 
-The watcher restarts on build-relevant files under `src/`, extension source files, extension `package.json` and `openclaw.plugin.json` metadata, `tsconfig.json`, `package.json`, and `tsdown.config.ts`. Extension metadata changes restart the gateway without forcing a rebuild; source and config changes still rebuild `dist` first.
+The watcher restarts on build-relevant files under `src/`, extension source files, extension `package.json` and `afora.plugin.json` metadata, `tsconfig.json`, `package.json`, and `tsdown.config.ts`. Extension metadata changes restart the gateway without forcing a rebuild; source and config changes still rebuild `dist` first.
 
 Add gateway CLI flags after `gateway:watch` and they pass through on each restart. Re-running the same watch command respawns the named tmux pane; the raw watcher keeps a single-watcher lock so duplicate watcher parents are replaced instead of piling up.
 
@@ -158,32 +158,32 @@ Add gateway CLI flags after `gateway:watch` and they pass through on each restar
 
 Two **separate** `--dev` flags:
 
-- **Global `--dev` (profile):** isolates state under `~/.openclaw-dev` and defaults the gateway port to `19001` (derived ports shift with it).
+- **Global `--dev` (profile):** isolates state under `~/.afora-dev` and defaults the gateway port to `19001` (derived ports shift with it).
 - **`gateway --dev`:** tells the Gateway to auto-create a default config + workspace when missing (and skip bootstrap).
 
 Recommended flow (dev profile + dev bootstrap):
 
 ```bash
 pnpm gateway:dev
-OPENCLAW_PROFILE=dev openclaw tui
+AFORA_PROFILE=dev afora tui
 ```
 
-Without a global install, run the CLI via `pnpm openclaw ...`.
+Without a global install, run the CLI via `pnpm afora ...`.
 
 What this does:
 
 1. **Profile isolation** (global `--dev`)
-   - `OPENCLAW_PROFILE=dev`
-   - `OPENCLAW_STATE_DIR=~/.openclaw-dev`
-   - `OPENCLAW_CONFIG_PATH=~/.openclaw-dev/openclaw.json`
-   - `OPENCLAW_GATEWAY_PORT=19001` (browser/canvas ports shift accordingly)
+   - `AFORA_PROFILE=dev`
+   - `AFORA_STATE_DIR=~/.afora-dev`
+   - `AFORA_CONFIG_PATH=~/.afora-dev/afora.json`
+   - `AFORA_GATEWAY_PORT=19001` (browser/canvas ports shift accordingly)
 
 2. **Dev bootstrap** (`gateway --dev`)
    - Writes a minimal config if missing (`gateway.mode=local`, bind loopback).
    - Sets `agents.defaults.workspace` to the dev workspace and `agents.defaults.skipBootstrap=true`.
    - Seeds the workspace files if missing: `AGENTS.md`, `SOUL.md`, `IDENTITY.md`, `USER.md`.
    - Default identity: **C3-PO** (protocol droid).
-   - `pnpm gateway:dev` also sets `OPENCLAW_SKIP_CHANNELS=1` to skip channel providers.
+   - `pnpm gateway:dev` also sets `AFORA_SKIP_CHANNELS=1` to skip channel providers.
 
 All Gateways ignore ambient channel environment triggers by default, so credentials inherited from the launching shell do not connect to channel services without explicit intent. A `channels.<id>` configuration block still enables that channel and can use environment variables for its credentials. Pass `--ambient-channels` to restore ambient channel auto-configuration for that run; `--dev-ambient-channels` remains as a deprecated alias.
 
@@ -197,7 +197,7 @@ pnpm gateway:dev:reset
 `--dev` is a **global** profile flag and gets eaten by some runners. If you need to spell it out, use the env var form:
 
 ```bash
-OPENCLAW_PROFILE=dev openclaw gateway --dev --reset
+AFORA_PROFILE=dev afora gateway --dev --reset
 ```
 
 </Note>
@@ -208,14 +208,14 @@ OPENCLAW_PROFILE=dev openclaw gateway --dev --reset
 If a non-dev gateway is already running (launchd or systemd), stop it first:
 
 ```bash
-openclaw gateway stop
+afora gateway stop
 ```
 
 </Tip>
 
 ## Raw stream logging
 
-OpenClaw can log the **raw assistant stream** before any filtering/formatting. This is the best way to see whether reasoning is arriving as plain text deltas (or as separate thinking blocks).
+Afora can log the **raw assistant stream** before any filtering/formatting. This is the best way to see whether reasoning is arriving as plain text deltas (or as separate thinking blocks).
 
 Enable it via CLI:
 
@@ -226,17 +226,17 @@ pnpm gateway:watch --raw-stream
 Optional path override:
 
 ```bash
-pnpm gateway:watch --raw-stream --raw-stream-path ~/.openclaw/logs/raw-stream.jsonl
+pnpm gateway:watch --raw-stream --raw-stream-path ~/.afora/logs/raw-stream.jsonl
 ```
 
 Equivalent env vars:
 
 ```bash
-OPENCLAW_RAW_STREAM=1
-OPENCLAW_RAW_STREAM_PATH=~/.openclaw/logs/raw-stream.jsonl
+AFORA_RAW_STREAM=1
+AFORA_RAW_STREAM_PATH=~/.afora/logs/raw-stream.jsonl
 ```
 
-Default file: `~/.openclaw/logs/raw-stream.jsonl`
+Default file: `~/.afora/logs/raw-stream.jsonl`
 
 ## Safety notes
 
@@ -272,7 +272,7 @@ Set breakpoints in `src/` TypeScript files; the debugger maps them to compiled J
 - **Rebuild and Debug Gateway** deletes `/dist` and runs a full `pnpm build` with source maps on every launch.
 - **Debug Gateway** can start/stop without affecting `/dist`, but you manage the build cycle in a separate terminal.
 - Edit `launch.json` `args` to debug other CLI subcommands.
-- To use the built CLI for other tasks (for example `dashboard --no-open` if your debug session spawns a new auth token), run it from another terminal: `node ./openclaw.mjs` or an alias like `alias openclaw-build="node $(pwd)/openclaw.mjs"`.
+- To use the built CLI for other tasks (for example `dashboard --no-open` if your debug session spawns a new auth token), run it from another terminal: `node ./afora.mjs` or an alias like `alias afora-build="node $(pwd)/afora.mjs"`.
 
 ## Related
 

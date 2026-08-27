@@ -1,4 +1,4 @@
-name: openclaw-codeql-macos-critical-security
+name: afora-codeql-macos-critical-security
 
 disable-default-queries: true
 

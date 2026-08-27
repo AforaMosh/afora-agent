@@ -14,8 +14,8 @@ const buildGatewayInstallPlanMock = vi.hoisted(() =>
       const preservedFileValue =
         params.existingEnvironmentValueSources?.TELEGRAM_DEFAULT_BOTTOKEN === "file";
       return {
-        programArguments: ["/usr/bin/openclaw", "gateway", "run"],
-        workingDirectory: "/tmp/openclaw",
+        programArguments: ["/usr/bin/afora", "gateway", "run"],
+        workingDirectory: "/tmp/afora",
         environment: {
           TELEGRAM_DEFAULT_BOTTOKEN: preservedFileValue
             ? params.existingEnvironment?.TELEGRAM_DEFAULT_BOTTOKEN
@@ -33,22 +33,22 @@ const readConfigFileSnapshotForWriteMock = vi.hoisted(() => vi.fn());
 const resolveGatewayPortMock = vi.hoisted(() =>
   vi.fn(
     (config: { gateway?: { port?: number } } | undefined, env: NodeJS.ProcessEnv = process.env) => {
-      const portMatch = env.OPENCLAW_GATEWAY_PORT?.trim().match(/(?:^|:)(\d+)$/);
+      const portMatch = env.AFORA_GATEWAY_PORT?.trim().match(/(?:^|:)(\d+)$/);
       return Number(portMatch?.[1]) || config?.gateway?.port || 18_789;
     },
   ),
 );
 const resolveStateDirMock = vi.hoisted(() =>
-  vi.fn((env: NodeJS.ProcessEnv) => env.OPENCLAW_STATE_DIR?.trim() || `${env.HOME}/.openclaw`),
+  vi.fn((env: NodeJS.ProcessEnv) => env.AFORA_STATE_DIR?.trim() || `${env.HOME}/.afora`),
 );
 const resolveConfigPathCandidateMock = vi.hoisted(() =>
   vi.fn(
     (env: NodeJS.ProcessEnv) =>
-      env.OPENCLAW_CONFIG_PATH?.trim() ||
-      `${env.OPENCLAW_STATE_DIR?.trim() || `${env.HOME}/.openclaw`}/openclaw.json`,
+      env.AFORA_CONFIG_PATH?.trim() ||
+      `${env.AFORA_STATE_DIR?.trim() || `${env.HOME}/.afora`}/afora.json`,
   ),
 );
-const resolveOpenClawWrapperPathMock = vi.hoisted(() => vi.fn());
+const resolveAforaWrapperPathMock = vi.hoisted(() => vi.fn());
 const formatGatewayServiceStartRepairIssuesMock = vi.hoisted(() => vi.fn());
 const defaultRuntimeLogMock = vi.hoisted(() => vi.fn());
 const assertGatewayServiceMutationAllowedMock = vi.hoisted(() => vi.fn());
@@ -76,8 +76,8 @@ vi.mock("../../config/paths.js", () => ({
 }));
 
 vi.mock("../../daemon/program-args.js", () => ({
-  OPENCLAW_WRAPPER_ENV_KEY: "OPENCLAW_WRAPPER",
-  resolveOpenClawWrapperPath: resolveOpenClawWrapperPathMock,
+  AFORA_WRAPPER_ENV_KEY: "AFORA_WRAPPER",
+  resolveAforaWrapperPath: resolveAforaWrapperPathMock,
 }));
 
 vi.mock("../../daemon/service.js", () => ({
@@ -104,17 +104,17 @@ function readFirstInstallPlanArg(): Record<string, unknown> {
 
 describe("repairLoadedGatewayServiceForStart", () => {
   beforeEach(() => {
-    vi.stubEnv("HOME", "/home/openclaw");
-    vi.stubEnv("OPENCLAW_CONFIG_PATH", "");
-    vi.stubEnv("OPENCLAW_GATEWAY_PORT", "");
-    vi.stubEnv("OPENCLAW_HOME", "");
-    vi.stubEnv("OPENCLAW_PROFILE", "");
-    vi.stubEnv("OPENCLAW_STATE_DIR", "");
+    vi.stubEnv("HOME", "/home/afora");
+    vi.stubEnv("AFORA_CONFIG_PATH", "");
+    vi.stubEnv("AFORA_GATEWAY_PORT", "");
+    vi.stubEnv("AFORA_HOME", "");
+    vi.stubEnv("AFORA_PROFILE", "");
+    vi.stubEnv("AFORA_STATE_DIR", "");
     buildGatewayInstallPlanMock.mockClear();
     resolveGatewayInstallTokenMock.mockReset();
     readConfigFileSnapshotForWriteMock.mockReset();
     resolveGatewayPortMock.mockClear();
-    resolveOpenClawWrapperPathMock.mockReset();
+    resolveAforaWrapperPathMock.mockReset();
     formatGatewayServiceStartRepairIssuesMock.mockReset();
     defaultRuntimeLogMock.mockClear();
     assertGatewayServiceMutationAllowedMock.mockReset();
@@ -125,9 +125,9 @@ describe("repairLoadedGatewayServiceForStart", () => {
     });
     readConfigFileSnapshotForWriteMock.mockResolvedValue({
       snapshot: { exists: true, valid: true, sourceConfig: {}, config: {} },
-      writeOptions: { expectedConfigPath: "/tmp/openclaw.json" },
+      writeOptions: { expectedConfigPath: "/tmp/afora.json" },
     });
-    resolveOpenClawWrapperPathMock.mockResolvedValue("/usr/bin/openclaw");
+    resolveAforaWrapperPathMock.mockResolvedValue("/usr/bin/afora");
     formatGatewayServiceStartRepairIssuesMock.mockReturnValue(
       "service port does not match current gateway config",
     );
@@ -145,12 +145,12 @@ describe("repairLoadedGatewayServiceForStart", () => {
       isLoaded: isLoadedMock,
     } as unknown as GatewayService;
     const existingEnvironment = {
-      HOME: "/home/openclaw",
-      OPENCLAW_SERVICE_VERSION: "2026.4.24",
+      HOME: "/home/afora",
+      AFORA_SERVICE_VERSION: "2026.4.24",
       TELEGRAM_DEFAULT_BOTTOKEN: "existing-env-file-token",
     };
     const existingEnvironmentValueSources = {
-      OPENCLAW_SERVICE_VERSION: "inline" as const,
+      AFORA_SERVICE_VERSION: "inline" as const,
       TELEGRAM_DEFAULT_BOTTOKEN: "file" as const,
     };
     const state: GatewayServiceState = {
@@ -159,7 +159,7 @@ describe("repairLoadedGatewayServiceForStart", () => {
       running: false,
       env: {},
       command: {
-        programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+        programArguments: ["/usr/bin/afora", "gateway", "run"],
         environment: existingEnvironment,
         environmentValueSources: existingEnvironmentValueSources,
       },
@@ -187,8 +187,8 @@ describe("repairLoadedGatewayServiceForStart", () => {
   it.each(["start", "restart"] as const)(
     "refuses %s repair when ambient state, config, and port target a different service",
     async (action) => {
-      vi.stubEnv("OPENCLAW_STATE_DIR", "/home/openclaw/stress-state");
-      vi.stubEnv("OPENCLAW_CONFIG_PATH", "/home/openclaw/stress-state/openclaw.json");
+      vi.stubEnv("AFORA_STATE_DIR", "/home/afora/stress-state");
+      vi.stubEnv("AFORA_CONFIG_PATH", "/home/afora/stress-state/afora.json");
       readConfigFileSnapshotForWriteMock.mockResolvedValue({
         snapshot: {
           exists: true,
@@ -196,13 +196,13 @@ describe("repairLoadedGatewayServiceForStart", () => {
           sourceConfig: { gateway: { port: 18_999 } },
           config: { gateway: { port: 18_999 } },
         },
-        writeOptions: { expectedConfigPath: "/home/openclaw/stress-state/openclaw.json" },
+        writeOptions: { expectedConfigPath: "/home/afora/stress-state/afora.json" },
       });
 
       const originalUnit = [
-        "ExecStart=/usr/bin/openclaw gateway --port 18789",
-        "EnvironmentFile=-/home/openclaw/.openclaw/gateway.systemd.env",
-        "Environment=OPENCLAW_SERVICE_MANAGED_ENV_KEYS=OPENAI_API_KEY,OPENCLAW_GATEWAY_PASSWORD",
+        "ExecStart=/usr/bin/afora gateway --port 18789",
+        "EnvironmentFile=-/home/afora/.afora/gateway.systemd.env",
+        "Environment=AFORA_SERVICE_MANAGED_ENV_KEYS=OPENAI_API_KEY,AFORA_GATEWAY_PASSWORD",
       ].join("\n");
       let unit = originalUnit;
       const installMock = vi.fn(async () => {
@@ -218,20 +218,20 @@ describe("repairLoadedGatewayServiceForStart", () => {
         running: false,
         env: {},
         command: {
-          programArguments: ["/usr/bin/openclaw", "gateway", "--port", "18789"],
+          programArguments: ["/usr/bin/afora", "gateway", "--port", "18789"],
           environment: {
-            HOME: "/home/openclaw",
+            HOME: "/home/afora",
             OPENAI_API_KEY: "file-backed-openai-key",
-            OPENCLAW_GATEWAY_PASSWORD: "file-backed-password",
-            OPENCLAW_GATEWAY_PORT: "18789",
-            OPENCLAW_SERVICE_MANAGED_ENV_KEYS: "OPENAI_API_KEY,OPENCLAW_GATEWAY_PASSWORD",
+            AFORA_GATEWAY_PASSWORD: "file-backed-password",
+            AFORA_GATEWAY_PORT: "18789",
+            AFORA_SERVICE_MANAGED_ENV_KEYS: "OPENAI_API_KEY,AFORA_GATEWAY_PASSWORD",
           },
           environmentValueSources: {
             HOME: "inline",
             OPENAI_API_KEY: "file",
-            OPENCLAW_GATEWAY_PASSWORD: "file",
-            OPENCLAW_GATEWAY_PORT: "inline",
-            OPENCLAW_SERVICE_MANAGED_ENV_KEYS: "inline",
+            AFORA_GATEWAY_PASSWORD: "file",
+            AFORA_GATEWAY_PORT: "inline",
+            AFORA_SERVICE_MANAGED_ENV_KEYS: "inline",
           },
         },
       };
@@ -250,10 +250,10 @@ describe("repairLoadedGatewayServiceForStart", () => {
       await expect(repair).rejects.toThrow(
         [
           "Refusing to repair the managed Gateway service because the current invocation targets a different Gateway:",
-          '- OPENCLAW_STATE_DIR: installed="/home/openclaw/.openclaw", ambient="/home/openclaw/stress-state"',
-          '- OPENCLAW_CONFIG_PATH: installed="/home/openclaw/.openclaw/openclaw.json", ambient="/home/openclaw/stress-state/openclaw.json"',
+          '- AFORA_STATE_DIR: installed="/home/afora/.afora", ambient="/home/afora/stress-state"',
+          '- AFORA_CONFIG_PATH: installed="/home/afora/.AforaMosh/afora-agent.json", ambient="/home/afora/stress-state/afora.json"',
           '- gateway.port: installed="18789", ambient="18999"',
-          `Run \`openclaw gateway ${action}\` with the installed state directory, config path, and port (or unset conflicting environment overrides). To retarget intentionally, run \`openclaw gateway install --force\`.`,
+          `Run \`afora gateway ${action}\` with the installed state directory, config path, and port (or unset conflicting environment overrides). To retarget intentionally, run \`afora gateway install --force\`.`,
         ].join("\n"),
       );
 
@@ -265,7 +265,7 @@ describe("repairLoadedGatewayServiceForStart", () => {
   );
 
   it("refuses a port-less stale service repair when ambient port overrides its config port", async () => {
-    vi.stubEnv("OPENCLAW_GATEWAY_PORT", "18999");
+    vi.stubEnv("AFORA_GATEWAY_PORT", "18999");
     readConfigFileSnapshotForWriteMock.mockResolvedValue({
       snapshot: {
         exists: true,
@@ -273,7 +273,7 @@ describe("repairLoadedGatewayServiceForStart", () => {
         sourceConfig: { gateway: { port: 18_789 } },
         config: { gateway: { port: 18_789 } },
       },
-      writeOptions: { expectedConfigPath: "/home/openclaw/.openclaw/openclaw.json" },
+      writeOptions: { expectedConfigPath: "/home/afora/.AforaMosh/afora-agent.json" },
     });
     const installMock = vi.fn(async () => {});
     const service = {
@@ -286,8 +286,8 @@ describe("repairLoadedGatewayServiceForStart", () => {
       running: false,
       env: {},
       command: {
-        programArguments: ["/usr/bin/openclaw", "gateway"],
-        environment: { HOME: "/home/openclaw" },
+        programArguments: ["/usr/bin/afora", "gateway"],
+        environment: { HOME: "/home/afora" },
       },
     };
 
@@ -317,10 +317,10 @@ describe("repairLoadedGatewayServiceForStart", () => {
       running: false,
       env: {},
       command: {
-        programArguments: ["/usr/bin/openclaw", "gateway"],
+        programArguments: ["/usr/bin/afora", "gateway"],
         environment: {
-          HOME: "/home/openclaw",
-          OPENCLAW_GATEWAY_PORT: "127.0.0.1:19000",
+          HOME: "/home/afora",
+          AFORA_GATEWAY_PORT: "127.0.0.1:19000",
         },
       },
     };
@@ -352,8 +352,8 @@ describe("repairLoadedGatewayServiceForStart", () => {
       running: false,
       env: {},
       command: {
-        programArguments: ["/usr/bin/openclaw", "gateway", "--port", "18789"],
-        environment: { OPENCLAW_GATEWAY_PORT: "18789" },
+        programArguments: ["/usr/bin/afora", "gateway", "--port", "18789"],
+        environment: { AFORA_GATEWAY_PORT: "18789" },
       },
     };
 

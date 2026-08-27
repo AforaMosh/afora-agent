@@ -1,8 +1,8 @@
 import type { ChatMember, ReactionTypeEmoji } from "grammy/types";
-import { resolveChannelConfigWrites } from "openclaw/plugin-sdk/channel-config-helpers";
-import { mutateConfigFile } from "openclaw/plugin-sdk/config-mutation";
-import { resolveAgentRoute } from "openclaw/plugin-sdk/routing";
-import { danger, logVerbose, warn } from "openclaw/plugin-sdk/runtime-env";
+import { resolveChannelConfigWrites } from "afora-agent/plugin-sdk/channel-config-helpers";
+import { mutateConfigFile } from "afora-agent/plugin-sdk/config-mutation";
+import { resolveAgentRoute } from "afora-agent/plugin-sdk/routing";
+import { danger, logVerbose, warn } from "afora-agent/plugin-sdk/runtime-env";
 import { resolveTelegramAccount } from "./accounts.js";
 import type { TelegramHandlerAuthorization } from "./bot-handlers.inbound-authorization.js";
 import type { TelegramMessagePipeline } from "./bot-handlers.message-pipeline.js";

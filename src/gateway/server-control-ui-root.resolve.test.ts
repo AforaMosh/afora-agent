@@ -95,7 +95,7 @@ describe("createGatewayControlUiRootLifecycle", () => {
 
     expect(lifecycle.state).toEqual({ kind: "failed" });
     expect(warn).toHaveBeenCalledWith(
-      "gateway: Control UI assets at /App/Resources/control-ui remain incomplete. Run `openclaw doctor --fix` or reinstall OpenClaw.",
+      "gateway: Control UI assets at /App/Resources/control-ui remain incomplete. Run `afora doctor --fix` or reinstall Afora.",
     );
   });
 

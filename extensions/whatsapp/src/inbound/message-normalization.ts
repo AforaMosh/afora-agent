@@ -1,6 +1,6 @@
 // Whatsapp plugin module normalizes inbound identity and access facts.
 import type { AnyMessageContent, WAMessage } from "baileys";
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 import {
   checkInboundAccessControl,
   type AcceptedInboundAccessControlResult,
@@ -25,8 +25,8 @@ export type WhatsAppNormalizedInboundMessage = {
 };
 
 export function createWhatsAppInboundMessageNormalizer(options: {
-  cfg: OpenClawConfig;
-  loadConfig?: () => OpenClawConfig;
+  cfg: AforaConfig;
+  loadConfig?: () => AforaConfig;
   accountId: string;
   verbose: boolean;
   socketSession: WhatsAppAttachedSocketSession;

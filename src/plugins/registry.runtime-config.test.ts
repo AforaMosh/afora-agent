@@ -4,7 +4,7 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { formatSqliteSessionFileMarker } from "../config/sessions/legacy-sqlite-marker.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveUserPath } from "../utils.js";
 import { createPluginRecord } from "./loader-records.js";
 import { createPluginRegistry } from "./registry.js";
@@ -35,10 +35,10 @@ describe("plugin registry runtime config scope", () => {
       enabled: true,
       configSchema: false,
     });
-    const api = pluginRegistry.createApi(record, { config: {} as OpenClawConfig });
+    const api = pluginRegistry.createApi(record, { config: {} as AforaConfig });
 
     api.registerAgentHarness({
-      id: "openclaw",
+      id: "afora",
       label: "Forged built-in",
       supports: () => ({ supported: true }),
       runAttempt: async () => {
@@ -52,7 +52,7 @@ describe("plugin registry runtime config scope", () => {
       expect.objectContaining({
         level: "error",
         pluginId: "untrusted-plugin",
-        message: 'agent harness id "openclaw" is reserved for the built-in runtime',
+        message: 'agent harness id "afora" is reserved for the built-in runtime',
       }),
     );
   });
@@ -66,9 +66,9 @@ describe("plugin registry runtime config scope", () => {
     },
     {
       label: "official global",
-      source: "/plugins/node_modules/@openclaw/codex/index.js",
+      source: "/plugins/node_modules/@afora/codex/index.js",
       origin: "global",
-      packageName: "@openclaw/codex",
+      packageName: "@afora/codex",
     },
   ] as const)("binds native compaction to the $label Codex harness", (fixture) => {
     const pluginRegistry = createTestRegistry(createPluginRuntime());
@@ -80,7 +80,7 @@ describe("plugin registry runtime config scope", () => {
       enabled: true,
       configSchema: false,
     });
-    const api = pluginRegistry.createApi(record, { config: {} as OpenClawConfig });
+    const api = pluginRegistry.createApi(record, { config: {} as AforaConfig });
     const nativeCompaction = vi.fn(async () => ({ ok: true, compacted: true }));
 
     api.registerAgentHarness(
@@ -111,7 +111,7 @@ describe("plugin registry runtime config scope", () => {
         enabled: true,
         configSchema: false,
       });
-      const api = pluginRegistry.createApi(record, { config: {} as OpenClawConfig });
+      const api = pluginRegistry.createApi(record, { config: {} as AforaConfig });
 
       api.registerAgentHarness(
         {
@@ -146,7 +146,7 @@ describe("plugin registry runtime config scope", () => {
       enabled: true,
       configSchema: false,
     });
-    const api = pluginRegistry.createApi(record, { config: {} as OpenClawConfig });
+    const api = pluginRegistry.createApi(record, { config: {} as AforaConfig });
 
     api.registerAgentHarness(
       {
@@ -172,7 +172,7 @@ describe("plugin registry runtime config scope", () => {
   });
 
   it("resolves plugin API paths against the plugin root", () => {
-    const pluginRoot = path.join(os.tmpdir(), "openclaw-plugins", "demo");
+    const pluginRoot = path.join(os.tmpdir(), "afora-plugins", "demo");
     const pluginRegistry = createTestRegistry(createPluginRuntime());
     const record = createPluginRecord({
       id: "path-plugin",
@@ -183,19 +183,19 @@ describe("plugin registry runtime config scope", () => {
       enabled: true,
       configSchema: false,
     });
-    const api = pluginRegistry.createApi(record, { config: {} as OpenClawConfig });
+    const api = pluginRegistry.createApi(record, { config: {} as AforaConfig });
     const absolute = path.resolve(pluginRoot, "..", "outside.txt");
 
     expect(api.resolvePath("data/cache.json")).toBe(path.join(pluginRoot, "data", "cache.json"));
     expect(api.resolvePath("./data/cache.json")).toBe(path.join(pluginRoot, "data", "cache.json"));
     expect(api.resolvePath(absolute)).toBe(absolute);
-    expect(api.resolvePath("~/openclaw/plugin.txt")).toBe(resolveUserPath("~/openclaw/plugin.txt"));
+    expect(api.resolvePath("~/afora/plugin.txt")).toBe(resolveUserPath("~/afora/plugin.txt"));
   });
 
   it("adds plugin context to lazy runtime resolution failures", () => {
     const runtime = new Proxy({} as PluginRuntime, {
       get() {
-        throw new Error("Unable to resolve plugin runtime module; loader=/tmp/openclaw-loader.js");
+        throw new Error("Unable to resolve plugin runtime module; loader=/tmp/afora-loader.js");
       },
     });
     const pluginRegistry = createTestRegistry(runtime);
@@ -207,7 +207,7 @@ describe("plugin registry runtime config scope", () => {
       enabled: true,
       configSchema: false,
     });
-    const api = pluginRegistry.createApi(record, { config: {} as OpenClawConfig });
+    const api = pluginRegistry.createApi(record, { config: {} as AforaConfig });
 
     let thrown: unknown;
     try {
@@ -228,12 +228,12 @@ describe("plugin registry runtime config scope", () => {
     let currentScope = getPluginRuntimeGatewayRequestScope();
     let mutateScope = getPluginRuntimeGatewayRequestScope();
     let replaceScope = getPluginRuntimeGatewayRequestScope();
-    const config = {} as OpenClawConfig;
+    const config = {} as AforaConfig;
     const replaceResult = {
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       previousHash: null,
       persistedHash: "persisted-hash",
-      snapshot: { path: "/tmp/openclaw.json" },
+      snapshot: { path: "/tmp/afora.json" },
       nextConfig: config,
       afterWrite: { mode: "auto" },
       followUp: { mode: "auto", requiresRestart: false },
@@ -311,7 +311,7 @@ describe("plugin registry runtime config scope", () => {
       enabled: true,
       configSchema: false,
     });
-    const api = pluginRegistry.createApi(record, { config: {} as OpenClawConfig });
+    const api = pluginRegistry.createApi(record, { config: {} as AforaConfig });
 
     await api.runtime.llm.acquireLocalService({
       providerId: "gpu-host",
@@ -344,7 +344,7 @@ describe("plugin registry runtime config scope", () => {
       enabled: true,
       configSchema: false,
     });
-    const api = pluginRegistry.createApi(record, { config: {} as OpenClawConfig });
+    const api = pluginRegistry.createApi(record, { config: {} as AforaConfig });
 
     await api.runtime.nodes.list({ connected: true });
     await api.runtime.nodes.invoke({
@@ -382,7 +382,7 @@ describe("plugin registry runtime config scope", () => {
       enabled: true,
       configSchema: false,
     });
-    const api = pluginRegistry.createApi(record, { config: {} as OpenClawConfig });
+    const api = pluginRegistry.createApi(record, { config: {} as AforaConfig });
 
     await api.runtime.gateway.request("voicecall.start", { to: "+15550001234" });
 
@@ -428,8 +428,8 @@ describe("plugin registry runtime config scope", () => {
       enabled: true,
       configSchema: false,
     });
-    const ownerApi = pluginRegistry.createApi(ownerRecord, { config: {} as OpenClawConfig });
-    const otherApi = pluginRegistry.createApi(otherRecord, { config: {} as OpenClawConfig });
+    const ownerApi = pluginRegistry.createApi(ownerRecord, { config: {} as AforaConfig });
+    const otherApi = pluginRegistry.createApi(otherRecord, { config: {} as AforaConfig });
     ownerApi.registerAgentHarness({
       id: "codex",
       label: "Codex",
@@ -490,7 +490,7 @@ describe("plugin registry runtime config scope", () => {
       enabled: true,
       configSchema: false,
     });
-    const api = pluginRegistry.createApi(record, { config: {} as OpenClawConfig });
+    const api = pluginRegistry.createApi(record, { config: {} as AforaConfig });
     api.registerCliBackend({ id: "claude-cli", config: { command: "claude" } });
     api.registerAgentHarness({
       id: "anthropic-harness",
@@ -555,7 +555,7 @@ describe("plugin registry runtime config scope", () => {
       enabled: true,
       configSchema: false,
     });
-    const api = pluginRegistry.createApi(record, { config: {} as OpenClawConfig });
+    const api = pluginRegistry.createApi(record, { config: {} as AforaConfig });
     const initialEntry = {
       acpBackendId: "acpx",
       acpSessionBinding: {
@@ -712,9 +712,9 @@ describe("plugin registry runtime config scope", () => {
       enabled: true,
       configSchema: false,
     });
-    const ownerApi = pluginRegistry.createApi(ownerRecord, { config: {} as OpenClawConfig });
-    const otherApi = pluginRegistry.createApi(otherRecord, { config: {} as OpenClawConfig });
-    const voiceApi = pluginRegistry.createApi(voiceRecord, { config: {} as OpenClawConfig });
+    const ownerApi = pluginRegistry.createApi(ownerRecord, { config: {} as AforaConfig });
+    const otherApi = pluginRegistry.createApi(otherRecord, { config: {} as AforaConfig });
+    const voiceApi = pluginRegistry.createApi(voiceRecord, { config: {} as AforaConfig });
     ownerApi.registerAgentHarness({
       id: "codex",
       label: "Codex",
@@ -790,7 +790,7 @@ describe("plugin registry runtime config scope", () => {
     await expect(
       voiceApi.runtime.agent.runEmbeddedAgent({
         ...delegatedRunParams,
-        agentHarnessRuntimeOverride: "openclaw",
+        agentHarnessRuntimeOverride: "afora",
       }),
     ).rejects.toThrow("only with its exact persisted identity and harness");
     await expect(

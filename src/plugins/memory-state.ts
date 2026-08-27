@@ -1,7 +1,7 @@
 /** Registry state for plugin memory runtimes, prompt supplements, and flush planning. */
 import { AsyncLocalStorage } from "node:async_hooks";
-import { filterStringEntries } from "@openclaw/normalization-core/string-normalization";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { filterStringEntries } from "@afora/normalization-core/string-normalization";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import type {
   MemoryCorpusSupplement,
@@ -251,7 +251,7 @@ export function listMemoryPromptPreparations(): MemoryPromptPreparationRegistrat
   return [...requireActivePluginRegistry().memoryPromptPreparations];
 }
 export function resolveMemoryFlushPlan(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   nowMs?: number;
 }): MemoryFlushPlan | null {
   return getMemoryCapability()?.capability.flushPlanResolver?.(params) ?? null;
@@ -296,7 +296,7 @@ function isValidMemoryPublicArtifact(
 }
 
 export async function listActiveMemoryPublicArtifacts(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }): Promise<MemoryPluginPublicArtifact[]> {
   const capability = getMemoryCapability();
   const pluginId = capability?.pluginId;

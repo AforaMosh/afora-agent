@@ -1,4 +1,4 @@
-import type { RealtimeVoiceBridge } from "openclaw/plugin-sdk/realtime-voice";
+import type { RealtimeVoiceBridge } from "afora-agent/plugin-sdk/realtime-voice";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { OPENAI_QUICKSILVER_OFFER_PATH } from "./realtime-quicksilver-session.js";
 import { buildOpenAIQuicksilverSession } from "./realtime-quicksilver-wire.js";
@@ -435,7 +435,7 @@ describe("GPT-Live offer broker", () => {
       accountId: undefined,
     },
   ])("uses matching $name headers on signaling and the API sideband", async (authCase) => {
-    vi.stubEnv("OPENCLAW_VERSION", "2026.7.2-test");
+    vi.stubEnv("AFORA_VERSION", "2026.7.2-test");
     let signalingUrl: string | undefined;
     let signalingHeaders: Record<string, string> | undefined;
     const fetchImpl = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
@@ -468,8 +468,8 @@ describe("GPT-Live offer broker", () => {
       expect(signalingHeaders).toMatchObject({
         Authorization: authCase.authorization,
         "OpenAI-Alpha": "quicksilver=v2",
-        "User-Agent": "openclaw/2026.7.2-test",
-        originator: "openclaw",
+        "User-Agent": "afora-agent/2026.7.2-test",
+        originator: "afora",
         version: "2026.7.2-test",
         "session-id": expect.any(String),
         "thread-id": expect.any(String),
@@ -479,8 +479,8 @@ describe("GPT-Live offer broker", () => {
       expect(sideband?.headers).toMatchObject({
         Authorization: authCase.authorization,
         "OpenAI-Alpha": "quicksilver=v2",
-        "User-Agent": "openclaw/2026.7.2-test",
-        originator: "openclaw",
+        "User-Agent": "afora-agent/2026.7.2-test",
+        originator: "afora",
         version: "2026.7.2-test",
         "session-id": signalingHeaders?.["session-id"],
         "thread-id": signalingHeaders?.["thread-id"],

@@ -3,17 +3,17 @@ import type { DatabaseSync } from "node:sqlite";
 import { parseSqliteSessionEntryRecord } from "../config/sessions/session-entry-json.js";
 import { resolveAllAgentSessionStoreCandidateTargetsSync } from "../config/sessions/targets.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../infra/kysely-sync.js";
 import { normalizeLegacySessionEntryDelivery } from "../infra/state-migrations.legacy-session-store.js";
-import { withOpenClawAgentDatabaseReadOnly } from "../state/openclaw-agent-db-readonly.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../state/openclaw-agent-db.generated.js";
+import { withAforaAgentDatabaseReadOnly } from "../state/afora-agent-db-readonly.js";
+import type { DB as AforaAgentKyselyDatabase } from "../state/afora-agent-db.generated.js";
 import {
-  closeOpenClawAgentDatabaseByPath,
-  isOpenClawAgentDatabaseOpen,
-  type OpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-} from "../state/openclaw-agent-db.js";
+  closeAforaAgentDatabaseByPath,
+  isAforaAgentDatabaseOpen,
+  type AforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+} from "../state/afora-agent-db.js";
 import {
   deliveryContextFromSession,
   sessionDeliveryChannel,
@@ -42,7 +42,7 @@ type DeliveryRewrite = {
 /** Scan or rewrite legacy delivery fields inside existing session row JSON. */
 export function repairCanonicalSessionDeliveryStates(params: {
   apply: boolean;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
 }): SessionDeliveryStateRepairReport {
   const targets = listExistingAgentDatabaseTargets(params.cfg, params.env);
@@ -53,7 +53,7 @@ export function repairCanonicalSessionDeliveryStates(params: {
       agentId: target.agentId,
       path: target.sqlitePath,
       run: () =>
-        withOpenClawAgentDatabaseReadOnly((database) => collectDeliveryRewrites(database.db), {
+        withAforaAgentDatabaseReadOnly((database) => collectDeliveryRewrites(database.db), {
           agentId: target.agentId,
           env: params.env,
           path: target.sqlitePath,
@@ -66,16 +66,16 @@ export function repairCanonicalSessionDeliveryStates(params: {
     if (!params.apply || operation.value.value.length === 0) {
       continue;
     }
-    const wasOpen = isOpenClawAgentDatabaseOpen(target.sqlitePath);
+    const wasOpen = isAforaAgentDatabaseOpen(target.sqlitePath);
     try {
-      repaired += runOpenClawAgentWriteTransaction(
+      repaired += runAforaAgentWriteTransaction(
         (database) => applyDeliveryRewrites(database),
         { agentId: target.agentId, env: params.env, path: target.sqlitePath },
         { operationLabel: "doctor.canonicalize-session-delivery-state" },
       );
     } finally {
       if (!wasOpen) {
-        closeOpenClawAgentDatabaseByPath(target.sqlitePath);
+        closeAforaAgentDatabaseByPath(target.sqlitePath);
       }
     }
   }
@@ -83,7 +83,7 @@ export function repairCanonicalSessionDeliveryStates(params: {
 }
 
 function listExistingAgentDatabaseTargets(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   env: NodeJS.ProcessEnv,
 ): Array<{ agentId: string; sqlitePath: string }> {
   const seenPaths = new Set<string>();
@@ -98,7 +98,7 @@ function listExistingAgentDatabaseTargets(
 }
 
 function collectDeliveryRewrites(database: DatabaseSync): DeliveryRewrite[] {
-  const db = getNodeSqliteKysely<OpenClawAgentKyselyDatabase>(database);
+  const db = getNodeSqliteKysely<AforaAgentKyselyDatabase>(database);
   const rows = executeSqliteQuerySync(
     database,
     db
@@ -128,8 +128,8 @@ function collectDeliveryRewrites(database: DatabaseSync): DeliveryRewrite[] {
   });
 }
 
-function applyDeliveryRewrites(database: OpenClawAgentDatabase): number {
-  const db = getNodeSqliteKysely<OpenClawAgentKyselyDatabase>(database.db);
+function applyDeliveryRewrites(database: AforaAgentDatabase): number {
+  const db = getNodeSqliteKysely<AforaAgentKyselyDatabase>(database.db);
   const rewrites = collectDeliveryRewrites(database.db);
   for (const rewrite of rewrites) {
     writeValidatedDoctorSessionEntryJson(database, rewrite.row, rewrite.entryJson);

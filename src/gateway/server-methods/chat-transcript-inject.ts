@@ -3,7 +3,7 @@
 import type { SessionManager } from "../../agents/sessions/session-manager.js";
 import { persistSessionTranscriptTurn } from "../../config/sessions/session-accessor.js";
 import { applyAssistantDeliveryDirectives } from "../../config/sessions/transcript-assistant-delivery.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 
 type AppendMessageArg = Parameters<SessionManager["appendMessage"]>[0];
@@ -69,7 +69,7 @@ export async function appendInjectedAssistantMessageToTranscript(params: {
   abortMeta?: GatewayInjectedAbortMeta;
   ttsSupplement?: GatewayInjectedTtsSupplementMarker;
   now?: number;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): Promise<GatewayInjectedTranscriptAppendResult> {
   const now = params.now ?? Date.now();
   const usage = {
@@ -94,12 +94,12 @@ export async function appendInjectedAssistantMessageToTranscript(params: {
   const rawDeliveryMessage: {
     role: "assistant";
     content: Array<Record<string, unknown>>;
-    openclawDelivery?: unknown;
+    aforaDelivery?: unknown;
   } = {
     role: "assistant",
     content: [{ type: "text", text: params.message }],
   };
-  const rawDeliveryFacts = applyAssistantDeliveryDirectives(rawDeliveryMessage).openclawDelivery;
+  const rawDeliveryFacts = applyAssistantDeliveryDirectives(rawDeliveryMessage).aforaDelivery;
   const messageBody: AppendMessageArg & Record<string, unknown> = applyAssistantDeliveryDirectives({
     role: "assistant",
     // Gateway-injected assistant messages can include non-model content blocks (e.g. embedded TTS audio).
@@ -114,13 +114,13 @@ export async function appendInjectedAssistantMessageToTranscript(params: {
     usage,
     // Make these explicit so downstream tooling never treats this as model output.
     api: "openai-responses",
-    provider: "openclaw",
+    provider: "afora",
     model: "gateway-injected",
     ...(params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : {}),
-    ...(params.ttsSupplement ? { openclawTtsSupplement: params.ttsSupplement } : {}),
+    ...(params.ttsSupplement ? { aforaTtsSupplement: params.ttsSupplement } : {}),
     ...(params.abortMeta
       ? {
-          openclawAbort: {
+          aforaAbort: {
             aborted: true,
             origin: params.abortMeta.origin,
             runId: params.abortMeta.runId,
@@ -128,8 +128,8 @@ export async function appendInjectedAssistantMessageToTranscript(params: {
         }
       : {}),
   });
-  if (rawDeliveryFacts && messageBody.openclawDelivery === undefined) {
-    messageBody.openclawDelivery = rawDeliveryFacts;
+  if (rawDeliveryFacts && messageBody.aforaDelivery === undefined) {
+    messageBody.aforaDelivery = rawDeliveryFacts;
   }
 
   try {

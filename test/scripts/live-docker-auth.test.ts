@@ -21,12 +21,12 @@ function writeExecutable(filePath: string, contents: string) {
 function runDockerRunArgs(pathPrefix: string) {
   const script = [
     "source scripts/lib/live-docker-auth.sh",
-    "unset OPENCLAW_LIVE_DOCKER_DISABLE_RESOURCE_LIMITS OPENCLAW_DOCKER_E2E_DISABLE_RESOURCE_LIMITS",
-    "unset OPENCLAW_LIVE_DOCKER_MEMORY OPENCLAW_DOCKER_E2E_MEMORY",
-    "unset OPENCLAW_LIVE_DOCKER_CPUS OPENCLAW_DOCKER_E2E_CPUS",
-    "unset OPENCLAW_LIVE_DOCKER_PIDS_LIMIT OPENCLAW_DOCKER_E2E_PIDS_LIMIT",
+    "unset AFORA_LIVE_DOCKER_DISABLE_RESOURCE_LIMITS AFORA_DOCKER_E2E_DISABLE_RESOURCE_LIMITS",
+    "unset AFORA_LIVE_DOCKER_MEMORY AFORA_DOCKER_E2E_MEMORY",
+    "unset AFORA_LIVE_DOCKER_CPUS AFORA_DOCKER_E2E_CPUS",
+    "unset AFORA_LIVE_DOCKER_PIDS_LIMIT AFORA_DOCKER_E2E_PIDS_LIMIT",
     "ARGS=()",
-    "openclaw_live_init_docker_run_args ARGS 42s || exit $?",
+    "afora_live_init_docker_run_args ARGS 42s || exit $?",
     "printf '%s\\n' \"${ARGS[@]}\"",
   ].join("\n");
 
@@ -62,8 +62,8 @@ describe("scripts/lib/live-docker-auth.sh", () => {
         "-c",
         [
           "source scripts/lib/live-docker-auth.sh",
-          'fallback="$(openclaw_live_read_positive_int_env OPENCLAW_LIVE_SAMPLE_SECONDS 180)"',
-          'leading_zero="$(OPENCLAW_LIVE_SAMPLE_SECONDS=008 openclaw_live_read_positive_int_env OPENCLAW_LIVE_SAMPLE_SECONDS 180)"',
+          'fallback="$(afora_live_read_positive_int_env AFORA_LIVE_SAMPLE_SECONDS 180)"',
+          'leading_zero="$(AFORA_LIVE_SAMPLE_SECONDS=008 afora_live_read_positive_int_env AFORA_LIVE_SAMPLE_SECONDS 180)"',
           'printf "%s\\n%s\\n" "$fallback" "$leading_zero"',
         ].join("\n"),
       ],
@@ -75,7 +75,7 @@ describe("scripts/lib/live-docker-auth.sh", () => {
         "-c",
         [
           "source scripts/lib/live-docker-auth.sh",
-          "OPENCLAW_LIVE_SAMPLE_SECONDS=30s openclaw_live_read_positive_int_env OPENCLAW_LIVE_SAMPLE_SECONDS 180",
+          "AFORA_LIVE_SAMPLE_SECONDS=30s afora_live_read_positive_int_env AFORA_LIVE_SAMPLE_SECONDS 180",
         ].join("\n"),
       ],
       { cwd: process.cwd(), encoding: "utf8" },
@@ -84,11 +84,11 @@ describe("scripts/lib/live-docker-auth.sh", () => {
     expect(result.status).toBe(0);
     expect(result.stdout.trimEnd().split("\n")).toEqual(["180", "008"]);
     expect(invalid.status).toBe(2);
-    expect(invalid.stderr).toContain("invalid OPENCLAW_LIVE_SAMPLE_SECONDS: 30s");
+    expect(invalid.stderr).toContain("invalid AFORA_LIVE_SAMPLE_SECONDS: 30s");
   });
 
   it("collects default and provider-filtered auth under Bash 3 nounset", () => {
-    const homeDir = makeTempBin("openclaw-live-docker-auth-home-");
+    const homeDir = makeTempBin("afora-live-docker-auth-home-");
     const result = spawnSync(
       "/bin/bash",
       [
@@ -96,16 +96,16 @@ describe("scripts/lib/live-docker-auth.sh", () => {
         [
           "set -euo pipefail",
           "source scripts/lib/live-docker-auth.sh",
-          "unset OPENCLAW_DOCKER_AUTH_DIRS DOCKER_HOME_DIR",
-          'openclaw_live_collect_auth_for_providers ","',
-          "openclaw_live_finalize_auth_mounts",
+          "unset AFORA_DOCKER_AUTH_DIRS DOCKER_HOME_DIR",
+          'afora_live_collect_auth_for_providers ","',
+          "afora_live_finalize_auth_mounts",
           'printf "default-dirs=%s\\ndefault-files=%s\\ndefault-mounts=%s\\n" "$AUTH_DIRS_CSV" "$AUTH_FILES_CSV" "${#EXTERNAL_AUTH_MOUNTS[@]}"',
-          'openclaw_live_collect_auth_for_providers "openai, gemini"',
-          "openclaw_live_finalize_auth_mounts",
+          'afora_live_collect_auth_for_providers "openai, gemini"',
+          "afora_live_finalize_auth_mounts",
           'printf "filtered-dirs=%s\\nfiltered-files=%s\\nfiltered-mounts=%s\\n" "$AUTH_DIRS_CSV" "$AUTH_FILES_CSV" "${#EXTERNAL_AUTH_MOUNTS[@]}"',
-          "OPENCLAW_DOCKER_AUTH_DIRS=none",
-          "openclaw_live_collect_auth_for_providers openai",
-          "openclaw_live_finalize_auth_mounts",
+          "AFORA_DOCKER_AUTH_DIRS=none",
+          "afora_live_collect_auth_for_providers openai",
+          "afora_live_finalize_auth_mounts",
           'printf "none-dirs=%s\\nnone-files=%s\\nnone-mounts=%s\\n" "$AUTH_DIRS_CSV" "$AUTH_FILES_CSV" "${#EXTERNAL_AUTH_MOUNTS[@]}"',
         ].join("\n"),
       ],
@@ -128,8 +128,8 @@ describe("scripts/lib/live-docker-auth.sh", () => {
   });
 
   it("prestages selected auth and preserves equivalent external mounts", () => {
-    const homeDir = makeTempBin("openclaw-live-docker-auth-source-");
-    const dockerHomeDir = makeTempBin("openclaw-live-docker-auth-target-");
+    const homeDir = makeTempBin("afora-live-docker-auth-source-");
+    const dockerHomeDir = makeTempBin("afora-live-docker-auth-target-");
     mkdirSync(path.join(homeDir, ".gemini"), { recursive: true });
     mkdirSync(path.join(homeDir, ".codex"), { recursive: true });
     writeFileSync(path.join(homeDir, ".gemini", "token"), "gemini-token\n", "utf8");
@@ -142,10 +142,10 @@ describe("scripts/lib/live-docker-auth.sh", () => {
         [
           "set -euo pipefail",
           "source scripts/lib/live-docker-auth.sh",
-          "unset OPENCLAW_DOCKER_AUTH_DIRS",
+          "unset AFORA_DOCKER_AUTH_DIRS",
           "DOCKER_AUTH_PRESTAGED=0",
-          'openclaw_live_collect_auth_for_providers "openai,gemini"',
-          "openclaw_live_finalize_auth_mounts",
+          'afora_live_collect_auth_for_providers "openai,gemini"',
+          "afora_live_finalize_auth_mounts",
           'printf "dirs=%s\\nfiles=%s\\nprestaged=%s\\n" "$AUTH_DIRS_CSV" "$AUTH_FILES_CSV" "$DOCKER_AUTH_PRESTAGED"',
           'printf "%s\\n" "${EXTERNAL_AUTH_MOUNTS[@]}"',
         ].join("\n"),
@@ -184,10 +184,10 @@ describe("scripts/lib/live-docker-auth.sh", () => {
         [
           "set -euo pipefail",
           "source scripts/lib/live-docker-stage.sh",
-          "OPENCLAW_DOCKER_AUTH_PRESTAGED=0",
-          "OPENCLAW_DOCKER_AUTH_DIRS_RESOLVED=",
-          "OPENCLAW_DOCKER_AUTH_FILES_RESOLVED=",
-          "openclaw_live_stage_mounted_auth",
+          "AFORA_DOCKER_AUTH_PRESTAGED=0",
+          "AFORA_DOCKER_AUTH_DIRS_RESOLVED=",
+          "AFORA_DOCKER_AUTH_FILES_RESOLVED=",
+          "afora_live_stage_mounted_auth",
           "printf mounted-auth-ok",
         ].join("\n"),
       ],
@@ -200,7 +200,7 @@ describe("scripts/lib/live-docker-auth.sh", () => {
   });
 
   it("adds a kill-after grace period when timeout supports it", () => {
-    const binDir = makeTempBin("openclaw-live-docker-auth-gnu-");
+    const binDir = makeTempBin("afora-live-docker-auth-gnu-");
     writeExecutable(
       path.join(binDir, "timeout"),
       [
@@ -230,7 +230,7 @@ describe("scripts/lib/live-docker-auth.sh", () => {
   });
 
   it("caps default CPU limits to the runner capacity", () => {
-    const binDir = makeTempBin("openclaw-live-docker-auth-cpus-");
+    const binDir = makeTempBin("afora-live-docker-auth-cpus-");
     writeExecutable(
       path.join(binDir, "timeout"),
       [
@@ -250,7 +250,7 @@ describe("scripts/lib/live-docker-auth.sh", () => {
         [
           "source scripts/lib/live-docker-auth.sh",
           "ARGS=()",
-          "OPENCLAW_LIVE_DOCKER_AVAILABLE_CPUS=8 openclaw_live_init_docker_run_args ARGS 42s",
+          "AFORA_LIVE_DOCKER_AVAILABLE_CPUS=8 afora_live_init_docker_run_args ARGS 42s",
           "printf '%s\\n' \"${ARGS[@]}\"",
         ].join("\n"),
       ],
@@ -282,7 +282,7 @@ describe("scripts/lib/live-docker-auth.sh", () => {
   });
 
   it("falls back to plain timeout when kill-after is unavailable", () => {
-    const binDir = makeTempBin("openclaw-live-docker-auth-plain-");
+    const binDir = makeTempBin("afora-live-docker-auth-plain-");
     writeExecutable(
       path.join(binDir, "timeout"),
       ["#!/bin/sh", 'if [ "$1" = "--kill-after=1s" ]; then', "  exit 1", "fi", "exit 0", ""].join(
@@ -306,7 +306,7 @@ describe("scripts/lib/live-docker-auth.sh", () => {
   });
 
   it("uses gtimeout when timeout is unavailable", () => {
-    const binDir = makeTempBin("openclaw-live-docker-auth-gtimeout-");
+    const binDir = makeTempBin("afora-live-docker-auth-gtimeout-");
     writeExecutable(
       path.join(binDir, "gtimeout"),
       [
@@ -336,7 +336,7 @@ describe("scripts/lib/live-docker-auth.sh", () => {
   });
 
   it("allows live Docker resource limits to be disabled", () => {
-    const binDir = makeTempBin("openclaw-live-docker-auth-no-limits-");
+    const binDir = makeTempBin("afora-live-docker-auth-no-limits-");
     writeExecutable(
       path.join(binDir, "timeout"),
       [
@@ -356,7 +356,7 @@ describe("scripts/lib/live-docker-auth.sh", () => {
         [
           "source scripts/lib/live-docker-auth.sh",
           "ARGS=()",
-          "OPENCLAW_LIVE_DOCKER_DISABLE_RESOURCE_LIMITS=1 openclaw_live_init_docker_run_args ARGS 42s",
+          "AFORA_LIVE_DOCKER_DISABLE_RESOURCE_LIMITS=1 afora_live_init_docker_run_args ARGS 42s",
           "printf '%s\\n' \"${ARGS[@]}\"",
         ].join("\n"),
       ],
@@ -382,7 +382,7 @@ describe("scripts/lib/live-docker-auth.sh", () => {
   });
 
   it("normalizes live Docker pids limits", () => {
-    const binDir = makeTempBin("openclaw-live-docker-auth-pids-");
+    const binDir = makeTempBin("afora-live-docker-auth-pids-");
     writeExecutable(
       path.join(binDir, "timeout"),
       [
@@ -402,7 +402,7 @@ describe("scripts/lib/live-docker-auth.sh", () => {
         [
           "source scripts/lib/live-docker-auth.sh",
           "ARGS=()",
-          "OPENCLAW_LIVE_DOCKER_PIDS_LIMIT=0008 openclaw_live_init_docker_run_args ARGS 42s",
+          "AFORA_LIVE_DOCKER_PIDS_LIMIT=0008 afora_live_init_docker_run_args ARGS 42s",
           "printf '%s\\n' \"${ARGS[@]}\"",
         ].join("\n"),
       ],
@@ -421,10 +421,10 @@ describe("scripts/lib/live-docker-auth.sh", () => {
   });
 
   it.each([
-    ["live", "OPENCLAW_LIVE_DOCKER_PIDS_LIMIT"],
-    ["shared", "OPENCLAW_DOCKER_E2E_PIDS_LIMIT"],
+    ["live", "AFORA_LIVE_DOCKER_PIDS_LIMIT"],
+    ["shared", "AFORA_DOCKER_E2E_PIDS_LIMIT"],
   ])("rejects invalid %s Docker pids limits before live Docker setup", (_label, envName) => {
-    const binDir = makeTempBin("openclaw-live-docker-auth-invalid-pids-");
+    const binDir = makeTempBin("afora-live-docker-auth-invalid-pids-");
     writeExecutable(
       path.join(binDir, "timeout"),
       [
@@ -444,7 +444,7 @@ describe("scripts/lib/live-docker-auth.sh", () => {
         [
           "source scripts/lib/live-docker-auth.sh",
           "ARGS=()",
-          "openclaw_live_init_docker_run_args ARGS 42s",
+          "afora_live_init_docker_run_args ARGS 42s",
         ].join("\n"),
       ],
       {
@@ -452,10 +452,10 @@ describe("scripts/lib/live-docker-auth.sh", () => {
         encoding: "utf8",
         env: {
           ...process.env,
-          OPENCLAW_DOCKER_E2E_PIDS_LIMIT:
-            envName === "OPENCLAW_DOCKER_E2E_PIDS_LIMIT" ? "many" : "",
-          OPENCLAW_LIVE_DOCKER_PIDS_LIMIT:
-            envName === "OPENCLAW_LIVE_DOCKER_PIDS_LIMIT" ? "many" : "",
+          AFORA_DOCKER_E2E_PIDS_LIMIT:
+            envName === "AFORA_DOCKER_E2E_PIDS_LIMIT" ? "many" : "",
+          AFORA_LIVE_DOCKER_PIDS_LIMIT:
+            envName === "AFORA_LIVE_DOCKER_PIDS_LIMIT" ? "many" : "",
           PATH: binDir,
         },
       },
@@ -467,7 +467,7 @@ describe("scripts/lib/live-docker-auth.sh", () => {
   });
 
   it("fails fast when no timeout wrapper is available", () => {
-    const binDir = makeTempBin("openclaw-live-docker-auth-no-timeout-");
+    const binDir = makeTempBin("afora-live-docker-auth-no-timeout-");
 
     const result = runDockerRunArgs(binDir);
     expect(result.status).toBe(127);

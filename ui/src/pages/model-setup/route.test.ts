@@ -58,7 +58,7 @@ describe("model setup route", () => {
       type: "hello-ok" as const,
       protocol: 1,
       auth: { role: "operator", scopes: ["operator.admin"] },
-      features: { methods: ["openclaw.setup.detect"] },
+      features: { methods: ["afora.setup.detect"] },
     };
     const gateway = {
       snapshot: {
@@ -94,7 +94,7 @@ describe("model setup route", () => {
       type: "hello-ok" as const,
       protocol: 1,
       auth: { role: "operator", scopes: ["operator.admin"] },
-      features: { methods: ["openclaw.setup.detect"] },
+      features: { methods: ["afora.setup.detect"] },
     };
     const context = {
       gateway: { snapshot: { client, phase: "connected", hello } },

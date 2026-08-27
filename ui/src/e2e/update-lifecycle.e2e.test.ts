@@ -195,7 +195,7 @@ suite.define(() => {
 
           // The recorded cause lands in the dialog the operator is still watching.
           await page
-            .locator("openclaw-modal-dialog")
+            .locator("afora-modal-dialog")
             .getByText(
               "The update failed at install: ENOSPC: no space left on device, write. Dependency install failed. Fix the install error and retry.",
               { exact: true },

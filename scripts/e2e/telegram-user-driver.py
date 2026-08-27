@@ -118,7 +118,7 @@ def resolve_sut(config, bot_config):
         return {"username": username.lstrip("@"), "id": int(user_id)}
     token = (
         os.environ.get("TELEGRAM_E2E_SUT_BOT_TOKEN")
-        or os.environ.get("OPENCLAW_QA_TELEGRAM_SUT_BOT_TOKEN")
+        or os.environ.get("AFORA_QA_TELEGRAM_SUT_BOT_TOKEN")
         or bot_config.get("sutBotToken")
         or bot_config.get("botAToken")
         or bot_config.get("BOTA")
@@ -135,7 +135,7 @@ def default_chat(config, bot_config):
     return (
         os.environ.get("TELEGRAM_USER_DRIVER_CHAT_ID")
         or os.environ.get("TELEGRAM_E2E_GROUP_ID")
-        or os.environ.get("OPENCLAW_QA_TELEGRAM_GROUP_ID")
+        or os.environ.get("AFORA_QA_TELEGRAM_GROUP_ID")
         or str(config.get("defaultChatId") or "")
         or str(bot_config.get("groupId") or "")
     )
@@ -244,7 +244,7 @@ class UserDriver:
             "api_id": int(api_id),
             "api_hash": api_hash,
             "system_language_code": "en",
-            "device_model": "OpenClaw Telegram User Driver",
+            "device_model": "Afora Telegram User Driver",
             "system_version": sys.platform,
             "application_version": "1",
             "enable_storage_optimizer": True,

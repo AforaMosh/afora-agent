@@ -88,7 +88,7 @@ describe("resolveZaloToken", () => {
   });
 
   it("rejects symlinked token files", ({ skip }) => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-zalo-token-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-zalo-token-"));
     try {
       const tokenFile = path.join(dir, "token.txt");
       const tokenLink = path.join(dir, "token-link.txt");

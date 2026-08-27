@@ -69,7 +69,7 @@ describe("settings sidebar search", () => {
     expect(active?.textContent?.trim()).toBe("Models");
   });
 
-  it("links Ask OpenClaw to the shared custodian route", () => {
+  it("links Ask Afora to the shared custodian route", () => {
     const onNavigate = vi.fn();
     render(
       renderSettingsSidebar({
@@ -96,7 +96,7 @@ describe("settings sidebar search", () => {
     const link = container.querySelector<HTMLAnchorElement>(
       '.settings-sidebar__item[href="/custodian"]',
     );
-    expect(link?.textContent?.trim()).toBe("Ask OpenClaw");
+    expect(link?.textContent?.trim()).toBe("Ask Afora");
     link?.click();
     expect(onNavigate).toHaveBeenCalledWith("custodian");
   });
@@ -477,7 +477,7 @@ describe("settings sidebar search", () => {
     );
 
     const card = container.querySelector<HTMLElement & { updateComplete: Promise<boolean> }>(
-      "openclaw-sidebar-update-card",
+      "afora-sidebar-update-card",
     );
     await card?.updateComplete;
     expect(card?.nextElementSibling?.classList.contains("settings-sidebar__footer")).toBe(true);
@@ -491,7 +491,7 @@ describe("settings sidebar search", () => {
         variant: string;
         updateComplete: Promise<boolean>;
       }
-    >("openclaw-sidebar-build-chip");
+    >("afora-sidebar-build-chip");
     await buildChip?.updateComplete;
     expect(buildChip?.gatewayVersion).toBe("1.0.0");
     expect(buildChip?.variant).toBe("settings");
@@ -527,14 +527,14 @@ describe("settings sidebar search", () => {
 
     renderSidebar(false, null, 3);
     expect(container.querySelector(".sidebar-footer-bar__status")).toBeNull();
-    expect(container.querySelector("openclaw-settings-save-indicator")).not.toBeNull();
+    expect(container.querySelector("afora-settings-save-indicator")).not.toBeNull();
 
     renderSidebar(true, "connection refused?token=settings-secret", 3);
-    expect(container.querySelector("openclaw-settings-save-indicator")).toBeNull();
+    expect(container.querySelector("afora-settings-save-indicator")).toBeNull();
     const button = container.querySelector<HTMLButtonElement>(".sidebar-footer-bar__status");
     expect(button?.hasAttribute("title")).toBe(false);
     expect(
-      (button?.closest("openclaw-tooltip") as (HTMLElement & { content?: string }) | null)?.content,
+      (button?.closest("afora-tooltip") as (HTMLElement & { content?: string }) | null)?.content,
     ).toBe("connection refused?[redacted-credential]");
     expect(button?.textContent).toContain("3 queued");
     expect(button?.getAttribute("aria-label")).toBe("Offline — Retry now — 3 queued");

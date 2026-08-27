@@ -2,7 +2,7 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   buildConfiguredAcpSessionKey,
   normalizeBindingConfig,
@@ -10,7 +10,7 @@ import {
 } from "../../acp/persistent-bindings.types.js";
 import { resolveConfiguredBindingRecord } from "../../channels/plugins/configured-binding-registry.js";
 import { listAcpBindings } from "../../config/bindings.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { getSessionBindingService } from "../../infra/outbound/session-binding-service.js";
 import { DEFAULT_ACCOUNT_ID, isAcpSessionKey } from "../../routing/session-key.js";
 
@@ -37,12 +37,12 @@ const acpResetTargetTestApi = {
 };
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.acpResetTargetTestApi")] =
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.acpResetTargetTestApi")] =
     acpResetTargetTestApi;
 }
 
 function resolveResetTargetAccountId(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   accountId?: string | null;
 }): string {
@@ -59,7 +59,7 @@ function resolveResetTargetAccountId(params: {
 }
 
 function resolveRawConfiguredAcpSessionKey(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   accountId: string;
   conversationId: string;
@@ -107,7 +107,7 @@ function resolveRawConfiguredAcpSessionKey(params: {
 }
 
 export function resolveEffectiveResetTargetSessionKey(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel?: string | null;
   accountId?: string | null;
   conversationId?: string | null;

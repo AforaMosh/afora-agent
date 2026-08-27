@@ -1,5 +1,5 @@
 // Dependency tests cover CLI dependency imports and cold-start safety.
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChannelPlugin } from "../channels/plugins/types.public.js";
 import { createOutboundSendDeps } from "./outbound-send-deps.js";

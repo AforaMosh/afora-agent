@@ -2,16 +2,16 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { discoverOpenClawPlugins } from "./discovery.js";
-import { loadOpenClawPlugins } from "./loader.js";
-import { listOpenClawPluginManifestMetadata } from "./manifest-metadata-scan.js";
+import { discoverAforaPlugins } from "./discovery.js";
+import { loadAforaPlugins } from "./loader.js";
+import { listAforaPluginManifestMetadata } from "./manifest-metadata-scan.js";
 import { clearPluginMetadataLifecycleCaches } from "./plugin-metadata-lifecycle.js";
 import { resetPluginRuntimeStateForTest } from "./runtime.js";
 
 const temporaryRoots: string[] = [];
 
 function createTemporaryRoot(): string {
-  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-ordering-")));
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-ordering-")));
   temporaryRoots.push(root);
   return root;
 }
@@ -26,14 +26,14 @@ function createPlugin(params: {
     path.join(params.pluginRoot, "package.json"),
     JSON.stringify({
       name: `@qa/${params.pluginId}`,
-      openclaw: {
+      afora: {
         extensions: ["./index.cjs"],
         ...(params.bundledDist === undefined ? {} : { build: { bundledDist: params.bundledDist } }),
       },
     }),
   );
   fs.writeFileSync(
-    path.join(params.pluginRoot, "openclaw.plugin.json"),
+    path.join(params.pluginRoot, "afora.plugin.json"),
     JSON.stringify({ id: params.pluginId, configSchema: { type: "object" } }),
   );
   fs.writeFileSync(
@@ -83,11 +83,11 @@ describe("deterministic plugin discovery ownership", () => {
     }
     reverseDirectoryEntries(extensionRoot);
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadAforaPlugins({
       activate: false,
       cache: false,
       config: { plugins: { allow: ["alpha", "zeta"], slots: { memory: "none" } } },
-      env: { OPENCLAW_STATE_DIR: stateRoot, OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1" },
+      env: { AFORA_STATE_DIR: stateRoot, AFORA_DISABLE_BUNDLED_PLUGINS: "1" },
     });
 
     expect(registry.plugins.map((plugin) => plugin.id)).toEqual(["alpha", "zeta"]);
@@ -102,12 +102,12 @@ describe("deterministic plugin discovery ownership", () => {
     createPlugin({ pluginRoot: alphaRoot, pluginId: "alpha" });
     createPlugin({ pluginRoot: zetaRoot, pluginId: "zeta" });
 
-    const discovery = discoverOpenClawPlugins({
+    const discovery = discoverAforaPlugins({
       extraPaths: [zetaRoot, alphaRoot],
       installRecords: {},
       env: {
-        OPENCLAW_STATE_DIR: path.join(stateRoot, "state"),
-        OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
+        AFORA_STATE_DIR: path.join(stateRoot, "state"),
+        AFORA_DISABLE_BUNDLED_PLUGINS: "1",
       },
     });
 
@@ -131,12 +131,12 @@ describe("deterministic plugin discovery ownership", () => {
     }
     reverseDirectoryEntries(sourceRoot);
 
-    const discovery = discoverOpenClawPlugins({
+    const discovery = discoverAforaPlugins({
       installRecords: {},
       env: {
-        OPENCLAW_STATE_DIR: path.join(packageRoot, "state"),
-        OPENCLAW_BUNDLED_PLUGINS_DIR: bundledRoot,
-        OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
+        AFORA_STATE_DIR: path.join(packageRoot, "state"),
+        AFORA_BUNDLED_PLUGINS_DIR: bundledRoot,
+        AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
       },
     });
 
@@ -146,15 +146,15 @@ describe("deterministic plugin discovery ownership", () => {
   it("orders manifest-only plugin metadata consistently across filesystem enumeration", () => {
     const root = createTemporaryRoot();
     const home = path.join(root, "home");
-    const extensionRoot = path.join(home, ".openclaw", "extensions");
+    const extensionRoot = path.join(home, ".afora", "extensions");
     for (const pluginId of ["zeta", "alpha"]) {
       createPlugin({ pluginRoot: path.join(extensionRoot, pluginId), pluginId });
     }
     reverseDirectoryEntries(extensionRoot);
 
-    const records = listOpenClawPluginManifestMetadata({
-      OPENCLAW_HOME: home,
-      OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(root, "no-bundled-plugins"),
+    const records = listAforaPluginManifestMetadata({
+      AFORA_HOME: home,
+      AFORA_BUNDLED_PLUGINS_DIR: path.join(root, "no-bundled-plugins"),
     });
 
     expect(

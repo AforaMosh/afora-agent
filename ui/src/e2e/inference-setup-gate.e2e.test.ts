@@ -10,7 +10,7 @@ const suite = createNewSessionPageE2eSuite();
 const proofDir = path.join(process.cwd(), ".artifacts", "control-ui-e2e", "inference-setup-gate");
 
 async function captureProof(page: import("playwright").Page, fileName: string) {
-  if (process.env.OPENCLAW_CAPTURE_UI_PROOF !== "1") {
+  if (process.env.AFORA_CAPTURE_UI_PROOF !== "1") {
     return;
   }
   await mkdir(proofDir, { recursive: true });
@@ -83,14 +83,14 @@ suite.define(() => {
     const page = await context.newPage();
     const gateway = await installMockGateway(page, {
       agentModel: null,
-      featureMethods: ["chat.metadata", "chat.startup", "openclaw.chat"],
+      featureMethods: ["chat.metadata", "chat.startup", "afora.chat"],
     });
 
     try {
       await page.goto(`${suite.server.baseUrl}custodian`);
       await page.getByRole("heading", { name: "No AI provider configured" }).waitFor();
 
-      expect(await gateway.getRequests("openclaw.chat")).toHaveLength(0);
+      expect(await gateway.getRequests("afora.chat")).toHaveLength(0);
       await expect.poll(() => page.locator(".custodian__error").count()).toBe(0);
       await expect.poll(() => page.locator(".agent-chat__composer-shell").count()).toBe(0);
       await expect.poll(() => page.locator("textarea").count()).toBe(0);
@@ -132,16 +132,16 @@ suite.define(() => {
     });
     const page = await context.newPage();
     const gateway = await installMockGateway(page, {
-      deferredMethods: ["openclaw.chat"],
-      featureMethods: ["chat.metadata", "chat.startup", "openclaw.chat"],
+      deferredMethods: ["afora.chat"],
+      featureMethods: ["chat.metadata", "chat.startup", "afora.chat"],
       methodResponses: {
         "agents.list": {
           agents: [
             {
               id: "main",
-              identity: { name: "OpenClaw" },
+              identity: { name: "Afora" },
               model: { primary: "openai/gpt-5.5" },
-              name: "OpenClaw",
+              name: "Afora",
             },
           ],
           defaultId: "main",
@@ -153,11 +153,11 @@ suite.define(() => {
 
     try {
       await page.goto(`${suite.server.baseUrl}custodian`);
-      await gateway.waitForRequest("openclaw.chat");
-      await gateway.rejectDeferred("openclaw.chat", {
+      await gateway.waitForRequest("afora.chat");
+      await gateway.rejectDeferred("afora.chat", {
         code: "UNAVAILABLE",
         details: { code: "system_agent_inference_unavailable" },
-        message: "OpenClaw requires working inference: provider authentication failed",
+        message: "Afora requires working inference: provider authentication failed",
       });
 
       await page.getByRole("heading", { name: "Configured AI needs attention" }).waitFor();

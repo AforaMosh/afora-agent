@@ -8,7 +8,7 @@ import {
 import { t } from "../../i18n/index.ts";
 import { summarizeMcpServers } from "../../lib/config/mcp-servers.ts";
 
-const MCP_DOCS_URL = "https://docs.openclaw.ai/tools/mcp";
+const MCP_DOCS_URL = "https://docs.afora.ai/tools/mcp";
 
 type McpViewProps = {
   configObject: Record<string, unknown>;
@@ -60,19 +60,19 @@ export function renderMcp(props: McpViewProps) {
           <div class="settings-group">
             <div class="settings-row settings-row--stacked">
               <div class="mcp-command-card__grid">
-                <code>openclaw mcp status --verbose</code>
-                <code>openclaw mcp doctor --probe</code>
-                <code>openclaw mcp login &lt;name&gt;</code>
-                <code>openclaw mcp reload</code>
+                <code>afora mcp status --verbose</code>
+                <code>afora mcp doctor --probe</code>
+                <code>afora mcp login &lt;name&gt;</code>
+                <code>afora mcp reload</code>
               </div>
             </div>
           </div>
         </section>
 
-        <openclaw-mcp-servers-card
+        <afora-mcp-servers-card
           .pluginsHref=${props.pluginsHref}
           .docsUrl=${MCP_DOCS_URL}
-        ></openclaw-mcp-servers-card>
+        ></afora-mcp-servers-card>
       </div>
 
       ${props.editor}

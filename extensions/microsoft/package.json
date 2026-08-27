@@ -1,16 +1,16 @@
 {
-  "name": "@openclaw/microsoft-speech",
+  "name": "@afora/microsoft-speech",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw Microsoft speech plugin",
+  "description": "Afora Microsoft speech plugin",
   "type": "module",
   "dependencies": {
     "node-edge-tts": "1.2.10"
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

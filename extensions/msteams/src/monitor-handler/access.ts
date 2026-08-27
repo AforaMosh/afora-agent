@@ -1,19 +1,19 @@
 // Msteams plugin module implements access behavior.
-import { formatAllowlistMatchMeta } from "openclaw/plugin-sdk/allow-from";
-import { logInboundDrop } from "openclaw/plugin-sdk/channel-inbound";
+import { formatAllowlistMatchMeta } from "afora-agent/plugin-sdk/allow-from";
+import { logInboundDrop } from "afora-agent/plugin-sdk/channel-inbound";
 import {
   channelIngressRoutes,
   resolveStableChannelMessageIngress,
   type ChannelIngressContextBinding,
   type StableChannelIngressIdentityParams,
-} from "openclaw/plugin-sdk/channel-ingress-runtime";
-import { normalizeOptionalLowercaseString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/channel-ingress-runtime";
+import { normalizeOptionalLowercaseString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   DEFAULT_ACCOUNT_ID,
   createChannelPairingController,
   isDangerousNameMatchingEnabled,
   resolveDefaultGroupPolicy,
-  type OpenClawConfig,
+  type AforaConfig,
 } from "../../runtime-api.js";
 import type {
   StoredConversationReference,
@@ -112,7 +112,7 @@ function formatMSTeamsSenderReason(params: {
 }
 
 export async function resolveMSTeamsSenderAccess(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   activity: MSTeamsTurnContext["activity"];
   hasControlCommand?: boolean;
   conversationThreadId?: string;
@@ -216,7 +216,7 @@ export async function resolveMSTeamsSenderAccess(params: {
 }
 
 export async function admitMSTeamsMessage(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   activity: MSTeamsTurnContext["activity"];
   text: string;
   conversationId: string;

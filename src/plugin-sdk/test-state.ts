@@ -1,6 +1,6 @@
-// Test-state exports provide isolated OpenClaw filesystem and environment fixtures.
+// Test-state exports provide isolated Afora filesystem and environment fixtures.
 export {
-  createOpenClawTestState,
-  withOpenClawTestState,
-  type OpenClawTestState,
-} from "../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  withAforaTestState,
+  type AforaTestState,
+} from "../test-utils/afora-test-state.js";

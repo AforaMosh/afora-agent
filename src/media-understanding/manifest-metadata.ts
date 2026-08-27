@@ -1,13 +1,13 @@
 // Manifest metadata registry builder for media-understanding providers without
 // loading plugin runtime code.
 import { normalizeMediaProviderId } from "../../packages/media-understanding-common/src/provider-id.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { loadManifestMetadataSnapshot } from "../plugins/manifest-contract-eligibility.js";
 import type { MediaUnderstandingProvider } from "./types.js";
 
 /** Builds a media provider registry from trusted manifest metadata without loading plugin code. */
 export function buildMediaUnderstandingManifestMetadataRegistry(
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
   workspaceDir?: string,
 ): Map<string, MediaUnderstandingProvider> {
   const registry = new Map<string, MediaUnderstandingProvider>();

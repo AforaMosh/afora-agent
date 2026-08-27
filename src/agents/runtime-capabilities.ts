@@ -4,14 +4,14 @@
  * Agent startup uses this to merge configured channel capabilities with prompt
  * tools and thread-bound spawn features that depend on channel policy.
  */
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
-import { normalizeStringEntriesLower } from "@openclaw/normalization-core/string-normalization";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
+import { normalizeStringEntriesLower } from "@afora/normalization-core/string-normalization";
 import {
   resolveThreadBindingSpawnPolicy,
   supportsAutomaticThreadBindingSpawn,
 } from "../channels/thread-bindings-policy.js";
 import { resolveChannelCapabilities } from "../config/channel-capabilities.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { INTERNAL_MESSAGE_CHANNEL } from "../utils/message-channel-constants.js";
 import { resolveChannelPromptCapabilities } from "./channel-tools.js";
 
@@ -39,7 +39,7 @@ function mergeRuntimeCapabilities(
 
 /** Collects the effective runtime capabilities for a channel/account pair. */
 export function collectRuntimeChannelCapabilities(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   channel?: string | null;
   accountId?: string | null;
 }): string[] | undefined {

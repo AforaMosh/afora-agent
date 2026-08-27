@@ -32,9 +32,9 @@ describe("qa-otel-smoke receiver bounds", () => {
         encoding: "utf8",
         env: {
           ...process.env,
-          OPENCLAW_QA_OTEL_MAX_CAPTURED_BODY_TEXT_BYTES: "1024",
-          OPENCLAW_QA_OTEL_MAX_COMPRESSED_BODY_BYTES: "2048",
-          OPENCLAW_QA_OTEL_MAX_DECODED_BODY_BYTES: "4096",
+          AFORA_QA_OTEL_MAX_CAPTURED_BODY_TEXT_BYTES: "1024",
+          AFORA_QA_OTEL_MAX_COMPRESSED_BODY_BYTES: "2048",
+          AFORA_QA_OTEL_MAX_DECODED_BODY_BYTES: "4096",
         },
       },
     );
@@ -55,7 +55,7 @@ describe("qa-otel-smoke receiver bounds", () => {
           spanId: "span",
         },
       ],
-      metrics: [{ name: "openclaw.harness.duration_ms" }],
+      metrics: [{ name: "afora.harness.duration_ms" }],
       requests: [
         {
           path: "/v1/traces",
@@ -92,29 +92,29 @@ describe("qa-otel-smoke receiver bounds", () => {
       stdoutLogRecords: [],
       spans: [
         {
-          name: "openclaw.run",
+          name: "afora.run",
           parent: false,
           attributes: {
-            "openclaw.error": "QA OTEL provider stream failed OPENAI_API_KEY=***",
+            "afora.error": "QA OTEL provider stream failed OPENAI_API_KEY=***",
           },
         },
         {
-          name: "openclaw.harness.run",
+          name: "afora.harness.run",
           parent: true,
           attributes: {
-            "openclaw.error": "QA OTEL provider stream failed OPENAI_API_KEY=***",
+            "afora.error": "QA OTEL provider stream failed OPENAI_API_KEY=***",
           },
         },
-        { name: "openclaw.context.assembled", parent: true, attributes: {} },
-        { name: "openclaw.message.delivery", parent: true, attributes: {} },
+        { name: "afora.context.assembled", parent: true, attributes: {} },
+        { name: "afora.message.delivery", parent: true, attributes: {} },
         {
           name: "chat gpt-5.6-luna",
           parent: true,
           attributes: {
             "gen_ai.operation.name": "chat",
             "gen_ai.request.model": "gpt-5.6-luna",
-            "openclaw.model": "gpt-5.6-luna",
-            "openclaw.provider": "openai",
+            "afora.model": "gpt-5.6-luna",
+            "afora.provider": "openai",
           },
         },
       ],
@@ -185,7 +185,7 @@ describe("qa-otel-smoke receiver bounds", () => {
   });
 
   it("ignores inherited OTEL exporter endpoints during direct producer execution", () => {
-    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "openclaw-qa-otel-env-isolation-"));
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "afora-qa-otel-env-isolation-"));
     try {
       const result = spawnSync(
         process.execPath,
@@ -392,13 +392,13 @@ describe("qa-otel-smoke receiver bounds", () => {
     input.stdoutLogRecords = [
       {
         ts: "2026-06-18T00:00:00.000Z",
-        signal: "openclaw.diagnostic.log",
-        "service.name": "openclaw-qa-lab-otel-smoke",
+        signal: "afora.diagnostic.log",
+        "service.name": "afora-qa-lab-otel-smoke",
         severityText: "INFO",
         severityNumber: 9,
         body: "log",
         attributes: {
-          "openclaw.log.level": "INFO",
+          "afora.log.level": "INFO",
         },
       },
     ];
@@ -436,8 +436,8 @@ describe("qa-otel-smoke receiver bounds", () => {
     input.stdoutLogRecords = [
       {
         ts: "2026-06-18T00:00:00.000Z",
-        signal: "openclaw.diagnostic.log",
-        "service.name": "openclaw-qa-lab-otel-smoke",
+        signal: "afora.diagnostic.log",
+        "service.name": "afora-qa-lab-otel-smoke",
         severityText: "INFO",
         severityNumber: 9,
         body: "log",
@@ -476,8 +476,8 @@ describe("qa-otel-smoke receiver bounds", () => {
     input.stdoutLogRecords = [
       {
         ts: "2026-06-18T00:00:00.000Z",
-        signal: "openclaw.diagnostic.log",
-        "service.name": "openclaw-qa-lab-otel-smoke",
+        signal: "afora.diagnostic.log",
+        "service.name": "afora-qa-lab-otel-smoke",
         severityText: "INFO",
         severityNumber: 9,
         body: "log",
@@ -560,7 +560,7 @@ describe("qa-otel-smoke receiver bounds", () => {
     const ports = [4318, 4318, 45679];
 
     const collector = await testing.startDockerOtelCollector(4317, {
-      mkdtemp: async () => "/tmp/openclaw-otel-collector-test",
+      mkdtemp: async () => "/tmp/afora-otel-collector-test",
       platform: "linux",
       randomUUID: () => "00000000-0000-4000-8000-000000000000",
       reserveLocalPort: async () => ports.shift() ?? 49999,
@@ -581,16 +581,16 @@ describe("qa-otel-smoke receiver bounds", () => {
 
     await collector.close();
     expect(stopDockerContainer).toHaveBeenCalledWith(
-      "openclaw-otel-smoke-00000000-0000-4000-8000-000000000000",
+      "afora-otel-smoke-00000000-0000-4000-8000-000000000000",
     );
-    expect(removePath).toHaveBeenCalledWith("/tmp/openclaw-otel-collector-test", {
+    expect(removePath).toHaveBeenCalledWith("/tmp/afora-otel-collector-test", {
       force: true,
       recursive: true,
     });
   });
 
   it("cleans Docker collector containers and temp config after readiness failures", async () => {
-    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "openclaw-qa-otel-collector-"));
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "afora-qa-otel-collector-"));
     const collectorDir = path.join(tempRoot, "collector");
     const child = new EventEmitter() as EventEmitter & {
       stderr: EventEmitter;
@@ -619,7 +619,7 @@ describe("qa-otel-smoke receiver bounds", () => {
       ).rejects.toThrow("collector never became ready");
 
       expect(stopDockerContainer).toHaveBeenCalledWith(
-        "openclaw-otel-smoke-00000000-0000-4000-8000-000000000000",
+        "afora-otel-smoke-00000000-0000-4000-8000-000000000000",
       );
       expect(existsSync(collectorDir)).toBe(false);
     } finally {
@@ -628,7 +628,7 @@ describe("qa-otel-smoke receiver bounds", () => {
   });
 
   it("reports bounded Docker collector output when readiness exits", async () => {
-    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "openclaw-qa-otel-collector-output-"));
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "afora-qa-otel-collector-output-"));
     const collectorDir = path.join(tempRoot, "collector");
     const child = new EventEmitter() as EventEmitter & {
       stderr: EventEmitter;

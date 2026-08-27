@@ -496,7 +496,7 @@ describe("application cloud startup", () => {
       pendingRunId: "message-stable",
       message: {
         role: "user",
-        __openclaw: { idempotencyKey: "message-stable:user", seq: 7 },
+        __afora: { idempotencyKey: "message-stable:user", seq: 7 },
       },
     });
     expect(sessions.refresh).not.toHaveBeenCalled();

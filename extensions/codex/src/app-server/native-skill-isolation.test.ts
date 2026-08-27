@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { createTempHomeEnv, withEnvAsync } from "openclaw/plugin-sdk/test-env";
+import { createTempHomeEnv, withEnvAsync } from "afora-agent/plugin-sdk/test-env";
 import { expect, it, vi } from "vitest";
 import type { CodexAppServerClient } from "./client.js";
 import {
@@ -9,7 +9,7 @@ import {
 } from "./native-skill-isolation.js";
 
 it("reuses one authoritative native skill reload per physical client and workspace", async () => {
-  const tempHome = await createTempHomeEnv("openclaw-codex-native-skills-client-cache-");
+  const tempHome = await createTempHomeEnv("afora-codex-native-skills-client-cache-");
   try {
     const home = await fs.realpath(tempHome.home);
     const request = vi.fn(async () => ({
@@ -18,7 +18,7 @@ it("reuses one authoritative native skill reload per physical client and workspa
     const client = { request } as unknown as CodexAppServerClient;
 
     await withEnvAsync(
-      { HOME: home, OPENCLAW_STATE_DIR: path.join(home, "scratch-state") },
+      { HOME: home, AFORA_STATE_DIR: path.join(home, "scratch-state") },
       async () => {
         const params = { client, cwd: home };
         const [first, second] = await Promise.all([
@@ -41,7 +41,7 @@ it("reuses one authoritative native skill reload per physical client and workspa
 });
 
 it("retries a failed native skill reload instead of caching its rejection", async () => {
-  const tempHome = await createTempHomeEnv("openclaw-codex-native-skills-cache-retry-");
+  const tempHome = await createTempHomeEnv("afora-codex-native-skills-cache-retry-");
   try {
     const home = await fs.realpath(tempHome.home);
     const request = vi
@@ -51,7 +51,7 @@ it("retries a failed native skill reload instead of caching its rejection", asyn
     const client = { request } as unknown as CodexAppServerClient;
 
     await withEnvAsync(
-      { HOME: home, OPENCLAW_STATE_DIR: path.join(home, "scratch-state") },
+      { HOME: home, AFORA_STATE_DIR: path.join(home, "scratch-state") },
       async () => {
         const params = { client, cwd: home };
         await expect(resolveCodexNativeSkillIsolation(params)).rejects.toThrow(
@@ -69,7 +69,7 @@ it("retries a failed native skill reload instead of caching its rejection", asyn
 });
 
 it("does not share native skill reloads across independently cancellable turns", async () => {
-  const tempHome = await createTempHomeEnv("openclaw-codex-native-skills-cache-signals-");
+  const tempHome = await createTempHomeEnv("afora-codex-native-skills-cache-signals-");
   try {
     const home = await fs.realpath(tempHome.home);
     const request = vi.fn(async () => ({
@@ -80,7 +80,7 @@ it("does not share native skill reloads across independently cancellable turns",
     const secondSignal = new AbortController();
 
     await withEnvAsync(
-      { HOME: home, OPENCLAW_STATE_DIR: path.join(home, "scratch-state") },
+      { HOME: home, AFORA_STATE_DIR: path.join(home, "scratch-state") },
       async () => {
         await Promise.all([
           resolveCodexNativeSkillIsolation({ client, cwd: home, signal: firstSignal.signal }),
@@ -101,7 +101,7 @@ it("does not share native skill reloads across independently cancellable turns",
 });
 
 it("disables native user-scope skills only for non-default state directories", async () => {
-  const tempHome = await createTempHomeEnv("openclaw-codex-native-skills-");
+  const tempHome = await createTempHomeEnv("afora-codex-native-skills-");
   try {
     // macOS exposes os.tmpdir() through /var while real paths use /private/var.
     const home = await fs.realpath(tempHome.home);
@@ -208,7 +208,7 @@ it("disables native user-scope skills only for non-default state directories", a
     const client = { request } as unknown as CodexAppServerClient;
 
     await withEnvAsync(
-      { HOME: home, OPENCLAW_STATE_DIR: path.join(home, ".openclaw") },
+      { HOME: home, AFORA_STATE_DIR: path.join(home, ".afora") },
       async () => {
         await expect(
           resolveCodexNativeSkillIsolation({ client, codexHome: customCodexHome, cwd: workspace }),
@@ -220,7 +220,7 @@ it("disables native user-scope skills only for non-default state directories", a
     const isolation = await withEnvAsync(
       {
         HOME: path.join(home, "gateway-home"),
-        OPENCLAW_STATE_DIR: path.join(home, "scratch-state"),
+        AFORA_STATE_DIR: path.join(home, "scratch-state"),
       },
       async () =>
         await resolveCodexNativeSkillIsolation({
@@ -257,7 +257,7 @@ it("disables native user-scope skills only for non-default state directories", a
 it.runIf(process.platform !== "win32")(
   "fails closed to all native user skills when a personal root is unreadable",
   async () => {
-    const tempHome = await createTempHomeEnv("openclaw-codex-native-skills-fail-closed-");
+    const tempHome = await createTempHomeEnv("afora-codex-native-skills-fail-closed-");
     try {
       const home = await fs.realpath(tempHome.home);
       const skillsDir = path.join(home, ".claude", "skills");
@@ -292,7 +292,7 @@ it.runIf(process.platform !== "win32")(
       } as unknown as CodexAppServerClient;
 
       const isolation = await withEnvAsync(
-        { HOME: home, OPENCLAW_STATE_DIR: path.join(home, "scratch-state") },
+        { HOME: home, AFORA_STATE_DIR: path.join(home, "scratch-state") },
         async () => await resolveCodexNativeSkillIsolation({ client, cwd: home }),
       );
       expect(isolation?.disabledUserSkillPaths).toEqual([
@@ -306,7 +306,7 @@ it.runIf(process.platform !== "win32")(
 );
 
 it("captures a personal skill created during the authoritative Codex reload", async () => {
-  const tempHome = await createTempHomeEnv("openclaw-codex-native-skills-reload-race-");
+  const tempHome = await createTempHomeEnv("afora-codex-native-skills-reload-race-");
   try {
     const home = await fs.realpath(tempHome.home);
     const skillPath = path.join(home, ".claude", "skills", "late", "SKILL.md");
@@ -319,7 +319,7 @@ it("captures a personal skill created during the authoritative Codex reload", as
     } as unknown as CodexAppServerClient;
 
     const isolation = await withEnvAsync(
-      { HOME: home, OPENCLAW_STATE_DIR: path.join(home, "scratch-state") },
+      { HOME: home, AFORA_STATE_DIR: path.join(home, "scratch-state") },
       async () => await resolveCodexNativeSkillIsolation({ client, cwd: home }),
     );
     expect(isolation?.disabledUserSkillPaths).toEqual([await fs.realpath(skillPath)]);
@@ -329,7 +329,7 @@ it("captures a personal skill created during the authoritative Codex reload", as
 });
 
 it("preserves direct skills under a state-owned default Codex home", async () => {
-  const tempHome = await createTempHomeEnv("openclaw-codex-native-state-home-");
+  const tempHome = await createTempHomeEnv("afora-codex-native-state-home-");
   try {
     const stateHome = await fs.realpath(tempHome.home);
     const skillPath = path.join(stateHome, ".codex", "skills", "state-owned", "SKILL.md");
@@ -357,7 +357,7 @@ it("preserves direct skills under a state-owned default Codex home", async () =>
     } as unknown as CodexAppServerClient;
 
     const isolation = await withEnvAsync(
-      { HOME: stateHome, OPENCLAW_STATE_DIR: stateHome },
+      { HOME: stateHome, AFORA_STATE_DIR: stateHome },
       async () => await resolveCodexNativeSkillIsolation({ client, cwd: stateHome }),
     );
     expect(isolation?.disabledUserSkillPaths).toEqual([]);

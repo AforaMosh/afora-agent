@@ -2,18 +2,18 @@
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Worker } from "node:worker_threads";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import type { DecisionReceiptV1 } from "../../packages/gateway-protocol/src/index.js";
 import { resolveStateDir } from "../config/paths.js";
 import { redactSensitiveText } from "../logging/redact.js";
-import { OPENCLAW_SQLITE_BUSY_TIMEOUT_MS } from "../state/openclaw-state-db.js";
+import { AFORA_SQLITE_BUSY_TIMEOUT_MS } from "../state/afora-state-db.js";
 import type { AuditEventInput } from "./audit-event-types.js";
 import type { ExecutionIdentityAdmissionWork } from "./execution-identity-admission.js";
 
 const MAX_PENDING_AUDIT_EVENTS = 4_096;
 // The worker can be synchronously blocked inside SQLite's busy timeout. Keep
 // shutdown beyond that window so a queued stop cannot kill an accepted write.
-const AUDIT_WRITER_SHUTDOWN_TIMEOUT_MS = OPENCLAW_SQLITE_BUSY_TIMEOUT_MS + 5_000;
+const AUDIT_WRITER_SHUTDOWN_TIMEOUT_MS = AFORA_SQLITE_BUSY_TIMEOUT_MS + 5_000;
 
 type AuditWriterMessage =
   | { type: "ready" }

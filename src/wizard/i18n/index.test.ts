@@ -31,19 +31,19 @@ describe("wizard i18n", () => {
     ["en_US.UTF-8", "Gateway port"],
     ["de_DE.UTF-8", "Gateway port"],
   ])("resolves the %s CLI locale through translated setup copy", (locale, expected) => {
-    vi.stubEnv("OPENCLAW_LOCALE", locale);
+    vi.stubEnv("AFORA_LOCALE", locale);
     expect(t("wizard.gateway.port")).toBe(expected);
   });
 
-  it("uses OPENCLAW_LOCALE before process locale variables", () => {
-    vi.stubEnv("OPENCLAW_LOCALE", "en");
+  it("uses AFORA_LOCALE before process locale variables", () => {
+    vi.stubEnv("AFORA_LOCALE", "en");
     vi.stubEnv("LC_ALL", "zh-CN");
     vi.stubEnv("LANG", "zh-TW");
     expect(t("wizard.gateway.port")).toBe("Gateway port");
   });
 
   it("ignores blank locale overrides when a process locale is available", () => {
-    vi.stubEnv("OPENCLAW_LOCALE", "   ");
+    vi.stubEnv("AFORA_LOCALE", "   ");
     vi.stubEnv("LC_ALL", "");
     vi.stubEnv("LC_MESSAGES", "zh-CN");
     vi.stubEnv("LANG", "en-US");
@@ -51,7 +51,7 @@ describe("wizard i18n", () => {
   });
 
   it("continues through a blank LC_MESSAGES value to LANG", () => {
-    vi.stubEnv("OPENCLAW_LOCALE", "");
+    vi.stubEnv("AFORA_LOCALE", "");
     vi.stubEnv("LC_ALL", " ");
     vi.stubEnv("LC_MESSAGES", "\t");
     vi.stubEnv("LANG", "zh-TW");
@@ -59,7 +59,7 @@ describe("wizard i18n", () => {
   });
 
   it("uses English when every locale variable is blank", () => {
-    vi.stubEnv("OPENCLAW_LOCALE", " ");
+    vi.stubEnv("AFORA_LOCALE", " ");
     vi.stubEnv("LC_ALL", "");
     vi.stubEnv("LC_MESSAGES", "\t");
     vi.stubEnv("LANG", "  ");

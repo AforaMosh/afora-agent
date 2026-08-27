@@ -1,4 +1,4 @@
-import type { PluginStateKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { PluginStateKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
 
 const IMPORT_STATE_KEY = "onboarding";
 const IMPORT_PROFILE_BASENAME = "imported";

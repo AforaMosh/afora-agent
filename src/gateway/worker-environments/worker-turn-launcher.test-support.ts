@@ -9,14 +9,14 @@ import { SessionManager } from "../../agents/sessions/session-manager.js";
 import { upsertSessionEntryCore } from "../../config/sessions/session-accessor.js";
 import { resetAgentEventsForTest } from "../../infra/agent-events.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-  type OpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+  type AforaStateDatabase,
+} from "../../state/afora-state-db.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../../test-utils/afora-test-state.js";
 import type { MintedWorkerCredential } from "./credential.js";
 import {
   createWorkerSessionPlacementStore,
@@ -39,8 +39,8 @@ const BUNDLE_HASH = "a".repeat(64);
 export const MANIFEST_REF = `sha256:${"b".repeat(64)}`;
 const HOST_KEY = [["ssh", "ed25519"].join("-"), "AAAA"].join(" ");
 
-let testState: OpenClawTestState;
-let database: OpenClawStateDatabase;
+let testState: AforaTestState;
+let database: AforaStateDatabase;
 let cleanupAdmissionSink: (() => void) | undefined;
 
 export let root: string;
@@ -54,12 +54,12 @@ export let sessionTarget: {
 };
 
 export async function setupWorkerTurnLauncherTest(): Promise<void> {
-  testState = await createOpenClawTestState({
+  testState = await createAforaTestState({
     label: "worker-turn",
     layout: "state-only",
   });
   root = testState.root;
-  database = openOpenClawStateDatabase({ env: testState.env });
+  database = openAforaStateDatabase({ env: testState.env });
   placements = createWorkerSessionPlacementStore({ database });
   sessionTarget = {
     agentId: "main",
@@ -78,7 +78,7 @@ export async function setupWorkerTurnLauncherTest(): Promise<void> {
 export async function cleanupWorkerTurnLauncherTest(): Promise<void> {
   cleanupAdmissionSink?.();
   cleanupAdmissionSink = undefined;
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   resetAgentEventsForTest();
   await testState.cleanup();
 }
@@ -202,7 +202,7 @@ export function attachedEnvironment(): WorkerTurnEnvironmentRecord {
     sharedHost: false,
     bootstrapReceipt: {
       bundleHash: BUNDLE_HASH,
-      openclawVersion: "2026.7.2",
+      aforaVersion: "2026.7.2",
       protocolFeatures: [WORKER_EXECUTION_CONTEXT_PROTOCOL_FEATURE],
       installKind: "bundle",
     },
@@ -240,7 +240,7 @@ export function browserEnvironment(): WorkerTurnEnvironmentRecord {
       apps: [
         {
           id: "browser",
-          executablePath: "/usr/local/bin/openclaw-worker-browser",
+          executablePath: "/usr/local/bin/afora-worker-browser",
           cdpPort: 9222,
         },
       ],
@@ -296,7 +296,7 @@ export function turn(runId = "run-worker-turn", executionIdentity = false) {
     agents: {
       defaults: {
         models: {
-          "openai/gpt-test": { agentRuntime: { id: "openclaw" } },
+          "openai/gpt-test": { agentRuntime: { id: "afora" } },
         },
       },
     },

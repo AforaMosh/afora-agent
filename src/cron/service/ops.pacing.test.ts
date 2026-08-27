@@ -23,7 +23,7 @@ function makeInput(pacing: CronPacing): CronJobCreate {
 
 async function withState(run: (state: ReturnType<typeof createCronServiceState>) => Promise<void>) {
   const { storePath } = await makeStorePath();
-  await withEnvAsync({ OPENCLAW_STATE_DIR: path.dirname(path.dirname(storePath)) }, async () => {
+  await withEnvAsync({ AFORA_STATE_DIR: path.dirname(path.dirname(storePath)) }, async () => {
     await run(
       createCronServiceState({
         storePath,

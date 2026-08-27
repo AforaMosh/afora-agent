@@ -40,7 +40,7 @@ function makeCell(
 
 function makeRuntimeParity(
   scenarioId: string,
-  openclaw: RuntimeParityCell,
+  afora: RuntimeParityCell,
   codex: RuntimeParityCell,
   runtimeParityUsage?: RuntimeParityUsagePolicy,
 ): RuntimeParityResult {
@@ -49,7 +49,7 @@ function makeRuntimeParity(
     ...(runtimeParityUsage ? { runtimeParityUsage } : {}),
     drift: "none",
     cells: {
-      openclaw: { ...openclaw, status: "pass" },
+      afora: { ...afora, status: "pass" },
       codex: { ...codex, status: "pass" },
     },
   };
@@ -64,7 +64,7 @@ function makeLiveSummary(runtimeParity: RuntimeParityResult[]): TokenEfficiencyS
     })),
     run: {
       providerMode: "live-frontier",
-      runtimePair: ["openclaw", "codex"],
+      runtimePair: ["afora", "codex"],
     },
   };
 }
@@ -76,7 +76,7 @@ describe("token efficiency report", () => {
       summary: makeLiveSummary([
         makeRuntimeParity(
           "codex-savings",
-          makeCell("openclaw", { inputTokens: 120, outputTokens: 80, totalTokens: 200 }),
+          makeCell("afora", { inputTokens: 120, outputTokens: 80, totalTokens: 200 }),
           makeCell("codex", { inputTokens: 60, outputTokens: 40, totalTokens: 100 }),
         ),
       ]),
@@ -98,7 +98,7 @@ describe("token efficiency report", () => {
       summary: makeLiveSummary([
         makeRuntimeParity(
           "runtime-tool-fs-read",
-          makeCell("openclaw", { inputTokens: 72_000, outputTokens: 381, totalTokens: 72_381 }, [
+          makeCell("afora", { inputTokens: 72_000, outputTokens: 381, totalTokens: 72_381 }, [
             makeToolCall("fs.read"),
             makeToolCall("fs.read"),
           ]),
@@ -124,7 +124,7 @@ describe("token efficiency report", () => {
   });
 
   it("detects a real cache regression even when cached-inclusive totals hide it", () => {
-    const openclaw = makeCell("openclaw", {
+    const afora = makeCell("afora", {
       inputTokens: 7_403,
       outputTokens: 220,
       totalTokens: 435_810,
@@ -156,14 +156,14 @@ describe("token efficiency report", () => {
     ]);
 
     const report = buildTokenEfficiencyReport({
-      summary: makeLiveSummary([makeRuntimeParity("first-hour-cache-miss", openclaw, codex)]),
+      summary: makeLiveSummary([makeRuntimeParity("first-hour-cache-miss", afora, codex)]),
     });
 
     expect(report.pass).toBe(false);
     expect(report.rows[0]).toMatchObject({
       classification: "regression",
       flagged: true,
-      openclaw: { processedTokens: 20_318, cacheReadTokens: 415_492 },
+      afora: { processedTokens: 20_318, cacheReadTokens: 415_492 },
       codex: {
         processedTokens: 50_521,
         cacheReadTokens: 445_189,
@@ -185,7 +185,7 @@ describe("token efficiency report", () => {
       summary: makeLiveSummary([
         makeRuntimeParity(
           "different-cache-hit-totals",
-          makeCell("openclaw", {
+          makeCell("afora", {
             inputTokens: 100,
             outputTokens: 20,
             totalTokens: 1_000,
@@ -208,7 +208,7 @@ describe("token efficiency report", () => {
       deltaPercent: 0,
       classification: "neutral",
       flagged: false,
-      openclaw: { processedTokens: 120 },
+      afora: { processedTokens: 120 },
       codex: { processedTokens: 120 },
     });
   });
@@ -218,7 +218,7 @@ describe("token efficiency report", () => {
       summary: makeLiveSummary([
         makeRuntimeParity(
           "cache-write-regression",
-          makeCell("openclaw", {
+          makeCell("afora", {
             inputTokens: 10,
             outputTokens: 5,
             totalTokens: 105,
@@ -241,13 +241,13 @@ describe("token efficiency report", () => {
       classification: "regression",
       flagged: true,
       deltaPercent: 600,
-      openclaw: { processedTokens: 15 },
+      afora: { processedTokens: 15 },
       codex: { processedTokens: 105 },
     });
   });
 
   it("reports unavailable cache-miss telemetry as unknown rather than zero", () => {
-    const openclaw = makeCell("openclaw", {
+    const afora = makeCell("afora", {
       inputTokens: 100,
       outputTokens: 20,
       totalTokens: 120,
@@ -257,20 +257,20 @@ describe("token efficiency report", () => {
       outputTokens: 20,
       totalTokens: 120,
     });
-    for (const cell of [openclaw, codex]) {
+    for (const cell of [afora, codex]) {
       cell.cacheDiagnostics = buildRuntimeParityCacheDiagnostics([cell.usage]);
     }
 
     const report = buildTokenEfficiencyReport({
-      summary: makeLiveSummary([makeRuntimeParity("unknown-cache-telemetry", openclaw, codex)]),
+      summary: makeLiveSummary([makeRuntimeParity("unknown-cache-telemetry", afora, codex)]),
     });
 
     expect(report.pass).toBe(true);
     expect(report.rows[0]).toMatchObject({
-      openclaw: { cacheReadTokens: null, cacheWriteTokens: null, cacheMisses: null },
+      afora: { cacheReadTokens: null, cacheWriteTokens: null, cacheMisses: null },
       codex: { cacheReadTokens: null, cacheWriteTokens: null, cacheMisses: null },
     });
-    expect(report.aggregate.openclaw).toMatchObject({
+    expect(report.aggregate.afora).toMatchObject({
       cacheMissCount: null,
       cacheMissInputTokens: null,
     });
@@ -286,7 +286,7 @@ describe("token efficiency report", () => {
       summary: makeLiveSummary([
         makeRuntimeParity(
           "derived-cache-writes",
-          makeCell("openclaw", {
+          makeCell("afora", {
             inputTokens: 10,
             outputTokens: 5,
             totalTokens: 115,
@@ -306,7 +306,7 @@ describe("token efficiency report", () => {
     expect(report.rows[0]).toMatchObject({
       classification: "regression",
       flagged: true,
-      openclaw: {
+      afora: {
         processedTokens: 15,
         processedTokenEvidence: "derived",
         cacheWriteTokens: null,
@@ -324,7 +324,7 @@ describe("token efficiency report", () => {
       summary: makeLiveSummary([
         makeRuntimeParity(
           "unverifiable-cache-writes",
-          makeCell("openclaw", {
+          makeCell("afora", {
             inputTokens: 100,
             outputTokens: 20,
             totalTokens: 120,
@@ -342,7 +342,7 @@ describe("token efficiency report", () => {
     expect(report.rows[0]).toMatchObject({
       classification: "neutral",
       flagged: false,
-      openclaw: { processedTokenEvidence: "derived" },
+      afora: { processedTokenEvidence: "derived" },
       codex: { processedTokenEvidence: "unavailable" },
     });
     expect(report.failures).toEqual([
@@ -364,7 +364,7 @@ describe("token efficiency report", () => {
       summary: makeLiveSummary([
         makeRuntimeParity(
           "incoherent-cache-totals",
-          makeCell("openclaw", {
+          makeCell("afora", {
             inputTokens: 100,
             outputTokens: 20,
             totalTokens: 120,
@@ -395,7 +395,7 @@ describe("token efficiency report", () => {
       summary: makeLiveSummary([
         makeRuntimeParity(
           "unexplained-cache-totals",
-          makeCell("openclaw", {
+          makeCell("afora", {
             inputTokens: 100,
             outputTokens: 20,
             totalTokens: 120,
@@ -423,7 +423,7 @@ describe("token efficiency report", () => {
   });
 
   it("does not derive cache writes from partially observed post-warm cache reads", () => {
-    const openclaw = makeCell("openclaw", {
+    const afora = makeCell("afora", {
       inputTokens: 100,
       outputTokens: 20,
       totalTokens: 120,
@@ -441,7 +441,7 @@ describe("token efficiency report", () => {
 
     const report = buildTokenEfficiencyReport({
       summary: makeLiveSummary([
-        makeRuntimeParity("incomplete-cache-read-telemetry", openclaw, codex),
+        makeRuntimeParity("incomplete-cache-read-telemetry", afora, codex),
       ]),
     });
 
@@ -459,7 +459,7 @@ describe("token efficiency report", () => {
   });
 
   it("does not certify incomplete cache-write telemetry with unaccounted cache input", () => {
-    const openclaw = makeCell("openclaw", {
+    const afora = makeCell("afora", {
       inputTokens: 100,
       outputTokens: 20,
       totalTokens: 120,
@@ -478,7 +478,7 @@ describe("token efficiency report", () => {
 
     const report = buildTokenEfficiencyReport({
       summary: makeLiveSummary([
-        makeRuntimeParity("incomplete-cache-write-telemetry", openclaw, codex),
+        makeRuntimeParity("incomplete-cache-write-telemetry", afora, codex),
       ]),
     });
 
@@ -495,7 +495,7 @@ describe("token efficiency report", () => {
   });
 
   it("keeps mixed post-warm telemetry unknown without discarding measured misses", () => {
-    const openclaw = makeCell("openclaw", {
+    const afora = makeCell("afora", {
       inputTokens: 100,
       outputTokens: 20,
       totalTokens: 120,
@@ -514,7 +514,7 @@ describe("token efficiency report", () => {
     ]);
 
     const report = buildTokenEfficiencyReport({
-      summary: makeLiveSummary([makeRuntimeParity("mixed-cache-telemetry", openclaw, codex)]),
+      summary: makeLiveSummary([makeRuntimeParity("mixed-cache-telemetry", afora, codex)]),
     });
 
     expect(report.rows[0]?.codex).toMatchObject({
@@ -531,7 +531,7 @@ describe("token efficiency report", () => {
   });
 
   it("preserves unmeasured warm turns when only partial cache telemetry is available", () => {
-    const openclaw = makeCell("openclaw", {
+    const afora = makeCell("afora", {
       inputTokens: 100,
       outputTokens: 20,
       totalTokens: 120,
@@ -547,7 +547,7 @@ describe("token efficiency report", () => {
     ]);
 
     const report = buildTokenEfficiencyReport({
-      summary: makeLiveSummary([makeRuntimeParity("partial-warm-telemetry", openclaw, codex)]),
+      summary: makeLiveSummary([makeRuntimeParity("partial-warm-telemetry", afora, codex)]),
     });
 
     expect(report.pass).toBe(true);
@@ -567,7 +567,7 @@ describe("token efficiency report", () => {
       summary: makeLiveSummary([
         makeRuntimeParity(
           "missing-live-usage",
-          makeCell("openclaw", { inputTokens: 0, outputTokens: 0, totalTokens: 0 }),
+          makeCell("afora", { inputTokens: 0, outputTokens: 0, totalTokens: 0 }),
           makeCell("codex", { inputTokens: 0, outputTokens: 0, totalTokens: 0 }),
         ),
       ]),
@@ -575,7 +575,7 @@ describe("token efficiency report", () => {
 
     expect(report.pass).toBe(false);
     expect(report.failures).toEqual([
-      "missing-live-usage openclaw live usage totalTokens=0",
+      "missing-live-usage afora live usage totalTokens=0",
       "missing-live-usage codex live usage totalTokens=0",
     ]);
   });
@@ -585,12 +585,12 @@ describe("token efficiency report", () => {
       summary: makeLiveSummary([
         makeRuntimeParity(
           "usage-applicable",
-          makeCell("openclaw", { inputTokens: 80, outputTokens: 20, totalTokens: 100 }),
+          makeCell("afora", { inputTokens: 80, outputTokens: 20, totalTokens: 100 }),
           makeCell("codex", { inputTokens: 85, outputTokens: 20, totalTokens: 105 }),
         ),
         makeRuntimeParity(
           "local-fixture",
-          makeCell("openclaw", { inputTokens: 0, outputTokens: 0, totalTokens: 0 }),
+          makeCell("afora", { inputTokens: 0, outputTokens: 0, totalTokens: 0 }),
           makeCell("codex", { inputTokens: 0, outputTokens: 0, totalTokens: 0 }),
           {
             expectation: "not-applicable",
@@ -602,7 +602,7 @@ describe("token efficiency report", () => {
 
     expect(report.pass).toBe(true);
     expect(report.rows.map((row) => row.scenarioId)).toEqual(["usage-applicable"]);
-    expect(report.aggregate.openclaw.totalTokens).toBe(100);
+    expect(report.aggregate.afora.totalTokens).toBe(100);
     expect(report.aggregate.codex.totalTokens).toBe(105);
     expect(report.notApplicableScenarios).toEqual([
       {
@@ -620,7 +620,7 @@ describe("token efficiency report", () => {
       summary: makeLiveSummary([
         makeRuntimeParity(
           "local-fixture",
-          makeCell("openclaw", { inputTokens: 0, outputTokens: 0, totalTokens: 0 }),
+          makeCell("afora", { inputTokens: 0, outputTokens: 0, totalTokens: 0 }),
           makeCell("codex", { inputTokens: 0, outputTokens: 0, totalTokens: 0 }),
           {
             expectation: "not-applicable",
@@ -644,7 +644,7 @@ describe("token efficiency report", () => {
       summary: makeLiveSummary([
         makeRuntimeParity(
           "fractional-live-usage",
-          makeCell("openclaw", { inputTokens: 100.5, outputTokens: 0, totalTokens: 100.5 }),
+          makeCell("afora", { inputTokens: 100.5, outputTokens: 0, totalTokens: 100.5 }),
           makeCell("codex", { inputTokens: 101, outputTokens: 0, totalTokens: 101 }),
         ),
       ]),
@@ -652,8 +652,8 @@ describe("token efficiency report", () => {
 
     expect(report.pass).toBe(false);
     expect(report.failures).toEqual([
-      "fractional-live-usage openclaw live usage inputTokens must be a non-negative integer",
-      "fractional-live-usage openclaw live usage totalTokens must be a non-negative integer",
+      "fractional-live-usage afora live usage inputTokens must be a non-negative integer",
+      "fractional-live-usage afora live usage totalTokens must be a non-negative integer",
     ]);
   });
 
@@ -679,7 +679,7 @@ describe("token efficiency report", () => {
         scenarios: [],
         run: {
           providerMode: "mock-openai",
-          runtimePair: ["openclaw", "codex"],
+          runtimePair: ["afora", "codex"],
         },
       },
     });
@@ -698,14 +698,14 @@ describe("token efficiency report", () => {
             status: "pass",
             runtimeParity: makeRuntimeParity(
               "mock-regression",
-              makeCell("openclaw", { inputTokens: 100, outputTokens: 0, totalTokens: 100 }),
+              makeCell("afora", { inputTokens: 100, outputTokens: 0, totalTokens: 100 }),
               makeCell("codex", { inputTokens: 130, outputTokens: 0, totalTokens: 130 }),
             ),
           },
         ],
         run: {
           providerMode: "mock-openai",
-          runtimePair: ["openclaw", "codex"],
+          runtimePair: ["afora", "codex"],
         },
       },
     });
@@ -726,12 +726,12 @@ describe("token efficiency report", () => {
       summary: makeLiveSummary([
         makeRuntimeParity(
           "codex-savings",
-          makeCell("openclaw", { inputTokens: 100, outputTokens: 100, totalTokens: 200 }),
+          makeCell("afora", { inputTokens: 100, outputTokens: 100, totalTokens: 200 }),
           makeCell("codex", { inputTokens: 50, outputTokens: 50, totalTokens: 100 }),
         ),
         makeRuntimeParity(
           "codex-regression",
-          makeCell("openclaw", { inputTokens: 100, outputTokens: 0, totalTokens: 100 }),
+          makeCell("afora", { inputTokens: 100, outputTokens: 0, totalTokens: 100 }),
           makeCell("codex", { inputTokens: 130, outputTokens: 0, totalTokens: 130 }),
         ),
       ]),

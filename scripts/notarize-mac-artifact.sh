@@ -4,7 +4,7 @@ set -euo pipefail
 # Notarize a macOS artifact (zip/dmg/pkg) and optionally staple the app bundle.
 #
 # Usage:
-#   STAPLE_APP_PATH=dist/OpenClaw.app scripts/notarize-mac-artifact.sh <artifact>
+#   STAPLE_APP_PATH=dist/Afora.app scripts/notarize-mac-artifact.sh <artifact>
 #
 # Auth (pick one):
 #   NOTARYTOOL_PROFILE   keychain profile created via `xcrun notarytool store-credentials`
@@ -22,7 +22,7 @@ usage() {
 Usage: scripts/notarize-mac-artifact.sh <artifact>
 
 Env:
-  STAPLE_APP_PATH=dist/OpenClaw.app
+  STAPLE_APP_PATH=dist/Afora.app
   NOTARYTOOL_PROFILE=<keychain-profile>
   NOTARYTOOL_KEY=<api-key.p8>
   NOTARYTOOL_KEY_ID=<api-key-id>

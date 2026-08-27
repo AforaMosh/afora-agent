@@ -1,6 +1,6 @@
 /** Verifies plugin HTTP route registration, collision detection, and metadata capture. */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { registerPluginHttpRoute, withPluginHttpRouteRegistry } from "./http-registry.js";
 import { createEmptyPluginRegistry } from "./registry-empty.js";
 import { createPluginRegistry } from "./registry.js";
@@ -119,7 +119,7 @@ describe("registerPluginHttpRoute", () => {
       runtime: {} as PluginRuntime,
       activateGlobalSideEffects: false,
     });
-    const config = {} as OpenClawConfig;
+    const config = {} as AforaConfig;
     const plainRecord = createPluginRecord({
       id: "plain-http",
       source: "/plugins/plain-http/index.ts",
@@ -371,7 +371,7 @@ describe("registerPluginHttpRoute", () => {
     });
     const slashHandler = vi.fn();
     pluginRegistry.registry.plugins.push(record);
-    pluginRegistry.createApi(record, { config: {} as OpenClawConfig }).registerHttpRoute({
+    pluginRegistry.createApi(record, { config: {} as AforaConfig }).registerHttpRoute({
       path: "/Mattermost//Interactions/default/",
       auth: "plugin",
       handler: slashHandler,

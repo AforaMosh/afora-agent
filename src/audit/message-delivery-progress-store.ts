@@ -8,15 +8,15 @@ import {
   getNodeSqliteKysely,
 } from "../infra/kysely-sync.js";
 import { normalizeSqliteNumber } from "../infra/sqlite-number.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../state/openclaw-state-db-readonly.js";
-import { ensureColumn, tableExists } from "../state/openclaw-state-db-schema-helpers.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../state/afora-state-db-readonly.js";
+import { ensureColumn, tableExists } from "../state/afora-state-db-schema-helpers.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
-import { OPENCLAW_STATE_SCHEMA_SQL } from "../state/openclaw-state-schema.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
+import { AFORA_STATE_SCHEMA_SQL } from "../state/afora-state-schema.js";
 import type {
   OutboundMessageAuditEventRecord,
   OutboundMessageProgressInput,
@@ -34,8 +34,8 @@ import {
   type MessageExecutionBinding,
 } from "./message-execution-binding.js";
 
-type ProgressTable = OpenClawStateKyselyDatabase["outbound_message_progress"];
-type ProgressDatabase = Pick<OpenClawStateKyselyDatabase, "outbound_message_progress">;
+type ProgressTable = AforaStateKyselyDatabase["outbound_message_progress"];
+type ProgressDatabase = Pick<AforaStateKyselyDatabase, "outbound_message_progress">;
 type ProgressRow = Selectable<ProgressTable>;
 
 const OUTBOUND_MESSAGE_PROGRESS_RETENTION_MS = 30 * 24 * 60 * 60_000;
@@ -46,30 +46,30 @@ const ensuredDatabases = new WeakSet<DatabaseSync>();
 const progressRowCounts = new WeakMap<DatabaseSync, number>();
 
 function progressSchemaSql(): string {
-  const start = OPENCLAW_STATE_SCHEMA_SQL.indexOf(
+  const start = AFORA_STATE_SCHEMA_SQL.indexOf(
     "CREATE TABLE IF NOT EXISTS outbound_message_progress (",
   );
-  const finalIndex = OPENCLAW_STATE_SCHEMA_SQL.indexOf(
+  const finalIndex = AFORA_STATE_SCHEMA_SQL.indexOf(
     "CREATE INDEX IF NOT EXISTS outbound_message_progress_run_occurred_idx",
     start,
   );
-  const end = finalIndex >= 0 ? OPENCLAW_STATE_SCHEMA_SQL.indexOf(";", finalIndex) : -1;
+  const end = finalIndex >= 0 ? AFORA_STATE_SCHEMA_SQL.indexOf(";", finalIndex) : -1;
   if (start < 0 || end < 0) {
     throw new Error("canonical outbound message progress schema is missing");
   }
-  return OPENCLAW_STATE_SCHEMA_SQL.slice(start, end + 1);
+  return AFORA_STATE_SCHEMA_SQL.slice(start, end + 1);
 }
 
 function progressDb(db: DatabaseSync) {
   return getNodeSqliteKysely<ProgressDatabase>(db);
 }
 
-function ensureProgressSchema(options: OpenClawStateDatabaseOptions): void {
-  const database = openOpenClawStateDatabase(options);
+function ensureProgressSchema(options: AforaStateDatabaseOptions): void {
+  const database = openAforaStateDatabase(options);
   if (ensuredDatabases.has(database.db)) {
     return;
   }
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       // sqlite-allow-raw -- feature-local additive schema DDL; progress rows use Kysely.
       db.exec(progressSchemaSql());
@@ -284,13 +284,13 @@ function pruneProgressAfterInsert(db: DatabaseSync, now: number): void {
 /** Persist one progress fact idempotently; first use installs only this owner table. */
 export function recordOutboundMessageProgress(
   input: OutboundMessageProgressInput,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): OutboundMessageAuditEventRecord | undefined {
   const executionToken = planMessageExecutionBinding(input.executionIdentityToken, input.runId);
   ensureProgressSchema(options);
   let cacheDatabase: DatabaseSync | undefined;
   try {
-    return runOpenClawStateWriteTransaction(({ db }) => {
+    return runAforaStateWriteTransaction(({ db }) => {
       cacheDatabase = db;
       const executionBinding = confirmMessageExecutionBinding(db, executionToken);
       const insert = executeSqliteQuerySync(
@@ -331,10 +331,10 @@ export function countOutboundMessageProgressForRun(params: {
   contextId?: string;
   executionId?: string;
   now?: number;
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): number {
   return (
-    withExistingOpenClawStateDatabaseReadOnly(({ db }) => {
+    withExistingAforaStateDatabaseReadOnly(({ db }) => {
       const exact = selectMessageExecutionBinding(params);
       if (
         !tableExists(db, "outbound_message_progress") ||
@@ -370,10 +370,10 @@ export function readOutboundMessageProgressForRun(params: {
   after?: { occurredAt: number; sequence: number };
   limit: number;
   now?: number;
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): OutboundMessageAuditEventRecord[] {
   return (
-    withExistingOpenClawStateDatabaseReadOnly(({ db }) => {
+    withExistingAforaStateDatabaseReadOnly(({ db }) => {
       const exact = selectMessageExecutionBinding(params);
       if (
         !tableExists(db, "outbound_message_progress") ||
@@ -423,10 +423,10 @@ export function hasOutboundMessageProgressCursor(params: {
   occurredAt: number;
   sequence: number;
   action: OutboundMessageProgressInput["action"];
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): boolean {
   return (
-    withExistingOpenClawStateDatabaseReadOnly(({ db }) => {
+    withExistingAforaStateDatabaseReadOnly(({ db }) => {
       const exact = selectMessageExecutionBinding(params);
       if (
         !tableExists(db, "outbound_message_progress") ||
@@ -453,13 +453,13 @@ export function hasOutboundMessageProgressCursor(params: {
 
 /** Prune existing progress without creating its lazy table. */
 export function pruneExpiredOutboundMessageProgress(
-  params: { now?: number; database?: OpenClawStateDatabaseOptions } = {},
+  params: { now?: number; database?: AforaStateDatabaseOptions } = {},
 ): void {
-  const database = openOpenClawStateDatabase(params.database);
+  const database = openAforaStateDatabase(params.database);
   if (!tableExists(database.db, "outbound_message_progress")) {
     return;
   }
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     executeSqliteQuerySync(
       db,
       progressDb(db)

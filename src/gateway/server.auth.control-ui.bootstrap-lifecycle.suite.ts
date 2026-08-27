@@ -27,10 +27,10 @@ export function registerControlUiBootstrapLifecycleSuite(): void {
       await import("../shared/device-bootstrap-profile.js");
     const { server, port, prevToken } = await startProxiedControlUiServer("secret");
     const { identityPath, identity } = await createOperatorIdentityFixture(
-      "openclaw-bootstrap-node-retry-",
+      "afora-bootstrap-node-retry-",
     );
     const client = {
-      id: "openclaw-ios",
+      id: "afora-ios",
       displayName: "Test iPhone",
       version: "2026.3.30",
       platform: "iOS 26.3.1",
@@ -151,10 +151,10 @@ export function registerControlUiBootstrapLifecycleSuite(): void {
     const { listDevicePairing, rejectDevicePairing } = await import("../infra/device-pairing.js");
     const { server, port, prevToken } = await startProxiedControlUiServer("secret");
     const { identityPath, identity } = await createOperatorIdentityFixture(
-      "openclaw-bootstrap-node-reject-",
+      "afora-bootstrap-node-reject-",
     );
     const client = {
-      id: "openclaw-ios",
+      id: "afora-ios",
       version: "2026.3.30",
       platform: "iOS 26.3.1",
       mode: "node",
@@ -231,11 +231,11 @@ export function registerControlUiBootstrapLifecycleSuite(): void {
     const { server, port, prevToken } = await startProxiedControlUiServer("secret");
 
     const { identityPath, client } = await createOperatorIdentityFixture(
-      "openclaw-bootstrap-reconcile-fail-",
+      "afora-bootstrap-reconcile-fail-",
     );
     const nodeClient = {
       ...client,
-      id: "openclaw-android",
+      id: "afora-android",
       mode: "node",
     };
 
@@ -309,10 +309,10 @@ export function registerControlUiBootstrapLifecycleSuite(): void {
     const { server, port, prevToken } = await startProxiedControlUiServer("secret");
 
     const { identityPath, identity } = await createOperatorIdentityFixture(
-      "openclaw-bootstrap-role-upgrade-",
+      "afora-bootstrap-role-upgrade-",
     );
     const client = {
-      id: "openclaw-ios",
+      id: "afora-ios",
       version: "2026.3.30",
       platform: "iOS 26.3.1",
       mode: "node",
@@ -399,7 +399,7 @@ export function registerControlUiBootstrapLifecycleSuite(): void {
     const { server, port, prevToken } = await startProxiedControlUiServer("secret");
 
     const { identityPath, identity, client } = await createOperatorIdentityFixture(
-      "openclaw-bootstrap-operator-",
+      "afora-bootstrap-operator-",
     );
 
     try {

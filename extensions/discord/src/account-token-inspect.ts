@@ -2,7 +2,7 @@
 import {
   hasConfiguredSecretInput,
   normalizeSecretInputString,
-} from "openclaw/plugin-sdk/secret-input";
+} from "afora-agent/plugin-sdk/secret-input";
 import type { DiscordCredentialStatus } from "./token.js";
 
 type InspectedDiscordConfiguredToken = {

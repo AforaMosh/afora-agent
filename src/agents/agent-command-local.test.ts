@@ -24,7 +24,7 @@ function createPrepared(senderIsOwner: boolean) {
     cfg: {},
     opts: { runId: "run-local", senderIsOwner },
     runId: "run-local",
-    workspaceDir: "/tmp/openclaw-agent-command-local-test",
+    workspaceDir: "/tmp/afora-agent-command-local-test",
   };
 }
 

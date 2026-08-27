@@ -6,7 +6,7 @@ import { i18n } from "../../i18n/index.ts";
 import { createStorageMock } from "../../test-helpers/storage.ts";
 import { waitForFast } from "../../test-helpers/wait-for.ts";
 import type { TerminalGatewayClient } from "./terminal-connection.ts";
-import { OpenClawTerminalPanel } from "./terminal-panel.ts";
+import { AforaTerminalPanel } from "./terminal-panel.ts";
 import type { createIsolatedGhosttyTerminal } from "./terminal-runtime.ts";
 
 function createTerminalController() {
@@ -32,7 +32,7 @@ function createTerminalController() {
 
 const createTerminal = vi.fn(async () => createTerminalController());
 
-class ReadinessTestTerminalPanel extends OpenClawTerminalPanel {
+class ReadinessTestTerminalPanel extends AforaTerminalPanel {
   override createTerminalController =
     createTerminal as unknown as typeof createIsolatedGhosttyTerminal;
 }
@@ -65,12 +65,12 @@ describe("terminal panel readiness", () => {
   });
 
   it("keeps an already closed panel closed for an explicit close request", () => {
-    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as OpenClawTerminalPanel;
+    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as AforaTerminalPanel;
     panel.available = true;
     document.body.append(panel);
 
     panel.handleToggleRequest(
-      new CustomEvent("openclaw:terminal-toggle", { detail: { open: false } }),
+      new CustomEvent("afora:terminal-toggle", { detail: { open: false } }),
     );
 
     expect(panel.terminalPanelOpen).toBe(false);
@@ -93,13 +93,13 @@ describe("terminal panel readiness", () => {
       },
       addEventListener: () => () => {},
     };
-    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as OpenClawTerminalPanel;
+    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as AforaTerminalPanel;
     panel.client = client;
     panel.available = true;
     document.body.append(panel);
 
     panel.handleToggleRequest(
-      new CustomEvent("openclaw:terminal-toggle", {
+      new CustomEvent("afora:terminal-toggle", {
         detail: { open: true, terminalSessionId: "agent-terminal-1" },
       }),
     );
@@ -127,7 +127,7 @@ describe("terminal panel readiness", () => {
         (method === "terminal.open" ? open.promise : Promise.resolve({})) as Promise<T>,
       addEventListener: () => () => {},
     };
-    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as OpenClawTerminalPanel;
+    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as AforaTerminalPanel;
     panel.client = client;
     panel.available = true;
     document.body.append(panel);
@@ -172,13 +172,13 @@ describe("terminal panel readiness", () => {
         };
       },
     };
-    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as OpenClawTerminalPanel;
+    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as AforaTerminalPanel;
     panel.client = client;
     panel.available = true;
     document.body.append(panel);
     const catalog = { catalogId: "codex", hostId: "node:mac", threadId: "thread" };
 
-    panel.handleToggleRequest(new CustomEvent("openclaw:terminal-toggle", { detail: { catalog } }));
+    panel.handleToggleRequest(new CustomEvent("afora:terminal-toggle", { detail: { catalog } }));
 
     await waitForFast(() => {
       expect(requests).toContainEqual({
@@ -199,7 +199,7 @@ describe("terminal panel readiness", () => {
     });
     await waitForFast(() => expect(panel.renderRoot.querySelector(".tp-connecting")).toBeNull());
     expect(new TextDecoder().decode(controller.write.mock.calls[0]?.[0])).toBe("ready");
-    expect(sessionStorage.getItem("openclaw.terminal.sessions.v1")).toBe(
+    expect(sessionStorage.getItem("afora.terminal.sessions.v1")).toBe(
       JSON.stringify(["catalog-terminal-1"]),
     );
   });
@@ -232,13 +232,13 @@ describe("terminal panel readiness", () => {
         };
       },
     };
-    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as OpenClawTerminalPanel;
+    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as AforaTerminalPanel;
     panel.client = client;
     panel.available = true;
     document.body.append(panel);
 
     panel.handleToggleRequest(
-      new CustomEvent("openclaw:terminal-toggle", {
+      new CustomEvent("afora:terminal-toggle", {
         detail: { catalog: { catalogId: "anthropic", hostId: "node:mac", threadId: "thread" } },
       }),
     );
@@ -276,7 +276,7 @@ describe("terminal panel readiness", () => {
       },
       addEventListener: () => () => {},
     };
-    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as OpenClawTerminalPanel;
+    const panel = document.createElement(TERMINAL_PANEL_ELEMENT_NAME) as AforaTerminalPanel;
     panel.client = client;
     panel.available = true;
     (panel as unknown as { catalogReadyTimeoutMs: number }).catalogReadyTimeoutMs = 5;
@@ -284,7 +284,7 @@ describe("terminal panel readiness", () => {
     const catalog = { catalogId: "anthropic", hostId: "node:mac", threadId: "thread" };
 
     panel.handleToggleRequest(
-      new CustomEvent("openclaw:terminal-toggle", {
+      new CustomEvent("afora:terminal-toggle", {
         detail: { catalog },
       }),
     );

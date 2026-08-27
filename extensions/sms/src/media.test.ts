@@ -4,16 +4,16 @@ import path from "node:path";
 import {
   MediaFetchError,
   type unlinkIfExists as unlinkIfExistsType,
-} from "openclaw/plugin-sdk/media-runtime";
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
+} from "afora-agent/plugin-sdk/media-runtime";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
 import type {
   OpenKeyedStoreOptions,
   PluginStateKeyedStore,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
-import { createPluginStateKeyedStoreForTests } from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import { SsrFBlockedError } from "openclaw/plugin-sdk/security-runtime";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
-import type { loadWebMedia as loadWebMediaType } from "openclaw/plugin-sdk/web-media";
+} from "afora-agent/plugin-sdk/plugin-state-runtime";
+import { createPluginStateKeyedStoreForTests } from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import { SsrFBlockedError } from "afora-agent/plugin-sdk/security-runtime";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
+import type { loadWebMedia as loadWebMediaType } from "afora-agent/plugin-sdk/web-media";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   materializeSmsInboundMedia,
@@ -81,18 +81,18 @@ const TWILIO_MMS_FILENAME_CASES = [
   ["video/webm", ".webm"],
 ] as const;
 
-vi.mock("openclaw/plugin-sdk/web-media", () => ({
+vi.mock("afora-agent/plugin-sdk/web-media", () => ({
   loadWebMedia: loadWebMediaMock,
 }));
-vi.mock("openclaw/plugin-sdk/media-runtime", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/media-runtime")>()),
+vi.mock("afora-agent/plugin-sdk/media-runtime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/media-runtime")>()),
   unlinkIfExists: unlinkIfExistsMock,
 }));
 
 const testStateEnv: NodeJS.ProcessEnv = {
   ...process.env,
-  OPENCLAW_STATE_DIR: fs.mkdtempSync(
-    path.join(resolvePreferredOpenClawTmpDir(), "openclaw-sms-media-"),
+  AFORA_STATE_DIR: fs.mkdtempSync(
+    path.join(resolvePreferredAforaTmpDir(), "afora-sms-media-"),
   ),
 };
 
@@ -271,11 +271,11 @@ describe("SMS outbound hosted media", () => {
     expect(publicUrl.searchParams.get("upstream-token")).toBe("keep");
     expect(publicUrl.hash).toBe("");
     const tokenEntry = [...publicUrl.searchParams.entries()].find(([key]) =>
-      key.startsWith("__openclaw_mms_token_"),
+      key.startsWith("__afora_mms_token_"),
     );
-    const id = tokenEntry?.[0].slice("__openclaw_mms_token_".length);
+    const id = tokenEntry?.[0].slice("__afora_mms_token_".length);
     expect(id).toMatch(/^[a-f0-9]{24}$/u);
-    expect(publicUrl.searchParams.get(`__openclaw_mms_token_${id}`)).toMatch(/^[a-f0-9]{48}$/u);
+    expect(publicUrl.searchParams.get(`__afora_mms_token_${id}`)).toMatch(/^[a-f0-9]{48}$/u);
 
     const internalUrl = `/internal/sms${publicUrl.search}`;
     const getResponse = createMockResponse();
@@ -349,10 +349,10 @@ describe("SMS outbound hosted media", () => {
       }),
     );
     const tokenEntry = [...hostedUrl.searchParams.entries()].find(([key]) =>
-      key.startsWith("__openclaw_mms_token_"),
+      key.startsWith("__afora_mms_token_"),
     );
-    const id = tokenEntry?.[0].slice("__openclaw_mms_token_".length) ?? "";
-    const tokenParam = `__openclaw_mms_token_${id}`;
+    const id = tokenEntry?.[0].slice("__afora_mms_token_".length) ?? "";
+    const tokenParam = `__afora_mms_token_${id}`;
     hostedUrl.searchParams.set(tokenParam, "wrong");
     const chunkStore = openKeyedStore.mock.results[1]?.value;
     if (!chunkStore) {
@@ -383,7 +383,7 @@ describe("SMS outbound hosted media", () => {
       tryHandleHostedSmsMediaRequest(
         {
           method: "GET",
-          url: `/internal/sms?__openclaw_mms_token_${firstId}=first&__openclaw_mms_token_${secondId}=second`,
+          url: `/internal/sms?__afora_mms_token_${firstId}=first&__afora_mms_token_${secondId}=second`,
         } as never,
         response.res as never,
       ),

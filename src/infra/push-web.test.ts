@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import webPush from "web-push";
-import { closeOpenClawStateDatabase } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabase } from "../state/afora-state-db.js";
 import { captureEnv, setTestEnvValue } from "../test-utils/env.js";
 import {
   createWebPushVapidKeyPair,
@@ -49,7 +49,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  closeOpenClawStateDatabase();
+  closeAforaStateDatabase();
   await fs.rm(tmpDir, { recursive: true, force: true });
 });
 
@@ -60,12 +60,12 @@ describe("resolveVapidKeys", () => {
       createWebPushVapidKeyPair(
         "test-public-key-base64url",
         "test-private-key-base64url",
-        "https://openclaw.ai",
+        "https://afora.ai",
       ),
     );
     expect(readPersistedVapidKeyPair(tmpDir)).toEqual(keys);
 
-    closeOpenClawStateDatabase();
+    closeAforaStateDatabase();
     await expect(resolveVapidKeys(tmpDir)).resolves.toEqual(keys);
     expect(vi.mocked(webPush.generateVAPIDKeys)).toHaveBeenCalledTimes(1);
     await expect(fs.stat(path.join(tmpDir, "push", "vapid-keys.json"))).rejects.toMatchObject({
@@ -79,17 +79,17 @@ describe("resolveVapidKeys", () => {
     await fs.mkdir(pushDir, { recursive: true });
     await fs.writeFile(legacyPath, "{}", "utf8");
 
-    await expect(resolveVapidKeys(tmpDir)).rejects.toThrow("openclaw doctor --fix");
+    await expect(resolveVapidKeys(tmpDir)).rejects.toThrow("afora doctor --fix");
     expect(readPersistedVapidKeyPair(tmpDir)).toBeNull();
     expect(vi.mocked(webPush.generateVAPIDKeys)).not.toHaveBeenCalled();
 
     await fs.rename(legacyPath, `${legacyPath}.doctor-importing`);
-    await expect(resolveVapidKeys(tmpDir)).rejects.toThrow("openclaw doctor --fix");
+    await expect(resolveVapidKeys(tmpDir)).rejects.toThrow("afora doctor --fix");
     expect(vi.mocked(webPush.generateVAPIDKeys)).not.toHaveBeenCalled();
 
     await fs.rm(`${legacyPath}.doctor-importing`);
     await fs.symlink(path.join(tmpDir, "missing-vapid-keys.json"), legacyPath);
-    await expect(resolveVapidKeys(tmpDir)).rejects.toThrow("openclaw doctor --fix");
+    await expect(resolveVapidKeys(tmpDir)).rejects.toThrow("afora doctor --fix");
     expect(vi.mocked(webPush.generateVAPIDKeys)).not.toHaveBeenCalled();
   });
 
@@ -112,13 +112,13 @@ describe("resolveVapidKeys", () => {
       "mailto:env@test.com",
     );
     const envSnapshot = captureEnv([
-      "OPENCLAW_VAPID_PUBLIC_KEY",
-      "OPENCLAW_VAPID_PRIVATE_KEY",
-      "OPENCLAW_VAPID_SUBJECT",
+      "AFORA_VAPID_PUBLIC_KEY",
+      "AFORA_VAPID_PRIVATE_KEY",
+      "AFORA_VAPID_SUBJECT",
     ]);
-    setTestEnvValue("OPENCLAW_VAPID_PUBLIC_KEY", `  ${environmentKeys.publicKey}  `);
-    setTestEnvValue("OPENCLAW_VAPID_PRIVATE_KEY", `  ${environmentKeys.privateKey}  `);
-    setTestEnvValue("OPENCLAW_VAPID_SUBJECT", `  ${environmentKeys.subject}  `);
+    setTestEnvValue("AFORA_VAPID_PUBLIC_KEY", `  ${environmentKeys.publicKey}  `);
+    setTestEnvValue("AFORA_VAPID_PRIVATE_KEY", `  ${environmentKeys.privateKey}  `);
+    setTestEnvValue("AFORA_VAPID_SUBJECT", `  ${environmentKeys.subject}  `);
     try {
       await expect(resolveVapidKeys(tmpDir)).resolves.toEqual(environmentKeys);
       expect(readPersistedVapidKeyPair(tmpDir)).toBeNull();
@@ -130,20 +130,20 @@ describe("resolveVapidKeys", () => {
 
   it("treats blank environment values as unset", async () => {
     const envSnapshot = captureEnv([
-      "OPENCLAW_VAPID_PUBLIC_KEY",
-      "OPENCLAW_VAPID_PRIVATE_KEY",
-      "OPENCLAW_VAPID_SUBJECT",
+      "AFORA_VAPID_PUBLIC_KEY",
+      "AFORA_VAPID_PRIVATE_KEY",
+      "AFORA_VAPID_SUBJECT",
     ]);
-    setTestEnvValue("OPENCLAW_VAPID_PUBLIC_KEY", "   ");
-    setTestEnvValue("OPENCLAW_VAPID_PRIVATE_KEY", "   ");
-    setTestEnvValue("OPENCLAW_VAPID_SUBJECT", "   ");
+    setTestEnvValue("AFORA_VAPID_PUBLIC_KEY", "   ");
+    setTestEnvValue("AFORA_VAPID_PRIVATE_KEY", "   ");
+    setTestEnvValue("AFORA_VAPID_SUBJECT", "   ");
     try {
       const keys = await resolveVapidKeys(tmpDir);
       expect(keys).toEqual(
         createWebPushVapidKeyPair(
           "test-public-key-base64url",
           "test-private-key-base64url",
-          "https://openclaw.ai",
+          "https://afora.ai",
         ),
       );
       expect(readPersistedVapidKeyPair(tmpDir)).toEqual(keys);
@@ -155,15 +155,15 @@ describe("resolveVapidKeys", () => {
 
   it("applies the current subject to a persisted identity", async () => {
     const initial = await resolveVapidKeys(tmpDir);
-    process.env.OPENCLAW_VAPID_SUBJECT = "mailto:changed@test.com";
+    process.env.AFORA_VAPID_SUBJECT = "mailto:changed@test.com";
     try {
       await expect(resolveVapidKeys(tmpDir)).resolves.toEqual({
         ...initial,
         subject: "mailto:changed@test.com",
       });
-      expect(readPersistedVapidKeyPair(tmpDir)?.subject).toBe("https://openclaw.ai");
+      expect(readPersistedVapidKeyPair(tmpDir)?.subject).toBe("https://afora.ai");
     } finally {
-      delete process.env.OPENCLAW_VAPID_SUBJECT;
+      delete process.env.AFORA_VAPID_SUBJECT;
     }
   });
 });
@@ -186,7 +186,7 @@ describe("subscription CRUD", () => {
       keys: { p256dh: "new-p256dh", auth: "new-auth" },
     });
 
-    closeOpenClawStateDatabase();
+    closeAforaStateDatabase();
     expect(listWebPushSubscriptions(tmpDir)).toEqual([updated]);
     await expect(fs.stat(path.join(tmpDir, "push"))).rejects.toMatchObject({ code: "ENOENT" });
   });
@@ -256,7 +256,7 @@ describe("subscription CRUD", () => {
 
     expect(listWebPushSubscriptions(tmpDir)).toEqual([]);
     await expect(broadcastWebPush({ title: "Blocked" }, tmpDir)).rejects.toThrow(
-      "openclaw doctor --fix",
+      "afora doctor --fix",
     );
     expect(vi.mocked(webPush.sendNotification)).not.toHaveBeenCalled();
   });
@@ -269,7 +269,7 @@ describe("subscription CRUD", () => {
     await fs.writeFile(claimPath, "{}", "utf8");
 
     await expect(clearWebPushSubscriptionByEndpoint(endpoint, tmpDir)).rejects.toThrow(
-      "openclaw doctor --fix",
+      "afora doctor --fix",
     );
     await expect(
       registerWebPushSubscription({
@@ -277,7 +277,7 @@ describe("subscription CRUD", () => {
         keys,
         baseDir: tmpDir,
       }),
-    ).rejects.toThrow("openclaw doctor --fix");
+    ).rejects.toThrow("afora doctor --fix");
     expect(listWebPushSubscriptions(tmpDir)).toEqual([existing]);
   });
 });
@@ -371,8 +371,8 @@ describe("sending", () => {
 
     const broadcast = broadcastWebPush({ title: "Expired" }, tmpDir);
     await vi.waitFor(() => expect(rejectSend).toBeTypeOf("function"));
-    closeOpenClawStateDatabase();
-    const databasePath = path.join(tmpDir, "state", "openclaw.sqlite");
+    closeAforaStateDatabase();
+    const databasePath = path.join(tmpDir, "state", "afora.sqlite");
     await fs.rename(databasePath, `${databasePath}.backup`);
     await fs.mkdir(databasePath);
     rejectSend?.(Object.assign(new Error("gone"), { statusCode: 410 }));

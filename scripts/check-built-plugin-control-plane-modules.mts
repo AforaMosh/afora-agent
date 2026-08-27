@@ -36,7 +36,7 @@ const LEGACY_SETUP_PROPERTIES = new Map<string, string>([
   ["legacySessionSurface", "channel-legacy-session-surface"],
   ["legacySessionSurfaces", "channel-legacy-session-surface"],
 ]);
-const PROBE_RESULT_MARKER = "__OPENCLAW_PLUGIN_CONTROL_PLANE_PROBE__";
+const PROBE_RESULT_MARKER = "__AFORA_PLUGIN_CONTROL_PLANE_PROBE__";
 const DEFAULT_TIMEOUT_MS = 120_000;
 // Doctor enumeration cold-loads every declaring plugin's contract closure, so a
 // doctor artifact must never reach the process-spawn graph. Requiring the artifact

@@ -2,12 +2,12 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { note } from "../../packages/terminal-core/src/note.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { hasConfiguredSecretInput } from "../config/types.secrets.js";
-import { findStaleOpenClawUpdateLaunchdJobs } from "../daemon/launchd.js";
+import { findStaleAforaUpdateLaunchdJobs } from "../daemon/launchd.js";
 import { resolveGatewayService, type GatewayService } from "../daemon/service.js";
 import { runExec } from "../process/exec.js";
 import { shortenHomePath } from "../utils.js";
@@ -28,7 +28,7 @@ function collectMacLaunchAgentOverrideWarning(deps?: {
     return null;
   }
   const home = deps?.homeDir ?? resolveHomeDir();
-  const markerCandidates = [path.join(home, ".openclaw", "disable-launchagent")];
+  const markerCandidates = [path.join(home, ".afora", "disable-launchagent")];
   const exists = deps?.exists ?? fs.existsSync;
   const markerPath = markerCandidates.find((candidate) => exists(candidate));
   if (!markerPath) {
@@ -51,10 +51,10 @@ export async function noteMacLaunchAgentOverrides() {
   }
 }
 
-/** Returns a warning for stale OpenClaw updater launchd jobs left after interrupted updates. */
-async function collectMacStaleOpenClawUpdateLaunchdJobsWarning(deps?: {
+/** Returns a warning for stale Afora updater launchd jobs left after interrupted updates. */
+async function collectMacStaleAforaUpdateLaunchdJobsWarning(deps?: {
   platform?: NodeJS.Platform;
-  findJobs?: typeof findStaleOpenClawUpdateLaunchdJobs;
+  findJobs?: typeof findStaleAforaUpdateLaunchdJobs;
   env?: NodeJS.ProcessEnv;
 }): Promise<string | null> {
   const platform = deps?.platform ?? process.platform;
@@ -62,7 +62,7 @@ async function collectMacStaleOpenClawUpdateLaunchdJobsWarning(deps?: {
     return null;
   }
   const scanEnv = deps?.env ?? process.env;
-  const jobs = await (deps?.findJobs ?? findStaleOpenClawUpdateLaunchdJobs)(scanEnv).catch(
+  const jobs = await (deps?.findJobs ?? findStaleAforaUpdateLaunchdJobs)(scanEnv).catch(
     () => [],
   );
   if (jobs.length === 0) {
@@ -70,7 +70,7 @@ async function collectMacStaleOpenClawUpdateLaunchdJobsWarning(deps?: {
   }
 
   return [
-    "- Stale OpenClaw updater launchd job(s) detected.",
+    "- Stale Afora updater launchd job(s) detected.",
     ...jobs.map((job) => {
       const exitStatus =
         job.lastExitStatus !== undefined ? `, last exit ${job.lastExitStatus}` : "";
@@ -79,14 +79,14 @@ async function collectMacStaleOpenClawUpdateLaunchdJobsWarning(deps?: {
     }),
     "- Fix after confirming no update is running:",
     "  launchctl remove <label>",
-    `  ${formatCliCommand("openclaw gateway restart")}`,
+    `  ${formatCliCommand("afora gateway restart")}`,
   ].join("\n");
 }
 
 /** Emits stale updater launchd job notes using the gateway service environment when available. */
-export async function noteMacStaleOpenClawUpdateLaunchdJobs(deps?: {
+export async function noteMacStaleAforaUpdateLaunchdJobs(deps?: {
   platform?: NodeJS.Platform;
-  findJobs?: typeof findStaleOpenClawUpdateLaunchdJobs;
+  findJobs?: typeof findStaleAforaUpdateLaunchdJobs;
   env?: NodeJS.ProcessEnv;
   service?: Pick<GatewayService, "readCommand">;
   noteFn?: typeof note;
@@ -94,7 +94,7 @@ export async function noteMacStaleOpenClawUpdateLaunchdJobs(deps?: {
   const platform = deps?.platform ?? process.platform;
   const serviceEnv =
     platform === "darwin" ? await resolveGatewayServiceEnvForPlatformNotes(deps) : deps?.env;
-  const warning = await collectMacStaleOpenClawUpdateLaunchdJobsWarning({
+  const warning = await collectMacStaleAforaUpdateLaunchdJobsWarning({
     env: serviceEnv,
     findJobs: deps?.findJobs,
     platform,
@@ -117,7 +117,7 @@ async function launchctlGetenv(name: string): Promise<string | undefined> {
   }
 }
 
-function hasConfigGatewayCreds(cfg: OpenClawConfig): boolean {
+function hasConfigGatewayCreds(cfg: AforaConfig): boolean {
   const localPassword = cfg.gateway?.auth?.password;
   const remoteToken = cfg.gateway?.remote?.token;
   const remotePassword = cfg.gateway?.remote?.password;
@@ -131,7 +131,7 @@ function hasConfigGatewayCreds(cfg: OpenClawConfig): boolean {
 
 /** Returns a warning for host-wide launchctl gateway auth env overrides. */
 async function collectMacLaunchctlGatewayEnvOverrideWarning(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   deps?: {
     platform?: NodeJS.Platform;
     getenv?: (name: string) => Promise<string | undefined>;
@@ -147,10 +147,10 @@ async function collectMacLaunchctlGatewayEnvOverrideWarning(
 
   const getenv = deps?.getenv ?? launchctlGetenv;
   const tokenEntries = [
-    ["OPENCLAW_GATEWAY_TOKEN", await getenv("OPENCLAW_GATEWAY_TOKEN")],
+    ["AFORA_GATEWAY_TOKEN", await getenv("AFORA_GATEWAY_TOKEN")],
   ] as const;
   const passwordEntries = [
-    ["OPENCLAW_GATEWAY_PASSWORD", await getenv("OPENCLAW_GATEWAY_PASSWORD")],
+    ["AFORA_GATEWAY_PASSWORD", await getenv("AFORA_GATEWAY_PASSWORD")],
   ] as const;
   const tokenEntry = tokenEntries.find(([, value]) => normalizeOptionalString(value));
   const passwordEntry = passwordEntries.find(([, value]) => normalizeOptionalString(value));
@@ -169,7 +169,7 @@ async function collectMacLaunchctlGatewayEnvOverrideWarning(
       ? `- \`${envTokenKey}\` is set; explicit environment URL or node-host targets can use a different token than gateway.auth.token.`
       : undefined,
     envPassword
-      ? `- \`${envPasswordKey ?? "OPENCLAW_GATEWAY_PASSWORD"}\` is set; explicit environment URL or node-host targets can use a different password than gateway.auth.password.`
+      ? `- \`${envPasswordKey ?? "AFORA_GATEWAY_PASSWORD"}\` is set; explicit environment URL or node-host targets can use a different password than gateway.auth.password.`
       : undefined,
     "- Clear overrides and restart the app/gateway:",
     envTokenKey ? `  launchctl unsetenv ${envTokenKey}` : undefined,
@@ -181,7 +181,7 @@ async function collectMacLaunchctlGatewayEnvOverrideWarning(
 
 /** Emits macOS launchctl gateway auth override warnings. */
 export async function noteMacLaunchctlGatewayEnvOverrides(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   deps?: {
     platform?: NodeJS.Platform;
     getenv?: (name: string) => Promise<string | undefined>;
@@ -211,12 +211,12 @@ async function resolveGatewayServiceEnvForPlatformNotes(deps?: {
 
 /** Collects all macOS gateway platform warnings without emitting notes. */
 export async function collectMacGatewayPlatformWarnings(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   deps?: {
     platform?: NodeJS.Platform;
     env?: NodeJS.ProcessEnv;
     service?: Pick<GatewayService, "readCommand">;
-    findJobs?: typeof findStaleOpenClawUpdateLaunchdJobs;
+    findJobs?: typeof findStaleAforaUpdateLaunchdJobs;
   },
 ): Promise<readonly string[]> {
   const platform = deps?.platform ?? process.platform;
@@ -227,7 +227,7 @@ export async function collectMacGatewayPlatformWarnings(
   }
   const serviceEnv =
     platform === "darwin" ? await resolveGatewayServiceEnvForPlatformNotes(deps) : deps?.env;
-  const staleUpdateWarning = await collectMacStaleOpenClawUpdateLaunchdJobsWarning({
+  const staleUpdateWarning = await collectMacStaleAforaUpdateLaunchdJobsWarning({
     env: serviceEnv,
     findJobs: deps?.findJobs,
     platform,
@@ -279,7 +279,7 @@ export function noteStartupOptimizationHints(
   const noteFn = deps?.noteFn ?? note;
   const compileCache = normalizeOptionalString(env.NODE_COMPILE_CACHE) ?? "";
   const disableCompileCache = normalizeOptionalString(env.NODE_DISABLE_COMPILE_CACHE) ?? "";
-  const noRespawn = normalizeOptionalString(env.OPENCLAW_NO_RESPAWN) ?? "";
+  const noRespawn = normalizeOptionalString(env.AFORA_NO_RESPAWN) ?? "";
   const lines: string[] = [];
 
   if (!compileCache) {
@@ -298,7 +298,7 @@ export function noteStartupOptimizationHints(
 
   if (noRespawn !== "1") {
     lines.push(
-      "- OPENCLAW_NO_RESPAWN is not set to 1; set it when you want routine gateway restarts to stay in-process instead of handing off to a managed supervisor.",
+      "- AFORA_NO_RESPAWN is not set to 1; set it when you want routine gateway restarts to stay in-process instead of handing off to a managed supervisor.",
     );
   }
 
@@ -308,9 +308,9 @@ export function noteStartupOptimizationHints(
 
   const suggestions = [
     "- Suggested env for low-power hosts:",
-    "  export NODE_COMPILE_CACHE=/var/tmp/openclaw-compile-cache",
-    "  mkdir -p /var/tmp/openclaw-compile-cache",
-    "  export OPENCLAW_NO_RESPAWN=1",
+    "  export NODE_COMPILE_CACHE=/var/tmp/afora-compile-cache",
+    "  mkdir -p /var/tmp/afora-compile-cache",
+    "  export AFORA_NO_RESPAWN=1",
     disableCompileCache ? "  unset NODE_DISABLE_COMPILE_CACHE" : undefined,
   ].filter((line): line is string => Boolean(line));
 

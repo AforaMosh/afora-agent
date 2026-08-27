@@ -3,8 +3,8 @@
  * when the owning local credential identity changes.
  */
 import crypto from "node:crypto";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import { ensureAuthProfileStore, loadAuthProfileStoreForRuntime } from "./auth-profiles/store.js";
 import type { AuthProfileCredential, AuthProfileStore } from "./auth-profiles/types.js";
 import { resolveCliBackendConfig } from "./cli-backends.js";
@@ -62,7 +62,7 @@ function resetCliAuthEpochTestDeps(): void {
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.cliAuthEpochTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.cliAuthEpochTestApi")] = {
     setCliAuthEpochTestDeps,
     resetCliAuthEpochTestDeps,
   };
@@ -299,7 +299,7 @@ export async function resolveCliAuthEpoch(params: {
  */
 export function resolveCliAuthBindingFingerprint(params: {
   provider: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentDir?: string;
   authProfileId?: string;
   /** Exact selected profile material actually forwarded to this execution. */
@@ -348,7 +348,7 @@ export function resolveCliAuthBindingFingerprint(params: {
 
 type CliRuntimeArtifactFingerprintParams = {
   provider: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentId?: string;
   runtimeArtifactId?: string;
   cwd?: string;
@@ -416,7 +416,7 @@ export async function resolveCliRuntimeArtifactFingerprint(
  */
 export async function resolveCliRuntimeOwnerFingerprint(params: {
   provider: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentDir?: string;
   agentId?: string;
   runtimeOwnerId?: string;

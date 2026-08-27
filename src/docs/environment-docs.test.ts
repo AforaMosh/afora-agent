@@ -20,12 +20,12 @@ describe("environment docs", () => {
 
     expect(markdown).toContain("Provider credentials and workspace `.env`");
     expect(markdown).toContain(
-      "OpenClaw ignores provider credentials and protected runtime controls from workspace `.env`",
+      "Afora ignores provider credentials and protected runtime controls from workspace `.env`",
     );
-    expect(markdown).toContain("~/.openclaw/.env");
-    expect(markdown).toContain("$OPENCLAW_STATE_DIR/.env");
+    expect(markdown).toContain("~/.afora/.env");
+    expect(markdown).toContain("$AFORA_STATE_DIR/.env");
     expect(markdown).toContain("The config `env` block");
-    expect(markdown).toContain("OPENCLAW_LOAD_SHELL_ENV=1");
+    expect(markdown).toContain("AFORA_LOAD_SHELL_ENV=1");
 
     for (const key of providerCredentialExamples) {
       expect(markdown).toContain(key);
@@ -39,8 +39,8 @@ describe("environment docs", () => {
       "Provider credential environment variables are blocked from untrusted workspace `.env` files",
     );
     expect(markdown).toContain("provider auth keys declared by installed trusted plugins");
-    expect(markdown).toContain("~/.openclaw/.env");
-    expect(markdown).toContain("$OPENCLAW_STATE_DIR/.env");
+    expect(markdown).toContain("~/.afora/.env");
+    expect(markdown).toContain("$AFORA_STATE_DIR/.env");
 
     for (const key of providerCredentialExamples) {
       expect(markdown).toContain(key);

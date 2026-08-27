@@ -16,9 +16,9 @@ type StoreCall = { name: string; args: unknown[] };
 const settings: DebugProxySettings = {
   enabled: true,
   required: false,
-  dbPath: "/tmp/openclaw-proxy-runtime-test.sqlite",
-  blobDir: "/tmp/openclaw-proxy-runtime-test-blobs",
-  certDir: "/tmp/openclaw-proxy-runtime-test-certs",
+  dbPath: "/tmp/afora-proxy-runtime-test.sqlite",
+  blobDir: "/tmp/afora-proxy-runtime-test-blobs",
+  certDir: "/tmp/afora-proxy-runtime-test-certs",
   sessionId: "runtime-test-session",
   sourceProcess: "runtime-test",
 };

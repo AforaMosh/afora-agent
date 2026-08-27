@@ -25,7 +25,7 @@ describe("registerUsersCli", () => {
 
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "users",
       "link-email",
       "Ada@example.com",
@@ -50,7 +50,7 @@ describe("registerUsersCli", () => {
     const program = new Command().exitOverride();
     registerUsersCli(program);
 
-    await program.parseAsync(["node", "openclaw", "users", "list"]);
+    await program.parseAsync(["node", "afora", "users", "list"]);
 
     expect(callGatewayFromCli).toHaveBeenCalledWith(
       "users.list",
@@ -67,7 +67,7 @@ describe("registerUsersCli", () => {
     const program = new Command().exitOverride();
     registerUsersCli(program);
 
-    await program.parseAsync(["node", "openclaw", "users", "list", "--json"]);
+    await program.parseAsync(["node", "afora", "users", "list", "--json"]);
 
     expect(output).toHaveBeenCalledWith('{\n  "profiles": []\n}\n');
   });
@@ -80,7 +80,7 @@ describe("registerUsersCli", () => {
 
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "users",
       "link-email",
       "Ada@example.com",

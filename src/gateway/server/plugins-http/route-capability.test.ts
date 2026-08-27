@@ -54,7 +54,7 @@ describe("plugin node capability route metadata", () => {
       httpRoutes: [
         {
           pluginId: "canvas-plugin",
-          path: "/__openclaw__/canvas/ws",
+          path: "/__afora__/canvas/ws",
           auth: "plugin",
           match: "exact",
           handler: async () => false,
@@ -66,7 +66,7 @@ describe("plugin node capability route metadata", () => {
     expect(
       findMatchingPluginNodeCapabilityRoute(
         registry,
-        resolvePluginRoutePathContext("/__openclaw__/canvas/ws"),
+        resolvePluginRoutePathContext("/__afora__/canvas/ws"),
       )?.nodeCapability,
     ).toEqual({ surface: "canvas", scopeKey: "canvas-plugin:canvas" });
   });

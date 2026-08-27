@@ -1,8 +1,8 @@
 // Gmail hook helpers manage Gmail OAuth setup and watcher launch state.
 import { randomBytes } from "node:crypto";
-import { normalizeUniqueStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeUniqueStringEntries } from "@afora/normalization-core/string-normalization";
 import {
-  type OpenClawConfig,
+  type AforaConfig,
   DEFAULT_GATEWAY_PORT,
   type HooksGmailTailscaleMode,
   resolveGatewayPort,
@@ -23,7 +23,7 @@ export const DEFAULT_GMAIL_SERVE_PATH = "/gmail-pubsub";
 export const DEFAULT_GMAIL_MAX_BYTES = 20_000;
 export const DEFAULT_GMAIL_RENEW_MINUTES = 12 * 60;
 const DEFAULT_HOOKS_PATH = "/hooks";
-// OpenClaw handles inbound mail; override gog's narrower SPAM,TRASH default.
+// Afora handles inbound mail; override gog's narrower SPAM,TRASH default.
 const GMAIL_WATCH_EXCLUDED_LABELS = "SPAM,TRASH,DRAFT,SENT";
 const GMAIL_WATCH_SENSITIVE_FLAGS = new Set(["--token", "--hook-url", "--hook-token"]);
 let gogBin: string | undefined;
@@ -110,7 +110,7 @@ export function buildDefaultHookUrl(
 }
 
 export function resolveGmailHookRuntimeConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   overrides: GmailHookOverrides,
 ): { ok: true; value: GmailHookRuntimeConfig } | { ok: false; error: string } {
   const hooks = cfg.hooks;

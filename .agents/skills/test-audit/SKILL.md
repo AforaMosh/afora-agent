@@ -108,7 +108,7 @@ to increase deletion counts.
 ## Validation
 
 Never edit source or tests while Vitest is running in the checkout. Follow
-`$openclaw-testing`; route heavy proof through its `$crabbox` rules.
+`$afora-testing`; route heavy proof through its `$crabbox` rules.
 
 1. Run the smallest owner and sibling tests with
    `node scripts/run-vitest.mjs <path-or-filter>`.
@@ -125,7 +125,7 @@ Never edit source or tests while Vitest is running in the checkout. Follow
 ## Landing and continuation
 
 Commit, push, open a PR, or land only when authorized. Use
-`$openclaw-pr-maintainer` and the repository `scripts/pr` flow. Land one
+`$afora-pr-maintainer` and the repository `scripts/pr` flow. Land one
 coherent PR at a time; after landing, refresh from current `main` and rerun
 read-only discovery for the next high-confidence batch.
 

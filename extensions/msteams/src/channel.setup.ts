@@ -1,6 +1,6 @@
 // Msteams plugin module implements channel.setup behavior.
-import { describeAccountSnapshot } from "openclaw/plugin-sdk/account-helpers";
-import type { ChannelPlugin } from "openclaw/plugin-sdk/channel-core";
+import { describeAccountSnapshot } from "afora-agent/plugin-sdk/account-helpers";
+import type { ChannelPlugin } from "afora-agent/plugin-sdk/channel-core";
 import {
   msteamsConfigAdapter,
   msteamsMeta,

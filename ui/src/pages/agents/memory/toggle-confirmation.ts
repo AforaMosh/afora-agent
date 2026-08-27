@@ -37,7 +37,7 @@ export function renderDreamingToggleConfirmation(props: DreamingToggleConfirmati
   };
 
   return html`
-    <openclaw-modal-dialog label=${title} description=${description} @modal-cancel=${handleCancel}>
+    <afora-modal-dialog label=${title} description=${description} @modal-cancel=${handleCancel}>
       <div class="exec-approval-card">
         <div class="exec-approval-header">
           <div>
@@ -64,6 +64,6 @@ export function renderDreamingToggleConfirmation(props: DreamingToggleConfirmati
           </button>
         </div>
       </div>
-    </openclaw-modal-dialog>
+    </afora-modal-dialog>
   `;
 }

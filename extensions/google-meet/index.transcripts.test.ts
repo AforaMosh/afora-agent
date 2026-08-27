@@ -1,6 +1,6 @@
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
-import type { TranscriptSourceProvider } from "openclaw/plugin-sdk/transcripts";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
+import type { TranscriptSourceProvider } from "afora-agent/plugin-sdk/transcripts";
 import { describe, expect, it } from "vitest";
 import plugin from "./index.js";
 
@@ -15,7 +15,7 @@ describe("Google Meet transcript source registration", () => {
       source: "test",
       config: {},
       pluginConfig: {},
-      runtime: {} as OpenClawPluginApi["runtime"],
+      runtime: {} as AforaPluginApi["runtime"],
       registerTranscriptSourceProvider: (provider) => providers.push(provider),
     });
 

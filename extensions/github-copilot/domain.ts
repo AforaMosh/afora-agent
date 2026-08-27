@@ -2,7 +2,7 @@
 //
 // The allowlist and env/config precedence are provider policy. Deprecated SDK
 // facades keep their dated compatibility copy until its removal window closes.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 
 /** Public GitHub Copilot host used when no data-residency domain is configured. */
 export const PUBLIC_GITHUB_COPILOT_DOMAIN = "github.com";
@@ -26,7 +26,7 @@ export function normalizeGithubCopilotDomain(raw: string | undefined | null): st
     : PUBLIC_GITHUB_COPILOT_DOMAIN;
 }
 
-function readConfiguredGithubCopilotDomain(config?: OpenClawConfig): string | undefined {
+function readConfiguredGithubCopilotDomain(config?: AforaConfig): string | undefined {
   const params = config?.models?.providers?.["github-copilot"]?.params;
   const value = params && typeof params === "object" ? params.githubDomain : undefined;
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
@@ -42,7 +42,7 @@ function readConfiguredGithubCopilotDomain(config?: OpenClawConfig): string | un
 export function resolveGithubCopilotDomain(params?: {
   env?: NodeJS.ProcessEnv;
   explicit?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): string {
   const env = params?.env ?? process.env;
   const fromEnv = env.COPILOT_GITHUB_DOMAIN?.trim();

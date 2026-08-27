@@ -41,7 +41,7 @@ import { createUnitFastFakeTimersVitestConfig } from "./vitest/vitest.unit-fast-
 import unitFastRootConfig from "./vitest/vitest.unit-fast-root.config.ts";
 import { createUnitFastVitestConfig } from "./vitest/vitest.unit-fast.config.ts";
 
-const patternFiles = createPatternFileHelper("openclaw-vitest-projects-config-");
+const patternFiles = createPatternFileHelper("afora-vitest-projects-config-");
 
 function requireTestConfig<T extends { test?: unknown }>(config: T): NonNullable<T["test"]> {
   if (!config.test) {
@@ -202,7 +202,7 @@ describe("projects vitest config", () => {
   it("honors explicit worker caps in CI vitest lanes", () => {
     expect(
       resolveSharedVitestWorkerConfig({
-        env: { CI: "true", OPENCLAW_VITEST_MAX_WORKERS: "1" },
+        env: { CI: "true", AFORA_VITEST_MAX_WORKERS: "1" },
         isCI: true,
         isWindows: false,
         localScheduling: {
@@ -279,7 +279,7 @@ describe("projects vitest config", () => {
     const config = createContractsVitestConfig(
       ["src/channels/plugins/contracts/*-shard-a.contract.test.ts"],
       {
-        OPENCLAW_VITEST_INCLUDE_FILE: includeFile,
+        AFORA_VITEST_INCLUDE_FILE: includeFile,
       },
     );
 
@@ -295,7 +295,7 @@ describe("projects vitest config", () => {
     expect(testConfig.isolate).toBe(false);
     expect(normalizeConfigPath(testConfig.runner)).toBe("test/non-isolated-runner.ts");
     const setupFiles = normalizeConfigPaths(testConfig.setupFiles);
-    expect(setupFiles).not.toContain("test/setup-openclaw-runtime.ts");
+    expect(setupFiles).not.toContain("test/setup-afora-runtime.ts");
     expect(setupFiles).toContain("ui/src/test-helpers/lit-warnings.setup.ts");
     expect(requireWebOptimizer(testConfig).enabled).toBe(true);
   });

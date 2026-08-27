@@ -1,8 +1,8 @@
 // Restart request parsing keeps restart sentinel payloads limited to resumable
 // session, delivery, thread, and delay fields.
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { GatewayRestartIntent } from "../../infra/restart-intent.js";
 import { stringifyRouteThreadId } from "../../plugin-sdk/channel-route.js";
 

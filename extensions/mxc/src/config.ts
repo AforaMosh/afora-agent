@@ -1,10 +1,10 @@
 import { posix, win32 } from "node:path";
-import { buildPluginConfigSchema, type OpenClawPluginConfigSchema } from "openclaw/plugin-sdk/core";
+import { buildPluginConfigSchema, type AforaPluginConfigSchema } from "afora-agent/plugin-sdk/core";
 import {
   formatPluginConfigIssue,
   mapPluginConfigIssues,
-} from "openclaw/plugin-sdk/extension-shared";
-import { MAX_TIMER_TIMEOUT_SECONDS } from "openclaw/plugin-sdk/number-runtime";
+} from "afora-agent/plugin-sdk/extension-shared";
+import { MAX_TIMER_TIMEOUT_SECONDS } from "afora-agent/plugin-sdk/number-runtime";
 import { z } from "zod";
 
 const MXC_CONTAINMENTS = ["process", "processcontainer"] as const;
@@ -89,7 +89,7 @@ const MxcPluginConfigSchema = z.strictObject({
     .optional(),
 });
 
-export function createMxcPluginConfigSchema(): OpenClawPluginConfigSchema {
+export function createMxcPluginConfigSchema(): AforaPluginConfigSchema {
   return buildPluginConfigSchema(MxcPluginConfigSchema, {
     safeParse(value) {
       if (value === undefined) {

@@ -31,7 +31,7 @@ import {
   type FleetCellRecord,
 } from "./registry.js";
 
-const CELL_CONFIG_FILENAME = "openclaw.json";
+const CELL_CONFIG_FILENAME = "afora.json";
 const HEALTH_TIMEOUT_MS = 1_000;
 const CELL_CONFIG_MAX_BYTES = 4 * 1024 * 1024;
 const FLEET_OPERATION_HEARTBEAT_MS = 60_000;
@@ -357,7 +357,7 @@ export function requireInspectedGatewayToken(
   inspection: Extract<FleetContainerInspectResult, { kind: "ok" }>,
   context: "upgrade" | "restore",
 ): string {
-  const gatewayCredential = inspection.environment.OPENCLAW_GATEWAY_TOKEN;
+  const gatewayCredential = inspection.environment.AFORA_GATEWAY_TOKEN;
   if (!gatewayCredential) {
     throw new Error(`Cannot ${context} cell: existing container has no Gateway token environment.`);
   }

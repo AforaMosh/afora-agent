@@ -14,7 +14,7 @@ import {
 } from "../sessions/model-registry-runtime.js";
 
 export async function withTempPdfAgentDir<T>(run: (agentDir: string) => Promise<T>): Promise<T> {
-  const agentDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-pdf-"));
+  const agentDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-pdf-"));
   try {
     return await run(agentDir);
   } finally {
@@ -105,7 +105,7 @@ export function createPdfToolInfraStub(completeMock: Mock) {
         }) as never,
     );
 
-    vi.spyOn(modelsConfig, "ensureOpenClawModelsJson").mockResolvedValue({
+    vi.spyOn(modelsConfig, "ensureAforaModelsJson").mockResolvedValue({
       agentDir,
       wrote: false,
     });

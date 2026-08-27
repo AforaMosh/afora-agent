@@ -1,6 +1,6 @@
 // Tests ACP command bypass detection before normal dispatch.
 import { beforeEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import {
   createChannelTestPluginBase,
@@ -22,7 +22,7 @@ describe("shouldBypassAcpDispatchForCommand", () => {
       BodyForAgent: "write a test",
     });
 
-    expect(shouldBypassAcpDispatchForCommand(ctx, {} as OpenClawConfig)).toBe(false);
+    expect(shouldBypassAcpDispatchForCommand(ctx, {} as AforaConfig)).toBe(false);
   });
 
   it.each([
@@ -89,7 +89,7 @@ describe("shouldBypassAcpDispatchForCommand", () => {
       BodyForAgent: command,
     });
 
-    expect(shouldBypassAcpDispatchForCommand(ctx, {} as OpenClawConfig)).toBe(expected);
+    expect(shouldBypassAcpDispatchForCommand(ctx, {} as AforaConfig)).toBe(expected);
   });
 
   it("returns true for native ACP slash commands", () => {
@@ -102,7 +102,7 @@ describe("shouldBypassAcpDispatchForCommand", () => {
       BodyForAgent: "/acp close",
     });
 
-    expect(shouldBypassAcpDispatchForCommand(ctx, {} as OpenClawConfig)).toBe(true);
+    expect(shouldBypassAcpDispatchForCommand(ctx, {} as AforaConfig)).toBe(true);
   });
 
   it("prefers clean command text over channel envelopes", () => {
@@ -114,7 +114,7 @@ describe("shouldBypassAcpDispatchForCommand", () => {
       BodyForAgent: "/status",
     });
 
-    expect(shouldBypassAcpDispatchForCommand(ctx, {} as OpenClawConfig)).toBe(true);
+    expect(shouldBypassAcpDispatchForCommand(ctx, {} as AforaConfig)).toBe(true);
   });
 
   it.each(["/verbose:on", "/v:off", "/verbose:"])(
@@ -128,7 +128,7 @@ describe("shouldBypassAcpDispatchForCommand", () => {
         BodyForAgent: command,
       });
 
-      expect(shouldBypassAcpDispatchForCommand(ctx, {} as OpenClawConfig)).toBe(true);
+      expect(shouldBypassAcpDispatchForCommand(ctx, {} as AforaConfig)).toBe(true);
     },
   );
 
@@ -142,7 +142,7 @@ describe("shouldBypassAcpDispatchForCommand", () => {
       BodyForAgent: "/new continue with deployment",
     });
 
-    expect(shouldBypassAcpDispatchForCommand(ctx, {} as OpenClawConfig)).toBe(true);
+    expect(shouldBypassAcpDispatchForCommand(ctx, {} as AforaConfig)).toBe(true);
   });
 
   it("returns false for unrelated slash commands when text commands are disabled", () => {
@@ -158,7 +158,7 @@ describe("shouldBypassAcpDispatchForCommand", () => {
       commands: {
         text: false,
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(shouldBypassAcpDispatchForCommand(ctx, cfg)).toBe(false);
   });
@@ -176,7 +176,7 @@ describe("shouldBypassAcpDispatchForCommand", () => {
       commands: {
         text: false,
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(shouldBypassAcpDispatchForCommand(ctx, cfg)).toBe(true);
   });
@@ -207,7 +207,7 @@ describe("shouldBypassAcpDispatchForCommand", () => {
       commands: {
         text: false,
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(shouldBypassAcpDispatchForCommand(ctx, cfg)).toBe(false);
   });
@@ -225,7 +225,7 @@ describe("shouldBypassAcpDispatchForCommand", () => {
       commands: {
         text: false,
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(shouldBypassAcpDispatchForCommand(ctx, cfg)).toBe(true);
   });
@@ -240,7 +240,7 @@ describe("shouldBypassAcpDispatchForCommand", () => {
       CommandAuthorized: false,
     });
 
-    expect(shouldBypassAcpDispatchForCommand(ctx, {} as OpenClawConfig)).toBe(false);
+    expect(shouldBypassAcpDispatchForCommand(ctx, {} as AforaConfig)).toBe(false);
   });
 
   it("returns false for bang-prefixed commands when text commands are disabled", () => {
@@ -257,7 +257,7 @@ describe("shouldBypassAcpDispatchForCommand", () => {
       commands: {
         text: false,
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(shouldBypassAcpDispatchForCommand(ctx, cfg)).toBe(false);
   });
@@ -276,7 +276,7 @@ describe("shouldBypassAcpDispatchForCommand", () => {
       commands: {
         bash: true,
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(shouldBypassAcpDispatchForCommand(ctx, cfg)).toBe(true);
   });

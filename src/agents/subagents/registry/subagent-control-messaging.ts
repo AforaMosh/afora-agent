@@ -5,7 +5,7 @@ import { resolveSubagentLabel } from "../../../auto-reply/reply/subagents-utils.
 import { resolveSessionStorePathCore } from "../../../config/sessions/paths.js";
 import { loadSessionEntry } from "../../../config/sessions/session-accessor.js";
 import type { SessionEntry } from "../../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { callGateway } from "../../../gateway/call.js";
 import { getGatewayRecoveryRuntime } from "../../../gateway/server-recovery-runtime-context.js";
 import { logVerbose } from "../../../globals.js";
@@ -49,7 +49,7 @@ const SUBAGENT_REPLY_HISTORY_LIMIT = 50;
 const steerRateLimit = new Map<string, number>();
 
 function recordSubagentControllerParticipant(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   controller: ResolvedSubagentController;
   entry: SubagentRunRecord;
 }): void {
@@ -146,7 +146,7 @@ export function setSubagentMessagingTestDeps(overrides?: Partial<SubagentMessagi
 
 /** Restarts a controlled subagent run with a new steering message. */
 export async function steerControlledSubagentRun(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   controller: ResolvedSubagentController;
   entry: SubagentRunRecord;
   message: string;
@@ -425,7 +425,7 @@ export async function steerControlledSubagentRun(params: {
 
 /** Sends a follow-up message to a controlled subagent and waits for a reply. */
 export async function sendControlledSubagentMessage(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   controller: ResolvedSubagentController;
   entry: SubagentRunRecord;
   message: string;

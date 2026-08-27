@@ -11,7 +11,7 @@ type AuthProfileUsageTestApi = {
 
 function getTestApi(): AuthProfileUsageTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.authProfileUsageTestApi")
+    Symbol.for("afora.authProfileUsageTestApi")
   ] as AuthProfileUsageTestApi;
 }
 

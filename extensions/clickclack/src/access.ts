@@ -1,4 +1,4 @@
-import type { ChannelBotLoopProtectionFacts } from "openclaw/plugin-sdk/channel-inbound";
+import type { ChannelBotLoopProtectionFacts } from "afora-agent/plugin-sdk/channel-inbound";
 /**
  * Maps ClickClack senders and conversations onto the shared channel ingress
  * allowlist/command authorization contract.
@@ -6,14 +6,14 @@ import type { ChannelBotLoopProtectionFacts } from "openclaw/plugin-sdk/channel-
 import {
   resolveStableChannelMessageIngress,
   type StableChannelIngressIdentityParams,
-} from "openclaw/plugin-sdk/channel-ingress-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { parseDateStringTimestampMs } from "openclaw/plugin-sdk/number-runtime";
+} from "afora-agent/plugin-sdk/channel-ingress-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { parseDateStringTimestampMs } from "afora-agent/plugin-sdk/number-runtime";
 import {
   normalizeAgentId,
   type ResolvedAgentRoute,
   type RoutePeer,
-} from "openclaw/plugin-sdk/routing";
+} from "afora-agent/plugin-sdk/routing";
 import { resolveClickClackDiscussionRoute } from "./discussions/routing.js";
 import { resolveClickClackBotPolicy, resolveClickClackGroupPolicy } from "./group-policy.js";
 import { resolveClickClackMentionFacts } from "./mention-facts.js";
@@ -67,7 +67,7 @@ function resolveClickClackBotLoopConversationId(params: {
 }
 
 function resolveAccountAgentRoute(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   account: ResolvedClickClackAccount;
   target: string;
   isDirect: boolean;
@@ -129,7 +129,7 @@ function resolvePreparedInboundRoute(params: {
       : { chatType: "group", kind: "channel", id: params.message.channel_id ?? "" },
   );
   const accountRoute = resolveAccountAgentRoute({
-    cfg: params.config as OpenClawConfig,
+    cfg: params.config as AforaConfig,
     account: params.account,
     target,
     isDirect,
@@ -193,7 +193,7 @@ export async function resolveClickClackInboundAccess(params: {
   message: ClickClackMessage;
 }): Promise<ClickClackInboundAccess> {
   const runtime = getClickClackRuntime();
-  const cfg = params.config as OpenClawConfig;
+  const cfg = params.config as AforaConfig;
   const preparedRoute = resolvePreparedInboundRoute(params);
   const shouldCheckCommand = runtime.channel.commands.shouldComputeCommandAuthorized(
     params.message.body,

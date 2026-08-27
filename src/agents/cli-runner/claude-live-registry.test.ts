@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { SYSTEM_PROMPT_CACHE_BOUNDARY } from "@openclaw/ai/internal/shared";
+import { SYSTEM_PROMPT_CACHE_BOUNDARY } from "@afora/ai/internal/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import { onAgentEvent, resetAgentEventsForTest } from "../../infra/agent-events.js";
@@ -263,13 +263,13 @@ describe("Claude live registry lifecycle", () => {
       reason: "session_expired",
       code: "cli_live_session_changed",
     });
-    missingContext.openClawHistoryPrompt = "bounded OpenClaw history\n\nsecond";
+    missingContext.aforaHistoryPrompt = "bounded Afora history\n\nsecond";
     expect((await executePreparedCliRun(missingContext)).text).toBe("one");
     expect(supervisorSpawnMock).toHaveBeenCalledTimes(3);
     expect(
       (JSON.parse(liveRuns[2]?.writes.at(-1) ?? "") as { message: { content: string } }).message
         .content,
-    ).toBe("bounded OpenClaw history\n\nsecond");
+    ).toBe("bounded Afora history\n\nsecond");
   });
 
   it("serializes concurrent Claude live session creation for the same key", async () => {
@@ -696,7 +696,7 @@ describe("Claude live registry lifecycle", () => {
   });
 
   it("restarts Claude live sessions when selected skills change", async () => {
-    const workspaceDir = tempDirs.make("openclaw-live-skills-");
+    const workspaceDir = tempDirs.make("afora-live-skills-");
     const weatherDir = path.join(workspaceDir, "skills", "weather");
     const gitDir = path.join(workspaceDir, "skills", "git");
     await fs.mkdir(weatherDir, { recursive: true });

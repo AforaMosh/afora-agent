@@ -1,8 +1,8 @@
 // Attachment policy tests guard the numbers advertised on `hello-ok` against the
 // ceilings the parser actually enforces.
-import { MAX_IMAGE_BYTES } from "@openclaw/media-core/constants";
+import { MAX_IMAGE_BYTES } from "@afora/media-core/constants";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   DEFAULT_CHAT_ATTACHMENT_MAX_BYTES,
   resolveChatAttachmentMaxBytes,
@@ -11,8 +11,8 @@ import {
 
 const MB = 1024 * 1024;
 
-const cfgWithMediaMaxMb = (value: unknown): OpenClawConfig =>
-  ({ agents: { defaults: { mediaMaxMb: value } } }) as unknown as OpenClawConfig;
+const cfgWithMediaMaxMb = (value: unknown): AforaConfig =>
+  ({ agents: { defaults: { mediaMaxMb: value } } }) as unknown as AforaConfig;
 
 describe("resolveChatAttachmentMaxBytes", () => {
   it("honours a configured agents.defaults.mediaMaxMb", () => {
@@ -21,10 +21,10 @@ describe("resolveChatAttachmentMaxBytes", () => {
   });
 
   it("falls back to the default ceiling when unset", () => {
-    expect(resolveChatAttachmentMaxBytes({} as OpenClawConfig)).toBe(
+    expect(resolveChatAttachmentMaxBytes({} as AforaConfig)).toBe(
       DEFAULT_CHAT_ATTACHMENT_MAX_BYTES,
     );
-    expect(resolveChatAttachmentMaxBytes({ agents: {} } as unknown as OpenClawConfig)).toBe(
+    expect(resolveChatAttachmentMaxBytes({ agents: {} } as unknown as AforaConfig)).toBe(
       DEFAULT_CHAT_ATTACHMENT_MAX_BYTES,
     );
   });
@@ -62,7 +62,7 @@ describe("resolveChatAttachmentPolicy", () => {
     // The 20MB default and any raised mediaMaxMb both exceed the frame budget:
     // advertising them would let the client encode a frame the server
     // hard-drops with 1009.
-    expect(resolveChatAttachmentPolicy({} as OpenClawConfig).maxBytes).toBe(MAX_ADVERTISED_BYTES);
+    expect(resolveChatAttachmentPolicy({} as AforaConfig).maxBytes).toBe(MAX_ADVERTISED_BYTES);
     expect(resolveChatAttachmentPolicy(cfgWithMediaMaxMb(50)).maxBytes).toBe(MAX_ADVERTISED_BYTES);
     expect(MAX_ADVERTISED_BYTES).toBeLessThan(20 * MB);
   });

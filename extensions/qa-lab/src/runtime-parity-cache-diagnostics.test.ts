@@ -1,7 +1,7 @@
 import path from "node:path";
-import { resolveStorePath, upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
-import { appendSessionTranscriptMessageByIdentity } from "openclaw/plugin-sdk/session-transcript-runtime";
-import { formatSqliteSessionFileMarker } from "openclaw/plugin-sdk/sqlite-runtime-testing";
+import { resolveStorePath, upsertSessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
+import { appendSessionTranscriptMessageByIdentity } from "afora-agent/plugin-sdk/session-transcript-runtime";
+import { formatSqliteSessionFileMarker } from "afora-agent/plugin-sdk/sqlite-runtime-testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { buildRuntimeParityCacheDiagnostics } from "./runtime-parity-cache-diagnostics.js";
 import { captureRuntimeParityCell, type RuntimeParityUsage } from "./runtime-parity.js";
@@ -14,11 +14,11 @@ afterEach(async () => {
 });
 
 async function seedRuntimeParityCacheTranscript(messages: Array<Record<string, unknown>>) {
-  const tempRoot = await tempDirs.makeTempDir("openclaw-qa-runtime-parity-cache-");
+  const tempRoot = await tempDirs.makeTempDir("afora-qa-runtime-parity-cache-");
   const agentId = "qa";
   const sessionId = "runtime-parity-cache-miss";
   const sessionKey = "agent:qa:runtime-parity-cache-miss";
-  const env = { ...process.env, OPENCLAW_STATE_DIR: path.join(tempRoot, "state") };
+  const env = { ...process.env, AFORA_STATE_DIR: path.join(tempRoot, "state") };
   const storePath = resolveStorePath(undefined, { agentId, env });
   await upsertSessionEntry({
     agentId,
@@ -119,7 +119,7 @@ describe("runtime parity prompt-cache diagnostics", () => {
     ]);
 
     const cell = await captureRuntimeParityCell({
-      runtime: "openclaw",
+      runtime: "afora",
       gateway: { tempRoot },
       scenarioResult: { status: "pass" },
       wallClockMs: 10,
@@ -155,7 +155,7 @@ describe("runtime parity prompt-cache diagnostics", () => {
     ]);
 
     const cell = await captureRuntimeParityCell({
-      runtime: "openclaw",
+      runtime: "afora",
       gateway: { tempRoot },
       scenarioResult: { status: "pass" },
       wallClockMs: 10,
@@ -190,7 +190,7 @@ describe("runtime parity prompt-cache diagnostics", () => {
     ]);
 
     const cell = await captureRuntimeParityCell({
-      runtime: "openclaw",
+      runtime: "afora",
       gateway: { tempRoot },
       scenarioResult: { status: "pass" },
       wallClockMs: 10,

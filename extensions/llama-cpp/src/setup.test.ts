@@ -4,7 +4,7 @@ import path from "node:path";
 import type {
   ProviderAppGuidedSetupContext,
   ProviderAuthContext,
-} from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/plugin-entry";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({

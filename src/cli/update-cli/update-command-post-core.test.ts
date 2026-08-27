@@ -27,7 +27,7 @@ afterEach(async () => {
 });
 
 async function withTempDir(): Promise<string> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-post-core-records-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-post-core-records-"));
   tempDirs.push(dir);
   return dir;
 }
@@ -48,7 +48,7 @@ describe("readPostCorePluginInstallRecordsFile", () => {
     const filePath = path.join(dir, "plugin-install-records.json");
     await fs.writeFile(
       filePath,
-      '{"demo":{"source":"npm","spec":"@openclaw/demo@1.0.0","installPath":"/tmp/demo-plugin","futureMetadata":{"retained":true}},"constructor":{"source":"path"},"toString":{"source":"git"},"__proto__":{"source":"archive"}}\n',
+      '{"demo":{"source":"npm","spec":"@afora/demo@1.0.0","installPath":"/tmp/demo-plugin","futureMetadata":{"retained":true}},"constructor":{"source":"path"},"toString":{"source":"git"},"__proto__":{"source":"archive"}}\n',
       "utf-8",
     );
 
@@ -59,7 +59,7 @@ describe("readPostCorePluginInstallRecordsFile", () => {
     expect(Object.getPrototypeOf(records)).toBeNull();
     expect(getPluginInstallRecordMapEntry(records, "demo")).toEqual({
       source: "npm",
-      spec: "@openclaw/demo@1.0.0",
+      spec: "@afora/demo@1.0.0",
       installPath: "/tmp/demo-plugin",
       futureMetadata: { retained: true },
     });
@@ -119,7 +119,7 @@ describe("readPostCorePluginInstallRecordsFile", () => {
       `Malformed JSON in plugin install records file: ${filePath}`,
     );
     await expect(readPostCorePluginInstallRecordsFile(filePath)).rejects.toThrow(
-      "Run openclaw doctor to inspect and repair plugin installation state.",
+      "Run afora doctor to inspect and repair plugin installation state.",
     );
   });
 
@@ -184,7 +184,7 @@ describe("shouldResumePostCoreUpdateInFreshProcess", () => {
   const unchangedGitResult = {
     status: "ok" as const,
     mode: "git" as const,
-    root: "/tmp/openclaw",
+    root: "/tmp/afora",
     before: { sha: "abc123", version: "1.2.3" },
     after: { sha: "abc123", version: "1.2.3" },
     steps: [],

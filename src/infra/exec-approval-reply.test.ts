@@ -26,7 +26,7 @@ vi.mock("./exec-approval-surface.js", () => ({
         return `Approve it from the Web UI or terminal UI for now. ${label} supports native exec approvals for this account. Configure \`${accountPrefix}.execApprovals.approvers\` or \`commands.ownerAllowFrom\`; leave \`${accountPrefix}.execApprovals.enabled\` unset/\`auto\` or set it to \`true\`.`;
       }
       if (channel === "telegram") {
-        return `Approve it from the Web UI or terminal UI for now. ${label} supports native exec approvals for this account. Configure \`${accountPrefix}.execApprovals.approvers\`; if you leave it unset, OpenClaw can infer numeric owner IDs from \`${accountPrefix}.allowFrom\` or direct-message \`${accountPrefix}.defaultTo\` when possible. Leave \`${accountPrefix}.execApprovals.enabled\` unset/\`auto\` or set it to \`true\`.`;
+        return `Approve it from the Web UI or terminal UI for now. ${label} supports native exec approvals for this account. Configure \`${accountPrefix}.execApprovals.approvers\`; if you leave it unset, Afora can infer numeric owner IDs from \`${accountPrefix}.allowFrom\` or direct-message \`${accountPrefix}.defaultTo\` when possible. Leave \`${accountPrefix}.execApprovals.enabled\` unset/\`auto\` or set it to \`true\`.`;
       }
       return null;
     },
@@ -128,12 +128,12 @@ describe("exec approval reply helpers", () => {
     }).text;
 
     expect(text).toContain(
-      "Print the Control UI URL with `openclaw dashboard --no-open`, open it in a browser, then use the approval inbox.",
+      "Print the Control UI URL with `afora dashboard --no-open`, open it in a browser, then use the approval inbox.",
     );
     expect(text).toContain(
-      "Inspect the node's effective exec policy with `openclaw approvals get --node mac-1`.",
+      "Inspect the node's effective exec policy with `afora approvals get --node mac-1`.",
     );
-    expect(text).not.toContain("`openclaw dashboard --no-open` or `openclaw approvals get");
+    expect(text).not.toContain("`afora dashboard --no-open` or `afora approvals get");
     expect(text).not.toContain("Open the approval inbox with");
     expect(text).not.toContain("exec-approvals list");
   });

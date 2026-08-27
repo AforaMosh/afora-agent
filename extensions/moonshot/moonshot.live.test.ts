@@ -1,5 +1,5 @@
 // Moonshot tests cover moonshot plugin behavior.
-import { toErrorObject as toLintErrorObject } from "openclaw/plugin-sdk/error-runtime";
+import { toErrorObject as toLintErrorObject } from "afora-agent/plugin-sdk/error-runtime";
 import {
   streamSimple,
   type AssistantMessage,
@@ -7,9 +7,9 @@ import {
   type Model,
   type ProviderContext,
   type Tool,
-} from "openclaw/plugin-sdk/llm";
-import { registerSingleProviderPlugin } from "openclaw/plugin-sdk/plugin-test-runtime";
-import { isLiveTestEnabled } from "openclaw/plugin-sdk/test-live";
+} from "afora-agent/plugin-sdk/llm";
+import { registerSingleProviderPlugin } from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { isLiveTestEnabled } from "afora-agent/plugin-sdk/test-live";
 import { Type } from "typebox";
 import { describe, expect, it } from "vitest";
 import plugin from "./index.js";
@@ -97,7 +97,7 @@ describeLive("moonshot plugin live", () => {
     let lastError: unknown;
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
-        result = await tool?.execute({ query: "OpenClaw GitHub", count: 1 });
+        result = await tool?.execute({ query: "Afora GitHub", count: 1 });
         lastError = undefined;
         break;
       } catch (error) {

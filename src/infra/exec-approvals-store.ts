@@ -6,11 +6,11 @@ import {
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { readAgentDeletionJournal } from "../state/agent-deletion-journal.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../state/openclaw-state-db-readonly.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../state/afora-state-db-readonly.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../state/afora-state-db.js";
 import { formatErrorMessage } from "./errors.js";
 import {
   createFailClosedExecApprovalsFallback,
@@ -62,7 +62,7 @@ function warnFailClosed(message: string, error?: unknown): void {
 }
 
 function snapshotFromExecApprovalsDatabase(
-  db: ReturnType<typeof openOpenClawStateDatabase>["db"],
+  db: ReturnType<typeof openAforaStateDatabase>["db"],
 ): ExecApprovalsSnapshot {
   return snapshotFromExecApprovalsRow({
     path: resolveExecApprovalsDisplayPath(),
@@ -74,13 +74,13 @@ function snapshotFromExecApprovalsDatabase(
 
 function readExecApprovalsSnapshotFromDatabase(): ExecApprovalsSnapshot {
   assertNoPendingLegacyExecApprovals();
-  return snapshotFromExecApprovalsDatabase(openOpenClawStateDatabase().db);
+  return snapshotFromExecApprovalsDatabase(openAforaStateDatabase().db);
 }
 
 function readExecApprovalsSnapshotFromDatabaseReadOnly(): ExecApprovalsSnapshot {
   assertNoPendingLegacyExecApprovals();
   return (
-    withExistingOpenClawStateDatabaseReadOnly(({ db }) => snapshotFromExecApprovalsDatabase(db)) ??
+    withExistingAforaStateDatabaseReadOnly(({ db }) => snapshotFromExecApprovalsDatabase(db)) ??
     snapshotFromExecApprovalsRow({
       path: resolveExecApprovalsDisplayPath(),
       row: undefined,
@@ -163,7 +163,7 @@ function updateExecApprovalsInTransaction(
   params: InternalExecApprovalsUpdate,
 ): ExecApprovalsSnapshot | null {
   assertNoPendingLegacyExecApprovals();
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db }) => {
       const current = snapshotFromExecApprovalsRow({
         path: resolveExecApprovalsDisplayPath(),
@@ -243,7 +243,7 @@ export async function withAgentExecApprovalsRemoved<T>(
       throw new Error("Exec approvals changed while deleting agent; retry deletion.");
     }
   } else {
-    runOpenClawStateWriteTransaction(({ db }) => {
+    runAforaStateWriteTransaction(({ db }) => {
       assertExecApprovalsMutationAuthority(db, {
         action: "remove",
         agentId: key,
@@ -279,7 +279,7 @@ export async function withAgentExecApprovalsRemoved<T>(
 }
 
 function restoreExecApprovalsSnapshotInTransaction(snapshot: ExecApprovalsSnapshot): void {
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       const current = snapshotFromExecApprovalsRow({
         path: resolveExecApprovalsDisplayPath(),
@@ -308,7 +308,7 @@ export async function restoreExecApprovalsSnapshotLocked(
   baseHash: string,
 ): Promise<boolean> {
   assertNoPendingLegacyExecApprovals();
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db }) => {
       const current = snapshotFromExecApprovalsRow({
         path: resolveExecApprovalsDisplayPath(),
@@ -373,6 +373,6 @@ const testing = {
 };
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.execApprovalsStoreTestApi")] =
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.execApprovalsStoreTestApi")] =
     testing;
 }

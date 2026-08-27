@@ -23,7 +23,7 @@ export function createPluginRecord(params: {
   description?: string;
   packageVersion?: string;
   version?: string;
-  builtWithOpenClawVersion?: string;
+  builtWithAforaVersion?: string;
   packageName?: string;
   format?: PluginFormat;
   bundleFormat?: PluginBundleFormat;
@@ -50,9 +50,9 @@ export function createPluginRecord(params: {
     description: params.description,
     packageVersion: params.packageVersion,
     version: params.version,
-    builtWithOpenClawVersion: params.builtWithOpenClawVersion,
+    builtWithAforaVersion: params.builtWithAforaVersion,
     packageName: params.packageName,
-    format: params.format ?? "openclaw",
+    format: params.format ?? "afora",
     bundleFormat: params.bundleFormat,
     bundleCapabilities: params.bundleCapabilities,
     source: params.source,
@@ -203,7 +203,7 @@ export function formatPluginFailureSummary(failedPlugins: PluginRecord[]): strin
 }
 
 function isPluginLoadDebugEnabled(env: NodeJS.ProcessEnv): boolean {
-  return parseBooleanValue(env.OPENCLAW_PLUGIN_LOAD_DEBUG) === true;
+  return parseBooleanValue(env.AFORA_PLUGIN_LOAD_DEBUG) === true;
 }
 
 function describePluginModuleExportShape(

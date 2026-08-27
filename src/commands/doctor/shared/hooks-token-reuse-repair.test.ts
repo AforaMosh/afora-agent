@@ -1,11 +1,11 @@
 // Hooks token reuse repair tests cover doctor repairs for reused gateway hook tokens.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { repairHooksTokenReuseGatewayAuth } from "./hooks-token-reuse-repair.js";
 
 const ROTATED_HOOKS_TOKEN = "rotated-hooks-token-1234567890";
 
-function repair(cfg: OpenClawConfig, env: NodeJS.ProcessEnv = {}) {
+function repair(cfg: AforaConfig, env: NodeJS.ProcessEnv = {}) {
   return repairHooksTokenReuseGatewayAuth(cfg, env, () => ROTATED_HOOKS_TOKEN);
 }
 
@@ -19,7 +19,7 @@ describe("repairHooksTokenReuseGatewayAuth", () => {
         },
       },
       {
-        OPENCLAW_GATEWAY_TOKEN: "shared-gateway-token-1234567890",
+        AFORA_GATEWAY_TOKEN: "shared-gateway-token-1234567890",
       } as NodeJS.ProcessEnv,
     );
 
@@ -90,7 +90,7 @@ describe("repairHooksTokenReuseGatewayAuth", () => {
         enabled: true,
         token: "shared-gateway-password-1234567890",
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     await expect(repair(cfg, {} as NodeJS.ProcessEnv)).resolves.toEqual({
       config: cfg,
@@ -119,7 +119,7 @@ describe("repairHooksTokenReuseGatewayAuth", () => {
         enabled: true,
         token: "shared-gateway-password-1234567890",
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     await expect(repair(cfg, {} as NodeJS.ProcessEnv)).resolves.toEqual({
       config: cfg,
@@ -185,7 +185,7 @@ describe("repairHooksTokenReuseGatewayAuth", () => {
         enabled: false,
         token: "shared-gateway-token-1234567890",
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const distinct = {
       gateway: {
         auth: {
@@ -197,7 +197,7 @@ describe("repairHooksTokenReuseGatewayAuth", () => {
         enabled: true,
         token: "distinct-hooks-token-1234567890",
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     await expect(repair(disabled)).resolves.toEqual({ config: disabled, changes: [] });
     await expect(repair(distinct)).resolves.toEqual({ config: distinct, changes: [] });

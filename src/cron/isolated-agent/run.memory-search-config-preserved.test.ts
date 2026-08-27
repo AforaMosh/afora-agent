@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveMemorySearchConfig } from "../../agents/memory-search.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { MemorySearchConfig } from "../../config/types.tools.js";
 import { resolveCronAgentConfig } from "./run-config.js";
 
@@ -22,7 +22,7 @@ describe("resolveCronAgentConfig memory search preservation", () => {
       config: {},
       agentConfigOverride: { memory: { search: agentMemorySearch } },
     });
-    const runCfg: OpenClawConfig = {
+    const runCfg: AforaConfig = {
       plugins: { enabled: false },
       agents: {
         defaults: agentDefaults,

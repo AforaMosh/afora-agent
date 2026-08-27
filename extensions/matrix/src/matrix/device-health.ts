@@ -7,26 +7,26 @@ export type MatrixManagedDeviceInfo = {
 
 type MatrixDeviceHealthSummary = {
   currentDeviceId: string | null;
-  staleOpenClawDevices: MatrixManagedDeviceInfo[];
-  currentOpenClawDevices: MatrixManagedDeviceInfo[];
+  staleAforaDevices: MatrixManagedDeviceInfo[];
+  currentAforaDevices: MatrixManagedDeviceInfo[];
 };
 
-const OPENCLAW_DEVICE_NAME_PREFIX = "OpenClaw ";
+const AFORA_DEVICE_NAME_PREFIX = "Afora ";
 
-export function isOpenClawManagedMatrixDevice(displayName: string | null | undefined): boolean {
-  return displayName?.startsWith(OPENCLAW_DEVICE_NAME_PREFIX) === true;
+export function isAforaManagedMatrixDevice(displayName: string | null | undefined): boolean {
+  return displayName?.startsWith(AFORA_DEVICE_NAME_PREFIX) === true;
 }
 
 export function summarizeMatrixDeviceHealth(
   devices: MatrixManagedDeviceInfo[],
 ): MatrixDeviceHealthSummary {
   const currentDeviceId = devices.find((device) => device.current)?.deviceId ?? null;
-  const openClawDevices = devices.filter((device) =>
-    isOpenClawManagedMatrixDevice(device.displayName),
+  const aforaDevices = devices.filter((device) =>
+    isAforaManagedMatrixDevice(device.displayName),
   );
   return {
     currentDeviceId,
-    staleOpenClawDevices: openClawDevices.filter((device) => !device.current),
-    currentOpenClawDevices: openClawDevices.filter((device) => device.current),
+    staleAforaDevices: aforaDevices.filter((device) => !device.current),
+    currentAforaDevices: aforaDevices.filter((device) => device.current),
   };
 }

@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import {
   applyLocalSetupWorkspaceConfig,
   resolveOnboardingWorkspaceConflict,
@@ -12,7 +12,7 @@ import {
 
 describe("applyLocalSetupWorkspaceConfig", () => {
   it("leaves dmScope unset when not configured", () => {
-    const baseConfig: OpenClawConfig = {};
+    const baseConfig: AforaConfig = {};
     const result = applyLocalSetupWorkspaceConfig(baseConfig, "/tmp/workspace");
 
     expect(result.session?.dmScope).toBeUndefined();
@@ -23,7 +23,7 @@ describe("applyLocalSetupWorkspaceConfig", () => {
   });
 
   it("preserves existing dmScope when already configured", () => {
-    const baseConfig: OpenClawConfig = {
+    const baseConfig: AforaConfig = {
       session: {
         dmScope: "main",
       },
@@ -34,7 +34,7 @@ describe("applyLocalSetupWorkspaceConfig", () => {
   });
 
   it("preserves explicit non-main dmScope values", () => {
-    const baseConfig: OpenClawConfig = {
+    const baseConfig: AforaConfig = {
       session: {
         dmScope: "per-account-channel-peer",
       },
@@ -45,7 +45,7 @@ describe("applyLocalSetupWorkspaceConfig", () => {
   });
 
   it("preserves an explicit tools.profile when already configured", () => {
-    const baseConfig: OpenClawConfig = {
+    const baseConfig: AforaConfig = {
       tools: {
         profile: "full",
       },
@@ -55,8 +55,8 @@ describe("applyLocalSetupWorkspaceConfig", () => {
     expect(result.tools?.profile).toBe("full");
   });
 
-  it("preserves agents.list and bindings on onboard rerun (openclaw#84692)", () => {
-    const baseConfig: OpenClawConfig = {
+  it("preserves agents.list and bindings on onboard rerun (afora#84692)", () => {
+    const baseConfig: AforaConfig = {
       agents: {
         list: [
           { id: "alpha", model: "anthropic/claude-3-5-sonnet" },
@@ -70,7 +70,7 @@ describe("applyLocalSetupWorkspaceConfig", () => {
           match: { channel: "discord", peer: { kind: "direct", id: "user-1" } },
         },
       ],
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = applyLocalSetupWorkspaceConfig(baseConfig, "/tmp/workspace");
 
@@ -81,14 +81,14 @@ describe("applyLocalSetupWorkspaceConfig", () => {
 
   it("keeps fresh-install workspace writes unchanged", () => {
     const result = applyLocalSetupWorkspaceConfig({}, "/tmp/new-workspace", {
-      env: { HOME: "/tmp/fresh-home", OPENCLAW_STATE_DIR: "/tmp/fresh-state" },
+      env: { HOME: "/tmp/fresh-home", AFORA_STATE_DIR: "/tmp/fresh-state" },
     });
 
     expect(result.agents?.defaults?.workspace).toBe("/tmp/new-workspace");
   });
 
   it("preserves the current workspace when an agent roster exists", () => {
-    const baseConfig: OpenClawConfig = {
+    const baseConfig: AforaConfig = {
       agents: {
         defaults: { workspace: "/tmp/current-workspace" },
         list: [{ id: "main" }, { id: "ops" }],
@@ -106,14 +106,14 @@ describe("applyLocalSetupWorkspaceConfig", () => {
   });
 
   it("does not materialize a fleet default for an existing roster", () => {
-    const env = { HOME: "/tmp/fleet-home", OPENCLAW_STATE_DIR: "/tmp/fleet-state" };
-    const baseConfig: OpenClawConfig = {
+    const env = { HOME: "/tmp/fleet-home", AFORA_STATE_DIR: "/tmp/fleet-state" };
+    const baseConfig: AforaConfig = {
       agents: { list: [{ id: "main" }, { id: "ops" }] },
     };
 
     const result = applyLocalSetupWorkspaceConfig(
       baseConfig,
-      "/tmp/fleet-home/.openclaw/workspace",
+      "/tmp/fleet-home/.afora/workspace",
       { env },
     );
 
@@ -121,10 +121,10 @@ describe("applyLocalSetupWorkspaceConfig", () => {
   });
 
   it("keeps fresh-install workspace writes when only inference state exists on disk", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-onboard-state-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-onboard-state-"));
     try {
       await fs.mkdir(path.join(stateDir, "agents", "main", "sessions"), { recursive: true });
-      const env = { HOME: stateDir, OPENCLAW_STATE_DIR: stateDir };
+      const env = { HOME: stateDir, AFORA_STATE_DIR: stateDir };
 
       const result = applyLocalSetupWorkspaceConfig({}, "/tmp/requested-workspace", {
         env,
@@ -151,7 +151,7 @@ describe("applyLocalSetupWorkspaceConfig", () => {
         { agents: { defaults: { workspace: "/tmp/current-workspace" } } },
         "/tmp/requested-workspace",
         {
-          env: { HOME: "/tmp/unreadable-home", OPENCLAW_STATE_DIR: "/tmp/unreadable-state" },
+          env: { HOME: "/tmp/unreadable-home", AFORA_STATE_DIR: "/tmp/unreadable-state" },
         },
       );
       expect(result.agents?.defaults?.workspace).toBe("/tmp/current-workspace");
@@ -161,7 +161,7 @@ describe("applyLocalSetupWorkspaceConfig", () => {
   });
 
   it("allows an explicitly confirmed workspace move", () => {
-    const baseConfig: OpenClawConfig = {
+    const baseConfig: AforaConfig = {
       agents: {
         defaults: { workspace: "/tmp/current-workspace" },
         list: [{ id: "main" }],

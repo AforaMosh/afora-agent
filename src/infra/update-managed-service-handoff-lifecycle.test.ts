@@ -7,12 +7,12 @@ import os from "node:os";
 import path from "node:path";
 import { PassThrough, type Readable } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
@@ -43,7 +43,7 @@ function createSpawnMock(params?: { pid?: number }) {
 }
 
 function signalHandoffReady(child: ReturnType<typeof createSpawnMock>): void {
-  child.stdout.write("OPENCLAW_UPDATE_HANDOFF_READY\n");
+  child.stdout.write("AFORA_UPDATE_HANDOFF_READY\n");
 }
 
 async function waitForHandoffReady(output: Readable | null): Promise<void> {
@@ -53,7 +53,7 @@ async function waitForHandoffReady(output: Readable | null): Promise<void> {
   let buffered = "";
   for await (const chunk of output) {
     buffered = `${buffered}${chunk.toString()}`.slice(-1024);
-    if (buffered.includes("OPENCLAW_UPDATE_HANDOFF_READY\n")) {
+    if (buffered.includes("AFORA_UPDATE_HANDOFF_READY\n")) {
       return;
     }
   }
@@ -76,7 +76,7 @@ vi.mock("../process/child-process-tree.js", async () => {
 });
 
 const tempDirs = new Set<string>();
-type GatewayRestartSentinelDatabase = Pick<OpenClawStateKyselyDatabase, "gateway_restart_sentinel">;
+type GatewayRestartSentinelDatabase = Pick<AforaStateKyselyDatabase, "gateway_restart_sentinel">;
 
 beforeEach(() => {
   forceKillChildProcessTreeMock.mockReset();
@@ -92,7 +92,7 @@ beforeEach(() => {
 
 afterEach(async () => {
   vi.useRealTimers();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   await Promise.all([...tempDirs].map((dir) => fs.rm(dir, { recursive: true, force: true })));
   tempDirs.clear();
   vi.resetModules();
@@ -108,7 +108,7 @@ async function pathExists(filePath: string): Promise<boolean> {
 }
 
 function writeRestartSentinelRow(env: NodeJS.ProcessEnv, sentinel: unknown): void {
-  const { db } = openOpenClawStateDatabase({ env });
+  const { db } = openAforaStateDatabase({ env });
   const stateDb = getNodeSqliteKysely<GatewayRestartSentinelDatabase>(db);
   const payload =
     sentinel && typeof sentinel === "object" && (sentinel as { version?: unknown }).version === 1
@@ -162,7 +162,7 @@ function writeRestartSentinelRow(env: NodeJS.ProcessEnv, sentinel: unknown): voi
 }
 
 function replaceRestartSentinelRow(env: NodeJS.ProcessEnv, sentinel: unknown): void {
-  const { db } = openOpenClawStateDatabase({ env });
+  const { db } = openAforaStateDatabase({ env });
   const stateDb = getNodeSqliteKysely<GatewayRestartSentinelDatabase>(db);
   executeSqliteQuerySync(
     db,
@@ -172,7 +172,7 @@ function replaceRestartSentinelRow(env: NodeJS.ProcessEnv, sentinel: unknown): v
 }
 
 function readRestartSentinelPayload(env: NodeJS.ProcessEnv, key = "current"): unknown {
-  const { db } = openOpenClawStateDatabase({ env });
+  const { db } = openAforaStateDatabase({ env });
   const stateDb = getNodeSqliteKysely<GatewayRestartSentinelDatabase>(db);
   const row = executeSqliteQueryTakeFirstSync(
     db,
@@ -198,16 +198,16 @@ async function runHelperWithExistingSentinel(params: {
   const { execFile } =
     await vi.importActual<typeof import("node:child_process")>("node:child_process");
   const { startManagedServiceUpdateHandoff } = await import("./update-managed-service-handoff.js");
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-handoff-helper-test-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-handoff-helper-test-"));
   tempDirs.add(tmpDir);
   let stateDir = tmpDir;
   while (
     params.deepStatePath &&
-    resolveOpenClawStateSqlitePath({ OPENCLAW_STATE_DIR: stateDir }).length <= 260
+    resolveAforaStateSqlitePath({ AFORA_STATE_DIR: stateDir }).length <= 260
   ) {
     stateDir = path.join(stateDir, `segment-${"x".repeat(24)}`);
   }
-  const env = { OPENCLAW_STATE_DIR: stateDir } as NodeJS.ProcessEnv;
+  const env = { AFORA_STATE_DIR: stateDir } as NodeJS.ProcessEnv;
 
   await startManagedServiceUpdateHandoff({
     root: tmpDir,
@@ -216,7 +216,7 @@ async function runHelperWithExistingSentinel(params: {
     restartDelayMs: 500,
     parentPid: process.pid,
     execPath: "/usr/local/bin/node",
-    argv1: "/opt/openclaw/openclaw.mjs",
+    argv1: "/opt/AforaMosh/afora-agent.mjs",
     ...(params.handoffId ? { handoffId: params.handoffId } : {}),
     env,
     meta: {
@@ -276,7 +276,7 @@ async function runHelperWithExistingSentinel(params: {
 
 async function createLegacyRestartSentinelTable(env: NodeJS.ProcessEnv): Promise<void> {
   const sqlite = await import("node:sqlite");
-  const stateDatabasePath = resolveOpenClawStateSqlitePath(env);
+  const stateDatabasePath = resolveAforaStateSqlitePath(env);
   await fs.mkdir(path.dirname(stateDatabasePath), { recursive: true });
   const db = new sqlite.DatabaseSync(stateDatabasePath);
   try {
@@ -321,7 +321,7 @@ async function runHelperWithCommand(params: {
   const { execFile } =
     await vi.importActual<typeof import("node:child_process")>("node:child_process");
   const { startManagedServiceUpdateHandoff } = await import("./update-managed-service-handoff.js");
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-handoff-recovery-test-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-handoff-recovery-test-"));
   tempDirs.add(tmpDir);
 
   await startManagedServiceUpdateHandoff({
@@ -331,8 +331,8 @@ async function runHelperWithCommand(params: {
     restartDelayMs: 0,
     parentPid: process.pid,
     execPath: "/usr/local/bin/node",
-    argv1: "/opt/openclaw/openclaw.mjs",
-    env: { OPENCLAW_STATE_DIR: tmpDir },
+    argv1: "/opt/AforaMosh/afora-agent.mjs",
+    env: { AFORA_STATE_DIR: tmpDir },
     meta: { sessionKey: "agent:test:webchat:dm:user-123" },
   });
 
@@ -386,7 +386,7 @@ async function runHelperWithCommand(params: {
 }
 
 async function writeFakeSystemctl(): Promise<{ binDir: string; recordPath: string }> {
-  const binDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-recovery-bin-"));
+  const binDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-recovery-bin-"));
   tempDirs.add(binDir);
   const recordPath = path.join(binDir, "systemctl-calls.log");
   await fs.writeFile(
@@ -398,7 +398,7 @@ async function writeFakeSystemctl(): Promise<{ binDir: string; recordPath: strin
 }
 
 async function writeFakeLaunchctl(): Promise<{ binDir: string; recordPath: string }> {
-  const binDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-launchctl-bin-"));
+  const binDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-launchctl-bin-"));
   tempDirs.add(binDir);
   const recordPath = path.join(binDir, "launchctl-calls.log");
   const countPath = path.join(binDir, "launchctl-kickstart-count");
@@ -435,11 +435,11 @@ describe("managed service update handoff", () => {
       await import("./update-managed-service-handoff.js");
 
     const resultPromise = startManagedServiceUpdateHandoff({
-      root: "/tmp/openclaw",
+      root: "/tmp/afora",
       restartDrainTimeoutMs: 300_000,
       parentPid: 12345,
-      execPath: "/definitely/missing/openclaw-node",
-      argv1: "/opt/openclaw/openclaw.mjs",
+      execPath: "/definitely/missing/afora-node",
+      argv1: "/opt/AforaMosh/afora-agent.mjs",
       meta: { sessionKey: "agent:test:webchat:dm:user-123" },
     });
     await vi.waitFor(() => expect(spawnMock).toHaveBeenCalledTimes(1), FAST_WAIT_OPTS);
@@ -460,20 +460,20 @@ describe("managed service update handoff", () => {
   it("rejects a systemd-run launcher that exits before the helper is ready", async () => {
     const child = createSpawnMock();
     spawnMock.mockReturnValueOnce(child);
-    const binDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-systemd-run-bin-"));
+    const binDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-systemd-run-bin-"));
     tempDirs.add(binDir);
     await fs.writeFile(path.join(binDir, "systemd-run"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
     const { startManagedServiceUpdateHandoff } =
       await import("./update-managed-service-handoff.js");
 
     const resultPromise = startManagedServiceUpdateHandoff({
-      root: "/tmp/openclaw",
+      root: "/tmp/afora",
       restartDrainTimeoutMs: 300_000,
       parentPid: 12345,
       execPath: "/usr/local/bin/node",
-      argv1: "/opt/openclaw/openclaw.mjs",
+      argv1: "/opt/AforaMosh/afora-agent.mjs",
       supervisor: "systemd",
-      env: { PATH: binDir, OPENCLAW_SYSTEMD_UNIT: "openclaw-gateway.service" },
+      env: { PATH: binDir, AFORA_SYSTEMD_UNIT: "afora-gateway.service" },
       meta: {},
     });
     await vi.waitFor(() => expect(spawnMock).toHaveBeenCalledTimes(1), FAST_WAIT_OPTS);
@@ -501,11 +501,11 @@ describe("managed service update handoff", () => {
       await import("./update-managed-service-handoff.js");
 
     const resultPromise = startManagedServiceUpdateHandoff({
-      root: "/tmp/openclaw",
+      root: "/tmp/afora",
       restartDrainTimeoutMs: undefined,
       parentPid: 12345,
       execPath: "/usr/local/bin/node",
-      argv1: "/opt/openclaw/openclaw.mjs",
+      argv1: "/opt/AforaMosh/afora-agent.mjs",
       meta: {},
     });
     const rejection = resultPromise.catch((err: unknown) => err);
@@ -531,22 +531,22 @@ describe("managed service update handoff", () => {
     const { startManagedServiceUpdateHandoff } =
       await import("./update-managed-service-handoff.js");
     const serviceIdentityEnv = {
-      OPENCLAW_LAUNCHD_LABEL: "com.example.openclaw.test",
-      OPENCLAW_SYSTEMD_UNIT: "openclaw-test.service",
-      OPENCLAW_WINDOWS_TASK_NAME: "OpenClaw Test Gateway",
+      AFORA_LAUNCHD_LABEL: "com.example.afora.test",
+      AFORA_SYSTEMD_UNIT: "afora-test.service",
+      AFORA_WINDOWS_TASK_NAME: "Afora Test Gateway",
     } satisfies NodeJS.ProcessEnv;
     const supervisorEnv = Object.fromEntries(
       SUPERVISOR_HINT_ENV_VARS.map((key) => [key, "supervised"]),
     ) as NodeJS.ProcessEnv;
 
     const result = await startManagedServiceUpdateHandoff({
-      root: "/tmp/openclaw",
+      root: "/tmp/afora",
       timeoutMs: 1_800_000,
       restartDrainTimeoutMs: 300_000,
       restartDelayMs: 500,
       parentPid: 12345,
       execPath: "/usr/local/bin/node",
-      argv1: "/opt/openclaw/openclaw.mjs",
+      argv1: "/opt/AforaMosh/afora-agent.mjs",
       env: {
         ...supervisorEnv,
         ...serviceIdentityEnv,
@@ -578,32 +578,32 @@ describe("managed service update handoff", () => {
     )) {
       expect(options.env[key]).toBeUndefined();
     }
-    expect(options.env.OPENCLAW_UPDATE_RUN_HANDOFF).toBe("1");
+    expect(options.env.AFORA_UPDATE_RUN_HANDOFF).toBe("1");
     expect(options.env[CONTROL_PLANE_UPDATE_SENTINEL_META_ENV]).toBe(helperParams.metaPath);
   });
 
   it("launches systemd handoffs through a transient user scope", async () => {
     const { startManagedServiceUpdateHandoff } =
       await import("./update-managed-service-handoff.js");
-    const binDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-systemd-run-bin-"));
+    const binDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-systemd-run-bin-"));
     tempDirs.add(binDir);
     const systemdRunPath = path.join(binDir, "systemd-run");
     await fs.writeFile(systemdRunPath, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
 
     const result = await startManagedServiceUpdateHandoff({
-      root: "/tmp/openclaw",
+      root: "/tmp/afora",
       timeoutMs: 1_800_000,
       restartDrainTimeoutMs: 300_000,
       restartDelayMs: 500,
       parentPid: 12345,
       execPath: "/usr/local/bin/node",
-      argv1: "/opt/openclaw/openclaw.mjs",
+      argv1: "/opt/AforaMosh/afora-agent.mjs",
       handoffId: "handoff-123",
       channel: "beta",
       supervisor: "systemd",
       env: {
         PATH: binDir,
-        OPENCLAW_SYSTEMD_UNIT: "openclaw-gateway.service",
+        AFORA_SYSTEMD_UNIT: "afora-gateway.service",
         INVOCATION_ID: "gateway-invocation",
         KEEP_ME: "1",
       },
@@ -626,7 +626,7 @@ describe("managed service update handoff", () => {
       "--user",
       "--scope",
       "--collect",
-      "--unit=openclaw-update-handoff-123.scope",
+      "--unit=afora-update-handoff-123.scope",
     ]);
     expect(args.slice(4, 7)).toEqual([
       "/usr/local/bin/node",
@@ -641,11 +641,11 @@ describe("managed service update handoff", () => {
     };
     expect(helperParams.serviceRecovery).toEqual({
       kind: "systemd",
-      unit: "openclaw-gateway.service",
+      unit: "afora-gateway.service",
     });
     expect(helperParams.commandArgv).toEqual([
       "/usr/local/bin/node",
-      "/opt/openclaw/openclaw.mjs",
+      "/opt/AforaMosh/afora-agent.mjs",
       "update",
       "--yes",
       "--json",
@@ -656,10 +656,10 @@ describe("managed service update handoff", () => {
     ]);
     expect(helperParams.handoffId).toBe("handoff-123");
     expect(options.detached).toBe(true);
-    expect(options.env.OPENCLAW_SYSTEMD_UNIT).toBe("openclaw-gateway.service");
+    expect(options.env.AFORA_SYSTEMD_UNIT).toBe("afora-gateway.service");
     expect(options.env.INVOCATION_ID).toBeUndefined();
     expect(options.env.KEEP_ME).toBe("1");
-    expect(options.env.OPENCLAW_UPDATE_RUN_HANDOFF).toBe("1");
+    expect(options.env.AFORA_UPDATE_RUN_HANDOFF).toBe("1");
   });
 
   itUnix(
@@ -668,14 +668,14 @@ describe("managed service update handoff", () => {
       const { binDir, recordPath } = await writeFakeSystemctl();
       const { completion } = await runHelperWithCommand({
         commandArgv: [process.execPath, "-e", "process.exit(7)"],
-        serviceRecovery: { kind: "systemd", unit: "openclaw-gateway.service" },
+        serviceRecovery: { kind: "systemd", unit: "afora-gateway.service" },
         pathPrepend: binDir,
       });
       const result = await completion;
 
       expect(result.code).toBe(7);
       await expect(fs.readFile(recordPath, "utf-8")).resolves.toBe(
-        "--user start openclaw-gateway.service\n",
+        "--user start afora-gateway.service\n",
       );
     },
   );
@@ -684,7 +684,7 @@ describe("managed service update handoff", () => {
     const { binDir, recordPath } = await writeFakeSystemctl();
     const { completion } = await runHelperWithCommand({
       commandArgv: [process.execPath, "-e", "process.exit(0)"],
-      serviceRecovery: { kind: "systemd", unit: "openclaw-gateway.service" },
+      serviceRecovery: { kind: "systemd", unit: "afora-gateway.service" },
       pathPrepend: binDir,
     });
     const result = await completion;
@@ -700,8 +700,8 @@ describe("managed service update handoff", () => {
       serviceRecovery: {
         kind: "launchd",
         uid: 501,
-        label: "com.example.openclaw",
-        plistPath: "/Users/test/Library/LaunchAgents/com.example.openclaw.plist",
+        label: "com.example.afora",
+        plistPath: "/Users/test/Library/LaunchAgents/com.example.afora.plist",
       },
       pathPrepend: binDir,
     });
@@ -710,10 +710,10 @@ describe("managed service update handoff", () => {
     expect(result.code).toBe(7);
     await expect(fs.readFile(recordPath, "utf-8")).resolves.toBe(
       [
-        "kickstart gui/501/com.example.openclaw",
-        "enable gui/501/com.example.openclaw",
-        "bootstrap gui/501 /Users/test/Library/LaunchAgents/com.example.openclaw.plist",
-        "kickstart gui/501/com.example.openclaw",
+        "kickstart gui/501/com.example.afora",
+        "enable gui/501/com.example.afora",
+        "bootstrap gui/501 /Users/test/Library/LaunchAgents/com.example.afora.plist",
+        "kickstart gui/501/com.example.afora",
         "",
       ].join("\n"),
     );
@@ -725,7 +725,7 @@ describe("managed service update handoff", () => {
     const cases = [
       {
         supervisor: "launchd" as const,
-        env: { OPENCLAW_LAUNCHD_LABEL: "test.gateway", HOME: "/Users/test" },
+        env: { AFORA_LAUNCHD_LABEL: "test.gateway", HOME: "/Users/test" },
         expected: {
           kind: "launchd",
           uid: typeof process.getuid === "function" ? process.getuid() : 501,
@@ -735,20 +735,20 @@ describe("managed service update handoff", () => {
       },
       {
         supervisor: "schtasks" as const,
-        env: { OPENCLAW_WINDOWS_TASK_NAME: "OpenClaw Test Gateway" },
-        expected: { kind: "schtasks", taskName: "OpenClaw Test Gateway" },
+        env: { AFORA_WINDOWS_TASK_NAME: "Afora Test Gateway" },
+        expected: { kind: "schtasks", taskName: "Afora Test Gateway" },
       },
     ];
 
     for (const testCase of cases) {
       const result = await startManagedServiceUpdateHandoff({
-        root: "/tmp/openclaw",
+        root: "/tmp/afora",
         timeoutMs: 1_800_000,
         restartDrainTimeoutMs: 300_000,
         restartDelayMs: 500,
         parentPid: 12345,
         execPath: "/usr/local/bin/node",
-        argv1: "/opt/openclaw/openclaw.mjs",
+        argv1: "/opt/AforaMosh/afora-agent.mjs",
         supervisor: testCase.supervisor,
         env: testCase.env,
         meta: { sessionKey: "agent:test:webchat:dm:user-123" },
@@ -787,7 +787,7 @@ describe("managed service update handoff", () => {
       },
     });
     if (process.platform !== "win32") {
-      const mode = (await fs.stat(resolveOpenClawStateSqlitePath(env))).mode & 0o777;
+      const mode = (await fs.stat(resolveAforaStateSqlitePath(env))).mode & 0o777;
       expect(mode).toBe(0o600);
     }
   });
@@ -800,7 +800,7 @@ describe("managed service update handoff", () => {
         handoffId: "handoff-windows-long-path",
         metaHandoffId: "handoff-windows-long-path",
       });
-      const statePath = resolveOpenClawStateSqlitePath(env);
+      const statePath = resolveAforaStateSqlitePath(env);
       expect(statePath.startsWith("\\\\?\\")).toBe(false);
       expect(statePath.length).toBeGreaterThan(260);
       expect(result).toEqual({ code: 1, signal: null });
@@ -816,10 +816,10 @@ describe("managed service update handoff", () => {
       handoffId: "handoff-locked",
       metaHandoffId: "handoff-locked",
       prepareStateDatabase: async (stateEnv) => {
-        openOpenClawStateDatabase({ env: stateEnv });
-        closeOpenClawStateDatabaseForTest();
+        openAforaStateDatabase({ env: stateEnv });
+        closeAforaStateDatabaseForTest();
         const sqlite = await import("node:sqlite");
-        const lock = new sqlite.DatabaseSync(resolveOpenClawStateSqlitePath(stateEnv));
+        const lock = new sqlite.DatabaseSync(resolveAforaStateSqlitePath(stateEnv));
         lock.exec("BEGIN IMMEDIATE;");
         lockReleased = new Promise((resolve) => {
           setTimeout(() => {
@@ -977,11 +977,11 @@ describe("managed service update handoff", () => {
   });
 
   it("sweeps stale handoff temp directories while keeping fresh handoff logs", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-handoff-cleanup-test-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-handoff-cleanup-test-"));
     tempDirs.add(tmpDir);
     const staleDir = path.join(tmpDir, `${MANAGED_SERVICE_UPDATE_HANDOFF_TEMP_PREFIX}stale`);
     const freshDir = path.join(tmpDir, `${MANAGED_SERVICE_UPDATE_HANDOFF_TEMP_PREFIX}fresh`);
-    const unrelatedDir = path.join(tmpDir, "openclaw-other-temp");
+    const unrelatedDir = path.join(tmpDir, "afora-other-temp");
     await fs.mkdir(staleDir, { recursive: true });
     await fs.mkdir(freshDir, { recursive: true });
     await fs.mkdir(unrelatedDir, { recursive: true });
@@ -1003,7 +1003,7 @@ describe("managed service update handoff", () => {
   });
 
   it("waits for the configured restart drain and shutdown reserve (#99666)", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-handoff-timeout-test-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-handoff-timeout-test-"));
     tempDirs.add(tmpDir);
 
     const { startManagedServiceUpdateHandoff } =
@@ -1015,7 +1015,7 @@ describe("managed service update handoff", () => {
       restartDelayMs: 2_000,
       parentPid: process.pid,
       execPath: "/usr/local/bin/node",
-      argv1: "/opt/openclaw/openclaw.mjs",
+      argv1: "/opt/AforaMosh/afora-agent.mjs",
       env: {},
       meta: { sessionKey: "agent:test:webchat:dm:user-123" },
     });
@@ -1031,7 +1031,7 @@ describe("managed service update handoff", () => {
 
   it("waits indefinitely when restart draining has no deadline", async () => {
     const tmpDir = await fs.mkdtemp(
-      path.join(os.tmpdir(), "openclaw-handoff-default-timeout-test-"),
+      path.join(os.tmpdir(), "afora-handoff-default-timeout-test-"),
     );
     tempDirs.add(tmpDir);
 
@@ -1043,7 +1043,7 @@ describe("managed service update handoff", () => {
       restartDelayMs: 0,
       parentPid: process.pid,
       execPath: "/usr/local/bin/node",
-      argv1: "/opt/openclaw/openclaw.mjs",
+      argv1: "/opt/AforaMosh/afora-agent.mjs",
       env: {},
       meta: { sessionKey: "agent:test:webchat:dm:user-123" },
     });

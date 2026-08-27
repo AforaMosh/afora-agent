@@ -1,9 +1,9 @@
 // Shared formatting helpers for status overview, gateway summaries, and JSON payloads.
 // These functions keep text and JSON status surfaces aligned without pulling in command orchestration.
 
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { resolveGatewayPort } from "../../config/config.js";
-import type { OpenClawConfig } from "../../config/types.js";
+import type { AforaConfig } from "../../config/types.js";
 import { projectGatewayUrlForDiagnostics } from "../../gateway/connection-details.js";
 import { resolveControlUiLinks } from "../../gateway/control-ui-links.js";
 import { formatDurationPrecise } from "../../infra/format-time/format-duration.ts";
@@ -56,7 +56,7 @@ type StatusGatewaySelf =
 type StatusManagedService = {
   label: string;
   installed: boolean | null;
-  managedByOpenClaw?: boolean;
+  managedByAfora?: boolean;
   loadedText: string;
   runtimeShort?: string | null;
   runtime?: {
@@ -156,7 +156,7 @@ export function formatStatusTailscaleValue(params: {
 export function formatStatusServiceValue(params: {
   label: string;
   installed: boolean;
-  managedByOpenClaw?: boolean;
+  managedByAfora?: boolean;
   loadedText: string;
   runtimeShort?: string | null;
   runtimeStatus?: string | null;
@@ -165,7 +165,7 @@ export function formatStatusServiceValue(params: {
   if (!params.installed) {
     return `${params.label} not installed`;
   }
-  const installedPrefix = params.managedByOpenClaw ? "installed · " : "";
+  const installedPrefix = params.managedByAfora ? "installed · " : "";
   const runtimeSuffix = params.runtimeShort
     ? ` · ${params.runtimeShort}`
     : [
@@ -177,7 +177,7 @@ export function formatStatusServiceValue(params: {
 
 /** Returns the dashboard URL when the Control UI is enabled for the current gateway binding. */
 export function resolveStatusDashboardUrl(params: {
-  cfg: Pick<OpenClawConfig, "gateway">;
+  cfg: Pick<AforaConfig, "gateway">;
 }): string | null {
   if (!(params.cfg.gateway?.controlUi?.enabled ?? true)) {
     return null;
@@ -242,7 +242,7 @@ export function buildStatusOverviewRows(params: {
 
 /** Builds overview rows directly from raw scan/update/gateway inputs. */
 export function buildStatusOverviewSurfaceRows(params: {
-  cfg: Pick<OpenClawConfig, "update" | "gateway">;
+  cfg: Pick<AforaConfig, "update" | "gateway">;
   update: StatusUpdateLike;
   tailscaleMode: string;
   tailscaleDns?: string | null;
@@ -408,7 +408,7 @@ export function buildGatewayStatusSummaryParts(params: {
 
 /** Builds gateway/dashboard/service values for overview rows. */
 export function buildStatusGatewaySurfaceValues(params: {
-  cfg: Pick<OpenClawConfig, "gateway">;
+  cfg: Pick<AforaConfig, "gateway">;
   advertisedControlUiLinks?: { httpUrl: string; wsUrl: string };
   gatewayMode: "local" | "remote";
   remoteUrlMissing: boolean;
@@ -460,7 +460,7 @@ export function buildStatusGatewaySurfaceValues(params: {
     gatewayServiceValue: formatStatusServiceValue({
       label: params.gatewayService.label,
       installed: params.gatewayService.installed !== false,
-      managedByOpenClaw: params.gatewayService.managedByOpenClaw,
+      managedByAfora: params.gatewayService.managedByAfora,
       loadedText: params.gatewayService.loadedText,
       runtimeShort: params.gatewayService.runtimeShort,
       runtimeStatus: params.gatewayService.runtime?.status,
@@ -469,7 +469,7 @@ export function buildStatusGatewaySurfaceValues(params: {
     nodeServiceValue: formatStatusServiceValue({
       label: params.nodeService.label,
       installed: params.nodeService.installed !== false,
-      managedByOpenClaw: params.nodeService.managedByOpenClaw,
+      managedByAfora: params.nodeService.managedByAfora,
       loadedText: params.nodeService.loadedText,
       runtimeShort: params.nodeService.runtimeShort,
       runtimeStatus: params.nodeService.runtime?.status,
@@ -478,7 +478,7 @@ export function buildStatusGatewaySurfaceValues(params: {
   };
 }
 
-/** Builds the stable gateway object used by `openclaw status --json`. */
+/** Builds the stable gateway object used by `afora status --json`. */
 export function buildGatewayStatusJsonPayload(params: {
   gatewayMode: "local" | "remote";
   gatewayConnection: {

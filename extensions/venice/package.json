@@ -1,18 +1,18 @@
 {
-  "name": "@openclaw/venice-provider",
+  "name": "@afora/venice-provider",
   "version": "2026.8.1",
-  "description": "OpenClaw Venice provider plugin",
+  "description": "Afora Venice provider plugin",
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
     "install": {
-      "clawhubSpec": "clawhub:@openclaw/venice-provider",
-      "npmSpec": "@openclaw/venice-provider",
+      "clawhubSpec": "clawhub:@afora/venice-provider",
+      "npmSpec": "@afora/venice-provider",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.6.9"
     },
@@ -20,7 +20,7 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1",
+      "aforaVersion": "2026.8.1",
       "bundledDist": false
     },
     "release": {
@@ -30,6 +30,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   }
 }

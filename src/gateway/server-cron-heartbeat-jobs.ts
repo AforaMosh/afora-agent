@@ -1,7 +1,7 @@
 // Converges the system-owned heartbeat monitor jobs that replaced the
 // dedicated interval scheduler: one declaration-keyed cron job per
 // heartbeat-enabled agent, reconverged at startup and config reload.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   heartbeatMonitorAgentId,
   resolveHeartbeatMonitorSpecs,
@@ -19,7 +19,7 @@ type HeartbeatJobCron = Pick<GatewayCronServiceContract, "add" | "list" | "remov
  */
 export async function reconcileHeartbeatMonitorJobs(params: {
   cron: HeartbeatJobCron;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   logger: { warn: (obj: unknown, msg?: string) => void };
 }): Promise<{ ok: boolean }> {
   let ok = true;

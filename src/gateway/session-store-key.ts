@@ -2,7 +2,7 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { AgentSelectionRequiredError, listAgentIds } from "../agents/agent-scope.js";
 import { tryResolveLegacyCompatibilityAgentId } from "../config/legacy.default-agent-owner.js";
 import {
@@ -10,7 +10,7 @@ import {
   resolveAgentMainSessionKey,
 } from "../config/sessions/main-session.js";
 import { resolvePersistedSessionStoreOwnerForKey } from "../config/sessions/session-store-owner.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   DEFAULT_AGENT_ID,
   normalizeAgentId,
@@ -35,7 +35,7 @@ export function canonicalizeSessionKeyForAgent(agentId: string, key: string): st
 
 // Logical unscoped keys must honor the durable fixed-store owner. The physical-store
 // compatibility fallback is intentionally not used here because it can name a retired agent.
-function resolveLogicalSessionStoreAgentId(cfg: OpenClawConfig, sessionKey: string): string {
+function resolveLogicalSessionStoreAgentId(cfg: AforaConfig, sessionKey: string): string {
   const persistedOwner = resolvePersistedSessionStoreOwnerForKey(cfg, sessionKey);
   if (persistedOwner.kind === "configured") {
     return persistedOwner.agentId;
@@ -57,7 +57,7 @@ function resolveLogicalSessionStoreAgentId(cfg: OpenClawConfig, sessionKey: stri
 }
 
 function shouldRemapLegacyDefaultMainAlias(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   parsed: ParsedAgentSessionKey,
   options?: { storeAgentId?: string },
 ): boolean {
@@ -78,7 +78,7 @@ function shouldRemapLegacyDefaultMainAlias(
 }
 
 function resolveParsedSessionStoreKey(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   raw: string,
   parsed: ParsedAgentSessionKey,
   options?: { storeAgentId?: string },
@@ -98,7 +98,7 @@ function resolveParsedSessionStoreKey(
 
 /** Resolve any incoming session key into the canonical key used in persisted session stores. */
 export function resolveSessionStoreKey(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   storeAgentId?: string;
 }): string {
@@ -144,7 +144,7 @@ export function resolveSessionStoreKey(params: {
 }
 
 /** Resolve the agent that owns a canonical session-store key. */
-export function resolveSessionStoreAgentId(cfg: OpenClawConfig, canonicalKey: string): string {
+export function resolveSessionStoreAgentId(cfg: AforaConfig, canonicalKey: string): string {
   if (canonicalKey === "global" || canonicalKey === "unknown") {
     return resolveLogicalSessionStoreAgentId(cfg, canonicalKey);
   }
@@ -157,7 +157,7 @@ export function resolveSessionStoreAgentId(cfg: OpenClawConfig, canonicalKey: st
 
 /** Resolve a session key for lookup inside a specific agent's store. */
 export function resolveStoredSessionKeyForAgentStore(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   sessionKey: string;
 }): string {
@@ -189,7 +189,7 @@ export function resolveStoredSessionKeyForAgentStore(params: {
 
 /** Resolve the owner agent for a stored session key, returning null for global/unknown keys. */
 export function resolveStoredSessionOwnerAgentId(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   sessionKey: string;
 }): string | null {

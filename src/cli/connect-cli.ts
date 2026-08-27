@@ -75,7 +75,7 @@ async function fetchJoinPayload(
   try {
     const guarded = await fetchWithSsrFGuard({
       url: target.toString(),
-      auditContext: "openclaw-connect-join",
+      auditContext: "afora-connect-join",
       maxRedirects: 0,
       requireHttps: target.protocol === "https:",
       timeoutMs: JOIN_FETCH_TIMEOUT_MS,
@@ -196,7 +196,7 @@ async function runConnectCommand(target: string, opts: ConnectCommandOptions): P
 export function registerConnectCli(program: Command): void {
   program
     .command("connect")
-    .description("Connect this machine to an OpenClaw Gateway as a node")
+    .description("Connect this machine to an Afora Gateway as a node")
     .argument("<target>", "oc-pair URL, setup code, or HTTPS Gateway join URL")
     .option("--service", "Install and run the node host as an OS service", false)
     .option("--display-name <name>", "Override the node display name")
@@ -204,12 +204,12 @@ export function registerConnectCli(program: Command): void {
       "after",
       () =>
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
-          ["openclaw connect oc-pair://<setup-code>", "Connect in the foreground."],
+          ["afora connect oc-pair://<setup-code>", "Connect in the foreground."],
           [
-            "openclaw connect https://gateway.example/j/<code> --service",
+            "afora connect https://gateway.example/j/<code> --service",
             "Install the node host service.",
           ],
-        ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/connect", "docs.openclaw.ai/cli/connect")}\n`,
+        ])}\n\n${theme.muted("Docs:")} ${formatDocsLink("/cli/connect", "docs.afora.ai/cli/connect")}\n`,
     )
     .action(async (target: string, opts: ConnectCommandOptions) => {
       try {

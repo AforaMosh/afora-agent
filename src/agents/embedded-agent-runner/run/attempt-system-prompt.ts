@@ -1,14 +1,14 @@
 /**
  * Builds the system prompt inputs for a single embedded-agent attempt.
  */
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import type { ProviderTransformSystemPromptContext } from "../../../plugins/types.js";
 import { buildEmbeddedSystemPrompt } from "../system-prompt.js";
 
 type EmbeddedSystemPromptParams = Parameters<typeof buildEmbeddedSystemPrompt>[0];
 type ProviderSystemPromptTransform = (params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir: string;
   context: ProviderTransformSystemPromptContext;
 }) => string;
@@ -19,7 +19,7 @@ type BuildAttemptSystemPromptParams = {
   transformProviderSystemPrompt: ProviderSystemPromptTransform;
   providerTransform: {
     provider: string;
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     workspaceDir: string;
     context: Omit<ProviderTransformSystemPromptContext, "systemPrompt">;
   };

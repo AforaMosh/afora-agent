@@ -41,7 +41,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Approvals and Remote Execution
@@ -209,7 +209,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: CLI Setup
@@ -311,7 +311,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Authoring and Packaging plugins
@@ -435,7 +435,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Agent Turn Execution
@@ -559,7 +559,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: CLI Session and Transcript Management
@@ -683,7 +683,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Channel Actions Commands and Approvals
@@ -796,7 +796,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Approval Policy and Tool Safeguards
@@ -887,7 +887,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Health and Repair
@@ -967,7 +967,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Cron Jobs
@@ -1058,7 +1058,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Media Intake and Access
@@ -1149,7 +1149,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Talk Providers
@@ -1240,7 +1240,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Browser Realtime Talk
@@ -1331,7 +1331,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Runtime Modes
@@ -1411,7 +1411,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Publishing
@@ -1459,7 +1459,7 @@ surfaces:
           reason: none
           human_override: false
   - id: app-sdk
-    name: OpenClaw App SDK
+    name: Afora App SDK
     family: core
     level:
       id: alpha
@@ -1480,7 +1480,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Client API
@@ -1571,7 +1571,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: CLI Setup
@@ -1673,7 +1673,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Canvas
@@ -1786,7 +1786,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Host Setup and Updates
@@ -1866,7 +1866,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: App Distribution
@@ -1946,7 +1946,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: WSL Setup
@@ -2037,7 +2037,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: CLI
@@ -2106,7 +2106,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Installation and Updates
@@ -2186,7 +2186,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Media Capture
@@ -2288,7 +2288,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Media and Sharing
@@ -2401,7 +2401,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Delivery and Recovery
@@ -2481,7 +2481,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Setup and Compatibility
@@ -2550,7 +2550,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Container Setup
@@ -2619,7 +2619,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Deployment Setup
@@ -2688,7 +2688,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Install Handoff
@@ -2768,7 +2768,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Channel Setup and Operations
@@ -2859,7 +2859,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Channel Setup and Operations
@@ -2939,7 +2939,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Channel Setup and Operations
@@ -3019,7 +3019,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Channel Setup and Operations
@@ -3099,7 +3099,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Channel Setup and Operations
@@ -3179,7 +3179,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Channel Setup and Operations
@@ -3259,7 +3259,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Channel Setup and Operations
@@ -3339,7 +3339,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Channel Setup and Operations
@@ -3430,7 +3430,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Channel Setup and Operations
@@ -3510,7 +3510,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Channel Setup and Operations
@@ -3579,7 +3579,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Channel Setup and Operations
@@ -3648,7 +3648,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Channel Setup and Operations
@@ -3728,7 +3728,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Model and Auth
@@ -3808,7 +3808,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Provider Auth and Recovery
@@ -3888,7 +3888,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Provider Setup and Credentials
@@ -3968,7 +3968,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Provider Setup and Auth
@@ -4037,7 +4037,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Provider Setup, Lifecycle, and Diagnostics
@@ -4117,7 +4117,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Hosted LLM Providers
@@ -4175,7 +4175,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Search Providers
@@ -4244,7 +4244,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Browser Automation
@@ -4302,7 +4302,7 @@ surfaces:
       status: complete
       completed_at: 2026-08-02
       by: codex
-      source_ref: openclaw@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
+      source_ref: afora@9bb7a3c8fd7a60284e2623f70e9f088ec74b3b36
       process_version: 3
     categories:
       - name: Media Routing and Discovery

@@ -2,7 +2,7 @@
 // channel filtering, metadata forwarding, and failure swallowing.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MsgContext } from "../auto-reply/templating.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 
 const mockDeliverOutboundPayloads = vi.hoisted(() => vi.fn());
 
@@ -27,7 +27,7 @@ vi.mock("../utils/message-channel.js", () => ({
 
 import { DEFAULT_ECHO_TRANSCRIPT_FORMAT, sendTranscriptEcho } from "./echo-transcript.js";
 
-const EMPTY_CONFIG = {} as OpenClawConfig;
+const EMPTY_CONFIG = {} as AforaConfig;
 
 function createCtx(overrides?: Partial<MsgContext>): MsgContext {
   return {

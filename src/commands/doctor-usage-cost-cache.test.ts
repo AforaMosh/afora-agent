@@ -4,10 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { maybeRepairLegacyRuntimeFiles } from "./doctor-usage-cost-cache.js";
 
 const note = vi.hoisted(() => vi.fn());
@@ -19,8 +19,8 @@ let root: string | undefined;
 afterEach(async () => {
   vi.restoreAllMocks();
   note.mockReset();
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   if (root) {
     await fs.rm(root, { recursive: true, force: true });
     root = undefined;
@@ -29,7 +29,7 @@ afterEach(async () => {
 
 describe("legacy usage-cost cache cleanup", () => {
   it("removes only rebuildable usage-cost cache sidecars", async () => {
-    root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-usage-cost-doctor-"));
+    root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-usage-cost-doctor-"));
     const sessionsDir = path.join(root, "agents", "main", "sessions");
     await fs.mkdir(sessionsDir, { recursive: true });
     const cacheFiles = [
@@ -57,7 +57,7 @@ describe("legacy usage-cost cache cleanup", () => {
     );
     const staleTime = new Date(Date.now() - 60_000);
     await Promise.all(staleTempFiles.map((filePath) => fs.utimes(filePath, staleTime, staleTime)));
-    const env = { OPENCLAW_STATE_DIR: root } as NodeJS.ProcessEnv;
+    const env = { AFORA_STATE_DIR: root } as NodeJS.ProcessEnv;
 
     await maybeRepairLegacyRuntimeFiles(true, env);
 
@@ -70,12 +70,12 @@ describe("legacy usage-cost cache cleanup", () => {
   });
 
   it("reports legacy skill-upload staging without deleting it unless repair is enabled", async () => {
-    root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-skill-upload-doctor-"));
+    root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-skill-upload-doctor-"));
     const uploadRoot = path.join(root, "tmp", "skill-uploads");
     const metadataPath = path.join(uploadRoot, randomUploadId(), "metadata.json");
     await fs.mkdir(path.dirname(metadataPath), { recursive: true });
     await fs.writeFile(metadataPath, "{}\n", "utf8");
-    const env = { OPENCLAW_STATE_DIR: root } as NodeJS.ProcessEnv;
+    const env = { AFORA_STATE_DIR: root } as NodeJS.ProcessEnv;
 
     await maybeRepairLegacyRuntimeFiles(false, env);
     await expect(fs.readFile(metadataPath, "utf8")).resolves.toBe("{}\n");
@@ -86,7 +86,7 @@ describe("legacy usage-cost cache cleanup", () => {
 
   const symlinkTest = process.platform === "win32" ? it.skip : it;
   symlinkTest("removes a legacy staging symlink without touching its target", async () => {
-    root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-skill-upload-link-"));
+    root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-skill-upload-link-"));
     const uploadRoot = path.join(root, "tmp", "skill-uploads");
     const external = path.join(root, "external");
     await fs.mkdir(path.dirname(uploadRoot), { recursive: true });
@@ -95,7 +95,7 @@ describe("legacy usage-cost cache cleanup", () => {
     await fs.symlink(external, uploadRoot, "dir");
 
     await maybeRepairLegacyRuntimeFiles(true, {
-      OPENCLAW_STATE_DIR: root,
+      AFORA_STATE_DIR: root,
     } as NodeJS.ProcessEnv);
 
     await expect(fs.lstat(uploadRoot)).rejects.toMatchObject({ code: "ENOENT" });
@@ -103,10 +103,10 @@ describe("legacy usage-cost cache cleanup", () => {
   });
 
   it("removes retired usage rows from every registered agent database", async () => {
-    root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-usage-cost-sqlite-doctor-"));
-    const env = { OPENCLAW_STATE_DIR: root } as NodeJS.ProcessEnv;
+    root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-usage-cost-sqlite-doctor-"));
+    const env = { AFORA_STATE_DIR: root } as NodeJS.ProcessEnv;
     const databases = ["main", "worker"].map((agentId) =>
-      openOpenClawAgentDatabase({ agentId, env }),
+      openAforaAgentDatabase({ agentId, env }),
     );
     for (const database of databases) {
       const insert = database.db.prepare(
@@ -159,7 +159,7 @@ describe("legacy usage-cost cache cleanup", () => {
       false,
     ],
   ] as const)("%s", async (_name, scope, operation, code, shouldRepair, diagnostic) => {
-    root = await fs.mkdtemp(path.join(os.tmpdir(), `openclaw-usage-cost-${scope}-fault-`));
+    root = await fs.mkdtemp(path.join(os.tmpdir(), `afora-usage-cost-${scope}-fault-`));
     const agentsDir = path.join(root, "agents");
     const sessionsDir =
       scope === "root" ? path.join(root, "sessions") : path.join(agentsDir, "main", "sessions");
@@ -181,7 +181,7 @@ describe("legacy usage-cost cache cleanup", () => {
     }
 
     await maybeRepairLegacyRuntimeFiles(shouldRepair, {
-      OPENCLAW_STATE_DIR: root,
+      AFORA_STATE_DIR: root,
     } as NodeJS.ProcessEnv);
 
     if (diagnostic) {
@@ -196,7 +196,7 @@ describe("legacy usage-cost cache cleanup", () => {
       expect(note.mock.calls[0]?.[0]).toContain(scope === "root" ? agentsDir : tempFile);
       expect(note.mock.calls[0]?.[0]).toContain(code);
       expect(note.mock.calls[0]?.[0]).toContain(
-        shouldRepair ? "openclaw doctor --fix" : "openclaw doctor",
+        shouldRepair ? "afora doctor --fix" : "afora doctor",
       );
       expect(note.mock.calls[0]?.[0]).not.toContain("Removed");
       await expect(fs.readFile(cacheFile, "utf8")).resolves.toBe("x");

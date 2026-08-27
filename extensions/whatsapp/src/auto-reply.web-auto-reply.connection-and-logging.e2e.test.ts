@@ -3,10 +3,10 @@ import "./test-helpers.js";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { escapeRegExp, formatEnvelopeTimestamp } from "openclaw/plugin-sdk/channel-test-helpers";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { toErrorObject } from "openclaw/plugin-sdk/error-runtime";
-import { getChildLogger, setLoggerOverride } from "openclaw/plugin-sdk/runtime-env";
+import { escapeRegExp, formatEnvelopeTimestamp } from "afora-agent/plugin-sdk/channel-test-helpers";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { toErrorObject } from "afora-agent/plugin-sdk/error-runtime";
+import { getChildLogger, setLoggerOverride } from "afora-agent/plugin-sdk/runtime-env";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { getActiveWebListener } from "./active-listener.js";
 import { WhatsAppAuthUnstableError, resolveWebCredsPath } from "./auth-store.js";
@@ -48,7 +48,7 @@ const deliveryQueueMocks = vi.hoisted(() => ({
   drainPendingDeliveries: vi.fn(async (_opts: unknown) => undefined),
 }));
 
-vi.mock("openclaw/plugin-sdk/delivery-queue-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/delivery-queue-runtime", () => ({
   drainPendingDeliveries: deliveryQueueMocks.drainPendingDeliveries,
 }));
 
@@ -322,7 +322,7 @@ describe("web auto-reply connection", () => {
       lifecycle: "blocked",
       terminalDisconnect: true,
     });
-    expectErrorContaining(runtime.error, "openclaw channels login --channel whatsapp");
+    expectErrorContaining(runtime.error, "afora channels login --channel whatsapp");
   });
 
   it("keeps post-open Baileys 428 on the reconnect path", async () => {
@@ -484,7 +484,7 @@ describe("web auto-reply connection", () => {
     expect(sleep).not.toHaveBeenCalled();
     expectErrorContaining(runtime.error, "status 440");
     expectErrorContaining(runtime.error, "session conflict");
-    expectErrorContaining(runtime.error, "openclaw channels logout --channel whatsapp");
+    expectErrorContaining(runtime.error, "afora channels logout --channel whatsapp");
     expectErrorContaining(runtime.error, "Stopping web monitoring");
   });
 
@@ -843,7 +843,7 @@ describe("web auto-reply connection", () => {
           },
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
     await monitorWebChannel(
       false,
       capture.listenerFactory as never,
@@ -878,7 +878,7 @@ describe("web auto-reply connection", () => {
   });
 
   it("builds separate timestamped inbound envelopes without batching", () => {
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
     const buildLine = (body: string, id: string, timestamp: number) =>
       buildInboundLine({
         cfg,
@@ -902,13 +902,13 @@ describe("web auto-reply connection", () => {
 
     expect(firstBody).toMatch(
       new RegExp(
-        `\\[WhatsApp \\+1 (\\+\\d+[smhd] )?${escapeRegExp(firstTimestamp)}\\] \\+1: \\[openclaw\\] first`,
+        `\\[WhatsApp \\+1 (\\+\\d+[smhd] )?${escapeRegExp(firstTimestamp)}\\] \\+1: \\[afora\\] first`,
       ),
     );
     expect(firstBody).not.toContain("second");
     expect(secondBody).toMatch(
       new RegExp(
-        `\\[WhatsApp \\+1 (\\+\\d+[smhd] )?${escapeRegExp(secondTimestamp)}\\] \\+1: \\[openclaw\\] second`,
+        `\\[WhatsApp \\+1 (\\+\\d+[smhd] )?${escapeRegExp(secondTimestamp)}\\] \\+1: \\[afora\\] second`,
       ),
     );
     expect(secondBody).not.toContain("first");
@@ -916,7 +916,7 @@ describe("web auto-reply connection", () => {
 
   it("emits heartbeat logs with connection metadata", async () => {
     vi.useFakeTimers();
-    const logPath = `/tmp/openclaw-heartbeat-${crypto.randomUUID()}.log`;
+    const logPath = `/tmp/afora-heartbeat-${crypto.randomUUID()}.log`;
     setLoggerOverride({ level: "trace", file: logPath });
 
     const runtime = {
@@ -964,7 +964,7 @@ describe("web auto-reply connection", () => {
   });
 
   it("logs outbound replies to file", async () => {
-    const logPath = `/tmp/openclaw-log-test-${crypto.randomUUID()}.log`;
+    const logPath = `/tmp/afora-log-test-${crypto.randomUUID()}.log`;
     setLoggerOverride({ level: "trace", file: logPath });
     const spies = createWebInboundDeliverySpies();
     const msg = createTestWebInboundMessage({

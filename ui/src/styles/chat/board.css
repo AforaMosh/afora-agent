@@ -83,7 +83,7 @@
   overflow: hidden;
 }
 
-openclaw-workboard-card-chip {
+afora-workboard-card-chip {
   display: contents;
 }
 
@@ -148,7 +148,7 @@ openclaw-workboard-card-chip {
    wa-popup renders them in the top layer, so this overflow cannot clip them.
    Inline padding lives on .board-view below: macOS overlay scrollbars render
    inside the scroll container's padding and would float away from the edge. */
-.board-session-surface__board > openclaw-board-view {
+.board-session-surface__board > afora-board-view {
   display: block;
   flex: 1 1 0;
   min-width: 0;

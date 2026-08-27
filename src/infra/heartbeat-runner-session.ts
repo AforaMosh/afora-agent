@@ -1,11 +1,11 @@
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import {
   canonicalizeMainSessionAlias,
   resolveAgentMainSessionKey,
 } from "../config/sessions/main-session.js";
 import { resolveSessionStorePathCore } from "../config/sessions/paths.js";
 import { loadSessionEntry, patchSessionEntryCore } from "../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   isSubagentSessionKey,
   normalizeAgentId,
@@ -16,7 +16,7 @@ import { resolveMainScopedEventSessionKey } from "./event-session-routing.js";
 import { resolveAmbientHeartbeatAgentId, type HeartbeatConfig } from "./heartbeat-runner-config.js";
 
 export function resolveHeartbeatSessionKey(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId?: string,
   heartbeat?: HeartbeatConfig,
   forcedSessionKey?: string,
@@ -118,7 +118,7 @@ export function resolveHeartbeatSessionKey(
 }
 
 export function resolveHeartbeatSession(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId?: string,
   heartbeat?: HeartbeatConfig,
   forcedSessionKey?: string,

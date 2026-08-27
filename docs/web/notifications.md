@@ -7,7 +7,7 @@ read_when:
   - Comparing Control UI notifications with mobile push
 ---
 
-OpenClaw can ping you when something needs your attention — in the browser that runs the Control UI, or through native macOS notifications when you use the OpenClaw macOS app. Your first chat send may request permission automatically; **Settings → Notifications** remains the place to enable or repair the current device, check its status, and send yourself a test.
+Afora can ping you when something needs your attention — in the browser that runs the Control UI, or through native macOS notifications when you use the Afora macOS app. Your first chat send may request permission automatically; **Settings → Notifications** remains the place to enable or repair the current device, check its status, and send yourself a test.
 
 This page covers those two surfaces. It does not control channel reaction notifications, Android notification forwarding, or iOS background push — the mobile apps register for push through their own node paths; see [iOS](/platforms/ios) and [Nodes](/nodes).
 
@@ -18,7 +18,7 @@ What the Notifications page controls depends on where you opened it:
 | Where Settings is open                            | Transport                                          | What you can do                                                               |
 | ------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------- |
 | Supported web browser or installed Control UI PWA | Browser Push API via the Control UI service worker | Grant permission, subscribe or unsubscribe this browser, send a test          |
-| OpenClaw macOS app                                | Native macOS notifications                         | Grant app permission, jump to System Settings when blocked, send a local test |
+| Afora macOS app                                | Native macOS notifications                         | Grant app permission, jump to System Settings when blocked, send a local test |
 | Browser without Push API support                  | None                                               | Status only; enable and test stay unavailable                                 |
 
 The macOS app deliberately uses the native permission flow instead of browser push — that is the notification system your Mac already respects.
@@ -33,7 +33,7 @@ The Control UI asks for notification permission automatically the first time you
 4. Allow notifications when the browser asks.
 5. Select **Send test** — a test notification should arrive within a few seconds.
 
-Behind the scenes, enabling creates a push subscription in this browser and registers its endpoint and keys with the Gateway. The Gateway keeps browser subscriptions and its VAPID signing key in `state/openclaw.sqlite` — there is no `openclaw.json` key to edit. When the Control UI reconnects, existing subscriptions are reconciled with the Gateway automatically.
+Behind the scenes, enabling creates a push subscription in this browser and registers its endpoint and keys with the Gateway. The Gateway keeps browser subscriptions and its VAPID signing key in `state/afora.sqlite` — there is no `afora.json` key to edit. When the Control UI reconnects, existing subscriptions are reconciled with the Gateway automatically.
 
 **Send test** asks the Gateway to push a test message to every registered browser subscription. **Unsubscribe** removes the current browser's endpoint from the Gateway, then unsubscribes locally.
 
@@ -41,12 +41,12 @@ Behind the scenes, enabling creates a push subscription in this browser and regi
 
 The macOS app also asks automatically on your first chat send, but only while permission is **Not requested**. It never opens System Settings automatically after a denial; use **Settings → Notifications** to manage permission manually.
 
-1. Open **Settings → Notifications** in the OpenClaw macOS app.
+1. Open **Settings → Notifications** in the Afora macOS app.
 2. Select **Enable notifications** while the permission shows **Not requested**.
 3. Approve the macOS permission prompt.
-4. Select **Send test** to post a local OpenClaw notification.
+4. Select **Send test** to post a local Afora notification.
 
-If the permission shows **Denied**, macOS will not re-prompt: select **Open System Settings**, allow notifications for OpenClaw there, and switch back — the page rechecks permission when the app regains focus. This permission belongs to macOS, not to Gateway config.
+If the permission shows **Denied**, macOS will not re-prompt: select **Open System Settings**, allow notifications for Afora there, and switch back — the page rechecks permission when the app regains focus. This permission belongs to macOS, not to Gateway config.
 
 ## Troubleshooting
 
@@ -64,7 +64,7 @@ The Control UI waits up to 10 seconds for its service worker. If that times out 
 
 ### Web Push asks for a Doctor migration
 
-Run `openclaw doctor --fix` with the Gateway stopped. Web Push refuses to use the retired JSON stores until Doctor imports them into SQLite.
+Run `afora doctor --fix` with the Gateway stopped. Web Push refuses to use the retired JSON stores until Doctor imports them into SQLite.
 
 ## Related
 

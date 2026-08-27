@@ -17,7 +17,7 @@ type CatalogInstall = Partial<
 };
 type CatalogEntry = Partial<Record<"version" | "description" | "source" | "kind", string>> & {
   name: string;
-  openclaw: {
+  afora: {
     plugin?: Record<string, unknown>;
     catalog?: Record<string, unknown>;
     contracts?: Record<string, string[] | undefined>;
@@ -71,7 +71,7 @@ function readRepositoryPackageJsons(repoRoot: string) {
       continue;
     }
     try {
-      const pluginManifestPath = path.join(extensionsRoot, dirent.name, "openclaw.plugin.json");
+      const pluginManifestPath = path.join(extensionsRoot, dirent.name, "afora.plugin.json");
       packageJsons.push({
         dirName: dirent.name,
         packageJson: JSON.parse(fs.readFileSync(packageJsonPath, "utf8")),
@@ -172,7 +172,7 @@ function buildCatalogEntry(packageJson: unknown, pluginManifest: unknown): Catal
     return null;
   }
   const packageName = trimString(packageJson.name);
-  const manifest = isRecord(packageJson.openclaw) ? packageJson.openclaw : null;
+  const manifest = isRecord(packageJson.afora) ? packageJson.afora : null;
   const release = manifest && isRecord(manifest.release) ? manifest.release : null;
   const channel = manifest && isRecord(manifest.channel) ? manifest.channel : null;
   if (!packageName || !channel || release?.publishToNpm !== true) {
@@ -190,7 +190,7 @@ function buildCatalogEntry(packageJson: unknown, pluginManifest: unknown): Catal
     ...(description ? { description } : {}),
     source: "official",
     kind: "channel",
-    openclaw: {
+    afora: {
       ...toCatalogManifestFields(pluginManifest),
       channel,
       install,
@@ -199,7 +199,7 @@ function buildCatalogEntry(packageJson: unknown, pluginManifest: unknown): Catal
 }
 
 function getCatalogChannelId(entry: CatalogEntry) {
-  return trimString(entry.openclaw.channel.id) || trimString(entry.name);
+  return trimString(entry.afora.channel.id) || trimString(entry.name);
 }
 
 function getCatalogChannelKey(entry: CatalogEntry) {
@@ -226,8 +226,8 @@ function setUniqueCatalogEntry(
 }
 
 function stripSeedOnlyDocsMetadata(entry: CatalogEntry): CatalogEntry {
-  const hostConfig = isRecord(entry.openclaw.channelHostConfig)
-    ? entry.openclaw.channelHostConfig
+  const hostConfig = isRecord(entry.afora.channelHostConfig)
+    ? entry.afora.channelHostConfig
     : null;
   if (!hostConfig || !("docsInventory" in hostConfig)) {
     return entry;
@@ -236,8 +236,8 @@ function stripSeedOnlyDocsMetadata(entry: CatalogEntry): CatalogEntry {
   delete runtimeHostConfig.docsInventory;
   return {
     ...entry,
-    openclaw: {
-      ...entry.openclaw,
+    afora: {
+      ...entry.afora,
       channelHostConfig: runtimeHostConfig,
     },
   };
@@ -255,20 +255,20 @@ export function buildOfficialChannelCatalog(params: CatalogParams = {}): {
   for (const entry of Array.isArray(officialExternalChannelSeed.entries)
     ? officialExternalChannelSeed.entries
     : []) {
-    const defaultChoice = entry.openclaw.install.defaultChoice;
+    const defaultChoice = entry.afora.install.defaultChoice;
     if (defaultChoice !== "clawhub" && defaultChoice !== "npm" && defaultChoice !== "local") {
       throw new Error(`invalid install choice for official channel seed package "${entry.name}"`);
     }
-    const channelConfigs = toCatalogChannelConfigs(entry.openclaw.channelConfigs);
+    const channelConfigs = toCatalogChannelConfigs(entry.afora.channelConfigs);
     if (!channelConfigs) {
       throw new Error(`invalid channel configs for official channel seed package "${entry.name}"`);
     }
     const catalogEntry = {
       ...entry,
-      openclaw: {
-        ...entry.openclaw,
+      afora: {
+        ...entry.afora,
         channelConfigs,
-        install: { ...entry.openclaw.install, defaultChoice },
+        install: { ...entry.afora.install, defaultChoice },
       },
     } satisfies CatalogEntry;
     setUniqueCatalogEntry(
@@ -298,8 +298,8 @@ export function buildOfficialChannelCatalog(params: CatalogParams = {}): {
   }
   const entries = [...entriesByChannelId.values()].map(({ entry }) => entry);
   entries.sort((left, right) => {
-    const leftId = trimString(left.openclaw?.channel?.id) || left.name;
-    const rightId = trimString(right.openclaw?.channel?.id) || right.name;
+    const leftId = trimString(left.afora?.channel?.id) || left.name;
+    const rightId = trimString(right.afora?.channel?.id) || right.name;
     return leftId.localeCompare(rightId);
   });
 
@@ -332,16 +332,16 @@ export function checkOfficialChannelCatalogSource(params: CatalogParams = {}) {
 function toChannelDocsEntry(
   entry: {
     source?: string;
-    openclaw: {
+    afora: {
       channel: Record<string, unknown>;
       channelHostConfig?: Record<string, unknown>;
     };
   },
   sourceOverride?: ChannelDocsSource,
 ) {
-  const channel = isRecord(entry.openclaw.channel) ? entry.openclaw.channel : null;
-  const hostConfig = isRecord(entry.openclaw.channelHostConfig)
-    ? entry.openclaw.channelHostConfig
+  const channel = isRecord(entry.afora.channel) ? entry.afora.channel : null;
+  const hostConfig = isRecord(entry.afora.channelHostConfig)
+    ? entry.afora.channelHostConfig
     : null;
   const exposure = channel && isRecord(channel.exposure) ? channel.exposure : null;
   if (!channel || exposure?.docs === false) {
@@ -418,7 +418,7 @@ export function buildOfficialChannelDocsCatalog(params: CatalogParams = {}): {
 
   for (const { dirName, packageJson } of readRepositoryPackageJsons(repoRoot)) {
     const manifest =
-      isRecord(packageJson) && isRecord(packageJson.openclaw) ? packageJson.openclaw : {};
+      isRecord(packageJson) && isRecord(packageJson.afora) ? packageJson.afora : {};
     const channel = isRecord(manifest.channel) ? manifest.channel : null;
     if (!channel) {
       continue;
@@ -435,7 +435,7 @@ export function buildOfficialChannelDocsCatalog(params: CatalogParams = {}): {
       );
     }
     const docsEntry = toChannelDocsEntry(
-      { openclaw: { channel } },
+      { afora: { channel } },
       isCoreBundled ? "bundled" : "official",
     );
     if (docsEntry) {
@@ -458,7 +458,7 @@ function renderChannelDocsSummary(entry: CompleteChannelDocsEntry) {
   const summary = entry.summary.replace(/[.!?]+$/u, "");
   const normalizedSummary = summary
     ? `${summary.slice(0, 1).toUpperCase()}${summary.slice(1)}`
-    : `${entry.label} messaging for OpenClaw`;
+    : `${entry.label} messaging for Afora`;
   const sourceLabel =
     entry.source === "external"
       ? "external plugin"
@@ -583,7 +583,7 @@ function buildHiddenChannelDocsRoutes(repoRoot: string) {
   for (const entry of Array.isArray(officialExternalChannelSeed.entries)
     ? officialExternalChannelSeed.entries
     : []) {
-    const channel = isRecord(entry?.openclaw?.channel) ? entry.openclaw.channel : null;
+    const channel = isRecord(entry?.afora?.channel) ? entry.afora.channel : null;
     const channelId = trimString(channel?.id);
     if (channelId && channel) {
       channelsById.set(channelId, channel);
@@ -591,7 +591,7 @@ function buildHiddenChannelDocsRoutes(repoRoot: string) {
   }
   for (const { packageJson } of readRepositoryPackageJsons(repoRoot)) {
     const manifest =
-      isRecord(packageJson) && isRecord(packageJson.openclaw) ? packageJson.openclaw : {};
+      isRecord(packageJson) && isRecord(packageJson.afora) ? packageJson.afora : {};
     const channel = isRecord(manifest.channel) ? manifest.channel : null;
     const channelId = trimString(channel?.id);
     if (channelId && channel) {

@@ -1,5 +1,5 @@
-import { definePluginEntry, type OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
-import { buildProviderToolCompatFamilyHooks } from "openclaw/plugin-sdk/provider-tools";
+import { definePluginEntry, type AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
+import { buildProviderToolCompatFamilyHooks } from "afora-agent/plugin-sdk/provider-tools";
 import {
   LLAMA_CPP_PROVIDER_ID,
   LLAMA_CPP_PROVIDER_LABEL,
@@ -14,7 +14,7 @@ export default definePluginEntry({
   id: "llama-cpp",
   name: "llama.cpp Provider",
   description: "Managed local llama.cpp server for GGUF chat and embeddings",
-  register(api: OpenClawPluginApi) {
+  register(api: AforaPluginApi) {
     api.registerEmbeddingProvider(llamaCppEmbeddingProviderAdapter);
     api.registerProvider({
       id: LLAMA_CPP_PROVIDER_ID,
@@ -24,7 +24,7 @@ export default definePluginEntry({
         {
           id: "local",
           label: LLAMA_CPP_PROVIDER_LABEL,
-          hint: "Install a verified llama.cpp server and run a private GGUF model managed by OpenClaw",
+          hint: "Install a verified llama.cpp server and run a private GGUF model managed by Afora",
           kind: "custom",
           appGuidedSetup: {
             detect: detectLlamaCppSetup,
@@ -71,7 +71,7 @@ export default definePluginEntry({
           choiceId: LLAMA_CPP_PROVIDER_ID,
           choiceLabel: LLAMA_CPP_PROVIDER_LABEL,
           choiceHint:
-            "Install a verified llama.cpp server and run a private GGUF model managed by OpenClaw",
+            "Install a verified llama.cpp server and run a private GGUF model managed by Afora",
           groupId: LLAMA_CPP_PROVIDER_ID,
           groupLabel: "Local llama.cpp",
           groupHint: "No API key required",
@@ -79,7 +79,7 @@ export default definePluginEntry({
         },
         modelPicker: {
           label: "llama.cpp",
-          hint: "Run a GGUF model with OpenClaw's managed local llama.cpp server",
+          hint: "Run a GGUF model with Afora's managed local llama.cpp server",
           methodId: "local",
         },
       },

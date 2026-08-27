@@ -2,11 +2,11 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { OpenKeyedStoreOptions } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { OpenKeyedStoreOptions } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateSyncKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { VoiceCallConfigSchema } from "./config.js";
 import { CallManager } from "./manager.js";
 import type { CallManagerContext } from "./manager/context.js";
@@ -81,7 +81,7 @@ export class FakeProvider implements VoiceCallProvider {
 }
 
 export function createTestStorePath(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-voice-call-test-"));
+  return fs.mkdtempSync(path.join(os.tmpdir(), "afora-voice-call-test-"));
 }
 
 function createVoiceCallStateRuntimeForTests(): VoiceCallStateRuntime["state"] {
@@ -216,7 +216,7 @@ export function createEventManagerHarness() {
   }
 
   function createContext(overrides: Partial<CallManagerContext> = {}): CallManagerContext {
-    const storePath = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-voice-call-events-test-"));
+    const storePath = fs.mkdtempSync(path.join(os.tmpdir(), "afora-voice-call-events-test-"));
     const ctx: CallManagerContext = {
       activeCalls: new Map(),
       providerCallIdMap: new Map(),

@@ -1,7 +1,7 @@
 /** Tests runtime secret auditing for externalized channel plugin surfaces. */
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import type { PluginManifestRecord } from "../plugins/manifest-registry.js";
 import type { PluginOrigin } from "../plugins/plugin-origin.types.js";
 import { getPath } from "./path-utils.js";
@@ -77,7 +77,7 @@ function createExternalChannelRecord(id: ExternalizedChannelId): PluginManifestR
     origin: "global",
     rootDir,
     source: path.join(rootDir, "index.js"),
-    manifestPath: path.join(rootDir, "openclaw.plugin.json"),
+    manifestPath: path.join(rootDir, "afora.plugin.json"),
   };
 }
 
@@ -112,7 +112,7 @@ function createGoogleChatSecretContractApi() {
       id: "channels.googlechat.accounts.*.serviceAccount",
       targetType: "channels.googlechat.serviceAccount",
       targetTypeAliases: ["channels.googlechat.accounts.*.serviceAccount"],
-      configFile: "openclaw.json",
+      configFile: "afora.json",
       pathPattern: "channels.googlechat.accounts.*.serviceAccount",
       secretShape: "secret_input",
       expectedResolvedValue: "string-or-object",
@@ -124,7 +124,7 @@ function createGoogleChatSecretContractApi() {
     {
       id: "channels.googlechat.serviceAccount",
       targetType: "channels.googlechat.serviceAccount",
-      configFile: "openclaw.json",
+      configFile: "afora.json",
       pathPattern: "channels.googlechat.serviceAccount",
       secretShape: "secret_input",
       expectedResolvedValue: "string-or-object",
@@ -208,7 +208,7 @@ function expectMetadataBackedContractsWereUsed(
   }
 }
 
-function expectResolvedPaths(config: OpenClawConfig, expected: Record<string, unknown>) {
+function expectResolvedPaths(config: AforaConfig, expected: Record<string, unknown>) {
   for (const [pathKey, expectedValue] of Object.entries(expected)) {
     expect(getPath(config, pathKey.split(".")), pathKey).toBe(expectedValue);
   }
@@ -510,7 +510,7 @@ describe("secrets runtime externalized channel SecretRef audit", () => {
     const snapshot = await prepareSecretsRuntimeSnapshot({
       config,
       env: {},
-      agentDirs: ["/tmp/openclaw-agent-main"],
+      agentDirs: ["/tmp/afora-agent-main"],
       loadAuthStore: () => loadAuthStoreWithProfiles({}),
       loadablePluginOrigins: externalChannelOrigins(records),
     });

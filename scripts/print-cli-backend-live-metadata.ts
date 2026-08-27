@@ -1,4 +1,4 @@
-// Print Cli Backend Live Metadata script supports OpenClaw repository automation.
+// Print Cli Backend Live Metadata script supports Afora repository automation.
 import { pathToFileURL } from "node:url";
 import { resolveCliBackendConfig, resolveCliBackendLiveTest } from "../src/agents/cli-backends.js";
 

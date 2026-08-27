@@ -1,5 +1,5 @@
 /** Routed delivery thread classification and id resolution helpers. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { normalizeChatType } from "../../channels/chat-type.js";
 import { parseSessionThreadInfoFast } from "../../config/sessions/thread-info.js";
 import type { MsgContext } from "../templating.js";

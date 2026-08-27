@@ -37,7 +37,7 @@ export function assistantImageMessage(params: {
   return {
     role: "assistant",
     content: [{ type: "image", data: params.data ?? "aGVsbG8=", alt: params.alt }],
-    __openclaw: {
+    __afora: {
       seq: params.seq ?? 2,
       ...(params.runId ? { runId: params.runId } : {}),
       ...(params.taskId ? { messageTaskId: params.taskId } : {}),
@@ -62,7 +62,7 @@ export function assistantFileMessage(params: {
         title: params.title,
       },
     ],
-    __openclaw: {
+    __afora: {
       seq: params.seq ?? 2,
       ...(params.runId ? { runId: params.runId } : {}),
       ...(params.taskId ? { taskId: params.taskId } : {}),
@@ -77,7 +77,7 @@ export function resultImageMessage() {
       { type: "text", text: "see attached" },
       { type: "image", data: "aGVsbG8=", mimeType: "image/png", alt: "result.png" },
     ],
-    __openclaw: { seq: 2 },
+    __afora: { seq: 2 },
   };
 }
 

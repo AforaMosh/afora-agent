@@ -25,7 +25,7 @@ function readTargetModelIds(targetRoot) {
     const harnessPath = path.join(targetRoot, "scripts/test-live-codex-harness-docker.sh");
     const source = readFileSync(harnessPath, "utf8");
     const defaults = new Set(
-      [...source.matchAll(/\$\{OPENCLAW_LIVE_CODEX_HARNESS_MODEL:-[^/}]+\/([^}\s]+)\}/gu)].map(
+      [...source.matchAll(/\$\{AFORA_LIVE_CODEX_HARNESS_MODEL:-[^/}]+\/([^}\s]+)\}/gu)].map(
         (match) => match[1],
       ),
     );
@@ -78,11 +78,11 @@ function resolveFrozenCodexCompatibility({ suiteId, targetRoot }) {
 
 function main() {
   const outputFile = requireEnv("GITHUB_OUTPUT");
-  const suiteId = requireEnv("OPENCLAW_FROZEN_CODEX_SUITE_ID");
-  const selectedSha = requireEnv("OPENCLAW_SELECTED_SHA");
-  const workflowSha = requireEnv("OPENCLAW_WORKFLOW_SHA");
+  const suiteId = requireEnv("AFORA_FROZEN_CODEX_SUITE_ID");
+  const selectedSha = requireEnv("AFORA_SELECTED_SHA");
+  const workflowSha = requireEnv("AFORA_WORKFLOW_SHA");
   const isFrozenTarget = selectedSha !== workflowSha;
-  const omissionsAllowed = process.env.OPENCLAW_ALLOW_FROZEN_TARGET_SCENARIO_OMISSIONS === "1";
+  const omissionsAllowed = process.env.AFORA_ALLOW_FROZEN_TARGET_SCENARIO_OMISSIONS === "1";
 
   if (!suiteId.startsWith(CODEX_SUITE_PREFIX) || !isFrozenTarget || !omissionsAllowed) {
     appendLine(outputFile, "run_lane=true");
@@ -91,13 +91,13 @@ function main() {
 
   const result = resolveFrozenCodexCompatibility({
     suiteId,
-    targetRoot: requireEnv("OPENCLAW_FROZEN_TARGET_ROOT"),
+    targetRoot: requireEnv("AFORA_FROZEN_TARGET_ROOT"),
   });
   appendLine(outputFile, `run_lane=${result.runLane}`);
 
   const summaryFile = requireEnv("GITHUB_STEP_SUMMARY");
   if (result.model) {
-    appendLine(requireEnv("GITHUB_ENV"), `OPENCLAW_LIVE_CODEX_HARNESS_MODEL=${result.model}`);
+    appendLine(requireEnv("GITHUB_ENV"), `AFORA_LIVE_CODEX_HARNESS_MODEL=${result.model}`);
     appendLine(
       summaryFile,
       `Frozen Codex target \`${selectedSha}\`: \`${suiteId}\` uses \`${result.model}\`.`,

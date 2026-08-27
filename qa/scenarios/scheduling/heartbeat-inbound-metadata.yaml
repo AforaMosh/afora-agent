@@ -9,7 +9,7 @@ scenario:
       - automation.wake-and-cooldown-handling
       - channels.qa-channel-final-reply
   regressionRefs:
-    - openclaw/openclaw#97067
+    - AforaMosh/afora-agent#97067
   gatewayConfigPatch:
     agents:
       defaults:

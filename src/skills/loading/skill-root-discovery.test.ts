@@ -56,7 +56,7 @@ function loadTestWorkspaceSkills(
 }
 
 beforeAll(async () => {
-  tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-skills-discovery-"));
+  tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-skills-discovery-"));
 });
 
 afterEach(() => {

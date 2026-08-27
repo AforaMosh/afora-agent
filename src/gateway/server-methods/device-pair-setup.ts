@@ -1,6 +1,6 @@
 // Device-pairing setup-code method produces the connect QR/setup code a mobile
 // or companion client scans to connect to this gateway. It reuses the same
-// pairing helpers as `openclaw qr` so non-terminal clients can display the
+// pairing helpers as `afora qr` so non-terminal clients can display the
 // connect QR that was previously only renderable in a terminal.
 import {
   ErrorCodes,
@@ -9,7 +9,7 @@ import {
   validateDevicePairSetupStatusParams,
   type DevicePairSetupStatusResult,
 } from "../../../packages/gateway-protocol/src/index.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { readDevicePairSetupCompletion } from "../../infra/device-bootstrap.js";
 import { registerDevicePairingJoinCode } from "../../infra/device-pairing-join-code.js";
 import { renderQrPngDataUrl } from "../../media/qr-image.js";
@@ -35,7 +35,7 @@ import { assertValidParams } from "./validation.js";
 const MAX_QR_DATA_URL_LENGTH = 16_384;
 type PairingSetupPayload = ReturnType<typeof decodePairingSetupCode>;
 
-function readConfiguredDevicePairPublicUrl(config: OpenClawConfig): string | undefined {
+function readConfiguredDevicePairPublicUrl(config: AforaConfig): string | undefined {
   const value = config.plugins?.entries?.["device-pair"]?.config?.["publicUrl"];
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
@@ -101,7 +101,7 @@ export const devicePairSetupHandlers: GatewayRequestHandlers = {
                   : PAIRING_SETUP_BOOTSTRAP_PROFILE,
             }
           : {}),
-        // Lets Tailscale serve/funnel URLs resolve, mirroring the `openclaw qr` CLI.
+        // Lets Tailscale serve/funnel URLs resolve, mirroring the `afora qr` CLI.
         runCommandWithTimeout: async (argv, runOpts) =>
           await runCommandWithTimeout(argv, { timeoutMs: runOpts.timeoutMs }),
       });

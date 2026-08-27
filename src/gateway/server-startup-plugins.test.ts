@@ -2,7 +2,7 @@
  * Gateway startup plugin bootstrap tests.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginManifestRegistry } from "../plugins/manifest-registry.js";
 import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.js";
 import "./server-startup-bootstrap.test-support.js";
@@ -100,7 +100,7 @@ const loadPluginLookUpTable = vi.hoisted(() =>
     metrics: pluginLookUpTableMetrics,
   })),
 );
-const resolveOpenClawPackageRootSync = vi.hoisted(() => vi.fn((_params: unknown) => "/package"));
+const resolveAforaPackageRootSync = vi.hoisted(() => vi.fn((_params: unknown) => "/package"));
 const runChannelPluginStartupMaintenance = vi.hoisted(() =>
   vi.fn(async (_params: unknown) => undefined),
 );
@@ -134,8 +134,8 @@ vi.mock("../config/plugin-auto-enable.js", () => ({
   applyPluginAutoEnable: (params: { config: unknown }) => applyPluginAutoEnable(params),
 }));
 
-vi.mock("../infra/openclaw-root.js", () => ({
-  resolveOpenClawPackageRootSync: (params: unknown) => resolveOpenClawPackageRootSync(params),
+vi.mock("../infra/afora-root.js", () => ({
+  resolveAforaPackageRootSync: (params: unknown) => resolveAforaPackageRootSync(params),
 }));
 
 vi.mock("../infra/device-pairing-migration.js", () => ({
@@ -194,16 +194,16 @@ function firstCallArg<T>(mock: { mock: { calls: unknown[][] } }, _type?: (value:
   return call[0] as T;
 }
 
-function slackConfig(): OpenClawConfig {
+function slackConfig(): AforaConfig {
   return {
     channels: {
       slack: { enabled: true, token: "token" },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 async function prepareBootstrapWithRuntimeConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   options: {
     pluginMetadataSnapshot?: PluginMetadataSnapshot;
     workerProviderIds?: readonly string[];
@@ -311,7 +311,7 @@ describe("prepareGatewayPluginBootstrap startup plugins", () => {
       },
       metrics: pluginLookUpTableMetrics,
     });
-    resolveOpenClawPackageRootSync.mockClear().mockReturnValue("/package");
+    resolveAforaPackageRootSync.mockClear().mockReturnValue("/package");
     runChannelPluginStartupMaintenance.mockClear();
     runStartupSessionMigration.mockClear();
     migrateLegacyDevicePairingStore.mockClear();
@@ -336,7 +336,7 @@ describe("prepareGatewayPluginBootstrap startup plugins", () => {
       plugins: {
         allow: ["bench-plugin"],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const activationConfig = {
       channels: {
         telegram: {
@@ -352,7 +352,7 @@ describe("prepareGatewayPluginBootstrap startup plugins", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const runtimeConfig = {
       channels: {
         telegram: {
@@ -378,7 +378,7 @@ describe("prepareGatewayPluginBootstrap startup plugins", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     applyPluginAutoEnable.mockReturnValueOnce({
       config: activationConfig,
       changes: [],
@@ -401,9 +401,9 @@ describe("prepareGatewayPluginBootstrap startup plugins", () => {
       manifestRegistry: pluginManifestRegistry,
     });
     const lookupInput = firstCallArg<{
-      activationSourceConfig?: OpenClawConfig;
+      activationSourceConfig?: AforaConfig;
       metadataSnapshot?: PluginMetadataSnapshot;
-      config?: OpenClawConfig;
+      config?: AforaConfig;
     }>(loadPluginLookUpTable);
     expect(lookupInput.activationSourceConfig).toBe(sourceConfig);
     expect(lookupInput.metadataSnapshot).toBe(pluginMetadataSnapshot);
@@ -430,7 +430,7 @@ describe("prepareGatewayPluginBootstrap startup plugins", () => {
   });
 
   it("threads durable worker provider ids into startup lookup planning", async () => {
-    await prepareBootstrapWithRuntimeConfig({ channels: {} } as OpenClawConfig, {
+    await prepareBootstrapWithRuntimeConfig({ channels: {} } as AforaConfig, {
       workerProviderIds: ["static-ssh"],
     });
 
@@ -481,7 +481,7 @@ describe("prepareGatewayPluginBootstrap startup plugins", () => {
           telegram: { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await prepareBootstrapWithRuntimeConfig(cfg, {
       pluginMetadataSnapshot,
@@ -520,7 +520,7 @@ describe("loadGatewayStartupPluginRuntime", () => {
         agents: {
           defaults: {},
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       workspaceDir: "/workspace",
       log,
       baseMethods: ["ping"],
@@ -555,7 +555,7 @@ describe("warnUnregisteredConfiguredMemoryEmbeddingProviders", () => {
         memory: { search: { provider: "openai" } },
 
         agents: { defaults: {} },
-      } as OpenClawConfig,
+      } as AforaConfig,
       pluginRegistry: registry([]),
       log,
     });
@@ -572,7 +572,7 @@ describe("warnUnregisteredConfiguredMemoryEmbeddingProviders", () => {
         memory: { search: { provider: "openai" } },
 
         agents: { defaults: {} },
-      } as OpenClawConfig,
+      } as AforaConfig,
       pluginRegistry: registry(["openai"]),
       log,
     });
@@ -588,7 +588,7 @@ describe("warnUnregisteredConfiguredMemoryEmbeddingProviders", () => {
         memory: { search: { provider: "openai", fallback: "ollama" } },
 
         agents: { defaults: {} },
-      } as OpenClawConfig,
+      } as AforaConfig,
       pluginRegistry: registry(["openai"]),
       log,
     });
@@ -605,7 +605,7 @@ describe("warnUnregisteredConfiguredMemoryEmbeddingProviders", () => {
         memory: { search: { provider: "openai", fallback: "ollama" } },
 
         agents: { defaults: {} },
-      } as OpenClawConfig,
+      } as AforaConfig,
       pluginRegistry: registry(["openai", "ollama"]),
       log,
     });
@@ -621,7 +621,7 @@ describe("warnUnregisteredConfiguredMemoryEmbeddingProviders", () => {
         memory: { search: { provider: "generic-embed" } },
 
         agents: { defaults: {} },
-      } as OpenClawConfig,
+      } as AforaConfig,
       pluginRegistry: registry([], { embeddingProviderIds: ["generic-embed"] }),
       log,
     });
@@ -637,7 +637,7 @@ describe("warnUnregisteredConfiguredMemoryEmbeddingProviders", () => {
         memory: { search: { provider: "openai-compatible" } },
 
         agents: { defaults: {} },
-      } as OpenClawConfig,
+      } as AforaConfig,
       pluginRegistry: registry([]),
       log,
     });
@@ -662,7 +662,7 @@ describe("warnUnregisteredConfiguredMemoryEmbeddingProviders", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       pluginRegistry: registry([]),
       log,
     });
@@ -678,7 +678,7 @@ describe("warnUnregisteredConfiguredMemoryEmbeddingProviders", () => {
         memory: { search: { provider: "none", fallback: "openai" } },
 
         agents: { defaults: {} },
-      } as OpenClawConfig,
+      } as AforaConfig,
       pluginRegistry: registry([]),
       log,
     });
@@ -695,14 +695,14 @@ describe("warnUnregisteredConfiguredMemoryEmbeddingProviders", () => {
 
         agents: { defaults: {} },
         plugins: { slots: { memory: "none" } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       pluginRegistry: registry([]),
       log,
     });
     expect(log.warn).not.toHaveBeenCalled();
   });
 
-  function customOllamaConfig(source: "provider" | "fallback" = "provider"): OpenClawConfig {
+  function customOllamaConfig(source: "provider" | "fallback" = "provider"): AforaConfig {
     const memorySearch =
       source === "provider"
         ? { provider: "ollama-5080" }
@@ -718,7 +718,7 @@ describe("warnUnregisteredConfiguredMemoryEmbeddingProviders", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
   }
 
   it.each([
@@ -782,7 +782,7 @@ describe("warnUnregisteredConfiguredMemoryEmbeddingProviders", () => {
             },
           ],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       pluginRegistry: registry([]),
       log,
     });
@@ -804,7 +804,7 @@ describe("warnUnregisteredConfiguredMemoryEmbeddingProviders", () => {
             },
           ],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       pluginRegistry: registry([]),
       log,
     });

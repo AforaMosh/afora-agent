@@ -21,7 +21,7 @@ import {
   resolveChannelMessageToolHints,
   resolveChannelReactionGuidance,
 } from "../../channel-tools.js";
-import { resolveOpenClawReferencePaths } from "../../docs-path.js";
+import { resolveAforaReferencePaths } from "../../docs-path.js";
 import { resolveHeartbeatPromptForSystemPrompt } from "../../heartbeat-system-prompt.js";
 import { prepareAgentMemoryPrompt } from "../../memory-prompt-prepare.js";
 import { resolveDefaultModelForAgent } from "../../model-selection.js";
@@ -205,7 +205,7 @@ export async function prepareEmbeddedAttemptSystemPrompt(params: {
   const toolPolicyRestricted = toolPolicyRestrictsTools({ allow: attempt.toolsAllow });
   const effectivePromptMode = toolPolicyRestricted ? ("minimal" as const) : promptMode;
   const effectiveSkillsPrompt = toolPolicyRestricted ? undefined : params.skillsPrompt;
-  const openClawReferences = await resolveOpenClawReferencePaths({
+  const aforaReferences = await resolveAforaReferencePaths({
     workspaceDir: params.effectiveWorkspace,
     argv1: process.argv[1],
     cwd: params.effectiveCwd,
@@ -305,8 +305,8 @@ export async function prepareEmbeddedAttemptSystemPrompt(params: {
       heartbeatPrompt,
       skillsPrompt: effectiveSkillsPrompt,
       codeModeActive: params.codeModeActive,
-      docsPath: openClawReferences.docsPath ?? undefined,
-      sourcePath: openClawReferences.sourcePath ?? undefined,
+      docsPath: aforaReferences.docsPath ?? undefined,
+      sourcePath: aforaReferences.sourcePath ?? undefined,
       workspaceNotes: params.bootstrap.workspaceNotes.length
         ? params.bootstrap.workspaceNotes
         : undefined,

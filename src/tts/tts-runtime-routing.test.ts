@@ -28,7 +28,7 @@ import {
   textToSpeech,
   textToSpeechCore,
   transcodeAudioBufferMock,
-  type OpenClawConfig,
+  type AforaConfig,
   type SpeechListVoicesRequest,
   type TtsConfig,
 } from "./tts-runtime.test-support.js";
@@ -45,17 +45,17 @@ describe("TTS runtime native voice-note routing", () => {
   });
 
   it("prefers the environment preference path over migrated machine state", () => {
-    const previousEnvPath = process.env.OPENCLAW_TTS_PREFS;
+    const previousEnvPath = process.env.AFORA_TTS_PREFS;
     const envPath = prefsPathFor("env-override");
     setTtsMachinePrefsPathResolver(() => prefsPathFor("machine-state"));
-    process.env.OPENCLAW_TTS_PREFS = envPath;
+    process.env.AFORA_TTS_PREFS = envPath;
     try {
       expect(resolveTtsPrefsPath(resolveTtsConfig({}))).toBe(envPath);
     } finally {
       if (previousEnvPath === undefined) {
-        delete process.env.OPENCLAW_TTS_PREFS;
+        delete process.env.AFORA_TTS_PREFS;
       } else {
-        process.env.OPENCLAW_TTS_PREFS = previousEnvPath;
+        process.env.AFORA_TTS_PREFS = previousEnvPath;
       }
     }
   });
@@ -70,7 +70,7 @@ describe("TTS runtime native voice-note routing", () => {
   });
 
   it("tells generic TTS guidance to defer to MEMORY voice-delivery instructions", () => {
-    const hint = buildTtsSystemPromptHint(createTtsConfig("openclaw-speech-core-tts-hint-test"));
+    const hint = buildTtsSystemPromptHint(createTtsConfig("afora-speech-core-tts-hint-test"));
 
     expect(hint).toContain("Voice (TTS) is enabled.");
     expect(hint).toContain(
@@ -83,7 +83,7 @@ describe("TTS runtime native voice-note routing", () => {
 
   it("uses structured speech guidance for message-tool-only replies", () => {
     const hint = buildTtsSystemPromptHint(
-      createTtsConfig("openclaw-speech-core-structured-tts-hint-test"),
+      createTtsConfig("afora-speech-core-structured-tts-hint-test"),
       undefined,
       { messageToolOnly: true },
     );
@@ -94,7 +94,7 @@ describe("TTS runtime native voice-note routing", () => {
   });
 
   it("prepares deep-merged surface config and directive inputs", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tts: {
         provider: "mock",
         modelOverrides: { allowProvider: false },
@@ -170,7 +170,7 @@ describe("TTS runtime native voice-note routing", () => {
   it("marks Discord auto TTS replies as native voice messages", async () => {
     await expectTtsPayloadResult({
       channel: "discord",
-      prefsName: "openclaw-speech-core-tts-test",
+      prefsName: "afora-speech-core-tts-test",
       text: "This Discord reply should be delivered as a native voice note.",
       target: "voice-note",
       audioAsVoice: true,
@@ -180,7 +180,7 @@ describe("TTS runtime native voice-note routing", () => {
   it("keeps compatible audio-file synthesis deliverable as a voice memo", async () => {
     await expectTtsPayloadResult({
       channel: "voice-memo-chat",
-      prefsName: "openclaw-speech-core-tts-voice-memo-mp3-test",
+      prefsName: "afora-speech-core-tts-voice-memo-mp3-test",
       text: "This reply should be delivered as a native voice memo.",
       target: "audio-file",
       audioAsVoice: true,
@@ -197,7 +197,7 @@ describe("TTS runtime native voice-note routing", () => {
   it("does not mark unsupported audio-file output as a voice memo", async () => {
     await expectTtsPayloadResult({
       channel: "voice-memo-chat",
-      prefsName: "openclaw-speech-core-tts-voice-memo-ogg-test",
+      prefsName: "afora-speech-core-tts-voice-memo-ogg-test",
       text: "This reply should stay a regular audio attachment.",
       target: "audio-file",
       audioAsVoice: undefined,
@@ -211,7 +211,7 @@ describe("TTS runtime native voice-note routing", () => {
     });
     await expectTtsPayloadResult({
       channel: "voice-memo-chat",
-      prefsName: "openclaw-speech-core-tts-voice-memo-caf-transcode-test",
+      prefsName: "afora-speech-core-tts-voice-memo-caf-transcode-test",
       text: "This reply should be pre-transcoded to a native voice-memo CAF.",
       target: "audio-file",
       audioAsVoice: true,
@@ -244,7 +244,7 @@ describe("TTS runtime native voice-note routing", () => {
     // of a regression. The failure is logged via the call site in tts.ts.
     await expectTtsPayloadResult({
       channel: "voice-memo-chat",
-      prefsName: "openclaw-speech-core-tts-voice-memo-caf-fallback-test",
+      prefsName: "afora-speech-core-tts-voice-memo-caf-fallback-test",
       text: "This reply should fall back to the original mp3.",
       target: "audio-file",
       audioAsVoice: true,
@@ -269,7 +269,7 @@ describe("TTS runtime native voice-note routing", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const runtimeConfig = {
       tts: {
         enabled: true,
@@ -280,7 +280,7 @@ describe("TTS runtime native voice-note routing", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     installSpeechProviders([
       createMockSpeechProvider("mock", {
         isConfigured: ({ providerConfig }) => providerConfig.apiKey === "test-key",
@@ -316,7 +316,7 @@ describe("TTS runtime native voice-note routing", () => {
           enabled: true,
           provider: "mock",
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       disableFallback: true,
     });
 
@@ -328,7 +328,7 @@ describe("TTS runtime native voice-note routing", () => {
   it("normalizes non-streaming synthesis text before calling the provider", async () => {
     const result = await synthesizeSpeech({
       text: "## Update\n\nRead the [guide](https://example.com/guide)!!!!!",
-      cfg: createTtsConfig("openclaw-speech-core-talk-markdown-test"),
+      cfg: createTtsConfig("afora-speech-core-talk-markdown-test"),
       disableFallback: true,
     });
 
@@ -342,7 +342,7 @@ describe("TTS runtime native voice-note routing", () => {
     try {
       const result = await textToSpeech({
         text: "```ts\nconst answer = 42;\n```",
-        cfg: createTtsConfig("openclaw-speech-core-code-convert-test"),
+        cfg: createTtsConfig("afora-speech-core-code-convert-test"),
       });
 
       expect(result.success).toBe(true);
@@ -361,7 +361,7 @@ describe("TTS runtime native voice-note routing", () => {
     const result = await textToSpeechCore(
       {
         text: "Store this synthesized reply.",
-        cfg: createTtsConfig("openclaw-speech-core-persistence-failure-test"),
+        cfg: createTtsConfig("afora-speech-core-persistence-failure-test"),
       },
       async () => {
         throw new Error("Media exceeds configured limit");
@@ -392,7 +392,7 @@ describe("TTS runtime native voice-note routing", () => {
           provider: "mock",
           timeoutMs: 45_000,
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(listVoicesMock).toHaveBeenCalledWith(expect.objectContaining({ timeoutMs: 45_000 }));
@@ -410,7 +410,7 @@ describe("TTS runtime native voice-note routing", () => {
           enabled: true,
           provider: "mock",
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       disableFallback: true,
     });
 
@@ -429,7 +429,7 @@ describe("TTS runtime native voice-note routing", () => {
           enabled: true,
           provider: "mock",
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       disableFallback: true,
     });
 
@@ -449,7 +449,7 @@ describe("TTS runtime native voice-note routing", () => {
           provider: "mock",
           timeoutMs: 45_000,
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       disableFallback: true,
     });
 

@@ -38,7 +38,7 @@ function createFixture() {
       type: "hello-ok" as const,
       protocol: 1,
       auth: { role: "operator", scopes: ["operator.read", "operator.admin"] },
-      features: { methods: ["openclaw.setup.detect", "openclaw.setup.verify"] },
+      features: { methods: ["afora.setup.detect", "afora.setup.verify"] },
     },
     canvasPluginSurfaceUrl: null,
     assistantAgentId: "main",
@@ -96,7 +96,7 @@ async function mountPage(
   hello: ApplicationGateway["snapshot"]["hello"] = context.gateway.snapshot.hello,
 ): Promise<TestModelSetupPage> {
   const provider = createApplicationContextProvider(context);
-  const page = document.createElement("openclaw-model-setup-page") as TestModelSetupPage;
+  const page = document.createElement("afora-model-setup-page") as TestModelSetupPage;
   page.routeData = {
     state: { phase: "ready", result: detection },
     connection: { client, hello, agentId: context.agentSelection.state.selectedId },
@@ -125,7 +125,7 @@ describe("ModelSetupPage Gateway reconnect ownership", () => {
   it("does not expose stale route data when the page mounts during reconnect", async () => {
     const { client, context, request, runtimeConfig, setGatewayPhase } = createFixture();
     request.mockImplementation(async (method) =>
-      method === "openclaw.setup.detect" ? detection : {},
+      method === "afora.setup.detect" ? detection : {},
     );
 
     const previousHello = context.gateway.snapshot.hello;
@@ -138,7 +138,7 @@ describe("ModelSetupPage Gateway reconnect ownership", () => {
     setGatewayPhase("connected");
     await vi.waitFor(() => {
       expect(
-        request.mock.calls.filter(([method]) => method === "openclaw.setup.detect"),
+        request.mock.calls.filter(([method]) => method === "afora.setup.detect"),
       ).toHaveLength(1);
     });
     runtimeConfig.dispose();
@@ -147,7 +147,7 @@ describe("ModelSetupPage Gateway reconnect ownership", () => {
   it("clears stale setup actions and reloads detection after reconnecting the same client", async () => {
     const { client, context, request, runtimeConfig, setGatewayPhase } = createFixture();
     request.mockImplementation(async (method) => {
-      if (method === "openclaw.setup.detect") {
+      if (method === "afora.setup.detect") {
         return {
           ...detection,
           candidates: [
@@ -183,7 +183,7 @@ describe("ModelSetupPage Gateway reconnect ownership", () => {
     setGatewayPhase("connected");
     await vi.waitFor(() => expect(page.textContent).toContain("Recovered model"));
     expect(
-      request.mock.calls.filter(([method]) => method === "openclaw.setup.detect"),
+      request.mock.calls.filter(([method]) => method === "afora.setup.detect"),
     ).toHaveLength(1);
     runtimeConfig.dispose();
   });
@@ -192,7 +192,7 @@ describe("ModelSetupPage Gateway reconnect ownership", () => {
     const { client, context, request, runtimeConfig, setGatewayPhase } = createFixture();
     const staleHello = context.gateway.snapshot.hello;
     request.mockImplementation(async (method) =>
-      method === "openclaw.setup.detect"
+      method === "afora.setup.detect"
         ? { ...detection, configuredModel: "provider/fresh-model", setupComplete: true }
         : {},
     );
@@ -203,7 +203,7 @@ describe("ModelSetupPage Gateway reconnect ownership", () => {
 
     await vi.waitFor(() => expect(selectedModelDetail(page)).toBe("fresh-model"));
     expect(
-      request.mock.calls.filter(([method]) => method === "openclaw.setup.detect"),
+      request.mock.calls.filter(([method]) => method === "afora.setup.detect"),
     ).toHaveLength(1);
     runtimeConfig.dispose();
   });
@@ -212,7 +212,7 @@ describe("ModelSetupPage Gateway reconnect ownership", () => {
     const { client, context, request, runtimeConfig, setGatewayPhase } = createFixture();
     let oldWizardSignal: AbortSignal | undefined;
     request.mockImplementation(async (method, _params, options) => {
-      if (method === "openclaw.setup.auth.start") {
+      if (method === "afora.setup.auth.start") {
         return { sessionId: "wizard-before-reconnect", done: false, status: "running" };
       }
       if (method === "wizard.next") {
@@ -223,7 +223,7 @@ describe("ModelSetupPage Gateway reconnect ownership", () => {
           });
         });
       }
-      if (method === "openclaw.setup.detect") {
+      if (method === "afora.setup.detect") {
         return detection;
       }
       return {};
@@ -236,11 +236,11 @@ describe("ModelSetupPage Gateway reconnect ownership", () => {
     setGatewayPhase("connected");
     await vi.waitFor(() => {
       expect(
-        request.mock.calls.filter(([method]) => method === "openclaw.setup.detect"),
+        request.mock.calls.filter(([method]) => method === "afora.setup.detect"),
       ).toHaveLength(1);
     });
     expect(oldWizardSignal?.aborted).toBe(true);
-    expect(page.querySelector("openclaw-modal-dialog")).toBeNull();
+    expect(page.querySelector("afora-modal-dialog")).toBeNull();
     runtimeConfig.dispose();
   });
 
@@ -258,7 +258,7 @@ describe("ModelSetupPage Gateway reconnect ownership", () => {
           issues: [],
         };
       }
-      if (method === "openclaw.setup.auth.start") {
+      if (method === "afora.setup.auth.start") {
         return { sessionId: "wizard-before-reconnect", done: false, status: "running" };
       }
       if (method === "wizard.next") {
@@ -268,7 +268,7 @@ describe("ModelSetupPage Gateway reconnect ownership", () => {
           releaseWizard = resolve;
         });
       }
-      if (method === "openclaw.setup.detect") {
+      if (method === "afora.setup.detect") {
         return {
           ...detection,
           configuredModel: "provider/current-model",
@@ -287,7 +287,7 @@ describe("ModelSetupPage Gateway reconnect ownership", () => {
     releaseWizard?.({ done: true, status: "done" });
 
     await vi.waitFor(() => {
-      expect(page.querySelector("openclaw-modal-dialog")).toBeNull();
+      expect(page.querySelector("afora-modal-dialog")).toBeNull();
       expect(page.textContent).toContain(
         "Connection changed before the configuration update was refreshed.",
       );
@@ -299,7 +299,7 @@ describe("ModelSetupPage Gateway reconnect ownership", () => {
   it("rejects a route completion produced before a same-client reconnect", async () => {
     const { client, context, request, runtimeConfig, setGatewayPhase } = createFixture();
     request.mockImplementation(async (method) =>
-      method === "openclaw.setup.detect"
+      method === "afora.setup.detect"
         ? {
             ...detection,
             configuredModel: "provider/current-model",
@@ -330,7 +330,7 @@ describe("ModelSetupPage Gateway reconnect ownership", () => {
     expect(selectedModelDetail(page)).not.toBe("stale-model");
     await vi.waitFor(() => expect(selectedModelDetail(page)).toBe("current-model"));
     expect(
-      request.mock.calls.filter(([method]) => method === "openclaw.setup.detect"),
+      request.mock.calls.filter(([method]) => method === "afora.setup.detect"),
     ).toHaveLength(1);
     runtimeConfig.dispose();
   });

@@ -1,15 +1,15 @@
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import { listAgentEntries } from "../agents/agent-scope.js";
 import { getRuntimeConfig } from "../config/config.js";
 import { normalizeConfiguredMcpServers } from "../config/mcp-config-normalize.js";
 import { listConfiguredMcpServers } from "../config/mcp-config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   inspectBundlePluginArtifact,
   inspectNativePluginArtifact,
   PLUGIN_ARTIFACT_ADAPTER_IDENTITY,
 } from "../plugins/install-artifact-inspection.js";
-import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
+import type { AforaStateDatabaseOptions } from "../state/afora-state-db.js";
 import { readClawCronRefs, type PersistedClawCronRef } from "./cron.js";
 import { digestClawAgentConfig } from "./lifecycle-config-removal.js";
 import {
@@ -41,7 +41,7 @@ import {
 import { CLAW_OUTPUT_STABILITY, type ClawPackagePreflight } from "./types.js";
 import { readClawWorkspaceFiles } from "./workspace.js";
 
-const CLAW_STATUS_SCHEMA_VERSION = "openclaw.clawStatus.v1" as const;
+const CLAW_STATUS_SCHEMA_VERSION = "afora.clawStatus.v1" as const;
 
 type ClawMcpServerStatus = PersistedClawMcpServerRef & {
   state: "present" | "modified" | "missing" | "pending" | "failed";
@@ -101,7 +101,7 @@ async function inspectClawPackageCompatibility(params: {
     // Update planning supplies packagePreflight and reports unavailable inspection.
     const recorded = params.packageRef.extension;
     const artifact =
-      recorded.detectedFormat === "openclaw"
+      recorded.detectedFormat === "afora"
         ? inspectNativePluginArtifact()
         : inspectBundlePluginArtifact({
             format: recorded.detectedFormat,
@@ -185,8 +185,8 @@ function inspectMcpServer(
 
 export async function readClawStatus(
   target?: string,
-  options: OpenClawStateDatabaseOptions & {
-    config?: OpenClawConfig;
+  options: AforaStateDatabaseOptions & {
+    config?: AforaConfig;
     sourceMcpServers?: Record<string, Record<string, unknown>>;
     listMcpServers?: typeof listConfiguredMcpServers;
     packageDeps?: PackageRemovalDeps;

@@ -174,7 +174,7 @@ describe("openai completions params", () => {
       const params = buildOpenAICompletionsParams(model, context, { responseFormat: schema });
       expect(params.response_format).toEqual({
         type: "json_schema",
-        json_schema: { name: "openclaw_response", schema },
+        json_schema: { name: "afora_response", schema },
       });
     }
 
@@ -283,7 +283,7 @@ describe("openai completions params", () => {
 
     expect(params.response_format).toEqual({
       type: "json_schema",
-      json_schema: { name: "openclaw_response", schema },
+      json_schema: { name: "afora_response", schema },
     });
 
     const toolParams = buildOpenAICompletionsParams(

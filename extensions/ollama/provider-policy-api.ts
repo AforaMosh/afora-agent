@@ -3,9 +3,9 @@ import type {
   ProviderDefaultThinkingPolicyContext,
   ProviderNormalizeResolvedModelContext,
   ProviderThinkingProfile,
-} from "openclaw/plugin-sdk/plugin-entry";
-import { isCloudModelRef, normalizeProviderId } from "openclaw/plugin-sdk/provider-model-shared";
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-types";
+} from "afora-agent/plugin-sdk/plugin-entry";
+import { isCloudModelRef, normalizeProviderId } from "afora-agent/plugin-sdk/provider-model-shared";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-model-types";
 import { OLLAMA_CLOUD_PROVIDER_ID, OLLAMA_DEFAULT_BASE_URL } from "./src/defaults.js";
 import { supportsOllamaCloudFullThinkingEffort } from "./src/model-reasoning.js";
 

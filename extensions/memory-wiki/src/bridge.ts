@@ -6,9 +6,9 @@ import {
   getMemoryCapabilityRegistration,
   listActiveMemoryPublicArtifacts,
   type MemoryPluginPublicArtifact,
-} from "openclaw/plugin-sdk/memory-host-core";
-import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
-import type { OpenClawConfig } from "../api.js";
+} from "afora-agent/plugin-sdk/memory-host-core";
+import { normalizeAgentId } from "afora-agent/plugin-sdk/routing";
+import type { AforaConfig } from "../api.js";
 import type { ResolvedMemoryWikiConfig } from "./config.js";
 import { appendMemoryWikiLog } from "./log.js";
 import {
@@ -246,8 +246,8 @@ async function writeBridgeSourcePage(params: {
           renderMarkdownFence(raw, contentLanguage),
           "",
           "## Notes",
-          "<!-- openclaw:human:start -->",
-          "<!-- openclaw:human:end -->",
+          "<!-- afora:human:start -->",
+          "<!-- afora:human:end -->",
           "",
         ].join("\n"),
       });
@@ -257,7 +257,7 @@ async function writeBridgeSourcePage(params: {
 
 export async function syncMemoryWikiBridgeSources(params: {
   config: ResolvedMemoryWikiConfig;
-  appConfig?: OpenClawConfig;
+  appConfig?: AforaConfig;
 }): Promise<BridgeMemoryWikiResult> {
   resolveMemoryWikiVaultAgentId(params.config);
   await initializeMemoryWikiVault(params.config);

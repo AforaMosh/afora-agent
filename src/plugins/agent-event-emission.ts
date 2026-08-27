@@ -1,5 +1,5 @@
 // Emits agent events requested by plugin hook contracts.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { hasInvalidLifecycleStartTimestamp } from "../infra/agent-event-lifecycle.js";
 import { emitAgentEvent } from "../infra/agent-events.js";
 import {

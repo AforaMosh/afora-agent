@@ -4,8 +4,8 @@ import path from "node:path";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-coerce";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 import { resolveInlineCommandMatch } from "../infra/shell-inline-command.js";
 import { POSIX_SHELL_WRAPPERS } from "../infra/shell-wrapper-resolution.js";
 import { parseTcpPort } from "../infra/tcp-port.js";
@@ -348,8 +348,8 @@ function auditGatewayToken(
   }
   issues.push({
     code: SERVICE_AUDIT_CODES.gatewayTokenEmbedded,
-    message: "Gateway service embeds OPENCLAW_GATEWAY_TOKEN and should be reinstalled.",
-    detail: "Run `openclaw gateway install --force` to remove embedded service token.",
+    message: "Gateway service embeds AFORA_GATEWAY_TOKEN and should be reinstalled.",
+    detail: "Run `afora gateway install --force` to remove embedded service token.",
     level: "recommended",
   });
   const expectedToken = normalizeOptionalString(expectedGatewayToken);
@@ -359,7 +359,7 @@ function auditGatewayToken(
   issues.push({
     code: SERVICE_AUDIT_CODES.gatewayTokenMismatch,
     message:
-      "Gateway service OPENCLAW_GATEWAY_TOKEN does not match gateway.auth.token in openclaw.json",
+      "Gateway service AFORA_GATEWAY_TOKEN does not match gateway.auth.token in afora.json",
     detail: "service token is stale",
     level: "recommended",
   });
@@ -402,10 +402,10 @@ export function readEmbeddedGatewayToken(command: GatewayServiceCommand): string
   if (!command) {
     return undefined;
   }
-  if (isEnvironmentFileOnlySource(command.environmentValueSources?.OPENCLAW_GATEWAY_TOKEN)) {
+  if (isEnvironmentFileOnlySource(command.environmentValueSources?.AFORA_GATEWAY_TOKEN)) {
     return undefined;
   }
-  return normalizeOptionalString(command.environment?.OPENCLAW_GATEWAY_TOKEN);
+  return normalizeOptionalString(command.environment?.AFORA_GATEWAY_TOKEN);
 }
 
 function getPathModule(platform: NodeJS.Platform) {
@@ -513,7 +513,7 @@ async function auditGatewayRuntime(
   if (isBunRuntime(execPath)) {
     issues.push({
       code: SERVICE_AUDIT_CODES.gatewayRuntimeBun,
-      message: "Gateway service uses Bun; OpenClaw runtime state requires node:sqlite.",
+      message: "Gateway service uses Bun; Afora runtime state requires node:sqlite.",
       detail: execPath,
       level: "recommended",
     });
@@ -566,7 +566,7 @@ export function checkTokenDrift(params: {
       code: SERVICE_AUDIT_CODES.gatewayTokenDrift,
       message:
         "Config token differs from service token. The daemon will use the old token after restart.",
-      detail: "Run `openclaw gateway install --force` to sync the token.",
+      detail: "Run `afora gateway install --force` to sync the token.",
       level: "recommended",
     };
   }

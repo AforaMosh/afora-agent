@@ -1,5 +1,5 @@
 import Foundation
-import OpenClawKit
+import AforaKit
 
 @MainActor
 final class GatewayHealthMonitor {

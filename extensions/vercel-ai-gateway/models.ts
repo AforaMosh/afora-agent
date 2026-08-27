@@ -1,10 +1,10 @@
 // Vercel Ai Gateway plugin module implements models behavior.
-import { withTrustedEnvProxyGuardedFetchMode } from "openclaw/plugin-sdk/fetch-runtime";
-import { parseStrictFiniteNumber } from "openclaw/plugin-sdk/number-runtime";
-import { buildLiveModelProviderConfig } from "openclaw/plugin-sdk/provider-catalog-live-runtime";
-import type { ModelDefinitionConfig } from "openclaw/plugin-sdk/provider-model-shared";
-import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
-import { asPositiveSafeInteger } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { withTrustedEnvProxyGuardedFetchMode } from "afora-agent/plugin-sdk/fetch-runtime";
+import { parseStrictFiniteNumber } from "afora-agent/plugin-sdk/number-runtime";
+import { buildLiveModelProviderConfig } from "afora-agent/plugin-sdk/provider-catalog-live-runtime";
+import type { ModelDefinitionConfig } from "afora-agent/plugin-sdk/provider-model-shared";
+import { fetchWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime";
+import { asPositiveSafeInteger } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export const VERCEL_AI_GATEWAY_PROVIDER_ID = "vercel-ai-gateway";
 export const VERCEL_AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh";

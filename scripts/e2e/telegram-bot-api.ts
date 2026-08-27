@@ -1,5 +1,5 @@
-// Telegram Bot Api script supports OpenClaw repository automation.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+// Telegram Bot Api script supports Afora repository automation.
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { readBoundedResponseText } from "../lib/bounded-response.mjs";
 import { readPositiveIntEnv } from "./lib/env-limits.mjs";
 
@@ -13,7 +13,7 @@ type TelegramBotApiOptions = {
 };
 
 const DEFAULT_BASE_URL =
-  process.env.OPENCLAW_TELEGRAM_USER_BOT_API_BASE_URL ?? "https://api.telegram.org";
+  process.env.AFORA_TELEGRAM_USER_BOT_API_BASE_URL ?? "https://api.telegram.org";
 type TelegramBotApiLimits = {
   bodyMaxBytes: number;
   timeoutMs: number;
@@ -24,11 +24,11 @@ export function readTelegramBotApiLimits(
 ): TelegramBotApiLimits {
   return {
     bodyMaxBytes: readPositiveIntEnv(
-      "OPENCLAW_TELEGRAM_USER_BOT_API_BODY_MAX_BYTES",
+      "AFORA_TELEGRAM_USER_BOT_API_BODY_MAX_BYTES",
       1024 * 1024,
       env,
     ),
-    timeoutMs: readPositiveIntEnv("OPENCLAW_TELEGRAM_USER_BOT_API_TIMEOUT_MS", 30000, env),
+    timeoutMs: readPositiveIntEnv("AFORA_TELEGRAM_USER_BOT_API_TIMEOUT_MS", 30000, env),
   };
 }
 

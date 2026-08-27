@@ -27,7 +27,7 @@ type SnapshotReaderSlot = {
 
 // globalThis-keyed so a require-loaded second module instance shares the slot.
 const snapshotReaderSlot = resolveGlobalSingleton<SnapshotReaderSlot>(
-  Symbol.for("openclaw.pluginMetadataSnapshotReaders"),
+  Symbol.for("afora.pluginMetadataSnapshotReaders"),
   () => ({}),
 );
 

@@ -3,7 +3,7 @@ import type { UpdateChannel } from "../../infra/update-channels.js";
 import { canResolveRegistryVersionForPackageTarget } from "../../infra/update-global.js";
 import type { UpdateRunResult } from "../../infra/update-runner.js";
 import { defaultRuntime } from "../../runtime.js";
-import type { OpenClawDatabaseSchemaPreflight } from "../../state/openclaw-database-preflight.js";
+import type { AforaDatabaseSchemaPreflight } from "../../state/afora-database-preflight.js";
 import { resolveGlobalManager } from "./shared.js";
 import { formatSchemaRefusalLines, hasSchemaRefusal } from "./update-command-git.js";
 import type { ManagedServiceRootRedirect } from "./update-command-service.js";
@@ -86,7 +86,7 @@ export async function printUpdateDryRun(params: {
   fallbackToLatest: boolean;
   managedServiceRootRedirect: ManagedServiceRootRedirect | null;
   explicitTag: string | null;
-  packageSchemaPreflight: OpenClawDatabaseSchemaPreflight;
+  packageSchemaPreflight: AforaDatabaseSchemaPreflight;
   timeoutMs: number;
   opts: { tag?: string; json?: boolean };
 }): Promise<void> {

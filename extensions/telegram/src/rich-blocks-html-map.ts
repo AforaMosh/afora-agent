@@ -1,6 +1,6 @@
 // Block-level HTML-island mapping: figures/lists/tables/media/maps/collages
 // and island discovery, on top of the fragment parser in rich-blocks-html.ts.
-import { tokenizeHtmlTags } from "openclaw/plugin-sdk/text-chunking";
+import { tokenizeHtmlTags } from "afora-agent/plugin-sdk/text-chunking";
 import {
   richTextToPlainString,
   type InputRichBlock,

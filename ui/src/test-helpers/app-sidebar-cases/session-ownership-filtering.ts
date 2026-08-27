@@ -65,7 +65,7 @@ describe("AppSidebar session ownership filtering", () => {
     harness.publishList({ result, agentId: "main" });
     await sidebar.updateComplete;
 
-    expect(sidebar.querySelectorAll("openclaw-session-owner-chip")).toHaveLength(2);
+    expect(sidebar.querySelectorAll("afora-session-owner-chip")).toHaveLength(2);
     await selectCreator(sidebar, "profile-ada");
 
     expect(sidebar.querySelector('[data-session-key="agent:main:ada"]')).not.toBeNull();
@@ -243,7 +243,7 @@ describe("AppSidebar session ownership filtering", () => {
     await sidebar.updateComplete;
 
     const row = sidebar.querySelector(`[data-session-key="${key}"]`);
-    expect(row?.querySelector(".session-glyph openclaw-session-owner-chip")).not.toBeNull();
+    expect(row?.querySelector(".session-glyph afora-session-owner-chip")).not.toBeNull();
     expect(row?.querySelector('.session-glyph__badge[aria-label="Unread"]')).toBeNull();
     expect(row?.querySelector(".session-row-state .sidebar-recent-session__unread")).not.toBeNull();
   });
@@ -300,10 +300,10 @@ describe("AppSidebar session ownership filtering", () => {
     );
 
     expect(
-      sidebar.querySelector(`[data-session-key="${parentKey}"] openclaw-session-owner-chip`),
+      sidebar.querySelector(`[data-session-key="${parentKey}"] afora-session-owner-chip`),
     ).not.toBeNull();
     expect(
-      sidebar.querySelector(`[data-session-key="${childKey}"] openclaw-session-owner-chip`),
+      sidebar.querySelector(`[data-session-key="${childKey}"] afora-session-owner-chip`),
     ).toBeNull();
     expect(
       sidebar.querySelector(`[data-session-key="${childKey}"] [aria-label="Done"]`),

@@ -22,7 +22,7 @@ const loaderState = vi.hoisted(() => ({
 
 vi.mock("./loader.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./loader.js")>()),
-  loadOpenClawPlugins: () => loaderState.registry,
+  loadAforaPlugins: () => loaderState.registry,
   loadPluginRegistryHandle: () => loaderState.registry,
 }));
 
@@ -56,7 +56,7 @@ function createDependencyHealthRegistry(
 }
 
 function createDependencyHealthFixture() {
-  const rootDir = makeTrackedTempDir("openclaw-plugin-dependency-health", tempDirs);
+  const rootDir = makeTrackedTempDir("afora-plugin-dependency-health", tempDirs);
   const pluginRoot = path.join(rootDir, "plugin");
   const bundledRoot = path.join(rootDir, "bundled");
   fs.mkdirSync(pluginRoot);

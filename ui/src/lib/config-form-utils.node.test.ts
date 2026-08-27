@@ -75,7 +75,7 @@ describe("sanitizeRedactedFormForSubmit", () => {
       gateway: {
         mode: "remote",
         remote: {
-          token: "__OPENCLAW_REDACTED__",
+          token: "__AFORA_REDACTED__",
         },
       },
     };
@@ -83,7 +83,7 @@ describe("sanitizeRedactedFormForSubmit", () => {
       gateway: {
         mode: "remote",
         remote: {
-          token: "__OPENCLAW_REDACTED__",
+          token: "__AFORA_REDACTED__",
         },
       },
     };
@@ -102,7 +102,7 @@ describe("sanitizeRedactedFormForSubmit", () => {
       gateway: {
         mode: "remote",
         remote: {
-          token: "__OPENCLAW_REDACTED__",
+          token: "__AFORA_REDACTED__",
         },
       },
     };
@@ -110,7 +110,7 @@ describe("sanitizeRedactedFormForSubmit", () => {
 
     expect(
       sanitizeRedactedFormForSubmit(form, originalForm, {
-        gateway: { mode: "remote", remote: { token: "__OPENCLAW_REDACTED__" } },
+        gateway: { mode: "remote", remote: { token: "__AFORA_REDACTED__" } },
       }),
     ).toEqual(form);
   });
@@ -119,7 +119,7 @@ describe("sanitizeRedactedFormForSubmit", () => {
     const form = {
       gateway: {
         remote: {
-          token: "__OPENCLAW_REDACTED__",
+          token: "__AFORA_REDACTED__",
         },
       },
     };
@@ -139,7 +139,7 @@ describe("sanitizeRedactedFormForSubmit", () => {
       gateway: {
         remote: {
           nested: {
-            token: "__OPENCLAW_REDACTED__",
+            token: "__AFORA_REDACTED__",
           },
         },
       },
@@ -156,7 +156,7 @@ describe("sanitizeRedactedFormForSubmit", () => {
     const form = {
       channels: {
         slack: {
-          tokens: ["__OPENCLAW_REDACTED__", "second-token"],
+          tokens: ["__AFORA_REDACTED__", "second-token"],
         },
       },
     };
@@ -173,7 +173,7 @@ describe("sanitizeRedactedFormForSubmit", () => {
     const form = {
       gateway: {
         remote: {
-          token: "__OPENCLAW_REDACTED__",
+          token: "__AFORA_REDACTED__",
         },
       },
     };

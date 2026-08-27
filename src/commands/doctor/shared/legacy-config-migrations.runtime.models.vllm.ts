@@ -1,4 +1,4 @@
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import { splitTrailingAuthProfile } from "../../../agents/model-ref-profile.js";
 import { ensureRecord, getRecord, type LegacyConfigRule } from "../../../config/legacy.shared.js";
 import { isModelThinkingFormat } from "../../../config/types.models.js";
@@ -349,55 +349,55 @@ export function removeUntargetedLegacyVllmQwenThinkingFormat(params: {
 export const LEGACY_VLLM_QWEN_AGENT_THINKING_FORMAT_RULE: LegacyConfigRule = {
   path: ["agents", "defaults", "models"],
   message:
-    'agents.defaults.models.<vllm-model>.params.qwenThinkingFormat is legacy; run "openclaw doctor --fix" to move it to models.providers.vllm.models[].compat.thinkingFormat.',
+    'agents.defaults.models.<vllm-model>.params.qwenThinkingFormat is legacy; run "afora doctor --fix" to move it to models.providers.vllm.models[].compat.thinkingFormat.',
   match: (value) => hasLegacyVllmQwenThinkingFormat(value),
 };
 
 export const LEGACY_VLLM_QWEN_PROVIDER_THINKING_FORMAT_RULE: LegacyConfigRule = {
   path: ["models", "providers", "vllm", "params"],
   message:
-    'models.providers.vllm.params.qwenThinkingFormat is legacy; run "openclaw doctor --fix" to move it to models.providers.vllm.models[].compat.thinkingFormat.',
+    'models.providers.vllm.params.qwenThinkingFormat is legacy; run "afora doctor --fix" to move it to models.providers.vllm.models[].compat.thinkingFormat.',
   match: (value) => hasLegacyVllmQwenThinkingProviderParams({ params: value }),
 };
 
 export const LEGACY_VLLM_QWEN_PROVIDER_MODEL_THINKING_FORMAT_RULE: LegacyConfigRule = {
   path: ["models", "providers", "vllm", "models"],
   message:
-    'models.providers.vllm.models[*].params.qwenThinkingFormat is legacy; run "openclaw doctor --fix" to move it to models.providers.vllm.models[].compat.thinkingFormat.',
+    'models.providers.vllm.models[*].params.qwenThinkingFormat is legacy; run "afora doctor --fix" to move it to models.providers.vllm.models[].compat.thinkingFormat.',
   match: (value) => hasLegacyVllmQwenThinkingModelParams({ models: value }),
 };
 
 export const LEGACY_VLLM_QWEN_NORMALIZED_PROVIDER_THINKING_FORMAT_RULE: LegacyConfigRule = {
   path: ["models", "providers"],
   message:
-    'models.providers.<vllm>.params.qwenThinkingFormat is legacy; run "openclaw doctor --fix" to move it to models.providers.<vllm>.models[].compat.thinkingFormat.',
+    'models.providers.<vllm>.params.qwenThinkingFormat is legacy; run "afora doctor --fix" to move it to models.providers.<vllm>.models[].compat.thinkingFormat.',
   match: (value) => hasLegacyVllmQwenThinkingNormalizedProvider(value),
 };
 
 export const LEGACY_VLLM_QWEN_DEFAULT_PARAMS_THINKING_FORMAT_RULE: LegacyConfigRule = {
   path: ["agents", "defaults", "params"],
   message:
-    'agents.defaults.params.qwenThinkingFormat is legacy; run "openclaw doctor --fix" to move it to models.providers.vllm.models[].compat.thinkingFormat.',
+    'agents.defaults.params.qwenThinkingFormat is legacy; run "afora doctor --fix" to move it to models.providers.vllm.models[].compat.thinkingFormat.',
   match: (value) => hasLegacyVllmQwenThinkingParams(value),
 };
 
 export const LEGACY_VLLM_QWEN_AGENT_PARAMS_THINKING_FORMAT_RULE: LegacyConfigRule = {
   path: ["agents"],
   message:
-    'agents.list[].params.qwenThinkingFormat is legacy; run "openclaw doctor --fix" to move it to models.providers.vllm.models[].compat.thinkingFormat.',
+    'agents.list[].params.qwenThinkingFormat is legacy; run "afora doctor --fix" to move it to models.providers.vllm.models[].compat.thinkingFormat.',
   match: (value) => hasLegacyVllmQwenThinkingAgentParams(value),
 };
 
 export const INVALID_THINKING_FORMAT_RULE: LegacyConfigRule = {
   path: ["models", "providers"],
   message:
-    'models.providers.<id>.models[*].compat.thinkingFormat has an unrecognized value; run "openclaw doctor --fix" to remove it and restore the runtime default.',
+    'models.providers.<id>.models[*].compat.thinkingFormat has an unrecognized value; run "afora doctor --fix" to remove it and restore the runtime default.',
   match: (value) => hasInvalidThinkingFormat(value),
 };
 
 export const STALE_CONTEXT_WINDOW_RULE: LegacyConfigRule = {
   path: ["models", "providers"],
   message:
-    'models.providers.<id>.models[*].contextWindow has a stale catalog value; run "openclaw doctor --fix" to repair it.',
+    'models.providers.<id>.models[*].contextWindow has a stale catalog value; run "afora doctor --fix" to repair it.',
   match: (value) => hasStaleContextWindowValue(value),
 };

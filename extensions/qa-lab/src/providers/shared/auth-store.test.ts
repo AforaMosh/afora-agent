@@ -5,22 +5,22 @@ import { DatabaseSync } from "node:sqlite";
 import {
   loadAuthProfileStoreWithoutExternalProfiles,
   saveAuthProfileStore,
-} from "openclaw/plugin-sdk/agent-runtime";
+} from "afora-agent/plugin-sdk/agent-runtime";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "openclaw/plugin-sdk/sqlite-runtime-testing";
+  closeAforaAgentDatabasesForTest,
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "afora-agent/plugin-sdk/sqlite-runtime-testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createTempDirHarness } from "../../temp-dir.test-helper.js";
 import { readQaAuthProfiles, writeQaAuthProfiles } from "./auth-store.js";
 
 const tempDirs = createTempDirHarness();
 
-async function createQaAuthState(prefix = "openclaw-qa-auth-store-") {
+async function createQaAuthState(prefix = "afora-qa-auth-store-") {
   const stateDir = await tempDirs.makeTempDir(prefix);
   const agentId = "main";
-  vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+  vi.stubEnv("AFORA_STATE_DIR", stateDir);
   return {
     agentDir: path.join(stateDir, "agents", agentId, "agent"),
     agentId,
@@ -30,27 +30,27 @@ async function createQaAuthState(prefix = "openclaw-qa-auth-store-") {
 
 describe("QA auth profile store", () => {
   afterEach(async () => {
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     vi.unstubAllEnvs();
     await tempDirs.cleanup();
   });
 
   it("keeps inherited host shared state unchanged while staging isolated profiles", async () => {
-    const hostStateDir = await tempDirs.makeTempDir("openclaw-qa-auth-host-state-");
-    const qaStateDir = await tempDirs.makeTempDir("openclaw-qa-auth-isolated-state-");
-    const hostDatabase = openOpenClawStateDatabase({
-      env: { ...process.env, OPENCLAW_STATE_DIR: hostStateDir },
+    const hostStateDir = await tempDirs.makeTempDir("afora-qa-auth-host-state-");
+    const qaStateDir = await tempDirs.makeTempDir("afora-qa-auth-isolated-state-");
+    const hostDatabase = openAforaStateDatabase({
+      env: { ...process.env, AFORA_STATE_DIR: hostStateDir },
     });
     const hostDatabasePath = hostDatabase.path;
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const legacyHostDatabase = new DatabaseSync(hostDatabasePath);
     legacyHostDatabase.exec(`
       PRAGMA user_version = 6;
       UPDATE schema_meta SET schema_version = 6 WHERE meta_key = 'primary';
     `);
     legacyHostDatabase.close();
-    vi.stubEnv("OPENCLAW_STATE_DIR", hostStateDir);
+    vi.stubEnv("AFORA_STATE_DIR", hostStateDir);
 
     await writeQaAuthProfiles({
       agentId: "main",
@@ -64,8 +64,8 @@ describe("QA auth profile store", () => {
       stateDir: qaStateDir,
     });
 
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     const preservedHostDatabase = new DatabaseSync(hostDatabasePath, { readOnly: true });
     expect(preservedHostDatabase.prepare("PRAGMA user_version").get()).toEqual({
       user_version: 6,
@@ -76,7 +76,7 @@ describe("QA auth profile store", () => {
         .get(),
     ).toEqual({ schema_version: 6 });
     preservedHostDatabase.close();
-    vi.stubEnv("OPENCLAW_STATE_DIR", qaStateDir);
+    vi.stubEnv("AFORA_STATE_DIR", qaStateDir);
     const qaAgentDir = path.join(qaStateDir, "agents", "main", "agent");
     expect(readQaAuthProfiles(qaAgentDir).profiles).toMatchObject({
       "qa-mock-openai": { provider: "openai" },
@@ -176,7 +176,7 @@ describe("QA auth profile store", () => {
 
   it("can replace an existing profile set for deterministic fixture seeding", async () => {
     const { agentDir, agentId, stateDir } = await createQaAuthState();
-    vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+    vi.stubEnv("AFORA_STATE_DIR", stateDir);
     saveAuthProfileStore(
       {
         version: 1,

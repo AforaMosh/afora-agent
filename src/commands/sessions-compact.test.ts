@@ -1,6 +1,6 @@
 // Sessions compact command tests cover non-zero exits on failure and param forwarding.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { sessionsCompactCommand } from "./sessions-compact.js";
 

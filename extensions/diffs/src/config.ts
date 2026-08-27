@@ -1,8 +1,8 @@
 // Diffs helper module supports config behavior.
-import { mapPluginConfigIssues } from "openclaw/plugin-sdk/extension-shared";
-import { buildPluginConfigSchema } from "openclaw/plugin-sdk/plugin-entry";
+import { mapPluginConfigIssues } from "afora-agent/plugin-sdk/extension-shared";
+import { buildPluginConfigSchema } from "afora-agent/plugin-sdk/plugin-entry";
 import { z } from "zod";
-import type { OpenClawPluginConfigSchema } from "../api.js";
+import type { AforaPluginConfigSchema } from "../api.js";
 import {
   DIFF_IMAGE_QUALITY_PRESETS,
   DIFF_INDICATORS,
@@ -204,7 +204,7 @@ const diffsPluginConfigSchemaBase = buildPluginConfigSchema(DiffsPluginJsonSchem
   },
 });
 
-export const diffsPluginConfigSchema: OpenClawPluginConfigSchema = {
+export const diffsPluginConfigSchema: AforaPluginConfigSchema = {
   ...diffsPluginConfigSchemaBase,
   jsonSchema: {
     ...diffsPluginConfigSchemaBase.jsonSchema,

@@ -85,7 +85,7 @@ describe("model setup first-run redirect", () => {
           client: { request: vi.fn() },
           hello: {
             auth: { role: "operator", scopes: ["operator.admin"] },
-            features: { methods: ["openclaw.setup.detect"] },
+            features: { methods: ["afora.setup.detect"] },
           },
         },
         subscribe,
@@ -127,7 +127,7 @@ describe("model setup first-run redirect", () => {
         type: "hello-ok" as const,
         protocol: 1,
         auth: { role: "operator", scopes: ["operator.admin"] },
-        features: { methods: ["openclaw.setup.detect"] },
+        features: { methods: ["afora.setup.detect"] },
       },
     };
     const replace = vi.fn();
@@ -154,7 +154,7 @@ describe("model setup first-run redirect", () => {
 
     expect(request).toHaveBeenCalledOnce();
     expect(request).toHaveBeenCalledWith(
-      "openclaw.setup.detect",
+      "afora.setup.detect",
       { agentId: "main" },
       expect.objectContaining({ timeoutMs: 40_000 }),
     );
@@ -189,7 +189,7 @@ describe("model setup first-run redirect", () => {
       client,
       hello: {
         auth: { role: "operator", scopes: ["operator.admin"] },
-        features: { methods: ["openclaw.setup.detect"] },
+        features: { methods: ["afora.setup.detect"] },
       },
     };
     const replace = vi.fn();
@@ -231,7 +231,7 @@ describe("model setup first-run redirect", () => {
       client,
       hello: {
         auth: { role: "operator", scopes: ["operator.admin"] },
-        features: { methods: ["openclaw.setup.detect"] },
+        features: { methods: ["afora.setup.detect"] },
       },
     };
     const context = {
@@ -275,7 +275,7 @@ describe("model setup first-run redirect", () => {
         type: "hello-ok" as const,
         protocol: 1,
         auth: { role: "operator", scopes: ["operator.admin"] },
-        features: { methods: ["openclaw.setup.detect"] },
+        features: { methods: ["afora.setup.detect"] },
       },
     };
     const replace = vi.fn();
@@ -332,7 +332,7 @@ describe("model setup first-run redirect", () => {
       type: "hello-ok" as const,
       protocol: 1,
       auth: { role: "operator", scopes: ["operator.admin"] },
-      features: { methods: ["openclaw.setup.detect"] },
+      features: { methods: ["afora.setup.detect"] },
     };
     const gateway = {
       snapshot: { phase: "connected", client, hello: firstHello as typeof firstHello | null },
@@ -398,7 +398,7 @@ describe("model setup first-run redirect", () => {
       client,
       hello: {
         auth: { role: "operator", scopes: ["operator.read"] },
-        features: { methods: ["openclaw.setup.detect"] },
+        features: { methods: ["afora.setup.detect"] },
       },
     } as Parameters<GatewayListener>[0]);
     listener!({

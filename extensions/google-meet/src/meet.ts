@@ -1,6 +1,6 @@
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { parseDateStringTimestampMs as parseGoogleMeetTimestamp } from "openclaw/plugin-sdk/number-runtime";
-import { uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { parseDateStringTimestampMs as parseGoogleMeetTimestamp } from "afora-agent/plugin-sdk/number-runtime";
+import { uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { exportGoogleDriveDocumentText, extractGoogleDriveDocumentId } from "./drive.js";
 import {
   createGoogleMeetSpace,

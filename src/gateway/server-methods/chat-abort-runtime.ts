@@ -3,7 +3,7 @@ import {
   resolveSubagentController,
 } from "../../agents/subagents/registry/subagent-control.js";
 import { listSubagentRunsForController } from "../../agents/subagents/registry/subagent-registry-read.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   abortChatRunById,
   type ChatAbortControllerEntry,
@@ -32,7 +32,7 @@ import type { GatewayRequestContext } from "./types.js";
 type AbortOrigin = "rpc" | "stop-command";
 
 export function prepareControlledSubagentAbort(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   agentId?: string;
   requesterTurnRunId?: string;

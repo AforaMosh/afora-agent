@@ -5,10 +5,10 @@ import { pruneExpiredPending, resolvePairingPaths } from "./pairing-files.js";
 
 describe("pairing file helpers", () => {
   it("resolves pairing file paths from explicit base dirs", () => {
-    expect(resolvePairingPaths("/tmp/openclaw-state", "devices")).toEqual({
-      dir: path.join("/tmp/openclaw-state", "devices"),
-      pendingPath: path.join("/tmp/openclaw-state", "devices", "pending.json"),
-      pairedPath: path.join("/tmp/openclaw-state", "devices", "paired.json"),
+    expect(resolvePairingPaths("/tmp/afora-state", "devices")).toEqual({
+      dir: path.join("/tmp/afora-state", "devices"),
+      pendingPath: path.join("/tmp/afora-state", "devices", "pending.json"),
+      pairedPath: path.join("/tmp/afora-state", "devices", "paired.json"),
     });
   });
 

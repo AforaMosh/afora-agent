@@ -2,8 +2,8 @@
  * Shared validation and normalization helpers for Playwright-backed browser
  * tool implementations.
  */
-import { parseFiniteNumber } from "openclaw/plugin-sdk/number-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { parseFiniteNumber } from "afora-agent/plugin-sdk/number-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { formatErrorMessage } from "../infra/errors.js";
 import { parseRoleRef } from "./pw-role-snapshot.js";
 

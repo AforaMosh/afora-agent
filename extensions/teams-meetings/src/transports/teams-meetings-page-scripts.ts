@@ -114,9 +114,9 @@ export function teamsMeetingTranscriptScript(
   const expectedIdentity = ${JSON.stringify(expectedIdentity)};
   const expectedSessionId = ${JSON.stringify(meetingSessionId)};
   const currentIdentity = meetingIdentity(location.href);
-  const state = window.__openclawTeamsMeeting;
-  const activeCaptions = window.__openclawTeamsCaptions;
-  const archivedCaptions = window.__openclawTeamsCaptionArchive?.[expectedSessionId];
+  const state = window.__aforaTeamsMeeting;
+  const activeCaptions = window.__aforaTeamsCaptions;
+  const archivedCaptions = window.__aforaTeamsCaptionArchive?.[expectedSessionId];
   const captions = activeCaptions &&
       (!activeCaptions.sessionId || activeCaptions.sessionId === expectedSessionId)
     ? activeCaptions
@@ -203,7 +203,7 @@ export function teamsMeetingLeaveScript(params: {
   const expectedSessionId = ${JSON.stringify(params.meetingSessionId)};
   const leaveInitiated = ${JSON.stringify(params.leaveInitiated)};
   const currentIdentity = meetingIdentity(location.href);
-  const state = window.__openclawTeamsMeeting;
+  const state = window.__aforaTeamsMeeting;
   const enforceSessionOwnership = Boolean(expectedSessionId);
   if (enforceSessionOwnership && state?.sessionId && state.sessionId !== expectedSessionId) {
     return JSON.stringify({ departed: false, sessionConflict: true, sessionMatched: false, urlMatched: true });
@@ -214,8 +214,8 @@ export function teamsMeetingLeaveScript(params: {
     return JSON.stringify({ departed: false, sessionMatched: false, urlMatched: true });
   }
   const retireOwnedAudioBridges = () => {
-    const entries = Array.isArray(window.__openclawTeamsAudioOutputs)
-      ? window.__openclawTeamsAudioOutputs
+    const entries = Array.isArray(window.__aforaTeamsAudioOutputs)
+      ? window.__aforaTeamsAudioOutputs
       : [];
     const retained = [];
     const activeSessionId = expectedSessionId || state?.sessionId;
@@ -261,8 +261,8 @@ export function teamsMeetingLeaveScript(params: {
       if (entry?.bridge) entry.bridge.srcObject = null;
       entry?.bridge?.remove?.();
     }
-    if (retained.length > 0) window.__openclawTeamsAudioOutputs = retained;
-    else delete window.__openclawTeamsAudioOutputs;
+    if (retained.length > 0) window.__aforaTeamsAudioOutputs = retained;
+    else delete window.__aforaTeamsAudioOutputs;
   };
   const first = (list) => {
     for (const selector of list) {
@@ -314,7 +314,7 @@ export function teamsMeetingLeaveScript(params: {
   );
   if (postCall && (meetingIdentityMatches || initiatedLeaveTransitionMatches)) {
     retireOwnedAudioBridges();
-    if (sessionMatched) delete window.__openclawTeamsMeeting;
+    if (sessionMatched) delete window.__aforaTeamsMeeting;
     return JSON.stringify({ departed: true, sessionMatched: true, urlMatched: true });
   }
   if (!meetingIdentityMatches && !initiatedLeaveTransitionMatches) {
@@ -328,7 +328,7 @@ export function teamsMeetingLeaveScript(params: {
     return JSON.stringify({ departed: false, leaveAction: "confirm", urlMatched: true });
   }
   if (leave) {
-    window.__openclawTeamsMeeting = {
+    window.__aforaTeamsMeeting = {
       ...state,
       identity: expectedIdentity,
       inCallControl: leave,

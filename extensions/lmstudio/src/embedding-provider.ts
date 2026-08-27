@@ -1,15 +1,15 @@
 // Lmstudio provider module implements model/runtime integration.
-import { createSubsystemLogger } from "openclaw/plugin-sdk/logging-core";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/logging-core";
 import {
   buildRemoteBaseUrlPolicy,
   createRemoteEmbeddingProvider,
   normalizeEmbeddingModelWithPrefixes,
   type MemoryEmbeddingProvider,
   type MemoryEmbeddingProviderCreateOptions,
-} from "openclaw/plugin-sdk/memory-core-host-engine-embeddings";
-import { resolveMemorySecretInputString } from "openclaw/plugin-sdk/memory-core-host-secret";
-import { normalizeProviderId } from "openclaw/plugin-sdk/provider-model-shared";
-import { formatErrorMessage, type SsrFPolicy } from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-embeddings";
+import { resolveMemorySecretInputString } from "afora-agent/plugin-sdk/memory-core-host-secret";
+import { normalizeProviderId } from "afora-agent/plugin-sdk/provider-model-shared";
+import { formatErrorMessage, type SsrFPolicy } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { LMSTUDIO_DEFAULT_EMBEDDING_MODEL, LMSTUDIO_PROVIDER_ID } from "./defaults.js";
 import { ensureLmstudioModelLoaded, fetchLmstudioModels } from "./models.fetch.js";
 import {

@@ -1,9 +1,9 @@
 // Real native image results must retain a bounded, truthful visual context.
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { encodePngRgba, fillPixel } from "../../media/png-encode.js";
 import type { AgentMessage } from "../runtime/index.js";
 import { castAgentMessage } from "../test-helpers/agent-message-fixtures.js";
@@ -18,13 +18,13 @@ import { installToolResultContextGuard } from "./tool-result-context-guard.js";
 type ContentBlock = { type: string; text?: string; data?: string; mimeType?: string };
 
 function createRequiredImageTool() {
-  const config: OpenClawConfig = {
+  const config: AforaConfig = {
     agents: { defaults: { imageMaxDimensionPx: 32 } },
   };
   return expectDefined(
     createImageTool({
       config,
-      agentDir: join(tmpdir(), "openclaw-native-image-context-test"),
+      agentDir: join(tmpdir(), "afora-native-image-context-test"),
       modelHasVision: true,
     }),
     "native-vision image tool is available",

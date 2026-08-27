@@ -9,7 +9,7 @@ type MediaStoreTestApi = {
 
 function getTestApi(): MediaStoreTestApi {
   const api = (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.mediaStoreTestApi")
+    Symbol.for("afora.mediaStoreTestApi")
   ];
   if (!api) {
     throw new Error("media store test API is unavailable");

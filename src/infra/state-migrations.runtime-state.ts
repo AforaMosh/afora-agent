@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { resolveAgentIdFromSessionKey } from "../routing/session-key.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
-import { runOpenClawStateWriteTransaction } from "../state/openclaw-state-db.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
+import { runAforaStateWriteTransaction } from "../state/afora-state-db.js";
 import { resolveRequiredHomeDir } from "./home-dir.js";
 import {
   executeSqliteQuerySync,
@@ -19,21 +19,21 @@ import type { LegacyStateDetection, MigrationMessages } from "./state-migrations
 import { normalizeVoiceWakeRoutingConfig } from "./voicewake-routing.js";
 
 type LegacyVoiceWakeImportDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "voicewake_routing_config" | "voicewake_routing_routes" | "voicewake_triggers"
 >;
-type LegacyConfigHealthImportDatabase = Pick<OpenClawStateKyselyDatabase, "config_health_entries">;
+type LegacyConfigHealthImportDatabase = Pick<AforaStateKyselyDatabase, "config_health_entries">;
 type LegacyPluginBindingApprovalsImportDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "plugin_binding_approvals"
 >;
 type LegacyCurrentConversationBindingsImportDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "current_conversation_bindings"
 >;
 
 const VOICEWAKE_CONFIG_KEY = "default";
-const DEFAULT_VOICEWAKE_TRIGGERS = ["openclaw", "claude", "computer"];
+const DEFAULT_VOICEWAKE_TRIGGERS = ["afora", "claude", "computer"];
 
 export function resolveLegacyVoiceWakeTriggersPath(stateDir: string): string {
   return path.join(stateDir, "settings", "voicewake.json");
@@ -81,8 +81,8 @@ export function migrateLegacyJsonState<Value>(params: {
 
   let outcome: LegacyJsonImportOutcome;
   try {
-    outcome = runOpenClawStateWriteTransaction(({ db }) => params.migrate(db, value), {
-      env: { ...process.env, OPENCLAW_STATE_DIR: params.stateDir },
+    outcome = runAforaStateWriteTransaction(({ db }) => params.migrate(db, value), {
+      env: { ...process.env, AFORA_STATE_DIR: params.stateDir },
     });
   } catch (err) {
     warnings.push(`Failed migrating legacy ${params.label}: ${String(err)}`);
@@ -530,7 +530,7 @@ export function resolveLegacyPluginBindingApprovalsPath(
 ): string {
   return path.join(
     resolveRequiredHomeDir(env, homedir),
-    ".openclaw",
+    ".afora",
     "plugin-binding-approvals.json",
   );
 }

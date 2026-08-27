@@ -1,7 +1,7 @@
 /** Runtime provider selection and tool construction for the `web_fetch` tool. */
 import { createHash } from "node:crypto";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.js";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.js";
 import { logVerbose } from "../globals.js";
 import { getActivePluginRegistryVersion } from "../plugins/runtime.js";
 import type {
@@ -25,14 +25,14 @@ import {
 
 // Runtime provider selection for the web_fetch tool. It resolves config,
 // credentials, runtime metadata, and sandbox-safe bundled provider scopes.
-type WebFetchConfig = NonNullable<OpenClawConfig["tools"]>["web"] extends infer Web
+type WebFetchConfig = NonNullable<AforaConfig["tools"]>["web"] extends infer Web
   ? Web extends { fetch?: infer Fetch }
     ? Fetch
     : undefined
   : undefined;
 
 type ResolveWebFetchDefinitionParams = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   sandboxed?: boolean;
   runtimeWebFetch?: RuntimeWebFetchMetadata;
   providerId?: string;
@@ -48,7 +48,7 @@ type WebFetchProviderCacheEntry = {
   providers: PluginWebFetchProviderEntry[];
 };
 
-let webFetchProviderCache = new WeakMap<OpenClawConfig, WebFetchProviderCacheEntry>();
+let webFetchProviderCache = new WeakMap<AforaConfig, WebFetchProviderCacheEntry>();
 
 /** Resolves whether web_fetch is enabled for the current config/sandbox. */
 function resolveWebFetchEnabled(params: { fetch?: WebFetchConfig; sandboxed?: boolean }): boolean {
@@ -58,7 +58,7 @@ function resolveWebFetchEnabled(params: { fetch?: WebFetchConfig; sandboxed?: bo
   return true;
 }
 
-function resolveFetchConfig(config: OpenClawConfig | undefined): WebFetchConfig | undefined {
+function resolveFetchConfig(config: AforaConfig | undefined): WebFetchConfig | undefined {
   return resolveWebProviderConfig(config, "fetch") as NonNullable<WebFetchConfig> | undefined;
 }
 
@@ -70,7 +70,7 @@ function hasEntryCredential(
     | "getConfiguredCredentialValue"
     | "requiresCredential"
   >,
-  config: OpenClawConfig | undefined,
+  config: AforaConfig | undefined,
   fetch: WebFetchConfig | undefined,
 ): boolean {
   return hasWebProviderEntryCredential({
@@ -94,7 +94,7 @@ function hasAutoDetectCredential(
     | "getConfiguredCredentialValue"
     | "requiresCredential"
   >,
-  config: OpenClawConfig | undefined,
+  config: AforaConfig | undefined,
   fetch: WebFetchConfig | undefined,
 ): boolean {
   return hasEntryCredential(
@@ -117,14 +117,14 @@ export function isWebFetchProviderConfigured(params: {
     | "getCredentialValue"
     | "requiresCredential"
   >;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): boolean {
   return hasEntryCredential(params.provider, params.config, resolveFetchConfig(params.config));
 }
 
 /** Lists web_fetch providers available to runtime selection. */
 export function listWebFetchProviders(params?: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): PluginWebFetchProviderEntry[] {
   return resolvePluginWebFetchProviders({
     config: params?.config,
@@ -134,7 +134,7 @@ export function listWebFetchProviders(params?: {
 /** Resolves the configured or auto-detected web_fetch provider id. */
 function resolveWebFetchProviderId(params: {
   fetch?: WebFetchConfig;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   providers?: PluginWebFetchProviderEntry[];
 }): string {
   const providers = sortWebFetchProvidersForAutoDetect(
@@ -201,13 +201,13 @@ function resolveWebFetchProviderCacheKey(
   ]);
 }
 
-function createWebFetchProviderConfigFingerprint(config: OpenClawConfig): string {
+function createWebFetchProviderConfigFingerprint(config: AforaConfig): string {
   return createHash("sha256").update(JSON.stringify(config)).digest("hex");
 }
 
 function resolveCachedWebFetchProviders(params: {
   cacheKey: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   configFingerprint: string;
   load: () => PluginWebFetchProviderEntry[];
 }): PluginWebFetchProviderEntry[] {

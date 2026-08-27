@@ -2,7 +2,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { PassThrough } from "node:stream";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig, RuntimeEnv } from "../runtime-api.js";
+import type { AforaConfig, RuntimeEnv } from "../runtime-api.js";
 import type { ResolvedMattermostAccount } from "./accounts.js";
 import type { MattermostRegisteredCommand } from "./slash-commands.js";
 import {
@@ -45,11 +45,11 @@ const slashApi = {
     exit: () => {},
   },
 } satisfies {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   runtime: RuntimeEnv;
 };
 
-const ACCOUNT_STATES_KEY = Symbol.for("openclaw.mattermost.slash-account-states");
+const ACCOUNT_STATES_KEY = Symbol.for("afora.mattermost.slash-account-states");
 
 type AccountState = {
   handler: ((req: IncomingMessage, res: ServerResponse) => Promise<void>) | null;

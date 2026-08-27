@@ -1,7 +1,7 @@
-import type { OpenClawConfig, DiscordAccountConfig } from "openclaw/plugin-sdk/config-contracts";
-import { resolveAgentRoute } from "openclaw/plugin-sdk/routing";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
-import { formatErrorMessage } from "openclaw/plugin-sdk/ssrf-runtime";
+import type { AforaConfig, DiscordAccountConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { resolveAgentRoute } from "afora-agent/plugin-sdk/routing";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/runtime-env";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/ssrf-runtime";
 import type { Client } from "../internal/discord.js";
 import type { VoicePlugin } from "../internal/voice.js";
 import { formatMention } from "../mentions.js";
@@ -73,11 +73,11 @@ function isRetryableVoiceJoinReadyError(error: unknown): boolean {
 }
 
 function resolveVoiceConnectionGroup(accountId: string): string {
-  return `openclaw:${accountId}`;
+  return `afora:${accountId}`;
 }
 
 function resolveDiscordVoiceAgentRoute(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   guildId: string;
   sessionChannelId: string;
@@ -130,7 +130,7 @@ export class DiscordVoiceSessions {
     private readonly params: {
       accountId: string;
       botUserId: () => string | undefined;
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       client: Client;
       destroyed: () => boolean;
       discordConfig: DiscordAccountConfig;

@@ -1,4 +1,4 @@
-import { buildCopilotIdeHeaders } from "openclaw/plugin-sdk/provider-auth";
+import { buildCopilotIdeHeaders } from "afora-agent/plugin-sdk/provider-auth";
 
 // GitHub's current fine-grained PAT contract is the Copilot CLI identity.
 // Keep this provider-owned instead of changing the legacy public SDK constant.

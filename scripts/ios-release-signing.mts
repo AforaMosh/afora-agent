@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { parseFlagArgs, stringFlag } from "./lib/arg-utils.mts";
 import { resolveRepoRoot } from "./lib/repo-root.mjs";
 const rootDir = resolveRepoRoot(import.meta.url);
@@ -159,11 +159,11 @@ type SigningManifest = ReturnType<typeof readManifest>;
 
 function writeXcconfig(manifest: SigningManifest) {
   const lines = [
-    "OPENCLAW_CODE_SIGN_STYLE = Manual",
-    "OPENCLAW_CODE_SIGN_IDENTITY = Apple Distribution",
+    "AFORA_CODE_SIGN_STYLE = Manual",
+    "AFORA_CODE_SIGN_IDENTITY = Apple Distribution",
   ];
   if (typeof manifest.appGroupId === "string") {
-    lines.push(`OPENCLAW_APP_GROUP_ID = ${manifest.appGroupId}`);
+    lines.push(`AFORA_APP_GROUP_ID = ${manifest.appGroupId}`);
   }
 
   for (const target of manifest.targets) {

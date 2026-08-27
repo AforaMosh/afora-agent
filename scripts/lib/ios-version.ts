@@ -1,4 +1,4 @@
-// Ios Version script supports OpenClaw repository automation.
+// Ios Version script supports Afora repository automation.
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { parseReleaseVersion } from "./release-version.mjs";

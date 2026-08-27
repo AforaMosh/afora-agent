@@ -2,7 +2,7 @@
  * Provider discovery descriptor for Anthropic Vertex. This variant is used by
  * catalog surfaces that need the provider contract without full plugin entry setup.
  */
-import type { ProviderCatalogContext } from "openclaw/plugin-sdk/provider-catalog-shared";
+import type { ProviderCatalogContext } from "afora-agent/plugin-sdk/provider-catalog-shared";
 import { runAnthropicVertexCatalog } from "./provider-catalog-runtime.js";
 import { hasAnthropicVertexAvailableAuth, resolveAnthropicVertexConfigApiKey } from "./region.js";
 

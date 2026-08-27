@@ -1,6 +1,6 @@
 import path from "node:path";
 import { createConfigIO } from "../../config/config.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   normalizeWorkspaceSkillSupportPath,
   prepareWorkspaceSkillRestoration,
@@ -26,7 +26,7 @@ export async function reconcileInterruptedSkillProposalApply(params: {
   expectedRecordJson: string;
   draftContent: string;
   workspaceDir: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   store?: SkillWorkshopStoreOptions;
 }): Promise<boolean> {
   return await withSkillProposalCommitLock(

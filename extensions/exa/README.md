@@ -1,12 +1,12 @@
-# OpenClaw Exa Plugin
+# Afora Exa Plugin
 
-Official OpenClaw plugin for Exa.
+Official Afora plugin for Exa.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/exa-plugin
-openclaw gateway restart
+afora plugins install @afora/exa-plugin
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/tools/exa-search> for setup and configuration.
+See <https://docs.afora.ai/tools/exa-search> for setup and configuration.

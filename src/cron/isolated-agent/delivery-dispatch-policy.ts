@@ -6,7 +6,7 @@ import {
   stripLeadingSilentToken,
   stripSilentToken,
 } from "../../auto-reply/tokens.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { TtsAutoMode } from "../../config/types.tts.js";
 import { isSuppressedControlReplyText } from "../../gateway/control-reply-text.js";
 import { sleepWithAbort } from "../../infra/backoff.js";
@@ -144,7 +144,7 @@ export function isStaleCronDelivery(params: { job: CronJob; runStartedAt: number
 }
 
 export async function maybeApplyTtsToCronPayloads(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   payloads: ReplyPayload[];
   delivery: SuccessfulDeliveryTarget;
   agentId: string;

@@ -3,22 +3,22 @@ import type { Bot, Context } from "grammy";
 import {
   isChannelPartialDeliveryError,
   type ChannelInboundTurnPlan,
-} from "openclaw/plugin-sdk/channel-inbound";
-import { resolveChannelStreamingBlockEnabled } from "openclaw/plugin-sdk/channel-outbound";
-import { resolveNativeCommandSessionTargets } from "openclaw/plugin-sdk/command-auth-native";
+} from "afora-agent/plugin-sdk/channel-inbound";
+import { resolveChannelStreamingBlockEnabled } from "afora-agent/plugin-sdk/channel-outbound";
+import { resolveNativeCommandSessionTargets } from "afora-agent/plugin-sdk/command-auth-native";
 import type {
   ChannelGroupPolicy,
-  OpenClawConfig,
+  AforaConfig,
   TelegramAccountConfig,
-} from "openclaw/plugin-sdk/config-contracts";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
-import { resolveMarkdownTableMode } from "openclaw/plugin-sdk/markdown-table-runtime";
+} from "afora-agent/plugin-sdk/config-contracts";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
+import { resolveMarkdownTableMode } from "afora-agent/plugin-sdk/markdown-table-runtime";
 import {
   PLUGIN_COMMAND_DISPATCH,
   type PluginCommandCatalogDecision,
-} from "openclaw/plugin-sdk/plugin-command-runtime";
-import { danger, logVerbose, type RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import { resolveStorePath } from "openclaw/plugin-sdk/session-store-runtime";
+} from "afora-agent/plugin-sdk/plugin-command-runtime";
+import { danger, logVerbose, type RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+import { resolveStorePath } from "afora-agent/plugin-sdk/session-store-runtime";
 import { expandTelegramAllowFromWithAccessGroups } from "./access-groups.js";
 import { resolveTelegramAccountOwnerAgentId } from "./account-owner.js";
 import { resolveTelegramAccount } from "./accounts.js";
@@ -92,11 +92,11 @@ export type TelegramCommandExecutorParams = {
   runtime: RuntimeEnv;
   accountId: string;
   mediaMaxBytes?: number;
-  resolveGroupPolicy: (chatId: string | number, cfg: OpenClawConfig) => ChannelGroupPolicy;
+  resolveGroupPolicy: (chatId: string | number, cfg: AforaConfig) => ChannelGroupPolicy;
   resolveTelegramGroupConfig: (
     chatId: string | number,
     messageThreadId: number | undefined,
-    cfg: OpenClawConfig,
+    cfg: AforaConfig,
   ) => TelegramResolvedGroupConfig;
   telegramDeps?: TelegramNativeCommandDeps;
   opts: Pick<
@@ -118,7 +118,7 @@ type TelegramCommandAuthResult = NonNullable<
 export type TelegramCommandDispatch = TelegramCommandExecutorParams &
   TelegramCommandAuthResult & {
     telegramDeps: TelegramNativeCommandDeps;
-    runtimeCfg: OpenClawConfig;
+    runtimeCfg: AforaConfig;
     runtimeTelegramCfg: TelegramAccountConfig;
     turnSettings: ReturnType<typeof resolveTelegramMessageTurnSettings>;
     threadSpec: ReturnType<typeof resolveTelegramThreadSpec>;
@@ -169,7 +169,7 @@ async function resolveTelegramNativeCommandThreadContext(params: {
 async function resolveTelegramCommandAuth(params: {
   msg: NonNullable<Context["message"]>;
   bot: Bot;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   telegramCfg: TelegramAccountConfig;
   readChannelAllowFromStore: TelegramBotDeps["readChannelAllowFromStore"];
@@ -495,7 +495,7 @@ export async function prepareTelegramCommandDispatch(
 export async function dispatchTelegramBuiltinTurn(params: {
   dispatch: TelegramCommandDispatch;
   prompt: string;
-  commandArgs?: import("openclaw/plugin-sdk/command-auth-native").CommandArgs;
+  commandArgs?: import("afora-agent/plugin-sdk/command-auth-native").CommandArgs;
 }): Promise<boolean> {
   const { dispatch } = params;
   const { skillFilter, groupSystemPrompt } = resolveTelegramGroupPromptSettings({

@@ -145,7 +145,7 @@ export function registerControlUiTrustedProxySuite(): void {
     const { publicKeyRawBase64UrlFromPem } = await import("../infra/device-identity.js");
     const { rejectDevicePairing, requestDevicePairing } =
       await import("../infra/device-pairing.js");
-    const { identity } = await createOperatorIdentityFixture("openclaw-control-ui-trusted-proxy-");
+    const { identity } = await createOperatorIdentityFixture("afora-control-ui-trusted-proxy-");
     const pendingRequest = await requestDevicePairing({
       deviceId: identity.deviceId,
       publicKey: publicKeyRawBase64UrlFromPem(identity.publicKeyPem),
@@ -236,7 +236,7 @@ export function registerControlUiTrustedProxySuite(): void {
   test("bounds trusted-proxy control ui scopes to proxy-declared scope header", async () => {
     await withTrustedProxyControlUiServer(async (port) => {
       const seeded = await seedApprovedOperatorReadPairing({
-        identityPrefix: "openclaw-control-ui-trusted-proxy-bounded-",
+        identityPrefix: "afora-control-ui-trusted-proxy-bounded-",
         clientId: CONTROL_UI_CLIENT.id,
         clientMode: CONTROL_UI_CLIENT.mode,
         displayName: "Control UI",
@@ -245,7 +245,7 @@ export function registerControlUiTrustedProxySuite(): void {
       });
       const ws = await openWs(port, {
         ...TRUSTED_PROXY_CONTROL_UI_HEADERS,
-        "x-openclaw-scopes": "operator.read",
+        "x-afora-scopes": "operator.read",
       });
       try {
         const challengeNonce = await readConnectChallengeNonce(ws);

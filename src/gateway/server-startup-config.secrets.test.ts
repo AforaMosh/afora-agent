@@ -12,7 +12,7 @@ import {
   setRuntimeAuthProfileStoreSnapshot,
 } from "../agents/auth-profiles/runtime-snapshots.js";
 import { writePersistedAuthProfileStoreRaw } from "../agents/auth-profiles/sqlite.js";
-import type { ConfigFileSnapshot, OpenClawConfig } from "../config/types.js";
+import type { ConfigFileSnapshot, AforaConfig } from "../config/types.js";
 import { measureDiagnosticsTimelineSpan } from "../infra/diagnostics-timeline.js";
 import { providerResolutionError, refResolutionError } from "../secrets/resolve-errors.js";
 import { associateSecretResolutionErrorOwners } from "../secrets/runtime-degraded-state.js";
@@ -56,7 +56,7 @@ type GatewayStartupLogMock = {
 };
 
 type GatewayStartupStateEmitterMock = ReturnType<
-  typeof vi.fn<(code: string, message: string, cfg: OpenClawConfig) => void>
+  typeof vi.fn<(code: string, message: string, cfg: AforaConfig) => void>
 >;
 
 const RESOLVED_GATEWAY_TOKEN = "resolved-gateway-token";
@@ -70,7 +70,7 @@ function activateSecretsRuntimeSnapshotForTest(snapshot: PreparedSecretsRuntimeS
   });
 }
 
-function gatewayTokenConfig(config: OpenClawConfig): OpenClawConfig {
+function gatewayTokenConfig(config: AforaConfig): AforaConfig {
   return {
     ...config,
     gateway: {
@@ -84,14 +84,14 @@ function gatewayTokenConfig(config: OpenClawConfig): OpenClawConfig {
   };
 }
 
-function asConfig(value: unknown): OpenClawConfig {
-  return value as OpenClawConfig;
+function asConfig(value: unknown): AforaConfig {
+  return value as AforaConfig;
 }
 
-function buildSnapshot(config: OpenClawConfig): ConfigFileSnapshot {
+function buildSnapshot(config: AforaConfig): ConfigFileSnapshot {
   const raw = `${JSON.stringify(config, null, 2)}\n`;
   return buildTestConfigSnapshot({
-    path: "/tmp/openclaw-startup-secrets-test.json",
+    path: "/tmp/afora-startup-secrets-test.json",
     exists: true,
     raw,
     parsed: config,
@@ -102,7 +102,7 @@ function buildSnapshot(config: OpenClawConfig): ConfigFileSnapshot {
   });
 }
 
-function preparedSnapshot(config: OpenClawConfig): PreparedSecretsRuntimeSnapshot {
+function preparedSnapshot(config: AforaConfig): PreparedSecretsRuntimeSnapshot {
   return {
     sourceConfig: config,
     config,
@@ -124,7 +124,7 @@ function preparedSnapshot(config: OpenClawConfig): PreparedSecretsRuntimeSnapsho
 }
 
 function preparedSnapshotWithGatewayToken(
-  config: OpenClawConfig,
+  config: AforaConfig,
   token = RESOLVED_GATEWAY_TOKEN,
 ): PreparedSecretsRuntimeSnapshot {
   return {
@@ -184,7 +184,7 @@ function runtimeSecretsActivatorForTest(params: {
 function runtimeSecretsActivatorOptionsForTest() {
   return {
     logSecrets: mockLogSecretsForTest(),
-    emitStateEvent: vi.fn<(code: string, message: string, cfg: OpenClawConfig) => void>(),
+    emitStateEvent: vi.fn<(code: string, message: string, cfg: AforaConfig) => void>(),
   };
 }
 
@@ -205,25 +205,25 @@ function readTimelineEvents(filePath: string): Array<Record<string, unknown>> {
 }
 
 function installDiagnosticsTimelineEnv() {
-  const root = mkdtempSync(path.join(tmpdir(), "openclaw-startup-secrets-timeline-"));
+  const root = mkdtempSync(path.join(tmpdir(), "afora-startup-secrets-timeline-"));
   const timelinePath = path.join(root, "timeline.jsonl");
-  const previousDiagnostics = process.env.OPENCLAW_DIAGNOSTICS;
-  const previousTimelinePath = process.env.OPENCLAW_DIAGNOSTICS_TIMELINE_PATH;
-  process.env.OPENCLAW_DIAGNOSTICS = "timeline";
-  process.env.OPENCLAW_DIAGNOSTICS_TIMELINE_PATH = timelinePath;
+  const previousDiagnostics = process.env.AFORA_DIAGNOSTICS;
+  const previousTimelinePath = process.env.AFORA_DIAGNOSTICS_TIMELINE_PATH;
+  process.env.AFORA_DIAGNOSTICS = "timeline";
+  process.env.AFORA_DIAGNOSTICS_TIMELINE_PATH = timelinePath;
 
   return {
     timelinePath,
     cleanup: () => {
       if (previousDiagnostics === undefined) {
-        delete process.env.OPENCLAW_DIAGNOSTICS;
+        delete process.env.AFORA_DIAGNOSTICS;
       } else {
-        process.env.OPENCLAW_DIAGNOSTICS = previousDiagnostics;
+        process.env.AFORA_DIAGNOSTICS = previousDiagnostics;
       }
       if (previousTimelinePath === undefined) {
-        delete process.env.OPENCLAW_DIAGNOSTICS_TIMELINE_PATH;
+        delete process.env.AFORA_DIAGNOSTICS_TIMELINE_PATH;
       } else {
-        process.env.OPENCLAW_DIAGNOSTICS_TIMELINE_PATH = previousTimelinePath;
+        process.env.AFORA_DIAGNOSTICS_TIMELINE_PATH = previousTimelinePath;
       }
       rmSync(root, { force: true, recursive: true });
     },
@@ -232,21 +232,21 @@ function installDiagnosticsTimelineEnv() {
 
 /** Isolate path-based auth store discovery so prior full-suite env cannot force slow path. */
 function installIsolatedStartupFastPathEnv() {
-  const root = mkdtempSync(path.join(tmpdir(), "openclaw-startup-fast-path-env-"));
+  const root = mkdtempSync(path.join(tmpdir(), "afora-startup-fast-path-env-"));
   const keys = [
-    "OPENCLAW_HOME",
-    "OPENCLAW_STATE_DIR",
-    "OPENCLAW_CONFIG_PATH",
-    "OPENCLAW_OAUTH_DIR",
+    "AFORA_HOME",
+    "AFORA_STATE_DIR",
+    "AFORA_CONFIG_PATH",
+    "AFORA_OAUTH_DIR",
   ] as const;
   const previous = new Map<(typeof keys)[number], string | undefined>();
   for (const key of keys) {
     previous.set(key, process.env[key]);
   }
-  process.env.OPENCLAW_HOME = path.join(root, "home");
-  process.env.OPENCLAW_STATE_DIR = path.join(root, "state");
-  process.env.OPENCLAW_CONFIG_PATH = path.join(root, "state", "openclaw.json");
-  process.env.OPENCLAW_OAUTH_DIR = path.join(root, "credentials");
+  process.env.AFORA_HOME = path.join(root, "home");
+  process.env.AFORA_STATE_DIR = path.join(root, "state");
+  process.env.AFORA_CONFIG_PATH = path.join(root, "state", "afora.json");
+  process.env.AFORA_OAUTH_DIR = path.join(root, "credentials");
 
   return {
     cleanup: () => {
@@ -291,13 +291,13 @@ function installGatewayStartupSecretsRuntimeMock(state: GatewayStartupSecretsRun
       preflightActiveSecretsRuntimeSnapshotRefresh: async ({
         sourceConfig,
       }: {
-        sourceConfig: OpenClawConfig;
+        sourceConfig: AforaConfig;
       }) => await runtimeState.prepareRuntimeSecretsSnapshot({ config: sourceConfig }),
       refreshActiveSecretsRuntimeSnapshotForConfig: async ({
         sourceConfig,
         preflightResult,
       }: {
-        sourceConfig: OpenClawConfig;
+        sourceConfig: AforaConfig;
         preflightResult?: unknown;
       }) => {
         const snapshot =
@@ -347,7 +347,7 @@ function createGatewayStartupSecretsRuntimeHarness(prefix: string) {
   };
 }
 
-async function activateImportedStartupConfig(config: OpenClawConfig) {
+async function activateImportedStartupConfig(config: AforaConfig) {
   const { createRuntimeSecretsActivator: createActivator } =
     await import("./server-startup-config.js");
   return await createActivator(runtimeSecretsActivatorOptionsForTest())(
@@ -359,7 +359,7 @@ async function activateImportedStartupConfig(config: OpenClawConfig) {
   );
 }
 
-async function activateStartupConfigWithEnv(config: OpenClawConfig, env: NodeJS.ProcessEnv) {
+async function activateStartupConfigWithEnv(config: AforaConfig, env: NodeJS.ProcessEnv) {
   const activateRuntimeSecrets = createRuntimeSecretsActivator(
     runtimeSecretsActivatorOptionsForTest(),
   );
@@ -407,7 +407,7 @@ function expectBootstrapAuthResolvedGatewayToken(
 
 async function expectImportedStartupConfigUsesFullSecretsRuntime(
   harness: ReturnType<typeof createGatewayStartupSecretsRuntimeHarness>,
-  config: OpenClawConfig,
+  config: AforaConfig,
 ): Promise<void> {
   harness.install();
 
@@ -423,20 +423,20 @@ async function expectImportedStartupConfigUsesFullSecretsRuntime(
 }
 
 describe("gateway startup config secret preflight", () => {
-  const previousSkipChannels = process.env.OPENCLAW_SKIP_CHANNELS;
-  const previousSkipProviders = process.env.OPENCLAW_SKIP_PROVIDERS;
+  const previousSkipChannels = process.env.AFORA_SKIP_CHANNELS;
+  const previousSkipProviders = process.env.AFORA_SKIP_PROVIDERS;
 
   afterEach(() => {
     clearSecretsRuntimeSnapshotState();
     if (previousSkipChannels === undefined) {
-      delete process.env.OPENCLAW_SKIP_CHANNELS;
+      delete process.env.AFORA_SKIP_CHANNELS;
     } else {
-      process.env.OPENCLAW_SKIP_CHANNELS = previousSkipChannels;
+      process.env.AFORA_SKIP_CHANNELS = previousSkipChannels;
     }
     if (previousSkipProviders === undefined) {
-      delete process.env.OPENCLAW_SKIP_PROVIDERS;
+      delete process.env.AFORA_SKIP_PROVIDERS;
     } else {
-      process.env.OPENCLAW_SKIP_PROVIDERS = previousSkipProviders;
+      process.env.AFORA_SKIP_PROVIDERS = previousSkipProviders;
     }
   });
 
@@ -1231,7 +1231,7 @@ describe("gateway startup config secret preflight", () => {
   });
 
   it("rejects a managed reload prepared before an OAuth credential mutation", async () => {
-    const agentDir = "/tmp/openclaw-managed-auth-store-cas";
+    const agentDir = "/tmp/afora-managed-auth-store-cas";
     const initial = preparedSnapshot(gatewayTokenConfig({}));
     const candidate: PreparedSecretsRuntimeSnapshot = {
       ...preparedSnapshotWithGatewayToken(initial.sourceConfig, "candidate-token"),
@@ -1482,14 +1482,14 @@ describe("gateway startup config secret preflight", () => {
     expect(String(startupFailure)).not.toContain("PRIVATE_STARTUP_AUTH_REF");
     expect(logSecrets.warn).toHaveBeenCalledWith(
       "[SECRETS_DEGRADED] cold gateway:auth: secret reference was not found. " +
-        "Retry: openclaw secrets reload.",
+        "Retry: afora secrets reload.",
       {
         event: "secrets.degraded",
         ownerKind: "gateway",
         ownerId: "auth",
         reason: "secret reference was not found",
         state: "cold",
-        retryHint: "openclaw secrets reload",
+        retryHint: "afora secrets reload",
       },
     );
     expect(JSON.stringify(logSecrets.warn.mock.calls)).not.toContain("PRIVATE_STARTUP_AUTH_REF");
@@ -1574,14 +1574,14 @@ describe("gateway startup config secret preflight", () => {
     expect(logSecrets.warn).toHaveBeenCalledWith(`[${warning.code}] ${warning.message}`);
     expect(logSecrets.warn).toHaveBeenCalledWith(
       "[SECRETS_DEGRADED] cold capability:tts: secret provider policy denied resolution. " +
-        "Retry: openclaw secrets reload.",
+        "Retry: afora secrets reload.",
       {
         event: "secrets.degraded",
         ownerKind: "capability",
         ownerId: "tts",
         reason: "secret provider policy denied resolution",
         state: "cold",
-        retryHint: "openclaw secrets reload",
+        retryHint: "afora secrets reload",
       },
     );
     expect(JSON.stringify(logSecrets.warn.mock.calls)).not.toContain("ELEVENLABS_API_KEY");
@@ -1640,7 +1640,7 @@ describe("gateway startup config secret preflight", () => {
     expect(logSecrets.warn).toHaveBeenCalledWith(
       "[SECRETS_PROVIDER_DEGRADED] exec:vault: secret provider failed. " +
         "Affected owners: stale capability:tts, cold provider:openai. " +
-        "Retry: openclaw secrets reload.",
+        "Retry: afora secrets reload.",
       {
         event: "secrets.provider_degraded",
         source: "exec",
@@ -1650,7 +1650,7 @@ describe("gateway startup config secret preflight", () => {
           { ownerKind: "capability", ownerId: "tts", state: "stale" },
           { ownerKind: "provider", ownerId: "openai", state: "cold" },
         ],
-        retryHint: "openclaw secrets reload",
+        retryHint: "afora secrets reload",
       },
     );
   });
@@ -1814,14 +1814,14 @@ describe("gateway startup config secret preflight", () => {
 
     expect(logSecrets.warn).toHaveBeenCalledWith(
       "[SECRETS_DEGRADED] cold unknown:unmapped: secret reference was not found. " +
-        "Retry: openclaw secrets reload.",
+        "Retry: afora secrets reload.",
       {
         event: "secrets.degraded",
         ownerKind: "unknown",
         ownerId: "unmapped",
         reason: "secret reference was not found",
         state: "cold",
-        retryHint: "openclaw secrets reload",
+        retryHint: "afora secrets reload",
       },
     );
     expect(JSON.stringify(logSecrets.warn.mock.calls)).not.toContain("PRIVATE_UNMAPPED_REF");
@@ -2118,14 +2118,14 @@ describe("gateway startup config secret preflight", () => {
     expect(logSecrets.warn).toHaveBeenCalledTimes(2);
     expect(logSecrets.warn).toHaveBeenCalledWith(
       "[SECRETS_DEGRADED] stale provider:openai: secret reference was not found. " +
-        "Retry: openclaw secrets reload.",
+        "Retry: afora secrets reload.",
       {
         event: "secrets.degraded",
         ownerKind: "provider",
         ownerId: "openai",
         reason: "secret reference was not found",
         state: "stale",
-        retryHint: "openclaw secrets reload",
+        retryHint: "afora secrets reload",
       },
     );
     expect(JSON.stringify(logSecrets.warn.mock.calls)).not.toContain("OPENAI_API_KEY");
@@ -2193,7 +2193,7 @@ describe("gateway startup config secret preflight", () => {
       "SECRETS_RELOADER_RECOVERED",
     ]);
 
-    const changedSourceConfig: OpenClawConfig = structuredClone(sourceConfig);
+    const changedSourceConfig: AforaConfig = structuredClone(sourceConfig);
     changedSourceConfig.models!.providers!.openai!.apiKey = {
       source: "env",
       provider: "default",
@@ -2482,7 +2482,7 @@ describe("gateway startup config secret preflight", () => {
   );
 
   it("prunes channel refs from startup secret preflight when channels are skipped", async () => {
-    process.env.OPENCLAW_SKIP_CHANNELS = "1";
+    process.env.AFORA_SKIP_CHANNELS = "1";
     const prepareRuntimeSecretsSnapshot = vi.fn(async ({ config }) => preparedSnapshot(config));
     const activateRuntimeSecrets = runtimeSecretsActivatorForTest({
       prepareRuntimeSecretsSnapshot,
@@ -2503,7 +2503,7 @@ describe("gateway startup config secret preflight", () => {
     });
     expect(typeof result.config.gateway).toBe("object");
     const preflightInput = callArg<{
-      config?: OpenClawConfig;
+      config?: AforaConfig;
       loadAuthStore?: unknown;
     }>(prepareRuntimeSecretsSnapshot);
     expect(preflightInput.config?.channels).toBeUndefined();
@@ -2540,7 +2540,7 @@ describe("gateway startup config secret preflight", () => {
     expect(result.auth.mode).toBe("password");
     expect(result.auth.password).toBe("override-password");
     const preflightInput = callArg<{
-      config?: OpenClawConfig;
+      config?: AforaConfig;
       loadAuthStore?: unknown;
     }>(prepareRuntimeSecretsSnapshot);
     expect(preflightInput.config?.gateway?.auth?.mode).toBe("password");
@@ -2562,7 +2562,7 @@ describe("gateway startup config secret preflight", () => {
     expect(result.auth.token).toBe("startup-test-token");
     expect(prepareRuntimeSecretsSnapshot).toHaveBeenCalledTimes(1);
     const preflightInput = callArg<{
-      config?: OpenClawConfig;
+      config?: AforaConfig;
       loadAuthStore?: unknown;
     }>(prepareRuntimeSecretsSnapshot);
     expect(preflightInput.config?.gateway?.auth?.token).toBe("startup-test-token");
@@ -2625,7 +2625,7 @@ describe("gateway startup config secret preflight", () => {
 
   it("activates no-SecretRef startup config without importing the full secrets runtime", async () => {
     vi.resetModules();
-    const agentDir = mkdtempSync(path.join(tmpdir(), "openclaw-startup-fast-path-"));
+    const agentDir = mkdtempSync(path.join(tmpdir(), "afora-startup-fast-path-"));
     const isolatedEnv = installIsolatedStartupFastPathEnv();
     const runtimeImport = vi.fn();
     const prepareRuntimeSecretsSnapshot = vi.fn(async ({ config }) => preparedSnapshot(config));
@@ -2670,13 +2670,13 @@ describe("gateway startup config secret preflight", () => {
         preflightActiveSecretsRuntimeSnapshotRefresh: async ({
           sourceConfig,
         }: {
-          sourceConfig: OpenClawConfig;
+          sourceConfig: AforaConfig;
         }) => await state.prepareRuntimeSecretsSnapshot({ config: sourceConfig }),
         refreshActiveSecretsRuntimeSnapshotForConfig: async ({
           sourceConfig,
           preflightResult,
         }: {
-          sourceConfig: OpenClawConfig;
+          sourceConfig: AforaConfig;
           preflightResult?: unknown;
         }) => {
           const snapshot =
@@ -2745,7 +2745,7 @@ describe("gateway startup config secret preflight", () => {
   });
 
   it("retries a stale startup fast-path preflight against the newer runtime context", async () => {
-    const agentDir = autoCleanupTempDirs.make("openclaw-startup-fast-path-cas-");
+    const agentDir = autoCleanupTempDirs.make("afora-startup-fast-path-cas-");
     let clearImportedSecretsRuntimeSnapshot: (() => void) | undefined;
     const config = (port: number) =>
       gatewayTokenConfig(
@@ -2810,7 +2810,7 @@ describe("gateway startup config secret preflight", () => {
   });
 
   it("grafts live auth stores onto one-shot config-write snapshots", async () => {
-    const agentDir = "/tmp/openclaw-managed-write-auth-store";
+    const agentDir = "/tmp/afora-managed-write-auth-store";
     const credential = {
       type: "api_key" as const,
       provider: "openai",
@@ -2838,7 +2838,7 @@ describe("gateway startup config secret preflight", () => {
       },
       refreshHandler: null,
     });
-    const prepareRuntimeSecretsSnapshot = vi.fn(async (params: { config: OpenClawConfig }) =>
+    const prepareRuntimeSecretsSnapshot = vi.fn(async (params: { config: AforaConfig }) =>
       preparedSnapshot(params.config),
     );
     const activateRuntimeSecrets = runtimeSecretsActivatorForTest({
@@ -2866,7 +2866,7 @@ describe("gateway startup config secret preflight", () => {
   });
 
   it("keeps the full secrets runtime path when startup config has a SecretRef", async () => {
-    const harness = createGatewayStartupSecretsRuntimeHarness("openclaw-startup-secret-ref-");
+    const harness = createGatewayStartupSecretsRuntimeHarness("afora-startup-secret-ref-");
     await expectImportedStartupConfigUsesFullSecretsRuntime(
       harness,
       asConfig({
@@ -2886,7 +2886,7 @@ describe("gateway startup config secret preflight", () => {
   });
 
   it("keeps the full secrets runtime path when auth profile files are present", async () => {
-    const harness = createGatewayStartupSecretsRuntimeHarness("openclaw-startup-auth-store-");
+    const harness = createGatewayStartupSecretsRuntimeHarness("afora-startup-auth-store-");
     writeFileSync(
       path.join(harness.agentDir, "auth-profiles.json"),
       `${JSON.stringify({
@@ -2911,7 +2911,7 @@ describe("gateway startup config secret preflight", () => {
   });
 
   it("publishes persisted relocated shared-main auth at startup", async () => {
-    const root = autoCleanupTempDirs.make("openclaw-startup-relocated-main-auth-");
+    const root = autoCleanupTempDirs.make("afora-startup-relocated-main-auth-");
     const processHome = path.join(root, "process-home");
     const activationHome = path.join(root, "activation-home");
     const relocatedMainAgentDir = path.join(root, "relocated-main-agent");
@@ -2922,8 +2922,8 @@ describe("gateway startup config secret preflight", () => {
     await withEnvAsync(
       {
         HOME: processHome,
-        OPENCLAW_STATE_DIR: path.join(processHome, "state"),
-        OPENCLAW_AGENT_DIR: relocatedMainAgentDir,
+        AFORA_STATE_DIR: path.join(processHome, "state"),
+        AFORA_AGENT_DIR: relocatedMainAgentDir,
       },
       async () => {
         writePersistedOpenAiProfile(relocatedMainAgentDir, "fake-persisted-key");
@@ -2931,8 +2931,8 @@ describe("gateway startup config secret preflight", () => {
         const activationEnv = {
           ...process.env,
           HOME: activationHome,
-          OPENCLAW_STATE_DIR: path.join(activationHome, "state"),
-          OPENCLAW_AGENT_DIR: relocatedMainAgentDir,
+          AFORA_STATE_DIR: path.join(activationHome, "state"),
+          AFORA_AGENT_DIR: relocatedMainAgentDir,
         };
 
         try {
@@ -2954,7 +2954,7 @@ describe("gateway startup config secret preflight", () => {
   });
 
   it("uses the activation env when publishing persisted startup auth", async () => {
-    const root = autoCleanupTempDirs.make("openclaw-startup-activation-env-auth-");
+    const root = autoCleanupTempDirs.make("afora-startup-activation-env-auth-");
     const processHome = path.join(root, "process-home");
     const activationHome = path.join(root, "activation-home");
     const activationAgentDir = path.join(activationHome, "configured-agent");
@@ -2964,8 +2964,8 @@ describe("gateway startup config secret preflight", () => {
     await withEnvAsync(
       {
         HOME: processHome,
-        OPENCLAW_STATE_DIR: path.join(processHome, "state"),
-        OPENCLAW_AGENT_DIR: undefined,
+        AFORA_STATE_DIR: path.join(processHome, "state"),
+        AFORA_AGENT_DIR: undefined,
       },
       async () => {
         writePersistedOpenAiProfile(activationAgentDir, "fake-activation-env-key");
@@ -2973,7 +2973,7 @@ describe("gateway startup config secret preflight", () => {
         const activationEnv = {
           ...process.env,
           HOME: activationHome,
-          OPENCLAW_STATE_DIR: path.join(activationHome, "state"),
+          AFORA_STATE_DIR: path.join(activationHome, "state"),
         };
 
         try {

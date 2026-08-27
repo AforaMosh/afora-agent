@@ -2,14 +2,14 @@
 import type {
   ProviderDefaultThinkingPolicyContext,
   ProviderThinkingProfile,
-} from "openclaw/plugin-sdk/core";
+} from "afora-agent/plugin-sdk/core";
 import type {
   ProviderFailoverErrorContext,
   ProviderWrapStreamFnContext,
-} from "openclaw/plugin-sdk/plugin-entry";
-import { buildProviderReplayFamilyHooks } from "openclaw/plugin-sdk/provider-model-shared";
-import { createPayloadPatchStreamWrapper } from "openclaw/plugin-sdk/provider-stream-shared";
-import { buildProviderToolCompatFamilyHooks } from "openclaw/plugin-sdk/provider-tools";
+} from "afora-agent/plugin-sdk/plugin-entry";
+import { buildProviderReplayFamilyHooks } from "afora-agent/plugin-sdk/provider-model-shared";
+import { createPayloadPatchStreamWrapper } from "afora-agent/plugin-sdk/provider-stream-shared";
+import { buildProviderToolCompatFamilyHooks } from "afora-agent/plugin-sdk/provider-tools";
 import { stripGoogleProviderPrefix } from "./model-id.js";
 import { resolveGoogleThinkingProfile } from "./provider-policy.js";
 import { sanitizeGoogleThinkingPayload } from "./thinking-api.js";

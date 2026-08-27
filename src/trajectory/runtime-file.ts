@@ -1,7 +1,7 @@
 // Trajectory runtime file helpers create and append trajectory log files.
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { readRegularFile } from "../infra/regular-file.js";
 import {
   TRAJECTORY_POINTER_FILE_MAX_BYTES,

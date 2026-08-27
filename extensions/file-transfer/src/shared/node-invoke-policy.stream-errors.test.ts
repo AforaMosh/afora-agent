@@ -1,6 +1,6 @@
 // File Transfer tests cover archive-policy failures through the node invoke policy.
 import crypto from "node:crypto";
-import type { OpenClawPluginNodeInvokePolicyContext } from "openclaw/plugin-sdk/plugin-entry";
+import type { AforaPluginNodeInvokePolicyContext } from "afora-agent/plugin-sdk/plugin-entry";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { projectBoundedTextTail } from "./append-bounded-text-tail.js";
 
@@ -8,7 +8,7 @@ const { runCommandWithTimeoutMock } = vi.hoisted(() => ({
   runCommandWithTimeoutMock: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/process-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/process-runtime", () => ({
   runCommandWithTimeout: runCommandWithTimeoutMock,
 }));
 
@@ -47,10 +47,10 @@ function mockCommandResult(overrides: Record<string, unknown> = {}) {
   );
 }
 
-function createDirFetchContext(): OpenClawPluginNodeInvokePolicyContext {
+function createDirFetchContext(): AforaPluginNodeInvokePolicyContext {
   const archive = Buffer.from("archive");
   const invokeNode = vi
-    .fn<OpenClawPluginNodeInvokePolicyContext["invokeNode"]>()
+    .fn<AforaPluginNodeInvokePolicyContext["invokeNode"]>()
     .mockResolvedValueOnce({
       ok: true,
       payload: {

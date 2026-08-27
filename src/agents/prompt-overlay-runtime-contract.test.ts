@@ -11,7 +11,7 @@ import {
   OPENAI_CONTRACT_PROVIDER_ID,
   openAiPluginPersonalityConfig,
   sharedGpt5PersonalityConfig,
-} from "openclaw/plugin-sdk/agent-runtime-test-contracts";
+} from "afora-agent/plugin-sdk/agent-runtime-test-contracts";
 import { describe, expect, it } from "vitest";
 import { resolveGpt5SystemPromptContribution } from "./gpt5-prompt-overlay.js";
 

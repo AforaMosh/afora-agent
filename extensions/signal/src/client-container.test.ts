@@ -1,6 +1,6 @@
 // Signal tests cover client container plugin behavior.
-import * as fetchModule from "openclaw/plugin-sdk/fetch-runtime";
-import { MAX_TIMER_TIMEOUT_MS } from "openclaw/plugin-sdk/number-runtime";
+import * as fetchModule from "afora-agent/plugin-sdk/fetch-runtime";
+import { MAX_TIMER_TIMEOUT_MS } from "afora-agent/plugin-sdk/number-runtime";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { containerCheck, containerRpcRequest, streamContainerEvents } from "./client-container.js";
 

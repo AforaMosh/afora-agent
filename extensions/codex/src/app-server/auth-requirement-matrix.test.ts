@@ -1,5 +1,5 @@
 // Codex tests pin the full app-server auth-requirement matrix so one-sided changes fail loudly.
-import type { AuthProfileStore } from "openclaw/plugin-sdk/agent-runtime";
+import type { AuthProfileStore } from "afora-agent/plugin-sdk/agent-runtime";
 import { describe, expect, it, vi } from "vitest";
 import {
   applyCodexAppServerAuthProfile,
@@ -7,7 +7,7 @@ import {
 } from "./auth-bridge.js";
 import type { CodexAppServerHomeScope } from "./config.js";
 
-const AGENT_DIR = "/tmp/openclaw-codex-auth-matrix";
+const AGENT_DIR = "/tmp/afora-codex-auth-matrix";
 const SUBSCRIPTION_REQUIRED_ERROR = "subscription profile required";
 const SUBSCRIPTION_UNUSABLE_ERROR = "subscription profile unusable";
 
@@ -44,7 +44,7 @@ function buildStore(kind: StoredProfileKind): AuthProfileStore {
 }
 
 /**
- * Expected handoff per cell. `prepared` names the auth material OpenClaw hands to the
+ * Expected handoff per cell. `prepared` names the auth material Afora hands to the
  * app-server; `native` means the connection keeps whatever account its Codex home owns.
  */
 type ExpectedHandoff =
@@ -59,7 +59,7 @@ const HANDOFF_MATRIX: {
   storedProfile: StoredProfileKind;
   expected: ExpectedHandoff;
 }[] = [
-  // Agent scope owns an isolated CODEX_HOME, so OpenClaw may inject prepared auth.
+  // Agent scope owns an isolated CODEX_HOME, so Afora may inject prepared auth.
   {
     homeScope: "agent",
     authRequirement: "api-key",
@@ -235,7 +235,7 @@ describe("Codex app-server auth requirement matrix", () => {
 
 /**
  * A native-home connection reaches `applyCodexAppServerAuthProfile` with a null profile:
- * OpenClaw verifies the account it found instead of logging in over it.
+ * Afora verifies the account it found instead of logging in over it.
  */
 describe("native Codex account verification", () => {
   const NATIVE_ACCOUNT_MATRIX: {

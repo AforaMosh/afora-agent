@@ -91,7 +91,7 @@ func translateDocBodyChunked(ctx context.Context, translator docsTranslator, rel
 			maskedListMarkers,
 			extractMarkdownListMarkerPrefixes(translatedBody),
 		)
-		if os.Getenv("OPENCLAW_DOCS_I18N_LOG_REJECTED_BODY") == "1" {
+		if os.Getenv("AFORA_DOCS_I18N_LOG_REJECTED_BODY") == "1" {
 			log.Printf("docs-i18n: rejected translated body %s %q", relPath, translatedBody)
 		}
 		return "", fmt.Errorf("%s: final document validation: %w", relPath, err)
@@ -621,9 +621,9 @@ var contextualProductDestinations = map[string]contextualProductDestinationRule{
 	"Runway":      {hosts: []string{"runwayml.com"}, routes: []string{"/providers/runway", "/plugins/reference/runway"}},
 	"Synthetic":   {hosts: []string{"synthetic.new"}, routes: []string{"/providers/synthetic"}},
 	"Upstash Box": {hosts: []string{"upstash.com"}, routes: []string{"/install/upstash", "/docs/box"}},
-	"Lobster":     {routes: []string{"/tools/lobster", "/openclaw/lobster"}},
-	"Mantis":      {routes: []string{"/concepts/mantis", "/openclaw/mantis"}},
-	"Tokenjuice":  {routes: []string{"/tools/tokenjuice", "/openclaw/tokenjuice"}},
+	"Lobster":     {routes: []string{"/tools/lobster", "/afora/lobster"}},
+	"Mantis":      {routes: []string{"/concepts/mantis", "/afora/mantis"}},
+	"Tokenjuice":  {routes: []string{"/tools/tokenjuice", "/afora/tokenjuice"}},
 }
 
 func destinationMentionsProductName(destination, name string) bool {
@@ -1076,7 +1076,7 @@ func lastNonEmptyLineIndex(lines []string) int {
 }
 
 func docsI18nDocChunkMaxBytes() int {
-	value := strings.TrimSpace(os.Getenv("OPENCLAW_DOCS_I18N_DOC_CHUNK_MAX_BYTES"))
+	value := strings.TrimSpace(os.Getenv("AFORA_DOCS_I18N_DOC_CHUNK_MAX_BYTES"))
 	if value == "" {
 		return defaultDocChunkMaxBytes
 	}
@@ -1088,7 +1088,7 @@ func docsI18nDocChunkMaxBytes() int {
 }
 
 func docsI18nDocChunkPromptBudget() int {
-	value := strings.TrimSpace(os.Getenv("OPENCLAW_DOCS_I18N_DOC_CHUNK_PROMPT_BUDGET"))
+	value := strings.TrimSpace(os.Getenv("AFORA_DOCS_I18N_DOC_CHUNK_PROMPT_BUDGET"))
 	if value == "" {
 		return defaultDocChunkPromptBudget
 	}

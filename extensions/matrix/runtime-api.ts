@@ -1,5 +1,5 @@
 // Matrix API module exposes the plugin public contract.
-import { chunkTextForOutbound as chunkTextForOutboundSdk } from "openclaw/plugin-sdk/text-chunking";
+import { chunkTextForOutbound as chunkTextForOutboundSdk } from "afora-agent/plugin-sdk/text-chunking";
 
 export {
   type MatrixResolvedStringField,
@@ -38,22 +38,22 @@ export {
   ssrfPolicyFromDangerouslyAllowPrivateNetwork,
   type LookupFn,
   type SsrFPolicy,
-} from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/ssrf-runtime";
 export {
   setMatrixThreadBindingIdleTimeoutBySessionKey,
   setMatrixThreadBindingMaxAgeBySessionKey,
 } from "./src/matrix/thread-bindings-shared.js";
 export { setMatrixRuntime } from "./src/runtime.js";
-export { writeJsonFileAtomically } from "openclaw/plugin-sdk/json-store";
+export { writeJsonFileAtomically } from "afora-agent/plugin-sdk/json-store";
 export type {
   ChannelDirectoryEntry,
   ChannelMessageActionContext,
-} from "openclaw/plugin-sdk/channel-contract";
-export type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-export { formatZonedTimestamp } from "openclaw/plugin-sdk/time-runtime";
-export type { PluginRuntime, RuntimeLogger } from "openclaw/plugin-sdk/plugin-runtime";
-export type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-export type { WizardPrompter } from "openclaw/plugin-sdk/setup";
+} from "afora-agent/plugin-sdk/channel-contract";
+export type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+export { formatZonedTimestamp } from "afora-agent/plugin-sdk/time-runtime";
+export type { PluginRuntime, RuntimeLogger } from "afora-agent/plugin-sdk/plugin-runtime";
+export type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+export type { WizardPrompter } from "afora-agent/plugin-sdk/setup";
 
 // This facade shipped distinct empty and whitespace behavior. Preserve that
 // contract while delegating fractional limits to the progress-safe SDK owner.

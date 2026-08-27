@@ -1,5 +1,5 @@
-import type { ProviderNormalizeResolvedModelContext } from "openclaw/plugin-sdk/plugin-entry";
-import type { ModelApi } from "openclaw/plugin-sdk/provider-model-types";
+import type { ProviderNormalizeResolvedModelContext } from "afora-agent/plugin-sdk/plugin-entry";
+import type { ModelApi } from "afora-agent/plugin-sdk/provider-model-types";
 import { describe, expect, it } from "vitest";
 import { projectConfiguredModelRow } from "./provider-policy-api.js";
 

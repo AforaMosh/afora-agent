@@ -29,17 +29,17 @@ const manifestRecord = {
   origin: "global",
   rootDir: "/plugins/example",
   source: "/plugins/example/index.js",
-  manifestPath: "/plugins/example/openclaw.plugin.json",
+  manifestPath: "/plugins/example/afora.plugin.json",
 } satisfies PluginManifestRecord;
 
-function createRecordWithBuildVersion(openclawVersion: unknown) {
+function createRecordWithBuildVersion(aforaVersion: unknown) {
   const candidate = {
     idHint: "example",
     source: manifestRecord.source,
     rootDir: manifestRecord.rootDir,
     origin: manifestRecord.origin,
     packageManifest: {
-      build: { openclawVersion },
+      build: { aforaVersion },
     } as unknown as NonNullable<PluginCandidate["packageManifest"]>,
   } satisfies PluginCandidate;
 
@@ -58,8 +58,8 @@ function createRecordWithBuildVersion(openclawVersion: unknown) {
 
 describe("createManifestPluginRecord", () => {
   it("ignores malformed package build version metadata", () => {
-    expect(createRecordWithBuildVersion(" 2026.7.2 ").builtWithOpenClawVersion).toBe("2026.7.2");
-    expect(createRecordWithBuildVersion(42).builtWithOpenClawVersion).toBeUndefined();
+    expect(createRecordWithBuildVersion(" 2026.7.2 ").builtWithAforaVersion).toBe("2026.7.2");
+    expect(createRecordWithBuildVersion(42).builtWithAforaVersion).toBeUndefined();
   });
 });
 

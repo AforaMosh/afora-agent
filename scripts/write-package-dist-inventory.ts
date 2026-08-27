@@ -1,5 +1,5 @@
 #!/usr/bin/env -S node --import tsx
-// Write Package Dist Inventory script supports OpenClaw repository automation.
+// Write Package Dist Inventory script supports Afora repository automation.
 
 import { pathToFileURL } from "node:url";
 import { writePackageDistInventoryForPublish } from "./lib/package-dist-inventory.ts";

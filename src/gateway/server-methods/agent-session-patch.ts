@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { resolveTrustedGroupId } from "../../agents/agent-tools.policy.js";
 import { clearAllCliSessions } from "../../agents/cli-session.js";
 import { buildMainSessionRecoveryClearPatch } from "../../agents/main-session-recovery/main-session-recovery-clear.js";
@@ -12,7 +12,7 @@ import { hasProviderOwnedSession } from "../../config/sessions/entry-freshness.j
 import { resolveSessionEntryAccessTarget } from "../../config/sessions/session-accessor.js";
 import { isRecoverableTerminalSessionStatus } from "../../config/sessions/terminal-status.js";
 import type { InternalSessionEntry as SessionEntry } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   deliveryContextFromSession,
   mergeDeliveryContext,
@@ -45,7 +45,7 @@ export type AgentSessionPatchBuild = {
 export function buildAgentSessionPatch(params: {
   freshEntry: SessionEntry | undefined;
   initialEntry: SessionEntry | undefined;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionAgentId: string;
   canonicalSessionKey: string;
   storePath: string;

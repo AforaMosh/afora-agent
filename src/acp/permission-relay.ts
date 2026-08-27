@@ -4,7 +4,7 @@ import type {
   RequestPermissionRequest,
   RequestPermissionResponse,
 } from "@agentclientprotocol/sdk";
-import { normalizeOptionalString as readNonEmptyString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString as readNonEmptyString } from "@afora/normalization-core/string-coerce";
 
 export type GatewayExecApprovalDecision = "allow-once" | "allow-always" | "deny";
 

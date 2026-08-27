@@ -1,5 +1,5 @@
-import OpenClawKit
-import OpenClawProtocol
+import AforaKit
+import AforaProtocol
 import SwiftUI
 
 private enum AgentAutomationDetailSection: String, CaseIterable, Identifiable {
@@ -26,7 +26,7 @@ private struct AgentAutomationNotice {
 
         var color: Color {
             switch self {
-            case .success: OpenClawBrand.accent
+            case .success: AforaBrand.accent
             case .warning: .orange
             case .error: .red
             }
@@ -74,7 +74,7 @@ struct AgentAutomationDetailScreen: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                OpenClawProBackground()
+                AforaProBackground()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
                         self.summaryCard
@@ -104,7 +104,7 @@ struct AgentAutomationDetailScreen: View {
                         self.dismiss()
                     } label: {
                         Text("Close")
-                            .font(OpenClawType.subheadSemiBold)
+                            .font(AforaType.subheadSemiBold)
                     }
                 }
                 ToolbarItem(placement: .primaryAction) {
@@ -118,7 +118,7 @@ struct AgentAutomationDetailScreen: View {
                 }
             }
         }
-        .font(OpenClawType.body)
+        .font(AforaType.body)
         .presentationDetents([.large])
         .interactiveDismissDisabled(self.isBusy)
         .task { await self.initialLoad() }
@@ -131,15 +131,15 @@ struct AgentAutomationDetailScreen: View {
                 Task { await self.deleteAutomation() }
             } label: {
                 Text("Delete Automation")
-                    .font(OpenClawType.subheadSemiBold)
+                    .font(AforaType.subheadSemiBold)
             }
             Button(role: .cancel) {} label: {
                 Text("Cancel")
-                    .font(OpenClawType.subheadSemiBold)
+                    .font(AforaType.subheadSemiBold)
             }
         } message: {
             Text("This permanently removes the automation and its schedule from the Gateway.")
-                .font(OpenClawType.caption)
+                .font(AforaType.caption)
         }
     }
 
@@ -161,24 +161,24 @@ struct AgentAutomationDetailScreen: View {
     }
 
     private var summaryCard: some View {
-        ProCard(radius: OpenClawProMetric.cardRadius) {
+        ProCard(radius: AforaProMetric.cardRadius) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .top, spacing: 12) {
                     ProIconBadge(
                         systemName: self.job.enabled ? "clock.arrow.circlepath" : "pause.circle.fill",
-                        color: self.job.enabled ? OpenClawBrand.accent : .secondary)
+                        color: self.job.enabled ? AforaBrand.accent : .secondary)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(self.job.name)
-                            .font(OpenClawType.headline)
+                            .font(AforaType.headline)
                             .lineLimit(2)
                         Text(self.scheduleSummary)
-                            .font(OpenClawType.caption)
+                            .font(AforaType.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 8)
                     ProValuePill(
                         value: self.job.enabled ? String(localized: "active") : String(localized: "paused"),
-                        color: self.job.enabled ? OpenClawBrand.accent : .secondary)
+                        color: self.job.enabled ? AforaBrand.accent : .secondary)
                 }
                 HStack(spacing: 8) {
                     self.summaryMetric(
@@ -190,16 +190,16 @@ struct AgentAutomationDetailScreen: View {
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, AforaProMetric.pagePadding)
     }
 
     private func summaryMetric(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(title)
-                .font(OpenClawType.caption2SemiBold)
+                .font(AforaType.caption2SemiBold)
                 .foregroundStyle(.secondary)
             Text(value)
-                .font(OpenClawType.subheadSemiBold)
+                .font(AforaType.subheadSemiBold)
                 .lineLimit(1)
         }
         .padding(10)
@@ -211,12 +211,12 @@ struct AgentAutomationDetailScreen: View {
         Picker("Automation detail", selection: self.$selectedSection) {
             ForEach(AgentAutomationDetailSection.allCases) { section in
                 Text(section.title)
-                    .font(OpenClawType.captionSemiBold)
+                    .font(AforaType.captionSemiBold)
                     .tag(section)
             }
         }
         .pickerStyle(.segmented)
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, AforaProMetric.pagePadding)
     }
 
     @ViewBuilder
@@ -257,20 +257,20 @@ struct AgentAutomationDetailScreen: View {
     private func scheduleCard(_ draft: Binding<AgentAutomationDraft>) -> some View {
         self.cardSection(title: String(localized: "Schedule"), icon: "calendar.badge.clock") {
             Text(draft.wrappedValue.schedule.kindLabel)
-                .font(OpenClawType.captionSemiBold)
-                .foregroundStyle(OpenClawBrand.accent)
+                .font(AforaType.captionSemiBold)
+                .foregroundStyle(AforaBrand.accent)
             self.scheduleFields(draft)
             if case .at = draft.wrappedValue.schedule {
                 Toggle(isOn: draft.deleteAfterRun) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Delete after successful run")
-                            .font(OpenClawType.subheadSemiBold)
+                            .font(AforaType.subheadSemiBold)
                         Text("Useful for one-time automations.")
-                            .font(OpenClawType.caption)
+                            .font(AforaType.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
-                .tint(OpenClawBrand.accent)
+                .tint(AforaBrand.accent)
             }
         }
     }
@@ -323,8 +323,8 @@ struct AgentAutomationDetailScreen: View {
     private func actionCard(_ draft: Binding<AgentAutomationDraft>) -> some View {
         self.cardSection(title: String(localized: "Action"), icon: "bolt.fill") {
             Text(draft.wrappedValue.payload.kindLabel)
-                .font(OpenClawType.captionSemiBold)
-                .foregroundStyle(OpenClawBrand.accent)
+                .font(AforaType.captionSemiBold)
+                .foregroundStyle(AforaBrand.accent)
             self.payloadFields(draft)
         }
     }
@@ -356,7 +356,7 @@ struct AgentAutomationDetailScreen: View {
             self.labeledField(
                 String(localized: "Arguments (JSON array)"),
                 text: self.payloadBinding(draft, keyPath: \.argvJSON),
-                prompt: #"["openclaw","status"]"#,
+                prompt: #"["afora","status"]"#,
                 axis: .vertical)
             self.labeledField(
                 String(localized: "Working directory"),
@@ -377,7 +377,7 @@ struct AgentAutomationDetailScreen: View {
                 prompt: "now or next-heartbeat")
             if self.job.delivery != nil || self.job.failurealert != nil {
                 Text("Delivery and failure routing remain visible and editable in the Control UI.")
-                    .font(OpenClawType.caption)
+                    .font(AforaType.caption)
                     .foregroundStyle(.secondary)
             }
         }
@@ -387,7 +387,7 @@ struct AgentAutomationDetailScreen: View {
         self.cardSection(title: String(localized: "Manage"), icon: "slider.horizontal.3") {
             if !self.canAdmin {
                 Text("Admin scope is required to change, run, or delete automations.")
-                    .font(OpenClawType.caption)
+                    .font(AforaType.caption)
                     .foregroundStyle(.secondary)
             }
             HStack(spacing: 8) {
@@ -428,13 +428,13 @@ struct AgentAutomationDetailScreen: View {
                 HStack(spacing: 8) {
                     ProgressView().controlSize(.small)
                     Text(actionName)
-                        .font(OpenClawType.caption)
+                        .font(AforaType.caption)
                         .foregroundStyle(.secondary)
                 }
             }
             if self.hasUnsavedChanges {
                 Text("Save or discard edits before running, pausing, or enabling this automation.")
-                    .font(OpenClawType.caption)
+                    .font(AforaType.caption)
                     .foregroundStyle(.secondary)
             }
         }
@@ -453,7 +453,7 @@ struct AgentAutomationDetailScreen: View {
                 title: String(localized: "No runs yet"),
                 message: String(localized: "Completed runs and delivery outcomes will appear here."))
         } else {
-            ProCard(padding: 0, radius: OpenClawProMetric.cardRadius) {
+            ProCard(padding: 0, radius: AforaProMetric.cardRadius) {
                 VStack(spacing: 0) {
                     ForEach(Array(self.runs.enumerated()), id: \.offset) { index, run in
                         self.historyRow(run)
@@ -463,7 +463,7 @@ struct AgentAutomationDetailScreen: View {
                     }
                 }
             }
-            .padding(.horizontal, OpenClawProMetric.pagePadding)
+            .padding(.horizontal, AforaProMetric.pagePadding)
         }
     }
 
@@ -474,18 +474,18 @@ struct AgentAutomationDetailScreen: View {
     {
         VStack(alignment: .leading, spacing: 8) {
             ProSectionHeader(title: .verbatim(title))
-            ProCard(radius: OpenClawProMetric.cardRadius) {
+            ProCard(radius: AforaProMetric.cardRadius) {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 9) {
                         Image(systemName: icon)
-                            .foregroundStyle(OpenClawBrand.accent)
+                            .foregroundStyle(AforaBrand.accent)
                         Text(title)
-                            .font(OpenClawType.subheadSemiBold)
+                            .font(AforaType.subheadSemiBold)
                     }
                     content()
                 }
             }
-            .padding(.horizontal, OpenClawProMetric.pagePadding)
+            .padding(.horizontal, AforaProMetric.pagePadding)
         }
     }
 
@@ -498,10 +498,10 @@ struct AgentAutomationDetailScreen: View {
     {
         VStack(alignment: .leading, spacing: 5) {
             Text(title)
-                .font(OpenClawType.captionSemiBold)
+                .font(AforaType.captionSemiBold)
                 .foregroundStyle(.secondary)
             TextField(prompt, text: text, axis: axis)
-                .font(OpenClawType.body)
+                .font(AforaType.body)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .keyboardType(keyboard)
@@ -524,16 +524,16 @@ struct AgentAutomationDetailScreen: View {
         if prominent {
             Button(role: role, action: action) {
                 Label(title, systemImage: icon)
-                    .font(OpenClawType.captionSemiBold)
+                    .font(AforaType.captionSemiBold)
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .tint(OpenClawBrand.accent)
+            .tint(AforaBrand.accent)
             .disabled(!enabled)
         } else {
             Button(role: role, action: action) {
                 Label(title, systemImage: icon)
-                    .font(OpenClawType.captionSemiBold)
+                    .font(AforaType.captionSemiBold)
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
@@ -542,19 +542,19 @@ struct AgentAutomationDetailScreen: View {
     }
 
     private func messageCard(icon: String, color: Color, title: String, message: String) -> some View {
-        ProCard(radius: OpenClawProMetric.cardRadius) {
+        ProCard(radius: AforaProMetric.cardRadius) {
             HStack(alignment: .top, spacing: 12) {
                 ProIconBadge(systemName: icon, color: color)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                     Text(message)
-                        .font(OpenClawType.caption)
+                        .font(AforaType.caption)
                         .foregroundStyle(.secondary)
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, AforaProMetric.pagePadding)
     }
 
     private func noticeCard(_ notice: AgentAutomationNotice) -> some View {
@@ -988,7 +988,7 @@ extension AgentAutomationDetailScreen {
             status: status,
             error: run.error)
         {
-        case .success: ("checkmark.circle.fill", OpenClawBrand.accent, .secondary)
+        case .success: ("checkmark.circle.fill", AforaBrand.accent, .secondary)
         case .skipped: ("forward.end.circle.fill", .orange, .orange)
         case .failure: ("exclamationmark.triangle.fill", .red, .red)
         case .unknown: ("questionmark.circle.fill", .orange, .orange)
@@ -998,15 +998,15 @@ extension AgentAutomationDetailScreen {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text(status.capitalized)
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                     Spacer()
                     Text(Self.relativeTime(run.runatms ?? run.ts))
-                        .font(OpenClawType.caption2)
+                        .font(AforaType.caption2)
                         .foregroundStyle(.secondary)
                 }
                 if let message = run.error ?? run.summary {
                     Text(message)
-                        .font(OpenClawType.caption)
+                        .font(AforaType.caption)
                         .foregroundStyle(appearance.messageColor)
                         .lineLimit(3)
                 }
@@ -1017,7 +1017,7 @@ extension AgentAutomationDetailScreen {
                 ].compactMap(\.self)
                 if !details.isEmpty {
                     Text(details.joined(separator: " · "))
-                        .font(OpenClawType.caption2)
+                        .font(AforaType.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }

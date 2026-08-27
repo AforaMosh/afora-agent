@@ -1,5 +1,5 @@
 // Shared guard for browser-provided Talk relay audio frames.
-import { canonicalizeBase64 } from "@openclaw/media-core/base64";
+import { canonicalizeBase64 } from "@afora/media-core/base64";
 
 export function decodeTalkRelayAudioBase64(base64: string, label: string): Buffer {
   const canonicalBase64 = canonicalizeBase64(base64.replace(/-/gu, "+").replace(/_/gu, "/"));

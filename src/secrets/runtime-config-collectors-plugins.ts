@@ -1,7 +1,7 @@
 /** Collects plugin config secret refs from runtime plugin metadata. */
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 import { resolveConfigWidePluginManifestRegistry } from "../config/io.plugin-metadata.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   collectPluginConfigContractMatches,
   resolvePluginConfigContractsById,
@@ -34,7 +34,7 @@ function parsePluginConfigArrayIndex(segment: string): number | undefined {
 /** Collects SecretRef assignments from plugin-owned config contract paths. */
 export function collectPluginConfigAssignments(params: {
   /** Mutable config snapshot whose plugin config values will receive resolved secrets. */
-  config: OpenClawConfig;
+  config: AforaConfig;
   /** Defaults from the source config, used while matching manifest-declared SecretInput paths. */
   defaults: SecretDefaults | undefined;
   /** Resolver context that receives assignments and inactive-surface warnings. */

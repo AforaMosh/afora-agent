@@ -128,7 +128,7 @@ export function createWorkerDesktopTunnels(deps: {
           ssh: request.ssh,
           pinnedHostKey: request.ssh.hostKey,
           resolveIdentity: request.resolveIdentity,
-          temporaryDirectoryPrefix: "openclaw-worker-desktop-",
+          temporaryDirectoryPrefix: "afora-worker-desktop-",
         });
         if (!isCurrent()) {
           await prepared.dispose();
@@ -305,7 +305,7 @@ export function createWorkerDesktopTunnels(deps: {
         ssh: request.ssh,
         pinnedHostKey: request.ssh.hostKey,
         resolveIdentity: request.resolveIdentity,
-        temporaryDirectoryPrefix: "openclaw-worker-desktop-app-",
+        temporaryDirectoryPrefix: "afora-worker-desktop-app-",
       });
       try {
         abortController.signal.throwIfAborted();

@@ -23,7 +23,7 @@ jobs:
       ${{
         github.event_name != 'pull_request_target' ||
         (github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
-        (github.actor != 'clawsweeper[bot]' && github.actor != 'openclaw-clawsweeper[bot]')
+        (github.actor != 'clawsweeper[bot]' && github.actor != 'afora-clawsweeper[bot]')
       }}
     permissions:
       contents: read

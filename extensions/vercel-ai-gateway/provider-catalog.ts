@@ -1,5 +1,5 @@
 // Vercel Ai Gateway provider module implements model/runtime integration.
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-shared";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-model-shared";
 import {
   discoverVercelAiGatewayModels,
   getStaticVercelAiGatewayModelCatalog,

@@ -18,7 +18,7 @@ function changelog(strings: TemplateStringsArray, ...values: string[]) {
 
 const cumulativeChangelog = changelog`
 # Changelog
-Docs: https://docs.openclaw.ai
+Docs: https://docs.afora.ai
 ## Unreleased
 ### Fixes
 - Pending note.
@@ -58,7 +58,7 @@ describe("package-changelog", () => {
     expect(extractCurrentPackageChangelog(cumulativeChangelog, "2026.5.28-beta.1")).toBe(
       changelog`
 # Changelog
-Docs: https://docs.openclaw.ai
+Docs: https://docs.afora.ai
 
 ## 2026.5.28
 ### Highlights
@@ -139,7 +139,7 @@ Docs: https://docs.openclaw.ai
       }),
     ).toBe(changelog`
 # Changelog
-Docs: https://docs.openclaw.ai
+Docs: https://docs.afora.ai
 
 ## Unreleased
 ### Fixes
@@ -178,7 +178,7 @@ ${"é".repeat(260_000)}
   it("fails closed when the extracted release section is effectively empty", () => {
     const source = changelog`
 # Changelog
-Docs: https://docs.openclaw.ai
+Docs: https://docs.afora.ai
 ## 2026.5.28
 ### Fixes
 ## 2026.5.27
@@ -191,7 +191,7 @@ Docs: https://docs.openclaw.ai
   });
 
   it("prepares and restores the packaged changelog without changing the source permanently", async () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "openclaw-package-changelog-"));
+    const root = mkdtempSync(path.join(os.tmpdir(), "afora-package-changelog-"));
     try {
       writeFileSync(path.join(root, "package.json"), '{"version":"2026.5.28-beta.1"}\n', "utf8");
       writeFileSync(path.join(root, "CHANGELOG.md"), cumulativeChangelog, "utf8");
@@ -209,7 +209,7 @@ Docs: https://docs.openclaw.ai
   });
 
   it("recovers an interrupted ephemeral QA package with the default restore path", async () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "openclaw-package-changelog-"));
+    const root = mkdtempSync(path.join(os.tmpdir(), "afora-package-changelog-"));
     const unreleasedChangelog = cumulativeChangelog.replace(
       "- Pending note.",
       "- Pending release note with enough detail.",
@@ -227,7 +227,7 @@ Docs: https://docs.openclaw.ai
   });
 
   it("refuses to restore stale backups over current changelog edits", async () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "openclaw-package-changelog-"));
+    const root = mkdtempSync(path.join(os.tmpdir(), "afora-package-changelog-"));
     const backupPath = path.join(
       root,
       ".artifacts",

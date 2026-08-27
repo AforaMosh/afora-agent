@@ -65,7 +65,7 @@ describe("printClawBanner", () => {
     const { runtime, log } = runtimeStub();
     await printClawBanner(runtime, { columns: 50, isTty: true, rich: true, env: {} });
     const output = String(log.mock.calls[0]?.[0]);
-    expect(output).toContain("OPENCLAW");
+    expect(output).toContain("AFORA");
     expect(output).not.toContain("█");
   });
 

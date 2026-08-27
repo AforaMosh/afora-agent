@@ -6,12 +6,12 @@
 // logical (bot_id, chat_id, message_id) — the only identity that catches that replay
 // without colliding when state is reused after rotating to a different bot.
 import type { Message } from "grammy/types";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import {
   createChannelReplayGuard,
   runClaimableDedupeClaimLoop,
   type ChannelReplayClaimHandle,
-} from "openclaw/plugin-sdk/persistent-dedupe";
+} from "afora-agent/plugin-sdk/persistent-dedupe";
 
 const TELEGRAM_MESSAGE_DISPATCH_DEDUPE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const TELEGRAM_MESSAGE_DISPATCH_DEDUPE_NAMESPACE = "global";

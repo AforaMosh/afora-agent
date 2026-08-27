@@ -4,7 +4,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   forgetActiveSessionForShutdown,
@@ -18,7 +18,7 @@ const configMocks = vi.hoisted(() => ({
     agents: {
       defaults: {
         model: { primary: "anthropic/claude-opus-4-6" },
-        workspace: configMocks.workspaceDir || "/tmp/openclaw-agent-create-event",
+        workspace: configMocks.workspaceDir || "/tmp/afora-agent-create-event",
       },
     },
     session: {
@@ -60,7 +60,7 @@ describe("agent handler session create events", () => {
   let storePath: string;
 
   beforeEach(async () => {
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-agent-create-event-"));
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-agent-create-event-"));
     storePath = path.join(tempDir, "sessions.json");
     configMocks.storePath = storePath;
     configMocks.workspaceDir = tempDir;

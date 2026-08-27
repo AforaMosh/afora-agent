@@ -3,9 +3,9 @@ import {
   executeSqliteQueryTakeFirstSync,
 } from "../../infra/kysely-sync.js";
 import {
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import { readExactSessionEntryRowForCanonicalRepair } from "./session-accessor.sqlite-canonical-repair.js";
 import type { TranscriptEvent } from "./session-accessor.sqlite-contract.js";
 import { publishSessionEntryCacheInvalidation } from "./session-accessor.sqlite-entry-cache.js";
@@ -77,7 +77,7 @@ function prepareSqliteSessionImport(params: SqliteSessionImportRowsParams) {
 }
 
 function importSqliteSessionRowsInTransaction(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   prepared: ReturnType<typeof prepareSqliteSessionImport>,
 ): SqliteSessionImportRowsResult {
   const { params, resolved } = prepared;
@@ -210,7 +210,7 @@ export async function importSqliteSessionRowsBatch(
     throw new Error("SQLite session import batch spans multiple stores");
   }
   return await runExclusiveSqliteSessionWrite(resolved, async () =>
-    runOpenClawAgentWriteTransaction(
+    runAforaAgentWriteTransaction(
       (database) => prepared.map((row) => importSqliteSessionRowsInTransaction(database, row)),
       toDatabaseOptions(resolved),
     ),

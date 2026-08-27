@@ -1,7 +1,7 @@
-// Imports machine-owned openclaw.json values into the shared SQLite state store.
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
-import { compareOpenClawVersions } from "../config/version.js";
+// Imports machine-owned afora.json values into the shared SQLite state store.
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
+import { compareAforaVersions } from "../config/version.js";
 import {
   importConfigMachineState,
   readConfigMachineState,
@@ -12,7 +12,7 @@ const BUNDLED_DISCOVERY_STATE_CUTOVER_VERSION = "2026.7.2";
 
 /** Preserve retired machine-owned config fields before Doctor strips them. */
 export function migrateLegacyConfigMachineState(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
 }): { changes: string[]; warnings: string[] } {
   const raw = params.config as Record<string, unknown>;
@@ -32,7 +32,7 @@ export function migrateLegacyConfigMachineState(params: {
     Array.isArray(plugins?.allow) &&
     plugins.allow.length > 0 &&
     (typeof meta?.lastTouchedVersion !== "string" ||
-      compareOpenClawVersions(meta.lastTouchedVersion, BUNDLED_DISCOVERY_STATE_CUTOVER_VERSION) ===
+      compareAforaVersions(meta.lastTouchedVersion, BUNDLED_DISCOVERY_STATE_CUTOVER_VERSION) ===
         -1)
   ) {
     // Only infer compat when the canonical SQLite row does not already exist.

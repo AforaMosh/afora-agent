@@ -1,6 +1,6 @@
 // Memory Host SDK module owns additive memory chunk provenance schema.
 import type { DatabaseSync } from "node:sqlite";
-import { runSqliteImmediateTransactionSync } from "./openclaw-runtime-sqlite.js";
+import { runSqliteImmediateTransactionSync } from "./afora-runtime-sqlite.js";
 
 export const MEMORY_INDEX_CHUNK_PROVENANCE_TABLE = "memory_index_chunk_provenance";
 

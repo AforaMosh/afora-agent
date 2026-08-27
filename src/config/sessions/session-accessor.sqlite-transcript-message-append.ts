@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import { resolveTimestampMsToIsoString } from "@openclaw/normalization-core/number-coercion";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
+import { resolveTimestampMsToIsoString } from "@afora/normalization-core/number-coercion";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import type { AforaAgentDatabase } from "../../state/afora-agent-db.js";
 import type {
   TranscriptMessageAppendOptions,
   TranscriptMessageAppendResult,
@@ -40,7 +40,7 @@ function messagesMatchForIdempotentReplay(stored: unknown, candidate: unknown): 
 }
 
 export function appendTranscriptMessageInTransaction<TMessage>(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   resolved: ResolvedTranscriptScope,
   options: TranscriptMessageAppendOptions<TMessage> & { messageAlreadyRedacted?: boolean },
 ): TranscriptMessageAppendResult<TMessage> | undefined {

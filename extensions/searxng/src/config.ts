@@ -1,10 +1,10 @@
 // Searxng helper module supports config behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   normalizeResolvedSecretInputString,
   normalizeSecretInput,
-} from "openclaw/plugin-sdk/secret-input";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/secret-input";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 type SearxngPluginConfig = {
   webSearch?: {
@@ -43,7 +43,7 @@ function normalizeBaseUrl(value: string | undefined): string | undefined {
 }
 
 function resolveSearxngWebSearchConfig(
-  config?: OpenClawConfig,
+  config?: AforaConfig,
 ): SearxngPluginConfig["webSearch"] | undefined {
   const pluginConfig = config?.plugins?.entries?.searxng?.config as SearxngPluginConfig | undefined;
   const webSearch = pluginConfig?.webSearch;
@@ -54,7 +54,7 @@ function resolveSearxngWebSearchConfig(
 }
 
 export function resolveSearxngBaseUrl(
-  config?: OpenClawConfig,
+  config?: AforaConfig,
   env: NodeJS.ProcessEnv = process.env,
 ): string | undefined {
   const webSearch = resolveSearxngWebSearchConfig(config);
@@ -70,10 +70,10 @@ export function resolveSearxngBaseUrl(
   );
 }
 
-export function resolveSearxngCategories(config?: OpenClawConfig): string | undefined {
+export function resolveSearxngCategories(config?: AforaConfig): string | undefined {
   return normalizeOptionalString(resolveSearxngWebSearchConfig(config)?.categories);
 }
 
-export function resolveSearxngLanguage(config?: OpenClawConfig): string | undefined {
+export function resolveSearxngLanguage(config?: AforaConfig): string | undefined {
   return normalizeOptionalString(resolveSearxngWebSearchConfig(config)?.language);
 }

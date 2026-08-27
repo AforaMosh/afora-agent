@@ -5,11 +5,11 @@ import path from "node:path";
 import { afterAll, describe, expect, it, vi } from "vitest";
 
 const fixtureState = vi.hoisted(() => ({ pluginRoot: "" }));
-const originalBundledPluginsDir = process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
-const originalTrustBundledPluginsDir = process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR;
-const emptyBundledPluginsDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-empty-plugins-"));
+const originalBundledPluginsDir = process.env.AFORA_BUNDLED_PLUGINS_DIR;
+const originalTrustBundledPluginsDir = process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR;
+const emptyBundledPluginsDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-empty-plugins-"));
 const externalPluginRoot = fs.mkdtempSync(
-  path.join(os.tmpdir(), "openclaw-provider-policy-external-"),
+  path.join(os.tmpdir(), "afora-provider-policy-external-"),
 );
 fs.writeFileSync(
   path.join(externalPluginRoot, "provider-policy-api.js"),
@@ -24,8 +24,8 @@ fs.writeFileSync(
   "utf8",
 );
 fixtureState.pluginRoot = externalPluginRoot;
-process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = emptyBundledPluginsDir;
-process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
+process.env.AFORA_BUNDLED_PLUGINS_DIR = emptyBundledPluginsDir;
+process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR = "1";
 
 vi.mock("./current-plugin-metadata-snapshot.js", () => ({
   getCurrentPluginMetadataSnapshot: () => ({
@@ -49,14 +49,14 @@ const { isThinkingLevelSupported, listThinkingLevels, resolveThinkingDefaultForM
 
 afterAll(() => {
   if (originalBundledPluginsDir === undefined) {
-    delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+    delete process.env.AFORA_BUNDLED_PLUGINS_DIR;
   } else {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = originalBundledPluginsDir;
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = originalBundledPluginsDir;
   }
   if (originalTrustBundledPluginsDir === undefined) {
-    delete process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR;
+    delete process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR;
   } else {
-    process.env.OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR = originalTrustBundledPluginsDir;
+    process.env.AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR = originalTrustBundledPluginsDir;
   }
   fs.rmSync(emptyBundledPluginsDir, { recursive: true, force: true });
   fs.rmSync(externalPluginRoot, { recursive: true, force: true });

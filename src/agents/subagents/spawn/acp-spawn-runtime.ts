@@ -2,9 +2,9 @@ import fs from "node:fs/promises";
 import {
   resolveAcpSessionCwd,
   resolveAcpThreadSessionDetailLines,
-} from "@openclaw/acp-core/runtime/session-identifiers";
-import type { AcpRuntimeSessionMode } from "@openclaw/acp-core/runtime/types";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+} from "@afora/acp-core/runtime/session-identifiers";
+import type { AcpRuntimeSessionMode } from "@afora/acp-core/runtime/types";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { getAcpSessionManager } from "../../../acp/control-plane/manager.js";
 import type { AcpSpawnRuntimeCloseHandle } from "../../../acp/control-plane/spawn.js";
 import { formatThinkingLevels } from "../../../auto-reply/thinking.js";
@@ -19,7 +19,7 @@ import {
 import { resolveSessionStorePathCore } from "../../../config/sessions/paths.js";
 import { loadSessionEntry } from "../../../config/sessions/session-accessor.js";
 import type { SessionEntry } from "../../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { isMissingPathError } from "../../../infra/errors.js";
 import {
   getSessionBindingService,
@@ -88,7 +88,7 @@ function resolveAcpRuntimeTimeoutSeconds(runTimeoutSeconds?: number): number | u
 }
 
 export function resolveAcpSpawnRuntimeOptions(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   targetAgentId: string;
   configAgentId?: string;
   model?: string;
@@ -143,7 +143,7 @@ export function resolveAcpSpawnRuntimeOptions(params: {
 }
 
 export async function initializeAcpSpawnRuntime(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   targetAgentId: string;
   runtimeMode: AcpRuntimeSessionMode;
@@ -197,7 +197,7 @@ export async function initializeAcpSpawnRuntime(params: {
 }
 
 export async function bindPreparedAcpThread(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   targetAgentId: string;
   label?: string;

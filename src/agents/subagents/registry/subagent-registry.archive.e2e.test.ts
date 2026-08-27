@@ -376,7 +376,7 @@ describe("subagent registry archive behavior", () => {
       agents: { defaults: { subagents: { archiveAfterMinutes: 1 } } },
     };
     const onSubagentEnded = vi.fn(async () => undefined);
-    const attachmentsRootDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-sweep-retry-"));
+    const attachmentsRootDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-sweep-retry-"));
     const attachmentsDir = path.join(attachmentsRootDir, "child");
     await fs.mkdir(attachmentsDir, { recursive: true });
     await fs.writeFile(path.join(attachmentsDir, "artifact.txt"), "artifact", "utf8");
@@ -1032,7 +1032,7 @@ describe("subagent registry archive behavior", () => {
 
   it("removes attachments for the replaced run after steer restart", async () => {
     const attachmentsRootDir = await fs.mkdtemp(
-      path.join(os.tmpdir(), "openclaw-replace-attachments-"),
+      path.join(os.tmpdir(), "afora-replace-attachments-"),
     );
     const attachmentsDir = path.join(attachmentsRootDir, "old");
     await fs.mkdir(attachmentsDir, { recursive: true });

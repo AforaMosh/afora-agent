@@ -111,10 +111,10 @@ describe("mantis Slack desktop smoke runtime", () => {
     const runtimeEnv = {
       PATH: process.env.PATH,
       OPENAI_API_KEY: "openai-runtime-key",
-      OPENCLAW_QA_SLACK_CHANNEL_ID: "C123",
-      OPENCLAW_QA_SLACK_DRIVER_BOT_TOKEN: "driver-token",
-      OPENCLAW_QA_SLACK_SUT_APP_TOKEN: "app-token",
-      OPENCLAW_QA_SLACK_SUT_BOT_TOKEN: "sut-token",
+      AFORA_QA_SLACK_CHANNEL_ID: "C123",
+      AFORA_QA_SLACK_DRIVER_BOT_TOKEN: "driver-token",
+      AFORA_QA_SLACK_SUT_APP_TOKEN: "app-token",
+      AFORA_QA_SLACK_SUT_BOT_TOKEN: "sut-token",
     };
     const runner = vi.fn(
       async (command: string, args: readonly string[], options: { env?: NodeJS.ProcessEnv }) => {
@@ -164,7 +164,7 @@ describe("mantis Slack desktop smoke runtime", () => {
       commandRunner: runner,
       crabboxBin: "/tmp/crabbox",
       env: runtimeEnv,
-      freshPr: "openclaw/openclaw#85141",
+      freshPr: "AforaMosh/afora-agent#85141",
       now: () => new Date("2026-05-04T13:00:00.000Z"),
       outputDir: ".artifacts/qa-e2e/mantis/slack-desktop-test",
       primaryModel: "openai/gpt-5.4",
@@ -183,14 +183,14 @@ describe("mantis Slack desktop smoke runtime", () => {
       ["/tmp/crabbox", "stop"],
     ]);
     expect(
-      commands.every((entry) => entry.env?.OPENCLAW_LIVE_OPENAI_KEY === "openai-runtime-key"),
+      commands.every((entry) => entry.env?.AFORA_LIVE_OPENAI_KEY === "openai-runtime-key"),
     ).toBe(true);
     const runArgs = commands.find(
       (entry) => entry.command === "/tmp/crabbox" && entry.args[0] === "run",
     )?.args;
     expect(runArgs).toContain("--no-hydrate");
     expect(runArgs).toContain("--fresh-pr");
-    expect(runArgs).toContain("openclaw/openclaw#85141");
+    expect(runArgs).toContain("AforaMosh/afora-agent#85141");
     expect(runArgs).not.toContain("--no-sync");
     const remoteScript = runArgs?.at(-1);
     expect(remoteScript).toContain("hydrate_mode='source'");
@@ -234,7 +234,7 @@ describe("mantis Slack desktop smoke runtime", () => {
     expect(remoteScript).toContain('sudo apt-get update -y >>"$out/apt.log" 2>&1 || true');
     expect(remoteScript).toContain("slack-desktop-smoke.mp4");
     expect(remoteScript).not.toContain("-video_size");
-    expect(remoteScript).toContain("openclaw qa slack");
+    expect(remoteScript).toContain("afora qa slack");
     expect(remoteScript).toContain("--scenario 'slack-canary'");
     expect(remoteScript).toContain(
       'slack_qa_output_dir=".artifacts/qa-e2e/mantis/$(basename "$out")/slack-qa"',
@@ -256,7 +256,7 @@ describe("mantis Slack desktop smoke runtime", () => {
     expect(remoteScript).toContain('tail -n 200 "$diagnostic_file"');
     expect(remoteScript).toContain("Slack desktop screenshot is missing or empty");
     expect(remoteScript).not.toContain('test -s "$out/slack-desktop-smoke.png"');
-    expect(remoteScript).toContain("OPENCLAW_MANTIS_SLACK_BROWSER_PROFILE_DIR");
+    expect(remoteScript).toContain("AFORA_MANTIS_SLACK_BROWSER_PROFILE_DIR");
     expect(remoteScript)
       .toContain(`const response = await fetch("https://slack.com/api/auth.test", {
   method: "POST",
@@ -268,10 +268,10 @@ describe("mantis Slack desktop smoke runtime", () => {
       .flatMap((entry) => entry.args);
     expect(rsyncArgs).not.toContain("--delete");
     expect(rsyncArgs).toContain(
-      "crabbox@203.0.113.10:/tmp/openclaw-mantis-slack-desktop-2026-05-04T13-00-00-000Z/",
+      "crabbox@203.0.113.10:/tmp/afora-mantis-slack-desktop-2026-05-04T13-00-00-000Z/",
     );
     expect(rsyncArgs).toContain(
-      "crabbox@203.0.113.10:/tmp/openclaw-mantis-slack-desktop-2026-05-04T13-00-00-000Z/slack-qa/",
+      "crabbox@203.0.113.10:/tmp/afora-mantis-slack-desktop-2026-05-04T13-00-00-000Z/slack-qa/",
     );
     await expect(fs.readFile(result.screenshotPath ?? "", "utf8")).resolves.toBe("png");
     await expect(fs.readFile(result.videoPath ?? "", "utf8")).resolves.toBe("mp4");
@@ -350,15 +350,15 @@ describe("mantis Slack desktop smoke runtime", () => {
       .find((entry) => entry.command === "/tmp/crabbox" && entry.args[0] === "run")
       ?.args.at(-1);
     expect(remoteScript).toContain("approval_checkpoints=1");
-    expect(remoteScript).toContain('export OPENCLAW_QA_SLACK_CHANNEL_ID="$slack_channel_id"');
+    expect(remoteScript).toContain('export AFORA_QA_SLACK_CHANNEL_ID="$slack_channel_id"');
     expect(remoteScript).toContain("--scenario 'slack-approval-exec-native'");
     expect(remoteScript).toContain("--scenario 'slack-approval-plugin-native'");
-    expect(remoteScript).toContain("OPENCLAW_QA_SLACK_APPROVAL_CHECKPOINT_DIR");
-    expect(remoteScript).toContain("OPENCLAW_QA_SLACK_APPROVAL_CHECKPOINT_TIMEOUT_MS");
+    expect(remoteScript).toContain("AFORA_QA_SLACK_APPROVAL_CHECKPOINT_DIR");
+    expect(remoteScript).toContain("AFORA_QA_SLACK_APPROVAL_CHECKPOINT_TIMEOUT_MS");
     expect(remoteScript).toContain('cat >"$out/approval-checkpoint-watcher.mjs"');
     expect(remoteScript).not.toContain('node >"$out/approval-checkpoint-watcher.mjs"');
     expect(remoteScript).toContain("approval-checkpoint-watcher.mjs");
-    expect(remoteScript).toContain("OPENCLAW_MANTIS_APPROVAL_BROWSER_BIN");
+    expect(remoteScript).toContain("AFORA_MANTIS_APPROVAL_BROWSER_BIN");
     expect(remoteScript).toContain("Rendered from the Slack API message observed by QA");
     expect(remoteScript).toContain("class='wrap'");
     expect(remoteScript).toContain("--headless=new");
@@ -480,9 +480,9 @@ describe("mantis Slack desktop smoke runtime", () => {
       expect(remoteScript).toContain(
         expectedScenarioIds.map((scenarioId) => `--scenario '${scenarioId}'`).join(" "),
       );
-      expect(remoteScript).toContain("OPENCLAW_QA_SLACK_APPROVAL_CHECKPOINT_TIMEOUT_MS:-470000");
+      expect(remoteScript).toContain("AFORA_QA_SLACK_APPROVAL_CHECKPOINT_TIMEOUT_MS:-470000");
       expect(remoteScript).toContain(
-        `OPENCLAW_MANTIS_REMOTE_COMMAND_TIMEOUT_SECONDS:-${remoteTimeoutSeconds}`,
+        `AFORA_MANTIS_REMOTE_COMMAND_TIMEOUT_SECONDS:-${remoteTimeoutSeconds}`,
       );
     },
   );
@@ -699,8 +699,8 @@ describe("mantis Slack desktop smoke runtime", () => {
       env: {
         CI: "1",
         OPENAI_API_KEY: "openai-runtime-key",
-        OPENCLAW_QA_CONVEX_SECRET_CI: "convex-secret",
-        OPENCLAW_QA_CONVEX_SITE_URL: "https://example.convex.site",
+        AFORA_QA_CONVEX_SECRET_CI: "convex-secret",
+        AFORA_QA_CONVEX_SITE_URL: "https://example.convex.site",
         PATH: process.env.PATH,
       },
       gatewaySetup: true,
@@ -721,16 +721,16 @@ describe("mantis Slack desktop smoke runtime", () => {
     const runCommand = commands.find(
       (entry) => entry.command === "/tmp/crabbox" && entry.args[0] === "run",
     );
-    expect(runCommand?.env?.OPENCLAW_MANTIS_SLACK_APP_TOKEN).toBe("xapp-leased");
-    expect(runCommand?.env?.OPENCLAW_MANTIS_SLACK_BOT_TOKEN).toBe("xoxb-leased");
-    expect(runCommand?.env?.OPENCLAW_MANTIS_SLACK_CHANNEL_ID).toBe("CLEASED");
-    expect(runCommand?.env?.OPENCLAW_QA_SLACK_CHANNEL_ID).toBe("CLEASED");
-    expect(runCommand?.env?.OPENCLAW_QA_SLACK_SUT_APP_TOKEN).toBe("xapp-leased");
-    expect(runCommand?.env?.OPENCLAW_QA_SLACK_SUT_BOT_TOKEN).toBe("xoxb-leased");
+    expect(runCommand?.env?.AFORA_MANTIS_SLACK_APP_TOKEN).toBe("xapp-leased");
+    expect(runCommand?.env?.AFORA_MANTIS_SLACK_BOT_TOKEN).toBe("xoxb-leased");
+    expect(runCommand?.env?.AFORA_MANTIS_SLACK_CHANNEL_ID).toBe("CLEASED");
+    expect(runCommand?.env?.AFORA_QA_SLACK_CHANNEL_ID).toBe("CLEASED");
+    expect(runCommand?.env?.AFORA_QA_SLACK_SUT_APP_TOKEN).toBe("xapp-leased");
+    expect(runCommand?.env?.AFORA_QA_SLACK_SUT_BOT_TOKEN).toBe("xoxb-leased");
     const remoteScript = runCommand?.args.at(-1);
     expect(remoteScript).toContain("setup_gateway=1");
-    expect(remoteScript).toContain("openclaw gateway run");
-    expect(remoteScript).toContain('</dev/null >"$out/openclaw-gateway.log"');
+    expect(remoteScript).toContain("afora gateway run");
+    expect(remoteScript).toContain('</dev/null >"$out/afora-gateway.log"');
     expect(remoteScript).toContain('kill -0 "$gateway_pid"');
     expect(remoteScript).toContain('disown "$gateway_pid"');
     expect(fetchMock.mock.calls.map(([url]) => describeFetchInput(url))).toEqual([
@@ -845,8 +845,8 @@ describe("mantis Slack desktop smoke runtime", () => {
       crabboxBin: "/tmp/crabbox",
       env: {
         OPENAI_API_KEY: "openai-runtime-key",
-        OPENCLAW_MANTIS_SLACK_APP_TOKEN: "xapp-direct",
-        OPENCLAW_MANTIS_SLACK_BOT_TOKEN: "xoxb-direct",
+        AFORA_MANTIS_SLACK_APP_TOKEN: "xapp-direct",
+        AFORA_MANTIS_SLACK_BOT_TOKEN: "xoxb-direct",
         PATH: process.env.PATH,
       },
       gatewaySetup: true,
@@ -1111,7 +1111,7 @@ describe("mantis Slack desktop smoke runtime", () => {
 
     await qa.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "mantis",
       "slack-desktop-smoke",
       "--approval-checkpoints",
@@ -1142,7 +1142,7 @@ describe("mantis Slack desktop smoke runtime", () => {
     await expect(
       qa.parseAsync([
         "node",
-        "openclaw",
+        "afora",
         "mantis",
         "slack-desktop-smoke",
         "--approval-checkpoints",

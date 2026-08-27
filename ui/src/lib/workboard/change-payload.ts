@@ -1,5 +1,5 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import type { WorkboardChange } from "@openclaw/workboard-contract";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import type { WorkboardChange } from "@afora/workboard-contract";
 
 export function normalizeWorkboardChange(payload: unknown): WorkboardChange | null {
   if (!isRecord(payload)) {

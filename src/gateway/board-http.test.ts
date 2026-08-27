@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createTestBoardStore } from "../boards/board-store.test-support.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { handleBoardHttpRequest } from "./board-http.js";
 import {
   BOARD_VIEW_TICKET_TTL_MS,
@@ -14,7 +14,7 @@ import {
   verifyBoardViewTicket,
 } from "./board-view-ticket.js";
 
-const stateDir = mkdtempSync(path.join(tmpdir(), "openclaw-board-http-"));
+const stateDir = mkdtempSync(path.join(tmpdir(), "afora-board-http-"));
 const store = createTestBoardStore({ stateDir });
 const nowMs = 1_800_000_000_000;
 const statusHtml = "<!doctype html><p>Status 界</p>";
@@ -98,8 +98,8 @@ afterAll(async () => {
       resolve();
     });
   });
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   rmSync(stateDir, { recursive: true, force: true });
 });
 
@@ -122,7 +122,7 @@ function request(
   init: { method?: string; headers?: Record<string, string>; ticket?: string } = {},
 ) {
   const query = init.ticket ? `?bt=${encodeURIComponent(init.ticket)}` : "";
-  return fetch(`${baseUrl}/__openclaw__/board/agent%3Amain%3Amain/${name}/index.html${query}`, {
+  return fetch(`${baseUrl}/__afora__/board/agent%3Amain%3Amain/${name}/index.html${query}`, {
     method: init.method,
     headers: init.headers,
   });
@@ -308,7 +308,7 @@ describe("board widget HTTP", () => {
       nowMs,
     }).ticket;
     const response = await fetch(
-      `${baseUrl}/__openclaw__/board/session%2Fwith%2Fslash/slash-key/index.html?bt=${encodeURIComponent(ticket)}`,
+      `${baseUrl}/__afora__/board/session%2Fwith%2Fslash/slash-key/index.html?bt=${encodeURIComponent(ticket)}`,
     );
     expect(response.status).toBe(200);
     await expect(response.text()).resolves.toBe("slash");

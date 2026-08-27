@@ -14,7 +14,7 @@ describe("embedded run session permissions", () => {
     await runEmbeddedAgent({
       ...overflowBaseRunParams,
       permissionMode: "workspace",
-      sessionRoot: "/tmp/openclaw-plugin-session-root",
+      sessionRoot: "/tmp/afora-plugin-session-root",
       runId: "run-plugin-session-permissions",
     });
 
@@ -22,7 +22,7 @@ describe("embedded run session permissions", () => {
       expect.objectContaining({
         execOverrides: expect.objectContaining({ mode: "auto" }),
         permissionMode: "workspace",
-        sessionRoot: "/tmp/openclaw-plugin-session-root",
+        sessionRoot: "/tmp/afora-plugin-session-root",
       }),
     );
   });

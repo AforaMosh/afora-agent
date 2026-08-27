@@ -1,4 +1,4 @@
-import { defineSelfHostedOpenAICompatibleProvider } from "openclaw/plugin-sdk/provider-model-shared";
+import { defineSelfHostedOpenAICompatibleProvider } from "afora-agent/plugin-sdk/provider-model-shared";
 import {
   VLLM_DEFAULT_API_KEY_ENV_VAR,
   VLLM_DEFAULT_BASE_URL,
@@ -19,8 +19,8 @@ export default defineSelfHostedOpenAICompatibleProvider({
   overrides: {
     buildUnknownModelHint: () =>
       "vLLM requires authentication to be registered as a provider. " +
-      'Set VLLM_API_KEY (any value works) or run "openclaw configure". ' +
-      "See: https://docs.openclaw.ai/providers/vllm",
+      'Set VLLM_API_KEY (any value works) or run "afora configure". ' +
+      "See: https://docs.afora.ai/providers/vllm",
     resolveThinkingProfile,
     wrapStreamFn: wrapVllmProviderStream,
   },

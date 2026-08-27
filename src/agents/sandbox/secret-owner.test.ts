@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { setActiveDegradedSecretOwners } from "../../secrets/runtime-degraded-state.js";
 import { resolveSandboxContext } from "./context.js";
 import { isSandboxProvisioningError } from "./provisioning-error.js";
@@ -10,7 +10,7 @@ afterEach(() => {
 
 describe("sandbox SSH secret owner", () => {
   it("classifies an unmaterialized inherited ref as terminal sandbox provisioning", async () => {
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       agents: {
         entries: { main: { default: true } },
         defaults: {
@@ -40,7 +40,7 @@ describe("sandbox SSH secret owner", () => {
     expect(error).toMatchObject({
       code: "sandbox_provisioning",
       backendId: "ssh",
-      message: expect.stringContaining("openclaw secrets reload"),
+      message: expect.stringContaining("afora secrets reload"),
       cause: {
         code: "SECRET_SURFACE_UNAVAILABLE",
         ownerKind: "capability",

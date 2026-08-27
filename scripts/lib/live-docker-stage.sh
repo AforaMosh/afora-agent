@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
-openclaw_live_stage_mounted_auth() {
-  if [ "${OPENCLAW_DOCKER_AUTH_PRESTAGED:-0}" = "1" ]; then
+afora_live_stage_mounted_auth() {
+  if [ "${AFORA_DOCKER_AUTH_PRESTAGED:-0}" = "1" ]; then
     return 0
   fi
 
   local auth_path
   local auth_dirs=()
   local auth_files=()
-  IFS=',' read -r -a auth_dirs <<<"${OPENCLAW_DOCKER_AUTH_DIRS_RESOLVED:-}"
-  IFS=',' read -r -a auth_files <<<"${OPENCLAW_DOCKER_AUTH_FILES_RESOLVED:-}"
+  IFS=',' read -r -a auth_dirs <<<"${AFORA_DOCKER_AUTH_DIRS_RESOLVED:-}"
+  IFS=',' read -r -a auth_files <<<"${AFORA_DOCKER_AUTH_FILES_RESOLVED:-}"
   if ((${#auth_dirs[@]} > 0)); then
     for auth_path in "${auth_dirs[@]}"; do
       [ -n "$auth_path" ] || continue
@@ -32,7 +32,7 @@ openclaw_live_stage_mounted_auth() {
   fi
 }
 
-openclaw_live_run_setup_command() {
+afora_live_run_setup_command() {
   local timeout_seconds="${1:?setup timeout seconds required}"
   local label="${2:?setup label required}"
   shift 2
@@ -53,12 +53,12 @@ openclaw_live_run_setup_command() {
   fi
 }
 
-openclaw_live_stage_source_tree() {
+afora_live_stage_source_tree() {
   local dest_dir="${1:?destination directory required}"
-  local stage_mode="${OPENCLAW_LIVE_DOCKER_SOURCE_STAGE_MODE:-copy}"
+  local stage_mode="${AFORA_LIVE_DOCKER_SOURCE_STAGE_MODE:-copy}"
 
   if [ "$stage_mode" = "symlink" ]; then
-    echo "OPENCLAW_LIVE_DOCKER_SOURCE_STAGE_MODE=symlink is disabled; using copy staging." >&2
+    echo "AFORA_LIVE_DOCKER_SOURCE_STAGE_MODE=symlink is disabled; using copy staging." >&2
   fi
 
   set +e
@@ -75,7 +75,7 @@ openclaw_live_stage_source_tree() {
     --exclude=.tmp \
     --exclude=.tmp-precommit-venv \
     --exclude=.worktrees \
-    --exclude=__openclaw_vitest__ \
+    --exclude=__afora_vitest__ \
     --exclude=relay.sock \
     --exclude='*.sock' \
     --exclude='*/*.sock' \
@@ -91,11 +91,11 @@ openclaw_live_stage_source_tree() {
     return "$status"
   fi
 
-  local scripts_dir="${OPENCLAW_LIVE_DOCKER_SCRIPTS_DIR:-/src/scripts}"
+  local scripts_dir="${AFORA_LIVE_DOCKER_SCRIPTS_DIR:-/src/scripts}"
   node "$scripts_dir/live-docker-stage-private-sdk-exports.mjs" "$dest_dir"
 }
 
-openclaw_live_link_runtime_tree() {
+afora_live_link_runtime_tree() {
   local dest_dir="${1:?destination directory required}"
 
   if [ ! -e "$dest_dir/node_modules" ]; then
@@ -103,13 +103,13 @@ openclaw_live_link_runtime_tree() {
   fi
   ln -s /app/dist "$dest_dir/dist"
   if [ -d /app/dist-runtime/extensions ]; then
-    export OPENCLAW_BUNDLED_PLUGINS_DIR=/app/dist-runtime/extensions
+    export AFORA_BUNDLED_PLUGINS_DIR=/app/dist-runtime/extensions
   elif [ -d /app/dist/extensions ]; then
-    export OPENCLAW_BUNDLED_PLUGINS_DIR=/app/dist/extensions
+    export AFORA_BUNDLED_PLUGINS_DIR=/app/dist/extensions
   fi
 }
 
-openclaw_live_stage_node_modules() {
+afora_live_stage_node_modules() {
   local dest_dir="${1:?destination directory required}"
   local target_dir="$dest_dir/node_modules"
 
@@ -119,9 +119,9 @@ openclaw_live_stage_node_modules() {
   mkdir -p "$target_dir/.vite-temp"
 }
 
-openclaw_live_scrub_staged_plugin_index() {
+afora_live_scrub_staged_plugin_index() {
   local dest_dir="${1:?destination directory required}"
-  local db_path="$dest_dir/state/openclaw.sqlite"
+  local db_path="$dest_dir/state/afora.sqlite"
 
   if [ ! -f "$db_path" ]; then
     return 0
@@ -149,9 +149,9 @@ try {
 NODE
 }
 
-openclaw_live_stage_state_dir() {
+afora_live_stage_state_dir() {
   local dest_dir="${1:?destination directory required}"
-  local source_dir="${HOME}/.openclaw"
+  local source_dir="${HOME}/.afora"
 
   mkdir -p "$dest_dir"
   if [ -d "$source_dir" ]; then
@@ -177,22 +177,22 @@ openclaw_live_stage_state_dir() {
       return "$status"
     fi
     chmod -R u+rwX "$dest_dir" || true
-    openclaw_live_scrub_staged_plugin_index "$dest_dir"
+    afora_live_scrub_staged_plugin_index "$dest_dir"
     if [ -d "$source_dir/workspace" ] && [ ! -e "$dest_dir/workspace" ]; then
       ln -s "$source_dir/workspace" "$dest_dir/workspace"
     fi
   fi
 
-  export OPENCLAW_STATE_DIR="$dest_dir"
-  export OPENCLAW_CONFIG_PATH="$dest_dir/openclaw.json"
+  export AFORA_STATE_DIR="$dest_dir"
+  export AFORA_CONFIG_PATH="$dest_dir/afora.json"
 }
 
-openclaw_live_prepare_staged_config() {
-  if [ ! -f "${OPENCLAW_CONFIG_PATH:-}" ]; then
+afora_live_prepare_staged_config() {
+  if [ ! -f "${AFORA_CONFIG_PATH:-}" ]; then
     return 0
   fi
 
-  local scripts_dir="${OPENCLAW_LIVE_DOCKER_SCRIPTS_DIR:-/src/scripts}"
+  local scripts_dir="${AFORA_LIVE_DOCKER_SCRIPTS_DIR:-/src/scripts}"
   (
     cd /app
     node --import tsx "$scripts_dir/live-docker-normalize-config.ts"

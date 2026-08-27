@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AgentSelectionRequiredError } from "../../agents/agent-scope-config.js";
 import { migratePersistedImplicitMainRoster } from "../../config/legacy.roster.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { createEmptyPluginRegistry } from "../../plugins/registry-empty.js";
 import {
   getActivePluginRegistry,
@@ -35,26 +35,26 @@ const discordConfig = {
   channels: {
     discord: {},
   },
-} satisfies OpenClawConfig;
+} satisfies AforaConfig;
 
 const updatedDiscordConfig = {
   channels: {
     discord: { enabled: true },
   },
-} satisfies OpenClawConfig;
+} satisfies AforaConfig;
 
 const explicitFleetDiscordConfig = {
   agents: {
     ownership: "explicit",
     entries: {
-      ops: { workspace: "/tmp/openclaw-ops" },
-      research: { workspace: "/tmp/openclaw-research" },
+      ops: { workspace: "/tmp/afora-ops" },
+      research: { workspace: "/tmp/afora-research" },
     },
   },
   channels: {
     discord: {},
   },
-} satisfies OpenClawConfig;
+} satisfies AforaConfig;
 
 function installDiscordSetupShell(): void {
   const registry = createEmptyPluginRegistry();
@@ -115,7 +115,7 @@ describe("bootstrapOutboundChannelPlugin", () => {
     ).resolves.toEqual({ extractMarkdownImages: true });
 
     expect(loaderMocks.resolveDiscoverableScopedChannelPluginIds).toHaveBeenCalledWith(
-      expect.objectContaining({ workspaceDir: "/tmp/openclaw-ops" }),
+      expect.objectContaining({ workspaceDir: "/tmp/afora-ops" }),
     );
   });
 
@@ -123,14 +123,14 @@ describe("bootstrapOutboundChannelPlugin", () => {
     installDiscordSetupShell();
     const migrated = migratePersistedImplicitMainRoster({
       agents: {
-        defaults: { workspace: "/tmp/openclaw-legacy" },
+        defaults: { workspace: "/tmp/afora-legacy" },
         entries: {
           ops: { default: true },
           research: {},
         },
       },
       channels: { discord: {} },
-    }).config as OpenClawConfig;
+    }).config as AforaConfig;
     const handle = createEmptyPluginRegistry();
     handle.channels = [
       {
@@ -157,7 +157,7 @@ describe("bootstrapOutboundChannelPlugin", () => {
 
     expect(migrated.agents?.entries?.ops?.default).toBeUndefined();
     expect(loaderMocks.resolveDiscoverableScopedChannelPluginIds).toHaveBeenCalledWith(
-      expect.objectContaining({ workspaceDir: "/tmp/openclaw-legacy" }),
+      expect.objectContaining({ workspaceDir: "/tmp/afora-legacy" }),
     );
   });
 
@@ -190,7 +190,7 @@ describe("bootstrapOutboundChannelPlugin", () => {
     expect(loaderMocks.loadPluginRegistryHandle).toHaveBeenCalledTimes(2);
     expect(loaderMocks.resolveDiscoverableScopedChannelPluginIds).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({ workspaceDir: "/tmp/openclaw-research" }),
+      expect.objectContaining({ workspaceDir: "/tmp/afora-research" }),
     );
   });
 

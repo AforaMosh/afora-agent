@@ -4,8 +4,8 @@ import {
   normalizeMessagePresentation,
   renderMessagePresentationChartFallbackText,
   type MessagePresentationChartBlock,
-} from "openclaw/plugin-sdk/interactive-runtime";
-import { asOptionalRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/interactive-runtime";
+import { asOptionalRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { escapeSlackMrkdwn } from "./monitor/mrkdwn.js";
 import { renderSlackMessagePresentationChartFallbackText } from "./presentation-fallback.js";
 

@@ -1,11 +1,11 @@
 // Migrate Hermes tests cover model.plan plugin behavior.
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/provider-auth";
+import type { AforaConfig } from "afora-agent/plugin-sdk/provider-auth";
 import {
-  resolvePreferredOpenClawTmpDir,
+  resolvePreferredAforaTmpDir,
   tempWorkspace,
   type TempWorkspace,
-} from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/temp-path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { HERMES_REASON_DEFAULT_MODEL_CONFIGURED } from "./items.js";
 import { buildHermesMigrationProvider } from "./provider.js";
@@ -35,8 +35,8 @@ function expectedHermesModelPlanItems(params: {
 describe("Hermes migration model planning", () => {
   beforeEach(async () => {
     testWorkspace = await tempWorkspace({
-      rootDir: resolvePreferredOpenClawTmpDir(),
-      prefix: "openclaw-migrate-hermes-",
+      rootDir: resolvePreferredAforaTmpDir(),
+      prefix: "afora-migrate-hermes-",
     });
   });
 
@@ -103,7 +103,7 @@ describe("Hermes migration model planning", () => {
       if (["qwen-cli", "qwen-oauth", "qwen-portal"].includes(hermesProvider)) {
         const reauthItem = plan.items.find((item) => item.id === "manual:auth-reauthenticate:qwen");
         expect(reauthItem?.reason).toBe(
-          "Authenticate qwen with an API key after migration: openclaw onboard --auth-choice qwen-api-key.",
+          "Authenticate qwen with an API key after migration: afora onboard --auth-choice qwen-api-key.",
         );
       }
     }
@@ -124,7 +124,7 @@ describe("Hermes migration model planning", () => {
 
     expect(plan.items[0]?.details?.model).toBe("qwen/qwen3.5-plus");
     expect(plan.items.find((item) => item.id === "manual:auth-reauthenticate:qwen")?.reason).toBe(
-      "Authenticate qwen with an API key after migration: openclaw onboard --auth-choice qwen-api-key.",
+      "Authenticate qwen with an API key after migration: afora onboard --auth-choice qwen-api-key.",
     );
   });
 
@@ -225,7 +225,7 @@ describe("Hermes migration model planning", () => {
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const provider = buildHermesMigrationProvider();
     const plan = await provider.plan(makeContext({ source, stateDir, workspaceDir, config }));

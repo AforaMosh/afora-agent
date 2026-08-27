@@ -1,5 +1,5 @@
 // Tracks plugin loader provenance for diagnostics and policy checks.
-import { normalizeTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+import { normalizeTrimmedStringList } from "@afora/normalization-core/string-normalization";
 import { quoteCliArg } from "../cli/quote-cli-arg.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { resolveUserPath } from "../utils.js";
@@ -74,7 +74,7 @@ function matchesPathMatcher(matcher: PathMatcher, sourcePath: string): boolean {
 }
 
 function formatPluginInspectCommand(pluginId: string): string {
-  return `openclaw plugins inspect ${quoteCliArg(pluginId)}`;
+  return `afora plugins inspect ${quoteCliArg(pluginId)}`;
 }
 
 /** Builds provenance matchers from configured load paths and install records. */
@@ -262,12 +262,12 @@ export function warnWhenAllowlistIsOpen(params: {
     .join(", ");
   // Skip the snippet when truncated: a previewed-only allowlist would silently disable the rest
   const remediation = truncated
-    ? "Run 'openclaw plugins list --enabled --verbose' to enumerate every discovered plugin id, inspect trusted ids with 'openclaw plugins inspect <id>', and add the ones you trust to plugins.allow in openclaw.json."
-    : `To trust them explicitly, set plugins.allow in openclaw.json (e.g. "plugins": { "allow": [${autoDiscoverable
+    ? "Run 'afora plugins list --enabled --verbose' to enumerate every discovered plugin id, inspect trusted ids with 'afora plugins inspect <id>', and add the ones you trust to plugins.allow in afora.json."
+    : `To trust them explicitly, set plugins.allow in afora.json (e.g. "plugins": { "allow": [${autoDiscoverable
         .map((entry) => JSON.stringify(entry.id))
         .join(
           ", ",
-        )}] }). Run 'openclaw plugins list --enabled --verbose' or ${inspectCommands} to confirm plugin ids.`;
+        )}] }). Run 'afora plugins list --enabled --verbose' or ${inspectCommands} to confirm plugin ids.`;
   params.warningCache.recordOpenAllowlistWarning(params.warningCacheKey);
   if (!hasConfiguredAllowlist) {
     params.logger.warn(
@@ -316,7 +316,7 @@ export function warnAboutUntrackedLoadedPlugins(params: {
     ) {
       continue;
     }
-    const message = `OpenClaw can't verify where this plugin came from. Review it with '${formatPluginInspectCommand(plugin.id)}'. Adding it to plugins.allow lets it load, but does not make it trusted. If it's an official plugin, reinstall it from its official npm package or its official ClawHub listing to enable trusted features.`;
+    const message = `Afora can't verify where this plugin came from. Review it with '${formatPluginInspectCommand(plugin.id)}'. Adding it to plugins.allow lets it load, but does not make it trusted. If it's an official plugin, reinstall it from its official npm package or its official ClawHub listing to enable trusted features.`;
     params.registry.diagnostics.push({
       level: "warn",
       pluginId: plugin.id,

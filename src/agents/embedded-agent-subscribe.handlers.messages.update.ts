@@ -1,7 +1,7 @@
 /**
  * Handles assistant message deltas, reasoning, directives, and block replies.
  */
-import { resolveSendableOutboundReplyParts } from "openclaw/plugin-sdk/reply-payload";
+import { resolveSendableOutboundReplyParts } from "afora-agent/plugin-sdk/reply-payload";
 import { createInlineCodeState } from "../../packages/markdown-core/src/code-spans.js";
 import { emitAgentEvent } from "../infra/agent-events.js";
 import type { AssistantMessage } from "../llm/types.js";
@@ -25,7 +25,7 @@ import {
   isAnthropicAssistantMessage,
   isOpenAiCompletionsAssistantMessage,
   isResponsesApiAssistantMessage,
-  isSubscribeTranscriptOnlyOpenClawAssistantMessage,
+  isSubscribeTranscriptOnlyAforaAssistantMessage,
   openReasoningStream,
   replaceBlockReplyBuffer,
   resolveAssistantStreamContentIndex,
@@ -60,7 +60,7 @@ export function handleMessageUpdate(
   evt: AgentEvent & { message: AgentMessage; assistantMessageEvent?: unknown },
 ) {
   const msg = evt.message;
-  if (msg?.role !== "assistant" || isSubscribeTranscriptOnlyOpenClawAssistantMessage(msg)) {
+  if (msg?.role !== "assistant" || isSubscribeTranscriptOnlyAforaAssistantMessage(msg)) {
     return;
   }
 
@@ -206,7 +206,7 @@ export function handleMessageUpdate(
   const isCompletionsAssistant = isOpenAiCompletionsAssistantMessage(partialAssistant);
   const isPhasePendingCompletionsText = !deliveryPhase && isCompletionsAssistant;
   const isReasoningCompletionsText =
-    isCompletionsAssistant && partialAssistant.openclawDelivery?.textPhaseRequiresTerminal === true;
+    isCompletionsAssistant && partialAssistant.aforaDelivery?.textPhaseRequiresTerminal === true;
   const hasResponsesContentIndex =
     streamContentIndex !== undefined && isResponsesApiAssistantMessage(partialAssistant);
   let streamItemChanged = false;
@@ -509,7 +509,7 @@ export function handleMessageUpdate(
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
   (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.embeddedSubscribeMessagesTestApi")
+    Symbol.for("afora.embeddedSubscribeMessagesTestApi")
   ] = {
     buildAssistantStreamData,
     recordPendingAssistantReplyDirectives,

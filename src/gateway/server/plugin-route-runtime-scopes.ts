@@ -27,7 +27,7 @@ export function resolvePluginRouteRuntimeOperatorScopes(
   if (requestAuth.authMethod !== "trusted-proxy") {
     return [WRITE_SCOPE];
   }
-  if (getHeader(req, "x-openclaw-scopes") === undefined) {
+  if (getHeader(req, "x-afora-scopes") === undefined) {
     // Trusted-proxy callers without an explicit scope header keep the legacy
     // write-default surface instead of inheriting every CLI operator scope.
     return [WRITE_SCOPE];

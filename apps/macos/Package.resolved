@@ -4,7 +4,7 @@
     {
       "identity" : "axorcist",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/openclaw/AXorcist.git",
+      "location" : "https://github.com/afora/AXorcist.git",
       "state" : {
         "revision" : "dba24f0a2dd4a0ccfb285d7e11cf899f8b603ef6",
         "version" : "0.1.6"
@@ -58,7 +58,7 @@
     {
       "identity" : "peekaboo",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/openclaw/Peekaboo.git",
+      "location" : "https://github.com/afora/Peekaboo.git",
       "state" : {
         "revision" : "a48c462c757acbf320b22a6c9b34852e26bcb763"
       }

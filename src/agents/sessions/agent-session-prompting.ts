@@ -102,7 +102,7 @@ export abstract class AgentSessionPrompting extends AgentSessionBase {
     return imageFactIndexes
       ? Object.assign({}, message, {
           ...message,
-          __openclaw: { mediaImageBlockFactIndexes: imageFactIndexes },
+          __afora: { mediaImageBlockFactIndexes: imageFactIndexes },
         })
       : message;
   }

@@ -11,7 +11,7 @@ describe("prepareCliBundleMcpConfig gemini", () => {
       enabled: false,
       mode: "gemini-system-settings",
       backend: { command: "gemini" },
-      workspaceDir: "/tmp/openclaw-cli-gemini-web-search-disabled",
+      workspaceDir: "/tmp/afora-cli-gemini-web-search-disabled",
       toolOverrides: { webSearch: false },
     });
     const raw = JSON.parse(
@@ -31,30 +31,30 @@ describe("prepareCliBundleMcpConfig gemini", () => {
         command: "gemini",
         args: ["--prompt", "{prompt}"],
       },
-      workspaceDir: "/tmp/openclaw-bundle-mcp-gemini",
+      workspaceDir: "/tmp/afora-bundle-mcp-gemini",
       config: { plugins: { enabled: false } },
       additionalConfig: {
         mcpServers: {
-          openclaw: {
+          afora: {
             type: "http",
             url: "http://127.0.0.1:23119/mcp",
             excludeTools: ["global_delete"],
             headers: {
-              Authorization: "Bearer ${OPENCLAW_MCP_TOKEN}",
-              "x-openclaw-client-caps": "${OPENCLAW_MCP_CLIENT_CAPS}",
+              Authorization: "Bearer ${AFORA_MCP_TOKEN}",
+              "x-afora-client-caps": "${AFORA_MCP_CLIENT_CAPS}",
             },
           },
         },
       },
       env: {
-        OPENCLAW_MCP_TOKEN: "lb-tk-123",
-        OPENCLAW_MCP_CLIENT_CAPS: "tool-events,inline-widgets",
+        AFORA_MCP_TOKEN: "lb-tk-123",
+        AFORA_MCP_CLIENT_CAPS: "tool-events,inline-widgets",
       },
-      toolOverrides: { mcpToolsDeny: { openclaw: ["delete_docs"] }, webSearch: false },
+      toolOverrides: { mcpToolsDeny: { afora: ["delete_docs"] }, webSearch: false },
     });
 
     expect(prepared.backend.args).toEqual(["--prompt", "{prompt}"]);
-    expect(prepared.env?.OPENCLAW_MCP_TOKEN).toBe("lb-tk-123");
+    expect(prepared.env?.AFORA_MCP_TOKEN).toBe("lb-tk-123");
     expect(typeof prepared.env?.GEMINI_CLI_SYSTEM_SETTINGS_PATH).toBe("string");
     // Gemini reads MCP servers from a generated system settings JSON file.
     const raw = JSON.parse(
@@ -67,13 +67,13 @@ describe("prepareCliBundleMcpConfig gemini", () => {
         { url?: string; headers?: Record<string, string>; excludeTools?: string[] }
       >;
     };
-    expect(raw.mcp?.allowed).toEqual(["openclaw"]);
-    expect(raw.mcpServers?.openclaw?.url).toBe("http://127.0.0.1:23119/mcp");
-    expect(raw.mcpServers?.openclaw?.headers?.Authorization).toBe("Bearer lb-tk-123");
-    expect(raw.mcpServers?.openclaw?.headers?.["x-openclaw-client-caps"]).toBe(
+    expect(raw.mcp?.allowed).toEqual(["afora"]);
+    expect(raw.mcpServers?.afora?.url).toBe("http://127.0.0.1:23119/mcp");
+    expect(raw.mcpServers?.afora?.headers?.Authorization).toBe("Bearer lb-tk-123");
+    expect(raw.mcpServers?.afora?.headers?.["x-afora-client-caps"]).toBe(
       "tool-events,inline-widgets",
     );
-    expect(raw.mcpServers?.openclaw?.excludeTools).toEqual(["delete_docs", "global_delete"]);
+    expect(raw.mcpServers?.afora?.excludeTools).toEqual(["delete_docs", "global_delete"]);
     expect(raw.tools?.exclude).toEqual(["google_web_search"]);
 
     await prepared.cleanup?.();
@@ -87,7 +87,7 @@ describe("prepareCliBundleMcpConfig gemini", () => {
         command: "gemini",
         args: ["--prompt", "{prompt}"],
       },
-      workspaceDir: "/tmp/openclaw-bundle-mcp-gemini",
+      workspaceDir: "/tmp/afora-bundle-mcp-gemini",
       config: {
         plugins: { enabled: false },
         mcp: {
@@ -109,7 +109,7 @@ describe("prepareCliBundleMcpConfig gemini", () => {
 
     expect(prepared.env?.CONTEXT7_API_KEY).toBe("ctx7-test");
     expect(typeof prepared.env?.GEMINI_CLI_SYSTEM_SETTINGS_PATH).toBe("string");
-    // User OpenClaw transport names are normalized to Gemini's expected schema.
+    // User Afora transport names are normalized to Gemini's expected schema.
     const raw = JSON.parse(
       await fs.readFile(prepared.env?.GEMINI_CLI_SYSTEM_SETTINGS_PATH as string, "utf-8"),
     ) as {
@@ -136,21 +136,21 @@ describe("prepareCliBundleMcpConfig gemini", () => {
         command: "gemini",
         args: ["--prompt", "{prompt}"],
       },
-      workspaceDir: "/tmp/openclaw-bundle-mcp-gemini",
+      workspaceDir: "/tmp/afora-bundle-mcp-gemini",
       config: { plugins: { enabled: false } },
       additionalConfig: {
         mcpServers: {
-          openclaw: {
+          afora: {
             type: "http",
             url: "http://127.0.0.1:23119/mcp",
             headers: {
-              "x-openclaw-cli-capture-key": "${OPENCLAW_MCP_CLI_CAPTURE_KEY}",
+              "x-afora-cli-capture-key": "${AFORA_MCP_CLI_CAPTURE_KEY}",
             },
           },
         },
       },
       env: {
-        OPENCLAW_MCP_CLI_CAPTURE_KEY: "",
+        AFORA_MCP_CLI_CAPTURE_KEY: "",
       },
     });
     const attempt = await prepareCliBundleMcpCaptureAttempt({
@@ -165,7 +165,7 @@ describe("prepareCliBundleMcpConfig gemini", () => {
       ) as {
         mcpServers?: Record<string, { headers?: Record<string, string> }>;
       };
-      expect(raw.mcpServers?.openclaw?.headers?.["x-openclaw-cli-capture-key"]).toBe("attempt-123");
+      expect(raw.mcpServers?.afora?.headers?.["x-afora-cli-capture-key"]).toBe("attempt-123");
       expect(attempt.env?.GEMINI_CLI_SYSTEM_SETTINGS_PATH).not.toBe(
         prepared.env?.GEMINI_CLI_SYSTEM_SETTINGS_PATH,
       );
@@ -176,7 +176,7 @@ describe("prepareCliBundleMcpConfig gemini", () => {
   });
 
   it("preserves inherited Gemini auth selection in generated system settings", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gemini-settings-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-gemini-settings-"));
     const inheritedSettingsPath = path.join(dir, "settings.json");
     await fs.writeFile(
       inheritedSettingsPath,
@@ -203,11 +203,11 @@ describe("prepareCliBundleMcpConfig gemini", () => {
         command: "gemini",
         args: ["--prompt", "{prompt}"],
       },
-      workspaceDir: "/tmp/openclaw-bundle-mcp-gemini",
+      workspaceDir: "/tmp/afora-bundle-mcp-gemini",
       config: { plugins: { enabled: false } },
       additionalConfig: {
         mcpServers: {
-          openclaw: {
+          afora: {
             type: "http",
             url: "http://127.0.0.1:23119/mcp",
           },

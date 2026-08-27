@@ -1,7 +1,7 @@
-// Renders `openclaw status --all` report data into terminal lines.
+// Renders `afora status --all` report data into terminal lines.
 // Styling is applied here so data builders remain color/theme agnostic.
 
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { getTerminalTableWidth, renderTable } from "../../../packages/terminal-core/src/table.js";
 import { isRich, theme } from "../../../packages/terminal-core/src/theme.js";
 import type { ProgressReporter } from "../../cli/progress.js";
@@ -71,7 +71,7 @@ export async function buildStatusAllReportLines(params: {
   const tableWidth = getTerminalTableWidth();
 
   const lines: string[] = [];
-  lines.push(heading("OpenClaw status --all"));
+  lines.push(heading("Afora status --all"));
   appendStatusReportSections({
     lines,
     heading,

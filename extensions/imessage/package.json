@@ -1,10 +1,10 @@
 {
-  "name": "@openclaw/imessage",
+  "name": "@afora/imessage",
   "version": "2026.8.1",
-  "description": "OpenClaw iMessage channel plugin using imsg on a signed-in Mac",
+  "description": "Afora iMessage channel plugin using imsg on a signed-in Mac",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   },
   "type": "module",
   "dependencies": {
@@ -12,18 +12,18 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*",
-    "openclaw": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*",
+    "afora-agent": "workspace:*"
   },
   "peerDependencies": {
-    "openclaw": ">=2026.8.1"
+    "afora-agent": ">=2026.8.1"
   },
   "peerDependenciesMeta": {
-    "openclaw": {
+    "afora": {
       "optional": true
     }
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
@@ -89,8 +89,8 @@
       }
     },
     "install": {
-      "clawhubSpec": "clawhub:@openclaw/imessage",
-      "npmSpec": "@openclaw/imessage",
+      "clawhubSpec": "clawhub:@afora/imessage",
+      "npmSpec": "@afora/imessage",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.7.2",
       "allowInvalidConfigRecovery": true
@@ -99,7 +99,7 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1",
+      "aforaVersion": "2026.8.1",
       "bundledDist": false
     },
     "release": {

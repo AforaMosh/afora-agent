@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanupTempDirs, makeTempDir } from "../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  OPENCLAW_AGENT_SCHEMA_VERSION,
-  openOpenClawAgentDatabase,
-} from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  AFORA_AGENT_SCHEMA_VERSION,
+  openAforaAgentDatabase,
+} from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { requireNodeSqlite } from "./node-sqlite.js";
 import { migrateLegacyMediaPersistence } from "./state-migrations.media-persistence.js";
 
@@ -13,15 +13,15 @@ const tempDirs: string[] = [];
 
 describe("legacy media persistence additive schema repair", () => {
   afterEach(() => {
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     cleanupTempDirs(tempDirs);
   });
 
   it("repairs same-version additive session schema before media validation", () => {
     const stateDir = makeTempDir(tempDirs, "media-persistence-current-additive-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
-    const opened = openOpenClawAgentDatabase({ agentId: "main", env });
+    const env = { AFORA_STATE_DIR: stateDir };
+    const opened = openAforaAgentDatabase({ agentId: "main", env });
     const databasePath = opened.path;
     opened.db
       .prepare(
@@ -34,8 +34,8 @@ describe("legacy media persistence additive schema repair", () => {
         JSON.stringify({ sessionId: "session-1", updatedAt: 1 }),
         1,
       );
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
 
     const { DatabaseSync } = requireNodeSqlite();
     const database = new DatabaseSync(databasePath);
@@ -54,7 +54,7 @@ describe("legacy media persistence additive schema repair", () => {
     const repaired = new DatabaseSync(databasePath, { readOnly: true });
     try {
       expect(repaired.prepare("PRAGMA user_version").get()).toEqual({
-        user_version: OPENCLAW_AGENT_SCHEMA_VERSION,
+        user_version: AFORA_AGENT_SCHEMA_VERSION,
       });
       expect(
         repaired

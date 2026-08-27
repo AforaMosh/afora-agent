@@ -4,9 +4,9 @@
  * credentials, resolves SecretRefs, and maintains runtime store snapshots.
  */
 import { isDeepStrictEqual } from "node:util";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { getRuntimeConfig } from "../../config/config.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { coerceSecretRef } from "../../config/types.secrets.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import {
@@ -93,7 +93,7 @@ const isCompatibleModeType = (mode: string | undefined, type: string | undefined
 };
 
 function isProfileConfigCompatible(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   profileId: string;
   provider: string;
   mode: "api_key" | "token" | "oauth";
@@ -112,7 +112,7 @@ function isProfileConfigCompatible(params: {
 async function buildOAuthApiKey(
   provider: string,
   credentials: OAuthCredential,
-  context: { cfg?: OpenClawConfig },
+  context: { cfg?: AforaConfig },
 ): Promise<string> {
   const formatted = await formatProviderAuthProfileApiKeyWithPlugin({
     provider,
@@ -176,7 +176,7 @@ function isRefreshTokenReusedError(error: unknown): boolean {
 }
 
 type ResolveApiKeyForProfileParams = {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   store: AuthProfileStore;
   profileId: string;
   agentDir?: string;
@@ -184,11 +184,11 @@ type ResolveApiKeyForProfileParams = {
   allowProfileFallback?: boolean;
 };
 
-type SecretDefaults = NonNullable<OpenClawConfig["secrets"]>["defaults"];
+type SecretDefaults = NonNullable<AforaConfig["secrets"]>["defaults"];
 
 async function refreshOAuthCredential(
   credential: OAuthCredential,
-  context: { cfg?: OpenClawConfig } = {},
+  context: { cfg?: AforaConfig } = {},
 ): Promise<OAuthCredentials | null> {
   const pluginResult = await resolveProviderOAuthCredentialWithPlugin({
     provider: credential.provider,
@@ -216,7 +216,7 @@ async function refreshOAuthCredential(
 /** Refresh one OAuth credential and merge provider-returned token fields. */
 export async function refreshOAuthCredentialForRuntime(params: {
   credential: OAuthCredential;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): Promise<OAuthCredential | null> {
   const refreshed = await refreshOAuthCredential(params.credential, { cfg: params.cfg });
   return refreshed
@@ -246,7 +246,7 @@ function resetOAuthRefreshQueuesForTest(): void {
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.oauthTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.oauthTestApi")] = {
     isRefreshTokenReusedError,
     resetOAuthRefreshQueuesForTest,
   };

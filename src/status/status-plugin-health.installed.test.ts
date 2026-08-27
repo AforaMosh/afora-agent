@@ -89,7 +89,7 @@ afterEach(() => {
 
 describe("installed plugin health should-run drift", () => {
   it("flags startup plugins that are not loaded as drift", async () => {
-    await withStateDirEnv("openclaw-status-should-run-drift-", async () => {
+    await withStateDirEnv("afora-status-should-run-drift-", async () => {
       resolveReadOnlyChannelPluginsForConfigMock.mockReturnValue({
         loadFailures: [],
         missingConfiguredChannelIds: [],
@@ -123,7 +123,7 @@ describe("installed plugin health should-run drift", () => {
   });
 
   it("builds the plan via the shared gateway helper using source + runtime config", async () => {
-    await withStateDirEnv("openclaw-status-should-run-source-cfg-", async () => {
+    await withStateDirEnv("afora-status-should-run-source-cfg-", async () => {
       resolveReadOnlyChannelPluginsForConfigMock.mockReturnValue({
         loadFailures: [],
         missingConfiguredChannelIds: [],
@@ -159,7 +159,7 @@ describe("installed plugin health should-run drift", () => {
   });
 
   it("omits the should-run set entirely when no config is provided", async () => {
-    await withStateDirEnv("openclaw-status-should-run-no-config-", async () => {
+    await withStateDirEnv("afora-status-should-run-no-config-", async () => {
       resolveReadOnlyChannelPluginsForConfigMock.mockReturnValue({
         loadFailures: [],
         missingConfiguredChannelIds: [],
@@ -179,7 +179,7 @@ describe("installed plugin health should-run drift", () => {
 
 describe("installed plugin health unregistered memory embedding providers", () => {
   it("surfaces configured memory embedding providers the runtime registry does not register", async () => {
-    await withStateDirEnv("openclaw-status-memory-embed-", async () => {
+    await withStateDirEnv("afora-status-memory-embed-", async () => {
       resolveReadOnlyChannelPluginsForConfigMock.mockReturnValue({
         loadFailures: [],
         missingConfiguredChannelIds: [],
@@ -213,7 +213,7 @@ describe("installed plugin health unregistered memory embedding providers", () =
   });
 
   it("skips the check and renders no line when no runtime registry is active", async () => {
-    await withStateDirEnv("openclaw-status-memory-embed-no-registry-", async () => {
+    await withStateDirEnv("afora-status-memory-embed-no-registry-", async () => {
       // No active runtime registry (a fresh CLI process that never started a gateway).
       resetPluginRuntimeStateForTest();
       resolveReadOnlyChannelPluginsForConfigMock.mockReturnValue({
@@ -244,7 +244,7 @@ describe("installed plugin health unregistered memory embedding providers", () =
   });
 
   it("omits the check when no config is provided", async () => {
-    await withStateDirEnv("openclaw-status-memory-embed-no-config-", async () => {
+    await withStateDirEnv("afora-status-memory-embed-no-config-", async () => {
       resolveReadOnlyChannelPluginsForConfigMock.mockReturnValue({
         loadFailures: [],
         missingConfiguredChannelIds: [],

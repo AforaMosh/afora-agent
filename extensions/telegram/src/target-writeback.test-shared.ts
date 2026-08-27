@@ -1,5 +1,5 @@
 // Telegram plugin module implements target writeback shared behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeAll, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 type UnknownMock = Mock<(...args: unknown[]) => unknown>;
@@ -29,9 +29,9 @@ type CronStoreWrite = {
   jobs: Array<{ id: string; delivery: { channel: string; to: string } }>;
 };
 
-vi.mock("openclaw/plugin-sdk/config-mutation", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/config-mutation")>(
-    "openclaw/plugin-sdk/config-mutation",
+vi.mock("afora-agent/plugin-sdk/config-mutation", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/config-mutation")>(
+    "afora-agent/plugin-sdk/config-mutation",
   );
   return {
     ...actual,
@@ -41,9 +41,9 @@ vi.mock("openclaw/plugin-sdk/config-mutation", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/cron-store-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/cron-store-runtime")>(
-    "openclaw/plugin-sdk/cron-store-runtime",
+vi.mock("afora-agent/plugin-sdk/cron-store-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/cron-store-runtime")>(
+    "afora-agent/plugin-sdk/cron-store-runtime",
   );
   return {
     ...actual,
@@ -93,7 +93,7 @@ export function installMaybePersistResolvedTelegramTargetTests(params?: {
 
     it("skips writeback when target is already numeric", async () => {
       await maybePersistResolvedTelegramTarget({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         rawTarget: "-100123",
         resolvedChatId: "-100123",
         gatewayClientScopes: ["operator.admin"],
@@ -108,7 +108,7 @@ export function installMaybePersistResolvedTelegramTargetTests(params?: {
         await maybePersistResolvedTelegramTarget({
           cfg: {
             cron: { store: "/tmp/cron/jobs.json" },
-          } as OpenClawConfig,
+          } as AforaConfig,
           rawTarget: "t.me/mychannel",
           resolvedChatId: "-100123",
           gatewayClientScopes: ["operator.write"],
@@ -124,7 +124,7 @@ export function installMaybePersistResolvedTelegramTargetTests(params?: {
         await maybePersistResolvedTelegramTarget({
           cfg: {
             cron: { store: "/tmp/cron/jobs.json" },
-          } as OpenClawConfig,
+          } as AforaConfig,
           rawTarget: "t.me/mychannel",
           resolvedChatId: "-100123",
           gatewayClientScopes: ["operator.write"],
@@ -141,7 +141,7 @@ export function installMaybePersistResolvedTelegramTargetTests(params?: {
         await maybePersistResolvedTelegramTarget({
           cfg: {
             cron: { store: "/tmp/cron/jobs.json" },
-          } as OpenClawConfig,
+          } as AforaConfig,
           rawTarget: "t.me/mychannel",
           resolvedChatId: "-100123",
           gatewayClientScopes: [],
@@ -157,7 +157,7 @@ export function installMaybePersistResolvedTelegramTargetTests(params?: {
         await maybePersistResolvedTelegramTarget({
           cfg: {
             cron: { store: "/tmp/cron/jobs.json" },
-          } as OpenClawConfig,
+          } as AforaConfig,
           rawTarget: "t.me/mychannel",
           resolvedChatId: "-100123",
           gatewayClientScopes: undefined,
@@ -190,7 +190,7 @@ export function installMaybePersistResolvedTelegramTargetTests(params?: {
         await maybePersistResolvedTelegramTarget({
           cfg: {
             cron: { store: "/tmp/cron/jobs.json" },
-          } as OpenClawConfig,
+          } as AforaConfig,
           rawTarget: "t.me/mychannel",
           resolvedChatId: "-100123",
           gatewayClientScopes: ["operator.admin"],
@@ -217,7 +217,7 @@ export function installMaybePersistResolvedTelegramTargetTests(params?: {
             },
           },
         },
-        writeOptions: { expectedConfigPath: "/tmp/openclaw.json" },
+        writeOptions: { expectedConfigPath: "/tmp/afora.json" },
       });
       loadCronStore.mockResolvedValue({
         version: 1,
@@ -230,7 +230,7 @@ export function installMaybePersistResolvedTelegramTargetTests(params?: {
       await maybePersistResolvedTelegramTarget({
         cfg: {
           cron: { store: "/tmp/cron/jobs.json" },
-        } as OpenClawConfig,
+        } as AforaConfig,
         rawTarget: "t.me/mychannel",
         resolvedChatId: "-100123",
         gatewayClientScopes: undefined,
@@ -241,7 +241,7 @@ export function installMaybePersistResolvedTelegramTargetTests(params?: {
       const [writtenConfig, writeOptions] = requireWriteConfigCall();
       expect(writtenConfig.channels?.telegram?.defaultTo).toBe("-100123");
       expect(writtenConfig.channels?.telegram?.accounts?.alerts?.defaultTo).toBe("-100123");
-      expect(writeOptions.expectedConfigPath).toBe("/tmp/openclaw.json");
+      expect(writeOptions.expectedConfigPath).toBe("/tmp/afora.json");
       expect(saveCronStore).toHaveBeenCalledTimes(1);
       const [cronPath, cronStore] = requireSaveCronStoreCall();
       expect(cronPath).toBe("/tmp/cron/jobs.json");
@@ -267,7 +267,7 @@ export function installMaybePersistResolvedTelegramTargetTests(params?: {
       loadCronStore.mockResolvedValue({ version: 1, jobs: [] });
 
       await maybePersistResolvedTelegramTarget({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         rawTarget: "t.me/mychannel:topic:9",
         resolvedChatId: "-100123",
         gatewayClientScopes: undefined,
@@ -299,7 +299,7 @@ export function installMaybePersistResolvedTelegramTargetTests(params?: {
       });
 
       await maybePersistResolvedTelegramTarget({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         rawTarget: "@MyChannel",
         resolvedChatId: "-100123",
         gatewayClientScopes: undefined,

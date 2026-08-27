@@ -215,7 +215,7 @@ describe("command-analysis risks", () => {
     expect(
       buildCommandPayloadCandidates(["sudo", "--command-timeout=1", "/approve", "abc"]),
     ).toEqual(["/approve abc"]);
-    expect(buildCommandPayloadCandidates(["sudo", "OPENCLAW_ENV=1", "/approve", "abc"])).toEqual([
+    expect(buildCommandPayloadCandidates(["sudo", "AFORA_ENV=1", "/approve", "abc"])).toEqual([
       "/approve abc",
     ]);
     expect(buildCommandPayloadCandidates(["sudo", "--shell", "/approve", "abc"])).toEqual([
@@ -245,7 +245,7 @@ describe("command-analysis risks", () => {
     expect(buildCommandPayloadCandidates(["env", "-P", "/usr/bin", "/approve", "abc"])).toEqual([
       "/approve abc",
     ]);
-    expect(buildCommandPayloadCandidates(["exec", "-a", "openclaw", "/approve", "abc"])).toEqual([
+    expect(buildCommandPayloadCandidates(["exec", "-a", "afora", "/approve", "abc"])).toEqual([
       "/approve abc",
     ]);
     expect(buildCommandPayloadCandidates(["command", "-v", "/approve"])).toEqual([
@@ -259,13 +259,13 @@ describe("command-analysis risks", () => {
         "env",
         "env",
         "env",
-        "openclaw",
+        "afora",
         "channels",
         "login",
         "--channel",
         "whatsapp",
       ]),
-    ).toContain("openclaw channels login --channel whatsapp");
+    ).toContain("afora channels login --channel whatsapp");
   });
 
   it("checks both effective and original argv for segment inline eval", () => {

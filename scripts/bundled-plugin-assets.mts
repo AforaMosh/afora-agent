@@ -5,7 +5,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 // Discovers and runs bundled plugin package asset hooks.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { runManagedCommand } from "./lib/managed-child-process.mts";
 import { assertRealOutputRoot } from "./lib/output-root-guard.mjs";
 import { resolveRepoRoot } from "./lib/repo-root.mjs";
@@ -61,7 +61,7 @@ function packagePluginAliases(packageName: unknown) {
 
 async function resolvePluginAliases(pluginDir: string, packageJson: Record<string, unknown>) {
   const aliases = new Set([path.basename(pluginDir), ...packagePluginAliases(packageJson.name)]);
-  const manifestPath = path.join(pluginDir, "openclaw.plugin.json");
+  const manifestPath = path.join(pluginDir, "afora.plugin.json");
   if (await pathExists(manifestPath)) {
     const manifest = await readJsonFile(manifestPath);
     if (typeof manifest.id === "string" && manifest.id) {
@@ -72,8 +72,8 @@ async function resolvePluginAliases(pluginDir: string, packageJson: Record<strin
 }
 
 function resolveAssetCommand(packageJson: Record<string, unknown>, phase: AssetPhase) {
-  const assetScripts = isRecord(packageJson.openclaw)
-    ? packageJson.openclaw.assetScripts
+  const assetScripts = isRecord(packageJson.afora)
+    ? packageJson.afora.assetScripts
     : undefined;
   if (!isRecord(assetScripts)) {
     return null;

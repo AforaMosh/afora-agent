@@ -3,14 +3,14 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { looksLikeSecretSentinel, resolveSecretSentinel } from "../secrets/sentinel.js";
 import { writeSecretStoreEntry } from "../secrets/store/secret-store.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { captureEnv } from "../test-utils/env.js";
 import type { ExecuteNodeHostCommandParams } from "./bash-tools.exec-host-node.types.js";
 import type { BashSandboxConfig } from "./bash-tools.shared.js";
 
 const mocks = vi.hoisted(() => ({
   egressActive: false,
-  proxyUrl: ["http://openclaw:", "fixture-password", "@127.0.0.1:19090"].join(""),
+  proxyUrl: ["http://afora:", "fixture-password", "@127.0.0.1:19090"].join(""),
   gatewayParams: [] as Array<{
     env: Record<string, string>;
     requestedEnv?: Record<string, string>;
@@ -137,16 +137,16 @@ async function withTeamStoreEntries(
   run: () => Promise<void>,
 ): Promise<void> {
   const tempDirs = createTempDirTracker();
-  const stateDir = tempDirs.make("openclaw-exec-store-env-");
-  const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
-  process.env.OPENCLAW_STATE_DIR = stateDir;
+  const stateDir = tempDirs.make("afora-exec-store-env-");
+  const envSnapshot = captureEnv(["AFORA_STATE_DIR"]);
+  process.env.AFORA_STATE_DIR = stateDir;
   try {
     for (const entry of entries) {
       writeSecretStoreEntry({ scope: { kind: "team" }, ...entry, updatedBy: "test" });
     }
     await run();
   } finally {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     envSnapshot.restore();
     tempDirs.cleanup();
   }
@@ -225,7 +225,7 @@ describe("exec store environment", () => {
   });
 
   it("applies store env when code mode invokes exec through the hidden tool catalog", async () => {
-    // Code mode never runs shell itself: its guest calls `openclaw:core:exec`, which
+    // Code mode never runs shell itself: its guest calls `afora:core:exec`, which
     // re-enters this same tool object. Re-executing one instance is what that nested
     // route does, so store env must land on every call, not only the first.
     await withTeamStoreEntries(

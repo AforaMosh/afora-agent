@@ -20,8 +20,8 @@ vi.mock("./google-genai-runtime.js", () => ({
   createGoogleGenAI: createGoogleGenAIMock,
 }));
 
-import * as providerAuthRuntime from "openclaw/plugin-sdk/provider-auth-runtime";
-import { expectExplicitMusicGenerationCapabilities } from "openclaw/plugin-sdk/provider-test-contracts";
+import * as providerAuthRuntime from "afora-agent/plugin-sdk/provider-auth-runtime";
+import { expectExplicitMusicGenerationCapabilities } from "afora-agent/plugin-sdk/provider-test-contracts";
 import { buildGoogleMusicGenerationProvider } from "./music-generation-provider.js";
 
 type GoogleGenAIConfig = {

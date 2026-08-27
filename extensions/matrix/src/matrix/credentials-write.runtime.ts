@@ -1,4 +1,4 @@
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 // Matrix plugin module implements credentials write behavior.
 import type {
   saveBackfilledMatrixDeviceId as saveBackfilledMatrixDeviceIdType,

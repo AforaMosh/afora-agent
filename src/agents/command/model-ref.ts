@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   allowsPluginModelNormalization,
   findConfiguredModelProvider,
@@ -13,7 +13,7 @@ import {
 } from "../model-selection.js";
 
 export function normalizeAgentCommandModelRef(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   provider: string,
   model: string,
   modelManifestContext: ModelManifestNormalizationContext,
@@ -25,7 +25,7 @@ export function normalizeAgentCommandModelRef(
 }
 
 export function normalizeAgentCommandDefaultModelRef(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   provider: string,
   model: string,
   modelManifestContext: ModelManifestNormalizationContext,
@@ -43,7 +43,7 @@ export function normalizeAgentCommandDefaultModelRef(
 }
 
 export function parseAgentCommandModelRef(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   raw: string,
   defaultProvider: string,
   modelManifestContext: ModelManifestNormalizationContext,

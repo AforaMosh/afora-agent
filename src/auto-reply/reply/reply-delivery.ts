@@ -1,5 +1,5 @@
 /** Normalizes reply directives and delivers block replies through streaming or direct paths. */
-import { hasOutboundReplyContent } from "openclaw/plugin-sdk/reply-payload";
+import { hasOutboundReplyContent } from "afora-agent/plugin-sdk/reply-payload";
 import { logVerbose } from "../../globals.js";
 import { copyReplyPayloadMetadata, isReplyPayloadStatusNotice } from "../reply-payload.js";
 import { SILENT_REPLY_TOKEN } from "../tokens.js";

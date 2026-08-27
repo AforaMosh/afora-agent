@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 
 // Workspace fixture helpers for tests that need a real cwd with small files.
-export async function makeTempWorkspace(prefix = "openclaw-workspace-"): Promise<string> {
+export async function makeTempWorkspace(prefix = "afora-workspace-"): Promise<string> {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
 }
 

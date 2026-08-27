@@ -1,7 +1,7 @@
 // Shared error graph/format helpers without the full infra-runtime surface.
 
 /** Stable error code for subagent APIs called outside an authenticated gateway request. */
-export const SUBAGENT_RUNTIME_REQUEST_SCOPE_ERROR_CODE = "OPENCLAW_SUBAGENT_RUNTIME_REQUEST_SCOPE";
+export const SUBAGENT_RUNTIME_REQUEST_SCOPE_ERROR_CODE = "AFORA_SUBAGENT_RUNTIME_REQUEST_SCOPE";
 /** Default message paired with `SUBAGENT_RUNTIME_REQUEST_SCOPE_ERROR_CODE`. */
 export const SUBAGENT_RUNTIME_REQUEST_SCOPE_ERROR_MESSAGE =
   "Plugin runtime subagent methods are only available during a gateway request.";

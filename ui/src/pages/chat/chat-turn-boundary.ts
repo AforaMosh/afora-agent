@@ -1,4 +1,4 @@
-import { asNullableRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord as asRecord } from "@afora/normalization-core/record-coerce";
 import type { ChatItem, MessageGroup, NormalizedMessage } from "../../lib/chat/chat-types.ts";
 import { normalizeMessage, normalizeRoleForGrouping } from "../../lib/chat/message-normalizer.ts";
 
@@ -21,7 +21,7 @@ export function assistantGroupIsForwardedBoundary(group: MessageGroup): boolean 
 }
 
 function groupStartsProjectedTurnBoundary(group: MessageGroup): boolean {
-  return asRecord(asRecord(group.messages[0]?.message)?.["__openclaw"])?.turnBoundary === true;
+  return asRecord(asRecord(group.messages[0]?.message)?.["__afora"])?.turnBoundary === true;
 }
 
 /** Canonical user-turn boundary shared by insertion, outcome, and collapse projections. */

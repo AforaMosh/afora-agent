@@ -13,7 +13,7 @@ afterEach(async () => {
 
 describe("runAcpClientInteractive process lifecycle", () => {
   it("force-kills the spawned ACP server when the handshake fails", async () => {
-    const dir = await tempDirs.make("openclaw-acp-client-process-test-");
+    const dir = await tempDirs.make("afora-acp-client-process-test-");
     const pidFile = path.join(dir, "server.pid");
     const termFile = path.join(dir, "server.term");
     // The client prepends "acp" to server args, so this becomes `node acp`.

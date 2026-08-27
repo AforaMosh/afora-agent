@@ -220,7 +220,7 @@ export async function createRenderedPage(
   statusFilter: "active" | "archived" | "all" = "active",
   expandedSessionKey: string | null = null,
 ): Promise<TestSessionsPage> {
-  const page = document.createElement("openclaw-sessions-page") as TestSessionsPage;
+  const page = document.createElement("afora-sessions-page") as TestSessionsPage;
   page.context = context;
   page.routeData = {
     gateway: context.gateway,

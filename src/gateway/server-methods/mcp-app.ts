@@ -5,7 +5,7 @@ import {
 } from "../../../packages/gateway-protocol/src/index.js";
 import { updateMcpAppModelContext } from "../../agents/mcp-app-model-context.js";
 import { buildMcpAppSandboxPath } from "../../agents/mcp-app-sandbox.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { logWarn } from "../../logger.js";
 import {
@@ -39,7 +39,7 @@ class McpAppRequestError extends Error {
   }
 }
 
-function resolveMcpAppSessionOwner(params: Record<string, unknown>, cfg: OpenClawConfig): string {
+function resolveMcpAppSessionOwner(params: Record<string, unknown>, cfg: AforaConfig): string {
   const sessionKey = requireString(params, "sessionKey");
   const explicitAgentId =
     typeof params.agentId === "string" && params.agentId.trim() ? params.agentId.trim() : undefined;
@@ -53,7 +53,7 @@ function resolveMcpAppSessionOwner(params: Record<string, unknown>, cfg: OpenCla
 async function runOperation(
   params: Record<string, unknown>,
   operation: McpAppOperation,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): Promise<unknown> {
   const active = await resolveMcpAppActiveView({
     sessionKey: requireString(params, "sessionKey"),

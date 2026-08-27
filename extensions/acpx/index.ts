@@ -2,11 +2,11 @@
  * ACPX runtime plugin entry. It registers the embedded ACP backend service and
  * wires reply-dispatch hooks into the plugin SDK runtime.
  */
-import { tryDispatchAcpReplyHook } from "openclaw/plugin-sdk/acp-runtime-backend";
-import { finiteSecondsToTimerSafeMilliseconds } from "openclaw/plugin-sdk/number-runtime";
+import { tryDispatchAcpReplyHook } from "afora-agent/plugin-sdk/acp-runtime-backend";
+import { finiteSecondsToTimerSafeMilliseconds } from "afora-agent/plugin-sdk/number-runtime";
 import { createAcpxRuntimeService } from "./register.runtime.js";
 import type {
-  OpenClawPluginApi,
+  AforaPluginApi,
   PluginHookReplyDispatchContext,
   PluginHookReplyDispatchEvent,
   PluginHookReplyDispatchResult,
@@ -48,7 +48,7 @@ const plugin = {
   id: "acpx",
   name: "ACPX Runtime",
   description: "Embedded ACP runtime backend with plugin-owned session and transport management.",
-  register(api: OpenClawPluginApi) {
+  register(api: AforaPluginApi) {
     const replyDispatchTimeoutMs = resolveReplyDispatchTimeoutMs(api.pluginConfig);
     registerPiSessionCatalog(api);
     api.registerService(

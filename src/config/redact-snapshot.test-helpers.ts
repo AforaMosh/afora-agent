@@ -1,7 +1,7 @@
 // Provides assertions for redacted snapshot tests.
 import { expect } from "vitest";
 import { restoreRedactedValues as restoreRedactedValues_orig } from "./redact-snapshot.js";
-import type { ConfigFileSnapshot } from "./types.openclaw.js";
+import type { ConfigFileSnapshot } from "./types.afora.js";
 
 type ConfigUiHints = NonNullable<Parameters<typeof restoreRedactedValues_orig>[2]>;
 
@@ -19,7 +19,7 @@ export function makeSnapshot<TConfig extends Record<string, unknown>>(
   raw?: string,
 ): TestSnapshot<TConfig> {
   return {
-    path: "/home/user/.openclaw/config.json5",
+    path: "/home/user/.afora/config.json5",
     exists: true,
     raw: raw ?? JSON.stringify(config),
     parsed: config,

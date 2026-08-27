@@ -54,7 +54,7 @@ function installPersistSnapshot() {
     config: {},
     baseHash: "base-hash",
     writeOptions: {
-      expectedConfigPath: "/tmp/openclaw.json",
+      expectedConfigPath: "/tmp/afora.json",
       includeFileHashesForWrite: { "/tmp/plugins.json": "include-hash" },
       includeFileTargetsForWrite: { "/tmp/plugins.json": "/tmp/plugins.json" },
     },
@@ -85,9 +85,9 @@ describe("managed plugin install compensation", () => {
   });
 
   it("defaults direct managed source installs to persistence-failure cleanup", async () => {
-    const env = { HOME: "/tmp/openclaw-managed-source-conflict-home" };
+    const env = { HOME: "/tmp/afora-managed-source-conflict-home" };
     const conflict = new Error("config changed during plugin install");
-    const targetDir = "/tmp/openclaw-managed-source-conflict-home/extensions/demo";
+    const targetDir = "/tmp/afora-managed-source-conflict-home/extensions/demo";
     mockClawHubInstall("demo", "community/demo", targetDir);
     mocks.persistInstall.mockRejectedValue(conflict);
     mocks.planUninstall.mockReturnValue({
@@ -116,9 +116,9 @@ describe("managed plugin install compensation", () => {
   ])(
     "removes a planner-validated $name npm project after persistence conflicts",
     async (fixture) => {
-      const home = compensationTempDirs.make("openclaw-managed-npm-conflict-");
+      const home = compensationTempDirs.make("afora-managed-npm-conflict-");
       const env = { HOME: home };
-      const packageName = "@openclaw/demo";
+      const packageName = "@afora/demo";
       const npmDir = resolveDefaultPluginNpmDir(env);
       const npmRoot = fixture.generationKey
         ? resolvePluginNpmGenerationProjectDir({
@@ -127,8 +127,8 @@ describe("managed plugin install compensation", () => {
             generationKey: fixture.generationKey,
           })
         : resolvePluginNpmProjectDir({ npmDir, packageName });
-      const targetDir = path.join(npmRoot, "node_modules", "@openclaw", "demo");
-      const packArchive = path.join(npmRoot, "_openclaw-pack-archives", "demo.tgz");
+      const targetDir = path.join(npmRoot, "node_modules", "@afora", "demo");
+      const packArchive = path.join(npmRoot, "_afora-pack-archives", "demo.tgz");
       const conflict = new Error("config changed during npm plugin install");
 
       await fs.mkdir(targetDir, { recursive: true });
@@ -169,7 +169,7 @@ describe("managed plugin install compensation", () => {
   );
 
   it("never deletes an operator-owned source when link persistence fails", async () => {
-    const env = { HOME: "/tmp/openclaw-managed-link-conflict-home" };
+    const env = { HOME: "/tmp/afora-managed-link-conflict-home" };
     const sourcePath = "/tmp/operator-owned-plugin-source";
     const conflict = new Error("config changed during plugin link");
     mocks.pathInstall.mockResolvedValue({

@@ -13,7 +13,7 @@ import { escapeRegExp } from "../lib/regexp.mjs";
  * @property {string[]} missingSections
  */
 
-/** ClawSweeper-owned labels that OpenClaw preserves but does not mutate. */
+/** ClawSweeper-owned labels that Afora preserves but does not mutate. */
 export const PROOF_OVERRIDE_LABEL = "proof: override";
 export const PROOF_SUFFICIENT_LABEL = "proof: sufficient";
 export const NEEDS_PR_CONTEXT_LABEL = "triage: needs-pr-context";
@@ -22,7 +22,7 @@ const DEFAULT_GITHUB_API_TIMEOUT_MS = 30_000;
 const GITHUB_API_RESPONSE_BODY_MAX_BYTES = 1024 * 1024;
 
 const CLAWSWEEPER_PROOF_VERDICT_STATUS = "clawsweeper_exact_head_pass";
-const CLAWSWEEPER_BOT_LOGINS = new Set(["clawsweeper[bot]", "openclaw-clawsweeper[bot]"]);
+const CLAWSWEEPER_BOT_LOGINS = new Set(["clawsweeper[bot]", "afora-clawsweeper[bot]"]);
 
 const privilegedAuthorAssociations = new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
 

@@ -21,7 +21,7 @@ const bundledContractPlugin = {
   origin: "bundled",
   rootDir: "/tmp/document-extract",
   source: "bundled",
-  manifestPath: "/tmp/document-extract/openclaw.plugin.json",
+  manifestPath: "/tmp/document-extract/afora.plugin.json",
   contracts: {
     documentExtractors: ["pdf"],
   },

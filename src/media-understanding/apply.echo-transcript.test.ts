@@ -2,11 +2,11 @@
 // best-effort transcript delivery.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MsgContext } from "../auto-reply/templating.js";
-import type { OpenClawConfig } from "../config/types.js";
-import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import type { AforaConfig } from "../config/types.js";
+import { resolvePreferredAforaTmpDir } from "../infra/tmp-afora-dir.js";
 import { createSafeAudioFixtureBuffer } from "./runner.test-utils.js";
 import type { MediaUnderstandingProvider } from "./types.js";
 
@@ -56,7 +56,7 @@ const { MediaFetchErrorMock } = vi.hoisted(() => {
 
 let applyMediaUnderstanding: typeof import("./apply.js").applyMediaUnderstanding;
 
-const TEMP_MEDIA_PREFIX = "openclaw-echo-transcript-test-";
+const TEMP_MEDIA_PREFIX = "afora-echo-transcript-test-";
 let suiteTempMediaRootDir = "";
 
 async function createTempAudioFile(): Promise<string> {
@@ -82,10 +82,10 @@ function createAudioConfigWithEcho(opts?: {
   echoFormat?: string;
   transcribedText?: string;
 }): {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   providers: Record<string, { id: string; transcribeAudio: () => Promise<{ text: string }> }>;
 } {
-  const cfg: OpenClawConfig = {
+  const cfg: AforaConfig = {
     tools: {
       media: {
         models: [{ provider: "groq", capabilities: ["audio"] }],
@@ -107,7 +107,7 @@ function createAudioConfigWithEcho(opts?: {
   return { cfg, providers };
 }
 
-function disableImageUnderstanding(cfg: OpenClawConfig): void {
+function disableImageUnderstanding(cfg: AforaConfig): void {
   if (!cfg.tools?.media) {
     throw new Error("Expected media tool config");
   }
@@ -231,7 +231,7 @@ describe("applyMediaUnderstanding – echo transcript", () => {
       };
     });
 
-    const baseDir = resolvePreferredOpenClawTmpDir();
+    const baseDir = resolvePreferredAforaTmpDir();
     await fs.mkdir(baseDir, { recursive: true });
     suiteTempMediaRootDir = await fs.mkdtemp(path.join(baseDir, TEMP_MEDIA_PREFIX));
     const mod = await import("./apply.js");

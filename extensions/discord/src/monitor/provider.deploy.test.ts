@@ -1,5 +1,5 @@
 // Discord tests cover slash-command deploy REST logging behavior.
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
 import { describe, expect, it, type Mock, vi } from "vitest";
 import type { Client } from "../internal/discord.js";
 import { formatDiscordDeployErrorDetails } from "./provider.deploy-errors.js";

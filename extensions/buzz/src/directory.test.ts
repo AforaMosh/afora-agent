@@ -1,5 +1,5 @@
 import { getPublicKey, type Event, type Filter } from "nostr-tools";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const relayMocks = vi.hoisted(() => ({
@@ -156,7 +156,7 @@ describe("Buzz live directory", () => {
           groups: { [ROOM_ID]: {} },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     await expect(
       listBuzzDirectoryPeersLive({
@@ -204,7 +204,7 @@ describe("Buzz live directory", () => {
           groups: { [ROOM_ID]: {} },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     await expect(
       listBuzzDirectoryPeersLive({
@@ -226,7 +226,7 @@ describe("Buzz live directory", () => {
 
   it("refreshes only room listings when an active bus already owns directory state", async () => {
     const refreshDirectory = vi.fn(async () => {});
-    const self = vi.fn(() => ({ kind: "user", id: BOT_PUBLIC_KEY, name: "OpenClaw" }));
+    const self = vi.fn(() => ({ kind: "user", id: BOT_PUBLIC_KEY, name: "Afora" }));
     const listPeers = vi.fn(() => [{ kind: "user", id: MEMBER_PUBLIC_KEY, name: "Alice" }]);
     const listGroups = vi.fn(() => [{ kind: "group", id: `buzz:${ROOM_ID}`, name: "Engineering" }]);
     const listGroupMembers = vi.fn(() => [{ kind: "user", id: MEMBER_PUBLIC_KEY, name: "Alice" }]);
@@ -248,7 +248,7 @@ describe("Buzz live directory", () => {
           groups: { [ROOM_ID]: {} },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     await getBuzzDirectorySelf({ cfg, accountId: "default" });
     await listBuzzDirectoryPeersLive({ cfg, accountId: "default" });
@@ -285,7 +285,7 @@ describe("Buzz live directory", () => {
               groups: { [ROOM_ID]: {} },
             },
           },
-        } as unknown as OpenClawConfig,
+        } as unknown as AforaConfig,
         accountId: "default",
       }),
     ).resolves.toEqual([{ kind: "group", id: `buzz:${ROOM_ID}`, name: "Cached Engineering" }]);

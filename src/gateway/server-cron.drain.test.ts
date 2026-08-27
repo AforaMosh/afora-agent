@@ -4,7 +4,7 @@ import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createDeferred } from "../../test/helpers/promise.js";
 import type { CliDeps } from "../cli/deps.types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 const { getRuntimeConfigMock, stopAllMock } = vi.hoisted(() => ({
   getRuntimeConfigMock: vi.fn(),
@@ -34,13 +34,13 @@ import { sessionHasAutomation } from "./session-automation-index.js";
 
 type StartedGatewayCron = {
   state: ReturnType<typeof buildGatewayCronService>;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   stateDir: string;
 };
 
 async function startGatewayCron(label: string): Promise<StartedGatewayCron> {
-  const stateDir = await mkdtemp(path.join(os.tmpdir(), `openclaw-cron-drain-${label}-`));
-  const cfg: OpenClawConfig = {
+  const stateDir = await mkdtemp(path.join(os.tmpdir(), `afora-cron-drain-${label}-`));
+  const cfg: AforaConfig = {
     session: { mainKey: "main" },
     cron: { triggers: { enabled: true } },
   };
@@ -49,7 +49,7 @@ async function startGatewayCron(label: string): Promise<StartedGatewayCron> {
     cfg,
     deps: {} as CliDeps,
     broadcast: () => {},
-    env: { ...process.env, OPENCLAW_SKIP_CRON: "0", OPENCLAW_STATE_DIR: stateDir },
+    env: { ...process.env, AFORA_SKIP_CRON: "0", AFORA_STATE_DIR: stateDir },
   });
   await state.cron.start();
   await state.cron.add({

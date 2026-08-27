@@ -1,5 +1,5 @@
 ---
-summary: "Run multiple OpenClaw Gateways on one host (isolation, ports, and profiles)"
+summary: "Run multiple Afora Gateways on one host (isolation, ports, and profiles)"
 read_when:
   - Running more than one Gateway on the same machine
   - You need isolated config/state/ports per Gateway
@@ -20,13 +20,13 @@ This keeps the rescue bot able to debug or apply config changes if the primary b
 
 ```bash
 # Rescue bot (separate Telegram bot, separate profile, port 19789)
-openclaw --profile rescue onboard
-openclaw --profile rescue gateway install --port 19789
+afora --profile rescue onboard
+afora --profile rescue gateway install --port 19789
 ```
 
 If your main bot is already running, that's usually all you need. If onboarding already installed the rescue service, skip the final `gateway install`.
 
-During `openclaw --profile rescue onboard`:
+During `afora --profile rescue onboard`:
 
 - Use a separate Telegram bot token, dedicated to the rescue account (easy to keep operator-only, independent from the main bot's channel/app install, and a simple DM-based recovery path).
 - Keep the `rescue` profile name.
@@ -39,7 +39,7 @@ During `openclaw --profile rescue onboard`:
 
 - Profile/config file
 - State directory
-- Workspace (default: `~/.openclaw/workspace-rescue`)
+- Workspace (default: `~/.afora/workspace-rescue`)
 - Managed service name
 - Base port (plus derived ports)
 - Telegram bot token
@@ -52,29 +52,29 @@ The same isolation pattern works for any pair or group of Gateways on one host -
 
 ```bash
 # main (default profile)
-openclaw setup
-openclaw gateway --port 18789
+afora setup
+afora gateway --port 18789
 
 # extra gateway
-openclaw --profile ops setup
-openclaw --profile ops gateway --port 19789
+afora --profile ops setup
+afora --profile ops gateway --port 19789
 ```
 
 Named profiles on both sides also work:
 
 ```bash
-openclaw --profile main setup
-openclaw --profile main gateway --port 18789
+afora --profile main setup
+afora --profile main gateway --port 18789
 
-openclaw --profile ops setup
-openclaw --profile ops gateway --port 19789
+afora --profile ops setup
+afora --profile ops gateway --port 19789
 ```
 
 Services follow the same pattern:
 
 ```bash
-openclaw gateway install
-openclaw --profile ops gateway install --port 19789
+afora gateway install
+afora --profile ops gateway install --port 19789
 ```
 
 Use the rescue-bot quickstart for a fallback operator lane; use the general profile pattern for multiple long-lived Gateways across different channels, tenants, workspaces, or operational roles.
@@ -85,19 +85,19 @@ Keep these unique per Gateway instance:
 
 | Setting                      | Purpose                              |
 | ---------------------------- | ------------------------------------ |
-| `OPENCLAW_CONFIG_PATH`       | Per-instance config file             |
-| `OPENCLAW_STATE_DIR`         | Per-instance sessions, creds, caches |
+| `AFORA_CONFIG_PATH`       | Per-instance config file             |
+| `AFORA_STATE_DIR`         | Per-instance sessions, creds, caches |
 | `agents.defaults.workspace`  | Per-instance workspace root          |
 | `gateway.port` (or `--port`) | Unique per instance                  |
 | Derived browser/CDP ports    | See below                            |
 
 Sharing any of these causes config, state, or port conflicts. Gateway startup
 enforces unique state-directory ownership even when
-`OPENCLAW_ALLOW_MULTI_GATEWAY=1` skips the per-config singleton.
+`AFORA_ALLOW_MULTI_GATEWAY=1` skips the per-config singleton.
 
 ## Port mapping (derived)
 
-Base port = `gateway.port` (or `OPENCLAW_GATEWAY_PORT` / `--port`).
+Base port = `gateway.port` (or `AFORA_GATEWAY_PORT` / `--port`).
 
 - Browser control service port = base + 2 (loopback only).
 - Canvas host is served on the Gateway HTTP server itself (same port as `gateway.port`).
@@ -115,28 +115,28 @@ Override any of these in config or env and you must keep them unique per instanc
 ## Manual env example
 
 ```bash
-OPENCLAW_CONFIG_PATH=~/.openclaw/main.json \
-OPENCLAW_STATE_DIR=~/.openclaw \
-openclaw gateway --port 18789
+AFORA_CONFIG_PATH=~/.afora/main.json \
+AFORA_STATE_DIR=~/.afora \
+afora gateway --port 18789
 
-OPENCLAW_CONFIG_PATH=~/.openclaw/rescue.json \
-OPENCLAW_STATE_DIR=~/.openclaw-rescue \
-openclaw gateway --port 19789
+AFORA_CONFIG_PATH=~/.afora/rescue.json \
+AFORA_STATE_DIR=~/.afora-rescue \
+afora gateway --port 19789
 ```
 
 ## Quick checks
 
 ```bash
-openclaw gateway status --deep
-openclaw --profile rescue gateway status --deep
-openclaw --profile rescue gateway probe
-openclaw status
-openclaw --profile rescue status
-openclaw --profile rescue browser status
+afora gateway status --deep
+afora --profile rescue gateway status --deep
+afora --profile rescue gateway probe
+afora status
+afora --profile rescue status
+afora --profile rescue browser status
 ```
 
 - `gateway status --deep` catches stale launchd/systemd/schtasks services from older installs.
-- `gateway probe` warning text such as `multiple reachable gateway identities detected` is expected only when you intentionally run more than one isolated gateway, or when OpenClaw cannot prove reachable probe targets are the same gateway. An SSH tunnel, proxy URL, or configured remote URL to the same gateway is one gateway with multiple transports, even when transport ports differ.
+- `gateway probe` warning text such as `multiple reachable gateway identities detected` is expected only when you intentionally run more than one isolated gateway, or when Afora cannot prove reachable probe targets are the same gateway. An SSH tunnel, proxy URL, or configured remote URL to the same gateway is one gateway with multiple transports, even when transport ports differ.
 
 ## Related
 

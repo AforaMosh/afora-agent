@@ -4,14 +4,14 @@ import path from "node:path";
 import {
   clearRuntimeAuthProfileStoreSnapshots,
   loadAuthProfileStoreForSecretsRuntime,
-} from "openclaw/plugin-sdk/agent-runtime";
-import type { MigrationProviderContext } from "openclaw/plugin-sdk/plugin-entry";
-import { upsertAuthProfile } from "openclaw/plugin-sdk/provider-auth";
+} from "afora-agent/plugin-sdk/agent-runtime";
+import type { MigrationProviderContext } from "afora-agent/plugin-sdk/plugin-entry";
+import { upsertAuthProfile } from "afora-agent/plugin-sdk/provider-auth";
 import {
-  resolvePreferredOpenClawTmpDir,
+  resolvePreferredAforaTmpDir,
   tempWorkspace,
   type TempWorkspace,
-} from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/temp-path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defaultCodexAppInventoryCache } from "../app-server/app-inventory-cache.js";
 import { codexAppInventoryResponse } from "../app-server/app-inventory.test-helpers.js";
@@ -138,8 +138,8 @@ async function createCodexFixture(): Promise<{
   workspaceDir: string;
 }> {
   const workspace = await tempWorkspace({
-    rootDir: resolvePreferredOpenClawTmpDir(),
-    prefix: "openclaw-migrate-codex-",
+    rootDir: resolvePreferredAforaTmpDir(),
+    prefix: "afora-migrate-codex-",
   });
   tempWorkspaces.push(workspace);
   const root = workspace.dir;
@@ -148,8 +148,8 @@ async function createCodexFixture(): Promise<{
   const stateDir = path.join(root, "state");
   const workspaceDir = path.join(root, "workspace");
   vi.stubEnv("HOME", homeDir);
-  vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
-  vi.stubEnv("OPENCLAW_AGENT_DIR", "");
+  vi.stubEnv("AFORA_STATE_DIR", stateDir);
+  vi.stubEnv("AFORA_AGENT_DIR", "");
   await writeFile(path.join(codexHome, "skills", "tweet-helper", "SKILL.md"), "# Tweet helper\n");
   await writeFile(path.join(codexHome, "skills", ".system", "system-skill", "SKILL.md"));
   await writeFile(path.join(homeDir, ".agents", "skills", "personal-style", "SKILL.md"));
@@ -215,8 +215,8 @@ describe("buildCodexMigrationProvider", () => {
 
   it("preserves whitespace in nonempty CODEX_HOME values", async () => {
     const workspace = await tempWorkspace({
-      rootDir: resolvePreferredOpenClawTmpDir(),
-      prefix: "openclaw-migrate-codex-",
+      rootDir: resolvePreferredAforaTmpDir(),
+      prefix: "afora-migrate-codex-",
     });
     tempWorkspaces.push(workspace);
     const root = workspace.dir;
@@ -1639,7 +1639,7 @@ describe("buildCodexMigrationProvider", () => {
       },
     ]);
     expect(plan.warnings).toEqual([
-      "Codex app-backed plugin migration requires the Codex app-server source account to be logged in with a ChatGPT subscription account. Log in to the Codex app with subscription auth; OpenClaw auth or API-key auth does not satisfy Codex app connector access.",
+      "Codex app-backed plugin migration requires the Codex app-server source account to be logged in with a ChatGPT subscription account. Log in to the Codex app with subscription auth; Afora auth or API-key auth does not satisfy Codex app connector access.",
     ]);
     expect(
       appServerRequest.mock.calls.filter(([arg]) => arg.method === "app/installed"),
@@ -2266,7 +2266,7 @@ describe("buildCodexMigrationProvider", () => {
   });
 
   it("leaves selected Codex plugins as warnings when target curated plugins never load", async () => {
-    vi.stubEnv("OPENCLAW_CODEX_MIGRATION_PLUGIN_LIST_TIMEOUT_MS", "1");
+    vi.stubEnv("AFORA_CODEX_MIGRATION_PLUGIN_LIST_TIMEOUT_MS", "1");
     const fixture = await createCodexFixture();
     const configState: MigrationProviderContext["config"] = {
       agents: { defaults: { workspace: fixture.workspaceDir } },
@@ -2329,10 +2329,10 @@ describe("buildCodexMigrationProvider", () => {
       reason: "marketplace_missing",
     });
     expect(result.warnings).toContain(
-      "Some Codex plugins could not be migrated. Run `openclaw migrate codex` after onboarding.",
+      "Some Codex plugins could not be migrated. Run `afora migrate codex` after onboarding.",
     );
     expect(result.nextSteps).toContain(
-      "Some Codex plugins could not be migrated. Run `openclaw migrate codex` after onboarding.",
+      "Some Codex plugins could not be migrated. Run `afora migrate codex` after onboarding.",
     );
     expect(configState.plugins?.entries?.codex?.config?.codexPlugins).toBeUndefined();
   });
@@ -2392,10 +2392,10 @@ describe("buildCodexMigrationProvider", () => {
       message: 'Codex plugin "google-calendar" could not be migrated automatically',
     });
     expect(result.warnings).toContain(
-      "Some Codex plugins could not be migrated. Run `openclaw migrate codex` after onboarding.",
+      "Some Codex plugins could not be migrated. Run `afora migrate codex` after onboarding.",
     );
     expect(result.nextSteps).toContain(
-      "Some Codex plugins could not be migrated. Run `openclaw migrate codex` after onboarding.",
+      "Some Codex plugins could not be migrated. Run `afora migrate codex` after onboarding.",
     );
     expect(result.summary.errors).toBe(0);
     expect(configState.plugins?.entries?.codex?.config?.codexPlugins).toBeUndefined();
@@ -3103,7 +3103,7 @@ function createConfigRuntime(
           previousHash: null,
         });
         return {
-          path: "/tmp/openclaw.json",
+          path: "/tmp/afora.json",
           previousHash: null,
           persistedHash: "test-persisted-hash",
           snapshot: {} as never,

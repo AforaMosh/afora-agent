@@ -1,6 +1,6 @@
 // Sms public webhook URL validation is shared by startup diagnostics and Twilio callbacks.
 import { isIP } from "node:net";
-import { isBlockedHostnameOrIp } from "openclaw/plugin-sdk/ssrf-runtime";
+import { isBlockedHostnameOrIp } from "afora-agent/plugin-sdk/ssrf-runtime";
 
 // Bound generated callback metadata defensively; Twilio does not publish a
 // 4,000-character StatusCallback contract.

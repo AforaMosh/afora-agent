@@ -337,7 +337,7 @@ describe("CodexAppServerEventProjector replay safety and progress projection", (
       tool: "bash",
       arguments: {
         command:
-          '/bin/bash -lc \'/home/openclaw/.openclaw/workspace/bin/log_activity.sh "web_search" "Grilled salmon research"\'',
+          '/bin/bash -lc \'/home/afora/.afora/workspace/bin/log_activity.sh "web_search" "Grilled salmon research"\'',
         cwd: "/workspace",
       },
     });

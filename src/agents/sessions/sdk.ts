@@ -6,7 +6,7 @@
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { clampThinkingLevel } from "@openclaw/ai/internal/runtime";
+import { clampThinkingLevel } from "@afora/ai/internal/runtime";
 import {
   resolveThinkingDefaultForModel,
   type ThinkingCatalogEntry,
@@ -79,7 +79,7 @@ function projectThinkingCatalogCompat(compat: Model["compat"]) {
 export interface CreateAgentSessionOptions {
   /** Working directory for project-local discovery. Default: process.cwd() */
   cwd?: string;
-  /** Global config directory. Default: ~/.openclaw/agents/default */
+  /** Global config directory. Default: ~/.afora/agents/default */
   agentDir?: string;
 
   /** Auth storage for credentials. Default: canonical per-agent SQLite auth profiles. */
@@ -105,7 +105,7 @@ export interface CreateAgentSessionOptions {
   /**
    * Optional allowlist of tool names.
    *
-   * When omitted, OpenClaw enables the default built-in tools (read, bash, edit, write)
+   * When omitted, Afora enables the default built-in tools (read, bash, edit, write)
    * and leaves extension/custom tools enabled unless `noTools` changes that default.
    * When provided, only the listed tool names are enabled.
    */
@@ -233,8 +233,8 @@ function getAttributionHeaders(
 
   if (model.provider === "openrouter" || baseUrl.includes("openrouter.ai")) {
     return {
-      "HTTP-Referer": "https://openclaw.ai",
-      "X-OpenRouter-Title": "OpenClaw",
+      "HTTP-Referer": "https://afora.ai",
+      "X-OpenRouter-Title": "Afora",
       "X-OpenRouter-Categories": "cli-agent",
     };
   }
@@ -246,7 +246,7 @@ function getAttributionHeaders(
     baseUrl.includes("gateway.ai.cloudflare.com")
   ) {
     return {
-      "User-Agent": "openclaw",
+      "User-Agent": "afora",
     };
   }
 
@@ -593,7 +593,7 @@ async function createDefaultSdkSessionManager(
   const sessionId = randomUUID();
   // afora-compat: unmigrated agent dirs still carry the legacy basename.
   const resolveAgentStorePath = (dir: string): string => {
-    const canonical = join(dir, "openclaw-agent.sqlite");
+    const canonical = join(dir, "afora-agent.sqlite");
     const legacy = join(dir, "openclaw-agent.sqlite"); // afora-compat: legacy basename
     return !existsSync(canonical) && existsSync(legacy) ? legacy : canonical;
   };

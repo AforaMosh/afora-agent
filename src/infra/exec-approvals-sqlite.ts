@@ -2,7 +2,7 @@
 import type { DatabaseSync } from "node:sqlite";
 import { isDeepStrictEqual } from "node:util";
 import { normalizeAgentId } from "../routing/session-key.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import { sha256Hex } from "./crypto-digest.js";
 import {
   normalizeExecApprovalsInternal,
@@ -18,7 +18,7 @@ import {
 const EXEC_APPROVALS_CONFIG_KEY = "current";
 
 type ExecApprovalsDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "agent_deletion_journal" | "exec_approvals_config"
 >;
 

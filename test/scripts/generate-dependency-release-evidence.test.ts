@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import {
   DEPENDENCY_EVIDENCE_REPORTS,
@@ -68,7 +68,7 @@ describe("generate-dependency-release-evidence", () => {
       releaseRef: "v2026.5.13-beta.1",
       releaseSha: "abc123",
       npmDistTag: "beta",
-      packageName: "openclaw",
+      packageName: "afora",
       packageVersion: "2026.5.13-beta.1",
       workflowRunId: "123",
       workflowRunAttempt: "2",
@@ -255,7 +255,7 @@ describe("generate-dependency-release-evidence", () => {
   });
 
   it("collects report counts and renders human summaries", async () => {
-    const dir = await mkdtemp(path.join(tmpdir(), "openclaw-release-dependency-evidence-test-"));
+    const dir = await mkdtemp(path.join(tmpdir(), "afora-release-dependency-evidence-test-"));
     try {
       await writeJson(dir, "dependency-vulnerability-gate.json", {
         blockers: [{ id: "GHSA-blocker" }],
@@ -308,12 +308,12 @@ describe("generate-dependency-release-evidence", () => {
       expect(summary).toContain("- Resolved package changes: +5 -6 changed 7");
 
       const stepSummary = renderDependencyEvidenceStepSummary({
-        evidenceArtifactName: "openclaw-release-dependency-evidence-v2026.5.13",
+        evidenceArtifactName: "afora-release-dependency-evidence-v2026.5.13",
         baseRef: "v2026.5.1",
         counts,
       });
       expect(stepSummary).toContain(
-        "- Evidence artifact: `openclaw-release-dependency-evidence-v2026.5.13`",
+        "- Evidence artifact: `afora-release-dependency-evidence-v2026.5.13`",
       );
       expect(stepSummary).toContain("- npm advisory vulnerability hard blockers: `1`");
 

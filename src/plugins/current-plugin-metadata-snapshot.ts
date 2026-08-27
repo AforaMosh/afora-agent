@@ -1,6 +1,6 @@
 /** Tracks the current plugin metadata snapshot for control-plane lookups. */
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 import {
   currentPluginMetadataConfigIdentityCache,
@@ -23,12 +23,12 @@ import { normalizePluginIdScope, serializePluginIdScope } from "./plugin-scope.j
 type CurrentPluginMetadataSnapshotState = ReturnType<
   typeof getCurrentPluginMetadataSnapshotState
 > & {
-  configIdentities: WeakSet<OpenClawConfig>;
+  configIdentities: WeakSet<AforaConfig>;
 };
 
 type CurrentPluginMetadataSnapshotOptions = {
-  config?: OpenClawConfig;
-  compatibleConfigs?: readonly OpenClawConfig[];
+  config?: AforaConfig;
+  compatibleConfigs?: readonly AforaConfig[];
   env?: NodeJS.ProcessEnv;
   /** Only immutable runtime generations may trust identity across policy drift. */
   trustConfigIdentity?: boolean;
@@ -47,7 +47,7 @@ type TemporaryPluginMetadataSnapshotLease = {
 };
 
 type CurrentPluginMetadataSnapshotParams = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   allowScopedSnapshot?: boolean;
   pluginIds?: readonly string[];
@@ -62,7 +62,7 @@ type PluginMetadataSnapshotCandidate = {
   configFingerprint: string | undefined;
   compatiblePolicyHashes?: readonly string[];
   compatibleConfigFingerprints?: readonly string[];
-  hasConfigIdentity?: (config: OpenClawConfig) => boolean;
+  hasConfigIdentity?: (config: AforaConfig) => boolean;
 };
 
 type ScopedPluginMetadataSnapshot = PluginMetadataSnapshotCandidate & {
@@ -71,7 +71,7 @@ type ScopedPluginMetadataSnapshot = PluginMetadataSnapshotCandidate & {
 
 export type PluginMetadataSnapshotScopeRunner = <T>(
   params: {
-    config: OpenClawConfig;
+    config: AforaConfig;
     workspaceDir?: string;
   },
   run: () => T,
@@ -81,13 +81,13 @@ let activeTemporaryPluginMetadataSnapshotLease:
   | TemporaryPluginMetadataSnapshotLeaseState
   | undefined;
 
-const SCOPED_PLUGIN_METADATA_SNAPSHOT_KEY = Symbol.for("openclaw.scopedPluginMetadataSnapshot");
+const SCOPED_PLUGIN_METADATA_SNAPSHOT_KEY = Symbol.for("afora.scopedPluginMetadataSnapshot");
 const scopedPluginMetadataSnapshot = resolveGlobalSingleton<
   AsyncLocalStorage<ScopedPluginMetadataSnapshot>
 >(SCOPED_PLUGIN_METADATA_SNAPSHOT_KEY, () => new AsyncLocalStorage());
 
 function resolvePluginMetadataControlPlaneFingerprint(
-  config?: OpenClawConfig,
+  config?: AforaConfig,
   options: Omit<ResolvePluginControlPlaneContextParams, "config"> = {},
 ): string {
   return resolvePluginControlPlaneFingerprint({
@@ -279,7 +279,7 @@ export function withPluginMetadataSnapshotScope<T>(
         workspaceDir,
       })
     : snapshot.configFingerprint;
-  const configIdentities = new WeakSet<OpenClawConfig>();
+  const configIdentities = new WeakSet<AforaConfig>();
   if (options.config) {
     const policyHash = resolveInstalledPluginIndexPolicyHash(options.config);
     if (

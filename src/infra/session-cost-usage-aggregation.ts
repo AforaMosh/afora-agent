@@ -12,9 +12,9 @@ import {
   scanSessionTranscriptTree,
 } from "../config/sessions/transcript-tree.js";
 import { selectVisibleTranscriptEvents } from "../config/sessions/transcript-visible-events.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizeAgentId } from "../routing/session-key.js";
-import { resolveOpenClawAgentSqlitePath } from "../state/openclaw-agent-db.js";
+import { resolveAforaAgentSqlitePath } from "../state/afora-agent-db.js";
 import { resolveModelCostConfigFingerprint } from "../utils/usage-format.js";
 import {
   acquireSessionCostUsageRefreshLock,
@@ -87,18 +87,18 @@ export type UsageCostStoredRollup = {
 type UsageCostRefreshResult = "refreshed" | "busy";
 
 export function resolveUsageCostCacheDatabasePath(agentId: string): string {
-  return resolveOpenClawAgentSqlitePath({ agentId: normalizeAgentId(agentId) });
+  return resolveAforaAgentSqlitePath({ agentId: normalizeAgentId(agentId) });
 }
 
 export function resolveUsageCostAgentDir(
-  config: OpenClawConfig | undefined,
+  config: AforaConfig | undefined,
   agentId: string,
 ): string {
   return resolveAgentDir(config ?? {}, agentId);
 }
 
 export function resolveUsageCostPricingFingerprint(
-  config?: OpenClawConfig,
+  config?: AforaConfig,
   agentDir?: string,
 ): string {
   return resolveModelCostConfigFingerprint(config, agentDir);
@@ -570,7 +570,7 @@ async function scanUsageFileForRollup(params: {
 }
 
 export async function refreshCostUsageCacheForAgent(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId: string;
   agentDir?: string;
   databasePath?: string;

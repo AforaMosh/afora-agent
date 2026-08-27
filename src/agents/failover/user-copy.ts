@@ -1,6 +1,6 @@
-import { stableStringify } from "@openclaw/normalization-core";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { stableStringify } from "@afora/normalization-core";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import {
   extractLeadingHttpStatus,
   formatRawAssistantErrorForUi,
@@ -202,7 +202,7 @@ export function formatDiskSpaceErrorCopy(raw: string): string | undefined {
   return /\benospc\b/i.test(raw) ||
     lower.includes("no space left on device") ||
     lower.includes("disk full")
-    ? "OpenClaw could not write local session data because the disk is full. Free some disk space and try again."
+    ? "Afora could not write local session data because the disk is full. Free some disk space and try again."
     : undefined;
 }
 
@@ -535,7 +535,7 @@ export function renderMissingApiKeyReplyCopy(params?: {
     return "⚠️ Missing API key for OpenAI on the gateway. Use `openai/gpt-5.6-sol` with the OpenAI OAuth profile, or set `OPENAI_API_KEY` for direct OpenAI API-key runs.";
   }
   if (provider === "openai") {
-    return '⚠️ Missing API key for provider "openai". Run `openclaw doctor --fix` to repair stale OpenAI model/session routes, restart the gateway if doctor asks, then try again. If doctor has nothing to repair or the error persists, re-auth with `openclaw models auth login --provider openai` or run `openclaw configure`.';
+    return '⚠️ Missing API key for provider "openai". Run `afora doctor --fix` to repair stale OpenAI model/session routes, restart the gateway if doctor asks, then try again. If doctor has nothing to repair or the error persists, re-auth with `afora models auth login --provider openai` or run `afora configure`.';
   }
   return SAFE_MISSING_API_KEY_PROVIDERS.has(provider)
     ? `⚠️ Missing API key for provider "${provider}". Configure the gateway auth for that provider, then try again.`
@@ -582,11 +582,11 @@ export function renderCliTimeoutReplyCopy(params: {
         ? " The CLI had already begun work, so effects may be partial; check before retrying."
         : "";
   if (params.replayPrevented) {
-    workStatus += " OpenClaw did not replay this turn automatically.";
+    workStatus += " Afora did not replay this turn automatically.";
   }
   return mode === "no-output"
     ? `⚠️ CLI subprocess${routingSuffix}: no output for ${seconds}s, so the no-output watchdog stopped it. This is separate from the overall agent timeout; the gateway is unaffected.${workStatus} Check for an interactive prompt. The CLI backend ${params.provider ?? "<id>"} produced no output before its watchdog expired.`
-    : `⚠️ CLI turn${routingSuffix}: timed out after ${seconds}s (overall turn limit). The gateway is unaffected.${workStatus} For long work, use a detached OpenClaw sub-agent (no run timeout by default), or raise \`agents.defaults.timeoutSeconds\`.`;
+    : `⚠️ CLI turn${routingSuffix}: timed out after ${seconds}s (overall turn limit). The gateway is unaffected.${workStatus} For long work, use a detached Afora sub-agent (no run timeout by default), or raise \`agents.defaults.timeoutSeconds\`.`;
 }
 
 type AuthProfileFailureCopyParams = {
@@ -674,7 +674,7 @@ export function renderAuthProfileFailoverCopy(params: AuthProfileFailureCopyPara
   return `${[description, hint].filter(Boolean).join(" ")}${suffix}`;
 }
 
-const CONTROL_UI_LOG_HINT = "To view logs, run `openclaw logs --follow` in a terminal.";
+const CONTROL_UI_LOG_HINT = "To view logs, run `afora logs --follow` in a terminal.";
 
 export function renderControlUiAgentFailureCopy(errorText: string): string {
   return `⚠️ Agent failed before reply: ${errorText.trim().replace(/\.\s*$/, "")}.\n${CONTROL_UI_LOG_HINT}`;

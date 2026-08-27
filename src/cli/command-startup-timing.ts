@@ -1,16 +1,16 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 type DiagnosticsTimelineModule = typeof import("../infra/diagnostics-timeline.js");
 
 type CliCommandStartupTimingOptions = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
 };
 
 let diagnosticsTimelineModulePromise: Promise<DiagnosticsTimelineModule> | undefined;
 
 function hasDiagnosticsTimelinePath(env: NodeJS.ProcessEnv): boolean {
-  return Boolean(env.OPENCLAW_DIAGNOSTICS_TIMELINE_PATH?.trim());
+  return Boolean(env.AFORA_DIAGNOSTICS_TIMELINE_PATH?.trim());
 }
 
 function loadDiagnosticsTimelineModule(): Promise<DiagnosticsTimelineModule> {

@@ -2,18 +2,18 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { captureFullEnv } from "../test-utils/env.js";
 import { getWindowsCmdExePath } from "./windows-install-roots.js";
 import { decodeWindowsLauncherScript } from "./windows-launcher-encoding.js";
 
 const spawnMock = vi.hoisted(() => vi.fn());
-const resolvePreferredOpenClawTmpDirMock = vi.hoisted(() => vi.fn(() => os.tmpdir()));
+const resolvePreferredAforaTmpDirMock = vi.hoisted(() => vi.fn(() => os.tmpdir()));
 const resolveTaskScriptPathMock = vi.hoisted(() =>
   vi.fn((env: Record<string, string | undefined>) => {
     const home = env.USERPROFILE || env.HOME || os.homedir();
-    return path.join(home, ".openclaw", "gateway.cmd");
+    return path.join(home, ".afora", "gateway.cmd");
   }),
 );
 // Pin code page detection so hosts with CJK home paths cannot leak the real
@@ -21,7 +21,7 @@ const resolveTaskScriptPathMock = vi.hoisted(() =>
 const resolveWindowsOemEncodingMock = vi.hoisted(() => vi.fn((): string | null => null));
 
 vi.mock("node:child_process", async () => {
-  const { mockNodeBuiltinModule } = await import("openclaw/plugin-sdk/test-node-mocks");
+  const { mockNodeBuiltinModule } = await import("afora-agent/plugin-sdk/test-node-mocks");
   return mockNodeBuiltinModule(
     () => vi.importActual<typeof import("node:child_process")>("node:child_process"),
     {
@@ -29,8 +29,8 @@ vi.mock("node:child_process", async () => {
     },
   );
 });
-vi.mock("./tmp-openclaw-dir.js", () => ({
-  resolvePreferredOpenClawTmpDir: () => resolvePreferredOpenClawTmpDirMock(),
+vi.mock("./tmp-afora-dir.js", () => ({
+  resolvePreferredAforaTmpDir: () => resolvePreferredAforaTmpDirMock(),
 }));
 vi.mock("../daemon/schtasks.js", () => ({
   resolveTaskScriptPath: (env: Record<string, string | undefined>) =>
@@ -96,12 +96,12 @@ describe("relaunchGatewayScheduledTask", () => {
 
   beforeEach(() => {
     spawnMock.mockReset();
-    resolvePreferredOpenClawTmpDirMock.mockReset();
-    resolvePreferredOpenClawTmpDirMock.mockReturnValue(os.tmpdir());
+    resolvePreferredAforaTmpDirMock.mockReset();
+    resolvePreferredAforaTmpDirMock.mockReturnValue(os.tmpdir());
     resolveTaskScriptPathMock.mockReset();
     resolveTaskScriptPathMock.mockImplementation((env: Record<string, string | undefined>) => {
       const home = env.USERPROFILE || env.HOME || os.homedir();
-      return path.join(home, ".openclaw", "gateway.cmd");
+      return path.join(home, ".afora", "gateway.cmd");
     });
     resolveWindowsOemEncodingMock.mockReset();
     resolveWindowsOemEncodingMock.mockReturnValue(null);
@@ -116,12 +116,12 @@ describe("relaunchGatewayScheduledTask", () => {
       return { unref };
     });
 
-    const result = relaunchGatewayScheduledTask({ OPENCLAW_PROFILE: "work" });
+    const result = relaunchGatewayScheduledTask({ AFORA_PROFILE: "work" });
     const cmdExePath = getWindowsCmdExePath();
 
     expect(result.ok).toBe(true);
     expect(result.method).toBe("schtasks");
-    expect(result.tried).toContain('schtasks /Run /TN "OpenClaw Gateway (work)"');
+    expect(result.tried).toContain('schtasks /Run /TN "Afora Gateway (work)"');
     expect(result.tried).toContain(`${cmdExePath} /d /s /c ${seenCommandArg}`);
     const spawnCall = requireFirstMockCall(spawnMock, "restart helper spawn");
     expect(spawnCall[0]).toBe(cmdExePath);
@@ -144,28 +144,28 @@ describe("relaunchGatewayScheduledTask", () => {
     expect(script).toContain("timeout /t 1 /nobreak >nul");
     expect(script).toContain("gateway-restart.log");
     expect(script).toContain(
-      'openclaw restart attempt source=windows-task-handoff target="OpenClaw Gateway (work)"',
+      'afora restart attempt source=windows-task-handoff target="Afora Gateway (work)"',
     );
     expect(script).toContain(
-      `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$task = Get-ScheduledTask -TaskName 'OpenClaw Gateway (work)' -ErrorAction SilentlyContinue; if ($null -ne $task -and $task.State -eq 'Running') { exit 0 }; exit 1" >nul 2>&1`,
+      `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$task = Get-ScheduledTask -TaskName 'Afora Gateway (work)' -ErrorAction SilentlyContinue; if ($null -ne $task -and $task.State -eq 'Running') { exit 0 }; exit 1" >nul 2>&1`,
     );
     expect(script).not.toContain("findstr");
-    expect(script).toContain('schtasks /Run /TN "OpenClaw Gateway (work)" >>');
+    expect(script).toContain('schtasks /Run /TN "Afora Gateway (work)" >>');
     expect(script.indexOf("powershell.exe -NoProfile")).toBeLessThan(
-      script.indexOf('schtasks /Run /TN "OpenClaw Gateway (work)"'),
+      script.indexOf('schtasks /Run /TN "Afora Gateway (work)"'),
     );
     expect(script).toContain('del "%~f0" >nul 2>&1');
   });
 
-  it("prefers OPENCLAW_WINDOWS_TASK_NAME overrides", () => {
+  it("prefers AFORA_WINDOWS_TASK_NAME overrides", () => {
     spawnMock.mockImplementation((_file: string, args: string[]) => {
       createdScriptPaths.add(decodeCmdPathArg(expectDefined(args[3], "args[3] test invariant")));
       return { unref: vi.fn() };
     });
 
     relaunchGatewayScheduledTask({
-      OPENCLAW_PROFILE: "work",
-      OPENCLAW_WINDOWS_TASK_NAME: "OpenClaw Gateway (custom)",
+      AFORA_PROFILE: "work",
+      AFORA_WINDOWS_TASK_NAME: "Afora Gateway (custom)",
     });
 
     const scriptPath = expectDefined(
@@ -173,7 +173,7 @@ describe("relaunchGatewayScheduledTask", () => {
       "[...createdScriptPaths][0] test invariant",
     );
     const script = fs.readFileSync(scriptPath, "utf8");
-    expect(script).toContain('schtasks /Run /TN "OpenClaw Gateway (custom)" >>');
+    expect(script).toContain('schtasks /Run /TN "Afora Gateway (custom)" >>');
   });
 
   it("escapes custom task names in the PowerShell running-task probe", () => {
@@ -183,7 +183,7 @@ describe("relaunchGatewayScheduledTask", () => {
     });
 
     relaunchGatewayScheduledTask({
-      OPENCLAW_WINDOWS_TASK_NAME: "OpenClaw Gateway (Bob's work)",
+      AFORA_WINDOWS_TASK_NAME: "Afora Gateway (Bob's work)",
     });
 
     const scriptPath = expectDefined(
@@ -192,7 +192,7 @@ describe("relaunchGatewayScheduledTask", () => {
     );
     const script = fs.readFileSync(scriptPath, "utf8");
     expect(script).toContain(
-      `-Command "$task = Get-ScheduledTask -TaskName 'OpenClaw Gateway (Bob''s work)' -ErrorAction SilentlyContinue; if ($null -ne $task -and $task.State -eq 'Running') { exit 0 }; exit 1"`,
+      `-Command "$task = Get-ScheduledTask -TaskName 'Afora Gateway (Bob''s work)' -ErrorAction SilentlyContinue; if ($null -ne $task -and $task.State -eq 'Running') { exit 0 }; exit 1"`,
     );
     expect(script).not.toContain("findstr");
   });
@@ -202,7 +202,7 @@ describe("relaunchGatewayScheduledTask", () => {
       throw new Error("spawn failed");
     });
 
-    const result = relaunchGatewayScheduledTask({ OPENCLAW_PROFILE: "work" });
+    const result = relaunchGatewayScheduledTask({ AFORA_PROFILE: "work" });
 
     expect(result.ok).toBe(false);
     expect(result.method).toBe("schtasks");
@@ -211,12 +211,12 @@ describe("relaunchGatewayScheduledTask", () => {
 
   it("quotes the cmd /c script path when temp paths contain metacharacters", () => {
     const unref = vi.fn();
-    const metacharTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw&(restart)-"));
+    const metacharTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora&(restart)-"));
     createdTmpDirs.add(metacharTmpDir);
-    resolvePreferredOpenClawTmpDirMock.mockReturnValue(metacharTmpDir);
+    resolvePreferredAforaTmpDirMock.mockReturnValue(metacharTmpDir);
     spawnMock.mockReturnValue({ unref });
 
-    relaunchGatewayScheduledTask({ OPENCLAW_PROFILE: "work" });
+    relaunchGatewayScheduledTask({ AFORA_PROFILE: "work" });
 
     expect(spawnMock).toHaveBeenCalledOnce();
     const spawnCall = requireFirstMockCall(spawnMock, "restart helper spawn");
@@ -241,7 +241,7 @@ describe("relaunchGatewayScheduledTask", () => {
   });
 
   it("includes startup fallback", () => {
-    const taskScriptDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-state-"));
+    const taskScriptDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-state-"));
     createdTmpDirs.add(taskScriptDir);
     const taskScriptPath = path.join(taskScriptDir, "gateway.cmd");
     fs.writeFileSync(taskScriptPath, "@echo off\r\nrem placeholder\r\n", "utf8");
@@ -252,7 +252,7 @@ describe("relaunchGatewayScheduledTask", () => {
       return { unref: vi.fn() };
     });
 
-    const result = relaunchGatewayScheduledTask({ OPENCLAW_PROFILE: "work" });
+    const result = relaunchGatewayScheduledTask({ AFORA_PROFILE: "work" });
 
     expect(result.ok).toBe(true);
     const scriptPath = expectDefined(
@@ -272,7 +272,7 @@ describe("relaunchGatewayScheduledTask", () => {
   const asciiPathEnv = {
     HOME: "C:\\ocw-test",
     USERPROFILE: "C:\\ocw-test",
-    OPENCLAW_STATE_DIR: "C:\\ocw-test\\state",
+    AFORA_STATE_DIR: "C:\\ocw-test\\state",
   };
 
   it("writes marked code-page bytes for CJK task names that decode back exactly", () => {
@@ -284,7 +284,7 @@ describe("relaunchGatewayScheduledTask", () => {
 
     const result = relaunchGatewayScheduledTask({
       ...asciiPathEnv,
-      OPENCLAW_WINDOWS_TASK_NAME: "OpenClaw Gateway (隆)",
+      AFORA_WINDOWS_TASK_NAME: "Afora Gateway (隆)",
     });
 
     expect(result.ok).toBe(true);
@@ -296,13 +296,13 @@ describe("relaunchGatewayScheduledTask", () => {
     expect(
       raw
         .toString("latin1")
-        .startsWith("@chcp 936 >nul\r\n@rem openclaw-launcher-encoding=gbk\r\n"),
+        .startsWith("@chcp 936 >nul\r\n@rem afora-launcher-encoding=gbk\r\n"),
     ).toBe(true);
     // The old raw-UTF-8 writer would have kept the task name readable here.
     expect(raw.toString("utf8")).not.toContain("隆");
     const script = decodeWindowsLauncherScript({ buffer: raw });
     expect(script.startsWith("@echo off\r\n")).toBe(true);
-    expect(script).toContain('schtasks /Run /TN "OpenClaw Gateway (隆)" >>');
+    expect(script).toContain('schtasks /Run /TN "Afora Gateway (隆)" >>');
     expect(script).toContain('del "%~f0" >nul 2>&1');
   });
 
@@ -314,7 +314,7 @@ describe("relaunchGatewayScheduledTask", () => {
 
     const result = relaunchGatewayScheduledTask({
       ...asciiPathEnv,
-      OPENCLAW_WINDOWS_TASK_NAME: "🚀",
+      AFORA_WINDOWS_TASK_NAME: "🚀",
     });
 
     expect(result.ok).toBe(false);

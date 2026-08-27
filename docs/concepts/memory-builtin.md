@@ -47,7 +47,7 @@ To force local GGUF embeddings, install and configure the official llama.cpp
 provider, then point `local.modelPath` at a GGUF file:
 
 ```bash
-openclaw plugins install @openclaw/llama-cpp-provider
+afora plugins install @afora/llama-cpp-provider
 ```
 
 ```json5
@@ -57,7 +57,7 @@ openclaw plugins install @openclaw/llama-cpp-provider
       provider: "local",
       fallback: "none",
       local: {
-        modelPath: "~/.openclaw/models/llama.cpp/hf_ggml-org_embeddinggemma-300m-qat-Q8_0.gguf",
+        modelPath: "~/.afora/models/llama.cpp/hf_ggml-org_embeddinggemma-300m-qat-Q8_0.gguf",
       },
     },
   },
@@ -73,7 +73,7 @@ openclaw plugins install @openclaw/llama-cpp-provider
 | Gemini            | `gemini`            | Supports multimodal (image + audio) |
 | GitHub Copilot    | `github-copilot`    | Uses your Copilot subscription      |
 | LM Studio         | `lmstudio`          | Local/self-hosted                   |
-| Local             | `local`             | OpenClaw-managed llama.cpp server   |
+| Local             | `local`             | Afora-managed llama.cpp server   |
 | Mistral           | `mistral`           |                                     |
 | Ollama            | `ollama`            | Local/self-hosted                   |
 | OpenAI            | `openai`            | Default: `text-embedding-3-small`   |
@@ -84,9 +84,9 @@ Set `memory.search.provider` to switch away from OpenAI.
 
 ## How indexing works
 
-OpenClaw indexes `MEMORY.md`, an existing root `USER.md`, and `memory/*.md` into
+Afora indexes `MEMORY.md`, an existing root `USER.md`, and `memory/*.md` into
 chunks (400 tokens with 80-token overlap by default) and stores them in a
-per-agent SQLite database. OpenClaw does not create `USER.md` automatically.
+per-agent SQLite database. Afora does not create `USER.md` automatically.
 
 Each chunk can carry nullable importance and trigger metadata. Null values are
 neutral, so older indexes remain usable. Search combines hybrid relevance,
@@ -99,14 +99,14 @@ optional supersession key. This metadata is stored separately from Markdown
 so recalled prose cannot rewrite its own trust classification.
 
 - **Index location:** the owning agent database at
-  `~/.openclaw/agents/<agentId>/agent/openclaw-agent.sqlite`
+  `~/.afora/agents/<agentId>/agent/afora-agent.sqlite`
 - **Storage maintenance:** SQLite WAL sidecars are bounded with periodic and
   shutdown checkpoints.
 - **File watching:** changes to memory files trigger a debounced reindex
   (1.5s default).
 - **Auto-reindex:** the index rebuilds automatically when the embedding
   provider, model, chunking config, configured sources, or scope change.
-- **Reindex on demand:** `openclaw memory index --force`
+- **Reindex on demand:** `afora memory index --force`
 
 <Info>
 You can also index Markdown files outside the workspace with
@@ -119,7 +119,7 @@ You can also index Markdown files outside the workspace with
 QMD has been removed; builtin is the only memory engine. After upgrading, run:
 
 ```bash
-openclaw doctor --fix
+afora doctor --fix
 ```
 
 Doctor removes the retired `memory.backend`, `memory.qmd`, and
@@ -127,7 +127,7 @@ Doctor removes the retired `memory.backend`, `memory.qmd`, and
 forms. It preserves QMD paths and extra collections as the corresponding
 `memory.search.extraPaths` entries, including `{ path, pattern }` globs. When
 Memory Core finds a retired per-agent QMD workspace under
-`~/.openclaw/agents/<agentId>/qmd/`, Doctor also offers to remove its derived
+`~/.afora/agents/<agentId>/qmd/`, Doctor also offers to remove its derived
 indexes, model downloads, collection metadata, and session exports.
 
 Canonical memory remains in `MEMORY.md`, `USER.md`, `memory/*.md`, and the
@@ -169,25 +169,25 @@ with automatic user modeling.
 
 ## Troubleshooting
 
-**Memory search disabled?** Check `openclaw memory status`. If no provider is
+**Memory search disabled?** Check `afora memory status`. If no provider is
 detected, set one explicitly or add an API key.
 
 **Local provider not detected?** Run interactive llama.cpp setup once, confirm
 the local path exists, and run:
 
 ```bash
-openclaw memory status --deep --agent main
-openclaw memory index --force --agent main
+afora memory status --deep --agent main
+afora memory index --force --agent main
 ```
 
 Both standalone CLI commands and the Gateway use the same `local` provider id.
 Set `memory.search.provider: "local"` when you want local embeddings.
 
-**Stale results?** Run `openclaw memory index --force` to rebuild. The watcher
+**Stale results?** Run `afora memory index --force` to rebuild. The watcher
 may miss changes in rare edge cases.
 
-**sqlite-vec not loading?** OpenClaw falls back to in-process cosine
-similarity automatically. `openclaw memory status --deep` reports the local
+**sqlite-vec not loading?** Afora falls back to in-process cosine
+similarity automatically. `afora memory status --deep` reports the local
 vector store separately from the embedding provider, so `Vector store:
 unavailable` points at sqlite-vec loading while `Embeddings: unavailable`
 points at provider/auth or model readiness. Check logs for the specific load

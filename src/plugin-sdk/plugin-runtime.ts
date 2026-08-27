@@ -21,7 +21,7 @@ export {
 export { startLazyPluginServiceModule } from "../plugins/lazy-service-module.js";
 export type { LazyPluginServiceHandle } from "../plugins/lazy-service-module.js";
 export type {
-  OpenClawPluginApi,
+  AforaPluginApi,
   PluginConversationBinding,
   PluginConversationBindingRequestParams,
   PluginConversationBindingRequestResult,
@@ -32,4 +32,4 @@ export type { PluginRuntime, RuntimeLogger } from "../plugins/runtime/types.js";
 
 export { getGlobalHookRunner } from "../plugins/hook-runner-global.js";
 export { getPluginCommandSpecs } from "../plugins/command-specs.js";
-export type { OpenClawPluginConfigSchema } from "../plugins/types.js";
+export type { AforaPluginConfigSchema } from "../plugins/types.js";

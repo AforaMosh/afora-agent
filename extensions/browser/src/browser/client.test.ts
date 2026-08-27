@@ -1,5 +1,5 @@
 // Browser tests cover client plugin behavior.
-import { MAX_TIMER_TIMEOUT_MS } from "openclaw/plugin-sdk/number-runtime";
+import { MAX_TIMER_TIMEOUT_MS } from "afora-agent/plugin-sdk/number-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   browserAct,
@@ -192,7 +192,7 @@ describe("browser client", () => {
             download: {
               url: "https://y/report.csv",
               suggestedFilename: "report.csv",
-              path: "/tmp/openclaw/downloads/report.csv",
+              path: "/tmp/afora/downloads/report.csv",
             },
           });
         }
@@ -207,7 +207,7 @@ describe("browser client", () => {
               {
                 url: "https://x/report.pdf",
                 suggestedFilename: "report.pdf",
-                path: "/tmp/openclaw/downloads/report.pdf",
+                path: "/tmp/afora/downloads/report.pdf",
               },
             ],
           });
@@ -253,7 +253,7 @@ describe("browser client", () => {
         if (url.includes("/doctor")) {
           return jsonResponse({
             ok: true,
-            profile: "openclaw",
+            profile: "afora",
             transport: "cdp",
             checks: [],
             status: {
@@ -286,14 +286,14 @@ describe("browser client", () => {
 
     const doctorResult = await browserDoctor("http://127.0.0.1:18791");
     expect(doctorResult.ok).toBe(true);
-    expect(doctorResult.profile).toBe("openclaw");
+    expect(doctorResult.profile).toBe("afora");
 
     const deepDoctorResult = await browserDoctor("http://127.0.0.1:18791", {
-      profile: "openclaw",
+      profile: "afora",
       deep: true,
     });
     expect(deepDoctorResult.ok).toBe(true);
-    expect(deepDoctorResult.profile).toBe("openclaw");
+    expect(deepDoctorResult.profile).toBe("afora");
 
     await expect(browserTabs("http://127.0.0.1:18791")).resolves.toHaveLength(1);
     const openedTab = await browserOpenTab("http://127.0.0.1:18791", "https://example.com");
@@ -314,7 +314,7 @@ describe("browser client", () => {
     expect(navigation.download).toEqual({
       url: "https://y/report.csv",
       suggestedFilename: "report.csv",
-      path: "/tmp/openclaw/downloads/report.csv",
+      path: "/tmp/afora/downloads/report.csv",
     });
 
     const act = await browserAct("http://127.0.0.1:18791", { kind: "click", ref: "1" });
@@ -325,7 +325,7 @@ describe("browser client", () => {
       {
         url: "https://x/report.pdf",
         suggestedFilename: "report.pdf",
-        path: "/tmp/openclaw/downloads/report.pdf",
+        path: "/tmp/afora/downloads/report.pdf",
       },
     ]);
 
@@ -363,12 +363,12 @@ describe("browser client", () => {
     const urls = calls.map((call) => call.url);
     expect(urls.some((url) => url.endsWith("/tabs"))).toBe(true);
     expect(urls.some((url) => url.endsWith("/doctor"))).toBe(true);
-    expect(urls.some((url) => url.endsWith("/doctor?profile=openclaw&deep=true"))).toBe(true);
+    expect(urls.some((url) => url.endsWith("/doctor?profile=afora&deep=true"))).toBe(true);
     const status = calls.find((c) => c.url.endsWith("/"));
     expect(status?.init?.timeoutMs).toBe(7_500);
     const doctor = calls.find((c) => c.url.endsWith("/doctor"));
     expect(doctor?.init?.timeoutMs).toBe(7_500);
-    const deepDoctor = calls.find((c) => c.url.endsWith("/doctor?profile=openclaw&deep=true"));
+    const deepDoctor = calls.find((c) => c.url.endsWith("/doctor?profile=afora&deep=true"));
     expect(deepDoctor?.init?.timeoutMs).toBe(10_000);
     const open = calls.find((c) => c.url.endsWith("/tabs/open"));
     expect(open?.init?.method).toBe("POST");
@@ -398,11 +398,11 @@ describe("browser client", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await browserCloseTabByRawTargetId("http://127.0.0.1:18791", "RAW_TARGET", {
-      profile: "openclaw",
+      profile: "afora",
     });
 
     const [url, init] = fetchMock.mock.calls[0] ?? [];
-    expect(url).toBe("http://127.0.0.1:18791/tabs/RAW_TARGET?targetIdMode=raw&profile=openclaw");
+    expect(url).toBe("http://127.0.0.1:18791/tabs/RAW_TARGET?targetIdMode=raw&profile=afora");
     expect(init).toMatchObject({
       method: "DELETE",
     });

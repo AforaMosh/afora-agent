@@ -9,7 +9,7 @@ read_when:
 
 Prompt caching lets a model provider reuse an unchanged prompt prefix (system/developer instructions, tool definitions, other stable context) across turns instead of reprocessing it every request. This cuts token cost and latency on long-running sessions with repeated context.
 
-OpenClaw normalizes provider usage into `cacheRead` and `cacheWrite` wherever the upstream API exposes those counters. Usage summaries (`/status` and similar) fall back to the last transcript usage entry when the live session snapshot lacks cache counters; a nonzero live value always wins over the fallback.
+Afora normalizes provider usage into `cacheRead` and `cacheWrite` wherever the upstream API exposes those counters. Usage summaries (`/status` and similar) fall back to the last transcript usage entry when the live session snapshot lacks cache counters; a nonzero live value always wins over the fallback.
 
 Provider references:
 
@@ -91,19 +91,19 @@ agents:
 ### Anthropic (direct API and Vertex AI)
 
 - `cacheRetention` is supported for `anthropic` and `anthropic-vertex` providers, and for Claude models on `amazon-bedrock` and custom `anthropic-messages`-compatible endpoints when `cacheRetention` is set explicitly.
-- When unset, OpenClaw seeds `cacheRetention: "short"` for direct Anthropic (`anthropic` and `anthropic-vertex` providers only; other Anthropic-family routes require an explicit value).
+- When unset, Afora seeds `cacheRetention: "short"` for direct Anthropic (`anthropic` and `anthropic-vertex` providers only; other Anthropic-family routes require an explicit value).
 - Native Anthropic Messages responses expose `cache_read_input_tokens` and `cache_creation_input_tokens`, mapped to `cacheRead` and `cacheWrite`.
-- `cacheRetention: "short"` maps to the default 5-minute ephemeral cache. `cacheRetention: "long"` requests the 1-hour TTL (`cache_control: { type: "ephemeral", ttl: "1h" }`) when set explicitly. An implicit/env-driven long retention (`OPENCLAW_CACHE_RETENTION=long` with no explicit `cacheRetention`) only upgrades to the 1-hour TTL on `api.anthropic.com` or Vertex AI (`aiplatform.googleapis.com` / `*-aiplatform.googleapis.com`) hosts; other hosts keep the 5-minute cache.
+- `cacheRetention: "short"` maps to the default 5-minute ephemeral cache. `cacheRetention: "long"` requests the 1-hour TTL (`cache_control: { type: "ephemeral", ttl: "1h" }`) when set explicitly. An implicit/env-driven long retention (`AFORA_CACHE_RETENTION=long` with no explicit `cacheRetention`) only upgrades to the 1-hour TTL on `api.anthropic.com` or Vertex AI (`aiplatform.googleapis.com` / `*-aiplatform.googleapis.com`) hosts; other hosts keep the 5-minute cache.
 
 Source: `packages/ai/src/transports/anthropic-payload-policy.ts` (`resolveAnthropicEphemeralCacheControl`, `isLongTtlEligibleEndpoint`).
 
 ### OpenAI (direct API)
 
-- Prompt caching is automatic on supported recent models; OpenClaw does not inject block-level cache markers.
-- OpenClaw sends `prompt_cache_key` to keep cache routing stable across turns. Direct `api.openai.com` hosts get this automatically. OpenAI-compatible proxies (oMLX, llama.cpp, custom endpoints) need `compat.supportsPromptCacheKey: true` in model config to opt in - this is never auto-detected for a proxy.
+- Prompt caching is automatic on supported recent models; Afora does not inject block-level cache markers.
+- Afora sends `prompt_cache_key` to keep cache routing stable across turns. Direct `api.openai.com` hosts get this automatically. OpenAI-compatible proxies (oMLX, llama.cpp, custom endpoints) need `compat.supportsPromptCacheKey: true` in model config to opt in - this is never auto-detected for a proxy.
 - `prompt_cache_retention: "24h"` is added only when `cacheRetention: "long"` is selected and the resolved endpoint supports both the cache key and long retention (`compat.supportsLongCacheRetention`, true by default; Together AI and Cloudflare compat profiles disable it). `cacheRetention: "none"` suppresses both fields.
 - Cache hits surface via `usage.prompt_tokens_details.cached_tokens` (Chat Completions) or `input_tokens_details.cached_tokens` (Responses API), mapped to `cacheRead`.
-- Responses API payloads can also expose `input_tokens_details.cache_write_tokens`, mapped to `cacheWrite` and priced at the model's cache-write rate; Responses payloads that omit the field keep `cacheWrite` at `0`. OpenAI's Chat Completions API does not document or emit a `cache_write_tokens` counter, but OpenClaw still reads `prompt_tokens_details.cache_write_tokens` there for OpenRouter-compatible and DeepSeek-style proxies that report a separate write count.
+- Responses API payloads can also expose `input_tokens_details.cache_write_tokens`, mapped to `cacheWrite` and priced at the model's cache-write rate; Responses payloads that omit the field keep `cacheWrite` at `0`. OpenAI's Chat Completions API does not document or emit a `cache_write_tokens` counter, but Afora still reads `prompt_tokens_details.cache_write_tokens` there for OpenRouter-compatible and DeepSeek-style proxies that report a separate write count.
 - In practice, OpenAI behaves more like an initial-prefix cache than Anthropic's moving full-history reuse - see [OpenAI live expectations](#openai-live-expectations) below.
 
 ### Amazon Bedrock
@@ -114,9 +114,9 @@ Source: `packages/ai/src/transports/anthropic-payload-policy.ts` (`resolveAnthro
 
 ### OpenRouter
 
-For `openrouter/anthropic/*` model refs, OpenClaw injects Anthropic `cache_control` markers on system/developer prompt blocks, but only when the request still targets a verified OpenRouter route (`openrouter` on its default endpoint, or any provider/base URL that resolves to `openrouter.ai`). Repointing the model at an arbitrary OpenAI-compatible proxy URL stops this injection.
+For `openrouter/anthropic/*` model refs, Afora injects Anthropic `cache_control` markers on system/developer prompt blocks, but only when the request still targets a verified OpenRouter route (`openrouter` on its default endpoint, or any provider/base URL that resolves to `openrouter.ai`). Repointing the model at an arbitrary OpenAI-compatible proxy URL stops this injection.
 
-`contextPruning.mode: "cache-ttl"` is allowed for `openrouter/anthropic/*`, `openrouter/deepseek/*`, `openrouter/moonshot/*`, `openrouter/moonshotai/*`, and `openrouter/zai/*` model refs, because these routes handle provider-side prompt caching without needing OpenClaw's injected markers.
+`contextPruning.mode: "cache-ttl"` is allowed for `openrouter/anthropic/*`, `openrouter/deepseek/*`, `openrouter/moonshot/*`, `openrouter/moonshotai/*`, and `openrouter/zai/*` model refs, because these routes handle provider-side prompt caching without needing Afora's injected markers.
 
 Source: `extensions/openrouter/index.ts` (`OPENROUTER_CACHE_TTL_MODEL_PREFIXES`).
 
@@ -126,17 +126,17 @@ DeepSeek cache construction on OpenRouter is best-effort and can take a few seco
 
 - Direct Gemini transport (`api: "google-generative-ai"`) reports cache hits through upstream `cachedContentTokenCount`, mapped to `cacheRead`.
 - Eligible model families: `gemini-2.5*` and `gemini-3*` (excludes Live/preview variants outside that prefix match, for example `gemini-live-2.5-flash-preview`).
-- When `cacheRetention` is set on an eligible model, OpenClaw automatically creates, reuses, and refreshes a `cachedContents` resource for the system prompt - no manual cached-content handle needed. TTL is `300s` for `cacheRetention: "short"` and `3600s` for `"long"`.
+- When `cacheRetention` is set on an eligible model, Afora automatically creates, reuses, and refreshes a `cachedContents` resource for the system prompt - no manual cached-content handle needed. TTL is `300s` for `cacheRetention: "short"` and `3600s` for `"long"`.
 - You can still pass a pre-existing Gemini cached-content handle through as `params.cachedContent` (or legacy `params.cached_content`); an explicit handle skips the automatic cache-management path entirely.
-- This is separate from Anthropic/OpenAI prompt-prefix caching: OpenClaw manages a provider-native `cachedContents` resource for Gemini instead of injecting inline cache markers.
+- This is separate from Anthropic/OpenAI prompt-prefix caching: Afora manages a provider-native `cachedContents` resource for Gemini instead of injecting inline cache markers.
 
 Source: `src/agents/embedded-agent-runner/google-prompt-cache.ts`.
 
 ### CLI-harness providers (Claude Code, Gemini CLI)
 
-CLI backends that emit JSONL usage events (`jsonlDialect: "claude-stream-json"` or `"gemini-stream-json"`) go through a shared usage parser that recognizes several field-name variants, including a plain `cached` counter mapped to `cacheRead`. When the CLI's JSON payload omits a direct input-token field, OpenClaw derives it as `input_tokens - cached`. This is usage normalization only - it does not create Anthropic/OpenAI-style prompt-cache markers for these CLI-driven models.
+CLI backends that emit JSONL usage events (`jsonlDialect: "claude-stream-json"` or `"gemini-stream-json"`) go through a shared usage parser that recognizes several field-name variants, including a plain `cached` counter mapped to `cacheRead`. When the CLI's JSON payload omits a direct input-token field, Afora derives it as `input_tokens - cached`. This is usage normalization only - it does not create Anthropic/OpenAI-style prompt-cache markers for these CLI-driven models.
 
-Claude Code has no OpenClaw-controlled `cache_control` breakpoint on `--append-system-prompt-file`, so OpenClaw keeps its complete system prompt in that transport. When the bounded Gateway-startup probe finds Claude Code 2.1.98 or newer, bundled `claude-cli` also passes `--exclude-dynamic-system-prompt-sections`. That Claude Code flag moves only Claude's own per-machine cwd, environment, memory-path, and Git-status sections out of its native system prompt; an older, unknown, or failed probe keeps the established argv. `cacheRetention` still has no effect on this path.
+Claude Code has no Afora-controlled `cache_control` breakpoint on `--append-system-prompt-file`, so Afora keeps its complete system prompt in that transport. When the bounded Gateway-startup probe finds Claude Code 2.1.98 or newer, bundled `claude-cli` also passes `--exclude-dynamic-system-prompt-sections`. That Claude Code flag moves only Claude's own per-machine cwd, environment, memory-path, and Git-status sections out of its native system prompt; an older, unknown, or failed probe keeps the established argv. `cacheRetention` still has no effect on this path.
 
 Source: `src/agents/cli-output.ts` (`toCliUsage`).
 
@@ -146,7 +146,7 @@ If a provider does not support any of the above cache modes, `cacheRetention` ha
 
 ## System-prompt cache boundary
 
-OpenClaw splits the system prompt into a **stable prefix** and a **volatile suffix** at an internal cache-prefix boundary. Content above the boundary (tool definitions, skills metadata, workspace files) is ordered to stay byte-identical across turns. Content below the boundary (for example runtime timestamps and other per-turn metadata) can change without invalidating the cached prefix.
+Afora splits the system prompt into a **stable prefix** and a **volatile suffix** at an internal cache-prefix boundary. Content above the boundary (tool definitions, skills metadata, workspace files) is ordered to stay byte-identical across turns. Content below the boundary (for example runtime timestamps and other per-turn metadata) can change without invalidating the cached prefix.
 
 Key design choices:
 
@@ -157,7 +157,7 @@ Key design choices:
 
 If you see unexpected `cacheWrite` spikes after a config or workspace change, check whether the change lands above or below the cache boundary. Moving volatile content below the boundary (or stabilizing it) usually resolves the issue.
 
-## OpenClaw cache-stability guards
+## Afora cache-stability guards
 
 - Bundled MCP tool catalogs are sorted deterministically (by server name, then tool name) before tool registration, so `listTools()` order changes do not churn the tools block and bust prompt-cache prefixes.
 - Legacy sessions with persisted image blocks keep the **3 most recent completed turns** intact (counting all completed turns, not just image-bearing ones). Older already-processed image blocks are replaced with a text marker so image-heavy follow-ups do not keep re-sending large stale payloads.
@@ -195,7 +195,7 @@ agents:
 
 ## Live regression tests
 
-OpenClaw runs one combined live cache regression gate covering repeated prefixes, tool turns, image turns, MCP-style tool transcripts, and an Anthropic no-cache control.
+Afora runs one combined live cache regression gate covering repeated prefixes, tool turns, image turns, MCP-style tool transcripts, and an Anthropic no-cache control.
 
 - `src/agents/live-cache-regression.live.test.ts`
 - `src/agents/test-helpers/live-cache-regression-runner.ts`
@@ -204,7 +204,7 @@ OpenClaw runs one combined live cache regression gate covering repeated prefixes
 Run it with:
 
 ```sh
-OPENCLAW_LIVE_TEST=1 OPENCLAW_LIVE_CACHE_TEST=1 pnpm test:live:cache
+AFORA_LIVE_TEST=1 AFORA_LIVE_CACHE_TEST=1 pnpm test:live:cache
 ```
 
 The baseline file stores the most recently observed live numbers plus the provider-specific regression floors the test checks against. Each run uses fresh per-run session IDs and prompt namespaces so previous cache state does not pollute the current sample. Anthropic and OpenAI use different enforcement: an Anthropic floor miss is a hard regression (test fails), while an OpenAI floor miss is watch-only (recorded as a warning, does not fail the run). They do not share a single cross-provider threshold.
@@ -246,17 +246,17 @@ diagnostics:
     enabled: true
 ```
 
-`enabled` defaults to `false`. Cache traces otherwise write to `$OPENCLAW_STATE_DIR/logs/cache-trace.jsonl` and include messages, prompt text, and the system prompt by default. Output-path and payload-inclusion overrides are environment-only controls for one-off debugging.
+`enabled` defaults to `false`. Cache traces otherwise write to `$AFORA_STATE_DIR/logs/cache-trace.jsonl` and include messages, prompt text, and the system prompt by default. Output-path and payload-inclusion overrides are environment-only controls for one-off debugging.
 
 ### Env toggles (one-off debugging)
 
 | Variable                             | Effect                               |
 | ------------------------------------ | ------------------------------------ |
-| `OPENCLAW_CACHE_TRACE=1`             | Enables cache tracing                |
-| `OPENCLAW_CACHE_TRACE_FILE=path`     | Overrides output path                |
-| `OPENCLAW_CACHE_TRACE_MESSAGES=0\|1` | Toggles full message payload capture |
-| `OPENCLAW_CACHE_TRACE_PROMPT=0\|1`   | Toggles prompt text capture          |
-| `OPENCLAW_CACHE_TRACE_SYSTEM=0\|1`   | Toggles system prompt capture        |
+| `AFORA_CACHE_TRACE=1`             | Enables cache tracing                |
+| `AFORA_CACHE_TRACE_FILE=path`     | Overrides output path                |
+| `AFORA_CACHE_TRACE_MESSAGES=0\|1` | Toggles full message payload capture |
+| `AFORA_CACHE_TRACE_PROMPT=0\|1`   | Toggles prompt text capture          |
+| `AFORA_CACHE_TRACE_SYSTEM=0\|1`   | Toggles system prompt capture        |
 
 ### What to inspect
 

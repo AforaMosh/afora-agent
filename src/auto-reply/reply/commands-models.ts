@@ -1,9 +1,9 @@
 // Implements model listing and provider catalog commands.
-import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-coercion";
+import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   resolveAgentDir,
   resolveAgentWorkspaceDir,
@@ -38,7 +38,7 @@ import { loadPreparedModelCatalogSnapshot } from "../../agents/prepared-model-ca
 import { resolveDefaultAgentWorkspaceDir } from "../../agents/workspace.js";
 import { getChannelPlugin } from "../../channels/plugins/index.js";
 import type { SessionEntry } from "../../config/sessions.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveAgentRuntimeLabel } from "../../status/agent-runtime-label.js";
 import type { ReplyPayload } from "../types.js";
 import { rejectUnauthorizedCommand } from "./command-gates.js";
@@ -96,13 +96,13 @@ function usesUnfilteredCatalogModels(
 function normalizeRuntimeChoiceId(runtime: string | undefined): string {
   const normalized = normalizeLowercaseStringOrEmpty(runtime);
   if (!normalized || normalized === "auto" || normalized === "default") {
-    return "openclaw";
+    return "afora";
   }
   return normalized;
 }
 
 function buildRuntimeChoice(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: string;
   runtime: string;
   cli?: boolean;
@@ -113,8 +113,8 @@ function buildRuntimeChoice(params: {
     id,
     label,
     description:
-      id === "openclaw"
-        ? "Use the built-in OpenClaw runtime."
+      id === "afora"
+        ? "Use the built-in Afora runtime."
         : params.cli
           ? `Run ${params.provider} models through ${label}.`
           : `Use the ${label} runtime selected by the effective harness policy.`,
@@ -122,7 +122,7 @@ function buildRuntimeChoice(params: {
 }
 
 function buildDefaultRuntimeChoice(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
   provider: string;
   modelId?: string;
@@ -151,7 +151,7 @@ function addRuntimeChoice(
 }
 
 export async function buildModelsProviderData(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId?: string,
   options: { view?: "default" | "all"; workspaceDir?: string } = {},
 ): Promise<ModelsProviderData> {
@@ -378,7 +378,7 @@ export async function buildModelsProviderData(
         modelId: defaultModelId,
       }),
     ];
-    addRuntimeChoice(choices, buildRuntimeChoice({ cfg, provider, runtime: "openclaw" }));
+    addRuntimeChoice(choices, buildRuntimeChoice({ cfg, provider, runtime: "afora" }));
     addRuntimeChoice(
       choices,
       buildRuntimeChoice({
@@ -469,7 +469,7 @@ function parseModelsArgs(raw: string): ParsedModelsCommand {
 
 function resolveProviderLabel(params: {
   provider: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
   agentDir?: string;
   workspaceDir?: string;
@@ -502,7 +502,7 @@ function resolveProviderLabel(params: {
 export function formatModelsAvailableHeader(params: {
   provider: string;
   total: number;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
   agentDir?: string;
   workspaceDir?: string;
@@ -548,7 +548,7 @@ function buildProviderInfos(params: {
 }
 
 export async function resolveModelsCommandReply(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   commandBodyNormalized: string;
   surface?: string;
   currentModel?: string;

@@ -1,10 +1,10 @@
 // Opencode Go stream termination wrapper aborts stalled OpenAI-compatible
 // SSE streams at the provider-owned raw boundary, before the shared runtime
 // stuck-session recovery kicks in.
-import type { AssistantMessage, AssistantMessageEvent } from "openclaw/plugin-sdk/llm";
-import { createAssistantMessageEventStream } from "openclaw/plugin-sdk/llm";
-import { asPositiveFiniteNumber as validTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
-import type { ProviderWrapStreamFnContext } from "openclaw/plugin-sdk/plugin-entry";
+import type { AssistantMessage, AssistantMessageEvent } from "afora-agent/plugin-sdk/llm";
+import { createAssistantMessageEventStream } from "afora-agent/plugin-sdk/llm";
+import { asPositiveFiniteNumber as validTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
+import type { ProviderWrapStreamFnContext } from "afora-agent/plugin-sdk/plugin-entry";
 
 type ProviderStreamFn = NonNullable<ProviderWrapStreamFnContext["streamFn"]>;
 

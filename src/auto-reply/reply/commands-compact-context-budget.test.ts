@@ -1,6 +1,6 @@
 // Tests compact command context-budget resolution separately from command lifecycle behavior.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import {
   resolveAgentDirMock,
   resolveSessionAgentIdMock,
@@ -28,7 +28,7 @@ const {
 } = await import("./commands-compact.runtime.js");
 const { handleCompactCommand } = await import("./commands-compact.js");
 
-function buildCompactParams(cfg: OpenClawConfig): HandleCommandsParams {
+function buildCompactParams(cfg: AforaConfig): HandleCommandsParams {
   return {
     cfg,
     ctx: {
@@ -66,7 +66,7 @@ describe("handleCompactCommand context budget", () => {
     vi.mocked(incrementCompactionCount).mockResolvedValue(1);
     vi.mocked(isCurrentSessionEntry).mockReturnValue(true);
     resolveAgentDirMock.mockImplementation(
-      (_cfg: unknown, agentId: string) => `/tmp/workspace/.openclaw/agents/${agentId}/agent`,
+      (_cfg: unknown, agentId: string) => `/tmp/workspace/.afora/agents/${agentId}/agent`,
     );
     resolveSessionAgentIdMock.mockReturnValue("main");
   });
@@ -104,7 +104,7 @@ describe("handleCompactCommand context budget", () => {
               },
             },
           },
-        } as unknown as OpenClawConfig),
+        } as unknown as AforaConfig),
         provider: "openai",
         model: "openai/gpt-5.5",
         contextTokens: 0,
@@ -138,7 +138,7 @@ describe("handleCompactCommand context budget", () => {
           },
           commands: { text: true },
           channels: { whatsapp: { allowFrom: ["*"] } },
-        } as OpenClawConfig),
+        } as AforaConfig),
         provider: "custom",
         model: "actual-model",
         contextTokens: 0,

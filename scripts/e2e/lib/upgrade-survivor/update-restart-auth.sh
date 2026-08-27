@@ -7,9 +7,9 @@ install_update_restart_systemctl_shim() {
 #!/usr/bin/env bash
 set -euo pipefail
 
-log_file="${OPENCLAW_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_LOG:-/tmp/openclaw-systemctl-shim.log}"
-pid_file="${OPENCLAW_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_PID_FILE:-/tmp/openclaw-systemctl-shim.pid}"
-daemon_log="${OPENCLAW_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_DAEMON_LOG:-/tmp/openclaw-systemctl-shim-gateway.log}"
+log_file="${AFORA_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_LOG:-/tmp/afora-systemctl-shim.log}"
+pid_file="${AFORA_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_PID_FILE:-/tmp/afora-systemctl-shim.pid}"
+daemon_log="${AFORA_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_DAEMON_LOG:-/tmp/afora-systemctl-shim-gateway.log}"
 supervisor_script="${pid_file}.supervisor.mjs"
 printf '%s\n' "$*" >>"$log_file"
 
@@ -66,7 +66,7 @@ stop_gateway() {
 }
 
 unit_path() {
-  printf '%s/.config/systemd/user/openclaw-gateway.service\n' "${HOME:?missing HOME}"
+  printf '%s/.config/systemd/user/afora-gateway.service\n' "${HOME:?missing HOME}"
 }
 
 load_unit_environment() {
@@ -108,23 +108,23 @@ start_gateway() {
 import fs from "node:fs";
 import { spawn } from "node:child_process";
 
-const command = process.env.OPENCLAW_SYSTEMCTL_SHIM_EXEC_START;
-const daemonLog = process.env.OPENCLAW_SYSTEMCTL_SHIM_DAEMON_LOG;
+const command = process.env.AFORA_SYSTEMCTL_SHIM_EXEC_START;
+const daemonLog = process.env.AFORA_SYSTEMCTL_SHIM_DAEMON_LOG;
 if (!command || !daemonLog) {
   process.exit(2);
 }
 
 const output = fs.openSync(daemonLog, "a");
 const childEnv = { ...process.env };
-delete childEnv.OPENCLAW_SYSTEMCTL_SHIM_EXEC_START;
-delete childEnv.OPENCLAW_SYSTEMCTL_SHIM_DAEMON_LOG;
+delete childEnv.AFORA_SYSTEMCTL_SHIM_EXEC_START;
+delete childEnv.AFORA_SYSTEMCTL_SHIM_DAEMON_LOG;
 // systemd does not pass transient systemctl-caller update state into the service.
 for (const key of Object.keys(childEnv)) {
-  if (key.startsWith("OPENCLAW_UPDATE_")) {
+  if (key.startsWith("AFORA_UPDATE_")) {
     delete childEnv[key];
   }
 }
-delete childEnv.OPENCLAW_COMPATIBILITY_HOST_VERSION;
+delete childEnv.AFORA_COMPATIBILITY_HOST_VERSION;
 const restartDelayMs = 5_000;
 const restartWindowMs = 60_000;
 const restartBurst = 5;
@@ -243,8 +243,8 @@ start();
 SUPERVISOR
   (
     load_unit_environment "$unit"
-    OPENCLAW_SYSTEMCTL_SHIM_EXEC_START="$exec_start" \
-      OPENCLAW_SYSTEMCTL_SHIM_DAEMON_LOG="$daemon_log" \
+    AFORA_SYSTEMCTL_SHIM_EXEC_START="$exec_start" \
+      AFORA_SYSTEMCTL_SHIM_DAEMON_LOG="$daemon_log" \
       nohup node "$supervisor_script" </dev/null >/dev/null 2>&1 &
     printf '%s\n' "$!" >"$pid_file"
   )
@@ -313,9 +313,9 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
-const stateDir = process.env.OPENCLAW_STATE_DIR;
+const stateDir = process.env.AFORA_STATE_DIR;
 if (!stateDir) {
-  throw new Error("missing OPENCLAW_STATE_DIR");
+  throw new Error("missing AFORA_STATE_DIR");
 }
 
 const base64UrlEncode = (buf) =>
@@ -370,7 +370,7 @@ writeJson(path.join(stateDir, "devices", "paired.json"), {
     publicKey: publicKeyRaw,
     displayName: "upgrade survivor restart probe",
     platform: process.platform,
-    clientId: "openclaw-cli",
+    clientId: "afora-cli",
     clientMode: "probe",
     role: "operator",
     roles: ["operator"],
@@ -393,8 +393,8 @@ NODE
 }
 
 write_update_restart_service_auth_env() {
-  mkdir -p "$OPENCLAW_STATE_DIR"
-  local dotenv_path="$OPENCLAW_STATE_DIR/.env"
+  mkdir -p "$AFORA_STATE_DIR"
+  local dotenv_path="$AFORA_STATE_DIR/.env"
   local tmp_path="$dotenv_path.tmp.$$"
   if [ -f "$dotenv_path" ]; then
     grep -v '^GATEWAY_AUTH_TOKEN_REF=' "$dotenv_path" >"$tmp_path" || true
@@ -403,13 +403,13 @@ write_update_restart_service_auth_env() {
   fi
   printf 'GATEWAY_AUTH_TOKEN_REF=%s\n' "$GATEWAY_AUTH_TOKEN_REF" >>"$tmp_path"
   mv "$tmp_path" "$dotenv_path"
-  printf 'GATEWAY_AUTH_TOKEN_REF=%s\n' "$GATEWAY_AUTH_TOKEN_REF" >"$OPENCLAW_STATE_DIR/gateway.systemd.env"
+  printf 'GATEWAY_AUTH_TOKEN_REF=%s\n' "$GATEWAY_AUTH_TOKEN_REF" >"$AFORA_STATE_DIR/gateway.systemd.env"
 }
 
 prepare_update_restart_probe_current_install() {
   local port="$1"
   local log_file="$2"
-  local command_timeout="${OPENCLAW_UPGRADE_SURVIVOR_COMMAND_TIMEOUT:-900s}"
+  local command_timeout="${AFORA_UPGRADE_SURVIVOR_COMMAND_TIMEOUT:-900s}"
   local doctor_log="${log_file}.doctor"
   local start_epoch
   local ready_epoch
@@ -417,23 +417,23 @@ prepare_update_restart_probe_current_install() {
   echo "Preparing candidate-auth gateway for automatic update restart."
   install_update_restart_systemctl_shim
   seed_update_restart_probe_device_auth
-  if ! openclaw_e2e_maybe_timeout "$command_timeout" openclaw doctor --fix --non-interactive >"$doctor_log" 2>&1; then
+  if ! afora_e2e_maybe_timeout "$command_timeout" afora doctor --fix --non-interactive >"$doctor_log" 2>&1; then
     echo "candidate device identity migration failed" >&2
     cat "$doctor_log" >&2 || true
     return 1
   fi
   start_epoch="$(node -e "process.stdout.write(String(Date.now()))")"
-  env -u OPENCLAW_GATEWAY_TOKEN -u OPENCLAW_GATEWAY_PASSWORD openclaw gateway --port "$port" --bind loopback --allow-unconfigured >"$log_file" 2>&1 &
+  env -u AFORA_GATEWAY_TOKEN -u AFORA_GATEWAY_PASSWORD afora gateway --port "$port" --bind loopback --allow-unconfigured >"$log_file" 2>&1 &
   gateway_pid="$!"
-  printf '%s\n' "$gateway_pid" >"$OPENCLAW_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_PID_FILE"
-  openclaw_e2e_wait_gateway_ready "$gateway_pid" "$log_file" 360 "$port"
+  printf '%s\n' "$gateway_pid" >"$AFORA_UPGRADE_SURVIVOR_SYSTEMCTL_SHIM_PID_FILE"
+  afora_e2e_wait_gateway_ready "$gateway_pid" "$log_file" 360 "$port"
   ready_epoch="$(node -e "process.stdout.write(String(Date.now()))")"
   start_seconds=$(((ready_epoch - start_epoch + 999) / 1000))
   write_update_restart_service_auth_env
-  if ! openclaw_e2e_maybe_timeout "$command_timeout" env -u OPENCLAW_GATEWAY_TOKEN -u OPENCLAW_GATEWAY_PASSWORD openclaw gateway install --force --json >"$OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SERVICE_INSTALL_JSON" 2>"$OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SERVICE_INSTALL_ERR"; then
+  if ! afora_e2e_maybe_timeout "$command_timeout" env -u AFORA_GATEWAY_TOKEN -u AFORA_GATEWAY_PASSWORD afora gateway install --force --json >"$AFORA_UPGRADE_SURVIVOR_BASELINE_SERVICE_INSTALL_JSON" 2>"$AFORA_UPGRADE_SURVIVOR_BASELINE_SERVICE_INSTALL_ERR"; then
     echo "gateway service install failed" >&2
-    cat "$OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SERVICE_INSTALL_ERR" >&2 || true
-    cat "$OPENCLAW_UPGRADE_SURVIVOR_BASELINE_SERVICE_INSTALL_JSON" >&2 || true
+    cat "$AFORA_UPGRADE_SURVIVOR_BASELINE_SERVICE_INSTALL_ERR" >&2 || true
+    cat "$AFORA_UPGRADE_SURVIVOR_BASELINE_SERVICE_INSTALL_JSON" >&2 || true
     return 1
   fi
 }

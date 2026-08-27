@@ -1,4 +1,4 @@
-import type { ProgressCard, ProgressCardStep } from "@openclaw/gateway-protocol";
+import type { ProgressCard, ProgressCardStep } from "@afora/gateway-protocol";
 import { html, nothing } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { t } from "../i18n/index.ts";

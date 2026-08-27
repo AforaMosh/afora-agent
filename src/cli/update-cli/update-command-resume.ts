@@ -64,7 +64,7 @@ async function resumePostCoreUpdateUnlocked(params: ResumePostCoreUpdateParams):
     return;
   }
 
-  process.env.OPENCLAW_COMPATIBILITY_HOST_VERSION =
+  process.env.AFORA_COMPATIBILITY_HOST_VERSION =
     (await readPackageVersion(params.root)) ?? VERSION;
 
   let configSnapshot = await readConfigFileSnapshot({

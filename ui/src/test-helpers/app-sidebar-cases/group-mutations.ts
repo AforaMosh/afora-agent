@@ -41,7 +41,7 @@ function dispatchDragEvent(
 }
 
 describe("AppSidebar group mutation collapsed state", () => {
-  const COLLAPSED_STORAGE_KEY = "openclaw:sidebar:sessions:collapsed-sections";
+  const COLLAPSED_STORAGE_KEY = "afora:sidebar:sessions:collapsed-sections";
   let restoreDialogPolyfill: () => void;
 
   beforeEach(() => {
@@ -116,7 +116,7 @@ describe("AppSidebar group mutation collapsed state", () => {
     const menu = await openGroupMenu(sidebar);
     selectGroupMenuAction(menu, "rename-group");
     await waitForFast(() => {
-      const input = document.body.querySelector('openclaw-modal-dialog input[name="value"]');
+      const input = document.body.querySelector('afora-modal-dialog input[name="value"]');
       if (!(input instanceof HTMLInputElement)) {
         throw new Error("expected group rename input");
       }
@@ -130,7 +130,7 @@ describe("AppSidebar group mutation collapsed state", () => {
     selectGroupMenuAction(menu, "delete-group");
     const confirm = await waitForFast(() => {
       const button = document.body.querySelector<HTMLButtonElement>(
-        "openclaw-modal-dialog .exec-approval-actions .btn.danger",
+        "afora-modal-dialog .exec-approval-actions .btn.danger",
       );
       if (!button) {
         throw new Error("expected the group delete confirm");
@@ -212,13 +212,13 @@ describe("AppSidebar group mutation collapsed state", () => {
 
   it("keeps a reconnected group delete retryable after its confirm opened", async () => {
     const { sidebar, harness, gatewayHarness } = await mountCollapsedGroup({});
-    const toast = document.body.appendChild(document.createElement("openclaw-toast-host"));
+    const toast = document.body.appendChild(document.createElement("afora-toast-host"));
     await toast.updateComplete;
     const menu = await openGroupMenu(sidebar);
     selectGroupMenuAction(menu, "delete-group");
     const confirm = await waitForFast(() => {
       const button = document.body.querySelector<HTMLButtonElement>(
-        "openclaw-modal-dialog .exec-approval-actions .btn.danger",
+        "afora-modal-dialog .exec-approval-actions .btn.danger",
       );
       if (!button) {
         throw new Error("expected the group delete confirm");
@@ -230,7 +230,7 @@ describe("AppSidebar group mutation collapsed state", () => {
     gatewayHarness.publish({ phase: "connected" });
     confirm.click();
     await waitForFast(() =>
-      expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull(),
+      expect(document.body.querySelector("afora-modal-dialog")).toBeNull(),
     );
 
     expect(harness.groupsDelete).not.toHaveBeenCalled();
@@ -285,7 +285,7 @@ describe("AppSidebar group mutation collapsed state", () => {
     // group, its members and the collapsed key untouched.
     const cancel = await waitForFast(() => {
       const buttons = document.body.querySelectorAll<HTMLButtonElement>(
-        "openclaw-modal-dialog .exec-approval-actions .btn",
+        "afora-modal-dialog .exec-approval-actions .btn",
       );
       if (buttons.length !== 2) {
         throw new Error("expected the group delete confirm");
@@ -294,7 +294,7 @@ describe("AppSidebar group mutation collapsed state", () => {
     });
     cancel.click();
     await waitForFast(() =>
-      expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull(),
+      expect(document.body.querySelector("afora-modal-dialog")).toBeNull(),
     );
 
     expect(harness.groupsDelete).not.toHaveBeenCalled();

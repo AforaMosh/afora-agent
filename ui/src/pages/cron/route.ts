@@ -7,6 +7,6 @@ export const page = definePage({
   component: () =>
     import("./cron-page.ts").then(() => ({
       header: true,
-      render: () => html`<openclaw-cron-page></openclaw-cron-page>`,
+      render: () => html`<afora-cron-page></afora-cron-page>`,
     })),
 });

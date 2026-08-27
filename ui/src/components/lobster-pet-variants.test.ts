@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import { LOBSTER_PALETTE_LORE } from "./lobster-pet-lore.ts";
 import { LOBSTER_PALETTE_WEIGHTS } from "./lobster-pet-palettes.ts";

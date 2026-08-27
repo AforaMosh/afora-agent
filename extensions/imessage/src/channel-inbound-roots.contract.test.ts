@@ -1,5 +1,5 @@
 // Imessage tests cover channel inbound roots.contract plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_IMESSAGE_ATTACHMENT_ROOTS,
@@ -25,7 +25,7 @@ describe("iMessage channel-inbound-roots contract", () => {
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 
   it("resolves configured attachment roots with account overrides", () => {
     expectResolvedRootsCase(
@@ -57,7 +57,7 @@ describe("iMessage channel-inbound-roots contract", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expectResolvedRootsCase(
       () => resolveIMessageAttachmentRoots({ cfg, accountId: "work" }),
@@ -67,14 +67,14 @@ describe("iMessage channel-inbound-roots contract", () => {
 
   it("falls back to default iMessage attachment roots", () => {
     expectResolvedRootsCase(
-      () => resolveIMessageAttachmentRoots({ cfg: {} as OpenClawConfig }),
+      () => resolveIMessageAttachmentRoots({ cfg: {} as AforaConfig }),
       [...DEFAULT_IMESSAGE_ATTACHMENT_ROOTS],
     );
   });
 
   it("falls back to default iMessage remote attachment roots", () => {
     expectResolvedRootsCase(
-      () => resolveIMessageRemoteAttachmentRoots({ cfg: {} as OpenClawConfig }),
+      () => resolveIMessageRemoteAttachmentRoots({ cfg: {} as AforaConfig }),
       [...DEFAULT_IMESSAGE_ATTACHMENT_ROOTS],
     );
   });

@@ -8,7 +8,7 @@ import {
 } from "./session-link-hovercard-target.ts";
 import type { SessionLinkHovercardProvider } from "./session-link-hovercard.runtime.ts";
 
-const HOVERCARD_TAG = "openclaw-session-link-hovercard-provider";
+const HOVERCARD_TAG = "afora-session-link-hovercard-provider";
 const SESSION_LINK_SELECTOR = "a.markdown-session-link";
 
 let bootstrapObserver: MutationObserver | null = null;

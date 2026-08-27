@@ -1,11 +1,11 @@
 import type {
   EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams,
   ToolProgressDetailMode,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   asFiniteNumber,
   readStringField as readString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   isNonSuccessItemStatus,
   itemKind,

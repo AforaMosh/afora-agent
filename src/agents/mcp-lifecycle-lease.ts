@@ -1,11 +1,11 @@
-import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
-import { withOpenClawStateLease } from "../state/openclaw-state-lease.js";
+import type { AforaStateDatabaseOptions } from "../state/afora-state-db.js";
+import { withAforaStateLease } from "../state/afora-state-lease.js";
 
 const MCP_LIFECYCLE_LEASE_SCOPE = "core:claw-mcp-lifecycle";
 const MCP_LIFECYCLE_LEASE_MS = 5 * 60_000;
 const MCP_LIFECYCLE_WAIT_MS = 10 * 60_000;
 
-type McpLifecycleLeaseOptions = Pick<OpenClawStateDatabaseOptions, "env" | "path" | "database"> & {
+type McpLifecycleLeaseOptions = Pick<AforaStateDatabaseOptions, "env" | "path" | "database"> & {
   signal?: AbortSignal;
 };
 
@@ -15,7 +15,7 @@ export async function withMcpLifecycleLease<T>(
   options: McpLifecycleLeaseOptions,
   run: () => Promise<T>,
 ): Promise<T> {
-  return await withOpenClawStateLease(
+  return await withAforaStateLease(
     {
       scope: MCP_LIFECYCLE_LEASE_SCOPE,
       key: name.trim(),

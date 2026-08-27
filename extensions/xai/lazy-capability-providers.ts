@@ -1,24 +1,24 @@
-import type { ImageGenerationProvider } from "openclaw/plugin-sdk/image-generation";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
-import type { MediaUnderstandingProvider } from "openclaw/plugin-sdk/media-understanding";
+import type { ImageGenerationProvider } from "afora-agent/plugin-sdk/image-generation";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
+import type { MediaUnderstandingProvider } from "afora-agent/plugin-sdk/media-understanding";
 import type {
   RealtimeTranscriptionProviderPlugin,
   RealtimeTranscriptionSession,
   RealtimeTranscriptionSessionCreateRequest,
-} from "openclaw/plugin-sdk/realtime-transcription";
+} from "afora-agent/plugin-sdk/realtime-transcription";
 import type {
   RealtimeVoiceBridge,
   RealtimeVoiceBridgeCreateRequest,
   RealtimeVoiceProviderPlugin,
   RealtimeVoiceToolResultOptions,
-} from "openclaw/plugin-sdk/realtime-voice";
-import { createRealtimeVoiceAudioQueue } from "openclaw/plugin-sdk/realtime-voice-audio-queue";
+} from "afora-agent/plugin-sdk/realtime-voice";
+import { createRealtimeVoiceAudioQueue } from "afora-agent/plugin-sdk/realtime-voice-audio-queue";
 import type {
   SpeechProviderPlugin,
   SpeechSynthesisStreamRequest,
   SpeechTelephonySynthesisRequest,
-} from "openclaw/plugin-sdk/speech";
-import type { VideoGenerationProvider } from "openclaw/plugin-sdk/video-generation";
+} from "afora-agent/plugin-sdk/speech";
+import type { VideoGenerationProvider } from "afora-agent/plugin-sdk/video-generation";
 import {
   assertXaiRealtimeVoiceRequestSupported,
   createXaiImageGenerationProviderMetadata,

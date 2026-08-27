@@ -1,6 +1,6 @@
 // Policy plugin module implements tool policy conformance behavior.
 const POLICY_TOOL_GROUPS: Record<string, readonly string[]> = {
-  "group:openclaw": [
+  "group:afora": [
     "code_execution",
     "web_search",
     "web_fetch",

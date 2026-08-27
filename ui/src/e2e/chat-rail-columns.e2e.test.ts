@@ -16,7 +16,7 @@ const suite = createControlUiE2eSuite({
 });
 
 const sessionKey = "agent:main:rail-tabs";
-const proofDir = process.env.OPENCLAW_UI_RAIL_PROOF_DIR?.trim();
+const proofDir = process.env.AFORA_UI_RAIL_PROOF_DIR?.trim();
 
 const historyMessages = Array.from({ length: 10 }, (_, index) => ({
   id: `rail-tabs-${index}`,
@@ -54,7 +54,7 @@ function scenario(): ControlUiMockGatewayScenario {
       },
       "sessions.diff": {
         sessionKey,
-        root: "/workspace/openclaw",
+        root: "/workspace/afora",
         branch: "feature/tabbed-side-panel",
         baseRef: "main",
         files: [
@@ -100,18 +100,18 @@ function scenario(): ControlUiMockGatewayScenario {
             kind: "modified",
             missing: false,
             name: "chat-pane-render.ts",
-            path: "/workspace/openclaw/ui/src/pages/chat/chat-pane-render.ts",
+            path: "/workspace/afora/ui/src/pages/chat/chat-pane-render.ts",
             size: 18_432,
           },
           {
             kind: "read",
             missing: false,
             name: "sidebar.css",
-            path: "/workspace/openclaw/ui/src/styles/chat/sidebar.css",
+            path: "/workspace/afora/ui/src/styles/chat/sidebar.css",
             size: 24_820,
           },
         ],
-        root: "/workspace/openclaw",
+        root: "/workspace/afora",
         sessionKey,
       },
       "tasks.list": {
@@ -137,14 +137,14 @@ function scenario(): ControlUiMockGatewayScenario {
       "terminal.open": {
         agentId: "main",
         confined: false,
-        cwd: "/workspace/openclaw",
+        cwd: "/workspace/afora",
         sessionId: "rail-tabs-terminal",
         shell: "/bin/zsh",
       },
     },
     sessionKey,
     terminalEnabled: true,
-    workspace: "/workspace/openclaw",
+    workspace: "/workspace/afora",
     workspaceGit: true,
   };
 }
@@ -186,7 +186,7 @@ async function seedDockReservationRegression(page: Page, dock: "bottom" | "right
         }),
       );
       localStorage.setItem(
-        "openclaw.browser.panel.v1",
+        "afora.browser.panel.v1",
         JSON.stringify({ open: true, dock: "right", height: 420, width: 560 }),
       );
     },
@@ -559,7 +559,7 @@ suite.define(() => {
           const tooltipTrigger = overflowingLabel.locator("..");
           const labelTooltip = tooltipTrigger.locator("..");
           expect(await labelTooltip.evaluate((element) => element.localName)).toBe(
-            "openclaw-tooltip",
+            "afora-tooltip",
           );
           expect(
             await overflowingLabel.locator("xpath=ancestor::wa-tab").getAttribute("title"),
@@ -896,7 +896,7 @@ suite.define(() => {
         expect(geometry.right).toBeLessThanOrEqual(geometry.viewport + 1);
         expect(geometry.width).toBeGreaterThan(300);
 
-        const companion = sidePanel(page).locator("openclaw-chat-session-rail");
+        const companion = sidePanel(page).locator("afora-chat-session-rail");
         const companionGeometry = await companion.locator(".chat-session-rail").evaluate((rail) => {
           const body = rail.closest(".side-panel__body");
           const bodyRect = body?.getBoundingClientRect();

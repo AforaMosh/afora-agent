@@ -305,22 +305,22 @@ describe("Signal post-core update schema", () => {
   });
 
   it("accepts shipped transport fields only while update finalization owns migration", () => {
-    vi.stubEnv("OPENCLAW_UPDATE_IN_PROGRESS", "1");
+    vi.stubEnv("AFORA_UPDATE_IN_PROGRESS", "1");
 
     expect(SignalConfigSchema.safeParse(legacyConfig).success).toBe(true);
   });
 
   it("keeps normal runtime validation canonical", () => {
-    vi.stubEnv("OPENCLAW_UPDATE_IN_PROGRESS", "0");
+    vi.stubEnv("AFORA_UPDATE_IN_PROGRESS", "0");
 
     expect(SignalConfigSchema.safeParse(legacyConfig).success).toBe(false);
   });
 
   it("closes the temporary schema window without reloading modules", () => {
-    vi.stubEnv("OPENCLAW_UPDATE_IN_PROGRESS", "1");
+    vi.stubEnv("AFORA_UPDATE_IN_PROGRESS", "1");
     expect(SignalConfigSchema.safeParse(legacyConfig).success).toBe(true);
 
-    vi.stubEnv("OPENCLAW_UPDATE_IN_PROGRESS", "0");
+    vi.stubEnv("AFORA_UPDATE_IN_PROGRESS", "0");
     expect(SignalConfigSchema.safeParse(legacyConfig).success).toBe(false);
   });
 });

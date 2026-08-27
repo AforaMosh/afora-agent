@@ -46,7 +46,7 @@ describe("check-no-conflict-markers", () => {
   });
 
   it("scans text files and skips binary files", () => {
-    const rootDir = createTempDir("openclaw-conflict-markers-");
+    const rootDir = createTempDir("afora-conflict-markers-");
     const textFile = path.join(rootDir, "CHANGELOG.md");
     const binaryFile = path.join(rootDir, "image.png");
     fs.writeFileSync(textFile, "<<<<<<< HEAD\nconflict\n>>>>>>> main\n");
@@ -63,7 +63,7 @@ describe("check-no-conflict-markers", () => {
   });
 
   it("finds conflict markers in tracked files using git grep", () => {
-    const rootDir = createTempDir("openclaw-conflict-markers-");
+    const rootDir = createTempDir("afora-conflict-markers-");
     git(rootDir, "init", "-q");
     git(rootDir, "config", "user.email", "test@example.com");
     git(rootDir, "config", "user.name", "Test User");
@@ -94,7 +94,7 @@ describe("check-no-conflict-markers", () => {
   });
 
   it("disables configured git grep colors before parsing records", () => {
-    const rootDir = createTempDir("openclaw-conflict-markers-");
+    const rootDir = createTempDir("afora-conflict-markers-");
     git(rootDir, "init", "-q");
     git(rootDir, "config", "user.email", "test@example.com");
     git(rootDir, "config", "user.name", "Test User");
@@ -116,7 +116,7 @@ describe("check-no-conflict-markers", () => {
   });
 
   it("returns no violations when tracked files have no conflict markers", () => {
-    const rootDir = createTempDir("openclaw-conflict-markers-");
+    const rootDir = createTempDir("afora-conflict-markers-");
     git(rootDir, "init", "-q");
     git(rootDir, "config", "user.email", "test@example.com");
     git(rootDir, "config", "user.name", "Test User");
@@ -131,7 +131,7 @@ describe("check-no-conflict-markers", () => {
   });
 
   it("skips binary tracked files via git grep binary exclusion", () => {
-    const rootDir = createTempDir("openclaw-conflict-markers-");
+    const rootDir = createTempDir("afora-conflict-markers-");
     git(rootDir, "init", "-q");
     git(rootDir, "config", "user.email", "test@example.com");
     git(rootDir, "config", "user.name", "Test User");
@@ -151,7 +151,7 @@ describe("check-no-conflict-markers", () => {
   });
 
   it("handles tracked files with spaces and unusual characters in paths", () => {
-    const rootDir = createTempDir("openclaw-conflict-markers-");
+    const rootDir = createTempDir("afora-conflict-markers-");
     git(rootDir, "init", "-q");
     git(rootDir, "config", "user.email", "test@example.com");
     git(rootDir, "config", "user.name", "Test User");
@@ -176,7 +176,7 @@ describe("check-no-conflict-markers", () => {
   });
 
   it("reports tracked filenames containing newlines without mangling the path", () => {
-    const rootDir = createTempDir("openclaw-conflict-markers-");
+    const rootDir = createTempDir("afora-conflict-markers-");
     git(rootDir, "init", "-q");
     git(rootDir, "config", "user.email", "test@example.com");
     git(rootDir, "config", "user.name", "Test User");
@@ -204,7 +204,7 @@ describe("check-no-conflict-markers", () => {
   });
 
   it("detects markers in a file larger than the previous scan byte limit without reading it whole", () => {
-    const rootDir = createTempDir("openclaw-conflict-markers-");
+    const rootDir = createTempDir("afora-conflict-markers-");
     git(rootDir, "init", "-q");
     git(rootDir, "config", "user.email", "test@example.com");
     git(rootDir, "config", "user.name", "Test User");
@@ -229,7 +229,7 @@ describe("check-no-conflict-markers", () => {
   });
 
   it("main reports tracked violations with paths relative to cwd", () => {
-    const rootDir = createTempDir("openclaw-conflict-markers-main-");
+    const rootDir = createTempDir("afora-conflict-markers-main-");
     git(rootDir, "init", "-q");
     git(rootDir, "config", "user.email", "test@example.com");
     git(rootDir, "config", "user.name", "Test User");

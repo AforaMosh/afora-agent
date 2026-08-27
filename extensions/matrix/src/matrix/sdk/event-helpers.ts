@@ -1,6 +1,6 @@
 // Matrix helper module supports event helpers behavior.
 import type { MatrixEvent } from "matrix-js-sdk/lib/matrix.js";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import type { MatrixRawEvent } from "./types.js";
 
 type MatrixEventContentMode = "current" | "original";

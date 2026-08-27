@@ -1,6 +1,6 @@
 // Setup migration finalization owns deferred activation, reporting, and terminal acknowledgement.
 import path from "node:path";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { writeMigrationReport } from "../plugin-sdk/migration-runtime.js";
 import { summarizeMigrationItems } from "../plugin-sdk/migration.js";
@@ -53,7 +53,7 @@ export function assertDeferredMigrationApplyContract(
 }
 
 function deferredRetryInstruction(providerId: string): string {
-  return `Some post-promotion migration activation steps are still pending. Retry only those steps with openclaw onboard --flow import --import-from ${providerId}.`;
+  return `Some post-promotion migration activation steps are still pending. Retry only those steps with afora onboard --flow import --import-from ${providerId}.`;
 }
 
 function deferredMigrationFailure(plan: MigrationPlan, error: unknown): MigrationApplyResult {
@@ -151,7 +151,7 @@ function hasPendingDeferredMigrationItems(
 }
 
 async function createPromotionConfigRuntime(
-  config: OpenClawConfig,
+  config: AforaConfig,
 ): Promise<MigrationConfigRuntime> {
   const { mutateConfigFile } = await import("../config/mutate.js");
   let currentConfig = structuredClone(config);
@@ -168,7 +168,7 @@ async function createPromotionConfigRuntime(
 export async function finalizeSetupMigrationPromotion(params: {
   provider: MigrationProviderPlugin;
   resume: SetupMigrationPromotionResume;
-  config: OpenClawConfig;
+  config: AforaConfig;
   stateDir: string;
   logger: MigrationProviderContext["logger"];
   prompter: WizardPrompter;

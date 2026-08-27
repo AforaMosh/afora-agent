@@ -14,7 +14,7 @@ import {
 import { inheritLegacyDefaultAgentId } from "./legacy.default-agent-owner.js";
 import { normalizeExecSafeBinProfilesInConfig } from "./normalize-exec-safe-bin.js";
 import { normalizeConfigPaths } from "./normalize-paths.js";
-import type { OpenClawConfig, ResolvedSourceConfig, RuntimeConfig } from "./types.js";
+import type { AforaConfig, ResolvedSourceConfig, RuntimeConfig } from "./types.js";
 
 // Snapshot and load must materialize identically: prepared-runtime exact-config
 // resolution compares the startup-published (snapshot) config against the reply-path
@@ -23,16 +23,16 @@ import type { OpenClawConfig, ResolvedSourceConfig, RuntimeConfig } from "./type
 // until its last divergent ("missing") caller was removed and only invited drift.
 type ConfigMaterializationMode = "load" | "snapshot";
 
-export function asResolvedSourceConfig(config: OpenClawConfig): ResolvedSourceConfig {
+export function asResolvedSourceConfig(config: AforaConfig): ResolvedSourceConfig {
   return config as ResolvedSourceConfig;
 }
 
-export function asRuntimeConfig(config: OpenClawConfig): RuntimeConfig {
+export function asRuntimeConfig(config: AforaConfig): RuntimeConfig {
   return config as RuntimeConfig;
 }
 
 export function materializeRuntimeConfig(
-  config: OpenClawConfig,
+  config: AforaConfig,
   _mode: ConfigMaterializationMode,
   options: {
     manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;

@@ -6,7 +6,7 @@ import { createChatFlowE2eSuite, installMockGateway } from "./chat-flow.test-sup
 const suite = createChatFlowE2eSuite();
 const sessionKey = "agent:main:main";
 const proofDir =
-  process.env.OPENCLAW_CAPTURE_UI_PROOF === "1"
+  process.env.AFORA_CAPTURE_UI_PROOF === "1"
     ? path.join(process.cwd(), ".artifacts", "control-ui-e2e", "chat-only-model")
     : null;
 

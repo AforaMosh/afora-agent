@@ -2,7 +2,7 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { isOperatorScope } from "../gateway/operator-scopes.js";
 import { logVerbose } from "../globals.js";
 import { isRecord } from "../utils.js";
@@ -16,7 +16,7 @@ import {
   type AgentPromptGuidance,
   type AgentPromptGuidanceEntry,
   type AgentPromptSurfaceKind,
-  type OpenClawPluginCommandDefinition,
+  type AforaPluginCommandDefinition,
 } from "./types.js";
 
 /**
@@ -87,7 +87,7 @@ type CommandRegistrationResult = {
   error?: string;
 };
 
-/** Returns true when a command name is owned by built-in OpenClaw command handling. */
+/** Returns true when a command name is owned by built-in Afora command handling. */
 export function isReservedCommandName(name: string): boolean {
   const trimmed = normalizeOptionalLowercaseString(name) ?? "";
   return Boolean(trimmed && getReservedCommands().has(trimmed));
@@ -123,7 +123,7 @@ function validateCommandName(
  * Shared by both the global registration path and snapshot (non-activating) loads.
  */
 function validatePluginCommandDefinition(
-  command: OpenClawPluginCommandDefinition,
+  command: AforaPluginCommandDefinition,
   opts?: { allowReservedCommandNames?: boolean },
 ): string | null {
   if (typeof command.handler !== "function") {
@@ -306,7 +306,7 @@ function normalizeAgentPromptGuidance(
   });
 }
 
-function listPluginInvocationKeys(command: OpenClawPluginCommandDefinition): string[] {
+function listPluginInvocationKeys(command: AforaPluginCommandDefinition): string[] {
   const keys = new Set<string>();
   const push = (value: string | undefined) => {
     const normalized = normalizeOptionalLowercaseString(value);
@@ -328,7 +328,7 @@ function listPluginInvocationKeys(command: OpenClawPluginCommandDefinition): str
 
 export function registerPluginCommand(
   pluginId: string,
-  command: OpenClawPluginCommandDefinition,
+  command: AforaPluginCommandDefinition,
   opts?: {
     pluginName?: string;
     pluginRoot?: string;
@@ -348,7 +348,7 @@ export function registerPluginCommand(
 export function registerPluginCommandInRegistry(
   registry: PluginRegistry,
   pluginId: string,
-  command: OpenClawPluginCommandDefinition,
+  command: AforaPluginCommandDefinition,
   opts?: Parameters<typeof registerPluginCommand>[2],
 ): CommandRegistrationResult {
   // Prevent registration while commands are being processed

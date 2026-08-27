@@ -2,12 +2,12 @@
 import {
   resolveChannelDraftStreamingChunking,
   type ChannelDraftStreamingChunking,
-} from "openclaw/plugin-sdk/channel-outbound";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { DISCORD_TEXT_CHUNK_LIMIT } from "./outbound-adapter.js";
 
 export function resolveDiscordDraftStreamingChunking(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   accountId?: string | null,
 ): ChannelDraftStreamingChunking {
   return resolveChannelDraftStreamingChunking(cfg, "discord", accountId, {

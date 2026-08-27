@@ -1,9 +1,9 @@
 // Host policy ports for the reusable transport package. Fetch guarding,
 // secret redaction, strict-tool policy, and diagnostics logging are owned by
-// the embedding application (OpenClaw core installs its implementations via
+// the embedding application (Afora core installs its implementations via
 // configureAiTransportHost); the library defaults below are inert so external
 // consumers get safe, dependency-free behavior without wiring anything.
-import type { Api, Context, Model, StreamFn } from "@openclaw/llm-core";
+import type { Api, Context, Model, StreamFn } from "@afora/llm-core";
 import type { ApiRegistry } from "./api-registry.js";
 import { transformMessages } from "./transcript-transform.js";
 
@@ -17,7 +17,7 @@ export interface AiProviderRequestCapabilities {
   allowsAnthropicServiceTier: boolean;
 }
 
-/** Transport-safe provider policy input kept independent of OpenClaw config types. */
+/** Transport-safe provider policy input kept independent of Afora config types. */
 export interface AiProviderRequestPolicyInput {
   provider?: string;
   api?: string;

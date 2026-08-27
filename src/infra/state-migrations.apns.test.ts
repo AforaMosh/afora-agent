@@ -6,9 +6,9 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { captureEnv, deleteTestEnvValue, setTestEnvValue } from "../test-utils/env.js";
 import { acquireGatewayLock } from "./gateway-lock.js";
 import {
@@ -29,7 +29,7 @@ describe("legacy APNs Doctor migration", () => {
   let envSnapshot: ReturnType<typeof captureEnv> | undefined;
   const tempDirs = useAutoCleanupTempDirTracker((cleanup) => {
     afterEach(() => {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       envSnapshot?.restore();
       envSnapshot = undefined;
       cleanup();
@@ -37,21 +37,21 @@ describe("legacy APNs Doctor migration", () => {
   });
 
   function useStateDir(): string {
-    const stateDir = tempDirs.make("openclaw-apns-migration-");
-    envSnapshot ??= captureEnv(["OPENCLAW_STATE_DIR", "OPENCLAW_APNS_RELAY_ALLOW_HTTP"]);
-    setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+    const stateDir = tempDirs.make("afora-apns-migration-");
+    envSnapshot ??= captureEnv(["AFORA_STATE_DIR", "AFORA_APNS_RELAY_ALLOW_HTTP"]);
+    setTestEnvValue("AFORA_STATE_DIR", stateDir);
     return stateDir;
   }
 
   function envFor(stateDir: string): NodeJS.ProcessEnv {
-    return { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    return { ...process.env, AFORA_STATE_DIR: stateDir };
   }
 
   function directRegistration(overrides: Record<string, unknown> = {}) {
     return {
       nodeId: "legacy-direct",
       [APNS_DEVICE_FIELD]: `<${APNS_DEVICE_IDENTIFIER.toUpperCase()}>`,
-      topic: " ai.openclaw.ios ",
+      topic: " ai.afora.ios ",
       environment: "invalid-old-value",
       updatedAtMs: 1_000,
       ...overrides,
@@ -65,10 +65,10 @@ describe("legacy APNs Doctor migration", () => {
       relayHandle: "relay-handle-123",
       sendGrant: "send-grant-123",
       installationId: "installation-123",
-      topic: "ai.openclaw.ios",
+      topic: "ai.afora.ios",
       environment: "sandbox",
       distribution: "official",
-      relayOrigin: "https://ios-push-relay-sandbox.openclaw.ai/",
+      relayOrigin: "https://ios-push-relay-sandbox.afora.ai/",
       tokenDebugSuffix: " abcd-1234 ",
       updatedAtMs: 2_000,
       ...overrides,
@@ -133,7 +133,7 @@ describe("legacy APNs Doctor migration", () => {
       nodeId: "legacy-direct",
       transport: "direct",
       [APNS_DEVICE_FIELD]: APNS_DEVICE_IDENTIFIER,
-      topic: "ai.openclaw.ios",
+      topic: "ai.afora.ios",
       environment: "sandbox",
       updatedAtMs: 1_000,
     });
@@ -143,15 +143,15 @@ describe("legacy APNs Doctor migration", () => {
       relayHandle: "relay-handle-123",
       sendGrant: "send-grant-123",
       installationId: "installation-123",
-      topic: "ai.openclaw.ios",
+      topic: "ai.afora.ios",
       environment: "sandbox",
       distribution: "official",
-      relayOrigin: "https://ios-push-relay-sandbox.openclaw.ai",
+      relayOrigin: "https://ios-push-relay-sandbox.afora.ai",
       tokenDebugSuffix: "abcd1234",
       updatedAtMs: 2_000,
     });
     expect(fs.existsSync(sourcePath)).toBe(false);
-    const receipt = openOpenClawStateDatabase()
+    const receipt = openAforaStateDatabase()
       .db.prepare(
         `SELECT source_sha256, source_size_bytes, source_record_count,
                 status, removed_source, report_json
@@ -180,7 +180,7 @@ describe("legacy APNs Doctor migration", () => {
       nodeId: "shared-node",
       transport: "direct",
       [APNS_DEVICE_FIELD]: APNS_DEVICE_IDENTIFIER,
-      topic: "ai.openclaw.ios",
+      topic: "ai.afora.ios",
       environment: "production",
       baseDir: stateDir,
     });
@@ -212,7 +212,7 @@ describe("legacy APNs Doctor migration", () => {
       nodeId: "legacy-direct",
       transport: "direct",
       [APNS_DEVICE_FIELD]: APNS_DEVICE_IDENTIFIER,
-      topic: "ai.openclaw.ios",
+      topic: "ai.afora.ios",
       environment: "production",
       baseDir: stateDir,
     });
@@ -223,7 +223,7 @@ describe("legacy APNs Doctor migration", () => {
         baseDir: stateDir,
       }),
     ).resolves.toBe(true);
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
 
     const result = await migrate(stateDir);
 
@@ -239,7 +239,7 @@ describe("legacy APNs Doctor migration", () => {
     });
     const env = {
       ...envFor(stateDir),
-      OPENCLAW_APNS_RELAY_ALLOW_HTTP: "true",
+      AFORA_APNS_RELAY_ALLOW_HTTP: "true",
     };
 
     const result = await migrateLegacyApnsRegistrations({
@@ -252,12 +252,12 @@ describe("legacy APNs Doctor migration", () => {
     });
 
     expect(result.warnings).toEqual([]);
-    const row = openOpenClawStateDatabase({ env })
+    const row = openAforaStateDatabase({ env })
       .db.prepare("SELECT relay_origin FROM apns_registrations WHERE node_id = ?")
       .get("legacy-relay");
     expect(row).toEqual({ relay_origin: "http://127.0.0.1:18791" });
-    closeOpenClawStateDatabaseForTest();
-    deleteTestEnvValue("OPENCLAW_APNS_RELAY_ALLOW_HTTP");
+    closeAforaStateDatabaseForTest();
+    deleteTestEnvValue("AFORA_APNS_RELAY_ALLOW_HTTP");
     await expect(loadApnsRegistration("legacy-relay", stateDir)).resolves.toMatchObject({
       relayOrigin: "http://127.0.0.1:18791",
     });
@@ -371,7 +371,7 @@ describe("legacy APNs Doctor migration", () => {
     ];
 
     for (const raw of malformedStores) {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       const stateDir = useStateDir();
       const sourcePath = path.join(stateDir, "push", "apns-registrations.json");
       await fsp.mkdir(path.dirname(sourcePath), { recursive: true });
@@ -392,13 +392,13 @@ describe("legacy APNs Doctor migration", () => {
       "legacy-only": directRegistration({ nodeId: "legacy-only" }),
       [privateMarker]: directRegistration({ nodeId: privateMarker }),
     });
-    openOpenClawStateDatabase()
+    openAforaStateDatabase()
       .db.prepare(
         `INSERT INTO apns_registrations (
            node_id, transport, topic, environment, updated_at_ms
          ) VALUES (?, ?, ?, ?, ?)`,
       )
-      .run(privateMarker, "unknown", "ai.openclaw.ios", "sandbox", 1);
+      .run(privateMarker, "unknown", "ai.afora.ios", "sandbox", 1);
 
     const result = await migrate(stateDir);
 
@@ -437,7 +437,7 @@ describe("legacy APNs Doctor migration", () => {
       transport: "relay",
     });
     expect(
-      openOpenClawStateDatabase()
+      openAforaStateDatabase()
         .db.prepare("SELECT source_record_count FROM migration_sources WHERE migration_kind = ?")
         .get("legacy-apns-registrations-json"),
     ).toEqual({ source_record_count: 2_500 });
@@ -446,8 +446,8 @@ describe("legacy APNs Doctor migration", () => {
 
   it("rejects symlinks, hardlinks, and invalid UTF-8", async () => {
     for (const kind of ["symlink", "hardlink", "invalid-utf8"] as const) {
-      closeOpenClawStateDatabaseForTest();
-      const stateDir = tempDirs.make(`openclaw-apns-${kind}-`);
+      closeAforaStateDatabaseForTest();
+      const stateDir = tempDirs.make(`afora-apns-${kind}-`);
       const sourcePath = path.join(stateDir, "push", "apns-registrations.json");
       const targetPath = path.join(stateDir, "target.json");
       await fsp.mkdir(path.dirname(sourcePath), { recursive: true });
@@ -560,7 +560,7 @@ describe("legacy APNs Doctor migration", () => {
     expect(first.warnings[0]).toContain("legacy cleanup failed");
     expect(fs.existsSync(`${sourcePath}.doctor-importing`)).toBe(true);
     expect(
-      openOpenClawStateDatabase()
+      openAforaStateDatabase()
         .db.prepare("SELECT removed_source FROM migration_sources WHERE migration_kind = ?")
         .get("legacy-apns-registrations-json"),
     ).toEqual({ removed_source: 0 });
@@ -578,7 +578,7 @@ describe("legacy APNs Doctor migration", () => {
     await expect(loadApnsRegistration("legacy-direct", stateDir)).resolves.toBeNull();
     expect(fs.existsSync(`${sourcePath}.doctor-importing`)).toBe(false);
     expect(
-      openOpenClawStateDatabase()
+      openAforaStateDatabase()
         .db.prepare("SELECT removed_source FROM migration_sources WHERE migration_kind = ?")
         .get("legacy-apns-registrations-json"),
     ).toEqual({ removed_source: 1 });

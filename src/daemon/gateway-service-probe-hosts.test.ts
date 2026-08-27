@@ -76,17 +76,17 @@ describe("resolveGatewayServiceProbeHosts", () => {
 
       await expect(
         resolveGatewayServiceProbeHosts({
-          env: { OPENCLAW_STATE_DIR: "/tmp/cli-state" },
+          env: { AFORA_STATE_DIR: "/tmp/cli-state" },
           command: {
             programArguments: ["node", "gateway.js"],
-            environment: { OPENCLAW_STATE_DIR: "/tmp/service-state" },
+            environment: { AFORA_STATE_DIR: "/tmp/service-state" },
           },
         }),
       ).resolves.toEqual(testCase.expected);
 
       expect(mocks.createConfigIO).toHaveBeenCalledWith(
         expect.objectContaining({
-          env: expect.objectContaining({ OPENCLAW_STATE_DIR: "/tmp/service-state" }),
+          env: expect.objectContaining({ AFORA_STATE_DIR: "/tmp/service-state" }),
           pluginValidation: "skip",
           suppressFutureVersionWarning: true,
         }),

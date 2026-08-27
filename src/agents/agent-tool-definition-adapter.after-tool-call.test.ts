@@ -3,7 +3,7 @@
  * Ensures embedded run subscription handling remains the single after-hook
  * execution path.
  */
-import type { AgentTool } from "openclaw/plugin-sdk/agent-core";
+import type { AgentTool } from "afora-agent/plugin-sdk/agent-core";
 import { Type } from "typebox";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { toToolDefinitions } from "./agent-tool-definition-adapter.js";

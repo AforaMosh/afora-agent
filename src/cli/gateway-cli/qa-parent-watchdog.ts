@@ -1,16 +1,16 @@
 // QA watchdog for shutting down orphaned gateway children and cleaning staged temp roots.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { isPathInside } from "../../infra/path-guards.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 
-const QA_PARENT_PID_ENV = "OPENCLAW_QA_PARENT_PID";
-const QA_TEMP_ROOT_ENV = "OPENCLAW_QA_TEMP_ROOT";
-const QA_STAGED_RUNTIME_ROOT_ENV = "OPENCLAW_QA_STAGED_RUNTIME_ROOT";
+const QA_PARENT_PID_ENV = "AFORA_QA_PARENT_PID";
+const QA_TEMP_ROOT_ENV = "AFORA_QA_TEMP_ROOT";
+const QA_STAGED_RUNTIME_ROOT_ENV = "AFORA_QA_STAGED_RUNTIME_ROOT";
 
 const DEFAULT_QA_PARENT_WATCHDOG_INTERVAL_MS = 1000;
-const QA_TEMP_ROOT_PREFIX = "openclaw-qa-suite-";
+const QA_TEMP_ROOT_PREFIX = "afora-qa-suite-";
 
 type QaParentWatchdogTimer =
   | number

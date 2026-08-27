@@ -1,16 +1,16 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   resolveMemoryDreamingPluginConfig,
   resolveSessionTranscriptsDirForAgent,
-} from "openclaw/plugin-sdk/memory-core-host-runtime-core";
-import { clearRuntimeConfigSnapshot } from "openclaw/plugin-sdk/runtime-config-snapshot";
-import { upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
-import { appendSessionTranscriptMessageByIdentity } from "openclaw/plugin-sdk/session-transcript-runtime";
+} from "afora-agent/plugin-sdk/memory-core-host-runtime-core";
+import { clearRuntimeConfigSnapshot } from "afora-agent/plugin-sdk/runtime-config-snapshot";
+import { upsertSessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
+import { appendSessionTranscriptMessageByIdentity } from "afora-agent/plugin-sdk/session-transcript-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("openclaw/plugin-sdk/memory-host-events", () => ({
+vi.mock("afora-agent/plugin-sdk/memory-host-events", () => ({
   appendMemoryHostEvent: vi.fn(async () => {}),
 }));
 
@@ -27,8 +27,8 @@ const RAW_PROMOTION_SECRET = "OPENAI_API_KEY=sk-fedcba0987654321"; // pragma: al
 async function createWorkspace(prefix: string): Promise<string> {
   const workspaceDir = await createTempWorkspace(prefix);
   await fs.mkdir(path.join(workspaceDir, "memory"), { recursive: true });
-  vi.stubEnv("OPENCLAW_STATE_DIR", path.join(workspaceDir, ".state"));
-  vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+  vi.stubEnv("AFORA_STATE_DIR", path.join(workspaceDir, ".state"));
+  vi.stubEnv("AFORA_TEST_FAST", "1");
   clearRuntimeConfigSnapshot();
   return workspaceDir;
 }
@@ -54,7 +54,7 @@ async function seedInteractiveTranscript(params: {
       role: "user",
       content: [{ type: "text", text: params.content }],
       timestamp: params.timestamp,
-      __openclaw: { senderIsOwner: true },
+      __afora: { senderIsOwner: true },
     },
   });
   await upsertSessionEntry({ agentId, sessionKey, storePath, entry });
@@ -116,7 +116,7 @@ describe("memory-core redaction product boundaries", () => {
       timestamp: "2026-08-03T18:00:00.000Z",
       content: `${safeControlText} ${RAW_DREAMING_SECRET}`,
     });
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: { workspace: workspaceDir, userTimezone: "UTC" },
         list: [{ id: "main", workspace: workspaceDir }],
@@ -219,10 +219,10 @@ describe("memory-core redaction product boundaries", () => {
 
     const memory = await fs.readFile(path.join(workspaceDir, "MEMORY.md"), "utf-8");
     expect(memory).toContain(cleanText);
-    expect(memory).toContain(`<!-- openclaw-memory-promotion:${cleanKey} -->`);
-    expect(memory).not.toContain(`openclaw-memory-promotion:${contaminatedKey}`);
+    expect(memory).toContain(`<!-- afora-memory-promotion:${cleanKey} -->`);
+    expect(memory).not.toContain(`afora-memory-promotion:${contaminatedKey}`);
     expect(memory).not.toContain("CONTAMINATED_DREAMING_BOUNDARY");
-    expect(memory).not.toContain(`openclaw-memory-promotion:${untrustedKey}`);
+    expect(memory).not.toContain(`afora-memory-promotion:${untrustedKey}`);
     expect(memory).not.toContain(untrustedText);
     expect(memory).not.toContain(RAW_PROMOTION_SECRET);
     expect(memory).not.toContain("OPENAI_API_KEY=***");

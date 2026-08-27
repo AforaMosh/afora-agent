@@ -1,6 +1,6 @@
 // Memory Core plugin module implements memory tool manager mock behavior.
-import type { MemorySource } from "openclaw/plugin-sdk/memory-core-host-engine-storage";
-import type { MemorySearchRuntimeDebug } from "openclaw/plugin-sdk/memory-core-host-runtime-files";
+import type { MemorySource } from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
+import type { MemorySearchRuntimeDebug } from "afora-agent/plugin-sdk/memory-core-host-runtime-files";
 import { vi } from "vitest";
 import type { getMemorySearchManager } from "./tools.runtime.js";
 

@@ -2,8 +2,8 @@
  * Public Anthropic Vertex API barrel. It exposes lightweight discovery helpers
  * and lazy stream factories without eagerly importing the Vertex SDK runtime.
  */
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 import type { AnthropicVertexStreamDeps } from "./stream-runtime.js";
 
 export {

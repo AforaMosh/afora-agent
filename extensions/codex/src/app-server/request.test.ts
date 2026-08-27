@@ -47,7 +47,7 @@ describe("requestCodexAppServerJson sandbox guard", () => {
         sessionKey: "sandboxed-session",
       }),
     ).rejects.toThrow(
-      "Codex-native app-server method `command/exec` is unavailable because OpenClaw sandboxing is active for this session.",
+      "Codex-native app-server method `command/exec` is unavailable because Afora sandboxing is active for this session.",
     );
 
     expect(sharedClientMocks.getSharedCodexAppServerClient).not.toHaveBeenCalled();
@@ -63,7 +63,7 @@ describe("requestCodexAppServerJson sandbox guard", () => {
           sessionKey: "node-session",
         }),
       ).rejects.toThrow(
-        `Codex-native app-server method \`${method}\` is unavailable because OpenClaw exec host=node is active for this session.`,
+        `Codex-native app-server method \`${method}\` is unavailable because Afora exec host=node is active for this session.`,
       );
     }
 
@@ -156,13 +156,13 @@ describe("requestCodexAppServerJson sandbox guard", () => {
       description: "sandboxed",
       config: { agents: { defaults: { sandbox: { mode: "all" as const } } } },
       sessionKey: "sandboxed-session",
-      reason: "OpenClaw sandboxing is active for this session",
+      reason: "Afora sandboxing is active for this session",
     },
     {
       description: "node-hosted",
       config: { tools: { exec: { host: "node" as const, node: "worker-1" } } },
       sessionKey: "node-session",
-      reason: "OpenClaw exec host=node is active for this session",
+      reason: "Afora exec host=node is active for this session",
     },
   ])(
     "fails closed for unlisted app methods in $description sessions",
@@ -211,7 +211,7 @@ describe("requestCodexAppServerJson sandbox guard", () => {
         config: { tools: { exec: { host: "node", node: "worker-1" } } },
       }),
     ).rejects.toThrow(
-      "Codex-native app-server method `command/exec` is unavailable because OpenClaw exec host=node is active for this session.",
+      "Codex-native app-server method `command/exec` is unavailable because Afora exec host=node is active for this session.",
     );
 
     expect(sharedClientMocks.getSharedCodexAppServerClient).not.toHaveBeenCalled();
@@ -225,7 +225,7 @@ describe("requestCodexAppServerJson sandbox guard", () => {
         config: { tools: { exec: { host: "node", node: "worker-1" } } },
       }),
     ).rejects.toThrow(
-      "Codex-native app-server method `config/mcpServer/reload` is unavailable because OpenClaw exec host=node is active for this session.",
+      "Codex-native app-server method `config/mcpServer/reload` is unavailable because Afora exec host=node is active for this session.",
     );
 
     expect(sharedClientMocks.getSharedCodexAppServerClient).not.toHaveBeenCalled();
@@ -290,7 +290,7 @@ describe("requestCodexAppServerJson sandbox guard", () => {
     sharedClientMocks.getSharedCodexAppServerClient.mockResolvedValue({ request });
     const params = {
       cwd: "/workspace",
-      environments: [{ environmentId: "openclaw-sandbox-abc123", cwd: "/workspace" }],
+      environments: [{ environmentId: "afora-sandbox-abc123", cwd: "/workspace" }],
     };
 
     await expect(
@@ -432,7 +432,7 @@ describe("requestCodexAppServerJson sandbox guard", () => {
   it("blocks thread starts with sandbox environments when exec host=node is active", async () => {
     const params = {
       cwd: "/workspace",
-      environments: [{ environmentId: "openclaw-sandbox-abc123", cwd: "/workspace" }],
+      environments: [{ environmentId: "afora-sandbox-abc123", cwd: "/workspace" }],
     };
 
     await expect(
@@ -446,7 +446,7 @@ describe("requestCodexAppServerJson sandbox guard", () => {
         sessionKey: "node-session",
       }),
     ).rejects.toThrow(
-      "Codex-native app-server method `thread/start` is unavailable because OpenClaw exec host=node is active for this session.",
+      "Codex-native app-server method `thread/start` is unavailable because Afora exec host=node is active for this session.",
     );
 
     expect(sharedClientMocks.getSharedCodexAppServerClient).not.toHaveBeenCalled();

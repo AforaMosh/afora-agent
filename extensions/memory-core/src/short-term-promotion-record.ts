@@ -3,9 +3,9 @@ import path from "node:path";
 import type {
   MemoryEntryProvenance,
   MemorySearchResult,
-} from "openclaw/plugin-sdk/memory-core-host-runtime-files";
-import { formatMemoryDreamingDay } from "openclaw/plugin-sdk/memory-core-host-status";
-import { appendMemoryHostEvent } from "openclaw/plugin-sdk/memory-host-events";
+} from "afora-agent/plugin-sdk/memory-core-host-runtime-files";
+import { formatMemoryDreamingDay } from "afora-agent/plugin-sdk/memory-core-host-status";
+import { appendMemoryHostEvent } from "afora-agent/plugin-sdk/memory-host-events";
 import pLimit from "p-limit";
 import { deriveConceptTags } from "./concept-vocabulary.js";
 import { readStore, withShortTermLock, writeStore } from "./short-term-promotion-store.js";

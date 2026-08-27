@@ -1,7 +1,7 @@
-// Github Copilot plugin entrypoint registers its OpenClaw integration.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { adaptMemoryEmbeddingProviderAdapter } from "openclaw/plugin-sdk/memory-core-host-engine-embeddings";
-import { resolvePluginConfigObject } from "openclaw/plugin-sdk/plugin-config-runtime";
+// Github Copilot plugin entrypoint registers its Afora integration.
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { adaptMemoryEmbeddingProviderAdapter } from "afora-agent/plugin-sdk/memory-core-host-engine-embeddings";
+import { resolvePluginConfigObject } from "afora-agent/plugin-sdk/plugin-config-runtime";
 import {
   definePluginEntry,
   type ProviderAuthContext,
@@ -9,7 +9,7 @@ import {
   type ProviderAuthMethodNonInteractiveContext,
   type UnifiedModelCatalogEntry,
   type UnifiedModelCatalogProviderContext,
-} from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/plugin-entry";
 import {
   applyAuthProfileConfig,
   coerceSecretRef,
@@ -18,7 +18,7 @@ import {
   normalizeOptionalSecretInput,
   resolveDefaultSecretProviderAlias,
   upsertAuthProfileWithLock,
-} from "openclaw/plugin-sdk/provider-auth";
+} from "afora-agent/plugin-sdk/provider-auth";
 import { resolveFirstGithubToken } from "./auth.js";
 import {
   normalizeGithubCopilotDomain,
@@ -60,7 +60,7 @@ async function loadGithubCopilotRuntime() {
   return await import("./register.runtime.js");
 }
 
-function resolveCopilotConfiguredPrimary(cfg: OpenClawConfig): string {
+function resolveCopilotConfiguredPrimary(cfg: AforaConfig): string {
   const defaults = cfg.agents?.defaults;
   const existingModel = defaults?.model;
   return typeof existingModel === "string"
@@ -70,7 +70,7 @@ function resolveCopilotConfiguredPrimary(cfg: OpenClawConfig): string {
       : "";
 }
 
-function applyCopilotDefaultModel(cfg: OpenClawConfig, modelRef: string): OpenClawConfig {
+function applyCopilotDefaultModel(cfg: AforaConfig, modelRef: string): AforaConfig {
   if (resolveCopilotConfiguredPrimary(cfg)) {
     return cfg;
   }
@@ -168,7 +168,7 @@ async function resolveInteractiveCopilotStarterModel(params: {
 // or tenant fallback), so only the host is stored here. Mirror of
 // clearGithubCopilotDomainConfigPatch; both are provider-owned and live with the
 // plugin rather than the shared SDK.
-function buildGithubCopilotDomainConfigPatch(domain: string): Partial<OpenClawConfig> {
+function buildGithubCopilotDomainConfigPatch(domain: string): Partial<AforaConfig> {
   const normalized = normalizeGithubCopilotDomain(domain);
   return {
     models: {
@@ -176,26 +176,26 @@ function buildGithubCopilotDomainConfigPatch(domain: string): Partial<OpenClawCo
         [PROVIDER_ID]: { params: { githubDomain: normalized } },
       },
     },
-  } as unknown as Partial<OpenClawConfig>;
+  } as unknown as Partial<AforaConfig>;
 }
 
 // Removes a previously persisted enterprise domain so config falls back to the
 // "no config == github.com" default. Undefined leaves are deleted on merge.
-function clearGithubCopilotDomainConfigPatch(): Partial<OpenClawConfig> {
+function clearGithubCopilotDomainConfigPatch(): Partial<AforaConfig> {
   return {
     models: {
       providers: {
         [PROVIDER_ID]: { params: { githubDomain: undefined } },
       },
     },
-  } as unknown as Partial<OpenClawConfig>;
+  } as unknown as Partial<AforaConfig>;
 }
 
 function applyGithubCopilotDomainToConfig(
-  config: OpenClawConfig,
+  config: AforaConfig,
   domain: string,
   previousDomain: string,
-): OpenClawConfig {
+): AforaConfig {
   const isEnterprise = domain !== PUBLIC_GITHUB_COPILOT_DOMAIN;
   const shouldClear = !isEnterprise && previousDomain !== PUBLIC_GITHUB_COPILOT_DOMAIN;
   if (!isEnterprise && !shouldClear) {
@@ -301,7 +301,7 @@ async function resolveCopilotNonInteractiveToken(
 
 async function runGitHubCopilotNonInteractiveAuth(
   ctx: ProviderAuthMethodNonInteractiveContext,
-): Promise<OpenClawConfig | null> {
+): Promise<AforaConfig | null> {
   const opts = ctx.opts as Record<string, unknown> | undefined;
   const flagValue = normalizeOptionalSecretInput(opts?.githubCopilotToken);
   const resolved = await resolveCopilotNonInteractiveToken(ctx, flagValue);
@@ -411,7 +411,7 @@ export default definePluginEntry({
   description: "Bundled GitHub Copilot provider plugin",
   register(api) {
     const startupPluginConfig = (api.pluginConfig ?? {}) as GithubCopilotPluginConfig;
-    function resolveCurrentPluginConfig(config?: OpenClawConfig): GithubCopilotPluginConfig {
+    function resolveCurrentPluginConfig(config?: AforaConfig): GithubCopilotPluginConfig {
       const runtimePluginConfig = resolvePluginConfigObject(config, "github-copilot");
       if (runtimePluginConfig) {
         return runtimePluginConfig as GithubCopilotPluginConfig;

@@ -1,4 +1,4 @@
-import { rawDataToString } from "@openclaw/gateway-client/websocket-data";
+import { rawDataToString } from "@afora/gateway-client/websocket-data";
 import type { RawData, WebSocket } from "ws";
 import {
   ErrorCodes,

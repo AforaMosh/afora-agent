@@ -1,10 +1,10 @@
 import {
   MODEL_SELECTION_LOCKED_MESSAGE,
   resolvePersistedSessionRuntimeId,
-} from "openclaw/plugin-sdk/model-session-runtime";
-import type { PluginCommandContext } from "openclaw/plugin-sdk/plugin-entry";
-import { getSessionEntry, resolveStorePath } from "openclaw/plugin-sdk/session-store-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/model-session-runtime";
+import type { PluginCommandContext } from "afora-agent/plugin-sdk/plugin-entry";
+import { getSessionEntry, resolveStorePath } from "afora-agent/plugin-sdk/session-store-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveCodexBindingAppServerConnection } from "./app-server/binding-connection.js";
 import type { CodexComputerUseSetupParams } from "./app-server/computer-use.js";
 import { isJsonObject, type JsonValue } from "./app-server/protocol.js";
@@ -190,7 +190,7 @@ export async function handleNativeGoal(
   }
   const binding = await deps.bindingStore.read(target.identity);
   if (!binding?.threadId) {
-    return "No Codex thread is attached to this OpenClaw session yet.";
+    return "No Codex thread is attached to this Afora session yet.";
   }
   const connection = resolveCodexBindingAppServerConnection({
     binding,
@@ -449,7 +449,7 @@ export async function startThreadAction(
   }
   const binding = await deps.bindingStore.read(target.identity);
   if (!binding?.threadId) {
-    return `No Codex thread is attached to this OpenClaw session yet.`;
+    return `No Codex thread is attached to this Afora session yet.`;
   }
   if (kind === "compact") {
     const sessionTarget = ctx.sessionTarget;
@@ -472,7 +472,7 @@ export async function startThreadAction(
       currentSession?.sessionId !== ctx.sessionId ||
       resolvePersistedSessionRuntimeId(currentSession) !== "codex"
     ) {
-      return "Codex compaction is unavailable because the current OpenClaw session is not using the Codex runtime.";
+      return "Codex compaction is unavailable because the current Afora session is not using the Codex runtime.";
     }
     if (target.identity.kind === "conversation") {
       const sessionBinding = ctx.sessionId

@@ -1,12 +1,12 @@
 // Plugin entry contracts define the manifest-facing hooks implemented by plugin packages.
 import { emptyPluginConfigSchema } from "../plugins/config-schema.js";
 import type {
-  OpenClawPluginConfigSchema,
-  OpenClawPluginDefinition,
+  AforaPluginConfigSchema,
+  AforaPluginDefinition,
   ProviderBuiltInModelSuppressionContext as ProviderBuiltInModelSuppressionContextType,
 } from "../plugins/types.js";
 import { createCachedLazyValueGetter } from "./lazy-value.js";
-export type { OpenClawConfig } from "../config/types.openclaw.js";
+export type { AforaConfig } from "../config/types.afora.js";
 
 export type {
   AgentHarness,
@@ -22,25 +22,25 @@ export type {
   MigrationProviderContext,
   MigrationProviderPlugin,
   MigrationSummary,
-  OpenClawGatewayDiscoveryAdvertiseContext,
-  OpenClawGatewayDiscoveryService,
-  OpenClawPluginApi,
-  OpenClawPluginCommandDefinition,
-  OpenClawPluginConfigSchema,
-  OpenClawPluginDefinition,
-  OpenClawPluginHttpRouteHandler,
-  OpenClawPluginNodeHostCommand,
-  OpenClawPluginNodeHostCommandAvailabilityContext,
-  OpenClawPluginNodeInvokePolicy,
-  OpenClawPluginNodeInvokePolicyContext,
-  OpenClawPluginNodeInvokePolicyResult,
-  OpenClawPluginReloadRegistration,
-  OpenClawPluginSecurityAuditCollector,
-  OpenClawPluginSecurityAuditContext,
-  OpenClawPluginService,
-  OpenClawPluginServiceContext,
-  OpenClawPluginToolContext,
-  OpenClawPluginToolFactory,
+  AforaGatewayDiscoveryAdvertiseContext,
+  AforaGatewayDiscoveryService,
+  AforaPluginApi,
+  AforaPluginCommandDefinition,
+  AforaPluginConfigSchema,
+  AforaPluginDefinition,
+  AforaPluginHttpRouteHandler,
+  AforaPluginNodeHostCommand,
+  AforaPluginNodeHostCommandAvailabilityContext,
+  AforaPluginNodeInvokePolicy,
+  AforaPluginNodeInvokePolicyContext,
+  AforaPluginNodeInvokePolicyResult,
+  AforaPluginReloadRegistration,
+  AforaPluginSecurityAuditCollector,
+  AforaPluginSecurityAuditContext,
+  AforaPluginService,
+  AforaPluginServiceContext,
+  AforaPluginToolContext,
+  AforaPluginToolFactory,
   PluginAgentEventEmitParams,
   PluginAgentEventEmitResult,
   PluginAgentEventSubscriptionRegistration,
@@ -148,8 +148,8 @@ export type {
 export type ProviderBuiltInModelSuppressionContext = ProviderBuiltInModelSuppressionContextType;
 
 export type {
-  OpenClawPluginGatewayEventScope,
-  OpenClawPluginGatewayEvents,
+  AforaPluginGatewayEventScope,
+  AforaPluginGatewayEvents,
 } from "../plugins/gateway-events.js";
 export { WorkerProviderError } from "../plugins/capability-provider.types.js";
 
@@ -185,7 +185,7 @@ export type {
   UnifiedModelCatalogEntry,
   UnifiedModelCatalogKind,
   UnifiedModelCatalogSource,
-} from "@openclaw/model-catalog-core/model-catalog-types";
+} from "@afora/model-catalog-core/model-catalog-types";
 
 export {
   buildJsonPluginConfigSchema,
@@ -199,21 +199,21 @@ type DefinePluginEntryOptions = {
   name: string;
   description: string;
   /**
-   * @deprecated Declare exclusive plugin kind in `openclaw.plugin.json` via
+   * @deprecated Declare exclusive plugin kind in `afora.plugin.json` via
    * manifest `kind`. Runtime-entry `kind` remains only as a compatibility
    * fallback for older plugins.
    */
-  kind?: OpenClawPluginDefinition["kind"];
-  configSchema?: OpenClawPluginConfigSchema | (() => OpenClawPluginConfigSchema);
-  reload?: OpenClawPluginDefinition["reload"];
-  nodeHostCommands?: OpenClawPluginDefinition["nodeHostCommands"];
-  securityAuditCollectors?: OpenClawPluginDefinition["securityAuditCollectors"];
-  register: NonNullable<OpenClawPluginDefinition["register"]>;
+  kind?: AforaPluginDefinition["kind"];
+  configSchema?: AforaPluginConfigSchema | (() => AforaPluginConfigSchema);
+  reload?: AforaPluginDefinition["reload"];
+  nodeHostCommands?: AforaPluginDefinition["nodeHostCommands"];
+  securityAuditCollectors?: AforaPluginDefinition["securityAuditCollectors"];
+  register: NonNullable<AforaPluginDefinition["register"]>;
 };
 
-/** Normalized object shape that OpenClaw loads from a plugin entry module. */
+/** Normalized object shape that Afora loads from a plugin entry module. */
 type DefinedPluginEntry = Omit<DefinePluginEntryOptions, "configSchema"> & {
-  configSchema: OpenClawPluginConfigSchema;
+  configSchema: AforaPluginConfigSchema;
 };
 
 /**
@@ -221,7 +221,7 @@ type DefinedPluginEntry = Omit<DefinePluginEntryOptions, "configSchema"> & {
  *
  * Use this for provider, tool, command, service, memory, and context-engine
  * plugins. Channel plugins should use `defineChannelPluginEntry(...)` from
- * `openclaw/plugin-sdk/core` so they inherit the channel capability wiring.
+ * `afora/plugin-sdk/core` so they inherit the channel capability wiring.
  */
 export function definePluginEntry({
   id,

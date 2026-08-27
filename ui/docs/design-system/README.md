@@ -1,6 +1,6 @@
-# OpenClaw Design System
+# Afora Design System
 
-OpenClaw's visual language is a **dark-first, glass-surface system** built around a deep charcoal base (`#0e1015`), a punchy signature red accent (`#ff5c5c`), and layered frosted-glass surfaces that create depth without solid panels. Motion is crisp and purposeful — fast micro-interactions (100ms) with spring-loaded expansions. All interactive elements meet WCAG 2.1 AA contrast requirements on dark backgrounds.
+Afora's visual language is a **dark-first, glass-surface system** built around a deep charcoal base (`#0e1015`), a punchy signature red accent (`#ff5c5c`), and layered frosted-glass surfaces that create depth without solid panels. Motion is crisp and purposeful — fast micro-interactions (100ms) with spring-loaded expansions. All interactive elements meet WCAG 2.1 AA contrast requirements on dark backgrounds.
 
 ## Contents
 

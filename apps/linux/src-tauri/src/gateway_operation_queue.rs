@@ -27,7 +27,7 @@ impl GatewayOperationQueue {
     {
         Self {
             executor: OperationExecutor::new(
-                "openclaw-gateway-operations",
+                "afora-gateway-operations",
                 move |request: QueuedGatewayOperation| {
                     let result = sink(request.operation);
                     if let Some(reply) = request.reply {

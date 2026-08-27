@@ -1,13 +1,13 @@
-import { isRecord } from "@openclaw/normalization-core";
+import { isRecord } from "@afora/normalization-core";
 import { patchSettings, type UiSettings } from "../../app/settings.ts";
 import { updateSidebarSessionLayout } from "./sidebar-layout-persistence.ts";
 import { openSlot, type SidebarLayout, type SidebarSlotId } from "./sidebar-layout.ts";
 
-const MIGRATION_MARKER_KEY = "openclaw.chat.sidePanel.legacyDockVisibility.v1";
+const MIGRATION_MARKER_KEY = "afora.chat.sidePanel.legacyDockVisibility.v1";
 
 const LEGACY_DOCKS = [
-  { storageKey: "openclaw.browser.panel.v1", slot: "browser" },
-  { storageKey: "openclaw.desktopPanel", slot: "desktop" },
+  { storageKey: "afora.browser.panel.v1", slot: "browser" },
+  { storageKey: "afora.desktopPanel", slot: "desktop" },
 ] as const satisfies ReadonlyArray<{ storageKey: string; slot: SidebarSlotId }>;
 
 function legacyDockWasOpen(storage: Storage, storageKey: string): boolean {

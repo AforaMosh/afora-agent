@@ -2,7 +2,7 @@
 import crypto from "node:crypto";
 import { resolveRuntimeConfigCacheKey } from "../config/runtime-snapshot.js";
 import type { SessionToolOverrides } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { logWarn } from "../logger.js";
 import type { PluginManifestRegistry } from "../plugins/manifest-registry.js";
 import { PluginLruCache } from "../plugins/plugin-cache-primitives.js";
@@ -26,11 +26,11 @@ type SessionMcpConfigDiscoveryCacheEntry = {
 };
 
 const SESSION_MCP_CONFIG_DISCOVERY_CACHE_KEY = Symbol.for(
-  "openclaw.sessionMcpConfigDiscoveryCache.pluginLru.v1",
+  "afora.sessionMcpConfigDiscoveryCache.pluginLru.v1",
 );
 const SESSION_MCP_CONFIG_DISCOVERY_CACHE_LIMIT = 128;
 const SESSION_MCP_PREPARED_CONFIG_VARIANT_LIMIT = 64;
-const EMPTY_OPENCLAW_CONFIG: OpenClawConfig = {};
+const EMPTY_AFORA_CONFIG: AforaConfig = {};
 
 type SessionMcpConfigDiscoveryCacheState = {
   entries: PluginLruCache<SessionMcpConfigDiscoveryCacheEntry>;
@@ -66,7 +66,7 @@ function resolveManifestRegistryCacheId(
 
 function buildSessionMcpConfigDiscoveryCacheKey(params: {
   workspaceDir: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
   toolOverrides?: Pick<SessionToolOverrides, "mcpServers">;
 }): string {
@@ -74,7 +74,7 @@ function buildSessionMcpConfigDiscoveryCacheKey(params: {
   return JSON.stringify({
     v: 1,
     workspaceDir: params.workspaceDir,
-    config: resolveRuntimeConfigCacheKey(params.cfg ?? EMPTY_OPENCLAW_CONFIG),
+    config: resolveRuntimeConfigCacheKey(params.cfg ?? EMPTY_AFORA_CONFIG),
     manifestRegistry: resolveManifestRegistryCacheId(params.manifestRegistry),
     mcpServers: params.toolOverrides?.mcpServers
       ? Object.fromEntries(
@@ -96,7 +96,7 @@ function clonePreparedSessionMcpConfig(
 
 function loadCachedEmbeddedAgentMcpConfig(params: {
   workspaceDir: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
   toolOverrides?: Pick<SessionToolOverrides, "mcpServers">;
 }): SessionMcpConfigDiscoveryCacheEntry {
@@ -221,7 +221,7 @@ function filterMcpServers<T>(
 
 export function loadSessionMcpConfig(params: {
   workspaceDir: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   logDiagnostics?: boolean;
   manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
   includeServerNames?: ReadonlySet<string>;
@@ -298,7 +298,7 @@ export function loadSessionMcpConfig(params: {
  */
 export function resolveSessionMcpConfigSummary(params: {
   workspaceDir: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
   toolOverrides?: Pick<SessionToolOverrides, "mcpServers" | "mcpToolsDeny">;
 }): { fingerprint: string; serverNames: string[] } {
@@ -335,7 +335,7 @@ export function resolveSessionMcpConfigSummary(params: {
 /** Reads the enabled static MCP server set without opening transports or listing tools. */
 export function resolveStaticSessionMcpServerNames(params: {
   workspaceDir: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
   toolOverrides?: Pick<SessionToolOverrides, "mcpServers" | "mcpToolsDeny">;
 }): string[] {

@@ -3,7 +3,7 @@ import {
   resolveScopeRequireMention,
   resolveScopeToolsPolicy,
   type GroupToolPolicyConfig,
-} from "openclaw/plugin-sdk/channel-policy";
+} from "afora-agent/plugin-sdk/channel-policy";
 import { resolveMatrixAccountConfig } from "./matrix/accounts.js";
 import { buildMatrixRoomScopeTree, resolveMatrixRoomScopePath } from "./matrix/monitor/rooms.js";
 import { normalizeMatrixResolvableTarget } from "./matrix/target-ids.js";

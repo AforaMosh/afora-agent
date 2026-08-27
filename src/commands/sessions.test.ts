@@ -248,7 +248,7 @@ describe("sessionsCommand", () => {
       sessions?: Array<{ key: string }>;
     }>(sessionsCommand, store);
 
-    expect(payload.path).toMatch(/openclaw-agent\.sqlite$/u);
+    expect(payload.path).toMatch(/afora-agent\.sqlite$/u);
     expect(payload.path).not.toContain("sessions.json");
     expect(payload.sessions?.find((row) => row.key === "agent:main:main")).not.toHaveProperty(
       "sessionFile",

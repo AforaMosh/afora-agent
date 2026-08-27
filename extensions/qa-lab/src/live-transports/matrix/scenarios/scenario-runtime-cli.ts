@@ -1,16 +1,16 @@
 // QA Lab Matrix plugin module implements scenario runtime cli behavior.
-import { spawn as startOpenClawCliProcess } from "node:child_process";
+import { spawn as startAforaCliProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { chmod, mkdir, mkdtemp, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { redactSensitiveText } from "openclaw/plugin-sdk/logging-core";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { redactSensitiveText } from "afora-agent/plugin-sdk/logging-core";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
 import { createQaPosixCommandSettlement } from "../../../posix-command-settlement.js";
 import {
   killMatrixQaCliChild,
-  resolveMatrixQaOpenClawCliEntryPath,
+  resolveMatrixQaAforaCliEntryPath,
 } from "./scenario-runtime-cli-process.js";
 
 export type MatrixQaCliRunResult = {
@@ -65,7 +65,7 @@ export function redactMatrixQaCliOutput(text: string): string {
 }
 
 export function formatMatrixQaCliCommand(args: string[]) {
-  return `openclaw ${redactMatrixQaCliArgs(args).join(" ")}`;
+  return `afora ${redactMatrixQaCliArgs(args).join(" ")}`;
 }
 
 function buildMatrixQaCliResult(params: {
@@ -101,7 +101,7 @@ function formatMatrixQaCliTimeoutError(result: MatrixQaCliRunResult, timeoutMs: 
     .join("\n");
 }
 
-export function startMatrixQaOpenClawCli(params: {
+export function startMatrixQaAforaCli(params: {
   allowNonZero?: boolean;
   args: string[];
   cwd?: string;
@@ -110,7 +110,7 @@ export function startMatrixQaOpenClawCli(params: {
   timeoutMs: number;
 }): MatrixQaCliSession {
   const cwd = params.cwd ?? process.cwd();
-  const distEntryPath = resolveMatrixQaOpenClawCliEntryPath(cwd);
+  const distEntryPath = resolveMatrixQaAforaCliEntryPath(cwd);
   const stdout: Buffer[] = [];
   const stderr: Buffer[] = [];
   let closed = false;
@@ -123,7 +123,7 @@ export function startMatrixQaOpenClawCli(params: {
       }
     | undefined;
 
-  const child = startOpenClawCliProcess(process.execPath, [distEntryPath, ...params.args], {
+  const child = startAforaCliProcess(process.execPath, [distEntryPath, ...params.args], {
     cwd,
     detached: process.platform !== "win32",
     env: params.env,
@@ -270,7 +270,7 @@ export function startMatrixQaOpenClawCli(params: {
   };
 }
 
-export async function runMatrixQaOpenClawCli(params: {
+export async function runMatrixQaAforaCli(params: {
   allowNonZero?: boolean;
   args: string[];
   cwd?: string;
@@ -278,7 +278,7 @@ export async function runMatrixQaOpenClawCli(params: {
   stdin?: string;
   timeoutMs: number;
 }): Promise<MatrixQaCliRunResult> {
-  return await startMatrixQaOpenClawCli(params).wait();
+  return await startMatrixQaAforaCli(params).wait();
 }
 
 async function assertMatrixQaPrivatePathMode(pathToCheck: string, label: string) {
@@ -291,7 +291,7 @@ async function assertMatrixQaPrivatePathMode(pathToCheck: string, label: string)
   }
 }
 
-export async function createMatrixQaOpenClawCliRuntime(params: {
+export async function createMatrixQaAforaCliRuntime(params: {
   accountId: string;
   accessToken: string;
   artifactLabel: string;
@@ -303,7 +303,7 @@ export async function createMatrixQaOpenClawCliRuntime(params: {
   userId: string;
 }) {
   const rootDir = await mkdtemp(
-    path.join(resolvePreferredOpenClawTmpDir(), "openclaw-matrix-cli-qa-"),
+    path.join(resolvePreferredAforaTmpDir(), "afora-matrix-cli-qa-"),
   );
   const artifactDir = path.join(
     params.outputDir,
@@ -361,9 +361,9 @@ export async function createMatrixQaOpenClawCliRuntime(params: {
     ...params.runtimeEnv,
     FORCE_COLOR: "0",
     NO_COLOR: "1",
-    OPENCLAW_CONFIG_PATH: configPath,
-    OPENCLAW_NO_AUTO_UPDATE: "1",
-    OPENCLAW_STATE_DIR: stateDir,
+    AFORA_CONFIG_PATH: configPath,
+    AFORA_NO_AUTO_UPDATE: "1",
+    AFORA_STATE_DIR: stateDir,
   };
   return {
     artifactDir,
@@ -375,7 +375,7 @@ export async function createMatrixQaOpenClawCliRuntime(params: {
       args: string[],
       opts: { allowNonZero?: boolean; stdin?: string; timeoutMs: number },
     ): Promise<MatrixQaCliRunResult> =>
-      await runMatrixQaOpenClawCli({
+      await runMatrixQaAforaCli({
         allowNonZero: opts.allowNonZero,
         args,
         env,
@@ -383,7 +383,7 @@ export async function createMatrixQaOpenClawCliRuntime(params: {
         timeoutMs: opts.timeoutMs,
       }),
     start: (args: string[], opts: { allowNonZero?: boolean; timeoutMs: number }) =>
-      startMatrixQaOpenClawCli({
+      startMatrixQaAforaCli({
         allowNonZero: opts.allowNonZero,
         args,
         env,

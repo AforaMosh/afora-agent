@@ -6,7 +6,7 @@ read_when:
 title: "Tools invoke API"
 ---
 
-OpenClaw's Gateway exposes an HTTP endpoint for invoking a single tool directly. It is always enabled and uses Gateway auth plus tool policy. Like the OpenAI-compatible `/v1/*` surface, shared-secret bearer auth is treated as trusted operator access for the whole gateway.
+Afora's Gateway exposes an HTTP endpoint for invoking a single tool directly. It is always enabled and uses Gateway auth plus tool policy. Like the OpenAI-compatible `/v1/*` surface, shared-secret bearer auth is treated as trusted operator access for the whole gateway.
 
 - `POST /tools/invoke`
 - Same port as the Gateway (WS + HTTP multiplex): `http://<gateway-host>:<port>/tools/invoke`
@@ -24,10 +24,10 @@ Common HTTP auth paths:
 
 Notes:
 
-- `mode="token"` uses `gateway.auth.token` (or `OPENCLAW_GATEWAY_TOKEN`).
-- `mode="password"` uses `gateway.auth.password` (or `OPENCLAW_GATEWAY_PASSWORD`).
+- `mode="token"` uses `gateway.auth.token` (or `AFORA_GATEWAY_TOKEN`).
+- `mode="password"` uses `gateway.auth.password` (or `AFORA_GATEWAY_PASSWORD`).
 - `mode="trusted-proxy"` requires the HTTP request to come from a configured trusted proxy source; same-host loopback proxies require explicit `gateway.auth.trustedProxy.allowLoopback = true`.
-- Internal same-host callers that bypass the proxy can use `gateway.auth.password` / `OPENCLAW_GATEWAY_PASSWORD` as a local direct fallback. Any `Forwarded`, `X-Forwarded-*`, or `X-Real-IP` header evidence keeps the request on the trusted-proxy path instead.
+- Internal same-host callers that bypass the proxy can use `gateway.auth.password` / `AFORA_GATEWAY_PASSWORD` as a local direct fallback. Any `Forwarded`, `X-Forwarded-*`, or `X-Real-IP` header evidence keeps the request on the trusted-proxy path instead.
 - If `gateway.auth.rateLimit` is configured and too many auth failures occur, the endpoint returns `429` with `Retry-After`.
 
 ## Security boundary (important)
@@ -36,17 +36,17 @@ Treat this endpoint as a **full operator-access** surface for the gateway instan
 
 - HTTP bearer auth here is not a narrow per-user scope model.
 - A valid Gateway token/password for this endpoint should be treated like an owner/operator credential.
-- For shared-secret auth modes (`token` and `password`), the endpoint restores the normal full operator defaults even if the caller sends a narrower `x-openclaw-scopes` header.
+- For shared-secret auth modes (`token` and `password`), the endpoint restores the normal full operator defaults even if the caller sends a narrower `x-afora-scopes` header.
 - Shared-secret auth also treats direct tool invokes on this endpoint as owner-sender turns.
-- Trusted identity-bearing HTTP modes (trusted proxy auth, or `gateway.auth.mode="none"` on a private ingress) honor `x-openclaw-scopes` when present and otherwise fall back to the normal operator default scope set.
+- Trusted identity-bearing HTTP modes (trusted proxy auth, or `gateway.auth.mode="none"` on a private ingress) honor `x-afora-scopes` when present and otherwise fall back to the normal operator default scope set.
 - Keep this endpoint on loopback/tailnet/private ingress only; do not expose it directly to the public internet.
 
 Auth matrix:
 
 | Auth mode                                                                               | Behavior                                                                                                                                                                                                                                                                                                               |
 | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `token` or `password` + `Authorization: Bearer ...`                                     | Proves possession of the shared gateway operator secret. Ignores narrower `x-openclaw-scopes`. Restores the full default operator scope set: `operator.admin`, `operator.approvals`, `operator.pairing`, `operator.read`, `operator.talk.secrets`, `operator.write`. Treats direct tool invokes as owner-sender turns. |
-| Trusted identity-bearing HTTP (trusted proxy auth, or `mode="none"` on private ingress) | Authenticates an outer trusted identity or deployment boundary. Honors `x-openclaw-scopes` when present. Falls back to the normal operator default scope set when the header is absent. Only loses owner semantics when the caller explicitly narrows scopes and omits `operator.admin`.                               |
+| `token` or `password` + `Authorization: Bearer ...`                                     | Proves possession of the shared gateway operator secret. Ignores narrower `x-afora-scopes`. Restores the full default operator scope set: `operator.admin`, `operator.approvals`, `operator.pairing`, `operator.read`, `operator.talk.secrets`, `operator.write`. Treats direct tool invokes as owner-sender turns. |
+| Trusted identity-bearing HTTP (trusted proxy auth, or `mode="none"` on private ingress) | Authenticates an outer trusted identity or deployment boundary. Honors `x-afora-scopes` when present. Falls back to the normal operator default scope set when the header is absent. Only loses owner semantics when the caller explicitly narrows scopes and omits `operator.admin`.                               |
 
 ## Request body
 
@@ -126,10 +126,10 @@ Customize the general deny list via `gateway.tools`:
 
 To help group policies resolve context, you can optionally set:
 
-- `x-openclaw-message-channel: <channel>` (example: `slack`, `telegram`)
-- `x-openclaw-account-id: <accountId>` (when multiple accounts exist)
-- `x-openclaw-message-to: <target>` (delivery target for message-tool policy)
-- `x-openclaw-thread-id: <threadId>` (thread context for message-tool policy)
+- `x-afora-message-channel: <channel>` (example: `slack`, `telegram`)
+- `x-afora-account-id: <accountId>` (when multiple accounts exist)
+- `x-afora-message-to: <target>` (delivery target for message-tool policy)
+- `x-afora-thread-id: <threadId>` (thread context for message-tool policy)
 
 ## Responses
 

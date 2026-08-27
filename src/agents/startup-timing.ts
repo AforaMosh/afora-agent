@@ -1,8 +1,8 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { measureDiagnosticsTimelineSpan } from "../infra/diagnostics-timeline.js";
 
 type AgentStartupTimingOptions = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
 };
 

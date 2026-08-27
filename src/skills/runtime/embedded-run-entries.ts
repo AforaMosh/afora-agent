@@ -1,5 +1,5 @@
 // Embedded run entry helpers serialize runtime skill metadata for agent run records.
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveSkillRuntimeConfig } from "../loading/runtime-config.js";
 import { loadWorkspaceSkills } from "../loading/workspace-skill-loader.js";
 import type { SkillEligibilityContext, SkillEntry, SkillSnapshot } from "../types.js";
@@ -7,7 +7,7 @@ import type { SkillEligibilityContext, SkillEntry, SkillSnapshot } from "../type
 /** Resolves skill entries embedded into a run payload into runtime-visible entries. */
 export function resolveEmbeddedRunSkillEntries(params: {
   workspaceDir: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   eligibility?: SkillEligibilityContext;
   skillsSnapshot?: SkillSnapshot;

@@ -1,9 +1,9 @@
 // Telegram plugin module implements bot message context.route test support behavior.
-import { buildChannelInboundEventContext } from "openclaw/plugin-sdk/channel-inbound";
+import { buildChannelInboundEventContext } from "afora-agent/plugin-sdk/channel-inbound";
 import {
   clearRuntimeConfigSnapshot,
   setRuntimeConfigSnapshot,
-} from "openclaw/plugin-sdk/runtime-config-snapshot";
+} from "afora-agent/plugin-sdk/runtime-config-snapshot";
 import { vi, type Mock } from "vitest";
 
 type AsyncUnknownMock = Mock<(...args: unknown[]) => Promise<unknown>>;
@@ -33,7 +33,7 @@ export const telegramRouteTestSessionRuntime: NonNullable<
   resolveInboundLastRouteSessionKey: ({ route, sessionKey }) =>
     route.lastRoutePolicy === "main" ? route.mainSessionKey : sessionKey,
   resolvePinnedMainDmOwnerFromAllowlist: () => null,
-  resolveStorePath: () => "/tmp/openclaw/session-store.json",
+  resolveStorePath: () => "/tmp/afora/session-store.json",
 };
 
 export async function loadTelegramMessageContextRouteHarness() {

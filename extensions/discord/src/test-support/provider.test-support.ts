@@ -1,6 +1,6 @@
 // Discord provider module implements model/runtime integration.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
 import type { Mock } from "vitest";
 import { expect, vi } from "vitest";
 
@@ -18,7 +18,7 @@ type ProviderMonitorTestMocks = {
   createDiscordAutoPresenceControllerMock: Mock<() => unknown>;
   createDiscordExecApprovalButtonContextMock: Mock<
     (params?: {
-      cfg?: OpenClawConfig;
+      cfg?: AforaConfig;
       accountId?: string;
       config?: unknown;
       gatewayUrl?: string;
@@ -33,7 +33,7 @@ type ProviderMonitorTestMocks = {
   createdBindingManagers: Array<{ stop: ReturnType<typeof vi.fn> }>;
   getAcpSessionStatusMock: Mock<
     (params: {
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       sessionKey: string;
       signal?: AbortSignal;
     }) => Promise<{ state: string }>
@@ -119,7 +119,7 @@ const providerMonitorTestMocks: ProviderMonitorTestMocks = vi.hoisted(() => {
     })),
     createdBindingManagers,
     getAcpSessionStatusMock: vi.fn(
-      async (_params: { cfg: OpenClawConfig; sessionKey: string; signal?: AbortSignal }) => ({
+      async (_params: { cfg: AforaConfig; sessionKey: string; signal?: AbortSignal }) => ({
         state: "idle",
       }),
     ),
@@ -267,7 +267,7 @@ export const baseRuntime = (): RuntimeEnv => ({
   exit: vi.fn(),
 });
 
-export const baseConfig = (): OpenClawConfig =>
+export const baseConfig = (): AforaConfig =>
   ({
     channels: {
       discord: {
@@ -278,7 +278,7 @@ export const baseConfig = (): OpenClawConfig =>
         },
       },
     },
-  }) as OpenClawConfig;
+  }) as AforaConfig;
 
 vi.mock("../internal/discord.js", async () => {
   const actual =
@@ -342,9 +342,9 @@ vi.mock("../internal/voice.js", () => ({
   VoicePlugin: function VoicePlugin() {},
 }));
 
-vi.mock("openclaw/plugin-sdk/acp-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/acp-runtime")>(
-    "openclaw/plugin-sdk/acp-runtime",
+vi.mock("afora-agent/plugin-sdk/acp-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/acp-runtime")>(
+    "afora-agent/plugin-sdk/acp-runtime",
   );
   return {
     ...actual,
@@ -356,9 +356,9 @@ vi.mock("openclaw/plugin-sdk/acp-runtime", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/command-auth-native", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/command-auth-native")>(
-    "openclaw/plugin-sdk/command-auth-native",
+vi.mock("afora-agent/plugin-sdk/command-auth-native", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/command-auth-native")>(
+    "afora-agent/plugin-sdk/command-auth-native",
   );
   return {
     ...actual,
@@ -366,9 +366,9 @@ vi.mock("openclaw/plugin-sdk/command-auth-native", async () => {
     listSkillCommandsForAgents: listSkillCommandsForAgentsMock,
   };
 });
-vi.mock("openclaw/plugin-sdk/reply-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/reply-runtime")>(
-    "openclaw/plugin-sdk/reply-runtime",
+vi.mock("afora-agent/plugin-sdk/reply-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/reply-runtime")>(
+    "afora-agent/plugin-sdk/reply-runtime",
   );
   return {
     ...actual,
@@ -376,10 +376,10 @@ vi.mock("openclaw/plugin-sdk/reply-runtime", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/native-command-config-runtime", async () => {
+vi.mock("afora-agent/plugin-sdk/native-command-config-runtime", async () => {
   const actual = await vi.importActual<
-    typeof import("openclaw/plugin-sdk/native-command-config-runtime")
-  >("openclaw/plugin-sdk/native-command-config-runtime");
+    typeof import("afora-agent/plugin-sdk/native-command-config-runtime")
+  >("afora-agent/plugin-sdk/native-command-config-runtime");
   return {
     ...actual,
     isNativeCommandsExplicitlyDisabled: isNativeCommandsExplicitlyDisabledMock,
@@ -388,19 +388,19 @@ vi.mock("openclaw/plugin-sdk/native-command-config-runtime", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/runtime-config-snapshot", async () => {
+vi.mock("afora-agent/plugin-sdk/runtime-config-snapshot", async () => {
   const actual = await vi.importActual<
-    typeof import("openclaw/plugin-sdk/runtime-config-snapshot")
-  >("openclaw/plugin-sdk/runtime-config-snapshot");
+    typeof import("afora-agent/plugin-sdk/runtime-config-snapshot")
+  >("afora-agent/plugin-sdk/runtime-config-snapshot");
   return {
     ...actual,
     getRuntimeConfig: () => ({}),
   };
 });
 
-vi.mock("openclaw/plugin-sdk/runtime-env", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/runtime-env")>(
-    "openclaw/plugin-sdk/runtime-env",
+vi.mock("afora-agent/plugin-sdk/runtime-env", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/runtime-env")>(
+    "afora-agent/plugin-sdk/runtime-env",
   );
   return {
     ...actual,
@@ -423,9 +423,9 @@ vi.mock("openclaw/plugin-sdk/runtime-env", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/error-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/error-runtime")>(
-    "openclaw/plugin-sdk/error-runtime",
+vi.mock("afora-agent/plugin-sdk/error-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/error-runtime")>(
+    "afora-agent/plugin-sdk/error-runtime",
   );
   return {
     ...actual,

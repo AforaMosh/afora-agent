@@ -1,7 +1,7 @@
 // Covers limiting persisted history by recent user turns.
 
-import { expectDefined } from "@openclaw/normalization-core";
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
+import { expectDefined } from "@afora/normalization-core";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
 import { describe, expect, it } from "vitest";
 import { limitHistoryTurns } from "./embedded-agent-runner/history.js";
 
@@ -203,7 +203,7 @@ describe("limitHistoryTurns", () => {
   it("preserves the reset kept-tail prelude while limiting post-boundary turns", () => {
     const prelude = makeMessages(["user", "assistant"]);
     for (const message of prelude) {
-      Object.defineProperty(message, Symbol.for("openclaw.sessionHistoryPrelude"), {
+      Object.defineProperty(message, Symbol.for("afora.sessionHistoryPrelude"), {
         enumerable: false,
         value: true,
       });

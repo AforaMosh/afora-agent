@@ -8,7 +8,7 @@ import { TEAMS_MEETINGS_PLATFORM_ADAPTER } from "./teams-meetings-platform-adapt
 export const URL =
   "https://teams.microsoft.com/l/meetup-join/19%3ameeting_test%40thread.v2/0?context=%7b%7d";
 export const CONSUMER_URL = "https://teams.live.com/meet/9326458712345?p=abc";
-export const MEETING_STATE_KEY = "__openclawTeamsMeeting";
+export const MEETING_STATE_KEY = "__aforaTeamsMeeting";
 
 export function consumerLightMeetingUrl(meetingCode: string, passcode: string) {
   const coordinates = btoa(JSON.stringify({ meetingCode, passcode }));
@@ -308,17 +308,17 @@ export async function runStatusScript(params: StatusScriptParams) {
     window[MEETING_STATE_KEY] = params.priorMeeting;
   }
   if (params.priorAudioOutputs) {
-    window["__openclawTeamsAudioOutputs"] = params.priorAudioOutputs;
+    window["__aforaTeamsAudioOutputs"] = params.priorAudioOutputs;
   }
   if (params.priorCaptions) {
-    window["__openclawTeamsCaptions"] = params.priorCaptions;
+    window["__aforaTeamsCaptions"] = params.priorCaptions;
   }
   const script = teamsMeetingStatusScript({
     allowMicrophone: params.allowMicrophone ?? false,
     allowSessionAdoption: params.allowSessionAdoption ?? true,
     autoJoin: params.autoJoin ?? true,
     captureCaptions: params.captureCaptions ?? false,
-    guestName: "OpenClaw Guest",
+    guestName: "Afora Guest",
     meetingSessionId: params.meetingSessionId === undefined ? "session-1" : params.meetingSessionId,
     meetingUrl: params.meetingUrl ?? URL,
     readOnly: params.readOnly,
@@ -386,7 +386,7 @@ type StatusScriptPage = Awaited<ReturnType<typeof runStatusScript>>;
 export function continueStatusScript(previous: StatusScriptPage, params: StatusScriptParams = {}) {
   return runStatusScript({
     ...params,
-    priorAudioOutputs: previous.window["__openclawTeamsAudioOutputs"] as unknown[],
+    priorAudioOutputs: previous.window["__aforaTeamsAudioOutputs"] as unknown[],
     priorMeeting: previous.window[MEETING_STATE_KEY] as Record<string, unknown>,
   });
 }
@@ -398,7 +398,7 @@ export function runCaptionRows(
 ) {
   return runCaptionStatusScript({
     captionRows,
-    priorCaptions: previous?.window["__openclawTeamsCaptions"],
+    priorCaptions: previous?.window["__aforaTeamsCaptions"],
     ...params,
   });
 }
@@ -459,7 +459,7 @@ export function runLeaveScript(params: {
     };
   }
   if (params.priorAudioOutputs) {
-    window["__openclawTeamsAudioOutputs"] = params.priorAudioOutputs;
+    window["__aforaTeamsAudioOutputs"] = params.priorAudioOutputs;
   }
   const run = runInNewContext(
     `(${teamsMeetingLeaveScript({ leaveInitiated: params.leaveInitiated ?? false, meetingSessionId: params.meetingSessionId ?? "session-1", meetingUrl: URL })})`,

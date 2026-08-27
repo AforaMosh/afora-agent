@@ -1,5 +1,5 @@
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   resolveProviderModelMaterializationAuthMode,
   resolveProviderModelRouteMaterializationAuthMode,
@@ -40,7 +40,7 @@ function modelMatchesPreparedTarget(params: {
 }
 
 type PreparedRuntimeModelRequest = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   authProfileId?: string;
   authProfileMode?: ProviderModelRouteMaterializationAuthMode;
 };
@@ -50,7 +50,7 @@ export async function materializePreparedRuntimeModel<Model extends RuntimeRoute
   plan: AgentRuntimeAuthPlan;
   provider: string;
   modelId: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   model?: Model;
   /** Re-resolve when a later auth candidate changes credential-scoped model metadata. */
   forceResolve?: boolean;

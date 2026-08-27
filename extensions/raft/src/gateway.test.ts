@@ -1,12 +1,12 @@
 import { EventEmitter } from "node:events";
-import type { ChannelGatewayContext } from "openclaw/plugin-sdk/channel-contract";
-import { createChannelReplayGuard } from "openclaw/plugin-sdk/persistent-dedupe";
-import { resetPluginStateStoreForTests } from "openclaw/plugin-sdk/plugin-state-test-runtime";
+import type { ChannelGatewayContext } from "afora-agent/plugin-sdk/channel-contract";
+import { createChannelReplayGuard } from "afora-agent/plugin-sdk/persistent-dedupe";
+import { resetPluginStateStoreForTests } from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import {
-  resolvePreferredOpenClawTmpDir,
+  resolvePreferredAforaTmpDir,
   tempWorkspaceSync,
   type TempWorkspaceSync,
-} from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/temp-path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ResolvedRaftAccount } from "./accounts.js";
 import { startRaftGatewayAccount } from "./gateway.js";
@@ -64,7 +64,7 @@ function createContext(accountId = "default") {
       name: null,
       enabled: true,
       configured: true,
-      profile: "openclaw",
+      profile: "afora",
     },
     runtime: {},
     abortSignal: new AbortController().signal,
@@ -89,7 +89,7 @@ function createContext(accountId = "default") {
         buildContext,
       },
       session: {
-        resolveStorePath: vi.fn(() => "/tmp/openclaw-agent.sqlite"),
+        resolveStorePath: vi.fn(() => "/tmp/afora-agent.sqlite"),
         recordInboundSession: vi.fn(),
       },
       reply: {
@@ -118,7 +118,7 @@ function createPersistentWakeDedupe(stateDir: string) {
       pluginId: "raft",
       namespacePrefix: "raft-wake-dedupe",
       stateMaxEntries: 10_000,
-      env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+      env: { ...process.env, AFORA_STATE_DIR: stateDir },
     },
     buildReplayKey: (event) => event.key,
     namespace: (event) => event.accountId,
@@ -423,8 +423,8 @@ describe("Raft wake gateway", () => {
 
   it("persists accepted wake dedupe across restarts without crossing accounts", async () => {
     const workspace = tempWorkspaceSync({
-      rootDir: resolvePreferredOpenClawTmpDir(),
-      prefix: "openclaw-raft-wake-dedupe-",
+      rootDir: resolvePreferredAforaTmpDir(),
+      prefix: "afora-raft-wake-dedupe-",
     });
     tempWorkspaces.push(workspace);
     const stateDir = workspace.dir;

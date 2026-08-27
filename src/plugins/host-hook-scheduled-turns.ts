@@ -3,8 +3,8 @@ import { randomUUID } from "node:crypto";
 import {
   resolveExpiresAtMsFromDurationMs,
   timestampMsToIsoString,
-} from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { CronServiceContract } from "../cron/service-contract.js";
 import {
   readCanonicalCronListPage,

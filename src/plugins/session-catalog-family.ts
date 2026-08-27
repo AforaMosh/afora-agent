@@ -1,4 +1,4 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import type {
   SessionCatalogHost,
   SessionCatalogSession,
@@ -20,9 +20,9 @@ import {
   type SessionCatalogProvider,
 } from "./session-catalog.js";
 import type {
-  OpenClawPluginNodeHostCommand,
-  OpenClawPluginNodeHostCommandAvailabilityContext,
-  OpenClawPluginNodeInvokePolicy,
+  AforaPluginNodeHostCommand,
+  AforaPluginNodeHostCommandAvailabilityContext,
+  AforaPluginNodeInvokePolicy,
 } from "./types.js";
 
 type SessionCatalogPage = {
@@ -546,8 +546,8 @@ export type SessionCatalogNodeHostBindingsOptions = {
   sessionIdPattern: RegExp;
   executable: string;
   args: (threadId: string) => string[];
-  listAvailable: (context: OpenClawPluginNodeHostCommandAvailabilityContext) => boolean;
-  terminalAvailable: (context: OpenClawPluginNodeHostCommandAvailabilityContext) => boolean;
+  listAvailable: (context: AforaPluginNodeHostCommandAvailabilityContext) => boolean;
+  terminalAvailable: (context: AforaPluginNodeHostCommandAvailabilityContext) => boolean;
   parseParams: (paramsJSON?: string | null) => unknown;
   list: (params: unknown) => Promise<SessionCatalogPage>;
   read: (params: unknown) => Promise<SessionsCatalogReadResult>;
@@ -561,10 +561,10 @@ export type SessionCatalogNodeHostBindingsOptions = {
 export function createSessionCatalogNodeHostBindings(
   options: SessionCatalogNodeHostBindingsOptions,
 ): {
-  commands: OpenClawPluginNodeHostCommand[];
-  policies: OpenClawPluginNodeInvokePolicy[];
+  commands: AforaPluginNodeHostCommand[];
+  policies: AforaPluginNodeInvokePolicy[];
 } {
-  const terminal: OpenClawPluginNodeHostCommand = {
+  const terminal: AforaPluginNodeHostCommand = {
     command: options.terminalCommand,
     cap: options.capability,
     dangerous: false,

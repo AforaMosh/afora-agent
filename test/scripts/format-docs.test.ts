@@ -17,7 +17,7 @@ const { createTempDir } = createScriptTestHarness();
 
 function writeDocsFixture(root: string): void {
   fs.mkdirSync(path.join(root, "docs"), { recursive: true });
-  fs.writeFileSync(path.join(root, "README.md"), "# OpenClaw\n", "utf8");
+  fs.writeFileSync(path.join(root, "README.md"), "# Afora\n", "utf8");
   fs.writeFileSync(path.join(root, "docs", "guide.mdx"), "# Guide\n", "utf8");
 }
 
@@ -40,7 +40,7 @@ describe("format-docs", () => {
   });
 
   it("batches oxfmt invocations when docs exceed the command line budget", () => {
-    const root = createTempDir("openclaw-format-docs-batch-");
+    const root = createTempDir("afora-format-docs-batch-");
     const calls: Array<{ args: string[]; command: string }> = [];
 
     runOxfmt(
@@ -68,7 +68,7 @@ describe("format-docs", () => {
   });
 
   it("reports git and oxfmt spawn diagnostics", () => {
-    const root = createTempDir("openclaw-format-docs-failures-");
+    const root = createTempDir("afora-format-docs-failures-");
 
     expect(() =>
       docsFiles(root, {
@@ -99,7 +99,7 @@ describe("format-docs", () => {
   });
 
   it("keeps real formatter failure tails UTF-8 safe", () => {
-    const root = createTempDir("openclaw-format-docs-utf8-tail-");
+    const root = createTempDir("afora-format-docs-utf8-tail-");
     let message = "";
 
     try {
@@ -125,7 +125,7 @@ describe("format-docs", () => {
   });
 
   it("uses repository paths in write mode and temporary paths in check mode", () => {
-    const root = createTempDir("openclaw-format-docs-mode-");
+    const root = createTempDir("afora-format-docs-mode-");
     writeDocsFixture(root);
     const oxfmtFileArgs: string[][] = [];
 

@@ -23,8 +23,8 @@ suite.define(() => {
             scope: "agent",
           },
           "skills.status": {
-            workspaceDir: "/tmp/openclaw-e2e/workspace",
-            managedSkillsDir: "/tmp/openclaw-e2e/skills",
+            workspaceDir: "/tmp/afora-e2e/workspace",
+            managedSkillsDir: "/tmp/afora-e2e/skills",
             skills: [],
           },
         },
@@ -33,8 +33,8 @@ suite.define(() => {
       await page.goto(`${suite.server.baseUrl}skills`);
       await gateway.waitForRequest("skills.status");
       await gateway.resolveDeferred("skills.status", {
-        workspaceDir: "/tmp/openclaw-e2e/workspace",
-        managedSkillsDir: "/tmp/openclaw-e2e/skills",
+        workspaceDir: "/tmp/afora-e2e/workspace",
+        managedSkillsDir: "/tmp/afora-e2e/skills",
         skills: [],
       });
       await page.getByText("No skills found.").waitFor();

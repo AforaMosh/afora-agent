@@ -4,9 +4,9 @@ import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import {
-  closeOpenClawStateDatabaseForTest,
+  closeAforaStateDatabaseForTest,
   createChannelIngressQueueForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { describe, expect, it, vi } from "vitest";
 import { createIrcIngressMonitor } from "./irc-ingress.js";
 import { monitorIrcProvider } from "./monitor.js";
@@ -37,7 +37,7 @@ type IrcIngressQueue = NonNullable<Parameters<typeof createIrcIngressMonitor>[0]
 type IrcIngressPayload = Parameters<IrcIngressQueue["enqueue"]>[1];
 
 async function withIngressQueue<T>(fn: (queue: IrcIngressQueue) => Promise<T>): Promise<T> {
-  const created = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-irc-monitor-"));
+  const created = await fs.mkdtemp(path.join(os.tmpdir(), "afora-irc-monitor-"));
   const stateDir = await fs.realpath(created);
   const queue = createChannelIngressQueueForTests<IrcIngressPayload>({
     channelId: "irc",
@@ -47,7 +47,7 @@ async function withIngressQueue<T>(fn: (queue: IrcIngressQueue) => Promise<T>): 
   try {
     return await fn(queue);
   } finally {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(stateDir, { recursive: true, force: true });
   }
 }
@@ -347,8 +347,8 @@ describe("irc monitor reconnect", () => {
             tls: false,
             nick: "bot",
             username: "bot",
-            realname: "OpenClaw",
-            channels: ["#openclaw"],
+            realname: "Afora",
+            channels: ["#afora"],
           },
         },
       } as CoreConfig;
@@ -359,7 +359,7 @@ describe("irc monitor reconnect", () => {
         await waitForIrcCondition(
           () =>
             server.connectionCount >= 3 &&
-            server.lines.filter((line) => line === "USER bot 0 * :OpenClaw").length >= 3 &&
+            server.lines.filter((line) => line === "USER bot 0 * :Afora").length >= 3 &&
             statusSink.mock.calls.filter(([patch]) => patch.lifecycle).length >= 4,
           "expected IRC monitor to recover after a failed reconnect attempt",
         );
@@ -415,7 +415,7 @@ describe("irc monitor reconnect", () => {
                 tls: false,
                 nick: "receipt-bot",
                 username: "bot",
-                realname: "OpenClaw",
+                realname: "Afora",
                 dmPolicy: "pairing",
               },
             },
@@ -456,19 +456,19 @@ describe("irc monitor inbound target", () => {
   it.each([
     {
       label: "channel",
-      serverTarget: "#openclaw",
-      expected: { isGroup: true, target: "#openclaw", rawTarget: "#openclaw" },
+      serverTarget: "#afora",
+      expected: { isGroup: true, target: "#afora", rawTarget: "#afora" },
     },
     {
       label: "DM",
-      serverTarget: "openclaw-bot",
-      expected: { isGroup: false, target: "alice", rawTarget: "openclaw-bot" },
+      serverTarget: "afora-bot",
+      expected: { isGroup: false, target: "alice", rawTarget: "afora-bot" },
     },
     {
       label: "channel with a colonless body",
-      serverTarget: "#openclaw",
+      serverTarget: "#afora",
       colonlessBody: true,
-      expected: { isGroup: true, target: "#openclaw", rawTarget: "#openclaw" },
+      expected: { isGroup: true, target: "#afora", rawTarget: "#afora" },
     },
   ])(
     "maps $label targets through the monitor boundary",
@@ -488,7 +488,7 @@ describe("irc monitor inbound target", () => {
                   tls: false,
                   nick: "bot",
                   username: "bot",
-                  realname: "OpenClaw",
+                  realname: "Afora",
                 },
               },
             } as CoreConfig,
@@ -529,9 +529,9 @@ describe("irc monitor inbound target", () => {
           receivedAt,
           connectionEpoch: "previous-connection",
           connectedNick: "receipt-bot",
-          rawLine: ":receipt-bot!ident@example.org PRIVMSG #openclaw :echo",
+          rawLine: ":receipt-bot!ident@example.org PRIVMSG #afora :echo",
         },
-        { receivedAt, laneKey: "channel:#openclaw" },
+        { receivedAt, laneKey: "channel:#afora" },
       );
       const server = await startInboundIrcServer(undefined, "reconnected-bot");
       const onMessage = vi.fn();
@@ -546,7 +546,7 @@ describe("irc monitor inbound target", () => {
                 tls: false,
                 nick: "reconnected-bot",
                 username: "bot",
-                realname: "OpenClaw",
+                realname: "Afora",
               },
             },
           } as CoreConfig,
@@ -597,7 +597,7 @@ describe("irc monitor inbound target", () => {
                 tls: false,
                 nick: "receipt-bot",
                 username: "bot",
-                realname: "OpenClaw",
+                realname: "Afora",
               },
             },
           } as CoreConfig,
@@ -622,7 +622,7 @@ describe("irc monitor inbound target", () => {
     await withIngressQueue(async (ingressQueue) => {
       const activityRecord = installMonitorRuntime();
       const enqueueSpy = vi.spyOn(ingressQueue, "enqueue");
-      const server = await startInboundIrcServer("#openclaw", "bot", false, "bot");
+      const server = await startInboundIrcServer("#afora", "bot", false, "bot");
       const onMessage = vi.fn();
       let monitor: { stop: () => Promise<void> } | undefined;
       try {
@@ -635,7 +635,7 @@ describe("irc monitor inbound target", () => {
                 tls: false,
                 nick: "bot",
                 username: "bot",
-                realname: "OpenClaw",
+                realname: "Afora",
               },
             },
           } as CoreConfig,

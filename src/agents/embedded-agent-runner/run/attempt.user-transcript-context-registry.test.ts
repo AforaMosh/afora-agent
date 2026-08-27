@@ -9,14 +9,14 @@ describe("createUserTranscriptContextRegistry", () => {
       role: "user",
       content: "same",
       timestamp: 1,
-      __openclaw: { senderName: "Alice" },
+      __afora: { senderName: "Alice" },
     } as AgentMessage;
     const queuedRuntime = { role: "user", content: "queued", timestamp: 2 } as AgentMessage;
     const queuedTranscript = {
       role: "user",
       content: "queued",
       timestamp: 2,
-      __openclaw: { senderName: "Bob" },
+      __afora: { senderName: "Bob" },
     } as AgentMessage;
     const registry = createUserTranscriptContextRegistry();
 

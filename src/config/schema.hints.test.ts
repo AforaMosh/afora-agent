@@ -1,14 +1,14 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 // Verifies schema hint metadata and sensitive path handling.
-import { isSensitiveUrlConfigPath } from "@openclaw/net-policy/redact-sensitive-url";
+import { isSensitiveUrlConfigPath } from "@afora/net-policy/redact-sensitive-url";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { buildSecretInputSchema } from "../plugin-sdk/secret-input-schema.js";
 import { buildBaseHints, testApi } from "./schema.hints.js";
 import { isSensitiveConfigPath } from "./sensitive-paths.js";
-import { OpenClawSchema } from "./zod-schema.js";
-import { OpenClawSchemaShape } from "./zod-schema.root-shape.js";
+import { AforaSchema } from "./zod-schema.js";
+import { AforaSchemaShape } from "./zod-schema.root-shape.js";
 import { sensitive } from "./zod-schema.sensitive.js";
 
 const { collectMatchingSchemaPaths, mapSensitivePaths, SECTION_DOCS_URLS, SECTIONS_WITHOUT_DOCS } =
@@ -30,7 +30,7 @@ describe("section docs URLs", () => {
       ...Object.keys(SECTION_DOCS_URLS),
       ...SECTIONS_WITHOUT_DOCS,
     ]);
-    const undecidedSections = Object.keys(OpenClawSchemaShape).filter(
+    const undecidedSections = Object.keys(AforaSchemaShape).filter(
       (section) => !sectionsWithDocsDecisions.has(section),
     );
 
@@ -39,7 +39,7 @@ describe("section docs URLs", () => {
 
   it("maps every URL to an existing task-oriented docs page", () => {
     const hints = buildBaseHints();
-    const docsOrigin = "https://docs.openclaw.ai";
+    const docsOrigin = "https://docs.afora.ai";
 
     for (const [path, docsUrl] of Object.entries(SECTION_DOCS_URLS)) {
       const docsPath = docsUrl.slice(docsOrigin.length).replace(/^\//u, "");
@@ -212,12 +212,12 @@ describe("mapSensitivePaths", () => {
   });
 
   it("main schema yields correct hints (samples)", () => {
-    const schema = OpenClawSchema.toJSONSchema({
+    const schema = AforaSchema.toJSONSchema({
       target: "draft-07",
       unrepresentable: "any",
     });
-    schema.title = "OpenClawConfig";
-    const hints = mapSensitivePaths(OpenClawSchema, "", {});
+    schema.title = "AforaConfig";
+    const hints = mapSensitivePaths(AforaSchema, "", {});
 
     expect(hints["memory.search.remote.apiKey"]?.sensitive).toBe(true);
     expect(hints["agents.entries.*.memory.search.remote.apiKey"]?.sensitive).toBe(true);
@@ -249,7 +249,7 @@ describe("mapSensitivePaths", () => {
 
 describe("collectMatchingSchemaPaths", () => {
   it("finds base-config URL fields that may embed secrets", () => {
-    const paths = collectMatchingSchemaPaths(OpenClawSchema, "", isSensitiveUrlConfigPath);
+    const paths = collectMatchingSchemaPaths(AforaSchema, "", isSensitiveUrlConfigPath);
 
     expect(paths.has("mcp.servers.*.url")).toBe(true);
     expect(paths.has("models.providers.*.baseUrl")).toBe(true);

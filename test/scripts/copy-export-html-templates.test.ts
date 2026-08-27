@@ -38,7 +38,7 @@ describe("copyExportHtmlTemplates", () => {
   });
 
   it("copies authored templates and generates vendor assets only in dist", () => {
-    const projectRoot = tempDirs.make("openclaw-export-html-copy-");
+    const projectRoot = tempDirs.make("afora-export-html-copy-");
     const sourceDir = path.join(projectRoot, "src", "auto-reply", "reply", "export-html");
     fs.mkdirSync(sourceDir, { recursive: true });
     fs.writeFileSync(path.join(sourceDir, "template.html"), "<html></html>\n");
@@ -69,7 +69,7 @@ describe("copyExportHtmlTemplates", () => {
   });
 
   it("resolves relative caller roots without changing the process cwd", () => {
-    const projectRoot = tempDirs.make("openclaw-export-html-relative-root-");
+    const projectRoot = tempDirs.make("afora-export-html-relative-root-");
     const relativeRoot = path.relative(process.cwd(), projectRoot);
     const sourceDir = path.join(projectRoot, "src", "auto-reply", "reply", "export-html");
     fs.mkdirSync(sourceDir, { recursive: true });
@@ -95,7 +95,7 @@ describe("copyExportHtmlTemplates", () => {
   });
 
   it("rejects a symlinked dist root without changing its target", () => {
-    const projectRoot = tempDirs.make("openclaw-export-html-output-root-");
+    const projectRoot = tempDirs.make("afora-export-html-output-root-");
     const sourceDir = path.join(projectRoot, "src", "auto-reply", "reply", "export-html");
     const targetDir = path.join(projectRoot, "live-gateway-dist");
     fs.mkdirSync(sourceDir, { recursive: true });

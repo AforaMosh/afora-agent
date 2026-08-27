@@ -1,10 +1,10 @@
 {
-  "name": "@openclaw/twitch",
+  "name": "@afora/twitch",
   "version": "2026.8.1",
-  "description": "OpenClaw Twitch channel plugin for chat and moderation workflows.",
+  "description": "Afora Twitch channel plugin for chat and moderation workflows.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   },
   "type": "module",
   "dependencies": {
@@ -14,9 +14,9 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
@@ -25,7 +25,7 @@
       "configPromotion": true
     },
     "install": {
-      "npmSpec": "@openclaw/twitch",
+      "npmSpec": "@afora/twitch",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.4.10"
     },
@@ -33,14 +33,14 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1"
+      "aforaVersion": "2026.8.1"
     },
     "channel": {
       "id": "twitch",
       "configuredState": {
         "env": {
           "anyOf": [
-            "OPENCLAW_TWITCH_ACCESS_TOKEN"
+            "AFORA_TWITCH_ACCESS_TOKEN"
           ]
         }
       },

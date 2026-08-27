@@ -1,3 +1,3 @@
 // Memory Lancedb API module exposes the plugin public contract.
-export { definePluginEntry, type OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
-export { resolveStateDir } from "openclaw/plugin-sdk/state-paths";
+export { definePluginEntry, type AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
+export { resolveStateDir } from "afora-agent/plugin-sdk/state-paths";

@@ -1,5 +1,5 @@
 // Slack plugin module implements prepare thread context root behavior.
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 
 type SlackBotAuthorIdentity = {
   botUserId?: string;

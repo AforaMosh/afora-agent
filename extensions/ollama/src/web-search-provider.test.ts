@@ -1,7 +1,7 @@
 // Ollama tests cover web search provider plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { SecretInput } from "openclaw/plugin-sdk/secret-input";
-import { withEnvAsync } from "openclaw/plugin-sdk/test-env";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { SecretInput } from "afora-agent/plugin-sdk/secret-input";
+import { withEnvAsync } from "afora-agent/plugin-sdk/test-env";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createStreamingResponse } from "../../test-support/streaming-error-response.js";
 import { createOllamaWebSearchProvider as createContractOllamaWebSearchProvider } from "../web-search-contract-api.js";
@@ -11,7 +11,7 @@ const { fetchWithSsrFGuardMock } = vi.hoisted(() => ({
   fetchWithSsrFGuardMock: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ({
   fetchWithSsrFGuard: fetchWithSsrFGuardMock,
 }));
 
@@ -21,11 +21,11 @@ type OllamaProviderConfigOverride = Partial<{
   baseUrl: string;
   baseURL: string;
   models: NonNullable<
-    NonNullable<NonNullable<OpenClawConfig["models"]>["providers"]>[string]
+    NonNullable<NonNullable<AforaConfig["models"]>["providers"]>[string]
   >["models"];
 }>;
 
-function createOllamaConfig(provider: OllamaProviderConfigOverride = {}): OpenClawConfig {
+function createOllamaConfig(provider: OllamaProviderConfigOverride = {}): AforaConfig {
   return {
     models: {
       providers: {
@@ -40,7 +40,7 @@ function createOllamaConfig(provider: OllamaProviderConfigOverride = {}): OpenCl
   };
 }
 
-async function runOllamaWebSearchSetup(config: OpenClawConfig) {
+async function runOllamaWebSearchSetup(config: AforaConfig) {
   const provider = createOllamaWebSearchProvider();
   if (!provider.runSetup) {
     throw new Error("Expected Ollama web search setup");
@@ -98,8 +98,8 @@ function mockSuccessfulSearchResponse() {
 }
 
 async function runOllamaWebSearch(
-  config: OpenClawConfig,
-  query = "openclaw",
+  config: AforaConfig,
+  query = "afora",
   count?: number,
 ): Promise<Record<string, unknown>> {
   const tool = createOllamaWebSearchProvider().createTool({
@@ -150,7 +150,7 @@ function expectOllamaWebSearchRequest(params: {
       method: "POST",
       headers: params.headers ?? { "Content-Type": "application/json" },
       body: JSON.stringify({
-        query: params.query ?? "openclaw",
+        query: params.query ?? "afora",
         max_results: params.maxResults ?? 5,
       }),
     },
@@ -193,7 +193,7 @@ async function expectConfiguredRefFailure(input: SecretInput, message: string) {
   expect(fetchWithSsrFGuardMock).not.toHaveBeenCalled();
 }
 
-async function expectSetupNote(config: OpenClawConfig, message: string) {
+async function expectSetupNote(config: AforaConfig, message: string) {
   const { next, notes } = await runOllamaWebSearchSetup(config);
   expect(next).toBe(config);
   expect(notes).toEqual([{ title: "Ollama Web Search", message }]);
@@ -257,7 +257,7 @@ describe("ollama web search provider", () => {
     expect(fetchWithSsrFGuardMock).not.toHaveBeenCalled();
   });
 
-  it.each<[string, () => OpenClawConfig, string]>([
+  it.each<[string, () => AforaConfig, string]>([
     [
       "prefers the plugin web search base URL over the model provider host",
       () => ({
@@ -295,29 +295,29 @@ describe("ollama web search provider", () => {
     fetchWithSsrFGuardMock.mockResolvedValue(
       searchResponse(
         {
-          title: "OpenClaw",
-          url: "https://openclaw.ai/docs",
+          title: "Afora",
+          url: "https://afora.ai/docs",
           content: "Gateway docs and setup details",
         },
         release,
       ),
     );
 
-    const result = await runOllamaWebSearch(createOllamaConfig(), "openclaw docs", 3);
+    const result = await runOllamaWebSearch(createOllamaConfig(), "afora docs", 3);
 
     expectOllamaWebSearchRequest({
       url: "http://ollama.local:11434/api/experimental/web_search",
-      query: "openclaw docs",
+      query: "afora docs",
       maxResults: 3,
       policy: {
         allowPrivateNetwork: true,
         hostnameAllowlist: ["ollama.local"],
       },
     });
-    expect(result.query).toBe("openclaw docs");
+    expect(result.query).toBe("afora docs");
     expect(result.provider).toBe("ollama");
     expect(result.count).toBe(1);
-    expectSingleSearchResultUrl(result.results, "https://openclaw.ai/docs");
+    expectSingleSearchResultUrl(result.results, "https://afora.ai/docs");
     expect(release).toHaveBeenCalledTimes(1);
   });
 
@@ -455,7 +455,7 @@ describe("ollama web search provider", () => {
   it("surfaces Ollama signin guidance for 401 responses", async () => {
     fetchWithSsrFGuardMock.mockResolvedValue(guardedResponse("", { status: 401 }));
 
-    await expect(runOllamaWebSearch({}, "latest openclaw release")).rejects.toThrow(
+    await expect(runOllamaWebSearch({}, "latest afora release")).rejects.toThrow(
       "ollama signin",
     );
   });

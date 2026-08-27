@@ -2,25 +2,25 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import type {
   OpenKeyedStoreOptions,
   PluginStateSyncKeyedStore,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateKeyedStoreForTests,
   createPluginStateSyncKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import {
   clearRuntimeConfigSnapshot,
   setRuntimeConfigSnapshot,
-} from "openclaw/plugin-sdk/runtime-config-snapshot";
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+} from "afora-agent/plugin-sdk/runtime-config-snapshot";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { registerBrowserPlugin } from "../../plugin-registration.js";
-import type { OpenClawPluginApi } from "../../runtime-api.js";
+import type { AforaPluginApi } from "../../runtime-api.js";
 import type { CloseTrackedCdpTargetResult } from "./cdp.helpers.js";
 import { BROWSER_TAB_UNREACHABLE_RETIRE_MS } from "./constants.js";
 import {
@@ -44,14 +44,14 @@ vi.mock("./cdp.helpers.js", async (importOriginal) => ({
 function clearProcessLocalTabState(): void {
   const state = globalThis as Record<symbol, unknown>;
   for (const name of [
-    "openclaw.browser.session-tabs.volatile",
-    "openclaw.browser.session-tabs.volatile-cleanup",
-    "openclaw.browser.session-tabs.active-durable-keys",
-    "openclaw.browser.session-tabs.cold-native-activity",
-    "openclaw.browser.session-tabs.interaction-storage-keys",
-    "openclaw.browser.session-tabs.exact-interaction-storage-keys",
-    "openclaw.browser.session-tabs.volatile-aliases",
-    "openclaw.browser.session-tabs.exact-volatile-aliases",
+    "afora.browser.session-tabs.volatile",
+    "afora.browser.session-tabs.volatile-cleanup",
+    "afora.browser.session-tabs.active-durable-keys",
+    "afora.browser.session-tabs.cold-native-activity",
+    "afora.browser.session-tabs.interaction-storage-keys",
+    "afora.browser.session-tabs.exact-interaction-storage-keys",
+    "afora.browser.session-tabs.volatile-aliases",
+    "afora.browser.session-tabs.exact-volatile-aliases",
   ]) {
     delete state[Symbol.for(name)];
   }
@@ -69,12 +69,12 @@ function setBrowserProfileConfig(): void {
         },
       },
     },
-  } satisfies OpenClawConfig;
+  } satisfies AforaConfig;
   setRuntimeConfigSnapshot(config, config);
 }
 
 describe("durable session tab registry", () => {
-  const originalStateDir = process.env.OPENCLAW_STATE_DIR;
+  const originalStateDir = process.env.AFORA_STATE_DIR;
   let stateDir: string;
   let freshModuleCounter = 0;
 
@@ -104,7 +104,7 @@ describe("durable session tab registry", () => {
               createPluginStateKeyedStoreForTests("browser", options),
             openSyncKeyedStore,
           },
-        } as unknown as OpenClawPluginApi["runtime"],
+        } as unknown as AforaPluginApi["runtime"],
       }),
     );
   }
@@ -120,8 +120,8 @@ describe("durable session tab registry", () => {
   beforeEach(() => {
     clearRuntimeConfigSnapshot();
     clearProcessLocalTabState();
-    stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-browser-tabs-"));
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+    stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-browser-tabs-"));
+    process.env.AFORA_STATE_DIR = stateDir;
     resetPluginStateStoreForTests();
     installRuntime();
     openStore().clear();
@@ -134,9 +134,9 @@ describe("durable session tab registry", () => {
     resetPluginStateStoreForTests();
     fs.rmSync(stateDir, { recursive: true, force: true });
     if (originalStateDir === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.AFORA_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = originalStateDir;
+      process.env.AFORA_STATE_DIR = originalStateDir;
     }
   });
 

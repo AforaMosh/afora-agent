@@ -90,7 +90,7 @@ describe("readBrowserVersion", () => {
 
   describe("on Windows", () => {
     function makeWindowsChromeDir(versionDirs: string[]): string {
-      const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-chrome-win-"));
+      const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-chrome-win-"));
       const appDir = path.join(root, "Application");
       fs.mkdirSync(appDir, { recursive: true });
       for (const name of versionDirs) {

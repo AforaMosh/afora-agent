@@ -19,7 +19,7 @@ afterEach(async () => {
 
 function seedRunningProfileState(
   state: ReturnType<typeof makeState>,
-  profileName = "openclaw",
+  profileName = "afora",
 ): void {
   (state.profiles as Map<string, unknown>).set(profileName, {
     profile: { name: profileName },
@@ -73,14 +73,14 @@ describe("browser server-context tab selection lookup state", () => {
         }
       }) as never,
     }));
-    const state = makeState("openclaw");
+    const state = makeState("afora");
     state.resolved.ssrfPolicy = {};
     seedRunningProfileState(state);
-    const openclaw = createTestBrowserRouteContext({ getState: () => state }).forProfile(
-      "openclaw",
+    const afora = createTestBrowserRouteContext({ getState: () => state }).forProfile(
+      "afora",
     );
 
-    const selected = await openclaw.ensureTabAvailable();
+    const selected = await afora.ensureTabAvailable();
 
     expect(selected).toEqual(
       expect.objectContaining({
@@ -120,16 +120,16 @@ describe("browser server-context tab selection lookup state", () => {
     });
 
     global.fetch = withBrowserFetchPreconnect(fetchMock);
-    const state = makeState("openclaw");
+    const state = makeState("afora");
     const ctx = createTestBrowserRouteContext({ getState: () => state });
-    const openclaw = ctx.forProfile("openclaw");
+    const afora = ctx.forProfile("afora");
 
-    await openclaw.labelTab("DOCS_RAW", "docs");
-    await expect(openclaw.ensureTabAvailable("t1")).resolves.toEqual(
+    await afora.labelTab("DOCS_RAW", "docs");
+    await expect(afora.ensureTabAvailable("t1")).resolves.toEqual(
       expect.objectContaining({ targetId: "DOCS_RAW" }),
     );
-    await openclaw.focusTab("docs");
-    await openclaw.closeTab("t1");
+    await afora.focusTab("docs");
+    await afora.closeTab("t1");
 
     expect(fetchCallUrls(fetchMock).some((url) => url.includes("/json/activate/DOCS_RAW"))).toBe(
       true,

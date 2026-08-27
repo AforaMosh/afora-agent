@@ -1,4 +1,4 @@
-import OpenClawKit
+import AforaKit
 
 extension GatewaySettingsStore {
     struct GatewayRegistry: Codable, Equatable {

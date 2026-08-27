@@ -1,4 +1,4 @@
-import type { Result } from "@openclaw/normalization-core/result";
+import type { Result } from "@afora/normalization-core/result";
 import type { CodeModeApiVirtualFile } from "./code-mode-namespaces.js";
 
 type CodeModeBridgeMethod =

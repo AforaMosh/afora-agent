@@ -4,7 +4,7 @@ import type { Socket } from "node:net";
 import { describe, expect, it, vi } from "vitest";
 import { fetchCdpChecked, fetchJson, fetchOk } from "./cdp.helpers.js";
 
-const CDP_USERNAME = "openclaw";
+const CDP_USERNAME = "afora";
 const CDP_FIXTURE_TOKEN = "browser-cdp-transport-test";
 const EXPECTED_AUTHORIZATION = `Basic ${Buffer.from(
   `${CDP_USERNAME}:${CDP_FIXTURE_TOKEN}`,
@@ -37,7 +37,7 @@ async function startAuthenticatedCdpServer(params: {
       response.write('{"Browser":');
       return;
     }
-    response.end(JSON.stringify({ Browser: "OpenClaw transport fixture" }));
+    response.end(JSON.stringify({ Browser: "Afora transport fixture" }));
   });
   server.on("connection", (socket) => {
     sockets.add(socket);
@@ -174,7 +174,7 @@ describe("browser CDP authenticated HTTP transport", () => {
     const server = await startAuthenticatedCdpServer({ status: 200, streaming: false });
     try {
       await expect(fetchJson(server.url, 1_000)).resolves.toEqual({
-        Browser: "OpenClaw transport fixture",
+        Browser: "Afora transport fixture",
       });
 
       expect(server.authorizations).toEqual([EXPECTED_AUTHORIZATION]);

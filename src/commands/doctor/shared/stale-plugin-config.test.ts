@@ -1,6 +1,6 @@
 // Stale plugin config tests cover doctor cleanup and warnings for obsolete plugin config.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { AforaConfig } from "../../../config/config.js";
 import type { PluginInstallRecord } from "../../../config/types.plugins.js";
 import type { PluginManifestRecord } from "../../../plugins/manifest-registry.js";
 import * as manifestRegistry from "../../../plugins/manifest-registry.js";
@@ -33,7 +33,7 @@ function manifest(id: string): PluginManifestRecord {
     origin: "bundled",
     rootDir: `/plugins/${id}`,
     source: `/plugins/${id}`,
-    manifestPath: `/plugins/${id}/openclaw.plugin.json`,
+    manifestPath: `/plugins/${id}/afora.plugin.json`,
   };
 }
 
@@ -61,7 +61,7 @@ describe("doctor stale plugin config helpers", () => {
           "stale-plugin": { enabled: true },
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(hits).toEqual([
       {
@@ -92,7 +92,7 @@ describe("doctor stale plugin config helpers", () => {
           "stale-plugin": { enabled: true },
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(result.changes).toEqual([
       "- plugins.allow: removed 1 stale plugin id (stale-plugin)",
@@ -116,7 +116,7 @@ describe("doctor stale plugin config helpers", () => {
           "thread-ownership": { enabled: true },
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(result.config.plugins).toEqual({
       allow: ["discord"],
@@ -138,7 +138,7 @@ describe("doctor stale plugin config helpers", () => {
           contextEngine: "missing-engine",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const hits = scanStalePluginConfig(cfg);
     expect(hits).toEqual([
@@ -177,7 +177,7 @@ describe("doctor stale plugin config helpers", () => {
           "missing-plugin": { enabled: true },
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(result.changes).toEqual([
       "- plugins.allow: removed 1 stale plugin id (missing-plugin)",
@@ -199,7 +199,7 @@ describe("doctor stale plugin config helpers", () => {
             codex: { enabled: false },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       undefined,
       {
         surfacePreservePluginIds: {
@@ -228,7 +228,7 @@ describe("doctor stale plugin config helpers", () => {
             memory: "codex",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       undefined,
       {
         surfacePreservePluginIds: {
@@ -256,7 +256,7 @@ describe("doctor stale plugin config helpers", () => {
             contextEngine: "legacy",
           },
         },
-      } as OpenClawConfig),
+      } as AforaConfig),
     ).toStrictEqual([]);
   });
 
@@ -284,13 +284,13 @@ describe("doctor stale plugin config helpers", () => {
           surface: "slot",
         },
       ],
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     expect(warnings).toEqual([
       "- Stale plugin references (plugins.allow/deny/entries): acpx, zeta.",
       '- plugins.slots.memory: slot references missing plugin "missing-memory".',
-      '- Run "openclaw doctor --fix" to remove stale plugin ids and dangling channel references.',
+      '- Run "afora doctor --fix" to remove stale plugin ids and dangling channel references.',
     ]);
   });
 
@@ -311,7 +311,7 @@ describe("doctor stale plugin config helpers", () => {
           allowFrom: ["+15555550123"],
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(result.changes).toEqual([
       "- plugins.allow: removed 1 stale plugin id (stale-plugin)",
@@ -363,7 +363,7 @@ describe("doctor stale plugin config helpers", () => {
         },
         list: [
           {
-            id: "openclaw",
+            id: "afora",
             heartbeat: {
               target: "missing-chat-plugin",
             },
@@ -376,7 +376,7 @@ describe("doctor stale plugin config helpers", () => {
           },
         ],
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(result.changes).toEqual([
       "- plugins.allow: removed 1 stale plugin id (missing-chat-plugin)",
@@ -429,7 +429,7 @@ describe("doctor stale plugin config helpers", () => {
           },
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(result.changes).toEqual([
       "- plugins.allow: removed 2 stale plugin ids (missing-a, missing-b)",
@@ -449,7 +449,7 @@ describe("doctor stale plugin config helpers", () => {
           botToken: "typo",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(scanStalePluginConfig(cfg)).toStrictEqual([]);
     expect(maybeRepairStalePluginConfig(cfg)).toEqual({ config: cfg, changes: [] });
@@ -465,11 +465,11 @@ describe("doctor stale plugin config helpers", () => {
         },
       },
       channels: {
-        "openclaw-weixin": {
+        "afora-weixin": {
           enabled: true,
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(scanStalePluginConfig(cfg)).toStrictEqual([]);
     expect(maybeRepairStalePluginConfig(cfg)).toEqual({ config: cfg, changes: [] });
@@ -491,7 +491,7 @@ describe("doctor stale plugin config helpers", () => {
           enabled: true,
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(result.changes).toEqual([
       "- channels: removed 1 stale channel config (missing-chat-plugin)",
@@ -514,7 +514,7 @@ describe("doctor stale plugin config helpers", () => {
           "stale-plugin": { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const hits = scanStalePluginConfig(cfg);
     expect(hits).toEqual([
@@ -536,7 +536,7 @@ describe("doctor stale plugin config helpers", () => {
 
     const warnings = collectStalePluginConfigWarnings({
       hits,
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
       autoRepairBlocked: true,
     });
     expect(warnings.at(-1)).toContain("Auto-removal is paused");
@@ -550,7 +550,7 @@ describe("doctor stale plugin config helpers", () => {
           "stale-plugin": { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const hits = scanStalePluginConfig(cfg);
     expect(hits).toEqual([
@@ -568,11 +568,11 @@ describe("doctor stale plugin config helpers", () => {
     expect(
       collectStalePluginConfigWarnings({
         hits,
-        doctorFixCommand: "openclaw doctor --fix",
+        doctorFixCommand: "afora doctor --fix",
       }),
     ).toEqual([
       "- Stale plugin references (plugins.allow/deny/entries): stale-plugin.",
-      '- Run "openclaw doctor --fix" to remove stale plugin ids and dangling channel references.',
+      '- Run "afora doctor --fix" to remove stale plugin ids and dangling channel references.',
     ]);
   });
 
@@ -583,7 +583,7 @@ describe("doctor stale plugin config helpers", () => {
           codex: { enabled: false },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(scanStalePluginConfig(cfg)).toEqual([]);
     expect(maybeRepairStalePluginConfig(cfg)).toEqual({ config: cfg, changes: [] });
@@ -598,7 +598,7 @@ describe("doctor stale plugin config helpers", () => {
           "stale-plugin": { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(scanStalePluginConfig(cfg)).toEqual([
       {

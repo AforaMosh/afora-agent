@@ -1,4 +1,4 @@
-// Copy Assets script supports OpenClaw repository automation.
+// Copy Assets script supports Afora repository automation.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,7 +14,7 @@ export function resolveBuildCopyContext(importMetaUrl: string): BuildCopyContext
   return {
     prefix: `[${path.basename(filePath, path.extname(filePath))}]`,
     projectRoot: path.resolve(path.dirname(filePath), ".."),
-    verbose: process.env.OPENCLAW_BUILD_VERBOSE === "1",
+    verbose: process.env.AFORA_BUILD_VERBOSE === "1",
   };
 }
 

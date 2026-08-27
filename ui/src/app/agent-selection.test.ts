@@ -61,27 +61,27 @@ describe("agent selection", () => {
   });
 
   it("clears system page scopes when the typed roster becomes known", () => {
-    const gateway = createGateway("OpenClaw");
+    const gateway = createGateway("Afora");
     const roster = createRoster();
     const selection = createAgentSelectionCapability(gateway.gateway, roster.roster);
 
-    expect(selection.state).toEqual({ selectedId: "openclaw", scopeId: "openclaw" });
+    expect(selection.state).toEqual({ selectedId: "afora", scopeId: "afora" });
     roster.publish({
       defaultId: "main",
       mainKey: "main",
       scope: "per-sender",
       agents: [
         { id: "main", kind: "agent" },
-        { id: "openclaw", kind: "system" },
+        { id: "afora", kind: "system" },
       ],
     });
-    expect(selection.state).toEqual({ selectedId: "openclaw", scopeId: null });
+    expect(selection.state).toEqual({ selectedId: "afora", scopeId: null });
 
     selection.setScope("historical");
     expect(selection.state.scopeId).toBe("historical");
     selection.setScope("main");
     expect(selection.state.scopeId).toBe("main");
-    selection.setScope("openclaw");
+    selection.setScope("afora");
     expect(selection.state.scopeId).toBeNull();
   });
 

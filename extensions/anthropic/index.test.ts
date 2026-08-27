@@ -1,15 +1,15 @@
-import { calculateCost, type Usage } from "openclaw/plugin-sdk/llm";
+import { calculateCost, type Usage } from "afora-agent/plugin-sdk/llm";
 import type {
   ProviderResolveDynamicModelContext,
   ProviderRuntimeModel,
-} from "openclaw/plugin-sdk/plugin-entry";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+} from "afora-agent/plugin-sdk/plugin-entry";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import {
   capturePluginRegistration,
   registerSingleProviderPlugin,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
 // Anthropic tests cover index plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { readClaudeCliCredentialsForSetupMock, readClaudeCliCredentialsForRuntimeMock } = vi.hoisted(
@@ -451,7 +451,7 @@ describe("anthropic provider replay hooks", () => {
               default: true,
               model: { primary: "anthropic/opus-4.7" },
               name: "Main",
-              workspace: "/tmp/openclaw-agent",
+              workspace: "/tmp/afora-agent",
             },
           },
         },
@@ -489,7 +489,7 @@ describe("anthropic provider replay hooks", () => {
                 "anthropic/sonnet-4.6": { alias: "Sonnet shorthand" },
               },
               name: "Main",
-              workspace: "/tmp/openclaw-agent",
+              workspace: "/tmp/afora-agent",
             },
           },
         },

@@ -1,5 +1,5 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { QaRunnerCliRegistration } from "openclaw/plugin-sdk/qa-runner-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { QaRunnerCliRegistration } from "afora-agent/plugin-sdk/qa-runner-runtime";
 import {
   patchLiveQaGatewayConfig,
   readLiveQaGatewayConfig,
@@ -24,7 +24,7 @@ type DiscordObservedMessage = Parameters<
 >[0]["observedMessages"][number];
 export type DiscordQaScenarioEnvironment = {
   configureScenario: (implementation: DiscordQaScenarioImplementation) => Promise<{
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     configureTranscriptVoiceAccess?: (authorized: boolean) => Promise<void>;
     run: DiscordQaScenarioRun;
     voiceChannel?: Awaited<
@@ -63,7 +63,7 @@ export function createDiscordQaScenarioEnvironment(params: {
           const applyConfig = async (transcriptVoiceAuthorized?: boolean) => {
             const snapshot = await readLiveQaGatewayConfig(input.gateway);
             const cfg = discordQaScenarioSupport.testing.buildDiscordQaConfig(
-              snapshot.config as OpenClawConfig,
+              snapshot.config as AforaConfig,
               {
                 guildId: params.runtimeEnv.guildId,
                 channelId: params.runtimeEnv.channelId,

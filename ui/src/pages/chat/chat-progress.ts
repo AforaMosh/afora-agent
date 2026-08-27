@@ -109,7 +109,7 @@ export function resolveWorkingProgress(
     ...streamSegments.map((segment) => segment.ts),
     ...toolMessages.map((message) => {
       const receivedAt = (message as Record<string, unknown> | null)?.[
-        "__openclawToolStreamReceivedAt"
+        "__aforaToolStreamReceivedAt"
       ];
       return typeof receivedAt === "number" ? receivedAt : null;
     }),

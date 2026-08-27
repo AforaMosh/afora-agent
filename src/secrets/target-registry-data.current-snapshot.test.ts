@@ -29,13 +29,13 @@ function writeChannelContract(params: {
   targetId: string;
   ownership: "channelConfigs" | "channels";
 }) {
-  const rootDir = makeTrackedTempDir("openclaw-target-registry-channel", tempDirs);
+  const rootDir = makeTrackedTempDir("afora-target-registry-channel", tempDirs);
   fs.writeFileSync(
     path.join(rootDir, "secret-contract-api.cjs"),
     `module.exports = { secretTargetRegistryEntries: [${JSON.stringify({
       id: params.targetId,
       targetType: params.targetId,
-      configFile: "openclaw.json",
+      configFile: "afora.json",
       pathPattern: params.targetId,
       secretShape: "secret_input",
       expectedResolvedValue: "string",

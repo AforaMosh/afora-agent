@@ -1,10 +1,10 @@
 // Covers plugin-dispatched message actions, target resolution, dry-run behavior,
 // and plugin tool-result extraction.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { jsonResult } from "../../agents/tools/common.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createTestRegistry } from "../../test-utils/channel-plugins.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../../utils/message-channel.js";
@@ -160,7 +160,7 @@ describe("runMessageAction plugin dispatch", () => {
               enabled: true,
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         action: "send",
         params: {
           channel: "gatewaychat",
@@ -238,7 +238,7 @@ describe("runMessageAction plugin dispatch", () => {
       });
 
       await runMessageAction({
-        cfg: { channels: { gatewaychat: { enabled: true } } } as OpenClawConfig,
+        cfg: { channels: { gatewaychat: { enabled: true } } } as AforaConfig,
         action: "send",
         params: { channel: "gatewaychat", target: "user-123", message: "terminal answer" },
         sourceReplyFinal: true,
@@ -277,7 +277,7 @@ describe("runMessageAction plugin dispatch", () => {
       });
 
       const result = await runMessageAction({
-        cfg: { channels: { gatewaychat: { enabled: true } } } as OpenClawConfig,
+        cfg: { channels: { gatewaychat: { enabled: true } } } as AforaConfig,
         action: "send",
         params: { channel: "gatewaychat", target: "user-123", message: "terminal answer" },
         sourceReplyFinal: true,
@@ -326,7 +326,7 @@ describe("runMessageAction plugin dispatch", () => {
 
       await expect(
         runMessageAction({
-          cfg: { channels: { gatewaychat: { enabled: true } } } as OpenClawConfig,
+          cfg: { channels: { gatewaychat: { enabled: true } } } as AforaConfig,
           action: "send",
           params: { channel: "gatewaychat", target: "user-123", message: "terminal answer" },
           sourceReplyFinal: true,
@@ -371,7 +371,7 @@ describe("runMessageAction plugin dispatch", () => {
 
       await expect(
         runMessageAction({
-          cfg: { channels: { gatewaychat: { enabled: true } } } as OpenClawConfig,
+          cfg: { channels: { gatewaychat: { enabled: true } } } as AforaConfig,
           action: "send",
           params: { channel: "gatewaychat", target: "user-123", message: "terminal answer" },
           sourceReplyFinal: true,
@@ -413,7 +413,7 @@ describe("runMessageAction plugin dispatch", () => {
 
       await expect(
         runMessageAction({
-          cfg: { channels: { gatewaychat: { enabled: true } } } as OpenClawConfig,
+          cfg: { channels: { gatewaychat: { enabled: true } } } as AforaConfig,
           action: "send",
           params: { channel: "gatewaychat", target: "user-123", message: "terminal answer" },
           sourceReplyFinal: true,
@@ -463,7 +463,7 @@ describe("runMessageAction plugin dispatch", () => {
 
       await expect(
         runMessageAction({
-          cfg: { channels: { gatewaychat: { enabled: true } } } as OpenClawConfig,
+          cfg: { channels: { gatewaychat: { enabled: true } } } as AforaConfig,
           action: "send",
           params: { channel: "gatewaychat", target: "user-123", message: "terminal answer" },
           sourceReplyFinal: true,
@@ -510,7 +510,7 @@ describe("runMessageAction plugin dispatch", () => {
         .mockResolvedValueOnce(failedPayload);
 
       await runMessageAction({
-        cfg: { channels: { gatewaychat: { enabled: true } } } as OpenClawConfig,
+        cfg: { channels: { gatewaychat: { enabled: true } } } as AforaConfig,
         action: "send",
         params: { channel: "gatewaychat", target: "user-123", message: "terminal answer" },
         sourceReplyFinal: true,
@@ -550,7 +550,7 @@ describe("runMessageAction plugin dispatch", () => {
 
       await expect(
         runMessageAction({
-          cfg: { channels: { gatewaychat: { enabled: true } } } as OpenClawConfig,
+          cfg: { channels: { gatewaychat: { enabled: true } } } as AforaConfig,
           action: "send",
           params: { channel: "gatewaychat", target: "user-123", message: "terminal answer" },
           sourceReplyFinal: true,
@@ -591,7 +591,7 @@ describe("runMessageAction plugin dispatch", () => {
 
       await expect(
         runMessageAction({
-          cfg: { channels: { gatewaychat: { enabled: true } } } as OpenClawConfig,
+          cfg: { channels: { gatewaychat: { enabled: true } } } as AforaConfig,
           action: "send",
           params: { channel: "gatewaychat", target: "user-123", message: "terminal answer" },
           sourceReplyFinal: true,
@@ -639,7 +639,7 @@ describe("runMessageAction plugin dispatch", () => {
               enabled: true,
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         action: "send",
         params: {
           channel: "gatewaychat",
@@ -754,7 +754,7 @@ describe("runMessageAction plugin dispatch", () => {
                 enabled: true,
               },
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
           action: "send",
           params: {
             channel: "gatewaychat",

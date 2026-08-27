@@ -15,13 +15,13 @@ function descriptorNames(descriptors: ReadonlyArray<{ name: string }>): string[]
 }
 
 describe("sub-cli descriptors", () => {
-  const originalPrivateQaCli = process.env.OPENCLAW_ENABLE_PRIVATE_QA_CLI;
+  const originalPrivateQaCli = process.env.AFORA_ENABLE_PRIVATE_QA_CLI;
 
   afterEach(() => {
     if (originalPrivateQaCli === undefined) {
-      delete process.env.OPENCLAW_ENABLE_PRIVATE_QA_CLI;
+      delete process.env.AFORA_ENABLE_PRIVATE_QA_CLI;
     } else {
-      process.env.OPENCLAW_ENABLE_PRIVATE_QA_CLI = originalPrivateQaCli;
+      process.env.AFORA_ENABLE_PRIVATE_QA_CLI = originalPrivateQaCli;
     }
     vi.resetModules();
   });
@@ -43,7 +43,7 @@ describe("sub-cli descriptors", () => {
   });
 
   it("keeps the exported descriptor list aligned with private QA visibility when disabled (#83927)", async () => {
-    delete process.env.OPENCLAW_ENABLE_PRIVATE_QA_CLI;
+    delete process.env.AFORA_ENABLE_PRIVATE_QA_CLI;
 
     const { SUB_CLI_DESCRIPTORS, getSubCliEntriesCore } = await importSubCliDescriptors();
     const exportedNames = descriptorNames(SUB_CLI_DESCRIPTORS);
@@ -53,7 +53,7 @@ describe("sub-cli descriptors", () => {
   });
 
   it("keeps all sub-cli filter surfaces aligned when private QA is disabled (#83926)", async () => {
-    delete process.env.OPENCLAW_ENABLE_PRIVATE_QA_CLI;
+    delete process.env.AFORA_ENABLE_PRIVATE_QA_CLI;
 
     const {
       SUB_CLI_DESCRIPTORS,
@@ -68,7 +68,7 @@ describe("sub-cli descriptors", () => {
   });
 
   it("includes qa in the exported descriptor list when private QA is enabled", async () => {
-    process.env.OPENCLAW_ENABLE_PRIVATE_QA_CLI = "1";
+    process.env.AFORA_ENABLE_PRIVATE_QA_CLI = "1";
 
     const {
       SUB_CLI_DESCRIPTORS,

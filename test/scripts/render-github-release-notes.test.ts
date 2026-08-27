@@ -12,7 +12,7 @@ import {
   verifyGithubReleaseNotes,
 } from "../../scripts/render-github-release-notes.mts";
 
-const repository = "openclaw/openclaw";
+const repository = "AforaMosh/afora-agent";
 const tag = "v2026.7.1-beta.3";
 const version = "2026.7.1";
 
@@ -145,7 +145,7 @@ describe("GitHub release-note rendering", () => {
     expect(rendered.body).toContain("- A grouped user-facing fix.");
     expect(rendered.body).toContain("### Complete contribution record");
     expect(rendered.body).toContain(
-      "https://github.com/openclaw/openclaw/blob/v2026.7.1-beta.3/CHANGELOG.md#complete-contribution-record",
+      "https://github.com/AforaMosh/afora-agent/blob/v2026.7.1-beta.3/CHANGELOG.md#complete-contribution-record",
     );
     expect(rendered.body).not.toContain("record-only-detail");
     expect(rendered.size.characters).toBeLessThanOrEqual(GITHUB_RELEASE_BODY_MAX_CHARACTERS);

@@ -1,7 +1,7 @@
 import { isAbsolute } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeSortedUniqueTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeSortedUniqueTrimmedStringList } from "@afora/normalization-core/string-normalization";
 import type { Insertable, Selectable, Updateable } from "kysely";
 import {
   type WorkerAdmissionHandshake,
@@ -26,12 +26,12 @@ import type {
   WorkerEnvironmentCredentials,
   WorkerEnvironmentSshFallbackPorts,
   WorkerEnvironments,
-} from "../../state/openclaw-state-db.generated.js";
+} from "../../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabase,
+} from "../../state/afora-state-db.js";
 import type { WorkerCredentialRecord } from "./credential.js";
 import {
   canTransitionWorkerEnvironment,
@@ -181,7 +181,7 @@ function teardownTerminalStateFrom(
 }
 function normalizeBootstrapReceipt(value: {
   bundleHash: unknown;
-  openclawVersion: unknown;
+  aforaVersion: unknown;
   protocolFeatures: unknown;
   installKind?: unknown;
 }): WorkerEnvironmentBootstrapReceipt {
@@ -210,7 +210,7 @@ function normalizeBootstrapReceipt(value: {
   }
   return {
     bundleHash,
-    openclawVersion: required(value.openclawVersion, "bootstrap OpenClaw version"),
+    aforaVersion: required(value.aforaVersion, "bootstrap Afora version"),
     protocolFeatures: normalizeSortedUniqueTrimmedStringList(value.protocolFeatures),
     ...(value.installKind ? { installKind: value.installKind } : {}),
   };
@@ -397,19 +397,19 @@ function desktopFrom(row: Row): WorkerDesktopEndpoint | null {
 function bootstrapReceiptFrom(row: Row): WorkerEnvironmentBootstrapReceipt | null {
   const {
     bootstrap_bundle_hash: bundleHash,
-    bootstrap_openclaw_version: openclawVersion,
+    bootstrap_afora_version: aforaVersion,
     bootstrap_protocol_features_json: encodedFeatures,
     bootstrap_install_kind: installKind,
   } = row;
-  if (bundleHash === null && openclawVersion === null && encodedFeatures === null) {
+  if (bundleHash === null && aforaVersion === null && encodedFeatures === null) {
     return null;
   }
-  if (bundleHash === null || openclawVersion === null || encodedFeatures === null) {
+  if (bundleHash === null || aforaVersion === null || encodedFeatures === null) {
     throw new Error("Worker environment bootstrap receipt is incomplete");
   }
   return normalizeBootstrapReceipt({
     bundleHash,
-    openclawVersion,
+    aforaVersion,
     protocolFeatures: JSON.parse(encodedFeatures) as unknown,
     ...(installKind === null ? {} : { installKind }),
   });
@@ -785,11 +785,11 @@ function reconcileAttachedSessionOwners(db: DatabaseSync, nowMs: number): void {
 }
 
 export function createWorkerEnvironmentStore(
-  options: { database?: OpenClawStateDatabase; now?: () => number } = {},
+  options: { database?: AforaStateDatabase; now?: () => number } = {},
 ) {
-  const database = options.database ?? openOpenClawStateDatabase();
+  const database = options.database ?? openAforaStateDatabase();
   if (!ensuredWorkerEnvironmentDatabases.has(database.db)) {
-    runOpenClawStateWriteTransaction(
+    runAforaStateWriteTransaction(
       ({ db }) => {
         // sqlite-allow-raw -- feature-local additive schema DDL; rows use Kysely below.
         db.exec(WORKER_ENVIRONMENT_SSH_FALLBACK_PORTS_SCHEMA_SQL);
@@ -801,9 +801,9 @@ export function createWorkerEnvironmentStore(
   }
   const path = database.path;
   const now = options.now ?? Date.now;
-  const read = () => openOpenClawStateDatabase({ path }).db;
+  const read = () => openAforaStateDatabase({ path }).db;
   const write = <T>(operation: (db: DatabaseSync) => T): T =>
-    runOpenClawStateWriteTransaction(({ db }) => operation(db), { path });
+    runAforaStateWriteTransaction(({ db }) => operation(db), { path });
   write((db) => reconcileAttachedSessionOwners(db, now()));
   const writeCredential = (
     input: CredentialInput & {
@@ -879,7 +879,7 @@ export function createWorkerEnvironmentStore(
               ssh_key_ref_json: null,
               desktop_json: null,
               bootstrap_bundle_hash: null,
-              bootstrap_openclaw_version: null,
+              bootstrap_afora_version: null,
               bootstrap_protocol_features_json: null,
               bootstrap_install_kind: null,
               owner_epoch: 0,
@@ -1121,7 +1121,7 @@ export function createWorkerEnvironmentStore(
           ssh_key_ref_json: sshEndpoint ? json(sshEndpoint.keyRef) : null,
           desktop_json: desktop ? json(desktop) : null,
           bootstrap_bundle_hash: bootstrapReceipt?.bundleHash ?? null,
-          bootstrap_openclaw_version: bootstrapReceipt?.openclawVersion ?? null,
+          bootstrap_afora_version: bootstrapReceipt?.aforaVersion ?? null,
           bootstrap_protocol_features_json: bootstrapReceipt
             ? json(bootstrapReceipt.protocolFeatures)
             : null,

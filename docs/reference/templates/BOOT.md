@@ -12,7 +12,7 @@ Add short, explicit startup instructions here. The bundled `boot-md` hook runs t
 The hook ships disabled. Enable it first:
 
 ```bash
-openclaw hooks enable boot-md
+afora hooks enable boot-md
 ```
 
 If a checklist item sends a message, use the message tool, then reply with the exact silent token `NO_REPLY` (case-insensitive).

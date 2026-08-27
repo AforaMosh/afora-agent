@@ -1,7 +1,7 @@
-// Memory Wiki plugin entrypoint registers its OpenClaw integration.
+// Memory Wiki plugin entrypoint registers its Afora integration.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { definePluginEntry, type OpenClawConfig } from "./api.js";
+import { definePluginEntry, type AforaConfig } from "./api.js";
 import { registerWikiCli } from "./src/cli.js";
 import {
   activateMemoryWikiCompiledCacheOwner,
@@ -56,7 +56,7 @@ async function loadConfiguredVaultIdentity(vaultRoot: string): Promise<{
     };
   }
   try {
-    const stat = await fs.stat(path.join(vaultRoot, ".openclaw-wiki", "log.jsonl"));
+    const stat = await fs.stat(path.join(vaultRoot, ".afora-wiki", "log.jsonl"));
     if (!stat.isFile()) {
       return null;
     }
@@ -77,12 +77,12 @@ async function loadConfiguredVaultIdentity(vaultRoot: string): Promise<{
 export default definePluginEntry({
   id: "memory-wiki",
   name: "Memory Wiki",
-  description: "Persistent wiki compiler and Obsidian-friendly knowledge vault for OpenClaw.",
+  description: "Persistent wiki compiler and Obsidian-friendly knowledge vault for Afora.",
   configSchema: memoryWikiConfigSchema,
   register(api) {
     const config = resolveMemoryWikiConfig(api.pluginConfig);
     const getAppConfig = () =>
-      (api.runtime.config?.current?.() ?? api.config) as OpenClawConfig | undefined;
+      (api.runtime.config?.current?.() ?? api.config) as AforaConfig | undefined;
     const resolveConfig: MemoryWikiConfigResolver = (agentId, appConfig = getAppConfig()) =>
       resolveMemoryWikiAgentConfig({ config, appConfig, agentId });
     const resolveToolContext = (agentId?: string) => {

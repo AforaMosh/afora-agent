@@ -10,9 +10,9 @@ import { ErrorCodes } from "../../../packages/gateway-protocol/src/index.js";
 import type { PairedDevice } from "../../infra/device-pairing.types.js";
 import { NODE_WORKER_SUPERVISOR_PROTOCOL_FEATURE } from "../../infra/node-runner-inventory.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../../state/afora-state-db.js";
 import type { NodeWorkerSupervisorNodeProof } from "../node-registry-private.js";
 import {
   bindDeviceWorkerAvailability,
@@ -75,7 +75,7 @@ describe("sessions.dispatch device targets", () => {
     dispatchTestMocks.resolveTarget.mockReturnValue(
       makeSessionTarget({
         sessionId: dispatchTestSessionId,
-        worktree: { id: "worktree-1", branch: "openclaw/device-test", repoRoot: "/repo" },
+        worktree: { id: "worktree-1", branch: "afora-agent/device-test", repoRoot: "/repo" },
       }),
     );
     dispatchTestMocks.findLiveByOwner.mockReturnValue({
@@ -138,7 +138,7 @@ describe("sessions.dispatch device targets", () => {
     dispatchTestMocks.resolveTarget.mockReturnValue(
       makeSessionTarget({
         sessionId: dispatchTestSessionId,
-        worktree: { id: "worktree-1", branch: "openclaw/device-test", repoRoot: "/repo" },
+        worktree: { id: "worktree-1", branch: "afora-agent/device-test", repoRoot: "/repo" },
       }),
     );
     dispatchTestMocks.findLiveByOwner.mockReturnValue({
@@ -187,10 +187,10 @@ describe("sessions.dispatch device targets", () => {
     "carries a $name node rejection through the placement row and operator response",
     async ({ nodes, expectedMessage, rejectedMessage }) => {
       const root = await fs.mkdtemp(
-        path.join(await fs.realpath(os.tmpdir()), "openclaw-session-dispatch-device-"),
+        path.join(await fs.realpath(os.tmpdir()), "afora-session-dispatch-device-"),
       );
       try {
-        const database = openOpenClawStateDatabase({ env: { OPENCLAW_STATE_DIR: root } });
+        const database = openAforaStateDatabase({ env: { AFORA_STATE_DIR: root } });
         const placements = createWorkerSessionPlacementStore({ database, now: () => 1_000 });
         const harness = createHarness(placements);
         const runtime = createDeviceWorkerRuntime({
@@ -206,7 +206,7 @@ describe("sessions.dispatch device targets", () => {
         dispatchTestMocks.resolveTarget.mockReturnValue(
           makeSessionTarget({
             sessionId: dispatchTestSessionId,
-            worktree: { id: "worktree-1", branch: "openclaw/device-test", repoRoot: "/repo" },
+            worktree: { id: "worktree-1", branch: "afora-agent/device-test", repoRoot: "/repo" },
           }),
         );
         dispatchTestMocks.findLiveByOwner.mockReturnValue({
@@ -243,7 +243,7 @@ describe("sessions.dispatch device targets", () => {
           expect.objectContaining({ message: expect.stringContaining(rejectedMessage) }),
         );
       } finally {
-        closeOpenClawStateDatabaseForTest();
+        closeAforaStateDatabaseForTest();
         await fs.rm(root, { recursive: true, force: true });
       }
     },

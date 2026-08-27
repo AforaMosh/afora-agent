@@ -25,7 +25,7 @@ function makeTelegramOutput({ includeReport = true, summary = {} } = {}) {
   writeFileSync(
     path.join(dir, "qa-evidence.json"),
     JSON.stringify({
-      kind: "openclaw.qa.evidence-summary",
+      kind: "afora.qa.evidence-summary",
       schemaVersion: 2,
       generatedAt: "2026-05-10T00:00:05.000Z",
       entries: [

@@ -2,16 +2,16 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { RequestScopedSubagentRuntimeError } from "openclaw/plugin-sdk/error-runtime";
+import { expectDefined } from "@afora/normalization-core";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { RequestScopedSubagentRuntimeError } from "afora-agent/plugin-sdk/error-runtime";
 import {
   resolveMemoryDreamingPluginConfig,
   resolveSessionTranscriptsDirForAgent,
-} from "openclaw/plugin-sdk/memory-core-host-runtime-core";
-import { clearRuntimeConfigSnapshot } from "openclaw/plugin-sdk/runtime-config-snapshot";
-import { upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
-import { appendSessionTranscriptMessageByIdentity } from "openclaw/plugin-sdk/session-transcript-runtime";
+} from "afora-agent/plugin-sdk/memory-core-host-runtime-core";
+import { clearRuntimeConfigSnapshot } from "afora-agent/plugin-sdk/runtime-config-snapshot";
+import { upsertSessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
+import { appendSessionTranscriptMessageByIdentity } from "afora-agent/plugin-sdk/session-transcript-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   filterRecallEntriesWithinLookback,
@@ -40,11 +40,11 @@ import {
 const { createTempWorkspace } = createMemoryCoreTestHarness();
 const DREAMING_TEST_BASE_TIME = new Date("2026-04-05T10:00:00.000Z");
 const DREAMING_TEST_DAY = "2026-04-05";
-const LIGHT_SLEEP_EVENT_TEXT = "__openclaw_memory_core_light_sleep__";
-const REM_SLEEP_EVENT_TEXT = "__openclaw_memory_core_rem_sleep__";
-const originalDreamingTestFast = process.env.OPENCLAW_TEST_FAST;
-const originalDreamingStateDir = process.env.OPENCLAW_STATE_DIR;
-const LIGHT_DREAMING_TEST_CONFIG: OpenClawConfig = {
+const LIGHT_SLEEP_EVENT_TEXT = "__afora_memory_core_light_sleep__";
+const REM_SLEEP_EVENT_TEXT = "__afora_memory_core_rem_sleep__";
+const originalDreamingTestFast = process.env.AFORA_TEST_FAST;
+const originalDreamingStateDir = process.env.AFORA_STATE_DIR;
+const LIGHT_DREAMING_TEST_CONFIG: AforaConfig = {
   plugins: {
     entries: {
       "memory-core": {
@@ -72,21 +72,21 @@ const LIGHT_DREAMING_TEST_CONFIG: OpenClawConfig = {
 };
 
 function setDreamingTestEnv(stateDir: string): void {
-  Reflect.set(process.env, "OPENCLAW_TEST_FAST", "1");
-  Reflect.set(process.env, "OPENCLAW_STATE_DIR", stateDir);
+  Reflect.set(process.env, "AFORA_TEST_FAST", "1");
+  Reflect.set(process.env, "AFORA_STATE_DIR", stateDir);
   clearRuntimeConfigSnapshot();
 }
 
 function restoreDreamingTestEnv(): void {
   if (originalDreamingTestFast === undefined) {
-    Reflect.deleteProperty(process.env, "OPENCLAW_TEST_FAST");
+    Reflect.deleteProperty(process.env, "AFORA_TEST_FAST");
   } else {
-    Reflect.set(process.env, "OPENCLAW_TEST_FAST", originalDreamingTestFast);
+    Reflect.set(process.env, "AFORA_TEST_FAST", originalDreamingTestFast);
   }
   if (originalDreamingStateDir === undefined) {
-    Reflect.deleteProperty(process.env, "OPENCLAW_STATE_DIR");
+    Reflect.deleteProperty(process.env, "AFORA_STATE_DIR");
   } else {
-    Reflect.set(process.env, "OPENCLAW_STATE_DIR", originalDreamingStateDir);
+    Reflect.set(process.env, "AFORA_STATE_DIR", originalDreamingStateDir);
   }
   clearRuntimeConfigSnapshot();
 }
@@ -205,7 +205,7 @@ async function seedDreamingSessionTranscript(params: {
 }
 
 function createHarness(
-  config: OpenClawConfig,
+  config: AforaConfig,
   workspaceDir?: string,
   subagent?: Parameters<typeof runDreamingSweepPhases>[0]["subagent"],
 ) {
@@ -349,7 +349,7 @@ function dailyCapStressLines(label: string): string[] {
 }
 
 async function createDreamingWorkspace(): Promise<string> {
-  const workspaceDir = await createTempWorkspace("openclaw-dreaming-phases-");
+  const workspaceDir = await createTempWorkspace("afora-dreaming-phases-");
   await fs.mkdir(path.join(workspaceDir, "memory"), { recursive: true });
   return workspaceDir;
 }
@@ -365,7 +365,7 @@ async function triggerLightDreaming(
 ): Promise<void> {
   setDreamingTestTime(offsetMinutes);
   await beforeAgentReply(
-    { cleanedBody: "__openclaw_memory_core_light_sleep__" },
+    { cleanedBody: "__afora_memory_core_light_sleep__" },
     { trigger: "heartbeat", workspaceDir },
   );
 }
@@ -467,7 +467,7 @@ describe("memory-core dreaming phases", () => {
       "- Move backups to S3 Glacier.",
       "- Keep retention at 365 days.",
     ]);
-    const testConfig: OpenClawConfig = {
+    const testConfig: AforaConfig = {
       ...LIGHT_DREAMING_TEST_CONFIG,
       agents: {
         defaults: {
@@ -533,7 +533,7 @@ describe("memory-core dreaming phases", () => {
       "- Move backups to S3 Glacier.",
       "- Keep retention at 365 days.",
     ]);
-    const testConfig: OpenClawConfig = {
+    const testConfig: AforaConfig = {
       ...LIGHT_DREAMING_TEST_CONFIG,
       agents: {
         defaults: {
@@ -759,7 +759,7 @@ describe("memory-core dreaming phases", () => {
       [
         "# Dream Diary",
         "",
-        "<!-- openclaw:dreaming:diary:start -->",
+        "<!-- afora:dreaming:diary:start -->",
         ...staleSnippets.flatMap((snippet, index) => [
           "---",
           "",
@@ -768,13 +768,13 @@ describe("memory-core dreaming phases", () => {
           snippet,
           "",
         ]),
-        "<!-- openclaw:dreaming:diary:end -->",
+        "<!-- afora:dreaming:diary:end -->",
         "",
       ].join("\n"),
       "utf-8",
     );
     const subagent = createMockNarrativeSubagent("A later routing note finally took the page.");
-    const testConfig: OpenClawConfig = {
+    const testConfig: AforaConfig = {
       agents: {
         defaults: {
           workspace: workspaceDir,
@@ -845,12 +845,12 @@ describe("memory-core dreaming phases", () => {
         {
           cleanedBody: [
             "System: rotate logs",
-            "System: __openclaw_memory_core_light_sleep__",
+            "System: __afora_memory_core_light_sleep__",
             "",
             "A scheduled reminder has been triggered. The reminder content is:",
             "",
             "rotate logs",
-            "__openclaw_memory_core_light_sleep__",
+            "__afora_memory_core_light_sleep__",
             "",
             "Handle this reminder internally. Do not relay it to the user unless explicitly requested.",
           ].join("\n"),
@@ -876,16 +876,16 @@ describe("memory-core dreaming phases", () => {
         "- Move backups to S3 Glacier.",
         "",
         "## Light Sleep",
-        "<!-- openclaw:dreaming:light:start -->",
+        "<!-- afora:dreaming:light:start -->",
         "- Candidate: Old staged summary.",
         "",
         "## Ops",
         "- Rotate access keys.",
         "",
         "## Light Sleep",
-        "<!-- openclaw:dreaming:light:start -->",
+        "<!-- afora:dreaming:light:start -->",
         "- Candidate: Fresh staged summary.",
-        "<!-- openclaw:dreaming:light:end -->",
+        "<!-- afora:dreaming:light:end -->",
       ]);
 
       const { beforeAgentReply } = createLightDreamingHarness(workspaceDir);
@@ -937,11 +937,11 @@ describe("memory-core dreaming phases", () => {
     const readSpy = vi.spyOn(fs, "readFile");
     try {
       await beforeAgentReply(
-        { cleanedBody: "__openclaw_memory_core_light_sleep__" },
+        { cleanedBody: "__afora_memory_core_light_sleep__" },
         { trigger: "heartbeat", workspaceDir },
       );
       await beforeAgentReply(
-        { cleanedBody: "__openclaw_memory_core_light_sleep__" },
+        { cleanedBody: "__afora_memory_core_light_sleep__" },
         { trigger: "heartbeat", workspaceDir },
       );
     } finally {
@@ -1502,7 +1502,7 @@ describe("memory-core dreaming phases", () => {
 
     try {
       await beforeAgentReply(
-        { cleanedBody: "__openclaw_memory_core_light_sleep__" },
+        { cleanedBody: "__afora_memory_core_light_sleep__" },
         { trigger: "heartbeat", workspaceDir },
       );
     } finally {
@@ -1570,7 +1570,7 @@ describe("memory-core dreaming phases", () => {
 
     try {
       await beforeAgentReply(
-        { cleanedBody: "__openclaw_memory_core_light_sleep__" },
+        { cleanedBody: "__afora_memory_core_light_sleep__" },
         { trigger: "heartbeat", workspaceDir },
       );
     } finally {
@@ -1683,7 +1683,7 @@ describe("memory-core dreaming phases", () => {
     vi.setSystemTime(new Date("2026-04-16T19:00:00.000Z"));
     try {
       await beforeAgentReply(
-        { cleanedBody: "__openclaw_memory_core_light_sleep__" },
+        { cleanedBody: "__afora_memory_core_light_sleep__" },
         { trigger: "heartbeat", workspaceDir },
       );
     } finally {
@@ -1813,7 +1813,7 @@ describe("memory-core dreaming phases", () => {
     vi.setSystemTime(new Date("2026-04-16T19:00:00.000Z"));
     try {
       await beforeAgentReply(
-        { cleanedBody: "__openclaw_memory_core_light_sleep__" },
+        { cleanedBody: "__afora_memory_core_light_sleep__" },
         { trigger: "heartbeat", workspaceDir },
       );
     } finally {
@@ -1917,13 +1917,13 @@ describe("memory-core dreaming phases", () => {
 
     try {
       await beforeAgentReply(
-        { cleanedBody: "__openclaw_memory_core_light_sleep__" },
+        { cleanedBody: "__afora_memory_core_light_sleep__" },
         { trigger: "heartbeat", workspaceDir },
       );
       const firstSessionIngestion = await dreamingTestState.readSessionIngestionState(workspaceDir);
 
       await beforeAgentReply(
-        { cleanedBody: "__openclaw_memory_core_light_sleep__" },
+        { cleanedBody: "__afora_memory_core_light_sleep__" },
         { trigger: "heartbeat", workspaceDir },
       );
       const secondSessionIngestion =
@@ -2583,7 +2583,7 @@ describe("memory-core dreaming phases", () => {
       await triggerLightDreaming(beforeAgentReply, workspaceDir, 5);
       setDreamingTestTime(6);
       await beforeAgentReply(
-        { cleanedBody: "__openclaw_memory_core_rem_sleep__" },
+        { cleanedBody: "__afora_memory_core_rem_sleep__" },
         { trigger: "heartbeat", workspaceDir },
       );
     });
@@ -2653,7 +2653,7 @@ describe("memory-core dreaming phases", () => {
       await triggerLightDreaming(beforeAgentReply, workspaceDir, 5);
       setDreamingTestTime(6);
       await beforeAgentReply(
-        { cleanedBody: "__openclaw_memory_core_rem_sleep__" },
+        { cleanedBody: "__afora_memory_core_rem_sleep__" },
         { trigger: "heartbeat", workspaceDir },
       );
     });
@@ -2983,7 +2983,7 @@ describe("memory-core dreaming phases", () => {
     await withDreamingTestClock(async () => {
       setDreamingTestTime(10);
       await beforeAgentReply(
-        { cleanedBody: "__openclaw_memory_core_rem_sleep__" },
+        { cleanedBody: "__afora_memory_core_rem_sleep__" },
         { trigger: "heartbeat", workspaceDir },
       );
     });
@@ -3204,7 +3204,7 @@ describe("memory-core dreaming phases", () => {
 
       setDreamingTestTime(5);
       await beforeAgentReply(
-        { cleanedBody: "__openclaw_memory_core_rem_sleep__" },
+        { cleanedBody: "__afora_memory_core_rem_sleep__" },
         { trigger: "heartbeat", workspaceDir },
       );
     });
@@ -3233,7 +3233,7 @@ describe("memory-core dreaming phases", () => {
       "utf-8",
     );
 
-    const configForTest: OpenClawConfig = {
+    const configForTest: AforaConfig = {
       plugins: {
         entries: {
           "memory-core": {
@@ -3260,7 +3260,7 @@ describe("memory-core dreaming phases", () => {
     await withDreamingTestClock(async () => {
       vi.setSystemTime(new Date(day1Ms));
       await reply1(
-        { cleanedBody: "__openclaw_memory_core_light_sleep__" },
+        { cleanedBody: "__afora_memory_core_light_sleep__" },
         { trigger: "heartbeat", workspaceDir },
       );
     });
@@ -3283,7 +3283,7 @@ describe("memory-core dreaming phases", () => {
     await withDreamingTestClock(async () => {
       vi.setSystemTime(new Date(day2Ms));
       await reply2(
-        { cleanedBody: "__openclaw_memory_core_light_sleep__" },
+        { cleanedBody: "__afora_memory_core_light_sleep__" },
         { trigger: "heartbeat", workspaceDir },
       );
     });

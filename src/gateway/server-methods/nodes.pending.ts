@@ -1,5 +1,5 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { normalizeUniqueTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { normalizeUniqueTrimmedStringList } from "@afora/normalization-core/string-normalization";
 import {
   ErrorCodes,
   errorShape,
@@ -7,7 +7,7 @@ import {
   validateNodePendingAckParams,
   type ConnectParams,
 } from "../../../packages/gateway-protocol/src/index.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   captureNodePairingGeneration,
   isNodePairingGenerationCurrent,
@@ -28,7 +28,7 @@ function resolveAllowedPendingNodeActions(params: {
   nodeId: string;
   pairingGeneration: string;
   client: { connect?: ConnectParams | null } | null;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }): PendingNodeAction[] {
   const pending = listPendingNodeActions({
     nodeId: params.nodeId,

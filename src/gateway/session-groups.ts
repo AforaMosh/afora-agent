@@ -2,22 +2,22 @@
 // Membership stays on each session entry's category field; this module owns
 // which groups exist, their display order, and bulk member category updates.
 import type { DatabaseSync } from "node:sqlite";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { resolveAllAgentSessionStoreTargetsSync } from "../config/sessions.js";
 import { applySessionEntryReplacements } from "../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../infra/kysely-sync.js";
-import { ensureColumn, tableHasColumn } from "../state/openclaw-state-db-schema-helpers.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import { ensureColumn, tableHasColumn } from "../state/afora-state-db-schema-helpers.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../state/afora-state-db.js";
 import { SessionMutationAuthorizationChangedError } from "./session-sharing.js";
 
 // Write transactions must run on the same env-scoped handle as their
 // statements; a bare transaction would open the default state DB while the
-// SQL hits the override, losing atomicity under OPENCLAW_STATE_DIR overrides.
+// SQL hits the override, losing atomicity under AFORA_STATE_DIR overrides.
 
 type SessionGroupRecord = {
   name: string;
@@ -31,7 +31,7 @@ type SessionGroupDefaultsRecord = {
 };
 
 type SessionGroupsDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "session_groups" | "sidebar_sections"
 >;
 
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS sidebar_sections (
 `;
 
 function dbFor(env: NodeJS.ProcessEnv): DatabaseSync {
-  return openOpenClawStateDatabase({ env }).db;
+  return openAforaStateDatabase({ env }).db;
 }
 
 function kyselyFor(db: DatabaseSync) {
@@ -60,11 +60,11 @@ function kyselyFor(db: DatabaseSync) {
 }
 
 function ensureSidebarSectionsSchema(env: NodeJS.ProcessEnv): void {
-  const database = openOpenClawStateDatabase({ env });
+  const database = openAforaStateDatabase({ env });
   if (ensuredSidebarSectionDatabases.has(database.db)) {
     return;
   }
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       // sqlite-allow-raw -- feature-local additive schema DDL; rows use Kysely below.
       db.exec(SIDEBAR_SECTIONS_SCHEMA_SQL);
@@ -189,7 +189,7 @@ export function putSessionGroups(
     ensureSidebarSectionsSchema(env);
   }
   const now = Date.now();
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       const kysely = kyselyFor(db);
       const existing = new Map(
@@ -247,7 +247,7 @@ export function ensureSessionGroupRegistered(
     return false;
   }
   let inserted = false;
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       const kysely = kyselyFor(db);
       const existing = executeSqliteQuerySync(
@@ -278,7 +278,7 @@ export function ensureSessionGroupRegistered(
 
 function renameCatalogEntry(from: string, to: string, env: NodeJS.ProcessEnv): void {
   ensureSidebarSectionsSchema(env);
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       const kysely = kyselyFor(db);
       const hasDefaults = hasSessionGroupDefaultsSchema(db);
@@ -363,10 +363,10 @@ export function updateSessionGroupDefaults(
   if (!normalized) {
     throw new Error("group defaults update requires a non-empty name");
   }
-  const database = openOpenClawStateDatabase({ env });
+  const database = openAforaStateDatabase({ env });
   let updated = false;
   let defaultsSchemaEnsured = false;
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       const kysely = kyselyFor(db);
       const existing = executeSqliteQuerySync(
@@ -406,7 +406,7 @@ export function updateSessionGroupDefaults(
  * bumping updatedAt: group maintenance must not reshuffle recency ordering.
  */
 async function updateMemberCategories(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   from: string,
   to: string | undefined,
   env: NodeJS.ProcessEnv,
@@ -447,7 +447,7 @@ async function updateMemberCategories(
 }
 
 export async function renameSessionGroup(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   name: string;
   to: string;
   env?: NodeJS.ProcessEnv;
@@ -476,7 +476,7 @@ export async function renameSessionGroup(params: {
 }
 
 export async function deleteSessionGroup(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   name: string;
   env?: NodeJS.ProcessEnv;
   assertCurrent?: () => void;
@@ -489,7 +489,7 @@ export async function deleteSessionGroup(params: {
   }
   params.assertCurrent?.();
   ensureSidebarSectionsSchema(env);
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       const kysely = kyselyFor(db);
       executeSqliteQuerySync(db, kysely.deleteFrom("session_groups").where("name", "=", name));

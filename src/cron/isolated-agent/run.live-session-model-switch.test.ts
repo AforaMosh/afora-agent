@@ -91,7 +91,7 @@ function requireEmbeddedAgentCall(index: number): {
       }
     | undefined;
   if (!call) {
-    throw new Error(`Expected embedded OpenClaw agent call ${index}`);
+    throw new Error(`Expected embedded Afora agent call ${index}`);
   }
   return call;
 }
@@ -125,9 +125,9 @@ describe("runCronIsolatedAgentTurn — LiveSessionModelSwitchError retry (#57206
 
   afterEach(() => {
     if (previousFastTestEnv !== undefined) {
-      process.env.OPENCLAW_TEST_FAST = previousFastTestEnv;
+      process.env.AFORA_TEST_FAST = previousFastTestEnv;
     } else {
-      delete process.env.OPENCLAW_TEST_FAST;
+      delete process.env.AFORA_TEST_FAST;
     }
   });
 
@@ -328,7 +328,7 @@ describe("runCronIsolatedAgentTurn — LiveSessionModelSwitchError retry (#57206
       sessionEntry: makeCronSessionEntry({
         model: "gpt-5.6-luna",
         modelProvider: "openai",
-        agentRuntimeOverride: "openclaw",
+        agentRuntimeOverride: "afora",
       }),
       isNewSession: false,
     });
@@ -371,7 +371,7 @@ describe("runCronIsolatedAgentTurn — LiveSessionModelSwitchError retry (#57206
     );
 
     expect(result.status).toBe("ok");
-    expect(requireEmbeddedAgentCall(0).agentHarnessRuntimeOverride).toBe("openclaw");
+    expect(requireEmbeddedAgentCall(0).agentHarnessRuntimeOverride).toBe("afora");
     expect(requireEmbeddedAgentCall(1).agentHarnessRuntimeOverride).toBe("codex");
     expect(cronSession.sessionEntry.agentRuntimeOverride).toBe("codex");
   });

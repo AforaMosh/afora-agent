@@ -1,7 +1,7 @@
 export {
   asNullableRecord as asProtocolRecord,
   isRecord as isProtocolRecord,
-} from "@openclaw/normalization-core/record-coerce";
+} from "@afora/normalization-core/record-coerce";
 
 /** Checks string presence without changing wire-significant whitespace. */
 export function isNonEmptyProtocolString(value: unknown): value is string {

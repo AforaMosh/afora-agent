@@ -1,11 +1,11 @@
 /**
- * Wire protocol between the extension relay server and the OpenClaw Chrome
+ * Wire protocol between the extension relay server and the Afora Chrome
  * extension. The extension owns tab eligibility/access, attaches chrome.debugger,
  * and forwards CDP traffic. All CDP target semantics (Target.* synthesis for
  * Playwright) live server-side in the bridge.
  */
 
-/** Tab snapshot reported by the extension for tabs currently accessible to OpenClaw. */
+/** Tab snapshot reported by the extension for tabs currently accessible to Afora. */
 export type RelayTabInfo = {
   tabId: number;
   url: string;
@@ -67,7 +67,7 @@ export type RelayCommandBody =
   | { type: "attach"; tabId: number }
   /** Detach chrome.debugger from a tab (access revoked or client detached). */
   | { type: "detach"; tabId: number }
-  /** Open a new tab inside the OpenClaw tab group. Result: { tabId: number }. */
+  /** Open a new tab inside the Afora tab group. Result: { tabId: number }. */
   | { type: "createTab"; url: string; background?: boolean; focus?: boolean }
   /** Close an accessible tab. Result: {}. */
   | { type: "closeTab"; tabId: number }

@@ -64,7 +64,7 @@ describe("memory index schema", () => {
   });
 
   it("keeps recall metadata ensure read-only when the schema is current", () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-memory-recall-schema-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-memory-recall-schema-"));
     const databasePath = path.join(rootDir, "memory.sqlite");
     const writable = new DatabaseSync(databasePath);
     try {
@@ -470,7 +470,7 @@ describe("memory index schema", () => {
   });
 
   it("keeps source and path FTS identities stable across VACUUM", () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-memory-vacuum-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-memory-vacuum-"));
     const db = new DatabaseSync(path.join(rootDir, "memory.sqlite"));
     try {
       ensureMemoryIndexSchema({ db, cacheEnabled: false, ftsEnabled: true });

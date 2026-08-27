@@ -22,9 +22,9 @@ afterEach(() => {
 
 describe("gateway lock state directory", () => {
   it("releases in-tree locks separately from Gateway lifecycle ownership", async () => {
-    await withTempDir("openclaw-gateway-lock-release-", async (root) => {
+    await withTempDir("afora-gateway-lock-release-", async (root) => {
       const stateDir = path.join(await fs.realpath(root), "state");
-      const configPath = path.join(stateDir, "openclaw.json");
+      const configPath = path.join(stateDir, "afora.json");
       await fs.mkdir(stateDir, { recursive: true });
       await fs.writeFile(configPath, "{}", "utf8");
       const lock = expectGatewayLock(
@@ -32,8 +32,8 @@ describe("gateway lock state directory", () => {
           allowInTests: true,
           env: {
             ...process.env,
-            OPENCLAW_CONFIG_PATH: configPath,
-            OPENCLAW_STATE_DIR: stateDir,
+            AFORA_CONFIG_PATH: configPath,
+            AFORA_STATE_DIR: stateDir,
           },
           timeoutMs: 30,
         }),
@@ -47,7 +47,7 @@ describe("gateway lock state directory", () => {
   });
 
   it("keeps lock, coordinator, and reclaim paths inside the selected state", async () => {
-    await withTempDir("openclaw-gateway-lock-state-", async (root) => {
+    await withTempDir("afora-gateway-lock-state-", async (root) => {
       const canonicalRoot = await fs.realpath(root);
       const stateDir = path.join(canonicalRoot, "selected-state");
       const fakeHome = path.join(canonicalRoot, "home");
@@ -55,15 +55,15 @@ describe("gateway lock state directory", () => {
       await fs.mkdir(stateDir, { recursive: true });
       await fs.mkdir(fakeHome, { recursive: true });
       await fs.mkdir(legacyTmpDir, { recursive: true });
-      const configPath = path.join(stateDir, "openclaw.json");
+      const configPath = path.join(stateDir, "afora.json");
       await fs.writeFile(configPath, "{}", "utf8");
       vi.spyOn(os, "tmpdir").mockReturnValue(legacyTmpDir);
       const env = {
         ...process.env,
         HOME: fakeHome,
-        OPENCLAW_HOME: fakeHome,
-        OPENCLAW_CONFIG_PATH: configPath,
-        OPENCLAW_STATE_DIR: stateDir,
+        AFORA_HOME: fakeHome,
+        AFORA_CONFIG_PATH: configPath,
+        AFORA_STATE_DIR: stateDir,
       };
 
       const lock = expectGatewayLock(
@@ -99,7 +99,7 @@ describe("gateway lock state directory", () => {
       }
 
       await expect(fs.readdir(legacyTmpDir)).resolves.toEqual([]);
-      await expect(fs.access(path.join(fakeHome, ".openclaw"))).rejects.toMatchObject({
+      await expect(fs.access(path.join(fakeHome, ".afora"))).rejects.toMatchObject({
         code: "ENOENT",
       });
     });

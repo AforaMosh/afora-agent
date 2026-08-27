@@ -21,7 +21,7 @@ describe("doctor legacy migration source contract", () => {
   });
 
   function createSource(content = '{"version":1}\n') {
-    const stateDir = tempDirs.make("openclaw-migration-source-");
+    const stateDir = tempDirs.make("afora-migration-source-");
     const sourcePath = path.join(stateDir, "legacy.json");
     fs.writeFileSync(sourcePath, content, "utf8");
     return { sourcePath, stateDir };

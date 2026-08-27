@@ -1,11 +1,11 @@
 // Diffs API module exposes the plugin public contract.
-export type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+export type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 export {
   definePluginEntry,
   type AnyAgentTool,
-  type OpenClawPluginApi,
-  type OpenClawPluginConfigSchema,
-  type OpenClawPluginToolContext,
+  type AforaPluginApi,
+  type AforaPluginConfigSchema,
+  type AforaPluginToolContext,
   type PluginLogger,
-} from "openclaw/plugin-sdk/plugin-entry";
-export { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/plugin-entry";
+export { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";

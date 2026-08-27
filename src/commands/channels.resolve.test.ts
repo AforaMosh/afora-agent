@@ -1,5 +1,5 @@
 // Channels resolve tests cover channel/account selection and command output for message routing.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { channelsResolveCommand } from "./channels/resolve.js";
 

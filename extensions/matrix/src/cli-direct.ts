@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 import * as cli from "./cli-shared.js";
 import { resolveMatrixAccount } from "./matrix/accounts.js";
 import type { MatrixDirectRoomCandidate } from "./matrix/direct-management.js";

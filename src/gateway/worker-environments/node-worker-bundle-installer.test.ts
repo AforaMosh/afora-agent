@@ -23,7 +23,7 @@ const node: NodeWorkerSupervisorNodeProof = {
 const artifact = {
   install: "bundle" as const,
   bundleHash: "a".repeat(64),
-  openclawVersion: "2026.8.1",
+  aforaVersion: "2026.8.1",
   protocolFeatures: [],
   tarballBytes: 123,
   tarballSha256: "b".repeat(64),
@@ -52,7 +52,7 @@ describe("Gateway node worker bundle installer", () => {
       ok: true,
       payloadJSON: JSON.stringify({
         bundleHash: artifact.bundleHash,
-        openclawVersion: artifact.openclawVersion,
+        aforaVersion: artifact.aforaVersion,
         protocolFeatures: artifact.protocolFeatures,
       }),
     }));
@@ -96,7 +96,7 @@ describe("Gateway node worker bundle installer", () => {
         ok: true,
         payloadJSON: JSON.stringify({
           bundleHash: "c".repeat(64),
-          openclawVersion: artifact.openclawVersion,
+          aforaVersion: artifact.aforaVersion,
           protocolFeatures: artifact.protocolFeatures,
         }),
       }),

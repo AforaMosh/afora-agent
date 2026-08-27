@@ -17,7 +17,7 @@ import { currentConfigObject } from "../../../lib/config/config-state-model.ts";
 import { formatUiError } from "../../../lib/format-error.ts";
 import { formatTimeMs } from "../../../lib/format.ts";
 import { isPluginEnabledInConfigSnapshot } from "../../../lib/plugin-activation.ts";
-import { OpenClawLightDomElement } from "../../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../../lit/afora-element.ts";
 import { SubscriptionsController } from "../../../lit/subscriptions-controller.ts";
 import {
   backfillDreamDiary,
@@ -109,7 +109,7 @@ function readWikiPagePreview(value: unknown, lookup: string): WikiPagePreview {
   };
 }
 
-class AgentMemoryPanel extends OpenClawLightDomElement {
+class AgentMemoryPanel extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context!: ApplicationContext;
 
@@ -638,6 +638,6 @@ class AgentMemoryPanel extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-agent-memory-panel")) {
-  customElements.define("openclaw-agent-memory-panel", AgentMemoryPanel);
+if (!customElements.get("afora-agent-memory-panel")) {
+  customElements.define("afora-agent-memory-panel", AgentMemoryPanel);
 }

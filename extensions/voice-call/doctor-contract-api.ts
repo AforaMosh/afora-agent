@@ -4,15 +4,15 @@ import os from "node:os";
 import path from "node:path";
 // Doctor enumeration cold-loads this closure; the state-DB helpers stay behind a
 // lazy doctor-repair-runtime import so enumeration never pulls the kysely/state-db graph.
-import type { OpenClawStateDatabaseSchemaMigration } from "openclaw/plugin-sdk/doctor-repair-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/plugin-entry";
-import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
+import type { AforaStateDatabaseSchemaMigration } from "afora-agent/plugin-sdk/doctor-repair-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/plugin-entry";
+import { normalizeAgentId } from "afora-agent/plugin-sdk/routing";
 import {
   archiveLegacyStateSource,
   type PluginDoctorStateMigration,
   type PluginStateKeyedStore,
-} from "openclaw/plugin-sdk/runtime-doctor-migrations";
-import { asOptionalRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/runtime-doctor-migrations";
+import { asOptionalRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   buildVoiceCallLegacyJsonlEventKey,
   CALL_RECORD_CHUNK_MAX_ENTRIES,
@@ -72,7 +72,7 @@ function resolveUserPath(input: string, env: NodeJS.ProcessEnv): string {
 
 /** Read the configured voice-call store path from either package id. */
 function getVoiceCallConfigStore(config: PluginDoctorStateMigrationParams["config"]): string {
-  for (const pluginId of ["voice-call", "@openclaw/voice-call"]) {
+  for (const pluginId of ["voice-call", "@afora/voice-call"]) {
     const rawConfig = config.plugins?.entries?.[pluginId]?.config;
     if (!rawConfig || typeof rawConfig !== "object" || Array.isArray(rawConfig)) {
       continue;
@@ -90,9 +90,9 @@ type PluginDoctorStateMigrationParams = Parameters<
 >[0];
 
 /** Return Voice Call agents whose templated core session stores need migration. */
-export function resolveSessionStoreAgentIds(params: { cfg: OpenClawConfig }): string[] {
+export function resolveSessionStoreAgentIds(params: { cfg: AforaConfig }): string[] {
   const agentIds = new Set<string>();
-  for (const pluginId of ["voice-call", "@openclaw/voice-call"]) {
+  for (const pluginId of ["voice-call", "@afora/voice-call"]) {
     const entry = params.cfg.plugins?.entries?.[pluginId];
     if (!entry) {
       continue;
@@ -130,11 +130,11 @@ function resolveVoiceCallStateDatabaseEnv(
 ): NodeJS.ProcessEnv {
   return {
     ...params.env,
-    OPENCLAW_STATE_DIR: resolveVoiceCallStorePath(params),
+    AFORA_STATE_DIR: resolveVoiceCallStorePath(params),
   };
 }
 
-function describeVoiceCallSchemaMigration(migration: OpenClawStateDatabaseSchemaMigration): string {
+function describeVoiceCallSchemaMigration(migration: AforaStateDatabaseSchemaMigration): string {
   switch (migration.kind) {
     case "agent-databases-composite-primary-key":
       return "agent database registry primary key -> agent_id,path";
@@ -147,7 +147,7 @@ function describeVoiceCallSchemaMigration(migration: OpenClawStateDatabaseSchema
     case "worker-placement-execution-mode-v8":
       return "cloud worker placements -> execution-mode claims";
     case "operator-approvals-system-agent":
-      return "operator approvals -> OpenClaw system changes";
+      return "operator approvals -> Afora system changes";
     case "session-watch-cursor-provenance-v4":
       return "session watch cursors -> provenance column";
     case "strict-tables-v3":
@@ -304,12 +304,12 @@ export const stateMigrations: PluginDoctorStateMigration[] = [
     id: "voice-call-calls-jsonl-to-plugin-state",
     label: "Voice Call call log",
     async detectLegacyState(params) {
-      const { detectOpenClawStateDatabaseSchemaMigrations } =
-        await import("openclaw/plugin-sdk/doctor-repair-runtime");
+      const { detectAforaStateDatabaseSchemaMigrations } =
+        await import("afora-agent/plugin-sdk/doctor-repair-runtime");
       const storePath = resolveVoiceCallStorePath(params);
       const filePath = resolveVoiceCallLegacyCallLogPath(storePath);
       const { entries } = await readLegacyCallRecords(filePath);
-      const schemaMigrations = detectOpenClawStateDatabaseSchemaMigrations({
+      const schemaMigrations = detectAforaStateDatabaseSchemaMigrations({
         env: resolveVoiceCallStateDatabaseEnv(params),
       });
       if (entries.length === 0 && schemaMigrations.length === 0) {
@@ -330,8 +330,8 @@ export const stateMigrations: PluginDoctorStateMigration[] = [
       };
     },
     async migrateLegacyState(params) {
-      const { detectOpenClawStateDatabaseSchemaMigrations, repairOpenClawStateDatabaseSchema } =
-        await import("openclaw/plugin-sdk/doctor-repair-runtime");
+      const { detectAforaStateDatabaseSchemaMigrations, repairAforaStateDatabaseSchema } =
+        await import("afora-agent/plugin-sdk/doctor-repair-runtime");
       const changes: string[] = [];
       const warnings: string[] = [];
       const storePath = resolveVoiceCallStorePath(params);
@@ -339,11 +339,11 @@ export const stateMigrations: PluginDoctorStateMigration[] = [
       const { entries, warnings: readWarnings } = await readLegacyCallRecords(filePath);
       warnings.push(...readWarnings);
       const stateDatabaseEnv = resolveVoiceCallStateDatabaseEnv(params);
-      const schemaMigrations = detectOpenClawStateDatabaseSchemaMigrations({
+      const schemaMigrations = detectAforaStateDatabaseSchemaMigrations({
         env: stateDatabaseEnv,
       });
       if (schemaMigrations.length > 0) {
-        const repaired = repairOpenClawStateDatabaseSchema({ env: stateDatabaseEnv });
+        const repaired = repairAforaStateDatabaseSchema({ env: stateDatabaseEnv });
         warnings.push(...repaired.warnings);
         if (repaired.warnings.length > 0) {
           return { changes, warnings };

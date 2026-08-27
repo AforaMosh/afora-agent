@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { GatewayReloadPlan } from "./config-reload.js";
 import { nextGatewayReloadGeneration } from "./server-reload-contracts.js";
 import { createGatewayRestartCoordinator } from "./server-reload-restart.js";
@@ -41,7 +41,7 @@ describe("gateway restart readiness preflight", () => {
       .fn<() => Promise<void> | void>()
       .mockRejectedValueOnce(new Error("state schema is noncanonical"))
       .mockResolvedValue(undefined);
-    const prepareRuntimeConfig = vi.fn(async () => ({}) as OpenClawConfig);
+    const prepareRuntimeConfig = vi.fn(async () => ({}) as AforaConfig);
     const logReload = { info: vi.fn(), warn: vi.fn() };
     const params = { assertRestartReady, logReload, requestRecoveryRestart };
     const coordinator = createGatewayRestartCoordinator({
@@ -57,7 +57,7 @@ describe("gateway restart readiness preflight", () => {
 
     try {
       expect(
-        coordinator.requestGatewayRestart(restartPlan, {} as OpenClawConfig, {
+        coordinator.requestGatewayRestart(restartPlan, {} as AforaConfig, {
           prepareRuntimeConfig,
         }).status,
       ).toBe("accepted");

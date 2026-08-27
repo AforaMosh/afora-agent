@@ -11,17 +11,17 @@ let registerSlackChannelEvents: typeof import("./channels.js").registerSlackChan
 let registerSlackChannelIdChangedEvent: typeof import("./channels.js").registerSlackChannelIdChangedEvent;
 let createSlackSystemEventTestHarness: typeof import("./system-event-test-harness.js").createSlackSystemEventTestHarness;
 
-vi.mock("openclaw/plugin-sdk/system-event-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/system-event-runtime", () => ({
   enqueueRoutedSystemEvent: (
     text: unknown,
     route: { sessionKey: unknown },
     options: Record<string, unknown>,
   ) => enqueueSystemEventMock(text, { ...options, sessionKey: route.sessionKey }),
 }));
-vi.mock("openclaw/plugin-sdk/channel-config-writes", () => ({
+vi.mock("afora-agent/plugin-sdk/channel-config-writes", () => ({
   resolveChannelConfigWrites: () => true,
 }));
-vi.mock("openclaw/plugin-sdk/config-mutation", () => ({
+vi.mock("afora-agent/plugin-sdk/config-mutation", () => ({
   mutateConfigFile: (...args: unknown[]) => mutateConfigFileMock(...args),
   readConfigFileSnapshotForWrite: (...args: unknown[]) => readConfigSnapshotMock(...args),
 }));
@@ -238,7 +238,7 @@ describe("registerSlackChannelEvents", () => {
         new_channel_id: newChannelId,
       },
       body: {},
-      context: { openclawIngressLifecycle: turnAdoptionLifecycle },
+      context: { aforaIngressLifecycle: turnAdoptionLifecycle },
     };
 
     await expect(handler(args)).rejects.toBe(persistenceError);

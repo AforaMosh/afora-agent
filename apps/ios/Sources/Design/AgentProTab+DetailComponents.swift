@@ -1,14 +1,14 @@
-import OpenClawKit
+import AforaKit
 import SwiftUI
 
 extension AgentProTab {
-    func detailMetric(label: OpenClawTextValue, value: String) -> some View {
+    func detailMetric(label: AforaTextValue, value: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             label.text
-                .font(OpenClawType.caption2Medium)
+                .font(AforaType.caption2Medium)
                 .foregroundStyle(.secondary)
             Text(verbatim: value)
-                .font(OpenClawType.subheadSemiBold)
+                .font(AforaType.subheadSemiBold)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
@@ -16,21 +16,21 @@ extension AgentProTab {
         .padding(10)
         .background(
             Color.primary.opacity(0.055),
-            in: RoundedRectangle(cornerRadius: OpenClawRadius.sm, style: .continuous))
+            in: RoundedRectangle(cornerRadius: AforaRadius.sm, style: .continuous))
     }
 
     func emptyDetailRow(
         icon: String,
-        title: OpenClawTextValue,
-        detail: OpenClawTextValue) -> some View
+        title: AforaTextValue,
+        detail: AforaTextValue) -> some View
     {
         HStack(spacing: 12) {
             ProIconBadge(systemName: icon, color: .secondary)
             VStack(alignment: .leading, spacing: 3) {
                 title.text
-                    .font(OpenClawType.subheadSemiBold)
+                    .font(AforaType.subheadSemiBold)
                 detail.text
-                    .font(OpenClawType.caption)
+                    .font(AforaType.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }

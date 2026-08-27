@@ -44,7 +44,7 @@ import {
 import { normalizeAgentId, normalizeAgentIdStrict } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv, writeRuntimeJson } from "../runtime.js";
 import { readAgentDeletionJournal } from "../state/agent-deletion-journal.js";
-import { unregisterOpenClawAgentDatabases } from "../state/openclaw-agent-db-registry.js";
+import { unregisterAforaAgentDatabases } from "../state/afora-agent-db-registry.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
 import { createClackPrompter } from "../wizard/clack-prompter.js";
 import { createQuietRuntime } from "./agents.command-shared.js";
@@ -131,7 +131,7 @@ export async function agentsDeleteCommand(
     failAgentsDelete(
       opts,
       runtime,
-      `Agent id is required. Run ${formatCliCommand("openclaw agents list")} to choose one.`,
+      `Agent id is required. Run ${formatCliCommand("afora agents list")} to choose one.`,
     );
     return;
   }
@@ -141,7 +141,7 @@ export async function agentsDeleteCommand(
     failAgentsDelete(
       opts,
       runtime,
-      `Agent "${input}" not found. Run ${formatCliCommand("openclaw agents list")} to see configured agents.`,
+      `Agent "${input}" not found. Run ${formatCliCommand("afora agents list")} to see configured agents.`,
     );
     return;
   }
@@ -155,7 +155,7 @@ export async function agentsDeleteCommand(
     failAgentsDelete(
       opts,
       runtime,
-      `Agent "${agentId}" not found. Run ${formatCliCommand("openclaw agents list")} to see configured agents.`,
+      `Agent "${agentId}" not found. Run ${formatCliCommand("afora agents list")} to see configured agents.`,
     );
     return;
   }
@@ -334,7 +334,7 @@ export async function agentsDeleteCommand(
     if (deleteFiles) {
       // Keep registry ownership until every cleanup target is terminal. A crash before journal
       // completion leaves this idempotent deregistration reachable on the next delete attempt.
-      unregisterOpenClawAgentDatabases({ agentId });
+      unregisterAforaAgentDatabases({ agentId });
     }
     deletion.finish();
   }

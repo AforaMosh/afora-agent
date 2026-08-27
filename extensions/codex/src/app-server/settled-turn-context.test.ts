@@ -1,4 +1,4 @@
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-harness-runtime";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { captureCodexSettledTurnFinalizationContext } from "./settled-turn-context.js";
 import { attachCodexMirrorAttestation } from "./transcript-mirror-attestation.js";
@@ -57,7 +57,7 @@ function settledHostPromptTurn() {
     content: "Send it.",
     timestamp: 1,
     idempotencyKey: "durable-user-turn",
-    __openclaw: { senderIsOwner: true, transport: { messageId: "transport-message" } },
+    __afora: { senderIsOwner: true, transport: { messageId: "transport-message" } },
   } as AgentMessage;
   return {
     settledMessages,
@@ -102,7 +102,7 @@ describe("captureCodexSettledTurnFinalizationContext", () => {
     });
 
     expect(context).toEqual({
-      source: "openclaw-transcript",
+      source: "afora-transcript",
       messages: [prior, ...settledMessages],
     });
     expect(Object.isFrozen(context?.messages)).toBe(true);
@@ -114,13 +114,13 @@ describe("captureCodexSettledTurnFinalizationContext", () => {
 
     const context = await captureContext(turn);
 
-    expect(context).toEqual({ source: "openclaw-transcript", messages: turn.historyMessages });
+    expect(context).toEqual({ source: "afora-transcript", messages: turn.historyMessages });
     expect(Object.isFrozen(context?.messages)).toBe(true);
     expect(context?.messages[0]).toEqual(persistedPrompt);
     expect(readMirrorIdentity(context!.messages[0]!)).toBeUndefined();
     expect(readUpstreamUserText(context!.messages[0]!)).toBeUndefined();
     expect(context?.messages[0]).toMatchObject({
-      __openclaw: { senderIsOwner: true, transport: { messageId: "transport-message" } },
+      __afora: { senderIsOwner: true, transport: { messageId: "transport-message" } },
     });
   });
 

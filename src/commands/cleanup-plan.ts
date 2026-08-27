@@ -1,4 +1,4 @@
-// Resolves cleanup inputs from current OpenClaw config and state paths.
+// Resolves cleanup inputs from current Afora config and state paths.
 import {
   readConfigFileSnapshot,
   readSourceConfigBestEffort,
@@ -7,7 +7,7 @@ import {
   resolveStateDir,
 } from "../config/config.js";
 import { formatConfigIssueSummary } from "../config/issue-format.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { buildCleanupPlan } from "./cleanup-utils.js";
 
@@ -18,7 +18,7 @@ function affectsWorkspaceDiscovery(path: string): boolean {
   );
 }
 
-function buildCleanupPlanForConfig(cfg: OpenClawConfig) {
+function buildCleanupPlanForConfig(cfg: AforaConfig) {
   const stateDir = resolveStateDir();
   const configPath = resolveConfigPath();
   const oauthDir = resolveOAuthDir();
@@ -41,7 +41,7 @@ export async function resolveCleanupPlanForRemoval(runtime: RuntimeEnv) {
     const issues = snapshot.valid ? workspaceWarnings : snapshot.issues;
     const issueSummary = formatConfigIssueSummary(issues) ?? "configuration read failed";
     runtime.error(
-      `Cannot safely remove OpenClaw state because workspace configuration could not be resolved: ${issueSummary}. Fix the configuration and retry.`,
+      `Cannot safely remove Afora state because workspace configuration could not be resolved: ${issueSummary}. Fix the configuration and retry.`,
     );
     runtime.exit(1);
     return undefined;

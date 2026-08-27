@@ -3,7 +3,7 @@
  *
  * Chooses storage and command target session keys for channel-native command events.
  */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import type { ChannelMessagingAdapter } from "./plugins/types.core.js";
 
 /**

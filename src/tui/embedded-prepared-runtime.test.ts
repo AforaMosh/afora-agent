@@ -36,6 +36,6 @@ describe("EmbeddedPreparedModelRuntimeHost", () => {
     second.release();
 
     expect(second.snapshot).toBe(first.snapshot);
-    expect(mocks.ensureOpenClawModelsJson).not.toHaveBeenCalled();
+    expect(mocks.ensureAforaModelsJson).not.toHaveBeenCalled();
   });
 });

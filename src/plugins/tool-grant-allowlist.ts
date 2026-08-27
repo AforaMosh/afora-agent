@@ -1,7 +1,7 @@
 import { normalizeToolPolicyName } from "../agents/tool-policy.js";
 import type { RuntimePluginToolGrant } from "./runtime/tool-grant.js";
 
-const RUNTIME_PLUGIN_TOOL_GRANT_PREFIX = "__openclaw_runtime_plugin_tool_grant__";
+const RUNTIME_PLUGIN_TOOL_GRANT_PREFIX = "__afora_runtime_plugin_tool_grant__";
 
 function runtimePluginToolGrantKey(pluginId: string, toolName: string): string {
   return `${RUNTIME_PLUGIN_TOOL_GRANT_PREFIX}:${pluginId.trim().toLowerCase()}:${normalizeToolPolicyName(toolName)}`;

@@ -1,4 +1,4 @@
-import type { ChannelApprovalKind } from "openclaw/plugin-sdk/approval-handler-runtime";
+import type { ChannelApprovalKind } from "afora-agent/plugin-sdk/approval-handler-runtime";
 // Native Apple Messages poll bindings for approval prompts.
 //
 // Native polls replace tapback controls when the imsg bridge supports them.
@@ -7,13 +7,13 @@ import type { ChannelApprovalKind } from "openclaw/plugin-sdk/approval-handler-r
 import {
   createApprovalReactionTargetStore,
   listApprovalReactionBindings,
-} from "openclaw/plugin-sdk/approval-reaction-runtime";
-import type { ExecApprovalReplyDecision } from "openclaw/plugin-sdk/approval-reply-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { isApprovalNotFoundError } from "openclaw/plugin-sdk/error-runtime";
-import { createLazyRuntimeSurface } from "openclaw/plugin-sdk/lazy-runtime";
-import { asDateTimestampMs } from "openclaw/plugin-sdk/number-runtime";
-import { createPluginStateErrorReporter } from "openclaw/plugin-sdk/plugin-state-runtime";
+} from "afora-agent/plugin-sdk/approval-reaction-runtime";
+import type { ExecApprovalReplyDecision } from "afora-agent/plugin-sdk/approval-reply-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { isApprovalNotFoundError } from "afora-agent/plugin-sdk/error-runtime";
+import { createLazyRuntimeSurface } from "afora-agent/plugin-sdk/lazy-runtime";
+import { asDateTimestampMs } from "afora-agent/plugin-sdk/number-runtime";
+import { createPluginStateErrorReporter } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import { getIMessageApprovalApprovers, imessageApprovalAuth } from "./approval-auth.js";
 import type { IMessageApprovalGatewayRuntime } from "./approval-gateway-types.js";
 import {
@@ -55,7 +55,7 @@ type IMessageApprovalPollTarget = {
 type IMessageApprovalPollTombstone = { approvalId: string };
 
 const loadResolveApprovalOverGateway = createLazyRuntimeSurface(
-  () => import("openclaw/plugin-sdk/approval-gateway-runtime"),
+  () => import("afora-agent/plugin-sdk/approval-gateway-runtime"),
   (runtime) => runtime.resolveApprovalOverGateway,
 );
 
@@ -436,7 +436,7 @@ function warn(message: string, fields: Record<string, unknown>): void {
  * before the ordinary dispatch pipeline renders it as prose.
  */
 export async function maybeResolveIMessageApprovalPollVote(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   message: IMessagePayload;
   gatewayUrl?: string;

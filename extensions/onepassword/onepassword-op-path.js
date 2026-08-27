@@ -1,5 +1,5 @@
 import path from "node:path";
-import { pluginSecretRefSetup } from "openclaw/plugin-sdk/secret-ref-runtime";
+import { pluginSecretRefSetup } from "afora-agent/plugin-sdk/secret-ref-runtime";
 
 function errorCode(error) {
   return error && typeof error === "object" && "code" in error ? error.code : undefined;

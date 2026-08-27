@@ -1,4 +1,4 @@
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 
 export const NODE_INVOKE_DEADLINE_EXPIRED = Symbol("node invoke deadline expired");
 

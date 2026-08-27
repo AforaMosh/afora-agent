@@ -1,31 +1,31 @@
 #!/usr/bin/env bash
-# Runs Open WebUI against a Dockerized OpenClaw Gateway and verifies the proxied
+# Runs Open WebUI against a Dockerized Afora Gateway and verifies the proxied
 # chat path with a real OpenAI-compatible request.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$ROOT_DIR/scripts/lib/docker-e2e-image.sh"
 
-IMAGE_NAME="$(docker_e2e_resolve_image "openclaw-openwebui-e2e" OPENCLAW_OPENWEBUI_E2E_IMAGE)"
+IMAGE_NAME="$(docker_e2e_resolve_image "afora-openwebui-e2e" AFORA_OPENWEBUI_E2E_IMAGE)"
 OPENWEBUI_IMAGE="${OPENWEBUI_IMAGE:-ghcr.io/open-webui/open-webui:v0.8.10}"
-MAX_MEMORY_MIB="$(docker_e2e_read_nonnegative_decimal_env OPENCLAW_OPENWEBUI_MAX_MEMORY_MIB 8192)"
-MAX_CPU_PERCENT="$(docker_e2e_read_nonnegative_decimal_env OPENCLAW_OPENWEBUI_MAX_CPU_PERCENT 1600)"
+MAX_MEMORY_MIB="$(docker_e2e_read_nonnegative_decimal_env AFORA_OPENWEBUI_MAX_MEMORY_MIB 8192)"
+MAX_CPU_PERCENT="$(docker_e2e_read_nonnegative_decimal_env AFORA_OPENWEBUI_MAX_CPU_PERCENT 1600)"
 # Keep the default on the preferred GPT-5 OpenAI model for Open WebUI
 # compatibility smoke. Callers can still override this explicitly.
-MODEL="${OPENCLAW_OPENWEBUI_MODEL:-openai/gpt-5.6-luna}"
+MODEL="${AFORA_OPENWEBUI_MODEL:-openai/gpt-5.6-luna}"
 PROMPT_NONCE="OPENWEBUI_DOCKER_E2E_$(date +%s)_$$"
-PROMPT="${OPENCLAW_OPENWEBUI_PROMPT:-Reply with exactly this token and nothing else: ${PROMPT_NONCE}}"
-PORT="$(docker_e2e_read_tcp_port_env OPENCLAW_OPENWEBUI_GATEWAY_PORT 18789)"
-WEBUI_PORT="$(docker_e2e_read_tcp_port_env OPENCLAW_OPENWEBUI_PORT 8080)"
+PROMPT="${AFORA_OPENWEBUI_PROMPT:-Reply with exactly this token and nothing else: ${PROMPT_NONCE}}"
+PORT="$(docker_e2e_read_tcp_port_env AFORA_OPENWEBUI_GATEWAY_PORT 18789)"
+WEBUI_PORT="$(docker_e2e_read_tcp_port_env AFORA_OPENWEBUI_PORT 8080)"
 TOKEN="openwebui-e2e-$(date +%s)-$$"
-ADMIN_EMAIL="${OPENCLAW_OPENWEBUI_ADMIN_EMAIL:-openwebui-e2e@example.com}"
-ADMIN_PASSWORD="${OPENCLAW_OPENWEBUI_ADMIN_PASSWORD:-OpenWebUI-E2E-Password-$(date +%s)-$$}"
-NET_NAME="openclaw-openwebui-e2e-$$"
-GW_NAME="openclaw-openwebui-gateway-$$"
-OW_NAME="openclaw-openwebui-$$"
-PROVIDER_TIMEOUT_SECONDS="${OPENCLAW_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS:-900}"
-DOCKER_PULL_TIMEOUT="${OPENCLAW_OPENWEBUI_DOCKER_PULL_TIMEOUT:-600s}"
-SMOKE_MODE="${OPENWEBUI_SMOKE_MODE:-${OPENCLAW_OPENWEBUI_SMOKE_MODE:-chat}}"
+ADMIN_EMAIL="${AFORA_OPENWEBUI_ADMIN_EMAIL:-openwebui-e2e@example.com}"
+ADMIN_PASSWORD="${AFORA_OPENWEBUI_ADMIN_PASSWORD:-OpenWebUI-E2E-Password-$(date +%s)-$$}"
+NET_NAME="afora-openwebui-e2e-$$"
+GW_NAME="afora-openwebui-gateway-$$"
+OW_NAME="afora-openwebui-$$"
+PROVIDER_TIMEOUT_SECONDS="${AFORA_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS:-900}"
+DOCKER_PULL_TIMEOUT="${AFORA_OPENWEBUI_DOCKER_PULL_TIMEOUT:-600s}"
+SMOKE_MODE="${OPENWEBUI_SMOKE_MODE:-${AFORA_OPENWEBUI_SMOKE_MODE:-chat}}"
 
 validate_positive_int() {
   local label="$1"
@@ -36,11 +36,11 @@ validate_positive_int() {
   fi
 }
 
-validate_positive_int OPENCLAW_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS "$PROVIDER_TIMEOUT_SECONDS"
+validate_positive_int AFORA_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS "$PROVIDER_TIMEOUT_SECONDS"
 PROVIDER_TIMEOUT_SECONDS_DECIMAL=$((10#$PROVIDER_TIMEOUT_SECONDS))
-PROBE_FETCH_TIMEOUT_MS="${OPENCLAW_OPENWEBUI_FETCH_TIMEOUT_MS:-$((PROVIDER_TIMEOUT_SECONDS_DECIMAL * 1000 + 60000))}"
-validate_positive_int OPENCLAW_OPENWEBUI_FETCH_TIMEOUT_MS "$PROBE_FETCH_TIMEOUT_MS"
-DOCKER_COMMAND_TIMEOUT="${OPENCLAW_OPENWEBUI_DOCKER_COMMAND_TIMEOUT:-$((PROVIDER_TIMEOUT_SECONDS_DECIMAL + 90))s}"
+PROBE_FETCH_TIMEOUT_MS="${AFORA_OPENWEBUI_FETCH_TIMEOUT_MS:-$((PROVIDER_TIMEOUT_SECONDS_DECIMAL * 1000 + 60000))}"
+validate_positive_int AFORA_OPENWEBUI_FETCH_TIMEOUT_MS "$PROBE_FETCH_TIMEOUT_MS"
+DOCKER_COMMAND_TIMEOUT="${AFORA_OPENWEBUI_DOCKER_COMMAND_TIMEOUT:-$((PROVIDER_TIMEOUT_SECONDS_DECIMAL + 90))s}"
 
 case "$SMOKE_MODE" in
   chat | models) ;;
@@ -50,7 +50,7 @@ case "$SMOKE_MODE" in
     ;;
 esac
 
-PROFILE_FILE="${OPENCLAW_TESTBOX_PROFILE_FILE:-$HOME/.openclaw-testbox-live.profile}"
+PROFILE_FILE="${AFORA_TESTBOX_PROFILE_FILE:-$HOME/.afora-testbox-live.profile}"
 if [[ -f "$PROFILE_FILE" && -r "$PROFILE_FILE" ]]; then
   set -a
   # shellcheck disable=SC1090
@@ -71,9 +71,9 @@ if [[ -z "$OPENAI_API_KEY_VALUE" ]]; then
   exit 2
 fi
 
-STATS_LOG="$(mktemp "${TMPDIR:-/tmp}/openclaw-openwebui-stats.XXXXXX")"
-PROBE_LOG="$(mktemp "${TMPDIR:-/tmp}/openclaw-openwebui-probe.XXXXXX")"
-STATS_STOP_FILE="$(mktemp "${TMPDIR:-/tmp}/openclaw-openwebui-stats-stop.XXXXXX")"
+STATS_LOG="$(mktemp "${TMPDIR:-/tmp}/afora-openwebui-stats.XXXXXX")"
+PROBE_LOG="$(mktemp "${TMPDIR:-/tmp}/afora-openwebui-probe.XXXXXX")"
+STATS_STOP_FILE="$(mktemp "${TMPDIR:-/tmp}/afora-openwebui-stats-stop.XXXXXX")"
 STATS_PIDS=()
 
 cleanup() {
@@ -138,35 +138,35 @@ docker_e2e_docker_cmd run -d \
   "${DOCKER_E2E_HARNESS_ARGS[@]}" \
   --name "$GW_NAME" \
   --network "$NET_NAME" \
-  -e "OPENCLAW_GATEWAY_TOKEN=$TOKEN" \
-  -e "OPENCLAW_OPENWEBUI_MODEL=$MODEL" \
-  -e "OPENCLAW_SKIP_CHANNELS=1" \
-  -e "OPENCLAW_SKIP_GMAIL_WATCHER=1" \
-  -e "OPENCLAW_SKIP_CRON=1" \
-  -e "OPENCLAW_SKIP_CANVAS_HOST=1" \
-  -e "OPENCLAW_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS=$PROVIDER_TIMEOUT_SECONDS" \
+  -e "AFORA_GATEWAY_TOKEN=$TOKEN" \
+  -e "AFORA_OPENWEBUI_MODEL=$MODEL" \
+  -e "AFORA_SKIP_CHANNELS=1" \
+  -e "AFORA_SKIP_GMAIL_WATCHER=1" \
+  -e "AFORA_SKIP_CRON=1" \
+  -e "AFORA_SKIP_CANVAS_HOST=1" \
+  -e "AFORA_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS=$PROVIDER_TIMEOUT_SECONDS" \
   -e OPENAI_API_KEY \
   ${OPENAI_BASE_URL_VALUE:+-e OPENAI_BASE_URL} \
   "$IMAGE_NAME" \
   bash -lc '
     set -euo pipefail
-    source scripts/lib/openclaw-e2e-instance.sh
-    entry="$(openclaw_e2e_resolve_entrypoint)"
+    source scripts/lib/afora-e2e-instance.sh
+    entry="$(afora_e2e_resolve_entrypoint)"
 
     openai_api_key="${OPENAI_API_KEY:?OPENAI_API_KEY required}"
-    batch_file="$(mktemp /tmp/openclaw-openwebui-config.XXXXXX.json)"
-    OPENCLAW_CONFIG_BATCH_PATH="$batch_file" node scripts/e2e/lib/fixture.mjs openwebui-config "$openai_api_key"
+    batch_file="$(mktemp /tmp/afora-openwebui-config.XXXXXX.json)"
+    AFORA_CONFIG_BATCH_PATH="$batch_file" node scripts/e2e/lib/fixture.mjs openwebui-config "$openai_api_key"
     node "$entry" config set --batch-file "$batch_file" >/dev/null
     rm -f "$batch_file"
     node scripts/e2e/lib/fixture.mjs openwebui-workspace
     node "$entry" doctor --fix --yes --force >/dev/null
 
-    openclaw_e2e_exec_gateway "$entry" '"$PORT"' lan /tmp/openwebui-gateway.log
+    afora_e2e_exec_gateway "$entry" '"$PORT"' lan /tmp/openwebui-gateway.log
   ' >/dev/null
 start_openwebui_stats_sampler
 
 echo "Waiting for gateway HTTP surface..."
-if ! docker_e2e_wait_container_bash "$GW_NAME" 240 1 "OPENCLAW_HTTP_PROBE_BEARER='$TOKEN' node scripts/e2e/lib/openwebui/http-probe.mjs 'http://127.0.0.1:$PORT/v1/models' 200"; then
+if ! docker_e2e_wait_container_bash "$GW_NAME" 240 1 "AFORA_HTTP_PROBE_BEARER='$TOKEN' node scripts/e2e/lib/openwebui/http-probe.mjs 'http://127.0.0.1:$PORT/v1/models' 200"; then
   echo "Gateway failed to start"
   docker_e2e_docker_cmd inspect "$GW_NAME" --format '{{json .State}}' 2>/dev/null || true
   docker_e2e_tail_container_file_if_running "$GW_NAME" /tmp/openwebui-gateway.log 200
@@ -178,8 +178,8 @@ docker_e2e_docker_cmd run -d \
   --name "$OW_NAME" \
   --network "$NET_NAME" \
   -e ENV=prod \
-  -e WEBUI_NAME="OpenClaw E2E" \
-  -e WEBUI_SECRET_KEY="openclaw-openwebui-e2e-secret-key-v1" \
+  -e WEBUI_NAME="Afora E2E" \
+  -e WEBUI_SECRET_KEY="afora-openwebui-e2e-secret-key-v1" \
   -e OFFLINE_MODE=True \
   -e ENABLE_VERSION_UPDATE_CHECK=False \
   -e ENABLE_PERSISTENT_CONFIG=False \
@@ -192,9 +192,9 @@ docker_e2e_docker_cmd run -d \
   -e RAG_RERANKING_MODEL_AUTO_UPDATE=False \
   -e WEBUI_ADMIN_EMAIL="$ADMIN_EMAIL" \
   -e WEBUI_ADMIN_PASSWORD="$ADMIN_PASSWORD" \
-  -e WEBUI_ADMIN_NAME="OpenClaw E2E" \
+  -e WEBUI_ADMIN_NAME="Afora E2E" \
   -e ENABLE_SIGNUP=False \
-  -e DEFAULT_MODELS="openclaw/default" \
+  -e DEFAULT_MODELS="afora-agent/default" \
   "$OPENWEBUI_IMAGE" >/dev/null
 
 echo "Waiting for Open WebUI..."
@@ -206,7 +206,7 @@ fi
 sample_openwebui_stats_once
 
 echo "Waiting for gateway model endpoint after Open WebUI startup..."
-if ! docker_e2e_wait_container_bash "$GW_NAME" 90 5 "OPENCLAW_HTTP_PROBE_BEARER='$TOKEN' OPENCLAW_HTTP_PROBE_TIMEOUT_MS=8000 node scripts/e2e/lib/openwebui/http-probe.mjs 'http://$GW_NAME:$PORT/v1/models' 200"; then
+if ! docker_e2e_wait_container_bash "$GW_NAME" 90 5 "AFORA_HTTP_PROBE_BEARER='$TOKEN' AFORA_HTTP_PROBE_TIMEOUT_MS=8000 node scripts/e2e/lib/openwebui/http-probe.mjs 'http://$GW_NAME:$PORT/v1/models' 200"; then
   echo "Gateway model endpoint did not stay reachable after Open WebUI startup"
   docker_e2e_docker_cmd inspect "$GW_NAME" --format '{{json .State}}' 2>/dev/null || true
   docker_e2e_tail_container_file_if_running "$GW_NAME" /tmp/openwebui-gateway.log 200
@@ -215,7 +215,7 @@ if ! docker_e2e_wait_container_bash "$GW_NAME" 90 5 "OPENCLAW_HTTP_PROBE_BEARER=
 fi
 sample_openwebui_stats_once
 
-echo "Running Open WebUI -> OpenClaw smoke..."
+echo "Running Open WebUI -> Afora smoke..."
 set +e
 docker_e2e_docker_cmd exec \
   -e "OPENWEBUI_BASE_URL=http://$OW_NAME:$WEBUI_PORT" \

@@ -4,8 +4,8 @@ import { mkdtemp, realpath, rm } from "node:fs/promises";
 import { createServer } from "node:http";
 import os from "node:os";
 import path from "node:path";
-import { saveRemoteMedia } from "openclaw/plugin-sdk/media-runtime";
-import { createChannelIngressQueueForTests } from "openclaw/plugin-sdk/plugin-state-test-runtime";
+import { saveRemoteMedia } from "afora-agent/plugin-sdk/media-runtime";
+import { createChannelIngressQueueForTests } from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SmsChannelRuntime } from "./inbound.js";
 import { createSmsIngressSpool } from "./ingress-spool.js";
@@ -39,7 +39,7 @@ type SmsIngressDeliver = NonNullable<Parameters<typeof createSmsIngressSpool>[0]
 type SmsIngressSpool = ReturnType<typeof createSmsIngressSpool>;
 
 async function createStateDir(): Promise<string> {
-  const created = await mkdtemp(path.join(os.tmpdir(), "openclaw-sms-ingress-"));
+  const created = await mkdtemp(path.join(os.tmpdir(), "afora-sms-ingress-"));
   const resolved = await realpath(created);
   stateDirs.push(resolved);
   return resolved;
@@ -96,7 +96,7 @@ afterEach(async () => {
 describe("createSmsIngressSpool", () => {
   it("retries acknowledged MMS provider outages before adopting later same-sender messages", async () => {
     const stateDir = await createStateDir();
-    vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+    vi.stubEnv("AFORA_STATE_DIR", stateDir);
     disposers.push(() => {
       vi.unstubAllEnvs();
     });
@@ -231,7 +231,7 @@ describe("createSmsIngressSpool", () => {
     };
     const firstResponse = await postSignedCallback(mediaCallback);
     expect(firstResponse.status).toBe(200);
-    expect(firstResponse.headers.get("x-openclaw-delivery-accepted")).toBe("durable");
+    expect(firstResponse.headers.get("x-afora-delivery-accepted")).toBe("durable");
     await vi.waitFor(async () => {
       expect(mediaRequests).toBe(1);
       expect(await queue.listPending()).toEqual([

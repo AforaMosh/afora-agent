@@ -1,8 +1,8 @@
 // Clickclack tests cover inbound plugin behavior.
-import { createPluginRuntimeMock } from "openclaw/plugin-sdk/channel-test-helpers";
-import type { PluginRuntime } from "openclaw/plugin-sdk/core";
-import type { PluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
-import { buildAgentSessionKey, resolveAgentRoute } from "openclaw/plugin-sdk/routing";
+import { createPluginRuntimeMock } from "afora-agent/plugin-sdk/channel-test-helpers";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/core";
+import type { PluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
+import { buildAgentSessionKey, resolveAgentRoute } from "afora-agent/plugin-sdk/routing";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   recordPendingDiscussionOpen,
@@ -604,7 +604,7 @@ describe("handleClickClackInbound", () => {
       agentId: "research",
       sessionId: "session-id",
       serverBaseUrl: "http://127.0.0.1:8080",
-      externalRef: "openclaw:test:research",
+      externalRef: "afora:test:research",
       externalUrl: "",
       workspaceRef: "wsp_1",
       workspaceId: "wsp_1",
@@ -680,7 +680,7 @@ describe("handleClickClackInbound", () => {
       agentId: "research",
       sessionId: "old-session-id",
       serverBaseUrl: "http://127.0.0.1:8080",
-      externalRef: "openclaw:test:research",
+      externalRef: "afora:test:research",
       externalUrl: "",
       workspaceRef: "wsp_1",
       workspaceId: "wsp_1",
@@ -716,7 +716,7 @@ describe("handleClickClackInbound", () => {
     expect(getClickClackDiscussionBindingStore(runtime).get(mainSessionKey)).toMatchObject({
       sessionId: "session-id",
       channelId: "chn_1",
-      externalRef: "openclaw:test:research",
+      externalRef: "afora:test:research",
     });
   });
 
@@ -728,7 +728,7 @@ describe("handleClickClackInbound", () => {
       agentId: "research",
       sessionId: "session-id",
       serverBaseUrl: "http://127.0.0.1:8080",
-      externalRef: "openclaw:test:research",
+      externalRef: "afora:test:research",
       externalUrl: "",
       workspaceRef: "wsp_1",
       workspaceId: "wsp_1",
@@ -776,7 +776,7 @@ describe("handleClickClackInbound", () => {
       agentId: "research",
       sessionId: "session-id",
       serverBaseUrl: "http://127.0.0.1:8080",
-      externalRef: "openclaw:test:research",
+      externalRef: "afora:test:research",
       externalUrl: "",
       workspaceRef: "wsp_1",
       workspaceId: "wsp_1",
@@ -819,7 +819,7 @@ describe("handleClickClackInbound", () => {
       agentId: "research",
       sessionId: "session-id",
       serverBaseUrl: "http://127.0.0.1:8080",
-      externalRef: "openclaw:test:research",
+      externalRef: "afora:test:research",
       externalUrl: "",
       workspaceRef: "wsp_1",
       workspaceId: "wsp_1",
@@ -850,7 +850,7 @@ describe("handleClickClackInbound", () => {
       agentId: "research",
       sessionId: "session-id",
       serverBaseUrl: "http://127.0.0.1:8080",
-      externalRef: "openclaw:test:released",
+      externalRef: "afora:test:released",
       externalUrl: "",
       workspaceRef: "wsp_1",
       workspaceId: "wsp_1",
@@ -884,7 +884,7 @@ describe("handleClickClackInbound", () => {
       agentId: "research",
       sessionId: "session-id",
       serverBaseUrl: "http://127.0.0.1:8080",
-      externalRef: "openclaw:test:renamed-account",
+      externalRef: "afora:test:renamed-account",
       externalUrl: "",
       workspaceRef: "wsp_1",
       workspaceId: "wsp_1",
@@ -927,7 +927,7 @@ describe("handleClickClackInbound", () => {
         serverBaseUrl: "http://127.0.0.1:8080",
         workspaceId: "wsp_1",
         sessionId: "session-id",
-        externalRef: "openclaw:test:pending",
+        externalRef: "afora:test:pending",
         credentialFingerprint: "test-fingerprint",
       },
     });
@@ -950,7 +950,7 @@ describe("handleClickClackInbound", () => {
       agentId: "research",
       sessionId: "session-id",
       serverBaseUrl: "http://127.0.0.1:8080",
-      externalRef: "openclaw:test:research",
+      externalRef: "afora:test:research",
       externalUrl: "",
       workspaceRef: "wsp_1",
       workspaceId: "wsp_1",

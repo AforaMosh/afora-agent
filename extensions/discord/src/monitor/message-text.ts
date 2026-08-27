@@ -1,6 +1,6 @@
 // Discord plugin module implements message text behavior.
 import { ComponentType } from "discord-api-types/v10";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { Message } from "../internal/discord.js";
 import {
   formatDiscordSnapshotAuthor,

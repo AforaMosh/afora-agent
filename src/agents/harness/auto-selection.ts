@@ -1,4 +1,4 @@
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import type { AgentHarness, AgentHarnessSupport } from "./types.js";
 
 /** Returns a prepared negative auto-selection fact, or undefined when full support needs probing. */

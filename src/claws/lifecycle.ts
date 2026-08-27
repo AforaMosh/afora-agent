@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { lstat, realpath } from "node:fs/promises";
 import { homedir } from "node:os";
 import { relative, resolve } from "node:path";
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import { resolvePathViaExistingAncestorSync } from "../infra/boundary-path.js";
 import { assertNoSymlinkParents } from "../infra/fs-safe-advanced.js";
 import { FsSafeError, root as fsSafeRoot, type Root } from "../infra/fs-safe.js";
@@ -23,7 +23,7 @@ import {
   type ClawDiagnostic,
   type ClawManifest,
   type ClawLocalPrerequisite,
-  type ClawOpenClawProfile,
+  type ClawAforaProfile,
   type ClawPackagePreflight,
   type ClawPackagePreflightResult,
   type ClawSourceIdentity,
@@ -192,7 +192,7 @@ export async function buildClawAddPlan(params: {
   clawMarkdownBody?: Buffer;
   packageBootstrap?: ClawWorkspaceSourceSnapshot;
   includePackageBootstrap?: boolean;
-  openClawProfile?: ClawOpenClawProfile;
+  aforaProfile?: ClawAforaProfile;
   reconstructLegacyDynamicToolProfilePlan?: boolean;
   source: ClawSourceIdentity;
   diagnostics?: ClawDiagnostic[];
@@ -201,7 +201,7 @@ export async function buildClawAddPlan(params: {
   const context = params.context ?? {};
   const finalId = context.agentId ?? params.manifest.agent.id;
   const workspace = canonicalWorkspacePath(
-    context.workspace ?? resolve(homedir(), ".openclaw", `workspace-${finalId}`),
+    context.workspace ?? resolve(homedir(), ".afora", `workspace-${finalId}`),
   );
   const packageRoot = await realpath(params.source.packageRoot).catch(
     () => params.source.packageRoot,
@@ -237,13 +237,13 @@ export async function buildClawAddPlan(params: {
   }
   const existingAgentIds = new Set(context.existingAgentIds ?? []);
   const agentBlocked = existingAgentIds.has(finalId);
-  const openClawAgentSettings = params.openClawProfile?.agent ?? {};
-  const persistedOpenClawAgentSettings = params.reconstructLegacyDynamicToolProfilePlan
-    ? openClawAgentSettings
-    : materializeClawToolProfile(openClawAgentSettings);
+  const aforaAgentSettings = params.aforaProfile?.agent ?? {};
+  const persistedAforaAgentSettings = params.reconstructLegacyDynamicToolProfilePlan
+    ? aforaAgentSettings
+    : materializeClawToolProfile(aforaAgentSettings);
   const agentConfig: ClawAddPlan["agent"]["config"] = {
     ...params.manifest.agent,
-    ...persistedOpenClawAgentSettings,
+    ...persistedAforaAgentSettings,
     id: finalId,
     workspace,
   };
@@ -265,10 +265,10 @@ export async function buildClawAddPlan(params: {
     blocked: agentBlocked || !AGENT_ID_PATTERN.test(finalId),
   });
   const agentCapabilityEffect = {
-    ...(openClawAgentSettings.sandbox ? { sandbox: openClawAgentSettings.sandbox } : {}),
-    ...(openClawAgentSettings.tools ? { tools: openClawAgentSettings.tools } : {}),
-    ...(openClawAgentSettings.memory ? { memory: openClawAgentSettings.memory } : {}),
-    ...(openClawAgentSettings.heartbeat ? { heartbeat: openClawAgentSettings.heartbeat } : {}),
+    ...(aforaAgentSettings.sandbox ? { sandbox: aforaAgentSettings.sandbox } : {}),
+    ...(aforaAgentSettings.tools ? { tools: aforaAgentSettings.tools } : {}),
+    ...(aforaAgentSettings.memory ? { memory: aforaAgentSettings.memory } : {}),
+    ...(aforaAgentSettings.heartbeat ? { heartbeat: aforaAgentSettings.heartbeat } : {}),
   };
   if (Object.keys(agentCapabilityEffect).length > 0) {
     capabilityChanges.push(
@@ -555,14 +555,14 @@ export async function buildClawAddPlan(params: {
   }
 
   const extensionPlan = await planClawExtensions({
-    extensions: params.openClawProfile?.extensions ?? [],
+    extensions: params.aforaProfile?.extensions ?? [],
     workspace,
     packagePreflight: context.packagePreflight,
   });
   const extensions = extensionPlan.extensions;
   const extensionCollisions = findClawExtensionPackageCollisions({
     packages: params.manifest.packages,
-    extensions: params.openClawProfile?.extensions ?? [],
+    extensions: params.aforaProfile?.extensions ?? [],
   });
   const collisionIndexes = new Set(extensionCollisions.map(({ index }) => index));
   blockers.push(...extensionCollisions.map(({ diagnostic }) => diagnostic));

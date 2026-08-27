@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { note } from "../../packages/terminal-core/src/note.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { loadBundledPluginPublicSurfaceModuleSyncCore } from "../plugin-sdk/facade-loader.js";
 import { resolveConfigDir } from "../utils.js";
 
@@ -36,13 +36,13 @@ export type LegacyClawdBrowserProfileResidue = {
 };
 
 type BrowserDoctorSurface = {
-  noteChromeMcpBrowserReadiness: (cfg: OpenClawConfig, deps?: BrowserDoctorDeps) => Promise<void>;
+  noteChromeMcpBrowserReadiness: (cfg: AforaConfig, deps?: BrowserDoctorDeps) => Promise<void>;
   detectLegacyClawdBrowserProfileResidue?: (
-    cfg: OpenClawConfig,
+    cfg: AforaConfig,
     deps?: BrowserDoctorRepairDeps,
   ) => LegacyClawdBrowserProfileResidue | null;
   maybeArchiveLegacyClawdBrowserProfileResidue?: (
-    cfg: OpenClawConfig,
+    cfg: AforaConfig,
     deps?: BrowserDoctorRepairDeps,
   ) => Promise<{ changes: string[]; warnings: string[] }>;
   maybeRepairOwnedChromeExtensionNativeHosts?: () => Promise<{
@@ -89,7 +89,7 @@ function mayHaveLegacyClawdBrowserProfileResidue(deps?: BrowserDoctorRepairDeps)
 }
 
 /** Emits browser readiness notes through the bundled browser plugin doctor surface. */
-export async function noteChromeMcpBrowserReadiness(cfg: OpenClawConfig, deps?: BrowserDoctorDeps) {
+export async function noteChromeMcpBrowserReadiness(cfg: AforaConfig, deps?: BrowserDoctorDeps) {
   try {
     await loadBrowserDoctorSurface().noteChromeMcpBrowserReadiness(cfg, deps);
   } catch (error) {
@@ -101,7 +101,7 @@ export async function noteChromeMcpBrowserReadiness(cfg: OpenClawConfig, deps?: 
 
 /** Detects old clawd browser profile residue without loading plugin cleanup when paths are absent. */
 export async function detectLegacyClawdBrowserProfileResidue(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   deps?: BrowserDoctorRepairDeps,
 ): Promise<LegacyClawdBrowserProfileResidue | null> {
   if (!mayHaveLegacyClawdBrowserProfileResidue(deps)) {
@@ -116,7 +116,7 @@ export async function detectLegacyClawdBrowserProfileResidue(
 
 /** Archives legacy clawd browser profile residue through the browser plugin repair hook. */
 export async function maybeArchiveLegacyClawdBrowserProfileResidue(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   deps?: BrowserDoctorRepairDeps,
 ): Promise<{ changes: string[]; warnings: string[] }> {
   if (!mayHaveLegacyClawdBrowserProfileResidue(deps)) {

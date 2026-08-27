@@ -1,7 +1,7 @@
 // Resolves approval delivery targets from sessions and turn sources.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { resolveSessionConversationRef } from "../channels/plugins/session-conversation.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizeMessageChannel } from "../utils/message-channel.js";
 import {
   doesApprovalRequestMatchChannelAccount,
@@ -33,7 +33,7 @@ export type ApprovalRequestSessionConversation = {
 
 type ApprovalRequestLike = ApprovalRequestInput;
 type ApprovalRequestOriginTargetResolver<TTarget> = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   request: ApprovalRequestLike;
   channel: string;
   accountId?: string | null;
@@ -115,7 +115,7 @@ export function resolveApprovalRequestSessionConversation(params: {
 
 /** Resolves the best known message target for an exec approval request. */
 export function resolveExecApprovalSessionTarget(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   request: ExecApprovalRequest;
   turnSourceChannel?: string | null;
   turnSourceTo?: string | null;
@@ -156,7 +156,7 @@ export function resolveExecApprovalSessionTarget(params: {
 
 /** Resolves the best known message target for either exec or plugin approval requests. */
 export function resolveApprovalRequestSessionTarget(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   request: ApprovalRequestLike;
 }): ExecApprovalSessionTarget | null {
   const execLikeRequest = toExecLikeApprovalRequest(params.request);
@@ -171,7 +171,7 @@ export function resolveApprovalRequestSessionTarget(params: {
 }
 
 function resolveApprovalRequestStoredSessionTarget(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   request: ApprovalRequestLike;
 }): ExecApprovalSessionTarget | null {
   const execLikeRequest = toExecLikeApprovalRequest(params.request);

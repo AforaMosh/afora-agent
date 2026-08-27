@@ -1,12 +1,12 @@
 // Discord tests cover model picker preferences migrations plugin behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { buildLegacyMigrationPreview } from "openclaw/plugin-sdk/runtime-doctor-migrations";
+import { buildLegacyMigrationPreview } from "afora-agent/plugin-sdk/runtime-doctor-migrations";
 import {
-  resolvePreferredOpenClawTmpDir,
+  resolvePreferredAforaTmpDir,
   tempWorkspace,
   type TempWorkspace,
-} from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/temp-path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { stateMigrations } from "../../doctor-contract-api.js";
 import { detectDiscordLegacyStateMigrations } from "./model-picker-preferences-migrations.js";
@@ -15,8 +15,8 @@ let stateWorkspace: TempWorkspace;
 
 beforeEach(async () => {
   stateWorkspace = await tempWorkspace({
-    rootDir: resolvePreferredOpenClawTmpDir(),
-    prefix: "openclaw-discord-model-picker-migration-",
+    rootDir: resolvePreferredAforaTmpDir(),
+    prefix: "afora-discord-model-picker-migration-",
   });
 });
 

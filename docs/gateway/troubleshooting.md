@@ -14,70 +14,70 @@ This is the deep runbook. Start at [/help/troubleshooting](/help/troubleshooting
 Run in this order:
 
 ```bash
-openclaw status
-openclaw gateway status
-openclaw logs --follow
-openclaw doctor
-openclaw channels status --probe
+afora status
+afora gateway status
+afora logs --follow
+afora doctor
+afora channels status --probe
 ```
 
 Healthy signals:
 
-- `openclaw gateway status` shows `Runtime: running`, `Connectivity probe: ok`, and a `Capability: ...` line.
-- `openclaw doctor` reports no blocking config/service issues.
-- `openclaw channels status --probe` shows live per-account transport status and, where supported, `works` or `audit ok`.
+- `afora gateway status` shows `Runtime: running`, `Connectivity probe: ok`, and a `Capability: ...` line.
+- `afora doctor` reports no blocking config/service issues.
+- `afora channels status --probe` shows live per-account transport status and, where supported, `works` or `audit ok`.
 
 ## After an update
 
 Use when an update finishes but the Gateway is down, channels are empty, or model calls fail with 401s.
 
 ```bash
-openclaw status --all
-openclaw update status --json
-openclaw gateway status --deep
-openclaw doctor --fix
-openclaw gateway restart
+afora status --all
+afora update status --json
+afora gateway status --deep
+afora doctor --fix
+afora gateway restart
 ```
 
 Look for:
 
-- `Update restart` in `openclaw status` / `openclaw status --all`. Pending or failed handoffs include the next command to run.
-- `plugin load failed: dependency tree corrupted; run openclaw doctor --fix` under Channels: the channel config still exists, but plugin registration failed before the channel could load.
-- Provider 401s after re-auth: `openclaw doctor --fix` checks for stale per-agent OAuth auth shadows and removes old copies so all agents resolve the current shared profile.
+- `Update restart` in `afora status` / `afora status --all`. Pending or failed handoffs include the next command to run.
+- `plugin load failed: dependency tree corrupted; run afora doctor --fix` under Channels: the channel config still exists, but plugin registration failed before the channel could load.
+- Provider 401s after re-auth: `afora doctor --fix` checks for stale per-agent OAuth auth shadows and removes old copies so all agents resolve the current shared profile.
 
 ## Split brain installs and newer config guard
 
-Use when a gateway service unexpectedly stops after an update, or logs show one `openclaw` binary is older than the version that last wrote `openclaw.json`.
+Use when a gateway service unexpectedly stops after an update, or logs show one `afora` binary is older than the version that last wrote `afora.json`.
 
-OpenClaw stamps config writes with `meta.lastTouchedVersion`. Read-only commands can inspect a config written by a newer OpenClaw, but process and service mutations refuse to run from an older binary. Blocked actions: gateway service start/stop/restart/uninstall, forced service reinstall, service-mode gateway startup, and `gateway --force` port cleanup.
+Afora stamps config writes with `meta.lastTouchedVersion`. Read-only commands can inspect a config written by a newer Afora, but process and service mutations refuse to run from an older binary. Blocked actions: gateway service start/stop/restart/uninstall, forced service reinstall, service-mode gateway startup, and `gateway --force` port cleanup.
 
 ```bash
-which openclaw
-openclaw --version
-openclaw gateway status --deep
-openclaw config get meta.lastTouchedVersion
+which afora
+afora --version
+afora gateway status --deep
+afora config get meta.lastTouchedVersion
 ```
 
 <Steps>
   <Step title="Fix PATH">
-    Fix `PATH` so `openclaw` resolves to the newer install, then rerun the action.
+    Fix `PATH` so `afora` resolves to the newer install, then rerun the action.
   </Step>
   <Step title="Reinstall the gateway service">
     Reinstall the intended gateway service from the newer install:
 
     ```bash
-    openclaw gateway install --force
-    openclaw gateway restart
+    afora gateway install --force
+    afora gateway restart
     ```
 
   </Step>
   <Step title="Remove stale wrappers">
-    Remove stale system package or old wrapper entries that still point at an old `openclaw` binary.
+    Remove stale system package or old wrapper entries that still point at an old `afora` binary.
   </Step>
 </Steps>
 
 <Warning>
-For intentional downgrade or emergency recovery only, set `OPENCLAW_ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS=1` for the single command. Leave it unset for normal operation.
+For intentional downgrade or emergency recovery only, set `AFORA_ALLOW_OLDER_BINARY_DESTRUCTIVE_ACTIONS=1` for the single command. Leave it unset for normal operation.
 </Warning>
 
 ## Protocol mismatch after rollback
@@ -85,24 +85,24 @@ For intentional downgrade or emergency recovery only, set `OPENCLAW_ALLOW_OLDER_
 Use when logs keep printing `protocol mismatch` after a downgrade or rollback. An older Gateway is running, but a newer local client process is still reconnecting with a protocol range the older Gateway cannot speak.
 
 ```bash
-openclaw --version
-which -a openclaw
-openclaw gateway status --deep
-openclaw doctor --deep
-openclaw logs --follow
+afora --version
+which -a afora
+afora gateway status --deep
+afora doctor --deep
+afora logs --follow
 ```
 
 Look for:
 
 - `protocol mismatch ... client=... v<version> min=<n> max=<n> expected=<n>` in Gateway logs.
-- `Established clients:` in `openclaw gateway status --deep` or `Gateway clients` in `openclaw doctor --deep`: active TCP clients connected to the Gateway port, with PIDs and command lines when the OS allows it.
-- A client process whose command line points at the newer OpenClaw install or wrapper you rolled back from.
+- `Established clients:` in `afora gateway status --deep` or `Gateway clients` in `afora doctor --deep`: active TCP clients connected to the Gateway port, with PIDs and command lines when the OS allows it.
+- A client process whose command line points at the newer Afora install or wrapper you rolled back from.
 
 Fix:
 
-1. Stop or restart the stale OpenClaw client process shown by `gateway status --deep`.
-2. Restart apps or wrappers that embed OpenClaw: local dashboards, editors, app-server helpers, or long-running `openclaw logs --follow` shells.
-3. Re-run `openclaw gateway status --deep` or `openclaw doctor --deep` and confirm the stale client PID is gone.
+1. Stop or restart the stale Afora client process shown by `gateway status --deep`.
+2. Restart apps or wrappers that embed Afora: local dashboards, editors, app-server helpers, or long-running `afora logs --follow` shells.
+3. Re-run `afora gateway status --deep` or `afora doctor --deep` and confirm the stale client PID is gone.
 
 Do not make an older Gateway accept a newer incompatible protocol. Protocol bumps protect the wire contract; rollback recovery is a process/version cleanup problem.
 
@@ -114,14 +114,14 @@ Use when logs include:
 Skipping escaped skill path outside its configured root: ... reason=symlink-escape
 ```
 
-Every skill root is a containment boundary. A symlink under `~/.agents/skills`, `<workspace>/.agents/skills`, `<workspace>/skills`, or `~/.openclaw/skills` is skipped when its real target resolves outside that root, unless the target is explicitly trusted.
+Every skill root is a containment boundary. A symlink under `~/.agents/skills`, `<workspace>/.agents/skills`, `<workspace>/skills`, or `~/.afora/skills` is skipped when its real target resolves outside that root, unless the target is explicitly trusted.
 
 Inspect the link:
 
 ```bash
 ls -l ~/.agents/skills/<name>
 realpath ~/.agents/skills/<name>
-openclaw config get skills.load
+afora config get skills.load
 ```
 
 If the target is intentional, configure both the direct skill root and the allowed symlink target:
@@ -153,9 +153,9 @@ Related:
 Use when logs/errors include: `HTTP 429: rate_limit_error: Extra usage is required for long context requests`.
 
 ```bash
-openclaw logs --follow
-openclaw models status
-openclaw config get agents.defaults.models
+afora logs --follow
+afora models status
+afora config get agents.defaults.models
 ```
 
 Look for:
@@ -189,12 +189,12 @@ Related:
 
 Use when an upstream LLM provider returns a generic `403` such as `Your request was blocked`.
 
-Do not assume this is always an OpenClaw configuration issue. The response can come from an upstream security layer such as a CDN, WAF, bot-management rule, or reverse proxy in front of an OpenAI-compatible endpoint.
+Do not assume this is always an Afora configuration issue. The response can come from an upstream security layer such as a CDN, WAF, bot-management rule, or reverse proxy in front of an OpenAI-compatible endpoint.
 
 ```bash
-openclaw status
-openclaw gateway status
-openclaw logs --follow
+afora status
+afora gateway status
+afora logs --follow
 ```
 
 Look for:
@@ -204,7 +204,7 @@ Look for:
 - Provider-side security events for the same request time.
 - A tiny direct `curl` probe succeeding while normal SDK-shaped requests fail.
 
-Fix the provider-side filtering first when evidence points to a WAF/CDN block. Prefer a narrowly scoped allow or skip rule for the API path OpenClaw uses, and avoid disabling protection for the whole site.
+Fix the provider-side filtering first when evidence points to a WAF/CDN block. Prefer a narrowly scoped allow or skip rule for the API path Afora uses, and avoid disabling protection for the whole site.
 
 <Warning>
 A successful minimal `curl` does not guarantee that real SDK-style requests will pass through the same upstream security layer.
@@ -222,20 +222,20 @@ Use when:
 
 - `curl ... /v1/models` works.
 - Tiny direct `/v1/chat/completions` calls work.
-- OpenClaw model runs fail only on normal agent turns.
+- Afora model runs fail only on normal agent turns.
 
 ```bash
 curl http://127.0.0.1:1234/v1/models
 curl http://127.0.0.1:1234/v1/chat/completions \
   -H 'content-type: application/json' \
   -d '{"model":"<id>","messages":[{"role":"user","content":"hi"}],"stream":false}'
-openclaw infer model run --model <provider/model> --prompt "hi" --json
-openclaw logs --follow
+afora infer model run --model <provider/model> --prompt "hi" --json
+afora logs --follow
 ```
 
 Look for:
 
-- Direct tiny calls succeed, but OpenClaw runs fail only on larger prompts.
+- Direct tiny calls succeed, but Afora runs fail only on larger prompts.
 - `model_not_found` or 404 errors even though direct `/v1/chat/completions` works with the same bare model id.
 - Backend errors about `messages[].content` expecting a string.
 - Intermittent `incomplete turn detected ... stopReason=stop payloads=0` warnings with an OpenAI-compatible local backend.
@@ -246,17 +246,17 @@ Look for:
     - `model_not_found` with a local MLX/vLLM-style server: verify `baseUrl` includes `/v1`, `api` is `"openai-completions"` for `/v1/chat/completions` backends, and `models.providers.<provider>.models[].id` is the bare provider-local id. Select it with the provider prefix once, for example `mlx/mlx-community/Qwen3-30B-A3B-6bit`; keep the catalog entry as `mlx-community/Qwen3-30B-A3B-6bit`.
     - `messages[...].content: invalid type: sequence, expected a string`: backend rejects structured Chat Completions content parts. Fix: set `models.providers.<provider>.models[].compat.requiresStringContent: true`.
     - `validation.keys` or allowed message keys like `["role","content"]`: backend rejects OpenAI-style replay metadata on Chat Completions messages. Fix: set `models.providers.<provider>.models[].compat.strictMessageKeys: true`.
-    - `incomplete turn detected ... stopReason=stop payloads=0`: the backend completed the Chat Completions request but returned no user-visible assistant text for that turn. OpenClaw retries replay-safe empty OpenAI-compatible turns once; persistent failures usually mean the backend is emitting empty/non-text content or suppressing final-answer text.
-    - Direct tiny requests succeed, but OpenClaw agent runs fail with backend/model crashes (for example Gemma on some `inferrs` builds): OpenClaw transport is likely already correct; the backend is failing on the larger agent-runtime prompt shape.
+    - `incomplete turn detected ... stopReason=stop payloads=0`: the backend completed the Chat Completions request but returned no user-visible assistant text for that turn. Afora retries replay-safe empty OpenAI-compatible turns once; persistent failures usually mean the backend is emitting empty/non-text content or suppressing final-answer text.
+    - Direct tiny requests succeed, but Afora agent runs fail with backend/model crashes (for example Gemma on some `inferrs` builds): Afora transport is likely already correct; the backend is failing on the larger agent-runtime prompt shape.
     - Failures shrink after disabling tools but do not disappear: tool schemas were part of the pressure, but the remaining issue is still upstream model/server capacity or a backend bug.
 
   </Accordion>
   <Accordion title="Fix options">
     1. Set `compat.requiresStringContent: true` for string-only Chat Completions backends.
     2. Set `compat.strictMessageKeys: true` for strict Chat Completions backends that only accept `role` and `content` on each message.
-    3. Set `compat.supportsTools: false` for models/backends that cannot handle OpenClaw's tool schema surface reliably.
+    3. Set `compat.supportsTools: false` for models/backends that cannot handle Afora's tool schema surface reliably.
     4. Lower prompt pressure where possible: smaller workspace bootstrap, shorter session history, lighter local model, or a backend with stronger long-context support.
-    5. If tiny direct requests keep passing while OpenClaw agent turns still crash inside the backend, treat it as an upstream server/model limitation and file a repro there with the accepted payload shape.
+    5. If tiny direct requests keep passing while Afora agent turns still crash inside the backend, treat it as an upstream server/model limitation and file a repro there with the accepted payload shape.
   </Accordion>
 </AccordionGroup>
 
@@ -271,11 +271,11 @@ Related:
 If channels are up but nothing answers, check routing and policy before reconnecting anything.
 
 ```bash
-openclaw status
-openclaw channels status --probe
-openclaw pairing list --channel <channel> [--account <id>]
-openclaw config get channels
-openclaw logs --follow
+afora status
+afora channels status --probe
+afora pairing list --channel <channel> [--account <id>]
+afora config get channels
+afora logs --follow
 ```
 
 Look for:
@@ -301,11 +301,11 @@ Related:
 When the dashboard/control UI will not connect, validate URL, auth mode, and secure context assumptions.
 
 ```bash
-openclaw gateway status
-openclaw status
-openclaw logs --follow
-openclaw doctor
-openclaw gateway status --json
+afora gateway status
+afora status
+afora logs --follow
+afora doctor
+afora gateway status --json
 ```
 
 Look for:
@@ -317,12 +317,12 @@ Look for:
 If a local browser cannot connect to `127.0.0.1:18789` after an update, first recover the local Gateway service and confirm it is serving the dashboard:
 
 ```bash
-openclaw gateway restart
+afora gateway restart
 lsof -i :18789
 curl http://127.0.0.1:18789
 ```
 
-If `curl` returns OpenClaw HTML, the Gateway is working and the remaining issue is likely browser cache, an old deep link, or stale tab state. Open `http://127.0.0.1:18789` directly and navigate from the dashboard. If restart does not leave the service running, run `openclaw gateway start` and recheck `openclaw gateway status`.
+If `curl` returns Afora HTML, the Gateway is working and the remaining issue is likely browser cache, an old deep link, or stale tab state. Open `http://127.0.0.1:18789` directly and navigate from the dashboard. If restart does not leave the service running, run `afora gateway start` and recheck `afora gateway status`.
 
 <AccordionGroup>
   <Accordion title="Connect / auth signatures">
@@ -348,11 +348,11 @@ Use `error.details.code` from the failed `connect` response to pick the next act
 
 | Detail code                  | Meaning                                                                                                                                                                                      | Recommended action                                                                                                                                                                                                                                                                       |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AUTH_TOKEN_MISSING`         | Client did not send a required shared token.                                                                                                                                                 | On the Gateway host, run `openclaw gateway auth-token --show` in an interactive terminal, paste the output into the client, and retry.                                                                                                                                                   |
+| `AUTH_TOKEN_MISSING`         | Client did not send a required shared token.                                                                                                                                                 | On the Gateway host, run `afora gateway auth-token --show` in an interactive terminal, paste the output into the client, and retry.                                                                                                                                                   |
 | `AUTH_TOKEN_MISMATCH`        | Shared token did not match gateway auth token.                                                                                                                                               | If `canRetryWithDeviceToken=true`, allow one trusted retry. Cached-token retries reuse stored approved scopes; explicit `deviceToken` / `scopes` callers keep requested scopes. If still failing, run the [token drift recovery checklist](/cli/devices#token-drift-recovery-checklist). |
 | `AUTH_DEVICE_TOKEN_MISMATCH` | Cached per-device token is stale or revoked.                                                                                                                                                 | Rotate/re-approve device token using [devices CLI](/cli/devices), then reconnect.                                                                                                                                                                                                        |
 | `AUTH_SCOPE_MISMATCH`        | Device token is valid, but its approved role/scopes do not cover this connect request.                                                                                                       | Re-pair the device or approve the requested scope contract; do not treat this as shared-token drift.                                                                                                                                                                                     |
-| `PAIRING_REQUIRED`           | Device identity needs approval. Check `error.details.reason` for `not-paired`, `scope-upgrade`, `role-upgrade`, or `metadata-upgrade`, and use `requestId` / `remediationHint` when present. | Approve pending request: `openclaw devices list` then `openclaw devices approve <requestId>`. Scope/role upgrades use the same flow after you review the requested access.                                                                                                               |
+| `PAIRING_REQUIRED`           | Device identity needs approval. Check `error.details.reason` for `not-paired`, `scope-upgrade`, `role-upgrade`, or `metadata-upgrade`, and use `requestId` / `remediationHint` when present. | Approve pending request: `afora devices list` then `afora devices approve <requestId>`. Scope/role upgrades use the same flow after you review the requested access.                                                                                                               |
 
 <Note>
 Direct loopback backend RPCs authenticated with the shared gateway token/password should not depend on the CLI's paired-device scope baseline. If subagents or other internal calls still fail with `scope-upgrade`, verify the caller is using `client.id: "gateway-client"` and `client.mode: "backend"` and is not forcing an explicit `deviceIdentity` or device token.
@@ -361,9 +361,9 @@ Direct loopback backend RPCs authenticated with the shared gateway token/passwor
 Device auth v2 migration check:
 
 ```bash
-openclaw --version
-openclaw doctor
-openclaw gateway status
+afora --version
+afora doctor
+afora gateway status
 ```
 
 If logs show nonce/signature errors, update the connecting client and verify it:
@@ -380,10 +380,10 @@ If logs show nonce/signature errors, update the connecting client and verify it:
   </Step>
 </Steps>
 
-If `openclaw devices rotate` / `revoke` / `remove` is denied unexpectedly:
+If `afora devices rotate` / `revoke` / `remove` is denied unexpectedly:
 
 - Paired-device token sessions can manage only **their own** device unless the caller also has `operator.admin`.
-- `openclaw devices rotate --scope ...` can only request operator scopes that the caller session already holds.
+- `afora devices rotate --scope ...` can only request operator scopes that the caller session already holds.
 
 Related:
 
@@ -398,11 +398,11 @@ Related:
 Use when the service is installed but the process does not stay up.
 
 ```bash
-openclaw gateway status
-openclaw status
-openclaw logs --follow
-openclaw doctor
-openclaw gateway status --deep   # also scan system-level services
+afora gateway status
+afora status
+afora logs --follow
+afora doctor
+afora gateway status --deep   # also scan system-level services
 ```
 
 Look for:
@@ -415,12 +415,12 @@ Look for:
 
 <AccordionGroup>
   <Accordion title="Common signatures">
-    - `Gateway start blocked: set gateway.mode=local` or `existing config is missing gateway.mode` → local gateway mode is not enabled, or the config file was clobbered and lost `gateway.mode`. Fix: set `gateway.mode="local"` in your config, or re-run `openclaw onboard --mode local` / `openclaw setup` to restamp the expected local-mode config. If you are running OpenClaw via Podman, the default config path is `~/.openclaw/openclaw.json`.
+    - `Gateway start blocked: set gateway.mode=local` or `existing config is missing gateway.mode` → local gateway mode is not enabled, or the config file was clobbered and lost `gateway.mode`. Fix: set `gateway.mode="local"` in your config, or re-run `afora onboard --mode local` / `afora setup` to restamp the expected local-mode config. If you are running Afora via Podman, the default config path is `~/.AforaMosh/afora-agent.json`.
     - `refusing to bind gateway ... without auth` → non-loopback bind without a valid gateway auth path (token/password, or trusted-proxy where configured).
     - `another gateway instance is already listening` / `EADDRINUSE` → port conflict.
     - `Other gateway-like services detected (best effort)` → stale or parallel launchd/systemd/schtasks units exist. Most setups should keep one gateway per machine; if you do need more than one, isolate ports + config/state/workspace. See [/gateway#multiple-gateways-same-host](/gateway#multiple-gateways-same-host).
-    - `System-level OpenClaw gateway service detected` from doctor → a systemd system unit exists while the user-level service is missing. Remove or disable the duplicate before allowing doctor to install a user service, or set `OPENCLAW_SERVICE_REPAIR_POLICY=external` if the system unit is the intended supervisor.
-    - `Gateway service port does not match current gateway config` → the installed supervisor still pins the old `--port`. Run `openclaw doctor --fix` or `openclaw gateway install --force`, then restart the gateway service.
+    - `System-level Afora gateway service detected` from doctor → a systemd system unit exists while the user-level service is missing. Remove or disable the duplicate before allowing doctor to install a user service, or set `AFORA_SERVICE_REPAIR_POLICY=external` if the system unit is the intended supervisor.
+    - `Gateway service port does not match current gateway config` → the installed supervisor still pins the old `--port`. Run `afora doctor --fix` or `afora gateway install --force`, then restart the gateway service.
 
   </Accordion>
 </AccordionGroup>
@@ -433,26 +433,26 @@ Related:
 
 ## macOS gateway silently stops responding, then resumes when you touch the dashboard
 
-Use when channels (Telegram, WhatsApp, etc.) on a macOS host go quiet for minutes to hours at a time, and the gateway appears to come back the moment you open the Control UI, SSH in, or otherwise interact with the host. There is usually no obvious symptom in `openclaw status` because by the time you look the gateway is alive again.
+Use when channels (Telegram, WhatsApp, etc.) on a macOS host go quiet for minutes to hours at a time, and the gateway appears to come back the moment you open the Control UI, SSH in, or otherwise interact with the host. There is usually no obvious symptom in `afora status` because by the time you look the gateway is alive again.
 
 ```bash
-ls ~/.openclaw/logs/stability/ | tail -5
-openclaw gateway stability --bundle latest
+ls ~/.afora/logs/stability/ | tail -5
+afora gateway stability --bundle latest
 pmset -g log | grep -iE "sleep|wake|maintenance" | tail -50
-launchctl print gui/$UID/ai.openclaw.gateway | grep -E "state|last exit|runs"
+launchctl print gui/$UID/ai.afora.gateway | grep -E "state|last exit|runs"
 ```
 
 Look for:
 
-- One or more `*-uncaught_exception.json` bundles in `~/.openclaw/logs/stability/` with `error.code` set to a transient network code such as `ENETDOWN`, `ENETUNREACH`, `EHOSTUNREACH`, or `ECONNREFUSED`.
+- One or more `*-uncaught_exception.json` bundles in `~/.afora/logs/stability/` with `error.code` set to a transient network code such as `ENETDOWN`, `ENETUNREACH`, `EHOSTUNREACH`, or `ECONNREFUSED`.
 - `pmset -g log` lines like `Entering Sleep state due to 'Maintenance Sleep'` or `en0 driver is slow (msg: WillChangeState to 0)` aligned with the crash timestamps. Power Nap / Maintenance Sleep briefly puts the Wi-Fi driver into state 0; any outbound `connect()` that lands in that window can fail with `ENETDOWN` even on a host that otherwise has full network connectivity.
 - `launchctl print` output showing `state = not running` with multiple recent `runs` and an exit code, especially when the gap between crash and the next launch is on the order of an hour rather than seconds. macOS launchd applies an undocumented respawn-protection gate after a crash burst that can stop honoring `KeepAlive=true` until an external trigger such as interactive login, dashboard connection, or `launchctl kickstart` re-arms it.
 
 Common signatures:
 
-- A stability bundle whose `error.code` is `ENETDOWN` or a sibling code, with the call stack pointing into Node `net` `lookupAndConnect` / `Socket.connect`. OpenClaw `2026.5.26` and newer classify these as benign transient network errors so they no longer propagate to the top-level uncaught handler; if you are on an older release, upgrade first.
+- A stability bundle whose `error.code` is `ENETDOWN` or a sibling code, with the call stack pointing into Node `net` `lookupAndConnect` / `Socket.connect`. Afora `2026.5.26` and newer classify these as benign transient network errors so they no longer propagate to the top-level uncaught handler; if you are on an older release, upgrade first.
 - Long quiet periods that end the instant you connect to the Control UI or SSH into the host: the user-visible activity is what re-arms launchd's respawn gate, not anything the dashboard does to the gateway.
-- `runs` count incrementing across the day with no corresponding `received SIG*; shutting down` line in `~/Library/Logs/openclaw/gateway.log`: clean shutdowns log a signal; transient crashes do not.
+- `runs` count incrementing across the day with no corresponding `received SIG*; shutting down` line in `~/Library/Logs/afora/gateway.log`: clean shutdowns log a signal; transient crashes do not.
 
 What to do:
 
@@ -469,9 +469,9 @@ What to do:
 
    ```bash
    # Example launchd-aware liveness check, suitable for a 5-minute cron or LaunchAgent
-   state=$(launchctl print gui/$UID/ai.openclaw.gateway 2>/dev/null | awk -F'= ' '/state =/ {print $2; exit}')
+   state=$(launchctl print gui/$UID/ai.afora.gateway 2>/dev/null | awk -F'= ' '/state =/ {print $2; exit}')
    if [ "$state" != "running" ]; then
-     launchctl kickstart -k gui/$UID/ai.openclaw.gateway
+     launchctl kickstart -k gui/$UID/ai.afora.gateway
    fi
    ```
 
@@ -485,26 +485,26 @@ Related:
 
 ## macOS launchd supervisor loop with duplicate gateway/node LaunchAgents
 
-Use this when a macOS install keeps restarting every few seconds, `openclaw`
+Use this when a macOS install keeps restarting every few seconds, `afora`
 health checks flap between healthy and unavailable, and channel dispatch stalls
 even though the service appears to be running.
 
-This was observed on older installs where both `ai.openclaw.gateway` and
-`ai.openclaw.node` LaunchAgents were active and each injected
-`OPENCLAW_LAUNCHD_LABEL`. In that state OpenClaw can detect launchd
+This was observed on older installs where both `ai.afora.gateway` and
+`ai.afora.node` LaunchAgents were active and each injected
+`AFORA_LAUNCHD_LABEL`. In that state Afora can detect launchd
 supervision, try to hand restart back to launchd, and fall into a fast
 `EADDRINUSE`/respawn loop instead of one stable gateway process.
 
 ```bash
 for i in 1 2 3 4; do
-  ps aux | grep 'openclaw.*index.js' | grep -v grep | awk '{print $2}'
+  ps aux | grep 'afora.*index.js' | grep -v grep | awk '{print $2}'
   sleep 10
 done
 
-openclaw gateway status --deep
-openclaw node status
-launchctl print gui/$UID/ai.openclaw.gateway | grep -E 'state|last exit|runs'
-tail -n 80 ~/Library/Logs/openclaw/gateway.log
+afora gateway status --deep
+afora node status
+launchctl print gui/$UID/ai.afora.gateway | grep -E 'state|last exit|runs'
+tail -n 80 ~/Library/Logs/afora/gateway.log
 ```
 
 Look for:
@@ -513,38 +513,38 @@ Look for:
   process.
 - `EADDRINUSE`, `another gateway instance is already listening`, or repeated
   restart/handoff lines in `gateway.log`.
-- Both `~/Library/LaunchAgents/ai.openclaw.gateway.plist` and
-  `~/Library/LaunchAgents/ai.openclaw.node.plist` loaded at the same time on a
+- Both `~/Library/LaunchAgents/ai.afora.gateway.plist` and
+  `~/Library/LaunchAgents/ai.afora.node.plist` loaded at the same time on a
   host that should only run one managed gateway service.
 
 What to do:
 
 1. If this host should only run the Gateway service, remove the managed node
-   service through OpenClaw. **Skip this step** if you actively rely on the node
+   service through Afora. **Skip this step** if you actively rely on the node
    service for remote node features; uninstalling it stops those features on
    this host:
 
    ```bash
-   openclaw node uninstall
+   afora node uninstall
    ```
 
 2. Install a persistent Gateway wrapper that clears the inherited launchd
-   markers before starting OpenClaw. Use the supported `--wrapper` option; do
-   not edit the generated file under `~/.openclaw/service-env/`, because service
+   markers before starting Afora. Use the supported `--wrapper` option; do
+   not edit the generated file under `~/.afora/service-env/`, because service
    reinstall, update, and doctor repair regenerate that file:
 
    ```bash
    mkdir -p ~/.local/bin
-   cat >~/.local/bin/openclaw-launchd-workaround <<'EOF'
+   cat >~/.local/bin/afora-launchd-workaround <<'EOF'
    #!/bin/sh
    set -eu
-   unset OPENCLAW_LAUNCHD_LABEL LAUNCH_JOB_LABEL LAUNCH_JOB_NAME XPC_SERVICE_NAME || true
-   exec openclaw "$@"
+   unset AFORA_LAUNCHD_LABEL LAUNCH_JOB_LABEL LAUNCH_JOB_NAME XPC_SERVICE_NAME || true
+   exec afora "$@"
    EOF
-   chmod 700 ~/.local/bin/openclaw-launchd-workaround
+   chmod 700 ~/.local/bin/afora-launchd-workaround
 
-   openclaw gateway install \
-     --wrapper ~/.local/bin/openclaw-launchd-workaround \
+   afora gateway install \
+     --wrapper ~/.local/bin/afora-launchd-workaround \
      --force
    ```
 
@@ -554,10 +554,10 @@ What to do:
 3. Verify that the Gateway is stable and serving RPC, not merely listening:
 
    ```bash
-   openclaw gateway status --deep --require-rpc
+   afora gateway status --deep --require-rpc
 
    for i in 1 2 3 4; do
-     ps aux | grep 'openclaw.*index.js' | grep -v grep | awk '{print $2}'
+     ps aux | grep 'afora.*index.js' | grep -v grep | awk '{print $2}'
      sleep 10
    done
    ```
@@ -569,8 +569,8 @@ What to do:
    fixed, remove the workaround and reinstall the normal managed service:
 
    ```bash
-   OPENCLAW_WRAPPER= openclaw gateway install --force
-   rm ~/.local/bin/openclaw-launchd-workaround
+   AFORA_WRAPPER= afora gateway install --force
+   rm ~/.local/bin/afora-launchd-workaround
    ```
 
 Related:
@@ -584,10 +584,10 @@ Related:
 Use when the Gateway disappears under load, the supervisor reports an OOM-style restart, or logs mention `critical memory pressure bundle written`.
 
 ```bash
-openclaw gateway status --deep
-openclaw logs --follow
-openclaw gateway stability --bundle latest
-openclaw gateway diagnostics export
+afora gateway status --deep
+afora logs --follow
+afora gateway stability --bundle latest
+afora gateway diagnostics export
 ```
 
 Look for:
@@ -600,12 +600,12 @@ Look for:
 
 Common signatures:
 
-- `critical memory pressure bundle written` appears shortly before restart → OpenClaw captured a pre-OOM stability bundle. Inspect it with `openclaw gateway stability --bundle latest`.
-- `memory pressure: level=critical` appears in gateway logs → OpenClaw detected critical memory pressure and recorded the available in-process memory facts.
+- `critical memory pressure bundle written` appears shortly before restart → Afora captured a pre-OOM stability bundle. Inspect it with `afora gateway stability --bundle latest`.
+- `memory pressure: level=critical` appears in gateway logs → Afora detected critical memory pressure and recorded the available in-process memory facts.
 - `Largest session files:` points at a very large redacted transcript path → reduce retained session history, inspect session growth, or move old transcripts out of the active store before restarting.
-- `V8 heap:` used bytes are close to the heap limit → lower prompt/session pressure or reduce concurrent work first. For a managed service, inspect `Gateway heap:` in `openclaw gateway status`; if it says `not set`, regenerate old service metadata with `openclaw gateway install --force`. Ambient shell `NODE_OPTIONS` is intentionally ignored. Use an explicit supervisor-level heap override only after confirming the sustained workload and leaving enough native-memory headroom.
+- `V8 heap:` used bytes are close to the heap limit → lower prompt/session pressure or reduce concurrent work first. For a managed service, inspect `Gateway heap:` in `afora gateway status`; if it says `not set`, regenerate old service metadata with `afora gateway install --force`. Ambient shell `NODE_OPTIONS` is intentionally ignored. Use an explicit supervisor-level heap override only after confirming the sustained workload and leaving enough native-memory headroom.
 - `Memory pressure: critical/rss_growth` → memory grew quickly inside one sampling window. Check the latest logs for a large import, runaway tool output, repeated retries, or a batch of queued agent work.
-- Critical memory pressure appears in logs but no bundle exists → capture `openclaw gateway diagnostics export` after the event for the available operational evidence.
+- Critical memory pressure appears in logs but no bundle exists → capture `afora gateway diagnostics export` after the event for the available operational evidence.
 
 The stability bundle is payload-free. It includes operational memory evidence and redacted relative file paths, not message text, webhook bodies, credentials, tokens, cookies, or raw session ids. Attach the diagnostics export to bug reports instead of copying raw logs.
 
@@ -620,10 +620,10 @@ Related:
 Use when Gateway startup fails with `Invalid config` or hot reload logs say it skipped an invalid edit.
 
 ```bash
-openclaw logs --follow
-openclaw config file
-openclaw config validate
-openclaw doctor
+afora logs --follow
+afora config file
+afora config validate
+afora doctor
 ```
 
 Look for:
@@ -631,43 +631,43 @@ Look for:
 - `Invalid config at ...`
 - `config reload skipped (invalid config): ...`
 - `Config write rejected: ...`
-- A timestamped `openclaw.json.rejected.*` file beside the active config.
-- A timestamped `openclaw.json.clobbered.*` file if `doctor --fix` repaired a broken direct edit.
-- OpenClaw keeps the latest 32 `.clobbered.*` files for each config path and rotates older ones.
+- A timestamped `afora.json.rejected.*` file beside the active config.
+- A timestamped `afora.json.clobbered.*` file if `doctor --fix` repaired a broken direct edit.
+- Afora keeps the latest 32 `.clobbered.*` files for each config path and rotates older ones.
 
 <AccordionGroup>
   <Accordion title="What happened">
-    - The config did not validate during startup, hot reload, or an OpenClaw-owned write.
-    - Gateway startup fails closed instead of rewriting `openclaw.json`.
+    - The config did not validate during startup, hot reload, or an Afora-owned write.
+    - Gateway startup fails closed instead of rewriting `afora.json`.
     - Hot reload skips invalid external edits and keeps the current runtime config active.
-    - OpenClaw-owned writes reject invalid/destructive payloads before commit and save `.rejected.*`.
-    - `openclaw doctor --fix` owns repair. It can remove non-JSON prefixes or restore the last-known-good copy while preserving the rejected payload as `.clobbered.*`.
-    - When many repairs happen for one config path, OpenClaw rotates older `.clobbered.*` files so the newest repaired payload is still available.
+    - Afora-owned writes reject invalid/destructive payloads before commit and save `.rejected.*`.
+    - `afora doctor --fix` owns repair. It can remove non-JSON prefixes or restore the last-known-good copy while preserving the rejected payload as `.clobbered.*`.
+    - When many repairs happen for one config path, Afora rotates older `.clobbered.*` files so the newest repaired payload is still available.
 
   </Accordion>
   <Accordion title="Inspect and repair">
     ```bash
-    CONFIG="$(openclaw config file)"
+    CONFIG="$(afora config file)"
     ls -lt "$CONFIG".clobbered.* "$CONFIG".rejected.* 2>/dev/null | head
     diff -u "$CONFIG" "$(ls -t "$CONFIG".clobbered.* 2>/dev/null | head -n 1)"
-    openclaw config validate
-    openclaw doctor
+    afora config validate
+    afora doctor
     ```
   </Accordion>
   <Accordion title="Common signatures">
     - `.clobbered.*` exists → doctor preserved a broken external edit while repairing the active config.
-    - `.rejected.*` exists → an OpenClaw-owned config write failed schema or clobber checks before commit.
+    - `.rejected.*` exists → an Afora-owned config write failed schema or clobber checks before commit.
     - `Config write rejected:` → the write tried to drop required shape, shrink the file sharply, or persist invalid config.
     - `config reload skipped (invalid config):` → a direct edit failed validation and was ignored by the running Gateway.
     - `Invalid config at ...` → startup failed before Gateway services booted.
-    - `missing-meta-vs-last-good`, `gateway-mode-missing-vs-last-good`, or `size-drop-vs-last-good:*` → an OpenClaw-owned write was rejected because it lost fields or size compared with the last-known-good backup.
+    - `missing-meta-vs-last-good`, `gateway-mode-missing-vs-last-good`, or `size-drop-vs-last-good:*` → an Afora-owned write was rejected because it lost fields or size compared with the last-known-good backup.
     - `Config last-known-good promotion skipped` → the candidate contained redacted secret placeholders such as `***`.
 
   </Accordion>
   <Accordion title="Fix options">
-    1. Run `openclaw doctor --fix` to let doctor repair prefixed/clobbered config or restore last-known-good.
-    2. Copy only the intended keys from `.clobbered.*` or `.rejected.*`, then apply them with `openclaw config set` or `config.patch`.
-    3. Run `openclaw config validate` before restarting.
+    1. Run `afora doctor --fix` to let doctor repair prefixed/clobbered config or restore last-known-good.
+    2. Copy only the intended keys from `.clobbered.*` or `.rejected.*`, then apply them with `afora config set` or `config.patch`.
+    3. Run `afora config validate` before restarting.
     4. If you edit by hand, keep the full JSON5 config, not just the partial object you wanted to change.
   </Accordion>
 </AccordionGroup>
@@ -681,12 +681,12 @@ Related:
 
 ## Gateway probe warnings
 
-Use when `openclaw gateway probe` reaches something, but still prints a warning block.
+Use when `afora gateway probe` reaches something, but still prints a warning block.
 
 ```bash
-openclaw gateway probe
-openclaw gateway probe --json
-openclaw gateway probe --ssh user@gateway-host
+afora gateway probe
+afora gateway probe --json
+afora gateway probe --ssh user@gateway-host
 ```
 
 Look for:
@@ -697,7 +697,7 @@ Look for:
 Common signatures:
 
 - `SSH tunnel failed to start; falling back to direct probes.` → SSH setup failed, but the command still tried direct configured/loopback targets.
-- `multiple reachable gateway identities detected` → distinct gateways answered, or OpenClaw could not prove reachable targets are the same gateway. An SSH tunnel, proxy URL, or configured remote URL to the same gateway is treated as one gateway with multiple transports, even when transport ports differ.
+- `multiple reachable gateway identities detected` → distinct gateways answered, or Afora could not prove reachable targets are the same gateway. An SSH tunnel, proxy URL, or configured remote URL to the same gateway is treated as one gateway with multiple transports, even when transport ports differ.
 - `Read-probe diagnostics are limited by gateway scopes (missing operator.read)` → connect worked, but detail RPC is scope-limited; pair device identity or use credentials with `operator.read`.
 - `Gateway accepted the WebSocket connection, but follow-up read diagnostics failed` → connect worked, but the full diagnostic RPC set timed out or failed. Treat this as a reachable Gateway with degraded diagnostics; compare `connect.ok` and `connect.rpcOk` in `--json` output.
 - `Capability: pairing-pending` or `gateway closed (1008): pairing required` → the gateway answered, but this client still needs pairing/approval before normal operator access.
@@ -714,11 +714,11 @@ Related:
 If channel state is connected but message flow is dead, focus on policy, permissions, and channel specific delivery rules.
 
 ```bash
-openclaw channels status --probe
-openclaw pairing list --channel <channel> [--account <id>]
-openclaw status --deep
-openclaw logs --follow
-openclaw config get channels
+afora channels status --probe
+afora pairing list --channel <channel> [--account <id>]
+afora status --deep
+afora logs --follow
+afora config get channels
 ```
 
 Look for:
@@ -745,11 +745,11 @@ Related:
 If cron or heartbeat did not run or did not deliver, verify scheduler state first, then delivery target.
 
 ```bash
-openclaw cron status
-openclaw cron list
-openclaw cron runs --id <jobId> --limit 20
-openclaw system heartbeat last
-openclaw logs --follow
+afora cron status
+afora cron list
+afora cron runs --id <jobId> --limit 20
+afora system heartbeat last
+afora logs --follow
 ```
 
 Look for:
@@ -763,7 +763,7 @@ Look for:
     - `cron: scheduler disabled; jobs will not run automatically` → cron disabled.
     - `cron: timer tick failed` → scheduler tick failed; check file/log/runtime errors.
     - `heartbeat skipped` with `reason=quiet-hours` → outside active hours window.
-    - `heartbeat skipped` with `reason=empty-heartbeat-file` → heartbeat monitor scratch only contains blank, comment, header, fence, or empty-checklist scaffolding, so OpenClaw skips the model call.
+    - `heartbeat skipped` with `reason=empty-heartbeat-file` → heartbeat monitor scratch only contains blank, comment, header, fence, or empty-checklist scaffolding, so Afora skips the model call.
     - `heartbeat skipped` with `reason=no-route` → the default `owner` target has no concrete owner in `commands.ownerAllowFrom` or channel `allowFrom`, the owner cannot resolve to a DM, or no channel is configured. Explicit `last` also needs a session conversation route.
     - `heartbeat: unknown accountId` → invalid account id for heartbeat delivery target.
     - `heartbeat skipped` with `reason=dm-blocked` → heartbeat target resolved to a DM-style destination while `agents.defaults.heartbeat.directPolicy` (or per-agent override) is set to `block`.
@@ -782,11 +782,11 @@ Related:
 If a node is paired but tools fail, isolate foreground, permission, and approval state.
 
 ```bash
-openclaw nodes status
-openclaw nodes describe --node <idOrNameOrIp>
-openclaw approvals get --node <idOrNameOrIp>
-openclaw logs --follow
-openclaw status
+afora nodes status
+afora nodes describe --node <idOrNameOrIp>
+afora approvals get --node <idOrNameOrIp>
+afora logs --follow
+afora status
 ```
 
 Look for:
@@ -813,11 +813,11 @@ Related:
 Use when browser tool actions fail even though the gateway itself is healthy.
 
 ```bash
-openclaw browser status
-openclaw browser start --browser-profile openclaw
-openclaw browser profiles
-openclaw logs --follow
-openclaw doctor
+afora browser status
+afora browser start --browser-profile afora
+afora browser profiles
+afora logs --follow
+afora doctor
 ```
 
 Look for:
@@ -835,11 +835,11 @@ Look for:
     - `browser.executablePath not found` → configured path is invalid.
     - `browser.cdpUrl must be http(s) or ws(s)` → the configured CDP URL uses an unsupported scheme such as `file:` or `ftp:`.
     - `browser.cdpUrl has invalid port` → the configured CDP URL has a bad or out-of-range port.
-    - `Playwright is not available in this gateway build; '<feature>' is unsupported.` → the current gateway install lacks the core browser runtime dependency; reinstall or update OpenClaw, then restart the gateway. ARIA snapshots and basic page screenshots can still work, but navigation, AI snapshots, CSS-selector element screenshots, and PDF export stay unavailable.
+    - `Playwright is not available in this gateway build; '<feature>' is unsupported.` → the current gateway install lacks the core browser runtime dependency; reinstall or update Afora, then restart the gateway. ARIA snapshots and basic page screenshots can still work, but navigation, AI snapshots, CSS-selector element screenshots, and PDF export stay unavailable.
 
   </Accordion>
   <Accordion title="Chrome MCP / existing-session signatures">
-    - `Could not find DevToolsActivePort for chrome` → Chrome MCP existing-session could not attach to the selected browser data dir yet. Open the browser inspect page, enable remote debugging, keep the browser open, approve the first attach prompt, then retry. If signed-in state is not required, prefer the managed `openclaw` profile.
+    - `Could not find DevToolsActivePort for chrome` → Chrome MCP existing-session could not attach to the selected browser data dir yet. Open the browser inspect page, enable remote debugging, keep the browser open, approve the first attach prompt, then retry. If signed-in state is not required, prefer the managed `afora` profile.
     - `No browser tabs found for profile="user"` → the Chrome MCP attach profile has no open local Chrome tabs.
     - `Remote CDP for profile "<name>" is not reachable` → the configured remote CDP endpoint is not reachable from the gateway host.
     - `Browser attachOnly is enabled ... not reachable` or `Browser attachOnly is enabled and CDP websocket ... is not reachable` → attach-only profile has no reachable target, or the HTTP endpoint answered but the CDP WebSocket still could not be opened.
@@ -853,14 +853,14 @@ Look for:
     - `existing-session dialog handling does not support timeoutMs.` → dialog hooks on Chrome MCP profiles do not support timeout overrides.
     - `existing-session type does not support timeoutMs overrides.` → omit `timeoutMs` for `act:type` on `profile="user"` / Chrome MCP existing-session profiles, or use a managed/CDP browser profile when a custom timeout is required.
     - `response body is not supported for existing-session profiles yet.` → `responsebody` still requires a managed browser or raw CDP profile.
-    - Stale viewport / dark-mode / locale / offline overrides on attach-only or remote CDP profiles → run `openclaw browser stop --browser-profile <name>` to close the active control session and release Playwright/CDP emulation state without restarting the whole gateway.
+    - Stale viewport / dark-mode / locale / offline overrides on attach-only or remote CDP profiles → run `afora browser stop --browser-profile <name>` to close the active control session and release Playwright/CDP emulation state without restarting the whole gateway.
 
   </Accordion>
 </AccordionGroup>
 
 Related:
 
-- [Browser (OpenClaw-managed)](/tools/browser)
+- [Browser (Afora-managed)](/tools/browser)
 - [Browser troubleshooting](/tools/browser-linux-troubleshooting)
 
 ## If you upgraded and something suddenly broke
@@ -870,10 +870,10 @@ Most post-upgrade breakage is config drift or stricter defaults now being enforc
 <AccordionGroup>
   <Accordion title="1. Auth and URL override behavior changed">
     ```bash
-    openclaw gateway status
-    openclaw config get gateway.mode
-    openclaw config get gateway.remote.url
-    openclaw config get gateway.auth.mode
+    afora gateway status
+    afora config get gateway.mode
+    afora config get gateway.remote.url
+    afora config get gateway.auth.mode
     ```
 
     What to check:
@@ -889,11 +889,11 @@ Most post-upgrade breakage is config drift or stricter defaults now being enforc
   </Accordion>
   <Accordion title="2. Bind and auth guardrails are stricter">
     ```bash
-    openclaw config get gateway.bind
-    openclaw config get gateway.auth.mode
-    openclaw config get gateway.auth.token
-    openclaw gateway status
-    openclaw logs --follow
+    afora config get gateway.bind
+    afora config get gateway.auth.mode
+    afora config get gateway.auth.token
+    afora gateway status
+    afora logs --follow
     ```
 
     What to check:
@@ -909,10 +909,10 @@ Most post-upgrade breakage is config drift or stricter defaults now being enforc
   </Accordion>
   <Accordion title="3. Pairing and device identity state changed">
     ```bash
-    openclaw devices list
-    openclaw pairing list --channel <channel> [--account <id>]
-    openclaw logs --follow
-    openclaw doctor
+    afora devices list
+    afora pairing list --channel <channel> [--account <id>]
+    afora logs --follow
+    afora doctor
     ```
 
     What to check:
@@ -931,8 +931,8 @@ Most post-upgrade breakage is config drift or stricter defaults now being enforc
 If the service config and runtime still disagree after checks, reinstall service metadata from the same profile/state directory:
 
 ```bash
-openclaw gateway install --force
-openclaw gateway restart
+afora gateway install --force
+afora gateway restart
 ```
 
 Related:

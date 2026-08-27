@@ -1,7 +1,7 @@
 // Transcript event helpers serialize and trim session transcript events.
-import { asPositiveSafeInteger } from "@openclaw/normalization-core/number-coercion";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { asPositiveSafeInteger } from "@afora/normalization-core/number-coercion";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { parseAgentSessionKey } from "../routing/session-key.js";
 import { resolveGlobalSet, resolveGlobalSingleton } from "../shared/global-singleton.js";
 
@@ -41,16 +41,16 @@ type SessionTranscriptListener = (update: SessionTranscriptUpdate) => void;
 type InternalSessionTranscriptListener = (update: InternalSessionTranscriptUpdate) => void;
 
 const SESSION_TRANSCRIPT_LISTENERS = resolveGlobalSet<SessionTranscriptListener>(
-  Symbol.for("openclaw.sessionTranscriptListeners"),
+  Symbol.for("afora.sessionTranscriptListeners"),
   "close-and-restart",
 );
 const INTERNAL_SESSION_TRANSCRIPT_LISTENERS = resolveGlobalSet<InternalSessionTranscriptListener>(
-  Symbol.for("openclaw.internalSessionTranscriptListeners"),
+  Symbol.for("afora.internalSessionTranscriptListeners"),
   "close-and-restart",
 );
 
 const SESSION_TRANSCRIPT_UPDATE_STATE = resolveGlobalSingleton(
-  Symbol.for("openclaw.sessionTranscriptUpdateState"),
+  Symbol.for("afora.sessionTranscriptUpdateState"),
   () => ({ version: 0 }),
 );
 

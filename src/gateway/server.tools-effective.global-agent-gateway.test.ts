@@ -48,10 +48,10 @@ test("tools.effective rejects a mismatched configured agent for a non-global ses
  * `agent:main:abc` session owned by `main`, and returns a cleanup callback.
  */
 async function configureNonGlobalMainSession(): Promise<() => Promise<void>> {
-  const configPath = process.env.OPENCLAW_CONFIG_PATH;
-  const stateDir = process.env.OPENCLAW_STATE_DIR;
+  const configPath = process.env.AFORA_CONFIG_PATH;
+  const stateDir = process.env.AFORA_STATE_DIR;
   if (!configPath || !stateDir) {
-    throw new Error("OPENCLAW_CONFIG_PATH and OPENCLAW_STATE_DIR are required");
+    throw new Error("AFORA_CONFIG_PATH and AFORA_STATE_DIR are required");
   }
   const dir = path.join(stateDir, "session-stores", `tools-effective-nonglobal-${Date.now()}`);
   const storePath = path.join(dir, "sessions.json");

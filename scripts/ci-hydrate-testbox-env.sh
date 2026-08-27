@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-profile_path="${1:-$HOME/.openclaw-testbox-live.profile}"
-helper_path="${2:-$HOME/.local/bin/openclaw-testbox-env}"
+profile_path="${1:-$HOME/.afora-testbox-live.profile}"
+helper_path="${2:-$HOME/.local/bin/afora-testbox-env}"
 quoted_profile_path="$(printf "%q" "$profile_path")"
 
 mkdir -p "$(dirname "$helper_path")"
@@ -14,7 +14,7 @@ cat >"$helper_path" <<SH
 set -euo pipefail
 
 default_profile_path=$quoted_profile_path
-profile_path="\${OPENCLAW_TESTBOX_PROFILE_FILE:-\$default_profile_path}"
+profile_path="\${AFORA_TESTBOX_PROFILE_FILE:-\$default_profile_path}"
 if [[ ! -f "\$profile_path" ]]; then
   echo "Missing Testbox provider env profile: \$profile_path" >&2
   exit 1

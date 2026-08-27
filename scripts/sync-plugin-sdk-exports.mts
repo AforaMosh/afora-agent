@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Regenerates package.json plugin-sdk export entries from the canonical entry list
-// and keeps the workspace facade package (@openclaw/plugin-sdk) exports aligned
+// and keeps the workspace facade package (@afora/plugin-sdk) exports aligned
 // with its src facade files.
 import fs from "node:fs";
 import path from "node:path";

@@ -1,6 +1,6 @@
 // Policy plugin attestation hashing.
 import { createHash } from "node:crypto";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { PolicyAttestation, PolicyEvidence } from "./policy-state-types.js";
 
 export function policyDocumentHash(policy: unknown): string {

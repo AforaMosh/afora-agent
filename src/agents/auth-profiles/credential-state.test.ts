@@ -85,11 +85,11 @@ describe("evaluateStoredCredentialEligibility", () => {
   });
 
   it.each([
-    "openclaw onboard --auth-choice zai-coding-global",
-    "openclaw onboard --auth-choice=zai-coding-global",
-    "openclaw onboard --non-interactive --auth-choice zai-coding-global --zai-api-key $ZAI_API_KEY",
-    "openclaw onboard --non-interactive --auth-choice=zai-coding-global --zai-api-key $ZAI_API_KEY",
-  ])("marks pasted OpenClaw onboarding command %p as a malformed api key", (key) => {
+    "afora onboard --auth-choice zai-coding-global",
+    "afora onboard --auth-choice=zai-coding-global",
+    "afora onboard --non-interactive --auth-choice zai-coding-global --zai-api-key $ZAI_API_KEY",
+    "afora onboard --non-interactive --auth-choice=zai-coding-global --zai-api-key $ZAI_API_KEY",
+  ])("marks pasted Afora onboarding command %p as a malformed api key", (key) => {
     const result = evaluateStoredCredentialEligibility({
       credential: {
         type: "api_key",

@@ -21,11 +21,11 @@ on:
         default: ""
         type: string
       release_publish_run_id:
-        description: Approved OpenClaw Release Publish workflow run id
+        description: Approved Afora Release Publish workflow run id
         required: false
         type: string
       release_publish_branch:
-        description: Branch name of the approving OpenClaw Release Publish workflow run
+        description: Branch name of the approving Afora Release Publish workflow run
         required: false
         type: string
       dry_run:
@@ -233,7 +233,7 @@ jobs:
         if: steps.plan.outputs.missing_trusted_publisher_count != '0'
         run: |
           echo "::error::One or more ClawHub packages exist but do not have trusted publishing configured. Configure trusted publishing before running the normal OIDC publish workflow."
-          jq -r '.missingTrustedPublisher[]? | "::error::Missing trusted publisher: \(.packageName)@\(.version). Configure trusted publishing for openclaw/openclaw, workflow plugin-clawhub-release.yml."' .local/plugin-clawhub-release-plan.json
+          jq -r '.missingTrustedPublisher[]? | "::error::Missing trusted publisher: \(.packageName)@\(.version). Configure trusted publishing for AforaMosh/afora-agent, workflow plugin-clawhub-release.yml."' .local/plugin-clawhub-release-plan.json
           exit 1
 
       - name: Fail normal publish when bootstrap is required
@@ -361,7 +361,7 @@ jobs:
           SOURCE_REF: ${{ github.ref }}
           PACKAGE_TAG: ${{ matrix.plugin.publishTag }}
           PACKAGE_DIR: ${{ matrix.plugin.packageDir }}
-          OPENCLAW_CLAWHUB_PACK_OUTPUT_DIR: ${{ runner.temp }}/clawhub-package-artifact
+          AFORA_CLAWHUB_PACK_OUTPUT_DIR: ${{ runner.temp }}/clawhub-package-artifact
         run: bash scripts/plugin-clawhub-publish.sh --pack "${PACKAGE_DIR}"
 
       - name: Upload ClawHub package artifact
@@ -382,13 +382,13 @@ jobs:
     steps:
       - name: Approve Plugin ClawHub release publish
         run: |
-          echo "Approved CLAW-277 03 - Split OpenClaw plugin ClawHub publishing into OIDC release and token bootstrap workflows release publish gate."
+          echo "Approved CLAW-277 03 - Split Afora plugin ClawHub publishing into OIDC release and token bootstrap workflows release publish gate."
 
   publish_plugins_clawhub:
     needs:
       [preview_plugins_clawhub, pack_plugins_clawhub_artifacts, approve_plugins_clawhub_release]
     if: always() && github.event_name == 'workflow_dispatch' && needs.preview_plugins_clawhub.outputs.has_candidates == 'true' && needs.pack_plugins_clawhub_artifacts.result == 'success' && (inputs.dry_run == true || needs.approve_plugins_clawhub_release.result == 'success')
-    uses: openclaw/clawhub/.github/workflows/package-publish.yml@d8096dfc039e86ab942ddf9ef117d04849fd84c1
+    uses: afora/clawhub/.github/workflows/package-publish.yml@d8096dfc039e86ab942ddf9ef117d04849fd84c1
     permissions:
       actions: read
       contents: read
@@ -403,7 +403,7 @@ jobs:
       dry_run: ${{ inputs.dry_run }}
       registry: https://clawhub.ai
       site: https://clawhub.ai
-      family: ${{ contains(fromJson('["@openclaw/acpx","@openclaw/diffs","@openclaw/feishu"]'), matrix.plugin.packageName) && 'bundle-plugin' || '' }}
+      family: ${{ contains(fromJson('["@afora/acpx","@afora/diffs","@afora/feishu"]'), matrix.plugin.packageName) && 'bundle-plugin' || '' }}
       tags: ${{ matrix.plugin.publishTag }}
       source_repo: ${{ github.repository }}
       source_commit: ${{ needs.preview_plugins_clawhub.outputs.ref_revision }}

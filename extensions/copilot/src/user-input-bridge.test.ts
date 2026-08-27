@@ -3,7 +3,7 @@ import {
   claimPendingAgentQuestionAnswer,
   type AgentHarnessQuestionGatewayCall,
   type EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import { describe, expect, it, vi } from "vitest";
 import { createCopilotTestHostCapabilities } from "./host-capability.test-support.js";
 import { createCopilotUserInputBridge } from "./user-input-bridge.js";

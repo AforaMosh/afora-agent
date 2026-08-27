@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST } from "./host-compat.js";
+import { AFORA_EMBEDDED_CONTEXT_ENGINE_HOST } from "./host-compat.js";
 import { buildContextEngineRuntimeSettings } from "./runtime-settings.js";
 
 describe("context engine runtime settings", () => {
   it("builds declared normal runtime settings from host and model inputs", () => {
     const settings = buildContextEngineRuntimeSettings({
-      contextEngineHost: OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST,
+      contextEngineHost: AFORA_EMBEDDED_CONTEXT_ENGINE_HOST,
       harnessId: "embedded",
       runtimeId: "direct",
       provider: "openai",
@@ -20,7 +20,7 @@ describe("context engine runtime settings", () => {
     expect(settings).toMatchObject({
       schemaVersion: 1,
       runtime: {
-        host: "openclaw",
+        host: "afora",
         mode: "normal",
         harnessId: "embedded",
         runtimeId: "direct",
@@ -35,8 +35,8 @@ describe("context engine runtime settings", () => {
         source: "configured",
       },
       executionHost: {
-        id: OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST.id,
-        label: OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST.label,
+        id: AFORA_EMBEDDED_CONTEXT_ENGINE_HOST.id,
+        label: AFORA_EMBEDDED_CONTEXT_ENGINE_HOST.label,
       },
       limits: {
         promptTokenBudget: 128_000,
@@ -51,7 +51,7 @@ describe("context engine runtime settings", () => {
 
   it("marks fallback mode when a fallback reason is present", () => {
     const settings = buildContextEngineRuntimeSettings({
-      contextEngineHost: OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST,
+      contextEngineHost: AFORA_EMBEDDED_CONTEXT_ENGINE_HOST,
       resolvedModel: "gpt-5-mini",
       fallbackReason: "primary_unavailable",
     });
@@ -62,7 +62,7 @@ describe("context engine runtime settings", () => {
 
   it("preserves known fallback reason codes", () => {
     const settings = buildContextEngineRuntimeSettings({
-      contextEngineHost: OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST,
+      contextEngineHost: AFORA_EMBEDDED_CONTEXT_ENGINE_HOST,
       resolvedModel: "gpt-5-mini",
       fallbackReason: "provider_timeout",
     });
@@ -73,7 +73,7 @@ describe("context engine runtime settings", () => {
 
   it("marks fallback mode when resolved model differs from the requested model", () => {
     const settings = buildContextEngineRuntimeSettings({
-      contextEngineHost: OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST,
+      contextEngineHost: AFORA_EMBEDDED_CONTEXT_ENGINE_HOST,
       requestedModel: "openai/gpt-5.5",
       resolvedModel: "anthropic/claude-sonnet-4-6",
     });
@@ -84,7 +84,7 @@ describe("context engine runtime settings", () => {
 
   it("marks degraded mode when a degraded reason is present", () => {
     const settings = buildContextEngineRuntimeSettings({
-      contextEngineHost: OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST,
+      contextEngineHost: AFORA_EMBEDDED_CONTEXT_ENGINE_HOST,
       resolvedModel: "gpt-5-mini",
       degradedReason: "context_pressure_high",
     });
@@ -96,7 +96,7 @@ describe("context engine runtime settings", () => {
   it("keeps host and selection ids nullable when unknown", () => {
     const settings = buildContextEngineRuntimeSettings({
       contextEngineHost: {
-        ...OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST,
+        ...AFORA_EMBEDDED_CONTEXT_ENGINE_HOST,
         id: "",
       },
     });

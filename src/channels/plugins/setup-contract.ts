@@ -1,7 +1,7 @@
-import { parseStrictNonNegativeInteger } from "@openclaw/normalization-core/number-coercion";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { parseStrictNonNegativeInteger } from "@afora/normalization-core/number-coercion";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { Option } from "commander";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import type { ChannelSetupAdapter } from "./setup-adapter.types.js";
 import type { ChannelSetupInput } from "./setup-input.js";
@@ -119,12 +119,12 @@ export type ChannelOwnedSetupContract = {
   metadata: ChannelSetupMetadata;
   parseInput: (input: unknown) => ChannelSetupParseResult;
   resolveAccountId?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string;
     input?: unknown;
   }) => string;
   prepareAccountConfigInput?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     input: unknown;
     runtime: RuntimeEnv;
@@ -134,19 +134,19 @@ export type ChannelOwnedSetupContract = {
   }>["resolveBindingAccountId"];
   applyAccountName?: ChannelOwnedSetupAdapterShape<{ name?: string }>["applyAccountName"];
   applyAccountConfig: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     input: unknown;
-  }) => OpenClawConfig;
+  }) => AforaConfig;
   afterAccountConfigWritten?: (params: {
-    previousCfg: OpenClawConfig;
-    cfg: OpenClawConfig;
+    previousCfg: AforaConfig;
+    cfg: AforaConfig;
     accountId: string;
     input: unknown;
     runtime: RuntimeEnv;
   }) => Promise<void> | void;
   validateInput?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     input: unknown;
   }) => string | null;

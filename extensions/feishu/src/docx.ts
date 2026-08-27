@@ -1,10 +1,10 @@
 // Feishu plugin module implements docx behavior.
 import { resolve } from "node:path";
 import type * as Lark from "@larksuiteoapi/node-sdk";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { normalizeOptionalString, uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { normalizeOptionalString, uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { Type } from "typebox";
-import type { OpenClawPluginApi } from "../runtime-api.js";
+import type { AforaPluginApi } from "../runtime-api.js";
 import { listEnabledFeishuAccounts } from "./accounts.js";
 import { resolveConfiguredHttpTimeoutMs } from "./client-timeout.js";
 import { FeishuDocSchema, type FeishuDocParams } from "./doc-schema.js";
@@ -1195,7 +1195,7 @@ async function listAppScopes(client: Lark.Client) {
 
 // ============ Tool Registration ============
 
-export function registerFeishuDocTools(api: OpenClawPluginApi) {
+export function registerFeishuDocTools(api: AforaPluginApi) {
   if (!api.config) {
     return;
   }

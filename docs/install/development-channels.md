@@ -8,7 +8,7 @@ title: "Release channels"
 sidebarTitle: "Release Channels"
 ---
 
-OpenClaw ships four update channels:
+Afora ships four update channels:
 
 - **stable**: npm dist-tag `latest`. Recommended for most users.
 - **extended-stable**: npm dist-tag `extended-stable`. A net-new, trailing
@@ -29,10 +29,10 @@ directly to `latest`. Dist-tags are the source of truth for npm installs.
 ## Switching channels
 
 ```bash
-openclaw update --channel stable
-openclaw update --channel extended-stable
-openclaw update --channel beta
-openclaw update --channel dev
+afora update --channel stable
+afora update --channel extended-stable
+afora update --channel beta
+afora update --channel dev
 ```
 
 `--channel` persists the choice to `update.channel` in config and drives both
@@ -41,17 +41,17 @@ install paths:
 | Channel           | npm/package installs                                                                                                                                                                   | git installs                                                                                                                                                       |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `stable`          | dist-tag `latest`                                                                                                                                                                      | latest stable git tag (excludes `-alpha.N`, `-beta.N`, `-rc.N`, `-dev.N`, `-next.N`, `-preview.N`, `-canary.N`, `-nightly.N`, and other named prerelease suffixes) |
-| `extended-stable` | resolves the public npm `extended-stable` selector, verifies the exact selected package, and installs that exact version. Fails closed with no fallback to `latest`, `beta`, or `dev`. | unsupported: OpenClaw leaves the checkout unchanged and asks you to use a package installation                                                                     |
+| `extended-stable` | resolves the public npm `extended-stable` selector, verifies the exact selected package, and installs that exact version. Fails closed with no fallback to `latest`, `beta`, or `dev`. | unsupported: Afora leaves the checkout unchanged and asks you to use a package installation                                                                     |
 | `beta`            | dist-tag `beta`, falling back to `latest` when `beta` is missing or older                                                                                                              | latest beta git tag, falling back to the latest stable git tag when beta is missing or older                                                                       |
 | `dev`             | dist-tag `dev` (rare; most dev users run git installs)                                                                                                                                 | fetches, rebases the checkout on the upstream `main` branch, builds, and reinstalls the global CLI                                                                 |
 
-For `dev` git installs, the default checkout is `~/openclaw` (or
-`$OPENCLAW_HOME/openclaw` when `OPENCLAW_HOME` is set); override with
-`OPENCLAW_GIT_DIR`.
+For `dev` git installs, the default checkout is `~/afora` (or
+`$AFORA_HOME/afora` when `AFORA_HOME` is set); override with
+`AFORA_GIT_DIR`.
 Automatic update campaigns pin the upstream commit they announce, so the
 displayed list previews up to five commits from the exact target installed even
 if `main` advances during the countdown. A manual
-`openclaw update --channel dev` still targets the current upstream `main`.
+`afora update --channel dev` still targets the current upstream `main`.
 
 <Tip>
 To keep stable and dev in parallel, use two separate checkouts and point each gateway at its own.
@@ -64,35 +64,35 @@ single update **without** changing the persisted channel:
 
 ```bash
 # Install a specific version
-openclaw update --tag 2026.4.1-beta.1
+afora update --tag 2026.4.1-beta.1
 
 # Install from the beta dist-tag (one-off, does not persist)
-openclaw update --tag beta
+afora update --tag beta
 
 # Switch to the moving GitHub main checkout (persistent)
-openclaw update --channel dev
+afora update --channel dev
 
 # Install a specific npm package spec
-openclaw update --tag openclaw@2026.4.1-beta.1
+afora update --tag afora@2026.4.1-beta.1
 
 # Install from GitHub main once without persisting the channel
-openclaw update --tag main
+afora update --tag main
 ```
 
 Notes:
 
 - `--tag` applies to **package (npm) installs only**; git installs ignore it.
-- The tag is not persisted; the next `openclaw update` uses the configured
+- The tag is not persisted; the next `afora update` uses the configured
   channel.
-- `--tag main` maps to the npm-compatible spec `github:openclaw/openclaw#main`
+- `--tag main` maps to the npm-compatible spec `github:AforaMosh/afora-agent#main`
   for that one run. For a persistent moving `main` install, use
-  `openclaw update --channel dev` (package installs switch to a git checkout)
+  `afora update --channel dev` (package installs switch to a git checkout)
   or reinstall with the installer's git method:
-  `curl -fsSL https://openclaw.ai/install.sh | bash -s -- --install-method git --version main`.
+  `curl -fsSL https://afora.ai/install.sh | bash -s -- --install-method git --version main`.
   The npm install path rejects GitHub/git source targets outright and points
   you at the git method instead.
 - Downgrade protection: if the target version is older than the current
-  version, OpenClaw prompts for confirmation (skip with `--yes`).
+  version, Afora prompts for confirmation (skip with `--yes`).
 - Extended-stable always uses its verified exact package target. It is not a
   one-off alias for `--tag extended-stable`, and `--tag` cannot be combined
   with an effective extended-stable channel.
@@ -102,13 +102,13 @@ Notes:
 
 ## Dry run
 
-Preview what `openclaw update` would do without making changes:
+Preview what `afora update` would do without making changes:
 
 ```bash
-openclaw update --dry-run
-openclaw update --channel beta --dry-run
-openclaw update --tag 2026.4.1-beta.1 --dry-run
-openclaw update --dry-run --json
+afora update --dry-run
+afora update --channel beta --dry-run
+afora update --tag 2026.4.1-beta.1 --dry-run
+afora update --dry-run --json
 ```
 
 The dry run reports the effective channel, target version, planned actions,
@@ -116,7 +116,7 @@ and whether a downgrade confirmation would be required.
 
 ## Plugins and channels
 
-Switching channels with `openclaw update` also syncs plugin sources:
+Switching channels with `afora update` also syncs plugin sources:
 
 - `dev` switches installed plugins that have a bundled counterpart back to
   their bundled (git checkout) source.
@@ -130,7 +130,7 @@ Switching channels with `openclaw update` also syncs plugin sources:
 ## Checking current status
 
 ```bash
-openclaw update status
+afora update status
 ```
 
 Shows the active channel (with the source that decided it: config, git tag,

@@ -21,8 +21,8 @@ describe("managed proxy undici TLS options", () => {
     "https_proxy",
     "HTTP_PROXY",
     "HTTPS_PROXY",
-    "OPENCLAW_PROXY_ACTIVE",
-    "OPENCLAW_PROXY_CA_FILE",
+    "AFORA_PROXY_ACTIVE",
+    "AFORA_PROXY_CA_FILE",
   ] as const;
   const tempDirs: string[] = [];
   const activeRegistrations: ActiveManagedProxyRegistration[] = [];
@@ -44,7 +44,7 @@ describe("managed proxy undici TLS options", () => {
   });
 
   function writeTempCa(contents: string): string {
-    const dir = mkdtempSync(path.join(os.tmpdir(), "openclaw-managed-proxy-ca-"));
+    const dir = mkdtempSync(path.join(os.tmpdir(), "afora-managed-proxy-ca-"));
     tempDirs.push(dir);
     const caFile = path.join(dir, "proxy-ca.pem");
     writeFileSync(caFile, contents, "utf8");
@@ -52,7 +52,7 @@ describe("managed proxy undici TLS options", () => {
   }
 
   it("adds active proxy CA trust only to matching explicit proxy URLs", () => {
-    vi.stubEnv("OPENCLAW_PROXY_ACTIVE", "1");
+    vi.stubEnv("AFORA_PROXY_ACTIVE", "1");
     activeRegistrations.push(
       registerActiveManagedProxyUrl(new URL("https://managed.example:8443"), {
         loopbackMode: "gateway-only",
@@ -83,9 +83,9 @@ describe("managed proxy undici TLS options", () => {
 
   it("loads inherited proxy CA trust only for the inherited proxy URL", () => {
     const caFile = writeTempCa("inherited-managed-ca");
-    vi.stubEnv("OPENCLAW_PROXY_ACTIVE", "1");
+    vi.stubEnv("AFORA_PROXY_ACTIVE", "1");
     vi.stubEnv("https_proxy", "https://managed.example:8443");
-    vi.stubEnv("OPENCLAW_PROXY_CA_FILE", caFile);
+    vi.stubEnv("AFORA_PROXY_CA_FILE", caFile);
 
     expect(resolveActiveManagedProxyTlsOptions()).toStrictEqual({
       ca: "inherited-managed-ca",
@@ -107,9 +107,9 @@ describe("managed proxy undici TLS options", () => {
 
     expect(
       resolveManagedEnvHttpProxyAgentOptions({
-        OPENCLAW_PROXY_ACTIVE: "1",
+        AFORA_PROXY_ACTIVE: "1",
         HTTPS_PROXY: "https://managed.example:8443",
-        OPENCLAW_PROXY_CA_FILE: caFile,
+        AFORA_PROXY_CA_FILE: caFile,
       }),
     ).toStrictEqual({
       httpsProxy: "https://managed.example:8443",

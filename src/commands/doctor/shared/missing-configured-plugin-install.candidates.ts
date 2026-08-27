@@ -1,8 +1,8 @@
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { listRawChannelPluginCatalogEntries } from "../../../channels/plugins/catalog.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import type { PluginInstallRecord } from "../../../config/types.plugins.js";
-import { compareOpenClawReleaseVersions } from "../../../infra/npm-registry-spec.js";
+import { compareAforaReleaseVersions } from "../../../infra/npm-registry-spec.js";
 import {
   normalizeUpdateChannel,
   resolveRegistryUpdateChannel,
@@ -45,7 +45,7 @@ export type DownloadableInstallCandidate = {
   expectedIntegrity?: string;
   trustedSourceLinkedOfficialInstall?: boolean;
   defaultChoice?: PluginPackageInstall["defaultChoice"];
-  versionBoundToOpenClaw?: boolean;
+  versionBoundToAfora?: boolean;
 };
 
 export type BundledPluginPackageDescriptor = {
@@ -55,7 +55,7 @@ export type BundledPluginPackageDescriptor = {
 
 /** Keep doctor diagnostics and actual package repair on the same discovery snapshot. */
 export async function resolveConfiguredPluginInstallContext(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   configuredPluginIds: ReadonlySet<string>;
   configuredChannelIds: ReadonlySet<string>;
@@ -142,8 +142,8 @@ const REPAIRABLE_PACKAGE_ENTRY_DIAGNOSTIC_MARKERS = [
   "extension entry unreadable",
   "requires compiled runtime output",
 ] as const;
-const OPENCLAW_BETA_COMPANION_VERSION_RE = /^(\d{4}\.[1-9]\d?\.[1-9]\d?)-beta\.[1-9]\d*$/;
-const OPENCLAW_STABLE_OR_BETA_COMPANION_VERSION_RE =
+const AFORA_BETA_COMPANION_VERSION_RE = /^(\d{4}\.[1-9]\d?\.[1-9]\d?)-beta\.[1-9]\d*$/;
+const AFORA_STABLE_OR_BETA_COMPANION_VERSION_RE =
   /^(\d{4}\.[1-9]\d?\.[1-9]\d?)(?:-beta\.[1-9]\d*)?$/;
 
 function resolveCandidateClawHubSpec(install: PluginPackageInstall): string | undefined {
@@ -182,7 +182,7 @@ function setDownloadableInstallCandidate(params: {
 }
 
 export function collectDownloadableInstallCandidates(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   missingPluginIds: ReadonlySet<string>;
   configuredPluginIds?: ReadonlySet<string>;
@@ -287,8 +287,8 @@ export function collectDownloadableInstallCandidates(params: {
       continue;
     }
     const existing = candidates.get(entry.pluginId);
-    if (existing && entry.versionBoundToOpenClaw) {
-      candidates.set(entry.pluginId, { ...existing, versionBoundToOpenClaw: true });
+    if (existing && entry.versionBoundToAfora) {
+      candidates.set(entry.pluginId, { ...existing, versionBoundToAfora: true });
     } else if (!existing) {
       candidates.set(entry.pluginId, entry);
     }
@@ -338,7 +338,7 @@ function addLegacyNpmDeclarationInstallCandidate(params: {
 }
 
 function collectLegacyNpmDeclarationInstallCandidates(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   configuredPluginIds: ReadonlySet<string>;
   missingPluginIds: ReadonlySet<string>;
@@ -387,7 +387,7 @@ function collectLegacyNpmDeclarationInstallCandidates(params: {
 }
 
 export function collectUpdateDeferredPluginIds(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   configuredPluginIds: ReadonlySet<string>;
   configuredChannelIds: ReadonlySet<string>;
@@ -486,7 +486,7 @@ function installedRuntimePackageVersionIsStale(params: {
   ) {
     return false;
   }
-  const comparison = compareOpenClawReleaseVersions(params.installedVersion, params.currentVersion);
+  const comparison = compareAforaReleaseVersions(params.installedVersion, params.currentVersion);
   return comparison === null ? params.installedVersion !== params.currentVersion : comparison < 0;
 }
 
@@ -494,8 +494,8 @@ function betaCompanionMatchesCurrentStableVersion(params: {
   installedVersion: string;
   currentVersion: string;
 }): boolean {
-  const installedBase = OPENCLAW_BETA_COMPANION_VERSION_RE.exec(params.installedVersion)?.[1];
-  const currentBase = OPENCLAW_STABLE_OR_BETA_COMPANION_VERSION_RE.exec(params.currentVersion)?.[1];
+  const installedBase = AFORA_BETA_COMPANION_VERSION_RE.exec(params.installedVersion)?.[1];
+  const currentBase = AFORA_STABLE_OR_BETA_COMPANION_VERSION_RE.exec(params.currentVersion)?.[1];
   return Boolean(installedBase && currentBase && installedBase === currentBase);
 }
 
@@ -560,7 +560,7 @@ function isConfiguredPluginRepairTarget(params: {
 }
 
 function collectOfficialReplacementInstallCandidates(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   repairablePluginIds: ReadonlySet<string>;
   configuredPluginIds: ReadonlySet<string>;

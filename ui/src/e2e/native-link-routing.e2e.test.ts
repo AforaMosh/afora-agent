@@ -13,7 +13,7 @@ import {
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
 const artifactDir = path.resolve(process.cwd(), ".artifacts/control-ui-e2e/native-link-routing");
 
@@ -72,13 +72,13 @@ describeControlUiE2e("native link routing", () => {
     await context.addInitScript(() => {
       const messages: unknown[] = [];
       const host = window as Window & {
-        openclawNativeLinkMessages?: unknown[];
+        aforaNativeLinkMessages?: unknown[];
         webkit?: unknown;
       };
-      host.openclawNativeLinkMessages = messages;
+      host.aforaNativeLinkMessages = messages;
       host.webkit = {
         messageHandlers: {
-          openclawLink: { postMessage: (message: unknown) => messages.push(message) },
+          aforaLink: { postMessage: (message: unknown) => messages.push(message) },
         },
       };
     });
@@ -108,8 +108,8 @@ describeControlUiE2e("native link routing", () => {
       .poll(() =>
         page.evaluate(
           () =>
-            (window as Window & { openclawNativeLinkMessages?: unknown[] })
-              .openclawNativeLinkMessages,
+            (window as Window & { aforaNativeLinkMessages?: unknown[] })
+              .aforaNativeLinkMessages,
         ),
       )
       .toEqual([{ type: "open-link", url: "https://example.com/report", target: "inline" }]);
@@ -132,8 +132,8 @@ describeControlUiE2e("native link routing", () => {
       .poll(() =>
         page.evaluate(
           () =>
-            (window as Window & { openclawNativeLinkMessages?: unknown[] })
-              .openclawNativeLinkMessages,
+            (window as Window & { aforaNativeLinkMessages?: unknown[] })
+              .aforaNativeLinkMessages,
         ),
       )
       .toContainEqual({
@@ -143,7 +143,7 @@ describeControlUiE2e("native link routing", () => {
       });
     const messageCount = await page.evaluate(
       () =>
-        (window as Window & { openclawNativeLinkMessages?: unknown[] }).openclawNativeLinkMessages
+        (window as Window & { aforaNativeLinkMessages?: unknown[] }).aforaNativeLinkMessages
           ?.length ?? 0,
     );
     await emailLink.evaluate((anchor) => (anchor as HTMLAnchorElement).click());
@@ -151,8 +151,8 @@ describeControlUiE2e("native link routing", () => {
       .poll(() =>
         page.evaluate(
           () =>
-            (window as Window & { openclawNativeLinkMessages?: unknown[] })
-              .openclawNativeLinkMessages?.length ?? 0,
+            (window as Window & { aforaNativeLinkMessages?: unknown[] })
+              .aforaNativeLinkMessages?.length ?? 0,
         ),
       )
       .toBe(messageCount);
@@ -170,11 +170,11 @@ describeControlUiE2e("native link routing", () => {
 
     await link.click({ button: "right" });
     const menu = page.getByRole("menu", { name: "Link actions" });
-    const menuHost = page.locator("openclaw-native-link-menu");
+    const menuHost = page.locator("afora-native-link-menu");
     await expect.poll(() => menu.isVisible()).toBe(true);
     await expect.poll(() => replyMenu.count()).toBe(0);
     await expect
-      .poll(() => page.locator("openclaw-native-link-menu .session-menu__text").allTextContents())
+      .poll(() => page.locator("afora-native-link-menu .session-menu__text").allTextContents())
       .toEqual(["Open in Sidebar", "Open in Default Browser", "Copy Link"]);
     await page.screenshot({
       path: path.join(artifactDir, "01-native-link-menu-page.jpg"),
@@ -186,8 +186,8 @@ describeControlUiE2e("native link routing", () => {
       .poll(() =>
         page.evaluate(
           () =>
-            (window as Window & { openclawNativeLinkMessages?: unknown[] })
-              .openclawNativeLinkMessages,
+            (window as Window & { aforaNativeLinkMessages?: unknown[] })
+              .aforaNativeLinkMessages,
         ),
       )
       .toEqual([
@@ -204,12 +204,12 @@ describeControlUiE2e("native link routing", () => {
 
     await page.evaluate(() => {
       const host = window as Window & {
-        openclawModifiedLinkClick?: { defaultPrevented: boolean; metaKey: boolean };
+        aforaModifiedLinkClick?: { defaultPrevented: boolean; metaKey: boolean };
       };
       document.addEventListener(
         "click",
         (event) => {
-          host.openclawModifiedLinkClick = {
+          host.aforaModifiedLinkClick = {
             defaultPrevented: event.defaultPrevented,
             metaKey: event.metaKey,
           };
@@ -223,22 +223,22 @@ describeControlUiE2e("native link routing", () => {
         () =>
           (
             window as Window & {
-              openclawModifiedLinkClick?: { defaultPrevented: boolean; metaKey: boolean };
+              aforaModifiedLinkClick?: { defaultPrevented: boolean; metaKey: boolean };
             }
-          ).openclawModifiedLinkClick,
+          ).aforaModifiedLinkClick,
       ),
     ).toEqual({ defaultPrevented: false, metaKey: true });
     expect(
       await page.evaluate(
         () =>
-          (window as Window & { openclawNativeLinkMessages?: unknown[] })
-            .openclawNativeLinkMessages,
+          (window as Window & { aforaNativeLinkMessages?: unknown[] })
+            .aforaNativeLinkMessages,
       ),
     ).toHaveLength(3);
 
     await page.evaluate(async () => {
-      await customElements.whenDefined("openclaw-modal-dialog");
-      const dialog = document.createElement("openclaw-modal-dialog");
+      await customElements.whenDefined("afora-modal-dialog");
+      const dialog = document.createElement("afora-modal-dialog");
       dialog.id = "native-link-routing-modal";
       dialog.setAttribute("label", "Link routing test");
       const anchor = document.createElement("a");
@@ -270,8 +270,8 @@ describeControlUiE2e("native link routing", () => {
       .poll(() =>
         page.evaluate(
           () =>
-            (window as Window & { openclawNativeLinkMessages?: unknown[] })
-              .openclawNativeLinkMessages,
+            (window as Window & { aforaNativeLinkMessages?: unknown[] })
+              .aforaNativeLinkMessages,
         ),
       )
       .toContainEqual({
@@ -287,7 +287,7 @@ describeControlUiE2e("native link routing", () => {
       .getByRole("paragraph")
       .getByRole("link", { name: "Usage" })
       .click({ button: "right" });
-    expect(await page.locator("openclaw-native-link-menu").count()).toBe(0);
+    expect(await page.locator("afora-native-link-menu").count()).toBe(0);
     const messageMenu = page.getByRole("menu", { name: "Message actions" });
     await expect.poll(() => messageMenu.isVisible()).toBe(false);
     await page.evaluate(() => new Promise(requestAnimationFrame));
@@ -296,7 +296,7 @@ describeControlUiE2e("native link routing", () => {
     await page.locator('a.markdown-file-link[data-file-path="README.md"]').click({
       button: "right",
     });
-    expect(await page.locator("openclaw-native-link-menu").count()).toBe(0);
+    expect(await page.locator("afora-native-link-menu").count()).toBe(0);
   });
 
   it("keeps ordinary browser navigation when the native bridge is absent", async () => {
@@ -318,7 +318,7 @@ describeControlUiE2e("native link routing", () => {
     const link = page.getByRole("link", { name: "report" });
 
     await link.click({ button: "right" });
-    expect(await page.locator("openclaw-native-link-menu").count()).toBe(0);
+    expect(await page.locator("afora-native-link-menu").count()).toBe(0);
     const popupPromise = page.waitForEvent("popup");
     await link.click();
     const popup = await popupPromise;

@@ -11,7 +11,7 @@ import {
   updateSessionGoalStatus,
 } from "../../config/sessions/goals.js";
 import { resolveSessionStorePathCore } from "../../config/sessions/paths.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../../routing/session-key.js";
 import { stringEnum } from "../schema/typebox.js";
 import {
@@ -26,7 +26,7 @@ type GoalToolOptions = {
   agentSessionKey?: string;
   runSessionKey?: string;
   sessionAgentId?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 };
 
 type GoalSessionScope = {

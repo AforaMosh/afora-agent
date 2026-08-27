@@ -3,7 +3,7 @@
  * Converts malformed file-tool arguments into retryable errors and fixes the
  * specific XML suffix and Office-extension corruption seen in path arguments.
  */
-import { asOptionalObjectRecord as getToolParamsRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalObjectRecord as getToolParamsRecord } from "@afora/normalization-core/record-coerce";
 import type { AnyAgentTool } from "./agent-tools.types.js";
 
 /** Return a record view of model-supplied tool params when possible. */

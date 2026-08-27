@@ -1,12 +1,12 @@
 // Matrix API module exposes the plugin public contract.
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/channel-entry-contract";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/channel-entry-contract";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 
 const loadMatrixSubagentHooksModule = createLazyRuntimeModule(
   () => import("./src/matrix/subagent-hooks.js"),
 );
 
-export function registerMatrixSubagentHooks(api: OpenClawPluginApi): void {
+export function registerMatrixSubagentHooks(api: AforaPluginApi): void {
   api.on("subagent_ended", async (event) => {
     const { handleMatrixSubagentEnded } = await loadMatrixSubagentHooksModule();
     await handleMatrixSubagentEnded(event);

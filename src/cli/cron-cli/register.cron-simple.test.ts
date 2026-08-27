@@ -68,7 +68,7 @@ function restoreStderrIsTTY(): void {
 }
 
 function createRegisteredCronCommand(): Command {
-  const program = new Command().name("openclaw");
+  const program = new Command().name("afora");
   registerCronCli(program);
   const cron = program.commands.find((command) => command.name() === "cron");
   if (!cron) {
@@ -100,7 +100,7 @@ describe("cron machine-output help", () => {
     );
     expect(jsonOption?.defaultValue).toBeUndefined();
     for (const commandName of [name, ...aliases]) {
-      expect(isCronMachineOutput(["node", "openclaw", "cron", commandName])).toBe(true);
+      expect(isCronMachineOutput(["node", "afora", "cron", commandName])).toBe(true);
     }
   });
 
@@ -113,7 +113,7 @@ describe("cron machine-output help", () => {
         "Explicit machine-output spelling (command results are JSON by default)";
       const reservesMachineOutput = command.name() === "scratch" || alwaysJson;
       for (const commandName of [command.name(), ...command.aliases()]) {
-        expect(isCronMachineOutput(["node", "openclaw", "cron", commandName]), commandName).toBe(
+        expect(isCronMachineOutput(["node", "afora", "cron", commandName]), commandName).toBe(
           reservesMachineOutput,
         );
       }
@@ -220,7 +220,7 @@ describe("cron show pagination guard (regression for #83856)", () => {
     await expect(runCronShow("missing")).rejects.toThrow("exit 1");
     expect(defaultRuntime.error).toHaveBeenCalledWith(
       expect.stringContaining(
-        "Automation not found: missing. Run `openclaw cron list` to see recent automation ids.",
+        "Automation not found: missing. Run `afora cron list` to see recent automation ids.",
       ),
     );
   });
@@ -258,7 +258,7 @@ describe("cron disable hint", () => {
       patch: { enabled: params.command === "enable" },
     });
     if (params.expectedHint) {
-      expect(stderrWrite).toHaveBeenCalledWith(expect.stringContaining("openclaw cron list --all"));
+      expect(stderrWrite).toHaveBeenCalledWith(expect.stringContaining("afora cron list --all"));
     } else {
       expect(stderrWrite).not.toHaveBeenCalled();
     }

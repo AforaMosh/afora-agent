@@ -1,8 +1,8 @@
 // Codex plugin module implements conversation turn input behavior.
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { PluginHookInboundClaimEvent } from "openclaw/plugin-sdk/plugin-entry";
-import { normalizeSingleOrTrimmedStringList } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { PluginHookInboundClaimEvent } from "afora-agent/plugin-sdk/plugin-entry";
+import { normalizeSingleOrTrimmedStringList } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { CodexUserInput } from "./app-server/protocol.js";
 
 type InboundMedia = {
@@ -27,7 +27,7 @@ export function buildCodexConversationTurnInput(params: {
 
 function extractInboundMedia(event: PluginHookInboundClaimEvent): InboundMedia[] {
   const metadata = event.metadata ?? {};
-  // OpenClaw channels expose either local staged files or remote URLs. Keep
+  // Afora channels expose either local staged files or remote URLs. Keep
   // them separate so Codex can receive the cheaper localImage input when a file
   // is already present, while still supporting remote-only transports.
   const paths = normalizeSingleOrTrimmedStringList(metadata.mediaPaths).concat(

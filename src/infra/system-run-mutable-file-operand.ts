@@ -1,10 +1,10 @@
 /** Detects mutable file operands in approved commands. */
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeNullableString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { splitShellArgs } from "../utils/shell-argv.js";
 import { detectPolicyInlineEval } from "./command-analysis/policy.js";
 import { isInterpreterLikeSafeBin } from "./exec-safe-bin-runtime-policy.js";

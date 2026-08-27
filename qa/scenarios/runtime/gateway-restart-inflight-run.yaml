@@ -47,7 +47,7 @@ scenario:
     - src/gateway/server-restart-sentinel.ts
   execution:
     kind: flow
-    runtime: openclaw
+    runtime: afora
     timeoutMs: 420000
     retryCount: 0
     summary: Restart three times while replay-safe Code Mode waits are pending, then verify identity-preserving automatic reconstruction and delivery.

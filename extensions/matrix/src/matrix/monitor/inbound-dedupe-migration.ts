@@ -17,9 +17,9 @@ import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 // Doctor enumeration cold-loads this closure; persistent-dedupe pulls the
 // plugin-state-store/kysely graph, so the value import stays lazy below.
-import type { PersistentDedupeEntry } from "openclaw/plugin-sdk/persistent-dedupe";
-import type { PluginDoctorStateMigrationContext } from "openclaw/plugin-sdk/runtime-doctor-migrations";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { PersistentDedupeEntry } from "afora-agent/plugin-sdk/persistent-dedupe";
+import type { PluginDoctorStateMigrationContext } from "afora-agent/plugin-sdk/runtime-doctor-migrations";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { normalizeMatrixStorageMetadata } from "../client/storage.js";
 
 const LEGACY_SQLITE_NAMESPACE = "inbound-dedupe";
@@ -28,7 +28,7 @@ const LEGACY_JSON_VERSION = 1;
 const MATRIX_PLUGIN_ID = "matrix";
 const MIGRATION_COMPLETION_NAMESPACE = "inbound-dedupe-migration-state";
 const MIGRATION_COMPLETION_KEY = "sqlite-json-to-claimable-v1";
-const STATE_DATABASE_RELATIVE_PATH = path.join("state", "openclaw.sqlite");
+const STATE_DATABASE_RELATIVE_PATH = path.join("state", "afora.sqlite");
 const STORAGE_META_FILENAME = "storage-meta.json";
 
 export const MATRIX_LEGACY_INBOUND_DEDUPE_FILENAME = "inbound-dedupe.json";
@@ -140,8 +140,8 @@ export async function collectMatrixInboundDedupeSources(
     for (const entry of entries) {
       const entryPath = path.join(dir, entry.name);
       if (entry.isFile()) {
-        // Legacy per-root dedupe rows live in `<storageRoot>/state/openclaw.sqlite`.
-        if (entry.name === "openclaw.sqlite" && path.basename(dir) === "state") {
+        // Legacy per-root dedupe rows live in `<storageRoot>/state/afora.sqlite`.
+        if (entry.name === "afora.sqlite" && path.basename(dir) === "state") {
           sqliteRoots.add(path.dirname(dir));
         } else if (entry.name === MATRIX_LEGACY_INBOUND_DEDUPE_FILENAME) {
           jsonRoots.add(dir);
@@ -240,7 +240,7 @@ export async function readLegacyInboundDedupeSqliteSource(
 ): Promise<{ markers: LegacyInboundDedupeMarker[]; legacyRowCount: number }> {
   // sqlite-runtime re-exports the agent-db/kysely graph; keep it lazy so doctor
   // enumeration does not cold-load it with this closure.
-  const { openNodeSqliteDatabase } = await import("openclaw/plugin-sdk/sqlite-runtime");
+  const { openNodeSqliteDatabase } = await import("afora-agent/plugin-sdk/sqlite-runtime");
   const databasePath = path.join(storageRootDir, STATE_DATABASE_RELATIVE_PATH);
   const db = openNodeSqliteDatabase(databasePath, { readOnly: true });
   try {
@@ -275,7 +275,7 @@ export async function readLegacyInboundDedupeSqliteSource(
 /** Deletes only the two retired Matrix namespaces after a successful import. */
 export async function retireLegacyInboundDedupeSqliteRows(storageRootDir: string): Promise<void> {
   const { openNodeSqliteDatabase, runSqliteImmediateTransactionSync } =
-    await import("openclaw/plugin-sdk/sqlite-runtime");
+    await import("afora-agent/plugin-sdk/sqlite-runtime");
   const databasePath = path.join(storageRootDir, STATE_DATABASE_RELATIVE_PATH);
   const db = openNodeSqliteDatabase(databasePath);
   try {
@@ -401,7 +401,7 @@ export async function importNewestInboundDedupeMarkers(params: {
   stateMaxEntries?: number;
 }): Promise<{ imported: number; total: number }> {
   const { createPersistentDedupeImportEntry } =
-    await import("openclaw/plugin-sdk/persistent-dedupe");
+    await import("afora-agent/plugin-sdk/persistent-dedupe");
   // inbound-dedupe.js value-imports persistent-dedupe's replay guard, so the
   // runtime module also stays out of this closure's static import graph.
   const {

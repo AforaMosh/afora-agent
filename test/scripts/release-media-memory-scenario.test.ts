@@ -7,7 +7,7 @@ const SCENARIO = "scripts/e2e/lib/release-media-memory/scenario.sh";
 describe("release media memory scenario", () => {
   it("fails when packaged plugin listing is broken or omits memory-core", () => {
     const script = readFileSync(SCENARIO, "utf8");
-    const listIndex = script.indexOf('openclaw plugins list --json >"$PLUGINS_JSON"');
+    const listIndex = script.indexOf('afora plugins list --json >"$PLUGINS_JSON"');
     const assertIndex = script.indexOf('assert-file-contains "$PLUGINS_JSON" memory-core');
 
     expect(listIndex).toBeGreaterThanOrEqual(0);
@@ -24,15 +24,15 @@ describe("release media memory scenario", () => {
   it("uses a per-run temp root for generated media artifacts", () => {
     const script = readFileSync(SCENARIO, "utf8");
 
-    expect(script).toContain('media_root="$(mktemp -d /tmp/openclaw-release-media-memory.XXXXXX)"');
+    expect(script).toContain('media_root="$(mktemp -d /tmp/afora-release-media-memory.XXXXXX)"');
     expect(script).toContain('rm -rf "$media_root"');
     expect(script).toContain('MOCK_REQUEST_LOG="$media_root/openai-requests.jsonl"');
     expect(script).toContain('PLUGINS_JSON="$media_root/plugins.json"');
     expect(script).toContain('--file "$media_root/input.png"');
     expect(script).toContain('--output "$media_root/generated.png"');
-    expect(script).not.toContain("/tmp/openclaw-release-media-memory-plugins.json");
+    expect(script).not.toContain("/tmp/afora-release-media-memory-plugins.json");
     expect(script).not.toContain(
-      'mkdir -p "$OPENCLAW_STATE_DIR/workspace/memory" /tmp/openclaw-release-media-memory',
+      'mkdir -p "$AFORA_STATE_DIR/workspace/memory" /tmp/afora-release-media-memory',
     );
   });
 });

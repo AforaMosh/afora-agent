@@ -144,7 +144,7 @@ describe("repairCanonicalSqliteIndexes", () => {
       expect(
         db
           .prepare(
-            "SELECT name FROM sqlite_schema WHERE type = 'index' AND name LIKE 'openclaw_probe_%'",
+            "SELECT name FROM sqlite_schema WHERE type = 'index' AND name LIKE 'afora_probe_%'",
           )
           .all(),
       ).toEqual([]);

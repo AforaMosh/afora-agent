@@ -1,5 +1,5 @@
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
-import { sliceUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
+import { sliceUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { resolveSessionStorePathCore } from "../../../config/sessions/paths.js";
 import {
   loadSessionEntryReadOnly,
@@ -147,7 +147,7 @@ export const hasPriorRequesterDeliveryMirror = async (
       const text = extractTextFromChatContent(record.content, { joinWith: "" });
       return (
         record.role === "assistant" &&
-        record.provider === "openclaw" &&
+        record.provider === "afora" &&
         record.model === "delivery-mirror" &&
         text === expectedText
       );

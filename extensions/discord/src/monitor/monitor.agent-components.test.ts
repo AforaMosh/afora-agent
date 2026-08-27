@@ -1,13 +1,13 @@
 // Discord tests cover monitor.agent components plugin behavior.
 import { ChannelType, ComponentType } from "discord-api-types/v10";
-import { expectPairingReplyText } from "openclaw/plugin-sdk/channel-test-helpers";
-import type { DiscordAccountConfig, OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { buildAgentSessionKey } from "openclaw/plugin-sdk/routing";
+import { expectPairingReplyText } from "afora-agent/plugin-sdk/channel-test-helpers";
+import type { DiscordAccountConfig, AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { buildAgentSessionKey } from "afora-agent/plugin-sdk/routing";
 import {
   enqueueSystemEvent,
   peekSystemEventEntries,
-} from "openclaw/plugin-sdk/system-event-runtime";
-import { peekSystemEvents, resetSystemEventsForTest } from "openclaw/plugin-sdk/test-fixtures";
+} from "afora-agent/plugin-sdk/system-event-runtime";
+import { peekSystemEvents, resetSystemEventsForTest } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ButtonInteraction,
@@ -45,7 +45,7 @@ describe("agent components", () => {
     peer: { kind: "group", id: "group-dm-channel" },
   });
 
-  const createCfg = (): OpenClawConfig => ({}) as OpenClawConfig;
+  const createCfg = (): AforaConfig => ({}) as AforaConfig;
   const createDmInteraction = (params: { interactionId: string; data?: Record<string, unknown> }) =>
     createInteraction(
       createInternalTestClient(),
@@ -200,7 +200,7 @@ describe("agent components", () => {
       channel: "discord",
       idLine: "Your Discord user id: 123456789",
     });
-    expect(pairingText).toContain(`openclaw pairing approve discord ${code}`);
+    expect(pairingText).toContain(`afora pairing approve discord ${code}`);
     expect(peekSystemEvents(defaultDmSessionKey)).toStrictEqual([]);
     expect(readAllowFromStoreMock).toHaveBeenCalledWith("discord", "default");
   });

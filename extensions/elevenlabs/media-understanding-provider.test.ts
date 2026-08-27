@@ -1,5 +1,5 @@
 // Elevenlabs tests cover media understanding provider plugin behavior.
-import { mockPinnedHostnameResolution } from "openclaw/plugin-sdk/test-env";
+import { mockPinnedHostnameResolution } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { elevenLabsMediaUnderstandingProvider } from "./media-understanding-provider.js";
 

@@ -21,7 +21,7 @@ GITHUB_OUTPUT_FILE="${GITHUB_OUTPUT:-}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PREFLIGHT="${SCRIPT_DIR}/../release-preflight.mjs"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-VALIDATOR="${OPENCLAW_RELEASE_CI_SUMMARY_VALIDATOR:-${REPO_ROOT}/scripts/release-ci-summary.mjs}"
+VALIDATOR="${AFORA_RELEASE_CI_SUMMARY_VALIDATOR:-${REPO_ROOT}/scripts/release-ci-summary.mjs}"
 
 usage() {
   cat >&2 <<'EOF'
@@ -219,7 +219,7 @@ for ((index = 0; index < run_count; index += 1)); do
     --arg run_id "$run_id" \
     --arg verifier_sha "$VERIFIER_WORKFLOW_SHA" '
       . as $record
-      | .schema == "openclaw.release-validation-evidence/v3"
+      | .schema == "afora.release-validation-evidence/v3"
       and .valid == true
       and .repository == $repo
       and .producerOnTrustedMainLineage == true

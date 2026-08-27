@@ -1,5 +1,5 @@
 // Shared schedule option resolver for cron create/edit commands.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { CronSchedule } from "../../cron/types.js";
 import {
   parseAt,

@@ -14,7 +14,7 @@ type PlaybackCacheTestApi = {
 
 function getPlaybackCacheTestApi(): PlaybackCacheTestApi {
   const api = (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.mediaStoreTestApi")
+    Symbol.for("afora.mediaStoreTestApi")
   ];
   if (!api) {
     throw new Error("media store test API is unavailable");
@@ -23,7 +23,7 @@ function getPlaybackCacheTestApi(): PlaybackCacheTestApi {
 }
 
 beforeAll(async () => {
-  tempHome = await createTempHomeEnv("openclaw-playback-cache-");
+  tempHome = await createTempHomeEnv("afora-playback-cache-");
   store = await import("./store.js");
 });
 

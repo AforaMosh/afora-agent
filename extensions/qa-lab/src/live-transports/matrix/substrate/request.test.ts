@@ -1,5 +1,5 @@
 // Qa Lab Matrix tests cover request behavior.
-import { MAX_TIMER_TIMEOUT_MS } from "openclaw/plugin-sdk/number-runtime";
+import { MAX_TIMER_TIMEOUT_MS } from "afora-agent/plugin-sdk/number-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { requestMatrixJson, type MatrixQaFetchLike } from "./request.js";
 

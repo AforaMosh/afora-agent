@@ -38,9 +38,9 @@ describe("gateway exec approvals QA", () => {
   it("protects policy snapshots and resolves a pending request from another reviewer", async () => {
     const port = await getGatewayTestPort();
     const token = "gateway-exec-approvals-qa-token";
-    const stateDir = process.env.OPENCLAW_STATE_DIR;
+    const stateDir = process.env.AFORA_STATE_DIR;
     if (!stateDir) {
-      throw new Error("OPENCLAW_STATE_DIR is required for gateway QA fixtures");
+      throw new Error("AFORA_STATE_DIR is required for gateway QA fixtures");
     }
 
     const server = await startTestGatewayServer(port, {

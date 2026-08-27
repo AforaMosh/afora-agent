@@ -1,11 +1,11 @@
-# OpenClaw Matrix
+# Afora Matrix
 
-Official OpenClaw channel plugin for Matrix rooms and direct messages.
+Official Afora channel plugin for Matrix rooms and direct messages.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/matrix
+afora plugins install @afora/matrix
 ```
 
-Configure the Matrix homeserver and bot credentials in OpenClaw. The plugin lets agents join configured rooms, receive messages, and reply through Matrix.
+Configure the Matrix homeserver and bot credentials in Afora. The plugin lets agents join configured rooms, receive messages, and reply through Matrix.

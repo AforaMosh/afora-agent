@@ -14,7 +14,7 @@ export function createUnitFastFakeTimersVitestConfig(
 ) {
   const sharedTest = sharedVitestConfig.test ?? {};
   const sharedSequence = (sharedTest as { sequence?: { groupOrder?: number } }).sequence;
-  const includeFromEnv = loadPatternListFromEnv("OPENCLAW_VITEST_INCLUDE_FILE", env);
+  const includeFromEnv = loadPatternListFromEnv("AFORA_VITEST_INCLUDE_FILE", env);
   const unitFastTimerTestFiles = getUnitFastTimerTestFiles();
   const cliInclude = narrowIncludePatternsForCli(unitFastTimerTestFiles, options.argv);
 

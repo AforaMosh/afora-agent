@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import type { SkillHistoryScanCandidate } from "./history-scan-candidates.js";
 import type { SkillHistoryScanPromptSession } from "./history-scan-prompt.js";
 
@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../../agents/agent-scope.js", () => ({
   resolveAgentConfig: vi.fn(() => undefined),
-  resolveAgentDir: vi.fn(() => "/tmp/openclaw-history-scan-agent"),
+  resolveAgentDir: vi.fn(() => "/tmp/afora-history-scan-agent"),
 }));
 
 vi.mock("../../agents/embedded-agent-runner/model.js", () => ({
@@ -83,10 +83,10 @@ function candidate(instanceId: string, updatedAtMs: number): SkillHistoryScanCan
 
 describe("Skill Workshop history scan resume", () => {
   it("excludes malformed sessions before checkpointing and replays the same batch", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-history-scan-resume-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-history-scan-resume-"));
     const workspaceDir = path.join(tempDir, "workspace");
     const storePath = path.join(tempDir, "sessions.json");
-    const env = { ...process.env, OPENCLAW_STATE_DIR: path.join(tempDir, "state") };
+    const env = { ...process.env, AFORA_STATE_DIR: path.join(tempDir, "state") };
     const validUpdatedAtMs = Date.parse("2026-07-16T12:00:00.000Z");
     const invalid = candidate("invalid", validUpdatedAtMs + 1_000);
     const valid = candidate("valid", validUpdatedAtMs);
@@ -135,7 +135,7 @@ describe("Skill Workshop history scan resume", () => {
       expect(reviewedBatches).toEqual([["valid"], ["valid"]]);
       expect(mocks.getProgress).toHaveBeenCalledTimes(1);
     } finally {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       await fs.rm(tempDir, { recursive: true, force: true });
       vi.clearAllMocks();
       mocks.candidates = [];

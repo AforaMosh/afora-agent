@@ -4,7 +4,7 @@ import { FEISHU_HTTP_TIMEOUT_MS } from "./client-timeout.js";
 import { FeishuConfigSchema } from "./config-schema.js";
 import type { ResolvedFeishuAccount } from "./types.js";
 
-const FEISHU_HTTP_TIMEOUT_ENV_VAR = "OPENCLAW_FEISHU_HTTP_TIMEOUT_MS";
+const FEISHU_HTTP_TIMEOUT_ENV_VAR = "AFORA_FEISHU_HTTP_TIMEOUT_MS";
 const FEISHU_HTTP_TIMEOUT_MAX_MS = 300_000;
 
 type CreateFeishuClient = typeof import("./client.js").createFeishuClient;
@@ -65,7 +65,7 @@ const proxyEnvKeys = [
   "HTTPS_PROXY",
   "http_proxy",
   "HTTP_PROXY",
-  "OPENCLAW_PROXY_ACTIVE",
+  "AFORA_PROXY_ACTIVE",
 ] as const;
 type ProxyEnvKey = (typeof proxyEnvKeys)[number];
 const registerFeishuDocToolsMock = vi.hoisted(() => vi.fn());
@@ -656,7 +656,7 @@ describe("createFeishuClient HTTP timeout", () => {
     });
   });
 
-  it("uses OpenClaw's ambient proxy agent for Feishu HTTP API requests", async () => {
+  it("uses Afora's ambient proxy agent for Feishu HTTP API requests", async () => {
     process.env.HTTPS_PROXY = "http://upper-https:8002";
 
     createFeishuClient({
@@ -718,7 +718,7 @@ describe("createFeishuClient HTTP timeout", () => {
 
   it("overrides request-level agents while managed proxy mode is active", async () => {
     process.env.HTTPS_PROXY = "http://upper-https:8002";
-    process.env.OPENCLAW_PROXY_ACTIVE = "1";
+    process.env.AFORA_PROXY_ACTIVE = "1";
     const callerHttpAgent = { caller: "http" };
     const callerHttpsAgent = { caller: "https" };
 
@@ -767,7 +767,7 @@ describe("createFeishuClient HTTP timeout", () => {
 
   it("fails closed when managed proxy agent creation fails", async () => {
     process.env.HTTPS_PROXY = "http://upper-https:8002";
-    process.env.OPENCLAW_PROXY_ACTIVE = "1";
+    process.env.AFORA_PROXY_ACTIVE = "1";
     proxyAgentCtorMock.mockImplementationOnce(() => {
       throw new Error("proxy agent failed");
     });

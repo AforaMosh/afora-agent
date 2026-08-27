@@ -1,4 +1,4 @@
-// Linux native-app admission tests: openclaw-linux joins the native UI client class,
+// Linux native-app admission tests: afora-linux joins the native UI client class,
 // pairing auto-approves only for direct-local connections.
 import { describe, expect, it } from "vitest";
 import {
@@ -20,7 +20,7 @@ const LINUX_NATIVE_CONNECT_PARAMS = {
 } as ConnectParams;
 
 describe("linux native-app handshake admission", () => {
-  it("auto-approves local openclaw-linux pairing and keeps remote pairing explicit", () => {
+  it("auto-approves local afora-linux pairing and keeps remote pairing explicit", () => {
     expect(isNativeAppUiClient(LINUX_NATIVE_CONNECT_PARAMS.client)).toBe(true);
     const locality = resolvePairingLocality({
       connectParams: LINUX_NATIVE_CONNECT_PARAMS,

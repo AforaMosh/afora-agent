@@ -3,10 +3,10 @@
  */
 import crypto from "node:crypto";
 import path from "node:path";
-import { sanitizeSurrogates } from "@openclaw/ai/internal/shared";
-import { stableStringify } from "@openclaw/normalization-core";
+import { sanitizeSurrogates } from "@afora/ai/internal/shared";
+import { stableStringify } from "@afora/normalization-core";
 import { resolveStateDir } from "../config/paths.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveUserPath } from "../utils.js";
 import { parseBooleanValue } from "../utils/boolean.js";
 import { safeJsonStringify } from "../utils/safe-json.js";
@@ -66,7 +66,7 @@ type CacheTrace = {
 };
 
 type CacheTraceInit = {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   runId?: string;
   sessionId?: string;
@@ -93,16 +93,16 @@ const writers = new Map<string, CacheTraceWriter>();
 function resolveCacheTraceConfig(params: CacheTraceInit): CacheTraceConfig {
   const env = params.env ?? process.env;
   const config = params.cfg?.diagnostics?.cacheTrace;
-  const envEnabled = parseBooleanValue(env.OPENCLAW_CACHE_TRACE);
+  const envEnabled = parseBooleanValue(env.AFORA_CACHE_TRACE);
   const enabled = envEnabled ?? config?.enabled ?? false;
-  const fileOverride = env.OPENCLAW_CACHE_TRACE_FILE?.trim();
+  const fileOverride = env.AFORA_CACHE_TRACE_FILE?.trim();
   const filePath = fileOverride
     ? resolveUserPath(fileOverride)
     : path.join(resolveStateDir(env), "logs", "cache-trace.jsonl");
 
-  const includeMessages = parseBooleanValue(env.OPENCLAW_CACHE_TRACE_MESSAGES);
-  const includePrompt = parseBooleanValue(env.OPENCLAW_CACHE_TRACE_PROMPT);
-  const includeSystem = parseBooleanValue(env.OPENCLAW_CACHE_TRACE_SYSTEM);
+  const includeMessages = parseBooleanValue(env.AFORA_CACHE_TRACE_MESSAGES);
+  const includePrompt = parseBooleanValue(env.AFORA_CACHE_TRACE_PROMPT);
+  const includeSystem = parseBooleanValue(env.AFORA_CACHE_TRACE_SYSTEM);
 
   return {
     enabled,

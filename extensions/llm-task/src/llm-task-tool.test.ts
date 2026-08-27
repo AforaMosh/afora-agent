@@ -17,7 +17,7 @@ function completionResult(params: Parameters<Complete>[0], text = "{}") {
     usage: {},
     execution: {
       mode: "isolated-agent-runtime" as const,
-      owner: { kind: "harness" as const, id: "openclaw" },
+      owner: { kind: "harness" as const, id: "afora" },
     },
     audit: { caller: { kind: "plugin" as const, id: "llm-task" } },
   };
@@ -34,7 +34,7 @@ const resolveThinkingPolicy = vi.fn(
       { id: "medium", label: "medium" },
       { id: "high", label: "high" },
       ...(model?.startsWith("gpt-5.6") &&
-      (agentRuntime === "openclaw" || (agentRuntime === "codex" && !model.endsWith("-luna")))
+      (agentRuntime === "afora" || (agentRuntime === "codex" && !model.endsWith("-luna")))
         ? [
             { id: "max", label: "max" },
             { id: "ultra", label: "ultra" },
@@ -71,7 +71,7 @@ function fakeApi(overrides: Record<string, unknown> = {}): LlmTaskApi {
           workspace: "/tmp",
           model: { primary: "openai/gpt-5.5" },
           models: {
-            "openai/gpt-5.5": { agentRuntime: { id: "openclaw" } },
+            "openai/gpt-5.5": { agentRuntime: { id: "afora" } },
           },
         },
       },

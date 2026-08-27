@@ -1,4 +1,4 @@
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
 import type { BeamStoredSession } from "./types.js";
 import { BEAM_MAX_SESSIONS, BEAM_RETENTION_MS } from "./types.js";
 

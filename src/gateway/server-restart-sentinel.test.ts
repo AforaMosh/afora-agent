@@ -9,9 +9,9 @@ import {
 import type { RestartSentinelPayload } from "../infra/restart-sentinel.js";
 import { resolveSystemEventOptionsOwnerAgentId } from "../infra/system-event-ownership.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../test-utils/afora-test-state.js";
 import { normalizeSessionDeliveryState } from "../utils/delivery-context.shared.js";
 
 type RestartSentinel = NonNullable<
@@ -176,7 +176,7 @@ const mocks = vi.hoisted(() => {
     drainPendingSessionDeliveries: vi.fn(),
     recoverPendingSessionDeliveries: vi.fn<RecoverPendingSessionDeliveriesMock>(),
     resolveAgentConfig: vi.fn(() => undefined),
-    resolveAgentWorkspaceDir: vi.fn(() => "/tmp/openclaw-test-workspace"),
+    resolveAgentWorkspaceDir: vi.fn(() => "/tmp/afora-test-workspace"),
     resolveDefaultAgentId: vi.fn(() => "main"),
     recordInboundSessionAndDispatchReply: vi.fn(
       async (_params: RecordInboundSessionAndDispatchReplyParams) => {},
@@ -567,7 +567,7 @@ function mockRestartContinuation(
   } as Awaited<ReturnType<typeof mocks.readRestartSentinel>>);
 }
 
-let testState: OpenClawTestState;
+let testState: AforaTestState;
 
 describe("scheduleRestartSentinelWake", () => {
   afterEach(async () => {
@@ -577,7 +577,7 @@ describe("scheduleRestartSentinelWake", () => {
   });
 
   beforeEach(async () => {
-    testState = await createOpenClawTestState({
+    testState = await createAforaTestState({
       label: "gateway-restart-sentinel",
       layout: "state-only",
     });
@@ -2761,10 +2761,10 @@ describe("scheduleRestartSentinelWake", () => {
           deliveryContext: undefined,
           threadId: undefined,
           message: null,
-          doctorHint: "Run openclaw doctor --non-interactive",
+          doctorHint: "Run afora doctor --non-interactive",
           stats: {
             mode: kind === "config-patch" ? "config.patch" : "config.apply",
-            root: "/tmp/openclaw.json",
+            root: "/tmp/afora.json",
             requiresRestart: true,
           },
         },

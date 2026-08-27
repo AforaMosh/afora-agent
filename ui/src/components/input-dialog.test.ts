@@ -17,7 +17,7 @@ function findButton(label: string): HTMLButtonElement {
 }
 
 function dialogInput(): HTMLInputElement {
-  const input = document.body.querySelector('openclaw-modal-dialog input[name="value"]');
+  const input = document.body.querySelector('afora-modal-dialog input[name="value"]');
   if (!(input instanceof HTMLInputElement)) {
     throw new Error("Expected text input");
   }
@@ -33,7 +33,7 @@ async function type(value: string) {
 
 function submitForm() {
   document.body
-    .querySelector("openclaw-modal-dialog form")
+    .querySelector("afora-modal-dialog form")
     ?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
 }
 
@@ -75,7 +75,7 @@ describe("showInputDialog", () => {
     findButton("Rename").click();
 
     await expect(result).resolves.toBe("Renamed session");
-    expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull();
+    expect(document.body.querySelector("afora-modal-dialog")).toBeNull();
   });
 
   it("treats modal dismissal as cancellation", async () => {
@@ -95,7 +95,7 @@ describe("showInputDialog", () => {
     controller.abort();
 
     await expect(result).resolves.toBeNull();
-    expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull();
+    expect(document.body.querySelector("afora-modal-dialog")).toBeNull();
   });
 
   it("rejects a reentrant input request instead of stacking or replaying it", async () => {
@@ -127,7 +127,7 @@ describe("showInputDialog", () => {
 
     await closed;
     expect(submit).toHaveBeenCalledExactlyOnceWith("Client work");
-    expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull();
+    expect(document.body.querySelector("afora-modal-dialog")).toBeNull();
   });
 
   it("holds a rename closed on the name it started from", async () => {
@@ -146,7 +146,7 @@ describe("showInputDialog", () => {
     await type("  Research  ");
     expect(findButton("Save").disabled).toBe(true);
     submitForm();
-    expect(document.body.querySelector("openclaw-modal-dialog")).not.toBeNull();
+    expect(document.body.querySelector("afora-modal-dialog")).not.toBeNull();
 
     await type("Projects");
     expect(findButton("Save").disabled).toBe(false);
@@ -173,7 +173,7 @@ describe("showInputDialog", () => {
     submitForm();
     await closed;
     expect(submit).toHaveBeenCalledTimes(2);
-    expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull();
+    expect(document.body.querySelector("afora-modal-dialog")).toBeNull();
   });
 
   it("submits once while an attempt is in flight and blocks dismissal until it settles", async () => {
@@ -195,11 +195,11 @@ describe("showInputDialog", () => {
     const cancelEvent = new CustomEvent("modal-cancel", { cancelable: true });
     modal.dispatchEvent(cancelEvent);
     expect(cancelEvent.defaultPrevented).toBe(true);
-    expect(document.body.querySelector("openclaw-modal-dialog")).not.toBeNull();
+    expect(document.body.querySelector("afora-modal-dialog")).not.toBeNull();
 
     settle(null);
     await closed;
-    expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull();
+    expect(document.body.querySelector("afora-modal-dialog")).toBeNull();
   });
 
   it("recovers when the operation throws before it returns a promise", async () => {
@@ -227,7 +227,7 @@ describe("showInputDialog", () => {
 
     submitForm();
     await closed;
-    expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull();
+    expect(document.body.querySelector("afora-modal-dialog")).toBeNull();
   });
 
   it("turns a thrown operation into a visible failure instead of a stuck dialog", async () => {
@@ -247,6 +247,6 @@ describe("showInputDialog", () => {
 
     submitForm();
     await closed;
-    expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull();
+    expect(document.body.querySelector("afora-modal-dialog")).toBeNull();
   });
 });

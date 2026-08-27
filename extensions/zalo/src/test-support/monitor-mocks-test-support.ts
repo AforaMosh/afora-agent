@@ -1,21 +1,21 @@
 // Zalo plugin module implements monitor mocks test support behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { createPluginRuntimeMock } from "openclaw/plugin-sdk/channel-test-helpers";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+import { createPluginRuntimeMock } from "afora-agent/plugin-sdk/channel-test-helpers";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 import {
-  closeOpenClawStateDatabaseForTest,
+  closeAforaStateDatabaseForTest,
   createChannelIngressQueueForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import {
   createEmptyPluginRegistry,
   createRuntimeEnv,
   setActivePluginRegistry,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
-import { closeOpenClawAgentDatabasesForTest } from "openclaw/plugin-sdk/sqlite-runtime-testing";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { closeAforaAgentDatabasesForTest } from "afora-agent/plugin-sdk/sqlite-runtime-testing";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
 import { vi, type Mock } from "vitest";
-import type { OpenClawConfig, PluginRuntime } from "../runtime-api.js";
+import type { AforaConfig, PluginRuntime } from "../runtime-api.js";
 import type { ResolvedZaloAccount } from "../types.js";
 
 type MonitorModule = typeof import("../monitor.js");
@@ -117,8 +117,8 @@ const importCachedWebhookModule = createLazyRuntimeModule(
 export async function resetLifecycleTestState() {
   // Agent close releases leases through shared state; closing shared state first
   // can reopen it during teardown and leave Windows handles under the state dir.
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   if (lifecycleStateDir) {
     await fs.rm(lifecycleStateDir, {
       recursive: true,
@@ -129,9 +129,9 @@ export async function resetLifecycleTestState() {
     lifecycleStateDir = undefined;
   }
   if (previousLifecycleStateDir === undefined) {
-    delete process.env.OPENCLAW_STATE_DIR;
+    delete process.env.AFORA_STATE_DIR;
   } else {
-    process.env.OPENCLAW_STATE_DIR = previousLifecycleStateDir;
+    process.env.AFORA_STATE_DIR = previousLifecycleStateDir;
     previousLifecycleStateDir = undefined;
   }
   vi.clearAllMocks();
@@ -142,12 +142,12 @@ export async function resetLifecycleTestState() {
 async function installLifecycleWebhookIngressState(): Promise<void> {
   const runtime = getZaloRuntimeMock() as PluginRuntime;
   const createdDir = await fs.mkdtemp(
-    path.join(resolvePreferredOpenClawTmpDir(), "openclaw-zalo-lifecycle-"),
+    path.join(resolvePreferredAforaTmpDir(), "afora-zalo-lifecycle-"),
   );
   const stateDir = await fs.realpath(createdDir);
-  previousLifecycleStateDir = process.env.OPENCLAW_STATE_DIR;
+  previousLifecycleStateDir = process.env.AFORA_STATE_DIR;
   lifecycleStateDir = stateDir;
-  process.env.OPENCLAW_STATE_DIR = stateDir;
+  process.env.AFORA_STATE_DIR = stateDir;
   runtime.state.openChannelIngressQueue = (<T>(options: { accountId?: string }) =>
     createChannelIngressQueueForTests<T>({
       channelId: "zalo",
@@ -190,7 +190,7 @@ export async function loadCachedLifecycleMonitorModule(cacheKey: string): Promis
 
 export async function startWebhookLifecycleMonitor(params: {
   account: ResolvedZaloAccount;
-  config: OpenClawConfig;
+  config: AforaConfig;
   token?: string;
   webhookUrl?: string;
   webhookSecret?: string;

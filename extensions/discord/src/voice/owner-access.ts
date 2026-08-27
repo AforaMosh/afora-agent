@@ -1,10 +1,10 @@
 // Discord plugin module implements voice owner resolution.
-import type { DiscordAccountConfig, OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { DiscordAccountConfig, AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { resolveDiscordAccountAllowFrom } from "../accounts.js";
 import { resolveDiscordCommandOwnerAllowFrom } from "../monitor/allow-list.js";
 
 export function resolveDiscordVoiceAccess(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   discordConfig: DiscordAccountConfig;
   accountId: string;
 }): {

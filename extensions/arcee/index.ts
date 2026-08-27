@@ -2,13 +2,13 @@
  * Arcee AI provider plugin entry. It supports direct Arcee auth and OpenRouter
  * routing while normalizing OpenRouter model ids and base URLs.
  */
-import { buildOpenAICompatibleLiveModelProviderConfig } from "openclaw/plugin-sdk/provider-catalog-live-runtime";
+import { buildOpenAICompatibleLiveModelProviderConfig } from "afora-agent/plugin-sdk/provider-catalog-live-runtime";
 import {
   readConfiguredProviderCatalogEntries,
   type ProviderCatalogContext,
-} from "openclaw/plugin-sdk/provider-catalog-shared";
-import { defineSingleProviderPluginEntry } from "openclaw/plugin-sdk/provider-entry";
-import { buildProviderReplayFamilyHooks } from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/provider-catalog-shared";
+import { defineSingleProviderPluginEntry } from "afora-agent/plugin-sdk/provider-entry";
+import { buildProviderReplayFamilyHooks } from "afora-agent/plugin-sdk/provider-model-shared";
 import {
   applyArceeConfig,
   applyArceeOpenRouterConfig,

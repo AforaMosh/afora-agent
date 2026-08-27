@@ -1,23 +1,23 @@
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
 import {
   createNonExitingRuntimeEnv,
   createQueuedWizardPrompter,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
-import { CUSTOM_LOCAL_AUTH_MARKER } from "openclaw/plugin-sdk/provider-auth";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/provider-auth";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { CUSTOM_LOCAL_AUTH_MARKER } from "afora-agent/plugin-sdk/provider-auth";
+import type { AforaConfig } from "afora-agent/plugin-sdk/provider-auth";
 import type {
   ModelDefinitionConfig,
   ModelProviderConfig,
-} from "openclaw/plugin-sdk/provider-model-shared";
-import { resolveAgentModelPrimaryValue } from "openclaw/plugin-sdk/provider-onboard";
+} from "afora-agent/plugin-sdk/provider-model-shared";
+import { resolveAgentModelPrimaryValue } from "afora-agent/plugin-sdk/provider-onboard";
 import {
   SELF_HOSTED_DEFAULT_CONTEXT_WINDOW,
   type ProviderAuthMethodNonInteractiveContext,
   type ProviderCatalogContext,
-} from "openclaw/plugin-sdk/provider-setup";
-import type { WizardPrompter } from "openclaw/plugin-sdk/setup";
+} from "afora-agent/plugin-sdk/provider-setup";
+import type { WizardPrompter } from "afora-agent/plugin-sdk/setup";
 // Lmstudio tests cover setup plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   LMSTUDIO_DEFAULT_API_KEY_ENV_VAR,
@@ -44,8 +44,8 @@ vi.mock("./models.fetch.js", () => ({
   ensureLmstudioModelLoaded: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/provider-auth", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/provider-auth")>();
+vi.mock("afora-agent/plugin-sdk/provider-auth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/provider-auth")>();
   return {
     ...actual,
     removeProviderAuthProfilesWithLock: (...args: unknown[]) =>
@@ -53,8 +53,8 @@ vi.mock("openclaw/plugin-sdk/provider-auth", async (importOriginal) => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/provider-setup", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/provider-setup")>();
+vi.mock("afora-agent/plugin-sdk/provider-setup", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/provider-setup")>();
   return {
     ...actual,
     configureOpenAICompatibleSelfHostedProviderNonInteractive: (...args: unknown[]) =>
@@ -64,8 +64,8 @@ vi.mock("openclaw/plugin-sdk/provider-setup", async (importOriginal) => {
 
 afterAll(() => {
   vi.doUnmock("./models.fetch.js");
-  vi.doUnmock("openclaw/plugin-sdk/provider-auth");
-  vi.doUnmock("openclaw/plugin-sdk/provider-setup");
+  vi.doUnmock("afora-agent/plugin-sdk/provider-auth");
+  vi.doUnmock("afora-agent/plugin-sdk/provider-setup");
   vi.resetModules();
 });
 
@@ -86,8 +86,8 @@ function buildConfig(
     apiKey: LMSTUDIO_DEFAULT_API_KEY_ENV_VAR,
     api: "openai-completions",
   },
-  config: Omit<OpenClawConfig, "models"> = {},
-): OpenClawConfig {
+  config: Omit<AforaConfig, "models"> = {},
+): AforaConfig {
   return {
     ...config,
     models: {
@@ -123,13 +123,13 @@ function mockFetchedModelsOnce(models: LmstudioModelWire[]): void {
 }
 
 function buildDiscoveryContext(params?: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   apiKey?: string;
   discoveryApiKey?: string;
   env?: NodeJS.ProcessEnv;
 }): ProviderCatalogContext {
   return {
-    config: params?.config ?? ({} as OpenClawConfig),
+    config: params?.config ?? ({} as AforaConfig),
     env: params?.env ?? {},
     resolveProviderApiKey: () => ({
       apiKey: params?.apiKey,
@@ -145,7 +145,7 @@ function buildDiscoveryContext(params?: {
 }
 
 function buildNonInteractiveContext(params?: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   customBaseUrl?: string;
   customApiKey?: string;
   lmstudioApiKey?: string;
@@ -192,7 +192,7 @@ function createPromptText(apiKey = "lmstudio-test-key", baseUrl = "http://localh
 
 function runInteractive(
   params: Omit<Parameters<typeof promptAndConfigureLmstudioInteractive>[0], "config"> & {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
   } = {},
 ) {
   const { config = buildConfig(), ...options } = params;
@@ -695,7 +695,7 @@ describe("lmstudio setup", () => {
       customModelId: "missing-model",
     });
     const dockerSetup = ["1", "true", "yes", "on"].includes(
-      process.env.OPENCLAW_DOCKER_SETUP?.trim().toLowerCase() ?? "",
+      process.env.AFORA_DOCKER_SETUP?.trim().toLowerCase() ?? "",
     );
     const expectedBaseUrl = dockerSetup
       ? LMSTUDIO_DOCKER_HOST_INFERENCE_BASE_URL
@@ -895,7 +895,7 @@ describe("lmstudio setup", () => {
   });
 
   it("interactive Docker setup defaults to the host LM Studio endpoint", async () => {
-    vi.stubEnv("OPENCLAW_DOCKER_SETUP", "1");
+    vi.stubEnv("AFORA_DOCKER_SETUP", "1");
     const { prompter, text } = createQueuedWizardPrompterHarness({
       baseUrl: "http://host.docker.internal:1234",
       apiKey: "",

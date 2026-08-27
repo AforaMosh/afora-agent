@@ -15,7 +15,7 @@ import {
 } from "../../../../src/config/config.js";
 import { resetConfigOverrides } from "../../../../src/config/runtime-overrides.js";
 import { clearSessionStoreCacheForTest } from "../../../../src/config/sessions/store-writer-state.js";
-import type { OpenClawConfig } from "../../../../src/config/types.openclaw.js";
+import type { AforaConfig } from "../../../../src/config/types.afora.js";
 import {
   disconnectGatewayClient,
   startGatewayWithClient,
@@ -29,20 +29,20 @@ import { useAutoCleanupTempDirTracker } from "../../../helpers/temp-dir.js";
 
 const ISOLATED_GATEWAY_ENV_KEYS = [
   "HOME",
-  "OPENCLAW_STATE_DIR",
-  "OPENCLAW_CONFIG_PATH",
-  "OPENCLAW_GATEWAY_TOKEN",
-  "OPENCLAW_TEST_GATEWAY_OVERRIDE_TOKEN",
-  "OPENCLAW_TEST_RUNTIME_OVERRIDE_TOKEN",
-  "OPENCLAW_TEST_MINIMAL_GATEWAY",
-  "OPENCLAW_SKIP_CHANNELS",
-  "OPENCLAW_SKIP_GMAIL_WATCHER",
-  "OPENCLAW_SKIP_CRON",
-  "OPENCLAW_SKIP_CANVAS_HOST",
-  "OPENCLAW_SKIP_BROWSER_CONTROL_SERVER",
-  "OPENCLAW_SKIP_PROVIDERS",
-  "OPENCLAW_BUNDLED_PLUGINS_DIR",
-  "OPENCLAW_DISABLE_BUNDLED_PLUGINS",
+  "AFORA_STATE_DIR",
+  "AFORA_CONFIG_PATH",
+  "AFORA_GATEWAY_TOKEN",
+  "AFORA_TEST_GATEWAY_OVERRIDE_TOKEN",
+  "AFORA_TEST_RUNTIME_OVERRIDE_TOKEN",
+  "AFORA_TEST_MINIMAL_GATEWAY",
+  "AFORA_SKIP_CHANNELS",
+  "AFORA_SKIP_GMAIL_WATCHER",
+  "AFORA_SKIP_CRON",
+  "AFORA_SKIP_CANVAS_HOST",
+  "AFORA_SKIP_BROWSER_CONTROL_SERVER",
+  "AFORA_SKIP_PROVIDERS",
+  "AFORA_BUNDLED_PLUGINS_DIR",
+  "AFORA_DISABLE_BUNDLED_PLUGINS",
 ] as const;
 
 let sequence = 0;
@@ -109,11 +109,11 @@ describe("Gateway task and automation RPCs", () => {
     { timeout: 90_000 },
     async () => {
       const envSnapshot = captureEnv([...ISOLATED_GATEWAY_ENV_KEYS]);
-      const tempHome = tempDirs.make("openclaw-gateway-automation-");
-      const stateDir = path.join(tempHome, ".openclaw");
+      const tempHome = tempDirs.make("afora-gateway-automation-");
+      const stateDir = path.join(tempHome, ".afora");
       const workspaceDir = path.join(tempHome, "workspace");
       const bundledPluginsDir = path.join(tempHome, "empty-bundled-plugins");
-      const configPath = path.join(stateDir, "openclaw.json");
+      const configPath = path.join(stateDir, "afora.json");
       await Promise.all([
         fs.mkdir(workspaceDir, { recursive: true }),
         fs.mkdir(bundledPluginsDir, { recursive: true }),
@@ -127,21 +127,21 @@ describe("Gateway task and automation RPCs", () => {
       const token = nextId("gateway-automation-token");
       for (const [key, value] of Object.entries({
         HOME: tempHome,
-        OPENCLAW_STATE_DIR: stateDir,
-        OPENCLAW_GATEWAY_TOKEN: token,
-        OPENCLAW_SKIP_CHANNELS: "1",
-        OPENCLAW_SKIP_GMAIL_WATCHER: "1",
-        OPENCLAW_SKIP_CRON: "0",
-        OPENCLAW_SKIP_CANVAS_HOST: "1",
-        OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-        OPENCLAW_SKIP_PROVIDERS: "1",
-        OPENCLAW_BUNDLED_PLUGINS_DIR: bundledPluginsDir,
-        OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
+        AFORA_STATE_DIR: stateDir,
+        AFORA_GATEWAY_TOKEN: token,
+        AFORA_SKIP_CHANNELS: "1",
+        AFORA_SKIP_GMAIL_WATCHER: "1",
+        AFORA_SKIP_CRON: "0",
+        AFORA_SKIP_CANVAS_HOST: "1",
+        AFORA_SKIP_BROWSER_CONTROL_SERVER: "1",
+        AFORA_SKIP_PROVIDERS: "1",
+        AFORA_BUNDLED_PLUGINS_DIR: bundledPluginsDir,
+        AFORA_DISABLE_BUNDLED_PLUGINS: "1",
       })) {
         setTestEnvValue(key, value);
       }
-      deleteTestEnvValue("OPENCLAW_CONFIG_PATH");
-      deleteTestEnvValue("OPENCLAW_TEST_MINIMAL_GATEWAY");
+      deleteTestEnvValue("AFORA_CONFIG_PATH");
+      deleteTestEnvValue("AFORA_TEST_MINIMAL_GATEWAY");
 
       const taskPrompt = nextId("create-tracked-task");
       const wakeText = nextId("wake-heartbeat");
@@ -219,7 +219,7 @@ describe("Gateway task and automation RPCs", () => {
           },
           gateway: { auth: { mode: "token", token } },
           plugins: { slots: { memory: "none" } },
-        } satisfies OpenClawConfig;
+        } satisfies AforaConfig;
 
         gateway = await startGatewayWithClient({
           cfg: config,

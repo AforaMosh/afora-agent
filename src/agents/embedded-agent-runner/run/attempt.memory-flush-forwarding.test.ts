@@ -2,8 +2,8 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { AuthStorage, ModelRegistry } from "openclaw/plugin-sdk/agent-sessions";
-import type { Model } from "openclaw/plugin-sdk/llm";
+import type { AuthStorage, ModelRegistry } from "afora-agent/plugin-sdk/agent-sessions";
+import type { Model } from "afora-agent/plugin-sdk/llm";
 import { describe, expect, it, vi } from "vitest";
 import type { AnyAgentTool } from "../../agent-tools.types.js";
 import { buildEmbeddedAttemptToolRunContext } from "./attempt-tool-run-context.js";
@@ -40,7 +40,7 @@ function createAttemptParams(workspaceDir: string) {
 
 describe("runEmbeddedAttempt memory flush tool forwarding", () => {
   it("forwards memory trigger metadata into tool creation so append-only guards activate", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-attempt-memory-flush-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-attempt-memory-flush-"));
 
     try {
       const context = buildEmbeddedAttemptToolRunContext(createAttemptParams(workspaceDir));
@@ -63,7 +63,7 @@ describe("runEmbeddedAttempt memory flush tool forwarding", () => {
   it("activates the memory flush append-only write wrapper", async () => {
     // The wrapper appends directly to the allowed path and rejects any other
     // write target without delegating to the normal write tool.
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-attempt-memory-flush-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-attempt-memory-flush-"));
     const memoryFile = path.join(workspaceDir, MEMORY_RELATIVE_PATH);
 
     try {

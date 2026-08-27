@@ -1,5 +1,5 @@
 // Slack tests cover account inspection and credential status reporting.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import { isSlackPluginAccountConfigured } from "./account-configured.js";
 import { inspectSlackAccount } from "./account-inspect.js";
@@ -22,7 +22,7 @@ describe("inspectSlackAccount", () => {
             appToken: "test-app-token",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       envBotToken: "",
       envAppToken: "",
       envUserToken: "",
@@ -49,7 +49,7 @@ describe("inspectSlackAccount", () => {
             userToken: "test-user-token",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       envBotToken: "",
       envAppToken: "",
       envUserToken: "",
@@ -74,7 +74,7 @@ describe("inspectSlackAccount", () => {
             appToken: "test-app-token",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       envBotToken: "",
       envAppToken: "",
       envUserToken: "",
@@ -100,12 +100,12 @@ describe("inspectSlackAccount", () => {
             botToken: {
               source: "env",
               provider: "default",
-              id: "OPENCLAW_TEST_MISSING_SLACK_BOT_TOKEN",
+              id: "AFORA_TEST_MISSING_SLACK_BOT_TOKEN",
             },
             appToken: "test-app-token",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       envBotToken: "xoxb-lower-precedence",
       envAppToken: "",
       envUserToken: "",
@@ -130,11 +130,11 @@ describe("inspectSlackAccount", () => {
             userToken: {
               source: "env",
               provider: "default",
-              id: "OPENCLAW_TEST_MISSING_OPTIONAL_SLACK_USER_TOKEN",
+              id: "AFORA_TEST_MISSING_OPTIONAL_SLACK_USER_TOKEN",
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       envBotToken: "",
       envAppToken: "",
       envUserToken: "",
@@ -157,11 +157,11 @@ describe("inspectSlackAccount", () => {
             botToken: {
               source: "env",
               provider: "default",
-              id: "OPENCLAW_TEST_MISSING_REQUIRED_SLACK_BOT_TOKEN",
+              id: "AFORA_TEST_MISSING_REQUIRED_SLACK_BOT_TOKEN",
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       envBotToken: "",
       envAppToken: "",
       envUserToken: "",

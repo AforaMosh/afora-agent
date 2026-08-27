@@ -2,7 +2,7 @@
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { formatSqliteSessionFileMarker } from "../../config/sessions/legacy-sqlite-marker.js";
 import { addSession } from "../bash-process-registry.js";
 import { createProcessSessionFixture } from "../bash-process-registry.test-helpers.js";
@@ -19,7 +19,7 @@ import { buildContextEngineCompactionSessionTarget } from "./run/session-bootstr
 const compactionTempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("resolveCompactionContextTokenBudget", () => {
-  const cfg = {} as OpenClawConfig;
+  const cfg = {} as AforaConfig;
   const modelWithWindow = (contextWindow: number) =>
     ({ contextWindow }) as Parameters<typeof resolveCompactionContextTokenBudget>[0]["model"];
   it.each([
@@ -114,7 +114,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
       workspaceDir: "/tmp/workspace",
       cwd: "/tmp/task-repo",
       agentDir: "/tmp/agent",
-      config: {} as unknown as OpenClawConfig,
+      config: {} as unknown as AforaConfig,
       senderIsOwner: true,
       senderId: "user-123",
       provider: "openai",
@@ -179,7 +179,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
       agentDir: "/tmp/agent",
       config: {
         agents: { defaults: { compaction: { model: "anthropic/claude-opus-4-6" } } },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       provider: "ollama",
       modelId: "minimax-m2.7:cloud",
       authProfileId: "ollama:default",
@@ -197,7 +197,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
       agentDir: "/tmp/agent",
       config: {
         agents: { defaults: { compaction: { model: "gpt-4o" } } },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       provider: "openai",
       modelId: "gpt-3.5-turbo",
       authProfileId: "openai:p1",
@@ -212,7 +212,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
     const result = buildEmbeddedCompactionRuntimeContext({
       workspaceDir: "/tmp/workspace",
       agentDir: "/tmp/agent",
-      config: {} as unknown as OpenClawConfig,
+      config: {} as unknown as AforaConfig,
       provider: "ollama",
       modelId: "minimax-m2.7:cloud",
       authProfileId: "ollama:default",
@@ -248,7 +248,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
       sessionKey: "agent:main:thread:1",
       workspaceDir: "/tmp/workspace",
       agentDir: "/tmp/agent",
-      config: {} as unknown as OpenClawConfig,
+      config: {} as unknown as AforaConfig,
     });
 
     try {
@@ -283,7 +283,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
     const result = buildEmbeddedCompactionRuntimeContext({
       workspaceDir: "/tmp/workspace",
       agentDir: "/tmp/agent",
-      config: {} as unknown as OpenClawConfig,
+      config: {} as unknown as AforaConfig,
     });
 
     expect(result.activeProcessSessions).toBeUndefined();
@@ -294,7 +294,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
       resolveEmbeddedCompactionTarget({
         config: {
           agents: { defaults: { compaction: { model: "anthropic/" } } },
-        } as unknown as OpenClawConfig,
+        } as unknown as AforaConfig,
         provider: "openai",
         modelId: "gpt-5.4",
         authProfileId: "openai:p1",
@@ -313,7 +313,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
       resolveEmbeddedCompactionTarget({
         config: {
           agents: { defaults: { compaction: { model: "anthropic/claude-opus-4-6" } } },
-        } as unknown as OpenClawConfig,
+        } as unknown as AforaConfig,
         provider: "openai",
         modelId: "gpt-5.5",
         authProfileId: "openai:default",
@@ -345,7 +345,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
     const result = resolveEmbeddedCompactionTarget({
       config: {
         auth: { order: { openai: ["openai:default"] } },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       provider: "openai",
       modelId: "gpt-5.5",
       defaultProvider: "openai",
@@ -366,7 +366,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
             openai: { models: [{ id: "gpt-5.5" }] },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       provider: "openai",
       modelId: "gpt-5.5",
       harnessRuntime: "codex",
@@ -387,7 +387,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
       agentDir: "/tmp/agent",
       config: {
         agents: { defaults: { compaction: { model: "anthropic/claude-opus-4-6" } } },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       provider: "openai",
       modelId: "gpt-5.5",
       harnessRuntime: "codex",
@@ -480,7 +480,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
     ).toBe("custom");
   });
 
-  it("preserves direct OpenAI compaction for the OpenClaw runtime", () => {
+  it("preserves direct OpenAI compaction for the Afora runtime", () => {
     const result = resolveEmbeddedCompactionTarget({
       config: {
         models: {
@@ -488,10 +488,10 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
             openai: { models: [{ id: "gpt-5.5" }] },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       provider: "openai",
       modelId: "gpt-5.5",
-      harnessRuntime: "openclaw",
+      harnessRuntime: "afora",
       defaultProvider: "openai",
       defaultModel: "gpt-5.5",
     });
@@ -503,8 +503,8 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
   });
 
   it.each([
-    { selection: "implicit OpenClaw", harnessRuntime: undefined, nativeCompaction: undefined },
-    { selection: "bound OpenClaw", harnessRuntime: "openclaw", nativeCompaction: undefined },
+    { selection: "implicit Afora", harnessRuntime: undefined, nativeCompaction: undefined },
+    { selection: "bound Afora", harnessRuntime: "afora", nativeCompaction: undefined },
     { selection: "bound Codex", harnessRuntime: "codex", nativeCompaction: true },
   ])("keeps $selection ownership for custom OpenAI Responses compaction", (fixture) => {
     const result = resolveEmbeddedCompactionTarget({
@@ -518,7 +518,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       provider: "openai",
       modelId: "gpt-5.5",
       harnessRuntime: fixture.harnessRuntime,
@@ -544,7 +544,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       provider: "openai",
       modelId: "gpt-5.5",
       harnessRuntime: "codex",
@@ -563,7 +563,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
     const result = resolveEmbeddedCompactionTarget({
       config: {
         agents: { defaults: { compaction: { model: "gpt-5.4" } } },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       provider: "openai",
       modelId: "gpt-5.5",
       authProfileId: "openai:default",
@@ -581,7 +581,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
     const result = resolveEmbeddedCompactionTarget({
       config: {
         agents: { defaults: { compaction: { model: "openai/gpt-5.4" } } },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       provider: "openai",
       modelId: "gpt-5.5",
       authProfileId: "openai:default",
@@ -604,7 +604,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
           },
         },
         agents: { defaults: { compaction: { model: "openai/gpt-5.4-mini" } } },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       provider: "openai",
       modelId: "gpt-5.5",
       harnessRuntime: "codex",
@@ -633,7 +633,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
             compaction: { model: "gpt54mini" },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       provider: "openai",
       modelId: "gpt-5.5",
       authProfileId: "openai:default",
@@ -658,7 +658,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
             compaction: { model: "thinky" },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       provider: "openai",
       modelId: "gpt-5.5",
       authProfileId: "openai:default",
@@ -684,7 +684,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
             compaction: { model: "nonexistent-alias" },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       provider: "openai",
       modelId: "gpt-5.5",
       authProfileId: "openai:default",
@@ -709,7 +709,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
             compaction: { model: "summary" },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       authProfileId: "openai:default",
       defaultProvider: "openai",
       defaultModel: "gpt-5.5",
@@ -733,7 +733,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
             compaction: { model: "gpt54mini" },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       provider: "openai",
       modelId: "gpt-5.5",
       authProfileId: "openai:default",
@@ -763,7 +763,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
             openai: { models: [{ id: "gpt-5.4-mini" }] },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       provider: "openai",
       modelId: "gpt-5.5",
       authProfileId: "openai:default",
@@ -826,7 +826,7 @@ describe("buildEmbeddedCompactionRuntimeContext", () => {
     },
   ])("$name", (fixture) => {
     const result = resolveEmbeddedCompactionTarget({
-      config: fixture.config as unknown as OpenClawConfig,
+      config: fixture.config as unknown as AforaConfig,
       provider: fixture.provider,
       modelId: "current-model",
       authProfileId: fixture.authProfileId,

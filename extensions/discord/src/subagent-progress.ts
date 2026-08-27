@@ -1,12 +1,12 @@
-import { listAgentIds, resolveAgentConfig } from "openclaw/plugin-sdk/agent-scope-runtime";
+import { listAgentIds, resolveAgentConfig } from "afora-agent/plugin-sdk/agent-scope-runtime";
 // Discord plugin module cleans up reactions left by the retired subagent progress feature.
-import { DEFAULT_EMOJIS } from "openclaw/plugin-sdk/channel-feedback";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import { DEFAULT_EMOJIS } from "afora-agent/plugin-sdk/channel-feedback";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import type {
   PluginStateEntry,
   PluginStateKeyedStore,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
-import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/routing";
+} from "afora-agent/plugin-sdk/plugin-state-runtime";
+import { DEFAULT_ACCOUNT_ID } from "afora-agent/plugin-sdk/routing";
 import { resolveDiscordAccount, resolveDiscordAccountConfig } from "./accounts.js";
 import { removeReactionDiscord } from "./send.reactions.js";
 
@@ -37,7 +37,7 @@ type PersistedProgressRun = {
 };
 
 type ProgressCleanupApi = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   logger: { debug?: (message: string) => void };
   runtime: {
     state: {

@@ -4,16 +4,16 @@ import {
   findCommandByNativeName,
   listNativeCommandSpecs,
   listNativeCommandSpecsForConfig,
-} from "openclaw/plugin-sdk/command-auth-native";
+} from "afora-agent/plugin-sdk/command-auth-native";
 import type {
   ChannelGroupPolicy,
-  OpenClawConfig,
+  AforaConfig,
   TelegramAccountConfig,
-} from "openclaw/plugin-sdk/config-contracts";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
-import { createPluginCommandRuntime } from "openclaw/plugin-sdk/plugin-command-runtime";
-import { resolveAgentRoute } from "openclaw/plugin-sdk/routing";
-import { danger, type RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/config-contracts";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
+import { createPluginCommandRuntime } from "afora-agent/plugin-sdk/plugin-command-runtime";
+import { resolveAgentRoute } from "afora-agent/plugin-sdk/routing";
+import { danger, type RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
 import type {
   TelegramNativeCommandCallbackDispatcher,
   TelegramResolvedGroupConfig,
@@ -47,18 +47,18 @@ type TelegramNativeCommandContext = Context & { match?: string };
 
 type RegisterTelegramNativeCommandsParams = {
   bot: Bot;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   runtime: RuntimeEnv;
   accountId: string;
   telegramCfg: TelegramAccountConfig;
   mediaMaxBytes?: number;
   nativeEnabled: boolean;
   nativeSkillsEnabled: boolean;
-  resolveGroupPolicy: (chatId: string | number, cfg: OpenClawConfig) => ChannelGroupPolicy;
+  resolveGroupPolicy: (chatId: string | number, cfg: AforaConfig) => ChannelGroupPolicy;
   resolveTelegramGroupConfig: (
     chatId: string | number,
     messageThreadId: number | undefined,
-    cfg: OpenClawConfig,
+    cfg: AforaConfig,
   ) => TelegramResolvedGroupConfig;
   shouldSkipUpdate: (ctx: TelegramUpdateKeyContext) => boolean;
   telegramDeps?: TelegramNativeCommandDeps;

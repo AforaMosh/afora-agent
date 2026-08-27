@@ -1,18 +1,18 @@
 // Deepinfra provider module implements model/runtime integration.
 
-import { withTrustedEnvProxyGuardedFetchMode } from "openclaw/plugin-sdk/fetch-runtime";
-import { isProviderApiKeyConfigured } from "openclaw/plugin-sdk/provider-auth";
+import { withTrustedEnvProxyGuardedFetchMode } from "afora-agent/plugin-sdk/fetch-runtime";
+import { isProviderApiKeyConfigured } from "afora-agent/plugin-sdk/provider-auth";
 import {
   getCachedLiveProviderModelRows,
   LiveModelCatalogHttpError,
-} from "openclaw/plugin-sdk/provider-catalog-live-runtime";
-import { buildManifestModelProviderConfig } from "openclaw/plugin-sdk/provider-catalog-shared";
-import type { ModelDefinitionConfig } from "openclaw/plugin-sdk/provider-model-shared";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
-import { hasConfiguredSecretInput } from "openclaw/plugin-sdk/secret-input";
-import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
-import { asPositiveSafeInteger } from "openclaw/plugin-sdk/string-coerce-runtime";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+} from "afora-agent/plugin-sdk/provider-catalog-live-runtime";
+import { buildManifestModelProviderConfig } from "afora-agent/plugin-sdk/provider-catalog-shared";
+import type { ModelDefinitionConfig } from "afora-agent/plugin-sdk/provider-model-shared";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/runtime-env";
+import { hasConfiguredSecretInput } from "afora-agent/plugin-sdk/secret-input";
+import { fetchWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime";
+import { asPositiveSafeInteger } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import manifest from "./afora.plugin.json" with { type: "json" };
 
 const log = createSubsystemLogger("deepinfra-models");
 
@@ -22,7 +22,7 @@ const DEEPINFRA_MANIFEST_PROVIDER = buildManifestModelProviderConfig({
 });
 
 export const DEEPINFRA_BASE_URL = DEEPINFRA_MANIFEST_PROVIDER.baseUrl;
-const DEEPINFRA_MODELS_URL = `${DEEPINFRA_BASE_URL}/models?sort_by=openclaw&filter=with_meta`;
+const DEEPINFRA_MODELS_URL = `${DEEPINFRA_BASE_URL}/models?sort_by=afora&filter=with_meta`;
 
 const DEEPINFRA_DEFAULT_MODEL_ID = "deepseek-ai/DeepSeek-V4-Flash";
 export const DEEPINFRA_DEFAULT_MODEL_REF = `deepinfra/${DEEPINFRA_DEFAULT_MODEL_ID}`;
@@ -173,7 +173,7 @@ function hasDeepInfraSurfaceModelRows(rows: readonly unknown[]): boolean {
   return rows.some((entry) => entryToSurfaceModel(entry as DeepInfraAgentModelEntry) !== null);
 }
 
-// Static fallback. Chat rows live in openclaw.plugin.json (manifest-validated);
+// Static fallback. Chat rows live in afora.plugin.json (manifest-validated);
 // non-chat surfaces live below because the manifest validator only accepts
 // chat-shaped rows. These are used pre-auth / offline; live discovery
 // overrides once a key is configured.
@@ -218,7 +218,7 @@ function manifestChatEntryToSurfaceModel(entry: ManifestChatModelEntry): DeepInf
 
 // Per-surface static fallback used only when no API key is configured or
 // live discovery fails. Kept deliberately minimal: the dynamic
-// `/v1/openai/models?sort_by=openclaw&filter=with_meta` projection is the
+// `/v1/openai/models?sort_by=afora&filter=with_meta` projection is the
 // real source of truth (140 tagged rows today), so every retired model
 // removed from the DeepInfra catalog disappears here automatically the
 // next time discovery runs. Newer entries — additional image-gen models,
@@ -380,7 +380,7 @@ function chatSurfaceModelToModelDefinition(model: DeepInfraSurfaceModel): ModelD
 // Gate dynamic discovery on key presence: pre-auth keeps the picker tight and
 // avoids a useless network call. The endpoint itself is unauthenticated.
 // Accepts env-var keys and auth-profile-store keys via the shared
-// `isProviderApiKeyConfigured` helper (covers SecretRef / `OPENCLAW_LIVE_*`
+// `isProviderApiKeyConfigured` helper (covers SecretRef / `AFORA_LIVE_*`
 // indirection too).
 export function hasDeepInfraApiKey(options?: {
   env?: NodeJS.ProcessEnv;

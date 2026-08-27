@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createOpenClawTestInstance } from "./helpers/openclaw-test-instance.js";
+import { createAforaTestInstance } from "./helpers/afora-test-instance.js";
 
 describe("Gateway external shared-state ownership", () => {
   it("refuses unmarked startup and accepts the external supervisor marker", async () => {
-    const instance = await createOpenClawTestInstance({
+    const instance = await createAforaTestInstance({
       name: "gateway-external-state-owner",
-      env: { OPENCLAW_SUPERVISOR_MODE: "external" },
+      env: { AFORA_SUPERVISOR_MODE: "external" },
       startTimeoutMs: 30_000,
     });
     try {
@@ -35,7 +35,7 @@ describe("Gateway external shared-state ownership", () => {
       ]);
       expect(preflight.code, preflight.stderr).toBe(0);
       expect(JSON.parse(preflight.stdout)).toMatchObject({
-        schema: "openclaw.state-schema-preflight.v1",
+        schema: "afora.state-schema-preflight.v1",
         status: "exact",
         requiresWrite: false,
       });
@@ -47,7 +47,7 @@ describe("Gateway external shared-state ownership", () => {
       ]);
       expect(unreadable.code).toBe(1);
       expect(JSON.parse(unreadable.stdout)).toMatchObject({
-        schema: "openclaw.state-schema-preflight.v1",
+        schema: "afora.state-schema-preflight.v1",
         status: "indeterminate",
       });
       const status = await instance.cli(["database", "ownership", "status", "--json"]);
@@ -69,11 +69,11 @@ describe("Gateway external shared-state ownership", () => {
         error: expect.stringContaining("already claimed by external manager gateway-supervisor"),
       });
 
-      delete instance.env.OPENCLAW_SUPERVISOR_MODE;
+      delete instance.env.AFORA_SUPERVISOR_MODE;
       await expect(instance.startGateway()).rejects.toThrow(/gateway-supervisor/u);
-      expect(instance.logs()).toMatch(/OPENCLAW_SUPERVISOR_MODE=external/u);
+      expect(instance.logs()).toMatch(/AFORA_SUPERVISOR_MODE=external/u);
 
-      instance.env.OPENCLAW_SUPERVISOR_MODE = "external";
+      instance.env.AFORA_SUPERVISOR_MODE = "external";
       await instance.startGateway();
       expect(instance.child).toBeDefined();
     } finally {

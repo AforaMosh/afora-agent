@@ -8,7 +8,7 @@ type SwarmSchedulerTestApi = {
 
 function getTestApi(): SwarmSchedulerTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.swarmSchedulerTestApi")
+    Symbol.for("afora.swarmSchedulerTestApi")
   ] as SwarmSchedulerTestApi;
 }
 

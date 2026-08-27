@@ -48,10 +48,10 @@ describe("Docker artifact proof producer", () => {
             state: "running",
           },
         ],
-        image: { id: "sha256:image", reference: "openclaw:functional", repoDigests: [] },
+        image: { id: "sha256:image", reference: "afora:functional", repoDigests: [] },
         package: {
-          fileName: "openclaw-current.tgz",
-          name: "openclaw",
+          fileName: "afora-current.tgz",
+          name: "afora",
           sha256: "a".repeat(64),
           sizeBytes: 42,
           version: "2026.7.6",

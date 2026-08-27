@@ -1,8 +1,8 @@
 // Memory Core tests cover manager.mistral provider plugin behavior.
 import type {
-  OpenClawConfig,
+  AforaConfig,
   ResolvedMemorySearchConfig,
-} from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-foundation";
 import { describe, expect, it, vi } from "vitest";
 import {
   applyMemoryFallbackProviderState,
@@ -194,7 +194,7 @@ describe("memory manager mistral provider wiring", () => {
 
       const fallbackRequest = expectMemoryFallbackRequest(
         resolveMemoryFallbackProviderRequest({
-          cfg: {} as OpenClawConfig,
+          cfg: {} as AforaConfig,
           settings,
           currentProviderId: "openai",
         }),
@@ -248,7 +248,7 @@ describe("memory manager mistral provider wiring", () => {
   it("does not activate a fallback that is already the current provider", () => {
     expect(
       resolveMemoryFallbackProviderRequest({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         settings: createSettings({ provider: "openai", fallback: "lmstudio" }),
         currentProviderId: "lmstudio",
       }),

@@ -1,5 +1,5 @@
 // Formatting and parse re-exports for node list/pairing CLI output.
-import { normalizeStringifiedOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeStringifiedOptionalString } from "@afora/normalization-core/string-coerce";
 
 export { parseNodeList, parsePairingList } from "../../shared/node-list-parse.js";
 

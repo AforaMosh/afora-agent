@@ -8,7 +8,7 @@ import { resolveCliExecutableIdentity } from "./cli-executable-identity.js";
 const tempDirs: string[] = [];
 
 function makePackage(): { root: string; entrypoint: string; implementation: string } {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-cli-artifact-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-cli-artifact-"));
   tempDirs.push(root);
   const entrypoint = path.join(root, "bin", "cli.js");
   const implementation = path.join(root, "dist", "main.js");
@@ -63,7 +63,7 @@ describe("CLI executable implementation identity", () => {
   it.runIf(process.platform === "win32")(
     "rejects mixed-case relative PATH entries and accepts mixed-case absolute entries",
     async () => {
-      const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-cli-path-case-"));
+      const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-cli-path-case-"));
       tempDirs.push(root);
       const binDir = path.join(root, "bin");
       const executable = path.join(binDir, "mixed-identity.exe");
@@ -159,7 +159,7 @@ describe("CLI executable implementation identity", () => {
   });
 
   it("requires a positive native executable name under a backend package policy", async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-cli-native-policy-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-cli-native-policy-"));
     tempDirs.push(root);
     const executable = path.join(root, "claude");
     fs.copyFileSync(process.execPath, executable);

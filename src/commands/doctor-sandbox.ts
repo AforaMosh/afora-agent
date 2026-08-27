@@ -15,9 +15,9 @@ import {
   validateSandboxContainerEngineTarget,
 } from "../agents/sandbox/docker.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { HealthFinding, HealthRepairEffect } from "../flows/health-checks.js";
-import { resolveOpenClawPackageRootsSync } from "../infra/openclaw-root.js";
+import { resolveAforaPackageRootsSync } from "../infra/afora-root.js";
 import { runCommandWithTimeout, runExec } from "../process/exec.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { shortenHomePath } from "../utils.js";
@@ -40,12 +40,12 @@ function resolveSandboxScript(
   scriptRel: string,
   options: { argv1?: string; cwd?: string } = {},
 ): SandboxScriptInfo | null {
-  // Scan every openclaw package root the shared resolver finds (symlinked launcher via realpath,
+  // Scan every afora package root the shared resolver finds (symlinked launcher via realpath,
   // then cwd) and return the first that actually holds the script. The resolver follows npm/pnpm
   // global bins and version-manager links, but a published package root can resolve first and ship
   // without scripts/sandbox-setup.sh (the npm files allowlist drops scripts/); stopping at the
   // first root would then skip a valid source-checkout cwd that still has it.
-  const roots = resolveOpenClawPackageRootsSync({
+  const roots = resolveAforaPackageRootsSync({
     cwd: options.cwd ?? process.cwd(),
     argv1: options.argv1 ?? process.argv[1],
   });
@@ -59,7 +59,7 @@ function resolveSandboxScript(
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.doctorSandboxTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.doctorSandboxTestApi")] = {
     resolveSandboxScript,
   };
 }
@@ -130,12 +130,12 @@ async function runCodexBwrapNamespaceProbe(
   }
 }
 
-function codexBwrapNeedsNetworkNamespaceProbe(cfg: OpenClawConfig): boolean {
+function codexBwrapNeedsNetworkNamespaceProbe(cfg: AforaConfig): boolean {
   const network = cfg.agents?.defaults?.sandbox?.docker?.network?.trim().toLowerCase();
   return network === undefined || network === "" || network === "none";
 }
 
-async function probeCodexBwrapNamespaces(cfg: OpenClawConfig): Promise<CodexBwrapNamespaceProbe> {
+async function probeCodexBwrapNamespaces(cfg: AforaConfig): Promise<CodexBwrapNamespaceProbe> {
   if (process.platform !== "linux") {
     return { ok: true };
   }
@@ -156,7 +156,7 @@ async function probeCodexBwrapNamespaces(cfg: OpenClawConfig): Promise<CodexBwra
 }
 
 async function noteCodexBwrapNamespaceWarning(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   engineName: "Docker" | "Podman",
 ): Promise<void> {
   const probe = await probeCodexBwrapNamespaces(cfg);
@@ -178,8 +178,8 @@ async function noteCodexBwrapNamespaceWarning(
     `Probe command: ${probe.command}`,
     `Probe result: ${probe.reason}`,
     "",
-    "Fix the host namespace policy for the OpenClaw service user, then restart the gateway.",
-    "Prefer an AppArmor profile that grants the required namespaces to the OpenClaw service process.",
+    "Fix the host namespace policy for the Afora service user, then restart the gateway.",
+    "Prefer an AppArmor profile that grants the required namespaces to the Afora service process.",
     "`kernel.apparmor_restrict_unprivileged_userns=0` is a host-wide fallback with security tradeoffs; use it only when that host posture is acceptable.",
     "Do not add broad Docker container privileges just to satisfy nested bwrap; that weakens the outer sandbox.",
   ];
@@ -209,22 +209,22 @@ async function containerImageExists(command: "docker" | "podman", image: string)
   }
 }
 
-function resolveSandboxDockerImage(cfg: OpenClawConfig): string {
+function resolveSandboxDockerImage(cfg: AforaConfig): string {
   const image = cfg.agents?.defaults?.sandbox?.docker?.image?.trim();
   return image ? image : DEFAULT_SANDBOX_IMAGE;
 }
 
-function resolveSandboxBackend(cfg: OpenClawConfig): string {
+function resolveSandboxBackend(cfg: AforaConfig): string {
   const backend = cfg.agents?.defaults?.sandbox?.backend?.trim();
   return (backend || "docker").toLowerCase();
 }
 
-function resolveSandboxBrowserImage(cfg: OpenClawConfig): string {
+function resolveSandboxBrowserImage(cfg: AforaConfig): string {
   const image = cfg.agents?.defaults?.sandbox?.browser?.image?.trim();
   return image ? image : DEFAULT_SANDBOX_BROWSER_IMAGE;
 }
 
-function updateSandboxDockerImage(cfg: OpenClawConfig, image: string): OpenClawConfig {
+function updateSandboxDockerImage(cfg: AforaConfig, image: string): AforaConfig {
   return {
     ...cfg,
     agents: {
@@ -243,7 +243,7 @@ function updateSandboxDockerImage(cfg: OpenClawConfig, image: string): OpenClawC
   };
 }
 
-function updateSandboxBrowserImage(cfg: OpenClawConfig, image: string): OpenClawConfig {
+function updateSandboxBrowserImage(cfg: AforaConfig, image: string): AforaConfig {
   return {
     ...cfg,
     agents: {
@@ -303,10 +303,10 @@ async function handleMissingSandboxImage(
  * support because nested app-server shells rely on host user/network namespace policy.
  */
 export async function maybeRepairSandboxImages(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   runtime: RuntimeEnv,
   prompter: DoctorPrompter,
-): Promise<OpenClawConfig> {
+): Promise<AforaConfig> {
   const sandbox = cfg.agents?.defaults?.sandbox;
   const mode = sandbox?.mode ?? "off";
   if (!sandbox || mode === "off") {
@@ -335,7 +335,7 @@ export async function maybeRepairSandboxImages(
             "",
             "Options:",
             "- Install Docker and restart the gateway",
-            "- Disable sandbox mode: openclaw config set agents.defaults.sandbox.mode off",
+            "- Disable sandbox mode: afora config set agents.defaults.sandbox.mode off",
           ]
         : [
             `Sandbox mode is enabled (mode: "${mode}") but Podman is not available.`,
@@ -344,7 +344,7 @@ export async function maybeRepairSandboxImages(
             "",
             "Options:",
             "- Install Podman and restart the gateway",
-            "- Disable sandbox mode: openclaw config set agents.defaults.sandbox.mode off",
+            "- Disable sandbox mode: afora config set agents.defaults.sandbox.mode off",
           ];
     note(lines.join("\n"), "Sandbox");
     return cfg;
@@ -442,7 +442,7 @@ export function legacySandboxRegistryInspectionToHealthFinding(
     message: `Legacy sandbox registry file detected.
 ${formatLegacyRegistryInspectionLine(file)}`,
     path: file.path,
-    fixHint: `Run ${formatCliCommand("openclaw doctor --fix")} to migrate valid entries to SQLite.`,
+    fixHint: `Run ${formatCliCommand("afora doctor --fix")} to migrate valid entries to SQLite.`,
   };
 }
 
@@ -474,7 +474,7 @@ export async function maybeRepairSandboxRegistryFiles(prompter: DoctorPrompter):
       [
         "Legacy sandbox registry files detected.",
         ...legacyFiles.map(formatLegacyRegistryInspectionLine),
-        `Run ${formatCliCommand("openclaw doctor --fix")} to migrate them to SQLite.`,
+        `Run ${formatCliCommand("afora doctor --fix")} to migrate them to SQLite.`,
       ].join("\n"),
       "Sandbox",
     );
@@ -491,7 +491,7 @@ export async function maybeRepairSandboxRegistryFiles(prompter: DoctorPrompter):
 }
 
 /** Warns when agent sandbox overrides are ignored because sandbox scope resolves to shared. */
-export function noteSandboxScopeWarnings(cfg: OpenClawConfig) {
+export function noteSandboxScopeWarnings(cfg: AforaConfig) {
   const globalSandbox = cfg.agents?.defaults?.sandbox;
   const agents = Array.isArray(cfg.agents?.list) ? cfg.agents.list : [];
   const warnings: string[] = [];

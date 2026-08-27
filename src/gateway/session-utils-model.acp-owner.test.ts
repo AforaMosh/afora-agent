@@ -1,6 +1,6 @@
 // Session model projection tests verify ACP metadata reads preserve row ownership.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 const readAcpSessionMeta = vi.hoisted(() => vi.fn(() => undefined));
 
@@ -14,7 +14,7 @@ describe("resolveGatewaySessionThinkingProjectionInternal", () => {
   });
 
   it("reads bare-key ACP metadata under the resolved row owner", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       session: { scope: "global", store: "/tmp/shared.sqlite" },
       agents: {
         ownership: "explicit",

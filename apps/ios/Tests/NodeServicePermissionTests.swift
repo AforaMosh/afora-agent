@@ -1,8 +1,8 @@
 import Contacts
 import EventKit
-import OpenClawKit
+import AforaKit
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 @Suite struct NodeServicePermissionTests {
     @Test func `calendar events do not request access from node invoke`() async throws {
@@ -11,7 +11,7 @@ import Testing
         await expectPermissionError(
             code: "CALENDAR_PERMISSION_REQUIRED",
             performing: {
-                _ = try await service.events(params: OpenClawCalendarEventsParams())
+                _ = try await service.events(params: AforaCalendarEventsParams())
             })
     }
 
@@ -31,7 +31,7 @@ import Testing
         await expectPermissionError(
             code: "REMINDERS_PERMISSION_REQUIRED",
             performing: {
-                _ = try await service.list(params: OpenClawRemindersListParams())
+                _ = try await service.list(params: AforaRemindersListParams())
             })
     }
 
@@ -41,7 +41,7 @@ import Testing
         await expectPermissionError(
             code: "REMINDERS_PERMISSION_REQUIRED",
             performing: {
-                _ = try await service.add(params: OpenClawRemindersAddParams(title: "Follow up"))
+                _ = try await service.add(params: AforaRemindersAddParams(title: "Follow up"))
             })
     }
 
@@ -51,7 +51,7 @@ import Testing
         await expectPermissionError(
             code: "CONTACTS_PERMISSION_REQUIRED",
             performing: {
-                _ = try await service.search(params: OpenClawContactsSearchParams(query: "Ada"))
+                _ = try await service.search(params: AforaContactsSearchParams(query: "Ada"))
             })
     }
 
@@ -61,13 +61,13 @@ import Testing
         await expectPermissionError(
             code: "CONTACTS_PERMISSION_REQUIRED",
             performing: {
-                _ = try await service.add(params: OpenClawContactsAddParams(givenName: "Ada"))
+                _ = try await service.add(params: AforaContactsAddParams(givenName: "Ada"))
             })
     }
 }
 
-private func calendarAddParams() -> OpenClawCalendarAddParams {
-    OpenClawCalendarAddParams(
+private func calendarAddParams() -> AforaCalendarAddParams {
+    AforaCalendarAddParams(
         title: "Review",
         startISO: "2026-07-03T09:00:00Z",
         endISO: "2026-07-03T09:30:00Z")

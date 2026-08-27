@@ -2,7 +2,7 @@
  * Tests for text-to-speech gateway methods and provider error envelopes.
  */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ErrorCodes } from "../../../packages/gateway-protocol/src/index.js";
 import { setActiveDegradedSecretOwners } from "../../secrets/runtime-degraded-state.js";

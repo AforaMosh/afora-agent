@@ -16,7 +16,7 @@ title: "Gateway lock"
 
 Startup enforces ownership in three steps, in order:
 
-1. **State ownership lock** acquires a lock keyed by the canonical state directory. Every Gateway participates, including Gateways started with `OPENCLAW_ALLOW_MULTI_GATEWAY=1`, so destructive SQLite maintenance cannot race a live owner.
+1. **State ownership lock** acquires a lock keyed by the canonical state directory. Every Gateway participates, including Gateways started with `AFORA_ALLOW_MULTI_GATEWAY=1`, so destructive SQLite maintenance cannot race a live owner.
 2. **Config lock** acquires the historical per-config lock and records the runtime port. Multi-Gateway mode skips this config singleton but retains the state ownership lock.
 3. **Socket bind** binds the HTTP/WebSocket listener (default `ws://127.0.0.1:18789`) as an exclusive TCP listener.
 
@@ -25,7 +25,7 @@ Each layer can fail independently and throws its own `GatewayLockError`.
 ### State and config locks
 
 - Lock files, SQLite coordinators, and transient reclaim guards live under
-  `$OPENCLAW_STATE_DIR/tmp/openclaw-<uid>` (or `openclaw` on platforms without
+  `$AFORA_STATE_DIR/tmp/afora-<uid>` (or `afora` on platforms without
   a user ID). An overridden state directory therefore owns its complete lock tree.
 - Lock liveness comes from the recorded PID, platform process start identity when available, and Gateway process identity. A verified owner remains authoritative during startup before its port begins listening.
 - A dedicated SQLite coordinator serializes metadata inspection, stale-owner reclamation, and lock replacement. Its exclusive transaction is released automatically if the owning process crashes.
@@ -60,8 +60,8 @@ directory during an upgrade do not exclude each other through these locks.
 
 ## Operational notes
 
-- If the port is occupied by a different, non-gateway process, the error is the same; free the port or choose another with `openclaw gateway --port <port>`.
-- `OPENCLAW_ALLOW_MULTI_GATEWAY=1` permits multiple config/runtime instances, not shared mutable state. Each instance still needs a unique `OPENCLAW_STATE_DIR`.
+- If the port is occupied by a different, non-gateway process, the error is the same; free the port or choose another with `afora gateway --port <port>`.
+- `AFORA_ALLOW_MULTI_GATEWAY=1` permits multiple config/runtime instances, not shared mutable state. Each instance still needs a unique `AFORA_STATE_DIR`.
 - Under a service supervisor, a new gateway process that hits either error above first probes `/healthz` on the existing process. If that process is healthy, the new process leaves it in control instead of failing. On systemd, it exits with code `78`; the unit's `RestartPreventExitStatus=78` stops `Restart=always` from looping on a lock or `EADDRINUSE` conflict. If the existing process never becomes healthy, the health-probe retry is time-bounded and startup then fails with the lock error above instead of looping forever.
 - The macOS app keeps its own lightweight PID guard before spawning the gateway; the file lock and socket bind above are the actual runtime enforcement.
 

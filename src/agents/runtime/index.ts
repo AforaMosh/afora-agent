@@ -1,4 +1,4 @@
-/** OpenClaw-owned agent runtime facade; the plugin SDK module owns the adapter. */
+/** Afora-owned agent runtime facade; the plugin SDK module owns the adapter. */
 export {
   Agent,
   bashExecutionToText,
@@ -13,7 +13,7 @@ export {
   generateBranchSummary,
   generateSummary,
   getLastAssistantUsage,
-  openClawAgentCoreRuntime,
+  aforaAgentCoreRuntime,
   prepareBranchEntries,
   prepareCompaction,
   runAgentLoop,

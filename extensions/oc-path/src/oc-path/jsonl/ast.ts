@@ -1,6 +1,6 @@
 /**
  * JSONL AST types — JSON-Lines: one JSON value per line, separated by
- * `\n`. The shape used by openclaw session-event logs, audit trails,
+ * `\n`. The shape used by afora session-event logs, audit trails,
  * and LKG checkpoints (which is why JSONL is part of the universal
  * OcPath addressing scheme).
  *
@@ -12,7 +12,7 @@
  * (we don't strip them in render mode either — we preserve them as
  * "raw" line entries) live in the AST.
  *
- * @module @openclaw/oc-path/jsonl/ast
+ * @module @afora/oc-path/jsonl/ast
  */
 
 import type { JsoncValue } from "../jsonc/ast.js";

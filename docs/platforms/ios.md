@@ -20,7 +20,7 @@ Availability: iPhone app builds are distributed through Apple channels when enab
 - Queues text messages sent while disconnected in a durable per-gateway outbox (up to 50): queued bubbles show in the transcript, flush in order on reconnect with idempotent retries, remain durable until canonical history confirms the send, retry with backoff before surfacing a retry/delete action, and expire instead of sending after 48 hours offline; reset/forget clears the queue with the cache.
 - Chat is the single text-and-voice surface. Chat actions can open the full Sessions screen without leaving Chat and can show or hide assistant reasoning and tool activity. Tap the microphone for draft dictation, open its menu to record a voice note, or use the inline Talk control for realtime voice; the Talk control animates from live microphone or playback level while listening or speaking.
 - Chat accepts images from the photo picker, camera, Files, paste, and the iOS share sheet. Assistant-generated images render inline from short-lived Gateway artifact URLs, open in a full-screen preview, and remain available after reconnect or history reload without storing image bytes in the transcript cache.
-- **Settings -> OpenClaw** opens a dedicated Gateway settings assistant when the operator connection has `operator.admin` and the Gateway supports `openclaw.chat`. Its setup conversation stays separate from ordinary Chat, redacts secret replies locally, and moves to Chat only after you tap **Open Chat**.
+- **Settings -> Afora** opens a dedicated Gateway settings assistant when the operator connection has `operator.admin` and the Gateway supports `afora.chat`. Its setup conversation stays separate from ordinary Chat, redacts secret replies locally, and moves to Chat only after you tap **Open Chat**.
 - Speaks assistant messages on demand: long-press a message in Chat and choose **Listen**. The app plays supported gateway `tts.speak` clips with the configured TTS provider and falls back to on-device speech when gateway audio is unavailable or unplayable. Playback stops on session switch or backgrounding.
 
 ## Requirements
@@ -28,7 +28,7 @@ Availability: iPhone app builds are distributed through Apple channels when enab
 - Gateway running on another device (macOS, Linux, or Windows via WSL2).
 - Network path:
   - Same LAN via Bonjour, **or**
-  - Tailnet via unicast DNS-SD (example domain: `openclaw.internal.`), **or**
+  - Tailnet via unicast DNS-SD (example domain: `afora.internal.`), **or**
   - Manual host/port (fallback).
 
 ## Quick start (pair + connect)
@@ -44,12 +44,12 @@ change granted access later in the iOS Settings app.
    Serve is the recommended remote path:
 
 ```bash
-openclaw gateway --port 18789 --tailscale serve
+afora gateway --port 18789 --tailscale serve
 ```
 
 For a trusted same-LAN setup, use an authenticated `gateway.bind: "lan"`
 instead. The default loopback bind is not reachable from a phone. If the
-Gateway has not been configured yet, run `openclaw onboard` first so setup-code
+Gateway has not been configured yet, run `afora onboard` first so setup-code
 creation has a token or password auth path.
 
 2. Open the [Control UI](/web/control-ui), select **Nodes**, and click
@@ -74,7 +74,7 @@ creation has a token or password auth path.
    **Settings → Gateway** shows whether the saved operator connection has
    **Full** or **Limited** access. Plaintext LAN `ws://` setup is automatically
    limited for bearer-token safety. If it is limited, configure `wss://` or
-   Tailscale Serve, scan a new full-access code from Control UI or `openclaw qr`,
+   Tailscale Serve, scan a new full-access code from Control UI or `afora qr`,
    then reconnect to enable settings and upgrades.
 
 The Control UI button requires an already paired session with `operator.admin`.
@@ -82,11 +82,11 @@ As a terminal fallback, pick a discovered gateway in the iOS app (or enable
 Manual Host and enter host/port), then approve the request on the Gateway host:
 
 ```bash
-openclaw devices list
-openclaw devices approve <requestId>
+afora devices list
+afora devices approve <requestId>
 ```
 
-If the app retries pairing with changed auth details (role/scopes/public key), the previous pending request is superseded and a new `requestId` is created. Run `openclaw devices list` again before approval.
+If the app retries pairing with changed auth details (role/scopes/public key), the previous pending request is superseded and a new `requestId` is created. Run `afora devices list` again before approval.
 
 Optional: if the iOS node always connects from a tightly controlled subnet, you can opt in to first-time node auto-approval with explicit CIDRs or exact IPs:
 
@@ -107,8 +107,8 @@ This is disabled by default. It applies only to fresh `role: node` pairing with 
 5. Verify connection:
 
 ```bash
-openclaw nodes status
-openclaw gateway call node.list --params "{}"
+afora nodes status
+afora gateway call node.list --params "{}"
 ```
 
 ## Health summaries
@@ -120,8 +120,8 @@ setup, invocation, payload fields, privacy behavior, and troubleshooting.
 
 By default, the Apple Watch companion keeps using the existing iPhone relay and
 does not need a separate Gateway pairing. Pair the Watch with the iPhone in
-Apple's Watch app, install OpenClaw from **Watch app -> My Watch -> Available
-Apps**, then open OpenClaw once on both devices.
+Apple's Watch app, install Afora from **Watch app -> My Watch -> Available
+Apps**, then open Afora once on both devices.
 
 ## Review command approvals
 
@@ -160,7 +160,7 @@ question expires or is cancelled.
 
 Direct mode gives the watch its own signed node identity and Gateway connection.
 Supported node commands continue to work over watch Wi-Fi or cellular while
-OpenClaw is active, even when the paired iPhone is unavailable.
+Afora is active, even when the paired iPhone is unavailable.
 
 Requirements:
 
@@ -171,7 +171,7 @@ Requirements:
   pairing](/gateway/pairing) for endpoint configuration. Loopback, iPhone-only,
   and tailnet-only routes are not independently reachable by the watch.
 - Cellular use requires a cellular-capable Apple Watch with active service.
-- OpenClaw is active on the watch. Apple does not allow ordinary watchOS apps to
+- Afora is active on the watch. Apple does not allow ordinary watchOS apps to
   keep generic WebSocket/TCP connections, so the direct node uses short HTTPS
   polls and reconnects when the app returns to the foreground. See Apple's
   [watchOS low-level networking guidance](https://developer.apple.com/documentation/technotes/tn3135-low-level-networking-on-watchOS).
@@ -180,8 +180,8 @@ Setup:
 
 1. On iPhone, open **Settings -> Apple Watch**.
 2. Tap **Enable Direct Gateway Connection**.
-3. Open OpenClaw on the watch before the short-lived setup code expires.
-4. Verify the separate Apple Watch row with `openclaw nodes status`.
+3. Open Afora on the watch before the short-lived setup code expires.
+4. Verify the separate Apple Watch row with `afora nodes status`.
 
 The setup code contains a short-lived, node-only bootstrap credential; treat it
 like a password until it expires. It never contains the iPhone's saved Gateway
@@ -202,7 +202,7 @@ does not advertise Canvas commands.
 
 ## Relay-backed push for official builds
 
-Official distributed iOS builds use an external push relay instead of publishing the raw APNs token to the gateway. Official App Store builds from the public release lane use the hosted relay at `https://ios-push-relay.openclaw.ai`; this base URL is hardcoded for App Store distribution and does not read any override.
+Official distributed iOS builds use an external push relay instead of publishing the raw APNs token to the gateway. Official App Store builds from the public release lane use the hosted relay at `https://ios-push-relay.afora.ai`; this base URL is hardcoded for App Store distribution and does not read any override.
 
 Custom relay deployments require a deliberately separate iOS build/deployment path whose relay URL matches the gateway relay URL. The App Store release lane never accepts a custom relay URL. If you're using a custom relay build, set the matching gateway relay URL:
 
@@ -247,14 +247,14 @@ The app treats a background wake as successfully recorded only when the gateway 
 
 Compatibility note:
 
-- `OPENCLAW_APNS_RELAY_BASE_URL` still works as a temporary env override for the gateway (`gateway.push.apns.relay.baseUrl` is the config-first path).
-- The App Store release build's push mode hardcodes the hosted relay host and never reads a relay-URL override — the `OPENCLAW_PUSH_RELAY_BASE_URL` build-time env var only affects local/sandbox iOS build modes.
+- `AFORA_APNS_RELAY_BASE_URL` still works as a temporary env override for the gateway (`gateway.push.apns.relay.baseUrl` is the config-first path).
+- The App Store release build's push mode hardcodes the hosted relay host and never reads a relay-URL override — the `AFORA_PUSH_RELAY_BASE_URL` build-time env var only affects local/sandbox iOS build modes.
 
 ## Authentication and trust flow
 
 The relay exists to enforce two constraints direct APNs-on-gateway cannot provide for official iOS builds:
 
-- Only genuine OpenClaw iOS builds distributed through Apple can use the hosted relay.
+- Only genuine Afora iOS builds distributed through Apple can use the hosted relay.
 - A gateway can send relay-backed pushes only for iOS devices that paired with that specific gateway.
 
 Hop by hop:
@@ -265,26 +265,26 @@ Hop by hop:
 4. `gateway -> relay`: the gateway stores the relay handle and send grant from `push.apns.register`. On `push.test`, reconnect wakes, and wake nudges, the gateway signs the send request with its own device identity; the relay verifies both the stored send grant and the gateway signature against the delegated gateway identity from registration. Another gateway cannot reuse that stored registration, even if it somehow obtains the handle.
 5. `relay -> APNs`: the relay owns the production APNs credentials and the raw APNs token for the official build. The gateway never stores the raw APNs token for relay-backed official builds; the relay sends the final push to APNs on behalf of the paired gateway.
 
-Why this design was created: to keep production APNs credentials out of user gateways, avoid storing raw official-build APNs tokens on the gateway, allow hosted relay usage only for official OpenClaw iOS builds, and prevent one gateway from sending wake pushes to iOS devices owned by a different gateway.
+Why this design was created: to keep production APNs credentials out of user gateways, avoid storing raw official-build APNs tokens on the gateway, allow hosted relay usage only for official Afora iOS builds, and prevent one gateway from sending wake pushes to iOS devices owned by a different gateway.
 
 Local/manual builds remain on direct APNs. If you are testing those builds without the relay, the gateway still needs direct APNs credentials:
 
 ```bash
-export OPENCLAW_APNS_TEAM_ID="TEAMID"
-export OPENCLAW_APNS_KEY_ID="KEYID"
-export OPENCLAW_APNS_PRIVATE_KEY_P8="$(cat /path/to/AuthKey_KEYID.p8)"
+export AFORA_APNS_TEAM_ID="TEAMID"
+export AFORA_APNS_KEY_ID="KEYID"
+export AFORA_APNS_PRIVATE_KEY_P8="$(cat /path/to/AuthKey_KEYID.p8)"
 ```
 
 These are gateway-host runtime env vars, not Fastlane settings. `apps/ios/fastlane/.env` only stores App Store Connect auth such as `APP_STORE_CONNECT_KEY_ID` and `APP_STORE_CONNECT_ISSUER_ID`; it does not configure direct APNs delivery for local iOS builds.
 
-Recommended gateway-host storage, consistent with other provider credentials under `~/.openclaw/credentials/`:
+Recommended gateway-host storage, consistent with other provider credentials under `~/.afora/credentials/`:
 
 ```bash
-mkdir -p ~/.openclaw/credentials/apns
-chmod 700 ~/.openclaw/credentials/apns
-mv /path/to/AuthKey_KEYID.p8 ~/.openclaw/credentials/apns/AuthKey_KEYID.p8
-chmod 600 ~/.openclaw/credentials/apns/AuthKey_KEYID.p8
-export OPENCLAW_APNS_PRIVATE_KEY_PATH="$HOME/.openclaw/credentials/apns/AuthKey_KEYID.p8"
+mkdir -p ~/.afora/credentials/apns
+chmod 700 ~/.afora/credentials/apns
+mv /path/to/AuthKey_KEYID.p8 ~/.afora/credentials/apns/AuthKey_KEYID.p8
+chmod 600 ~/.afora/credentials/apns/AuthKey_KEYID.p8
+export AFORA_APNS_PRIVATE_KEY_PATH="$HOME/.afora/credentials/apns/AuthKey_KEYID.p8"
 ```
 
 Do not commit the `.p8` file or place it under the repo checkout.
@@ -293,11 +293,11 @@ Do not commit the `.p8` file or place it under the repo checkout.
 
 ### Bonjour (LAN)
 
-The iOS app browses `_openclaw-gw._tcp` on `local.` and, when configured, the same wide-area DNS-SD discovery domain. Same-LAN gateways appear automatically from `local.`; cross-network discovery can use the configured wide-area domain without changing the beacon type.
+The iOS app browses `_afora-gw._tcp` on `local.` and, when configured, the same wide-area DNS-SD discovery domain. Same-LAN gateways appear automatically from `local.`; cross-network discovery can use the configured wide-area domain without changing the beacon type.
 
 ### Tailnet (cross-network)
 
-If mDNS is blocked, use a unicast DNS-SD zone (choose a domain; example: `openclaw.internal.`) and Tailscale split DNS. See [Bonjour](/gateway/bonjour) for the CoreDNS example.
+If mDNS is blocked, use a unicast DNS-SD zone (choose a domain; example: `afora.internal.`) and Tailscale split DNS. See [Bonjour](/gateway/bonjour) for the CoreDNS example.
 
 ### Manual host/port
 
@@ -317,30 +317,30 @@ The app keeps a registry of every gateway it has paired with, so you can switch 
 The iOS node renders a WKWebView canvas. Use `node.invoke` to drive it:
 
 ```bash
-openclaw nodes invoke --node "iOS Node" --command canvas.navigate --params '{"url":"http://<gateway-host>:18789/__openclaw__/canvas/"}'
+afora nodes invoke --node "iOS Node" --command canvas.navigate --params '{"url":"http://<gateway-host>:18789/__afora__/canvas/"}'
 ```
 
 Notes:
 
-- The Gateway canvas host serves `/__openclaw__/canvas/` and `/__openclaw__/a2ui/`, from the Gateway HTTP server (same port as `gateway.port`, default `18789`).
+- The Gateway canvas host serves `/__afora__/canvas/` and `/__afora__/a2ui/`, from the Gateway HTTP server (same port as `gateway.port`, default `18789`).
 - The iOS node keeps the built-in scaffold as the connected default view. `canvas.a2ui.push` and `canvas.a2ui.reset` use the bundled app-owned A2UI page.
 - Remote Gateway A2UI pages are render-only on iOS; native A2UI button actions are accepted only from bundled app-owned pages.
 - Return to the built-in scaffold with `canvas.navigate` and `{"url":""}`.
 
 ## Computer Use relationship
 
-The iOS app is a mobile node surface, not a Codex Computer Use backend. Codex Computer Use and `cua-driver mcp` control a local macOS desktop through MCP tools; the iOS app exposes iPhone capabilities through OpenClaw node commands such as `canvas.*`, `camera.*`, `screen.*`, `location.*`, and `talk.*`.
+The iOS app is a mobile node surface, not a Codex Computer Use backend. Codex Computer Use and `cua-driver mcp` control a local macOS desktop through MCP tools; the iOS app exposes iPhone capabilities through Afora node commands such as `canvas.*`, `camera.*`, `screen.*`, `location.*`, and `talk.*`.
 
-Agents can still operate the iOS app through OpenClaw by invoking node commands, but those calls go through the gateway node protocol and follow iOS foreground/background limits. Use [Codex Computer Use](/plugins/codex-computer-use) for local desktop control and this page for iOS node capabilities.
+Agents can still operate the iOS app through Afora by invoking node commands, but those calls go through the gateway node protocol and follow iOS foreground/background limits. Use [Codex Computer Use](/plugins/codex-computer-use) for local desktop control and this page for iOS node capabilities.
 
 ### Canvas eval / snapshot
 
 ```bash
-openclaw nodes invoke --node "iOS Node" --command canvas.eval --params '{"javaScript":"(() => { const {ctx} = window.__openclaw; ctx.clearRect(0,0,innerWidth,innerHeight); ctx.lineWidth=6; ctx.strokeStyle=\"#ff2d55\"; ctx.beginPath(); ctx.moveTo(40,40); ctx.lineTo(innerWidth-40, innerHeight-40); ctx.stroke(); return \"ok\"; })()"}'
+afora nodes invoke --node "iOS Node" --command canvas.eval --params '{"javaScript":"(() => { const {ctx} = window.__afora; ctx.clearRect(0,0,innerWidth,innerHeight); ctx.lineWidth=6; ctx.strokeStyle=\"#ff2d55\"; ctx.beginPath(); ctx.moveTo(40,40); ctx.lineTo(innerWidth-40, innerHeight-40); ctx.stroke(); return \"ok\"; })()"}'
 ```
 
 ```bash
-openclaw nodes invoke --node "iOS Node" --command canvas.snapshot --params '{"maxWidth":900,"format":"jpeg"}'
+afora nodes invoke --node "iOS Node" --command canvas.snapshot --params '{"maxWidth":900,"format":"jpeg"}'
 ```
 
 ## Voice wake + talk mode
@@ -354,11 +354,11 @@ openclaw nodes invoke --node "iOS Node" --command canvas.snapshot --params '{"ma
 
 - `NODE_BACKGROUND_UNAVAILABLE`: bring the iOS app to the foreground (canvas/camera/screen commands require it).
 - `A2UI_HOST_UNAVAILABLE`: the bundled A2UI page was not reachable in the app WebView; keep the app foregrounded on the Screen tab and retry.
-- Pairing prompt never appears: run `openclaw devices list` and approve manually.
+- Pairing prompt never appears: run `afora devices list` and approve manually.
 - Watch shows no iPhone state: confirm the iPhone reports `watchPaired: true`
   and `watchAppInstalled: true` in `watch.status`. If pairing is false, pair the
   Watch in Apple's Watch app. If installation is false, install the companion
-  from **My Watch -> Available Apps**. After either change, open OpenClaw on the
+  from **My Watch -> Available Apps**. After either change, open Afora on the
   Watch once; immediate reachability still requires both apps to be running,
   while queued updates can arrive later in the background.
 - Reconnect fails after reinstall: the Keychain pairing token was cleared; re-pair the node.

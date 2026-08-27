@@ -1,4 +1,4 @@
-import type { RealtimeTranscriptionSession } from "openclaw/plugin-sdk/realtime-transcription";
+import type { RealtimeTranscriptionSession } from "afora-agent/plugin-sdk/realtime-transcription";
 import { describe, expect, it, vi } from "vitest";
 import { MediaStreamHandler } from "./media-stream.js";
 import { connectWs, startUpgradeWsServer, waitForClose } from "./websocket-test-support.js";

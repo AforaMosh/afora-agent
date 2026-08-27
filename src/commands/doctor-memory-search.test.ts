@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import type { DoctorPrompter } from "./doctor-prompter.js";
 
 const note = vi.hoisted(() => vi.fn());
@@ -11,10 +11,10 @@ const listAgentIds = vi.hoisted(() =>
   ),
 );
 const resolveAgentDir = vi.hoisted(() =>
-  vi.fn<(_cfg: OpenClawConfig, agentId: string) => string>(() => "/tmp/agent-default"),
+  vi.fn<(_cfg: AforaConfig, agentId: string) => string>(() => "/tmp/agent-default"),
 );
 const resolveAgentWorkspaceDir = vi.hoisted(() =>
-  vi.fn<(_cfg: OpenClawConfig, agentId: string) => string>(() => "/tmp/agent-default/workspace"),
+  vi.fn<(_cfg: AforaConfig, agentId: string) => string>(() => "/tmp/agent-default/workspace"),
 );
 const resolveMemorySearchConfig = vi.hoisted(() => vi.fn());
 const resolveApiKeyForProviderCore = vi.hoisted(() => vi.fn());
@@ -179,7 +179,7 @@ function expectFirstNoteExcludes(...values: string[]) {
 }
 
 describe("noteMemorySearchHealth", () => {
-  const cfg = {} as OpenClawConfig;
+  const cfg = {} as AforaConfig;
   const skippedGatewayOptions = {
     gatewayMemoryProbe: { checked: false, ready: false, skipped: true },
   } satisfies NonNullable<Parameters<typeof noteMemorySearchHealth>[1]>;
@@ -213,7 +213,7 @@ describe("noteMemorySearchHealth", () => {
     NonNullable<Parameters<typeof noteMemorySearchHealth>[1]>,
     {
       overrides?: Record<string, unknown>;
-      config?: OpenClawConfig;
+      config?: AforaConfig;
       contains?: string[];
       noNote?: boolean;
       noApiKeyLookup?: boolean;
@@ -233,7 +233,7 @@ describe("noteMemorySearchHealth", () => {
     provider: string,
     options?: Parameters<typeof noteMemorySearchHealth>[1],
     overrides?: Record<string, unknown>,
-    config: OpenClawConfig = cfg,
+    config: AforaConfig = cfg,
   ) {
     stubMemorySearchConfig(provider, overrides);
     await noteMemorySearchHealth(config, options);
@@ -241,7 +241,7 @@ describe("noteMemorySearchHealth", () => {
 
   async function runConfiguredMemorySearch(
     provider: string,
-    config: OpenClawConfig,
+    config: AforaConfig,
     options?: Parameters<typeof noteMemorySearchHealth>[1],
     overrides?: Record<string, unknown>,
   ) {
@@ -249,9 +249,9 @@ describe("noteMemorySearchHealth", () => {
   }
 
   function conversationRecallConfig(
-    plugins?: OpenClawConfig["plugins"],
+    plugins?: AforaConfig["plugins"],
     rememberAcrossConversations = true,
-  ): OpenClawConfig {
+  ): AforaConfig {
     return {
       agents: {
         list: [
@@ -262,11 +262,11 @@ describe("noteMemorySearchHealth", () => {
         ],
       },
       ...(plugins ? { plugins } : {}),
-    } as OpenClawConfig;
+    } as AforaConfig;
   }
 
   async function runConversationRecallHealth(
-    plugins?: OpenClawConfig["plugins"],
+    plugins?: AforaConfig["plugins"],
     rememberAcrossConversations = true,
     overrides: Record<string, unknown> = conversationRecall,
   ) {
@@ -278,7 +278,7 @@ describe("noteMemorySearchHealth", () => {
     );
   }
 
-  async function runAuthLintHealth(provider: "openai" | "bedrock", config: OpenClawConfig = cfg) {
+  async function runAuthLintHealth(provider: "openai" | "bedrock", config: AforaConfig = cfg) {
     await runConfiguredMemorySearch(
       provider,
       config,
@@ -323,7 +323,7 @@ describe("noteMemorySearchHealth", () => {
     expect(note).toHaveBeenCalledTimes(1);
     expectFirstNoteContains(
       'Memory search provider is set to "local"',
-      "openclaw plugins install @openclaw/llama-cpp-provider",
+      "afora plugins install @afora/llama-cpp-provider",
     );
   });
 
@@ -452,7 +452,7 @@ describe("noteMemorySearchHealth", () => {
           checked: false,
           ready: false,
           error:
-            "memory embedding readiness not checked; run `openclaw memory status --deep` to probe",
+            "memory embedding readiness not checked; run `afora memory status --deep` to probe",
           skipped: true,
         },
       },
@@ -470,11 +470,11 @@ describe("noteMemorySearchHealth", () => {
           checked: false,
           ready: false,
           error:
-            "memory embedding readiness not checked; run `openclaw memory status --deep` to probe",
+            "memory embedding readiness not checked; run `afora memory status --deep` to probe",
           skipped: true,
         },
       },
-      { local: { modelPath: "/definitely/missing/openclaw-memory-model.gguf" } },
+      { local: { modelPath: "/definitely/missing/afora-memory-model.gguf" } },
     );
 
     expect(note).toHaveBeenCalledTimes(1);
@@ -524,7 +524,7 @@ describe("noteMemorySearchHealth", () => {
       "does not warn when an enabled alternate memory plugin owns the memory slot",
       {
         slots: { memory: "memory-lancedb" },
-        entries: { "memory-lancedb": { enabled: true, config: { dbPath: ".openclaw/memory" } } },
+        entries: { "memory-lancedb": { enabled: true, config: { dbPath: ".afora/memory" } } },
       },
       true,
     ],
@@ -551,7 +551,7 @@ describe("noteMemorySearchHealth", () => {
     ],
   ])("%s", async (_name, plugins, isActive) => {
     resolveActiveMemoryBackendConfig.mockReturnValue(null);
-    const config = { session: { dmScope: "per-peer" }, plugins } as unknown as OpenClawConfig;
+    const config = { session: { dmScope: "per-peer" }, plugins } as unknown as AforaConfig;
     await runConfiguredMemorySearch("auto", config);
     expect(resolveApiKeyForProviderCore).not.toHaveBeenCalled();
     if (isActive) {
@@ -683,8 +683,8 @@ describe("noteMemorySearchHealth", () => {
       agents: {
         list: [{ id: "personal", memory: { search: { rememberAcrossConversations: true } } }],
       },
-    } as OpenClawConfig;
-    resolveMemorySearchConfig.mockImplementation((_cfg: OpenClawConfig, agentId: string) =>
+    } as AforaConfig;
+    resolveMemorySearchConfig.mockImplementation((_cfg: AforaConfig, agentId: string) =>
       agentId === "personal"
         ? undefined
         : { provider: "auto", local: {}, remote: {}, sources: ["memory"] },
@@ -800,7 +800,7 @@ describe("noteMemorySearchHealth", () => {
         contains: [
           'provider is set to "openai-compatible"',
           "remote.baseUrl",
-          "openclaw config set",
+          "afora config set",
         ],
         noApiKeyLookup: true,
       },
@@ -814,7 +814,7 @@ describe("noteMemorySearchHealth", () => {
         contains: [
           'provider is set to "openai-compatible"',
           "memory.search.model",
-          "openclaw config set",
+          "afora config set",
         ],
         noApiKeyLookup: true,
       },
@@ -829,7 +829,7 @@ describe("noteMemorySearchHealth", () => {
           models: {
             providers: { localEmbeddings: { baseUrl: "http://127.0.0.1:1234/v1", models: [] } },
           },
-        } as unknown as OpenClawConfig,
+        } as unknown as AforaConfig,
         noNote: true,
         noApiKeyLookup: true,
       },
@@ -868,7 +868,7 @@ describe("noteMemorySearchHealth", () => {
     const orderedCfg = {
       ...cfg,
       auth: { order: { openai: profileIds } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     await runAuthLintHealth("openai", orderedCfg);
     expect(hasAuthProfileStoreSourceForProvider).toHaveBeenCalledWith(
       "openai",
@@ -887,7 +887,7 @@ describe("noteMemorySearchHealth", () => {
           "amazon-bedrock": { auth: "aws-sdk", models: [] },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     await runAuthLintHealth("bedrock", bedrockCfg);
 
@@ -913,7 +913,7 @@ describe("noteMemorySearchHealth", () => {
         },
         order: { "amazon-bedrock": ["amazon-bedrock:default"] },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     await runAuthLintHealth("bedrock", bedrockCfg);
 
@@ -954,7 +954,7 @@ describe("noteMemorySearchHealth", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     await runConfiguredMemorySearch(
       "openai",
       openaiCfg,
@@ -973,7 +973,7 @@ describe("noteMemorySearchHealth", () => {
   it("warns for key-optional provider (lmstudio) when gateway probe timed out", async () => {
     // A gateway timeout sets checked: false but skipped: false/absent. This is a
     // real diagnostic signal — embeddings may be unavailable — so we should warn.
-    // Regression guard: https://github.com/openclaw/openclaw/issues/74608
+    // Regression guard: https://github.com/AforaMosh/afora-agent/issues/74608
     await runMemorySearchHealth("lmstudio", {
       gatewayMemoryProbe: {
         checked: false,
@@ -1000,9 +1000,9 @@ describe("noteMemorySearchHealth", () => {
 
     expectFirstNoteContains(
       "Gateway memory probe for default agent is not ready",
-      "openclaw configure --section model",
+      "afora configure --section model",
     );
-    expectFirstNoteExcludes("openclaw auth add --provider");
+    expectFirstNoteExcludes("afora auth add --provider");
   });
 
   it("warns for legacy auto mode as OpenAI when no API key is configured", async () => {
@@ -1012,7 +1012,7 @@ describe("noteMemorySearchHealth", () => {
     expectFirstNoteContains(
       'provider is set to "openai"',
       "OPENAI_API_KEY",
-      "openclaw configure --section model",
+      "afora configure --section model",
     );
   });
 
@@ -1080,7 +1080,7 @@ describe("noteMemorySearchHealth", () => {
 });
 
 describe("memory recall doctor integration", () => {
-  const cfg = {} as OpenClawConfig;
+  const cfg = {} as AforaConfig;
 
   beforeEach(() => {
     note.mockClear();
@@ -1227,7 +1227,7 @@ describe("memory recall doctor integration", () => {
     );
     repairDreamingArtifacts.mockResolvedValueOnce({
       changed: true,
-      archiveDir: "/tmp/agent-default/workspace/.openclaw-repair/dreaming/2026-04-11T21-35-00-000Z",
+      archiveDir: "/tmp/agent-default/workspace/.afora-repair/dreaming/2026-04-11T21-35-00-000Z",
       archivedDreamsDiary: false,
       archivedSessionCorpus: true,
       archivedSessionIngestion: true,

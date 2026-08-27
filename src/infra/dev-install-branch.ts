@@ -4,7 +4,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { runCommandWithTimeout } from "../process/exec.js";
-import { resolveOpenClawPackageRoot } from "./openclaw-root.js";
+import { resolveAforaPackageRoot } from "./afora-root.js";
 
 const GIT_TIMEOUT_MS = 3000;
 // Mainline branches read as release-shaped state; the badge exists to flag
@@ -49,7 +49,7 @@ async function detectDevInstallGitBranch(params: {
 let cached: Promise<string | null> | null = null;
 
 export function resolveDevInstallGitBranch(): Promise<string | null> {
-  cached ??= resolveOpenClawPackageRoot({
+  cached ??= resolveAforaPackageRoot({
     argv1: process.argv[1],
     cwd: process.cwd(),
     moduleUrl: import.meta.url,

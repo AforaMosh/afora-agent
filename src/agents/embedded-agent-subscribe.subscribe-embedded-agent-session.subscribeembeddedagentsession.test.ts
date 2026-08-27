@@ -3,7 +3,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { AssistantMessage } from "openclaw/plugin-sdk/llm";
+import type { AssistantMessage } from "afora-agent/plugin-sdk/llm";
 import { describe, expect, it, vi } from "vitest";
 import { HEARTBEAT_RESPONSE_TOOL_NAME } from "../auto-reply/heartbeat-tool-response.js";
 import * as agentEvents from "../infra/agent-events.js";
@@ -148,8 +148,8 @@ describe("subscribeEmbeddedAgentSession", () => {
   async function captureToolLifecycleLogSubsystems(messageChannel?: string): Promise<string[]> {
     // Use a temporary file-backed logger so subsystem attribution is verified
     // against real serialized log lines.
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-tool-log-attribution-"));
-    const logFile = path.join(tempDir, "openclaw.log");
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-tool-log-attribution-"));
+    const logFile = path.join(tempDir, "afora.log");
     try {
       setLoggerOverride({
         level: "debug",
@@ -303,7 +303,7 @@ describe("subscribeEmbeddedAgentSession", () => {
   it.each([
     ["telegram", "gateway/channels/telegram"],
     [undefined, "agent/embedded"],
-    ["openclaw", "agent/embedded"],
+    ["afora", "agent/embedded"],
     ["not a channel", "agent/embedded"],
   ] as const)(
     "attributes tool lifecycle logs for channel=%s",

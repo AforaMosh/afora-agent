@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "./config.js";
+import type { AforaConfig } from "./config.js";
 import { resolveChannelImplicitMentions } from "./implicit-mentions.js";
 import { ChannelsSchema } from "./zod-schema.channels-config.js";
 
@@ -55,7 +55,7 @@ describe("resolveChannelImplicitMentions", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(
       resolveChannelImplicitMentions({ cfg, channel: "mattermost", accountId: "work" }),

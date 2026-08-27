@@ -105,7 +105,7 @@ Source: https://github.com/vercel-labs/agent-skills/blob/main/AGENTS.md
 Source: https://contributing.md/how-to-build-contributing-md/
 Source: https://blog.codacy.com/best-practices-to-manage-an-open-source-project
 Source: https://mozillascience.github.io/working-open-workshop/contributing/
-Source: https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md
+Source: https://github.com/AforaMosh/afora-agent/blob/main/CONTRIBUTING.md
 
 1. Keep root `CONTRIBUTING.md` focused on setup, issue flow, PR flow, testing, and review gates.
 2. Use issue/PR template links instead of embedding every process detail inline.
@@ -115,9 +115,9 @@ Source: https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md
 
 ## Example repos to emulate
 
-Source: https://github.com/openclaw/openclaw/blob/main/AGENTS.md
-Source: https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md
-Source: https://github.com/openclaw/openclaw/blob/main/VISION.md
+Source: https://github.com/AforaMosh/afora-agent/blob/main/AGENTS.md
+Source: https://github.com/AforaMosh/afora-agent/blob/main/CONTRIBUTING.md
+Source: https://github.com/AforaMosh/afora-agent/blob/main/VISION.md
 Source: https://github.com/openai/codex/blob/main/AGENTS.md
 Source: https://github.com/processing/p5.js/blob/main/AGENTS.md
 Source: https://github.com/vercel-labs/agent-skills/blob/main/AGENTS.md
@@ -128,7 +128,7 @@ Source: https://github.com/atom/atom/blob/master/CONTRIBUTING.md
 Source: https://github.com/github/docs/blob/main/CONTRIBUTING.md
 Source: https://github.com/facebook/react/blob/main/CONTRIBUTING.md
 
-1. OpenClaw: strong real-world alias policy and AGENTS/CONTRIBUTING/VISION cohesion.
+1. Afora: strong real-world alias policy and AGENTS/CONTRIBUTING/VISION cohesion.
 2. OpenAI Codex: strict command discipline and explicit scope control.
 3. p5.js: explicit AI-policy guardrails in agent instructions.
 4. Vercel + agentsmd spec: compact, context-efficient AGENTS patterns.

@@ -6,7 +6,7 @@ import path from "node:path";
 import {
   INTERNAL_RUNTIME_CONTEXT_BEGIN,
   INTERNAL_RUNTIME_CONTEXT_END,
-  OPENCLAW_RUNTIME_CONTEXT_NOTICE,
+  AFORA_RUNTIME_CONTEXT_NOTICE,
   escapeInternalRuntimeContextDelimiters,
 } from "../agents/internal-runtime-context.js";
 import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
@@ -19,7 +19,7 @@ import {
 } from "../config/sessions/main-session.js";
 import { resolveSessionStorePathCore } from "../config/sessions/paths.js";
 import { preserveTemporarySessionMapping } from "../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { readRegularFile } from "../infra/regular-file.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
@@ -55,7 +55,7 @@ function buildBootPrompt(content: string) {
     "You are running a boot check. Follow BOOT.md instructions exactly.",
     "",
     INTERNAL_RUNTIME_CONTEXT_BEGIN,
-    OPENCLAW_RUNTIME_CONTEXT_NOTICE,
+    AFORA_RUNTIME_CONTEXT_NOTICE,
     "",
     "BOOT.md:",
     safeContent,
@@ -107,7 +107,7 @@ async function loadBootFile(
 }
 
 export async function runBootOnce(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   deps: CliDeps;
   workspaceDir: string;
   agentId?: string;

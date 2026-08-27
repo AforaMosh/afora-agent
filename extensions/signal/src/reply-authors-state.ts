@@ -1,5 +1,5 @@
 // Signal plugin module owns native-reply quote author state.
-import type { MediaPlaceholderTextFact } from "openclaw/plugin-sdk/channel-inbound";
+import type { MediaPlaceholderTextFact } from "afora-agent/plugin-sdk/channel-inbound";
 type SignalReplyContextRecordBase = {
   accountId: string;
   conversationKey: string;

@@ -3,9 +3,9 @@ import "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import type WaDialog from "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 import { css, html, type PropertyValues } from "lit";
 import { property, query } from "lit/decorators.js";
-import { OpenClawLitElement } from "../lit/openclaw-element.ts";
+import { AforaLitElement } from "../lit/afora-element.ts";
 
-const modalToastLayers = (document.openClawModalToastLayers ??= new Set<HTMLElement>());
+const modalToastLayers = (document.aforaModalToastLayers ??= new Set<HTMLElement>());
 
 function setModalToastLayer(modal: HTMLElement, open: boolean) {
   modalToastLayers.delete(modal);
@@ -14,7 +14,7 @@ function setModalToastLayer(modal: HTMLElement, open: boolean) {
   }
 }
 
-export class OpenClawModalDialog extends OpenClawLitElement {
+export class AforaModalDialog extends AforaLitElement {
   @property({ type: Boolean }) open = true;
   @property({ type: Boolean, reflect: true }) manual = false;
   @property() label = "";
@@ -33,14 +33,14 @@ export class OpenClawModalDialog extends OpenClawLitElement {
     }
 
     wa-dialog {
-      --width: min(var(--openclaw-modal-width, 540px), calc(100vw - 48px));
+      --width: min(var(--afora-modal-width, 540px), calc(100vw - 48px));
       --spacing: 0;
       --backdrop-filter: blur(4px);
     }
 
     wa-dialog::part(dialog) {
-      max-width: var(--openclaw-modal-max-width, calc(100vw - 48px));
-      max-height: var(--openclaw-modal-max-height, calc(100dvh - 48px));
+      max-width: var(--afora-modal-max-width, calc(100vw - 48px));
+      max-height: var(--afora-modal-max-height, calc(100dvh - 48px));
       padding: 0;
       border: 0;
       background: transparent;
@@ -68,7 +68,7 @@ export class OpenClawModalDialog extends OpenClawLitElement {
     }
 
     :host(.drawer) wa-dialog {
-      --width: min(var(--openclaw-modal-width, 100vw), 100vw);
+      --width: min(var(--afora-modal-width, 100vw), 100vw);
     }
 
     :host(.drawer) wa-dialog::part(dialog) {
@@ -105,11 +105,11 @@ export class OpenClawModalDialog extends OpenClawLitElement {
 
     @media (max-width: 640px) {
       wa-dialog {
-        --width: min(var(--openclaw-modal-width, 540px), calc(100vw - 24px));
+        --width: min(var(--afora-modal-width, 540px), calc(100vw - 24px));
       }
 
       wa-dialog::part(dialog) {
-        max-width: var(--openclaw-modal-max-width, calc(100vw - 24px));
+        max-width: var(--afora-modal-max-width, calc(100vw - 24px));
         max-height: 90dvh;
       }
     }
@@ -304,16 +304,16 @@ export class OpenClawModalDialog extends OpenClawLitElement {
   }
 }
 
-if (!customElements.get("openclaw-modal-dialog")) {
-  customElements.define("openclaw-modal-dialog", OpenClawModalDialog);
+if (!customElements.get("afora-modal-dialog")) {
+  customElements.define("afora-modal-dialog", AforaModalDialog);
 }
 
 declare global {
   interface Document {
-    openClawModalToastLayers?: Set<HTMLElement>;
+    aforaModalToastLayers?: Set<HTMLElement>;
   }
 
   interface HTMLElementTagNameMap {
-    "openclaw-modal-dialog": OpenClawModalDialog;
+    "afora-modal-dialog": AforaModalDialog;
   }
 }

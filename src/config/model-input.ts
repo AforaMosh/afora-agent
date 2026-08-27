@@ -1,14 +1,14 @@
 // Normalizes model input config into provider and model references.
-import { parseModelCatalogRef } from "@openclaw/model-catalog-core/model-catalog-refs";
+import { parseModelCatalogRef } from "@afora/model-catalog-core/model-catalog-refs";
 import {
   normalizeGooglePreviewModelId,
   normalizeTogetherModelId,
-} from "@openclaw/model-catalog-core/provider-model-id-normalize";
-import { isRecord as isPlainRecord } from "@openclaw/normalization-core/record-coerce";
+} from "@afora/model-catalog-core/provider-model-id-normalize";
+import { isRecord as isPlainRecord } from "@afora/normalization-core/record-coerce";
 import {
   normalizeOptionalString,
   resolvePrimaryStringValue,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { modelKey } from "../shared/model-key.js";
 import type { AgentModelConfig, AgentToolModelConfig } from "./types.agents-shared.js";
 

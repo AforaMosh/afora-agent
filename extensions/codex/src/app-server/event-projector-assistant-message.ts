@@ -2,8 +2,8 @@ import {
   formatErrorMessage,
   type NormalizedUsage,
   type AgentHarnessAttemptParamsV2,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import type { AssistantMessage, Usage } from "openclaw/plugin-sdk/llm";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import type { AssistantMessage, Usage } from "afora-agent/plugin-sdk/llm";
 import {
   resolveCodexLocalRuntimeAttribution,
   type CodexLocalRuntimeAttributionParams,
@@ -104,7 +104,7 @@ export function createAssistantCommentaryMessage(
 ): AssistantMessage {
   const attribution = resolveCodexLocalRuntimeAttribution(params);
   const message: AssistantMessage & {
-    openclawStreamFallback: { replacementText: string; source: "segment"; itemId: string };
+    aforaStreamFallback: { replacementText: string; source: "segment"; itemId: string };
   } = {
     role: "assistant",
     content: [{ type: "text", text }],
@@ -116,7 +116,7 @@ export function createAssistantCommentaryMessage(
     timestamp,
     // Keep this unphased: gateway history hides commentary-phase assistant rows.
     // The keyed fallback persists Control UI narration without channel delivery.
-    openclawStreamFallback: {
+    aforaStreamFallback: {
       replacementText: text,
       source: "segment",
       itemId,

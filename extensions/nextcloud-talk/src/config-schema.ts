@@ -7,8 +7,8 @@ import {
   buildGroupEntrySchema,
   buildMultiAccountChannelSchema,
   requireOpenAllowFrom,
-} from "openclaw/plugin-sdk/channel-config-schema";
-import { requireChannelOpenAllowFrom } from "openclaw/plugin-sdk/extension-shared";
+} from "afora-agent/plugin-sdk/channel-config-schema";
+import { requireChannelOpenAllowFrom } from "afora-agent/plugin-sdk/extension-shared";
 import { z } from "zod";
 import { buildSecretInputSchema } from "./secret-input.js";
 

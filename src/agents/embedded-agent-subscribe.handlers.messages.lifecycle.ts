@@ -1,9 +1,9 @@
-import { isPromiseLike } from "@openclaw/normalization-core/promise-like";
+import { isPromiseLike } from "@afora/normalization-core/promise-like";
 /**
  * Handles assistant message lifecycle boundaries, final reconciliation, and usage.
  */
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
-import { resolveSendableOutboundReplyParts } from "openclaw/plugin-sdk/reply-payload";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
+import { resolveSendableOutboundReplyParts } from "afora-agent/plugin-sdk/reply-payload";
 import { createInlineCodeState } from "../../packages/markdown-core/src/code-spans.js";
 import { parseReplyDirectives } from "../auto-reply/reply/reply-directives.js";
 import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
@@ -23,7 +23,7 @@ import {
   hasMessageToolOnlySourceDelivery,
   isOpenAiCompletionsAssistantMessage,
   isResponsesApiAssistantMessage,
-  isSubscribeTranscriptOnlyOpenClawAssistantMessage,
+  isSubscribeTranscriptOnlyAforaAssistantMessage,
   scopeAssistantMessageToStreamBlock,
   shouldSuppressAssistantVisibleOutput,
   shouldSuppressDeterministicApprovalOutput,
@@ -54,7 +54,7 @@ export function preservePendingAssistantUsage(
   pendingUsage: NormalizedUsage | undefined,
 ): AssistantMessage {
   if (
-    isSubscribeTranscriptOnlyOpenClawAssistantMessage(message) ||
+    isSubscribeTranscriptOnlyAforaAssistantMessage(message) ||
     !hasNonzeroUsage(pendingUsage)
   ) {
     return message;
@@ -90,7 +90,7 @@ export function capturePendingAssistantUsage(
   evt: AgentEvent & { message: AgentMessage; assistantMessageEvent?: unknown },
 ): void {
   const msg = evt.message;
-  if (msg?.role !== "assistant" || isSubscribeTranscriptOnlyOpenClawAssistantMessage(msg)) {
+  if (msg?.role !== "assistant" || isSubscribeTranscriptOnlyAforaAssistantMessage(msg)) {
     return;
   }
   const assistantRecord =
@@ -107,7 +107,7 @@ export function resetPendingAssistantUsage(
   ctx: EmbeddedAgentSubscribeContext,
   message: AgentMessage,
 ): void {
-  if (message?.role !== "assistant" || isSubscribeTranscriptOnlyOpenClawAssistantMessage(message)) {
+  if (message?.role !== "assistant" || isSubscribeTranscriptOnlyAforaAssistantMessage(message)) {
     return;
   }
   ctx.state.pendingAssistantUsage = undefined;
@@ -119,7 +119,7 @@ export function handleMessageStart(
   evt: AgentEvent & { message: AgentMessage },
 ) {
   const msg = evt.message;
-  if (msg?.role !== "assistant" || isSubscribeTranscriptOnlyOpenClawAssistantMessage(msg)) {
+  if (msg?.role !== "assistant" || isSubscribeTranscriptOnlyAforaAssistantMessage(msg)) {
     return;
   }
 
@@ -140,7 +140,7 @@ export function handleMessageEnd(
   evt: AgentEvent & { message: AgentMessage },
 ): void | Promise<void> {
   const msg = evt.message;
-  if (msg?.role !== "assistant" || isSubscribeTranscriptOnlyOpenClawAssistantMessage(msg)) {
+  if (msg?.role !== "assistant" || isSubscribeTranscriptOnlyAforaAssistantMessage(msg)) {
     return;
   }
 

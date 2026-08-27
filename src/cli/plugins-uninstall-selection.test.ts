@@ -1,6 +1,6 @@
 // Plugin uninstall selection tests cover CLI uninstall target matching.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { resolvePluginUninstallId } from "./plugins-uninstall-selection.js";
 
 describe("resolvePluginUninstallId", () => {
@@ -29,7 +29,7 @@ describe("resolvePluginUninstallId", () => {
 
     const result = resolvePluginUninstallId({
       rawId: "calendar",
-      config: { plugins } as OpenClawConfig,
+      config: { plugins } as AforaConfig,
       plugins: [alias],
     });
 
@@ -63,7 +63,7 @@ describe("resolvePluginUninstallId", () => {
             "calendar-two": { source: "npm", resolvedName: "@scope/calendar" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       plugins: [],
     });
 
@@ -84,7 +84,7 @@ describe("resolvePluginUninstallId", () => {
             "calendar-two": { source: "npm", clawhubPackage: "calendar" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       plugins: [],
     });
 
@@ -106,7 +106,7 @@ describe("resolvePluginUninstallId", () => {
             "calendar-owner": { source: "npm", resolvedName: "calendar" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       plugins: [plugin],
     });
 
@@ -137,7 +137,7 @@ describe("resolvePluginUninstallId", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       plugins: [plugin],
     });
 
@@ -167,7 +167,7 @@ describe("resolvePluginUninstallId", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       plugins: [plugin],
     });
 

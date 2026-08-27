@@ -1,5 +1,5 @@
-import type { CliBackendPlugin } from "openclaw/plugin-sdk/cli-backend";
-import type { ProviderPlugin } from "openclaw/plugin-sdk/provider-model-shared";
+import type { CliBackendPlugin } from "afora-agent/plugin-sdk/cli-backend";
+import type { ProviderPlugin } from "afora-agent/plugin-sdk/provider-model-shared";
 import { describe, expect, it } from "vitest";
 import { buildGoogleGeminiCliBackend } from "./cli-backend.js";
 import setupEntry from "./setup-api.js";
@@ -83,7 +83,7 @@ describe("google gemini cli backend config", () => {
   it("enforces exact MCP server availability with a per-run argv override", () => {
     const backend = buildGoogleGeminiCliBackend();
     const baseContext = {
-      workspaceDir: "/tmp/openclaw-gemini-test",
+      workspaceDir: "/tmp/afora-gemini-test",
       provider: "google-gemini-cli",
       modelId: "gemini-3.1-pro-preview",
       useResume: false,
@@ -104,13 +104,13 @@ describe("google gemini cli backend config", () => {
 
     const restrictedArgs = backend.resolveExecutionArgs?.({
       ...baseContext,
-      toolAvailability: { native: [], openClaw: ["read"], mcp: ["read"] },
+      toolAvailability: { native: [], afora: ["read"], mcp: ["read"] },
     });
     expect(restrictedArgs).toEqual([
       "--prompt",
       "{prompt}",
       "--allowed-mcp-server-names",
-      "openclaw",
+      "afora",
       "--",
       "--allowed-mcp-server-names",
       "positional-hostile",
@@ -118,7 +118,7 @@ describe("google gemini cli backend config", () => {
 
     const emptyArgs = backend.resolveExecutionArgs?.({
       ...baseContext,
-      toolAvailability: { native: [], openClaw: [], mcp: [] },
+      toolAvailability: { native: [], afora: [], mcp: [] },
     });
     expect(emptyArgs?.slice(0, -4)).toEqual(["--prompt", "{prompt}", "--allowed-mcp-server-names"]);
     expect(emptyArgs?.at(-4)).toMatch(

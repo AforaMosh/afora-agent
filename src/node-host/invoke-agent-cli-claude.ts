@@ -59,7 +59,7 @@ export async function runClaudeCliNodeCommand(params: {
   let argv = params.argv;
   try {
     if (params.request.systemPrompt !== undefined) {
-      promptDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-node-claude-prompt-"));
+      promptDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-node-claude-prompt-"));
       const promptPath = path.join(promptDir, "system-prompt.md");
       await fs.writeFile(promptPath, params.request.systemPrompt, { mode: 0o600 });
       argv = [...argv, "--append-system-prompt-file", promptPath];

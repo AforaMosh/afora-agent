@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { expectDefined, stableStringify } from "@openclaw/normalization-core";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { expectDefined, stableStringify } from "@afora/normalization-core";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { MediaImageLayout } from "../../../agents/embedded-agent-runner/run/prompt-image-metadata.js";
 import { runAgentHarnessBeforeMessageWriteHook } from "../../../agents/harness/hook-helpers.js";
 import { readToolAllowlistIntersection } from "../../../agents/tool-policy.js";
@@ -58,13 +58,13 @@ function hasPreparedCurrentTurnImages(run: FollowupRun): boolean {
 
 // Persists the most recent runFollowup callback per queue key so that
 // enqueueFollowupRun can restart a drain that finished and deleted the queue.
-const FOLLOWUP_DRAIN_CALLBACKS_KEY = Symbol.for("openclaw.followupDrainCallbacks");
+const FOLLOWUP_DRAIN_CALLBACKS_KEY = Symbol.for("afora.followupDrainCallbacks");
 
 const FOLLOWUP_RUN_CALLBACKS = resolveGlobalMap<string, (run: FollowupRun) => Promise<void>>(
   FOLLOWUP_DRAIN_CALLBACKS_KEY,
 );
 
-const QUEUED_ADMISSION_OWNER_STATE_KEY = Symbol.for("openclaw.queuedAdmissionOwnerState");
+const QUEUED_ADMISSION_OWNER_STATE_KEY = Symbol.for("afora.queuedAdmissionOwnerState");
 const queuedAdmissionOwnerState = resolveGlobalSingleton(QUEUED_ADMISSION_OWNER_STATE_KEY, () => ({
   keys: new WeakMap<NonNullable<FollowupRun["turnAdoptionLifecycle"]>, string>(),
   nextId: 1,

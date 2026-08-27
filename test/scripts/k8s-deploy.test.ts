@@ -20,7 +20,7 @@ function runWithStubbedKubectl(
     deleteSecretStatus?: number;
   } = {},
 ) {
-  const root = tempDirs.make("openclaw-k8s-delete-");
+  const root = tempDirs.make("afora-k8s-delete-");
   const binDir = path.join(root, "bin");
   const logPath = path.join(root, "kubectl.log");
   mkdirSync(binDir);
@@ -29,15 +29,15 @@ function runWithStubbedKubectl(
     path.join(binDir, "kubectl"),
     `#!/usr/bin/env bash
 set -euo pipefail
-printf '%s\\n' "$*" >> "$OPENCLAW_KUBECTL_LOG"
+printf '%s\\n' "$*" >> "$AFORA_KUBECTL_LOG"
 if [[ "$1" == "delete" && "$2" == "-k" ]]; then
-  exit "\${OPENCLAW_KUBECTL_DELETE_KUSTOMIZE_STATUS:-0}"
+  exit "\${AFORA_KUBECTL_DELETE_KUSTOMIZE_STATUS:-0}"
 fi
 if [[ "$1" == "delete" && "$2" == "namespace" ]]; then
-  exit "\${OPENCLAW_KUBECTL_DELETE_NAMESPACE_STATUS:-0}"
+  exit "\${AFORA_KUBECTL_DELETE_NAMESPACE_STATUS:-0}"
 fi
 if [[ "$1" == "delete" && "$2" == "secret" ]]; then
-  exit "\${OPENCLAW_KUBECTL_DELETE_SECRET_STATUS:-0}"
+  exit "\${AFORA_KUBECTL_DELETE_SECRET_STATUS:-0}"
 fi
 if [[ "$1" == "get" && "$2" == "namespace" ]]; then
   exit 99
@@ -55,11 +55,11 @@ esac
     encoding: "utf8",
     env: {
       ...process.env,
-      OPENCLAW_KUBECTL_DELETE_KUSTOMIZE_STATUS: String(options.deleteKustomizeStatus ?? 0),
-      OPENCLAW_KUBECTL_DELETE_NAMESPACE_STATUS: String(options.deleteNamespaceStatus ?? 0),
-      OPENCLAW_KUBECTL_DELETE_SECRET_STATUS: String(options.deleteSecretStatus ?? 0),
-      OPENCLAW_KUBECTL_LOG: logPath,
-      OPENCLAW_NAMESPACE: namespace,
+      AFORA_KUBECTL_DELETE_KUSTOMIZE_STATUS: String(options.deleteKustomizeStatus ?? 0),
+      AFORA_KUBECTL_DELETE_NAMESPACE_STATUS: String(options.deleteNamespaceStatus ?? 0),
+      AFORA_KUBECTL_DELETE_SECRET_STATUS: String(options.deleteSecretStatus ?? 0),
+      AFORA_KUBECTL_LOG: logPath,
+      AFORA_NAMESPACE: namespace,
       PATH: `${binDir}:${process.env.PATH ?? ""}`,
     },
   });
@@ -82,37 +82,37 @@ describe("scripts/k8s/deploy.sh", () => {
   }
 
   it("keeps the default namespace delete mode as a full namespace teardown", () => {
-    const { calls, output, result } = runWithStubbedKubectl(["--delete"], "openclaw");
+    const { calls, output, result } = runWithStubbedKubectl(["--delete"], "afora");
 
     expect(result.status, output).toBe(0);
-    expect(output).toContain("Deleting namespace 'openclaw' and all resources");
-    expect(calls).toEqual(["cluster-info", "delete namespace openclaw --ignore-not-found"]);
+    expect(output).toContain("Deleting namespace 'afora' and all resources");
+    expect(calls).toEqual(["cluster-info", "delete namespace afora --ignore-not-found"]);
   });
 
   it("keeps a custom namespace and unrelated workloads when the legacy delete mode is used", () => {
     const { calls, output, result } = runWithStubbedKubectl(["--delete"], "my-namespace");
 
     expect(result.status, output).toBe(0);
-    expect(output).toContain("Deleting OpenClaw resources from namespace 'my-namespace'");
+    expect(output).toContain("Deleting Afora resources from namespace 'my-namespace'");
     expect(calls).toEqual([
       "cluster-info",
       `delete -k ${path.resolve("scripts/k8s/manifests")} -n my-namespace --ignore-not-found`,
-      "delete secret openclaw-secrets -n my-namespace --ignore-not-found",
+      "delete secret afora-secrets -n my-namespace --ignore-not-found",
     ]);
     expect(calls).not.toContain("delete namespace my-namespace --ignore-not-found");
     expect(calls).not.toContain("get namespace my-namespace");
   });
 
-  it("deletes OpenClaw resources without deleting the namespace", () => {
+  it("deletes Afora resources without deleting the namespace", () => {
     const { calls, output, result } = runDeleteResourcesWithStubbedKubectl("my-namespace");
 
     expect(result.status, output).toBe(0);
-    expect(output).toContain("Deleting OpenClaw resources from namespace 'my-namespace'");
+    expect(output).toContain("Deleting Afora resources from namespace 'my-namespace'");
 
     expect(calls).toEqual([
       "cluster-info",
       `delete -k ${path.resolve("scripts/k8s/manifests")} -n my-namespace --ignore-not-found`,
-      "delete secret openclaw-secrets -n my-namespace --ignore-not-found",
+      "delete secret afora-secrets -n my-namespace --ignore-not-found",
     ]);
     expect(calls).not.toContain("delete namespace my-namespace --ignore-not-found");
     expect(calls).not.toContain("get namespace my-namespace");
@@ -124,7 +124,7 @@ describe("scripts/k8s/deploy.sh", () => {
     });
 
     expect(result.status, output).toBe(17);
-    expect(output).toContain("Deleting OpenClaw resources from namespace 'restricted-namespace'");
+    expect(output).toContain("Deleting Afora resources from namespace 'restricted-namespace'");
     expect(calls).toEqual([
       "cluster-info",
       `delete -k ${path.resolve("scripts/k8s/manifests")} -n restricted-namespace --ignore-not-found`,
@@ -156,7 +156,7 @@ describe("scripts/k8s/deploy.sh", () => {
       expect(calls).toEqual([
         "cluster-info",
         `delete -k ${path.resolve("scripts/k8s/manifests")} -n shared-namespace --ignore-not-found`,
-        "delete secret openclaw-secrets -n shared-namespace --ignore-not-found",
+        "delete secret afora-secrets -n shared-namespace --ignore-not-found",
       ]);
       expect(output).not.toContain("Done.");
     },

@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { getReplyPayloadMetadata, type ReplyPayload } from "../../auto-reply/reply-payload.js";
 import { applyAssistantDeliveryDirectives } from "../../config/sessions/transcript-assistant-delivery.js";
 import {
@@ -350,7 +350,7 @@ export async function finalizeChatSendNonAgentReplies(params: {
             : {}),
         ...(fallbackText ? { text: fallbackText } : {}),
         timestamp: Date.now(),
-        ...(ttsSupplementMarker ? { openclawTtsSupplement: ttsSupplementMarker } : {}),
+        ...(ttsSupplementMarker ? { aforaTtsSupplement: ttsSupplementMarker } : {}),
         // Keep compatible with runner stopReason enums when transcript persistence fails.
         stopReason: "stop",
         usage: { input: 0, output: 0, totalTokens: 0 },

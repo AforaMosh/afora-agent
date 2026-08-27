@@ -1,5 +1,5 @@
 // Discord tests cover auto presence plugin behavior.
-import type { AuthProfileStore } from "openclaw/plugin-sdk/provider-auth";
+import type { AuthProfileStore } from "afora-agent/plugin-sdk/provider-auth";
 import { describe, expect, it, vi } from "vitest";
 import { createDiscordAutoPresenceController } from "./auto-presence.js";
 

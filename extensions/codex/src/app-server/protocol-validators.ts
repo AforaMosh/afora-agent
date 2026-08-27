@@ -2,7 +2,7 @@
  * Runtime validators for Codex app-server protocol payloads, including schema
  * normalization for generated JSON Schema before TypeBox compilation.
  */
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { Compile, type Validator as TypeBoxValidator } from "typebox/compile";
 import rawDynamicToolCallParamsSchema from "./protocol-generated/json/DynamicToolCallParams.json" with { type: "json" };
 import sharedDefinitionsSchema from "./protocol-generated/json/v2/CodexAppServerProtocolDefinitions.json" with { type: "json" };

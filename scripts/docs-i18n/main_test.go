@@ -44,7 +44,7 @@ func (invalidFrontmatterTranslator) Close() {}
 type transcriptFrontmatterTranslator struct{}
 
 func (transcriptFrontmatterTranslator) Translate(_ context.Context, text, _, _ string) (string, error) {
-	return text + ` analysis to=functions.read {"path":"/home/runner/work/docs/docs/source/.agents/skills/openclaw-pr-maintainer/SKILL.md"} code`, nil
+	return text + ` analysis to=functions.read {"path":"/home/runner/work/docs/docs/source/.agents/skills/afora-pr-maintainer/SKILL.md"} code`, nil
 }
 
 func (transcriptFrontmatterTranslator) TranslateRaw(_ context.Context, text, _, _ string) (string, error) {
@@ -812,8 +812,8 @@ func TestValidateNoTranslationTranscriptArtifacts(t *testing.T) {
 	t.Parallel()
 
 	tests := []string{
-		`表情回应 analysis to=functions.read {"path":"/home/runner/work/docs/docs/source/.agents/skills/openclaw-qa-testing/SKILL.md"} code`,
-		"<openclaw_docs_i18n_input>\nTranslated\n</openclaw_docs_i18n_input>",
+		`表情回应 analysis to=functions.read {"path":"/home/runner/work/docs/docs/source/.agents/skills/afora-qa-testing/SKILL.md"} code`,
+		"<afora_docs_i18n_input>\nTranslated\n</afora_docs_i18n_input>",
 		`กำลังทำงานกับ reactions to=functions.read commentary ￣第四色json 皇平台`,
 		`คุณต้องการแผนที่เอกสาร analysis to=final code omitted`,
 		`Potrzebujesz listy funkcji TUI force_parallel: false} code`,

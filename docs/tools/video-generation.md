@@ -8,7 +8,7 @@ title: "Video generation"
 sidebarTitle: "Video generation"
 ---
 
-OpenClaw agents generate videos from text prompts, reference images, or
+Afora agents generate videos from text prompts, reference images, or
 existing videos through `video_generate`. Sixteen provider backends are
 supported; the agent picks the right one automatically based on config and
 available API keys.
@@ -42,7 +42,7 @@ active mode before submission and reports supported modes in `action=list`.
   </Step>
   <Step title="Pick a default model (optional)">
     ```bash
-    openclaw config set agents.defaults.mediaModels.video.primary "google/veo-3.1-fast-generate-preview"
+    afora config set agents.defaults.mediaModels.video.primary "google/veo-3.1-fast-generate-preview"
     ```
   </Step>
   <Step title="Ask the agent">
@@ -58,29 +58,29 @@ active mode before submission and reports supported modes in `action=list`.
 
 Video generation is asynchronous:
 
-1. OpenClaw submits the request to the provider and immediately returns a task id.
+1. Afora submits the request to the provider and immediately returns a task id.
 2. The provider processes the job in the background (typically 30 seconds to several minutes depending on the provider and resolution; slow queue-backed providers can run up to the configured timeout).
-3. When the video is ready, OpenClaw wakes the same session with an internal completion event.
+3. When the video is ready, Afora wakes the same session with an internal completion event.
 4. The agent reports it through the session's normal visible-reply mode:
    automatic final reply, or `message(action="send")` when the session requires
    the message tool. If the requester session is inactive, or its wake fails and
-   generated media is still missing from the completion reply, OpenClaw sends
+   generated media is still missing from the completion reply, Afora sends
    an idempotent direct fallback with the media.
 
 While a job is in flight, duplicate `video_generate` calls in the same
 session return the current task status instead of starting another
 generation. Use `action: "status"` to check without triggering a new
-generation, or `openclaw tasks list` / `openclaw tasks show <lookup>` from the
+generation, or `afora tasks list` / `afora tasks show <lookup>` from the
 CLI (see [Background tasks](/automation/tasks)).
 
 Outside of session-backed agent runs (for example, direct tool invocations),
 the tool falls back to inline generation and returns the final media path
 in the same turn.
 
-Generated video files save under OpenClaw-managed media storage when the
+Generated video files save under Afora-managed media storage when the
 provider returns bytes. The default cap is 16MB (the shared video media
 limit); `agents.defaults.mediaMaxMb` raises it for larger renders. When a
-provider also returns a hosted output URL, OpenClaw delivers that URL instead
+provider also returns a hosted output URL, Afora delivers that URL instead
 of failing the task if local persistence rejects an oversized file.
 
 ### Task lifecycle
@@ -95,9 +95,9 @@ of failing the task if local persistence rejects an oversized file.
 Check status from the CLI:
 
 ```bash
-openclaw tasks list
-openclaw tasks show <lookup>
-openclaw tasks cancel <lookup>
+afora tasks list
+afora tasks show <lookup>
+afora tasks cancel <lookup>
 ```
 
 ## Supported providers
@@ -194,9 +194,9 @@ role or use `first_frame` for single-image image-to-video.
 ### Style controls
 
 <ParamField path="aspectRatio" type="string">
-  Aspect-ratio hint such as `1:1`, `16:9`, `9:16`, `adaptive`, or a provider-specific value. OpenClaw normalizes or ignores unsupported values per provider.
+  Aspect-ratio hint such as `1:1`, `16:9`, `9:16`, `adaptive`, or a provider-specific value. Afora normalizes or ignores unsupported values per provider.
 </ParamField>
-<ParamField path="resolution" type="string">Resolution hint such as `360P`, `480P`, `540P`, `720P`, `768P`, `1080P`, `4K`, or a provider-specific value. OpenClaw normalizes or ignores unsupported values per provider.</ParamField>
+<ParamField path="resolution" type="string">Resolution hint such as `360P`, `480P`, `540P`, `720P`, `768P`, `1080P`, `4K`, or a provider-specific value. Afora normalizes or ignores unsupported values per provider.</ParamField>
 <ParamField path="durationSeconds" type="number">
   Target duration in seconds (rounded to nearest provider-supported value).
 </ParamField>
@@ -219,7 +219,7 @@ dimensions). Providers that do not declare it surface the value via
 </ParamField>
 <ParamField path="model" type="string">Provider/model override (e.g. `runway/gen4.5`).</ParamField>
 <ParamField path="filename" type="string">Output filename hint.</ParamField>
-<ParamField path="timeoutMs" type="number">Optional provider operation timeout in milliseconds. When omitted, OpenClaw uses `agents.defaults.mediaModels.video.timeoutMs` if configured, otherwise the plugin-authored provider default when one exists.</ParamField>
+<ParamField path="timeoutMs" type="number">Optional provider operation timeout in milliseconds. When omitted, Afora uses `agents.defaults.mediaModels.video.timeoutMs` if configured, otherwise the plugin-authored provider default when one exists.</ParamField>
 <ParamField path="providerOptions" type="object">
   Provider-specific options as a JSON object (e.g. `{"seed": 42, "draft": true}`).
   Providers that declare a typed schema validate the keys and types; unknown
@@ -229,7 +229,7 @@ dimensions). Providers that do not declare it surface the value via
 </ParamField>
 
 <Note>
-Not all providers support all parameters. OpenClaw normalizes duration to
+Not all providers support all parameters. Afora normalizes duration to
 the closest provider-supported value, and remaps translated geometry hints
 such as size-to-aspect-ratio when a fallback provider exposes a different
 control surface. Truly unsupported overrides are ignored on a best-effort
@@ -286,7 +286,7 @@ aggregated error includes the skip reason for each.
 
 ## Model selection
 
-OpenClaw resolves the model in this order:
+Afora resolves the model in this order:
 
 1. **`model` tool parameter** - if the agent specifies one in the call.
 2. **`agents.defaults.mediaModels.video.primary`** from config.
@@ -325,7 +325,7 @@ Automatic fallback across authenticated providers is always enabled. A per-call
     videos must be remote `http(s)` URLs.
   </Accordion>
   <Accordion title="BytePlus plugin">
-    Requires the official `@openclaw/byteplus-provider` plugin.
+    Requires the official `@afora/byteplus-provider` plugin.
     Provider id: `byteplus`.
 
     Models: `seedance-1-0-pro-250528` (default),
@@ -340,7 +340,7 @@ Automatic fallback across authenticated providers is always enabled. A per-call
 
   </Accordion>
   <Accordion title="BytePlus Seedance 1.5 plugin">
-    Requires the [`@openclaw/byteplus-modelark`](https://www.npmjs.com/package/@openclaw/byteplus-modelark)
+    Requires the [`@afora/byteplus-modelark`](https://www.npmjs.com/package/@afora/byteplus-modelark)
     plugin (external, not bundled). Provider id: `byteplus-seedance15`. Model:
     `seedance-1-5-pro-251215`.
 
@@ -355,7 +355,7 @@ Automatic fallback across authenticated providers is always enabled. A per-call
 
   </Accordion>
   <Accordion title="BytePlus Seedance 2.0">
-    Requires the [`@openclaw/byteplus-modelark`](https://www.npmjs.com/package/@openclaw/byteplus-modelark)
+    Requires the [`@afora/byteplus-modelark`](https://www.npmjs.com/package/@afora/byteplus-modelark)
     plugin (external, not bundled). Provider id: `byteplus-seedance2`. Models:
     `dreamina-seedance-2-0-260128`,
     `dreamina-seedance-2-0-fast-260128`.
@@ -376,7 +376,7 @@ Automatic fallback across authenticated providers is always enabled. A per-call
     image-to-video through the configured graph.
   </Accordion>
   <Accordion title="fal">
-    Uses a queue-backed flow for long-running jobs. OpenClaw waits up to 20
+    Uses a queue-backed flow for long-running jobs. Afora waits up to 20
     minutes by default before treating an in-progress fal queue job as timed
     out. Most fal video models
     accept a single image reference. Seedance 2.0 reference-to-video
@@ -399,7 +399,7 @@ Automatic fallback across authenticated providers is always enabled. A per-call
     a warning.
   </Accordion>
   <Accordion title="OpenRouter">
-    Uses OpenRouter's asynchronous `/videos` API. OpenClaw submits the
+    Uses OpenRouter's asynchronous `/videos` API. Afora submits the
     job, polls `polling_url`, and downloads either `unsigned_urls` or the
     documented job content endpoint. The bundled `google/veo-3.1-fast` default
     advertises 4/6/8 second durations, `720P`/`1080P` resolutions, and
@@ -484,7 +484,7 @@ rest, use `maxInputImagesByModel`, `maxInputVideosByModel`, or
 Opt-in live coverage for the shared bundled providers:
 
 ```bash
-OPENCLAW_LIVE_TEST=1 pnpm test:live -- extensions/video-generation-providers.live.test.ts
+AFORA_LIVE_TEST=1 pnpm test:live -- extensions/video-generation-providers.live.test.ts
 ```
 
 Repo wrapper:
@@ -499,7 +499,7 @@ profiles by default, and runs a release-safe smoke by default:
 - `generate` for every non-FAL provider in the sweep.
 - One-second lobster prompt.
 - Per-provider operation cap from
-  `OPENCLAW_LIVE_VIDEO_GENERATION_TIMEOUT_MS` (`180000` by default).
+  `AFORA_LIVE_VIDEO_GENERATION_TIMEOUT_MS` (`180000` by default).
 
 FAL is opt-in because provider-side queue latency can dominate release
 time:
@@ -508,7 +508,7 @@ time:
 pnpm test:live:media video --video-providers fal
 ```
 
-Set `OPENCLAW_LIVE_VIDEO_GENERATION_FULL_MODES=1` to also run declared
+Set `AFORA_LIVE_VIDEO_GENERATION_FULL_MODES=1` to also run declared
 transform modes the shared sweep can exercise safely with local media:
 
 - `imageToVideo` when `capabilities.imageToVideo.enabled`.
@@ -521,7 +521,7 @@ select `runway/gen4_aleph`.
 
 ## Configuration
 
-Set the default video-generation model in your OpenClaw config:
+Set the default video-generation model in your Afora config:
 
 ```json5
 {
@@ -541,7 +541,7 @@ Set the default video-generation model in your OpenClaw config:
 Or via the CLI:
 
 ```bash
-openclaw config set agents.defaults.mediaModels.video.primary "qwen/wan2.6-t2v"
+afora config set agents.defaults.mediaModels.video.primary "qwen/wan2.6-t2v"
 ```
 
 ## Related

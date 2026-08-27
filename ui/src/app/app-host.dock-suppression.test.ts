@@ -25,7 +25,7 @@ afterEach(() => {
   resetAppHostTestGlobals();
 });
 
-describe("OpenClaw shell dock suppression", () => {
+describe("Afora shell dock suppression", () => {
   it("applies route ownership to shell panels without session-gating desktop", () => {
     vi.stubGlobal("localStorage", createStorageMock());
     vi.stubGlobal(
@@ -44,7 +44,7 @@ describe("OpenClaw shell dock suppression", () => {
           hello: {
             auth: { role: "operator", scopes: ["operator.admin"] },
             features: {
-              methods: ["terminal.open", "browser.request", "openclaw.chat", "desktop.observe"],
+              methods: ["terminal.open", "browser.request", "afora.chat", "desktop.observe"],
             },
           },
           lastError: null,
@@ -113,13 +113,13 @@ describe("OpenClaw shell dock suppression", () => {
       theme: { mode: "dark" },
       preload: vi.fn(),
     } as unknown as ApplicationContext;
-    const shell = document.createElement("openclaw-app-shell") as unknown as ShellRenderState;
+    const shell = document.createElement("afora-app-shell") as unknown as ShellRenderState;
     shell.runtime = { context, router: {} } as unknown as ApplicationRuntime;
     shell.activeSessionKey = "agent:main:main";
     const container = document.createElement("div");
     const desktopAvailable = () =>
       (
-        container.querySelector("openclaw-desktop-panel") as
+        container.querySelector("afora-desktop-panel") as
           | (HTMLElement & {
               available: boolean;
             })
@@ -130,21 +130,21 @@ describe("OpenClaw shell dock suppression", () => {
     renderLit(shell.render(), container);
     expect(
       (
-        container.querySelector("openclaw-terminal-panel") as HTMLElement & {
+        container.querySelector("afora-terminal-panel") as HTMLElement & {
           agentId: string | null;
         }
       ).agentId,
     ).toBe("research");
     expect(
       (
-        container.querySelector("openclaw-terminal-panel") as HTMLElement & {
+        container.querySelector("afora-terminal-panel") as HTMLElement & {
           suppressed: boolean;
         }
       ).suppressed,
     ).toBe(true);
     expect(
       (
-        container.querySelector("openclaw-custodian-panel") as HTMLElement & {
+        container.querySelector("afora-custodian-panel") as HTMLElement & {
           suppressed: boolean;
         }
       ).suppressed,
@@ -154,7 +154,7 @@ describe("OpenClaw shell dock suppression", () => {
     renderLit(shell.render(), container);
     expect(
       (
-        container.querySelector("openclaw-custodian-panel") as HTMLElement & {
+        container.querySelector("afora-custodian-panel") as HTMLElement & {
           suppressed: boolean;
         }
       ).suppressed,
@@ -164,13 +164,13 @@ describe("OpenClaw shell dock suppression", () => {
     renderLit(shell.render(), container);
     expect(
       (
-        container.querySelector("openclaw-terminal-panel") as HTMLElement & {
+        container.querySelector("afora-terminal-panel") as HTMLElement & {
           sessionBottomOnly: boolean;
         }
       ).sessionBottomOnly,
     ).toBe(true);
-    expect(container.querySelector("openclaw-browser-panel")).toBeNull();
-    expect(container.querySelector("openclaw-desktop-panel")).toBeNull();
+    expect(container.querySelector("afora-browser-panel")).toBeNull();
+    expect(container.querySelector("afora-desktop-panel")).toBeNull();
 
     shell.routeState = {
       routeId: "new-session",
@@ -179,7 +179,7 @@ describe("OpenClaw shell dock suppression", () => {
     renderLit(shell.render(), container);
     expect(
       (
-        container.querySelector("openclaw-terminal-panel") as HTMLElement & {
+        container.querySelector("afora-terminal-panel") as HTMLElement & {
           agentId: string | null;
         }
       ).agentId,
@@ -192,7 +192,7 @@ describe("OpenClaw shell dock suppression", () => {
     renderLit(shell.render(), container);
     expect(
       (
-        container.querySelector("openclaw-terminal-panel") as HTMLElement & {
+        container.querySelector("afora-terminal-panel") as HTMLElement & {
           agentId: string | null;
         }
       ).agentId,

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Builds OpenClaw packages and plugin SDK artifacts with cache-aware orchestration.
+// Builds Afora packages and plugin SDK artifacts with cache-aware orchestration.
 
 import { spawnSync, type SpawnSyncOptions } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -7,7 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { pathToFileURL } from "node:url";
-import { asRecord } from "@openclaw/normalization-core/record-coerce";
+import { asRecord } from "@afora/normalization-core/record-coerce";
 import prettyMilliseconds from "pretty-ms";
 import { resolveBuildIdentityEnvironment } from "./lib/build-identity.mts";
 import {
@@ -117,8 +117,8 @@ const TSDOWN_UNIFIED_CACHE_INPUTS = [
 const declarationCacheOutputs = (roots: string[]) =>
   roots.map((root) => ({ path: root, extensions: TSDOWN_DECLARATION_EXTENSIONS }));
 const PLUGIN_SDK_ENTRY_DTS_CACHE_ENV = [
-  "OPENCLAW_BUILD_PRIVATE_QA",
-  "OPENCLAW_PLUGIN_SDK_CANONICAL_DTS",
+  "AFORA_BUILD_PRIVATE_QA",
+  "AFORA_PLUGIN_SDK_CANONICAL_DTS",
 ];
 const PLUGIN_SDK_ENTRY_DTS_SHARED_CACHE_INPUTS = [
   "scripts/write-plugin-sdk-entry-dts.ts",
@@ -176,7 +176,7 @@ export const BUILD_ALL_STEPS: BuildAllStep[] = [
   {
     ...tsxStep("tsdown-ai", "scripts/tsdown-build.mts", "--config", "tsdown.ai.config.ts"),
     cache: {
-      env: ["OPENCLAW_RUN_NODE_SKIP_DTS_BUILD"],
+      env: ["AFORA_RUN_NODE_SKIP_DTS_BUILD"],
       inputs: [
         ...TSDOWN_DECLARATION_TOOL_INPUTS,
         "tsdown.ai.config.ts",
@@ -185,7 +185,7 @@ export const BUILD_ALL_STEPS: BuildAllStep[] = [
       outputs: declarationCacheOutputs([TSDOWN_AI_OUTPUT_ROOT]),
       restore: "always",
       runOnHit: {
-        env: { OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: "1" },
+        env: { AFORA_RUN_NODE_SKIP_DTS_BUILD: "1" },
       },
     },
   },
@@ -199,12 +199,12 @@ export const BUILD_ALL_STEPS: BuildAllStep[] = [
       TSDOWN_PACKAGE_CONFIG_GROUP,
     ),
     cache: {
-      env: ["OPENCLAW_RUN_NODE_SKIP_DTS_BUILD"],
+      env: ["AFORA_RUN_NODE_SKIP_DTS_BUILD"],
       inputs: [...TSDOWN_DECLARATION_TOOL_INPUTS, "tsdown.config.ts", TSDOWN_PACKAGES_CACHE_INPUT],
       outputs: declarationCacheOutputs(TSDOWN_MAIN_PACKAGE_OUTPUT_ROOTS),
       restore: "always",
       runOnHit: {
-        env: { OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: "1" },
+        env: { AFORA_RUN_NODE_SKIP_DTS_BUILD: "1" },
       },
     },
   },
@@ -218,7 +218,7 @@ export const BUILD_ALL_STEPS: BuildAllStep[] = [
       TSDOWN_UNIFIED_CONFIG_GROUP,
     ),
     cache: {
-      env: ["OPENCLAW_BUILD_PRIVATE_QA", "OPENCLAW_RUN_NODE_SKIP_DTS_BUILD"],
+      env: ["AFORA_BUILD_PRIVATE_QA", "AFORA_RUN_NODE_SKIP_DTS_BUILD"],
       inputs: [
         ...TSDOWN_DECLARATION_TOOL_INPUTS,
         "tsdown.config.ts",
@@ -226,12 +226,12 @@ export const BUILD_ALL_STEPS: BuildAllStep[] = [
       ],
       outputs: declarationCacheOutputs(["dist"]),
       requiredOutputs: (env) =>
-        env.OPENCLAW_BUILD_PRIVATE_QA === "1"
+        env.AFORA_BUILD_PRIVATE_QA === "1"
           ? listPluginSdkDeclarationOutputs(pluginSdkEntrypoints)
           : listPluginSdkDeclarationOutputs(),
       restore: "always",
       runOnHit: {
-        env: { OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: "1" },
+        env: { AFORA_RUN_NODE_SKIP_DTS_BUILD: "1" },
       },
     },
   },
@@ -248,7 +248,7 @@ export const BUILD_ALL_STEPS: BuildAllStep[] = [
   {
     ...tsxStep("write-plugin-sdk-entry-dts", "scripts/write-plugin-sdk-entry-dts.ts"),
     env: {
-      OPENCLAW_PLUGIN_SDK_CANONICAL_DTS: "1",
+      AFORA_PLUGIN_SDK_CANONICAL_DTS: "1",
     },
     cache: {
       env: PLUGIN_SDK_ENTRY_DTS_CACHE_ENV,
@@ -264,7 +264,7 @@ export const BUILD_ALL_STEPS: BuildAllStep[] = [
     kind: "pnpm",
     pnpmArgs: ["ui:build"],
     // No build-all cache: ui/vite.config.ts derives the Control UI build ID
-    // from package.json, git HEAD, and OPENCLAW_CONTROL_UI_BUILD_ID env, so a
+    // from package.json, git HEAD, and AFORA_CONTROL_UI_BUILD_ID env, so a
     // file-input signature cannot exactly invalidate generated assets and a
     // warm hit could restore stale service-worker/app cache metadata.
     cache: undefined,
@@ -363,7 +363,7 @@ export const BUILD_ALL_PROFILES: Record<string, string[]> = {
 export const BUILD_ALL_PROFILE_STEP_ENV: Record<string, Record<string, NodeJS.ProcessEnv>> = {
   full: {
     "tsdown-unified": {
-      OPENCLAW_PRESERVE_CLI_STARTUP_METADATA: "1",
+      AFORA_PRESERVE_CLI_STARTUP_METADATA: "1",
     },
   },
   ciArtifacts: {
@@ -372,39 +372,39 @@ export const BUILD_ALL_PROFILE_STEP_ENV: Record<string, Record<string, NodeJS.Pr
       // CI's dist consumers are runtime JS only; the plugin-sdk gate below
       // self-builds its scoped declarations instead. Release/package builds
       // (full profile, docker packaging) keep canonical dts.
-      OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: "1",
-      OPENCLAW_PRESERVE_CLI_STARTUP_METADATA: "1",
+      AFORA_RUN_NODE_SKIP_DTS_BUILD: "1",
+      AFORA_PRESERVE_CLI_STARTUP_METADATA: "1",
     },
     "write-plugin-sdk-entry-dts": {
-      OPENCLAW_PLUGIN_SDK_CANONICAL_DTS: "0",
+      AFORA_PLUGIN_SDK_CANONICAL_DTS: "0",
     },
   },
   gatewayWatch: {
     tsdown: {
-      OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: "1",
+      AFORA_RUN_NODE_SKIP_DTS_BUILD: "1",
     },
     "runtime-postbuild": {
-      OPENCLAW_RUNTIME_POSTBUILD_STATIC_ASSETS: "0",
+      AFORA_RUNTIME_POSTBUILD_STATIC_ASSETS: "0",
     },
   },
   qaRuntime: {
     tsdown: {
-      OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: "1",
+      AFORA_RUN_NODE_SKIP_DTS_BUILD: "1",
     },
   },
   sourcePerformance: {
     tsdown: {
-      OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: "1",
-      OPENCLAW_PRESERVE_CLI_STARTUP_METADATA: "1",
+      AFORA_RUN_NODE_SKIP_DTS_BUILD: "1",
+      AFORA_PRESERVE_CLI_STARTUP_METADATA: "1",
     },
   },
   cliStartup: {
     tsdown: {
-      OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: "1",
-      OPENCLAW_PRESERVE_CLI_STARTUP_METADATA: "1",
+      AFORA_RUN_NODE_SKIP_DTS_BUILD: "1",
+      AFORA_PRESERVE_CLI_STARTUP_METADATA: "1",
     },
     "runtime-postbuild": {
-      OPENCLAW_RUNTIME_POSTBUILD_STATIC_ASSETS: "0",
+      AFORA_RUNTIME_POSTBUILD_STATIC_ASSETS: "0",
     },
   },
 };
@@ -413,7 +413,7 @@ function buildAllUsage() {
   return [
     "Usage: node --import tsx scripts/build-all.mts [profile]",
     "",
-    "Builds OpenClaw artifacts for the selected profile.",
+    "Builds Afora artifacts for the selected profile.",
     "",
     "Profiles:",
     ...Object.keys(BUILD_ALL_PROFILES).map((profile) => `  ${profile}`),
@@ -472,7 +472,7 @@ export function resolveBuildAllSteps(profile = "full"): BuildAllStep[] {
       // clears dist. Canonical mode keeps its narrower generated-dts cache.
       if (
         step.label === "write-plugin-sdk-entry-dts" &&
-        mergedEnv.OPENCLAW_PLUGIN_SDK_CANONICAL_DTS !== "1"
+        mergedEnv.AFORA_PLUGIN_SDK_CANONICAL_DTS !== "1"
       ) {
         merged.cache = {
           ...step.cache,
@@ -528,7 +528,7 @@ export function resolveBuildAllStep(step: BuildAllStep, params: BuildAllStepPara
   const env = resolveStepEnv(step, params.env ?? process.env, platform);
   if (step.kind === "pnpm") {
     const nodeFallbackArgs =
-      env.OPENCLAW_BUILD_ALL_NO_PNPM === "1" ? PNPM_STEP_NODE_FALLBACKS.get(step.label) : undefined;
+      env.AFORA_BUILD_ALL_NO_PNPM === "1" ? PNPM_STEP_NODE_FALLBACKS.get(step.label) : undefined;
     if (nodeFallbackArgs) {
       return {
         command: params.nodeExecPath ?? nodeBin,
@@ -951,7 +951,7 @@ if (isMainModule()) {
       const cacheState = resolveBuildAllStepCacheState(step, { env: buildEnv });
       let stepToRun = step;
       let reusedCache = false;
-      if (process.env.OPENCLAW_BUILD_CACHE !== "0" && cacheState.fresh) {
+      if (process.env.AFORA_BUILD_CACHE !== "0" && cacheState.fresh) {
         restoreBuildAllStepCacheOutputs(cacheState);
         const cacheHitStep = resolveBuildAllStepOnCacheHit(step);
         if (!cacheHitStep) {

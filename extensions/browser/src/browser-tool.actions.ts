@@ -4,11 +4,11 @@
  * Converts model-facing parameters into browser control client calls and wraps
  * browser-originated text as untrusted content before returning it to agents.
  */
-import type { AgentToolResult } from "openclaw/plugin-sdk/agent-core";
+import type { AgentToolResult } from "afora-agent/plugin-sdk/agent-core";
 import {
   readNonNegativeIntegerParam,
   readPositiveIntegerParam,
-} from "openclaw/plugin-sdk/param-readers";
+} from "afora-agent/plugin-sdk/param-readers";
 import {
   browserAct,
   browserConsoleMessages,

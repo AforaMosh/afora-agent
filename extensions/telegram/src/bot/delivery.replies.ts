@@ -4,8 +4,8 @@ import type { Message } from "grammy/types";
 import {
   createOutboundPayloadPlan,
   projectOutboundPayloadPlanForDelivery,
-} from "openclaw/plugin-sdk/channel-outbound";
-import type { MarkdownTableMode, ReplyToMode } from "openclaw/plugin-sdk/config-contracts";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import type { MarkdownTableMode, ReplyToMode } from "afora-agent/plugin-sdk/config-contracts";
 import {
   buildCanonicalSentMessageHookContext,
   createInternalHookEvent,
@@ -14,21 +14,21 @@ import {
   toPluginMessageContext,
   toPluginMessageSentEvent,
   triggerInternalHook,
-} from "openclaw/plugin-sdk/hook-runtime";
-import type { ReplyPayloadDelivery } from "openclaw/plugin-sdk/interactive-runtime";
-import { normalizeMessagePresentation } from "openclaw/plugin-sdk/interactive-runtime";
+} from "afora-agent/plugin-sdk/hook-runtime";
+import type { ReplyPayloadDelivery } from "afora-agent/plugin-sdk/interactive-runtime";
+import { normalizeMessagePresentation } from "afora-agent/plugin-sdk/interactive-runtime";
 import {
   buildOutboundMediaLoadOptions,
   probeVideoDimensions,
-} from "openclaw/plugin-sdk/media-runtime";
-import { getGlobalHookRunner } from "openclaw/plugin-sdk/plugin-runtime";
-import type { ChunkMode } from "openclaw/plugin-sdk/reply-chunking";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-payload";
-import { isSingleUseReplyToMode } from "openclaw/plugin-sdk/reply-reference";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import { danger, logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { formatErrorMessage } from "openclaw/plugin-sdk/ssrf-runtime";
-import { loadWebMedia } from "openclaw/plugin-sdk/web-media";
+} from "afora-agent/plugin-sdk/media-runtime";
+import { getGlobalHookRunner } from "afora-agent/plugin-sdk/plugin-runtime";
+import type { ChunkMode } from "afora-agent/plugin-sdk/reply-chunking";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-payload";
+import { isSingleUseReplyToMode } from "afora-agent/plugin-sdk/reply-reference";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+import { danger, logVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/ssrf-runtime";
+import { loadWebMedia } from "afora-agent/plugin-sdk/web-media";
 import { resolveTelegramInlineButtons, type TelegramInlineButtons } from "../button-types.js";
 import {
   createTelegramChunkDeliveryTracker,
@@ -685,7 +685,7 @@ export function emitTelegramMessageSentHooks(params: EmitMessageSentHookParams):
 
 export async function deliverReplies(params: {
   replies: ReplyPayload[];
-  cfg?: import("openclaw/plugin-sdk/config-contracts").OpenClawConfig;
+  cfg?: import("afora-agent/plugin-sdk/config-contracts").AforaConfig;
   ownerAgentId?: string;
   chatId: string;
   accountId?: string;

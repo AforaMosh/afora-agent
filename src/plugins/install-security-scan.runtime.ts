@@ -1,12 +1,12 @@
 // Runtime bridge for plugin install security scanning.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-coercion";
+import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
 import { sanitizeTerminalText } from "../../packages/terminal-core/src/safe-text.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { tryReadJson } from "../infra/json-files.js";
-import { resolveOpenClawPackageRootSync } from "../infra/openclaw-root.js";
+import { resolveAforaPackageRootSync } from "../infra/afora-root.js";
 import {
   runInstallPolicy,
   type InstallPolicyFinding,
@@ -33,7 +33,7 @@ const MAX_INSTALL_POLICY_NOTICE_CHARS = 4_000;
 const INSTALL_POLICY_REVIEW_GUIDANCE = [
   "This invocation cannot approve install policy warnings.",
   "To continue:",
-  "  • Run the matching direct `openclaw plugins ...` or `openclaw skills ...` command interactively.",
+  "  • Run the matching direct `afora plugins ...` or `afora skills ...` command interactively.",
   `  • For reviewed direct CLI automation, add ${INSTALL_POLICY_ACKNOWLEDGEMENT_FLAG}.`,
   "  • If no equivalent direct command exists, change security.installPolicy to allow this reviewed request, then retry.",
   "  • --force does not approve install policy warnings.",
@@ -201,13 +201,13 @@ function pathContainsNodeModulesSegment(relativePath: string): boolean {
     .includes("node_modules");
 }
 
-function isPackageRootOpenClawPeerSymlink(segments: string[]): boolean {
+function isPackageRootAforaPeerSymlink(segments: string[]): boolean {
   return (
-    (segments.length === 2 && segments[0] === "node_modules" && segments[1] === "openclaw") ||
+    (segments.length === 2 && segments[0] === "node_modules" && segments[1] === "afora") ||
     (segments.length === 3 &&
       segments[0] === "node_modules" &&
       segments[1] === ".bin" &&
-      segments[2] === "openclaw")
+      segments[2] === "afora")
   );
 }
 
@@ -223,23 +223,23 @@ function isManagedNpmRootPackagePeerSymlink(segments: string[]): boolean {
   ) {
     return false;
   }
-  return isPackageRootOpenClawPeerSymlink(segments.slice(packageEndIndex));
+  return isPackageRootAforaPeerSymlink(segments.slice(packageEndIndex));
 }
 
-function isTrustedOpenClawPeerSymlink(params: {
+function isTrustedAforaPeerSymlink(params: {
   allowManagedNpmRootPackagePeerSymlinks?: boolean;
   relativePath: string;
 }): boolean {
   const segments = params.relativePath.split(/[\\/]+/);
   return (
-    isPackageRootOpenClawPeerSymlink(segments) ||
+    isPackageRootAforaPeerSymlink(segments) ||
     (params.allowManagedNpmRootPackagePeerSymlinks === true &&
       isManagedNpmRootPackagePeerSymlink(segments))
   );
 }
 
-async function resolveTrustedHostOpenClawRootRealPath(): Promise<string | null> {
-  const hostRoot = resolveOpenClawPackageRootSync({
+async function resolveTrustedHostAforaRootRealPath(): Promise<string | null> {
+  const hostRoot = resolveAforaPackageRootSync({
     argv1: process.argv[1],
     cwd: process.cwd(),
     moduleUrl: import.meta.url,
@@ -250,13 +250,13 @@ async function resolveTrustedHostOpenClawRootRealPath(): Promise<string | null> 
   return await fs.realpath(hostRoot).catch(() => path.resolve(hostRoot));
 }
 
-function isTrustedHostOpenClawPath(params: {
+function isTrustedHostAforaPath(params: {
   resolvedTargetPath: string;
-  trustedHostOpenClawRootRealPath: string | null;
+  trustedHostAforaRootRealPath: string | null;
 }): boolean {
   return (
-    params.trustedHostOpenClawRootRealPath !== null &&
-    isPathInside(params.trustedHostOpenClawRootRealPath, params.resolvedTargetPath)
+    params.trustedHostAforaRootRealPath !== null &&
+    isPathInside(params.trustedHostAforaRootRealPath, params.resolvedTargetPath)
   );
 }
 
@@ -265,7 +265,7 @@ async function inspectNodeModulesSymlinkTarget(params: {
   rootRealPath: string;
   symlinkPath: string;
   symlinkRelativePath: string;
-  trustedHostOpenClawRootRealPath: string | null;
+  trustedHostAforaRootRealPath: string | null;
 }): Promise<void> {
   let resolvedTargetPath: string;
   try {
@@ -281,13 +281,13 @@ async function inspectNodeModulesSymlinkTarget(params: {
 
   if (!isPathInside(params.rootRealPath, resolvedTargetPath)) {
     if (
-      isTrustedOpenClawPeerSymlink({
+      isTrustedAforaPeerSymlink({
         allowManagedNpmRootPackagePeerSymlinks: params.allowManagedNpmRootPackagePeerSymlinks,
         relativePath: params.symlinkRelativePath,
       }) &&
-      isTrustedHostOpenClawPath({
+      isTrustedHostAforaPath({
         resolvedTargetPath,
-        trustedHostOpenClawRootRealPath: params.trustedHostOpenClawRootRealPath,
+        trustedHostAforaRootRealPath: params.trustedHostAforaRootRealPath,
       })
     ) {
       return;
@@ -310,11 +310,11 @@ function readPositiveIntegerEnv(name: string, fallback: number): number {
 function resolvePackageTraversalLimits(): PackageTraversalLimits {
   return {
     maxDepth: readPositiveIntegerEnv(
-      "OPENCLAW_INSTALL_SCAN_MAX_DEPTH",
+      "AFORA_INSTALL_SCAN_MAX_DEPTH",
       DEFAULT_PACKAGE_TRAVERSAL_LIMITS.maxDepth,
     ),
     maxDirectories: readPositiveIntegerEnv(
-      "OPENCLAW_INSTALL_SCAN_MAX_DIRECTORIES",
+      "AFORA_INSTALL_SCAN_MAX_DIRECTORIES",
       DEFAULT_PACKAGE_TRAVERSAL_LIMITS.maxDirectories,
     ),
   };
@@ -354,7 +354,7 @@ function collectManifestRuntimeDependencyNames(manifest: PackageManifest): strin
     }
   }
   for (const dependencyName of Object.keys(manifest.peerDependencies ?? {})) {
-    if (dependencyName !== "openclaw" && isInstallScannableDependencyName(dependencyName)) {
+    if (dependencyName !== "afora" && isInstallScannableDependencyName(dependencyName)) {
       dependencyNames.add(dependencyName);
     }
   }
@@ -366,7 +366,7 @@ async function resolveInstalledPackageScanRoot(params: {
   boundaryRealPath: string;
   dependencyName: string;
   packageDir: string;
-  trustedHostOpenClawRootRealPath: string | null;
+  trustedHostAforaRootRealPath: string | null;
 }): Promise<InstalledPackageScanRoot | undefined> {
   const packageDir = path.join(params.packageDir, "node_modules", params.dependencyName);
   let stats: Awaited<ReturnType<typeof fs.stat>>;
@@ -386,10 +386,10 @@ async function resolveInstalledPackageScanRoot(params: {
   if (!isSamePathOrInside(params.boundaryRealPath, realPath)) {
     if (
       params.allowManagedNpmRootPackagePeerSymlinks === true &&
-      params.dependencyName === "openclaw" &&
-      isTrustedHostOpenClawPath({
+      params.dependencyName === "afora" &&
+      isTrustedHostAforaPath({
         resolvedTargetPath: realPath,
-        trustedHostOpenClawRootRealPath: params.trustedHostOpenClawRootRealPath,
+        trustedHostAforaRootRealPath: params.trustedHostAforaRootRealPath,
       })
     ) {
       return undefined;
@@ -410,7 +410,7 @@ async function collectInstalledPackageScanRoots(params: {
   const limits = resolvePackageTraversalLimits();
   const boundaryDir = params.dependencyScanRootDir ?? params.packageDir;
   const boundaryRealPath = await fs.realpath(boundaryDir).catch(() => path.resolve(boundaryDir));
-  const trustedHostOpenClawRootRealPath = await resolveTrustedHostOpenClawRootRealPath();
+  const trustedHostAforaRootRealPath = await resolveTrustedHostAforaRootRealPath();
   const packageRealPath = await fs
     .realpath(params.packageDir)
     .catch(() => path.resolve(params.packageDir));
@@ -462,7 +462,7 @@ async function collectInstalledPackageScanRoots(params: {
         boundaryRealPath,
         dependencyName,
         packageDir: current.packageDir,
-        trustedHostOpenClawRootRealPath,
+        trustedHostAforaRootRealPath,
       });
       const candidate =
         nestedCandidate ??
@@ -472,7 +472,7 @@ async function collectInstalledPackageScanRoots(params: {
               boundaryRealPath,
               dependencyName,
               packageDir: params.dependencyScanRootDir,
-              trustedHostOpenClawRootRealPath,
+              trustedHostAforaRootRealPath,
             })
           : undefined);
       if (candidate && !visitedRealPaths.has(candidate.realPath)) {
@@ -503,7 +503,7 @@ async function validatePackageDependencyBoundaries(params: {
   const limits = resolvePackageTraversalLimits();
   const rootDir = params.rootDir;
   const rootRealPath = await fs.realpath(rootDir).catch(() => rootDir);
-  const trustedHostOpenClawRootRealPath = await resolveTrustedHostOpenClawRootRealPath();
+  const trustedHostAforaRootRealPath = await resolveTrustedHostAforaRootRealPath();
   const queue: Array<{ depth: number; dir: string }> = [{ depth: 0, dir: rootDir }];
   const visitedDirectories = new Set<string>();
   let queueIndex = 0;
@@ -556,7 +556,7 @@ async function validatePackageDependencyBoundaries(params: {
             rootRealPath,
             symlinkPath: nextPath,
             symlinkRelativePath: relativeNextPath,
-            trustedHostOpenClawRootRealPath,
+            trustedHostAforaRootRealPath,
           });
         }
         continue;
@@ -661,7 +661,7 @@ function resolvePolicySource(params: {
   if (params.requestKind === "skill-install") {
     switch (params.origin?.type) {
       case "clawhub":
-        return { kind: "clawhub", authority: "openclaw", mutable: false, network: true };
+        return { kind: "clawhub", authority: "afora", mutable: false, network: true };
       case "git":
         return {
           kind: "git",
@@ -673,11 +673,11 @@ function resolvePolicySource(params: {
         return { kind: "local-path", authority: "user", mutable: true, network: false };
       case "upload":
         return { kind: "upload", authority: "user", mutable: false, network: false };
-      case "openclaw-bundled":
-        return { kind: "bundled", authority: "openclaw", mutable: false, network: false };
-      case "openclaw-managed":
-      case "openclaw-extra":
-        return { kind: "managed", authority: "openclaw", mutable: false, network: false };
+      case "afora-bundled":
+        return { kind: "bundled", authority: "afora", mutable: false, network: false };
+      case "afora-managed":
+      case "afora-extra":
+        return { kind: "managed", authority: "afora", mutable: false, network: false };
       default:
         return { kind: "workspace", authority: "user", mutable: true, network: false };
     }
@@ -698,7 +698,7 @@ function resolvePolicySource(params: {
   return { kind: "local-path", authority: "unknown", mutable: true, network: false };
 }
 
-function shouldBypassOpenClawInstallFriction(params: {
+function shouldBypassAforaInstallFriction(params: {
   source?: InstallPolicySource;
   trustedSourceLinkedOfficialInstall?: boolean;
 }): boolean {
@@ -713,12 +713,12 @@ function shouldBypassOpenClawInstallFriction(params: {
     return source.kind === "clawhub" || source.kind === "git" || source.kind === "npm";
   }
   return (
-    source.authority === "openclaw" && (source.kind === "bundled" || source.kind === "managed")
+    source.authority === "afora" && (source.kind === "bundled" || source.kind === "managed")
   );
 }
 
 async function runOperatorInstallPolicy(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   dangerouslyForceUnsafeInstall?: boolean;
   logger: InstallScanLogger;
   onInstallPolicyWarning?: InstallSafetyOverrides["onInstallPolicyWarning"];
@@ -913,7 +913,7 @@ async function runOperatorInstallPolicy(params: {
 
 export async function scanBundleInstallSourceRuntime(
   params: InstallSafetyOverrides & {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     logger: InstallScanLogger;
     pluginId: string;
     sourceDir: string;
@@ -950,7 +950,7 @@ export async function scanBundleInstallSourceRuntime(
   await validatePackageDependencyBoundaries({
     rootDir: params.sourceDir,
   });
-  if (shouldBypassOpenClawInstallFriction({ source: params.source })) {
+  if (shouldBypassAforaInstallFriction({ source: params.source })) {
     return await runPolicy();
   }
 
@@ -982,7 +982,7 @@ export async function scanBundleInstallSourceRuntime(
 
 export async function scanPackageInstallSourceRuntime(
   params: InstallSafetyOverrides & {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     extensions: string[];
     logger: InstallScanLogger;
     packageDir: string;
@@ -1030,7 +1030,7 @@ export async function scanPackageInstallSourceRuntime(
     rootDir: params.packageDir,
   });
   if (
-    shouldBypassOpenClawInstallFriction({
+    shouldBypassAforaInstallFriction({
       source: params.source,
       trustedSourceLinkedOfficialInstall: params.trustedSourceLinkedOfficialInstall,
     })
@@ -1069,7 +1069,7 @@ export async function scanPackageInstallSourceRuntime(
 export async function scanInstalledPackageDependencyTreeRuntime(params: {
   additionalPackageDirs?: string[];
   allowManagedNpmRootPackagePeerSymlinks?: boolean;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   dependencyScanRootDir?: string;
   logger: InstallScanLogger;
   mode?: "install" | "update";
@@ -1122,7 +1122,7 @@ export async function scanInstalledPackageDependencyTreeRuntime(params: {
 
 export async function scanFileInstallSourceRuntime(
   params: InstallSafetyOverrides & {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     filePath: string;
     logger: InstallScanLogger;
     mode?: "install" | "update";
@@ -1176,7 +1176,7 @@ export async function scanFileInstallSourceRuntime(
 }
 
 export async function preflightPluginNpmInstallPolicyRuntime(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   dangerouslyForceUnsafeInstall?: boolean;
   logger: InstallScanLogger;
   mode?: "install" | "update";
@@ -1212,7 +1212,7 @@ export async function preflightPluginNpmInstallPolicyRuntime(params: {
 }
 
 export async function preflightPluginGitInstallPolicyRuntime(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   dangerouslyForceUnsafeInstall?: boolean;
   logger: InstallScanLogger;
   mode?: "install" | "update";
@@ -1244,7 +1244,7 @@ export async function preflightPluginGitInstallPolicyRuntime(params: {
 }
 
 export async function evaluateSkillInstallPolicyRuntime(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   installId: string;
   installSpec?: SkillInstallSpec;
   logger: InstallScanLogger;
@@ -1277,7 +1277,7 @@ export async function evaluateSkillInstallPolicyRuntime(params: {
         ...(params.installSpec ? { installSpec: params.installSpec } : {}),
       },
     });
-  if (shouldBypassOpenClawInstallFriction({ source: params.source })) {
+  if (shouldBypassAforaInstallFriction({ source: params.source })) {
     return await runPolicy();
   }
   const policyResult = await runPolicy();

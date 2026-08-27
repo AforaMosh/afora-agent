@@ -94,7 +94,7 @@ function createReachableTarget(
   id: string,
   self: GatewayStatusProbedTarget["self"],
   target?: Partial<GatewayStatusProbedTarget["target"]>,
-  configPath = "/tmp/openclaw/config.json",
+  configPath = "/tmp/afora/config.json",
 ): GatewayStatusProbedTarget {
   const probe = createProbe("admin_capable", {
     ok: true,
@@ -185,7 +185,7 @@ describe("gateway status output", () => {
     expect(warnings.find((entry) => entry.code === "no_gateway_reachable")).toStrictEqual({
       code: "no_gateway_reachable",
       message:
-        "No gateway answered any probe and Bonjour discovery returned no local gateways. Run `openclaw gateway status --deep --require-rpc` to inspect service state, config paths, listener owners, and logs; include `ss -ltnp` or `lsof -nP -iTCP:<port> -sTCP:LISTEN` for the configured port when filing a report.",
+        "No gateway answered any probe and Bonjour discovery returned no local gateways. Run `afora gateway status --deep --require-rpc` to inspect service state, config paths, listener owners, and logs; include `ss -ltnp` or `lsof -nP -iTCP:<port> -sTCP:LISTEN` for the configured port when filing a report.",
       targetIds: ["localLoopback"],
     });
   });

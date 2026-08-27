@@ -1,6 +1,6 @@
 // Verifies correlation metadata for plugin hook execution.
 import { spawnSync } from "node:child_process";
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHookRunner } from "./hooks.js";
 import { addTestHook, TEST_PLUGIN_AGENT_CTX } from "./hooks.test-fixtures.js";
@@ -102,7 +102,7 @@ describe("hook correlation fields", () => {
           agentId: "test-agent",
           sessionKey: "test-session",
           sessionId: "test-session-id",
-          workspaceDir: "/tmp/openclaw-test",
+          workspaceDir: "/tmp/afora-test",
           messageProvider: "test",
         },
         { unrefTimeout: false },

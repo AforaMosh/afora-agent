@@ -8,12 +8,12 @@ import {
   removeCommandGroupNames,
   type CommandGroupEntry,
 } from "../cli/program/register-command-groups.js";
-import type { OpenClawPluginCliRootCommandDescriptor, PluginLogger } from "./types.js";
+import type { AforaPluginCliRootCommandDescriptor, PluginLogger } from "./types.js";
 
 type PluginCliCommandGroupEntry = CommandGroupEntry & {
   pluginId: string;
   parentPath?: readonly string[];
-  placeholders: readonly OpenClawPluginCliRootCommandDescriptor[];
+  placeholders: readonly AforaPluginCliRootCommandDescriptor[];
 };
 
 type PluginCliCommandGroupMode = "eager" | "lazy";
@@ -23,7 +23,7 @@ function canRegisterPluginCliLazily(entry: PluginCliCommandGroupEntry): boolean 
     return false;
   }
   const descriptorNames = new Set(
-    (entry.placeholders as readonly OpenClawPluginCliRootCommandDescriptor[]).map(
+    (entry.placeholders as readonly AforaPluginCliRootCommandDescriptor[]).map(
       (descriptor) => descriptor.name,
     ),
   );
@@ -50,7 +50,7 @@ function commandNamesFor(program: Command): Set<string> {
 
 function applyMachineOutputMode(
   program: Command,
-  descriptor: OpenClawPluginCliRootCommandDescriptor,
+  descriptor: AforaPluginCliRootCommandDescriptor,
 ): void {
   if (!descriptor.machineOutput) {
     return;

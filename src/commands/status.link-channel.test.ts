@@ -1,6 +1,6 @@
 // Status link-channel tests cover channel link status summaries and redaction.
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 
 const pluginRegistry = vi.hoisted(() => ({ list: [] as unknown[] }));
 
@@ -34,7 +34,7 @@ describe("resolveLinkChannelContext", () => {
       },
     ];
 
-    const result = await resolveLinkChannelContext({} as OpenClawConfig);
+    const result = await resolveLinkChannelContext({} as AforaConfig);
     expect(result?.linked).toBe(true);
     expect(result?.authAgeMs).toBe(1234);
     expect(result?.account).toBe(account);
@@ -54,7 +54,7 @@ describe("resolveLinkChannelContext", () => {
       },
     ];
 
-    const result = await resolveLinkChannelContext({} as OpenClawConfig);
+    const result = await resolveLinkChannelContext({} as AforaConfig);
     expect(result).toBeNull();
   });
 });

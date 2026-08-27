@@ -1,6 +1,6 @@
 // Firecrawl API module exposes the plugin public contract.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { readStringValue } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { readStringValue } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { runFirecrawlScrape } from "./src/firecrawl-client.js";
 
 export type FetchFirecrawlContentParams = {
@@ -27,7 +27,7 @@ export type FetchFirecrawlContentResult = {
 export async function fetchFirecrawlContent(
   params: FetchFirecrawlContentParams,
 ): Promise<FetchFirecrawlContentResult> {
-  const cfg: OpenClawConfig = {
+  const cfg: AforaConfig = {
     plugins: {
       entries: {
         firecrawl: {

@@ -1,7 +1,7 @@
 import Foundation
 import Network
 import Observation
-import OpenClawKit
+import AforaKit
 
 @MainActor
 @Observable
@@ -69,11 +69,11 @@ final class GatewayDiscoveryModel {
         if !self.browsers.isEmpty { return }
         self.appendDebugLog("start()")
 
-        for domain in OpenClawBonjour.gatewayServiceDomains {
+        for domain in AforaBonjour.gatewayServiceDomains {
             let browser = GatewayDiscoveryBrowserSupport.makeBrowser(
-                serviceType: OpenClawBonjour.gatewayServiceType,
+                serviceType: AforaBonjour.gatewayServiceType,
                 domain: domain,
-                queueLabelPrefix: "ai.openclawfoundation.app.gateway-discovery",
+                queueLabelPrefix: "ai.aforafoundation.app.gateway-discovery",
                 onState: { [weak self] state in
                     guard let self else { return }
                     self.statesByDomain[domain] = state
@@ -176,7 +176,7 @@ final class GatewayDiscoveryModel {
 
     private static func prettifyInstanceName(_ decodedName: String) -> String {
         let normalized = decodedName.split(whereSeparator: \.isWhitespace).joined(separator: " ")
-        let stripped = normalized.replacingOccurrences(of: " (OpenClaw)", with: "")
+        let stripped = normalized.replacingOccurrences(of: " (Afora)", with: "")
             .replacingOccurrences(of: #"\s+\(\d+\)$"#, with: "", options: .regularExpression)
         return stripped.trimmingCharacters(in: .whitespacesAndNewlines)
     }

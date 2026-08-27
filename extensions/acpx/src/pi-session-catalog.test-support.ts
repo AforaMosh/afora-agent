@@ -1,11 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
 import { vi } from "vitest";
 import { registerPiSessionCatalog } from "./pi-session-catalog-plugin.js";
 
-type RegisteredSessionCatalogProvider = Parameters<OpenClawPluginApi["registerSessionCatalog"]>[0];
+type RegisteredSessionCatalogProvider = Parameters<AforaPluginApi["registerSessionCatalog"]>[0];
 type OptionalCatalogAgent<T extends { agentId?: string }> = Omit<T, "agentId"> & {
   agentId?: string;
 };
@@ -67,7 +67,7 @@ export async function createPiStoreFixture(
   acpResolvable = false,
 ): Promise<string> {
   const root = await fs.mkdtemp(
-    path.join(resolvePreferredOpenClawTmpDir(), "openclaw-pi-catalog-"),
+    path.join(resolvePreferredAforaTmpDir(), "afora-pi-catalog-"),
   );
   temporaryDirectories.push(root);
   const directory = acpResolvable ? path.join(root, "sessions", "project") : root;
@@ -143,7 +143,7 @@ export async function installFakePiFixture(
   originalPath: string | undefined,
 ): Promise<string> {
   const directory = await fs.mkdtemp(
-    path.join(resolvePreferredOpenClawTmpDir(), "openclaw-pi-cli-"),
+    path.join(resolvePreferredAforaTmpDir(), "afora-pi-cli-"),
   );
   temporaryDirectories.push(directory);
   const bareExecutable = path.join(directory, "pi");
@@ -158,17 +158,17 @@ export async function installFakePiFixture(
 }
 
 export function registerPiNodeHostCommands(): Parameters<
-  OpenClawPluginApi["registerNodeHostCommand"]
+  AforaPluginApi["registerNodeHostCommand"]
 >[0][] {
-  const commands: Parameters<OpenClawPluginApi["registerNodeHostCommand"]>[0][] = [];
+  const commands: Parameters<AforaPluginApi["registerNodeHostCommand"]>[0][] = [];
   registerPiSessionCatalog({
     pluginConfig: {},
     registerSessionCatalog: vi.fn(),
     registerNodeHostCommand: (
-      command: Parameters<OpenClawPluginApi["registerNodeHostCommand"]>[0],
+      command: Parameters<AforaPluginApi["registerNodeHostCommand"]>[0],
     ) => commands.push(command),
     registerNodeInvokePolicy: vi.fn(),
-  } as unknown as OpenClawPluginApi);
+  } as unknown as AforaPluginApi);
   return commands;
 }
 
@@ -177,7 +177,7 @@ export function capturePiContinuationCatalog() {
   const entries: Array<{ sessionKey: string; entry: Record<string, unknown> }> = [];
   const createSessionEntry = vi.fn(
     async (
-      params: Parameters<OpenClawPluginApi["runtime"]["agent"]["session"]["createSessionEntry"]>[0],
+      params: Parameters<AforaPluginApi["runtime"]["agent"]["session"]["createSessionEntry"]>[0],
     ) => {
       const sessionKey = `agent:${params.agentId ?? "main"}:${params.key}`;
       const entry = {
@@ -229,6 +229,6 @@ export function capturePiContinuationCatalog() {
     },
     registerNodeHostCommand: vi.fn(),
     registerNodeInvokePolicy: vi.fn(),
-  } as unknown as OpenClawPluginApi);
+  } as unknown as AforaPluginApi);
   return { createSessionEntry, entries, provider: provider! };
 }

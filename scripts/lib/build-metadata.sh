@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 
-openclaw_trim_build_metadata_value() {
+afora_trim_build_metadata_value() {
   local value="${1:-}"
   value="${value#"${value%%[![:space:]]*}"}"
   value="${value%"${value##*[![:space:]]}"}"
   printf '%s' "${value}"
 }
 
-openclaw_is_full_git_commit() {
+afora_is_full_git_commit() {
   [[ "${1:-}" =~ ^[0-9a-fA-F]{40}$ ]]
 }
 
-openclaw_normalize_utc_build_timestamp() {
+afora_normalize_utc_build_timestamp() {
   local value="${1:-}"
   local LC_ALL=C
   [[ "${value}" =~ ^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})([.][0-9]{1,3})?Z$ ]] || return 1
@@ -55,20 +55,20 @@ openclaw_normalize_utc_build_timestamp() {
     "${year}" "${month}" "${day}" "${hour}" "${minute}" "${second}" "${fraction}"
 }
 
-openclaw_is_utc_build_timestamp() {
-  openclaw_normalize_utc_build_timestamp "${1:-}" >/dev/null
+afora_is_utc_build_timestamp() {
+  afora_normalize_utc_build_timestamp "${1:-}" >/dev/null
 }
 
-openclaw_resolve_git_commit() {
+afora_resolve_git_commit() {
   local root_dir="$1"
   local candidate
   local source_name
   for source_name in GIT_COMMIT GIT_SHA; do
-    candidate="$(openclaw_trim_build_metadata_value "${!source_name:-}")"
+    candidate="$(afora_trim_build_metadata_value "${!source_name:-}")"
     [[ -n "${candidate}" ]] && break
   done
   if [[ -n "${candidate}" ]]; then
-    if ! openclaw_is_full_git_commit "${candidate}"; then
+    if ! afora_is_full_git_commit "${candidate}"; then
       echo "ERROR: ${source_name} must be a full 40-character hexadecimal commit." >&2
       return 1
     fi
@@ -77,20 +77,20 @@ openclaw_resolve_git_commit() {
   fi
 
   candidate="$( (cd "${root_dir}" && git rev-parse HEAD) 2>/dev/null || true)"
-  if [[ -n "${candidate}" ]] && ! openclaw_is_full_git_commit "${candidate}"; then
+  if [[ -n "${candidate}" ]] && ! afora_is_full_git_commit "${candidate}"; then
     echo "ERROR: git rev-parse HEAD must return a full 40-character hexadecimal commit." >&2
     return 1
   fi
   # GITHUB_SHA names the workflow invocation and can differ from a checked-out tag.
   if [[ -z "${candidate}" ]]; then
-    candidate="$(openclaw_trim_build_metadata_value "${GITHUB_SHA:-}")"
-    if [[ -n "${candidate}" ]] && ! openclaw_is_full_git_commit "${candidate}"; then
+    candidate="$(afora_trim_build_metadata_value "${GITHUB_SHA:-}")"
+    if [[ -n "${candidate}" ]] && ! afora_is_full_git_commit "${candidate}"; then
       echo "ERROR: GITHUB_SHA must be a full 40-character hexadecimal commit." >&2
       return 1
     fi
   fi
   if [[ -z "${candidate}" ]]; then
-    if [[ "${OPENCLAW_REQUIRE_BUILD_METADATA:-0}" == "1" ]]; then
+    if [[ "${AFORA_REQUIRE_BUILD_METADATA:-0}" == "1" ]]; then
       echo "ERROR: Unable to resolve a full Git commit for the release build." >&2
       return 1
     fi
@@ -100,17 +100,17 @@ openclaw_resolve_git_commit() {
   printf '%s' "${candidate}" | tr '[:upper:]' '[:lower:]'
 }
 
-openclaw_resolve_build_timestamp() {
+afora_resolve_build_timestamp() {
   local candidate
-  candidate="$(openclaw_trim_build_metadata_value "${OPENCLAW_BUILD_TIMESTAMP:-}")"
+  candidate="$(afora_trim_build_metadata_value "${AFORA_BUILD_TIMESTAMP:-}")"
   if [[ -n "${candidate}" ]]; then
-    if ! candidate="$(openclaw_normalize_utc_build_timestamp "${candidate}")"; then
-      echo "ERROR: OPENCLAW_BUILD_TIMESTAMP must be an ISO-8601 UTC timestamp." >&2
+    if ! candidate="$(afora_normalize_utc_build_timestamp "${candidate}")"; then
+      echo "ERROR: AFORA_BUILD_TIMESTAMP must be an ISO-8601 UTC timestamp." >&2
       return 1
     fi
   else
     candidate="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-    if ! candidate="$(openclaw_normalize_utc_build_timestamp "${candidate}")"; then
+    if ! candidate="$(afora_normalize_utc_build_timestamp "${candidate}")"; then
       echo "ERROR: Unable to resolve an ISO-8601 UTC timestamp for the build." >&2
       return 1
     fi

@@ -1,6 +1,6 @@
 // Synthetic tests cover onboard plugin behavior.
-import { resolveAgentModelPrimaryValue } from "openclaw/plugin-sdk/provider-onboard";
-import { expectProviderOnboardMergedLegacyConfig } from "openclaw/plugin-sdk/provider-test-contracts";
+import { resolveAgentModelPrimaryValue } from "afora-agent/plugin-sdk/provider-onboard";
+import { expectProviderOnboardMergedLegacyConfig } from "afora-agent/plugin-sdk/provider-test-contracts";
 import { beforeAll, describe, expect, it } from "vitest";
 import { SYNTHETIC_DEFAULT_MODEL_REF as SYNTHETIC_DEFAULT_MODEL_REF_PUBLIC } from "./api.js";
 import { buildSyntheticModelDefinition, SYNTHETIC_MODEL_CATALOG } from "./models.js";

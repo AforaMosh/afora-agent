@@ -1,10 +1,10 @@
 // Tlon tests cover upload plugin behavior.
-import { MAX_IMAGE_BYTES, readRemoteMediaBuffer } from "openclaw/plugin-sdk/media-runtime";
+import { MAX_IMAGE_BYTES, readRemoteMediaBuffer } from "afora-agent/plugin-sdk/media-runtime";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { uploadFile } from "../tlon-api.js";
 import { uploadImageFromUrl } from "./upload.js";
 
-vi.mock("openclaw/plugin-sdk/media-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/media-runtime", () => ({
   MAX_IMAGE_BYTES: 6 * 1024 * 1024,
   readRemoteMediaBuffer: vi.fn(),
 }));

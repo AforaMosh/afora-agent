@@ -21,10 +21,10 @@ describe("option card", () => {
     const selected = vi.fn();
     container.addEventListener("option-select", selected);
     render(
-      html`<openclaw-option-card
+      html`<afora-option-card
         .props=${{
           header: "Access",
-          question: "How should OpenClaw help?",
+          question: "How should Afora help?",
           options: [
             { value: "guarded", label: "Ask first" },
             {
@@ -36,10 +36,10 @@ describe("option card", () => {
           ],
           onSelect,
         }}
-      ></openclaw-option-card>`,
+      ></afora-option-card>`,
       container,
     );
-    const card = container.querySelector("openclaw-option-card")!;
+    const card = container.querySelector("afora-option-card")!;
     await card.updateComplete;
     const recommended = container.querySelector<HTMLButtonElement>(
       ".option-card__choice--recommended",
@@ -61,7 +61,7 @@ describe("option card", () => {
     const skipped = vi.fn();
     container.addEventListener("option-skip", skipped);
     render(
-      html`<openclaw-option-card
+      html`<afora-option-card
         .props=${{
           question: "Choose one",
           options: [
@@ -70,10 +70,10 @@ describe("option card", () => {
           ],
           onSkip,
         }}
-      ></openclaw-option-card>`,
+      ></afora-option-card>`,
       container,
     );
-    await container.querySelector("openclaw-option-card")!.updateComplete;
+    await container.querySelector("afora-option-card")!.updateComplete;
     container.querySelector<HTMLButtonElement>(".option-card__skip")!.click();
 
     expect(onSkip).toHaveBeenCalledOnce();

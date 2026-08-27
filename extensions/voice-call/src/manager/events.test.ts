@@ -21,8 +21,8 @@ const logSpy = vi.hoisted(() => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/runtime-env", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/runtime-env")>();
+vi.mock("afora-agent/plugin-sdk/runtime-env", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/runtime-env")>();
   return {
     ...actual,
     createSubsystemLogger: (_subsystem: string) => ({

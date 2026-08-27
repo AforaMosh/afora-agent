@@ -1,11 +1,11 @@
-// OpenClaw SDK tests cover index behavior.
+// Afora SDK tests cover index behavior.
 import { describe, expect, it } from "vitest";
-import { EventHub, OpenClaw, normalizeGatewayEvent } from "./index.js";
+import { EventHub, Afora, normalizeGatewayEvent } from "./index.js";
 import type {
   GatewayEvent,
   GatewayRequestOptions,
-  OpenClawEvent,
-  OpenClawTransport,
+  AforaEvent,
+  AforaTransport,
 } from "./types.js";
 
 type RequestCall = {
@@ -22,7 +22,7 @@ type FakeResponseHandler = (
 ) => Promise<FakeResponseValue> | FakeResponseValue;
 type FakeResponse = FakeResponseValue | FakeResponseHandler;
 
-class FakeTransport implements OpenClawTransport {
+class FakeTransport implements AforaTransport {
   readonly calls: RequestCall[] = [];
   private readonly eventHub = new EventHub<GatewayEvent>({ replayLimit: 100 });
 
@@ -99,7 +99,7 @@ class ClosingEventPumpTransport extends FakeTransport {
   }
 }
 
-class EventsOnlyTransport implements OpenClawTransport {
+class EventsOnlyTransport implements AforaTransport {
   constructor(private readonly eventSource: AsyncIterable<GatewayEvent>) {}
 
   async request<T = unknown>(): Promise<T> {
@@ -121,7 +121,7 @@ function requireTransportCall(calls: readonly RequestCall[], index: number): Req
 
 function createClientFixture(responses: Record<string, FakeResponse> = {}) {
   const transport = new FakeTransport(responses);
-  return { transport, oc: new OpenClaw({ transport }) };
+  return { transport, oc: new Afora({ transport }) };
 }
 
 function createListFixture() {
@@ -184,7 +184,7 @@ function createRunEventFixture(runId: string, sessionKey: string, events: readon
   });
 }
 
-describe("OpenClaw SDK", () => {
+describe("Afora SDK", () => {
   it("runs an agent through the Gateway agent method", async () => {
     const { transport, oc } = createClientFixture({
       agent: { status: "accepted", runId: "run_123" },
@@ -413,7 +413,7 @@ describe("OpenClaw SDK", () => {
         approvals: "ask",
       }),
     ).rejects.toThrow(
-      "OpenClaw Gateway does not support per-run SDK options yet: workspace, runtime, environment, approvals",
+      "Afora Gateway does not support per-run SDK options yet: workspace, runtime, environment, approvals",
     );
   });
 
@@ -672,7 +672,7 @@ describe("OpenClaw SDK", () => {
       status: "unavailable",
     });
     await expect(oc.environments.delete("worker_123")).rejects.toThrow(
-      "oc.environments.delete is not supported by the current OpenClaw Gateway yet",
+      "oc.environments.delete is not supported by the current Afora Gateway yet",
     );
     expect(transport.calls).toEqual([
       { method: "environments.list", params: {}, options: undefined },
@@ -753,19 +753,19 @@ describe("OpenClaw SDK", () => {
     const transport = new DelayedConnectTransport({
       "agents.list": { agents: [] },
     });
-    const oc = new OpenClaw({ transport });
+    const oc = new Afora({ transport });
 
     const connect = oc.connect();
     const close = oc.close();
     transport.finishConnect();
 
-    await expect(connect).rejects.toThrow("OpenClaw SDK client is closed");
+    await expect(connect).rejects.toThrow("Afora SDK client is closed");
     await close;
-    await expect(oc.agents.list()).rejects.toThrow("OpenClaw SDK client is closed");
+    await expect(oc.agents.list()).rejects.toThrow("Afora SDK client is closed");
     await expect(oc.events()[Symbol.asyncIterator]().next()).rejects.toThrow(
-      "OpenClaw SDK client is closed",
+      "Afora SDK client is closed",
     );
-    expect(() => oc.rawEvents()).toThrow("OpenClaw SDK client is closed");
+    expect(() => oc.rawEvents()).toThrow("Afora SDK client is closed");
     expect(transport.connectCalls).toBe(1);
     expect(transport.calls).toEqual([]);
   });
@@ -800,13 +800,13 @@ describe("OpenClaw SDK", () => {
     const transport = new ClosingEventPumpTransport({
       "agents.list": { agents: [] },
     });
-    const oc = new OpenClaw({ transport });
+    const oc = new Afora({ transport });
     let closePromise: Promise<void> | undefined;
     transport.onFirstEventPoll = () => {
       closePromise = oc.close();
     };
 
-    await expect(oc.agents.list()).rejects.toThrow("OpenClaw SDK client is closed");
+    await expect(oc.agents.list()).rejects.toThrow("Afora SDK client is closed");
     await closePromise;
     expect(transport.calls).toEqual([]);
   });
@@ -872,9 +872,9 @@ describe("OpenClaw SDK", () => {
         };
       },
     });
-    const oc = new OpenClaw({ transport });
+    const oc = new Afora({ transport });
     const iterator = oc.events()[Symbol.asyncIterator]();
-    let futureIterator: AsyncIterator<OpenClawEvent> | undefined;
+    let futureIterator: AsyncIterator<AforaEvent> | undefined;
 
     try {
       await expect(iterator.next()).rejects.toThrow("synthetic transport event failure");
@@ -899,10 +899,10 @@ describe("OpenClaw SDK", () => {
         throw failure;
       },
     });
-    const oc = new OpenClaw({ transport });
+    const oc = new Afora({ transport });
     const run = await oc.runs.get("run_pump_failure");
     const iterator = run.events()[Symbol.asyncIterator]();
-    let futureIterator: AsyncIterator<OpenClawEvent> | undefined;
+    let futureIterator: AsyncIterator<AforaEvent> | undefined;
 
     try {
       const first = await iterator.next();
@@ -949,7 +949,7 @@ describe("OpenClaw SDK", () => {
       idempotencyKey: "chat-projection-events",
       sessionKey: "chat-projection",
     });
-    const seen: OpenClawEvent[] = [];
+    const seen: AforaEvent[] = [];
 
     for await (const event of run.events()) {
       seen.push(event);
@@ -1078,7 +1078,7 @@ describe("OpenClaw SDK", () => {
     const { transport, oc } = createClientFixture();
     const runId = "run_chat_delta_text_replay";
     let text = "";
-    let iterator: AsyncIterator<OpenClawEvent> | undefined;
+    let iterator: AsyncIterator<AforaEvent> | undefined;
 
     try {
       await oc.connect();

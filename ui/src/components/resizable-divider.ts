@@ -2,13 +2,13 @@
 import { css, nothing } from "lit";
 import { property } from "lit/decorators.js";
 import { t } from "../i18n/index.ts";
-import { OpenClawLitElement } from "../lit/openclaw-element.ts";
+import { AforaLitElement } from "../lit/afora-element.ts";
 
 /**
  * An accessible draggable divider for resizable split views.
  * Dispatches 'resize' events with { splitRatio: number } detail.
  */
-class ResizableDivider extends OpenClawLitElement {
+class ResizableDivider extends AforaLitElement {
   @property({ type: Number }) splitRatio = 0.6;
   @property({ type: Number }) minRatio = 0.4;
   @property({ type: Number }) maxRatio = 0.7;

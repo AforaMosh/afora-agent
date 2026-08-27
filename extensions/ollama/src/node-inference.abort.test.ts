@@ -1,6 +1,6 @@
 /** Proves paired-node Ollama work stops at every node-local HTTP phase. */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import { describe, expect, it, vi } from "vitest";
 import { createOllamaNodeHostCommands, createOllamaNodeInferenceTool } from "./node-inference.js";
 import {

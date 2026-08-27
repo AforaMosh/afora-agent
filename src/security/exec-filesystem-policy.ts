@@ -3,7 +3,7 @@ import { listAgentEntries } from "../agents/agent-scope-config.js";
 import { resolveConfiguredToolPolicies } from "../agents/agent-tools.policy.js";
 import { resolveSandboxConfigForAgent } from "../agents/sandbox/config.js";
 import { isToolAllowedByPolicies } from "../agents/tool-policy-match.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import type { AgentToolsConfig, ExecToolConfig } from "../config/types.tools.js";
 
 const MUTATING_FS_TOOLS = ["write", "edit", "apply_patch"] as const;
@@ -42,7 +42,7 @@ function isExecFilesystemConstrained(params: {
 
 /** Find policy scopes where exec can still mutate files despite disabled fs tools. */
 export function collectExecFilesystemPolicyDriftHits(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): ExecFilesystemPolicyDriftHit[] {
   const hits: ExecFilesystemPolicyDriftHit[] = [];
   const globalExec = cfg.tools?.exec;

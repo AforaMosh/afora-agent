@@ -9,7 +9,7 @@ const suite = createControlUiE2eSuite({
   unavailableMessage: (executablePath) => `Playwright Chromium is unavailable at ${executablePath}`,
 });
 
-const NATIVE_UPDATE_AVAILABILITY_CHANGED_EVENT = "openclaw:native-update-availability-changed";
+const NATIVE_UPDATE_AVAILABILITY_CHANGED_EVENT = "afora:native-update-availability-changed";
 const MANAGED_UPDATE_HANDOFF_RESPONSE = {
   ok: true,
   handoff: { status: "started" },
@@ -83,7 +83,7 @@ suite.define(() => {
 
         await page.getByRole("button", { name: /Update Gateway/ }).click();
         await page.getByRole("button", { name: "Update and restart", exact: true }).click();
-        const dialog = page.locator("openclaw-modal-dialog");
+        const dialog = page.locator("afora-modal-dialog");
         await dialog
           .getByText(
             "Update error: global-install-failed. The global package install did not verify on disk. Retry or reinstall from the CLI.",
@@ -233,7 +233,7 @@ suite.define(() => {
           await gateway.closeLatest(1012, "managed update handoff");
 
           await page
-            .locator("openclaw-modal-dialog")
+            .locator("afora-modal-dialog")
             .getByText(expectedText, { exact: false })
             .waitFor({ timeout: 15_000 });
           expect(await gateway.getRequests("update.run")).toHaveLength(1);
@@ -256,16 +256,16 @@ suite.define(() => {
     });
     await context.addInitScript(() => {
       const nativeWindow = window as unknown as {
-        openClawUpdateMessages: unknown[];
+        aforaUpdateMessages: unknown[];
         webkit: {
-          messageHandlers: { openclawUpdate: { postMessage: (message: unknown) => void } };
+          messageHandlers: { aforaUpdate: { postMessage: (message: unknown) => void } };
         };
       };
-      nativeWindow.openClawUpdateMessages = [];
+      nativeWindow.aforaUpdateMessages = [];
       nativeWindow.webkit = {
         messageHandlers: {
-          openclawUpdate: {
-            postMessage: (message) => nativeWindow.openClawUpdateMessages.push(message),
+          aforaUpdate: {
+            postMessage: (message) => nativeWindow.aforaUpdateMessages.push(message),
           },
         },
       };
@@ -298,7 +298,7 @@ suite.define(() => {
       await page.getByRole("button", { name: "Update Mac app and restart", exact: true }).click();
       expect(
         await page.evaluate(
-          () => (window as unknown as { openClawUpdateMessages: unknown[] }).openClawUpdateMessages,
+          () => (window as unknown as { aforaUpdateMessages: unknown[] }).aforaUpdateMessages,
         ),
       ).toEqual([{ type: "start-update" }]);
       expect(await gateway.getRequests("update.run")).toHaveLength(0);

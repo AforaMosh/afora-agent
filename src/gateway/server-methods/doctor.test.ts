@@ -4,20 +4,20 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ErrorCodes, errorShape } from "../../../packages/gateway-protocol/src/index.js";
 import { AgentSelectionRequiredError } from "../../agents/agent-scope-config.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 
-const getRuntimeConfig = vi.hoisted(() => vi.fn(() => ({}) as OpenClawConfig));
+const getRuntimeConfig = vi.hoisted(() => vi.fn(() => ({}) as AforaConfig));
 const listAgentIds = vi.hoisted(() => vi.fn(() => ["main", "research-analyst", "alpha"]));
 const resolveDefaultAgentId = vi.hoisted(() => vi.fn(() => "main"));
 const resolveAgentWorkspaceDir = vi.hoisted(() =>
-  vi.fn((_cfg: OpenClawConfig, _agentId: string) => "/tmp/openclaw"),
+  vi.fn((_cfg: AforaConfig, _agentId: string) => "/tmp/afora"),
 );
 const resolveMemorySearchConfig = vi.hoisted(() =>
-  vi.fn<(_cfg: OpenClawConfig, _agentId: string) => { enabled: boolean } | null>(() => ({
+  vi.fn<(_cfg: AforaConfig, _agentId: string) => { enabled: boolean } | null>(() => ({
     enabled: true,
   })),
 );
@@ -36,7 +36,7 @@ vi.mock("../../config/config.js", () => ({
 
 vi.mock("../../agents/agent-scope.js", () => ({
   listAgentIds,
-  listAgentEntries: (cfg: OpenClawConfig) =>
+  listAgentEntries: (cfg: AforaConfig) =>
     cfg.agents?.entries
       ? Object.entries(cfg.agents.entries).map(([id, entry]) => {
           const copy = structuredClone(entry) as Record<string, unknown>;
@@ -242,7 +242,7 @@ describe("doctor.memory agent targeting", () => {
   beforeEach(() => {
     listAgentIds.mockClear();
     resolveDefaultAgentId.mockReset().mockReturnValue("main");
-    resolveAgentWorkspaceDir.mockReset().mockReturnValue("/tmp/openclaw");
+    resolveAgentWorkspaceDir.mockReset().mockReturnValue("/tmp/afora");
     getMemorySearchManager.mockReset().mockResolvedValue({
       manager: null,
       error: "memory search unavailable",
@@ -329,7 +329,7 @@ describe("doctor.memory.status", () => {
   beforeEach(() => {
     getRuntimeConfig.mockClear();
     resolveDefaultAgentId.mockClear();
-    resolveAgentWorkspaceDir.mockReset().mockReturnValue("/tmp/openclaw");
+    resolveAgentWorkspaceDir.mockReset().mockReturnValue("/tmp/afora");
     resolveMemorySearchConfig.mockReset().mockReturnValue({ enabled: true });
     getMemorySearchManager.mockReset();
     previewGroundedRemMarkdown.mockReset();
@@ -723,8 +723,8 @@ describe("doctor.memory.status", () => {
           },
         },
       },
-    } as OpenClawConfig);
-    resolveAgentWorkspaceDir.mockImplementation((cfg: OpenClawConfig, agentId: string) => {
+    } as AforaConfig);
+    resolveAgentWorkspaceDir.mockImplementation((cfg: AforaConfig, agentId: string) => {
       if (agentId === "alpha") {
         return alphaWorkspaceDir;
       }
@@ -813,7 +813,7 @@ describe("doctor.memory.status", () => {
         enabled: true,
         payload: {
           kind: "systemEvent",
-          text: "__openclaw_memory_core_short_term_promotion_dream__",
+          text: "__afora_memory_core_short_term_promotion_dream__",
         },
         state: { nextRunAtMs: now + 60_000 },
       },
@@ -938,8 +938,8 @@ describe("doctor.memory.status", () => {
           },
         },
       },
-    } as OpenClawConfig);
-    resolveAgentWorkspaceDir.mockImplementation((_cfg: OpenClawConfig, agentId: string) => {
+    } as AforaConfig);
+    resolveAgentWorkspaceDir.mockImplementation((_cfg: AforaConfig, agentId: string) => {
       if (agentId === "alpha") {
         return alphaWorkspaceDir;
       }
@@ -1015,7 +1015,7 @@ describe("doctor.memory.status", () => {
           },
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     useMemoryManagerFixture({
       status: () => ({ provider: "gemini", workspaceDir }),
@@ -1042,10 +1042,10 @@ describe("doctor.memory.status", () => {
     getRuntimeConfig.mockReturnValue({
       plugins: {
         slots: {
-          memory: "memos-local-openclaw-plugin",
+          memory: "memos-local-afora-plugin",
         },
         entries: {
-          "memos-local-openclaw-plugin": {
+          "memos-local-afora-plugin": {
             config: {
               dreaming: {
                 enabled: true,
@@ -1062,7 +1062,7 @@ describe("doctor.memory.status", () => {
           },
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     const { close } = useMemoryManagerFixture({
       status: () => ({ provider: "gemini" }),
@@ -1131,8 +1131,8 @@ describe("doctor.memory.status", () => {
           },
         },
       },
-    } as OpenClawConfig);
-    resolveAgentWorkspaceDir.mockImplementation((_cfg: OpenClawConfig, agentId: string) =>
+    } as AforaConfig);
+    resolveAgentWorkspaceDir.mockImplementation((_cfg: AforaConfig, agentId: string) =>
       agentId === "alpha" ? alphaWorkspaceDir : mainWorkspaceDir,
     );
 
@@ -1159,17 +1159,17 @@ describe("doctor.memory.status", () => {
 
 describe("doctor.memory dream actions", () => {
   it("clears grounded-only staged short-term entries without touching the diary", async () => {
-    resolveAgentWorkspaceDir.mockReturnValue("/tmp/openclaw");
+    resolveAgentWorkspaceDir.mockReturnValue("/tmp/afora");
     removeGroundedShortTermCandidates.mockResolvedValue({
       removed: 3,
-      storePath: "/tmp/openclaw/memory/.dreams/short-term-recall.json",
+      storePath: "/tmp/afora/memory/.dreams/short-term-recall.json",
     });
     const respond = vi.fn();
 
     await invokeDoctorMemory("doctor.memory.resetGroundedShortTerm", respond);
 
     expect(removeGroundedShortTermCandidates).toHaveBeenCalledWith({
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
     });
     expect(respond).toHaveBeenCalledWith(
       true,
@@ -1183,10 +1183,10 @@ describe("doctor.memory dream actions", () => {
   });
 
   it("repairs contaminated dreaming artifacts for control-ui callers", async () => {
-    resolveAgentWorkspaceDir.mockReturnValue("/tmp/openclaw");
+    resolveAgentWorkspaceDir.mockReturnValue("/tmp/afora");
     repairDreamingArtifacts.mockResolvedValue({
       changed: true,
-      archiveDir: "/tmp/openclaw/.openclaw-repair/dreaming/2026-04-11T22-00-00-000Z",
+      archiveDir: "/tmp/afora/.afora-repair/dreaming/2026-04-11T22-00-00-000Z",
       archivedDreamsDiary: false,
       archivedSessionCorpus: true,
       archivedSessionIngestion: true,
@@ -1198,7 +1198,7 @@ describe("doctor.memory dream actions", () => {
     await invokeDoctorMemory("doctor.memory.repairDreamingArtifacts", respond);
 
     expect(repairDreamingArtifacts).toHaveBeenCalledWith({
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
     });
     expect(respond).toHaveBeenCalledWith(
       true,
@@ -1206,7 +1206,7 @@ describe("doctor.memory dream actions", () => {
         agentId: "main",
         action: "repairDreamingArtifacts",
         changed: true,
-        archiveDir: "/tmp/openclaw/.openclaw-repair/dreaming/2026-04-11T22-00-00-000Z",
+        archiveDir: "/tmp/afora/.afora-repair/dreaming/2026-04-11T22-00-00-000Z",
         archivedDreamsDiary: false,
         archivedSessionCorpus: true,
         archivedSessionIngestion: true,
@@ -1217,9 +1217,9 @@ describe("doctor.memory dream actions", () => {
   });
 
   it("dedupes exact dream diary duplicates for control-ui callers", async () => {
-    resolveAgentWorkspaceDir.mockReturnValue("/tmp/openclaw");
+    resolveAgentWorkspaceDir.mockReturnValue("/tmp/afora");
     dedupeDreamDiaryEntries.mockResolvedValue({
-      dreamsPath: "/tmp/openclaw/DREAMS.md",
+      dreamsPath: "/tmp/afora/DREAMS.md",
       removed: 2,
       kept: 7,
     });
@@ -1228,7 +1228,7 @@ describe("doctor.memory dream actions", () => {
     await invokeDoctorMemory("doctor.memory.dedupeDreamDiary", respond);
 
     expect(dedupeDreamDiaryEntries).toHaveBeenCalledWith({
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
     });
     expect(respond).toHaveBeenCalledWith(
       true,
@@ -1250,7 +1250,7 @@ describe("doctor.memory.dreamDiary", () => {
   beforeEach(() => {
     getRuntimeConfig.mockClear();
     resolveDefaultAgentId.mockClear();
-    resolveAgentWorkspaceDir.mockReset().mockReturnValue("/tmp/openclaw");
+    resolveAgentWorkspaceDir.mockReset().mockReturnValue("/tmp/afora");
     previewGroundedRemMarkdown.mockReset();
     writeBackfillDiaryEntries.mockReset();
     removeBackfillDiaryEntries.mockReset();
@@ -1282,7 +1282,7 @@ describe("doctor.memory.dreamDiary", () => {
     const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "doctor-dream-diary-agent-"));
     await fs.writeFile(path.join(workspaceDir, "DREAMS.md"), "## Research Dreams\n", "utf-8");
     resolveAgentWorkspaceDir.mockImplementation((_cfg, agentId) =>
-      agentId === "research-analyst" ? workspaceDir : "/tmp/openclaw",
+      agentId === "research-analyst" ? workspaceDir : "/tmp/afora",
     );
     const respond = vi.fn();
 

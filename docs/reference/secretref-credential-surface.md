@@ -11,14 +11,14 @@ This page defines the canonical SecretRef credential surface: which credential f
 
 Scope:
 
-- In scope: strictly user-supplied credentials that OpenClaw does not mint or rotate.
+- In scope: strictly user-supplied credentials that Afora does not mint or rotate.
 - Out of scope: runtime-minted or rotating credentials, OAuth refresh material, and session-like artifacts.
 
 The lists below are generated from the source target registry and checked against `docs/reference/secretref-user-supplied-credentials-matrix.json` in CI; do not hand-edit entries.
 
 ## Supported credentials
 
-### `openclaw.json` targets (`secrets configure` + `secrets apply` + `secrets audit`)
+### `afora.json` targets (`secrets configure` + `secrets apply` + `secrets audit`)
 
 [//]: # "secretref-supported-list-start"
 
@@ -137,7 +137,7 @@ The lists below are generated from the source target registry and checked agains
 - `gateway.cloudflareAccess.clientSecret`
 
 These fields live in the node host's canonical `node_host_config` SQLite row,
-not `openclaw.json`. They accept the same SecretInput forms and resolve through
+not `afora.json`. They accept the same SecretInput forms and resolve through
 the configured SecretRef providers when the node starts. The conventional
 `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET` fallback persists env refs for
 these fields automatically. They are not targets for `secrets configure` or
@@ -147,9 +147,9 @@ Notes:
 
 - Store refs use names matching `^[A-Z][A-Z0-9_]{0,127}$` and resolve only from the Gateway-wide team scope in this release. A typical ref is `{"source":"store","provider":"default","id":"OPENAI_API_KEY"}`.
 - Auth-profile plan targets require `agentId`; plan entries target `profiles.*.key` / `profiles.*.token` and write sibling refs (`keyRef` / `tokenRef`). Auth-profile refs are included in runtime resolution and audit coverage.
-- In `openclaw.json`, SecretRefs must use structured objects such as `{"source":"env","provider":"default","id":"DISCORD_BOT_TOKEN"}`. Legacy `secretref-env:<ENV_VAR>` marker strings are rejected on SecretRef credential paths; run `openclaw doctor --fix` to migrate valid markers.
+- In `afora.json`, SecretRefs must use structured objects such as `{"source":"env","provider":"default","id":"DISCORD_BOT_TOKEN"}`. Legacy `secretref-env:<ENV_VAR>` marker strings are rejected on SecretRef credential paths; run `afora doctor --fix` to migrate valid markers.
 - OAuth policy guard: `auth.profiles.<id>.mode = "oauth"` cannot be combined with SecretRef inputs for that profile. Startup/reload and auth-profile resolution fail fast when this policy is violated.
-- For SecretRef-managed model providers, generated `agents/*/agent/models.json` entries persist non-secret markers (not resolved secret values) for `apiKey`/header surfaces. Marker persistence is source-authoritative: OpenClaw writes markers from the active source config snapshot (pre-resolution), not from resolved runtime secret values.
+- For SecretRef-managed model providers, generated `agents/*/agent/models.json` entries persist non-secret markers (not resolved secret values) for `apiKey`/header surfaces. Marker persistence is source-authoritative: Afora writes markers from the active source config snapshot (pre-resolution), not from resolved runtime secret values.
 - Cold Gateway startup can isolate retryable resolution failures for mapped, non-Gateway owners. Current mapped classes include model providers and skills, media/TTS/cron providers, eligible auth profiles, per-agent memory, sandbox SSH, channel accounts, and manifest-declared plugin routes. Startup keeps each failed owner's explicit refs in the runtime snapshot, reports the owner through status and doctor, and rejects requests for that owner without trying lower-precedence credentials. Reload and config-write preflight use the same owner-aware policy: healthy owners refresh; an eligible failed owner stays stale only when its ref identities, provider definitions, and complete non-secret owner contract are unchanged; a new or changed failure becomes cold. Gateway ingress auth, structurally invalid refs or values, fail-closed owners, and currently unmapped owners remain strict.
 - For web search: in explicit provider mode (`tools.web.search.provider` set), only the selected provider key is active. In auto mode (`tools.web.search.provider` unset), only the first provider key that resolves by precedence is active, and non-selected provider refs are treated as inactive until selected. Provider credentials use `plugins.entries.<plugin>.config.webSearch.*`.
 - Slack `identity: "user"` uses `channels.slack.userToken` with `channels.slack.appToken` for Socket Mode or `channels.slack.signingSecret` for HTTP mode. The same pairing applies under `channels.slack.accounts.*`; no bot token is required for this identity.

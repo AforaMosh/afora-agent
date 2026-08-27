@@ -1,10 +1,10 @@
 import path from "node:path";
-import type { MemoryEntryProvenance } from "openclaw/plugin-sdk/memory-core-host-runtime-files";
+import type { MemoryEntryProvenance } from "afora-agent/plugin-sdk/memory-core-host-runtime-files";
 import {
   DEFAULT_MEMORY_DEEP_DREAMING_MIN_RECALL_COUNT,
   DEFAULT_MEMORY_DEEP_DREAMING_MIN_SCORE,
   DEFAULT_MEMORY_DEEP_DREAMING_MIN_UNIQUE_QUERIES,
-} from "openclaw/plugin-sdk/memory-core-host-status";
+} from "afora-agent/plugin-sdk/memory-core-host-status";
 import type { ConceptTagScriptCoverage } from "./concept-vocabulary.js";
 
 export const DEFAULT_PROMOTION_MIN_SCORE = DEFAULT_MEMORY_DEEP_DREAMING_MIN_SCORE;

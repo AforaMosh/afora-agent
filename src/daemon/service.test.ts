@@ -64,11 +64,11 @@ describe("resolveGatewayService", () => {
     );
   });
 
-  it("guards mutating service adapters when config was written by a newer OpenClaw", async () => {
-    const tempHome = await makeTempWorkspace("openclaw-service-future-config-");
-    const stateDir = path.join(tempHome, ".openclaw");
-    const configPath = path.join(stateDir, "openclaw.json");
-    const envSnapshot = captureEnv(["HOME", "OPENCLAW_STATE_DIR", "OPENCLAW_CONFIG_PATH"]);
+  it("guards mutating service adapters when config was written by a newer Afora", async () => {
+    const tempHome = await makeTempWorkspace("afora-service-future-config-");
+    const stateDir = path.join(tempHome, ".afora");
+    const configPath = path.join(stateDir, "afora.json");
+    const envSnapshot = captureEnv(["HOME", "AFORA_STATE_DIR", "AFORA_CONFIG_PATH"]);
     try {
       await fs.mkdir(stateDir, { recursive: true });
       await fs.writeFile(
@@ -84,8 +84,8 @@ describe("resolveGatewayService", () => {
         ),
       );
       process.env.HOME = tempHome;
-      process.env.OPENCLAW_STATE_DIR = stateDir;
-      process.env.OPENCLAW_CONFIG_PATH = configPath;
+      process.env.AFORA_STATE_DIR = stateDir;
+      process.env.AFORA_CONFIG_PATH = configPath;
       clearConfigCache();
       clearRuntimeConfigSnapshot();
 
@@ -105,11 +105,11 @@ describe("resolveGatewayService", () => {
   it("guards every native service mutation when an external supervisor owns lifecycle", async () => {
     setPlatform("darwin");
     const service = resolveGatewayService();
-    const env = { OPENCLAW_SUPERVISOR_MODE: "external" };
+    const env = { AFORA_SUPERVISOR_MODE: "external" };
     const installArgs = {
       env,
       stdout: process.stdout,
-      programArguments: ["openclaw", "gateway", "run"],
+      programArguments: ["afora", "gateway", "run"],
     };
     const mutations = [
       () => service.stage(installArgs),
@@ -142,20 +142,20 @@ describe("readGatewayServiceState", () => {
     const service = createService({
       isLoaded: vi.fn(async () => true),
       readCommand: vi.fn(async () => ({
-        programArguments: ["openclaw", "gateway", "run"],
-        environment: { OPENCLAW_GATEWAY_PORT: "18789" },
+        programArguments: ["afora", "gateway", "run"],
+        environment: { AFORA_GATEWAY_PORT: "18789" },
       })),
       readRuntime: vi.fn(async () => ({ status: "running" })),
     });
 
     const state = await readGatewayServiceState(service, {
-      env: { OPENCLAW_GATEWAY_PORT: "1" },
+      env: { AFORA_GATEWAY_PORT: "1" },
     });
 
     expect(state.installed).toBe(true);
     expect(state.loaded).toBe(true);
     expect(state.running).toBe(true);
-    expect(state.env.OPENCLAW_GATEWAY_PORT).toBe("18789");
+    expect(state.env.AFORA_GATEWAY_PORT).toBe("18789");
   });
 
   it("keeps the caller-selected service identity when merging persisted env", async () => {
@@ -163,23 +163,23 @@ describe("readGatewayServiceState", () => {
     const service = createService({
       isLoaded: vi.fn(async () => true),
       readCommand: vi.fn(async () => ({
-        programArguments: ["openclaw", "gateway", "run"],
+        programArguments: ["afora", "gateway", "run"],
         environment: {
-          OPENCLAW_GATEWAY_PORT: "18789",
-          OPENCLAW_SYSTEMD_UNIT: "openclaw-gateway.service",
+          AFORA_GATEWAY_PORT: "18789",
+          AFORA_SYSTEMD_UNIT: "afora-gateway.service",
         },
       })),
       readRuntime,
     });
 
     const state = await readGatewayServiceState(service, {
-      env: { OPENCLAW_SYSTEMD_UNIT: "openclaw-gateway-maintenance.service" },
+      env: { AFORA_SYSTEMD_UNIT: "afora-gateway-maintenance.service" },
     });
 
-    expect(state.env.OPENCLAW_SYSTEMD_UNIT).toBe("openclaw-gateway-maintenance.service");
+    expect(state.env.AFORA_SYSTEMD_UNIT).toBe("afora-gateway-maintenance.service");
     expect(readRuntime).toHaveBeenCalledWith(
       expect.objectContaining({
-        OPENCLAW_SYSTEMD_UNIT: "openclaw-gateway-maintenance.service",
+        AFORA_SYSTEMD_UNIT: "afora-gateway-maintenance.service",
       }),
       { timeoutMs: undefined },
     );
@@ -208,8 +208,8 @@ describe("readGatewayServiceState", () => {
     const service = createService({
       isLoaded,
       readCommand: vi.fn(async () => ({
-        programArguments: ["openclaw", "gateway", "run"],
-        environment: { OPENCLAW_SYSTEMD_UNIT: "openclaw-gateway.service" },
+        programArguments: ["afora", "gateway", "run"],
+        environment: { AFORA_SYSTEMD_UNIT: "afora-gateway.service" },
       })),
       readRuntime,
     });
@@ -218,10 +218,10 @@ describe("readGatewayServiceState", () => {
       readGatewayServiceState(service, {
         env: {},
         validateEnvBeforeStatusRead: (env) => {
-          throw new Error(`refused ${env.OPENCLAW_SYSTEMD_UNIT}`);
+          throw new Error(`refused ${env.AFORA_SYSTEMD_UNIT}`);
         },
       }),
-    ).rejects.toThrow("refused openclaw-gateway.service");
+    ).rejects.toThrow("refused afora-gateway.service");
 
     expect(isLoaded).not.toHaveBeenCalled();
     expect(readRuntime).not.toHaveBeenCalled();
@@ -243,8 +243,8 @@ describe("startGatewayService", () => {
 
   it("starts stopped installed services and returns post-start state", async () => {
     const readCommand = vi.fn(async () => ({
-      programArguments: ["openclaw", "gateway", "run"],
-      environment: { OPENCLAW_GATEWAY_PORT: "18789" },
+      programArguments: ["afora", "gateway", "run"],
+      environment: { AFORA_GATEWAY_PORT: "18789" },
     }));
     const isLoaded = vi
       .fn<GatewayService["isLoaded"]>()
@@ -276,7 +276,7 @@ describe("startGatewayService", () => {
   it("reports an explicit post-start process failure instead of claiming success", async () => {
     const service = createService({
       readCommand: vi.fn(async () => ({
-        programArguments: ["openclaw", "gateway", "run"],
+        programArguments: ["afora", "gateway", "run"],
       })),
       isLoaded: vi.fn(async () => true),
       readRuntime: vi
@@ -294,7 +294,7 @@ describe("startGatewayService", () => {
   it("reports an explicit post-start failed manager state instead of claiming success", async () => {
     const service = createService({
       readCommand: vi.fn(async () => ({
-        programArguments: ["openclaw", "gateway", "run"],
+        programArguments: ["afora", "gateway", "run"],
       })),
       isLoaded: vi.fn(async () => true),
       readRuntime: vi
@@ -311,7 +311,7 @@ describe("startGatewayService", () => {
   it("allows asynchronously starting services without terminal failure evidence", async () => {
     const service = createService({
       readCommand: vi.fn(async () => ({
-        programArguments: ["openclaw", "gateway", "run"],
+        programArguments: ["afora", "gateway", "run"],
       })),
       isLoaded: vi.fn(async () => true),
       readRuntime: vi.fn(async () => ({ status: "stopped" })),
@@ -325,7 +325,7 @@ describe("startGatewayService", () => {
   it("does not mistake a previous exit code for a new asynchronous start failure", async () => {
     const service = createService({
       readCommand: vi.fn(async () => ({
-        programArguments: ["openclaw", "gateway", "run"],
+        programArguments: ["afora", "gateway", "run"],
       })),
       isLoaded: vi.fn(async () => true),
       readRuntime: vi.fn(async () => ({ status: "stopped", lastExitStatus: 78 })),
@@ -339,7 +339,7 @@ describe("startGatewayService", () => {
   it("returns already-running without starting a loaded running service", async () => {
     const service = createService({
       readCommand: vi.fn(async () => ({
-        programArguments: ["openclaw", "gateway", "run"],
+        programArguments: ["afora", "gateway", "run"],
       })),
       isLoaded: vi.fn(async () => true),
       readRuntime: vi.fn(async () => ({ status: "running", pid: 4242 })),
@@ -360,8 +360,8 @@ describe("startGatewayService", () => {
   it("ignores legacy version metadata on an already-running service", async () => {
     const service = createService({
       readCommand: vi.fn(async () => ({
-        programArguments: ["openclaw", "gateway", "run"],
-        environment: { OPENCLAW_SERVICE_VERSION: "2026.4.24" },
+        programArguments: ["afora", "gateway", "run"],
+        environment: { AFORA_SERVICE_VERSION: "2026.4.24" },
       })),
       isLoaded: vi.fn(async () => true),
       readRuntime: vi.fn(async () => ({ status: "running", pid: 4242 })),
@@ -382,8 +382,8 @@ describe("startGatewayService", () => {
   it("starts a stopped service despite legacy version metadata", async () => {
     const service = createService({
       readCommand: vi.fn(async () => ({
-        programArguments: ["openclaw", "gateway", "run"],
-        environment: { OPENCLAW_SERVICE_VERSION: "2026.4.24" },
+        programArguments: ["afora", "gateway", "run"],
+        environment: { AFORA_SERVICE_VERSION: "2026.4.24" },
       })),
       isLoaded: vi.fn(async () => true),
       readRuntime: vi.fn(async () => ({ status: "stopped" })),
@@ -401,8 +401,8 @@ describe("startGatewayService", () => {
   it("requests repair before start when the managed port differs from config", async () => {
     const service = createService({
       readCommand: vi.fn(async () => ({
-        programArguments: ["openclaw", "gateway", "--port", "18789"],
-        environment: { OPENCLAW_GATEWAY_PORT: "19001" },
+        programArguments: ["afora", "gateway", "--port", "18789"],
+        environment: { AFORA_GATEWAY_PORT: "19001" },
       })),
       isLoaded: vi.fn(async () => true),
       readRuntime: vi.fn(async () => ({ status: "stopped" })),
@@ -430,8 +430,8 @@ describe("startGatewayService", () => {
   it("uses the command-line port before a stale managed environment port", async () => {
     const service = createService({
       readCommand: vi.fn(async () => ({
-        programArguments: ["openclaw", "gateway", "--port", "19001"],
-        environment: { OPENCLAW_GATEWAY_PORT: "18789" },
+        programArguments: ["afora", "gateway", "--port", "19001"],
+        environment: { AFORA_GATEWAY_PORT: "18789" },
       })),
       isLoaded: vi.fn(async () => true),
       readRuntime: vi.fn(async () => ({ status: "stopped" })),
@@ -454,8 +454,8 @@ describe("startGatewayService", () => {
     const service = createService({
       readCommand: vi.fn(async () => ({
         programArguments: [
-          "/private/tmp/openclaw-ai-install-cli-pr118/tools/node/bin/node",
-          "/tmp/openclaw-ai-install-cli-pr118/lib/node_modules/openclaw/dist/index.js",
+          "/private/tmp/afora-ai-install-cli-pr118/tools/node/bin/node",
+          "/tmp/afora-ai-install-cli-pr118/lib/node_modules/afora/dist/index.js",
           "gateway",
         ],
         environment: {},
@@ -479,7 +479,7 @@ describe("startGatewayService", () => {
     const readCommand = vi
       .fn<GatewayService["readCommand"]>()
       .mockResolvedValueOnce({
-        programArguments: ["openclaw", "gateway", "run"],
+        programArguments: ["afora", "gateway", "run"],
       })
       .mockResolvedValueOnce(null);
     const service = createService({

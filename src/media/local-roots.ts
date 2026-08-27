@@ -1,15 +1,15 @@
 // Local media root helpers normalize and match allowed local media roots.
 import path from "node:path";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import {
   resolveEffectiveToolFsRootExpansionAllowed,
   resolveEffectiveToolFsWorkspaceOnly,
 } from "../agents/tool-fs-policy.js";
 import { resolveDeliveryQueueMediaDir, resolveStateDir } from "../config/paths.js";
-import type { OpenClawConfig } from "../config/types.js";
-import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import type { AforaConfig } from "../config/types.js";
+import { resolvePreferredAforaTmpDir } from "../infra/tmp-afora-dir.js";
 import { resolveConfigDir } from "../utils.js";
 import { resolveLocalMediaPath } from "./local-media-path.js";
 
@@ -23,7 +23,7 @@ function resolveCachedPreferredTmpDir(): string {
   if (!cachedPreferredTmpDir) {
     // Temp-root discovery can hit platform/env state; keep one process-local
     // snapshot so media root lists stay stable during a run.
-    cachedPreferredTmpDir = resolvePreferredOpenClawTmpDir();
+    cachedPreferredTmpDir = resolvePreferredAforaTmpDir();
   }
   return cachedPreferredTmpDir;
 }
@@ -60,7 +60,7 @@ export function getDefaultMediaLocalRoots(): readonly string[] {
 
 /** Adds the active agent workspace to the default media roots without exposing all agent state. */
 export function getAgentScopedMediaLocalRoots(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId?: string,
 ): readonly string[] {
   const roots = buildMediaLocalRoots(resolveStateDir(), resolveConfigDir());
@@ -104,7 +104,7 @@ export function appendLocalMediaParentRoots(
 
 /** Resolves outbound media roots, expanding for local sources only when filesystem policy allows it. */
 export function getAgentScopedMediaLocalRootsForSources(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
   mediaSources?: readonly string[];
 }): readonly string[] {

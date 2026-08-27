@@ -1,13 +1,13 @@
-# OpenClaw Cohere Provider
+# Afora Cohere Provider
 
-Official OpenClaw provider plugin for Cohere's OpenAI-compatible Compatibility
+Official Afora provider plugin for Cohere's OpenAI-compatible Compatibility
 API.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/cohere-provider
-openclaw gateway restart
+afora plugins install @afora/cohere-provider
+afora gateway restart
 ```
 
 Configure a Cohere API key, then select `cohere/command-a-plus-05-2026`,

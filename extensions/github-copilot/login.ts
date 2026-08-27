@@ -4,10 +4,10 @@ import {
   nonNegativeSecondsToSafeMilliseconds,
   positiveSecondsToSafeMilliseconds,
   resolveTimerTimeoutMs,
-} from "openclaw/plugin-sdk/number-runtime";
-import { normalizeGithubCopilotDomain } from "openclaw/plugin-sdk/provider-auth";
-import { readProviderJsonResponse } from "openclaw/plugin-sdk/provider-http";
-import { fetchWithSsrFGuard, type SsrFPolicy } from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/number-runtime";
+import { normalizeGithubCopilotDomain } from "afora-agent/plugin-sdk/provider-auth";
+import { readProviderJsonResponse } from "afora-agent/plugin-sdk/provider-http";
+import { fetchWithSsrFGuard, type SsrFPolicy } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { PUBLIC_GITHUB_COPILOT_DOMAIN } from "./domain.js";
 
 const CLIENT_ID = "Iv1.b507a08c87ecfe98";

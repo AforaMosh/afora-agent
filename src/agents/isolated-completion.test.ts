@@ -101,8 +101,8 @@ vi.mock("../infra/private-temp-workspace.js", () => ({
   withTempWorkspace: async (_options: unknown, run: (value: { dir: string }) => unknown) =>
     await run({ dir: "/tmp/isolated" }),
 }));
-vi.mock("../infra/tmp-openclaw-dir.js", () => ({
-  resolvePreferredOpenClawTmpDir: () => "/tmp",
+vi.mock("../infra/tmp-afora-dir.js", () => ({
+  resolvePreferredAforaTmpDir: () => "/tmp",
 }));
 
 import { runIsolatedCompletion } from "./isolated-completion.js";
@@ -770,7 +770,7 @@ describe("runIsolatedCompletion", () => {
         executionMode: "side-question",
         isolatedCompletion: true,
         disableTools: true,
-        cliToolAvailability: { native: [], openClaw: [] },
+        cliToolAvailability: { native: [], afora: [] },
       }),
     );
   });

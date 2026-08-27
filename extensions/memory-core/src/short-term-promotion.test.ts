@@ -3,14 +3,14 @@ import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
-import type { OpenKeyedStoreOptions } from "openclaw/plugin-sdk/plugin-state-runtime";
-import { createPluginStateKeyedStoreForTests } from "openclaw/plugin-sdk/plugin-state-test-runtime";
+import { expectDefined } from "@afora/normalization-core";
+import type { OpenKeyedStoreOptions } from "afora-agent/plugin-sdk/plugin-state-runtime";
+import { createPluginStateKeyedStoreForTests } from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { deriveConceptTags } from "./concept-vocabulary.js";
 import { isPromotionOriginBlocked } from "./dreaming-consolidation-candidates.js";
 
-vi.mock("openclaw/plugin-sdk/memory-host-events", () => ({
+vi.mock("afora-agent/plugin-sdk/memory-host-events", () => ({
   appendMemoryHostEvent: vi.fn(async () => {}),
 }));
 
@@ -651,7 +651,7 @@ describe("short-term promotion", () => {
             score: 0.9,
             snippet,
             source: "memory",
-            projectKey: "github.com/OpenClaw/OpenClaw",
+            projectKey: "github.com/AforaMosh/afora-agent",
           },
         ],
       });
@@ -662,7 +662,7 @@ describe("short-term promotion", () => {
         minUniqueQueries: 0,
       });
       expect(candidates[0]?.projectKey).toBe(
-        "path:/Users/Alice/Repo; path:/Users/alice/repo; github.com/OpenClaw/OpenClaw",
+        "path:/Users/Alice/Repo; path:/Users/alice/repo; github.com/AforaMosh/afora-agent",
       );
 
       await applyShortTermPromotions({
@@ -673,7 +673,7 @@ describe("short-term promotion", () => {
         minUniqueQueries: 0,
       });
       await expect(fs.readFile(path.join(workspaceDir, "MEMORY.md"), "utf8")).resolves.toContain(
-        "<!-- project: path:/Users/Alice/Repo; path:/Users/alice/repo; github.com/OpenClaw/OpenClaw -->",
+        "<!-- project: path:/Users/Alice/Repo; path:/Users/alice/repo; github.com/AforaMosh/afora-agent -->",
       );
     });
   });
@@ -1603,7 +1603,7 @@ describe("short-term promotion", () => {
       expect(secondApply.reconciledExisting).toBe(1);
 
       const memoryText = await fs.readFile(path.join(workspaceDir, "MEMORY.md"), "utf-8");
-      expect(memoryText.match(/openclaw-memory-promotion:/g)?.length).toBe(1);
+      expect(memoryText.match(/afora-memory-promotion:/g)?.length).toBe(1);
       expect(
         memoryText.match(/The gateway should stay loopback-only on port 18789\./g)?.length,
       ).toBe(1);
@@ -1670,9 +1670,9 @@ describe("short-term promotion", () => {
 
       const memoryText = await fs.readFile(path.join(workspaceDir, "MEMORY.md"), "utf-8");
       expect(memoryText).toContain(
-        "<!-- openclaw-memory-promotion:memory:memory/project alpha/2026-04-01.md:2:2 -->",
+        "<!-- afora-memory-promotion:memory:memory/project alpha/2026-04-01.md:2:2 -->",
       );
-      expect(memoryText.match(/openclaw-memory-promotion:/g)?.length).toBe(1);
+      expect(memoryText.match(/afora-memory-promotion:/g)?.length).toBe(1);
       expect(
         memoryText.match(/The project alpha gateway should stay loopback-only on port 18789\./g)
           ?.length,
@@ -1829,10 +1829,10 @@ describe("short-term promotion", () => {
         "- Plan switches use exRule, not abConfig", // 2
         "", // 3
         "## Light Sleep", // 4
-        "<!-- openclaw:dreaming:light:start -->", // 5
+        "<!-- afora:dreaming:light:start -->", // 5
         "- Candidate: staged dream", // 6
         "  - confidence: 0.95", // 7
-        "<!-- openclaw:dreaming:light:end -->", // 8
+        "<!-- afora:dreaming:light:end -->", // 8
       ]);
 
       // Stored recall snippet equals the marker text exactly, so relocate's
@@ -1851,7 +1851,7 @@ describe("short-term promotion", () => {
             startLine: 5,
             endLine: 5,
             score: 0.94,
-            snippet: "<!-- openclaw:dreaming:light:start -->",
+            snippet: "<!-- afora:dreaming:light:start -->",
             source: "memory",
           },
         ],
@@ -1876,7 +1876,7 @@ describe("short-term promotion", () => {
         .readFile(path.join(workspaceDir, "MEMORY.md"), "utf-8")
         .catch(() => "");
       expect(memoryText).not.toContain("Promoted From Short-Term Memory");
-      expect(memoryText).not.toMatch(/openclaw:dreaming/i);
+      expect(memoryText).not.toMatch(/afora:dreaming/i);
     });
   });
 
@@ -1889,9 +1889,9 @@ describe("short-term promotion", () => {
         "Legitimate durable observation about backups.",
         "",
         "## Light Sleep",
-        "<!-- openclaw:dreaming:light:start -->",
+        "<!-- afora:dreaming:light:start -->",
         "- Candidate: staged dream scratchwork",
-        "<!-- openclaw:dreaming:light:end -->",
+        "<!-- afora:dreaming:light:end -->",
       ]);
       expect(dailyPath).toBeTruthy();
 
@@ -2251,7 +2251,7 @@ describe("short-term promotion", () => {
       expect(promotedLine).toMatch(
         /\[score=0\.\d{3} signals=1 recalls=1 avg=0\.\d{3} source=memory\/2026-04-01\.md:1-1\]/,
       );
-      expect(memoryText).toMatch(/<!-- openclaw-memory-promotion:[^\n]+ -->/);
+      expect(memoryText).toMatch(/<!-- afora-memory-promotion:[^\n]+ -->/);
     });
   });
 
@@ -2909,9 +2909,9 @@ describe("short-term promotion", () => {
         "# 2026-05-28",
         "",
         "## Light Sleep",
-        "<!-- openclaw:dreaming:light:start -->",
+        "<!-- afora:dreaming:light:start -->",
         "- Candidate: scratch reflection",
-        "<!-- openclaw:dreaming:light:end -->",
+        "<!-- afora:dreaming:light:end -->",
         "- Reviewed travel timing before the workshop.",
       ]);
       await recordShortTermRecalls({
@@ -3796,13 +3796,13 @@ describe("short-term promotion", () => {
           "# Long-Term Memory",
           "",
           "## Promoted From Short-Term Memory (2026-04-10)",
-          "<!-- openclaw-memory-promotion:legacy-mixed -->",
+          "<!-- afora-memory-promotion:legacy-mixed -->",
           `- ${filler}`,
           "",
           "USER-AUTHORED: recovery key is paper-copy-17",
           "",
           "## Promoted From Short-Term Memory (2026-04-20)",
-          "<!-- openclaw-memory-promotion:legacy-generated -->",
+          "<!-- afora-memory-promotion:legacy-generated -->",
           `- ${filler}`,
           "",
         ].join("\n");
@@ -3864,14 +3864,14 @@ describe("short-term promotion", () => {
           "# Long-Term Memory",
           "",
           "## Promoted From Short-Term Memory (2026-04-10)",
-          "<!-- openclaw-memory-promotion:legacy-old -->",
+          "<!-- afora-memory-promotion:legacy-old -->",
           `- ${filler}`,
           "",
           "   ### Correction (added by me)",
           "The prod DB is db-2.corp.example, NOT db-1.",
           "",
           "## Promoted From Short-Term Memory (2026-04-20)",
-          "<!-- openclaw-memory-promotion:legacy-newer -->",
+          "<!-- afora-memory-promotion:legacy-newer -->",
           `- ${filler}`,
           "",
         ].join("\n");
@@ -3936,11 +3936,11 @@ describe("short-term promotion", () => {
           "# Long-Term Memory",
           "",
           "## Promoted From Short-Term Memory (2026-04-10)",
-          "<!-- openclaw-memory-promotion:legacy-old -->",
+          "<!-- afora-memory-promotion:legacy-old -->",
           `- ${filler}`,
           "",
           "## Promoted From Short-Term Memory (2026-04-20)",
-          "<!-- openclaw-memory-promotion:legacy-newer -->",
+          "<!-- afora-memory-promotion:legacy-newer -->",
           `- ${filler}`,
           "",
         ].join("\n");

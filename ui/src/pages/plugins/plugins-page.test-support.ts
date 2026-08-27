@@ -260,7 +260,7 @@ export async function mountPage(
   routeData?: PluginsRouteData,
 ): Promise<{ page: TestPluginsPage; provider: ApplicationContextProvider }> {
   const provider = createApplicationContextProvider(context);
-  const page = document.createElement("openclaw-plugins-page") as unknown as TestPluginsPage;
+  const page = document.createElement("afora-plugins-page") as unknown as TestPluginsPage;
   page.routeData = routeData;
   provider.append(page);
   document.body.append(provider);

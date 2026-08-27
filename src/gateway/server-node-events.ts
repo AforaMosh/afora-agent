@@ -4,8 +4,8 @@ import { randomUUID } from "node:crypto";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import { sliceUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+} from "@afora/normalization-core/string-coerce";
+import { sliceUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { validateNodePresenceActivityPayload } from "../../packages/gateway-protocol/src/index.js";
 import { resolveSessionAgentId as defaultResolveSessionAgentId } from "../agents/agent-scope.js";
 import { sendDurableMessageBatchCore } from "../channels/message/runtime.js";
@@ -15,7 +15,7 @@ import { agentCommandFromIngress } from "../commands/agent.js";
 import { getRuntimeConfig as defaultGetRuntimeConfig } from "../config/io.js";
 import { resolveSystemMainSessionTarget as defaultResolveSystemMainSessionTarget } from "../config/sessions/main-session.js";
 import { upsertSessionEntryCore } from "../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { loadOrCreateProcessDeviceIdentity as defaultLoadOrCreateProcessDeviceIdentity } from "../infra/device-identity.js";
 import {
   updatePairedDevicePresence as defaultUpdatePairedDevicePresence,
@@ -554,7 +554,7 @@ function parsePayloadObject(payloadJSON?: string | null): Record<string, unknown
 }
 
 async function sendReceiptAck(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   deps: NodeEventContext["deps"];
   sessionKey: string;
   channel: string;

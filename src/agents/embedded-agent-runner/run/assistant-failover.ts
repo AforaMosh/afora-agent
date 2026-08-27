@@ -2,7 +2,7 @@
  * Handles assistant-stage failover decisions during embedded-agent attempts.
  */
 import { sanitizeForLog } from "../../../../packages/terminal-core/src/ansi.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import type { AssistantMessage } from "../../../llm/types.js";
 import {
   projectAgentRunAttemptTerminal,
@@ -81,7 +81,7 @@ export async function handleAssistantFailover(params: {
   providerOwner?: PreparedProviderFailoverOwner;
   activeErrorContext: { provider: string; model: string };
   lastAssistant: AssistantMessage | undefined;
-  config: OpenClawConfig | undefined;
+  config: AforaConfig | undefined;
   sessionKey?: string;
   authFailure: boolean;
   rateLimitFailure: boolean;
@@ -330,7 +330,7 @@ export async function handleAssistantFailover(params: {
 
 function resolveAssistantFailoverErrorMessage(params: {
   lastAssistant: AssistantMessage | undefined;
-  config: OpenClawConfig | undefined;
+  config: AforaConfig | undefined;
   sessionKey?: string;
   activeErrorContext: { provider: string; model: string };
   providerOwner?: PreparedProviderFailoverOwner;

@@ -1,6 +1,6 @@
 import { once } from "node:events";
 import type { AddressInfo } from "node:net";
-import { rawDataToString } from "@openclaw/gateway-client/websocket-data";
+import { rawDataToString } from "@afora/gateway-client/websocket-data";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { WebSocket, WebSocketServer, type RawData } from "ws";
 import { setActiveNodeContext } from "../infra/active-node-context.js";
@@ -16,7 +16,7 @@ function createNodeClient(socket: WebSocket): GatewayWsClient {
       minProtocol: 1,
       maxProtocol: 1,
       client: {
-        id: "openclaw-linux",
+        id: "afora-linux",
         version: "1.0.0",
         platform: "linux",
         mode: "node",

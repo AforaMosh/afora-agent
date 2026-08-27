@@ -5,7 +5,7 @@ import path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import type { ReadableStream as NodeReadableStream } from "node:stream/web";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { isWindowsDrivePath } from "../../infra/archive-path.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { root as fsRoot } from "../../infra/fs-safe.js";
@@ -90,7 +90,7 @@ async function downloadFile(params: {
   timeoutMs: number;
 }): Promise<{ bytes: number }> {
   const destPath = path.resolve(params.rootDir, params.relativePath);
-  const stagingDir = path.join(params.rootDir, ".openclaw-download-staging");
+  const stagingDir = path.join(params.rootDir, ".afora-download-staging");
   await ensureDir(stagingDir);
   await assertCanonicalPathWithinBase({
     baseDir: params.rootDir,

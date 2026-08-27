@@ -1,5 +1,5 @@
 // @vitest-environment node
-import type { SystemAgentChatQuestion } from "@openclaw/gateway-protocol";
+import type { SystemAgentChatQuestion } from "@afora/gateway-protocol";
 import { describe, expect, it } from "vitest";
 import { parseCustodianQuestion } from "./structured-question.ts";
 

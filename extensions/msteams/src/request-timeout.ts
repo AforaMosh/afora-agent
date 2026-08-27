@@ -1,11 +1,11 @@
 // Msteams plugin module implements request deadline behavior.
-import { resolveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
+import { resolveTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
 import {
   createProviderOperationDeadline,
   resolveProviderOperationTimeoutMs,
   type ProviderOperationDeadline,
-} from "openclaw/plugin-sdk/provider-http";
-import { withTimeout } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/provider-http";
+import { withTimeout } from "afora-agent/plugin-sdk/text-utility-runtime";
 
 export const MSTEAMS_REQUEST_TIMEOUT_MS = 30_000;
 // SharePoint PUTs are data-plane transfers: keep a base stall bound, then add

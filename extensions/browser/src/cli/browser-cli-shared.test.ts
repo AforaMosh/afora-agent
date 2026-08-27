@@ -22,7 +22,7 @@ describe("callBrowserRequest", () => {
   it("requests the browser.request admin scope explicitly", async () => {
     await callBrowserRequest(
       { json: true },
-      { method: "GET", path: "/status", query: { profile: "openclaw" } },
+      { method: "GET", path: "/status", query: { profile: "afora" } },
       { progress: true },
     );
 

@@ -1,5 +1,5 @@
 // Pane-local search, context menus, selection actions, and presentation resets.
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { html, nothing, type TemplateResult } from "lit";
 import { ref } from "lit/directives/ref.js";
 import type { SessionsListResult } from "../../../api/types.ts";
@@ -231,7 +231,7 @@ export function renderTranscriptSearch(
           requestUpdate();
         }}
       />
-      <openclaw-tooltip .content=${t("chat.thread.closeSearch")}>
+      <afora-tooltip .content=${t("chat.thread.closeSearch")}>
         <button
           class="btn btn--ghost"
           aria-label=${t("chat.thread.closeSearch")}
@@ -239,7 +239,7 @@ export function renderTranscriptSearch(
         >
           ${icons.x}
         </button>
-      </openclaw-tooltip>
+      </afora-tooltip>
     </div>
   `;
 }
@@ -353,7 +353,7 @@ function createMessageActionContextButton(params: {
   button.setAttribute("aria-label", params.label);
   button.textContent = params.label;
   button.addEventListener("click", params.onClick);
-  const tooltip = document.createElement("openclaw-tooltip");
+  const tooltip = document.createElement("afora-tooltip");
   tooltip.content = params.tooltip;
   tooltip.append(button);
   return { element: tooltip, button };

@@ -1,4 +1,4 @@
-import type { AssistantMessage, ProviderReplayState } from "@openclaw/llm-core";
+import type { AssistantMessage, ProviderReplayState } from "@afora/llm-core";
 import { describe, expect, it } from "vitest";
 import { convertToLlm } from "../messages.js";
 import type { SessionTreeEntry } from "../types.js";
@@ -289,7 +289,7 @@ describe("buildSessionContext", () => {
         keptAssistant as AssistantMessage & {
           [key: symbol]: true | undefined;
         }
-      )[Symbol.for("openclaw.sessionHistoryPrelude")],
+      )[Symbol.for("afora.sessionHistoryPrelude")],
     ).toBe(true);
   });
 

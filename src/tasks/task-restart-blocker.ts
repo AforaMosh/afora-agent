@@ -1,5 +1,5 @@
 // Shared formatting contract for restart diagnostics that report active tasks.
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import type { TaskRecord, TaskStatus } from "./task-registry.types.js";
 
 export type ActiveTaskRestartBlocker = {

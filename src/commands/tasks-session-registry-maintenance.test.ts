@@ -4,8 +4,8 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { resetConfigRuntimeState } from "../config/config.js";
 import { loadSessionEntry, replaceSessionEntry } from "../config/sessions/session-accessor.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import { runSessionRegistryMaintenance } from "./tasks-session-registry-maintenance.js";
 
 const mocks = vi.hoisted(() => ({
@@ -29,12 +29,12 @@ describe("runSessionRegistryMaintenance", () => {
   afterEach(() => {
     mocks.cronStoreLoadError = undefined;
     resetConfigRuntimeState();
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
   });
 
   it("skips the sweep instead of pruning when the cron store is unreadable", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-session-registry-maintenance-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-session-registry-maintenance-" },
       async (state) => {
         resetConfigRuntimeState();
         const storePath = path.join(state.sessionsDir("main"), "sessions.json");
@@ -56,8 +56,8 @@ describe("runSessionRegistryMaintenance", () => {
   });
 
   it("prunes stale rows when the cron store is readable", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-session-registry-maintenance-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-session-registry-maintenance-" },
       async (state) => {
         resetConfigRuntimeState();
         const storePath = path.join(state.sessionsDir("main"), "sessions.json");

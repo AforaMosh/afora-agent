@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import {
   buildQaEvidenceGalleryModel,
@@ -48,7 +48,7 @@ function vitestArtifactEvidence(params: {
   artifact: { kind: string; path: string };
 }): QaEvidenceSummaryJson {
   return {
-    kind: "openclaw.qa.evidence-summary",
+    kind: "afora.qa.evidence-summary",
     schemaVersion: 2,
     generatedAt: "2026-06-17T12:00:00.000Z",
     evidenceMode: "full",
@@ -87,7 +87,7 @@ describe("evidence gallery", () => {
         { kind: "log", path: "runner/output.log" },
       ],
       env: {
-        OPENCLAW_QA_REF: "gallery-test",
+        AFORA_QA_REF: "gallery-test",
       } as NodeJS.ProcessEnv,
       generatedAt: "2026-06-17T12:00:00.000Z",
       primaryModel: "mock-openai/gpt-5.6-luna",
@@ -184,7 +184,7 @@ describe("evidence gallery", () => {
         status: "blocked",
         failure: {
           class: "blocked",
-          reason: `Command failed at ${repoRoot}/openclaw.mjs and file://${repoRoot}/trace.log`,
+          reason: `Command failed at ${repoRoot}/afora.mjs and file://${repoRoot}/trace.log`,
         },
       },
     };
@@ -197,7 +197,7 @@ describe("evidence gallery", () => {
 
     const failureModelEntry = expectDefined(model.entries[0], "failure gallery entry");
     expect(failureModelEntry.failureReason).toBe(
-      "Command failed at <repo-root>/openclaw.mjs and file://<repo-root>/trace.log",
+      "Command failed at <repo-root>/afora.mjs and file://<repo-root>/trace.log",
     );
     expect(JSON.stringify(model)).not.toContain(repoRoot);
   });
@@ -414,7 +414,7 @@ describe("evidence gallery", () => {
     );
 
     await writeJson(path.join(suiteDir, QA_EVIDENCE_FILENAME), {
-      kind: "openclaw.qa.evidence-summary",
+      kind: "afora.qa.evidence-summary",
       schemaVersion: 2,
       generatedAt: "2026-06-17T12:00:00.000Z",
       evidenceMode: "full",
@@ -728,7 +728,7 @@ describe("evidence gallery", () => {
     ).rejects.toThrow("Evidence artifact not found.");
     await expect(
       buildQaEvidenceGalleryModel({
-        evidencePath: "/tmp/not-openclaw-evidence.json",
+        evidencePath: "/tmp/not-afora-evidence.json",
         repoRoot,
       }),
     ).rejects.toThrow("Evidence path not found.");

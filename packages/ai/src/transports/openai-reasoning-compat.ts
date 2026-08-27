@@ -3,8 +3,8 @@
  *
  * Keeps provider metadata and built-in model exceptions on one path before request payloads are built.
  */
-import { asOptionalObjectRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { asOptionalObjectRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 
 /** Minimal model fields needed to resolve OpenAI reasoning effort compatibility. */
 type OpenAIReasoningCompatModel = {

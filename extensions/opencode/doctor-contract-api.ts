@@ -1,7 +1,7 @@
 // OpenCode doctor contract repairs the retired Zen free-model reference shipped in beta.3.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { normalizeProviderId, parseModelRef } from "openclaw/plugin-sdk/model-ref-parse";
-import { asObjectRecord } from "openclaw/plugin-sdk/runtime-doctor-migrations";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { normalizeProviderId, parseModelRef } from "afora-agent/plugin-sdk/model-ref-parse";
+import { asObjectRecord } from "afora-agent/plugin-sdk/runtime-doctor-migrations";
 
 const RETIRED_MODEL = "hy3-free";
 const REPLACEMENT_MODEL = "laguna-s-2.1-free";
@@ -249,8 +249,8 @@ function removeRetiredCatalogRows(root: Record<string, unknown>, changes: string
   }
 }
 
-export function normalizeCompatibilityConfig({ cfg }: { cfg: OpenClawConfig }): {
-  config: OpenClawConfig;
+export function normalizeCompatibilityConfig({ cfg }: { cfg: AforaConfig }): {
+  config: AforaConfig;
   changes: string[];
 } {
   const next = structuredClone(cfg);

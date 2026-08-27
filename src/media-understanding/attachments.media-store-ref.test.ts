@@ -8,7 +8,7 @@ import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import type { MsgContext } from "../auto-reply/templating.js";
 import { toInboundMediaFacts } from "../channels/inbound-event/media.js";
 import type { ChannelInboundMediaInput } from "../channels/inbound-event/media.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { saveMediaBuffer } from "../media/store.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { applyMediaUnderstanding } from "./apply.js";
@@ -31,7 +31,7 @@ vi.mock("../plugins/capability-provider-runtime.js", async () => {
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
-function createOpenAiAudioCfg(): OpenClawConfig {
+function createOpenAiAudioCfg(): AforaConfig {
   return {
     models: {
       providers: {
@@ -41,10 +41,10 @@ function createOpenAiAudioCfg(): OpenClawConfig {
         },
       },
     },
-  } as unknown as OpenClawConfig;
+  } as unknown as AforaConfig;
 }
 
-function createUrlDisabledFileCfg(): OpenClawConfig {
+function createUrlDisabledFileCfg(): AforaConfig {
   return {
     tools: {
       media: {
@@ -70,8 +70,8 @@ async function withStoredInboundAudio<T>(
 ): Promise<T> {
   // Realpath the temp root: macOS resolves os.tmpdir() through /private, and the
   // media store returns canonical paths that would otherwise miss the roots.
-  const stateDir = await fs.realpath(tempDirs.make("openclaw-media-store-ref-", os.tmpdir()));
-  return await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir, PATH: "" }, async () => {
+  const stateDir = await fs.realpath(tempDirs.make("afora-media-store-ref-", os.tmpdir()));
+  return await withEnvAsync({ AFORA_STATE_DIR: stateDir, PATH: "" }, async () => {
     // Real inbound store write, exactly what a channel plugin does for an
     // inbound voice note before handing the reference to the agent turn.
     const saved = await saveMediaBuffer(
@@ -86,8 +86,8 @@ async function withStoredInboundAudio<T>(
 async function withStoredInboundDocument<T>(
   run: (saved: { id: string; path: string }) => Promise<T>,
 ): Promise<T> {
-  const stateDir = await fs.realpath(tempDirs.make("openclaw-media-store-ref-", os.tmpdir()));
-  return await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir, PATH: "" }, async () => {
+  const stateDir = await fs.realpath(tempDirs.make("afora-media-store-ref-", os.tmpdir()));
+  return await withEnvAsync({ AFORA_STATE_DIR: stateDir, PATH: "" }, async () => {
     const saved = await saveMediaBuffer(
       Buffer.from("stored document text", "utf8"),
       "text/plain",

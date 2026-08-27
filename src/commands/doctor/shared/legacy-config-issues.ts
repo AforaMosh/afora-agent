@@ -5,7 +5,7 @@ import type { LegacyConfigRule } from "../../../config/legacy.shared.js";
 import type {
   ConfigFileSnapshot,
   LegacyConfigIssue,
-  OpenClawConfig,
+  AforaConfig,
 } from "../../../config/types.js";
 import { withPluginMetadataSnapshotScope } from "../../../plugins/current-plugin-metadata-snapshot.js";
 import {
@@ -33,7 +33,7 @@ function collectPluginLegacyConfigRules(
   if (pluginIds.length === 0) {
     return [];
   }
-  return listPluginDoctorLegacyConfigRules({ config: raw as OpenClawConfig, pluginIds });
+  return listPluginDoctorLegacyConfigRules({ config: raw as AforaConfig, pluginIds });
 }
 
 /** Find legacy config issues using core rules plus relevant channel/plugin doctor contracts. */

@@ -1,5 +1,5 @@
 ---
-summary: "Adds LiteLLM model provider support to OpenClaw."
+summary: "Adds LiteLLM model provider support to Afora."
 read_when:
   - You are installing, configuring, or auditing the litellm plugin
 title: "LiteLLM plugin"
@@ -7,12 +7,12 @@ title: "LiteLLM plugin"
 
 # LiteLLM plugin
 
-Adds LiteLLM model provider support to OpenClaw.
+Adds LiteLLM model provider support to Afora.
 
 ## Distribution
 
-- Package: `@openclaw/litellm-provider`
-- Install route: included in OpenClaw
+- Package: `@afora/litellm-provider`
+- Install route: included in Afora
 
 ## Surface
 

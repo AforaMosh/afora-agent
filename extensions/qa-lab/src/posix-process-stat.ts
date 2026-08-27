@@ -1,5 +1,5 @@
 // Qa Lab parses Linux process stat snapshots for process-group ownership.
-import { sliceUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { sliceUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 
 function parseLinuxProcessStat(raw: string) {
   const commandStart = raw.indexOf("(");

@@ -1,17 +1,17 @@
-import type { ChannelApprovalKind } from "openclaw/plugin-sdk/approval-handler-runtime";
+import type { ChannelApprovalKind } from "afora-agent/plugin-sdk/approval-handler-runtime";
 // Imessage plugin module owns persisted approval reaction poll targets.
-import { readApprovalReactionDecisionList } from "openclaw/plugin-sdk/approval-reaction-runtime";
-import type { ExecApprovalReplyDecision } from "openclaw/plugin-sdk/approval-reply-runtime";
+import { readApprovalReactionDecisionList } from "afora-agent/plugin-sdk/approval-reaction-runtime";
+import type { ExecApprovalReplyDecision } from "afora-agent/plugin-sdk/approval-reply-runtime";
 import {
   asDateTimestampMs,
   isFutureDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "openclaw/plugin-sdk/number-runtime";
+} from "afora-agent/plugin-sdk/number-runtime";
 import {
   createPluginStateErrorReporter,
   type PluginStateKeyedStore,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
-import { asOptionalRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-runtime";
+import { asOptionalRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   normalizeConversationKey,
   normalizeIMessageGuid,

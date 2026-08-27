@@ -1,4 +1,4 @@
-import { textResult } from "openclaw/plugin-sdk/tool-results";
+import { textResult } from "afora-agent/plugin-sdk/tool-results";
 import type { ClickClackDiscussionService } from "./service.js";
 
 const DEFAULT_MESSAGE_LIMIT = 30;

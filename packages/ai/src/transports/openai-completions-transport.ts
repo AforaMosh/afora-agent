@@ -1,4 +1,4 @@
-import type { Context, Model, StreamFn } from "@openclaw/llm-core";
+import type { Context, Model, StreamFn } from "@afora/llm-core";
 import OpenAI from "openai";
 import { getEnvApiKey } from "../env-api-keys.js";
 import type { OpenAICompletionsOptions } from "../provider-options.js";
@@ -237,8 +237,8 @@ export function createOpenAICompletionsTransportStreamFn(): StreamFn {
           params = nextParams as typeof params;
         }
         if (
-          (options as { openclawCodeModeToolSurface?: unknown } | undefined)
-            ?.openclawCodeModeToolSurface === true
+          (options as { aforaCodeModeToolSurface?: unknown } | undefined)
+            ?.aforaCodeModeToolSurface === true
         ) {
           const visibleToolNames = resolveCodeModeResponsesVisibleToolNames(context);
           enforceCodeModeResponsesToolSurface(params, visibleToolNames);

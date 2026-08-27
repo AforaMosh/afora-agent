@@ -5,8 +5,8 @@ import path from "node:path";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+} from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { prepareSystemAgentRunAdmission } from "../../agents/admitted-run-context.js";
 import { resolveDefaultAgentId } from "../../agents/agent-scope-config.js";
 import { resolveBootstrapWarningSignaturesSeen } from "../../agents/bootstrap-budget.js";
@@ -48,7 +48,7 @@ import {
 } from "../../config/sessions/session-accessor.js";
 import { resolveSessionStorePathForScope } from "../../config/sessions/session-store-path.js";
 import { selectSessionTranscriptLeafControlledPath } from "../../config/sessions/transcript-tree.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { readSessionMessagesAsync } from "../../gateway/session-transcript-readers.js";
 import { logVerbose } from "../../globals.js";
 import { isAbortError } from "../../infra/abort-signal.js";
@@ -198,7 +198,7 @@ function setAgentRunnerMemoryTestDeps(overrides?: Partial<typeof memoryDeps>): v
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.agentRunnerMemoryTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.agentRunnerMemoryTestApi")] = {
     setAgentRunnerMemoryTestDeps,
   };
 }
@@ -264,7 +264,7 @@ function resolveMemoryFlushModelFallbackOptions(
 }
 
 type FollowupRuntimeParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   followupRun: FollowupRun;
   sessionEntry?: Pick<
     SessionEntry,
@@ -314,7 +314,7 @@ function resolveFollowupAgentRuntimeId(params: FollowupRuntimeParams): string {
 
 function followupOwnsNativeCompaction(params: FollowupRuntimeParams, runtimeId: string): boolean {
   // Backends that persist resumable native transcripts must remain the sole
-  // compaction owner; OpenClaw maintenance would corrupt that runtime state.
+  // compaction owner; Afora maintenance would corrupt that runtime state.
   return (
     resolveCliBackendConfig(runtimeId, params.cfg, {
       agentId: params.followupRun.run.agentId,
@@ -478,12 +478,12 @@ function readActiveTurnTaintFromTranscriptEvents(events: readonly unknown[]): {
     if (record.role === "user") {
       return { boundaryFound: true, tainted: false };
     }
-    const metadata = record["__openclaw"];
+    const metadata = record["__afora"];
     if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
       continue;
     }
-    const openClaw = metadata as { resultContentSource?: unknown; turnTainted?: unknown };
-    if (openClaw.turnTainted === true || openClaw.resultContentSource === "network") {
+    const afora = metadata as { resultContentSource?: unknown; turnTainted?: unknown };
+    if (afora.turnTainted === true || afora.resultContentSource === "network") {
       return { boundaryFound: false, tainted: true };
     }
   }
@@ -539,7 +539,7 @@ type SessionLogSnapshot = {
 };
 
 async function appendPostCompactionRefreshPrompt(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   followupRun: FollowupRun;
 }): Promise<void> {
   const refreshPrompt = await readPostCompactionContext(params.followupRun.run.workspaceDir, {
@@ -711,7 +711,7 @@ async function estimatePromptTokensFromSessionTranscript(params: {
 
 /** Runs preflight compaction when session state exceeds configured thresholds. */
 export async function runPreflightCompactionIfNeeded(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   followupRun: FollowupRun;
   promptForEstimate?: string;
   defaultModel: string;
@@ -833,7 +833,7 @@ export async function runPreflightCompactionIfNeeded(params: {
     typeof maxActiveTranscriptBytes === "number" &&
     activeTranscriptBytes >= maxActiveTranscriptBytes;
   if (isCodexRuntime && !shouldCompactByTranscriptBytes) {
-    // Codex owns native-thread token pressure; OpenClaw owns the host transcript byte fuse
+    // Codex owns native-thread token pressure; Afora owns the host transcript byte fuse
     // that bounds fresh-thread bootstrap seeds.
     logVerbose(
       `preflightCompaction skipped: sessionKey=${params.sessionKey} runtime=codex ` +
@@ -1072,7 +1072,7 @@ type MemoryFlushRunParams = Parameters<typeof runMemoryFlushIfNeeded>[0];
 
 /** Runs pre-compaction memory flush when transcript state warrants it. */
 export async function runMemoryFlushIfNeeded(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   followupRun: FollowupRun;
   promptForEstimate?: string;
   sessionCtx: TemplateContext;

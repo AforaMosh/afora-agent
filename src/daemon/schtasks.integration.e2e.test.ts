@@ -696,7 +696,7 @@ async function createIntegrationRoot(
   id: string,
 ): Promise<string> {
   if (!configuredRoot) {
-    return fs.mkdtemp(path.join(os.tmpdir(), `openclaw-schtasks-int-${id}-`));
+    return fs.mkdtemp(path.join(os.tmpdir(), `afora-schtasks-int-${id}-`));
   }
   const rootDir = path.resolve(configuredRoot);
   try {
@@ -745,7 +745,7 @@ describe("schtasks Windows integration principal assertion", () => {
   });
 
   it("refuses to reuse or delete an existing configured root", async () => {
-    const existingRoot = path.join(os.tmpdir(), `openclaw-schtasks-existing-${randomUUID()}`);
+    const existingRoot = path.join(os.tmpdir(), `afora-schtasks-existing-${randomUUID()}`);
     await fs.mkdir(existingRoot);
     try {
       await expect(createIntegrationRoot(existingRoot, "existing")).rejects.toThrow(
@@ -759,8 +759,8 @@ describe("schtasks Windows integration principal assertion", () => {
 
   it("redacts task identities without rewriting placeholders", () => {
     expect(
-      sanitizeDiagnosticText("openclaw user on host-user", [
-        ["openclaw", "<product>"],
+      sanitizeDiagnosticText("afora user on host-user", [
+        ["afora", "<product>"],
         ["user", "<task-user>"],
       ]),
     ).toBe("<product> <task-user> on host-<task-user>");
@@ -771,7 +771,7 @@ describe("schtasks Windows integration principal assertion", () => {
     ).toBe("<Task><Author><task-user></Author><UserId><task-user></UserId></Task>");
     expect(
       sanitizeTaskXml("<Task><Author>private</Author><UserId>S-1-5-21</UserId></Task>", [
-        ["openclaw", "<product>"],
+        ["afora", "<product>"],
       ]),
     ).toBe("<Task><Author><task-user></Author><UserId><task-user></UserId></Task>");
   });
@@ -787,7 +787,7 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
     const rootDir = await createIntegrationRoot(configuredRoot, id);
     const accountHome = os.userInfo().homedir;
     const profile = `schtasks-int-${id}`;
-    const stateDir = path.join(accountHome, `.openclaw-${profile}`);
+    const stateDir = path.join(accountHome, `.afora-${profile}`);
     const activePidPath = path.join(rootDir, "active-pid.txt");
     const eventsPath = path.join(rootDir, "runs.txt");
     const probePath = path.join(rootDir, "probe.cjs");
@@ -806,17 +806,17 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
       APPDATA: path.join(rootDir, "appdata"),
       HOME: accountHome,
       USERPROFILE: accountHome,
-      OPENCLAW_CONFIG_PATH: path.join(stateDir, "openclaw.json"),
-      OPENCLAW_GATEWAY_PORT: String(gatewayPort),
-      OPENCLAW_HOME: undefined,
-      OPENCLAW_PROFILE: profile,
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_TASK_SCRIPT: undefined,
-      OPENCLAW_TASK_SCRIPT_NAME: undefined,
-      OPENCLAW_WINDOWS_TASK_HIDDEN_LAUNCHER: "1",
-      OPENCLAW_WINDOWS_TASK_NAME: undefined,
+      AFORA_CONFIG_PATH: path.join(stateDir, "afora.json"),
+      AFORA_GATEWAY_PORT: String(gatewayPort),
+      AFORA_HOME: undefined,
+      AFORA_PROFILE: profile,
+      AFORA_STATE_DIR: stateDir,
+      AFORA_TASK_SCRIPT: undefined,
+      AFORA_TASK_SCRIPT_NAME: undefined,
+      AFORA_WINDOWS_TASK_HIDDEN_LAUNCHER: "1",
+      AFORA_WINDOWS_TASK_NAME: undefined,
     };
-    const defaultTaskBefore = await readTaskDefinitionSnapshot("OpenClaw Gateway");
+    const defaultTaskBefore = await readTaskDefinitionSnapshot("Afora Gateway");
     const scriptPath = resolveTaskScriptPath(env);
     const launcherPath = resolveTaskLauncherScriptPath(env, scriptPath);
 
@@ -873,8 +873,8 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
           stdout,
           programArguments,
           workingDirectory: rootDir,
-          environment: { OPENCLAW_GATEWAY_PORT: String(gatewayPort) },
-          description: `OpenClaw CI Scheduled Task integration ${id}`,
+          environment: { AFORA_GATEWAY_PORT: String(gatewayPort) },
+          description: `Afora CI Scheduled Task integration ${id}`,
         });
 
         expect((await execSchtasks(["/Query", "/TN", taskName])).code).toBe(0);
@@ -896,7 +896,7 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
         }
         const command = await service.readCommand(env);
         expect(command?.programArguments).toEqual(programArguments);
-        expect(command?.environment?.OPENCLAW_GATEWAY_PORT).toBe(String(gatewayPort));
+        expect(command?.environment?.AFORA_GATEWAY_PORT).toBe(String(gatewayPort));
         const installedRun = await waitForExactProbeRun(eventsPath, 1);
         const installedPid = installedRun.pid;
         expectProbeProcessAlive(installedPid);
@@ -977,7 +977,7 @@ describe.runIf(nativeIntegrationEnabled)("schtasks Windows integration", () => {
         await expect(fs.access(scriptPath)).rejects.toThrow();
         await expect(fs.access(launcherPath)).rejects.toThrow();
         expect(await canBindLoopbackPort(gatewayPort)).toBe(true);
-        expect(await readTaskDefinitionSnapshot("OpenClaw Gateway")).toEqual(defaultTaskBefore);
+        expect(await readTaskDefinitionSnapshot("Afora Gateway")).toEqual(defaultTaskBefore);
 
         const proofPath = process.env.CI_WINDOWS_SCHTASKS_PROOF_PATH?.trim();
         if (proofPath) {

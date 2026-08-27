@@ -8,7 +8,7 @@ function workSession(): SidebarRecentSession {
     hasActiveRun: false,
     label: "Backing session",
     status: "done",
-    subtitle: "~/Projects/openclaw",
+    subtitle: "~/Projects/afora",
     workSession: true,
   } as unknown as SidebarRecentSession;
 }
@@ -35,7 +35,7 @@ describe("resolveSidebarSessionSubtitle", () => {
         sidebarLiveActivity: true,
         narrationLine: "Still running",
       }),
-    ).toEqual({ subtitle: "~/Projects/openclaw", narration: undefined });
+    ).toEqual({ subtitle: "~/Projects/afora", narration: undefined });
   });
 
   it("uses attention, agent status, observer, narration, then work subtitle precedence", () => {

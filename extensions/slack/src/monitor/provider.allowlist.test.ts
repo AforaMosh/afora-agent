@@ -1,7 +1,7 @@
 // Slack tests cover provider.allowlist plugin behavior.
-import { CHANNEL_APPROVAL_NATIVE_RUNTIME_CONTEXT_CAPABILITY } from "openclaw/plugin-sdk/approval-handler-adapter-runtime";
-import type { ChannelRuntimeSurface } from "openclaw/plugin-sdk/channel-contract";
-import { buildChannelInboundEventContext } from "openclaw/plugin-sdk/channel-inbound";
+import { CHANNEL_APPROVAL_NATIVE_RUNTIME_CONTEXT_CAPABILITY } from "afora-agent/plugin-sdk/approval-handler-adapter-runtime";
+import type { ChannelRuntimeSurface } from "afora-agent/plugin-sdk/channel-contract";
+import { buildChannelInboundEventContext } from "afora-agent/plugin-sdk/channel-inbound";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   flush,
@@ -56,9 +56,9 @@ describe("slack allowlist log formatting", () => {
         input: "C0AQXEG6QFJ",
         resolved: true,
         id: "C0AQXEG6QFJ",
-        name: "openclawtest",
+        name: "aforatest",
       }),
-    ).toBe("C0AQXEG6QFJ→openclawtest");
+    ).toBe("C0AQXEG6QFJ→aforatest");
   });
 
   it("prints user names without repeating the id input", () => {

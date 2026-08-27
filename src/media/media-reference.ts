@@ -1,7 +1,7 @@
 // Media reference helpers resolve media refs to file, URL, or inline payloads.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { hasHttpUrlPrefix } from "@openclaw/net-policy/url-protocol";
+import { hasHttpUrlPrefix } from "@afora/net-policy/url-protocol";
 import { safeFileURLToPath } from "../infra/local-file-access.js";
 import { resolveUserPath } from "../utils.js";
 import { getMediaDir, resolveMediaBufferPath } from "./store.js";

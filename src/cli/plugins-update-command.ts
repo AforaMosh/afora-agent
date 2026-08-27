@@ -1,4 +1,4 @@
-// `openclaw plugins update` command implementation for tracked npm plugins and hook packs.
+// `afora plugins update` command implementation for tracked npm plugins and hook packs.
 import { isDeepStrictEqual } from "node:util";
 import { theme } from "../../packages/terminal-core/src/theme.js";
 import {
@@ -15,7 +15,7 @@ import type { ConfigWriteOptions } from "../config/io.js";
 import { containsConfigIncludeDirective } from "../config/io.read-helpers.js";
 import { createMergePatch, applyMergePatch } from "../config/merge-patch.js";
 import { ConfigMutationConflictError } from "../config/mutate.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { readHookInstalls } from "../hooks/installs.js";
 import { updateNpmInstalledHookPacks } from "../hooks/update.js";
@@ -118,12 +118,12 @@ function shouldPreserveEmptyPlugins(params: {
 }
 
 function projectUpdaterResultOntoSourceConfig(params: {
-  runtimeBase: OpenClawConfig;
-  sourceBase: OpenClawConfig;
-  updatedConfig: OpenClawConfig;
-}): OpenClawConfig {
+  runtimeBase: AforaConfig;
+  sourceBase: AforaConfig;
+  updatedConfig: AforaConfig;
+}): AforaConfig {
   const updatePatch = createMergePatch(params.runtimeBase, params.updatedConfig);
-  return applyMergePatch(params.sourceBase, updatePatch) as OpenClawConfig;
+  return applyMergePatch(params.sourceBase, updatePatch) as AforaConfig;
 }
 
 function assertWriteOptionRecordFresh(params: {
@@ -295,7 +295,7 @@ async function runPluginUpdateCommandUnlocked(params: RunPluginUpdateCommandPara
     }
     defaultRuntime.error(
       params.id
-        ? `No tracked plugin or hook pack found for "${params.id}". Run "openclaw plugins list" or "openclaw hooks list" to inspect installed packages.`
+        ? `No tracked plugin or hook pack found for "${params.id}". Run "afora plugins list" or "afora hooks list" to inspect installed packages.`
         : "Provide a plugin or hook-pack id, or use --all.",
     );
     return defaultRuntime.exit(1);

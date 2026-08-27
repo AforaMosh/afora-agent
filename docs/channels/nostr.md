@@ -1,17 +1,17 @@
 ---
 summary: "Nostr DM channel via NIP-04 encrypted messages"
 read_when:
-  - You want OpenClaw to receive DMs via Nostr
+  - You want Afora to receive DMs via Nostr
   - You're setting up decentralized messaging
 title: "Nostr"
 ---
 
-Nostr is a downloadable channel plugin (`@openclaw/nostr`) that lets OpenClaw receive and answer NIP-04 encrypted direct messages over Nostr relays. One account per gateway; DMs only.
+Nostr is a downloadable channel plugin (`@afora/nostr`) that lets Afora receive and answer NIP-04 encrypted direct messages over Nostr relays. One account per gateway; DMs only.
 
 ## Install
 
 ```bash
-openclaw plugins install @openclaw/nostr
+afora plugins install @afora/nostr
 ```
 
 Use the bare package spec to follow the current official release tag. Pin an exact version only when you need a reproducible install.
@@ -19,16 +19,16 @@ Use the bare package spec to follow the current official release tag. Pin an exa
 From a local checkout (dev workflows):
 
 ```bash
-openclaw plugins install --link <path-to-local-nostr-plugin>
+afora plugins install --link <path-to-local-nostr-plugin>
 ```
 
-Restart the gateway after installing or enabling plugins. Onboarding (`openclaw onboard`) and `openclaw channels add` surface Nostr from the shared channel catalog once the plugin is installed.
+Restart the gateway after installing or enabling plugins. Onboarding (`afora onboard`) and `afora channels add` surface Nostr from the shared channel catalog once the plugin is installed.
 
 ### Non-interactive setup
 
 ```bash
-openclaw channels add --channel nostr --private-key "$NOSTR_PRIVATE_KEY"
-openclaw channels add --channel nostr --private-key "$NOSTR_PRIVATE_KEY" --relay-urls "wss://relay.damus.io,wss://relay.primal.net"
+afora channels add --channel nostr --private-key "$NOSTR_PRIVATE_KEY"
+afora channels add --channel nostr --private-key "$NOSTR_PRIVATE_KEY" --relay-urls "wss://relay.damus.io,wss://relay.primal.net"
 ```
 
 Use `--use-env` to keep `NOSTR_PRIVATE_KEY` in the environment instead of storing the key in config (default account only).
@@ -86,14 +86,14 @@ Example:
     nostr: {
       privateKey: "${NOSTR_PRIVATE_KEY}",
       profile: {
-        name: "openclaw",
-        displayName: "OpenClaw",
+        name: "afora",
+        displayName: "Afora",
         about: "Personal assistant DM bot",
         picture: "https://example.com/avatar.png",
         banner: "https://example.com/banner.png",
         website: "https://example.com",
-        nip05: "openclaw@example.com",
-        lud16: "openclaw@example.com",
+        nip05: "afora@example.com",
+        lud16: "afora@example.com",
       },
     },
   },
@@ -194,7 +194,7 @@ docker run -p 7777:7777 ghcr.io/hoytech/strfry
 
 ### Manual test
 
-1. Note the bot pubkey from gateway logs or `openclaw channels status` (hex; convert to npub in your client if needed).
+1. Note the bot pubkey from gateway logs or `afora channels status` (hex; convert to npub in your client if needed).
 2. Open a Nostr client (Amethyst, Damus, etc.).
 3. DM the bot pubkey.
 4. Verify the response.

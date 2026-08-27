@@ -2,7 +2,7 @@
 import {
   parseProviderModelRef,
   type ProviderModelRef,
-} from "@openclaw/model-catalog-core/model-catalog-refs";
+} from "@afora/model-catalog-core/model-catalog-refs";
 
 /** Provider/model pair parsed from a generation model reference like `provider/model`. */
 export type ParsedGenerationModelRef = ProviderModelRef;

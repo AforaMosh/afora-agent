@@ -3,7 +3,7 @@ export const SANDBOX_CREATE_STAGING_PYTHON = [
   "    # This helper guarantees descriptor-relative confinement and no-replace",
   "    # publication, not content integrity against same-UID peers; they can",
   "    # also rewrite the destination immediately after publication.",
-  "    prefix = '.openclaw-create-'",
+  "    prefix = '.afora-create-'",
   "    for _ in range(128):",
   "        candidate = prefix + secrets.token_hex(6)",
   "        try:",

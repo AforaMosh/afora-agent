@@ -7,7 +7,7 @@ import {
   jidEncode,
   jidNormalizedUser,
 } from "baileys";
-import { createDedupeCache } from "openclaw/plugin-sdk/dedupe-runtime";
+import { createDedupeCache } from "afora-agent/plugin-sdk/dedupe-runtime";
 
 const RECENT_OUTBOUND_MESSAGE_TTL_MS = 20 * 60_000;
 const RECENT_OUTBOUND_MESSAGE_MAX = 5000;

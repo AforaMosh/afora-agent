@@ -1,14 +1,14 @@
 import type { DatabaseSync } from "node:sqlite";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import type { TranscriptEvent } from "../config/sessions/session-accessor.sqlite-contract.js";
 import { updateSqliteTranscriptEventJsonInTransaction } from "../config/sessions/session-accessor.sqlite-transcript-store.js";
 import {
-  assertOpenClawAgentDatabaseForMaintenance,
-  migrateOpenClawAgentDatabaseForMaintenance,
-} from "../state/openclaw-agent-db-maintenance.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../state/openclaw-agent-db.generated.js";
-import type { OpenClawAgentDatabase } from "../state/openclaw-agent-db.js";
-import { OPENCLAW_SQLITE_BUSY_TIMEOUT_MS } from "../state/openclaw-state-db.js";
+  assertAforaAgentDatabaseForMaintenance,
+  migrateAforaAgentDatabaseForMaintenance,
+} from "../state/afora-agent-db-maintenance.js";
+import type { DB as AforaAgentKyselyDatabase } from "../state/afora-agent-db.generated.js";
+import type { AforaAgentDatabase } from "../state/afora-agent-db.js";
+import { AFORA_SQLITE_BUSY_TIMEOUT_MS } from "../state/afora-state-db.js";
 import {
   clearNodeSqliteKyselyCacheForDatabase,
   executeSqliteQuerySync,
@@ -28,7 +28,7 @@ import type { MigrationMessages } from "./state-migrations.types.js";
 const MIGRATION_META_KEY = "historical-transcript-directives-v1";
 
 type TranscriptDirectiveMigrationDatabase = Pick<
-  OpenClawAgentKyselyDatabase,
+  AforaAgentKyselyDatabase,
   "schema_meta" | "transcript_events"
 >;
 
@@ -52,7 +52,7 @@ function createMigrationDatabaseHandle(
   database: DatabaseSync,
   agentId: string,
   pathname: string,
-): OpenClawAgentDatabase {
+): AforaAgentDatabase {
   return {
     agentId,
     db: database,
@@ -214,7 +214,7 @@ function assertTranscriptSessionSourceUnchanged(
 function migrateTranscriptSessions(params: {
   agentId: string;
   database: DatabaseSync;
-  owner: OpenClawAgentDatabase;
+  owner: AforaAgentDatabase;
   pathname: string;
   start: Extract<MigrationCursor, { phase: "transcripts" }>;
 }): number {
@@ -253,7 +253,7 @@ function migrateTranscriptSessions(params: {
           });
         },
         {
-          busyTimeoutMs: OPENCLAW_SQLITE_BUSY_TIMEOUT_MS,
+          busyTimeoutMs: AFORA_SQLITE_BUSY_TIMEOUT_MS,
           databaseLabel: params.pathname,
           operationLabel: "historical-transcript-directives",
         },
@@ -268,11 +268,11 @@ function migrateAgentDatabase(params: {
   agentId: string;
   pathname: string;
 }): DatabaseMigrationResult {
-  migrateOpenClawAgentDatabaseForMaintenance(params);
+  migrateAforaAgentDatabaseForMaintenance(params);
   const database = openNodeSqliteDatabase(params.pathname);
   try {
-    database.exec(`PRAGMA busy_timeout = ${OPENCLAW_SQLITE_BUSY_TIMEOUT_MS};`);
-    assertOpenClawAgentDatabaseForMaintenance(database, params);
+    database.exec(`PRAGMA busy_timeout = ${AFORA_SQLITE_BUSY_TIMEOUT_MS};`);
+    assertAforaAgentDatabaseForMaintenance(database, params);
     const cursor = readMigrationCursor(database, params.pathname);
     if (cursor.phase === "complete") {
       return { archivedTranscripts: 0, transcriptSessions: 0 };

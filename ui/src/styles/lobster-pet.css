@@ -11,7 +11,7 @@
 /* Every visit variant shares this zero-layout overlay strip above the footer.
    Its bottom edge sits 3px inside the bar so feet dangle over the divider, and
    overflow: hidden makes duck/peek/enter moves read as "behind the ledge". */
-openclaw-lobster-pet {
+afora-lobster-pet {
   position: absolute;
   left: 0;
   right: 0;
@@ -64,7 +64,7 @@ wa-dropdown.lobster-pet-dismiss-menu {
 
 /* Completed Lobsterdex: a quiet golden trim along the ledge, earned once
    every palette has visited this browser. */
-openclaw-lobster-pet[data-dex-complete]::after {
+afora-lobster-pet[data-dex-complete]::after {
   content: "";
   position: absolute;
   left: 8%;
@@ -523,7 +523,7 @@ openclaw-lobster-pet[data-dex-complete]::after {
   }
 }
 
-/* Retro: homage to the classic OpenClaw logo — white sticker outline around
+/* Retro: homage to the classic Afora logo — white sticker outline around
    the whole sprite (the halo is two stacked 1px drop-shadows). */
 .lobster-pet--palette-retro .lobster-pet__svg,
 .lobster-pet--palette-goldenretro .lobster-pet__svg {
@@ -1329,10 +1329,10 @@ openclaw-lobster-pet[data-dex-complete]::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  openclaw-lobster-pet .lobster-pet,
-  openclaw-lobster-pet .lobster-pet *,
-  openclaw-lobster-pet .lobster-bottle,
-  openclaw-lobster-pet .lobster-bottle * {
+  afora-lobster-pet .lobster-pet,
+  afora-lobster-pet .lobster-pet *,
+  afora-lobster-pet .lobster-bottle,
+  afora-lobster-pet .lobster-bottle * {
     animation: none !important;
     transition: none !important;
   }

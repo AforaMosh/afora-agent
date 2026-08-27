@@ -3,12 +3,12 @@ import {
   type AgentEvent,
   type AgentTool,
   type StreamFn,
-} from "openclaw/plugin-sdk/agent-core";
+} from "afora-agent/plugin-sdk/agent-core";
 import {
   type AssistantMessage,
   createAssistantMessageEventStream,
   type Model,
-} from "openclaw/plugin-sdk/llm";
+} from "afora-agent/plugin-sdk/llm";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -218,8 +218,8 @@ describe("Tool Search flattened call arguments", () => {
     const baseEntry = catalogRef.current?.entries[0];
     expect(baseEntry).toBeDefined();
     catalogRef.current!.entries = [
-      { ...baseEntry!, id: "openclaw:first:shared_search", tool: first },
-      { ...baseEntry!, id: "openclaw:second:shared_search", tool: second },
+      { ...baseEntry!, id: "afora:first:shared_search", tool: first },
+      { ...baseEntry!, id: "afora:second:shared_search", tool: second },
     ];
     const callTool = createToolSearchTools({ catalogRef, config }).find(
       (tool) => tool.name === TOOL_CALL_RAW_TOOL_NAME,
@@ -261,8 +261,8 @@ describe("Tool Search dispatcher argument preparation", () => {
   it.each([
     {
       label: "args-wrapped selector and input",
-      input: { args: { id: "openclaw:example-plugin:example_tool", args: { path: "/x" } } },
-      expected: { id: "openclaw:example-plugin:example_tool", args: { path: "/x" } },
+      input: { args: { id: "afora:example-plugin:example_tool", args: { path: "/x" } } },
+      expected: { id: "afora:example-plugin:example_tool", args: { path: "/x" } },
     },
     {
       label: "input-wrapped selector and args",
@@ -642,7 +642,7 @@ describe("Tool Search input schemas", () => {
     const result = await codeTool!.execute("invalid-code-call", {
       code: `
         try {
-          await openclaw.tools.call("strict_instruction", { instructions: "run" });
+          await afora.tools.call("strict_instruction", { instructions: "run" });
           return { executed: true };
         } catch (error) {
           return { error: error.message };

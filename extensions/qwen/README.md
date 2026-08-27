@@ -1,12 +1,12 @@
-# OpenClaw Qwen Cloud Provider
+# Afora Qwen Cloud Provider
 
-Official OpenClaw provider plugin for Qwen Cloud.
+Official Afora provider plugin for Qwen Cloud.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/qwen-provider
-openclaw gateway restart
+afora plugins install @afora/qwen-provider
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/providers/qwen> for setup and configuration.
+See <https://docs.afora.ai/providers/qwen> for setup and configuration.

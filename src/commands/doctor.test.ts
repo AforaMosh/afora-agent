@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   runDoctorStateSqliteCompact: vi.fn(),
   runDoctorSessionSqlite: vi.fn(),
   withDoctorSqliteMaintenanceLock: vi.fn(),
-  resolveInstalledPluginIndexStorePath: vi.fn(() => "/tmp/openclaw-installed-plugins.json"),
+  resolveInstalledPluginIndexStorePath: vi.fn(() => "/tmp/afora-installed-plugins.json"),
 }));
 
 vi.mock("./doctor-post-upgrade.js", () => ({
@@ -199,9 +199,9 @@ describe("doctorCommand", () => {
         throw new Error(`exit:${code}`);
       }),
     };
-    const stateDir = path.resolve(process.env.OPENCLAW_STATE_DIR ?? ".openclaw");
+    const stateDir = path.resolve(process.env.AFORA_STATE_DIR ?? ".afora");
     const storePath = path.join(stateDir, "agents", "main", "sessions", "sessions.json");
-    const sqlitePath = path.join(stateDir, "agents", "main", "agent", "openclaw-agent.sqlite");
+    const sqlitePath = path.join(stateDir, "agents", "main", "agent", "afora-agent.sqlite");
 
     await expect(
       doctorCommand(runtime, {
@@ -255,7 +255,7 @@ describe("doctorCommand", () => {
       },
       integrityCheck: "ok",
       mode: "compact",
-      path: "/tmp/openclaw/state/openclaw.sqlite",
+      path: "/tmp/afora/state/afora.sqlite",
       reclaimedBytes: 12_288,
       skipped: false,
     };
@@ -288,7 +288,7 @@ describe("doctorCommand", () => {
       body: "sanitized body",
       bodyPath: "/tmp/session.failure.md",
       title: "Session SQLite migration recovery report (run-1)",
-      url: "https://github.com/openclaw/openclaw/issues/new?title=run-1",
+      url: "https://github.com/AforaMosh/afora-agent/issues/new?title=run-1",
     };
     const report = {
       mode: "recover",
@@ -311,7 +311,7 @@ describe("doctorCommand", () => {
     mocks.runDoctorSessionSqlite.mockResolvedValueOnce(report);
     mocks.createSessionSqliteGithubIssue.mockReturnValueOnce({
       ok: true,
-      url: "https://github.com/openclaw/openclaw/issues/123",
+      url: "https://github.com/AforaMosh/afora-agent/issues/123",
     });
     const runtime = {
       log: vi.fn(),
@@ -333,7 +333,7 @@ describe("doctorCommand", () => {
 
     expect(mocks.createSessionSqliteGithubIssue).toHaveBeenCalledWith(supportIssue);
     expect(runtime.log).toHaveBeenCalledWith(
-      "session-sqlite recover: created GitHub issue https://github.com/openclaw/openclaw/issues/123",
+      "session-sqlite recover: created GitHub issue https://github.com/AforaMosh/afora-agent/issues/123",
     );
     expect(runtime.exit).toHaveBeenCalledWith(0);
   });
@@ -344,7 +344,7 @@ describe("doctorCommand", () => {
       supportIssue: {
         body: "sanitized body",
         title: "Session SQLite migration recovery report (run-1)",
-        url: "https://github.com/openclaw/openclaw/issues/new?title=run-1",
+        url: "https://github.com/AforaMosh/afora-agent/issues/new?title=run-1",
       },
       targets: [],
       totals: {

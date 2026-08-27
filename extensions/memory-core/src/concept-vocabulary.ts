@@ -1,6 +1,6 @@
 // Memory Core plugin module implements concept vocabulary behavior.
 import path from "node:path";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export const MAX_CONCEPT_TAGS = 8;
 

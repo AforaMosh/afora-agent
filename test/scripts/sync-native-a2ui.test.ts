@@ -33,7 +33,7 @@ describe("scripts/sync-native-a2ui.mts", () => {
   });
 
   it("requires every native build owner to generate isolated resources", async () => {
-    const root = tempDirs.make("openclaw-native-a2ui-");
+    const root = tempDirs.make("afora-native-a2ui-");
     const paths = {
       linuxBuildFile: path.join(root, "build.rs"),
       androidBuildFile: path.join(root, "build.gradle.kts"),
@@ -57,7 +57,7 @@ describe("scripts/sync-native-a2ui.mts", () => {
           "Stage Canvas A2UI resources",
           "node --import tsx scripts/sync-native-a2ui.mts --write --output",
           "pwd -P",
-          "$BUILT_PRODUCTS_DIR/OpenClawKit_OpenClawKit.bundle",
+          "$BUILT_PRODUCTS_DIR/AforaKit_AforaKit.bundle",
           "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH",
           'cp -R "$resource_product/CanvasA2UI"',
         ].join("\n"),
@@ -72,13 +72,13 @@ describe("scripts/sync-native-a2ui.mts", () => {
   });
 
   it("requires Linux Canvas to embed the plugin-owned resources", async () => {
-    const root = tempDirs.make("openclaw-native-a2ui-");
+    const root = tempDirs.make("afora-native-a2ui-");
     const linuxConsumerFile = path.join(root, "canvas.rs");
     await fs.writeFile(
       linuxConsumerFile,
       [
-        'include_bytes!(env!("OPENCLAW_CANVAS_A2UI_INDEX_HTML"));',
-        'include_bytes!(env!("OPENCLAW_CANVAS_A2UI_BUNDLE_JS"));',
+        'include_bytes!(env!("AFORA_CANVAS_A2UI_INDEX_HTML"));',
+        'include_bytes!(env!("AFORA_CANVAS_A2UI_BUNDLE_JS"));',
       ].join("\n"),
     );
 
@@ -90,7 +90,7 @@ describe("scripts/sync-native-a2ui.mts", () => {
   });
 
   it("replaces stale native resources with the generated source files", async () => {
-    const root = tempDirs.make("openclaw-native-a2ui-");
+    const root = tempDirs.make("afora-native-a2ui-");
     const sourceDir = path.join(root, "source");
     const nativeDir = path.join(root, "native");
     await writeA2uiFixture(sourceDir);
@@ -110,7 +110,7 @@ describe("scripts/sync-native-a2ui.mts", () => {
   });
 
   it("fails check mode when native resources contain stale files or stale bytes", async () => {
-    const root = tempDirs.make("openclaw-native-a2ui-");
+    const root = tempDirs.make("afora-native-a2ui-");
     const sourceDir = path.join(root, "source");
     const nativeDir = path.join(root, "native");
     await writeA2uiFixture(sourceDir);

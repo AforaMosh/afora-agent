@@ -37,7 +37,7 @@ type ControlUiE2eSuite = {
 export function createControlUiE2eSuite(options: ControlUiE2eSuiteOptions): ControlUiE2eSuite {
   const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
   const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-  const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+  const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
   const describeControlUiE2e =
     chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
   const openBrowserContexts = new Set<BrowserContext>();

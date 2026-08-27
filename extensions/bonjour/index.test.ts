@@ -1,5 +1,5 @@
 // Bonjour tests cover index plugin behavior.
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import { afterAll, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -17,7 +17,7 @@ vi.mock("./src/advertiser.js", () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/runtime", () => {
+vi.mock("afora-agent/plugin-sdk/runtime", () => {
   mocks.runtimeModuleLoaded();
   return {
     registerUncaughtExceptionHandler: mocks.registerUncaughtExceptionHandler,
@@ -29,7 +29,7 @@ const { default: bonjourPlugin } = await import("./index.js");
 
 afterAll(() => {
   vi.doUnmock("./src/advertiser.js");
-  vi.doUnmock("openclaw/plugin-sdk/runtime");
+  vi.doUnmock("afora-agent/plugin-sdk/runtime");
   vi.resetModules();
 });
 
@@ -77,7 +77,7 @@ describe("bonjour plugin entry", () => {
         canvasPort: 9876,
         sshPort: 22,
         tailnetDns: "dev.tailnet.ts.net",
-        cliPath: "/usr/local/bin/openclaw",
+        cliPath: "/usr/local/bin/afora",
         minimal: false,
       }),
     ).resolves.toEqual({ stop });
@@ -86,7 +86,7 @@ describe("bonjour plugin entry", () => {
     expect(mocks.runtimeModuleLoaded).toHaveBeenCalledTimes(1);
     expect(mocks.startGatewayBonjourAdvertiser).toHaveBeenCalledWith(
       {
-        instanceName: "Dev Box (OpenClaw)",
+        instanceName: "Dev Box (Afora)",
         gatewayPort: 3210,
         gatewayTlsEnabled: true,
         gatewayTlsFingerprintSha256: "abc123",
@@ -94,7 +94,7 @@ describe("bonjour plugin entry", () => {
         canvasPort: 9876,
         sshPort: 22,
         tailnetDns: "dev.tailnet.ts.net",
-        cliPath: "/usr/local/bin/openclaw",
+        cliPath: "/usr/local/bin/afora",
         minimal: false,
       },
       {

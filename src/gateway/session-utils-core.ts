@@ -1,8 +1,8 @@
 import {
   asNonNegativeFiniteNumber,
   asPositiveFiniteNumber,
-} from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   countActiveDescendantRuns,
   getSessionDisplaySubagentRunByChildSessionKey,
@@ -14,7 +14,7 @@ import {
 } from "../agents/subagents/registry/subagent-run-liveness.js";
 import { stripInboundMetadata } from "../auto-reply/reply/strip-inbound-meta.js";
 import { isTerminalSessionStatus, type SessionEntry } from "../config/sessions.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { pruneMapToMaxSize } from "../infra/map-size.js";
 import { truncateUtf16Safe } from "../utils.js";
 import {
@@ -172,7 +172,7 @@ export function buildCompactionCheckpointPreview(
 function resolveModelCostConfigCached(
   provider: string | undefined,
   model: string | undefined,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   rowContext?: SessionListRowContext,
 ): ModelCostConfig | undefined {
   if (!rowContext) {
@@ -188,7 +188,7 @@ function resolveModelCostConfigCached(
 }
 
 export function resolveEstimatedSessionCostUsd(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider?: string;
   model?: string;
   entry?: Pick<

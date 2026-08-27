@@ -1,13 +1,13 @@
 /** Runtime type contracts for mention-pattern matching helpers. */
 import type { ResolveMentionPatternPolicyParams } from "../../channels/mention-pattern-policy.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
 /** Options for building mention regexes without binding config/agent id. */
 export type BuildMentionRegexesOptions = Omit<ResolveMentionPatternPolicyParams, "cfg" | "agentId">;
 
 /** Builds mention regexes for the current config and agent. */
 export type BuildMentionRegexes = (
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
   agentId?: string,
   options?: BuildMentionRegexesOptions,
 ) => RegExp[];

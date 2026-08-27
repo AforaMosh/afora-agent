@@ -71,8 +71,8 @@ describe("diagnostics-otel gateway runtime", () => {
           "qa-channel": {
             enabled: true,
             baseUrl,
-            botUserId: "openclaw",
-            botDisplayName: "OpenClaw QA",
+            botUserId: "afora",
+            botDisplayName: "Afora QA",
             allowFrom: ["*"],
             pollTimeoutMs: 250,
           },
@@ -80,7 +80,7 @@ describe("diagnostics-otel gateway runtime", () => {
         messages: {
           visibleReplies: "automatic" as const,
           groupChat: {
-            mentionPatterns: ["\\b@?openclaw\\b"],
+            mentionPatterns: ["\\b@?afora\\b"],
             visibleReplies: "automatic" as const,
           },
         },
@@ -222,10 +222,10 @@ describe("diagnostics-otel gateway runtime", () => {
         () => {
           const toolError = activeReceiver.capturedSpans.find(
             (span) =>
-              span.name === "openclaw.tool.execution" &&
+              span.name === "afora.tool.execution" &&
               span.statusCode === 2 &&
-              span.attributes["openclaw.toolName"] === "read" &&
-              Boolean(span.attributes["openclaw.errorCategory"]),
+              span.attributes["afora.toolName"] === "read" &&
+              Boolean(span.attributes["afora.errorCategory"]),
           );
           if (!toolError?.traceId) {
             return undefined;
@@ -233,16 +233,16 @@ describe("diagnostics-otel gateway runtime", () => {
           const sameTrace = activeReceiver.capturedSpans.filter(
             (span) => span.traceId === toolError.traceId,
           );
-          const runs = sameTrace.filter((span) => span.name === "openclaw.run");
-          const harnesses = sameTrace.filter((span) => span.name === "openclaw.harness.run");
-          const modelCalls = sameTrace.filter((span) => span.name === "openclaw.model.call");
+          const runs = sameTrace.filter((span) => span.name === "afora.run");
+          const harnesses = sameTrace.filter((span) => span.name === "afora.harness.run");
+          const modelCalls = sameTrace.filter((span) => span.name === "afora.model.call");
           // QA-channel inbound replies use the channel-owned direct callback, not
           // deliver-core; the outbound bus receipt above is the delivery proof.
           const terminal = sameTrace.find(
             (span) =>
-              span.name === "openclaw.message.processed" &&
-              span.attributes["openclaw.channel"] === "qa-channel" &&
-              span.attributes["openclaw.outcome"] === "completed",
+              span.name === "afora.message.processed" &&
+              span.attributes["afora.channel"] === "qa-channel" &&
+              span.attributes["afora.outcome"] === "completed",
           );
           return runs.length >= 2 && harnesses.length >= 2 && modelCalls.length >= 2 && terminal
             ? { harnesses, modelCalls, runs, sameTrace, terminal, toolError }
@@ -268,20 +268,20 @@ describe("diagnostics-otel gateway runtime", () => {
         expect(expectResolvedParent(harness, failureSpansById)).toBe(failureEvidence.terminal);
       }
       for (const run of failureEvidence.runs) {
-        expect(expectResolvedParent(run, failureSpansById).name).toBe("openclaw.harness.run");
+        expect(expectResolvedParent(run, failureSpansById).name).toBe("afora.harness.run");
       }
       for (const modelCall of failureEvidence.modelCalls) {
-        expect(expectResolvedParent(modelCall, failureSpansById).name).toBe("openclaw.run");
+        expect(expectResolvedParent(modelCall, failureSpansById).name).toBe("afora.run");
       }
       expect(expectResolvedParent(failureEvidence.toolError, failureSpansById).name).toBe(
-        "openclaw.run",
+        "afora.run",
       );
 
       const successEvidence = activeReceiver.capturedSpans.find(
         (span) =>
-          span.name === "openclaw.tool.execution" &&
+          span.name === "afora.tool.execution" &&
           span.statusCode !== 2 &&
-          span.attributes["openclaw.toolName"] === "read" &&
+          span.attributes["afora.toolName"] === "read" &&
           span.traceId !== failureEvidence.toolError.traceId,
       );
       expect(successEvidence).toBeTruthy();
@@ -290,13 +290,13 @@ describe("diagnostics-otel gateway runtime", () => {
       );
       const successTerminal = successTrace.find(
         (span) =>
-          span.name === "openclaw.message.processed" &&
-          span.attributes["openclaw.channel"] === "qa-channel" &&
-          span.attributes["openclaw.outcome"] === "completed",
+          span.name === "afora.message.processed" &&
+          span.attributes["afora.channel"] === "qa-channel" &&
+          span.attributes["afora.outcome"] === "completed",
       );
-      const successHarnesses = successTrace.filter((span) => span.name === "openclaw.harness.run");
-      const successRuns = successTrace.filter((span) => span.name === "openclaw.run");
-      const successModelCalls = successTrace.filter((span) => span.name === "openclaw.model.call");
+      const successHarnesses = successTrace.filter((span) => span.name === "afora.harness.run");
+      const successRuns = successTrace.filter((span) => span.name === "afora.run");
+      const successModelCalls = successTrace.filter((span) => span.name === "afora.model.call");
       expect(successTerminal).toBeDefined();
       expect(successHarnesses.length).toBeGreaterThanOrEqual(1);
       expect(successRuns.length).toBeGreaterThanOrEqual(1);
@@ -307,12 +307,12 @@ describe("diagnostics-otel gateway runtime", () => {
         expect(expectResolvedParent(harness, successSpansById)).toBe(successTerminal);
       }
       for (const run of successRuns) {
-        expect(expectResolvedParent(run, successSpansById).name).toBe("openclaw.harness.run");
+        expect(expectResolvedParent(run, successSpansById).name).toBe("afora.harness.run");
       }
       for (const modelCall of successModelCalls) {
-        expect(expectResolvedParent(modelCall, successSpansById).name).toBe("openclaw.run");
+        expect(expectResolvedParent(modelCall, successSpansById).name).toBe("afora.run");
       }
-      expect(expectResolvedParent(successEvidence!, successSpansById).name).toBe("openclaw.run");
+      expect(expectResolvedParent(successEvidence!, successSpansById).name).toBe("afora.run");
 
       const llmTaskConversation = { id: "qa-plugin-usage", kind: "direct" as const };
       const llmTaskSpanCursor = activeReceiver.capturedSpans.length;
@@ -345,49 +345,49 @@ describe("diagnostics-otel gateway runtime", () => {
         () =>
           activeReceiver.capturedSpans.find(
             (span) =>
-              span.name === "openclaw.model.usage" &&
-              span.attributes["openclaw.plugin"] === "llm-task",
+              span.name === "afora.model.usage" &&
+              span.attributes["afora.plugin"] === "llm-task",
           ),
         45_000,
         () => activeReceiver.capturedSpans,
       );
       expect(llmTaskUsage.attributes).toMatchObject({
-        "openclaw.tokens.input": 64,
-        "openclaw.tokens.output": 24,
-        "openclaw.tokens.total": 88,
+        "afora.tokens.input": 64,
+        "afora.tokens.output": 24,
+        "afora.tokens.total": 88,
       });
       expect(
         activeReceiver.capturedSpans
           .slice(llmTaskSpanCursor)
           .filter(
             (span) =>
-              span.name === "openclaw.model.usage" &&
-              span.attributes["openclaw.channel"] === "unknown" &&
-              span.attributes["openclaw.tokens.input"] === 64 &&
-              span.attributes["openclaw.tokens.output"] === 24 &&
-              span.attributes["openclaw.tokens.total"] === 88,
+              span.name === "afora.model.usage" &&
+              span.attributes["afora.channel"] === "unknown" &&
+              span.attributes["afora.tokens.input"] === 64 &&
+              span.attributes["afora.tokens.output"] === 24 &&
+              span.attributes["afora.tokens.total"] === 88,
           )
-          .map((span) => span.attributes["openclaw.plugin"]),
+          .map((span) => span.attributes["afora.plugin"]),
       ).toEqual(["llm-task"]);
       const attributedUsageSpans = activeReceiver.capturedSpans.filter(
-        (span) => span.attributes["openclaw.plugin"] !== undefined,
+        (span) => span.attributes["afora.plugin"] !== undefined,
       );
       expect(
         attributedUsageSpans.map((span) => ({
           name: span.name,
-          pluginId: span.attributes["openclaw.plugin"],
+          pluginId: span.attributes["afora.plugin"],
         })),
-      ).toEqual([{ name: "openclaw.model.usage", pluginId: "llm-task" }]);
+      ).toEqual([{ name: "afora.model.usage", pluginId: "llm-task" }]);
 
       const exportedBodies = Object.values(activeReceiver.capturedBodyText).flat().join("\n");
       expect(exportedBodies).not.toContain("qa-plugin-usage-secret-sentinel");
       console.info(
         `[otel-gateway-runtime] plugin usage proof ${JSON.stringify({
           spanName: llmTaskUsage.name,
-          pluginId: llmTaskUsage.attributes["openclaw.plugin"],
-          inputTokens: llmTaskUsage.attributes["openclaw.tokens.input"],
-          outputTokens: llmTaskUsage.attributes["openclaw.tokens.output"],
-          totalTokens: llmTaskUsage.attributes["openclaw.tokens.total"],
+          pluginId: llmTaskUsage.attributes["afora.plugin"],
+          inputTokens: llmTaskUsage.attributes["afora.tokens.input"],
+          outputTokens: llmTaskUsage.attributes["afora.tokens.output"],
+          totalTokens: llmTaskUsage.attributes["afora.tokens.total"],
           attributedUsageSpanCount: attributedUsageSpans.length,
           requestContentPresent: exportedBodies.includes("qa-plugin-usage-secret-sentinel"),
         })}`,

@@ -1,6 +1,6 @@
 // Telegram plugin module implements bot handlers.media behavior.
 import type { Message } from "grammy/types";
-import { MediaFetchError } from "openclaw/plugin-sdk/media-runtime";
+import { MediaFetchError } from "afora-agent/plugin-sdk/media-runtime";
 import { isRecoverableTelegramNetworkError } from "./network-errors.js";
 
 const TELEGRAM_BOT_API_FILE_DOWNLOAD_LIMIT_MB = 20;

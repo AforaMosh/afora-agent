@@ -1,4 +1,4 @@
-// Android Pin Version script supports OpenClaw repository automation.
+// Android Pin Version script supports Afora repository automation.
 import path from "node:path";
 import {
   canonicalAndroidVersionCode,

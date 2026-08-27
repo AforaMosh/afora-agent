@@ -1,5 +1,5 @@
 // Shared session-handler target resolution and mutation guards.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   ErrorCodes,
   errorShape,
@@ -8,7 +8,7 @@ import {
 } from "../../../packages/gateway-protocol/src/index.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { resolveAgentMainSessionKey } from "../../config/sessions/main-session.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { parseAgentSessionKey } from "../../routing/session-key.js";
 import { createLazyRuntimeModule } from "../../shared/lazy-runtime.js";
@@ -44,7 +44,7 @@ export function respondSessionWorkerPlacementMutationError(
 
 export function resolveSessionWorkerPlacementPatchError(params: {
   agentId: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   context: GatewayRequestContext;
   entry: SessionEntry | undefined;
   key: string;
@@ -126,7 +126,7 @@ export function rejectPluginRuntimeSessionOwnershipMismatch(params: {
 
 export function resolveGatewaySessionTargetFromKey(
   key: string,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   opts?: { agentId?: string },
 ) {
   const target = resolveGatewaySessionStoreTarget({
@@ -139,7 +139,7 @@ export function resolveGatewaySessionTargetFromKey(
 
 export function loadAccessorSessionEntryForGatewayTarget(params: {
   key: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
 }) {
   const target = resolveGatewaySessionStoreTargetWithStore({
@@ -182,7 +182,7 @@ export function loadAccessorSessionEntryForGatewayTarget(params: {
 
 export function loadSessionEntriesForTarget(params: {
   key: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
 }) {
   const target = resolveGatewaySessionStoreTargetWithStore({
@@ -223,7 +223,7 @@ export function isWorkerDispatchInputError(error: unknown): boolean {
   return code === "invalid_profile" || code === "profile_not_found" || code === "invalid_state";
 }
 
-export function isAgentMainSessionKey(cfg: OpenClawConfig, sessionKey: string): boolean {
+export function isAgentMainSessionKey(cfg: AforaConfig, sessionKey: string): boolean {
   const parsed = parseAgentSessionKey(sessionKey);
   if (!parsed) {
     return false;

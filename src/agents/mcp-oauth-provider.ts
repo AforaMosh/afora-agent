@@ -1,11 +1,11 @@
-/** MCP SDK OAuth provider backed by canonical OpenClaw state. */
+/** MCP SDK OAuth provider backed by canonical Afora state. */
 import { randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import type { OAuthClientProvider } from "@modelcontextprotocol/sdk/client/auth.js";
 import type { OAuthClientMetadata, OAuthTokens } from "@modelcontextprotocol/sdk/shared/auth.js";
 import type { FetchLike } from "@modelcontextprotocol/sdk/shared/transport.js";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawStateLeaseContext } from "../state/openclaw-state-lease.js";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import type { AforaStateLeaseContext } from "../state/afora-state-lease.js";
 import type { McpOAuthIdentity } from "./mcp-oauth-identity.js";
 import { readMcpOAuthStore, updateMcpOAuthStore, type McpOAuthStore } from "./mcp-oauth-store.js";
 
@@ -38,7 +38,7 @@ function buildOAuthClientMetadata(
 ): OAuthClientMetadata {
   const redirectUrl = resolveOAuthRedirectUrl(config, store);
   return {
-    client_name: "OpenClaw MCP",
+    client_name: "Afora MCP",
     redirect_uris: [redirectUrl],
     grant_types: ["authorization_code", "refresh_token"],
     response_types: ["code"],
@@ -50,7 +50,7 @@ function buildOAuthClientMetadata(
 }
 
 export function bindMcpOAuthLeaseAssertion(
-  lease: OpenClawStateLeaseContext | undefined,
+  lease: AforaStateLeaseContext | undefined,
 ): ((database: DatabaseSync) => void) | undefined {
   return lease ? (database) => lease.assertOwnedInTransaction(database) : undefined;
 }
@@ -82,7 +82,7 @@ export function createMcpOAuthClientProvider(params: {
   config?: McpOAuthConfig;
   allowAuthorizationRedirect?: boolean;
   suppressStoredTokens?: boolean;
-  lease?: OpenClawStateLeaseContext;
+  lease?: AforaStateLeaseContext;
 }): OAuthClientProvider {
   const config = params.config ?? {};
   const storeKey = params.identity.storeKey;
@@ -92,7 +92,7 @@ export function createMcpOAuthClientProvider(params: {
   const assertAuthorizationRedirectAllowed = () => {
     if (params.allowAuthorizationRedirect !== true) {
       throw new Error(
-        `MCP server "${params.identity.serverName}" requires OAuth authorization. Run openclaw mcp login ${params.identity.serverName}.`,
+        `MCP server "${params.identity.serverName}" requires OAuth authorization. Run afora mcp login ${params.identity.serverName}.`,
       );
     }
   };

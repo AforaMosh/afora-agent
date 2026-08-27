@@ -156,13 +156,13 @@ const representativeConfigSteps: ConfigStep[] = [
 
 const scenarioConfigSteps = new Map<string, ConfigStep[]>([
   [
-    "acpx-openclaw-tools-bridge",
+    "acpx-afora-tools-bridge",
     [
       configSetJsonFile(
-        "plugins-acpx-openclaw-tools-bridge",
-        "acpx-openclaw-tools-bridge",
+        "plugins-acpx-afora-tools-bridge",
+        "acpx-afora-tools-bridge",
         "plugins",
-        "plugins-acpx-openclaw-tools-bridge.json",
+        "plugins-acpx-afora-tools-bridge.json",
       ),
     ],
   ],
@@ -184,7 +184,7 @@ const scenarioConfigSteps = new Map<string, ConfigStep[]>([
       {
         id: "logging-file",
         intent: "logging",
-        argv: ["config", "set", "logging.file", "~/openclaw-upgrade-survivor/gateway.jsonl"],
+        argv: ["config", "set", "logging.file", "~/afora-upgrade-survivor/gateway.jsonl"],
       },
     ],
   ],
@@ -257,7 +257,7 @@ export function resolveUpgradeSurvivorConfigSteps(scenario = "base"): ConfigStep
 }
 
 function selectedScenario() {
-  return process.env.OPENCLAW_UPGRADE_SURVIVOR_SCENARIO || "base";
+  return process.env.AFORA_UPGRADE_SURVIVOR_SCENARIO || "base";
 }
 
 function adaptStepForBaseline(
@@ -266,11 +266,11 @@ function adaptStepForBaseline(
   summary: BaselineAdaptationSummary,
 ): ConfigStep | null {
   if (
-    step.intent === "acpx-openclaw-tools-bridge" &&
+    step.intent === "acpx-afora-tools-bridge" &&
     isReleaseBefore(baselineVersion, "2026.4.22")
   ) {
-    if (!summary.skippedIntents.includes("acpx-openclaw-tools-bridge")) {
-      summary.skippedIntents.push("acpx-openclaw-tools-bridge");
+    if (!summary.skippedIntents.includes("acpx-afora-tools-bridge")) {
+      summary.skippedIntents.push("acpx-afora-tools-bridge");
     }
     return null;
   }
@@ -330,7 +330,7 @@ export function resolveUpgradeSurvivorConfigStepsForBaseline(
     .filter((step): step is ConfigStep => step !== null);
 }
 
-export function resolveUpgradeSurvivorOpenClawCommand(
+export function resolveUpgradeSurvivorAforaCommand(
   argv: string[],
   params: UpgradeSurvivorCommandParams = {},
 ) {
@@ -339,16 +339,16 @@ export function resolveUpgradeSurvivorOpenClawCommand(
     const comSpec = params.comSpec ?? resolveWindowsCmdExePath(params.env ?? process.env);
     return {
       command: comSpec,
-      args: ["/d", "/s", "/c", buildCmdExeCommandLine("openclaw.cmd", argv)],
-      commandLabel: ["openclaw", ...argv].join(" "),
+      args: ["/d", "/s", "/c", buildCmdExeCommandLine("afora.cmd", argv)],
+      commandLabel: ["afora", ...argv].join(" "),
       shell: false,
       windowsVerbatimArguments: true,
     };
   }
   return {
-    command: "openclaw",
+    command: "afora",
     args: argv,
-    commandLabel: ["openclaw", ...argv].join(" "),
+    commandLabel: ["afora", ...argv].join(" "),
     shell: false,
   };
 }
@@ -357,8 +357,8 @@ function errorCode(error: unknown) {
   return error && typeof error === "object" && "code" in error ? String(error.code) : undefined;
 }
 
-export function runUpgradeSurvivorOpenClawStep(step: ConfigStep, params: ConfigCommandParams = {}) {
-  const invocation = resolveUpgradeSurvivorOpenClawCommand(step.argv);
+export function runUpgradeSurvivorAforaStep(step: ConfigStep, params: ConfigCommandParams = {}) {
+  const invocation = resolveUpgradeSurvivorAforaCommand(step.argv);
   const run: SpawnSyncCommand = params.spawnSyncCommand ?? spawnSync;
   const timeoutMs = params.timeoutMs ?? CONFIG_COMMAND_TIMEOUT_MS;
   const maxBuffer = params.maxBufferBytes ?? CONFIG_COMMAND_MAX_BUFFER_BYTES;
@@ -398,7 +398,7 @@ function applyRecipe() {
     scenario: string;
     acceptedIntents: string[];
     skippedIntents: string[];
-    steps: ReturnType<typeof runUpgradeSurvivorOpenClawStep>[];
+    steps: ReturnType<typeof runUpgradeSurvivorAforaStep>[];
   } = {
     source: "baseline-cli-command-recipe",
     recipe: "upgrade-survivor-v1",
@@ -425,7 +425,7 @@ function applyRecipe() {
     if (!adaptedStep) {
       continue;
     }
-    const outcome = runUpgradeSurvivorOpenClawStep(adaptedStep);
+    const outcome = runUpgradeSurvivorAforaStep(adaptedStep);
     summary.steps.push(outcome);
     writeJson(summaryPath, summary);
     if (!outcome.ok) {

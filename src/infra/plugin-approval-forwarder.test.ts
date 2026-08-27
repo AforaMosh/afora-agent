@@ -1,7 +1,7 @@
 // Covers plugin approval forwarding through channel capabilities.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChannelPlugin } from "../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createChannelTestPluginBase, createTestRegistry } from "../test-utils/channel-plugins.js";
 import { createExecApprovalForwarder } from "./exec-approval-forwarder.js";
@@ -24,7 +24,7 @@ const PLUGIN_TARGETS_CFG = {
       targets: [{ channel: "slack", to: "U123" }],
     },
   },
-} as OpenClawConfig;
+} as AforaConfig;
 
 const PLUGIN_DISABLED_CFG = {
   approvals: {
@@ -32,10 +32,10 @@ const PLUGIN_DISABLED_CFG = {
       enabled: false,
     },
   },
-} as OpenClawConfig;
+} as AforaConfig;
 
 function createForwarder(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   deliver?: ReturnType<typeof vi.fn>;
   resolveSessionTarget?: NonNullable<
     Parameters<typeof createExecApprovalForwarder>[0]
@@ -142,7 +142,7 @@ describe("plugin approval forwarding", () => {
         );
         const cfg = {
           approvals: { plugin: { enabled: true, mode: "session" } },
-        } as OpenClawConfig;
+        } as AforaConfig;
         const { deliver, forwarder } = createForwarder({ cfg, resolveSessionTarget });
 
         await expect(
@@ -174,7 +174,7 @@ describe("plugin approval forwarding", () => {
       );
       const cfg = {
         approvals: { plugin: { enabled: true, mode: "session" } },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const { deliver, forwarder } = createForwarder({ cfg, resolveSessionTarget });
 
       await expect(
@@ -318,7 +318,7 @@ describe("plugin approval forwarding", () => {
           exec: { enabled: true, mode: "targets", targets: [{ channel: "slack", to: "U123" }] },
           plugin: { enabled: false },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const { forwarder } = createForwarder({ cfg });
       const result = await forwarder.handlePluginApprovalRequested!(makePluginRequest());
       expect(result).toBe(false);
@@ -334,7 +334,7 @@ describe("plugin approval forwarding", () => {
             targets: [{ channel: "slack", to: "U123" }],
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const deliver = vi.fn().mockResolvedValue([]);
       const { forwarder } = createForwarder({ cfg, deliver });
       const result = await forwarder.handlePluginApprovalRequested!(makePluginRequest());
@@ -344,7 +344,7 @@ describe("plugin approval forwarding", () => {
     });
 
     it("returns false when no approvals config at all", async () => {
-      const cfg = {} as OpenClawConfig;
+      const cfg = {} as AforaConfig;
       const { forwarder } = createForwarder({ cfg });
       const result = await forwarder.handlePluginApprovalRequested!(makePluginRequest());
       expect(result).toBe(false);

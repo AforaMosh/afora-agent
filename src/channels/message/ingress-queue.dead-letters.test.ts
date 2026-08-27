@@ -4,24 +4,24 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../../state/afora-state-db.js";
 import { countFailedChannelIngressQueueEntries } from "./ingress-queue-health.js";
 import { createChannelIngressQueue } from "./ingress-queue.js";
 
 async function withTempState<T>(run: (stateDir: string) => Promise<T>): Promise<T> {
-  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-ingress-dead-letters-"));
+  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-ingress-dead-letters-"));
   try {
     return await run(stateDir);
   } finally {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(stateDir, { recursive: true, force: true });
   }
 }
 
 describe("channel ingress dead letters", () => {
-  afterEach(() => closeOpenClawStateDatabaseForTest());
+  afterEach(() => closeAforaStateDatabaseForTest());
 
   it("retains failed payload, metadata, and attempt history", async () => {
     await withTempState(async (stateDir) => {
@@ -178,8 +178,8 @@ describe("channel ingress dead letters", () => {
         }
         await queue.fail(claim, { reason: "handler-error", failedAt });
       }
-      const { db } = openOpenClawStateDatabase({
-        env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+      const { db } = openAforaStateDatabase({
+        env: { ...process.env, AFORA_STATE_DIR: stateDir },
       });
       db.prepare(
         "UPDATE channel_ingress_events SET failed_at = NULL WHERE channel_id = 'line'",

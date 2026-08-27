@@ -1,10 +1,10 @@
 // Transcript redaction tests cover structured and text transcript fields so
 // secrets do not persist in logs or replay artifacts.
 
-import { expectDefined } from "@openclaw/normalization-core";
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
+import { expectDefined } from "@afora/normalization-core";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import * as loggingConfigModule from "../logging/config.js";
 import { castAgentMessage } from "./test-helpers/agent-message-fixtures.js";
 import { redactTranscriptMessage } from "./transcript-redact.js";
@@ -22,13 +22,13 @@ function textMessage(text: string): AgentMessage {
   });
 }
 
-function cfg(_mode: "tools" | "off", patterns?: string[]): OpenClawConfig {
+function cfg(_mode: "tools" | "off", patterns?: string[]): AforaConfig {
   return {
     logging: patterns ? { redactPatterns: patterns } : {},
-  } satisfies OpenClawConfig;
+  } satisfies AforaConfig;
 }
 
-function googleCompatCfg(): OpenClawConfig {
+function googleCompatCfg(): AforaConfig {
   return {
     ...cfg("tools"),
     models: {
@@ -40,7 +40,7 @@ function googleCompatCfg(): OpenClawConfig {
         },
       },
     },
-  } satisfies OpenClawConfig;
+  } satisfies AforaConfig;
 }
 
 const EMAIL_PATTERN = String.raw`([\w]|[-.])+@([\w]|[-.])+\.\w+`;
@@ -159,7 +159,7 @@ describe("redactTranscriptMessage", () => {
       encrypted_content: CIPHERTEXT_WITH_TOKEN_SHAPED_BYTES,
       summary: [{ type: "summary_text", text: "secret sk-abcdef1234567890xyz" }],
       content: [{ type: "reasoning_text", text: "secret sk-abcdef1234567890xyz" }],
-      __openclaw_replay: {
+      __afora_replay: {
         ...OPENAI_REASONING_REPLAY_METADATA,
         secret: "sk-abcdef1234567890xyz",
       },
@@ -174,7 +174,7 @@ describe("redactTranscriptMessage", () => {
           type: "thinking",
           thinking: "secret sk-abcdef1234567890xyz",
           thinkingSignature,
-          openclawReasoningReplay: {
+          aforaReasoningReplay: {
             ...OPENAI_REASONING_REPLAY_METADATA,
             secret: "sk-abcdef1234567890xyz",
           },
@@ -188,7 +188,7 @@ describe("redactTranscriptMessage", () => {
             encrypted_content: CIPHERTEXT_WITH_TOKEN_SHAPED_BYTES,
             summary: [{ type: "summary_text", text: "secret sk-abcdef1234567890xyz" }],
           }),
-          openclawReasoningReplay: {
+          aforaReasoningReplay: {
             ...OPENAI_REASONING_REPLAY_METADATA,
             model: "sk-abcdef1234567890xyz",
           },
@@ -210,10 +210,10 @@ describe("redactTranscriptMessage", () => {
       encrypted_content: string;
       summary: unknown[];
       content?: unknown[];
-      __openclaw_replay: Record<string, unknown>;
+      __afora_replay: Record<string, unknown>;
     };
-    const blockMetadata = (block as unknown as { openclawReasoningReplay: Record<string, unknown> })
-      .openclawReasoningReplay;
+    const blockMetadata = (block as unknown as { aforaReasoningReplay: Record<string, unknown> })
+      .aforaReasoningReplay;
     const rejectedSignature = expectDefined(
       (msgContent(result) as Array<{ thinkingSignature: string }>)[1],
       "(msgContent(result) as Array<{ thinkingSignature: string }>)[1] test invariant",
@@ -224,7 +224,7 @@ describe("redactTranscriptMessage", () => {
     expect(replayItem.encrypted_content).toBe(CIPHERTEXT_WITH_TOKEN_SHAPED_BYTES);
     expect(replayItem.summary).toEqual([]);
     expect(replayItem.content).toBeUndefined();
-    expect(replayItem["__openclaw_replay"]).toEqual(OPENAI_REASONING_REPLAY_METADATA);
+    expect(replayItem["__afora_replay"]).toEqual(OPENAI_REASONING_REPLAY_METADATA);
     expect(blockMetadata).toEqual(OPENAI_REASONING_REPLAY_METADATA);
     expect(block.thinkingSignature).not.toContain("sk-abcdef1234567890xyz");
     expect(JSON.stringify(blockMetadata)).not.toContain("sk-abcdef1234567890xyz");
@@ -235,7 +235,7 @@ describe("redactTranscriptMessage", () => {
   it("preserves only validated OpenAI compaction replay state", () => {
     const msg = castAgentMessage({
       role: "assistant",
-      api: "openclaw-openai-responses-transport",
+      api: "afora-openai-responses-transport",
       model: "gpt-5.6-luna",
       provider: "openai",
       content: [{ type: "text", text: "visible" }],
@@ -278,7 +278,7 @@ describe("redactTranscriptMessage", () => {
   it("preserves validated OpenAI compaction suppression state", () => {
     const msg = castAgentMessage({
       role: "assistant",
-      api: "openclaw-openai-responses-transport",
+      api: "afora-openai-responses-transport",
       model: "gpt-5.6-luna",
       provider: "openai",
       content: [{ type: "text", text: "visible" }],
@@ -419,7 +419,7 @@ describe("redactTranscriptMessage", () => {
   ])("removes an %s optional OpenAI compaction id while preserving state", (_name, id) => {
     const msg = castAgentMessage({
       role: "assistant",
-      api: "openclaw-openai-responses-transport",
+      api: "afora-openai-responses-transport",
       model: "gpt-5.6-luna",
       provider: "openai",
       content: [{ type: "text", text: "visible" }],
@@ -471,7 +471,7 @@ describe("redactTranscriptMessage", () => {
     };
     const msg = castAgentMessage({
       role: "assistant",
-      api: "openclaw-openai-responses-transport",
+      api: "afora-openai-responses-transport",
       model: "gpt-5.6-luna",
       provider: "openai",
       content: [{ type: "text", text: "visible" }],
@@ -495,7 +495,7 @@ describe("redactTranscriptMessage", () => {
     const inputCfg = {
       logging: { redactSensitive: "tools" },
       models: { providers: { openai: { apiKey: "test-key" } } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const result = redactTranscriptMessage(msg, inputCfg) as unknown as {
       api: string;
@@ -516,7 +516,7 @@ describe("redactTranscriptMessage", () => {
 
   it.each([
     {
-      api: "openclaw-openai-responses-transport",
+      api: "afora-openai-responses-transport",
       provider: "openai",
       block: {
         type: "thinking",
@@ -535,7 +535,7 @@ describe("redactTranscriptMessage", () => {
       }),
     },
     {
-      api: "openclaw-anthropic-messages-transport",
+      api: "afora-anthropic-messages-transport",
       provider: "anthropic",
       block: {
         type: "thinking",
@@ -546,7 +546,7 @@ describe("redactTranscriptMessage", () => {
       expectedSignature: CIPHERTEXT_WITH_TOKEN_SHAPED_BYTES,
     },
     {
-      api: "openclaw-google-generative-ai-transport",
+      api: "afora-google-generative-ai-transport",
       provider: "google",
       block: {
         type: "toolCall",
@@ -572,7 +572,7 @@ describe("redactTranscriptMessage", () => {
       expectedSignature: SHORT_GOOGLE_THOUGHT_SIGNATURE,
     },
     {
-      api: "openclaw-openai-completions-transport",
+      api: "afora-openai-completions-transport",
       provider: "google",
       block: {
         type: "toolCall",
@@ -774,7 +774,7 @@ describe("redactTranscriptMessage", () => {
     );
   });
 
-  it.each(["openai-responses", "openclaw-openai-responses-transport"])(
+  it.each(["openai-responses", "afora-openai-responses-transport"])(
     "preserves structured OpenAI text signatures for %s",
     (api) => {
       const textSignature = JSON.stringify({ v: 1, id: COPILOT_CONNECTION_BOUND_ID });
@@ -926,7 +926,7 @@ describe("redactTranscriptMessage", () => {
     });
     const googleOpenAICompletionsMsg = castAgentMessage({
       role: "assistant",
-      api: "openclaw-openai-completions-transport",
+      api: "afora-openai-completions-transport",
       model: "gemini-3.1-pro",
       provider: "google-compatible-proxy",
       content: [
@@ -1254,7 +1254,7 @@ describe("redactTranscriptMessage", () => {
           id: "call_1",
           name: "shell",
           arguments: {
-            command: "OPENAI_API_KEY=sk-abcdef1234567890xyz openclaw health",
+            command: "OPENAI_API_KEY=sk-abcdef1234567890xyz afora health",
             env: { nested: ["token sk-abcdef1234567890xyz"] },
             count: 1,
           },
@@ -1274,10 +1274,10 @@ describe("redactTranscriptMessage", () => {
     };
     const serializedArguments = JSON.stringify(block.arguments);
     expect(serializedArguments).not.toContain("sk-abcdef1234567890xyz");
-    expect(argumentsValue.command).toBe("OPENAI_API_KEY=sk-abc…0xyz openclaw health");
+    expect(argumentsValue.command).toBe("OPENAI_API_KEY=sk-abc…0xyz afora health");
     expect(argumentsValue.env.nested[0]).toBe("token sk-abc…0xyz");
     expect(argumentsValue.count).toBe(1);
-    expect(serializedArguments).toContain("openclaw health");
+    expect(serializedArguments).toContain("afora health");
     expect(block.arguments).not.toBe(
       expectDefined(
         (msgContent(msg) as Array<{ arguments: unknown }>)[0],
@@ -1336,7 +1336,7 @@ describe("redactTranscriptMessage", () => {
           input: {
             apiKey: "plainsecretvalue123",
             nested: { accessToken: ["nestedplainsecret123"] },
-            command: "OPENAI_API_KEY=sk-abcdef1234567890xyz openclaw health",
+            command: "OPENAI_API_KEY=sk-abcdef1234567890xyz afora health",
             safe: "visible",
           },
         },
@@ -1360,7 +1360,7 @@ describe("redactTranscriptMessage", () => {
     expect(serializedInput).not.toContain("sk-abcdef1234567890xyz");
     expect(inputValue.apiKey).toBe("plains…e123");
     expect(inputValue.nested.accessToken[0]).toBe("nested…t123");
-    expect(inputValue.command).toBe("OPENAI_API_KEY=sk-abc…0xyz openclaw health");
+    expect(inputValue.command).toBe("OPENAI_API_KEY=sk-abc…0xyz afora health");
     expect(serializedInput).toContain("visible");
   });
 
@@ -1696,7 +1696,7 @@ describe("redactTranscriptMessage", () => {
   it("redacts documented transcript text fields on content-less message types", () => {
     const msg = castAgentMessage({
       role: "bashExecution",
-      command: "OPENAI_API_KEY=sk-abcdef1234567890xyz openclaw health",
+      command: "OPENAI_API_KEY=sk-abcdef1234567890xyz afora health",
       output: "failed with sk-abcdef1234567890xyz",
       exitCode: 1,
       cancelled: false,

@@ -1,8 +1,8 @@
 /** Generic core consumers for provider-owned model route facts. */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import { resolveMergedModelProviderEntry } from "../config/model-provider-config.js";
 import type { ModelApi, ModelProviderConfig } from "../config/types.models.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { ProviderModelRouteCandidate } from "../plugin-sdk/provider-model-types.js";
 import {
   resolveProviderModelCatalogId,
@@ -107,9 +107,9 @@ export function createProviderModelCatalogRoutePolicy(providerId: string): Model
 /** Projects a selected route onto transient config used only for model materialization. */
 export function projectProviderModelRouteConfig(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   route: ProviderModelRouteCandidate;
-}): OpenClawConfig {
+}): AforaConfig {
   const provider = normalizeProviderId(params.provider);
   const providers = params.config?.models?.providers ?? {};
   const providerEntry = resolveMergedModelProviderEntry(params.config, provider);

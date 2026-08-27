@@ -1,4 +1,4 @@
-// Builds overview table rows for `openclaw status` and `openclaw status --all`.
+// Builds overview table rows for `afora status` and `afora status --all`.
 // The row builders combine scan surfaces with health/session summaries while keeping rendering elsewhere.
 
 import { formatCliCommand } from "../cli/command-format.js";
@@ -31,7 +31,7 @@ import {
 } from "./status.command-sections.js";
 import type { MemoryPluginStatus, MemoryStatusSnapshot } from "./status.scan.shared.js";
 
-/** Builds the default `openclaw status` overview rows from scan, health, memory, and session inputs. */
+/** Builds the default `afora status` overview rows from scan, health, memory, and session inputs. */
 export function buildStatusCommandOverviewRows(
   params: {
     env: NodeJS.ProcessEnv;
@@ -215,7 +215,7 @@ export function buildStatusAllOverviewRows(params: {
       ...(params.updateRestartValue
         ? [{ Item: "Update restart", Value: params.updateRestartValue }]
         : []),
-      { Item: "Security", Value: `Run: ${formatCliCommand("openclaw security audit --deep")}` },
+      { Item: "Security", Value: `Run: ${formatCliCommand("afora security audit --deep")}` },
     ],
     agentsValue: buildStatusAllAgentsValue({
       agentStatus: params.agentStatus,

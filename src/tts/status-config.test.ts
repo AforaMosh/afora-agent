@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { resolveStatusTtsSnapshot } from "./status-config.js";
 
@@ -11,7 +11,7 @@ let fixtureRoot = "";
 let fixtureId = 0;
 
 beforeAll(() => {
-  fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-tts-status-"));
+  fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-tts-status-"));
 });
 
 afterAll(() => {
@@ -27,8 +27,8 @@ async function withStatusTempHome(run: (home: string) => Promise<void>): Promise
     {
       HOME: home,
       USERPROFILE: home,
-      OPENCLAW_HOME: undefined,
-      OPENCLAW_STATE_DIR: path.join(home, ".openclaw"),
+      AFORA_HOME: undefined,
+      AFORA_STATE_DIR: path.join(home, ".afora"),
     },
     async () => await run(home),
   );
@@ -37,7 +37,7 @@ async function withStatusTempHome(run: (home: string) => Promise<void>): Promise
 describe("resolveStatusTtsSnapshot", () => {
   it("treats null prefs as empty settings", async () => {
     await withStatusTempHome(async (home) => {
-      const prefsPath = path.join(home, ".openclaw", "settings", "tts.json");
+      const prefsPath = path.join(home, ".afora", "settings", "tts.json");
       fs.mkdirSync(path.dirname(prefsPath), { recursive: true });
       fs.writeFileSync(prefsPath, "null");
 
@@ -49,7 +49,7 @@ describe("resolveStatusTtsSnapshot", () => {
               provider: "edge",
               prefsPath,
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
         }),
       ).toEqual({
         autoMode: "always",
@@ -62,7 +62,7 @@ describe("resolveStatusTtsSnapshot", () => {
 
   it("uses prefs overrides without loading speech providers", async () => {
     await withStatusTempHome(async (home) => {
-      const prefsPath = path.join(home, ".openclaw", "settings", "tts.json");
+      const prefsPath = path.join(home, ".afora", "settings", "tts.json");
       fs.mkdirSync(path.dirname(prefsPath), { recursive: true });
       fs.writeFileSync(
         prefsPath,
@@ -82,7 +82,7 @@ describe("resolveStatusTtsSnapshot", () => {
             tts: {
               prefsPath,
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
         }),
       ).toEqual({
         autoMode: "always",
@@ -101,7 +101,7 @@ describe("resolveStatusTtsSnapshot", () => {
             tts: {
               auto: "always",
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
         }),
       ).toEqual({
         autoMode: "always",
@@ -132,7 +132,7 @@ describe("resolveStatusTtsSnapshot", () => {
                 },
               ],
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
           agentId: "reader",
         }),
       ).toEqual({
@@ -167,7 +167,7 @@ describe("resolveStatusTtsSnapshot", () => {
                 },
               ],
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
           agentId: "reader",
         }),
       ).toEqual({
@@ -197,7 +197,7 @@ describe("resolveStatusTtsSnapshot", () => {
                 },
               },
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
         }),
       ).toEqual({
         autoMode: "always",
@@ -231,7 +231,7 @@ describe("resolveStatusTtsSnapshot", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
       });
 
       expect(snapshot?.displayName).toBe(`${"d".repeat(92)}...`);
@@ -256,7 +256,7 @@ describe("resolveStatusTtsSnapshot", () => {
                 },
               },
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
         }),
       ).toEqual({
         autoMode: "always",
@@ -283,7 +283,7 @@ describe("resolveStatusTtsSnapshot", () => {
                 },
               },
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
         }),
       ).toEqual({
         autoMode: "always",
@@ -325,7 +325,7 @@ describe("resolveStatusTtsSnapshot", () => {
                 },
               ],
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
           agentId: "reader",
         }),
       ).toEqual({
@@ -341,7 +341,7 @@ describe("resolveStatusTtsSnapshot", () => {
 
   it("uses provider metadata for local provider prefs overrides", async () => {
     await withStatusTempHome(async (home) => {
-      const prefsPath = path.join(home, ".openclaw", "settings", "tts.json");
+      const prefsPath = path.join(home, ".afora", "settings", "tts.json");
       fs.mkdirSync(path.dirname(prefsPath), { recursive: true });
       fs.writeFileSync(
         prefsPath,
@@ -369,7 +369,7 @@ describe("resolveStatusTtsSnapshot", () => {
                 },
               },
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
         }),
       ).toEqual({
         autoMode: "always",
@@ -381,9 +381,9 @@ describe("resolveStatusTtsSnapshot", () => {
     });
   });
 
-  it("derives the default prefs path from OPENCLAW_CONFIG_PATH when set", async () => {
+  it("derives the default prefs path from AFORA_CONFIG_PATH when set", async () => {
     await withStatusTempHome(async (home) => {
-      const stateDir = path.join(home, ".openclaw-dev");
+      const stateDir = path.join(home, ".afora-dev");
       const prefsPath = path.join(stateDir, "settings", "tts.json");
       fs.mkdirSync(path.dirname(prefsPath), { recursive: true });
       fs.writeFileSync(
@@ -398,15 +398,15 @@ describe("resolveStatusTtsSnapshot", () => {
 
       await withEnvAsync(
         {
-          OPENCLAW_STATE_DIR: undefined,
-          OPENCLAW_CONFIG_PATH: path.join(stateDir, "openclaw.json"),
+          AFORA_STATE_DIR: undefined,
+          AFORA_CONFIG_PATH: path.join(stateDir, "afora.json"),
         },
         async () => {
           expect(
             resolveStatusTtsSnapshot({
               cfg: {
                 tts: {},
-              } as OpenClawConfig,
+              } as AforaConfig,
             }),
           ).toEqual({
             autoMode: "always",

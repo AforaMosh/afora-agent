@@ -5,7 +5,7 @@ import { hasLegacyAuthProfileSourcesForStartup } from "../agents/auth-profiles/l
 import { inheritLegacyDefaultAgentId } from "../config/legacy.default-agent-owner.js";
 import { applyConfigOverrides } from "../config/runtime-overrides.js";
 import type { GatewayAuthConfig, GatewayTailscaleConfig } from "../config/types.gateway.js";
-import type { ConfigFileSnapshot, OpenClawConfig } from "../config/types.openclaw.js";
+import type { ConfigFileSnapshot, AforaConfig } from "../config/types.afora.js";
 import { measureDiagnosticsTimelineSpan } from "../infra/diagnostics-timeline.js";
 import type { PluginManifestRegistry } from "../plugins/manifest-registry.js";
 import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.js";
@@ -78,7 +78,7 @@ type RuntimeSecretsActivationParams = {
   env?: NodeJS.ProcessEnv;
   includeAuthStoreRefs?: boolean;
   /** Raw config source paired with an otherwise fully activated prepared snapshot. */
-  runtimeSourceConfig?: OpenClawConfig;
+  runtimeSourceConfig?: AforaConfig;
   /** Defer degradation/recovery publication until a larger transaction can no longer roll back. */
   deferStatePublication?: boolean;
   /** SecretRefs that must not retain last-known-good values during this reload. */
@@ -93,7 +93,7 @@ type DeferredSecretsStateTransition = {
 
 /** Gateway startup hook that prepares secrets and optionally activates the prepared snapshot. */
 export type ActivateRuntimeSecrets = ((
-  config: OpenClawConfig,
+  config: AforaConfig,
   params: RuntimeSecretsActivationParams,
 ) => Promise<PreparedRuntimeSecretsSnapshot>) & {
   activatePreparedSnapshot?: (
@@ -132,7 +132,7 @@ export function createRuntimeSecretsActivator(params: {
   emitStateEvent: (
     code: GatewaySecretsStateEventCode,
     message: string,
-    cfg: OpenClawConfig,
+    cfg: AforaConfig,
   ) => void;
   prepareRuntimeSecretsSnapshot?: PrepareRuntimeSecretsSnapshot;
   activateRuntimeSecretsSnapshot?: ActivateRuntimeSecretsSnapshot;
@@ -143,7 +143,7 @@ export function createRuntimeSecretsActivator(params: {
   let secretsDegraded = false;
   let degradationGeneration = 0;
   let activeDegradationGeneration: number | null = null;
-  let activeDegradationConfig: OpenClawConfig | null = null;
+  let activeDegradationConfig: AforaConfig | null = null;
   let activeDegradationSupportsSourceOnlyRecovery = false;
   let activeDegradationScope: SecretsStateScope | null = null;
   const deferredStateTransitions = new WeakMap<object, DeferredSecretsStateTransition>();
@@ -176,7 +176,7 @@ export function createRuntimeSecretsActivator(params: {
   };
 
   const publishRecovery = (
-    config: OpenClawConfig,
+    config: AforaConfig,
     expectedGeneration?: number,
     scope: SecretsStateScope = "full",
   ) => {
@@ -303,7 +303,7 @@ export function createRuntimeSecretsActivator(params: {
   const handleSecretsActivationError = (
     err: unknown,
     activationParams: RuntimeSecretsActivationParams,
-    eventConfig: OpenClawConfig,
+    eventConfig: AforaConfig,
   ): never => {
     const mayPublishReloadDegradation =
       (activationParams.activate || activationParams.publishFailureAsDegraded === true) &&
@@ -648,7 +648,7 @@ export async function prepareGatewayStartupConfig(params: {
     },
     { omitErrorMessage: true },
   );
-  const canReusePreflightPreparedSnapshot = (config: OpenClawConfig): boolean =>
+  const canReusePreflightPreparedSnapshot = (config: AforaConfig): boolean =>
     Boolean(
       preflightPrepared &&
       params.activateRuntimeSecrets.activatePreparedSnapshot &&
@@ -657,7 +657,7 @@ export async function prepareGatewayStartupConfig(params: {
         preflightPrepared.sourceConfig,
       ),
     );
-  const activateStartupSecrets = async (config: OpenClawConfig) => {
+  const activateStartupSecrets = async (config: AforaConfig) => {
     // Reuse the preflight snapshot only if generated startup auth did not
     // change the secret-relevant source config.
     if (preflightPrepared && canReusePreflightPreparedSnapshot(config)) {

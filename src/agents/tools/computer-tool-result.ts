@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { imageMimeFromFormat } from "@openclaw/media-core/mime";
+import { imageMimeFromFormat } from "@afora/media-core/mime";
 import type { ComputerActResult } from "../../plugins/computer-use-contract.js";
 import { DEFAULT_IMAGE_MAX_DIMENSION_PX } from "../image-sanitization.js";
 import type { AgentMessage, AgentToolResult } from "../runtime/index.js";
@@ -171,7 +171,7 @@ export async function projectScreenshotResult(params: {
   // >= referenceWidth, so it is a no-op and the node maps coordinates
   // against this same width for both portrait and landscape captures. A
   // portrait frame (height > referenceWidth) is uniformly scaled down here,
-  // matching OpenClawComputerInputGeometry.capturedWidth on the node.
+  // matching AforaComputerInputGeometry.capturedWidth on the node.
   // media.outbound=false keeps desktop pixels model-only (#44759).
   const result = await sanitizeToolResultImages(
     {

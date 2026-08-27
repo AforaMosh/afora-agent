@@ -1,4 +1,4 @@
-name: openclaw-codeql-ui-control-plane-critical-quality
+name: afora-codeql-ui-control-plane-critical-quality
 
 disable-default-queries: true
 

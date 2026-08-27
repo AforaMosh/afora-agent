@@ -4,7 +4,7 @@ import type { PublishedModelCatalogOwnerCandidate } from "../agents/prepared-mod
 import { setPreparedModelRuntimeAuthLoader } from "../agents/prepared-model-runtime-auth.js";
 import { PreparedModelRuntimePublicationSupersededError } from "../agents/prepared-model-runtime.errors.js";
 import { markPreparedModelCatalogFull } from "../agents/prepared-model-runtime.facts.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   loadDeferredCatalog,
   registerGatewayModelCatalogPrivateAccess,
@@ -21,7 +21,7 @@ const snapshot: ModelCatalogSnapshot = {
   routeVariants: [],
 };
 
-function ownerConfig(agentId = "main", extra: OpenClawConfig = {}): OpenClawConfig {
+function ownerConfig(agentId = "main", extra: AforaConfig = {}): AforaConfig {
   return {
     ...extra,
     agents: {
@@ -39,7 +39,7 @@ function ownerConfig(agentId = "main", extra: OpenClawConfig = {}): OpenClawConf
 }
 
 function ownerSnapshot(
-  config: OpenClawConfig,
+  config: AforaConfig,
   modelCatalog: ModelCatalogSnapshot = snapshot,
   agentId?: string,
 ): PublishedModelCatalogOwnerCandidate {
@@ -319,7 +319,7 @@ describe("gateway prepared model catalog", () => {
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const loadPublishedPreparedModelCatalogOwnerSnapshot = vi.fn(async () => ownerSnapshot(config));
 
     await expect(

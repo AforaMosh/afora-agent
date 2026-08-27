@@ -41,7 +41,7 @@ export function openContextMenu(sidebar: SidebarLifecycleState, key: string) {
 }
 
 export async function sessionMenu(sidebar: SidebarLifecycleState): Promise<TestSessionMenu> {
-  const menu = sidebar.querySelector<TestSessionMenu>("openclaw-session-menu");
+  const menu = sidebar.querySelector<TestSessionMenu>("afora-session-menu");
   if (!menu) {
     throw new Error("expected session menu");
   }

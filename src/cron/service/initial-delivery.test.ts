@@ -72,7 +72,7 @@ describe("resolveInitialCronDelivery", () => {
 // Direct service callers do not pass through normalizeCronJobCreate, so keep
 // the public add and declarative convergence paths pinned to the same default.
 const logger = createNoopLogger();
-const { makeStorePath } = createCronStoreHarness({ prefix: "openclaw-cron-initial-delivery-" });
+const { makeStorePath } = createCronStoreHarness({ prefix: "afora-cron-initial-delivery-" });
 installCronTestHooks({ logger });
 
 function createDirectCronService(storePath: string) {

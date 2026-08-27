@@ -110,7 +110,7 @@ describe("proxy cli", () => {
   ])("passes --json through proxy reporting command $args", async ({ args, invoke, expected }) => {
     const program = createProgram();
 
-    await program.parseAsync(["node", "openclaw", ...args]);
+    await program.parseAsync(["node", "afora", ...args]);
 
     if (expected === undefined) {
       expect(invoke).toHaveBeenCalledWith();
@@ -130,15 +130,15 @@ describe("proxy cli", () => {
   ])("rejects invalid numeric option %s", (args, expected) => {
     const program = createProgram();
 
-    expect(() => program.parse(["node", "openclaw", ...args])).toThrow(expected);
+    expect(() => program.parse(["node", "afora", ...args])).toThrow(expected);
   });
 
   it("normalizes signed decimal numeric options through the shared parser", async () => {
     const program = createProgram();
 
-    await program.parseAsync(["node", "openclaw", "proxy", "start", "--port", "+08080"]);
-    await program.parseAsync(["node", "openclaw", "proxy", "validate", "--timeout-ms", "+01000"]);
-    await program.parseAsync(["node", "openclaw", "proxy", "sessions", "--limit", "+05"]);
+    await program.parseAsync(["node", "afora", "proxy", "start", "--port", "+08080"]);
+    await program.parseAsync(["node", "afora", "proxy", "validate", "--timeout-ms", "+01000"]);
+    await program.parseAsync(["node", "afora", "proxy", "sessions", "--limit", "+05"]);
 
     expect(runDebugProxyStartCommand).toHaveBeenCalledWith({
       host: "127.0.0.1",

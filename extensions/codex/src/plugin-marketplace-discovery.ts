@@ -1,5 +1,5 @@
 /** Read-only discovery of Codex-owned local, curated, and remote plugin marketplaces. */
-import { asOptionalRecord as readRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { asOptionalRecord as readRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { v2 } from "./app-server/protocol.js";
 
 const PLUGIN_SEGMENT_PATTERN = /^[A-Za-z0-9_-]+$/;

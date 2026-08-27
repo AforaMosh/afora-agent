@@ -1,8 +1,8 @@
 // Xiaomi setup module handles plugin onboarding behavior.
 import {
   createDefaultModelsPresetAppliers,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/provider-onboard";
+  type AforaConfig,
+} from "afora-agent/plugin-sdk/provider-onboard";
 import {
   buildXiaomiProvider,
   buildXiaomiTokenPlanProvider,
@@ -59,10 +59,10 @@ const xiaomiTokenPlanPresetAppliers = createDefaultModelsPresetAppliers<[]>({
 });
 
 function withProviderBaseUrl(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   providerId: string,
   baseUrl: string,
-): OpenClawConfig {
+): AforaConfig {
   const providers: Record<string, unknown> = {
     ...cfg.models?.providers,
     [providerId]: {
@@ -76,13 +76,13 @@ function withProviderBaseUrl(
       ...cfg.models,
       providers,
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 export function applyXiaomiTokenPlanConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   region: XiaomiTokenPlanRegion,
-): OpenClawConfig {
+): AforaConfig {
   return withProviderBaseUrl(
     xiaomiTokenPlanPresetAppliers.applyConfig(cfg),
     XIAOMI_TOKEN_PLAN_PROVIDER_ID,

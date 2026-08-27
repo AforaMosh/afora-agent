@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 // Parses poll command parameters into validated polling options.
 import { readSnakeCaseParamRaw } from "./param-key.js";
 

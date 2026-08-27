@@ -1,4 +1,4 @@
-// Resolves trusted official external plugin installs from the OpenClaw-owned catalog.
+// Resolves trusted official external plugin installs from the Afora-owned catalog.
 import { parseRegistryNpmSpec } from "../infra/npm-registry-spec.js";
 import {
   getOfficialExternalPluginCatalogEntry,

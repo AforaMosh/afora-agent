@@ -1,6 +1,6 @@
 // Telegram tests cover forum topic recovery from the real message cache.
 import type { Message } from "grammy/types";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createTelegramMessageContextRuntime,
@@ -20,7 +20,7 @@ let storeScopeId = 0;
  */
 function createRuntime() {
   storeScopeId += 1;
-  const cfg: OpenClawConfig = {};
+  const cfg: AforaConfig = {};
   return createTelegramMessageContextRuntime({
     cfg,
     accountId: "default",
@@ -28,7 +28,7 @@ function createRuntime() {
     opts: { token: "test" },
     telegramCfg: {},
     telegramDeps: {
-      resolveStorePath: () => `/tmp/openclaw-telegram-thread-recovery-${storeScopeId}/store.json`,
+      resolveStorePath: () => `/tmp/afora-telegram-thread-recovery-${storeScopeId}/store.json`,
     } as RegisterTelegramHandlerParams["telegramDeps"],
   });
 }
@@ -52,7 +52,7 @@ describe("resolveCachedMessageThreadSpec", () => {
   it("keeps account cache ownership separate from a topic-routed session owner", () => {
     const resolveStorePath = vi.fn(
       (_store, options: { agentId?: string }) =>
-        `/tmp/openclaw-telegram-owner-${options.agentId}.json`,
+        `/tmp/afora-telegram-owner-${options.agentId}.json`,
     );
     const cfg = {
       agents: {
@@ -60,7 +60,7 @@ describe("resolveCachedMessageThreadSpec", () => {
         entries: { main: {}, ops: {}, research: {} },
       },
       bindings: [{ agentId: "main", match: { channel: "telegram", accountId: "*" } }],
-    } as OpenClawConfig;
+    } as AforaConfig;
     createTelegramMessageContextRuntime({
       cfg,
       accountId: "primary",
@@ -94,7 +94,7 @@ describe("resolveCachedMessageThreadSpec", () => {
     ]);
     expect(session).toMatchObject({
       agentId: "research",
-      storePath: "/tmp/openclaw-telegram-owner-research.json",
+      storePath: "/tmp/afora-telegram-owner-research.json",
     });
     expect(session.sessionKey).toContain("agent:research:");
   });

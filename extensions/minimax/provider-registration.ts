@@ -1,28 +1,28 @@
 // Minimax provider module implements model/runtime integration.
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import type {
-  OpenClawPluginApi,
-  OpenClawConfig,
+  AforaPluginApi,
+  AforaConfig,
   ProviderAuthContext,
   ProviderAuthResult,
   ProviderCatalogContext,
   ProviderResolveDynamicModelContext,
   ProviderRuntimeModel,
-} from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/plugin-entry";
 import {
   MINIMAX_OAUTH_MARKER,
   buildOauthProviderAuthResult,
-} from "openclaw/plugin-sdk/provider-auth";
-import { createProviderApiKeyAuthMethod } from "openclaw/plugin-sdk/provider-auth-api-key";
-import { buildOpenAICompatibleLiveModelProviderConfig } from "openclaw/plugin-sdk/provider-catalog-live-runtime";
-import type { ProviderPlugin } from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/provider-auth";
+import { createProviderApiKeyAuthMethod } from "afora-agent/plugin-sdk/provider-auth-api-key";
+import { buildOpenAICompatibleLiveModelProviderConfig } from "afora-agent/plugin-sdk/provider-catalog-live-runtime";
+import type { ProviderPlugin } from "afora-agent/plugin-sdk/provider-model-shared";
 import {
   buildProviderReplayFamilyHooks,
   normalizeModelCompat,
-} from "openclaw/plugin-sdk/provider-model-shared";
-import { buildProviderStreamFamilyHooks } from "openclaw/plugin-sdk/provider-stream-family";
-import { fetchMinimaxUsage } from "openclaw/plugin-sdk/provider-usage";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/provider-model-shared";
+import { buildProviderStreamFamilyHooks } from "afora-agent/plugin-sdk/provider-stream-family";
+import { fetchMinimaxUsage } from "afora-agent/plugin-sdk/provider-usage";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   isMiniMaxModernModelId,
   MINIMAX_DEFAULT_MODEL_ID,
@@ -89,11 +89,11 @@ function portalModelRef(modelId: string): string {
   return `${PORTAL_PROVIDER_ID}/${modelId}`;
 }
 
-function getProviderBaseUrl(cfg: OpenClawConfig, providerId: string): string | undefined {
+function getProviderBaseUrl(cfg: AforaConfig, providerId: string): string | undefined {
   return normalizeOptionalString(cfg.models?.providers?.[providerId]?.baseUrl);
 }
 
-function resolveMinimaxUsageBaseUrl(cfg: OpenClawConfig): string | undefined {
+function resolveMinimaxUsageBaseUrl(cfg: AforaConfig): string | undefined {
   return getProviderBaseUrl(cfg, PORTAL_PROVIDER_ID) ?? getProviderBaseUrl(cfg, API_PROVIDER_ID);
 }
 
@@ -364,7 +364,7 @@ function buildMinimaxPortalProviderPlugin(): ProviderPlugin {
   };
 }
 
-export function registerMinimaxProviders(api: OpenClawPluginApi) {
+export function registerMinimaxProviders(api: AforaPluginApi) {
   api.registerProvider(buildMinimaxApiProviderPlugin());
   api.registerProvider(buildMinimaxPortalProviderPlugin());
 }

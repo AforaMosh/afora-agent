@@ -99,7 +99,7 @@ describe("memory-host-core helpers", () => {
     const fixtureRoot = await createFixtureRoot("memory-host-readonly-workspace-");
     const workspaceDir = path.join(fixtureRoot, "workspace");
     try {
-      vi.stubEnv("OPENCLAW_STATE_DIR", path.join(fixtureRoot, "state"));
+      vi.stubEnv("AFORA_STATE_DIR", path.join(fixtureRoot, "state"));
       await fs.mkdir(workspaceDir);
       await fs.writeFile(path.join(workspaceDir, "MEMORY.md"), "# Read-only memory\n", "utf8");
       await appendMemoryHostEvent(workspaceDir, {
@@ -139,7 +139,7 @@ describe("memory-host-core helpers", () => {
       const workspaceDir = path.join(fixtureRoot, "workspace");
       let eventExportPath: string | undefined;
       try {
-        vi.stubEnv("OPENCLAW_STATE_DIR", path.join(fixtureRoot, "state"));
+        vi.stubEnv("AFORA_STATE_DIR", path.join(fixtureRoot, "state"));
         await fs.mkdir(workspaceDir);
         await appendMemoryHostEvent(workspaceDir, {
           type: "memory.recall.recorded",
@@ -189,7 +189,7 @@ describe("memory-host-core helpers", () => {
       const externalMemoryDir = path.join(fixtureRoot, "external-memory");
       const stateDir = path.join(fixtureRoot, "state");
       try {
-        vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+        vi.stubEnv("AFORA_STATE_DIR", stateDir);
         await fs.mkdir(workspaceDir);
         await fs.mkdir(stateDir);
         const stateHash = createHash("sha256")
@@ -204,7 +204,7 @@ describe("memory-host-core helpers", () => {
         );
         const externalOwner = path.join(
           path.dirname(externalExport),
-          ".openclaw-memory-host-events-owner.json",
+          ".afora-memory-host-events-owner.json",
         );
         await fs.mkdir(path.dirname(externalExport), { recursive: true });
         await fs.writeFile(externalExport, '{"type":"external"}\n', "utf8");
@@ -232,7 +232,7 @@ describe("memory-host-core helpers", () => {
     const fixtureRoot = await createFixtureRoot("memory-host-unowned-export-");
     const workspaceDir = path.join(fixtureRoot, "workspace");
     try {
-      vi.stubEnv("OPENCLAW_STATE_DIR", fixtureRoot);
+      vi.stubEnv("AFORA_STATE_DIR", fixtureRoot);
       await fs.mkdir(workspaceDir);
       await appendMemoryHostEvent(workspaceDir, {
         type: "memory.recall.recorded",
@@ -264,7 +264,7 @@ describe("memory-host-core helpers", () => {
       await createPluginStateKeyedStore("memory-core", {
         namespace: "memory-host.events",
         maxEntries: 10_000,
-        env: { ...process.env, OPENCLAW_STATE_DIR: fixtureRoot },
+        env: { ...process.env, AFORA_STATE_DIR: fixtureRoot },
       }).clear();
       await listMemoryHostPublicArtifacts({
         cfg: { agents: { list: [{ id: "main", default: true, workspace: workspaceDir }] } },
@@ -280,7 +280,7 @@ describe("memory-host-core helpers", () => {
     const stateDir = path.join(fixtureRoot, "state");
     const workspaceDir = path.join(fixtureRoot, "workspace");
     try {
-      vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+      vi.stubEnv("AFORA_STATE_DIR", stateDir);
       await fs.mkdir(workspaceDir);
       await appendMemoryHostEvent(workspaceDir, {
         type: "memory.recall.recorded",
@@ -299,7 +299,7 @@ describe("memory-host-core helpers", () => {
         .slice(0, 32);
       const exportDir = path.join(workspaceDir, "memory", "events", stateHash);
       const exportPath = path.join(exportDir, "memory-host-events.jsonl");
-      const ownerPath = path.join(exportDir, ".openclaw-memory-host-events-owner.json");
+      const ownerPath = path.join(exportDir, ".afora-memory-host-events-owner.json");
       const expectedContent = `${JSON.stringify({
         type: "memory.recall.recorded",
         timestamp: "2026-05-18T12:00:00.000Z",
@@ -312,7 +312,7 @@ describe("memory-host-core helpers", () => {
         ownerPath,
         `${JSON.stringify({
           schemaVersion: 3,
-          kind: "openclaw-memory-host-events-export",
+          kind: "afora-memory-host-events-export",
           stateHash,
           workspaceHash,
           pendingContentSha256: createHash("sha256").update(expectedContent).digest("hex"),
@@ -349,7 +349,7 @@ describe("memory-host-core helpers", () => {
     const originalOpen = fs.open.bind(fs);
     let exportOpenCount = 0;
     try {
-      vi.stubEnv("OPENCLAW_STATE_DIR", fixtureRoot);
+      vi.stubEnv("AFORA_STATE_DIR", fixtureRoot);
       await fs.mkdir(workspaceDir, { recursive: true });
       await appendMemoryHostEvent(workspaceDir, event);
       const stateHash = createHash("sha256")
@@ -368,7 +368,7 @@ describe("memory-host-core helpers", () => {
         if (typeof target === "string" && path.resolve(target) === path.resolve(exportPath)) {
           exportOpenCount += 1;
           if (exportOpenCount === 4) {
-            await fs.rename(exportPath, `${exportPath}.openclaw-created`);
+            await fs.rename(exportPath, `${exportPath}.afora-created`);
             const replacement = await originalOpen(exportPath, "wx", 0o600);
             try {
               await replacement.writeFile(expectedContent, "utf8");
@@ -406,7 +406,7 @@ describe("memory-host-core helpers", () => {
       results: [],
     };
     try {
-      vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+      vi.stubEnv("AFORA_STATE_DIR", stateDir);
       await fs.mkdir(workspaceDir);
       await appendMemoryHostEvent(workspaceDir, firstEvent);
       const stateHash = createHash("sha256")
@@ -419,7 +419,7 @@ describe("memory-host-core helpers", () => {
         .slice(0, 32);
       const exportDir = path.join(workspaceDir, "memory", "events", stateHash);
       const exportPath = path.join(exportDir, "memory-host-events.jsonl");
-      const ownerPath = path.join(exportDir, ".openclaw-memory-host-events-owner.json");
+      const ownerPath = path.join(exportDir, ".afora-memory-host-events-owner.json");
       const pendingContent = `${JSON.stringify(firstEvent)}\n`;
       await fs.mkdir(exportDir, { recursive: true });
       await fs.writeFile(exportPath, pendingContent, "utf8");
@@ -427,7 +427,7 @@ describe("memory-host-core helpers", () => {
         ownerPath,
         `${JSON.stringify({
           schemaVersion: 3,
-          kind: "openclaw-memory-host-events-export",
+          kind: "afora-memory-host-events-export",
           stateHash,
           workspaceHash,
           pendingContentSha256: createHash("sha256").update(pendingContent).digest("hex"),
@@ -469,7 +469,7 @@ describe("memory-host-core helpers", () => {
     const fixtureRoot = await createFixtureRoot("memory-host-blocked-export-");
     const workspaceDir = path.join(fixtureRoot, "workspace");
     try {
-      vi.stubEnv("OPENCLAW_STATE_DIR", path.join(fixtureRoot, "state"));
+      vi.stubEnv("AFORA_STATE_DIR", path.join(fixtureRoot, "state"));
       await fs.mkdir(workspaceDir);
       await fs.writeFile(path.join(workspaceDir, "MEMORY.md"), "# Still visible\n", "utf8");
       await fs.writeFile(path.join(workspaceDir, "memory"), "user file\n", "utf8");
@@ -499,7 +499,7 @@ describe("memory-host-core helpers", () => {
   it("lists shared public artifacts from memory workspaces", async () => {
     const fixtureRoot = await createFixtureRoot("memory-host-public-artifacts-");
     try {
-      vi.stubEnv("OPENCLAW_STATE_DIR", fixtureRoot);
+      vi.stubEnv("AFORA_STATE_DIR", fixtureRoot);
       const workspaceDir = path.join(fixtureRoot, "workspace");
       await fs.mkdir(path.join(workspaceDir, "memory", "dreaming"), { recursive: true });
       await fs.writeFile(path.join(workspaceDir, "MEMORY.md"), "# Durable Memory\n", "utf8");
@@ -585,7 +585,7 @@ describe("memory-host-core helpers", () => {
       const exportStat = await fs.stat(eventExportPath);
       const exportOwner = JSON.parse(
         await fs.readFile(
-          path.join(path.dirname(eventExportPath), ".openclaw-memory-host-events-owner.json"),
+          path.join(path.dirname(eventExportPath), ".afora-memory-host-events-owner.json"),
           "utf8",
         ),
       ) as { fileDev?: string; fileIno?: string };
@@ -603,7 +603,7 @@ describe("memory-host-core helpers", () => {
       await createPluginStateKeyedStore("memory-core", {
         namespace: "memory-host.events",
         maxEntries: 10_000,
-        env: { ...process.env, OPENCLAW_STATE_DIR: fixtureRoot },
+        env: { ...process.env, AFORA_STATE_DIR: fixtureRoot },
       }).clear();
       const afterRetention = await listMemoryHostPublicArtifacts({
         cfg: {
@@ -658,7 +658,7 @@ describe("memory-host-core helpers", () => {
         });
 
       try {
-        vi.stubEnv("OPENCLAW_STATE_DIR", fixtureRoot);
+        vi.stubEnv("AFORA_STATE_DIR", fixtureRoot);
         await fs.mkdir(workspaceDir, { recursive: true });
         await fs.symlink(workspaceDir, workspaceAlias);
         await appendMemoryHostEvent(workspaceAlias, {
@@ -722,7 +722,7 @@ describe("memory-host-core helpers", () => {
     let exportOpenCount = 0;
     let eventExportPath: string | undefined;
     try {
-      vi.stubEnv("OPENCLAW_STATE_DIR", fixtureRoot);
+      vi.stubEnv("AFORA_STATE_DIR", fixtureRoot);
       await fs.mkdir(workspaceDir, { recursive: true });
       await appendMemoryHostEvent(workspaceDir, {
         type: "memory.recall.recorded",
@@ -741,7 +741,7 @@ describe("memory-host-core helpers", () => {
         await createPluginStateKeyedStore("memory-core", {
           namespace: "memory-host.events",
           maxEntries: 10_000,
-          env: { ...process.env, OPENCLAW_STATE_DIR: fixtureRoot },
+          env: { ...process.env, AFORA_STATE_DIR: fixtureRoot },
         }).clear();
       } else {
         await appendMemoryHostEvent(workspaceDir, {
@@ -759,7 +759,7 @@ describe("memory-host-core helpers", () => {
         if (typeof target === "string" && path.resolve(target) === expectedExportPath) {
           exportOpenCount += 1;
           if (exportOpenCount === 2) {
-            await fs.rename(expectedExportPath, `${expectedExportPath}.openclaw-owned`);
+            await fs.rename(expectedExportPath, `${expectedExportPath}.afora-owned`);
             await fs.writeFile(expectedExportPath, replacement, "utf8");
           }
         }
@@ -786,7 +786,7 @@ describe("memory-host-core helpers", () => {
     const originalOpen = fs.open.bind(fs);
     let exportOpenCount = 0;
     try {
-      vi.stubEnv("OPENCLAW_STATE_DIR", fixtureRoot);
+      vi.stubEnv("AFORA_STATE_DIR", fixtureRoot);
       await fs.mkdir(workspaceDir, { recursive: true });
       await appendMemoryHostEvent(workspaceDir, {
         type: "memory.recall.recorded",
@@ -805,7 +805,7 @@ describe("memory-host-core helpers", () => {
         await createPluginStateKeyedStore("memory-core", {
           namespace: "memory-host.events",
           maxEntries: 10_000,
-          env: { ...process.env, OPENCLAW_STATE_DIR: fixtureRoot },
+          env: { ...process.env, AFORA_STATE_DIR: fixtureRoot },
         }).clear();
       } else {
         await appendMemoryHostEvent(workspaceDir, {
@@ -858,7 +858,7 @@ describe("memory-host-core helpers", () => {
     const originalOpen = fs.open.bind(fs);
     let exportOpenCount = 0;
     try {
-      vi.stubEnv("OPENCLAW_STATE_DIR", fixtureRoot);
+      vi.stubEnv("AFORA_STATE_DIR", fixtureRoot);
       await fs.mkdir(workspaceDir, { recursive: true });
       await appendMemoryHostEvent(workspaceDir, {
         type: "memory.recall.recorded",
@@ -919,7 +919,7 @@ describe("memory-host-core helpers", () => {
       agents: { list: [{ id: "main", default: true, workspace: workspaceDir }] },
     };
     try {
-      vi.stubEnv("OPENCLAW_STATE_DIR", fixtureRoot);
+      vi.stubEnv("AFORA_STATE_DIR", fixtureRoot);
       await fs.mkdir(workspaceDir, { recursive: true });
       await appendMemoryHostEvent(workspaceDir, {
         type: "memory.recall.recorded",
@@ -965,7 +965,7 @@ describe("memory-host-core helpers", () => {
 
       const exports: string[] = [];
       for (const profile of ["profile-a", "profile-b"]) {
-        vi.stubEnv("OPENCLAW_STATE_DIR", path.join(fixtureRoot, profile));
+        vi.stubEnv("AFORA_STATE_DIR", path.join(fixtureRoot, profile));
         await appendMemoryHostEvent(workspaceDir, {
           type: "memory.recall.recorded",
           timestamp: "2026-05-18T12:00:00.000Z",

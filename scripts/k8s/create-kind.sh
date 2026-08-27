@@ -15,7 +15,7 @@
 set -euo pipefail
 
 # Defaults
-CLUSTER_NAME="openclaw"
+CLUSTER_NAME="afora"
 CONTAINER_CMD=""
 DELETE=false
 
@@ -37,7 +37,7 @@ Usage: $(basename "$0") [OPTIONS]
 
 
 Options:
-  --name NAME          Cluster name (default: openclaw)
+  --name NAME          Cluster name (default: afora)
   --delete             Delete the cluster instead of creating it
   -h, --help           Show this help message
 
@@ -174,7 +174,7 @@ apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
   labels:
-    openclaw.dev/role: control-plane
+    afora.dev/role: control-plane
   # Uncomment to expose services on host ports:
   # extraPortMappings:
   # - containerPort: 30080

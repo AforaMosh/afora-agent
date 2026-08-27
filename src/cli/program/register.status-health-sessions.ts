@@ -1,5 +1,5 @@
 // Status, health, sessions, and task/flow command registration.
-import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-coercion";
+import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
 import type { Command } from "commander";
 import { formatDocsLink } from "../../../packages/terminal-core/src/links.js";
 import { theme } from "../../../packages/terminal-core/src/theme.js";
@@ -130,24 +130,24 @@ function registerSessionsLifecycleCommand(
   const destructive = operation === "delete";
   const examples: Array<[string, string]> = destructive
     ? [
-        ['openclaw sessions delete "agent:main:scratch-1"', "Delete with confirmation."],
+        ['afora sessions delete "agent:main:scratch-1"', "Delete with confirmation."],
         [
-          'openclaw sessions delete "agent:main:scratch-1" "agent:main:scratch-2" --yes',
+          'afora sessions delete "agent:main:scratch-1" "agent:main:scratch-2" --yes',
           "Delete several sessions non-interactively.",
         ],
         [
-          'openclaw sessions delete "agent:work:scratch-1" --agent work --dry-run',
+          'afora sessions delete "agent:work:scratch-1" --agent work --dry-run',
           "Preview an agent-scoped delete.",
         ],
       ]
     : [
-        ['openclaw sessions archive "agent:main:scratch-1"', "Archive one session."],
+        ['afora sessions archive "agent:main:scratch-1"', "Archive one session."],
         [
-          'openclaw sessions archive "agent:main:scratch-1" "agent:main:scratch-2"',
+          'afora sessions archive "agent:main:scratch-1" "agent:main:scratch-2"',
           "Archive several sessions.",
         ],
         [
-          'openclaw sessions archive "agent:work:scratch-1" --agent work --dry-run',
+          'afora sessions archive "agent:work:scratch-1" --agent work --dry-run',
           "Preview an agent-scoped archive.",
         ],
       ];
@@ -267,21 +267,21 @@ export function registerStatusHealthSessionsCommands(program: Command) {
       "after",
       () =>
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
-          ["openclaw status", "Show channel health + session summary."],
-          ["openclaw status --all", "Full diagnosis (read-only)."],
-          ["openclaw status --json", "Machine-readable output."],
-          ["openclaw status --usage", "Show model provider usage/quota snapshots."],
+          ["afora status", "Show channel health + session summary."],
+          ["afora status --all", "Full diagnosis (read-only)."],
+          ["afora status --json", "Machine-readable output."],
+          ["afora status --usage", "Show model provider usage/quota snapshots."],
           [
-            "openclaw status --deep",
+            "afora status --deep",
             "Run channel probes (WA + Telegram + Discord + Slack + Signal).",
           ],
-          ["openclaw status --deep --timeout 5000", "Tighten probe timeout."],
+          ["afora status --deep --timeout 5000", "Tighten probe timeout."],
         ])}`,
     )
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/status", "docs.openclaw.ai/cli/status")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/status", "docs.afora.ai/cli/status")}\n`,
     )
     .action(async (opts) => {
       await runWithVerboseAndTimeout(opts, async ({ verbose, timeoutMs }) => {
@@ -311,7 +311,7 @@ export function registerStatusHealthSessionsCommands(program: Command) {
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/health", "docs.openclaw.ai/cli/health")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/health", "docs.afora.ai/cli/health")}\n`,
     )
     .action(async (opts) => {
       await runWithVerboseAndTimeout(opts, async ({ verbose, timeoutMs }) => {
@@ -334,13 +334,13 @@ export function registerStatusHealthSessionsCommands(program: Command) {
       "after",
       () =>
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
-          ["openclaw sessions", "List all sessions."],
-          ["openclaw sessions --agent work", "List sessions for one agent."],
-          ["openclaw sessions --all-agents", "Aggregate sessions across agents."],
-          ["openclaw sessions --active 120", "Only last 2 hours."],
-          ["openclaw sessions --limit 25", "Show the newest 25 sessions."],
-          ["openclaw sessions --json", "Machine-readable output."],
-          ["openclaw sessions --store ./tmp/sessions.sqlite", "Use a specific session store."],
+          ["afora sessions", "List all sessions."],
+          ["afora sessions --agent work", "List sessions for one agent."],
+          ["afora sessions --all-agents", "Aggregate sessions across agents."],
+          ["afora sessions --active 120", "Only last 2 hours."],
+          ["afora sessions --limit 25", "Show the newest 25 sessions."],
+          ["afora sessions --json", "Machine-readable output."],
+          ["afora sessions --store ./tmp/sessions.sqlite", "Use a specific session store."],
         ])}\n\n${theme.muted(
           "Shows token usage per session when the agent reports it; set the model entry's contextTokens to cap the window and show %.",
         )}`,
@@ -348,7 +348,7 @@ export function registerStatusHealthSessionsCommands(program: Command) {
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/sessions", "docs.openclaw.ai/cli/sessions")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/sessions", "docs.afora.ai/cli/sessions")}\n`,
     )
     .action(async (opts) => {
       await runSessionsListCli(opts as SessionsListCliOptions);
@@ -386,20 +386,20 @@ export function registerStatusHealthSessionsCommands(program: Command) {
       "after",
       () =>
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
-          ["openclaw sessions cleanup --dry-run", "Preview stale/cap cleanup."],
+          ["afora sessions cleanup --dry-run", "Preview stale/cap cleanup."],
           [
-            "openclaw sessions cleanup --dry-run --fix-missing",
+            "afora sessions cleanup --dry-run --fix-missing",
             "Also preview pruning entries with missing transcript files.",
           ],
           [
-            "openclaw sessions cleanup --dry-run --fix-dm-scope",
+            "afora sessions cleanup --dry-run --fix-dm-scope",
             "Preview stale direct-DM rows after returning dmScope to main.",
           ],
-          ["openclaw sessions cleanup --enforce", "Apply maintenance now."],
-          ["openclaw sessions cleanup --agent work --dry-run", "Preview one agent store."],
-          ["openclaw sessions cleanup --all-agents --dry-run", "Preview all agent stores."],
+          ["afora sessions cleanup --enforce", "Apply maintenance now."],
+          ["afora sessions cleanup --agent work --dry-run", "Preview one agent store."],
+          ["afora sessions cleanup --all-agents --dry-run", "Preview all agent stores."],
           [
-            "openclaw sessions cleanup --enforce --store ./tmp/sessions.sqlite",
+            "afora sessions cleanup --enforce --store ./tmp/sessions.sqlite",
             "Use a specific store.",
           ],
         ])}`,
@@ -476,7 +476,7 @@ export function registerStatusHealthSessionsCommands(program: Command) {
     .command("export-trajectory")
     .description("Export a redacted trajectory bundle for a stored session")
     .option("--session-key <key>", "Session key to export")
-    .option("--output <path>", "Output directory name inside .openclaw/trajectory-exports")
+    .option("--output <path>", "Output directory name inside .afora/trajectory-exports")
     .option("--workspace <path>", "Workspace root for the export (default: current directory)")
     .option("--store <path>", "Path to physical .sqlite session store")
     .option("--agent <id>", "Agent id for resolving the default session store")
@@ -525,15 +525,15 @@ export function registerStatusHealthSessionsCommands(program: Command) {
       () =>
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
           [
-            'openclaw sessions compact "agent:main:main"',
+            'afora sessions compact "agent:main:main"',
             "LLM-summarize a session to reclaim context budget.",
           ],
           [
-            'openclaw sessions compact "agent:main:main" --max-lines 200',
+            'afora sessions compact "agent:main:main" --max-lines 200',
             "Truncate to the last 200 transcript lines instead.",
           ],
           [
-            'openclaw sessions compact "agent:work:main" --agent work --json',
+            'afora sessions compact "agent:work:main" --agent work --json',
             "Target one agent's session and emit JSON.",
           ],
         ])}\n\n${theme.muted(
@@ -543,7 +543,7 @@ export function registerStatusHealthSessionsCommands(program: Command) {
     .action(async (key: string, opts, command) => {
       // Sibling `sessions` subcommands inherit parent options (see list/cleanup
       // above): `--agent`/`--json` may be supplied on the parent `sessions`
-      // command, e.g. `openclaw sessions --agent work compact <key>`. Merge those
+      // command, e.g. `afora sessions --agent work compact <key>`. Merge those
       // so a parent `--agent` is not silently dropped and the wrong agent's
       // session compacted.
       //

@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import type { ChannelSetupPlugin } from "../../channels/plugins/setup-wizard-types.js";
 import type { ChannelSetupWizard } from "../../channels/plugins/setup-wizard.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { createChannelTestPluginBase } from "../../test-utils/channel-plugins.js";
 import { resolveChannelSetupWizardAdapterForPlugin } from "./registry.js";
 
@@ -15,7 +15,7 @@ function createSetupPlugin(params: {
       label: "Demo",
     }),
     setup: {
-      applyAccountConfig: ({ cfg }: { cfg: OpenClawConfig }) => cfg,
+      applyAccountConfig: ({ cfg }: { cfg: AforaConfig }) => cfg,
     },
     setupWizard: params.setupWizard,
   };
@@ -38,14 +38,14 @@ describe("resolveChannelSetupWizardAdapterForPlugin", () => {
 
     expect(adapter?.channel).toBe("demo");
     const status = await adapter?.getStatus({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       accountOverrides: { demo: "default" },
     });
     expect(status?.channel).toBe("demo");
     expect(status?.configured).toBe(false);
 
     const configured = await adapter?.configure({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       runtime: {} as never,
       prompter: {} as never,
       options: {},
@@ -66,7 +66,7 @@ describe("resolveChannelSetupWizardAdapterForPlugin", () => {
         configured: false,
         statusLines: [],
       }),
-      configure: async ({ cfg }: { cfg: OpenClawConfig }) => ({ cfg }),
+      configure: async ({ cfg }: { cfg: AforaConfig }) => ({ cfg }),
     };
     const plugin = createSetupPlugin({ setupWizard });
 

@@ -7,7 +7,7 @@ import type {
   ModelsAuthLoginFlowResult,
 } from "../commands/models/auth.js";
 import { createLazyRuntimeMethodBinder, createLazyRuntimeModule } from "../shared/lazy-runtime.js";
-import type { OpenClawConfig } from "./config-contracts.js";
+import type { AforaConfig } from "./config-contracts.js";
 import type { RuntimeEnv } from "./runtime-env.js";
 
 export type {
@@ -56,7 +56,7 @@ function resolveCodexLoginProvider(rawProvider: string | undefined): string | nu
   return CODEX_LOGIN_PROVIDER_ALIASES.has(normalized) ? CODEX_LOGIN_PROVIDER : null;
 }
 
-function hasConfiguredCommandOwnerAllowlist(cfg: OpenClawConfig): boolean {
+function hasConfiguredCommandOwnerAllowlist(cfg: AforaConfig): boolean {
   const owners = cfg.commands?.ownerAllowFrom;
   return Array.isArray(owners) && owners.some((owner) => normalizeOptionalString(String(owner)));
 }
@@ -203,7 +203,7 @@ async function runCodexDeviceLoginFlow(params: {
   provider: string;
   agentId: string;
   profileId?: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   runtime: RuntimeEnv;
   sendMessage: (message: string) => Promise<void>;
   sendDeviceCode?: NonNullable<ModelsAuthLoginFlowOptions["prompter"]["deviceCode"]>;

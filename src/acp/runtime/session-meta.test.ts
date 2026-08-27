@@ -2,11 +2,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { loadSessionEntry, replaceSessionEntry } from "../../config/sessions/session-accessor.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaAgentDatabasesForTest } from "../../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { withTestDir } from "../../test-helpers/temp-dir.js";
 import {
   listAcpSessionEntries,
@@ -49,12 +49,12 @@ function readStoredAcpSessionEntry(params: {
 
 describe("ACP session metadata SQLite store", () => {
   afterEach(() => {
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
   });
 
   it("persists bare global metadata under a configured fixed-store owner", async () => {
-    await withTestDir({ prefix: "openclaw-acp-global-owner-" }, async (dir) => {
+    await withTestDir({ prefix: "afora-acp-global-owner-" }, async (dir) => {
       const storePath = path.join(dir, "sessions.json");
       const cfg = {
         session: { scope: "global", store: storePath },
@@ -63,8 +63,8 @@ describe("ACP session metadata SQLite store", () => {
           defaults: { sessionStore: { agentId: "ops" } },
           entries: { ops: {}, research: {} },
         },
-      } satisfies OpenClawConfig;
-      const databasePath = path.join(dir, "state", "openclaw.sqlite");
+      } satisfies AforaConfig;
+      const databasePath = path.join(dir, "state", "afora.sqlite");
       await replaceSessionEntry(
         {
           agentId: "ops",
@@ -111,7 +111,7 @@ describe("ACP session metadata SQLite store", () => {
       const ownerlessCfg = {
         ...cfg,
         agents: { ownership: "explicit", entries: { ops: {}, research: {} } },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       const ownerlessMutate = vi.fn(mutate);
       await expect(
         upsertAcpSessionMeta({
@@ -126,13 +126,13 @@ describe("ACP session metadata SQLite store", () => {
   });
 
   it("keeps identical bare keys isolated by explicit agent owner", async () => {
-    await withTestDir({ prefix: "openclaw-acp-pair-owner-" }, async (dir) => {
+    await withTestDir({ prefix: "afora-acp-pair-owner-" }, async (dir) => {
       const storePath = path.join(dir, "sessions.json");
-      const databasePath = path.join(dir, "state", "openclaw.sqlite");
+      const databasePath = path.join(dir, "state", "afora.sqlite");
       const cfg = {
         session: { store: storePath },
         agents: { ownership: "explicit", entries: { research: {}, ops: {} } },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       for (const agentId of ["research", "ops"]) {
         await replaceSessionEntry(
           { agentId, storePath, sessionKey: "global" },
@@ -178,8 +178,8 @@ describe("ACP session metadata SQLite store", () => {
   });
 
   it("batch-loads and rekeys legacy bare metadata for the stable store owner", async () => {
-    await withTestDir({ prefix: "openclaw-acp-batch-owner-" }, async (dir) => {
-      const databasePath = path.join(dir, "state", "openclaw.sqlite");
+    await withTestDir({ prefix: "afora-acp-batch-owner-" }, async (dir) => {
+      const databasePath = path.join(dir, "state", "afora.sqlite");
       const cfg = {
         session: { store: path.join(dir, "sessions.json") },
         agents: {
@@ -187,7 +187,7 @@ describe("ACP session metadata SQLite store", () => {
           defaults: { sessionStore: { agentId: "ops" } },
           entries: { ops: {}, research: {} },
         },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       const entry: SessionEntry = {
         sessionId: "ops-global",
         lifecycleRevision: "ops-revision",
@@ -230,9 +230,9 @@ describe("ACP session metadata SQLite store", () => {
   });
 
   it("deletes the legacy row selected by fallback when metadata is cleared", async () => {
-    await withTestDir({ prefix: "openclaw-acp-clear-legacy-owner-" }, async (dir) => {
+    await withTestDir({ prefix: "afora-acp-clear-legacy-owner-" }, async (dir) => {
       const storePath = path.join(dir, "sessions.json");
-      const databasePath = path.join(dir, "state", "openclaw.sqlite");
+      const databasePath = path.join(dir, "state", "afora.sqlite");
       const cfg = {
         session: { scope: "global", store: storePath },
         agents: {
@@ -240,7 +240,7 @@ describe("ACP session metadata SQLite store", () => {
           defaults: { sessionStore: { agentId: "ops" } },
           entries: { ops: {}, research: {} },
         },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       const entry: SessionEntry = {
         sessionId: "ops-global",
         lifecycleRevision: "ops-revision",
@@ -276,8 +276,8 @@ describe("ACP session metadata SQLite store", () => {
   });
 
   it("escapes composite identities from legacy raw keys that use the old prefix", async () => {
-    await withTestDir({ prefix: "openclaw-acp-prefix-collision-" }, async (dir) => {
-      const databasePath = path.join(dir, "state", "openclaw.sqlite");
+    await withTestDir({ prefix: "afora-acp-prefix-collision-" }, async (dir) => {
+      const databasePath = path.join(dir, "state", "afora.sqlite");
       const rawSessionKey = "@agent:research:foo";
       const rawEntry: SessionEntry = {
         sessionId: "raw-session",
@@ -322,10 +322,10 @@ describe("ACP session metadata SQLite store", () => {
   });
 
   it("persists ACP metadata in SQLite without writing sessions.json acp blocks", async () => {
-    await withTestDir({ prefix: "openclaw-acp-meta-" }, async (dir) => {
+    await withTestDir({ prefix: "afora-acp-meta-" }, async (dir) => {
       const storePath = path.join(dir, "sessions.json");
-      const databasePath = path.join(dir, "state", "openclaw.sqlite");
-      const cfg = { session: { store: storePath } } as OpenClawConfig;
+      const databasePath = path.join(dir, "state", "afora.sqlite");
+      const cfg = { session: { store: storePath } } as AforaConfig;
       const sessionKey = "agent:codex:acp:binding:discord:default:feedface";
       await seedAcpSessionEntry({
         storePath,
@@ -372,10 +372,10 @@ describe("ACP session metadata SQLite store", () => {
   });
 
   it("clears legacy embedded ACP metadata through the session accessor", async () => {
-    await withTestDir({ prefix: "openclaw-acp-meta-" }, async (dir) => {
+    await withTestDir({ prefix: "afora-acp-meta-" }, async (dir) => {
       const storePath = path.join(dir, "sessions.json");
-      const databasePath = path.join(dir, "state", "openclaw.sqlite");
-      const cfg = { session: { store: storePath } } as OpenClawConfig;
+      const databasePath = path.join(dir, "state", "afora.sqlite");
+      const cfg = { session: { store: storePath } } as AforaConfig;
       const sessionKey = "agent:codex:acp:binding:discord:default:feedface";
       await seedAcpSessionEntry({
         storePath,
@@ -421,10 +421,10 @@ describe("ACP session metadata SQLite store", () => {
   });
 
   it("creates a session-store row for new SQLite ACP sessions without embedding ACP metadata", async () => {
-    await withTestDir({ prefix: "openclaw-acp-meta-" }, async (dir) => {
+    await withTestDir({ prefix: "afora-acp-meta-" }, async (dir) => {
       const storePath = path.join(dir, "sessions.json");
-      const databasePath = path.join(dir, "state", "openclaw.sqlite");
-      const cfg = { session: { store: storePath } } as OpenClawConfig;
+      const databasePath = path.join(dir, "state", "afora.sqlite");
+      const cfg = { session: { store: storePath } } as AforaConfig;
       const sessionKey = "agent:codex:acp:new-session";
 
       const result = await upsertAcpSessionMeta({
@@ -452,10 +452,10 @@ describe("ACP session metadata SQLite store", () => {
   });
 
   it("normalizes ACP metadata lookups and writes to the resolved session-store key", async () => {
-    await withTestDir({ prefix: "openclaw-acp-meta-" }, async (dir) => {
+    await withTestDir({ prefix: "afora-acp-meta-" }, async (dir) => {
       const storePath = path.join(dir, "sessions.json");
-      const databasePath = path.join(dir, "state", "openclaw.sqlite");
-      const cfg = { session: { store: storePath } } as OpenClawConfig;
+      const databasePath = path.join(dir, "state", "afora.sqlite");
+      const cfg = { session: { store: storePath } } as AforaConfig;
       const storeSessionKey = "agent:codex:acp:binding:discord:default:feedface";
       const rawSessionKey = storeSessionKey.toUpperCase();
       await seedAcpSessionEntry({
@@ -545,10 +545,10 @@ describe("ACP session metadata SQLite store", () => {
   });
 
   it("keeps SQLite ACP metadata visible when legacy store keys are canonicalized", async () => {
-    await withTestDir({ prefix: "openclaw-acp-meta-" }, async (dir) => {
+    await withTestDir({ prefix: "afora-acp-meta-" }, async (dir) => {
       const storePath = path.join(dir, "sessions.json");
-      const databasePath = path.join(dir, "state", "openclaw.sqlite");
-      const cfg = { session: { store: storePath } } as OpenClawConfig;
+      const databasePath = path.join(dir, "state", "afora.sqlite");
+      const cfg = { session: { store: storePath } } as AforaConfig;
       const legacyStoreSessionKey = "agent:CODEX:acp:legacy-runtime";
       const canonicalSessionKey = "agent:codex:acp:legacy-runtime";
       await seedAcpSessionEntry({
@@ -590,10 +590,10 @@ describe("ACP session metadata SQLite store", () => {
   });
 
   it("binds ACP metadata to the final accessor-selected entry for alias writes", async () => {
-    await withTestDir({ prefix: "openclaw-acp-meta-" }, async (dir) => {
+    await withTestDir({ prefix: "afora-acp-meta-" }, async (dir) => {
       const storePath = path.join(dir, "sessions.json");
-      const databasePath = path.join(dir, "state", "openclaw.sqlite");
-      const cfg = { session: { store: storePath } } as OpenClawConfig;
+      const databasePath = path.join(dir, "state", "afora.sqlite");
+      const cfg = { session: { store: storePath } } as AforaConfig;
       const canonicalSessionKey = "agent:codex:acp:alias-runtime";
       const legacyStoreSessionKey = "agent:CODEX:acp:alias-runtime";
       await seedAcpSessionEntry({
@@ -643,10 +643,10 @@ describe("ACP session metadata SQLite store", () => {
   });
 
   it("ignores SQLite ACP metadata rows from an older lifecycle revision", async () => {
-    await withTestDir({ prefix: "openclaw-acp-meta-" }, async (dir) => {
+    await withTestDir({ prefix: "afora-acp-meta-" }, async (dir) => {
       const storePath = path.join(dir, "sessions.json");
-      const databasePath = path.join(dir, "state", "openclaw.sqlite");
-      const cfg = { session: { store: storePath } } as OpenClawConfig;
+      const databasePath = path.join(dir, "state", "afora.sqlite");
+      const cfg = { session: { store: storePath } } as AforaConfig;
       const sessionKey = "agent:codex:acp:binding:discord:default:feedface";
       await seedAcpSessionEntry({
         storePath,
@@ -697,10 +697,10 @@ describe("ACP session metadata SQLite store", () => {
   });
 
   it("reads ACP metadata rows written with the legacy session-id binding", async () => {
-    await withTestDir({ prefix: "openclaw-acp-meta-" }, async (dir) => {
+    await withTestDir({ prefix: "afora-acp-meta-" }, async (dir) => {
       const storePath = path.join(dir, "sessions.json");
-      const databasePath = path.join(dir, "state", "openclaw.sqlite");
-      const cfg = { session: { store: storePath } } as OpenClawConfig;
+      const databasePath = path.join(dir, "state", "afora.sqlite");
+      const cfg = { session: { store: storePath } } as AforaConfig;
       const sessionKey = "agent:codex:acp:binding:discord:default:legacy";
       await seedAcpSessionEntry({
         storePath,
@@ -774,8 +774,8 @@ describe("ACP session metadata SQLite store", () => {
   });
 
   it("keeps a session-id fence when ACP metadata is written before a lifecycle revision", async () => {
-    await withTestDir({ prefix: "openclaw-acp-meta-" }, async (dir) => {
-      const databasePath = path.join(dir, "state", "openclaw.sqlite");
+    await withTestDir({ prefix: "afora-acp-meta-" }, async (dir) => {
+      const databasePath = path.join(dir, "state", "afora.sqlite");
       const sessionKey = "agent:codex:acp:pre-revision";
       writeAcpSessionMetaForMigration({
         databasePath,
@@ -818,10 +818,10 @@ describe("ACP session metadata SQLite store", () => {
   });
 
   it("repairs ACP metadata rows when session-store keys are canonicalized", async () => {
-    await withTestDir({ prefix: "openclaw-acp-meta-" }, async (dir) => {
+    await withTestDir({ prefix: "afora-acp-meta-" }, async (dir) => {
       const storePath = path.join(dir, "sessions.json");
-      const databasePath = path.join(dir, "state", "openclaw.sqlite");
-      const cfg = { session: { store: storePath } } as OpenClawConfig;
+      const databasePath = path.join(dir, "state", "afora.sqlite");
+      const cfg = { session: { store: storePath } } as AforaConfig;
       const legacyKey = "agent:CODEX:acp:legacy-runtime";
       const canonicalKey = "agent:codex:acp:legacy-runtime";
       await seedAcpSessionEntry({
@@ -871,10 +871,10 @@ describe("ACP session metadata SQLite store", () => {
   });
 
   it("lists SQLite ACP rows while joining current session-store entries", async () => {
-    await withTestDir({ prefix: "openclaw-acp-meta-" }, async (dir) => {
+    await withTestDir({ prefix: "afora-acp-meta-" }, async (dir) => {
       const storePath = path.join(dir, "sessions.json");
-      const databasePath = path.join(dir, "state", "openclaw.sqlite");
-      const cfg = { session: { store: storePath } } as OpenClawConfig;
+      const databasePath = path.join(dir, "state", "afora.sqlite");
+      const cfg = { session: { store: storePath } } as AforaConfig;
       const sessionKey = "agent:codex:acp:s1";
       await seedAcpSessionEntry({
         storePath,
@@ -921,10 +921,10 @@ describe("ACP session metadata SQLite store", () => {
     });
   });
 
-  it("honors OPENCLAW_STATE_DIR when joining listed SQLite rows to session stores", async () => {
-    await withTestDir({ prefix: "openclaw-acp-meta-" }, async (dir) => {
-      const env = { ...process.env, OPENCLAW_STATE_DIR: dir } as NodeJS.ProcessEnv;
-      const cfg = {} as OpenClawConfig;
+  it("honors AFORA_STATE_DIR when joining listed SQLite rows to session stores", async () => {
+    await withTestDir({ prefix: "afora-acp-meta-" }, async (dir) => {
+      const env = { ...process.env, AFORA_STATE_DIR: dir } as NodeJS.ProcessEnv;
+      const cfg = {} as AforaConfig;
       const sessionKey = "agent:codex:acp:s1";
       const storePath = path.join(dir, "agents", "codex", "sessions", "sessions.json");
       await seedAcpSessionEntry({

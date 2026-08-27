@@ -492,7 +492,7 @@ describe("resolveMSTeamsTeamsConfig", () => {
 });
 
 describe("looksLikeMSTeamsTargetId", () => {
-  // Regression suite for https://github.com/openclaw/openclaw/issues/58001:
+  // Regression suite for https://github.com/AforaMosh/afora-agent/issues/58001:
   // cron announce delivery rejected valid Teams conversation ids because the
   // validator only matched the `conversation:`-prefixed and `@thread`-suffixed
   // forms. It must now accept every documented Bot Framework + Graph format.

@@ -1,5 +1,5 @@
 // Public operation dispatcher. Parsing and mutation helpers live in focused modules.
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { buildAgentMainSessionKey, normalizeAgentId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { resolveUserPath, shortenHomePath } from "../utils.js";
@@ -33,7 +33,7 @@ import { executePluginInstall } from "./plugin-install.js";
 
 const loadOverviewModule = async () => await import("./overview.js");
 
-/** Execute a parsed OpenClaw operation after applying approval gates and audit logging. */
+/** Execute a parsed Afora operation after applying approval gates and audit logging. */
 export async function executeSystemAgentOperation(
   operation: SystemAgentOperation,
   runtime: RuntimeEnv,
@@ -240,14 +240,14 @@ export async function executeSystemAgentOperation(
       return { applied: false };
     }
     case "channel-setup":
-      // Channel setup is a multi-step wizard; only interactive OpenClaw (TUI
+      // Channel setup is a multi-step wizard; only interactive Afora (TUI
       // chat bridge or the gateway chat) can host it. One-shot mode points at
       // the guided paths.
       runtime.log(
         [
           `Connecting ${operation.channel} needs an interactive session.`,
-          "Run `openclaw setup` and say `connect " + operation.channel + "`,",
-          "or run `openclaw channels add` for the terminal wizard.",
+          "Run `afora setup` and say `connect " + operation.channel + "`,",
+          "or run `afora channels add` for the terminal wizard.",
         ].join("\n"),
       );
       return { applied: false };
@@ -255,8 +255,8 @@ export async function executeSystemAgentOperation(
       runtime.log(
         [
           "Skills setup needs an interactive session.",
-          "Run `openclaw setup` and say `configure skills`,",
-          "or run `openclaw configure --section skills` for the terminal wizard.",
+          "Run `afora setup` and say `configure skills`,",
+          "or run `afora configure --section skills` for the terminal wizard.",
         ].join("\n"),
       );
       return { applied: false };
@@ -264,8 +264,8 @@ export async function executeSystemAgentOperation(
       runtime.log(
         [
           "Web search setup needs an interactive session.",
-          "Run `openclaw setup` and say `configure search`,",
-          "or run `openclaw configure --section web` for the masked terminal wizard.",
+          "Run `afora setup` and say `configure search`,",
+          "or run `afora configure --section web` for the masked terminal wizard.",
         ].join("\n"),
       );
       return { applied: false };
@@ -273,8 +273,8 @@ export async function executeSystemAgentOperation(
       runtime.log(
         [
           "Gateway configuration needs an interactive session.",
-          "Run `openclaw setup` and say `configure gateway`,",
-          "or run `openclaw configure --section gateway` for the masked terminal wizard.",
+          "Run `afora setup` and say `configure gateway`,",
+          "or run `afora configure --section gateway` for the masked terminal wizard.",
         ].join("\n"),
       );
       return { applied: false };
@@ -283,31 +283,31 @@ export async function executeSystemAgentOperation(
         [
           "Memory import needs an interactive session.",
           "Open the Memory page in the Control UI,",
-          "or run `openclaw onboard` for the terminal wizard.",
+          "or run `afora onboard` for the terminal wizard.",
         ].join("\n"),
       );
       return { applied: false };
     case "model-setup":
       runtime.log(
         [
-          "Changing model providers must happen outside the inference session that powers OpenClaw.",
-          "Stop the OpenClaw host through whatever started it. Run `openclaw onboard` on the machine running OpenClaw: it stages credentials, live-tests the candidate route, and saves only a passing setup. Then restart the host.",
+          "Changing model providers must happen outside the inference session that powers Afora.",
+          "Stop the Afora host through whatever started it. Run `afora onboard` on the machine running Afora: it stages credentials, live-tests the candidate route, and saves only a passing setup. Then restart the host.",
         ].join("\n"),
       );
       return { applied: false };
     case "open-setup": {
       const command =
         operation.target === "guided"
-          ? "openclaw onboard"
+          ? "afora onboard"
           : operation.target === "classic"
-            ? "openclaw onboard --classic"
+            ? "afora onboard --classic"
             : operation.target === "channels"
-              ? `openclaw channels add${operation.channel ? ` --channel ${operation.channel}` : ""}`
+              ? `afora channels add${operation.channel ? ` --channel ${operation.channel}` : ""}`
               : operation.target === "search"
-                ? "openclaw configure --section web"
-                : "openclaw configure --section gateway";
+                ? "afora configure --section web"
+                : "afora configure --section gateway";
       runtime.log(
-        `This session cannot host an interactive wizard. Run \`${command}\` on the machine running OpenClaw.`,
+        `This session cannot host an interactive wizard. Run \`${command}\` on the machine running Afora.`,
       );
       return { applied: false };
     }
@@ -349,8 +349,8 @@ export async function executeSystemAgentOperation(
     case "plugin-uninstall": {
       if (await isPluginBackingDefaultInferenceRoute(operation.pluginId)) {
         const message = [
-          `Uninstalling ${operation.pluginId} could remove the provider behind OpenClaw's own active inference route.`,
-          `Removing it has to happen with OpenClaw stopped: run \`openclaw plugins uninstall ${operation.pluginId}\` on the machine running it.`,
+          `Uninstalling ${operation.pluginId} could remove the provider behind Afora's own active inference route.`,
+          `Removing it has to happen with Afora stopped: run \`afora plugins uninstall ${operation.pluginId}\` on the machine running it.`,
         ].join("\n");
         runtime.log(message);
         return { applied: false, message };
@@ -374,7 +374,7 @@ export async function executeSystemAgentOperation(
             // moment so the destructive removal never hits the active route.
             if (await isPluginBackingDefaultInferenceRoute(operation.pluginId)) {
               throw new Error(
-                `Uninstall aborted: ${operation.pluginId} now backs the active inference route. Removing it has to happen with OpenClaw stopped: run \`openclaw plugins uninstall ${operation.pluginId}\` on the machine running it.`,
+                `Uninstall aborted: ${operation.pluginId} now backs the active inference route. Removing it has to happen with Afora stopped: run \`afora plugins uninstall ${operation.pluginId}\` on the machine running it.`,
               );
             }
             await runPluginUninstall(operation.pluginId, createNoExitRuntime(ctx.runtime));
@@ -398,7 +398,7 @@ export async function executeSystemAgentOperation(
       }
       if (operation.model?.trim()) {
         throw new Error(
-          "OpenClaw cannot save an explicit per-agent model until that new route can be live-tested. Retry without `model`; the new agent inherits the verified default, then use `set_default_model` with agentId to live-test and save its own model.",
+          "Afora cannot save an explicit per-agent model until that new route can be live-tested. Retry without `model`; the new agent inherits the verified default, then use `set_default_model` with agentId to live-test and save its own model.",
         );
       }
       return await applyPersistentOperation({
@@ -442,7 +442,7 @@ export async function executeSystemAgentOperation(
     }
     case "doctor-fix":
       runtime.log(
-        "Doctor repairs can change the inference route that powers this session, so they run with OpenClaw stopped: `openclaw doctor --fix` on the machine running it.",
+        "Doctor repairs can change the inference route that powers this session, so they run with Afora stopped: `afora doctor --fix` on the machine running it.",
       );
       return { applied: false };
     case "status": {
@@ -530,8 +530,8 @@ export async function executeSystemAgentOperation(
       if (result?.exitReason === "return-to-system-agent") {
         runtime.log(
           result.systemAgentMessage
-            ? `[openclaw] returned from agent with request: ${result.systemAgentMessage}`
-            : "[openclaw] returned from agent",
+            ? `[afora] returned from agent with request: ${result.systemAgentMessage}`
+            : "[afora] returned from agent",
         );
         return { applied: false, returnToShell: true, nextInput: result.systemAgentMessage };
       }

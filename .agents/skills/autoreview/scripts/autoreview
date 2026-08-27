@@ -336,7 +336,7 @@ class ReviewChunk(NamedTuple):
     content: str
     context: str = ""
 SECRET_PLACEHOLDER_VALUES = {
-    "__openclaw_redacted__",
+    "__afora_redacted__",
     "changeme",
     "decoy-token",
     "dummy",
@@ -759,7 +759,7 @@ TEST_ENV_ALLOWED_EXACT = {
     "NO_PROXY",
     "NVM_BIN",
     "NVM_DIR",
-    "OPENCLAW_TESTBOX",
+    "AFORA_TESTBOX",
     "PATH",
     "PATHEXT",
     "PNPM_HOME",
@@ -1056,7 +1056,7 @@ def safe_temp_root(repo: Path) -> Path:
 
 def parallel_test_temp_root(repo: Path) -> Path:
     root = safe_temp_root(repo)
-    if os.name == "nt" or not env_truthy("OPENCLAW_TESTBOX"):
+    if os.name == "nt" or not env_truthy("AFORA_TESTBOX"):
         return root
 
     # Blacksmith stores its SSH control socket below HOME. macOS temp roots can
@@ -1432,7 +1432,7 @@ def safe_test_env(repo: Path, isolated_home: Path) -> dict[str, str]:
         }
     )
     original_home = os.environ.get("HOME") or os.environ.get("USERPROFILE")
-    if env.get("OPENCLAW_TESTBOX", "").strip().lower() in {
+    if env.get("AFORA_TESTBOX", "").strip().lower() in {
         "1",
         "true",
         "yes",

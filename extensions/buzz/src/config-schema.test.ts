@@ -1,4 +1,4 @@
-import { validateJsonSchemaValue } from "openclaw/plugin-sdk/json-schema-runtime";
+import { validateJsonSchemaValue } from "afora-agent/plugin-sdk/json-schema-runtime";
 import { describe, expect, it } from "vitest";
 import { BuzzConfigSchema } from "./config-schema.js";
 

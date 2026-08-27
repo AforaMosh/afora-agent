@@ -15,7 +15,7 @@ import {
   QWEN_TOKEN_PLAN_GLOBAL_BASE_URL,
   resolveQwenTokenPlanBaseUrl,
 } from "./api.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 
 type QwenProvider = ReturnType<typeof buildQwenProvider>;
 

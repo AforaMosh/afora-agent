@@ -4,11 +4,11 @@ import type {
   ProviderResolveDynamicModelContext,
   ProviderRuntimeModel,
   ProviderThinkingProfile,
-} from "openclaw/plugin-sdk/plugin-entry";
-import { defineSingleProviderPluginEntry } from "openclaw/plugin-sdk/provider-entry";
-import { buildProviderReplayFamilyHooks } from "openclaw/plugin-sdk/provider-model-shared";
-import { buildProviderToolCompatFamilyHooks } from "openclaw/plugin-sdk/provider-tools";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+} from "afora-agent/plugin-sdk/plugin-entry";
+import { defineSingleProviderPluginEntry } from "afora-agent/plugin-sdk/provider-entry";
+import { buildProviderReplayFamilyHooks } from "afora-agent/plugin-sdk/provider-model-shared";
+import { buildProviderToolCompatFamilyHooks } from "afora-agent/plugin-sdk/provider-tools";
+import manifest from "./afora.plugin.json" with { type: "json" };
 import {
   buildClawRouterProviderConfig,
   CLAWROUTER_REASONING_EFFORT_LEVELS,
@@ -55,7 +55,7 @@ function resolveClawRouterThinkingProfile(
   const runtime = ctx.agentRuntime?.trim().toLowerCase();
   if (
     levels.some((level) => level.id === "max") &&
-    (runtime === "openclaw" || runtime === "auto")
+    (runtime === "afora" || runtime === "auto")
   ) {
     levels.push({ id: "ultra" });
   }
@@ -131,7 +131,7 @@ export default defineSingleProviderPluginEntry({
         noteTitle: "ClawRouter",
         noteMessage: [
           "Use the proxy key issued by your ClawRouter administrator.",
-          "OpenClaw discovers only the models granted to that key.",
+          "Afora discovers only the models granted to that key.",
         ].join("\n"),
       },
       catalog: {
@@ -142,7 +142,7 @@ export default defineSingleProviderPluginEntry({
           if (!discoveryApiKey) {
             try {
               const { resolveApiKeyForProvider } =
-                await import("openclaw/plugin-sdk/provider-auth-runtime");
+                await import("afora-agent/plugin-sdk/provider-auth-runtime");
               discoveryApiKey = (
                 await resolveApiKeyForProvider({
                   provider: PROVIDER_ID,
@@ -192,7 +192,7 @@ export default defineSingleProviderPluginEntry({
       prepareDynamicModel: async (ctx) => {
         const scope = dynamicModelScope(ctx);
         const { resolveApiKeyForProvider } =
-          await import("openclaw/plugin-sdk/provider-auth-runtime");
+          await import("afora-agent/plugin-sdk/provider-auth-runtime");
         const apiKey = (
           await resolveApiKeyForProvider({
             provider: PROVIDER_ID,

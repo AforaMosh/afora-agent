@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const runExecMock = vi.hoisted(() => vi.fn());
 
-vi.mock("openclaw/plugin-sdk/process-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/process-runtime", () => ({
   runExec: runExecMock,
 }));
 

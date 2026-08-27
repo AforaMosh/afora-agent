@@ -2,14 +2,14 @@ import fs from "node:fs";
 // Resolves agent-specific config and workspace directories.
 import os from "node:os";
 import path from "node:path";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { listAgentEntries, resolveAgentConfig } from "../agents/agent-scope-config.js";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
 import { isPathCaseInsensitive } from "../infra/path-case.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { resolveUserPath } from "../utils.js";
 import { resolveStateDir } from "./paths.js";
-import type { OpenClawConfig } from "./types.js";
+import type { AforaConfig } from "./types.js";
 
 type DuplicateAgentDir = {
   agentDir: string;
@@ -66,7 +66,7 @@ function canonicalizeAgentDir(agentDir: string): string {
   return isPathCaseInsensitive(resolved) ? normalizeLowercaseStringOrEmpty(resolved) : resolved;
 }
 
-function collectReferencedAgentIds(cfg: OpenClawConfig): string[] {
+function collectReferencedAgentIds(cfg: AforaConfig): string[] {
   const ids = new Set<string>();
 
   const agents = listAgentEntries(cfg);
@@ -95,7 +95,7 @@ function collectReferencedAgentIds(cfg: OpenClawConfig): string[] {
 }
 
 function resolveEffectiveAgentDir(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
   deps?: { env?: NodeJS.ProcessEnv; homedir?: () => string },
 ): string {
@@ -115,7 +115,7 @@ function resolveEffectiveAgentDir(
 
 /** Finds agent ids whose effective agentDir would share auth/session state. */
 export function findDuplicateAgentDirs(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   deps?: { env?: NodeJS.ProcessEnv; homedir?: () => string },
 ): DuplicateAgentDir[] {
   const byDir = new Map<string, { agentDir: string; agentIds: string[] }>();

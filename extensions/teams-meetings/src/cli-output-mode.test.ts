@@ -7,13 +7,13 @@ describe("Teams meetings CLI output mode", () => {
   it("detects action output and ignores the bare root", () => {
     expect(
       isMachineOutput({
-        argv: ["node", "openclaw", "teamsmeetings", "status"],
+        argv: ["node", "afora", "teamsmeetings", "status"],
       }),
     ).toBe(true);
-    expect(isMachineOutput({ argv: ["node", "openclaw", "teamsmeetings"] })).toBe(false);
+    expect(isMachineOutput({ argv: ["node", "afora", "teamsmeetings"] })).toBe(false);
     expect(
       isMachineOutput({
-        argv: ["node", "openclaw", "teamsmeetings", "--log-level", "debug", "status"],
+        argv: ["node", "afora", "teamsmeetings", "--log-level", "debug", "status"],
       }),
     ).toBe(true);
   });

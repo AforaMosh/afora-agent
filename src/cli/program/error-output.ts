@@ -30,9 +30,9 @@ function resolveHelpCommand(
 ): string {
   const commandPath = options?.commandPath ?? (argv ? getCommandPathWithRootOptions(argv, 2) : []);
   if (commandPath.length === 0) {
-    return formatCliCommand("openclaw --help");
+    return formatCliCommand("afora --help");
   }
-  return formatCliCommand(`openclaw ${commandPath.join(" ")} --help`);
+  return formatCliCommand(`afora ${commandPath.join(" ")} --help`);
 }
 
 function lines(...items: Array<string | undefined>): string {
@@ -45,18 +45,18 @@ function formatHelpHint(argv: string[] | undefined, options?: { commandPath?: st
 }
 
 function formatDocsHint(): string {
-  return `${theme.muted("Docs:")} ${formatDocsLink("/cli", "docs.openclaw.ai/cli")}`;
+  return `${theme.muted("Docs:")} ${formatDocsLink("/cli", "docs.afora.ai/cli")}`;
 }
 
 function formatCliMachineOutput(humanOutput: string): string {
-  const docs = `Docs: ${formatDocsLink("/cli", "docs.openclaw.ai/cli", { force: false })}`;
+  const docs = `Docs: ${formatDocsLink("/cli", "docs.afora.ai/cli", { force: false })}`;
   return stripAnsi(humanOutput).replace(/^Docs:.*$/mu, docs);
 }
 
 function formatUnknownCommandMessage(command: string, commandPath: readonly string[]): string {
   return commandPath.length > 0
-    ? `OpenClaw ${commandPath.join(" ")} has no command ${quote(command)}.`
-    : `OpenClaw does not know the command ${quote(command)}.`;
+    ? `Afora ${commandPath.join(" ")} has no command ${quote(command)}.`
+    : `Afora does not know the command ${quote(command)}.`;
 }
 
 function formatCliUnknownCommandOutput(
@@ -71,7 +71,7 @@ function formatCliUnknownCommandOutput(
     formatHelpHint(options.argv, { commandPath }),
     hasParentCommand
       ? undefined
-      : `${theme.muted("Plugin command?")} ${theme.command(formatCliCommand("openclaw plugins list"))}`,
+      : `${theme.muted("Plugin command?")} ${theme.command(formatCliCommand("afora plugins list"))}`,
     formatDocsHint(),
   );
 }
@@ -116,7 +116,7 @@ export function createCliUnknownCommandError(
   });
 }
 
-/** Convert Commander parse errors into OpenClaw-specific help and docs guidance. */
+/** Convert Commander parse errors into Afora-specific help and docs guidance. */
 export function formatCliParseErrorOutput(
   raw: string,
   options: FormatCliParseErrorOptions = {},
@@ -130,7 +130,7 @@ export function formatCliParseErrorOutput(
   const unknownOption = message.match(/^unknown option ['"`](.+?)['"`]/i);
   if (unknownOption) {
     const option = unknownOption[1] ?? "";
-    const output = `OpenClaw does not recognize option ${quote(option)}.`;
+    const output = `Afora does not recognize option ${quote(option)}.`;
     return lines(
       theme.error(output),
       formatHelpHint(options.argv, { commandPath: options.commandPath }),
@@ -165,7 +165,7 @@ export function formatCliParseErrorOutput(
     );
   }
 
-  const output = `OpenClaw could not parse this command: ${message}`;
+  const output = `Afora could not parse this command: ${message}`;
   return lines(
     theme.error(output),
     formatHelpHint(options.argv, { commandPath: options.commandPath }),

@@ -1,13 +1,13 @@
 // Covers plugin-dispatched message actions, target resolution, dry-run behavior,
 // and plugin tool-result extraction.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { jsonResult } from "../../agents/tools/common.js";
 import type {
   ChannelMessageActionContext,
   ChannelPlugin,
 } from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createTestRegistry } from "../../test-utils/channel-plugins.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../../utils/message-channel.js";
@@ -145,7 +145,7 @@ describe("runMessageAction plugin dispatch", () => {
       const cfg = {
         channels: { actionhub: { enabled: true } },
         tools: { message: { crossContext: { allowWithinProvider: false } } },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const toolContext = {
         currentChannelProvider: "actionhub" as const,
         currentChannelId: "oc_current",
@@ -193,7 +193,7 @@ describe("runMessageAction plugin dispatch", () => {
               enabled: true,
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         action: "edit",
         params: {
           channel: "actionhub",
@@ -229,7 +229,7 @@ describe("runMessageAction plugin dispatch", () => {
             enabled: true,
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       await expect(
         runMessageAction({
@@ -305,7 +305,7 @@ describe("runMessageAction plugin dispatch", () => {
               enabled: true,
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         action: "channel-info",
         params: {
           channel: "actionhub",
@@ -341,7 +341,7 @@ describe("runMessageAction plugin dispatch", () => {
               enabled: true,
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         action: "pin",
         params: {
           channel: "actionhub",
@@ -377,7 +377,7 @@ describe("runMessageAction plugin dispatch", () => {
               enabled: true,
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         action: "pin",
         params: {
           channel: "actionhub",
@@ -436,7 +436,7 @@ describe("runMessageAction plugin dispatch", () => {
               enabled: true,
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         action: "pin",
         params: {
           channel: "actionhub",
@@ -508,7 +508,7 @@ describe("runMessageAction plugin dispatch", () => {
             enabled: true,
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       setTestPlugin(discordPlugin, "discord", "bundled");
 
@@ -610,7 +610,7 @@ describe("runMessageAction plugin dispatch", () => {
               enabled: true,
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         action: "react",
         params: {
           channel: "gatewaychat",

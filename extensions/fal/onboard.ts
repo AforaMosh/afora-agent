@@ -1,9 +1,9 @@
 // Fal setup module handles plugin onboarding behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/provider-onboard";
+import type { AforaConfig } from "afora-agent/plugin-sdk/provider-onboard";
 
 export const FAL_DEFAULT_IMAGE_MODEL_REF = "fal/fal-ai/flux/dev";
 
-export function applyFalConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function applyFalConfig(cfg: AforaConfig): AforaConfig {
   if (cfg.agents?.defaults?.imageGenerationModel) {
     return cfg;
   }

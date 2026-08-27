@@ -1,7 +1,7 @@
 // Google Meet composes platform strategies with the shared meeting session runtime.
-import { resolveDefaultAgentId } from "openclaw/plugin-sdk/agent-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { resolveDefaultAgentId } from "afora-agent/plugin-sdk/agent-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import {
   createMeetingSession,
   MeetingPlatformAdapter,
@@ -9,13 +9,13 @@ import {
   type MeetingSessionLeaveResult,
   type MeetingSessionRuntimeHandles,
   type MeetingSessionRuntimeJoinContext,
-} from "openclaw/plugin-sdk/meeting-runtime";
-import type { PluginRuntime, RuntimeLogger } from "openclaw/plugin-sdk/plugin-runtime";
-import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
+} from "afora-agent/plugin-sdk/meeting-runtime";
+import type { PluginRuntime, RuntimeLogger } from "afora-agent/plugin-sdk/plugin-runtime";
+import { normalizeAgentId } from "afora-agent/plugin-sdk/routing";
 import {
   asOptionalRecord,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type {
   GoogleMeetConfig,
   GoogleMeetMode,
@@ -100,7 +100,7 @@ export class GoogleMeetRuntime {
   constructor(
     private readonly params: {
       config: GoogleMeetConfig;
-      fullConfig: OpenClawConfig;
+      fullConfig: AforaConfig;
       runtime: PluginRuntime;
       logger: RuntimeLogger;
     },
@@ -132,7 +132,7 @@ export class GoogleMeetRuntime {
           audioBridgeUnavailable: "Realtime speech requires an active Chrome audio bridge.",
           browserUnverified: "Google Meet browser state has not been verified yet.",
           microphoneMuted:
-            "Turn on the OpenClaw Google Meet microphone before asking OpenClaw to speak.",
+            "Turn on the Afora Google Meet microphone before asking Afora to speak.",
           microphoneMutedReason: "meet-microphone-muted",
           notInCall: "Google Meet has not reported that the browser participant is in the call.",
           notInCallReason: "not-in-call",

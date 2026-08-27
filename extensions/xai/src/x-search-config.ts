@@ -1,6 +1,6 @@
 // Xai helper module supports x search config behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -11,7 +11,7 @@ function cloneRecord<T extends JsonRecord | undefined>(value: T): T {
   return { ...value } as T;
 }
 
-function resolvePluginXSearchConfig(config?: OpenClawConfig): JsonRecord | undefined {
+function resolvePluginXSearchConfig(config?: AforaConfig): JsonRecord | undefined {
   const pluginConfig = config?.plugins?.entries?.xai?.config;
   if (!isRecord(pluginConfig?.xSearch)) {
     return undefined;
@@ -19,7 +19,7 @@ function resolvePluginXSearchConfig(config?: OpenClawConfig): JsonRecord | undef
   return cloneRecord(pluginConfig.xSearch);
 }
 
-function resolvePluginWebSearchConfig(config?: OpenClawConfig): JsonRecord | undefined {
+function resolvePluginWebSearchConfig(config?: AforaConfig): JsonRecord | undefined {
   const pluginConfig = config?.plugins?.entries?.xai?.config;
   if (!isRecord(pluginConfig?.webSearch)) {
     return undefined;
@@ -33,7 +33,7 @@ function baseUrlFallback(config?: JsonRecord): JsonRecord | undefined {
     : undefined;
 }
 
-export function resolveEffectiveXSearchConfig(config?: OpenClawConfig): JsonRecord | undefined {
+export function resolveEffectiveXSearchConfig(config?: AforaConfig): JsonRecord | undefined {
   const pluginWebSearchBaseUrl = baseUrlFallback(resolvePluginWebSearchConfig(config));
   const pluginOwned = resolvePluginXSearchConfig(config);
   const merged = {
@@ -47,7 +47,7 @@ export function resolveEffectiveXSearchConfig(config?: OpenClawConfig): JsonReco
 }
 
 export function setPluginXSearchConfigValue(
-  configTarget: OpenClawConfig,
+  configTarget: AforaConfig,
   key: string,
   value: unknown,
 ): void {

@@ -1,5 +1,5 @@
 ---
-summary: "Adds Synthetic model provider support to OpenClaw."
+summary: "Adds Synthetic model provider support to Afora."
 read_when:
   - You are installing, configuring, or auditing the synthetic plugin
 title: "Synthetic plugin"
@@ -7,12 +7,12 @@ title: "Synthetic plugin"
 
 # Synthetic plugin
 
-Adds Synthetic model provider support to OpenClaw.
+Adds Synthetic model provider support to Afora.
 
 ## Distribution
 
-- Package: `@openclaw/synthetic-provider`
-- Install route: npm; ClawHub: `clawhub:@openclaw/synthetic-provider`
+- Package: `@afora/synthetic-provider`
+- Install route: npm; ClawHub: `clawhub:@afora/synthetic-provider`
 
 ## Surface
 

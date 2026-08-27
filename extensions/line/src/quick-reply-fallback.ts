@@ -1,5 +1,5 @@
 // Line plugin module implements quick reply fallback behavior.
-import { normalizeStringEntries } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeStringEntries } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export function buildLineQuickReplyFallbackText(labels: readonly string[] | undefined): string {
   const normalized = normalizeStringEntries(labels ?? []).slice(0, 13);

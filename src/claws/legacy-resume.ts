@@ -1,20 +1,20 @@
-import type { AgentConfig, OpenClawConfig } from "../config/config.js";
+import type { AgentConfig, AforaConfig } from "../config/config.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import type { PersistedClawInstall } from "./provenance.js";
 import type { ClawAddPlan } from "./types.js";
 
 export function replaceLegacyCommittedAgent(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agents: AgentConfig[];
   normalizedAgentId: string;
   plan: ClawAddPlan;
   resumePlan?: ClawAddPlan;
   resumeRecord?: PersistedClawInstall;
   matchesPlan: (agent: AgentConfig, plan: ClawAddPlan) => boolean;
-}): OpenClawConfig | undefined {
+}): AforaConfig | undefined {
   if (
     !params.resumePlan ||
-    params.resumeRecord?.schemaVersion !== "openclaw.clawInstallRecord.v1" ||
+    params.resumeRecord?.schemaVersion !== "afora.clawInstallRecord.v1" ||
     params.resumeRecord.status === "complete"
   ) {
     return undefined;

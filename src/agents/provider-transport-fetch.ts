@@ -3,19 +3,19 @@
  *
  * Applies request timeouts, proxy/TLS overrides, SSRF policy, local-service leases, retry hints, and SSE normalization.
  */
-import { parseRetryAfterHttpDateMs } from "@openclaw/ai/internal/retry-after";
-import { emitModelTransportDebug, formatModelTransportDebugUrl } from "@openclaw/ai/transports";
+import { parseRetryAfterHttpDateMs } from "@afora/ai/internal/retry-after";
+import { emitModelTransportDebug, formatModelTransportDebugUrl } from "@afora/ai/transports";
 import {
   isCloudMetadataIpAddress,
   isLinkLocalIpAddress,
   parseCanonicalIpAddress,
-} from "@openclaw/net-policy/ip";
+} from "@afora/net-policy/ip";
 import {
   asFiniteNumberInRange,
   clampTimerTimeoutMs,
   parseStrictFiniteNumber,
   parseStrictNonNegativeInteger,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import {
   fetchWithSsrFGuard,
   withTrustedEnvProxyGuardedFetchMode,
@@ -494,7 +494,7 @@ function parseRetryAfterSeconds(headers: Headers): number | undefined {
 }
 
 function resolveMaxSdkRetryWaitSeconds(): number | undefined {
-  const raw = process.env.OPENCLAW_SDK_RETRY_MAX_WAIT_SECONDS?.trim();
+  const raw = process.env.AFORA_SDK_RETRY_MAX_WAIT_SECONDS?.trim();
   if (!raw) {
     return DEFAULT_MAX_SDK_RETRY_WAIT_SECONDS;
   }

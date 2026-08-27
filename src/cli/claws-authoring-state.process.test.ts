@@ -33,7 +33,7 @@ async function writeProject(root: string): Promise<void> {
     `${JSON.stringify({
       name: "authoring-state-test",
       version: "1.0.0",
-      openclaw: { claw: "CLAW.md" },
+      afora: { claw: "CLAW.md" },
     })}\n`,
   );
   await fs.writeFile(
@@ -57,12 +57,12 @@ function runClaws(root: string, args: string[]) {
         NODE_ENV: undefined,
         NODE_OPTIONS: undefined,
         NO_COLOR: "1",
-        OPENCLAW_CONFIG_PATH: path.join(root, "config", "openclaw.json"),
-        OPENCLAW_EXPERIMENTAL_CLAWS: "1",
-        OPENCLAW_HIDE_BANNER: "1",
-        OPENCLAW_HOME: root,
-        OPENCLAW_NO_RESPAWN: "1",
-        OPENCLAW_STATE_DIR: path.join(root, "state"),
+        AFORA_CONFIG_PATH: path.join(root, "config", "afora.json"),
+        AFORA_EXPERIMENTAL_CLAWS: "1",
+        AFORA_HIDE_BANNER: "1",
+        AFORA_HOME: root,
+        AFORA_NO_RESPAWN: "1",
+        AFORA_STATE_DIR: path.join(root, "state"),
         VITEST: undefined,
         VITEST_POOL_ID: undefined,
         VITEST_WORKER_ID: undefined,
@@ -75,13 +75,13 @@ function runClaws(root: string, args: string[]) {
 
 describe("Claw authoring process state", () => {
   it("leaves migration-pending operator state unchanged for claws dev", async () => {
-    const root = tempDirs.make("openclaw-claws-dev-state-");
-    const external = tempDirs.make("openclaw-claws-dev-external-");
+    const root = tempDirs.make("afora-claws-dev-state-");
+    const external = tempDirs.make("afora-claws-dev-external-");
     const project = path.join(external, "project");
     const workspace = path.join(external, "dev-workspace");
     await fs.mkdir(path.join(root, "config"), { recursive: true });
     await fs.mkdir(path.join(root, "state", "tasks"), { recursive: true });
-    await fs.writeFile(path.join(root, "config", "openclaw.json"), "{}\n");
+    await fs.writeFile(path.join(root, "config", "afora.json"), "{}\n");
     await fs.writeFile(path.join(root, "state", "tasks", "runs.sqlite"), "legacy state\n");
     await writeProject(project);
     const before = await snapshotTree(root);

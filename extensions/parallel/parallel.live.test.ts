@@ -1,4 +1,4 @@
-import { isLiveTestEnabled } from "openclaw/plugin-sdk/test-live";
+import { isLiveTestEnabled } from "afora-agent/plugin-sdk/test-live";
 import { describe, expect, it } from "vitest";
 import { createParallelWebSearchProvider } from "./src/parallel-web-search-provider.js";
 
@@ -22,8 +22,8 @@ describeLive("parallel plugin live", () => {
 
       const result = (await tool.execute({
         objective:
-          "Find the OpenClaw GitHub repository and recent project activity for a quick smoke test.",
-        search_queries: ["openclaw github repository", "openclaw release notes"],
+          "Find the Afora GitHub repository and recent project activity for a quick smoke test.",
+        search_queries: ["afora github repository", "afora release notes"],
         count: 3,
         client_model: "claude-opus-4-7",
       })) as {

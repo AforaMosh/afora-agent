@@ -1,12 +1,12 @@
 ---
-summary: "Run OpenClaw with vLLM (OpenAI-compatible local server)"
+summary: "Run Afora with vLLM (OpenAI-compatible local server)"
 read_when:
-  - You want to run OpenClaw against a local vLLM server
+  - You want to run Afora against a local vLLM server
   - You want OpenAI-compatible /v1 endpoints with your own models
 title: "vLLM"
 ---
 
-vLLM serves open-source (and some custom) models through an **OpenAI-compatible** HTTP API. OpenClaw connects using the `openai-completions` API and can **auto-discover** models when you opt in with `VLLM_API_KEY`.
+vLLM serves open-source (and some custom) models through an **OpenAI-compatible** HTTP API. Afora connects using the `openai-completions` API and can **auto-discover** models when you opt in with `VLLM_API_KEY`.
 
 | Property         | Value                                      |
 | ---------------- | ------------------------------------------ |
@@ -51,7 +51,7 @@ vLLM serves open-source (and some custom) models through an **OpenAI-compatible*
   </Step>
   <Step title="Verify the model is available">
     ```bash
-    openclaw models list --provider vllm
+    afora models list --provider vllm
     ```
   </Step>
 </Steps>
@@ -60,7 +60,7 @@ vLLM serves open-source (and some custom) models through an **OpenAI-compatible*
 For non-interactive setup (CI, scripting), pass the base URL, key, and model directly:
 
 ```bash
-openclaw onboard --non-interactive --accept-risk --skip-health \
+afora onboard --non-interactive --accept-risk --skip-health \
   --mode local \
   --auth-choice vllm \
   --custom-base-url "http://127.0.0.1:8000/v1" \
@@ -72,10 +72,10 @@ openclaw onboard --non-interactive --accept-risk --skip-health \
 
 ## Model discovery (implicit provider)
 
-When `VLLM_API_KEY` is set (or an auth profile exists) and `models.providers.vllm` is **not** defined, OpenClaw queries `GET http://127.0.0.1:8000/v1/models` and converts the returned IDs into model entries.
+When `VLLM_API_KEY` is set (or an auth profile exists) and `models.providers.vllm` is **not** defined, Afora queries `GET http://127.0.0.1:8000/v1/models` and converts the returned IDs into model entries.
 
 <Note>
-If you set `models.providers.vllm` explicitly, OpenClaw uses only your declared models. Add `"vllm/*": {}` to `agents.defaults.models` to make OpenClaw also query that configured provider's `/models` endpoint and include all advertised vLLM models.
+If you set `models.providers.vllm` explicitly, Afora uses only your declared models. Add `"vllm/*": {}` to `agents.defaults.models` to make Afora also query that configured provider's `/models` endpoint and include all advertised vLLM models.
 </Note>
 
 ## Explicit configuration
@@ -135,7 +135,7 @@ To keep the provider dynamic without listing every model, add a wildcard to the 
     | Responses `store`                       | Not sent                         |
     | Prompt-cache hints                      | Not sent                         |
     | OpenAI reasoning-compat payload shaping | Not applied                      |
-    | Hidden OpenClaw attribution headers     | Not injected on custom base URLs |
+    | Hidden Afora attribution headers     | Not injected on custom base URLs |
 
   </Accordion>
 
@@ -161,7 +161,7 @@ To keep the provider dynamic without listing every model, add a wildcard to the 
     }
     ```
 
-    OpenClaw maps `/think off` to:
+    Afora maps `/think off` to:
 
     ```json
     {
@@ -214,7 +214,7 @@ To keep the provider dynamic without listing every model, add a wildcard to the 
   <Accordion title="Qwen tool calls appear as text">
     First confirm vLLM was started with the right tool-call parser and chat template for the model. vLLM documents `hermes` for Qwen2.5 models and `qwen3_xml` for Qwen3-Coder models.
 
-    Symptoms: skills/tools never run, the assistant prints raw JSON/XML such as `{"name":"read","arguments":...}`, or vLLM returns an empty `tool_calls` array when OpenClaw sends `tool_choice: "auto"`.
+    Symptoms: skills/tools never run, the assistant prints raw JSON/XML such as `{"name":"read","arguments":...}`, or vLLM returns an empty `tool_calls` array when Afora sends `tool_choice: "auto"`.
 
     Some Qwen/vLLM combinations return structured tool calls only when the request uses `tool_choice: "required"`. Force it per model with `params.extra_body`:
 
@@ -236,10 +236,10 @@ To keep the provider dynamic without listing every model, add a wildcard to the 
     }
     ```
 
-    Replace the model id with the exact id from `openclaw models list --provider vllm`, or apply the same override from the CLI:
+    Replace the model id with the exact id from `afora models list --provider vllm`, or apply the same override from the CLI:
 
     ```bash
-    openclaw config set agents.defaults.models '{"vllm/Qwen-Qwen2.5-Coder-32B-Instruct":{"params":{"extra_body":{"tool_choice":"required"}}}}' --strict-json --merge
+    afora config set agents.defaults.models '{"vllm/Qwen-Qwen2.5-Coder-32B-Instruct":{"params":{"extra_body":{"tool_choice":"required"}}}}' --strict-json --merge
     ```
 
     This is an opt-in workaround: it forces every turn with tools to make a tool call, so use it only for a dedicated model entry where that is acceptable. Do not set it as a global default for all vLLM models, and do not pair it with a proxy that converts arbitrary assistant text into executable tool calls.
@@ -310,7 +310,7 @@ To keep the provider dynamic without listing every model, add a wildcard to the 
     curl http://127.0.0.1:8000/v1/models
     ```
 
-    If you see a connection error, verify the host, port, and that vLLM started in OpenAI-compatible server mode. OpenClaw trusts the exact configured `models.providers.vllm.baseUrl` origin for guarded model requests on loopback, LAN, and Tailscale endpoints. Metadata/link-local origins remain blocked without explicit opt-in. Set `models.providers.vllm.request.allowPrivateNetwork: true` only when vLLM requests must reach another private origin, or `false` to opt out of exact-origin trust.
+    If you see a connection error, verify the host, port, and that vLLM started in OpenAI-compatible server mode. Afora trusts the exact configured `models.providers.vllm.baseUrl` origin for guarded model requests on loopback, LAN, and Tailscale endpoints. Metadata/link-local origins remain blocked without explicit opt-in. Set `models.providers.vllm.request.allowPrivateNetwork: true` only when vLLM requests must reach another private origin, or `false` to opt out of exact-origin trust.
 
   </Accordion>
 
@@ -318,20 +318,20 @@ To keep the provider dynamic without listing every model, add a wildcard to the 
     If requests fail with auth errors, set a real `VLLM_API_KEY` that matches your server configuration, or configure the provider explicitly under `models.providers.vllm`.
 
     <Tip>
-    If your vLLM server does not enforce auth, any non-empty value for `VLLM_API_KEY` works as an opt-in signal for OpenClaw.
+    If your vLLM server does not enforce auth, any non-empty value for `VLLM_API_KEY` works as an opt-in signal for Afora.
     </Tip>
 
   </Accordion>
 
   <Accordion title="No models discovered">
-    Auto-discovery requires `VLLM_API_KEY` to be set. If you have defined `models.providers.vllm`, OpenClaw uses only your declared models unless `agents.defaults.models` includes `"vllm/*": {}`.
+    Auto-discovery requires `VLLM_API_KEY` to be set. If you have defined `models.providers.vllm`, Afora uses only your declared models unless `agents.defaults.models` includes `"vllm/*": {}`.
   </Accordion>
 
   <Accordion title="Tools render as raw text">
     If a Qwen model prints JSON/XML tool syntax instead of executing a skill:
 
     - Start vLLM with the correct parser/template for that model.
-    - Confirm the exact model id with `openclaw models list --provider vllm`.
+    - Confirm the exact model id with `afora models list --provider vllm`.
     - Add a dedicated per-model `params.extra_body.tool_choice: "required"` override only if `tool_choice: "auto"` still returns empty or text-only tool calls.
 
   </Accordion>

@@ -10,7 +10,7 @@ import {
 } from "../agents/bash-process-registry.js";
 import { createProcessSessionFixture } from "../agents/bash-process-registry.test-helpers.js";
 import { resetProcessRegistryForTests } from "../agents/bash-process-registry.test-support.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { writeSessionStore } from "./test-helpers.js";
 import {
   directSessionReq,
@@ -22,7 +22,7 @@ const { createSessionStoreDir, seedActiveMainSession } = setupGatewaySessionsHan
 
 afterEach(() => {
   resetProcessRegistryForTests();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 function seedFinishedProcess(id: string, scopeKey: string) {

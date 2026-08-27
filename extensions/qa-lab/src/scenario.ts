@@ -1,5 +1,5 @@
 // Qa Lab plugin module implements scenario behavior.
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import type { QaTransportActionName, QaTransportState } from "./qa-transport.js";
 
 export type QaScenarioStepContext = {

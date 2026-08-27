@@ -22,6 +22,6 @@ export const page = definePage({
   component: () =>
     import("./channels-page.ts").then(() => ({
       header: true,
-      render: () => html`<openclaw-channels-page></openclaw-channels-page>`,
+      render: () => html`<afora-channels-page></afora-channels-page>`,
     })),
 });

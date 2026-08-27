@@ -6,14 +6,14 @@ import {
   markRetainedManagedNpmInstall,
 } from "../plugins/managed-npm-retention.js";
 import { writeManagedNpmPlugin } from "../plugins/test-helpers/managed-npm-plugin.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import { cleanupRetainedPluginInstallGenerations } from "./server-retained-plugin-cleanup.js";
 
 it("preserves package files retained by plugin uninstall", async () => {
-  await withOpenClawTestState({ label: "gateway-retained-plugin-cleanup" }, async (state) => {
+  await withAforaTestState({ label: "gateway-retained-plugin-cleanup" }, async (state) => {
     const packageDir = writeManagedNpmPlugin({
       stateDir: state.stateDir,
-      packageName: "@openclaw/kept-plugin",
+      packageName: "@afora/kept-plugin",
       pluginId: "kept-plugin",
       version: "1.0.0",
     });

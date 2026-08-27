@@ -4,7 +4,7 @@
  * Tests use this helper to construct complete assistant messages with stable
  * defaults while overriding only the fields relevant to a scenario.
  */
-import type { AssistantMessage } from "openclaw/plugin-sdk/llm";
+import type { AssistantMessage } from "afora-agent/plugin-sdk/llm";
 import { ZERO_USAGE_FIXTURE } from "./usage-fixtures.js";
 
 /** Builds an assistant message fixture with deterministic error-style defaults. */

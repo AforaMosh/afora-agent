@@ -1,13 +1,13 @@
 // Applies host-owned compatibility migrations to external channel setup output.
 import type { ChannelId } from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveOfficialExternalChannelCompatibilityMigration } from "../../plugins/official-external-plugin-catalog.js";
 import { LEGACY_CONFIG_MIGRATIONS } from "../doctor/shared/legacy-config-migrations.js";
 
 export function normalizeExternalChannelSetupConfig(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: ChannelId;
-}): OpenClawConfig {
+}): AforaConfig {
   const migrationId = resolveOfficialExternalChannelCompatibilityMigration(params.channel);
   if (!migrationId) {
     return params.cfg;
@@ -21,7 +21,7 @@ export function normalizeExternalChannelSetupConfig(params: {
 
   // Setup plugins may return config that shares nested objects with the previous
   // snapshot. Clone before the migration mutates its narrowly owned channel data.
-  const next = structuredClone(params.cfg) as OpenClawConfig;
+  const next = structuredClone(params.cfg) as AforaConfig;
   migration.apply(next as Record<string, unknown>, []);
   return next;
 }

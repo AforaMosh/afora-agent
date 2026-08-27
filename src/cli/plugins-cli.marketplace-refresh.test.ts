@@ -1,4 +1,4 @@
-// Covers the hosted OpenClaw marketplace feed refresh command.
+// Covers the hosted Afora marketplace feed refresh command.
 import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -48,7 +48,7 @@ vi.mock("./plugins-update-gateway-signal.js", () => ({
 }));
 
 async function createTimelinePath(): Promise<string> {
-  const dir = await mkdtemp(path.join(tmpdir(), "openclaw-marketplace-refresh-"));
+  const dir = await mkdtemp(path.join(tmpdir(), "afora-marketplace-refresh-"));
   return path.join(dir, "timeline.jsonl");
 }
 
@@ -109,7 +109,7 @@ describe("plugins marketplace refresh", () => {
         sequence: 7,
       },
       metadata: {
-        url: "https://packages.acme.example/openclaw/feed",
+        url: "https://packages.acme.example/afora/feed",
         status: 200,
         checksum: "feed-sha",
         etag: '"abc"',
@@ -184,7 +184,7 @@ describe("plugins marketplace refresh", () => {
     mocks.getRuntimeConfig.mockReturnValue({});
     mocks.loadConfiguredHostedOfficialExternalPluginCatalogEntries.mockResolvedValue({
       source: "bundled-fallback",
-      entries: [{ name: "@openclaw/acpx" }],
+      entries: [{ name: "@afora/acpx" }],
       error: "hosted catalog feed returned HTTP 503",
       metadata: {
         url: "https://clawhub.ai/v1/feeds/plugins",
@@ -219,7 +219,7 @@ describe("plugins marketplace refresh", () => {
     expect(mocks.defaultRuntime.writeJson).toHaveBeenCalledOnce();
     expect(mocks.defaultRuntime.log).not.toHaveBeenCalled();
     expect(mocks.defaultRuntime.error.mock.calls.map(([message]) => message)).toEqual([
-      expect.stringContaining('Run "openclaw gateway restart" to apply the current catalog state.'),
+      expect.stringContaining('Run "afora gateway restart" to apply the current catalog state.'),
       "Pinned marketplace feed refresh did not accept a fresh hosted payload (source: hosted-snapshot).",
     ]);
     expect(mocks.defaultRuntime.exit).toHaveBeenCalledWith(1);
@@ -236,7 +236,7 @@ describe("plugins marketplace refresh", () => {
     await runPluginMarketplaceRefreshCommand({});
 
     expect(mocks.defaultRuntime.log).toHaveBeenCalledWith(
-      expect.stringContaining('Run "openclaw gateway restart" to apply the current catalog state.'),
+      expect.stringContaining('Run "afora gateway restart" to apply the current catalog state.'),
     );
     expect(mocks.defaultRuntime.error).not.toHaveBeenCalled();
     expect(mocks.defaultRuntime.exit).not.toHaveBeenCalled();
@@ -255,7 +255,7 @@ describe("plugins marketplace refresh", () => {
     expect(mocks.defaultRuntime.writeJson).toHaveBeenCalledOnce();
     expect(mocks.defaultRuntime.log).not.toHaveBeenCalled();
     expect(mocks.defaultRuntime.error).toHaveBeenCalledWith(
-      expect.stringContaining('Run "openclaw gateway restart" to apply the current catalog state.'),
+      expect.stringContaining('Run "afora gateway restart" to apply the current catalog state.'),
     );
     expect(mocks.defaultRuntime.exit).not.toHaveBeenCalled();
   });
@@ -264,7 +264,7 @@ describe("plugins marketplace refresh", () => {
     mocks.getRuntimeConfig.mockReturnValue({});
     mocks.loadConfiguredHostedOfficialExternalPluginCatalogEntries.mockResolvedValue({
       source: "bundled-fallback",
-      entries: [{ name: "@openclaw/acpx" }],
+      entries: [{ name: "@afora/acpx" }],
       error:
         "hosted catalog feed fetch failed for https://clawhub.ai/v1/feeds/plugins?token=secret#frag",
       metadata: {
@@ -303,7 +303,7 @@ describe("plugins marketplace refresh", () => {
     mocks.getRuntimeConfig.mockReturnValue({});
     mocks.loadConfiguredHostedOfficialExternalPluginCatalogEntries.mockResolvedValue({
       source: "bundled-fallback",
-      entries: [{ name: "@openclaw/acpx" }],
+      entries: [{ name: "@afora/acpx" }],
       error: "hosted catalog feed checksum mismatch: expected sha256:expected",
       metadata: {
         url: "https://clawhub.ai/v1/feeds/plugins",
@@ -328,7 +328,7 @@ describe("plugins marketplace refresh", () => {
 
   it("emits bounded diagnostics for refresh without raw feed URLs", async () => {
     const timelinePath = await createTimelinePath();
-    vi.stubEnv("OPENCLAW_DIAGNOSTICS_TIMELINE_PATH", timelinePath);
+    vi.stubEnv("AFORA_DIAGNOSTICS_TIMELINE_PATH", timelinePath);
     const config = {
       diagnostics: { flags: ["timeline"] },
     };
@@ -336,7 +336,7 @@ describe("plugins marketplace refresh", () => {
     mocks.loadConfiguredHostedOfficialExternalPluginCatalogEntries.mockResolvedValue(
       createHostedMarketplaceFeedFixture({
         entries: [{ name: "@acme/calendar" }, { name: "@acme/docs" }],
-        url: "https://user:secret@packages.acme.example/openclaw/feed?token=leak#frag",
+        url: "https://user:secret@packages.acme.example/afora/feed?token=leak#frag",
         etag: '"abc"',
       }),
     );
@@ -345,13 +345,13 @@ describe("plugins marketplace refresh", () => {
     await runPluginMarketplaceRefreshCommand({
       expectedSha256: "feed-sha",
       feedProfile: "acme",
-      feedUrl: "https://override.example/openclaw/feed?token=override-leak",
+      feedUrl: "https://override.example/afora/feed?token=override-leak",
     });
 
     const [event] = await readTimeline(timelinePath);
     expect(mocks.loadConfiguredHostedOfficialExternalPluginCatalogEntries).toHaveBeenCalledWith(
       expect.objectContaining({
-        feedUrl: "https://override.example/openclaw/feed?token=override-leak",
+        feedUrl: "https://override.example/afora/feed?token=override-leak",
       }),
     );
     expect(event?.name).toBe("plugins.marketplace.feed.refresh");

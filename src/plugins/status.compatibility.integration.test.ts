@@ -5,7 +5,7 @@ import { afterAll, afterEach, describe, expect, it } from "vitest";
 import { withEnv } from "../test-utils/env.js";
 import {
   cleanupPluginLoaderFixturesForTest,
-  loadOpenClawPlugins,
+  loadAforaPlugins,
   makePluginLoaderTempDir,
   resetPluginLoaderTestStateForTest,
   useNoBundledPlugins,
@@ -14,7 +14,7 @@ import {
 import { buildPluginCompatibilitySnapshotNotices } from "./status.js";
 
 function addStartupActivation(pluginDir: string, onStartup: boolean): void {
-  const manifestPath = path.join(pluginDir, "openclaw.plugin.json");
+  const manifestPath = path.join(pluginDir, "afora.plugin.json");
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as Record<string, unknown>;
   fs.writeFileSync(
     manifestPath,
@@ -25,7 +25,7 @@ function addStartupActivation(pluginDir: string, onStartup: boolean): void {
 
 function buildSnapshotCompatibilityNoticeCodes(plugin: { dir: string; file: string; id: string }) {
   const stateDir = makePluginLoaderTempDir();
-  return withEnv({ OPENCLAW_STATE_DIR: stateDir }, () => {
+  return withEnv({ AFORA_STATE_DIR: stateDir }, () => {
     useNoBundledPlugins();
     return buildPluginCompatibilitySnapshotNotices({
       config: {
@@ -84,14 +84,14 @@ describe("plugin compatibility snapshot notices", () => {
       },
     };
 
-    withEnv({ OPENCLAW_STATE_DIR: stateDir }, () => {
+    withEnv({ AFORA_STATE_DIR: stateDir }, () => {
       useNoBundledPlugins();
       const params = { config, workspaceDir: plugin.dir, env: process.env };
 
       expect(buildPluginCompatibilitySnapshotNotices(params)).toStrictEqual([]);
       expect(fs.existsSync(runtimeMarker)).toBe(false);
 
-      const registry = loadOpenClawPlugins({ ...params, cache: false });
+      const registry = loadAforaPlugins({ ...params, cache: false });
       expect(fs.existsSync(runtimeMarker)).toBe(true);
       expect(registry.typedHooks).toEqual([
         expect.objectContaining({ pluginId: plugin.id, hookName: "message_received" }),

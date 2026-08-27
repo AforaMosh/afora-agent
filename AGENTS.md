@@ -5,14 +5,14 @@ Skills own workflows; root owns hard policy and routing. Product direction and m
 
 ## Start
 
-- Repo: `https://github.com/openclaw/openclaw`
+- Repo: `https://github.com/AforaMosh/afora-agent`
 - Replies: repo-root refs only: `extensions/telegram/src/bot-access.ts:80`. No absolute paths, no `~/`.
 - Docs/user-visible work: `pnpm docs:list`, then read relevant docs only.
-- Existing-solutions preflight: before proposing or building anything custom, briefly check for OSS projects, maintained libraries, existing OpenClaw plugins, or free platforms that already solve it; prefer those when adequate. Custom only when existing options are unsuitable or the user explicitly asks. No paid-service recommendations without explicitly approved spend. A brief gate, not a research assignment.
+- Existing-solutions preflight: before proposing or building anything custom, briefly check for OSS projects, maintained libraries, existing Afora plugins, or free platforms that already solve it; prefer those when adequate. Custom only when existing options are unsuitable or the user explicitly asks. No paid-service recommendations without explicitly approved spend. A brief gate, not a research assignment.
 - Fix/triage/review: Repair Doctrine applies. Verdicts need source, tests, current/shipped behavior, and (when dependencies are involved) dependency contract proof; diff-only review is insufficient.
 - Dependency work: direct inspection mandatory when feasible — read upstream source/docs/types first. External API work: live test required; search for additional proof; cite current proof. No API/default/error/timing claims from assumptions, wrappers, or memory.
-- Codex hard gate: the acting agent must personally inspect sibling `../codex` source (clone `https://github.com/openai/codex.git` there if missing) for the exact protocol/runtime behavior before any verdict, comment, approval, merge recommendation, code change, or `proof sufficient` claim. Subagent reports, PR text, OpenClaw wrappers, generated schemas, memory, and prior bot reviews do not satisfy it — no direct `../codex` check means no Codex verdict. Cite Codex files/lines checked.
-- Provider model changes: update the owning plugin manifest; after landing, verify `openclaw/catalog/models/v1/catalog.json` refreshes and dispatch the catalog publish workflow when needed.
+- Codex hard gate: the acting agent must personally inspect sibling `../codex` source (clone `https://github.com/openai/codex.git` there if missing) for the exact protocol/runtime behavior before any verdict, comment, approval, merge recommendation, code change, or `proof sufficient` claim. Subagent reports, PR text, Afora wrappers, generated schemas, memory, and prior bot reviews do not satisfy it — no direct `../codex` check means no Codex verdict. Cite Codex files/lines checked.
+- Provider model changes: update the owning plugin manifest; after landing, verify `afora/catalog/models/v1/catalog.json` refreshes and dispatch the catalog publish workflow when needed.
 - Live-verify is the default, not a nicety: user-facing behavior gets live-tested through the real flow before landing. Skipping requires a concrete infeasibility stated in the PR, not convenience. Never print secrets.
 - Missing deps in a normal checkout: `pnpm install`, retry once, then report first actionable error. Worktrees: see Commands — never reconcile there.
 - CODEOWNERS: maint/refactor/tests ok. Larger behavior/product/security/ownership: owner ask/review.
@@ -53,8 +53,8 @@ Skills own workflows; root owns hard policy and routing. Product direction and m
 
 ## ClawSweeper Review Policy
 
-- OpenClaw-specific review rules live here; generic ClawSweeper prompts stay repo-agnostic.
-- ClawSweeper-owned schema, labels, close reasons, protected-label gates, maintainer-item gates, and mutation rules live in `openclaw/clawsweeper`.
+- Afora-specific review rules live here; generic ClawSweeper prompts stay repo-agnostic.
+- ClawSweeper-owned schema, labels, close reasons, protected-label gates, maintainer-item gates, and mutation rules live in `afora/clawsweeper`.
 - Review workers read this full root `AGENTS.md` (no search snippets, `head`, partial ranges, or truncated copies), then every scoped `AGENTS.md` owning touched paths.
 - Optional integrations, providers, channels, skill bundles, MCP surfaces, and service workflows route to plugins, ClawHub, or owner repos when current seams suffice. Keep core items for missing core/plugin APIs, bundled regressions, security/core hardening, or maintainer product decisions.
 - Plugin APIs, provider routing, auth/session state, persisted preferences, config loading/defaults, migrations, setup, startup checks, and fallback behavior are compatibility/upgrade-sensitive: config breaks, new config/default surfaces, removed fallbacks, fail-closed changes, stricter validation, or new operator action are merge risk even with green CI when they can hit existing users, upgrades, provider/plugin behavior, or maintainer operations.
@@ -69,7 +69,7 @@ Skills own workflows; root owns hard policy and routing. Product direction and m
 - Doctrine-class findings are first-class: action path ending with no visible outcome and no recorded reason; default-path regression; prompt/tool text contradicting shipped behavior; multi-signal inference where a recorded fact belongs; new default-off capability with no named enablement path.
 - `maturity:stable`: issue-only attention signal for broken existing behavior primarily owned by an M4/M5 scorecard surface; name that surface and category. Not for feature requests, new config/policy choices, docs/support work, or lower-maturity owners merely passing through a stable surface. Visibility only — not fix proof, backport approval, or a release blocker.
 - Before landing any PR: read the latest ClawSweeper comment and its `Rank-up moves:` list; apply each move or state the skip in the PR — never merge past them silently. A <12h review covers the PR once every actionable finding is addressed (or skip stated) and exact-head CI is green, even if the head moved. Request `@clawsweeper re-review` only for an older review or post-review pushes that changed behavior beyond findings + mechanical refreshes (rebase, format, merge-ref). A queued or late re-review refreshes the rating; never block landing on the publisher.
-- Public ClawSweeper comments prefer `https://docs.openclaw.ai/...` when a public docs page exists; structured evidence still cites repo files, lines, SHAs.
+- Public ClawSweeper comments prefer `https://docs.afora.ai/...` when a public docs page exists; structured evidence still cites repo files, lines, SHAs.
 - Findings follow the Start-section evidence bar (source, tests, current/shipped behavior, dependency contract proof when involved). Validation is judged against touched + sibling surfaces plus the Commands section; user-visible changes need clear evidence, Telegram-visible behavior Telegram/Desktop proof when feasible.
 - Real-behavior-proof gate: a mock-gateway harness run (mock channel API + mock provider + ephemeral gateway, verdict JSON in the PR body) satisfies it for channel-visible changes covering the changed path; live-channel proof is stronger evidence.
 - Prefer findings for concrete behavior regressions, missing changed-surface proof, owner-boundary violations, security/API contract issues, or docs/config mismatches.
@@ -78,19 +78,19 @@ Skills own workflows; root owns hard policy and routing. Product direction and m
 ## Map
 
 - Core TS: `src/`, `ui/`, `packages/`; plugins: `extensions/`; SDK: `src/plugin-sdk/*`; channels: `src/channels/*`; loader: `src/plugins/*`; protocol: `packages/gateway-protocol/*`; docs/apps: `docs/`, `apps/`.
-- Installers: sibling `../openclaw.ai`.
+- Installers: sibling `../afora.ai`.
 - Scoped guides: `extensions/`, `src/{plugin-sdk,channels,plugins,gateway,agents,tui}/`, `test/`, `test/helpers*/`, `docs/`, `ui/`, `scripts/`, plus deeper subtree guides — always check the touched path's nearest `AGENTS.md`.
 
 ## Docs
 
-- Source docs: `docs/**`; publish repo: `openclaw/docs`; host: `https://docs.openclaw.ai`.
+- Source docs: `docs/**`; publish repo: `afora/docs`; host: `https://docs.afora.ai`.
 - Flow: source -> `docs-sync-publish.yml` -> mirror build -> R2 -> Worker router.
-- Docs AI: `openclaw/ask-molty`; see its `AGENTS.md`.
+- Docs AI: `afora/ask-molty`; see its `AGENTS.md`.
 
 ## Architecture
 
 - Core stays plugin-agnostic. No bundled ids/defaults/policy in core when manifest/registry/capability contracts work.
-- Plugins cross into core only via `openclaw/plugin-sdk/*`, manifest metadata, injected runtime helpers, documented barrels (`api.ts`, `runtime-api.ts`).
+- Plugins cross into core only via `afora/plugin-sdk/*`, manifest metadata, injected runtime helpers, documented barrels (`api.ts`, `runtime-api.ts`).
 - Plugin prod code: no core `src/**`, `src/plugin-sdk-internal/**`, other plugin `src/**`, or relative outside package.
 - Core/tests: no deep plugin internals (`extensions/*/src/**`, `onboard.js`). Use public barrels, SDK facade, generic contracts.
 - Owner boundary: owner-specific repair/detection/onboarding/auth/defaults/provider behavior lives in owner plugin. Shared/core gets generic seams only.
@@ -98,24 +98,24 @@ Skills own workflows; root owns hard policy and routing. Product direction and m
 - Internal bundled plugins ship in core dist; bundled-only facade loader ok only for them.
 - External official plugins own package/deps and are excluded from core dist; core uses registry-aware `facade-runtime` or generic contracts.
 - Externalizing a bundled plugin: update package excludes, official catalogs, docs, tests, and prove core runtime paths resolve installed plugin roots before root-dep removal.
-- If a config change invalidates existing files, add a matching `openclaw doctor --fix` migration. Core/auth config repairs live in core doctor; plugin-owned config repairs live in that plugin's doctor contract (`legacyConfigRules` / `normalizeCompatibilityConfig`).
+- If a config change invalidates existing files, add a matching `afora doctor --fix` migration. Core/auth config repairs live in core doctor; plugin-owned config repairs live in that plugin's doctor contract (`legacyConfigRules` / `normalizeCompatibilityConfig`).
 - OpenAI Codex = `openai`. No new/live `openai-codex` routes — legacy input only; runtime/setup/auth/catalog use `openai` + `openai/*`, doctor/migrations repair stale `openai-codex/*` profiles/metadata.
-- Config/env surface bar is high; `openclaw.json` and env vars are already large. Before adding an option or env var, prove existing product behavior, provider selection, defaults, or doctor migration cannot solve it; prefer removing/consolidating options when touching these surfaces.
-- CLI setup flows (`openclaw onboard`/`configure`, documented flags, non-interactive behavior, generated config shape) are shipped public API once external docs/installers can copy them: prefer additive flags/aliases, deprecation windows, and backward-preserving migrations over breaking existing snippets.
+- Config/env surface bar is high; `afora.json` and env vars are already large. Before adding an option or env var, prove existing product behavior, provider selection, defaults, or doctor migration cannot solve it; prefer removing/consolidating options when touching these surfaces.
+- CLI setup flows (`afora onboard`/`configure`, documented flags, non-interactive behavior, generated config shape) are shipped public API once external docs/installers can copy them: prefer additive flags/aliases, deprecation windows, and backward-preserving migrations over breaking existing snippets.
 - Nested CLI options: when a parent option semantically applies to a leaf subcommand, declare it on both the parent and every applicable leaf so positional parsing accepts the option before or after the subcommand. Resolve the leaf value only when its source is non-default, then inherit from ancestors with `inheritOptionFromParent`. Do not expose inherited options on leaves where the semantics differ. Add real-parser coverage that enumerates every applicable leaf.
-- New binary fallible-operation results use `Result` from `@openclaw/normalization-core/result`; domain-rich outcomes keep named discriminated unions.
+- New binary fallible-operation results use `Result` from `@afora/normalization-core/result`; domain-rich outcomes keep named discriminated unions.
 - Tests may use observed examples, but prod literals need a short contract reason.
 - Compatibility is opt-in. "Shipped" means reachable from a stable release Git tag; betas, nightlies, main/GitHub/PR/unreleased code are not shipped. Plugin SDK surface in beta-only tags carries no compat obligation — remove, don't deprecate.
 - Refactor default: one canonical path — delete the old one. Keep old behavior only when the user explicitly asks or for an explicit public API/config/plugin SDK/data contract, tagged upgrade path, security/migration boundary, dependency contract, or observed prod state; cite it.
-- Reuse canonical coercion guards (`@openclaw/normalization-core/record-coerce`; plugins: `openclaw/plugin-sdk/string-coerce-runtime`) — no local `isRecord` copies. CI guard `pnpm check:coercion-helpers` owns the carve-outs; intentionally different semantics or a file that cannot use workspace resolution gets a reasoned carve-out entry there.
+- Reuse canonical coercion guards (`@afora/normalization-core/record-coerce`; plugins: `afora/plugin-sdk/string-coerce-runtime`) — no local `isRecord` copies. CI guard `pnpm check:coercion-helpers` owns the carve-outs; intentionally different semantics or a file that cannot use workspace resolution gets a reasoned carve-out entry there.
 - Core runtime consumes only current canonical shapes/config/data. Legacy or retired shapes normalize only in doctor/migration code before runtime; no runtime shims, aliases, or fallback readers.
-- State/storage migrations are database-first. Runtime reads/writes the canonical store only. Old file stores, sidecars, aliases, and fallback readers belong in `openclaw doctor --fix` migration code only, never steady-state runtime.
-- Storage default: SQLite only. Do not add JSON/JSONL/TXT/sidecar files for OpenClaw-owned runtime state, caches, queues, registries, indexes, cursors, checkpoints, or plugin scratch data. File storage is only for named product artifacts: import/export, user attachment, log, backup, or external tool contract. Doctrine: `docs/refactor/database-first.md`.
+- State/storage migrations are database-first. Runtime reads/writes the canonical store only. Old file stores, sidecars, aliases, and fallback readers belong in `afora doctor --fix` migration code only, never steady-state runtime.
+- Storage default: SQLite only. Do not add JSON/JSONL/TXT/sidecar files for Afora-owned runtime state, caches, queues, registries, indexes, cursors, checkpoints, or plugin scratch data. File storage is only for named product artifacts: import/export, user attachment, log, backup, or external tool contract. Doctrine: `docs/refactor/database-first.md`.
 - Any SQLite change requiring a schema-version bump needs explicit user discussion and acceptance before implementation. Agents must not advance SQLite schema versions autonomously.
 - Additive SQLite surface may stay at the same schema version only when downgraded readers stay safe — exact criteria (new tables; bare nullable `STRICT`-datatype existing-table columns, zero constraints): `docs/reference/database-schemas.md`. Declare it in the canonical schema plus a one-time idempotent lazy ensure on first feature use; fold it into the migration path at the next natural bump.
 - SQLite runtime access uses Kysely helpers, not raw SQL statement strings, except schema DDL, migrations, low-level DB bootstrap, or narrowly justified SQLite primitives.
 - SQLite write transactions are synchronous commit sections only. Finish async planning, filesystem access, plugin hooks, and predicates before `BEGIN`; then reread and validate authoritative rows before writing. Never return a Promise or execute `await` from a transaction callback.
-- Use the shared state DB (`state/openclaw.sqlite`) for global runtime state and plugin KV data. Use the per-agent DB (`agents/<agentId>/agent/openclaw-agent.sqlite`) for agent-scoped state/cache. Use a dedicated SQLite DB only when schema, volume, or lifecycle clearly does not fit those stores.
+- Use the shared state DB (`state/afora.sqlite`) for global runtime state and plugin KV data. Use the per-agent DB (`agents/<agentId>/agent/afora-agent.sqlite`) for agent-scoped state/cache. Use a dedicated SQLite DB only when schema, volume, or lifecycle clearly does not fit those stores.
 - Legacy state/cache files are migration debt. When touching code that reads/writes them, prefer moving the data into SQLite or calling out the refactor follow-up; do not add parallel file paths.
 - Cache/transient state gets no compat migration unless a shipped user contract is cited. Prefer delete/drop/rebuild over import. If old state can be lost without user-visible data loss, remove the old path entirely.
 - Persistent user state gets one migration owner. Doctor migrates, verifies, and then runtime assumes the new shape.
@@ -164,7 +164,7 @@ Review invariants; full doctrine: `docs/gateway/audit.md`.
 - Runtime: Node 22.22.3+, 24.15+, or 25.9+; Node 26 recommended (CI and release workflows still pin Node 24). Keep Node + Bun paths working.
 - Package manager/runtime: repo defaults only. No swaps without approval.
 - Install: `pnpm install` (keep Bun lock/patches aligned if touched). Trusted development installs and validation run locally by default.
-- CLI: `pnpm openclaw ...` or `pnpm dev`; build: `pnpm build`.
+- CLI: `pnpm afora ...` or `pnpm dev`; build: `pnpm build`.
 - Never run the CLI as `node --import tsx src/index.ts`: tsx compiles all bundled plugins per process (~220s), the cost lands inside the agent task budget, and the run fails as a misleading `no progress ... timed out`. Use the dist-backed wrappers above. (Scoped-guide `node --import tsx scripts/*.mts` tools are fine — this rule is about the CLI entrypoint.)
 - Checkout classes for the rules below: a **normal checkout** is a full clone with its own installed `node_modules` (includes harness/PR worktrees that have them); a **worktree** here means any Codex, linked, sparse, or `node_modules`-less checkout where pnpm may prompt or reconcile dependencies.
 - Test commands, trusted source: use `pnpm test <path-or-filter> [vitest args...]`, `pnpm test:changed`, `pnpm test:serial`, or `pnpm test:coverage` with scope proportional to the touched contract. In a worktree, direct local `pnpm test*` is valid when dependencies are ready; use `node scripts/run-vitest.mjs <path-or-filter>` when avoiding pnpm dependency reconciliation is useful. Never raw `vitest`; if unavoidable, `vitest run ...` (bare `vitest` starts watch mode and never exits). No `--repeat`; use a bounded shell loop.
@@ -180,20 +180,20 @@ Review invariants; full doctrine: `docs/gateway/audit.md`.
 
 ## Validation
 
-- Use `$openclaw-testing` for test/CI choice and `$crabbox` for remote-environment, isolation, and clean-machine E2E proof.
+- Use `$afora-testing` for test/CI choice and `$crabbox` for remote-environment, isolation, and clean-machine E2E proof.
 - Proof routing: source trust first, required environment second. Trusted development tests, changed gates, typecheck/lint, builds, and full suites run locally with scope proportional to the touched contract. Use Crabbox/Testbox only when the environment is part of the proof: clean-machine, install/package, Docker, E2E, live, desktop, cross-OS, CI parity, or explicit operator-requested remote work. Do not use it merely as generic compute offload. Lease/procedure mechanics: `$crabbox`.
 - Untrusted (contributor/fork) source: never run its scripts, tests, checks, wrappers, config, or package hooks locally, regardless of proof size, and never fall back to local. Use secretless fork CI or the sanitized direct AWS Crabbox procedure in `$crabbox`, never a credential-hydrated Testbox. Maintainer approval of credentialed execution after review makes it trusted; an explicit owner/maintainer instruction to land named, reviewed PRs is that approval — do not ask twice.
 - Visual proof: use a real isolated browser/desktop on the current host when capable; otherwise use Crabbox. Set up like a user, then screenshot-verify. No harness/bypass/shortcut unless explicitly asked.
 - Captured screenshots/videos are proof only after the agent has looked at them: open every capture, confirm the asserted state is actually visible in frame, and re-shoot when it is not. An uninspected capture is not verification and must not be attached as evidence.
 - UI-visible change (Control UI, native app, or user-visible chat/session behavior): before/after screenshots or a short video are mandatory PR evidence, captured from a real running surface and sanitized. Exception: channel-visible chat behavior may satisfy the real-behavior-proof gate via the mock-gateway harness verdict (ClawSweeper section) when it covers the changed path; live proof is stronger. UI proof infeasible: state the exact blocker in the PR.
-- Gateway-behavior change provable in the Control UI (session lifecycle, steering/queue, subagent flows, delivery states): prove on a live dev gateway — isolated `OPENCLAW_STATE_DIR`, own port, never the operator's gateway — and attach a video of the flow. Default recorder: Playwright `recordVideo` against the dashboard URL; keep the driving script's waits on asserted UI states, not sleeps.
+- Gateway-behavior change provable in the Control UI (session lifecycle, steering/queue, subagent flows, delivery states): prove on a live dev gateway — isolated `AFORA_STATE_DIR`, own port, never the operator's gateway — and attach a video of the flow. Default recorder: Playwright `recordVideo` against the dashboard URL; keep the driving script's waits on asserted UI states, not sleeps.
 - In Codex or linked worktrees, direct local `pnpm test*` and `pnpm check*` are valid when dependencies are ready. Use the direct `node` test/check wrappers when avoiding pnpm dependency reconciliation; use the direct Crabbox wrapper only for actual remote proof.
 - Repo-native PR worktrees may omit `node_modules`; run `pnpm install` once, retry the local proof, then report the first actionable error.
 - Targeted local format/lint (including release branches): use existing `./node_modules/.bin/*`; never `pnpm exec` reconciliation. Use Testbox only when explicit clean-machine proof requires it.
 - Parallel agents share the checkout; never switch its branch while sibling work runs.
 - QA CLI `--output-dir` must be repo-relative.
 - Before handoff/push: prove touched surface. Before landing to `main`: proof matches actual risk. Bounded behavior-neutral refactor: focused tests/checks enough; no issue proof or full/broad suite by default.
-- Release-branch full validation and its dispatch mechanics: `$release-openclaw-ci`.
+- Release-branch full validation and its dispatch mechanics: `$release-afora-ci`.
 - Pre-land/pre-commit code changes: mandatory fresh `$autoreview` until no accepted/actionable findings remain. Do not land code on CI, ClawSweeper, prior review comments, or your own manual review alone unless user explicitly opts out or scope is truly trivial/docs-only. If findings want refactor, refactor; no ugly fixes. Autoreview staged/uncommitted diff: `--mode uncommitted`; there is no `dirty` or `staged` mode.
 - If proof is blocked, say exactly what is missing and why.
 - Do not land related failing format/lint/type/build/tests. If unrelated on latest `origin/main`, say so with scoped proof.
@@ -206,7 +206,7 @@ Review invariants; full doctrine: `docs/gateway/audit.md`.
 - Fresh GitHub items: read `CONTRIBUTING.md`, the issue chooser/form, PR template, and `.github/CODEOWNERS`; blank issues are disabled; preserve templates and evidence requirements.
 - Issue first for bugs, user-facing features, architecture/product decisions, or work needing durable discussion. Bounded maintainer-requested refactor may go direct; agent decides whether an issue adds value. PRs use the template, link context, and keep durable problem/impact/evidence sections.
 - Route support to Discord and security through `SECURITY.md`. Use listed maintainer areas/`CODEOWNERS`; never guess mentions.
-- Use `$openclaw-pr-maintainer` immediately for maintainer-side OpenClaw issue/PR review, triage, duplicates, labels, comments, close, land, or evidence. Contributor PR creation/refresh follows the requested contributor workflow; linked refs alone do not require maintainer archive tooling.
+- Use `$afora-pr-maintainer` immediately for maintainer-side Afora issue/PR review, triage, duplicates, labels, comments, close, land, or evidence. Contributor PR creation/refresh follows the requested contributor workflow; linked refs alone do not require maintainer archive tooling.
 - Issue/PR start: `git status -sb`; if clean, `git pull --ff-only`; if dirty, yell before pull/rebase.
 - PR refs: `gh pr view/diff` or `gh api`, not web search. Prefer `gitcrawl` for maintainer discovery; missing/stale `gitcrawl` falls through to live `gh`, not contributor setup. Verify live with `gh` before mutation.
 - Bare issue/PR URL/number: inspect live and take the efficient maintainer path; switch branches/refs when useful.
@@ -232,11 +232,11 @@ Review invariants; full doctrine: `docs/gateway/audit.md`.
 - PR create/refresh: keep PR branches takeover-ready. Use a branch maintainers can push to, or for fork PRs ensure `maintainer_can_modify` / GitHub's `Allow edits by maintainers` is enabled unless explicitly told otherwise or GitHub's Actions/secrets warning makes that unsafe.
 - GitHub issue/PR create: read `$agent-transcript`; ask about sanitized transcript logs when available.
 - Contributor PRs: parsed context requires authored `What Problem This Solves` and `Evidence` sections. Do not require field-level proof forms; reviewers inspect code, tests, and CI for correctness.
-- PR/issue images/video: `curl -s "https://uploads.github.com/user-attachments/assets?name=<f>&content_type=<mime>&repository_id=<id>" -X POST -H "Authorization: Bearer $(gh auth token)" -H "Accept: application/json" --data-binary @<f>`; embed returned `.url` as markdown (video: bare line, not `![]()`). Same CDN as drag-drop; inherits repo visibility; no browser/computer use. Error semantics, video transcode, artifact fallback: `$openclaw-pr-maintainer`. Never push proof assets to any product repo branch; do not commit `.github/pr-assets`.
+- PR/issue images/video: `curl -s "https://uploads.github.com/user-attachments/assets?name=<f>&content_type=<mime>&repository_id=<id>" -X POST -H "Authorization: Bearer $(gh auth token)" -H "Accept: application/json" --data-binary @<f>`; embed returned `.url` as markdown (video: bare line, not `![]()`). Same CDN as drag-drop; inherits repo visibility; no browser/computer use. Error semantics, video transcode, artifact fallback: `$afora-pr-maintainer`. Never push proof assets to any product repo branch; do not commit `.github/pr-assets`.
 - CI polling: exact SHA, relevant checks only, minimal fields. Skip routine noise (`Auto response`, `Labeler`, docs agents, performance/stale). Logs only after failure/completion or concrete need. Never `gh run watch`; its 3s polling exhausts API quota. Use sparse GraphQL rollups. Filter `gh run list` by workflow/branch/commit; broad JSON lists can exceed relay caps. Exact-SHA fallback dispatches require the full 40-character SHA.
 - CI waits: `node scripts/watch-pr-ci.mjs <pr> <head-sha>` — prechecks mergeable (CONFLICTING = pull_request CI cannot attach) and run attachment before polling; watchers emit every terminal state; no unbounded polls.
-- Agent PR landing to `main`: only the repo-native `scripts/pr` wrapper — `review-init` -> `review-artifacts-init` -> `review-validate-artifacts` -> `OPENCLAW_TESTBOX=1 scripts/pr prepare-run` -> `merge-run`. The Testbox flag is mandatory for agents; invoke `prepare-run` only after exact-head CI is complete and green. Full mechanics (fork-code variant, drift policy, waits): `$openclaw-pr-maintainer`.
-- Non-main PRs: never `scripts/pr prepare-run`/`merge-run` (they diff against `main`); the exact procedure, plus throttle-lock recovery, lives in `$openclaw-pr-maintainer`.
+- Agent PR landing to `main`: only the repo-native `scripts/pr` wrapper — `review-init` -> `review-artifacts-init` -> `review-validate-artifacts` -> `AFORA_TESTBOX=1 scripts/pr prepare-run` -> `merge-run`. The Testbox flag is mandatory for agents; invoke `prepare-run` only after exact-head CI is complete and green. Full mechanics (fork-code variant, drift policy, waits): `$afora-pr-maintainer`.
+- Non-main PRs: never `scripts/pr prepare-run`/`merge-run` (they diff against `main`); the exact procedure, plus throttle-lock recovery, lives in `$afora-pr-maintainer`.
 - Main-bound workflow dispatch: resolve server `main` SHA immediately before dispatch; retry if identity fails after `main` advances.
 
 ## Tooling Gotchas
@@ -251,7 +251,7 @@ Mechanics only; policy lives above.
 - `rg`: options/globs before `--`; `--` immediately before a leading-dash pattern only.
 - macOS `find` has no `-printf`; use `-print0` plus `stat`.
 - Path formatter: `node_modules/.bin/oxfmt`; `pnpm exec` may reconcile workspace deps.
-- `scripts/pr` operational gotchas (guard SHAs, token unsets, artifact enums, post-merge `cd`): `$openclaw-pr-maintainer`.
+- `scripts/pr` operational gotchas (guard SHAs, token unsets, artifact enums, post-merge `cd`): `$afora-pr-maintainer`.
 
 ## Code
 
@@ -283,7 +283,7 @@ Mechanics only; policy lives above.
 - Provider tool schemas: prefer flat string enum helpers over `Type.Union([Type.Literal(...)])`; some providers reject `anyOf`.
 - Split files around ~700 LOC when clarity/testability improves.
 - Never add a `max-lines` suppression. Existing suppressions are grandfathered TODOs; split the file and remove its suppression plus baseline entry.
-- Naming: **OpenClaw** product/docs; `openclaw` CLI/package/path/config.
+- Naming: **Afora** product/docs; `afora` CLI/package/path/config.
 - Agents navigate by grep: exported symbols use 2-3 word unique names; no generic single-word exports (`get`, `run`, `create`, `handle`).
 - New modules/dirs concept-named; no new `utils/`, `helpers/`, `common/`. One spelling per concept repo-wide.
 - English: American spelling.
@@ -300,13 +300,13 @@ Mechanics only; policy lives above.
 - Clean timers/env/globals/mocks/sockets/temp dirs/module state; `--isolate=false` safe.
 - Tests asserting resolver/root-containment paths: `fs.realpath` mkdtemp/tmp roots first. macOS `os.tmpdir()` is a `/var` -> `/private/var` symlink; prod resolvers return canonical paths, so raw mkdtemp assertions pass on Linux CI but fail on Mac.
 - Explicit `vi.mock` factories must export every binding prod touches, including error classes used in `instanceof` checks; `vi.importActual` the defining module for those instead of stub classes.
-- Prefer injection and narrow `*.runtime.ts` mocks over broad barrels or `openclaw/plugin-sdk/*`.
+- Prefer injection and narrow `*.runtime.ts` mocks over broad barrels or `afora/plugin-sdk/*`.
 - Do not edit baseline/inventory/ignore/snapshot/expected-failure files to silence checks without explicit approval. Shrink-only ratchet updates that exactly record removed violations are required maintenance and need no separate approval.
 - Never edit source/test files while a Vitest run is in flight in the same checkout; mid-collection reads produce phantom failures and 120s timeouts. Wait for the run to finish, then edit.
-- Vitest rejects Jest `--runInBand`; use `OPENCLAW_VITEST_MAX_WORKERS=1 pnpm test` for serial proof. Test workers max 16.
-- Live: `OPENCLAW_LIVE_TEST=1 pnpm test:live`; verbose `OPENCLAW_LIVE_TEST_QUIET=0`.
-- Live gateway tests: session-owned dev gateway only — isolated `OPENCLAW_STATE_DIR` + free port. Never bind the operator's real gateway port (default 18789) while their gateway runs.
-- Never stop/restart/kickstart a gateway service you did not start (launchd/systemd/tmux) or edit its live `~/.openclaw` state/config; that is the operator's running instance — explicit per-task operator approval required.
+- Vitest rejects Jest `--runInBand`; use `AFORA_VITEST_MAX_WORKERS=1 pnpm test` for serial proof. Test workers max 16.
+- Live: `AFORA_LIVE_TEST=1 pnpm test:live`; verbose `AFORA_LIVE_TEST_QUIET=0`.
+- Live gateway tests: session-owned dev gateway only — isolated `AFORA_STATE_DIR` + free port. Never bind the operator's real gateway port (default 18789) while their gateway runs.
+- Never stop/restart/kickstart a gateway service you did not start (launchd/systemd/tmux) or edit its live `~/.afora` state/config; that is the operator's running instance — explicit per-task operator approval required.
 - Realistic data: copy the state/DB into your dev state dir and test the copy. In-place migration of a live gateway's state needs explicit operator approval.
 - Guide: `docs/reference/test.md`.
 
@@ -314,8 +314,8 @@ Mechanics only; policy lives above.
 
 - Use `$technical-documentation` for docs writing/review. Docs change with behavior/API.
 - Codex harness upgrade (`extensions/codex/package.json` `@openai/codex`): refresh `docs/plugins/codex-harness.md` model snapshot from the new harness `model/list`.
-- Docs final answers: include relevant full `https://docs.openclaw.ai/...` URL(s).
-- `CHANGELOG.md`: release-only — release generation derives it from merged PRs + direct `main` commits (`$openclaw-changelog-update` owns style, credit, forbidden handles). Never edit it for normal PRs, direct `main` fixes, or `ship it`; never ask contributors/agents for changelog edits.
+- Docs final answers: include relevant full `https://docs.afora.ai/...` URL(s).
+- `CHANGELOG.md`: release-only — release generation derives it from merged PRs + direct `main` commits (`$afora-changelog-update` owns style, credit, forbidden handles). Never edit it for normal PRs, direct `main` fixes, or `ship it`; never ask contributors/agents for changelog edits.
 - User-facing `fix`/`feat`/`perf`: put release-note context in PR body, squash message, or direct commit: behavior, surface, issue/PR refs, credited human author/reporter.
 
 ## Git
@@ -331,22 +331,22 @@ Mechanics only; policy lives above.
 ## Security / Release
 
 - Never commit real phone numbers, videos, credentials, live config.
-- Secrets: channel/provider creds in `~/.openclaw/credentials/`; model auth profiles in `~/.openclaw/agents/<agentId>/agent/auth-profiles.json`.
+- Secrets: channel/provider creds in `~/.afora/credentials/`; model auth profiles in `~/.afora/agents/<agentId>/agent/auth-profiles.json`.
 - SecretRef failures isolate to the smallest known owning surface; unknown ownership fails closed. Gateway starts degraded (exact owner marked configured-unavailable, typed redacted diagnostic, no implicit credential fallback) rather than refusing startup, except for its own ingress protection or structurally invalid config. Doctor and status list every degraded owner. Full doctrine: `docs/gateway/secrets.md`.
 - Dependency patches/overrides/vendor changes need explicit approval. `pnpm-workspace.yaml` patched dependencies use exact versions only.
 - Release/package guards: no hard-coded retired-package denylists; use generic artifact/dependency checks or fix build source.
 - `pnpm-lock.yaml` is the product dependency security review surface; `.github/release/clawhub-cli/package-lock.json` separately pins trusted release tooling. Published packages bundle runtime dependencies where configured and never ship lockfiles; other npm-format locks exist only transiently during checks and publish staging.
-- Releases/publish/version bumps need explicit approval. `$release-openclaw-maintainer` owns the full flow: two-SHA (Code/Release) identities, `YYYY.M.PATCH` versioning and train selection, backports, scope lock, changelog generation, publish, and verification. Nightlies: `$release-openclaw-nightly`; release CI: `$release-openclaw-ci`.
+- Releases/publish/version bumps need explicit approval. `$release-afora-maintainer` owns the full flow: two-SHA (Code/Release) identities, `YYYY.M.PATCH` versioning and train selection, backports, scope lock, changelog generation, publish, and verification. Nightlies: `$release-afora-nightly`; release CI: `$release-afora-ci`.
 - During an active release, freeze the operator-selected cut SHA and release identity through publish and verification; touch `main` only for the smallest critical main-owned blocker or on operator request, then return to the release branch.
-- GHSA/advisories: never create, open, draft, update, publish, or otherwise mutate a GitHub Security Advisory, GHSA temporary fork, private security-review repository, or security-only review artifact unless the user explicitly asks for that exact advisory/security workflow action. Terms such as "security-sensitive", "hardening", "private review", "unshipped", or "unreleased" grant no advisory authority; unshipped hardening uses the normal code/PR workflow. Routes: `$openclaw-ghsa-maintainer` / `$security-triage`. Secret scanning: `$openclaw-secret-scanning-maintainer`.
+- GHSA/advisories: never create, open, draft, update, publish, or otherwise mutate a GitHub Security Advisory, GHSA temporary fork, private security-review repository, or security-only review artifact unless the user explicitly asks for that exact advisory/security workflow action. Terms such as "security-sensitive", "hardening", "private review", "unshipped", or "unreleased" grant no advisory authority; unshipped hardening uses the normal code/PR workflow. Routes: `$afora-ghsa-maintainer` / `$security-triage`. Secret scanning: `$afora-secret-scanning-maintainer`.
 
 ## Platform / Ops
 
 - Before simulator/emulator testing, check real iOS/Android devices.
 - "restart iOS/Android apps" = rebuild/reinstall/relaunch, not kill/launch.
-- Mac gateway: dev watch = `pnpm gateway:watch`; managed installs = `openclaw gateway restart/status --deep`; logs = `./scripts/clawlog.sh`. No launchd/ad-hoc tmux.
+- Mac gateway: dev watch = `pnpm gateway:watch`; managed installs = `afora gateway restart/status --deep`; logs = `./scripts/clawlog.sh`. No launchd/ad-hoc tmux.
 - Mac app permission testing: stable app path + real signing identity, or TCC prompts/listing won't stick; doctrine: `docs/platforms/mac/signing.md`.
-- Parallels: `$openclaw-parallels-smoke`; Discord roundtrip: `$parallels-discord-roundtrip`.
+- Parallels: `$afora-parallels-smoke`; Discord roundtrip: `$parallels-discord-roundtrip`.
 - ClawSweeper ops: `$clawsweeper`. Deployed ClawSweeper hook sessions may post one concise `#clawsweeper` note only when surprising/actionable/risky; if using message tool, reply exactly `NO_REPLY`.
 - Never edit `node_modules`.
 - Local-only `.agents` ignores: `.git/info/exclude`, not repo `.gitignore`.

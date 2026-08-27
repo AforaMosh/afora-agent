@@ -26,20 +26,20 @@ describe("qa-lab web search provider", () => {
     }
 
     const result = await tool.execute({
-      query: "OpenClaw runtime parity fixed query",
+      query: "Afora runtime parity fixed query",
       count: 2,
     });
 
     expect(result).toMatchObject({
-      query: "OpenClaw runtime parity fixed query",
+      query: "Afora runtime parity fixed query",
       results: [
         {
-          url: "https://docs.openclaw.ai/qa-lab/search-fixture/1",
-          siteName: "docs.openclaw.ai",
+          url: "https://docs.afora.ai/qa-lab/search-fixture/1",
+          siteName: "docs.afora.ai",
         },
         {
-          url: "https://docs.openclaw.ai/qa-lab/search-fixture/2",
-          siteName: "docs.openclaw.ai",
+          url: "https://docs.afora.ai/qa-lab/search-fixture/2",
+          siteName: "docs.afora.ai",
         },
       ],
     });

@@ -1,6 +1,6 @@
-import { parseStrictPositiveInteger } from "openclaw/plugin-sdk/number-runtime";
-import { defaultRuntime } from "openclaw/plugin-sdk/runtime";
-import type { OpenClawPluginApi } from "./api.js";
+import { parseStrictPositiveInteger } from "afora-agent/plugin-sdk/number-runtime";
+import { defaultRuntime } from "afora-agent/plugin-sdk/runtime";
+import type { AforaPluginApi } from "./api.js";
 import { isMemoryMachineOutput } from "./cli-output-mode.js";
 import type { Embeddings } from "./embeddings.js";
 import {
@@ -104,7 +104,7 @@ export function parseMemoryCliFilter(rawValue: unknown): MemoryQueryFilter | und
 }
 
 export function registerMemoryCli(
-  api: OpenClawPluginApi,
+  api: AforaPluginApi,
   db: MemoryDB,
   embeddings: Embeddings,
   resolveCliAgentId: (rawAgentId: unknown) => string,

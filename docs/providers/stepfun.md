@@ -1,12 +1,12 @@
 ---
-summary: "Use StepFun models with OpenClaw"
+summary: "Use StepFun models with Afora"
 read_when:
-  - You want StepFun models in OpenClaw
+  - You want StepFun models in Afora
   - You need StepFun setup guidance
 title: "StepFun"
 ---
 
-StepFun ships as an external official plugin (`@openclaw/stepfun-provider`) with two provider ids:
+StepFun ships as an external official plugin (`@afora/stepfun-provider`) with two provider ids:
 
 - `stepfun` for the standard endpoint
 - `stepfun-plan` for the Step Plan endpoint
@@ -18,8 +18,8 @@ Standard and Step Plan are **separate providers** with different endpoints and m
 ## Install plugin
 
 ```bash
-openclaw plugins install @openclaw/stepfun-provider
-openclaw gateway restart
+afora plugins install @afora/stepfun-provider
+afora gateway restart
 ```
 
 ## Region and endpoint overview
@@ -63,24 +63,24 @@ Step Plan (`stepfun-plan`):
       </Step>
       <Step title="Run onboarding">
         ```bash
-        openclaw onboard --auth-choice stepfun-standard-api-key-intl
+        afora onboard --auth-choice stepfun-standard-api-key-intl
         ```
 
         China endpoint:
 
         ```bash
-        openclaw onboard --auth-choice stepfun-standard-api-key-cn
+        afora onboard --auth-choice stepfun-standard-api-key-cn
         ```
       </Step>
       <Step title="Non-interactive alternative">
         ```bash
-        openclaw onboard --auth-choice stepfun-standard-api-key-intl \
+        afora onboard --auth-choice stepfun-standard-api-key-intl \
           --stepfun-api-key "$STEPFUN_API_KEY"
         ```
       </Step>
       <Step title="Verify models are available">
         ```bash
-        openclaw models list --provider stepfun
+        afora models list --provider stepfun
         ```
       </Step>
     </Steps>
@@ -102,24 +102,24 @@ Step Plan (`stepfun-plan`):
       </Step>
       <Step title="Run onboarding">
         ```bash
-        openclaw onboard --auth-choice stepfun-plan-api-key-intl
+        afora onboard --auth-choice stepfun-plan-api-key-intl
         ```
 
         China endpoint:
 
         ```bash
-        openclaw onboard --auth-choice stepfun-plan-api-key-cn
+        afora onboard --auth-choice stepfun-plan-api-key-cn
         ```
       </Step>
       <Step title="Non-interactive alternative">
         ```bash
-        openclaw onboard --auth-choice stepfun-plan-api-key-intl \
+        afora onboard --auth-choice stepfun-plan-api-key-intl \
           --stepfun-api-key "$STEPFUN_API_KEY"
         ```
       </Step>
       <Step title="Verify models are available">
         ```bash
-        openclaw models list --provider stepfun-plan
+        afora models list --provider stepfun-plan
         ```
       </Step>
     </Steps>
@@ -225,10 +225,10 @@ A single auth flow writes region-matched profiles for both `stepfun` and `stepfu
   </Accordion>
 
   <Accordion title="Notes">
-    - `step-3.7-flash` accepts text and image input through OpenClaw. StepFun's API also supports video, which is not yet a model input modality in OpenClaw.
+    - `step-3.7-flash` accepts text and image input through Afora. StepFun's API also supports video, which is not yet a model input modality in Afora.
     - Step 3.7 supports `low`, `medium`, and `high` reasoning effort. Because the model has no non-reasoning mode, `/think off` maps to `low`.
     - `step-3.5-flash-2603` is currently exposed only on `stepfun-plan`.
-    - Use `openclaw models list` and `openclaw models set <provider/model>` to inspect or switch models.
+    - Use `afora models list` and `afora models set <provider/model>` to inspect or switch models.
 
   </Accordion>
 </AccordionGroup>

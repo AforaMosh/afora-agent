@@ -7,10 +7,10 @@
 // The service account key is a throwaway RSA key generated in-process; no real
 // credentials or network access are involved.
 import { generateKeyPairSync } from "node:crypto";
-import { isChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
-import { withServer } from "openclaw/plugin-sdk/test-env";
+import { isChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
+import { withServer } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 import type { ResolvedGoogleChatAccount } from "./accounts.js";
 import { deliverGoogleChatReply } from "./monitor-reply-delivery.js";
 import type { GoogleChatCoreRuntime, GoogleChatRuntimeEnv } from "./monitor-types.js";
@@ -34,7 +34,7 @@ const account = {
   config: {},
 } as unknown as ResolvedGoogleChatAccount;
 
-const config = {} as OpenClawConfig;
+const config = {} as AforaConfig;
 
 const CHUNKS = [
   "First chunk of the assistant reply.",

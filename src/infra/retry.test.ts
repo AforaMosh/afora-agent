@@ -1,4 +1,4 @@
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 // Tests retry backoff timing and cancellation behavior.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getRetryAttemptErrors } from "./retry-attempt-errors.js";

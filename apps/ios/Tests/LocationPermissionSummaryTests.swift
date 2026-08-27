@@ -1,7 +1,7 @@
 import CoreLocation
 import Testing
-@testable import OpenClaw
-@testable import OpenClawKit
+@testable import Afora
+@testable import AforaKit
 
 @Suite(.serialized) struct LocationPermissionSummaryTests {
     @Test func `location settings presentation uses apple access labels`() {
@@ -30,7 +30,7 @@ import Testing
         #expect(whileUsing.accessLevelText == "While Using the App")
         #expect(always.accessLevelText == "Always")
         #expect(whileUsingWithAlwaysGrant.accessLevelText == "While Using the App")
-        #expect(OpenClawLocationMode.off.locationAccessLevelText == nil)
+        #expect(AforaLocationMode.off.locationAccessLevelText == nil)
     }
 
     @Test func `location sharing control follows selected mode while permission is pending`() {
@@ -313,7 +313,7 @@ import Testing
                 UserDefaults.standard.removeObject(forKey: defaultsKey)
             }
         }
-        UserDefaults.standard.set(OpenClawLocationMode.always.rawValue, forKey: defaultsKey)
+        UserDefaults.standard.set(AforaLocationMode.always.rawValue, forKey: defaultsKey)
         let locationService = MockLocationService(authorizationStatus: .authorizedAlways)
         let appModel = NodeAppModel(locationService: locationService)
 
@@ -373,14 +373,14 @@ private final class MockLocationService: LocationServicing, @unchecked Sendable 
         self.accuracy
     }
 
-    func ensureAuthorization(mode: OpenClawLocationMode) async -> CLAuthorizationStatus {
+    func ensureAuthorization(mode: AforaLocationMode) async -> CLAuthorizationStatus {
         _ = mode
         return self.status
     }
 
     func currentLocation(
-        params: OpenClawLocationGetParams,
-        desiredAccuracy: OpenClawLocationAccuracy,
+        params: AforaLocationGetParams,
+        desiredAccuracy: AforaLocationAccuracy,
         maxAgeMs: Int?,
         timeoutMs: Int?) async throws -> CLLocation
     {

@@ -1,5 +1,5 @@
 /** Tests ACP setSessionMode and setSessionConfigOption Gateway bridge behavior. */
-import { createInMemorySessionStore } from "@openclaw/acp-core/session";
+import { createInMemorySessionStore } from "@afora/acp-core/session";
 import { describe, expect, it, vi } from "vitest";
 import type { GatewayClient } from "../gateway/client.js";
 import {
@@ -251,7 +251,7 @@ describe("acp setSessionConfigOption bridge behavior", () => {
     );
   });
 
-  it("accepts forwarded timeout config options without failing OpenClaw ACP bridge turns", async () => {
+  it("accepts forwarded timeout config options without failing Afora ACP bridge turns", async () => {
     const sessionStore = createInMemorySessionStore();
     const connection = createAcpConnection();
     const requestMock = vi.fn(async (method: string) => {

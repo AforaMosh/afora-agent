@@ -1,13 +1,13 @@
 // Telegram plugin module implements group access behavior.
 import type {
   ChannelGroupPolicy,
-  OpenClawConfig,
+  AforaConfig,
   TelegramAccountConfig,
   TelegramDirectConfig,
   TelegramGroupConfig,
   TelegramTopicConfig,
-} from "openclaw/plugin-sdk/config-contracts";
-import { resolveOpenProviderRuntimeGroupPolicy } from "openclaw/plugin-sdk/runtime-group-policy";
+} from "afora-agent/plugin-sdk/config-contracts";
+import { resolveOpenProviderRuntimeGroupPolicy } from "afora-agent/plugin-sdk/runtime-group-policy";
 import { isSenderAllowed, type NormalizedAllowFrom, firstDefined } from "./bot-access.js";
 
 type TelegramGroupBaseBlockReason =
@@ -117,7 +117,7 @@ export const resolveTelegramRuntimeGroupPolicy = (params: {
   });
 
 export const resolveTelegramEffectiveGroupPolicy = (params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   telegramCfg: TelegramAccountConfig;
   groupConfig?: TelegramGroupConfig;
   topicConfig?: TelegramTopicConfig;
@@ -140,14 +140,14 @@ export const resolveTelegramEffectiveGroupPolicy = (params: {
 export const evaluateTelegramGroupPolicyAccess = (params: {
   isGroup: boolean;
   chatId: string | number;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   telegramCfg: TelegramAccountConfig;
   topicConfig?: TelegramTopicConfig;
   groupConfig?: TelegramGroupConfig;
   effectiveGroupAllow: NormalizedAllowFrom;
   senderId?: string;
   senderUsername?: string;
-  resolveGroupPolicy: (chatId: string | number, cfg: OpenClawConfig) => ChannelGroupPolicy;
+  resolveGroupPolicy: (chatId: string | number, cfg: AforaConfig) => ChannelGroupPolicy;
   enforcePolicy: boolean;
   enforceAllowlistAuthorization: boolean;
   allowEmptyAllowlistEntries: boolean;

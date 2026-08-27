@@ -6,29 +6,29 @@ import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import {
   resolveSessionTranscriptsDirForAgent,
-  type OpenClawConfig,
+  type AforaConfig,
   type ResolvedMemorySearchConfig,
-} from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-foundation";
 import {
   buildSessionEntry,
   statSessionEntrySync,
-} from "openclaw/plugin-sdk/memory-core-host-engine-sessions";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-sessions";
 import {
   MEMORY_CHUNKING_VERSION,
   type MemorySource,
   type MemorySyncParams,
   type MemorySyncProgressUpdate,
-} from "openclaw/plugin-sdk/memory-core-host-engine-storage";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
 import {
   clearConfigCache,
   clearRuntimeConfigSnapshot,
-} from "openclaw/plugin-sdk/runtime-config-snapshot";
-import { deleteSessionEntry, upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
+} from "afora-agent/plugin-sdk/runtime-config-snapshot";
+import { deleteSessionEntry, upsertSessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
 import {
   appendSessionTranscriptMessageByIdentity,
   publishSessionTranscriptUpdateByIdentity,
-} from "openclaw/plugin-sdk/session-transcript-runtime";
-import { closeOpenClawAgentDatabasesForTest } from "openclaw/plugin-sdk/sqlite-runtime-testing";
+} from "afora-agent/plugin-sdk/session-transcript-runtime";
+import { closeAforaAgentDatabasesForTest } from "afora-agent/plugin-sdk/sqlite-runtime-testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   MEMORY_INDEX_PROVENANCE_VERSION,
@@ -65,8 +65,8 @@ type MemorySessionTranscriptUpdate = {
   };
 };
 
-const originalStartupStateDir = process.env.OPENCLAW_STATE_DIR;
-const originalStartupConfigPath = process.env.OPENCLAW_CONFIG_PATH;
+const originalStartupStateDir = process.env.AFORA_STATE_DIR;
+const originalStartupConfigPath = process.env.AFORA_CONFIG_PATH;
 let transcriptUpdateListener: ((update: MemorySessionTranscriptUpdate) => void) | undefined;
 const startupHarnessDatabases = new Set<DatabaseSync>();
 
@@ -106,23 +106,23 @@ function createStartupHarnessDatabase(sourceRows: SourceStateRow[]): DatabaseSyn
   return db;
 }
 function setStartupStateDir(stateDir: string): void {
-  Reflect.set(process.env, "OPENCLAW_STATE_DIR", stateDir);
+  Reflect.set(process.env, "AFORA_STATE_DIR", stateDir);
 }
 
 function setStartupConfigPath(configPath: string): void {
-  Reflect.set(process.env, "OPENCLAW_CONFIG_PATH", configPath);
+  Reflect.set(process.env, "AFORA_CONFIG_PATH", configPath);
 }
 
 function restoreStartupEnv(): void {
   if (originalStartupStateDir === undefined) {
-    Reflect.deleteProperty(process.env, "OPENCLAW_STATE_DIR");
+    Reflect.deleteProperty(process.env, "AFORA_STATE_DIR");
   } else {
-    Reflect.set(process.env, "OPENCLAW_STATE_DIR", originalStartupStateDir);
+    Reflect.set(process.env, "AFORA_STATE_DIR", originalStartupStateDir);
   }
   if (originalStartupConfigPath === undefined) {
-    Reflect.deleteProperty(process.env, "OPENCLAW_CONFIG_PATH");
+    Reflect.deleteProperty(process.env, "AFORA_CONFIG_PATH");
   } else {
-    Reflect.set(process.env, "OPENCLAW_CONFIG_PATH", originalStartupConfigPath);
+    Reflect.set(process.env, "AFORA_CONFIG_PATH", originalStartupConfigPath);
   }
 }
 
@@ -131,9 +131,9 @@ function emitSessionTranscriptUpdate(update: MemorySessionTranscriptUpdate): voi
 }
 
 class SessionStartupCatchupHarness extends MemoryManagerSyncOps {
-  protected readonly cfg = {} as OpenClawConfig;
+  protected readonly cfg = {} as AforaConfig;
   protected readonly agentId = "main";
-  protected readonly workspaceDir = "/tmp/openclaw-test-workspace";
+  protected readonly workspaceDir = "/tmp/afora-test-workspace";
   protected readonly settings = {
     chunking: {
       overlap: 0,
@@ -396,7 +396,7 @@ describe("session startup catch-up", () => {
   let stateDir = "";
 
   beforeEach(async () => {
-    stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-session-startup-"));
+    stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-session-startup-"));
     setStartupStateDir(stateDir);
     transcriptUpdateListener = undefined;
   });
@@ -412,7 +412,7 @@ describe("session startup catch-up", () => {
       database.close();
     }
     startupHarnessDatabases.clear();
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
     await fs.rm(stateDir, { recursive: true, force: true });
   });
 
@@ -438,7 +438,7 @@ describe("session startup catch-up", () => {
   }
 
   async function configureTestSessionStore(storePath: string): Promise<void> {
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     await fs.mkdir(path.dirname(storePath), { recursive: true });
     await fs.writeFile(configPath, JSON.stringify({ session: { store: storePath } }), "utf-8");
     setStartupConfigPath(configPath);

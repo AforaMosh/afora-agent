@@ -38,7 +38,7 @@ export function applyConnectionScopeCap(params: {
   scopes: string[];
   upgradeReq: IncomingMessage;
 }): string[] {
-  const header = params.upgradeReq.headers["x-openclaw-scopes"];
+  const header = params.upgradeReq.headers["x-afora-scopes"];
   const rawHeader = Array.isArray(header) ? header[0] : header;
   if (rawHeader === undefined) {
     return params.scopes;

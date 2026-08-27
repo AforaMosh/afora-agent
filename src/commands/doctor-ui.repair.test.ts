@@ -14,9 +14,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../../packages/terminal-core/src/note.js", () => ({ note: mocks.note }));
-vi.mock("../infra/openclaw-root.js", () => ({
-  resolveOpenClawPackageRoot: vi.fn(async () => mocks.root),
-  resolveOpenClawPackageRootSync: vi.fn(() => mocks.root),
+vi.mock("../infra/afora-root.js", () => ({
+  resolveAforaPackageRoot: vi.fn(async () => mocks.root),
+  resolveAforaPackageRootSync: vi.fn(() => mocks.root),
 }));
 vi.mock("../process/exec.js", () => ({ runCommandWithTimeout: mocks.runCommandWithTimeout }));
 vi.mock("../infra/control-ui-assets.js", async (importOriginal) => ({
@@ -38,7 +38,7 @@ function createPrompter(): DoctorPrompter {
 describe("Control UI doctor repair owner", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    mocks.root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-doctor-ui-repair-"));
+    mocks.root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-doctor-ui-repair-"));
     await fs.mkdir(path.join(mocks.root, "ui"), { recursive: true });
     await fs.writeFile(path.join(mocks.root, "ui", "package.json"), "{}");
     mocks.ensureControlUiAssetsBuilt.mockImplementation(async (_runtime, opts) => {
@@ -100,7 +100,7 @@ describe("Control UI doctor repair owner", () => {
     await maybeRepairUiProtocolFreshness(runtime, createPrompter());
 
     expect(mocks.note).toHaveBeenCalledWith(
-      expect.stringContaining("Reinstall OpenClaw to restore bundled Control UI assets."),
+      expect.stringContaining("Reinstall Afora to restore bundled Control UI assets."),
       "UI",
     );
     expect(mocks.ensureControlUiAssetsBuilt).not.toHaveBeenCalled();

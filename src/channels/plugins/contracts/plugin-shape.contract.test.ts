@@ -1,4 +1,4 @@
-import { sanitizeAssistantVisibleText } from "openclaw/plugin-sdk/text-chunking";
+import { sanitizeAssistantVisibleText } from "afora-agent/plugin-sdk/text-chunking";
 // Plugin-shape coherence contract for bundled channel plugins.
 //
 // Catalog routing keys off plugin ids, docs surfaces render `meta.docsPath`,

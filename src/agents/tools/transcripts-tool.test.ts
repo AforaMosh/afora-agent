@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createTempDirTracker } from "../../../test/helpers/temp-dir.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import type {
   TranscriptSourceProvider,
   TranscriptStopRequest,
@@ -64,7 +64,7 @@ async function createHarness(
 
 function storeFor(stateDir: string): TranscriptsStore {
   return new TranscriptsStore(path.join(stateDir, "transcripts"), {
-    env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+    env: { ...process.env, AFORA_STATE_DIR: stateDir },
   });
 }
 
@@ -87,7 +87,7 @@ function discordAccountOwnership(
 describe("transcripts tool", () => {
   afterEach(() => {
     vi.useRealTimers();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     tempDirs.cleanup();
   });
 
@@ -97,14 +97,14 @@ describe("transcripts tool", () => {
   });
 
   it("creates the core transcripts tool", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-");
+    const stateDir = tempDirs.make("afora-transcripts-");
     const { tool } = await createHarness(stateDir);
 
     expect(tool.name).toBe("transcripts");
   });
 
   it("adds the trusted tool agent to live source ownership metadata", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-");
+    const stateDir = tempDirs.make("afora-transcripts-");
     const start = vi.fn(async (request) => {
       expect(request.session).toMatchObject({
         source: {
@@ -145,7 +145,7 @@ describe("transcripts tool", () => {
   });
 
   it("lets a channel-less tool without an agent id manage its account-bound capture", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-");
+    const stateDir = tempDirs.make("afora-transcripts-");
     const start = vi.fn(async (request) => ({ ok: true as const, session: request.session }));
     const stop = vi.fn(async (request) => ({ ok: true as const, sessionId: request.sessionId }));
     getTranscriptSourceProviderMock.mockReturnValue({
@@ -186,7 +186,7 @@ describe("transcripts tool", () => {
   });
 
   it("requires explicit enablement before execution", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-");
+    const stateDir = tempDirs.make("afora-transcripts-");
     const { tool } = await createHarness(stateDir, { enabled: false });
 
     await expect(tool.execute("call-1", { action: "status" }, undefined, vi.fn())).rejects.toThrow(
@@ -195,7 +195,7 @@ describe("transcripts tool", () => {
   });
 
   it("cancels a pending live capture when the agent run is aborted", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-");
+    const stateDir = tempDirs.make("afora-transcripts-");
     const controller = new AbortController();
     const stop = vi.fn(async () => ({ ok: true, sessionId: "cancelled-meeting" }));
     const start = vi.fn(async (request) => {
@@ -237,7 +237,7 @@ describe("transcripts tool", () => {
   });
 
   it("keeps capturing after a successfully started agent run is later aborted", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-");
+    const stateDir = tempDirs.make("afora-transcripts-");
     const controller = new AbortController();
     let emitAfterStart: (() => Promise<void>) | undefined;
     let startupSignal: AbortSignal | undefined;
@@ -299,7 +299,7 @@ describe("transcripts tool", () => {
   });
 
   it("drops late utterances and keeps repeated abort cleanup failures retryable", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-");
+    const stateDir = tempDirs.make("afora-transcripts-");
     const controller = new AbortController();
     let cleanupFailuresRemaining = 2;
     const stop = vi.fn(async () =>
@@ -377,7 +377,7 @@ describe("transcripts tool", () => {
   });
 
   it("reserves a session id while provider startup is pending", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-");
+    const stateDir = tempDirs.make("afora-transcripts-");
     let releaseStart: (() => void) | undefined;
     const startGate = new Promise<void>((resolve) => {
       releaseStart = resolve;
@@ -428,7 +428,7 @@ describe("transcripts tool", () => {
   });
 
   it("keeps thrown abort cleanup failures retryable", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-");
+    const stateDir = tempDirs.make("afora-transcripts-");
     const controller = new AbortController();
     let stopAttempts = 0;
     const stop = vi.fn(async (_request: TranscriptStopRequest) => {
@@ -479,7 +479,7 @@ describe("transcripts tool", () => {
   });
 
   it("keeps missing abort cleanup hooks visible until the provider can stop", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-");
+    const stateDir = tempDirs.make("afora-transcripts-");
     const controller = new AbortController();
     const start = vi.fn(async (request) => {
       controller.abort();
@@ -536,7 +536,7 @@ describe("transcripts tool", () => {
   it("stops date-qualified active sessions with the canonical provider session id", async () => {
     // Date-qualified selectors disambiguate storage paths; providers still own
     // the original session id.
-    const stateDir = tempDirs.make("openclaw-transcripts-");
+    const stateDir = tempDirs.make("afora-transcripts-");
     const start = vi.fn(async (request) => {
       await request.onUtterance({
         text: "Sam: Decision: use date-qualified selectors for repeated names.",
@@ -593,7 +593,7 @@ describe("transcripts tool", () => {
   });
 
   it("finalizes an active session when the live provider stop fails", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-");
+    const stateDir = tempDirs.make("afora-transcripts-");
     const start = vi.fn(async (request) => {
       await request.onUtterance({
         text: "Alex: Action item: publish the notes even after voice disconnects.",
@@ -648,7 +648,7 @@ describe("transcripts tool", () => {
   });
 
   it("does not stop a current active session when summarizing an older dated duplicate", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-");
+    const stateDir = tempDirs.make("afora-transcripts-");
     const store = storeFor(stateDir);
     const olderSession = {
       sessionId: "standup",
@@ -718,7 +718,7 @@ describe("transcripts tool", () => {
   });
 
   it("auto-starts configured live meeting sources", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-");
+    const stateDir = tempDirs.make("afora-transcripts-");
     const start = vi.fn(async (request) => ({ ok: true, session: request.session }));
     const stop = vi.fn(async () => ({ ok: true as const, sessionId: "standup" }));
     getTranscriptSourceProviderMock.mockReturnValue({
@@ -791,7 +791,7 @@ describe("transcripts tool", () => {
   });
 
   it("does not retain an explicit account when provider resolution returns undefined", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-");
+    const stateDir = tempDirs.make("afora-transcripts-");
     const start = vi.fn(async (request) => ({ ok: true as const, session: request.session }));
     getTranscriptSourceProviderMock.mockReturnValue({
       id: "discord-voice",
@@ -847,7 +847,7 @@ describe("transcripts tool", () => {
       start,
       stop,
     });
-    const { tool } = await createHarness(tempDirs.make("openclaw-transcripts-"));
+    const { tool } = await createHarness(tempDirs.make("afora-transcripts-"));
 
     await tool.execute(
       "start-original",
@@ -886,7 +886,7 @@ describe("transcripts tool", () => {
     }
 
     const { tool: replacementTool } = await createHarness(
-      tempDirs.make("openclaw-transcripts-replacement-"),
+      tempDirs.make("afora-transcripts-replacement-"),
     );
     await replacementTool.execute(
       "start-replacement",
@@ -908,7 +908,7 @@ describe("transcripts tool", () => {
   });
 
   it("aborts pending auto-starts when the service stops", async () => {
-    const stateDir = tempDirs.make("openclaw-transcripts-");
+    const stateDir = tempDirs.make("afora-transcripts-");
     const stop = vi.fn(async () => ({ ok: true, sessionId: "standup" }));
     const start = vi.fn(
       async (request) =>

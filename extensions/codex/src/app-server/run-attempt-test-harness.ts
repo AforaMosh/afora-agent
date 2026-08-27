@@ -8,15 +8,15 @@ import {
   resetAgentEventsForTest,
   runBeforeToolCallHook,
   type EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { clearRuntimeAuthProfileStoreSnapshots } from "openclaw/plugin-sdk/agent-runtime";
-import { resetDiagnosticEventsForTest } from "openclaw/plugin-sdk/diagnostic-runtime";
-import type { ExecApprovalsFile } from "openclaw/plugin-sdk/exec-approvals-runtime";
-import { clearInternalHooks, resetGlobalHookRunner } from "openclaw/plugin-sdk/hook-runtime";
-import { clearMemoryPluginState } from "openclaw/plugin-sdk/memory-core-host-runtime-core";
-import { clearPluginCommands } from "openclaw/plugin-sdk/plugin-runtime";
-import { createAgentHarnessHostCapabilitiesForTest } from "openclaw/plugin-sdk/plugin-test-runtime";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { clearRuntimeAuthProfileStoreSnapshots } from "afora-agent/plugin-sdk/agent-runtime";
+import { resetDiagnosticEventsForTest } from "afora-agent/plugin-sdk/diagnostic-runtime";
+import type { ExecApprovalsFile } from "afora-agent/plugin-sdk/exec-approvals-runtime";
+import { clearInternalHooks, resetGlobalHookRunner } from "afora-agent/plugin-sdk/hook-runtime";
+import { clearMemoryPluginState } from "afora-agent/plugin-sdk/memory-core-host-runtime-core";
+import { clearPluginCommands } from "afora-agent/plugin-sdk/plugin-runtime";
+import { createAgentHarnessHostCapabilitiesForTest } from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
 import { afterEach, beforeEach, expect, vi } from "vitest";
 import { defaultCodexAppInventoryCache } from "./app-inventory-cache.js";
 import type { CodexAppServerClient } from "./client.js";
@@ -86,9 +86,9 @@ function createHarnessHostCapabilities(
   });
 }
 
-vi.mock("openclaw/plugin-sdk/exec-approvals-runtime", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/exec-approvals-runtime", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("openclaw/plugin-sdk/exec-approvals-runtime")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/exec-approvals-runtime")>();
   return {
     ...actual,
     loadExecApprovals: execApprovalsRuntimeMocks.loadExecApprovals,
@@ -400,7 +400,7 @@ export function turnStartResult(turnId = "turn-1", status = "inProgress") {
 }
 
 export function threadStartResult(threadId = "thread-1", options: { cwd?: string } = {}) {
-  const cwd = options.cwd ?? tempDir ?? "/tmp/openclaw-codex-test";
+  const cwd = options.cwd ?? tempDir ?? "/tmp/afora-codex-test";
   return createThreadStartResult(threadId, cwd);
 }
 
@@ -714,10 +714,10 @@ export function setupRunAttemptTestHooks(): void {
     clearMemoryPluginState();
     resetAgentEventsForTest();
     resetDiagnosticEventsForTest();
-    vi.stubEnv("OPENCLAW_TRAJECTORY", "0");
+    vi.stubEnv("AFORA_TRAJECTORY", "0");
     vi.stubEnv("CODEX_API_KEY", "");
     vi.stubEnv("OPENAI_API_KEY", "");
-    tempDir = await fs.mkdtemp(path.join(resolvePreferredOpenClawTmpDir(), "openclaw-codex-run-"));
+    tempDir = await fs.mkdtemp(path.join(resolvePreferredAforaTmpDir(), "afora-codex-run-"));
   });
 
   afterEach(async () => {
@@ -728,7 +728,7 @@ export function setupRunAttemptTestHooks(): void {
     await sandboxExecServerRegistry.closeAll();
     resetCodexAppServerClientFactoryForTest();
     clearRuntimeAuthProfileStoreSnapshots();
-    dynamicToolBuildState.openClawCodingToolsFactory = undefined;
+    dynamicToolBuildState.aforaCodingToolsFactory = undefined;
     codexWorkspaceDirCache.clear();
     nativeHookRelayUnregisterQueue.clear();
     nativeHookRelayTesting.clearNativeHookRelaysForTests();

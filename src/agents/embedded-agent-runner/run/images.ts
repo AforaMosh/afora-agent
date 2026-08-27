@@ -1,7 +1,7 @@
 import path from "node:path";
-import { MAX_VIDEO_BYTES } from "@openclaw/media-core/constants";
-import { normalizeMimeType } from "@openclaw/media-core/mime";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { MAX_VIDEO_BYTES } from "@afora/media-core/constants";
+import { normalizeMimeType } from "@afora/media-core/mime";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import type {
   ModelInputContent,
   ProviderContext,
@@ -35,7 +35,7 @@ import { sanitizeImageBlocks } from "../../tool-images.js";
 import { log } from "../logger.js";
 import {
   collectMediaImageRefs,
-  isOpenClawCliImageCachePath,
+  isAforaCliImageCachePath,
   resolveMediaFactLocalRef,
   type MediaFileRef,
   type MediaImageRef,
@@ -146,7 +146,7 @@ export function detectImageReferences(prompt: string): MediaFileRef[] {
       return;
     }
     const resolved = trimmed.startsWith("~") ? resolveUserPath(trimmed) : trimmed;
-    if (isOpenClawCliImageCachePath(resolved)) {
+    if (isAforaCliImageCachePath(resolved)) {
       return;
     }
     seen.add(dedupeKey);
@@ -166,7 +166,7 @@ export function detectImageReferences(prompt: string): MediaFileRef[] {
     }
     try {
       const resolved = safeFileURLToPath(raw);
-      if (isOpenClawCliImageCachePath(resolved)) {
+      if (isAforaCliImageCachePath(resolved)) {
         continue;
       }
       seen.add(dedupeKey);
@@ -580,7 +580,7 @@ async function materializePromptMediaMessages(
       continue;
     }
     const runtimeMedia = readRuntimePromptMediaFacts(message);
-    const meta = Reflect.get(message, "__openclaw");
+    const meta = Reflect.get(message, "__afora");
     const resolvedMedia = runtimeMedia ?? readPersistedMediaFacts(message) ?? [];
     const runtimeImageOrder = readRuntimePromptImageOrder(message);
     const mediaImageLayout = readPersistedMediaImageLayout(message);
@@ -637,9 +637,9 @@ async function materializePromptMediaMessages(
       content: projectedContent,
     } as AgentMessage;
     if (Object.keys(nextMeta).length > 0) {
-      Reflect.set(hydratedMessage, "__openclaw", nextMeta);
+      Reflect.set(hydratedMessage, "__afora", nextMeta);
     } else {
-      Reflect.deleteProperty(hydratedMessage, "__openclaw");
+      Reflect.deleteProperty(hydratedMessage, "__afora");
     }
     if (runtimeMedia) {
       attachRuntimePromptMediaFacts(hydratedMessage, runtimeMedia, runtimeImageOrder);

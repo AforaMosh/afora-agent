@@ -3,7 +3,7 @@ import {
   createPluginInstallRecordMap,
   setPluginInstallRecordMapEntry,
 } from "../../config/plugin-install-record-map.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { PluginInstallRecord } from "../../config/types.plugins.js";
 import { normalizePluginsConfig, resolveEffectiveEnableState } from "../../plugins/config-state.js";
 import {
@@ -17,7 +17,7 @@ import {
 
 /** Runs the static payload check without repair, installs, or network access. */
 export async function runActivePluginPayloadSmokeCheck(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   records: Record<string, PluginInstallRecord>;
   env: NodeJS.ProcessEnv;
 }): Promise<PluginPayloadSmokeResult> {
@@ -29,7 +29,7 @@ export async function runActivePluginPayloadSmokeCheck(params: {
 
 /** Selects the installed records covered by update/startup payload verification. */
 export function filterRecordsToActive(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   records: Record<string, PluginInstallRecord>;
 }): Record<string, PluginInstallRecord> {
   const normalizedPluginConfig = normalizePluginsConfig(params.cfg.plugins);

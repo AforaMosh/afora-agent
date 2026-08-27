@@ -269,7 +269,7 @@ describe("parseCliJsonl", () => {
         {
           type: "tool_use",
           timestamp: "2026-06-16T19:36:47.000Z",
-          tool_name: "mcp_openclaw_create_goal",
+          tool_name: "mcp_afora_create_goal",
           tool_id: "tool-1",
           parameters: { objective: "Update files" },
         },

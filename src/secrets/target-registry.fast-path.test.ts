@@ -20,7 +20,7 @@ const { loadBundledPluginPublicArtifactModuleSyncMock } = vi.hoisted(() => ({
             {
               id: "channels.googlechat.serviceAccount",
               targetType: "channels.googlechat.serviceAccount",
-              configFile: "openclaw.json",
+              configFile: "afora.json",
               pathPattern: "channels.googlechat.serviceAccount",
               secretShape: "secret_input",
               expectedResolvedValue: "string",
@@ -37,7 +37,7 @@ const { loadBundledPluginPublicArtifactModuleSyncMock } = vi.hoisted(() => ({
             {
               id: "channels.telegram.botToken",
               targetType: "channels.telegram.botToken",
-              configFile: "openclaw.json",
+              configFile: "afora.json",
               pathPattern: "channels.telegram.botToken",
               refPathPattern: "channels.telegram.botTokenRef",
               secretShape: "sibling_ref",
@@ -69,7 +69,7 @@ vi.mock("./target-registry-data.js", async (importOriginal) => {
   const channelTarget = (id: string) => ({
     id,
     targetType: id,
-    configFile: "openclaw.json" as const,
+    configFile: "afora.json" as const,
     pathPattern: id,
     secretShape: "secret_input" as const,
     expectedResolvedValue: "string" as const,

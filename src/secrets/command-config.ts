@@ -1,5 +1,5 @@
-/** Collects and analyzes command-scoped secret assignments from OpenClaw config. */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+/** Collects and analyzes command-scoped secret assignments from Afora config. */
+import type { AforaConfig } from "../config/types.afora.js";
 import { coerceSecretRef, resolveSecretInputRef } from "../config/types.secrets.js";
 import { getPath } from "./path-utils.js";
 import { isExpectedResolvedSecretValue } from "./secret-value.js";
@@ -32,8 +32,8 @@ type AnalyzeAssignmentsFromSnapshotResult = {
  */
 /** Analyzes command secret assignments without mutating the source config. */
 export function analyzeCommandSecretAssignmentsFromSnapshot(params: {
-  sourceConfig: OpenClawConfig;
-  resolvedConfig: OpenClawConfig;
+  sourceConfig: AforaConfig;
+  resolvedConfig: AforaConfig;
   targetIds: ReadonlySet<string>;
   inactiveRefPaths?: ReadonlySet<string>;
   allowedPaths?: ReadonlySet<string>;

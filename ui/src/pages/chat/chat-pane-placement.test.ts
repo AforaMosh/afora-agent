@@ -77,7 +77,7 @@ describe("chat pane placement", () => {
       reclaimingKey: null,
       row: session,
     });
-    const dialogsBefore = document.body.querySelectorAll("openclaw-modal-dialog").length;
+    const dialogsBefore = document.body.querySelectorAll("afora-modal-dialog").length;
     await pane.reclaimHeaderPlacement(session);
 
     expect(placement).toEqual({
@@ -85,7 +85,7 @@ describe("chat pane placement", () => {
       moveDisabledReason: "This Gateway does not support this session action.",
       reclaimDisabledReason: "This Gateway does not support this session action.",
     });
-    expect(document.body.querySelectorAll("openclaw-modal-dialog")).toHaveLength(dialogsBefore);
+    expect(document.body.querySelectorAll("afora-modal-dialog")).toHaveLength(dialogsBefore);
     expect(request).not.toHaveBeenCalled();
   });
 

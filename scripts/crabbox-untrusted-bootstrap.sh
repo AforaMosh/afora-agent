@@ -44,8 +44,8 @@ esac
 
 archive="node-v${node_version}-linux-${node_arch}.tar.xz"
 base_url="https://nodejs.org/dist/v${node_version}"
-install_root="/opt/openclaw-untrusted-node-v${node_version}-${node_arch}"
-corepack_home="/opt/openclaw-untrusted-corepack"
+install_root="/opt/afora-untrusted-node-v${node_version}-${node_arch}"
+corepack_home="/opt/afora-untrusted-corepack"
 tmp_dir="$(/usr/bin/mktemp -d)"
 run_home=""
 # Invoked by the EXIT trap.

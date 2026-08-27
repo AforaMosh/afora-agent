@@ -1,5 +1,5 @@
 // Transport stall watchdog tests cover timer bounds and stalled channel transport detection.
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { describe, expect, it, vi } from "vitest";
 import type { RuntimeEnv } from "../../runtime.js";
 import { createArmableStallWatchdog } from "./stall-watchdog.js";

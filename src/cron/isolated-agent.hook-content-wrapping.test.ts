@@ -25,7 +25,7 @@ function lastEmbeddedPrompt(): string {
 
 describe("runCronIsolatedAgentTurn hook content wrapping", () => {
   beforeAll(async () => {
-    vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+    vi.stubEnv("AFORA_TEST_FAST", "1");
     vi.spyOn(isolatedAgentRunRuntime, "resolveThinkingDefault").mockReturnValue("off");
     vi.mocked(loadPreparedModelCatalog).mockResolvedValue([]);
     await withTempHome(async (home) => {
@@ -38,7 +38,7 @@ describe("runCronIsolatedAgentTurn hook content wrapping", () => {
   });
 
   beforeEach(() => {
-    vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+    vi.stubEnv("AFORA_TEST_FAST", "1");
     vi.spyOn(isolatedAgentRunRuntime, "resolveThinkingDefault").mockReturnValue("off");
     vi.mocked(runEmbeddedAgent).mockClear();
     vi.mocked(loadPreparedModelCatalog).mockResolvedValue([]);

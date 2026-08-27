@@ -5,10 +5,10 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { displayString } from "./display-string.js";
 
-function stubHome(home: string, openclawHome = ""): void {
+function stubHome(home: string, aforaHome = ""): void {
   vi.stubEnv("HOME", home);
   vi.stubEnv("USERPROFILE", "");
-  vi.stubEnv("OPENCLAW_HOME", openclawHome);
+  vi.stubEnv("AFORA_HOME", aforaHome);
 }
 
 describe("displayString", () => {
@@ -37,29 +37,29 @@ describe("displayString", () => {
     expect(displayString(`/tmp${home}/project`)).toBe(`/tmp${home}/project`);
   });
 
-  it("uses OPENCLAW_HOME as the display prefix", () => {
+  it("uses AFORA_HOME as the display prefix", () => {
     const home = path.resolve("test-home", "alice");
-    const openclawHome = path.resolve("test-openclaw-home");
-    stubHome(home, openclawHome);
+    const aforaHome = path.resolve("test-afora-home");
+    stubHome(home, aforaHome);
 
-    expect(displayString(openclawHome)).toBe("$OPENCLAW_HOME");
-    expect(displayString(`${openclawHome}/state`)).toBe("$OPENCLAW_HOME/state");
-    expect(displayString(`${openclawHome}2/state`)).toBe(`${openclawHome}2/state`);
+    expect(displayString(aforaHome)).toBe("$AFORA_HOME");
+    expect(displayString(`${aforaHome}/state`)).toBe("$AFORA_HOME/state");
+    expect(displayString(`${aforaHome}2/state`)).toBe(`${aforaHome}2/state`);
   });
 
-  it.each(["$&", "$`", "$'", "$$"])("keeps %s literal when expanding OPENCLAW_HOME", (pattern) => {
+  it.each(["$&", "$`", "$'", "$$"])("keeps %s literal when expanding AFORA_HOME", (pattern) => {
     const home = path.resolve("test-home", `${pattern}user`);
     stubHome(home, "~/state");
 
     expect(displayString(path.join(home, "state", "project"))).toBe(
-      `$OPENCLAW_HOME${path.sep}project`,
+      `$AFORA_HOME${path.sep}project`,
     );
   });
 
   it.skipIf(process.platform !== "win32")(
     "shortens real Windows home casing aliases inside table display text",
     () => {
-      const home = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-home-display-"));
+      const home = fs.mkdtempSync(path.join(os.tmpdir(), "afora-home-display-"));
       try {
         const homeAlias = home.toUpperCase();
         expect(fs.statSync(homeAlias).isDirectory()).toBe(true);

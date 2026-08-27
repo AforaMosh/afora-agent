@@ -1,6 +1,6 @@
 // Tests group prompt helpers and lazy runtime loading for group metadata.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "../../plugins/runtime.js";
 import {
   createChannelTestPluginBase,
@@ -245,7 +245,7 @@ describe("group runtime loading", () => {
               },
             },
           },
-        } as unknown as OpenClawConfig,
+        } as unknown as AforaConfig,
         ctx: {
           Provider: "slack",
           From: "slack:channel:C123",

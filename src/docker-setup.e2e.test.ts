@@ -36,10 +36,10 @@ function createEnv(
     LC_ALL: process.env.LC_ALL,
     TMPDIR: process.env.TMPDIR,
     DOCKER_STUB_LOG: sandbox.logPath,
-    OPENCLAW_GATEWAY_TOKEN: "test-token",
-    OPENCLAW_CONFIG_DIR: join(sandbox.rootDir, "config"),
-    OPENCLAW_WORKSPACE_DIR: join(sandbox.rootDir, "openclaw"),
-    OPENCLAW_AUTH_PROFILE_SECRET_DIR: join(sandbox.rootDir, "auth-profile-secrets"),
+    AFORA_GATEWAY_TOKEN: "test-token",
+    AFORA_CONFIG_DIR: join(sandbox.rootDir, "config"),
+    AFORA_WORKSPACE_DIR: join(sandbox.rootDir, "afora"),
+    AFORA_AUTH_PROFILE_SECRET_DIR: join(sandbox.rootDir, "auth-profile-secrets"),
   };
 
   for (const [key, value] of Object.entries(overrides)) {
@@ -77,9 +77,9 @@ async function runDockerSetupWithUnsetGatewayToken(
   await prepare?.(configDir);
 
   const result = runDockerSetup(sandbox, {
-    OPENCLAW_GATEWAY_TOKEN: undefined,
-    OPENCLAW_CONFIG_DIR: configDir,
-    OPENCLAW_WORKSPACE_DIR: workspaceDir,
+    AFORA_GATEWAY_TOKEN: undefined,
+    AFORA_CONFIG_DIR: configDir,
+    AFORA_WORKSPACE_DIR: workspaceDir,
   });
   const envFile = await readFile(join(sandbox.rootDir, ".env"), "utf8");
 
@@ -110,61 +110,61 @@ describe("scripts/docker/setup.sh", () => {
 
     const result = runDockerSetup(activeSandbox, {
       GIT_COMMIT: buildCommit,
-      OPENCLAW_DOCKER_APT_PACKAGES: "curl wget",
-      OPENCLAW_EXTRA_MOUNTS: undefined,
-      OPENCLAW_HOME_VOLUME: "openclaw-home",
+      AFORA_DOCKER_APT_PACKAGES: "curl wget",
+      AFORA_EXTRA_MOUNTS: undefined,
+      AFORA_HOME_VOLUME: "afora-home",
     });
     expect(result.status).toBe(0);
     const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
-    expect(envFile).toContain("OPENCLAW_IMAGE_APT_PACKAGES=curl wget");
-    expect(envFile).toContain("OPENCLAW_DOCKER_BUILD_NODE_OPTIONS=--max-old-space-size=8192");
-    expect(envFile).toContain("OPENCLAW_DOCKER_BUILD_TSDOWN_MAX_OLD_SPACE_MB=");
-    expect(envFile).toContain("OPENCLAW_DOCKER_BUILD_SKIP_DTS=1");
-    expect(envFile).toContain("OPENCLAW_EXTRA_MOUNTS=");
-    expect(envFile).toContain("OPENCLAW_HOME_VOLUME=openclaw-home"); // pragma: allowlist secret
-    expect(envFile).toContain("OPENCLAW_DISABLE_BONJOUR=");
+    expect(envFile).toContain("AFORA_IMAGE_APT_PACKAGES=curl wget");
+    expect(envFile).toContain("AFORA_DOCKER_BUILD_NODE_OPTIONS=--max-old-space-size=8192");
+    expect(envFile).toContain("AFORA_DOCKER_BUILD_TSDOWN_MAX_OLD_SPACE_MB=");
+    expect(envFile).toContain("AFORA_DOCKER_BUILD_SKIP_DTS=1");
+    expect(envFile).toContain("AFORA_EXTRA_MOUNTS=");
+    expect(envFile).toContain("AFORA_HOME_VOLUME=afora-home"); // pragma: allowlist secret
+    expect(envFile).toContain("AFORA_DISABLE_BONJOUR=");
     expect(envFile).toContain(
-      `OPENCLAW_AUTH_PROFILE_SECRET_DIR=${join(activeSandbox.rootDir, "auth-profile-secrets")}`,
+      `AFORA_AUTH_PROFILE_SECRET_DIR=${join(activeSandbox.rootDir, "auth-profile-secrets")}`,
     );
     const extraCompose = await readFile(
       join(activeSandbox.rootDir, "docker-compose.extra.yml"),
       "utf8",
     );
-    expect(extraCompose).toContain("openclaw-home:/home/node");
+    expect(extraCompose).toContain("afora-home:/home/node");
     expect(extraCompose).toContain(
-      `${join(activeSandbox.rootDir, "auth-profile-secrets")}:/home/node/.config/openclaw`,
+      `${join(activeSandbox.rootDir, "auth-profile-secrets")}:/home/node/.config/afora`,
     );
     expect(extraCompose).toContain("volumes:");
-    expect(extraCompose).toContain("openclaw-home:");
+    expect(extraCompose).toContain("afora-home:");
     const log = await readDockerLog(activeSandbox);
-    expect(log).toContain("--build-arg OPENCLAW_IMAGE_APT_PACKAGES=curl wget");
+    expect(log).toContain("--build-arg AFORA_IMAGE_APT_PACKAGES=curl wget");
     expect(log).toContain(
-      "--build-arg OPENCLAW_DOCKER_BUILD_NODE_OPTIONS=--max-old-space-size=8192",
+      "--build-arg AFORA_DOCKER_BUILD_NODE_OPTIONS=--max-old-space-size=8192",
     );
-    expect(log).toContain("--build-arg OPENCLAW_DOCKER_BUILD_TSDOWN_MAX_OLD_SPACE_MB=");
-    expect(log).toContain("--build-arg OPENCLAW_DOCKER_BUILD_SKIP_DTS=1");
+    expect(log).toContain("--build-arg AFORA_DOCKER_BUILD_TSDOWN_MAX_OLD_SPACE_MB=");
+    expect(log).toContain("--build-arg AFORA_DOCKER_BUILD_SKIP_DTS=1");
     expect(log).toMatch(
-      /--build-arg OPENCLAW_BUILD_TIMESTAMP=\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/u,
+      /--build-arg AFORA_BUILD_TIMESTAMP=\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/u,
     );
     expect(log).toContain(`--build-arg GIT_COMMIT=${buildCommit}`);
     expect(log).toContain(
-      `run --rm --no-deps ${prestartContainerEnvFlags} --entrypoint node openclaw-gateway dist/index.js onboard --mode local --no-install-daemon --gateway-auth token --gateway-token-ref-env OPENCLAW_GATEWAY_TOKEN --skip-ui --suppress-gateway-token-output`,
+      `run --rm --no-deps ${prestartContainerEnvFlags} --entrypoint node afora-gateway dist/index.js onboard --mode local --no-install-daemon --gateway-auth token --gateway-token-ref-env AFORA_GATEWAY_TOKEN --skip-ui --suppress-gateway-token-output`,
     );
     expect(result.stdout).toContain("Gateway token: stored in Docker environment/config");
     expect(result.stdout).toContain("Gateway running with host port mapping.");
     expect(result.stdout).toContain("Access from tailnet devices via the host's tailnet IP.");
     expect(result.stdout).toContain("Commands:");
-    expect(result.stdout).toContain("logs -f openclaw-gateway");
+    expect(result.stdout).toContain("logs -f afora-gateway");
     expect(result.stdout).toContain(
-      `exec openclaw-gateway sh -lc 'node dist/index.js gateway health --token "$OPENCLAW_GATEWAY_TOKEN"'`,
+      `exec afora-gateway sh -lc 'node dist/index.js gateway health --token "$AFORA_GATEWAY_TOKEN"'`,
     );
     expect(result.stdout).not.toContain("node dist/index.js health --token");
     expect(result.stdout).not.toContain("test-token");
     expect(result.stdout).not.toContain("#token=");
     expect(log).toContain(
-      `run --rm --no-deps ${prestartContainerEnvFlags} --entrypoint node openclaw-gateway dist/index.js config set --batch-json [{"path":"gateway.mode","value":"local"},{"path":"gateway.bind","value":"lan"},{"path":"gateway.controlUi.allowedOrigins","value":["http://localhost:18789","http://127.0.0.1:18789"]}]`,
+      `run --rm --no-deps ${prestartContainerEnvFlags} --entrypoint node afora-gateway dist/index.js config set --batch-json [{"path":"gateway.mode","value":"local"},{"path":"gateway.bind","value":"lan"},{"path":"gateway.controlUi.allowedOrigins","value":["http://localhost:18789","http://127.0.0.1:18789"]}]`,
     );
-    expect(log).not.toContain("run --rm openclaw-cli onboard --mode local --no-install-daemon");
+    expect(log).not.toContain("run --rm afora-cli onboard --mode local --no-install-daemon");
   });
 
   it("allows ordinary spaces in host persistence paths and quotes generated mounts", async () => {
@@ -177,28 +177,28 @@ describe("scripts/docker/setup.sh", () => {
     const extraMountSource = join(activeSandbox.rootDir, "extra data");
 
     const result = runDockerSetup(activeSandbox, {
-      OPENCLAW_CONFIG_DIR: configDir,
-      OPENCLAW_WORKSPACE_DIR: workspaceDir,
-      OPENCLAW_AUTH_PROFILE_SECRET_DIR: authProfileSecretDir,
-      OPENCLAW_HOME_VOLUME: homeVolumeDir,
-      OPENCLAW_EXTRA_MOUNTS: `${extraMountSource}:/mnt/extra data:ro`,
+      AFORA_CONFIG_DIR: configDir,
+      AFORA_WORKSPACE_DIR: workspaceDir,
+      AFORA_AUTH_PROFILE_SECRET_DIR: authProfileSecretDir,
+      AFORA_HOME_VOLUME: homeVolumeDir,
+      AFORA_EXTRA_MOUNTS: `${extraMountSource}:/mnt/extra data:ro`,
     });
 
     expect(result.status).toBe(0);
     expect(result.stderr).not.toContain("cannot contain whitespace");
     const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
-    expect(envFile).toContain(`OPENCLAW_CONFIG_DIR=${configDir}`);
-    expect(envFile).toContain(`OPENCLAW_WORKSPACE_DIR=${workspaceDir}`);
-    expect(envFile).toContain(`OPENCLAW_AUTH_PROFILE_SECRET_DIR=${authProfileSecretDir}`);
+    expect(envFile).toContain(`AFORA_CONFIG_DIR=${configDir}`);
+    expect(envFile).toContain(`AFORA_WORKSPACE_DIR=${workspaceDir}`);
+    expect(envFile).toContain(`AFORA_AUTH_PROFILE_SECRET_DIR=${authProfileSecretDir}`);
 
     const extraCompose = await readFile(
       join(activeSandbox.rootDir, "docker-compose.extra.yml"),
       "utf8",
     );
     expect(extraCompose).toContain(`"${homeVolumeDir}:/home/node"`);
-    expect(extraCompose).toContain(`"${configDir}:/home/node/.openclaw"`);
-    expect(extraCompose).toContain(`"${workspaceDir}:/home/node/.openclaw/workspace"`);
-    expect(extraCompose).toContain(`"${authProfileSecretDir}:/home/node/.config/openclaw"`);
+    expect(extraCompose).toContain(`"${configDir}:/home/node/.afora"`);
+    expect(extraCompose).toContain(`"${workspaceDir}:/home/node/.afora/workspace"`);
+    expect(extraCompose).toContain(`"${authProfileSecretDir}:/home/node/.config/afora"`);
     expect(extraCompose).toContain(`"${extraMountSource}:/mnt/extra data:ro"`);
   });
 
@@ -206,12 +206,12 @@ describe("scripts/docker/setup.sh", () => {
     const activeSandbox = requireSandbox(sandbox);
 
     const result = runDockerSetup(activeSandbox, {
-      OPENCLAW_DISABLE_BONJOUR: "0",
+      AFORA_DISABLE_BONJOUR: "0",
     });
 
     expect(result.status).toBe(0);
     const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
-    expect(envFile).toContain("OPENCLAW_DISABLE_BONJOUR=0");
+    expect(envFile).toContain("AFORA_DISABLE_BONJOUR=0");
   });
 
   it("persists and forwards signal-specific OTLP protocol overrides", async () => {
@@ -233,62 +233,62 @@ describe("scripts/docker/setup.sh", () => {
     }
   });
 
-  it("normalizes legacy OPENCLAW_DOCKER_APT_PACKAGES into OPENCLAW_IMAGE_APT_PACKAGES", async () => {
+  it("normalizes legacy AFORA_DOCKER_APT_PACKAGES into AFORA_IMAGE_APT_PACKAGES", async () => {
     const activeSandbox = requireSandbox(sandbox);
     await resetDockerLog(activeSandbox);
 
     const result = runDockerSetup(activeSandbox, {
-      OPENCLAW_DOCKER_APT_PACKAGES: "curl wget",
+      AFORA_DOCKER_APT_PACKAGES: "curl wget",
     });
     expect(result.status).toBe(0);
 
     const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
-    expect(envFile).toContain("OPENCLAW_IMAGE_APT_PACKAGES=curl wget");
-    expect(envFile).not.toContain("OPENCLAW_DOCKER_APT_PACKAGES");
+    expect(envFile).toContain("AFORA_IMAGE_APT_PACKAGES=curl wget");
+    expect(envFile).not.toContain("AFORA_DOCKER_APT_PACKAGES");
 
     const log = await readDockerLog(activeSandbox);
-    expect(log).toContain("--build-arg OPENCLAW_IMAGE_APT_PACKAGES=curl wget");
-    expect(log).not.toContain("--build-arg OPENCLAW_DOCKER_APT_PACKAGES");
+    expect(log).toContain("--build-arg AFORA_IMAGE_APT_PACKAGES=curl wget");
+    expect(log).not.toContain("--build-arg AFORA_DOCKER_APT_PACKAGES");
   });
 
-  it("prefers OPENCLAW_IMAGE_APT_PACKAGES over legacy OPENCLAW_DOCKER_APT_PACKAGES", async () => {
+  it("prefers AFORA_IMAGE_APT_PACKAGES over legacy AFORA_DOCKER_APT_PACKAGES", async () => {
     const activeSandbox = requireSandbox(sandbox);
     await resetDockerLog(activeSandbox);
 
     const result = runDockerSetup(activeSandbox, {
-      OPENCLAW_IMAGE_APT_PACKAGES: "curl wget httpie",
-      OPENCLAW_DOCKER_APT_PACKAGES: "curl wget",
+      AFORA_IMAGE_APT_PACKAGES: "curl wget httpie",
+      AFORA_DOCKER_APT_PACKAGES: "curl wget",
     });
     expect(result.status).toBe(0);
 
     const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
-    expect(envFile).toContain("OPENCLAW_IMAGE_APT_PACKAGES=curl wget httpie");
-    expect(envFile).not.toContain("OPENCLAW_DOCKER_APT_PACKAGES");
+    expect(envFile).toContain("AFORA_IMAGE_APT_PACKAGES=curl wget httpie");
+    expect(envFile).not.toContain("AFORA_DOCKER_APT_PACKAGES");
 
     const log = await readDockerLog(activeSandbox);
-    expect(log).toContain("--build-arg OPENCLAW_IMAGE_APT_PACKAGES=curl wget httpie");
-    expect(log).not.toMatch(/--build-arg OPENCLAW_IMAGE_APT_PACKAGES=curl wget(?! httpie)/);
+    expect(log).toContain("--build-arg AFORA_IMAGE_APT_PACKAGES=curl wget httpie");
+    expect(log).not.toMatch(/--build-arg AFORA_IMAGE_APT_PACKAGES=curl wget(?! httpie)/);
   });
 
-  it("explicitly empty OPENCLAW_IMAGE_APT_PACKAGES suppresses legacy fallback", async () => {
+  it("explicitly empty AFORA_IMAGE_APT_PACKAGES suppresses legacy fallback", async () => {
     const activeSandbox = requireSandbox(sandbox);
     await resetDockerLog(activeSandbox);
 
     const result = runDockerSetup(activeSandbox, {
-      OPENCLAW_IMAGE_APT_PACKAGES: "",
-      OPENCLAW_DOCKER_APT_PACKAGES: "curl wget",
+      AFORA_IMAGE_APT_PACKAGES: "",
+      AFORA_DOCKER_APT_PACKAGES: "curl wget",
     });
     expect(result.status).toBe(0);
 
     const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
-    expect(envFile).toContain("OPENCLAW_IMAGE_APT_PACKAGES=");
+    expect(envFile).toContain("AFORA_IMAGE_APT_PACKAGES=");
     expect(envFile).not.toContain("curl wget");
 
     const log = await readDockerLog(activeSandbox);
-    expect(log).not.toContain("--build-arg OPENCLAW_IMAGE_APT_PACKAGES=curl wget");
+    expect(log).not.toContain("--build-arg AFORA_IMAGE_APT_PACKAGES=curl wget");
   });
 
-  it("avoids shared-network openclaw-cli before the gateway is started", async () => {
+  it("avoids shared-network afora-cli before the gateway is started", async () => {
     const activeSandbox = requireSandbox(sandbox);
 
     await resetDockerLog(activeSandbox);
@@ -301,7 +301,7 @@ describe("scripts/docker/setup.sh", () => {
 
     const prestartLines = lines.slice(0, gatewayStartIdx);
     const prestartCliRunLines = collectMatchingLines(prestartLines, (line) =>
-      /\bcompose\b.*\brun\b.*\bopenclaw-cli\b/.test(line),
+      /\bcompose\b.*\brun\b.*\bafora-cli\b/.test(line),
     );
     expect(prestartCliRunLines).toStrictEqual([]);
   });
@@ -311,10 +311,10 @@ describe("scripts/docker/setup.sh", () => {
 
     await resetDockerLog(activeSandbox);
     const result = runDockerSetup(activeSandbox, {
-      OPENCLAW_HOME: "/mnt/c/Users/Trevor",
-      OPENCLAW_STATE_DIR: "/mnt/c/Users/Trevor/.openclaw",
-      OPENCLAW_CONFIG_PATH: "/mnt/c/Users/Trevor/.openclaw/openclaw.json",
-      OPENCLAW_SKIP_ONBOARDING: "1",
+      AFORA_HOME: "/mnt/c/Users/Trevor",
+      AFORA_STATE_DIR: "/mnt/c/Users/Trevor/.afora",
+      AFORA_CONFIG_PATH: "/mnt/c/Users/Trevor/.AforaMosh/afora-agent.json",
+      AFORA_SKIP_ONBOARDING: "1",
     });
     expect(result.status).toBe(0);
 
@@ -344,8 +344,8 @@ describe("scripts/docker/setup.sh", () => {
 
     await withUnixSocket(socketPath, async () => {
       const result = runDockerSetup(activeSandbox, {
-        OPENCLAW_SANDBOX: "1",
-        OPENCLAW_DOCKER_SOCKET: socketPath,
+        AFORA_SANDBOX: "1",
+        AFORA_DOCKER_SOCKET: socketPath,
       });
 
       expect(result.status).toBe(0);
@@ -368,20 +368,20 @@ describe("scripts/docker/setup.sh", () => {
     const result = runDockerSetup(
       activeSandbox,
       {
-        OPENCLAW_IMAGE: "ghcr.io/openclaw/openclaw:latest",
-        OPENCLAW_SKIP_ONBOARDING: "1",
+        AFORA_IMAGE: "ghcr.io/AforaMosh/afora-agent:latest",
+        AFORA_SKIP_ONBOARDING: "1",
       },
       ["--offline"],
     );
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain(
-      "Using preloaded Docker image: ghcr.io/openclaw/openclaw:latest",
+      "Using preloaded Docker image: ghcr.io/AforaMosh/afora-agent:latest",
     );
 
     const lines = await readDockerLogLines(activeSandbox);
     const log = lines.join("\n");
-    expect(log).toContain("image inspect ghcr.io/openclaw/openclaw:latest");
+    expect(log).toContain("image inspect ghcr.io/AforaMosh/afora-agent:latest");
     expect(log).not.toMatch(/^build /m);
     expect(log).not.toMatch(/^pull /m);
     expect(log).toContain("config set --batch-json");
@@ -395,22 +395,22 @@ describe("scripts/docker/setup.sh", () => {
     const result = runDockerSetup(
       activeSandbox,
       {
-        OPENCLAW_IMAGE: "ghcr.io/openclaw/openclaw:offline",
-        DOCKER_STUB_MISSING_IMAGES: "ghcr.io/openclaw/openclaw:offline",
+        AFORA_IMAGE: "ghcr.io/AforaMosh/afora-agent:offline",
+        DOCKER_STUB_MISSING_IMAGES: "ghcr.io/AforaMosh/afora-agent:offline",
       },
       ["--offline"],
     );
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain(
-      "Offline Docker setup requires preloaded image ghcr.io/openclaw/openclaw:offline",
+      "Offline Docker setup requires preloaded image ghcr.io/AforaMosh/afora-agent:offline",
     );
 
     const log = await readDockerLog(activeSandbox);
-    expect(log).toContain("image inspect ghcr.io/openclaw/openclaw:offline");
+    expect(log).toContain("image inspect ghcr.io/AforaMosh/afora-agent:offline");
     expect(log).not.toMatch(/^build /m);
     expect(log).not.toMatch(/^pull /m);
-    expect(log).not.toContain("up -d openclaw-gateway");
+    expect(log).not.toContain("up -d afora-gateway");
   });
 
   it("offline sandbox stays disabled when its configured image is missing", async () => {
@@ -424,14 +424,14 @@ describe("scripts/docker/setup.sh", () => {
     const socketPath = join(activeSandbox.rootDir, "sb.sock");
 
     await withUnixSocket(socketPath, async () => {
-      const defaultImage = "registry.example/openclaw-sandbox:approved";
-      const agentImage = " registry.example/openclaw-sandbox:agent ";
+      const defaultImage = "registry.example/afora-sandbox:approved";
+      const agentImage = " registry.example/afora-sandbox:agent ";
       const result = runDockerSetup(
         activeSandbox,
         {
-          OPENCLAW_SANDBOX: "1",
-          OPENCLAW_SKIP_ONBOARDING: "1",
-          OPENCLAW_DOCKER_SOCKET: socketPath,
+          AFORA_SANDBOX: "1",
+          AFORA_SKIP_ONBOARDING: "1",
+          AFORA_DOCKER_SOCKET: socketPath,
           DOCKER_STUB_AGENTS_JSON: JSON.stringify({
             defaults: { sandbox: { docker: { image: defaultImage } } },
             list: [{ id: "custom", sandbox: { docker: { image: agentImage } } }],
@@ -450,10 +450,10 @@ describe("scripts/docker/setup.sh", () => {
 
       const lines = await readDockerLogLines(activeSandbox);
       const log = lines.join("\n");
-      expect(log).toContain("image inspect openclaw:local");
+      expect(log).toContain("image inspect afora:local");
       expect(log).not.toContain(`image inspect ${defaultImage}`);
       expect(log).toContain(`image inspect ${agentImage} host=unix://${socketPath}`);
-      expect(log).not.toContain("image inspect openclaw-sandbox:bookworm-slim");
+      expect(log).not.toContain("image inspect afora-sandbox:bookworm-slim");
       expect(log).not.toMatch(/^build /m);
       expect(log).not.toMatch(/^pull /m);
       expect(log).not.toContain("config set agents.defaults.sandbox.mode off");
@@ -468,21 +468,21 @@ describe("scripts/docker/setup.sh", () => {
     const socketPath = join(activeSandbox.rootDir, "eff.sock");
 
     await withUnixSocket(socketPath, async () => {
-      const defaultImage = "registry.example/openclaw-sandbox:default";
-      const browserImage = "registry.example/openclaw-sandbox-browser:default";
+      const defaultImage = "registry.example/afora-sandbox:default";
+      const browserImage = "registry.example/afora-sandbox-browser:default";
       const ignoredImages = [
-        "registry.example/openclaw-sandbox:ssh",
-        "registry.example/openclaw-sandbox:shared-agent",
-        "registry.example/openclaw-sandbox-browser:shared-agent",
-        "registry.example/openclaw-sandbox:off",
-        "registry.example/openclaw-sandbox-browser:denied",
+        "registry.example/afora-sandbox:ssh",
+        "registry.example/afora-sandbox:shared-agent",
+        "registry.example/afora-sandbox-browser:shared-agent",
+        "registry.example/afora-sandbox:off",
+        "registry.example/afora-sandbox-browser:denied",
       ];
       const result = runDockerSetup(
         activeSandbox,
         {
-          OPENCLAW_SANDBOX: "1",
-          OPENCLAW_SKIP_ONBOARDING: "1",
-          OPENCLAW_DOCKER_SOCKET: socketPath,
+          AFORA_SANDBOX: "1",
+          AFORA_SKIP_ONBOARDING: "1",
+          AFORA_DOCKER_SOCKET: socketPath,
           DOCKER_STUB_AGENTS_JSON: JSON.stringify({
             defaults: {
               sandbox: {
@@ -538,13 +538,13 @@ describe("scripts/docker/setup.sh", () => {
     const socketPath = join(activeSandbox.rootDir, "br.sock");
 
     await withUnixSocket(socketPath, async () => {
-      const browserImage = "registry.example/openclaw-sandbox-browser:stale";
+      const browserImage = "registry.example/afora-sandbox-browser:stale";
       const result = runDockerSetup(
         activeSandbox,
         {
-          OPENCLAW_SANDBOX: "1",
-          OPENCLAW_SKIP_ONBOARDING: "1",
-          OPENCLAW_DOCKER_SOCKET: socketPath,
+          AFORA_SANDBOX: "1",
+          AFORA_SKIP_ONBOARDING: "1",
+          AFORA_DOCKER_SOCKET: socketPath,
           DOCKER_STUB_AGENTS_JSON: JSON.stringify({
             defaults: { sandbox: { browser: { enabled: true, image: browserImage } } },
           }),
@@ -577,8 +577,8 @@ describe("scripts/docker/setup.sh", () => {
     const workspaceDir = join(activeSandbox.rootDir, "workspace-identity");
 
     const result = runDockerSetup(activeSandbox, {
-      OPENCLAW_CONFIG_DIR: configDir,
-      OPENCLAW_WORKSPACE_DIR: workspaceDir,
+      AFORA_CONFIG_DIR: configDir,
+      AFORA_WORKSPACE_DIR: workspaceDir,
     });
 
     expect(result.status).toBe(0);
@@ -586,16 +586,16 @@ describe("scripts/docker/setup.sh", () => {
     expect(identityDirStat.isDirectory()).toBe(true);
   });
 
-  it("writes OPENCLAW_TZ into .env when given a real IANA timezone", async () => {
+  it("writes AFORA_TZ into .env when given a real IANA timezone", async () => {
     const activeSandbox = requireSandbox(sandbox);
 
     const result = runDockerSetup(activeSandbox, {
-      OPENCLAW_TZ: "Asia/Shanghai",
+      AFORA_TZ: "Asia/Shanghai",
     });
 
     expect(result.status).toBe(0);
     const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
-    expect(envFile).toContain("OPENCLAW_TZ=Asia/Shanghai");
+    expect(envFile).toContain("AFORA_TZ=Asia/Shanghai");
   });
 
   it("precreates agent data dirs to avoid EACCES in container", async () => {
@@ -604,8 +604,8 @@ describe("scripts/docker/setup.sh", () => {
     const workspaceDir = join(activeSandbox.rootDir, "workspace-agent-dirs");
 
     const result = runDockerSetup(activeSandbox, {
-      OPENCLAW_CONFIG_DIR: configDir,
-      OPENCLAW_WORKSPACE_DIR: workspaceDir,
+      AFORA_CONFIG_DIR: configDir,
+      AFORA_WORKSPACE_DIR: workspaceDir,
     });
 
     expect(result.status).toBe(0);
@@ -618,23 +618,23 @@ describe("scripts/docker/setup.sh", () => {
     const log = await readDockerLog(activeSandbox);
     const chownIdx = log.indexOf("--user root");
     const safePathIdx = log.indexOf(`${prestartSafePath}; export PATH`);
-    const stateRepairIdx = log.indexOf(noFollowOwnershipRepair("/home/node/.openclaw"));
+    const stateRepairIdx = log.indexOf(noFollowOwnershipRepair("/home/node/.afora"));
     const onboardIdx = log.indexOf("onboard");
     expect(chownIdx).toBeGreaterThanOrEqual(0);
     expect(safePathIdx).toBeGreaterThan(chownIdx);
     expect(stateRepairIdx).toBeGreaterThan(safePathIdx);
     expect(onboardIdx).toBeGreaterThan(chownIdx);
-    expect(log).toContain("run --rm --no-deps --user root --entrypoint sh openclaw-gateway -c");
+    expect(log).toContain("run --rm --no-deps --user root --entrypoint sh afora-gateway -c");
     expect(log).toContain("/usr/bin/chown -h node:node /home/node/.config");
-    expect(log).toContain(noFollowOwnershipRepair("/home/node/.openclaw"));
-    expect(log).toContain(noFollowOwnershipRepair("/home/node/.config/openclaw"));
-    expect(log).toContain("[ ! -L /home/node/.openclaw/workspace/.openclaw ]");
-    expect(log).toContain(noFollowOwnershipRepair("/home/node/.openclaw/workspace/.openclaw"));
+    expect(log).toContain(noFollowOwnershipRepair("/home/node/.afora"));
+    expect(log).toContain(noFollowOwnershipRepair("/home/node/.config/afora"));
+    expect(log).toContain("[ ! -L /home/node/.afora/workspace/.afora ]");
+    expect(log).toContain(noFollowOwnershipRepair("/home/node/.afora/workspace/.afora"));
     expect(log).toContain("fi || true");
     expect(log).not.toContain("-type d -o -type f");
     expect(log).not.toContain("-exec chown");
     expect(log).not.toContain(" chown node:node");
-    expect(log).not.toContain("chown -R node:node /home/node/.openclaw/workspace/.openclaw");
+    expect(log).not.toContain("chown -R node:node /home/node/.afora/workspace/.afora");
   });
 
   it("precreates auth profile secret key dir outside the mounted state dir", async () => {
@@ -644,9 +644,9 @@ describe("scripts/docker/setup.sh", () => {
     const secretDir = join(activeSandbox.rootDir, "auth-profile-secret-key");
 
     const result = runDockerSetup(activeSandbox, {
-      OPENCLAW_CONFIG_DIR: configDir,
-      OPENCLAW_WORKSPACE_DIR: workspaceDir,
-      OPENCLAW_AUTH_PROFILE_SECRET_DIR: secretDir,
+      AFORA_CONFIG_DIR: configDir,
+      AFORA_WORKSPACE_DIR: workspaceDir,
+      AFORA_AUTH_PROFILE_SECRET_DIR: secretDir,
     });
 
     expect(result.status).toBe(0);
@@ -655,31 +655,31 @@ describe("scripts/docker/setup.sh", () => {
     expect(secretDir.startsWith(`${configDir}/`)).toBe(false);
 
     const log = await readDockerLog(activeSandbox);
-    expect(log).toContain(noFollowOwnershipRepair("/home/node/.config/openclaw"));
+    expect(log).toContain(noFollowOwnershipRepair("/home/node/.config/afora"));
   });
 
-  it("reuses existing config token when OPENCLAW_GATEWAY_TOKEN is unset", async () => {
+  it("reuses existing config token when AFORA_GATEWAY_TOKEN is unset", async () => {
     const activeSandbox = requireSandbox(sandbox);
     const { result, envFile } = await runDockerSetupWithUnsetGatewayToken(
       activeSandbox,
       "token-reuse",
       async (configDir) => {
         await writeFile(
-          join(configDir, "openclaw.json"),
+          join(configDir, "afora.json"),
           JSON.stringify({ gateway: { auth: { mode: "token", token: "config-token-123" } } }),
         );
       },
     );
 
     expect(result.status).toBe(0);
-    expect(envFile).toContain("OPENCLAW_GATEWAY_TOKEN=config-token-123"); // pragma: allowlist secret
+    expect(envFile).toContain("AFORA_GATEWAY_TOKEN=config-token-123"); // pragma: allowlist secret
   });
 
-  it("reuses existing .env token when OPENCLAW_GATEWAY_TOKEN and config token are unset", async () => {
+  it("reuses existing .env token when AFORA_GATEWAY_TOKEN and config token are unset", async () => {
     const activeSandbox = requireSandbox(sandbox);
     await writeFile(
       join(activeSandbox.rootDir, ".env"),
-      "OPENCLAW_GATEWAY_TOKEN=dotenv-token-123\nOPENCLAW_GATEWAY_PORT=18789\n", // pragma: allowlist secret
+      "AFORA_GATEWAY_TOKEN=dotenv-token-123\nAFORA_GATEWAY_PORT=18789\n", // pragma: allowlist secret
     );
     const { result, envFile } = await runDockerSetupWithUnsetGatewayToken(
       activeSandbox,
@@ -687,7 +687,7 @@ describe("scripts/docker/setup.sh", () => {
     );
 
     expect(result.status).toBe(0);
-    expect(envFile).toContain("OPENCLAW_GATEWAY_TOKEN=dotenv-token-123"); // pragma: allowlist secret
+    expect(envFile).toContain("AFORA_GATEWAY_TOKEN=dotenv-token-123"); // pragma: allowlist secret
     expect(result.stderr).toBe("");
   });
 
@@ -696,9 +696,9 @@ describe("scripts/docker/setup.sh", () => {
     await writeFile(
       join(activeSandbox.rootDir, ".env"),
       [
-        "OPENCLAW_GATEWAY_TOKEN=",
-        "OPENCLAW_GATEWAY_TOKEN=first-token",
-        "OPENCLAW_GATEWAY_TOKEN=last=token=value\r", // pragma: allowlist secret
+        "AFORA_GATEWAY_TOKEN=",
+        "AFORA_GATEWAY_TOKEN=first-token",
+        "AFORA_GATEWAY_TOKEN=last=token=value\r", // pragma: allowlist secret
       ].join("\n"),
     );
     const { result, envFile } = await runDockerSetupWithUnsetGatewayToken(
@@ -707,26 +707,26 @@ describe("scripts/docker/setup.sh", () => {
     );
 
     expect(result.status).toBe(0);
-    expect(envFile).toContain("OPENCLAW_GATEWAY_TOKEN=last=token=value"); // pragma: allowlist secret
-    expect(envFile).not.toContain("OPENCLAW_GATEWAY_TOKEN=first-token");
+    expect(envFile).toContain("AFORA_GATEWAY_TOKEN=last=token=value"); // pragma: allowlist secret
+    expect(envFile).not.toContain("AFORA_GATEWAY_TOKEN=first-token");
     expect(envFile).not.toContain("\r");
   });
 
-  it("treats OPENCLAW_SANDBOX=0 as disabled", async () => {
+  it("treats AFORA_SANDBOX=0 as disabled", async () => {
     const activeSandbox = requireSandbox(sandbox);
     await resetDockerLog(activeSandbox);
 
     const result = runDockerSetup(activeSandbox, {
-      OPENCLAW_SANDBOX: "0",
+      AFORA_SANDBOX: "0",
     });
 
     expect(result.status).toBe(0);
     const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
-    expect(envFile).toContain("OPENCLAW_SANDBOX=");
+    expect(envFile).toContain("AFORA_SANDBOX=");
 
     const log = await readDockerLog(activeSandbox);
-    expect(log).toContain("--build-arg OPENCLAW_INSTALL_DOCKER_CLI=");
-    expect(log).not.toContain("--build-arg OPENCLAW_INSTALL_DOCKER_CLI=1");
+    expect(log).toContain("--build-arg AFORA_INSTALL_DOCKER_CLI=");
+    expect(log).not.toContain("--build-arg AFORA_INSTALL_DOCKER_CLI=1");
     expect(log).toContain("config set agents.defaults.sandbox.mode off");
   });
 
@@ -735,15 +735,15 @@ describe("scripts/docker/setup.sh", () => {
     await resetDockerLog(activeSandbox);
     await writeFile(
       join(activeSandbox.rootDir, "docker-compose.sandbox.yml"),
-      "services:\n  openclaw-gateway:\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n",
+      "services:\n  afora-gateway:\n    volumes:\n      - /var/run/docker.sock:/var/run/docker.sock\n",
     );
     const socketPath = join(activeSandbox.rootDir, "missing-cli.sock");
 
     await withUnixSocket(socketPath, async () => {
       const result = runDockerSetup(activeSandbox, {
-        OPENCLAW_SANDBOX: "1",
-        OPENCLAW_DOCKER_SOCKET: socketPath,
-        DOCKER_STUB_FAIL_MATCH: "--entrypoint docker openclaw-gateway --version",
+        AFORA_SANDBOX: "1",
+        AFORA_DOCKER_SOCKET: socketPath,
+        DOCKER_STUB_FAIL_MATCH: "--entrypoint docker afora-gateway --version",
       });
 
       expect(result.status).toBe(0);
@@ -763,8 +763,8 @@ describe("scripts/docker/setup.sh", () => {
       const result = runDockerSetup(
         activeSandbox,
         {
-          OPENCLAW_SANDBOX: "1",
-          OPENCLAW_DOCKER_SOCKET: socketPath,
+          AFORA_SANDBOX: "1",
+          AFORA_DOCKER_SOCKET: socketPath,
           DOCKER_STUB_FAIL_MATCH: "config set agents.defaults.sandbox.scope",
         },
         ["--offline"],
@@ -779,74 +779,74 @@ describe("scripts/docker/setup.sh", () => {
       const gatewayStarts = collectMatchingLines(lines, (line) => isGatewayStartLine(line));
       expect(gatewayStarts).toHaveLength(2);
       expect(log).toContain(
-        "run --pull never --rm --no-deps openclaw-cli config set agents.defaults.sandbox.mode non-main",
+        "run --pull never --rm --no-deps afora-cli config set agents.defaults.sandbox.mode non-main",
       );
       expect(log).toContain("config set agents.defaults.sandbox.mode off");
       const forceRecreateLine = log
         .split("\n")
-        .find((line) => line.includes("--force-recreate openclaw-gateway"));
+        .find((line) => line.includes("--force-recreate afora-gateway"));
       expect(forceRecreateLine).toBe(
-        `compose compose -f ${join(activeSandbox.rootDir, "docker-compose.yml")} up -d --pull never --no-build --force-recreate openclaw-gateway`,
+        `compose compose -f ${join(activeSandbox.rootDir, "docker-compose.yml")} up -d --pull never --no-build --force-recreate afora-gateway`,
       );
       expect(forceRecreateLine).not.toContain("docker-compose.sandbox.yml");
       expect(log).toContain(
-        `image inspect openclaw-sandbox:bookworm-slim host=unix://${socketPath}`,
+        `image inspect afora-sandbox:bookworm-slim host=unix://${socketPath}`,
       );
       expectOfflineComposePolicy(lines);
       await expectMissingPath(join(activeSandbox.rootDir, "docker-compose.sandbox.yml"));
     });
   });
 
-  it("rejects injected multiline OPENCLAW_EXTRA_MOUNTS values", () => {
+  it("rejects injected multiline AFORA_EXTRA_MOUNTS values", () => {
     const activeSandbox = requireSandbox(sandbox);
 
     const result = runDockerSetup(activeSandbox, {
-      OPENCLAW_EXTRA_MOUNTS: "/tmp:/tmp\n  evil-service:\n    image: alpine",
+      AFORA_EXTRA_MOUNTS: "/tmp:/tmp\n  evil-service:\n    image: alpine",
     });
 
     expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain("OPENCLAW_EXTRA_MOUNTS cannot contain control characters");
+    expect(result.stderr).toContain("AFORA_EXTRA_MOUNTS cannot contain control characters");
   });
 
-  it("rejects invalid OPENCLAW_EXTRA_MOUNTS mount format", () => {
+  it("rejects invalid AFORA_EXTRA_MOUNTS mount format", () => {
     const activeSandbox = requireSandbox(sandbox);
 
     const result = runDockerSetup(activeSandbox, {
-      OPENCLAW_EXTRA_MOUNTS: "bad mount spec",
+      AFORA_EXTRA_MOUNTS: "bad mount spec",
     });
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("Invalid mount format");
   });
 
-  it("rejects invalid OPENCLAW_HOME_VOLUME names", () => {
+  it("rejects invalid AFORA_HOME_VOLUME names", () => {
     const activeSandbox = requireSandbox(sandbox);
 
     const result = runDockerSetup(activeSandbox, {
-      OPENCLAW_HOME_VOLUME: "bad name",
+      AFORA_HOME_VOLUME: "bad name",
     });
 
     expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain("OPENCLAW_HOME_VOLUME must match");
+    expect(result.stderr).toContain("AFORA_HOME_VOLUME must match");
   });
 
-  it("rejects OPENCLAW_TZ values that are unsupported by the runtime image", () => {
+  it("rejects AFORA_TZ values that are unsupported by the runtime image", () => {
     const activeSandbox = requireSandbox(sandbox);
 
     const result = runDockerSetup(activeSandbox, {
-      OPENCLAW_TZ: "Nope/Bad",
+      AFORA_TZ: "Nope/Bad",
     });
 
     expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain("OPENCLAW_TZ must be supported by openclaw:local");
+    expect(result.stderr).toContain("AFORA_TZ must be supported by afora:local");
   });
 
-  it("skips onboarding when OPENCLAW_SKIP_ONBOARDING is set", async () => {
+  it("skips onboarding when AFORA_SKIP_ONBOARDING is set", async () => {
     const activeSandbox = requireSandbox(sandbox);
     await resetDockerLog(activeSandbox);
 
     const result = runDockerSetup(activeSandbox, {
-      OPENCLAW_SKIP_ONBOARDING: "1",
+      AFORA_SKIP_ONBOARDING: "1",
     });
 
     expect(result.status).toBe(0);
@@ -857,24 +857,24 @@ describe("scripts/docker/setup.sh", () => {
     expect(log).toContain('"path":"gateway.mode","value":"local"');
     expect(log).toContain('"path":"gateway.bind","value":"lan"');
     const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
-    expect(envFile).toContain("OPENCLAW_SKIP_ONBOARDING=1");
+    expect(envFile).toContain("AFORA_SKIP_ONBOARDING=1");
   });
 
-  it("treats OPENCLAW_SKIP_ONBOARDING=0 as disabled and runs onboarding", async () => {
+  it("treats AFORA_SKIP_ONBOARDING=0 as disabled and runs onboarding", async () => {
     const activeSandbox = requireSandbox(sandbox);
     await resetDockerLog(activeSandbox);
 
     const result = runDockerSetup(activeSandbox, {
-      OPENCLAW_SKIP_ONBOARDING: "0",
+      AFORA_SKIP_ONBOARDING: "0",
     });
 
     expect(result.status).toBe(0);
     const log = await readDockerLog(activeSandbox);
     expect(log).toContain(
-      "onboard --mode local --no-install-daemon --gateway-auth token --gateway-token-ref-env OPENCLAW_GATEWAY_TOKEN --skip-ui --suppress-gateway-token-output",
+      "onboard --mode local --no-install-daemon --gateway-auth token --gateway-token-ref-env AFORA_GATEWAY_TOKEN --skip-ui --suppress-gateway-token-output",
     );
     const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
-    expect(envFile).toMatch(/OPENCLAW_SKIP_ONBOARDING=\n/);
+    expect(envFile).toMatch(/AFORA_SKIP_ONBOARDING=\n/);
   });
 
   it("avoids associative arrays so the script remains Bash 3.2-compatible", async () => {
@@ -916,19 +916,19 @@ describe("scripts/docker/setup.sh", () => {
   it("keeps docker-compose gateway Bonjour advertising in auto mode by default", async () => {
     const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
     expect(
-      compose.match(/OPENCLAW_DISABLE_BONJOUR: \$\{OPENCLAW_DISABLE_BONJOUR:-\}/g),
+      compose.match(/AFORA_DISABLE_BONJOUR: \$\{AFORA_DISABLE_BONJOUR:-\}/g),
     ).toHaveLength(1);
   });
 
   it("keeps docker-compose CLI network namespace settings in sync", async () => {
     const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
-    expect(compose).toContain('network_mode: "service:openclaw-gateway"');
-    expect(compose).toContain("depends_on:\n      - openclaw-gateway");
+    expect(compose).toContain('network_mode: "service:afora-gateway"');
+    expect(compose).toContain("depends_on:\n      - afora-gateway");
   });
 
   it("keeps docker-compose gateway token env defaults aligned across services", async () => {
     const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
-    expect(compose.match(/OPENCLAW_GATEWAY_TOKEN: \$\{OPENCLAW_GATEWAY_TOKEN:-\}/g)).toHaveLength(
+    expect(compose.match(/AFORA_GATEWAY_TOKEN: \$\{AFORA_GATEWAY_TOKEN:-\}/g)).toHaveLength(
       2,
     );
   });
@@ -937,7 +937,7 @@ describe("scripts/docker/setup.sh", () => {
     const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
     expect(
       compose.split(
-        '"${OPENCLAW_AUTH_PROFILE_SECRET_DIR:-${HOME:-/tmp}/.openclaw-auth-profile-secrets}:/home/node/.config/openclaw"',
+        '"${AFORA_AUTH_PROFILE_SECRET_DIR:-${HOME:-/tmp}/.afora-auth-profile-secrets}:/home/node/.config/afora"',
       ),
     ).toHaveLength(3);
   });
@@ -949,7 +949,7 @@ describe("scripts/docker/setup.sh", () => {
 
   it("keeps docker-compose timezone env defaults aligned across services", async () => {
     const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
-    expect(compose.match(/TZ: \$\{OPENCLAW_TZ:-UTC\}/g)).toHaveLength(2);
+    expect(compose.match(/TZ: \$\{AFORA_TZ:-UTC\}/g)).toHaveLength(2);
   });
 
   it("pins container-side state, workspace, and config dirs on both services so host .env paths cannot leak (#77436)", async () => {
@@ -957,29 +957,29 @@ describe("scripts/docker/setup.sh", () => {
     // Both gateway and CLI services must override env_file values with the
     // canonical container paths so host-style paths written to `.env` cannot
     // reach runtime code inside Linux Docker.
-    expect(compose.match(/OPENCLAW_HOME: \/home\/node$/gm)).toHaveLength(2);
-    expect(compose.match(/OPENCLAW_STATE_DIR: \/home\/node\/\.openclaw$/gm)).toHaveLength(2);
+    expect(compose.match(/AFORA_HOME: \/home\/node$/gm)).toHaveLength(2);
+    expect(compose.match(/AFORA_STATE_DIR: \/home\/node\/\.afora$/gm)).toHaveLength(2);
     expect(
-      compose.match(/OPENCLAW_CONFIG_PATH: \/home\/node\/\.openclaw\/openclaw\.json$/gm),
+      compose.match(/AFORA_CONFIG_PATH: \/home\/node\/\.afora\/afora\.json$/gm),
     ).toHaveLength(2);
-    expect(compose.match(/OPENCLAW_CONFIG_DIR: \/home\/node\/\.openclaw$/gm)).toHaveLength(2);
+    expect(compose.match(/AFORA_CONFIG_DIR: \/home\/node\/\.afora$/gm)).toHaveLength(2);
     expect(
-      compose.match(/OPENCLAW_WORKSPACE_DIR: \/home\/node\/\.openclaw\/workspace$/gm),
+      compose.match(/AFORA_WORKSPACE_DIR: \/home\/node\/\.afora\/workspace$/gm),
     ).toHaveLength(2);
   });
 
-  it("Dockerfile ARG OPENCLAW_IMAGE_APT_PACKAGES must not have a default value", async () => {
-    // If the ARG has a default (e.g. ARG OPENCLAW_IMAGE_APT_PACKAGES=""), Docker treats it as
+  it("Dockerfile ARG AFORA_IMAGE_APT_PACKAGES must not have a default value", async () => {
+    // If the ARG has a default (e.g. ARG AFORA_IMAGE_APT_PACKAGES=""), Docker treats it as
     // "set" even when no --build-arg is passed. That breaks the RUN fallback expression
-    // ${OPENCLAW_IMAGE_APT_PACKAGES-$OPENCLAW_DOCKER_APT_PACKAGES} because the variable is
-    // never truly unset, so legacy-only callers using --build-arg OPENCLAW_DOCKER_APT_PACKAGES
+    // ${AFORA_IMAGE_APT_PACKAGES-$AFORA_DOCKER_APT_PACKAGES} because the variable is
+    // never truly unset, so legacy-only callers using --build-arg AFORA_DOCKER_APT_PACKAGES
     // get nothing installed — a backward-compat regression.
     const dockerfile = await readFile(join(repoRoot, "Dockerfile"), "utf8");
     const argLine = dockerfile
       .split("\n")
-      .find((line) => line.startsWith("ARG OPENCLAW_IMAGE_APT_PACKAGES"));
+      .find((line) => line.startsWith("ARG AFORA_IMAGE_APT_PACKAGES"));
     expect(argLine).toBeDefined();
-    // Must be bare `ARG OPENCLAW_IMAGE_APT_PACKAGES` with no default assignment
-    expect(argLine).toBe("ARG OPENCLAW_IMAGE_APT_PACKAGES");
+    // Must be bare `ARG AFORA_IMAGE_APT_PACKAGES` with no default assignment
+    expect(argLine).toBe("ARG AFORA_IMAGE_APT_PACKAGES");
   });
 });

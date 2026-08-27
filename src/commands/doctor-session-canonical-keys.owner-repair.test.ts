@@ -6,16 +6,16 @@ import {
   loadTranscriptEvents,
 } from "../config/sessions/session-accessor.js";
 import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/session-sqlite-target.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../state/openclaw-agent-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../state/afora-agent-db.js";
 import { withStateDirEnv } from "../test-helpers/state-dir-env.js";
 import { repairCanonicalSessionKeys } from "./doctor-session-canonical-keys.js";
 import { insertLegacySession } from "./doctor-session-canonical-keys.test-support.js";
 
-afterEach(() => closeOpenClawAgentDatabasesForTest());
+afterEach(() => closeAforaAgentDatabasesForTest());
 
 function insertEmptyAlias(params: {
   agentId: string;
@@ -25,7 +25,7 @@ function insertEmptyAlias(params: {
   storePath: string;
   updatedAt: number;
 }) {
-  const database = openOpenClawAgentDatabase({
+  const database = openAforaAgentDatabase({
     agentId: params.agentId,
     env: params.env,
     path: resolveSqliteTargetFromSessionStorePath(params.storePath, {
@@ -43,14 +43,14 @@ function insertEmptyAlias(params: {
 
 describe("doctor transcript owner repair", () => {
   it("restores a valid node after an empty alias steals its transcript window", async () => {
-    await withStateDirEnv("openclaw-doctor-transcript-owner-", async ({ stateDir }) => {
-      const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    await withStateDirEnv("afora-doctor-transcript-owner-", async ({ stateDir }) => {
+      const env = { ...process.env, AFORA_STATE_DIR: stateDir };
       const storeTemplate = path.join(stateDir, "agents", "{agentId}", "sessions.json");
       const storePath = resolveSessionStorePathCore(storeTemplate, { agentId: "main", env });
       const cfg = {
         agents: { list: [{ id: "main", default: true }] },
         session: { store: storeTemplate },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const canonicalKey = "agent:main:main";
       const staleKey = "agent:main:telegram:default:direct:fixture-peer";
       const sessionId = "stolen-owner-session";
@@ -119,14 +119,14 @@ describe("doctor transcript owner repair", () => {
   });
 
   it("follows alias ownership transitively to the configured canonical key", async () => {
-    await withStateDirEnv("openclaw-doctor-transcript-owner-chain-", async ({ stateDir }) => {
-      const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    await withStateDirEnv("afora-doctor-transcript-owner-chain-", async ({ stateDir }) => {
+      const env = { ...process.env, AFORA_STATE_DIR: stateDir };
       const storeTemplate = path.join(stateDir, "agents", "{agentId}", "sessions.json");
       const storePath = resolveSessionStorePathCore(storeTemplate, { agentId: "main", env });
       const cfg = {
         agents: { list: [{ id: "main", default: true }] },
         session: { mainKey: "work", store: storeTemplate },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const staleKey = "agent:main:telegram:default:direct:fixture-peer";
       const intermediateKey = "agent:main:main";
       const canonicalKey = "agent:main:work";

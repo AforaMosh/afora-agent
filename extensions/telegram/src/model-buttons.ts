@@ -8,9 +8,9 @@
  * - mdl_sel/{model}       - select model (compact fallback when standard is >64 bytes)
  * - mdl_back              - back to providers list
  */
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
-import { parseStrictPositiveInteger } from "openclaw/plugin-sdk/number-runtime";
-import { sliceUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
+import { parseStrictPositiveInteger } from "afora-agent/plugin-sdk/number-runtime";
+import { sliceUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { fitsTelegramCallbackData } from "./approval-callback-data.js";
 
 export type ButtonRow = Array<{ text: string; callback_data: string }>;

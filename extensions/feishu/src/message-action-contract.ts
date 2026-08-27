@@ -1,5 +1,5 @@
 // Feishu plugin module implements message action contract behavior.
-import type { ChannelMessageActionAdapter } from "openclaw/plugin-sdk/channel-contract";
+import type { ChannelMessageActionAdapter } from "afora-agent/plugin-sdk/channel-contract";
 
 const FEISHU_NATIVE_CHAT_TARGET_ALIASES = ["chatId", "chat_id", "channel_id"];
 

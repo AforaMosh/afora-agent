@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { ModelCatalogEntry } from "../../agents/model-catalog.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { loadSessionEntry, replaceSessionEntry } from "../../config/sessions/session-accessor.js";
 import { clearSessionStoreCacheForTest } from "../../config/sessions/store-writer-state.js";
@@ -25,7 +25,7 @@ const modelCatalog: ModelCatalogEntry[] = [
 ];
 
 function createResetFixture(entry: Partial<SessionEntry> = {}) {
-  const cfg = {} as OpenClawConfig;
+  const cfg = {} as AforaConfig;
   const aliasIndex: ModelAliasIndex = { byAlias: new Map(), byKey: new Map() };
   const sessionEntry: SessionEntry = {
     sessionId: "s1",
@@ -194,7 +194,7 @@ describe("applyResetModelOverride", () => {
   });
 
   it("adopts a concurrent model winner instead of acknowledging the reset hint", async () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-reset-model-race-"));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-reset-model-race-"));
     const storePath = path.join(tempRoot, "sessions.json");
     const fixture = createResetFixture();
     const concurrentEntry: SessionEntry = {
@@ -242,7 +242,7 @@ describe("applyResetModelOverride", () => {
   });
 
   it("checks the persisted winner for an explicit same-value reset hint", async () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-reset-model-race-"));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-reset-model-race-"));
     const storePath = path.join(tempRoot, "sessions.json");
     const fixture = createResetFixture({
       providerOverride: "minimax",
@@ -287,7 +287,7 @@ describe("applyResetModelOverride", () => {
   });
 
   it("rejects a reset-model hint when the session rotates during persistence", async () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-reset-model-rotation-"));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-reset-model-rotation-"));
     const storePath = path.join(tempRoot, "sessions.json");
     const fixture = createResetFixture();
     const rotatedEntry: SessionEntry = {

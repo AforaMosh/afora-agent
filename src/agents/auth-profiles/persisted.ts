@@ -3,10 +3,10 @@
  * Normalizes legacy JSON stores, SQLite/raw payloads, runtime state metadata,
  * legacy OAuth files, and merged main/agent stores.
  */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { readNonBlankString } from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { readNonBlankString } from "@afora/normalization-core/string-coerce";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { coerceSecretRef } from "../../config/types.secrets.js";
 import { asBoolean } from "../../utils/boolean.js";
 import { AUTH_STORE_VERSION, authProfilesLog } from "./constants.js";

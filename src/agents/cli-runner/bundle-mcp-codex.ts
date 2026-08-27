@@ -3,7 +3,7 @@
  */
 import { normalizeConfiguredMcpServers } from "../../config/mcp-config-normalize.js";
 import type { SessionToolOverrides } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { BundleMcpConfig, BundleMcpServerConfig } from "../../plugins/bundle-mcp.js";
 import { isValidAgentId, normalizeAgentId } from "../../routing/session-key.js";
 import { isRecord } from "../bundle-mcp-adapter.js";
@@ -69,11 +69,11 @@ function isCodexMcpServerAllowedForAgent(
 }
 
 /**
- * Applies Codex-only agent scoping before OpenClaw resolves credentials or opens transports.
+ * Applies Codex-only agent scoping before Afora resolves credentials or opens transports.
  * Session overrides may narrow this result, but cannot widen `codex.agents`.
  */
 export function resolveCodexMcpToolOverridesForAgent(
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
   options: Pick<CodexUserMcpServersProjectionOptions, "agentId" | "toolOverrides">,
 ): Pick<SessionToolOverrides, "mcpServers" | "mcpToolsDeny"> | undefined {
   const deniedServerNames = Object.entries(normalizeConfiguredMcpServers(cfg?.mcp?.servers))
@@ -119,7 +119,7 @@ export function injectCodexMcpConfigArgs(
  * plugin thread-config `apps` patch, so they must not be re-projected here.
  */
 export function buildCodexUserMcpServersThreadConfigPatch(
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
   options?: CodexUserMcpServersProjectionOptions,
 ): { mcp_servers: CodexThreadConfigObject } | undefined {
   const userServers = normalizeConfiguredMcpServers(cfg?.mcp?.servers);
@@ -155,9 +155,9 @@ export function buildCodexUserMcpServersThreadConfigPatch(
   return { mcp_servers };
 }
 
-/** Async runtime projection that resolves OpenClaw-managed MCP bearer tokens. */
+/** Async runtime projection that resolves Afora-managed MCP bearer tokens. */
 export async function buildCodexUserMcpServersThreadConfigPatchForRuntime(
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
   options?: CodexUserMcpServersProjectionOptions,
 ): Promise<{ mcp_servers: CodexThreadConfigObject } | undefined> {
   const userServers = normalizeConfiguredMcpServers(cfg?.mcp?.servers);

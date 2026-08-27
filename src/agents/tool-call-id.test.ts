@@ -1,6 +1,6 @@
 // Tool-call id tests cover provider-safe rewrites, collision handling, replay
 // preservation for signed thinking turns, and strict short-id mode.
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
 import { describe, expect, it } from "vitest";
 import { castAgentMessages } from "./test-helpers/agent-message-fixtures.js";
 import { sanitizeToolCallIdsForCloudCodeAssist } from "./tool-call-id.js";

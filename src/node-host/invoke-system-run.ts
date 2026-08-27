@@ -1,8 +1,8 @@
 /** Policy and execution pipeline for approved node-host system.run requests. */
 import crypto from "node:crypto";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { resolveAgentConfig } from "../agents/agent-scope-config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   describeInterpreterInlineEval,
   type InterpreterInlineEvalHit,
@@ -160,7 +160,7 @@ const APPROVAL_SCRIPT_OPERAND_BINDING_DENIED_MESSAGE =
   "SYSTEM_RUN_DENIED: approval missing script operand binding";
 const APPROVAL_STATE_WRITE_FAILED_MESSAGE =
   "SYSTEM_RUN_DENIED: approval state could not be persisted";
-type ExecToolConfig = NonNullable<NonNullable<OpenClawConfig["tools"]>["exec"]>;
+type ExecToolConfig = NonNullable<NonNullable<AforaConfig["tools"]>["exec"]>;
 
 type EffectiveSystemRunExecPolicy = {
   agentExec: ExecToolConfig | undefined;
@@ -193,7 +193,7 @@ function normalizeDeniedReason(reason: string | null | undefined): SystemRunDeni
 }
 
 function resolveAgentExecConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string | undefined,
 ): ExecToolConfig | undefined {
   if (!agentId) {
@@ -204,7 +204,7 @@ function resolveAgentExecConfig(
 
 /** Resolves the effective exec security/ask policy for one system.run request. */
 export async function resolveEffectiveSystemRunExecPolicy(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string | undefined;
   defaultSecurity: ExecSecurity;
   defaultAsk: ExecAsk;
@@ -244,7 +244,7 @@ export async function resolveEffectiveSystemRunExecPolicy(params: {
 
 async function resolveSystemRunAutoReviewer(params: {
   opts: HandleSystemRunInvokeOptions;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string | undefined;
   agentExec: ExecToolConfig | undefined;
   globalExec: ExecToolConfig | undefined;
@@ -287,12 +287,12 @@ type HandleSystemRunInvokeOptions = {
   sendInvokeResult: (result: SystemRunInvokeResult) => Promise<void>;
   sendExecFinishedEvent: (params: ExecFinishedEventParams) => Promise<void>;
   preferMacAppExecHost: boolean;
-  getRuntimeConfig?: () => OpenClawConfig;
+  getRuntimeConfig?: () => AforaConfig;
   autoReviewer?: ExecAutoReviewer;
   commitExecAuthorization?: typeof commitExecAuthorizationLocked;
 };
 
-async function loadSystemRunConfig(opts: HandleSystemRunInvokeOptions): Promise<OpenClawConfig> {
+async function loadSystemRunConfig(opts: HandleSystemRunInvokeOptions): Promise<AforaConfig> {
   if (opts.getRuntimeConfig) {
     return opts.getRuntimeConfig();
   }

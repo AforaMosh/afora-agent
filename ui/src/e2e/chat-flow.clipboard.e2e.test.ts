@@ -83,7 +83,7 @@ suite.define(() => {
         });
         expect(await gateway.getRequests("chat.send")).toHaveLength(0);
 
-        const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+        const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
         if (artifactDir) {
           await mkdir(artifactDir, { recursive: true });
           await page.screenshot({
@@ -132,7 +132,7 @@ suite.define(() => {
       });
       expect(await gateway.getRequests("chat.send")).toHaveLength(0);
 
-      const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+      const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
       if (artifactDir) {
         await mkdir(artifactDir, { recursive: true });
         await page.screenshot({

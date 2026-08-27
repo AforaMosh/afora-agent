@@ -113,10 +113,10 @@ describe("registerBackupCommand", () => {
   });
 
   it("runs backup verify with forwarded options", async () => {
-    await runCli(["backup", "verify", "/tmp/openclaw-backup.tar.gz", "--json"]);
+    await runCli(["backup", "verify", "/tmp/afora-backup.tar.gz", "--json"]);
 
     const options = expectForwardedOptions(backupVerifyCommand);
-    expect(options.archive).toBe("/tmp/openclaw-backup.tar.gz");
+    expect(options.archive).toBe("/tmp/afora-backup.tar.gz");
     expect(options.json).toBe(true);
   });
 
@@ -124,16 +124,16 @@ describe("registerBackupCommand", () => {
     await runCli([
       "backup",
       "restore",
-      "/tmp/openclaw-backup.tar.gz",
+      "/tmp/afora-backup.tar.gz",
       "--target",
-      "/tmp/restored-openclaw",
+      "/tmp/restored-afora",
       "--json",
     ]);
 
     const options = expectForwardedOptions(backupRestoreCommand);
     expect(options).toEqual({
-      archive: "/tmp/openclaw-backup.tar.gz",
-      target: "/tmp/restored-openclaw",
+      archive: "/tmp/afora-backup.tar.gz",
+      target: "/tmp/restored-afora",
       json: true,
     });
   });
@@ -153,7 +153,7 @@ describe("registerBackupCommand", () => {
     ]);
   });
 
-  it("runs SQLite snapshot create for named OpenClaw databases", async () => {
+  it("runs SQLite snapshot create for named Afora databases", async () => {
     await runCli([
       "backup",
       "sqlite",

@@ -5,7 +5,7 @@ read_when:
 title: "Remote access"
 ---
 
-OpenClaw runs one Gateway (the master) on a host and connects every client to it. The Gateway owns sessions, auth profiles, channels, and state; everything else is a client.
+Afora runs one Gateway (the master) on a host and connects every client to it. The Gateway owns sessions, auth profiles, channels, and state; everything else is a client.
 
 - **Operators** (you, or the macOS app): direct LAN/Tailnet WebSocket is simplest when the Gateway is reachable; SSH tunneling is the universal fallback.
 - **Nodes** (iOS/Android and other devices): connect to the Gateway **WebSocket** (LAN/tailnet or SSH tunnel).
@@ -22,7 +22,7 @@ The Gateway WebSocket binds to **loopback** by default, on port `18789` (`gatewa
 | Setup                             | Where the Gateway runs                                                                                    | Best for                                                                                                                                          |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Always-on Gateway in your tailnet | Persistent host (VPS or home server), reached via Tailscale or SSH                                        | Laptops that sleep often but need the agent always-on. See [exe.dev](/install/exe-dev) (easy VM) or [Hetzner](/install/hetzner) (production VPS). |
-| Home desktop                      | Desktop; laptop connects remotely via the macOS app's remote mode (Settings → Connection → OpenClaw runs) | Keeping the agent on hardware that stays powered on. Runbook: [macOS remote access](/platforms/mac/remote).                                       |
+| Home desktop                      | Desktop; laptop connects remotely via the macOS app's remote mode (Settings → Connection → Afora runs) | Keeping the agent on hardware that stays powered on. Runbook: [macOS remote access](/platforms/mac/remote).                                       |
 | Laptop                            | Laptop, exposed safely via SSH tunnel or Tailscale Serve (keep `gateway.bind: "loopback"`)                | Single-machine setups. See [Tailscale](/gateway/tailscale) and [Web](/web).                                                                       |
 
 For the always-on and laptop setups, prefer keeping `gateway.bind: "loopback"` and using **Tailscale Serve** for the Control UI, or a trusted LAN/Tailnet bind with `gateway.remote.transport: "direct"`. SSH tunnel is the fallback that works from any machine.
@@ -44,12 +44,12 @@ Nodes do not run the Gateway service. Only one Gateway should run per host unles
 ssh -N -L 18789:127.0.0.1:18789 user@gateway-host
 ```
 
-With the tunnel up, `openclaw health` and `openclaw status --deep` reach the remote Gateway via `ws://127.0.0.1:18789`. `openclaw gateway status`, `openclaw gateway health`, `openclaw gateway probe`, and `openclaw gateway call` can also target a forwarded URL via `--url`.
+With the tunnel up, `afora health` and `afora status --deep` reach the remote Gateway via `ws://127.0.0.1:18789`. `afora gateway status`, `afora gateway health`, `afora gateway probe`, and `afora gateway call` can also target a forwarded URL via `--url`.
 
 To replace per-client SSH tunnels with one private `wss://` endpoint while keeping the Gateway on loopback, follow [Give your Gateway a stable HTTPS URL](/gateway/stable-https-url).
 
 <Note>
-Replace `18789` with your configured `gateway.port` (or `--port` / `OPENCLAW_GATEWAY_PORT`).
+Replace `18789` with your configured `gateway.port` (or `--port` / `AFORA_GATEWAY_PORT`).
 </Note>
 
 <Warning>
@@ -98,13 +98,13 @@ Gateway credential resolution follows one shared contract across call/probe/stat
 - Explicit credentials (`--token`, `--password`, or a tool's `gatewayToken`) always win on call paths that accept explicit auth.
 - URL override safety:
   - CLI `--url` never reuses implicit config/env credentials.
-  - Env `OPENCLAW_GATEWAY_URL` may use env credentials only (`OPENCLAW_GATEWAY_TOKEN` / `OPENCLAW_GATEWAY_PASSWORD`).
+  - Env `AFORA_GATEWAY_URL` may use env credentials only (`AFORA_GATEWAY_TOKEN` / `AFORA_GATEWAY_PASSWORD`).
 - Local mode defaults:
-  - token: `gateway.auth.token` -> `OPENCLAW_GATEWAY_TOKEN` -> `gateway.remote.token` (remote fallback only when the local token is unset)
-  - password: `gateway.auth.password` -> `OPENCLAW_GATEWAY_PASSWORD` -> `gateway.remote.password` (remote fallback only when the local password is unset)
+  - token: `gateway.auth.token` -> `AFORA_GATEWAY_TOKEN` -> `gateway.remote.token` (remote fallback only when the local token is unset)
+  - password: `gateway.auth.password` -> `AFORA_GATEWAY_PASSWORD` -> `gateway.remote.password` (remote fallback only when the local password is unset)
 - Remote mode defaults:
-  - token: `gateway.remote.token` -> `OPENCLAW_GATEWAY_TOKEN` -> `gateway.auth.token`
-  - password: `OPENCLAW_GATEWAY_PASSWORD` -> `gateway.remote.password` -> `gateway.auth.password`
+  - token: `gateway.remote.token` -> `AFORA_GATEWAY_TOKEN` -> `gateway.auth.token`
+  - password: `AFORA_GATEWAY_PASSWORD` -> `gateway.remote.password` -> `gateway.auth.password`
 - Node-host local-mode exception: environment credentials stay first and `gateway.remote.token` / `gateway.remote.password` are ignored because node commands target an explicit host and port.
 - Remote startup/status/wizard probes with SecretRef support treat configured
   `gateway.remote.token` and `gateway.remote.password` as authoritative for the configured
@@ -112,7 +112,7 @@ Gateway credential resolution follows one shared contract across call/probe/stat
   is configured. If a configured remote SecretRef cannot be resolved, the probe warns and does
   not fall back to environment credentials; a separately configured sibling credential that
   resolves successfully remains usable.
-- Gateway env overrides use `OPENCLAW_GATEWAY_*` only.
+- Gateway env overrides use `AFORA_GATEWAY_*` only.
 
 ## Chat UI remote access
 
@@ -170,14 +170,14 @@ ssh-copy-id -i ~/.ssh/id_rsa <REMOTE_USER>@<REMOTE_IP>
 #### Step 3: configure the gateway token
 
 ```bash
-openclaw config set gateway.remote.token "<your-token>"
+afora config set gateway.remote.token "<your-token>"
 ```
 
-Use `gateway.remote.password` instead if the remote Gateway uses password auth. `OPENCLAW_GATEWAY_TOKEN` is still valid as a shell-level override, but the durable remote-client setup is `gateway.remote.token` / `gateway.remote.password`.
+Use `gateway.remote.password` instead if the remote Gateway uses password auth. `AFORA_GATEWAY_TOKEN` is still valid as a shell-level override, but the durable remote-client setup is `gateway.remote.token` / `gateway.remote.password`.
 
 #### Step 4: create the LaunchAgent
 
-Save as `~/Library/LaunchAgents/ai.openclaw.ssh-tunnel.plist`:
+Save as `~/Library/LaunchAgents/ai.afora.ssh-tunnel.plist`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -185,7 +185,7 @@ Save as `~/Library/LaunchAgents/ai.openclaw.ssh-tunnel.plist`:
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>ai.openclaw.ssh-tunnel</string>
+    <string>ai.afora.ssh-tunnel</string>
     <key>ProgramArguments</key>
     <array>
         <string>/usr/bin/ssh</string>
@@ -203,13 +203,13 @@ Save as `~/Library/LaunchAgents/ai.openclaw.ssh-tunnel.plist`:
 #### Step 5: load the LaunchAgent
 
 ```bash
-launchctl bootstrap gui/$UID ~/Library/LaunchAgents/ai.openclaw.ssh-tunnel.plist
+launchctl bootstrap gui/$UID ~/Library/LaunchAgents/ai.afora.ssh-tunnel.plist
 ```
 
 The tunnel starts automatically at login, restarts on crash, and keeps the forwarded port live.
 
 <Note>
-If you have a leftover `com.openclaw.ssh-tunnel` LaunchAgent from an older setup, unload and delete it.
+If you have a leftover `com.afora.ssh-tunnel` LaunchAgent from an older setup, unload and delete it.
 </Note>
 
 #### Troubleshooting
@@ -220,10 +220,10 @@ ps aux | grep "ssh -N remote-gateway" | grep -v grep
 lsof -i :18789
 
 # Restart the tunnel
-launchctl kickstart -k gui/$UID/ai.openclaw.ssh-tunnel
+launchctl kickstart -k gui/$UID/ai.afora.ssh-tunnel
 
 # Stop the tunnel
-launchctl bootout gui/$UID/ai.openclaw.ssh-tunnel
+launchctl bootout gui/$UID/ai.afora.ssh-tunnel
 ```
 
 | Config entry                         | What it does                                                 |

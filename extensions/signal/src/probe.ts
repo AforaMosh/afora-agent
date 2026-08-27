@@ -1,7 +1,7 @@
 // Signal plugin module implements probe behavior.
-import type { BaseProbeResult } from "openclaw/plugin-sdk/channel-contract";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { runChannelProbe } from "openclaw/plugin-sdk/text-utility-runtime";
+import type { BaseProbeResult } from "afora-agent/plugin-sdk/channel-contract";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { runChannelProbe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { type SignalTransportKind, signalCheck, signalRpcRequest } from "./client-adapter.js";
 import { detectSignalTransport } from "./transport-detection.js";
 

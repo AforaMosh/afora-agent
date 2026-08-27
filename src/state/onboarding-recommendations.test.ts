@@ -1,11 +1,11 @@
 import fs from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import {
   createOnboardingRecommendationsStore,
   type OnboardingRecommendationMatch,
 } from "./onboarding-recommendations.js";
-import { closeOpenClawStateDatabaseForTest } from "./openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "./afora-state-db.js";
 
 const matches: OnboardingRecommendationMatch[] = [
   {
@@ -23,12 +23,12 @@ const matches: OnboardingRecommendationMatch[] = [
 ];
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 describe("onboarding recommendations store", () => {
   it("isolates offers by workspace", async () => {
-    await withOpenClawTestState({ label: "onboarding-recommendations-scopes" }, async (state) => {
+    await withAforaTestState({ label: "onboarding-recommendations-scopes" }, async (state) => {
       const database = { env: state.env };
       const workspaceA = createOnboardingRecommendationsStore({
         workspaceDir: state.path("workspace-a"),
@@ -53,7 +53,7 @@ describe("onboarding recommendations store", () => {
   });
 
   it("round-trips the workspace offer and answer timestamps", async () => {
-    await withOpenClawTestState({ label: "onboarding-recommendations" }, async (state) => {
+    await withAforaTestState({ label: "onboarding-recommendations" }, async (state) => {
       const database = { env: state.env };
       const store = createOnboardingRecommendationsStore({
         workspaceDir: state.workspaceDir,
@@ -62,7 +62,7 @@ describe("onboarding recommendations store", () => {
       const inventory = [{ label: "Chat", bundleId: "com.example.chat" }];
 
       expect(store.read()).toBeNull();
-      expect(fs.existsSync(state.statePath("state", "openclaw.sqlite"))).toBe(false);
+      expect(fs.existsSync(state.statePath("state", "afora.sqlite"))).toBe(false);
       const written = store.writeOffer({
         inventory,
         matches,
@@ -90,7 +90,7 @@ describe("onboarding recommendations store", () => {
   });
 
   it("keeps acceptedAt null when the offer was shown without an answer", async () => {
-    await withOpenClawTestState({ label: "onboarding-recommendations-open" }, async (state) => {
+    await withAforaTestState({ label: "onboarding-recommendations-open" }, async (state) => {
       const store = createOnboardingRecommendationsStore({
         workspaceDir: state.workspaceDir,
         database: { env: state.env },
@@ -113,7 +113,7 @@ describe("onboarding recommendations store", () => {
   });
 
   it("updates pending matches without changing the inventory identity", async () => {
-    await withOpenClawTestState({ label: "onboarding-recommendations-retry" }, async (state) => {
+    await withAforaTestState({ label: "onboarding-recommendations-retry" }, async (state) => {
       const database = { env: state.env };
       const store = createOnboardingRecommendationsStore({
         workspaceDir: state.workspaceDir,
@@ -143,7 +143,7 @@ describe("onboarding recommendations store", () => {
   });
 
   it("does not overwrite a concurrently replaced pending offer", async () => {
-    await withOpenClawTestState({ label: "onboarding-recommendations-stale" }, async (state) => {
+    await withAforaTestState({ label: "onboarding-recommendations-stale" }, async (state) => {
       const database = { env: state.env };
       const store = createOnboardingRecommendationsStore({
         workspaceDir: state.workspaceDir,
@@ -180,7 +180,7 @@ describe("onboarding recommendations store", () => {
   });
 
   it("clears only pending offers", async () => {
-    await withOpenClawTestState(
+    await withAforaTestState(
       { label: "onboarding-recommendations-pending-clear" },
       async (state) => {
         const database = { env: state.env };
@@ -209,7 +209,7 @@ describe("onboarding recommendations store", () => {
   });
 
   it("deletes the stored offer so recommendations can be scanned again", async () => {
-    await withOpenClawTestState({ label: "onboarding-recommendations-clear" }, async (state) => {
+    await withAforaTestState({ label: "onboarding-recommendations-clear" }, async (state) => {
       const database = { env: state.env };
       const store = createOnboardingRecommendationsStore({
         workspaceDir: state.workspaceDir,

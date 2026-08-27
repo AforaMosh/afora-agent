@@ -110,7 +110,7 @@ export function shouldInstallPlaywrightSystemDependencies(
   return (
     parsePermissiveBooleanToken(env.CI) === true ||
     parsePermissiveBooleanToken(env.GITHUB_ACTIONS) === true ||
-    parsePermissiveBooleanToken(env.OPENCLAW_TESTBOX) === true
+    parsePermissiveBooleanToken(env.AFORA_TESTBOX) === true
   );
 }
 
@@ -300,9 +300,9 @@ export function ensurePlaywrightChromium(options: ChromiumInstallOptions = {}) {
     }
   }
 
-  if (env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1") {
+  if (env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1") {
     log(
-      `[ui-e2e] Playwright Chromium is missing at ${executablePath}; OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM=1 leaves the lane skipped.`,
+      `[ui-e2e] Playwright Chromium is missing at ${executablePath}; AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM=1 leaves the lane skipped.`,
     );
     return 0;
   }

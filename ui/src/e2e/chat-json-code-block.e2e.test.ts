@@ -12,10 +12,10 @@ import {
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
-const captureProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
-const proofStage = process.env.OPENCLAW_JSON_CODE_PROOF_STAGE ?? "after";
+const captureProof = process.env.AFORA_CAPTURE_UI_PROOF === "1";
+const proofStage = process.env.AFORA_JSON_CODE_PROOF_STAGE ?? "after";
 const artifactDir = path.resolve(process.cwd(), ".artifacts/control-ui-e2e/chat-json-code-block");
 
 function fencedJson(lineCount: number): string {
@@ -84,25 +84,25 @@ describeControlUiE2e("Control UI JSON code blocks", () => {
             role: "user",
             content: [{ type: "text", text: "Show the full diagnostic payload." }],
             timestamp: Date.now(),
-            __openclaw: { id: "user-json-long", seq: 1 },
+            __afora: { id: "user-json-long", seq: 1 },
           },
           {
             role: "assistant",
             content: [{ type: "text", text: fencedJson(41) }],
             timestamp: Date.now() + 1,
-            __openclaw: { id: "assistant-json-long", seq: 2 },
+            __afora: { id: "assistant-json-long", seq: 2 },
           },
           {
             role: "user",
             content: [{ type: "text", text: "Return the deployment receipt as JSON." }],
             timestamp: Date.now() + 2,
-            __openclaw: { id: "user-json-short", seq: 3 },
+            __afora: { id: "user-json-short", seq: 3 },
           },
           {
             role: "assistant",
             content: [{ type: "text", text: shortJson }],
             timestamp: Date.now() + 3,
-            __openclaw: { id: "assistant-json-short", seq: 4 },
+            __afora: { id: "assistant-json-short", seq: 4 },
           },
         ],
       });

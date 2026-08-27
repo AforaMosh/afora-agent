@@ -1,25 +1,25 @@
 // Google provider module implements model/runtime integration.
-import { transcodeAudioBufferToOpus } from "openclaw/plugin-sdk/media-runtime";
+import { transcodeAudioBufferToOpus } from "afora-agent/plugin-sdk/media-runtime";
 import {
   assertOkOrThrowProviderError,
   postJsonRequest,
   readProviderJsonResponse,
   sanitizeConfiguredModelProviderRequest,
-} from "openclaw/plugin-sdk/provider-http";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/provider-onboard";
-import { normalizeResolvedSecretInputString } from "openclaw/plugin-sdk/secret-input";
+} from "afora-agent/plugin-sdk/provider-http";
+import type { AforaConfig } from "afora-agent/plugin-sdk/provider-onboard";
+import { normalizeResolvedSecretInputString } from "afora-agent/plugin-sdk/secret-input";
 import type {
   SpeechDirectiveTokenParseContext,
   SpeechProviderConfig,
   SpeechProviderOverrides,
   SpeechProviderPlugin,
   SpeechSynthesisRequest,
-} from "openclaw/plugin-sdk/speech-core";
-import { trimToUndefined } from "openclaw/plugin-sdk/speech-core";
+} from "afora-agent/plugin-sdk/speech-core";
+import { trimToUndefined } from "afora-agent/plugin-sdk/speech-core";
 import {
   asOptionalRecord,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveGoogleGenerativeAiHttpRequestConfig } from "./api.js";
 import { canonicalizeGoogleProviderBase64 } from "./base64.js";
 
@@ -166,7 +166,7 @@ function resolveGoogleTtsEnvApiKey(): string | undefined {
   );
 }
 
-function resolveGoogleTtsModelProviderApiKey(cfg?: OpenClawConfig): string | undefined {
+function resolveGoogleTtsModelProviderApiKey(cfg?: AforaConfig): string | undefined {
   return normalizeResolvedSecretInputString({
     value: cfg?.models?.providers?.google?.apiKey,
     path: "models.providers.google.apiKey",
@@ -174,7 +174,7 @@ function resolveGoogleTtsModelProviderApiKey(cfg?: OpenClawConfig): string | und
 }
 
 function resolveGoogleTtsApiKey(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   providerConfig: SpeechProviderConfig;
 }): string | undefined {
   return (
@@ -185,7 +185,7 @@ function resolveGoogleTtsApiKey(params: {
 }
 
 function resolveGoogleTtsBaseUrl(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   providerConfig: GoogleTtsProviderConfig;
 }): string | undefined {
   return (
@@ -333,7 +333,7 @@ function normalizePromptSectionText(value: string | undefined): string | undefin
   return sanitized;
 }
 
-function isOpenClawGoogleAudioProfilePrompt(text: string): boolean {
+function isAforaGoogleAudioProfilePrompt(text: string): boolean {
   return (
     text.includes("# AUDIO PROFILE:") &&
     text.includes("### TRANSCRIPT") &&
@@ -586,7 +586,7 @@ export function buildGoogleSpeechProvider(): SpeechProviderPlugin {
       const shouldWrap =
         config.promptTemplate === GOOGLE_AUDIO_PROFILE_PROMPT_TEMPLATE ||
         Boolean(config.personaPrompt);
-      if (!shouldWrap || isOpenClawGoogleAudioProfilePrompt(ctx.text)) {
+      if (!shouldWrap || isAforaGoogleAudioProfilePrompt(ctx.text)) {
         return undefined;
       }
       return {

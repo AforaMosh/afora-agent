@@ -1,8 +1,8 @@
 import SwiftUI
 import UIKit
 import XCTest
-@testable import OpenClaw
-@testable import OpenClawChatUI
+@testable import Afora
+@testable import AforaChatUI
 
 @MainActor
 final class TraceHeadingVisualProofTests: XCTestCase {
@@ -12,14 +12,14 @@ final class TraceHeadingVisualProofTests: XCTestCase {
             context: .assistant,
             variant: .standard,
             typography: .response,
-            textColor: OpenClawChatTheme.assistantText)
+            textColor: AforaChatTheme.assistantText)
             .environment(\.dynamicTypeSize, .accessibility2)
         let thinkingHeading = ChatMarkdownRenderer(
             text: "# Internal plan",
             context: .assistant,
             variant: .standard,
             typography: .thinking,
-            textColor: OpenClawChatTheme.assistantText)
+            textColor: AforaChatTheme.assistantText)
             .environment(\.dynamicTypeSize, .accessibility2)
         let responseHeight = UIHostingController(rootView: responseHeading)
             .sizeThatFits(in: CGSize(width: 393, height: 1000)).height
@@ -30,33 +30,33 @@ final class TraceHeadingVisualProofTests: XCTestCase {
 
         let root = VStack(alignment: .leading, spacing: 18) {
             Text(verbatim: "Before: thinking rendered as response")
-                .font(OpenClawType.captionSemiBold)
+                .font(AforaType.captionSemiBold)
             ChatMarkdownRenderer(
                 text: "# Internal plan",
                 context: .assistant,
                 variant: .standard,
                 typography: .response,
-                textColor: OpenClawChatTheme.assistantText)
+                textColor: AforaChatTheme.assistantText)
 
             Divider()
 
             Text(verbatim: "After: thinking profile")
-                .font(OpenClawType.captionSemiBold)
+                .font(AforaType.captionSemiBold)
             ChatMarkdownRenderer(
                 text: "# Internal plan",
                 context: .assistant,
                 variant: .standard,
                 typography: .thinking,
-                textColor: OpenClawChatTheme.assistantText)
+                textColor: AforaChatTheme.assistantText)
 
             Text(verbatim: "Final response")
-                .font(OpenClawType.captionSemiBold)
+                .font(AforaType.captionSemiBold)
             ChatMarkdownRenderer(
                 text: "# Final answer",
                 context: .assistant,
                 variant: .standard,
                 typography: .response,
-                textColor: OpenClawChatTheme.assistantText)
+                textColor: AforaChatTheme.assistantText)
         }
         .padding(24)
         .frame(width: 393, alignment: .leading)

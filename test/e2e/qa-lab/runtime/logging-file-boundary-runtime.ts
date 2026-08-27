@@ -29,7 +29,7 @@ function rotatedPath(file: string): string {
 
 export async function runLoggingFileBoundary(outputRoot: string) {
   await mkdir(outputRoot, { recursive: true });
-  const logPath = path.join(outputRoot, "openclaw.jsonl");
+  const logPath = path.join(outputRoot, "afora.jsonl");
   const trace = createDiagnosticTraceContext({
     traceId: "4bf92f3577b34da6a3ce929d0e0e4736",
     spanId: "00f067aa0ba902b7",

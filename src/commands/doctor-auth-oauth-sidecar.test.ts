@@ -5,13 +5,13 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearRuntimeAuthProfileStoreSnapshots } from "../agents/auth-profiles/runtime-snapshots.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../test-utils/afora-test-state.js";
 import { maybeRepairLegacyOAuthSidecarProfiles } from "./doctor-auth-oauth-sidecar.js";
 import type { DoctorPrompter } from "./doctor-prompter.js";
 
-const states: OpenClawTestState[] = [];
+const states: AforaTestState[] = [];
 
 function makePrompter(shouldRepair: boolean): DoctorPrompter {
   return {
@@ -32,13 +32,13 @@ function makePrompter(shouldRepair: boolean): DoctorPrompter {
   };
 }
 
-async function makeTestState(seed = "legacy-oauth-seed"): Promise<OpenClawTestState> {
-  const state = await createOpenClawTestState({
+async function makeTestState(seed = "legacy-oauth-seed"): Promise<AforaTestState> {
+  const state = await createAforaTestState({
     layout: "state-only",
-    prefix: "openclaw-doctor-oauth-sidecar-",
+    prefix: "afora-doctor-oauth-sidecar-",
     env: {
-      OPENCLAW_AGENT_DIR: undefined,
-      OPENCLAW_AUTH_PROFILE_SECRET_KEY: seed,
+      AFORA_AGENT_DIR: undefined,
+      AFORA_AUTH_PROFILE_SECRET_KEY: seed,
     },
   });
   states.push(state);
@@ -46,7 +46,7 @@ async function makeTestState(seed = "legacy-oauth-seed"): Promise<OpenClawTestSt
 }
 
 function writeLegacyAuthProfiles(
-  state: OpenClawTestState,
+  state: AforaTestState,
   store: unknown,
   agentId = "main",
 ): Promise<string> {
@@ -63,7 +63,7 @@ function encryptLegacySidecarMaterial(params: {
   const iv = Buffer.alloc(12, 7);
   const cipher = createCipheriv(
     "aes-256-gcm",
-    hash("sha256", `openclaw:auth-profile-oauth:${params.seed}`, "buffer"),
+    hash("sha256", `afora:auth-profile-oauth:${params.seed}`, "buffer"),
     iv,
   );
   cipher.setAAD(Buffer.from(`${params.ref.id}\0${params.profileId}\0${params.provider}`, "utf8"));
@@ -92,7 +92,7 @@ describe("maybeRepairLegacyOAuthSidecarProfiles", () => {
     const state = await makeTestState(seed);
     const profileId = "openai-codex:default";
     const ref = {
-      source: "openclaw-credentials" as const,
+      source: "afora-credentials" as const,
       provider: "openai-codex" as const,
       id: "0123456789abcdef0123456789abcdef",
     };
@@ -179,7 +179,7 @@ describe("maybeRepairLegacyOAuthSidecarProfiles", () => {
           type: "oauth",
           provider: "openai-codex",
           oauthRef: {
-            source: "openclaw-credentials",
+            source: "afora-credentials",
             provider: "openai-codex",
             id: "fedcba9876543210fedcba9876543210",
           },
@@ -204,7 +204,7 @@ describe("maybeRepairLegacyOAuthSidecarProfiles", () => {
     const state = await makeTestState(seed);
     const profileId = "openai-codex:retired-owner";
     const ref = {
-      source: "openclaw-credentials" as const,
+      source: "afora-credentials" as const,
       provider: "openai-codex" as const,
       id: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
     };
@@ -277,7 +277,7 @@ describe("maybeRepairLegacyOAuthSidecarProfiles", () => {
     const state = await makeTestState("wrong-seed");
     const profileId = "openai-codex:default";
     const ref = {
-      source: "openclaw-credentials" as const,
+      source: "afora-credentials" as const,
       provider: "openai-codex" as const,
       id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     };
@@ -371,7 +371,7 @@ describe("maybeRepairLegacyOAuthSidecarProfiles", () => {
     async () => {
       const state = await makeTestState();
       const ref = {
-        source: "openclaw-credentials" as const,
+        source: "afora-credentials" as const,
         provider: "openai-codex" as const,
         id: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
       };
@@ -437,14 +437,14 @@ describe("maybeRepairLegacyOAuthSidecarProfiles", () => {
     },
   );
 
-  it("scans OPENCLAW_AGENT_DIR before treating sidecars as unreferenced", async () => {
+  it("scans AFORA_AGENT_DIR before treating sidecars as unreferenced", async () => {
     const state = await makeTestState();
-    const previousAgentDir = process.env.OPENCLAW_AGENT_DIR;
+    const previousAgentDir = process.env.AFORA_AGENT_DIR;
     const agentDir = state.path("external-agent");
     const authPath = path.join(agentDir, "auth-profiles.json");
     const profileId = "openai-codex:external";
     const ref = {
-      source: "openclaw-credentials" as const,
+      source: "afora-credentials" as const,
       provider: "openai-codex" as const,
       id: "dddddddddddddddddddddddddddddddd",
     };
@@ -461,7 +461,7 @@ describe("maybeRepairLegacyOAuthSidecarProfiles", () => {
     try {
       fs.mkdirSync(agentDir, { recursive: true });
       fs.writeFileSync(authPath, `${JSON.stringify(auth, null, 2)}\n`, "utf8");
-      process.env.OPENCLAW_AGENT_DIR = agentDir;
+      process.env.AFORA_AGENT_DIR = agentDir;
       const sidecarPath = await state.writeJson(
         path.join("credentials", "auth-profiles", `${ref.id}.json`),
         {
@@ -498,9 +498,9 @@ describe("maybeRepairLegacyOAuthSidecarProfiles", () => {
       expect(fs.existsSync(sidecarPath)).toBe(false);
     } finally {
       if (previousAgentDir === undefined) {
-        delete process.env.OPENCLAW_AGENT_DIR;
+        delete process.env.AFORA_AGENT_DIR;
       } else {
-        process.env.OPENCLAW_AGENT_DIR = previousAgentDir;
+        process.env.AFORA_AGENT_DIR = previousAgentDir;
       }
     }
   });
@@ -512,7 +512,7 @@ describe("maybeRepairLegacyOAuthSidecarProfiles", () => {
     const authPath = path.join(agentDir, "auth-profiles.json");
     const profileId = "openai-codex:pi";
     const ref = {
-      source: "openclaw-credentials" as const,
+      source: "afora-credentials" as const,
       provider: "openai-codex" as const,
       id: "ffffffffffffffffffffffffffffffff",
     };
@@ -568,7 +568,7 @@ describe("maybeRepairLegacyOAuthSidecarProfiles", () => {
     const state = await makeTestState(seed);
     const profileId = "openai-codex:default";
     const ref = {
-      source: "openclaw-credentials" as const,
+      source: "afora-credentials" as const,
       provider: "openai-codex" as const,
       id: "cccccccccccccccccccccccccccccccc",
     };

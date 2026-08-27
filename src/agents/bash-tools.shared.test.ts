@@ -20,14 +20,14 @@ describe("buildDockerExecArgs", () => {
     });
 
     const commandArg = args.at(-1);
-    expect(args).toContain("OPENCLAW_PREPEND_PATH=/custom/bin:/usr/local/bin:/usr/bin");
+    expect(args).toContain("AFORA_PREPEND_PATH=/custom/bin:/usr/local/bin:/usr/bin");
     expect(commandArg).toBe(
-      'export PATH="${OPENCLAW_PREPEND_PATH}:$PATH"; unset OPENCLAW_PREPEND_PATH; echo hello',
+      'export PATH="${AFORA_PREPEND_PATH}:$PATH"; unset AFORA_PREPEND_PATH; echo hello',
     );
   });
 
   it("does not interpolate PATH into the shell command", () => {
-    const injectedPath = "$(touch /tmp/openclaw-path-injection)";
+    const injectedPath = "$(touch /tmp/afora-path-injection)";
     const args = buildDockerExecArgs({
       containerName: "test-container",
       command: "echo hello",
@@ -35,9 +35,9 @@ describe("buildDockerExecArgs", () => {
       tty: false,
     });
 
-    expect(args).toContain(`OPENCLAW_PREPEND_PATH=${injectedPath}`);
+    expect(args).toContain(`AFORA_PREPEND_PATH=${injectedPath}`);
     expect(args.at(-1)).not.toContain(injectedPath);
-    expect(args.at(-1)).toContain("OPENCLAW_PREPEND_PATH");
+    expect(args.at(-1)).toContain("AFORA_PREPEND_PATH");
   });
 
   it("does not add PATH export when PATH is not in env", () => {
@@ -81,38 +81,38 @@ describe("readEnvInt", () => {
     vi.unstubAllEnvs();
   });
 
-  it("reads deprecated PI env integer aliases behind OPENCLAW env names", () => {
+  it("reads deprecated PI env integer aliases behind AFORA env names", () => {
     vi.stubEnv("PI_BASH_YIELD_MS", "250");
 
-    expect(readEnvInt("OPENCLAW_BASH_YIELD_MS", "PI_BASH_YIELD_MS")).toBe(250);
+    expect(readEnvInt("AFORA_BASH_YIELD_MS", "PI_BASH_YIELD_MS")).toBe(250);
 
-    vi.stubEnv("OPENCLAW_BASH_YIELD_MS", "500");
+    vi.stubEnv("AFORA_BASH_YIELD_MS", "500");
 
-    expect(readEnvInt("OPENCLAW_BASH_YIELD_MS", "PI_BASH_YIELD_MS")).toBe(500);
+    expect(readEnvInt("AFORA_BASH_YIELD_MS", "PI_BASH_YIELD_MS")).toBe(500);
   });
 
   it("ignores partial environment integers", () => {
-    vi.stubEnv("OPENCLAW_BASH_YIELD_MS", "250ms");
+    vi.stubEnv("AFORA_BASH_YIELD_MS", "250ms");
     vi.stubEnv("PI_BASH_YIELD_MS", "500");
 
-    expect(readEnvInt("OPENCLAW_BASH_YIELD_MS", "PI_BASH_YIELD_MS")).toBeUndefined();
+    expect(readEnvInt("AFORA_BASH_YIELD_MS", "PI_BASH_YIELD_MS")).toBeUndefined();
   });
 
   it("reads only strict signed decimal environment integers", () => {
-    vi.stubEnv("OPENCLAW_BASH_YIELD_MS", "+250");
-    expect(readEnvInt("OPENCLAW_BASH_YIELD_MS", "PI_BASH_YIELD_MS")).toBe(250);
+    vi.stubEnv("AFORA_BASH_YIELD_MS", "+250");
+    expect(readEnvInt("AFORA_BASH_YIELD_MS", "PI_BASH_YIELD_MS")).toBe(250);
 
-    vi.stubEnv("OPENCLAW_BASH_YIELD_MS", "0x10");
-    expect(readEnvInt("OPENCLAW_BASH_YIELD_MS", "PI_BASH_YIELD_MS")).toBeUndefined();
+    vi.stubEnv("AFORA_BASH_YIELD_MS", "0x10");
+    expect(readEnvInt("AFORA_BASH_YIELD_MS", "PI_BASH_YIELD_MS")).toBeUndefined();
 
-    vi.stubEnv("OPENCLAW_BASH_YIELD_MS", "1e2");
-    expect(readEnvInt("OPENCLAW_BASH_YIELD_MS", "PI_BASH_YIELD_MS")).toBeUndefined();
+    vi.stubEnv("AFORA_BASH_YIELD_MS", "1e2");
+    expect(readEnvInt("AFORA_BASH_YIELD_MS", "PI_BASH_YIELD_MS")).toBeUndefined();
   });
 
   it("ignores unsafe environment integers", () => {
-    vi.stubEnv("OPENCLAW_BASH_YIELD_MS", "9007199254740993");
+    vi.stubEnv("AFORA_BASH_YIELD_MS", "9007199254740993");
 
-    expect(readEnvInt("OPENCLAW_BASH_YIELD_MS", "PI_BASH_YIELD_MS")).toBeUndefined();
+    expect(readEnvInt("AFORA_BASH_YIELD_MS", "PI_BASH_YIELD_MS")).toBeUndefined();
   });
 });
 

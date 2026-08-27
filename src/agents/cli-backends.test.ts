@@ -1,6 +1,6 @@
 /** Tests plugin-owned CLI backend resolution and runtime bindings. */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import type {
   CliBackendConfig,
   CliBackendPlugin,
@@ -95,7 +95,7 @@ function createBooleanOwnershipBackend(ownsNativeCompaction: boolean): CliBacken
 function runtimeEntry(
   overrides: CliBackendOverrides = {},
   pluginId = "acme-plugin",
-  metadata: { builtWithOpenClawVersion?: string } = {},
+  metadata: { builtWithAforaVersion?: string } = {},
 ): RuntimeBackendEntry {
   return { ...createBackend(overrides), pluginId, ...metadata } as RuntimeBackendEntry;
 }
@@ -111,7 +111,7 @@ function setupEntry(
   } as SetupBackendEntry;
 }
 
-function requireBackend(provider = "acme-cli", cfg?: OpenClawConfig) {
+function requireBackend(provider = "acme-cli", cfg?: AforaConfig) {
   const resolved = resolveCliBackendConfig(provider, cfg);
   if (!resolved) {
     throw new Error(`Expected CLI backend ${provider}`);
@@ -181,7 +181,7 @@ describe("resolveCliBackendConfig", () => {
       resolveRuntimeCliBackends: () => [runtimeEntry({ normalizeConfig })],
       resolvePluginSetupCliBackend: () => undefined,
     });
-    const cfg: OpenClawConfig = { tools: { exec: { mode: "ask" } } };
+    const cfg: AforaConfig = { tools: { exec: { mode: "ask" } } };
 
     const resolved = resolveCliBackendConfig("acme-cli", cfg, { agentId: "reviewer" });
 
@@ -292,7 +292,7 @@ describe("resolveCliBackendConfig", () => {
             resolveExecutionArgs: resolveExecutionArgs as never,
           },
           "acme-plugin",
-          { builtWithOpenClawVersion: "2026.7.2-beta.3" },
+          { builtWithAforaVersion: "2026.7.2-beta.3" },
         ),
       ],
       resolvePluginSetupCliBackend: () => undefined,

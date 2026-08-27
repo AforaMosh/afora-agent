@@ -2,7 +2,7 @@
 import { createServer, type Server } from "node:http";
 import type { AddressInfo, Socket } from "node:net";
 import { Bot } from "grammy";
-import { getChildLogger } from "openclaw/plugin-sdk/runtime-env";
+import { getChildLogger } from "afora-agent/plugin-sdk/runtime-env";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { defaultTelegramBotDeps } from "./bot-deps.js";
 import { createTelegramHandlerAuthorization } from "./bot-handlers.inbound-authorization.js";

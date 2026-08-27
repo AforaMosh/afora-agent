@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { formatHumanList } from "../shared/human-list.js";
 
 /** Parses an optional exact-match CLI enum before command-owned work begins. */

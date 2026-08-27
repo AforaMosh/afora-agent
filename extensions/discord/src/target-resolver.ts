@@ -1,6 +1,6 @@
 // Discord plugin module implements target resolver behavior.
-import { buildMessagingTarget, type MessagingTarget } from "openclaw/plugin-sdk/channel-targets";
-import type { DirectoryConfigParams } from "openclaw/plugin-sdk/directory-runtime";
+import { buildMessagingTarget, type MessagingTarget } from "afora-agent/plugin-sdk/channel-targets";
+import type { DirectoryConfigParams } from "afora-agent/plugin-sdk/directory-runtime";
 import { resolveDiscordAccount, resolveDiscordAccountAllowFrom } from "./accounts.js";
 import { rememberDiscordDirectoryUser } from "./directory-cache.js";
 import { listDiscordDirectoryPeersLive } from "./directory-live.js";

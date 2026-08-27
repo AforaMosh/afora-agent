@@ -5,7 +5,7 @@ import {
   resolveAgentModelFallbackValues,
   resolveAgentModelPrimaryValue,
 } from "../config/model-input.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveAgentConfig } from "./agent-scope.js";
 import type { ModelCatalogEntry } from "./model-catalog.types.js";
 import type { ModelManifestNormalizationContext } from "./model-ref-shared.js";
@@ -21,7 +21,7 @@ export const RUNTIME_MODEL_VISIBILITY_NORMALIZATION = {
 } as const;
 
 function resolveAdditionalConfiguredModelRefs(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
 }): string[] {
   const defaults = params.cfg.agents?.defaults;
@@ -43,7 +43,7 @@ function resolveAdditionalConfiguredModelRefs(params: {
 
 export function createModelVisibilityPolicy(
   params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     catalog: ModelCatalogEntry[];
     defaultProvider: string;
     defaultModel?: string;

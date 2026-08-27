@@ -1,5 +1,5 @@
 ---
-summary: "Model providers (LLMs) supported by OpenClaw"
+summary: "Model providers (LLMs) supported by Afora"
 read_when:
   - You want to choose a model provider
   - You want quick setup examples for LLM auth + model selection
@@ -10,7 +10,7 @@ Pick a provider, authenticate, then set the default model as `provider/model`.
 
 ## Quick start (two steps)
 
-1. Authenticate with the provider (usually via `openclaw onboard`).
+1. Authenticate with the provider (usually via `afora onboard`).
 2. Set the default model:
 
 ```json5
@@ -55,8 +55,8 @@ For the full provider catalog and advanced configuration, see
 
 ## Additional provider variants
 
-- `anthropic-vertex` - install `@openclaw/anthropic-vertex-provider` for implicit Anthropic on Google Vertex support when Vertex credentials are available; no separate onboarding auth choice
-- `copilot-proxy` - local VS Code Copilot Proxy bridge; use `openclaw onboard --auth-choice copilot-proxy`
+- `anthropic-vertex` - install `@afora/anthropic-vertex-provider` for implicit Anthropic on Google Vertex support when Vertex credentials are available; no separate onboarding auth choice
+- `copilot-proxy` - local VS Code Copilot Proxy bridge; use `afora onboard --auth-choice copilot-proxy`
 - `google-gemini-cli` - optional explicit runtime for canonical `google/*` models; requires a local `gemini` install and a supported Google AI Studio API-key profile; new Gemini CLI or Antigravity OAuth setup is not offered
 
 ## Related

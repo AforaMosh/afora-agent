@@ -1,6 +1,6 @@
-# OpenClaw iOS Versioning
+# Afora iOS Versioning
 
-OpenClaw iOS releases retain their gateway association while allowing multiple
+Afora iOS releases retain their gateway association while allowing multiple
 public App Store releases for one gateway version. The release planner derives
 the active release identity from the repository and App Store Connect.
 
@@ -70,7 +70,7 @@ pnpm ios:release:archive -- --version 2026.7.2 --revision 1 --build-number 3
 
 Gateway `2026.7.2`, revision `1`, build `3` maps to:
 
-- `OpenClawCanonicalVersion = 2026.7.2`
+- `AforaCanonicalVersion = 2026.7.2`
 - `CFBundleShortVersionString = 2026.7.21`
 - `CFBundleVersion = 3`
 
@@ -167,13 +167,13 @@ The canonical implementation is split across:
 Successful uploads record the exact App Store version and build:
 
 ```text
-refs/openclaw/mobile-releases/ios/<CFBundleShortVersionString>-<CFBundleVersion>
+refs/afora/mobile-releases/ios/<CFBundleShortVersionString>-<CFBundleVersion>
 ```
 
 For example:
 
 ```text
-refs/openclaw/mobile-releases/ios/2026.7.21-3
+refs/afora/mobile-releases/ios/2026.7.21-3
 ```
 
 The ref is checked before archive/upload work and created only after App Store

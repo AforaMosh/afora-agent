@@ -1,6 +1,6 @@
-import type { dispatchInboundDirectDm as DispatchInboundDirectDm } from "openclaw/plugin-sdk/channel-inbound";
+import type { dispatchInboundDirectDm as DispatchInboundDirectDm } from "afora-agent/plugin-sdk/channel-inbound";
 // Nostr tests cover channel.inbound plugin behavior.
-import { createStartAccountContext } from "openclaw/plugin-sdk/channel-test-helpers";
+import { createStartAccountContext } from "afora-agent/plugin-sdk/channel-test-helpers";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { PluginRuntime } from "../runtime-api.js";
 import { startNostrGatewayAccount } from "./gateway.js";
@@ -19,8 +19,8 @@ const mocks = vi.hoisted(() => ({
   startNostrBus: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/channel-inbound")>()),
+vi.mock("afora-agent/plugin-sdk/channel-inbound", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/channel-inbound")>()),
   dispatchInboundDirectDm: mocks.dispatchInboundDirectDm,
 }));
 vi.mock("./nostr-bus.js", () => ({

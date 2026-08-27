@@ -1,19 +1,19 @@
 // Covers session-manager guard behavior for tool-result pairing and transcript
 // redaction.
 import { readFileSync } from "node:fs";
-import { expectDefined } from "@openclaw/normalization-core";
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
-import { SessionManager } from "openclaw/plugin-sdk/agent-sessions";
+import { expectDefined } from "@afora/normalization-core";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
+import { SessionManager } from "afora-agent/plugin-sdk/agent-sessions";
 import {
   initializeGlobalHookRunner,
   resetGlobalHookRunner,
-} from "openclaw/plugin-sdk/hook-runtime";
-import { createMockPluginRegistry } from "openclaw/plugin-sdk/plugin-test-runtime";
+} from "afora-agent/plugin-sdk/hook-runtime";
+import { createMockPluginRegistry } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createFileBackedSessionManagerForTest } from "../../test/helpers/session-manager-file-fixture.js";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { attachRuntimeUserTurnTranscriptContext } from "../sessions/user-turn-transcript-runtime-context.js";
 import {
   createUserTurnTranscriptRecorder,
@@ -79,7 +79,7 @@ describe("guardSessionManager integration", () => {
     appendMessage(assistantToolCall("call_1"));
     appendMessage({
       role: "assistant",
-      provider: "openclaw",
+      provider: "afora",
       model: "delivery-mirror",
       content: [{ type: "text", text: "display copy" }],
     } as AgentMessage);
@@ -203,7 +203,7 @@ describe("guardSessionManager integration", () => {
         role: "user",
         content: "already durable",
         timestamp: 1,
-        __openclaw: { senderName: "Alice" },
+        __afora: { senderName: "Alice" },
       } as PersistedUserTurnMessage,
       suppressNextUserMessagePersistence: true,
       onUserMessagePersistenceSuppressed: (persisted, runtime) => {
@@ -219,7 +219,7 @@ describe("guardSessionManager integration", () => {
       {
         persisted: expect.objectContaining({
           content: "already durable",
-          __openclaw: { senderName: "Alice" },
+          __afora: { senderName: "Alice" },
         }),
         runtime: runtimeMessage,
       },
@@ -236,7 +236,7 @@ describe("guardSessionManager integration", () => {
               role: "user",
               content: "[redacted by hook]",
               timestamp: 124,
-              __openclaw: { hookOwned: true },
+              __afora: { hookOwned: true },
             } as AgentMessage,
           }),
         },
@@ -247,7 +247,7 @@ describe("guardSessionManager integration", () => {
         role: "user",
         content: "private group prompt",
         timestamp: 123,
-        __openclaw: {
+        __afora: {
           senderIsOwner: true,
           senderId: "secret-user",
           senderName: "secret-name",
@@ -263,7 +263,7 @@ describe("guardSessionManager integration", () => {
     expect(message?.message).toMatchObject({
       role: "user",
       content: "[redacted by hook]",
-      __openclaw: {
+      __afora: {
         hookOwned: true,
         senderIsOwner: true,
       },
@@ -273,7 +273,7 @@ describe("guardSessionManager integration", () => {
   });
 
   it("commits queued group sender metadata to JSONL and completes its recorder", () => {
-    const dir = tempDirs.make("openclaw-queued-group-turn-");
+    const dir = tempDirs.make("afora-queued-group-turn-");
     const sessionManager = createFileBackedSessionManagerForTest(dir, dir);
     const sessionFile = sessionManager.getSessionFile();
     if (!sessionFile) {
@@ -316,7 +316,7 @@ describe("guardSessionManager integration", () => {
     expect(entries.find((entry) => entry.message?.role === "user")?.message).toMatchObject({
       role: "user",
       content: "visible group prompt",
-      __openclaw: {
+      __afora: {
         senderId: "user-42",
         senderName: "Ada",
         senderUsername: "ada42",
@@ -376,7 +376,7 @@ describe("guardSessionManager integration", () => {
       role: "user",
       content: [{ type: "text", text: "blocked" }],
       timestamp: 124,
-      __openclaw: { beforeAgentRunBlocked: { blockedBy: "test", blockedAt: 123 } },
+      __afora: { beforeAgentRunBlocked: { blockedBy: "test", blockedAt: 123 } },
     } as AgentMessage);
     appendMessage({ role: "user", content: "runtime prompt" } as AgentMessage);
 
@@ -385,7 +385,7 @@ describe("guardSessionManager integration", () => {
     expect(messages[0]).toMatchObject({
       role: "user",
       content: [{ type: "text", text: "blocked" }],
-      __openclaw: { beforeAgentRunBlocked: { blockedBy: "test", blockedAt: 123 } },
+      __afora: { beforeAgentRunBlocked: { blockedBy: "test", blockedAt: 123 } },
     });
     expect(messages[0]).not.toHaveProperty("MediaPath");
     expect(messages[1]).toMatchObject({
@@ -403,7 +403,7 @@ describe("guardSessionManager integration", () => {
       logging: {
         redactPatterns: [String.raw`([\w]|[-.])+@([\w]|[-.])+\.\w+`],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const sm = guardSessionManager(SessionManager.inMemory(), { config: cfg });
     const appendMessage = sm.appendMessage.bind(sm) as unknown as (message: AgentMessage) => void;
 

@@ -20,7 +20,7 @@ suite.define(() => {
       });
       const page = await context.newPage();
       const favicon = await readFile(path.resolve(process.cwd(), "ui/public/favicon.svg"));
-      await page.route("**/__openclaw__/workspace-icon/**", async (route) => {
+      await page.route("**/__afora__/workspace-icon/**", async (route) => {
         await route.fulfill({ body: favicon, contentType: "image/svg+xml", status: 200 });
       });
       await installMockGateway(page, {
@@ -30,7 +30,7 @@ suite.define(() => {
               key: "agent:main:parent",
               kind: "direct",
               label: "Release readiness and production rollout coordination",
-              spawnedCwd: "/repo/openclaw",
+              spawnedCwd: "/repo/afora",
               updatedAt: 1,
             },
             {
@@ -38,7 +38,7 @@ suite.define(() => {
               kind: "direct",
               label: "Implement parent breadcrumb navigation and polish overflow behavior",
               parentSessionKey: "agent:main:parent",
-              spawnedCwd: "/repo/openclaw",
+              spawnedCwd: "/repo/afora",
               updatedAt: 2,
             },
           ]),

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   ErrorCodes,
   type ErrorShape,
@@ -43,7 +43,7 @@ import {
   type SessionCreatedVia,
 } from "../config/sessions/session-entry-provenance.js";
 import { inheritSessionSelection } from "../config/sessions/session-entry-selection.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   createInternalHookEvent,
   hasInternalHookListeners,
@@ -99,7 +99,7 @@ const loadSessionLifecycleRuntime = createLazyRuntimeModule(
 );
 
 export function resolveSessionCreateModelSelection(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
   input: string | { model: string; agentRuntime?: string } | undefined,
   parentEntry?: SessionEntry,
@@ -140,7 +140,7 @@ export function resolveSessionCreateModelSelection(
 
 async function existingModelSelectionWouldChange(params: {
   agentId: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   catalogModel?: string;
   defaultModel: string;
   defaultProvider: string;
@@ -267,7 +267,7 @@ type CreateGatewaySessionResult =
   | { ok: false; error: ErrorShape };
 
 export async function createGatewaySession(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   key?: string;
   agentId?: string;
   label?: string;

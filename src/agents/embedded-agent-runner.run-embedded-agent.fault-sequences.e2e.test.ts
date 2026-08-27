@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { wrapRunWithTestAdmission } from "./admitted-run-context.test-support.js";
 import { ensureAuthProfileStore, saveAuthProfileStore } from "./auth-profiles/store.js";
 import {
@@ -62,7 +62,7 @@ const { computeBackoffMock, sleepWithAbortMock } = vi.hoisted(() => ({
 
 vi.mock("./models-config.js", async () => {
   const actual = await vi.importActual<typeof import("./models-config.js")>("./models-config.js");
-  return { ...actual, ensureOpenClawModelsJson: vi.fn(async () => ({ wrote: false })) };
+  return { ...actual, ensureAforaModelsJson: vi.fn(async () => ({ wrote: false })) };
 });
 
 type ProductionRunEmbeddedAgent = typeof import("./embedded-agent-runner/run.js").runEmbeddedAgent;
@@ -99,7 +99,7 @@ beforeEach(() => {
   sleepWithAbortMock.mockClear();
 });
 
-function makeProviderConfig(fallbacks: string[]): OpenClawConfig {
+function makeProviderConfig(fallbacks: string[]): AforaConfig {
   const provider = (modelIds: string[]) => ({
     api: "openai-responses" as const,
     apiKey: "test-key",
@@ -131,7 +131,7 @@ function makeProviderConfig(fallbacks: string[]): OpenClawConfig {
 async function withScenarioWorkspace<T>(
   run: (paths: { agentDir: string; workspaceDir: string }) => Promise<T>,
 ): Promise<T> {
-  const rawRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-fault-sequences-"));
+  const rawRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-fault-sequences-"));
   const root = await fs.realpath(rawRoot);
   const agentDir = path.join(root, "agent");
   const workspaceDir = path.join(root, "workspace");
@@ -236,7 +236,7 @@ function installFaultScript(faults: ProviderFault[], observations: AttemptObserv
 async function runScenario(params: {
   agentDir: string;
   workspaceDir: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   runId: string;
 }): Promise<ScenarioOutcome> {
   try {

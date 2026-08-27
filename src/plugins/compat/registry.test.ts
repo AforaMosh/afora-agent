@@ -109,8 +109,8 @@ describe("plugin compatibility registry", () => {
       removeAfter: undefined,
     });
     expect(records.get("agent-harness-sdk-alias")?.surfaces).toEqual([
-      "openclaw/plugin-sdk/agent-harness",
-      "openclaw/plugin-sdk/agent-harness-runtime",
+      "afora-agent/plugin-sdk/agent-harness",
+      "afora-agent/plugin-sdk/agent-harness-runtime",
     ]);
   });
 
@@ -143,24 +143,24 @@ describe("plugin compatibility registry", () => {
     }
     expect(records.get("plugin-sdk-broad-runtime-barrels")?.surfaces).toEqual(
       expect.arrayContaining([
-        "openclaw/plugin-sdk/agent-runtime",
-        "openclaw/plugin-sdk/agent-runtime loadModelCatalog params.useCache",
-        "openclaw/plugin-sdk/agent-runtime loadModelCatalog params.cacheOnly",
-        "openclaw/plugin-sdk/agent-runtime loadModelCatalog params.metadataSnapshot",
-        "openclaw/plugin-sdk/agent-runtime loadModelCatalog",
-        "openclaw/plugin-sdk/cli-runtime",
-        "openclaw/plugin-sdk/conversation-runtime",
-        "openclaw/plugin-sdk/hook-runtime",
-        "openclaw/plugin-sdk/media-runtime",
-        "openclaw/plugin-sdk/media-runtime buildAgentMediaPayload",
-        "openclaw/plugin-sdk/plugin-runtime",
-        "openclaw/plugin-sdk/security-runtime",
+        "afora-agent/plugin-sdk/agent-runtime",
+        "afora-agent/plugin-sdk/agent-runtime loadModelCatalog params.useCache",
+        "afora-agent/plugin-sdk/agent-runtime loadModelCatalog params.cacheOnly",
+        "afora-agent/plugin-sdk/agent-runtime loadModelCatalog params.metadataSnapshot",
+        "afora-agent/plugin-sdk/agent-runtime loadModelCatalog",
+        "afora-agent/plugin-sdk/cli-runtime",
+        "afora-agent/plugin-sdk/conversation-runtime",
+        "afora-agent/plugin-sdk/hook-runtime",
+        "afora-agent/plugin-sdk/media-runtime",
+        "afora-agent/plugin-sdk/media-runtime buildAgentMediaPayload",
+        "afora-agent/plugin-sdk/plugin-runtime",
+        "afora-agent/plugin-sdk/security-runtime",
       ]),
     );
     expect(records.get("deprecated-session-store-beta5-api")?.surfaces).toEqual(
       expect.arrayContaining([
-        "openclaw package root loadSessionStore",
-        "openclaw package root saveSessionStore",
+        "afora package root loadSessionStore",
+        "afora package root saveSessionStore",
       ]),
     );
   });
@@ -223,7 +223,7 @@ describe("plugin compatibility registry", () => {
     expect(record).toMatchObject({
       status: "removed",
       replacement:
-        "plugin-owned config schemas plus generic `openclaw/plugin-sdk/channel-config-schema` and `openclaw/plugin-sdk/setup-runtime` primitives",
+        "plugin-owned config schemas plus generic `afora/plugin-sdk/channel-config-schema` and `afora/plugin-sdk/setup-runtime` primitives",
     });
     expect(record?.removeAfter).toBeUndefined();
   });

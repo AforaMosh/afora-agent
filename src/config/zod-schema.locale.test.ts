@@ -27,12 +27,12 @@ describe("zod default locale", () => {
       const degraded = z.object({ expected: z.string() }).strict().safeParse({ unexpected: true });
       expect(firstIssueMessage(degraded)).toBe("Invalid input");
 
-      const { OpenClawSchema } = await import("./zod-schema.js");
-      const restored = OpenClawSchema.safeParse({
+      const { AforaSchema } = await import("./zod-schema.js");
+      const restored = AforaSchema.safeParse({
         agents: { defaults: { session: { pruneAfter: "1d" } } },
       });
       expect(firstIssueMessage(restored)).toBe('Unrecognized key: "session"');
-      const typeError = OpenClawSchema.safeParse({ gateway: { port: "not-a-number" } });
+      const typeError = AforaSchema.safeParse({ gateway: { port: "not-a-number" } });
       expect(firstIssueMessage(typeError)).toBe("Invalid input: expected number, received string");
     } finally {
       z.config({ localeError: previousLocaleError });

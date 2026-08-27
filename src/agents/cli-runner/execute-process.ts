@@ -123,7 +123,7 @@ export async function executeCliProcess(params: {
       prompt: params.prompt,
       useResume: params.useResume,
       forceNewSession:
-        params.cliSessionIdToUse === undefined && context.openClawHistoryPrompt !== undefined,
+        params.cliSessionIdToUse === undefined && context.aforaHistoryPrompt !== undefined,
       requiredSessionGeneration: params.cliSessionIdToUse
         ? context.requiredClaudeLiveSessionGeneration
         : undefined,
@@ -419,7 +419,7 @@ export async function executeCliProcess(params: {
         retryable &&
         Boolean(params.cliSessionIdToUse) &&
         Boolean(params.resolvedSessionId) &&
-        Boolean(context.openClawHistoryPrompt) &&
+        Boolean(context.aforaHistoryPrompt) &&
         Boolean(runParams.sessionKey) &&
         runParams.timeoutMs - (Date.now() - context.started) > 0;
       if (runParams.sessionKey && params.events.emitLiveEvents && !deferNotice) {

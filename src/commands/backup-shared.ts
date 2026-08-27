@@ -85,7 +85,7 @@ function formatBackupArchiveTimestamp(
 
 /** Build the root directory name stored inside a backup tarball. */
 export function buildBackupArchiveRoot(nowMs = Date.now()): string {
-  return `${formatBackupArchiveTimestamp(nowMs)}-openclaw-backup`;
+  return `${formatBackupArchiveTimestamp(nowMs)}-afora-backup`;
 }
 
 /** Build the default `.tar.gz` filename for a backup archive. */
@@ -255,7 +255,7 @@ async function resolveBackupPlanFromPaths(params: {
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.backupPlanTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.backupPlanTestApi")] = {
     resolveBackupPlanFromPaths,
   };
 }
@@ -301,7 +301,7 @@ export async function canonicalizePathForContainment(targetPath: string): Promis
   }
 }
 
-/** Resolve the backup plan from the current OpenClaw state/config/workspace paths on disk. */
+/** Resolve the backup plan from the current Afora state/config/workspace paths on disk. */
 export async function resolveBackupPlanFromDisk(
   params: {
     includeWorkspace?: boolean;
@@ -319,7 +319,7 @@ export async function resolveBackupPlanFromDisk(
   const configSnapshot = await readConfigFileSnapshot({ observe: false });
   if (includeWorkspace && configSnapshot.exists && !configSnapshot.valid) {
     throw new Error(
-      `Config invalid at ${shortenHomePath(configSnapshot.path)}. OpenClaw cannot reliably discover custom workspaces for backup. Fix the config or rerun with --no-include-workspace for a partial backup.`,
+      `Config invalid at ${shortenHomePath(configSnapshot.path)}. Afora cannot reliably discover custom workspaces for backup. Fix the config or rerun with --no-include-workspace for a partial backup.`,
     );
   }
   const cleanupPlan = buildCleanupPlan({

@@ -2,7 +2,7 @@
 import type { ConfigWriteTarget } from "../channels/plugins/config-writes.js";
 import type { ChannelAllowlistAdapter } from "../channels/plugins/types.adapters.js";
 import type { ChannelId } from "../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isBlockedObjectKey } from "../infra/prototype-keys.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
 import { isRecord } from "../utils.js";
@@ -23,12 +23,12 @@ export type AllowlistNameResolution = Array<{
   name?: string | null;
 }>;
 type AllowlistNormalizer = (params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   values: Array<string | number>;
 }) => string[];
 type AllowlistAccountResolver<ResolvedAccount> = (params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }) => ResolvedAccount;
 
@@ -150,7 +150,7 @@ export function createNestedAllowlistOverrideResolver<ResolvedAccount, Outer, In
 
 /** Build the common account-scoped token-gated allowlist name resolver. */
 export function createAccountScopedAllowlistNameResolver<ResolvedAccount>(params: {
-  resolveAccount: (params: { cfg: OpenClawConfig; accountId?: string | null }) => ResolvedAccount;
+  resolveAccount: (params: { cfg: AforaConfig; accountId?: string | null }) => ResolvedAccount;
   resolveToken: (account: ResolvedAccount) => string | null | undefined;
   resolveNames: (params: { token: string; entries: string[] }) => Promise<AllowlistNameResolution>;
 }): NonNullable<ChannelAllowlistAdapter["resolveNames"]> {
@@ -358,7 +358,7 @@ export function buildAccountScopedAllowlistConfigEditor(params: {
   channelId: ChannelId;
   normalize: AllowlistNormalizer;
   resolveEffectiveEntries?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
     scope: "dm" | "group";
   }) => Array<string | number> | null | undefined;
@@ -390,12 +390,12 @@ function buildAccountAllowlistAdapter<ResolvedAccount>(params: {
   resolvePaths: (scope: "dm" | "group") => AllowlistConfigPaths | null;
   readConfig: (
     account: ResolvedAccount,
-    context: { cfg: OpenClawConfig; accountId?: string | null },
+    context: { cfg: AforaConfig; accountId?: string | null },
   ) => Awaited<ReturnType<NonNullable<ChannelAllowlistAdapter["readConfig"]>>>;
   resolveEntries: (
     account: ResolvedAccount,
     scope: "dm" | "group",
-    context: { cfg: OpenClawConfig; accountId?: string | null },
+    context: { cfg: AforaConfig; accountId?: string | null },
   ) => Array<string | number> | null | undefined;
 }): Pick<ChannelAllowlistAdapter, "supportsScope" | "readConfig" | "applyConfigEdit"> {
   return {
@@ -422,7 +422,7 @@ export function buildDmGroupAccountAllowlistAdapter<ResolvedAccount>(params: {
   normalize: AllowlistNormalizer;
   resolveDmAllowFrom: (
     account: ResolvedAccount,
-    context: { cfg: OpenClawConfig; accountId?: string | null },
+    context: { cfg: AforaConfig; accountId?: string | null },
   ) => Array<string | number> | null | undefined;
   resolveGroupAllowFrom: (account: ResolvedAccount) => Array<string | number> | null | undefined;
   resolveDmPolicy?: (account: ResolvedAccount) => string | null | undefined;
@@ -456,7 +456,7 @@ export function buildLegacyDmAccountAllowlistAdapter<ResolvedAccount>(params: {
   normalize: AllowlistNormalizer;
   resolveDmAllowFrom: (
     account: ResolvedAccount,
-    context: { cfg: OpenClawConfig; accountId?: string | null },
+    context: { cfg: AforaConfig; accountId?: string | null },
   ) => Array<string | number> | null | undefined;
   resolveGroupPolicy?: (account: ResolvedAccount) => string | null | undefined;
   resolveGroupOverrides?: (account: ResolvedAccount) => AllowlistGroupOverride[] | undefined;

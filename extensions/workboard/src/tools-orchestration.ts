@@ -1,8 +1,8 @@
-import type { WorkboardCard } from "@openclaw/workboard-contract";
-import { jsonResult, readStringParam } from "openclaw/plugin-sdk/core";
-import type { AnyAgentTool } from "openclaw/plugin-sdk/plugin-entry";
-import { asNonArrayRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
-import type { AgentToolResult } from "openclaw/plugin-sdk/tool-results";
+import type { WorkboardCard } from "@afora/workboard-contract";
+import { jsonResult, readStringParam } from "afora-agent/plugin-sdk/core";
+import type { AnyAgentTool } from "afora-agent/plugin-sdk/plugin-entry";
+import { asNonArrayRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import type { AgentToolResult } from "afora-agent/plugin-sdk/tool-results";
 import { Type } from "typebox";
 import { redactClaimToken } from "./card-redaction.js";
 import type { WorkboardStore } from "./store.js";

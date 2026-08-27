@@ -1,9 +1,9 @@
 // Mattermost plugin module implements draft stream behavior.
-import { isChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
-import { createFinalizableDraftLifecycle } from "openclaw/plugin-sdk/channel-outbound";
-import { toErrorObject } from "openclaw/plugin-sdk/error-runtime";
-import { chunkMarkdownTextWithMode } from "openclaw/plugin-sdk/reply-chunking";
-import { sliceUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { isChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
+import { createFinalizableDraftLifecycle } from "afora-agent/plugin-sdk/channel-outbound";
+import { toErrorObject } from "afora-agent/plugin-sdk/error-runtime";
+import { chunkMarkdownTextWithMode } from "afora-agent/plugin-sdk/reply-chunking";
+import { sliceUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import {
   createMattermostPost,
   deleteMattermostPost,

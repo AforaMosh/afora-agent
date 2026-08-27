@@ -1,5 +1,5 @@
 // Resolves response-prefix templates for channel and sender scoped replies.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 
 /**
  * Template interpolation for response prefix.

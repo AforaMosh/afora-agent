@@ -1,7 +1,7 @@
 // Memory Wiki plugin module implements source path shared behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { lowercasePreservingWhitespace } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { lowercasePreservingWhitespace } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export async function resolveArtifactKey(absolutePath: string): Promise<string> {
   const canonicalPath = await fs.realpath(absolutePath).catch(() => path.resolve(absolutePath));

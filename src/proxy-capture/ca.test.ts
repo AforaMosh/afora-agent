@@ -66,7 +66,7 @@ function writeGeneratedPair(args: string[], marker: string): void {
 }
 
 async function makeCertPaths() {
-  const certDir = await tempDirs.make("openclaw-proxy-ca-");
+  const certDir = await tempDirs.make("afora-proxy-ca-");
   return {
     certDir,
     certPath: path.join(certDir, "root-ca.pem"),
@@ -121,7 +121,7 @@ describe("ensureDebugProxyCa", () => {
     expect(path.dirname(outputPath(args, "-config"))).toBe(path.dirname(outputPath(args, "-out")));
     expect(path.dirname(outputPath(args, "-out")).startsWith(`${certDir}${path.sep}`)).toBe(true);
     expect(options).toEqual({ logOutput: false, timeoutMs: 30_000 });
-    expect(generatedConfig).toContain("CN = OpenClaw Debug Proxy");
+    expect(generatedConfig).toContain("CN = Afora Debug Proxy");
     expect(generatedConfig).toContain("basicConstraints = critical, CA:TRUE");
     expect(generatedConfig).toContain("keyUsage = critical, keyCertSign, cRLSign");
   });

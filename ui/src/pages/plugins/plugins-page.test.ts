@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GatewayRequestError } from "../../api/gateway.ts";
 import type { ApplicationContext } from "../../app/context.ts";
@@ -219,7 +219,7 @@ describe("PluginsPage", () => {
           message: "install requires review",
           details: {
             installPolicyCode: "install_policy_warning_acknowledgement_required",
-            targetName: "@openclaw/bluebubbles",
+            targetName: "@afora/bluebubbles",
             targetType: "plugin",
             requestMode: "install",
             reason: `Review this plugin (${installCalls}).`,
@@ -239,25 +239,25 @@ describe("PluginsPage", () => {
         harness.gateway,
         createResult(
           createPlugin({
-            id: "@openclaw/bluebubbles",
+            id: "@afora/bluebubbles",
             name: "BlueBubbles",
-            packageName: "@openclaw/bluebubbles",
+            packageName: "@afora/bluebubbles",
             installed: false,
             enabled: false,
             state: "not-installed",
-            install: { source: "official", pluginId: "@openclaw/bluebubbles" },
+            install: { source: "official", pluginId: "@afora/bluebubbles" },
           }),
         ),
       ),
     );
-    const installIdentity = "plugin:@openclaw/bluebubbles";
+    const installIdentity = "plugin:@afora/bluebubbles";
     const catalogRequest = {
       source: "official",
-      pluginId: "@openclaw/bluebubbles",
+      pluginId: "@afora/bluebubbles",
     } satisfies PluginInstallRequest;
     const searchRequest = {
       source: "clawhub",
-      packageName: "@openclaw/bluebubbles",
+      packageName: "@afora/bluebubbles",
     } satisfies PluginInstallRequest;
     page.messages["plugin:workboard"] = { kind: "success", text: "Unrelated message." };
 

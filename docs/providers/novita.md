@@ -1,14 +1,14 @@
 ---
-summary: "Use NovitaAI's OpenAI-compatible API with OpenClaw"
+summary: "Use NovitaAI's OpenAI-compatible API with Afora"
 read_when:
-  - You want to run OpenClaw with NovitaAI models
+  - You want to run Afora with NovitaAI models
   - You need the Novita provider id, key, or endpoint
 title: "NovitaAI"
 ---
 
 NovitaAI is a hosted AI infrastructure provider with an OpenAI-compatible API.
-OpenClaw provides NovitaAI through the official external
-`@openclaw/novita-provider` plugin. Model refs use the
+Afora provides NovitaAI through the official external
+`@afora/novita-provider` plugin. Model refs use the
 `novita/deepseek/deepseek-v4-pro` form.
 
 ## Setup
@@ -16,14 +16,14 @@ OpenClaw provides NovitaAI through the official external
 Install the plugin and restart the Gateway:
 
 ```bash
-openclaw plugins install @openclaw/novita-provider
-openclaw gateway restart
+afora plugins install @afora/novita-provider
+afora gateway restart
 ```
 
 Create an API key at [novita.ai/settings/key-management](https://novita.ai/settings/key-management), then run:
 
 ```bash
-openclaw onboard --auth-choice novita-api-key
+afora onboard --auth-choice novita-api-key
 ```
 
 Or set:
@@ -36,7 +36,7 @@ export NOVITA_API_KEY="<your-novita-api-key>" # pragma: allowlist secret
 
 | Setting       | Value                             |
 | ------------- | --------------------------------- |
-| Plugin        | `@openclaw/novita-provider`       |
+| Plugin        | `@afora/novita-provider`       |
 | Provider id   | `novita`                          |
 | Aliases       | `novita-ai`, `novitaai`           |
 | Base URL      | `https://api.novita.ai/openai/v1` |
@@ -61,7 +61,7 @@ Novita's current offering may add, remove, or restrict routes. Check before
 setting a long-lived default:
 
 ```bash
-openclaw models list --provider novita
+afora models list --provider novita
 ```
 
 ## When to choose Novita
@@ -81,10 +81,10 @@ run on your own hardware or network boundary.
 ## Troubleshooting
 
 - `401`/`403`: verify the key in Novita's key management page and re-run
-  `openclaw onboard --auth-choice novita-api-key` if the stored profile is
+  `afora onboard --auth-choice novita-api-key` if the stored profile is
   stale.
 - Unknown model errors: use the exact `novita/<route-id>` returned by
-  `openclaw models list --provider novita`.
+  `afora models list --provider novita`.
 - Slow or failed routes: try another Novita model route, or set Novita as a
   fallback provider for workloads that can tolerate provider-specific
   variance.

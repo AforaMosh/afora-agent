@@ -19,7 +19,7 @@ import {
 
 const GATEWAY_CONNECT_OPERATION_TIMEOUT_MS = 1_000;
 const GATEWAY_CONNECT_TEST_TIMEOUT_MS = 15_000;
-const tempDirs = createSuiteTempRootTracker({ prefix: "openclaw-gateway-connect-" });
+const tempDirs = createSuiteTempRootTracker({ prefix: "afora-gateway-connect-" });
 
 async function createTempDeviceIdentity() {
   const tempRoot = await tempDirs.make("device");

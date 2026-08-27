@@ -1,7 +1,7 @@
 import { nip19 } from "nostr-tools";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import type { WizardPrompter } from "openclaw/plugin-sdk/setup";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+import type { WizardPrompter } from "afora-agent/plugin-sdk/setup";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createBuzzSetupWizard } from "./setup-surface.js";
 
@@ -66,11 +66,11 @@ describe("Buzz guided setup", () => {
     const prompter = createPrompter();
     const runtime = createRuntime();
     const hooks: Array<{
-      run: (ctx: { cfg: OpenClawConfig; runtime: RuntimeEnv }) => void | Promise<void>;
+      run: (ctx: { cfg: AforaConfig; runtime: RuntimeEnv }) => void | Promise<void>;
     }> = [];
 
     const result = await wizard.configure({
-      cfg: { channels: { buzz: { authTag: AUTH_TAG } } } as OpenClawConfig,
+      cfg: { channels: { buzz: { authTag: AUTH_TAG } } } as AforaConfig,
       runtime,
       prompter,
       options: {
@@ -131,7 +131,7 @@ describe("Buzz guided setup", () => {
     vi.mocked(prompter.multiselect).mockResolvedValue([ROOM_A]);
 
     const result = await wizard.configure({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       runtime: createRuntime(),
       prompter,
       options: { secretInputMode: "ref" },
@@ -169,7 +169,7 @@ describe("Buzz guided setup", () => {
             defaultTo: ROOM_A,
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       runtime: createRuntime(),
       prompter,
       accountOverrides: {},
@@ -213,7 +213,7 @@ describe("Buzz guided setup", () => {
               privateKey: "11".repeat(32),
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         accountOverrides: {},
       }),
     ).resolves.toEqual({
@@ -241,7 +241,7 @@ describe("Buzz guided setup", () => {
     const result = await wizard.configure({
       cfg: {
         channels: { buzz: { relayUrl: "ws://127.attacker.example" } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       runtime: createRuntime(),
       prompter,
       accountOverrides: {},
@@ -274,7 +274,7 @@ describe("Buzz guided setup", () => {
             groups: { [ROOM_A]: { enabled: false, requireMention: false } },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       runtime: createRuntime(),
       prompter,
       accountOverrides: {},
@@ -310,7 +310,7 @@ describe("Buzz guided setup", () => {
         channels: {
           buzz: { relayUrl: "wss://buzz.example.com", privateKey: secretRef },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       runtime: createRuntime(),
       prompter,
       accountOverrides: {},
@@ -341,7 +341,7 @@ describe("Buzz guided setup", () => {
             privateKey: "11".repeat(32),
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       runtime: createRuntime(),
       prompter,
       options: { secretInputMode: "ref" },
@@ -373,7 +373,7 @@ describe("Buzz guided setup", () => {
     vi.mocked(prompter.multiselect).mockResolvedValue([ROOM_A]);
 
     const result = await wizard.configure({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       runtime: createRuntime(),
       prompter,
       accountOverrides: {},

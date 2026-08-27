@@ -2,7 +2,7 @@ import { once } from "node:events";
 import fs from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import path from "node:path";
-import { rawDataToString } from "@openclaw/gateway-client/websocket-data";
+import { rawDataToString } from "@afora/gateway-client/websocket-data";
 import { WebSocket, WebSocketServer, type RawData } from "ws";
 import {
   type WorkerLiveEventParams,
@@ -16,7 +16,7 @@ import {
   resolveSessionTranscriptRuntimeTarget,
   upsertSessionEntryCore,
 } from "../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import * as workerServer from "../gateway/server/ws-connection/worker-connection.js";
 import type { GatewayWsClient } from "../gateway/server/ws-types.js";
 import type { WorkerConnectionIdentity } from "../gateway/worker-environments/connection-identity.js";
@@ -35,7 +35,7 @@ import { createWorkerTranscriptCommitStore } from "../gateway/worker-environment
 import { createWorkerTranscriptCommitter } from "../gateway/worker-environments/transcript-commit.js";
 import { onAgentRuntimeEvent } from "../infra/agent-events.js";
 import type { WorkerProvider, WorkerSshEndpoint } from "../plugins/types.js";
-import * as stateDb from "../state/openclaw-state-db.js";
+import * as stateDb from "../state/afora-state-db.js";
 import { buildWorkerConnectParams, type WorkerLaunchDescriptor } from "./launch-descriptor.js";
 import { createWorkerConnection, type WorkerConnection } from "./worker-connection.js";
 import { WorkerFaultPlacementLifecycle } from "./worker-fault-placement-lifecycle.test-support.js";
@@ -51,19 +51,19 @@ const MODEL_REF = { provider: "fake", model: "fault-model" } as const;
 const SSH_ENDPOINT: WorkerSshEndpoint = {
   host: "worker.example.test",
   port: 22,
-  user: "openclaw",
+  user: "afora",
   hostKey: [["ssh", "ed25519"].join("-"), "AAAA"].join(" "),
   keyRef: { source: "file", provider: "worker-fixtures", id: "/development-key" },
 };
 const HANDSHAKE = {
   bundleHash: BUNDLE_HASH,
-  openclawVersion: "fault-test",
+  aforaVersion: "fault-test",
   protocolFeatures: [...WORKER_PROTOCOL_FEATURES],
 };
 const BUNDLE_ARTIFACT = {
   install: "bundle" as const,
   bundleHash: BUNDLE_HASH,
-  openclawVersion: HANDSHAKE.openclawVersion,
+  aforaVersion: HANDSHAKE.aforaVersion,
   protocolFeatures: [...WORKER_PROTOCOL_FEATURES],
   tarballBytes: 1,
   tarballSha256: Array.from({ length: 64 }, () => "b").join(""),
@@ -158,8 +158,8 @@ type WorkerClientOptions = {
 
 export class ComposedGatewayHarness {
   readonly socketPath: string;
-  readonly cfg: OpenClawConfig;
-  readonly database: stateDb.OpenClawStateDatabase;
+  readonly cfg: AforaConfig;
+  readonly database: stateDb.AforaStateDatabase;
   readonly store: envStore.WorkerEnvironmentStore;
   readonly placementStore: placements.WorkerSessionPlacementStore;
   readonly requests: Array<{ method: string; params: unknown }> = [];
@@ -218,8 +218,8 @@ export class ComposedGatewayHarness {
         profiles: { development: { provider: "fake", settings: { region: "test" } } },
       },
     };
-    this.database = stateDb.openOpenClawStateDatabase({
-      env: { OPENCLAW_STATE_DIR: stateDir },
+    this.database = stateDb.openAforaStateDatabase({
+      env: { AFORA_STATE_DIR: stateDir },
     });
     this.store = envStore.createWorkerEnvironmentStore({ database: this.database });
     this.placementStore = placements.createWorkerSessionPlacementStore({
@@ -461,7 +461,7 @@ export class ComposedGatewayHarness {
     await new Promise<void>((resolve) => {
       this.httpServer.close(() => resolve());
     });
-    stateDb.closeOpenClawStateDatabaseForTest();
+    stateDb.closeAforaStateDatabaseForTest();
     await fs.rm(this.root, { recursive: true, force: true });
   }
 

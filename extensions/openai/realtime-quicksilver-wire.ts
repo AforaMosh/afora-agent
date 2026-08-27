@@ -4,9 +4,9 @@ import {
   readProviderTextResponse,
   readResponseTextLimited,
   resolveProviderRequestHeaders,
-} from "openclaw/plugin-sdk/provider-http";
-import { redactSensitiveText } from "openclaw/plugin-sdk/security-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/provider-http";
+import { redactSensitiveText } from "afora-agent/plugin-sdk/security-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { z } from "zod";
 import { isOpenAIGptLiveModel } from "./realtime-quicksilver.js";
 
@@ -291,7 +291,7 @@ function buildOpenAIQuicksilverMultipartBody(params: { sdp: string; session: unk
   const sessionJson = JSON.stringify(params.session);
   let boundary: string;
   do {
-    boundary = `openclaw-quicksilver-${randomBytes(18).toString("hex")}`;
+    boundary = `afora-quicksilver-${randomBytes(18).toString("hex")}`;
   } while (params.sdp.includes(boundary) || sessionJson.includes(boundary));
   return {
     body: [

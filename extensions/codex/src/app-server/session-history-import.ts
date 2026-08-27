@@ -1,6 +1,6 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
-import { resolveStorePath } from "openclaw/plugin-sdk/session-store-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
+import { resolveStorePath } from "afora-agent/plugin-sdk/session-store-runtime";
 import type { CodexThread } from "./protocol.js";
 import { importCodexThreadHistoryToTranscript } from "./transcript-mirror.js";
 
@@ -11,7 +11,7 @@ type CreatedCodexImportedSession = Awaited<
 /** Creates a session whose transcript is derived from one verified Codex thread snapshot. */
 export async function createImportedCodexSession(params: {
   runtime: PluginRuntime;
-  config: OpenClawConfig;
+  config: AforaConfig;
   key: string;
   agentId: string;
   thread: CodexThread;

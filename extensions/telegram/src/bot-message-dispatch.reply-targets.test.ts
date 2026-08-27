@@ -503,7 +503,7 @@ describeTelegramDispatch("dispatchTelegramMessage reply-targets", () => {
       deliveredText: undefined,
     },
   ])("correlates $name after MEDIA directive normalization", async (testCase) => {
-    const storePath = `/tmp/openclaw-telegram-direct-media-${process.pid}-${testCase.name}.json`;
+    const storePath = `/tmp/afora-telegram-direct-media-${process.pid}-${testCase.name}.json`;
     const context = createContext({
       ctxPayload: {
         MessageSid: "1001",
@@ -523,7 +523,7 @@ describeTelegramDispatch("dispatchTelegramMessage reply-targets", () => {
       message_id: 2002,
       date: 1_779_425_460,
       chat: { id: 123, type: "private" as const },
-      from: { id: 999, is_bot: true, first_name: "OpenClaw" },
+      from: { id: 999, is_bot: true, first_name: "Afora" },
       photo: [{ file_id: "photo-file", file_unique_id: "photo-unique", width: 10, height: 10 }],
     };
     deliverReplies.mockImplementation(async (params: Record<string, unknown>) => {

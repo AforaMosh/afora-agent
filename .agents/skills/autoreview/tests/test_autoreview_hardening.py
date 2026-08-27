@@ -1569,7 +1569,7 @@ class AutoreviewHardeningTests(unittest.TestCase):
             "password_validator.go",
             ".env.example",
             "private/parser.py",
-            ".agents/skills/openclaw-secret-scanning-maintainer/SKILL.md",
+            ".agents/skills/afora-secret-scanning-maintainer/SKILL.md",
             "design-tokens/colors.json",
             "design-tokens.json",
             "design_tokens.json",
@@ -3973,9 +3973,9 @@ class AutoreviewHardeningTests(unittest.TestCase):
 
         self.assertTrue(self.helper["secret_text_risk"](content))
 
-    def test_secret_detector_allows_openclaw_redaction_sentinel(self) -> None:
+    def test_secret_detector_allows_afora_redaction_sentinel(self) -> None:
         self.assertFalse(
-            self.helper["secret_text_risk"]('token: "__OPENCLAW_REDACTED__"')
+            self.helper["secret_text_risk"]('token: "__AFORA_REDACTED__"')
         )
 
     def test_normalized_secret_scan_does_not_cross_hunks(self) -> None:
@@ -4013,7 +4013,7 @@ class AutoreviewHardeningTests(unittest.TestCase):
             "+  ) => Promise<SecretResolutionResult<TSource>>;\n"
             "   /** Writes the selected credential into the resolved runtime config snapshot. */\n"
             "   setResolvedCredential: (params: {\n"
-            "     resolvedConfig: OpenClawConfig;\n"
+            "     resolvedConfig: AforaConfig;\n"
             "@@ -418,6 +414,7 @@ function resolveRuntimeWebProviderSelection() {\n"
             "     let keylessFallbackProvider: TProvider | undefined;\n"
             " \n"
@@ -5436,7 +5436,7 @@ class AutoreviewHardeningTests(unittest.TestCase):
                 os.environ["JAVA_HOME"] = "/opt/jdk"
                 os.environ["JAVA_TOOL_OPTIONS"] = "-javaagent:/host/unsafe.jar"
                 os.environ["NODE_ENV"] = "test"
-                os.environ["OPENCLAW_TESTBOX"] = "1"
+                os.environ["AFORA_TESTBOX"] = "1"
                 os.environ["PROJECT_FEATURE_MODE"] = "strict"
                 os.environ["GH_CONFIG_DIR"] = "/host/gh"
                 os.environ["CLOUDSDK_CONFIG"] = "/host/gcloud"
@@ -5475,7 +5475,7 @@ class AutoreviewHardeningTests(unittest.TestCase):
                     ),
                 )
                 self.assertEqual(env["NODE_ENV"], "test")
-                self.assertEqual(env["OPENCLAW_TESTBOX"], "1")
+                self.assertEqual(env["AFORA_TESTBOX"], "1")
                 isolated_blacksmith = isolated_home / ".blacksmith"
                 self.assertEqual(
                     (isolated_blacksmith / "credentials").read_bytes(),
@@ -5680,7 +5680,7 @@ class AutoreviewHardeningTests(unittest.TestCase):
                 return_value=str(long_temp),
             ), mock.patch.dict(
                 os.environ,
-                {"OPENCLAW_TESTBOX": "1"},
+                {"AFORA_TESTBOX": "1"},
             ):
                 selected = self.helper["parallel_test_temp_root"](repo)
 
@@ -5707,7 +5707,7 @@ class AutoreviewHardeningTests(unittest.TestCase):
                 return_value=str(configured_temp),
             ), mock.patch.dict(
                 os.environ,
-                {"OPENCLAW_TESTBOX": "0"},
+                {"AFORA_TESTBOX": "0"},
             ):
                 selected = self.helper["parallel_test_temp_root"](repo)
 

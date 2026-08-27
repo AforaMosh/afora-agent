@@ -1,15 +1,15 @@
 // Googlechat plugin module implements gateway behavior.
-import { CHANNEL_APPROVAL_NATIVE_RUNTIME_CONTEXT_CAPABILITY } from "openclaw/plugin-sdk/approval-handler-adapter-runtime";
-import type { ChannelRuntimeSurface } from "openclaw/plugin-sdk/channel-contract";
+import { CHANNEL_APPROVAL_NATIVE_RUNTIME_CONTEXT_CAPABILITY } from "afora-agent/plugin-sdk/approval-handler-adapter-runtime";
+import type { ChannelRuntimeSurface } from "afora-agent/plugin-sdk/channel-contract";
 import {
   createAccountStatusSink,
   runPassiveAccountLifecycle,
-} from "openclaw/plugin-sdk/channel-outbound";
-import { registerChannelRuntimeContext } from "openclaw/plugin-sdk/channel-runtime-context";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { channelBlockedPatch } from "openclaw/plugin-sdk/gateway-runtime";
-import { createLazyRuntimeNamedExport } from "openclaw/plugin-sdk/lazy-runtime";
-import type { ChannelAccountSnapshot } from "openclaw/plugin-sdk/status-helpers";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import { registerChannelRuntimeContext } from "afora-agent/plugin-sdk/channel-runtime-context";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { channelBlockedPatch } from "afora-agent/plugin-sdk/gateway-runtime";
+import { createLazyRuntimeNamedExport } from "afora-agent/plugin-sdk/lazy-runtime";
+import type { ChannelAccountSnapshot } from "afora-agent/plugin-sdk/status-helpers";
 import type { ResolvedGoogleChatAccount } from "./accounts.js";
 import { isGoogleChatNativeApprovalClientEnabled } from "./approval-native.js";
 import type { GoogleChatRuntimeEnv } from "./monitor-types.js";
@@ -24,7 +24,7 @@ const UNRESOLVED_WEBHOOK_URL_ERROR =
 
 export async function startGoogleChatGatewayAccount(ctx: {
   account: ResolvedGoogleChatAccount;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   runtime: GoogleChatRuntimeEnv;
   abortSignal: AbortSignal;
   channelRuntime?: ChannelRuntimeSurface;

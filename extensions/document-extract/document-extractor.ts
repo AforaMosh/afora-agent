@@ -5,7 +5,7 @@ import type {
   DocumentExtractionRequest,
   DocumentExtractionResult,
   DocumentExtractorPlugin,
-} from "openclaw/plugin-sdk/document-extractor";
+} from "afora-agent/plugin-sdk/document-extractor";
 
 const MAX_EXTRACTED_TEXT_CHARS = 200_000;
 const MAX_RENDER_DIMENSION = 10_000;

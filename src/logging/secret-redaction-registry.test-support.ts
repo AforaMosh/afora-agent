@@ -6,7 +6,7 @@ type SecretRedactionRegistryTestApi = {
 
 function getTestApi(): SecretRedactionRegistryTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.secretRedactionRegistryTestApi")
+    Symbol.for("afora.secretRedactionRegistryTestApi")
   ] as SecretRedactionRegistryTestApi;
 }
 

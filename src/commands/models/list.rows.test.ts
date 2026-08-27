@@ -130,7 +130,7 @@ describe("appendPreparedModelCatalogRows", () => {
       },
       context: {
         cfg: {},
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: { evaluateModelAuth },
         configuredByKey: new Map(),
         discoveredKeys: new Set(),
@@ -178,7 +178,7 @@ describe("appendPreparedModelCatalogRows", () => {
       },
       context: {
         cfg: {},
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: { evaluateModelAuth },
         configuredByKey: new Map(),
         discoveredKeys: new Set(),
@@ -218,7 +218,7 @@ describe("appendPreparedModelCatalogRows", () => {
       },
       context: {
         cfg: {},
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: { evaluateModelAuth: () => authEvaluation(true) },
         configuredByKey: new Map(),
         discoveredKeys: new Set<string>(),
@@ -257,9 +257,9 @@ describe("appendPreparedModelCatalogRows", () => {
       context: {
         cfg: {},
         agentId: "worker",
-        agentDir: "/tmp/openclaw-worker",
-        inheritedAuthDir: "/tmp/openclaw-default",
-        workspaceDir: "/tmp/openclaw-workspace",
+        agentDir: "/tmp/afora-worker",
+        inheritedAuthDir: "/tmp/afora-default",
+        workspaceDir: "/tmp/afora-workspace",
         providerDiscoveryProviderIds: ["anthropic"],
         providerRuntimeDiscoveryProviderIds: ["anthropic"],
         providerManifestFallbackProviderIds: ["anthropic"],
@@ -277,9 +277,9 @@ describe("appendPreparedModelCatalogRows", () => {
     expect(mocks.loadScopedModelCatalogSnapshot).toHaveBeenCalledExactlyOnceWith({
       cfg: {},
       agentId: "worker",
-      agentDir: "/tmp/openclaw-worker",
-      inheritedAuthDir: "/tmp/openclaw-default",
-      workspaceDir: "/tmp/openclaw-workspace",
+      agentDir: "/tmp/afora-worker",
+      inheritedAuthDir: "/tmp/afora-default",
+      workspaceDir: "/tmp/afora-workspace",
       providerIds: ["anthropic"],
       runtimeProviderIds: ["anthropic"],
       manifestFallbackProviderIds: ["anthropic"],
@@ -309,7 +309,7 @@ describe("appendDiscoveredRows", () => {
       ] as never,
       context: {
         cfg: {},
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: { evaluateModelAuth: () => authEvaluation(undefined) },
         configuredByKey: new Map(),
         discoveredKeys: new Set(["openai/gpt-5.5"]),
@@ -361,7 +361,7 @@ describe("appendDiscoveredRows", () => {
       ] as never,
       context: {
         cfg: {},
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: {
           evaluateModelAuth: () => ({
             availability: true,
@@ -405,7 +405,7 @@ describe("appendDiscoveredRows", () => {
       ] as never,
       context: {
         cfg: {},
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: {
           evaluateModelAuth: () => ({
             availability: false,
@@ -464,7 +464,7 @@ describe("appendConfiguredRows", () => {
             },
           },
         },
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: {
           evaluateModelAuth: () => ({ availability: undefined, routeResolution: null }),
         },
@@ -508,7 +508,7 @@ describe("appendConfiguredRows", () => {
       catalogSnapshot: { entries: [catalogEntry], routeVariants: [catalogEntry] },
       context: {
         cfg: {},
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: { evaluateModelAuth },
         configuredByKey: new Map(),
         discoveredKeys: new Set<string>(),
@@ -554,7 +554,7 @@ describe("prepared provider catalog projection", () => {
           agents: { defaults: { model: { primary: "openai/gpt-5.5" } } },
           models: { providers: {} },
         },
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: {
           evaluateModelAuth: () => authEvaluation(false),
         },
@@ -604,7 +604,7 @@ describe("prepared provider catalog projection", () => {
           agents: { defaults: { model: { primary: "openai/gpt-5.5" } } },
           models: { providers: {} },
         },
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: {
           evaluateModelAuth,
         },
@@ -662,7 +662,7 @@ describe("prepared provider catalog projection", () => {
       ],
       context: {
         cfg: {},
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: {
           evaluateModelAuth: () => authEvaluation(undefined),
         },
@@ -697,7 +697,7 @@ describe("prepared provider catalog projection", () => {
       ],
       context: {
         cfg: {},
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: {
           evaluateModelAuth: () => authEvaluation(true),
         },
@@ -732,7 +732,7 @@ describe("prepared provider catalog projection", () => {
       ],
       context: {
         cfg: {},
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: {
           evaluateModelAuth: () => authEvaluation(undefined),
         },
@@ -779,7 +779,7 @@ describe("appendConfiguredProviderRows", () => {
             },
           },
         },
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex,
         configuredByKey: new Map(),
         discoveredKeys: new Set(),
@@ -827,7 +827,7 @@ describe("appendConfiguredProviderRows", () => {
             },
           },
         },
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex,
         configuredByKey: new Map(),
         discoveredKeys: new Set(),
@@ -869,7 +869,7 @@ describe("appendConfiguredProviderRows", () => {
             },
           },
         },
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: {
           evaluateModelAuth,
         },
@@ -926,7 +926,7 @@ describe("appendConfiguredProviderRows", () => {
             },
           },
         },
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: {
           evaluateModelAuth,
         },
@@ -956,7 +956,7 @@ describe("appendAuthenticatedCatalogRows", () => {
       seenKeys: new Set(),
       context: {
         cfg: { models: { mode: "replace" } },
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: {
           evaluateModelAuth: () => ({ availability: true, routeResolution: null }),
         },
@@ -997,8 +997,8 @@ describe("appendAuthenticatedCatalogRows", () => {
       seenKeys: new Set(),
       context: {
         cfg: {},
-        agentDir: "/tmp/openclaw-agent",
-        workspaceDir: "/tmp/openclaw-workspace",
+        agentDir: "/tmp/afora-agent",
+        workspaceDir: "/tmp/afora-workspace",
         providerDiscoveryProviderIds: ["local-openai"],
         providerRuntimeDiscoveryProviderIds: ["local-openai"],
         authIndex: {
@@ -1022,9 +1022,9 @@ describe("appendAuthenticatedCatalogRows", () => {
     });
     expect(mocks.loadScopedModelCatalogSnapshot).toHaveBeenCalledWith({
       cfg: {},
-      agentDir: "/tmp/openclaw-agent",
-      inheritedAuthDir: "/tmp/openclaw-agent",
-      workspaceDir: "/tmp/openclaw-workspace",
+      agentDir: "/tmp/afora-agent",
+      inheritedAuthDir: "/tmp/afora-agent",
+      workspaceDir: "/tmp/afora-workspace",
       providerIds: ["local-openai"],
       runtimeProviderIds: ["local-openai"],
       configuredKeys: [],
@@ -1054,7 +1054,7 @@ describe("appendAuthenticatedCatalogRows", () => {
       seenKeys: new Set(),
       context: {
         cfg: {},
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: {
           evaluateModelAuth: () => ({ availability: undefined, routeResolution: null }),
         },

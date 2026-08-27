@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { clawProfileExtensionPackages } from "./application-plan.js";
 import { buildClawAddPlan } from "./lifecycle.js";
-import { parseClawManifest, parseClawOpenClawProfile } from "./schema.js";
+import { parseClawManifest, parseClawAforaProfile } from "./schema.js";
 import type { ClawManifest, ClawSourceIdentity } from "./types.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
@@ -18,7 +18,7 @@ function requireManifest(value: unknown): ClawManifest {
 }
 
 async function createPlanSource(): Promise<{ source: ClawSourceIdentity; workspace: string }> {
-  const root = tempDirs.make("openclaw-claw-application-plan-");
+  const root = tempDirs.make("afora-claw-application-plan-");
   await mkdir(join(root, "workspace", "schemas"), { recursive: true });
   await writeFile(join(root, "workspace", "schemas", "market.json"), "{}\n", "utf8");
   return {
@@ -48,7 +48,7 @@ const extension = {
 describe("Claw application schema v1", () => {
   it("accepts strict native extension assertions without a schema bump", () => {
     expect(
-      parseClawOpenClawProfile({
+      parseClawAforaProfile({
         schemaVersion: 1,
         agent: { tools: { profile: "coding", allow: ["read"] } },
         extensions: [extension],
@@ -61,11 +61,11 @@ describe("Claw application schema v1", () => {
 
   it("rejects duplicate extensions and unknown formats", () => {
     expect(
-      parseClawOpenClawProfile({ schemaVersion: 1, agent: {}, extensions: [extension, extension] })
+      parseClawAforaProfile({ schemaVersion: 1, agent: {}, extensions: [extension, extension] })
         .ok,
     ).toBe(false);
     expect(
-      parseClawOpenClawProfile({
+      parseClawAforaProfile({
         schemaVersion: 1,
         agent: {},
         extensions: [{ ...extension, format: "future" }],
@@ -100,7 +100,7 @@ describe("Claw application planning v1", () => {
     });
     const plan = await buildClawAddPlan({
       manifest,
-      openClawProfile: { schemaVersion: 1, agent: {}, extensions: [extension] },
+      aforaProfile: { schemaVersion: 1, agent: {}, extensions: [extension] },
       source,
       context: {
         workspace,
@@ -112,7 +112,7 @@ describe("Claw application planning v1", () => {
           detectedFormat: "claude",
           mapped: ["commands", "skills"],
           unavailable: ["agents"],
-          adapterIdentity: "openclaw/test",
+          adapterIdentity: "afora-agent/test",
         }),
       },
     });
@@ -135,7 +135,7 @@ describe("Claw application planning v1", () => {
         details: expect.objectContaining({
           extension: expect.objectContaining({
             id: "market-data",
-            adapterIdentity: "openclaw/test",
+            adapterIdentity: "afora-agent/test",
           }),
         }),
       }),
@@ -156,7 +156,7 @@ describe("Claw application planning v1", () => {
     };
     const plan = await buildClawAddPlan({
       manifest: requireManifest({ schemaVersion: 1, agent: { id: "market-analyst" } }),
-      openClawProfile: { schemaVersion: 1, agent: {}, extensions: [extension] },
+      aforaProfile: { schemaVersion: 1, agent: {}, extensions: [extension] },
       source,
       context: {
         workspace,
@@ -168,7 +168,7 @@ describe("Claw application planning v1", () => {
           detectedFormat: "claude",
           mapped: ["skills"],
           unavailable: [],
-          adapterIdentity: "openclaw/test",
+          adapterIdentity: "afora-agent/test",
           requirements: [prerequisite],
         }),
       },
@@ -192,7 +192,7 @@ describe("Claw application planning v1", () => {
     const { source, workspace } = await createPlanSource();
     const plan = await buildClawAddPlan({
       manifest: requireManifest({ schemaVersion: 1, agent: { id: "market-analyst" } }),
-      openClawProfile: { schemaVersion: 1, agent: {}, extensions: [extension] },
+      aforaProfile: { schemaVersion: 1, agent: {}, extensions: [extension] },
       source,
       context: {
         workspace,
@@ -232,7 +232,7 @@ describe("Claw application planning v1", () => {
     });
     const plan = await buildClawAddPlan({
       manifest,
-      openClawProfile: { schemaVersion: 1, agent: {}, extensions: [extension] },
+      aforaProfile: { schemaVersion: 1, agent: {}, extensions: [extension] },
       source,
       context: {
         workspace,
@@ -244,7 +244,7 @@ describe("Claw application planning v1", () => {
           detectedFormat: "claude",
           mapped: ["skills"],
           unavailable: [],
-          adapterIdentity: "openclaw/test",
+          adapterIdentity: "afora-agent/test",
         }),
       },
     });
@@ -261,7 +261,7 @@ describe("Claw application planning v1", () => {
     const { source, workspace } = await createPlanSource();
     const plan = await buildClawAddPlan({
       manifest: requireManifest({ schemaVersion: 1, agent: { id: "market-analyst" } }),
-      openClawProfile: {
+      aforaProfile: {
         schemaVersion: 1,
         agent: {},
         extensions: [{ ...extension, format: "codex" }],
@@ -277,7 +277,7 @@ describe("Claw application planning v1", () => {
           detectedFormat: "claude",
           mapped: ["skills"],
           unavailable: [],
-          adapterIdentity: "openclaw/test",
+          adapterIdentity: "afora-agent/test",
         }),
       },
     });
@@ -286,7 +286,7 @@ describe("Claw application planning v1", () => {
     expect(plan.blockers).toContainEqual(
       expect.objectContaining({
         code: "extension_format_mismatch",
-        path: "$.profiles.openclaw.extensions[0].format",
+        path: "$.profiles.afora.extensions[0].format",
       }),
     );
   });

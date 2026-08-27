@@ -1,5 +1,5 @@
 // Telegram plugin module implements direct-message history limit resolution.
-import type { TelegramAccountConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { TelegramAccountConfig } from "afora-agent/plugin-sdk/config-contracts";
 
 const DEFAULT_TELEGRAM_DM_HISTORY_LIMIT = 10;
 

@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { expandPolicyToolRequirement, toolListCoversTool } from "./tool-policy-conformance.js";
 
 describe("policy tool group conformance", () => {
-  it("keeps computer control in both node and OpenClaw policy groups", () => {
+  it("keeps computer control in both node and Afora policy groups", () => {
     expect(expandPolicyToolRequirement("group:nodes")).toEqual(
       expect.arrayContaining(["computer", "mobile_ui"]),
     );
-    expect(expandPolicyToolRequirement("group:openclaw")).toEqual(
+    expect(expandPolicyToolRequirement("group:afora")).toEqual(
       expect.arrayContaining(["computer", "mobile_ui"]),
     );
   });

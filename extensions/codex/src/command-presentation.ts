@@ -1,5 +1,5 @@
 // Codex plugin module implements command presentation behavior.
-import type { MessagePresentation } from "openclaw/plugin-sdk/interactive-runtime";
+import type { MessagePresentation } from "afora-agent/plugin-sdk/interactive-runtime";
 
 export type CodexCommandPickerButton = { label: string; command: string };
 

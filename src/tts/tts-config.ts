@@ -4,13 +4,13 @@ import path from "node:path";
 import {
   asOptionalRecord as asObjectRecord,
   isRecord as isPlainObject,
-} from "@openclaw/normalization-core/record-coerce";
+} from "@afora/normalization-core/record-coerce";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { resolveAgentConfig } from "../agents/agent-scope-config.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import type { TtsAutoMode, TtsConfig, TtsMode } from "../config/types.tts.js";
 import { mergeDeep } from "../infra/deep-merge.js";
 import { normalizeAccountId } from "../routing/session-key.js";
@@ -27,7 +27,7 @@ export type TtsConfigResolutionContext = {
 };
 
 function resolveAgentTtsOverride(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string | undefined,
 ): TtsConfig | undefined {
   if (!agentId) {
@@ -66,7 +66,7 @@ function asTtsConfig(value: unknown): TtsConfig | undefined {
 }
 
 function resolveChannelConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   channelId: string | undefined,
 ): Record<string, unknown> | undefined {
   if (!isPlainObject(cfg.channels)) {
@@ -86,14 +86,14 @@ function resolveChannelConfig(
 }
 
 function resolveChannelTtsOverride(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   context: TtsConfigResolutionContext,
 ): TtsConfig | undefined {
   return asTtsConfig(resolveChannelConfig(cfg, context.channelId)?.tts);
 }
 
 function resolveAccountTtsOverride(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   context: TtsConfigResolutionContext,
 ): TtsConfig | undefined {
   const channelConfig = resolveChannelConfig(cfg, context.channelId);
@@ -104,7 +104,7 @@ function resolveAccountTtsOverride(
 
 /** Resolve effective TTS config after applying global, agent, channel, and account layers. */
 export function resolveEffectiveTtsConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   contextOrAgentId?: string | TtsConfigResolutionContext,
 ): TtsConfig {
   const context = resolveTtsConfigContext(contextOrAgentId);
@@ -121,7 +121,7 @@ export function resolveEffectiveTtsConfig(
 
 /** Resolve the configured TTS mode, defaulting to final-answer synthesis. */
 export function resolveConfiguredTtsMode(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   contextOrAgentId?: string | TtsConfigResolutionContext,
 ): TtsMode {
   return resolveEffectiveTtsConfig(cfg, contextOrAgentId).mode ?? "final";
@@ -134,7 +134,7 @@ function resolveTtsPrefsPathValue(
   if (prefsPath?.trim()) {
     return resolveUserPath(prefsPath.trim());
   }
-  const envPath = process.env.OPENCLAW_TTS_PREFS?.trim();
+  const envPath = process.env.AFORA_TTS_PREFS?.trim();
   if (envPath) {
     return resolveUserPath(envPath);
   }
@@ -167,7 +167,7 @@ function readTtsPrefsAutoMode(prefsPath: string): TtsAutoMode | undefined {
 
 /** Return whether this payload should attempt TTS based on session, prefs, and config. */
 export function shouldAttemptTtsPayload(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   ttsAuto?: string;
   agentId?: string;
   channelId?: string;
@@ -196,7 +196,7 @@ export function shouldAttemptTtsPayload(params: {
 
 /** Return whether TTS directive markup should be stripped from user-visible text. */
 export function shouldCleanTtsDirectiveText(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   ttsAuto?: string;
   agentId?: string;
   channelId?: string;

@@ -18,7 +18,7 @@ import { getDebugProxyCaptureStore } from "./store.sqlite.js";
 import type { CaptureEventRecord } from "./types.js";
 
 const DEBUG_PROXY_DIRECT_CONNECT_OVERRIDE =
-  "OPENCLAW_DEBUG_PROXY_ALLOW_DIRECT_CONNECT_WITH_MANAGED_PROXY";
+  "AFORA_DEBUG_PROXY_ALLOW_DIRECT_CONNECT_WITH_MANAGED_PROXY";
 const CAPTURE_BODY_PREVIEW_BYTES = 8192;
 const BAD_GATEWAY_BODY = "Bad Gateway\n";
 const DEBUG_PROXY_CONNECT_TIMEOUT_MS = 30_000;
@@ -32,7 +32,7 @@ type BodyPreviewCapture = {
 };
 
 function isManagedProxyActive(env: NodeJS.ProcessEnv = process.env): boolean {
-  return isTruthyEnvValue(env["OPENCLAW_PROXY_ACTIVE"]);
+  return isTruthyEnvValue(env["AFORA_PROXY_ACTIVE"]);
 }
 
 function allowsDirectConnectWithManagedProxy(env: NodeJS.ProcessEnv = process.env): boolean {
@@ -67,7 +67,7 @@ function createProxyCaptureRecorder(params: {
     params.store.recordEvent({
       sessionId: params.settings.sessionId,
       ts: Date.now(),
-      sourceScope: "openclaw",
+      sourceScope: "afora",
       sourceProcess: params.settings.sourceProcess,
       ...event,
     });

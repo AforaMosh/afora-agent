@@ -1,4 +1,4 @@
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { resolveAgentEffectiveModelPrimary } from "../agents/agent-scope.js";
 import { splitTrailingAuthProfile } from "../agents/model-ref-profile.js";
 import { resolveSessionModelRef } from "../agents/session-model-ref.js";
@@ -8,7 +8,7 @@ import { generateConversationLabelWithFallback } from "../auto-reply/reply/conve
 import { stripInboundMetadata } from "../auto-reply/reply/strip-inbound-meta.js";
 import { updateSessionEntry } from "../config/sessions/session-accessor.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { withTimeout } from "../infra/fs-safe.js";
 import { parseAgentSessionKey } from "../sessions/session-key-utils.js";
 import { getOrCreatePromise } from "../shared/lazy-promise.js";
@@ -122,7 +122,7 @@ export function isDashboardSessionTitleCandidate(params: {
 }
 
 function resolveDashboardTitleAuthProfile(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   entry: DashboardSessionTitleModelEntry | undefined;
   regularProvider: string;
@@ -157,7 +157,7 @@ function normalizeDashboardSessionTitle(raw: string): string | null {
 }
 
 async function generateDashboardSessionTitle(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   entry?: DashboardSessionTitleModelEntry;
   userMessage: string;
@@ -209,7 +209,7 @@ async function generateDashboardSessionTitle(params: {
 }
 
 export function prepareWorktreeSessionTitle(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   entry?: DashboardSessionTitleModelEntry | null;
   userMessage: string;
@@ -268,7 +268,7 @@ export function prepareWorktreeSessionTitle(params: {
 }
 
 export async function maybeGenerateDashboardSessionTitle(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   entry: SessionEntry | undefined;
   sessionId: string;
@@ -293,7 +293,7 @@ export async function maybeGenerateDashboardSessionTitle(params: {
 }
 
 export async function maybeGenerateSessionTitle(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   entry: SessionEntry | undefined;
   sessionId: string;

@@ -1,4 +1,4 @@
-name: openclaw-codeql-channel-runtime-boundary-critical-quality
+name: afora-codeql-channel-runtime-boundary-critical-quality
 
 disable-default-queries: true
 

@@ -1,25 +1,25 @@
 ---
-summary: "Synology Chat webhook setup and OpenClaw config"
+summary: "Synology Chat webhook setup and Afora config"
 read_when:
-  - Setting up Synology Chat with OpenClaw
+  - Setting up Synology Chat with Afora
   - Debugging Synology Chat webhook routing
 title: "Synology Chat"
 ---
 
-Synology Chat connects to OpenClaw through a webhook pair: a Synology Chat outgoing webhook posts inbound direct messages to the Gateway, and replies go back through a Synology Chat incoming webhook.
+Synology Chat connects to Afora through a webhook pair: a Synology Chat outgoing webhook posts inbound direct messages to the Gateway, and replies go back through a Synology Chat incoming webhook.
 
 Status: official plugin, installed separately. Direct messages only; text and hosted file sends are supported.
 
 ## Install
 
 ```bash
-openclaw plugins install @openclaw/synology-chat
+afora plugins install @afora/synology-chat
 ```
 
 Local checkout (when running from a git repo):
 
 ```bash
-openclaw plugins install ./path/to/local/synology-chat-plugin
+afora plugins install ./path/to/local/synology-chat-plugin
 ```
 
 Details: [Plugins](/tools/plugin)
@@ -30,30 +30,30 @@ Details: [Plugins](/tools/plugin)
 2. In Synology Chat integrations:
    - Create an incoming webhook and copy its URL.
    - Create an outgoing webhook with your secret token.
-3. Point the outgoing webhook URL to your OpenClaw Gateway:
+3. Point the outgoing webhook URL to your Afora Gateway:
    - `https://gateway-host/webhook/synology` by default.
    - Or your custom `channels.synology-chat.webhookPath`.
    - Record that exact externally reachable HTTPS URL as `channels.synology-chat.webhookUrl` so the NAS can retrieve hosted attachments.
-4. Finish setup in OpenClaw. Synology Chat appears in the same channel setup list in both flows:
-   - Guided: `openclaw onboard` or `openclaw channels add`
-   - Direct: `openclaw channels add --channel synology-chat --token <token> --url <incoming-webhook-url> --webhook-url <public-outgoing-webhook-url>`
+4. Finish setup in Afora. Synology Chat appears in the same channel setup list in both flows:
+   - Guided: `afora onboard` or `afora channels add`
+   - Direct: `afora channels add --channel synology-chat --token <token> --url <incoming-webhook-url> --webhook-url <public-outgoing-webhook-url>`
 5. Restart the Gateway and send a DM to the Synology Chat bot.
 
 Webhook auth details:
 
-- OpenClaw accepts the outgoing webhook token from `body.token`, then
+- Afora accepts the outgoing webhook token from `body.token`, then
   `?token=...`, then headers.
 - Accepted header forms:
   - `x-synology-token`
   - `x-webhook-token`
-  - `x-openclaw-token`
+  - `x-afora-token`
   - `Authorization: Bearer <token>`
 - Empty or missing tokens fail closed.
 - Payloads may be `application/x-www-form-urlencoded` or `application/json`; `token`, `user_id`, and `text` are required.
 
 ## Inbound durability
 
-After token, sender-policy, and rate-limit checks pass, OpenClaw removes the webhook token from the stored envelope and durably queues the event before acknowledging it. The route returns `204` only after that append succeeds; a persistence failure returns `503` so Synology Chat can retry instead of silently losing the message. The durable `204` carries `x-openclaw-delivery-accepted: durable`; authentication, validation, and storage-error responses omit the marker, so reverse proxies can require it to distinguish durable acceptance from a generic response.
+After token, sender-policy, and rate-limit checks pass, Afora removes the webhook token from the stored envelope and durably queues the event before acknowledging it. The route returns `204` only after that append succeeds; a persistence failure returns `503` so Synology Chat can retry instead of silently losing the message. The durable `204` carries `x-afora-delivery-accepted: durable`; authentication, validation, and storage-error responses omit the marker, so reverse proxies can require it to distinguish durable acceptance from a generic response.
 
 Pending or retryable events survive a Gateway restart. Synology's stable `post_id` suppresses duplicate queue entries while the corresponding active or retained completion record exists. Delivery remains at least once across the queue-to-agent handoff, so a crash at that boundary can still replay a turn.
 
@@ -86,7 +86,7 @@ For the default account, you can use env vars:
 - `SYNOLOGY_NAS_HOST`
 - `SYNOLOGY_ALLOWED_USER_IDS` (comma-separated)
 - `SYNOLOGY_RATE_LIMIT`
-- `OPENCLAW_BOT_NAME`
+- `AFORA_BOT_NAME`
 
 Config values override env vars.
 
@@ -108,22 +108,22 @@ Use numeric Synology Chat user IDs as targets. The `synology-chat:`, `synology_c
 Examples:
 
 ```bash
-openclaw message send --channel synology-chat --target 123456 --message "Hello from OpenClaw"
-openclaw message send --channel synology-chat --target synology-chat:123456 --message "Hello again"
-openclaw message send --channel synology-chat --target synology:123456 --message "Short prefix"
+afora message send --channel synology-chat --target 123456 --message "Hello from Afora"
+afora message send --channel synology-chat --target synology-chat:123456 --message "Hello again"
+afora message send --channel synology-chat --target synology:123456 --message "Short prefix"
 ```
 
 Outbound text is chunked at 2000 characters, and ordinary links remain intact. Keep **Hide URL previews in conversations and channels** enabled in Synology Chat Admin Console on a supported Chat Server release.
 
-For attachments, OpenClaw loads the source under its guarded outbound-media policy, freezes the resulting bytes in bounded plugin-scoped SQLite state, and gives Synology a short-lived opaque HTTPS capability on the configured webhook route. The NAS receives only this OpenClaw-hosted URL, never the original remote or local media reference. Capabilities are account- and route-scoped, reusable for delayed `GET` or `HEAD` requests during their ten-minute lifetime, and expire automatically. Files are limited to 32 MB. Each account can serve at most four attachment responses concurrently and 128 MB per minute; stalled responses are closed after two minutes. Byte-range responses are not advertised.
+For attachments, Afora loads the source under its guarded outbound-media policy, freezes the resulting bytes in bounded plugin-scoped SQLite state, and gives Synology a short-lived opaque HTTPS capability on the configured webhook route. The NAS receives only this Afora-hosted URL, never the original remote or local media reference. Capabilities are account- and route-scoped, reusable for delayed `GET` or `HEAD` requests during their ten-minute lifetime, and expire automatically. Files are limited to 32 MB. Each account can serve at most four attachment responses concurrently and 128 MB per minute; stalled responses are closed after two minutes. Byte-range responses are not advertised.
 
 `webhookUrl` and `webhookPath` have different roles:
 
-- `webhookUrl` is the exact externally reachable HTTPS callback configured in Synology Chat. OpenClaw uses its public origin, path, and existing query string when creating attachment capabilities.
+- `webhookUrl` is the exact externally reachable HTTPS callback configured in Synology Chat. Afora uses its public origin, path, and existing query string when creating attachment capabilities.
 - `webhookPath` is the internal Gateway route. A reverse proxy may map the public URL to this route, but should expose only this plugin path, not the general Gateway HTTP surface.
-- `incomingUrl` points in the opposite direction: OpenClaw uses it to post replies to the NAS.
+- `incomingUrl` points in the opposite direction: Afora uses it to post replies to the NAS.
 
-OpenClaw never derives the public URL from `Host` or `X-Forwarded-*` headers and never falls back to forwarding the original source URL. If `webhookUrl` is missing or invalid, inbound messages and outbound text continue to work, while attachment sends fail with an actionable setup error.
+Afora never derives the public URL from `Host` or `X-Forwarded-*` headers and never falls back to forwarding the original source URL. If `webhookUrl` is missing or invalid, inbound messages and outbound text continue to work, while attachment sends fail with an actionable setup error.
 
 ## Multi-account
 
@@ -131,7 +131,7 @@ Multiple Synology Chat accounts are supported under `channels.synology-chat.acco
 Each account can override token, incoming URL, public webhook URL, webhook path, DM policy, and limits.
 Direct-message sessions are isolated per account and user, so the same numeric `user_id`
 on two different Synology accounts does not share transcript state.
-Give each enabled account a distinct `webhookPath`. OpenClaw rejects duplicate exact paths
+Give each enabled account a distinct `webhookPath`. Afora rejects duplicate exact paths
 and refuses to start named accounts that only inherit a shared webhook path in multi-account setups.
 If you intentionally need legacy inheritance for a named account, set
 `dangerouslyAllowInheritedWebhookPath: true` on that account or at `channels.synology-chat`,
@@ -172,7 +172,7 @@ but duplicate exact paths are still rejected fail-closed. Prefer explicit per-ac
 - Prefer `dmPolicy: "allowlist"` for production.
 - Keep `dangerouslyAllowNameMatching` off unless you explicitly need legacy username-based reply delivery.
 - Keep `dangerouslyAllowInheritedWebhookPath` off unless you explicitly accept shared-path routing risk in a multi-account setup.
-- Reverse-proxy access logs can capture attachment capability tokens. Disable query-string logging or redact `__openclaw_synology_media_token_*` parameters, and keep application logs free of full capability URLs.
+- Reverse-proxy access logs can capture attachment capability tokens. Disable query-string logging or redact `__afora_synology_media_token_*` parameters, and keep application logs free of full capability URLs.
 - Hosted attachments use `Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`, and `Cache-Control: no-store`. Files declared or named as HTML, SVG, or XML are rejected. Frozen bytes that begin as a UTF-8, UTF-16, or UTF-32 markup document after an optional encoding marker, whitespace, and comments are also rejected; literal tags later in passive text or source files do not make those files active documents.
 
 ## Troubleshooting
@@ -183,7 +183,7 @@ but duplicate exact paths are still rejected fail-closed. Prefer explicit per-ac
 - `Invalid token`:
   - the outgoing webhook secret does not match `channels.synology-chat.token`
   - the request is hitting the wrong account/webhook path
-  - a reverse proxy stripped the token header before the request reached OpenClaw
+  - a reverse proxy stripped the token header before the request reached Afora
 - `Rate limit exceeded`:
   - too many invalid token attempts from the same source can temporarily lock that source out
   - authenticated senders also have a separate per-user message rate limit

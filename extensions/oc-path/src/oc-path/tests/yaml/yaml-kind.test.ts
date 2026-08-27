@@ -17,7 +17,7 @@ steps:
     command: gog.gmail.search --query 'newer_than:1d' --max 20
 
   - id: classify
-    command: openclaw.invoke --tool llm-task --action json
+    command: afora.invoke --tool llm-task --action json
     stdin: $fetch.stdout
 `;
 

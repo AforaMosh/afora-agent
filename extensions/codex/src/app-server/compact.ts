@@ -1,5 +1,5 @@
 /**
- * Native Codex app-server compaction bridge for bound OpenClaw sessions.
+ * Native Codex app-server compaction bridge for bound Afora sessions.
  */
 import { AsyncLocalStorage } from "node:async_hooks";
 import {
@@ -7,15 +7,15 @@ import {
   resolveCompactionTimeoutMs,
   type CompactEmbeddedAgentSessionParams,
   type EmbeddedAgentCompactResult,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { resolveAgentDir } from "openclaw/plugin-sdk/agent-runtime";
-import { resolveDefaultAgentId } from "openclaw/plugin-sdk/agent-scope-runtime";
-import { createDedupeCache } from "openclaw/plugin-sdk/dedupe-runtime";
-import { coerceErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
-import { KeyedAsyncQueue } from "openclaw/plugin-sdk/keyed-async-queue";
-import type { SandboxContext } from "openclaw/plugin-sdk/sandbox";
-import { asOptionalRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { resolveAgentDir } from "afora-agent/plugin-sdk/agent-runtime";
+import { resolveDefaultAgentId } from "afora-agent/plugin-sdk/agent-scope-runtime";
+import { createDedupeCache } from "afora-agent/plugin-sdk/dedupe-runtime";
+import { coerceErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
+import { KeyedAsyncQueue } from "afora-agent/plugin-sdk/keyed-async-queue";
+import type { SandboxContext } from "afora-agent/plugin-sdk/sandbox";
+import { asOptionalRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { isIncognitoSessionKey } from "../incognito-session.js";
 import {
   CODEX_APP_SERVER_UNSUBSCRIBE_TIMEOUT_MS,
@@ -344,14 +344,14 @@ export async function maybeCompactCodexAppServerSession(
   params: CompactEmbeddedAgentSessionParams,
   options: CodexAppServerCompactOptions,
 ): Promise<EmbeddedAgentCompactResult | undefined> {
-  warnIfIgnoringOpenClawCompactionOverrides(params);
+  warnIfIgnoringAforaCompactionOverrides(params);
   // Codex owns automatic context-pressure compaction for Codex runtime sessions.
   // This entry point starts native Codex compaction for the bound thread and
   // retains the lease until Codex reports the context-compaction item complete.
   return compactCodexNativeThread(params, options);
 }
 
-function warnIfIgnoringOpenClawCompactionOverrides(
+function warnIfIgnoringAforaCompactionOverrides(
   params: CompactEmbeddedAgentSessionParams,
 ): void {
   const ignoredConfig = readIgnoredCompactionOverridePaths(params);
@@ -363,7 +363,7 @@ function warnIfIgnoringOpenClawCompactionOverrides(
     return;
   }
   embeddedAgentLog.warn(
-    "ignoring OpenClaw compaction overrides for Codex app-server compaction; Codex uses native server-side compaction",
+    "ignoring Afora compaction overrides for Codex app-server compaction; Codex uses native server-side compaction",
     {
       sessionId: params.sessionId,
       sessionKey: params.sessionKey,
@@ -583,7 +583,7 @@ async function compactCodexNativeThread(
             }
             if (usesSupervisionConnection) {
               // A supervised thread is native user-home state, not an
-              // OpenClaw-owned remote binding. Keep the lifecycle fence held
+              // Afora-owned remote binding. Keep the lifecycle fence held
               // rather than detach and permit a second writer.
               throw new Error("cannot detach an unconfirmed supervised codex thread");
             }

@@ -1,11 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type {
-  OpenClawPluginNodeHostCommand,
-  OpenClawPluginNodeHostCommandAvailabilityContext,
-} from "openclaw/plugin-sdk/plugin-entry";
-import { runCommandWithTimeout } from "openclaw/plugin-sdk/process-runtime";
-import { resolvePreferredOpenClawTmpDir, withTempWorkspace } from "openclaw/plugin-sdk/temp-path";
+  AforaPluginNodeHostCommand,
+  AforaPluginNodeHostCommandAvailabilityContext,
+} from "afora-agent/plugin-sdk/plugin-entry";
+import { runCommandWithTimeout } from "afora-agent/plugin-sdk/process-runtime";
+import { resolvePreferredAforaTmpDir, withTempWorkspace } from "afora-agent/plugin-sdk/temp-path";
 import {
   assertToolResult,
   clamp,
@@ -139,14 +139,14 @@ async function defaultWithTempFile<T>(
   run: (filePath: string) => Promise<T>,
 ): Promise<T> {
   return await withTempWorkspace(
-    { rootDir: resolvePreferredOpenClawTmpDir(), prefix: "openclaw-linux-node-" },
+    { rootDir: resolvePreferredAforaTmpDir(), prefix: "afora-linux-node-" },
     async ({ dir }) => await run(path.join(dir, `capture${suffix}`)),
   );
 }
 
 export function createLinuxNodeCommands(
   deps: LinuxNodeCommandDeps,
-): OpenClawPluginNodeHostCommand[] {
+): AforaPluginNodeHostCommand[] {
   const platform = deps.platform ?? process.platform;
   const env = deps.env ?? process.env;
   const findExecutable = deps.resolveExecutable ?? resolveExecutable;
@@ -182,7 +182,7 @@ export function createLinuxNodeCommands(
   };
   const isAvailable =
     (capability: keyof ResolvedLinuxNodePluginConfig, tool: "ffmpeg" | "notify-send") =>
-    (context: OpenClawPluginNodeHostCommandAvailabilityContext) =>
+    (context: AforaPluginNodeHostCommandAvailabilityContext) =>
       platform === "linux" &&
       isCapabilityEnabledForHost(context, capability) &&
       findTool(tool, context.env) !== null;

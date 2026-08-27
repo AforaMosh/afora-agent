@@ -5,18 +5,18 @@ import type { Selectable } from "kysely";
 import { listAgentIds, resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import { insideGitCheckout, runGit } from "../agents/worktrees/git.js";
 import { slugifyWorktreeTitle } from "../agents/worktrees/name.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../infra/kysely-sync.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
 
 export type ProjectRegistryRecord = {
   id: string;
@@ -27,8 +27,8 @@ export type ProjectRegistryRecord = {
   agentId?: string;
 };
 
-type ProjectsDatabase = Pick<OpenClawStateKyselyDatabase, "projects">;
-type ProjectRow = Selectable<OpenClawStateKyselyDatabase["projects"]>;
+type ProjectsDatabase = Pick<AforaStateKyselyDatabase, "projects">;
+type ProjectRow = Selectable<AforaStateKyselyDatabase["projects"]>;
 
 const ensuredDatabases = new WeakSet<DatabaseSync>();
 const PROJECT_ID_MAX_LENGTH = 64;
@@ -51,12 +51,12 @@ export class ProjectCheckoutError extends Error {
   }
 }
 
-function ensureProjectRegistrySchema(options: OpenClawStateDatabaseOptions = {}): void {
-  const database = openOpenClawStateDatabase(options);
+function ensureProjectRegistrySchema(options: AforaStateDatabaseOptions = {}): void {
+  const database = openAforaStateDatabase(options);
   if (ensuredDatabases.has(database.db)) {
     return;
   }
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       // sqlite-allow-raw -- feature-local additive schema DDL; project rows use Kysely below.
       db.exec(PROJECTS_SCHEMA_SQL);
@@ -67,9 +67,9 @@ function ensureProjectRegistrySchema(options: OpenClawStateDatabaseOptions = {})
   ensuredDatabases.add(database.db);
 }
 
-function openProjectsDatabase(options: OpenClawStateDatabaseOptions = {}) {
+function openProjectsDatabase(options: AforaStateDatabaseOptions = {}) {
   ensureProjectRegistrySchema(options);
-  const state = openOpenClawStateDatabase(options);
+  const state = openAforaStateDatabase(options);
   return { sqlite: state.db, kysely: getNodeSqliteKysely<ProjectsDatabase>(state.db) };
 }
 
@@ -90,10 +90,10 @@ function insertProjectRegistry(
     originUrl?: string;
     source: "registered" | "cloned";
   },
-  options: OpenClawStateDatabaseOptions,
+  options: AforaStateDatabaseOptions,
 ): ProjectRegistryRecord {
   ensureProjectRegistrySchema(options);
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db: sqlite }) => {
       const db = getNodeSqliteKysely<ProjectsDatabase>(sqlite);
       if (input.source === "cloned" && input.originUrl) {
@@ -130,7 +130,7 @@ function insertProjectRegistry(
   );
 }
 
-function workspaceProject(cfg: OpenClawConfig, agentId: string): ProjectRegistryRecord {
+function workspaceProject(cfg: AforaConfig, agentId: string): ProjectRegistryRecord {
   const repoRoot = resolveAgentWorkspaceDir(cfg, agentId);
   return {
     id: `workspace:${agentId}`,
@@ -193,7 +193,7 @@ export async function resolveProjectCheckout(projectPath: string): Promise<{
 
 export async function registerProjectRegistry(
   input: { path: string; name?: string },
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): Promise<ProjectRegistryRecord> {
   const checkout = await resolveProjectCheckout(input.path);
   const displayName = input.name?.trim() || path.basename(checkout.repoRoot) || "Project";
@@ -210,7 +210,7 @@ export async function registerProjectRegistry(
 
 export async function registerClonedProjectRegistry(
   input: { path: string; name: string; originUrl: string },
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): Promise<ProjectRegistryRecord> {
   const checkout = await resolveProjectCheckout(input.path);
   return insertProjectRegistry(
@@ -225,8 +225,8 @@ export async function registerClonedProjectRegistry(
 }
 
 export function listProjectRegistry(
-  cfg: OpenClawConfig,
-  options: OpenClawStateDatabaseOptions = {},
+  cfg: AforaConfig,
+  options: AforaStateDatabaseOptions = {},
 ): ProjectRegistryRecord[] {
   const { sqlite, kysely } = openProjectsDatabase(options);
   const stored = executeSqliteQuerySync(sqlite, kysely.selectFrom("projects").selectAll()).rows.map(
@@ -237,9 +237,9 @@ export function listProjectRegistry(
 }
 
 export function resolveProjectRegistry(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   id: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): ProjectRegistryRecord | undefined {
   if (id.startsWith("workspace:")) {
     const agentId = id.slice("workspace:".length);
@@ -255,7 +255,7 @@ export function resolveProjectRegistry(
 
 export async function resolveRecordedProjectRoot(
   projectPath: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): Promise<string | undefined> {
   const repoRoot = await fs.realpath(projectPath).catch(() => undefined);
   if (!repoRoot) {
@@ -271,10 +271,10 @@ export async function resolveRecordedProjectRoot(
 
 export function removeProjectRegistry(
   id: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): boolean {
   ensureProjectRegistrySchema(options);
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db: sqlite }) => {
       const db = getNodeSqliteKysely<ProjectsDatabase>(sqlite);
       return (

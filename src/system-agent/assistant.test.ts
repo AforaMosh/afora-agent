@@ -1,4 +1,4 @@
-// OpenClaw assistant tests cover plan parsing and inference prompt construction.
+// Afora assistant tests cover plan parsing and inference prompt construction.
 import { describe, expect, it } from "vitest";
 import {
   SYSTEM_AGENT_ASSISTANT_SYSTEM_PROMPT,
@@ -11,7 +11,7 @@ import type { SystemAgentOverview } from "./overview.js";
 function overview(overrides: Partial<SystemAgentOverview["tools"]> = {}): SystemAgentOverview {
   return {
     config: {
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       exists: false,
       valid: false,
       issues: [],
@@ -32,13 +32,13 @@ function overview(overrides: Partial<SystemAgentOverview["tools"]> = {}): System
       reachable: false,
     },
     references: {
-      docsUrl: "https://docs.openclaw.ai",
-      sourceUrl: "https://github.com/openclaw/openclaw",
+      docsUrl: "https://docs.afora.ai",
+      sourceUrl: "https://github.com/AforaMosh/afora-agent",
     },
   };
 }
 
-describe("OpenClaw assistant", () => {
+describe("Afora assistant", () => {
   it("teaches both planner and agent-loop prompts about hosted setup flows", () => {
     expect(SYSTEM_AGENT_ASSISTANT_SYSTEM_PROMPT).toContain("- configure skills");
     expect(SYSTEM_AGENT_ASSISTANT_SYSTEM_PROMPT).toContain("- configure search");
@@ -116,8 +116,8 @@ describe("OpenClaw assistant", () => {
   it("keeps remote Gateway mode outside both hosted chat planners", () => {
     for (const prompt of [SYSTEM_AGENT_ASSISTANT_SYSTEM_PROMPT, SYSTEM_AGENT_SYSTEM_PROMPT]) {
       expect(prompt).toContain("running the Gateway on another machine");
-      expect(prompt).toContain("`openclaw onboard` for fresh setup");
-      expect(prompt).toContain("`openclaw configure` for the mode question");
+      expect(prompt).toContain("`afora onboard` for fresh setup");
+      expect(prompt).toContain("`afora configure` for the mode question");
       expect(prompt).toContain("LOCAL Gateway's port, bind, auth, and Tailscale exposure");
     }
   });
@@ -150,7 +150,7 @@ describe("OpenClaw assistant", () => {
           apiKeys: { openai: true, anthropic: false },
         }),
         config: {
-          path: "/tmp/openclaw.json",
+          path: "/tmp/afora.json",
           exists: true,
           valid: true,
           issues: [],
@@ -168,10 +168,10 @@ describe("OpenClaw assistant", () => {
         defaultAgentId: "main",
         defaultModel: "openai/gpt-5.5",
         references: {
-          docsPath: "/tmp/openclaw/docs",
-          docsUrl: "https://docs.openclaw.ai",
-          sourcePath: "/tmp/openclaw",
-          sourceUrl: "https://github.com/openclaw/openclaw",
+          docsPath: "/tmp/afora/docs",
+          docsUrl: "https://docs.afora.ai",
+          sourcePath: "/tmp/afora",
+          sourceUrl: "https://github.com/AforaMosh/afora-agent",
         },
       },
     });
@@ -180,8 +180,8 @@ describe("OpenClaw assistant", () => {
     expect(prompt).toContain("Default model: openai/gpt-5.5");
     expect(prompt).toContain("id=main, name=Main, workspace=/tmp/main");
     expect(prompt).toContain("OpenAI API key: found");
-    expect(prompt).toContain("OpenClaw docs: /tmp/openclaw/docs");
-    expect(prompt).toContain("OpenClaw source: /tmp/openclaw");
+    expect(prompt).toContain("Afora docs: /tmp/afora/docs");
+    expect(prompt).toContain("Afora source: /tmp/afora");
   });
 
   it("keeps truncated conversation history valid at a UTF-16 boundary", () => {

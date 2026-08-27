@@ -26,7 +26,7 @@ describe("mcp cli OAuth", () => {
   });
 
   it("includes OAuth credential status in MCP status output", async () => {
-    await withTempHome("openclaw-cli-mcp-home-", async () => {
+    await withTempHome("afora-cli-mcp-home-", async () => {
       const workspaceDir = await createWorkspace();
       vi.spyOn(process, "cwd").mockReturnValue(workspaceDir);
       readMcpOAuthCredentialsStatus.mockResolvedValueOnce({
@@ -55,7 +55,7 @@ describe("mcp cli OAuth", () => {
   });
 
   it("surfaces required OAuth authorization in status and doctor", async () => {
-    await withTempHome("openclaw-cli-mcp-home-", async () => {
+    await withTempHome("afora-cli-mcp-home-", async () => {
       const workspaceDir = await createWorkspace();
       vi.spyOn(process, "cwd").mockReturnValue(workspaceDir);
       readMcpOAuthCredentialsStatus.mockResolvedValue({
@@ -89,7 +89,7 @@ describe("mcp cli OAuth", () => {
               {
                 level: "warning",
                 message:
-                  "OAuth credentials require additional authorization; run openclaw mcp login docs",
+                  "OAuth credentials require additional authorization; run afora mcp login docs",
               },
             ],
           },
@@ -99,7 +99,7 @@ describe("mcp cli OAuth", () => {
   });
 
   it("shows connected requester principals in list and status output", async () => {
-    await withTempHome("openclaw-cli-mcp-home-", async () => {
+    await withTempHome("afora-cli-mcp-home-", async () => {
       const workspaceDir = await createWorkspace();
       vi.spyOn(process, "cwd").mockReturnValue(workspaceDir);
       countMcpOAuthPrincipals.mockReturnValue(2);
@@ -128,7 +128,7 @@ describe("mcp cli OAuth", () => {
   });
 
   it("configures enablement, timeouts, and OAuth login", async () => {
-    await withTempHome("openclaw-cli-mcp-home-", async () => {
+    await withTempHome("afora-cli-mcp-home-", async () => {
       const workspaceDir = await createWorkspace();
       vi.spyOn(process, "cwd").mockReturnValue(workspaceDir);
       completeMcpOAuthAuthorization.mockResolvedValueOnce("authorized");
@@ -173,7 +173,7 @@ describe("mcp cli OAuth", () => {
   });
 
   it("clears stored OAuth credentials on logout", async () => {
-    await withTempHome("openclaw-cli-mcp-home-", async () => {
+    await withTempHome("afora-cli-mcp-home-", async () => {
       const workspaceDir = await createWorkspace();
       vi.spyOn(process, "cwd").mockReturnValue(workspaceDir);
 
@@ -197,7 +197,7 @@ describe("mcp cli OAuth", () => {
   });
 
   it("rejects operator login and logout for per-requester OAuth", async () => {
-    await withTempHome("openclaw-cli-mcp-home-", async () => {
+    await withTempHome("afora-cli-mcp-home-", async () => {
       const workspaceDir = await createWorkspace();
       vi.spyOn(process, "cwd").mockReturnValue(workspaceDir);
       await runMcpCommand([
@@ -228,7 +228,7 @@ describe("mcp cli OAuth", () => {
   });
 
   it("clears stored OAuth credentials after auth is removed", async () => {
-    await withTempHome("openclaw-cli-mcp-home-", async () => {
+    await withTempHome("afora-cli-mcp-home-", async () => {
       const workspaceDir = await createWorkspace();
       vi.spyOn(process, "cwd").mockReturnValue(workspaceDir);
 

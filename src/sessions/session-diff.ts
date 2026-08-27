@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import { constants as fsConstants, type BigIntStats } from "node:fs";
 import fs from "node:fs/promises";
 import nodePath from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import type {
   SessionDiffFile,
   SessionsDiffResult,

@@ -1,15 +1,15 @@
 // Qwen plugin module implements stream behavior.
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import { streamSimple } from "openclaw/plugin-sdk/llm";
-import type { ProviderWrapStreamFnContext } from "openclaw/plugin-sdk/plugin-entry";
-import { normalizeProviderId } from "openclaw/plugin-sdk/provider-model-shared";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import { streamSimple } from "afora-agent/plugin-sdk/llm";
+import type { ProviderWrapStreamFnContext } from "afora-agent/plugin-sdk/plugin-entry";
+import { normalizeProviderId } from "afora-agent/plugin-sdk/provider-model-shared";
 import {
   createPayloadPatchStreamWrapper,
   isOpenAICompatibleThinkingEnabled,
   normalizeOpenAICompatibleReasoningReplay,
   setQwenChatTemplateThinking,
-} from "openclaw/plugin-sdk/provider-stream-shared";
-import { asOptionalRecord as asPayloadRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/provider-stream-shared";
+import { asOptionalRecord as asPayloadRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   isQwenTokenPlanDeepSeekV4ModelId,
   isQwenTokenPlanGlmModelId,
@@ -337,7 +337,7 @@ export function createQwenThinkingWrapper(
         // tool-choice normalization; this pass only strips generic fields.
         patchTokenPlanKimiPayload(payloadObj, false);
       } else if (tokenPlanContract?.family === "glm") {
-        // GLM accepts OpenClaw's reasoning levels directly; only GLM 5.2 accepts max.
+        // GLM accepts Afora's reasoning levels directly; only GLM 5.2 accepts max.
         patchTokenPlanGlmPayload(
           payloadObj,
           effectiveThinkingLevel,

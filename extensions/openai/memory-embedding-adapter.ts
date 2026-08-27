@@ -4,7 +4,7 @@ import {
   mapBatchEmbeddingsByIndex,
   sanitizeEmbeddingCacheHeaders,
   type MemoryEmbeddingProviderAdapter,
-} from "openclaw/plugin-sdk/memory-core-host-engine-embeddings";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-embeddings";
 import { OPENAI_BATCH_ENDPOINT, runOpenAiEmbeddingBatches } from "./embedding-batch.js";
 import {
   createOpenAiEmbeddingProvider,
@@ -19,7 +19,7 @@ function resolveEmbeddingCacheExcludedHeaders(providerId: string, baseUrl: strin
   try {
     if (new URL(baseUrl).hostname.toLowerCase().replace(/\.+$/, "") === "api.openai.com") {
       // Native attribution changes on every upgrade; cache identity must describe embeddings,
-      // not the OpenClaw build that requested them.
+      // not the Afora build that requested them.
       excludedHeaders.push("version", "user-agent");
     }
   } catch {

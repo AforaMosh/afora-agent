@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   listPluginSdkDeclarationOutputs,
@@ -107,7 +107,7 @@ async function waitForProcessExit(
 
 describe("prepare-extension-package-boundary-artifacts", () => {
   it("derives the historical SDK cache misses from TypeScript build inputs", () => {
-    const rootDir = makeTempDir(tempRoots, "openclaw-plugin-sdk-inputs-");
+    const rootDir = makeTempDir(tempRoots, "afora-plugin-sdk-inputs-");
     const buildInfoPath = path.join(rootDir, "dist", "plugin-sdk", ".tsbuildinfo");
     fs.mkdirSync(path.dirname(buildInfoPath), { recursive: true });
     fs.writeFileSync(
@@ -277,7 +277,7 @@ describe("prepare-extension-package-boundary-artifacts", () => {
   it.runIf(process.platform !== "win32")(
     "force-kills aborted sibling step process groups",
     async () => {
-      const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-boundary-abort-group-"));
+      const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-boundary-abort-group-"));
       tempRoots.add(rootDir);
       const descendantPidPath = path.join(rootDir, "descendant.pid");
       let descendantPid = 0;
@@ -335,7 +335,7 @@ describe("prepare-extension-package-boundary-artifacts", () => {
   it.runIf(process.platform !== "win32")(
     "lets aborted sibling descendants drain during kill grace",
     async () => {
-      const rootDir = makeTempDir(tempRoots, "openclaw-boundary-abort-drain-");
+      const rootDir = makeTempDir(tempRoots, "afora-boundary-abort-drain-");
       const readyPath = path.join(rootDir, "descendant.ready");
       const drainedPath = path.join(rootDir, "descendant.drained");
       const descendantScript = [
@@ -422,7 +422,7 @@ describe("prepare-extension-package-boundary-artifacts", () => {
   });
 
   it.runIf(process.platform !== "win32")("kills timed-out prep step process groups", async () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-boundary-timeout-group-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-boundary-timeout-group-"));
     tempRoots.add(rootDir);
     const descendantPidPath = path.join(rootDir, "descendant.pid");
     let descendantPid = 0;
@@ -473,7 +473,7 @@ describe("prepare-extension-package-boundary-artifacts", () => {
   it.runIf(process.platform !== "win32")(
     "forwards wrapper termination to detached prep step groups",
     async () => {
-      const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-boundary-signal-group-"));
+      const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-boundary-signal-group-"));
       tempRoots.add(rootDir);
       const descendantPidPath = path.join(rootDir, "descendant.pid");
       let descendantPid = 0;
@@ -520,7 +520,7 @@ describe("prepare-extension-package-boundary-artifacts", () => {
   );
 
   it("runs boundary prep steps serially for local checks", async () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-boundary-serial-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-boundary-serial-"));
     tempRoots.add(rootDir);
     const logPath = path.join(rootDir, "steps.log");
     const appendScript = (label: string) =>
@@ -534,7 +534,7 @@ describe("prepare-extension-package-boundary-artifacts", () => {
         { label: "first", args: ["--eval", appendScript("first")], timeoutMs: 5_000 },
         { label: "second", args: ["--eval", appendScript("second")], timeoutMs: 5_000 },
       ],
-      { OPENCLAW_LOCAL_CHECK: "1" },
+      { AFORA_LOCAL_CHECK: "1" },
     );
 
     expect(fs.readFileSync(logPath, "utf8").trim().split("\n")).toEqual([
@@ -546,18 +546,18 @@ describe("prepare-extension-package-boundary-artifacts", () => {
   });
 
   it("passes step-specific environment overrides to child steps", async () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-boundary-env-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-boundary-env-"));
     tempRoots.add(rootDir);
     const outputPath = path.join(rootDir, "env.txt");
     const writeEnvScript =
       `const fs=require("node:fs");` +
-      `fs.writeFileSync(${JSON.stringify(outputPath)}, process.env.OPENCLAW_TEST_ENV || "", "utf8");`;
+      `fs.writeFileSync(${JSON.stringify(outputPath)}, process.env.AFORA_TEST_ENV || "", "utf8");`;
 
     await runNodeStepsInParallel([
       {
         label: "env-step",
         args: ["--eval", writeEnvScript],
-        env: { OPENCLAW_TEST_ENV: "passed" },
+        env: { AFORA_TEST_ENV: "passed" },
         timeoutMs: 5_000,
       },
     ]);
@@ -566,7 +566,7 @@ describe("prepare-extension-package-boundary-artifacts", () => {
   });
 
   it("treats artifacts as fresh only when outputs are newer than inputs", () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-boundary-prep-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-boundary-prep-"));
     tempRoots.add(rootDir);
     const inputPath = path.join(rootDir, "src", "demo.ts");
     const outputPath = path.join(rootDir, "dist", "demo.tsbuildinfo");
@@ -600,7 +600,7 @@ describe("prepare-extension-package-boundary-artifacts", () => {
   it("keeps mtime-stale artifacts fresh when the hash stamp matches the input digest", () => {
     // Regression: fresh checkouts re-stamp every input mtime, so cache-restored
     // artifacts must stay fresh by content identity, not build again per CI run.
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-boundary-hash-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-boundary-hash-"));
     tempRoots.add(rootDir);
     const inputPath = path.join(rootDir, "src", "demo.ts");
     const stampPath = path.join(rootDir, "dist", ".demo.stamp");
@@ -653,7 +653,7 @@ describe("prepare-extension-package-boundary-artifacts", () => {
   });
 
   it("requires generated entry-shim outputs in addition to the freshness stamp", () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-boundary-entry-shims-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-boundary-entry-shims-"));
     tempRoots.add(rootDir);
     const inputPath = path.join(rootDir, "scripts", "write-plugin-sdk-entry-dts.ts");
     const stampPath = path.join(rootDir, "dist", "plugin-sdk", ".boundary-entry-shims.stamp");
@@ -716,7 +716,7 @@ describe("prepare-extension-package-boundary-artifacts", () => {
   it("keeps bundled-private runtime shims in production while gating QA helpers", () => {
     const productionOutputs = resolveBoundaryEntryShimRequiredOutputs({});
     const privateQaOutputs = resolveBoundaryEntryShimRequiredOutputs({
-      OPENCLAW_BUILD_PRIVATE_QA: "1",
+      AFORA_BUILD_PRIVATE_QA: "1",
     });
 
     expect(productionOutputs.filter((output) => output.startsWith("dist/plugin-sdk/"))).toEqual(
@@ -751,18 +751,18 @@ describe("prepare-extension-package-boundary-artifacts", () => {
     expect(resolveBoundaryRootShimsTimeoutMs({})).toBe(300_000);
     expect(
       resolveBoundaryRootShimsTimeoutMs({
-        OPENCLAW_PLUGIN_SDK_BOUNDARY_ROOT_SHIMS_TIMEOUT_MS: "450000",
+        AFORA_PLUGIN_SDK_BOUNDARY_ROOT_SHIMS_TIMEOUT_MS: "450000",
       }),
     ).toBe(450_000);
     expect(() =>
       resolveBoundaryRootShimsTimeoutMs({
-        OPENCLAW_PLUGIN_SDK_BOUNDARY_ROOT_SHIMS_TIMEOUT_MS: "120s",
+        AFORA_PLUGIN_SDK_BOUNDARY_ROOT_SHIMS_TIMEOUT_MS: "120s",
       }),
-    ).toThrow("OPENCLAW_PLUGIN_SDK_BOUNDARY_ROOT_SHIMS_TIMEOUT_MS must be a positive integer");
+    ).toThrow("AFORA_PLUGIN_SDK_BOUNDARY_ROOT_SHIMS_TIMEOUT_MS must be a positive integer");
     expect(() =>
       resolveBoundaryRootShimsTimeoutMs({
-        OPENCLAW_PLUGIN_SDK_BOUNDARY_ROOT_SHIMS_TIMEOUT_MS: "0",
+        AFORA_PLUGIN_SDK_BOUNDARY_ROOT_SHIMS_TIMEOUT_MS: "0",
       }),
-    ).toThrow("OPENCLAW_PLUGIN_SDK_BOUNDARY_ROOT_SHIMS_TIMEOUT_MS must be a positive integer");
+    ).toThrow("AFORA_PLUGIN_SDK_BOUNDARY_ROOT_SHIMS_TIMEOUT_MS must be a positive integer");
   });
 });

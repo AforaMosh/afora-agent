@@ -11,7 +11,7 @@ function compilePattern(pathPattern: string, refPathPattern?: string) {
   return compileTargetRegistryEntry({
     id: "test.pattern",
     targetType: "test.pattern",
-    configFile: "openclaw.json",
+    configFile: "afora.json",
     pathPattern,
     ...(refPathPattern ? { refPathPattern } : {}),
     secretShape: refPathPattern ? "sibling_ref" : "secret_input",

@@ -1,11 +1,11 @@
 // Covers MCP OAuth token refresh, lease cancellation, and concurrency.
 import path from "node:path";
-import { withTempHome as withBaseTempHome } from "openclaw/plugin-sdk/test-env";
+import { withTempHome as withBaseTempHome } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { operatorMcpOAuthIdentity } from "./mcp-oauth-identity.js";
 import { createMcpOAuthClientProvider, withMcpOAuthLeaseSignal } from "./mcp-oauth-provider.js";
 import { readMcpOAuthStore } from "./mcp-oauth-store.js";
@@ -25,17 +25,17 @@ async function withTempHome<T>(
   options: Parameters<typeof withBaseTempHome>[1],
 ): Promise<T> {
   return withBaseTempHome(async (home) => {
-    const previousStateDir = process.env.OPENCLAW_STATE_DIR;
-    process.env.OPENCLAW_STATE_DIR = path.join(home, ".openclaw");
-    closeOpenClawStateDatabaseForTest();
+    const previousStateDir = process.env.AFORA_STATE_DIR;
+    process.env.AFORA_STATE_DIR = path.join(home, ".afora");
+    closeAforaStateDatabaseForTest();
     try {
       return await run(home);
     } finally {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       if (previousStateDir === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.AFORA_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = previousStateDir;
+        process.env.AFORA_STATE_DIR = previousStateDir;
       }
     }
   }, options);
@@ -44,10 +44,10 @@ async function withTempHome<T>(
 describe("MCP OAuth provider", () => {
   beforeEach(() => {
     authMock.mockReset();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
   });
 
-  afterEach(() => closeOpenClawStateDatabaseForTest());
+  afterEach(() => closeAforaStateDatabaseForTest());
 
   it("aborts OAuth fetches when their owning lease signal is lost", async () => {
     const lease = new AbortController();
@@ -95,11 +95,11 @@ describe("MCP OAuth provider", () => {
         expect(authMock).not.toHaveBeenCalled();
       },
       {
-        prefix: "openclaw-mcp-oauth-fresh-token-",
+        prefix: "afora-mcp-oauth-fresh-token-",
         skipSessionCleanup: true,
         env: {
-          OPENCLAW_CONFIG_PATH: undefined,
-          OPENCLAW_STATE_DIR: undefined,
+          AFORA_CONFIG_PATH: undefined,
+          AFORA_STATE_DIR: undefined,
         },
       },
     );
@@ -150,21 +150,21 @@ describe("MCP OAuth provider", () => {
         await started;
         controller.abort(new Error("request stopped"));
 
-        await expect(refresh).rejects.toMatchObject({ code: "OPENCLAW_STATE_LEASE_ABORTED" });
+        await expect(refresh).rejects.toMatchObject({ code: "AFORA_STATE_LEASE_ABORTED" });
         expect(refreshSignal).toMatchObject({ aborted: true });
         expect(provider.tokens()).toMatchObject({
           access_token: "decoy-token",
           refresh_token: "test-auth-token",
         });
-        const leaseCount = openOpenClawStateDatabase()
+        const leaseCount = openAforaStateDatabase()
           .db.prepare("SELECT COUNT(*) AS count FROM state_leases WHERE scope = ?")
           .get("core:mcp-oauth") as { count: number };
         expect(leaseCount.count).toBe(0);
       },
       {
-        prefix: "openclaw-mcp-oauth-aborted-refresh-",
+        prefix: "afora-mcp-oauth-aborted-refresh-",
         skipSessionCleanup: true,
-        env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
       },
     );
   });
@@ -204,11 +204,11 @@ describe("MCP OAuth provider", () => {
         });
       },
       {
-        prefix: "openclaw-mcp-oauth-expired-token-",
+        prefix: "afora-mcp-oauth-expired-token-",
         skipSessionCleanup: true,
         env: {
-          OPENCLAW_CONFIG_PATH: undefined,
-          OPENCLAW_STATE_DIR: undefined,
+          AFORA_CONFIG_PATH: undefined,
+          AFORA_STATE_DIR: undefined,
         },
       },
     );
@@ -263,11 +263,11 @@ describe("MCP OAuth provider", () => {
         expect(authMock).toHaveBeenCalledOnce();
       },
       {
-        prefix: "openclaw-mcp-oauth-concurrent-refresh-",
+        prefix: "afora-mcp-oauth-concurrent-refresh-",
         skipSessionCleanup: true,
         env: {
-          OPENCLAW_CONFIG_PATH: undefined,
-          OPENCLAW_STATE_DIR: undefined,
+          AFORA_CONFIG_PATH: undefined,
+          AFORA_STATE_DIR: undefined,
         },
       },
     );
@@ -329,9 +329,9 @@ describe("MCP OAuth provider", () => {
         expect(readMcpOAuthStore(IDENTITY.storeKey).pendingAuthorizationChallenge).toBeUndefined();
       },
       {
-        prefix: "openclaw-mcp-oauth-concurrent-challenge-",
+        prefix: "afora-mcp-oauth-concurrent-challenge-",
         skipSessionCleanup: true,
-        env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
       },
     );
   });
@@ -380,9 +380,9 @@ describe("MCP OAuth provider", () => {
         expect(provider.tokens()).toBeUndefined();
       },
       {
-        prefix: "openclaw-mcp-oauth-refresh-logout-",
+        prefix: "afora-mcp-oauth-refresh-logout-",
         skipSessionCleanup: true,
-        env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
       },
     );
   });
@@ -424,9 +424,9 @@ describe("MCP OAuth provider", () => {
         expect(readMcpOAuthStore(IDENTITY.storeKey).pendingAuthorizationChallenge).toBeUndefined();
       },
       {
-        prefix: "openclaw-mcp-oauth-rejected-token-",
+        prefix: "afora-mcp-oauth-rejected-token-",
         skipSessionCleanup: true,
-        env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
       },
     );
   });

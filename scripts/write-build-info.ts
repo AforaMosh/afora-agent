@@ -53,7 +53,7 @@ export function normalizeBuildCommit(raw: string, source = "GIT_COMMIT"): string
   return commit;
 }
 
-export function normalizeBuildTimestamp(raw: string, source = "OPENCLAW_BUILD_TIMESTAMP"): string {
+export function normalizeBuildTimestamp(raw: string, source = "AFORA_BUILD_TIMESTAMP"): string {
   const timestamp = raw.trim();
   if (!UTC_ISO_TIMESTAMP_RE.test(timestamp)) {
     throw new Error(`${source} must be an ISO-8601 UTC timestamp ending in Z.`);
@@ -94,7 +94,7 @@ export function resolveBuildInfo(options: ResolveBuildInfoOptions = {}): BuildIn
   const explicitCommit = env.GIT_COMMIT?.trim();
   const explicitSha = env.GIT_SHA?.trim();
   const githubSha = env.GITHUB_SHA?.trim();
-  const explicitTimestamp = env.OPENCLAW_BUILD_TIMESTAMP?.trim();
+  const explicitTimestamp = env.AFORA_BUILD_TIMESTAMP?.trim();
   const checkedOutCommit =
     explicitCommit || explicitSha
       ? null
@@ -108,16 +108,16 @@ export function resolveBuildInfo(options: ResolveBuildInfoOptions = {}): BuildIn
   const builtAt = explicitTimestamp
     ? normalizeBuildTimestamp(explicitTimestamp)
     : (options.now ?? (() => new Date()))().toISOString();
-  const releaseFlag = env.OPENCLAW_CONTROL_UI_RELEASE_BUILD?.trim();
+  const releaseFlag = env.AFORA_CONTROL_UI_RELEASE_BUILD?.trim();
   if (releaseFlag && releaseFlag !== "1") {
-    throw new Error("OPENCLAW_CONTROL_UI_RELEASE_BUILD must be 1 when set");
+    throw new Error("AFORA_CONTROL_UI_RELEASE_BUILD must be 1 when set");
   }
   const buildId = normalizeControlUiBuildInfo({
     version: readPackageVersion(rootDir),
     commit,
     builtAt,
     release: releaseFlag === "1",
-    buildId: env.OPENCLAW_CONTROL_UI_BUILD_ID,
+    buildId: env.AFORA_CONTROL_UI_BUILD_ID,
   }).buildId;
 
   return {

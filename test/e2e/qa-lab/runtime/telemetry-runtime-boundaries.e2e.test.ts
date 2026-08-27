@@ -24,7 +24,7 @@ describe("telemetry runtime boundaries", () => {
     const repoRoot = process.cwd();
     const artifactRoot = path.join(repoRoot, ".artifacts", "qa-e2e");
     await fs.mkdir(artifactRoot, { recursive: true });
-    const outputDir = tempDirs.make("openclaw-telemetry-runtime-", artifactRoot);
+    const outputDir = tempDirs.make("afora-telemetry-runtime-", artifactRoot);
     const runtime = await runQaSuite({
       alternateModel: "mock-openai/gpt-5.6-luna",
       concurrency: 1,
@@ -116,6 +116,6 @@ describe("telemetry runtime boundaries", () => {
     expect(serializedArtifacts).not.toContain("PERSONAL_TASK_LEDGER.md");
     expect(serializedArtifacts).not.toContain("FOLLOWTHROUGH_NOTE.md");
     expect(serializedArtifacts).not.toContain("QA_TELEMETRY_PROBE.md");
-    expect(path.basename(runtime.result.outputDir)).toMatch(/^openclaw-telemetry-runtime-/u);
+    expect(path.basename(runtime.result.outputDir)).toMatch(/^afora-telemetry-runtime-/u);
   }, 180_000);
 });

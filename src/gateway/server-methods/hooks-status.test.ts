@@ -28,7 +28,7 @@ function createHookRegistry(workspaceDir: string) {
       hook: {
         name: "live-plugin-hook",
         description: "Registered by the live Gateway plugin registry",
-        source: "openclaw-plugin",
+        source: "afora-plugin",
         pluginId: "live-hooks",
         filePath: "/plugins/live-hooks/index.js",
         baseDir: "/plugins/live-hooks",
@@ -85,7 +85,7 @@ async function dispatchHooksStatus(params: {
 
 describe("hooks.status", () => {
   it("returns typed selection-required for an ownerless explicit fleet", async () => {
-    const workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hooks-status-"));
+    const workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hooks-status-"));
     tempDirs.push(workspaceDir);
     const fixture = createHookRegistry(workspaceDir);
     const config = {
@@ -125,7 +125,7 @@ describe("hooks.status", () => {
   });
 
   it("returns registered plugin hooks from the request-attached live registry", async () => {
-    const workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hooks-status-"));
+    const workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hooks-status-"));
     tempDirs.push(workspaceDir);
     const fixture = createHookRegistry(workspaceDir);
     setActivePluginRegistry(createEmptyPluginRegistry());
@@ -152,7 +152,7 @@ describe("hooks.status", () => {
   });
 
   it("requires operator.read and rejects unexpected params", async () => {
-    const workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hooks-status-"));
+    const workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hooks-status-"));
     tempDirs.push(workspaceDir);
     const fixture = createHookRegistry(workspaceDir);
 

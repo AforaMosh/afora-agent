@@ -1,4 +1,4 @@
-export const NODE_WORKSPACE_TRANSFER_PATH = "/__openclaw__/worker-transfer/v1";
+export const NODE_WORKSPACE_TRANSFER_PATH = "/__afora__/worker-transfer/v1";
 export const NODE_WORKSPACE_TRANSFER_ERROR_CODE = "WORKSPACE_TRANSFER_FAILED";
 
 export class NodeWorkerWorkspaceTransferError extends Error {

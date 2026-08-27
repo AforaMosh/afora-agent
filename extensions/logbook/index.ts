@@ -1,17 +1,17 @@
 // Logbook plugin entrypoint: automatic work journal built from screen snapshots.
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import {
   ErrorCodes,
   errorShape,
   type GatewayRequestHandlerOptions,
-} from "openclaw/plugin-sdk/gateway-runtime";
+} from "afora-agent/plugin-sdk/gateway-runtime";
 import {
   definePluginEntry,
-  type OpenClawPluginApi,
-  type OpenClawPluginNodeHostCommand,
-} from "openclaw/plugin-sdk/plugin-entry";
+  type AforaPluginApi,
+  type AforaPluginNodeHostCommand,
+} from "afora-agent/plugin-sdk/plugin-entry";
 import { resolveLogbookConfig } from "./src/config.js";
 import { LogbookService } from "./src/service.js";
 import { dayKeyFor } from "./src/store.js";
@@ -43,7 +43,7 @@ function readNumberParam(params: unknown, key: string): number {
   return value;
 }
 
-const logbookNodeHostCommands: OpenClawPluginNodeHostCommand[] = [
+const logbookNodeHostCommands: AforaPluginNodeHostCommand[] = [
   {
     command: "logbook.snapshot",
     cap: "screen",
@@ -67,7 +67,7 @@ export default definePluginEntry({
   description: "Automatic work journal built from periodic screen snapshots",
   configSchema: logbookConfigSchema,
   nodeHostCommands: logbookNodeHostCommands,
-  register(api: OpenClawPluginApi) {
+  register(api: AforaPluginApi) {
     const config = logbookConfigSchema.parse(api.pluginConfig);
     let service: LogbookService | null = null;
 

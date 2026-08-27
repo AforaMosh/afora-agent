@@ -1,8 +1,8 @@
 // Parsing for the retired Web Push JSON stores: raw legacy file contents in,
 // validated domain shapes out. Doctor-only, split from
 // state-migrations.web-push.ts which owns detection/claiming/DB import.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   createWebPushVapidKeyPair,
   hashWebPushEndpoint,
@@ -99,7 +99,7 @@ export function parseLegacyVapidKeys(raw: string, env: NodeJS.ProcessEnv): Vapid
   }
   const subject =
     normalizeOptionalString(parsed.subject) ??
-    normalizeOptionalString(env.OPENCLAW_VAPID_SUBJECT) ??
+    normalizeOptionalString(env.AFORA_VAPID_SUBJECT) ??
     DEFAULT_WEB_PUSH_VAPID_SUBJECT;
   if (
     !isValidWebPushKey(parsed.publicKey) ||

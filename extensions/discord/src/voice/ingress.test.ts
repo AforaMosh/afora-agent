@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   })),
 }));
 
-vi.mock("openclaw/plugin-sdk/agent-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/agent-runtime", () => ({
   agentCommandFromIngress: mocks.agentCommandFromIngress,
 }));
 

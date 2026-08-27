@@ -1,4 +1,4 @@
-import { asNullableObjectRecord, isRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableObjectRecord, isRecord } from "@afora/normalization-core/record-coerce";
 import { unsupportedSecretRefSurfacePolicy } from "../secrets/unsupported-surface-policy.js";
 import { appendAllowedValuesHint, summarizeAllowedValues } from "./allowed-values.js";
 import type { ConfigValidationIssue } from "./types.js";
@@ -15,7 +15,7 @@ type AllowedValuesCollection = {
 type JsonSchemaLike = Record<string, unknown>;
 
 const CUSTOM_EXPECTED_ONE_OF_RE = /expected one of ((?:"[^"]+"(?:\|"?[^"]+"?)*)+)/i;
-const SECRETREF_POLICY_DOC_URL = "https://docs.openclaw.ai/reference/secretref-credential-surface";
+const SECRETREF_POLICY_DOC_URL = "https://docs.afora.ai/reference/secretref-credential-surface";
 
 function toConfigPathSegments(path: unknown): ConfigPathSegment[] {
   if (!Array.isArray(path)) {

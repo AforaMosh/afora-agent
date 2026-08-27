@@ -8,11 +8,11 @@ import {
 function pullRequest(overrides: Partial<ControlUiSessionPullRequest>): ControlUiSessionPullRequest {
   return {
     number: 1,
-    owner: "openclaw",
-    repo: "openclaw",
+    owner: "afora",
+    repo: "afora",
     branch: "feature/demo",
     title: "Demo",
-    url: "https://github.com/openclaw/openclaw/pull/1",
+    url: "https://github.com/AforaMosh/afora-agent/pull/1",
     state: "open",
     ...overrides,
   };

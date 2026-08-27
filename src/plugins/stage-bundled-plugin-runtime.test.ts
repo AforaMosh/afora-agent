@@ -2,11 +2,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { bundledDistPluginFile } from "openclaw/plugin-sdk/test-fixtures";
+import { bundledDistPluginFile } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { stageBundledPluginRuntime } from "../../scripts/stage-bundled-plugin-runtime.mts";
 import { withMockedWindowsPlatform, withRestoredMocks } from "../test-utils/vitest-spies.js";
-import { discoverOpenClawPlugins } from "./discovery.js";
+import { discoverAforaPlugins } from "./discovery.js";
 import { loadPluginManifestRegistryCore } from "./manifest-registry.js";
 import { cleanupTrackedTempDirs, makeTrackedTempDir } from "./test-helpers/fs-fixtures.js";
 
@@ -96,7 +96,7 @@ afterEach(() => {
 
 describe("stageBundledPluginRuntime", () => {
   it("stages bundled dist plugins as runtime wrappers without linking plugin node_modules", () => {
-    const repoRoot = makeRepoRoot("openclaw-stage-bundled-runtime-");
+    const repoRoot = makeRepoRoot("afora-stage-bundled-runtime-");
     const distPluginDir = createDistPluginDir(repoRoot, "diffs");
     fs.mkdirSync(path.join(repoRoot, "dist"), { recursive: true });
     fs.mkdirSync(path.join(repoRoot, "dist", "plugin-sdk"), { recursive: true });
@@ -132,14 +132,14 @@ describe("stageBundledPluginRuntime", () => {
     expect(
       fs
         .lstatSync(
-          path.join(repoRoot, "dist", "extensions", "node_modules", "openclaw", "plugin-sdk"),
+          path.join(repoRoot, "dist", "extensions", "node_modules", "afora", "plugin-sdk"),
         )
         .isSymbolicLink(),
     ).toBe(false);
     expect(
       JSON.parse(
         fs.readFileSync(
-          path.join(repoRoot, "dist", "extensions", "node_modules", "openclaw", "package.json"),
+          path.join(repoRoot, "dist", "extensions", "node_modules", "afora", "package.json"),
           "utf8",
         ),
       ).exports,
@@ -149,7 +149,7 @@ describe("stageBundledPluginRuntime", () => {
     });
     expect(
       fs.readFileSync(
-        path.join(repoRoot, "dist", "extensions", "node_modules", "openclaw", "package.json"),
+        path.join(repoRoot, "dist", "extensions", "node_modules", "afora", "package.json"),
         "utf8",
       ),
     ).not.toContain('"./plugin-sdk/*"');
@@ -160,7 +160,7 @@ describe("stageBundledPluginRuntime", () => {
           "dist",
           "extensions",
           "node_modules",
-          "openclaw",
+          "afora",
           "plugin-sdk",
           "channel-entry-contract.js",
         ),
@@ -174,22 +174,22 @@ describe("stageBundledPluginRuntime", () => {
           "dist",
           "extensions",
           "node_modules",
-          "openclaw",
+          "afora",
           "plugin-sdk",
           "ssrf-runtime-internal.js",
         ),
       ),
     ).toBe(false);
-    expect(fs.existsSync(path.join(runtimePluginDir, "node_modules", "openclaw"))).toBe(false);
+    expect(fs.existsSync(path.join(runtimePluginDir, "node_modules", "afora"))).toBe(false);
   });
 
   it("stages only public plugin-sdk package exports for bundled runtime aliases", () => {
-    const repoRoot = makeRepoRoot("openclaw-stage-bundled-runtime-sdk-public-");
+    const repoRoot = makeRepoRoot("afora-stage-bundled-runtime-sdk-public-");
     createDistPluginDir(repoRoot, "ollama");
     setupRepoFiles(repoRoot, {
       "package.json": JSON.stringify(
         {
-          name: "openclaw",
+          name: "afora",
           type: "module",
           exports: {
             "./plugin-sdk/core": "./dist/plugin-sdk/core.js",
@@ -208,7 +208,7 @@ describe("stageBundledPluginRuntime", () => {
 
     stageBundledPluginRuntime({ repoRoot });
 
-    const aliasRoot = path.join(repoRoot, "dist", "extensions", "node_modules", "openclaw");
+    const aliasRoot = path.join(repoRoot, "dist", "extensions", "node_modules", "afora");
     const packageJson = JSON.parse(
       fs.readFileSync(path.join(aliasRoot, "package.json"), "utf8"),
     ) as { exports: Record<string, string> };
@@ -227,7 +227,7 @@ describe("stageBundledPluginRuntime", () => {
   });
 
   it("keeps extension-local plugin-sdk wrappers resolving canonical dist chunks", async () => {
-    const repoRoot = makeRepoRoot("openclaw-stage-bundled-runtime-sdk-wrapper-");
+    const repoRoot = makeRepoRoot("afora-stage-bundled-runtime-sdk-wrapper-");
     createDistPluginDir(repoRoot, "diffs");
     setupRepoFiles(repoRoot, {
       "dist/plugin-sdk/channel-entry-contract.js":
@@ -243,7 +243,7 @@ describe("stageBundledPluginRuntime", () => {
       "dist",
       "extensions",
       "node_modules",
-      "openclaw",
+      "afora",
       "plugin-sdk",
       "channel-entry-contract.js",
     );
@@ -252,7 +252,7 @@ describe("stageBundledPluginRuntime", () => {
   });
 
   it("writes wrappers that forward plugin entry imports into canonical dist files", async () => {
-    const repoRoot = makeRepoRoot("openclaw-stage-bundled-runtime-chunks-");
+    const repoRoot = makeRepoRoot("afora-stage-bundled-runtime-chunks-");
     createDistPluginDir(repoRoot, "diffs");
     setupRepoFiles(repoRoot, {
       "dist/chunk-abc.js": "export const value = 1;\n",
@@ -274,7 +274,7 @@ describe("stageBundledPluginRuntime", () => {
   });
 
   it("stages root runtime sidecars that bundled plugin boundaries resolve directly", () => {
-    const repoRoot = makeRepoRoot("openclaw-stage-bundled-runtime-sidecars-");
+    const repoRoot = makeRepoRoot("afora-stage-bundled-runtime-sidecars-");
     createDistPluginDir(repoRoot, "whatsapp");
     setupRepoFiles(repoRoot, {
       [bundledDistPluginFile("whatsapp", "index.js")]: "export default {};\n",
@@ -299,7 +299,7 @@ describe("stageBundledPluginRuntime", () => {
   });
 
   it("keeps plugin command registration on the canonical dist graph when loaded from dist-runtime", async () => {
-    const repoRoot = makeRepoRoot("openclaw-stage-bundled-runtime-commands-");
+    const repoRoot = makeRepoRoot("afora-stage-bundled-runtime-commands-");
     const distPluginDir = path.join(repoRoot, "dist", "extensions", "demo");
     const distCommandsDir = path.join(repoRoot, "dist", "plugins");
     fs.mkdirSync(distPluginDir, { recursive: true });
@@ -308,7 +308,7 @@ describe("stageBundledPluginRuntime", () => {
     fs.writeFileSync(
       path.join(distCommandsDir, "commands.js"),
       [
-        "const registry = globalThis.__openclawTestPluginCommands ??= new Map();",
+        "const registry = globalThis.__aforaTestPluginCommands ??= new Map();",
         "export function registerPluginCommand(pluginId, command) {",
         "  registry.set(`/${command.name.toLowerCase()}`, { ...command, pluginId });",
         "}",
@@ -409,15 +409,15 @@ describe("stageBundledPluginRuntime", () => {
   });
 
   it("copies package metadata files but symlinks other non-js plugin artifacts into the runtime overlay", () => {
-    const repoRoot = makeRepoRoot("openclaw-stage-bundled-runtime-assets-");
+    const repoRoot = makeRepoRoot("afora-stage-bundled-runtime-assets-");
     createDistPluginDir(repoRoot, "diffs");
     setupRepoFiles(repoRoot, {
       [bundledDistPluginFile("diffs", "package.json")]: JSON.stringify(
-        { name: "@openclaw/diffs", openclaw: { extensions: ["./index.js"] } },
+        { name: "@afora/diffs", afora: { extensions: ["./index.js"] } },
         null,
         2,
       ),
-      [bundledDistPluginFile("diffs", "openclaw.plugin.json")]: "{}\n",
+      [bundledDistPluginFile("diffs", "afora.plugin.json")]: "{}\n",
       [bundledDistPluginFile("diffs", "assets/info.txt")]: "ok\n",
     });
 
@@ -426,7 +426,7 @@ describe("stageBundledPluginRuntime", () => {
     expectRuntimeArtifactText({
       repoRoot,
       pluginId: "diffs",
-      relativePath: "openclaw.plugin.json",
+      relativePath: "afora.plugin.json",
       expectedText: "{}\n",
       symbolicLink: false,
     });
@@ -449,7 +449,7 @@ describe("stageBundledPluginRuntime", () => {
   });
 
   it("copies unpacked Chrome extension payloads without wrapping their JavaScript", () => {
-    const repoRoot = makeRepoRoot("openclaw-stage-bundled-runtime-chrome-extension-");
+    const repoRoot = makeRepoRoot("afora-stage-bundled-runtime-chrome-extension-");
     createDistPluginDir(repoRoot, "browser");
     const background = "chrome.runtime.onInstalled.addListener(() => {});\n";
     const popup = "document.body.dataset.ready = 'true';\n";
@@ -478,7 +478,7 @@ describe("stageBundledPluginRuntime", () => {
   });
 
   it("copies bundled plugin skill trees into the runtime overlay", () => {
-    const repoRoot = makeRepoRoot("openclaw-stage-bundled-runtime-skills-");
+    const repoRoot = makeRepoRoot("afora-stage-bundled-runtime-skills-");
     createDistPluginDir(repoRoot, "feishu");
     setupRepoFiles(repoRoot, {
       [bundledDistPluginFile("feishu", "index.js")]: "export default {}\n",
@@ -507,14 +507,14 @@ describe("stageBundledPluginRuntime", () => {
   });
 
   it("preserves package metadata needed for bundled plugin discovery from dist-runtime", () => {
-    const repoRoot = makeRepoRoot("openclaw-stage-bundled-runtime-discovery-");
+    const repoRoot = makeRepoRoot("afora-stage-bundled-runtime-discovery-");
     const runtimeExtensionsDir = path.join(repoRoot, "dist-runtime", "extensions");
     createDistPluginDir(repoRoot, "demo");
     setupRepoFiles(repoRoot, {
       [bundledDistPluginFile("demo", "package.json")]: JSON.stringify(
         {
-          name: "@openclaw/demo",
-          openclaw: {
+          name: "@afora/demo",
+          afora: {
             extensions: ["./main.js"],
             setupEntry: "./setup.js",
           },
@@ -522,7 +522,7 @@ describe("stageBundledPluginRuntime", () => {
         null,
         2,
       ),
-      [bundledDistPluginFile("demo", "openclaw.plugin.json")]: JSON.stringify(
+      [bundledDistPluginFile("demo", "afora.plugin.json")]: JSON.stringify(
         {
           id: "demo",
           channels: ["demo"],
@@ -539,10 +539,10 @@ describe("stageBundledPluginRuntime", () => {
 
     const env = {
       ...process.env,
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
-      OPENCLAW_BUNDLED_PLUGINS_DIR: runtimeExtensionsDir,
+      AFORA_DISABLE_BUNDLED_PLUGINS: undefined,
+      AFORA_BUNDLED_PLUGINS_DIR: runtimeExtensionsDir,
     };
-    const discovery = discoverOpenClawPlugins({
+    const discovery = discoverAforaPlugins({
       env,
     });
     const manifestRegistry = loadPluginManifestRegistryCore({
@@ -568,7 +568,7 @@ describe("stageBundledPluginRuntime", () => {
   });
 
   it("removes stale runtime plugin directories that are no longer in dist", () => {
-    const repoRoot = makeRepoRoot("openclaw-stage-bundled-runtime-stale-");
+    const repoRoot = makeRepoRoot("afora-stage-bundled-runtime-stale-");
     const staleRuntimeDir = path.join(repoRoot, "dist-runtime", "extensions", "stale");
     fs.mkdirSync(staleRuntimeDir, { recursive: true });
     fs.writeFileSync(path.join(staleRuntimeDir, "index.js"), "stale\n", "utf8");
@@ -580,7 +580,7 @@ describe("stageBundledPluginRuntime", () => {
   });
 
   it("removes dist-runtime when the built bundled plugin tree is absent", () => {
-    const repoRoot = makeRepoRoot("openclaw-stage-bundled-runtime-missing-");
+    const repoRoot = makeRepoRoot("afora-stage-bundled-runtime-missing-");
     const runtimeRoot = path.join(repoRoot, "dist-runtime", "extensions", "diffs");
     fs.mkdirSync(runtimeRoot, { recursive: true });
 
@@ -590,7 +590,7 @@ describe("stageBundledPluginRuntime", () => {
   });
 
   it("tolerates EEXIST when an identical runtime symlink is materialized concurrently", () => {
-    const repoRoot = makeRepoRoot("openclaw-stage-bundled-runtime-eexist-");
+    const repoRoot = makeRepoRoot("afora-stage-bundled-runtime-eexist-");
     createDistPluginDir(repoRoot, "feishu");
     setupRepoFiles(repoRoot, {
       [bundledDistPluginFile("feishu", "index.js")]: "export default {}\n",
@@ -627,7 +627,7 @@ describe("stageBundledPluginRuntime", () => {
   it.each(["EACCES", "ENOSYS"] as const)(
     "falls back to copying runtime assets when Windows symlink creation fails with %s",
     (code) => {
-      const repoRoot = makeRepoRoot("openclaw-stage-bundled-runtime-win-copy-");
+      const repoRoot = makeRepoRoot("afora-stage-bundled-runtime-win-copy-");
       createDistPluginDir(repoRoot, "feishu");
       setupRepoFiles(repoRoot, {
         [bundledDistPluginFile("feishu", "index.js")]: "export default {}\n",

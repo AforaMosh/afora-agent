@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-const UNKNOWN_PACKAGE = "@openclaw/not-a-real-release-wrapper-test-package";
+const UNKNOWN_PACKAGE = "@afora/not-a-real-release-wrapper-test-package";
 const tempDirs: string[] = [];
 const tsxImport = import.meta.resolve("tsx");
 
@@ -23,16 +23,16 @@ function runTsxScript(scriptPath: string, args: string[], cwd = process.cwd()) {
 }
 
 function createOldReleaseTarget() {
-  const root = mkdtempSync(join(tmpdir(), "openclaw-old-release-target-"));
+  const root = mkdtempSync(join(tmpdir(), "afora-old-release-target-"));
   tempDirs.push(root);
   mkdirSync(join(root, "extensions"), { recursive: true });
   mkdirSync(join(root, "scripts"), { recursive: true });
   writeFileSync(
     join(root, "package.json"),
-    `${JSON.stringify({ name: "openclaw", version: "2026.7.1-beta.3" }, null, 2)}\n`,
+    `${JSON.stringify({ name: "afora", version: "2026.7.1-beta.3" }, null, 2)}\n`,
   );
   writeFileSync(
-    join(root, "scripts", "openclaw-release-clawhub-plan.ts"),
+    join(root, "scripts", "afora-release-clawhub-plan.ts"),
     'throw new Error("old target planner invoked");\n',
   );
   writeFileSync(
@@ -60,8 +60,8 @@ describe("release wrapper scripts", () => {
     }
   });
 
-  it("loads the OpenClaw ClawHub plan CLI and validates required arguments before planning", () => {
-    const result = runTsxScript("scripts/openclaw-release-clawhub-plan.ts", [
+  it("loads the Afora ClawHub plan CLI and validates required arguments before planning", () => {
+    const result = runTsxScript("scripts/afora-release-clawhub-plan.ts", [
       "--bootstrap-workflow-ref",
       "main",
       "--bootstrap-workflow-sha",
@@ -87,7 +87,7 @@ describe("release wrapper scripts", () => {
     const releaseSha = "a".repeat(40);
     const bootstrapWorkflowRef = `release-publish/${"b".repeat(12)}-123`;
     const plan = runTsxScript(
-      join(repositoryRoot, "scripts/openclaw-release-clawhub-plan.ts"),
+      join(repositoryRoot, "scripts/afora-release-clawhub-plan.ts"),
       [
         "--bootstrap-workflow-ref",
         bootstrapWorkflowRef,
@@ -123,7 +123,7 @@ describe("release wrapper scripts", () => {
         "--release-sha",
         releaseSha,
         "--clawhub-bootstrap-plugins",
-        "@openclaw/meta",
+        "@afora/meta",
         "--plugin-clawhub-bootstrap-run",
         "34",
       ],

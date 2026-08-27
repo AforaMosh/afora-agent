@@ -29,7 +29,7 @@ const qaFlowProviderModeSchema = z.enum(["aimock", "live-frontier", "mock-openai
 const qaFlowExecutionShape = {
   providerMode: qaFlowProviderModeSchema.optional(),
   retryCount: z.number().int().min(0).max(1).optional(),
-  runtime: z.enum(["openclaw", "codex"]).optional(),
+  runtime: z.enum(["afora", "codex"]).optional(),
   timeoutMs: z.number().int().positive().optional(),
 };
 

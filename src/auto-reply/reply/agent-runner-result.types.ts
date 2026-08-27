@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import type { OriginatingChannelType } from "../templating.js";
 import type { RunReplyAgentParams } from "./agent-runner-core.js";
@@ -33,7 +33,7 @@ export type FinalizeReplyAgentRunInput = Pick<
   activeSessionEntry: SessionEntry | undefined;
   activeSessionStore: Record<string, SessionEntry> | undefined;
   blockReplyPipeline: BlockReplyPipeline | null;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   isHeartbeat: boolean;
   pendingToolTasks: Set<Promise<void>>;
   preflightCompactionApplied: boolean | undefined;

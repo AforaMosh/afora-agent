@@ -1,5 +1,5 @@
 /** Session self-service tool. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { Type } from "typebox";
 import type {
   SessionsAssignOwnerResult,
@@ -13,7 +13,7 @@ import { getRuntimeConfig } from "../../config/config.js";
 import { resolveAgentMainSessionKey } from "../../config/sessions/main-session.js";
 import { resolveSessionStorePathCore } from "../../config/sessions/paths.js";
 import { loadSessionEntry } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { GatewayTransportError } from "../../gateway/call.js";
 import { withAgentSessionModelPatchOrigin } from "../../gateway/session-model-patch-origin.js";
 import { formatErrorMessage } from "../../infra/errors.js";
@@ -157,7 +157,7 @@ type SessionsToolOptions = {
   agentSessionId?: string;
   requesterAgentIdOverride?: string;
   sandboxed?: boolean;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   callGateway?: AgentToolGatewayRequestCaller;
   hasInProcessGatewayContext?: () => boolean;
 };
@@ -222,7 +222,7 @@ async function resolvePatchTarget(
   callGateway: AgentToolGatewayRequestCaller,
 ): Promise<{
   agentId: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   isRequesterSession: boolean;
   key: string;
   requesterAgentId: string;

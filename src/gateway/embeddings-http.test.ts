@@ -31,7 +31,7 @@ import {
 
 installGatewayTestHooks({ scope: "suite" });
 
-const WRITE_SCOPE_HEADER = { "x-openclaw-scopes": "operator.write" };
+const WRITE_SCOPE_HEADER = { "x-afora-scopes": "operator.write" };
 
 let startGatewayServer: typeof import("./server.js").startGatewayServer;
 let createEmbeddingProviderMock: ReturnType<
@@ -260,7 +260,7 @@ async function expectGenericProviderEmbeddingRequest(expectedProviderCall: {
   inputType: string;
 }) {
   const res = await postEmbeddings({
-    model: "openclaw/default",
+    model: "afora-agent/default",
     input: ["a", "b"],
   });
   await expectEmbeddingData(res, [
@@ -304,13 +304,13 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
   it("embeds string and array inputs", async () => {
     const closesBefore = closeEmbeddingProviderMock.mock.calls.length;
     const single = await postEmbeddings({
-      model: "openclaw/default",
+      model: "afora-agent/default",
       input: "hello",
     });
     await expectDefaultEmbeddingResponse(single);
 
     const batch = await postEmbeddings({
-      model: "openclaw/default",
+      model: "afora-agent/default",
       input: ["a", "b"],
     });
     await expectEmbeddingData(batch, [
@@ -320,14 +320,14 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
 
     const qualified = await postEmbeddings(
       {
-        model: "openclaw/default",
+        model: "afora-agent/default",
         input: "hello again",
       },
-      { "x-openclaw-model": "openai/text-embedding-3-small" },
+      { "x-afora-model": "openai/text-embedding-3-small" },
     );
     expect(qualified.status).toBe(200);
     const qualifiedJson = (await qualified.json()) as { model?: string };
-    expect(qualifiedJson.model).toBe("openclaw/default");
+    expect(qualifiedJson.model).toBe("afora-agent/default");
     const lastCall = latestCreateEmbeddingProviderOptions();
     expect(lastCall.provider).toBe("openai");
     expect(lastCall.model).toBe("text-embedding-3-small");
@@ -341,11 +341,11 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
 
       const res = await postEmbeddings(
         {
-          model: "openclaw/beta",
+          model: "afora-agent/beta",
           input: "hello",
           encoding_format: "base64",
         },
-        { "x-openclaw-agent-id": "beta" },
+        { "x-afora-agent-id": "beta" },
       );
       expect(res.status).toBe(200);
       const json = (await res.json()) as { data?: Array<{ embedding?: string }> };
@@ -392,7 +392,7 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
       resetConfigRuntimeState();
 
       const res = await postEmbeddings({
-        model: "openclaw/default",
+        model: "afora-agent/default",
         input: "hello",
       });
       await expectDefaultEmbeddingResponse(res);
@@ -410,7 +410,7 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
       testState.agentsConfig = { ownership: "explicit", entries: { main: {}, beta: {} } };
       resetConfigRuntimeState();
 
-      const missing = await postEmbeddings({ model: "openclaw", input: "hello" });
+      const missing = await postEmbeddings({ model: "afora", input: "hello" });
       expect(missing.status).toBe(400);
       const missingJson = (await missing.json()) as {
         error?: { type?: string; message?: string };
@@ -419,12 +419,12 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
       expect(missingJson.error?.message).toContain("has no explicit owner");
 
       const header = await postEmbeddings(
-        { model: "openclaw/default", input: "hello" },
-        { "x-openclaw-agent-id": "missing-agent" },
+        { model: "afora-agent/default", input: "hello" },
+        { "x-afora-agent-id": "missing-agent" },
       );
       await expectInvalidEmbeddingRequest(header, "Unknown agent 'missing-agent'.");
 
-      const model = await postEmbeddings({ model: "openclaw/missing-agent", input: "hello" });
+      const model = await postEmbeddings({ model: "afora-agent/missing-agent", input: "hello" });
       await expectInvalidEmbeddingRequest(model, "Unknown agent 'missing-agent'.");
     } finally {
       testState.agentsConfig = undefined;
@@ -434,7 +434,7 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
 
   it("rejects invalid input shapes", async () => {
     const res = await postEmbeddings({
-      model: "openclaw/default",
+      model: "afora-agent/default",
       input: [{ nope: true }],
     });
     await expectInvalidEmbeddingRequest(res);
@@ -448,7 +448,7 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
   ])("rejects $name before creating an embedding provider", async ({ input }) => {
     const providersCreatedBefore = createEmbeddingProviderMock.mock.calls.length;
     const res = await postEmbeddings({
-      model: "openclaw/default",
+      model: "afora-agent/default",
       input,
     });
 
@@ -459,7 +459,7 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
   it("preserves whitespace-only embedding input", async () => {
     const input = " \t\n";
     const res = await postEmbeddings({
-      model: "openclaw/default",
+      model: "afora-agent/default",
       input,
     });
 
@@ -470,10 +470,10 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
   it("ignores narrower declared scopes for shared-secret bearer auth", async () => {
     const res = await postEmbeddings(
       {
-        model: "openclaw/default",
+        model: "afora-agent/default",
         input: "hello",
       },
-      { "x-openclaw-scopes": "operator.read" },
+      { "x-afora-scopes": "operator.read" },
     );
     await expectDefaultEmbeddingResponse(res);
   });
@@ -481,10 +481,10 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
   it("allows requests with an empty declared scopes header", async () => {
     const res = await postEmbeddings(
       {
-        model: "openclaw/default",
+        model: "afora-agent/default",
         input: "hello",
       },
-      { "x-openclaw-scopes": "" },
+      { "x-afora-scopes": "" },
     );
     await expectDefaultEmbeddingResponse(res);
   });
@@ -497,7 +497,7 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "openclaw/default",
+        model: "afora-agent/default",
         input: "hello",
       }),
     });
@@ -585,17 +585,17 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
     });
     await expectInvalidEmbeddingRequest(
       res,
-      "Invalid `model`. Use `openclaw` or `openclaw/<agentId>`.",
+      "Invalid `model`. Use `afora` or `afora/<agentId>`.",
     );
   });
 
-  it("rejects disallowed x-openclaw-model provider overrides", async () => {
+  it("rejects disallowed x-afora-model provider overrides", async () => {
     const res = await postEmbeddings(
       {
-        model: "openclaw/default",
+        model: "afora-agent/default",
         input: "hello",
       },
-      { "x-openclaw-model": "ollama/nomic-embed-text" },
+      { "x-afora-model": "ollama/nomic-embed-text" },
     );
     await expectInvalidEmbeddingRequest(
       res,
@@ -603,7 +603,7 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
     );
   });
 
-  it("rejects x-openclaw-model for trusted write-only callers", async () => {
+  it("rejects x-afora-model for trusted write-only callers", async () => {
     const port = await getGatewayTestPort();
     const server = await startOpenAiCompatGatewayServer({
       startGatewayServer,
@@ -617,11 +617,11 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "x-openclaw-scopes": "operator.write",
-          "x-openclaw-model": "openai/text-embedding-3-small",
+          "x-afora-scopes": "operator.write",
+          "x-afora-model": "openai/text-embedding-3-small",
         },
         body: JSON.stringify({
-          model: "openclaw/default",
+          model: "afora-agent/default",
           input: "hello",
         }),
       });
@@ -637,7 +637,7 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
 
   it("rejects oversized batches", async () => {
     const res = await postEmbeddings({
-      model: "openclaw/default",
+      model: "afora-agent/default",
       input: Array.from({ length: 129 }, () => "x"),
     });
     await expectInvalidEmbeddingRequest(res, "Too many inputs (max 128).");
@@ -646,7 +646,7 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
   it("sanitizes provider failures", async () => {
     createEmbeddingProviderMock.mockRejectedValueOnce(new Error("secret upstream failure"));
     const res = await postEmbeddings({
-      model: "openclaw/default",
+      model: "afora-agent/default",
       input: "hello",
     });
     expect(res.status).toBe(500);
@@ -662,7 +662,7 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
     embedBatchMock.mockRejectedValueOnce(new Error("embedding failed"));
 
     const res = await postEmbeddings({
-      model: "openclaw/default",
+      model: "afora-agent/default",
       input: "hello",
     });
 
@@ -687,7 +687,7 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
       return [[0.1, 0.2]];
     });
 
-    const body = JSON.stringify({ model: "openclaw/default", input: "hello" });
+    const body = JSON.stringify({ model: "afora-agent/default", input: "hello" });
     const clientRequest = httpRequest({
       host: "127.0.0.1",
       port: enabledPort,
@@ -724,7 +724,7 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
     closeEmbeddingProviderMock.mockImplementationOnce(() => undefined);
 
     const res = await postEmbeddings({
-      model: "openclaw/default",
+      model: "afora-agent/default",
       input: "hello",
     });
 
@@ -738,15 +738,15 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
       .mockRejectedValueOnce(new Error("first close failed"))
       .mockRejectedValueOnce(new Error("retry close failed"));
 
-    const first = await postEmbeddings({ model: "openclaw/default", input: "first" });
+    const first = await postEmbeddings({ model: "afora-agent/default", input: "first" });
     expect(first.status).toBe(200);
     expect(createEmbeddingProviderMock).toHaveBeenCalledTimes(createsBefore + 1);
 
-    const blocked = await postEmbeddings({ model: "openclaw/default", input: "blocked" });
+    const blocked = await postEmbeddings({ model: "afora-agent/default", input: "blocked" });
     expect(blocked.status).toBe(500);
     expect(createEmbeddingProviderMock).toHaveBeenCalledTimes(createsBefore + 1);
 
-    const recovered = await postEmbeddings({ model: "openclaw/default", input: "recovered" });
+    const recovered = await postEmbeddings({ model: "afora-agent/default", input: "recovered" });
     expect(recovered.status).toBe(200);
     expect(createEmbeddingProviderMock).toHaveBeenCalledTimes(createsBefore + 2);
   });
@@ -764,11 +764,11 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
     const createsBefore = createEmbeddingProviderMock.mock.calls.length;
     const closesBefore = closeEmbeddingProviderMock.mock.calls.length;
 
-    const firstPromise = postEmbeddings({ model: "openclaw/default", input: "first" });
+    const firstPromise = postEmbeddings({ model: "afora-agent/default", input: "first" });
     await vi.waitFor(() =>
       expect(closeEmbeddingProviderMock).toHaveBeenCalledTimes(closesBefore + 1),
     );
-    const secondPromise = postEmbeddings({ model: "openclaw/default", input: "second" });
+    const secondPromise = postEmbeddings({ model: "afora-agent/default", input: "second" });
     await Promise.resolve();
     expect(createEmbeddingProviderMock).toHaveBeenCalledTimes(createsBefore + 1);
 
@@ -791,7 +791,7 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
     });
     const createsBefore = createEmbeddingProviderMock.mock.calls.length;
     const closesBefore = closeEmbeddingProviderMock.mock.calls.length;
-    const firstPromise = postEmbeddings({ model: "openclaw/default", input: "first" });
+    const firstPromise = postEmbeddings({ model: "afora-agent/default", input: "first" });
     let secondRequest: ReturnType<typeof httpRequest> | undefined;
 
     try {
@@ -799,7 +799,7 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
         expect(closeEmbeddingProviderMock).toHaveBeenCalledTimes(closesBefore + 1),
       );
 
-      const body = JSON.stringify({ model: "openclaw/default", input: "second" });
+      const body = JSON.stringify({ model: "afora-agent/default", input: "second" });
       secondRequest = httpRequest({
         host: "127.0.0.1",
         port: enabledPort,
@@ -831,7 +831,7 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
       releaseClose();
       expect((await firstPromise).status).toBe(200);
 
-      const next = await postEmbeddings({ model: "openclaw/default", input: "next" });
+      const next = await postEmbeddings({ model: "afora-agent/default", input: "next" });
       expect(next.status).toBe(200);
       expect(createEmbeddingProviderMock).toHaveBeenCalledTimes(createsBefore + 2);
     } finally {
@@ -861,11 +861,11 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
     const createsBefore = createEmbeddingProviderMock.mock.calls.length;
     const closesBefore = closeEmbeddingProviderMock.mock.calls.length;
 
-    const firstPromise = postEmbeddings({ model: "openclaw/default", input: "first" });
+    const firstPromise = postEmbeddings({ model: "afora-agent/default", input: "first" });
     await vi.waitFor(() =>
       expect(closeEmbeddingProviderMock).toHaveBeenCalledTimes(closesBefore + 1),
     );
-    const secondPromise = postEmbeddings({ model: "openclaw/default", input: "second" });
+    const secondPromise = postEmbeddings({ model: "afora-agent/default", input: "second" });
     await Promise.resolve();
     expect(createEmbeddingProviderMock).toHaveBeenCalledTimes(createsBefore + 1);
 
@@ -889,15 +889,15 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
     const closesBefore = closeEmbeddingProviderMock.mock.calls.length;
 
     const firstPromise = postEmbeddings(
-      { model: "openclaw/default", input: "first" },
-      { "x-openclaw-model": "openai/model-a" },
+      { model: "afora-agent/default", input: "first" },
+      { "x-afora-model": "openai/model-a" },
     );
     await vi.waitFor(() =>
       expect(closeEmbeddingProviderMock).toHaveBeenCalledTimes(closesBefore + 1),
     );
     const secondPromise = postEmbeddings(
-      { model: "openclaw/default", input: "second" },
-      { "x-openclaw-model": "openai/model-b" },
+      { model: "afora-agent/default", input: "second" },
+      { "x-afora-model": "openai/model-b" },
     );
     await Promise.resolve();
     expect(createEmbeddingProviderMock).toHaveBeenCalledTimes(createsBefore + 1);
@@ -940,9 +940,9 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
         },
       });
 
-    const firstPromise = postEmbeddings({ model: "openclaw/default", input: "first" });
+    const firstPromise = postEmbeddings({ model: "afora-agent/default", input: "first" });
     await vi.waitFor(() => expect(firstEmbed).toHaveBeenCalledTimes(1));
-    const second = await postEmbeddings({ model: "openclaw/default", input: "second" });
+    const second = await postEmbeddings({ model: "afora-agent/default", input: "second" });
     expect(second.status).toBe(200);
     expect(secondEmbed).toHaveBeenCalledTimes(1);
 
@@ -954,7 +954,7 @@ describe("OpenAI-compatible embeddings HTTP API (e2e)", () => {
     const closesBefore = closeEmbeddingProviderMock.mock.calls.length;
     closeEmbeddingProviderMock.mockRejectedValueOnce(new Error("close failed"));
 
-    const res = await postEmbeddings({ model: "openclaw/default", input: "hello" });
+    const res = await postEmbeddings({ model: "afora-agent/default", input: "hello" });
     expect(res.status).toBe(200);
 
     await drainRetainedOpenAiEmbeddingProviders();

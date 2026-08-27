@@ -3,10 +3,10 @@ import { statSync } from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../infra/kysely-sync.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
-import { openOpenClawStateDatabase } from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
+import { openAforaStateDatabase } from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import {
   createManagedTaskFlow as createManagedTaskFlowOrNull,
   getTaskFlowById,
@@ -39,7 +39,7 @@ function createManagedTaskFlow(
   return flow;
 }
 
-type TaskFlowRegistryTestDatabase = Pick<OpenClawStateKyselyDatabase, "flow_runs">;
+type TaskFlowRegistryTestDatabase = Pick<AforaStateKyselyDatabase, "flow_runs">;
 
 function createStoredFlow(): TaskFlowRecord {
   return {
@@ -64,14 +64,14 @@ function createStoredFlow(): TaskFlowRecord {
 }
 
 async function withFlowRegistryTempDir<T>(run: (root: string) => Promise<T>): Promise<T> {
-  return await withOpenClawTestState(
+  return await withAforaTestState(
     {
       layout: "state-only",
-      prefix: "openclaw-task-flow-store-",
+      prefix: "afora-task-flow-store-",
     },
     async (state) => {
       const root = state.stateDir;
-      process.env.OPENCLAW_STATE_DIR = root;
+      process.env.AFORA_STATE_DIR = root;
       resetTaskFlowRegistryForTests();
       try {
         return await run(root);
@@ -82,13 +82,13 @@ async function withFlowRegistryTempDir<T>(run: (root: string) => Promise<T>): Pr
   );
 }
 
-const ORIGINAL_STATE_DIR = process.env.OPENCLAW_STATE_DIR;
+const ORIGINAL_STATE_DIR = process.env.AFORA_STATE_DIR;
 
 function restoreOriginalStateDir(): void {
   if (ORIGINAL_STATE_DIR === undefined) {
-    delete process.env.OPENCLAW_STATE_DIR;
+    delete process.env.AFORA_STATE_DIR;
   } else {
-    process.env.OPENCLAW_STATE_DIR = ORIGINAL_STATE_DIR;
+    process.env.AFORA_STATE_DIR = ORIGINAL_STATE_DIR;
   }
 }
 
@@ -104,12 +104,12 @@ describe("task-flow-registry store runtime", () => {
   });
 
   it("does not create shared state for a read-only flow snapshot", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-task-flow-store-readonly-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-task-flow-store-readonly-" },
       async (state) => {
-        process.env.OPENCLAW_STATE_DIR = state.stateDir;
+        process.env.AFORA_STATE_DIR = state.stateDir;
         resetTaskFlowRegistryForTests({ persist: false });
-        const statePath = resolveOpenClawStateSqlitePath();
+        const statePath = resolveAforaStateSqlitePath();
         expect(() => statSync(statePath)).toThrow();
 
         expect(loadTaskFlowRegistryStateFromSqliteReadOnly().flows.size).toBe(0);
@@ -189,7 +189,7 @@ describe("task-flow-registry store runtime", () => {
         status: "running",
       });
 
-      const database = openOpenClawStateDatabase();
+      const database = openAforaStateDatabase();
       const db = getNodeSqliteKysely<TaskFlowRegistryTestDatabase>(database.db);
       executeSqliteQuerySync(
         database.db,
@@ -216,7 +216,7 @@ describe("task-flow-registry store runtime", () => {
         },
       });
 
-      const database = openOpenClawStateDatabase();
+      const database = openAforaStateDatabase();
       const db = getNodeSqliteKysely<TaskFlowRegistryTestDatabase>(database.db);
       executeSqliteQuerySync(
         database.db,
@@ -341,9 +341,9 @@ describe("task-flow-registry store runtime", () => {
         waitJson: { kind: "task", taskId: "task-secured" },
       });
 
-      const databasePath = resolveOpenClawStateSqlitePath(process.env);
+      const databasePath = resolveAforaStateSqlitePath(process.env);
       const registryDir = path.dirname(databasePath);
-      expect(databasePath.endsWith(path.join("state", "openclaw.sqlite"))).toBe(true);
+      expect(databasePath.endsWith(path.join("state", "afora.sqlite"))).toBe(true);
       expect(statSync(registryDir).mode & 0o777).toBe(0o700);
       expect(statSync(databasePath).mode & 0o777).toBe(0o600);
     });

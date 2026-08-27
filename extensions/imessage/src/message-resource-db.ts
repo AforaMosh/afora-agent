@@ -1,5 +1,5 @@
 // Imessage plugin module verifies provider message ownership in the local Messages database.
-import { openNodeSqliteDatabase } from "openclaw/plugin-sdk/sqlite-runtime";
+import { openNodeSqliteDatabase } from "afora-agent/plugin-sdk/sqlite-runtime";
 import { isIMessageEmailChatIdentifier, type IMessageChatContext } from "./chat-context.js";
 import { resolveLocalIMessageChatDbPath } from "./cli-path.js";
 

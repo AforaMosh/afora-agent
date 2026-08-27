@@ -1,9 +1,9 @@
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import { normalizeClawHubSha256Integrity } from "../infra/clawhub-artifacts.js";
 import {
-  openExistingOpenClawStateDatabaseReadOnly,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
+  openExistingAforaStateDatabaseReadOnly,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
 import {
   readClawInstallRecordFromDatabase,
   readClawPackageRefs,
@@ -84,7 +84,7 @@ export function findResumableIntroducedPluginRequirement(params: {
 
 export async function readClawResumeStateReadOnly(
   agentId: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): Promise<
   | {
       record: PersistedClawInstall;
@@ -92,7 +92,7 @@ export async function readClawResumeStateReadOnly(
     }
   | undefined
 > {
-  const database = await openExistingOpenClawStateDatabaseReadOnly(options);
+  const database = await openExistingAforaStateDatabaseReadOnly(options);
   if (!database) {
     return undefined;
   }

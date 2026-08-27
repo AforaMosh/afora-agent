@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { Model } from "../../llm/types.js";
 import type { AuthProfileStore } from "../auth-profiles/types.js";
 import { GCP_VERTEX_CREDENTIALS_MARKER } from "../model-auth-markers.js";
@@ -39,7 +39,7 @@ describe("prepared setup-provider auth fallback", () => {
     const profileId = "anthropic-vertex:missing";
     const config = {
       auth: { order: { "anthropic-vertex": [profileId] } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const store = {
       version: 1,
       profiles: {

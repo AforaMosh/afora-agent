@@ -4,9 +4,9 @@ import {
   type BindingTargetKind,
   type SessionBindingAdapter,
   type SessionBindingRecord,
-} from "openclaw/plugin-sdk/conversation-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/runtime-config-snapshot";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/conversation-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/runtime-config-snapshot";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveDiscordChannelId } from "../target-parsing.js";
 import { resolveChannelIdForBinding } from "./thread-bindings.discord-api.js";
 import {
@@ -112,7 +112,7 @@ export function createThreadBindingSessionAdapter(params: {
   accountId: string;
   manager: ThreadBindingManager;
   defaults: ThreadBindingDefaults;
-  resolveCurrentCfg: () => OpenClawConfig;
+  resolveCurrentCfg: () => AforaConfig;
   resolveCurrentToken: () => string | undefined;
 }): SessionBindingAdapter {
   const serializeBinding = (entry: ThreadBindingRecord) =>

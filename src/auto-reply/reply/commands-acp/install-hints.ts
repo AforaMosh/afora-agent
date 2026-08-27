@@ -4,12 +4,12 @@ import path from "node:path";
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+} from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { resolveBundledPluginInstallCommandHint } from "../../../plugins/bundled-sources.js";
 
 /** Resolves the install command hint shown when the configured ACP backend is missing. */
-export function resolveAcpInstallCommandHint(cfg: OpenClawConfig): string {
+export function resolveAcpInstallCommandHint(cfg: AforaConfig): string {
   const configured = normalizeOptionalString(cfg.acp?.runtime?.installCommand);
   if (configured) {
     return configured;
@@ -19,14 +19,14 @@ export function resolveAcpInstallCommandHint(cfg: OpenClawConfig): string {
   if (backendId === "acpx") {
     const workspaceLocalPath = path.join(workspaceDir, "extensions", "acpx");
     if (existsSync(workspaceLocalPath)) {
-      return `openclaw plugins install ${workspaceLocalPath}`;
+      return `afora plugins install ${workspaceLocalPath}`;
     }
     const bundledInstallHint = resolveBundledPluginInstallCommandHint({
       pluginId: backendId,
       workspaceDir,
     });
     if (bundledInstallHint) {
-      const localPath = bundledInstallHint.replace(/^openclaw plugins install /u, "");
+      const localPath = bundledInstallHint.replace(/^afora plugins install /u, "");
       const resolvedLocalPath = path.resolve(localPath);
       const relativeToWorkspace = path.relative(workspaceDir, resolvedLocalPath);
       // Only surface local path hints that belong to the current workspace.
@@ -37,7 +37,7 @@ export function resolveAcpInstallCommandHint(cfg: OpenClawConfig): string {
         return bundledInstallHint;
       }
     }
-    return "openclaw plugins install acpx";
+    return "afora plugins install acpx";
   }
   return `Install and enable the plugin that provides ACP backend "${backendId}".`;
 }

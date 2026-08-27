@@ -1,22 +1,22 @@
 // Whatsapp plugin module implements shared behavior.
-import { describeAccountSnapshot } from "openclaw/plugin-sdk/account-helpers";
-import { normalizeE164 } from "openclaw/plugin-sdk/account-resolution";
+import { describeAccountSnapshot } from "afora-agent/plugin-sdk/account-helpers";
+import { normalizeE164 } from "afora-agent/plugin-sdk/account-resolution";
 import {
   adaptScopedAccountAccessor,
   createScopedChannelConfigAdapter,
   createScopedDmSecurityResolver,
-} from "openclaw/plugin-sdk/channel-config-helpers";
+} from "afora-agent/plugin-sdk/channel-config-helpers";
 import {
   collectOpenGroupPolicyRouteAllowlistWarnings,
   createAllowlistProviderGroupPolicyWarningCollector,
   createConditionalWarningCollector,
-} from "openclaw/plugin-sdk/channel-policy";
-import type { ChannelPlugin } from "openclaw/plugin-sdk/core";
-import { createChannelPluginBase } from "openclaw/plugin-sdk/core";
+} from "afora-agent/plugin-sdk/channel-policy";
+import type { ChannelPlugin } from "afora-agent/plugin-sdk/core";
+import { createChannelPluginBase } from "afora-agent/plugin-sdk/core";
 import {
   createDelegatedSetupWizardProxy,
   type ChannelSetupWizard,
-} from "openclaw/plugin-sdk/setup-runtime";
+} from "afora-agent/plugin-sdk/setup-runtime";
 import {
   hasAnyWhatsAppAuth,
   listWhatsAppAccountIds,

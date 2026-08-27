@@ -1,5 +1,5 @@
 // Openai tests cover transport policy plugin behavior.
-import type { ProviderRuntimeModel } from "openclaw/plugin-sdk/plugin-entry";
+import type { ProviderRuntimeModel } from "afora-agent/plugin-sdk/plugin-entry";
 import { describe, expect, it } from "vitest";
 import { resolveOpenAITransportTurnState } from "./transport-policy.js";
 
@@ -35,17 +35,17 @@ describe("openai transport policy", () => {
       transport: "websocket",
     });
     expect(state?.headers?.["x-client-request-id"]).toBe("session-123");
-    expect(state?.headers?.["x-openclaw-session-id"]).toBe("session-123");
-    expect(state?.headers?.["x-openclaw-turn-id"]).toBe("turn-123");
-    expect(state?.headers?.["x-openclaw-turn-attempt"]).toBe("2");
-    expect(state?.metadata?.openclaw_session_id).toBe("session-123");
-    expect(state?.metadata?.openclaw_turn_id).toBe("turn-123");
-    expect(state?.metadata?.openclaw_turn_attempt).toBe("2");
-    expect(state?.metadata?.openclaw_transport).toBe("websocket");
+    expect(state?.headers?.["x-afora-session-id"]).toBe("session-123");
+    expect(state?.headers?.["x-afora-turn-id"]).toBe("turn-123");
+    expect(state?.headers?.["x-afora-turn-attempt"]).toBe("2");
+    expect(state?.metadata?.afora_session_id).toBe("session-123");
+    expect(state?.metadata?.afora_turn_id).toBe("turn-123");
+    expect(state?.metadata?.afora_turn_attempt).toBe("2");
+    expect(state?.metadata?.afora_transport).toBe("websocket");
     expect(state?.websocket).toEqual({
       headers: {
         "x-client-request-id": "session-123",
-        "x-openclaw-session-id": "session-123",
+        "x-afora-session-id": "session-123",
       },
       degradeCooldownMs: 60_000,
     });
@@ -81,9 +81,9 @@ describe("openai transport policy", () => {
       transport: "stream",
     });
     expect(state?.headers?.["x-client-request-id"]).toBe("session-123");
-    expect(state?.headers?.["x-openclaw-session-id"]).toBe("session-123");
-    expect(state?.headers?.["x-openclaw-turn-id"]).toBe("turn-123");
-    expect(state?.headers?.["x-openclaw-turn-attempt"]).toBe("2");
+    expect(state?.headers?.["x-afora-session-id"]).toBe("session-123");
+    expect(state?.headers?.["x-afora-turn-id"]).toBe("turn-123");
+    expect(state?.headers?.["x-afora-turn-attempt"]).toBe("2");
   });
 
   it.each([
@@ -117,7 +117,7 @@ describe("openai transport policy", () => {
         transport: "websocket",
       })?.websocket;
       expect(policy?.headers?.["x-client-request-id"]).toBe("session-123");
-      expect(policy?.headers?.["x-openclaw-session-id"]).toBe("session-123");
+      expect(policy?.headers?.["x-afora-session-id"]).toBe("session-123");
       expect(policy?.degradeCooldownMs).toBe(60_000);
     },
   );

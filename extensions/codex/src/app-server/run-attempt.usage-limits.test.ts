@@ -1,6 +1,6 @@
 // Codex tests cover run attempt.usage limits plugin behavior.
 import path from "node:path";
-import { saveAuthProfileStore } from "openclaw/plugin-sdk/agent-runtime";
+import { saveAuthProfileStore } from "afora-agent/plugin-sdk/agent-runtime";
 import { describe, expect, it } from "vitest";
 import { readAttemptTerminal } from "./attempt-terminal.test-helper.js";
 import { readCodexRateLimitsRevision, rememberCodexRateLimitsRead } from "./rate-limit-cache.js";

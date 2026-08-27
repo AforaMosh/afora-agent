@@ -1,6 +1,6 @@
 /** Lifecycle-owned auth/model discovery snapshots for agent runs. */
-import { toStringifiedError } from "@openclaw/normalization-core/error-coercion";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { toStringifiedError } from "@afora/normalization-core/error-coercion";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { registerRuntimeAuthProfileStoreMutationListener } from "./auth-profiles/runtime-snapshots.js";
 import {
@@ -414,7 +414,7 @@ export function rejectPendingPreparedModelRuntimeReplacement(
 
 /** Rebuilds active owners after config/plugin runtime publication. */
 async function refreshPreparedModelRuntimeSnapshotsNow(
-  config: OpenClawConfig,
+  config: AforaConfig,
   options: PreparedModelRuntimeRefreshOptions,
   publicationEpoch: number,
 ): Promise<void> {
@@ -496,7 +496,7 @@ async function refreshPreparedModelRuntimeSnapshotsNow(
 
 /** Serializes config/plugin publications so only the latest completed refresh retires owners. */
 export function refreshPreparedModelRuntimeSnapshots(
-  config: OpenClawConfig,
+  config: AforaConfig,
   options: PreparedModelRuntimeRefreshOptions = {},
 ): Promise<void> {
   // Stale synchronously. Queued publication must never leave the prior generation request-visible.
@@ -674,7 +674,7 @@ function resetPreparedModelRuntimeSnapshotsForTest(): void {
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.preparedModelRuntimeTestApi")] =
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.preparedModelRuntimeTestApi")] =
     {
       resetPreparedModelRuntimeSnapshotsForTest,
       getPreparedModelRuntimeOwnerCountForTest: () => owners.size,

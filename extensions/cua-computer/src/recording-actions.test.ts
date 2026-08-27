@@ -58,7 +58,7 @@ describe("cua-computer recording actions", () => {
     expect(startedJson).not.toContain(nativeRecordingRoot);
     expect(startedJson).not.toContain("native-session");
     const started = JSON.parse(startedJson) as { details: { resourceHandle: string } };
-    expect(started.details.resourceHandle).toMatch(/^openclaw:computer-resource:v1:/u);
+    expect(started.details.resourceHandle).toMatch(/^afora:computer-resource:v1:/u);
 
     const stateJson = await computer.act(JSON.stringify({ action: "get_recording_state" }));
     expect(stateJson).not.toContain("/native/");
@@ -94,7 +94,7 @@ describe("cua-computer recording actions", () => {
   });
 
   it("rejects malformed, absolute, traversal, and symlink-escaped replay resources", async () => {
-    const outside = await tempRoot("openclaw-cua-resource-outside-");
+    const outside = await tempRoot("afora-cua-resource-outside-");
     const active = driver();
     let nativeRecordingRoot = "";
     active.callTool.mockImplementation(async (name, args) => {
@@ -112,8 +112,8 @@ describe("cua-computer recording actions", () => {
     for (const resourceHandle of [
       "../outside",
       outside,
-      "openclaw:computer-resource:v1:unknown",
-      "openclaw:computer-resource:v1:123e4567-e89b-42d3-a456-426614174000",
+      "afora:computer-resource:v1:unknown",
+      "afora:computer-resource:v1:123e4567-e89b-42d3-a456-426614174000",
     ]) {
       await expect(
         computer.act(JSON.stringify({ action: "replay_trajectory", resourceHandle })),

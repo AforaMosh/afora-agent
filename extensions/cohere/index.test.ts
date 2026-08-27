@@ -1,11 +1,11 @@
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import type { Context, Model } from "openclaw/plugin-sdk/llm";
-import { registerSingleProviderPlugin } from "openclaw/plugin-sdk/plugin-test-runtime";
-import { buildManifestModelProviderConfig } from "openclaw/plugin-sdk/provider-catalog-shared";
-import { buildOpenAICompletionsParams } from "openclaw/plugin-sdk/provider-transport-runtime";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import type { Context, Model } from "afora-agent/plugin-sdk/llm";
+import { registerSingleProviderPlugin } from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { buildManifestModelProviderConfig } from "afora-agent/plugin-sdk/provider-catalog-shared";
+import { buildOpenAICompletionsParams } from "afora-agent/plugin-sdk/provider-transport-runtime";
 import { describe, expect, it } from "vitest";
 import plugin from "./index.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 import { COHERE_LIVE_MODEL_DISCOVERY } from "./provider-catalog.js";
 import { wrapCohereProviderStream } from "./stream.js";
 

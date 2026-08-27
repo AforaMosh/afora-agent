@@ -1,6 +1,6 @@
 // Coordinates managed task-flow creation, updates, ownership, and snapshots.
 import crypto from "node:crypto";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { formatErrorMessage } from "../infra/errors.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
@@ -823,7 +823,7 @@ function resetTaskFlowRegistryForTests(opts?: { persist?: boolean }) {
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.taskFlowRegistryTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.taskFlowRegistryTestApi")] = {
     createFlowRecord,
     resetTaskFlowRegistryForTests,
   };

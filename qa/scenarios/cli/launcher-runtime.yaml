@@ -8,7 +8,7 @@ scenario:
     primary:
       - cli.cli-entrypoint
       - cli.supported-node-runtime
-  objective: Verify the actual OpenClaw launcher accepts supported runtimes, rejects unsupported runtimes, serves help and version, and reports source-build recovery guidance.
+  objective: Verify the actual Afora launcher accepts supported runtimes, rejects unsupported runtimes, serves help and version, and reports source-build recovery guidance.
   successCriteria:
     - The copied launcher executes under every supported Node minimum and future supported majors.
     - Below-floor and unsupported Node versions exit before loading the CLI with the documented runtime requirement.
@@ -18,9 +18,9 @@ scenario:
     - docs/install/index.md
     - docs/help/troubleshooting.md
   codeRefs:
-    - openclaw.mjs
-    - test/openclaw-launcher.e2e.test.ts
+    - afora.mjs
+    - test/afora-launcher.e2e.test.ts
   execution:
     kind: vitest
-    path: test/openclaw-launcher.e2e.test.ts
+    path: test/afora-launcher.e2e.test.ts
     summary: Executes copied launcher processes across supported and rejected runtime versions, CLI fast paths, and missing-build recovery.

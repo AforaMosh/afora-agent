@@ -1,5 +1,5 @@
 // Cron timeout policy tests cover timer cap handling and timeout decisions.
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { describe, expect, it } from "vitest";
 import type { CronJob } from "../types.js";
 import { resolveCronJobTimeoutMs } from "./timeout-policy.js";

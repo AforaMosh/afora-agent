@@ -5,33 +5,33 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ExecApprovalsFile } from "../infra/exec-approvals-core.js";
 import { saveExecApprovals } from "../infra/exec-approvals-store.js";
 import { testing as execApprovalsStoreTesting } from "../infra/exec-approvals-store.test-support.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { captureEnv, setTestEnvValue } from "../test-utils/env.js";
 
-const envSnapshot = captureEnv(["HOME", "OPENCLAW_HOME", "OPENCLAW_STATE_DIR"]);
+const envSnapshot = captureEnv(["HOME", "AFORA_HOME", "AFORA_STATE_DIR"]);
 
 const tempHomes: string[] = [];
 
 function useTempHome(): string {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-approval-runtime-"));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "afora-approval-runtime-"));
   tempHomes.push(home);
   setTestEnvValue("HOME", home);
-  setTestEnvValue("OPENCLAW_HOME", home);
-  setTestEnvValue("OPENCLAW_STATE_DIR", path.join(home, ".openclaw"));
-  closeOpenClawStateDatabaseForTest();
+  setTestEnvValue("AFORA_HOME", home);
+  setTestEnvValue("AFORA_STATE_DIR", path.join(home, ".afora"));
+  closeAforaStateDatabaseForTest();
   execApprovalsStoreTesting.reset();
   return home;
 }
 
 function execApprovalsPath(home: string): string {
-  return path.join(home, ".openclaw", "exec-approvals.json");
+  return path.join(home, ".afora", "exec-approvals.json");
 }
 
 function writeExecApprovalsToken(_home: string, token: string): void {
   saveExecApprovals({
     version: 1,
     socket: {
-      path: "~/.openclaw/exec-approvals.sock",
+      path: "~/.afora/exec-approvals.sock",
       token,
     },
     agents: {},
@@ -46,7 +46,7 @@ async function importRuntimeTokenModule(): Promise<
 }
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   execApprovalsStoreTesting.reset();
   vi.resetModules();
   envSnapshot.restore();

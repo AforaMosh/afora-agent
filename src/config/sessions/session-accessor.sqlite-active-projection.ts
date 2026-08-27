@@ -1,10 +1,10 @@
 import { executeSqliteQueryTakeFirstSync, getNodeSqliteKysely } from "../../infra/kysely-sync.js";
 import { runSqliteDeferredTransactionSync } from "../../infra/sqlite-transaction.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
+import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.generated.js";
 import {
-  openOpenClawAgentDatabase,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import type { SessionTranscriptReadScope } from "./session-accessor.sqlite-contract.js";
 import {
   resolveSqliteTranscriptReadScope,
@@ -15,7 +15,7 @@ import { SessionTranscriptProjectionUnavailableError } from "./session-transcrip
 import { startSessionTranscriptIndexReconcile } from "./session-transcript-reconcile.js";
 
 type ActiveTranscriptDatabase = Pick<
-  OpenClawAgentKyselyDatabase,
+  AforaAgentKyselyDatabase,
   | "session_transcript_active_events"
   | "transcript_rewrite_watermarks"
   | "session_transcript_index_state"
@@ -24,7 +24,7 @@ type ActiveTranscriptDatabase = Pick<
 >;
 
 export type CurrentTranscriptProjection = {
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   resolved: ReturnType<typeof resolveSqliteTranscriptReadScope>;
   state: SessionTranscriptProjectionState;
 };
@@ -37,12 +37,12 @@ const EMPTY_PROJECTION_STATE: SessionTranscriptProjectionState = {
   needsRebuild: false,
 };
 
-export function getActiveTranscriptKysely(database: OpenClawAgentDatabase) {
+export function getActiveTranscriptKysely(database: AforaAgentDatabase) {
   return getNodeSqliteKysely<ActiveTranscriptDatabase>(database.db);
 }
 
 function readProjectionSnapshot(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionId: string,
 ): { latestSeq: number; state?: SessionTranscriptProjectionState } | undefined {
   const row = executeSqliteQueryTakeFirstSync(
@@ -87,7 +87,7 @@ export function withCurrentProjectionSnapshot<T>(
 ): T {
   const resolved = resolveSqliteTranscriptReadScope(scope);
   const databaseOptions = toDatabaseOptions(resolved);
-  const database = openOpenClawAgentDatabase(databaseOptions);
+  const database = openAforaAgentDatabase(databaseOptions);
   const result = runSqliteDeferredTransactionSync(
     database.db,
     () => {

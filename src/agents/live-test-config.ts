@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 
 const LIVE_OK_PROMPT = "Reply with the word ok.";
@@ -7,7 +7,7 @@ const LIVE_OK_PROMPT = "Reply with the word ok.";
  * Read the active host or test config without letting invalid legacy keys or
  * config-owned env vars mutate the live-test process.
  */
-export async function readLiveTestConfig(): Promise<OpenClawConfig> {
+export async function readLiveTestConfig(): Promise<AforaConfig> {
   const { readBestEffortConfig } = await import("../config/io.js");
   return await readBestEffortConfig({ isolateEnv: true, observe: false });
 }
@@ -17,14 +17,14 @@ export function isLiveTestEnabled(
   extraEnvVars: readonly string[] = [],
   env: NodeJS.ProcessEnv = process.env,
 ): boolean {
-  return [...extraEnvVars, "LIVE", "OPENCLAW_LIVE_TEST"].some((name) =>
+  return [...extraEnvVars, "LIVE", "AFORA_LIVE_TEST"].some((name) =>
     isTruthyEnvValue(env[name]),
   );
 }
 
 /** Return whether live tests must prefer profile credentials over env keys. */
 export function isLiveProfileKeyModeEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return isTruthyEnvValue(env.OPENCLAW_LIVE_REQUIRE_PROFILE_KEYS);
+  return isTruthyEnvValue(env.AFORA_LIVE_REQUIRE_PROFILE_KEYS);
 }
 
 /** Build a single user-message prompt for simple live model probes. */

@@ -1,5 +1,5 @@
 /** Client-scoped Codex auth and account observers. */
-import { embeddedAgentLog, formatErrorMessage } from "openclaw/plugin-sdk/agent-harness-runtime";
+import { embeddedAgentLog, formatErrorMessage } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import { refreshCodexAppServerAuthTokens } from "./auth-bridge.js";
 import type { CodexAppServerClient } from "./client.js";
 import type { CodexServiceTier } from "./protocol.js";

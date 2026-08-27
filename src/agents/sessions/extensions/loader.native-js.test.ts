@@ -52,7 +52,7 @@ afterEach(async () => {
 describe("loadExtensionsCached native JavaScript path", () => {
   it("loads compiled JavaScript extensions without creating a jiti loader", async () => {
     const loadExtensionsCached = preloadedLoadExtensionsCached;
-    const dir = await mkdtemp(join(tmpdir(), "openclaw-extension-js-"));
+    const dir = await mkdtemp(join(tmpdir(), "afora-extension-js-"));
     tempDirs.push(dir);
     const extensionPath = join(dir, "extension.mjs");
     await writeFile(
@@ -80,7 +80,7 @@ export default async function extension(api) {
     // Explicit reload clears the factory cache. Native imports still need a
     // fresh URL so same-size, same-mtime edits are observed.
     const { clearExtensionCache, loadExtensionsCached } = await import("./loader.js");
-    const dir = await mkdtemp(join(tmpdir(), "openclaw-extension-js-"));
+    const dir = await mkdtemp(join(tmpdir(), "afora-extension-js-"));
     tempDirs.push(dir);
     const extensionPath = join(dir, "extension.cjs");
     const beforeSource = `
@@ -119,7 +119,7 @@ module.exports = async function(api) {
 
   it("loads transpiled CommonJS default exports through the native path", async () => {
     const { loadExtensionsCached } = await import("./loader.js");
-    const dir = await mkdtemp(join(tmpdir(), "openclaw-extension-js-"));
+    const dir = await mkdtemp(join(tmpdir(), "afora-extension-js-"));
     tempDirs.push(dir);
     const extensionPath = join(dir, "extension.cjs");
     await writeFile(
@@ -144,7 +144,7 @@ exports.default = async function(api) {
 
   it("keeps CommonJS-shaped .js extensions on jiti", async () => {
     const { loadExtensionsCached } = await import("./loader.js");
-    const dir = await mkdtemp(join(tmpdir(), "openclaw-extension-js-"));
+    const dir = await mkdtemp(join(tmpdir(), "afora-extension-js-"));
     tempDirs.push(dir);
     await writeFile(join(dir, "package.json"), '{"type":"module"}\n');
     const extensionPath = join(dir, "extension.js");
@@ -170,7 +170,7 @@ module.exports = async function(api) {
 
   it("keeps plain ESM .js extensions on jiti", async () => {
     const { loadExtensionsCached } = await import("./loader.js");
-    const dir = await mkdtemp(join(tmpdir(), "openclaw-extension-js-"));
+    const dir = await mkdtemp(join(tmpdir(), "afora-extension-js-"));
     tempDirs.push(dir);
     const extensionPath = join(dir, "extension.js");
     await writeFile(
@@ -197,12 +197,12 @@ export default async function extension(api) {
     // SDK aliases need jiti's virtual resolution, but one shared loader keeps
     // multi-extension imports consistent and cheap.
     const { loadExtensionsCached } = await import("./loader.js");
-    const dir = await mkdtemp(join(tmpdir(), "openclaw-extension-js-"));
+    const dir = await mkdtemp(join(tmpdir(), "afora-extension-js-"));
     tempDirs.push(dir);
     const firstPath = join(dir, "first.js");
     const secondPath = join(dir, "second.js");
     const source = `
-require("@openclaw/plugin-sdk/agent-sessions");
+require("@afora/plugin-sdk/agent-sessions");
 module.exports = async function(api) {
   api.registerCommand("should-not-native-load", {
     description: "probe",
@@ -223,7 +223,7 @@ module.exports = async function(api) {
 
   it("keeps TypeBox-alias JavaScript extensions on jiti", async () => {
     const { loadExtensionsCached } = await import("./loader.js");
-    const dir = await mkdtemp(join(tmpdir(), "openclaw-extension-js-"));
+    const dir = await mkdtemp(join(tmpdir(), "afora-extension-js-"));
     tempDirs.push(dir);
     const extensionPath = join(dir, "extension.js");
     await writeFile(
@@ -251,7 +251,7 @@ module.exports = async function(api) {
     // Alias detection walks relative helper files; a clean entrypoint can still
     // need jiti when its dependency graph imports SDK/TypeBox aliases.
     const { loadExtensionsCached } = await import("./loader.js");
-    const dir = await mkdtemp(join(tmpdir(), "openclaw-extension-js-"));
+    const dir = await mkdtemp(join(tmpdir(), "afora-extension-js-"));
     tempDirs.push(dir);
     const extensionPath = join(dir, "extension.js");
     await writeFile(
@@ -278,7 +278,7 @@ module.exports = async function(api) {
 
   it("keeps ESM re-export JavaScript extensions on jiti for graph-wide aliases", async () => {
     const { loadExtensionsCached } = await import("./loader.js");
-    const dir = await mkdtemp(join(tmpdir(), "openclaw-extension-js-"));
+    const dir = await mkdtemp(join(tmpdir(), "afora-extension-js-"));
     tempDirs.push(dir);
     await writeFile(join(dir, "package.json"), '{"type":"module"}\n');
     const extensionPath = join(dir, "extension.js");
@@ -306,7 +306,7 @@ export default async function extension(api) {
 
   it("keeps minified ESM relative imports on jiti for graph-wide aliases", async () => {
     const { loadExtensionsCached } = await import("./loader.js");
-    const dir = await mkdtemp(join(tmpdir(), "openclaw-extension-js-"));
+    const dir = await mkdtemp(join(tmpdir(), "afora-extension-js-"));
     tempDirs.push(dir);
     const extensionPath = join(dir, "extension.mjs");
     await writeFile(

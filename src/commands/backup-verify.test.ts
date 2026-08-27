@@ -12,7 +12,7 @@ import { requireNodeSqlite } from "../infra/node-sqlite.js";
 import { buildBackupArchivePath, buildBackupArchiveRoot } from "./backup-shared.js";
 import { backupVerifyCommand, testApi } from "./backup-verify.js";
 
-const TEST_ARCHIVE_ROOT = "2026-03-09T00-00-00.000Z-openclaw-backup";
+const TEST_ARCHIVE_ROOT = "2026-03-09T00-00-00.000Z-afora-backup";
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 const createBackupVerifyRuntime = () => ({
@@ -24,7 +24,7 @@ const createBackupVerifyRuntime = () => ({
 function createBackupManifest(
   assetArchivePath: string,
   archiveRoot = TEST_ARCHIVE_ROOT,
-  stateDir = "/tmp/.openclaw",
+  stateDir = "/tmp/.afora",
 ) {
   return {
     schemaVersion: 1,
@@ -89,7 +89,7 @@ async function createArchiveWithManifestContent(
   const manifestPath = path.join(tempDir, "manifest.json");
   const payloadPath = path.join(tempDir, "payload.txt");
   const payloadArchivePath =
-    options.payloadArchivePath ?? `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw/payload.txt`;
+    options.payloadArchivePath ?? `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora/payload.txt`;
   try {
     await fs.writeFile(manifestPath, options.manifestContent, "utf8");
     await fs.writeFile(payloadPath, "payload\n", "utf8");
@@ -179,7 +179,7 @@ async function withBrokenArchiveFixture(
 }
 
 async function createSqlitePayload(setup: (database: DatabaseSync) => void): Promise<Buffer> {
-  const tempDir = tempDirs.make("openclaw-backup-verify-sqlite-db-");
+  const tempDir = tempDirs.make("afora-backup-verify-sqlite-db-");
   const databasePath = path.join(tempDir, "snapshot.sqlite");
   try {
     const sqlite = requireNodeSqlite();
@@ -201,7 +201,7 @@ describe("backupVerifyCommand", () => {
   });
 
   it("verifies a valid backup archive", async () => {
-    const archiveDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-backup-verify-out-"));
+    const archiveDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-backup-verify-out-"));
     try {
       const runtime = createBackupVerifyRuntime();
       const nowMs = Date.UTC(2026, 2, 9, 0, 0, 0);
@@ -209,7 +209,7 @@ describe("backupVerifyCommand", () => {
       const archivePath = path.join(archiveDir, "backup.tar.gz");
       const manifestPath = path.join(archiveDir, "manifest.json");
       const payloadPath = path.join(archiveDir, "state.txt");
-      const payloadArchivePath = `${archiveRoot}/payload/posix/tmp/.openclaw/state.txt`;
+      const payloadArchivePath = `${archiveRoot}/payload/posix/tmp/.afora/state.txt`;
       await fs.writeFile(
         manifestPath,
         `${JSON.stringify(createBackupManifest(payloadArchivePath, archiveRoot), null, 2)}\n`,
@@ -249,13 +249,13 @@ describe("backupVerifyCommand", () => {
       name: "missing archive",
       prepare: async (tempDir: string) => path.join(tempDir, "missing.tar.gz"),
       detail:
-        "Archive does not exist. Check the path and run `openclaw backup verify <archive>` again.",
+        "Archive does not exist. Check the path and run `afora backup verify <archive>` again.",
     },
     {
       name: "directory",
       prepare: async (tempDir: string) => tempDir,
       detail:
-        "Archive must be a regular file. Choose a backup archive created by `openclaw backup create` and try again.",
+        "Archive must be a regular file. Choose a backup archive created by `afora backup create` and try again.",
     },
     {
       name: "non-tar garbage",
@@ -265,10 +265,10 @@ describe("backupVerifyCommand", () => {
         return archivePath;
       },
       detail:
-        "Archive is not a valid OpenClaw backup. Unrecognized archive format. Choose another archive or create a new one with `openclaw backup create`.",
+        "Archive is not a valid Afora backup. Unrecognized archive format. Choose another archive or create a new one with `afora backup create`.",
     },
   ])("reports an actionable failure for $name", async ({ prepare, detail }) => {
-    const tempDir = tempDirs.make("openclaw-backup-verify-input-");
+    const tempDir = tempDirs.make("afora-backup-verify-input-");
     const archivePath = await prepare(tempDir);
     const runtime = createBackupVerifyRuntime();
 
@@ -283,8 +283,8 @@ describe("backupVerifyCommand", () => {
   });
 
   it("verifies SQLite integrity and the canonical shared-state role", async () => {
-    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw`;
-    const sqliteArchivePath = `${stateAssetArchivePath}/state/openclaw.sqlite`;
+    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora`;
+    const sqliteArchivePath = `${stateAssetArchivePath}/state/afora.sqlite`;
     const sqlitePayload = await createSqlitePayload((database) => {
       database.exec(`
         CREATE TABLE schema_meta (
@@ -297,11 +297,11 @@ describe("backupVerifyCommand", () => {
 
     await withBrokenArchiveFixture(
       {
-        tempPrefix: "openclaw-backup-valid-sqlite-",
+        tempPrefix: "afora-backup-valid-sqlite-",
         manifestAssetArchivePath: stateAssetArchivePath,
         payloads: [
           {
-            fileName: "openclaw.sqlite",
+            fileName: "afora.sqlite",
             contents: sqlitePayload,
             archivePath: sqliteArchivePath,
           },
@@ -321,9 +321,9 @@ describe("backupVerifyCommand", () => {
   it.runIf(process.platform === "win32")(
     "verifies a canonical global SQLite backup beyond MAX_PATH",
     async () => {
-      const stateDir = String.raw`C:\Users\OpenClaw\.openclaw`;
+      const stateDir = String.raw`C:\Users\Afora\.afora`;
       const stateAssetArchivePath = buildBackupArchivePath(TEST_ARCHIVE_ROOT, stateDir);
-      const sqliteArchivePath = `${stateAssetArchivePath}/state/openclaw.sqlite`;
+      const sqliteArchivePath = `${stateAssetArchivePath}/state/afora.sqlite`;
       const sqlitePayload = await createSqlitePayload((database) => {
         database.exec(`
           CREATE TABLE schema_meta (
@@ -336,24 +336,24 @@ describe("backupVerifyCommand", () => {
 
       await withBrokenArchiveFixture(
         {
-          tempPrefix: "openclaw-backup-windows-long-path-",
+          tempPrefix: "afora-backup-windows-long-path-",
           manifestAssetArchivePath: stateAssetArchivePath,
           manifest: createBackupManifest(stateAssetArchivePath, TEST_ARCHIVE_ROOT, stateDir),
           payloads: [
             {
-              fileName: "openclaw.sqlite",
+              fileName: "afora.sqlite",
               contents: sqlitePayload,
               archivePath: sqliteArchivePath,
             },
           ],
         },
         async (archivePath) => {
-          const verificationTempBase = tempDirs.make("openclaw-backup-verify-long-path-");
+          const verificationTempBase = tempDirs.make("afora-backup-verify-long-path-");
           let verificationTempRoot = verificationTempBase;
           const resolveMinimumExtractedPath = () =>
             path.join(
               verificationTempRoot,
-              "openclaw-backup-verify-sqlite-",
+              "afora-backup-verify-sqlite-",
               ...sqliteArchivePath.split("/"),
             );
           while (resolveMinimumExtractedPath().length <= 260) {
@@ -379,8 +379,8 @@ describe("backupVerifyCommand", () => {
   );
 
   it("rejects canonical SQLite snapshots with foreign-key violations", async () => {
-    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw`;
-    const sqliteArchivePath = `${stateAssetArchivePath}/state/openclaw.sqlite`;
+    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora`;
+    const sqliteArchivePath = `${stateAssetArchivePath}/state/afora.sqlite`;
     const sqlitePayload = await createSqlitePayload((database) => {
       database.exec(`
         PRAGMA foreign_keys = OFF;
@@ -400,11 +400,11 @@ describe("backupVerifyCommand", () => {
 
     await withBrokenArchiveFixture(
       {
-        tempPrefix: "openclaw-backup-foreign-key-",
+        tempPrefix: "afora-backup-foreign-key-",
         manifestAssetArchivePath: stateAssetArchivePath,
         payloads: [
           {
-            fileName: "openclaw.sqlite",
+            fileName: "afora.sqlite",
             contents: sqlitePayload,
             archivePath: sqliteArchivePath,
           },
@@ -420,7 +420,7 @@ describe("backupVerifyCommand", () => {
   });
 
   it("does not interpret plugin-owned SQLite schemas without their owner runtime", async () => {
-    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw`;
+    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora`;
     const sqliteArchivePath = `${stateAssetArchivePath}/plugins/dedicated/custom.sqlite`;
     const sqlitePayload = await createSqlitePayload((database) => {
       database.function("plugin_double", { deterministic: true }, (value) => Number(value) * 2);
@@ -433,7 +433,7 @@ describe("backupVerifyCommand", () => {
 
     await withBrokenArchiveFixture(
       {
-        tempPrefix: "openclaw-backup-plugin-owned-sqlite-",
+        tempPrefix: "afora-backup-plugin-owned-sqlite-",
         manifestAssetArchivePath: stateAssetArchivePath,
         payloads: [
           {
@@ -455,30 +455,30 @@ describe("backupVerifyCommand", () => {
   });
 
   it("rejects a structurally valid archive containing a malformed SQLite snapshot", async () => {
-    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw`;
-    const sqliteArchivePath = `${stateAssetArchivePath}/state/openclaw.sqlite`;
+    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora`;
+    const sqliteArchivePath = `${stateAssetArchivePath}/state/afora.sqlite`;
     const invalidSqlite = Buffer.from("not a sqlite database", "utf8");
     expect(invalidSqlite.byteLength).toBe(21);
 
     await withBrokenArchiveFixture(
       {
-        tempPrefix: "openclaw-backup-invalid-sqlite-",
+        tempPrefix: "afora-backup-invalid-sqlite-",
         manifestAssetArchivePath: stateAssetArchivePath,
         payloads: [
           {
-            fileName: "openclaw.sqlite",
+            fileName: "afora.sqlite",
             contents: invalidSqlite,
             archivePath: sqliteArchivePath,
           },
         ],
       },
       async (archivePath) => {
-        const verificationTempRoot = tempDirs.make("openclaw-backup-verify-cleanup-");
+        const verificationTempRoot = tempDirs.make("afora-backup-verify-cleanup-");
         const tmpdirSpy = vi.spyOn(os, "tmpdir").mockReturnValue(verificationTempRoot);
         try {
           const runtime = createBackupVerifyRuntime();
           await expect(backupVerifyCommand(runtime, { archive: archivePath })).rejects.toThrow(
-            /Backup SQLite snapshot failed verification.*openclaw\.sqlite/iu,
+            /Backup SQLite snapshot failed verification.*afora\.sqlite/iu,
           );
           await expect(fs.readdir(verificationTempRoot)).resolves.toEqual([]);
         } finally {
@@ -490,12 +490,12 @@ describe("backupVerifyCommand", () => {
   });
 
   it("rejects an empty SQLite snapshot instead of accepting a new empty database", async () => {
-    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw`;
+    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora`;
     const sqliteArchivePath = `${stateAssetArchivePath}/plugins/dedicated/empty.sqlite`;
 
     await withBrokenArchiveFixture(
       {
-        tempPrefix: "openclaw-backup-empty-sqlite-",
+        tempPrefix: "afora-backup-empty-sqlite-",
         manifestAssetArchivePath: stateAssetArchivePath,
         payloads: [
           {
@@ -517,8 +517,8 @@ describe("backupVerifyCommand", () => {
   it.each(["-wal", "-WAL"])(
     "rejects SQLite sidecars that could change restored snapshot contents (%s)",
     async (sidecarSuffix) => {
-      const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw`;
-      const sqliteArchivePath = `${stateAssetArchivePath}/state/openclaw.sqlite`;
+      const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora`;
+      const sqliteArchivePath = `${stateAssetArchivePath}/state/afora.sqlite`;
       const sqlitePayload = await createSqlitePayload((database) => {
         database.exec(`
         CREATE TABLE schema_meta (
@@ -531,16 +531,16 @@ describe("backupVerifyCommand", () => {
 
       await withBrokenArchiveFixture(
         {
-          tempPrefix: "openclaw-backup-sqlite-sidecar-",
+          tempPrefix: "afora-backup-sqlite-sidecar-",
           manifestAssetArchivePath: stateAssetArchivePath,
           payloads: [
             {
-              fileName: "openclaw.sqlite",
+              fileName: "afora.sqlite",
               contents: sqlitePayload,
               archivePath: sqliteArchivePath,
             },
             {
-              fileName: "openclaw.sqlite-wal",
+              fileName: "afora.sqlite-wal",
               contents: "unverified transaction data",
               archivePath: `${sqliteArchivePath}${sidecarSuffix}`,
             },
@@ -549,7 +549,7 @@ describe("backupVerifyCommand", () => {
         async (archivePath) => {
           const runtime = createBackupVerifyRuntime();
           await expect(backupVerifyCommand(runtime, { archive: archivePath })).rejects.toThrow(
-            /contains a SQLite snapshot sidecar.*openclaw\.sqlite-wal/iu,
+            /contains a SQLite snapshot sidecar.*afora\.sqlite-wal/iu,
           );
         },
       );
@@ -557,8 +557,8 @@ describe("backupVerifyCommand", () => {
   );
 
   it("rejects case-mangled canonical SQLite paths", async () => {
-    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw`;
-    const sqliteArchivePath = `${stateAssetArchivePath}/State/OpenClaw.SQLITE`;
+    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora`;
+    const sqliteArchivePath = `${stateAssetArchivePath}/State/Afora.SQLITE`;
     const sqlitePayload = await createSqlitePayload((database) => {
       database.exec(`
         CREATE TABLE schema_meta (
@@ -571,11 +571,11 @@ describe("backupVerifyCommand", () => {
 
     await withBrokenArchiveFixture(
       {
-        tempPrefix: "openclaw-backup-sqlite-case-alias-",
+        tempPrefix: "afora-backup-sqlite-case-alias-",
         manifestAssetArchivePath: stateAssetArchivePath,
         payloads: [
           {
-            fileName: "openclaw.sqlite",
+            fileName: "afora.sqlite",
             contents: sqlitePayload,
             archivePath: sqliteArchivePath,
           },
@@ -584,20 +584,20 @@ describe("backupVerifyCommand", () => {
       async (archivePath) => {
         const runtime = createBackupVerifyRuntime();
         await expect(backupVerifyCommand(runtime, { archive: archivePath })).rejects.toThrow(
-          /case-mangled canonical SQLite path.*State\/OpenClaw\.SQLITE/u,
+          /case-mangled canonical SQLite path.*State\/Afora\.SQLITE/u,
         );
       },
     );
   });
 
   it("rejects case-mangled aliases of the state asset root", async () => {
-    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw`;
+    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora`;
     const statePayloadArchivePath = `${stateAssetArchivePath}/payload.txt`;
-    const aliasSidecarArchivePath = `${TEST_ARCHIVE_ROOT}/PAYLOAD/posix/tmp/.openclaw/plugins/dedicated/custom.sqlite-wal`;
+    const aliasSidecarArchivePath = `${TEST_ARCHIVE_ROOT}/PAYLOAD/posix/tmp/.afora/plugins/dedicated/custom.sqlite-wal`;
 
     await withBrokenArchiveFixture(
       {
-        tempPrefix: "openclaw-backup-state-root-case-alias-",
+        tempPrefix: "afora-backup-state-root-case-alias-",
         manifestAssetArchivePath: stateAssetArchivePath,
         payloads: [
           {
@@ -622,7 +622,7 @@ describe("backupVerifyCommand", () => {
   });
 
   it("rejects a truncated SQLite snapshot with a valid database header", async () => {
-    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw`;
+    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora`;
     const sqliteArchivePath = `${stateAssetArchivePath}/plugins/dedicated/corrupt.sqlite`;
     const sqlitePayload = await createSqlitePayload((database) => {
       database.exec("CREATE TABLE records (id INTEGER PRIMARY KEY, value TEXT NOT NULL);");
@@ -642,7 +642,7 @@ describe("backupVerifyCommand", () => {
 
     await withBrokenArchiveFixture(
       {
-        tempPrefix: "openclaw-backup-corrupt-sqlite-",
+        tempPrefix: "afora-backup-corrupt-sqlite-",
         manifestAssetArchivePath: stateAssetArchivePath,
         payloads: [
           {
@@ -662,7 +662,7 @@ describe("backupVerifyCommand", () => {
   });
 
   it("rejects a page-aligned truncated plugin SQLite snapshot", async () => {
-    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw`;
+    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora`;
     const sqliteArchivePath = `${stateAssetArchivePath}/plugins/dedicated/corrupt.sqlite`;
     const sqlitePayload = await createSqlitePayload((database) => {
       database.exec("CREATE TABLE records (id INTEGER PRIMARY KEY, value TEXT NOT NULL);");
@@ -682,7 +682,7 @@ describe("backupVerifyCommand", () => {
 
     await withBrokenArchiveFixture(
       {
-        tempPrefix: "openclaw-backup-page-truncated-sqlite-",
+        tempPrefix: "afora-backup-page-truncated-sqlite-",
         manifestAssetArchivePath: stateAssetArchivePath,
         payloads: [
           {
@@ -702,8 +702,8 @@ describe("backupVerifyCommand", () => {
   });
 
   it("rejects a canonical SQLite snapshot with the wrong database role", async () => {
-    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw`;
-    const sqliteArchivePath = `${stateAssetArchivePath}/state/openclaw.sqlite`;
+    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora`;
+    const sqliteArchivePath = `${stateAssetArchivePath}/state/afora.sqlite`;
     const sqlitePayload = await createSqlitePayload((database) => {
       database.exec(`
         CREATE TABLE schema_meta (
@@ -716,11 +716,11 @@ describe("backupVerifyCommand", () => {
 
     await withBrokenArchiveFixture(
       {
-        tempPrefix: "openclaw-backup-wrong-sqlite-role-",
+        tempPrefix: "afora-backup-wrong-sqlite-role-",
         manifestAssetArchivePath: stateAssetArchivePath,
         payloads: [
           {
-            fileName: "openclaw.sqlite",
+            fileName: "afora.sqlite",
             contents: sqlitePayload,
             archivePath: sqliteArchivePath,
           },
@@ -736,8 +736,8 @@ describe("backupVerifyCommand", () => {
   });
 
   it("validates a canonical agent database whose agent id is node_modules", async () => {
-    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw`;
-    const sqliteArchivePath = `${stateAssetArchivePath}/agents/node_modules/agent/openclaw-agent.sqlite`;
+    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora`;
+    const sqliteArchivePath = `${stateAssetArchivePath}/agents/node_modules/agent/afora-agent.sqlite`;
     const sqlitePayload = await createSqlitePayload((database) => {
       database.exec(`
         CREATE TABLE schema_meta (
@@ -750,11 +750,11 @@ describe("backupVerifyCommand", () => {
 
     await withBrokenArchiveFixture(
       {
-        tempPrefix: "openclaw-backup-agent-node-modules-",
+        tempPrefix: "afora-backup-agent-node-modules-",
         manifestAssetArchivePath: stateAssetArchivePath,
         payloads: [
           {
-            fileName: "openclaw-agent.sqlite",
+            fileName: "afora-agent.sqlite",
             contents: sqlitePayload,
             archivePath: sqliteArchivePath,
           },
@@ -771,7 +771,7 @@ describe("backupVerifyCommand", () => {
 
   it("rejects a state asset root that does not encode its declared source path", async () => {
     const declaredStateAssetRoot = `${TEST_ARCHIVE_ROOT}/payload`;
-    const sqliteArchivePath = `${declaredStateAssetRoot}/posix/tmp/.openclaw/state/openclaw.sqlite`;
+    const sqliteArchivePath = `${declaredStateAssetRoot}/posix/tmp/.afora/state/afora.sqlite`;
     const sqlitePayload = await createSqlitePayload((database) => {
       database.exec(`
         CREATE TABLE schema_meta (
@@ -784,12 +784,12 @@ describe("backupVerifyCommand", () => {
 
     await withBrokenArchiveFixture(
       {
-        tempPrefix: "openclaw-backup-state-root-bypass-",
+        tempPrefix: "afora-backup-state-root-bypass-",
         manifestAssetArchivePath: declaredStateAssetRoot,
         manifest: createBackupManifest(declaredStateAssetRoot),
         payloads: [
           {
-            fileName: "openclaw.sqlite",
+            fileName: "afora.sqlite",
             contents: sqlitePayload,
             archivePath: sqliteArchivePath,
           },
@@ -809,8 +809,8 @@ describe("backupVerifyCommand", () => {
       testApi.assertSqliteExtractionBudget({
         entries: [
           {
-            raw: "backup/payload/state/openclaw.sqlite",
-            normalized: "backup/payload/state/openclaw.sqlite",
+            raw: "backup/payload/state/afora.sqlite",
+            normalized: "backup/payload/state/afora.sqlite",
             stateAssetRoot: "backup/payload",
             type: "File",
             size: 2 * 1024 * 1024,
@@ -832,8 +832,8 @@ describe("backupVerifyCommand", () => {
       testApi.assertSqliteExtractionBudget({
         entries: [
           {
-            raw: "backup/payload/state/openclaw.sqlite",
-            normalized: "backup/payload/state/openclaw.sqlite",
+            raw: "backup/payload/state/afora.sqlite",
+            normalized: "backup/payload/state/afora.sqlite",
             stateAssetRoot: "backup/payload",
             type: "File",
             size: 64 * 1024 * 1024 * 1024 + 1,
@@ -846,13 +846,13 @@ describe("backupVerifyCommand", () => {
   });
 
   it("ignores package-owned and transient SQLite-shaped state files", async () => {
-    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw`;
+    const stateAssetArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora`;
     const transientId = "11111111-2222-3333-4444-555555555555";
     const invalidSqlite = "not a sqlite database";
 
     await withBrokenArchiveFixture(
       {
-        tempPrefix: "openclaw-backup-excluded-sqlite-",
+        tempPrefix: "afora-backup-excluded-sqlite-",
         manifestAssetArchivePath: stateAssetArchivePath,
         payloads: [
           {
@@ -909,7 +909,7 @@ describe("backupVerifyCommand", () => {
   });
 
   it("fails when the archive does not contain a manifest", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-backup-no-manifest-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-backup-no-manifest-"));
     const archivePath = path.join(tempDir, "broken.tar.gz");
     try {
       const root = path.join(tempDir, "root");
@@ -927,10 +927,10 @@ describe("backupVerifyCommand", () => {
   });
 
   it("fails when the manifest references a missing asset payload", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-backup-missing-asset-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-backup-missing-asset-"));
     const archivePath = path.join(tempDir, "broken.tar.gz");
     try {
-      const rootName = "2026-03-09T00-00-00.000Z-openclaw-backup";
+      const rootName = "2026-03-09T00-00-00.000Z-afora-backup";
       const root = path.join(tempDir, rootName);
       await fs.mkdir(root, { recursive: true });
       const manifest = {
@@ -943,8 +943,8 @@ describe("backupVerifyCommand", () => {
         assets: [
           {
             kind: "state",
-            sourcePath: "/tmp/.openclaw",
-            archivePath: `${rootName}/payload/posix/tmp/.openclaw`,
+            sourcePath: "/tmp/.afora",
+            archivePath: `${rootName}/payload/posix/tmp/.afora`,
           },
         ],
       };
@@ -966,7 +966,7 @@ describe("backupVerifyCommand", () => {
   it("reports malformed manifest JSON without leaking parser internals", async () => {
     await createArchiveWithManifestContent(
       {
-        tempPrefix: "openclaw-backup-bad-manifest-json-",
+        tempPrefix: "afora-backup-bad-manifest-json-",
         manifestContent: '{"schemaVersion":1,',
       },
       async (archivePath) => {
@@ -984,7 +984,7 @@ describe("backupVerifyCommand", () => {
   it("rejects oversized manifest entries without retaining the full body", async () => {
     await createArchiveWithManifestContent(
       {
-        tempPrefix: "openclaw-backup-huge-manifest-",
+        tempPrefix: "afora-backup-huge-manifest-",
         manifestContent: "x".repeat(1024 * 1024 + 1),
       },
       async (archivePath) => {
@@ -999,12 +999,12 @@ describe("backupVerifyCommand", () => {
   it("rejects unsafe archive paths", async () => {
     for (const { tempPrefix, archivePath, error } of [
       {
-        tempPrefix: "openclaw-backup-traversal-",
+        tempPrefix: "afora-backup-traversal-",
         archivePath: `${TEST_ARCHIVE_ROOT}/payload/../escaped.txt`,
         error: /path traversal segments/i,
       },
       {
-        tempPrefix: "openclaw-backup-backslash-",
+        tempPrefix: "afora-backup-backslash-",
         archivePath: `${TEST_ARCHIVE_ROOT}/payload\\escaped.txt`,
         error: /forward slashes/i,
       },
@@ -1026,10 +1026,10 @@ describe("backupVerifyCommand", () => {
   });
 
   it("rejects unsafe hardlink targets", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-backup-linkpath-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-backup-linkpath-"));
     const archivePath = path.join(tempDir, "broken.tar.gz");
-    const payloadArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw/target.txt`;
-    const hardlinkArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw/hardlink.txt`;
+    const payloadArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora/target.txt`;
+    const hardlinkArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora/hardlink.txt`;
     try {
       const archive = gzipSync(
         Buffer.concat([
@@ -1058,11 +1058,11 @@ describe("backupVerifyCommand", () => {
   });
 
   it("accepts root-relative internal hardlink targets from older backups", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-backup-rootless-linkpath-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-backup-rootless-linkpath-"));
     const archivePath = path.join(tempDir, "backup.tar.gz");
-    const rootRelativeTargetPath = "payload/posix/tmp/.openclaw/target.txt";
+    const rootRelativeTargetPath = "payload/posix/tmp/.afora/target.txt";
     const payloadArchivePath = `${TEST_ARCHIVE_ROOT}/${rootRelativeTargetPath}`;
-    const hardlinkArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw/hardlink.txt`;
+    const hardlinkArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora/hardlink.txt`;
     try {
       const archive = gzipSync(
         Buffer.concat([
@@ -1091,11 +1091,11 @@ describe("backupVerifyCommand", () => {
   });
 
   it("rejects hardlink targets missing from archive entries", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-backup-missing-linkpath-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-backup-missing-linkpath-"));
     const archivePath = path.join(tempDir, "broken.tar.gz");
-    const payloadArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw/target.txt`;
-    const hardlinkArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw/hardlink.txt`;
-    const missingTargetPath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw/missing-target.txt`;
+    const payloadArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora/target.txt`;
+    const hardlinkArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora/hardlink.txt`;
+    const missingTargetPath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora/missing-target.txt`;
     try {
       const archive = gzipSync(
         Buffer.concat([
@@ -1124,7 +1124,7 @@ describe("backupVerifyCommand", () => {
   });
 
   it("ignores payload manifest.json files when locating the backup manifest", async () => {
-    const archiveDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-backup-verify-out-"));
+    const archiveDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-backup-verify-out-"));
     try {
       const runtime = createBackupVerifyRuntime();
       const nowMs = Date.UTC(2026, 2, 9, 2, 0, 0);
@@ -1133,7 +1133,7 @@ describe("backupVerifyCommand", () => {
       const manifestPath = path.join(archiveDir, "manifest.json");
       const statePayloadPath = path.join(archiveDir, "state.txt");
       const workspaceManifestPayloadPath = path.join(archiveDir, "workspace-manifest.json");
-      const stateArchivePath = `${archiveRoot}/payload/posix/tmp/.openclaw/state.txt`;
+      const stateArchivePath = `${archiveRoot}/payload/posix/tmp/.afora/state.txt`;
       const workspaceArchivePath = `${archiveRoot}/payload/posix/tmp/workspace/manifest.json`;
       await fs.writeFile(
         manifestPath,
@@ -1143,7 +1143,7 @@ describe("backupVerifyCommand", () => {
             assets: [
               {
                 kind: "state",
-                sourcePath: "/tmp/.openclaw",
+                sourcePath: "/tmp/.afora",
                 archivePath: stateArchivePath,
               },
               {
@@ -1196,10 +1196,10 @@ describe("backupVerifyCommand", () => {
   });
 
   it("rejects duplicate manifest and payload entries", async () => {
-    const payloadArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.openclaw/payload.txt`;
+    const payloadArchivePath = `${TEST_ARCHIVE_ROOT}/payload/posix/tmp/.afora/payload.txt`;
     for (const options of [
       {
-        tempPrefix: "openclaw-backup-duplicate-manifest-",
+        tempPrefix: "afora-backup-duplicate-manifest-",
         payloads: [{ fileName: "payload.txt", contents: "payload\n" }],
         buildTarEntries: ({
           manifestPath,
@@ -1211,7 +1211,7 @@ describe("backupVerifyCommand", () => {
         error: /expected exactly one backup manifest entry, found 2/i,
       },
       {
-        tempPrefix: "openclaw-backup-duplicate-payload-",
+        tempPrefix: "afora-backup-duplicate-payload-",
         payloads: [
           { fileName: "payload-a.txt", contents: "payload-a\n", archivePath: payloadArchivePath },
           { fileName: "payload-b.txt", contents: "payload-b\n", archivePath: payloadArchivePath },
@@ -1219,7 +1219,7 @@ describe("backupVerifyCommand", () => {
         error: /duplicate entry path/i,
       },
       {
-        tempPrefix: "openclaw-backup-portable-path-collision-",
+        tempPrefix: "afora-backup-portable-path-collision-",
         payloads: [
           { fileName: "payload-a.txt", contents: "payload-a\n", archivePath: payloadArchivePath },
           {

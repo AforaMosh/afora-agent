@@ -15,10 +15,10 @@ import {
   PLUGIN_MODEL_CATALOG_GENERATED_BY,
   replacePersistedPluginModelCatalogs,
 } from "../agents/plugin-model-catalog.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { RuntimeEnv } from "../runtime.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { maybeMigrateModelCatalogCredentials } from "./doctor-model-catalog-credentials.js";
 import type { DoctorPrompter } from "./doctor-prompter.js";
 
@@ -28,14 +28,14 @@ vi.mock("../../packages/terminal-core/src/note.js", () => ({ note }));
 const tempDirs: string[] = [];
 
 function createState(): { agentDir: string; env: NodeJS.ProcessEnv; stateDir: string } {
-  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-doctor-catalog-credentials-"));
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-doctor-catalog-credentials-"));
   tempDirs.push(stateDir);
   const agentDir = path.join(stateDir, "agents", "main", "agent");
   fs.mkdirSync(agentDir, { recursive: true });
   return {
     agentDir,
     stateDir,
-    env: { ...process.env, HOME: stateDir, OPENCLAW_STATE_DIR: stateDir },
+    env: { ...process.env, HOME: stateDir, AFORA_STATE_DIR: stateDir },
   };
 }
 
@@ -58,7 +58,7 @@ function provider(apiKey: string) {
   };
 }
 
-function migrationParams(state: ReturnType<typeof createState>, cfg: OpenClawConfig) {
+function migrationParams(state: ReturnType<typeof createState>, cfg: AforaConfig) {
   return {
     cfg,
     env: state.env,
@@ -68,8 +68,8 @@ function migrationParams(state: ReturnType<typeof createState>, cfg: OpenClawCon
 }
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   for (const dir of tempDirs.splice(0)) {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -79,7 +79,7 @@ describe("doctor model catalog credential migration", () => {
   it("copies config, root, and plugin catalog keys before runtime retires plaintext", async () => {
     const state = createState();
     const { agentDir } = state;
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       models: { providers: { configured: provider("configured-secret") } },
     };
     const rootContents = `{
@@ -215,7 +215,7 @@ describe("doctor model catalog credential migration", () => {
           third: { agentDir: thirdAgentDir },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     await expect(maybeMigrateModelCatalogCredentials(migrationParams(state, cfg))).resolves.toEqual(
       { detected: 1, migrated: 1, warnings: [] },

@@ -1,5 +1,5 @@
 import type { ChannelLegacyStateMigrationPlan } from "../channels/plugins/legacy-state-migration.types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginModuleLoaderFactory } from "../plugins/plugin-module-loader-cache.js";
 
 /** Legacy session helpers used while bundled channels migrate old session key formats. */
@@ -17,7 +17,7 @@ export type BundledChannelLegacySessionSurface = {
  * Removal plan: remove the setup-entry adapter after the 2027.1 external-plugin migration window.
  */
 export type BundledChannelLegacyStateMigrationDetector = (params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   stateDir: string;
   oauthDir: string;

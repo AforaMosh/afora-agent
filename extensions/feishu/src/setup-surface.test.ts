@@ -5,8 +5,8 @@ import {
   createPluginSetupWizardStatus,
   createTestWizardPrompter,
   runSetupWizardConfigure,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
-import { withEnvAsync } from "openclaw/plugin-sdk/test-env";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { withEnvAsync } from "afora-agent/plugin-sdk/test-env";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FeishuProbeResult } from "./types.js";
 
@@ -321,8 +321,8 @@ describe("feishu setup wizard status", () => {
   });
 
   it("localizes existing bot setup prompts and status lines", async () => {
-    const previousLocale = process.env.OPENCLAW_LOCALE;
-    process.env.OPENCLAW_LOCALE = "zh-CN";
+    const previousLocale = process.env.AFORA_LOCALE;
+    process.env.AFORA_LOCALE = "zh-CN";
     const confirm = vi.fn(async () => true);
     const note = vi.fn(async () => {});
     const prompter = createTestWizardPrompter({
@@ -353,16 +353,16 @@ describe("feishu setup wizard status", () => {
       expect(note).toHaveBeenCalledWith("Bot 已配置。", "");
     } finally {
       if (previousLocale === undefined) {
-        delete process.env.OPENCLAW_LOCALE;
+        delete process.env.AFORA_LOCALE;
       } else {
-        process.env.OPENCLAW_LOCALE = previousLocale;
+        process.env.AFORA_LOCALE = previousLocale;
       }
     }
   });
 
   it("localizes new bot setup prompts and progress", async () => {
-    const previousLocale = process.env.OPENCLAW_LOCALE;
-    process.env.OPENCLAW_LOCALE = "zh-CN";
+    const previousLocale = process.env.AFORA_LOCALE;
+    process.env.AFORA_LOCALE = "zh-CN";
     const note = vi.fn(async () => {});
     const stop = vi.fn();
     const progress = vi.fn(() => ({ update: vi.fn(), stop }));
@@ -434,9 +434,9 @@ describe("feishu setup wizard status", () => {
       expect(stop).toHaveBeenCalledWith("Bot 已配置。");
     } finally {
       if (previousLocale === undefined) {
-        delete process.env.OPENCLAW_LOCALE;
+        delete process.env.AFORA_LOCALE;
       } else {
-        process.env.OPENCLAW_LOCALE = previousLocale;
+        process.env.AFORA_LOCALE = previousLocale;
       }
     }
   });

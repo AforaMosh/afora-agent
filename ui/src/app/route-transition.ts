@@ -9,7 +9,7 @@ type RouteTransitionOptions = {
   to: RouteId;
 };
 
-export const CHAT_ROUTE_READY_EVENT = "openclaw-chat-route-ready";
+export const CHAT_ROUTE_READY_EVENT = "afora-chat-route-ready";
 const SESSION_ROUTE_ENTER_KEYFRAMES: Keyframe[] = [
   { transform: "translateY(5px) scale(0.997)" },
   { transform: "none" },
@@ -41,7 +41,7 @@ async function navigateAndAnimate(
   prefersReducedMotion: boolean,
 ) {
   const outlet = document.querySelector<HTMLElement & { updateComplete?: Promise<unknown> }>(
-    "openclaw-router-outlet",
+    "afora-router-outlet",
   );
   const chatReady = waitForChatRouteReady(document);
   try {

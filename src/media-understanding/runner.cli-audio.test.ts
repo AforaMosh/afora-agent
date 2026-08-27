@@ -3,7 +3,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { withTestDir } from "../test-helpers/temp-dir.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { CLI_OUTPUT_MAX_BUFFER } from "./defaults.constants.js";
@@ -108,11 +108,11 @@ async function runAudioEntry(params: {
   args: string[];
 }): Promise<Awaited<ReturnType<typeof runCliEntry>>> {
   let result: Awaited<ReturnType<typeof runCliEntry>> = null;
-  await withAudioFixture(`openclaw-cli-${params.command}`, async ({ ctx, media, cache }) => {
+  await withAudioFixture(`afora-cli-${params.command}`, async ({ ctx, media, cache }) => {
     result = await runCliEntry({
       capability: "audio",
       entry: { type: "cli", command: params.command, args: params.args },
-      cfg: { tools: { media: { audio: {} } } } as OpenClawConfig,
+      cfg: { tools: { media: { audio: {} } } } as AforaConfig,
       ctx,
       attachment: requireFirstAttachment(media),
       cache,
@@ -140,7 +140,7 @@ describe("media-understanding CLI audio entry", () => {
     let mediaPath = "";
 
     await withAudioFixture(
-      "openclaw-cli-audio",
+      "afora-cli-audio",
       async ({ ctx, mediaPath: fixturePath, media, cache }) => {
         mediaPath = await fs.realpath(fixturePath);
 
@@ -171,7 +171,7 @@ describe("media-understanding CLI audio entry", () => {
                 },
               },
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
           ctx,
           attachment: requireFirstAttachment(media),
           cache,
@@ -204,7 +204,7 @@ describe("media-understanding CLI audio entry", () => {
       expected: "fr",
     },
   ])("applies the configured $source language to CLI templating", async (testCase) => {
-    await withAudioFixture("openclaw-cli-language", async ({ ctx, media, cache }) => {
+    await withAudioFixture("afora-cli-language", async ({ ctx, media, cache }) => {
       await runCliEntry({
         capability: "audio",
         entry: {
@@ -215,7 +215,7 @@ describe("media-understanding CLI audio entry", () => {
         },
         cfg: {
           tools: { media: { audio: { language: testCase.configLanguage } } },
-        } as OpenClawConfig,
+        } as AforaConfig,
         ctx,
         attachment: requireFirstAttachment(media),
         cache,
@@ -233,7 +233,7 @@ describe("media-understanding CLI audio entry", () => {
   ])(
     "projects facts-first and deprecated template variables for $name",
     async ({ count, leadingEmpty }) => {
-      await withTestDir({ prefix: "openclaw-cli-media-template-" }, async (base) => {
+      await withTestDir({ prefix: "afora-cli-media-template-" }, async (base) => {
         const media = await Promise.all(
           Array.from({ length: count }, async (_, index) => {
             const mediaPath = path.join(base, `audio-${index}.wav`);
@@ -279,7 +279,7 @@ describe("media-understanding CLI audio entry", () => {
                   "{{MediaPaths}}",
                 ],
               },
-              cfg: { tools: { media: { audio: {} } } } as OpenClawConfig,
+              cfg: { tools: { media: { audio: {} } } } as AforaConfig,
               ctx,
               attachment,
               cache,
@@ -329,7 +329,7 @@ describe("media-understanding CLI audio entry", () => {
 
     await withMediaFixture(
       {
-        filePrefix: "openclaw-cli-whisper-conversion-failure",
+        filePrefix: "afora-cli-whisper-conversion-failure",
         extension: "mp3",
         mediaType: "audio/mpeg",
         fileContents: createSafeAudioFixtureBuffer(),
@@ -343,7 +343,7 @@ describe("media-understanding CLI audio entry", () => {
               command: "whisper-cli",
               args: ["-otxt", "-of", "{{OutputBase}}", "{{MediaPath}}"],
             },
-            cfg: { tools: { media: { audio: {} } } } as OpenClawConfig,
+            cfg: { tools: { media: { audio: {} } } } as AforaConfig,
             ctx,
             attachment: requireFirstAttachment(media),
             cache,
@@ -469,7 +469,7 @@ describe("media-understanding CLI audio entry", () => {
       stderr: "",
     });
 
-    await withAudioFixture("openclaw-cli-audio-empty-sherpa", async ({ ctx, media, cache }) => {
+    await withAudioFixture("afora-cli-audio-empty-sherpa", async ({ ctx, media, cache }) => {
       const result = await runCliEntry({
         capability: "audio",
         entry: {
@@ -477,7 +477,7 @@ describe("media-understanding CLI audio entry", () => {
           command: "sherpa-onnx-offline",
           args: ["{{MediaPath}}"],
         },
-        cfg: { tools: { media: { audio: {} } } } as OpenClawConfig,
+        cfg: { tools: { media: { audio: {} } } } as AforaConfig,
         ctx,
         attachment: requireFirstAttachment(media),
         cache,
@@ -494,7 +494,7 @@ describe("media-understanding CLI audio entry", () => {
       stderr: "",
     });
 
-    await withAudioFixture("openclaw-cli-audio-sherpa-json", async ({ ctx, media, cache }) => {
+    await withAudioFixture("afora-cli-audio-sherpa-json", async ({ ctx, media, cache }) => {
       const result = await runCliEntry({
         capability: "audio",
         entry: {
@@ -502,7 +502,7 @@ describe("media-understanding CLI audio entry", () => {
           command: "sherpa-onnx-offline",
           args: ["{{MediaPath}}"],
         },
-        cfg: { tools: { media: { audio: {} } } } as OpenClawConfig,
+        cfg: { tools: { media: { audio: {} } } } as AforaConfig,
         ctx,
         attachment: requireFirstAttachment(media),
         cache,

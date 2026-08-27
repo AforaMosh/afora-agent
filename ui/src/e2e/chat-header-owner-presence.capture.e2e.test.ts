@@ -11,7 +11,7 @@ const suite = createControlUiE2eSuite({
 
 const outputDir = path.resolve(
   process.cwd(),
-  process.env.OPENCLAW_CHAT_HEADER_CAPTURE_OUTPUT_DIR ??
+  process.env.AFORA_CHAT_HEADER_CAPTURE_OUTPUT_DIR ??
     ".artifacts/control-ui-e2e/chat-header-owner-presence",
 );
 const screenshotPath = path.join(outputDir, "chat-header.png");

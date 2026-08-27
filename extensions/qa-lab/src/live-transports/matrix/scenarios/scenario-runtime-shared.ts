@@ -1,5 +1,5 @@
 // QA Lab Matrix plugin module implements scenario runtime shared behavior.
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { createMatrixQaClient, type MatrixQaRoomObserver } from "../substrate/client.js";
 import type { MatrixQaObservedEvent } from "../substrate/events.js";
 import type {
@@ -80,7 +80,7 @@ export type MatrixQaScenarioContext = {
 };
 
 const NO_REPLY_WINDOW_MS = 8_000;
-const NO_REPLY_WINDOW_ENV = "OPENCLAW_QA_MATRIX_NO_REPLY_WINDOW_MS";
+const NO_REPLY_WINDOW_ENV = "AFORA_QA_MATRIX_NO_REPLY_WINDOW_MS";
 const MATRIX_QA_PREVIEW_LIMIT = 200;
 
 export function truncateMatrixQaPreview(value: string | null | undefined) {

@@ -1,4 +1,4 @@
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 // Formats terminal-safe strings for TUI messages and status surfaces.
 import { stripAnsi } from "../../packages/terminal-core/src/ansi.js";
 import { splitTrailingAuthProfile } from "../agents/model-ref-profile.js";
@@ -566,7 +566,7 @@ function extractPairingQrTerminalText(record: Record<string, unknown>): string {
     }
     const blockRecord = block as Record<string, unknown>;
     if (
-      blockRecord.type === "openclaw_pairing_qr" &&
+      blockRecord.type === "afora_pairing_qr" &&
       typeof blockRecord.terminalText === "string"
     ) {
       const text = sanitizeRenderableText(blockRecord.terminalText).trim();
@@ -631,7 +631,7 @@ function extractUserAttachmentText(record: Record<string, unknown>): string {
   }
 
   // Gateway-persisted attachment-only turns keep blank content and carry
-  // their authoritative attachments in __openclaw.media instead.
+  // their authoritative attachments in __afora.media instead.
   return (readPersistedMediaFacts(record) ?? [])
     .filter((fact) => fact.path || fact.url || fact.contentType || fact.kind)
     .map((fact) => (isImageMediaFact(fact) ? "Attached image" : "Attached file"))

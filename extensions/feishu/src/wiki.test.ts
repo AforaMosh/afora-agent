@@ -1,7 +1,7 @@
 // Feishu tests cover wiki plugin pagination behavior.
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawPluginApi, PluginRuntime } from "../runtime-api.js";
+import type { AforaPluginApi, PluginRuntime } from "../runtime-api.js";
 
 const createFeishuToolClientMock = vi.hoisted(() => vi.fn());
 const resolveAnyEnabledFeishuToolsConfigMock = vi.hoisted(() => vi.fn());
@@ -28,7 +28,7 @@ function createFeishuToolRuntime(): PluginRuntime {
   return {} as PluginRuntime;
 }
 
-function createWikiToolApi(registerTool: OpenClawPluginApi["registerTool"]): OpenClawPluginApi {
+function createWikiToolApi(registerTool: AforaPluginApi["registerTool"]): AforaPluginApi {
   return createTestPluginApi({
     id: "feishu-test",
     name: "Feishu Test",

@@ -34,7 +34,7 @@ function runAssertion(args: string[], env?: NodeJS.ProcessEnv) {
 
 function writeAuthProfileStoreSqlite(agentDir: string, store: unknown) {
   mkdirSync(agentDir, { recursive: true });
-  const db = new DatabaseSync(path.join(agentDir, "openclaw-agent.sqlite"));
+  const db = new DatabaseSync(path.join(agentDir, "afora-agent.sqlite"));
   try {
     db.exec(`
       CREATE TABLE IF NOT EXISTS auth_profile_store (
@@ -64,7 +64,7 @@ describe("release scenario assertions", () => {
   });
 
   it("scans large files when checking release scenario output text", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-release-scenarios-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-release-scenarios-"));
     const outputPath = path.join(root, "output.log");
 
     try {
@@ -89,7 +89,7 @@ describe("release scenario assertions", () => {
   });
 
   it("bounds release output text assertion diagnostics", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-release-scenarios-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-release-scenarios-"));
     const outputPath = path.join(root, "output.log");
 
     try {
@@ -111,7 +111,7 @@ describe("release scenario assertions", () => {
   });
 
   it("scans large request logs for image describe responses", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-release-scenarios-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-release-scenarios-"));
     const outputPath = path.join(root, "describe.json");
     const requestLogPath = path.join(root, "requests.jsonl");
 
@@ -119,7 +119,7 @@ describe("release scenario assertions", () => {
       writeJson(outputPath, {
         capability: "image.describe",
         ok: true,
-        outputs: [{ provider: "openai", text: "OPENCLAW_E2E_OK describe" }],
+        outputs: [{ provider: "openai", text: "AFORA_E2E_OK describe" }],
       });
       const endpointPrefix = "/v1/res";
       writeFileSync(
@@ -138,7 +138,7 @@ describe("release scenario assertions", () => {
   });
 
   it("rejects oversized JSON artifacts before parsing release scenario outputs", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-release-scenarios-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-release-scenarios-"));
     const outputPath = path.join(root, "describe.json");
     const requestLogPath = path.join(root, "requests.jsonl");
 
@@ -163,7 +163,7 @@ describe("release scenario assertions", () => {
   });
 
   it("scans large request logs for image generation requests", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-release-scenarios-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-release-scenarios-"));
     const outputPath = path.join(root, "generate.json");
     const requestLogPath = path.join(root, "requests.jsonl");
     const imagePath = path.join(root, "generated.png");
@@ -193,11 +193,11 @@ describe("release scenario assertions", () => {
   });
 
   it("accepts OpenAI env refs from the SQLite auth profile store", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-release-scenarios-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-release-scenarios-"));
     const home = path.join(root, "home");
-    const stateDir = path.join(home, ".openclaw");
+    const stateDir = path.join(home, ".afora");
     const agentDir = path.join(stateDir, "agents", "main", "agent");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
 
     try {
       writeJson(configPath, {
@@ -220,7 +220,7 @@ describe("release scenario assertions", () => {
 
       const result = runAssertion(["assert-openai-env-ref", "sk-test-raw-key"], {
         HOME: home,
-        OPENCLAW_CONFIG_PATH: configPath,
+        AFORA_CONFIG_PATH: configPath,
       });
 
       expect(result.status).toBe(0);
@@ -231,11 +231,11 @@ describe("release scenario assertions", () => {
   });
 
   it("rejects SQLite auth profile stores without a usable OpenAI env ref", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-release-scenarios-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-release-scenarios-"));
     const home = path.join(root, "home");
-    const stateDir = path.join(home, ".openclaw");
+    const stateDir = path.join(home, ".afora");
     const agentDir = path.join(stateDir, "agents", "main", "agent");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
 
     try {
       writeJson(configPath, {
@@ -254,7 +254,7 @@ describe("release scenario assertions", () => {
 
       const result = runAssertion(["assert-openai-env-ref", "sk-test-raw-key"], {
         HOME: home,
-        OPENCLAW_CONFIG_PATH: configPath,
+        AFORA_CONFIG_PATH: configPath,
       });
 
       expect(result.status).not.toBe(0);
@@ -265,11 +265,11 @@ describe("release scenario assertions", () => {
   });
 
   it("rejects inline OpenAI keys in the SQLite auth profile store", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-release-scenarios-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-release-scenarios-"));
     const home = path.join(root, "home");
-    const stateDir = path.join(home, ".openclaw");
+    const stateDir = path.join(home, ".afora");
     const agentDir = path.join(stateDir, "agents", "main", "agent");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
 
     try {
       writeJson(configPath, {
@@ -292,7 +292,7 @@ describe("release scenario assertions", () => {
 
       const result = runAssertion(["assert-openai-env-ref", "sk-test-raw-key"], {
         HOME: home,
-        OPENCLAW_CONFIG_PATH: configPath,
+        AFORA_CONFIG_PATH: configPath,
       });
 
       expect(result.status).not.toBe(0);
@@ -303,11 +303,11 @@ describe("release scenario assertions", () => {
   });
 
   it("rejects raw OpenAI keys leaked outside the SQLite auth profile store", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-release-scenarios-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-release-scenarios-"));
     const home = path.join(root, "home");
-    const stateDir = path.join(home, ".openclaw");
+    const stateDir = path.join(home, ".afora");
     const agentDir = path.join(stateDir, "agents", "main", "agent");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
 
     try {
       writeJson(configPath, {
@@ -335,7 +335,7 @@ describe("release scenario assertions", () => {
 
       const result = runAssertion(["assert-openai-env-ref", "sk-test-raw-key"], {
         HOME: home,
-        OPENCLAW_CONFIG_PATH: configPath,
+        AFORA_CONFIG_PATH: configPath,
       });
 
       expect(result.status).not.toBe(0);
@@ -346,12 +346,12 @@ describe("release scenario assertions", () => {
   });
 
   it("passes when the installed package version matches the candidate version", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-release-scenarios-"));
-    const packageRoot = path.join(root, "openclaw");
+    const root = mkdtempSync(path.join(tmpdir(), "afora-release-scenarios-"));
+    const packageRoot = path.join(root, "afora");
 
     try {
       writeJson(path.join(packageRoot, "package.json"), {
-        name: "openclaw",
+        name: "afora",
         version: "2026.5.26",
       });
 
@@ -370,12 +370,12 @@ describe("release scenario assertions", () => {
   });
 
   it("fails when the global install still points at the baseline version", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-release-scenarios-"));
-    const packageRoot = path.join(root, "openclaw");
+    const root = mkdtempSync(path.join(tmpdir(), "afora-release-scenarios-"));
+    const packageRoot = path.join(root, "afora");
 
     try {
       writeJson(path.join(packageRoot, "package.json"), {
-        name: "openclaw",
+        name: "afora",
         version: "2026.5.22",
       });
 

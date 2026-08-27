@@ -1,13 +1,13 @@
 ---
 summary: "How session ownership and presence work when several people operate one agent"
 read_when:
-  - You share one OpenClaw agent with other operators
+  - You share one Afora agent with other operators
   - You want to hand a session to another person or agent, or filter sessions by owner
   - You are deciding whether one shared agent provides enough isolation
 title: "Multi-user mode"
 ---
 
-Multi-user mode lets several trusted people operate the same OpenClaw agent. It adds session ownership, participant history, live presence, and owner filtering so a team can tell who started work, who is responsible for it now, and who has been involved.
+Multi-user mode lets several trusted people operate the same Afora agent. It adds session ownership, participant history, live presence, and owner filtering so a team can tell who started work, who is responsible for it now, and who has been involved.
 
 ## Trust boundary
 
@@ -23,7 +23,7 @@ Every session carries up to three layers of attribution:
 - **Owner** (assignable): the person or agent currently responsible for the session, in the style of a GitHub issue assignee. It defaults to the creator and can be reassigned at any time; the assignment records who reassigned it and when. The sidebar avatar, the owner filter, and People sorting all follow the current owner.
 - **Participants** (history): everyone who has actually prompted the session — authenticated people, channel senders, and requesting agents — recorded automatically at each turn. The session's own agent and passive viewers are never recorded. Participant history is bounded (up to 32 distinct actors per session) and recorded best-effort in the background, so it never delays a turn.
 
-Human display names and avatars are resolved from the current Gateway profile when session rows are returned; agent actors resolve from the configured agent identity. OpenClaw does not store display labels on session entries, so renaming a profile or agent updates the ownership UI without rewriting session history.
+Human display names and avatars are resolved from the current Gateway profile when session rows are returned; agent actors resolve from the configured agent identity. Afora does not store display labels on session entries, so renaming a profile or agent updates the ownership UI without rewriting session history.
 
 ## Assigning an owner
 
@@ -56,7 +56,7 @@ The Control UI keeps ownership and presence visually distinct:
 - When other people or agents have prompted the session, the row avatar becomes a **pair-stack**: the owner stays in front, and either the single other participant peeks out behind, or a **+N** count summarizes several. The chat header shows the owner chip plus a participant facepile of up to four avatars. The owner is excluded from the participant display.
 - Ringed or translucent presence avatars show people who are currently connected or watching; they come from live presence, not ownership, and disappear when those viewers leave.
 
-When the loaded session list contains fewer than two distinct owner identities and no session has recorded outside participants, OpenClaw hides all ownership and owner-filter chrome. A single-user gateway therefore looks unchanged.
+When the loaded session list contains fewer than two distinct owner identities and no session has recorded outside participants, Afora hides all ownership and owner-filter chrome. A single-user gateway therefore looks unchanged.
 
 ## Agent-spawned sessions
 

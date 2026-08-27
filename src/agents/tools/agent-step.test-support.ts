@@ -14,7 +14,7 @@ type AgentStepTestApi = {
 
 function getTestApi(): AgentStepTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.agentStepTestApi")
+    Symbol.for("afora.agentStepTestApi")
   ] as AgentStepTestApi;
 }
 

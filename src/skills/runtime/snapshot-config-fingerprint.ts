@@ -1,11 +1,11 @@
 import crypto from "node:crypto";
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import { redactConfigObject } from "../../config/redact-snapshot.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
-let configFingerprints = new WeakMap<OpenClawConfig, string>();
+let configFingerprints = new WeakMap<AforaConfig, string>();
 
-export function fingerprintSkillSnapshotConfig(config: OpenClawConfig): string {
+export function fingerprintSkillSnapshotConfig(config: AforaConfig): string {
   const cached = configFingerprints.get(config);
   if (cached) {
     return cached;

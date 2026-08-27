@@ -1,11 +1,11 @@
 // Workspace skill loading turns validated discovery candidates into source-aware skill entries.
 import fs from "node:fs";
 import path from "node:path";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { normalizeTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { normalizeTrimmedStringList } from "@afora/normalization-core/string-normalization";
 import { canonicalizePath } from "../../agents/utils/paths.js";
 import { isDefaultStateDir } from "../../config/paths.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { isPathInside } from "../../infra/path-guards.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { CONFIG_DIR, resolveUserPath } from "../../utils.js";
@@ -16,7 +16,7 @@ import {
 import { normalizeSkillFilter } from "../discovery/filter.js";
 import { mergeRemoteNodeSkillEntries } from "../runtime/remote-skills.js";
 import type {
-  OpenClawSkillMetadata,
+  AforaSkillMetadata,
   ParsedSkillFrontmatter,
   SkillEligibilityContext,
   SkillEntry,
@@ -48,7 +48,7 @@ import {
 import { resolveAllowedSkillSymlinkTargetRealPaths, tryRealpath } from "./symlink-targets.js";
 
 const skillsLogger = createSubsystemLogger("skills");
-const SKILL_SOURCE_ORIGIN_RELATIVE_PATH = path.join(".openclaw", "source-origin.json");
+const SKILL_SOURCE_ORIGIN_RELATIVE_PATH = path.join(".afora", "source-origin.json");
 const MAX_SKILL_SOURCE_ORIGIN_BYTES = 16 * 1024;
 
 type LoadedSkillRecord = {
@@ -71,7 +71,7 @@ function warnInvalidSkillFrontmatter(source: string, diagnostic: LocalSkillLoadD
 
 function filterSkillEntries(
   entries: SkillEntry[],
-  config?: OpenClawConfig,
+  config?: AforaConfig,
   skillFilter?: string[],
   skillOverrides?: Readonly<Record<string, boolean>>,
   eligibility?: SkillEligibilityContext,
@@ -152,7 +152,7 @@ function readSourceInstallSkillKey(skillDir: string): string | undefined {
 function resolveSkillEntryMetadata(params: {
   frontmatter: ParsedSkillFrontmatter;
   skillDir: string;
-}): OpenClawSkillMetadata | undefined {
+}): AforaSkillMetadata | undefined {
   const metadata = resolveSkillManifestMetadata(params.frontmatter);
   if (metadata?.skillKey) {
     return metadata;
@@ -308,7 +308,7 @@ function loadGeneratedPluginSkillRecords(params: {
 function loadSkillEntries(
   workspaceDir: string,
   opts?: {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     agentId?: string;
     managedSkillsDir?: string;
     bundledSkillsDir?: string;
@@ -337,22 +337,22 @@ function loadSkillEntries(
   const mergedExtraDirs = [...extraDirs, ...pluginSkillDirs];
 
   const bundledSkills = bundledSkillsDir
-    ? loadSkills({ dir: bundledSkillsDir, source: "openclaw-bundled" })
+    ? loadSkills({ dir: bundledSkillsDir, source: "afora-bundled" })
     : [];
   const extraSkills = [
     ...mergedExtraDirs.flatMap((dir) =>
-      loadSkills({ dir: resolveUserPath(dir), source: "openclaw-extra" }),
+      loadSkills({ dir: resolveUserPath(dir), source: "afora-extra" }),
     ),
     ...loadGeneratedPluginSkillRecords({
       pluginSkillsDir,
       pluginSkillDirs,
-      source: "openclaw-extra",
+      source: "afora-extra",
       limits,
     }),
   ];
   const managedSkills = workspaceOnly
     ? []
-    : loadSkills({ dir: managedSkillsDir, source: "openclaw-managed" });
+    : loadSkills({ dir: managedSkillsDir, source: "afora-managed" });
   const osHomeDir = resolveSkillsUserHomeDir();
   const personalAgentsSkillsDir = osHomeDir
     ? path.resolve(osHomeDir, ".agents", "skills")
@@ -365,7 +365,7 @@ function loadSkillEntries(
   const projectAgentsSkills = workspaceOnly
     ? []
     : loadSkills({ dir: projectAgentsSkillsDir, source: "agents-skills-project" });
-  const workspaceSkills = loadSkills({ dir: workspaceSkillsDir, source: "openclaw-workspace" });
+  const workspaceSkills = loadSkills({ dir: workspaceSkillsDir, source: "afora-workspace" });
 
   const merged = new Map<string, LoadedSkillRecord>();
   const archivedSkillFiles = opts?.includeArchived ? null : getArchivedSkillFiles();
@@ -434,7 +434,7 @@ function filterArchivedSkillEntries(entries: SkillEntry[]): SkillEntry[] {
 }
 
 function resolveEffectiveWorkspaceSkillFilter(opts?: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   skillFilter?: string[];
 }): string[] | undefined {
@@ -450,7 +450,7 @@ function resolveEffectiveWorkspaceSkillFilter(opts?: {
 export function resolveWorkspaceSkillPromptEntries(
   workspaceDir: string,
   opts?: {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     managedSkillsDir?: string;
     bundledSkillsDir?: string;
     entries?: SkillEntry[];
@@ -482,7 +482,7 @@ export function resolveWorkspaceSkillPromptEntries(
 export function loadWorkspaceSkills(
   workspaceDir: string,
   opts?: {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     managedSkillsDir?: string;
     bundledSkillsDir?: string;
     pluginSkillsDir?: string;
@@ -518,7 +518,7 @@ export function loadWorkspaceSkills(
 export function loadVisibleSkills(
   workspaceDir: string,
   opts?: {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     managedSkillsDir?: string;
     bundledSkillsDir?: string;
     skillFilter?: string[];
@@ -544,7 +544,7 @@ export function loadVisibleSkills(
 export function filterWorkspaceSkills(
   entries: SkillEntry[],
   opts?: {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     skillFilter?: string[];
     skillOverrides?: Record<string, boolean>;
     eligibility?: SkillEligibilityContext;

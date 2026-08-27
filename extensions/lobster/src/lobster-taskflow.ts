@@ -1,5 +1,5 @@
 // Lobster plugin module implements lobster taskflow behavior.
-import type { OpenClawPluginApi } from "../runtime-api.js";
+import type { AforaPluginApi } from "../runtime-api.js";
 import type { LobsterEnvelope, LobsterRunner, LobsterRunnerParams } from "./lobster-runner.js";
 
 export type JsonLike =
@@ -13,7 +13,7 @@ export type JsonLike =
     };
 
 export type BoundTaskFlow = ReturnType<
-  NonNullable<OpenClawPluginApi["runtime"]>["tasks"]["managedFlows"]["bindSession"]
+  NonNullable<AforaPluginApi["runtime"]>["tasks"]["managedFlows"]["bindSession"]
 >;
 
 type FlowRecord = NonNullable<ReturnType<BoundTaskFlow["tryCreateManaged"]>>;

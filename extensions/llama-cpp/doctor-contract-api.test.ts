@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import { legacyConfigRules, normalizeCompatibilityConfig } from "./doctor-contract-api.js";
 import { inspectEmbeddingProviderSetup } from "./provider-policy-api.js";
@@ -6,7 +6,7 @@ import { buildLlamaCppProviderConfig } from "./src/defaults.js";
 
 describe("llama.cpp doctor migration", () => {
   it("moves the shipped local URL to an absolute managed service", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       models: {
         providers: {
           "llama-cpp": {
@@ -37,7 +37,7 @@ describe("llama.cpp doctor migration", () => {
   });
 
   it("does not rewrite explicit HTTP llama.cpp servers", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       models: {
         providers: {
           "llama-cpp": {
@@ -65,7 +65,7 @@ describe("llama.cpp doctor migration", () => {
       reason: expect.stringContaining("Local embeddings need the managed llama.cpp server config"),
       requirement: "managed-llama-cpp-setup",
       fixHint:
-        "Run `openclaw models --agent main auth login --provider llama-cpp --method local` in an interactive terminal, then rerun this check.",
+        "Run `afora models --agent main auth login --provider llama-cpp --method local` in an interactive terminal, then rerun this check.",
     });
   });
 
@@ -76,7 +76,7 @@ describe("llama.cpp doctor migration", () => {
       healthUrl: "http://127.0.0.1:19432/health",
       args: ["--models-preset", "/managed/models.ini"],
     });
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       models: { providers: { "llama-cpp": provider } },
     };
     const configBefore = JSON.stringify(config);

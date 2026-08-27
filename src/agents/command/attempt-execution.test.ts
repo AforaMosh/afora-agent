@@ -417,7 +417,7 @@ describe("claudeCliSessionTranscriptPath", () => {
     expect(
       claudeCliSessionTranscriptPath({
         sessionId: "11111111-2222-3333-4444-555555555555",
-        workspaceDir: "/home/faris/.openclaw/workspace",
+        workspaceDir: "/home/faris/.afora/workspace",
         homeDir: "/home/faris",
       }),
     ).toBe(
@@ -425,7 +425,7 @@ describe("claudeCliSessionTranscriptPath", () => {
         "/home/faris",
         ".claude",
         "projects",
-        "-home-faris--openclaw-workspace",
+        "-home-faris--afora-workspace",
         "11111111-2222-3333-4444-555555555555.jsonl",
       ),
     );

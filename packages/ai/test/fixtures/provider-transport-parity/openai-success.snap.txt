@@ -95,7 +95,7 @@
       "model": "gpt-5.5",
       "responseId": "chatcmpl-parity",
       "responseModel": "gpt-5.5-response",
-      "openclawDelivery": {
+      "aforaDelivery": {
         "textPhaseRequiresTerminal": true
       },
       "usage": {
@@ -207,7 +207,7 @@
       "provider": "openai",
       "model": "gpt-5.5",
       "responseId": "chatcmpl-parity",
-      "openclawDelivery": {
+      "aforaDelivery": {
         "textPhaseRequiresTerminal": true
       },
       "usage": {

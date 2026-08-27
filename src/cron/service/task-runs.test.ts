@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { runOpenClawStateWriteTransaction } from "../../state/openclaw-state-db.js";
+import { runAforaStateWriteTransaction } from "../../state/afora-state-db.js";
 import { getDetachedTaskLifecycleRuntime } from "../../tasks/detached-task-runtime.js";
 import * as taskExecutor from "../../tasks/task-executor.js";
 import { finalizeTaskRunByRunIdCore } from "../../tasks/task-executor.js";
@@ -11,7 +11,7 @@ import {
   resetTaskRegistryForTests,
   setDetachedTaskLifecycleRuntime,
 } from "../../tasks/task-runtime.test-helpers.js";
-import { withOpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../../test-utils/afora-test-state.js";
 import { cronStoreKey } from "../store/key.js";
 import { readCronTaskRunHistoryPage } from "../task-run-history.js";
 import type { CronJob } from "../types.js";
@@ -68,8 +68,8 @@ describe("cron task run terminal records", () => {
       executionSessionKey: "agent:ops:telegram:group:target",
     },
   ])("uses the authoritative $label execution transcript", async (testCase) => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: `openclaw-cron-${testCase.id}-` },
+    await withAforaTestState(
+      { layout: "state-only", prefix: `afora-cron-${testCase.id}-` },
       async () => {
         resetTaskRegistryForTests();
         let resolveStarted!: () => void;
@@ -156,8 +156,8 @@ describe("cron task run terminal records", () => {
   });
 
   it("persists canonical history directly when a detached runtime is registered", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-cron-core-ledger-runtime-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-cron-core-ledger-runtime-" },
       async () => {
         resetTaskRegistryForTests();
         const customCreate = vi.fn(() => null);
@@ -262,8 +262,8 @@ describe("cron task run terminal records", () => {
   });
 
   it("creates an immediately terminal task row for a skipped-only event", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-cron-skipped-task-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-cron-skipped-task-" },
       async () => {
         resetTaskRegistryForTests();
         const startedAt = 1_000;
@@ -342,8 +342,8 @@ describe("cron task run terminal records", () => {
   });
 
   it("keeps same-millisecond cron executions as distinct task rows", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-cron-distinct-task-runs-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-cron-distinct-task-runs-" },
       async () => {
         resetTaskRegistryForTests();
         const startedAt = 1_500;
@@ -413,8 +413,8 @@ describe("cron task run terminal records", () => {
   });
 
   it("keeps operator cancellation while attaching terminal run history", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-cron-cancelled-task-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-cron-cancelled-task-" },
       async () => {
         resetTaskRegistryForTests();
         const startedAt = 2_000;
@@ -493,8 +493,8 @@ describe("cron task run terminal records", () => {
   });
 
   it("retries the original outcome after an empty finalization result", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-cron-task-retry-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-cron-task-retry-" },
       async () => {
         resetTaskRegistryForTests();
         const startedAt = 3_000;
@@ -560,8 +560,8 @@ describe("cron task run terminal records", () => {
   });
 
   it("overwrites a lost canonical row with restart terminal history", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-cron-task-lost-recovery-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-cron-task-lost-recovery-" },
       async () => {
         resetTaskRegistryForTests();
         const startedAt = 4_000;
@@ -653,8 +653,8 @@ describe("cron task run terminal records", () => {
     Object.assign(new Error(), { name: "AbortError" }),
   ])("preserves a provisional timed-out task for case %#", async (input) => {
     const expected = input instanceof Error ? timeoutErrorMessage() : input;
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-cron-provisional-watchdog-timeout-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-cron-provisional-watchdog-timeout-" },
       async () => {
         resetTaskRegistryForTests();
         const startedAt = 5_000;
@@ -708,8 +708,8 @@ describe("cron task run terminal records", () => {
   });
 
   it("overwrites a provisional timeout with restart terminal history", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-cron-task-timeout-recovery-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-cron-task-timeout-recovery-" },
       async () => {
         resetTaskRegistryForTests();
         const startedAt = 5_000;
@@ -774,8 +774,8 @@ describe("cron task run terminal records", () => {
   });
 
   it("recovers pre-discriminator task rows written by older releases", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-cron-task-legacy-runid-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-cron-task-legacy-runid-" },
       async () => {
         resetTaskRegistryForTests();
         const startedAt = 7_000;
@@ -801,7 +801,7 @@ describe("cron task run terminal records", () => {
           notifyPolicy: "silent",
           startedAt,
         });
-        const recovery = runOpenClawStateWriteTransaction(({ db }) =>
+        const recovery = runAforaStateWriteTransaction(({ db }) =>
           findCronTaskRunRecoveryInDatabase({
             database: db,
             jobId: "legacy-job",
@@ -845,8 +845,8 @@ describe("cron task run terminal records", () => {
   });
 
   it("keeps suffixed recovery identities scoped to the current cron store", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-cron-task-store-recovery-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-cron-task-store-recovery-" },
       async (fixture) => {
         resetTaskRegistryForTests();
         const startedAt = 8_000;
@@ -881,7 +881,7 @@ describe("cron task run terminal records", () => {
         expect(runA).not.toBe(runB);
 
         const findRecoveryId = (state: ReturnType<typeof createCronServiceState>) =>
-          runOpenClawStateWriteTransaction(
+          runAforaStateWriteTransaction(
             ({ db }) =>
               findCronTaskRunRecoveryInDatabase({
                 database: db,

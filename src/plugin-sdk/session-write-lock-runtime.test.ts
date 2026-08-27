@@ -25,15 +25,15 @@ describe("Plugin SDK session write-lock compatibility stubs", () => {
   it("retains the historical resolver defaults", () => {
     expect(
       resolveSessionWriteLockAcquireTimeoutMs(undefined, {
-        OPENCLAW_SESSION_WRITE_LOCK_ACQUIRE_TIMEOUT_MS: "1",
+        AFORA_SESSION_WRITE_LOCK_ACQUIRE_TIMEOUT_MS: "1",
       }),
     ).toBe(60_000);
     expect(
       resolveSessionWriteLockOptions(undefined, {
         env: {
-          OPENCLAW_SESSION_WRITE_LOCK_ACQUIRE_TIMEOUT_MS: "1",
-          OPENCLAW_SESSION_WRITE_LOCK_STALE_MS: "1",
-          OPENCLAW_SESSION_WRITE_LOCK_MAX_HOLD_MS: "1",
+          AFORA_SESSION_WRITE_LOCK_ACQUIRE_TIMEOUT_MS: "1",
+          AFORA_SESSION_WRITE_LOCK_STALE_MS: "1",
+          AFORA_SESSION_WRITE_LOCK_MAX_HOLD_MS: "1",
         },
         maxHoldMsFallback: 1,
       }),

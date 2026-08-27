@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { AforaConfig } from "../../../config/config.js";
 import { makeTempWorkspace, writeWorkspaceFile } from "../../../test-helpers/workspace.js";
 import {
   type AgentBootstrapHookContext,
@@ -10,7 +10,7 @@ import {
 } from "../../internal-hooks.js";
 import handler from "./handler.js";
 
-function createBootstrapExtraConfig(paths: string[]): OpenClawConfig {
+function createBootstrapExtraConfig(paths: string[]): AforaConfig {
   return {
     hooks: {
       internal: {
@@ -27,7 +27,7 @@ function createBootstrapExtraConfig(paths: string[]): OpenClawConfig {
 
 async function createBootstrapContext(params: {
   workspaceDir: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   rootFiles: Array<{ name: string; content: string }>;
 }): Promise<AgentBootstrapHookContext> {
@@ -53,7 +53,7 @@ async function createBootstrapContext(params: {
 
 describe("bootstrap-extra-files hook", () => {
   it("appends extra bootstrap files from configured patterns", async () => {
-    const tempDir = await makeTempWorkspace("openclaw-bootstrap-extra-");
+    const tempDir = await makeTempWorkspace("afora-bootstrap-extra-");
     const extraDir = path.join(tempDir, "packages", "core");
     await fs.mkdir(extraDir, { recursive: true });
     await fs.writeFile(path.join(extraDir, "AGENTS.md"), "extra agents", "utf-8");
@@ -77,7 +77,7 @@ describe("bootstrap-extra-files hook", () => {
   });
 
   it("appends configured nested memory without applying session policy", async () => {
-    const tempDir = await makeTempWorkspace("openclaw-bootstrap-extra-memory-");
+    const tempDir = await makeTempWorkspace("afora-bootstrap-extra-memory-");
     const extraDir = path.join(tempDir, "packages", "core");
     const sessionKey = "agent:main:slack:channel:c1";
     await fs.mkdir(extraDir, { recursive: true });
@@ -100,7 +100,7 @@ describe("bootstrap-extra-files hook", () => {
   });
 
   it("leaves subagent allowlist enforcement to the final resolver", async () => {
-    const tempDir = await makeTempWorkspace("openclaw-bootstrap-extra-subagent-");
+    const tempDir = await makeTempWorkspace("afora-bootstrap-extra-subagent-");
     const extraDir = path.join(tempDir, "packages", "persona");
     await fs.mkdir(extraDir, { recursive: true });
     await fs.writeFile(path.join(extraDir, "SOUL.md"), "extra persona", "utf-8");

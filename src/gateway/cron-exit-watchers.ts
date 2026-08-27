@@ -1,5 +1,5 @@
 import type { CronJob } from "../cron/types.js";
-import { markOpenClawExecEnv } from "../infra/openclaw-exec-env.js";
+import { markAforaExecEnv } from "../infra/afora-exec-env.js";
 import type { ManagedRun, ProcessSupervisor } from "../process/supervisor/index.js";
 import { resolveExitWatchShell } from "./cron-exit-watch-shell.js";
 
@@ -193,10 +193,10 @@ export function createCronExitWatchers(params: {
           mode: "child",
           argv: [shell.command, ...shell.argsFor(command)],
           ...(cwd ? { cwd } : {}),
-          // Mark the child as an OpenClaw-launched subprocess (loop protection /
+          // Mark the child as an Afora-launched subprocess (loop protection /
           // detection) and bound its lifetime — consistent with how cron
           // command-payload jobs run via runCommandWithTimeout.
-          env: markOpenClawExecEnv({ ...process.env }),
+          env: markAforaExecEnv({ ...process.env }),
           timeoutMs: ON_EXIT_WATCH_TIMEOUT_MS,
           captureOutput: true,
         });

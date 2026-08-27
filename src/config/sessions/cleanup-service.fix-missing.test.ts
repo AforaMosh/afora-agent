@@ -3,9 +3,9 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import { readSessionArchiveContentSync } from "./archive-compression.js";
 import { isRetainedSessionTranscriptArchiveName } from "./artifacts.js";
 import { runSessionsCleanup } from "./cleanup-service.js";
@@ -36,12 +36,12 @@ describe("sessions cleanup --fix-missing", () => {
   let storePath: string;
 
   beforeEach(() => {
-    const tempDir = tempDirs.make("openclaw-cleanup-fix-missing-");
+    const tempDir = tempDirs.make("afora-cleanup-fix-missing-");
     storePath = path.join(tempDir, "agents", "main", "sessions", "sessions.json");
   });
 
   afterEach(() => {
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
   });
 
   it("preserves readable session state when a later transcript row is malformed", async () => {
@@ -59,7 +59,7 @@ describe("sessions cleanup --fix-missing", () => {
     if (!sqlitePath) {
       throw new Error("expected SQLite session store");
     }
-    const database = openOpenClawAgentDatabase({ agentId: "main", path: sqlitePath });
+    const database = openAforaAgentDatabase({ agentId: "main", path: sqlitePath });
     database.db
       .prepare(
         `UPDATE transcript_events
@@ -97,7 +97,7 @@ describe("sessions cleanup --fix-missing", () => {
     if (!sqlitePath) {
       throw new Error("expected SQLite session store");
     }
-    openOpenClawAgentDatabase({ agentId: "main", path: sqlitePath })
+    openAforaAgentDatabase({ agentId: "main", path: sqlitePath })
       .db.prepare("UPDATE transcript_events SET event_json = ? WHERE session_id = ?")
       .run(rawEventJson, sessionId);
 
@@ -113,7 +113,7 @@ describe("sessions cleanup --fix-missing", () => {
     expect(archives).toHaveLength(1);
     expect(readSessionArchiveContentSync(archives[0] ?? "")).toBe(`${rawEventJson}\n`);
     expect(
-      openOpenClawAgentDatabase({ agentId: "main", path: sqlitePath })
+      openAforaAgentDatabase({ agentId: "main", path: sqlitePath })
         .db.prepare(
           `SELECT session_key, reason, published_at
            FROM session_transcript_archives WHERE session_id = ?`,
@@ -156,7 +156,7 @@ describe("sessions cleanup --fix-missing", () => {
     if (!sqlitePath) {
       throw new Error("expected SQLite session store");
     }
-    openOpenClawAgentDatabase({ agentId: "main", path: sqlitePath })
+    openAforaAgentDatabase({ agentId: "main", path: sqlitePath })
       .db.prepare(
         `UPDATE session_transcript_archives
          SET published_at = NULL, last_publish_error = 'simulated crash'`,
@@ -180,7 +180,7 @@ describe("sessions cleanup --fix-missing", () => {
         `recover after commit ${sessionId}`,
       );
     }
-    const statuses = openOpenClawAgentDatabase({ agentId: "main", path: sqlitePath })
+    const statuses = openAforaAgentDatabase({ agentId: "main", path: sqlitePath })
       .db.prepare(
         `SELECT session_id, published_at, publish_attempts, last_publish_error
          FROM session_transcript_archives ORDER BY session_id`,
@@ -214,7 +214,7 @@ describe("sessions cleanup --fix-missing", () => {
     if (!sqlitePath) {
       throw new Error("expected SQLite session store");
     }
-    const database = openOpenClawAgentDatabase({ agentId: "main", path: sqlitePath });
+    const database = openAforaAgentDatabase({ agentId: "main", path: sqlitePath });
     database.db
       .prepare("UPDATE session_transcript_archives SET published_at = NULL WHERE session_id = ?")
       .run(sessionId);
@@ -250,7 +250,7 @@ describe("sessions cleanup --fix-missing", () => {
     if (!sqlitePath) {
       throw new Error("expected SQLite session store");
     }
-    const database = openOpenClawAgentDatabase({ agentId: "main", path: sqlitePath });
+    const database = openAforaAgentDatabase({ agentId: "main", path: sqlitePath });
     database.db.exec(`
       CREATE TRIGGER fail_session_window_delete
       BEFORE DELETE ON session_windows
@@ -327,7 +327,7 @@ describe("sessions cleanup --fix-missing", () => {
     if (!sqlitePath) {
       throw new Error("expected SQLite session store");
     }
-    const database = openOpenClawAgentDatabase({ agentId: "main", path: sqlitePath });
+    const database = openAforaAgentDatabase({ agentId: "main", path: sqlitePath });
     database.db
       .prepare("UPDATE session_transcript_archives SET created_at = 1 WHERE session_id = ?")
       .run(sessionId);

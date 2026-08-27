@@ -21,7 +21,7 @@ afterEach(async () => {
 
 describe("workspace skill mutations", () => {
   it("removes support files when the activating SKILL.md write fails", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-workspace-skill-write-failure-");
+    const workspaceDir = await tempDirs.make("afora-workspace-skill-write-failure-");
     const skillDir = path.join(workspaceDir, "skills", "partial-create");
     const skillFile = path.join(skillDir, "SKILL.md");
     const supportFile = path.join(skillDir, "references", "proof.md");
@@ -42,7 +42,7 @@ describe("workspace skill mutations", () => {
   });
 
   it("restores the complete previous update bundle", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-workspace-skill-write-update-");
+    const workspaceDir = await tempDirs.make("afora-workspace-skill-write-update-");
     const skillDir = path.join(workspaceDir, "skills", "reversible-update");
     const skillFile = path.join(skillDir, "SKILL.md");
     const supportFile = path.join(skillDir, "references", "proof.md");
@@ -70,7 +70,7 @@ describe("workspace skill mutations", () => {
   });
 
   it("removes a support file when its atomic write commits and then rejects", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-workspace-skill-support-commit-failure-");
+    const workspaceDir = await tempDirs.make("afora-workspace-skill-support-commit-failure-");
     const skillDir = path.join(workspaceDir, "skills", "partial-support");
     const skillFile = path.join(skillDir, "SKILL.md");
     const supportFile = path.join(skillDir, "references", "proof.md");
@@ -99,7 +99,7 @@ describe("workspace skill mutations", () => {
   });
 
   it("restores an update when the SKILL.md write commits and then rejects", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-workspace-skill-main-commit-failure-");
+    const workspaceDir = await tempDirs.make("afora-workspace-skill-main-commit-failure-");
     const skillDir = path.join(workspaceDir, "skills", "partial-main");
     const skillFile = path.join(skillDir, "SKILL.md");
     const supportFile = path.join(skillDir, "references", "proof.md");
@@ -131,7 +131,7 @@ describe("workspace skill mutations", () => {
   });
 
   it("removes every file from a restored create mutation", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-workspace-skill-write-create-");
+    const workspaceDir = await tempDirs.make("afora-workspace-skill-write-create-");
     const skillDir = path.join(workspaceDir, "skills", "reversible-create");
     const skillFile = path.join(skillDir, "SKILL.md");
     const supportFile = path.join(skillDir, "references", "proof.md");
@@ -153,7 +153,7 @@ describe("workspace skill mutations", () => {
   });
 
   it("restores an interrupted update from persisted rollback facts", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-workspace-skill-recovery-");
+    const workspaceDir = await tempDirs.make("afora-workspace-skill-recovery-");
     const skillDir = path.join(workspaceDir, "skills", "recovered-update");
     const skillFile = path.join(skillDir, "SKILL.md");
     const supportFile = path.join(skillDir, "references", "proof.md");
@@ -184,7 +184,7 @@ describe("workspace skill mutations", () => {
   });
 
   it("detects external edits before restoring a completed mutation", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-workspace-skill-external-edit-");
+    const workspaceDir = await tempDirs.make("afora-workspace-skill-external-edit-");
     const skillDir = path.join(workspaceDir, "skills", "external-edit");
     const skillFile = path.join(skillDir, "SKILL.md");
     const mutation = await prepareWorkspaceSkillMutation({

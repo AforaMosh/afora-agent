@@ -1,11 +1,11 @@
 import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { SessionCatalogSession } from "openclaw/plugin-sdk/session-catalog";
+import type { SessionCatalogSession } from "afora-agent/plugin-sdk/session-catalog";
 import {
   isRecord,
   normalizeBoundedOptionalString as readBoundedString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { piAcpSessionStoreRoot, piSessionStore } from "./pi-session-paths.js";
 import { parsePiSessionTimestampMs } from "./pi-session-timestamp.js";
 

@@ -2,8 +2,8 @@
 import {
   DEFAULT_GATEWAY_REQUEST_TIMEOUT_MS,
   type GatewayProtocolRequestOptions,
-} from "@openclaw/gateway-client/browser";
-import type { QuestionResolvedEvent } from "@openclaw/gateway-protocol";
+} from "@afora/gateway-client/browser";
+import type { QuestionResolvedEvent } from "@afora/gateway-protocol";
 
 export type QuestionClient = {
   request: (

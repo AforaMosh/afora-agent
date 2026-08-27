@@ -29,7 +29,7 @@ describe("AppSidebar session sort persistence", () => {
     expect(firstSidebar.sessionSortMode).toBe("created");
 
     firstSidebar.setSessionSortMode("updated");
-    expect(localStorage.getItem("openclaw:sidebar:sessions:sort-mode")).toBe("updated");
+    expect(localStorage.getItem("afora:sidebar:sessions:sort-mode")).toBe("updated");
 
     // A remount is what a reload does to this element; the preference must
     // survive it like every other stored sidebar choice.
@@ -165,7 +165,7 @@ describe("AppSidebar lobster outcome wiring", () => {
       });
       await sidebar.updateComplete;
 
-      const pet = sidebar.querySelector<LobsterPetElement>("openclaw-lobster-pet");
+      const pet = sidebar.querySelector<LobsterPetElement>("afora-lobster-pet");
       expect(pet?.runOutcome).toBe(expectedOutcome);
     },
   );
@@ -195,7 +195,7 @@ describe("AppSidebar session source lifecycle", () => {
     menuButton.click();
     await sidebar.updateComplete;
 
-    const menu = sidebar.querySelector<TestSessionMenu>("openclaw-session-menu");
+    const menu = sidebar.querySelector<TestSessionMenu>("afora-session-menu");
     if (!menu) {
       throw new Error("Expected sidebar session menu");
     }
@@ -226,7 +226,7 @@ describe("AppSidebar session source lifecycle", () => {
       ?.click();
     await sidebar.updateComplete;
 
-    const menu = sidebar.querySelector<TestSessionMenu>("openclaw-session-menu");
+    const menu = sidebar.querySelector<TestSessionMenu>("afora-session-menu");
     if (!menu) {
       throw new Error("Expected sidebar session menu");
     }

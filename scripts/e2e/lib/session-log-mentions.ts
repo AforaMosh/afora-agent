@@ -1,4 +1,4 @@
-// Session Log Mentions script supports OpenClaw repository automation.
+// Session Log Mentions script supports Afora repository automation.
 import fs from "node:fs/promises";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -19,12 +19,12 @@ export function readSessionLogMentionLimits(
 ): SessionLogMentionLimits {
   return {
     fileMaxBytes: readPositiveIntEnv(
-      "OPENCLAW_SESSION_LOG_MENTION_FILE_MAX_BYTES",
+      "AFORA_SESSION_LOG_MENTION_FILE_MAX_BYTES",
       DEFAULT_FILE_MAX_BYTES,
       env,
     ),
     totalMaxBytes: readPositiveIntEnv(
-      "OPENCLAW_SESSION_LOG_MENTION_TOTAL_MAX_BYTES",
+      "AFORA_SESSION_LOG_MENTION_TOTAL_MAX_BYTES",
       DEFAULT_TOTAL_MAX_BYTES,
       env,
     ),
@@ -195,7 +195,7 @@ function resolveAgentSqlitePathFromSessionsDir(sessionsDir: string): string | nu
   if (path.basename(sessionsDir) !== "sessions") {
     return null;
   }
-  return path.join(path.dirname(sessionsDir), "agent", "openclaw-agent.sqlite");
+  return path.join(path.dirname(sessionsDir), "agent", "afora-agent.sqlite");
 }
 
 async function countSqliteTranscriptMentions(params: {

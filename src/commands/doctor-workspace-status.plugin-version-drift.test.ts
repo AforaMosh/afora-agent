@@ -1,7 +1,7 @@
 // Focused QA evidence for official Codex plugin drift through doctor diagnostics.
 import { describe, expect, it, vi } from "vitest";
 import * as noteModule from "../../packages/terminal-core/src/note.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { detectPluginVersionDrift } from "../plugins/plugin-version-drift.js";
 import {
   collectWorkspaceStatusHealthFindings,
@@ -33,7 +33,7 @@ vi.mock("../tasks/runtime-internal.js", () => ({
   listTasksForFlowId: () => [],
 }));
 
-const config: OpenClawConfig = {
+const config: AforaConfig = {
   plugins: {
     entries: {
       codex: { enabled: true },
@@ -47,8 +47,8 @@ function detectCodexDrift(installedVersion: string, gatewayVersion: string) {
     installRecords: {
       codex: {
         source: "npm",
-        spec: `@openclaw/codex@${installedVersion}`,
-        resolvedName: "@openclaw/codex",
+        spec: `@afora/codex@${installedVersion}`,
+        resolvedName: "@afora/codex",
         resolvedVersion: installedVersion,
       },
     },
@@ -70,8 +70,8 @@ describe("official Codex plugin version drift doctor evidence", () => {
             installedVersion,
             gatewayVersion,
             source: "npm",
-            packageName: "@openclaw/codex",
-            spec: `@openclaw/codex@${installedVersion}`,
+            packageName: "@afora/codex",
+            spec: `@afora/codex@${installedVersion}`,
           },
         ],
       });
@@ -84,7 +84,7 @@ describe("official Codex plugin version drift doctor evidence", () => {
           path: "plugins.entries.codex",
           target: "codex",
           requirement: "plugin-version-drift",
-          fixHint: "openclaw plugins update @openclaw/codex@2026.6.1 && openclaw gateway restart",
+          fixHint: "afora plugins update @afora/codex@2026.6.1 && afora gateway restart",
         },
       ]);
 
@@ -96,13 +96,13 @@ describe("official Codex plugin version drift doctor evidence", () => {
         );
         expect(driftNotes).toHaveLength(1);
         expect(driftNotes[0]?.[0]).toContain(
-          `1 active official plugin not on OpenClaw ${gatewayVersion}`,
+          `1 active official plugin not on Afora ${gatewayVersion}`,
         );
         expect(driftNotes[0]?.[0]).toContain(
           `codex: ${installedVersion} (npm) -> expected ${gatewayVersion}`,
         );
-        expect(driftNotes[0]?.[0]).toContain("openclaw plugins update @openclaw/codex@2026.6.1");
-        expect(driftNotes[0]?.[0]).toContain("openclaw gateway restart");
+        expect(driftNotes[0]?.[0]).toContain("afora plugins update @afora/codex@2026.6.1");
+        expect(driftNotes[0]?.[0]).toContain("afora gateway restart");
       } finally {
         noteSpy.mockRestore();
       }

@@ -1,5 +1,5 @@
 // Mattermost plugin module maps reaction transport events into system events.
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveMattermostMonitorInboundAccess } from "./monitor-auth.js";
 import { resolveMattermostReactionChannelId } from "./monitor-context.js";
 import { buildMattermostEventPlan } from "./monitor-event-plan.js";

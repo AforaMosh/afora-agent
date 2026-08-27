@@ -7,7 +7,7 @@ read_when:
 title: "Markdown formatting"
 ---
 
-OpenClaw converts outbound Markdown into a shared intermediate representation
+Afora converts outbound Markdown into a shared intermediate representation
 (IR) before rendering channel-specific output. The IR keeps plain text plus
 style/link spans, so one parse step feeds every channel and chunking never
 splits formatting mid-span.
@@ -37,7 +37,7 @@ splits formatting mid-span.
 Input Markdown:
 
 ```markdown
-Hello **world** - see [docs](https://docs.openclaw.ai).
+Hello **world** - see [docs](https://docs.afora.ai).
 ```
 
 IR (schematic):
@@ -46,7 +46,7 @@ IR (schematic):
 {
   "text": "Hello world - see docs.",
   "styles": [{ "start": 6, "end": 11, "style": "bold" }],
-  "links": [{ "start": 19, "end": 23, "href": "https://docs.openclaw.ai" }]
+  "links": [{ "start": 19, "end": 23, "href": "https://docs.afora.ai" }]
 }
 ```
 
@@ -109,7 +109,7 @@ style ranges) and Telegram (mapped to `<tg-spoiler>`). Other channels treat
 
 The Control UI and Telegram accounts with `richMessages: true` render
 `<details><summary>Label</summary>` disclosures as native collapsible sections.
-OpenClaw tells the model about this option only when the current reply surface
+Afora tells the model about this option only when the current reply surface
 supports it. Other channels, including Telegram accounts without rich messages,
 flatten each disclosure to `**Summary**` followed by the visible body so no
 content is hidden or lost.

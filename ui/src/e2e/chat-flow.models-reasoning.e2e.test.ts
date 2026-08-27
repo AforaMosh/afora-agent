@@ -23,7 +23,7 @@ suite.define(() => {
       kind: "direct",
       label: "Session A",
       permissionMode: "guarded",
-      sessionRoot: "/workspace/projects/openclaw",
+      sessionRoot: "/workspace/projects/afora",
       updatedAt: 2,
     };
     const gateway = await installMockGateway(page, {
@@ -35,7 +35,7 @@ suite.define(() => {
 
     try {
       await page.goto(`${suite.server.baseUrl}chat`);
-      const pane = page.locator('openclaw-chat-pane[aria-hidden="false"]');
+      const pane = page.locator('afora-chat-pane[aria-hidden="false"]');
       const trigger = pane.locator('[data-chat-permission-select="true"]');
       await trigger.waitFor({ state: "visible", timeout: 10_000 });
       expect(await trigger.getAttribute("data-chat-select-value")).toBe("guarded");
@@ -280,13 +280,13 @@ suite.define(() => {
       const main = page.getByRole("main");
       const openModelSelect = async () => {
         const trigger = main.locator(
-          'openclaw-chat-pane[aria-hidden="false"] [data-chat-model-select="true"]',
+          'afora-chat-pane[aria-hidden="false"] [data-chat-model-select="true"]',
         );
         await trigger.waitFor({ state: "visible", timeout: 10_000 });
         return trigger;
       };
       const selectModel = async (value: string) => {
-        const activePane = main.locator('openclaw-chat-pane[aria-hidden="false"]');
+        const activePane = main.locator('afora-chat-pane[aria-hidden="false"]');
         await activePane.locator('[data-chat-model-select="true"]').click();
         const option = activePane.locator(`[data-chat-model-option="${value}"]`);
         await option.waitFor({ state: "visible", timeout: 10_000 });
@@ -442,7 +442,7 @@ suite.define(() => {
   });
 
   it("shows one canonical default model with matching inherited reasoning", async () => {
-    const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+    const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
     const context = await suite.newBrowserContext({
       locale: "en-US",
       serviceWorkers: "block",
@@ -521,7 +521,7 @@ suite.define(() => {
     try {
       await page.goto(`${suite.server.baseUrl}chat`);
       const main = page.getByRole("main");
-      const activePane = main.locator('openclaw-chat-pane[aria-hidden="false"]');
+      const activePane = main.locator('afora-chat-pane[aria-hidden="false"]');
       const modelSelect = activePane.locator('[data-chat-model-select="true"]');
       const effortSelect = activePane.locator('[data-chat-thinking-select="true"]');
       const thinkingSlider = activePane.locator('[data-chat-thinking-slider="true"]');
@@ -835,7 +835,7 @@ suite.define(() => {
       });
       await expect.poll(() => page.getByText(/not supported for/u).count()).toBe(0);
 
-      const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+      const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
       if (artifactDir) {
         await page.screenshot({
           path: `${artifactDir}/model-thinking-sync.png`,

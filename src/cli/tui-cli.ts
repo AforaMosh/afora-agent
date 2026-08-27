@@ -1,4 +1,4 @@
-import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-coercion";
+import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
 // Registers the terminal UI subcommand and normalizes its local-vs-gateway options.
 import type { Command } from "commander";
 import { CHAT_HISTORY_MAX_ENTRIES } from "../../packages/gateway-protocol/src/schema/chat-history-constants.js";
@@ -33,7 +33,7 @@ export async function runTuiCliAction(
   const isLocal = Boolean(opts.local) || invokedAsLocalAlias;
   if (target && isLocal) {
     throw new Error(
-      "a session target cannot be combined with --local, openclaw chat, or openclaw terminal",
+      "a session target cannot be combined with --local, afora chat, or afora terminal",
     );
   }
   if (isLocal && (opts.url || opts.token || opts.password || opts.tlsFingerprint)) {
@@ -115,7 +115,7 @@ export function registerTuiCli(program: Command) {
     .option("--history-limit <n>", "History entries to load", "200")
     .addHelpText(
       "after",
-      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/tui", "docs.openclaw.ai/cli/tui")}\n`,
+      () => `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/tui", "docs.afora.ai/cli/tui")}\n`,
     )
     .action(async (target: string | undefined, opts: TuiCliOptions, cmd: Command) => {
       try {

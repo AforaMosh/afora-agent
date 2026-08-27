@@ -1,6 +1,6 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { executeSqliteQueryTakeFirstSync } from "../../infra/kysely-sync.js";
-import { runOpenClawAgentWriteTransaction } from "../../state/openclaw-agent-db.js";
+import { runAforaAgentWriteTransaction } from "../../state/afora-agent-db.js";
 import {
   getSessionKysely,
   resolveSqliteTranscriptScope,
@@ -24,7 +24,7 @@ export async function rewriteTranscriptMessageAtAnchor<TMessage>(
   const resolved = resolveSqliteTranscriptScope(anchor);
   return await runExclusiveSqliteSessionWrite(resolved, async () => {
     let result: TranscriptMessageAnchorRewriteResult<TMessage> | null = null;
-    runOpenClawAgentWriteTransaction(
+    runAforaAgentWriteTransaction(
       (database) => {
         const row = executeSqliteQueryTakeFirstSync(
           database.db,

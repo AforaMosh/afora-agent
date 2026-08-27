@@ -40,7 +40,7 @@ export function memoryHostEventExportOwnerContent(
 ): string {
   return `${JSON.stringify({
     schemaVersion: 3,
-    kind: "openclaw-memory-host-events-export",
+    kind: "afora-memory-host-events-export",
     stateHash: owner.stateHash,
     workspaceHash: owner.workspaceHash,
     ...(content.identity

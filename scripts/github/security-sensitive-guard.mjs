@@ -20,7 +20,7 @@ import {
 } from "./guard-shared.mjs";
 
 /** Marker used to identify security-sensitive guard comments. */
-export const securitySensitiveGuardMarker = "<!-- openclaw:security-sensitive-guard -->";
+export const securitySensitiveGuardMarker = "<!-- afora:security-sensitive-guard -->";
 const securitySensitiveChangedLabel = "security-sensitive-changed";
 export const allowSecuritySensitiveCommand = "/allow-security-sensitive-change";
 export {
@@ -31,7 +31,7 @@ export {
   readBoundedGitHubJson,
 };
 
-const securityTeamSlug = process.env.OPENCLAW_SECURITY_TEAM_SLUG ?? "openclaw-secops";
+const securityTeamSlug = process.env.AFORA_SECURITY_TEAM_SLUG ?? "afora-secops";
 const maxListedFiles = 25;
 const securitySensitiveFiles = [
   {
@@ -230,7 +230,7 @@ export function renderSecuritySensitiveAwarenessComment(changes) {
     "Maintainer follow-up:",
     "- Review whether each security-sensitive file change is intentional.",
     "- Confirm the change does not weaken secret, credential, or local-state protection.",
-    "- If this PR intentionally needs the change, a repository admin or member of `@openclaw/openclaw-secops` must approve the exact head SHA.",
+    "- If this PR intentionally needs the change, a repository admin or member of `@AforaMosh/afora-agent-secops` must approve the exact head SHA.",
   ].join("\n");
 }
 
@@ -240,7 +240,7 @@ export function renderAuthorizedSecuritySensitiveComment(override) {
     "",
     "### Security-sensitive change authorized",
     "",
-    "This PR includes security-sensitive file changes. A repository admin or member of `@openclaw/openclaw-secops` authorized this exact head SHA with `/allow-security-sensitive-change`.",
+    "This PR includes security-sensitive file changes. A repository admin or member of `@AforaMosh/afora-agent-secops` authorized this exact head SHA with `/allow-security-sensitive-change`.",
     "",
     `- Approved SHA: ${markdownCode(override.sha)}`,
     `- Approved by: @${sanitizeGuardDisplayValue(override.login)}`,
@@ -258,7 +258,7 @@ export function renderTrustedSecuritySensitiveComment({ actor, headSha, changes 
     "",
     "### Security-sensitive changes noted",
     "",
-    "This PR includes security-sensitive file changes. The guard is informational because the PR author is a repository admin or a member of `@openclaw/openclaw-secops`.",
+    "This PR includes security-sensitive file changes. The guard is informational because the PR author is a repository admin or a member of `@AforaMosh/afora-agent-secops`.",
     "",
     `- Current SHA: ${markdownCode(headSha ?? "<head-sha>")}`,
     `- Trusted actor: @${sanitizeGuardDisplayValue(actor.login)}`,
@@ -289,12 +289,12 @@ export function renderBlockedSecuritySensitiveComment({ headSha, changes }) {
     "",
     "### Security-sensitive changes are blocked",
     "",
-    "OpenClaw does not accept security-sensitive file changes through PRs unless a repository admin or security explicitly authorizes the current head SHA.",
+    "Afora does not accept security-sensitive file changes through PRs unless a repository admin or security explicitly authorizes the current head SHA.",
     "",
     "Detected security-sensitive changes:",
     ...renderChangedFileLines(changes),
     "",
-    "If this PR intentionally needs these changes, ask a repository admin or member of `@openclaw/openclaw-secops` to comment:",
+    "If this PR intentionally needs these changes, ask a repository admin or member of `@AforaMosh/afora-agent-secops` to comment:",
     "",
     "```text",
     allowSecuritySensitiveCommand,
@@ -358,15 +358,15 @@ async function main() {
     return;
   }
 
-  const api = createGitHubApi(token, { userAgent: "openclaw-security-sensitive-guard" });
-  const explicitSecurityApprovers = normalizeGuardLoginSet(process.env.OPENCLAW_SECURITY_APPROVERS);
+  const api = createGitHubApi(token, { userAgent: "afora-security-sensitive-guard" });
+  const explicitSecurityApprovers = normalizeGuardLoginSet(process.env.AFORA_SECURITY_APPROVERS);
   const trustedCommentAuthors = securitySensitiveGuardCommentAuthors(
-    process.env.OPENCLAW_SECURITY_SENSITIVE_GUARD_COMMENT_BOTS,
+    process.env.AFORA_SECURITY_SENSITIVE_GUARD_COMMENT_BOTS,
   );
   const issuePath = `/repos/${owner}/${repo}/issues/${eventPullRequest.number}`;
   const pullPath = `/repos/${owner}/${repo}/pulls/${eventPullRequest.number}`;
   const pullRequest = await api.request(pullPath);
-  const mode = process.env.OPENCLAW_SECURITY_SENSITIVE_GUARD_MODE ?? "enforce";
+  const mode = process.env.AFORA_SECURITY_SENSITIVE_GUARD_MODE ?? "enforce";
   const files = await api.paginate(`${pullPath}/files`);
   const securitySensitiveChanges = collectSecuritySensitiveChanges(files);
 

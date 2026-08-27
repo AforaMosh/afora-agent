@@ -1,5 +1,5 @@
 // Telegram tests cover threading tool context plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it, vi } from "vitest";
 import { telegramPlugin } from "./channel.js";
 import { buildTelegramThreadingToolContext } from "./threading-tool-context.js";
@@ -10,8 +10,8 @@ const tryReadSecretFileSyncMock = vi.hoisted(() =>
   }),
 );
 
-vi.mock("openclaw/plugin-sdk/secret-file-runtime", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/secret-file-runtime")>()),
+vi.mock("afora-agent/plugin-sdk/secret-file-runtime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/secret-file-runtime")>()),
   tryReadSecretFileSync: tryReadSecretFileSyncMock,
 }));
 
@@ -22,7 +22,7 @@ describe("telegramPlugin reply threading", () => {
       telegram: {
         accounts: {
           sut: {
-            tokenFile: "/tmp/openclaw-telegram-reply-mode-must-not-read",
+            tokenFile: "/tmp/afora-telegram-reply-mode-must-not-read",
             replyToMode: "first" as const,
           },
         },
@@ -56,7 +56,7 @@ describe("telegramPlugin reply threading", () => {
       throw new Error("Telegram reply mode resolver is unavailable");
     }
 
-    const cfg = { channels: { telegram } } as unknown as OpenClawConfig;
+    const cfg = { channels: { telegram } } as unknown as AforaConfig;
     expect(resolveReplyToMode({ cfg, accountId: "sut" })).toBe(expected);
     expect(tryReadSecretFileSyncMock).not.toHaveBeenCalled();
   });
@@ -67,7 +67,7 @@ describe("buildTelegramThreadingToolContext", () => {
     const hasRepliedRef = { value: false };
     expect(
       buildTelegramThreadingToolContext({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         accountId: "default",
         context: {
           To: "telegram:-1001:topic:77",
@@ -86,7 +86,7 @@ describe("buildTelegramThreadingToolContext", () => {
   it("parses topic thread state from target grammar when MessageThreadId is absent", () => {
     expect(
       buildTelegramThreadingToolContext({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         accountId: "default",
         context: {
           To: "telegram:-1001:topic:77",

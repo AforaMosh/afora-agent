@@ -1,8 +1,8 @@
-import type { WorkboardCard } from "@openclaw/workboard-contract";
-import { resolveGlobalSingleton } from "openclaw/plugin-sdk/global-singleton";
-import { isCronSessionKey } from "openclaw/plugin-sdk/routing";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
-import type { OpenClawPluginApi, OpenClawPluginService } from "../api.js";
+import type { WorkboardCard } from "@afora/workboard-contract";
+import { resolveGlobalSingleton } from "afora-agent/plugin-sdk/global-singleton";
+import { isCronSessionKey } from "afora-agent/plugin-sdk/routing";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import type { AforaPluginApi, AforaPluginService } from "../api.js";
 import { cardBoardId } from "./store-card-helpers.js";
 import { MAX_CARDS } from "./store-constants.js";
 import type { WorkboardStore } from "./store.js";
@@ -14,7 +14,7 @@ type WorkboardAutomationNudgeInput = {
   sessionKey?: string;
 };
 
-type WorkboardAutomationNudgeService = OpenClawPluginService & {
+type WorkboardAutomationNudgeService = AforaPluginService & {
   nudge: (input: WorkboardAutomationNudgeInput) => Promise<void>;
 };
 
@@ -24,11 +24,11 @@ type PendingBoardNudge = {
 
 type WorkboardAutomationNudgeState = {
   owner?: object;
-  logger?: Parameters<OpenClawPluginService["start"]>[0]["logger"];
+  logger?: Parameters<AforaPluginService["start"]>[0]["logger"];
   pendingByBoard: Map<string, PendingBoardNudge>;
 };
 
-const WORKBOARD_AUTOMATION_NUDGE_STATE_KEY = Symbol.for("openclaw.workboard.automationNudgeState");
+const WORKBOARD_AUTOMATION_NUDGE_STATE_KEY = Symbol.for("afora.workboard.automationNudgeState");
 
 // Prepared model generations register fresh hook closures without starting their services.
 // Shared state lets those closures reach the active service owner and its debounce fence.
@@ -62,7 +62,7 @@ function isCronOriginSession(sessionKey: string | undefined): boolean {
 
 export function createWorkboardAutomationNudgeService(params: {
   store: WorkboardStore;
-  gateway: Pick<OpenClawPluginApi["runtime"]["gateway"], "request">;
+  gateway: Pick<AforaPluginApi["runtime"]["gateway"], "request">;
 }): WorkboardAutomationNudgeService {
   const serviceOwner = {};
 

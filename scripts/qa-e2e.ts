@@ -1,4 +1,4 @@
-// Qa E2E script supports OpenClaw repository automation.
+// Qa E2E script supports Afora repository automation.
 import { pathToFileURL } from "node:url";
 
 type QaE2eRuntime = Pick<
@@ -22,9 +22,9 @@ async function loadQaE2eRuntime(): Promise<QaE2eRuntime> {
 }
 
 export function enablePrivateQaScriptEnv(env: NodeJS.ProcessEnv = process.env) {
-  env.OPENCLAW_BUILD_PRIVATE_QA = "1";
-  env.OPENCLAW_ENABLE_PRIVATE_QA_CLI = "1";
-  env.OPENCLAW_DISABLE_BUNDLED_PLUGINS = "0";
+  env.AFORA_BUILD_PRIVATE_QA = "1";
+  env.AFORA_ENABLE_PRIVATE_QA_CLI = "1";
+  env.AFORA_DISABLE_BUNDLED_PLUGINS = "0";
 }
 
 export function resolveQaE2eOutputPath(argv: readonly string[] = process.argv.slice(2)) {

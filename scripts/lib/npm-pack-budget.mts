@@ -1,4 +1,4 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { resolveNpmJsonEntries } from "./npm-json-output.mts";
 
 // 2026.3.12 ballooned to ~213.6 MiB unpacked and correlated with low-memory

@@ -1,5 +1,5 @@
 // Defines agent-related Zod schema fragments for config parsing.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { z } from "zod";
 import { isBlockedObjectKey } from "../infra/prototype-keys.js";
 import { AgentDefaultsSchema } from "./zod-schema.agent-defaults.js";
@@ -66,7 +66,7 @@ export const AgentsSchema = z
         code: z.ZodIssueCode.custom,
         path: ["ownership"],
         message:
-          'multi-agent rosters require agents.ownership="explicit" or one legacy default=true marker; add agents.ownership="explicit" or run openclaw doctor',
+          'multi-agent rosters require agents.ownership="explicit" or one legacy default=true marker; add agents.ownership="explicit" or run afora doctor',
       });
     }
   })

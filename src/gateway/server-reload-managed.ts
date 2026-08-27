@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { runWithGatewayIndependentRootWorkAdmission } from "../process/gateway-work-admission.js";
 import { getActiveSecretsRuntimeSnapshotRevisionState } from "../secrets/runtime-state.js";
 import { resetSkillSnapshotConfigFingerprintCache } from "../skills/runtime/snapshot-config-fingerprint.js";
@@ -49,22 +49,22 @@ export function startManagedGatewayConfigReloader(
   }
 
   const prepareRuntimeCandidate = (
-    runtimeConfig: OpenClawConfig,
-    sourceConfig: OpenClawConfig,
+    runtimeConfig: AforaConfig,
+    sourceConfig: AforaConfig,
     ownership?: GatewayConfigReloadTransactionOwnership,
-  ): OpenClawConfig => {
+  ): AforaConfig => {
     const canonicalConfig = restoreCanonicalSecretRefs(runtimeConfig, sourceConfig);
     const candidateConfig = ownership?.reapplyRuntimeOverlays(canonicalConfig) ?? canonicalConfig;
     return params.applyRuntimeConfigOverrides?.(candidateConfig) ?? candidateConfig;
   };
-  const applyRuntimeConfigOverrides = (config: OpenClawConfig): OpenClawConfig =>
+  const applyRuntimeConfigOverrides = (config: AforaConfig): AforaConfig =>
     params.applyRuntimeConfigOverrides?.(config) ?? config;
   const restartRecoveryAvailable =
     params.restartRecoveryAvailable !== false && params.requestRecoveryRestart !== undefined;
 
   let stopped = false;
   const tryPrepareRuntimeSecrets = async (
-    config: OpenClawConfig,
+    config: AforaConfig,
     transactionOwnership: GatewayConfigReloadTransactionOwnership,
     activationParams: RuntimeSecretsPreflightParams,
   ): Promise<CurrentRuntimeSecretsPreparation | null> => {
@@ -149,9 +149,9 @@ export function startManagedGatewayConfigReloader(
       ? { requestRecoveryRestart: params.requestRecoveryRestart }
       : {}),
     assertRestartReady: () =>
-      import("../state/openclaw-database-preflight.js").then(
-        ({ assertOpenClawDatabasesReadyForRestart }) =>
-          assertOpenClawDatabasesReadyForRestart({ env: process.env }),
+      import("../state/afora-database-preflight.js").then(
+        ({ assertAforaDatabasesReadyForRestart }) =>
+          assertAforaDatabasesReadyForRestart({ env: process.env }),
       ),
     restartRecoveryAvailable,
     createHealthMonitor: (config) =>
@@ -162,9 +162,9 @@ export function startManagedGatewayConfigReloader(
   });
   const runManagedRestart = async (
     plan: GatewayReloadPlan,
-    nextConfig: OpenClawConfig,
+    nextConfig: AforaConfig,
     transactionOwnership: GatewayConfigReloadTransactionOwnership,
-    sourceConfig: OpenClawConfig,
+    sourceConfig: AforaConfig,
     restartOptions?: GatewayRestartRequestOptions,
     beforeRestartRequest?: () => Promise<void>,
   ) => {
@@ -182,7 +182,7 @@ export function startManagedGatewayConfigReloader(
           previousRequired: string | undefined | null;
           previousCurrent: string | undefined;
           nextGeneration: string | undefined;
-          runtimeConfig: OpenClawConfig;
+          runtimeConfig: AforaConfig;
         }
       | undefined;
     try {

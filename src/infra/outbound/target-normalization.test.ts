@@ -2,7 +2,7 @@
 // caching, and id-like lookup heuristics.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChannelPlugin } from "../../channels/plugins/types.plugin.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 
 const getLoadedChannelPluginMock = vi.hoisted(() => vi.fn());
 const getChannelPluginMock = vi.hoisted(() => vi.fn());
@@ -210,7 +210,7 @@ describe("looksLikeTargetId", () => {
 });
 
 describe("maybeResolvePluginMessagingTarget", () => {
-  const cfg = {} as OpenClawConfig;
+  const cfg = {} as AforaConfig;
 
   it("returns undefined when requireIdLike is set and the target is not id-like", async () => {
     getLoadedChannelPluginMock.mockReturnValueOnce({

@@ -1,7 +1,7 @@
 // Covers captured plugin registration behavior in test registries.
 import { describe, expect, it, vi } from "vitest";
 import { capturePluginRegistration } from "./captured-registration.js";
-import type { AnyAgentTool, OpenClawPluginApi } from "./types.js";
+import type { AnyAgentTool, AforaPluginApi } from "./types.js";
 
 describe("captured plugin registration", () => {
   it("preserves root machine-output metadata", () => {
@@ -25,7 +25,7 @@ describe("captured plugin registration", () => {
     expect(descriptor?.machineOutput).toBe(machineOutput);
     expect(
       descriptor?.machineOutput?.({
-        argv: ["node", "openclaw", "captured-machine"],
+        argv: ["node", "afora", "captured-machine"],
         stdoutIsTTY: false,
       }),
     ).toBe(true);
@@ -178,15 +178,15 @@ describe("captured plugin registration", () => {
     };
 
     await registration.handler({ ...event, toolName: "web_search" }, { runtime: "codex" });
-    await registration.handler({ ...event, toolName: "exec" }, { runtime: "openclaw" });
+    await registration.handler({ ...event, toolName: "exec" }, { runtime: "afora" });
     await registration.handler({ ...event, toolName: "exec" }, { runtime: "codex" });
 
     expect(handler).toHaveBeenCalledOnce();
   });
 
   it("returns synthetic scheduled-turn ids independent of human-readable names", async () => {
-    let scheduleSessionTurn: OpenClawPluginApi["scheduleSessionTurn"] | undefined;
-    let registerSessionSchedulerJob: OpenClawPluginApi["registerSessionSchedulerJob"] | undefined;
+    let scheduleSessionTurn: AforaPluginApi["scheduleSessionTurn"] | undefined;
+    let registerSessionSchedulerJob: AforaPluginApi["registerSessionSchedulerJob"] | undefined;
     const captured = capturePluginRegistration({
       id: "captured-custom-plugin",
       name: "Captured Custom Plugin",

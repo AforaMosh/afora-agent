@@ -6,7 +6,7 @@
 import {
   normalizeStringEntries,
   uniqueStrings,
-} from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-normalization";
 import type { PairingChannel } from "../../pairing/pairing-store.types.js";
 import { recordChannelIngressResolution } from "./admission-evidence.js";
 import { decideChannelIngress } from "./decision.js";

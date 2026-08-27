@@ -1,5 +1,5 @@
 import { performance } from "node:perf_hooks";
-import type { FastMode } from "@openclaw/normalization-core/string-coerce";
+import type { FastMode } from "@afora/normalization-core/string-coerce";
 import {
   GATEWAY_CLIENT_CAPS,
   hasGatewayClientCap,

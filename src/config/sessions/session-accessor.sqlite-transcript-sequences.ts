@@ -1,9 +1,9 @@
 import { executeSqliteQueryTakeFirstSync, getNodeSqliteKysely } from "../../infra/kysely-sync.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
+import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.generated.js";
 import {
-  openOpenClawAgentDatabase,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import type {
   SessionTranscriptTurnWriteContext,
   TranscriptMessageAppendResult,
@@ -27,7 +27,7 @@ export function readCommittedTranscriptMessageSequence(
 
 /** Captures atomic turn cursors from the final projection before SQLite commits. */
 export function rememberCommittedTranscriptMessageSequencesInTransaction(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionId: string,
   messages: readonly TranscriptMessageAppendResult<unknown>[],
 ): void {
@@ -40,7 +40,7 @@ export function rememberCommittedTranscriptMessageSequencesInTransaction(
   }
   const db = getNodeSqliteKysely<
     Pick<
-      OpenClawAgentKyselyDatabase,
+      AforaAgentKyselyDatabase,
       "session_transcript_active_events" | "session_transcript_index_state"
     >
   >(database.db);
@@ -90,7 +90,7 @@ export function rememberCommittedTranscriptMessageSequences(
     ...(scope.storePath ? { storePath: scope.storePath } : {}),
   });
   rememberCommittedTranscriptMessageSequencesInTransaction(
-    openOpenClawAgentDatabase(toDatabaseOptions(resolved)),
+    openAforaAgentDatabase(toDatabaseOptions(resolved)),
     resolved.sessionId,
     messages,
   );

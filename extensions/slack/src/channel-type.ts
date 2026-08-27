@@ -1,15 +1,15 @@
 // Slack plugin module implements channel type behavior.
 import { createHash } from "node:crypto";
-import { pruneMapToMaxSize } from "openclaw/plugin-sdk/collection-runtime";
+import { pruneMapToMaxSize } from "afora-agent/plugin-sdk/collection-runtime";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { resolveSlackAccount, resolveSlackOperationToken } from "./accounts.js";
 import { createSlackReadClient, createSlackWebClient } from "./client.js";
 import { assertSlackDetachedTargetAllowed } from "./detached-target-admission.js";
 import { normalizeAllowListLower } from "./monitor/allow-list.js";
-import type { OpenClawConfig } from "./runtime-api.js";
+import type { AforaConfig } from "./runtime-api.js";
 
 export type SlackConversationInfo = {
   type: "channel" | "group" | "dm" | "unknown";
@@ -72,7 +72,7 @@ function resolveConfiguredSlackConversationInfo(params: {
 }
 
 export async function resolveSlackConversationInfo(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   channelId: string;
   teamId?: string;
@@ -152,7 +152,7 @@ export async function resolveSlackConversationInfo(params: {
 }
 
 export async function resolveSlackChannelType(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   channelId: string;
   teamId?: string;

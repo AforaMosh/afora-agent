@@ -7,7 +7,7 @@ import { fingerprintPluginRuntimeArtifact } from "./plugin-runtime-artifact-iden
 const tempDirs: string[] = [];
 
 function createPluginFixture(): { rootDir: string; source: string } {
-  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-artifact-"));
+  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-artifact-"));
   tempDirs.push(rootDir);
   const source = path.join(rootDir, "dist", "index.js");
   fs.mkdirSync(path.dirname(source), { recursive: true });
@@ -51,7 +51,7 @@ describe("fingerprintPluginRuntimeArtifact", () => {
   });
 
   it("hashes canonical dist content when the registry points at dist-runtime", () => {
-    const packageRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-artifact-"));
+    const packageRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-artifact-"));
     tempDirs.push(packageRoot);
     const stagingRoot = path.join(packageRoot, "dist-runtime", "extensions", "fixture");
     const canonicalRoot = path.join(packageRoot, "dist", "extensions", "fixture");
@@ -77,7 +77,7 @@ describe("fingerprintPluginRuntimeArtifact", () => {
   });
 
   it("hashes source when a bundled plugin opts out of core dist", () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-artifact-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-artifact-"));
     tempDirs.push(rootDir);
     const source = path.join(rootDir, "index.ts");
     const staleDistSource = path.join(rootDir, "dist", "index.js");

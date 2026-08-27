@@ -32,7 +32,7 @@ describe("persistRefreshedPluginIndex", () => {
   it("reports selector diagnostics when the durable reread is rejected", async () => {
     const index = {} as PluginMetadataSnapshot["index"];
     const lease = {} as StartupMigrationLease;
-    const env = { OPENCLAW_STATE_DIR: "test-state" };
+    const env = { AFORA_STATE_DIR: "test-state" };
 
     await expect(
       persistRefreshedPluginIndex({

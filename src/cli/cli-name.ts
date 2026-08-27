@@ -1,12 +1,12 @@
 // CLI-name helpers keep generated examples aligned with the binary the user invoked.
 import path from "node:path";
 
-const DEFAULT_CLI_NAME = "openclaw";
+const DEFAULT_CLI_NAME = "afora";
 
 const KNOWN_CLI_NAMES = new Set([DEFAULT_CLI_NAME]);
-const CLI_PREFIX_RE = /^(?:((?:pnpm|npm|bunx|npx)\s+))?(openclaw)\b/;
+const CLI_PREFIX_RE = /^(?:((?:pnpm|npm|bunx|npx)\s+))?(afora)\b/;
 
-/** Resolve the displayed CLI binary name from argv, falling back to `openclaw`. */
+/** Resolve the displayed CLI binary name from argv, falling back to `afora`. */
 export function resolveCliName(argv: string[] = process.argv): string {
   const argv1 = argv[1];
   if (!argv1) {
@@ -19,7 +19,7 @@ export function resolveCliName(argv: string[] = process.argv): string {
   return DEFAULT_CLI_NAME;
 }
 
-/** Replace a leading `openclaw` command prefix with the active CLI name. */
+/** Replace a leading `afora` command prefix with the active CLI name. */
 export function replaceCliName(command: string, cliName = resolveCliName()): string {
   if (!command.trim()) {
     return command;

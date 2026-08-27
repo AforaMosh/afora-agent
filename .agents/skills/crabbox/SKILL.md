@@ -1,6 +1,6 @@
 ---
 name: crabbox
-description: "Remote environment and isolation proof for OpenClaw: clean-machine E2E, untrusted code, package/install, live providers and channels, desktop, cross-OS, diagnostics, and cleanup."
+description: "Remote environment and isolation proof for Afora: clean-machine E2E, untrusted code, package/install, live providers and channels, desktop, cross-OS, diagnostics, and cleanup."
 ---
 
 # Crabbox
@@ -33,7 +33,7 @@ Route by required environment, not command size.
 - No speculative warmup. Acquire when the first environment-sensitive command
   is ready. Reuse id. Stop.
 
-Need direct AWS semantics? Pass `--provider aws`. Need a clean trusted OpenClaw
+Need direct AWS semantics? Pass `--provider aws`. Need a clean trusted Afora
 environment? Pass `--provider blacksmith-testbox`.
 
 ## Preflight
@@ -81,9 +81,9 @@ node scripts/crabbox-wrapper.mjs run \
   --provider blacksmith-testbox \
   --timing-json -- \
   CI=1 NODE_OPTIONS=--max-old-space-size=4096 \
-  OPENCLAW_TEST_PROJECTS_PARALLEL=6 \
-  OPENCLAW_VITEST_MAX_WORKERS=1 \
-  OPENCLAW_TESTBOX=1 OPENCLAW_TESTBOX_REMOTE_RUN=1 \
+  AFORA_TEST_PROJECTS_PARALLEL=6 \
+  AFORA_VITEST_MAX_WORKERS=1 \
+  AFORA_TESTBOX=1 AFORA_TESTBOX_REMOTE_RUN=1 \
   <clean-machine-or-e2e-command>
 ```
 
@@ -94,7 +94,7 @@ node scripts/crabbox-wrapper.mjs warmup \
   --provider blacksmith-testbox --keep --timing-json
 node scripts/crabbox-wrapper.mjs run \
   --provider blacksmith-testbox --id <tbx_id> --timing-json -- \
-  OPENCLAW_TESTBOX=1 OPENCLAW_TESTBOX_REMOTE_RUN=1 \
+  AFORA_TESTBOX=1 AFORA_TESTBOX_REMOTE_RUN=1 \
   <environment-sensitive-command>
 blacksmith testbox stop --id <tbx_id>
 ```
@@ -133,7 +133,7 @@ reviewed full head SHA. No instance role. No Tailscale. No hydration. Only `CI`
 forwarded. Trusted bootstrap uploaded beside `--fresh-pr`.
 
 ```sh
-cd <clean-trusted-openclaw-main>
+cd <clean-trusted-afora-main>
 env -u CRABBOX_AWS_INSTANCE_PROFILE \
   "$CRABBOX" config show --json | \
   jq -e '.aws.instanceProfile == ""' >/dev/null
@@ -204,7 +204,7 @@ Broker auth, not cloud keys:
 "$CRABBOX" config show
 "$CRABBOX" doctor
 "$CRABBOX" whoami
-"$CRABBOX" login --url https://crabbox.openclaw.ai --provider aws
+"$CRABBOX" login --url https://crabbox.afora.ai --provider aws
 ```
 
 Normal validation asking for AWS keys usually means wrong path.
@@ -220,7 +220,7 @@ No remote provider? Local Docker fallback:
 node scripts/crabbox-wrapper.mjs run \
   --provider local-container \
   --local-container-image node:24-bookworm \
-  --no-hydrate --fresh-pr openclaw/openclaw#123 \
+  --no-hydrate --fresh-pr AforaMosh/afora-agent#123 \
   --timing-json --shell -- \
   "corepack pnpm install --frozen-lockfile --store-dir .pnpm-store && \
    corepack pnpm test <path-or-filter>"
@@ -272,8 +272,8 @@ Before/after: same Testbox when practical. Detached temp worktrees under `/tmp`.
 Never checkout refs in synced root. Full-screen CLI: real PTY. Interactive Clack:
 exact arrows/Enter; raw search typing can lie.
 
-Isolate mutable state: `OPENCLAW_STATE_DIR=$(mktemp -d)`. Test-only local plugin
-artifacts may use `OPENCLAW_ALLOW_PLUGIN_INSTALL_OVERRIDES=1`; never call them
+Isolate mutable state: `AFORA_STATE_DIR=$(mktemp -d)`. Test-only local plugin
+artifacts may use `AFORA_ALLOW_PLUGIN_INSTALL_OVERRIDES=1`; never call them
 official/trusted installs.
 
 ## Desktop / Cross-OS
@@ -361,4 +361,4 @@ Run semantics:
 ## Boundary
 
 Crabbox stays generic: lease, sync, command, logs, results, timing, cleanup.
-OpenClaw setup belongs hydration workflow/repo scripts.
+Afora setup belongs hydration workflow/repo scripts.

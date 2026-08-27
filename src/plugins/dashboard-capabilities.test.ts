@@ -3,7 +3,7 @@ import path from "node:path";
 import { afterAll, afterEach, describe, expect, it } from "vitest";
 import {
   cleanupPluginLoaderFixturesForTest,
-  loadOpenClawPlugins,
+  loadAforaPlugins,
   resetPluginLoaderTestStateForTest,
   type TempPlugin,
   useNoBundledPlugins,
@@ -15,13 +15,13 @@ afterEach(resetPluginLoaderTestStateForTest);
 afterAll(cleanupPluginLoaderFixturesForTest);
 
 function updateDashboardManifest(plugin: TempPlugin, dashboard: Record<string, unknown>): void {
-  const manifestPath = path.join(plugin.dir, "openclaw.plugin.json");
+  const manifestPath = path.join(plugin.dir, "afora.plugin.json");
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as Record<string, unknown>;
   fs.writeFileSync(manifestPath, JSON.stringify({ ...manifest, dashboard }, null, 2), "utf8");
 }
 
 function loadFixture(plugin: TempPlugin) {
-  return loadOpenClawPlugins({
+  return loadAforaPlugins({
     cache: false,
     workspaceDir: plugin.dir,
     config: {
@@ -287,7 +287,7 @@ describe("plugin dashboard declarations", () => {
       ],
     });
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadAforaPlugins({
       cache: false,
       workspaceDir: dataPlugin.dir,
       config: {

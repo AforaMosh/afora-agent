@@ -49,7 +49,7 @@ describe("recent session maintenance preservation", () => {
   });
 
   it("keeps recent interactive sessions under file-store disk pressure", async () => {
-    await withTestDir({ prefix: "openclaw-preserve-recent-budget-" }, async (dir) => {
+    await withTestDir({ prefix: "afora-preserve-recent-budget-" }, async (dir) => {
       const now = Date.now();
       const recentKey = "agent:main:dashboard:recent";
       const staleKey = "agent:main:dashboard:stale";

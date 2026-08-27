@@ -63,7 +63,7 @@ export function createPortalTool(options: PortalToolOptions = {}): AnyAgentTool 
     label: "Portal",
     name: "portal",
     description:
-      "Expose local HTTP server; operator sees it live in Control UI. Order matters: action=open with the port first, which returns the URL; then start the dev server as a background process, passing PORT and PUBLIC_URL from that result. Workspace may declare servers in .openclaw/portals.json. Proxies HTTP and WebSockets, so hot reload works; serves retry page until port listens. action=list and action=close manage portals. Portals end at gateway restart.",
+      "Expose local HTTP server; operator sees it live in Control UI. Order matters: action=open with the port first, which returns the URL; then start the dev server as a background process, passing PORT and PUBLIC_URL from that result. Workspace may declare servers in .afora/portals.json. Proxies HTTP and WebSockets, so hot reload works; serves retry page until port listens. action=list and action=close manage portals. Portals end at gateway restart.",
     parameters: PortalToolSchema,
     outputSchema: PortalToolOutputSchema,
     execute: async (_toolCallId, rawArgs) => {

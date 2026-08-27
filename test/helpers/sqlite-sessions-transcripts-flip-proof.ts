@@ -8,8 +8,8 @@ import path from "node:path";
 import { DatabaseSync, type SQLInputValue } from "node:sqlite";
 import type { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
-import { expectDefined } from "@openclaw/normalization-core";
-import { asOptionalRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
+import { expectDefined } from "@afora/normalization-core";
+import { asOptionalRecord as asRecord } from "@afora/normalization-core/record-coerce";
 import {
   readSessionArchiveContentSync,
   stripSessionArchiveCompressionSuffix,
@@ -25,10 +25,10 @@ import {
   connectGatewayClient,
   disconnectGatewayClient,
 } from "../../src/gateway/test-helpers.e2e.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../src/state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../../src/state/openclaw-state-db.js";
+import { closeAforaAgentDatabasesForTest } from "../../src/state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../../src/state/afora-state-db.js";
 import { sleep } from "../../src/utils.js";
-import { createOpenClawTestInstance } from "./openclaw-test-instance.js";
+import { createAforaTestInstance } from "./afora-test-instance.js";
 
 type DoctorMode = "import" | "inspect" | "validate" | "restore";
 type ProofChildProcess = ChildProcessByStdio<null, Readable, Readable>;
@@ -48,7 +48,7 @@ type RollbackRestoreEvidence = Awaited<ReturnType<typeof runRollbackRestoreProof
 
 type ProofContext = ReturnType<typeof buildProofContext>;
 type GatewayClient = Awaited<ReturnType<typeof connectGatewayClient>>;
-type OpenClawTestInstance = Awaited<ReturnType<typeof createOpenClawTestInstance>>;
+type AforaTestInstance = Awaited<ReturnType<typeof createAforaTestInstance>>;
 
 type RunOptions = {
   print?: boolean;
@@ -63,7 +63,7 @@ const CONCURRENT_RESET_SESSION_KEY = "agent:main:dashboard:sqlite-concurrent-res
 const CONCURRENT_DELETE_SESSION_KEY = "agent:main:dashboard:sqlite-concurrent-delete";
 const CONCURRENT_SEND_TEXT = "sqlite concurrent send history reset";
 const CONCURRENT_DELETE_TEXT = "sqlite concurrent delete while send is active";
-const FULL_TURN_ASSISTANT_TEXT = "OPENCLAW_E2E_OK_12";
+const FULL_TURN_ASSISTANT_TEXT = "AFORA_E2E_OK_12";
 const FULL_TURN_SESSION_KEY = "agent:main:sqlite-full-turn";
 const DOWNGRADE_REUPGRADE_SESSION_ID = "sqlite-downgrade-reupgrade";
 const DOWNGRADE_REUPGRADE_SESSION_KEY = "agent:main:dashboard:sqlite-downgrade-reupgrade";
@@ -92,7 +92,7 @@ const OLD_STATE_SESSION_KEYS = [
 export async function runSqliteSessionsTranscriptsFlipProof(options: RunOptions = {}) {
   const print = options.print ?? false;
   const mockOpenAiPort = await getFreeTcpPort();
-  const inst = await createOpenClawTestInstance({
+  const inst = await createAforaTestInstance({
     name: `sqlite-sessions-transcripts-flip-${randomUUID()}`,
     config: buildMockOpenAiConfig(mockOpenAiPort),
     env: {
@@ -104,12 +104,12 @@ export async function runSqliteSessionsTranscriptsFlipProof(options: RunOptions 
         ? {
             OPENCODE_API_KEY: undefined,
             OPENCODE_ZEN_API_KEY: undefined,
-            OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
+            AFORA_DISABLE_BUNDLED_PLUGINS: "1",
           }
         : {}),
-      OPENAI_API_KEY: "sk-openclaw-e2e-mock",
-      OPENCLAW_TEST_MINIMAL_GATEWAY: undefined,
-      OPENCLAW_SKIP_PROVIDERS: undefined,
+      OPENAI_API_KEY: "sk-afora-e2e-mock",
+      AFORA_TEST_MINIMAL_GATEWAY: undefined,
+      AFORA_SKIP_PROVIDERS: undefined,
       no_proxy: "127.0.0.1,localhost",
     },
     startTimeoutMs: 90_000,
@@ -301,8 +301,8 @@ export async function runSqliteSessionsTranscriptsFlipProof(options: RunOptions 
   } finally {
     await stopChildProcess(mockOpenAi);
     await inst.stopGateway();
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     await inst.cleanup();
   }
 
@@ -347,7 +347,7 @@ function buildProofContext(stateDir: string) {
   const legacySessionsDir = path.join(stateDir, "sessions");
   return {
     activeSessionsDir,
-    agentDbPath: path.join(agentDir, "agent", "openclaw-agent.sqlite"),
+    agentDbPath: path.join(agentDir, "agent", "afora-agent.sqlite"),
     agentId: AGENT_ID,
     archiveRoots: [path.join(agentDir, "session-sqlite-import-archive"), activeSessionsDir],
     concurrentDeleteSessionKey: CONCURRENT_DELETE_SESSION_KEY,
@@ -390,7 +390,7 @@ function buildMockOpenAiConfig(mockPort: number): Record<string, unknown> {
         model: { primary: modelRef },
         models: {
           [modelRef]: {
-            agentRuntime: { id: "openclaw" },
+            agentRuntime: { id: "afora" },
             params: { openaiWsWarmup: false, transport: "sse" },
           },
         },
@@ -401,13 +401,13 @@ function buildMockOpenAiConfig(mockPort: number): Record<string, unknown> {
       mode: "merge",
       providers: {
         openai: {
-          agentRuntime: { id: "openclaw" },
+          agentRuntime: { id: "afora" },
           api: "openai-responses",
           apiKey: { source: "env", provider: "default", id: "OPENAI_API_KEY" },
           baseUrl: `http://127.0.0.1:${mockPort}/v1`,
           models: [
             {
-              agentRuntime: { id: "openclaw" },
+              agentRuntime: { id: "afora" },
               api: "openai-responses",
               contextTokens: 96_000,
               contextWindow: 128_000,
@@ -445,7 +445,7 @@ async function getFreeTcpPort(): Promise<number> {
 }
 
 async function connectProofClient(
-  inst: OpenClawTestInstance,
+  inst: AforaTestInstance,
   clientDisplayName: string,
 ): Promise<GatewayClient> {
   return await connectGatewayClient({
@@ -706,7 +706,7 @@ async function importProofSession(
   });
 }
 
-async function runDoctor(inst: OpenClawTestInstance, mode: DoctorMode, storePath: string) {
+async function runDoctor(inst: AforaTestInstance, mode: DoctorMode, storePath: string) {
   const result = await inst.cli(
     ["doctor", "--session-sqlite", mode, "--session-sqlite-store", storePath, "--json"],
     { timeoutMs: 60_000 },
@@ -764,13 +764,13 @@ function parseDoctorRestore(parsed: Record<string, unknown>) {
   };
 }
 
-async function runRollbackRestoreProof(inst: OpenClawTestInstance, context: ProofContext) {
+async function runRollbackRestoreProof(inst: AforaTestInstance, context: ProofContext) {
   const drillDir = path.join(context.stateDir, "rollback-drill");
   const storePath = path.join(drillDir, "sessions.json");
   const sessionId = "sqlite-rollback-restore";
   const sessionKey = "agent:main:rollback-restore";
   const sourcePath = path.join(drillDir, `${sessionId}.jsonl`);
-  const sqlitePath = path.join(drillDir, "openclaw-agent.sqlite");
+  const sqlitePath = path.join(drillDir, "afora-agent.sqlite");
   await fs.mkdir(drillDir, { recursive: true });
   await writeJsonFile(storePath, { [sessionKey]: legacyEntry(sessionId, Date.now()) }, 2);
   await writeMessageTranscript(
@@ -942,7 +942,7 @@ function sessionArtifactPaths(sessionsDir: string, sessionId: string) {
 }
 
 async function runDoctorIdempotenceProof(
-  inst: OpenClawTestInstance,
+  inst: AforaTestInstance,
   context: ProofContext,
 ): Promise<DoctorCommandEvidence> {
   const before = readSqliteEvidence(context.agentDbPath, context.trackedSessionKeys);
@@ -994,7 +994,7 @@ function requireScaleMigrationProof(context: ProofContext, startupImportElapsedM
   };
 }
 
-async function runDowngradeReupgradeProof(inst: OpenClawTestInstance, context: ProofContext) {
+async function runDowngradeReupgradeProof(inst: AforaTestInstance, context: ProofContext) {
   await fs.mkdir(context.activeSessionsDir, { recursive: true });
   await writeJsonFile(
     context.storePath,
@@ -1019,7 +1019,7 @@ async function runDowngradeReupgradeProof(inst: OpenClawTestInstance, context: P
     sessionId: DOWNGRADE_REUPGRADE_SESSION_ID,
   });
   await writeJsonFile(trajectoryPointerPath, {
-    traceSchema: "openclaw-trajectory-pointer",
+    traceSchema: "afora-trajectory-pointer",
     schemaVersion: 1,
     sessionId: DOWNGRADE_REUPGRADE_SESSION_ID,
     runtimeFile: trajectoryPath,
@@ -1092,22 +1092,22 @@ async function runSqliteBusyContentionProof(context: ProofContext) {
       `
         import fs from "node:fs";
         import { DatabaseSync } from "node:sqlite";
-        const db = new DatabaseSync(process.env.OPENCLAW_E2E_BUSY_DB_PATH);
+        const db = new DatabaseSync(process.env.AFORA_E2E_BUSY_DB_PATH);
         db.exec("PRAGMA busy_timeout = 30000; BEGIN IMMEDIATE;");
-        fs.writeFileSync(process.env.OPENCLAW_E2E_BUSY_READY_PATH, "ready");
+        fs.writeFileSync(process.env.AFORA_E2E_BUSY_READY_PATH, "ready");
         setTimeout(() => {
           db.exec("COMMIT");
           db.close();
-        }, Number(process.env.OPENCLAW_E2E_BUSY_HOLD_MS));
+        }, Number(process.env.AFORA_E2E_BUSY_HOLD_MS));
       `,
     ],
     {
       cwd: process.cwd(),
       env: {
         ...process.env,
-        OPENCLAW_E2E_BUSY_DB_PATH: context.agentDbPath,
-        OPENCLAW_E2E_BUSY_HOLD_MS: String(holdMs),
-        OPENCLAW_E2E_BUSY_READY_PATH: readyPath,
+        AFORA_E2E_BUSY_DB_PATH: context.agentDbPath,
+        AFORA_E2E_BUSY_HOLD_MS: String(holdMs),
+        AFORA_E2E_BUSY_READY_PATH: readyPath,
       },
       stdio: ["ignore", "pipe", "pipe"],
     },
@@ -1186,7 +1186,7 @@ async function runSecondStartupAfterResetProof(
 }
 
 async function runConcurrentMultiClientLifecycle(
-  inst: OpenClawTestInstance,
+  inst: AforaTestInstance,
   context: ProofContext,
   primaryClient: GatewayClient,
 ): Promise<void> {

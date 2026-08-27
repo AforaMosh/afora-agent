@@ -1,7 +1,7 @@
 // Imessage tests cover approval reactions plugin behavior.
-import { buildApprovalReactionHint } from "openclaw/plugin-sdk/approval-reaction-runtime";
-import { buildTypedExecApprovalPendingReplyPayload } from "openclaw/plugin-sdk/approval-reply-runtime";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
+import { buildApprovalReactionHint } from "afora-agent/plugin-sdk/approval-reaction-runtime";
+import { buildTypedExecApprovalPendingReplyPayload } from "afora-agent/plugin-sdk/approval-reply-runtime";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { listPendingIMessageApprovalReactionPollTargets } from "./approval-reaction-poll-targets.js";
 import {
@@ -36,10 +36,10 @@ function registerIMessageApprovalReactionTarget(
   });
 }
 
-vi.mock("openclaw/plugin-sdk/approval-gateway-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/approval-gateway-runtime", () => ({
   resolveApprovalOverGateway: resolverMocks.resolveApprovalOverGateway,
 }));
-vi.mock("openclaw/plugin-sdk/error-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/error-runtime", () => ({
   isApprovalNotFoundError: resolverMocks.isApprovalNotFoundError,
 }));
 

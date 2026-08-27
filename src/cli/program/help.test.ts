@@ -3,7 +3,7 @@ import { Command, CommanderError } from "commander";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProgramContext } from "./context.js";
 import { configureProgramHelp } from "./help.js";
-import { OpenClawCommand } from "./openclaw-command.js";
+import { AforaCommand } from "./afora-command.js";
 
 const hasEmittedCliBannerMock = vi.hoisted(() => vi.fn(() => false));
 const formatCliBannerLineMock = vi.hoisted(() => vi.fn(() => "BANNER-LINE"));
@@ -37,7 +37,7 @@ vi.mock("../../infra/git-commit.js", () => ({
 }));
 
 vi.mock("../cli-name.js", () => ({
-  resolveCliName: () => "openclaw",
+  resolveCliName: () => "afora",
   replaceCliName: (cmd: string) => cmd,
 }));
 
@@ -63,18 +63,18 @@ describe("configureProgramHelp", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     originalArgv = [...process.argv];
-    originalSuppressHelpBanner = process.env.OPENCLAW_SUPPRESS_HELP_BANNER;
+    originalSuppressHelpBanner = process.env.AFORA_SUPPRESS_HELP_BANNER;
     hasEmittedCliBannerMock.mockReturnValue(false);
     resolveCommitHashMock.mockReturnValue("abc1234");
-    delete process.env.OPENCLAW_SUPPRESS_HELP_BANNER;
+    delete process.env.AFORA_SUPPRESS_HELP_BANNER;
   });
 
   afterEach(() => {
     process.argv = originalArgv;
     if (originalSuppressHelpBanner === undefined) {
-      delete process.env.OPENCLAW_SUPPRESS_HELP_BANNER;
+      delete process.env.AFORA_SUPPRESS_HELP_BANNER;
     } else {
-      process.env.OPENCLAW_SUPPRESS_HELP_BANNER = originalSuppressHelpBanner;
+      process.env.AFORA_SUPPRESS_HELP_BANNER = originalSuppressHelpBanner;
     }
   });
 
@@ -119,10 +119,10 @@ describe("configureProgramHelp", () => {
   }
 
   async function parseHelp(argv: string[]) {
-    process.argv = ["node", "openclaw", ...argv];
+    process.argv = ["node", "afora", ...argv];
     let stdout = "";
     let stderr = "";
-    const program = new OpenClawCommand().enablePositionalOptions().exitOverride();
+    const program = new AforaCommand().enablePositionalOptions().exitOverride();
     configureProgramHelp(program, testProgramContext);
     program.configureOutput({
       writeOut: (value) => {
@@ -144,7 +144,7 @@ describe("configureProgramHelp", () => {
   }
 
   it("adds root help hint and marks commands with subcommands", () => {
-    process.argv = ["node", "openclaw", "--help"];
+    process.argv = ["node", "afora", "--help"];
     const program = makeProgramWithCommands();
     configureProgramHelp(program, testProgramContext);
 
@@ -156,7 +156,7 @@ describe("configureProgramHelp", () => {
   });
 
   it("includes banner and docs/examples in root help output", () => {
-    process.argv = ["node", "openclaw", "--help"];
+    process.argv = ["node", "afora", "--help"];
     const program = makeProgramWithCommands();
     configureProgramHelp(program, testProgramContext);
 
@@ -168,7 +168,7 @@ describe("configureProgramHelp", () => {
     expect(version).toBe(testProgramContext.programVersion);
     expect(options?.mode).toBe("default");
     expect(help).toContain("Examples:");
-    expect(help).toContain("https://docs.openclaw.ai/cli");
+    expect(help).toContain("https://docs.afora.ai/cli");
   });
 
   it("keeps valid root, group, subcommand, short, and help-command output successful", async () => {
@@ -184,15 +184,15 @@ describe("configureProgramHelp", () => {
     }
     expect(rootHelp.error.code).toBe("commander.helpDisplayed");
     expect(shortHelp.stdout).toBe(rootHelp.stdout);
-    expect(groupHelp.stdout).toContain("Usage: openclaw plugins [options] [command]");
-    expect(subcommandHelp.stdout).toContain("Usage: openclaw plugins list [options]");
+    expect(groupHelp.stdout).toContain("Usage: afora plugins [options] [command]");
+    expect(subcommandHelp.stdout).toContain("Usage: afora plugins list [options]");
     expect(helpCommand.stdout).toBe(groupHelp.stdout);
   });
 
   it("formats parse errors from the exact Commander command path", async () => {
     let stderr = "";
-    process.argv = ["node", "openclaw", "plugins", "--source", "list", "list", "--wat"];
-    const program = new OpenClawCommand().enablePositionalOptions().exitOverride();
+    process.argv = ["node", "afora", "plugins", "--source", "list", "list", "--wat"];
+    const program = new AforaCommand().enablePositionalOptions().exitOverride();
     configureProgramHelp(program, testProgramContext);
     program.configureOutput({
       writeErr: (value) => {
@@ -207,21 +207,21 @@ describe("configureProgramHelp", () => {
 
     const firstError = await program.parseAsync(process.argv).catch((error: unknown) => error);
     expect(firstError).toBeInstanceOf(CommanderError);
-    process.argv = ["node", "openclaw", "plugins", "list", "--still-wat"];
+    process.argv = ["node", "afora", "plugins", "list", "--still-wat"];
     const secondError = await program.parseAsync(process.argv).catch((error: unknown) => error);
     expect(secondError).toBeInstanceOf(CommanderError);
-    process.argv = ["node", "openclaw", "plugins", "lis"];
+    process.argv = ["node", "afora", "plugins", "lis"];
     const thirdError = await program.parseAsync(process.argv).catch((error: unknown) => error);
     expect(thirdError).toBeInstanceOf(CommanderError);
 
-    expect(stderr.match(/Try: openclaw plugins list --help/g)).toHaveLength(2);
-    expect(stderr).not.toContain("openclaw plugins list list --help");
-    expect(stderr).toContain("Did you mean this?\n  openclaw plugins list\n");
+    expect(stderr.match(/Try: afora plugins list --help/g)).toHaveLength(2);
+    expect(stderr).not.toContain("afora plugins list list --help");
+    expect(stderr).toContain("Did you mean this?\n  afora plugins list\n");
   });
 
   it("suppresses banner formatting when parent default help requests it", () => {
-    process.argv = ["node", "openclaw", "channels"];
-    process.env.OPENCLAW_SUPPRESS_HELP_BANNER = "1";
+    process.argv = ["node", "afora", "channels"];
+    process.env.AFORA_SUPPRESS_HELP_BANNER = "1";
     const program = makeProgramWithCommands();
     configureProgramHelp(program, testProgramContext);
 
@@ -231,18 +231,18 @@ describe("configureProgramHelp", () => {
   });
 
   it("prints version and exits immediately when version flags are present", () => {
-    process.argv = ["node", "openclaw", "--version"];
-    expectVersionExit({ expectedVersion: "OpenClaw 9.9.9-test (abc1234)" });
+    process.argv = ["node", "afora", "--version"];
+    expectVersionExit({ expectedVersion: "Afora 9.9.9-test (abc1234)" });
   });
 
   it("prints version and exits immediately without commit metadata", () => {
-    process.argv = ["node", "openclaw", "--version"];
+    process.argv = ["node", "afora", "--version"];
     resolveCommitHashMock.mockReturnValue(null);
-    expectVersionExit({ expectedVersion: "OpenClaw 9.9.9-test" });
+    expectVersionExit({ expectedVersion: "Afora 9.9.9-test" });
   });
 
   it("does not treat subcommand --version options as root version requests", () => {
-    process.argv = ["node", "openclaw", "skills", "verify", "discrawl", "--version", "1.0.0"];
+    process.argv = ["node", "afora", "skills", "verify", "discrawl", "--version", "1.0.0"];
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
       throw new Error(`exit:${code ?? ""}`);

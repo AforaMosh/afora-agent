@@ -3,7 +3,7 @@
  *
  * Evaluates route, sender, command, and mention gates into one admission decision.
  */
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { resolveCommandAuthorizedFromAuthorizers } from "../command-gating.js";
 import {
   allowedImplicitMentionKindsFromConfig,

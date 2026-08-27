@@ -1,5 +1,5 @@
 // Qa Lab tests cover bounded CI smoke pack planning.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createQaSmokeCiPart, selectQaSmokeCiEligibilityChannel } from "./ci-smoke-plan.js";
 import { resolveQaProfileScenarios } from "./profile-planning.js";

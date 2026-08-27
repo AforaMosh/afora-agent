@@ -1,7 +1,7 @@
 // Telegram tests cover directory contract plugin behavior.
-import { expectDirectoryIds } from "openclaw/plugin-sdk/channel-test-helpers";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { withEnvAsync } from "openclaw/plugin-sdk/test-env";
+import { expectDirectoryIds } from "afora-agent/plugin-sdk/channel-test-helpers";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { withEnvAsync } from "afora-agent/plugin-sdk/test-env";
 import { describe, expect, it } from "vitest";
 import {
   listTelegramDirectoryGroupsFromConfig,
@@ -18,7 +18,7 @@ describe("Telegram directory contract", () => {
           groups: { "-1001": {}, "*": {} },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     await expectDirectoryIds(
       listTelegramDirectoryPeersFromConfig,
@@ -45,7 +45,7 @@ describe("Telegram directory contract", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       await expectDirectoryIds(listTelegramDirectoryPeersFromConfig, cfg, ["@alice"]);
       await expectDirectoryIds(listTelegramDirectoryGroupsFromConfig, cfg, ["-1001"]);
@@ -66,7 +66,7 @@ describe("Telegram directory contract", () => {
           groups: { "-1001": {} },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     await expectDirectoryIds(listTelegramDirectoryPeersFromConfig, cfg, ["@alice"]);
     await expectDirectoryIds(listTelegramDirectoryGroupsFromConfig, cfg, ["-1001"]);
@@ -80,7 +80,7 @@ describe("Telegram directory contract", () => {
           groups: { "-1001": {}, "-1002": {}, "-2001": {} },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const groups = await listTelegramDirectoryGroupsFromConfig({
       cfg,

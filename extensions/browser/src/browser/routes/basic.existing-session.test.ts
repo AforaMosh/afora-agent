@@ -91,13 +91,13 @@ function createManagedProfileState(
     forProfile: () =>
       ({
         profile: {
-          name: "openclaw",
-          driver: "openclaw",
+          name: "afora",
+          driver: "afora",
           cdpPort: 18800,
           cdpUrl: "http://127.0.0.1:18800",
           cdpHost: "127.0.0.1",
           cdpIsLoopback: true,
-          userDataDir: "/tmp/openclaw-profile",
+          userDataDir: "/tmp/afora-profile",
           color: "#FF4500",
           headless: false,
           headlessSource: "default",
@@ -148,13 +148,13 @@ async function callStartRoute(params: {
     }
   });
   const profile = {
-    name: "openclaw",
-    driver: "openclaw",
+    name: "afora",
+    driver: "afora",
     cdpPort: 18800,
     cdpUrl: "http://127.0.0.1:18800",
     cdpHost: "127.0.0.1",
     cdpIsLoopback: true,
-    userDataDir: "/tmp/openclaw-profile",
+    userDataDir: "/tmp/afora-profile",
     color: "#FF4500",
     headless: false,
     headlessSource: "default",
@@ -235,13 +235,13 @@ describe("basic browser routes", () => {
     delete process.env.WAYLAND_DISPLAY;
     try {
       const response = await callBasicRouteWithState({
-        query: { profile: "openclaw" },
+        query: { profile: "afora" },
         state: createManagedProfileState(),
       });
 
       expect(response.statusCode).toBe(200);
       const body = responseBodyRecord(response);
-      expect(body.profile).toBe("openclaw");
+      expect(body.profile).toBe("afora");
       expect(body.headless).toBe(true);
       expect(body.headlessSource).toBe("linux-display-fallback");
     } finally {
@@ -262,12 +262,12 @@ describe("basic browser routes", () => {
   it("reports request-local headless source for tracked local launches", async () => {
     const state = createManagedProfileState();
     const profile = (state.forProfile() as { profile: unknown }).profile as never;
-    state.profiles.set("openclaw", {
+    state.profiles.set("afora", {
       profile,
       running: {
         pid: 222,
         exe: { kind: "chromium", path: "/usr/bin/chromium" },
-        userDataDir: "/tmp/openclaw-profile",
+        userDataDir: "/tmp/afora-profile",
         cdpPort: 18800,
         startedAt: Date.now(),
         proc: {} as never,
@@ -277,13 +277,13 @@ describe("basic browser routes", () => {
     });
 
     const response = await callBasicRouteWithState({
-      query: { profile: "openclaw" },
+      query: { profile: "afora" },
       state,
     });
 
     expect(response.statusCode).toBe(200);
     const body = responseBodyRecord(response);
-    expect(body.profile).toBe("openclaw");
+    expect(body.profile).toBe("afora");
     expect(body.pid).toBe(222);
     expect(body.chosenBrowser).toBe("chromium");
     expect(body.headless).toBe(true);
@@ -317,12 +317,12 @@ describe("basic browser routes", () => {
       },
     );
     const profile = (state.forProfile() as { profile: unknown }).profile as never;
-    state.profiles.set("openclaw", {
+    state.profiles.set("afora", {
       profile,
       running: {
         pid: 222,
         exe: { kind: "chromium", path: "/usr/bin/chromium" },
-        userDataDir: "/tmp/openclaw-profile",
+        userDataDir: "/tmp/afora-profile",
         cdpPort: 18800,
         startedAt: Date.now(),
         proc: {} as never,
@@ -330,11 +330,11 @@ describe("basic browser routes", () => {
     });
 
     const first = await callBasicRouteWithState({
-      query: { profile: "openclaw" },
+      query: { profile: "afora" },
       state,
     });
     const second = await callBasicRouteWithState({
-      query: { profile: "openclaw" },
+      query: { profile: "afora" },
       state,
     });
 
@@ -379,21 +379,21 @@ describe("basic browser routes", () => {
       },
     );
     const profile = (state.forProfile() as { profile: unknown }).profile as never;
-    state.profiles.set("openclaw", {
+    state.profiles.set("afora", {
       profile,
       running: {
         pid: 222,
         exe: { kind: "chromium", path: "/usr/bin/chromium" },
-        userDataDir: "/tmp/openclaw-profile",
+        userDataDir: "/tmp/afora-profile",
         cdpPort: 18800,
         startedAt: Date.now(),
         proc: {} as never,
       },
     });
 
-    const first = await callBasicRouteWithState({ query: { profile: "openclaw" }, state });
-    const second = await callBasicRouteWithState({ query: { profile: "openclaw" }, state });
-    const third = await callBasicRouteWithState({ query: { profile: "openclaw" }, state });
+    const first = await callBasicRouteWithState({ query: { profile: "afora" }, state });
+    const second = await callBasicRouteWithState({ query: { profile: "afora" }, state });
+    const third = await callBasicRouteWithState({ query: { profile: "afora" }, state });
 
     expect(responseBodyRecord(first).graphics).toEqual(unavailable);
     expect(responseBodyRecord(second).graphics).toEqual(available);
@@ -415,17 +415,17 @@ describe("basic browser routes", () => {
       running: {
         pid: 222,
         exe: { kind: "chromium", path: "/usr/bin/chromium" },
-        userDataDir: "/tmp/openclaw-profile",
+        userDataDir: "/tmp/afora-profile",
         cdpPort: 18800,
         startedAt: Date.now(),
         proc: {} as never,
       },
     };
-    state.profiles.set("openclaw", runtime);
+    state.profiles.set("afora", runtime);
     getProfileLifecycle(runtime as never).transitionReason = "cdp-port-changed";
 
     const response = await callBasicRouteWithState({
-      query: { profile: "openclaw" },
+      query: { profile: "afora" },
       state,
     });
 
@@ -436,7 +436,7 @@ describe("basic browser routes", () => {
 
   it("does not inspect graphics when passive status sees no owned managed process", async () => {
     const response = await callBasicRouteWithState({
-      query: { profile: "openclaw" },
+      query: { profile: "afora" },
       state: createManagedProfileState(
         {},
         {
@@ -453,9 +453,9 @@ describe("basic browser routes", () => {
 
   it("redacts CDP URL credentials from status responses", async () => {
     const response = await callBasicRouteWithState({
-      query: { profile: "openclaw" },
+      query: { profile: "afora" },
       state: createManagedProfileState({
-        cdpUrl: "http://openclaw:relay-token@127.0.0.1:18800",
+        cdpUrl: "http://afora:relay-token@127.0.0.1:18800",
       }),
     });
 
@@ -503,7 +503,7 @@ describe("basic browser routes", () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(response.body).toEqual({ ok: true, profile: "openclaw" });
+    expect(response.body).toEqual({ ok: true, profile: "afora" });
     expect(ensureBrowserAvailable).toHaveBeenCalledWith({ headless: true });
   });
 
@@ -513,7 +513,7 @@ describe("basic browser routes", () => {
         metadata: {
           reason: "no_display_for_headed_profile",
           details: {
-            profile: "openclaw",
+            profile: "afora",
             requestedHeadless: false,
             headlessSource: "profile",
             displayPresent: false,
@@ -527,7 +527,7 @@ describe("basic browser routes", () => {
       error: "display required",
       reason: "no_display_for_headed_profile",
       details: {
-        profile: "openclaw",
+        profile: "afora",
         requestedHeadless: false,
         headlessSource: "profile",
         displayPresent: false,
@@ -563,7 +563,7 @@ describe("basic browser routes", () => {
 
     expect(response.statusCode).toBe(400);
     expect(responseBodyRecord(response).error).toBe(
-      'Headless start override is only supported for locally launched openclaw profiles. Profile "chrome-live" is attach-only, remote, or existing-session.',
+      'Headless start override is only supported for locally launched afora profiles. Profile "chrome-live" is attach-only, remote, or existing-session.',
     );
     expect(ensureBrowserAvailable).not.toHaveBeenCalled();
   });
@@ -636,7 +636,7 @@ describe("basic browser routes", () => {
     const isTransportAvailable = vi.fn(async () => false);
 
     const response = await callBasicRouteWithState({
-      query: { profile: "openclaw" },
+      query: { profile: "afora" },
       state: createManagedProfileState({}, { isHttpReachable, isTransportAvailable }),
     });
 

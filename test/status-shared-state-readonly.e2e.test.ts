@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
-import { createOpenClawTestInstance } from "./helpers/openclaw-test-instance.js";
+import { createAforaTestInstance } from "./helpers/afora-test-instance.js";
 
 function seedInspectableTask(db: DatabaseSync): void {
   const now = Date.now();
@@ -44,10 +44,10 @@ describe("status shared-state ownership", () => {
   ])(
     "does not create shared state during $name",
     async ({ name, args }) => {
-      const instance = await createOpenClawTestInstance({
+      const instance = await createAforaTestInstance({
         name: `status-read-only-${name.replaceAll(" ", "-")}`,
       });
-      const databasePath = path.join(instance.stateDir, "state", "openclaw.sqlite");
+      const databasePath = path.join(instance.stateDir, "state", "afora.sqlite");
       try {
         expect(fs.existsSync(databasePath)).toBe(false);
 
@@ -66,8 +66,8 @@ describe("status shared-state ownership", () => {
   );
 
   it("reads committed tasks while the Gateway owns state and another writer is active", async () => {
-    const instance = await createOpenClawTestInstance({ name: "status-read-only-live-gateway" });
-    const databasePath = path.join(instance.stateDir, "state", "openclaw.sqlite");
+    const instance = await createAforaTestInstance({ name: "status-read-only-live-gateway" });
+    const databasePath = path.join(instance.stateDir, "state", "afora.sqlite");
     let writer: DatabaseSync | undefined;
     try {
       await instance.startGateway();

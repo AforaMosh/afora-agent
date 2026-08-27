@@ -1,5 +1,5 @@
 // Shared mobile pairing setup state for app-level entry points.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import type {
   DevicePairSetupCodeResult,
   DevicePairSetupCompletedEvent,

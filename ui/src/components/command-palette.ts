@@ -3,7 +3,7 @@ import { consume } from "@lit/context";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { html, nothing } from "lit";
 import { property, state } from "lit/decorators.js";
 import { ref } from "lit/directives/ref.js";
@@ -13,7 +13,7 @@ import { t } from "../i18n/index.ts";
 import { formatRelativeTimestamp } from "../lib/format.ts";
 import { resolveSessionDisplayName } from "../lib/session-display.ts";
 import { getVisibleSessionRows } from "../lib/sessions/index.ts";
-import { OpenClawLightDomContentsElement } from "../lit/openclaw-element.ts";
+import { AforaLightDomContentsElement } from "../lit/afora-element.ts";
 import { SubscriptionsController } from "../lit/subscriptions-controller.ts";
 import { isCommandPaletteShortcut } from "./command-palette-contract.ts";
 import { icons, type IconName } from "./icons.ts";
@@ -279,10 +279,10 @@ function renderCommandPalette(props: CommandPaletteProps) {
   const paletteLabel = t("palette.placeholder");
 
   return html`
-    <openclaw-modal-dialog
+    <afora-modal-dialog
       class="cmd-palette-overlay palette"
       label=${paletteLabel}
-      style="--openclaw-modal-width: min(640px, calc(100vw - 32px));"
+      style="--afora-modal-width: min(640px, calc(100vw - 32px));"
       @modal-cancel=${() => closePalette(props)}
     >
       <div
@@ -359,11 +359,11 @@ function renderCommandPalette(props: CommandPaletteProps) {
           <span><kbd>esc</kbd> ${t("palette.footer.close")}</span>
         </div>
       </div>
-    </openclaw-modal-dialog>
+    </afora-modal-dialog>
   `;
 }
 
-export class CommandPalette extends OpenClawLightDomContentsElement {
+export class CommandPalette extends AforaLightDomContentsElement {
   @property({ attribute: false }) onNavigate?: (routeId: RouteId) => void;
   @property({ attribute: false }) onSelectSession?: (sessionKey: string) => void;
   @property({ attribute: false }) onSlashCommand?: (command: string) => void;
@@ -606,6 +606,6 @@ export class CommandPalette extends OpenClawLightDomContentsElement {
   }
 }
 
-if (!customElements.get("openclaw-command-palette")) {
-  customElements.define("openclaw-command-palette", CommandPalette);
+if (!customElements.get("afora-command-palette")) {
+  customElements.define("afora-command-palette", CommandPalette);
 }

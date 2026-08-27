@@ -55,7 +55,7 @@ it("claims created placement while carrying work metadata through background rec
         key,
         kind: "direct",
         updatedAt: 2,
-        worktree: { id: "wt-1", branch: "openclaw/task", repoRoot: "/repo" },
+        worktree: { id: "wt-1", branch: "afora-agent/task", repoRoot: "/repo" },
       },
     ],
   });

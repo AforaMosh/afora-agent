@@ -39,7 +39,7 @@ if ! verify_archive; then
   trap - EXIT
 fi
 
-extract_dir="$(mktemp -d "${TMPDIR:-/tmp}/openclaw-cua-driver.XXXXXX")"
+extract_dir="$(mktemp -d "${TMPDIR:-/tmp}/afora-cua-driver.XXXXXX")"
 trap 'rm -rf "$extract_dir"' EXIT
 tar -xzf "$ARCHIVE" -C "$extract_dir" cua-driver
 source_binary="$extract_dir/cua-driver"

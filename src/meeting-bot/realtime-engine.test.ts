@@ -262,7 +262,7 @@ describe("meeting realtime engine output ownership", () => {
       fixture.callbacks.onToolCall?.({
         itemId: "item-old",
         callId: "call-old",
-        name: "openclaw_agent_consult",
+        name: "afora_agent_consult",
         args: { question: "old work" },
       });
 

@@ -1,5 +1,5 @@
 {
-  "name": "@openclaw/cua-computer",
+  "name": "@afora/cua-computer",
   "version": "2026.8.1",
   "description": "Experimental CUA Driver computer control for macOS, Windows, and Linux node hosts",
   "type": "module",
@@ -9,7 +9,7 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
   "cuaDriverArtifacts": {
     "darwin-universal-binary": {
@@ -40,7 +40,7 @@
       }
     }
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

@@ -17,7 +17,7 @@ afterEach(() => {
 describe("Linux Canvas IPC client", () => {
   it("keeps the outer timeout above the app's complete A2UI phase budget", async () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-linux-canvas-timeout-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-linux-canvas-timeout-"));
     tempDirs.push(dir);
     const socketPath = path.join(dir, "canvas.sock");
     let resolveRequest: (() => void) | undefined;
@@ -54,7 +54,7 @@ describe("Linux Canvas IPC client", () => {
   });
 
   it("maps requests to responses without corrupting split UTF-8 frames", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-linux-canvas-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-linux-canvas-"));
     tempDirs.push(dir);
     const socketPath = path.join(dir, "canvas.sock");
     let resolveRequest:
@@ -118,7 +118,7 @@ describe("Linux Canvas IPC client", () => {
   });
 
   it("rejects success frames without valid payload JSON", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-linux-canvas-invalid-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-linux-canvas-invalid-"));
     tempDirs.push(dir);
     const socketPath = path.join(dir, "canvas.sock");
     const server = net.createServer((socket) => {
@@ -151,7 +151,7 @@ describe("Linux Canvas IPC client", () => {
   });
 
   it("does not dispatch a queued request before the prior response", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-linux-canvas-queue-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-linux-canvas-queue-"));
     tempDirs.push(dir);
     const socketPath = path.join(dir, "canvas.sock");
     const requests: Array<{ id: string; command: string }> = [];
@@ -223,7 +223,7 @@ describe("Linux Canvas IPC client", () => {
   });
 
   it("rejects queued work without reconnecting after close", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-linux-canvas-close-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-linux-canvas-close-"));
     tempDirs.push(dir);
     const socketPath = path.join(dir, "canvas.sock");
     let connections = 0;

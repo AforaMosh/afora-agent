@@ -1,7 +1,7 @@
 // This type-only leaf exists solely to keep lifecycle sibling modules from importing the controller.
 // Keeping the controller out of their dependency graph satisfies the architecture cycle gate.
 import type { cleanupBrowserSessionsForLifecycleEnd } from "../../../browser-lifecycle-cleanup.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import type { callGateway as defaultCallGateway } from "../../../gateway/call.js";
 import type { DetachedTaskFindResult } from "../../../tasks/detached-task-runtime-contract.js";
 import type { SubagentLifecycleEndedReason } from "./subagent-lifecycle-events.js";
@@ -19,7 +19,7 @@ export type SubagentLifecycleOptions = {
   runs: Map<string, SubagentRunRecord>;
   resumedRuns: Set<string>;
   subagentAnnounceTimeoutMs: number;
-  getRuntimeConfig(): OpenClawConfig;
+  getRuntimeConfig(): AforaConfig;
   persist(...runIds: string[]): void;
   persistOrThrow(...runIds: string[]): void;
   clearPendingLifecycleError(runId: string): void;

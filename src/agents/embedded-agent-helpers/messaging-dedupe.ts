@@ -1,7 +1,7 @@
 /**
  * Normalizes outbound message text to suppress duplicate send actions.
  */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 
 const MIN_DUPLICATE_TEXT_LENGTH = 10;
 const MIN_SUBSTRING_DUPLICATE_RATIO = 0.5;

@@ -1,10 +1,10 @@
-// Snapshots script supports OpenClaw repository automation.
-import { expectDefined } from "@openclaw/normalization-core";
+// Snapshots script supports Afora repository automation.
+import { expectDefined } from "@afora/normalization-core";
 import { die, run } from "./host-command.ts";
 import type { Mode, SnapshotInfo } from "./types.ts";
 
 const SNAPSHOT_LIST_TIMEOUT_MS = 120_000;
-export const SKIP_SNAPSHOT_RESTORE_ENV = "OPENCLAW_PARALLELS_SKIP_SNAPSHOT_RESTORE";
+export const SKIP_SNAPSHOT_RESTORE_ENV = "AFORA_PARALLELS_SKIP_SNAPSHOT_RESTORE";
 
 export function shouldSkipSnapshotRestore(): boolean {
   return /^(1|true|yes|on)$/iu.test(process.env[SKIP_SNAPSHOT_RESTORE_ENV] ?? "");

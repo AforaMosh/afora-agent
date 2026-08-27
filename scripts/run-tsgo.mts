@@ -37,7 +37,7 @@ function main(): void {
   if (sparseGuardError) {
     console.error(sparseGuardError);
     if (shouldSkipSparseTsgoGuardError(env)) {
-      console.error("[tsgo] skipping sparse-missing project because OPENCLAW_TSGO_SPARSE_SKIP=1");
+      console.error("[tsgo] skipping sparse-missing project because AFORA_TSGO_SPARSE_SKIP=1");
       process.exitCode = 0;
     } else {
       process.exitCode = 1;

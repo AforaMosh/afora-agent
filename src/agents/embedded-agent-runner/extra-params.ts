@@ -2,7 +2,7 @@ import {
   canonicalizeMaxTokensParam,
   resolveMaxTokensParam,
   detectOpenAICompletionsCompat,
-} from "@openclaw/ai/transports";
+} from "@afora/ai/transports";
 import {
   type NativeWebSearchToolPolicyParams,
   isNativeWebSearchAllowedByToolPolicy,
@@ -10,7 +10,7 @@ import {
 /**
  * Resolves model extra parameters and transport overrides for embedded agents.
  */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { createGoogleThinkingPayloadWrapper } from "../../llm/providers/stream-wrappers/google.js";
 import { createMinimaxThinkingDisabledWrapper } from "../../llm/providers/stream-wrappers/minimax.js";
 import {
@@ -63,7 +63,7 @@ const providerRuntimeDeps = {
   ...defaultProviderRuntimeDeps,
 };
 
-let preparedExtraParamsCache = new WeakMap<OpenClawConfig, Map<string, Record<string, unknown>>>();
+let preparedExtraParamsCache = new WeakMap<AforaConfig, Map<string, Record<string, unknown>>>();
 const REQUEST_SCOPED_EXTRA_PARAM_KEYS = new Set(["response_format", "responseFormat", "stop"]);
 const GPT_PARALLEL_TOOL_CALLS_APIS = new Set([
   "openai-completions",
@@ -101,7 +101,7 @@ const testing = {
 };
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.extraParamsTestApi")] = testing;
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.extraParamsTestApi")] = testing;
 }
 
 /**
@@ -111,7 +111,7 @@ if (process.env.VITEST || process.env.NODE_ENV === "test") {
  * @internal Exported for testing only
  */
 export function resolveExtraParams(params: {
-  cfg: OpenClawConfig | undefined;
+  cfg: AforaConfig | undefined;
   provider: string;
   modelId: string;
   agentId?: string;
@@ -257,7 +257,7 @@ function resolvePreparedExtraParamsCacheKey(params: {
 }
 
 export function resolvePreparedExtraParams(params: {
-  cfg: OpenClawConfig | undefined;
+  cfg: AforaConfig | undefined;
   provider: string;
   modelId: string;
   agentDir?: string;
@@ -814,7 +814,7 @@ function createOpenAICompletionsExtraBodyWrapper(
 
 type ApplyExtraParamsContext = {
   agent: { streamFn?: StreamFn };
-  cfg: OpenClawConfig | undefined;
+  cfg: AforaConfig | undefined;
   provider: string;
   modelId: string;
   agentDir?: string;
@@ -1095,7 +1095,7 @@ function isMiMoReasoningAsVisibleTextOpenAICompatibleModel(
  */
 export function applyExtraParamsToAgent(
   agent: { streamFn?: StreamFn },
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
   provider: string,
   modelId: string,
   extraParamsOverride?: Record<string, unknown>,

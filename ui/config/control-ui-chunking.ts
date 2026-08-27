@@ -7,7 +7,7 @@ function moduleIdIncludesPackage(id: string, packageName: string): boolean {
   const normalized = normalizeModuleId(id);
   return (
     normalized.includes(`/node_modules/${packageName}/`) ||
-    normalized.includes(`/openclaw-pnpm-node-modules/${packageName}/`)
+    normalized.includes(`/afora-pnpm-node-modules/${packageName}/`)
   );
 }
 

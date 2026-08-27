@@ -6,7 +6,7 @@
 import {
   asDateTimestampMs,
   parseStrictNonNegativeInteger,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 
 export function hasMultipleHardlinks(raw: string): boolean {
   const linkCount = parseStrictNonNegativeInteger(raw);

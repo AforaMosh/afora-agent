@@ -235,7 +235,7 @@ describe("task-registry maintenance issue #60299", () => {
     createTaskRegistryMaintenanceHarness({
       tasks,
       listSessionEntries: listSessionEntriesMock,
-      resolveStorePath: () => "/tmp/openclaw-test-sessions-main.json",
+      resolveStorePath: () => "/tmp/afora-test-sessions-main.json",
     });
 
     expectMaintenanceCounts(await runTaskRegistryMaintenance(), { reconciled: tasks.length });

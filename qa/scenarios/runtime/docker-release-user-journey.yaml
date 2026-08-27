@@ -9,7 +9,7 @@ scenario:
       - containers.release-path-install
   objective: Verify the package-installed Docker release journey from clean install through agent, plugin, channel, Gateway restart, and doctor checks.
   successCriteria:
-    - The packed OpenClaw tarball installs globally in a clean Docker home.
+    - The packed Afora tarball installs globally in a clean Docker home.
     - Non-interactive onboarding configures the loopback Gateway and mock model provider.
     - A package-installed agent turn, external plugin install/uninstall, ClickClack outbound/inbound messaging, Gateway restart, and doctor repair all pass.
   docsRefs:

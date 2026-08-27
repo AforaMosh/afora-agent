@@ -15,17 +15,17 @@ import type {
   ChannelStatusIssue as ContractChannelStatusIssue,
   ChannelThreadingContext as ContractChannelThreadingContext,
   ChannelThreadingToolContext as ContractChannelThreadingToolContext,
-} from "openclaw/plugin-sdk/channel-contract";
+} from "afora-agent/plugin-sdk/channel-contract";
 import type {
   ChannelMessageActionContext as CoreChannelMessageActionContext,
-  OpenClawPluginApi as CoreOpenClawPluginApi,
+  AforaPluginApi as CoreAforaPluginApi,
   PluginRuntime as CorePluginRuntime,
-} from "openclaw/plugin-sdk/core";
+} from "afora-agent/plugin-sdk/core";
 import type {
   GetReplyOptions as ReplyRuntimeGetReplyOptions,
   ReplyDispatchBeforeDeliverOptions as ReplyRuntimeBeforeDeliverOptions,
   ReplyDispatcher as ReplyRuntimeDispatcher,
-} from "openclaw/plugin-sdk/reply-runtime";
+} from "afora-agent/plugin-sdk/reply-runtime";
 import ts from "typescript";
 import { beforeAll, describe, expect, expectTypeOf, it } from "vitest";
 import {
@@ -54,7 +54,7 @@ import * as channelActionsDirectSdk from "../../plugin-sdk/channel-actions.js";
 import * as channelLifecycleDirectSdk from "../../plugin-sdk/channel-lifecycle.js";
 import type {
   ChannelMessageActionContext as SharedChannelMessageActionContext,
-  OpenClawPluginApi as SharedOpenClawPluginApi,
+  AforaPluginApi as SharedAforaPluginApi,
   PluginRuntime as SharedPluginRuntime,
 } from "../../plugin-sdk/channel-plugin-common.js";
 import * as channelReplyPipelineDirectSdk from "../../plugin-sdk/channel-reply-pipeline.js";
@@ -62,7 +62,7 @@ import * as coreDirectSdk from "../../plugin-sdk/core.js";
 import { expectNoReaddirSyncDuring } from "../../test-utils/fs-scan-assertions.js";
 import { listGitTrackedFiles, toRepoRelativePath } from "../../test-utils/repo-files.js";
 import type { PluginRuntime } from "../runtime/types.js";
-import type { OpenClawPluginApi } from "../types.js";
+import type { AforaPluginApi } from "../types.js";
 
 const SRC_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const REPO_ROOT = resolve(SRC_ROOT, "..");
@@ -161,9 +161,9 @@ const BROWSER_HELPER_EXPORT_PARITY_CONTRACTS: readonly BrowserHelperExportParity
       "DEFAULT_BROWSER_ACTION_TIMEOUT_MS",
       "DEFAULT_BROWSER_DEFAULT_PROFILE_NAME",
       "DEFAULT_BROWSER_EVALUATE_ENABLED",
-      "DEFAULT_OPENCLAW_BROWSER_COLOR",
-      "DEFAULT_OPENCLAW_BROWSER_ENABLED",
-      "DEFAULT_OPENCLAW_BROWSER_PROFILE_NAME",
+      "DEFAULT_AFORA_BROWSER_COLOR",
+      "DEFAULT_AFORA_BROWSER_ENABLED",
+      "DEFAULT_AFORA_BROWSER_PROFILE_NAME",
       "DEFAULT_UPLOAD_DIR",
       "ResolvedBrowserConfig",
       "ResolvedBrowserProfile",
@@ -481,7 +481,7 @@ describe("plugin-sdk subpath exports", () => {
         resolve(REPO_ROOT, "test"),
       ],
       pattern:
-        /(?:from\s+|import\s+(?:type\s+)?|import\s*\(\s*)["']openclaw\/plugin-sdk\/channel-runtime(?=["'])/u,
+        /(?:from\s+|import\s+(?:type\s+)?|import\s*\(\s*)["']afora\/plugin-sdk\/channel-runtime(?=["'])/u,
       exclude: ["src/plugins/compat/registry.ts", "src/plugins/sdk-alias.test.ts"],
     });
   });
@@ -1328,10 +1328,10 @@ describe("plugin-sdk subpath exports", () => {
     expectTypeOf<ContractChannelStatusIssue>().toMatchTypeOf<ChannelStatusIssue>();
     expectTypeOf<ContractChannelThreadingContext>().toMatchTypeOf<ChannelThreadingContext>();
     expectTypeOf<ContractChannelThreadingToolContext>().toMatchTypeOf<ChannelThreadingToolContext>();
-    expectTypeOf<CoreOpenClawPluginApi>().toMatchTypeOf<OpenClawPluginApi>();
+    expectTypeOf<CoreAforaPluginApi>().toMatchTypeOf<AforaPluginApi>();
     expectTypeOf<CorePluginRuntime>().toMatchTypeOf<PluginRuntime>();
     expectTypeOf<CoreChannelMessageActionContext>().toMatchTypeOf<ChannelMessageActionContext>();
-    expectTypeOf<CoreOpenClawPluginApi>().toMatchTypeOf<SharedOpenClawPluginApi>();
+    expectTypeOf<CoreAforaPluginApi>().toMatchTypeOf<SharedAforaPluginApi>();
     expectTypeOf<CorePluginRuntime>().toMatchTypeOf<SharedPluginRuntime>();
     expectTypeOf<CoreChannelMessageActionContext>().toMatchTypeOf<SharedChannelMessageActionContext>();
     type PrivateResumeOptionKeys = Extract<
@@ -1348,7 +1348,7 @@ describe("plugin-sdk subpath exports", () => {
   });
 
   it("keeps the supported root SDK contract importable through core", async () => {
-    const coreSdk = await importResolvedPluginSdkSubpath("openclaw/plugin-sdk/core");
+    const coreSdk = await importResolvedPluginSdkSubpath("afora-agent/plugin-sdk/core");
 
     expect(coreSdk.definePluginEntry).toBe(coreDirectSdk.definePluginEntry);
     expect(coreSdk.optionalStringEnum).toBe(coreDirectSdk.optionalStringEnum);
@@ -1359,21 +1359,21 @@ describe("plugin-sdk subpath exports", () => {
 
   it("keeps focused SDK subpaths importable", async () => {
     const channelActionsSdk = await importResolvedPluginSdkSubpath(
-      "openclaw/plugin-sdk/channel-actions",
+      "afora-agent/plugin-sdk/channel-actions",
     );
-    const pluginEntrySdk = await importResolvedPluginSdkSubpath("openclaw/plugin-sdk/plugin-entry");
+    const pluginEntrySdk = await importResolvedPluginSdkSubpath("afora-agent/plugin-sdk/plugin-entry");
     const channelLifecycleSdk = await importResolvedPluginSdkSubpath(
-      "openclaw/plugin-sdk/channel-lifecycle",
+      "afora-agent/plugin-sdk/channel-lifecycle",
     );
     const channelPairingSdk = await importResolvedPluginSdkSubpath(
-      "openclaw/plugin-sdk/channel-pairing",
+      "afora-agent/plugin-sdk/channel-pairing",
     );
     const channelReplyPipelineSdk = await importResolvedPluginSdkSubpath(
-      "openclaw/plugin-sdk/channel-reply-pipeline",
+      "afora-agent/plugin-sdk/channel-reply-pipeline",
     );
     const representativeModules = [];
     for (const id of representativeRuntimeSmokeSubpaths) {
-      representativeModules.push(await importResolvedPluginSdkSubpath(`openclaw/plugin-sdk/${id}`));
+      representativeModules.push(await importResolvedPluginSdkSubpath(`afora/plugin-sdk/${id}`));
     }
 
     expect(pluginEntrySdk.definePluginEntry).toBe(coreDirectSdk.definePluginEntry);
@@ -1446,14 +1446,14 @@ describe("plugin-sdk subpath exports", () => {
     expect(deprecatedPublicPluginSdkEntrypoints.length).toBeGreaterThan(0);
 
     for (const subpath of deprecatedPublicPluginSdkEntrypoints) {
-      const mod = await importResolvedPluginSdkSubpath(`openclaw/plugin-sdk/${subpath}`);
+      const mod = await importResolvedPluginSdkSubpath(`afora/plugin-sdk/${subpath}`);
       expect(typeof mod, `deprecated subpath ${subpath} should resolve`).toBe("object");
     }
   });
 
   it("keeps repeated silent-token semantics visible through the reply-chunking subpath", async () => {
     const replyChunkingSdk = await importResolvedPluginSdkSubpath(
-      "openclaw/plugin-sdk/reply-chunking",
+      "afora-agent/plugin-sdk/reply-chunking",
     );
 
     expect(replyChunkingSdk.isSilentReplyText("NO_REPLY\n\nNO_REPLY")).toBe(true);

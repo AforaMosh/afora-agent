@@ -7,6 +7,6 @@ export const page = definePage({
   component: () =>
     import("./lobsterdex-page.ts").then(() => ({
       header: true,
-      render: () => html`<openclaw-lobsterdex-page></openclaw-lobsterdex-page>`,
+      render: () => html`<afora-lobsterdex-page></afora-lobsterdex-page>`,
     })),
 });

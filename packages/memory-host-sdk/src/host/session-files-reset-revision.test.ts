@@ -4,15 +4,15 @@ import path from "node:path";
 import {
   clearConfigCache,
   clearRuntimeConfigSnapshot,
-} from "openclaw/plugin-sdk/runtime-config-snapshot";
+} from "afora-agent/plugin-sdk/runtime-config-snapshot";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   persistSessionTranscriptTurn,
   resetSessionEntryLifecycle,
   upsertSessionEntryCore,
 } from "../../../../src/config/sessions/session-accessor.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../../../src/state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../../../../src/state/openclaw-state-db.js";
+import { closeAforaAgentDatabasesForTest } from "../../../../src/state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../../../../src/state/afora-state-db.js";
 import { buildSessionEntry, type SessionFileEntry } from "./session-files.js";
 
 function requireSessionEntry(entry: SessionFileEntry | null): SessionFileEntry {
@@ -28,25 +28,25 @@ let previousConfigPath: string | undefined;
 
 beforeEach(() => {
   tmpDir = fsSync.mkdtempSync(path.join(os.tmpdir(), "session-reset-revision-test-"));
-  previousStateDir = process.env.OPENCLAW_STATE_DIR;
-  previousConfigPath = process.env.OPENCLAW_CONFIG_PATH;
-  Reflect.set(process.env, "OPENCLAW_STATE_DIR", tmpDir);
+  previousStateDir = process.env.AFORA_STATE_DIR;
+  previousConfigPath = process.env.AFORA_CONFIG_PATH;
+  Reflect.set(process.env, "AFORA_STATE_DIR", tmpDir);
   clearRuntimeConfigSnapshot();
   clearConfigCache();
 });
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   if (previousStateDir === undefined) {
-    Reflect.deleteProperty(process.env, "OPENCLAW_STATE_DIR");
+    Reflect.deleteProperty(process.env, "AFORA_STATE_DIR");
   } else {
-    Reflect.set(process.env, "OPENCLAW_STATE_DIR", previousStateDir);
+    Reflect.set(process.env, "AFORA_STATE_DIR", previousStateDir);
   }
   if (previousConfigPath === undefined) {
-    Reflect.deleteProperty(process.env, "OPENCLAW_CONFIG_PATH");
+    Reflect.deleteProperty(process.env, "AFORA_CONFIG_PATH");
   } else {
-    Reflect.set(process.env, "OPENCLAW_CONFIG_PATH", previousConfigPath);
+    Reflect.set(process.env, "AFORA_CONFIG_PATH", previousConfigPath);
   }
   clearRuntimeConfigSnapshot();
   clearConfigCache();
@@ -96,7 +96,7 @@ describe("SQLite session reset content revision", () => {
     const after = requireSessionEntry(await buildSessionEntry(sessionKey, buildOptions));
     expect(after.content).toBe(before.content);
     expect(after.lineMap).toEqual(before.lineMap);
-    const cutoffSymbol = Symbol.for("openclaw.memory.sessionResetRecallCutoff");
+    const cutoffSymbol = Symbol.for("afora.memory.sessionResetRecallCutoff");
     expect(Object.getOwnPropertyDescriptor(after, cutoffSymbol)).toMatchObject({
       enumerable: false,
       value: { state: "valid", cutoffLine: expect.any(Number) },

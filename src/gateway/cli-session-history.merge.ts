@@ -1,10 +1,10 @@
 // Imported CLI history merge helpers.
-// Deduplicates external history messages against local OpenClaw transcripts.
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
+// Deduplicates external history messages against local Afora transcripts.
+import { asFiniteNumber } from "@afora/normalization-core/number-coercion";
 import {
   normalizeOptionalString,
   readStringValue,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { stripInboundMetadata } from "../auto-reply/reply/strip-inbound-meta.js";
 import { stripInlineDirectiveTagsForDisplay } from "../utils/directive-tags.js";
 
@@ -75,10 +75,10 @@ function resolveImportedExternalIdentity(message: unknown): ImportedExternalIden
     return undefined;
   }
   const meta =
-    "__openclaw" in message &&
-    (message as { __openclaw?: unknown })["__openclaw"] &&
-    typeof (message as { __openclaw?: unknown })["__openclaw"] === "object"
-      ? ((message as { __openclaw?: Record<string, unknown> })["__openclaw"] ?? {})
+    "__afora" in message &&
+    (message as { __afora?: unknown })["__afora"] &&
+    typeof (message as { __afora?: unknown })["__afora"] === "object"
+      ? ((message as { __afora?: Record<string, unknown> })["__afora"] ?? {})
       : undefined;
   const externalId = normalizeOptionalString(meta?.externalId);
   return externalId

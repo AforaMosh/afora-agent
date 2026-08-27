@@ -6,11 +6,11 @@ import fs from "node:fs/promises";
 import net from "node:net";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { formatErrorMessage, toErrorObject } from "openclaw/plugin-sdk/error-runtime";
-import { uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
-import { sliceUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { formatErrorMessage, toErrorObject } from "afora-agent/plugin-sdk/error-runtime";
+import { uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
+import { sliceUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import {
   createQaBundledPluginsDir,
   resolveQaOwnerPluginIdsForProviderIds,
@@ -247,13 +247,13 @@ export async function startQaGatewayChild(params: {
   forwardHostHome?: boolean;
   mockAuthAgentIds?: readonly string[];
   onListening?: (context: QaGatewayChildListeningContext) => Promise<void> | void;
-  mutateConfig?: (cfg: OpenClawConfig) => OpenClawConfig;
+  mutateConfig?: (cfg: AforaConfig) => AforaConfig;
   runtimeEnvPatch?: NodeJS.ProcessEnv;
 }) {
   // Verified launchers may require every runtime artifact to stay inside their
   // prepared root; carry that root forward instead of rediscovering host temp policy.
-  const tempParentDir = params.command?.tempParentDir ?? resolvePreferredOpenClawTmpDir();
-  const keepTemp = process.env.OPENCLAW_QA_KEEP_TEMP === "1";
+  const tempParentDir = params.command?.tempParentDir ?? resolvePreferredAforaTmpDir();
+  const keepTemp = process.env.AFORA_QA_KEEP_TEMP === "1";
   const gatewayLogStreams: Array<["stdout" | "stderr", WriteStream]> = [];
   let child: ReturnType<typeof spawn> | null = null;
   let childIdentity: QaGatewayVerifiedProcessIdentity | null = null;
@@ -262,7 +262,7 @@ export async function startQaGatewayChild(params: {
   > | null = null;
   let rpcClient: Awaited<ReturnType<typeof startQaGatewayRpcClient>> | null = null;
   let stagedBundledPluginsRoot: string | null = null;
-  const tempRoot = await fs.mkdtemp(path.join(tempParentDir, "openclaw-qa-suite-"));
+  const tempRoot = await fs.mkdtemp(path.join(tempParentDir, "afora-qa-suite-"));
   // The startup owner must release its temp root even when launcher or staging
   // setup fails before a child process or log streams have been created.
   try {
@@ -282,7 +282,7 @@ export async function startQaGatewayChild(params: {
     const xdgConfigHome = path.join(tempRoot, "xdg-config");
     const xdgDataHome = path.join(tempRoot, "xdg-data");
     const xdgCacheHome = path.join(tempRoot, "xdg-cache");
-    const configPath = path.join(tempRoot, "openclaw.json");
+    const configPath = path.join(tempRoot, "afora.json");
     const gatewayToken = `qa-suite-${randomUUID()}`;
     const transport = params.transport ?? createQaGatewayEmptyTransport();
     await seedQaAgentWorkspace({
@@ -388,7 +388,7 @@ export async function startQaGatewayChild(params: {
     let gatewayPort = 0;
     let baseUrl = "";
     let wsUrl = "";
-    let cfg!: OpenClawConfig;
+    let cfg!: AforaConfig;
     let getChildFailure: (() => QaChildFailure | null) | null = null;
     let env: NodeJS.ProcessEnv | null = null;
     let migrationConvergenceRestartUsed = false;
@@ -567,8 +567,8 @@ export async function startQaGatewayChild(params: {
                 providerBaseUrl: params.providerBaseUrl,
                 codexModelCatalogPath,
                 nativeAppServerArgs:
-                  params.runtimeEnvPatch?.OPENCLAW_CODEX_APP_SERVER_ARGS ??
-                  process.env.OPENCLAW_CODEX_APP_SERVER_ARGS,
+                  params.runtimeEnvPatch?.AFORA_CODEX_APP_SERVER_ARGS ??
+                  process.env.AFORA_CODEX_APP_SERVER_ARGS,
               }),
             },
             forwardHostHomeForClaudeCli: liveProviderIds.includes("claude-cli"),

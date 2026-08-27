@@ -2,7 +2,7 @@
 import { isAbsolute, resolve } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import type { Command } from "commander";
-import { listAgentIds } from "openclaw/plugin-sdk/agent-runtime";
+import { listAgentIds } from "afora-agent/plugin-sdk/agent-runtime";
 import {
   exitCodeFromFindings,
   healthFindingMeetsSeverity,
@@ -12,9 +12,9 @@ import {
   resolveDefaultAgentId,
   type HealthCheckContext,
   type HealthFinding,
-} from "openclaw/plugin-sdk/health";
-import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
-import { defaultRuntime as cliRuntime } from "openclaw/plugin-sdk/runtime";
+} from "afora-agent/plugin-sdk/health";
+import { normalizeAgentId } from "afora-agent/plugin-sdk/routing";
+import { defaultRuntime as cliRuntime } from "afora-agent/plugin-sdk/runtime";
 import { POLICY_FIX_METADATA_BY_CHECK_ID } from "./doctor/fix-metadata.js";
 import { POLICY_CHECK_IDS, evaluatePolicy } from "./doctor/register.js";
 import {
@@ -290,7 +290,7 @@ function resolvePolicyCommandAgentId(
     const agentId = normalizeAgentId(requestedAgentId);
     if (!listAgentIds(cfg).includes(agentId)) {
       throw new Error(
-        `Unknown agent id "${requestedAgentId}". Run \`openclaw agents list\` to see configured agents.`,
+        `Unknown agent id "${requestedAgentId}". Run \`afora agents list\` to see configured agents.`,
       );
     }
     return agentId;

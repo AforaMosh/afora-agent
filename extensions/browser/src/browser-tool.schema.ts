@@ -10,7 +10,7 @@ import {
   optionalPositiveIntegerSchema,
   optionalStringEnum,
   stringEnum,
-} from "openclaw/plugin-sdk/channel-actions";
+} from "afora-agent/plugin-sdk/channel-actions";
 import { Type } from "typebox";
 import { ACT_MAX_VIEWPORT_DIMENSION } from "./browser/act-policy.js";
 

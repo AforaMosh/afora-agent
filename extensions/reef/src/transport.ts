@@ -1,8 +1,8 @@
-import { toStringifiedError as asError } from "openclaw/plugin-sdk/error-runtime";
-import { buildTimeoutAbortSignal } from "openclaw/plugin-sdk/extension-shared";
-import { redactSensitiveText } from "openclaw/plugin-sdk/logging-core";
-import { readProviderJsonResponse } from "openclaw/plugin-sdk/provider-http";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { toStringifiedError as asError } from "afora-agent/plugin-sdk/error-runtime";
+import { buildTimeoutAbortSignal } from "afora-agent/plugin-sdk/extension-shared";
+import { redactSensitiveText } from "afora-agent/plugin-sdk/logging-core";
+import { readProviderJsonResponse } from "afora-agent/plugin-sdk/provider-http";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import WebSocket from "ws";
 import { sha256Hex, signDeviceRequest, utf8 } from "../protocol/index.js";
 import type { Envelope, SignedReceipt } from "../protocol/index.js";
@@ -55,7 +55,7 @@ export class ReefProtocolCompatibilityError extends ReefRelayError {
   constructor(
     status: 400 | 409,
     code: "invalid_request" | "client_upgrade_required",
-    readonly upgradeRequired: "reef-relay" | "openclaw-client",
+    readonly upgradeRequired: "reef-relay" | "afora-client",
     message: string,
   ) {
     super(status, message, code);
@@ -196,7 +196,7 @@ export class ReefTransportClient {
           400,
           error.code,
           "reef-relay",
-          "The Reef relay is likely incompatible or outdated. Update OpenClaw and the Reef relay together, then approve the fresh pairing challenge again.",
+          "The Reef relay is likely incompatible or outdated. Update Afora and the Reef relay together, then approve the fresh pairing challenge again.",
         );
       }
       if (
@@ -207,8 +207,8 @@ export class ReefTransportClient {
         throw new ReefProtocolCompatibilityError(
           409,
           error.code,
-          "openclaw-client",
-          "OpenClaw is outdated for this Reef relay. Update OpenClaw, then approve the fresh pairing challenge again.",
+          "afora-client",
+          "Afora is outdated for this Reef relay. Update Afora, then approve the fresh pairing challenge again.",
         );
       }
       throw error;

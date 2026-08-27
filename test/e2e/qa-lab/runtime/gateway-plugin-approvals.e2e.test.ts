@@ -1,6 +1,6 @@
 import path from "node:path";
 // Proves the plugin approval lifecycle through authenticated Gateway WebSockets.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GATEWAY_CLIENT_CAPS } from "../../../../packages/gateway-protocol/src/client-info.js";
 import { ADMIN_SCOPE, APPROVALS_SCOPE } from "../../../../src/gateway/method-scopes.js";
@@ -64,9 +64,9 @@ describe("gateway plugin approvals QA", () => {
       // handshake phase if this real connection fails before hello-ok.
       setLoggerOverride({ level: "silent", consoleLevel: "warn", consoleStyle: "compact" });
 
-      const stateDir = process.env.OPENCLAW_STATE_DIR;
+      const stateDir = process.env.AFORA_STATE_DIR;
       if (!stateDir) {
-        throw new Error("OPENCLAW_STATE_DIR is required for gateway QA fixtures");
+        throw new Error("AFORA_STATE_DIR is required for gateway QA fixtures");
       }
       const reviewerIdentity = loadOrCreateDeviceIdentity({
         path: path.join(stateDir, "test-device-identities", "plugin-approval-reviewer.sqlite"),

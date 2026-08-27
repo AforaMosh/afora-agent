@@ -7,7 +7,7 @@ import {
   tryGetLegacyDefaultAgentId,
   tryResolveLegacyCompatibilityAgentId,
 } from "../config/legacy.default-agent-owner.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { CronService } from "../cron/service.js";
 import { resolveCronJobsStorePath } from "../cron/store.js";
 import { getChildLogger } from "../logging/logger.js";
@@ -36,7 +36,7 @@ import {
 // so local command paths do not silently enqueue cron/channel work.
 type LocalGatewayRequestContextParams = {
   deps: CliDeps;
-  getRuntimeConfig: () => OpenClawConfig;
+  getRuntimeConfig: () => AforaConfig;
 };
 
 function cronUnavailable(): never {

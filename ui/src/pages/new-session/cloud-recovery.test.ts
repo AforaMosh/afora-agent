@@ -41,7 +41,7 @@ describe("cloud session recovery", () => {
     const sessionKey = "admin";
     const scopePrefix = cloudSessionRecoveryScopeStoragePrefix(gatewayUrl, recoveryScope);
     expect(scopePrefix).toBe(
-      `openclaw.new-session.cloud-recovery.v2:${gatewayUrl.length}:${gatewayUrl}:${recoveryScope.length}:${recoveryScope}:`,
+      `afora.new-session.cloud-recovery.v2:${gatewayUrl.length}:${gatewayUrl}:${recoveryScope.length}:${recoveryScope}:`,
     );
     expect(cloudSessionRecoveryExactStorageKey(gatewayUrl, recoveryScope, sessionKey)).toBe(
       `${scopePrefix}${sessionKey.length}:${sessionKey}`,

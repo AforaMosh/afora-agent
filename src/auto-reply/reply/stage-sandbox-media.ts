@@ -2,18 +2,18 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { isInboundPathAllowed } from "@openclaw/media-core/inbound-path-policy";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { sliceUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { isInboundPathAllowed } from "@afora/media-core/inbound-path-policy";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { sliceUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { assertSandboxPath } from "../../agents/sandbox-paths.js";
 import { ensureSandboxWorkspaceForSession } from "../../agents/sandbox.js";
 import { slugifySessionKey } from "../../agents/sandbox/shared.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { logVerbose } from "../../globals.js";
 import { root as fsRoot, FsSafeError } from "../../infra/fs-safe.js";
 import { safeFileURLToPath } from "../../infra/local-file-access.js";
 import { normalizeScpRemoteHost, normalizeScpRemotePath } from "../../infra/scp-host.js";
-import { resolvePreferredOpenClawTmpDir } from "../../infra/tmp-openclaw-dir.js";
+import { resolvePreferredAforaTmpDir } from "../../infra/tmp-afora-dir.js";
 import { resolveChannelRemoteInboundAttachmentRoots } from "../../media/channel-inbound-roots.js";
 import { normalizeMediaFacts, type MediaFact } from "../../media/media-facts.js";
 import { resolveInboundMediaReference } from "../../media/media-reference.js";
@@ -41,7 +41,7 @@ type StageableMediaSource = {
 export async function stageSandboxMedia(params: {
   ctx: MsgContext;
   sessionCtx: TemplateContext;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey?: string;
   workspaceDir: string;
   remoteMediaMode?: "sandbox-or-cache" | "cache";
@@ -65,8 +65,8 @@ export async function stageSandboxMedia(params: {
         workspaceDir,
       });
 
-  // For remote attachments without sandbox, use ~/.openclaw/media (not agent workspace for privacy).
-  // Managed local inbound refs are already in OpenClaw's media store; when no sandbox is
+  // For remote attachments without sandbox, use ~/.afora/media (not agent workspace for privacy).
+  // Managed local inbound refs are already in Afora's media store; when no sandbox is
   // active, copy them into the runner workspace so host-mode shell/doc readers get a path.
   const remoteMediaCacheDir = ctx.MediaRemoteHost
     ? path.join(CONFIG_DIR, "media", "remote-cache", slugifySessionKey(sessionKey))
@@ -86,7 +86,7 @@ export async function stageSandboxMedia(params: {
   const stagedUrlAliases = new Set<number>();
   const hostWorkspaceStagingDir =
     !sandbox && !ctx.MediaRemoteHost
-      ? path.join("media", "inbound", `openclaw-staged-${crypto.randomUUID()}`)
+      ? path.join("media", "inbound", `afora-staged-${crypto.randomUUID()}`)
       : undefined;
 
   for (const entry of pathEntries) {
@@ -271,7 +271,7 @@ async function stageRemoteFileIntoRoot(params: {
   relativeDestPath: string;
   maxBytes?: number;
 }): Promise<void> {
-  const tmpRoot = resolvePreferredOpenClawTmpDir();
+  const tmpRoot = resolvePreferredAforaTmpDir();
   await fs.mkdir(tmpRoot, { recursive: true });
   const tmpDir = await fs.mkdtemp(path.join(tmpRoot, "stage-sandbox-media-"));
   const tmpPath = path.join(tmpDir, "download");
@@ -413,7 +413,7 @@ function appendScpStderrTail(
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.stageSandboxMediaTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.stageSandboxMediaTestApi")] = {
     scpFile,
   };
 }

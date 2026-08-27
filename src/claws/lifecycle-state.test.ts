@@ -2,16 +2,16 @@ import { link, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizeCronJobCreate } from "../cron/normalize.js";
 import {
-  listOpenClawRegisteredAgentDatabases,
-  registerOpenClawAgentDatabase,
-} from "../state/openclaw-agent-db-registry.js";
+  listAforaRegisteredAgentDatabases,
+  registerAforaAgentDatabase,
+} from "../state/afora-agent-db-registry.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { applyClawAddPlan } from "./add.js";
 import { markClawCronRefRemoved, readClawCronRefs } from "./cron.js";
 import { claimClawAgentConfigRemoval } from "./lifecycle-config-removal.js";
@@ -25,7 +25,7 @@ import {
 import { parseClawManifest } from "./schema.js";
 import type { ClawSourceIdentity } from "./types.js";
 
-afterEach(() => closeOpenClawStateDatabaseForTest());
+afterEach(() => closeAforaStateDatabaseForTest());
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 const packageIntegrity = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -75,7 +75,7 @@ async function fixture(
     withMcp?: boolean;
   } = {},
 ) {
-  const root = tempDirs.make("openclaw-claw-remove-");
+  const root = tempDirs.make("afora-claw-remove-");
   if (params.withFile) {
     await writeFile(join(root, "SOUL.md"), "managed\n", "utf8");
   }
@@ -111,7 +111,7 @@ async function fixture(
     name: params.name ?? "@acme/worker",
     version: "1.0.0",
     packageRoot: root,
-    manifestPath: join(root, "openclaw.claw.json"),
+    manifestPath: join(root, "afora.claw.json"),
     integrityKind: "artifact",
     integrity: "sha256:manifest",
     byteLength: 100,
@@ -121,14 +121,14 @@ async function fixture(
     source,
     context: { workspace: join(root, `workspace-${params.id ?? "worker"}`) },
   });
-  return { root, plan, env: { OPENCLAW_STATE_DIR: join(root, "state") } };
+  return { root, plan, env: { AFORA_STATE_DIR: join(root, "state") } };
 }
 
 async function addFixture(
   params: { withFile?: boolean; withCron?: boolean; withMcp?: boolean } = {},
 ) {
   const current = await fixture(params);
-  let config: OpenClawConfig = {};
+  let config: AforaConfig = {};
   await applyClawAddPlan(current.plan, {
     consentPlanIntegrity: current.plan.planIntegrity,
     env: current.env,
@@ -141,7 +141,7 @@ async function addFixture(
   return {
     ...current,
     getConfig: () => config,
-    commitConfig: async (transform: (current: OpenClawConfig) => OpenClawConfig) => {
+    commitConfig: async (transform: (current: AforaConfig) => AforaConfig) => {
       config = transform(config);
     },
   };
@@ -207,7 +207,7 @@ describe("Claw status and remove", () => {
       detectedFormat: "claude" as const,
       mapped: ["skills"],
       unavailable: ["agents"],
-      adapterIdentity: "openclaw/previous",
+      adapterIdentity: "afora-agent/previous",
     };
     persistClawPackageRef(
       current.plan,
@@ -243,7 +243,7 @@ describe("Claw status and remove", () => {
         state: "drifted",
         mapped: ["agents", "skills"],
         unavailable: [],
-        adapterIdentity: "openclaw/v1",
+        adapterIdentity: "afora-agent/v1",
       },
     });
     expect(readClawPackageRefs({ env: current.env })[0]?.extension).toEqual(extension);
@@ -257,7 +257,7 @@ describe("Claw status and remove", () => {
       detectedFormat: "claude" as const,
       mapped: ["skills"],
       unavailable: ["agents"],
-      adapterIdentity: "openclaw/current",
+      adapterIdentity: "afora-agent/current",
     };
     persistClawPackageRef(
       current.plan,
@@ -357,11 +357,11 @@ describe("Claw status and remove", () => {
 
   it("previews all canonical agent config deletion effects", async () => {
     const current = await addFixture();
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       ...current.getConfig(),
       bindings: [{ match: { channel: "telegram", accountId: "*" }, agentId: "worker" }],
       tools: { agentToAgent: { allow: ["worker"] } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const plan = await buildClawRemovePlan("worker", { env: current.env, config });
 
@@ -380,15 +380,15 @@ describe("Claw status and remove", () => {
 
   it("rejects consent when a binding changes without changing the binding count", async () => {
     const current = await addFixture();
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       ...current.getConfig(),
       bindings: [{ match: { channel: "telegram", accountId: "first" }, agentId: "worker" }],
-    } as OpenClawConfig;
+    } as AforaConfig;
     const plan = await buildClawRemovePlan("worker", { env: current.env, config });
-    const changedConfig: OpenClawConfig = {
+    const changedConfig: AforaConfig = {
       ...config,
       bindings: [{ match: { channel: "telegram", accountId: "second" }, agentId: "worker" }],
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await expect(
       applyClawRemovePlan(plan, {
@@ -404,7 +404,7 @@ describe("Claw status and remove", () => {
 
   it("previews and blocks operator-owned cron jobs attached to the agent", async () => {
     const current = await addFixture();
-    const database = openOpenClawStateDatabase({ env: current.env });
+    const database = openAforaStateDatabase({ env: current.env });
     database.db
       .prepare(
         `INSERT INTO cron_jobs (
@@ -446,7 +446,7 @@ describe("Claw status and remove", () => {
 
   it("does not treat Claw-owned cron jobs as external agent blockers", async () => {
     const current = await addFixture({ withCron: true });
-    const database = openOpenClawStateDatabase({ env: current.env });
+    const database = openAforaStateDatabase({ env: current.env });
     database.db
       .prepare(
         `INSERT INTO cron_jobs (
@@ -483,13 +483,13 @@ describe("Claw status and remove", () => {
   it("removes the agent and unchanged files but only releases package refs", async () => {
     const current = await addFixture({ withFile: true });
     const databasePath = join(
-      current.env.OPENCLAW_STATE_DIR,
+      current.env.AFORA_STATE_DIR,
       "agents",
       "worker",
       "agent",
-      "openclaw-agent.sqlite",
+      "afora-agent.sqlite",
     );
-    registerOpenClawAgentDatabase({ agentId: "worker", path: databasePath, env: current.env });
+    registerAforaAgentDatabase({ agentId: "worker", path: databasePath, env: current.env });
     persistClawPackageRef(
       current.plan,
       {
@@ -522,7 +522,7 @@ describe("Claw status and remove", () => {
     });
     expect(config.agents?.entries?.worker).toBeUndefined();
     expect(
-      listOpenClawRegisteredAgentDatabases({ env: current.env }).map((entry) => entry.agentId),
+      listAforaRegisteredAgentDatabases({ env: current.env }).map((entry) => entry.agentId),
     ).not.toContain("worker");
     await expect(readFile(join(current.plan.agent.workspace, "SOUL.md"), "utf8")).rejects.toThrow();
     await expect(readClawStatus("worker", { env: current.env, config })).resolves.toMatchObject({
@@ -1042,7 +1042,7 @@ describe("Claw status and remove", () => {
     });
     const { id: firstId, ...firstConfig } = first.plan.agent.config;
     const { id: secondId, ...secondConfig } = second.plan.agent.config;
-    let config: OpenClawConfig = {
+    let config: AforaConfig = {
       agents: { entries: { [firstId]: firstConfig, [secondId]: secondConfig } },
     };
     const remove = await buildClawRemovePlan("worker-a", { env: first.env, config });

@@ -14,7 +14,7 @@ type UpdateBannerElement = HTMLElement & {
 };
 
 async function renderBanner(props: UpdateBannerProps): Promise<UpdateBannerElement> {
-  const element = document.createElement("openclaw-update-banner") as UpdateBannerElement;
+  const element = document.createElement("afora-update-banner") as UpdateBannerElement;
   element.props = props;
   document.body.append(element);
   await element.updateComplete;

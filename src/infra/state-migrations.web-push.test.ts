@@ -5,9 +5,9 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { captureEnv, setTestEnvValue } from "../test-utils/env.js";
 import { acquireGatewayLock } from "./gateway-lock.js";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "./kysely-sync.js";
@@ -29,7 +29,7 @@ describe("legacy Web Push Doctor migration", () => {
   let envSnapshot: ReturnType<typeof captureEnv> | undefined;
   const tempDirs = useAutoCleanupTempDirTracker((cleanup) => {
     afterEach(() => {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       envSnapshot?.restore();
       envSnapshot = undefined;
       cleanup();
@@ -37,9 +37,9 @@ describe("legacy Web Push Doctor migration", () => {
   });
 
   function useStateDir(): string {
-    const stateDir = tempDirs.make("openclaw-web-push-migration-");
-    envSnapshot ??= captureEnv(["OPENCLAW_STATE_DIR", "OPENCLAW_VAPID_SUBJECT"]);
-    setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+    const stateDir = tempDirs.make("afora-web-push-migration-");
+    envSnapshot ??= captureEnv(["AFORA_STATE_DIR", "AFORA_VAPID_SUBJECT"]);
+    setTestEnvValue("AFORA_STATE_DIR", stateDir);
     return stateDir;
   }
 
@@ -59,7 +59,7 @@ describe("legacy Web Push Doctor migration", () => {
       ...createWebPushVapidKeyPair(
         "legacy-public-key",
         "legacy-private-key",
-        "https://openclaw.ai",
+        "https://afora.ai",
       ),
       ...overrides,
     };
@@ -97,7 +97,7 @@ describe("legacy Web Push Doctor migration", () => {
   }
 
   function seedSubscription(endpointHash: string, value: WebPushSubscription): void {
-    const database = openOpenClawStateDatabase();
+    const database = openAforaStateDatabase();
     executeSqliteQuerySync(
       database.db,
       getNodeSqliteKysely<WebPushDatabase>(database.db)
@@ -107,7 +107,7 @@ describe("legacy Web Push Doctor migration", () => {
   }
 
   function seedVapid(value: VapidKeyPair): void {
-    const database = openOpenClawStateDatabase();
+    const database = openAforaStateDatabase();
     executeSqliteQuerySync(
       database.db,
       getNodeSqliteKysely<WebPushDatabase>(database.db)
@@ -135,7 +135,7 @@ describe("legacy Web Push Doctor migration", () => {
       stateDir,
       subscriptions: [subscription()],
     });
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
     const gatewayLock = await acquireGatewayLock({
       allowInTests: true,
       env,
@@ -215,7 +215,7 @@ describe("legacy Web Push Doctor migration", () => {
     ],
   ])("normalizes a %s", async (_label, legacySubject, injectedSubject, expectedSubject) => {
     const stateDir = useStateDir();
-    setTestEnvValue("OPENCLAW_VAPID_SUBJECT", "mailto:ambient@example.com");
+    setTestEnvValue("AFORA_VAPID_SUBJECT", "mailto:ambient@example.com");
     const legacyKeys = vapidKeys({ subject: legacySubject ?? "" });
     if (legacySubject === undefined) {
       delete (legacyKeys as Partial<VapidKeyPair>).subject;
@@ -224,7 +224,7 @@ describe("legacy Web Push Doctor migration", () => {
 
     const result = await migrateLegacyWebPush({
       detected: detectLegacyWebPush({ stateDir, doctorOnlyStateMigrations: true }),
-      env: { ...process.env, OPENCLAW_VAPID_SUBJECT: injectedSubject },
+      env: { ...process.env, AFORA_VAPID_SUBJECT: injectedSubject },
       stateDir,
     });
 
@@ -241,7 +241,7 @@ describe("legacy Web Push Doctor migration", () => {
 
     const result = await migrateLegacyWebPush({
       detected: detectLegacyWebPush({ stateDir, doctorOnlyStateMigrations: true }),
-      env: { ...process.env, OPENCLAW_VAPID_SUBJECT: "mailto:fallback@example.com" },
+      env: { ...process.env, AFORA_VAPID_SUBJECT: "mailto:fallback@example.com" },
       stateDir,
     });
 
@@ -260,7 +260,7 @@ describe("legacy Web Push Doctor migration", () => {
     });
 
     expect(result.warnings).toEqual([]);
-    expect(fs.existsSync(path.join(stateDir, "state", "openclaw.sqlite"))).toBe(true);
+    expect(fs.existsSync(path.join(stateDir, "state", "afora.sqlite"))).toBe(true);
     expect(fs.existsSync(subscriptionsPath!)).toBe(false);
   });
 
@@ -398,7 +398,7 @@ describe("legacy Web Push Doctor migration", () => {
     const canonical = subscription({ keys: { p256dh: "canonical", auth: "canonical" } });
     seedSubscription(hashWebPushEndpoint(canonical.endpoint), canonical);
     seedVapid(
-      createWebPushVapidKeyPair("canonical-public", "canonical-private", "https://openclaw.ai"),
+      createWebPushVapidKeyPair("canonical-public", "canonical-private", "https://afora.ai"),
     );
     const paths = await writeLegacyState({
       stateDir,
@@ -423,7 +423,7 @@ describe("legacy Web Push Doctor migration", () => {
   it("rolls back subscription changes when only VAPID conflicts", async () => {
     const stateDir = useStateDir();
     seedVapid(
-      createWebPushVapidKeyPair("canonical-public", "canonical-private", "https://openclaw.ai"),
+      createWebPushVapidKeyPair("canonical-public", "canonical-private", "https://afora.ai"),
     );
     await writeLegacyState({
       stateDir,
@@ -549,7 +549,7 @@ describe("legacy Web Push Doctor migration", () => {
       return;
     }
     const stateDir = useStateDir();
-    const outside = tempDirs.make("openclaw-web-push-outside-");
+    const outside = tempDirs.make("afora-web-push-outside-");
     const legacy = subscription();
     const sourcePath = path.join(outside, "web-push-subscriptions.json");
     await fsp.writeFile(

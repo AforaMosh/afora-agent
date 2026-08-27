@@ -5,7 +5,7 @@ export function createRelayCommandHandler(params: {
   send: (message: Record<string, unknown>) => void;
   attachDebugger: (tabId: number) => Promise<unknown>;
   detachDebugger: (tabId: number) => Promise<void>;
-  addTabToOpenClawGroup: (tabId: number) => Promise<void>;
+  addTabToAforaGroup: (tabId: number) => Promise<void>;
   focusWindowForTab: (tab: BrowserTabSnapshot) => Promise<void>;
   scheduleTabsSync: () => void;
   captureAccess: (tabId: number) => TabAccessEpoch;

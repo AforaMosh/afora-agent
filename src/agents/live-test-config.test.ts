@@ -28,11 +28,11 @@ function listLiveTestFiles(root: string): string[] {
 describe("readLiveTestConfig", () => {
   it("tolerates retired config keys without mutating process env", async () => {
     await withTempHome(async (home) => {
-      const envKey = "OPENCLAW_LIVE_CONFIG_ISOLATION_TEST";
-      const configDir = path.join(home, ".openclaw");
+      const envKey = "AFORA_LIVE_CONFIG_ISOLATION_TEST";
+      const configDir = path.join(home, ".afora");
       await fs.promises.mkdir(configDir, { recursive: true });
       await fs.promises.writeFile(
-        path.join(configDir, "openclaw.json"),
+        path.join(configDir, "afora.json"),
         `${JSON.stringify({
           meta: { lastTouchedAt: "2026-07-25T00:00:00.000Z" },
           env: { vars: { [envKey]: "from-config" } },

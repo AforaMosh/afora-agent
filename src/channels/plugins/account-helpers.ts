@@ -3,9 +3,9 @@
  *
  * Lists configured accounts and resolves default-account behavior for plugin configs.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { normalizeUniqueStringEntries } from "@openclaw/normalization-core/string-normalization";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { normalizeUniqueStringEntries } from "@afora/normalization-core/string-normalization";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   resolveAccountEntry,
   resolveNormalizedAccountEntry,
@@ -29,17 +29,17 @@ export function createAccountListHelpers<
     omitKeys?: Array<(keyof TConfig & string) | "defaultAccount">;
     nestedObjectKeys?: Array<keyof TConfig & string>;
     allowUnlistedDefaultAccount?: boolean;
-    additionalAccountIds?: (cfg: OpenClawConfig) => Iterable<string>;
+    additionalAccountIds?: (cfg: AforaConfig) => Iterable<string>;
     fallbackAccountIdWhenEmpty?: string | false;
     implicitDefaultAccount?: {
       channelKeys?: readonly string[];
       envVars?: readonly string[];
     };
-    hasImplicitDefaultAccount?: (cfg: OpenClawConfig) => boolean;
-    resolveImplicitAccountId?: (cfg: OpenClawConfig) => string | undefined;
+    hasImplicitDefaultAccount?: (cfg: AforaConfig) => boolean;
+    resolveImplicitAccountId?: (cfg: AforaConfig) => string | undefined;
   },
 ) {
-  function hasImplicitDefaultAccount(cfg: OpenClawConfig): boolean {
+  function hasImplicitDefaultAccount(cfg: AforaConfig): boolean {
     // Legacy single-account configs and env-only setup imply the default account even when
     // channels.<id>.accounts is absent.
     const channel = cfg.channels?.[channelKey] as Record<string, unknown> | undefined;
@@ -54,7 +54,7 @@ export function createAccountListHelpers<
     );
   }
 
-  function resolveConfiguredDefaultAccountId(cfg: OpenClawConfig): string | undefined {
+  function resolveConfiguredDefaultAccountId(cfg: AforaConfig): string | undefined {
     const channel = cfg.channels?.[channelKey] as Record<string, unknown> | undefined;
     // The canonical default resolver validates this preference against the same listed ids.
     return normalizeOptionalAccountId(
@@ -62,7 +62,7 @@ export function createAccountListHelpers<
     );
   }
 
-  function listConfiguredAccountIds(cfg: OpenClawConfig): string[] {
+  function listConfiguredAccountIds(cfg: AforaConfig): string[] {
     const channel = cfg.channels?.[channelKey];
     const accounts = (channel as Record<string, unknown> | undefined)?.accounts;
     if (!accounts || typeof accounts !== "object") {
@@ -76,7 +76,7 @@ export function createAccountListHelpers<
     return normalizeUniqueStringEntries(ids.map((id) => normalizeConfiguredAccountId(id)));
   }
 
-  function listAccountIds(cfg: OpenClawConfig): string[] {
+  function listAccountIds(cfg: AforaConfig): string[] {
     return listCombinedAccountIds({
       configuredAccountIds: listConfiguredAccountIds(cfg),
       additionalAccountIds: options?.additionalAccountIds?.(cfg),
@@ -92,7 +92,7 @@ export function createAccountListHelpers<
     });
   }
 
-  function resolveDefaultAccountId(cfg: OpenClawConfig): string {
+  function resolveDefaultAccountId(cfg: AforaConfig): string {
     return resolveListedDefaultAccountId({
       accountIds: listAccountIds(cfg),
       configuredDefaultAccountId: resolveConfiguredDefaultAccountId(cfg),
@@ -105,7 +105,7 @@ export function createAccountListHelpers<
     listAccountIds,
     resolveDefaultAccountId,
     // Channel owners destructure this resolver; an arrow keeps it independent of `this`.
-    resolveAccountConfig: (cfg: OpenClawConfig, accountId: string): TConfig => {
+    resolveAccountConfig: (cfg: AforaConfig, accountId: string): TConfig => {
       const channelConfig = cfg.channels?.[channelKey] as TConfig | undefined;
       const accounts = (
         channelConfig as (TConfig & { accounts?: Record<string, Partial<TConfig>> }) | undefined

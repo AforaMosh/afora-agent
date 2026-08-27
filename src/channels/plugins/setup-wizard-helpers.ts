@@ -3,13 +3,13 @@
  *
  * Prompts account ids, credentials, allowlists, and account-scoped setup config updates.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   normalizeStringEntries,
   uniqueStrings,
-} from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-normalization";
 import type { DmPolicy, GroupPolicy } from "../../config/types.base.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { SecretInput } from "../../config/types.secrets.js";
 import { resolveSecretInputModeForEnvSelection } from "../../plugins/provider-auth-mode.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
@@ -170,7 +170,7 @@ export function createStandardChannelSetupStatus(params: {
   includeStatusLine?: boolean;
   resolveConfigured: ChannelSetupWizardStatus["resolveConfigured"];
   resolveExtraStatusLines?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string;
     configured: boolean;
   }) => string[] | Promise<string[]>;
@@ -213,12 +213,12 @@ export function resolveSetupAccountId(params: {
 }
 
 export async function resolveAccountIdForConfigure(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   prompter: WizardPrompter;
   label: string;
   accountOverride?: string;
   shouldPromptAccountIds: boolean;
-  listAccountIds: (cfg: OpenClawConfig) => string[];
+  listAccountIds: (cfg: AforaConfig) => string[];
   defaultAccountId: string;
 }): Promise<string> {
   const override = params.accountOverride?.trim();
@@ -237,12 +237,12 @@ export async function resolveAccountIdForConfigure(params: {
 }
 
 export function setAccountAllowFromForChannel(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   accountId: string;
   allowFrom: string[];
   setupSurface?: ChannelSetupAdapter;
-}): OpenClawConfig {
+}): AforaConfig {
   const { cfg, channel, accountId, allowFrom } = params;
   return patchConfigForScopedAccount({
     cfg,
@@ -255,12 +255,12 @@ export function setAccountAllowFromForChannel(params: {
 }
 
 export function patchTopLevelChannelConfigSection(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   enabled?: boolean;
   clearFields?: string[];
   patch: Record<string, unknown>;
-}): OpenClawConfig {
+}): AforaConfig {
   const channelConfig = {
     ...(params.cfg.channels?.[params.channel] as Record<string, unknown> | undefined),
   };
@@ -281,11 +281,11 @@ export function patchTopLevelChannelConfigSection(params: {
 }
 
 function setTopLevelChannelAllowFrom(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   allowFrom: string[];
   enabled?: boolean;
-}): OpenClawConfig {
+}): AforaConfig {
   return patchTopLevelChannelConfigSection({
     cfg: params.cfg,
     channel: params.channel,
@@ -295,11 +295,11 @@ function setTopLevelChannelAllowFrom(params: {
 }
 
 export function setTopLevelChannelDmPolicyWithAllowFrom(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   dmPolicy: DmPolicy;
-  getAllowFrom?: (cfg: OpenClawConfig) => Array<string | number> | undefined;
-}): OpenClawConfig {
+  getAllowFrom?: (cfg: AforaConfig) => Array<string | number> | undefined;
+}): AforaConfig {
   const channelConfig =
     (params.cfg.channels?.[params.channel] as Record<string, unknown> | undefined) ?? {};
   const existingAllowFrom =
@@ -319,11 +319,11 @@ export function setTopLevelChannelDmPolicyWithAllowFrom(params: {
 }
 
 function setTopLevelChannelGroupPolicy(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   groupPolicy: GroupPolicy;
   enabled?: boolean;
-}): OpenClawConfig {
+}): AforaConfig {
   return patchTopLevelChannelConfigSection({
     cfg: params.cfg,
     channel: params.channel,
@@ -337,9 +337,9 @@ export function createTopLevelChannelDmPolicy(params: {
   channel: string;
   policyKey: string;
   allowFromKey: string;
-  getCurrent: (cfg: OpenClawConfig) => DmPolicy;
+  getCurrent: (cfg: AforaConfig) => DmPolicy;
   promptAllowFrom?: ChannelSetupDmPolicy["promptAllowFrom"];
-  getAllowFrom?: (cfg: OpenClawConfig) => Array<string | number> | undefined;
+  getAllowFrom?: (cfg: AforaConfig) => Array<string | number> | undefined;
 }): ChannelSetupDmPolicy {
   const setPolicy = createTopLevelChannelDmPolicySetter({
     channel: params.channel,
@@ -358,8 +358,8 @@ export function createTopLevelChannelDmPolicy(params: {
 
 export function createTopLevelChannelDmPolicySetter(params: {
   channel: string;
-  getAllowFrom?: (cfg: OpenClawConfig) => Array<string | number> | undefined;
-}): (cfg: OpenClawConfig, dmPolicy: DmPolicy) => OpenClawConfig {
+  getAllowFrom?: (cfg: AforaConfig) => Array<string | number> | undefined;
+}): (cfg: AforaConfig, dmPolicy: DmPolicy) => AforaConfig {
   return (cfg, dmPolicy) =>
     setTopLevelChannelDmPolicyWithAllowFrom({
       cfg,
@@ -372,7 +372,7 @@ export function createTopLevelChannelDmPolicySetter(params: {
 export function createTopLevelChannelAllowFromSetter(params: {
   channel: string;
   enabled?: boolean;
-}): (cfg: OpenClawConfig, allowFrom: string[]) => OpenClawConfig {
+}): (cfg: AforaConfig, allowFrom: string[]) => AforaConfig {
   return (cfg, allowFrom) =>
     setTopLevelChannelAllowFrom({
       cfg,
@@ -385,7 +385,7 @@ export function createTopLevelChannelAllowFromSetter(params: {
 export function createTopLevelChannelGroupPolicySetter(params: {
   channel: string;
   enabled?: boolean;
-}): (cfg: OpenClawConfig, groupPolicy: "open" | "allowlist" | "disabled") => OpenClawConfig {
+}): (cfg: AforaConfig, groupPolicy: "open" | "allowlist" | "disabled") => AforaConfig {
   return (cfg, groupPolicy) =>
     setTopLevelChannelGroupPolicy({
       cfg,
@@ -396,11 +396,11 @@ export function createTopLevelChannelGroupPolicySetter(params: {
 }
 
 function setAccountGroupPolicyForChannel(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   accountId: string;
   groupPolicy: GroupPolicy;
-}): OpenClawConfig {
+}): AforaConfig {
   return patchChannelConfigForAccount({
     cfg: params.cfg,
     channel: params.channel,
@@ -410,11 +410,11 @@ function setAccountGroupPolicyForChannel(params: {
 }
 
 function setAccountDmAllowFromForChannel(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   accountId: string;
   allowFrom: string[];
-}): OpenClawConfig {
+}): AforaConfig {
   return patchChannelConfigForAccount({
     cfg: params.cfg,
     channel: params.channel,
@@ -493,10 +493,10 @@ export function createAccountScopedGroupAccessSection<TResolved>(params: {
   >;
   fallbackResolved: (entries: string[]) => TResolved;
   applyAllowlist: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     resolved: TResolved;
-  }) => OpenClawConfig;
+  }) => AforaConfig;
 }): NonNullable<ChannelSetupWizard["groupAccess"]> {
   return {
     label: params.label,
@@ -545,10 +545,10 @@ export function createAccountScopedGroupAccessSection<TResolved>(params: {
 type AccountScopedChannel = string;
 
 export function setSetupChannelEnabled(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   channel: string,
   enabled: boolean,
-): OpenClawConfig {
+): AforaConfig {
   const channelConfig = (cfg.channels?.[channel] as Record<string, unknown> | undefined) ?? {};
   return {
     ...cfg,
@@ -563,13 +563,13 @@ export function setSetupChannelEnabled(
 }
 
 function patchConfigForScopedAccount(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: AccountScopedChannel;
   accountId: string;
   patch: Record<string, unknown>;
   ensureEnabled: boolean;
   setupSurface?: ChannelSetupAdapter;
-}): OpenClawConfig {
+}): AforaConfig {
   const { cfg, channel, accountId, patch, ensureEnabled, setupSurface } = params;
   const channelConfig = cfg.channels?.[channel] as
     | { accounts?: Record<string, unknown> }
@@ -596,12 +596,12 @@ function patchConfigForScopedAccount(params: {
 }
 
 export function patchChannelConfigForAccount(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: AccountScopedChannel;
   accountId: string;
   patch: Record<string, unknown>;
   setupSurface?: ChannelSetupAdapter;
-}): OpenClawConfig {
+}): AforaConfig {
   return patchConfigForScopedAccount({
     ...params,
     ensureEnabled: true,
@@ -638,7 +638,7 @@ async function promptSingleChannelToken(params: {
     (
       await params.prompter.text({
         message: params.inputPrompt,
-        // Credential input: masked in terminal prompts, and the OpenClaw
+        // Credential input: masked in terminal prompts, and the Afora
         // chat bridge relies on this flag to refuse plain-text secret entry.
         sensitive: true,
         validate: (value) => (value?.trim() ? undefined : "Required"),
@@ -675,7 +675,7 @@ type SingleChannelSecretInputPromptResult =
   | { action: "set"; value: SecretInput; resolvedValue: string };
 
 export async function runSingleChannelSecretStep(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   prompter: Pick<WizardPrompter, "confirm" | "text" | "select" | "note">;
   providerHint: string;
   credentialLabel: string;
@@ -689,14 +689,14 @@ export async function runSingleChannelSecretStep(params: {
   inputPrompt: string;
   preferredEnvVar?: string;
   onMissingConfigured?: () => Promise<void>;
-  applyUseEnv?: (cfg: OpenClawConfig) => OpenClawConfig | Promise<OpenClawConfig>;
+  applyUseEnv?: (cfg: AforaConfig) => AforaConfig | Promise<AforaConfig>;
   applySet?: (
-    cfg: OpenClawConfig,
+    cfg: AforaConfig,
     value: SecretInput,
     resolvedValue: string,
-  ) => OpenClawConfig | Promise<OpenClawConfig>;
+  ) => AforaConfig | Promise<AforaConfig>;
 }): Promise<{
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   action: SingleChannelSecretInputPromptResult["action"];
   resolvedValue?: string;
 }> {
@@ -751,7 +751,7 @@ export async function runSingleChannelSecretStep(params: {
 }
 
 export async function promptSingleChannelSecretInput(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   prompter: Pick<WizardPrompter, "confirm" | "text" | "select" | "note">;
   providerHint: string;
   credentialLabel: string;
@@ -770,7 +770,7 @@ export async function promptSingleChannelSecretInput(params: {
     copy: {
       modeMessage: `How do you want to provide this ${params.credentialLabel}?`,
       plaintextLabel: `Enter ${params.credentialLabel}`,
-      plaintextHint: "Stores the credential directly in OpenClaw config",
+      plaintextHint: "Stores the credential directly in Afora config",
       refLabel: "Use external secret provider",
       refHint: "Stores a reference to env or configured external secret providers",
     },
@@ -813,9 +813,9 @@ export async function promptSingleChannelSecretInput(params: {
     preferredEnvVar: params.preferredEnvVar,
     copy: {
       sourceMessage: `Where is this ${params.credentialLabel} stored?`,
-      envVarPlaceholder: params.preferredEnvVar ?? "OPENCLAW_SECRET",
+      envVarPlaceholder: params.preferredEnvVar ?? "AFORA_SECRET",
       envVarFormatError:
-        'Use an env var name like "OPENCLAW_SECRET" (uppercase letters, numbers, underscores).',
+        'Use an env var name like "AFORA_SECRET" (uppercase letters, numbers, underscores).',
       noProvidersMessage:
         "No file/exec secret providers are configured yet. Add one under secrets.providers, or select Environment variable.",
     },
@@ -829,7 +829,7 @@ export async function promptSingleChannelSecretInput(params: {
 
 type ParsedAllowFromResult = { entries: string[]; error?: string };
 
-export async function promptParsedAllowFromForAccount<TConfig extends OpenClawConfig>(params: {
+export async function promptParsedAllowFromForAccount<TConfig extends AforaConfig>(params: {
   cfg: TConfig;
   accountId?: string;
   defaultAccountId: string;
@@ -883,7 +883,7 @@ export async function promptParsedAllowFromForAccount<TConfig extends OpenClawCo
   });
 }
 
-export function createPromptParsedAllowFromForAccount<TConfig extends OpenClawConfig>(params: {
+export function createPromptParsedAllowFromForAccount<TConfig extends AforaConfig>(params: {
   defaultAccountId: string | ((cfg: TConfig) => string);
   noteTitle?: string;
   noteLines?: string[];
@@ -920,14 +920,14 @@ export function createPromptParsedAllowFromForAccount<TConfig extends OpenClawCo
 
 export function createTopLevelChannelParsedAllowFromPrompt(params: {
   channel: string;
-  defaultAccountId: string | ((cfg: OpenClawConfig) => string);
+  defaultAccountId: string | ((cfg: AforaConfig) => string);
   enabled?: boolean;
   noteTitle?: string;
   noteLines?: string[];
   message: string;
   placeholder: string;
   parseEntries: (raw: string) => ParsedAllowFromResult;
-  getExistingAllowFrom?: (cfg: OpenClawConfig) => Array<string | number>;
+  getExistingAllowFrom?: (cfg: AforaConfig) => Array<string | number>;
   mergeEntries?: (params: { existing: Array<string | number>; parsed: string[] }) => string[];
 }): NonNullable<ChannelSetupDmPolicy["promptAllowFrom"]> {
   const setAllowFrom = createTopLevelChannelAllowFromSetter({
@@ -940,13 +940,13 @@ export function createTopLevelChannelParsedAllowFromPrompt(params: {
     message: params.message,
     placeholder: params.placeholder,
     parseEntries: params.parseEntries,
-    getExistingAllowFrom: ({ cfg }: { cfg: OpenClawConfig }) =>
+    getExistingAllowFrom: ({ cfg }: { cfg: AforaConfig }) =>
       params.getExistingAllowFrom?.(cfg) ??
       (cfg.channels?.[params.channel] as { allowFrom?: Array<string | number> } | undefined)
         ?.allowFrom ??
       [],
     ...(params.mergeEntries ? { mergeEntries: params.mergeEntries } : {}),
-    applyAllowFrom: ({ cfg, allowFrom }: { cfg: OpenClawConfig; allowFrom: string[] }) =>
+    applyAllowFrom: ({ cfg, allowFrom }: { cfg: AforaConfig; allowFrom: string[] }) =>
       setAllowFrom(cfg, allowFrom),
   };
 

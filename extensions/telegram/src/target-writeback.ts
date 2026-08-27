@@ -1,20 +1,20 @@
 // Telegram plugin module implements target writeback behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   readConfigFileSnapshotForWrite,
   replaceConfigFile,
-} from "openclaw/plugin-sdk/config-mutation";
+} from "afora-agent/plugin-sdk/config-mutation";
 import {
   loadCronStore,
   resolveCronStorePath,
   saveCronStore,
-} from "openclaw/plugin-sdk/cron-store-runtime";
-import { asObjectRecord } from "openclaw/plugin-sdk/runtime-doctor-migrations";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/cron-store-runtime";
+import { asObjectRecord } from "afora-agent/plugin-sdk/runtime-doctor-migrations";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/runtime-env";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   normalizeTelegramChatId,
   normalizeTelegramLookupTarget,
@@ -98,7 +98,7 @@ function rewriteTargetIfMatch(params: {
 }
 
 function replaceTelegramDefaultToTargets(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   matchKey: string;
   resolvedTarget: string;
 }): boolean {
@@ -137,7 +137,7 @@ function replaceTelegramDefaultToTargets(params: {
 }
 
 export async function maybePersistResolvedTelegramTarget(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   rawTarget: string;
   resolvedChatId: string;
   verbose?: boolean;

@@ -1,8 +1,8 @@
 // Android node capability live tests verify paired node command allowlists and remote policy behavior.
 import { randomUUID } from "node:crypto";
-import { expectDefined } from "@openclaw/normalization-core";
-import { asRecord, isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeNullableString } from "@openclaw/normalization-core/string-coerce";
+import { expectDefined } from "@afora/normalization-core";
+import { asRecord, isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeNullableString } from "@afora/normalization-core/string-coerce";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { unwrapRemoteConfigSnapshot } from "../../test/helpers/gateway/android-node-capabilities-policy-config.js";
 import { shouldFetchRemotePolicyConfig } from "../../test/helpers/gateway/android-node-capabilities-policy-source.js";
@@ -11,7 +11,7 @@ import {
   findMissingRequiredAndroidNodeCommands,
 } from "../../test/helpers/gateway/android-node-capabilities-required-commands.js";
 import { isLiveTestEnabled, readLiveTestConfig } from "../agents/live-test-helpers.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { isTruthyEnvValue } from "../infra/env.js";
 import { parseNodeList, parsePairingList } from "../shared/node-list-parse.js";
 import type { NodeListNode } from "../shared/node-list-types.js";
@@ -22,7 +22,7 @@ import { resolveGatewayCredentialsFromConfig } from "./credentials.js";
 import { resolveNodeCommandAllowlist } from "./node-command-policy.js";
 
 const LIVE = isLiveTestEnabled();
-const LIVE_ANDROID_NODE = isTruthyEnvValue(process.env.OPENCLAW_LIVE_ANDROID_NODE);
+const LIVE_ANDROID_NODE = isTruthyEnvValue(process.env.AFORA_LIVE_ANDROID_NODE);
 const describeLive = LIVE && LIVE_ANDROID_NODE ? describe : describe.skip;
 const SKIPPED_INTERACTIVE_COMMANDS = new Set([
   "screen.record",
@@ -304,7 +304,7 @@ const COMMAND_PROFILES: Record<string, CommandProfile> = {
   },
   "system.notify": {
     buildParams: () => ({
-      title: "OpenClaw Android E2E",
+      title: "Afora Android E2E",
       body: "Live node integration check",
       sound: "none",
       priority: "passive",
@@ -314,7 +314,7 @@ const COMMAND_PROFILES: Record<string, CommandProfile> = {
     allowedErrorCodes: ["NOT_AUTHORIZED"],
   },
   "contacts.search": {
-    buildParams: () => ({ query: "__openclaw_live_no_match__", limit: 1 }),
+    buildParams: () => ({ query: "__afora_live_no_match__", limit: 1 }),
     timeoutMs: 20_000,
     outcome: "success",
     allowedErrorCodes: ["CONTACTS_PERMISSION_REQUIRED"],
@@ -355,13 +355,13 @@ const COMMAND_PROFILES: Record<string, CommandProfile> = {
 
 async function resolveGatewayConnection() {
   const cfg = await readLiveTestConfig();
-  const urlOverride = normalizeNullableString(process.env.OPENCLAW_ANDROID_GATEWAY_URL);
+  const urlOverride = normalizeNullableString(process.env.AFORA_ANDROID_GATEWAY_URL);
   const details = buildGatewayConnectionDetails({
     config: cfg,
     ...(urlOverride ? { url: urlOverride } : {}),
   });
-  const tokenOverride = normalizeNullableString(process.env.OPENCLAW_ANDROID_GATEWAY_TOKEN);
-  const passwordOverride = normalizeNullableString(process.env.OPENCLAW_ANDROID_GATEWAY_PASSWORD);
+  const tokenOverride = normalizeNullableString(process.env.AFORA_ANDROID_GATEWAY_TOKEN);
+  const passwordOverride = normalizeNullableString(process.env.AFORA_ANDROID_GATEWAY_PASSWORD);
   const creds = resolveGatewayCredentialsFromConfig({
     cfg,
     explicitAuth: {
@@ -380,8 +380,8 @@ async function resolveGatewayConnection() {
 async function resolvePolicyConfigForRun(params: {
   client: GatewayClient;
   connectionDetails: ReturnType<typeof buildGatewayConnectionDetails>;
-  loadLocalConfig?: () => OpenClawConfig | Promise<OpenClawConfig>;
-}): Promise<OpenClawConfig> {
+  loadLocalConfig?: () => AforaConfig | Promise<AforaConfig>;
+}): Promise<AforaConfig> {
   if (shouldFetchRemotePolicyConfig(params.connectionDetails)) {
     const raw = await params.client.request("config.get", {});
     return unwrapRemoteConfigSnapshot(raw);
@@ -414,7 +414,7 @@ describe("resolvePolicyConfigForRun", () => {
   });
 
   it("still uses local config loading for local loopback runs", async () => {
-    const localConfig = { gateway: { bind: "127.0.0.1" } } as unknown as OpenClawConfig;
+    const localConfig = { gateway: { bind: "127.0.0.1" } } as unknown as AforaConfig;
     const loadLocalConfig = vi.fn(() => localConfig);
 
     const result = await resolvePolicyConfigForRun({
@@ -484,24 +484,24 @@ function isAndroidNode(node: NodeListNode): boolean {
 }
 
 function selectTargetNode(nodes: NodeListNode[]): NodeListNode {
-  const nodeIdOverride = normalizeNullableString(process.env.OPENCLAW_ANDROID_NODE_ID);
+  const nodeIdOverride = normalizeNullableString(process.env.AFORA_ANDROID_NODE_ID);
   if (nodeIdOverride) {
     const match = nodes.find((node) => node.nodeId === nodeIdOverride);
     if (!match) {
-      throw new Error(`OPENCLAW_ANDROID_NODE_ID not found in node.list: ${nodeIdOverride}`);
+      throw new Error(`AFORA_ANDROID_NODE_ID not found in node.list: ${nodeIdOverride}`);
     }
     return match;
   }
 
   const nodeNameOverride = normalizeNullableString(
-    process.env.OPENCLAW_ANDROID_NODE_NAME,
+    process.env.AFORA_ANDROID_NODE_NAME,
   )?.toLowerCase();
   if (nodeNameOverride) {
     const match = nodes.find(
       (node) => normalizeNullableString(node.displayName)?.toLowerCase() === nodeNameOverride,
     );
     if (!match) {
-      throw new Error(`OPENCLAW_ANDROID_NODE_NAME not found in node.list: ${nodeNameOverride}`);
+      throw new Error(`AFORA_ANDROID_NODE_NAME not found in node.list: ${nodeNameOverride}`);
     }
     return match;
   }
@@ -663,7 +663,7 @@ describeLive("android node capability integration (preconditioned)", () => {
         [
           `selected node is not ready (nodeId=${nodeId}, connected=${String(target.connected)}, paired=${String(target.paired)})`,
           pendingHint,
-          "precondition: open app, keep foreground, ensure pairing approved (`openclaw nodes pending` / `openclaw nodes approve <requestId>`)",
+          "precondition: open app, keep foreground, ensure pairing approved (`afora nodes pending` / `afora nodes approve <requestId>`)",
         ].join("\n"),
       );
     }

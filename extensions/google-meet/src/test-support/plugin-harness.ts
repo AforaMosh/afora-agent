@@ -1,7 +1,7 @@
 // Google Meet plugin module implements plugin harness behavior.
-import type { AnyAgentTool, OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
-import type { AgentToolResult } from "openclaw/plugin-sdk/tool-results";
+import type { AnyAgentTool, AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
+import type { AgentToolResult } from "afora-agent/plugin-sdk/tool-results";
 import { vi } from "vitest";
 import type { GoogleMeetCalendarLookupResult } from "../calendar.js";
 import { listGoogleMeetCalendarEvents } from "../calendar.js";
@@ -15,7 +15,7 @@ import type { GoogleMeetRuntime } from "../runtime.js";
 import { MEET_URL } from "./fixtures.test-helpers.js";
 
 type GoogleMeetTestPluginEntry = {
-  register(api: OpenClawPluginApi): void;
+  register(api: AforaPluginApi): void;
 };
 
 export const noopLogger = {
@@ -187,7 +187,7 @@ export function setupGoogleMeetPlugin(
         list: nodesList,
         invoke: nodesInvoke,
       },
-    } as unknown as OpenClawPluginApi["runtime"],
+    } as unknown as AforaPluginApi["runtime"],
     logger: noopLogger,
     registerGatewayMethod: (method: string, handler: unknown) => methods.set(method, handler),
     registerTool: (tool) => {

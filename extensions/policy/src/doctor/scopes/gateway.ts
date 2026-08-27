@@ -1,6 +1,6 @@
 // Policy doctor checks and findings for gateway exposure policy.
-import { isRecord } from "openclaw/plugin-sdk/channel-secret-basic-runtime";
-import type { HealthCheck, HealthFinding } from "openclaw/plugin-sdk/health";
+import { isRecord } from "afora-agent/plugin-sdk/channel-secret-basic-runtime";
+import type { HealthCheck, HealthFinding } from "afora-agent/plugin-sdk/health";
 import type { PolicyEvidence } from "../../policy-state.js";
 import { repairPolicyAutomaticNarrower } from "../automatic-repairs.js";
 import { createPolicyScopedChecks } from "../check-factory.js";
@@ -93,7 +93,7 @@ function gatewayNonLoopbackBindFindings(
             ? "Gateway bind is omitted while the runtime default can permit non-loopback exposure."
             : `Gateway bind setting '${entry.id}' permits non-loopback exposure.`,
         source: "policy",
-        path: "openclaw config",
+        path: "afora config",
         ocPath: entry.source,
         target: entry.source,
         requirement: `oc://${policyDocName}/gateway/exposure/allowNonLoopbackBind`,
@@ -118,7 +118,7 @@ function gatewayAuthFindings(
             severity: "error",
             message: "Gateway authentication is disabled.",
             source: "policy",
-            path: "openclaw config",
+            path: "afora config",
             ocPath: entry.source,
             target: entry.source,
             requirement: `oc://${policyDocName}/gateway/auth/requireAuth`,
@@ -137,7 +137,7 @@ function gatewayAuthFindings(
             severity: "error",
             message: "Gateway authentication rate-limit posture is not explicit.",
             source: "policy",
-            path: "openclaw config",
+            path: "afora config",
             ocPath: entry.source,
             target: entry.source,
             requirement: `oc://${policyDocName}/gateway/auth/requireExplicitRateLimit`,
@@ -172,7 +172,7 @@ function gatewayControlUiFindings(
         severity: "error",
         message: `Gateway Control UI insecure toggle '${entry.id}' is enabled.`,
         source: "policy",
-        path: "openclaw config",
+        path: "afora config",
         ocPath: entry.source,
         target: entry.source,
         requirement: `oc://${policyDocName}/gateway/controlUi/allowInsecure`,
@@ -197,7 +197,7 @@ function gatewayTailscaleFindings(
         severity: "error",
         message: "Gateway Tailscale Funnel exposure is enabled.",
         source: "policy",
-        path: "openclaw config",
+        path: "afora config",
         ocPath: entry.source,
         target: entry.source,
         requirement: `oc://${policyDocName}/gateway/exposure/allowTailscaleFunnel`,
@@ -222,7 +222,7 @@ function gatewayRemoteFindings(
         severity: "error",
         message: `Gateway remote posture '${entry.id}' is enabled.`,
         source: "policy",
-        path: "openclaw config",
+        path: "afora config",
         ocPath: entry.source,
         target: entry.source,
         requirement: `oc://${policyDocName}/gateway/remote/allow`,
@@ -257,7 +257,7 @@ function gatewayHttpEndpointFindings(
         severity: "error",
         message: `Gateway HTTP endpoint '${entry.endpoint ?? entry.id}' is denied by policy.`,
         source: "policy",
-        path: "openclaw config",
+        path: "afora config",
         ocPath: entry.source,
         target: entry.source,
         requirement: `oc://${policyDocName}/gateway/http/denyEndpoints`,
@@ -282,7 +282,7 @@ function gatewayHttpUrlFetchFindings(
         severity: "error",
         message: `Gateway HTTP URL-fetch input '${entry.id}' has no URL allowlist.`,
         source: "policy",
-        path: "openclaw config",
+        path: "afora config",
         ocPath: entry.source,
         target: entry.source,
         requirement: `oc://${policyDocName}/gateway/http/requireUrlAllowlists`,
@@ -316,11 +316,11 @@ function gatewayNodeCommandFindings(
       return {
         checkId: CHECK_IDS.policyGatewayNodeCommandDenied,
         severity: "error",
-        message: `Gateway node command '${command}' is denied by policy but not denied by OpenClaw config.`,
+        message: `Gateway node command '${command}' is denied by policy but not denied by Afora config.`,
         source: "policy",
-        path: "openclaw config",
-        ocPath: "oc://openclaw.config/gateway/nodes/commands/deny",
-        target: "oc://openclaw.config/gateway/nodes/commands/deny",
+        path: "afora config",
+        ocPath: "oc://afora.config/gateway/nodes/commands/deny",
+        target: "oc://afora.config/gateway/nodes/commands/deny",
         requirement: `oc://${policyDocName}/gateway/nodes/denyCommands`,
         fixHint: `Add '${command}' to gateway.nodes.commands.deny or update policy after review.`,
       };

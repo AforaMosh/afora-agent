@@ -31,7 +31,7 @@ const authStatusWithUsage = {
 
 const gatewayInjectedSessions = {
   count: 1,
-  defaults: { contextTokens: 200_000, model: "gateway-injected", modelProvider: "openclaw" },
+  defaults: { contextTokens: 200_000, model: "gateway-injected", modelProvider: "afora" },
   path: "",
   sessions: [
     {
@@ -42,7 +42,7 @@ const gatewayInjectedSessions = {
       kind: "direct",
       label: "Main",
       model: "gateway-injected",
-      modelProvider: "openclaw",
+      modelProvider: "afora",
       status: "done",
       totalTokens: 46_000,
       totalTokensFresh: true,
@@ -172,7 +172,7 @@ suite.define(() => {
           .trim(),
       ).toBe("Provider: OpenAI");
       const popoverText = (await page.locator(".context-usage__popover").textContent()) ?? "";
-      expect(popoverText).not.toContain("openclaw");
+      expect(popoverText).not.toContain("afora");
       expect(popoverText).not.toContain("gateway-injected");
       expect(popoverText).not.toContain("Model:");
     } finally {
@@ -221,7 +221,7 @@ suite.define(() => {
       const contextRing = page.locator(".context-ring");
       await contextRing.waitFor({ state: "visible" });
       await page.waitForFunction(() => {
-        const pane = document.querySelector("openclaw-chat-pane") as
+        const pane = document.querySelector("afora-chat-pane") as
           | (HTMLElement & {
               state?: { modelAuthStatusResult?: { providers?: unknown[] } | null };
             })
@@ -234,7 +234,7 @@ suite.define(() => {
       await popover.screenshot({ path: path.join(artifactDir, "04-usage-unavailable.png") });
       expect(await page.locator('[data-chat-provider-usage="true"]').count()).toBe(0);
       const popoverText = (await popover.textContent()) ?? "";
-      expect(popoverText).not.toContain("openclaw");
+      expect(popoverText).not.toContain("afora");
       expect(popoverText).not.toContain("gateway-injected");
       expect(popoverText).not.toContain("Model:");
     } finally {
@@ -261,7 +261,7 @@ suite.define(() => {
 
       expect(await page.locator('[data-chat-provider-usage="true"]').count()).toBe(0);
       const popoverText = (await popover.textContent()) ?? "";
-      expect(popoverText).not.toContain("openclaw");
+      expect(popoverText).not.toContain("afora");
       expect(popoverText).not.toContain("gateway-injected");
       expect(popoverText).not.toContain("Model:");
     } finally {

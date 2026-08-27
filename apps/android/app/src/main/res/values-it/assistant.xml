@@ -1,7 +1,7 @@
 <resources>
-    <string-array name="ask_openclaw_query_patterns">
-        <item>"chiedi a OpenClaw %1$s"</item>
-        <item>"di\' a OpenClaw di %1$s"</item>
-        <item>"apri OpenClaw e chiedi %1$s"</item>
+    <string-array name="ask_afora_query_patterns">
+        <item>"chiedi a Afora %1$s"</item>
+        <item>"di\' a Afora di %1$s"</item>
+        <item>"apri Afora e chiedi %1$s"</item>
     </string-array>
 </resources>

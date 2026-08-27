@@ -1,7 +1,7 @@
 // Launchd tests cover macOS service plist generation and command handling.
 import fs from "node:fs/promises";
 import { PassThrough } from "node:stream";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PortListener } from "../infra/ports-types.js";
 import { deleteTestEnvValue, setTestEnvValue } from "../test-utils/env.js";
@@ -12,15 +12,15 @@ import {
 } from "./launchd-plist.js";
 import {
   installLaunchAgent as installLaunchAgentImpl,
-  disableCurrentOpenClawUpdateLaunchdJob,
-  disableOpenClawUpdateLaunchdJob,
-  findStaleOpenClawUpdateLaunchdJobs,
+  disableCurrentAforaUpdateLaunchdJob,
+  disableAforaUpdateLaunchdJob,
+  findStaleAforaUpdateLaunchdJobs,
   isLaunchAgentEnabled,
   isLaunchAgentLoaded,
   parkCurrentLaunchAgentForMaintenance,
   parseLaunchAgentEnabled,
   parseLaunchctlPrint,
-  parseLaunchctlListOpenClawUpdateJobs,
+  parseLaunchctlListAforaUpdateJobs,
   readLaunchAgentProgramArguments,
   readLaunchAgentRuntime,
   repairLaunchAgentBootstrap,
@@ -141,7 +141,7 @@ function readPlistProgramArgumentStrings(plist: string): string[] {
 function createDefaultLaunchdEnv(): Record<string, string | undefined> {
   return {
     HOME: "/Users/test",
-    OPENCLAW_PROFILE: "default",
+    AFORA_PROFILE: "default",
   };
 }
 
@@ -149,7 +149,7 @@ async function installLaunchAgent(
   args: Parameters<typeof installLaunchAgentImpl>[0],
 ): ReturnType<typeof installLaunchAgentImpl> {
   const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
-  const serviceTarget = `${domain}/ai.openclaw.gateway`;
+  const serviceTarget = `${domain}/ai.afora.gateway`;
   if (
     !state.files.has(resolveLaunchAgentPlistPath(args.env)) &&
     !state.serviceStates.has(serviceTarget)
@@ -270,7 +270,7 @@ async function runRestartLaunchAgentWithFakeTimers(args: Parameters<typeof resta
 
 function expectLaunchctlEnableBootstrapOrder(
   env: Record<string, string | undefined>,
-  label = "ai.openclaw.gateway",
+  label = "ai.afora.gateway",
 ) {
   const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
   const plistPath = resolveLaunchAgentPlistPath(env);
@@ -311,17 +311,17 @@ function createSystemOwnershipError(
     status === "installed"
       ? {
           status,
-          serviceTarget: "system/ai.openclaw.gateway",
-          plistPath: "/Library/LaunchDaemons/custom-openclaw.plist",
+          serviceTarget: "system/ai.afora.gateway",
+          plistPath: "/Library/LaunchDaemons/custom-afora.plist",
         }
       : status === "unverifiable"
         ? {
             status,
-            serviceTarget: "system/ai.openclaw.gateway",
+            serviceTarget: "system/ai.afora.gateway",
             operation: "launchctl",
             detail: "permission denied",
           }
-        : { status, serviceTarget: "system/ai.openclaw.gateway" };
+        : { status, serviceTarget: "system/ai.afora.gateway" };
   return Object.assign(new Error(`system ownership blocked: ${status}`), {
     code: "SYSTEM_LAUNCH_DAEMON_OWNERSHIP",
     ownership,
@@ -437,7 +437,7 @@ function executeLaunchctlMock(file: string, args: string[]) {
 }
 
 vi.mock("node:child_process", async () => {
-  const { mockNodeBuiltinModule } = await import("openclaw/plugin-sdk/test-node-mocks");
+  const { mockNodeBuiltinModule } = await import("afora-agent/plugin-sdk/test-node-mocks");
   return mockNodeBuiltinModule(
     () => vi.importActual<typeof import("node:child_process")>("node:child_process"),
     { spawnSync: (...args: unknown[]) => launchctlSpawnSync(...args) },
@@ -596,7 +596,7 @@ beforeEach(() => {
   state.launchctlCalls.length = 0;
   state.listOutput = "";
   state.printOutput = "";
-  state.printDisabledOutput = 'disabled services = {\n\t"ai.openclaw.gateway" => enabled\n}';
+  state.printDisabledOutput = 'disabled services = {\n\t"ai.afora.gateway" => enabled\n}';
   state.printDisabledError = "";
   state.printDisabledCode = 0;
   state.printNotLoadedRemaining = 0;
@@ -667,24 +667,24 @@ beforeEach(() => {
 
 describe("launchd runtime parsing", () => {
   it.each([
-    ['disabled services = {\n\t"ai.openclaw.gateway" => enabled\n}', true],
-    ['disabled services = {\n\t"ai.openclaw.gateway" => disabled\n}', false],
+    ['disabled services = {\n\t"ai.afora.gateway" => enabled\n}', true],
+    ['disabled services = {\n\t"ai.afora.gateway" => disabled\n}', false],
     ['disabled services = {\n\t"other.service" => disabled\n}', true],
   ])("parses the LaunchAgent enabled override", (output, expected) => {
-    expect(parseLaunchAgentEnabled(output, "ai.openclaw.gateway")).toBe(expected);
+    expect(parseLaunchAgentEnabled(output, "ai.afora.gateway")).toBe(expected);
   });
 
   it("rejects an unrecognized LaunchAgent enabled override", () => {
     expect(() =>
       parseLaunchAgentEnabled(
-        'disabled services = {\n\t"ai.openclaw.gateway" => unexpected\n}',
-        "ai.openclaw.gateway",
+        'disabled services = {\n\t"ai.afora.gateway" => unexpected\n}',
+        "ai.afora.gateway",
       ),
     ).toThrow("unrecognized state");
   });
 
   it("reads the persistent LaunchAgent enabled state", async () => {
-    state.printDisabledOutput = 'disabled services = {\n\t"ai.openclaw.gateway" => disabled\n}';
+    state.printDisabledOutput = 'disabled services = {\n\t"ai.afora.gateway" => disabled\n}';
 
     await expect(isLaunchAgentEnabled({ env: createDefaultLaunchdEnv() })).resolves.toBe(false);
     expect(state.launchctlCalls).toContainEqual([
@@ -757,7 +757,7 @@ describe("launchd runtime state", () => {
     state.files.set(resolveLaunchAgentPlistPath(env), "<plist/>");
     state.printError = [
       "Bad request.",
-      'Could not find service "ai.openclaw.gateway" in domain for user gui: 501',
+      'Could not find service "ai.afora.gateway" in domain for user gui: 501',
     ].join("\n");
     state.printFailuresRemaining = 1;
 
@@ -809,51 +809,51 @@ describe("launchd runtime state", () => {
     const env = createDefaultLaunchdEnv();
     launchdSystemState.inspectSystemLaunchDaemonOwnership.mockResolvedValueOnce({
       status: "loaded",
-      serviceTarget: "system/ai.openclaw.gateway",
+      serviceTarget: "system/ai.afora.gateway",
     });
 
     const runtime = await readLaunchAgentRuntime(env);
 
     expect(runtime).toEqual({
       status: "unknown",
-      detail: "System LaunchDaemon system/ai.openclaw.gateway already owns this gateway label.",
+      detail: "System LaunchDaemon system/ai.afora.gateway already owns this gateway label.",
       systemLaunchDaemon: {
         status: "loaded",
-        serviceTarget: "system/ai.openclaw.gateway",
+        serviceTarget: "system/ai.afora.gateway",
       },
     });
     expect(launchdSystemState.inspectSystemLaunchDaemonOwnership).toHaveBeenCalledWith(
-      "ai.openclaw.gateway",
+      "ai.afora.gateway",
       { scanInstalledPlists: false },
     );
   });
 });
 
 describe("launchctl list detection", () => {
-  it("parses stale OpenClaw updater jobs from launchctl list", () => {
-    const jobs = parseLaunchctlListOpenClawUpdateJobs(
+  it("parses stale Afora updater jobs from launchctl list", () => {
+    const jobs = parseLaunchctlListAforaUpdateJobs(
       [
-        "123 0 ai.openclaw.gateway",
-        "- 127 ai.openclaw.update.2026.5.12",
-        "- 0 ai.openclaw.manual-update.1717168800",
-        "8142 0 ai.openclaw.update.2026.5.13-beta.1",
-        "915 0 ai.openclaw.tayoun.update.20260625T201026-0400",
-        "- 0 ai.openclaw.manual-updater.1717168800",
+        "123 0 ai.afora.gateway",
+        "- 127 ai.afora.update.2026.5.12",
+        "- 0 ai.afora.manual-update.1717168800",
+        "8142 0 ai.afora.update.2026.5.13-beta.1",
+        "915 0 ai.afora.tayoun.update.20260625T201026-0400",
+        "- 0 ai.afora.manual-updater.1717168800",
         "- 0 com.example.other",
       ].join("\n"),
     );
 
     expect(jobs).toEqual([
       {
-        label: "ai.openclaw.manual-update.1717168800",
+        label: "ai.afora.manual-update.1717168800",
         lastExitStatus: 0,
       },
       {
-        label: "ai.openclaw.update.2026.5.12",
+        label: "ai.afora.update.2026.5.12",
         lastExitStatus: 127,
       },
       {
-        label: "ai.openclaw.update.2026.5.13-beta.1",
+        label: "ai.afora.update.2026.5.13-beta.1",
         pid: 8142,
         lastExitStatus: 0,
       },
@@ -861,15 +861,15 @@ describe("launchctl list detection", () => {
   });
 
   it.runIf(process.platform === "darwin")(
-    "finds stale OpenClaw updater jobs via launchctl list",
+    "finds stale Afora updater jobs via launchctl list",
     async () => {
-      state.listOutput = "- 127 ai.openclaw.update.2026.5.12\n";
+      state.listOutput = "- 127 ai.afora.update.2026.5.12\n";
 
-      const jobs = await findStaleOpenClawUpdateLaunchdJobs();
+      const jobs = await findStaleAforaUpdateLaunchdJobs();
 
       expect(jobs).toEqual([
         {
-          label: "ai.openclaw.update.2026.5.12",
+          label: "ai.afora.update.2026.5.12",
           lastExitStatus: 127,
         },
       ]);
@@ -880,38 +880,38 @@ describe("launchctl list detection", () => {
     "reports profile-scoped updater jobs only when launchd metadata confirms an update command",
     async () => {
       const env = createDefaultLaunchdEnv();
-      const updaterLabel = "ai.openclaw.tayoun.update.20260625T201026-0400";
-      const gatewayLikeLabel = "ai.openclaw.dev.team.update.20260625T201026-0400";
-      const nonOpenClawLabel = "ai.openclaw.fake.update.20260625T201026-0400";
-      const prefixedCliLabel = "ai.openclaw.helper.update.20260625T201026-0400";
+      const updaterLabel = "ai.afora.tayoun.update.20260625T201026-0400";
+      const gatewayLikeLabel = "ai.afora.dev.team.update.20260625T201026-0400";
+      const nonAforaLabel = "ai.afora.fake.update.20260625T201026-0400";
+      const prefixedCliLabel = "ai.afora.helper.update.20260625T201026-0400";
       state.listOutput = [
         `4321 0 ${updaterLabel}`,
         `9876 0 ${gatewayLikeLabel}`,
-        `2468 0 ${nonOpenClawLabel}`,
+        `2468 0 ${nonAforaLabel}`,
         `1357 0 ${prefixedCliLabel}`,
       ].join("\n");
       setLaunchAgentPlist({
         env,
         label: updaterLabel,
-        programArguments: ["/opt/homebrew/bin/openclaw", "update", "--yes", "--json"],
+        programArguments: ["/opt/homebrew/bin/afora", "update", "--yes", "--json"],
       });
       setLaunchAgentPlist({
         env,
         label: gatewayLikeLabel,
-        programArguments: ["/opt/homebrew/bin/openclaw", "gateway", "run"],
+        programArguments: ["/opt/homebrew/bin/afora", "gateway", "run"],
       });
       setLaunchAgentPlist({
         env,
-        label: nonOpenClawLabel,
+        label: nonAforaLabel,
         programArguments: ["/bin/echo", "update", "--yes"],
       });
       setLaunchAgentPlist({
         env,
         label: prefixedCliLabel,
-        programArguments: ["/usr/local/bin/openclaw-helper", "update", "--yes"],
+        programArguments: ["/usr/local/bin/afora-helper", "update", "--yes"],
       });
 
-      const jobs = await findStaleOpenClawUpdateLaunchdJobs(env as NodeJS.ProcessEnv);
+      const jobs = await findStaleAforaUpdateLaunchdJobs(env as NodeJS.ProcessEnv);
 
       expect(jobs).toEqual([
         {
@@ -927,16 +927,16 @@ describe("launchctl list detection", () => {
     "accepts an explicit updater marker when confirming profile-scoped updater jobs",
     async () => {
       const env = createDefaultLaunchdEnv();
-      const updaterLabel = "ai.openclaw.tayoun.update.20260625T201026-0400";
+      const updaterLabel = "ai.afora.tayoun.update.20260625T201026-0400";
       state.listOutput = `4321 0 ${updaterLabel}`;
       setLaunchAgentPlist({
         env,
         label: updaterLabel,
-        programArguments: ["/opt/homebrew/bin/openclaw", "gateway", "run"],
-        environment: { OPENCLAW_UPDATE_RUN_HANDOFF: "1" },
+        programArguments: ["/opt/homebrew/bin/afora", "gateway", "run"],
+        environment: { AFORA_UPDATE_RUN_HANDOFF: "1" },
       });
 
-      const jobs = await findStaleOpenClawUpdateLaunchdJobs(env as NodeJS.ProcessEnv);
+      const jobs = await findStaleAforaUpdateLaunchdJobs(env as NodeJS.ProcessEnv);
 
       expect(jobs).toEqual([
         {
@@ -952,8 +952,8 @@ describe("launchctl list detection", () => {
     "unwraps generated environment-wrapper metadata for profile-scoped updater jobs",
     async () => {
       const env = createDefaultLaunchdEnv();
-      const label = "ai.openclaw.tayoun.update.20260625T201026-0400";
-      const envDir = "/Users/test/.openclaw-tayoun/service-env";
+      const label = "ai.afora.tayoun.update.20260625T201026-0400";
+      const envDir = "/Users/test/.afora-tayoun/service-env";
       const wrapperPath = `${envDir}/${label}-env-wrapper.sh`;
       const envFilePath = `${envDir}/${label}.env`;
       state.listOutput = `4321 0 ${label}`;
@@ -965,13 +965,13 @@ describe("launchctl list detection", () => {
           LAUNCH_AGENT_ENV_WRAPPER_SHELL,
           wrapperPath,
           envFilePath,
-          "/opt/homebrew/bin/openclaw",
+          "/opt/homebrew/bin/afora",
           "update",
           "--yes",
         ],
       });
 
-      const jobs = await findStaleOpenClawUpdateLaunchdJobs(env as NodeJS.ProcessEnv);
+      const jobs = await findStaleAforaUpdateLaunchdJobs(env as NodeJS.ProcessEnv);
 
       expect(jobs).toEqual([
         {
@@ -987,12 +987,12 @@ describe("launchctl list detection", () => {
     "reads the updater marker from a generated environment file",
     async () => {
       const env = createDefaultLaunchdEnv();
-      const label = "ai.openclaw.tayoun.update.20260625T201026-0400";
-      const envDir = "/Users/test/.openclaw-tayoun/service-env";
+      const label = "ai.afora.tayoun.update.20260625T201026-0400";
+      const envDir = "/Users/test/.afora-tayoun/service-env";
       const wrapperPath = `${envDir}/${label}-env-wrapper.sh`;
       const envFilePath = `${envDir}/${label}.env`;
       state.listOutput = `4321 0 ${label}`;
-      state.files.set(envFilePath, "export OPENCLAW_UPDATE_RUN_HANDOFF='1'\n");
+      state.files.set(envFilePath, "export AFORA_UPDATE_RUN_HANDOFF='1'\n");
       setLaunchAgentPlist({
         env,
         label,
@@ -1000,13 +1000,13 @@ describe("launchctl list detection", () => {
           LAUNCH_AGENT_ENV_WRAPPER_SHELL,
           wrapperPath,
           envFilePath,
-          "/opt/homebrew/bin/openclaw",
+          "/opt/homebrew/bin/afora",
           "gateway",
           "run",
         ],
       });
 
-      const jobs = await findStaleOpenClawUpdateLaunchdJobs(env as NodeJS.ProcessEnv);
+      const jobs = await findStaleAforaUpdateLaunchdJobs(env as NodeJS.ProcessEnv);
 
       expect(jobs).toEqual([
         {
@@ -1023,17 +1023,17 @@ describe("launchctl list detection", () => {
     async () => {
       const env = {
         ...createDefaultLaunchdEnv(),
-        OPENCLAW_UPDATE_RUN_HANDOFF: "1",
+        AFORA_UPDATE_RUN_HANDOFF: "1",
       };
-      const gatewayLikeLabel = "ai.openclaw.dev.team.update.20260625T201026-0400";
+      const gatewayLikeLabel = "ai.afora.dev.team.update.20260625T201026-0400";
       state.listOutput = `9876 0 ${gatewayLikeLabel}`;
       setLaunchAgentPlist({
         env,
         label: gatewayLikeLabel,
-        programArguments: ["/opt/homebrew/bin/openclaw", "gateway", "run"],
+        programArguments: ["/opt/homebrew/bin/afora", "gateway", "run"],
       });
 
-      const jobs = await findStaleOpenClawUpdateLaunchdJobs(env as NodeJS.ProcessEnv);
+      const jobs = await findStaleAforaUpdateLaunchdJobs(env as NodeJS.ProcessEnv);
 
       expect(jobs).toEqual([]);
     },
@@ -1043,21 +1043,21 @@ describe("launchctl list detection", () => {
     "does not report current gateway labels that collide with manual update labels",
     async () => {
       state.listOutput = [
-        "- 0 ai.openclaw.manual-update.1717168800",
-        "812 0 ai.openclaw.manual-update.profile",
-        "913 0 ai.openclaw.manual-update.custom-label",
+        "- 0 ai.afora.manual-update.1717168800",
+        "812 0 ai.afora.manual-update.profile",
+        "913 0 ai.afora.manual-update.custom-label",
       ].join("\n");
 
-      const jobs = await findStaleOpenClawUpdateLaunchdJobs({
-        OPENCLAW_PROFILE: "manual-update.profile",
-        OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.manual-update.custom-label",
-        OPENCLAW_SERVICE_MARKER: GATEWAY_SERVICE_MARKER,
-        OPENCLAW_SERVICE_KIND: GATEWAY_SERVICE_KIND,
+      const jobs = await findStaleAforaUpdateLaunchdJobs({
+        AFORA_PROFILE: "manual-update.profile",
+        AFORA_LAUNCHD_LABEL: "ai.afora.manual-update.custom-label",
+        AFORA_SERVICE_MARKER: GATEWAY_SERVICE_MARKER,
+        AFORA_SERVICE_KIND: GATEWAY_SERVICE_KIND,
       } as NodeJS.ProcessEnv);
 
       expect(jobs).toEqual([
         {
-          label: "ai.openclaw.manual-update.1717168800",
+          label: "ai.afora.manual-update.1717168800",
           lastExitStatus: 0,
         },
       ]);
@@ -1068,15 +1068,15 @@ describe("launchctl list detection", () => {
     "disables the current legacy updater launchd job",
     async () => {
       await expect(
-        disableCurrentOpenClawUpdateLaunchdJob({
-          LAUNCH_JOB_LABEL: "ai.openclaw.update.2026.5.12",
+        disableCurrentAforaUpdateLaunchdJob({
+          LAUNCH_JOB_LABEL: "ai.afora.update.2026.5.12",
         }),
       ).resolves.toBe(true);
 
       const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
       expect(state.launchctlCalls).toContainEqual([
         "disable",
-        `${domain}/ai.openclaw.update.2026.5.12`,
+        `${domain}/ai.afora.update.2026.5.12`,
       ]);
       expect(launchctlCommandNames()).not.toContain("remove");
     },
@@ -1086,51 +1086,51 @@ describe("launchctl list detection", () => {
     "disables the current manual updater launchd job",
     async () => {
       await expect(
-        disableCurrentOpenClawUpdateLaunchdJob({
-          LAUNCH_JOB_LABEL: "ai.openclaw.manual-update.1717168800",
+        disableCurrentAforaUpdateLaunchdJob({
+          LAUNCH_JOB_LABEL: "ai.afora.manual-update.1717168800",
         }),
       ).resolves.toBe(true);
 
       const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
       expect(state.launchctlCalls).toContainEqual([
         "disable",
-        `${domain}/ai.openclaw.manual-update.1717168800`,
+        `${domain}/ai.afora.manual-update.1717168800`,
       ]);
       expect(launchctlCommandNames()).not.toContain("remove");
     },
   );
 
   it.runIf(process.platform === "darwin")(
-    "disables the current legacy updater launchd job from OpenClaw label env",
+    "disables the current legacy updater launchd job from Afora label env",
     async () => {
       await expect(
-        disableCurrentOpenClawUpdateLaunchdJob({
-          OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.update.2026.5.12",
+        disableCurrentAforaUpdateLaunchdJob({
+          AFORA_LAUNCHD_LABEL: "ai.afora.update.2026.5.12",
         }),
       ).resolves.toBe(true);
 
       const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
       expect(state.launchctlCalls).toContainEqual([
         "disable",
-        `${domain}/ai.openclaw.update.2026.5.12`,
+        `${domain}/ai.afora.update.2026.5.12`,
       ]);
     },
   );
 
   it.runIf(process.platform === "darwin")(
-    "does not let non-update launchd markers mask the OpenClaw update label",
+    "does not let non-update launchd markers mask the Afora update label",
     async () => {
       await expect(
-        disableCurrentOpenClawUpdateLaunchdJob({
+        disableCurrentAforaUpdateLaunchdJob({
           XPC_SERVICE_NAME: "0",
-          OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.update.2026.5.12",
+          AFORA_LAUNCHD_LABEL: "ai.afora.update.2026.5.12",
         }),
       ).resolves.toBe(true);
 
       const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
       expect(state.launchctlCalls).toContainEqual([
         "disable",
-        `${domain}/ai.openclaw.update.2026.5.12`,
+        `${domain}/ai.afora.update.2026.5.12`,
       ]);
     },
   );
@@ -1139,8 +1139,8 @@ describe("launchctl list detection", () => {
     "does not disable the current gateway launchd job",
     async () => {
       await expect(
-        disableCurrentOpenClawUpdateLaunchdJob({
-          LAUNCH_JOB_LABEL: "ai.openclaw.gateway",
+        disableCurrentAforaUpdateLaunchdJob({
+          LAUNCH_JOB_LABEL: "ai.afora.gateway",
         }),
       ).resolves.toBe(false);
 
@@ -1152,9 +1152,9 @@ describe("launchctl list detection", () => {
     "does not disable profile-specific gateway launchd jobs that look like updater labels",
     async () => {
       await expect(
-        disableCurrentOpenClawUpdateLaunchdJob({
-          LAUNCH_JOB_LABEL: "ai.openclaw.update.2026.5.12",
-          OPENCLAW_PROFILE: "update.2026.5.12",
+        disableCurrentAforaUpdateLaunchdJob({
+          LAUNCH_JOB_LABEL: "ai.afora.update.2026.5.12",
+          AFORA_PROFILE: "update.2026.5.12",
         }),
       ).resolves.toBe(false);
 
@@ -1166,9 +1166,9 @@ describe("launchctl list detection", () => {
     "does not disable profile-specific gateway launchd jobs that look like manual updater labels",
     async () => {
       await expect(
-        disableCurrentOpenClawUpdateLaunchdJob({
-          LAUNCH_JOB_LABEL: "ai.openclaw.manual-update.1717168800",
-          OPENCLAW_PROFILE: "manual-update.1717168800",
+        disableCurrentAforaUpdateLaunchdJob({
+          LAUNCH_JOB_LABEL: "ai.afora.manual-update.1717168800",
+          AFORA_PROFILE: "manual-update.1717168800",
         }),
       ).resolves.toBe(false);
 
@@ -1180,15 +1180,15 @@ describe("launchctl list detection", () => {
     "disables current profile-scoped updater launchd jobs only after metadata confirmation",
     async () => {
       const env = createDefaultLaunchdEnv();
-      const label = "ai.openclaw.tayoun.update.20260625T201026-0400";
+      const label = "ai.afora.tayoun.update.20260625T201026-0400";
       setLaunchAgentPlist({
         env,
         label,
-        programArguments: ["/usr/local/bin/node", "/opt/openclaw/openclaw.mjs", "update", "--yes"],
+        programArguments: ["/usr/local/bin/node", "/opt/AforaMosh/afora-agent.mjs", "update", "--yes"],
       });
 
       await expect(
-        disableCurrentOpenClawUpdateLaunchdJob({
+        disableCurrentAforaUpdateLaunchdJob({
           ...env,
           LAUNCH_JOB_LABEL: label,
         }),
@@ -1203,13 +1203,13 @@ describe("launchctl list detection", () => {
     "lets a profile-scoped updater self-disarm from launchd runtime metadata",
     async () => {
       const env = createDefaultLaunchdEnv();
-      const label = "ai.openclaw.tayoun.update.20260625T201026-0400";
+      const label = "ai.afora.tayoun.update.20260625T201026-0400";
 
       await expect(
-        disableCurrentOpenClawUpdateLaunchdJob({
+        disableCurrentAforaUpdateLaunchdJob({
           ...env,
           LAUNCH_JOB_LABEL: label,
-          OPENCLAW_UPDATE_RUN_HANDOFF: "1",
+          AFORA_UPDATE_RUN_HANDOFF: "1",
         }),
       ).resolves.toBe(true);
 
@@ -1222,18 +1222,18 @@ describe("launchctl list detection", () => {
     "requires plist proof for a configured label preserved by an update handoff",
     async () => {
       const env = createDefaultLaunchdEnv();
-      const label = "ai.openclaw.dev.team.update.20260625T201026-0400";
+      const label = "ai.afora.dev.team.update.20260625T201026-0400";
       setLaunchAgentPlist({
         env,
         label,
-        programArguments: ["/opt/homebrew/bin/openclaw", "gateway", "run"],
+        programArguments: ["/opt/homebrew/bin/afora", "gateway", "run"],
       });
 
       await expect(
-        disableCurrentOpenClawUpdateLaunchdJob({
+        disableCurrentAforaUpdateLaunchdJob({
           ...env,
-          OPENCLAW_LAUNCHD_LABEL: label,
-          OPENCLAW_UPDATE_RUN_HANDOFF: "1",
+          AFORA_LAUNCHD_LABEL: label,
+          AFORA_UPDATE_RUN_HANDOFF: "1",
         }),
       ).resolves.toBe(false);
 
@@ -1245,18 +1245,18 @@ describe("launchctl list detection", () => {
     "disables a configured profile-scoped updater only with confirming plist metadata",
     async () => {
       const env = createDefaultLaunchdEnv();
-      const label = "ai.openclaw.tayoun.update.20260625T201026-0400";
+      const label = "ai.afora.tayoun.update.20260625T201026-0400";
       setLaunchAgentPlist({
         env,
         label,
-        programArguments: ["/opt/homebrew/bin/openclaw", "update", "--yes"],
+        programArguments: ["/opt/homebrew/bin/afora", "update", "--yes"],
       });
 
       await expect(
-        disableCurrentOpenClawUpdateLaunchdJob({
+        disableCurrentAforaUpdateLaunchdJob({
           ...env,
-          OPENCLAW_LAUNCHD_LABEL: label,
-          OPENCLAW_UPDATE_RUN_HANDOFF: "1",
+          AFORA_LAUNCHD_LABEL: label,
+          AFORA_UPDATE_RUN_HANDOFF: "1",
         }),
       ).resolves.toBe(true);
 
@@ -1269,15 +1269,15 @@ describe("launchctl list detection", () => {
     "does not disable profile-scoped gateway labels without updater metadata",
     async () => {
       const env = createDefaultLaunchdEnv();
-      const label = "ai.openclaw.tayoun.update.20260625T201026-0400";
+      const label = "ai.afora.tayoun.update.20260625T201026-0400";
       setLaunchAgentPlist({
         env,
         label,
-        programArguments: ["/opt/homebrew/bin/openclaw", "gateway", "run"],
+        programArguments: ["/opt/homebrew/bin/afora", "gateway", "run"],
       });
 
       await expect(
-        disableCurrentOpenClawUpdateLaunchdJob({
+        disableCurrentAforaUpdateLaunchdJob({
           ...env,
           LAUNCH_JOB_LABEL: label,
         }),
@@ -1291,8 +1291,8 @@ describe("launchctl list detection", () => {
     "does not disable custom gateway launchd labels under the manual-update prefix",
     async () => {
       await expect(
-        disableCurrentOpenClawUpdateLaunchdJob({
-          LAUNCH_JOB_LABEL: "ai.openclaw.manual-update.gateway",
+        disableCurrentAforaUpdateLaunchdJob({
+          LAUNCH_JOB_LABEL: "ai.afora.manual-update.gateway",
         }),
       ).resolves.toBe(false);
 
@@ -1304,11 +1304,11 @@ describe("launchctl list detection", () => {
     "does not disable custom gateway launchd labels that look like updater labels",
     async () => {
       await expect(
-        disableCurrentOpenClawUpdateLaunchdJob({
-          LAUNCH_JOB_LABEL: "ai.openclaw.update.2026.5.12",
-          OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.update.2026.5.12",
-          OPENCLAW_SERVICE_MARKER: "openclaw",
-          OPENCLAW_SERVICE_KIND: "gateway",
+        disableCurrentAforaUpdateLaunchdJob({
+          LAUNCH_JOB_LABEL: "ai.afora.update.2026.5.12",
+          AFORA_LAUNCHD_LABEL: "ai.afora.update.2026.5.12",
+          AFORA_SERVICE_MARKER: "afora",
+          AFORA_SERVICE_KIND: "gateway",
         }),
       ).resolves.toBe(false);
 
@@ -1317,26 +1317,26 @@ describe("launchctl list detection", () => {
   );
 
   it.runIf(process.platform === "darwin")("disables explicit legacy updater jobs", async () => {
-    await expect(disableOpenClawUpdateLaunchdJob("ai.openclaw.update.2026.5.12")).resolves.toBe(
+    await expect(disableAforaUpdateLaunchdJob("ai.afora.update.2026.5.12")).resolves.toBe(
       true,
     );
 
     const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
     expect(state.launchctlCalls).toContainEqual([
       "disable",
-      `${domain}/ai.openclaw.update.2026.5.12`,
+      `${domain}/ai.afora.update.2026.5.12`,
     ]);
   });
 
   it.runIf(process.platform === "darwin")("disables explicit manual updater jobs", async () => {
     await expect(
-      disableOpenClawUpdateLaunchdJob("ai.openclaw.manual-update.1717168800"),
+      disableAforaUpdateLaunchdJob("ai.afora.manual-update.1717168800"),
     ).resolves.toBe(true);
 
     const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
     expect(state.launchctlCalls).toContainEqual([
       "disable",
-      `${domain}/ai.openclaw.manual-update.1717168800`,
+      `${domain}/ai.afora.manual-update.1717168800`,
     ]);
   });
 
@@ -1344,12 +1344,12 @@ describe("launchctl list detection", () => {
     "does not let the process marker bypass metadata for an explicit profile job",
     async () => {
       const env = createDefaultLaunchdEnv();
-      const label = "ai.openclaw.tayoun.update.20260625T201026-0400";
+      const label = "ai.afora.tayoun.update.20260625T201026-0400";
 
       await expect(
-        disableOpenClawUpdateLaunchdJob(label, {
+        disableAforaUpdateLaunchdJob(label, {
           ...env,
-          OPENCLAW_UPDATE_RUN_HANDOFF: "1",
+          AFORA_UPDATE_RUN_HANDOFF: "1",
         }),
       ).resolves.toBe(false);
 
@@ -1385,14 +1385,14 @@ describe("launchd bootstrap repair", () => {
   it("migrates inline secrets before making an existing plist readable", async () => {
     const env = createDefaultLaunchdEnv();
     const plistPath = resolveLaunchAgentPlistPath(env);
-    const wrapperPath = "/Users/test/.openclaw/service-env/ai.openclaw.gateway-env-wrapper.sh";
+    const wrapperPath = "/Users/test/.afora/service-env/ai.afora.gateway-env-wrapper.sh";
     const warn = vi.fn();
     const secret = "legacy-secret";
     state.files.set(wrapperPath, "custom wrapper");
     state.files.set(
       plistPath,
       createTestLaunchAgentPlist({
-        label: "ai.openclaw.gateway",
+        label: "ai.afora.gateway",
         programArguments: defaultProgramArguments,
         environment: { OPENAI_API_KEY: secret },
       }),
@@ -1404,7 +1404,7 @@ describe("launchd bootstrap repair", () => {
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("custom behavior"));
     expect(state.files.get(plistPath)).not.toContain(secret);
     expect(state.fileModes.get(plistPath)).toBe(0o644);
-    expect(state.files.get("/Users/test/.openclaw/service-env/ai.openclaw.gateway.env")).toContain(
+    expect(state.files.get("/Users/test/.afora/service-env/ai.afora.gateway.env")).toContain(
       secret,
     );
   });
@@ -1530,9 +1530,9 @@ describe("launchd uninstall", () => {
     const previous = "RunAtLoad=true";
     state.files.set(plistPath, previous);
 
-    await withProcessEnv({ XPC_SERVICE_NAME: "ai.openclaw.gateway" }, async () => {
+    await withProcessEnv({ XPC_SERVICE_NAME: "ai.afora.gateway" }, async () => {
       await expect(uninstallLaunchAgent({ env, stdout: new PassThrough() })).rejects.toThrow(
-        "Refusing to uninstall LaunchAgent ai.openclaw.gateway from inside ai.openclaw.gateway",
+        "Refusing to uninstall LaunchAgent ai.afora.gateway from inside ai.afora.gateway",
       );
     });
 
@@ -1648,7 +1648,7 @@ describe("launchd install", () => {
   it("refuses an in-band reinstall before booting out its own LaunchAgent", async () => {
     const env = createDefaultLaunchdEnv();
 
-    await withProcessEnv({ XPC_SERVICE_NAME: "ai.openclaw.gateway" }, async () => {
+    await withProcessEnv({ XPC_SERVICE_NAME: "ai.afora.gateway" }, async () => {
       await expect(
         installLaunchAgent({
           env,
@@ -1656,7 +1656,7 @@ describe("launchd install", () => {
           programArguments: defaultProgramArguments,
         }),
       ).rejects.toThrow(
-        "Refusing to install LaunchAgent ai.openclaw.gateway from inside ai.openclaw.gateway",
+        "Refusing to install LaunchAgent ai.afora.gateway from inside ai.afora.gateway",
       );
     });
 
@@ -1670,9 +1670,9 @@ describe("launchd install", () => {
     await withProcessEnv(
       {
         XPC_SERVICE_NAME: "0",
-        OPENCLAW_SERVICE_MARKER: GATEWAY_SERVICE_MARKER,
-        OPENCLAW_SERVICE_KIND: GATEWAY_SERVICE_KIND,
-        OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.legacy-gateway",
+        AFORA_SERVICE_MARKER: GATEWAY_SERVICE_MARKER,
+        AFORA_SERVICE_KIND: GATEWAY_SERVICE_KIND,
+        AFORA_LAUNCHD_LABEL: "ai.afora.legacy-gateway",
       },
       async () => {
         await expect(
@@ -1682,7 +1682,7 @@ describe("launchd install", () => {
             programArguments: defaultProgramArguments,
           }),
         ).rejects.toThrow(
-          "Refusing to install LaunchAgent ai.openclaw.gateway from inside ai.openclaw.legacy-gateway",
+          "Refusing to install LaunchAgent ai.afora.gateway from inside ai.afora.legacy-gateway",
         );
       },
     );
@@ -1693,12 +1693,12 @@ describe("launchd install", () => {
 
   it("restores an external legacy-label owner when canonical bootstrap fails", async () => {
     const env = createDefaultLaunchdEnv();
-    const legacyLabel = "ai.openclaw.legacy-gateway";
+    const legacyLabel = "ai.afora.legacy-gateway";
     const legacyPlistPath = `${env.HOME}/Library/LaunchAgents/${legacyLabel}.plist`;
     const targetPlistPath = resolveLaunchAgentPlistPath(env);
     const previousLegacy = createTestLaunchAgentPlist({
       label: legacyLabel,
-      programArguments: ["/legacy/node", "/legacy/openclaw.mjs", "gateway"],
+      programArguments: ["/legacy/node", "/legacy/afora.mjs", "gateway"],
     });
     launchdConstantsState.legacyGatewayLabels.push(legacyLabel);
     state.files.set(legacyPlistPath, previousLegacy);
@@ -1734,11 +1734,11 @@ describe("launchd install", () => {
 
   it("stages a canonical plist without retiring a legacy LaunchAgent", async () => {
     const env = createDefaultLaunchdEnv();
-    const legacyLabel = "ai.openclaw.legacy-gateway";
+    const legacyLabel = "ai.afora.legacy-gateway";
     const legacyPlistPath = `${env.HOME}/Library/LaunchAgents/${legacyLabel}.plist`;
     const previousLegacy = createTestLaunchAgentPlist({
       label: legacyLabel,
-      programArguments: ["/legacy/node", "/legacy/openclaw.mjs", "gateway"],
+      programArguments: ["/legacy/node", "/legacy/afora.mjs", "gateway"],
     });
     launchdConstantsState.legacyGatewayLabels.push(legacyLabel);
     state.files.set(legacyPlistPath, previousLegacy);
@@ -1758,8 +1758,8 @@ describe("launchd install", () => {
     const env = createDefaultLaunchdEnv();
     const plistPath = resolveLaunchAgentPlistPath(env);
     const previous = createTestLaunchAgentPlist({
-      label: "ai.openclaw.gateway",
-      programArguments: ["/previous/node", "/previous/openclaw.mjs", "gateway"],
+      label: "ai.afora.gateway",
+      programArguments: ["/previous/node", "/previous/afora.mjs", "gateway"],
     });
     state.files.set(plistPath, previous);
     state.printError = "launchctl print permission denied";
@@ -1781,7 +1781,7 @@ describe("launchd install", () => {
   it("aborts before mutation when launchd has the only copy of the prior definition", async () => {
     const env = createDefaultLaunchdEnv();
     const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
-    state.serviceStates.set(`${domain}/ai.openclaw.gateway`, "running");
+    state.serviceStates.set(`${domain}/ai.afora.gateway`, "running");
 
     await expect(
       installLaunchAgent({
@@ -1801,8 +1801,8 @@ describe("launchd install", () => {
     const env = createDefaultLaunchdEnv();
     const plistPath = resolveLaunchAgentPlistPath(env);
     const previous = createTestLaunchAgentPlist({
-      label: "ai.openclaw.gateway",
-      programArguments: ["/previous/node", "/previous/openclaw.mjs", "gateway"],
+      label: "ai.afora.gateway",
+      programArguments: ["/previous/node", "/previous/afora.mjs", "gateway"],
     });
     state.files.set(plistPath, previous);
     state.serviceLoaded = false;
@@ -1827,8 +1827,8 @@ describe("launchd install", () => {
   it("removes generated artifacts after a failed fresh install", async () => {
     const env = createDefaultLaunchdEnv();
     const plistPath = resolveLaunchAgentPlistPath(env);
-    const envFilePath = "/Users/test/.openclaw/service-env/ai.openclaw.gateway.env";
-    const wrapperPath = "/Users/test/.openclaw/service-env/ai.openclaw.gateway-env-wrapper.sh";
+    const envFilePath = "/Users/test/.afora/service-env/ai.afora.gateway.env";
+    const wrapperPath = "/Users/test/.afora/service-env/ai.afora.gateway-env-wrapper.sh";
     state.serviceLoaded = false;
     state.serviceRunning = false;
     state.bootstrapError = "Operation not permitted";
@@ -1840,7 +1840,7 @@ describe("launchd install", () => {
       env,
       stdout: new PassThrough(),
       programArguments: defaultProgramArguments,
-      environment: { OPENCLAW_GATEWAY_PORT: "19000" },
+      environment: { AFORA_GATEWAY_PORT: "19000" },
     }).catch((caught: unknown) => caught);
 
     expect(error).toBeInstanceOf(Error);
@@ -1881,18 +1881,18 @@ describe("launchd install", () => {
   it("restores the exact prior plist and supervision after external bootstrap failure", async () => {
     const env = createDefaultLaunchdEnv();
     const plistPath = resolveLaunchAgentPlistPath(env);
-    const envFilePath = "/Users/test/.openclaw/service-env/ai.openclaw.gateway.env";
-    const wrapperPath = "/Users/test/.openclaw/service-env/ai.openclaw.gateway-env-wrapper.sh";
-    const previousEnv = "export OPENCLAW_GATEWAY_PORT='18789'\n";
+    const envFilePath = "/Users/test/.afora/service-env/ai.afora.gateway.env";
+    const wrapperPath = "/Users/test/.afora/service-env/ai.afora.gateway-env-wrapper.sh";
+    const previousEnv = "export AFORA_GATEWAY_PORT='18789'\n";
     const previousWrapper = '#!/bin/sh\n. "$1"\nshift\nexec "$@"\n';
     const previous = createTestLaunchAgentPlist({
-      label: "ai.openclaw.gateway",
+      label: "ai.afora.gateway",
       programArguments: [
         "/bin/sh",
         wrapperPath,
         envFilePath,
         "/previous/node",
-        "/previous/openclaw.mjs",
+        "/previous/afora.mjs",
         "gateway",
       ],
     });
@@ -1911,7 +1911,7 @@ describe("launchd install", () => {
         env,
         stdout: new PassThrough(),
         programArguments: defaultProgramArguments,
-        environment: { OPENCLAW_GATEWAY_PORT: "19000" },
+        environment: { AFORA_GATEWAY_PORT: "19000" },
       }),
     ).rejects.toThrow("launchctl bootstrap failed: Operation not permitted");
 
@@ -1998,19 +1998,19 @@ describe("launchd install", () => {
     {
       name: "default gateway",
       env: createDefaultLaunchdEnv(),
-      label: "ai.openclaw.gateway",
+      label: "ai.afora.gateway",
       programArguments: defaultProgramArguments,
     },
     {
       name: "profiled gateway",
-      env: { HOME: "/Users/test", OPENCLAW_PROFILE: "qa" },
-      label: "ai.openclaw.qa",
+      env: { HOME: "/Users/test", AFORA_PROFILE: "qa" },
+      label: "ai.afora.qa",
       programArguments: defaultProgramArguments,
     },
     {
       name: "node service",
-      env: { HOME: "/Users/test", OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.node" },
-      label: "ai.openclaw.node",
+      env: { HOME: "/Users/test", AFORA_LAUNCHD_LABEL: "ai.afora.node" },
+      label: "ai.afora.node",
       programArguments: ["node", "node-host.js"],
     },
   ])(
@@ -2025,7 +2025,7 @@ describe("launchd install", () => {
       });
 
       const plist = state.files.get(resolveLaunchAgentPlistPath(env)) ?? "";
-      expect(plist).not.toContain("OPENCLAW_SERVICE_VERSION");
+      expect(plist).not.toContain("AFORA_SERVICE_VERSION");
       const { serviceId } = expectLaunchctlEnableBootstrapOrder(env, label);
       const installKickstartIndex = state.launchctlCalls.findIndex(
         (c) => c[0] === "kickstart" && c[2] === serviceId,
@@ -2041,7 +2041,7 @@ describe("launchd install", () => {
     state.files.set(
       plistPath,
       createTestLaunchAgentPlist({
-        label: "ai.openclaw.gateway",
+        label: "ai.afora.gateway",
         programArguments: defaultProgramArguments,
       }),
     );
@@ -2064,23 +2064,23 @@ describe("launchd install", () => {
   it("writes a version-free node service description", async () => {
     const env = {
       HOME: "/Users/test",
-      OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.node",
+      AFORA_LAUNCHD_LABEL: "ai.afora.node",
     };
     await installLaunchAgent({
       env,
       stdout: new PassThrough(),
       programArguments: ["node", "node-host.js"],
-      description: "OpenClaw Node Host",
+      description: "Afora Node Host",
     });
 
     const plist = state.files.get(resolveLaunchAgentPlistPath(env)) ?? "";
-    expect(plist).toContain("<key>Comment</key>\n    <string>OpenClaw Node Host</string>");
-    expect(plist).not.toContain("OPENCLAW_SERVICE_VERSION");
+    expect(plist).toContain("<key>Comment</key>\n    <string>Afora Node Host</string>");
+    expect(plist).not.toContain("AFORA_SERVICE_VERSION");
   });
 
   it("writes LaunchAgent environment to an owner-only env file when provided", async () => {
     const env = createDefaultLaunchdEnv();
-    const tmpDir = "/Users/test/.openclaw/tmp";
+    const tmpDir = "/Users/test/.afora/tmp";
     const apiKey = "secret-api-key";
     await installLaunchAgent({
       env,
@@ -2090,8 +2090,8 @@ describe("launchd install", () => {
     });
 
     const plistPath = resolveLaunchAgentPlistPath(env);
-    const envFilePath = "/Users/test/.openclaw/service-env/ai.openclaw.gateway.env";
-    const wrapperPath = "/Users/test/.openclaw/service-env/ai.openclaw.gateway-env-wrapper.sh";
+    const envFilePath = "/Users/test/.afora/service-env/ai.afora.gateway.env";
+    const wrapperPath = "/Users/test/.afora/service-env/ai.afora.gateway-env-wrapper.sh";
     const plist = state.files.get(plistPath) ?? "";
     expect(plist).not.toContain("<key>EnvironmentVariables</key>");
     expect(plist).not.toContain(apiKey);
@@ -2106,7 +2106,7 @@ describe("launchd install", () => {
     expect(envFile).toContain(`export OPENAI_API_KEY='${apiKey}'`);
     expect(state.fileModes.get(envFilePath)).toBe(0o600);
     expect(state.fileModes.get(wrapperPath)).toBe(0o700);
-    expect(state.dirModes.get("/Users/test/.openclaw/service-env")).toBe(0o700);
+    expect(state.dirModes.get("/Users/test/.afora/service-env")).toBe(0o700);
 
     const command = await readLaunchAgentProgramArguments(env);
     expect(command?.programArguments).toEqual(defaultProgramArguments);
@@ -2119,8 +2119,8 @@ describe("launchd install", () => {
   it("retains custom Node CA trust when reinstalling a generated owner-only LaunchAgent", async () => {
     const env = createDefaultLaunchdEnv();
     const extraCaCerts = "/Users/test/certs/corporate-ca.pem";
-    const envFilePath = "/Users/test/.openclaw/service-env/ai.openclaw.gateway.env";
-    const wrapperPath = "/Users/test/.openclaw/service-env/ai.openclaw.gateway-env-wrapper.sh";
+    const envFilePath = "/Users/test/.afora/service-env/ai.afora.gateway.env";
+    const wrapperPath = "/Users/test/.afora/service-env/ai.afora.gateway-env-wrapper.sh";
 
     await installLaunchAgent({
       env,
@@ -2151,17 +2151,17 @@ describe("launchd install", () => {
     expect(state.files.get(resolveLaunchAgentPlistPath(env))).not.toContain(extraCaCerts);
     expect(state.fileModes.get(envFilePath)).toBe(0o600);
     expect(state.fileModes.get(wrapperPath)).toBe(0o700);
-    expect(state.dirModes.get("/Users/test/.openclaw/service-env")).toBe(0o700);
+    expect(state.dirModes.get("/Users/test/.afora/service-env")).toBe(0o700);
   });
 
   it("warns before overwriting a customized generated LaunchAgent env wrapper", async () => {
     const env = createDefaultLaunchdEnv();
-    const wrapperPath = "/Users/test/.openclaw/service-env/ai.openclaw.gateway-env-wrapper.sh";
+    const wrapperPath = "/Users/test/.afora/service-env/ai.afora.gateway-env-wrapper.sh";
     await installLaunchAgent({
       env,
       stdout: new PassThrough(),
       programArguments: defaultProgramArguments,
-      environment: { OPENCLAW_GATEWAY_PORT: "18789" },
+      environment: { AFORA_GATEWAY_PORT: "18789" },
     });
     const generatedWrapper = state.files.get(wrapperPath);
     if (!generatedWrapper) {
@@ -2182,24 +2182,24 @@ describe("launchd install", () => {
       env,
       stdout,
       programArguments: defaultProgramArguments,
-      environment: { OPENCLAW_GATEWAY_PORT: "18789" },
+      environment: { AFORA_GATEWAY_PORT: "18789" },
     });
 
     expect(output).toContain("Warning:");
     expect(output).toContain("contains custom behavior and will be overwritten");
-    expect(output).toContain("openclaw gateway install --wrapper <path>");
-    expect(output).toContain("OPENCLAW_WRAPPER");
+    expect(output).toContain("afora gateway install --wrapper <path>");
+    expect(output).toContain("AFORA_WRAPPER");
     expect(state.files.get(wrapperPath)).toBe(generatedWrapper);
   });
 
   it("warns before overwriting a customized generated LaunchAgent env wrapper during restart rewrite", async () => {
     const env = createDefaultLaunchdEnv();
-    const wrapperPath = "/Users/test/.openclaw/service-env/ai.openclaw.gateway-env-wrapper.sh";
+    const wrapperPath = "/Users/test/.afora/service-env/ai.afora.gateway-env-wrapper.sh";
     await installLaunchAgent({
       env,
       stdout: new PassThrough(),
       programArguments: defaultProgramArguments,
-      environment: { OPENCLAW_GATEWAY_PORT: "18789" },
+      environment: { AFORA_GATEWAY_PORT: "18789" },
     });
     const generatedWrapper = state.files.get(wrapperPath);
     if (!generatedWrapper) {
@@ -2224,20 +2224,20 @@ describe("launchd install", () => {
 
     expect(output).toContain("Warning:");
     expect(output).toContain("contains custom behavior and will be overwritten");
-    expect(output).toContain("openclaw gateway install --wrapper <path>");
-    expect(output).toContain("OPENCLAW_WRAPPER");
+    expect(output).toContain("afora gateway install --wrapper <path>");
+    expect(output).toContain("AFORA_WRAPPER");
     expect(state.files.get(wrapperPath)).toBe(generatedWrapper);
   });
 
   it("rewrites legacy LaunchAgent environment wrappers to a system shell executable", async () => {
     const env = createDefaultLaunchdEnv();
-    const envFilePath = "/Users/test/.openclaw/service-env/ai.openclaw.gateway.env";
-    const wrapperPath = "/Users/test/.openclaw/service-env/ai.openclaw.gateway-env-wrapper.sh";
+    const envFilePath = "/Users/test/.afora/service-env/ai.afora.gateway.env";
+    const wrapperPath = "/Users/test/.afora/service-env/ai.afora.gateway-env-wrapper.sh";
     await installLaunchAgent({
       env,
       stdout: new PassThrough(),
       programArguments: defaultProgramArguments,
-      environment: { OPENCLAW_GATEWAY_PORT: "19007" },
+      environment: { AFORA_GATEWAY_PORT: "19007" },
     });
 
     const plistPath = resolveLaunchAgentPlistPath(env);
@@ -2281,29 +2281,29 @@ describe("launchd install", () => {
     const callerEnv = createDefaultLaunchdEnv();
     const serviceEnv = {
       ...callerEnv,
-      OPENCLAW_STATE_DIR: "/Users/test/service-env/custom-state",
+      AFORA_STATE_DIR: "/Users/test/service-env/custom-state",
     };
     await installLaunchAgent({
       env: serviceEnv,
       stdout: new PassThrough(),
       programArguments: defaultProgramArguments,
       environment: {
-        OPENCLAW_GATEWAY_PORT: "18789",
-        OPENCLAW_STATE_DIR: serviceEnv.OPENCLAW_STATE_DIR,
+        AFORA_GATEWAY_PORT: "18789",
+        AFORA_STATE_DIR: serviceEnv.AFORA_STATE_DIR,
       },
     });
 
     const plistPath = resolveLaunchAgentPlistPath(callerEnv);
-    const envFilePath = "/Users/test/service-env/custom-state/service-env/ai.openclaw.gateway.env";
+    const envFilePath = "/Users/test/service-env/custom-state/service-env/ai.afora.gateway.env";
     const wrapperPath =
-      "/Users/test/service-env/custom-state/service-env/ai.openclaw.gateway-env-wrapper.sh";
-    const callerEnvFilePath = "/Users/test/.openclaw/service-env/ai.openclaw.gateway.env";
+      "/Users/test/service-env/custom-state/service-env/ai.afora.gateway-env-wrapper.sh";
+    const callerEnvFilePath = "/Users/test/.afora/service-env/ai.afora.gateway.env";
     const callerWrapperPath =
-      "/Users/test/.openclaw/service-env/ai.openclaw.gateway-env-wrapper.sh";
+      "/Users/test/.afora/service-env/ai.afora.gateway-env-wrapper.sh";
     const mangledEnvFilePath =
-      "/Users/test/service-env/custom-state/service-env/[ai.openclaw.gateway.env](http:/ai.openclaw.gateway.env)";
+      "/Users/test/service-env/custom-state/service-env/[ai.afora.gateway.env](http:/ai.afora.gateway.env)";
     const mangledWrapperPath =
-      "/Users/test/service-env/custom-state/service-env/[ai.openclaw.gateway-env-wrapper.sh](http:/ai.openclaw.gateway-env-wrapper.sh)";
+      "/Users/test/service-env/custom-state/service-env/[ai.afora.gateway-env-wrapper.sh](http:/ai.afora.gateway-env-wrapper.sh)";
     state.files.set(
       plistPath,
       (state.files.get(plistPath) ?? "")
@@ -2313,9 +2313,9 @@ describe("launchd install", () => {
 
     const command = await readLaunchAgentProgramArguments(callerEnv);
     expect(command?.programArguments).toEqual(defaultProgramArguments);
-    expect(command?.environment?.OPENCLAW_GATEWAY_PORT).toBe("18789");
-    expect(command?.environment?.OPENCLAW_STATE_DIR).toBe(serviceEnv.OPENCLAW_STATE_DIR);
-    expect(command?.environmentValueSources?.OPENCLAW_GATEWAY_PORT).toBe("file");
+    expect(command?.environment?.AFORA_GATEWAY_PORT).toBe("18789");
+    expect(command?.environment?.AFORA_STATE_DIR).toBe(serviceEnv.AFORA_STATE_DIR);
+    expect(command?.environmentValueSources?.AFORA_GATEWAY_PORT).toBe("file");
 
     await restartLaunchAgent({
       env: callerEnv,
@@ -2332,15 +2332,15 @@ describe("launchd install", () => {
     expect(rewritten).not.toContain(mangledEnvFilePath);
     expect(rewritten).not.toContain(mangledWrapperPath);
     const rewrittenEnv = state.files.get(callerEnvFilePath) ?? "";
-    expect(rewrittenEnv).toContain("export OPENCLAW_GATEWAY_PORT='18789'");
+    expect(rewrittenEnv).toContain("export AFORA_GATEWAY_PORT='18789'");
     expect(rewrittenEnv).toContain(
-      "export OPENCLAW_STATE_DIR='/Users/test/service-env/custom-state'",
+      "export AFORA_STATE_DIR='/Users/test/service-env/custom-state'",
     );
   });
 
   it("creates the LaunchAgent TMPDIR before bootstrap", async () => {
     const env = createDefaultLaunchdEnv();
-    const tmpDir = "/Users/test/.openclaw/tmp";
+    const tmpDir = "/Users/test/.afora/tmp";
     await installLaunchAgent({
       env,
       stdout: new PassThrough(),
@@ -2367,7 +2367,7 @@ describe("launchd install", () => {
     expect(plist).toContain("<key>StandardInPath</key>");
     expect(plist).toContain("<string>/dev/null</string>");
     expect(plist).toContain("<key>StandardOutPath</key>");
-    expect(plist).toContain("<string>/Users/test/Library/Logs/openclaw/gateway.log</string>");
+    expect(plist).toContain("<string>/Users/test/Library/Logs/afora/gateway.log</string>");
     expect(plist).not.toContain("<key>SuccessfulExit</key>");
     expect(plist).toContain("<key>ExitTimeOut</key>");
     expect(plist).toContain(`<integer>${LAUNCH_AGENT_EXIT_TIMEOUT_SECONDS}</integer>`);
@@ -2392,7 +2392,7 @@ describe("launchd install", () => {
         '<plist version="1.0">',
         "  <dict>",
         "    <key>Label</key>",
-        "    <string>ai.openclaw.gateway</string>",
+        "    <string>ai.afora.gateway</string>",
         "    <key>ProgramArguments</key>",
         "    <array>",
         "      <string>node</string>",
@@ -2400,7 +2400,7 @@ describe("launchd install", () => {
         "    </array>",
         "    <key>EnvironmentVariables</key>",
         "    <dict>",
-        "      <key>OPENCLAW_SERVICE_VERSION</key>",
+        "      <key>AFORA_SERVICE_VERSION</key>",
         "      <string>2026.4.24</string>",
         "    </dict>",
         "  </dict>",
@@ -2416,12 +2416,12 @@ describe("launchd install", () => {
     const plist = state.files.get(plistPath) ?? "";
     expect(plist).toContain("<key>StandardInPath</key>");
     expect(plist).toContain("<key>StandardOutPath</key>");
-    expect(plist).toContain("<string>/Users/test/Library/Logs/openclaw/gateway.log</string>");
+    expect(plist).toContain("<string>/Users/test/Library/Logs/afora/gateway.log</string>");
     expect(plist).toContain("<key>StandardErrorPath</key>");
     expect(plist).toContain("<string>/dev/null</string>");
     expect(plist).toContain("<key>KeepAlive</key>");
     expect(plist).toContain("<string>node</string>");
-    expect(plist).not.toContain("OPENCLAW_SERVICE_VERSION");
+    expect(plist).not.toContain("AFORA_SERVICE_VERSION");
     const rewriteIndex = state.fileWrites.findIndex((write) => write.path === plistPath);
     const bootstrapIndex = state.launchctlCalls.findIndex((call) => call[0] === "bootstrap");
     expect(rewriteIndex).toBeGreaterThanOrEqual(0);
@@ -2460,7 +2460,7 @@ describe("launchd install", () => {
     await stopLaunchAgent({ env, stdout });
 
     const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
-    const serviceId = `${domain}/ai.openclaw.gateway`;
+    const serviceId = `${domain}/ai.afora.gateway`;
     expect(state.launchctlCalls).toEqual([["bootout", serviceId]]);
     expect(output).toContain("Stopped LaunchAgent");
   });
@@ -2470,11 +2470,11 @@ describe("launchd install", () => {
 
     await withProcessEnv(
       {
-        LAUNCH_JOB_LABEL: "ai.openclaw.gateway",
+        LAUNCH_JOB_LABEL: "ai.afora.gateway",
       },
       async () => {
         await expect(stopLaunchAgent({ env, stdout: new PassThrough() })).rejects.toThrow(
-          "Refusing to stop LaunchAgent ai.openclaw.gateway from inside the same launchd service",
+          "Refusing to stop LaunchAgent ai.afora.gateway from inside the same launchd service",
         );
       },
     );
@@ -2488,7 +2488,7 @@ describe("launchd install", () => {
 
     await withProcessEnv(
       {
-        LAUNCH_JOB_LABEL: "ai.openclaw.gateway",
+        LAUNCH_JOB_LABEL: "ai.afora.gateway",
       },
       async () => {
         await expect(parkCurrentLaunchAgentForMaintenance({ env })).resolves.toBe(true);
@@ -2496,7 +2496,7 @@ describe("launchd install", () => {
     );
 
     const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
-    expect(state.launchctlCalls).toEqual([["disable", `${domain}/ai.openclaw.gateway`]]);
+    expect(state.launchctlCalls).toEqual([["disable", `${domain}/ai.afora.gateway`]]);
     expect(launchdRestartHandoffState.scheduleDetachedLaunchdMaintenancePark).toHaveBeenCalledWith({
       env,
       waitForPid: process.pid,
@@ -2511,9 +2511,9 @@ describe("launchd install", () => {
         LAUNCH_JOB_LABEL: undefined,
         LAUNCH_JOB_NAME: undefined,
         XPC_SERVICE_NAME: undefined,
-        OPENCLAW_SERVICE_MARKER: undefined,
-        OPENCLAW_SERVICE_KIND: undefined,
-        OPENCLAW_LAUNCHD_LABEL: undefined,
+        AFORA_SERVICE_MARKER: undefined,
+        AFORA_SERVICE_KIND: undefined,
+        AFORA_LAUNCHD_LABEL: undefined,
       },
       async () => {
         await expect(parkCurrentLaunchAgentForMaintenance({ env })).resolves.toBe(false);
@@ -2536,7 +2536,7 @@ describe("launchd install", () => {
 
     await withProcessEnv(
       {
-        LAUNCH_JOB_LABEL: "ai.openclaw.gateway",
+        LAUNCH_JOB_LABEL: "ai.afora.gateway",
       },
       async () => {
         await expect(parkCurrentLaunchAgentForMaintenance({ env })).rejects.toThrow(
@@ -2547,8 +2547,8 @@ describe("launchd install", () => {
 
     const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
     expect(state.launchctlCalls).toEqual([
-      ["disable", `${domain}/ai.openclaw.gateway`],
-      ["enable", `${domain}/ai.openclaw.gateway`],
+      ["disable", `${domain}/ai.afora.gateway`],
+      ["enable", `${domain}/ai.afora.gateway`],
     ]);
   });
 
@@ -2560,13 +2560,13 @@ describe("launchd install", () => {
         LAUNCH_JOB_LABEL: undefined,
         LAUNCH_JOB_NAME: undefined,
         XPC_SERVICE_NAME: "0",
-        OPENCLAW_SERVICE_MARKER: "openclaw",
-        OPENCLAW_SERVICE_KIND: "gateway",
-        OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.gateway",
+        AFORA_SERVICE_MARKER: "afora",
+        AFORA_SERVICE_KIND: "gateway",
+        AFORA_LAUNCHD_LABEL: "ai.afora.gateway",
       },
       async () => {
         await expect(stopLaunchAgent({ env, stdout: new PassThrough() })).rejects.toThrow(
-          "Refusing to stop LaunchAgent ai.openclaw.gateway from inside the same launchd service",
+          "Refusing to stop LaunchAgent ai.afora.gateway from inside the same launchd service",
         );
       },
     );
@@ -2577,7 +2577,7 @@ describe("launchd install", () => {
   it("allows external LaunchAgent label overrides to stop the selected target", async () => {
     const env = {
       ...createDefaultLaunchdEnv(),
-      OPENCLAW_LAUNCHD_LABEL: "com.example.openclaw.gateway",
+      AFORA_LAUNCHD_LABEL: "com.example.afora.gateway",
     };
     const stdout = new PassThrough();
     let output = "";
@@ -2590,9 +2590,9 @@ describe("launchd install", () => {
         LAUNCH_JOB_LABEL: undefined,
         LAUNCH_JOB_NAME: undefined,
         XPC_SERVICE_NAME: undefined,
-        OPENCLAW_LAUNCHD_LABEL: undefined,
-        OPENCLAW_SERVICE_MARKER: undefined,
-        OPENCLAW_SERVICE_KIND: undefined,
+        AFORA_LAUNCHD_LABEL: undefined,
+        AFORA_SERVICE_MARKER: undefined,
+        AFORA_SERVICE_KIND: undefined,
       },
       async () => {
         await stopLaunchAgent({ env, stdout });
@@ -2600,7 +2600,7 @@ describe("launchd install", () => {
     );
 
     const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
-    const serviceId = `${domain}/com.example.openclaw.gateway`;
+    const serviceId = `${domain}/com.example.afora.gateway`;
     expect(state.launchctlCalls).toEqual([["bootout", serviceId]]);
     expect(output).toContain("Stopped LaunchAgent");
   });
@@ -2608,7 +2608,7 @@ describe("launchd install", () => {
   it("verifies the configured gateway port is released before reporting stop success", async () => {
     const env = {
       ...createDefaultLaunchdEnv(),
-      OPENCLAW_GATEWAY_PORT: "19003",
+      AFORA_GATEWAY_PORT: "19003",
     };
     const stdout = new PassThrough();
     let output = "";
@@ -2628,7 +2628,7 @@ describe("launchd install", () => {
   it("waits for the configured gateway port to finish releasing after bootout", async () => {
     const env = {
       ...createDefaultLaunchdEnv(),
-      OPENCLAW_GATEWAY_PORT: "19009",
+      AFORA_GATEWAY_PORT: "19009",
     };
     inspectPortUsage.mockResolvedValueOnce({
       port: 19009,
@@ -2646,7 +2646,7 @@ describe("launchd install", () => {
   it("waits on the configured non-loopback host before reporting the port released", async () => {
     const env = {
       ...createDefaultLaunchdEnv(),
-      OPENCLAW_GATEWAY_PORT: "19011",
+      AFORA_GATEWAY_PORT: "19011",
     };
     resolveGatewayServiceProbeHosts.mockResolvedValue(["192.0.2.40"]);
     inspectPortUsage.mockResolvedValueOnce({
@@ -2667,7 +2667,7 @@ describe("launchd install", () => {
   it("keeps waiting until a bind probe explicitly confirms port release", async () => {
     const env = {
       ...createDefaultLaunchdEnv(),
-      OPENCLAW_GATEWAY_PORT: "19010",
+      AFORA_GATEWAY_PORT: "19010",
     };
     inspectPortUsage.mockResolvedValueOnce({
       port: 19010,
@@ -2688,7 +2688,7 @@ describe("launchd install", () => {
       env,
       stdout: new PassThrough(),
       programArguments: defaultProgramArguments,
-      environment: { OPENCLAW_GATEWAY_PORT: "19006" },
+      environment: { AFORA_GATEWAY_PORT: "19006" },
     });
     state.launchctlCalls.length = 0;
 
@@ -2703,7 +2703,7 @@ describe("launchd install", () => {
   it("fails stop when the verified gateway port remains busy after cleanup", async () => {
     const env = {
       ...createDefaultLaunchdEnv(),
-      OPENCLAW_GATEWAY_PORT: "19004",
+      AFORA_GATEWAY_PORT: "19004",
     };
     const stdout = new PassThrough();
     const onMutation = vi.fn();
@@ -2743,10 +2743,10 @@ describe("launchd install", () => {
     await stopLaunchAgent({ env, stdout, disable: true });
 
     const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
-    const serviceId = `${domain}/ai.openclaw.gateway`;
+    const serviceId = `${domain}/ai.afora.gateway`;
     expect(state.launchctlCalls).toEqual([
       ["disable", serviceId],
-      ["stop", "ai.openclaw.gateway"],
+      ["stop", "ai.afora.gateway"],
       ["print", serviceId],
     ]);
     expect(output).toContain("Stopped LaunchAgent");
@@ -2755,7 +2755,7 @@ describe("launchd install", () => {
   it("verifies the configured gateway port is released before reporting disable stop success", async () => {
     const env = {
       ...createDefaultLaunchdEnv(),
-      OPENCLAW_GATEWAY_PORT: "19005",
+      AFORA_GATEWAY_PORT: "19005",
     };
     const stdout = new PassThrough();
     let output = "";
@@ -2777,13 +2777,13 @@ describe("launchd install", () => {
 
     await withProcessEnv(
       {
-        LAUNCH_JOB_LABEL: "ai.openclaw.gateway",
+        LAUNCH_JOB_LABEL: "ai.afora.gateway",
       },
       async () => {
         await expect(
           stopLaunchAgent({ env, stdout: new PassThrough(), disable: true }),
         ).rejects.toThrow(
-          "Refusing to stop LaunchAgent ai.openclaw.gateway from inside the same launchd service",
+          "Refusing to stop LaunchAgent ai.afora.gateway from inside the same launchd service",
         );
       },
     );
@@ -2806,10 +2806,10 @@ describe("launchd install", () => {
     await stopLaunchAgent({ env, stdout, disable: true });
 
     const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
-    const serviceId = `${domain}/ai.openclaw.gateway`;
+    const serviceId = `${domain}/ai.afora.gateway`;
     expect(state.launchctlCalls).toEqual([
       ["disable", serviceId],
-      ["stop", "ai.openclaw.gateway"],
+      ["stop", "ai.afora.gateway"],
       ["print", serviceId],
     ]);
     expect(launchctlCommandNames()).not.toContain("bootout");
@@ -2854,7 +2854,7 @@ describe("launchd install", () => {
   it("does not report degraded stop success when fallback cleanup leaves the port busy", async () => {
     const env = {
       ...createDefaultLaunchdEnv(),
-      OPENCLAW_GATEWAY_PORT: "19008",
+      AFORA_GATEWAY_PORT: "19008",
     };
     const stdout = new PassThrough();
     const onMutation = vi.fn();
@@ -3027,7 +3027,7 @@ describe("launchd install", () => {
   it("restarts LaunchAgent with kickstart and no bootout", async () => {
     const env = {
       ...createDefaultLaunchdEnv(),
-      OPENCLAW_GATEWAY_PORT: "18789",
+      AFORA_GATEWAY_PORT: "18789",
     };
     const onMutation = vi.fn();
     const result = await restartLaunchAgent({
@@ -3037,7 +3037,7 @@ describe("launchd install", () => {
     });
 
     const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
-    const label = "ai.openclaw.gateway";
+    const label = "ai.afora.gateway";
     const serviceId = `${domain}/${label}`;
     expect(result).toEqual({ outcome: "completed" });
     expect(cleanStaleGatewayProcessesSync).toHaveBeenCalledWith(
@@ -3074,7 +3074,7 @@ describe("launchd install", () => {
     ).resolves.toBeUndefined();
 
     const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
-    const serviceId = `${domain}/ai.openclaw.gateway`;
+    const serviceId = `${domain}/ai.afora.gateway`;
     expect(state.launchctlCalls).toEqual([
       ["enable", serviceId],
       ["kickstart", serviceId],
@@ -3094,7 +3094,7 @@ describe("launchd install", () => {
     await startLaunchAgent({ env, stdout: new PassThrough(), onMutation });
 
     const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
-    const serviceId = `${domain}/ai.openclaw.gateway`;
+    const serviceId = `${domain}/ai.afora.gateway`;
     expect(state.launchctlCalls).toEqual([
       ["enable", serviceId],
       ["kickstart", serviceId],
@@ -3141,7 +3141,7 @@ describe("launchd install", () => {
   it("audits kickstart before a later output failure", async () => {
     const env = {
       ...createDefaultLaunchdEnv(),
-      OPENCLAW_GATEWAY_PORT: "18789",
+      AFORA_GATEWAY_PORT: "18789",
     };
     const onMutation = vi.fn();
     const stdout = {
@@ -3158,7 +3158,7 @@ describe("launchd install", () => {
   it("reloads launchd after rewriting an existing plist", async () => {
     const env = {
       ...createDefaultLaunchdEnv(),
-      OPENCLAW_GATEWAY_PORT: "18789",
+      AFORA_GATEWAY_PORT: "18789",
     };
     const plistPath = resolveLaunchAgentPlistPath(env);
     state.files.set(
@@ -3168,14 +3168,14 @@ describe("launchd install", () => {
         '<plist version="1.0">',
         "  <dict>",
         "    <key>Label</key>",
-        "    <string>ai.openclaw.gateway</string>",
+        "    <string>ai.afora.gateway</string>",
         "    <key>ProgramArguments</key>",
         "    <array>",
         "      <string>node</string>",
         "      <string>gateway.js</string>",
         "    </array>",
         "    <key>StandardOutPath</key>",
-        "    <string>/Users/test/.openclaw-default/logs/gateway.log</string>",
+        "    <string>/Users/test/.afora-default/logs/gateway.log</string>",
         "  </dict>",
         "</plist>",
       ].join("\n"),
@@ -3191,7 +3191,7 @@ describe("launchd install", () => {
     const plist = state.files.get(plistPath) ?? "";
     expect(plist).toContain("<key>StandardInPath</key>");
     expect(plist).toContain("<string>/dev/null</string>");
-    expect(plist).toContain("<string>/Users/test/Library/Logs/openclaw/gateway.log</string>");
+    expect(plist).toContain("<string>/Users/test/Library/Logs/afora/gateway.log</string>");
     expect(launchctlCommandNames()).toEqual(["print", "enable", "bootout", "enable", "bootstrap"]);
     expect(launchctlCommandNames()).not.toContain("kickstart");
     expect(onMutation.mock.calls).toEqual([
@@ -3205,11 +3205,11 @@ describe("launchd install", () => {
   it("audits reload bootout before a later bootstrap failure", async () => {
     const env = {
       ...createDefaultLaunchdEnv(),
-      OPENCLAW_GATEWAY_PORT: "18789",
+      AFORA_GATEWAY_PORT: "18789",
     };
     setLaunchAgentPlist({
       env,
-      label: "ai.openclaw.gateway",
+      label: "ai.afora.gateway",
       programArguments: ["node", "gateway.js"],
     });
     state.bootstrapError = "Operation not permitted";
@@ -3234,11 +3234,11 @@ describe("launchd install", () => {
   it("reloads the LaunchAgent through a transient reload bootstrap failure", async () => {
     const env = {
       ...createDefaultLaunchdEnv(),
-      OPENCLAW_GATEWAY_PORT: "18789",
+      AFORA_GATEWAY_PORT: "18789",
     };
     setLaunchAgentPlist({
       env,
-      label: "ai.openclaw.gateway",
+      label: "ai.afora.gateway",
       programArguments: ["node", "gateway.js"],
     });
     // launchd answers EIO while the just-booted-out job is still tearing down.
@@ -3263,11 +3263,11 @@ describe("launchd install", () => {
   it("reports the LaunchAgent as unloaded when bootstrap teardown never clears", async () => {
     const env = {
       ...createDefaultLaunchdEnv(),
-      OPENCLAW_GATEWAY_PORT: "18789",
+      AFORA_GATEWAY_PORT: "18789",
     };
     setLaunchAgentPlist({
       env,
-      label: "ai.openclaw.gateway",
+      label: "ai.afora.gateway",
       programArguments: ["node", "gateway.js"],
     });
     // EIO that never clears must stay bounded instead of retrying forever, and
@@ -3289,19 +3289,19 @@ describe("launchd install", () => {
     expect(message).toContain(
       "launchctl bootstrap failed: Bootstrap failed: 5: Input/output error",
     );
-    expect(message).toContain(`LaunchAgent ${domain}/ai.openclaw.gateway is not loaded`);
+    expect(message).toContain(`LaunchAgent ${domain}/ai.afora.gateway is not loaded`);
     expect(message).toContain("The gateway is down and launchd has no job left to respawn it.");
-    expect(message).toContain("openclaw gateway start");
+    expect(message).toContain("afora gateway start");
   });
 
   it("does not wait out the teardown deadline when the reload bootstrap reports already-loaded", async () => {
     const env = {
       ...createDefaultLaunchdEnv(),
-      OPENCLAW_GATEWAY_PORT: "18789",
+      AFORA_GATEWAY_PORT: "18789",
     };
     setLaunchAgentPlist({
       env,
-      label: "ai.openclaw.gateway",
+      label: "ai.afora.gateway",
       programArguments: ["node", "gateway.js"],
     });
     // Same EIO code as a pending teardown, but the label is still registered
@@ -3330,11 +3330,11 @@ describe("launchd install", () => {
   it("completes reload when the mutation observer fails after bootout", async () => {
     const env = {
       ...createDefaultLaunchdEnv(),
-      OPENCLAW_GATEWAY_PORT: "18789",
+      AFORA_GATEWAY_PORT: "18789",
     };
     setLaunchAgentPlist({
       env,
-      label: "ai.openclaw.gateway",
+      label: "ai.afora.gateway",
       programArguments: ["node", "gateway.js"],
     });
     const onMutation = vi.fn(({ mode }: { mode: string }) => {
@@ -3355,7 +3355,7 @@ describe("launchd install", () => {
   it("treats a concurrent launchd bootstrap as success when the service is loaded", async () => {
     const env = {
       ...createDefaultLaunchdEnv(),
-      OPENCLAW_GATEWAY_PORT: "18789",
+      AFORA_GATEWAY_PORT: "18789",
     };
     const plistPath = resolveLaunchAgentPlistPath(env);
     state.files.set(
@@ -3365,14 +3365,14 @@ describe("launchd install", () => {
         '<plist version="1.0">',
         "  <dict>",
         "    <key>Label</key>",
-        "    <string>ai.openclaw.gateway</string>",
+        "    <string>ai.afora.gateway</string>",
         "    <key>ProgramArguments</key>",
         "    <array>",
         "      <string>node</string>",
         "      <string>gateway.js</string>",
         "    </array>",
         "    <key>StandardOutPath</key>",
-        "    <string>/Users/test/.openclaw-default/logs/gateway.log</string>",
+        "    <string>/Users/test/.afora-default/logs/gateway.log</string>",
         "  </dict>",
         "</plist>",
       ].join("\n"),
@@ -3400,7 +3400,7 @@ describe("launchd install", () => {
   it("uses the configured gateway port for stale cleanup", async () => {
     const env = {
       ...createDefaultLaunchdEnv(),
-      OPENCLAW_GATEWAY_PORT: "19001",
+      AFORA_GATEWAY_PORT: "19001",
     };
 
     await restartLaunchAgent({
@@ -3419,7 +3419,7 @@ describe("launchd install", () => {
   it("ignores invalid configured gateway ports for stale cleanup", async () => {
     const env = {
       ...createDefaultLaunchdEnv(),
-      OPENCLAW_GATEWAY_PORT: "65536",
+      AFORA_GATEWAY_PORT: "65536",
     };
     state.files.clear();
 
@@ -3438,7 +3438,7 @@ describe("launchd install", () => {
       env,
       stdout: new PassThrough(),
       programArguments: defaultProgramArguments,
-      environment: { OPENCLAW_GATEWAY_PORT: "19007" },
+      environment: { AFORA_GATEWAY_PORT: "19007" },
     });
     state.launchctlCalls.length = 0;
 
@@ -3490,7 +3490,7 @@ describe("launchd install", () => {
       env,
       stdout: new PassThrough(),
       programArguments: defaultProgramArguments,
-      environment: { OPENCLAW_GATEWAY_PORT: "65536" },
+      environment: { AFORA_GATEWAY_PORT: "65536" },
     });
     state.launchctlCalls.length = 0;
 
@@ -3526,7 +3526,7 @@ describe("launchd install", () => {
     async ({ managedPidAfterCleanup, listeners }) => {
       const env = {
         ...createDefaultLaunchdEnv(),
-        OPENCLAW_GATEWAY_PORT: "19002",
+        AFORA_GATEWAY_PORT: "19002",
       };
       if (managedPidAfterCleanup !== 4242) {
         state.printOutput = ["state = running", `pid = ${managedPidAfterCleanup}`].join("\n");
@@ -3541,7 +3541,7 @@ describe("launchd install", () => {
       const result = await restartLaunchAgent({ env, stdout: new PassThrough() });
 
       const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
-      const serviceId = `${domain}/ai.openclaw.gateway`;
+      const serviceId = `${domain}/ai.afora.gateway`;
       expect(result).toEqual({ outcome: "completed" });
       expect(cleanStaleGatewayProcessesSync).toHaveBeenCalledWith(
         19002,
@@ -3585,11 +3585,11 @@ describe("launchd install", () => {
     async ({ listeners }) => {
       const env = {
         ...createDefaultLaunchdEnv(),
-        OPENCLAW_GATEWAY_PORT: "19002",
+        AFORA_GATEWAY_PORT: "19002",
       };
       setLaunchAgentPlist({
         env,
-        label: "ai.openclaw.gateway",
+        label: "ai.afora.gateway",
         programArguments: ["node", "gateway.js"],
       });
       const plistPath = resolveLaunchAgentPlistPath(env);
@@ -3608,11 +3608,11 @@ describe("launchd install", () => {
           stdout: new PassThrough(),
         }),
       ).rejects.toThrow(
-        "gateway port 19002 is busy but is not verifiably owned by LaunchAgent ai.openclaw.gateway",
+        "gateway port 19002 is busy but is not verifiably owned by LaunchAgent ai.afora.gateway",
       );
 
       const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
-      const serviceId = `${domain}/ai.openclaw.gateway`;
+      const serviceId = `${domain}/ai.afora.gateway`;
       expect(cleanStaleGatewayProcessesSync).toHaveBeenCalledWith(
         19002,
         expect.objectContaining({ resolveProtectedPid: expect.any(Function) }),
@@ -3657,7 +3657,7 @@ describe("launchd install", () => {
     });
 
     const domain = typeof process.getuid === "function" ? `gui/${process.getuid()}` : "gui/501";
-    const serviceId = `${domain}/ai.openclaw.gateway`;
+    const serviceId = `${domain}/ai.afora.gateway`;
     const kickstartCalls = state.launchctlCalls.filter(
       (c) => c[0] === "kickstart" && c[1] === "-k" && c[2] === serviceId,
     );
@@ -3695,7 +3695,7 @@ describe("launchd install", () => {
   it("hands restart off to a detached helper when invoked from the current LaunchAgent", async () => {
     const env = createDefaultLaunchdEnv();
 
-    const result = await withProcessEnv({ LAUNCH_JOB_LABEL: "ai.openclaw.gateway" }, async () =>
+    const result = await withProcessEnv({ LAUNCH_JOB_LABEL: "ai.afora.gateway" }, async () =>
       restartLaunchAgent({
         env,
         stdout: new PassThrough(),
@@ -3721,20 +3721,20 @@ describe("launchd install", () => {
         '<plist version="1.0">',
         "  <dict>",
         "    <key>Label</key>",
-        "    <string>ai.openclaw.gateway</string>",
+        "    <string>ai.afora.gateway</string>",
         "    <key>ProgramArguments</key>",
         "    <array>",
         "      <string>node</string>",
         "      <string>gateway.js</string>",
         "    </array>",
         "    <key>StandardOutPath</key>",
-        "    <string>/Users/test/.openclaw-default/logs/gateway.log</string>",
+        "    <string>/Users/test/.afora-default/logs/gateway.log</string>",
         "  </dict>",
         "</plist>",
       ].join("\n"),
     );
 
-    const result = await withProcessEnv({ LAUNCH_JOB_LABEL: "ai.openclaw.gateway" }, async () =>
+    const result = await withProcessEnv({ LAUNCH_JOB_LABEL: "ai.afora.gateway" }, async () =>
       restartLaunchAgent({
         env,
         stdout: new PassThrough(),
@@ -3747,7 +3747,7 @@ describe("launchd install", () => {
       mode: "reload",
       waitForPid: process.pid,
     });
-    expect(state.files.get(plistPath)).toContain("/Users/test/Library/Logs/openclaw/gateway.log");
+    expect(state.files.get(plistPath)).toContain("/Users/test/Library/Logs/afora/gateway.log");
     expect(state.launchctlCalls).toStrictEqual([]);
   });
 
@@ -3759,7 +3759,7 @@ describe("launchd install", () => {
     });
 
     await expect(
-      withProcessEnv({ LAUNCH_JOB_LABEL: "ai.openclaw.gateway" }, async () =>
+      withProcessEnv({ LAUNCH_JOB_LABEL: "ai.afora.gateway" }, async () =>
         restartLaunchAgent({
           env,
           stdout: new PassThrough(),
@@ -3776,9 +3776,9 @@ describe("launchd install", () => {
         LAUNCH_JOB_LABEL: undefined,
         LAUNCH_JOB_NAME: undefined,
         XPC_SERVICE_NAME: "0",
-        OPENCLAW_SERVICE_MARKER: "openclaw",
-        OPENCLAW_SERVICE_KIND: "gateway",
-        OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.gateway",
+        AFORA_SERVICE_MARKER: "afora",
+        AFORA_SERVICE_KIND: "gateway",
+        AFORA_LAUNCHD_LABEL: "ai.afora.gateway",
       },
       async () =>
         restartLaunchAgent({
@@ -3804,9 +3804,9 @@ describe("launchd install", () => {
         LAUNCH_JOB_LABEL: undefined,
         LAUNCH_JOB_NAME: undefined,
         XPC_SERVICE_NAME: "0",
-        OPENCLAW_SERVICE_MARKER: undefined,
-        OPENCLAW_SERVICE_KIND: undefined,
-        OPENCLAW_LAUNCHD_LABEL: undefined,
+        AFORA_SERVICE_MARKER: undefined,
+        AFORA_SERVICE_KIND: undefined,
+        AFORA_LAUNCHD_LABEL: undefined,
       },
       async () =>
         restartLaunchAgent({
@@ -3834,7 +3834,7 @@ describe("launchd install", () => {
     }
     expect(message).toContain("logged-in macOS GUI session");
     expect(message).toContain("wrong user (including sudo)");
-    expect(message).toContain("https://docs.openclaw.ai/gateway");
+    expect(message).toContain("https://docs.afora.ai/gateway");
   });
 
   it("surfaces generic bootstrap failures without GUI-specific guidance", async () => {
@@ -3854,40 +3854,40 @@ describe("launchd install", () => {
 describe("resolveLaunchAgentPlistPath", () => {
   it.each([
     {
-      name: "uses default label when OPENCLAW_PROFILE is unset",
+      name: "uses default label when AFORA_PROFILE is unset",
       env: { HOME: "/Users/test" },
-      expected: "/Users/test/Library/LaunchAgents/ai.openclaw.gateway.plist",
+      expected: "/Users/test/Library/LaunchAgents/ai.afora.gateway.plist",
     },
     {
-      name: "uses profile-specific label when OPENCLAW_PROFILE is set to a custom value",
-      env: { HOME: "/Users/test", OPENCLAW_PROFILE: "jbphoenix" },
-      expected: "/Users/test/Library/LaunchAgents/ai.openclaw.jbphoenix.plist",
+      name: "uses profile-specific label when AFORA_PROFILE is set to a custom value",
+      env: { HOME: "/Users/test", AFORA_PROFILE: "jbphoenix" },
+      expected: "/Users/test/Library/LaunchAgents/ai.afora.jbphoenix.plist",
     },
     {
-      name: "prefers OPENCLAW_LAUNCHD_LABEL over OPENCLAW_PROFILE",
+      name: "prefers AFORA_LAUNCHD_LABEL over AFORA_PROFILE",
       env: {
         HOME: "/Users/test",
-        OPENCLAW_PROFILE: "jbphoenix",
-        OPENCLAW_LAUNCHD_LABEL: "com.custom.label",
+        AFORA_PROFILE: "jbphoenix",
+        AFORA_LAUNCHD_LABEL: "com.custom.label",
       },
       expected: "/Users/test/Library/LaunchAgents/com.custom.label.plist",
     },
     {
-      name: "trims whitespace from OPENCLAW_LAUNCHD_LABEL",
+      name: "trims whitespace from AFORA_LAUNCHD_LABEL",
       env: {
         HOME: "/Users/test",
-        OPENCLAW_LAUNCHD_LABEL: "  com.custom.label  ",
+        AFORA_LAUNCHD_LABEL: "  com.custom.label  ",
       },
       expected: "/Users/test/Library/LaunchAgents/com.custom.label.plist",
     },
     {
-      name: "ignores empty OPENCLAW_LAUNCHD_LABEL and falls back to profile",
+      name: "ignores empty AFORA_LAUNCHD_LABEL and falls back to profile",
       env: {
         HOME: "/Users/test",
-        OPENCLAW_PROFILE: "myprofile",
-        OPENCLAW_LAUNCHD_LABEL: "   ",
+        AFORA_PROFILE: "myprofile",
+        AFORA_LAUNCHD_LABEL: "   ",
       },
-      expected: "/Users/test/Library/LaunchAgents/ai.openclaw.myprofile.plist",
+      expected: "/Users/test/Library/LaunchAgents/ai.afora.myprofile.plist",
     },
   ])("$name", ({ env, expected }) => {
     expect(resolveLaunchAgentPlistPath(env)).toBe(expected);
@@ -3897,7 +3897,7 @@ describe("resolveLaunchAgentPlistPath", () => {
     expect(() =>
       resolveLaunchAgentPlistPath({
         HOME: "/Users/test",
-        OPENCLAW_LAUNCHD_LABEL: "../evil/label",
+        AFORA_LAUNCHD_LABEL: "../evil/label",
       }),
     ).toThrow("Invalid launchd label");
   });

@@ -3,7 +3,7 @@
  *
  * Describes approval request targets, surfaces, capabilities, and plugin adapters.
  */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ChannelApprovalKind } from "../../infra/approval-types.js";
 import type { ExecApprovalRequest } from "../../infra/exec-approvals.js";
 import type { PluginApprovalRequest } from "../../infra/plugin-approvals.js";
@@ -47,19 +47,19 @@ type ChannelApprovalNativeDeliveryCapabilities = {
  */
 export type ChannelApprovalNativeAdapter = {
   describeDeliveryCapabilities: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
     approvalKind: ChannelApprovalKind;
     request: ChannelApprovalNativeRequest;
   }) => ChannelApprovalNativeDeliveryCapabilities;
   resolveOriginTarget?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
     approvalKind: ChannelApprovalKind;
     request: ChannelApprovalNativeRequest;
   }) => ChannelApprovalNativeTarget | null | Promise<ChannelApprovalNativeTarget | null>;
   resolveApproverDmTargets?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
     approvalKind: ChannelApprovalKind;
     request: ChannelApprovalNativeRequest;

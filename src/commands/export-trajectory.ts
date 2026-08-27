@@ -1,6 +1,6 @@
 /** CLI command for exporting a session transcript as a trajectory artifact. */
 import path from "node:path";
-import { readNonBlankString } from "@openclaw/normalization-core/string-coerce";
+import { readNonBlankString } from "@afora/normalization-core/string-coerce";
 import { formatCliCommand } from "../cli/command-format.js";
 import { getRuntimeConfig } from "../config/config.js";
 import { resolveSessionStorePathCore } from "../config/sessions/paths.js";
@@ -109,7 +109,7 @@ export async function exportTrajectoryCommand(
   const sessionKey = resolvedOpts.sessionKey?.trim();
   if (!sessionKey) {
     runtime.error(
-      `--session-key is required. Run ${formatCliCommand("openclaw sessions")} to choose a session.`,
+      `--session-key is required. Run ${formatCliCommand("afora sessions")} to choose a session.`,
     );
     runtime.exit(1);
     return;
@@ -139,7 +139,7 @@ export async function exportTrajectoryCommand(
   });
   if (!entry?.sessionId) {
     runtime.error(
-      `Session not found: ${sessionKey}. Run ${formatCliCommand("openclaw sessions")} to see available sessions.`,
+      `Session not found: ${sessionKey}. Run ${formatCliCommand("afora sessions")} to see available sessions.`,
     );
     runtime.exit(1);
     return;

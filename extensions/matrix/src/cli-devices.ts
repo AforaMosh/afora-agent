@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { timestampMsToIsoString } from "openclaw/plugin-sdk/number-runtime";
+import { timestampMsToIsoString } from "afora-agent/plugin-sdk/number-runtime";
 import * as cli from "./cli-shared.js";
 import { listMatrixOwnDevices, pruneMatrixStaleGatewayDevices } from "./matrix/actions/devices.js";
 
@@ -58,7 +58,7 @@ export function registerMatrixDeviceCommands(root: Command): void {
 
   devices
     .command("prune-stale")
-    .description("Delete stale OpenClaw-managed devices for this account")
+    .description("Delete stale Afora-managed devices for this account")
     .option("--account <id>", "Account ID (for multi-account setups)")
     .option("--verbose", "Show detailed diagnostics")
     .option("--json", "Output as JSON")
@@ -71,7 +71,7 @@ export function registerMatrixDeviceCommands(root: Command): void {
         onText: (result, verbose) => {
           cli.printAccountLabel(accountId);
           console.log(
-            `Deleted stale OpenClaw devices: ${
+            `Deleted stale Afora devices: ${
               result.deletedDeviceIds.length
                 ? result.deletedDeviceIds
                     .map((deviceId) => cli.formatMatrixCliText(deviceId))

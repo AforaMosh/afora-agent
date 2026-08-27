@@ -1,5 +1,5 @@
 // Voice Call command service owns operations shared by gateway and model-tool adapters.
-import { timestampMsToIsoString } from "openclaw/plugin-sdk/number-runtime";
+import { timestampMsToIsoString } from "afora-agent/plugin-sdk/number-runtime";
 import type { CallMode } from "./config.js";
 import type { VoiceCallRuntime } from "./runtime.js";
 import type { CallRecord } from "./types.js";

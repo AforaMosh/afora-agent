@@ -8,8 +8,8 @@ import type { PluginBundleFormat } from "../../plugins/manifest-types.js";
 import { resolvePackageExtensionEntries, type PackageManifest } from "../../plugins/manifest.js";
 import { validatePackageExtensionEntriesForInstall } from "../../plugins/package-entry-resolution.js";
 import {
-  auditOpenClawPeerDependencyLink,
-  resolveOpenClawHostDependency,
+  auditAforaPeerDependencyLink,
+  resolveAforaHostDependency,
 } from "../../plugins/plugin-peer-link.js";
 import type { PluginVerificationFailureReason } from "../../plugins/runtime-degraded-state.js";
 import { resolveUserPath } from "../../utils.js";
@@ -217,14 +217,14 @@ async function validatePackagePayload(params: {
 }): Promise<PluginPayloadSmokeFailure[]> {
   const failures: PluginPayloadSmokeFailure[] = [];
 
-  const hostDependency = resolveOpenClawHostDependency(params.manifest);
+  const hostDependency = resolveAforaHostDependency(params.manifest);
   // Older non-npm installs never guaranteed direct host links; only npm ownership can repair them.
   if (
     hostDependency &&
     (hostDependency.declaration === "peerDependencies" ||
       (params.installSourceIsAuthoritative && params.installSource === "npm"))
   ) {
-    const peerIssue = await auditOpenClawPeerDependencyLink({
+    const peerIssue = await auditAforaPeerDependencyLink({
       packageDir: params.installPath,
       packageName: params.manifest.name ?? params.pluginId,
     });
@@ -232,10 +232,10 @@ async function validatePackagePayload(params: {
       failures.push({
         pluginId: params.pluginId,
         installPath: params.installPath,
-        reason: "missing-openclaw-peer-link",
+        reason: "missing-afora-peer-link",
         detail: `Plugin declares ${
           hostDependency.declaration === "peerDependencies" ? "peerDependency" : "dependency"
-        } "openclaw" but ${
+        } "afora" but ${
           hostDependency.declaration === "peerDependencies" ? "peer" : "host"
         } link audit failed: ${peerIssue.reason}.`,
       });
@@ -251,7 +251,7 @@ async function validatePackagePayload(params: {
       detail: `Plugin extension entry validation failed: ${
         extensionResolution.status === "invalid"
           ? extensionResolution.error
-          : "package.json openclaw.extensions is empty"
+          : "package.json afora.extensions is empty"
       }`,
     });
     return failures;

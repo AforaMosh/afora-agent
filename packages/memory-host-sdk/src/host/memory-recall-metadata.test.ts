@@ -69,12 +69,12 @@ describe("memory recall metadata", () => {
         project_key: null,
       });
       expect(() => insertMetadata.run("good", 11, null, null)).toThrow();
-      insertMetadata.run("good", 9, "when flying", "github.com/openclaw/openclaw");
+      insertMetadata.run("good", 9, "when flying", "github.com/AforaMosh/afora-agent");
       expect(readMemoryRecallMetadata(db, ["good"]).get("good")).toEqual({
         id: "good",
         importance: 9,
         triggers: "when flying",
-        project_key: "github.com/openclaw/openclaw",
+        project_key: "github.com/AforaMosh/afora-agent",
       });
       expect(readCuratedMemoryTriggerCandidates(db, 10)).toEqual([
         {
@@ -86,7 +86,7 @@ describe("memory recall metadata", () => {
           text: "t",
           importance: 9,
           triggers: "when flying",
-          project_key: "github.com/openclaw/openclaw",
+          project_key: "github.com/AforaMosh/afora-agent",
         },
       ]);
 
@@ -100,16 +100,16 @@ describe("memory recall metadata", () => {
           id,
           "daily",
         );
-        insertMetadata.run(id, null, null, "github.com/openclaw/openclaw");
+        insertMetadata.run(id, null, null, "github.com/AforaMosh/afora-agent");
       }
-      expect(readCuratedProjectMemoryCandidates(db, 1, ["github.com/openclaw/openclaw"])).toEqual([
+      expect(readCuratedProjectMemoryCandidates(db, 1, ["github.com/AforaMosh/afora-agent"])).toEqual([
         expect.objectContaining({ id: "good", importance: 9 }),
       ]);
 
       for (let index = 0; index < 64; index += 1) {
         const id = `bootstrap-low-${String(index).padStart(3, "0")}`;
         insertChunk.run(id, "MEMORY.md", index + 2, index + 2, id, "low");
-        insertMetadata.run(id, 1, null, "github.com/openclaw/openclaw");
+        insertMetadata.run(id, 1, null, "github.com/AforaMosh/afora-agent");
       }
       insertChunk.run(
         "bootstrap-high",
@@ -119,14 +119,14 @@ describe("memory recall metadata", () => {
         "bootstrap-high",
         "high-priority bootstrap fact",
       );
-      insertMetadata.run("bootstrap-high", 10, null, "github.com/openclaw/openclaw");
-      expect(readCuratedProjectMemoryCandidates(db, 48, ["github.com/openclaw/openclaw"])).toEqual(
+      insertMetadata.run("bootstrap-high", 10, null, "github.com/AforaMosh/afora-agent");
+      expect(readCuratedProjectMemoryCandidates(db, 48, ["github.com/AforaMosh/afora-agent"])).toEqual(
         expect.arrayContaining([expect.objectContaining({ id: "bootstrap-high", importance: 10 })]),
       );
 
       insertChunk.run("a-foreign", "MEMORY.md", 2, 2, "h2", "foreign");
       insertMetadata.run("a-foreign", 9, "when flying", "github.com/example/other");
-      expect(readCuratedMemoryTriggerCandidates(db, 1, ["github.com/openclaw/openclaw"])).toEqual([
+      expect(readCuratedMemoryTriggerCandidates(db, 1, ["github.com/AforaMosh/afora-agent"])).toEqual([
         expect.objectContaining({ id: "good" }),
       ]);
       expect(readCuratedMemoryTriggerCandidates(db, 1, [])).toEqual([]);

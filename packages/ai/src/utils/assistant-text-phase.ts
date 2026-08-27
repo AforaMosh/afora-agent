@@ -79,9 +79,9 @@ export function tagInterruptedTextPhases(
 /** Prevents unresolved completion text from becoming a fallback answer after stream failure. */
 export function tagUnresolvedTextAsCommentary(message: {
   content: ReadonlyArray<unknown>;
-  openclawDelivery?: { textPhaseRequiresTerminal?: true };
+  aforaDelivery?: { textPhaseRequiresTerminal?: true };
 }): void {
-  if (message.openclawDelivery?.textPhaseRequiresTerminal) {
+  if (message.aforaDelivery?.textPhaseRequiresTerminal) {
     tagUnphasedText(message.content, "commentary", "commentary");
   }
 }

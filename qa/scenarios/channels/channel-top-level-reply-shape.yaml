@@ -44,7 +44,7 @@ flow:
             senderId: driver
             senderName: QA Driver
             text:
-              expr: "`@openclaw reply exactly: ${config.expectedMarker}`"
+              expr: "`@afora reply exactly: ${config.expectedMarker}`"
         - waitForOutbound:
             conversation:
               id: { ref: config.conversationId }

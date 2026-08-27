@@ -6,12 +6,12 @@ import {
   selectApplicableRuntimeConfig,
 } from "../../config/config.js";
 import type { AgentDefaultsConfig } from "../../config/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
 type ResolvedAgentConfig = NonNullable<ReturnType<typeof resolveAgentConfig>>;
 
 /** Selects the active reloadable config when it descends from the cron caller's snapshot. */
-export function resolveCronActiveRuntimeConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function resolveCronActiveRuntimeConfig(cfg: AforaConfig): AforaConfig {
   const runtimeConfig = getRuntimeConfigSnapshot();
   const runtimeSourceConfig = getRuntimeConfigSourceSnapshot();
   if (!runtimeConfig || !runtimeSourceConfig) {
@@ -54,7 +54,7 @@ function mergeCronAgentModelOverride(params: {
 
 /** Selects the active runtime snapshot before deriving isolated cron agent defaults. */
 export function resolveCronAgentConfig(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentConfigOverride?: ResolvedAgentConfig;
 }) {
   const runtimeConfig = resolveCronActiveRuntimeConfig(params.config);
@@ -73,6 +73,6 @@ export function resolveCronAgentConfig(params: {
     cfgWithAgentDefaults: {
       ...runtimeConfig,
       agents: Object.assign({}, runtimeConfig.agents, { defaults: agentDefaults }),
-    } satisfies OpenClawConfig,
+    } satisfies AforaConfig,
   };
 }

@@ -72,7 +72,7 @@ export async function installPluginFromPluginsCommand(params: {
     ) {
       return {
         ok: false,
-        error: `${warningPrefix}${result.error} The /plugins chat command cannot acknowledge ClawHub risk; run the local openclaw plugins install command with --acknowledge-clawhub-risk from a trusted shell after reviewing the warning.`,
+        error: `${warningPrefix}${result.error} The /plugins chat command cannot acknowledge ClawHub risk; run the local afora plugins install command with --acknowledge-clawhub-risk from a trusted shell after reviewing the warning.`,
       };
     }
     return { ok: false, error: `${warningPrefix}${result.error}` };

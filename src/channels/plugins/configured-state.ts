@@ -3,7 +3,7 @@
  *
  * Lists and checks bundled channels that can report configured account state.
  */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { PluginDiscoveryResult } from "../../plugins/discovery.js";
 import {
   hasBundledChannelPackageState,
@@ -24,7 +24,7 @@ export function listBundledChannelIdsWithConfiguredState(
  */
 export function hasBundledChannelConfiguredState(params: {
   channelId: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   discovery?: PluginDiscoveryResult;
 }): boolean {

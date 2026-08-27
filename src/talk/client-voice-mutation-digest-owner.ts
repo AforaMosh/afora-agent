@@ -1,8 +1,8 @@
 import { loadSessionEntryReadOnly } from "../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { buildOutboundSessionContext } from "../infra/outbound/session-context.js";
 import { resolveSessionDeliveryTarget } from "../infra/outbound/targets-session.js";
-import { runOpenClawAgentWriteTransaction } from "../state/openclaw-agent-db.js";
+import { runAforaAgentWriteTransaction } from "../state/afora-agent-db.js";
 import {
   type ClientVoiceSessionRecord,
   type ClientVoiceToolEffect,
@@ -37,7 +37,7 @@ function formatMutationDigest(effects: ClientVoiceToolEffect[]): string | undefi
 /** Deliver one point-in-time summary and mark the durable voice record after success. */
 export async function deliverClientVoiceMutationDigest(
   record: ClientVoiceSessionRecord,
-  config: OpenClawConfig,
+  config: AforaConfig,
   signal: AbortSignal,
 ): Promise<void> {
   if (record.digestDeliveredAt) {
@@ -77,7 +77,7 @@ export async function deliverClientVoiceMutationDigest(
     throw send.error;
   }
   const deliveredAt = Date.now();
-  runOpenClawAgentWriteTransaction(
+  runAforaAgentWriteTransaction(
     (database) => {
       const current = readVoiceSessionRecordInTransaction(database, record.voiceSessionId);
       if (!current || current.digestDeliveredAt) {

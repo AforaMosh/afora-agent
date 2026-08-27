@@ -1,6 +1,6 @@
 // Covers restoring redacted config snapshots into writable config values.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import { redactSnapshotTestHints as mainSchemaHints } from "../../test/helpers/config/redact-snapshot-test-hints.js";
 import type { ConfigUiHints } from "../shared/config-ui-hints-types.js";

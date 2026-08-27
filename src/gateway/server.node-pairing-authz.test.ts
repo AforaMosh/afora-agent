@@ -44,7 +44,7 @@ const {
   makeStateDir: makeNodePairingStateDir,
   seedNodeDevice,
   setup: setupNodePairingTestState,
-} = createNodePairingTestState("openclaw-node-pair-authz-");
+} = createNodePairingTestState("afora-node-pair-authz-");
 
 async function findPairedNode(nodeId: string, baseDir?: string) {
   const pairing = await listNodePairing(baseDir);
@@ -788,8 +788,8 @@ describe("gateway node pairing authorization", () => {
     test("withholds plugin surface URLs until the node capability is approved", async () => {
       // The shared Gateway harness disables Canvas startup; expose its descriptor
       // so this handshake test exercises production capability issuance.
-      const previousSkipCanvasHost = process.env.OPENCLAW_SKIP_CANVAS_HOST;
-      delete process.env.OPENCLAW_SKIP_CANVAS_HOST;
+      const previousSkipCanvasHost = process.env.AFORA_SKIP_CANVAS_HOST;
+      delete process.env.AFORA_SKIP_CANVAS_HOST;
       try {
         const pairedNode = await pairDeviceIdentity({
           name: "node-plugin-surface-approval",
@@ -833,16 +833,16 @@ describe("gateway node pairing authorization", () => {
         });
         try {
           expect(approvedHello?.pluginSurfaceUrls?.canvas).toMatch(
-            /^http:\/\/127\.0\.0\.1:\d+\/__openclaw__\/cap\/[^/]+$/,
+            /^http:\/\/127\.0\.0\.1:\d+\/__afora__\/cap\/[^/]+$/,
           );
         } finally {
           await approvedClient.stopAndWait();
         }
       } finally {
         if (previousSkipCanvasHost === undefined) {
-          delete process.env.OPENCLAW_SKIP_CANVAS_HOST;
+          delete process.env.AFORA_SKIP_CANVAS_HOST;
         } else {
-          process.env.OPENCLAW_SKIP_CANVAS_HOST = previousSkipCanvasHost;
+          process.env.AFORA_SKIP_CANVAS_HOST = previousSkipCanvasHost;
         }
       }
     });

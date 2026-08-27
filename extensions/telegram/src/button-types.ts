@@ -1,5 +1,5 @@
 // Telegram plugin module implements button types behavior.
-import { parseExecApprovalCommandText } from "openclaw/plugin-sdk/approval-reply-runtime";
+import { parseExecApprovalCommandText } from "afora-agent/plugin-sdk/approval-reply-runtime";
 import {
   reduceLegacyInteractiveReply,
   isMessagePresentationInteractiveBlock,
@@ -10,8 +10,8 @@ import {
   type LegacyInteractiveReply,
   type MessagePresentation,
   type MessagePresentationButton,
-} from "openclaw/plugin-sdk/interactive-runtime";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
+} from "afora-agent/plugin-sdk/interactive-runtime";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-runtime";
 import {
   buildTelegramApprovalCallbackData,
   TELEGRAM_CALLBACK_DATA_MAX_BYTES,

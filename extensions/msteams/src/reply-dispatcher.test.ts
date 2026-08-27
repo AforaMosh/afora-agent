@@ -1,5 +1,5 @@
 // Msteams tests cover reply dispatcher plugin behavior.
-import { PlatformMessageNotDispatchedError } from "openclaw/plugin-sdk/error-runtime";
+import { PlatformMessageNotDispatchedError } from "afora-agent/plugin-sdk/error-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReplyPayload } from "../runtime-api.js";
 
@@ -22,8 +22,8 @@ vi.mock("./runtime.js", () => ({
   getMSTeamsRuntime: getMSTeamsRuntimeMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/plugin-runtime", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/plugin-runtime")>()),
+vi.mock("afora-agent/plugin-sdk/plugin-runtime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/plugin-runtime")>()),
   getGlobalHookRunner: getGlobalHookRunnerMock,
 }));
 
@@ -726,7 +726,7 @@ describe("createMSTeamsReplyDispatcher", () => {
 
     // With toolProgress disabled, the previewToolProgressEnabled gate flips
     // false so we don't claim to suppress the agent's default messages —
-    // they should flow through openclaw's normal block delivery instead.
+    // they should flow through afora's normal block delivery instead.
     expect(dispatcher.replyOptions.suppressDefaultToolProgressMessages).toBeUndefined();
   });
 

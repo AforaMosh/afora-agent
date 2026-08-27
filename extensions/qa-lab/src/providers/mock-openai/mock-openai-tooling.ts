@@ -1,6 +1,6 @@
 // QA Lab mock provider tool planning and memory fixtures.
 import { createHash } from "node:crypto";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { QA_LAB_WEB_SEARCH_DENIED_INPUT_QUERY } from "../../qa-web-search-provider.js";
 import type { StreamEvent } from "./mock-openai-contracts.js";
 
@@ -284,7 +284,7 @@ export function buildQaToolSearchArgs(
     };
   }
   if (targetTool === "web_search") {
-    return { query: "OpenClaw runtime parity fixed query", count: 1 };
+    return { query: "Afora runtime parity fixed query", count: 1 };
   }
   if (targetTool === "web_fetch") {
     return { url: "https://example.com/", maxChars: 500 };

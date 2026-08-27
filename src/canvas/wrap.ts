@@ -101,14 +101,14 @@ export function buildWidgetDocument(
     // measure the body box, which tracks the actual widget height.
     "let last=0;const report=()=>{const b=document.body;if(!b)return;" +
     "const h=Math.ceil(Math.max(b.scrollHeight,b.offsetHeight,b.getBoundingClientRect().height));" +
-    'if(h&&h!==last){last=h;window.parent.postMessage({type:"openclaw:widget-size",height:h},"*");}};' +
+    'if(h&&h!==last){last=h;window.parent.postMessage({type:"afora:widget-size",height:h},"*");}};' +
     "addEventListener('load',report);new ResizeObserver(report).observe(document.body);" +
     "setTimeout(report,50);setTimeout(report,500);})();</script>";
   // This bridge precedes widget code and snapshots every authority-bearing
   // primitive. Inline chat keeps its private prompt port; board hosting adopts
   // the view ticket and routes every host API over one request channel.
   const widgetBridge =
-    '<script>(()=>{if(!window.parent||window.parent===window||Object.prototype.hasOwnProperty.call(window,"openclaw"))return;' +
+    '<script>(()=>{if(!window.parent||window.parent===window||Object.prototype.hasOwnProperty.call(window,"afora"))return;' +
     "const parent=window.parent;const post=parent.postMessage.bind(parent);" +
     "const P=Promise;const then=P.prototype.then;const ErrorCtor=Error;" +
     "const stringify=String;const freeze=Object.freeze;const define=Object.defineProperty;" +
@@ -118,45 +118,45 @@ export function buildWidgetDocument(
     "const promptPost=c.port1.postMessage.bind(c.port1);" +
     "const b=new MessageChannel();const bridgePost=b.port1.postMessage.bind(b.port1);" +
     "const promptWaiting=[];let inlinePromptReady=false;" +
-    'c.port1.addEventListener("message",event=>{if(event.data?.type!=="openclaw:widget-prompt-host-ready"||inlinePromptReady)return;' +
+    'c.port1.addEventListener("message",event=>{if(event.data?.type!=="afora:widget-prompt-host-ready"||inlinePromptReady)return;' +
     "inlinePromptReady=true;while(promptWaiting.length){const entry=shift.call(promptWaiting);if(entry)entry.inline();}});c.port1.start();" +
     "let act=null;" +
     "try{const ua=navigator.userActivation;" +
     'const d=ua&&Object.getOwnPropertyDescriptor(Object.getPrototypeOf(ua),"isActive");' +
     "if(d&&d.get)act=d.get.bind(ua);}catch{}" +
-    'post({type:"openclaw:widget-prompt-offer"},"*",[c.port2]);' +
-    'post({type:"openclaw:widget-bridge-port-offer"},"*",[b.port2]);' +
+    'post({type:"afora:widget-prompt-offer"},"*",[c.port2]);' +
+    'post({type:"afora:widget-bridge-port-offer"},"*",[b.port2]);' +
     "let ticket=null;let sequence=0;let hostInitExpired=false;const pending=new Map();const waiting=[];" +
     'const initTimer=later(()=>{hostInitExpired=true;while(waiting.length){const entry=shift.call(waiting);if(entry)entry.reject(new ErrorCtor("widget host capabilities unavailable"));}' +
     'while(promptWaiting.length){const entry=shift.call(promptWaiting);if(entry)entry.reject(new ErrorCtor("widget prompt host unavailable"));}},5000);' +
     'b.port1.addEventListener("message",event=>{const data=event.data;' +
-    'if(data?.type==="openclaw:widget-host-init"&&typeof data.ticket==="string"){ticket=data.ticket;' +
-    'bridgePost({type:"openclaw:widget-host-init-ack",ticket});cancel(initTimer);' +
+    'if(data?.type==="afora:widget-host-init"&&typeof data.ticket==="string"){ticket=data.ticket;' +
+    'bridgePost({type:"afora:widget-host-init-ack",ticket});cancel(initTimer);' +
     "while(waiting.length){const entry=shift.call(waiting);if(entry)entry.send();}" +
     "while(promptWaiting.length){const entry=shift.call(promptWaiting);if(entry)entry.send();}return;}" +
-    'if(data?.type!=="openclaw:widget-bridge-response"||typeof data.id!=="string")return;' +
+    'if(data?.type!=="afora:widget-bridge-response"||typeof data.id!=="string")return;' +
     "const entry=pending.get(data.id);if(!entry)return;pending.delete(data.id);" +
     'if(data.ok===true)entry.resolve(data.result);else entry.reject(new ErrorCtor(typeof data.error==="string"?data.error:"widget host request failed"));});b.port1.start();' +
     'const request=(method,params)=>new P((resolve,reject)=>{const send=()=>{const id="widget-"+(++sequence);' +
     "pending.set(id,{resolve,reject});" +
-    'try{bridgePost({type:"openclaw:widget-bridge-request",id,method,params,ticket});}' +
+    'try{bridgePost({type:"afora:widget-bridge-request",id,method,params,ticket});}' +
     "catch(error){pending.delete(id);reject(error);}};" +
     'if(ticket)send();else if(hostInitExpired)reject(new ErrorCtor("widget host capabilities unavailable"));' +
     "else push.call(waiting,{send,reject});});" +
     "const sendPrompt=text=>{if(!act||act()!==true)return P.resolve(false);const value=stringify(text);" +
     'if(ticket)return request("prompt.send",{text:value});return new P((resolve,reject)=>{' +
     'const send=()=>{const result=request("prompt.send",{text:value});then.call(result,resolve,reject);};' +
-    'const inline=()=>{promptPost({type:"openclaw:widget-prompt",prompt:value});resolve(true);};' +
+    'const inline=()=>{promptPost({type:"afora:widget-prompt",prompt:value});resolve(true);};' +
     'if(inlinePromptReady)inline();else if(hostInitExpired)reject(new ErrorCtor("widget prompt host unavailable"));' +
     "else push.call(promptWaiting,{send,inline,reject});});};" +
     "const api=freeze({" +
     'prompt:freeze({send:sendPrompt}),state:freeze({emit:payload=>request("state.emit",{payload})}),' +
     'data:freeze({read:(bindingId,params)=>request("data.read",{bindingId:stringify(bindingId),params})}),' +
     'cron:freeze({trigger:jobId=>request("cron.trigger",{jobId:stringify(jobId)})})});' +
-    'define(window,"openclaw",{value:api,writable:false,configurable:false});' +
+    'define(window,"afora",{value:api,writable:false,configurable:false});' +
     "window.sendPrompt=text=>{void sendPrompt(text);};" +
     'define(window,"sendPrompt",{value:window.sendPrompt,writable:false,configurable:false});' +
-    'post({type:"openclaw:widget-bridge-ready"},"*");})();</script>';
+    'post({type:"afora:widget-bridge-ready"},"*");})();</script>';
   /*
    * The host may push a new theme after every theme change. Each message is a
    * full snapshot: omitted or invalid tokens are removed so a theme switch
@@ -170,7 +170,7 @@ export function buildWidgetDocument(
     "const rm=root.style.removeProperty.bind(root.style);" +
     `const keys=${JSON.stringify(WIDGET_THEME_TOKENS)};` +
     'addEventListener("message",event=>{if(event.source!==window.parent)return;' +
-    'const data=event.data;if(!data||data.type!=="openclaw:widget-theme"||' +
+    'const data=event.data;if(!data||data.type!=="afora:widget-theme"||' +
     'typeof data.tokens!=="object"||data.tokens===null)return;' +
     "for(const key of keys){const raw=data.tokens[key];" +
     'const value=typeof raw==="string"?raw.trim():"";' +
@@ -207,7 +207,7 @@ export function buildWidgetDocument(
     "const encode=encodeURIComponent;const P=Promise;const ErrorCtor=Error;const stringify=String;" +
     "const max=Math.max.bind(Math);const min=Math.min.bind(Math);const ceil=Math.ceil.bind(Math);" +
     'listen("message",event=>{if(event.source!==parent)return;' +
-    'const data=event.data;if(!data||data.type!=="openclaw:widget-snapshot-request"||typeof data.id!=="string")return;' +
+    'const data=event.data;if(!data||data.type!=="afora:widget-snapshot-request"||typeof data.id!=="string")return;' +
     "void (async()=>{try{const body=document.body;" +
     "const width=max(1,body.scrollWidth);const height=max(1,body.scrollHeight);" +
     'const root=clone.call(document.documentElement,true);const scripts=query.call(root,"script");' +
@@ -232,8 +232,8 @@ export function buildWidgetDocument(
     'const context=getContext.call(canvas,"2d");if(!context||!setFill)throw new ErrorCtor("widget snapshot canvas unavailable");' +
     'setFill.call(context,getProperty.call(styles(document.documentElement),"--surface"));' +
     "fill.call(context,0,0,canvasWidth,canvasHeight);draw.call(context,image,0,0,canvasWidth,canvasHeight);" +
-    'post({type:"openclaw:widget-snapshot",id:data.id,dataUrl:toDataURL.call(canvas,"image/png"),width,height},"*");' +
-    '}catch(error){post({type:"openclaw:widget-snapshot",id:data.id,error:stringify(error)},"*");}})();});})();</script>';
+    'post({type:"afora:widget-snapshot",id:data.id,dataUrl:toDataURL.call(canvas,"image/png"),width,height},"*");' +
+    '}catch(error){post({type:"afora:widget-snapshot",id:data.id,error:stringify(error)},"*");}})();});})();</script>';
   const connectSources = options.connectOrigins?.length
     ? options.connectOrigins.join(" ")
     : "'none'";

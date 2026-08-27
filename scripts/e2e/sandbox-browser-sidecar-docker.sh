@@ -5,20 +5,20 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$ROOT_DIR/scripts/lib/docker-e2e-image.sh"
 
 FUNCTIONAL_IMAGE="$(docker_e2e_resolve_image \
-  "openclaw-sandbox-browser-sidecar-functional:local" \
-  OPENCLAW_SANDBOX_BROWSER_SIDECAR_FUNCTIONAL_IMAGE)"
-RUNNER_IMAGE="${OPENCLAW_SANDBOX_BROWSER_SIDECAR_RUNNER_IMAGE:-openclaw-sandbox-browser-sidecar-e2e:${OPENCLAW_DOCKER_ALL_LANE_NAME:-local}}"
-SANDBOX_IMAGE="${OPENCLAW_SANDBOX_IMAGE:-openclaw-sandbox:bookworm-slim}"
-BROWSER_IMAGE="${OPENCLAW_SANDBOX_BROWSER_IMAGE:-openclaw-sandbox-browser:bookworm-slim}"
+  "afora-sandbox-browser-sidecar-functional:local" \
+  AFORA_SANDBOX_BROWSER_SIDECAR_FUNCTIONAL_IMAGE)"
+RUNNER_IMAGE="${AFORA_SANDBOX_BROWSER_SIDECAR_RUNNER_IMAGE:-afora-sandbox-browser-sidecar-e2e:${AFORA_DOCKER_ALL_LANE_NAME:-local}}"
+SANDBOX_IMAGE="${AFORA_SANDBOX_IMAGE:-afora-sandbox:bookworm-slim}"
+BROWSER_IMAGE="${AFORA_SANDBOX_BROWSER_IMAGE:-afora-sandbox-browser:bookworm-slim}"
 RUN_ID="$$-$(date +%s)"
-SANDBOX_PREFIX="openclaw-e2e-sbx-${RUN_ID}-"
-BROWSER_PREFIX="openclaw-e2e-browser-${RUN_ID}-"
-NETWORK_NAME="openclaw-e2e-browser-${RUN_ID}"
-SCENARIO_ROOT="$(mktemp -d /tmp/openclaw-sandbox-browser-sidecar.XXXXXX)"
-BUILD_DIR="$(mktemp -d /tmp/openclaw-sandbox-browser-sidecar-build.XXXXXX)"
-DOCKER_SOCKET="${OPENCLAW_DOCKER_SOCKET:-/var/run/docker.sock}"
+SANDBOX_PREFIX="afora-e2e-sbx-${RUN_ID}-"
+BROWSER_PREFIX="afora-e2e-browser-${RUN_ID}-"
+NETWORK_NAME="afora-e2e-browser-${RUN_ID}"
+SCENARIO_ROOT="$(mktemp -d /tmp/afora-sandbox-browser-sidecar.XXXXXX)"
+BUILD_DIR="$(mktemp -d /tmp/afora-sandbox-browser-sidecar-build.XXXXXX)"
+DOCKER_SOCKET="${AFORA_DOCKER_SOCKET:-/var/run/docker.sock}"
 SCENARIO_SOURCE="$ROOT_DIR/scripts/e2e/lib/sandbox-browser-sidecar/scenario.mjs"
-DOCKER_COMMAND_TIMEOUT="${OPENCLAW_SANDBOX_BROWSER_SIDECAR_DOCKER_TIMEOUT:-1200s}"
+DOCKER_COMMAND_TIMEOUT="${AFORA_SANDBOX_BROWSER_SIDECAR_DOCKER_TIMEOUT:-1200s}"
 
 docker_socket_gid() {
   if stat -c "%g" "$DOCKER_SOCKET" >/dev/null 2>&1; then
@@ -99,18 +99,18 @@ docker_e2e_run_logged_print_with_harness sandbox-browser-sidecar \
   --network host \
   --group-add "$SOCKET_GID" \
   -e COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
-  -e "OPENCLAW_E2E_ROOT=$SCENARIO_ROOT" \
-  -e "OPENCLAW_E2E_SANDBOX_IMAGE=$SANDBOX_IMAGE" \
-  -e "OPENCLAW_E2E_BROWSER_IMAGE=$BROWSER_IMAGE" \
-  -e "OPENCLAW_E2E_SANDBOX_PREFIX=$SANDBOX_PREFIX" \
-  -e "OPENCLAW_E2E_BROWSER_PREFIX=$BROWSER_PREFIX" \
-  -e "OPENCLAW_E2E_BROWSER_NETWORK=$NETWORK_NAME" \
+  -e "AFORA_E2E_ROOT=$SCENARIO_ROOT" \
+  -e "AFORA_E2E_SANDBOX_IMAGE=$SANDBOX_IMAGE" \
+  -e "AFORA_E2E_BROWSER_IMAGE=$BROWSER_IMAGE" \
+  -e "AFORA_E2E_SANDBOX_PREFIX=$SANDBOX_PREFIX" \
+  -e "AFORA_E2E_BROWSER_PREFIX=$BROWSER_PREFIX" \
+  -e "AFORA_E2E_BROWSER_NETWORK=$NETWORK_NAME" \
   -v "$DOCKER_SOCKET:/var/run/docker.sock" \
   -v "$SCENARIO_ROOT:$SCENARIO_ROOT" \
-  -v "$SCENARIO_SOURCE:/tmp/openclaw-sandbox-browser-sidecar-scenario.mjs:ro" \
+  -v "$SCENARIO_SOURCE:/tmp/afora-sandbox-browser-sidecar-scenario.mjs:ro" \
   "$RUNNER_IMAGE" \
   bash -lc \
-  'cp /tmp/openclaw-sandbox-browser-sidecar-scenario.mjs /app/sandbox-browser-sidecar-scenario.mjs
+  'cp /tmp/afora-sandbox-browser-sidecar-scenario.mjs /app/sandbox-browser-sidecar-scenario.mjs
    exec node /app/sandbox-browser-sidecar-scenario.mjs'
 
 echo "Sandbox browser sidecar Docker E2E passed."

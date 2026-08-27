@@ -64,7 +64,7 @@ function plainGhAuthenticatedEnv(env) {
   }
 
   const tokenEnv = { ...next };
-  delete tokenEnv.OPENCLAW_GH_BIN;
+  delete tokenEnv.AFORA_GH_BIN;
   const args = ["auth", "token"];
   if (tokenEnv.GH_HOST) {
     args.push("--hostname", tokenEnv.GH_HOST);
@@ -115,11 +115,11 @@ export function resolvePlainGhBin(
   env = process.env,
   systemCandidates = PLAIN_GH_SYSTEM_CANDIDATES,
 ) {
-  if (env.OPENCLAW_GH_BIN) {
-    if (isExecutable(env.OPENCLAW_GH_BIN)) {
-      return env.OPENCLAW_GH_BIN;
+  if (env.AFORA_GH_BIN) {
+    if (isExecutable(env.AFORA_GH_BIN)) {
+      return env.AFORA_GH_BIN;
     }
-    throw new Error(`OPENCLAW_GH_BIN is not executable: ${env.OPENCLAW_GH_BIN}`);
+    throw new Error(`AFORA_GH_BIN is not executable: ${env.AFORA_GH_BIN}`);
   }
 
   for (const candidate of systemCandidates) {
@@ -212,7 +212,7 @@ export function execPlainGh(args, options = {}) {
 export function execGhRead(args, options = {}, params = {}) {
   const env = plainGhEnv(options.env ?? process.env);
   // Reads stay on the cache-aware PATH shim; the explicit binary is reserved for writes.
-  delete env.OPENCLAW_GH_BIN;
+  delete env.AFORA_GH_BIN;
   const execFileSyncImpl = params.execFileSyncImpl ?? execFileSync;
   return execFileSyncImpl("gh", args, {
     ...options,

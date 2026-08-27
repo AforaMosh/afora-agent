@@ -1,11 +1,11 @@
 // Matrix tests cover approval native plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import { matrixApprovalCapability } from "./approval-native.js";
 
 function buildConfig(
-  overrides?: Partial<NonNullable<NonNullable<OpenClawConfig["channels"]>["matrix"]>>,
-): OpenClawConfig {
+  overrides?: Partial<NonNullable<NonNullable<AforaConfig["channels"]>["matrix"]>>,
+): AforaConfig {
   return {
     channels: {
       matrix: {
@@ -20,7 +20,7 @@ function buildConfig(
         ...overrides,
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 describe("matrix approval capability", () => {

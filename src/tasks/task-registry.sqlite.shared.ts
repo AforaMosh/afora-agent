@@ -1,5 +1,5 @@
 // Shares SQLite row mapping helpers between task registry persistence modules.
-import { safeParseJson } from "@openclaw/normalization-core";
+import { safeParseJson } from "@afora/normalization-core";
 import { isRecord } from "../utils.js";
 import { normalizeDeliveryContext } from "../utils/delivery-context.shared.js";
 import type { DeliveryContext } from "../utils/delivery-context.types.js";

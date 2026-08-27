@@ -421,7 +421,7 @@ describe("session pull request snapshot store", () => {
       sessions: {
         [key]: {
           pullRequests: [],
-          branch: { owner: "openclaw", repo: "openclaw", branch: "feature/demo" },
+          branch: { owner: "afora", repo: "afora", branch: "feature/demo" },
           rateLimited: true,
           status: "rate-limited",
         },

@@ -34,10 +34,10 @@ async function withIsolatedEnvAndCwd(run: () => Promise<void>) {
 }
 
 async function withDotEnvFixture(run: (fixture: DotEnvFixture) => Promise<void>) {
-  const base = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-dotenv-test-"));
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "afora-dotenv-test-"));
   const cwdDir = path.join(base, "cwd");
   const stateDir = path.join(base, "state");
-  setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+  setTestEnvValue("AFORA_STATE_DIR", stateDir);
   await fs.mkdir(cwdDir, { recursive: true });
   await fs.mkdir(stateDir, { recursive: true });
   await run({ base, cwdDir, stateDir });
@@ -111,7 +111,7 @@ describe("workspace .env blocklist completeness", () => {
           origin: "global",
           rootDir: "/plugins/runtime-cloud",
           source: "/plugins/runtime-cloud/index.js",
-          manifestPath: "/plugins/runtime-cloud/openclaw.plugin.json",
+          manifestPath: "/plugins/runtime-cloud/afora.plugin.json",
           setup: {
             providers: [{ id: "runtime-cloud", envVars: ["RUNTIME_CLOUD_API_KEY"] }],
           },
@@ -174,22 +174,22 @@ describe("workspace .env blocklist completeness", () => {
     await withIsolatedEnvAndCwd(async () => {
       await withDotEnvFixture(async ({ cwdDir }) => {
         const runtimeControlKeys = [
-          "OPENCLAW_GIT_DIR",
-          "OPENCLAW_WORKSPACE_DIR",
-          "OPENCLAW_MDNS_HOSTNAME",
-          "OPENCLAW_SESSION_CACHE_TTL_MS",
-          "OPENCLAW_UPDATE_PACKAGE_SPEC",
-          "OPENCLAW_GATEWAY_PORT",
-          "OPENCLAW_GATEWAY_URL",
-          "OPENCLAW_CLAWHUB_URL",
+          "AFORA_GIT_DIR",
+          "AFORA_WORKSPACE_DIR",
+          "AFORA_MDNS_HOSTNAME",
+          "AFORA_SESSION_CACHE_TTL_MS",
+          "AFORA_UPDATE_PACKAGE_SPEC",
+          "AFORA_GATEWAY_PORT",
+          "AFORA_GATEWAY_URL",
+          "AFORA_CLAWHUB_URL",
           "CLAWHUB_URL",
           "CLAWHUB_TOKEN",
           "CLAWHUB_AUTH_TOKEN",
           "CLAWHUB_CONFIG_PATH",
-          "OPENCLAW_DISABLE_BUNDLED_PLUGINS",
-          "OPENCLAW_ALLOW_INSECURE_PRIVATE_WS",
-          "OPENCLAW_BROWSER_EXECUTABLE_PATH",
-          "OPENCLAW_WHATSAPP_WEB_SOCKET_URL",
+          "AFORA_DISABLE_BUNDLED_PLUGINS",
+          "AFORA_ALLOW_INSECURE_PRIVATE_WS",
+          "AFORA_BROWSER_EXECUTABLE_PATH",
+          "AFORA_WHATSAPP_WEB_SOCKET_URL",
           "EXAMPLE_API_HOST",
           "HOMEBREW_BREW_FILE",
           "HOMEBREW_PREFIX",
@@ -237,22 +237,22 @@ describe("workspace .env blocklist completeness", () => {
           "CLOUDSDK_PYTHON_ARGS",
           "CLOUDSDK_PYTHON_SITEPACKAGES",
           "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH",
-          "OPENCLAW_SKIP_CHANNELS",
-          "OPENCLAW_SKIP_PROVIDERS",
-          "OPENCLAW_SKIP_CRON",
-          "OPENCLAW_RAW_STREAM",
-          "OPENCLAW_RAW_STREAM_PATH",
-          "OPENCLAW_CACHE_TRACE",
-          "OPENCLAW_CACHE_TRACE_FILE",
-          "OPENCLAW_CACHE_TRACE_MESSAGES",
-          "OPENCLAW_CACHE_TRACE_PROMPT",
-          "OPENCLAW_CACHE_TRACE_SYSTEM",
-          "OPENCLAW_SHOW_SECRETS",
-          "OPENCLAW_PLUGIN_CATALOG_PATHS",
-          "OPENCLAW_MPM_CATALOG_PATHS",
-          "OPENCLAW_NODE_EXEC_HOST",
-          "OPENCLAW_NODE_EXEC_FALLBACK",
-          "OPENCLAW_ALLOW_PROJECT_LOCAL_BIN",
+          "AFORA_SKIP_CHANNELS",
+          "AFORA_SKIP_PROVIDERS",
+          "AFORA_SKIP_CRON",
+          "AFORA_RAW_STREAM",
+          "AFORA_RAW_STREAM_PATH",
+          "AFORA_CACHE_TRACE",
+          "AFORA_CACHE_TRACE_FILE",
+          "AFORA_CACHE_TRACE_MESSAGES",
+          "AFORA_CACHE_TRACE_PROMPT",
+          "AFORA_CACHE_TRACE_SYSTEM",
+          "AFORA_SHOW_SECRETS",
+          "AFORA_PLUGIN_CATALOG_PATHS",
+          "AFORA_MPM_CATALOG_PATHS",
+          "AFORA_NODE_EXEC_HOST",
+          "AFORA_NODE_EXEC_FALLBACK",
+          "AFORA_ALLOW_PROJECT_LOCAL_BIN",
           "PATH",
           "HOMEBREW_BREW_FILE",
           "HOMEBREW_PREFIX",
@@ -291,7 +291,7 @@ describe("workspace .env blocklist completeness", () => {
           path.join(cwdDir, ".env"),
           [
             "MY_APP_KEY=user-value",
-            "APP_GITHUB_REPO=openclaw/openclaw",
+            "APP_GITHUB_REPO=AforaMosh/afora-agent",
             "APP_URL=https://project.example.com",
             "APP_ALLOWED_USERS=alice,bob",
             "DATABASE_URL_CUSTOM=pg://localhost",
@@ -311,7 +311,7 @@ describe("workspace .env blocklist completeness", () => {
         loadWorkspaceDotEnvFile(path.join(cwdDir, ".env"), { quiet: true });
 
         expect(process.env.MY_APP_KEY).toBe("user-value");
-        expect(process.env.APP_GITHUB_REPO).toBe("openclaw/openclaw");
+        expect(process.env.APP_GITHUB_REPO).toBe("AforaMosh/afora-agent");
         expect(process.env.APP_URL).toBe("https://project.example.com");
         expect(process.env.APP_ALLOWED_USERS).toBe("alice,bob");
         expect(process.env.DATABASE_URL_CUSTOM).toBe("pg://localhost");

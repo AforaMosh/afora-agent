@@ -5,10 +5,10 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
-import { OPENCLAW_STATE_MAINTENANCE_SCHEMA_COMPATIBILITY } from "../state/openclaw-state-schema-compatibility.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
+import { AFORA_STATE_MAINTENANCE_SCHEMA_COMPATIBILITY } from "../state/afora-state-schema-compatibility.js";
 import { readClawResumeStateReadOnly } from "./package-resume.js";
 import { parseClawManifest } from "./schema.js";
 import type { ClawSourceIdentity } from "./types.js";
@@ -16,14 +16,14 @@ import { buildClawUpdatePlan } from "./update-plan.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
-afterEach(() => closeOpenClawStateDatabaseForTest());
+afterEach(() => closeAforaStateDatabaseForTest());
 
 function createBaseShapeState(params: {
-  env: { OPENCLAW_STATE_DIR: string };
+  env: { AFORA_STATE_DIR: string };
   packageRoot: string;
   workspace: string;
 }): string {
-  const database = openOpenClawStateDatabase({ env: params.env });
+  const database = openAforaStateDatabase({ env: params.env });
   const databasePath = database.path;
   database.db
     .prepare(
@@ -33,23 +33,23 @@ function createBaseShapeState(params: {
         plan_integrity, workspace, agent_config_digest, agent_owned_paths_json, status,
         added_at_ms, updated_at_ms
       ) VALUES (
-        'legacy-worker', 'openclaw.clawInstallRecord.v1', 'package', '@acme/legacy', '1.0.0', ?,
+        'legacy-worker', 'afora.clawInstallRecord.v1', 'package', '@acme/legacy', '1.0.0', ?,
         ?, 'artifact', 'sha256:aa', 10, 1, 'sha256:bb', ?, 'sha256:cc', '[]', 'complete',
         1000, 2000
       )`,
     )
     .run(params.packageRoot, join(params.packageRoot, "CLAW.md"), params.workspace);
-  for (const column of OPENCLAW_STATE_MAINTENANCE_SCHEMA_COMPATIBILITY.allowedMissingColumns ??
+  for (const column of AFORA_STATE_MAINTENANCE_SCHEMA_COMPATIBILITY.allowedMissingColumns ??
     []) {
     const [table, name] = column.split(".");
     database.db.exec(`ALTER TABLE ${table} DROP COLUMN ${name};`);
   }
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   return databasePath;
 }
 
 async function createFixture(label: string): Promise<{
-  env: { OPENCLAW_STATE_DIR: string };
+  env: { AFORA_STATE_DIR: string };
   databasePath: string;
   packageRoot: string;
   workspace: string;
@@ -60,7 +60,7 @@ async function createFixture(label: string): Promise<{
   await mkdir(packageRoot, { recursive: true });
   await mkdir(workspace, { recursive: true });
   await writeFile(join(packageRoot, "CLAW.md"), "---\nschemaVersion: 1\n---\n", "utf8");
-  const env = { OPENCLAW_STATE_DIR: join(root, "state") };
+  const env = { AFORA_STATE_DIR: join(root, "state") };
   return {
     env,
     databasePath: createBaseShapeState({ env, packageRoot, workspace }),
@@ -71,7 +71,7 @@ async function createFixture(label: string): Promise<{
 
 describe("read-only Claw state compatibility", () => {
   it("plans an update against a base-shape database without mutating it", async () => {
-    const fixture = await createFixture("openclaw-claw-base-shape-");
+    const fixture = await createFixture("afora-claw-base-shape-");
     const before = await readFile(fixture.databasePath);
     const parsed = parseClawManifest({
       schemaVersion: 1,
@@ -113,7 +113,7 @@ describe("read-only Claw state compatibility", () => {
   });
 
   it("resumes a base-shape database without mutating it", async () => {
-    const fixture = await createFixture("openclaw-claw-base-shape-resume-");
+    const fixture = await createFixture("afora-claw-base-shape-resume-");
     const before = await readFile(fixture.databasePath);
 
     const state = await readClawResumeStateReadOnly("legacy-worker", {

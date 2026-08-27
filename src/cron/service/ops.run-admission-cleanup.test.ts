@@ -15,7 +15,7 @@ import {
   waitForActiveTasks,
 } from "../../process/command-queue.js";
 import { CommandLane } from "../../process/lanes.js";
-import { openOpenClawStateDatabase } from "../../state/openclaw-state-db.js";
+import { openAforaStateDatabase } from "../../state/afora-state-db.js";
 import { loadCronStore, saveCronStore } from "../store.js";
 import { cronStoreKey } from "../store/key.js";
 import { stop } from "./ops-lifecycle.js";
@@ -35,7 +35,7 @@ function observeCronJobWrites(
   jobId: string,
   observer: (state: { queuedAtMs?: number; runningAtMs?: number }) => void,
 ): () => void {
-  const database = openOpenClawStateDatabase().db;
+  const database = openAforaStateDatabase().db;
   const suffix = ++cronJobWriteObserverId;
   const functionName = `observe_cron_job_write_${suffix}`;
   const triggerName = `observe_cron_job_write_${suffix}`;
@@ -95,7 +95,7 @@ describe("cron service run admission cleanup", () => {
     await expect(activeRun).resolves.toEqual({ ok: true, ran: true });
 
     expect((await loadCronStore(store.storePath)).jobs[0]?.state.runningAtMs).toBeUndefined();
-    const receipt = openOpenClawStateDatabase()
+    const receipt = openAforaStateDatabase()
       .db.prepare(
         "SELECT status FROM cron_run_receipts WHERE store_key = ? AND job_id = ? ORDER BY started_at_ms DESC LIMIT 1",
       )
@@ -141,7 +141,7 @@ describe("cron service run admission cleanup", () => {
     await expect(activeRun).resolves.toEqual({ ok: true, ran: true });
 
     expect((await loadCronStore(store.storePath)).jobs[0]?.state.lastRunStatus).toBeUndefined();
-    const receipt = openOpenClawStateDatabase()
+    const receipt = openAforaStateDatabase()
       .db.prepare(
         "SELECT status FROM cron_run_receipts WHERE store_key = ? AND job_id = ? ORDER BY started_at_ms DESC LIMIT 1",
       )
@@ -284,7 +284,7 @@ describe("cron service run admission cleanup", () => {
     });
     const activeRun = run(state, job.id, "force");
     await runnerStarted.promise;
-    const databasePath = openOpenClawStateDatabase().path;
+    const databasePath = openAforaStateDatabase().path;
     const worker = new Worker(
       `
         const { parentPort, workerData } = require("node:worker_threads");
@@ -392,7 +392,7 @@ describe("cron service run admission cleanup", () => {
 
     expect(state.queuedRunReservationsByJobId.has(job.id)).toBe(false);
     expect(runIsolatedAgentJob).not.toHaveBeenCalled();
-    const receipt = openOpenClawStateDatabase()
+    const receipt = openAforaStateDatabase()
       .db.prepare(
         "SELECT status FROM cron_run_receipts WHERE store_key = ? AND job_id = ? ORDER BY started_at_ms DESC, receipt_id DESC LIMIT 1",
       )

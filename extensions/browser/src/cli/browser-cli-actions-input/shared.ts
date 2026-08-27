@@ -3,7 +3,7 @@
  */
 import fs from "node:fs/promises";
 import type { Command } from "commander";
-import { addTimerTimeoutGraceMs } from "openclaw/plugin-sdk/number-runtime";
+import { addTimerTimeoutGraceMs } from "afora-agent/plugin-sdk/number-runtime";
 import { BROWSER_ACTION_TRANSPORT_SLACK_MS } from "../../browser/act-policy.js";
 import { callBrowserRequest, type BrowserParentOpts } from "../browser-cli-shared.js";
 import {

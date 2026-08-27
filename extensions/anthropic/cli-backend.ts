@@ -6,11 +6,11 @@ import { createHmac, randomBytes } from "node:crypto";
 import type {
   CliBackendPlugin,
   CliBackendPreparedExecution,
-} from "openclaw/plugin-sdk/cli-backend";
+} from "afora-agent/plugin-sdk/cli-backend";
 import {
   CLI_FRESH_WATCHDOG_DEFAULTS,
   CLI_RESUME_WATCHDOG_DEFAULTS,
-} from "openclaw/plugin-sdk/cli-backend";
+} from "afora-agent/plugin-sdk/cli-backend";
 import { parseClaudeCliJsonlEvent } from "./cli-output.js";
 import {
   CLAUDE_CLI_BACKEND_ID,
@@ -75,8 +75,8 @@ function createClaudeCliAuthInput(params: {
 function resolveClaudeCliAuthInput(
   credential: ClaudeCliAuthCredential | undefined,
 ): ClaudeCliPreparedExecution | undefined {
-  // Forwarded OAuth here is OpenClaw-managed material (its refresh path is
-  // OpenClaw-owned). Imported native `claude` logins are never forwarded —
+  // Forwarded OAuth here is Afora-managed material (its refresh path is
+  // Afora-owned). Imported native `claude` logins are never forwarded —
   // core runs those as identity-verified passthrough — so an expired token
   // reaching this point is a real fault worth failing loudly, not refreshable
   // state this plugin could repair.
@@ -84,7 +84,7 @@ function resolveClaudeCliAuthInput(
     const expires = "expires" in credential ? credential.expires : undefined;
     if (typeof expires !== "number" || !Number.isFinite(expires) || expires <= Date.now()) {
       throw new Error(
-        "Selected Claude CLI OAuth credential is expired or invalid. Re-authenticate the selected profile and retry. OpenClaw did not start the run.",
+        "Selected Claude CLI OAuth credential is expired or invalid. Re-authenticate the selected profile and retry. Afora did not start the run.",
       );
     }
     if (typeof credential.access !== "string") {
@@ -203,7 +203,7 @@ export function buildAnthropicCliBackend(
         "--setting-sources",
         "user",
         "--allowedTools",
-        "mcp__openclaw__*",
+        "mcp__afora__*",
         "--disallowedTools",
         "ScheduleWakeup,CronCreate,Bash(run_in_background:true),Monitor",
       ],
@@ -216,7 +216,7 @@ export function buildAnthropicCliBackend(
         "--setting-sources",
         "user",
         "--allowedTools",
-        "mcp__openclaw__*",
+        "mcp__afora__*",
         "--disallowedTools",
         "ScheduleWakeup,CronCreate,Bash(run_in_background:true),Monitor",
         "--resume",

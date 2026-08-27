@@ -3,7 +3,7 @@
  * Exercises catalog compatibility, provider modernity hooks, and live sweep selection.
  */
 import path from "node:path";
-import type { Api, Model } from "openclaw/plugin-sdk/llm";
+import type { Api, Model } from "afora-agent/plugin-sdk/llm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const providerRuntimeMocks = vi.hoisted(() => ({
@@ -91,7 +91,7 @@ function expectNativeStreamingSupported(overrides: Partial<Model>): void {
 beforeEach(() => {
   // Endpoint capabilities come from manifests. Keep source tests independent
   // from partial dist output left by an earlier build in the same checkout.
-  vi.stubEnv("OPENCLAW_BUNDLED_PLUGINS_DIR", path.join(process.cwd(), "extensions"));
+  vi.stubEnv("AFORA_BUNDLED_PLUGINS_DIR", path.join(process.cwd(), "extensions"));
   providerRuntimeMocks.resolveProviderModernModelRef.mockReset();
   providerRuntimeMocks.resolveProviderModernModelRef.mockReturnValue(undefined);
 });

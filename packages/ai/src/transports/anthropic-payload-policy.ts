@@ -1,5 +1,5 @@
-import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { resolveCacheRetention } from "../providers/cache-retention.js";
 import {
   splitSystemPromptCacheBoundary,

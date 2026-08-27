@@ -1,15 +1,15 @@
-// Covers locating OpenClaw docs and source paths from package roots.
+// Covers locating Afora docs and source paths from package roots.
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { resolveOpenClawReferencePaths } from "./docs-path.js";
+import { resolveAforaReferencePaths } from "./docs-path.js";
 
 async function makePackageRoot(prefix: string): Promise<string> {
   // Tests create minimal package roots so path resolution is checked without
   // depending on this checkout's real docs or git state.
   const root = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
-  await fs.writeFile(path.join(root, "package.json"), '{"name":"openclaw"}\n');
+  await fs.writeFile(path.join(root, "package.json"), '{"name":"afora-agent"}\n');
   return root;
 }
 
@@ -18,23 +18,23 @@ async function writeDocsJson(root: string): Promise<void> {
   await fs.writeFile(path.join(root, "docs", "docs.json"), "{}\n");
 }
 
-describe("resolveOpenClawDocsPath", () => {
+describe("resolveAforaDocsPath", () => {
   it("uses the workspace docs directory when it has canonical docs metadata", async () => {
-    const root = await makePackageRoot("openclaw-docs-workspace-");
+    const root = await makePackageRoot("afora-docs-workspace-");
     await writeDocsJson(root);
 
-    await expect(resolveOpenClawReferencePaths({ workspaceDir: root })).resolves.toMatchObject({
+    await expect(resolveAforaReferencePaths({ workspaceDir: root })).resolves.toMatchObject({
       docsPath: path.join(root, "docs"),
     });
   });
 
   it("finds bundled package docs from a nested package path", async () => {
-    const root = await makePackageRoot("openclaw-docs-package-");
+    const root = await makePackageRoot("afora-docs-package-");
     await writeDocsJson(root);
     const nested = path.join(root, "dist", "agents");
     await fs.mkdir(nested, { recursive: true });
 
-    await expect(resolveOpenClawReferencePaths({ cwd: nested })).resolves.toMatchObject({
+    await expect(resolveAforaReferencePaths({ cwd: nested })).resolves.toMatchObject({
       docsPath: path.join(root, "docs"),
     });
   });
@@ -42,42 +42,42 @@ describe("resolveOpenClawDocsPath", () => {
   it("does not accept incomplete template-only docs directories", async () => {
     // Template folders alone are not published docs; docs.json is the canonical
     // marker that the path is usable for model reference context.
-    const root = await makePackageRoot("openclaw-docs-incomplete-");
+    const root = await makePackageRoot("afora-docs-incomplete-");
     await fs.mkdir(path.join(root, "docs", "reference", "templates"), { recursive: true });
 
-    await expect(resolveOpenClawReferencePaths({ cwd: root })).resolves.toMatchObject({
+    await expect(resolveAforaReferencePaths({ cwd: root })).resolves.toMatchObject({
       docsPath: null,
     });
   });
 });
 
-describe("resolveOpenClawSourcePath", () => {
+describe("resolveAforaSourcePath", () => {
   it("returns the package root only for git checkouts", async () => {
-    const root = await makePackageRoot("openclaw-source-git-");
+    const root = await makePackageRoot("afora-source-git-");
     await fs.mkdir(path.join(root, ".git"));
 
-    await expect(resolveOpenClawReferencePaths({ cwd: root })).resolves.toMatchObject({
+    await expect(resolveAforaReferencePaths({ cwd: root })).resolves.toMatchObject({
       sourcePath: root,
     });
   });
 
   it("omits source path for npm-style package installs", async () => {
     // npm installs may contain package files but not source checkout metadata.
-    const root = await makePackageRoot("openclaw-source-npm-");
+    const root = await makePackageRoot("afora-source-npm-");
 
-    await expect(resolveOpenClawReferencePaths({ cwd: root })).resolves.toMatchObject({
+    await expect(resolveAforaReferencePaths({ cwd: root })).resolves.toMatchObject({
       sourcePath: null,
     });
   });
 });
 
-describe("resolveOpenClawReferencePaths", () => {
+describe("resolveAforaReferencePaths", () => {
   it("returns docs and local source together for git checkouts", async () => {
-    const root = await makePackageRoot("openclaw-reference-git-");
+    const root = await makePackageRoot("afora-reference-git-");
     await writeDocsJson(root);
     await fs.mkdir(path.join(root, ".git"));
 
-    await expect(resolveOpenClawReferencePaths({ cwd: root })).resolves.toEqual({
+    await expect(resolveAforaReferencePaths({ cwd: root })).resolves.toEqual({
       docsPath: path.join(root, "docs"),
       sourcePath: root,
     });

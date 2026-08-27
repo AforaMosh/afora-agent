@@ -1,5 +1,5 @@
 // Nextcloud Talk room info lookup tests cover real HTTP timeout behavior.
-import { withServer } from "openclaw/plugin-sdk/test-env";
+import { withServer } from "afora-agent/plugin-sdk/test-env";
 import { describe, expect, it, vi } from "vitest";
 import { resolveNextcloudTalkRoomKind } from "./room-info.js";
 

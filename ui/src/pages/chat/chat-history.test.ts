@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { reduceSessionProjection } from "@openclaw/gateway-client/browser";
+import { reduceSessionProjection } from "@afora/gateway-client/browser";
 import { describe, expect, it, vi } from "vitest";
 import { GatewayRequestError, type GatewayBrowserClient } from "../../api/gateway.ts";
 import {
@@ -494,7 +494,7 @@ describe("canonical history snapshot projection", () => {
     return {
       role,
       content: [{ type: "text", text }],
-      ...(metadata ? { __openclaw: metadata } : {}),
+      ...(metadata ? { __afora: metadata } : {}),
     };
   }
 
@@ -841,7 +841,7 @@ describe("active-run commentary reconciliation", () => {
     expect(
       state.chatMessages.some(
         (message) =>
-          (message as { openclawStreamFallback?: { itemId?: unknown } }).openclawStreamFallback
+          (message as { aforaStreamFallback?: { itemId?: unknown } }).aforaStreamFallback
             ?.itemId === "preamble-live",
       ),
     ).toBe(true);

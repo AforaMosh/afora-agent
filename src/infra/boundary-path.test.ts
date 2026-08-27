@@ -20,7 +20,7 @@ describe("resolveRootPath", () => {
       return;
     }
 
-    await withTestDir({ prefix: "openclaw-boundary-path-" }, async (base) => {
+    await withTestDir({ prefix: "afora-boundary-path-" }, async (base) => {
       const root = path.join(base, "workspace");
       const targetDir = path.join(root, "target-dir");
       const linkPath = path.join(root, "alias");
@@ -47,7 +47,7 @@ describe("resolveRootPath", () => {
       return;
     }
 
-    await withTestDir({ prefix: "openclaw-boundary-path-" }, async (base) => {
+    await withTestDir({ prefix: "afora-boundary-path-" }, async (base) => {
       const root = path.join(base, "workspace");
       const outside = path.join(base, "outside");
       const linkPath = path.join(root, "alias-out");
@@ -78,7 +78,7 @@ describe("resolveRootPath", () => {
       return;
     }
 
-    await withTestDir({ prefix: "openclaw-boundary-path-" }, async (base) => {
+    await withTestDir({ prefix: "afora-boundary-path-" }, async (base) => {
       const root = path.join(base, "workspace");
       const outside = path.join(base, "outside");
       const outsideFile = path.join(outside, "target.txt");
@@ -114,7 +114,7 @@ describe("resolveRootPath", () => {
       return;
     }
 
-    await withTestDir({ prefix: "openclaw-boundary-path-" }, async (base) => {
+    await withTestDir({ prefix: "afora-boundary-path-" }, async (base) => {
       const root = path.join(base, "workspace");
       const aliasRoot = path.join(base, "workspace-alias");
       const fileName = "plugin.js";
@@ -145,7 +145,7 @@ describe("resolveRootPath", () => {
       return;
     }
 
-    await withTestDir({ prefix: "openclaw-boundary-path-fuzz-" }, async (base) => {
+    await withTestDir({ prefix: "afora-boundary-path-fuzz-" }, async (base) => {
       const root = path.join(base, "workspace");
       const outside = path.join(base, "outside");
       const safeTarget = path.join(root, "safe-target");

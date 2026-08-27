@@ -1,8 +1,8 @@
 import { randomInt } from "node:crypto";
-// Inference backend detection shared by onboarding bootstrap and OpenClaw setup.
+// Inference backend detection shared by onboarding bootstrap and Afora setup.
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { resolveAgentConfig } from "../agents/agent-scope-config.js";
 import {
   formatCliBackendVersionAdvisory,
@@ -17,7 +17,7 @@ import {
 import { resolveDefaultModelForAgent } from "../agents/model-selection.js";
 import { tryResolveLegacyCompatibilityAgentId } from "../config/legacy.default-agent-owner.js";
 import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { probeLocalCommand, type LocalCommandProbe } from "../system-agent/probes.js";
 import {
   CLAUDE_CLI_DEFAULT_MODEL_REF,
@@ -55,7 +55,7 @@ type DetectInferenceBackendsDeps = {
 };
 
 type DetectInferenceBackendsOptions = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   env?: NodeJS.ProcessEnv;
   platform?: NodeJS.Platform;

@@ -1,9 +1,9 @@
 /** Public installed-plugin-index API for load, refresh, policy hash, and invalidation checks. */
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { resolveCompatibilityHostVersion } from "../version.js";
 import { normalizePluginsConfig, resolveEffectivePluginActivationState } from "./config-state.js";
 import { isPluginEnabledByDefaultForPlatform } from "./default-enablement.js";
-import { discoverOpenClawPlugins, type PluginDiscoveryResult } from "./discovery.js";
+import { discoverAforaPlugins, type PluginDiscoveryResult } from "./discovery.js";
 import { normalizeInstallRecordMap } from "./installed-plugin-index-install-records.js";
 import {
   resolveCompatRegistryVersion,
@@ -63,7 +63,7 @@ function buildInstalledPluginIndex(
   const baseDiscovery = params.candidates
     ? { candidates: params.candidates, diagnostics: params.diagnostics ?? [] }
     : (params.discovery ??
-      discoverOpenClawPlugins({
+      discoverAforaPlugins({
         workspaceDir: params.workspaceDir,
         extraPaths: normalizePluginsConfig(params.config?.plugins).loadPaths,
         env,
@@ -160,7 +160,7 @@ export function getInstalledPluginRecord(
 export function isInstalledPluginEnabled(
   index: InstalledPluginIndex,
   pluginId: string,
-  config?: OpenClawConfig,
+  config?: AforaConfig,
 ): boolean {
   const record = getInstalledPluginRecord(index, pluginId);
   if (!record) {

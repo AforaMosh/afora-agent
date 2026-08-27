@@ -45,7 +45,7 @@ vi.mock("../../logging/subsystem.js", async (importOriginal) => {
 
 const BUILD = {
   bundleHash: "a".repeat(64),
-  openclawVersion: "2026.8.13",
+  aforaVersion: "2026.8.13",
   protocolFeatures: [...WORKER_PROTOCOL_FEATURES],
 };
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);

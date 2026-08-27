@@ -33,7 +33,7 @@ const TRUSTED_PROXY_HEADERS = {
 };
 
 function deviceIdentityPath(label: string): string {
-  return path.join(os.tmpdir(), `openclaw-${label}-${randomUUID()}.sqlite`);
+  return path.join(os.tmpdir(), `afora-${label}-${randomUUID()}.sqlite`);
 }
 
 async function configureGatewayAuth(
@@ -69,8 +69,8 @@ describe("gateway identity scope grants", () => {
     });
     const identityPath = deviceIdentityPath("identity-scope-device");
     const identity = loadOrCreateDeviceIdentity({ path: identityPath });
-    const configuredWorkspace = tempDirs.make("openclaw-identity-workspace-");
-    const outsideWorkspace = tempDirs.make("openclaw-identity-outside-");
+    const configuredWorkspace = tempDirs.make("afora-identity-workspace-");
+    const outsideWorkspace = tempDirs.make("afora-identity-outside-");
     testState.agentConfig = { workspace: configuredWorkspace };
 
     try {
@@ -201,7 +201,7 @@ describe("gateway identity scope grants", () => {
     await withGatewayServer(async ({ port }) => {
       const ws = await openWs(port, {
         ...TRUSTED_PROXY_HEADERS,
-        "x-openclaw-scopes": "operator.read",
+        "x-afora-scopes": "operator.read",
       });
       try {
         const connected = await connectReq(ws, {
@@ -253,7 +253,7 @@ describe("gateway identity scope grants", () => {
 
       const reconnectWs = await openWs(port, {
         ...TRUSTED_PROXY_HEADERS,
-        "x-openclaw-scopes": "operator.read",
+        "x-afora-scopes": "operator.read",
       });
       try {
         const reconnect = await connectReq(reconnectWs, {

@@ -3,9 +3,9 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import {
   findResumableIntroducedPluginRequirement,
   readClawResumeStateReadOnly,
@@ -14,11 +14,11 @@ import type { PersistedClawPackageRef } from "./provenance.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
-afterEach(() => closeOpenClawStateDatabaseForTest());
+afterEach(() => closeAforaStateDatabaseForTest());
 
 /** Reproduces a current-main same-version database that predates the additive columns. */
-function createBaseShapeClawState(env: { OPENCLAW_STATE_DIR: string }): string {
-  const database = openOpenClawStateDatabase({ env });
+function createBaseShapeClawState(env: { AFORA_STATE_DIR: string }): string {
+  const database = openAforaStateDatabase({ env });
   const databasePath = database.path;
   database.db.exec(`
     INSERT INTO claw_installs (
@@ -27,7 +27,7 @@ function createBaseShapeClawState(env: { OPENCLAW_STATE_DIR: string }): string {
       plan_integrity, workspace, agent_config_digest, agent_owned_paths_json, status,
       added_at_ms, updated_at_ms
     ) VALUES (
-      'incident-2', 'openclaw.clawInstallRecord.v1', 'package', 'incident-claw', '1.0.0',
+      'incident-2', 'afora.clawInstallRecord.v1', 'package', 'incident-claw', '1.0.0',
       '/packages/incident', '/packages/incident/CLAW.md', 'artifact', 'sha256:aa', 10, 1,
       'sha256:bb', '/workspaces/incident', 'sha256:cc', '[]', 'config_committed', 1000, 2000
     );
@@ -38,7 +38,7 @@ function createBaseShapeClawState(env: { OPENCLAW_STATE_DIR: string }): string {
     ) VALUES (
       'incident-2', 'plugin', 'clawhub', '@owner/audit', '2.0.1',
       'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      'openclaw.clawPackageRef.v1', 'incident-claw', 'complete', 'referenced',
+      'afora.clawPackageRef.v1', 'incident-claw', 'complete', 'referenced',
       'claw-introduced', 0, 1000, 2000
     );
     ALTER TABLE claw_installs DROP COLUMN bootstrap_source_path;
@@ -50,7 +50,7 @@ function createBaseShapeClawState(env: { OPENCLAW_STATE_DIR: string }): string {
     ALTER TABLE claw_package_refs DROP COLUMN extension_unavailable_json;
     ALTER TABLE claw_package_refs DROP COLUMN extension_adapter_identity;
   `);
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   return databasePath;
 }
 
@@ -70,10 +70,10 @@ const preflight = {
   detectedFormat: "claude" as const,
   mapped: ["commands", "skills"],
   unavailable: ["agents"],
-  adapterIdentity: "openclaw/v1",
+  adapterIdentity: "afora-agent/v1",
 };
 const ref: PersistedClawPackageRef = {
-  schemaVersion: "openclaw.clawPackageRef.v1",
+  schemaVersion: "afora.clawPackageRef.v1",
   agentId: "incident-2",
   clawName: "incident-claw",
   ...pkg,
@@ -88,7 +88,7 @@ const ref: PersistedClawPackageRef = {
     detectedFormat: "claude",
     mapped: ["commands", "skills"],
     unavailable: ["agents"],
-    adapterIdentity: "openclaw/v1",
+    adapterIdentity: "afora-agent/v1",
   },
   installedAtMs: 1_000,
   updatedAtMs: 2_000,
@@ -136,7 +136,7 @@ describe("findResumableIntroducedPluginRequirement", () => {
     ).toBeUndefined();
   });
   it("does not create a state database while checking for a resumable preview", async () => {
-    const databasePath = join(tempDirs.make("openclaw-claw-resume-"), "missing.sqlite");
+    const databasePath = join(tempDirs.make("afora-claw-resume-"), "missing.sqlite");
 
     await expect(
       readClawResumeStateReadOnly("incident-2", { path: databasePath }),
@@ -145,7 +145,7 @@ describe("findResumableIntroducedPluginRequirement", () => {
   });
 
   it("previews a same-version base-shape database without mutating it", async () => {
-    const env = { OPENCLAW_STATE_DIR: tempDirs.make("openclaw-claw-resume-base-") };
+    const env = { AFORA_STATE_DIR: tempDirs.make("afora-claw-resume-base-") };
     const databasePath = createBaseShapeClawState(env);
     const before = await readFile(databasePath);
 

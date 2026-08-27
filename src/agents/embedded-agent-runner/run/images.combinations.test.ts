@@ -52,7 +52,7 @@ describe("hydration combination matrix", () => {
   it.each(HYDRATION_COMBINATIONS)(
     "$name preserves materialization, order, and suppression invariants",
     async (testCase: HydrationCombination) => {
-      const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-hydration-matrix-"));
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-hydration-matrix-"));
       const has = (part: HydrationPart) => testCase.parts.includes(part);
       const inlineBuffer = createSolidPngBuffer(1, 1, { r: 255, g: 0, b: 0 });
       const offloadedBuffer = createSolidPngBuffer(1, 1, { r: 0, g: 255, b: 0 });

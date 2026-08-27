@@ -1,8 +1,8 @@
 // Imessage plugin module implements actions behavior.
 import { basename, parse, win32 } from "node:path";
-import { sanitizeUntrustedFileName } from "openclaw/plugin-sdk/security-runtime";
-import { resolvePreferredOpenClawTmpDir, withTempWorkspace } from "openclaw/plugin-sdk/temp-path";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { sanitizeUntrustedFileName } from "afora-agent/plugin-sdk/security-runtime";
+import { resolvePreferredAforaTmpDir, withTempWorkspace } from "afora-agent/plugin-sdk/temp-path";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { resolveIMessageActionChatGuid } from "./actions-chat-guid.js";
 import {
   type IMessageActionTransportOptions,
@@ -90,7 +90,7 @@ function resolveMessageId(result: Record<string, unknown>): string {
 
 async function withTempFile<T>(input: TempFileInput, fn: (path: string) => Promise<T>): Promise<T> {
   return await withTempWorkspace(
-    { rootDir: resolvePreferredOpenClawTmpDir(), prefix: "openclaw-imessage-" },
+    { rootDir: resolvePreferredAforaTmpDir(), prefix: "afora-imessage-" },
     async (workspace) => {
       const safeFilename = sanitizeUntrustedFileName(input.filename, "upload.bin");
       const { name, ext: safeExtension } = parse(safeFilename);
@@ -256,7 +256,7 @@ export const imessageActionsRuntime = {
     // — this runtime intentionally does not accept a raw filesystem path,
     // because that would let an attacker-controlled path bypass the
     // resolver and let imsg send any host-readable file. Requires an imsg
-    // local build that accepts `send-rich --file` (openclaw/imsg#114). Remote
+    // local build that accepts `send-rich --file` (afora/imsg#114). Remote
     // accounts route the same payload through the exact `send` RPC contract.
     attachment?: { kind: "buffer"; buffer: Uint8Array; filename: string };
     options: IMessageBridgeActionOptions;

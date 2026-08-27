@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 
-export const BROWSER_RELAY_AUTH_LABEL = "openclaw.browser-relay.auth" as const;
+export const BROWSER_RELAY_AUTH_LABEL = "afora.browser-relay.auth" as const;
 export const BROWSER_RELAY_AUTH_VERSION = 2 as const;
 
 const KEY_HEX_PATTERN = /^[0-9a-f]{64}$/u;

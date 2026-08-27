@@ -1,16 +1,16 @@
 // Memory Wiki tests cover agent-scoped vault isolation through the public tools.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { createPluginRuntimeMock } from "openclaw/plugin-sdk/channel-test-helpers";
+import { createPluginRuntimeMock } from "afora-agent/plugin-sdk/channel-test-helpers";
 import {
   clearMemoryPluginState,
   registerMemoryCorpusSupplement,
-} from "openclaw/plugin-sdk/memory-host-core";
-import type { AnyAgentTool, OpenClawPluginToolFactory } from "openclaw/plugin-sdk/plugin-entry";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+} from "afora-agent/plugin-sdk/memory-host-core";
+import type { AnyAgentTool, AforaPluginToolFactory } from "afora-agent/plugin-sdk/plugin-entry";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import { describe, expect, it } from "vitest";
 import memoryCorePlugin from "../../memory-core/index.js";
-import type { OpenClawConfig } from "../api.js";
+import type { AforaConfig } from "../api.js";
 import {
   resolveMemoryWikiAgentConfig,
   resolveMemoryWikiConfig,
@@ -34,9 +34,9 @@ function textContent(result: { content: Array<{ type: string; text?: string }> }
 }
 
 function registerMemoryCoreToolFactories(
-  appConfig: OpenClawConfig,
-): Map<string, OpenClawPluginToolFactory> {
-  const factories = new Map<string, OpenClawPluginToolFactory>();
+  appConfig: AforaConfig,
+): Map<string, AforaPluginToolFactory> {
+  const factories = new Map<string, AforaPluginToolFactory>();
   memoryCorePlugin.register(
     createTestPluginApi({
       id: "memory-core",
@@ -56,9 +56,9 @@ function registerMemoryCoreToolFactories(
 }
 
 function createMemoryCoreTool(params: {
-  factories: Map<string, OpenClawPluginToolFactory>;
+  factories: Map<string, AforaPluginToolFactory>;
   name: "memory_search" | "memory_get";
-  appConfig: OpenClawConfig;
+  appConfig: AforaConfig;
   agentId: string;
 }): AnyAgentTool {
   const factory = params.factories.get(params.name);
@@ -87,7 +87,7 @@ describe("agent-scoped memory-wiki tools", () => {
       agents: {
         list: [{ id: "support", default: true }, { id: "marketing" }],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const baseConfig = resolveMemoryWikiConfig({
       vault: { scope: "agent", path: vaultParent },
       search: { backend: "local", corpus: "wiki" },

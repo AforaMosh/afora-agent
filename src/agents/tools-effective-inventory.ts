@@ -6,17 +6,17 @@
 import {
   findNormalizedProviderValue,
   normalizeProviderId,
-} from "@openclaw/model-catalog-core/provider-id";
+} from "@afora/model-catalog-core/provider-id";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/config.js";
+} from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/config.js";
 import { extractModelCompat } from "../plugins/provider-model-compat.js";
 import type { ProviderRuntimeModel } from "../plugins/provider-runtime-model.types.js";
 import { normalizeProviderTransportWithPlugin } from "../plugins/provider-runtime.js";
 import { resolveAgentDir, resolveAgentWorkspaceDir, resolveSessionAgentId } from "./agent-scope.js";
-import { createOpenClawCodingTools } from "./agent-tools.js";
+import { createAforaCodingTools } from "./agent-tools.js";
 import { resolveEffectiveToolPolicy } from "./agent-tools.policy.js";
 import { resolveModel, resolveModelAsync } from "./embedded-agent-runner/model.js";
 import { resolveBundledStaticCatalogModel } from "./embedded-agent-runner/model.static-catalog.js";
@@ -47,16 +47,16 @@ function policyDeniesTool(policy: { deny?: string[] } | undefined, toolName: str
   return (
     listIncludesTool(policy?.deny, toolName) ||
     listIncludesTool(policy?.deny, "group:ui") ||
-    listIncludesTool(policy?.deny, "group:openclaw")
+    listIncludesTool(policy?.deny, "group:afora")
   );
 }
 
-function hasExplicitBrowserIntent(cfg: OpenClawConfig): boolean {
+function hasExplicitBrowserIntent(cfg: AforaConfig): boolean {
   return cfg.browser?.enabled !== false && Boolean(cfg.browser || cfg.plugins?.entries?.browser);
 }
 
 function buildToolInventoryNotices(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   profile: string;
   entries: EffectiveToolInventoryEntry[];
   effectivePolicy: ReturnType<typeof resolveEffectiveToolPolicy>;
@@ -115,7 +115,7 @@ function buildToolInventoryNotices(params: {
 }
 
 function applyProviderTransportNormalization(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: string;
   workspaceDir?: string;
   runtimeModel: ProviderRuntimeModel;
@@ -157,7 +157,7 @@ function resolveConfiguredFallbackApi(
 }
 
 function resolveDynamicRuntimeModelContext(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
   agentDir?: string;
   workspaceDir?: string;
@@ -179,7 +179,7 @@ function resolveDynamicRuntimeModelContext(params: {
 
 /** Resolves the runtime model metadata needed to filter model-compatible tools. */
 function resolveEffectiveToolInventoryRuntimeModelContext(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
   agentDir?: string;
   workspaceDir?: string;
@@ -310,7 +310,7 @@ export async function resolveEffectiveToolInventoryRuntimeModelContextAsync(
 
 /** Resolves compatibility metadata explicitly configured for a provider/model pair. */
 export function resolveConfiguredModelCompat(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   modelProvider?: string;
   modelId?: string;
 }) {
@@ -366,7 +366,7 @@ export function resolveEffectiveToolInventory(
     modelId: params.modelId,
   });
 
-  const effectiveTools = createOpenClawCodingTools({
+  const effectiveTools = createAforaCodingTools({
     agentId,
     sessionKey: params.sessionKey,
     workspaceDir,

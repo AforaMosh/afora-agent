@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { OpenClawSchema } from "../../config/zod-schema.js";
+import { AforaSchema } from "../../config/zod-schema.js";
 
 const mocks = vi.hoisted(() => ({
   configPath: "",
@@ -45,8 +45,8 @@ describe("ensureDevGatewayConfig", () => {
   let tempDir = "";
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(path.join(os.tmpdir(), "openclaw-dev-config-"));
-    mocks.configPath = path.join(tempDir, "openclaw.json");
+    tempDir = await mkdtemp(path.join(os.tmpdir(), "afora-dev-config-"));
+    mocks.configPath = path.join(tempDir, "afora.json");
     mocks.workspace = path.join(tempDir, "workspace");
     mocks.nextConfig = undefined;
     mocks.writeOptions = undefined;
@@ -79,7 +79,7 @@ describe("ensureDevGatewayConfig", () => {
         },
       },
     });
-    expect(OpenClawSchema.safeParse(mocks.nextConfig).success).toBe(true);
+    expect(AforaSchema.safeParse(mocks.nextConfig).success).toBe(true);
     expect(mocks.writeOptions).toEqual({ allowedAgentRosterRemovals: ["main"] });
   });
 });

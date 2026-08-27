@@ -13,23 +13,23 @@ describe("widget-card", () => {
       surface: "assistant_message",
       render: "url",
       viewId: "cv_surface_lease_one",
-      url: "/__openclaw__/canvas/documents/cv_surface_lease_one/index.html",
+      url: "/__afora__/canvas/documents/cv_surface_lease_one/index.html",
       sandbox: "scripts",
     } as const;
     const host = document.createElement("div");
     render(
       renderToolPreview(firstPreview, "chat_message", {
-        canvasPluginSurfaceUrl: "https://canvas.test/__openclaw__/cap/one",
+        canvasPluginSurfaceUrl: "https://canvas.test/__afora__/cap/one",
       }),
       host,
     );
     const originalFrame = host.querySelector<HTMLIFrameElement>("iframe");
     const originalSrc = originalFrame?.getAttribute("src");
-    expect(originalSrc).toContain("/__openclaw__/cap/one/");
+    expect(originalSrc).toContain("/__afora__/cap/one/");
 
     render(
       renderToolPreview(firstPreview, "chat_message", {
-        canvasPluginSurfaceUrl: "https://canvas.test/__openclaw__/cap/two",
+        canvasPluginSurfaceUrl: "https://canvas.test/__afora__/cap/two",
       }),
       host,
     );
@@ -39,23 +39,23 @@ describe("widget-card", () => {
     render(nothing, host);
     render(
       renderToolPreview(firstPreview, "chat_message", {
-        canvasPluginSurfaceUrl: "https://canvas.test/__openclaw__/cap/two",
+        canvasPluginSurfaceUrl: "https://canvas.test/__afora__/cap/two",
       }),
       host,
     );
     const remountedFrame = host.querySelector("iframe");
     expect(remountedFrame).not.toBe(originalFrame);
-    expect(remountedFrame?.getAttribute("src")).toContain("/__openclaw__/cap/two/");
+    expect(remountedFrame?.getAttribute("src")).toContain("/__afora__/cap/two/");
 
     bumpCanvasWidgetFrameConnectionGeneration();
     render(
       renderToolPreview(firstPreview, "chat_message", {
-        canvasPluginSurfaceUrl: "https://canvas.test/__openclaw__/cap/three",
+        canvasPluginSurfaceUrl: "https://canvas.test/__afora__/cap/three",
       }),
       host,
     );
     expect(host.querySelector("iframe")).not.toBe(remountedFrame);
-    expect(host.querySelector("iframe")?.getAttribute("src")).toContain("/__openclaw__/cap/three/");
+    expect(host.querySelector("iframe")?.getAttribute("src")).toContain("/__afora__/cap/three/");
   });
 
   it("keeps a short reported frame height across a capability rotation", () => {
@@ -64,14 +64,14 @@ describe("widget-card", () => {
       surface: "assistant_message",
       render: "url",
       viewId: "cv_surface_lease_height",
-      url: "/__openclaw__/canvas/documents/cv_surface_lease_height/index.html",
+      url: "/__afora__/canvas/documents/cv_surface_lease_height/index.html",
       sandbox: "scripts",
     } as const;
     const host = document.createElement("div");
     document.body.append(host);
     render(
       renderToolPreview(preview, "chat_message", {
-        canvasPluginSurfaceUrl: "https://canvas.test/__openclaw__/cap/one",
+        canvasPluginSurfaceUrl: "https://canvas.test/__afora__/cap/one",
       }),
       host,
     );
@@ -79,7 +79,7 @@ describe("widget-card", () => {
     frame?.dispatchEvent(new Event("load"));
     window.dispatchEvent(
       new MessageEvent("message", {
-        data: { type: "openclaw:widget-size", height: 48 },
+        data: { type: "afora:widget-size", height: 48 },
         source: frame?.contentWindow,
       }),
     );
@@ -89,7 +89,7 @@ describe("widget-card", () => {
     // remembered height; only then can a later rotation clear it.
     render(
       renderToolPreview(preview, "chat_message", {
-        canvasPluginSurfaceUrl: "https://canvas.test/__openclaw__/cap/one",
+        canvasPluginSurfaceUrl: "https://canvas.test/__afora__/cap/one",
       }),
       host,
     );
@@ -100,7 +100,7 @@ describe("widget-card", () => {
     // default until the widget content happened to resize.
     render(
       renderToolPreview(preview, "chat_message", {
-        canvasPluginSurfaceUrl: "https://canvas.test/__openclaw__/cap/two",
+        canvasPluginSurfaceUrl: "https://canvas.test/__afora__/cap/two",
       }),
       host,
     );
@@ -115,18 +115,18 @@ describe("widget-card", () => {
       surface: "assistant_message",
       render: "url",
       viewId: "cv_surface_lease_mounted",
-      url: "/__openclaw__/canvas/documents/cv_surface_lease_mounted/index.html",
+      url: "/__afora__/canvas/documents/cv_surface_lease_mounted/index.html",
       sandbox: "scripts",
     } as const;
     const mountedHost = document.createElement("div");
     render(
       renderToolPreview(preview, "chat_message", {
-        canvasPluginSurfaceUrl: "https://canvas.test/__openclaw__/cap/one",
+        canvasPluginSurfaceUrl: "https://canvas.test/__afora__/cap/one",
       }),
       mountedHost,
     );
     expect(mountedHost.querySelector("iframe")?.getAttribute("src")).toContain(
-      "/__openclaw__/cap/one/",
+      "/__afora__/cap/one/",
     );
 
     // The renewal that fixes expired widgets only helps if a widget created
@@ -138,15 +138,15 @@ describe("widget-card", () => {
         {
           ...preview,
           viewId: "cv_surface_lease_rotated",
-          url: "/__openclaw__/canvas/documents/cv_surface_lease_rotated/index.html",
+          url: "/__afora__/canvas/documents/cv_surface_lease_rotated/index.html",
         },
         "chat_message",
-        { canvasPluginSurfaceUrl: "https://canvas.test/__openclaw__/cap/two" },
+        { canvasPluginSurfaceUrl: "https://canvas.test/__afora__/cap/two" },
       ),
       rotatedHost,
     );
     expect(rotatedHost.querySelector("iframe")?.getAttribute("src")).toContain(
-      "/__openclaw__/cap/two/",
+      "/__afora__/cap/two/",
     );
   });
 
@@ -177,7 +177,7 @@ describe("widget-card", () => {
           kind: "canvas",
           surface: "assistant_message",
           render: "url",
-          url: "/__openclaw__/canvas/documents/cv_dispatch/index.html",
+          url: "/__afora__/canvas/documents/cv_dispatch/index.html",
           preferredHeight: 320,
         },
         "chat_message",
@@ -245,7 +245,7 @@ describe("widget-card", () => {
           render: "url",
           title: "Release status",
           viewId: " cv_release ",
-          url: "/__openclaw__/canvas/documents/cv_release/index.html",
+          url: "/__afora__/canvas/documents/cv_release/index.html",
           sandbox: "scripts",
         },
         "chat_message",
@@ -289,7 +289,7 @@ describe("widget-card", () => {
           render: "url",
           viewId: "cv_release",
           boardWidgetName: "release-status",
-          url: "/__openclaw__/canvas/documents/cv_release/index.html",
+          url: "/__afora__/canvas/documents/cv_release/index.html",
           sandbox: "scripts",
         },
         "chat_message",
@@ -326,7 +326,7 @@ describe("widget-card", () => {
           surface: "assistant_message",
           render: "url",
           viewId: "cv_expected",
-          url: "/__openclaw__/canvas/documents/cv_other/index.html",
+          url: "/__afora__/canvas/documents/cv_other/index.html",
           sandbox: "scripts",
         },
         "chat_message",
@@ -344,7 +344,7 @@ describe("widget-card", () => {
           surface: "assistant_message",
           render: "url",
           viewId: "cv_strict",
-          url: "/__openclaw__/canvas/documents/cv_strict/index.html",
+          url: "/__afora__/canvas/documents/cv_strict/index.html",
           sandbox: "strict",
         },
         "chat_message",
@@ -452,7 +452,7 @@ describe("widget-card presentation", () => {
     render: "url",
     title: "Clock",
     viewId: "cv_clock",
-    url: "/__openclaw__/canvas/documents/cv_clock/index.html",
+    url: "/__afora__/canvas/documents/cv_clock/index.html",
     sandbox: "scripts",
   } as const;
 

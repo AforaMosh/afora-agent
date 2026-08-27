@@ -3,7 +3,7 @@
  *
  * Runs the configured runtime provider and returns normalized cached search results.
  */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { assertSecretOwnerAvailable } from "../../secrets/runtime-degraded-state.js";
 import { runtimeWebSecretOwnerId } from "../../secrets/runtime-web-secret-owner.js";
 import type { RuntimeWebSearchMetadata } from "../../secrets/runtime-web-tools.types.js";
@@ -76,14 +76,14 @@ const WebSearchSchema = {
   },
 } satisfies Record<string, unknown>;
 
-function isWebSearchDisabled(config?: OpenClawConfig): boolean {
+function isWebSearchDisabled(config?: AforaConfig): boolean {
   const search = config?.tools?.web?.search;
   return Boolean(search && typeof search === "object" && search.enabled === false);
 }
 
 /** Creates the `web_search` tool, or `null` when web search is disabled by config. */
 export function createWebSearchTool(options?: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   enabled?: boolean;
   agentDir?: string;
   sandboxed?: boolean;

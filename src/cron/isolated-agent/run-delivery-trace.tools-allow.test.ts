@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { createCronToolsAllowPreflightDiagnostics } from "./run-delivery-trace.js";
 
 const cfg = {
@@ -8,7 +8,7 @@ const cfg = {
       notes: { transport: "stdio", command: "notes-mcp" },
     },
   },
-} as OpenClawConfig;
+} as AforaConfig;
 
 describe("configured MCP inherited-cap diagnostics", () => {
   it("persists an actionable warning for legacy Codex default caps", async () => {
@@ -31,7 +31,7 @@ describe("configured MCP inherited-cap diagnostics", () => {
       source: "cron-preflight",
       severity: "warn",
     });
-    expect(diagnostics?.summary).toContain("openclaw automations edit job-1 --tools <tool,...>");
+    expect(diagnostics?.summary).toContain("afora automations edit job-1 --tools <tool,...>");
   });
 
   it("does not warn after final executable-surface capture", async () => {
@@ -65,7 +65,7 @@ describe("configured MCP inherited-cap diagnostics", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const base = {
       cfg: agentScopedCfg,
       jobId: "job-agent-scope",

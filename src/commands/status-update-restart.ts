@@ -45,18 +45,18 @@ export function formatUpdateRestartStatusValue(
 
   if (payload.status === "error") {
     return warn(
-      `failed · ${reason ?? "restart failed"} · run openclaw gateway status --deep${age}`,
+      `failed · ${reason ?? "restart failed"} · run afora gateway status --deep${age}`,
     );
   }
 
   if (payload.status === "skipped") {
     if (reason === CONTROL_PLANE_UPDATE_HANDOFF_STARTED_REASON) {
       // Handoff already started in the control plane; gateway restart should not be duplicated.
-      return warn(`handoff running · gateway restart pending · run openclaw update status${age}`);
+      return warn(`handoff running · gateway restart pending · run afora update status${age}`);
     }
     if (reason === CONTROL_PLANE_UPDATE_RESTART_HEALTH_PENDING_REASON) {
       // Restart completed enough to defer, but health proof still needs a deep gateway check.
-      return warn(`restart pending health verification · run openclaw gateway status --deep${age}`);
+      return warn(`restart pending health verification · run afora gateway status --deep${age}`);
     }
     return muted(`skipped · ${reason ?? "restart skipped"}${age}`);
   }
@@ -74,8 +74,8 @@ export function formatUpdateRestartActionLines(
   }
   if (payload.status === "error") {
     return [
-      "Update restart failed; run openclaw gateway status --deep.",
-      "If the service is down, run openclaw gateway restart or openclaw gateway install --force.",
+      "Update restart failed; run afora gateway status --deep.",
+      "If the service is down, run afora gateway restart or afora gateway install --force.",
     ];
   }
   const reason = readReason(payload);
@@ -85,8 +85,8 @@ export function formatUpdateRestartActionLines(
       reason === CONTROL_PLANE_UPDATE_RESTART_HEALTH_PENDING_REASON)
   ) {
     return [
-      "Update restart is still pending; run openclaw update status --json for handoff state.",
-      "If it stays pending, run openclaw gateway status --deep.",
+      "Update restart is still pending; run afora update status --json for handoff state.",
+      "If it stays pending, run afora gateway status --deep.",
     ];
   }
   return [];

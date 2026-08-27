@@ -16,8 +16,8 @@ import {
 } from "./process/respawn-child-runner.js";
 
 const EXPERIMENTAL_WARNING_FLAG = "--disable-warning=ExperimentalWarning";
-const OPENCLAW_NODE_OPTIONS_READY = "OPENCLAW_NODE_OPTIONS_READY";
-const OPENCLAW_NODE_EXTRA_CA_CERTS_READY = "OPENCLAW_NODE_EXTRA_CA_CERTS_READY";
+const AFORA_NODE_OPTIONS_READY = "AFORA_NODE_OPTIONS_READY";
+const AFORA_NODE_EXTRA_CA_CERTS_READY = "AFORA_NODE_EXTRA_CA_CERTS_READY";
 const WINDOWS_STACK_SIZE_FLAG = "--stack-size=8192";
 
 type CliRespawnPlan = {
@@ -92,7 +92,7 @@ export function buildCliRespawnPlan(
 
   if (
     shouldSkipStartupEnvironmentRespawnForArgv(normalizedArgv, platform) ||
-    isTruthyEnvValue(env.OPENCLAW_NO_RESPAWN)
+    isTruthyEnvValue(env.AFORA_NO_RESPAWN)
   ) {
     return null;
   }
@@ -128,20 +128,20 @@ export function buildCliRespawnPlan(
     }).NODE_EXTRA_CA_CERTS;
   if (
     autoNodeExtraCaCerts &&
-    !isTruthyEnvValue(env[OPENCLAW_NODE_EXTRA_CA_CERTS_READY]) &&
+    !isTruthyEnvValue(env[AFORA_NODE_EXTRA_CA_CERTS_READY]) &&
     !env.NODE_EXTRA_CA_CERTS
   ) {
     childEnv.NODE_EXTRA_CA_CERTS = autoNodeExtraCaCerts;
-    childEnv[OPENCLAW_NODE_EXTRA_CA_CERTS_READY] = "1";
+    childEnv[AFORA_NODE_EXTRA_CA_CERTS_READY] = "1";
     needsRespawn = true;
   }
 
   if (
     !shouldSkipRespawnForArgv(argv, platform) &&
-    !isTruthyEnvValue(env[OPENCLAW_NODE_OPTIONS_READY]) &&
+    !isTruthyEnvValue(env[AFORA_NODE_OPTIONS_READY]) &&
     !hasExperimentalWarningSuppressed({ env, execArgv })
   ) {
-    childEnv[OPENCLAW_NODE_OPTIONS_READY] = "1";
+    childEnv[AFORA_NODE_OPTIONS_READY] = "1";
     childExecArgv.unshift(EXPERIMENTAL_WARNING_FLAG);
     needsRespawn = true;
   }
@@ -177,7 +177,7 @@ export function runCliRespawnPlan(
     runtime: resolvedRuntime,
     onError: (error) => {
       resolvedRuntime.writeError(
-        "[openclaw] Failed to respawn CLI:",
+        "[afora] Failed to respawn CLI:",
         error instanceof Error ? (error.stack ?? error.message) : error,
       );
     },

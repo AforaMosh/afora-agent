@@ -3,7 +3,7 @@ import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 import type { GatewayNativeApprovalRuntime } from "./approval-gateway-runtime.types.js";
 
 const APPROVAL_GATEWAY_RUNTIME_SCOPE_KEY: unique symbol = Symbol.for(
-  "openclaw.approvalGatewayRuntimeScope",
+  "afora.approvalGatewayRuntimeScope",
 );
 const approvalGatewayRuntimeScope = resolveGlobalSingleton<
   AsyncLocalStorage<GatewayNativeApprovalRuntime>

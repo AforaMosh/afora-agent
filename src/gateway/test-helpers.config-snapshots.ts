@@ -1,7 +1,7 @@
 // Gateway config snapshot test helpers.
 // Builds config snapshots for mocked config module state.
 import crypto from "node:crypto";
-import type { ConfigFileSnapshot, OpenClawConfig } from "../config/types.js";
+import type { ConfigFileSnapshot, AforaConfig } from "../config/types.js";
 
 function hashConfigRaw(raw: string | null): string {
   return crypto
@@ -17,7 +17,7 @@ export function buildTestConfigSnapshot(params: {
   raw: string | null;
   parsed: unknown;
   valid: boolean;
-  config: OpenClawConfig;
+  config: AforaConfig;
   issues: ConfigFileSnapshot["issues"];
   warnings?: ConfigFileSnapshot["warnings"];
   legacyIssues: ConfigFileSnapshot["legacyIssues"];

@@ -4,11 +4,11 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$ROOT_DIR/scripts/lib/docker-e2e-image.sh"
 
-IMAGE_NAME="$(docker_e2e_resolve_image "openclaw-docker-e2e-functional:local")"
-PACKAGE_TGZ="$(docker_e2e_prepare_package_tgz compose-setup "${OPENCLAW_CURRENT_PACKAGE_TGZ:-}")"
-IDENTITY_PATH="${OPENCLAW_DOCKER_ARTIFACT_IDENTITY_PATH:-$ROOT_DIR/.artifacts/docker-tests/compose-setup-identities.json}"
-PROJECT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/openclaw-compose-proof.XXXXXX")"
-PROJECT_NAME="openclaw-compose-proof-$$"
+IMAGE_NAME="$(docker_e2e_resolve_image "afora-docker-e2e-functional:local")"
+PACKAGE_TGZ="$(docker_e2e_prepare_package_tgz compose-setup "${AFORA_CURRENT_PACKAGE_TGZ:-}")"
+IDENTITY_PATH="${AFORA_DOCKER_ARTIFACT_IDENTITY_PATH:-$ROOT_DIR/.artifacts/docker-tests/compose-setup-identities.json}"
+PROJECT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/afora-compose-proof.XXXXXX")"
+PROJECT_NAME="afora-compose-proof-$$"
 CLI_NAME="$PROJECT_NAME-cli-proof"
 TOKEN="compose-proof-$$-$(date +%s)"
 WRONG_TOKEN="$TOKEN-wrong"
@@ -79,7 +79,7 @@ const inspectPath = process.argv[4];
 const payload = JSON.parse(fs.readFileSync(inspectPath, "utf8"));
 const actual =
   kind === "compose"
-    ? payload?.services?.["openclaw-gateway"]?.healthcheck?.test
+    ? payload?.services?.["afora-gateway"]?.healthcheck?.test
     : payload?.[0]?.Config?.Healthcheck?.Test;
 const expected = ["CMD", "node", "dist/docker-healthcheck.js"];
 if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -105,14 +105,14 @@ wait_for_gateway_health() {
   done
   echo "Gateway health did not reach $expected (last state: $health)" >&2
   docker inspect --format '{{json .State.Health}}' "$GATEWAY_ID" >&2 || true
-  "${COMPOSE[@]}" logs --no-color openclaw-gateway >&2 || true
+  "${COMPOSE[@]}" logs --no-color afora-gateway >&2 || true
   return 1
 }
 
 assert_probe_endpoints() {
   local label="$1"
   local output_path="$2"
-  "${COMPOSE[@]}" exec -T openclaw-gateway node - "$label" >"$output_path" <<'NODE'
+  "${COMPOSE[@]}" exec -T afora-gateway node - "$label" >"$output_path" <<'NODE'
 const label = process.argv[2];
 const readJson = async (path) => {
   const response = await fetch(`http://127.0.0.1:18789${path}`);
@@ -191,7 +191,7 @@ NODE
 
 mkdir -p "$PROJECT_DIR/config/workspace" "$PROJECT_DIR/auth-profile"
 chmod -R 0777 "$PROJECT_DIR/config" "$PROJECT_DIR/auth-profile"
-cat >"$PROJECT_DIR/config/openclaw.json" <<EOF
+cat >"$PROJECT_DIR/config/afora.json" <<EOF
 {
   "gateway": {
     "mode": "local",
@@ -202,7 +202,7 @@ cat >"$PROJECT_DIR/config/openclaw.json" <<EOF
 EOF
 cat >"$HEALTH_OVERRIDE_PATH" <<'EOF'
 services:
-  openclaw-gateway:
+  afora-gateway:
     healthcheck:
       interval: 1s
       timeout: 5s
@@ -210,16 +210,16 @@ services:
       start_period: 5s
 EOF
 
-export OPENCLAW_IMAGE="$IMAGE_NAME"
-export OPENCLAW_CONFIG_DIR="$PROJECT_DIR/config"
-export OPENCLAW_WORKSPACE_DIR="$PROJECT_DIR/config/workspace"
-export OPENCLAW_AUTH_PROFILE_SECRET_DIR="$PROJECT_DIR/auth-profile"
-export OPENCLAW_GATEWAY_TOKEN="$TOKEN"
-export OPENCLAW_GATEWAY_PORT=0
-export OPENCLAW_BRIDGE_PORT=0
-export OPENCLAW_MSTEAMS_PORT=0
-export OPENCLAW_DISABLE_BONJOUR=1
-export OPENCLAW_CURRENT_PACKAGE_TGZ="$PACKAGE_TGZ"
+export AFORA_IMAGE="$IMAGE_NAME"
+export AFORA_CONFIG_DIR="$PROJECT_DIR/config"
+export AFORA_WORKSPACE_DIR="$PROJECT_DIR/config/workspace"
+export AFORA_AUTH_PROFILE_SECRET_DIR="$PROJECT_DIR/auth-profile"
+export AFORA_GATEWAY_TOKEN="$TOKEN"
+export AFORA_GATEWAY_PORT=0
+export AFORA_BRIDGE_PORT=0
+export AFORA_MSTEAMS_PORT=0
+export AFORA_DISABLE_BONJOUR=1
+export AFORA_CURRENT_PACKAGE_TGZ="$PACKAGE_TGZ"
 
 docker_e2e_build_or_reuse "$IMAGE_NAME" compose-setup "$ROOT_DIR/scripts/e2e/Dockerfile" "$ROOT_DIR" functional
 
@@ -228,10 +228,10 @@ assert_dockerfile_healthcheck
 assert_effective_healthcheck "resolved Compose service" compose "$PROJECT_DIR/compose-config.json"
 
 echo "Launching documented Docker Compose gateway topology..."
-"${COMPOSE[@]}" up -d --no-build openclaw-gateway
-GATEWAY_ID="$("${COMPOSE[@]}" ps -q openclaw-gateway)"
+"${COMPOSE[@]}" up -d --no-build afora-gateway
+GATEWAY_ID="$("${COMPOSE[@]}" ps -q afora-gateway)"
 if [ -z "$GATEWAY_ID" ]; then
-  echo "Compose did not create openclaw-gateway" >&2
+  echo "Compose did not create afora-gateway" >&2
   exit 1
 fi
 docker inspect "$GATEWAY_ID" >"$PROJECT_DIR/gateway-container.json"
@@ -242,22 +242,22 @@ docker inspect --format '{{json .State.Health}}' "$GATEWAY_ID" >"$PROJECT_DIR/he
 assert_health_state "initial healthy state" healthy "$PROJECT_DIR/health-initial.json"
 assert_probe_endpoints "initial probes" "$PROJECT_DIR/probes-initial.json"
 
-"${COMPOSE[@]}" exec -T openclaw-gateway sh -lc 'node dist/index.js gateway health --token "$OPENCLAW_GATEWAY_TOKEN"'
+"${COMPOSE[@]}" exec -T afora-gateway sh -lc 'node dist/index.js gateway health --token "$AFORA_GATEWAY_TOKEN"'
 assert_auth_rejected \
   "gateway service" \
   "$PROJECT_DIR/gateway-wrong-token.json" \
   "$PROJECT_DIR/gateway-wrong-token.err" \
-  "${COMPOSE[@]}" exec -T openclaw-gateway \
+  "${COMPOSE[@]}" exec -T afora-gateway \
   node dist/index.js gateway health --token "$WRONG_TOKEN" --json
-"${COMPOSE[@]}" exec -T openclaw-gateway node dist/index.js gateway health --token "$TOKEN" --json >"$PROJECT_DIR/gateway-health.json"
+"${COMPOSE[@]}" exec -T afora-gateway node dist/index.js gateway health --token "$TOKEN" --json >"$PROJECT_DIR/gateway-health.json"
 assert_gateway_health_json "gateway service" "$PROJECT_DIR/gateway-health.json"
 assert_auth_rejected \
   "CLI sidecar" \
   "$PROJECT_DIR/cli-wrong-token.json" \
   "$PROJECT_DIR/cli-wrong-token.err" \
   "${COMPOSE[@]}" run -T --rm --no-deps \
-  openclaw-cli gateway health --token "$WRONG_TOKEN" --json
-"${COMPOSE[@]}" run -T --no-deps --name "$CLI_NAME" openclaw-cli gateway health --token "$TOKEN" --json >"$PROJECT_DIR/cli-health.json"
+  afora-cli gateway health --token "$WRONG_TOKEN" --json
+"${COMPOSE[@]}" run -T --no-deps --name "$CLI_NAME" afora-cli gateway health --token "$TOKEN" --json >"$PROJECT_DIR/cli-health.json"
 assert_gateway_health_json "CLI sidecar" "$PROJECT_DIR/cli-health.json"
 
 echo "Forcing the configured Docker healthcheck to fail..."
@@ -273,7 +273,7 @@ docker inspect --format '{{json .State.Health}}' "$GATEWAY_ID" >"$PROJECT_DIR/he
 assert_health_state "recovered healthy state" healthy "$PROJECT_DIR/health-recovered.json"
 assert_probe_endpoints "recovered probes" "$PROJECT_DIR/probes-recovered.json"
 
-"${COMPOSE[@]}" logs --no-color openclaw-gateway >"$PROJECT_DIR/gateway-compose.log"
+"${COMPOSE[@]}" logs --no-color afora-gateway >"$PROJECT_DIR/gateway-compose.log"
 if [ ! -s "$PROJECT_DIR/gateway-compose.log" ]; then
   echo "Compose gateway logs were empty" >&2
   exit 1
@@ -281,7 +281,7 @@ fi
 echo "Compose gateway log tail:"
 tail -n 40 "$PROJECT_DIR/gateway-compose.log"
 
-GATEWAY_VERSION="$("${COMPOSE[@]}" exec -T openclaw-gateway node -p "require('./package.json').version")"
+GATEWAY_VERSION="$("${COMPOSE[@]}" exec -T afora-gateway node -p "require('./package.json').version")"
 
 node --import tsx "$ROOT_DIR/scripts/e2e/lib/docker-artifact-proof/write-identities.ts" \
   --scenario compose-setup \
@@ -290,7 +290,7 @@ node --import tsx "$ROOT_DIR/scripts/e2e/lib/docker-artifact-proof/write-identit
   --package "$PACKAGE_TGZ" \
   --container "gateway=$GATEWAY_ID" \
   --container "cli=$CLI_NAME" \
-  --detail "gateway:openclawVersion=$GATEWAY_VERSION" \
+  --detail "gateway:aforaVersion=$GATEWAY_VERSION" \
   --detail "gateway:health=healthy" \
   --detail "gateway:dockerfileHealthcheckDefinition=passed" \
   --detail "gateway:composeHealthcheckResolved=passed" \

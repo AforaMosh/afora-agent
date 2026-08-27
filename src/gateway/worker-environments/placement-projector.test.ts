@@ -100,7 +100,7 @@ describe("worker placement projection", () => {
         workerBundleHash: BUNDLE_HASH,
         workspaceResultConflict: {
           paths: ["src/local.ts"],
-          stagedResultRef: "refs/openclaw/worker-results/claim-1",
+          stagedResultRef: "refs/afora/worker-results/claim-1",
         },
       },
       {
@@ -145,7 +145,7 @@ describe("worker placement projection", () => {
         workerBundleHash: BUNDLE_HASH,
         workspaceResultConflict: {
           paths: ["src/local.ts"],
-          stagedResultRef: "refs/openclaw/worker-results/claim-1",
+          stagedResultRef: "refs/afora/worker-results/claim-1",
         },
         terminalAtMs: 250,
       },

@@ -18,7 +18,7 @@ describe("onboard log-contains helper", () => {
   });
 
   function writeLog(contents: string) {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-onboard-log-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-onboard-log-"));
     tempRoots.push(root);
     const logPath = path.join(root, "wizard.log");
     writeFileSync(logPath, contents, "utf8");

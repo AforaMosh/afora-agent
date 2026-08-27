@@ -246,20 +246,20 @@ export function createGatewayBenchEnv(
     CI: process.env.CI ?? "1",
     HOME: root,
     LANG: process.env.LANG ?? "en_US.UTF-8",
-    LOGNAME: process.env.LOGNAME ?? "openclaw-bench",
+    LOGNAME: process.env.LOGNAME ?? "afora-bench",
     NO_COLOR: "1",
     PATH: process.env.PATH,
     SHELL: process.env.SHELL,
     TMPDIR: process.env.TMPDIR,
-    USER: process.env.USER ?? "openclaw-bench",
+    USER: process.env.USER ?? "afora-bench",
     npm_config_update_notifier: "false",
-    OPENCLAW_CONFIG_PATH: configPath,
-    ...(options.restartTrace ? { OPENCLAW_GATEWAY_RESTART_TRACE: "1" } : {}),
-    OPENCLAW_GATEWAY_STARTUP_TRACE: "1",
-    OPENCLAW_HOME: root,
-    OPENCLAW_NO_RESPAWN: "1",
-    OPENCLAW_STATE_DIR: path.join(root, "state"),
-    OPENCLAW_TEST_DISABLE_UPDATE_CHECK: "1",
+    AFORA_CONFIG_PATH: configPath,
+    ...(options.restartTrace ? { AFORA_GATEWAY_RESTART_TRACE: "1" } : {}),
+    AFORA_GATEWAY_STARTUP_TRACE: "1",
+    AFORA_HOME: root,
+    AFORA_NO_RESPAWN: "1",
+    AFORA_STATE_DIR: path.join(root, "state"),
+    AFORA_TEST_DISABLE_UPDATE_CHECK: "1",
     ...options.caseEnv,
   };
 }
@@ -320,7 +320,7 @@ export function writePluginFixtures(
       );
     }
     writeFileSync(
-      path.join(pluginDir, "openclaw.plugin.json"),
+      path.join(pluginDir, "afora.plugin.json"),
       `${JSON.stringify(
         {
           id,
@@ -380,7 +380,7 @@ export function writeGatewayBenchConfig(
         : {}),
     },
   };
-  const configPath = path.join(root, "openclaw.json");
+  const configPath = path.join(root, "afora.json");
   writeFileSync(configPath, `${JSON.stringify(merged, null, 2)}\n`);
   return configPath;
 }

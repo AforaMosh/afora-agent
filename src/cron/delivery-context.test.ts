@@ -1,6 +1,6 @@
 // Cron delivery context tests cover context assembly for scheduled job delivery.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 const { extractDeliveryInfoMock } = vi.hoisted(() => ({
   extractDeliveryInfoMock: vi.fn(),
@@ -13,7 +13,7 @@ vi.mock("../config/sessions/delivery-info.js", () => ({
 import { resolveCronCreationDelivery } from "./delivery-context.js";
 
 describe("cron delivery context", () => {
-  const cfg = {} as OpenClawConfig;
+  const cfg = {} as AforaConfig;
 
   beforeEach(() => {
     extractDeliveryInfoMock.mockReset();

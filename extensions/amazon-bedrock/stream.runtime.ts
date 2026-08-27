@@ -1,5 +1,5 @@
 /**
- * Amazon Bedrock Converse streaming runtime. It maps OpenClaw messages/tools,
+ * Amazon Bedrock Converse streaming runtime. It maps Afora messages/tools,
  * thinking, cache points, images, and usage into Bedrock Converse Stream calls.
  */
 import {
@@ -27,7 +27,7 @@ import {
 } from "@aws-sdk/client-bedrock-runtime";
 import { NodeHttpHandler } from "@smithy/node-http-handler";
 import type { DocumentType } from "@smithy/types";
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
 import {
   adjustMaxTokensForThinking,
   AssistantMessageEventStream,
@@ -53,8 +53,8 @@ import {
   type Tool,
   type ToolCall,
   type ToolResultMessage,
-} from "openclaw/plugin-sdk/llm";
-import { canonicalizeBase64 } from "openclaw/plugin-sdk/media-runtime";
+} from "afora-agent/plugin-sdk/llm";
+import { canonicalizeBase64 } from "afora-agent/plugin-sdk/media-runtime";
 import {
   resolveClaudeFable5ModelIdentity,
   resolveClaudeModelIdentity,
@@ -64,14 +64,14 @@ import {
   requiresClaudeMandatoryAdaptiveThinking,
   supportsClaudeAdaptiveThinking,
   supportsClaudeNativeXhighEffort,
-} from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/provider-model-shared";
 import {
   applyAnthropicRefusal,
   createDeferredEventBuffer,
   notifyLlmRequestActivity,
-} from "openclaw/plugin-sdk/provider-stream-shared";
-import { describeToolResultMediaPlaceholder } from "openclaw/plugin-sdk/provider-transport-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/provider-stream-shared";
+import { describeToolResultMediaPlaceholder } from "afora-agent/plugin-sdk/provider-transport-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { supportsBedrockPromptCaching, type BedrockOptions } from "./bedrock-options.js";
 import { supportsBedrockNativeMaxEffort } from "./thinking-policy.js";
 
@@ -118,9 +118,9 @@ function normalizeAdaptiveClaudeToolChoice(
   return toolChoice;
 }
 
-// OpenClaw synthesizes these caps when the provider's real output limit is unknown.
+// Afora synthesizes these caps when the provider's real output limit is unknown.
 // Keep them out of Bedrock adaptive requests so Bedrock can use its native default.
-const OPENCLAW_FALLBACK_MODEL_MAX_TOKENS = new Set([4096, 8192, 16_384]);
+const AFORA_FALLBACK_MODEL_MAX_TOKENS = new Set([4096, 8192, 16_384]);
 
 function resolveAdaptiveBedrockMaxTokens(
   model: Model<"bedrock-converse-stream">,
@@ -129,7 +129,7 @@ function resolveAdaptiveBedrockMaxTokens(
   if (baseMaxTokens !== undefined) {
     return baseMaxTokens;
   }
-  return OPENCLAW_FALLBACK_MODEL_MAX_TOKENS.has(model.maxTokens) ? undefined : model.maxTokens;
+  return AFORA_FALLBACK_MODEL_MAX_TOKENS.has(model.maxTokens) ? undefined : model.maxTokens;
 }
 
 /** Stream a Bedrock Converse request using Bedrock-specific options. */
@@ -425,7 +425,7 @@ function formatBedrockError(error: unknown): string {
   return message;
 }
 
-/** Stream a Bedrock Converse request from the generic OpenClaw stream options. */
+/** Stream a Bedrock Converse request from the generic Afora stream options. */
 export const streamSimpleBedrock: StreamFunction<"bedrock-converse-stream", SimpleStreamOptions> = (
   model: Model<"bedrock-converse-stream">,
   context: Context,
@@ -793,13 +793,13 @@ function mapThinkingLevelToEffort(
 
 /**
  * Resolve cache retention preference.
- * Defaults to "short" and uses OPENCLAW_CACHE_RETENTION for backward compatibility.
+ * Defaults to "short" and uses AFORA_CACHE_RETENTION for backward compatibility.
  */
 function resolveCacheRetention(cacheRetention?: CacheRetention): CacheRetention {
   if (cacheRetention) {
     return cacheRetention;
   }
-  if (typeof process !== "undefined" && process.env.OPENCLAW_CACHE_RETENTION === "long") {
+  if (typeof process !== "undefined" && process.env.AFORA_CACHE_RETENTION === "long") {
     return "long";
   }
   return "short";

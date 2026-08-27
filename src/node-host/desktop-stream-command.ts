@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import net from "node:net";
 import type { TLSSocket } from "node:tls";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { WebSocket, type ClientOptions, type RawData } from "ws";
 import { normalizeTlsFingerprint } from "../../packages/gateway-client/src/client-address-utils.js";
 import type { DesktopHostConfig } from "../config/types.desktop.js";

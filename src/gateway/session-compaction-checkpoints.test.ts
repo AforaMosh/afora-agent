@@ -5,8 +5,8 @@ import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { CURRENT_SESSION_VERSION, SessionManager } from "openclaw/plugin-sdk/agent-sessions";
-import type { AssistantMessage } from "openclaw/plugin-sdk/llm";
+import { CURRENT_SESSION_VERSION, SessionManager } from "afora-agent/plugin-sdk/agent-sessions";
+import type { AssistantMessage } from "afora-agent/plugin-sdk/llm";
 import { afterEach, describe, expect, test } from "vitest";
 import type { SessionCompactionCheckpoint } from "../config/sessions.js";
 import { formatSqliteSessionFileMarker } from "../config/sessions/legacy-sqlite-marker.js";
@@ -72,9 +72,9 @@ describe("session-compaction-checkpoints", () => {
   });
 
   test("checkpoint store branches and restores checkpoints through resolved store keys", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-checkpoint-sqlite-branch-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-checkpoint-sqlite-branch-"));
     tempDirs.push(dir);
-    const storePath = path.join(dir, "openclaw-agent.sqlite");
+    const storePath = path.join(dir, "afora-agent.sqlite");
     const sessionId = "sqlite-checkpoint-branch-source";
     const sessionKey = MAIN_SESSION_KEY;
     const sessionStoreKey = "agent:main:legacy-main";
@@ -192,9 +192,9 @@ describe("session-compaction-checkpoints", () => {
   test.each(["branch", "restore"] as const)(
     "checkpoint %s rejects a lifecycle change queued before its transaction",
     async (mode) => {
-      const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-checkpoint-sqlite-race-"));
+      const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-checkpoint-sqlite-race-"));
       tempDirs.push(dir);
-      const storePath = path.join(dir, "openclaw-agent.sqlite");
+      const storePath = path.join(dir, "afora-agent.sqlite");
       const sessionId = `sqlite-checkpoint-${mode}-race`;
       const sessionKey = MAIN_SESSION_KEY;
       const scope = { agentId: MAIN_AGENT_ID, sessionId, sessionKey, storePath };
@@ -289,9 +289,9 @@ describe("session-compaction-checkpoints", () => {
   );
 
   test("checkpoint store branches row-backed checkpoints when entry sessionFile is stale", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-checkpoint-sqlite-stale-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-checkpoint-sqlite-stale-"));
     tempDirs.push(dir);
-    const storePath = path.join(dir, "openclaw-agent.sqlite");
+    const storePath = path.join(dir, "afora-agent.sqlite");
     const sessionId = "sqlite-checkpoint-stale-source";
     const sessionKey = MAIN_SESSION_KEY;
     const scope = {
@@ -417,9 +417,9 @@ describe("session-compaction-checkpoints", () => {
   });
 
   test("imports a retired legacy checkpoint snapshot into a new SQLite branch", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-checkpoint-sqlite-legacy-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-checkpoint-sqlite-legacy-"));
     tempDirs.push(dir);
-    const storePath = path.join(dir, "openclaw-agent.sqlite");
+    const storePath = path.join(dir, "afora-agent.sqlite");
     const sessionId = "sqlite-checkpoint-legacy-source";
     const sessionKey = MAIN_SESSION_KEY;
     const marker = formatSqliteSessionFileMarker({
@@ -504,7 +504,7 @@ describe("session-compaction-checkpoints", () => {
   });
 
   test("leaf state follows terminal controls while retaining the append cursor", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-checkpoint-leaf-control-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-checkpoint-leaf-control-"));
     tempDirs.push(dir);
     const sessionFile = path.join(dir, "session.jsonl");
     await fs.writeFile(
@@ -555,7 +555,7 @@ describe("session-compaction-checkpoints", () => {
   });
 
   test("async leaf scans ignore controls with dangling references", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-checkpoint-invalid-leaf-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-checkpoint-invalid-leaf-"));
     tempDirs.push(dir);
     const sessionFile = path.join(dir, "session.jsonl");
     await fs.writeFile(
@@ -603,7 +603,7 @@ describe("session-compaction-checkpoints", () => {
   });
 
   test("reads leaf state from a structured SQLite transcript target", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-checkpoint-target-leaf-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-checkpoint-target-leaf-"));
     tempDirs.push(dir);
     const target = {
       agentId: "main",

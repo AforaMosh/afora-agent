@@ -1,5 +1,5 @@
 /** Persists usage, cost, model, and CLI session metadata after reply runs. */
-import { asNonNegativeFiniteNumber } from "@openclaw/normalization-core/number-coercion";
+import { asNonNegativeFiniteNumber } from "@afora/normalization-core/number-coercion";
 import {
   clearCliSession,
   setCliSessionBinding,
@@ -18,7 +18,7 @@ import {
   type SessionEntry,
 } from "../../config/sessions.js";
 import { updateSessionEntry } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { logVerbose } from "../../globals.js";
 import { estimateUsageCost, resolveModelCostConfig } from "../../utils/usage-format.js";
 
@@ -75,7 +75,7 @@ function resolveNonNegativeTokenCount(value: number | undefined): number | undef
 }
 
 function estimateSessionRunCostUsd(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentDir?: string;
   usage?: NormalizedUsage;
   providerUsed?: string;
@@ -97,7 +97,7 @@ function estimateSessionRunCostUsd(params: {
 export async function persistSessionUsageUpdate(params: {
   storePath?: string;
   sessionKey?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentDir?: string;
   usage?: NormalizedUsage;
   /**

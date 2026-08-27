@@ -23,22 +23,22 @@ import {
   loadSessionEntry,
   replaceSessionEntry,
 } from "../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   detectSharedAuthStoreMigration,
   migrateSharedAuthStore,
 } from "../infra/state-migrations.shared-auth-store.js";
 import { writeConfigMachineState } from "../state/config-machine-state.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { buildStatusText } from "../status/status-text.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../test-utils/afora-test-state.js";
 import {
   collectOpenAICodexAuthProfileStoreIdMap,
   maybeMigrateAuthProfileJsonStoresToSqlite,
@@ -47,7 +47,7 @@ import {
 import type { DoctorPrompter } from "./doctor-prompter.js";
 import { maybeRepairCodexSessionRoutes } from "./doctor/shared/codex-route-session-repair.js";
 
-const states: OpenClawTestState[] = [];
+const states: AforaTestState[] = [];
 
 function makePrompter(shouldRepair: boolean): DoctorPrompter {
   return {
@@ -68,12 +68,12 @@ function makePrompter(shouldRepair: boolean): DoctorPrompter {
   };
 }
 
-async function makeTestState(): Promise<OpenClawTestState> {
-  const state = await createOpenClawTestState({
+async function makeTestState(): Promise<AforaTestState> {
+  const state = await createAforaTestState({
     layout: "state-only",
-    prefix: "openclaw-doctor-flat-auth-",
+    prefix: "afora-doctor-flat-auth-",
     env: {
-      OPENCLAW_AGENT_DIR: undefined,
+      AFORA_AGENT_DIR: undefined,
     },
   });
   states.push(state);
@@ -81,8 +81,8 @@ async function makeTestState(): Promise<OpenClawTestState> {
 }
 
 async function expectSelectedCodexAccountStatus(params: {
-  cfg: OpenClawConfig;
-  state: OpenClawTestState;
+  cfg: AforaConfig;
+  state: AforaTestState;
   sessionKey: string;
   storePath: string;
 }): Promise<void> {
@@ -149,7 +149,7 @@ async function expectSelectedCodexAccountStatus(params: {
 }
 
 async function writeLegacyAuthProfilesJson(
-  state: OpenClawTestState,
+  state: AforaTestState,
   value: unknown,
   agentId = "main",
 ): Promise<string> {
@@ -177,8 +177,8 @@ function expectNoMigratedArchive(sourcePath: string): void {
 
 afterEach(async () => {
   clearRuntimeAuthProfileStoreSnapshots();
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   for (const state of states.splice(0)) {
     await state.cleanup();
   }
@@ -272,7 +272,7 @@ describe("maybeMigrateAuthProfileJsonStoresToSqlite", () => {
     expect(archives).toHaveLength(1);
     expect(fs.readFileSync(archives[0]!)).toEqual(sourceBytes);
 
-    const receipt = openOpenClawStateDatabase({ env: state.env })
+    const receipt = openAforaStateDatabase({ env: state.env })
       .db.prepare(
         "SELECT status, removed_source, target_table FROM migration_sources WHERE migration_kind = ?",
       )
@@ -295,7 +295,7 @@ describe("maybeMigrateAuthProfileJsonStoresToSqlite", () => {
           type: "oauth",
           provider: "openai",
           oauthRef: {
-            source: "openclaw-credentials",
+            source: "afora-credentials",
             id: "0123456789abcdef0123456789abcdef",
             provider: "openai-codex",
           },
@@ -323,7 +323,7 @@ describe("maybeMigrateAuthProfileJsonStoresToSqlite", () => {
       type: "oauth",
       provider: "openai",
       oauthRef: {
-        source: "openclaw-credentials",
+        source: "afora-credentials",
         provider: "openai-codex",
       },
     });
@@ -471,7 +471,7 @@ describe("maybeMigrateAuthProfileJsonStoresToSqlite", () => {
       loadPersistedAuthProfileStore(state.agentDir())?.profiles["anthropic:default"],
     ).toBeDefined();
     expect(fs.existsSync(oauthPath)).toBe(false);
-    const receipt = openOpenClawStateDatabase({ env: state.env })
+    const receipt = openAforaStateDatabase({ env: state.env })
       .db.prepare("SELECT status FROM migration_sources WHERE migration_kind = ?")
       .get("auth-profile-json-to-sqlite-v2") as { status?: string } | undefined;
     expect(receipt?.status).toBe("archived-unparsed");
@@ -556,7 +556,7 @@ describe("maybeMigrateAuthProfileJsonStoresToSqlite", () => {
       expect(fs.existsSync(statePath)).toBe(false);
       expectMigratedArchive(authPath);
       expectMigratedArchive(statePath);
-      const combinedReceipt = openOpenClawStateDatabase({ env: state.env })
+      const combinedReceipt = openAforaStateDatabase({ env: state.env })
         .db.prepare("SELECT report_json FROM migration_sources WHERE source_path = ?")
         .get(authPath) as { report_json?: string } | undefined;
       expect(JSON.parse(combinedReceipt?.report_json ?? "null")?.expectedStateSha256).toEqual(
@@ -741,7 +741,7 @@ describe("maybeMigrateAuthProfileJsonStoresToSqlite", () => {
           provider: "openai",
           email: "user@example.com",
           oauthRef: {
-            source: "openclaw-credentials",
+            source: "afora-credentials",
             id: "0123456789abcdef0123456789abcdef",
             provider: "openai-codex",
           },
@@ -767,7 +767,7 @@ describe("maybeMigrateAuthProfileJsonStoresToSqlite", () => {
       provider: "openai",
       email: "user@example.com",
       oauthRef: {
-        source: "openclaw-credentials",
+        source: "afora-credentials",
         provider: "openai-codex",
       },
     });
@@ -803,7 +803,7 @@ describe("maybeMigrateAuthProfileJsonStoresToSqlite", () => {
           provider: "openai",
           email: "user@example.com",
           oauthRef: {
-            source: "openclaw-credentials",
+            source: "afora-credentials",
             id: "0123456789abcdef0123456789abcdef",
             provider: "openai-codex",
           },
@@ -833,7 +833,7 @@ describe("maybeMigrateAuthProfileJsonStoresToSqlite", () => {
           provider: "openai",
           email: "user@example.com",
           oauthRef: {
-            source: "openclaw-credentials",
+            source: "afora-credentials",
             id: "0123456789abcdef0123456789abcdef",
             provider: "openai-codex",
           },
@@ -1113,7 +1113,7 @@ describe("maybeMigrateAuthProfileJsonStoresToSqlite", () => {
           anthropic: ["anthropic:default"],
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await maybeMigrateAuthProfileJsonStoresToSqlite({
       cfg,
@@ -1188,7 +1188,7 @@ describe("maybeMigrateAuthProfileJsonStoresToSqlite", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await maybeMigrateAuthProfileJsonStoresToSqlite({
       cfg,
@@ -1222,12 +1222,12 @@ describe("maybeMigrateAuthProfileJsonStoresToSqlite", () => {
   });
 
   it("infers config credential provider and mode before stripping config", async () => {
-    const cases: Array<{ profileId: string; cfg: OpenClawConfig; now: number }> = [
+    const cases: Array<{ profileId: string; cfg: AforaConfig; now: number }> = [
       {
         profileId: "openai:default",
         cfg: {
           auth: { profiles: { "openai:default": { key: "sk-config" } } },
-        } as unknown as OpenClawConfig,
+        } as unknown as AforaConfig,
         now: 468,
       },
       {
@@ -1235,7 +1235,7 @@ describe("maybeMigrateAuthProfileJsonStoresToSqlite", () => {
         cfg: {
           auth: { profiles: { work: { key: "sk-config" } } },
           agents: { defaults: { model: { primary: "openai/gpt-5.5@work" } } },
-        } as unknown as OpenClawConfig,
+        } as unknown as AforaConfig,
         now: 470,
       },
       {
@@ -1245,7 +1245,7 @@ describe("maybeMigrateAuthProfileJsonStoresToSqlite", () => {
             profiles: { ordered: { key: "sk-config" } },
             order: { openai: ["ordered"] },
           },
-        } as unknown as OpenClawConfig,
+        } as unknown as AforaConfig,
         now: 474,
       },
     ];
@@ -1314,7 +1314,7 @@ describe("maybeMigrateAuthProfileJsonStoresToSqlite", () => {
           openai: ["openai:default"],
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await maybeMigrateAuthProfileJsonStoresToSqlite({
       cfg,
@@ -1401,7 +1401,7 @@ describe("maybeMigrateAuthProfileJsonStoresToSqlite", () => {
             [entry.profileId]: entry.profile,
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       const result = await maybeMigrateAuthProfileJsonStoresToSqlite({
         cfg,
@@ -1468,7 +1468,7 @@ describe("maybeMigrateAuthProfileJsonStoresToSqlite", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       const result = await maybeMigrateAuthProfileJsonStoresToSqlite({
         cfg,
@@ -1677,10 +1677,10 @@ describe("maybeRepairOpenAICodexAuthConfig", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const result = maybeRepairOpenAICodexAuthConfig(cfg);
-    const migrated = result.config as OpenClawConfig & {
+    const migrated = result.config as AforaConfig & {
       agents?: {
         defaults?: {
           models?: Record<string, { agentRuntime?: { authProfileId?: string } }>;
@@ -1728,10 +1728,10 @@ describe("maybeRepairOpenAICodexAuthConfig", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const result = maybeRepairOpenAICodexAuthConfig(cfg);
-    const migrated = result.config as OpenClawConfig & {
+    const migrated = result.config as AforaConfig & {
       agents?: {
         defaults?: {
           models?: Record<string, { agentRuntime?: { authProfileId?: string } }>;
@@ -1768,12 +1768,12 @@ describe("maybeRepairOpenAICodexAuthConfig", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const result = maybeRepairOpenAICodexAuthConfig(cfg, {
       profileIdMap: new Map([["openai-codex:default", "openai:chatgpt-default"]]),
     });
-    const migrated = result.config as OpenClawConfig & {
+    const migrated = result.config as AforaConfig & {
       agents?: {
         defaults?: {
           models?: Record<string, { agentRuntime?: { authProfileId?: string } }>;
@@ -1802,12 +1802,12 @@ describe("maybeRepairOpenAICodexAuthConfig", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const result = maybeRepairOpenAICodexAuthConfig(cfg, {
       profileIdMap: new Map([["openai-codex:default", "openai:chatgpt-default"]]),
     });
-    const migrated = result.config as OpenClawConfig & {
+    const migrated = result.config as AforaConfig & {
       agents?: {
         defaults?: {
           models?: Record<string, { agentRuntime?: { authProfileId?: string } }>;
@@ -1843,12 +1843,12 @@ describe("maybeRepairOpenAICodexAuthConfig", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const result = maybeRepairOpenAICodexAuthConfig(cfg, {
       profileIdMap: new Map([["openai-codex:default", "openai:chatgpt-default"]]),
     });
-    const migrated = result.config as OpenClawConfig & {
+    const migrated = result.config as AforaConfig & {
       agents?: {
         defaults?: {
           systemPrompt?: string;
@@ -1878,7 +1878,7 @@ describe("maybeRepairOpenAICodexAuthConfig", () => {
           "openai-codex": ["openai-codex:default"],
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const result = maybeRepairOpenAICodexAuthConfig(cfg, {
       profileIdMap: new Map([["openai-codex:default", "openai:chatgpt-default"]]),
@@ -1925,12 +1925,12 @@ describe("maybeRepairOpenAICodexAuthConfig", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const result = maybeRepairOpenAICodexAuthConfig(cfg, {
       profileIdMap: new Map([["openai-codex:default", "openai:default"]]),
     });
-    const migrated = result.config as OpenClawConfig & {
+    const migrated = result.config as AforaConfig & {
       agents?: {
         defaults?: {
           models?: Record<string, { agentRuntime?: { authProfileId?: string } }>;
@@ -2054,7 +2054,7 @@ describe("legacy OpenAI auth profiles through the canonical migration owner", ()
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     await replaceSessionEntry(
       { storePath, sessionKey, env: state.env },
       {
@@ -2310,7 +2310,7 @@ describe("legacy OpenAI auth profiles through the canonical migration owner", ()
 
   it("keeps failed agent accounts separate while repairing verified and inherited main accounts", async () => {
     const state = await makeTestState();
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         list: [
           { id: "main", default: true },
@@ -2342,7 +2342,7 @@ describe("legacy OpenAI auth profiles through the canonical migration owner", ()
             provider: "openai-codex",
             accountId: "failed-different-account",
             oauthRef: {
-              source: "openclaw-credentials",
+              source: "afora-credentials",
               id: "0123456789abcdef0123456789abcdef",
               provider: "openai-codex",
             },
@@ -2423,7 +2423,7 @@ describe("legacy OpenAI auth profiles through the canonical migration owner", ()
         provider: "openai",
         accountId: "failed-different-account",
         oauthRef: {
-          source: "openclaw-credentials",
+          source: "afora-credentials",
           provider: "openai-codex",
         },
       },
@@ -2443,8 +2443,8 @@ describe("legacy OpenAI auth profiles through the canonical migration owner", ()
         model: "gpt-5.5",
       },
     );
-    closeOpenClawAgentDatabasesForTest();
-    const sqlitePath = path.join(state.agentDir(), "openclaw-agent.sqlite");
+    closeAforaAgentDatabasesForTest();
+    const sqlitePath = path.join(state.agentDir(), "afora-agent.sqlite");
     const database = new DatabaseSync(sqlitePath);
     database
       .prepare("UPDATE session_nodes SET entry_valid = 0 WHERE session_key = ?")
@@ -2505,7 +2505,7 @@ describe("legacy OpenAI auth profiles through the canonical migration owner", ()
         },
       },
       agents: { defaults: { agentRuntime: { id: "codex" } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     await writeLegacyAuthProfilesJson(state, {
       version: 1,
       profiles: {

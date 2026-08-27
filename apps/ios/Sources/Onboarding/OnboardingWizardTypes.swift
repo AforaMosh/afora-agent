@@ -1,4 +1,4 @@
-import OpenClawKit
+import AforaKit
 import SwiftUI
 
 enum OnboardingStep: Int, CaseIterable {

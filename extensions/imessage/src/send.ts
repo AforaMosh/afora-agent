@@ -1,40 +1,40 @@
 // Imessage plugin module implements send behavior.
 import { constants, accessSync } from "node:fs";
 import { basename } from "node:path";
-import type { ChannelApprovalKind } from "openclaw/plugin-sdk/approval-handler-runtime";
-import { addApprovalReactionHintToText } from "openclaw/plugin-sdk/approval-reaction-runtime";
-import type { ExecApprovalReplyDecision } from "openclaw/plugin-sdk/approval-reply-runtime";
+import type { ChannelApprovalKind } from "afora-agent/plugin-sdk/approval-handler-runtime";
+import { addApprovalReactionHintToText } from "afora-agent/plugin-sdk/approval-reaction-runtime";
+import type { ExecApprovalReplyDecision } from "afora-agent/plugin-sdk/approval-reply-runtime";
 import {
   createChannelPartialDeliveryError,
   type MediaPlaceholderTextFact,
-} from "openclaw/plugin-sdk/channel-inbound";
+} from "afora-agent/plugin-sdk/channel-inbound";
 import {
   createMessageReceiptFromOutboundResults,
   type MessageReceipt,
   type MessageReceiptPartKind,
   type MessageReceiptSourceResult,
-} from "openclaw/plugin-sdk/channel-outbound";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { PlatformMessageNotDispatchedError } from "openclaw/plugin-sdk/error-runtime";
-import { resolveMarkdownTableMode } from "openclaw/plugin-sdk/markdown-table-runtime";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { PlatformMessageNotDispatchedError } from "afora-agent/plugin-sdk/error-runtime";
+import { resolveMarkdownTableMode } from "afora-agent/plugin-sdk/markdown-table-runtime";
 import {
   extractOriginalFilename,
   kindFromMime,
   resolveOutboundAttachmentFromUrl,
   type OutboundMediaAccess,
-} from "openclaw/plugin-sdk/media-runtime";
-import { requireRuntimeConfig } from "openclaw/plugin-sdk/plugin-config-runtime";
-import { sleep as delay } from "openclaw/plugin-sdk/runtime-env";
-import { openNodeSqliteDatabase } from "openclaw/plugin-sdk/sqlite-runtime";
+} from "afora-agent/plugin-sdk/media-runtime";
+import { requireRuntimeConfig } from "afora-agent/plugin-sdk/plugin-config-runtime";
+import { sleep as delay } from "afora-agent/plugin-sdk/runtime-env";
+import { openNodeSqliteDatabase } from "afora-agent/plugin-sdk/sqlite-runtime";
 import {
   asOptionalRecord,
   normalizeOptionalString as stringValue,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
-import { resolvePreferredOpenClawTmpDir, withTempWorkspace } from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { resolvePreferredAforaTmpDir, withTempWorkspace } from "afora-agent/plugin-sdk/temp-path";
 import {
   convertMarkdownTables,
   stripInlineDirectiveTagsForDelivery,
-} from "openclaw/plugin-sdk/text-chunking";
+} from "afora-agent/plugin-sdk/text-chunking";
 import {
   hasExclusiveIMessageLocalDatabase,
   resolveIMessageAccount,
@@ -100,7 +100,7 @@ type IMessageSendOpts = {
   timeoutMs?: number;
   chatId?: number;
   client?: IMessageRpcClient;
-  config: OpenClawConfig;
+  config: AforaConfig;
   account?: ResolvedIMessageAccount;
   approvalPrompt?: IMessageApprovalPromptBinding;
   resolveAttachmentImpl?: (
@@ -477,7 +477,7 @@ async function withOriginalIMessageAttachmentPath<T>(
   // The bridge exposes this basename and copies its bytes before returning;
   // keep the UUID-backed media-store file intact while its private alias is live.
   return await withTempWorkspace(
-    { rootDir: resolvePreferredOpenClawTmpDir(), prefix: "openclaw-imessage-outbound-" },
+    { rootDir: resolvePreferredAforaTmpDir(), prefix: "afora-imessage-outbound-" },
     async (workspace) => await send(await workspace.copyIn(filename, filePath)),
   );
 }

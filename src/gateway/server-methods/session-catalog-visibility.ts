@@ -1,5 +1,5 @@
 import type { SessionCatalogHost } from "../../../packages/gateway-protocol/src/index.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type {
   SessionCatalogListProviderParams,
   SessionCatalogProvider,
@@ -44,7 +44,7 @@ export function filterSessionCatalogHost(
     ...host,
     sessions: host.sessions.filter((session) => {
       // No sessionKey means the provider cannot link this host-owned CLI row to an adopted
-      // OpenClaw session. Keep it private from non-admin callers on multi-identity Gateways.
+      // Afora session. Keep it private from non-admin callers on multi-identity Gateways.
       return session.createdActor?.id === visibility.ownerProfileId;
     }),
   };
@@ -52,7 +52,7 @@ export function filterSessionCatalogHost(
 
 export async function isSessionCatalogThreadVisible(params: {
   allowProcessHomeFallback: boolean;
-  config: OpenClawConfig;
+  config: AforaConfig;
   fallbackAgentId: string;
   hostId: string;
   list: SessionCatalogProvider["list"];

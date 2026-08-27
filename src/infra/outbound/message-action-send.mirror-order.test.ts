@@ -7,13 +7,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import { jsonResult } from "../../agents/tools/common.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import {
   loadExactSessionEntry,
   upsertSessionEntryCore,
 } from "../../config/sessions/session-accessor.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
+import { closeAforaAgentDatabasesForTest } from "../../state/afora-agent-db.js";
 import {
   createChannelTestPluginBase,
   createTestRegistry,
@@ -33,7 +33,7 @@ const MAIN_SESSION_KEY = "agent:main:main";
 describe("outbound mirror route ordering", () => {
   const tempDirs = useAutoCleanupTempDirTracker(afterEach);
   let storePath: string;
-  let cfg: OpenClawConfig;
+  let cfg: AforaConfig;
   const handleAction = vi.fn();
 
   function registerTestChannel() {
@@ -85,11 +85,11 @@ describe("outbound mirror route ordering", () => {
   }
 
   beforeEach(async () => {
-    storePath = path.join(tempDirs.make("openclaw-mirror-order-"), "sessions.json");
+    storePath = path.join(tempDirs.make("afora-mirror-order-"), "sessions.json");
     cfg = {
       session: { store: storePath },
       channels: { testchat: { enabled: true } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     handleAction.mockReset();
     registerTestChannel();
     await seedMainSessionWithDiscordOrigin();
@@ -97,7 +97,7 @@ describe("outbound mirror route ordering", () => {
 
   afterEach(() => {
     setActivePluginRegistry(createTestRegistry([]));
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
   });
 
   it("leaves the main session route untouched when the send fails", async () => {

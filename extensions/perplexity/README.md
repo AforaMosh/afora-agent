@@ -1,12 +1,12 @@
-# OpenClaw Perplexity Plugin
+# Afora Perplexity Plugin
 
-Official OpenClaw plugin for Perplexity.
+Official Afora plugin for Perplexity.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/perplexity-plugin
-openclaw gateway restart
+afora plugins install @afora/perplexity-plugin
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/tools/perplexity-search> for setup and configuration.
+See <https://docs.afora.ai/tools/perplexity-search> for setup and configuration.

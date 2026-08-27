@@ -34,7 +34,7 @@ import {
   CODEX_LOCAL_SESSION_HOST_ID,
   createCodexSessionCatalogControlFactory,
   type CodexCatalogHome,
-  type OpenClawConfig,
+  type AforaConfig,
   originalPath,
 } from "./session-catalog.test-helpers.js";
 
@@ -245,7 +245,7 @@ describe("Codex supervision catalog", () => {
         _pluginConfig: unknown,
         _method: string,
         _params: unknown,
-        options: { agentDir?: string; config?: OpenClawConfig },
+        options: { agentDir?: string; config?: AforaConfig },
       ) => {
         if (!options.agentDir) {
           try {
@@ -271,7 +271,7 @@ describe("Codex supervision catalog", () => {
   it("uses the Gateway-selected owner directory for an explicit multi-agent catalog", async () => {
     const runtimeConfig = {
       agents: { ownership: "explicit", entries: { alpha: {}, beta: {} } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     commandRpcMocks.codexControlRequest.mockResolvedValue({ data: [] });
     const control = createCodexSessionCatalogControlFactory({
       getPluginConfig: () => ({ supervision: { enabled: true } }),
@@ -288,7 +288,7 @@ describe("Codex supervision catalog", () => {
 
   it("discovers configured and automatic Codex homes while retaining the route owner", async () => {
     const root = await fs.realpath(
-      await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-catalog-homes-")),
+      await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-catalog-homes-")),
     );
     tempDirs.push(root);
     const alphaAgentDir = path.join(root, "agents", "alpha", "agent");
@@ -325,7 +325,7 @@ describe("Codex supervision catalog", () => {
           { id: "file", agentDir: fileAgentDir },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const env = { ...process.env, CODEX_HOME: processCodexHome };
 
     const control = createCodexSessionCatalogControlFactory({
@@ -410,7 +410,7 @@ describe("Codex supervision catalog", () => {
 
   it("refreshes Codex homes once for each hot-reloaded config generation", async () => {
     const root = await fs.realpath(
-      await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-catalog-reload-")),
+      await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-catalog-reload-")),
     );
     tempDirs.push(root);
     const alphaAgentDir = path.join(root, "agents", "alpha", "agent");
@@ -425,7 +425,7 @@ describe("Codex supervision catalog", () => {
     );
     const configA = {
       agents: { ownership: "explicit", list: [{ id: "alpha", agentDir: alphaAgentDir }] },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const configB = {
       agents: {
         ownership: "explicit",
@@ -434,7 +434,7 @@ describe("Codex supervision catalog", () => {
           { id: "beta", agentDir: betaAgentDir },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     let runtimeConfig = configA;
     const statSync = vi.spyOn(fsSync, "statSync");
     try {
@@ -470,7 +470,7 @@ describe("Codex supervision catalog", () => {
 
   it("exposes every local source as an actionable host for the selected owner", async () => {
     const root = await fs.realpath(
-      await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-catalog-hosts-")),
+      await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-catalog-hosts-")),
     );
     tempDirs.push(root);
     const alphaAgentDir = path.join(root, "agents", "alpha", "agent");
@@ -491,7 +491,7 @@ describe("Codex supervision catalog", () => {
           { id: "beta", agentDir: betaAgentDir },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const { runtime } = createRuntime();
     const { api, getProvider } = createGatewayApi(runtime, runtimeConfig);
     const listPage = vi.fn(async (source?: { agentDir: string; sourceHomeId: string }) => ({
@@ -550,7 +550,7 @@ describe("Codex supervision catalog", () => {
     const homeA = source("home-a", CODEX_LOCAL_SESSION_HOST_ID);
     const homeB = source("home-b", `${CODEX_LOCAL_SESSION_HOST_ID}:home-b`);
     const sessionKey = supervisionSessionKey("thread-1", homeA.sourceHomeId);
-    const sessionId = "openclaw-session-home-a";
+    const sessionId = "afora-session-home-a";
     const { runtime } = createRuntime({
       entries: [
         {

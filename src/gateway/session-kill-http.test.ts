@@ -9,15 +9,15 @@ const TEST_GATEWAY_TOKEN = "test-gateway-token-1234567890";
 const WORKER_SESSION_KEY = "agent:main:subagent:worker";
 const WORKER_KILL_PATH = "/sessions/agent%3Amain%3Asubagent%3Aworker/kill";
 const ADMIN_SCOPE_HEADERS = {
-  "x-openclaw-scopes": "operator.admin",
+  "x-afora-scopes": "operator.admin",
 };
 const REQUESTER_WRITE_HEADERS = {
-  "x-openclaw-scopes": "operator.write",
-  "x-openclaw-requester-session-key": "agent:main:main",
+  "x-afora-scopes": "operator.write",
+  "x-afora-requester-session-key": "agent:main:main",
 };
 const REQUESTER_ADMIN_HEADERS = {
-  "x-openclaw-scopes": "operator.admin",
-  "x-openclaw-requester-session-key": "agent:other:main",
+  "x-afora-scopes": "operator.admin",
+  "x-afora-requester-session-key": "agent:other:main",
 };
 
 let cfg: Record<string, unknown> = {};
@@ -201,7 +201,7 @@ describe("POST /sessions/:sessionKey/kill", () => {
       "/sessions/agent%3AMain%3ASubagent%3AWorker/kill",
       TEST_GATEWAY_TOKEN,
       {
-        "x-openclaw-scopes": "operator.admin",
+        "x-afora-scopes": "operator.admin",
       },
     );
     expect(response.status).toBe(200);
@@ -230,7 +230,7 @@ describe("POST /sessions/:sessionKey/kill", () => {
     expect(killSubagentRunAdminMock).not.toHaveBeenCalled();
   });
 
-  it("does not trust x-openclaw-scopes on shared-secret bearer auth", async () => {
+  it("does not trust x-afora-scopes on shared-secret bearer auth", async () => {
     const response = await postWorkerKill(TEST_GATEWAY_TOKEN, ADMIN_SCOPE_HEADERS);
     await expectForbiddenMissingScope(response, "missing scope: operator.admin");
     expect(loadSessionEntryMock).not.toHaveBeenCalled();
@@ -273,7 +273,7 @@ describe("POST /sessions/:sessionKey/kill", () => {
     const response = await post(
       "/sessions/agent%3Amain%3Asubagent%3Aworker/kill",
       TEST_GATEWAY_TOKEN,
-      { "x-openclaw-requester-session-key": "agent:other:main" },
+      { "x-afora-requester-session-key": "agent:other:main" },
     );
     expect(response.status).toBe(403);
     expectErrorResponse(await response.json(), {

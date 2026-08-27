@@ -1,7 +1,7 @@
 import { css, html, nothing, type PropertyValues } from "lit";
 import { property, query, state } from "lit/decorators.js";
 import { t } from "../i18n/index.ts";
-import { OpenClawLitElement } from "../lit/openclaw-element.ts";
+import { AforaLitElement } from "../lit/afora-element.ts";
 import { icons } from "./icons.ts";
 import "./modal-dialog.ts";
 
@@ -28,7 +28,7 @@ function dataUrlMimeType(source: string): string | undefined {
   return mediaType === undefined ? undefined : mimeTypeEssence(mediaType);
 }
 
-class OpenClawImageLightbox extends OpenClawLitElement {
+class AforaImageLightbox extends AforaLitElement {
   @property() src = "";
   @property() override title = "";
   @query(".open-original") private openOriginal?: HTMLAnchorElement;
@@ -43,10 +43,10 @@ class OpenClawImageLightbox extends OpenClawLitElement {
       display: contents;
     }
 
-    openclaw-modal-dialog {
-      --openclaw-modal-width: min(1280px, calc(100vw - 40px));
-      --openclaw-modal-max-width: calc(100vw - 40px);
-      --openclaw-modal-max-height: calc(100dvh - 40px);
+    afora-modal-dialog {
+      --afora-modal-width: min(1280px, calc(100vw - 40px));
+      --afora-modal-max-width: calc(100vw - 40px);
+      --afora-modal-max-height: calc(100dvh - 40px);
     }
 
     .lightbox {
@@ -156,10 +156,10 @@ class OpenClawImageLightbox extends OpenClawLitElement {
     }
 
     @media (max-width: 720px), (max-height: 520px) and (orientation: landscape) {
-      openclaw-modal-dialog {
-        --openclaw-modal-width: calc(100vw - 24px);
-        --openclaw-modal-max-width: calc(100vw - 24px);
-        --openclaw-modal-max-height: 100dvh;
+      afora-modal-dialog {
+        --afora-modal-width: calc(100vw - 24px);
+        --afora-modal-max-width: calc(100vw - 24px);
+        --afora-modal-max-height: 100dvh;
       }
 
       .lightbox {
@@ -205,7 +205,7 @@ class OpenClawImageLightbox extends OpenClawLitElement {
   override render() {
     const title = this.title.trim() || t("chat.imageLightbox.untitled");
     return html`
-      <openclaw-modal-dialog
+      <afora-modal-dialog
         label=${t("chat.imageLightbox.label", { title })}
         @modal-cancel=${this.emitClose}
         @keydown=${this.handleKeydown}
@@ -241,7 +241,7 @@ class OpenClawImageLightbox extends OpenClawLitElement {
             <img class="image" src=${this.src} alt=${title} />
           </div>
         </section>
-      </openclaw-modal-dialog>
+      </afora-modal-dialog>
     `;
   }
 
@@ -329,12 +329,12 @@ class OpenClawImageLightbox extends OpenClawLitElement {
   };
 }
 
-if (!customElements.get("openclaw-image-lightbox")) {
-  customElements.define("openclaw-image-lightbox", OpenClawImageLightbox);
+if (!customElements.get("afora-image-lightbox")) {
+  customElements.define("afora-image-lightbox", AforaImageLightbox);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "openclaw-image-lightbox": OpenClawImageLightbox;
+    "afora-image-lightbox": AforaImageLightbox;
   }
 }

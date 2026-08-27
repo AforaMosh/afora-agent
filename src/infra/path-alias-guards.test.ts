@@ -6,7 +6,7 @@ import { withTestDir } from "../test-helpers/temp-dir.js";
 import { assertNoPathAliasEscape } from "./path-alias-guards.js";
 
 async function withAliasRoot(cb: (root: string) => Promise<void>): Promise<void> {
-  await withTestDir({ prefix: "openclaw-path-alias-", subdir: "root" }, cb);
+  await withTestDir({ prefix: "afora-path-alias-", subdir: "root" }, cb);
 }
 
 describe("assertNoPathAliasEscape", () => {

@@ -1,6 +1,6 @@
 // @vitest-environment node
 // Control UI tests cover chat model ref behavior.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import {
   createAmbiguousModelCatalog,

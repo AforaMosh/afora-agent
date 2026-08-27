@@ -52,13 +52,13 @@ const preparedModelRuntimeMocks = vi.hoisted(() => ({
   createStaticCatalogResolver: vi.fn<CreateStaticCatalogResolver>(),
   discoverAuthStorage: vi.fn((..._args: unknown[]) => undefined as unknown),
   discoverModels: vi.fn(),
-  ensureOpenClawModelsJson: vi.fn(async (..._args: unknown[]) => ({
+  ensureAforaModelsJson: vi.fn(async (..._args: unknown[]) => ({
     agentDir: "/tmp/agent",
     wrote: false,
   })),
   loadAgentRuntimePluginRegistryHandle: vi.fn(),
   loadStaticCatalog: vi.fn<LoadStaticCatalog>(async () => []),
-  planOpenClawModelsJsonSource: vi.fn(async (...args: unknown[]) => ({
+  planAforaModelsJsonSource: vi.fn(async (...args: unknown[]) => ({
     agentDir: String(args[1]),
     modelsJsonContents: null,
     pluginCatalogs: [],
@@ -296,10 +296,10 @@ vi.mock("./model-discovery-context.js", () => ({
 }));
 
 vi.mock("./models-config.js", () => ({
-  ensureOpenClawModelsJson: (...args: unknown[]) =>
-    preparedModelRuntimeMocks.ensureOpenClawModelsJson(...args),
-  planOpenClawModelsJsonSource: (...args: unknown[]) =>
-    preparedModelRuntimeMocks.planOpenClawModelsJsonSource(...args),
+  ensureAforaModelsJson: (...args: unknown[]) =>
+    preparedModelRuntimeMocks.ensureAforaModelsJson(...args),
+  planAforaModelsJsonSource: (...args: unknown[]) =>
+    preparedModelRuntimeMocks.planAforaModelsJsonSource(...args),
 }));
 
 vi.mock("./models-config.providers.implicit.js", () => ({
@@ -335,7 +335,7 @@ export function getPreparedModelRuntimeMocks(): typeof preparedModelRuntimeMocks
 
 export function getPreparedModelRuntimeTestApi(): PreparedModelRuntimeTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.preparedModelRuntimeTestApi")
+    Symbol.for("afora.preparedModelRuntimeTestApi")
   ] as PreparedModelRuntimeTestApi;
 }
 
@@ -359,14 +359,14 @@ export function resetPreparedModelRuntimeHarness(): void {
     .mockReset()
     .mockImplementation(() => preparedModelRuntimeMocks.authStorage);
   preparedModelRuntimeMocks.discoverModels.mockReset();
-  preparedModelRuntimeMocks.ensureOpenClawModelsJson
+  preparedModelRuntimeMocks.ensureAforaModelsJson
     .mockReset()
     .mockResolvedValue({ agentDir: "/tmp/agent", wrote: false });
   preparedModelRuntimeMocks.loadAgentRuntimePluginRegistryHandle
     .mockReset()
     .mockReturnValue(createEmptyPluginRegistry());
   preparedModelRuntimeMocks.loadStaticCatalog.mockReset().mockResolvedValue([]);
-  preparedModelRuntimeMocks.planOpenClawModelsJsonSource
+  preparedModelRuntimeMocks.planAforaModelsJsonSource
     .mockReset()
     .mockImplementation(async (_config, agentDir) => ({
       agentDir: String(agentDir),

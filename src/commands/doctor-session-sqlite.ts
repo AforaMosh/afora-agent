@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { tryResolveDefaultAgentId } from "../agents/agent-scope.js";
 import { getRuntimeConfig } from "../config/config.js";
 import { tryResolveLegacyCompatibilityAgentId } from "../config/legacy.default-agent-owner.js";
@@ -18,7 +18,7 @@ import {
   type SessionStoreTarget as ResolvedSessionStoreTarget,
 } from "../config/sessions/targets.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveStoredSessionOwnerAgentId } from "../gateway/session-store-key.js";
 import { readFileDescriptorBoundedSync } from "../infra/boundary-file-read.js";
 import { isPathInside } from "../infra/path-guards.js";
@@ -29,7 +29,7 @@ import {
   normalizeAgentId,
   parseAgentSessionKey,
 } from "../routing/session-key.js";
-import { closeOpenClawAgentDatabaseByPath } from "../state/openclaw-agent-db.js";
+import { closeAforaAgentDatabaseByPath } from "../state/afora-agent-db.js";
 import { compactDoctorSessionSqliteTarget } from "./doctor-session-sqlite-compact.js";
 import {
   assertSafeSessionSqliteMigrationDirectory,
@@ -224,7 +224,7 @@ function commonPathAncestor(leftPath: string, rightPath: string): string {
 }
 
 // Direct store migrations are scoped by path; broader agent discovery needs runtime config.
-function resolveDoctorSessionSqliteConfig(options: DoctorSessionSqliteOptions): OpenClawConfig {
+function resolveDoctorSessionSqliteConfig(options: DoctorSessionSqliteOptions): AforaConfig {
   if (options.cfg) {
     return options.cfg;
   }
@@ -237,7 +237,7 @@ function resolveDoctorSessionSqliteConfig(options: DoctorSessionSqliteOptions): 
 function resolveDoctorSessionSqliteTargets(params: {
   allAgents?: boolean;
   agent?: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   mode: DoctorSessionSqliteMode;
   store?: string;
@@ -305,7 +305,7 @@ function filterLegacySessionStoreTargets(
 async function inspectOrMigrateTarget(params: {
   activeRun?: ActiveSessionSqliteMigrationRun;
   archiveImportedArtifacts?: boolean;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   mode: Exclude<DoctorSessionSqliteMode, "restore" | "recover">;
   target: SessionStoreTarget;
@@ -401,7 +401,7 @@ async function inspectOrMigrateTarget(params: {
 }
 
 function resolveFullyCoveredLegacyStorePaths(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   targets: readonly SessionStoreTarget[],
 ): Set<string> {
   const covered = new Set<string>();
@@ -526,7 +526,7 @@ function readLegacySessionRecords(
 }
 
 function isLegacySessionRecordOwnedByTarget(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   target: SessionStoreTarget,
   sessionKey: string,
 ): boolean {
@@ -1181,7 +1181,7 @@ function compactSqliteDatabase(
 ): void {
   try {
     if (options.closeImportedHandle) {
-      closeOpenClawAgentDatabaseByPath(resolveTargetSqlitePath(target));
+      closeAforaAgentDatabaseByPath(resolveTargetSqlitePath(target));
     }
     report.compact = options.migrateOlderSchema
       ? compactDoctorSessionSqliteTarget(target, {

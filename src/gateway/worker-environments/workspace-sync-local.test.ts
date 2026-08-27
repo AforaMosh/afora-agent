@@ -101,7 +101,7 @@ async function waitForFile(filePath: string): Promise<void> {
 
 describe("runLocalCommandToFile", () => {
   it("fully persists bounded stdout after a positive short write", async () => {
-    const root = tempDirs.make("openclaw-workspace-command-short-write-");
+    const root = tempDirs.make("afora-workspace-command-short-write-");
     const outputPath = path.join(root, "output");
     const expected = Buffer.from("bounded workspace inventory output\n");
     const shortWriteObserved = injectPositiveShortWrite(outputPath);
@@ -119,7 +119,7 @@ describe("runLocalCommandToFile", () => {
   });
 
   it("fully persists a buffered Git transfer list after a positive short write", async () => {
-    const root = tempDirs.make("openclaw-workspace-list-short-write-");
+    const root = tempDirs.make("afora-workspace-list-short-write-");
     const temporaryDirectory = `${root}-transfer`;
     const outputPath = path.join(temporaryDirectory, "transfer-list");
     await fs.mkdir(path.join(root, "nested"));
@@ -144,7 +144,7 @@ describe("runLocalCommandToFile", () => {
   });
 
   it("fully persists a filtered Git transfer list after a positive short write", async () => {
-    const root = tempDirs.make("openclaw-workspace-filter-short-write-");
+    const root = tempDirs.make("afora-workspace-filter-short-write-");
     const preparedListPath = path.join(root, "prepared");
     const outputPath = path.join(root, "filtered");
     await fs.mkdir(path.join(root, "nested"));
@@ -164,7 +164,7 @@ describe("runLocalCommandToFile", () => {
   });
 
   it("force-kills a command that ignores abort termination", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-workspace-sync-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-workspace-sync-"));
     const outputPath = path.join(root, "output");
     const readyPath = path.join(root, "ready");
     const controller = new AbortController();
@@ -199,7 +199,7 @@ describe("runLocalCommandToFile", () => {
   });
 
   it("stops a pack producer before it can exceed its output budget", async () => {
-    const root = tempDirs.make("openclaw-workspace-pack-limit-");
+    const root = tempDirs.make("afora-workspace-pack-limit-");
     const outputPath = path.join(root, "pack");
 
     await expect(
@@ -215,7 +215,7 @@ describe("runLocalCommandToFile", () => {
   });
 
   it("omits derived artifacts from outbound Git file lists", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-workspace-files-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-workspace-files-"));
     const files = [
       "src/keep.ts",
       "__pycache__/fizzbuzz.cpython-314.pyc",
@@ -265,7 +265,7 @@ describe("runLocalCommandToFile", () => {
   });
 
   it("bounds raw Git candidates before materializing the eligible inventory", async () => {
-    const root = tempDirs.make("openclaw-workspace-candidates-");
+    const root = tempDirs.make("afora-workspace-candidates-");
     const bin = path.join(root, "bin");
     const mockGit = path.join(bin, "git");
     const countFile = path.join(bin, "git-entry-count");
@@ -323,7 +323,7 @@ process.stdout.write("eligible.txt\\0".repeat(count));
 
 describe("preflightWorkerWorkspace", () => {
   it("measures the canonical Git eligibility boundary without hashing content", async () => {
-    const root = tempDirs.make("openclaw-workspace-preflight-");
+    const root = tempDirs.make("afora-workspace-preflight-");
     const transferDirectory = `${root}-transfer`;
     try {
       await git(root, "init", "--quiet");
@@ -337,9 +337,9 @@ describe("preflightWorkerWorkspace", () => {
       await git(
         root,
         "-c",
-        "user.name=OpenClaw Test",
+        "user.name=Afora Test",
         "-c",
-        "user.email=test@openclaw.invalid",
+        "user.email=test@afora.invalid",
         "commit",
         "--quiet",
         "-m",
@@ -389,7 +389,7 @@ describe("preflightWorkerWorkspace", () => {
   });
 
   it("rejects escaping symlinks with a typed bounded error", async () => {
-    const root = tempDirs.make("openclaw-workspace-symlink-");
+    const root = tempDirs.make("afora-workspace-symlink-");
     try {
       await git(root, "init", "--quiet");
       await fs.writeFile(path.join(root, "tracked.txt"), "tracked\n");
@@ -397,9 +397,9 @@ describe("preflightWorkerWorkspace", () => {
       await git(
         root,
         "-c",
-        "user.name=OpenClaw Test",
+        "user.name=Afora Test",
         "-c",
-        "user.email=test@openclaw.invalid",
+        "user.email=test@afora.invalid",
         "commit",
         "--quiet",
         "-m",
@@ -420,8 +420,8 @@ describe("preflightWorkerWorkspace", () => {
   });
 
   it("preserves filesystem and abort failures as operational errors", async () => {
-    const missingParent = tempDirs.make("openclaw-workspace-missing-");
-    const root = tempDirs.make("openclaw-workspace-abort-");
+    const missingParent = tempDirs.make("afora-workspace-missing-");
+    const root = tempDirs.make("afora-workspace-abort-");
     try {
       const missing = await preflightWorkerWorkspace({
         localPath: path.join(missingParent, "absent"),

@@ -90,10 +90,10 @@ function subscriptionIncludesKind(
 
 describe("Buzz mention delivery", () => {
   beforeEach(() => {
-    previousStateDir = process.env.OPENCLAW_STATE_DIR;
-    // openclaw-temp-dir: allow extension tests cannot import root test helpers.
-    stateDir = mkdtempSync(path.join(tmpdir(), "openclaw-buzz-mentions-"));
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+    previousStateDir = process.env.AFORA_STATE_DIR;
+    // afora-temp-dir: allow extension tests cannot import root test helpers.
+    stateDir = mkdtempSync(path.join(tmpdir(), "afora-buzz-mentions-"));
+    process.env.AFORA_STATE_DIR = stateDir;
     vi.clearAllMocks();
     relayMocks.profileEvents = [];
     relayMocks.subscriptions.length = 0;
@@ -130,9 +130,9 @@ describe("Buzz mention delivery", () => {
 
   afterEach(() => {
     if (previousStateDir === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.AFORA_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = previousStateDir;
+      process.env.AFORA_STATE_DIR = previousStateDir;
     }
     rmSync(stateDir, { recursive: true, force: true });
   });

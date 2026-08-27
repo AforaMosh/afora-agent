@@ -1,6 +1,6 @@
 ---
 name: telegram-crabbox-e2e-proof
-description: Use when reviewing, reproducing, or proving OpenClaw Telegram behavior with a real Telegram user on Crabbox, including PR review workflows that need an agent-controlled Telegram Desktop recording, TDLib user-driver commands, Convex-leased credentials, WebVNC observation, and motion-trimmed artifacts.
+description: Use when reviewing, reproducing, or proving Afora Telegram behavior with a real Telegram user on Crabbox, including PR review workflows that need an agent-controlled Telegram Desktop recording, TDLib user-driver commands, Convex-leased credentials, WebVNC observation, and motion-trimmed artifacts.
 ---
 
 # Telegram Crabbox E2E Proof
@@ -14,12 +14,12 @@ artifact bundle. The runner leases the shared burner account from Convex.
 
 ## Start
 
-Run from the OpenClaw repo and branch under test:
+Run from the Afora repo and branch under test:
 
 ```bash
-proof_cmd="${OPENCLAW_TELEGRAM_USER_PROOF_CMD:-openclaw-telegram-user-crabbox-proof}"
+proof_cmd="${AFORA_TELEGRAM_USER_PROOF_CMD:-afora-telegram-user-crabbox-proof}"
 "$proof_cmd" start \
-  --tdlib-url http://artifacts.openclaw.ai/tdlib-v1.8.0-linux-x64.tgz \
+  --tdlib-url http://artifacts.afora.ai/tdlib-v1.8.0-linux-x64.tgz \
   --output-dir .artifacts/qa-e2e/telegram-user-crabbox/pr-review
 ```
 
@@ -27,7 +27,7 @@ This starts one held session:
 
 - leases the exclusive `telegram-user` Convex credential
 - restores TDLib and Telegram Desktop with the same user account
-- starts a mock OpenClaw Telegram SUT from the current checkout
+- starts a mock Afora Telegram SUT from the current checkout
 - selects the configured Telegram chat in the visible Linux desktop
 - starts a 24fps desktop recording
 - writes `.artifacts/qa-e2e/telegram-user-crabbox/pr-review/session.json`
@@ -40,9 +40,9 @@ For deterministic visual repros, put the exact mock-model reply in a file and
 pass it to `start`:
 
 ```bash
-proof_cmd="${OPENCLAW_TELEGRAM_USER_PROOF_CMD:-openclaw-telegram-user-crabbox-proof}"
+proof_cmd="${AFORA_TELEGRAM_USER_PROOF_CMD:-afora-telegram-user-crabbox-proof}"
 "$proof_cmd" start \
-  --tdlib-url http://artifacts.openclaw.ai/tdlib-v1.8.0-linux-x64.tgz \
+  --tdlib-url http://artifacts.afora.ai/tdlib-v1.8.0-linux-x64.tgz \
   --mock-response-file .artifacts/qa-e2e/telegram-user-crabbox/reply.txt \
   --output-dir .artifacts/qa-e2e/telegram-user-crabbox/pr-review
 ```
@@ -52,7 +52,7 @@ set the SUT config before Gateway startup:
 
 ```bash
 "$proof_cmd" start \
-  --tdlib-url http://artifacts.openclaw.ai/tdlib-v1.8.0-linux-x64.tgz \
+  --tdlib-url http://artifacts.afora.ai/tdlib-v1.8.0-linux-x64.tgz \
   --link-preview false \
   --mock-response-chunk-delay-ms 1200 \
   --mock-response-file .artifacts/qa-e2e/telegram-user-crabbox/reply.txt \
@@ -74,7 +74,7 @@ For visual proof, first send or identify a bottom marker message, then open the
 group/topic directly by message id:
 
 ```bash
-proof_cmd="${OPENCLAW_TELEGRAM_USER_PROOF_CMD:-openclaw-telegram-user-crabbox-proof}"
+proof_cmd="${AFORA_TELEGRAM_USER_PROOF_CMD:-afora-telegram-user-crabbox-proof}"
 "$proof_cmd" view \
   --session .artifacts/qa-e2e/telegram-user-crabbox/pr-review/session.json \
   --message-id <message-id>
@@ -97,7 +97,7 @@ Bottom behavior matters:
 Send as the real Telegram user:
 
 ```bash
-proof_cmd="${OPENCLAW_TELEGRAM_USER_PROOF_CMD:-openclaw-telegram-user-crabbox-proof}"
+proof_cmd="${AFORA_TELEGRAM_USER_PROOF_CMD:-afora-telegram-user-crabbox-proof}"
 "$proof_cmd" send \
   --session .artifacts/qa-e2e/telegram-user-crabbox/pr-review/session.json \
   --text /status
@@ -108,27 +108,27 @@ For slash commands, omit the bot username; the runner targets the SUT bot.
 Run arbitrary commands on the Crabbox:
 
 ```bash
-proof_cmd="${OPENCLAW_TELEGRAM_USER_PROOF_CMD:-openclaw-telegram-user-crabbox-proof}"
+proof_cmd="${AFORA_TELEGRAM_USER_PROOF_CMD:-afora-telegram-user-crabbox-proof}"
 "$proof_cmd" run \
   --session .artifacts/qa-e2e/telegram-user-crabbox/pr-review/session.json \
-  -- bash -lc 'source /tmp/openclaw-telegram-user-crabbox/env.sh && python3 /tmp/openclaw-telegram-user-crabbox/user-driver.py transcript --limit 20 --json'
+  -- bash -lc 'source /tmp/afora-telegram-user-crabbox/env.sh && python3 /tmp/afora-telegram-user-crabbox/user-driver.py transcript --limit 20 --json'
 ```
 
 Useful remote user-driver commands:
 
 ```bash
-source /tmp/openclaw-telegram-user-crabbox/env.sh
-python3 /tmp/openclaw-telegram-user-crabbox/user-driver.py status --json
-python3 /tmp/openclaw-telegram-user-crabbox/user-driver.py chats --json
-python3 /tmp/openclaw-telegram-user-crabbox/user-driver.py transcript --limit 20 --json
-python3 /tmp/openclaw-telegram-user-crabbox/user-driver.py send --text '/status@{sut}'
-python3 /tmp/openclaw-telegram-user-crabbox/user-driver.py probe --text '@{sut} Reply exactly: USER-E2E-{run}' --expect USER-E2E-
+source /tmp/afora-telegram-user-crabbox/env.sh
+python3 /tmp/afora-telegram-user-crabbox/user-driver.py status --json
+python3 /tmp/afora-telegram-user-crabbox/user-driver.py chats --json
+python3 /tmp/afora-telegram-user-crabbox/user-driver.py transcript --limit 20 --json
+python3 /tmp/afora-telegram-user-crabbox/user-driver.py send --text '/status@{sut}'
+python3 /tmp/afora-telegram-user-crabbox/user-driver.py probe --text '@{sut} Reply exactly: USER-E2E-{run}' --expect USER-E2E-
 ```
 
 Capture the current desktop without ending the session:
 
 ```bash
-proof_cmd="${OPENCLAW_TELEGRAM_USER_PROOF_CMD:-openclaw-telegram-user-crabbox-proof}"
+proof_cmd="${AFORA_TELEGRAM_USER_PROOF_CMD:-afora-telegram-user-crabbox-proof}"
 "$proof_cmd" screenshot \
   --session .artifacts/qa-e2e/telegram-user-crabbox/pr-review/session.json
 ```
@@ -136,7 +136,7 @@ proof_cmd="${OPENCLAW_TELEGRAM_USER_PROOF_CMD:-openclaw-telegram-user-crabbox-pr
 Check lease state and get the WebVNC command:
 
 ```bash
-proof_cmd="${OPENCLAW_TELEGRAM_USER_PROOF_CMD:-openclaw-telegram-user-crabbox-proof}"
+proof_cmd="${AFORA_TELEGRAM_USER_PROOF_CMD:-afora-telegram-user-crabbox-proof}"
 "$proof_cmd" status \
   --session .artifacts/qa-e2e/telegram-user-crabbox/pr-review/session.json
 ```
@@ -146,7 +146,7 @@ proof_cmd="${OPENCLAW_TELEGRAM_USER_PROOF_CMD:-openclaw-telegram-user-crabbox-pr
 Always finish or explicitly keep the box:
 
 ```bash
-proof_cmd="${OPENCLAW_TELEGRAM_USER_PROOF_CMD:-openclaw-telegram-user-crabbox-proof}"
+proof_cmd="${AFORA_TELEGRAM_USER_PROOF_CMD:-afora-telegram-user-crabbox-proof}"
 "$proof_cmd" finish \
   --session .artifacts/qa-e2e/telegram-user-crabbox/pr-review/session.json \
   --preview-crop telegram-window
@@ -175,7 +175,7 @@ Attach only the useful visual artifact to the PR unless logs are needed. The
 runner is GIF-only by default:
 
 ```bash
-proof_cmd="${OPENCLAW_TELEGRAM_USER_PROOF_CMD:-openclaw-telegram-user-crabbox-proof}"
+proof_cmd="${AFORA_TELEGRAM_USER_PROOF_CMD:-afora-telegram-user-crabbox-proof}"
 "$proof_cmd" publish \
   --session .artifacts/qa-e2e/telegram-user-crabbox/pr-review/session.json \
   --pr <pr-number> \
@@ -199,7 +199,7 @@ cp <main-output>/telegram-user-crabbox-session-motion-telegram-window.gif \
 cp <pr-output>/telegram-user-crabbox-session-motion-telegram-window.gif \
   .artifacts/qa-e2e/telegram-user-crabbox/pr-123/comparison/pr-after.gif
 crabbox artifacts publish \
-  --repo openclaw/openclaw \
+  --repo AforaMosh/afora-agent \
   --pr 123 \
   --dir .artifacts/qa-e2e/telegram-user-crabbox/pr-123/comparison \
   --summary 'Telegram before/after proof' \
@@ -215,7 +215,7 @@ experiments unless those artifacts are explicitly needed.
 For a fast one-shot check, use:
 
 ```bash
-proof_cmd="${OPENCLAW_TELEGRAM_USER_PROOF_CMD:-openclaw-telegram-user-crabbox-proof}"
+proof_cmd="${AFORA_TELEGRAM_USER_PROOF_CMD:-afora-telegram-user-crabbox-proof}"
 "$proof_cmd" --text /status
 ```
 

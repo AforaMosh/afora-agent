@@ -1,4 +1,4 @@
-use crate::cli::OpenClawCli;
+use crate::cli::AforaCli;
 use crate::gateway_ws::GatewayWsConfig;
 use serde::{Deserialize, Serialize};
 use std::thread;
@@ -26,7 +26,7 @@ impl GatewaySnapshot {
             running: false,
             reachable: false,
             status: "CLI required".to_string(),
-            detail: Some("Install the OpenClaw CLI to continue.".to_string()),
+            detail: Some("Install the Afora CLI to continue.".to_string()),
         }
     }
 
@@ -111,7 +111,7 @@ struct DashboardResponse {
     reason: Option<String>,
 }
 
-pub fn status(cli: &OpenClawCli) -> Result<GatewaySnapshot, String> {
+pub fn status(cli: &AforaCli) -> Result<GatewaySnapshot, String> {
     let (value, _) = cli
         .json::<DaemonStatus, _, _>(["gateway", "status", "--json"])
         .map_err(|error| error.to_string())?;
@@ -145,7 +145,7 @@ pub fn status(cli: &OpenClawCli) -> Result<GatewaySnapshot, String> {
                     "{error}\nThe Gateway on the configured port rejected this profile's \
                      credentials. This may indicate another user's Gateway is using the \
                      port, or that this profile's stored token is stale. Run \
-                     `openclaw gateway status` in a terminal to inspect it, then retry."
+                     `afora gateway status` in a terminal to inspect it, then retry."
                 )
             } else {
                 error
@@ -172,7 +172,7 @@ pub fn status(cli: &OpenClawCli) -> Result<GatewaySnapshot, String> {
     })
 }
 
-pub fn ensure_ready(cli: &OpenClawCli) -> Result<ReadyGateway, String> {
+pub fn ensure_ready(cli: &AforaCli) -> Result<ReadyGateway, String> {
     let mut snapshot = status(cli)?;
     if snapshot.reachable {
         return dashboard(cli, snapshot);
@@ -190,7 +190,7 @@ pub fn ensure_ready(cli: &OpenClawCli) -> Result<ReadyGateway, String> {
     dashboard(cli, snapshot)
 }
 
-fn wait_until_reachable(cli: &OpenClawCli) -> Result<GatewaySnapshot, String> {
+fn wait_until_reachable(cli: &AforaCli) -> Result<GatewaySnapshot, String> {
     let mut snapshot = status(cli)?;
     for attempt in 0..START_ATTEMPTS {
         if snapshot.reachable {
@@ -206,7 +206,7 @@ fn wait_until_reachable(cli: &OpenClawCli) -> Result<GatewaySnapshot, String> {
         .unwrap_or_else(|| "Gateway did not become reachable.".to_string()))
 }
 
-pub fn act(cli: &OpenClawCli, action: GatewayAction) -> Result<GatewaySnapshot, String> {
+pub fn act(cli: &AforaCli, action: GatewayAction) -> Result<GatewaySnapshot, String> {
     run_service_command(cli, action.command())?;
     if matches!(action, GatewayAction::Stop) {
         return status(cli);
@@ -214,7 +214,7 @@ pub fn act(cli: &OpenClawCli, action: GatewayAction) -> Result<GatewaySnapshot, 
     wait_until_reachable(cli)
 }
 
-pub fn dashboard(cli: &OpenClawCli, snapshot: GatewaySnapshot) -> Result<ReadyGateway, String> {
+pub fn dashboard(cli: &AforaCli, snapshot: GatewaySnapshot) -> Result<ReadyGateway, String> {
     // CLIs released before `dashboard --json` reject the flag without JSON output;
     // surface an upgrade path instead of a raw parse error.
     let (response, output) =
@@ -222,8 +222,8 @@ pub fn dashboard(cli: &OpenClawCli, snapshot: GatewaySnapshot) -> Result<ReadyGa
             Ok(result) => result,
             Err(crate::cli::CliError::InvalidJson(_)) => {
                 return Err(
-                    "The installed OpenClaw CLI does not support the desktop dashboard \
-                 integration. Update OpenClaw (for example: npm install -g openclaw@latest), \
+                    "The installed Afora CLI does not support the desktop dashboard \
+                 integration. Update Afora (for example: npm install -g afora@latest), \
                  then retry."
                         .to_string(),
                 );
@@ -298,7 +298,7 @@ mod dashboard_tests {
     }
 }
 
-fn run_service_command(cli: &OpenClawCli, action: &str) -> Result<(), String> {
+fn run_service_command(cli: &AforaCli, action: &str) -> Result<(), String> {
     let (response, output) = cli
         .json::<CommandResponse, _, _>(["gateway", action, "--json"])
         .map_err(|error| error.to_string())?;

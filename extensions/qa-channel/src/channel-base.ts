@@ -1,4 +1,4 @@
-import { defineChannelSetupContract } from "openclaw/plugin-sdk/channel-setup";
+import { defineChannelSetupContract } from "afora-agent/plugin-sdk/channel-setup";
 // Qa Channel plugin module implements channel base behavior.
 import {
   listQaChannelAccountIds,
@@ -20,7 +20,7 @@ export const qaChannelRuntimeMeta = {
   label: "QA Channel",
   selectionLabel: "QA Channel",
   docsPath: "/channels/qa-channel",
-  blurb: "Synthetic QA channel for OpenClaw QA runs.",
+  blurb: "Synthetic QA channel for Afora QA runs.",
 };
 const qaChannelSetupMeta = qaChannelRuntimeMeta;
 

@@ -8,9 +8,9 @@ import {
 } from "../../agents/admitted-run-context.js";
 import { createSkillWorkshopTool } from "../../agents/tools/skill-workshop-tool.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../../test-utils/afora-test-state.js";
 import { createTrackedTempDirs } from "../../test-utils/tracked-temp-dirs.js";
 import { writeWorkspaceSkills } from "../test-support/e2e-test-helpers.js";
 import {
@@ -39,13 +39,13 @@ async function makeWorkspaceDir(prefix: string): Promise<string> {
   return await fs.realpath(await tempDirs.make(prefix));
 }
 
-let testState: OpenClawTestState;
+let testState: AforaTestState;
 
 beforeEach(async () => {
   authStoresByAgentDir.clear();
-  testState = await createOpenClawTestState({
+  testState = await createAforaTestState({
     layout: "state-only",
-    prefix: "openclaw-collection-review-state-",
+    prefix: "afora-collection-review-state-",
   });
 });
 
@@ -58,7 +58,7 @@ afterEach(async () => {
 
 describe("skill collection review", () => {
   it("runs an incognito session with only collection read and reconcile", async () => {
-    const workspaceDir = await makeWorkspaceDir("openclaw-collection-review-workspace-");
+    const workspaceDir = await makeWorkspaceDir("afora-collection-review-workspace-");
     await writeWorkspaceSkills(workspaceDir, [
       { name: "useful", description: "Useful reusable procedure" },
     ]);
@@ -133,7 +133,7 @@ describe("skill collection review", () => {
   });
 
   it("encodes hostile skill metadata as prompt data", async () => {
-    const workspaceDir = await makeWorkspaceDir("openclaw-collection-review-hostile-metadata-");
+    const workspaceDir = await makeWorkspaceDir("afora-collection-review-hostile-metadata-");
     await writeWorkspaceSkills(workspaceDir, [
       {
         name: "hostile",
@@ -173,7 +173,7 @@ describe("skill collection review", () => {
   });
 
   it("persists the daily boundary per workspace", async () => {
-    const workspaceDir = await makeWorkspaceDir("openclaw-collection-review-cadence-");
+    const workspaceDir = await makeWorkspaceDir("afora-collection-review-cadence-");
     const nowMs = Date.UTC(2026, 7, 10);
 
     expect(isSkillCollectionReviewDue(workspaceDir, nowMs, { env: testState.env })).toBe(true);
@@ -191,7 +191,7 @@ describe("skill collection review", () => {
   });
 
   it("leaves disabled and agent-filtered skills outside the editable collection", async () => {
-    const workspaceDir = await makeWorkspaceDir("openclaw-collection-review-filtered-");
+    const workspaceDir = await makeWorkspaceDir("afora-collection-review-filtered-");
     await writeWorkspaceSkills(workspaceDir, [
       { name: "enabled", description: "Enabled procedure" },
       { name: "disabled", description: "Disabled procedure" },
@@ -248,8 +248,8 @@ describe("skill collection review", () => {
   it.runIf(process.platform !== "win32")(
     "does not dispatch a review for read-only trusted symlink targets",
     async () => {
-      const workspaceDir = await makeWorkspaceDir("openclaw-collection-review-readonly-");
-      const targetSkillsDir = await makeWorkspaceDir("openclaw-collection-review-target-");
+      const workspaceDir = await makeWorkspaceDir("afora-collection-review-readonly-");
+      const targetSkillsDir = await makeWorkspaceDir("afora-collection-review-target-");
       const targetSkillDir = path.join(targetSkillsDir, "skills", "shared-skill");
       await writeWorkspaceSkills(targetSkillsDir, [
         { name: "shared-skill", description: "Shared read-only procedure" },
@@ -281,7 +281,7 @@ describe("skill collection review", () => {
   );
 
   it("does not dispatch a second review when the runner fails after reconciliation", async () => {
-    const workspaceDir = await makeWorkspaceDir("openclaw-collection-review-restart-");
+    const workspaceDir = await makeWorkspaceDir("afora-collection-review-restart-");
     await writeWorkspaceSkills(workspaceDir, [
       { name: "useful", description: "Useful reusable procedure" },
     ]);
@@ -321,7 +321,7 @@ describe("skill collection review", () => {
   });
 
   it("reviews a same-model shared workspace without hiding every agent's skills", async () => {
-    const workspaceDir = await makeWorkspaceDir("openclaw-collection-review-shared-");
+    const workspaceDir = await makeWorkspaceDir("afora-collection-review-shared-");
     await writeWorkspaceSkills(workspaceDir, [
       { name: "alpha", description: "Alpha procedure" },
       { name: "beta", description: "Beta procedure" },
@@ -396,7 +396,7 @@ describe("skill collection review", () => {
   });
 
   it("skips same-model shared agents with different implicit auth profiles", async () => {
-    const workspaceDir = await makeWorkspaceDir("openclaw-collection-review-shared-auth-");
+    const workspaceDir = await makeWorkspaceDir("afora-collection-review-shared-auth-");
     await writeWorkspaceSkills(workspaceDir, [
       { name: "alpha", description: "Alpha procedure" },
       { name: "beta", description: "Beta procedure" },
@@ -444,8 +444,8 @@ describe("skill collection review", () => {
   });
 
   it("groups symlink aliases before comparing shared-workspace identities", async () => {
-    const workspaceDir = await makeWorkspaceDir("openclaw-collection-review-real-workspace-");
-    const aliasParent = await tempDirs.make("openclaw-collection-review-alias-parent-");
+    const workspaceDir = await makeWorkspaceDir("afora-collection-review-real-workspace-");
+    const aliasParent = await tempDirs.make("afora-collection-review-alias-parent-");
     const workspaceAlias = path.join(aliasParent, "workspace-alias");
     await fs.symlink(
       workspaceDir,
@@ -484,7 +484,7 @@ describe("skill collection review", () => {
   });
 
   it("claims a due workspace before dispatching the model", async () => {
-    const workspaceDir = await makeWorkspaceDir("openclaw-collection-review-claim-");
+    const workspaceDir = await makeWorkspaceDir("afora-collection-review-claim-");
     await writeWorkspaceSkills(workspaceDir, [{ name: "useful", description: "Useful procedure" }]);
     let releaseReview: (() => void) | undefined;
     let markStarted: (() => void) | undefined;
@@ -527,8 +527,8 @@ describe("skill collection review", () => {
   });
 
   it("admits and reports each workspace independently", async () => {
-    const oversizedWorkspace = await makeWorkspaceDir("openclaw-collection-review-failed-");
-    const healthyWorkspace = await makeWorkspaceDir("openclaw-collection-review-healthy-");
+    const oversizedWorkspace = await makeWorkspaceDir("afora-collection-review-failed-");
+    const healthyWorkspace = await makeWorkspaceDir("afora-collection-review-healthy-");
     await writeWorkspaceSkills(oversizedWorkspace, [
       { name: "oversized", description: "Oversized", body: "x".repeat(240_001) },
     ]);
@@ -572,7 +572,7 @@ describe("skill collection review", () => {
   });
 
   it("rejects an oversized collection before model dispatch", async () => {
-    const workspaceDir = await makeWorkspaceDir("openclaw-collection-review-oversized-");
+    const workspaceDir = await makeWorkspaceDir("afora-collection-review-oversized-");
     await writeWorkspaceSkills(workspaceDir, [
       {
         name: "oversized",

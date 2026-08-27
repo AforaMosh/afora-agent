@@ -2,12 +2,12 @@ import path from "node:path";
 import { GATEWAY_SERVICE_SELECTOR_ENV_KEYS } from "../../daemon/constants.js";
 
 const SERVICE_REFRESH_PATH_ENV_KEYS = [
-  "OPENCLAW_HOME",
-  "OPENCLAW_STATE_DIR",
-  "OPENCLAW_CONFIG_PATH",
+  "AFORA_HOME",
+  "AFORA_STATE_DIR",
+  "AFORA_CONFIG_PATH",
 ] as const;
 const MANAGED_UPDATE_SELECTOR_ENV_KEYS = [
-  "OPENCLAW_HOME",
+  "AFORA_HOME",
   ...GATEWAY_SERVICE_SELECTOR_ENV_KEYS,
 ] as const;
 

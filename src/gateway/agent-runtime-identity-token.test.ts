@@ -12,10 +12,10 @@ import {
 } from "../infra/agent-run-registry.js";
 import { readExecApprovalsSnapshot } from "../infra/exec-approvals-store.js";
 import { testing as execApprovalsStoreTesting } from "../infra/exec-approvals-store.test-support.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { captureEnv, setTestEnvValue } from "../test-utils/env.js";
 
-const envSnapshot = captureEnv(["HOME", "OPENCLAW_HOME", "OPENCLAW_STATE_DIR"]);
+const envSnapshot = captureEnv(["HOME", "AFORA_HOME", "AFORA_STATE_DIR"]);
 
 const tempHomes: string[] = [];
 
@@ -26,12 +26,12 @@ function operationalRun(runId = "run-1") {
 }
 
 function useTempHome(): string {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-agent-runtime-"));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "afora-agent-runtime-"));
   tempHomes.push(home);
   setTestEnvValue("HOME", home);
-  setTestEnvValue("OPENCLAW_HOME", home);
-  setTestEnvValue("OPENCLAW_STATE_DIR", path.join(home, ".openclaw"));
-  closeOpenClawStateDatabaseForTest();
+  setTestEnvValue("AFORA_HOME", home);
+  setTestEnvValue("AFORA_STATE_DIR", path.join(home, ".afora"));
+  closeAforaStateDatabaseForTest();
   execApprovalsStoreTesting.reset();
   return home;
 }
@@ -61,7 +61,7 @@ function rewriteSignedPayload(
     throw new Error("missing signing secret");
   }
   const signature = createHmac("sha256", secret)
-    .update("openclaw:gateway-agent-runtime-identity-token:v1")
+    .update("afora:gateway-agent-runtime-identity-token:v1")
     .update("\0")
     .update(rewritten)
     .digest("base64url");
@@ -90,7 +90,7 @@ function validateDelegatedAuthority(
 
 afterEach(() => {
   resetAgentRunRegistryForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   execApprovalsStoreTesting.reset();
   vi.resetModules();
   envSnapshot.restore();

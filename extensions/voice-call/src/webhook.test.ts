@@ -1,8 +1,8 @@
 // Voice Call tests cover webhook plugin behavior.
 import crypto from "node:crypto";
 import { request, type IncomingMessage } from "node:http";
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
-import type { RealtimeTranscriptionProviderPlugin } from "openclaw/plugin-sdk/realtime-transcription";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
+import type { RealtimeTranscriptionProviderPlugin } from "afora-agent/plugin-sdk/realtime-transcription";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { VoiceCallConfigSchema, resolveVoiceCallConfig, type VoiceCallConfig } from "./config.js";
 import type { CallManager } from "./manager.js";
@@ -2570,7 +2570,7 @@ describe("VoiceCallWebhookServer barge-in suppression during initial message", (
     call.state = "speaking";
     call.metadata = {
       mode: "conversation",
-      initialMessage: "Hi, this is OpenClaw.",
+      initialMessage: "Hi, this is Afora.",
     };
 
     const clearTtsQueue = vi.fn<TwilioProviderTestDouble["clearTtsQueue"]>();

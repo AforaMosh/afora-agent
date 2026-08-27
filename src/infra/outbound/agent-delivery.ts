@@ -1,6 +1,6 @@
 // Agent delivery planning resolves final reply destinations from explicit
 // options, session history, turn source, bindings, and channel route hooks.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { resolveChannelDefaultAccountId } from "../../channels/plugins/helpers.js";
 import type {
   ChannelId,
@@ -9,7 +9,7 @@ import type {
 } from "../../channels/plugins/types.public.js";
 import { listRouteBindings } from "../../config/bindings.js";
 import type { SessionEntry } from "../../config/sessions.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { normalizeOptionalAccountId } from "../../routing/account-id.js";
 import { normalizeRouteBindingChannelId } from "../../routing/binding-scope.js";
 import { buildAgentMainSessionKey, normalizeAgentId } from "../../routing/session-key.js";
@@ -53,7 +53,7 @@ function resolveAgentDeliveryPlan(params: {
    * overrides session-level `lastChannel` to prevent cross-channel reply
    * routing in shared sessions (dmScope="main").
    *
-   * @see https://github.com/openclaw/openclaw/issues/24152
+   * @see https://github.com/AforaMosh/afora-agent/issues/24152
    */
   turnSourceChannel?: string;
   /** Turn-source `to` — paired with `turnSourceChannel`. */
@@ -147,7 +147,7 @@ function resolveAgentDeliveryPlan(params: {
 
 export async function resolveAgentDeliveryPlanWithSessionRoute(
   params: Parameters<typeof resolveAgentDeliveryPlan>[0] & {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     agentId: string;
     currentSessionKey?: string;
     sessionRouteMode?: "plugin-only" | "allow-fallback";
@@ -327,7 +327,7 @@ export async function resolveAgentDeliveryPlanWithSessionRoute(
 
 /** Resolves an explicit recipient into its canonical or stable provider-owned session. */
 export async function resolveAgentExplicitRecipientSession(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   channel: string;
   to: string;
@@ -367,7 +367,7 @@ export async function resolveAgentExplicitRecipientSession(params: {
 }
 
 export function resolveAgentOutboundTarget(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   plan: AgentDeliveryPlan;
   targetMode?: ChannelOutboundTargetMode;
   validateExplicitTarget?: boolean;

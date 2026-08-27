@@ -12,7 +12,7 @@ import {
 } from "../../../components/panel-toggle-contract.ts";
 import "../../../components/tooltip.ts";
 import { t } from "../../../i18n/index.ts";
-import { OpenClawLightDomElement } from "../../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../../lit/afora-element.ts";
 import { sidebarPanelDefinitions } from "../chat-pane-embedded-panels.ts";
 import {
   SIDEBAR_MIN_HEIGHT_PX,
@@ -59,7 +59,7 @@ function panelsOf(layout: SidebarLayout): SidebarPanel[] {
   return layout.columns[0]?.panels ?? [];
 }
 
-class ChatSidebarRegion extends OpenClawLightDomElement {
+class ChatSidebarRegion extends AforaLightDomElement {
   @property({ attribute: false }) layout: SidebarLayout = { columns: [] };
   @property({ attribute: false }) panelDefinitions = sidebarPanelDefinitions();
   @property({ attribute: false }) panelTemplates: SidebarPanelTemplates = {};
@@ -217,7 +217,7 @@ class ChatSidebarRegion extends OpenClawLightDomElement {
         : nothing}
       ${this.renderDockControls()}
       <span class="side-panel__action-group side-panel__action-group--layout">
-        <openclaw-tooltip .content=${expandLabel}>
+        <afora-tooltip .content=${expandLabel}>
           <button
             class="rail-header__action side-panel__expand"
             type="button"
@@ -227,10 +227,10 @@ class ChatSidebarRegion extends OpenClawLightDomElement {
           >
             ${this.layout.expanded ? icons.minimize : icons.maximize}
           </button>
-        </openclaw-tooltip>
+        </afora-tooltip>
       </span>
       <span class="side-panel__action-group side-panel__action-group--close">
-        <openclaw-tooltip .content=${t("common.close")}>
+        <afora-tooltip .content=${t("common.close")}>
           <button
             class="rail-header__action side-panel__minimize"
             type="button"
@@ -239,7 +239,7 @@ class ChatSidebarRegion extends OpenClawLightDomElement {
           >
             ${icons.x}
           </button>
-        </openclaw-tooltip>
+        </afora-tooltip>
       </span>
     </div>`;
   }
@@ -380,12 +380,12 @@ class ChatSidebarRegion extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-chat-sidebar-region")) {
-  customElements.define("openclaw-chat-sidebar-region", ChatSidebarRegion);
+if (!customElements.get("afora-chat-sidebar-region")) {
+  customElements.define("afora-chat-sidebar-region", ChatSidebarRegion);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "openclaw-chat-sidebar-region": ChatSidebarRegion;
+    "afora-chat-sidebar-region": ChatSidebarRegion;
   }
 }

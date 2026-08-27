@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { applySkillProposal } from "./service.js";
 import type { SkillProposalApplyResult } from "./types.js";
@@ -16,7 +16,7 @@ export async function autoApplySkillProposal(
   params: {
     workspaceDir: string;
     agentId?: string;
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     env?: NodeJS.ProcessEnv;
     proposalId: string;
     skillName: string;

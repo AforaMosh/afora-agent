@@ -1,5 +1,5 @@
 // Browser tests cover server context.remote profile tab ops.fallback plugin behavior.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it, vi } from "vitest";
 import { withBrowserFetchPreconnect } from "../../test-fetch.js";
 import {
@@ -13,9 +13,9 @@ installRemoteProfileTestLifecycle(deps);
 
 describe("browser remote profile fallback and attachOnly behavior", () => {
   it("uses profile-level attachOnly when global attachOnly is false", async () => {
-    const state = deps.makeState("openclaw");
+    const state = deps.makeState("afora");
     state.resolved.attachOnly = false;
-    state.resolved.profiles.openclaw = {
+    state.resolved.profiles.afora = {
       cdpPort: 18800,
       attachOnly: true,
       color: "#FF4500",
@@ -24,10 +24,10 @@ describe("browser remote profile fallback and attachOnly behavior", () => {
     const reachableMock = vi
       .mocked(deps.chromeModule.isChromeReachable)
       .mockResolvedValueOnce(false);
-    const launchMock = vi.mocked(deps.chromeModule.launchOpenClawChrome);
+    const launchMock = vi.mocked(deps.chromeModule.launchAforaChrome);
     const ctx = deps.createBrowserRouteContext({ getState: () => state });
 
-    await expect(ctx.forProfile("openclaw").ensureBrowserAvailable()).rejects.toThrow(
+    await expect(ctx.forProfile("afora").ensureBrowserAvailable()).rejects.toThrow(
       /attachOnly is enabled/i,
     );
     expect(reachableMock).toHaveBeenCalled();
@@ -35,9 +35,9 @@ describe("browser remote profile fallback and attachOnly behavior", () => {
   });
 
   it("keeps attachOnly websocket failures off the loopback ownership error path", async () => {
-    const state = deps.makeState("openclaw");
+    const state = deps.makeState("afora");
     state.resolved.attachOnly = false;
-    state.resolved.profiles.openclaw = {
+    state.resolved.profiles.afora = {
       cdpPort: 18800,
       attachOnly: true,
       color: "#FF4500",
@@ -49,10 +49,10 @@ describe("browser remote profile fallback and attachOnly behavior", () => {
     const wsReachableMock = vi
       .mocked(deps.chromeModule.isChromeCdpReady)
       .mockResolvedValueOnce(false);
-    const launchMock = vi.mocked(deps.chromeModule.launchOpenClawChrome);
+    const launchMock = vi.mocked(deps.chromeModule.launchAforaChrome);
     const ctx = deps.createBrowserRouteContext({ getState: () => state });
 
-    await expect(ctx.forProfile("openclaw").ensureBrowserAvailable()).rejects.toThrow(
+    await expect(ctx.forProfile("afora").ensureBrowserAvailable()).rejects.toThrow(
       /attachOnly is enabled and CDP websocket/i,
     );
     expect(httpReachableMock).toHaveBeenCalled();
@@ -235,7 +235,7 @@ describe("browser remote profile fallback and attachOnly behavior", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("does not enforce managed tab cap for remote openclaw profiles", async () => {
+  it("does not enforce managed tab cap for remote afora profiles", async () => {
     const listPagesViaPlaywright = vi
       .fn()
       .mockResolvedValueOnce([
@@ -320,10 +320,10 @@ describe("browser remote profile fallback and attachOnly behavior", () => {
     const createTargetViaCdp = vi
       .spyOn(deps.cdpModule, "createTargetViaCdp")
       .mockResolvedValue({ targetId: "T_ATTACH", finalUrl: "https://example.com" });
-    const state = deps.makeState("openclaw");
+    const state = deps.makeState("afora");
     state.resolved.remoteCdpTimeoutMs = 2345;
     state.resolved.remoteCdpHandshakeTimeoutMs = 6789;
-    state.resolved.profiles.openclaw = {
+    state.resolved.profiles.afora = {
       cdpPort: 18800,
       attachOnly: true,
       color: "#FF4500",
@@ -342,7 +342,7 @@ describe("browser remote profile fallback and attachOnly behavior", () => {
     global.fetch = withBrowserFetchPreconnect(fetchMock);
     const ctx = deps.createBrowserRouteContext({ getState: () => state });
 
-    const opened = await ctx.forProfile("openclaw").openTab("https://example.com");
+    const opened = await ctx.forProfile("afora").openTab("https://example.com");
 
     expect(opened.targetId).toBe("T_ATTACH");
     expect(createTargetViaCdp).toHaveBeenCalledWith({
@@ -363,7 +363,7 @@ describe("browser remote profile fallback and attachOnly behavior", () => {
     const createTargetViaCdp = vi
       .spyOn(deps.cdpModule, "createTargetViaCdp")
       .mockResolvedValue({ targetId: "T_LOCAL", finalUrl: "http://127.0.0.1:3000" });
-    const state = deps.makeState("openclaw");
+    const state = deps.makeState("afora");
     const fetchMock = vi.fn(
       deps.createJsonListFetchMock([
         {
@@ -378,7 +378,7 @@ describe("browser remote profile fallback and attachOnly behavior", () => {
     global.fetch = withBrowserFetchPreconnect(fetchMock);
     const ctx = deps.createBrowserRouteContext({ getState: () => state });
 
-    await ctx.forProfile("openclaw").openTab("http://127.0.0.1:3000");
+    await ctx.forProfile("afora").openTab("http://127.0.0.1:3000");
 
     expect(createTargetViaCdp).toHaveBeenCalledWith({
       cdpUrl: "http://127.0.0.1:18800",

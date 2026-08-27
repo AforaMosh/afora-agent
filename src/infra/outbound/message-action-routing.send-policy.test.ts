@@ -1,7 +1,7 @@
 // Covers core message-action send fallback, TTS application, and durable send
 // policy after plugin preparation is absent.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../../test-utils/channel-plugins.js";
 import { runMessageAction } from "./message-action-runner.js";
@@ -35,7 +35,7 @@ const slackConfig = {
       enabled: true,
     },
   },
-} as OpenClawConfig;
+} as AforaConfig;
 
 function registerSlackTextPlugin(accountIds: string[] = ["default"]) {
   const sendText = vi.fn().mockResolvedValue({
@@ -107,7 +107,7 @@ describe("runMessageAction core send routing", () => {
             botToken: "123:test",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       action: "send",
       params: {
         channel: "telegram",
@@ -298,7 +298,7 @@ describe("runMessageAction core send routing", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         action: "send",
         params: {
           channel: "telegram",

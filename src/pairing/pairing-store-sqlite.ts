@@ -1,16 +1,16 @@
 // Internal SQLite persistence for channel pairing requests and allow entries.
-import { parseDateStringTimestampMs } from "@openclaw/normalization-core/number-coercion";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { parseDateStringTimestampMs } from "@afora/normalization-core/number-coercion";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../infra/kysely-sync.js";
 import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabase,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabase,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
 import {
   dedupePreserveOrder,
   resolveAllowFromAccountId,
@@ -21,7 +21,7 @@ import type { PairingChannel, PairingRequestRecord } from "./pairing-store.types
 type PairingRequest = PairingRequestRecord;
 
 type PairingDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "channel_pairing_allow_entries" | "channel_pairing_requests"
 >;
 
@@ -75,12 +75,12 @@ export function resolvePairingRequestAccountId(entry: PairingRequest): string {
   return resolveAllowFromAccountId(entry.meta?.accountId) || DEFAULT_ACCOUNT_ID;
 }
 
-export function sqliteOptionsForEnv(env: NodeJS.ProcessEnv): OpenClawStateDatabaseOptions {
+export function sqliteOptionsForEnv(env: NodeJS.ProcessEnv): AforaStateDatabaseOptions {
   return { env };
 }
 
 export function readChannelPairingStateFromDatabase(
-  database: OpenClawStateDatabase,
+  database: AforaStateDatabase,
   channel: PairingChannel,
 ): ChannelPairingState {
   const db = getNodeSqliteKysely<PairingDatabase>(database.db);
@@ -139,13 +139,13 @@ export function readChannelPairingState(
   env: NodeJS.ProcessEnv,
 ): ChannelPairingState {
   return readChannelPairingStateFromDatabase(
-    openOpenClawStateDatabase(sqliteOptionsForEnv(env)),
+    openAforaStateDatabase(sqliteOptionsForEnv(env)),
     channel,
   );
 }
 
 export function writeChannelPairingStateToDatabase(
-  database: OpenClawStateDatabase,
+  database: AforaStateDatabase,
   channel: PairingChannel,
   state: ChannelPairingState,
 ): void {
@@ -204,7 +204,7 @@ export function updateChannelPairingStateSnapshot<T>(
   env: NodeJS.ProcessEnv,
   update: (state: ChannelPairingState) => T,
 ): T {
-  return runOpenClawStateWriteTransaction((database) => {
+  return runAforaStateWriteTransaction((database) => {
     const state = readChannelPairingStateFromDatabase(database, channel);
     const result = update(state);
     writeChannelPairingStateToDatabase(database, channel, state);

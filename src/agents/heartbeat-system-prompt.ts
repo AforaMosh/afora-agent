@@ -1,7 +1,7 @@
 /**
  * Builds heartbeat-specific guidance for agent system prompts.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   DEFAULT_HEARTBEAT_EVERY,
   HEARTBEAT_CRON_TASK_GUIDANCE,
@@ -10,13 +10,13 @@ import {
 import { parseDurationMs } from "../cli/parse-duration.js";
 import { tryResolveLegacyCompatibilityAgentId } from "../config/legacy.default-agent-owner.js";
 import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { listAgentEntries, resolveAgentConfig } from "./agent-scope.js";
 
 type HeartbeatConfig = AgentDefaultsConfig["heartbeat"];
 
-function isHeartbeatSharedAcrossAgents(config: OpenClawConfig): boolean {
+function isHeartbeatSharedAcrossAgents(config: AforaConfig): boolean {
   return (
     config.agents?.defaults?.heartbeat !== undefined &&
     normalizeOptionalString(config.agents.defaults.heartbeat.agentId) === undefined &&
@@ -24,7 +24,7 @@ function isHeartbeatSharedAcrossAgents(config: OpenClawConfig): boolean {
   );
 }
 
-function tryResolveHeartbeatOwnerAgentId(config?: OpenClawConfig): string | undefined {
+function tryResolveHeartbeatOwnerAgentId(config?: AforaConfig): string | undefined {
   return (
     normalizeOptionalString(config?.agents?.defaults?.heartbeat?.agentId) ??
     tryResolveLegacyCompatibilityAgentId(config ?? {})
@@ -34,7 +34,7 @@ function tryResolveHeartbeatOwnerAgentId(config?: OpenClawConfig): string | unde
 // System prompt heartbeat config inherits defaults, then per-agent overrides,
 // matching runtime scheduling without exposing disabled agents to the section.
 function resolveHeartbeatConfigForSystemPrompt(
-  config?: OpenClawConfig,
+  config?: AforaConfig,
   agentId?: string,
 ): HeartbeatConfig | undefined {
   const defaults = config?.agents?.defaults?.heartbeat;
@@ -48,7 +48,7 @@ function resolveHeartbeatConfigForSystemPrompt(
   return { ...defaults, ...overrides };
 }
 
-function isAgentExplicitlyEnrolledForHeartbeat(config: OpenClawConfig, agentId: string): boolean {
+function isAgentExplicitlyEnrolledForHeartbeat(config: AforaConfig, agentId: string): boolean {
   const resolvedAgentId = normalizeAgentId(agentId);
   return listAgentEntries(config).some(
     (entry) => Boolean(entry?.heartbeat) && normalizeAgentId(entry.id) === resolvedAgentId,
@@ -57,7 +57,7 @@ function isAgentExplicitlyEnrolledForHeartbeat(config: OpenClawConfig, agentId: 
 
 // Explicit heartbeat config on any agent means only those agents are opted in;
 // shared defaults without an owner enroll every configured agent.
-function isHeartbeatEnabledByAgentPolicy(config: OpenClawConfig, agentId: string): boolean {
+function isHeartbeatEnabledByAgentPolicy(config: AforaConfig, agentId: string): boolean {
   const agents = listAgentEntries(config);
   const hasExplicitHeartbeatAgents = agents.some((entry) => Boolean(entry?.heartbeat));
   if (hasExplicitHeartbeatAgents) {
@@ -88,7 +88,7 @@ function isHeartbeatCadenceEnabled(heartbeat?: HeartbeatConfig): boolean {
 
 /** Returns true when heartbeat guidance should be included in the system prompt. */
 function shouldIncludeHeartbeatGuidanceForSystemPrompt(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   defaultAgentId?: string;
 }): boolean {
@@ -118,7 +118,7 @@ function shouldIncludeHeartbeatGuidanceForSystemPrompt(params: {
 
 /** Resolves the heartbeat system prompt section for the selected/default agent. */
 export function resolveHeartbeatPromptForSystemPrompt(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   defaultAgentId?: string;
 }): string | undefined {

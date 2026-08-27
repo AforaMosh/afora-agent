@@ -97,13 +97,13 @@ describe("chat transcript rendering", () => {
       {
         role: "assistant",
         content: "The original answer",
-        __openclaw: { id: "source-message" },
+        __afora: { id: "source-message" },
         timestamp: 1_000,
       },
       {
         role: "user",
         content: "Follow up",
-        __openclaw: { id: "reply-message", replyToId: "source-message" },
+        __afora: { id: "reply-message", replyToId: "source-message" },
         timestamp: 2_000,
       },
     ]);
@@ -138,7 +138,7 @@ describe("chat transcript rendering", () => {
         {
           role: "user",
           content: "Follow up",
-          __openclaw: { id: "reply-message", replyToId: "source-message" },
+          __afora: { id: "reply-message", replyToId: "source-message" },
           timestamp: 2_000,
         },
       ]),
@@ -164,7 +164,7 @@ describe("chat transcript rendering", () => {
     resolvedMessage = {
       role: "assistant",
       content: "The original answer",
-      __openclaw: { id: "source-message" },
+      __afora: { id: "source-message" },
       timestamp: 1_000,
     };
     props.replyMessageAccess.revision += 1;
@@ -189,13 +189,13 @@ describe("chat transcript rendering", () => {
         {
           role: "assistant",
           content: "The original answer",
-          __openclaw: { id: "source-message" },
+          __afora: { id: "source-message" },
           timestamp: 1_000,
         },
         {
           role: "user",
           content: "Follow up",
-          __openclaw: {
+          __afora: {
             id: "reply-message",
             replyToId: "source-message",
             replyToPreview: { text: "The original answer", senderLabel: "Molty" },
@@ -256,7 +256,7 @@ describe("chat transcript rendering", () => {
         {
           role: "assistant",
           content: "Preview\n...(truncated)...",
-          __openclaw: { id: "assistant-full-1" },
+          __afora: { id: "assistant-full-1" },
           timestamp: 1_000,
         },
       ]),
@@ -296,7 +296,7 @@ describe("chat transcript rendering", () => {
         {
           role: "assistant",
           content: "Preview\n...(truncated)...",
-          __openclaw: { id: "assistant-retry-1" },
+          __afora: { id: "assistant-retry-1" },
           timestamp: 1_000,
         },
       ]),

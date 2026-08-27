@@ -3,7 +3,7 @@ import {
   createAgentHarnessTaskRuntime,
   type AgentHarnessTaskRuntime,
   type AgentHarnessTaskRuntimeScope,
-} from "openclaw/plugin-sdk/agent-harness-task-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-task-runtime";
 
 const COPILOT_NATIVE_SUBAGENT_TASK_KIND = "copilot-native";
 const COPILOT_NATIVE_SUBAGENT_RUN_ID_PREFIX = "copilot-agent:";

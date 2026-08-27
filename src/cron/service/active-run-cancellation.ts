@@ -163,7 +163,7 @@ function resetActiveCronTaskRunsForTests(): void {
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.activeCronTaskRunTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.activeCronTaskRunTestApi")] = {
     resetActiveCronTaskRunsForTests,
   };
 }

@@ -1,6 +1,6 @@
 import type { NativeHookRelaySharedState } from "./native-hook-relay-types.js";
 
-const NATIVE_HOOK_RELAY_STATE_SYMBOL = Symbol.for("openclaw.nativeHookRelay.state");
+const NATIVE_HOOK_RELAY_STATE_SYMBOL = Symbol.for("afora.nativeHookRelay.state");
 export const MAX_NATIVE_HOOK_RELAY_INVOCATIONS = 200;
 
 function getNativeHookRelaySharedState(): NativeHookRelaySharedState {

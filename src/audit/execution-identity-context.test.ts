@@ -6,10 +6,10 @@ import {
 } from "../gateway/operator-approval-store.js";
 import { openNodeSqliteDatabase } from "../infra/node-sqlite.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-  type OpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+  type AforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { recordAuditEvent } from "./audit-event-store.js";
 import {
   configureExecutionIdentityAdmissionSink,
@@ -27,16 +27,16 @@ import {
 const RETENTION_MS = 30 * 24 * 60 * 60_000;
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 function databaseOptions() {
-  return { env: { OPENCLAW_STATE_DIR: tempDirs.make("openclaw-identity-") } };
+  return { env: { AFORA_STATE_DIR: tempDirs.make("afora-identity-") } };
 }
 
-function openIndependentStateDatabase(path: string): OpenClawStateDatabase {
+function openIndependentStateDatabase(path: string): AforaStateDatabase {
   return {
     db: openNodeSqliteDatabase(path),
     path,
@@ -101,7 +101,7 @@ function persistExecutionIdentityAdmissionEnvelope(
 function prepareExecutionIdentityContextAtAdmission(
   admissionFacts: ExecutionIdentityAdmissionFacts,
   options: {
-    database?: OpenClawStateDatabase;
+    database?: AforaStateDatabase;
     env?: NodeJS.ProcessEnv;
     now?: number;
     contextId?: string;
@@ -177,7 +177,7 @@ describe("execution identity context storage", () => {
     });
     const first = persistExecutionIdentityAdmissionEnvelope(envelope, { ...database, now: 100 });
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const second = persistExecutionIdentityAdmissionEnvelope(structuredClone(envelope), {
       ...database,
       now: 999,
@@ -190,7 +190,7 @@ describe("execution identity context storage", () => {
     expect(Object.isFrozen(first.runtimeInstance)).toBe(true);
     expect(JSON.stringify(first)).not.toContain("runtime-secret-1");
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const afterRestart = inspectExecutionIdentityRun(
       { executionId: "execution-1" },
       {
@@ -233,7 +233,7 @@ describe("execution identity context storage", () => {
       missingEvidence: ["invoker.principal"],
     });
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const unknownAfterRestart = inspectExecutionIdentityRun(
       { executionId: "execution-unknown" },
       { ...database, now: 101 },
@@ -291,7 +291,7 @@ describe("execution identity context storage", () => {
         ...database,
         now: 100,
       });
-      const originalRow = openOpenClawStateDatabase(database)
+      const originalRow = openAforaStateDatabase(database)
         .db.prepare("SELECT context_json FROM execution_identity_contexts WHERE execution_id = ?")
         .get("execution-original");
 
@@ -299,7 +299,7 @@ describe("execution identity context storage", () => {
         persistExecutionIdentityAdmissionEnvelope(mutate(envelope), { ...database, now: 101 }),
       ).toThrow("execution identity context conflict");
       expect(
-        openOpenClawStateDatabase(database)
+        openAforaStateDatabase(database)
           .db.prepare("SELECT context_json FROM execution_identity_contexts WHERE execution_id = ?")
           .get("execution-original"),
       ).toEqual(originalRow);
@@ -412,7 +412,7 @@ describe("execution identity context storage", () => {
       executionId: "execution-recovery",
     });
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     expect(
       processExecutionIdentityAdmissionWork({ kind: "retry-reference", token }, database),
     ).toEqual(original);
@@ -456,7 +456,7 @@ describe("execution identity context storage", () => {
 
   it("keeps inspection read-only and lets persistence create the additive table", () => {
     const database = databaseOptions();
-    const reopened = openOpenClawStateDatabase(database);
+    const reopened = openAforaStateDatabase(database);
     expect(
       reopened.db
         .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = ?")
@@ -487,7 +487,7 @@ describe("execution identity context storage", () => {
 
   it("keeps maintenance read-only until the first identity capture", () => {
     const database = databaseOptions();
-    const opened = openOpenClawStateDatabase(database);
+    const opened = openAforaStateDatabase(database);
     expect(
       opened.db
         .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = ?")
@@ -550,8 +550,8 @@ describe("execution identity context storage", () => {
   it("declines recording instead of rotating a missing HMAC key with retained contexts", () => {
     const database = databaseOptions();
     prepareExecutionIdentityContextAtAdmission(facts("run-before-key-loss"), database);
-    openOpenClawStateDatabase(database).db.exec("DELETE FROM audit_identity_keys;");
-    closeOpenClawStateDatabaseForTest();
+    openAforaStateDatabase(database).db.exec("DELETE FROM audit_identity_keys;");
+    closeAforaStateDatabaseForTest();
 
     expect(() =>
       prepareExecutionIdentityContextAtAdmission(facts("run-after-key-loss"), database),
@@ -566,7 +566,7 @@ describe("execution identity context storage", () => {
     ).toBeUndefined();
 
     expect(
-      openOpenClawStateDatabase(database)
+      openAforaStateDatabase(database)
         .db.prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = ?")
         .get("execution_identity_contexts"),
     ).toBeUndefined();
@@ -585,7 +585,7 @@ describe("execution identity context storage", () => {
 
     expect(pruneExpiredExecutionIdentityContexts({ database, now: RETENTION_MS + 1 })).toBe(1);
     expect(
-      openOpenClawStateDatabase(database)
+      openAforaStateDatabase(database)
         .db.prepare("SELECT COUNT(*) AS count FROM execution_identity_contexts")
         .get(),
     ).toEqual({ count: 0 });
@@ -615,7 +615,7 @@ describe("execution identity context storage", () => {
       now: 0,
       runtimeInstanceId: "runtime-1",
     });
-    openOpenClawStateDatabase(database).db.exec(`
+    openAforaStateDatabase(database).db.exec(`
       CREATE TRIGGER reject_identity_cleanup
       BEFORE DELETE ON execution_identity_contexts
       BEGIN
@@ -693,7 +693,7 @@ describe("execution identity context storage", () => {
     expect(JSON.stringify(exactAfter)).not.toContain("expired-context-secret");
     expect(JSON.stringify(exactAfter)).not.toContain("expired-runtime-secret");
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     expect(
       inspectExecutionIdentityRun(
         { runId: "run-retention" },
@@ -732,7 +732,7 @@ describe("execution identity context storage", () => {
       now: 1,
       runtimeInstanceId: "runtime-1",
     });
-    const { db } = openOpenClawStateDatabase(database);
+    const { db } = openAforaStateDatabase(database);
     db.exec("DELETE FROM execution_identity_contexts;");
     db.prepare(
       `WITH RECURSIVE rows(n) AS (
@@ -773,7 +773,7 @@ describe("execution identity context storage", () => {
       runtimeInstanceId: "runtime-1",
       limits: { maxRows: 1, pruneBatchRows: 1 },
     });
-    const retainedAfterOneBatch = openOpenClawStateDatabase(retentionDatabase)
+    const retainedAfterOneBatch = openAforaStateDatabase(retentionDatabase)
       .db.prepare("SELECT COUNT(*) AS count FROM execution_identity_contexts")
       .get() as { count: number };
     expect(retainedAfterOneBatch.count).toBe(3);
@@ -788,7 +788,7 @@ describe("execution identity context storage", () => {
         limits: { maxRows: 2, pruneBatchRows: 1 },
       });
     }
-    const capped = openOpenClawStateDatabase(capDatabase)
+    const capped = openAforaStateDatabase(capDatabase)
       .db.prepare("SELECT run_id FROM execution_identity_contexts ORDER BY context_id")
       .all() as Array<{ run_id: string }>;
     expect(capped).toHaveLength(2);
@@ -797,8 +797,8 @@ describe("execution identity context storage", () => {
 
   it("enforces the row cap across independent database connections", () => {
     const database = databaseOptions();
-    const path = openOpenClawStateDatabase(database).path;
-    closeOpenClawStateDatabaseForTest();
+    const path = openAforaStateDatabase(database).path;
+    closeAforaStateDatabaseForTest();
     const first = openIndependentStateDatabase(path);
     const second = openIndependentStateDatabase(path);
     try {
@@ -832,8 +832,8 @@ describe("execution identity context storage", () => {
       executionId: "execution-held-lock-inspection",
       runtimeInstanceId: "runtime-1",
     });
-    const path = openOpenClawStateDatabase(database).path;
-    closeOpenClawStateDatabaseForTest();
+    const path = openAforaStateDatabase(database).path;
+    closeAforaStateDatabaseForTest();
     const lockDatabase = openNodeSqliteDatabase(path);
     lockDatabase.exec("BEGIN IMMEDIATE");
     try {
@@ -866,7 +866,7 @@ describe("execution identity context storage", () => {
       ...corruptDatabase,
       runtimeInstanceId: "runtime-1",
     });
-    openOpenClawStateDatabase(corruptDatabase)
+    openAforaStateDatabase(corruptDatabase)
       .db.prepare("UPDATE execution_identity_contexts SET context_json = ? WHERE run_id = ?")
       .run("{", "run-corrupt");
     expect(inspectExecutionIdentityRun({ runId: "run-corrupt" }, corruptDatabase)).toMatchObject({
@@ -993,7 +993,7 @@ describe("execution identity context storage", () => {
     expect(JSON.stringify(beforeRestart)).not.toContain("private-reviewer-device");
     expect(JSON.stringify(beforeRestart)).not.toContain("private-tool-call");
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     expect(
       inspectExecutionIdentityRun({ runId: "run-denied-receipt" }, { ...database, now: 300 }),
     ).toEqual(beforeRestart);
@@ -1026,7 +1026,7 @@ describe("execution identity context storage", () => {
       contextId: "context-corrupt-approval",
       executionId: "execution-corrupt-approval",
     });
-    openOpenClawStateDatabase(database)
+    openAforaStateDatabase(database)
       .db.prepare("UPDATE operator_approvals SET presentation_json = ? WHERE approval_id = ?")
       .run("{", "corrupt-approval");
 

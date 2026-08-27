@@ -49,7 +49,7 @@ describe("install policy Windows ACL diagnostics", () => {
     { kind: "file", unavailablePath: (scriptPath: string) => scriptPath },
     { kind: "parent directory", unavailablePath: (scriptPath: string) => path.dirname(scriptPath) },
   ])("identifies the interpreter script when its $kind ACL is unavailable", async (fixture) => {
-    const dir = tempDirs.make("openclaw-install-policy-windows-");
+    const dir = tempDirs.make("afora-install-policy-windows-");
     const scriptPath = path.join(dir, "policy.cjs");
     await fs.writeFile(scriptPath, "export {};\n", "utf8");
     const unavailablePath = fixture.unavailablePath(scriptPath);

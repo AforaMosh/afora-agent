@@ -1,6 +1,6 @@
 // Coverage for resolving channel and DM history limits from session keys.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { getHistoryLimitFromSessionKey } from "./history.js";
 
 describe("getHistoryLimitFromSessionKey", () => {
@@ -29,7 +29,7 @@ describe("getHistoryLimitFromSessionKey", () => {
         telegram: { dmHistoryLimit: 15 },
         whatsapp: { dmHistoryLimit: 20 },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(getHistoryLimitFromSessionKey("telegram:dm:123", config)).toBe(15);
     expect(getHistoryLimitFromSessionKey("whatsapp:dm:123", config)).toBe(20);
@@ -39,7 +39,7 @@ describe("getHistoryLimitFromSessionKey", () => {
   it("keeps backward compatibility for dm and direct session kinds", () => {
     const config = {
       channels: { telegram: { dmHistoryLimit: 10 } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(getHistoryLimitFromSessionKey("telegram:dm:123", config)).toBe(10);
     expect(getHistoryLimitFromSessionKey("agent:main:telegram:dm:123", config)).toBe(10);
@@ -52,7 +52,7 @@ describe("getHistoryLimitFromSessionKey", () => {
     // used for per-contact history limit overrides.
     const config = {
       channels: { telegram: { dmHistoryLimit: 10, dms: { "123": { historyLimit: 7 } } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(getHistoryLimitFromSessionKey("agent:main:telegram:dm:123:thread:999", config)).toBe(7);
     expect(getHistoryLimitFromSessionKey("agent:main:telegram:dm:123:topic:555", config)).toBe(7);
@@ -64,7 +64,7 @@ describe("getHistoryLimitFromSessionKey", () => {
       channels: {
         telegram: { dms: { "user:thread:abc": { historyLimit: 9 } } },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(getHistoryLimitFromSessionKey("agent:main:telegram:dm:user:thread:abc", config)).toBe(9);
   });
@@ -81,7 +81,7 @@ describe("getHistoryLimitFromSessionKey", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(getHistoryLimitFromSessionKey("telegram:dm:123", config)).toBe(5);
     expect(getHistoryLimitFromSessionKey("telegram:dm:456", config)).toBe(15);
@@ -101,7 +101,7 @@ describe("getHistoryLimitFromSessionKey", () => {
           dms: { "user@example.com": { historyLimit: 7 } },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(getHistoryLimitFromSessionKey("agent:main:telegram:dm:789", config)).toBe(3);
     expect(getHistoryLimitFromSessionKey("msteams:dm:user@example.com", config)).toBe(7);
@@ -113,7 +113,7 @@ describe("getHistoryLimitFromSessionKey", () => {
         slack: { historyLimit: 10, dmHistoryLimit: 15 },
         discord: { historyLimit: 8 },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(getHistoryLimitFromSessionKey("agent:beta:slack:channel:c1", config)).toBe(10);
     expect(getHistoryLimitFromSessionKey("discord:channel:123456", config)).toBe(8);
@@ -126,7 +126,7 @@ describe("getHistoryLimitFromSessionKey", () => {
         telegram: { historyLimit: 10 },
         discord: { dmHistoryLimit: 10 },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(getHistoryLimitFromSessionKey("telegram:slash:123", config)).toBeUndefined();
     expect(getHistoryLimitFromSessionKey("unknown:dm:123", config)).toBeUndefined();
@@ -149,7 +149,7 @@ describe("getHistoryLimitFromSessionKey", () => {
     for (const provider of providers) {
       const config = {
         channels: { [provider]: { dmHistoryLimit: 5, historyLimit: 12 } },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       expect(getHistoryLimitFromSessionKey(`${provider}:dm:123`, config)).toBe(5);
       expect(getHistoryLimitFromSessionKey(`${provider}:channel:123`, config)).toBe(12);

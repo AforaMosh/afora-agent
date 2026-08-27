@@ -1,7 +1,7 @@
 import type { PluginRegistry } from "./registry-types.js";
 import type { PluginRuntime } from "./runtime/types.js";
 
-const PLUGIN_REGISTRY_RUNTIME = Symbol.for("openclaw.pluginRegistryRuntime");
+const PLUGIN_REGISTRY_RUNTIME = Symbol.for("afora.pluginRegistryRuntime");
 
 type RuntimeBoundPluginRegistry = PluginRegistry & {
   [PLUGIN_REGISTRY_RUNTIME]?: PluginRuntime;

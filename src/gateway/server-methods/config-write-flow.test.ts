@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
 const configMocks = vi.hoisted(() => ({
   replaceConfigFile: vi.fn(),
@@ -7,8 +7,8 @@ const configMocks = vi.hoisted(() => ({
 }));
 const secretsMocks = vi.hoisted(() => ({
   activeSnapshot: null as {
-    sourceConfig: OpenClawConfig;
-    config: OpenClawConfig;
+    sourceConfig: AforaConfig;
+    config: AforaConfig;
   } | null,
 }));
 
@@ -44,7 +44,7 @@ describe("commitGatewayConfigWrite", () => {
 
   it("carries a missing file revision into the lock-time compare-and-swap", async () => {
     const snapshot = {
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       exists: false,
       raw: null,
       hash: "missing-config-revision",
@@ -53,7 +53,7 @@ describe("commitGatewayConfigWrite", () => {
     await commitGatewayConfigWrite({
       snapshot: snapshot as never,
       writeOptions: {},
-      nextConfig: {} satisfies OpenClawConfig,
+      nextConfig: {} satisfies AforaConfig,
     });
 
     expect(configMocks.replaceConfigFile).toHaveBeenCalledWith(
@@ -71,7 +71,7 @@ describe("didActiveSharedGatewayAuthChange", () => {
   });
 
   it("preserves runtime-only auth fields absent from the active secrets source", () => {
-    const runtimeConfig: OpenClawConfig = {
+    const runtimeConfig: AforaConfig = {
       gateway: { auth: { mode: "token", token: "runtime-token" } },
     };
     secretsMocks.activeSnapshot = {
@@ -89,7 +89,7 @@ describe("didActiveSharedGatewayAuthChange", () => {
       sourceConfig: { gateway: { auth: { mode: "token", token: "token-a" } } },
       config: { gateway: { auth: { mode: "token", token: "token-a" } } },
     };
-    const current: OpenClawConfig = {
+    const current: AforaConfig = {
       gateway: { auth: { mode: "token", token: "token-b" } },
     };
 
@@ -107,7 +107,7 @@ describe("didActiveSharedGatewayAuthChange", () => {
       sourceConfig: { gateway: { auth: { mode: "token" } } },
       config: { gateway: { auth: { mode: "token" } } },
     };
-    const runtimeConfig: OpenClawConfig = {
+    const runtimeConfig: AforaConfig = {
       gateway: { auth: { mode: "token", token: "runtime-token" } },
     };
 

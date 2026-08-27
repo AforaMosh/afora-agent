@@ -1,4 +1,4 @@
-// Gateway Bench Child script supports OpenClaw repository automation.
+// Gateway Bench Child script supports Afora repository automation.
 import { spawnSync, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { sleep as delay } from "./sleep.mjs";
 import { resolveWindowsTaskkillPath } from "./windows-taskkill.mjs";

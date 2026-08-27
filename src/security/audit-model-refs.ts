@@ -10,7 +10,7 @@ import {
   resolveAgentModelFallbackValues,
   resolveAgentModelPrimaryValue,
 } from "../config/model-input.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 /**
  * Model reference used by security audit findings.
@@ -19,7 +19,7 @@ import type { OpenClawConfig } from "../config/types.openclaw.js";
 type AuditModelRef = { id: string; source: string };
 
 function resolveAuditModelId(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   raw: string,
   aliasIndex: ReturnType<typeof buildModelAliasIndex>,
 ): string {
@@ -37,7 +37,7 @@ function resolveAuditModelId(
 
 function addModelRef(params: {
   out: AuditModelRef[];
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   aliasIndex: ReturnType<typeof buildModelAliasIndex>;
   raw: unknown;
   source: string;
@@ -59,7 +59,7 @@ function addModelRef(params: {
  * Collect every configured primary and fallback model that security audits should classify.
  * Agent-specific refs keep source labels precise so findings point at the risky override.
  */
-export function collectAuditModelRefs(cfg: OpenClawConfig): AuditModelRef[] {
+export function collectAuditModelRefs(cfg: AforaConfig): AuditModelRef[] {
   const aliasIndex = buildModelAliasIndex({
     cfg,
     defaultProvider: DEFAULT_PROVIDER,

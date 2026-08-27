@@ -40,7 +40,7 @@ const canvasToolInvocationActions = [
 const mocks = vi.hoisted(() => ({
   callGatewayTool: vi.fn(),
   imageResultFromFile: vi.fn<
-    typeof import("openclaw/plugin-sdk/channel-actions").imageResultFromFile
+    typeof import("afora-agent/plugin-sdk/channel-actions").imageResultFromFile
   >(async (params) => {
     const details = params.details ?? {};
     const media = details.media as Record<string, unknown> | undefined;
@@ -51,28 +51,28 @@ const mocks = vi.hoisted(() => ({
   }),
   listNodes: vi.fn(async () => []),
   resolveNodeIdFromList: vi.fn(() => "node-1"),
-  saveMediaBuffer: vi.fn<typeof import("openclaw/plugin-sdk/media-store").saveMediaBuffer>(
+  saveMediaBuffer: vi.fn<typeof import("afora-agent/plugin-sdk/media-store").saveMediaBuffer>(
     async (buffer) => ({
       id: "snapshot.png",
-      path: "/tmp/openclaw-media/canvas/snapshot.png",
+      path: "/tmp/afora-media/canvas/snapshot.png",
       size: buffer.byteLength,
       contentType: "image/png",
     }),
   ),
 }));
 
-vi.mock("openclaw/plugin-sdk/agent-harness-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/agent-harness-runtime", () => ({
   callGatewayTool: mocks.callGatewayTool,
   listNodes: mocks.listNodes,
   resolveNodeIdFromList: mocks.resolveNodeIdFromList,
 }));
 
-vi.mock("openclaw/plugin-sdk/channel-actions", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/channel-actions")>()),
+vi.mock("afora-agent/plugin-sdk/channel-actions", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/channel-actions")>()),
   imageResultFromFile: mocks.imageResultFromFile,
 }));
 
-vi.mock("openclaw/plugin-sdk/media-store", () => ({
+vi.mock("afora-agent/plugin-sdk/media-store", () => ({
   saveMediaBuffer: mocks.saveMediaBuffer,
 }));
 
@@ -89,7 +89,7 @@ describe("Canvas tool", () => {
     mocks.saveMediaBuffer.mockClear();
     mocks.saveMediaBuffer.mockImplementation(async (buffer) => ({
       id: "snapshot.png",
-      path: "/tmp/openclaw-media/canvas/snapshot.png",
+      path: "/tmp/afora-media/canvas/snapshot.png",
       size: buffer.byteLength,
       contentType: "image/png",
     }));
@@ -180,7 +180,7 @@ describe("Canvas tool", () => {
   it.skipIf(process.platform === "win32")(
     "rejects jsonlPath symlinks that resolve outside the workspace",
     async () => {
-      tempRoot = await mkdtemp(path.join(os.tmpdir(), "openclaw-canvas-tool-"));
+      tempRoot = await mkdtemp(path.join(os.tmpdir(), "afora-canvas-tool-"));
       const workspaceDir = path.join(tempRoot, "workspace");
       await mkdir(workspaceDir);
       const outsidePath = path.join(tempRoot, "outside.jsonl");
@@ -201,7 +201,7 @@ describe("Canvas tool", () => {
   );
 
   it("rejects jsonlPath files above the shared bounded-read limit", async () => {
-    tempRoot = await mkdtemp(path.join(os.tmpdir(), "openclaw-canvas-tool-"));
+    tempRoot = await mkdtemp(path.join(os.tmpdir(), "afora-canvas-tool-"));
     const workspaceDir = path.join(tempRoot, "workspace");
     await mkdir(workspaceDir);
     await writeFile(
@@ -254,7 +254,7 @@ describe("Canvas tool", () => {
       "canvas",
       CANVAS_MAX_SNAPSHOT_BYTES,
     );
-    expect(imageResultParams?.path).toBe("/tmp/openclaw-media/canvas/snapshot.png");
+    expect(imageResultParams?.path).toBe("/tmp/afora-media/canvas/snapshot.png");
     expect(imageResultParams?.details).toEqual({
       node: "node-1",
       format: "png",
@@ -272,7 +272,7 @@ describe("Canvas tool", () => {
         }
         return {
           id: "snapshot.png",
-          path: "/tmp/openclaw-media/canvas/snapshot.png",
+          path: "/tmp/afora-media/canvas/snapshot.png",
           size: buffer.byteLength,
           contentType: contentType ?? "image/png",
         };
@@ -315,14 +315,14 @@ describe("Canvas tool", () => {
   it("keeps private Canvas snapshots visible to the model but out of channel delivery", async () => {
     const [{ imageResultFromFile }, { extractToolResultMediaArtifact, filterToolResultMediaUrls }] =
       await Promise.all([
-        vi.importActual<typeof import("openclaw/plugin-sdk/channel-actions")>(
-          "openclaw/plugin-sdk/channel-actions",
+        vi.importActual<typeof import("afora-agent/plugin-sdk/channel-actions")>(
+          "afora-agent/plugin-sdk/channel-actions",
         ),
-        vi.importActual<typeof import("openclaw/plugin-sdk/agent-harness-runtime")>(
-          "openclaw/plugin-sdk/agent-harness-runtime",
+        vi.importActual<typeof import("afora-agent/plugin-sdk/agent-harness-runtime")>(
+          "afora-agent/plugin-sdk/agent-harness-runtime",
         ),
       ]);
-    tempRoot = await mkdtemp(path.join(os.tmpdir(), "openclaw-canvas-tool-"));
+    tempRoot = await mkdtemp(path.join(os.tmpdir(), "afora-canvas-tool-"));
     const mediaDir = path.join(tempRoot, "media", "canvas");
     const savedPath = path.join(mediaDir, "snapshot.png");
     await mkdir(mediaDir, { recursive: true });
@@ -578,17 +578,17 @@ describe("Canvas tool", () => {
           catalogId: "https://a2ui.org/specification/v0_9/catalogs/basic/catalog.json",
         },
       }),
-      /OpenClaw currently supports v0\.8 only/,
+      /Afora currently supports v0\.8 only/,
     ],
     [
       "legacy createSurface JSONL",
       JSON.stringify({ createSurface: { surfaceId: "main", root: "root" } }),
-      /OpenClaw currently supports v0\.8 only/,
+      /Afora currently supports v0\.8 only/,
     ],
     [
       "A2UI v0.9 deleteSurface JSONL",
       JSON.stringify({ version: "v0.9", deleteSurface: { surfaceId: "main" } }),
-      /OpenClaw currently supports v0\.8 only/,
+      /Afora currently supports v0\.8 only/,
     ],
     [
       "an unsupported explicit A2UI version",

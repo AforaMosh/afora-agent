@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { MAX_DATE_TIMESTAMP_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_DATE_TIMESTAMP_MS } from "@afora/normalization-core/number-coercion";
 import { describe, expect, it, vi } from "vitest";
 import {
   resolveAgentCredentialMapFromStore,
@@ -52,7 +52,7 @@ vi.mock("./model-auth-env.js", () => ({
 }));
 
 async function createAgentDir(): Promise<string> {
-  return await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-agent-auth-storage-"));
+  return await fs.mkdtemp(path.join(os.tmpdir(), "afora-agent-auth-storage-"));
 }
 
 async function withAgentDir(run: (agentDir: string) => Promise<void>): Promise<void> {
@@ -366,11 +366,11 @@ describe("discoverAuthStorage", () => {
 
   it("includes env-backed provider auth when no auth profile exists", () => {
     const previousMistral = process.env.MISTRAL_API_KEY;
-    const previousBundledPluginsDir = process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
-    const previousDisableBundledPlugins = process.env.OPENCLAW_DISABLE_BUNDLED_PLUGINS;
+    const previousBundledPluginsDir = process.env.AFORA_BUNDLED_PLUGINS_DIR;
+    const previousDisableBundledPlugins = process.env.AFORA_DISABLE_BUNDLED_PLUGINS;
     process.env.MISTRAL_API_KEY = "mistral-env-test-key";
-    delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
-    delete process.env.OPENCLAW_DISABLE_BUNDLED_PLUGINS;
+    delete process.env.AFORA_BUNDLED_PLUGINS_DIR;
+    delete process.env.AFORA_DISABLE_BUNDLED_PLUGINS;
     try {
       const credentials = addEnvBackedAgentCredentials({}, { env: process.env });
 
@@ -385,14 +385,14 @@ describe("discoverAuthStorage", () => {
         process.env.MISTRAL_API_KEY = previousMistral;
       }
       if (previousBundledPluginsDir === undefined) {
-        delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+        delete process.env.AFORA_BUNDLED_PLUGINS_DIR;
       } else {
-        process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = previousBundledPluginsDir;
+        process.env.AFORA_BUNDLED_PLUGINS_DIR = previousBundledPluginsDir;
       }
       if (previousDisableBundledPlugins === undefined) {
-        delete process.env.OPENCLAW_DISABLE_BUNDLED_PLUGINS;
+        delete process.env.AFORA_DISABLE_BUNDLED_PLUGINS;
       } else {
-        process.env.OPENCLAW_DISABLE_BUNDLED_PLUGINS = previousDisableBundledPlugins;
+        process.env.AFORA_DISABLE_BUNDLED_PLUGINS = previousDisableBundledPlugins;
       }
     }
   });

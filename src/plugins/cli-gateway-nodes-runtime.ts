@@ -1,6 +1,6 @@
 /** Provides plugin CLI node APIs by forwarding calls to the Gateway. */
 import { randomUUID } from "node:crypto";
-import { addTimerTimeoutGraceMs } from "@openclaw/normalization-core/number-coercion";
+import { addTimerTimeoutGraceMs } from "@afora/normalization-core/number-coercion";
 import {
   GATEWAY_CLIENT_MODES,
   GATEWAY_CLIENT_NAMES,

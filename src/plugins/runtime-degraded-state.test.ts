@@ -10,7 +10,7 @@ describe("pluginInstallPathMatchesRoot", () => {
       return;
     }
 
-    withTempDirSync({ prefix: "openclaw-degraded-plugin-root-" }, (baseDir) => {
+    withTempDirSync({ prefix: "afora-degraded-plugin-root-" }, (baseDir) => {
       const pluginRoot = path.join(baseDir, "plugin");
       const pluginAlias = path.join(baseDir, "plugin-alias");
       fs.mkdirSync(pluginRoot);
@@ -21,7 +21,7 @@ describe("pluginInstallPathMatchesRoot", () => {
   });
 
   it("falls back to absolute lexical paths when plugin roots are missing", () => {
-    withTempDirSync({ prefix: "openclaw-degraded-plugin-root-" }, (baseDir) => {
+    withTempDirSync({ prefix: "afora-degraded-plugin-root-" }, (baseDir) => {
       const missingRoot = path.join(baseDir, "missing-plugin");
       const equivalentMissingRoot = path.join(baseDir, "nested", "..", "missing-plugin");
 

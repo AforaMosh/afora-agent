@@ -1,6 +1,6 @@
 // Fetches and normalizes MiniMax provider usage records.
-import { asDateTimestampMs } from "@openclaw/normalization-core/number-coercion";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { asDateTimestampMs } from "@afora/normalization-core/number-coercion";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { isRecord } from "../utils.js";
 import { readTrimmedStringAlias } from "../utils/string-readers.js";
 import { fetchUsageJson, parseFiniteNumber } from "./provider-usage.fetch.shared.js";
@@ -525,7 +525,7 @@ export async function fetchMinimaxUsage(
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        "MM-API-Source": "OpenClaw",
+        "MM-API-Source": "Afora",
       },
     },
     timeoutMs,

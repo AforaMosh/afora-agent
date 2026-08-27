@@ -1,8 +1,8 @@
 // Synology Chat plugin module stages immutable outbound bytes for NAS attachment pickup.
 import { createHash } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { mimeTypeFromFilePath, normalizeMimeType } from "openclaw/plugin-sdk/media-mime";
-import { resolveExpiresAtMsFromDurationMs } from "openclaw/plugin-sdk/number-runtime";
+import { mimeTypeFromFilePath, normalizeMimeType } from "afora-agent/plugin-sdk/media-mime";
+import { resolveExpiresAtMsFromDurationMs } from "afora-agent/plugin-sdk/number-runtime";
 import {
   buildHostedOutboundMediaResponseHeaders,
   createHostedOutboundMediaStore,
@@ -11,9 +11,9 @@ import {
   type HostedOutboundMediaMetaRecord,
   type HostedOutboundMediaStore,
   type OutboundMediaLoadOptions,
-} from "openclaw/plugin-sdk/outbound-media";
-import { safeEqualSecret } from "openclaw/plugin-sdk/security-runtime";
-import { createWebhookInFlightLimiter } from "openclaw/plugin-sdk/webhook-ingress";
+} from "afora-agent/plugin-sdk/outbound-media";
+import { safeEqualSecret } from "afora-agent/plugin-sdk/security-runtime";
+import { createWebhookInFlightLimiter } from "afora-agent/plugin-sdk/webhook-ingress";
 import {
   resolveSynologyHostedMediaRoute,
   SYNOLOGY_HOSTED_MEDIA_TOKEN_PARAM_PREFIX,

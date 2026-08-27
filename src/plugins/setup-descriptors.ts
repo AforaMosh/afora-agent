@@ -1,5 +1,5 @@
 // Builds setup descriptors from plugin provider and manifest metadata.
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import type { PluginManifestRecord } from "./manifest-registry.js";
 
 type SetupDescriptorRecord = Pick<

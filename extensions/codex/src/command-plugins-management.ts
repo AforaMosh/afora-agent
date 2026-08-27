@@ -1,5 +1,5 @@
 // Codex plugin module implements command plugins management behavior.
-import type { PluginCommandContext, PluginCommandResult } from "openclaw/plugin-sdk/plugin-entry";
+import type { PluginCommandContext, PluginCommandResult } from "afora-agent/plugin-sdk/plugin-entry";
 import { CODEX_PLUGINS_MARKETPLACE_NAME } from "./app-server/config.js";
 import { isOpenAiCuratedMarketplaceName } from "./app-server/plugin-inventory.js";
 import type { v2 } from "./app-server/protocol.js";
@@ -17,7 +17,7 @@ import {
 } from "./plugin-marketplace-discovery.js";
 
 /**
- * Lightweight read/write surface over the Openclaw config file. Plugged in by
+ * Lightweight read/write surface over the Afora config file. Plugged in by
  * the command registration site so this module stays decoupled from the
  * concrete `mutateConfigFile` import in tests.
  */
@@ -54,7 +54,7 @@ type ConfiguredPluginKeyResolution =
   | { status: "ambiguous" }
   | { status: "mismatched" };
 
-// Plugin lifecycle changes (enable/disable) write to openclaw.json
+// Plugin lifecycle changes (enable/disable) write to afora.json
 // synchronously. The Codex app-server picks up the new policy when the next
 // thread starts; in-flight conversations keep the old policy until /new or
 // /reset. A full gateway restart is NOT needed.
@@ -175,7 +175,7 @@ export async function handleCodexPluginsSubcommand(
       block.plugins[configKey] = { ...block.plugins[configKey], enabled: wantEnabled };
     });
     return {
-      text: `${formatCodexDisplayText(configKey)}: ${wantEnabled ? "enabled" : "disabled"} in openclaw.json. ${POLICY_REFRESH_HINT}`,
+      text: `${formatCodexDisplayText(configKey)}: ${wantEnabled ? "enabled" : "disabled"} in afora.json. ${POLICY_REFRESH_HINT}`,
     };
   }
 
@@ -343,7 +343,7 @@ async function installCodexPlugin(
   if (!alreadyInstalled && !plugin.marketplacePath && plugin.remotePluginId) {
     if (plugin.mustShowInstallationInterstitial === true) {
       return {
-        text: `${formatCodexDisplayText(requestedId)} requires a Codex installation confirmation that OpenClaw cannot display. Install it in Codex first, then rerun this command to authorize it here.`,
+        text: `${formatCodexDisplayText(requestedId)} requires a Codex installation confirmation that Afora cannot display. Install it in Codex first, then rerun this command to authorize it here.`,
       };
     }
     if (plugin.mustShowInstallationInterstitial !== false) {
@@ -421,7 +421,7 @@ async function installCodexPlugin(
     });
   } catch (error) {
     return {
-      text: `${formatCodexDisplayText(requestedId)} was installed in Codex but could not be authorized in OpenClaw and will not be exposed: ${formatCodexDisplayText(errorMessage(error))}`,
+      text: `${formatCodexDisplayText(requestedId)} was installed in Codex but could not be authorized in Afora and will not be exposed: ${formatCodexDisplayText(errorMessage(error))}`,
     };
   }
 
@@ -691,7 +691,7 @@ function formatPluginList(
   const keyW = Math.max(...rows.map((r) => r.displayKey.length));
   const pluginW = Math.max(...rows.map((r) => r.pluginName.length));
   return [
-    "Codex sub-plugins in Openclaw config (~/.openclaw/openclaw.json):",
+    "Codex sub-plugins in Afora config (~/.AforaMosh/afora-agent.json):",
     "",
     ...rows.map(
       (r) =>

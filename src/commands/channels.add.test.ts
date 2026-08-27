@@ -1,12 +1,12 @@
 // Channels add tests cover guided setup, plugin install paths, and channel account config writes.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { getBundledChannelSetupPlugin } from "../channels/plugins/bundled.js";
 import type { ChannelPluginCatalogEntry } from "../channels/plugins/catalog.js";
 import { defineChannelSetupContract } from "../channels/plugins/setup-contract.js";
 import type { ChannelSetupInput } from "../channels/plugins/types.core.js";
 import type { ChannelPlugin } from "../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import type { PluginPackageChannelCliOption } from "../plugins/manifest.js";
 import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "../plugins/runtime.js";
@@ -65,7 +65,7 @@ const channelWizardMocks = vi.hoisted(() => {
   };
   return {
     prompter,
-    setupChannels: vi.fn(async (...args: unknown[]) => args[0] as OpenClawConfig),
+    setupChannels: vi.fn(async (...args: unknown[]) => args[0] as AforaConfig),
   };
 });
 
@@ -141,7 +141,7 @@ function createSetupOptionCatalogEntry(
       docsPath: `/channels/${id}`,
       blurb: `${label} test channel.`,
     },
-    install: { npmSpec: `@openclaw/${id}` },
+    install: { npmSpec: `@afora/${id}` },
   };
 }
 
@@ -524,7 +524,7 @@ describe("channelsAddCommand", () => {
     channelWizardMocks.prompter.progress.mockClear();
     channelWizardMocks.setupChannels.mockClear();
     channelWizardMocks.setupChannels.mockImplementation(
-      async (...args: unknown[]) => args[0] as OpenClawConfig,
+      async (...args: unknown[]) => args[0] as AforaConfig,
     );
     setMinimalChannelsAddRegistryForTests();
   });
@@ -566,7 +566,7 @@ describe("channelsAddCommand", () => {
       await channelsAddCommand({ channel }, runtime, { hasFlags: false });
 
       expect(runtime.error).toHaveBeenCalledWith(
-        `Unknown channel "${expectedChannel}". Run \`openclaw channels list --all\` to see configured and installable channels.`,
+        `Unknown channel "${expectedChannel}". Run \`afora channels list --all\` to see configured and installable channels.`,
       );
       expect(runtime.exit).toHaveBeenCalledWith(1);
       expect(runtime.log).not.toHaveBeenCalled();
@@ -592,7 +592,7 @@ describe("channelsAddCommand", () => {
       await expect(
         runChannelsSetupWizard({ channel }, runtime, channelWizardMocks.prompter),
       ).rejects.toThrow(
-        `Unknown channel "${expectedChannel}". Run \`openclaw channels list --all\` to see configured and installable channels.`,
+        `Unknown channel "${expectedChannel}". Run \`afora channels list --all\` to see configured and installable channels.`,
       );
 
       expect(runtime.exit).not.toHaveBeenCalled();
@@ -603,7 +603,7 @@ describe("channelsAddCommand", () => {
   );
 
   it("keeps an omitted hosted selector on the shared picker path", async () => {
-    const config: OpenClawConfig = { channels: {} };
+    const config: AforaConfig = { channels: {} };
     configMocks.readConfigFileSnapshot.mockResolvedValue({
       ...baseConfigSnapshot,
       sourceConfig: config,
@@ -620,7 +620,7 @@ describe("channelsAddCommand", () => {
   it.each(["external-chat", "ext"])(
     "preselects a hosted catalog channel from the %s selector",
     async (channel) => {
-      const config: OpenClawConfig = { channels: {} };
+      const config: AforaConfig = { channels: {} };
       configMocks.readConfigFileSnapshot.mockResolvedValue({
         ...baseConfigSnapshot,
         sourceConfig: config,
@@ -721,7 +721,7 @@ describe("channelsAddCommand", () => {
   });
 
   it("keeps guided channel setup lazy until the user selects a channel", async () => {
-    const config: OpenClawConfig = { channels: {} };
+    const config: AforaConfig = { channels: {} };
     configMocks.readConfigFileSnapshot.mockResolvedValue({
       ...baseConfigSnapshot,
       sourceConfig: config,
@@ -742,8 +742,8 @@ describe("channelsAddCommand", () => {
   });
 
   it("persists an accepted plugin install after setup returns to an empty selection", async () => {
-    const config: OpenClawConfig = { channels: {} };
-    const installedConfig: OpenClawConfig = {
+    const config: AforaConfig = { channels: {} };
+    const installedConfig: AforaConfig = {
       ...config,
       plugins: {
         entries: { "external-chat": { enabled: true } },
@@ -778,7 +778,7 @@ describe("channelsAddCommand", () => {
   it.each(["external-chat", "ext"])(
     "preselects an installable catalog channel from the %s selector",
     async (channel) => {
-      const config: OpenClawConfig = { channels: {} };
+      const config: AforaConfig = { channels: {} };
       configMocks.readConfigFileSnapshot.mockResolvedValue({
         ...baseConfigSnapshot,
         sourceConfig: config,
@@ -801,7 +801,7 @@ describe("channelsAddCommand", () => {
   );
 
   it("preselects an inactive known channel in guided setup", async () => {
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       channels: { "lifecycle-chat": { enabled: false } },
     };
     configMocks.readConfigFileSnapshot.mockResolvedValue({
@@ -817,7 +817,7 @@ describe("channelsAddCommand", () => {
   });
 
   it("opens an exact channel id instead of an earlier plugin alias", async () => {
-    const config: OpenClawConfig = { channels: {} };
+    const config: AforaConfig = { channels: {} };
     const aliasOwner = createChannelTestPluginBase({
       id: "alias-owner",
       label: "Alias Owner",
@@ -1039,7 +1039,7 @@ describe("channelsAddCommand", () => {
       {
         channel: "whatsapp",
         account: "work",
-        authDir: "/tmp/openclaw-wa-auth",
+        authDir: "/tmp/afora-wa-auth",
       },
       runtime,
       { hasFlags: true },
@@ -1050,7 +1050,7 @@ describe("channelsAddCommand", () => {
       accounts: {
         work: {
           enabled: true,
-          authDir: "/tmp/openclaw-wa-auth",
+          authDir: "/tmp/afora-wa-auth",
         },
       },
     });
@@ -1298,7 +1298,7 @@ describe("channelsAddCommand", () => {
         blurb: "WhatsApp channel",
       },
       install: {
-        npmSpec: "@openclaw/whatsapp",
+        npmSpec: "@afora/whatsapp",
       },
     };
     catalogMocks.listChannelPluginCatalogEntries.mockReturnValue([catalogEntry]);
@@ -1339,7 +1339,7 @@ describe("channelsAddCommand", () => {
       {
         channel: "whatsapp",
         account: "work",
-        authDir: "/tmp/openclaw-wa-auth",
+        authDir: "/tmp/afora-wa-auth",
       },
       runtime,
       { hasFlags: true },
@@ -1353,7 +1353,7 @@ describe("channelsAddCommand", () => {
       accounts: {
         work: {
           enabled: true,
-          authDir: "/tmp/openclaw-wa-auth",
+          authDir: "/tmp/afora-wa-auth",
         },
       },
     });
@@ -1367,7 +1367,7 @@ describe("channelsAddCommand", () => {
     setActivePluginRegistry(
       createTestRegistry([
         {
-          pluginId: "openclaw-qqbot",
+          pluginId: "afora-qqbot",
           plugin: {
             ...createChannelTestPluginBase({ id: "qqbot", label: "QQ Bot" }),
             setup: {
@@ -1405,7 +1405,7 @@ describe("channelsAddCommand", () => {
       appId: "app-id",
       clientSecret: "secret",
       dmPolicy: "open",
-      allowFrom: ["openclaw:approval-disabled"],
+      allowFrom: ["afora:approval-disabled"],
     });
   });
 
@@ -1753,7 +1753,7 @@ describe("channelsAddCommand", () => {
       },
     };
     pluginInstallRecordCommitMocks.commitConfigWithPendingPluginInstalls.mockImplementationOnce(
-      async (params: { nextConfig: OpenClawConfig }) => {
+      async (params: { nextConfig: AforaConfig }) => {
         const { installs: _installs, ...plugins } = params.nextConfig.plugins ?? {};
         const writtenConfigLocal = { ...params.nextConfig, plugins };
         await configMocks.writeConfigFile(writtenConfigLocal);

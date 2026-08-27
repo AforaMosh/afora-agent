@@ -13,7 +13,7 @@ scenario:
     - The registered Gateway RPC starts an outbound call through the same mock provider runtime.
     - Gateway tools.invoke starts an outbound call through the registered voice_call agent tool.
     - The runtime issues a real webhook media-stream token for the tool-started call.
-    - The fake realtime provider invokes openclaw_agent_consult and the embedded agent receives caller transcript and provider context.
+    - The fake realtime provider invokes afora_agent_consult and the embedded agent receives caller transcript and provider context.
   docsRefs:
     - docs/cli/voicecall.md
     - docs/plugins/voice-call.md

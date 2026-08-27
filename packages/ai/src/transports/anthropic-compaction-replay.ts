@@ -1,5 +1,5 @@
-import type { AssistantMessage, Context, Model, ProviderReplayState } from "@openclaw/llm-core";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import type { AssistantMessage, Context, Model, ProviderReplayState } from "@afora/llm-core";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { shortHash } from "../utils/hash.js";
 
 const ANTHROPIC_COMPACTION_REPLAY_TYPE = "anthropic-compaction";

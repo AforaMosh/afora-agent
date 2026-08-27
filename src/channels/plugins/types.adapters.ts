@@ -7,7 +7,7 @@ import type { ReplyPayload } from "../../auto-reply/reply-payload.js";
 import type { LegacyConfigRule } from "../../config/legacy.shared.js";
 import type { AgentBinding } from "../../config/types.agents.js";
 import type { DmScope } from "../../config/types.base.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { GroupToolPolicyConfig } from "../../config/types.tools.js";
 import type { ChannelApprovalNativeRuntimeAdapter } from "../../infra/approval-handler-runtime-types.js";
 import type { ChannelApprovalKind } from "../../infra/approval-types.js";
@@ -79,51 +79,51 @@ type ChannelAdapterCallback<T extends (...args: never[]) => unknown> = T;
 export type ChannelAccountLinkState = "linked" | "not-linked" | "unknown";
 
 export type ChannelConfigAdapter<ResolvedAccount> = {
-  listAccountIds: (cfg: OpenClawConfig) => string[];
-  resolveAccount: (cfg: OpenClawConfig, accountId?: string | null) => ResolvedAccount;
-  inspectAccount?: (cfg: OpenClawConfig, accountId?: string | null) => unknown;
-  defaultAccountId?: (cfg: OpenClawConfig) => string;
+  listAccountIds: (cfg: AforaConfig) => string[];
+  resolveAccount: (cfg: AforaConfig, accountId?: string | null) => ResolvedAccount;
+  inspectAccount?: (cfg: AforaConfig, accountId?: string | null) => unknown;
+  defaultAccountId?: (cfg: AforaConfig) => string;
   setAccountEnabled?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     enabled: boolean;
-  }) => OpenClawConfig;
-  deleteAccount?: (params: { cfg: OpenClawConfig; accountId: string }) => OpenClawConfig;
-  isEnabled?: ChannelAdapterCallback<(account: ResolvedAccount, cfg: OpenClawConfig) => boolean>;
+  }) => AforaConfig;
+  deleteAccount?: (params: { cfg: AforaConfig; accountId: string }) => AforaConfig;
+  isEnabled?: ChannelAdapterCallback<(account: ResolvedAccount, cfg: AforaConfig) => boolean>;
   disabledReason?: ChannelAdapterCallback<
-    (account: ResolvedAccount, cfg: OpenClawConfig) => string
+    (account: ResolvedAccount, cfg: AforaConfig) => string
   >;
   isConfigured?: ChannelAdapterCallback<
-    (account: ResolvedAccount, cfg: OpenClawConfig) => boolean | Promise<boolean>
+    (account: ResolvedAccount, cfg: AforaConfig) => boolean | Promise<boolean>
   >;
   isLinked?: ChannelAdapterCallback<
     (
       account: ResolvedAccount,
-      cfg: OpenClawConfig,
+      cfg: AforaConfig,
     ) => ChannelAccountLinkState | Promise<ChannelAccountLinkState>
   >;
   unconfiguredReason?: ChannelAdapterCallback<
-    (account: ResolvedAccount, cfg: OpenClawConfig) => string
+    (account: ResolvedAccount, cfg: AforaConfig) => string
   >;
   unlinkedReason?: ChannelAdapterCallback<
-    (account: ResolvedAccount, cfg: OpenClawConfig) => string
+    (account: ResolvedAccount, cfg: AforaConfig) => string
   >;
   describeAccount?: ChannelAdapterCallback<
-    (account: ResolvedAccount, cfg: OpenClawConfig) => ChannelAccountSnapshot
+    (account: ResolvedAccount, cfg: AforaConfig) => ChannelAccountSnapshot
   >;
   resolveAllowFrom?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
   }) => Array<string | number> | undefined;
   formatAllowFrom?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
     allowFrom: Array<string | number>;
   }) => string[];
-  hasConfiguredState?: (params: { cfg: OpenClawConfig; env?: NodeJS.ProcessEnv }) => boolean;
-  hasPersistedAuthState?: (params: { cfg: OpenClawConfig; env?: NodeJS.ProcessEnv }) => boolean;
+  hasConfiguredState?: (params: { cfg: AforaConfig; env?: NodeJS.ProcessEnv }) => boolean;
+  hasPersistedAuthState?: (params: { cfg: AforaConfig; env?: NodeJS.ProcessEnv }) => boolean;
   resolveDefaultTo?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
   }) => string | undefined;
 };
@@ -136,7 +136,7 @@ export type ChannelSecretsAdapter = {
     value: unknown;
   }>;
   collectRuntimeConfigAssignments?: (params: {
-    config: OpenClawConfig;
+    config: AforaConfig;
     defaults: SecretDefaults | undefined;
     context: ResolverContext;
   }) => void;
@@ -151,13 +151,13 @@ export type ChannelStatusAdapter<ResolvedAccount, Probe = unknown, Audit = unkno
   buildChannelSummary?: ChannelAdapterCallback<
     (params: {
       account: ResolvedAccount;
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       defaultAccountId: string;
       snapshot: ChannelAccountSnapshot;
     }) => Record<string, unknown> | Promise<Record<string, unknown>>
   >;
   probeAccount?: ChannelAdapterCallback<
-    (params: { account: ResolvedAccount; timeoutMs: number; cfg: OpenClawConfig }) => Promise<Probe>
+    (params: { account: ResolvedAccount; timeoutMs: number; cfg: AforaConfig }) => Promise<Probe>
   >;
   formatCapabilitiesProbe?: ChannelAdapterCallback<
     (params: { probe: Probe }) => ChannelCapabilitiesDisplayLine[]
@@ -166,7 +166,7 @@ export type ChannelStatusAdapter<ResolvedAccount, Probe = unknown, Audit = unkno
     (params: {
       account: ResolvedAccount;
       timeoutMs: number;
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       probe?: Probe;
     }) => Promise<Audit>
   >;
@@ -174,7 +174,7 @@ export type ChannelStatusAdapter<ResolvedAccount, Probe = unknown, Audit = unkno
     (params: {
       account: ResolvedAccount;
       timeoutMs: number;
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       probe?: Probe;
       audit?: Audit;
       target?: string;
@@ -183,7 +183,7 @@ export type ChannelStatusAdapter<ResolvedAccount, Probe = unknown, Audit = unkno
   buildAccountSnapshot?: ChannelAdapterCallback<
     (params: {
       account: ResolvedAccount;
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       runtime?: ChannelAccountSnapshot;
       probe?: Probe;
       audit?: Audit;
@@ -192,7 +192,7 @@ export type ChannelStatusAdapter<ResolvedAccount, Probe = unknown, Audit = unkno
   logSelfId?: ChannelAdapterCallback<
     (params: {
       account: ResolvedAccount;
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       runtime: RuntimeEnv;
       includeChannelPrefix?: boolean;
     }) => void
@@ -200,7 +200,7 @@ export type ChannelStatusAdapter<ResolvedAccount, Probe = unknown, Audit = unkno
   resolveAccountState?: ChannelAdapterCallback<
     (params: {
       account: ResolvedAccount;
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       configured: boolean;
       enabled: boolean;
     }) => ChannelAccountState
@@ -209,7 +209,7 @@ export type ChannelStatusAdapter<ResolvedAccount, Probe = unknown, Audit = unkno
 };
 
 export type ChannelGatewayContext<ResolvedAccount = unknown> = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   account: ResolvedAccount;
   runtime: RuntimeEnv;
@@ -277,7 +277,7 @@ export type ChannelGatewayContext<ResolvedAccount = unknown> = {
    * - External plugins should check for undefined before using
    *
    * @since Plugin SDK 2026.2.19
-   * @see {@link https://docs.openclaw.ai/plugins/building-plugins | Plugin SDK documentation}
+   * @see {@link https://docs.afora.ai/plugins/building-plugins | Plugin SDK documentation}
    */
   channelRuntime?: ChannelRuntimeSurface;
 };
@@ -301,7 +301,7 @@ type ChannelLoginWithQrWaitResult = {
 };
 
 type ChannelLogoutContext<ResolvedAccount = unknown> = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   account: ResolvedAccount;
   runtime: RuntimeEnv;
@@ -312,7 +312,7 @@ export type ChannelGatewayAdapter<ResolvedAccount = unknown> = {
   startAccount?: (ctx: ChannelGatewayContext<ResolvedAccount>) => Promise<unknown>;
   stopAccount?: (ctx: ChannelGatewayContext<ResolvedAccount>) => Promise<void>;
   /** Keep gateway auth bypass resolution mirrored through a lightweight top-level `gateway-auth-api.ts` artifact. */
-  resolveGatewayAuthBypassPaths?: (params: { cfg: OpenClawConfig }) => string[];
+  resolveGatewayAuthBypassPaths?: (params: { cfg: AforaConfig }) => string[];
   loginWithQrStart?: (params: {
     accountId?: string;
     force?: boolean;
@@ -329,7 +329,7 @@ export type ChannelGatewayAdapter<ResolvedAccount = unknown> = {
 
 export type ChannelAuthAdapter = {
   login?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
     runtime: RuntimeEnv;
     verbose?: boolean;
@@ -339,19 +339,19 @@ export type ChannelAuthAdapter = {
 
 export type ChannelHeartbeatAdapter = {
   checkReady?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
     deps?: ChannelHeartbeatDeps;
   }) => Promise<{ ok: boolean; reason: string }>;
   sendTyping?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     to: string;
     accountId?: string | null;
     threadId?: string | number | null;
     deps?: ChannelHeartbeatDeps;
   }) => Promise<void> | void;
   clearTyping?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     to: string;
     accountId?: string | null;
     threadId?: string | number | null;
@@ -360,13 +360,13 @@ export type ChannelHeartbeatAdapter = {
 };
 
 type ChannelDirectorySelfParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   runtime: RuntimeEnv;
 };
 
 type ChannelDirectoryListParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   query?: string | null;
   limit?: number | null;
@@ -374,7 +374,7 @@ type ChannelDirectoryListParams = {
 };
 
 type ChannelDirectoryListGroupMembersParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   groupId: string;
   limit?: number | null;
@@ -404,7 +404,7 @@ export type ChannelResolveResult = {
 
 export type ChannelResolverAdapter = {
   resolveTargets: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
     inputs: string[];
     kind: ChannelResolveKind;
@@ -414,7 +414,7 @@ export type ChannelResolverAdapter = {
 
 export type ChannelElevatedAdapter = {
   allowFromFallback?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
   }) => Array<string | number> | undefined;
 };
@@ -456,7 +456,7 @@ export type ChannelCommandAdapter = {
 };
 
 export type ChannelDoctorConfigMutation = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   changes: string[];
   warnings?: string[];
 };
@@ -483,27 +483,27 @@ export type ChannelDoctorAdapter = {
   groupAllowFromFallbackToAllowFrom?: boolean;
   warnOnEmptyGroupSenderAllowlist?: boolean;
   legacyConfigRules?: LegacyConfigRule[];
-  normalizeCompatibilityConfig?: (params: { cfg: OpenClawConfig }) => ChannelDoctorConfigMutation;
+  normalizeCompatibilityConfig?: (params: { cfg: AforaConfig }) => ChannelDoctorConfigMutation;
   collectPreviewWarnings?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     doctorFixCommand: string;
     env?: NodeJS.ProcessEnv;
   }) => string[] | Promise<string[]>;
   collectMutableAllowlistWarnings?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
   }) => string[] | Promise<string[]>;
   repairConfig?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     doctorFixCommand: string;
     env?: NodeJS.ProcessEnv;
   }) => ChannelDoctorConfigMutation | Promise<ChannelDoctorConfigMutation>;
   runConfigSequence?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     env: NodeJS.ProcessEnv;
     shouldRepair: boolean;
   }) => ChannelDoctorSequenceResult | Promise<ChannelDoctorSequenceResult>;
   cleanStaleConfig?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
   }) => ChannelDoctorConfigMutation | Promise<ChannelDoctorConfigMutation>;
   collectEmptyAllowlistExtraWarnings?: (
     params: ChannelDoctorEmptyAllowlistAccountContext,
@@ -515,18 +515,18 @@ export type ChannelDoctorAdapter = {
 
 export type ChannelLifecycleAdapter = {
   onAccountConfigChanged?: (params: {
-    prevCfg: OpenClawConfig;
-    nextCfg: OpenClawConfig;
+    prevCfg: AforaConfig;
+    nextCfg: AforaConfig;
     accountId: string;
     runtime: RuntimeEnv;
   }) => Promise<void> | void;
   onAccountRemoved?: (params: {
-    prevCfg: OpenClawConfig;
+    prevCfg: AforaConfig;
     accountId: string;
     runtime: RuntimeEnv;
   }) => Promise<void> | void;
   runStartupMaintenance?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     env?: NodeJS.ProcessEnv;
     log: {
       info?: (message: string) => void;
@@ -540,7 +540,7 @@ export type ChannelLifecycleAdapter = {
    * Removal plan: remove the lifecycle adapter after the 2027.1 external-plugin migration window.
    */
   detectLegacyStateMigrations?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     env: NodeJS.ProcessEnv;
     stateDir: string;
     oauthDir: string;
@@ -548,9 +548,9 @@ export type ChannelLifecycleAdapter = {
 };
 
 type ChannelApprovalDeliveryAdapter = {
-  hasConfiguredDmRoute?: (params: { cfg: OpenClawConfig }) => boolean;
+  hasConfiguredDmRoute?: (params: { cfg: AforaConfig }) => boolean;
   shouldSuppressForwardingFallback?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     approvalKind: ChannelApprovalKind;
     target: ChannelApprovalForwardTarget;
     request: ExecApprovalRequest | PluginApprovalRequest;
@@ -566,26 +566,26 @@ export type { ChannelApprovalNativeAdapter } from "./approval-native.types.js";
 type ChannelApprovalRenderAdapter = {
   exec?: {
     buildPendingPayload?: (params: {
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       request: ExecApprovalRequest;
       target: ChannelApprovalForwardTarget;
       nowMs: number;
     }) => ReplyPayload | null;
     buildResolvedPayload?: (params: {
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       resolved: ExecApprovalResolved;
       target: ChannelApprovalForwardTarget;
     }) => ReplyPayload | null;
   };
   plugin?: {
     buildPendingPayload?: (params: {
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       request: PluginApprovalRequest;
       target: ChannelApprovalForwardTarget;
       nowMs: number;
     }) => ReplyPayload | null;
     buildResolvedPayload?: (params: {
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       resolved: PluginApprovalResolved;
       target: ChannelApprovalForwardTarget;
     }) => ReplyPayload | null;
@@ -611,7 +611,7 @@ export type ChannelApprovalAdapter = {
 
 export type ChannelApprovalCapability = ChannelApprovalAdapter & {
   authorizeActorAction?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
     senderId?: string | null;
     action: "approve";
@@ -621,19 +621,19 @@ export type ChannelApprovalCapability = ChannelApprovalAdapter & {
     reason?: string;
   };
   getActionAvailabilityState?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
     action: "approve";
     approvalKind?: ChannelApprovalKind;
   }) => ChannelActionAvailabilityState;
   /** Exec-native client availability for the initiating surface; distinct from same-chat auth. */
   getExecInitiatingSurfaceState?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
     action: "approve";
   }) => ChannelActionAvailabilityState;
   resolveApproveCommandBehavior?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
     senderId?: string | null;
     approvalKind: ChannelApprovalKind;
@@ -642,7 +642,7 @@ export type ChannelApprovalCapability = ChannelApprovalAdapter & {
 
 export type ChannelAllowlistAdapter = {
   applyConfigEdit?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     parsedConfig: Record<string, unknown>;
     accountId?: string | null;
     scope: "dm" | "group";
@@ -670,7 +670,7 @@ export type ChannelAllowlistAdapter = {
           }
       >
     | null;
-  readConfig?: (params: { cfg: OpenClawConfig; accountId?: string | null }) =>
+  readConfig?: (params: { cfg: AforaConfig; accountId?: string | null }) =>
     | {
         dmAllowFrom?: Array<string | number>;
         groupAllowFrom?: Array<string | number>;
@@ -686,7 +686,7 @@ export type ChannelAllowlistAdapter = {
         groupOverrides?: Array<{ label: string; entries: Array<string | number> }>;
       }>;
   resolveNames?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
     scope: "dm" | "group";
     entries: string[];
@@ -804,7 +804,7 @@ export type ChannelConversationBindingSupport = {
     idleTimeoutMs?: number;
     maxAgeMs?: number;
   }>;
-  createManager?: (params: { cfg: OpenClawConfig; accountId?: string | null }) =>
+  createManager?: (params: { cfg: AforaConfig; accountId?: string | null }) =>
     | {
         stop: () => void | Promise<void>;
       }
@@ -820,7 +820,7 @@ type ChannelSecurityDmRouteContext<ResolvedAccount> = ChannelSecurityContext<Res
 
 export type ChannelSecurityAdapter<ResolvedAccount = unknown> = {
   applyConfigFixes?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     env: NodeJS.ProcessEnv;
   }) => ChannelDoctorConfigMutation | Promise<ChannelDoctorConfigMutation>;
   resolveDmPolicy?: ChannelAdapterCallback<
@@ -840,7 +840,7 @@ export type ChannelSecurityAdapter<ResolvedAccount = unknown> = {
   collectAuditFindings?: ChannelAdapterCallback<
     (
       ctx: ChannelSecurityContext<ResolvedAccount> & {
-        sourceConfig: OpenClawConfig;
+        sourceConfig: AforaConfig;
         orderedAccountIds: string[];
         hasExplicitAccountPath: boolean;
       },

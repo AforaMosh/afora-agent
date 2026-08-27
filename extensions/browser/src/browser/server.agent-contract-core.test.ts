@@ -1,6 +1,6 @@
 // Browser tests cover server.agent contract core plugin behavior.
 import fs from "node:fs";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_AI_SNAPSHOT_MAX_CHARS } from "./constants.js";
 import { ACT_ERROR_CODES } from "./routes/agent.act.errors.js";
@@ -176,7 +176,7 @@ describe("browser control server", () => {
     "returns ACT_EXISTING_SESSION_UNSUPPORTED for unsupported existing-session actions",
     async () => {
       setBrowserControlServerProfiles({
-        openclaw: {
+        afora: {
           color: "#FF4500",
           driver: "existing-session",
         },
@@ -376,7 +376,7 @@ describe("browser control server", () => {
           {
             url: "https://example.com/report.pdf",
             suggestedFilename: "report.pdf",
-            path: "/tmp/openclaw/downloads/report.pdf",
+            path: "/tmp/afora/downloads/report.pdf",
           },
         ],
       });
@@ -394,7 +394,7 @@ describe("browser control server", () => {
         {
           url: "https://example.com/report.pdf",
           suggestedFilename: "report.pdf",
-          path: "/tmp/openclaw/downloads/report.pdf",
+          path: "/tmp/afora/downloads/report.pdf",
         },
       ]);
     },
@@ -623,7 +623,7 @@ describe("browser control server", () => {
     "forwards timer-safe navigation timeout $requestedTimeoutMs to the Chrome MCP backend",
     async ({ requestedTimeoutMs, expectedTimeoutMs }) => {
       setBrowserControlServerProfiles({
-        openclaw: { color: "#FF4500", driver: "existing-session" },
+        afora: { color: "#FF4500", driver: "existing-session" },
       });
       const base = await startServerAndBase();
 
@@ -637,7 +637,7 @@ describe("browser control server", () => {
       const chromeMcp = await vi.importMock<typeof import("./chrome-mcp.js")>("./chrome-mcp.js");
       expect(chromeMcp.navigateChromeMcpPage).toHaveBeenCalledWith(
         expect.objectContaining({
-          profileName: "openclaw",
+          profileName: "afora",
           targetId: "7",
           url: "https://example.com/slow",
           timeoutMs: expectedTimeoutMs,
@@ -894,7 +894,7 @@ describe("profile CRUD endpoints", () => {
     const createDuplicate = await realFetch(`${base}/profiles/create`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "openclaw" }),
+      body: JSON.stringify({ name: "afora" }),
     });
     expect(createDuplicate.status).toBe(409);
     const createDuplicateBody = (await createDuplicate.json()) as { error: string };
@@ -941,7 +941,7 @@ describe("profile CRUD endpoints", () => {
     expect(createClawdBody.cdpPort).toBeTypeOf("number");
     expect(createClawdBody.userDataDir).toBeNull();
 
-    const explicitUserDataDir = "/tmp/openclaw-brave-profile";
+    const explicitUserDataDir = "/tmp/afora-brave-profile";
     await fs.promises.mkdir(explicitUserDataDir, { recursive: true });
     const createExistingSession = await realFetch(`${base}/profiles/create`, {
       method: "POST",
@@ -992,7 +992,7 @@ describe("profile CRUD endpoints", () => {
     const deleteMissingBody = (await deleteMissing.json()) as { error: string };
     expect(deleteMissingBody.error).toContain("not found");
 
-    const deleteDefault = await realFetch(`${base}/profiles/openclaw`, {
+    const deleteDefault = await realFetch(`${base}/profiles/afora`, {
       method: "DELETE",
     });
     expect(deleteDefault.status).toBe(400);

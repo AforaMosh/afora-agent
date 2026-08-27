@@ -125,7 +125,7 @@ function createQuickChatHarness(): Record<string, any> {
   let widgetSyncCount = 0;
   let widgetSurfaceRefreshCount = 0;
   let widgetSurfaceRefreshFails = false;
-  let widgetSurfaceRefreshResult = "https://gateway.example/__openclaw__/cap/refreshed-capability";
+  let widgetSurfaceRefreshResult = "https://gateway.example/__afora__/cap/refreshed-capability";
   let fakeNow = 1_000_000;
   const sendResult = new Promise((resolve) => {
     resolveSend = resolve;
@@ -204,7 +204,7 @@ this.harness = {
   nextVisibilityOperation,
   requestHide,
   clearReply,
-  setGatewayUp(surface = "https://gateway.example/__openclaw__/cap/fixture-capability") {
+  setGatewayUp(surface = "https://gateway.example/__afora__/cap/fixture-capability") {
     gatewayState = "up";
     canvasSurfaceObservedUrl = surface;
     canvasSurfaceUrl = surface;
@@ -356,7 +356,7 @@ test("canvas previews are accepted only for safe assistant widgets", () => {
           title: "Build status",
           preferredHeight: 2_000,
           viewId: "build-status",
-          url: "/__openclaw__/canvas/documents/build-status/index.html",
+          url: "/__afora__/canvas/documents/build-status/index.html",
         },
       },
     ],
@@ -367,7 +367,7 @@ test("canvas previews are accepted only for safe assistant widgets", () => {
     {
       key: "build-status",
       title: "Build status",
-      target: "/__openclaw__/canvas/documents/build-status/index.html",
+      target: "/__afora__/canvas/documents/build-status/index.html",
       preferredHeight: 1_200,
       sandbox: "scripts",
     },
@@ -383,7 +383,7 @@ test("canvas previews are accepted only for safe assistant widgets", () => {
           render: "url",
           sandbox: "scripts",
           viewId: "duplicate",
-          url: "/__openclaw__/canvas/documents/first/index.html",
+          url: "/__afora__/canvas/documents/first/index.html",
         },
       },
       {
@@ -394,7 +394,7 @@ test("canvas previews are accepted only for safe assistant widgets", () => {
           render: "url",
           sandbox: "scripts",
           viewId: "duplicate",
-          url: "/__openclaw__/canvas/documents/second/index.html",
+          url: "/__afora__/canvas/documents/second/index.html",
         },
       },
       {
@@ -405,7 +405,7 @@ test("canvas previews are accepted only for safe assistant widgets", () => {
           render: "url",
           sandbox: "scripts",
           viewId: "duplicate-2",
-          url: "/__openclaw__/canvas/documents/third/index.html",
+          url: "/__afora__/canvas/documents/third/index.html",
         },
       },
     ],
@@ -430,7 +430,7 @@ test("canvas previews are accepted only for safe assistant widgets", () => {
           render: "url",
           sandbox: "scripts",
           viewId: emojiViewId,
-          url: "/__openclaw__/canvas/documents/emoji/index.html",
+          url: "/__afora__/canvas/documents/emoji/index.html",
         },
       },
     ],
@@ -449,7 +449,7 @@ test("canvas previews are accepted only for safe assistant widgets", () => {
           render: "url",
           sandbox: "scripts",
           viewId: cjkViewId,
-          url: "/__openclaw__/canvas/documents/cjk/index.html",
+          url: "/__afora__/canvas/documents/cjk/index.html",
         },
       },
     ],
@@ -467,7 +467,7 @@ test("canvas previews are accepted only for safe assistant widgets", () => {
             surface: "assistant_message",
             render: "url",
             sandbox: "scripts",
-            url: "/__openclaw__/canvas/documents/tool/index.html",
+            url: "/__afora__/canvas/documents/tool/index.html",
           },
         },
       ],
@@ -484,7 +484,7 @@ test("canvas previews are accepted only for safe assistant widgets", () => {
             surface: "assistant_message",
             render: "url",
             sandbox: "scripts",
-            url: "/__openclaw__/canvas/documents/roleless/index.html",
+            url: "/__afora__/canvas/documents/roleless/index.html",
           },
         },
       ],
@@ -502,7 +502,7 @@ test("canvas previews are accepted only for safe assistant widgets", () => {
             surface: "assistant_message",
             render: "url",
             sandbox: "scripts",
-            url: "/__openclaw__/canvas/documents/%252e%252e/private-file",
+            url: "/__afora__/canvas/documents/%252e%252e/private-file",
           },
         },
       ],
@@ -514,49 +514,49 @@ test("canvas previews are accepted only for safe assistant widgets", () => {
 test("widget URLs stay inside the capability-scoped Canvas host", () => {
   assert.equal(
     resolveInlineWidgetUrl(
-      "https://gateway.example/base/__openclaw__/cap/fixture-capability",
-      "/__openclaw__/canvas/documents/widget-1/index.html?mode=compact#result",
+      "https://gateway.example/base/__afora__/cap/fixture-capability",
+      "/__afora__/canvas/documents/widget-1/index.html?mode=compact#result",
     ),
-    "https://gateway.example/base/__openclaw__/cap/fixture-capability/__openclaw__/canvas/documents/widget-1/index.html?mode=compact#result",
+    "https://gateway.example/base/__afora__/cap/fixture-capability/__afora__/canvas/documents/widget-1/index.html?mode=compact#result",
   );
   assert.equal(
     resolveInlineWidgetUrl(
-      "http://gateway.example/__openclaw__/cap/fixture-capability",
-      "/__openclaw__/canvas/documents/widget-1/index.html",
-    ),
-    null,
-  );
-  assert.equal(
-    resolveInlineWidgetUrl(
-      "http://localhost:18789/__openclaw__/cap/fixture-capability",
-      "/__openclaw__/canvas/documents/widget-1/index.html",
-    ),
-    "http://localhost:18789/__openclaw__/cap/fixture-capability/__openclaw__/canvas/documents/widget-1/index.html",
-  );
-  assert.equal(
-    resolveInlineWidgetUrl(
-      "http://[::1]:18789/__openclaw__/cap/fixture-capability",
-      "/__openclaw__/canvas/documents/widget-1/index.html",
-    ),
-    "http://[::1]:18789/__openclaw__/cap/fixture-capability/__openclaw__/canvas/documents/widget-1/index.html",
-  );
-  assert.equal(
-    resolveInlineWidgetUrl(
-      "https://gateway.example/base/__openclaw__/cap/fixture-capability?leak=1",
-      "/__openclaw__/canvas/documents/widget-1/index.html",
+      "http://gateway.example/__afora__/cap/fixture-capability",
+      "/__afora__/canvas/documents/widget-1/index.html",
     ),
     null,
   );
   assert.equal(
     resolveInlineWidgetUrl(
-      "https://gateway.example/base/__openclaw__/cap/%252f..%252fother",
-      "/__openclaw__/canvas/documents/widget-1/index.html",
+      "http://localhost:18789/__afora__/cap/fixture-capability",
+      "/__afora__/canvas/documents/widget-1/index.html",
+    ),
+    "http://localhost:18789/__afora__/cap/fixture-capability/__afora__/canvas/documents/widget-1/index.html",
+  );
+  assert.equal(
+    resolveInlineWidgetUrl(
+      "http://[::1]:18789/__afora__/cap/fixture-capability",
+      "/__afora__/canvas/documents/widget-1/index.html",
+    ),
+    "http://[::1]:18789/__afora__/cap/fixture-capability/__afora__/canvas/documents/widget-1/index.html",
+  );
+  assert.equal(
+    resolveInlineWidgetUrl(
+      "https://gateway.example/base/__afora__/cap/fixture-capability?leak=1",
+      "/__afora__/canvas/documents/widget-1/index.html",
     ),
     null,
   );
   assert.equal(
     resolveInlineWidgetUrl(
-      "https://gateway.example/base/__openclaw__/cap/fixture-capability",
+      "https://gateway.example/base/__afora__/cap/%252f..%252fother",
+      "/__afora__/canvas/documents/widget-1/index.html",
+    ),
+    null,
+  );
+  assert.equal(
+    resolveInlineWidgetUrl(
+      "https://gateway.example/base/__afora__/cap/fixture-capability",
       "https://evil.example/widget.html",
     ),
     null,
@@ -639,7 +639,7 @@ test("final assistant canvas previews sync into isolated native webviews", async
             render: "url",
             sandbox: "strict",
             title: "Status",
-            url: "/__openclaw__/canvas/documents/status/index.html",
+            url: "/__afora__/canvas/documents/status/index.html",
           },
         },
       ],
@@ -651,8 +651,8 @@ test("final assistant canvas previews sync into isolated native webviews", async
   assert.deepEqual(
     { ...layout },
     {
-      key: "/__openclaw__/canvas/documents/status/index.html",
-      url: "https://gateway.example/__openclaw__/cap/fixture-capability/__openclaw__/canvas/documents/status/index.html",
+      key: "/__afora__/canvas/documents/status/index.html",
+      url: "https://gateway.example/__afora__/cap/fixture-capability/__afora__/canvas/documents/status/index.html",
       sandbox: "strict",
       x: 52,
       y: 174,
@@ -689,7 +689,7 @@ test("expired Canvas capability refreshes before a new widget loads", async () =
             surface: "assistant_message",
             render: "url",
             sandbox: "scripts",
-            url: "/__openclaw__/canvas/documents/status/index.html",
+            url: "/__afora__/canvas/documents/status/index.html",
           },
         },
       ],
@@ -701,7 +701,7 @@ test("expired Canvas capability refreshes before a new widget loads", async () =
   assert.equal(harness.widgetSurfaceRefreshCount(), 1);
   assert.equal(
     harness.syncedWidgets()[0]?.url,
-    "https://gateway.example/__openclaw__/cap/refreshed-capability/__openclaw__/canvas/documents/status/index.html",
+    "https://gateway.example/__afora__/cap/refreshed-capability/__afora__/canvas/documents/status/index.html",
   );
 });
 
@@ -721,7 +721,7 @@ test("transient Canvas refresh failures remain retryable", async () => {
       surface: "assistant_message",
       render: "url",
       sandbox: "scripts",
-      url: `/__openclaw__/canvas/documents/${id}/index.html`,
+      url: `/__afora__/canvas/documents/${id}/index.html`,
     },
   });
 
@@ -754,7 +754,7 @@ test("transient Canvas refresh failures remain retryable", async () => {
 
 test("unchanged gateway state does not renew a failed Canvas capability", async () => {
   const harness = createQuickChatHarness();
-  const surface = "https://gateway.example/__openclaw__/cap/fixture-capability";
+  const surface = "https://gateway.example/__afora__/cap/fixture-capability";
   harness.setGatewayUp(surface);
   harness.expireCanvasSurface();
   harness.setWidgetSurfaceRefreshFails(true);
@@ -777,7 +777,7 @@ test("unchanged gateway state does not renew a failed Canvas capability", async 
             surface: "assistant_message",
             render: "url",
             sandbox: "scripts",
-            url: "/__openclaw__/canvas/documents/status/index.html",
+            url: "/__afora__/canvas/documents/status/index.html",
           },
         },
       ],
@@ -804,7 +804,7 @@ test("unchanged gateway state does not renew a failed Canvas capability", async 
             surface: "assistant_message",
             render: "url",
             sandbox: "scripts",
-            url: "/__openclaw__/canvas/documents/retry/index.html",
+            url: "/__afora__/canvas/documents/retry/index.html",
           },
         },
       ],
@@ -836,7 +836,7 @@ test("clearing the widget reply restores semantic text-only layout", async () =>
             surface: "assistant_message",
             render: "url",
             sandbox: "scripts",
-            url: "/__openclaw__/canvas/documents/status/index.html",
+            url: "/__afora__/canvas/documents/status/index.html",
           },
         },
       ],
@@ -868,7 +868,7 @@ test("adding a widget preserves the existing native webview identity", async () 
       sandbox: "scripts",
       title: id,
       viewId: id,
-      url: `/__openclaw__/canvas/documents/${id}/index.html`,
+      url: `/__afora__/canvas/documents/${id}/index.html`,
     },
   });
 

@@ -3,17 +3,17 @@ import { createHash } from "node:crypto";
 import {
   resolveStoredModelOverride,
   type ModelsProviderData,
-} from "openclaw/plugin-sdk/command-auth-native";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/core";
-import { parseStrictInteger } from "openclaw/plugin-sdk/number-runtime";
-import { normalizeProviderId } from "openclaw/plugin-sdk/provider-model-shared";
-import { getSessionEntry, resolveStorePath } from "openclaw/plugin-sdk/session-store-runtime";
+} from "afora-agent/plugin-sdk/command-auth-native";
+import type { AforaConfig } from "afora-agent/plugin-sdk/core";
+import { parseStrictInteger } from "afora-agent/plugin-sdk/number-runtime";
+import { normalizeProviderId } from "afora-agent/plugin-sdk/provider-model-shared";
+import { getSessionEntry, resolveStorePath } from "afora-agent/plugin-sdk/session-store-runtime";
 import {
   asFiniteNumber,
   normalizeOptionalString,
   normalizeStringifiedOptionalString,
   readStringField,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { MattermostInteractiveButtonInput } from "./interactions.js";
 
 const MATTERMOST_MODEL_PICKER_CONTEXT_KEY = "oc_model_picker";
@@ -233,7 +233,7 @@ export function buildMattermostAllowedModelRefs(data: ModelsProviderData): Set<s
 }
 
 export function resolveMattermostModelPickerCurrentModel(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   route: { agentId: string; sessionKey: string };
   data: ModelsProviderData;
   readConsistency?: "latest";

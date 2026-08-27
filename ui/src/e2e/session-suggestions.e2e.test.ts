@@ -14,7 +14,7 @@ const suite = createControlUiE2eSuite({
 const sessionKey = "agent:main:main";
 
 function artifactDir(): string | undefined {
-  return process.env.OPENCLAW_CONTROL_UI_E2E_ARTIFACT_DIR?.trim() || undefined;
+  return process.env.AFORA_CONTROL_UI_E2E_ARTIFACT_DIR?.trim() || undefined;
 }
 
 async function contextAndPage() {

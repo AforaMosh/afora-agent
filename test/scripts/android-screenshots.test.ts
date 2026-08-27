@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const SCRIPT = "scripts/android-screenshots.sh";
 const SCREENSHOT_FIXTURE =
-  "apps/android/app/src/main/java/ai/openclaw/app/AndroidScreenshotFixture.kt";
+  "apps/android/app/src/main/java/ai/afora/app/AndroidScreenshotFixture.kt";
 
 function runAndroidScreenshots(args: string[], env: NodeJS.ProcessEnv = {}) {
   return spawnSync("bash", [SCRIPT, ...args], {
@@ -28,8 +28,8 @@ describe("android screenshots script", () => {
     expect(result.stdout).toContain(".artifacts/android-screenshots/latest/wear");
     expect(result.stdout).toContain("Android screenshot size: 1440x2560");
     expect(result.stdout).toContain("Android screenshot size: 454x454");
-    expect(result.stdout).toContain("Screenshot AVD: OpenClaw_Screenshots_API36");
-    expect(result.stdout).toContain("Screenshot AVD: OpenClaw_Wear_Screenshots_API34");
+    expect(result.stdout).toContain("Screenshot AVD: Afora_Screenshots_API36");
+    expect(result.stdout).toContain("Screenshot AVD: Afora_Wear_Screenshots_API34");
     expect(result.stdout).toContain("Screenshot device profile: pixel_2");
     expect(result.stdout).toContain("Screenshot device profile: wearos_large_round");
     expect(result.stdout).toContain("Scenes: home chat settings gateway voice-wake");
@@ -58,10 +58,10 @@ describe("android screenshots script", () => {
     expect(script).toContain("voice) printf '%s\\n' \"Dictate\"");
     expect(script).not.toContain("Ready to talk");
     expect(fixture).toContain('"Draft a short status update for the team."');
-    expect(script).toContain("settings) printf '%s\\n' \"OpenClaw mobile\"");
+    expect(script).toContain("settings) printf '%s\\n' \"Afora mobile\"");
     expect(script).not.toContain("settings) printf '%s\\n' \"Settings\"");
     expect(script).toContain(
-      "gateway) printf '%s\\n' \"Connection between this phone and OpenClaw.\"",
+      "gateway) printf '%s\\n' \"Connection between this phone and Afora.\"",
     );
     expect(script).not.toContain("gateway) printf '%s\\n' \"Add Gateway\"");
   });
@@ -102,9 +102,9 @@ describe("android screenshots script", () => {
   it("provisions a retained no-cutout screenshot emulator by default", () => {
     const script = readFileSync(SCRIPT, "utf8");
 
-    expect(script).toContain('DEFAULT_SCREENSHOT_AVD="OpenClaw_Screenshots_API36"');
+    expect(script).toContain('DEFAULT_SCREENSHOT_AVD="Afora_Screenshots_API36"');
     expect(script).toContain('DEFAULT_SCREENSHOT_DEVICE_PROFILE="pixel_2"');
-    expect(script).toContain('DEFAULT_WEAR_SCREENSHOT_AVD="OpenClaw_Wear_Screenshots_API34"');
+    expect(script).toContain('DEFAULT_WEAR_SCREENSHOT_AVD="Afora_Wear_Screenshots_API34"');
     expect(script).toContain('DEFAULT_WEAR_SCREENSHOT_DEVICE_PROFILE="wearos_large_round"');
     expect(script).toContain('GRADLE_ASSEMBLE_TASK=":wear:assembleDebug"');
     expect(script).toContain('OUTPUT_TYPE="wearScreenshots"');

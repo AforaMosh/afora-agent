@@ -1,4 +1,4 @@
-import type { InternalToolBatchCall } from "@openclaw/agent-core";
+import type { InternalToolBatchCall } from "@afora/agent-core";
 import { Type } from "typebox";
 import { describe, expect, it, vi } from "vitest";
 import { markCodeModeControlTool } from "../../code-mode-control-tools.js";

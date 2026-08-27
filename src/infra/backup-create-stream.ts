@@ -46,7 +46,7 @@ export function observeBackupTarEntryProgress(
   }
 }
 
-// OpenClaw's one-user trust model treats hostile same-UID pathname rewrites as
+// Afora's one-user trust model treats hostile same-UID pathname rewrites as
 // trusted host mutation. Keep the check and unlink synchronous so cooperative
 // processes cannot interleave through an in-process await boundary.
 export function removePreparedBackupArchive(prepared: PreparedBackupArchive): boolean {

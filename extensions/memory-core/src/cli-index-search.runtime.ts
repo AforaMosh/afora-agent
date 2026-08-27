@@ -1,6 +1,6 @@
 import path from "node:path";
-import { resolveMemorySearchStaleness } from "openclaw/plugin-sdk/memory-core-host-engine-storage";
-import { resolveMemoryDreamingConfig } from "openclaw/plugin-sdk/memory-core-host-status";
+import { resolveMemorySearchStaleness } from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
+import { resolveMemoryDreamingConfig } from "afora-agent/plugin-sdk/memory-core-host-status";
 import {
   buildCliMemorySearchSessionKey,
   formatAuditCounts,

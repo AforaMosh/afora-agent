@@ -20,7 +20,7 @@ import {
   synthesizeSpeech,
   textToSpeechTelephony,
   transcodeAudioBufferMock,
-  type OpenClawConfig,
+  type AforaConfig,
   type ReplyPayload,
   type SpeechTelephonySynthesisRequest,
 } from "./tts-runtime.test-support.js";
@@ -37,7 +37,7 @@ describe("TTS runtime persona behavior", () => {
   });
 
   it("selects persona preferred provider before config fallback", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tts: {
         enabled: true,
         provider: "other",
@@ -56,7 +56,7 @@ describe("TTS runtime persona behavior", () => {
       },
     };
     const config = resolveTtsConfig(cfg);
-    const prefsPath = "/tmp/openclaw-speech-core-persona-provider.json";
+    const prefsPath = "/tmp/afora-speech-core-persona-provider.json";
 
     expect(getTtsPersona(config, prefsPath)?.id).toBe("alfred");
     expect(getTtsProvider(config, prefsPath)).toBe("mock");
@@ -70,13 +70,13 @@ describe("TTS runtime persona behavior", () => {
         },
       }),
     ]);
-    const prefsPath = "/tmp/openclaw-speech-core-invalid-provider.json";
+    const prefsPath = "/tmp/afora-speech-core-invalid-provider.json";
     setTtsMachinePrefsPathResolver(() => prefsPath);
     const cfg = {
       tts: {
         providers: { broken: {} },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const config = resolveTtsConfig(cfg);
 
     expect(isTtsProviderConfigured(config, "broken", cfg)).toBe(false);
@@ -84,8 +84,8 @@ describe("TTS runtime persona behavior", () => {
   });
 
   it("merges active persona provider binding into synthesis config", async () => {
-    setTtsMachinePrefsPathResolver(() => "/tmp/openclaw-speech-core-persona-merge.json");
-    const cfg: OpenClawConfig = {
+    setTtsMachinePrefsPathResolver(() => "/tmp/afora-speech-core-persona-merge.json");
+    const cfg: AforaConfig = {
       tts: {
         enabled: true,
         provider: "mock",
@@ -379,7 +379,7 @@ describe("TTS runtime per-agent config", () => {
           },
         ],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const resolved = resolveTtsConfig(cfg, "reader");
 
@@ -439,7 +439,7 @@ describe("TTS runtime per-agent config", () => {
           },
         ],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     let mediaDir: string | undefined;
     try {
@@ -486,7 +486,7 @@ describe("TTS runtime per-agent config", () => {
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const resolved = resolveTtsConfig(cfg, "reader");
 

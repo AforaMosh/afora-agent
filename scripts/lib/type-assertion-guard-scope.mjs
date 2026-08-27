@@ -50,7 +50,7 @@ export const CHAINED_ASSERTION_EXCLUDED_ROOTS = [
   "extensions/codex/src/app-server/run-attempt-runtime.ts", // supervised Codex models bridge the agent-harness model generic
   "extensions/copilot/harness.ts", // test support
   "extensions/copilot/src/attempt-execution.ts", // Copilot SDK session implementations expose incompatible private shapes
-  "extensions/copilot/src/attempt-transcript-journal.ts", // OpenClaw transcript metadata extends the public AgentMessage union
+  "extensions/copilot/src/attempt-transcript-journal.ts", // Afora transcript metadata extends the public AgentMessage union
   "extensions/copilot/src/byok-proxy.ts", // DOM and Node readable streams use distinct type namespaces
   "extensions/copilot/src/isolated-completion.ts", // Copilot SDK isolated sessions expose a narrower private shape
   "extensions/copilot/src/runtime.ts", // staged Copilot client state initializes after async acquisition
@@ -63,7 +63,7 @@ export const CHAINED_ASSERTION_EXCLUDED_ROOTS = [
   "extensions/discord/src/monitor/message-handler.hydration.ts", // hydrated Discord messages bridge SDK constructor-private fields
   "extensions/discord/src/monitor/provider.startup-log.ts", // reconnect attempts are private Discord gateway diagnostics
   "extensions/discord/src/monitor/threading.starter.ts", // Discord thread channels narrow a dependency union after runtime checks
-  "extensions/github-copilot/index.ts", // config merge patches are intentionally deeper than Partial<OpenClawConfig>
+  "extensions/github-copilot/index.ts", // config merge patches are intentionally deeper than Partial<AforaConfig>
   "extensions/google/realtime-voice-provider.ts", // provider tool schemas and lifecycle fields bridge Google SDK versions
   "extensions/googlechat/src/approval-native.ts", // approval runtime dynamically implements the public channel adapter seam
   "extensions/imessage/src/approval-native.ts", // approval runtime dynamically implements the public channel adapter seam

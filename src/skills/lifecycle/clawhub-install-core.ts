@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   downloadClawHubGitHubSkillArchive,
   downloadClawHubSkillArchive,
@@ -74,7 +74,7 @@ export type ClawHubInstallParams = {
   acknowledgeClawHubRisk?: boolean;
   onClawHubRisk?: (request: ClawHubRiskAcknowledgementRequest) => boolean | Promise<boolean>;
   logger?: Logger;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   onInstallPolicyWarning?: InstallSafetyOverrides["onInstallPolicyWarning"];
   clawManaged?: boolean;
 };
@@ -199,7 +199,7 @@ function formatClawHubSkillInstallError(error: unknown, slug: string): string {
     error.status === 404 &&
     (error.requestPath.endsWith(skillPath) || error.requestPath.endsWith(`${skillPath}/install`))
   ) {
-    return `Skill "${slug}" not found. Run \`openclaw skills list\` to see available skills.`;
+    return `Skill "${slug}" not found. Run \`afora skills list\` to see available skills.`;
   }
   if (error.status === 401) {
     return `ClawHub authentication failed while installing skill "${slug}". Authenticate with ClawHub and try again.`;
@@ -337,15 +337,15 @@ async function installArchiveResolution(params: {
   version: string;
   archivePath: string;
   registry: string;
-  authority: "official" | "openclaw" | "third-party";
+  authority: "official" | "afora" | "third-party";
   force?: boolean;
   logger?: Logger;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   onInstallPolicyWarning?: InstallSafetyOverrides["onInstallPolicyWarning"];
 }) {
   return await withExtractedArchiveRoot({
     archivePath: params.archivePath,
-    tempDirPrefix: "openclaw-skill-clawhub-",
+    tempDirPrefix: "afora-skill-clawhub-",
     timeoutMs: 120_000,
     rootMarkers: CLAWHUB_SKILL_ARCHIVE_ROOT_MARKERS,
     onExtracted: async (rootDir) =>
@@ -388,14 +388,14 @@ async function installGitHubResolution(params: {
   trustState?: ClawHubSkillsShTrustState;
   force?: boolean;
   logger?: Logger;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   onInstallPolicyWarning?: InstallSafetyOverrides["onInstallPolicyWarning"];
 }) {
   // Preserve the repository root for sourcePath selection. Root markers validate
   // the selected skill directory afterward, so nested paths are not applied twice.
   return await withExtractedArchiveRoot({
     archivePath: params.archivePath,
-    tempDirPrefix: "openclaw-skill-clawhub-github-",
+    tempDirPrefix: "afora-skill-clawhub-github-",
     timeoutMs: 120_000,
     onExtracted: async (repoRoot) =>
       await installExtractedSkillRoot({
@@ -437,7 +437,7 @@ function assertInstallResolutionAllowed(
     if (resolution.reason === "ambiguous_slug") {
       const message = resolution.message ? ` ${resolution.message}` : "";
       throw new Error(
-        `Skill "${resolution.slug}" is ambiguous on ClawHub. Install an owner-qualified skill, for example: openclaw skills install @owner/${resolution.slug}.${message}`,
+        `Skill "${resolution.slug}" is ambiguous on ClawHub. Install an owner-qualified skill, for example: afora skills install @owner/${resolution.slug}.${message}`,
       );
     }
     throw new Error(resolution.message || `Skill "${resolution.slug}" is not installable.`);
@@ -628,7 +628,7 @@ export async function performClawHubSkillInstall(
               authority: official
                 ? "official"
                 : isDefaultClawHubBaseUrl(params.baseUrl)
-                  ? "openclaw"
+                  ? "afora"
                   : "third-party",
               force: params.force,
               logger: params.logger,

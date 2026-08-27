@@ -1,11 +1,11 @@
 import {
   buildTransportAwareSimpleStreamFn,
   createBoundaryAwareStreamFnForModel,
-  createOpenClawTransportStreamFnForModel,
+  createAforaTransportStreamFnForModel,
   prepareTransportAwareSimpleModel,
   resolveTransportAwareSimpleApi,
-} from "@openclaw/ai/transports";
-import type { Api, Model } from "openclaw/plugin-sdk/llm";
+} from "@afora/ai/transports";
+import type { Api, Model } from "afora-agent/plugin-sdk/llm";
 import { describe, expect, it, vi } from "vitest";
 import {
   resolveAzureOpenAIApiVersion,
@@ -253,7 +253,7 @@ describe("openai transport stream", () => {
     });
     const thinkingBlock = output.content[0] as {
       thinkingSignature?: string;
-      openclawReasoningReplay?: unknown;
+      aforaReasoningReplay?: unknown;
     };
     const replayItem = JSON.parse(thinkingBlock.thinkingSignature ?? "{}") as Record<
       string,
@@ -264,8 +264,8 @@ describe("openai transport stream", () => {
       id: "rs_123",
       encrypted_content: "ciphertext",
     });
-    expect(replayItem).not.toHaveProperty("__openclaw_replay");
-    expect(thinkingBlock.openclawReasoningReplay).toEqual(expectedReplayMetadata);
+    expect(replayItem).not.toHaveProperty("__afora_replay");
+    expect(thinkingBlock.aforaReasoningReplay).toEqual(expectedReplayMetadata);
   });
 
   it("clamps Responses cached prompt usage at zero", async () => {
@@ -853,8 +853,8 @@ describe("openai transport stream", () => {
   });
 
   it("summarizes model payload tools with full names when requested", () => {
-    const previous = process.env.OPENCLAW_DEBUG_MODEL_PAYLOAD;
-    process.env.OPENCLAW_DEBUG_MODEL_PAYLOAD = "tools";
+    const previous = process.env.AFORA_DEBUG_MODEL_PAYLOAD;
+    process.env.AFORA_DEBUG_MODEL_PAYLOAD = "tools";
     try {
       expect(
         testing.summarizeResponsesTools([
@@ -864,16 +864,16 @@ describe("openai transport stream", () => {
       ).toBe("count=2 names=exec,wait");
     } finally {
       if (previous === undefined) {
-        delete process.env.OPENCLAW_DEBUG_MODEL_PAYLOAD;
+        delete process.env.AFORA_DEBUG_MODEL_PAYLOAD;
       } else {
-        process.env.OPENCLAW_DEBUG_MODEL_PAYLOAD = previous;
+        process.env.AFORA_DEBUG_MODEL_PAYLOAD = previous;
       }
     }
   });
 
   it("skips unreadable model payload tool names in debug summaries", () => {
-    const previous = process.env.OPENCLAW_DEBUG_MODEL_PAYLOAD;
-    process.env.OPENCLAW_DEBUG_MODEL_PAYLOAD = "tools";
+    const previous = process.env.AFORA_DEBUG_MODEL_PAYLOAD;
+    process.env.AFORA_DEBUG_MODEL_PAYLOAD = "tools";
     try {
       expect(
         testing.summarizeResponsesTools([
@@ -896,16 +896,16 @@ describe("openai transport stream", () => {
       ).toBe("count=3 names=wait");
     } finally {
       if (previous === undefined) {
-        delete process.env.OPENCLAW_DEBUG_MODEL_PAYLOAD;
+        delete process.env.AFORA_DEBUG_MODEL_PAYLOAD;
       } else {
-        process.env.OPENCLAW_DEBUG_MODEL_PAYLOAD = previous;
+        process.env.AFORA_DEBUG_MODEL_PAYLOAD = previous;
       }
     }
   });
 
   it("redacts full model payload debug summaries", () => {
-    const previous = process.env.OPENCLAW_DEBUG_MODEL_PAYLOAD;
-    process.env.OPENCLAW_DEBUG_MODEL_PAYLOAD = "full-redacted";
+    const previous = process.env.AFORA_DEBUG_MODEL_PAYLOAD;
+    process.env.AFORA_DEBUG_MODEL_PAYLOAD = "full-redacted";
     try {
       const apiKey = "test-api-key";
       const summary = testing.summarizeResponsesPayload({
@@ -920,14 +920,14 @@ describe("openai transport stream", () => {
       expect(summary).not.toContain(apiKey);
     } finally {
       if (previous === undefined) {
-        delete process.env.OPENCLAW_DEBUG_MODEL_PAYLOAD;
+        delete process.env.AFORA_DEBUG_MODEL_PAYLOAD;
       } else {
-        process.env.OPENCLAW_DEBUG_MODEL_PAYLOAD = previous;
+        process.env.AFORA_DEBUG_MODEL_PAYLOAD = previous;
       }
     }
   });
 
-  it("enforces the code mode responses tool surface before requests leave OpenClaw", () => {
+  it("enforces the code mode responses tool surface before requests leave Afora", () => {
     const visibleToolNames = new Set(["exec", "wait", "computer"]);
     const payload = {
       tools: [
@@ -1006,37 +1006,37 @@ describe("openai transport stream", () => {
     ).toThrow(/Code mode payload tool surface violation/);
   });
 
-  it("adds OpenClaw attribution to native OpenAI transport headers and protects it from provider overrides", () => {
-    vi.stubEnv("OPENCLAW_VERSION", "2026.3.22");
+  it("adds Afora attribution to native OpenAI transport headers and protects it from provider overrides", () => {
+    vi.stubEnv("AFORA_VERSION", "2026.3.22");
     const headers = testing.buildOpenAIClientHeaders(
       makeResponsesModel({
         id: "gpt-5.4",
         name: "GPT-5.4",
         headers: {
-          originator: "openclaw",
-          "User-Agent": "openclaw",
+          originator: "afora",
+          "User-Agent": "afora",
           "X-Provider": "model",
         },
       }),
       { systemPrompt: "", messages: [] } as never,
       {
-        originator: "openclaw",
-        "User-Agent": "openclaw",
+        originator: "afora",
+        "User-Agent": "afora",
         "X-Caller": "request",
       },
     );
 
     expectRecordFields(headers, {
-      originator: "openclaw",
+      originator: "afora",
       version: "2026.3.22",
-      "User-Agent": "openclaw/2026.3.22",
+      "User-Agent": "afora-agent/2026.3.22",
       "X-Provider": "model",
       "X-Caller": "request",
     });
   });
 
-  it("adds OpenClaw attribution to native OpenAI Codex transport headers", () => {
-    vi.stubEnv("OPENCLAW_VERSION", "2026.3.22");
+  it("adds Afora attribution to native OpenAI Codex transport headers", () => {
+    vi.stubEnv("AFORA_VERSION", "2026.3.22");
     const headers = testing.buildOpenAIClientHeaders(
       makeResponsesModel({
         id: "gpt-5.4-codex",
@@ -1044,17 +1044,17 @@ describe("openai transport stream", () => {
         api: "openai-chatgpt-responses",
         baseUrl: "https://chatgpt.com/backend-api",
         headers: {
-          originator: "openclaw",
-          "User-Agent": "openclaw",
+          originator: "afora",
+          "User-Agent": "afora",
         },
       }),
       { systemPrompt: "", messages: [] } as never,
     );
 
     expectRecordFields(headers, {
-      originator: "openclaw",
+      originator: "afora",
       version: "2026.3.22",
-      "User-Agent": "openclaw/2026.3.22",
+      "User-Agent": "afora-agent/2026.3.22",
     });
     expect(headers.Accept).toBeUndefined();
     expect(headers.accept).toBeUndefined();
@@ -1157,7 +1157,7 @@ describe("openai transport stream", () => {
     });
     const transportAliasModel = {
       ...codexModel,
-      api: "openclaw-openai-chatgpt-responses-transport" as Api,
+      api: "afora-openai-chatgpt-responses-transport" as Api,
     } satisfies Model;
     const nonNativeChatGPTModel = makeResponsesModel({
       ...codexModel,
@@ -1194,7 +1194,7 @@ describe("openai transport stream", () => {
       ),
     ).toBeTypeOf("function");
     expect(
-      createOpenClawTransportStreamFnForModel(
+      createAforaTransportStreamFnForModel(
         makeResponsesModel({
           id: "gpt-5.4",
           name: "GPT-5.4",
@@ -1242,9 +1242,9 @@ describe("openai transport stream", () => {
 
     const prepared = prepareTransportAwareSimpleModel(model);
 
-    expect(resolveTransportAwareSimpleApi(model.api)).toBe("openclaw-openai-responses-transport");
+    expect(resolveTransportAwareSimpleApi(model.api)).toBe("afora-openai-responses-transport");
     expectRecordFields(prepared, {
-      api: "openclaw-openai-responses-transport",
+      api: "afora-openai-responses-transport",
       provider: "openai",
       id: "gpt-5.4",
     });
@@ -1269,10 +1269,10 @@ describe("openai transport stream", () => {
     const prepared = prepareTransportAwareSimpleModel(model);
 
     expect(resolveTransportAwareSimpleApi(model.api)).toBe(
-      "openclaw-openai-chatgpt-responses-transport",
+      "afora-openai-chatgpt-responses-transport",
     );
     expectRecordFields(prepared, {
-      api: "openclaw-openai-chatgpt-responses-transport",
+      api: "afora-openai-chatgpt-responses-transport",
       provider: "openai",
       id: "codex-mini-latest",
     });
@@ -1303,9 +1303,9 @@ describe("openai transport stream", () => {
 
     const prepared = prepareTransportAwareSimpleModel(model);
 
-    expect(resolveTransportAwareSimpleApi(model.api)).toBe("openclaw-anthropic-messages-transport");
+    expect(resolveTransportAwareSimpleApi(model.api)).toBe("afora-anthropic-messages-transport");
     expectRecordFields(prepared, {
-      api: "openclaw-anthropic-messages-transport",
+      api: "afora-anthropic-messages-transport",
       provider: "anthropic",
       id: "claude-sonnet-4-6",
     });
@@ -1335,7 +1335,7 @@ describe("openai transport stream", () => {
     );
 
     expect(resolveTransportAwareSimpleApi(model.api)).toBe(
-      "openclaw-google-generative-ai-transport",
+      "afora-google-generative-ai-transport",
     );
   });
 
@@ -1356,9 +1356,9 @@ describe("openai transport stream", () => {
       },
     );
 
-    expect(resolveTransportAwareSimpleApi(model.api)).toBe("openclaw-openai-responses-transport");
+    expect(resolveTransportAwareSimpleApi(model.api)).toBe("afora-openai-responses-transport");
     expectRecordFields(prepareTransportAwareSimpleModel(model), {
-      api: "openclaw-openai-responses-transport",
+      api: "afora-openai-responses-transport",
       provider: "github-copilot",
       id: "gpt-5.4",
     });
@@ -1387,9 +1387,9 @@ describe("openai transport stream", () => {
       },
     );
 
-    expect(resolveTransportAwareSimpleApi(model.api)).toBe("openclaw-anthropic-messages-transport");
+    expect(resolveTransportAwareSimpleApi(model.api)).toBe("afora-anthropic-messages-transport");
     expectRecordFields(prepareTransportAwareSimpleModel(model), {
-      api: "openclaw-anthropic-messages-transport",
+      api: "afora-anthropic-messages-transport",
       provider: "github-copilot",
       id: "claude-sonnet-4.6",
     });

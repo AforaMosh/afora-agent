@@ -1,11 +1,11 @@
 // Discovers gateways over Bonjour and normalizes service records.
-import { expectDefined } from "@openclaw/normalization-core";
-import { parseStrictInteger } from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { expectDefined } from "@afora/normalization-core";
+import { parseStrictInteger } from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import {
   normalizeStringEntries,
   uniqueStrings,
-} from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-normalization";
 import pLimit from "p-limit";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { isTailnetIPv4 } from "./tailnet.js";
@@ -73,7 +73,7 @@ type GatewayBonjourDiscoverOpts = {
 };
 
 const DEFAULT_TIMEOUT_MS = 2000;
-const GATEWAY_SERVICE_TYPE = "_openclaw-gw._tcp";
+const GATEWAY_SERVICE_TYPE = "_afora-gw._tcp";
 const MAX_TCP_PORT = 65_535;
 
 function decodeDnsSdEscapes(value: string): string {
@@ -233,7 +233,7 @@ function parseDnsSdBrowse(stdout: string): string[] {
     if (!line.includes("Add")) {
       continue;
     }
-    const match = line.match(/_openclaw-gw\._tcp\.?\s+(.+)$/);
+    const match = line.match(/_afora-gw\._tcp\.?\s+(.+)$/);
     if (match?.[1]) {
       instances.add(decodeDnsSdEscapes(match[1].trim()));
     }
@@ -407,7 +407,7 @@ async function discoverWideAreaViaTailnetDns(
     if (!ptrName) {
       continue;
     }
-    const instanceName = ptrName.replace(/\.?_openclaw-gw\._tcp\..*$/, "");
+    const instanceName = ptrName.replace(/\.?_afora-gw\._tcp\..*$/, "");
 
     const srv = await run(["dig", "+short", "+time=1", "+tries=1", nameserverArg, ptrName, "SRV"], {
       timeoutMs: Math.max(1, Math.min(350, budget)),

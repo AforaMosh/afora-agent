@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { isDeepStrictEqual } from "node:util";
-import { GatewayClient } from "openclaw/plugin-sdk/gateway-runtime";
+import { GatewayClient } from "afora-agent/plugin-sdk/gateway-runtime";
 import {
   createQaBusState,
   createQaChannelTransport,
@@ -205,8 +205,8 @@ function waitForChatError(events: readonly GatewayEvent[], runId: string) {
 }
 
 async function runProof(options: ProducerOptions) {
-  // openclaw-temp-dir: allow standalone QA producer owns and removes this fixture root.
-  const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-cloud-midturn-loss-"));
+  // afora-temp-dir: allow standalone QA producer owns and removes this fixture root.
+  const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-cloud-midturn-loss-"));
   const state = createQaBusState();
   const bus = await startQaBusServer({ state });
   const provider = await startMidturnProvider();
@@ -232,7 +232,7 @@ async function runProof(options: ProducerOptions) {
       enabledPluginIds: ["qa-lab"],
       controlUiEnabled: false,
       controlUiAllowedOrigins: ["http://127.0.0.1"],
-      runtimeEnvPatch: { OPENCLAW_QA_STATIC_SSH_KEY: sshPrivateKey },
+      runtimeEnvPatch: { AFORA_QA_STATIC_SSH_KEY: sshPrivateKey },
       mutateConfig: (config) => ({
         ...config,
         session: { ...config.session, dmScope: "per-peer" },
@@ -253,7 +253,7 @@ async function runProof(options: ProducerOptions) {
                 keyRef: {
                   source: "env",
                   provider: "default",
-                  id: "OPENCLAW_QA_STATIC_SSH_KEY",
+                  id: "AFORA_QA_STATIC_SSH_KEY",
                 },
               },
             },

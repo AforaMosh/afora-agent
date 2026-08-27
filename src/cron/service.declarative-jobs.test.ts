@@ -9,7 +9,7 @@ import type { CronAddResult } from "./service/state.js";
 import type { CronJob, CronJobCreate } from "./types.js";
 
 const logger = createNoopLogger();
-const { makeStorePath } = createCronStoreHarness({ prefix: "openclaw-cron-declarative-" });
+const { makeStorePath } = createCronStoreHarness({ prefix: "afora-cron-declarative-" });
 installCronTestHooks({ logger });
 
 function createCronService(storePath: string, cronEnabled = true) {

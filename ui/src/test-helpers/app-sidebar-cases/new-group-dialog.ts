@@ -55,7 +55,7 @@ describe("AppSidebar new group dialog", () => {
 
   it("reports the skipped moves when selected rows leave the list mid-write", async () => {
     const restoreDialogPolyfill = installDialogPolyfill();
-    const toastHost = document.createElement("openclaw-toast-host");
+    const toastHost = document.createElement("afora-toast-host");
     document.body.append(toastHost);
     await toastHost.updateComplete;
     try {
@@ -90,7 +90,7 @@ describe("AppSidebar new group dialog", () => {
       // so waiting on that keeps the negative assertions below from passing
       // before the continuation has had a chance to patch anything.
       await waitForFast(() =>
-        expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull(),
+        expect(document.body.querySelector("afora-modal-dialog")).toBeNull(),
       );
       expect(harness.patchMany).not.toHaveBeenCalled();
       expect(harness.patch).not.toHaveBeenCalled();
@@ -107,7 +107,7 @@ describe("AppSidebar new group dialog", () => {
 
   it("reports the partial outcome when only part of the selection leaves the list", async () => {
     const restoreDialogPolyfill = installDialogPolyfill();
-    const toastHost = document.createElement("openclaw-toast-host");
+    const toastHost = document.createElement("afora-toast-host");
     document.body.append(toastHost);
     await toastHost.updateComplete;
     try {
@@ -145,7 +145,7 @@ describe("AppSidebar new group dialog", () => {
       landCatalogWrite();
 
       await waitForFast(() =>
-        expect(document.body.querySelector("openclaw-modal-dialog")).toBeNull(),
+        expect(document.body.querySelector("afora-modal-dialog")).toBeNull(),
       );
       // The surviving row is patched on its own; the removed key is never sent,
       // so patchMany stays out of it.

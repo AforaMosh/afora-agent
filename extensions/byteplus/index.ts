@@ -1,12 +1,12 @@
 /**
  * BytePlus provider plugin entrypoint for model and video generation providers.
  */
-import { buildOpenAICompatibleProviderFamilyCatalog } from "openclaw/plugin-sdk/provider-catalog-live-runtime";
-import { readManifestProviderDefaultModelRef } from "openclaw/plugin-sdk/provider-catalog-shared";
-import { defineSingleProviderPluginEntry } from "openclaw/plugin-sdk/provider-entry";
-import { ensureModelAllowlistEntry } from "openclaw/plugin-sdk/provider-onboard";
+import { buildOpenAICompatibleProviderFamilyCatalog } from "afora-agent/plugin-sdk/provider-catalog-live-runtime";
+import { readManifestProviderDefaultModelRef } from "afora-agent/plugin-sdk/provider-catalog-shared";
+import { defineSingleProviderPluginEntry } from "afora-agent/plugin-sdk/provider-entry";
+import { ensureModelAllowlistEntry } from "afora-agent/plugin-sdk/provider-onboard";
 import { BYTEPLUS_PROVIDER_CATALOG } from "./models.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 import { buildBytePlusVideoGenerationProvider } from "./video-generation-provider.js";
 
 const PROVIDER_ID = "byteplus";

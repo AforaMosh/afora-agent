@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { buildTestCtx } from "./test-ctx.js";
 
 const { handleApproveCommandFromContextMock } = vi.hoisted(() => ({
@@ -37,7 +37,7 @@ describe("tryFastApproveFromMessage", () => {
     await expect(
       tryFastApproveFromMessage({
         ctx,
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         agentId: "main",
         sessionKey: "agent:main:imessage:direct:peer",
       }),
@@ -65,7 +65,7 @@ describe("tryFastApproveFromMessage", () => {
       ChatType: "direct",
     });
 
-    await expect(tryFastApproveFromMessage({ ctx, cfg: {} as OpenClawConfig })).resolves.toEqual({
+    await expect(tryFastApproveFromMessage({ ctx, cfg: {} as AforaConfig })).resolves.toEqual({
       handled: true,
     });
     expect(handleApproveCommandFromContextMock).toHaveBeenCalledWith(
@@ -91,7 +91,7 @@ describe("tryFastApproveFromMessage", () => {
       ChatType: "direct",
     });
 
-    await expect(tryFastApproveFromMessage({ ctx, cfg: {} as OpenClawConfig })).resolves.toEqual({
+    await expect(tryFastApproveFromMessage({ ctx, cfg: {} as AforaConfig })).resolves.toEqual({
       handled: true,
       reply: { text: "Approval submitted." },
     });
@@ -115,7 +115,7 @@ describe("tryFastApproveFromMessage", () => {
       ChatType: "direct",
     });
 
-    await expect(tryFastApproveFromMessage({ ctx, cfg: {} as OpenClawConfig })).resolves.toEqual({
+    await expect(tryFastApproveFromMessage({ ctx, cfg: {} as AforaConfig })).resolves.toEqual({
       handled: false,
     });
     expect(handleApproveCommandFromContextMock).not.toHaveBeenCalled();
@@ -126,7 +126,7 @@ describe("tryFastApproveFromMessage", () => {
       Body: "hello",
       Provider: "imessage",
     });
-    await expect(tryFastApproveFromMessage({ ctx, cfg: {} as OpenClawConfig })).resolves.toEqual({
+    await expect(tryFastApproveFromMessage({ ctx, cfg: {} as AforaConfig })).resolves.toEqual({
       handled: false,
     });
     expect(handleApproveCommandFromContextMock).not.toHaveBeenCalled();

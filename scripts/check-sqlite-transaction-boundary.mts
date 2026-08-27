@@ -11,12 +11,12 @@ import {
 } from "./lib/ts-guard-utils.mts";
 
 const removedAsyncTransactionNames = new Set([
-  "runOpenClawAgentWriteTransactionAsync",
+  "runAforaAgentWriteTransactionAsync",
   "runSqliteImmediateTransactionAsync",
 ]);
 const synchronousTransactionCallbackIndexes = new Map([
-  ["runOpenClawAgentWriteTransaction", 0],
-  ["runOpenClawStateWriteTransaction", 0],
+  ["runAforaAgentWriteTransaction", 0],
+  ["runAforaStateWriteTransaction", 0],
   ["runSqliteImmediateTransactionSync", 1],
 ]);
 

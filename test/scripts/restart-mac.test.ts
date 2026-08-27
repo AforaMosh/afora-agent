@@ -23,7 +23,7 @@ function shellQuote(value: string): string {
 }
 
 function runGatewayPortCheck(fakeLsof: string) {
-  const root = mkdtempSync(join(tmpdir(), "openclaw-restart-mac-test-"));
+  const root = mkdtempSync(join(tmpdir(), "afora-restart-mac-test-"));
   tempRoots.push(root);
 
   const binDir = join(root, "bin");
@@ -46,7 +46,7 @@ function runGatewayPortCheck(fakeLsof: string) {
 }
 
 function runCleanupFunction(fakePs: string) {
-  const root = mkdtempSync(join(tmpdir(), "openclaw-restart-mac-test-"));
+  const root = mkdtempSync(join(tmpdir(), "afora-restart-mac-test-"));
   tempRoots.push(root);
 
   const binDir = join(root, "bin");
@@ -63,7 +63,7 @@ function runCleanupFunction(fakePs: string) {
 
   const script = readFileSync(restartScriptPath, "utf8");
   const cleanupFunction = script.slice(
-    script.indexOf("kill_all_openclaw()"),
+    script.indexOf("kill_all_afora()"),
     script.indexOf("stop_launch_agent()"),
   );
   const harnessPath = join(root, "cleanup-harness.sh");
@@ -74,15 +74,15 @@ function runCleanupFunction(fakePs: string) {
       cleanupFunction,
       'ROOT_DIR="/worktree"',
       'APP_BUNDLE=""',
-      'APP_EXECUTABLE_RELATIVE_PATH="Contents/MacOS/OpenClaw"',
-      'DEBUG_PROCESS_PATTERN="/worktree/apps/macos/.build/debug/OpenClaw"',
-      'LOCAL_PROCESS_PATTERN="/worktree/apps/macos/.build-local/debug/OpenClaw"',
-      'RELEASE_PROCESS_PATTERN="/worktree/apps/macos/.build/release/OpenClaw"',
+      'APP_EXECUTABLE_RELATIVE_PATH="Contents/MacOS/Afora"',
+      'DEBUG_PROCESS_PATTERN="/worktree/apps/macos/.build/debug/Afora"',
+      'LOCAL_PROCESS_PATTERN="/worktree/apps/macos/.build-local/debug/Afora"',
+      'RELEASE_PROCESS_PATTERN="/worktree/apps/macos/.build/release/Afora"',
       "kill() {",
-      '  printf "%s\\n" "$*" >> "$OPENCLAW_TEST_KILL_CALLS"',
+      '  printf "%s\\n" "$*" >> "$AFORA_TEST_KILL_CALLS"',
       "  return 0",
       "}",
-      "kill_all_openclaw",
+      "kill_all_afora",
     ].join("\n"),
   );
   chmodSync(harnessPath, 0o755);
@@ -91,7 +91,7 @@ function runCleanupFunction(fakePs: string) {
     encoding: "utf8",
     env: {
       ...process.env,
-      OPENCLAW_TEST_KILL_CALLS: killCallsPath,
+      AFORA_TEST_KILL_CALLS: killCallsPath,
       PATH: `${binDir}:${process.env.PATH ?? ""}`,
     },
   });
@@ -103,7 +103,7 @@ function runManagedSupervisorClassifier(
   records: Array<{ domain: string; label: string; program: string; properties?: string }>,
   options: { failEnumeration?: boolean } = {},
 ) {
-  const root = mkdtempSync(join(tmpdir(), "openclaw-restart-mac-supervisor-test-"));
+  const root = mkdtempSync(join(tmpdir(), "afora-restart-mac-supervisor-test-"));
   tempRoots.push(root);
   const recordsPath = join(root, "loaded-jobs.txt");
   writeFileSync(
@@ -117,8 +117,8 @@ function runManagedSupervisorClassifier(
 
   const script = readFileSync(restartScriptPath, "utf8");
   const classifierFunctions = script.slice(
-    script.indexOf("print_managed_openclaw_supervisor_label()"),
-    script.indexOf("kill_managed_openclaw()"),
+    script.indexOf("print_managed_afora_supervisor_label()"),
+    script.indexOf("kill_managed_afora()"),
   );
   const harnessPath = join(root, "supervisor-harness.sh");
   writeFileSync(
@@ -128,16 +128,16 @@ function runManagedSupervisorClassifier(
       "set -euo pipefail",
       classifierFunctions,
       "loaded_launch_jobs() {",
-      '  [[ "${OPENCLAW_TEST_FAIL_ENUMERATION:-0}" != "1" ]] || return 1',
-      "  cut -d'|' -f1,2 \"$OPENCLAW_TEST_LOADED_JOBS\"",
+      '  [[ "${AFORA_TEST_FAIL_ENUMERATION:-0}" != "1" ]] || return 1',
+      "  cut -d'|' -f1,2 \"$AFORA_TEST_LOADED_JOBS\"",
       "}",
       "launch_job_snapshot() {",
-      '  grep "^$1|$2|" "$OPENCLAW_TEST_LOADED_JOBS" |',
+      '  grep "^$1|$2|" "$AFORA_TEST_LOADED_JOBS" |',
       "    awk -F'|' '{ print \"program = \" $3; print \"properties = \" $4 }'",
       "}",
-      'TARGET_EXECUTABLE="/worktree/dist/OpenClaw.app/Contents/MacOS/OpenClaw"',
-      'INSTALLED_EXECUTABLE="/Applications/OpenClaw.app/Contents/MacOS/OpenClaw"',
-      "managed_openclaw_supervisor_labels",
+      'TARGET_EXECUTABLE="/worktree/dist/Afora.app/Contents/MacOS/Afora"',
+      'INSTALLED_EXECUTABLE="/Applications/Afora.app/Contents/MacOS/Afora"',
+      "managed_afora_supervisor_labels",
     ].join("\n"),
   );
   chmodSync(harnessPath, 0o755);
@@ -145,14 +145,14 @@ function runManagedSupervisorClassifier(
     encoding: "utf8",
     env: {
       ...process.env,
-      OPENCLAW_TEST_FAIL_ENUMERATION: options.failEnumeration ? "1" : "0",
-      OPENCLAW_TEST_LOADED_JOBS: recordsPath,
+      AFORA_TEST_FAIL_ENUMERATION: options.failEnumeration ? "1" : "0",
+      AFORA_TEST_LOADED_JOBS: recordsPath,
     },
   });
 }
 
 function runCanonicalizeAppBundle(appBundle: string) {
-  const root = mkdtempSync(join(tmpdir(), "openclaw-restart-mac-test-"));
+  const root = mkdtempSync(join(tmpdir(), "afora-restart-mac-test-"));
   tempRoots.push(root);
 
   const script = readFileSync(restartScriptPath, "utf8");
@@ -185,7 +185,7 @@ function runCanonicalizeAppBundle(appBundle: string) {
 }
 
 function runRestartArgParser(...args: string[]) {
-  const root = mkdtempSync(join(tmpdir(), "openclaw-restart-mac-test-"));
+  const root = mkdtempSync(join(tmpdir(), "afora-restart-mac-test-"));
   tempRoots.push(root);
 
   const script = readFileSync(restartScriptPath, "utf8");
@@ -218,7 +218,7 @@ function runRestartArgParser(...args: string[]) {
 }
 
 function runSigningEnvironmentBlock(signIdentity: string) {
-  const root = mkdtempSync(join(tmpdir(), "openclaw-restart-mac-signing-test-"));
+  const root = mkdtempSync(join(tmpdir(), "afora-restart-mac-signing-test-"));
   tempRoots.push(root);
   const script = readFileSync(restartScriptPath, "utf8");
   const start = script.indexOf('if [ "$NO_SIGN" -eq 1 ]; then');
@@ -245,10 +245,10 @@ function runSigningEnvironmentBlock(signIdentity: string) {
 }
 
 function runProfileGuard(profile: string) {
-  const root = mkdtempSync(join(tmpdir(), "openclaw-restart-mac-profile-test-"));
+  const root = mkdtempSync(join(tmpdir(), "afora-restart-mac-profile-test-"));
   tempRoots.push(root);
   const script = readFileSync(restartScriptPath, "utf8");
-  const start = script.indexOf('if [[ -n "${OPENCLAW_PROFILE:-}" ]]');
+  const start = script.indexOf('if [[ -n "${AFORA_PROFILE:-}" ]]');
   const guardBlock = script.slice(start, script.indexOf("canonicalize_app_bundle", start));
   const harnessPath = join(root, "profile-guard.sh");
   writeFileSync(
@@ -264,12 +264,12 @@ function runProfileGuard(profile: string) {
   chmodSync(harnessPath, 0o755);
   return spawnSync("/bin/bash", [harnessPath], {
     encoding: "utf8",
-    env: { ...process.env, OPENCLAW_PROFILE: profile },
+    env: { ...process.env, AFORA_PROFILE: profile },
   });
 }
 
 function runLaunchArgBuilder(...args: string[]) {
-  const root = mkdtempSync(join(tmpdir(), "openclaw-restart-mac-test-"));
+  const root = mkdtempSync(join(tmpdir(), "afora-restart-mac-test-"));
   tempRoots.push(root);
 
   const script = readFileSync(restartScriptPath, "utf8");
@@ -298,7 +298,7 @@ function runLaunchArgBuilder(...args: string[]) {
       "ATTACH_ONLY=1",
       "BACKGROUND_ONLY=0",
       "TARGET_ONLY=0",
-      'APP_BUNDLE="/tmp/OpenClaw.app"',
+      'APP_BUNDLE="/tmp/Afora.app"',
       'log() { printf "%s\\n" "$*"; }',
       'fail() { printf "ERROR: %s\\n" "$*" >&2; exit 1; }',
       parserBlock,
@@ -313,7 +313,7 @@ function runLaunchArgBuilder(...args: string[]) {
 }
 
 function runRestartLockHarness(lockDir: string) {
-  const root = mkdtempSync(join(tmpdir(), "openclaw-restart-mac-test-"));
+  const root = mkdtempSync(join(tmpdir(), "afora-restart-mac-test-"));
   tempRoots.push(root);
 
   const script = readFileSync(restartScriptPath, "utf8");
@@ -343,7 +343,7 @@ function runRestartLockHarness(lockDir: string) {
 }
 
 function runForeignProcessClassifier(fakePs: string) {
-  const root = mkdtempSync(join(tmpdir(), "openclaw-restart-mac-test-"));
+  const root = mkdtempSync(join(tmpdir(), "afora-restart-mac-test-"));
   tempRoots.push(root);
   const binDir = join(root, "bin");
   mkdirSync(binDir);
@@ -362,10 +362,10 @@ function runForeignProcessClassifier(fakePs: string) {
     [
       "#!/usr/bin/env bash",
       functions,
-      'APP_EXECUTABLE_RELATIVE_PATH="Contents/MacOS/OpenClaw"',
-      'TARGET_EXECUTABLE="/Users/steipete/openclaw/dist/OpenClaw.app/Contents/MacOS/OpenClaw"',
-      'INSTALLED_EXECUTABLE="/Applications/OpenClaw.app/Contents/MacOS/OpenClaw"',
-      "foreign_openclaw_process_pids",
+      'APP_EXECUTABLE_RELATIVE_PATH="Contents/MacOS/Afora"',
+      'TARGET_EXECUTABLE="/Users/steipete/afora/dist/Afora.app/Contents/MacOS/Afora"',
+      'INSTALLED_EXECUTABLE="/Applications/Afora.app/Contents/MacOS/Afora"',
+      "foreign_afora_process_pids",
     ].join("\n"),
   );
   chmodSync(harnessPath, 0o755);
@@ -383,7 +383,7 @@ afterEach(() => {
 
 describe("scripts/restart-mac.sh", () => {
   it("preserves an explicit signing identity through signed packaging", () => {
-    const identity = "Developer ID Application: OpenClaw Foundation (FWJYW4S8P8)";
+    const identity = "Developer ID Application: Afora Foundation (FWJYW4S8P8)";
     const result = runSigningEnvironmentBlock(identity);
 
     expect(result.status).toBe(0);
@@ -459,15 +459,15 @@ describe("scripts/restart-mac.sh", () => {
     const script = readFileSync(restartScriptPath, "utf8");
 
     expect(script).toContain(
-      'LOG_PATH="${OPENCLAW_RESTART_LOG:-${TMPDIR:-/tmp}/openclaw-restart-${LOCK_KEY}.log}"',
+      'LOG_PATH="${AFORA_RESTART_LOG:-${TMPDIR:-/tmp}/afora-restart-${LOCK_KEY}.log}"',
     );
-    expect(script).not.toContain('LOG_PATH="${OPENCLAW_RESTART_LOG:-/tmp/openclaw-restart.log}"');
+    expect(script).not.toContain('LOG_PATH="${AFORA_RESTART_LOG:-/tmp/afora-restart.log}"');
   });
 
   it("rejects named app profiles before global process or launchd cleanup", () => {
     const script = readFileSync(restartScriptPath, "utf8");
 
-    expect(script).toContain('if [[ -n "${OPENCLAW_PROFILE:-}"');
+    expect(script).toContain('if [[ -n "${AFORA_PROFILE:-}"');
     expect(script).toContain("restart-mac.sh cannot safely target one app profile");
     expect(script.indexOf("cannot safely target one app profile")).toBeLessThan(
       script.indexOf("\nacquire_lock\n"),
@@ -478,9 +478,9 @@ describe("scripts/restart-mac.sh", () => {
   });
 
   it("does not remove a live restart lock it did not acquire", () => {
-    const root = mkdtempSync(join(tmpdir(), "openclaw-restart-mac-test-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-restart-mac-test-"));
     tempRoots.push(root);
-    const lockDir = join(root, "openclaw-restart-lock");
+    const lockDir = join(root, "afora-restart-lock");
     mkdirSync(lockDir);
     writeFileSync(join(lockDir, "pid"), String(process.pid), "utf8");
 
@@ -496,9 +496,9 @@ describe("scripts/restart-mac.sh", () => {
   });
 
   it("removes the restart lock it acquired", () => {
-    const root = mkdtempSync(join(tmpdir(), "openclaw-restart-mac-test-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-restart-mac-test-"));
     tempRoots.push(root);
-    const lockDir = join(root, "openclaw-restart-lock");
+    const lockDir = join(root, "afora-restart-lock");
 
     const result = runRestartLockHarness(lockDir);
 
@@ -515,41 +515,41 @@ describe("scripts/restart-mac.sh", () => {
       script.indexOf("choose_app_bundle", script.indexOf("choose_app_bundle()") + 1),
     );
 
-    expect(script).toContain('fail "OPENCLAW_APP_BUNDLE does not exist: ${APP_BUNDLE}"');
+    expect(script).toContain('fail "AFORA_APP_BUNDLE does not exist: ${APP_BUNDLE}"');
     expect(chooseBlock).toContain("canonicalize_app_bundle");
-    expect(chooseBlock.indexOf("${ROOT_DIR}/dist/OpenClaw.app")).toBeGreaterThan(-1);
-    expect(chooseBlock.indexOf("/Applications/OpenClaw.app")).toBeGreaterThan(-1);
-    expect(chooseBlock.indexOf("${ROOT_DIR}/dist/OpenClaw.app")).toBeLessThan(
-      chooseBlock.indexOf("/Applications/OpenClaw.app"),
+    expect(chooseBlock.indexOf("${ROOT_DIR}/dist/Afora.app")).toBeGreaterThan(-1);
+    expect(chooseBlock.indexOf("/Applications/Afora.app")).toBeGreaterThan(-1);
+    expect(chooseBlock.indexOf("${ROOT_DIR}/dist/Afora.app")).toBeLessThan(
+      chooseBlock.indexOf("/Applications/Afora.app"),
     );
   });
 
-  it("keeps restart cleanup scoped to known OpenClaw app and build paths", () => {
+  it("keeps restart cleanup scoped to known Afora app and build paths", () => {
     const script = readFileSync(restartScriptPath, "utf8");
     const cleanupBlock = script.slice(
-      script.indexOf("kill_all_openclaw()"),
+      script.indexOf("kill_all_afora()"),
       script.indexOf("stop_launch_agent()"),
     );
 
     expect(cleanupBlock).toContain("ps axww -o pid=,command=");
     expect(cleanupBlock).toContain(
-      '"${ROOT_DIR}/dist/OpenClaw.app/${APP_EXECUTABLE_RELATIVE_PATH}"',
+      '"${ROOT_DIR}/dist/Afora.app/${APP_EXECUTABLE_RELATIVE_PATH}"',
     );
-    expect(cleanupBlock).toContain('"/Applications/OpenClaw.app/${APP_EXECUTABLE_RELATIVE_PATH}"');
+    expect(cleanupBlock).toContain('"/Applications/Afora.app/${APP_EXECUTABLE_RELATIVE_PATH}"');
     expect(cleanupBlock).toContain('"${DEBUG_PROCESS_PATTERN}"');
     expect(cleanupBlock).toContain('"${LOCAL_PROCESS_PATTERN}"');
     expect(cleanupBlock).toContain('"${RELEASE_PROCESS_PATTERN}"');
     expect(cleanupBlock).not.toContain("APP_PROCESS_PATTERN");
     expect(cleanupBlock).not.toContain("pkill");
-    expect(cleanupBlock).not.toContain('pkill -x "OpenClaw"');
+    expect(cleanupBlock).not.toContain('pkill -x "Afora"');
     expect(cleanupBlock).not.toContain("pgrep");
-    expect(cleanupBlock).not.toContain('pgrep -x "OpenClaw"');
+    expect(cleanupBlock).not.toContain('pgrep -x "Afora"');
   });
 
   it("stops launchd supervision before killing app processes", () => {
     const script = readFileSync(restartScriptPath, "utf8");
     const stopIndex = script.indexOf("stop_launch_agent\n  log");
-    const killIndex = script.indexOf("if ! kill_all_openclaw");
+    const killIndex = script.indexOf("if ! kill_all_afora");
 
     expect(stopIndex).toBeGreaterThan(-1);
     expect(killIndex).toBeGreaterThan(-1);
@@ -567,12 +567,12 @@ describe("scripts/restart-mac.sh", () => {
       script.indexOf("# 4) Launch"),
     );
 
-    expect(initialTargetBlock).toContain("foreign_openclaw_process_pids");
-    expect(initialTargetBlock).not.toContain("kill_managed_openclaw");
+    expect(initialTargetBlock).toContain("foreign_afora_process_pids");
+    expect(initialTargetBlock).not.toContain("kill_managed_afora");
     expect(initialTargetBlock).not.toContain("stop_launch_agent");
-    expect(initialTargetBlock).not.toContain("kill_all_openclaw");
-    expect(switchTargetBlock).toContain("foreign_openclaw_process_pids");
-    expect(switchTargetBlock).toContain("kill_managed_openclaw");
+    expect(initialTargetBlock).not.toContain("kill_all_afora");
+    expect(switchTargetBlock).toContain("foreign_afora_process_pids");
+    expect(switchTargetBlock).toContain("kill_managed_afora");
     expect(script).toContain('[[ "${executable}" == "${TARGET_EXECUTABLE}" ]] && continue');
     expect(script).toContain('process_pids_for_executable "${TARGET_EXECUTABLE}"');
     expect(script).toContain("target-only restart deferred");
@@ -591,27 +591,27 @@ describe("scripts/restart-mac.sh", () => {
 
     expect(result.status).toBe(0);
     expect(result.stderr).toBe("");
-    expect(result.stdout.trim()).toBe("<-n>\n</tmp/OpenClaw.app>");
+    expect(result.stdout.trim()).toBe("<-n>\n</tmp/Afora.app>");
   });
 
   it("finds persistent launchd supervisors across explicit domains", () => {
     const result = runManagedSupervisorClassifier([
       {
         domain: "gui/501",
-        label: "ai.openclaw.mac.custom",
-        program: "/Applications/OpenClaw.app/Contents/MacOS/OpenClaw",
+        label: "ai.afora.mac.custom",
+        program: "/Applications/Afora.app/Contents/MacOS/Afora",
         properties: "keepalive | runatload",
       },
       {
         domain: "user/501",
-        label: "ai.openclaw.mac.target",
-        program: "/worktree/dist/OpenClaw.app/Contents/MacOS/OpenClaw",
+        label: "ai.afora.mac.target",
+        program: "/worktree/dist/Afora.app/Contents/MacOS/Afora",
         properties: "keepalive",
       },
       {
         domain: "gui/501",
-        label: "application.ai.openclaw.mac.123",
-        program: "/Applications/OpenClaw.app/Contents/MacOS/OpenClaw",
+        label: "application.ai.afora.mac.123",
+        program: "/Applications/Afora.app/Contents/MacOS/Afora",
       },
       {
         domain: "system",
@@ -623,8 +623,8 @@ describe("scripts/restart-mac.sh", () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout.trim().split("\n").toSorted()).toEqual([
-      "ai.openclaw.mac.custom",
-      "ai.openclaw.mac.target",
+      "ai.afora.mac.custom",
+      "ai.afora.mac.target",
     ]);
     expect(result.stderr).toBe("");
   });
@@ -632,7 +632,7 @@ describe("scripts/restart-mac.sh", () => {
   it("checks managed launchd supervisors before starting the Swift package build", () => {
     const script = readFileSync(restartScriptPath, "utf8");
     const supervisorIndex = script.indexOf(
-      'managed_supervisors="$(managed_openclaw_supervisor_labels',
+      'managed_supervisors="$(managed_afora_supervisor_labels',
     );
     const packageIndex = script.indexOf('run_step "package app"');
 
@@ -659,7 +659,7 @@ describe("scripts/restart-mac.sh", () => {
     const launchIndex = script.indexOf('run_step "launch app"');
 
     expect(packageIndex).toBeGreaterThan(-1);
-    expect(script).toContain('OPENCLAW_PACKAGE_APP_ROOT="${STAGED_APP_BUNDLE}"');
+    expect(script).toContain('AFORA_PACKAGE_APP_ROOT="${STAGED_APP_BUNDLE}"');
     expect(verifyIndex).toBeGreaterThan(packageIndex);
     expect(switchIndex).toBeGreaterThan(packageIndex);
     expect(installIndex).toBeGreaterThan(switchIndex);
@@ -682,16 +682,16 @@ describe("scripts/restart-mac.sh", () => {
   it("escalates only exact managed app processes when graceful shutdown stalls", () => {
     const script = readFileSync(restartScriptPath, "utf8");
     const managedKillBlock = script.slice(
-      script.indexOf("kill_managed_openclaw()"),
+      script.indexOf("kill_managed_afora()"),
       script.indexOf("stop_launch_agent()"),
     );
     const broadKillBlock = script.slice(
-      script.indexOf("kill_all_openclaw()"),
-      script.indexOf("known_openclaw_executables()"),
+      script.indexOf("kill_all_afora()"),
+      script.indexOf("known_afora_executables()"),
     );
 
     expect(managedKillBlock).toContain('kill -KILL "${pid}"');
-    expect(managedKillBlock).toContain("managed_openclaw_process_pids");
+    expect(managedKillBlock).toContain("managed_afora_process_pids");
     expect(broadKillBlock).not.toContain("kill -KILL");
   });
 
@@ -699,10 +699,10 @@ describe("scripts/restart-mac.sh", () => {
     const result = runForeignProcessClassifier(
       [
         "#!/usr/bin/env bash",
-        "printf '%s\\n' '  101 /Applications/OpenClaw.app/Contents/MacOS/OpenClaw --attach-only'",
-        "printf '%s\\n' '  102 /Users/steipete/openclaw/dist/OpenClaw.app/Contents/MacOS/OpenClaw --attach-only'",
-        "printf '%s\\n' '  103 /tmp/agent/OpenClaw.app/Contents/MacOS/OpenClaw --attach-only'",
-        "printf '%s\\n' '  104 /bin/sh test.sh /Applications/OpenClaw.app/Contents/MacOS/OpenClaw'",
+        "printf '%s\\n' '  101 /Applications/Afora.app/Contents/MacOS/Afora --attach-only'",
+        "printf '%s\\n' '  102 /Users/steipete/afora/dist/Afora.app/Contents/MacOS/Afora --attach-only'",
+        "printf '%s\\n' '  103 /tmp/agent/Afora.app/Contents/MacOS/Afora --attach-only'",
+        "printf '%s\\n' '  104 /bin/sh test.sh /Applications/Afora.app/Contents/MacOS/Afora'",
       ].join("\n"),
     );
 
@@ -733,12 +733,12 @@ describe("scripts/restart-mac.sh", () => {
   });
 
   it("normalizes custom app bundle paths before process matching", () => {
-    const root = mkdtempSync(join(tmpdir(), "openclaw-restart-mac-test-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-restart-mac-test-"));
     tempRoots.push(root);
-    const appBundle = join(root, "dist", "OpenClaw.app");
+    const appBundle = join(root, "dist", "Afora.app");
     mkdirSync(appBundle, { recursive: true });
 
-    const { result } = runCanonicalizeAppBundle(`${appBundle}/../OpenClaw.app/`);
+    const { result } = runCanonicalizeAppBundle(`${appBundle}/../Afora.app/`);
 
     expect(result.status).toBe(0);
     expect(result.stdout.trim()).toBe(realpathSync(appBundle));
@@ -749,7 +749,7 @@ describe("scripts/restart-mac.sh", () => {
     const { killCalls, result } = runCleanupFunction(
       [
         "#!/usr/bin/env bash",
-        "printf '%s\\n' '  321 /worktree/dist/OpenClaw.app/Contents/MacOS/OpenClaw --attach-only'",
+        "printf '%s\\n' '  321 /worktree/dist/Afora.app/Contents/MacOS/Afora --attach-only'",
       ].join("\n"),
     );
 
@@ -763,9 +763,9 @@ describe("scripts/restart-mac.sh", () => {
     const { killCalls, result } = runCleanupFunction(
       [
         "#!/usr/bin/env bash",
-        'kill_count="$(wc -l < "$OPENCLAW_TEST_KILL_CALLS" 2>/dev/null || echo 0)"',
+        'kill_count="$(wc -l < "$AFORA_TEST_KILL_CALLS" 2>/dev/null || echo 0)"',
         'if [[ "$kill_count" -lt 11 ]]; then',
-        "  printf '%s\\n' '  321 /worktree/dist/OpenClaw.app/Contents/MacOS/OpenClaw --attach-only'",
+        "  printf '%s\\n' '  321 /worktree/dist/Afora.app/Contents/MacOS/Afora --attach-only'",
         "fi",
       ].join("\n"),
     );
@@ -779,11 +779,11 @@ describe("scripts/restart-mac.sh", () => {
   it("keeps the restart grace period longer than the app signal failsafe", () => {
     const script = readFileSync(restartScriptPath, "utf8");
     const cleanupBlock = script.slice(
-      script.indexOf("kill_all_openclaw()"),
+      script.indexOf("kill_all_afora()"),
       script.indexOf("stop_launch_agent()"),
     );
     const watcher = readFileSync(
-      "apps/macos/Sources/OpenClaw/TerminationSignalWatcher.swift",
+      "apps/macos/Sources/Afora/TerminationSignalWatcher.swift",
       "utf8",
     );
     const maxAttempts = Number(cleanupBlock.match(/local max_attempts=(\d+)/u)?.[1]);
@@ -802,11 +802,11 @@ describe("scripts/restart-mac.sh", () => {
     expect(result.stderr).toBe("");
   });
 
-  it("does not kill unrelated OpenClaw app bundles", () => {
+  it("does not kill unrelated Afora app bundles", () => {
     const { killCalls, result } = runCleanupFunction(
       [
         "#!/usr/bin/env bash",
-        "printf '%s\\n' '  654 /tmp/Other/OpenClaw.app/Contents/MacOS/OpenClaw'",
+        "printf '%s\\n' '  654 /tmp/Other/Afora.app/Contents/MacOS/Afora'",
       ].join("\n"),
     );
 

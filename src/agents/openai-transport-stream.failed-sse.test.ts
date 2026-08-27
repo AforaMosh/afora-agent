@@ -2,8 +2,8 @@ import { createServer, type Server } from "node:http";
 import {
   createAzureOpenAIResponsesTransportStreamFn,
   createOpenAIResponsesTransportStreamFn,
-} from "@openclaw/ai/transports";
-import type { Model } from "openclaw/plugin-sdk/llm";
+} from "@afora/ai/transports";
+import type { Model } from "afora-agent/plugin-sdk/llm";
 import { describe, expect, it } from "vitest";
 
 const responsesTransports = [

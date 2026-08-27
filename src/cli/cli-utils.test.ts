@@ -59,17 +59,17 @@ describe("runCommandWithRuntime", () => {
         },
       );
 
-    const originalDebug = process.env.OPENCLAW_DEBUG;
-    delete process.env.OPENCLAW_DEBUG;
+    const originalDebug = process.env.AFORA_DEBUG;
+    delete process.env.AFORA_DEBUG;
     try {
       await run();
-      process.env.OPENCLAW_DEBUG = "1";
+      process.env.AFORA_DEBUG = "1";
       await run();
     } finally {
       if (originalDebug === undefined) {
-        delete process.env.OPENCLAW_DEBUG;
+        delete process.env.AFORA_DEBUG;
       } else {
-        process.env.OPENCLAW_DEBUG = originalDebug;
+        process.env.AFORA_DEBUG = originalDebug;
       }
     }
 
@@ -83,7 +83,7 @@ describe("runCommandWithRuntime", () => {
   it("bubbles JSON-mode failures to the process-level owner", async () => {
     const originalArgv = process.argv;
     const runtime = { error: vi.fn(), exit: vi.fn() };
-    process.argv = ["node", "openclaw", "backup", "verify", "missing.tgz", "--json"];
+    process.argv = ["node", "afora", "backup", "verify", "missing.tgz", "--json"];
     try {
       await withConsoleLogsRoutedToStderrForJson(process.argv, async () => {
         applyResolvedCommandOutputMode(true);
@@ -104,26 +104,26 @@ describe("runCommandWithRuntime", () => {
 
 describe("shouldSkipRespawnForArgv", () => {
   it.each([
-    { argv: ["node", "openclaw", "--help"] },
-    { argv: ["node", "openclaw", "-V"] },
-    { argv: ["node", "openclaw", "tui"] },
-    { argv: ["node", "openclaw", "terminal"] },
-    { argv: ["node", "openclaw", "chat"] },
-    { argv: ["node", "openclaw", "hooks", "relay", "--relay-id", "relay-1"] },
-    { argv: ["node", "openclaw", "gateway"] },
-    { argv: ["node", "openclaw", "gateway", "--port", "14720", "--bind", "loopback"] },
-    { argv: ["node", "openclaw", "gateway", "run", "--port=14720", "--bind", "loopback"] },
+    { argv: ["node", "afora", "--help"] },
+    { argv: ["node", "afora", "-V"] },
+    { argv: ["node", "afora", "tui"] },
+    { argv: ["node", "afora", "terminal"] },
+    { argv: ["node", "afora", "chat"] },
+    { argv: ["node", "afora", "hooks", "relay", "--relay-id", "relay-1"] },
+    { argv: ["node", "afora", "gateway"] },
+    { argv: ["node", "afora", "gateway", "--port", "14720", "--bind", "loopback"] },
+    { argv: ["node", "afora", "gateway", "run", "--port=14720", "--bind", "loopback"] },
     {
-      argv: ["node", "openclaw", "--profile", "server", "gateway", "run", "--allow-unconfigured"],
+      argv: ["node", "afora", "--profile", "server", "gateway", "run", "--allow-unconfigured"],
     },
   ] as const)("skips respawn for argv %j", ({ argv }) => {
     expect(shouldSkipRespawnForArgv([...argv]), argv.join(" ")).toBe(true);
   });
 
   it.each([
-    { argv: ["node", "openclaw", "status"] },
-    { argv: ["node", "openclaw", "gateway", "status"] },
-    { argv: ["node", "openclaw", "gateway", "call", "health"] },
+    { argv: ["node", "afora", "status"] },
+    { argv: ["node", "afora", "gateway", "status"] },
+    { argv: ["node", "afora", "gateway", "call", "health"] },
   ] as const)("keeps respawn path for argv %j", ({ argv }) => {
     expect(shouldSkipRespawnForArgv([...argv]), argv.join(" ")).toBe(false);
   });
@@ -131,7 +131,7 @@ describe("shouldSkipRespawnForArgv", () => {
   it("keeps native hook relay respawn behavior unchanged on Windows", () => {
     expect(
       shouldSkipRespawnForArgv(
-        ["node", "openclaw", "hooks", "relay", "--relay-id", "relay-1"],
+        ["node", "afora", "hooks", "relay", "--relay-id", "relay-1"],
         "win32",
       ),
     ).toBe(false);
@@ -140,19 +140,19 @@ describe("shouldSkipRespawnForArgv", () => {
 
 describe("shouldSkipStartupEnvironmentRespawnForArgv", () => {
   it.each([
-    { argv: ["node", "openclaw", "--help"] },
-    { argv: ["node", "openclaw", "hooks", "relay", "--relay-id", "relay-1"] },
-    { argv: ["node", "openclaw", "gateway"] },
-    { argv: ["node", "openclaw", "gateway", "run", "--port=14720"] },
+    { argv: ["node", "afora", "--help"] },
+    { argv: ["node", "afora", "hooks", "relay", "--relay-id", "relay-1"] },
+    { argv: ["node", "afora", "gateway"] },
+    { argv: ["node", "afora", "gateway", "run", "--port=14720"] },
   ] as const)("skips startup env respawn for argv %j", ({ argv }) => {
     expect(shouldSkipStartupEnvironmentRespawnForArgv([...argv]), argv.join(" ")).toBe(true);
   });
 
   it.each([
-    { argv: ["node", "openclaw", "tui"] },
-    { argv: ["node", "openclaw", "terminal"] },
-    { argv: ["node", "openclaw", "chat"] },
-    { argv: ["node", "openclaw", "status"] },
+    { argv: ["node", "afora", "tui"] },
+    { argv: ["node", "afora", "terminal"] },
+    { argv: ["node", "afora", "chat"] },
+    { argv: ["node", "afora", "status"] },
   ] as const)("allows startup env respawn for argv %j", ({ argv }) => {
     expect(shouldSkipStartupEnvironmentRespawnForArgv([...argv]), argv.join(" ")).toBe(false);
   });
@@ -160,7 +160,7 @@ describe("shouldSkipStartupEnvironmentRespawnForArgv", () => {
   it("keeps native hook relay startup environment respawn on Windows", () => {
     expect(
       shouldSkipStartupEnvironmentRespawnForArgv(
-        ["node", "openclaw", "hooks", "relay", "--relay-id", "relay-1"],
+        ["node", "afora", "hooks", "relay", "--relay-id", "relay-1"],
         "win32",
       ),
     ).toBe(false);
@@ -174,13 +174,13 @@ describe("dns cli", () => {
     try {
       const program = new Command();
       registerDnsCli(program);
-      await program.parseAsync(["dns", "setup", "--domain", "openclaw.internal"], { from: "user" });
+      await program.parseAsync(["dns", "setup", "--domain", "afora.internal"], { from: "user" });
       const output = log.mock.calls.map((call) => call.join(" ")).join("\\n");
       expect(output).toContain("DNS setup");
-      expect(output).toContain("openclaw.internal");
+      expect(output).toContain("afora.internal");
       expect(writeJson).toHaveBeenCalledWith({
         gateway: { bind: "auto" },
-        discovery: { wideArea: { domain: "openclaw.internal." } },
+        discovery: { wideArea: { domain: "afora.internal." } },
       });
     } finally {
       writeJson.mockRestore();

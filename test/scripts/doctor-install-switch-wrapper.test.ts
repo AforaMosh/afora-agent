@@ -21,7 +21,7 @@ function runWriter(args: string[]) {
 
 describe("doctor install switch wrapper writer", () => {
   it("writes an executable wrapper that preserves quoted paths and arguments", () => {
-    const root = makeTempDir(tempDirs, "openclaw-doctor-wrapper-");
+    const root = makeTempDir(tempDirs, "afora-doctor-wrapper-");
     const npmDir = path.join(root, "bin with ' quote");
     mkdirSync(npmDir);
 
@@ -37,7 +37,7 @@ fs.writeFileSync(${JSON.stringify(forwardedArgsPath)}, JSON.stringify(process.ar
     );
     chmodSync(fakeNpm, 0o755);
 
-    const wrapperPath = path.join(root, "openclaw wrapper");
+    const wrapperPath = path.join(root, "afora wrapper");
     const wrapperLogPath = path.join(root, "wrapper log with ' quote.txt");
     const writeResult = runWriter([wrapperPath, fakeNpm, wrapperLogPath]);
 

@@ -1,9 +1,9 @@
 import process from "node:process";
-import { resolveAcpSessionAvailability } from "openclaw/plugin-sdk/acp-runtime";
-import { resolveSessionAgentIds } from "openclaw/plugin-sdk/agent-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { resolveNodeHostExecutable } from "openclaw/plugin-sdk/node-host";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
+import { resolveAcpSessionAvailability } from "afora-agent/plugin-sdk/acp-runtime";
+import { resolveSessionAgentIds } from "afora-agent/plugin-sdk/agent-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { resolveNodeHostExecutable } from "afora-agent/plugin-sdk/node-host";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   createSessionCatalogFamily,
   importSessionCatalogHistory,
@@ -11,8 +11,8 @@ import {
   sessionCatalogAdoptedSessionKey,
   type SessionCatalogEntrySnapshot,
   type SessionCatalogSession,
-} from "openclaw/plugin-sdk/session-catalog";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/session-catalog";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   PI_LOCAL_SESSION_HOST_ID,
   PI_SESSIONS_LIST_COMMAND,
@@ -47,12 +47,12 @@ export async function requireLocalPiSession(threadId: string): Promise<SessionCa
   return session;
 }
 
-function currentPiCatalogConfig(api: OpenClawPluginApi): OpenClawConfig {
-  return (api.runtime.config?.current?.() ?? api.config ?? {}) as OpenClawConfig;
+function currentPiCatalogConfig(api: AforaPluginApi): AforaConfig {
+  return (api.runtime.config?.current?.() ?? api.config ?? {}) as AforaConfig;
 }
 
 function resolvePiContinuationAvailability(
-  api: OpenClawPluginApi,
+  api: AforaPluginApi,
 ): { available: true } | { available: false; message: string } {
   const availability = resolveAcpSessionAvailability({
     config: currentPiCatalogConfig(api),
@@ -71,7 +71,7 @@ function resolvePiContinuationAvailability(
 }
 
 function listAdoptedPiSessions(
-  api: OpenClawPluginApi,
+  api: AforaPluginApi,
   agentId?: string,
   sessionEntries?: SessionCatalogEntrySnapshot,
 ): Map<string, string> {
@@ -92,7 +92,7 @@ function listAdoptedPiSessions(
 }
 
 async function createAdoptedPiSession(params: {
-  api: OpenClawPluginApi;
+  api: AforaPluginApi;
   agentId: string;
   hostId: string;
   threadId: string;
@@ -155,7 +155,7 @@ export async function readPiSession(params: unknown) {
   return await readLocalPiTranscriptPage(params);
 }
 
-export function createPiSessionCatalogRuntime(api: OpenClawPluginApi) {
+export function createPiSessionCatalogRuntime(api: AforaPluginApi) {
   return createSessionCatalogFamily(
     {
       runtime: api.runtime,

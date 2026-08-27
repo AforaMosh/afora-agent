@@ -1,11 +1,11 @@
 import { sql } from "kysely";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../../infra/kysely-sync.js";
 import { runSqliteDeferredTransactionSync } from "../../infra/sqlite-transaction.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
+import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.generated.js";
 import {
-  openOpenClawAgentDatabase,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import type {
   SessionTranscriptReadScope,
   TranscriptEvent,
@@ -17,7 +17,7 @@ import {
 } from "./session-accessor.sqlite-scope.js";
 
 type TitleProbeDatabase = Pick<
-  OpenClawAgentKyselyDatabase,
+  AforaAgentKyselyDatabase,
   | "session_transcript_active_events"
   | "session_transcript_index_state"
   | "session_windows"
@@ -36,7 +36,7 @@ export type SessionTranscriptTitleProbe = {
 const SESSION_TITLE_PROBE_MESSAGES = 20;
 const SESSION_TITLE_PROBE_QUERY_CHUNK_SIZE = 400;
 
-function getTitleProbeKysely(database: OpenClawAgentDatabase) {
+function getTitleProbeKysely(database: AforaAgentDatabase) {
   return getNodeSqliteKysely<TitleProbeDatabase>(database.db);
 }
 
@@ -57,7 +57,7 @@ function sqliteTranscriptBoundaryEventType() {
 }
 
 function readTitleProbeChunk(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionIds: readonly string[],
 ): Map<string, SessionTranscriptTitleProbe> {
   const db = getTitleProbeKysely(database);
@@ -179,12 +179,12 @@ export function readSessionTranscriptTitleProbeBatch(
   });
   const groups = new Map<
     string,
-    { database: OpenClawAgentDatabase; items: Array<{ index: number; sessionId: string }> }
+    { database: AforaAgentDatabase; items: Array<{ index: number; sessionId: string }> }
   >();
   const targetCache: SessionSqliteTargetResolutionCache = new Map();
   for (const [index, scope] of scopes.entries()) {
     const resolved = resolveSqliteTranscriptReadScope(scope, targetCache);
-    const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+    const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
     const group = groups.get(database.path) ?? { database, items: [] };
     group.items.push({ index, sessionId: resolved.sessionId });
     groups.set(database.path, group);

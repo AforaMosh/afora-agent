@@ -7,7 +7,7 @@ import {
   onInternalDiagnosticEvent,
   resetDiagnosticEventsForTest,
   waitForDiagnosticEventsDrained,
-} from "openclaw/plugin-sdk/diagnostic-runtime";
+} from "afora-agent/plugin-sdk/diagnostic-runtime";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import type { DiagnosticEventPayload } from "../api.js";
 import {
@@ -17,7 +17,7 @@ import {
   type ReportedExporterHealth,
 } from "./service.test-helpers.js";
 
-const PRELOAD_ENV = "OPENCLAW_OTEL_PRELOADED";
+const PRELOAD_ENV = "AFORA_OTEL_PRELOADED";
 const IMMEDIATE_RETRY_AFTER = "Thu, 01 Jan 1970 00:00:00 GMT";
 const OTEL_ENV_KEYS = [
   "OTEL_SDK_DISABLED",
@@ -219,7 +219,7 @@ function startTraceExporterHealthService(
   });
 }
 
-test("reports no OpenClaw-owned routes when the SDK is disabled", async () => {
+test("reports no Afora-owned routes when the SDK is disabled", async () => {
   process.env.OTEL_SDK_DISABLED = " TRUE ";
 
   const { ctx } = await startOtelService({

@@ -6,7 +6,7 @@ export function createPluginSdkLightVitestConfig(env?: Record<string, string | u
   return createScopedVitestConfig(pluginSdkLightTestFiles, {
     dir: "src",
     env,
-    includeOpenClawRuntimeSetup: false,
+    includeAforaRuntimeSetup: false,
     name: "plugin-sdk-light",
     passWithNoTests: true,
   });

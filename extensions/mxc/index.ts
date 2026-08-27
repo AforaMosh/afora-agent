@@ -1,4 +1,4 @@
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import { createMxcPluginConfigSchema } from "./src/config.js";
 import { registerMxcPlugin } from "./src/plugin.js";
 

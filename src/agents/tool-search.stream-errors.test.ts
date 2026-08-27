@@ -22,7 +22,7 @@ function createMockSpawnChild() {
 }
 
 vi.mock("node:child_process", async () => {
-  const { mockNodeBuiltinModule } = await import("openclaw/plugin-sdk/test-node-mocks");
+  const { mockNodeBuiltinModule } = await import("afora-agent/plugin-sdk/test-node-mocks");
   const spawnLocal = vi.fn(
     (_command: string, _args: readonly string[], _options: SpawnOptions): ChildProcess => {
       const { child } = createMockSpawnChild();

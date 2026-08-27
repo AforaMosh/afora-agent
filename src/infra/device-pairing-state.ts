@@ -1,6 +1,6 @@
 // Shared snapshot, lock, and normalization owner for device pairing domain modules.
-import { expectDefined } from "@openclaw/normalization-core";
-import { normalizeUniqueSingleOrTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+import { expectDefined } from "@afora/normalization-core";
+import { normalizeUniqueSingleOrTrimmedStringList } from "@afora/normalization-core/string-normalization";
 import { loadDevicePairingStoreStateReadOnly } from "./device-pairing-store-readonly.js";
 import {
   loadDevicePairingStoreState,

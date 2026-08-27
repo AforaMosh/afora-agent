@@ -146,7 +146,7 @@ async function setupSandboxWorkspace(home: string): Promise<{
   sandboxDir: string;
 }> {
   const cfg = createSandboxMediaStageConfig(home);
-  const workspaceDir = join(home, "openclaw");
+  const workspaceDir = join(home, "afora");
   const sandboxDir = join(home, "sandboxes", "session");
   await fs.mkdir(sandboxDir, { recursive: true });
   sandboxMocks.ensureSandboxWorkspaceForSession.mockResolvedValue({
@@ -161,7 +161,7 @@ async function writeInboundMedia(
   fileName: string,
   payload: string | Buffer,
 ): Promise<string> {
-  const inboundDir = join(home, ".openclaw", "media", "inbound");
+  const inboundDir = join(home, ".afora", "media", "inbound");
   await fs.mkdir(inboundDir, { recursive: true });
   const mediaPath = join(inboundDir, fileName);
   await fs.writeFile(mediaPath, payload);
@@ -170,7 +170,7 @@ async function writeInboundMedia(
 
 describe("stageSandboxMedia", () => {
   it("stages managed inbound media URIs into the sandbox workspace", async () => {
-    await withSandboxMediaTempHome("openclaw-triggers-", async (home) => {
+    await withSandboxMediaTempHome("afora-triggers-", async (home) => {
       const { cfg, workspaceDir, sandboxDir } = await setupSandboxWorkspace(home);
       const fileName = "report.pdf";
       await writeInboundMedia(home, fileName, "pdf-bytes");
@@ -200,9 +200,9 @@ describe("stageSandboxMedia", () => {
   });
 
   it("keeps host-staged inbound images available to native vision", async () => {
-    await withSandboxMediaTempHome("openclaw-triggers-", async (home) => {
+    await withSandboxMediaTempHome("afora-triggers-", async (home) => {
       const cfg = createSandboxMediaStageConfig(home);
-      const workspaceDir = join(home, "openclaw");
+      const workspaceDir = join(home, "afora");
       sandboxMocks.ensureSandboxWorkspaceForSession.mockResolvedValue(null);
       const fileName = "host-photo.png";
       await writeInboundMedia(home, fileName, "host-image-bytes");
@@ -225,7 +225,7 @@ describe("stageSandboxMedia", () => {
       const stagedPath = ctx.media?.[0]?.path ?? "";
       const stagedRelativePath = path.relative(workspaceDir, stagedPath).replaceAll(path.sep, "/");
       expect(stagedRelativePath).toMatch(
-        new RegExp(`^media/inbound/openclaw-staged-[0-9a-f-]+/${fileName}$`),
+        new RegExp(`^media/inbound/afora-staged-[0-9a-f-]+/${fileName}$`),
       );
       expect(result.staged.get(0)).toBe(stagedPath);
       expect(sessionCtx.media?.[0]?.path).toBe(stagedPath);
@@ -279,7 +279,7 @@ describe("stageSandboxMedia", () => {
   });
 
   it("stages allowed media and blocks unsafe paths", async () => {
-    await withSandboxMediaTempHome("openclaw-triggers-", async (home) => {
+    await withSandboxMediaTempHome("afora-triggers-", async (home) => {
       const { cfg, workspaceDir, sandboxDir } = await setupSandboxWorkspace(home);
 
       {
@@ -359,9 +359,9 @@ describe("stageSandboxMedia", () => {
       rewrite: (value: string) => value.replace(/^file:\/\/\//u, "FILE:/"),
     },
   ])("stages $label local file URLs from the media root", async ({ rewrite }) => {
-    await withSandboxMediaTempHome("openclaw-staging-file-url-", async (home) => {
+    await withSandboxMediaTempHome("afora-staging-file-url-", async (home) => {
       const { cfg, workspaceDir, sandboxDir } = await setupSandboxWorkspace(home);
-      const sourceDir = join(home, ".openclaw", "media", "cache");
+      const sourceDir = join(home, ".afora", "media", "cache");
       const fileName = "café photo.png";
       const sourcePath = join(sourceDir, fileName);
       await fs.mkdir(sourceDir, { recursive: true });
@@ -393,7 +393,7 @@ describe("stageSandboxMedia", () => {
     "FILE:/C:/media%5Cphoto.png",
     "FILE:////server/share/photo.png",
   ])("rejects unsafe uppercase file URL before staging: %s", async (sourceUrl) => {
-    await withSandboxMediaTempHome("openclaw-staging-file-url-", async (home) => {
+    await withSandboxMediaTempHome("afora-staging-file-url-", async (home) => {
       const { cfg, workspaceDir } = await setupSandboxWorkspace(home);
       const { ctx, sessionCtx } = createSandboxMediaContexts(sourceUrl);
 
@@ -416,7 +416,7 @@ describe("stageSandboxMedia", () => {
     { name: "failed slot before staged slot", allowedIndex: 1, blockedIndex: 0 },
     { name: "staged slot before failed slot", allowedIndex: 0, blockedIndex: 1 },
   ])("updates facts positionally: $name", async ({ allowedIndex, blockedIndex }) => {
-    await withSandboxMediaTempHome("openclaw-staging-slots-", async (home) => {
+    await withSandboxMediaTempHome("afora-staging-slots-", async (home) => {
       const { cfg, workspaceDir, sandboxDir } = await setupSandboxWorkspace(home);
       const allowedPath = await writeInboundMedia(home, "allowed.jpg", "allowed");
       const blockedPath = join(home, "blocked.jpg");
@@ -485,7 +485,7 @@ describe("stageSandboxMedia", () => {
   ] as const)(
     "rewrites resolved local URL aliases: $name",
     async ({ source, url, rewritesUrl }) => {
-      await withSandboxMediaTempHome("openclaw-staging-url-alias-", async (home) => {
+      await withSandboxMediaTempHome("afora-staging-url-alias-", async (home) => {
         const { cfg, workspaceDir, sandboxDir } = await setupSandboxWorkspace(home);
         const fileName = "alias.jpg";
         const mediaPath = await writeInboundMedia(home, fileName, "alias-bytes");
@@ -529,7 +529,7 @@ describe("stageSandboxMedia", () => {
   );
 
   it("blocks destination symlink escapes when staging into sandbox workspace", async () => {
-    await withSandboxMediaTempHome("openclaw-triggers-", async (home) => {
+    await withSandboxMediaTempHome("afora-triggers-", async (home) => {
       const { cfg, workspaceDir, sandboxDir } = await setupSandboxWorkspace(home);
 
       const mediaPath = await writeInboundMedia(home, "payload.txt", "PAYLOAD");
@@ -569,7 +569,7 @@ describe("stageSandboxMedia", () => {
   });
 
   it("skips oversized media staging and keeps original media paths", async () => {
-    await withSandboxMediaTempHome("openclaw-triggers-", async (home) => {
+    await withSandboxMediaTempHome("afora-triggers-", async (home) => {
       const { cfg, workspaceDir, sandboxDir } = await setupSandboxWorkspace(home);
 
       const mediaPath = await writeInboundMedia(

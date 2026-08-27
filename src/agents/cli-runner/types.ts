@@ -21,7 +21,7 @@ import type {
 } from "../../config/sessions.js";
 import type { SessionTranscriptRuntimeTarget } from "../../config/sessions/session-accessor.js";
 import type { SessionSystemPromptReport } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ContextEngine } from "../../context-engine/types.js";
 import type { CronScheduledToolCallerOrigin } from "../../cron/scheduled-tool-policy.js";
 import type { ImageContent } from "../../llm/types.js";
@@ -85,7 +85,7 @@ export type RunCliAgentParams = {
   cwd?: string;
   /** Start a fresh CLI process so per-turn MCP authority is reloaded from this run. */
   disableCliLiveSession?: boolean;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   toolOverrides?: SessionToolOverrides;
   prompt: string;
   transcriptPrompt?: string;
@@ -102,7 +102,7 @@ export type RunCliAgentParams = {
   isolatedCompletion?: true;
   /** Internal backend control command: reuse the native session without recording a conversation turn. */
   controlOperation?: "compact";
-  /** Persist the successful CLI assistant reply into the OpenClaw session transcript. */
+  /** Persist the successful CLI assistant reply into the Afora session transcript. */
   persistAssistantTranscript?: boolean;
   /** Session store path used when assistant transcript persistence is enabled. */
   storePath?: string;
@@ -237,10 +237,10 @@ export type RunCliAgentParams = {
   scheduledToolPolicy?: ScheduledToolPolicyContext;
   /** Server-authored origin for fresh automation mutations from this CLI run. */
   cronCreatorCallerOrigin?: CronScheduledToolCallerOrigin;
-  /** Exact native plus canonical OpenClaw surface for a selectable CLI backend. */
+  /** Exact native plus canonical Afora surface for a selectable CLI backend. */
   cliToolAvailability?: {
     native: string[];
-    openClaw: string[];
+    afora: string[];
   };
   disableTools?: boolean;
   abortSignal?: AbortSignal;
@@ -323,7 +323,7 @@ export type PreparedCliRunContext = {
   /** Resume is safe only while the exact managed Claude stdio child still exists. */
   requiredClaudeLiveSessionGeneration?: string;
   hadSessionFile: boolean;
-  contextEngineConfig: OpenClawConfig;
+  contextEngineConfig: AforaConfig;
   contextEngine?: ContextEngine;
   contextEngineTurnPrompt?: string;
   contextEngineDeferredTurnMaintenance?: Promise<void>;
@@ -334,7 +334,7 @@ export type PreparedCliRunContext = {
   systemPromptReport: SessionSystemPromptReport;
   claudeSkillsPluginArgs?: string[] | undefined;
   bootstrapPromptWarningLines: string[];
-  openClawHistoryPrompt?: string;
+  aforaHistoryPrompt?: string;
   heartbeatPrompt?: string;
   authEpoch?: string;
   /** Strict owner fingerprint captured for live inference verification only. */

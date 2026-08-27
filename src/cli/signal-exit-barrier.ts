@@ -5,11 +5,11 @@ type SignalExitBarrier = () => Promise<void>;
 // Gates let bounded mutations finish before signal cleanup begins; barriers
 // then prevent one cleanup from exiting while another still owns state.
 const activeBarriers = resolveGlobalSet<SignalExitBarrier>(
-  Symbol.for("openclaw.signalExitBarriers"),
+  Symbol.for("afora.signalExitBarriers"),
   "close-and-restart",
 );
 const activeGates = resolveGlobalSet<Promise<void>>(
-  Symbol.for("openclaw.signalExitGates"),
+  Symbol.for("afora.signalExitGates"),
   "close-and-restart",
 );
 

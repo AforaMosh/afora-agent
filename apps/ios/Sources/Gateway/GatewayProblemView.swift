@@ -1,4 +1,4 @@
-import OpenClawKit
+import AforaKit
 import SwiftUI
 import UIKit
 
@@ -53,14 +53,14 @@ struct GatewayProblemBanner: View {
     var onShowDetails: (() -> Void)?
 
     var body: some View {
-        OpenClawNoticeBanner(
+        AforaNoticeBanner(
             icon: self.iconName,
             title: .verbatim(self.problem.localizedTitle),
             message: .verbatim(self.problem.localizedMessage),
             ownerLabel: .localized(self.ownerLabel),
             tint: self.tint,
-            detail: self.problem.requestId.map(OpenClawNoticeDetail.requestID),
-            primaryActionTitle: self.primaryActionTitle.map(OpenClawTextValue.verbatim),
+            detail: self.problem.requestId.map(AforaNoticeDetail.requestID),
+            primaryActionTitle: self.primaryActionTitle.map(AforaTextValue.verbatim),
             onPrimaryAction: self.onPrimaryAction,
             secondaryActionTitle: "Details",
             onSecondaryAction: self.onShowDetails)
@@ -94,11 +94,11 @@ struct GatewayProblemBanner: View {
              .pairingRoleUpgradeRequired,
              .pairingScopeUpgradeRequired,
              .pairingMetadataUpgradeRequired:
-            OpenClawBrand.warn
+            AforaBrand.warn
         case .timeout, .connectionRefused, .reachabilityFailed, .websocketCancelled:
-            OpenClawBrand.warn
+            AforaBrand.warn
         default:
-            OpenClawBrand.danger
+            AforaBrand.danger
         }
     }
 
@@ -133,12 +133,12 @@ struct GatewayProblemDetailsSheet: View {
                 Section {
                     VStack(alignment: .leading, spacing: 10) {
                         Text(verbatim: self.problem.localizedTitle)
-                            .font(OpenClawType.title3)
+                            .font(AforaType.title3)
                         Text(verbatim: self.problem.localizedMessage)
-                            .font(OpenClawType.body)
+                            .font(AforaType.body)
                             .foregroundStyle(.secondary)
                         Text(LocalizedStringKey(self.ownerSummary))
-                            .font(OpenClawType.footnoteSemiBold)
+                            .font(AforaType.footnoteSemiBold)
                             .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -148,38 +148,38 @@ struct GatewayProblemDetailsSheet: View {
                 if let requestId = self.problem.requestId {
                     Section {
                         Text(verbatim: requestId)
-                            .font(OpenClawType.mono)
+                            .font(AforaType.mono)
                             .textSelection(.enabled)
                         Button {
                             UIPasteboard.general.string = requestId
                             self.copyFeedback = "Copied request ID"
                         } label: {
                             Text("Copy request ID")
-                                .font(OpenClawType.subheadSemiBold)
+                                .font(AforaType.subheadSemiBold)
                         }
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                     } header: {
                         Text("Request")
-                            .font(OpenClawType.captionSemiBold)
+                            .font(AforaType.captionSemiBold)
                     }
                 }
 
                 if let actionCommand = self.problem.actionCommand {
                     Section {
                         Text(verbatim: actionCommand)
-                            .font(OpenClawType.mono)
+                            .font(AforaType.mono)
                             .textSelection(.enabled)
                         Button {
                             UIPasteboard.general.string = actionCommand
                             self.copyFeedback = "Copied command"
                         } label: {
                             Text("Copy command")
-                                .font(OpenClawType.subheadSemiBold)
+                                .font(AforaType.subheadSemiBold)
                         }
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                     } header: {
                         Text("Gateway command")
-                            .font(OpenClawType.captionSemiBold)
+                            .font(AforaType.captionSemiBold)
                     }
                 }
 
@@ -187,35 +187,35 @@ struct GatewayProblemDetailsSheet: View {
                     Section {
                         Link(destination: docsURL) {
                             Label("Open docs", systemImage: "book")
-                                .font(OpenClawType.subheadSemiBold)
+                                .font(AforaType.subheadSemiBold)
                         }
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                         Text(verbatim: docsURL.absoluteString)
-                            .font(OpenClawType.footnote)
+                            .font(AforaType.footnote)
                             .foregroundStyle(.secondary)
                             .textSelection(.enabled)
                     } header: {
                         Text("Help")
-                            .font(OpenClawType.captionSemiBold)
+                            .font(AforaType.captionSemiBold)
                     }
                 }
 
                 if let technicalDetails = self.problem.technicalDetails {
                     Section {
                         Text(verbatim: technicalDetails)
-                            .font(OpenClawType.monoFootnote)
+                            .font(AforaType.monoFootnote)
                             .foregroundStyle(.secondary)
                             .textSelection(.enabled)
                     } header: {
                         Text("Technical details")
-                            .font(OpenClawType.captionSemiBold)
+                            .font(AforaType.captionSemiBold)
                     }
                 }
 
                 if let copyFeedback {
                     Section {
                         Text(verbatim: copyFeedback)
-                            .font(OpenClawType.footnote)
+                            .font(AforaType.footnote)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -225,7 +225,7 @@ struct GatewayProblemDetailsSheet: View {
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text("Connection problem")
-                        .font(OpenClawType.headline)
+                        .font(AforaType.headline)
                 }
                 ToolbarItem(placement: .topBarLeading) {
                     if let primaryActionTitle, let onPrimaryAction {
@@ -234,9 +234,9 @@ struct GatewayProblemDetailsSheet: View {
                             onPrimaryAction()
                         } label: {
                             Text(verbatim: primaryActionTitle)
-                                .font(OpenClawType.subheadSemiBold)
+                                .font(AforaType.subheadSemiBold)
                         }
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -244,9 +244,9 @@ struct GatewayProblemDetailsSheet: View {
                         self.dismiss()
                     } label: {
                         Text("Done")
-                            .font(OpenClawType.subheadSemiBold)
+                            .font(AforaType.subheadSemiBold)
                     }
-                    .font(OpenClawType.subheadSemiBold)
+                    .font(AforaType.subheadSemiBold)
                 }
             }
         }

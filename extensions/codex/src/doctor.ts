@@ -1,8 +1,8 @@
 import { execFile } from "node:child_process";
-import { resolveDefaultModelForAgent } from "openclaw/plugin-sdk/agent-runtime";
-import { listAgentIds, resolveAgentDir } from "openclaw/plugin-sdk/agent-scope-runtime";
-import { resolveEffectiveAgentRuntime } from "openclaw/plugin-sdk/command-auth-native";
-import { getHealthCheck, type HealthCheck, type HealthFinding } from "openclaw/plugin-sdk/health";
+import { resolveDefaultModelForAgent } from "afora-agent/plugin-sdk/agent-runtime";
+import { listAgentIds, resolveAgentDir } from "afora-agent/plugin-sdk/agent-scope-runtime";
+import { resolveEffectiveAgentRuntime } from "afora-agent/plugin-sdk/command-auth-native";
+import { getHealthCheck, type HealthCheck, type HealthFinding } from "afora-agent/plugin-sdk/health";
 import {
   resolveCodexAppServerRuntimeOptions,
   resolveCodexAppServerStartOptionsForAgent,
@@ -142,7 +142,7 @@ function createCodexManagedAppServerHealthCheck(params: {
               path: params.pluginRoot,
               requirement: `an executable Codex ${CODEX_APP_SERVER_VERSION} managed artifact`,
               fixHint:
-                "Reinstall the staged OpenClaw package with its @openai/codex platform dependency, then rerun the candidate check.",
+                "Reinstall the staged Afora package with its @openai/codex platform dependency, then rerun the candidate check.",
             }),
           ];
         }
@@ -164,7 +164,7 @@ function createCodexManagedAppServerHealthCheck(params: {
             path: resolved.command,
             requirement: `the platform-native Codex ${CODEX_APP_SERVER_VERSION} executable`,
             fixHint:
-              "Reinstall the staged OpenClaw package with the matching @openai/codex platform package, then rerun the candidate check.",
+              "Reinstall the staged Afora package with the matching @openai/codex platform package, then rerun the candidate check.",
           }),
         ];
       }
@@ -179,7 +179,7 @@ function createCodexManagedAppServerHealthCheck(params: {
             path: nativeCommand,
             requirement: `Codex ${CODEX_APP_SERVER_VERSION} must report its version within ${CODEX_VERSION_TIMEOUT_MS} ms`,
             fixHint:
-              "Repair or reinstall the staged OpenClaw package, then rerun the candidate check before cutover.",
+              "Repair or reinstall the staged Afora package, then rerun the candidate check before cutover.",
           }),
         ];
       }
@@ -192,9 +192,9 @@ function createCodexManagedAppServerHealthCheck(params: {
               ? `Managed Codex app-server version mismatch: expected ${CODEX_APP_SERVER_VERSION}, detected ${detectedVersion}.`
               : `Managed Codex app-server did not report a parseable version; expected ${CODEX_APP_SERVER_VERSION}.`,
             path: nativeCommand,
-            requirement: `the exact OpenClaw-pinned Codex version ${CODEX_APP_SERVER_VERSION}`,
+            requirement: `the exact Afora-pinned Codex version ${CODEX_APP_SERVER_VERSION}`,
             fixHint:
-              "Reinstall the staged OpenClaw package so its managed @openai/codex dependency matches the pinned version, then rerun the candidate check.",
+              "Reinstall the staged Afora package so its managed @openai/codex dependency matches the pinned version, then rerun the candidate check.",
           }),
         ];
       }

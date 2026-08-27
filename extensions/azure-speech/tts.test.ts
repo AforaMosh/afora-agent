@@ -1,7 +1,7 @@
 // Azure Speech tests cover tts plugin behavior.
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import { installPinnedHostnameTestHooks } from "openclaw/plugin-sdk/test-media-understanding";
+import { installPinnedHostnameTestHooks } from "afora-agent/plugin-sdk/test-media-understanding";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   azureSpeechTTS,

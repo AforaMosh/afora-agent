@@ -1,4 +1,4 @@
-// Macos Discord script supports OpenClaw repository automation.
+// Macos Discord script supports Afora repository automation.
 import { randomUUID } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -17,8 +17,8 @@ type MacosDiscordSmokeInput = {
   config: MacosDiscordConfig;
   guest: MacosGuest;
   guestNode: string;
-  guestOpenClaw: string;
-  guestOpenClawEntry: string;
+  guestAfora: string;
+  guestAforaEntry: string;
   runDir: string;
   vmName: string;
 };
@@ -42,24 +42,24 @@ export class MacosDiscordSmoke {
       },
     });
     this.input.guest.sh(`set -eu
-${this.input.guestNode} ${this.input.guestOpenClawEntry} config set channels.discord.token ${shellQuote(this.input.config.token)}
-${this.input.guestNode} ${this.input.guestOpenClawEntry} config set channels.discord.enabled true
-${this.input.guestNode} ${this.input.guestOpenClawEntry} config set channels.discord.groupPolicy allowlist
-${this.input.guestNode} ${this.input.guestOpenClawEntry} config set channels.discord.guilds ${shellQuote(guilds)} --strict-json
-${this.input.guestNode} ${this.input.guestOpenClawEntry} doctor --fix --yes --non-interactive
+${this.input.guestNode} ${this.input.guestAforaEntry} config set channels.discord.token ${shellQuote(this.input.config.token)}
+${this.input.guestNode} ${this.input.guestAforaEntry} config set channels.discord.enabled true
+${this.input.guestNode} ${this.input.guestAforaEntry} config set channels.discord.groupPolicy allowlist
+${this.input.guestNode} ${this.input.guestAforaEntry} config set channels.discord.guilds ${shellQuote(guilds)} --strict-json
+${this.input.guestNode} ${this.input.guestAforaEntry} doctor --fix --yes --non-interactive
 ${this.input.guestNode} - <<'JS'
 const fs = require("node:fs");
 const path = require("node:path");
-const configPath = path.join(process.env.HOME || "", ".openclaw", "openclaw.json");
+const configPath = path.join(process.env.HOME || "", ".afora", "afora.json");
 const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 config.plugins = config.plugins && typeof config.plugins === "object" ? config.plugins : {};
 const allow = Array.isArray(config.plugins.allow) ? config.plugins.allow : [];
 config.plugins.allow = Array.from(new Set([...allow, "discord"]));
 fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\\n");
 JS
-${this.input.guestNode} ${this.input.guestOpenClawEntry} plugins enable discord
-${this.input.guestNode} ${this.input.guestOpenClawEntry} gateway restart
-${this.input.guestNode} ${this.input.guestOpenClawEntry} channels status --probe --json`);
+${this.input.guestNode} ${this.input.guestAforaEntry} plugins enable discord
+${this.input.guestNode} ${this.input.guestAforaEntry} gateway restart
+${this.input.guestNode} ${this.input.guestAforaEntry} channels status --probe --json`);
   }
 
   async runRoundtrip(phase: DiscordSmokePhase): Promise<void> {
@@ -70,7 +70,7 @@ ${this.input.guestNode} ${this.input.guestOpenClawEntry} channels status --probe
     const sentIdFile = path.join(this.input.runDir, `${phase}.discord-sent-message-id`);
     const hostIdFile = path.join(this.input.runDir, `${phase}.discord-host-message-id`);
     const outbound = this.input.guest.exec([
-      this.input.guestOpenClaw,
+      this.input.guestAfora,
       "message",
       "send",
       "--channel",
@@ -200,7 +200,7 @@ ${this.input.guestNode} ${this.input.guestOpenClawEntry} channels status --probe
     while (Date.now() < deadline) {
       const result = this.input.guest.run(
         [
-          this.input.guestOpenClaw,
+          this.input.guestAfora,
           "message",
           "read",
           "--channel",

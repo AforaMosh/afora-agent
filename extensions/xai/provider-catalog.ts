@@ -6,11 +6,11 @@ import {
   readLiveModelCatalogPositiveSafeIntegerField,
   readLiveModelCatalogStringField,
   type LiveModelCatalogFetchGuard,
-} from "openclaw/plugin-sdk/provider-catalog-live-runtime";
+} from "afora-agent/plugin-sdk/provider-catalog-live-runtime";
 import type {
   ModelDefinitionConfig,
   ModelProviderConfig,
-} from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/provider-model-shared";
 import {
   buildXaiCatalogModels,
   resolveXaiCatalogEntry,

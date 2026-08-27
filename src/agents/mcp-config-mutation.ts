@@ -1,5 +1,5 @@
 /** Canonical configured-MCP mutations with OAuth credential lifecycle cleanup. */
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord } from "@afora/normalization-core/record-coerce";
 import { mcpConfigInternal } from "../config/mcp-config.js";
 import { withMcpLifecycleLease } from "./mcp-lifecycle-lease.js";
 import { operatorMcpOAuthIdentity } from "./mcp-oauth-identity.js";

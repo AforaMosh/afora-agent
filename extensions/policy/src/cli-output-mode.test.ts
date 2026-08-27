@@ -7,7 +7,7 @@ describe("policy CLI output mode", () => {
   it.each(["check", "compare", "watch"])("detects piped %s output", (command) => {
     expect(
       isMachineOutput({
-        argv: ["node", "openclaw", "policy", command],
+        argv: ["node", "afora", "policy", command],
         stdoutIsTTY: false,
       }),
     ).toBe(true);
@@ -16,7 +16,7 @@ describe("policy CLI output mode", () => {
   it("keeps terminal output human-readable", () => {
     expect(
       isMachineOutput({
-        argv: ["node", "openclaw", "policy", "check"],
+        argv: ["node", "afora", "policy", "check"],
         stdoutIsTTY: true,
       }),
     ).toBe(false);
@@ -25,7 +25,7 @@ describe("policy CLI output mode", () => {
   it("accepts a post-root log level", () => {
     expect(
       isMachineOutput({
-        argv: ["node", "openclaw", "policy", "--log-level", "debug", "check"],
+        argv: ["node", "afora", "policy", "--log-level", "debug", "check"],
         stdoutIsTTY: false,
       }),
     ).toBe(true);

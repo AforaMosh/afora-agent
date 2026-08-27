@@ -8,10 +8,10 @@ artifact_kind=""
 target_sha=""
 workflow_sha=""
 image_refs=()
-shared_package_sha256="${OPENCLAW_SHARED_IMAGE_PACKAGE_SHA256:-}"
-shared_archive_sha256="${OPENCLAW_SHARED_IMAGE_ARCHIVE_SHA256:-}"
-shared_run_id="${OPENCLAW_SHARED_IMAGE_RUN_ID:-}"
-shared_run_attempt="${OPENCLAW_SHARED_IMAGE_RUN_ATTEMPT:-}"
+shared_package_sha256="${AFORA_SHARED_IMAGE_PACKAGE_SHA256:-}"
+shared_archive_sha256="${AFORA_SHARED_IMAGE_ARCHIVE_SHA256:-}"
+shared_run_id="${AFORA_SHARED_IMAGE_RUN_ID:-}"
+shared_run_attempt="${AFORA_SHARED_IMAGE_RUN_ATTEMPT:-}"
 
 archive_name="shared-images.tar.zst"
 manifest_path=""
@@ -298,7 +298,7 @@ const images = fs
     return { ref, id };
   });
 const manifest = {
-  schema: "openclaw.shared-docker-image-artifact/v1",
+  schema: "afora.shared-docker-image-artifact/v1",
   schemaVersion: 1,
   kind: process.env.ARTIFACT_KIND,
   targetSha: process.env.TARGET_SHA,
@@ -362,7 +362,7 @@ const fail = (message) => {
   throw new Error(`invalid shared Docker image artifact: ${message}`);
 };
 
-if (value.schema !== "openclaw.shared-docker-image-artifact/v1") fail("schema");
+if (value.schema !== "afora.shared-docker-image-artifact/v1") fail("schema");
 if (value.schemaVersion !== 1) fail("schemaVersion");
 if (value.kind !== process.env.ARTIFACT_KIND) fail("kind");
 if (value.targetSha !== process.env.TARGET_SHA) fail("target SHA");
@@ -446,8 +446,8 @@ case "$command_name" in
       export ARCHIVE_SIZE_BYTES=""
       pack_artifact
     else
-      require_positive_decimal "OPENCLAW_SHARED_IMAGE_RUN_ID" "$shared_run_id"
-      require_positive_decimal "OPENCLAW_SHARED_IMAGE_RUN_ATTEMPT" "$shared_run_attempt"
+      require_positive_decimal "AFORA_SHARED_IMAGE_RUN_ID" "$shared_run_id"
+      require_positive_decimal "AFORA_SHARED_IMAGE_RUN_ATTEMPT" "$shared_run_attempt"
       export SHARED_RUN_ID="$shared_run_id"
       export SHARED_RUN_ATTEMPT="$shared_run_attempt"
       load_artifact

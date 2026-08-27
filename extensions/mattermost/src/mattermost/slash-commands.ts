@@ -1,5 +1,5 @@
 // Mattermost plugin module implements slash commands behavior.
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { MattermostClient } from "./client.js";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -135,7 +135,7 @@ export type MattermostCommandResponse = {
 // ─── Default commands ────────────────────────────────────────────────────────
 
 /**
- * Built-in OpenClaw commands to register as native slash commands.
+ * Built-in Afora commands to register as native slash commands.
  * These mirror the text-based commands already handled by the gateway.
  */
 export const DEFAULT_COMMAND_SPECS: MattermostCommandSpec[] = [
@@ -271,7 +271,7 @@ async function updateMattermostCommand(
 }
 
 /**
- * Register all OpenClaw slash commands for a given team.
+ * Register all Afora slash commands for a given team.
  * Skips commands that are already registered with the same trigger + callback URL.
  * Returns the list of newly created command IDs.
  */
@@ -322,7 +322,7 @@ export async function registerSlashCommands(params: {
 
     if (ownedCommands.length === 0 && foreignCommands.length > 0) {
       log?.(
-        `mattermost: trigger /${spec.trigger} already used by non-OpenClaw command(s); skipping to avoid mutating external integrations`,
+        `mattermost: trigger /${spec.trigger} already used by non-Afora command(s); skipping to avoid mutating external integrations`,
       );
       continue;
     }
@@ -523,7 +523,7 @@ export function parseSlashCommandPayload(
 }
 
 /**
- * Map the trigger word back to the original OpenClaw command name.
+ * Map the trigger word back to the original Afora command name.
  * e.g. "oc_status" -> "/status", "oc_model" -> "/model"
  */
 export function resolveCommandText(

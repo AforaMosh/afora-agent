@@ -1,11 +1,11 @@
 /** Downgrade-stable persistence for runtime-private cron authority. */
 import { createHash } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
-import { safeParseJson } from "@openclaw/normalization-core";
+import { safeParseJson } from "@afora/normalization-core";
 import type { Selectable } from "kysely";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../../infra/kysely-sync.js";
-import { tableExists } from "../../state/openclaw-state-db-schema-helpers.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../../state/openclaw-state-db.generated.js";
+import { tableExists } from "../../state/afora-state-db-schema-helpers.js";
+import type { DB as AforaStateKyselyDatabase } from "../../state/afora-state-db.generated.js";
 import { normalizeCronRuntimeAuthority } from "../runtime-authority.js";
 import { normalizeCronScheduledToolPolicy } from "../scheduled-tool-policy.js";
 import { cronJobUsesToolRuntime } from "../tools-allow.js";
@@ -34,11 +34,11 @@ CREATE TABLE IF NOT EXISTS cron_job_runtime_authorities (
 `;
 
 type CronAuthorityDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "cron_job_runtime_authorities" | "cron_jobs"
 >;
 type CronRuntimeAuthorityRow = Selectable<
-  OpenClawStateKyselyDatabase["cron_job_runtime_authorities"]
+  AforaStateKyselyDatabase["cron_job_runtime_authorities"]
 >;
 
 type CronRuntimeAuthorityLoadResult = {

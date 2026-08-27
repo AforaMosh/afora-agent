@@ -1,6 +1,6 @@
 // Resolves recent Gateway sessions and attaches the existing TUI to the selected key.
 import { cancel, isCancel } from "@clack/prompts";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import type { ErrorShape } from "../../packages/gateway-protocol/src/frame-guards.js";
 import { selectStyled } from "../../packages/terminal-core/src/prompt-select-styled.js";
 import { sanitizeTerminalText } from "../../packages/terminal-core/src/safe-text.js";
@@ -19,7 +19,7 @@ import type { ResumeCliOptions } from "./resume-cli.js";
 import { isTerminalInteractive } from "./terminal-interactivity.js";
 
 const RESUME_INTERACTIVE_TERMINAL_GUIDANCE =
-  "Attaching to a session requires an interactive terminal. Re-run `openclaw resume [query]` from an interactive terminal.";
+  "Attaching to a session requires an interactive terminal. Re-run `afora resume [query]` from an interactive terminal.";
 const RESUME_HANDOFF_MISSING =
   "This session is no longer available. Copy a fresh command from the Control UI.";
 const RESUME_HANDOFF_UNRESOLVED =
@@ -230,7 +230,7 @@ async function promptResumeSession(
   const choices = buildSessionChoices(sessions);
   if (choices.length === 0) {
     throw new Error(
-      "No recent sessions found. Run `openclaw sessions` to inspect sessions or `openclaw tui` to start one.",
+      "No recent sessions found. Run `afora sessions` to inspect sessions or `afora tui` to start one.",
     );
   }
   const selected = await selectStyled({
@@ -262,7 +262,7 @@ function reportResumeFailure(
   }
   defaultRuntime.error(`No recent session matched ${JSON.stringify(query)}.`);
   defaultRuntime.error(
-    "Run `openclaw resume` to choose from recent sessions or `openclaw sessions` to inspect all sessions.",
+    "Run `afora resume` to choose from recent sessions or `afora sessions` to inspect all sessions.",
   );
 }
 

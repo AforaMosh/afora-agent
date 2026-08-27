@@ -51,4 +51,4 @@ export {
 export { ChannelImplicitMentionsSchema } from "../config/zod-schema.implicit-mentions.js";
 export { ToolPolicySchema } from "../config/zod-schema.agent-runtime.js";
 export { isSafeScpRemoteHost } from "../infra/scp-host.js";
-export { isValidInboundPathRootPattern } from "@openclaw/media-core/inbound-path-policy";
+export { isValidInboundPathRootPattern } from "@afora/media-core/inbound-path-policy";

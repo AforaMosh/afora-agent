@@ -48,7 +48,7 @@ function settledFailedAttempt(): EmbeddedRunAttemptWithReceiptEvidence {
     currentAttemptAssistant: assistant,
     currentAttemptReplayMetadata: { hadPotentialSideEffects: true, replaySafe: false },
     replayMetadata: { hadPotentialSideEffects: true, replaySafe: false },
-    settledTurnFinalizationContext: { source: "openclaw-transcript", messages: messagesSnapshot },
+    settledTurnFinalizationContext: { source: "afora-transcript", messages: messagesSnapshot },
     lastToolError: {
       toolName: "exec",
       error: "post-processing error",
@@ -83,7 +83,7 @@ function finalizationInput(attempt: ReturnType<typeof settledFailedAttempt>) {
         admittedRunContext: createTestAdmittedRunContext("run-settled"),
         sessionId: "session-settled",
         runId: "run-settled",
-        workspaceDir: "/tmp/openclaw-test",
+        workspaceDir: "/tmp/afora-test",
         prompt: "finish the task",
         trigger: "cron",
         terminalReplyExpectation: "required",
@@ -104,7 +104,7 @@ function finalizationInput(attempt: ReturnType<typeof settledFailedAttempt>) {
       preparedAttempt: {
         runId: "run-settled",
         sessionId: "session-settled",
-        workspaceDir: "/tmp/openclaw-test",
+        workspaceDir: "/tmp/afora-test",
         prompt: "finish the task",
         timeoutMs: 60_000,
       },

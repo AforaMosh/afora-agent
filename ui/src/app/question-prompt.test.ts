@@ -3,8 +3,8 @@
 import {
   DEFAULT_GATEWAY_REQUEST_TIMEOUT_MS,
   type GatewayProtocolRequestOptions,
-} from "@openclaw/gateway-client/browser";
-import type { QuestionAnswers, QuestionResolveResult } from "@openclaw/gateway-protocol";
+} from "@afora/gateway-client/browser";
+import type { QuestionAnswers, QuestionResolveResult } from "@afora/gateway-protocol";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GatewayRequestError } from "../api/gateway.ts";
 import { i18n } from "../i18n/index.ts";

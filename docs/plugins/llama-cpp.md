@@ -1,16 +1,16 @@
 ---
-summary: "Run local GGUF chat and memory embeddings with an OpenClaw-managed llama.cpp server"
+summary: "Run local GGUF chat and memory embeddings with an Afora-managed llama.cpp server"
 read_when:
   - You want local text inference without an API key or separately managed model server
   - You want memory search embeddings from a local GGUF model
   - You are configuring memory.search.provider = "local"
-  - You need to inspect or repair OpenClaw's managed llama.cpp server
+  - You need to inspect or repair Afora's managed llama.cpp server
 title: "llama.cpp Provider"
 sidebarTitle: "llama.cpp Provider"
 ---
 
 The `llama-cpp` plugin manages a loopback-only `llama-server` for local GGUF
-chat and embeddings. OpenClaw installs a pinned, integrity-verified llama.cpp
+chat and embeddings. Afora installs a pinned, integrity-verified llama.cpp
 release, starts it only when a request needs it, reuses it across concurrent
 chat and embedding requests, and stops it after an idle period.
 
@@ -18,13 +18,13 @@ Install the official plugin before using either local inference or local memory
 embeddings:
 
 ```bash
-openclaw plugins install @openclaw/llama-cpp-provider
+afora plugins install @afora/llama-cpp-provider
 ```
 
 ## Guided setup
 
 Choose **llama.cpp** once during interactive onboarding or configuration.
-OpenClaw then:
+Afora then:
 
 1. Selects the verified llama-server build for the Gateway platform.
 2. Verifies the archive SHA-256 and the extracted server version.
@@ -37,7 +37,7 @@ The default chat model remains:
 
 `hf:unsloth/gemma-4-E4B-it-GGUF/gemma-4-E4B-it-Q4_K_M.gguf`
 
-Gemma 4 E4B IT Q4_K_M is about 5.0 GB. OpenClaw offers that download only on
+Gemma 4 E4B IT Q4_K_M is about 5.0 GB. Afora offers that download only on
 machines with at least 16 GiB of RAM. The default context cap is 65,536 tokens,
 which the full agent system prompt requires. The bundled EmbeddingGemma model is
 about 0.3 GB.
@@ -48,14 +48,14 @@ downloads during discovery.
 
 ## How requests run
 
-The provider uses OpenClaw's normal OpenAI-compatible chat, image, streaming,
-and tool transport. `llama-server` applies the GGUF chat template; OpenClaw
+The provider uses Afora's normal OpenAI-compatible chat, image, streaming,
+and tool transport. `llama-server` applies the GGUF chat template; Afora
 executes tool calls and returns their results to the model. The existing
 `llamacpp-gbnf` tool-schema compatibility profile remains enabled.
 
 One managed router owns separate presets for chat and embeddings. This lets
 `memory.search.provider: "local"` use a dedicated embedding GGUF through
-`/v1/embeddings` without creating a second OpenClaw process supervisor.
+`/v1/embeddings` without creating a second Afora process supervisor.
 
 ## Use another GGUF model
 
@@ -87,7 +87,7 @@ Example model entry:
 }
 ```
 
-The default managed cache is `~/.openclaw/models/llama.cpp`. Existing
+The default managed cache is `~/.afora/models/llama.cpp`. Existing
 `modelCacheDir` settings still win, and setup recognizes the former
 `~/.node-llama-cpp/models` default cache so upgrades do not redownload a model
 that is already present.
@@ -112,15 +112,15 @@ Set the memory provider to `local`:
 The plugin preserves the historical `local` provider/model cache identity, so
 the transport migration does not require a SQLite schema change or automatic
 memory reindex. A custom embedding `modelPath` remains its literal index
-identity. Run `openclaw memory status --index` if you intentionally change it.
+identity. Run `afora memory status --index` if you intentionally change it.
 
 ## Diagnostics
 
 Run:
 
 ```bash
-openclaw memory status --deep
-openclaw doctor
+afora memory status --deep
+afora doctor
 ```
 
 After the managed embedding server has handled a request, deep status reports
@@ -144,7 +144,7 @@ Local-service startup and exit logs include bounded, redacted stderr tails. See
 - Alpine/musl and platforms without a pinned official build fail with an
   actionable manual-server path rather than silently skipping setup.
 
-OpenClaw intentionally does not auto-select CUDA, ROCm, SYCL, OpenVINO, or
+Afora intentionally does not auto-select CUDA, ROCm, SYCL, OpenVINO, or
 Vulkan archives. Those builds add driver and companion-runtime contracts that
 cannot be verified safely from onboarding alone.
 
@@ -156,10 +156,10 @@ reinstalls the pinned build and rewrites the absolute `localService.command`.
 **Model missing:** configure a local GGUF path or rerun setup and approve the
 verified default download.
 
-**Server starts but the model fails to load:** inspect `openclaw logs --follow`
-and `openclaw memory status --deep`. The managed service error includes the
+**Server starts but the model fails to load:** inspect `afora logs --follow`
+and `afora memory status --deep`. The managed service error includes the
 bounded server stderr tail.
 
-**Only keyword memory matches:** run `openclaw memory status --deep`, repair the
-reported endpoint/model issue, then run `openclaw memory index --force` only if
+**Only keyword memory matches:** run `afora memory status --deep`, repair the
+reported endpoint/model issue, then run `afora memory index --force` only if
 status reports an index identity mismatch.

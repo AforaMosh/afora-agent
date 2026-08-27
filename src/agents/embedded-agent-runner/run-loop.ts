@@ -1,5 +1,5 @@
 /** Prepared embedded-agent loop and cleanup. */
-import { OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST } from "../../context-engine/host-compat.js";
+import { AFORA_EMBEDDED_CONTEXT_ENGINE_HOST } from "../../context-engine/host-compat.js";
 import { resolveContextEngineOwnerPluginId } from "../../context-engine/registry.js";
 import { buildContextEngineRuntimeSettings } from "../../context-engine/runtime-settings.js";
 import { formatErrorMessage } from "../../infra/errors.js";
@@ -161,7 +161,7 @@ export async function runPreparedEmbeddedLoop(
   }) => {
     const fallbackReason = resolveRuntimeFallbackReason();
     return buildContextEngineRuntimeSettings({
-      contextEngineHost: OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST,
+      contextEngineHost: AFORA_EMBEDDED_CONTEXT_ENGINE_HOST,
       provider,
       requestedModel: requestedModelId,
       resolvedModel: modelId,

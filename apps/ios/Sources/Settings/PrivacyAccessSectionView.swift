@@ -47,9 +47,9 @@ struct PrivacyAccessSectionView: View {
             self.remindersRow
         } label: {
             Text("Privacy & Access")
-                .font(OpenClawType.subheadSemiBold)
+                .font(AforaType.subheadSemiBold)
         }
-        .font(OpenClawType.body)
+        .font(AforaType.body)
         .onAppear { self.refreshAll() }
         .onChange(of: self.scenePhase) { _, phase in
             if phase == .active {

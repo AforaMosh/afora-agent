@@ -14,17 +14,17 @@ import { readSqliteNumberPragma } from "../infra/sqlite-pragma.test-support.js";
 import { resetLogger, setLoggerOverride } from "../logging/logger.js";
 import { loggingState } from "../logging/state.js";
 import { createWarnLogCapture } from "../logging/test-helpers/warn-log-capture.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  closeOpenClawStateDatabase,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+  closeAforaStateDatabase,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-  withOpenClawTestState,
-} from "../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+  withAforaTestState,
+} from "../test-utils/afora-test-state.js";
 import { createManagedTaskFlow as createManagedTaskFlowOrNull } from "./task-flow-registry.js";
 import type { TaskFlowRecord } from "./task-flow-registry.types.js";
 import {
@@ -79,7 +79,7 @@ function createManagedTaskFlow(
   return flow;
 }
 type TaskRegistryTestDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "task_delivery_state" | "task_runs"
 >;
 
@@ -135,10 +135,10 @@ function createUnsafeTaskOwnerIndex(database: DatabaseSync): void {
 
 describe("task-registry store runtime", () => {
   it("does not create shared state for a read-only task snapshot", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-task-store-readonly-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-task-store-readonly-" },
       async () => {
-        const statePath = resolveOpenClawStateSqlitePath();
+        const statePath = resolveAforaStateSqlitePath();
         expect(() => statSync(statePath)).toThrow();
 
         const snapshot = loadTaskRegistryStateFromSqliteReadOnly();
@@ -148,12 +148,12 @@ describe("task-registry store runtime", () => {
       },
     );
   });
-  let testState: OpenClawTestState;
+  let testState: AforaTestState;
 
   beforeAll(async () => {
-    testState = await createOpenClawTestState({
+    testState = await createAforaTestState({
       layout: "state-only",
-      prefix: "openclaw-task-store-suite-",
+      prefix: "afora-task-store-suite-",
     });
   });
 
@@ -210,7 +210,7 @@ describe("task-registry store runtime", () => {
   });
 
   it("logs restore parser failures and keeps the failure sticky", async () => {
-    const warnLogs = createWarnLogCapture("openclaw-task-registry-restore-test");
+    const warnLogs = createWarnLogCapture("afora-task-registry-restore-test");
     const invalidValue = "not-requested";
     const loadSnapshot = vi.fn(() => {
       throw new Error(`Invalid persisted task delivery status: ${JSON.stringify(invalidValue)}`);
@@ -388,8 +388,8 @@ describe("task-registry store runtime", () => {
   it.each(["verbose", "", "state-change", "DONE_ONLY"])(
     "rejects an invalid notification policy before it can poison a SQLite restart (%s)",
     async (invalidPolicy) => {
-      await withOpenClawTestState(
-        { layout: "state-only", prefix: "openclaw-task-invalid-notify-" },
+      await withAforaTestState(
+        { layout: "state-only", prefix: "afora-task-invalid-notify-" },
         async () => {
           resetTaskRegistryForTests();
           const created = createTaskRecord({
@@ -403,7 +403,7 @@ describe("task-registry store runtime", () => {
             deliveryStatus: "pending",
             notifyPolicy: "done_only",
           });
-          const database = openOpenClawStateDatabase();
+          const database = openAforaStateDatabase();
           const db = getNodeSqliteKysely<TaskRegistryTestDatabase>(database.db);
 
           let mutationError: string | null = null;
@@ -465,8 +465,8 @@ describe("task-registry store runtime", () => {
   it.each(["done_only", "state_changes", "silent"] as const)(
     "persists valid notification policy %s across a fresh SQLite restart",
     async (notifyPolicy) => {
-      await withOpenClawTestState(
-        { layout: "state-only", prefix: "openclaw-task-valid-notify-" },
+      await withAforaTestState(
+        { layout: "state-only", prefix: "afora-task-valid-notify-" },
         async () => {
           resetTaskRegistryForTests();
           const created = createTaskRecord({
@@ -492,8 +492,8 @@ describe("task-registry store runtime", () => {
   );
 
   it("rejects corrupt persisted task rows during sqlite restore", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-task-store-corrupt-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-task-store-corrupt-" },
       async () => {
         resetTaskRegistryForTests();
         const created = createTaskRecord({
@@ -508,7 +508,7 @@ describe("task-registry store runtime", () => {
           notifyPolicy: "silent",
         });
 
-        const database = openOpenClawStateDatabase();
+        const database = openAforaStateDatabase();
         const db = getNodeSqliteKysely<TaskRegistryTestDatabase>(database.db);
         executeSqliteQuerySync(
           database.db,
@@ -521,8 +521,8 @@ describe("task-registry store runtime", () => {
   });
 
   it("drops invalid requester origins during sqlite restore", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-task-store-invalid-origin-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-task-store-invalid-origin-" },
       async () => {
         resetTaskRegistryForTests();
         const created = createTaskRecord({
@@ -540,7 +540,7 @@ describe("task-registry store runtime", () => {
           },
         });
 
-        const database = openOpenClawStateDatabase();
+        const database = openAforaStateDatabase();
         const db = getNodeSqliteKysely<TaskRegistryTestDatabase>(database.db);
         executeSqliteQuerySync(
           database.db,
@@ -557,8 +557,8 @@ describe("task-registry store runtime", () => {
   });
 
   it("round-trips runtime-owned task detail through sqlite", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-task-store-detail-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-task-store-detail-" },
       async () => {
         const task: TaskRecord = {
           ...createStoredTask(),
@@ -583,8 +583,8 @@ describe("task-registry store runtime", () => {
   });
 
   it("preserves explicit null task detail through sqlite", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-task-store-null-detail-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-task-store-null-detail-" },
       async () => {
         const task: TaskRecord = {
           ...createStoredTask(),
@@ -602,8 +602,8 @@ describe("task-registry store runtime", () => {
   });
 
   it("loads task and delivery rows from one sqlite read snapshot", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-task-store-read-snapshot-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-task-store-read-snapshot-" },
       async () => {
         resetTaskRegistryForTests();
         const created = createTaskRecord({
@@ -620,7 +620,7 @@ describe("task-registry store runtime", () => {
             to: "C1234567890",
           },
         });
-        const database = openOpenClawStateDatabase();
+        const database = openAforaStateDatabase();
         database.db
           .prepare("UPDATE task_delivery_state SET last_notified_event_at = ? WHERE task_id = ?")
           .run(100, created.taskId);
@@ -658,8 +658,8 @@ describe("task-registry store runtime", () => {
   });
 
   it("bypasses stale owner indexes for complete fresh results", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-task-store-owner-index-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-task-store-owner-index-" },
       async () => {
         resetTaskRegistryForTests();
         const ownerKey = "agent:main:main";
@@ -689,7 +689,7 @@ describe("task-registry store runtime", () => {
           target.taskId,
         );
 
-        const database = openOpenClawStateDatabase();
+        const database = openAforaStateDatabase();
         createUnsafeTaskOwnerIndex(database.db);
         expect(database.db.prepare("PRAGMA quick_check").get()).toEqual({ quick_check: "ok" });
         expect(database.db.prepare("PRAGMA integrity_check('task_runs')").all()).toEqual(
@@ -981,8 +981,8 @@ describe("task-registry store runtime", () => {
   });
 
   it("persists executor and requester agent ids in sqlite task rows", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-task-agent-id-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-task-agent-id-" },
       async () => {
         const created = createTaskRecord({
           runtime: "subagent",
@@ -997,7 +997,7 @@ describe("task-registry store runtime", () => {
           deliveryStatus: "pending",
         });
 
-        const database = openOpenClawStateDatabase();
+        const database = openAforaStateDatabase();
         const db = getNodeSqliteKysely<TaskRegistryTestDatabase>(database.db);
         const row = executeSqliteQueryTakeFirstSync(
           database.db,
@@ -1025,8 +1025,8 @@ describe("task-registry store runtime", () => {
   });
 
   it("persists tool activity across sqlite restore", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-task-tool-activity-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-task-tool-activity-" },
       async () => {
         const created = createTaskRecord({
           runtime: "subagent",
@@ -1055,8 +1055,8 @@ describe("task-registry store runtime", () => {
   });
 
   it("persists requester origin atomically when creating sqlite tasks", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-task-create-origin-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-task-create-origin-" },
       async () => {
         const created = createTaskRecord({
           runtime: "acp",
@@ -1163,8 +1163,8 @@ describe("task-registry store runtime", () => {
   });
 
   it("prunes stale sqlite delivery state while retaining current rows", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-task-delivery-prune-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-task-delivery-prune-" },
       async () => {
         const taskA = createStoredTask();
         const taskB: TaskRecord = {
@@ -1208,8 +1208,8 @@ describe("task-registry store runtime", () => {
   });
 
   it("prunes large sqlite snapshots without binding every task id at once", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-task-large-prune-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-task-large-prune-" },
       async () => {
         const tasks = new Map<string, TaskRecord>();
         const deliveryStates = new Map<string, TaskDeliveryState>();
@@ -1246,8 +1246,8 @@ describe("task-registry store runtime", () => {
   });
 
   it("reopens after the shared state database is closed", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-task-store-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-task-store-" },
       async () => {
         const task = createStoredTask();
         saveTaskRegistryStateToSqlite({
@@ -1255,7 +1255,7 @@ describe("task-registry store runtime", () => {
           deliveryStates: new Map(),
         });
 
-        closeOpenClawStateDatabase();
+        closeAforaStateDatabase();
 
         const restored = loadTaskRegistryStateFromSqlite();
         expect(restored.tasks.get(task.taskId)).toEqual(task);
@@ -1267,8 +1267,8 @@ describe("task-registry store runtime", () => {
     if (process.platform === "win32") {
       return;
     }
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-task-store-" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-task-store-" },
       async () => {
         createTaskRecord({
           runtime: "cron",
@@ -1282,9 +1282,9 @@ describe("task-registry store runtime", () => {
           notifyPolicy: "silent",
         });
 
-        const databasePath = resolveOpenClawStateSqlitePath(process.env);
+        const databasePath = resolveAforaStateSqlitePath(process.env);
         const registryDir = path.dirname(databasePath);
-        expect(databasePath.endsWith(path.join("state", "openclaw.sqlite"))).toBe(true);
+        expect(databasePath.endsWith(path.join("state", "afora.sqlite"))).toBe(true);
         expect(statSync(registryDir).mode & 0o777).toBe(0o700);
         expect(statSync(databasePath).mode & 0o777).toBe(0o600);
       },

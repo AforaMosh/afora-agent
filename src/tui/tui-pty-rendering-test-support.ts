@@ -6,7 +6,7 @@ import {
 const STREAM_PROMPT = "burst streaming proof";
 const TOOL_PROMPT = "tool chronology proof";
 const TOKENS = Array.from({ length: 128 }, (_, index) => `T${String(index).padStart(3, "0")}`);
-const dimensions = { OPENCLAW_TUI_PTY_COLS: "120", OPENCLAW_TUI_PTY_ROWS: "32" };
+const dimensions = { AFORA_TUI_PTY_COLS: "120", AFORA_TUI_PTY_ROWS: "32" };
 type Fixture = Awaited<ReturnType<StartTuiPtyFixture>>;
 const text = (rows: string[]) => rows.join("\n");
 const tokens = (rows: string[]) => text(rows).match(/\bT\d{3}\b/gu) ?? [];
@@ -73,8 +73,8 @@ export async function exerciseToolCardRendering(start: StartTuiPtyFixture, timeo
   await withFixture(
     start,
     {
-      OPENCLAW_TUI_PTY_MODEL: "fixture-provider/fixture-model",
-      OPENCLAW_TUI_PTY_VERBOSE_LEVEL: "full",
+      AFORA_TUI_PTY_MODEL: "fixture-provider/fixture-model",
+      AFORA_TUI_PTY_VERBOSE_LEVEL: "full",
     },
     timeoutMs,
     async (fixture) => {
@@ -110,9 +110,9 @@ export const TUI_PTY_RENDERING_FIXTURE_SCRIPT = `
   }
   async function runToolCardRendering(backend, runId, sessionKey) {
     emitAssistant(backend, runId, sessionKey, "delta", "PTY_BEFORE_TOOL");
-    const base = { toolCallId: "pty-rendering-tool", name: process.env.OPENCLAW_TUI_PTY_TOOL_NAME ?? "read_file" };
+    const base = { toolCallId: "pty-rendering-tool", name: process.env.AFORA_TUI_PTY_TOOL_NAME ?? "read_file" };
     backend.onEvent?.({ event: "agent", payload: { runId, sessionKey, stream: "tool", data: { ...base, phase: "start", args: { path: "chronology-proof.txt" } } } });
-    if (process.env.OPENCLAW_TUI_PTY_VERBOSE_LEVEL === "full") {
+    if (process.env.AFORA_TUI_PTY_VERBOSE_LEVEL === "full") {
       backend.onEvent?.({ event: "agent", payload: { runId, sessionKey, stream: "tool", data: { ...base, phase: "update", partialResult: { content: [{ type: "text", text: "PTY_TOOL_PARTIAL" }] } } } });
       record("toolPartialReady", { runId }); await waitForRenderingRelease("tool");
       backend.onEvent?.({ event: "agent", payload: { runId, sessionKey, stream: "tool", data: { ...base, phase: "result", result: { content: [{ type: "text", text: "PTY_TOOL_RESULT" }] } } } });

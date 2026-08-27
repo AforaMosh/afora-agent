@@ -27,7 +27,7 @@ afterEach(() => {
 
 describe("docs-list", () => {
   it("reports a concise error outside a source checkout", () => {
-    const tempRepoRoot = makeTempRepoRoot("openclaw-docs-list-missing-");
+    const tempRepoRoot = makeTempRepoRoot("afora-docs-list-missing-");
     const result = spawnSync(process.execPath, [docsListScriptPath], {
       cwd: tempRepoRoot,
       encoding: "utf8",
@@ -38,7 +38,7 @@ describe("docs-list", () => {
   });
 
   it("prints single-line read_when strings as read hints", () => {
-    const tempRepoRoot = makeTempRepoRoot("openclaw-docs-list-");
+    const tempRepoRoot = makeTempRepoRoot("afora-docs-list-");
     mkdirSync(path.join(tempRepoRoot, "docs"), { recursive: true });
     writeFileSync(
       path.join(tempRepoRoot, "docs", "page.md"),
@@ -57,7 +57,7 @@ read_when: "Read this page when the hint is inline."
   });
 
   it("renders the publish docs map on demand without creating a mirror", () => {
-    const tempRepoRoot = makeTempRepoRoot("openclaw-docs-headings-");
+    const tempRepoRoot = makeTempRepoRoot("afora-docs-headings-");
     mkdirSync(path.join(tempRepoRoot, "docs", "nested"), { recursive: true });
     writeFileSync(
       path.join(tempRepoRoot, "docs", "page.md"),
@@ -95,7 +95,7 @@ summary: "Page"
   });
 
   it("normalizes injected Windows paths for nested page routes", () => {
-    const tempRepoRoot = makeTempRepoRoot("openclaw-docs-headings-windows-");
+    const tempRepoRoot = makeTempRepoRoot("afora-docs-headings-windows-");
     const docsDir = path.join(tempRepoRoot, "docs");
     mkdirSync(path.join(docsDir, "nested"), { recursive: true });
     writeFileSync(path.join(docsDir, "nested", "index.mdx"), "# Nested index\n");

@@ -2,9 +2,9 @@ import type {
   WorkboardCard,
   WorkboardExecutionStatus,
   WorkboardStatus,
-} from "@openclaw/workboard-contract";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
-import type { OpenClawPluginApi, OpenClawPluginService } from "../api.js";
+} from "@afora/workboard-contract";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import type { AforaPluginApi, AforaPluginService } from "../api.js";
 import {
   workboardCardMatchesLifecycleLink,
   workboardCardSessionLookupKey,
@@ -241,7 +241,7 @@ function normalizeSession(value: unknown): WorkboardLifecycleSession | undefined
 }
 
 export async function readWorkboardLifecycleSessions(
-  gateway: Pick<OpenClawPluginApi["runtime"]["gateway"], "isAvailable" | "request">,
+  gateway: Pick<AforaPluginApi["runtime"]["gateway"], "isAvailable" | "request">,
 ): Promise<WorkboardLifecycleSessionSnapshot> {
   if (!(await gateway.isAvailable())) {
     return { sessions: [], complete: false };
@@ -274,7 +274,7 @@ export function createWorkboardLifecycleService(params: {
   store: WorkboardStore;
   readSessions: () => Promise<WorkboardLifecycleSessionSnapshot>;
   now?: () => number;
-}): OpenClawPluginService {
+}): AforaPluginService {
   let generation = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
   return {

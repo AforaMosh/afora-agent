@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { WorkboardCard } from "@openclaw/workboard-contract";
+import type { WorkboardCard } from "@afora/workboard-contract";
 import { assertCanMutateClaimedCard } from "./store-card-helpers.js";
 import { MAX_CARD_COMMENTS } from "./store-constants.js";
 import { WorkboardEnrichmentStore } from "./store-enrichment.js";

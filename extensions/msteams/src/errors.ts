@@ -1,10 +1,10 @@
 // Msteams plugin module implements errors behavior.
-import { asFiniteNumberInRange, parseStrictFiniteNumber } from "openclaw/plugin-sdk/number-runtime";
+import { asFiniteNumberInRange, parseStrictFiniteNumber } from "afora-agent/plugin-sdk/number-runtime";
 import {
   isTransientNetworkError,
   parseRetryAfterHeaderSeconds,
-} from "openclaw/plugin-sdk/retry-runtime";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/retry-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 const MAX_SAFE_RETRY_AFTER_SECONDS = Number.MAX_SAFE_INTEGER / 1000;
 

@@ -1,11 +1,11 @@
 // Legacy provider-shape migration tests cover doctor repair of old provider config shapes.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../../config/types.js";
+import type { AforaConfig } from "../../../config/types.js";
 import { LEGACY_CONFIG_MIGRATIONS_RUNTIME_TTS } from "./legacy-config-migrations.runtime.tts.js";
 import { normalizeLegacyTalkConfig } from "./legacy-talk-config-normalizer.js";
 
 function migrateLegacyConfig(raw: unknown): {
-  config: OpenClawConfig | null;
+  config: AforaConfig | null;
   changes: string[];
 } {
   if (!raw || typeof raw !== "object") {
@@ -19,7 +19,7 @@ function migrateLegacyConfig(raw: unknown): {
   if (changes.length === 0) {
     return { config: null, changes };
   }
-  return { config: next as OpenClawConfig | null, changes };
+  return { config: next as AforaConfig | null, changes };
 }
 
 describe("legacy migrate provider-shaped config", () => {
@@ -124,7 +124,7 @@ describe("legacy migrate provider-shaped config", () => {
           brain: "agent-consult",
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const changes: string[] = [];
 
     const migrated = normalizeLegacyTalkConfig(input, changes);

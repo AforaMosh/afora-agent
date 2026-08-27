@@ -1,4 +1,4 @@
-// Migrates OpenClaw-owned SQLite tables to canonical STRICT schemas.
+// Migrates Afora-owned SQLite tables to canonical STRICT schemas.
 import type { DatabaseSync } from "node:sqlite";
 import { openNodeSqliteDatabase } from "./node-sqlite.js";
 import { assertSqliteIntegrity } from "./sqlite-integrity.js";
@@ -58,7 +58,7 @@ export type SqliteStrictMigrationResult = {
 };
 
 const DEFAULT_STRICT_MIGRATION_BUSY_TIMEOUT_MS = 5_000;
-const STRICT_MIGRATION_TABLE_PREFIX = "__openclaw_strict_migration_";
+const STRICT_MIGRATION_TABLE_PREFIX = "__afora_strict_migration_";
 const SQLITE_ROWID_ALIASES = ["_rowid_", "rowid", "oid"] as const;
 
 function quoteSqliteIdentifier(identifier: string): string {
@@ -372,7 +372,7 @@ export function migrateSqliteSchemaToStrictInTransaction(
   return { migratedTables: tablesToMigrate.map((table) => table.name) };
 }
 
-/** Atomically upgrade OpenClaw-owned tables described by a canonical STRICT schema. */
+/** Atomically upgrade Afora-owned tables described by a canonical STRICT schema. */
 export function migrateSqliteSchemaToStrict(
   db: DatabaseSync,
   schemaSql: string,

@@ -44,7 +44,7 @@ describe("worker Browser runtime", () => {
     const runtime = await createWorkerBrowserToolRuntime({
       descriptor: {
         cdpUrl: "http://127.0.0.1:9222",
-        launcherPath: "/usr/local/bin/openclaw-worker-browser",
+        launcherPath: "/usr/local/bin/afora-worker-browser",
       },
       sessionKey: "worker:session-1",
       stateDir: "/tmp/worker-state",
@@ -68,7 +68,7 @@ describe("worker Browser runtime", () => {
       .ensureAttachTarget as () => Promise<void>;
     await ensureAttachTarget();
     expect(mocks.execFile).toHaveBeenCalledWith(
-      "/usr/local/bin/openclaw-worker-browser",
+      "/usr/local/bin/afora-worker-browser",
       [],
       {
         timeout: 30_000,
@@ -91,7 +91,7 @@ describe("worker Browser runtime", () => {
     await createWorkerBrowserToolRuntime({
       descriptor: {
         cdpUrl: "http://127.0.0.1:9222",
-        launcherPath: "/usr/local/bin/openclaw-worker-browser",
+        launcherPath: "/usr/local/bin/afora-worker-browser",
       },
       sessionKey: "worker:session-1",
       stateDir: "/tmp/worker-state",
@@ -126,7 +126,7 @@ describe("worker Browser runtime", () => {
     await createWorkerBrowserToolRuntime({
       descriptor: {
         cdpUrl: "http://127.0.0.1:9222",
-        launcherPath: "/usr/local/bin/openclaw-worker-browser",
+        launcherPath: "/usr/local/bin/afora-worker-browser",
       },
       sessionKey: "worker:session-1",
       stateDir: "/tmp/worker-state",

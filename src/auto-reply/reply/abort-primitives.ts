@@ -1,5 +1,5 @@
 // Normalizes abort command primitives before runtime cancellation.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { resolveGlobalMap } from "../../shared/global-singleton.js";
 import { normalizeCommandBody } from "../commands-registry-normalize.js";
 import type { CommandNormalizeOptions } from "../commands-registry.types.js";
@@ -33,8 +33,8 @@ const ABORT_TRIGGERS = new Set([
   "hoer auf",
   "stopp",
   "pare",
-  "stop openclaw",
-  "openclaw stop",
+  "stop afora",
+  "afora stop",
   "stop action",
   "stop current action",
   "stop run",
@@ -50,7 +50,7 @@ const ABORT_TRIGGERS = new Set([
   "stop please",
 ]);
 const ABORT_MEMORY = resolveGlobalMap<string, boolean>(
-  Symbol.for("openclaw.abortMemory"),
+  Symbol.for("afora.abortMemory"),
   "close-and-restart",
 );
 const ABORT_MEMORY_MAX = 2000;

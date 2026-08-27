@@ -2,15 +2,15 @@
 summary: "Experimental Cloudflare Worker and Container deployment with Litestream backups to R2"
 title: "Cloudflare Containers"
 read_when:
-  - You want to run OpenClaw on Cloudflare Containers
+  - You want to run Afora on Cloudflare Containers
   - You are evaluating R2-backed SQLite recovery on ephemeral containers
   - You need to choose between webhook scale-to-zero and always-on channels
 ---
 
-Run one OpenClaw installation behind a Cloudflare Worker and a named Durable Object, with the official OpenClaw image and Litestream replication to R2.
+Run one Afora installation behind a Cloudflare Worker and a named Durable Object, with the official Afora image and Litestream replication to R2.
 
 <Warning>
-  This deployment target is experimental. Litestream protects SQLite databases, not the complete OpenClaw state directory. Read [Limits and recovery](#limits-and-recovery) before using production credentials.
+  This deployment target is experimental. Litestream protects SQLite databases, not the complete Afora state directory. Read [Limits and recovery](#limits-and-recovery) before using production credentials.
 </Warning>
 
 ## What you need
@@ -19,20 +19,20 @@ Run one OpenClaw installation behind a Cloudflare Worker and a named Durable Obj
 - Docker Buildx with `linux/amd64` support
 - A public Docker Hub repository for the derived image
 - Node.js and npm
-- Provider and channel credentials for your OpenClaw setup
+- Provider and channel credentials for your Afora setup
 
-The template lives in [`scripts/cloudflare`](https://github.com/openclaw/openclaw/tree/main/scripts/cloudflare). It deploys a `standard-2` Container with `max_instances: 1`.
+The template lives in [`scripts/cloudflare`](https://github.com/AforaMosh/afora-agent/tree/main/scripts/cloudflare). It deploys a `standard-2` Container with `max_instances: 1`.
 
 ## How it works
 
-The Worker forwards every HTTP and WebSocket request to one stable Durable Object name. That Durable Object owns one Container instance and is the single-writer fence around the Litestream replica. The Container exposes OpenClaw on port `8080`, and the Durable Object polls `/healthz` there before routing to it.
+The Worker forwards every HTTP and WebSocket request to one stable Durable Object name. That Durable Object owns one Container instance and is the single-writer fence around the Litestream replica. The Container exposes Afora on port `8080`, and the Durable Object polls `/healthz` there before routing to it.
 
 ```mermaid
 flowchart TD
     client[Channels, browsers, API clients]
     worker[Cloudflare Worker]
     durable[Durable Object, one stable name]
-    container[Container running the OpenClaw Gateway on 8080]
+    container[Container running the Afora Gateway on 8080]
     litestream[Litestream sidecar process]
     r2[(R2 bucket of SQLite replicas)]
 
@@ -46,8 +46,8 @@ flowchart TD
 
 Litestream watches both SQLite roots:
 
-- `/home/node/.openclaw/state/*.sqlite`
-- `/home/node/.openclaw/agents/**/*.sqlite`
+- `/home/node/.afora/state/*.sqlite`
+- `/home/node/.afora/agents/**/*.sqlite`
 
 At boot, the entrypoint uses R2's S3 `ListObjectsV2` API as the restore manifest, rejects paths outside those roots, restores each discovered database, and only then starts the Gateway.
 
@@ -57,11 +57,11 @@ Measured on this template against a real R2 bucket: about 2.4 seconds from write
 
 <Steps>
   <Step title="Prepare the template">
-    Clone OpenClaw and enter the template directory:
+    Clone Afora and enter the template directory:
 
     ```bash
-    git clone https://github.com/openclaw/openclaw.git
-    cd openclaw/scripts/cloudflare
+    git clone https://github.com/AforaMosh/afora-agent.git
+    cd afora/scripts/cloudflare
     npm install
     npx wrangler login
     npx wrangler whoami
@@ -75,7 +75,7 @@ Measured on this template against a real R2 bucket: about 2.4 seconds from write
     Create the bucket:
 
     ```bash
-    npx wrangler r2 bucket create openclaw-backups
+    npx wrangler r2 bucket create afora-backups
     ```
 
     In the Cloudflare dashboard, create an R2 API token with object read/write access limited to that bucket. Keep the access key ID and secret access key out of the checkout.
@@ -87,18 +87,18 @@ Measured on this template against a real R2 bucket: about 2.4 seconds from write
   </Step>
 
   <Step title="Publish the Container image">
-    Replace `<official-openclaw-image-digest>` in `Dockerfile` with an immutable digest from the official [`openclaw/openclaw`](https://hub.docker.com/r/openclaw/openclaw) Docker Hub repository.
+    Replace `<official-afora-image-digest>` in `Dockerfile` with an immutable digest from the official [`AforaMosh/afora-agent`](https://hub.docker.com/r/AforaMosh/afora-agent) Docker Hub repository.
 
     Build the derived image for Cloudflare's required architecture and push it to a public Docker Hub repository:
 
     ```bash
     docker buildx build \
       --platform linux/amd64 \
-      --tag docker.io/<docker-hub-user>/openclaw-cloudflare:<version> \
+      --tag docker.io/<docker-hub-user>/afora-cloudflare:<version> \
       --push \
       .
     docker buildx imagetools inspect \
-      docker.io/<docker-hub-user>/openclaw-cloudflare:<version>
+      docker.io/<docker-hub-user>/afora-cloudflare:<version>
     ```
 
     Replace the `containers[].image` placeholder in `wrangler.jsonc` with the resulting immutable `docker.io/...@sha256:...` reference. Cloudflare Containers can pull public Docker Hub images directly; GHCR is not a supported source for this template.
@@ -123,7 +123,7 @@ Measured on this template against a real R2 bucket: about 2.4 seconds from write
     ```bash
     npx wrangler secret put LITESTREAM_ACCESS_KEY_ID
     npx wrangler secret put LITESTREAM_SECRET_ACCESS_KEY
-    npx wrangler secret put OPENCLAW_GATEWAY_TOKEN
+    npx wrangler secret put AFORA_GATEWAY_TOKEN
     ```
 
     Add provider and channel variables as needed. For example:
@@ -137,7 +137,7 @@ Measured on this template against a real R2 bucket: about 2.4 seconds from write
 
   </Step>
 
-  <Step title="Bootstrap OpenClaw">
+  <Step title="Bootstrap Afora">
     First boot needs one interactive session inside the Container. SSH access ships disabled; enable it temporarily by adding this to the container entry in `wrangler.jsonc`, then redeploy:
 
     ```jsonc
@@ -158,16 +158,16 @@ Measured on this template against a real R2 bucket: about 2.4 seconds from write
 
     ```bash
     cd /app
-    node openclaw.mjs onboard --non-interactive --accept-risk --skip-health \
+    node afora.mjs onboard --non-interactive --accept-risk --skip-health \
       --mode local \
       --auth-choice openai-api-key \
       --secret-input-mode ref \
       --gateway-auth token \
-      --gateway-token-ref-env OPENCLAW_GATEWAY_TOKEN \
+      --gateway-token-ref-env AFORA_GATEWAY_TOKEN \
       --skip-channels \
       --no-install-daemon
-    node openclaw.mjs channels add --channel telegram --use-env
-    node openclaw.mjs doctor --json
+    node afora.mjs channels add --channel telegram --use-env
+    node afora.mjs doctor --json
     ```
 
     Keep your exact bootstrap recipe in a private, reproducible runbook. A fresh Container disk does not retain the generated config.
@@ -183,14 +183,14 @@ Confirm the Gateway answers. `/healthz` reports that the listener is up. `/start
 
 ```bash
 curl -sS https://<worker-subdomain>.workers.dev/healthz
-curl -sS -H "Authorization: Bearer $OPENCLAW_GATEWAY_TOKEN" \
+curl -sS -H "Authorization: Bearer $AFORA_GATEWAY_TOKEN" \
   https://<worker-subdomain>.workers.dev/readyz
 ```
 
 Confirm replication is actually reaching R2. Litestream writes keys under `replicas/state/<database>/<generation>/`, so list that prefix with any S3-compatible client using the same R2 credentials you gave Litestream. Wrangler cannot list object keys, only fetch them by exact path:
 
 ```bash
-aws s3 ls "s3://openclaw-backups/replicas/" --recursive \
+aws s3 ls "s3://afora-backups/replicas/" --recursive \
   --endpoint-url "https://<account-id>.r2.cloudflarestorage.com"
 ```
 
@@ -216,7 +216,7 @@ This matters for the lifecycle decision below:
 - **Socket channels keep the Container awake**, so they pay the always-on rate. A small always-on virtual machine is often cheaper. Choose Cloudflare here for its operational model, colocation with other Cloudflare services, or the R2 durability path, not to save money.
 - **Webhook-only installations sleep**, and a sleeping Container bills nothing. That is where this target is genuinely inexpensive.
 
-Verify current rates on [Cloudflare's Containers pricing page](https://developers.cloudflare.com/containers/pricing/) before committing; these figures are estimates from the published rate card and change independently of OpenClaw.
+Verify current rates on [Cloudflare's Containers pricing page](https://developers.cloudflare.com/containers/pricing/) before committing; these figures are estimates from the published rate card and change independently of Afora.
 
 ## Observability
 
@@ -232,31 +232,31 @@ Gateway logs stay inside the Container. Reach them over the temporary SSH sessio
 
 ## Choose the lifecycle mode
 
-`OPENCLAW_WEBHOOK_ONLY` defaults to `false`, which keeps the Container running through idle periods. Keep this default for channels that maintain sockets or long-lived processes, including:
+`AFORA_WEBHOOK_ONLY` defaults to `false`, which keeps the Container running through idle periods. Keep this default for channels that maintain sockets or long-lived processes, including:
 
 - Discord
 - Slack Socket Mode
 - WhatsApp
 
-Set `OPENCLAW_WEBHOOK_ONLY` to `true` only when every enabled channel receives traffic through HTTP webhooks. In that mode, the Container stops after ten idle minutes and cold-starts on the next request.
+Set `AFORA_WEBHOOK_ONLY` to `true` only when every enabled channel receives traffic through HTTP webhooks. In that mode, the Container stops after ten idle minutes and cold-starts on the next request.
 
 <Warning>
-  Scale-to-zero starts with a fresh disk. Enable it only when an external process can reapply your declarative bootstrap. Litestream restores SQLite but cannot recreate `openclaw.json`, credential files, installed plugins, or workspaces.
+  Scale-to-zero starts with a fresh disk. Enable it only when an external process can reapply your declarative bootstrap. Litestream restores SQLite but cannot recreate `afora.json`, credential files, installed plugins, or workspaces.
 </Warning>
 
 ## Limits and recovery
 
 - **Single writer:** every request resolves the same Durable Object name, and Cloudflare runs one live Durable Object instance for that name. Do not increase `max_instances` or introduce alternate routing around this fence. A brief old/new Container overlap during a platform replacement or rollout is an accepted experimental tradeoff.
 - **Recovery point:** the one-second Litestream sync interval normally produces a seconds-scale RPO. It is not synchronous replication, and abrupt termination can lose writes that have not reached R2.
-- **Ephemeral disk:** every sleep, replacement, or host restart starts from the image plus the restored SQLite databases. Use [full OpenClaw archives](/install/backups#full-archives) for config, credential files, plugin files, and workspaces.
+- **Ephemeral disk:** every sleep, replacement, or host restart starts from the image plus the restored SQLite databases. Use [full Afora archives](/install/backups#full-archives) for config, credential files, plugin files, and workspaces.
 - **Rollback:** older database bytes are time travel. Ratcheting channel credentials, especially WhatsApp, can desynchronize; approvals and delivery/dedupe state also roll back. Relink affected channels and review pending approvals before resuming. See [Restore](/install/backups#restore).
 - **WebSockets:** Worker and Container proxying supports WebSockets. Cloudflare limits each received WebSocket message to 32 MiB.
 - **Egress:** outbound requests use shared Cloudflare IP space. This target does not provide a fixed egress address.
-- **Provider boundary:** this is a deployment template, not an OpenClaw `cloudWorkers` provider. Its operator SSH access does not implement that provider's SSH execution contract.
+- **Provider boundary:** this is a deployment template, not an Afora `cloudWorkers` provider. Its operator SSH access does not implement that provider's SSH execution contract.
 
 ## Update
 
-Build a new derived image from a new immutable official OpenClaw digest, push it, update the derived digest in `wrangler.jsonc`, and deploy:
+Build a new derived image from a new immutable official Afora digest, push it, update the derived digest in `wrangler.jsonc`, and deploy:
 
 ```bash
 npm run check
@@ -281,7 +281,7 @@ Test updates and rollbacks against a separate R2 bucket first. Preserve current 
 
 **`wrangler containers ssh` is rejected** -- SSH ships disabled. Add `"ssh": { "enabled": true }` to the container entry, redeploy, then connect.
 
-**Configuration disappeared after a sleep or a redeploy** -- Litestream restores SQLite databases only. `openclaw.json`, credential files, installed plugin files, and workspaces live on the ephemeral disk. Reapply your bootstrap runbook, or keep the installation always-on and take [full archives](/install/backups#full-archives).
+**Configuration disappeared after a sleep or a redeploy** -- Litestream restores SQLite databases only. `afora.json`, credential files, installed plugin files, and workspaces live on the ephemeral disk. Reapply your bootstrap runbook, or keep the installation always-on and take [full archives](/install/backups#full-archives).
 
 **Channel sessions break after a restore** -- Restoring older bytes rolls back ratcheting credentials. Relink the affected channel and review pending approvals; see [Limits and recovery](#limits-and-recovery).
 

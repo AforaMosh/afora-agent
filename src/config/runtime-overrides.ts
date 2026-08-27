@@ -1,11 +1,11 @@
-import { err, ok, type Result } from "@openclaw/normalization-core/result";
+import { err, ok, type Result } from "@afora/normalization-core/result";
 import { isBlockedObjectKey } from "../infra/prototype-keys.js";
 // Applies runtime-only config overrides without mutating persisted config.
 import { isPlainObject } from "../utils.js";
 import { attachAgentListProjection } from "./agent-list-projection.js";
 import { parseConfigPath, setConfigValueAtPath, unsetConfigValueAtPath } from "./config-paths.js";
 import { inheritLegacyDefaultAgentId } from "./legacy.default-agent-owner.js";
-import type { OpenClawConfig } from "./types.js";
+import type { AforaConfig } from "./types.js";
 
 type OverrideTree = Record<string, unknown>;
 
@@ -48,8 +48,8 @@ function mergeOverrides(base: unknown, override: unknown): unknown {
   return next;
 }
 
-function applyOverrideTree(cfg: OpenClawConfig, overrideTree: OverrideTree): OpenClawConfig {
-  const next = mergeOverrides(cfg, overrideTree) as OpenClawConfig;
+function applyOverrideTree(cfg: AforaConfig, overrideTree: OverrideTree): AforaConfig {
+  const next = mergeOverrides(cfg, overrideTree) as AforaConfig;
   // Runtime cloning must preserve retained migration ownership or unrelated
   // overrides turn an upgraded fleet back into an ownerless explicit roster.
   if (next.agents === cfg.agents) {
@@ -89,7 +89,7 @@ export function unsetConfigOverride(pathRaw: string): Result<boolean, string> {
 }
 
 /** Merge the current runtime overrides over a loaded config without mutating the input config. */
-export function applyConfigOverrides(cfg: OpenClawConfig): OpenClawConfig {
+export function applyConfigOverrides(cfg: AforaConfig): AforaConfig {
   if (!overrides || Object.keys(overrides).length === 0) {
     return cfg;
   }
@@ -97,7 +97,7 @@ export function applyConfigOverrides(cfg: OpenClawConfig): OpenClawConfig {
 }
 
 /** Capture an immutable applier for the process-local overrides active at this instant. */
-export function captureConfigOverrideApplier(): (cfg: OpenClawConfig) => OpenClawConfig {
+export function captureConfigOverrideApplier(): (cfg: AforaConfig) => AforaConfig {
   const capturedOverrides = structuredClone(overrides);
   if (Object.keys(capturedOverrides).length === 0) {
     return (cfg) => cfg;

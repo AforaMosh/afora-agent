@@ -73,7 +73,7 @@ export async function runQaFlowSuiteFromRuntime(params?: QaSuiteRunParams): Prom
     ...new Set([
       ...collectQaSuitePluginIds(selectedScenarios),
       ...(params?.enabledPluginIds ?? []).map((pluginId) => pluginId.trim()).filter(Boolean),
-      ...(params?.forcedRuntime && params.forcedRuntime !== "openclaw"
+      ...(params?.forcedRuntime && params.forcedRuntime !== "afora"
         ? [params.forcedRuntime]
         : []),
     ]),

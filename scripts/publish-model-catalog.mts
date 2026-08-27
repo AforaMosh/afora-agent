@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import type {
   RemoteModelCatalogBundle,
   RemoteModelCatalogPricing,
@@ -95,7 +95,7 @@ export function readModelCatalogManifests(
     .filter((entry) => entry.isDirectory())
     .map((entry) => ({
       pluginId: entry.name,
-      manifestPath: path.join(extensionsDir, entry.name, "openclaw.plugin.json"),
+      manifestPath: path.join(extensionsDir, entry.name, "afora.plugin.json"),
     }))
     .filter((entry) => fs.existsSync(entry.manifestPath))
     .map((entry) => ({

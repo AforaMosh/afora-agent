@@ -17,7 +17,7 @@ type ContextEngineMaintenanceTestApi = {
 
 function getTestApi(): ContextEngineMaintenanceTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.contextEngineMaintenanceTestApi")
+    Symbol.for("afora.contextEngineMaintenanceTestApi")
   ] as ContextEngineMaintenanceTestApi;
 }
 

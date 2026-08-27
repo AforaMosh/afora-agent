@@ -1,6 +1,6 @@
-import { asDateTimestampMs } from "@openclaw/normalization-core/number-coercion";
+import { asDateTimestampMs } from "@afora/normalization-core/number-coercion";
 // Handles auth directives that choose provider auth profiles for a reply.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { formatRemainingShort } from "../../agents/auth-health.js";
 import {
   isConfiguredAwsSdkAuthProfileForProvider,
@@ -16,7 +16,7 @@ import {
   resolveUsableCustomProviderApiKey,
 } from "../../agents/model-auth.js";
 import { findNormalizedProviderValue, normalizeProviderId } from "../../agents/model-selection.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { coerceSecretRef } from "../../config/types.secrets.js";
 import { maskApiKey } from "../../security/secret-mask.js";
 import { shortenHomePath } from "../../utils.js";
@@ -63,7 +63,7 @@ function isStoredAuthProfileType(value: unknown): value is AuthProfileCredential
 /** Resolves the displayed auth source for a provider without exposing secrets. */
 export const resolveAuthLabel = async (
   provider: string,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   modelsPath: string,
   agentDir?: string,
   mode: ModelAuthDetailMode = "compact",

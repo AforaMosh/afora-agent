@@ -14,7 +14,7 @@ scenario:
   objective: Prove a watched OTEL endpoint change replaces one private provider generation with another inside the same Gateway PID.
   successCriteria:
     - Collector A receives correlated traces, metrics, and logs before the watched config mutation.
-    - The config watcher performs an OPENCLAW_NO_RESPAWN in-process restart without changing the Gateway PID.
+    - The config watcher performs an AFORA_NO_RESPAWN in-process restart without changing the Gateway PID.
     - A fresh traced RPC after readiness exports correlated traces, metrics, and logs only to collector B.
     - Collector A receives no requests after the post-restart readiness barrier, including final Gateway shutdown.
     - Exported spans retain one valid traceparent-derived graph and logs carry valid correlation ids.

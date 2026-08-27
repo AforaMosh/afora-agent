@@ -1,5 +1,5 @@
 ---
-summary: "OpenClaw Raft channel plugin for secure CLI wake bridges."
+summary: "Afora Raft channel plugin for secure CLI wake bridges."
 read_when:
   - You are installing, configuring, or auditing the raft plugin
 title: "Raft plugin"
@@ -7,11 +7,11 @@ title: "Raft plugin"
 
 # Raft plugin
 
-OpenClaw Raft channel plugin for secure CLI wake bridges.
+Afora Raft channel plugin for secure CLI wake bridges.
 
 ## Distribution
 
-- Package: `@openclaw/raft`
+- Package: `@afora/raft`
 - Install route: npm; ClawHub
 
 ## Surface

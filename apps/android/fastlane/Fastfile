@@ -7,14 +7,14 @@ require "supply"
 default_platform(:android)
 
 ANDROID_FASTLANE_ROOT = File.expand_path(__dir__, Dir.pwd)
-DEFAULT_PLAY_PACKAGE_NAME = "ai.openclaw.app"
+DEFAULT_PLAY_PACKAGE_NAME = "ai.afora.app"
 DEFAULT_PLAY_TRACK = "internal"
 DEFAULT_PLAY_RELEASE_STATUS = "completed"
 ANDROID_RELEASE_SIGNING_GRADLE_PROPERTIES = [
-  "OPENCLAW_ANDROID_STORE_FILE",
-  "OPENCLAW_ANDROID_STORE_PASSWORD",
-  "OPENCLAW_ANDROID_KEY_ALIAS",
-  "OPENCLAW_ANDROID_KEY_PASSWORD"
+  "AFORA_ANDROID_STORE_FILE",
+  "AFORA_ANDROID_STORE_PASSWORD",
+  "AFORA_ANDROID_KEY_ALIAS",
+  "AFORA_ANDROID_KEY_PASSWORD"
 ].freeze
 
 def load_env_file(path)
@@ -335,11 +335,11 @@ def validate_android_screenshots!
 end
 
 def release_artifact_path(version)
-  File.join(android_root, "build", "release-artifacts", "openclaw-#{version}-play-release.aab")
+  File.join(android_root, "build", "release-artifacts", "afora-#{version}-play-release.aab")
 end
 
 def wear_release_artifact_path(version)
-  File.join(android_root, "build", "release-artifacts", "openclaw-#{version}-wear-release.aab")
+  File.join(android_root, "build", "release-artifacts", "afora-#{version}-wear-release.aab")
 end
 
 def play_release_artifact_paths(version)

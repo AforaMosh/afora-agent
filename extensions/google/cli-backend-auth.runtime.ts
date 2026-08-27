@@ -5,9 +5,9 @@ import {
   CliBackendAuthProfilePreparationError,
   type CliBackendPreparedExecution,
   type CliBackendToolAvailability,
-} from "openclaw/plugin-sdk/cli-backend";
-import { isRecord, normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/cli-backend";
+import { isRecord, normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
 import {
   assertGeminiCliLiteralIsolatedPrompt,
   GEMINI_CLI_EXACT_TOOL_ENV_BARRIERS,
@@ -100,7 +100,7 @@ function throwUnsupportedGeminiCredential(credential: GeminiAuthProfileCredentia
   // a profile that is valid for its owner is not quarantined across providers.
   if (credential.provider === VERCEL_AI_GATEWAY_PROVIDER_ID) {
     throw new Error(
-      "Gemini CLI execution cannot use a vercel-ai-gateway auth profile. Use the OpenClaw vercel-ai-gateway provider instead.",
+      "Gemini CLI execution cannot use a vercel-ai-gateway auth profile. Use the Afora vercel-ai-gateway provider instead.",
     );
   }
   throw new Error("Gemini CLI execution requires a google-gemini-cli auth profile.");
@@ -151,7 +151,7 @@ function requireGeminiOAuthCredential(
     !Number.isFinite(credential.expires)
   ) {
     throw new CliBackendAuthProfilePreparationError(
-      `Gemini CLI OAuth profile is incomplete and cannot be repaired by OpenClaw. ${GEMINI_CLI_SUPPORTED_AUTH_GUIDANCE}`,
+      `Gemini CLI OAuth profile is incomplete and cannot be repaired by Afora. ${GEMINI_CLI_SUPPORTED_AUTH_GUIDANCE}`,
     );
   }
 
@@ -260,7 +260,7 @@ async function buildGeminiCliSystemSettings(
     );
     if (enforcedType && enforcedType !== selectedType) {
       throw new Error(
-        `Gemini CLI system settings enforce ${enforcedType} auth, but the selected OpenClaw profile requires ${selectedType}.`,
+        `Gemini CLI system settings enforce ${enforcedType} auth, but the selected Afora profile requires ${selectedType}.`,
       );
     }
     security.auth = { ...auth, selectedType };
@@ -356,17 +356,17 @@ function applyGeminiCliToolAvailability(
   const mcpServers = isRecord(base.mcpServers) ? { ...base.mcpServers } : {};
   // A fully empty cap must not require the loopback server: tool-free handoffs
   // intentionally suppress that runtime before backend preparation.
-  const exposesOpenClawTools = availability.openClaw.length > 0;
+  const exposesAforaTools = availability.afora.length > 0;
   let restrictedMcpServers: Record<string, unknown> = {};
-  if (exposesOpenClawTools) {
-    const openClawMcpServer = mcpServers.openclaw;
-    if (!isRecord(openClawMcpServer)) {
-      throw new Error("Gemini CLI exact tool availability requires the OpenClaw MCP server.");
+  if (exposesAforaTools) {
+    const aforaMcpServer = mcpServers.afora;
+    if (!isRecord(aforaMcpServer)) {
+      throw new Error("Gemini CLI exact tool availability requires the Afora MCP server.");
     }
     restrictedMcpServers = {
-      openclaw: {
-        ...openClawMcpServer,
-        includeTools: [...availability.openClaw],
+      afora: {
+        ...aforaMcpServer,
+        includeTools: [...availability.afora],
       },
     };
   }
@@ -384,7 +384,7 @@ function applyGeminiCliToolAvailability(
   const { serverCommand: _serverCommand, ...nonAuthorityMcpSettings } = mcp;
   // Gemini treats an empty MCP allowlist as unrestricted. Use a per-run name
   // that no inherited server can know when this run must expose no MCP tools.
-  const allowedMcpServers = exposesOpenClawTools ? ["openclaw"] : [crypto.randomUUID()];
+  const allowedMcpServers = exposesAforaTools ? ["afora"] : [crypto.randomUUID()];
   const experimental = isRecord(base.experimental) ? { ...base.experimental } : {};
   const agents = isRecord(base.agents) ? { ...base.agents } : {};
   const agentOverrides = isRecord(agents.overrides) ? { ...agents.overrides } : {};
@@ -394,7 +394,7 @@ function applyGeminiCliToolAvailability(
     ...base,
     tools: {
       ...nonAuthorityToolSettings,
-      core: exposesOpenClawTools ? ["mcp_openclaw_*"] : [],
+      core: exposesAforaTools ? ["mcp_afora_*"] : [],
       discoveryCommand: "",
       callCommand: "",
     },
@@ -431,7 +431,7 @@ async function writeGeminiCliJson(filePath: string, value: unknown): Promise<voi
 }
 
 async function createGeminiCliPrivateTempDir(prefix: string): Promise<string> {
-  const directory = await fs.mkdtemp(path.join(resolvePreferredOpenClawTmpDir(), prefix));
+  const directory = await fs.mkdtemp(path.join(resolvePreferredAforaTmpDir(), prefix));
   try {
     await fs.chmod(directory, 0o700);
     return directory;
@@ -486,7 +486,7 @@ async function prepareGeminiCliProfileHome(
   // validation failure cannot return the cleanup callback below.
   const persistentProfileHome =
     isolated || exactToolAvailability ? undefined : resolveGeminiCliProfileHome(ctx);
-  const systemSettingsDir = await createGeminiCliPrivateTempDir("openclaw-gemini-cli-");
+  const systemSettingsDir = await createGeminiCliPrivateTempDir("afora-gemini-cli-");
   const { home, geminiDir } = persistentProfileHome ?? {
     home: path.join(systemSettingsDir, "home"),
     geminiDir: path.join(systemSettingsDir, "home", ".gemini"),
@@ -521,7 +521,7 @@ async function prepareGeminiCliProfileHome(
 
 async function clearGeminiCliCachedCredentials(geminiDir: string): Promise<void> {
   // Gemini prefers its token store over oauth_creds.json. Rebuild that store
-  // from the selected OpenClaw profile each run so stale CLI auth cannot win.
+  // from the selected Afora profile each run so stale CLI auth cannot win.
   await fs.rm(path.join(geminiDir, GEMINI_CLI_CREDENTIALS_FILENAME), { force: true });
 }
 
@@ -653,7 +653,7 @@ async function prepareGeminiCliRestrictedSystemSettings(
     ambientAuth.selectedType,
     ambientAuth.safeSettings,
   );
-  const systemSettingsDir = await createGeminiCliPrivateTempDir("openclaw-gemini-cli-policy-");
+  const systemSettingsDir = await createGeminiCliPrivateTempDir("afora-gemini-cli-policy-");
   const systemSettingsPath = path.join(systemSettingsDir, "settings.json");
   const isolatedSystemPrompt = ctx.isolatedCompletionSystemPrompt;
   const isolatedSystemPromptPath = isolated ? path.join(systemSettingsDir, "system.md") : undefined;

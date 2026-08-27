@@ -2,7 +2,7 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { formatErrorMessage, toErrorObject } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage, toErrorObject } from "afora-agent/plugin-sdk/error-runtime";
 import {
   appendQaChildOutput,
   appendQaChildOutputTail,
@@ -44,7 +44,7 @@ export function resolveQaGatewayChildCommand(repoRoot: string): QaGatewayChildCo
   }
 
   throw new Error(
-    "OpenClaw CLI entry not found: expected scripts/run-node.mjs or dist/index.(m)js",
+    "Afora CLI entry not found: expected scripts/run-node.mjs or dist/index.(m)js",
   );
 }
 
@@ -59,7 +59,7 @@ export async function runQaGatewayCliCommand(params: {
   const hasStdin = params.stdin !== undefined;
   const child = spawn(params.executablePath, [...params.argsPrefix, ...params.args], {
     cwd: params.cwd,
-    env: { ...params.env, OPENCLAW_CLI: "1" },
+    env: { ...params.env, AFORA_CLI: "1" },
     stdio: [hasStdin ? "pipe" : "ignore", "pipe", "pipe"],
   });
   const result = readQaGatewayCliCommand(child);
@@ -78,7 +78,7 @@ async function readQaGatewayCliCommand(child: ChildProcess): Promise<string> {
   const exitCode = await new Promise<number>((resolve, reject) => {
     monitorQaChildFailure(child, (failure) => {
       if (failure.source === "process") {
-        reject(toErrorObject(failure.error, "OpenClaw CLI process failed"));
+        reject(toErrorObject(failure.error, "Afora CLI process failed"));
         return;
       }
       if (!hasQaGatewayChildExited(child) && !child.killed) {
@@ -100,7 +100,7 @@ async function readQaGatewayCliCommand(child: ChildProcess): Promise<string> {
   const stdoutText = readQaChildOutput(stdout);
   if (exitCode !== 0) {
     const stderrText = formatQaChildOutputTail(stderr, "stderr");
-    throw new Error(`OpenClaw CLI exited ${exitCode}: ${stderrText || stdoutText}`);
+    throw new Error(`Afora CLI exited ${exitCode}: ${stderrText || stdoutText}`);
   }
   return stdoutText;
 }

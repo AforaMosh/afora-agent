@@ -2,7 +2,7 @@ import type { ActiveMediaModel } from "../../packages/media-understanding-common
 // Audio preflight transcribes voice notes before mention checks and optionally
 // echoes the transcript back to the source chat.
 import type { RuntimeMsgContext as MsgContext } from "../auto-reply/templating.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { logVerbose, shouldLogVerbose } from "../globals.js";
 import { normalizeMediaFacts } from "../media/media-facts.js";
 import { isAudioAttachment } from "./attachments.js";
@@ -18,7 +18,7 @@ import type { MediaUnderstandingProvider } from "./types.js";
  */
 export async function transcribeFirstAudio(params: {
   ctx: MsgContext;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentDir?: string;
   providers?: Record<string, MediaUnderstandingProvider>;
   activeModel?: ActiveMediaModel;

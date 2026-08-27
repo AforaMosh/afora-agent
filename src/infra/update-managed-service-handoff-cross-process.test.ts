@@ -18,7 +18,7 @@ function createReadyChild() {
     unref: vi.fn(),
   });
   process.nextTick(() => {
-    child.stdout.write("OPENCLAW_UPDATE_HANDOFF_READY\n");
+    child.stdout.write("AFORA_UPDATE_HANDOFF_READY\n");
   });
   return child;
 }
@@ -66,7 +66,7 @@ async function prepareConcurrentHandoffHelper(): Promise<{
   baseParams: Record<string, unknown>;
 }> {
   const { startManagedServiceUpdateHandoff } = await import("./update-managed-service-handoff.js");
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-handoff-concurrent-test-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-handoff-concurrent-test-"));
   tempDirs.add(tmpDir);
 
   await startManagedServiceUpdateHandoff({
@@ -76,8 +76,8 @@ async function prepareConcurrentHandoffHelper(): Promise<{
     restartDelayMs: 0,
     parentPid: process.pid,
     execPath: "/usr/local/bin/node",
-    argv1: "/opt/openclaw/openclaw.mjs",
-    env: { OPENCLAW_STATE_DIR: tmpDir },
+    argv1: "/opt/AforaMosh/afora-agent.mjs",
+    env: { AFORA_STATE_DIR: tmpDir },
     handoffId: "fixture-handoff",
     meta: { handoffId: "fixture-handoff" },
   });
@@ -169,11 +169,11 @@ describe("managed service update handoff cross-process lease", () => {
       await import("./update-managed-service-handoff.js");
 
     const result = await startManagedServiceUpdateHandoff({
-      root: "/tmp/openclaw",
+      root: "/tmp/afora",
       restartDrainTimeoutMs: 300_000,
       parentPid: 12345,
       execPath: "/usr/local/bin/node",
-      argv1: "/opt/openclaw/openclaw.mjs",
+      argv1: "/opt/AforaMosh/afora-agent.mjs",
       handoffId: "replacement-handoff",
       meta: { handoffId: "replacement-handoff" },
     });
@@ -182,7 +182,7 @@ describe("managed service update handoff cross-process lease", () => {
     expect(result).toMatchObject({
       status: "joined",
       handoffId: "active-handoff",
-      command: "openclaw update --yes",
+      command: "afora update --yes",
     });
     expect(result).not.toHaveProperty("pid");
   });
@@ -239,7 +239,7 @@ describe("managed service update handoff cross-process lease", () => {
 
       expect(result, result.stderr).toMatchObject({
         code: 0,
-        stdout: expect.stringContaining("OPENCLAW_UPDATE_HANDOFF_READY"),
+        stdout: expect.stringContaining("AFORA_UPDATE_HANDOFF_READY"),
       });
       await expect(pathExists(commandStartedPath)).resolves.toBe(true);
     },
@@ -277,7 +277,7 @@ describe("managed service update handoff cross-process lease", () => {
       });
 
       expect(result.code).toBe(1);
-      expect(result.stdout).not.toContain("OPENCLAW_UPDATE_HANDOFF_READY");
+      expect(result.stdout).not.toContain("AFORA_UPDATE_HANDOFF_READY");
       await expect(pathExists(commandStartedPath)).resolves.toBe(false);
     },
   );
@@ -292,7 +292,7 @@ describe("managed service update handoff cross-process lease", () => {
       const secondStartedPath = path.join(tmpDir, "second-started");
       const thirdStartedPath = path.join(tmpDir, "third-started");
       const releaseOrphanPath = path.join(tmpDir, "release-orphan");
-      const secondProfileStatePath = path.join(tmpDir, "profile-b", "openclaw.sqlite");
+      const secondProfileStatePath = path.join(tmpDir, "profile-b", "afora.sqlite");
       const firstParamsPath = await writeConcurrentHandoffParams({
         tmpDir,
         baseParams,
@@ -338,7 +338,7 @@ describe("managed service update handoff cross-process lease", () => {
       try {
         await vi.waitFor(
           async () => {
-            expect(firstStdout).toContain("OPENCLAW_UPDATE_HANDOFF_READY");
+            expect(firstStdout).toContain("AFORA_UPDATE_HANDOFF_READY");
             await expect(pathExists(orphanPidPath)).resolves.toBe(true);
           },
           { interval: 10, timeout: 5_000 },
@@ -376,7 +376,7 @@ describe("managed service update handoff cross-process lease", () => {
         });
         expect(third, third.stderr).toMatchObject({
           code: 0,
-          stdout: expect.stringContaining("OPENCLAW_UPDATE_HANDOFF_READY"),
+          stdout: expect.stringContaining("AFORA_UPDATE_HANDOFF_READY"),
         });
         await expect(pathExists(thirdStartedPath)).resolves.toBe(true);
       } finally {
@@ -450,7 +450,7 @@ describe("managed service update handoff cross-process lease", () => {
       try {
         await vi.waitFor(
           async () => {
-            expect(firstStdout).toContain("OPENCLAW_UPDATE_HANDOFF_READY");
+            expect(firstStdout).toContain("AFORA_UPDATE_HANDOFF_READY");
             await expect(pathExists(firstStartedPath)).resolves.toBe(true);
           },
           { interval: 10, timeout: 5_000 },
@@ -479,7 +479,7 @@ describe("managed service update handoff cross-process lease", () => {
         });
         expect(third, third.stderr).toMatchObject({
           code: 0,
-          stdout: expect.stringContaining("OPENCLAW_UPDATE_HANDOFF_READY"),
+          stdout: expect.stringContaining("AFORA_UPDATE_HANDOFF_READY"),
         });
         await expect(pathExists(thirdStartedPath)).resolves.toBe(true);
       } finally {

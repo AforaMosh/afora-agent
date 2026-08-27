@@ -5,12 +5,12 @@ import {
   formatErrorMessage,
   PlatformMessageNotDispatchedError,
   readErrorName,
-} from "openclaw/plugin-sdk/error-runtime";
-import { parseStrictNonNegativeInteger } from "openclaw/plugin-sdk/number-runtime";
-import { classifyTransientNetworkErrorCode } from "openclaw/plugin-sdk/retry-runtime";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/error-runtime";
+import { parseStrictNonNegativeInteger } from "afora-agent/plugin-sdk/number-runtime";
+import { classifyTransientNetworkErrorCode } from "afora-agent/plugin-sdk/retry-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
-const TELEGRAM_NETWORK_ORIGIN = Symbol("openclaw.telegram.network-origin");
+const TELEGRAM_NETWORK_ORIGIN = Symbol("afora.telegram.network-origin");
 
 export class TelegramRequestNotStartedError extends Error {
   constructor(message = "Telegram request did not start") {

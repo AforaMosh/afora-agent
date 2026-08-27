@@ -5,7 +5,7 @@
  */
 import { Type } from "typebox";
 import { getRuntimeConfig } from "../../config/config.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { listTaskRecordsUnsorted } from "../../tasks/runtime-internal.js";
 import { cancelDetachedTaskRunById } from "../../tasks/task-executor.js";
 import type { TaskRecord, TaskStatus } from "../../tasks/task-registry.types.js";
@@ -49,7 +49,7 @@ const STATUS_MAP: Record<TaskStatus, string> = {
 type SubagentsToolOptions = {
   agentSessionKey?: string;
   agentId?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   listTasks?: typeof listTaskRecordsUnsorted;
   cancelTask?: typeof cancelDetachedTaskRunById;
 };
@@ -58,7 +58,7 @@ function taskUpdatedAt(task: TaskRecord): number {
   return task.lastEventAt ?? task.endedAt ?? task.startedAt ?? task.createdAt;
 }
 
-function resolveTaskRequesterAgentId(task: TaskRecord, cfg: OpenClawConfig): string | undefined {
+function resolveTaskRequesterAgentId(task: TaskRecord, cfg: AforaConfig): string | undefined {
   if (task.requesterAgentId) {
     return task.requesterAgentId;
   }
@@ -69,7 +69,7 @@ function taskOwnerMatches(
   task: TaskRecord,
   sessionKey: string,
   agentId: string,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): boolean {
   return task.ownerKey === sessionKey && resolveTaskRequesterAgentId(task, cfg) === agentId;
 }
@@ -78,7 +78,7 @@ function listTreeTasks(
   tasks: TaskRecord[],
   rootSessionKey: string,
   rootAgentId: string,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): TaskRecord[] {
   const visibleSessions = new Set([`${rootAgentId}\0${rootSessionKey}`]);
   const visibleTasks = new Set<string>();

@@ -2,7 +2,7 @@
 import { createHash } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { getRuntimeConfig } from "../config/io.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { getOrCreatePromise } from "../shared/lazy-promise.js";
 import {
   formatUserProfileAvatarEtag,
@@ -40,7 +40,7 @@ const MAX_GRAVATAR_BYTES = 1_000_000;
 const MAX_GRAVATAR_EMAIL_LOOKUPS = 8;
 const GRAVATAR_MIME_TYPES = new Set(["image/gif", "image/jpeg", "image/png", "image/webp"]);
 
-function resolveAvatarCorsOrigin(req: IncomingMessage, cfg: OpenClawConfig): string | undefined {
+function resolveAvatarCorsOrigin(req: IncomingMessage, cfg: AforaConfig): string | undefined {
   const rawOrigin = typeof req.headers.origin === "string" ? req.headers.origin.trim() : "";
   if (!rawOrigin) {
     return undefined;
@@ -64,7 +64,7 @@ function resolveAvatarCorsOrigin(req: IncomingMessage, cfg: OpenClawConfig): str
 function setAvatarCorsHeaders(
   req: IncomingMessage,
   res: ServerResponse,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): boolean {
   if (!req.headers.origin) {
     return true;

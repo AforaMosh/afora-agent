@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { resolveProvidersForModelsJsonWithDeps } from "./models-config.plan.test-support.js";
 import type { ProviderConfig } from "./models-config.providers.secrets.js";
 
@@ -44,7 +44,7 @@ function createImplicitProvider(): ProviderConfig {
 describe("models-config plan: replace mode skips implicit discovery", () => {
   it("skips implicit discovery when models.mode === 'replace'", async () => {
     const explicitProvider = createExplicitProvider();
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       models: {
         mode: "replace",
         providers: { explicit: explicitProvider },
@@ -58,7 +58,7 @@ describe("models-config plan: replace mode skips implicit discovery", () => {
     const result = await resolveProvidersForModelsJsonWithDeps(
       {
         cfg,
-        agentDir: "/tmp/openclaw-models-config-replace-test",
+        agentDir: "/tmp/afora-models-config-replace-test",
         env: {},
       },
       { resolveImplicitProviders: resolveImplicitSpy },
@@ -71,7 +71,7 @@ describe("models-config plan: replace mode skips implicit discovery", () => {
 
   it("still resolves implicit when models.mode === 'merge'", async () => {
     const explicitProvider = createExplicitProvider();
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       models: {
         mode: "merge",
         providers: { explicit: explicitProvider },
@@ -85,7 +85,7 @@ describe("models-config plan: replace mode skips implicit discovery", () => {
     const result = await resolveProvidersForModelsJsonWithDeps(
       {
         cfg,
-        agentDir: "/tmp/openclaw-models-config-replace-test",
+        agentDir: "/tmp/afora-models-config-replace-test",
         env: {},
       },
       { resolveImplicitProviders: resolveImplicitSpy },
@@ -97,7 +97,7 @@ describe("models-config plan: replace mode skips implicit discovery", () => {
 
   it("still resolves implicit when models.mode is undefined (defaults to merge)", async () => {
     const explicitProvider = createExplicitProvider();
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       models: {
         providers: { explicit: explicitProvider },
       },
@@ -110,7 +110,7 @@ describe("models-config plan: replace mode skips implicit discovery", () => {
     await resolveProvidersForModelsJsonWithDeps(
       {
         cfg,
-        agentDir: "/tmp/openclaw-models-config-replace-test",
+        agentDir: "/tmp/afora-models-config-replace-test",
         env: {},
       },
       { resolveImplicitProviders: resolveImplicitSpy },
@@ -120,7 +120,7 @@ describe("models-config plan: replace mode skips implicit discovery", () => {
   });
 
   it("forwards resolved runtime config separately from source config", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       models: {
         providers: {
           explicit: {
@@ -130,7 +130,7 @@ describe("models-config plan: replace mode skips implicit discovery", () => {
         },
       },
     };
-    const discoveryAuthConfig: OpenClawConfig = {
+    const discoveryAuthConfig: AforaConfig = {
       models: {
         providers: {
           explicit: {
@@ -146,7 +146,7 @@ describe("models-config plan: replace mode skips implicit discovery", () => {
       {
         cfg,
         discoveryAuthConfig,
-        agentDir: "/tmp/openclaw-models-config-auth-test",
+        agentDir: "/tmp/afora-models-config-auth-test",
         env: {},
       },
       { resolveImplicitProviders: resolveImplicitSpy },

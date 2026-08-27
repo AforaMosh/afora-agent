@@ -1,5 +1,5 @@
 // Control UI helpers shared by config form node renderers.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { html, nothing, type TemplateResult } from "lit";
 import { ref } from "lit/directives/ref.js";
 import type { ConfigUiHints } from "../api/types.ts";
@@ -167,7 +167,7 @@ export function renderSensitiveToggleButton(params: {
       ? t("configForm.storedSecretNotRevealable")
       : t("configForm.disableStreamToReveal");
   return html`
-    <openclaw-tooltip .content=${label}>
+    <afora-tooltip .content=${label}>
       <button
         type="button"
         class="settings-secret__toggle"
@@ -178,7 +178,7 @@ export function renderSensitiveToggleButton(params: {
       >
         ${state.isRevealed ? icons.eye : icons.eyeOff}
       </button>
-    </openclaw-tooltip>
+    </afora-tooltip>
   `;
 }
 
@@ -329,7 +329,7 @@ export function renderRestoreDefaultButton(
     return nothing;
   }
   return html`
-    <openclaw-tooltip .content=${t("configForm.resetToDefault")}>
+    <afora-tooltip .content=${t("configForm.resetToDefault")}>
       <button
         type="button"
         class="btn btn--icon"
@@ -350,7 +350,7 @@ export function renderRestoreDefaultButton(
       >
         ${icons.refresh}
       </button>
-    </openclaw-tooltip>
+    </afora-tooltip>
   `;
 }
 

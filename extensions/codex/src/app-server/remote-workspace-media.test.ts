@@ -4,8 +4,8 @@ import os from "node:os";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { promisify } from "node:util";
-import { saveMediaBuffer } from "openclaw/plugin-sdk/media-store";
-import { createOpenClawTestState, type OpenClawTestState } from "openclaw/plugin-sdk/test-state";
+import { saveMediaBuffer } from "afora-agent/plugin-sdk/media-store";
+import { createAforaTestState, type AforaTestState } from "afora-agent/plugin-sdk/test-state";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CodexCommandExecParams, CodexCommandExecResponse } from "./command-exec-protocol.js";
 import {
@@ -17,10 +17,10 @@ import {
 const remoteWorkspaceRoot = "/remote/codex-workspace";
 const execFileAsync = promisify(execFile);
 let localWorkspaceRoot: string;
-let openClawState: OpenClawTestState;
+let aforaState: AforaTestState;
 
 beforeEach(async () => {
-  openClawState = await createOpenClawTestState({
+  aforaState = await createAforaTestState({
     layout: "state-only",
     prefix: "codex-remote-workspace-media-",
   });
@@ -29,7 +29,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await rm(localWorkspaceRoot, { recursive: true, force: true });
-  await openClawState.cleanup();
+  await aforaState.cleanup();
 });
 
 function createRemoteFileReader(files: Record<string, string>) {

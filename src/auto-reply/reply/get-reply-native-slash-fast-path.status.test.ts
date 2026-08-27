@@ -2,7 +2,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import * as preparedModelCatalog from "../../agents/prepared-model-catalog.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { replaceSessionEntry } from "../../config/sessions/session-accessor.js";
 import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createSessionConversationTestRegistry } from "../../test-utils/session-conversation-registry.js";
@@ -52,7 +52,7 @@ const createTypingController = (): TypingController => ({
 describe("native /status channel model routing", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+    vi.stubEnv("AFORA_TEST_FAST", "1");
     resetPluginRuntimeStateForTest();
     setActivePluginRegistry(createSessionConversationTestRegistry());
     vi.spyOn(preparedModelCatalog, "loadPreparedModelCatalog").mockResolvedValue([
@@ -155,7 +155,7 @@ describe("native /status channel model routing", () => {
     "preserves canonical native /status $selection",
     async (testCase) => {
       const targetSessionKey = "agent:main:main";
-      const storePath = path.join(tempDirs.make("openclaw-native-status-"), "sessions.json");
+      const storePath = path.join(tempDirs.make("afora-native-status-"), "sessions.json");
       const {
         channelModel = "anthropic/claude-fable-5",
         deliveryChannel = "telegram",
@@ -253,7 +253,7 @@ describe("native /status channel model routing", () => {
               discord: { "123": "openai/gpt-5.5" },
             },
           },
-        } as OpenClawConfig),
+        } as AforaConfig),
         agentId: "main",
         agentDir: "/tmp/agent",
         agentCfg: undefined,

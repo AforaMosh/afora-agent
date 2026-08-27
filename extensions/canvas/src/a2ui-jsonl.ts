@@ -110,7 +110,7 @@ function validateA2UIJsonl(jsonl: string) {
 export function validateSupportedA2UIJsonl(jsonl: string) {
   const result = validateA2UIJsonl(jsonl);
   if (result.version !== "v0.8") {
-    throw new Error("Detected unsupported A2UI v0.9 JSONL. OpenClaw currently supports v0.8 only.");
+    throw new Error("Detected unsupported A2UI v0.9 JSONL. Afora currently supports v0.8 only.");
   }
   return result;
 }

@@ -36,6 +36,6 @@ export function resolveMatrixSqliteStateEnv(
   }
   return {
     ...(options?.env ?? process.env),
-    OPENCLAW_STATE_DIR: stateDir,
+    AFORA_STATE_DIR: stateDir,
   };
 }

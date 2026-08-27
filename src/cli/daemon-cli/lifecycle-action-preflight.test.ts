@@ -13,18 +13,18 @@ afterEach(() => {
 async function withIsolatedLifecycleState(
   run: (params: { agentDir: string; configPath: string }) => Promise<void>,
 ): Promise<void> {
-  await withTestDir({ prefix: "openclaw-lifecycle-action-preflight-" }, async (root) => {
+  await withTestDir({ prefix: "afora-lifecycle-action-preflight-" }, async (root) => {
     const stateDir = path.join(root, "state");
-    const configPath = path.join(root, "openclaw.json");
+    const configPath = path.join(root, "afora.json");
     const agentDir = path.join(stateDir, "agents", "main", "agent");
     await fs.mkdir(agentDir, { recursive: true });
     await fs.writeFile(configPath, "{}\n");
     vi.stubEnv("HOME", root);
-    vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
-    vi.stubEnv("OPENCLAW_CONFIG_PATH", configPath);
+    vi.stubEnv("AFORA_STATE_DIR", stateDir);
+    vi.stubEnv("AFORA_CONFIG_PATH", configPath);
     resetConfigRuntimeState();
     await run({ agentDir, configPath });
-    await expect(fs.access(path.join(stateDir, "state", "openclaw.sqlite"))).rejects.toMatchObject({
+    await expect(fs.access(path.join(stateDir, "state", "afora.sqlite"))).rejects.toMatchObject({
       code: "ENOENT",
     });
   });
@@ -39,8 +39,8 @@ describe("getServiceActionPreflightFailure", () => {
 
         await expect(getServiceActionPreflightFailure(action)).resolves.toEqual({
           message:
-            "Auth profile store ~/state/agents/main/agent/openclaw-agent.sqlite requires legacy credential migration.",
-          hints: ["Run `openclaw doctor --fix`, then retry this command."],
+            "Auth profile store ~/state/agents/main/agent/afora-agent.sqlite requires legacy credential migration.",
+          hints: ["Run `afora doctor --fix`, then retry this command."],
         });
       });
     },
@@ -79,10 +79,10 @@ describe("getServiceActionPreflightFailure", () => {
         const failure = await getServiceActionPreflightFailure(action);
 
         expect(failure?.message).toContain(
-          'openclaw.json:3 — gateway.mode: Invalid input (allowed: "local", "remote"), got: "nope"',
+          'afora.json:3 — gateway.mode: Invalid input (allowed: "local", "remote"), got: "nope"',
         );
         expect(failure?.message).toContain(
-          "Config was last written by OpenClaw 9999.1.1, but you are running",
+          "Config was last written by Afora 9999.1.1, but you are running",
         );
       });
     },

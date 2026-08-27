@@ -1,6 +1,6 @@
 /** Tests bundle-MCP resume hash stability across loopback endpoint changes. */
 import { describe, expect, it } from "vitest";
-import { buildSystemAgentToolsMcpServerConfig } from "../../mcp/openclaw-tools-serve-config.js";
+import { buildSystemAgentToolsMcpServerConfig } from "../../mcp/afora-tools-serve-config.js";
 import { resolveCliSessionReuse } from "../cli-session.js";
 import { prepareCliBundleMcpConfig } from "./bundle-mcp.js";
 import {
@@ -12,17 +12,17 @@ import {
 setupCliBundleMcpTestHarness();
 
 describe("prepareCliBundleMcpConfig resume hash", () => {
-  it("stabilizes the resume hash when only the OpenClaw loopback port changes", async () => {
+  it("stabilizes the resume hash when only the Afora loopback port changes", async () => {
     // Loopback ports are volatile per gateway run and should not force CLI
     // session abandonment when stable MCP semantics are unchanged.
     const first = await prepareBundleProbeCliConfig({
       additionalConfig: {
         mcpServers: {
-          openclaw: {
+          afora: {
             type: "http",
             url: "http://127.0.0.1:23119/mcp",
             headers: {
-              Authorization: "Bearer ${OPENCLAW_MCP_TOKEN}",
+              Authorization: "Bearer ${AFORA_MCP_TOKEN}",
             },
           },
         },
@@ -31,11 +31,11 @@ describe("prepareCliBundleMcpConfig resume hash", () => {
     const second = await prepareBundleProbeCliConfig({
       additionalConfig: {
         mcpServers: {
-          openclaw: {
+          afora: {
             type: "http",
             url: "http://127.0.0.1:24567/mcp",
             headers: {
-              Authorization: "Bearer ${OPENCLAW_MCP_TOKEN}",
+              Authorization: "Bearer ${AFORA_MCP_TOKEN}",
             },
           },
         },
@@ -53,11 +53,11 @@ describe("prepareCliBundleMcpConfig resume hash", () => {
     const first = await prepareBundleProbeCliConfig({
       additionalConfig: {
         mcpServers: {
-          openclaw: {
+          afora: {
             type: "http",
             url: "http://127.0.0.1:23119/mcp",
             headers: {
-              Authorization: "Bearer ${OPENCLAW_MCP_TOKEN}",
+              Authorization: "Bearer ${AFORA_MCP_TOKEN}",
             },
           },
         },
@@ -66,11 +66,11 @@ describe("prepareCliBundleMcpConfig resume hash", () => {
     const second = await prepareBundleProbeCliConfig({
       additionalConfig: {
         mcpServers: {
-          openclaw: {
+          afora: {
             type: "http",
             url: "http://127.0.0.1:23119/other",
             headers: {
-              Authorization: "Bearer ${OPENCLAW_MCP_TOKEN}",
+              Authorization: "Bearer ${AFORA_MCP_TOKEN}",
             },
           },
         },
@@ -83,7 +83,7 @@ describe("prepareCliBundleMcpConfig resume hash", () => {
     await second.cleanup?.();
   });
 
-  it("keeps OpenClaw approval state out of the resume identity", async () => {
+  it("keeps Afora approval state out of the resume identity", async () => {
     const prepare = async (options: Parameters<typeof buildSystemAgentToolsMcpServerConfig>[0]) =>
       await prepareCliBundleMcpConfig({
         enabled: true,

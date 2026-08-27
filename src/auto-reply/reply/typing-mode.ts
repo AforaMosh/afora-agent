@@ -1,5 +1,5 @@
 // Normalizes typing indicator modes from config and directives.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { TypingMode } from "../../config/types.js";
 import type { SourceReplyDeliveryMode } from "../get-reply-options.types.js";
 import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../tokens.js";

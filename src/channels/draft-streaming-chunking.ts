@@ -1,6 +1,6 @@
 // Shared resolver for channel live-preview draft chunk thresholds.
 import { resolveTextChunkLimit } from "../auto-reply/chunk.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveAccountEntry } from "../routing/account-lookup.js";
 import { normalizeAccountId } from "../routing/session-key.js";
 import type { ChannelId } from "./plugins/types.core.js";
@@ -20,7 +20,7 @@ type ChannelDraftStreamingConfig = StreamingCompatEntry & {
 };
 
 export function resolveChannelDraftStreamingChunking(
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
   channelId: ChannelId,
   accountId: string | null | undefined,
   opts: { fallbackLimit: number },

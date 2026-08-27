@@ -1,7 +1,7 @@
-import { readSessionMessageIdentity } from "@openclaw/gateway-client/browser";
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
-import { asNullableRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { readSessionMessageIdentity } from "@afora/gateway-client/browser";
+import { asFiniteNumber } from "@afora/normalization-core/number-coercion";
+import { asNullableRecord as asRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { resolveToolUseId } from "../../../../src/chat/tool-content.js";
 import { escapeRegExp } from "../../../../src/shared/regexp.js";
 import type { ChatItem, ChatQueueItem, ToolCard } from "../../lib/chat/chat-types.ts";
@@ -295,7 +295,7 @@ export function resolveToolBlockId(
 }
 
 export function isPendingSendMessage(message: unknown): boolean {
-  return asRecord(asRecord(message)?.["__openclaw"])?.kind === "pending-send";
+  return asRecord(asRecord(message)?.["__afora"])?.kind === "pending-send";
 }
 
 function readChatThreadMessageIdentity(message: unknown) {
@@ -561,7 +561,7 @@ export function queuedSendThreadMessage(item: ChatQueueItem): Record<string, unk
     role: "user",
     content,
     timestamp: item.createdAt,
-    __openclaw: {
+    __afora: {
       kind: "pending-send",
       id: item.id,
       state: item.sendState,

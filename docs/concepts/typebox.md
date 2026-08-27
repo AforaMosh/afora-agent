@@ -5,7 +5,7 @@ read_when:
 title: "TypeBox"
 ---
 
-TypeBox is a TypeScript-first schema library. OpenClaw uses it to define the **Gateway WebSocket protocol** (handshake, request/response, server events). Those schemas drive **runtime validation** (AJV), **JSON Schema export**, and **Swift codegen** for the macOS app. One source of truth; everything else is generated.
+TypeBox is a TypeScript-first schema library. Afora uses it to define the **Gateway WebSocket protocol** (handshake, request/response, server events). Those schemas drive **runtime validation** (AJV), **JSON Schema export**, and **Swift codegen** for the macOS app. One source of truth; everything else is generated.
 
 For the higher-level protocol context, start with [Gateway architecture](/concepts/architecture).
 
@@ -53,7 +53,7 @@ The authoritative advertised **discovery** inventory lives in `src/gateway/serve
 - Server handshake and method dispatch: `src/gateway/server-core-runtime.ts`
 - Node client: `src/gateway/client.ts`
 - Generated JSON Schema: `dist/protocol.schema.json` (build output, not committed)
-- Generated Swift models: `apps/shared/OpenClawKit/Sources/OpenClawProtocol/GatewayModels.swift`
+- Generated Swift models: `apps/shared/AforaKit/Sources/AforaProtocol/GatewayModels.swift`
 
 ## Current pipeline
 
@@ -85,7 +85,7 @@ Connect (first message):
     "minProtocol": 3,
     "maxProtocol": 4,
     "client": {
-      "id": "openclaw-macos",
+      "id": "afora-macos",
       "displayName": "macos",
       "version": "1.0.0",
       "platform": "macos 15.1",
@@ -281,7 +281,7 @@ Unknown frame types are preserved as raw payloads for forward compatibility.
 
 Generated JSON Schema is a build artifact, not committed to the repo. During the package rollout, the current beta schema is available at:
 
-- [`protocol.schema.json`](https://unpkg.com/@openclaw/gateway-protocol@beta/protocol.schema.json)
+- [`protocol.schema.json`](https://unpkg.com/@afora/gateway-protocol@beta/protocol.schema.json)
 
 ## When you change schemas
 

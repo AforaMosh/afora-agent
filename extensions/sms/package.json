@@ -1,19 +1,19 @@
 {
-  "name": "@openclaw/sms",
+  "name": "@afora/sms",
   "version": "2026.8.1",
-  "description": "OpenClaw SMS/MMS channel plugin for Twilio messages.",
+  "description": "Afora SMS/MMS channel plugin for Twilio messages.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   },
   "type": "module",
   "dependencies": {
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
@@ -130,12 +130,12 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1",
+      "aforaVersion": "2026.8.1",
       "bundledDist": false
     },
     "install": {
-      "clawhubSpec": "clawhub:@openclaw/sms",
-      "npmSpec": "@openclaw/sms",
+      "clawhubSpec": "clawhub:@afora/sms",
+      "npmSpec": "@afora/sms",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.6.9",
       "allowInvalidConfigRecovery": true

@@ -7,7 +7,7 @@ import {
 } from "../../routing/session-key.js";
 import { getRuntimeConfig } from "../io.js";
 import { tryResolveLegacyCompatibilityAgentId } from "../legacy.default-agent-owner.js";
-import type { OpenClawConfig } from "../types.openclaw.js";
+import type { AforaConfig } from "../types.afora.js";
 import { resolveSessionStorePathCore } from "./paths.js";
 import { updateSessionEntry } from "./session-accessor.entry-mutation.js";
 import {
@@ -40,7 +40,7 @@ import {
 import type { SessionEntry } from "./types.js";
 
 function resolveTranscriptTurnAgentId(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   scopeAgentId?: string;
   sessionKey: string;
   storePath?: string;
@@ -391,7 +391,7 @@ async function resolveTranscriptTurnTarget(
     sessionEntry?: SessionEntry;
     sessionStore?: Record<string, SessionEntry>;
   },
-  config?: import("../types.openclaw.js").OpenClawConfig,
+  config?: import("../types.afora.js").AforaConfig,
 ): Promise<
   SessionTranscriptTurnWriteContext & {
     sessionEntry: SessionEntry | undefined;

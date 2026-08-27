@@ -51,7 +51,7 @@ describe("resolveCodexNativeSearchActivation", () => {
   });
 
   it("activates for direct openai when auth exists", () => {
-    // Direct OpenAI needs bridgeable auth before OpenClaw can suppress the
+    // Direct OpenAI needs bridgeable auth before Afora can suppress the
     // managed web-search tool in favor of Codex native search.
     const result = resolveCodexNativeSearchActivation({
       config: {
@@ -234,7 +234,7 @@ describe("resolveCodexNativeSearchActivation", () => {
     const sessionKey = `agent:${agentId}:subagent:limited`;
     const storePath = path.join(
       os.tmpdir(),
-      `openclaw-native-inherited-deny-${agentId}`,
+      `afora-native-inherited-deny-${agentId}`,
       "agents",
       agentId,
       "sessions",

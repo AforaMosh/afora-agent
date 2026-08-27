@@ -3,8 +3,8 @@
  * was truncated before an agent sees it.
  */
 import path from "node:path";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   buildBootstrapPromptWarning,
   normalizeBootstrapWarningSignatures,
@@ -185,7 +185,7 @@ export function analyzeBootstrapBudget(params: {
 
 /** Builds the canonical bootstrap budget diagnosis after caller-owned routing. */
 export function buildBootstrapBudgetState(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string | null;
   bootstrapFiles: WorkspaceBootstrapFile[];
   injectedFiles: EmbeddedContextFile[];

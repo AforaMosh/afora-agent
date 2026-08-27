@@ -7,7 +7,7 @@ export const CODEX_PLUGIN_ID = "codex";
 
 export const CODEX_PLUGIN_LIFECYCLE_MESSAGES = Object.freeze({
   missingPlugin:
-    'Codex plugin is required for Codex runtime. Run "openclaw doctor --fix" to install @openclaw/codex, then retry.',
+    'Codex plugin is required for Codex runtime. Run "afora doctor --fix" to install @afora/codex, then retry.',
 });
 
 export type CodexPluginState = {
@@ -41,7 +41,7 @@ function collectStaleLegacyRuntimePins(config: unknown): string[] {
   };
   const markers = new Set<string>();
   const collectRuntimePin = (value: unknown) => {
-    if (value === "openclaw") {
+    if (value === "afora") {
       markers.add(`agentRuntime.id=${value}`);
     }
   };
@@ -63,11 +63,11 @@ export async function installCodexPluginFixture(agentDir: string): Promise<void>
   await fs.mkdir(targetDir, { recursive: true });
   await fs.writeFile(
     path.join(targetDir, "package.json"),
-    `${JSON.stringify({ name: "@openclaw/codex" }, null, 2)}\n`,
+    `${JSON.stringify({ name: "@afora/codex" }, null, 2)}\n`,
     "utf8",
   );
   await fs.writeFile(
-    path.join(targetDir, "openclaw.plugin.json"),
+    path.join(targetDir, "afora.plugin.json"),
     `${JSON.stringify({ id: CODEX_PLUGIN_ID, name: "Codex" }, null, 2)}\n`,
     "utf8",
   );

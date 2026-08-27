@@ -1,4 +1,4 @@
-import { stripCompactionReplayCheckpoint } from "@openclaw/ai/transports";
+import { stripCompactionReplayCheckpoint } from "@afora/ai/transports";
 import type { AgentMessage } from "../../types.js";
 import {
   asAgentMessage,
@@ -10,7 +10,7 @@ import type { CompactionEntry, ResetEntry, SessionContext, SessionTreeEntry } fr
 import { selectResetKeptEntries } from "./tool-result-pairing.js";
 
 type ContextBoundary = CompactionEntry | ResetEntry;
-const SESSION_HISTORY_PRELUDE = Symbol.for("openclaw.sessionHistoryPrelude");
+const SESSION_HISTORY_PRELUDE = Symbol.for("afora.sessionHistoryPrelude");
 
 /** Project persisted session entries into the message shared by replay and summarization. */
 export function projectSessionEntryMessage(entry: SessionTreeEntry): AgentMessage | undefined {

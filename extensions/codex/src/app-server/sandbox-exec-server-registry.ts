@@ -1,7 +1,7 @@
-import type { OpenClawExecServer } from "./sandbox-exec-server/types.js";
+import type { AforaExecServer } from "./sandbox-exec-server/types.js";
 
 export const sandboxExecServerRegistry = {
-  servers: new Map<string, Promise<OpenClawExecServer>>(),
+  servers: new Map<string, Promise<AforaExecServer>>(),
   async closeAll(): Promise<void> {
     const servers = await Promise.allSettled(this.servers.values());
     this.servers.clear();

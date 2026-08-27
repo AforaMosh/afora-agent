@@ -2,7 +2,7 @@
  * Admin HTTP RPC plugin entry. It exposes a trusted gateway-authenticated HTTP
  * endpoint for the explicit admin method allowlist.
  */
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import { handleAdminHttpRpcRequest } from "./src/handler.js";
 
 export default definePluginEntry({

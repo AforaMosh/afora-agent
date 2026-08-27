@@ -41,7 +41,7 @@ type BackupPlanTestApi = {
 
 function getBackupPlanTestApi(): BackupPlanTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.backupPlanTestApi")
+    Symbol.for("afora.backupPlanTestApi")
   ] as BackupPlanTestApi;
 }
 
@@ -94,16 +94,16 @@ export function createBackupTestRuntime(): RuntimeEnv {
 
 export async function resetBackupTempHome(tempHome: { home: string }) {
   await fs.rm(tempHome.home, { recursive: true, force: true });
-  await fs.mkdir(path.join(tempHome.home, ".openclaw"), { recursive: true });
-  deleteTestEnvValue("OPENCLAW_CONFIG_PATH");
+  await fs.mkdir(path.join(tempHome.home, ".afora"), { recursive: true });
+  deleteTestEnvValue("AFORA_CONFIG_PATH");
 }
 
 export async function mockStateOnlyBackupPlan(stateDir: string) {
-  await fs.writeFile(path.join(stateDir, "openclaw.json"), JSON.stringify({}), "utf8");
+  await fs.writeFile(path.join(stateDir, "afora.json"), JSON.stringify({}), "utf8");
   vi.spyOn(backupShared, "resolveBackupPlanFromDisk").mockResolvedValue(
     await resolveBackupPlanFromPaths({
       stateDir,
-      configPath: path.join(stateDir, "openclaw.json"),
+      configPath: path.join(stateDir, "afora.json"),
       oauthDir: path.join(stateDir, "credentials"),
       includeWorkspace: false,
       configInsideState: true,

@@ -1,5 +1,5 @@
 /** Guards SSH sandbox use against unresolved runtime SecretRefs. */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { coerceSecretRef } from "../../config/types.secrets.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
 import { secretRefKey } from "../../secrets/ref-contract.js";
@@ -15,7 +15,7 @@ const SSH_SECRET_KEYS = ["identityData", "certificateData", "knownHostsData"] as
 
 /** Rejects cold or unmaterialized SSH credentials before any host SSH fallback is possible. */
 export function assertSshSandboxSecretOwnerAvailable(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   scope: SandboxScope;
   agentId?: string;
 }): void {

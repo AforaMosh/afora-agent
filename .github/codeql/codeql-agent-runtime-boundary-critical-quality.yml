@@ -1,4 +1,4 @@
-name: openclaw-codeql-agent-runtime-boundary-critical-quality
+name: afora-codeql-agent-runtime-boundary-critical-quality
 
 disable-default-queries: true
 
@@ -23,7 +23,7 @@ paths:
   - src/agents/*completion*.ts
   - src/agents/*transport*.ts
   - src/agents/model-*.ts
-  - src/agents/openclaw-tools*.ts
+  - src/agents/afora-tools*.ts
   - src/agents/provider-*.ts
   - src/agents/session*.ts
   - src/agents/tool-call*.ts

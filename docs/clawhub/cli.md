@@ -1,8 +1,8 @@
 ---
-summary: "ClawHub CLI entry points for discovering, installing, removing, publishing, and verifying OpenClaw skills and plugins."
+summary: "ClawHub CLI entry points for discovering, installing, removing, publishing, and verifying Afora skills and plugins."
 read_when:
   - You want to use ClawHub from the command line
-  - You want to install ClawHub skills or plugins through OpenClaw
+  - You want to install ClawHub skills or plugins through Afora
   - You need to remove an installed ClawHub skill
   - You want to publish ClawHub packages
 title: "ClawHub CLI"
@@ -12,36 +12,36 @@ title: "ClawHub CLI"
 
 Two command-line surfaces talk to ClawHub:
 
-- `openclaw skills` / `openclaw plugins` - discover, install, and update
-  packages for a local OpenClaw agent or Gateway.
+- `afora skills` / `afora plugins` - discover, install, and update
+  packages for a local Afora agent or Gateway.
 - The standalone `clawhub` CLI - remove installed skills and handle publisher
   workflows including login, publish, sync, and transfer.
 
 ## Discover and install
 
 ```bash
-openclaw skills search "calendar"
-openclaw skills install @owner/<slug>
-openclaw skills install @owner/<slug> --version <version> --global
-openclaw skills install skills-sh:<owner>/<repo>/<slug>
-openclaw skills update @owner/<slug>
-openclaw skills update --all --acknowledge-clawhub-risk
-openclaw skills verify @owner/<slug> --card
+afora skills search "calendar"
+afora skills install @owner/<slug>
+afora skills install @owner/<slug> --version <version> --global
+afora skills install skills-sh:<owner>/<repo>/<slug>
+afora skills update @owner/<slug>
+afora skills update --all --acknowledge-clawhub-risk
+afora skills verify @owner/<slug> --card
 
-openclaw plugins search "calendar"
-openclaw plugins install clawhub:<package>
-openclaw plugins install clawhub:<package> --acknowledge-clawhub-risk
-openclaw plugins update <id-or-npm-spec>
-openclaw plugins update --all
+afora plugins search "calendar"
+afora plugins install clawhub:<package>
+afora plugins install clawhub:<package> --acknowledge-clawhub-risk
+afora plugins update <id-or-npm-spec>
+afora plugins update --all
 ```
 
 Skill installs target the active workspace `skills/` directory by default; add
 `--global` for the shared managed skills directory. Plugin installs need the
 explicit `clawhub:` prefix to force ClawHub resolution over npm, git, or a
-local path. Full flag reference: [`openclaw skills`](/cli/skills) and
-[`openclaw plugins`](/cli/plugins).
+local path. Full flag reference: [`afora skills`](/cli/skills) and
+[`afora plugins`](/cli/plugins).
 
-`skills-sh:` is an explicitly external catalog reference. OpenClaw sends it to
+`skills-sh:` is an explicitly external catalog reference. Afora sends it to
 ClawHub and installs the exact commit-pinned GitHub source returned by the
 resolver; it never downloads skill content from skills.sh directly. Unclaimed
 entries are labeled **Not scanned by ClawHub**. Claimed and ClawHub-scanned
@@ -49,7 +49,7 @@ skills use the native `@owner/<slug>` form instead.
 
 ### Release trust
 
-OpenClaw checks a release's ClawHub trust state before downloading it, for
+Afora checks a release's ClawHub trust state before downloading it, for
 both skills and plugins. Versioned releases use exact-release trust metadata;
 resolver-backed GitHub skills go through ClawHub's install resolver, which
 enforces scan and force-install policy before returning a pinned commit.
@@ -58,7 +58,7 @@ enforces scan and force-install policy before returning a pinned commit.
 - **Risky** releases (non-clean scan, non-blocking moderation state) print a
   warning and require `--acknowledge-clawhub-risk` to continue
   non-interactively.
-- **Official ClawHub publishers/packages and bundled OpenClaw sources** skip
+- **Official ClawHub publishers/packages and bundled Afora sources** skip
   the trust prompt and security-verdict fetch entirely.
 
 ## Remove an installed skill
@@ -72,14 +72,14 @@ clawhub uninstall @owner/my-skill
 
 The command asks for confirmation, then removes the installed skill directory
 and its ClawHub lockfile entry. Select the original agent workspace or shared
-OpenClaw state directory when the installation is outside the current workdir:
+Afora state directory when the installation is outside the current workdir:
 
 ```bash
 clawhub --workdir /path/to/agent-workspace uninstall @owner/my-skill
-clawhub --workdir ~/.openclaw uninstall @owner/my-skill
+clawhub --workdir ~/.afora uninstall @owner/my-skill
 ```
 
-For a custom `OPENCLAW_STATE_DIR`, replace `~/.openclaw` with that configured
+For a custom `AFORA_STATE_DIR`, replace `~/.afora` with that configured
 directory. See [Remove a ClawHub skill](/cli/skills#remove-a-clawhub-skill) for
 workspace targeting and skill refresh behavior.
 
@@ -119,9 +119,9 @@ clawhub explore --sort trending                              # browse the regist
 
 ## Related
 
-- [`openclaw skills`](/cli/skills) - local skill search, install, update, and
+- [`afora skills`](/cli/skills) - local skill search, install, update, and
   verification
-- [`openclaw plugins`](/cli/plugins) - plugin search, install, update, and
+- [`afora plugins`](/cli/plugins) - plugin search, install, update, and
   inspection
 - [ClawHub publishing](/clawhub/publishing) - owner scope, release validation,
   and review flow

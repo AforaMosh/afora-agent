@@ -7,7 +7,7 @@ title: "Bridge protocol"
 ---
 
 <Warning>
-The TCP bridge has been **removed**. Current OpenClaw builds do not ship the bridge listener, and `bridge.*` config keys are no longer in the schema. This page is historical reference only. Use the [Gateway protocol](/gateway/protocol) for all node/operator clients.
+The TCP bridge has been **removed**. Current Afora builds do not ship the bridge listener, and `bridge.*` config keys are no longer in the schema. This page is historical reference only. Use the [Gateway protocol](/gateway/protocol) for all node/operator clients.
 </Warning>
 
 ## Why it existed
@@ -65,7 +65,7 @@ Payload fields (all optional unless noted):
 
 ## Historical tailnet usage
 
-- Bind the bridge to a tailnet IP: `bridge.bind: "tailnet"` in `~/.openclaw/openclaw.json` (historical only; `bridge.*` is no longer valid config).
+- Bind the bridge to a tailnet IP: `bridge.bind: "tailnet"` in `~/.AforaMosh/afora-agent.json` (historical only; `bridge.*` is no longer valid config).
 - Clients connected via MagicDNS name or tailnet IP.
 - Bonjour does not cross networks; wide-area DNS-SD or a manual host/port was required otherwise.
 

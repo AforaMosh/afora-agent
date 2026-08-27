@@ -15,7 +15,7 @@ const response = {
   schema: {},
   uiHints: {
     "channels.sms.fromNumber": {
-      docsUrl: "https://docs.openclaw.ai/channels/sms",
+      docsUrl: "https://docs.afora.ai/channels/sms",
       presentation: "phone-number",
     },
   },
@@ -48,7 +48,7 @@ describe("ConfigSchemaLookupResultSchema", () => {
       Value.Check(ConfigSchemaLookupResultSchema, {
         path: "gateway",
         schema: { type: "object" },
-        hint: { docsUrl: "https://docs.openclaw.ai/gateway" },
+        hint: { docsUrl: "https://docs.afora.ai/gateway" },
         children: [],
       }),
     ).toBe(true);

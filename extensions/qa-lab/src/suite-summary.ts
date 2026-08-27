@@ -1,7 +1,7 @@
 // Qa Lab plugin module implements suite summary behavior.
 import fs from "node:fs/promises";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { asSafeIntegerInRange, isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { asSafeIntegerInRange, isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { QaSuiteArtifactError } from "./errors.js";
 import type { QaEvidenceSummaryJson, QaEvidenceTiming } from "./evidence-summary.js";
 import type { QaProviderMode } from "./model-selection.js";

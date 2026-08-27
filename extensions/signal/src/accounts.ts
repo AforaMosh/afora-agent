@@ -5,10 +5,10 @@ import {
   normalizeAccountId,
   resolveAccountEntry,
   resolveMergedAccountConfig,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/account-resolution";
-import type { ReplyToMode } from "openclaw/plugin-sdk/config-contracts";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+  type AforaConfig,
+} from "afora-agent/plugin-sdk/account-resolution";
+import type { ReplyToMode } from "afora-agent/plugin-sdk/config-contracts";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { SignalAccountConfig, SignalTransportConfig } from "./account-types.js";
 import {
   allocateSignalManagedNativePort,
@@ -56,7 +56,7 @@ export const listSignalAccountIds = listAccountIds;
 export const resolveDefaultSignalAccountId = resolveDefaultAccountId;
 
 export function resolveSignalAccountConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   accountId: string,
 ): SignalAccountConfig {
   const channelConfig = cfg.channels?.signal;
@@ -88,12 +88,12 @@ function isSignalAccountConfigured(config: SignalAccountConfig): boolean {
   return Boolean(normalizeOptionalString(config.account) || config.transport);
 }
 
-function isSignalAccountEnabled(cfg: OpenClawConfig, config: SignalAccountConfig): boolean {
+function isSignalAccountEnabled(cfg: AforaConfig, config: SignalAccountConfig): boolean {
   return cfg.channels?.signal?.enabled !== false && config.enabled !== false;
 }
 
 function resolveSignalManagedNativePort(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   accountConfig: SignalAccountConfig;
   transport: SignalTransportConfig | undefined;
@@ -233,7 +233,7 @@ export function resolveSignalTransport(
 }
 
 export function resolveSignalAccount(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): ResolvedSignalAccount {
   const accountId = normalizeAccountId(
@@ -265,7 +265,7 @@ export function resolveSignalAccount(params: {
   };
 }
 
-export function listEnabledSignalAccounts(cfg: OpenClawConfig): ResolvedSignalAccount[] {
+export function listEnabledSignalAccounts(cfg: AforaConfig): ResolvedSignalAccount[] {
   return listSignalAccountIds(cfg)
     .map((accountId) => resolveSignalAccount({ cfg, accountId }))
     .filter((account) => account.enabled);
@@ -278,7 +278,7 @@ function normalizeSignalReplyToMode(value: unknown): ReplyToMode | undefined {
 }
 
 export function resolveSignalReplyToMode(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   chatType?: string | null;
 }): ReplyToMode {

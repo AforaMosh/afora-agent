@@ -1,6 +1,6 @@
 ---
 name: discord-user-post
-description: Post an approved message as the logged-in Discord user through the Discord desktop app. Use for release announcements or other direct user-authored Discord posts; not for OpenClaw channel sends, bots, webhooks, relays, agent sessions, or archive search.
+description: Post an approved message as the logged-in Discord user through the Discord desktop app. Use for release announcements or other direct user-authored Discord posts; not for Afora channel sends, bots, webhooks, relays, agent sessions, or archive search.
 ---
 
 # Discord User Post
@@ -44,7 +44,7 @@ again before sending.
 
 ## Guardrails
 
-- Never use `openclaw message`, an OpenClaw agent, a Discord bot, webhook, relay,
+- Never use `afora message`, an Afora agent, a Discord bot, webhook, relay,
   or token for this workflow.
 - Never expose private Discord content or account details in public output.
 - Never send a draft, partial message, duplicate, or unreviewed attachment.

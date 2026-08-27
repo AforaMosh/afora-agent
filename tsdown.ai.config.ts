@@ -12,7 +12,7 @@ const externalDependencies = [
 
 const config = {
   clean: true,
-  dts: process.env.OPENCLAW_RUN_NODE_SKIP_DTS_BUILD !== "1",
+  dts: process.env.AFORA_RUN_NODE_SKIP_DTS_BUILD !== "1",
   entry: {
     index: "packages/ai/src/index.ts",
     providers: "packages/ai/src/providers.ts",

@@ -1,5 +1,5 @@
 // Normalizes env flag values and logs env warnings lazily.
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import type { SubsystemLogger } from "../logging/subsystem.js";
 import { createLazyPromise } from "../shared/lazy-runtime.js";
 import { parseBooleanValue } from "../utils/boolean.js";
@@ -101,7 +101,7 @@ export function isTruthyEnvValue(value?: string): boolean {
 
 /** Applies process-wide env normalization before runtime configuration is read. */
 export function normalizeEnv(): void {
-  // afora: AFORA_* aliases must land before anything reads OPENCLAW_*.
+  // afora: AFORA_* aliases must land before anything reads AFORA_*.
   applyAforaEnvAliases(process.env);
   normalizeZaiEnv(process.env);
 }

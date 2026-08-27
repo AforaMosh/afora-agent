@@ -3,7 +3,7 @@ import type { ProviderSystemPromptContribution } from "../agents/system-prompt-c
 import type { ReplyPayload } from "../auto-reply/reply-payload.js";
 import type { ThinkLevel } from "../auto-reply/thinking.shared.js";
 import type { ModelProviderConfig } from "../config/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { ModelRegistry } from "../llm/model-registry.js";
 import type { ProviderSystemPromptContributionContext } from "./provider-authentication.types.js";
 import type { ProviderRuntimeModel } from "./provider-runtime-model.types.js";
@@ -28,7 +28,7 @@ type ProviderRuntimeProviderConfig = {
  * belong in `prepareDynamicModel`.
  */
 export type ProviderResolveDynamicModelContext = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentDir?: string;
   workspaceDir?: string;
   agentRuntimeId?: string;
@@ -50,7 +50,7 @@ export type ProviderResolveDynamicModelContext = {
 export type ProviderPrepareDynamicModelContext = ProviderResolveDynamicModelContext;
 
 export type ProviderPreferRuntimeResolvedModelContext = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentDir?: string;
   workspaceDir?: string;
   provider: string;
@@ -60,12 +60,12 @@ export type ProviderPreferRuntimeResolvedModelContext = {
 /**
  * Last-chance rewrite hook for provider-owned transport normalization.
  *
- * Runs after OpenClaw resolves an explicit/discovered/dynamic model and before
+ * Runs after Afora resolves an explicit/discovered/dynamic model and before
  * the embedded runner uses it. Typical uses: swap API ids, fix base URLs, or
  * patch provider-specific compat bits.
  */
 export type ProviderNormalizeResolvedModelContext = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentDir?: string;
   workspaceDir?: string;
   provider: string;
@@ -92,7 +92,7 @@ export type ProviderNormalizeModelIdContext = {
  * plugin-owned transport family.
  */
 export type ProviderNormalizeTransportContext = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   provider: string;
   modelId?: string;
@@ -107,7 +107,7 @@ export type ProviderNormalizeTransportContext = {
  * for the request.
  */
 export type ProviderPrepareRuntimeAuthContext = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentDir?: string;
   workspaceDir?: string;
   env: NodeJS.ProcessEnv;
@@ -141,7 +141,7 @@ export type ProviderPreparedRuntimeAuth = {
  * snapshots often need a different credential source than live inference
  * requests, and they run outside the embedded runner.
  *
- * The helper methods cover the common OpenClaw auth resolution paths:
+ * The helper methods cover the common Afora auth resolution paths:
  *
  * - `resolveApiKeyFromConfigAndStore`: env/config/plain token/api_key profiles
  * - `resolveOAuthToken`: oauth/token profiles resolved through the auth store,
@@ -151,7 +151,7 @@ export type ProviderPreparedRuntimeAuth = {
  * token blob, read a legacy credential file, or pick between aliases).
  */
 export type ProviderResolveUsageAuthContext = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentDir?: string;
   workspaceDir?: string;
   env: NodeJS.ProcessEnv;
@@ -201,7 +201,7 @@ export type ProviderResolvedUsageAuth = ProviderUsageAuthToken | { handled: true
  * owns the provider-specific HTTP request + response normalization.
  */
 export type ProviderFetchUsageSnapshotContext = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentDir?: string;
   workspaceDir?: string;
   env: NodeJS.ProcessEnv;
@@ -221,29 +221,29 @@ export type ProviderFetchUsageSnapshotContext = {
 /**
  * Provider-owned auth-doctor hint input.
  *
- * Called when OAuth refresh fails and OpenClaw wants a provider-specific repair
+ * Called when OAuth refresh fails and Afora wants a provider-specific repair
  * hint to append to the generic re-auth message. Use this for legacy profile-id
  * migrations or other provider-owned auth-store cleanup guidance.
  */
 export type ProviderAuthDoctorHintContext = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   store: AuthProfileStore;
   provider: string;
   profileId?: string;
 };
 
 /**
- * Provider-owned extra-param normalization before OpenClaw builds its generic
+ * Provider-owned extra-param normalization before Afora builds its generic
  * stream option wrapper.
  *
  * Use this to set provider defaults or rewrite provider-specific config keys
  * into the merged `extraParams` object. Return the full next extraParams object.
  */
-/** Provider-facing effort after OpenClaw lowers orchestration-only modes. */
+/** Provider-facing effort after Afora lowers orchestration-only modes. */
 type ProviderTransportThinkingLevel = Exclude<ThinkLevel, "ultra">;
 
 export type ProviderPrepareExtraParamsContext = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentDir?: string;
   workspaceDir?: string;
   agentId?: string;
@@ -273,7 +273,7 @@ export type ProviderResolvePromptOverlayContext = ProviderSystemPromptContributi
 };
 
 export type ProviderFollowupFallbackRouteContext = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentDir?: string;
   workspaceDir?: string;
   provider: string;
@@ -291,7 +291,7 @@ export type ProviderFollowupFallbackRouteResult = {
 };
 
 export type ProviderResolveAuthProfileIdContext = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentDir?: string;
   workspaceDir?: string;
   provider: string;

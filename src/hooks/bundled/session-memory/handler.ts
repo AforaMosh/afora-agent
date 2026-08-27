@@ -8,7 +8,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   resolveAgentIdByWorkspacePath,
   resolveAgentWorkspaceDir,
@@ -22,7 +22,7 @@ import {
   type TranscriptEvent,
 } from "../../../config/sessions/session-accessor.js";
 import { selectVisibleTranscriptEvents } from "../../../config/sessions/transcript-visible-events.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { isVitestRuntimeEnv } from "../../../infra/env.js";
 import { root } from "../../../infra/fs-safe.js";
 import { createSubsystemLogger } from "../../../logging/subsystem.js";
@@ -183,7 +183,7 @@ function captureRecentSessionMemoryEvents(
 }
 
 function resolveDisplaySessionKey(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   workspaceDir?: string;
   sessionKey: string;
 }): string {
@@ -224,7 +224,7 @@ async function saveSessionMemoryNow(
     log.debug("Session memory hook triggered", { action: event.action, type: event.type });
 
     const context = event.context || {};
-    const cfg = context.cfg as OpenClawConfig | undefined;
+    const cfg = context.cfg as AforaConfig | undefined;
     const contextWorkspaceDir =
       typeof context.workspaceDir === "string" && context.workspaceDir.trim().length > 0
         ? context.workspaceDir
@@ -397,7 +397,7 @@ const saveSessionToMemory: HookHandler = (event) => {
         ? sessionEntry.sessionId.trim()
         : undefined;
     if (sessionId) {
-      const cfg = context.cfg as OpenClawConfig | undefined;
+      const cfg = context.cfg as AforaConfig | undefined;
       const storePath =
         typeof context.storePath === "string" && context.storePath.trim()
           ? context.storePath.trim()

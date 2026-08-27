@@ -1,5 +1,5 @@
 // TTS auto mode helpers decide when speech should be generated automatically.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import type { TtsAutoMode } from "../config/types.tts.js";
 
 /** Accepted TTS auto modes from config, prefs, and session-level overrides. */

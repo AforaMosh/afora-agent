@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runMantisVisualDriver, runMantisVisualTask } from "./visual-task.runtime.js";
 
@@ -123,7 +123,7 @@ describe("mantis visual task runtime", () => {
       "pnpm",
       "--dir",
       repoRoot,
-      "openclaw",
+      "afora",
       "qa",
       "mantis",
       "visual-driver",
@@ -311,7 +311,7 @@ describe("mantis visual task runtime", () => {
       }
       if (command === "pnpm") {
         return {
-          stdout: `\n> openclaw qa mantis visual-driver --vision-prompt '{"visible": boolean}'\n${JSON.stringify(
+          stdout: `\n> afora qa mantis visual-driver --vision-prompt '{"visible": boolean}'\n${JSON.stringify(
             {
               ok: true,
               outputs: [
@@ -359,7 +359,7 @@ describe("mantis visual task runtime", () => {
     expect(launchArgs[launchShellIndex + 3]).toContain("--no-first-run");
     const visionArgs = commands.find((entry) => entry.command === "pnpm")?.args ?? [];
     expectArgsContainSequence(visionArgs, [
-      "openclaw",
+      "afora",
       "infer",
       "image",
       "describe",

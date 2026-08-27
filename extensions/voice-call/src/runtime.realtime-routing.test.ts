@@ -1,14 +1,14 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { OpenKeyedStoreOptions } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { OpenKeyedStoreOptions } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateSyncKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import type {
   RealtimeVoiceBridge,
   RealtimeVoiceProviderPlugin,
-} from "openclaw/plugin-sdk/realtime-voice";
-import { useAutoCleanupTempDirTracker } from "openclaw/plugin-sdk/test-env";
+} from "afora-agent/plugin-sdk/realtime-voice";
+import { useAutoCleanupTempDirTracker } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { WebSocket } from "ws";
 import type { VoiceCallStateRuntime } from "./runtime-state.js";
@@ -77,7 +77,7 @@ afterEach(() => {
 
 describe("voice-call realtime route ownership", () => {
   it("selects provider readiness and bridge auth from each inbound number owner", async () => {
-    const storePath = tempDirs.make("openclaw-voice-routing-");
+    const storePath = tempDirs.make("afora-voice-routing-");
     const sockets: WebSocket[] = [];
     const servers: Array<Awaited<ReturnType<typeof startUpgradeWsServer>>> = [];
     let runtime: VoiceCallRuntime | undefined;
@@ -128,7 +128,7 @@ describe("voice-call realtime route ownership", () => {
         agents: {
           list: [{ id: "main", default: true }, { id: "sales" }, { id: "support" }],
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       runtime = await createVoiceCallRuntime({
         config,

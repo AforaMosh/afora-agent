@@ -1,5 +1,5 @@
 // Doctor service audit test helpers normalize expected service environment-source labels.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { isEnvironmentFileOnlySource } from "../daemon/service-managed-env.js";
 import type { GatewayServiceEnvironmentValueSource } from "../daemon/service-types.js";
 
@@ -18,7 +18,7 @@ export function readEmbeddedGatewayTokenForTest(
     environmentValueSources?: Record<string, GatewayServiceEnvironmentValueSource>;
   } | null,
 ) {
-  return isEnvironmentFileOnlySource(command?.environmentValueSources?.OPENCLAW_GATEWAY_TOKEN)
+  return isEnvironmentFileOnlySource(command?.environmentValueSources?.AFORA_GATEWAY_TOKEN)
     ? undefined
-    : normalizeOptionalString(command?.environment?.OPENCLAW_GATEWAY_TOKEN);
+    : normalizeOptionalString(command?.environment?.AFORA_GATEWAY_TOKEN);
 }

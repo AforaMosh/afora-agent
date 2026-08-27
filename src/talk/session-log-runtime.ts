@@ -1,5 +1,5 @@
 // Talk session log runtime persists voice session transcripts and metadata.
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import type { RealtimeVoiceBridgeEvent, RealtimeVoiceRole } from "./provider-types.js";
 
 /** Ring-buffer entry for transcript text used by Talk health and echo suppression. */

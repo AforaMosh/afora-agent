@@ -2,15 +2,15 @@
  * Bundled Codex plugin entry: app-server harness, media understanding,
  * migration provider, CLI-session commands, and binding hooks.
  */
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { mutateConfigFile } from "openclaw/plugin-sdk/config-mutation";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { mutateConfigFile } from "afora-agent/plugin-sdk/config-mutation";
 import {
   normalizePluginsConfig,
   resolveEffectiveEnableState,
   resolveLivePluginConfigObject,
-} from "openclaw/plugin-sdk/plugin-config-runtime";
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
-import type { PluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
+} from "afora-agent/plugin-sdk/plugin-config-runtime";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
+import type { PluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import { registerCodexCliMetadata } from "./cli-metadata.js";
 import {
   createCodexAppServerAgentHarness,
@@ -68,8 +68,8 @@ export default definePluginEntry({
     // cannot identify the owning plugin package or its pinned dependencies.
     setManagedCodexPluginRoot(api.rootDir);
     const resolveCurrentConfig = () =>
-      api.runtime.config?.current ? (api.runtime.config.current() as OpenClawConfig) : undefined;
-    const resolvePluginConfig = (resolveConfig: () => OpenClawConfig | undefined) => {
+      api.runtime.config?.current ? (api.runtime.config.current() as AforaConfig) : undefined;
+    const resolvePluginConfig = (resolveConfig: () => AforaConfig | undefined) => {
       const liveConfig = resolveConfig();
       // Codex plugin config can change at runtime. A missing live entry is an
       // explicit removal, while an unavailable runtime snapshot uses startup config.
@@ -131,7 +131,7 @@ export default definePluginEntry({
     const bindingStore = createLazyCodexAppServerBindingStore(lazyBindingStateStore);
     registerCodexCliMetadata(api);
     const sessionCatalogControlFactory = createCodexSessionCatalogControl({
-      config: api.config as OpenClawConfig,
+      config: api.config as AforaConfig,
       getPluginConfig: resolveCurrentPluginConfig,
       getRuntimeConfig: resolveCurrentConfig,
     });
@@ -149,7 +149,7 @@ export default definePluginEntry({
         sessionCatalogControlFactory,
         {
           getPluginConfig: resolveCurrentPluginConfig,
-          getRuntimeConfig: () => resolveCurrentConfig() ?? (api.config as OpenClawConfig),
+          getRuntimeConfig: () => resolveCurrentConfig() ?? (api.config as AforaConfig),
         },
       )) {
         api.registerNodeHostCommand(command);
@@ -246,7 +246,7 @@ export default definePluginEntry({
             resolveCodexCliSessionForBindingOnNode({ runtime: api.runtime, ...params }),
           codexPluginsManagementIo: {
             readConfig: () => {
-              const current = (api.runtime.config?.current?.() ?? {}) as OpenClawConfig;
+              const current = (api.runtime.config?.current?.() ?? {}) as AforaConfig;
               const plugins = (current as Record<string, unknown>).plugins;
               if (!plugins || typeof plugins !== "object") {
                 return Promise.resolve({});

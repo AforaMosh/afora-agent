@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../plugins/bundled-dir.js", async (importOriginal) => {
@@ -10,12 +10,12 @@ vi.mock("../../plugins/bundled-dir.js", async (importOriginal) => {
   return {
     ...actual,
     resolveBundledPluginsDir: (env: NodeJS.ProcessEnv = process.env) =>
-      env.OPENCLAW_BUNDLED_PLUGINS_DIR ?? actual.resolveBundledPluginsDir(env),
+      env.AFORA_BUNDLED_PLUGINS_DIR ?? actual.resolveBundledPluginsDir(env),
   };
 });
 
 const tempDirs: string[] = [];
-const originalBundledPluginsDir = process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+const originalBundledPluginsDir = process.env.AFORA_BUNDLED_PLUGINS_DIR;
 
 function makeBundledRoot(prefix: string): { root: string; pluginsDir: string } {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -44,9 +44,9 @@ afterEach(() => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
   if (originalBundledPluginsDir === undefined) {
-    delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+    delete process.env.AFORA_BUNDLED_PLUGINS_DIR;
   } else {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = originalBundledPluginsDir;
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = originalBundledPluginsDir;
   }
   vi.resetModules();
   vi.doUnmock("../../plugins/channel-catalog-registry.js");
@@ -55,12 +55,12 @@ afterEach(() => {
 
 describe("bundled root-aware plugin lookups", () => {
   it("reads bundled channel ids from the active bundled root without re-importing", async () => {
-    const rootA = makeBundledRoot("openclaw-bundled-ids-a-");
-    const rootB = makeBundledRoot("openclaw-bundled-ids-b-");
+    const rootA = makeBundledRoot("afora-bundled-ids-a-");
+    const rootB = makeBundledRoot("afora-bundled-ids-b-");
 
     vi.doMock("../../plugins/channel-catalog-registry.js", () => ({
       listChannelCatalogEntries: (params?: { env?: NodeJS.ProcessEnv }) => {
-        const activeRoot = params?.env?.OPENCLAW_BUNDLED_PLUGINS_DIR;
+        const activeRoot = params?.env?.AFORA_BUNDLED_PLUGINS_DIR;
         if (activeRoot === rootA.pluginsDir) {
           return [{ pluginId: "alpha", channel: { id: "alpha-chat" } }];
         }
@@ -76,16 +76,16 @@ describe("bundled root-aware plugin lookups", () => {
       "./bundled-ids.js?scope=root-aware-id-cache",
     );
 
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = rootA.pluginsDir;
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = rootA.pluginsDir;
     expect(bundledIds.listBundledChannelIds()).toEqual(["alpha-chat"]);
 
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = rootB.pluginsDir;
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = rootB.pluginsDir;
     expect(bundledIds.listBundledChannelIds()).toEqual(["beta-chat"]);
   });
 
   it("reads bootstrap plugins from the active bundled root without re-importing", async () => {
-    const rootA = makeBundledRoot("openclaw-bootstrap-a-");
-    const rootB = makeBundledRoot("openclaw-bootstrap-b-");
+    const rootA = makeBundledRoot("afora-bootstrap-a-");
+    const rootB = makeBundledRoot("afora-bootstrap-b-");
 
     vi.doMock("./bundled.js", () => ({
       getBundledChannelPlugin: (id: string) => ({
@@ -96,7 +96,7 @@ describe("bundled root-aware plugin lookups", () => {
       }),
       getBundledChannelSetupPlugin: (id: string) => {
         const suffix = resolveMockRootSuffix({
-          activeRoot: process.env.OPENCLAW_BUNDLED_PLUGINS_DIR,
+          activeRoot: process.env.AFORA_BUNDLED_PLUGINS_DIR,
           rootAPluginsDir: rootA.pluginsDir,
           rootBPluginsDir: rootB.pluginsDir,
         });
@@ -112,7 +112,7 @@ describe("bundled root-aware plugin lookups", () => {
       }),
       getBundledChannelSetupSecrets: (id: string) => {
         const suffix = resolveMockRootSuffix({
-          activeRoot: process.env.OPENCLAW_BUNDLED_PLUGINS_DIR,
+          activeRoot: process.env.AFORA_BUNDLED_PLUGINS_DIR,
           rootAPluginsDir: rootA.pluginsDir,
           rootBPluginsDir: rootB.pluginsDir,
         });
@@ -127,13 +127,13 @@ describe("bundled root-aware plugin lookups", () => {
       "./bootstrap-registry.js?scope=root-aware-bootstrap-cache",
     );
 
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = rootA.pluginsDir;
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = rootA.pluginsDir;
     expect(bootstrapRegistry.getBootstrapChannelPlugin("alpha")?.meta.label).toBe("setup-A");
     expect(
       bootstrapRegistry.getBootstrapChannelSecrets("alpha")?.secretTargetRegistryEntries?.[0]?.id,
     ).toBe("setup-alpha-A");
 
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = rootB.pluginsDir;
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = rootB.pluginsDir;
     expect(bootstrapRegistry.getBootstrapChannelPlugin("beta")?.meta.label).toBe("setup-B");
     expect(
       bootstrapRegistry.getBootstrapChannelSecrets("beta")?.secretTargetRegistryEntries?.[0]?.id,

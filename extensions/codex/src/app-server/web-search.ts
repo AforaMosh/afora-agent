@@ -1,5 +1,5 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { JsonObject } from "./protocol.js";
 
 export type CodexWebSearchPlan = {
@@ -27,18 +27,18 @@ function normalizeUniqueStrings(value: unknown): string[] | undefined {
   return normalized.length > 0 ? normalized : undefined;
 }
 
-function hasManagedSearchProvider(config: OpenClawConfig | undefined): boolean {
+function hasManagedSearchProvider(config: AforaConfig | undefined): boolean {
   return normalizeOptionalString(config?.tools?.web?.search?.provider) !== undefined;
 }
 
-function hasNativeDomainRestrictions(config: OpenClawConfig | undefined): boolean {
+function hasNativeDomainRestrictions(config: AforaConfig | undefined): boolean {
   return (
     normalizeUniqueStrings(config?.tools?.web?.search?.openaiCodex?.allowedDomains) !== undefined
   );
 }
 
 export function buildCodexNativeWebSearchThreadConfig(
-  config: OpenClawConfig | undefined,
+  config: AforaConfig | undefined,
 ): JsonObject {
   const nativeConfig = config?.tools?.web?.search?.openaiCodex;
   const threadConfig: JsonObject = {
@@ -77,7 +77,7 @@ export function buildCodexNativeWebSearchThreadConfig(
 }
 
 export function resolveCodexWebSearchPlan(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   disableTools?: boolean;
   nativeToolSurfaceEnabled?: boolean;
   nativeProviderWebSearchSupport?: CodexNativeWebSearchSupport;

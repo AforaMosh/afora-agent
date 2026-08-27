@@ -1,7 +1,7 @@
 // Shared compaction formatting and user-facing notice payload helpers.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { sanitizeForLog } from "../../../packages/terminal-core/src/ansi.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ReplyPayload } from "../types.js";
 
 export type CompactionNoticePhase =
@@ -34,7 +34,7 @@ export function formatCompactionModelRef(provider?: string, model?: string): str
   return "unknown model";
 }
 
-export function shouldNotifyUserAboutCompaction(cfg?: OpenClawConfig): boolean {
+export function shouldNotifyUserAboutCompaction(cfg?: AforaConfig): boolean {
   return cfg?.agents?.defaults?.compaction?.notifyUser === true;
 }
 

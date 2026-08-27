@@ -11,14 +11,14 @@ Adds syntax highlighting for languages outside the default diffs viewer set.
 
 ## Distribution
 
-- Package: `@openclaw/diffs-language-pack`
-- Install route: npm; ClawHub: `clawhub:@openclaw/diffs-language-pack`
+- Package: `@afora/diffs-language-pack`
+- Install route: npm; ClawHub: `clawhub:@afora/diffs-language-pack`
 
 ## Surface
 
 plugin
 
-<!-- openclaw-plugin-reference:manual-start -->
+<!-- afora-plugin-reference:manual-start -->
 
 ## Added languages
 
@@ -28,4 +28,4 @@ Examples include Astro, Vue, Svelte, MDX, GraphQL, Terraform/HCL, Nix, Clojure, 
 
 See [Shiki languages](https://shiki.style/languages) for Shiki's upstream language and alias catalog.
 
-<!-- openclaw-plugin-reference:manual-end -->
+<!-- afora-plugin-reference:manual-end -->

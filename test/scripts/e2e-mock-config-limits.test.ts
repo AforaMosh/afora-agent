@@ -22,10 +22,10 @@ const scrubbedEnvKeys = [
   "MOCK_RESPONSE_CHUNK_DELAY_MS",
   "MOCK_TLS_CERT",
   "MOCK_TLS_KEY",
-  "OPENCLAW_CONFIG_RELOAD_LOG_MAX_READ_BYTES",
-  "OPENCLAW_CONFIG_RELOAD_LOG_PATH",
-  "OPENCLAW_CONFIG_RELOAD_LOG_TIMEOUT_MS",
-  "OPENCLAW_MOCK_OPENAI_PORT",
+  "AFORA_CONFIG_RELOAD_LOG_MAX_READ_BYTES",
+  "AFORA_CONFIG_RELOAD_LOG_PATH",
+  "AFORA_CONFIG_RELOAD_LOG_TIMEOUT_MS",
+  "AFORA_MOCK_OPENAI_PORT",
   "RAW_SCHEMA_ERROR",
   "SUCCESS_MARKER",
 ];
@@ -259,8 +259,8 @@ describe("mock OpenAI response markers", () => {
     const final = await conversation.request();
     expect(final.body.output?.[0]?.content?.[0]?.text).toBe(
       options.retry
-        ? "OPENCLAW_E2E_EDIT_FAILURE_MATCHED_RETRY_FINAL"
-        : "OPENCLAW_E2E_EDIT_FAILURE_UNRESOLVED_FINAL",
+        ? "AFORA_E2E_EDIT_FAILURE_MATCHED_RETRY_FINAL"
+        : "AFORA_E2E_EDIT_FAILURE_UNRESOLVED_FINAL",
     );
     responses.push(final);
     return responses;
@@ -270,11 +270,11 @@ describe("mock OpenAI response markers", () => {
     await withMockServer(mockOpenAiPath, {}, async (baseUrl) => {
       const unresolved = createEditRecoveryConversation(
         baseUrl,
-        "OPENCLAW_E2E_EDIT_FAILURE_UNRESOLVED",
+        "AFORA_E2E_EDIT_FAILURE_UNRESOLVED",
       );
       const matchedRetry = createEditRecoveryConversation(
         baseUrl,
-        "OPENCLAW_E2E_EDIT_FAILURE_MATCHED_RETRY",
+        "AFORA_E2E_EDIT_FAILURE_MATCHED_RETRY",
       );
       expect((await driveEditRecovery(unresolved, { retry: false })).length).toBe(3);
       expect(
@@ -287,11 +287,11 @@ describe("mock OpenAI response markers", () => {
     await withMockServer(mockOpenAiPath, {}, async (baseUrl) => {
       const unresolved = createEditRecoveryConversation(
         baseUrl,
-        "OPENCLAW_E2E_EDIT_FAILURE_UNRESOLVED",
+        "AFORA_E2E_EDIT_FAILURE_UNRESOLVED",
       );
       const matchedRetry = createEditRecoveryConversation(
         baseUrl,
-        "OPENCLAW_E2E_EDIT_FAILURE_MATCHED_RETRY",
+        "AFORA_E2E_EDIT_FAILURE_MATCHED_RETRY",
       );
       for (const conversation of [unresolved, matchedRetry]) {
         await completeTool(
@@ -311,7 +311,7 @@ describe("mock OpenAI response markers", () => {
       }
       const unresolvedFinal = await unresolved.request();
       expect(unresolvedFinal.body.output?.[0]?.content?.[0]?.text).toBe(
-        "OPENCLAW_E2E_EDIT_FAILURE_UNRESOLVED_FINAL",
+        "AFORA_E2E_EDIT_FAILURE_UNRESOLVED_FINAL",
       );
       await completeTool(
         matchedRetry,
@@ -320,7 +320,7 @@ describe("mock OpenAI response markers", () => {
         editRecoveryTranscript.retry.output,
       );
       expect((await matchedRetry.request()).body.output?.[0]?.content?.[0]?.text).toBe(
-        "OPENCLAW_E2E_EDIT_FAILURE_MATCHED_RETRY_FINAL",
+        "AFORA_E2E_EDIT_FAILURE_MATCHED_RETRY_FINAL",
       );
     });
   });
@@ -328,26 +328,26 @@ describe("mock OpenAI response markers", () => {
   it("returns fixture errors for missing tools, malformed outcomes, and impossible prefixes", async () => {
     await withMockServer(mockOpenAiPath, {}, async (baseUrl) => {
       const missingTools = await postResponses(baseUrl, {
-        input: [{ content: "Run OPENCLAW_E2E_EDIT_FAILURE_UNRESOLVED.", role: "user" }],
+        input: [{ content: "Run AFORA_E2E_EDIT_FAILURE_UNRESOLVED.", role: "user" }],
       });
       expect(missingTools.body.output?.[0]?.content?.[0]?.text).toContain(
-        "OPENCLAW_E2E_EDIT_FAILURE_FIXTURE_ERROR",
+        "AFORA_E2E_EDIT_FAILURE_FIXTURE_ERROR",
       );
 
       const malformedPrefix = await postResponses(baseUrl, {
         input: [
-          { content: "Run OPENCLAW_E2E_EDIT_FAILURE_UNRESOLVED.", role: "user" },
+          { content: "Run AFORA_E2E_EDIT_FAILURE_UNRESOLVED.", role: "user" },
           outputFor("wrong-call-id", "not a write result"),
         ],
         tools: editRecoveryTools,
       });
       expect(malformedPrefix.body.output?.[0]?.content?.[0]?.text).toContain(
-        "OPENCLAW_E2E_EDIT_FAILURE_FIXTURE_ERROR",
+        "AFORA_E2E_EDIT_FAILURE_FIXTURE_ERROR",
       );
 
       const conversation = createEditRecoveryConversation(
         baseUrl,
-        "OPENCLAW_E2E_EDIT_FAILURE_UNRESOLVED",
+        "AFORA_E2E_EDIT_FAILURE_UNRESOLVED",
       );
       const seed = await conversation.request();
       const seedCallId = seed.body.output?.[0]?.call_id;
@@ -356,20 +356,20 @@ describe("mock OpenAI response markers", () => {
       }
       const malformedOutcome = await postResponses(baseUrl, {
         input: [
-          { content: "Run OPENCLAW_E2E_EDIT_FAILURE_UNRESOLVED.", role: "user" },
+          { content: "Run AFORA_E2E_EDIT_FAILURE_UNRESOLVED.", role: "user" },
           outputFor(seedCallId, "not a write result"),
         ],
         tools: editRecoveryTools,
       });
       expect(malformedOutcome.body.output?.[0]?.content?.[0]?.text).toContain(
-        "OPENCLAW_E2E_EDIT_FAILURE_FIXTURE_ERROR",
+        "AFORA_E2E_EDIT_FAILURE_FIXTURE_ERROR",
       );
     });
   });
 
-  it("echoes dynamic OpenClaw E2E markers", async () => {
+  it("echoes dynamic Afora E2E markers", async () => {
     await withMockServer(mockOpenAiPath, {}, async (baseUrl) => {
-      for (const marker of ["OPENCLAW_E2E_SEED_0_123", "OPENCLAW_E2E_ANDROID_OK"]) {
+      for (const marker of ["AFORA_E2E_SEED_0_123", "AFORA_E2E_ANDROID_OK"]) {
         const response = await fetch(`${baseUrl}/v1/responses`, {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -523,10 +523,10 @@ describe("e2e mock and config helper numeric limits", () => {
     expect(mockPort.stderr).toContain("invalid MOCK_PORT: 44080tcp");
 
     const fallbackPort = runScript(mockOpenAiPath, {
-      OPENCLAW_MOCK_OPENAI_PORT: "44080http",
+      AFORA_MOCK_OPENAI_PORT: "44080http",
     });
     expect(fallbackPort.status).not.toBe(0);
-    expect(fallbackPort.stderr).toContain("invalid OPENCLAW_MOCK_OPENAI_PORT: 44080http");
+    expect(fallbackPort.stderr).toContain("invalid AFORA_MOCK_OPENAI_PORT: 44080http");
   });
 
   it("rejects out-of-range mock OpenAI port env values", () => {
@@ -535,10 +535,10 @@ describe("e2e mock and config helper numeric limits", () => {
     expect(mockPort.stderr).toContain("invalid MOCK_PORT: 65536");
 
     const fallbackPort = runScript(mockOpenAiPath, {
-      OPENCLAW_MOCK_OPENAI_PORT: "65536",
+      AFORA_MOCK_OPENAI_PORT: "65536",
     });
     expect(fallbackPort.status).not.toBe(0);
-    expect(fallbackPort.stderr).toContain("invalid OPENCLAW_MOCK_OPENAI_PORT: 65536");
+    expect(fallbackPort.stderr).toContain("invalid AFORA_MOCK_OPENAI_PORT: 65536");
   });
 
   it("rejects loose OpenAI web-search mock port env values", () => {
@@ -566,24 +566,24 @@ describe("e2e mock and config helper numeric limits", () => {
 
   it("rejects loose config-reload log timeout env values", () => {
     const result = runScript(configReloadAssertPath, {
-      OPENCLAW_CONFIG_RELOAD_LOG_TIMEOUT_MS: "30000ms",
+      AFORA_CONFIG_RELOAD_LOG_TIMEOUT_MS: "30000ms",
     });
 
     expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain("invalid OPENCLAW_CONFIG_RELOAD_LOG_TIMEOUT_MS: 30000ms");
+    expect(result.stderr).toContain("invalid AFORA_CONFIG_RELOAD_LOG_TIMEOUT_MS: 30000ms");
   });
 
   it("rejects loose config-reload log read caps", () => {
     const result = runScript(configReloadAssertPath, {
-      OPENCLAW_CONFIG_RELOAD_LOG_MAX_READ_BYTES: "256kb",
+      AFORA_CONFIG_RELOAD_LOG_MAX_READ_BYTES: "256kb",
     });
 
     expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain("invalid OPENCLAW_CONFIG_RELOAD_LOG_MAX_READ_BYTES: 256kb");
+    expect(result.stderr).toContain("invalid AFORA_CONFIG_RELOAD_LOG_MAX_READ_BYTES: 256kb");
   });
 
   it("returns a clear error when mock OpenAI cannot append request logs", async () => {
-    const requestLogDirectory = await mkdtemp(join(tmpdir(), "openclaw-mock-request-log-"));
+    const requestLogDirectory = await mkdtemp(join(tmpdir(), "afora-mock-request-log-"));
     try {
       await withMockServer(
         mockOpenAiPath,
@@ -592,7 +592,7 @@ describe("e2e mock and config helper numeric limits", () => {
           const response = await fetch(`${baseUrl}/v1/responses`, {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ input: "OPENCLAW_E2E_OK" }),
+            body: JSON.stringify({ input: "AFORA_E2E_OK" }),
           });
           const body = await response.json();
 
@@ -609,21 +609,21 @@ describe("e2e mock and config helper numeric limits", () => {
   });
 
   it("returns a clear error when web-search mock cannot append request logs", async () => {
-    const requestLogDirectory = await mkdtemp(join(tmpdir(), "openclaw-web-search-log-"));
+    const requestLogDirectory = await mkdtemp(join(tmpdir(), "afora-web-search-log-"));
     try {
       await withMockServer(
         webSearchMockPath,
         {
           MOCK_REQUEST_LOG: requestLogDirectory,
           RAW_SCHEMA_ERROR: "400 schema rejected",
-          SUCCESS_MARKER: "OPENCLAW_SCHEMA_E2E_OK",
+          SUCCESS_MARKER: "AFORA_SCHEMA_E2E_OK",
         },
         async (baseUrl, output) => {
           const response = await fetch(`${baseUrl}/v1/responses`, {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({
-              input: "OPENCLAW_SCHEMA_E2E_OK",
+              input: "AFORA_SCHEMA_E2E_OK",
               reasoning: { effort: "low" },
               tools: [{ type: "web_search" }],
             }),

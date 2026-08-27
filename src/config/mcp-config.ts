@@ -1,5 +1,5 @@
 // Normalizes MCP server config for runtime launch and validation.
-import { expectDefined, stableStringify } from "@openclaw/normalization-core";
+import { expectDefined, stableStringify } from "@afora/normalization-core";
 import { markClawMcpServerIndependentlyOwned } from "../state/claw-mcp-adoption.js";
 import { isRecord } from "../utils.js";
 import { readSourceConfigSnapshot } from "./io.js";
@@ -12,7 +12,7 @@ import { redactSensitiveArgv } from "./redact-argv.js";
 import { REDACTED_SENTINEL, restoreRedactedValues } from "./redact-snapshot.js";
 import { buildConfigSchemaCore } from "./schema.js";
 import type { McpServerToolFilterConfig } from "./types.mcp.js";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import type { AforaConfig } from "./types.afora.js";
 import { validateConfigObjectWithPlugins } from "./validation.js";
 
 type ConfigMcpServers = ReturnType<typeof normalizeConfiguredMcpServers>;
@@ -23,7 +23,7 @@ type McpArgvRestoreResult =
 
 type ConfigMcpSuccess = {
   path: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   mcpServers: ConfigMcpServers;
 };
 type ConfigMcpFailure = { ok: false; path: string; error: string };

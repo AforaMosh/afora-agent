@@ -1,7 +1,7 @@
 // Verifies exec command highlighting resolution across global and agent-scoped config.
 import { describe, expect, it } from "vitest";
 import { resolveExecCommandHighlighting } from "./exec-command-highlighting.js";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import type { AforaConfig } from "./types.afora.js";
 
 describe("resolveExecCommandHighlighting", () => {
   it("defaults to false when no config is provided", () => {
@@ -15,7 +15,7 @@ describe("resolveExecCommandHighlighting", () => {
   it("reads global exec commandHighlighting", () => {
     const config = {
       tools: { exec: { commandHighlighting: true } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveExecCommandHighlighting({ config })).toBe(true);
   });
@@ -23,7 +23,7 @@ describe("resolveExecCommandHighlighting", () => {
   it("returns false when global exec commandHighlighting is disabled", () => {
     const config = {
       tools: { exec: { commandHighlighting: false } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveExecCommandHighlighting({ config })).toBe(false);
   });
@@ -39,7 +39,7 @@ describe("resolveExecCommandHighlighting", () => {
         ],
       },
       tools: { exec: { commandHighlighting: false } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveExecCommandHighlighting({ config, agentId: "alpha" })).toBe(true);
   });
@@ -55,7 +55,7 @@ describe("resolveExecCommandHighlighting", () => {
         ],
       },
       tools: { exec: { commandHighlighting: true } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveExecCommandHighlighting({ config, agentId: "alpha" })).toBe(false);
   });
@@ -66,7 +66,7 @@ describe("resolveExecCommandHighlighting", () => {
         list: [{ id: "alpha" }],
       },
       tools: { exec: { commandHighlighting: true } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveExecCommandHighlighting({ config, agentId: "alpha" })).toBe(true);
   });
@@ -77,7 +77,7 @@ describe("resolveExecCommandHighlighting", () => {
         list: [{ id: "alpha" }],
       },
       tools: { exec: { commandHighlighting: false } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveExecCommandHighlighting({ config, agentId: "alpha" })).toBe(false);
   });
@@ -92,7 +92,7 @@ describe("resolveExecCommandHighlighting", () => {
           },
         ],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveExecCommandHighlighting({ config, agentId: "alpha" })).toBe(true);
   });
@@ -107,7 +107,7 @@ describe("resolveExecCommandHighlighting", () => {
           },
         ],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveExecCommandHighlighting({ config, agentId: "alpha" })).toBe(false);
   });
@@ -115,7 +115,7 @@ describe("resolveExecCommandHighlighting", () => {
   it("falls back to global config when agent ID is not in the agent list", () => {
     const config = {
       tools: { exec: { commandHighlighting: true } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveExecCommandHighlighting({ config, agentId: "nonexistent" })).toBe(true);
   });
@@ -132,7 +132,7 @@ describe("resolveExecCommandHighlighting", () => {
           },
         ],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveExecCommandHighlighting({ config, agentId: "ALPHA" })).toBe(true);
   });
@@ -147,7 +147,7 @@ describe("resolveExecCommandHighlighting", () => {
           },
         ],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveExecCommandHighlighting({ config, agentId: "alpha" })).toBe(false);
   });

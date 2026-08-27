@@ -1,7 +1,7 @@
 import Foundation
-import OpenClawChatUI
-import OpenClawKit
-import OpenClawProtocol
+import AforaChatUI
+import AforaKit
+import AforaProtocol
 
 /// Backs the chat "Listen" action with the gateway `tts.speak` method, which
 /// renders text with the operator's configured TTS provider chain.
@@ -11,7 +11,7 @@ enum ChatMessageSpeechClient {
 
     static func synthesize(
         text: String,
-        gateway: GatewayNodeSession) async throws -> OpenClawChatSpeechClip
+        gateway: GatewayNodeSession) async throws -> AforaChatSpeechClip
     {
         try await self.synthesize(text: text) { method, paramsJSON, timeoutSeconds in
             try await gateway.request(
@@ -23,7 +23,7 @@ enum ChatMessageSpeechClient {
 
     static func synthesize(
         text: String,
-        request: Request) async throws -> OpenClawChatSpeechClip
+        request: Request) async throws -> AforaChatSpeechClip
     {
         let params = TtsSpeakParams(text: text)
         let paramsData = try JSONEncoder().encode(params)
@@ -35,7 +35,7 @@ enum ChatMessageSpeechClient {
         guard let audioData = Data(base64Encoded: response.audiobase64), !audioData.isEmpty else {
             throw ChatMessageSpeechError.emptyAudio
         }
-        return OpenClawChatSpeechClip(
+        return AforaChatSpeechClip(
             data: audioData,
             outputFormat: response.outputformat,
             mimeType: response.mimetype,

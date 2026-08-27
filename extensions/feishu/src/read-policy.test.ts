@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/core";
+import type { AforaConfig } from "afora-agent/plugin-sdk/core";
 import { describe, expect, it } from "vitest";
 import { resolveFeishuAccount } from "./accounts.js";
 import { resolveFeishuChatType } from "./chat-type.js";
@@ -10,7 +10,7 @@ import {
 } from "./read-policy.js";
 import type { ResolvedFeishuAccount } from "./types.js";
 
-const cfg = { channels: { feishu: {} } } as OpenClawConfig;
+const cfg = { channels: { feishu: {} } } as AforaConfig;
 
 function createAccount(): ResolvedFeishuAccount {
   return {
@@ -143,7 +143,7 @@ describe("Feishu read policy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const account = resolveFeishuAccount({ cfg: mergedCfg, accountId: "sales" });
 
     expect(() =>
@@ -236,7 +236,7 @@ describe("Feishu read policy", () => {
         defaults: { groupPolicy: "open" },
         feishu: {},
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       assertFeishuChatReadAllowed({

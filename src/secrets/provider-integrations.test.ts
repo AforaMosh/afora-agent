@@ -19,7 +19,7 @@ import { withSecureTestNodeExecPath } from "./test-node-command.test-support.js"
 const tempDirs: string[] = [];
 
 function makeTempDir(): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-secret-provider-integrations-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-secret-provider-integrations-"));
   fs.chmodSync(dir, 0o700);
   tempDirs.push(dir);
   return dir;
@@ -38,7 +38,7 @@ function writeSecureFile(file: string, contents: string): void {
 function writePluginManifest(rootDir: string, manifest: Record<string, unknown>): void {
   fs.writeFileSync(path.join(rootDir, "index.ts"), "export default {};\n", "utf8");
   fs.writeFileSync(
-    path.join(rootDir, "openclaw.plugin.json"),
+    path.join(rootDir, "afora.plugin.json"),
     JSON.stringify({
       ...manifest,
       configSchema: {

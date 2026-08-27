@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { createAssistantMessageEventStream } from "@openclaw/llm-core";
-import { MAX_VIDEO_BYTES } from "@openclaw/media-core/constants";
+import { createAssistantMessageEventStream } from "@afora/llm-core";
+import { MAX_VIDEO_BYTES } from "@afora/media-core/constants";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   PROVIDER_CONTEXT_HANDOFF,
@@ -33,10 +33,10 @@ describe("direct provider context handoff", () => {
   });
 
   it("keeps canonical omissions while materializing persisted and current facts in order", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-provider-video-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-provider-video-"));
     tempDirs.push(stateDir);
-    const env = captureEnv(["OPENCLAW_STATE_DIR"]);
-    setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+    const env = captureEnv(["AFORA_STATE_DIR"]);
+    setTestEnvValue("AFORA_STATE_DIR", stateDir);
     const inbound = path.join(stateDir, "media", "inbound");
     await fs.mkdir(inbound, { recursive: true });
     await fs.writeFile(path.join(inbound, "old.mp4"), MP4);
@@ -48,7 +48,7 @@ describe("direct provider context handoff", () => {
         role: "user" as const,
         content: [{ type: "text" as const, text: "historical" }, PNG, { ...PNG }],
         timestamp: 1,
-        __openclaw: {
+        __afora: {
           mediaImageBlockFactIndexes: [0, 2],
           mediaImageLayout: {
             slots: [
@@ -74,7 +74,7 @@ describe("direct provider context handoff", () => {
           role: "user" as const,
           content: [{ type: "text" as const, text: "recent" }, PNG, { ...PNG }],
           timestamp: 2,
-          __openclaw: {
+          __afora: {
             mediaImageBlockFactIndexes: [0, 2],
             mediaImageLayout: {
               slots: [
@@ -101,7 +101,7 @@ describe("direct provider context handoff", () => {
           role: "user" as const,
           content: [{ type: "text" as const, text: "steer" }, { ...PNG }],
           timestamp: 3,
-          __openclaw: { mediaImageBlockFactIndexes: [1] },
+          __afora: { mediaImageBlockFactIndexes: [1] },
         },
         [
           {
@@ -117,7 +117,7 @@ describe("direct provider context handoff", () => {
         role: "user" as const,
         content: "missing historical",
         timestamp: 2,
-        __openclaw: {
+        __afora: {
           media: [
             {
               kind: "video",
@@ -192,7 +192,7 @@ describe("direct provider context handoff", () => {
         { ...PNG },
       ]);
       for (const message of resolved?.messages.slice(2) ?? []) {
-        expect(message).not.toHaveProperty("__openclaw");
+        expect(message).not.toHaveProperty("__afora");
         expect(Object.getOwnPropertySymbols(message)).toEqual([]);
       }
       expect(JSON.stringify(resolved)).not.toContain(stateDir);
@@ -228,7 +228,7 @@ describe("direct provider context handoff", () => {
       role: "user" as const,
       content: "inspect",
       timestamp: 1,
-      __openclaw: {
+      __afora: {
         media: [{ kind: "video", contentType: "video/mp4", path: "/workspace/clip.mp4" }],
       },
     };
@@ -262,7 +262,7 @@ describe("direct provider context handoff", () => {
       role: "user" as const,
       content: "inspect",
       timestamp: 1,
-      __openclaw: {
+      __afora: {
         media: [
           {
             kind: "video",
@@ -305,7 +305,7 @@ describe("direct provider context handoff", () => {
       role: "user" as const,
       content: "inspect",
       timestamp: 1,
-      __openclaw: {
+      __afora: {
         media: [{ kind: "video", contentType: "video/mp4", path: "/workspace/clip.mp4" }],
       },
     };

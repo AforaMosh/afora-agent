@@ -10,7 +10,7 @@ read_when:
 
 Skills are markdown instruction files that teach the agent how and when to use
 tools. Each skill lives in a directory containing a `SKILL.md` file with YAML
-frontmatter and a markdown body. OpenClaw loads bundled skills plus any local
+frontmatter and a markdown body. Afora loads bundled skills plus any local
 overrides, and filters them at load time based on environment, config, and
 binary presence.
 
@@ -31,7 +31,7 @@ binary presence.
 
 ## Loading order
 
-OpenClaw loads from these sources, **highest precedence first**. When the same
+Afora loads from these sources, **highest precedence first**. When the same
 skill name appears in multiple places, the highest source wins.
 
 | Priority    | Source                 | Path                                    |
@@ -43,7 +43,7 @@ skill name appears in multiple places, the highest source wins.
 | 5           | Bundled skills         | shipped with the install                |
 | 6 — lowest  | Extra directories      | `skills.load.extraDirs` + plugin skills |
 
-Skill roots support grouped layouts. OpenClaw discovers a skill whenever
+Skill roots support grouped layouts. Afora discovers a skill whenever
 `SKILL.md` appears anywhere under a configured root (up to 6 levels deep):
 
 ```text
@@ -56,15 +56,15 @@ come from the `name` frontmatter field (or the directory name when `name` is
 missing). Agent allowlists (below) also match on this `name`.
 
 <Note>
-  Codex CLI's native `$CODEX_HOME/skills` directory is **not** an OpenClaw
-  skill root. Use `openclaw migrate plan codex` to inventory those skills, then
-  `openclaw migrate codex` to copy them into your OpenClaw workspace.
+  Codex CLI's native `$CODEX_HOME/skills` directory is **not** an Afora
+  skill root. Use `afora migrate plan codex` to inventory those skills, then
+  `afora migrate codex` to copy them into your Afora workspace.
 </Note>
 
 ## Node-hosted skills
 
-A connected headless node can publish skills installed in its active OpenClaw
-skills directory (`~/.openclaw/skills` by default; profile environment overrides
+A connected headless node can publish skills installed in its active Afora
+skills directory (`~/.afora/skills` by default; profile environment overrides
 apply). They appear in the normal agent skill list while the node is connected
 and disappear when it disconnects. A local or Gateway skill keeps its name on
 collision; the node skill receives a deterministic node-prefixed name.
@@ -89,8 +89,8 @@ matches your desired visibility:
 | Shared managed | `<state-dir>/skills`         | All agents using that state    |
 | Extra dirs     | `skills.load.extraDirs`      | All agents using that config   |
 
-When `OPENCLAW_STATE_DIR` points somewhere other than the default
-`~/.openclaw`, session skill indexes exclude home-scoped personal or
+When `AFORA_STATE_DIR` points somewhere other than the default
+`~/.afora`, session skill indexes exclude home-scoped personal or
 compatibility skill roots such as `~/.agents/skills`. Workspace, project,
 bundled, extra, and state-owned managed skills continue to load normally.
 
@@ -133,14 +133,14 @@ regardless of where they are loaded from.
 ## Plugins and skills
 
 Plugins can ship their own skills by listing `skills` directories in
-`openclaw.plugin.json` (paths relative to the plugin root). Plugin skills load
+`afora.plugin.json` (paths relative to the plugin root). Plugin skills load
 when the plugin is enabled — for example, the browser plugin ships a
 `browser-automation` skill for multi-step browser control.
 
 Plugin skill directories merge at the same low-precedence level as
 `skills.load.extraDirs`, so a same-named bundled, managed, agent, or workspace
 skill overrides them. Gate a plugin skill's own eligibility via
-`metadata.openclaw.requires` in its frontmatter, same as any other skill.
+`metadata.afora.requires` in its frontmatter, same as any other skill.
 
 See [Plugins](/tools/plugin) and [Tools](/tools) for the full plugin system.
 
@@ -155,11 +155,11 @@ reference more than one skill:
 Use $github and $release_notes to summarize this change for the release.
 ```
 
-OpenClaw resolves explicit references from authorized senders on every channel
+Afora resolves explicit references from authorized senders on every channel
 and on generic Gateway, CLI, and webhook agent turns. It matches the current
 agent's eligible, user-invocable skills and tells the model to read each
 referenced `SKILL.md` before acting. A single message can reference up to eight
-distinct skills; OpenClaw returns a visible error instead of ignoring extra or
+distinct skills; Afora returns a visible error instead of ignoring extra or
 allowlist-hidden references. The `$` form is composable prompt text. On channel
 messages, `/release_notes ...` remains the standalone command form and may use
 direct tool dispatch when the skill declares `command-dispatch: tool`; generic
@@ -182,10 +182,10 @@ proposal instead of writing directly to `SKILL.md`. You review and approve
 before anything changes.
 
 ```bash
-openclaw skills workshop list
-openclaw skills workshop inspect <proposal-id>
-openclaw skills workshop evaluate <proposal-id>
-openclaw skills workshop apply <proposal-id>
+afora skills workshop list
+afora skills workshop inspect <proposal-id>
+afora skills workshop evaluate <proposal-id>
+afora skills workshop apply <proposal-id>
 ```
 
 See [Skill Workshop](/tools/skill-workshop) for the full lifecycle, CLI
@@ -194,39 +194,39 @@ reference, and configuration.
 ## Installing from ClawHub
 
 [ClawHub](https://clawhub.ai) is the public skills registry. Use
-`openclaw skills` commands for install and update, or the `clawhub` CLI for
+`afora skills` commands for install and update, or the `clawhub` CLI for
 publish and sync.
 
 | Action                             | Command                                                |
 | ---------------------------------- | ------------------------------------------------------ |
-| Install a skill into the workspace | `openclaw skills install @owner/<slug>`                |
-| Install an external skills.sh ref  | `openclaw skills install skills-sh:owner/repo/slug`    |
-| Install from a Git repository      | `openclaw skills install git:owner/repo@ref`           |
-| Install a local skill directory    | `openclaw skills install ./path/to/skill --as my-tool` |
-| Install for all local agents       | `openclaw skills install @owner/<slug> --global`       |
-| Update all workspace skills        | `openclaw skills update --all`                         |
-| Update a shared managed skill      | `openclaw skills update @owner/<slug> --global`        |
-| Update all shared managed skills   | `openclaw skills update --all --global`                |
-| Verify a skill's trust envelope    | `openclaw skills verify @owner/<slug>`                 |
-| Print the generated Skill Card     | `openclaw skills verify @owner/<slug> --card`          |
+| Install a skill into the workspace | `afora skills install @owner/<slug>`                |
+| Install an external skills.sh ref  | `afora skills install skills-sh:owner/repo/slug`    |
+| Install from a Git repository      | `afora skills install git:owner/repo@ref`           |
+| Install a local skill directory    | `afora skills install ./path/to/skill --as my-tool` |
+| Install for all local agents       | `afora skills install @owner/<slug> --global`       |
+| Update all workspace skills        | `afora skills update --all`                         |
+| Update a shared managed skill      | `afora skills update @owner/<slug> --global`        |
+| Update all shared managed skills   | `afora skills update --all --global`                |
+| Verify a skill's trust envelope    | `afora skills verify @owner/<slug>`                 |
+| Print the generated Skill Card     | `afora skills verify @owner/<slug> --card`          |
 | Publish / sync via ClawHub CLI     | `clawhub sync --all`                                   |
 
 <AccordionGroup>
   <Accordion title="Install details">
-    `openclaw skills install` installs into the active workspace `skills/`
+    `afora skills install` installs into the active workspace `skills/`
     directory by default. Add `--global` to install into the shared
-    `~/.openclaw/skills` directory, visible to all local agents unless agent
+    `~/.afora/skills` directory, visible to all local agents unless agent
     allowlists narrow it.
 
     Git and local installs expect `SKILL.md` at the source root. The slug comes
     from `SKILL.md` frontmatter `name` when valid, then falls back to the
     directory or repository name. Use `--as <slug>` to override.
-    `openclaw skills update` tracks ClawHub installs only — reinstall Git or
+    `afora skills update` tracks ClawHub installs only — reinstall Git or
     local sources to refresh them.
 
   </Accordion>
   <Accordion title="Verification and security scanning">
-    `openclaw skills verify @owner/<slug>` asks ClawHub for the skill's
+    `afora skills verify @owner/<slug>` asks ClawHub for the skill's
     `clawhub.skill.verify.v1` trust envelope. Installed ClawHub skills verify
     against the version and registry recorded in `.clawhub/origin.json`.
     Bare slugs remain accepted for existing installed or unambiguous skills, but
@@ -244,7 +244,7 @@ publish and sync.
     with `skills.upload.begin`, `skills.upload.chunk`, and `skills.upload.commit`,
     then install with `skills.install({ source: "upload", ... })`. This path is
     off by default and requires `skills.install.allowUploadedArchives: true` in
-    `openclaw.json`. Normal ClawHub installs never need that setting.
+    `afora.json`. Normal ClawHub installs never need that setting.
   </Accordion>
 </AccordionGroup>
 
@@ -263,7 +263,7 @@ publish and sync.
     `skills.load.allowSymlinkTargets` explicitly trusts a target root.
     Skill Workshop writes through those trusted targets only when
     `skills.workshop.allowSymlinkTargetWrites` is enabled.
-    Managed `~/.openclaw/skills` and personal `~/.agents/skills` may contain
+    Managed `~/.afora/skills` and personal `~/.agents/skills` may contain
     symlinked skill folders, but every `SKILL.md` realpath must still stay
     inside its resolved skill directory.
   </Accordion>
@@ -298,7 +298,7 @@ When the user asks to generate an image, use the `image_generate` tool...
 ```
 
 <Note>
-  OpenClaw follows the [AgentSkills](https://agentskills.io) spec. Frontmatter
+  Afora follows the [AgentSkills](https://agentskills.io) spec. Frontmatter
   is parsed as YAML first; if that fails, it falls back to a single-line-only
   parser. Nested `metadata` blocks (including multi-line YAML mappings) are
   flattened to a JSON string and re-parsed as JSON5, so the block form shown
@@ -310,7 +310,7 @@ When the user asks to generate an image, use the `image_generate` tool...
 
 <ParamField path="homepage" type="string">
   URL shown as "Website" in the macOS Skills UI. Also supported via
-  `metadata.openclaw.homepage`.
+  `metadata.afora.homepage`.
 </ParamField>
 
 <ParamField path="user-invocable" type="boolean" default="true">
@@ -318,7 +318,7 @@ When the user asks to generate an image, use the `image_generate` tool...
 </ParamField>
 
 <ParamField path="disable-model-invocation" type="boolean" default="false">
-  When `true`, OpenClaw keeps the skill's instructions out of the agent's normal
+  When `true`, Afora keeps the skill's instructions out of the agent's normal
   prompt. The skill is still available as a slash command when `user-invocable`
   is also `true`.
 </ParamField>
@@ -340,9 +340,9 @@ When the user asks to generate an image, use the `image_generate` tool...
 
 ## Gating
 
-OpenClaw filters skills at load time using `metadata.openclaw` (JSON5 object
+Afora filters skills at load time using `metadata.afora` (JSON5 object
 embedded in the frontmatter, see the parsing note above). A skill with no
-`metadata.openclaw` block is always eligible unless explicitly disabled.
+`metadata.afora` block is always eligible unless explicitly disabled.
 
 ```markdown
 ---
@@ -350,7 +350,7 @@ name: image-lab
 description: Generate or edit images via a provider-backed image workflow
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "requires": { "bins": ["uv"], "env": ["GEMINI_API_KEY"], "config": ["browser.enabled"] },
         "primaryEnv": "GEMINI_API_KEY",
@@ -392,7 +392,7 @@ metadata:
 </ParamField>
 
 <ParamField path="requires.config" type="string[]">
-  Each `openclaw.json` path must be truthy.
+  Each `afora.json` path must be truthy.
 </ParamField>
 
 <ParamField path="primaryEnv" type="string">
@@ -405,9 +405,9 @@ metadata:
 
 <Note>
   Legacy `metadata.clawdbot` blocks are still accepted when
-  `metadata.openclaw` is absent, so older installed skills keep their
+  `metadata.afora` is absent, so older installed skills keep their
   dependency gates and installer hints. New skills should use
-  `metadata.openclaw`.
+  `metadata.afora`.
 </Note>
 
 ### Installer specs
@@ -420,7 +420,7 @@ name: gemini
 description: Use Gemini CLI for coding assistance and Google search lookups.
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "emoji": "♊️",
         "requires": { "bins": ["gemini"] },
@@ -443,32 +443,32 @@ metadata:
   <Accordion title="Installer selection rules">
     - When multiple installers are listed, the gateway picks one preferred
       option (brew when available, otherwise node).
-    - If all installers are `download`, OpenClaw lists each entry so you can
+    - If all installers are `download`, Afora lists each entry so you can
       see all available artifacts.
     - Specs can include `os: ["darwin"|"linux"|"win32"]` to filter by platform.
-    - Node installs honor `skills.install.nodeManager` in `openclaw.json`
+    - Node installs honor `skills.install.nodeManager` in `afora.json`
       (default: npm; options: npm / pnpm / yarn / bun). This only affects skill
       installs; the Gateway runtime should still be Node.
     - Gateway installer preference: Homebrew → uv → configured node manager →
       go → download.
   </Accordion>
   <Accordion title="Per-installer details">
-    - **Homebrew:** OpenClaw does not auto-install Homebrew or translate brew
+    - **Homebrew:** Afora does not auto-install Homebrew or translate brew
       formulas into system package commands. In Linux containers without
       `brew`, brew-only installers are hidden; use a custom image or install
       the dependency manually.
-    - **Go:** OpenClaw requires Go 1.21 or newer for automatic skill installs.
-      If `go` is missing and Homebrew is available, OpenClaw installs Go via
+    - **Go:** Afora requires Go 1.21 or newer for automatic skill installs.
+      If `go` is missing and Homebrew is available, Afora installs Go via
       Homebrew first; on Linux without Homebrew it can instead use `apt-get`
       as root or through passwordless `sudo` when the refreshed `golang-go`
       candidate meets the minimum version. The actual `go install` for the
-      dependency always targets a dedicated OpenClaw-managed bin directory
+      dependency always targets a dedicated Afora-managed bin directory
       (Homebrew's `bin` on a fresh install, else `~/.local/bin`) rather than
       your configured `GOBIN` — your own `GOBIN`, `GOPATH`, and `GOTOOLCHAIN`
       env vars are read but never overwritten.
     - **Download:** `url` (required), `archive` (`tar.gz` | `tar.bz2` | `zip`),
       `extract` (default: auto when archive detected), `stripComponents`,
-      `targetDir` (default: `~/.openclaw/tools/<skillKey>`).
+      `targetDir` (default: `~/.afora/tools/<skillKey>`).
   </Accordion>
   <Accordion title="Sandboxing notes">
     `requires.bins` is checked on the **host** at skill load time. If an agent
@@ -482,7 +482,7 @@ metadata:
 ## Config overrides
 
 Toggle and configure bundled or managed skills under `skills.entries` in
-`~/.openclaw/openclaw.json`:
+`~/.AforaMosh/afora-agent.json`:
 
 ```json5
 {
@@ -512,7 +512,7 @@ Toggle and configure bundled or managed skills under `skills.entries` in
 </ParamField>
 
 <ParamField path="apiKey" type='string | { source, provider, id }'>
-  Convenience field for skills that declare `metadata.openclaw.primaryEnv`.
+  Convenience field for skills that declare `metadata.afora.primaryEnv`.
   Supports a plaintext string or a SecretRef object.
 </ParamField>
 
@@ -532,17 +532,17 @@ Toggle and configure bundled or managed skills under `skills.entries` in
 
 <Note>
   Config keys match the **skill name** by default. If a skill defines
-  `metadata.openclaw.skillKey`, use that key under `skills.entries` instead.
+  `metadata.afora.skillKey`, use that key under `skills.entries` instead.
   Quote hyphenated names: JSON5 allows quoted keys.
 </Note>
 
 ## Environment injection
 
-When an agent run starts, OpenClaw:
+When an agent run starts, Afora:
 
 <Steps>
   <Step title="Reads skill metadata">
-    OpenClaw resolves the effective skill list for the agent, applying gating
+    Afora resolves the effective skill list for the agent, applying gating
     rules, allowlists, and config overrides.
   </Step>
   <Step title="Injects env and API keys">
@@ -565,13 +565,13 @@ When an agent run starts, OpenClaw:
   to pass secrets into sandboxed runs.
 </Warning>
 
-For the bundled `claude-cli` backend, OpenClaw also materializes the same
+For the bundled `claude-cli` backend, Afora also materializes the same
 eligible skill snapshot as a temporary Claude Code plugin and passes it via
 `--plugin-dir`. Other CLI backends use the prompt catalog only.
 
 ## Snapshots and refresh
 
-OpenClaw snapshots eligible skills **when a session starts** and reuses that
+Afora snapshots eligible skills **when a session starts** and reuses that
 list for all subsequent turns in the session. Changes to skills or config take
 effect on the next new session.
 
@@ -581,12 +581,12 @@ Skills refresh mid-session in two cases:
 - A new eligible remote node connects.
 
 The refreshed list is picked up on the next agent turn. If the effective agent
-allowlist changes, OpenClaw refreshes the snapshot to keep visible skills
+allowlist changes, Afora refreshes the snapshot to keep visible skills
 aligned.
 
 <AccordionGroup>
   <Accordion title="Skills watcher">
-    By default, OpenClaw watches skill folders and bumps the snapshot when
+    By default, Afora watches skill folders and bumps the snapshot when
     `SKILL.md` files change. Configure under `skills.load`:
 
     ```json5
@@ -611,19 +611,19 @@ aligned.
   </Accordion>
   <Accordion title="Remote macOS nodes (Linux gateway)">
     If the Gateway runs on Linux but a **macOS node** is connected with
-    `system.run` allowed, OpenClaw can treat macOS-only skills as eligible when
+    `system.run` allowed, Afora can treat macOS-only skills as eligible when
     the required binaries are present on that node. The agent should run those
     skills via the `exec` tool with `host=node`.
 
     Offline nodes do **not** make remote-only skills visible. If a node stops
-    answering bin probes, OpenClaw clears its cached bin matches.
+    answering bin probes, Afora clears its cached bin matches.
 
   </Accordion>
 </AccordionGroup>
 
 ## Token impact
 
-When skills are eligible, OpenClaw injects a compact XML block into the system
+When skills are eligible, Afora injects a compact XML block into the system
 prompt. The cost is deterministic and scales linearly per skill:
 
 - **Base overhead** (only when 1+ skills are eligible): a fixed block of intro
@@ -635,11 +635,11 @@ prompt. The cost is deterministic and scales linearly per skill:
 - At ~4 chars/token, 97 chars ≈ 24 tokens per skill before field lengths.
 
 If the rendered block would exceed the configured prompt budget
-(`skills.limits.maxSkillsPromptChars`), OpenClaw first preserves as many skill
+(`skills.limits.maxSkillsPromptChars`), Afora first preserves as many skill
 identities (name, location, and version) as the description-free compact format
 can fit. It then uses any remaining budget for shortened descriptions. If no
 description budget remains, descriptions are omitted. The prompt includes a
-note pointing at `openclaw skills check` whenever compact formatting or list
+note pointing at `afora skills check` whenever compact formatting or list
 truncation is required.
 
 Keep descriptions short and descriptive to minimize prompt overhead.

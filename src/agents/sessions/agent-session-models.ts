@@ -2,7 +2,7 @@ import {
   clampThinkingLevel,
   getSupportedThinkingLevels,
   modelsAreEqual,
-} from "@openclaw/ai/internal/runtime";
+} from "@afora/ai/internal/runtime";
 import type { Model } from "../../llm/types.js";
 import type { ThinkingLevel } from "../runtime/index.js";
 import { AgentSessionPrompting } from "./agent-session-prompting.js";

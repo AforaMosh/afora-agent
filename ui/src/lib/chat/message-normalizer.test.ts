@@ -10,7 +10,7 @@ import {
 
 // Inbound context blocks are stamped with the provenance marker; strippers key
 // on the marker, so display fixtures must carry it to be recognized.
-const SENDER_METADATA_BLOCK = `${markInboundContextLabel("Sender:")}\n\`\`\`json\n{"label":"openclaw-control-ui","id":"openclaw-control-ui"}\n\`\`\``;
+const SENDER_METADATA_BLOCK = `${markInboundContextLabel("Sender:")}\n\`\`\`json\n{"label":"afora-control-ui","id":"afora-control-ui"}\n\`\`\``;
 
 describe("message-normalizer", () => {
   // Regression: gateway/transcript events can carry a null/undefined or
@@ -223,7 +223,7 @@ describe("message-normalizer", () => {
             source: {
               type: "url",
               media_type: "audio/mpeg",
-              url: "/tmp/openclaw/clip.mp3",
+              url: "/tmp/afora/clip.mp3",
             },
           },
         ],
@@ -233,7 +233,7 @@ describe("message-normalizer", () => {
         {
           type: "attachment",
           attachment: {
-            url: "/tmp/openclaw/clip.mp3",
+            url: "/tmp/afora/clip.mp3",
             kind: "audio",
             label: "clip.mp3",
             mimeType: "audio/mpeg",
@@ -338,7 +338,7 @@ describe("message-normalizer", () => {
             surface: "assistant_message",
             render: "url",
             viewId: "cv_status",
-            url: "/__openclaw__/canvas/documents/cv_status/index.html",
+            url: "/__afora__/canvas/documents/cv_status/index.html",
             title: "Status",
             preferredHeight: 320,
           },
@@ -357,7 +357,7 @@ describe("message-normalizer", () => {
               kind: "canvas",
               surface: "assistant_message",
               render: "url",
-              url: "/__openclaw__/canvas/documents/cv_widget/index.html",
+              url: "/__afora__/canvas/documents/cv_widget/index.html",
               sandbox: "scripts",
               boardWidgetName: "release-status",
             },
@@ -381,7 +381,7 @@ describe("message-normalizer", () => {
               kind: "canvas",
               surface: "assistant_message",
               render: "url",
-              url: "/__openclaw__/canvas/documents/cv_widget/index.html",
+              url: "/__afora__/canvas/documents/cv_widget/index.html",
               boardWidgetName: "Invalid widget name",
             },
           },
@@ -425,7 +425,7 @@ describe("message-normalizer", () => {
         role: "assistant",
         content:
           "Intro\nMEDIA:https://example.com/image.png\nOutro\nMEDIA:https://example.com/voice.ogg",
-        openclawDelivery: { audioAsVoice: true, replyToId: "thread-123" },
+        aforaDelivery: { audioAsVoice: true, replyToId: "thread-123" },
       });
 
       expect(result.replyTarget).toEqual({ kind: "id", id: "thread-123" });
@@ -520,7 +520,7 @@ describe("message-normalizer", () => {
         normalizeMessage({
           role: "assistant",
           content: `${code}\nMEDIA:https://example.com/image.png`,
-          openclawDelivery: { audioAsVoice: true, replyToCurrent: true },
+          aforaDelivery: { audioAsVoice: true, replyToCurrent: true },
         }).content,
       ).toEqual([
         { type: "text", text: code },
@@ -540,7 +540,7 @@ describe("message-normalizer", () => {
       const result = normalizeMessage({
         role: "assistant",
         content: "MEDIA:https://example.com/voice.ogg",
-        openclawDelivery: { audioAsVoice: true },
+        aforaDelivery: { audioAsVoice: true },
       });
 
       expect(result.audioAsVoice).toBe(true);
@@ -609,7 +609,7 @@ describe("message-normalizer", () => {
 
     it("classifies signed same-origin MEDIA image and audio routes", () => {
       const imageUrl = "/media/inbound/photo.png?mediaTicket=signed#preview";
-      const audioUrl = "/__openclaw__/media/voice%2Eogg?mediaTicket=signed";
+      const audioUrl = "/__afora__/media/voice%2Eogg?mediaTicket=signed";
       const result = normalizeMessage({
         role: "assistant",
         content: `MEDIA:${imageUrl}\nMEDIA:${audioUrl}`,
@@ -640,7 +640,7 @@ describe("message-normalizer", () => {
     it("keeps valid local MEDIA paths as assistant attachments", () => {
       const result = normalizeMessage({
         role: "assistant",
-        content: "Hello\nMEDIA:/tmp/openclaw/test-image.png\nWorld",
+        content: "Hello\nMEDIA:/tmp/afora/test-image.png\nWorld",
       });
 
       expect(result.content).toEqual([
@@ -648,7 +648,7 @@ describe("message-normalizer", () => {
         {
           type: "attachment",
           attachment: {
-            url: "/tmp/openclaw/test-image.png",
+            url: "/tmp/afora/test-image.png",
             kind: "image",
             label: "test-image.png",
             mimeType: "image/png",
@@ -661,14 +661,14 @@ describe("message-normalizer", () => {
     it("keeps spaced local filenames together instead of leaking suffix text", () => {
       const result = normalizeMessage({
         role: "assistant",
-        content: "MEDIA:/tmp/openclaw/shinkansen kato - Google Shopping.pdf",
+        content: "MEDIA:/tmp/afora/shinkansen kato - Google Shopping.pdf",
       });
 
       expect(result.content).toEqual([
         {
           type: "attachment",
           attachment: {
-            url: "/tmp/openclaw/shinkansen kato - Google Shopping.pdf",
+            url: "/tmp/afora/shinkansen kato - Google Shopping.pdf",
             kind: "document",
             label: "shinkansen kato - Google Shopping.pdf",
             mimeType: "application/pdf",
@@ -768,7 +768,7 @@ describe("message-normalizer", () => {
       const result = normalizeMessage({
         role: "assistant",
         content: "Reply body",
-        openclawDelivery: { replyToCurrent: true },
+        aforaDelivery: { replyToCurrent: true },
       });
 
       expect(result.replyTarget).toEqual({ kind: "current" });
@@ -779,7 +779,7 @@ describe("message-normalizer", () => {
       const result = normalizeMessage({
         role: "assistant",
         content: "",
-        openclawDelivery: { replyToCurrent: true },
+        aforaDelivery: { replyToCurrent: true },
       });
 
       expect(result.replyTarget).toEqual({ kind: "current" });
@@ -909,7 +909,7 @@ describe("message-normalizer", () => {
       const emailSender = normalizeMessage({
         role: "user",
         content: "Prompt from Alice",
-        __openclaw: { senderId: "alice@example.com" },
+        __afora: { senderId: "alice@example.com" },
       });
       expect(emailSender.senderLabel).toBe("alice");
       expect(emailSender.sender).toEqual({ id: "alice@example.com" });
@@ -917,7 +917,7 @@ describe("message-normalizer", () => {
         normalizeMessage({
           role: "user",
           content: "Prompt from a profile",
-          __openclaw: { senderId: "profile_123", senderName: "Alice Example" },
+          __afora: { senderId: "profile_123", senderName: "Alice Example" },
         }).senderLabel,
       ).toBe("Alice Example");
     });
@@ -945,7 +945,7 @@ describe("sender label opaque-id stripping", () => {
       role: "user",
       content: "hi",
       senderLabel: "steipete (c3e32452-0467-47e5-aafa-233cd5dae29f)",
-      __openclaw: { senderId: "meta-profile", senderName: "Meta Name" },
+      __afora: { senderId: "meta-profile", senderName: "Meta Name" },
     });
     expect(normalized.sender).toEqual({ id: "meta-profile", name: "Meta Name" });
     expect(normalized.senderLabel).toBe("steipete");

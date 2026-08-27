@@ -1,4 +1,4 @@
-// Tool Display script supports OpenClaw repository automation.
+// Tool Display script supports Afora repository automation.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -10,7 +10,7 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
 const outputPath = path.join(
   repoRoot,
-  "apps/shared/OpenClawKit/Sources/OpenClawKit/Resources/tool-display.json",
+  "apps/shared/AforaKit/Sources/AforaKit/Resources/tool-display.json",
 );
 const toolSources = [
   path.join(repoRoot, "src/agents/apply-patch.ts"),

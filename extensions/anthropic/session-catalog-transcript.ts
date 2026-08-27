@@ -1,5 +1,5 @@
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 
 const MAX_TRANSCRIPT_ITEM_BYTES = 4 * 1024 * 1024;
 const MAX_TRANSCRIPT_TEXT_LENGTH = 1_000_000;

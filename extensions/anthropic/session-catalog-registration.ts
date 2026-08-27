@@ -1,17 +1,17 @@
 import { statSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   createLazyRuntimeModule,
   createLazyRuntimeSurface,
-} from "openclaw/plugin-sdk/lazy-runtime";
+} from "afora-agent/plugin-sdk/lazy-runtime";
 import type {
-  OpenClawPluginApi,
-  OpenClawPluginNodeHostCommand,
-  OpenClawPluginNodeInvokePolicy,
-} from "openclaw/plugin-sdk/plugin-entry";
-import type { SessionCatalogProvider } from "openclaw/plugin-sdk/session-catalog";
+  AforaPluginApi,
+  AforaPluginNodeHostCommand,
+  AforaPluginNodeInvokePolicy,
+} from "afora-agent/plugin-sdk/plugin-entry";
+import type { SessionCatalogProvider } from "afora-agent/plugin-sdk/session-catalog";
 import { CLAUDE_CLI_BACKEND_ID, CLAUDE_CLI_ROUTE_PROBE_MODEL_IDS } from "./cli-constants.js";
 import { resolveClaudeTerminalExecutable } from "./session-catalog-executable.js";
 import {
@@ -53,11 +53,11 @@ function claudeProjectsAvailable(env: NodeJS.ProcessEnv): boolean {
   }
 }
 
-function currentConfig(api: OpenClawPluginApi): OpenClawConfig {
-  return (api.runtime.config?.current?.() ?? api.config ?? {}) as OpenClawConfig;
+function currentConfig(api: AforaPluginApi): AforaConfig {
+  return (api.runtime.config?.current?.() ?? api.config ?? {}) as AforaConfig;
 }
 
-function registerClaudeSessionCatalog(api: OpenClawPluginApi): void {
+function registerClaudeSessionCatalog(api: AforaPluginApi): void {
   const loadCatalogRuntime = createLazyRuntimeSurface(
     () => import("./session-catalog.js"),
     (module) => module.createClaudeSessionCatalogRuntime(api),
@@ -86,7 +86,7 @@ function registerClaudeSessionCatalog(api: OpenClawPluginApi): void {
   api.registerSessionCatalog(provider);
 }
 
-function createClaudeSessionNodeHostCommands(): OpenClawPluginNodeHostCommand[] {
+function createClaudeSessionNodeHostCommands(): AforaPluginNodeHostCommand[] {
   return [
     {
       command: CLAUDE_SESSIONS_LIST_COMMAND,
@@ -117,7 +117,7 @@ function createClaudeSessionNodeHostCommands(): OpenClawPluginNodeHostCommand[] 
   ];
 }
 
-export function createClaudeSessionNodeInvokePolicies(): OpenClawPluginNodeInvokePolicy[] {
+export function createClaudeSessionNodeInvokePolicies(): AforaPluginNodeInvokePolicy[] {
   return [
     {
       commands: [
@@ -133,7 +133,7 @@ export function createClaudeSessionNodeInvokePolicies(): OpenClawPluginNodeInvok
   ];
 }
 
-export function registerClaudeSessionDiscovery(api: OpenClawPluginApi): void {
+export function registerClaudeSessionDiscovery(api: AforaPluginApi): void {
   if (!isClaudeSessionCatalogEnabled(api.pluginConfig)) {
     return;
   }

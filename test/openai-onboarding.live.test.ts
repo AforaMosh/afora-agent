@@ -14,15 +14,15 @@ import {
   loadTranscriptEvents,
   resolveTranscriptSessionKeyBySessionId,
 } from "../src/config/sessions/session-accessor.js";
-import { createOpenClawTestState } from "../src/test-utils/openclaw-test-state.js";
+import { createAforaTestState } from "../src/test-utils/afora-test-state.js";
 import { getDeterministicFreePortBlock } from "../src/test-utils/ports.js";
 
 const execFileAsync = promisify(execFile);
 const openAiApiKey = process.env.OPENAI_API_KEY?.trim() ?? "";
 const describeLive = isLiveTestEnabled() && openAiApiKey.length > 0 ? describe : describe.skip;
-const replyMarker = "OPENCLAW_OPENAI_ONBOARDING_OK";
+const replyMarker = "AFORA_OPENAI_ONBOARDING_OK";
 
-async function runOpenClaw(args: string[], env: NodeJS.ProcessEnv): Promise<string> {
+async function runAfora(args: string[], env: NodeJS.ProcessEnv): Promise<string> {
   try {
     const result = await execFileAsync(process.execPath, ["scripts/run-node.mjs", ...args], {
       cwd: path.resolve(import.meta.dirname, ".."),
@@ -176,7 +176,7 @@ async function stopIsolatedGateway(gateway: ChildProcess | undefined): Promise<v
 
 describeLive("fresh OpenAI onboarding live", () => {
   it("keeps repeated onboarding secret-safe and runs the actual default model", async () => {
-    const state = await createOpenClawTestState({
+    const state = await createAforaTestState({
       label: "openai-onboarding-live",
       layout: "home",
       scenario: "empty",
@@ -188,20 +188,20 @@ describeLive("fresh OpenAI onboarding live", () => {
         VITEST: undefined,
         VITEST_POOL_ID: undefined,
         VITEST_WORKER_ID: undefined,
-        OPENCLAW_TEST_FAST: undefined,
-        OPENCLAW_TEST_HOME: undefined,
-        OPENCLAW_TEST_MINIMAL_GATEWAY: undefined,
-        OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR: undefined,
-        OPENCLAW_BUNDLED_PLUGINS_DIR: undefined,
-        OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
-        OPENCLAW_PLUGIN_CATALOG_PATHS: undefined,
-        OPENCLAW_PLUGINS_PATHS: undefined,
-        OPENCLAW_WORKSPACE_DIR: undefined,
-        OPENCLAW_PROFILE: undefined,
-        OPENCLAW_GATEWAY_TOKEN: undefined,
-        OPENCLAW_GATEWAY_PASSWORD: undefined,
-        OPENCLAW_GATEWAY_URL: undefined,
-        OPENCLAW_GATEWAY_PORT: undefined,
+        AFORA_TEST_FAST: undefined,
+        AFORA_TEST_HOME: undefined,
+        AFORA_TEST_MINIMAL_GATEWAY: undefined,
+        AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR: undefined,
+        AFORA_BUNDLED_PLUGINS_DIR: undefined,
+        AFORA_DISABLE_BUNDLED_PLUGINS: undefined,
+        AFORA_PLUGIN_CATALOG_PATHS: undefined,
+        AFORA_PLUGINS_PATHS: undefined,
+        AFORA_WORKSPACE_DIR: undefined,
+        AFORA_PROFILE: undefined,
+        AFORA_GATEWAY_TOKEN: undefined,
+        AFORA_GATEWAY_PASSWORD: undefined,
+        AFORA_GATEWAY_URL: undefined,
+        AFORA_GATEWAY_PORT: undefined,
       },
     });
 
@@ -234,7 +234,7 @@ describeLive("fresh OpenAI onboarding live", () => {
 
       let firstGatewayToken: string | undefined;
       for (let attempt = 0; attempt < 2; attempt += 1) {
-        await runOpenClaw(onboardArgs, state.env);
+        await runAfora(onboardArgs, state.env);
         const rawConfig = await fs.readFile(state.configPath, "utf8");
         expect(rawConfig.includes(openAiApiKey)).toBe(false);
         const config = JSON.parse(rawConfig) as {
@@ -243,7 +243,7 @@ describeLive("fresh OpenAI onboarding live", () => {
         };
         expect(config.agents?.defaults?.model?.primary).toBe("openai/gpt-5.6-sol");
         expect(config.agents?.defaults?.workspace).toBe(
-          path.join(state.home, ".openclaw", "workspace"),
+          path.join(state.home, ".afora", "workspace"),
         );
         expect(config.gateway?.mode).toBe("local");
         expect(config.gateway?.auth?.mode).toBe("token");
@@ -259,7 +259,7 @@ describeLive("fresh OpenAI onboarding live", () => {
 
       await expect(fs.access(path.join(state.agentDir(), "auth-profiles.json"))).rejects.toThrow();
 
-      const stdout = await runOpenClaw(
+      const stdout = await runAfora(
         [
           "agent",
           "--local",
@@ -300,11 +300,11 @@ describeLive("fresh OpenAI onboarding live", () => {
         },
       );
       await waitForIsolatedGatewayReady(gateway, gatewayPort);
-      await runOpenClaw(["health", "--json"], state.env);
+      await runAfora(["health", "--json"], state.env);
 
       const gatewaySessionId = "openai-onboarding-live-gateway";
       const gatewayPrompt = `Return exactly ${replyMarker} and no other text.`;
-      const gatewayStdout = await runOpenClaw(
+      const gatewayStdout = await runAfora(
         [
           "agent",
           "--agent",

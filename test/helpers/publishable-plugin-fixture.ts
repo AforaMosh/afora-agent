@@ -21,7 +21,7 @@ export function writePublishablePluginFixture(
   options: PublishablePluginFixtureOptions,
 ) {
   const extensionId = options.extensionId ?? "demo-plugin";
-  const packageName = `@openclaw/${extensionId}`;
+  const packageName = `@afora/${extensionId}`;
   const packageDir = join(repoDir, "extensions", extensionId);
   const publishToNpm = options.publishTo === "npm" || options.publishTo === "both";
   const publishToClawHub = options.publishTo === "clawhub" || options.publishTo === "both";
@@ -39,16 +39,16 @@ export function writePublishablePluginFixture(
     type: "module",
     repository: {
       type: "git",
-      url: "https://github.com/openclaw/openclaw",
+      url: "https://github.com/AforaMosh/afora-agent",
     },
     ...(options.dependency
       ? { dependencies: { [options.dependency.packageName]: options.dependency.version } }
       : {}),
-    openclaw: {
+    afora: {
       extensions: ["./index.ts"],
       compat: { pluginApi: `>=${options.version}` },
       build: {
-        openclawVersion: options.version,
+        aforaVersion: options.version,
         ...(options.bundledDist ? { bundledDist: true } : {}),
       },
       install: { npmSpec: packageName },

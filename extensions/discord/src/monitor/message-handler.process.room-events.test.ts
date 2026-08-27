@@ -49,7 +49,7 @@ describe("processDiscordMessage session routing and room events", () => {
             timing: { debounceMs: 0 },
           },
         },
-        session: { store: "/tmp/openclaw-discord-process-test-sessions.json" },
+        session: { store: "/tmp/afora-discord-process-test-sessions.json" },
       },
       route: BASE_CHANNEL_ROUTE,
     });
@@ -87,7 +87,7 @@ describe("processDiscordMessage session routing and room events", () => {
             timing: { debounceMs: 0 },
           },
         },
-        session: { store: "/tmp/openclaw-discord-process-test-sessions.json" },
+        session: { store: "/tmp/afora-discord-process-test-sessions.json" },
       },
       route: BASE_CHANNEL_ROUTE,
     });
@@ -257,7 +257,7 @@ describe("processDiscordMessage session routing and room events", () => {
               visibleReplies: "message_tool",
             },
           },
-          session: { store: "/tmp/openclaw-discord-process-test-sessions.json" },
+          session: { store: "/tmp/afora-discord-process-test-sessions.json" },
         },
         route: BASE_CHANNEL_ROUTE,
       }),
@@ -276,7 +276,7 @@ describe("processDiscordMessage session routing and room events", () => {
               visibleReplies: "automatic",
             },
           },
-          session: { store: "/tmp/openclaw-discord-process-test-sessions.json" },
+          session: { store: "/tmp/afora-discord-process-test-sessions.json" },
         },
         route: BASE_CHANNEL_ROUTE,
       }),
@@ -294,7 +294,7 @@ describe("processDiscordMessage session routing and room events", () => {
 
   it("prefers bound session keys and sets MessageThreadId for bound thread messages", async () => {
     const threadBindings = createThreadBindingManager({
-      cfg: {} as import("openclaw/plugin-sdk/config-contracts").OpenClawConfig,
+      cfg: {} as import("afora-agent/plugin-sdk/config-contracts").AforaConfig,
       accountId: "default",
       persist: false,
       enableSweeper: false,

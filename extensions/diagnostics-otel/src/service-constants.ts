@@ -1,25 +1,25 @@
-export const DEFAULT_SERVICE_NAME = "openclaw";
+export const DEFAULT_SERVICE_NAME = "afora";
 export const DROPPED_OTEL_ATTRIBUTE_KEYS = new Set([
-  "openclaw.callId",
-  "openclaw.call_id",
-  "openclaw.chatId",
-  "openclaw.chat_id",
-  "openclaw.messageId",
-  "openclaw.message_id",
-  "openclaw.parentSpanId",
-  "openclaw.parent_span_id",
-  "openclaw.runId",
-  "openclaw.run_id",
-  "openclaw.sessionId",
-  "openclaw.session_id",
-  "openclaw.sessionKey",
-  "openclaw.session_key",
-  "openclaw.spanId",
-  "openclaw.span_id",
-  "openclaw.toolCallId",
-  "openclaw.tool_call_id",
-  "openclaw.traceId",
-  "openclaw.trace_id",
+  "afora.callId",
+  "afora.call_id",
+  "afora.chatId",
+  "afora.chat_id",
+  "afora.messageId",
+  "afora.message_id",
+  "afora.parentSpanId",
+  "afora.parent_span_id",
+  "afora.runId",
+  "afora.run_id",
+  "afora.sessionId",
+  "afora.session_id",
+  "afora.sessionKey",
+  "afora.session_key",
+  "afora.spanId",
+  "afora.span_id",
+  "afora.toolCallId",
+  "afora.tool_call_id",
+  "afora.traceId",
+  "afora.trace_id",
 ]);
 export const SECURITY_TARGET_NAME_VALUE_RE = /^[A-Za-z0-9@/_.:-]{1,256}$/u;
 export const MAX_OTEL_LOG_BODY_CHARS = 4 * 1024;
@@ -71,7 +71,7 @@ export const AGENT_DURATION_MS_BUCKETS = [
   1_800_000,
   3_600_000,
 ];
-// openclaw.context.tokens records context window limit/used token counts, which
+// afora.context.tokens records context window limit/used token counts, which
 // range from a few thousand to >1M for large-context models. Keep the prior
 // layout and add common context-window sizes above it.
 export const CONTEXT_TOKENS_BUCKETS = [

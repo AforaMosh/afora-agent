@@ -3,7 +3,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { clearPluginMetadataLifecycleCaches } from "../plugins/plugin-metadata-lifecycle.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { createConfigIoContext } from "./io.context.js";
 import {
   readConfigFileSnapshotFromContext,
@@ -14,17 +14,17 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 afterEach(() => {
   clearPluginMetadataLifecycleCaches();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 function createContext(root: string) {
-  const configPath = path.join(root, "openclaw.json");
+  const configPath = path.join(root, "afora.json");
   const env: NodeJS.ProcessEnv = {
     HOME: root,
     USERPROFILE: root,
-    OPENCLAW_CONFIG_PATH: configPath,
-    OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-    OPENCLAW_STATE_DIR: path.join(root, "state"),
+    AFORA_CONFIG_PATH: configPath,
+    AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+    AFORA_STATE_DIR: path.join(root, "state"),
     VITEST: "true",
   };
   return createConfigIoContext({
@@ -37,7 +37,7 @@ function createContext(root: string) {
 
 describe("config snapshot plugin metadata", () => {
   it("loads metadata for an explicit valid missing-config read without changing plain reads", async () => {
-    const root = tempDirs.make("openclaw-config-snapshot-metadata-");
+    const root = tempDirs.make("afora-config-snapshot-metadata-");
     const context = createContext(root);
     const loader = vi.spyOn(context, "createValidationPluginMetadataSnapshotLoader");
 
@@ -59,7 +59,7 @@ describe("config snapshot plugin metadata", () => {
   });
 
   it("does not invent plugin metadata for invalid snapshots", async () => {
-    const root = tempDirs.make("openclaw-config-snapshot-invalid-");
+    const root = tempDirs.make("afora-config-snapshot-invalid-");
     const context = createContext(root);
     fs.writeFileSync(context.configPath, "{ invalid", "utf8");
     const loader = vi.spyOn(context, "createValidationPluginMetadataSnapshotLoader");

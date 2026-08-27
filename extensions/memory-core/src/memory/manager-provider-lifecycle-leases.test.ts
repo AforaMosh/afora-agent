@@ -1,6 +1,6 @@
 // Memory Core tests cover manager provider lifecycle lease behavior.
 import path from "node:path";
-import { hashText } from "openclaw/plugin-sdk/memory-core-host-engine-storage";
+import { hashText } from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
 import { describe, expect, it, vi } from "vitest";
 import { createManagerIndexFixture } from "./manager-index.test-support.js";
 

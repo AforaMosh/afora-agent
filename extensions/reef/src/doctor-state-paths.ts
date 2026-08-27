@@ -1,9 +1,9 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { resolveUserPath } from "openclaw/plugin-sdk/account-resolution";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { resolveUserPath } from "afora-agent/plugin-sdk/account-resolution";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export const REEF_DURABLE_LEGACY_FILENAMES = [
   "keys.json",
@@ -16,7 +16,7 @@ export const REEF_DURABLE_LEGACY_FILENAMES = [
 ] as const;
 
 export function resolveLegacyReefStateDir(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
   stateDir: string;
   homeDir?: string;
@@ -38,7 +38,7 @@ export function resolveLegacyReefStateDir(params: {
 }
 
 function resolveDefaultLegacyReefStateDir(homeDir = os.homedir()): string {
-  return path.join(homeDir, ".openclaw", "data", "reef");
+  return path.join(homeDir, ".afora", "data", "reef");
 }
 
 export async function legacyReefFileExists(filePath: string): Promise<boolean> {

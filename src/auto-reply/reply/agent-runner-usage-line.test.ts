@@ -1,7 +1,7 @@
 // Tests usage-line formatting for agent runner completion summaries.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { getReplyPayloadMetadata, setReplyPayloadMetadata } from "../reply-payload.js";
 import { appendUsageLine, resolveResponseUsageLine } from "./agent-runner-usage-line.js";
 
@@ -41,8 +41,8 @@ describe("appendUsageLine", () => {
             },
           },
         },
-      } as OpenClawConfig,
-      agentDir: "/tmp/openclaw-main-agent",
+      } as AforaConfig,
+      agentDir: "/tmp/afora-main-agent",
       usage: { input: 1_000_000, output: 0 },
       provider: "fixture",
       model: "priced",

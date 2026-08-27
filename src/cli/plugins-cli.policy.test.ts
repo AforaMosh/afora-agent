@@ -1,6 +1,6 @@
 // Plugins CLI policy tests cover plugin command policy checks and warnings.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import {
   buildPluginRegistrySnapshotReportMock,
   enablePluginInConfigMock,
@@ -14,7 +14,7 @@ import {
   configWriteMock,
 } from "./plugins-cli-test-helpers.js";
 
-const ORIGINAL_OPENCLAW_NIX_MODE = process.env.OPENCLAW_NIX_MODE;
+const ORIGINAL_AFORA_NIX_MODE = process.env.AFORA_NIX_MODE;
 
 describe("plugins cli policy mutations", () => {
   const compatibilityPluginIds = [
@@ -27,10 +27,10 @@ describe("plugins cli policy mutations", () => {
   });
 
   afterEach(() => {
-    if (ORIGINAL_OPENCLAW_NIX_MODE === undefined) {
-      delete process.env.OPENCLAW_NIX_MODE;
+    if (ORIGINAL_AFORA_NIX_MODE === undefined) {
+      delete process.env.AFORA_NIX_MODE;
     } else {
-      process.env.OPENCLAW_NIX_MODE = ORIGINAL_OPENCLAW_NIX_MODE;
+      process.env.AFORA_NIX_MODE = ORIGINAL_AFORA_NIX_MODE;
     }
   });
 
@@ -43,7 +43,7 @@ describe("plugins cli policy mutations", () => {
     });
   }
 
-  function requireFirstWrittenConfig(): OpenClawConfig {
+  function requireFirstWrittenConfig(): AforaConfig {
     const call = configWriteMock.mock.calls[0];
     if (!call) {
       throw new Error("expected configWriteMock to be called");
@@ -56,8 +56,8 @@ describe("plugins cli policy mutations", () => {
   }
 
   function requirePluginEntries(
-    config: OpenClawConfig,
-  ): NonNullable<NonNullable<OpenClawConfig["plugins"]>["entries"]> {
+    config: AforaConfig,
+  ): NonNullable<NonNullable<AforaConfig["plugins"]>["entries"]> {
     if (!config.plugins?.entries) {
       throw new Error("expected plugin entries in config");
     }
@@ -65,14 +65,14 @@ describe("plugins cli policy mutations", () => {
   }
 
   it("refreshes the persisted plugin registry after enabling a plugin", async () => {
-    const sourceConfig = {} as OpenClawConfig;
+    const sourceConfig = {} as AforaConfig;
     const enabledConfig = {
       plugins: {
         entries: {
           alpha: { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     pluginCliConfigMock.mockReturnValue(sourceConfig);
     enablePluginInConfigMock.mockReturnValue({
       config: enabledConfig,
@@ -119,7 +119,7 @@ describe("plugins cli policy mutations", () => {
       reason: "blocked by allowlist",
     },
   ])("fails without mutations when $policy blocks enablement", async ({ plugins, reason }) => {
-    const sourceConfig = { plugins } as OpenClawConfig;
+    const sourceConfig = { plugins } as AforaConfig;
     pluginCliConfigMock.mockReturnValue(sourceConfig);
     enablePluginInConfigMock.mockReturnValue({
       config: sourceConfig,
@@ -139,17 +139,17 @@ describe("plugins cli policy mutations", () => {
   });
 
   it("refuses plugin enablement in Nix mode before config mutation", async () => {
-    const previous = process.env.OPENCLAW_NIX_MODE;
-    process.env.OPENCLAW_NIX_MODE = "1";
+    const previous = process.env.AFORA_NIX_MODE;
+    process.env.AFORA_NIX_MODE = "1";
     try {
       await expect(runPluginsCommand(["plugins", "enable", "alpha"])).rejects.toThrow(
-        "OPENCLAW_NIX_MODE=1",
+        "AFORA_NIX_MODE=1",
       );
     } finally {
       if (previous === undefined) {
-        delete process.env.OPENCLAW_NIX_MODE;
+        delete process.env.AFORA_NIX_MODE;
       } else {
-        process.env.OPENCLAW_NIX_MODE = previous;
+        process.env.AFORA_NIX_MODE = previous;
       }
     }
 
@@ -164,7 +164,7 @@ describe("plugins cli policy mutations", () => {
           alpha: { enabled: true },
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
     mockPluginRegistry(["alpha"]);
 
     await runPluginsCommand(["plugins", "disable", "alpha"]);
@@ -190,14 +190,14 @@ describe("plugins cli policy mutations", () => {
   it.each(compatibilityPluginIds)(
     "enables compatibility id $alias through canonical plugin $pluginId",
     async ({ alias, pluginId }) => {
-      const sourceConfig = {} as OpenClawConfig;
+      const sourceConfig = {} as AforaConfig;
       const enabledConfig = {
         plugins: {
           entries: {
             [pluginId]: { enabled: true },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       pluginCliConfigMock.mockReturnValue(sourceConfig);
       enablePluginInConfigMock.mockReturnValue({
         config: enabledConfig,
@@ -231,7 +231,7 @@ describe("plugins cli policy mutations", () => {
             [pluginId]: { enabled: true },
           },
         },
-      } as OpenClawConfig);
+      } as AforaConfig);
       mockPluginRegistry([pluginId]);
 
       await runPluginsCommand(["plugins", "disable", alias]);
@@ -260,7 +260,7 @@ describe("plugins cli policy mutations", () => {
       );
 
       expect(runtimeErrors).toContain(
-        "Plugin not found: missing-plugin. Run `openclaw plugins list` to see installed plugins, or `openclaw plugins search missing-plugin` to look for installable plugins.",
+        "Plugin not found: missing-plugin. Run `afora plugins list` to see installed plugins, or `afora plugins search missing-plugin` to look for installable plugins.",
       );
       expect(enablePluginInConfigMock).not.toHaveBeenCalled();
       expect(configWriteMock).not.toHaveBeenCalled();
@@ -269,7 +269,7 @@ describe("plugins cli policy mutations", () => {
   );
 
   it("does not create a channel config when disabling a channel plugin by policy", async () => {
-    pluginCliConfigMock.mockReturnValue({} as OpenClawConfig);
+    pluginCliConfigMock.mockReturnValue({} as AforaConfig);
     mockPluginRegistry(["twitch"]);
 
     await runPluginsCommand(["plugins", "disable", "twitch"]);

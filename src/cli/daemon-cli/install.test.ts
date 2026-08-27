@@ -49,13 +49,13 @@ const createInstallPlanFixture = vi.hoisted(() => {
     environmentValueSources?: Record<string, string | undefined>;
   }> => {
     const environment: Record<string, string | undefined> = {};
-    if (params?.wrapperPath || params?.env?.OPENCLAW_WRAPPER) {
-      environment.OPENCLAW_WRAPPER = params.wrapperPath ?? params.env?.OPENCLAW_WRAPPER;
+    if (params?.wrapperPath || params?.env?.AFORA_WRAPPER) {
+      environment.AFORA_WRAPPER = params.wrapperPath ?? params.env?.AFORA_WRAPPER;
     }
     return {
       programArguments: params?.wrapperPath
         ? [params.wrapperPath, "gateway", "run"]
-        : ["openclaw", "gateway", "run"],
+        : ["afora", "gateway", "run"],
       workingDirectory: "/tmp",
       environment,
     };
@@ -94,7 +94,7 @@ vi.mock("../../config/io.js", () => ({
   loadConfig: loadConfigMock,
   readConfigFileSnapshotForWrite: vi.fn(async () => ({
     snapshot: await readConfigFileSnapshotMock(),
-    writeOptions: { expectedConfigPath: "/tmp/openclaw.json" },
+    writeOptions: { expectedConfigPath: "/tmp/afora.json" },
   })),
 }));
 
@@ -139,8 +139,8 @@ vi.mock("../../commands/daemon-install-helpers.js", () => ({
 }));
 
 vi.mock("../../daemon/program-args.js", () => ({
-  OPENCLAW_WRAPPER_ENV_KEY: "OPENCLAW_WRAPPER",
-  resolveOpenClawWrapperPath: async (value: string | undefined) => value?.trim() || undefined,
+  AFORA_WRAPPER_ENV_KEY: "AFORA_WRAPPER",
+  resolveAforaWrapperPath: async (value: string | undefined) => value?.trim() || undefined,
 }));
 
 vi.mock("./shared.js", () => ({
@@ -233,10 +233,10 @@ function expectLastEmittedResult(result: string): void {
 
 function mockResolvedGatewayTokenSecretRef() {
   resolveSecretInputRefMock.mockReturnValue({
-    ref: { source: "env", provider: "default", id: "OPENCLAW_GATEWAY_TOKEN" },
+    ref: { source: "env", provider: "default", id: "AFORA_GATEWAY_TOKEN" },
   });
   resolveSecretRefValuesMock.mockResolvedValue(
-    new Map([["env:default:OPENCLAW_GATEWAY_TOKEN", "resolved-from-secretref"]]),
+    new Map([["env:default:AFORA_GATEWAY_TOKEN", "resolved-from-secretref"]]),
   );
 }
 
@@ -273,7 +273,7 @@ describe("mergeInstallInvocationEnv", () => {
       const env = mergeInstallInvocationEnv({
         env: { PATH: "/usr/bin" },
         existingServiceEnv: {
-          [caKey]: " /opt/openclaw/corporate-ca.pem ",
+          [caKey]: " /opt/afora/corporate-ca.pem ",
           NODE_TLS_REJECT_UNAUTHORIZED: "0",
           HTTPS_PROXY: "https://attacker.invalid",
           NODE_OPTIONS: "--require /tmp/untrusted.js",
@@ -285,7 +285,7 @@ describe("mergeInstallInvocationEnv", () => {
       });
 
       expectFields(env, {
-        NODE_EXTRA_CA_CERTS: "/opt/openclaw/corporate-ca.pem",
+        NODE_EXTRA_CA_CERTS: "/opt/afora/corporate-ca.pem",
         OPENAI_API_KEY: "existing-service-key",
         PATH: "/usr/bin",
       });
@@ -307,14 +307,14 @@ describe("mergeInstallInvocationEnv", () => {
     "lets the current shell override installed Node CA trust on $platform",
     ({ platform, shellKey }) => {
       const env = mergeInstallInvocationEnv({
-        env: { [shellKey]: "/opt/openclaw/current-shell-ca.pem" },
+        env: { [shellKey]: "/opt/afora/current-shell-ca.pem" },
         existingServiceEnv: {
-          NODE_EXTRA_CA_CERTS: "/opt/openclaw/previous-service-ca.pem",
+          NODE_EXTRA_CA_CERTS: "/opt/afora/previous-service-ca.pem",
         },
         platform,
       });
 
-      expect(env.NODE_EXTRA_CA_CERTS).toBe("/opt/openclaw/current-shell-ca.pem");
+      expect(env.NODE_EXTRA_CA_CERTS).toBe("/opt/afora/current-shell-ca.pem");
     },
   );
 });
@@ -377,7 +377,7 @@ describe("runDaemonInstall", () => {
       NODE_EXTRA_CA_CERTS: undefined,
       NODE_USE_SYSTEM_CA: undefined,
     });
-    delete process.env.OPENCLAW_GATEWAY_TOKEN;
+    delete process.env.AFORA_GATEWAY_TOKEN;
   });
 
   afterEach(() => {
@@ -386,7 +386,7 @@ describe("runDaemonInstall", () => {
 
   it("fails install when token auth requires an unresolved token SecretRef", async () => {
     resolveSecretInputRefMock.mockReturnValue({
-      ref: { source: "env", provider: "default", id: "OPENCLAW_GATEWAY_TOKEN" },
+      ref: { source: "env", provider: "default", id: "AFORA_GATEWAY_TOKEN" },
     });
     resolveSecretRefValuesMock.mockRejectedValue(new Error("secret unavailable"));
 
@@ -399,7 +399,7 @@ describe("runDaemonInstall", () => {
   });
 
   it("blocks external-supervisor installs before reading or mutating config", async () => {
-    process.env.OPENCLAW_SUPERVISOR_MODE = "external";
+    process.env.AFORA_SUPERVISOR_MODE = "external";
 
     await runDaemonInstall({ json: true });
 
@@ -444,7 +444,7 @@ describe("runDaemonInstall", () => {
 
   it("passes service environment value sources through to service install", async () => {
     buildGatewayInstallPlanMock.mockResolvedValueOnce({
-      programArguments: ["openclaw", "gateway", "run"],
+      programArguments: ["afora", "gateway", "run"],
       workingDirectory: "/tmp",
       environment: {
         OPENROUTER_API_KEY: "or-operator-key",
@@ -500,7 +500,7 @@ describe("runDaemonInstall", () => {
 
   it("does not treat env-template gateway.auth.token as plaintext during install", async () => {
     loadConfigMock.mockReturnValue({
-      gateway: { auth: { mode: "token", token: "${OPENCLAW_GATEWAY_TOKEN}" } },
+      gateway: { auth: { mode: "token", token: "${AFORA_GATEWAY_TOKEN}" } },
     });
     mockResolvedGatewayTokenSecretRef();
 
@@ -604,7 +604,7 @@ describe("runDaemonInstall", () => {
     expect(actionState.failed[0]?.message).toContain("Gateway install blocked");
     expect(actionState.failed[0]?.message).toContain("gateway.bind=lan");
     expect(actionState.failed[0]?.message).toContain("gateway.auth.mode=none");
-    expect(actionState.failed[0]?.message).toContain("openclaw config set gateway.auth.mode token");
+    expect(actionState.failed[0]?.message).toContain("afora config set gateway.auth.mode token");
     expect(buildGatewayInstallPlanMock).not.toHaveBeenCalled();
     expect(installDaemonServiceAndEmitMock).not.toHaveBeenCalled();
   });
@@ -775,7 +775,7 @@ describe("runDaemonInstall", () => {
       NODE_USE_SYSTEM_CA: undefined,
     });
     service.readCommand.mockResolvedValue({
-      programArguments: ["openclaw", "gateway", "run"],
+      programArguments: ["afora", "gateway", "run"],
       environment: {
         NODE_EXTRA_CA_CERTS: "/etc/ssl/certs/ca-certificates.crt",
       },
@@ -787,12 +787,12 @@ describe("runDaemonInstall", () => {
     expectLastEmittedResult("already-installed");
   });
 
-  it("reinstalls when the loaded service still embeds OPENCLAW_GATEWAY_TOKEN", async () => {
+  it("reinstalls when the loaded service still embeds AFORA_GATEWAY_TOKEN", async () => {
     service.isLoaded.mockResolvedValue(true);
     service.readCommand.mockResolvedValue({
-      programArguments: ["openclaw", "gateway", "run"],
+      programArguments: ["afora", "gateway", "run"],
       environment: {
-        OPENCLAW_GATEWAY_TOKEN: "stale-service-token",
+        AFORA_GATEWAY_TOKEN: "stale-service-token",
       },
     } as never);
 
@@ -800,23 +800,23 @@ describe("runDaemonInstall", () => {
 
     expect(installDaemonServiceAndEmitMock).toHaveBeenCalledTimes(1);
     expect(actionState.warnings).toContain(
-      "Gateway service OPENCLAW_GATEWAY_TOKEN differs from the current install plan; refreshing the install.",
+      "Gateway service AFORA_GATEWAY_TOKEN differs from the current install plan; refreshing the install.",
     );
   });
 
   it("returns already-installed when the embedded gateway token matches the install plan", async () => {
     service.isLoaded.mockResolvedValue(true);
     service.readCommand.mockResolvedValue({
-      programArguments: ["openclaw", "gateway", "run"],
+      programArguments: ["afora", "gateway", "run"],
       environment: {
-        OPENCLAW_GATEWAY_TOKEN: "durable-token",
+        AFORA_GATEWAY_TOKEN: "durable-token",
       },
     } as never);
     buildGatewayInstallPlanMock.mockResolvedValueOnce({
-      programArguments: ["openclaw", "gateway", "run"],
+      programArguments: ["afora", "gateway", "run"],
       workingDirectory: "/tmp",
       environment: {
-        OPENCLAW_GATEWAY_TOKEN: "durable-token",
+        AFORA_GATEWAY_TOKEN: "durable-token",
       },
     });
 
@@ -831,9 +831,9 @@ describe("runDaemonInstall", () => {
   it("preserves wrapper env from an installed but unloaded service during forced reinstall", async () => {
     service.isLoaded.mockResolvedValue(false);
     service.readCommand.mockResolvedValue({
-      programArguments: ["/usr/local/bin/openclaw-doppler", "gateway", "run"],
+      programArguments: ["/usr/local/bin/afora-doppler", "gateway", "run"],
       environment: {
-        OPENCLAW_WRAPPER: "/usr/local/bin/openclaw-doppler",
+        AFORA_WRAPPER: "/usr/local/bin/afora-doppler",
       },
     } as never);
 
@@ -841,18 +841,18 @@ describe("runDaemonInstall", () => {
 
     expect(service.readCommand).toHaveBeenCalledTimes(1);
     const installPlanArg = readFirstInstallPlanArg();
-    expectFields(installPlanArg, { wrapperPath: "/usr/local/bin/openclaw-doppler" });
+    expectFields(installPlanArg, { wrapperPath: "/usr/local/bin/afora-doppler" });
     expectFields(installPlanArg.existingEnvironment, {
-      OPENCLAW_WRAPPER: "/usr/local/bin/openclaw-doppler",
+      AFORA_WRAPPER: "/usr/local/bin/afora-doppler",
     });
     expectFields(installPlanArg.env, {
-      OPENCLAW_WRAPPER: "/usr/local/bin/openclaw-doppler",
+      AFORA_WRAPPER: "/usr/local/bin/afora-doppler",
     });
     expect(installDaemonServiceAndEmitMock).toHaveBeenCalledTimes(1);
   });
 
   it("preserves generated-service CA trust without unsafe overrides during forced reinstall", async () => {
-    const extraCaCerts = "/opt/openclaw/corporate-ca.pem";
+    const extraCaCerts = "/opt/afora/corporate-ca.pem";
     for (const key of [
       "NODE_EXTRA_CA_CERTS",
       "NODE_TLS_REJECT_UNAUTHORIZED",
@@ -865,7 +865,7 @@ describe("runDaemonInstall", () => {
     }
     service.isLoaded.mockResolvedValue(true);
     service.readCommand.mockResolvedValue({
-      programArguments: ["openclaw", "gateway", "run"],
+      programArguments: ["afora", "gateway", "run"],
       environment: {
         NODE_EXTRA_CA_CERTS: extraCaCerts,
         NODE_TLS_REJECT_UNAUTHORIZED: "0",
@@ -914,34 +914,34 @@ describe("runDaemonInstall", () => {
   it("reinstalls when wrapper command matches but wrapper env is missing", async () => {
     service.isLoaded.mockResolvedValue(true);
     service.readCommand.mockResolvedValue({
-      programArguments: ["/usr/local/bin/openclaw-doppler", "gateway", "run"],
+      programArguments: ["/usr/local/bin/afora-doppler", "gateway", "run"],
       environment: {},
     } as never);
 
     await runDaemonInstall({
       json: true,
-      wrapper: "/usr/local/bin/openclaw-doppler",
+      wrapper: "/usr/local/bin/afora-doppler",
     });
 
     expect(installDaemonServiceAndEmitMock).toHaveBeenCalledTimes(1);
     expect(actionState.warnings).toContain(
-      "Gateway service OPENCLAW_WRAPPER differs from the current wrapper install plan; refreshing the install.",
+      "Gateway service AFORA_WRAPPER differs from the current wrapper install plan; refreshing the install.",
     );
   });
 
   it("reinstalls when the embedded gateway token differs from the install plan", async () => {
     service.isLoaded.mockResolvedValue(true);
     service.readCommand.mockResolvedValue({
-      programArguments: ["openclaw", "gateway", "run"],
+      programArguments: ["afora", "gateway", "run"],
       environment: {
-        OPENCLAW_GATEWAY_TOKEN: "stale-service-token",
+        AFORA_GATEWAY_TOKEN: "stale-service-token",
       },
     } as never);
     buildGatewayInstallPlanMock.mockResolvedValueOnce({
-      programArguments: ["openclaw", "gateway", "run"],
+      programArguments: ["afora", "gateway", "run"],
       workingDirectory: "/tmp",
       environment: {
-        OPENCLAW_GATEWAY_TOKEN: "fresh-token",
+        AFORA_GATEWAY_TOKEN: "fresh-token",
       },
     });
 
@@ -949,19 +949,19 @@ describe("runDaemonInstall", () => {
 
     expect(installDaemonServiceAndEmitMock).toHaveBeenCalledTimes(1);
     expect(actionState.warnings).toContain(
-      "Gateway service OPENCLAW_GATEWAY_TOKEN differs from the current install plan; refreshing the install.",
+      "Gateway service AFORA_GATEWAY_TOKEN differs from the current install plan; refreshing the install.",
     );
   });
 
-  it("does not reinstall when OPENCLAW_GATEWAY_TOKEN comes from an env file", async () => {
+  it("does not reinstall when AFORA_GATEWAY_TOKEN comes from an env file", async () => {
     service.isLoaded.mockResolvedValue(true);
     service.readCommand.mockResolvedValue({
-      programArguments: ["openclaw", "gateway", "run"],
+      programArguments: ["afora", "gateway", "run"],
       environment: {
-        OPENCLAW_GATEWAY_TOKEN: "env-file-token",
+        AFORA_GATEWAY_TOKEN: "env-file-token",
       },
       environmentValueSources: {
-        OPENCLAW_GATEWAY_TOKEN: "file",
+        AFORA_GATEWAY_TOKEN: "file",
       },
     } as never);
 
@@ -978,7 +978,7 @@ describe("runDaemonInstall", () => {
       NODE_USE_SYSTEM_CA: undefined,
     });
     service.readCommand.mockResolvedValue({
-      programArguments: ["openclaw", "gateway", "run"],
+      programArguments: ["afora", "gateway", "run"],
       environment: {},
     } as never);
 
@@ -1012,7 +1012,7 @@ describe("runDaemonInstall", () => {
   it("reuses env-backed service secrets during forced reinstall when the current shell is missing them", async () => {
     service.isLoaded.mockResolvedValue(true);
     service.readCommand.mockResolvedValue({
-      programArguments: ["openclaw", "gateway", "run"],
+      programArguments: ["afora", "gateway", "run"],
       environment: {
         OPENAI_API_KEY: "service-openai-key",
       },
@@ -1045,11 +1045,11 @@ describe("runDaemonInstall", () => {
   it("does not reuse stale service control env during forced reinstall", async () => {
     service.isLoaded.mockResolvedValue(true);
     service.readCommand.mockResolvedValue({
-      programArguments: ["openclaw", "gateway", "run"],
+      programArguments: ["afora", "gateway", "run"],
       environment: {
-        OPENCLAW_STATE_DIR: "/tmp/openclaw-doctor-manual",
-        OPENCLAW_CONFIG_PATH: "/tmp/openclaw-doctor-manual/openclaw.json",
-        OPENCLAW_GATEWAY_TOKEN: "stale-service-token",
+        AFORA_STATE_DIR: "/tmp/afora-doctor-manual",
+        AFORA_CONFIG_PATH: "/tmp/afora-doctor-manual/afora.json",
+        AFORA_GATEWAY_TOKEN: "stale-service-token",
         PATH: "/tmp/doctor-bin:/usr/bin",
         NODE_OPTIONS: "--require /tmp/evil.js",
         OPENAI_API_KEY: "service-openai-key",
@@ -1065,9 +1065,9 @@ describe("runDaemonInstall", () => {
         OPENAI_API_KEY: "service-openai-key",
       });
       const env = readFirstInstallPlanArg().env as Record<string, string | undefined>;
-      expect(env.OPENCLAW_STATE_DIR).toBeUndefined();
-      expect(env.OPENCLAW_CONFIG_PATH).toBeUndefined();
-      expect(env.OPENCLAW_GATEWAY_TOKEN).toBeUndefined();
+      expect(env.AFORA_STATE_DIR).toBeUndefined();
+      expect(env.AFORA_CONFIG_PATH).toBeUndefined();
+      expect(env.AFORA_GATEWAY_TOKEN).toBeUndefined();
       expect(env.NODE_OPTIONS).toBeUndefined();
       expect(env.PATH).not.toContain("/tmp/doctor-bin");
       expect(installDaemonServiceAndEmitMock).toHaveBeenCalledTimes(1);

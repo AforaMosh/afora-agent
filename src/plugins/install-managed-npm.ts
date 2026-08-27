@@ -6,8 +6,8 @@ import {
   listMissingRequiredPlatformPackages,
   readManagedNpmRootInstalledDependency,
   readManagedNpmRootPeerDependencySnapshot,
-  readOpenClawManagedNpmRootOverrides,
-  repairManagedNpmRootOpenClawPeer,
+  readAforaManagedNpmRootOverrides,
+  repairManagedNpmRootAforaPeer,
   syncManagedNpmRootPeerDependencies,
   upsertManagedNpmRootDependency,
   type ManagedNpmOverrideOmissions,
@@ -52,7 +52,7 @@ import {
 import {
   defaultLogger,
   ensureInstallTargetAvailableForMode,
-  formatUnresolvedOpenClawPeerLinkError,
+  formatUnresolvedAforaPeerLinkError,
   loadPluginInstallRuntime,
   readOptionalPackageManifest,
   resolveEffectiveInstallMode,
@@ -70,8 +70,8 @@ import type {
 } from "./install-types.js";
 import { hasRetainedManagedNpmInstallMarker } from "./managed-npm-retention.js";
 import {
-  auditDeclaredOpenClawHostDependency,
-  relinkOpenClawPeerDependenciesInManagedNpmRoot,
+  auditDeclaredAforaHostDependency,
+  relinkAforaPeerDependenciesInManagedNpmRoot,
 } from "./plugin-peer-link.js";
 
 export async function installPluginFromManagedNpmRoot(
@@ -204,18 +204,18 @@ export async function installPluginFromManagedNpmRoot(
     prepared: ManagedNpmRootPreparedDependency,
   ): Promise<InstallPluginResult> => {
     logger.info?.(`Installing ${params.displaySpec} into ${npmRoot}…`);
-    if (params.packageName !== "openclaw") {
-      const repairedOpenClawPeer = await repairManagedNpmRootOpenClawPeer({
+    if (params.packageName !== "afora") {
+      const repairedAforaPeer = await repairManagedNpmRootAforaPeer({
         npmRoot,
         timeoutMs,
         signal: params.signal,
         logger,
       });
-      if (repairedOpenClawPeer) {
-        logger.info?.(`Repaired stale openclaw peer dependency in ${npmRoot}`);
+      if (repairedAforaPeer) {
+        logger.info?.(`Repaired stale afora peer dependency in ${npmRoot}`);
       }
     }
-    const managedOverrides = await readOpenClawManagedNpmRootOverrides();
+    const managedOverrides = await readAforaManagedNpmRootOverrides();
     rollbackPeerDependencySnapshot ??= await readManagedNpmRootPeerDependencySnapshot({ npmRoot });
     const rollbackFailedManagedNpmInstall = async (
       failure: Extract<InstallPluginResult, { ok: false }>,
@@ -247,7 +247,7 @@ export async function installPluginFromManagedNpmRoot(
       } catch (error) {
         return await rollbackFailedManagedNpmInstall({
           ok: false,
-          error: `${cause.error}, but OpenClaw could not quarantine ${npmRoot} for rebuild: ${String(error)}`,
+          error: `${cause.error}, but Afora could not quarantine ${npmRoot} for rebuild: ${String(error)}`,
         });
       }
       logger.warn?.(
@@ -447,7 +447,7 @@ export async function installPluginFromManagedNpmRoot(
       );
       let freshCacheDir: string | undefined;
       try {
-        freshCacheDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-npm-cache-"));
+        freshCacheDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-npm-cache-"));
         install = await runCommandWithTimeout(npmInstallArgs, {
           ...npmInstallOptions,
           env: {
@@ -497,32 +497,32 @@ export async function installPluginFromManagedNpmRoot(
         });
       }
     }
-    if (params.packageName !== "openclaw") {
-      const repairedOpenClawPeer = await repairManagedNpmRootOpenClawPeer({
+    if (params.packageName !== "afora") {
+      const repairedAforaPeer = await repairManagedNpmRootAforaPeer({
         npmRoot,
         timeoutMs,
         signal: params.signal,
         logger,
       });
-      if (repairedOpenClawPeer) {
-        logger.info?.(`Repaired stale openclaw peer dependency in ${npmRoot} after npm install`);
+      if (repairedAforaPeer) {
+        logger.info?.(`Repaired stale afora peer dependency in ${npmRoot} after npm install`);
       }
     }
     try {
-      await relinkOpenClawPeerDependenciesInManagedNpmRoot({
+      await relinkAforaPeerDependenciesInManagedNpmRoot({
         npmRoot,
         logger,
       });
     } catch (error) {
       return await rollbackFailedManagedNpmInstall({
         ok: false,
-        error: `Failed to repair openclaw peer links after npm install: ${String(error)}`,
+        error: `Failed to repair afora peer links after npm install: ${String(error)}`,
       });
     }
-    if (await auditDeclaredOpenClawHostDependency({ packageDir: installRoot })) {
+    if (await auditDeclaredAforaHostDependency({ packageDir: installRoot })) {
       return await rollbackFailedManagedNpmInstall({
         ok: false,
-        error: formatUnresolvedOpenClawPeerLinkError(params.packageName),
+        error: formatUnresolvedAforaPeerLinkError(params.packageName),
       });
     }
 

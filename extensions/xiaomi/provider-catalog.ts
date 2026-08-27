@@ -1,7 +1,7 @@
 // Xiaomi provider module implements model/runtime integration.
-import { buildManifestModelProviderConfig } from "openclaw/plugin-sdk/provider-catalog-shared";
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-shared";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import { buildManifestModelProviderConfig } from "afora-agent/plugin-sdk/provider-catalog-shared";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-model-shared";
+import manifest from "./afora.plugin.json" with { type: "json" };
 
 export const XIAOMI_PROVIDER_ID = "xiaomi";
 export const XIAOMI_TOKEN_PLAN_PROVIDER_ID = "xiaomi-token-plan";

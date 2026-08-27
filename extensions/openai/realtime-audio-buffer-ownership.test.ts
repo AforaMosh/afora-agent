@@ -1,5 +1,5 @@
 import { once } from "node:events";
-import type { RealtimeVoiceBridge } from "openclaw/plugin-sdk/realtime-voice";
+import type { RealtimeVoiceBridge } from "afora-agent/plugin-sdk/realtime-voice";
 import { describe, expect, it, vi } from "vitest";
 import WebSocket, { type RawData, WebSocketServer } from "ws";
 import { OpenAIQuicksilverVoiceBridge } from "./realtime-quicksilver-bridge.js";

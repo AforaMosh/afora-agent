@@ -1,5 +1,5 @@
 import { isIncognitoSessionKey, resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
-import { resolveIncognitoOpenClawAgentSqlitePath } from "../../state/openclaw-agent-db.js";
+import { resolveIncognitoAforaAgentSqlitePath } from "../../state/afora-agent-db.js";
 import { getRuntimeConfig } from "../io.js";
 import { resolveSessionStorePathCore } from "./paths.js";
 
@@ -16,7 +16,7 @@ export function resolveSessionStorePathForScope(scope: SessionStorePathScope): s
   // durable rows that collide are doctor-owned (`doctor-session-incognito-key-repair`);
   // no runtime fallback by design.
   if (isIncognitoSessionKey(scope.sessionKey)) {
-    return resolveIncognitoOpenClawAgentSqlitePath({
+    return resolveIncognitoAforaAgentSqlitePath({
       agentId: resolveAgentIdFromSessionKey(scope.sessionKey),
       env: scope.env,
     });

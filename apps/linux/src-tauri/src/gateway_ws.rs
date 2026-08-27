@@ -136,7 +136,7 @@ impl ServerCertVerifier for GatewayTlsPinVerifier {
         _now: UnixTime,
     ) -> Result<ServerCertVerified, RustlsError> {
         // The local CLI authenticates this exact leaf-certificate hash before handing it to the
-        // app. A present pin replaces CA/hostname trust, matching OpenClawKit; the signature
+        // app. A present pin replaces CA/hostname trust, matching AforaKit; the signature
         // methods below still prove the peer owns the certificate's private key.
         if pinned_fingerprint_matches(&self.expected, end_entity.as_ref()) {
             Ok(ServerCertVerified::assertion())
@@ -1956,7 +1956,7 @@ mod tests {
     #[test]
     fn connect_frame_matches_gateway_schema() {
         let directory = std::env::temp_dir().join(format!(
-            "openclaw-linux-connect-frame-test-{}",
+            "afora-linux-connect-frame-test-{}",
             Uuid::new_v4()
         ));
         let store = GatewayDeviceIdentityStore::load_or_create(directory.join("identity.json"))
@@ -2055,7 +2055,7 @@ mod tests {
             "auth": { "deviceToken": "test-device-token" },
             "policy": { "tickIntervalMs": 1_250 },
             "pluginSurfaceUrls": {
-                "canvas": "https://gateway.example/__openclaw__/cap/fixture-capability"
+                "canvas": "https://gateway.example/__afora__/cap/fixture-capability"
             }
         }))
         .expect("valid hello");
@@ -2064,7 +2064,7 @@ mod tests {
         assert_eq!(hello.tick_watch_timeout, Duration::from_millis(2_500));
         assert_eq!(
             hello.canvas_surface_url.as_deref(),
-            Some("https://gateway.example/__openclaw__/cap/fixture-capability")
+            Some("https://gateway.example/__afora__/cap/fixture-capability")
         );
         assert_eq!(
             gated_canvas_surface_url(hello.canvas_surface_url.clone(), true),
@@ -2080,7 +2080,7 @@ mod tests {
     fn plugin_surface_refresh_response_decodes_canvas_url() {
         let response: PluginSurfaceRefreshResponse = serde_json::from_value(json!({
             "pluginSurfaceUrls": {
-                "canvas": "https://gateway.example/__openclaw__/cap/refreshed-capability"
+                "canvas": "https://gateway.example/__afora__/cap/refreshed-capability"
             }
         }))
         .expect("refresh response");
@@ -2090,7 +2090,7 @@ mod tests {
                 .plugin_surface_urls
                 .and_then(|urls| urls.get("canvas").cloned())
                 .as_deref(),
-            Some("https://gateway.example/__openclaw__/cap/refreshed-capability")
+            Some("https://gateway.example/__afora__/cap/refreshed-capability")
         );
     }
 
@@ -2157,13 +2157,13 @@ mod tests {
         let event = serde_json::to_value(GatewayStateEvent::new(
             GatewayConnectionState::Up,
             None,
-            Some("https://gateway.example/__openclaw__/cap/fixture-capability".to_string()),
+            Some("https://gateway.example/__afora__/cap/fixture-capability".to_string()),
         ))
         .expect("serialize gateway state");
 
         assert_eq!(
             event["canvasSurfaceUrl"],
-            "https://gateway.example/__openclaw__/cap/fixture-capability"
+            "https://gateway.example/__afora__/cap/fixture-capability"
         );
         assert!(event.get("canvas_surface_url").is_none());
     }

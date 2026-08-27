@@ -4,7 +4,7 @@
  * Prefers plugin manifest login commands, then falls back to configure/env-var guidance.
  */
 import { formatCliCommand } from "../cli/command-format.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveManifestProviderAuthChoices } from "../plugins/provider-auth-choices.js";
 import { normalizeProviderId } from "./model-selection.js";
 import { resolveProviderAuthAliasMap } from "./provider-auth-aliases.js";
@@ -33,7 +33,7 @@ function matchesProviderAuthChoice(
 
 function resolveProviderAuthLoginCommand(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
 }): string | undefined {
@@ -45,13 +45,13 @@ function resolveProviderAuthLoginCommand(params: {
     return undefined;
   }
   const providerId = normalizeProviderIdForAuth(choice.providerId, aliases);
-  return formatCliCommand(`openclaw models auth login --provider ${providerId}`);
+  return formatCliCommand(`afora models auth login --provider ${providerId}`);
 }
 
 /** Build a concise user-facing hint for recovering provider authentication. */
 export function buildProviderAuthRecoveryHint(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   includeConfigure?: boolean;
@@ -63,13 +63,13 @@ export function buildProviderAuthRecoveryHint(params: {
     parts.push(`Run \`${loginCommand}\``);
   }
   if (params.includeConfigure !== false) {
-    parts.push(`\`${formatCliCommand("openclaw configure")}\``);
+    parts.push(`\`${formatCliCommand("afora configure")}\``);
   }
   if (params.includeEnvVar) {
     parts.push("set an API key env var");
   }
   if (parts.length === 0) {
-    return `Run \`${formatCliCommand("openclaw configure")}\`.`;
+    return `Run \`${formatCliCommand("afora configure")}\`.`;
   }
   if (parts.length === 1) {
     return `${parts[0]}.`;

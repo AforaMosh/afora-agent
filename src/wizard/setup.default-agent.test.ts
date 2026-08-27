@@ -1,6 +1,6 @@
 // Classic setup tests keep every workspace-owned effect on the configured default agent.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "./prompts.js";
 
@@ -28,7 +28,7 @@ vi.mock("./setup.shared.js", async (importOriginal) => {
     ...actual,
     readSetupConfigFileSnapshot: mocks.readSnapshot,
     readValidSetupConfigFile: vi.fn(),
-    requireRiskAcknowledgement: async ({ config }: { config: OpenClawConfig }) => config,
+    requireRiskAcknowledgement: async ({ config }: { config: AforaConfig }) => config,
     resolveQuickstartGatewayDefaults: () => ({
       hasExisting: false,
       port: 18789,
@@ -47,7 +47,7 @@ vi.mock("./setup.migration-import.js", () => ({
 }));
 
 vi.mock("./setup.model-auth.js", () => ({
-  runSetupModelAuthStep: async ({ config }: { config: OpenClawConfig }) => ({
+  runSetupModelAuthStep: async ({ config }: { config: AforaConfig }) => ({
     config,
     authProfiles: [],
     persistAuthProfiles: async () => {},
@@ -66,7 +66,7 @@ vi.mock("./setup.secret-input.js", () => ({
 }));
 
 vi.mock("./setup.gateway-config.js", () => ({
-  configureGatewayForSetup: async ({ nextConfig }: { nextConfig: OpenClawConfig }) => ({
+  configureGatewayForSetup: async ({ nextConfig }: { nextConfig: AforaConfig }) => ({
     nextConfig,
     settings: {
       port: 18789,
@@ -100,7 +100,7 @@ vi.mock("./setup.finalize.js", () => ({
 
 vi.mock("../commands/onboard-helpers.js", () => ({
   DEFAULT_WORKSPACE: "/tmp/default-workspace",
-  applyWizardMetadata: (config: OpenClawConfig) => config,
+  applyWizardMetadata: (config: AforaConfig) => config,
   ensureWorkspaceAndSessions: mocks.ensureWorkspaceAndSessions,
   printWizardHeader: vi.fn(),
   probeGatewayReachable: vi.fn(async () => ({ ok: false })),
@@ -149,7 +149,7 @@ describe("runSetupWizard default-agent ownership", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     mocks.readSnapshot.mockResolvedValue({
       exists: true,
       valid: true,
@@ -158,16 +158,16 @@ describe("runSetupWizard default-agent ownership", () => {
       sourceConfigBeforeMigrations: config,
       issues: [],
     });
-    mocks.writeConfig.mockImplementation(async (nextConfig: OpenClawConfig) => nextConfig);
-    mocks.setupSkills.mockImplementation(async (nextConfig: OpenClawConfig) => nextConfig);
+    mocks.writeConfig.mockImplementation(async (nextConfig: AforaConfig) => nextConfig);
+    mocks.setupSkills.mockImplementation(async (nextConfig: AforaConfig) => nextConfig);
     mocks.setupOfficialPlugins.mockImplementation(
-      async ({ config: nextConfig }: { config: OpenClawConfig }) => nextConfig,
+      async ({ config: nextConfig }: { config: AforaConfig }) => nextConfig,
     );
     mocks.setupRecommendations.mockImplementation(
-      async ({ config: nextConfig }: { config: OpenClawConfig }) => ({ config: nextConfig }),
+      async ({ config: nextConfig }: { config: AforaConfig }) => ({ config: nextConfig }),
     );
     mocks.setupPluginConfig.mockImplementation(
-      async ({ config: nextConfig }: { config: OpenClawConfig }) => nextConfig,
+      async ({ config: nextConfig }: { config: AforaConfig }) => nextConfig,
     );
     mocks.finalizeSetup.mockResolvedValue({ launchedTui: false });
   });

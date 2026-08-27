@@ -730,7 +730,7 @@ describe("secrets runtime snapshot", () => {
     if (process.platform === "win32") {
       return;
     }
-    const root = tempDirs.make("openclaw-tts-secretref-missing-");
+    const root = tempDirs.make("afora-tts-secretref-missing-");
     const secretsPath = path.join(root, "secrets.json");
     await fs.writeFile(secretsPath, JSON.stringify({ providers: {} }, null, 2), "utf8");
     await fs.chmod(secretsPath, 0o600);
@@ -927,7 +927,7 @@ describe("secrets runtime snapshot", () => {
         }),
         env: {},
         includeAuthStoreRefs: false,
-        agentDirs: ["/tmp/openclaw-agent-main"],
+        agentDirs: ["/tmp/afora-agent-main"],
         loadAuthStore: () => ({ version: 1, profiles: {} }),
         loadablePluginOrigins: EMPTY_LOADABLE_PLUGIN_ORIGINS,
       }),

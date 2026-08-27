@@ -21,19 +21,19 @@ const ROUND_TRIP_VALUES = [
 
 describe("systemd unit value round-trips", () => {
   it.each(ROUND_TRIP_VALUES)("round-trips %p through Environment=", (value) => {
-    const rendered = renderSystemdEnvAssignment("OPENCLAW_TOKEN", value);
-    expect(parseSystemdEnvAssignments(rendered)).toEqual([{ key: "OPENCLAW_TOKEN", value }]);
+    const rendered = renderSystemdEnvAssignment("AFORA_TOKEN", value);
+    expect(parseSystemdEnvAssignments(rendered)).toEqual([{ key: "AFORA_TOKEN", value }]);
   });
 
   it.each(ROUND_TRIP_VALUES)("round-trips %p through ExecStart=", (value) => {
     const unit = buildSystemdUnit({
-      description: "OpenClaw Gateway",
-      programArguments: ["/usr/bin/openclaw", "gateway", value],
+      description: "Afora Gateway",
+      programArguments: ["/usr/bin/afora", "gateway", value],
       environment: {},
     });
     const execStart = unit.split("\n").find((line) => line.startsWith("ExecStart="));
     expect(parseSystemdExecStart(execStart?.slice("ExecStart=".length) ?? "")).toEqual([
-      "/usr/bin/openclaw",
+      "/usr/bin/afora",
       "gateway",
       value,
     ]);
@@ -43,18 +43,18 @@ describe("systemd unit value round-trips", () => {
 describe("buildSystemdUnit", () => {
   it("quotes arguments with whitespace", () => {
     const unit = buildSystemdUnit({
-      description: "OpenClaw Gateway",
-      programArguments: ["/usr/bin/openclaw", "gateway", "--name", "My Bot"],
+      description: "Afora Gateway",
+      programArguments: ["/usr/bin/afora", "gateway", "--name", "My Bot"],
       environment: {},
     });
     const execStart = unit.split("\n").find((line) => line.startsWith("ExecStart="));
-    expect(execStart).toBe('ExecStart=/usr/bin/openclaw gateway --name "My Bot"');
+    expect(execStart).toBe('ExecStart=/usr/bin/afora gateway --name "My Bot"');
   });
 
   it("renders control-group kill mode for child-process cleanup", () => {
     const unit = buildSystemdUnit({
-      description: "OpenClaw Gateway",
-      programArguments: ["/usr/bin/openclaw", "gateway", "run"],
+      description: "Afora Gateway",
+      programArguments: ["/usr/bin/afora", "gateway", "run"],
       environment: {},
     });
     expect(unit).toContain("KillMode=control-group");
@@ -70,8 +70,8 @@ describe("buildSystemdUnit", () => {
   it("rejects environment values with line breaks", () => {
     expect(() =>
       buildSystemdUnit({
-        description: "OpenClaw Gateway",
-        programArguments: ["/usr/bin/openclaw", "gateway", "start"],
+        description: "Afora Gateway",
+        programArguments: ["/usr/bin/afora", "gateway", "start"],
         environment: {
           INJECT: "ok\nExecStartPre=/bin/touch /tmp/oc15789_rce",
         },
@@ -81,17 +81,17 @@ describe("buildSystemdUnit", () => {
 
   it("renders EnvironmentFile entries before inline Environment values", () => {
     const unit = buildSystemdUnit({
-      description: "OpenClaw Gateway",
-      programArguments: ["/usr/bin/openclaw", "gateway", "run"],
-      environmentFiles: ["/home/test/.openclaw/.env"],
+      description: "Afora Gateway",
+      programArguments: ["/usr/bin/afora", "gateway", "run"],
+      environmentFiles: ["/home/test/.afora/.env"],
       environment: {
-        OPENCLAW_GATEWAY_PORT: "18789",
+        AFORA_GATEWAY_PORT: "18789",
       },
     });
-    expect(unit).toContain("EnvironmentFile=-/home/test/.openclaw/.env");
-    expect(unit).toContain("Environment=OPENCLAW_GATEWAY_PORT=18789");
-    expect(unit.indexOf("EnvironmentFile=-/home/test/.openclaw/.env")).toBeLessThan(
-      unit.indexOf("Environment=OPENCLAW_GATEWAY_PORT=18789"),
+    expect(unit).toContain("EnvironmentFile=-/home/test/.afora/.env");
+    expect(unit).toContain("Environment=AFORA_GATEWAY_PORT=18789");
+    expect(unit.indexOf("EnvironmentFile=-/home/test/.afora/.env")).toBeLessThan(
+      unit.indexOf("Environment=AFORA_GATEWAY_PORT=18789"),
     );
   });
 });

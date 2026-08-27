@@ -5,8 +5,8 @@ import type {
   ChannelMessageUnknownSendReconciliationResult,
   MessageReceipt,
   MessageReceiptPartKind,
-} from "openclaw/plugin-sdk/channel-outbound";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import { getMatrixRuntime } from "../runtime.js";
 import type { MatrixClient } from "./sdk.js";
 import type { MatrixMessageWireDispatch } from "./sdk/client-base.js";

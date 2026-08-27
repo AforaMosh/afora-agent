@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { createChannelDmPolicy } from "./channel-dm-policy.js";
 
 describe("createChannelDmPolicy", () => {
@@ -13,7 +13,7 @@ describe("createChannelDmPolicy", () => {
       }),
       promptAllowFrom: async ({ cfg }) => cfg,
     });
-    const cfg: OpenClawConfig = {};
+    const cfg: AforaConfig = {};
 
     expect(dmPolicy.resolveConfigKeys?.(cfg)).toEqual({
       policyKey: "channels.telegram.dmPolicy",
@@ -38,14 +38,14 @@ describe("createChannelDmPolicy", () => {
 
     expect(
       dmPolicy.setPolicy(
-        { channels: { telegram: { allowFrom: ["123"] } } } as OpenClawConfig,
+        { channels: { telegram: { allowFrom: ["123"] } } } as AforaConfig,
         "open",
       ).channels?.telegram,
     ).toMatchObject({ enabled: true, dmPolicy: "open", allowFrom: ["123", "*"] });
   });
 
   it("supports channel-specific key, allow-from, patch, and apply hooks", () => {
-    const applyPatch = vi.fn(({ cfg }: { cfg: OpenClawConfig }) => cfg);
+    const applyPatch = vi.fn(({ cfg }: { cfg: AforaConfig }) => cfg);
     const dmPolicy = createChannelDmPolicy({
       label: "Nested",
       channel: "matrix",
@@ -61,7 +61,7 @@ describe("createChannelDmPolicy", () => {
       applyPatch,
       promptAllowFrom: async ({ cfg }) => cfg,
     });
-    const cfg: OpenClawConfig = {};
+    const cfg: AforaConfig = {};
 
     expect(dmPolicy.policyKey).toBe("channels.matrix.dm.policy");
     expect(dmPolicy.getCurrent(cfg)).toBe("allowlist");

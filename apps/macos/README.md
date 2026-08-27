@@ -1,4 +1,4 @@
-# OpenClaw macOS app (dev + signing)
+# Afora macOS app (dev + signing)
 
 ## Quick dev run
 
@@ -28,7 +28,7 @@ comes from the normal environment/config endpoint. Combine it with
 Launch a fully isolated app instance with the same profile name used by the CLI:
 
 ```bash
-OPENCLAW_PROFILE=work /Applications/OpenClaw.app/Contents/MacOS/OpenClaw
+AFORA_PROFILE=work /Applications/Afora.app/Contents/MacOS/Afora
 ```
 
 Profile names use 1–64 lowercase letters, numbers, underscores, or hyphens and
@@ -39,12 +39,12 @@ must start with a letter or number. `default` selects the normal app; `gateway`,
 packaging cleanup is host-global. Build/package normally, then launch the named
 profile directly with the command above.
 
-A named profile keeps state in `~/.openclaw-<name>`, uses its own app defaults,
+A named profile keeps state in `~/.afora-<name>`, uses its own app defaults,
 Keychain services, duplicate-instance lock, and the CLI-managed Gateway service
-`ai.openclaw.<name>`. Unless config or environment selects a port, each profile
+`ai.afora.<name>`. Unless config or environment selects a port, each profile
 derives a stable port in the profile `20000...59999` range. The app does not
 install or modify the host-global Mac node
-service or OpenClaw login item while a profile is active. The runtime child node
+service or Afora login item while a profile is active. The runtime child node
 still runs in process as usual. App relocation, Sparkle updates, and post-update
 service repair are disabled in profile mode; update the installed app through
 the normal default-profile workflow.
@@ -57,7 +57,7 @@ Development bundle (signed but not notarized):
 scripts/package-mac-app.sh
 ```
 
-This creates `dist/OpenClaw.app` and signs it via `scripts/codesign-mac-app.sh`.
+This creates `dist/Afora.app` and signs it via `scripts/codesign-mac-app.sh`.
 It is not a distribution artifact. For a notarized app ZIP and DMG, use:
 
 ```bash
@@ -66,14 +66,14 @@ scripts/package-mac-dist.sh
 
 For an unattended Peekaboo elevation host, use the closed Foundation signing
 profile and source-addressed ZIP workflow. `package` is an internal release
-operator command: it requires the OpenClaw Foundation signing identity and
+operator command: it requires the Afora Foundation signing identity and
 notarization credentials, and its archive is not a general-download artifact.
 
 ```bash
 scripts/mac-elevation-host.sh package \
   --peekaboo-source-commit <full-peekaboo-sha>
 cd dist/elevation-host
-export PREFIX="OpenClaw-<full-openclaw-sha>-Peekaboo-<full-peekaboo-sha>-stable"
+export PREFIX="Afora-<full-afora-sha>-Peekaboo-<full-peekaboo-sha>-stable"
 export INSTALLER_SHA256="<authenticated-installer-sha256>"
 export RECEIPT_SHA256="<authenticated-receipt-sha256>"
 [[ "$(shasum -a 256 "$PREFIX-installer.sh" | awk '{print $1}')" == "$INSTALLER_SHA256" ]] || exit 1
@@ -84,17 +84,17 @@ shasum -a 256 -c "$PREFIX-installer.sh.sha256"
   --receipt "$PREFIX.json" \
   --receipt-sha256 "$RECEIPT_SHA256"
 ./"$PREFIX-installer.sh" migration-plan \
-  --migrate-launch-agent "$HOME/Library/LaunchAgents/ai.openclaw.node.plist"
+  --migrate-launch-agent "$HOME/Library/LaunchAgents/ai.afora.node.plist"
 ./"$PREFIX-installer.sh" install \
   --archive "$PREFIX.zip" \
   --receipt "$PREFIX.json" \
   --receipt-sha256 "$RECEIPT_SHA256" \
-  --migrate-launch-agent "$HOME/Library/LaunchAgents/ai.openclaw.node.plist"
+  --migrate-launch-agent "$HOME/Library/LaunchAgents/ai.afora.node.plist"
 ./"$PREFIX-installer.sh" status --state-dir "<existing-state-dir>"
 ```
 
 The elevation package is ZIP-only, notarized and stapled, contains exactly
-`OpenClaw.app`, omits Apple Events entitlements, records an immutable receipt,
+`Afora.app`, omits Apple Events entitlements, records an immutable receipt,
 and verifies a freshly extracted copy. The same source-addressed artifact set
 includes a portable installer copied from that exact Git commit plus separate
 archive and installer checksum files. Transfer the archive, receipt, portable
@@ -112,10 +112,10 @@ paired macOS node identity in the selected state directory. Use
 running background app with no LaunchAgent, use the explicit
 `--adopt-running-app` plan/install option instead. The installer copies no token
 or password: it preserves only the state and config ownership paths, then
-requires the same node identity to reconnect as `openclaw-macos/node` with the
+requires the same node identity to reconnect as `afora-macos/node` with the
 new app version and computer-use capabilities before committing. Installation owns the separate
-`ai.openclaw.mac.elevation-host` launchd job with `RunAtLoad` and `KeepAlive`.
-It refuses to replace or race the ordinary `ai.openclaw.mac` Launch at login
+`ai.afora.mac.elevation-host` launchd job with `RunAtLoad` and `KeepAlive`.
+It refuses to replace or race the ordinary `ai.afora.mac` Launch at login
 job. `recover` restores the recorded prior bundle after a failed cutover;
 `uninstall` removes only the elevation job and preserves the app, state,
 Keychain, TCC, and recovery receipt. Installation exits successfully once the

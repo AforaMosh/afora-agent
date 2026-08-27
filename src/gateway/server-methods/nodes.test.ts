@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   GATEWAY_CLIENT_IDS,
@@ -26,11 +26,11 @@ import {
 import { NODE_WORKER_SUPERVISOR_PROTOCOL_FEATURE } from "../../infra/node-runner-inventory.js";
 import { loadApnsRegistration, registerApnsRegistration } from "../../infra/push-apns.js";
 import { resetRemoteNodeSkillsForTests } from "../../skills/runtime/remote-skills.test-support.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../../test-utils/afora-test-state.js";
 import { drainNodePendingWork, enqueueNodePendingWork } from "../node-pending-work.js";
 import { createNodeRegistryRuntime } from "../node-registry-private.js";
 import { NodeRegistry } from "../node-registry.js";
@@ -48,7 +48,7 @@ import { nodeHandlers } from "./nodes.js";
 import { createWorkerSupervisorNodeClient } from "./nodes.runner-inventory.test-support.js";
 import type { GatewayRequestHandlerOptions } from "./types.js";
 
-const createdStates: OpenClawTestState[] = [];
+const createdStates: AforaTestState[] = [];
 const pairingGenerationHooks = vi.hoisted(() => ({
   beforeCapture: vi.fn<(nodeId: string) => Promise<void> | void>(),
 }));
@@ -68,8 +68,8 @@ vi.mock("../../infra/device-pairing-node-state.js", async (importOriginal) => {
   };
 });
 
-async function createState(label: string): Promise<OpenClawTestState> {
-  const state = await createOpenClawTestState({ label, layout: "state-only" });
+async function createState(label: string): Promise<AforaTestState> {
+  const state = await createAforaTestState({ label, layout: "state-only" });
   createdStates.push(state);
   return state;
 }
@@ -98,7 +98,7 @@ afterEach(async () => {
   resetNodeWakeStateForTest();
   pairingGenerationHooks.beforeCapture.mockReset();
   vi.clearAllMocks();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   while (createdStates.length > 0) {
     await createdStates.pop()?.cleanup();
   }
@@ -216,7 +216,7 @@ async function pairAndroidNodeDevice(stateDir: string, nodeId: string): Promise<
       displayName: "Galaxy A54 5G",
       platform: "android",
       deviceFamily: "Android",
-      clientId: "openclaw-android",
+      clientId: "afora-android",
       clientMode: "node",
       role: "node",
       roles: ["node"],
@@ -240,7 +240,7 @@ async function pairMixedRoleAndroidDevice(stateDir: string, nodeId: string): Pro
       displayName: "Galaxy A54 5G",
       platform: "android",
       deviceFamily: "Android",
-      clientId: "openclaw-android",
+      clientId: "afora-android",
       clientMode: "node",
       role: "operator",
       roles: ["operator", "node"],
@@ -262,7 +262,7 @@ async function approveNodeSurface(stateDir: string, nodeId: string): Promise<voi
       nodeId,
       platform: "android",
       deviceFamily: "Android",
-      clientId: "openclaw-android",
+      clientId: "afora-android",
       clientMode: "node",
       displayName: "Galaxy A54 5G",
     },
@@ -373,7 +373,7 @@ describe("nodeHandlers node.pair.approve", () => {
         nodeId,
         platform: "android",
         deviceFamily: "Android",
-        clientId: "openclaw-android",
+        clientId: "afora-android",
         clientMode: "node",
         displayName: "Galaxy A54 5G pending",
       },
@@ -427,7 +427,7 @@ describe("nodeHandlers node.pair.approve", () => {
         nodeId,
         platform: "android",
         deviceFamily: "Android",
-        clientId: "openclaw-android",
+        clientId: "afora-android",
         clientMode: "node",
         displayName: "Galaxy A54 5G reapproved",
       },
@@ -551,7 +551,7 @@ describe("nodeHandlers node.pair.approve", () => {
         nodeId,
         platform: "android",
         deviceFamily: "Android",
-        clientId: "openclaw-android",
+        clientId: "afora-android",
         clientMode: "node",
         displayName: "Galaxy A54 5G reapproved",
       },
@@ -596,7 +596,7 @@ describe("nodeHandlers node.pair.approve", () => {
         nodeId,
         platform: "android",
         deviceFamily: "Android",
-        clientId: "openclaw-android",
+        clientId: "afora-android",
         clientMode: "node",
         displayName: "Galaxy A54 5G surface refresh",
       },
@@ -645,7 +645,7 @@ describe("nodeHandlers node.pair.approve", () => {
         nodeId,
         platform: "android",
         deviceFamily: "Android",
-        clientId: "openclaw-android",
+        clientId: "afora-android",
         clientMode: "node",
         displayName: "Galaxy A54 5G pending",
       },
@@ -695,7 +695,7 @@ describe("nodeHandlers node.pair.remove", () => {
       nodeId,
       transport: "direct",
       token: "ABCD1234ABCD1234ABCD1234ABCD1234",
-      topic: "ai.openclaw.ios",
+      topic: "ai.afora.ios",
       environment: "sandbox",
     });
     await seedNodeWakeState(nodeId);
@@ -755,7 +755,7 @@ describe("nodeHandlers node.pair.remove", () => {
       nodeId,
       transport: "direct",
       token: "ABCD1234ABCD1234ABCD1234ABCD1234",
-      topic: "ai.openclaw.ios",
+      topic: "ai.afora.ios",
       environment: "sandbox",
     });
 
@@ -773,7 +773,7 @@ describe("nodeHandlers node.pair.remove", () => {
           nodeId,
           transport: "direct",
           token: "DCBA4321DCBA4321DCBA4321DCBA4321",
-          topic: "ai.openclaw.ios",
+          topic: "ai.afora.ios",
           environment: "sandbox",
           expectedPairingGeneration: replacementGeneration.key,
         });
@@ -946,7 +946,7 @@ describe("nodeHandlers node.pair.remove", () => {
       nodeId,
       transport: "direct",
       token: "ABCD1234ABCD1234ABCD1234ABCD1234",
-      topic: "ai.openclaw.ios",
+      topic: "ai.afora.ios",
       environment: "sandbox",
     });
 

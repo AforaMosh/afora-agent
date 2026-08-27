@@ -5,10 +5,10 @@
  */
 import type { Insertable, Selectable, Updateable } from "kysely";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../../infra/kysely-sync.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../../state/openclaw-state-db-readonly.js";
-import { tableExists } from "../../state/openclaw-state-db-schema-helpers.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../../state/openclaw-state-db.generated.js";
-import { runOpenClawStateWriteTransaction } from "../../state/openclaw-state-db.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../../state/afora-state-db-readonly.js";
+import { tableExists } from "../../state/afora-state-db-schema-helpers.js";
+import type { DB as AforaStateKyselyDatabase } from "../../state/afora-state-db.generated.js";
+import { runAforaStateWriteTransaction } from "../../state/afora-state-db.js";
 import type { SandboxContainerEngineTarget } from "./container-engine.js";
 
 export type SandboxRegistryEntry = {
@@ -45,8 +45,8 @@ type SandboxBrowserRegistry = {
 
 type RegistryEntryPayload = { containerName: string } & Record<string, unknown>;
 type SandboxRegistryKind = "container" | "browser";
-type SandboxRegistryTable = OpenClawStateKyselyDatabase["sandbox_registry_entries"];
-type SandboxRegistryDatabase = Pick<OpenClawStateKyselyDatabase, "sandbox_registry_entries">;
+type SandboxRegistryTable = AforaStateKyselyDatabase["sandbox_registry_entries"];
+type SandboxRegistryDatabase = Pick<AforaStateKyselyDatabase, "sandbox_registry_entries">;
 type SandboxRegistryRow = Selectable<SandboxRegistryTable>;
 type SandboxRegistryInsert = Insertable<SandboxRegistryTable>;
 type SandboxRegistryUpdate = Updateable<SandboxRegistryTable>;
@@ -181,7 +181,7 @@ function readRegistryRows(
 ): SandboxRegistryRow[] {
   // CLI reads must not join the Gateway's writable SQLite lifecycle (#101290).
   return (
-    withExistingOpenClawStateDatabaseReadOnly(({ db }) => {
+    withExistingAforaStateDatabaseReadOnly(({ db }) => {
       if (!tableExists(db, "sandbox_registry_entries")) {
         return [];
       }
@@ -211,7 +211,7 @@ function readRegistryRow(
 ): SandboxRegistryRow | null {
   // CLI reads must not join the Gateway's writable SQLite lifecycle (#101290).
   return (
-    withExistingOpenClawStateDatabaseReadOnly(({ db }) => {
+    withExistingAforaStateDatabaseReadOnly(({ db }) => {
       if (!tableExists(db, "sandbox_registry_entries")) {
         return null;
       }
@@ -232,7 +232,7 @@ function readRegistryRow(
 }
 
 function insertRegistryRowIfMissing(row: SandboxRegistryInsert): void {
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     const stateDb = getSandboxRegistryKysely(db);
     executeSqliteQuerySync(
       db,
@@ -282,7 +282,7 @@ function readRegistryRowFromDb(
 }
 
 function removeRegistryRow(kind: SandboxRegistryKind, containerName: string): void {
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     const stateDb = getSandboxRegistryKysely(db);
     executeSqliteQuerySync(
       db,
@@ -340,7 +340,7 @@ export function insertSandboxRegistryEntryIfMissing(entry: SandboxRegistryEntry)
 
 /** Creates or updates one sandbox runtime registry entry, preserving immutable creation fields. */
 export async function updateRegistry(entry: SandboxRegistryEntry) {
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     const existingRow = readRegistryRowFromDb(db, "container", entry.containerName);
     const existing = existingRow ? rowToContainerEntry(existingRow) : null;
     insertRegistryRow(db, containerEntryToRow(entry, existing));
@@ -370,7 +370,7 @@ export function insertSandboxBrowserRegistryEntryIfMissing(
 
 /** Creates or updates one browser sandbox registry entry, preserving immutable creation fields. */
 export async function updateBrowserRegistry(entry: SandboxBrowserRegistryEntry) {
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     const existingRow = readRegistryRowFromDb(db, "browser", entry.containerName);
     const existing = existingRow ? rowToBrowserEntry(existingRow) : null;
     insertRegistryRow(db, browserEntryToRow(entry, existing));

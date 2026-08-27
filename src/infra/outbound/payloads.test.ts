@@ -1,6 +1,6 @@
 // Covers outbound payload normalization across text, media, presentation,
 // interactive blocks, mirror text, and suppressed relay status payloads.
-import { resolveSendableOutboundReplyParts } from "openclaw/plugin-sdk/reply-payload";
+import { resolveSendableOutboundReplyParts } from "afora-agent/plugin-sdk/reply-payload";
 import { describe, expect, it } from "vitest";
 import { markInboundContextLabel } from "../../auto-reply/reply/inbound-context-marker.js";
 import type { ReplyPayload } from "../../auto-reply/types.js";
@@ -143,7 +143,7 @@ describe("normalizeReplyPayloadsForDelivery", () => {
         { text: "Replied in-thread." },
         { text: "Replied in #maintainers." },
         {
-          text: "Updated [wiki/providers.md](/Users/steipete/.openclaw/workspace/wiki/providers.md:33). No channel reply.",
+          text: "Updated [wiki/providers.md](/Users/steipete/.afora/workspace/wiki/providers.md:33). No channel reply.",
         },
         {
           text: "Updated [wiki/tools.md] with the rollback failure-mode nuance. No channel reply.",

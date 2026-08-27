@@ -101,8 +101,8 @@ function hasMatchingGatewayPluginRoute(
 
 /** Creates the HTTP/WebSocket transport for one gateway start. */
 export async function createGatewayHttpTransport(params: {
-  cfg: import("../config/config.js").OpenClawConfig;
-  getRuntimeConfig?: () => import("../config/config.js").OpenClawConfig;
+  cfg: import("../config/config.js").AforaConfig;
+  getRuntimeConfig?: () => import("../config/config.js").AforaConfig;
   bindHost: string;
   port: number;
   controlUiEnabled: boolean;

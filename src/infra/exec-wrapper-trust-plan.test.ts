@@ -20,10 +20,10 @@ describe("resolveExecWrapperTrustPlan", () => {
     {
       name: "does not unwrap path-qualified command tokens as shell builtins",
       enabled: process.platform !== "win32",
-      argv: ["/tmp/openclaw-test/command", "curl", "https://example.invalid"],
+      argv: ["/tmp/afora-test/command", "curl", "https://example.invalid"],
       expected: {
-        argv: ["/tmp/openclaw-test/command", "curl", "https://example.invalid"],
-        policyArgv: ["/tmp/openclaw-test/command", "curl", "https://example.invalid"],
+        argv: ["/tmp/afora-test/command", "curl", "https://example.invalid"],
+        policyArgv: ["/tmp/afora-test/command", "curl", "https://example.invalid"],
         wrapperChain: [],
         policyBlocked: false,
         shellWrapperExecutable: false,

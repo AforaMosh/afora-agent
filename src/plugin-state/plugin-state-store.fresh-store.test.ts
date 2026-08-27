@@ -2,9 +2,9 @@
 // plugin_state_entries table; read-only paths must report empty, not error (#117249).
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, describe, expect, it } from "vitest";
-import { withOpenClawStateStartupMigrationCheckpointDatabase } from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { withAforaStateStartupMigrationCheckpointDatabase } from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import {
   countPluginStateLiveEntries,
   createPluginStateKeyedStore,
@@ -37,11 +37,11 @@ async function expectPluginStateReadFailure(
 
 describe("plugin state fresh-store reads", () => {
   it("treats an existing state database without the lazy plugin-state table as empty", async () => {
-    await withOpenClawTestState(
+    await withAforaTestState(
       { label: "plugin-state-read-only-table-missing", applyEnv: false },
       async (state) => {
-        const databasePath = resolveOpenClawStateSqlitePath(state.env);
-        withOpenClawStateStartupMigrationCheckpointDatabase(() => undefined, { env: state.env });
+        const databasePath = resolveAforaStateSqlitePath(state.env);
+        withAforaStateStartupMigrationCheckpointDatabase(() => undefined, { env: state.env });
 
         const store = createPluginStateKeyedStore("discord", {
           namespace: "read-only-table-missing",
@@ -74,11 +74,11 @@ describe("plugin state fresh-store reads", () => {
   });
 
   it("rejects a missing plugin-state table after another state table has been initialized", async () => {
-    await withOpenClawTestState(
+    await withAforaTestState(
       { label: "plugin-state-read-only-table-damaged", applyEnv: false },
       async (state) => {
-        const databasePath = resolveOpenClawStateSqlitePath(state.env);
-        withOpenClawStateStartupMigrationCheckpointDatabase(() => undefined, { env: state.env });
+        const databasePath = resolveAforaStateSqlitePath(state.env);
+        withAforaStateStartupMigrationCheckpointDatabase(() => undefined, { env: state.env });
         const database = new DatabaseSync(databasePath);
         database.exec(`
           CREATE TABLE config_machine_state (

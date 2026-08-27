@@ -1,8 +1,8 @@
-import type { ConfiguredModelRef } from "@openclaw/model-catalog-core/configured-model-refs";
+import type { ConfiguredModelRef } from "@afora/model-catalog-core/configured-model-refs";
 import {
   buildModelCatalogMergeKey,
   parseModelCatalogRef,
-} from "@openclaw/model-catalog-core/model-catalog-refs";
+} from "@afora/model-catalog-core/model-catalog-refs";
 import type { ProviderRuntimeModel } from "../plugins/provider-runtime-model.types.js";
 import type { PreparedConfiguredRuntimeModel } from "./prepared-model-runtime.configured.js";
 

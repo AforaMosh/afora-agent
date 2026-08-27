@@ -1,4 +1,4 @@
-// Runtime implementations for `openclaw plugins` subcommands. Heavy plugin modules stay
+// Runtime implementations for `afora plugins` subcommands. Heavy plugin modules stay
 // lazy-loaded so the base CLI can start without activating the plugin registry.
 import { formatDocsLink } from "../../packages/terminal-core/src/links.js";
 import { theme } from "../../packages/terminal-core/src/theme.js";
@@ -13,7 +13,7 @@ import {
   replaceConfigFile,
 } from "../config/config.js";
 import { formatConfigIssueLines } from "../config/issue-format.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { emitDiagnosticsTimelineEvent } from "../infra/diagnostics-timeline.js";
 import { withPluginLifecycleLease } from "../plugins/plugin-lifecycle-lease.js";
 import { tracePluginLifecyclePhaseAsync } from "../plugins/plugin-lifecycle-trace.js";
@@ -105,14 +105,14 @@ function pluginIdListIncludes(list: readonly string[] | undefined, pluginId: str
 }
 
 function formatBlockedRuntimePluginGuidance(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   pluginId: string;
 }): string | undefined {
   const pluginId = params.pluginId;
   const alternative =
     pluginId === "acpx"
       ? "disable ACP/acpx in acp config"
-      : 'change the runtime policy to "openclaw"';
+      : 'change the runtime policy to "afora"';
   if (params.cfg.plugins?.enabled === false) {
     return `Enable plugin loading and the "${pluginId}" plugin, or ${alternative}.`;
   }
@@ -126,14 +126,14 @@ function formatBlockedRuntimePluginGuidance(params: {
 }
 
 function formatDisabledRuntimePluginGuidance(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   pluginId: string;
 }): string {
   const allow = params.cfg.plugins?.allow;
   const alternative =
     params.pluginId === "acpx"
       ? "disable ACP/acpx in acp config"
-      : 'change the runtime policy to "openclaw"';
+      : 'change the runtime policy to "afora"';
   if (Array.isArray(allow) && allow.length > 0 && !allow.includes(params.pluginId)) {
     return `Add "${params.pluginId}" to plugins.allow and enable the plugin, or ${alternative}.`;
   }
@@ -141,7 +141,7 @@ function formatDisabledRuntimePluginGuidance(params: {
 }
 
 function collectConfiguredRuntimePluginWarnings(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   plugins: readonly { enabled?: boolean; id: string; status?: string }[];
 }): string[] {
   const enabledPluginIds = new Set(
@@ -173,7 +173,7 @@ function collectConfiguredRuntimePluginWarnings(params: {
     }
     const installSpec = formatConfiguredRuntimePluginInstallSpec(candidate);
     return [
-      `- Configured runtime "${runtimeId}" requires the ${candidate.label} plugin, but no enabled "${runtimeId}" plugin was found. Run "openclaw doctor --fix" to install ${installSpec}, or install it manually with "openclaw plugins install ${installSpec}".`,
+      `- Configured runtime "${runtimeId}" requires the ${candidate.label} plugin, but no enabled "${runtimeId}" plugin was found. Run "afora doctor --fix" to install ${installSpec}, or install it manually with "afora plugins install ${installSpec}".`,
     ];
   });
 }
@@ -195,7 +195,7 @@ async function runPluginsEnableCommandUnlocked(idInput: string): Promise<void> {
   const { normalizePluginId } = await loadPluginsConfigState();
   const { buildPluginRegistrySnapshotReport } = await loadPluginsStatus();
   const snapshot = await readConfigFileSnapshot();
-  const cfg = (snapshot.sourceConfig ?? snapshot.config) as OpenClawConfig;
+  const cfg = (snapshot.sourceConfig ?? snapshot.config) as AforaConfig;
   const report = buildPluginRegistrySnapshotReport({ config: cfg });
   id = normalizePluginId(id);
   if (!report.plugins.some((plugin) => plugin.id === id)) {
@@ -215,7 +215,7 @@ async function runPluginsEnableCommandUnlocked(idInput: string): Promise<void> {
   const { applySlotSelectionForPlugin } = await loadPluginSlotSelection();
   const { logSlotWarnings } = await loadPluginsCommandHelpers();
   const { refreshPluginRegistryAfterConfigMutation } = await loadPluginsRegistryRefresh();
-  let next: OpenClawConfig = enableResult.config;
+  let next: AforaConfig = enableResult.config;
   const slotResult = applySlotSelectionForPlugin(next, id);
   next = slotResult.config;
   await replaceConfigFile({
@@ -258,7 +258,7 @@ async function runPluginsDisableCommandUnlocked(idInput: string): Promise<void> 
   const { setPluginEnabledInConfig } = await import("./plugins-config.js");
   const { refreshPluginRegistryAfterConfigMutation } = await loadPluginsRegistryRefresh();
   const snapshot = await readConfigFileSnapshot();
-  const cfg = (snapshot.sourceConfig ?? snapshot.config) as OpenClawConfig;
+  const cfg = (snapshot.sourceConfig ?? snapshot.config) as AforaConfig;
   const report = buildPluginRegistrySnapshotReport({ config: cfg });
   id = normalizePluginId(id);
   if (!report.plugins.some((plugin) => plugin.id === id)) {
@@ -355,7 +355,7 @@ export async function runPluginsRegistryCommand(opts: PluginRegistryOptions): Pr
   ];
   if (inspection.refreshReasons.length > 0) {
     lines.push(`${theme.muted("Refresh reasons:")} ${inspection.refreshReasons.join(", ")}`);
-    lines.push(`${theme.muted("Repair:")} ${theme.command("openclaw plugins registry --refresh")}`);
+    lines.push(`${theme.muted("Repair:")} ${theme.command("afora plugins registry --refresh")}`);
   }
   defaultRuntime.log(lines.join("\n"));
 }
@@ -390,7 +390,7 @@ export async function runPluginsDoctorCommand(opts: PluginDoctorOptions = {}): P
     ),
     ...collectStalePluginConfigWarnings({
       hits: scanStalePluginConfig(sourceCfg, process.env),
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
       autoRepairBlocked: isStalePluginAutoRepairBlocked(sourceCfg, process.env),
     }),
     ...collectConfiguredRuntimePluginWarnings({ cfg: sourceCfg, plugins: report.plugins }),
@@ -430,10 +430,10 @@ export async function runPluginsDoctorCommand(opts: PluginDoctorOptions = {}): P
             : {}),
           ...(entry.source ? { shadowedSource: shortenHomeInString(entry.source) } : {}),
           repair: [
-            `openclaw plugins inspect ${entry.pluginId ?? "<plugin-id>"}`,
+            `afora plugins inspect ${entry.pluginId ?? "<plugin-id>"}`,
             "edit or remove the config-selected plugin source",
-            "openclaw plugins registry --refresh",
-            "openclaw gateway restart --force",
+            "afora plugins registry --refresh",
+            "afora gateway restart --force",
           ],
         };
       }),
@@ -449,7 +449,7 @@ export async function runPluginsDoctorCommand(opts: PluginDoctorOptions = {}): P
   if (!hasInstallTreeIssues && pluginConfigWarnings.size === 0) {
     defaultRuntime.log(
       "Plugin discovery, module loading, compatibility, and configuration checks passed. " +
-        'Run "openclaw health" to check the running Gateway, including runtime quarantines and fallbacks.',
+        'Run "afora health" to check the running Gateway, including runtime quarantines and fallbacks.',
     );
     return;
   }
@@ -491,10 +491,10 @@ export async function runPluginsDoctorCommand(opts: PluginDoctorOptions = {}): P
         lines.push(`  shadowed: ${shortenHomeInString(diag.source)}`);
       }
       lines.push("  repair:");
-      lines.push("    openclaw plugins inspect " + (diag.pluginId ?? "<plugin-id>"));
+      lines.push("    afora plugins inspect " + (diag.pluginId ?? "<plugin-id>"));
       lines.push("    edit or remove the config-selected plugin source");
-      lines.push("    openclaw plugins registry --refresh");
-      lines.push("    openclaw gateway restart --force");
+      lines.push("    afora plugins registry --refresh");
+      lines.push("    afora gateway restart --force");
     }
   }
   if (compatibility.length > 0) {
@@ -520,7 +520,7 @@ export async function runPluginsDoctorCommand(opts: PluginDoctorOptions = {}): P
     }
     lines.push("No plugin install-tree issues detected; configuration warnings remain.");
   }
-  const docs = formatDocsLink("/plugin", "docs.openclaw.ai/plugin");
+  const docs = formatDocsLink("/plugin", "docs.afora.ai/plugin");
   lines.push("");
   lines.push(`${theme.muted("Docs:")} ${docs}`);
   defaultRuntime.log(lines.join("\n"));
@@ -600,7 +600,7 @@ function emitMarketplaceFeedTelemetry(params: {
   entryCount?: number;
   failedPinnedRefresh?: boolean;
   opts: MarketplaceFeedTelemetryOptions;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   payload: MarketplaceRefreshPayload;
 }): void {
   const attributes: Record<string, string | number | boolean | null> = {
@@ -830,9 +830,9 @@ function formatPinnedMarketplaceRefreshFailure(payload: MarketplaceRefreshPayloa
 }
 
 const MARKETPLACE_GATEWAY_RESTART_GUIDANCE =
-  'The running Gateway could not refresh its marketplace catalog. Run "openclaw gateway restart" to apply the current catalog state.';
+  'The running Gateway could not refresh its marketplace catalog. Run "afora gateway restart" to apply the current catalog state.';
 
-/** List entries from the configured OpenClaw marketplace feed. */
+/** List entries from the configured Afora marketplace feed. */
 export async function runPluginMarketplaceEntriesCommand(
   opts: PluginMarketplaceEntriesOptions,
 ): Promise<void> {
@@ -890,7 +890,7 @@ export async function runPluginMarketplaceEntriesCommand(
   defaultRuntime.log(lines.join("\n"));
 }
 
-/** Refresh the configured OpenClaw marketplace feed snapshot. */
+/** Refresh the configured Afora marketplace feed snapshot. */
 export async function runPluginMarketplaceRefreshCommand(
   opts: PluginMarketplaceRefreshOptions,
 ): Promise<void> {

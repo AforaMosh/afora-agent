@@ -1,7 +1,7 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMessageReceiptFromOutboundResults } from "../../channels/message/receipt.js";
 import type { ChannelMessageSendTextContext } from "../../channels/message/types.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { createEmptyPluginRegistry } from "../../plugins/registry.js";
 import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../../test-utils/channel-plugins.js";
@@ -37,7 +37,7 @@ describe("exact Matrix delivery queue reconciliation", () => {
   it.each(["required", "best_effort"] as const)(
     "settles one exact Matrix %s send without restart replay",
     async (queuePolicy) => {
-      process.env.OPENCLAW_STATE_DIR = tmpDir;
+      process.env.AFORA_STATE_DIR = tmpDir;
       const deliveryIntentId = `cron-direct-delivery:v1:exact-${queuePolicy}-completion`;
       const messageId = `exact-${queuePolicy}-message`;
       const reconcileUnknownSend = vi.fn();
@@ -73,7 +73,7 @@ describe("exact Matrix delivery queue reconciliation", () => {
         ]),
       );
       const params = {
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         channel: "matrix" as const,
         to: "!room:example",
         payloads: [{ text: "send exactly once with durable platform identity" }],

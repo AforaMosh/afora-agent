@@ -1,4 +1,4 @@
-// Android Version script supports OpenClaw repository automation.
+// Android Version script supports Afora repository automation.
 import { resolveAndroidVersion } from "./lib/android-version.ts";
 import { parseVersionQueryArgs } from "./lib/version-script-args.ts";
 
@@ -29,8 +29,8 @@ function main(argv = process.argv.slice(2)): number {
   if (options.format === "shell") {
     process.stdout.write(
       [
-        `OPENCLAW_ANDROID_VERSION_NAME=${version.canonicalVersion}`,
-        `OPENCLAW_ANDROID_VERSION_CODE=${version.versionCode}`,
+        `AFORA_ANDROID_VERSION_NAME=${version.canonicalVersion}`,
+        `AFORA_ANDROID_VERSION_CODE=${version.versionCode}`,
       ].join("\n") + "\n",
     );
   } else {

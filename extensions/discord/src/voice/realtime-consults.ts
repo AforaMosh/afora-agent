@@ -14,9 +14,9 @@ import {
   type RealtimeVoiceSessionHarness,
   type RealtimeVoiceToolCallEvent,
   type RealtimeVoiceWakeNamePolicy,
-} from "openclaw/plugin-sdk/realtime-voice";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
-import { formatErrorMessage } from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/realtime-voice";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/runtime-env";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { maybeControlDiscordVoiceAgentRun } from "./agent-control.js";
 import { formatVoiceLogPreview } from "./log-preview.js";
 import { formatVoiceIngressPrompt } from "./prompt.js";
@@ -31,7 +31,7 @@ const DISCORD_REALTIME_TALKBACK_DEBOUNCE_MS = 350;
 const DISCORD_REALTIME_FALLBACK_TEXT = "I hit an error while checking that. Please try again.";
 const DISCORD_REALTIME_FORCED_CONSULT_FALLBACK_DELAY_MS = 200;
 const DISCORD_REALTIME_FORCED_CONSULT_REASON =
-  "provider_final_transcript_without_openclaw_agent_consult";
+  "provider_final_transcript_without_afora_agent_consult";
 
 type RecentAgentProxyConsultResult =
   | { status: "fulfilled"; text: string }
@@ -136,7 +136,7 @@ export class DiscordRealtimeConsults {
     ) {
       await this.submitTerminalRealtimeToolResult(callId, session, {
         status: "cancelled",
-        message: "OpenClaw cancelled this consult before completion. Do not restart it.",
+        message: "Afora cancelled this consult before completion. Do not restart it.",
       });
       return;
     }
@@ -536,7 +536,7 @@ export class DiscordRealtimeConsults {
       }
       await this.submitTerminalRealtimeToolResult(callId, session, {
         status: "already_delivered",
-        message: "OpenClaw already delivered this answer to Discord voice. Do not repeat it.",
+        message: "Afora already delivered this answer to Discord voice. Do not repeat it.",
       });
     };
     const submitResult = async (result: RecentAgentProxyConsultResult): Promise<void> => {

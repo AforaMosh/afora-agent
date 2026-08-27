@@ -1,6 +1,6 @@
-import OpenClawChatUI
+import AforaChatUI
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 @MainActor
 struct GatewayQuickSetupSheetMoodTests {

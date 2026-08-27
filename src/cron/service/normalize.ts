@@ -1,4 +1,4 @@
-import { truncateWithMarker } from "@openclaw/normalization-core/utf16-slice";
+import { truncateWithMarker } from "@afora/normalization-core/utf16-slice";
 /** Name, agent id, and payload text normalization helpers for cron service ops. */
 import { normalizeOptionalAgentId } from "../../routing/session-key.js";
 import type { CronPayload } from "../types.js";

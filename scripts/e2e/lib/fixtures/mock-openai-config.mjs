@@ -34,14 +34,14 @@ export function applyMockOpenAiModelConfig(cfg, params) {
         baseUrl: `http://127.0.0.1:${mockPort}/v1`,
         apiKey: { source: "env", provider: "default", id: "OPENAI_API_KEY" },
         api: "openai-responses",
-        agentRuntime: { id: "openclaw" },
+        agentRuntime: { id: "afora" },
         request: { ...cfg.models?.providers?.openai?.request, allowPrivateNetwork: true },
         models: [
           {
             id: modelId,
             name: modelId,
             api: "openai-responses",
-            agentRuntime: { id: "openclaw" },
+            agentRuntime: { id: "afora" },
             reasoning: false,
             input: ["text", "image"],
             cost,
@@ -70,7 +70,7 @@ export function applyMockOpenAiModelConfig(cfg, params) {
       models: {
         ...cfg.agents?.defaults?.models,
         [modelRef]: {
-          agentRuntime: { id: "openclaw" },
+          agentRuntime: { id: "afora" },
           params: { transport: "sse", openaiWsWarmup: false },
         },
       },
@@ -90,7 +90,7 @@ export function applyMockOpenAiModelConfig(cfg, params) {
                   ...agent.models,
                   [modelRef]: {
                     ...agent.models?.[modelRef],
-                    agentRuntime: { id: "openclaw" },
+                    agentRuntime: { id: "afora" },
                     params: {
                       ...agent.models?.[modelRef]?.params,
                       transport: "sse",

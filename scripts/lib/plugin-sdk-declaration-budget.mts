@@ -9,7 +9,7 @@ export const MAX_PRIVATE_QA_PUBLIC_PLUGIN_SDK_DECLARATION_BYTES = 5_275_000;
 export const PLUGIN_SDK_DECLARATION_OUTPUT_VARIANCE_BYTES = 64 * 1024;
 
 export function isPrivateQaPluginSdkBuild(env: NodeJS.ProcessEnv): boolean {
-  return env.OPENCLAW_BUILD_PRIVATE_QA === "1";
+  return env.AFORA_BUILD_PRIVATE_QA === "1";
 }
 
 export function evaluatePluginSdkDeclarationBudget({

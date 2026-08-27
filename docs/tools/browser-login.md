@@ -8,7 +8,7 @@ title: "Browser login"
 
 ## Manual login (recommended)
 
-When a site requires login, sign in manually in the host browser's `openclaw`
+When a site requires login, sign in manually in the host browser's `afora`
 profile. Do not give the model your credentials: automated logins often
 trigger anti-bot defenses and can lock the account.
 
@@ -20,32 +20,32 @@ Back to the main browser docs: [Browser](/tools/browser).
 
 ## Which Chrome profile is used?
 
-OpenClaw controls a dedicated Chrome profile named `openclaw` (orange-tinted
+Afora controls a dedicated Chrome profile named `afora` (orange-tinted
 UI), separate from your daily browser profile.
 
 For agent browser tool calls:
 
-- Default choice: the agent uses its isolated `openclaw` browser.
+- Default choice: the agent uses its isolated `afora` browser.
 - Use `profile="user"` only when existing logged-in sessions matter and you
   are at the computer to click/approve any attach prompt.
 - If you have multiple user-browser profiles, specify the profile explicitly
   instead of guessing.
 
-Two ways to access the `openclaw` profile:
+Two ways to access the `afora` profile:
 
 1. Ask the agent to open the browser, then log in yourself.
 2. Open it via CLI:
 
 ```bash
-openclaw browser start
-openclaw browser open https://x.com
+afora browser start
+afora browser open https://x.com
 ```
 
 For a non-default profile, put `--browser-profile <name>` before the
-subcommand (default is `openclaw`):
+subcommand (default is `afora`):
 
 ```bash
-openclaw browser --browser-profile <name> open https://x.com
+afora browser --browser-profile <name> open https://x.com
 ```
 
 ## Sandboxing: allow host browser access
@@ -72,7 +72,7 @@ CLI invocations always target the host browser, never the sandbox, so you can
 open the host browser yourself regardless of this setting:
 
 ```bash
-openclaw browser --browser-profile openclaw open https://x.com
+afora browser --browser-profile afora open https://x.com
 ```
 
 Once `sandbox.browser.allowHostControl: true` is set, the agent's `browser`

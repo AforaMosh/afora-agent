@@ -102,7 +102,7 @@ describe("telegram miniapp page bootstrap", () => {
       ok: true,
       json: async () => ({
         bootstrapToken: "bootstrap-token",
-        controlUiUrl: "https://host.tailnet.ts.net/openclaw",
+        controlUiUrl: "https://host.tailnet.ts.net/afora",
         gatewayUrl: "wss://host.tailnet.ts.net",
       }),
     }));
@@ -122,7 +122,7 @@ describe("telegram miniapp page bootstrap", () => {
 
       await vi.waitFor(() => {
         expect(location.replace).toHaveBeenCalledWith(
-          "https://host.tailnet.ts.net/openclaw#gatewayUrl=wss%3A%2F%2Fhost.tailnet.ts.net&bootstrapToken=bootstrap-token",
+          "https://host.tailnet.ts.net/afora#gatewayUrl=wss%3A%2F%2Fhost.tailnet.ts.net&bootstrapToken=bootstrap-token",
         );
       });
       expect(ready).toHaveBeenCalledTimes(1);

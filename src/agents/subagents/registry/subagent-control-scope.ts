@@ -1,6 +1,6 @@
 /** Controller identity, authorization, and controlled-run read scope. */
 import { sortSubagentRuns } from "../../../auto-reply/reply/subagents-utils.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import {
   isSubagentSessionKey,
   normalizeAgentId,
@@ -35,7 +35,7 @@ export type ResolvedSubagentController = {
 
 /** Resolves which subagent runs the caller is allowed to control. */
 export function resolveSubagentController(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentSessionKey?: string;
   agentId?: string;
 }): ResolvedSubagentController {
@@ -75,7 +75,7 @@ export function resolveSubagentController(params: {
 
 function resolveRunRequesterAgentId(
   entry: SubagentRunRecord,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): string | undefined {
   if (entry.requesterAgentId) {
     return entry.requesterAgentId;
@@ -91,7 +91,7 @@ function isSubagentRunVisibleToSession(
   entry: SubagentRunRecord,
   sessionKey: string,
   agentId: string,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): boolean {
   const controllerKey = entry.controllerSessionKey?.trim();
   const requesterKey = entry.requesterSessionKey.trim();
@@ -111,7 +111,7 @@ function isSubagentRunVisibleToSession(
 export function buildControlledSubagentRunsReadContext(
   controllerSessionKey: string,
   controllerAgentId?: string,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): {
   runs: SubagentRunRecord[];
   countPendingDescendantRuns(rootSessionKey: string): number;
@@ -141,13 +141,13 @@ export function buildControlledSubagentRunsReadContext(
 export function listControlledSubagentRuns(
   controllerSessionKey: string,
   controllerAgentId?: string,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): SubagentRunRecord[] {
   return buildControlledSubagentRunsReadContext(controllerSessionKey, controllerAgentId, cfg).runs;
 }
 
 export function ensureSubagentControllerOwnsRun(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   controller: ResolvedSubagentController;
   entry: SubagentRunRecord;
 }) {
@@ -177,7 +177,7 @@ export function isFinishedSubagentRunForSteer(
 export function getLatestOwnedSubagentRun(
   childSessionKey: string,
   agentId: string | undefined,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): SubagentRunRecord | undefined {
   // Agent-scoped child keys already carry their sole owner; any newer generation fences
   // the old row. Bare per-agent keys need the explicit owner to avoid cross-agent shadowing.
@@ -192,7 +192,7 @@ export function getLatestOwnedSubagentRun(
   );
 }
 
-export function isCurrentSubagentRun(entry: SubagentRunRecord, cfg?: OpenClawConfig): boolean {
+export function isCurrentSubagentRun(entry: SubagentRunRecord, cfg?: AforaConfig): boolean {
   if (!cfg) {
     return getLatestLiveSubagentRunByChildSessionKey(entry.childSessionKey) === entry;
   }

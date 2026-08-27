@@ -6,8 +6,8 @@ import { spawn as spawnPty } from "@lydell/node-pty";
 import { readPositiveIntEnv } from "./env-limits.mjs";
 
 const [logPath, command, ...args] = process.argv.slice(2);
-const OUTPUT_MAX_BYTES = readPositiveIntEnv("OPENCLAW_E2E_PTY_OUTPUT_MAX_BYTES", 16 * 1024 * 1024);
-const FORCE_KILL_MS = readPositiveIntEnv("OPENCLAW_E2E_PTY_FORCE_KILL_MS", 5_000);
+const OUTPUT_MAX_BYTES = readPositiveIntEnv("AFORA_E2E_PTY_OUTPUT_MAX_BYTES", 16 * 1024 * 1024);
+const FORCE_KILL_MS = readPositiveIntEnv("AFORA_E2E_PTY_FORCE_KILL_MS", 5_000);
 
 if (!logPath || !command) {
   console.error("usage: run-with-pty.mjs <log-path> <command> [args...]");

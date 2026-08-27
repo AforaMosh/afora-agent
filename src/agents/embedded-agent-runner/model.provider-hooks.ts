@@ -1,6 +1,6 @@
-import { finiteSecondsToTimerSafeMilliseconds } from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import { finiteSecondsToTimerSafeMilliseconds } from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { Api, Model } from "../../llm/types.js";
 import type { ProviderRuntimeModel } from "../../plugins/provider-runtime-model.types.js";
 import {
@@ -106,7 +106,7 @@ function canonicalizeLegacyResolvedModel(params: { provider: string; model: Mode
 
 function applyResolvedTransportFallback(params: {
   provider: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   workspaceDir?: string;
   runtimeHooks: ProviderRuntimeHooks;
   model: Model;
@@ -143,7 +143,7 @@ function applyResolvedTransportFallback(params: {
 export function normalizeResolvedModel(params: {
   provider: string;
   model: Model;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentDir?: string;
   workspaceDir?: string;
   runtimeHooks?: ProviderRuntimeHooks;
@@ -247,7 +247,7 @@ export function resolveProviderTransport(params: {
   modelId?: string;
   api?: Api | null;
   baseUrl?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   workspaceDir?: string;
   runtimeHooks?: ProviderRuntimeHooks;
 }): { api?: Api; baseUrl?: string } {

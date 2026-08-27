@@ -3,7 +3,7 @@ import type { Server as HttpServer, ServerResponse } from "node:http";
 // upgrade dispatch stays part of the regression coverage.
 import net from "node:net";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { ResolvedGatewayAuth } from "./auth.js";
 import { createGatewayHttpServer } from "./server-http.js";
 
@@ -83,7 +83,7 @@ function createServerWithHook(handler: (res: ServerResponse) => void): HttpServe
       return true;
     },
     resolvedAuth,
-    getRuntimeConfig: () => ({ gateway: { trustedProxies: [] } }) as OpenClawConfig,
+    getRuntimeConfig: () => ({ gateway: { trustedProxies: [] } }) as AforaConfig,
   });
 }
 

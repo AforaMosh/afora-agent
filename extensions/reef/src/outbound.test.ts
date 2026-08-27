@@ -1,4 +1,4 @@
-import { PlatformMessageNotDispatchedError } from "openclaw/plugin-sdk/error-runtime";
+import { PlatformMessageNotDispatchedError } from "afora-agent/plugin-sdk/error-runtime";
 import { describe, expect, it, vi } from "vitest";
 import {
   canonicalBytes,

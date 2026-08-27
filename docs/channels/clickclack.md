@@ -1,58 +1,58 @@
 ---
 summary: "ClickClack bot-token channel setup and target syntax"
 read_when:
-  - Connecting OpenClaw to a ClickClack workspace
+  - Connecting Afora to a ClickClack workspace
   - Testing ClickClack bot identities
 title: "ClickClack"
 ---
 
-ClickClack connects OpenClaw to a self-hosted ClickClack workspace through first-class ClickClack bot tokens.
+ClickClack connects Afora to a self-hosted ClickClack workspace through first-class ClickClack bot tokens.
 
-Use this when you want an OpenClaw agent to appear as a ClickClack bot user. ClickClack supports independent service bots and user-owned bots; user-owned bots keep an `owner_user_id` and receive only the token scopes you grant.
+Use this when you want an Afora agent to appear as a ClickClack bot user. ClickClack supports independent service bots and user-owned bots; user-owned bots keep an `owner_user_id` and receive only the token scopes you grant.
 
 ## Quick setup
 
-In ClickClack, open **Workspace settings → Integrations → OpenClaw**, create a
+In ClickClack, open **Workspace settings → Integrations → Afora**, create a
 bot using **Setup code (recommended)**, and copy the generated command:
 
 ```bash
-openclaw channels add clickclack --code 'https://clickclack.example.com/#XXXX-XXXX-XXXX'
+afora channels add clickclack --code 'https://clickclack.example.com/#XXXX-XXXX-XXXX'
 ```
 
 For separate frontend and API origins or a path-mounted API, ClickClack emits an
 exact claim endpoint instead:
 
 ```bash
-openclaw channels add clickclack --code 'https://api.example.com/services/clickclack/api/bot-setup-codes/claim#XXXX-XXXX-XXXX'
+afora channels add clickclack --code 'https://api.example.com/services/clickclack/api/bot-setup-codes/claim#XXXX-XXXX-XXXX'
 ```
 
-The setup code is single-use and expires after 10 minutes. OpenClaw claims it,
+The setup code is single-use and expires after 10 minutes. Afora claims it,
 receives the newly minted bot token and workspace settings, saves the account,
 verifies the connection, and reports whether the running gateway picked it up.
-For versioned exact endpoints, OpenClaw validates and saves the canonical API
+For versioned exact endpoints, Afora validates and saves the canonical API
 base returned by ClickClack, including any path prefix. The setup code itself is
-not stored in OpenClaw config.
+not stored in Afora config.
 
 Setup-code claims use HTTPS for public servers. Plain HTTP is also supported for
 local installations on loopback addresses such as `localhost` and `127.0.0.1`.
 
-If OpenClaw is already running, ClickClack connects automatically and no second
+If Afora is already running, ClickClack connects automatically and no second
 command is needed. Otherwise, start it with:
 
 ```bash
-openclaw gateway
+afora gateway
 ```
 
 You can also pass the code separately from the server URL:
 
 ```bash
-openclaw channels add clickclack --code XXXX-XXXX-XXXX --base-url https://clickclack.example.com
+afora channels add clickclack --code XXXX-XXXX-XXXX --base-url https://clickclack.example.com
 ```
 
 For guided setup, run:
 
 ```bash
-openclaw onboard
+afora onboard
 ```
 
 Select ClickClack, then enter the server URL, bot token, and workspace when
@@ -61,11 +61,11 @@ failed check does not discard the configuration.
 
 ### Alternative: manual token
 
-Choose **Manual token** in ClickClack when configuring a non-OpenClaw client or
+Choose **Manual token** in ClickClack when configuring a non-Afora client or
 when you explicitly need to manage the token yourself:
 
 ```bash
-openclaw channels add clickclack --base-url https://clickclack.example.com --token ccb_... --workspace default
+afora channels add clickclack --base-url https://clickclack.example.com --token ccb_... --workspace default
 ```
 
 `workspace` accepts a workspace id (`wsp_...`), slug, or display name.
@@ -78,8 +78,8 @@ in config:
 
 ```bash
 export CLICKCLACK_BOT_TOKEN="ccb_..."
-openclaw channels add clickclack --base-url https://clickclack.example.com --workspace default --use-env
-openclaw gateway
+afora channels add clickclack --base-url https://clickclack.example.com --workspace default --use-env
+afora gateway
 ```
 
 Named accounts must use a configured token or token file; the shared env
@@ -135,7 +135,7 @@ id (`wsp_...`), slug, or name; the gateway resolves it to the id at startup.
 
 ### Keep an auth-gated public hostname
 
-Use `apiBaseUrl` when ClickClack and the OpenClaw gateway run on the same host
+Use `apiBaseUrl` when ClickClack and the Afora gateway run on the same host
 but the public ClickClack hostname is protected by an authentication gateway
 such as Cloudflare Access:
 
@@ -143,7 +143,7 @@ such as Cloudflare Access:
 {
   channels: {
     clickclack: {
-      baseUrl: "https://clack.openclaw.ai",
+      baseUrl: "https://clack.afora.ai",
       apiBaseUrl: "http://127.0.0.1:8484",
       token: { source: "env", provider: "default", id: "CLICKCLACK_BOT_TOKEN" },
       workspace: "default",
@@ -152,18 +152,18 @@ such as Cloudflare Access:
 }
 ```
 
-The public hostname can remain fully auth-gated for browser users. OpenClaw
+The public hostname can remain fully auth-gated for browser users. Afora
 uses the loopback endpoint for REST requests, setup verification, and the
 realtime WebSocket, while discussion `embedUrl` and `openUrl` links continue to
 use the public `baseUrl`. If `apiBaseUrl` is omitted, all traffic uses
 `baseUrl`, preserving existing behavior.
 
 If `plugins.allow` is a non-empty restrictive list, explicitly selecting
-ClickClack in channel setup or running `openclaw plugins enable clickclack`
+ClickClack in channel setup or running `afora plugins enable clickclack`
 appends `clickclack` to that list. Onboarding installation uses the same
 explicit-selection behavior. These paths do not override `plugins.deny` or a
 global `plugins.enabled: false` setting. Direct
-`openclaw plugins install @openclaw/clickclack` follows the normal
+`afora plugins install @afora/clickclack` follows the normal
 plugin-install policy and also records ClickClack in an existing allowlist.
 
 ## Multiple bots
@@ -198,7 +198,7 @@ Each account opens its own ClickClack realtime connection and uses its own bot t
 
 ## Session discussions
 
-Enable discussions on one ClickClack account to give each OpenClaw session a
+Enable discussions on one ClickClack account to give each Afora session a
 dedicated ClickClack channel. The account token must include
 `channels:write` (the `bot:admin` bundle includes it); the normal `bot:write`
 setup token cannot create or synchronize channels.
@@ -214,7 +214,7 @@ setup token cannot create or synchronize channels.
       discussions: {
         enabled: true,
         workspace: "default",
-        controlUrlBase: "https://team.openclaw.ai",
+        controlUrlBase: "https://team.afora.ai",
         section: "Sessions",
       },
     },
@@ -236,7 +236,7 @@ Opening a discussion creates a public ClickClack channel marked as externally
 managed. The plugin keeps the session label and category in sync, but channel
 lifecycle remains independent. Clearing the session category
 moves the channel back to the configured default section. Archiving, resetting,
-or deleting an OpenClaw session never archives or replaces the ClickClack
+or deleting an Afora session never archives or replaces the ClickClack
 channel. ClickClack owns channel archive and restore independently. The plugin
 reconciles bindings when discussion RPCs are used and approximately once per
 minute while any bindings exist.
@@ -248,7 +248,7 @@ main session to observe and can use `sessions_history` and `session_status`
 when people in the discussion ask it to relay or steer the main session.
 The binding separates durable room identity from its replaceable session
 attachment. The side-session peer identity and scoped grant include the exact
-concrete OpenClaw session id, so resetting a reusable session key rotates the
+concrete Afora session id, so resetting a reusable session key rotates the
 attachment and cannot reuse the old side transcript. The ClickClack channel id,
 URL, history, and ownership reference remain unchanged. Messages arriving
 through an inactive, disabled, or retargeted attachment are dropped instead of
@@ -268,7 +268,7 @@ and hook are the authorization boundary.
 
 The ClickClack server must support managed-channel fields (`external_managed`,
 `external_ref`, `external_url`, and `sidebar_section`) on channel creation and
-updates and return them in channel responses. OpenClaw verifies that contract
+updates and return them in channel responses. Afora verifies that contract
 before persisting a binding. If a create response is lost, the next open adopts
 the channel by its server-enforced `external_ref` instead of creating another.
 Until that outcome is reconciled, the pending reservation quarantines
@@ -276,7 +276,7 @@ otherwise-unbound events in the destination workspace. The coarse reconciler
 adopts the channel when the logical session is active, including after its
 concrete session id changes; it clears the reservation when no remote channel
 was created.
-That reference contains a durable per-OpenClaw-installation namespace plus a
+That reference contains a durable per-Afora-installation namespace plus a
 hash of the session key, ClickClack destination, and durable
 binding generation. Separate gateways cannot adopt each other's channels,
 while concrete session resets keep the same channel. An account or workspace
@@ -287,7 +287,7 @@ channel link on the next reconciliation pass. Changing
 `discussions.workspace` releases the old attachment before a channel can be
 opened in the new workspace. It never archives the old room. If the token was
 replaced with a workspace-scoped credential that cannot access the old
-workspace, OpenClaw records the old channel as revoked and releases the binding
+workspace, Afora records the old channel as revoked and releases the binding
 without trying the replacement token.
 
 The attached main session also receives a pull-only `discussion` tool. It reads
@@ -324,7 +324,7 @@ not needed there.
 
 ## Command menu
 
-At gateway startup, each configured account publishes OpenClaw's native
+At gateway startup, each configured account publishes Afora's native
 commands to ClickClack. They appear in composer autocomplete labeled with the
 bot's handle. The published set is replaced wholesale on each startup,
 including clearing a stale menu when the native command catalog is empty.
@@ -364,7 +364,7 @@ delivery.
 
 Use `agent` mode for cross-service correlation evidence. For an authoritative
 ClickClack message id in its canonical `msg_<ulid>` shape, the channel derives
-the deterministic OpenClaw run id `clickclack:<message-id>`. Each model call is
+the deterministic Afora run id `clickclack:<message-id>`. Each model call is
 then visible in diagnostics as `clickclack:<message-id>:model:<n>`; when that
 turn uses ClawRouter, the same model-call id is sent as `X-Request-ID`.
 `model` mode bypasses the normal agent run/session diagnostics and is therefore
@@ -379,11 +379,11 @@ prompts, completions, credentials, or tool output.
 
 ## Durable media delivery
 
-Agent replies containing media use required durable delivery. OpenClaw assigns
+Agent replies containing media use required durable delivery. Afora assigns
 stable per-part message and upload nonces before the first ClickClack write, so
 a retry reuses the same upload and message instead of consuming storage quota
 or publishing duplicates. If an upload already exists after a restart,
-OpenClaw does not reread the original local path or remote media URL.
+Afora does not reread the original local path or remote media URL.
 
 This recovery contract requires a ClickClack server that supports:
 
@@ -395,7 +395,7 @@ This recovery contract requires a ClickClack server that supports:
   owner-scoped nonce and upload.
 
 An older server's generic 404 is not treated as proof that a send is absent.
-OpenClaw leaves the delivery unresolved rather than risking a duplicate; update
+Afora leaves the delivery unresolved rather than risking a duplicate; update
 ClickClack before enabling media-producing agent replies.
 
 ## Native progress and agent activity rows
@@ -465,7 +465,7 @@ remain eligible without a mention. Bot messages still pass through
 wildcard remains available for human traffic. Self-authored messages are
 always ignored.
 
-Accepted bot messages also pass through OpenClaw's shared bot-pair loop guard.
+Accepted bot messages also pass through Afora's shared bot-pair loop guard.
 Use `botLoopProtection` on the account or `channels.defaults.botLoopProtection`
 to tune its window, budget, cooldown, or enabled state. Group-level `allowBots`
 and `botLoopProtection` values follow the same exact-channel, wildcard, then
@@ -474,7 +474,7 @@ messages share a channel budget, while replies in different ClickClack threads
 use independent thread-root budgets.
 
 ClickClack `agent_commentary` and `agent_tool` activity rows never trigger
-OpenClaw inbound turns, even when their author bot is explicitly allowed.
+Afora inbound turns, even when their author bot is explicitly allowed.
 
 Older ClickClack responses may omit `author.kind`. Those messages intentionally
 remain on the legacy `allowFrom` path: `allowFrom: ["*"]` can admit them, and
@@ -524,7 +524,7 @@ Explicit outbound targets may also carry the `clickclack:` or `cc:` provider pre
 
 Outbound media uses ClickClack's upload API and then attaches the durable upload
 to the created channel message, thread reply, or DM. Local files and supported
-remote media URLs follow OpenClaw's normal media-access policy, with a 64 MiB
+remote media URLs follow Afora's normal media-access policy, with a 64 MiB
 per-file limit. Durable queued sends use separate owner-scoped nonces for each
 upload and message part, then retry attachment association with those same
 objects. See [Durable media delivery](#durable-media-delivery) for the server
@@ -533,9 +533,9 @@ contract and recovery behavior.
 Examples:
 
 ```bash
-openclaw message send --channel clickclack --target channel:general --message "hello"
-openclaw message send --channel clickclack --target dm:usr_123 --message "hello"
-openclaw message send --channel clickclack --target thread:msg_123 --message "following up"
+afora message send --channel clickclack --target channel:general --message "hello"
+afora message send --channel clickclack --target dm:usr_123 --message "hello"
+afora message send --channel clickclack --target thread:msg_123 --message "following up"
 ```
 
 ## Permissions
@@ -548,7 +548,7 @@ ClickClack token scopes are enforced by the ClickClack API.
 - `commands:write`: publish the bot's command menu. Included in current `bot:write` and `bot:admin` bundles and grantable individually.
 - `agent_activity:write`: durable agent activity rows (`agent_commentary` / `agent_tool`). Not inherited by `bot:write` or `bot:admin`; required only when `agentActivity: true` is set.
 
-OpenClaw only needs current `bot:write` for normal agent chat and command-menu sync. Add `agent_activity:write` when enabling [native progress and agent activity rows](#native-progress-and-agent-activity-rows).
+Afora only needs current `bot:write` for normal agent chat and command-menu sync. Add `agent_activity:write` when enabling [native progress and agent activity rows](#native-progress-and-agent-activity-rows).
 
 ## Troubleshooting
 

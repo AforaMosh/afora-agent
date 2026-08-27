@@ -34,7 +34,7 @@ type TaskFlowRegistryTestApi = {
 
 function getTestApi(): TaskFlowRegistryTestApi {
   const api = (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.taskFlowRegistryTestApi")
+    Symbol.for("afora.taskFlowRegistryTestApi")
   ];
   if (!api) {
     throw new Error("task flow registry test API is unavailable");

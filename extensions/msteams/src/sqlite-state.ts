@@ -1,7 +1,7 @@
 // Msteams plugin module implements sqlite state behavior.
 import path from "node:path";
-import { withFileLock } from "openclaw/plugin-sdk/file-lock";
-import { KeyedAsyncQueue } from "openclaw/plugin-sdk/keyed-async-queue";
+import { withFileLock } from "afora-agent/plugin-sdk/file-lock";
+import { KeyedAsyncQueue } from "afora-agent/plugin-sdk/keyed-async-queue";
 import { getMSTeamsRuntime } from "./runtime.js";
 
 type MSTeamsSqliteStateOptions = {
@@ -26,7 +26,7 @@ function resolveStateDirOverride(
   if (options.homedir) {
     return getMSTeamsRuntime().state.resolveStateDir(options.env ?? process.env, options.homedir);
   }
-  return options.env?.OPENCLAW_STATE_DIR?.trim() || undefined;
+  return options.env?.AFORA_STATE_DIR?.trim() || undefined;
 }
 
 export function resolveMSTeamsSqliteStateEnv(
@@ -38,7 +38,7 @@ export function resolveMSTeamsSqliteStateEnv(
   }
   return {
     ...(options?.env ?? process.env),
-    OPENCLAW_STATE_DIR: stateDir,
+    AFORA_STATE_DIR: stateDir,
   };
 }
 

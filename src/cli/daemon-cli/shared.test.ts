@@ -47,58 +47,58 @@ describe("renderGatewayServiceStartHints", () => {
   it("resolves daemon container context from either env key", () => {
     expect(
       resolveDaemonContainerContext({
-        OPENCLAW_CONTAINER: "openclaw-demo-container",
+        AFORA_CONTAINER: "afora-demo-container",
       } as NodeJS.ProcessEnv),
-    ).toBe("openclaw-demo-container");
+    ).toBe("afora-demo-container");
     expect(
       resolveDaemonContainerContext({
-        OPENCLAW_CONTAINER_HINT: "openclaw-demo-container",
+        AFORA_CONTAINER_HINT: "afora-demo-container",
       } as NodeJS.ProcessEnv),
-    ).toBe("openclaw-demo-container");
+    ).toBe("afora-demo-container");
   });
 
-  it("prepends a single container restart hint when OPENCLAW_CONTAINER is set", () => {
+  it("prepends a single container restart hint when AFORA_CONTAINER is set", () => {
     expect(
       renderGatewayServiceStartHints({
-        OPENCLAW_CONTAINER: "openclaw-demo-container",
+        AFORA_CONTAINER: "afora-demo-container",
       } as NodeJS.ProcessEnv),
     ).toContain(
-      "Restart the container or the service that manages it for openclaw-demo-container.",
+      "Restart the container or the service that manages it for afora-demo-container.",
     );
   });
 
-  it("prepends a single container restart hint when OPENCLAW_CONTAINER_HINT is set", () => {
+  it("prepends a single container restart hint when AFORA_CONTAINER_HINT is set", () => {
     expect(
       renderGatewayServiceStartHints({
-        OPENCLAW_CONTAINER_HINT: "openclaw-demo-container",
+        AFORA_CONTAINER_HINT: "afora-demo-container",
       } as NodeJS.ProcessEnv),
     ).toContain(
-      "Restart the container or the service that manages it for openclaw-demo-container.",
+      "Restart the container or the service that manages it for afora-demo-container.",
     );
   });
 });
 
 describe("filterContainerGenericHints", () => {
-  it("drops the generic container foreground hint when OPENCLAW_CONTAINER is set", () => {
+  it("drops the generic container foreground hint when AFORA_CONTAINER is set", () => {
     expect(
       filterContainerGenericHints(
         [
           "systemd user services are unavailable; install/enable systemd or run the gateway under your supervisor.",
-          "If you're in a container, run the gateway in the foreground instead of `openclaw gateway`.",
+          "If you're in a container, run the gateway in the foreground instead of `afora gateway`.",
         ],
-        { OPENCLAW_CONTAINER: "openclaw-demo-container" } as NodeJS.ProcessEnv,
+        { AFORA_CONTAINER: "afora-demo-container" } as NodeJS.ProcessEnv,
       ),
     ).toStrictEqual([]);
   });
 
-  it("drops the generic container foreground hint when OPENCLAW_CONTAINER_HINT is set", () => {
+  it("drops the generic container foreground hint when AFORA_CONTAINER_HINT is set", () => {
     expect(
       filterContainerGenericHints(
         [
           "systemd user services are unavailable; install/enable systemd or run the gateway under your supervisor.",
-          "If you're in a container, run the gateway in the foreground instead of `openclaw gateway`.",
+          "If you're in a container, run the gateway in the foreground instead of `afora gateway`.",
         ],
-        { OPENCLAW_CONTAINER_HINT: "openclaw-demo-container" } as NodeJS.ProcessEnv,
+        { AFORA_CONTAINER_HINT: "afora-demo-container" } as NodeJS.ProcessEnv,
       ),
     ).toStrictEqual([]);
   });

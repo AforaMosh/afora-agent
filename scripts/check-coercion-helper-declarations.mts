@@ -744,11 +744,11 @@ export function runCoercionHelperDeclarationGuard(
   }
   writeLine(
     io.stderr,
-    "Core/package/UI/workspace-script code: use the matching @openclaw/normalization-core export or module.",
+    "Core/package/UI/workspace-script code: use the matching @afora/normalization-core export or module.",
   );
   writeLine(
     io.stderr,
-    "Bundled plugin production code: use the matching openclaw/plugin-sdk runtime; number-runtime is bundled/private-local, not a third-party typed contract.",
+    "Bundled plugin production code: use the matching afora/plugin-sdk runtime; number-runtime is bundled/private-local, not a third-party typed contract.",
   );
   writeLine(
     io.stderr,

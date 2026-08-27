@@ -2,7 +2,7 @@ type SnapshotInvalidation = { sessionKey: string } | { sessionKey?: undefined };
 
 type SnapshotInvalidationListener = (invalidation: SnapshotInvalidation) => void | Promise<void>;
 
-const SNAPSHOT_INVALIDATION_STORAGE_KEY = "openclaw.control.chatSnapshots.invalidate.v1";
+const SNAPSHOT_INVALIDATION_STORAGE_KEY = "afora.control.chatSnapshots.invalidate.v1";
 const invalidationListeners = new Set<SnapshotInvalidationListener>();
 let broadcastVersion = 0;
 

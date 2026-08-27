@@ -8,7 +8,7 @@ import {
   shouldAutoPromptNotificationsOnSend,
 } from "./notifications-auto-prompt.ts";
 
-const STORAGE_KEY = "openclaw.control.notificationsAutoPrompt.v1";
+const STORAGE_KEY = "afora.control.notificationsAutoPrompt.v1";
 
 type AutoPromptContext = Parameters<typeof autoPromptNotificationsOnSend>[0];
 type NativePermission = "granted" | "denied" | "notDetermined" | "unknown";

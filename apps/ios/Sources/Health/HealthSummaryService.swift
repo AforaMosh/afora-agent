@@ -1,6 +1,6 @@
 import Foundation
 import HealthKit
-import OpenClawKit
+import AforaKit
 
 enum HealthAuthorization {
     static let enabledKey = "health.summary.enabled"
@@ -36,7 +36,7 @@ enum HealthAuthorization {
         }
         try await HKHealthStore().requestAuthorization(toShare: [], read: self.readTypes)
         // HealthKit intentionally does not reveal read denial. This flag records only
-        // the user's explicit OpenClaw sharing choice, never inferred authorization.
+        // the user's explicit Afora sharing choice, never inferred authorization.
         UserDefaults.standard.set(true, forKey: self.enabledKey)
     }
 
@@ -46,7 +46,7 @@ enum HealthAuthorization {
 }
 
 protocol HealthSummaryServicing: Sendable {
-    func summary(params: OpenClawHealthSummaryParams) async throws -> OpenClawHealthSummaryPayload
+    func summary(params: AforaHealthSummaryParams) async throws -> AforaHealthSummaryPayload
 }
 
 actor HealthSummaryService: HealthSummaryServicing {
@@ -56,11 +56,11 @@ actor HealthSummaryService: HealthSummaryServicing {
         self.healthStore = healthStore
     }
 
-    func summary(params: OpenClawHealthSummaryParams) async throws -> OpenClawHealthSummaryPayload {
+    func summary(params: AforaHealthSummaryParams) async throws -> AforaHealthSummaryPayload {
         guard HealthAuthorization.isEnabled else {
             throw NSError(domain: "Health", code: 2, userInfo: [
                 NSLocalizedDescriptionKey:
-                    "HEALTH_ACCESS_DISABLED: enable Apple Health Summaries in OpenClaw Settings",
+                    "HEALTH_ACCESS_DISABLED: enable Apple Health Summaries in Afora Settings",
             ])
         }
 
@@ -72,7 +72,7 @@ actor HealthSummaryService: HealthSummaryServicing {
         let workouts = try await self.workouts(in: range)
         let formatter = ISO8601DateFormatter()
 
-        return OpenClawHealthSummaryPayload(
+        return AforaHealthSummaryPayload(
             period: params.period,
             startISO: formatter.string(from: range.start),
             endISO: formatter.string(from: range.end),

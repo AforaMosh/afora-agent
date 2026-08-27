@@ -1,13 +1,13 @@
 ---
 summary: "LINE Messaging API plugin setup, config, and usage"
 read_when:
-  - You want to connect OpenClaw to LINE
+  - You want to connect Afora to LINE
   - You need LINE webhook + credential setup
   - You want LINE-specific message options
 title: LINE
 ---
 
-LINE connects to OpenClaw via the LINE Messaging API. The plugin runs as a webhook
+LINE connects to Afora via the LINE Messaging API. The plugin runs as a webhook
 receiver on the Gateway and uses your channel access token + channel secret for
 authentication.
 
@@ -20,13 +20,13 @@ Reactions and threads are not supported.
 Install LINE before configuring the channel:
 
 ```bash
-openclaw plugins install @openclaw/line
+afora plugins install @afora/line
 ```
 
 Local checkout (when running from a git repo):
 
 ```bash
-openclaw plugins install ./path/to/local/line-plugin
+afora plugins install ./path/to/local/line-plugin
 ```
 
 ## Setup
@@ -58,8 +58,8 @@ If you need a custom path, set `channels.line.webhookPath` or
 
 Security notes:
 
-- LINE signature verification is body-dependent (HMAC over the raw body), so OpenClaw applies a strict pre-auth body limit (64 KB) and read timeout before verification.
-- OpenClaw processes webhook events from the verified raw request bytes. Upstream middleware-transformed `req.body` values are ignored for signature-integrity safety.
+- LINE signature verification is body-dependent (HMAC over the raw body), so Afora applies a strict pre-auth body limit (64 KB) and read timeout before verification.
+- Afora processes webhook events from the verified raw request bytes. Upstream middleware-transformed `req.body` values are ignored for signature-integrity safety.
 
 ## Configure
 
@@ -139,8 +139,8 @@ Direct messages default to pairing. Unknown senders get a pairing code and their
 messages are ignored until approved:
 
 ```bash
-openclaw pairing list line
-openclaw pairing approve line <CODE>
+afora pairing list line
+afora pairing approve line <CODE>
 ```
 
 Allowlists and policies:
@@ -168,7 +168,7 @@ LINE IDs are case-sensitive. Valid IDs look like:
 - Streaming responses are buffered; LINE receives full chunks with a loading
   animation while the agent works.
 - Media downloads are capped by `channels.line.mediaMaxMb` (default 10).
-- Inbound media is saved under `~/.openclaw/media/inbound/` before it is passed
+- Inbound media is saved under `~/.afora/media/inbound/` before it is passed
   to the agent, matching the shared media store used by other channel plugins.
 
 ## Structured rich messages
@@ -271,7 +271,7 @@ The LINE plugin sends images, videos, and audio through the agent message tool:
 The media kind is taken from `channelData.line.mediaKind` when set, otherwise inferred
 from the other LINE options or the URL file suffix, with image as the fallback.
 
-Outbound media URLs must be public HTTPS URLs of at most 2000 characters. OpenClaw
+Outbound media URLs must be public HTTPS URLs of at most 2000 characters. Afora
 validates the target hostname before handing the URL to LINE and rejects loopback,
 link-local, and private-network targets.
 

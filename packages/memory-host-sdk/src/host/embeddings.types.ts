@@ -1,5 +1,5 @@
 // Memory Host SDK type module defines shared TypeScript contracts.
-import type { OpenClawConfig, SecretInput } from "../engine-foundation.js";
+import type { AforaConfig, SecretInput } from "../engine-foundation.js";
 import type { EmbeddingInput } from "./embedding-inputs.js";
 
 export type EmbeddingProvider = {
@@ -33,7 +33,7 @@ export type EmbeddingProviderCallOptions = {
   | "FACT_VERIFICATION";
 
 export type EmbeddingProviderOptions = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentDir?: string;
   provider?: EmbeddingProviderRequest;
   remote?: {

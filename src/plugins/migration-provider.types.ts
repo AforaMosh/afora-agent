@@ -1,10 +1,10 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginLogger } from "./logger-types.js";
 import type { PluginRuntime } from "./runtime/types.js";
 
-export type PluginConfigMigration = (config: OpenClawConfig) =>
+export type PluginConfigMigration = (config: AforaConfig) =>
   | {
-      config: OpenClawConfig;
+      config: AforaConfig;
       changes: string[];
     }
   | null
@@ -102,7 +102,7 @@ export type MigrationConfigRuntime = Pick<
 >;
 
 export type MigrationProviderContext = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   runtime?: PluginRuntime;
   /** Host-owned config mutation target for isolated embedded migration flows. */
   configRuntime?: MigrationConfigRuntime;
@@ -121,7 +121,7 @@ export type MigrationProviderContext = {
   signal?: AbortSignal;
 };
 
-/** Migration source implemented by a plugin and orchestrated by `openclaw migrate`. */
+/** Migration source implemented by a plugin and orchestrated by `afora migrate`. */
 export type MigrationProviderPlugin = {
   id: string;
   label: string;
@@ -142,7 +142,7 @@ export type MigrationProviderPlugin = {
 };
 
 type PluginSetupAutoEnableContext = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
 };
 

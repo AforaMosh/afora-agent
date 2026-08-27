@@ -1,9 +1,9 @@
-import { runCommandWithTimeout } from "openclaw/plugin-sdk/process-runtime";
+import { runCommandWithTimeout } from "afora-agent/plugin-sdk/process-runtime";
 // iMessage tests cover canonical bounded CLI execution.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { runIMessageCliJsonCommand } from "./cli-output.js";
 
-vi.mock("openclaw/plugin-sdk/process-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/process-runtime", () => ({
   runCommandWithTimeout: vi.fn(),
 }));
 

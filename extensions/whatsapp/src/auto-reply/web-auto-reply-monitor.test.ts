@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { resolveAgentRoute } from "openclaw/plugin-sdk/routing";
+import { resolveAgentRoute } from "afora-agent/plugin-sdk/routing";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createTestWebInboundMessage } from "../inbound/test-message.test-helper.js";
 import type { AdmittedWebInboundMessage } from "../inbound/types.js";
@@ -15,7 +15,7 @@ let sessionDir: string | undefined;
 let sessionStorePath: string;
 
 beforeEach(async () => {
-  sessionDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-group-gating-"));
+  sessionDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-group-gating-"));
   sessionStorePath = path.join(sessionDir, "sessions.json");
   await fs.writeFile(sessionStorePath, "{}");
 });
@@ -37,10 +37,10 @@ const makeConfig = (overrides: Record<string, unknown>) =>
     },
     session: { store: sessionStorePath },
     ...overrides,
-  }) as unknown as import("openclaw/plugin-sdk/config-contracts").OpenClawConfig;
+  }) as unknown as import("afora-agent/plugin-sdk/config-contracts").AforaConfig;
 
 async function runGroupGating(params: {
-  cfg: import("openclaw/plugin-sdk/config-contracts").OpenClawConfig;
+  cfg: import("afora-agent/plugin-sdk/config-contracts").AforaConfig;
   msg: AdmittedWebInboundMessage;
   agentId?: string;
   selfChatMode?: boolean;
@@ -203,7 +203,7 @@ function makeOwnerGroupConfig() {
 
 function makeInboundCfg(responsePrefix = "") {
   return {
-    agents: { defaults: { workspace: "/tmp/openclaw" } },
+    agents: { defaults: { workspace: "/tmp/afora" } },
     channels: { whatsapp: { responsePrefix } },
   } as never;
 }
@@ -572,7 +572,7 @@ describe("applyGroupGating", () => {
           groups: { "*": { requireMention: true } },
         },
       },
-      messages: { groupChat: { mentionPatterns: ["@openclaw"] } },
+      messages: { groupChat: { mentionPatterns: ["@afora"] } },
     });
 
     // Third-party @-mention and no configured-pattern match: still dropped
@@ -599,7 +599,7 @@ describe("applyGroupGating", () => {
           groups: { "*": { requireMention: true } },
         },
       },
-      messages: { groupChat: { mentionPatterns: ["@openclaw"] } },
+      messages: { groupChat: { mentionPatterns: ["@afora"] } },
     });
 
     // Previously the native third-party @-mention short-circuited gating to
@@ -609,7 +609,7 @@ describe("applyGroupGating", () => {
       cfg,
       msg: createGroupMessage({
         id: "g-other-mention-pattern",
-        body: "@openclaw please check this",
+        body: "@afora please check this",
         mentionedJids: ["15550000000@s.whatsapp.net"],
         selfE164: "+15551234567",
         selfJid: "15551234567@s.whatsapp.net",
@@ -730,7 +730,7 @@ describe("applyGroupGating", () => {
           groups: { "*": { requireMention: false } },
         },
       },
-      messages: { groupChat: { mentionPatterns: ["@openclaw"] } },
+      messages: { groupChat: { mentionPatterns: ["@afora"] } },
     });
 
     const { result } = await runGroupGating({

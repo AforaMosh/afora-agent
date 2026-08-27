@@ -1,11 +1,11 @@
 /** Doctor migration for legacy plugin manifest capability keys into contracts.* fields. */
 import fs from "node:fs";
 import path from "node:path";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { normalizeTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { normalizeTrimmedStringList } from "@afora/normalization-core/string-normalization";
 import { z } from "zod";
 import { note } from "../../packages/terminal-core/src/note.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { HealthFinding } from "../flows/health-checks.js";
 import { loadPluginManifestRegistryCore } from "../plugins/manifest-registry.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -95,7 +95,7 @@ function buildLegacyManifestContractMigration(params: {
 
 /** Collects manifest rewrites needed to move legacy top-level capability keys under contracts. */
 export function collectLegacyPluginManifestContractMigrations(params?: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   manifestRoots?: string[];
   workspaceDir?: string;
@@ -111,7 +111,7 @@ export function collectLegacyPluginManifestContractMigrations(params?: {
       if (!entry.isDirectory()) {
         continue;
       }
-      const manifestPath = path.join(root, entry.name, "openclaw.plugin.json");
+      const manifestPath = path.join(root, entry.name, "afora.plugin.json");
       const seenKey = manifestSeenKey(manifestPath);
       if (seen.has(seenKey)) {
         continue;
@@ -165,7 +165,7 @@ export function legacyPluginManifestContractMigrationToHealthFinding(
     target: migration.pluginId,
     requirement: "contracts-capability-keys",
     fixHint:
-      "Run `openclaw doctor --fix` to rewrite legacy plugin manifest capability keys under contracts.*.",
+      "Run `afora doctor --fix` to rewrite legacy plugin manifest capability keys under contracts.*.",
   };
 }
 
@@ -175,7 +175,7 @@ function migrationToManifestJson(migration: LegacyManifestContractMigration): st
 
 /** Prompts and rewrites legacy plugin manifest contract fields when doctor repair is enabled. */
 export async function maybeRepairLegacyPluginManifestContracts(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   manifestRoots?: string[];
   workspaceDir?: string;

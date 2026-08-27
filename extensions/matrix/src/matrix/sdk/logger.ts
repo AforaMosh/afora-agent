@@ -1,9 +1,9 @@
 // Matrix plugin module implements logger behavior.
 import { format } from "node:util";
-import type { RuntimeLogger } from "openclaw/plugin-sdk/plugin-runtime";
+import type { RuntimeLogger } from "afora-agent/plugin-sdk/plugin-runtime";
 // security-runtime exports the same redaction helper without logging-core's
 // diagnostic/config graph, which doctor enumeration must not cold-load.
-import { redactSensitiveText } from "openclaw/plugin-sdk/security-runtime";
+import { redactSensitiveText } from "afora-agent/plugin-sdk/security-runtime";
 import { getMatrixRuntime } from "../../runtime.js";
 
 type Logger = {

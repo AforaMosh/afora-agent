@@ -1,12 +1,12 @@
 // Cron validation tests cover channel target validation against plugin
 // prefixes/aliases and runtime config for cron delivery destinations.
 
-import { expectDefined } from "@openclaw/normalization-core";
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { expectDefined } from "@afora/normalization-core";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createOperationalRunInstanceRef } from "../../agents/admitted-run-context.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { CronRuntimeAuthority } from "../../cron/runtime-authority.js";
 import type { CronDelivery, CronJob } from "../../cron/types.js";
 import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "../../plugins/runtime.js";
@@ -24,7 +24,7 @@ import { getGatewayProcessInstanceId } from "../process-instance.js";
 import type { GatewayClient, GatewayRequestContext } from "./types.js";
 
 const getRuntimeConfig = vi.hoisted(() =>
-  vi.fn<() => OpenClawConfig>(() => ({}) as OpenClawConfig),
+  vi.fn<() => AforaConfig>(() => ({}) as AforaConfig),
 );
 const loadGatewaySessionEntry = vi.hoisted(() =>
   vi.fn(
@@ -412,17 +412,17 @@ function telegramDeliveryWithSlackFailure(overrides: Partial<CronDelivery> = {})
   };
 }
 
-function setRuntimeConfig(config: OpenClawConfig): void {
+function setRuntimeConfig(config: AforaConfig): void {
   getRuntimeConfig.mockReturnValue(config);
 }
 
-function pluginEntries(...ids: string[]): OpenClawConfig["plugins"] {
+function pluginEntries(...ids: string[]): AforaConfig["plugins"] {
   return {
     entries: Object.fromEntries(ids.map((id) => [id, { enabled: true }])),
   };
 }
 
-function telegramConfig(): OpenClawConfig {
+function telegramConfig(): AforaConfig {
   return {
     channels: {
       telegram: {
@@ -430,10 +430,10 @@ function telegramConfig(): OpenClawConfig {
       },
     },
     plugins: pluginEntries("telegram"),
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
-function telegramSlackConfig(params: { includeMainSession?: boolean } = {}): OpenClawConfig {
+function telegramSlackConfig(params: { includeMainSession?: boolean } = {}): AforaConfig {
   return {
     ...(params.includeMainSession ? { session: { mainKey: "main" } } : {}),
     channels: {
@@ -446,10 +446,10 @@ function telegramSlackConfig(params: { includeMainSession?: boolean } = {}): Ope
       },
     },
     plugins: pluginEntries("telegram", "slack"),
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
-function telegramDisabledAccountConfig(): OpenClawConfig {
+function telegramDisabledAccountConfig(): AforaConfig {
   return {
     channels: {
       telegram: {
@@ -460,10 +460,10 @@ function telegramDisabledAccountConfig(): OpenClawConfig {
       },
     },
     plugins: pluginEntries("telegram"),
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
-function msteamsConfig(): OpenClawConfig {
+function msteamsConfig(): AforaConfig {
   return {
     channels: {
       msteams: {
@@ -471,10 +471,10 @@ function msteamsConfig(): OpenClawConfig {
       },
     },
     plugins: pluginEntries("msteams"),
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
-function slackSynologyConfig(): OpenClawConfig {
+function slackSynologyConfig(): AforaConfig {
   return {
     channels: {
       slack: {
@@ -486,10 +486,10 @@ function slackSynologyConfig(): OpenClawConfig {
       },
     },
     plugins: pluginEntries("slack", "synology-chat"),
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
-function slackConfig(params: { includeMainSession?: boolean } = {}): OpenClawConfig {
+function slackConfig(params: { includeMainSession?: boolean } = {}): AforaConfig {
   return {
     ...(params.includeMainSession ? { session: { mainKey: "main" } } : {}),
     channels: {
@@ -499,7 +499,7 @@ function slackConfig(params: { includeMainSession?: boolean } = {}): OpenClawCon
       },
     },
     plugins: pluginEntries("slack"),
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function agentTurnCronParams(overrides: Record<string, unknown> = {}) {
@@ -590,7 +590,7 @@ function expectInvalidCronPatternError(respond: ReturnType<typeof vi.fn>): void 
 
 describe("cron method validation", () => {
   beforeEach(() => {
-    getRuntimeConfig.mockReset().mockReturnValue({} as OpenClawConfig);
+    getRuntimeConfig.mockReset().mockReturnValue({} as AforaConfig);
     cronTaskRunHistoryPageOverride.mockReset().mockReturnValue(undefined);
     loadGatewaySessionEntry
       .mockReset()
@@ -2457,7 +2457,7 @@ describe("cron method validation", () => {
         },
       },
       plugins: pluginEntries("slack"),
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     const { context, respond } = await invokeCronAdd(
       agentTurnCronParams({
@@ -2482,7 +2482,7 @@ describe("cron method validation", () => {
         },
       },
       plugins: pluginEntries("slack"),
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     const { context, respond } = await invokeCronAdd(
       agentTurnCronParams({
@@ -2503,7 +2503,7 @@ describe("cron method validation", () => {
         },
       },
       plugins: pluginEntries(),
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     const { context, respond } = await invokeCronAdd(
       agentTurnCronParams({
@@ -2586,7 +2586,7 @@ describe("cron method validation", () => {
     setRuntimeConfig({
       channels: { twitch: { accounts: { main: { accessToken: "t" } } } },
       plugins: pluginEntries("twitch"),
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     const { respond } = await invokeCronAdd(
       agentTurnCronParams({
@@ -2617,7 +2617,7 @@ describe("cron method validation", () => {
         twitch: { enabled: false, accounts: { main: { accessToken: "t" } } },
       },
       plugins: pluginEntries("twitch"),
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     const { respond } = await invokeCronAdd(
       agentTurnCronParams({
@@ -2650,7 +2650,7 @@ describe("cron method validation", () => {
         },
       },
       plugins: pluginEntries("telegram"),
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     const { context, respond } = await invokeCronAdd(
       agentTurnCronParams({
@@ -2683,7 +2683,7 @@ describe("cron method validation", () => {
         },
       },
       plugins: pluginEntries("msteams"),
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     const { context, respond } = await invokeCronAdd(
       agentTurnCronParams({
@@ -2846,9 +2846,9 @@ describe("cron method validation", () => {
   } as const;
 
   function globalFailureAlertConfig(
-    config: OpenClawConfig,
-    failureAlert: NonNullable<OpenClawConfig["cron"]>["failureAlert"],
-  ): OpenClawConfig {
+    config: AforaConfig,
+    failureAlert: NonNullable<AforaConfig["cron"]>["failureAlert"],
+  ): AforaConfig {
     return { ...config, cron: { failureAlert } };
   }
 
@@ -2864,7 +2864,7 @@ describe("cron method validation", () => {
     title: string,
     patch: Record<string, unknown>,
     currentJob: CronJob = createCronJob(),
-    config: OpenClawConfig = telegramSlackConfig(),
+    config: AforaConfig = telegramSlackConfig(),
   ): void {
     it(title, async () => {
       setRuntimeConfig(config);
@@ -2878,7 +2878,7 @@ describe("cron method validation", () => {
     title: string,
     patch: Record<string, unknown>,
     currentJob: CronJob = createCronJob(),
-    config: OpenClawConfig = telegramSlackConfig(),
+    config: AforaConfig = telegramSlackConfig(),
   ): void {
     it(title, async () => {
       setRuntimeConfig(config);
@@ -2891,7 +2891,7 @@ describe("cron method validation", () => {
   function failureAlertAddAccepted(
     title: string,
     params: Record<string, unknown>,
-    config: OpenClawConfig = telegramSlackConfig(),
+    config: AforaConfig = telegramSlackConfig(),
   ): void {
     it(title, async () => {
       setRuntimeConfig(config);
@@ -2904,7 +2904,7 @@ describe("cron method validation", () => {
   function failureAlertAddRejected(
     title: string,
     params: Record<string, unknown>,
-    config: OpenClawConfig,
+    config: AforaConfig,
   ): void {
     it(title, async () => {
       setRuntimeConfig(config);
@@ -3478,7 +3478,7 @@ describe("cron method validation", () => {
           slack: { enabled: true },
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     const context = createCronContext(createCronJob());
     context.cron.getJob.mockReturnValue(undefined);

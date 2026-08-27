@@ -1,7 +1,7 @@
 import path from "node:path";
-import { withTempHome } from "openclaw/plugin-sdk/test-env";
+import { withTempHome } from "afora-agent/plugin-sdk/test-env";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config.js";
+import type { AforaConfig } from "../config.js";
 import { replaceSessionEntry } from "./session-accessor.js";
 import {
   resolveExistingAgentSessionStoreTargetsReadOnlyResult,
@@ -11,9 +11,9 @@ import {
 describe("session store availability", () => {
   it("reads cross-agent rows from a migrated fixed store", async () => {
     await withTempHome(async (home) => {
-      const env = { ...process.env, OPENCLAW_STATE_DIR: path.join(home, ".openclaw") };
+      const env = { ...process.env, AFORA_STATE_DIR: path.join(home, ".afora") };
       const storePath = path.join(home, "shared.sqlite");
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         session: { store: storePath },
         agents: {
           ownership: "explicit",
@@ -43,7 +43,7 @@ describe("session store availability", () => {
 
   it("does not let a missing configured store poison readable discovered siblings", async () => {
     await withTempHome(async (home) => {
-      const env = { ...process.env, OPENCLAW_STATE_DIR: path.join(home, ".openclaw") };
+      const env = { ...process.env, AFORA_STATE_DIR: path.join(home, ".afora") };
       // Sessions live in the discovered default per-agent store...
       await replaceSessionEntry(
         { agentId: "main", env, sessionKey: "agent:main:main" },
@@ -51,7 +51,7 @@ describe("session store availability", () => {
       );
       // ...while the configured per-agent template points at a path that has
       // not been created yet (fresh config / store migration window).
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         session: { store: path.join(home, "custom", "{agentId}", "sessions.sqlite") },
       };
 
@@ -69,8 +69,8 @@ describe("session store availability", () => {
 
   it("reports database-missing only when no candidate store exists", async () => {
     await withTempHome(async (home) => {
-      const env = { ...process.env, OPENCLAW_STATE_DIR: path.join(home, ".openclaw") };
-      const cfg: OpenClawConfig = {
+      const env = { ...process.env, AFORA_STATE_DIR: path.join(home, ".afora") };
+      const cfg: AforaConfig = {
         session: { store: path.join(home, "custom", "{agentId}", "sessions.sqlite") },
       };
 
@@ -83,9 +83,9 @@ describe("session store availability", () => {
 
   it("reads ownerless fixed-store rows under the requested agent", async () => {
     await withTempHome(async (home) => {
-      const env = { ...process.env, OPENCLAW_STATE_DIR: path.join(home, ".openclaw") };
+      const env = { ...process.env, AFORA_STATE_DIR: path.join(home, ".afora") };
       const storePath = path.join(home, "ownerless-shared.sqlite");
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         session: { store: storePath },
         agents: {
           ownership: "explicit",

@@ -1,29 +1,29 @@
 ---
-summary: "Sign in to GitHub Copilot from OpenClaw using the device flow or non-interactive token import"
+summary: "Sign in to GitHub Copilot from Afora using the device flow or non-interactive token import"
 read_when:
   - You want to use GitHub Copilot as a model provider
-  - You need the `openclaw models auth login-github-copilot` flow
+  - You need the `afora models auth login-github-copilot` flow
   - You are choosing between the built-in Copilot provider, Copilot SDK harness, and Copilot Proxy
 title: "GitHub Copilot"
 ---
 
 GitHub Copilot is GitHub's AI coding assistant. It provides access to Copilot
-models for your GitHub account and plan. OpenClaw can use Copilot as a model
+models for your GitHub account and plan. Afora can use Copilot as a model
 provider or agent runtime in three different ways.
 
-## Three ways to use Copilot in OpenClaw
+## Three ways to use Copilot in Afora
 
 <Tabs>
   <Tab title="Built-in provider (github-copilot)">
     Use the native device-login flow to obtain and store a GitHub token. When
-    OpenClaw runs, it validates Copilot access and resolves the account-specific
+    Afora runs, it validates Copilot access and resolves the account-specific
     Copilot API endpoint. This is the **default** and simplest path because it does
     not require VS Code.
 
     <Steps>
       <Step title="Run the login command">
         ```bash
-        openclaw models auth login-github-copilot
+        afora models auth login-github-copilot
         ```
 
         You will be prompted to visit a URL and enter a one-time code. Keep the
@@ -31,7 +31,7 @@ provider or agent runtime in three different ways.
       </Step>
       <Step title="Set a default model">
         ```bash
-        openclaw models set github-copilot/claude-sonnet-5
+        afora models set github-copilot/claude-sonnet-5
         ```
 
         Or in config:
@@ -49,12 +49,12 @@ provider or agent runtime in three different ways.
   </Tab>
 
   <Tab title="Copilot SDK harness plugin (copilot)">
-    Install the external `@openclaw/copilot` plugin when you want GitHub's
+    Install the external `@afora/copilot` plugin when you want GitHub's
     Copilot CLI and SDK to own the low-level agent loop for selected
     `github-copilot/*` models.
 
     ```bash
-    openclaw plugins install @openclaw/copilot
+    afora plugins install @afora/copilot
     ```
 
     Then opt a model or provider into the runtime:
@@ -83,15 +83,15 @@ provider or agent runtime in three different ways.
   </Tab>
 
   <Tab title="Copilot Proxy plugin (copilot-proxy)">
-    Use the **Copilot Proxy** VS Code extension as a local bridge. OpenClaw talks to
+    Use the **Copilot Proxy** VS Code extension as a local bridge. Afora talks to
     the proxy's `/v1` endpoint (default `http://localhost:3000/v1`) and uses the
     model list you configure.
 
-    The `copilot-proxy` plugin ships with OpenClaw and is enabled by default.
+    The `copilot-proxy` plugin ships with Afora and is enabled by default.
     Configure the base URL and model ids with:
 
     ```bash
-    openclaw models auth login --provider copilot-proxy --set-default
+    afora models auth login --provider copilot-proxy --set-default
     ```
 
     <Note>
@@ -106,22 +106,22 @@ provider or agent runtime in three different ways.
 
 If your organization uses a data-residency GitHub Enterprise tenant (a
 `*.ghe.com` host such as `your-org.ghe.com`), Copilot lives on tenant-local
-endpoints rather than public `github.com`. OpenClaw exposes this as a
+endpoints rather than public `github.com`. Afora exposes this as a
 first-class auth choice so you do not have to hand-edit URLs.
 
 <Steps>
   <Step title="Pick the Enterprise auth choice">
-    In onboarding or `openclaw models auth`, choose
+    In onboarding or `afora models auth`, choose
     **GitHub Copilot (Enterprise / data residency)**. You will be prompted for
     your Enterprise domain (for example `your-org.ghe.com`), then the device
     login runs against that tenant.
 
     Enter the tenant root only (`your-org.ghe.com`). Derived service hosts such
     as `api.your-org.ghe.com` or `copilot-api.your-org.ghe.com` are not accepted;
-    OpenClaw derives those endpoints from the tenant root automatically.
+    Afora derives those endpoints from the tenant root automatically.
 
     ```bash
-    openclaw models auth login --provider github-copilot --method device-enterprise
+    afora models auth login --provider github-copilot --method device-enterprise
     ```
 
   </Step>
@@ -150,7 +150,7 @@ the public endpoints.
 <Note>
 Switching domains always re-runs the device login. If you already have a stored
 Copilot token and pick a different domain (public `github.com` ↔ a `*.ghe.com`
-tenant, or one tenant to another), OpenClaw will not reuse the existing token —
+tenant, or one tenant to another), Afora will not reuse the existing token —
 it forces a fresh login so the token is scoped to the domain being written to
 config. Re-running login for the *same* domain still offers to reuse the current
 token. Switching back to public `github.com` clears the persisted
@@ -161,7 +161,7 @@ token. Switching back to public `github.com` clears the persisted
 The `COPILOT_GITHUB_DOMAIN` environment variable overrides the resolved domain
 for every Copilot path that resolves it — the Enterprise device login
 (`--method device-enterprise`), the standalone
-`openclaw models auth login-github-copilot` shortcut, account validation,
+`afora models auth login-github-copilot` shortcut, account validation,
 embeddings, and completions. Set it to your `*.ghe.com` host for fully headless
 or CI setups. Leave it unset (and the config param absent) to use public `github.com`.
 Logins persist the domain they minted the token for (and clear it when logging
@@ -173,24 +173,24 @@ environment variable is unset.
 
 | Command                                                                | Flag            | Description                                          |
 | ---------------------------------------------------------------------- | --------------- | ---------------------------------------------------- |
-| `openclaw models auth login-github-copilot`                            | `--yes`         | Overwrite an existing auth profile without prompting |
-| `openclaw models auth login --provider github-copilot --method device` | `--set-default` | Also apply the provider's recommended default model  |
+| `afora models auth login-github-copilot`                            | `--yes`         | Overwrite an existing auth profile without prompting |
+| `afora models auth login --provider github-copilot --method device` | `--set-default` | Also apply the provider's recommended default model  |
 
 ```bash
 # Skip the re-login confirmation
-openclaw models auth login-github-copilot --yes
+afora models auth login-github-copilot --yes
 
 # Login and set the default model in one step
-openclaw models auth login --provider github-copilot --method device --set-default
+afora models auth login --provider github-copilot --method device --set-default
 ```
 
 ## Non-interactive onboarding
 
 The device-login flow requires an interactive TTY. For headless setup, import
-an existing GitHub OAuth access token with `openclaw onboard --non-interactive`:
+an existing GitHub OAuth access token with `afora onboard --non-interactive`:
 
 ```bash
-openclaw onboard --non-interactive --accept-risk \
+afora onboard --non-interactive --accept-risk \
   --auth-choice github-copilot \
   --github-copilot-token "$COPILOT_GITHUB_TOKEN" \
   --skip-channels --skip-health
@@ -203,7 +203,7 @@ back to `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, then `GITHUB_TOKEN`. Use
 `tokenRef` instead of plaintext in `auth-profiles.json`.
 
 Fresh non-interactive setup validates the token before saving it. When setup
-must choose a default, it also checks the live Copilot model catalog. OpenClaw
+must choose a default, it also checks the live Copilot model catalog. Afora
 prefers the provider's current general-purpose model when that model is
 enabled for the account; otherwise it chooses a deterministic eligible fallback.
 Setup fails without writing a new auth profile if the account has no
@@ -226,13 +226,13 @@ configured default model is never replaced.
 
   <Accordion title="Live catalog refresh from the Copilot API">
     Once the device-login (or env-var) auth path has resolved a GitHub token,
-    OpenClaw refreshes the model catalog on demand from `${baseUrl}/models`
+    Afora refreshes the model catalog on demand from `${baseUrl}/models`
     (the same endpoint VS Code Copilot uses) so the runtime tracks
     per-account entitlement and accurate context windows without manifest
     churn. The visible live catalog excludes models hidden from GitHub's picker
     or disabled by account policy. Automatic setup defaults additionally require
     streaming and tool-call support.
-    Newly published Copilot models become visible without an OpenClaw upgrade,
+    Newly published Copilot models become visible without an Afora upgrade,
     and context windows reflect the real per-model limits
     (e.g. 400k for the gpt-5.x series, 1M for the internal
     `claude-opus-*-1m` variants).
@@ -259,18 +259,18 @@ configured default model is never replaced.
   <Accordion title="Transport selection">
     Claude model IDs use the Anthropic Messages transport automatically.
     Gemini models use the OpenAI Chat Completions transport; GPT and o-series
-    models keep the OpenAI Responses transport. OpenClaw selects the correct
+    models keep the OpenAI Responses transport. Afora selects the correct
     transport based on the model ref.
   </Accordion>
 
   <Accordion title="Request compatibility">
-    OpenClaw sends Copilot-compatible request headers with a Copilot CLI request
+    Afora sends Copilot-compatible request headers with a Copilot CLI request
     identity, marks tool-result follow-up turns as agent-initiated, and sets the
     Copilot vision header when a turn carries image input.
   </Accordion>
 
   <Accordion title="Environment variable resolution order">
-    OpenClaw resolves Copilot auth from environment variables in the following
+    Afora resolves Copilot auth from environment variables in the following
     priority order:
 
     | Priority | Variable              | Notes                            |
@@ -279,8 +279,8 @@ configured default model is never replaced.
     | 2        | `GH_TOKEN`            | GitHub CLI token (fallback)      |
     | 3        | `GITHUB_TOKEN`        | Standard GitHub token (lowest)   |
 
-    When multiple variables are set, OpenClaw uses the highest-priority one.
-    The device-login flow (`openclaw models auth login-github-copilot`) stores
+    When multiple variables are set, Afora uses the highest-priority one.
+    The device-login flow (`afora models auth login-github-copilot`) stores
     its token in the auth profile store and takes precedence over all environment
     variables.
 
@@ -288,7 +288,7 @@ configured default model is never replaced.
 
   <Accordion title="Token storage">
     The login stores a GitHub token in the auth profile store (profile id
-    `github-copilot:github`). At runtime, OpenClaw validates Copilot access,
+    `github-copilot:github`). At runtime, Afora validates Copilot access,
     resolves the account-specific API endpoint, and uses the stored GitHub token
     for Copilot requests. You do not need to manage runtime authentication
     manually.
@@ -299,12 +299,12 @@ configured default model is never replaced.
 
 GitHub Copilot can also serve as an embedding provider for
 [memory search](/concepts/memory-search). If you have a Copilot subscription and
-have logged in, OpenClaw can use it for embeddings without a separate API key.
+have logged in, Afora can use it for embeddings without a separate API key.
 
 ### Config
 
 Set `memory.search.provider` explicitly to use GitHub Copilot embeddings. If a
-GitHub token is available, OpenClaw discovers available embedding models from
+GitHub token is available, Afora discovers available embedding models from
 the Copilot API and picks the best one automatically.
 
 ```json5
@@ -321,7 +321,7 @@ the Copilot API and picks the best one automatically.
 
 ### How it works
 
-1. OpenClaw resolves your GitHub token (from env vars or auth profile).
+1. Afora resolves your GitHub token (from env vars or auth profile).
 2. Validates Copilot access and resolves the account-specific API endpoint.
 3. Queries the Copilot `/models` endpoint to discover available embedding models.
 4. Picks the best model (preference order: `text-embedding-3-small`,
@@ -329,7 +329,7 @@ the Copilot API and picks the best one automatically.
 5. Sends embedding requests to the Copilot `/embeddings` endpoint.
 
 Model availability depends on your GitHub plan. If no embedding models are
-available, OpenClaw skips Copilot and tries the next provider.
+available, Afora skips Copilot and tries the next provider.
 
 ## Related
 

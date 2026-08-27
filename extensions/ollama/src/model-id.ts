@@ -1,6 +1,6 @@
 // Ollama plugin module implements model id behavior.
-import { normalizeProviderId } from "openclaw/plugin-sdk/provider-model-shared";
-import { uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeProviderId } from "afora-agent/plugin-sdk/provider-model-shared";
+import { uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 const OLLAMA_PROVIDER_ID = "ollama";
 

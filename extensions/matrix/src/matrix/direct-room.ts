@@ -1,5 +1,5 @@
 // Matrix plugin module implements direct room behavior.
-import { normalizeNullableString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeNullableString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { MatrixClient } from "./sdk.js";
 
 function normalizeJoinedMatrixMembers(joinedMembers: unknown): string[] {

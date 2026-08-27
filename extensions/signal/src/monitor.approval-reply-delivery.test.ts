@@ -1,6 +1,6 @@
-import { buildExecApprovalPendingReplyPayload } from "openclaw/plugin-sdk/approval-reply-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
+import { buildExecApprovalPendingReplyPayload } from "afora-agent/plugin-sdk/approval-reply-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   clearSignalApprovalReactionTargetsForTest,
@@ -37,12 +37,12 @@ const cfg = {
       targets: [{ channel: "signal", to: approver }],
     },
   },
-} as OpenClawConfig;
+} as AforaConfig;
 
 async function deliverReplyPayload(
   payload: ReplyPayload,
   options: {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     account?: string;
     accountUuid?: string;
     accountId?: string;
@@ -241,7 +241,7 @@ describe("Signal monitor reply delivery", () => {
         },
       },
       approvals: cfg.approvals,
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await deliverReplyPayload(payload, {
       config: uuidOnlyConfig,

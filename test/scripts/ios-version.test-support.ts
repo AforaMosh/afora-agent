@@ -18,7 +18,7 @@ export function writeIosFixture(params: {
   packageVersion?: string;
   prefix?: string;
 }): string {
-  const rootDir = makeTempDir(tempDirs, params.prefix ?? "openclaw-ios-version-");
+  const rootDir = makeTempDir(tempDirs, params.prefix ?? "afora-ios-version-");
   fs.mkdirSync(path.join(rootDir, "apps", "ios"), { recursive: true });
   fs.writeFileSync(
     path.join(rootDir, "package.json"),

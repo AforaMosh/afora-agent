@@ -17,15 +17,15 @@ import {
   listSessionEntriesCore,
   replaceSessionEntry,
 } from "../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { parseAgentSessionKey } from "../routing/session-key.js";
 import { readAgentDeletionJournal } from "../state/agent-deletion-journal.js";
 import { readAgentProvenance, recordAgentProvenance } from "../state/agent-provenance.js";
 import { writeConfigMachineState } from "../state/config-machine-state.js";
 import {
-  listOpenClawRegisteredAgentDatabases,
-  registerOpenClawAgentDatabase,
-} from "../state/openclaw-agent-db-registry.js";
+  listAforaRegisteredAgentDatabases,
+  registerAforaAgentDatabase,
+} from "../state/afora-agent-db-registry.js";
 import { withStateDirEnv } from "../test-helpers/state-dir-env.js";
 import { baseConfigSnapshot, createTestRuntime } from "./test-runtime-config-helpers.js";
 
@@ -101,7 +101,7 @@ import { agentsDeleteCommand } from "./agents.commands.delete.js";
 
 const runtime = createTestRuntime();
 
-function resolveFixtureStoreAgentId(cfg: OpenClawConfig, deletedAgentId: string): string {
+function resolveFixtureStoreAgentId(cfg: AforaConfig, deletedAgentId: string): string {
   const storeConfig = cfg.session?.store;
   if (typeof storeConfig === "string" && !storeConfig.includes("{agentId}")) {
     return (
@@ -116,7 +116,7 @@ function resolveFixtureStoreAgentId(cfg: OpenClawConfig, deletedAgentId: string)
 
 async function arrangeAgentsDeleteTest(params: {
   stateDir: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   deletedAgentId?: string;
   sessions: Record<string, { sessionId: string; updatedAt: number }>;
 }) {
@@ -132,7 +132,7 @@ async function arrangeAgentsDeleteTest(params: {
     }
   }
   const { list: _legacyList, ...agents } = authored.agents ?? {};
-  const cfg: OpenClawConfig = {
+  const cfg: AforaConfig = {
     ...authored,
     agents: { ...agents, entries: toAgentEntriesRecord(roster) },
   };
@@ -165,7 +165,7 @@ async function arrangeAgentsDeleteTest(params: {
 }
 
 function expectSessionStore(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   sessions: Record<string, { sessionId: string; updatedAt: number }>,
   agentId = "ops",
 ) {
@@ -232,8 +232,8 @@ describe("agents delete command", () => {
   });
 
   it("requires --force when confirmation cannot use an interactive terminal", async () => {
-    await withStateDirEnv("openclaw-agents-delete-non-tty-", async ({ stateDir }) => {
-      const cfg: OpenClawConfig = {
+    await withStateDirEnv("afora-agents-delete-non-tty-", async ({ stateDir }) => {
+      const cfg: AforaConfig = {
         agents: {
           list: [
             { id: "main", default: true, workspace: path.join(stateDir, "workspace-main") },
@@ -255,16 +255,16 @@ describe("agents delete command", () => {
   });
 
   it("refuses deleting main even when another agent is default", async () => {
-    await withStateDirEnv("openclaw-agents-delete-gateway-", async ({ stateDir }) => {
+    await withStateDirEnv("afora-agents-delete-gateway-", async ({ stateDir }) => {
       const now = Date.now();
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           list: [
             { id: "main", workspace: path.join(stateDir, "workspace-main") },
             { id: "ops", default: true, workspace: path.join(stateDir, "workspace-ops") },
           ],
         },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       const sessions = {
         "agent:ops:main": { sessionId: "sess-ops-main", updatedAt: now + 1 },
         "agent:main:main": { sessionId: "sess-main", updatedAt: now + 2 },
@@ -286,7 +286,7 @@ describe("agents delete command", () => {
           error: {
             type: "cli_error",
             message:
-              'Agent "main" owns the legacy shared auth store and cannot be deleted. Run openclaw doctor --fix to migrate shared auth, then retry.',
+              'Agent "main" owns the legacy shared auth store and cannot be deleted. Run afora doctor --fix to migrate shared auth, then retry.',
           },
         },
       ]);
@@ -296,8 +296,8 @@ describe("agents delete command", () => {
   });
 
   it("deletes main normally after shared auth ownership moves to state SQLite", async () => {
-    await withStateDirEnv("openclaw-agents-delete-relocated-auth-", async ({ stateDir }) => {
-      const cfg: OpenClawConfig = {
+    await withStateDirEnv("afora-agents-delete-relocated-auth-", async ({ stateDir }) => {
+      const cfg: AforaConfig = {
         agents: {
           list: [
             { id: "main", workspace: path.join(stateDir, "workspace-main") },
@@ -325,8 +325,8 @@ describe("agents delete command", () => {
   });
 
   it("rejects an unrepresentable id before targeting or deleting an agent", async () => {
-    await withStateDirEnv("openclaw-agents-delete-invalid-id-", async ({ stateDir }) => {
-      const cfg: OpenClawConfig = {
+    await withStateDirEnv("afora-agents-delete-invalid-id-", async ({ stateDir }) => {
+      const cfg: AforaConfig = {
         agents: {
           list: [
             { id: "main", workspace: path.join(stateDir, "workspace-main") },
@@ -343,7 +343,7 @@ describe("agents delete command", () => {
       await agentsDeleteCommand({ id: "агент✨", force: true }, runtime);
 
       expect(runtime.error).toHaveBeenCalledWith(
-        'Agent "агент✨" not found. Run openclaw agents list to see configured agents.',
+        'Agent "агент✨" not found. Run afora agents list to see configured agents.',
       );
       expect(runtime.exit).toHaveBeenCalledWith(1);
       expect(gatewayMocks.callGateway).not.toHaveBeenCalled();
@@ -355,8 +355,8 @@ describe("agents delete command", () => {
   });
 
   it("refuses deleting the auth-inheritance owner until credentials are relocated", async () => {
-    await withStateDirEnv("openclaw-agents-delete-auth-owner-", async ({ stateDir }) => {
-      const cfg: OpenClawConfig = {
+    await withStateDirEnv("afora-agents-delete-auth-owner-", async ({ stateDir }) => {
+      const cfg: AforaConfig = {
         agents: {
           defaults: { authInheritance: { agentId: "ops" } },
           list: [{ id: "ops" }, { id: "research" }],
@@ -405,9 +405,9 @@ describe("agents delete command", () => {
   });
 
   it("warns about Gateway cleanup failures without failing committed deletion", async () => {
-    await withStateDirEnv("openclaw-agents-delete-gateway-warning-", async ({ stateDir }) => {
+    await withStateDirEnv("afora-agents-delete-gateway-warning-", async ({ stateDir }) => {
       const workspace = path.join(stateDir, "workspace-ops");
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: { list: [{ id: "main" }, { id: "ops", workspace }] },
       };
       await arrangeAgentsDeleteTest({ stateDir, cfg, sessions: {} });
@@ -434,8 +434,8 @@ describe("agents delete command", () => {
   });
 
   it("includes purge failure in delegated JSON output", async () => {
-    await withStateDirEnv("openclaw-agents-delete-gateway-purge-json-", async ({ stateDir }) => {
-      const cfg: OpenClawConfig = {
+    await withStateDirEnv("afora-agents-delete-gateway-purge-json-", async ({ stateDir }) => {
+      const cfg: AforaConfig = {
         agents: { list: [{ id: "main" }, { id: "ops" }] },
       };
       await arrangeAgentsDeleteTest({ stateDir, cfg, sessions: {} });
@@ -455,9 +455,9 @@ describe("agents delete command", () => {
   });
 
   it("falls back to local deletion when the optional Gateway probe needs credentials", async () => {
-    await withStateDirEnv("openclaw-agents-delete-gateway-auth-", async ({ stateDir }) => {
+    await withStateDirEnv("afora-agents-delete-gateway-auth-", async ({ stateDir }) => {
       const now = Date.now();
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           defaults: {
             heartbeat: { agentId: "ops" },
@@ -469,7 +469,7 @@ describe("agents delete command", () => {
           ],
         },
         talk: { agentId: "ops", provider: "test-provider" },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       await arrangeAgentsDeleteTest({
         stateDir,
         cfg,
@@ -485,7 +485,7 @@ describe("agents delete command", () => {
           {
             name: "GatewayCredentialsRequiredError",
             method: "agents.delete",
-            configPath: path.join(stateDir, "openclaw.json"),
+            configPath: path.join(stateDir, "afora.json"),
           },
         ),
       );
@@ -507,7 +507,7 @@ describe("agents delete command", () => {
         "talk.agentId",
       ]);
       const replaceConfigFileCalls = configMocks.replaceConfigFile.mock.calls as unknown as Array<
-        [{ nextConfig: OpenClawConfig }]
+        [{ nextConfig: AforaConfig }]
       >;
       expect(replaceConfigFileCalls[0]?.[0].nextConfig.agents?.defaults?.heartbeat).toBeUndefined();
       expect(
@@ -520,16 +520,16 @@ describe("agents delete command", () => {
   });
 
   it("purges deleted agent entries from the session store", async () => {
-    await withStateDirEnv("openclaw-agents-delete-", async ({ stateDir }) => {
+    await withStateDirEnv("afora-agents-delete-", async ({ stateDir }) => {
       const now = Date.now();
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           list: [
             { id: "main", workspace: path.join(stateDir, "workspace-main") },
             { id: "ops", workspace: path.join(stateDir, "workspace-ops") },
           ],
         },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       await arrangeAgentsDeleteTest({
         stateDir,
         cfg,
@@ -545,7 +545,7 @@ describe("agents delete command", () => {
       expect(runtime.exit).not.toHaveBeenCalled();
       expect(configMocks.replaceConfigFile).toHaveBeenCalledOnce();
       const replaceConfigFileCalls = configMocks.replaceConfigFile.mock.calls as unknown as Array<
-        [{ nextConfig: OpenClawConfig }]
+        [{ nextConfig: AforaConfig }]
       >;
       expect(replaceConfigFileCalls[0]?.[0].nextConfig).toEqual({
         agents: {
@@ -564,8 +564,8 @@ describe("agents delete command", () => {
   });
 
   it("deregisters the agent database after offline deletion", async () => {
-    await withStateDirEnv("openclaw-agents-delete-registry-", async ({ stateDir }) => {
-      const cfg: OpenClawConfig = {
+    await withStateDirEnv("afora-agents-delete-registry-", async ({ stateDir }) => {
+      const cfg: AforaConfig = {
         agents: {
           list: [
             { id: "main", workspace: path.join(stateDir, "workspace-main") },
@@ -574,15 +574,15 @@ describe("agents delete command", () => {
         },
       };
       await arrangeAgentsDeleteTest({ stateDir, cfg, sessions: {} });
-      const databasePath = path.join(stateDir, "agents", "ops", "agent", "openclaw-agent.sqlite");
-      registerOpenClawAgentDatabase({ agentId: "ops", path: databasePath });
+      const databasePath = path.join(stateDir, "agents", "ops", "agent", "afora-agent.sqlite");
+      registerAforaAgentDatabase({ agentId: "ops", path: databasePath });
       recordAgentProvenance("ops", { createdVia: "operator" });
       recordAgentProvenance("child", { createdVia: "agent", creatorAgentId: "ops" });
-      expect(listOpenClawRegisteredAgentDatabases().map((entry) => entry.agentId)).toContain("ops");
+      expect(listAforaRegisteredAgentDatabases().map((entry) => entry.agentId)).toContain("ops");
 
       await agentsDeleteCommand({ id: "ops", force: true, json: true }, runtime);
 
-      expect(listOpenClawRegisteredAgentDatabases().map((entry) => entry.agentId)).not.toContain(
+      expect(listAforaRegisteredAgentDatabases().map((entry) => entry.agentId)).not.toContain(
         "ops",
       );
       expect(readAgentDeletionJournal("ops")?.cleanupCompleted).toBe(true);
@@ -592,8 +592,8 @@ describe("agents delete command", () => {
   });
 
   it("resumes offline deletion after cleanup was interrupted", async () => {
-    await withStateDirEnv("openclaw-agents-delete-recovery-", async ({ stateDir }) => {
-      const cfg: OpenClawConfig = {
+    await withStateDirEnv("afora-agents-delete-recovery-", async ({ stateDir }) => {
+      const cfg: AforaConfig = {
         agents: {
           list: [
             { id: "main", workspace: path.join(stateDir, "workspace-main") },
@@ -602,8 +602,8 @@ describe("agents delete command", () => {
         },
       };
       await arrangeAgentsDeleteTest({ stateDir, cfg, sessions: {} });
-      const databasePath = path.join(stateDir, "agents", "ops", "agent", "openclaw-agent.sqlite");
-      registerOpenClawAgentDatabase({ agentId: "ops", path: databasePath });
+      const databasePath = path.join(stateDir, "agents", "ops", "agent", "afora-agent.sqlite");
+      registerAforaAgentDatabase({ agentId: "ops", path: databasePath });
       workspaceStateMocks.deleteWorkspaceState.mockImplementationOnce(() => {
         throw new Error("interrupted after filesystem cleanup");
       });
@@ -612,10 +612,10 @@ describe("agents delete command", () => {
         agentsDeleteCommand({ id: "ops", force: true, json: true }, runtime),
       ).rejects.toThrow("interrupted after filesystem cleanup");
       expect(readAgentDeletionJournal("ops")?.cleanupCompleted).toBe(false);
-      expect(listOpenClawRegisteredAgentDatabases().map((entry) => entry.agentId)).toContain("ops");
+      expect(listAforaRegisteredAgentDatabases().map((entry) => entry.agentId)).toContain("ops");
 
       const writeCalls = configMocks.replaceConfigFile.mock.calls as unknown as Array<
-        [{ nextConfig?: OpenClawConfig }]
+        [{ nextConfig?: AforaConfig }]
       >;
       const firstWrite = writeCalls[0]?.[0];
       const nextConfig = firstWrite?.nextConfig;
@@ -630,7 +630,7 @@ describe("agents delete command", () => {
 
       await agentsDeleteCommand({ id: "ops", force: true, json: true }, runtime);
 
-      expect(listOpenClawRegisteredAgentDatabases().map((entry) => entry.agentId)).not.toContain(
+      expect(listAforaRegisteredAgentDatabases().map((entry) => entry.agentId)).not.toContain(
         "ops",
       );
       expect(readAgentDeletionJournal("ops")?.cleanupCompleted).toBe(true);
@@ -638,16 +638,16 @@ describe("agents delete command", () => {
   });
 
   it("deletes workspace state after local workspace removal", async () => {
-    await withStateDirEnv("openclaw-agents-delete-workspace-state-", async ({ stateDir }) => {
+    await withStateDirEnv("afora-agents-delete-workspace-state-", async ({ stateDir }) => {
       const opsWorkspace = path.join(stateDir, "workspace-ops");
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           list: [
             { id: "main", workspace: path.join(stateDir, "workspace-main") },
             { id: "ops", workspace: opsWorkspace },
           ],
         },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       await arrangeAgentsDeleteTest({
         stateDir,
         cfg,
@@ -666,17 +666,17 @@ describe("agents delete command", () => {
   });
 
   it("finishes agent-directory cleanup when workspace state deletion fails", async () => {
-    await withStateDirEnv("openclaw-agents-delete-state-failure-", async ({ stateDir }) => {
+    await withStateDirEnv("afora-agents-delete-state-failure-", async ({ stateDir }) => {
       const opsWorkspace = path.join(stateDir, "workspace-ops");
       const opsAgentDir = path.join(stateDir, "agents", "ops", "agent");
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           list: [
             { id: "main", workspace: path.join(stateDir, "workspace-main") },
             { id: "ops", workspace: opsWorkspace },
           ],
         },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       await arrangeAgentsDeleteTest({ stateDir, cfg, deletedAgentId: "ops", sessions: {} });
       workspaceStateMocks.deleteWorkspaceState.mockImplementationOnce(() => {
         throw new Error("state database unavailable");
@@ -696,9 +696,9 @@ describe("agents delete command", () => {
   });
 
   it("refuses deleting the sole configured agent", async () => {
-    await withStateDirEnv("openclaw-agents-delete-main-alias-", async ({ stateDir }) => {
+    await withStateDirEnv("afora-agents-delete-main-alias-", async ({ stateDir }) => {
       const now = Date.now();
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           list: [{ id: "ops", default: true, workspace: path.join(stateDir, "workspace-ops") }],
         },
@@ -743,9 +743,9 @@ describe("agents delete command", () => {
   });
 
   it("preserves canonical main-agent keys when deleting another agent", async () => {
-    await withStateDirEnv("openclaw-agents-delete-shared-store-", async ({ stateDir }) => {
+    await withStateDirEnv("afora-agents-delete-shared-store-", async ({ stateDir }) => {
       const now = Date.now();
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         session: { store: path.join(stateDir, "shared-sessions.sqlite") },
         agents: {
           list: [
@@ -786,19 +786,19 @@ describe("agents delete command", () => {
   });
 
   it("skips workspace removal when another agent shares the same workspace (#70890)", async () => {
-    await withStateDirEnv("openclaw-agents-delete-shared-workspace-", async ({ stateDir }) => {
+    await withStateDirEnv("afora-agents-delete-shared-workspace-", async ({ stateDir }) => {
       const sharedWorkspace = path.join(stateDir, "workspace-shared");
       await fs.mkdir(sharedWorkspace, { recursive: true });
 
       const now = Date.now();
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           list: [
             { id: "main", workspace: sharedWorkspace },
             { id: "ops", workspace: sharedWorkspace },
           ],
         },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       await arrangeAgentsDeleteTest({
         stateDir,
         cfg,
@@ -828,20 +828,20 @@ describe("agents delete command", () => {
   });
 
   it("skips workspace removal when another agent workspace overlaps a child path (#70890)", async () => {
-    await withStateDirEnv("openclaw-agents-delete-overlapping-workspace-", async ({ stateDir }) => {
+    await withStateDirEnv("afora-agents-delete-overlapping-workspace-", async ({ stateDir }) => {
       const sharedWorkspace = path.join(stateDir, "workspace-shared");
       const childWorkspace = path.join(sharedWorkspace, "ops-child");
       await fs.mkdir(childWorkspace, { recursive: true });
 
       const now = Date.now();
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           list: [
             { id: "main", workspace: sharedWorkspace },
             { id: "ops", workspace: childWorkspace },
           ],
         },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       await arrangeAgentsDeleteTest({
         stateDir,
         cfg,
@@ -863,20 +863,20 @@ describe("agents delete command", () => {
   });
 
   it("skips workspace removal when deleting a parent workspace that contains another agent workspace (#70890)", async () => {
-    await withStateDirEnv("openclaw-agents-delete-parent-workspace-", async ({ stateDir }) => {
+    await withStateDirEnv("afora-agents-delete-parent-workspace-", async ({ stateDir }) => {
       const sharedWorkspace = path.join(stateDir, "workspace-shared");
       const childWorkspace = path.join(sharedWorkspace, "main-child");
       await fs.mkdir(childWorkspace, { recursive: true });
 
       const now = Date.now();
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           list: [
             { id: "main", workspace: childWorkspace },
             { id: "ops", workspace: sharedWorkspace },
           ],
         },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       await arrangeAgentsDeleteTest({
         stateDir,
         cfg,
@@ -900,21 +900,21 @@ describe("agents delete command", () => {
   it.runIf(process.platform !== "win32")(
     "skips workspace removal when another agent reaches the same directory through a symlink (#70890)",
     async () => {
-      await withStateDirEnv("openclaw-agents-delete-symlink-workspace-", async ({ stateDir }) => {
+      await withStateDirEnv("afora-agents-delete-symlink-workspace-", async ({ stateDir }) => {
         const realWorkspace = path.join(stateDir, "workspace-real");
         const aliasWorkspace = path.join(stateDir, "workspace-alias");
         await fs.mkdir(realWorkspace, { recursive: true });
         await fs.symlink(realWorkspace, aliasWorkspace, "dir");
 
         const now = Date.now();
-        const cfg: OpenClawConfig = {
+        const cfg: AforaConfig = {
           agents: {
             list: [
               { id: "main", workspace: realWorkspace },
               { id: "ops", workspace: aliasWorkspace },
             ],
           },
-        } satisfies OpenClawConfig;
+        } satisfies AforaConfig;
         await arrangeAgentsDeleteTest({
           stateDir,
           cfg,
@@ -939,21 +939,21 @@ describe("agents delete command", () => {
   );
 
   it("trashes workspace when no other agent shares it", async () => {
-    await withStateDirEnv("openclaw-agents-delete-unique-workspace-", async ({ stateDir }) => {
+    await withStateDirEnv("afora-agents-delete-unique-workspace-", async ({ stateDir }) => {
       const opsWorkspace = path.join(stateDir, "workspace-ops");
       const mainWorkspace = path.join(stateDir, "workspace-main");
       await fs.mkdir(opsWorkspace, { recursive: true });
       await fs.mkdir(mainWorkspace, { recursive: true });
 
       const now = Date.now();
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           list: [
             { id: "main", workspace: mainWorkspace },
             { id: "ops", workspace: opsWorkspace },
           ],
         },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       await arrangeAgentsDeleteTest({
         stateDir,
         cfg,
@@ -982,16 +982,16 @@ describe("agents delete command", () => {
   });
 
   it("retains workspace state when workspace trash fails", async () => {
-    await withStateDirEnv("openclaw-agents-delete-trash-failure-", async ({ stateDir }) => {
+    await withStateDirEnv("afora-agents-delete-trash-failure-", async ({ stateDir }) => {
       const opsWorkspace = path.join(stateDir, "workspace-ops");
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: {
           list: [
             { id: "main", workspace: path.join(stateDir, "workspace-main") },
             { id: "ops", workspace: opsWorkspace },
           ],
         },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       await arrangeAgentsDeleteTest({ stateDir, cfg, sessions: {} });
       fsSafeMocks.movePathToTrash.mockRejectedValueOnce(new Error("trash unavailable"));
 

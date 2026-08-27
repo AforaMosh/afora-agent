@@ -1,4 +1,4 @@
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
 import { expect } from "vitest";
 import { requireInvocationOrder } from "./bot-message-dispatch.test-harness.js";
 

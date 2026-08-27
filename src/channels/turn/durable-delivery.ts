@@ -1,9 +1,9 @@
 // Durable final-reply delivery for inbound channel turns.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { ExecutionIdentityAdmissionToken } from "../../audit/execution-identity-admission.js";
 import type { ReplyPayload } from "../../auto-reply/reply-payload.js";
 import type { FinalizedMsgContext } from "../../auto-reply/templating.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { normalizeDeliverableOutboundChannel } from "../../infra/outbound/channel-resolution.js";
 import {
   type DeliverOutboundPayloadsParams,
@@ -33,7 +33,7 @@ export type DurableInboundReplyDeliveryOptions = Pick<
 
 /** Full context required to deliver one inbound final reply through durable message sending. */
 export type DurableInboundReplyDeliveryParams = DurableInboundReplyDeliveryOptions & {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   accountId?: string;
   agentId: string;

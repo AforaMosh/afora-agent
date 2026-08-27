@@ -1,5 +1,5 @@
 /** Builds bounded transcript projections for compaction worker planning. */
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import type { AgentMessage } from "./runtime/index.js";
 
 const TEXT_TRUNCATE_THRESHOLD_CHARS = 32_768;
@@ -7,7 +7,7 @@ const TEXT_SAMPLE_CHARS = 8_192;
 const PLANNING_MAX_CHARS = 256 * 1024;
 const MAX_ARGUMENT_ESTIMATE_CHARS = 1_000_000;
 const UNMEASURABLE_ARGUMENT_OMITTED_CHARS = Number.MAX_SAFE_INTEGER;
-const OMITTED_CHARS_FIELD = "__openclawCompactionPlanningOmittedChars";
+const OMITTED_CHARS_FIELD = "__aforaCompactionPlanningOmittedChars";
 
 type ProjectionBudget = {
   remainingChars: number;

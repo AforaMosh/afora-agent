@@ -1,7 +1,7 @@
-import { toErrorObject as toLintErrorObject } from "@openclaw/normalization-core/error-coercion";
+import { toErrorObject as toLintErrorObject } from "@afora/normalization-core/error-coercion";
 // Guarded fetch SSRF tests cover redirect hardening, pinned dispatcher setup,
 // trusted proxy modes, and safe header retention.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   fetchConfiguredLocalOriginWithSsrFGuard,
@@ -15,7 +15,7 @@ import {
   resetGlobalUndiciStreamTimeoutsForTests,
 } from "./undici-global-dispatcher.js";
 
-const TEST_UNDICI_RUNTIME_DEPS_KEY = "__OPENCLAW_TEST_UNDICI_RUNTIME_DEPS__";
+const TEST_UNDICI_RUNTIME_DEPS_KEY = "__AFORA_TEST_UNDICI_RUNTIME_DEPS__";
 
 const { agentCtor, envHttpProxyAgentCtor, proxyAgentCtor } = vi.hoisted(() => ({
   agentCtor: vi.fn(function MockAgent(this: { options: unknown }, options: unknown) {
@@ -202,7 +202,7 @@ describe("fetchWithSsrFGuard hardening", () => {
   const CROSS_ORIGIN_REDIRECT_PRESERVED_HEADERS = [
     ["accept", "application/json"],
     ["content-type", "application/json"],
-    ["user-agent", "OpenClaw-Test/1.0"],
+    ["user-agent", "Afora-Test/1.0"],
   ] as const;
 
   const createPublicLookup = (): LookupFn =>
@@ -295,9 +295,9 @@ describe("fetchWithSsrFGuard hardening", () => {
 
   function installManagedProxyRuntime(loopbackMode?: ManagedProxyLoopbackMode): void {
     clearProxyEnv();
-    vi.stubEnv("OPENCLAW_PROXY_ACTIVE", "1");
+    vi.stubEnv("AFORA_PROXY_ACTIVE", "1");
     if (loopbackMode) {
-      vi.stubEnv("OPENCLAW_PROXY_LOOPBACK_MODE", loopbackMode);
+      vi.stubEnv("AFORA_PROXY_LOOPBACK_MODE", loopbackMode);
     }
     vi.stubEnv("http_proxy", "http://127.0.0.1:7890");
     (globalThis as Record<string, unknown>)[TEST_UNDICI_RUNTIME_DEPS_KEY] = {
@@ -616,7 +616,7 @@ describe("fetchWithSsrFGuard hardening", () => {
         globalFetchCalls += 1;
         throw new Error("ambient global fetch should not be used when a dispatcher is attached");
       },
-      { __openclawAcceptsDispatcher: true as const },
+      { __aforaAcceptsDispatcher: true as const },
     );
 
     class MockAgent {
@@ -991,7 +991,7 @@ describe("fetchWithSsrFGuard hardening", () => {
           "X-Trace": "1",
           Accept: "application/json",
           "Content-Type": "application/json",
-          "User-Agent": "OpenClaw-Test/1.0",
+          "User-Agent": "Afora-Test/1.0",
         },
       },
     });
@@ -1344,12 +1344,12 @@ describe("fetchWithSsrFGuard hardening", () => {
       Authorization: "Bearer secret",
       Cookie: "session=abc",
       Accept: "application/json",
-      "User-Agent": "OpenClaw-Test/1.0",
+      "User-Agent": "Afora-Test/1.0",
     });
 
     expect(headers).toEqual({
       accept: "application/json",
-      "user-agent": "OpenClaw-Test/1.0",
+      "user-agent": "Afora-Test/1.0",
     });
   });
 
@@ -1465,7 +1465,7 @@ describe("fetchWithSsrFGuard hardening", () => {
   });
 
   it("uses the env proxy in strict mode when the SSRF proxy lifecycle is active", async () => {
-    vi.stubEnv("OPENCLAW_PROXY_ACTIVE", "1");
+    vi.stubEnv("AFORA_PROXY_ACTIVE", "1");
 
     await runProxyModeDispatcherExpectation({
       mode: GUARDED_FETCH_MODE.STRICT,
@@ -1614,7 +1614,7 @@ describe("fetchWithSsrFGuard hardening", () => {
   }>)(
     "applies $name to the real dashboard document-readiness consumer",
     async ({ mode, routing }) => {
-      vi.stubEnv("OPENCLAW_PROXY_LOOPBACK_MODE", "");
+      vi.stubEnv("AFORA_PROXY_LOOPBACK_MODE", "");
       installManagedProxyRuntime(mode);
       vi.stubEnv("NO_PROXY", "127.0.0.1");
       vi.stubEnv("no_proxy", "127.0.0.1");

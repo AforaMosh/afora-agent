@@ -1,8 +1,8 @@
 import path from "node:path";
-import { withTempHome } from "openclaw/plugin-sdk/test-env";
+import { withTempHome } from "afora-agent/plugin-sdk/test-env";
 import { describe, expect, it } from "vitest";
-import { unregisterOpenClawAgentDatabase } from "../../state/openclaw-agent-db-registry.js";
-import type { OpenClawConfig } from "../config.js";
+import { unregisterAforaAgentDatabase } from "../../state/afora-agent-db-registry.js";
+import type { AforaConfig } from "../config.js";
 import { replaceSessionEntry } from "./session-accessor.js";
 import { resolveSqliteTargetFromSessionStorePath } from "./session-sqlite-target.js";
 import { listKnownSessionStoreAgentIds } from "./targets.js";
@@ -10,10 +10,10 @@ import { listKnownSessionStoreAgentIds } from "./targets.js";
 describe("known session store owners", () => {
   it("includes a retired owner registered under the active shared store", async () => {
     await withTempHome(async (home) => {
-      const stateDir = path.join(home, ".openclaw");
-      const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+      const stateDir = path.join(home, ".afora");
+      const env = { ...process.env, AFORA_STATE_DIR: stateDir };
       const storePath = path.join(stateDir, "shared", "sessions.json");
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         session: { store: storePath },
         agents: { entries: { ops: { default: true } } },
       };
@@ -34,10 +34,10 @@ describe("known session store owners", () => {
 
   it("keeps a retired fixed-store owner after its registry row is removed", async () => {
     await withTempHome(async (home) => {
-      const stateDir = path.join(home, ".openclaw");
-      const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+      const stateDir = path.join(home, ".afora");
+      const env = { ...process.env, AFORA_STATE_DIR: stateDir };
       const storePath = path.join(stateDir, "shared", "sessions.json");
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         session: { store: storePath },
         agents: { entries: { ops: { default: true } } },
       };
@@ -57,7 +57,7 @@ describe("known session store owners", () => {
         defaultAgentId: "retired",
         env,
       }).path;
-      unregisterOpenClawAgentDatabase({ agentId: "retired", env, path: retiredDatabasePath });
+      unregisterAforaAgentDatabase({ agentId: "retired", env, path: retiredDatabasePath });
 
       expect(listKnownSessionStoreAgentIds(cfg, { env }).toSorted()).toEqual(["ops", "retired"]);
     });
@@ -65,10 +65,10 @@ describe("known session store owners", () => {
 
   it("finds a retired owner in a durable suffixed sibling without a registry row", async () => {
     await withTempHome(async (home) => {
-      const stateDir = path.join(home, ".openclaw");
-      const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+      const stateDir = path.join(home, ".afora");
+      const env = { ...process.env, AFORA_STATE_DIR: stateDir };
       const storePath = path.join(stateDir, "shared", "sessions.json");
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         session: { store: storePath },
         agents: { entries: { ops: { default: true } } },
       };
@@ -88,8 +88,8 @@ describe("known session store owners", () => {
         defaultAgentId: "ops",
         env,
       }).path;
-      expect(path.basename(retiredDatabasePath)).toBe("openclaw-agent.retired.sqlite");
-      unregisterOpenClawAgentDatabase({ agentId: "retired", env, path: retiredDatabasePath });
+      expect(path.basename(retiredDatabasePath)).toBe("afora-agent.retired.sqlite");
+      unregisterAforaAgentDatabase({ agentId: "retired", env, path: retiredDatabasePath });
 
       expect(listKnownSessionStoreAgentIds(cfg, { env }).toSorted()).toEqual(["ops", "retired"]);
     });

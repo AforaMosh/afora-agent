@@ -1,5 +1,5 @@
 /** Parses daemon runtime command output into normalized key-value maps. */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 
 /** Parses command output key-value lines using a caller-supplied separator. */
 export function parseKeyValueOutput(output: string, separator: string): Record<string, string> {

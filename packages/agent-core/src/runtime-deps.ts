@@ -1,5 +1,5 @@
 // Agent Core module implements runtime deps behavior.
-import type { CompleteSimpleFn, StreamFn } from "@openclaw/llm-core";
+import type { CompleteSimpleFn, StreamFn } from "@afora/llm-core";
 
 /** Runtime functions injected by host packages so agent-core stays provider-agnostic. */
 export interface AgentCoreRuntimeDeps {
@@ -16,7 +16,7 @@ export type AgentCoreCompletionRuntimeDeps = Pick<AgentCoreRuntimeDeps, "complet
 
 function missingRuntimeDep(name: keyof AgentCoreRuntimeDeps): Error {
   return new Error(
-    `@openclaw/agent-core runtime dependency "${name}" is not configured. Pass an AgentCoreRuntimeDeps instance or a streamFn explicitly.`,
+    `@afora/agent-core runtime dependency "${name}" is not configured. Pass an AgentCoreRuntimeDeps instance or a streamFn explicitly.`,
   );
 }
 

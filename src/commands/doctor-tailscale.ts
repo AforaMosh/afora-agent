@@ -1,6 +1,6 @@
 // Doctor migration for Tailscale config and shipped external Serve routes.
 import { resolveGatewayPort } from "../config/paths.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { runUtf8CommandWithTimeout } from "../process/exec.js";
 import {
   inspectTailscaleServeGatewayUrlsWithRunner,
@@ -8,13 +8,13 @@ import {
 } from "../shared/tailscale-status.js";
 
 type DoctorTailscaleMigrationResult = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   changes: string[];
   warnings: string[];
 };
 
 function result(
-  config: OpenClawConfig,
+  config: AforaConfig,
   changes: string[] = [],
   warnings: string[] = [],
 ): DoctorTailscaleMigrationResult {
@@ -31,7 +31,7 @@ function isCanonicalServeUrl(raw: string): boolean {
 }
 
 export async function prepareTailscaleConfigMigration(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   runCommandWithTimeout?: TailscaleStatusCommandRunner;
 }): Promise<DoctorTailscaleMigrationResult> {

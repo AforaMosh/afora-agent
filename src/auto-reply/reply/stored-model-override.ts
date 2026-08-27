@@ -1,5 +1,5 @@
 // Persists and resolves per-session model override choices.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { hasSessionAutoModelFallbackProvenance } from "../../agents/agent-scope.js";
 import { resolveCliRuntimeCanonicalProvider } from "../../agents/cli-backends.js";
 import type { ModelFallbackRouteResolution } from "../../agents/model-fallback.types.js";
@@ -13,7 +13,7 @@ import { RUNTIME_MODEL_VISIBILITY_NORMALIZATION } from "../../agents/model-visib
 import { resolveSessionParentSessionKey } from "../../channels/plugins/session-conversation.js";
 import { resolveSessionModelOverrideRouteResolution } from "../../config/sessions/model-override-provenance.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { RuntimeModelNormalization } from "./model-runtime-normalization.js";
 
 /** Model override loaded from the current session or its parent session. */
@@ -51,7 +51,7 @@ export function resolveDirectStoredModelOverride(params: {
 export function normalizeStoredRuntimeModelRef(
   provider: string,
   model: string,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
   sessionEntry?: SessionEntry,
   normalization: RuntimeModelNormalization = RUNTIME_MODEL_VISIBILITY_NORMALIZATION,
 ) {

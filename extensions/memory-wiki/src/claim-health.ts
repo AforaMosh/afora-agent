@@ -1,6 +1,6 @@
-import { parseDateStringTimestampMs } from "openclaw/plugin-sdk/number-runtime";
+import { parseDateStringTimestampMs } from "afora-agent/plugin-sdk/number-runtime";
 // Memory Wiki plugin module implements claim health behavior.
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { WikiClaim, WikiPageSummary } from "./markdown.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;

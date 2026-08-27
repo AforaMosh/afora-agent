@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChannelGatewayContext } from "../runtime-api.js";
 import type { BuzzBus } from "./buzz-bus.js";
@@ -43,7 +43,7 @@ const CHANNEL_ID = "7c4a6d2a-2ed9-4b4e-a5e2-4d705ee9b34c";
 const PRIVATE_KEY = "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
 const BOT_PUBLIC_KEY = "a".repeat(64);
 
-function createBuzzConfig(name?: string): OpenClawConfig {
+function createBuzzConfig(name?: string): AforaConfig {
   return {
     channels: {
       buzz: {
@@ -53,7 +53,7 @@ function createBuzzConfig(name?: string): OpenClawConfig {
         groups: { [CHANNEL_ID]: {} },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function startTestGateway(
@@ -91,7 +91,7 @@ function createMockBus(): BuzzBus {
     publicKey: BOT_PUBLIC_KEY,
     directory: new BuzzDirectoryState({
       publicKey: BOT_PUBLIC_KEY,
-      fallbackProfileName: "OpenClaw",
+      fallbackProfileName: "Afora",
       channelIds: [CHANNEL_ID],
     }),
     refreshDirectory: vi.fn(async () => {}),

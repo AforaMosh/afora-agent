@@ -1,12 +1,12 @@
 // Googlechat plugin module implements channel behavior.
-import { createChatChannelPlugin } from "openclaw/plugin-sdk/channel-core";
-import { buildPassiveProbedChannelStatusSummary } from "openclaw/plugin-sdk/extension-shared";
-import { createLazyRuntimeNamedExport } from "openclaw/plugin-sdk/lazy-runtime";
+import { createChatChannelPlugin } from "afora-agent/plugin-sdk/channel-core";
+import { buildPassiveProbedChannelStatusSummary } from "afora-agent/plugin-sdk/extension-shared";
+import { createLazyRuntimeNamedExport } from "afora-agent/plugin-sdk/lazy-runtime";
 import {
   createComputedAccountStatusAdapter,
   createDefaultChannelRuntimeState,
-} from "openclaw/plugin-sdk/status-helpers";
-import { extractToolSend } from "openclaw/plugin-sdk/tool-send";
+} from "afora-agent/plugin-sdk/status-helpers";
+import { extractToolSend } from "afora-agent/plugin-sdk/tool-send";
 import {
   googleChatApprovalCapability,
   shouldSuppressLocalGoogleChatExecApprovalPrompt,

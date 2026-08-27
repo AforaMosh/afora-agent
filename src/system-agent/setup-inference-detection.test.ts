@@ -227,7 +227,7 @@ describe("isolated setup inference detection", () => {
 
   it("returns stored CLI credentials when detection times out", async () => {
     const { detectSetupInferenceIsolated } = await loadDetectionModule();
-    const home = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-detect-")));
+    const home = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), "afora-detect-")));
     tempHomes.add(home);
     const authPath = path.join(home, ".codex", "auth.json");
     await fs.mkdir(path.dirname(authPath), { recursive: true });

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Setup OpenClaw Auth Management System
+# Setup Afora Auth Management System
 # Run this once to set up:
 # 1. Long-lived Claude Code token
 # 2. Auth monitoring with notifications
@@ -9,7 +9,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "=== OpenClaw Auth System Setup ==="
+echo "=== Afora Auth System Setup ==="
 echo ""
 
 # Step 1: Check current auth status
@@ -49,35 +49,35 @@ echo ""
 # Check for ntfy
 echo "  ntfy.sh: Free push notifications to your phone"
 echo "  1. Install ntfy app on your phone"
-echo "  2. Subscribe to a topic (e.g., 'openclaw-alerts')"
+echo "  2. Subscribe to a topic (e.g., 'afora-alerts')"
 echo ""
 echo "Enter ntfy.sh topic (or leave blank to skip):"
 read -r NTFY_TOPIC
 
 # Phone notification
 echo ""
-echo "  OpenClaw message: Send warning via OpenClaw itself"
+echo "  Afora message: Send warning via Afora itself"
 echo "Enter your phone number for alerts (or leave blank to skip):"
 read -r PHONE_NUMBER
 
 # Install systemd units
-SERVICE_TEMPLATE="$SCRIPT_DIR/systemd/openclaw-auth-monitor.service"
+SERVICE_TEMPLATE="$SCRIPT_DIR/systemd/afora-auth-monitor.service"
 SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
-SERVICE_TARGET="$SYSTEMD_USER_DIR/openclaw-auth-monitor.service"
-TIMER_TARGET="$SYSTEMD_USER_DIR/openclaw-auth-monitor.timer"
+SERVICE_TARGET="$SYSTEMD_USER_DIR/afora-auth-monitor.service"
+TIMER_TARGET="$SYSTEMD_USER_DIR/afora-auth-monitor.timer"
 AUTH_MONITOR_PATH="$SCRIPT_DIR/auth-monitor.sh"
 
 echo ""
 echo "Installing systemd timer..."
 mkdir -p "$SYSTEMD_USER_DIR"
 
-SERVICE_TEMP="$(mktemp "$SYSTEMD_USER_DIR/openclaw-auth-monitor.service.XXXXXX")"
+SERVICE_TEMP="$(mktemp "$SYSTEMD_USER_DIR/afora-auth-monitor.service.XXXXXX")"
 SERVICE_RENDERED=""
 cleanup_service_temp() {
     rm -f "$SERVICE_TEMP" "$SERVICE_RENDERED"
 }
 trap cleanup_service_temp EXIT
-SERVICE_RENDERED="$(mktemp "$SYSTEMD_USER_DIR/openclaw-auth-monitor.service.rendered.XXXXXX")"
+SERVICE_RENDERED="$(mktemp "$SYSTEMD_USER_DIR/afora-auth-monitor.service.rendered.XXXXXX")"
 
 cp "$SERVICE_TEMPLATE" "$SERVICE_TEMP"
 
@@ -103,7 +103,7 @@ render_environment_line() {
 }
 
 RENDERED_EXEC_START="ExecStart=$(systemd_quote_arg "$AUTH_MONITOR_PATH")"
-RENDERED_NTFY_LINE="$(render_environment_line "NOTIFY_NTFY" "openclaw-alerts" "$NTFY_TOPIC")"
+RENDERED_NTFY_LINE="$(render_environment_line "NOTIFY_NTFY" "afora-alerts" "$NTFY_TOPIC")"
 RENDERED_PHONE_LINE="$(render_environment_line "NOTIFY_PHONE" "+1234567890" "$PHONE_NUMBER")"
 FOUND_EXEC_START=0
 FOUND_NTFY=0
@@ -141,9 +141,9 @@ mv "$SERVICE_RENDERED" "$SERVICE_TEMP"
 
 mv "$SERVICE_TEMP" "$SERVICE_TARGET"
 trap - EXIT
-cp "$SCRIPT_DIR/systemd/openclaw-auth-monitor.timer" "$TIMER_TARGET"
+cp "$SCRIPT_DIR/systemd/afora-auth-monitor.timer" "$TIMER_TARGET"
 systemctl --user daemon-reload
-systemctl --user enable --now openclaw-auth-monitor.timer
+systemctl --user enable --now afora-auth-monitor.timer
 
 echo "Auth monitor installed and running."
 echo ""
@@ -177,7 +177,7 @@ echo ""
 echo "What's configured:"
 echo "  - Auth status: $SCRIPT_DIR/claude-auth-status.sh"
 echo "  - Mobile re-auth: $SCRIPT_DIR/mobile-reauth.sh"
-echo "  - Auth monitor: systemctl --user status openclaw-auth-monitor.timer"
+echo "  - Auth monitor: systemctl --user status afora-auth-monitor.timer"
 echo ""
 echo "Quick commands:"
 echo "  Check auth:  $SCRIPT_DIR/claude-auth-status.sh"

@@ -2,8 +2,8 @@ import {
   embeddedAgentLog,
   formatErrorMessage,
   isHostScopedAgentToolActive,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { buildCodexUserMcpServersThreadConfigPatchForRuntime } from "openclaw/plugin-sdk/codex-mcp-projection";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { buildCodexUserMcpServersThreadConfigPatchForRuntime } from "afora-agent/plugin-sdk/codex-mcp-projection";
 import { getCodexAppServerClientInstanceId } from "./client.js";
 import {
   isMessageOnlyCodexSourceReply,
@@ -99,7 +99,7 @@ export async function prepareCodexThreadLifecyclePreflight(params: CodexStartOrR
     params.environmentSelection,
   );
   const hostSystemAgentActive =
-    params.hostSystemAgentActive ?? isHostScopedAgentToolActive("openclaw");
+    params.hostSystemAgentActive ?? isHostScopedAgentToolActive("afora");
   const ringZeroActive =
     hostSystemAgentActive && isSystemAgentOnlyCodexDynamicToolAllowlist(params.params.toolsAllow);
   const messageOnlySourceReply = isMessageOnlyCodexSourceReply(params.params);

@@ -2,11 +2,11 @@
 set -euo pipefail
 
 VM_NAME="Windows 11"
-OPENCLAW_PARALLELS_WINDOWS_API=1
+AFORA_PARALLELS_WINDOWS_API=1
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TODAY="$(date +%F)"
 CLEAN_SNAPSHOT="windows-11-clean-os-${TODAY}"
-BASELINE_SNAPSHOT="pre-openclaw-native-e2e-${TODAY}"
+BASELINE_SNAPSHOT="pre-afora-native-e2e-${TODAY}"
 GUEST_PROFILE=""
 GUEST_PROFILE_PS=""
 GUEST_ARCH=""
@@ -14,9 +14,9 @@ WINGET_EXPECTED_HASH=""
 WINDOWS_REBOOT_REQUIRED=0
 WINDOWS_REBOOT_STARTED=0
 SNAPSHOT=""
-SECURE_STAGE_DIR="C:/ProgramData/OpenClawPrerequisiteInstallers"
+SECURE_STAGE_DIR="C:/ProgramData/AforaPrerequisiteInstallers"
 COMMAND="help"
-if [[ "${OPENCLAW_PARALLELS_WINDOWS_LIBRARY_ONLY:-0}" != "1" ]]; then
+if [[ "${AFORA_PARALLELS_WINDOWS_LIBRARY_ONLY:-0}" != "1" ]]; then
   COMMAND="${1:-help}"
   if [[ $# -gt 0 ]]; then
     shift
@@ -38,8 +38,8 @@ Usage: scripts/e2e/parallels-windows-prepare.sh <command> [options]
 
 Commands:
   inventory   List the VM, hardware facts, and snapshots.
-  prepare     Create a clean snapshot, provision the reusable OpenClaw baseline, and snapshot it.
-  verify      Verify base prerequisites and prove the guest contains no OpenClaw product state.
+  prepare     Create a clean snapshot, provision the reusable Afora baseline, and snapshot it.
+  verify      Verify base prerequisites and prove the guest contains no Afora product state.
   restore     Restore a snapshot by exact name or id.
 
 Options:
@@ -50,13 +50,13 @@ Options:
   -h, --help                  Show this help.
 
 prepare assumes Parallels Desktop is installed/activated and a Windows 11 VM already exists.
-It installs only reusable OpenClaw prerequisites: WSL platform/package, Git, and Node/npm.
-It refuses to create the baseline when the guest contains an OpenClaw CLI, app package, process,
+It installs only reusable Afora prerequisites: WSL platform/package, Git, and Node/npm.
+It refuses to create the baseline when the guest contains an Afora CLI, app package, process,
 tray state, or WSL distro.
 EOF
 }
 
-if [[ "${OPENCLAW_PARALLELS_WINDOWS_LIBRARY_ONLY:-0}" != "1" ]]; then
+if [[ "${AFORA_PARALLELS_WINDOWS_LIBRARY_ONLY:-0}" != "1" ]]; then
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --vm)
@@ -293,7 +293,7 @@ for snapshot_id, item in data.items():
         raise SystemExit(0)
 prefixes = {
     "clean": "windows-11-clean-os-",
-    "e2e": "pre-openclaw-native-e2e-",
+    "e2e": "pre-afora-native-e2e-",
 }
 prefix = prefixes.get(requested.lower())
 if prefix:
@@ -349,7 +349,7 @@ create_clean_snapshot_if_raw() {
     say "Skipping clean-OS snapshot because reusable prerequisites are already installed"
     return
   fi
-  create_snapshot "$CLEAN_SNAPSHOT" "Clean Windows baseline before OpenClaw development prerequisites."
+  create_snapshot "$CLEAN_SNAPSHOT" "Clean Windows baseline before Afora development prerequisites."
 }
 
 restore_snapshot() {
@@ -375,21 +375,21 @@ inventory() {
 clean_state_script() {
   cat <<'PS'
 $dirty = [System.Collections.Generic.List[string]]::new()
-if (Get-Command openclaw.cmd -ErrorAction SilentlyContinue) { $dirty.Add('openclaw.cmd on PATH') }
-if (Test-Path (Join-Path $env:USERPROFILE '.openclaw')) { $dirty.Add('OpenClaw CLI state directory exists') }
-if (Test-Path (Join-Path $env:APPDATA 'OpenClawTray')) { $dirty.Add('OpenClawTray AppData exists') }
-if (Test-Path (Join-Path $env:APPDATA 'OpenClawTray-Dev')) { $dirty.Add('OpenClawTray-Dev AppData exists') }
-if (Test-Path (Join-Path $env:LOCALAPPDATA 'OpenClawTray')) { $dirty.Add('OpenClaw Companion install/state directory exists') }
-if (Test-Path (Join-Path $env:LOCALAPPDATA 'OpenClawTray-Dev')) { $dirty.Add('OpenClaw Companion dev install/state directory exists') }
-if (Get-AppxPackage -Name '*OpenClaw*' -ErrorAction SilentlyContinue) { $dirty.Add('OpenClaw app package installed') }
-if (Get-Process -Name '*OpenClaw*' -ErrorAction SilentlyContinue) { $dirty.Add('OpenClaw process running') }
+if (Get-Command afora.cmd -ErrorAction SilentlyContinue) { $dirty.Add('afora.cmd on PATH') }
+if (Test-Path (Join-Path $env:USERPROFILE '.afora')) { $dirty.Add('Afora CLI state directory exists') }
+if (Test-Path (Join-Path $env:APPDATA 'AforaTray')) { $dirty.Add('AforaTray AppData exists') }
+if (Test-Path (Join-Path $env:APPDATA 'AforaTray-Dev')) { $dirty.Add('AforaTray-Dev AppData exists') }
+if (Test-Path (Join-Path $env:LOCALAPPDATA 'AforaTray')) { $dirty.Add('Afora Companion install/state directory exists') }
+if (Test-Path (Join-Path $env:LOCALAPPDATA 'AforaTray-Dev')) { $dirty.Add('Afora Companion dev install/state directory exists') }
+if (Get-AppxPackage -Name '*Afora*' -ErrorAction SilentlyContinue) { $dirty.Add('Afora app package installed') }
+if (Get-Process -Name '*Afora*' -ErrorAction SilentlyContinue) { $dirty.Add('Afora process running') }
 $uninstallRoots = @(
   'HKCU:/Software/Microsoft/Windows/CurrentVersion/Uninstall/*',
   'HKLM:/Software/Microsoft/Windows/CurrentVersion/Uninstall/*',
   'HKLM:/Software/WOW6432Node/Microsoft/Windows/CurrentVersion/Uninstall/*'
 )
-if (Get-ItemProperty $uninstallRoots -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like 'OpenClaw Companion*' }) {
-  $dirty.Add('OpenClaw Companion uninstall registration exists')
+if (Get-ItemProperty $uninstallRoots -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like 'Afora Companion*' }) {
+  $dirty.Add('Afora Companion uninstall registration exists')
 }
 $distros = @(wsl.exe -l -q 2>$null | Where-Object { $_.Trim() })
 if ($distros.Count -gt 0) { $dirty.Add('WSL distro exists: ' + ($distros -join ', ')) }
@@ -497,13 +497,13 @@ ensure_wsl_package() {
   run_bounded 720 prlctl exec "$VM_NAME" curl.exe -fL --connect-timeout 20 --max-time 600 "$url" -o "$wsl_msi" || die "WSL download transport exceeded 12 minutes"
   signature="$(guest_system_ps "\$signature = Get-AuthenticodeSignature '${wsl_msi}'; if (\$signature.Status -eq 'Valid' -and \$signature.SignerCertificate.Subject -match 'Microsoft Corporation') { 'Valid' } else { \$signature.Status.ToString() + ': ' + \$signature.SignerCertificate.Subject }" | tr -d '\r' | tail -n 1)"
   [[ "$signature" == "Valid" ]] || die "WSL MSI signature was not valid Microsoft code: $signature"
-  run_windows_installer msiexec.exe /i 'C:\ProgramData\OpenClawPrerequisiteInstallers\WSL.msi' /qn /norestart '/L*v' 'C:\Windows\Temp\openclaw-wsl-install.log'
+  run_windows_installer msiexec.exe /i 'C:\ProgramData\AforaPrerequisiteInstallers\WSL.msi' /qn /norestart '/L*v' 'C:\Windows\Temp\afora-wsl-install.log'
   finish_installer_reboot
   # Parallels can return from the MSI client before the Windows Installer service
   # finishes publishing wsl.exe. Match the bounded readiness check used by Git and Node.
   wait_for_check WSL 'wsl.exe --version'
   ensure_wsl_default_version
-  guest_system_ps "Remove-Item -LiteralPath '${wsl_msi}','C:/Windows/Temp/openclaw-wsl-install.log' -Force -ErrorAction SilentlyContinue"
+  guest_system_ps "Remove-Item -LiteralPath '${wsl_msi}','C:/Windows/Temp/afora-wsl-install.log' -Force -ErrorAction SilentlyContinue"
 }
 
 resolve_winget_manifest() {
@@ -547,14 +547,14 @@ winget_download() {
   manifest_fact="$(resolve_winget_manifest "$package_id")"
   version="${manifest_fact%%|*}"
   WINGET_EXPECTED_HASH="${manifest_fact#*|}"
-  local download_dir="${GUEST_PROFILE//\//\\}\\Downloads\\OpenClawPrereqs"
-  guest_user_ps "if (Test-Path -LiteralPath '${GUEST_PROFILE_PS}/Downloads/OpenClawPrereqs') { Remove-Item -LiteralPath '${GUEST_PROFILE_PS}/Downloads/OpenClawPrereqs' -Recurse -Force }"
+  local download_dir="${GUEST_PROFILE//\//\\}\\Downloads\\AforaPrereqs"
+  guest_user_ps "if (Test-Path -LiteralPath '${GUEST_PROFILE_PS}/Downloads/AforaPrereqs') { Remove-Item -LiteralPath '${GUEST_PROFILE_PS}/Downloads/AforaPrereqs' -Recurse -Force }"
   guest_user_cmd "if not exist \"${download_dir}\" mkdir \"${download_dir}\" & winget.exe download --source winget --id ${package_id} -e --version \"${version}\" --scope machine --download-directory \"${download_dir}\" --accept-source-agreements --accept-package-agreements --disable-interactivity"
 }
 
 downloaded_installer() {
   local pattern="$1"
-  guest_user_ps "Get-ChildItem -LiteralPath '${GUEST_PROFILE_PS}/Downloads/OpenClawPrereqs' -File | Where-Object { \$_.Name -like '${pattern}' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName" | tr -d '\r' | tail -n 1
+  guest_user_ps "Get-ChildItem -LiteralPath '${GUEST_PROFILE_PS}/Downloads/AforaPrereqs' -File | Where-Object { \$_.Name -like '${pattern}' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName" | tr -d '\r' | tail -n 1
 }
 
 stage_installer() {
@@ -633,7 +633,7 @@ ensure_node() {
 }
 
 cleanup_installers() {
-  guest_user_ps "if (Test-Path -LiteralPath '${GUEST_PROFILE_PS}/Downloads/OpenClawPrereqs') { Remove-Item -LiteralPath '${GUEST_PROFILE_PS}/Downloads/OpenClawPrereqs' -Recurse -Force }"
+  guest_user_ps "if (Test-Path -LiteralPath '${GUEST_PROFILE_PS}/Downloads/AforaPrereqs') { Remove-Item -LiteralPath '${GUEST_PROFILE_PS}/Downloads/AforaPrereqs' -Recurse -Force }"
   guest_system_ps "if (Test-Path -LiteralPath '${SECURE_STAGE_DIR}') { Remove-Item -LiteralPath '${SECURE_STAGE_DIR}' -Recurse -Force }"
 }
 
@@ -672,11 +672,11 @@ prepare() {
   restart_guest
   ensure_wsl_default_version
   verify_baseline
-  create_snapshot "$BASELINE_SNAPSHOT" "E2E-ready OpenClaw Windows baseline with WSL 2, Git, Node/npm, and no OpenClaw product state."
+  create_snapshot "$BASELINE_SNAPSHOT" "E2E-ready Afora Windows baseline with WSL 2, Git, Node/npm, and no Afora product state."
   say "Baseline ready: $BASELINE_SNAPSHOT"
 }
 
-if [[ "${OPENCLAW_PARALLELS_WINDOWS_LIBRARY_ONLY:-0}" == "1" ]]; then
+if [[ "${AFORA_PARALLELS_WINDOWS_LIBRARY_ONLY:-0}" == "1" ]]; then
   return 0 2>/dev/null || exit 0
 fi
 

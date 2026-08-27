@@ -38,6 +38,6 @@ export const page = definePage({
     import("./devices-page.ts").then(() => ({
       header: true,
       render: (data: DevicesRouteData | undefined) =>
-        html`<openclaw-devices-page .routeData=${data}></openclaw-devices-page>`,
+        html`<afora-devices-page .routeData=${data}></afora-devices-page>`,
     })),
 });

@@ -75,5 +75,5 @@ fi
 (
   cd "${ROOT_DIR}/apps/ios"
   # App Store Connect screenshot reservations can fail with 500s under parallel deliver uploads.
-  DELIVER_NUMBER_OF_THREADS=1 FL_MAX_NUMBER_OF_THREADS=1 OPENCLAW_IOS_RELEASE_WRAPPER=1 run_ios_fastlane "${FASTLANE_ARGS[@]}"
+  DELIVER_NUMBER_OF_THREADS=1 FL_MAX_NUMBER_OF_THREADS=1 AFORA_IOS_RELEASE_WRAPPER=1 run_ios_fastlane "${FASTLANE_ARGS[@]}"
 )

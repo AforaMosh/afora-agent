@@ -1,7 +1,7 @@
 // Lightweight static projections for deciding whether plugin repair can be skipped.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import { BUNDLED_OFFICIAL_EXTERNAL_PLUGIN_CATALOG_ENTRIES } from "./official-external-plugin-bundled-catalogs.js";
 
 type StaticProvider = {
@@ -33,7 +33,7 @@ type StaticManifest = {
   webSearchProviders?: readonly StaticWebProvider[];
 };
 
-type StaticEntry = { openclaw?: StaticManifest };
+type StaticEntry = { afora?: StaticManifest };
 
 const STATIC_ENTRIES = BUNDLED_OFFICIAL_EXTERNAL_PLUGIN_CATALOG_ENTRIES as readonly StaticEntry[];
 
@@ -64,7 +64,7 @@ export function hasOfficialExternalProviderTarget(params: {
 }): boolean {
   const providerIds = normalizeIds(params.providerIds);
   return STATIC_ENTRIES.some((entry) =>
-    entry.openclaw?.providers?.some(
+    entry.afora?.providers?.some(
       (provider) =>
         envHasAny(params.env, provider.envVars) ||
         [provider.id, ...(provider.aliases ?? [])].some((providerId) => {
@@ -84,7 +84,7 @@ export function hasOfficialExternalContractTarget(params: {
     return false;
   }
   return STATIC_ENTRIES.some((entry) =>
-    entry.openclaw?.contracts?.[params.contract]?.some((providerId) => {
+    entry.afora?.contracts?.[params.contract]?.some((providerId) => {
       const normalized = normalizeOptionalLowercaseString(providerId);
       return normalized ? providerIds.has(normalized) : false;
     }),
@@ -96,7 +96,7 @@ export function hasOfficialExternalWebContractEnvTarget(params: {
   env: NodeJS.ProcessEnv;
 }): boolean {
   return STATIC_ENTRIES.some((entry) => {
-    const manifest = entry.openclaw;
+    const manifest = entry.afora;
     const contractIds = normalizeIds(manifest?.contracts?.[params.contract] ?? []);
     return manifest?.webSearchProviders?.some((provider) => {
       const providerId = normalizeOptionalLowercaseString(provider.id);
@@ -108,12 +108,12 @@ export function hasOfficialExternalWebContractEnvTarget(params: {
 }
 
 export function hasOfficialExternalChannelTarget(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
 }): boolean {
   const channels = isRecord(params.config.channels) ? params.config.channels : undefined;
   return STATIC_ENTRIES.some((entry) => {
-    const channel = entry.openclaw?.channel;
+    const channel = entry.afora?.channel;
     const channelId = normalizeOptionalLowercaseString(channel?.id);
     if (!channelId) {
       return false;
@@ -132,7 +132,7 @@ export function hasOfficialExternalWebSearchTarget(params: {
 }): boolean {
   const configuredId = normalizeOptionalLowercaseString(params.providerId);
   return STATIC_ENTRIES.some((entry) =>
-    entry.openclaw?.webSearchProviders?.some((provider) => {
+    entry.afora?.webSearchProviders?.some((provider) => {
       const providerId = normalizeOptionalLowercaseString(provider.id);
       return (
         (configuredId !== undefined && providerId === configuredId) ||

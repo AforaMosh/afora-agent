@@ -36,7 +36,7 @@ function runApprovalScript(
       EXPECTED_WORKFLOW_BRANCH: env.EXPECTED_WORKFLOW_BRANCH ?? "release/2026.6.21",
       EXPECTED_RUN_ATTEMPT: env.EXPECTED_RUN_ATTEMPT ?? "",
       APPROVAL_PATH: env.APPROVAL_PATH ?? "",
-      GITHUB_REPOSITORY: env.GITHUB_REPOSITORY ?? "openclaw/openclaw",
+      GITHUB_REPOSITORY: env.GITHUB_REPOSITORY ?? "AforaMosh/afora-agent",
       RELEASE_APPROVAL_KIND: env.RELEASE_APPROVAL_KIND ?? "android",
       RELEASE_PACKAGES: env.RELEASE_PACKAGES ?? "",
       RELEASE_TAG: env.RELEASE_TAG ?? "v2026.6.21",
@@ -48,14 +48,14 @@ function runApprovalScript(
 }
 
 function writeApproval(overrides: Record<string, unknown> = {}) {
-  const tempRoot = tempRoots.make("openclaw-release-approval-");
+  const tempRoot = tempRoots.make("afora-release-approval-");
   const approvalPath = path.join(tempRoot, "approval.json");
   fs.writeFileSync(
     approvalPath,
     `${JSON.stringify({
       version: 1,
-      repository: "openclaw/openclaw",
-      workflow: "OpenClaw Release Publish",
+      repository: "AforaMosh/afora-agent",
+      workflow: "Afora Release Publish",
       parentRunId: "123",
       workflowBranch: "release/2026.6.21",
       releaseTag: "v2026.6.21",
@@ -72,22 +72,22 @@ function approvalRun(overrides: Record<string, unknown> = {}) {
     event: "workflow_dispatch",
     headBranch: "release/2026.6.21",
     status: "in_progress",
-    url: "https://github.com/openclaw/openclaw/actions/runs/123",
-    workflowName: "OpenClaw Release Publish",
+    url: "https://github.com/AforaMosh/afora-agent/actions/runs/123",
+    workflowName: "Afora Release Publish",
     ...overrides,
   };
 }
 
 function writeClawHubApproval(overrides: Record<string, unknown> = {}) {
-  const tempRoot = tempRoots.make("openclaw-clawhub-bootstrap-approval-");
+  const tempRoot = tempRoots.make("afora-clawhub-bootstrap-approval-");
   const approvalPath = path.join(tempRoot, "approval.json");
   fs.writeFileSync(
     approvalPath,
     `${JSON.stringify({
       version: 2,
       kind: "clawhub-bootstrap",
-      repository: "openclaw/openclaw",
-      workflow: "OpenClaw Release Publish",
+      repository: "AforaMosh/afora-agent",
+      workflow: "Afora Release Publish",
       parentRunId: "123",
       parentRunAttempt: 2,
       workflowBranch: "main",
@@ -95,7 +95,7 @@ function writeClawHubApproval(overrides: Record<string, unknown> = {}) {
       bootstrapWorkflowSha: "b".repeat(40),
       releaseTag: "v2026.7.1-beta.3",
       targetSha: "a".repeat(40),
-      packages: ["@openclaw/meta-provider", "@openclaw/voice-call"],
+      packages: ["@afora/meta-provider", "@afora/voice-call"],
       ...overrides,
     })}\n`,
   );
@@ -108,7 +108,7 @@ describe("scripts/validate-release-publish-approval.mjs", () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain(
-      "Using release publish approval run 123: https://github.com/openclaw/openclaw/actions/runs/123",
+      "Using release publish approval run 123: https://github.com/AforaMosh/afora-agent/actions/runs/123",
     );
     expect(result.stderr).toBe("");
   });
@@ -140,7 +140,7 @@ describe("scripts/validate-release-publish-approval.mjs", () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain(
-      "Using successful completed release publish run 123: https://github.com/openclaw/openclaw/actions/runs/123",
+      "Using successful completed release publish run 123: https://github.com/AforaMosh/afora-agent/actions/runs/123",
     );
     expect(result.stderr).toBe("");
   });
@@ -178,7 +178,7 @@ describe("scripts/validate-release-publish-approval.mjs", () => {
         EXPECTED_WORKFLOW_BRANCH: "main",
         EXPECTED_RUN_ATTEMPT: "2",
         RELEASE_APPROVAL_KIND: "clawhub-bootstrap",
-        RELEASE_PACKAGES: "@openclaw/voice-call,@openclaw/meta-provider",
+        RELEASE_PACKAGES: "@afora/voice-call,@afora/meta-provider",
         RELEASE_TAG: "v2026.7.1-beta.3",
       },
     );
@@ -200,7 +200,7 @@ describe("scripts/validate-release-publish-approval.mjs", () => {
         EXPECTED_WORKFLOW_BRANCH: "main",
         EXPECTED_RUN_ATTEMPT: "2",
         RELEASE_APPROVAL_KIND: "clawhub-bootstrap",
-        RELEASE_PACKAGES: "@openclaw/meta-provider,@openclaw/voice-call",
+        RELEASE_PACKAGES: "@afora/meta-provider,@afora/voice-call",
         RELEASE_TAG: "v2026.7.1-beta.3",
       },
     );
@@ -223,7 +223,7 @@ describe("scripts/validate-release-publish-approval.mjs", () => {
         EXPECTED_WORKFLOW_BRANCH: "main",
         EXPECTED_RUN_ATTEMPT: "2",
         RELEASE_APPROVAL_KIND: "clawhub-bootstrap",
-        RELEASE_PACKAGES: "@openclaw/meta-provider,@openclaw/voice-call",
+        RELEASE_PACKAGES: "@afora/meta-provider,@afora/voice-call",
         RELEASE_TAG: "v2026.7.1-beta.3",
       },
     );
@@ -245,7 +245,7 @@ describe("scripts/validate-release-publish-approval.mjs", () => {
         EXPECTED_WORKFLOW_BRANCH: "main",
         EXPECTED_RUN_ATTEMPT: "2",
         RELEASE_APPROVAL_KIND: "clawhub-bootstrap",
-        RELEASE_PACKAGES: "@openclaw/meta-provider,@openclaw/voice-call",
+        RELEASE_PACKAGES: "@afora/meta-provider,@afora/voice-call",
         RELEASE_TAG: "v2026.7.1-beta.3",
       },
     );
@@ -259,7 +259,7 @@ describe("scripts/validate-release-publish-approval.mjs", () => {
   it.each([
     ["release tag", { releaseTag: "v2026.7.1-beta.2" }, {}],
     ["target SHA", { targetSha: "c".repeat(40) }, {}],
-    ["package set", { packages: ["@openclaw/meta-provider"] }, {}],
+    ["package set", { packages: ["@afora/meta-provider"] }, {}],
     ["parent attempt", { parentRunAttempt: 1 }, {}],
     ["parent workflow SHA", { parentWorkflowSha: "c".repeat(40) }, {}],
     ["bootstrap workflow SHA", { bootstrapWorkflowSha: "c".repeat(40) }, {}],
@@ -278,7 +278,7 @@ describe("scripts/validate-release-publish-approval.mjs", () => {
         EXPECTED_WORKFLOW_BRANCH: "main",
         EXPECTED_RUN_ATTEMPT: "2",
         RELEASE_APPROVAL_KIND: "clawhub-bootstrap",
-        RELEASE_PACKAGES: "@openclaw/meta-provider,@openclaw/voice-call",
+        RELEASE_PACKAGES: "@afora/meta-provider,@afora/voice-call",
         RELEASE_TAG: "v2026.7.1-beta.3",
         ...envOverrides,
       },
@@ -314,7 +314,7 @@ describe("scripts/validate-release-publish-approval.mjs", () => {
 
       expect(result.status).toBe(0);
       expect(result.stdout).toContain(
-        `Using completed release publish run 123 (${conclusion}) for direct recovery: https://github.com/openclaw/openclaw/actions/runs/123`,
+        `Using completed release publish run 123 (${conclusion}) for direct recovery: https://github.com/AforaMosh/afora-agent/actions/runs/123`,
       );
       expect(result.stderr).toBe("");
     }

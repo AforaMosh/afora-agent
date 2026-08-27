@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { writeWorkspaceSkills } from "../../skills/test-support/e2e-test-helpers.js";
-import { createOpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+import { createAforaTestState } from "../../test-utils/afora-test-state.js";
 import { createTrackedTempDirs } from "../../test-utils/tracked-temp-dirs.js";
 import { createSkillWorkshopTool } from "./skill-workshop-tool.js";
 
@@ -16,12 +16,12 @@ afterEach(async () => {
 
 describe("skill_workshop collection restore", () => {
   it("restores a canonical cleanup through the configured workspace alias", async () => {
-    const testState = await createOpenClawTestState({
+    const testState = await createAforaTestState({
       layout: "state-only",
-      prefix: "openclaw-skill-collection-restore-state-",
+      prefix: "afora-skill-collection-restore-state-",
     });
     cleanups.push(async () => await testState.cleanup());
-    const workspaceDir = await tempDirs.make("openclaw-skill-collection-restore-");
+    const workspaceDir = await tempDirs.make("afora-skill-collection-restore-");
     await writeWorkspaceSkills(workspaceDir, [
       { name: "duplicate", description: "Duplicate procedure" },
     ]);
@@ -35,7 +35,7 @@ describe("skill_workshop collection restore", () => {
       action: "reconcile",
       collection: [{ action: "drop", name: "duplicate", reason: "redundant" }],
     });
-    const aliasParent = await tempDirs.make("openclaw-skill-collection-restore-alias-");
+    const aliasParent = await tempDirs.make("afora-skill-collection-restore-alias-");
     const workspaceAlias = path.join(aliasParent, "workspace-alias");
     await fs.symlink(
       workspaceDir,

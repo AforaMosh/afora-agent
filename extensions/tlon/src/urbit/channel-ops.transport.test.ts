@@ -1,8 +1,8 @@
 // Real-transport proof: channel create/wake/scry failure paths cancel unread bodies.
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { LookupFn } from "openclaw/plugin-sdk/ssrf-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { LookupFn } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { describe, expect, it } from "vitest";
 import { tlonRuntimeOutbound } from "../channel.runtime.js";
 import { ensureUrbitChannelOpen, scryUrbitPath } from "./channel-ops.js";
@@ -141,7 +141,7 @@ describe("Urbit channel-ops transport body cleanup", () => {
               network: { dangerouslyAllowPrivateNetwork: true },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         to: "~nec",
         text: "hello from the real outbound adapter",
       });

@@ -66,7 +66,7 @@ describe("browser annotation admission", () => {
       ],
       requestUpdate: vi.fn(),
     } as unknown as ChatPageHost;
-    const event = new CustomEvent<BrowserAnnotationDraft>("openclaw:browser-annotation", {
+    const event = new CustomEvent<BrowserAnnotationDraft>("afora:browser-annotation", {
       detail: draft("Rejected context"),
       cancelable: true,
     });

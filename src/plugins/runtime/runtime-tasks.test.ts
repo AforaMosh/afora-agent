@@ -1,5 +1,5 @@
 // Runtime task tests cover plugin task runtime registration, invocation, and cleanup.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getDetachedTaskLifecycleRuntime } from "../../tasks/detached-task-runtime.js";
 import { createTaskRecord } from "../../tasks/task-registry.js";

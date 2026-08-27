@@ -16,7 +16,7 @@ const describeCursorPolicy = canRunPlaywrightChromium(chromiumExecutablePath)
   : describe.skip;
 
 // What `DashboardWindowController.installNativeChromeScript` stamps on <html>.
-const NATIVE_HOST_MARKERS = ["openclaw-native-macos", "openclaw-native-web-chrome"] as const;
+const NATIVE_HOST_MARKERS = ["afora-native-macos", "afora-native-web-chrome"] as const;
 
 type CursorCase = {
   /**

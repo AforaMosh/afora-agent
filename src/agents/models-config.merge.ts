@@ -3,8 +3,8 @@
  * preserved secret fields. Setup and doctor flows use this boundary to update
  * model catalogs without discarding existing credentials.
  */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { isNonSecretApiKeyMarker } from "./model-auth-markers.js";
 import { resolveCatalogOwnedModelCompat } from "./model-compat-catalog.js";
 import type { ProviderConfig } from "./models-config.providers.secrets.js";

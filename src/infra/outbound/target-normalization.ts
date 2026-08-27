@@ -3,12 +3,12 @@
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { getChannelPlugin } from "../../channels/plugins/index.js";
 import { getLoadedChannelPluginForRead } from "../../channels/plugins/registry-loaded.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.plugin.js";
 import type { ChannelDirectoryEntryKind, ChannelId } from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { getActivePluginChannelRegistryVersion } from "../../plugins/runtime.js";
 
 /**
@@ -202,7 +202,7 @@ export function looksLikeTargetId(params: {
  * Resolves a normalized target through the channel plugin when a resolver is available.
  */
 export async function maybeResolvePluginMessagingTarget(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: ChannelId;
   input: string;
   accountId?: string | null;

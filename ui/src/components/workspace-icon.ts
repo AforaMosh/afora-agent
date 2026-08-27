@@ -3,7 +3,7 @@ import { html } from "lit";
 import { property, state } from "lit/decorators.js";
 import { CONTROL_UI_WORKSPACE_ICON_PATH_PREFIX } from "../../../src/gateway/control-ui-contract.js";
 import { AuthenticatedAvatarRouteLoader } from "../lib/authenticated-avatar-route.ts";
-import { OpenClawLightDomContentsElement } from "../lit/openclaw-element.ts";
+import { AforaLightDomContentsElement } from "../lit/afora-element.ts";
 import { icons } from "./icons.ts";
 
 /** Same-origin Gateway route serving the project icon of a session's workspace. */
@@ -17,7 +17,7 @@ export function workspaceIconRouteUrl(basePath: string, sessionKey: string): str
  * have no project icon, so the route answering 404 is an ordinary outcome and
  * the glyph is the recorded fallback rather than an error state.
  */
-class WorkspaceIcon extends OpenClawLightDomContentsElement {
+class WorkspaceIcon extends AforaLightDomContentsElement {
   @property({ attribute: false }) routeUrl: string | null = null;
   /** Ordered credential candidates; a stale saved token falls through to the session password. */
   @property({ attribute: false }) authTokens: readonly string[] = [];
@@ -66,6 +66,6 @@ class WorkspaceIcon extends OpenClawLightDomContentsElement {
   }
 }
 
-if (!customElements.get("openclaw-workspace-icon")) {
-  customElements.define("openclaw-workspace-icon", WorkspaceIcon);
+if (!customElements.get("afora-workspace-icon")) {
+  customElements.define("afora-workspace-icon", WorkspaceIcon);
 }

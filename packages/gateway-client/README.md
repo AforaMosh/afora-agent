@@ -1,13 +1,13 @@
-# `@openclaw/gateway-client`
+# `@afora/gateway-client`
 
-Reference WebSocket client for the OpenClaw Gateway protocol. It provides the
-connection state machine used by OpenClaw's own Node and browser clients:
+Reference WebSocket client for the Afora Gateway protocol. It provides the
+connection state machine used by Afora's own Node and browser clients:
 challenge-based authentication, typed protocol frames, request correlation,
 timeouts, reconnect backoff, device-token handling, and event delivery.
 
 The current wire protocol is version 4. General clients must advertise exactly v4 with
 `minProtocol: 4` and `maxProtocol: 4`. See the
-[Gateway protocol specification](https://docs.openclaw.ai/gateway/protocol) for
+[Gateway protocol specification](https://docs.afora.ai/gateway/protocol) for
 the complete handshake, authentication, role, scope, and method contracts.
 Exact node identities (`role: "node"` plus `mode: "node"`) and probe clients
 can use v3. The built-in node host starts with an exact v4 envelope, then retries
@@ -19,14 +19,14 @@ same bounded negotiation.
 
 ## Versioning
 
-Package versions follow the OpenClaw calendar release train: `YYYY.M.PATCH`,
-including the OpenClaw prerelease suffix when applicable. The package version is
+Package versions follow the Afora calendar release train: `YYYY.M.PATCH`,
+including the Afora prerelease suffix when applicable. The package version is
 separate from the Gateway's current wire protocol number reported in `hello-ok`.
 
 ## Install
 
 ```bash
-npm install @openclaw/gateway-client @openclaw/gateway-protocol
+npm install @afora/gateway-client @afora/gateway-protocol
 ```
 
 Node consumers use the `ws` transport included as a runtime dependency. Browser
@@ -35,28 +35,28 @@ client surface.
 
 ## Entry points
 
-- `@openclaw/gateway-client` exports the Node `GatewayClient`, device-auth
+- `@afora/gateway-client` exports the Node `GatewayClient`, device-auth
   helpers, readiness helpers, and timeout utilities.
-- `@openclaw/gateway-client/browser` exports the browser-safe protocol client,
+- `@afora/gateway-client/browser` exports the browser-safe protocol client,
   browser device-auth lifecycle, reconnect policy, and lightweight protocol
   constants. Its module graph does not import Node built-ins or `ws`.
-- `@openclaw/gateway-client/readiness` exports helpers that delay client startup
+- `@afora/gateway-client/readiness` exports helpers that delay client startup
   until the event loop can process Gateway IO.
-- `@openclaw/gateway-client/timeouts` exports timeout constants and safe timer
+- `@afora/gateway-client/timeouts` exports timeout constants and safe timer
   resolution helpers.
-- `@openclaw/gateway-client/websocket-data` converts every Node `ws` raw-data
+- `@afora/gateway-client/websocket-data` converts every Node `ws` raw-data
   shape to UTF-8 text.
 
 ## Node quickstart
 
 ```ts
-import { GatewayClient } from "@openclaw/gateway-client";
-import { PROTOCOL_VERSION } from "@openclaw/gateway-protocol/version";
+import { GatewayClient } from "@afora/gateway-client";
+import { PROTOCOL_VERSION } from "@afora/gateway-protocol/version";
 
 const connected = Promise.withResolvers<void>();
 const client = new GatewayClient({
   url: "ws://127.0.0.1:18789",
-  token: process.env.OPENCLAW_GATEWAY_TOKEN,
+  token: process.env.AFORA_GATEWAY_TOKEN,
   minProtocol: PROTOCOL_VERSION, // v4
   maxProtocol: PROTOCOL_VERSION, // v4
   onHelloOk: () => connected.resolve(),
@@ -86,7 +86,7 @@ not cross an untrusted network without transport security.
 
 ## Browser clients
 
-Import `@openclaw/gateway-client/browser` when the host owns the WebSocket
+Import `@afora/gateway-client/browser` when the host owns the WebSocket
 adapter and device-key storage. The browser entry includes
 `GatewayProtocolClient` and `GatewayBrowserDeviceAuthLifecycle`; it deliberately
 omits the Node transport, TLS fingerprint handling, and private-network address
@@ -114,7 +114,7 @@ the next delay.
 
 The canonical defaults table and the server policy fields that can replace
 pre-handshake values are documented in the
-[Gateway protocol specification](https://docs.openclaw.ai/gateway/protocol#client-constants).
+[Gateway protocol specification](https://docs.afora.ai/gateway/protocol#client-constants).
 
 Use the `./timeouts` entry point when a host must align readiness or watchdog
 budgets with these defaults. Use the `./readiness` entry point when startup must
@@ -122,15 +122,15 @@ wait for an event-loop probe before opening the socket.
 
 ## Bundled internals
 
-The retry supervisor and the small `@openclaw/net-policy/ip` implementation are
+The retry supervisor and the small `@afora/net-policy/ip` implementation are
 inlined into the published JavaScript and declarations. They are implementation
 details, not public exports or supported API surfaces. `ipaddr.js` remains an
 external dependency because the inlined IP helpers use its public runtime and
 types.
 
-`ws`, `@openclaw/gateway-protocol`, and `ipaddr.js` remain external in the
+`ws`, `@afora/gateway-protocol`, and `ipaddr.js` remain external in the
 published distribution. Consumers should import protocol types and constants
-from `@openclaw/gateway-protocol`, not from bundled implementation paths.
+from `@afora/gateway-protocol`, not from bundled implementation paths.
 
 ## Contract notes
 

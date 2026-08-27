@@ -24,20 +24,20 @@ import {
 installGatewayTestHooks({ scope: "suite" });
 
 const ORIGINAL_GATEWAY_AUTH = testState.gatewayAuth;
-const ORIGINAL_GATEWAY_TOKEN_ENV = process.env.OPENCLAW_GATEWAY_TOKEN;
+const ORIGINAL_GATEWAY_TOKEN_ENV = process.env.AFORA_GATEWAY_TOKEN;
 const OLD_TOKEN = "shared-token-old";
 const NEW_TOKEN = "shared-token-new";
 const DEFERRED_RESTART_DELAY_MS = 1_000;
-const SECRET_REF_TOKEN_ID = "OPENCLAW_SHARED_AUTH_ROTATION_SECRET_REF";
+const SECRET_REF_TOKEN_ID = "AFORA_SHARED_AUTH_ROTATION_SECRET_REF";
 
 let port = 0;
 
 afterAll(() => {
   testState.gatewayAuth = ORIGINAL_GATEWAY_AUTH;
   if (ORIGINAL_GATEWAY_TOKEN_ENV === undefined) {
-    delete process.env.OPENCLAW_GATEWAY_TOKEN;
+    delete process.env.AFORA_GATEWAY_TOKEN;
   } else {
-    process.env.OPENCLAW_GATEWAY_TOKEN = ORIGINAL_GATEWAY_TOKEN_ENV;
+    process.env.AFORA_GATEWAY_TOKEN = ORIGINAL_GATEWAY_TOKEN_ENV;
   }
 });
 
@@ -50,7 +50,7 @@ async function openDeviceTokenWsWithDetails(
     auth?: { deviceToken?: unknown };
   };
 }> {
-  const identityPath = path.join(os.tmpdir(), `openclaw-shared-auth-${process.pid}-${port}.sqlite`);
+  const identityPath = path.join(os.tmpdir(), `afora-shared-auth-${process.pid}-${port}.sqlite`);
   const { loadOrCreateDeviceIdentity, publicKeyRawBase64UrlFromPem } =
     await import("../infra/device-identity.js");
   const { approveDevicePairing } = await import("../infra/device-pairing-approval.js");
@@ -59,7 +59,7 @@ async function openDeviceTokenWsWithDetails(
   const { requestDevicePairing } = await import("../infra/device-pairing.js");
   const client = params.browserClient
     ? {
-        id: "openclaw-control-ui",
+        id: "afora-control-ui",
         version: "1.0.0",
         platform: "test",
         mode: "webchat",
@@ -337,9 +337,9 @@ describe("gateway shared auth rotation with unchanged SecretRefs", () => {
   let secretRefPort = 0;
 
   beforeAll(async () => {
-    const configPath = process.env.OPENCLAW_CONFIG_PATH;
+    const configPath = process.env.AFORA_CONFIG_PATH;
     if (!configPath) {
-      throw new Error("OPENCLAW_CONFIG_PATH missing in gateway test environment");
+      throw new Error("AFORA_CONFIG_PATH missing in gateway test environment");
     }
     secretRefPort = await getGatewayTestPort();
     testState.gatewayAuth = undefined;

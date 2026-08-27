@@ -67,10 +67,10 @@ on:
       OPENAI_API_KEY:
         description: OpenAI API key used by live QA scenarios
         required: false
-      OPENCLAW_QA_CONVEX_SITE_URL:
+      AFORA_QA_CONVEX_SITE_URL:
         description: Convex credential broker URL
         required: false
-      OPENCLAW_QA_CONVEX_SECRET_CI:
+      AFORA_QA_CONVEX_SECRET_CI:
         description: Convex CI credential
         required: false
   workflow_dispatch:
@@ -124,10 +124,10 @@ concurrency:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   NODE_VERSION: "24.x"
-  OPENCLAW_CI_OPENAI_MODEL: ${{ vars.OPENCLAW_CI_OPENAI_MODEL || 'openai/gpt-5.6-luna' }}
-  OPENCLAW_CI_OPENAI_FALLBACK_MODEL: ${{ vars.OPENCLAW_CI_OPENAI_FALLBACK_MODEL || 'openai/gpt-5.4' }}
-  OPENCLAW_BUILD_PRIVATE_QA: "1"
-  OPENCLAW_ENABLE_PRIVATE_QA_CLI: "1"
+  AFORA_CI_OPENAI_MODEL: ${{ vars.AFORA_CI_OPENAI_MODEL || 'openai/gpt-5.6-luna' }}
+  AFORA_CI_OPENAI_FALLBACK_MODEL: ${{ vars.AFORA_CI_OPENAI_FALLBACK_MODEL || 'openai/gpt-5.4' }}
+  AFORA_BUILD_PRIVATE_QA: "1"
+  AFORA_ENABLE_PRIVATE_QA_CLI: "1"
 
 jobs:
   authorize_actor:
@@ -255,13 +255,13 @@ jobs:
     timeout-minutes: 30
     env:
       QA_PARITY_CONCURRENCY: "1"
-      OPENCLAW_QA_TRANSPORT_READY_TIMEOUT_MS: "180000"
+      AFORA_QA_TRANSPORT_READY_TIMEOUT_MS: "180000"
       OPENAI_API_KEY: ""
       ANTHROPIC_API_KEY: ""
-      OPENCLAW_LIVE_OPENAI_KEY: ""
-      OPENCLAW_LIVE_ANTHROPIC_KEY: ""
-      OPENCLAW_LIVE_GEMINI_KEY: ""
-      OPENCLAW_LIVE_SETUP_TOKEN_VALUE: ""
+      AFORA_LIVE_OPENAI_KEY: ""
+      AFORA_LIVE_ANTHROPIC_KEY: ""
+      AFORA_LIVE_GEMINI_KEY: ""
+      AFORA_LIVE_SETUP_TOKEN_VALUE: ""
     steps:
       - name: Checkout selected ref
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -283,17 +283,17 @@ jobs:
 
       - name: Run OpenAI candidate lane
         run: |
-          pnpm openclaw qa suite \
+          pnpm afora qa suite \
             --provider-mode mock-openai \
             --parity-pack agentic \
             --concurrency "${QA_PARITY_CONCURRENCY}" \
-            --model "${OPENCLAW_CI_OPENAI_MODEL}" \
+            --model "${AFORA_CI_OPENAI_MODEL}" \
             --alt-model openai/gpt-5.6-luna-alt \
             --output-dir .artifacts/qa-e2e/openai-candidate
 
       - name: Run Opus 4.8 lane
         run: |
-          pnpm openclaw qa suite \
+          pnpm afora qa suite \
             --provider-mode mock-openai \
             --parity-pack agentic \
             --concurrency "${QA_PARITY_CONCURRENCY}" \
@@ -303,11 +303,11 @@ jobs:
 
       - name: Generate parity report
         run: |
-          pnpm openclaw qa parity-report \
+          pnpm afora qa parity-report \
             --repo-root . \
             --candidate-summary .artifacts/qa-e2e/openai-candidate/qa-suite-summary.json \
             --baseline-summary .artifacts/qa-e2e/anthropic-baseline/qa-suite-summary.json \
-            --candidate-label "${OPENCLAW_CI_OPENAI_MODEL}" \
+            --candidate-label "${AFORA_CI_OPENAI_MODEL}" \
             --baseline-label anthropic/claude-opus-4-8 \
             --output-dir .artifacts/qa-e2e/parity
 
@@ -329,8 +329,8 @@ jobs:
     environment: qa-live-shared
     env:
       QA_PARITY_CONCURRENCY: "1"
-      OPENCLAW_QA_TRANSPORT_READY_TIMEOUT_MS: "180000"
-      OPENCLAW_QA_REDACT_PUBLIC_METADATA: "1"
+      AFORA_QA_TRANSPORT_READY_TIMEOUT_MS: "180000"
+      AFORA_QA_REDACT_PUBLIC_METADATA: "1"
     steps:
       - name: Checkout selected ref
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -367,7 +367,7 @@ jobs:
         shell: bash
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENCLAW_LIVE_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
+          AFORA_LIVE_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           set -euo pipefail
 
@@ -376,14 +376,14 @@ jobs:
           mkdir -p "${output_dir}"
           printf 'Runtime token-efficiency lane started.\n' > "${output_dir}/runtime-lane-started.txt"
 
-          pnpm openclaw qa suite \
+          pnpm afora qa suite \
             --repo-root . \
             --provider-mode live-frontier \
             --runtime-pair-lane core \
             --concurrency "${QA_PARITY_CONCURRENCY}" \
-            --model "${OPENCLAW_CI_OPENAI_MODEL}" \
-            --alt-model "${OPENCLAW_CI_OPENAI_FALLBACK_MODEL}" \
-            --runtime-pair openclaw,codex \
+            --model "${AFORA_CI_OPENAI_MODEL}" \
+            --alt-model "${AFORA_CI_OPENAI_FALLBACK_MODEL}" \
+            --runtime-pair afora,codex \
             --fast \
             --allow-failures \
             --output-dir "${output_dir}/runtime-suite"
@@ -392,18 +392,18 @@ jobs:
         shell: bash
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENCLAW_LIVE_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
+          AFORA_LIVE_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           set -euo pipefail
 
-          pnpm openclaw qa suite \
+          pnpm afora qa suite \
             --repo-root . \
             --provider-mode live-frontier \
             --scenario gateway-restart-multi-live \
             --concurrency 1 \
             --model openai/gpt-5.4 \
             --alt-model openai/gpt-5.4 \
-            --runtime-pair openclaw,codex \
+            --runtime-pair afora,codex \
             --fast \
             --output-dir "${{ steps.run_lane.outputs.output_dir }}/gateway-restart-gpt-5.4-runtime-pair"
 
@@ -413,7 +413,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          pnpm openclaw qa parity-report \
+          pnpm afora qa parity-report \
             --repo-root . \
             --runtime-axis \
             --token-efficiency \
@@ -459,10 +459,10 @@ jobs:
         id: run_lane
         shell: bash
         env:
-          OPENCLAW_QA_REDACT_PUBLIC_METADATA: "1"
+          AFORA_QA_REDACT_PUBLIC_METADATA: "1"
           FAIL_FAST: ${{ inputs.fail_fast }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENCLAW_LIVE_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
+          AFORA_LIVE_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           set -euo pipefail
 
@@ -475,10 +475,10 @@ jobs:
             --provider-mode mock-openai \
             --fast
           )
-          if [[ "$FAIL_FAST" == "true" ]] && pnpm openclaw qa matrix --help 2>/dev/null | grep -F -q -- "--fail-fast"; then
+          if [[ "$FAIL_FAST" == "true" ]] && pnpm afora qa matrix --help 2>/dev/null | grep -F -q -- "--fail-fast"; then
             matrix_args+=(--fail-fast)
           fi
-          pnpm openclaw qa matrix "${matrix_args[@]}"
+          pnpm afora qa matrix "${matrix_args[@]}"
 
       - name: Upload Matrix QA artifacts
         id: upload_artifacts
@@ -529,7 +529,7 @@ jobs:
           OUTPUT_DIR="${output_dir}" node --input-type=module <<'NODE'
           import fs from "node:fs";
 
-          const manifestPath = "extensions/buzz/openclaw.plugin.json";
+          const manifestPath = "extensions/buzz/afora.plugin.json";
           const manifest = fs.existsSync(manifestPath)
             ? JSON.parse(fs.readFileSync(manifestPath, "utf8"))
             : {};
@@ -556,13 +556,13 @@ jobs:
       - name: Validate required Buzz QA credential env
         if: steps.resolve_buzz.outputs.available == 'true'
         env:
-          OPENCLAW_QA_CONVEX_SITE_URL: ${{ secrets.OPENCLAW_QA_CONVEX_SITE_URL }}
-          OPENCLAW_QA_CONVEX_SECRET_CI: ${{ secrets.OPENCLAW_QA_CONVEX_SECRET_CI }}
+          AFORA_QA_CONVEX_SITE_URL: ${{ secrets.AFORA_QA_CONVEX_SITE_URL }}
+          AFORA_QA_CONVEX_SECRET_CI: ${{ secrets.AFORA_QA_CONVEX_SECRET_CI }}
         shell: bash
         run: |
           set -euo pipefail
 
-          for key in OPENCLAW_QA_CONVEX_SITE_URL OPENCLAW_QA_CONVEX_SECRET_CI; do
+          for key in AFORA_QA_CONVEX_SITE_URL AFORA_QA_CONVEX_SECRET_CI; do
             if [[ -z "${!key:-}" ]]; then
               echo "Missing required ${key}." >&2
               exit 1
@@ -580,11 +580,11 @@ jobs:
         id: run_lane
         shell: bash
         env:
-          OPENCLAW_QA_CONVEX_SITE_URL: ${{ secrets.OPENCLAW_QA_CONVEX_SITE_URL }}
-          OPENCLAW_QA_CONVEX_SECRET_CI: ${{ secrets.OPENCLAW_QA_CONVEX_SECRET_CI }}
-          OPENCLAW_QA_CREDENTIAL_ACQUIRE_TIMEOUT_MS: "1800000"
-          OPENCLAW_QA_REDACT_PUBLIC_METADATA: "1"
-          OPENCLAW_QA_TRANSPORT_READY_TIMEOUT_MS: "180000"
+          AFORA_QA_CONVEX_SITE_URL: ${{ secrets.AFORA_QA_CONVEX_SITE_URL }}
+          AFORA_QA_CONVEX_SECRET_CI: ${{ secrets.AFORA_QA_CONVEX_SECRET_CI }}
+          AFORA_QA_CREDENTIAL_ACQUIRE_TIMEOUT_MS: "1800000"
+          AFORA_QA_REDACT_PUBLIC_METADATA: "1"
+          AFORA_QA_TRANSPORT_READY_TIMEOUT_MS: "180000"
           INPUT_SCENARIO: ${{ inputs.buzz_scenario || '' }}
         run: |
           set -euo pipefail
@@ -604,7 +604,7 @@ jobs:
 
           echo "output_dir=${output_dir}" >> "$GITHUB_OUTPUT"
 
-          pnpm openclaw qa buzz \
+          pnpm afora qa buzz \
             --repo-root . \
             --output-dir "${output_dir}" \
             --provider-mode mock-openai \
@@ -653,8 +653,8 @@ jobs:
         name: Validate required QA credential env
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENCLAW_QA_CONVEX_SITE_URL: ${{ secrets.OPENCLAW_QA_CONVEX_SITE_URL }}
-          OPENCLAW_QA_CONVEX_SECRET_CI: ${{ secrets.OPENCLAW_QA_CONVEX_SECRET_CI }}
+          AFORA_QA_CONVEX_SITE_URL: ${{ secrets.AFORA_QA_CONVEX_SITE_URL }}
+          AFORA_QA_CONVEX_SECRET_CI: ${{ secrets.AFORA_QA_CONVEX_SECRET_CI }}
         shell: bash
         run: |
           set -euo pipefail
@@ -668,8 +668,8 @@ jobs:
           }
 
           require_var OPENAI_API_KEY
-          require_var OPENCLAW_QA_CONVEX_SITE_URL
-          require_var OPENCLAW_QA_CONVEX_SECRET_CI
+          require_var AFORA_QA_CONVEX_SITE_URL
+          require_var AFORA_QA_CONVEX_SECRET_CI
 
       - name: Build private QA runtime
         env:
@@ -681,11 +681,11 @@ jobs:
         shell: bash
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENCLAW_QA_CONVEX_SITE_URL: ${{ secrets.OPENCLAW_QA_CONVEX_SITE_URL }}
-          OPENCLAW_QA_CONVEX_SECRET_CI: ${{ secrets.OPENCLAW_QA_CONVEX_SECRET_CI }}
-          OPENCLAW_QA_CREDENTIAL_ACQUIRE_TIMEOUT_MS: "1800000"
-          OPENCLAW_QA_REDACT_PUBLIC_METADATA: "1"
-          OPENCLAW_QA_TRANSPORT_READY_TIMEOUT_MS: "180000"
+          AFORA_QA_CONVEX_SITE_URL: ${{ secrets.AFORA_QA_CONVEX_SITE_URL }}
+          AFORA_QA_CONVEX_SECRET_CI: ${{ secrets.AFORA_QA_CONVEX_SECRET_CI }}
+          AFORA_QA_CREDENTIAL_ACQUIRE_TIMEOUT_MS: "1800000"
+          AFORA_QA_REDACT_PUBLIC_METADATA: "1"
+          AFORA_QA_TRANSPORT_READY_TIMEOUT_MS: "180000"
           INPUT_SCENARIO: ${{ github.event_name == 'workflow_dispatch' && inputs.scenario || '' }}
         run: |
           set -euo pipefail
@@ -705,12 +705,12 @@ jobs:
 
           echo "output_dir=${output_dir}" >> "$GITHUB_OUTPUT"
 
-          pnpm openclaw qa telegram \
+          pnpm afora qa telegram \
             --repo-root . \
             --output-dir "${output_dir}" \
             --provider-mode live-frontier \
-            --model "${OPENCLAW_CI_OPENAI_MODEL}" \
-            --alt-model "${OPENCLAW_CI_OPENAI_FALLBACK_MODEL}" \
+            --model "${AFORA_CI_OPENAI_MODEL}" \
+            --alt-model "${AFORA_CI_OPENAI_FALLBACK_MODEL}" \
             --fast \
             --credential-source convex \
             --credential-role ci \
@@ -757,10 +757,10 @@ jobs:
         shell: bash
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENCLAW_QA_CONVEX_SITE_URL: ${{ secrets.OPENCLAW_QA_CONVEX_SITE_URL }}
-          OPENCLAW_QA_CONVEX_SECRET_CI: ${{ secrets.OPENCLAW_QA_CONVEX_SECRET_CI }}
-          OPENCLAW_QA_CREDENTIAL_ACQUIRE_TIMEOUT_MS: "1800000"
-          OPENCLAW_QA_REDACT_PUBLIC_METADATA: "1"
+          AFORA_QA_CONVEX_SITE_URL: ${{ secrets.AFORA_QA_CONVEX_SITE_URL }}
+          AFORA_QA_CONVEX_SECRET_CI: ${{ secrets.AFORA_QA_CONVEX_SECRET_CI }}
+          AFORA_QA_CREDENTIAL_ACQUIRE_TIMEOUT_MS: "1800000"
+          AFORA_QA_REDACT_PUBLIC_METADATA: "1"
           INPUT_SCENARIO: ${{ github.event_name == 'workflow_dispatch' && inputs.discord_scenario || '' }}
           PROVIDER_MODE: ${{ inputs.discord_provider_mode || 'live-frontier' }}
         run: |
@@ -773,7 +773,7 @@ jobs:
           if [[ "${PROVIDER_MODE}" == "live-frontier" ]]; then
             provider_args+=(
               --model openai/gpt-5.6-luna
-              --alt-model "${OPENCLAW_CI_OPENAI_FALLBACK_MODEL}"
+              --alt-model "${AFORA_CI_OPENAI_FALLBACK_MODEL}"
               --fast
             )
           elif [[ "${PROVIDER_MODE}" != "mock-openai" ]]; then
@@ -793,7 +793,7 @@ jobs:
 
           echo "output_dir=${output_dir}" >> "$GITHUB_OUTPUT"
 
-          pnpm openclaw qa discord \
+          pnpm afora qa discord \
             --repo-root . \
             --output-dir "${output_dir}" \
             "${provider_args[@]}" \
@@ -845,10 +845,10 @@ jobs:
         shell: bash
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENCLAW_QA_CONVEX_SITE_URL: ${{ secrets.OPENCLAW_QA_CONVEX_SITE_URL }}
-          OPENCLAW_QA_CONVEX_SECRET_CI: ${{ secrets.OPENCLAW_QA_CONVEX_SECRET_CI }}
-          OPENCLAW_QA_CREDENTIAL_ACQUIRE_TIMEOUT_MS: "1800000"
-          OPENCLAW_QA_REDACT_PUBLIC_METADATA: "1"
+          AFORA_QA_CONVEX_SITE_URL: ${{ secrets.AFORA_QA_CONVEX_SITE_URL }}
+          AFORA_QA_CONVEX_SECRET_CI: ${{ secrets.AFORA_QA_CONVEX_SECRET_CI }}
+          AFORA_QA_CREDENTIAL_ACQUIRE_TIMEOUT_MS: "1800000"
+          AFORA_QA_REDACT_PUBLIC_METADATA: "1"
           INPUT_SCENARIO: ${{ github.event_name == 'workflow_dispatch' && inputs.whatsapp_scenario || '' }}
         run: |
           set -euo pipefail
@@ -868,12 +868,12 @@ jobs:
 
           echo "output_dir=${output_dir}" >> "$GITHUB_OUTPUT"
 
-          pnpm openclaw qa whatsapp \
+          pnpm afora qa whatsapp \
             --repo-root . \
             --output-dir "${output_dir}" \
             --provider-mode live-frontier \
-            --model "${OPENCLAW_CI_OPENAI_MODEL}" \
-            --alt-model "${OPENCLAW_CI_OPENAI_FALLBACK_MODEL}" \
+            --model "${AFORA_CI_OPENAI_MODEL}" \
+            --alt-model "${AFORA_CI_OPENAI_FALLBACK_MODEL}" \
             --fast \
             --credential-source convex \
             --credential-role ci \
@@ -920,11 +920,11 @@ jobs:
         shell: bash
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENCLAW_QA_CONVEX_SITE_URL: ${{ secrets.OPENCLAW_QA_CONVEX_SITE_URL }}
-          OPENCLAW_QA_CONVEX_SECRET_CI: ${{ secrets.OPENCLAW_QA_CONVEX_SECRET_CI }}
-          OPENCLAW_QA_CREDENTIAL_ACQUIRE_TIMEOUT_MS: "1800000"
-          OPENCLAW_QA_REDACT_PUBLIC_METADATA: "1"
-          OPENCLAW_QA_TRANSPORT_READY_TIMEOUT_MS: "180000"
+          AFORA_QA_CONVEX_SITE_URL: ${{ secrets.AFORA_QA_CONVEX_SITE_URL }}
+          AFORA_QA_CONVEX_SECRET_CI: ${{ secrets.AFORA_QA_CONVEX_SECRET_CI }}
+          AFORA_QA_CREDENTIAL_ACQUIRE_TIMEOUT_MS: "1800000"
+          AFORA_QA_REDACT_PUBLIC_METADATA: "1"
+          AFORA_QA_TRANSPORT_READY_TIMEOUT_MS: "180000"
           INPUT_SCENARIO: ${{ github.event_name == 'workflow_dispatch' && inputs.slack_scenario || '' }}
         run: |
           set -euo pipefail
@@ -944,12 +944,12 @@ jobs:
 
           echo "output_dir=${output_dir}" >> "$GITHUB_OUTPUT"
 
-          pnpm openclaw qa slack \
+          pnpm afora qa slack \
             --repo-root . \
             --output-dir "${output_dir}" \
             --provider-mode live-frontier \
-            --model "${OPENCLAW_CI_OPENAI_MODEL}" \
-            --alt-model "${OPENCLAW_CI_OPENAI_FALLBACK_MODEL}" \
+            --model "${AFORA_CI_OPENAI_MODEL}" \
+            --alt-model "${AFORA_CI_OPENAI_FALLBACK_MODEL}" \
             --fast \
             --credential-source convex \
             --credential-role ci \

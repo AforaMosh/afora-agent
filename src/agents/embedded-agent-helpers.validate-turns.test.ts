@@ -1,7 +1,7 @@
 // Covers provider-specific transcript turn validation and repair.
 
-import { expectDefined } from "@openclaw/normalization-core";
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
+import { expectDefined } from "@afora/normalization-core";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
 import { describe, expect, it } from "vitest";
 import { validateAnthropicTurns, validateGeminiTurns } from "./embedded-agent-helpers.js";
 

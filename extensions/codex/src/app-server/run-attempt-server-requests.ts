@@ -1,4 +1,4 @@
-import { onInternalDiagnosticEvent } from "openclaw/plugin-sdk/diagnostic-runtime";
+import { onInternalDiagnosticEvent } from "afora-agent/plugin-sdk/diagnostic-runtime";
 import { handleCodexAppServerApprovalRequest } from "./approval-bridge.js";
 import { isCodexAppServerApprovalRequest } from "./client.js";
 import { shouldAutoApproveCodexAppServerApprovals } from "./config.js";
@@ -56,8 +56,8 @@ export function createCodexAttemptServerRequestController(
     state,
     turnIdRef,
     userInputBridgeRef,
-    openClawDynamicToolExecutions,
-    pendingOpenClawDynamicToolCompletionIds,
+    aforaDynamicToolExecutions,
+    pendingAforaDynamicToolCompletionIds,
     postToolRawAssistantCompletionIdleTimeoutMs,
     turnWatches,
   } = turnRuntime;
@@ -144,7 +144,7 @@ export function createCodexAttemptServerRequestController(
       if (!call || call.threadId !== resourceState.thread.threadId || call.turnId !== turnId) {
         return undefined;
       }
-      const replayedExecution = openClawDynamicToolExecutions.get(call);
+      const replayedExecution = aforaDynamicToolExecutions.get(call);
       if (replayedExecution) {
         armCompletionWatchOnResponse = true;
         markCurrentTurnRequestProgress({ hasIndependentTimeout: true });
@@ -155,7 +155,7 @@ export function createCodexAttemptServerRequestController(
       armCompletionWatchOnResponse = true;
       markCurrentTurnRequestProgress({ hasIndependentTimeout: true });
       state.turnCrossedToolHandoff = true;
-      pendingOpenClawDynamicToolCompletionIds.add(call.callId);
+      pendingAforaDynamicToolCompletionIds.add(call.callId);
       trajectoryRecorder?.recordEvent("tool.call", {
         threadId: call.threadId,
         turnId: call.turnId,
@@ -211,7 +211,7 @@ export function createCodexAttemptServerRequestController(
         }
       });
       try {
-        const { execution } = openClawDynamicToolExecutions.claim(call, () => {
+        const { execution } = aforaDynamicToolExecutions.claim(call, () => {
           emitDynamicToolStartedDiagnostic({
             call,
             agentId: sessionAgentId,
@@ -306,7 +306,7 @@ export function createCodexAttemptServerRequestController(
             durationMs: toolDurationMs,
           });
         }
-        pendingOpenClawDynamicToolCompletionIds.delete(call.callId);
+        pendingAforaDynamicToolCompletionIds.delete(call.callId);
         if (response.terminate === true && response.success) {
           scheduleTurnReleaseAfterTerminalDynamicTool({
             call,
@@ -321,7 +321,7 @@ export function createCodexAttemptServerRequestController(
         }
         return protocolResponse as JsonValue;
       } catch (error) {
-        pendingOpenClawDynamicToolCompletionIds.delete(call.callId);
+        pendingAforaDynamicToolCompletionIds.delete(call.callId);
         if (
           !terminalDiagnosticObserved &&
           !hasPendingDynamicToolTerminalDiagnostic({

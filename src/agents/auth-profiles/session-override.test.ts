@@ -13,11 +13,11 @@ import {
   replaceSessionEntry,
 } from "../../config/sessions/session-accessor.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
-  type OpenClawTestState,
-  withOpenClawTestState,
-} from "../../test-utils/openclaw-test-state.js";
+  type AforaTestState,
+  withAforaTestState,
+} from "../../test-utils/afora-test-state.js";
 import {
   clearSessionAuthProfileOverride,
   resolveSessionAuthProfileOverride,
@@ -45,7 +45,7 @@ const authStoreMocks = vi.hoisted(() => {
         store,
         provider,
       }: {
-        cfg?: OpenClawConfig;
+        cfg?: AforaConfig;
         store: AuthProfileStore;
         provider: string;
       }) => {
@@ -87,7 +87,7 @@ vi.mock("./order.js", () => ({
     provider,
     credential,
   }: {
-    cfg?: OpenClawConfig;
+    cfg?: AforaConfig;
     provider: string;
     credential: { type: string; provider: string };
   }) => {
@@ -106,7 +106,7 @@ vi.mock("./order.js", () => ({
     provider,
     profileId,
   }: {
-    cfg?: OpenClawConfig;
+    cfg?: AforaConfig;
     provider: string;
     profileId: string;
   }) => {
@@ -124,11 +124,11 @@ vi.mock("./usage.js", () => ({
   isProfileInCooldown: authStoreMocks.isProfileInCooldown,
 }));
 
-async function withAuthState<T>(run: (state: OpenClawTestState) => Promise<T>): Promise<T> {
-  return await withOpenClawTestState(
+async function withAuthState<T>(run: (state: AforaTestState) => Promise<T>): Promise<T> {
+  return await withAforaTestState(
     {
       layout: "state-only",
-      prefix: "openclaw-auth-",
+      prefix: "afora-auth-",
     },
     run,
   );
@@ -161,7 +161,7 @@ const TEST_PRIMARY_PROFILE_ID = "openai:primary@example.test";
 const TEST_SECONDARY_PROFILE_ID = "openai:secondary@example.test";
 
 async function prepareCooldownAuthState(
-  state: OpenClawTestState,
+  state: AforaTestState,
   options: {
     profileIds?: string[];
     usageStats?: AuthProfileStore["usageStats"];
@@ -195,7 +195,7 @@ async function resolveOpenAiSession(params: {
   storePath?: string;
 }): Promise<string | undefined> {
   return await resolveSessionAuthProfileOverride({
-    cfg: {} as OpenClawConfig,
+    cfg: {} as AforaConfig,
     provider: "openai",
     ...params,
     sessionKey: params.sessionKey ?? "agent:main:main",
@@ -231,7 +231,7 @@ describe("resolveSessionAuthProfileOverride", () => {
       const sessionStore = { "agent:main:main": sessionEntry };
 
       const resolved = await resolveSessionAuthProfileOverride({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         provider: "openrouter",
         agentDir,
         sessionEntry,
@@ -269,7 +269,7 @@ describe("resolveSessionAuthProfileOverride", () => {
       const sessionStore = { "agent:main:main": sessionEntry };
 
       const resolved = await resolveSessionAuthProfileOverride({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         provider: "z.ai",
         agentDir,
         sessionEntry,
@@ -319,7 +319,7 @@ describe("resolveSessionAuthProfileOverride", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         provider: "amazon-bedrock",
         agentDir,
         sessionEntry,
@@ -377,7 +377,7 @@ describe("resolveSessionAuthProfileOverride", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         provider: "amazon-bedrock",
         agentDir,
         sessionEntry,
@@ -425,7 +425,7 @@ describe("resolveSessionAuthProfileOverride", () => {
       const sessionStore = { "agent:main:main": sessionEntry };
 
       const resolved = await resolveSessionAuthProfileOverride({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         provider: "openai",
         agentDir,
         sessionEntry,
@@ -468,7 +468,7 @@ describe("resolveSessionAuthProfileOverride", () => {
       const sessionStore = { "agent:main:main": sessionEntry };
 
       const resolved = await resolveSessionAuthProfileOverride({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         provider: "codex-cli",
         agentDir,
         sessionEntry,
@@ -510,7 +510,7 @@ describe("resolveSessionAuthProfileOverride", () => {
       const sessionStore = { "agent:main:main": sessionEntry };
 
       const resolved = await resolveSessionAuthProfileOverride({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         provider: "openai",
         acceptedProviderIds: ["openai"],
         agentDir,
@@ -558,7 +558,7 @@ describe("resolveSessionAuthProfileOverride", () => {
       const sessionStore = { "agent:main:main": sessionEntry };
 
       const resolved = await resolveSessionAuthProfileOverride({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         provider: "openai",
         acceptedProviderIds: ["openai"],
         agentDir,
@@ -610,7 +610,7 @@ describe("resolveSessionAuthProfileOverride", () => {
       const sessionStore = { "agent:main:main": sessionEntry };
 
       const resolved = await resolveSessionAuthProfileOverride({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         provider: "openai",
         agentDir,
         sessionEntry,

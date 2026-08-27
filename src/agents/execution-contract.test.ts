@@ -1,12 +1,12 @@
 // Covers provider/model gates for strict agentic execution-contract activation.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isStrictAgenticExecutionContractActive } from "./execution-contract.js";
 
 describe("isStrictAgenticExecutionContractActive", () => {
   const supportedProvider = "openai";
   const unsupportedProvider = "anthropic";
-  const emptyConfig: OpenClawConfig = {
+  const emptyConfig: AforaConfig = {
     agents: { entries: { main: { default: true } } },
   };
 
@@ -136,7 +136,7 @@ describe("isStrictAgenticExecutionContractActive", () => {
 
   describe("explicit override behavior", () => {
     it("honors explicit strict-agentic on the supported lane", () => {
-      const config: OpenClawConfig = {
+      const config: AforaConfig = {
         agents: {
           entries: { main: { default: true } },
           defaults: {
@@ -156,7 +156,7 @@ describe("isStrictAgenticExecutionContractActive", () => {
     });
 
     it("honors explicit default opt-out even on the supported lane", () => {
-      const config: OpenClawConfig = {
+      const config: AforaConfig = {
         agents: {
           entries: { main: { default: true } },
           defaults: {
@@ -176,7 +176,7 @@ describe("isStrictAgenticExecutionContractActive", () => {
     });
 
     it("collapses explicit strict-agentic to default on an unsupported lane", () => {
-      const config: OpenClawConfig = {
+      const config: AforaConfig = {
         agents: {
           entries: { main: { default: true } },
           defaults: {

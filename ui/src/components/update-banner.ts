@@ -1,14 +1,14 @@
 // Control UI component renders update status and available-update actions.
 import { html, nothing } from "lit";
 import { property } from "lit/decorators.js";
-import { OpenClawLightDomContentsElement } from "../lit/openclaw-element.ts";
+import { AforaLightDomContentsElement } from "../lit/afora-element.ts";
 
 type UpdateBannerProps = {
   statusBanner: { tone: "danger" | "warn" | "info"; text: string } | null;
   action?: { label: string; onClick: () => void };
 };
 
-class UpdateBanner extends OpenClawLightDomContentsElement {
+class UpdateBanner extends AforaLightDomContentsElement {
   @property({ attribute: false }) props?: UpdateBannerProps;
 
   override render() {
@@ -34,6 +34,6 @@ class UpdateBanner extends OpenClawLightDomContentsElement {
   }
 }
 
-if (!customElements.get("openclaw-update-banner")) {
-  customElements.define("openclaw-update-banner", UpdateBanner);
+if (!customElements.get("afora-update-banner")) {
+  customElements.define("afora-update-banner", UpdateBanner);
 }

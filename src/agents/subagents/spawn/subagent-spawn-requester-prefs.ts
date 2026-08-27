@@ -1,5 +1,5 @@
 import type { SessionEntry } from "../../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import type { FastMode } from "../../../shared/fast-mode.js";
 import { resolveFastModeState } from "../../fast-mode.js";
 import {
@@ -15,7 +15,7 @@ import {
 } from "./subagent-spawn.runtime.js";
 
 export function readRequesterThinkingLevel(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   requesterInternalKey: string;
   requesterAgentId?: string;
 }): string | undefined {
@@ -75,7 +75,7 @@ export function readRequesterThinkingLevel(params: {
 }
 
 export function readRequesterFastMode(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   requesterInternalKey: string;
   requesterAgentId?: string;
 }): FastMode {

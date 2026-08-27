@@ -3,7 +3,7 @@ import {
   DEFAULT_MEMORY_DEEP_DREAMING_MIN_RECALL_COUNT,
   DEFAULT_MEMORY_DEEP_DREAMING_MIN_SCORE,
   DEFAULT_MEMORY_DEEP_DREAMING_MIN_UNIQUE_QUERIES,
-} from "openclaw/plugin-sdk/memory-core-host-status";
+} from "afora-agent/plugin-sdk/memory-core-host-status";
 import { describe, expect, it } from "vitest";
 import { resolveShortTermPromotionDreamingConfig } from "./dreaming.js";
 import type { PromotionWeights } from "./short-term-promotion-types.js";

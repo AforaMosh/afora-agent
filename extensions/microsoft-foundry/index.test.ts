@@ -1,8 +1,8 @@
 // Microsoft Foundry tests cover index plugin behavior.
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { ProviderAuthMethod } from "openclaw/plugin-sdk/core";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { ProviderAuthMethod } from "afora-agent/plugin-sdk/core";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { azLoginDeviceCodeWithOptions, getAccessTokenResultAsync } from "./cli.js";
 import plugin from "./index.js";
@@ -40,8 +40,8 @@ vi.mock("node:child_process", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/process-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/process-runtime")>();
+vi.mock("afora-agent/plugin-sdk/process-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/process-runtime")>();
   return {
     ...actual,
     runCommandWithTimeout: runCommandWithTimeoutMock,
@@ -49,9 +49,9 @@ vi.mock("openclaw/plugin-sdk/process-runtime", async (importOriginal) => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/provider-auth", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/provider-auth")>(
-    "openclaw/plugin-sdk/provider-auth",
+vi.mock("afora-agent/plugin-sdk/provider-auth", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/provider-auth")>(
+    "afora-agent/plugin-sdk/provider-auth",
   );
   return {
     ...actual,
@@ -191,7 +191,7 @@ function buildFoundryConfig(params?: {
         },
       },
     },
-  } satisfies OpenClawConfig;
+  } satisfies AforaConfig;
 }
 
 function buildEntraProfileStore(
@@ -347,7 +347,7 @@ describe("microsoft-foundry plugin", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     await provider.onModelSelected?.({
       config,
@@ -693,7 +693,7 @@ describe("microsoft-foundry plugin", () => {
 
   it("keeps other configured Foundry models when switching the selected model", async () => {
     const provider = registerProvider();
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       auth: {
         profiles: {
           "microsoft-foundry:default": {
@@ -824,7 +824,7 @@ describe("microsoft-foundry plugin", () => {
 
   it("infers OpenAI routing when adding a GPT deployment from a Claude-configured provider", async () => {
     const provider = registerProvider();
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       models: {
         providers: {
           "microsoft-foundry": {
@@ -1658,7 +1658,7 @@ describe("microsoft-foundry plugin", () => {
     expect(provider?.models[0]?.compat?.maxTokensField).toBe("max_completion_tokens");
   });
 
-  it("emits only persisted-schema thinkingLevelMap level keys for Entra ID reasoning onboarding (openclaw#91011)", () => {
+  it("emits only persisted-schema thinkingLevelMap level keys for Entra ID reasoning onboarding (afora#91011)", () => {
     // The persisted ModelDefinitionSchema only accepts these ModelThinkingLevel keys; if the writer
     // emits one outside the set, updateConfig rolls the Entra ID onboarding write back.
     const allowedThinkingLevels = new Set([
@@ -1772,7 +1772,7 @@ describe("microsoft-foundry plugin", () => {
 
   it("keeps persisted response-mode routing for custom deployment aliases", async () => {
     const provider = registerProvider();
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       auth: {
         profiles: {
           "microsoft-foundry:entra": {
@@ -1917,7 +1917,7 @@ describe("microsoft-foundry plugin", () => {
 
   it("keeps Foundry profile selection compatible with unrelated AWS SDK profile modes", async () => {
     const provider = registerProvider();
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       ...buildFoundryConfig({
         profileIds: ["microsoft-foundry:entra"],
         orderedProfileIds: ["microsoft-foundry:entra"],

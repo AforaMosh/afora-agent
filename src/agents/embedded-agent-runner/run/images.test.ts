@@ -6,7 +6,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import { buildInboundMediaNoteProjection } from "../../../auto-reply/media-note.js";
-import { resolvePreferredOpenClawTmpDir } from "../../../infra/tmp-openclaw-dir.js";
+import { resolvePreferredAforaTmpDir } from "../../../infra/tmp-afora-dir.js";
 import {
   attachRuntimePromptMediaFacts,
   readRuntimePromptImageOrder,
@@ -97,12 +97,12 @@ describe("detectImageReferences", () => {
     });
   });
 
-  it("ignores OpenClaw CLI image cache paths from prior prompt transcripts", () => {
+  it("ignores Afora CLI image cache paths from prior prompt transcripts", () => {
     // Cache paths from generated tool reminders are replay artifacts, not new
     // user attachments to hydrate again.
     const refs = detectImageReferences(
       [
-        '<system-reminder>Called the Read tool with {"file_path":"/Users/ada/.openclaw/workspace/.openclaw-cli-images/stale.png"}</system-reminder>',
+        '<system-reminder>Called the Read tool with {"file_path":"/Users/ada/.afora/workspace/.afora-cli-images/stale.png"}</system-reminder>',
         "Compare it with /Users/ada/Pictures/current.png",
       ].join("\n"),
     );
@@ -116,33 +116,33 @@ describe("detectImageReferences", () => {
     ]);
   });
 
-  it("ignores temporary OpenClaw CLI image cache paths", () => {
+  it("ignores temporary Afora CLI image cache paths", () => {
     expectNoImageReferences(
-      `Prior turn wrote ${path.join(resolvePreferredOpenClawTmpDir(), "openclaw-cli-images", "stale.jpg")}`,
+      `Prior turn wrote ${path.join(resolvePreferredAforaTmpDir(), "afora-cli-images", "stale.jpg")}`,
     );
     expectNoImageReferences(
-      `[media attached: ${path.join(resolvePreferredOpenClawTmpDir(), "openclaw-cli-images", "stale.jpg")} (image/jpeg)]`,
+      `[media attached: ${path.join(resolvePreferredAforaTmpDir(), "afora-cli-images", "stale.jpg")} (image/jpeg)]`,
     );
     expectNoImageReferences(
-      `Prior turn wrote ${path.join(os.tmpdir(), "openclaw", "openclaw-cli-images", "stale.jpg")}`,
+      `Prior turn wrote ${path.join(os.tmpdir(), "afora", "afora-cli-images", "stale.jpg")}`,
     );
     expectNoImageReferences(
-      `Prior turn wrote ${path.join(os.tmpdir(), "openclaw-501", "openclaw-cli-images", "stale.jpg")}`,
+      `Prior turn wrote ${path.join(os.tmpdir(), "afora-501", "afora-cli-images", "stale.jpg")}`,
     );
   });
 
-  it("ignores file URLs into the OpenClaw CLI image cache", () => {
-    const stalePath = path.join(os.tmpdir(), "openclaw", "openclaw-cli-images", "stale.png");
+  it("ignores file URLs into the Afora CLI image cache", () => {
+    const stalePath = path.join(os.tmpdir(), "afora", "afora-cli-images", "stale.png");
 
     expectNoImageReferences(`Prior turn wrote ${pathToFileURL(stalePath).href}`);
   });
 
   it("detects normal user image paths in similarly named directories", () => {
-    expect(detectImageReferences("/workspace/openclaw-cli-images/current.png")).toStrictEqual([
+    expect(detectImageReferences("/workspace/afora-cli-images/current.png")).toStrictEqual([
       {
-        raw: "/workspace/openclaw-cli-images/current.png",
+        raw: "/workspace/afora-cli-images/current.png",
         type: "path",
-        resolved: "/workspace/openclaw-cli-images/current.png",
+        resolved: "/workspace/afora-cli-images/current.png",
       },
     ]);
   });
@@ -347,7 +347,7 @@ describe("detectAndLoadPromptImages", () => {
   });
 
   it("skips generated media-note refs already supplied inline", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-native-image-dedupe-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-native-image-dedupe-"));
     const imagePath = path.join(stateDir, "photo.png");
     const pngB64 = TINY_PNG_BASE64;
     await fs.writeFile(imagePath, Buffer.from(pngB64, "base64"));
@@ -373,7 +373,7 @@ describe("detectAndLoadPromptImages", () => {
   });
 
   it("uses a described fact identity to suppress its generated media-note path", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-described-dedupe-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-described-dedupe-"));
     const imagePath = path.join(workspaceDir, "photo.png");
     await fs.writeFile(imagePath, Buffer.from(TINY_PNG_BASE64, "base64"));
 
@@ -404,7 +404,7 @@ describe("detectAndLoadPromptImages", () => {
   });
 
   it("dedupes a relative fact projection against the fact workspace", async () => {
-    const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-fact-workspace-dedupe-"));
+    const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-fact-workspace-dedupe-"));
     const stagedDir = path.join(rootDir, "staged");
     const currentDir = path.join(rootDir, "current");
     await fs.mkdir(stagedDir, { recursive: true });
@@ -447,7 +447,7 @@ describe("detectAndLoadPromptImages", () => {
   });
 
   it("keeps offloaded-only facts when existing images have no order metadata", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-unordered-images-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-unordered-images-"));
     const imagePath = path.join(workspaceDir, "offloaded.png");
     await fs.writeFile(imagePath, Buffer.from(TINY_PNG_BASE64, "base64"));
     const inlineImage = {
@@ -478,7 +478,7 @@ describe("detectAndLoadPromptImages", () => {
   });
 
   it("classifies prompt and attachment refs while preserving mixed attachment order", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-native-image-order-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-native-image-order-"));
     const inboundDir = path.join(stateDir, "media", "inbound");
     await fs.mkdir(inboundDir, { recursive: true });
     await fs.writeFile(path.join(inboundDir, "att-b.gif"), TINY_GIF_BUFFER);
@@ -487,8 +487,8 @@ describe("detectAndLoadPromptImages", () => {
       Buffer.from(TINY_PNG_BASE64, "base64"),
     );
     await fs.writeFile(path.join(stateDir, "prompt-b.png"), Buffer.from(TINY_PNG_BASE64, "base64"));
-    const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
-    setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+    const envSnapshot = captureEnv(["AFORA_STATE_DIR"]);
+    setTestEnvValue("AFORA_STATE_DIR", stateDir);
     const prompt =
       "compare [media attached: media://inbound/prompt-ref.png] and ./prompt-b.png\n[media attached: media://inbound/att-b.gif]";
 
@@ -524,13 +524,13 @@ describe("detectAndLoadPromptImages", () => {
   });
 
   it("preserves an empty described-image slot in mixed attachment order", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-described-image-order-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-described-image-order-"));
     const inboundDir = path.join(stateDir, "media", "inbound");
     const mediaId = "remaining.gif";
     await fs.mkdir(inboundDir, { recursive: true });
     await fs.writeFile(path.join(inboundDir, mediaId), TINY_GIF_BUFFER);
-    const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
-    setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+    const envSnapshot = captureEnv(["AFORA_STATE_DIR"]);
+    setTestEnvValue("AFORA_STATE_DIR", stateDir);
     const inlineImage = { type: "image" as const, data: TINY_PNG_BASE64, mimeType: "image/png" };
 
     try {
@@ -558,7 +558,7 @@ describe("detectAndLoadPromptImages", () => {
   });
 
   it("does not load an explicit prompt ref twice when the same fact owns it", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-native-image-fact-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-native-image-fact-"));
     await fs.writeFile(path.join(workspaceDir, "same.png"), Buffer.from(TINY_PNG_BASE64, "base64"));
 
     try {
@@ -583,7 +583,7 @@ describe("detectAndLoadPromptImages", () => {
   it("blocks prompt image refs outside workspace when sandbox workspaceOnly is enabled", async () => {
     // Sandbox workspaceOnly uses the bridge to validate mounted paths; ordinary
     // prompt refs outside the workspace are detected but intentionally skipped.
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-native-image-sandbox-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-native-image-sandbox-"));
     const sandboxRoot = path.join(stateDir, "sandbox");
     const agentRoot = path.join(stateDir, "agent");
     await fs.mkdir(sandboxRoot, { recursive: true });
@@ -615,7 +615,7 @@ describe("detectAndLoadPromptImages", () => {
   });
 
   it("loads managed inbound absolute paths when workspaceOnly is enabled", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-native-image-managed-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-native-image-managed-"));
     const workspaceDir = path.join(stateDir, "workspace-agent");
     const inboundDir = path.join(stateDir, "media", "inbound");
     await fs.mkdir(workspaceDir, { recursive: true });
@@ -623,8 +623,8 @@ describe("detectAndLoadPromptImages", () => {
     const imagePath = path.join(inboundDir, "signal-replay.png");
     const pngB64 = TINY_PNG_BASE64;
     await fs.writeFile(imagePath, Buffer.from(pngB64, "base64"));
-    const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
-    setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+    const envSnapshot = captureEnv(["AFORA_STATE_DIR"]);
+    setTestEnvValue("AFORA_STATE_DIR", stateDir);
 
     try {
       const result = await detectAndLoadPromptImages({
@@ -645,7 +645,7 @@ describe("detectAndLoadPromptImages", () => {
   });
 
   it("keeps the fact hydration size limit", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-native-image-size-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-native-image-size-"));
     const imagePath = path.join(workspaceDir, "too-large.png");
     await fs.writeFile(imagePath, Buffer.from(TINY_PNG_BASE64, "base64"));
 
@@ -670,13 +670,13 @@ describe("detectAndLoadPromptImages", () => {
 
 describe("hydratePromptMediaMessages", () => {
   it("hydrates queued facts in attachment order without mutating cache-stable input", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-queued-image-facts-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-queued-image-facts-"));
     const inboundDir = path.join(stateDir, "media", "inbound");
     const mediaId = "queued.gif";
     await fs.mkdir(inboundDir, { recursive: true });
     await fs.writeFile(path.join(inboundDir, mediaId), TINY_GIF_BUFFER);
-    const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
-    setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+    const envSnapshot = captureEnv(["AFORA_STATE_DIR"]);
+    setTestEnvValue("AFORA_STATE_DIR", stateDir);
     const inlineImage = { type: "image" as const, data: TINY_PNG_BASE64, mimeType: "image/png" };
     const message = attachRuntimePromptMediaFacts(
       { role: "user" as const, content: [{ type: "text" as const, text: "compare" }, inlineImage] },
@@ -710,7 +710,7 @@ describe("hydratePromptMediaMessages", () => {
   });
 
   it("hydrates a fact-owned user message whose content is a string", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-string-image-facts-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-string-image-facts-"));
     const imagePath = path.join(workspaceDir, "photo.png");
     await fs.writeFile(imagePath, Buffer.from(TINY_PNG_BASE64, "base64"));
     const message = attachRuntimePromptMediaFacts(
@@ -734,13 +734,13 @@ describe("hydratePromptMediaMessages", () => {
   });
 
   it("reconstructs recent facts from canonical transcript media", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-replayed-image-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-replayed-image-"));
     const imagePath = path.join(workspaceDir, "photo.png");
     await fs.writeFile(imagePath, Buffer.from(TINY_PNG_BASE64, "base64"));
     const message = {
       role: "user" as const,
       content: "describe the replayed image",
-      __openclaw: { media: [{ path: imagePath, contentType: "image/png" }] },
+      __afora: { media: [{ path: imagePath, contentType: "image/png" }] },
     } as unknown as AgentMessage;
 
     try {
@@ -759,7 +759,7 @@ describe("hydratePromptMediaMessages", () => {
   });
 
   it("preserves offloaded-before-inline order across serialize and restore", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-replay-order-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-replay-order-"));
     const offloadedPath = path.join(workspaceDir, "offloaded.png");
     const inlinePath = path.join(workspaceDir, "inline.gif");
     await fs.writeFile(offloadedPath, Buffer.from(TINY_PNG_BASE64, "base64"));
@@ -813,7 +813,7 @@ describe("hydratePromptMediaMessages", () => {
   });
 
   it("keeps duplicate fact slots across serialize and restore", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-replay-duplicates-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-replay-duplicates-"));
     const imagePath = path.join(workspaceDir, "same.png");
     await fs.writeFile(imagePath, Buffer.from(TINY_PNG_BASE64, "base64"));
     const inlineImage = { type: "image" as const, data: TINY_PNG_BASE64, mimeType: "image/png" };

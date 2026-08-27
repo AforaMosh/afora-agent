@@ -1,5 +1,5 @@
 import { isIncognitoSessionKey } from "../routing/session-key.js";
-import { isIncognitoOpenClawAgentSqlitePath } from "../state/openclaw-agent-db.js";
+import { isIncognitoAforaAgentSqlitePath } from "../state/afora-agent-db.js";
 
 const INCOGNITO_SYSTEM_PROMPT =
   "This chat is incognito; do not store its conversation content in memory files or long-term notes.";
@@ -13,7 +13,7 @@ export function appendIncognitoSystemPrompt(params: {
   const incognito =
     isIncognitoSessionKey(params.sessionKey) ||
     (params.storePath &&
-      isIncognitoOpenClawAgentSqlitePath(params.storePath, { agentId: params.agentId }));
+      isIncognitoAforaAgentSqlitePath(params.storePath, { agentId: params.agentId }));
   if (!incognito) {
     return params.extraSystemPrompt;
   }

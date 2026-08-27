@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { DEFAULT_SECRET_FILE_MAX_BYTES, tryReadSecretFileSync } from "@openclaw/fs-safe/secret";
 import { execa } from "execa";
-import { coerceErrorMessage as errorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { coerceErrorMessage as errorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import { resolveTrustedOnePasswordCli } from "./onepassword-op-path.js";
 import { resolveOnePasswordSecretReference } from "./onepassword-secret-id.js";
 
@@ -83,8 +83,8 @@ function resolveOsHome() {
   return path.resolve(home);
 }
 
-function resolveOpenClawHome() {
-  const explicit = process.env.OPENCLAW_HOME?.trim();
+function resolveAforaHome() {
+  const explicit = process.env.AFORA_HOME?.trim();
   if (!explicit) {
     return resolveOsHome();
   }
@@ -95,23 +95,23 @@ function resolveOpenClawHome() {
 }
 
 function resolveStateDir() {
-  const override = process.env.OPENCLAW_STATE_DIR?.trim();
+  const override = process.env.AFORA_STATE_DIR?.trim();
   if (override) {
     if (override === "~" || override.startsWith("~/") || override.startsWith("~\\")) {
-      return path.resolve(override.replace(/^~(?=$|[\\/])/u, resolveOpenClawHome()));
+      return path.resolve(override.replace(/^~(?=$|[\\/])/u, resolveAforaHome()));
     }
     return path.resolve(override);
   }
-  const home = resolveOpenClawHome();
-  const profile = process.env.OPENCLAW_PROFILE?.trim();
+  const home = resolveAforaHome();
+  const profile = process.env.AFORA_PROFILE?.trim();
   if (profile && profile.toLowerCase() !== "default") {
     // Keep the static resolver aligned with the root CLI profile contract without importing core.
     if (!/^[A-Za-z0-9_-]+$/u.test(profile)) {
-      throw new Error("invalid OpenClaw profile name");
+      throw new Error("invalid Afora profile name");
     }
-    return path.join(home, `.openclaw-${profile}`);
+    return path.join(home, `.afora-${profile}`);
   }
-  const current = path.join(home, ".openclaw");
+  const current = path.join(home, ".afora");
   const legacy = path.join(home, ".clawdbot");
   return fsSync.existsSync(current) || !fsSync.existsSync(legacy) ? current : legacy;
 }

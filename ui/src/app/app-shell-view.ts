@@ -50,7 +50,7 @@ const PALETTE_SHORTCUT = /Mac|iP(hone|ad|od)/i.test(globalThis.navigator?.platfo
   : "Ctrl K";
 
 const SCOPE_UPGRADE_BANNER_ELEMENT = {
-  tagName: "openclaw-device-scope-upgrade-banner",
+  tagName: "afora-device-scope-upgrade-banner",
   label: "device scope upgrade banner",
   loadModule: () => import("./device-scope-upgrade.runtime.ts"),
 } satisfies OptionalCustomElement;
@@ -65,20 +65,20 @@ function renderScopeUpgradeBanner(
   }
   void ensureOptionalElementForHost(host, SCOPE_UPGRADE_BANNER_ELEMENT).catch(() => undefined);
   if (isOptionalElementDefined(SCOPE_UPGRADE_BANNER_ELEMENT)) {
-    return html`<openclaw-device-scope-upgrade-banner
+    return html`<afora-device-scope-upgrade-banner
       .props=${{
         snapshot,
       }}
-    ></openclaw-device-scope-upgrade-banner>`;
+    ></afora-device-scope-upgrade-banner>`;
   }
-  return html`<openclaw-update-banner
+  return html`<afora-update-banner
     .props=${{
       statusBanner: {
         tone: "warn",
         text: t("connection.scopeUpgrade.guidance"),
       },
     }}
-  ></openclaw-update-banner>`;
+  ></afora-update-banner>`;
 }
 
 export interface ShellViewHost {
@@ -149,7 +149,7 @@ function renderLazyDevicePairSetup(host: ShellViewHost, props: DevicePairSetupPr
 function renderDevicePairSetupLoading(props: DevicePairSetupProps) {
   const title = t("devices.pairing.title");
   const message = t("common.loading");
-  return html`<openclaw-modal-dialog
+  return html`<afora-modal-dialog
     label=${title}
     description=${message}
     @modal-cancel=${props.onClose}
@@ -167,7 +167,7 @@ function renderDevicePairSetupLoading(props: DevicePairSetupProps) {
         </button>
       </footer>
     </section>
-  </openclaw-modal-dialog>`;
+  </afora-modal-dialog>`;
 }
 
 // The pairing chunk failed to load while its overlay is open. Reuse the eager
@@ -176,7 +176,7 @@ function renderDevicePairSetupLoading(props: DevicePairSetupProps) {
 function renderDevicePairSetupLoadFailure(host: ShellViewHost, props: DevicePairSetupProps) {
   const title = t("devices.pairing.title");
   const message = t("devices.pairing.loadFailed");
-  return html`<openclaw-modal-dialog
+  return html`<afora-modal-dialog
     label=${title}
     description=${message}
     @modal-cancel=${props.onClose}
@@ -201,7 +201,7 @@ function renderDevicePairSetupLoadFailure(host: ShellViewHost, props: DevicePair
         </button>
       </footer>
     </section>
-  </openclaw-modal-dialog>`;
+  </afora-modal-dialog>`;
 }
 
 export function renderApplicationShell(host: ShellViewHost) {
@@ -271,7 +271,7 @@ export function renderApplicationShell(host: ShellViewHost) {
   const browserPanelAvailable = isBrowserPanelAvailable(gatewaySnapshot);
   const desktopPanelAvailable = isDesktopPanelAvailable(gatewaySnapshot);
   const custodianPanelAvailable =
-    gatewayConnected && isGatewayMethodAdvertised(gatewaySnapshot, "openclaw.chat") === true;
+    gatewayConnected && isGatewayMethodAdvertised(gatewaySnapshot, "afora.chat") === true;
   const activeRoute = host.routeState.routeId ?? "chat";
   // Chat has an offline outbox, New Session keeps a local draft, and Appearance
   // persists local preference intent for replay. Their server actions are
@@ -462,11 +462,11 @@ export function renderApplicationShell(host: ShellViewHost) {
   // and the upgraded panels catch the first toggle instead of dropping the event.
   return html`
     ${isOptionalElementDefined(host.commandPaletteElement)
-      ? html`<openclaw-command-palette
+      ? html`<afora-command-palette
           .onNavigate=${(routeId: RouteId) => host.navigate(routeId)}
           .onSelectSession=${(sessionKey: string) => host.selectChatSession(sessionKey)}
           .onSlashCommand=${(command: string) => host.handleCommandPaletteSlashCommand(command)}
-        ></openclaw-command-palette>`
+        ></afora-command-palette>`
       : nothing}
     <div
       class="shell ${chatLikeRoute ? "shell--chat" : ""} ${navCollapsed
@@ -482,7 +482,7 @@ export function renderApplicationShell(host: ShellViewHost) {
       <a class="shell-skip-link" href="#control-ui-main"> ${t("common.skipToMainContent")} </a>
       ${isNativeWebChromeHost() && !onboarding
         ? html`
-            <openclaw-macos-titlebar-controls
+            <afora-macos-titlebar-controls
               .navCollapsed=${host.nativeNavCollapsed()}
               .historyOnly=${settingsTakeover}
               .canGoBack=${host.nativeHistoryState.canGoBack}
@@ -493,21 +493,21 @@ export function renderApplicationShell(host: ShellViewHost) {
               .onToggleSidebar=${() => host.toggleNavigationSurface()}
               .onOpenPalette=${() => host.openPalette()}
               .onOpenNewSession=${() => host.handleNativeNewSession()}
-            ></openclaw-macos-titlebar-controls>
+            ></afora-macos-titlebar-controls>
           `
         : nothing}
-      <openclaw-app-topbar
+      <afora-app-topbar
         .basePath=${context.basePath}
         .searchDisabled=${false}
         .navDrawerOpen=${navDrawerOpen}
         .onboarding=${onboarding}
         .onOpenPalette=${() => host.openPalette()}
         .onToggleDrawer=${(trigger: HTMLElement) => host.toggleNavigationSurface(trigger)}
-      ></openclaw-app-topbar>
+      ></afora-app-topbar>
       ${!onboarding && !settingsTakeover && !mobileNavLayout
         ? html`
             <div class="shell-chrome-controls">
-              <openclaw-tooltip
+              <afora-tooltip
                 .content=${`${t(navCollapsed ? "nav.expand" : "nav.collapse")} (⌘B)`}
               >
                 <button
@@ -519,9 +519,9 @@ export function renderApplicationShell(host: ShellViewHost) {
                 >
                   ${navCollapsed ? icons.panelLeftOpen : icons.panelLeftClose}
                 </button>
-              </openclaw-tooltip>
+              </afora-tooltip>
               ${navCollapsed
-                ? html`<openclaw-tooltip
+                ? html`<afora-tooltip
                     .content=${newSessionAccess.allowed
                       ? t("chat.runControls.newSession")
                       : newSessionAccess.reason}
@@ -535,9 +535,9 @@ export function renderApplicationShell(host: ShellViewHost) {
                     >
                       ${icons.plus}
                     </button>
-                  </openclaw-tooltip>`
+                  </afora-tooltip>`
                 : nothing}
-              <openclaw-tooltip .content=${`${t("chat.openCommandPalette")} (${PALETTE_SHORTCUT})`}>
+              <afora-tooltip .content=${`${t("chat.openCommandPalette")} (${PALETTE_SHORTCUT})`}>
                 <button
                   type="button"
                   class="shell-chrome-controls__button shell-chrome-controls__search"
@@ -546,13 +546,13 @@ export function renderApplicationShell(host: ShellViewHost) {
                 >
                   ${icons.search}
                 </button>
-              </openclaw-tooltip>
+              </afora-tooltip>
             </div>
           `
         : nothing}
       <div class="shell-nav" ?inert=${navigationSurfaceHidden}>
         ${mobileNavLayout
-          ? html`<openclaw-modal-dialog
+          ? html`<afora-modal-dialog
               class="drawer nav-drawer"
               .open=${navDrawerOpen}
               .label=${t("palette.categories.navigation")}
@@ -561,7 +561,7 @@ export function renderApplicationShell(host: ShellViewHost) {
               <div class="shell-nav-modal__content" tabindex="-1" autofocus>
                 ${navigationContent}
               </div>
-            </openclaw-modal-dialog>`
+            </afora-modal-dialog>`
           : navigationContent}
       </div>
       ${!navCollapsed && !onboarding && !settingsTakeover
@@ -608,16 +608,16 @@ export function renderApplicationShell(host: ShellViewHost) {
               ${t("connection.actionsUnavailable")}
             </div>`
           : nothing}
-        <openclaw-router-outlet
+        <afora-router-outlet
           ?inert=${pageActionsBlocked}
           aria-disabled=${pageActionsBlocked ? "true" : nothing}
           .router=${runtime.router}
           .retryContext=${context}
           .onNotFound=${() => host.replaceChatWithCurrentSession()}
           .notFoundRecoveryReady=${gatewayConnected}
-        ></openclaw-router-outlet>
+        ></afora-router-outlet>
       </main>
-      <openclaw-terminal-panel
+      <afora-terminal-panel
         .client=${gatewayConnected ? gatewaySnapshot.client : null}
         .available=${terminalAvailable}
         .agentId=${selectedAgentId}
@@ -625,11 +625,11 @@ export function renderApplicationShell(host: ShellViewHost) {
         .sessionBottomOnly=${isSessionRouteId(activeRoute)}
         .themeMode=${resolveTerminalThemeMode()}
         .basePath=${context.basePath}
-      ></openclaw-terminal-panel>
+      ></afora-terminal-panel>
       ${isSessionRouteId(activeRoute)
         ? nothing
         : html`
-            <openclaw-browser-panel
+            <afora-browser-panel
               data-chat-autotype-exempt
               .client=${gatewayConnected ? gatewaySnapshot.client : null}
               .available=${browserPanelAvailable}
@@ -640,21 +640,21 @@ export function renderApplicationShell(host: ShellViewHost) {
                 settings: { token: context.gateway.connection.token },
                 password: context.gateway.connection.password,
               })}
-            ></openclaw-browser-panel>
-            <openclaw-desktop-panel
+            ></afora-browser-panel>
+            <afora-desktop-panel
               data-chat-autotype-exempt
               .client=${gatewayConnected ? gatewaySnapshot.client : null}
               .available=${desktopPanelAvailable}
               .suppressed=${settingsTakeover}
-            ></openclaw-desktop-panel>
+            ></afora-desktop-panel>
           `}
-      <openclaw-custodian-panel
+      <afora-custodian-panel
         .available=${custodianPanelAvailable}
         .suppressed=${activeRoute === "custodian"}
         .minimizeRequestId=${host.custodianMinimizeRequestId}
-      ></openclaw-custodian-panel>
+      ></afora-custodian-panel>
       ${isOptionalElementDefined(host.execApprovalElement)
-        ? html`<openclaw-exec-approval
+        ? html`<afora-exec-approval
             .props=${{
               queue: overlaySnapshot.approvalQueue,
               busy: overlaySnapshot.approvalBusy,
@@ -665,7 +665,7 @@ export function renderApplicationShell(host: ShellViewHost) {
                 decision: Parameters<typeof context.overlays.decideApproval>[0],
               ) => context.overlays.decideApproval(decision, approvalId),
             }}
-          ></openclaw-exec-approval>`
+          ></afora-exec-approval>`
         : nothing}
       ${renderLazyDevicePairSetup(host, {
         open: overlaySnapshot.devicePairSetupOpen,
@@ -685,12 +685,12 @@ export function renderApplicationShell(host: ShellViewHost) {
         },
       })}
       ${onboarding && activeRoute !== "custodian"
-        ? html`<openclaw-onboarding-memory-import
+        ? html`<afora-onboarding-memory-import
             .active=${true}
             .context=${context}
-          ></openclaw-onboarding-memory-import>`
+          ></afora-onboarding-memory-import>`
         : nothing}
-      <openclaw-toast-host></openclaw-toast-host>
+      <afora-toast-host></afora-toast-host>
     </div>
   `;
 }

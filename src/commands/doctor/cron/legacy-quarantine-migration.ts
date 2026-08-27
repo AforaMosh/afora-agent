@@ -1,7 +1,7 @@
 /** Imports shipped cron quarantine sidecars only through the doctor migration boundary. */
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import type { CronQuarantinedJob } from "../../../cron/store.js";
 import { parseJsonWithJson5Fallback } from "../../../utils/parse-json-compat.js";
 import { archiveLegacyCronFile } from "./legacy-store-migration.js";

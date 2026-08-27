@@ -90,7 +90,7 @@ describe("tui session actions", () => {
       message: {
         role: "user",
         content: params.text,
-        __openclaw: {
+        __afora: {
           id: params.messageId,
           ...(params.messageSeq !== undefined ? { seq: params.messageSeq } : {}),
           ...(params.runId ? { idempotencyKey: `${params.runId}:user` } : {}),
@@ -486,7 +486,7 @@ describe("tui session actions", () => {
       resolved: {
         modelProvider: "openai",
         model: "gpt-5.6-luna",
-        agentRuntime: { id: "openclaw", source: "session-key" },
+        agentRuntime: { id: "afora", source: "session-key" },
         thinkingLevel: "ultra",
         thinkingLevels: [
           { id: "off", label: "off" },
@@ -499,7 +499,7 @@ describe("tui session actions", () => {
       expect.objectContaining({
         modelProvider: "openai",
         model: "gpt-5.6-luna",
-        agentRuntime: { id: "openclaw", source: "session-key" },
+        agentRuntime: { id: "afora", source: "session-key" },
         thinkingLevel: "ultra",
         thinkingLevels: [
           { id: "off", label: "off" },
@@ -696,7 +696,7 @@ describe("tui session actions", () => {
         {
           role: "assistant",
           content: "History completed",
-          __openclaw: { id: "shared-assistant-1", seq: 2 },
+          __afora: { id: "shared-assistant-1", seq: 2 },
         },
       ],
     });
@@ -741,12 +741,12 @@ describe("tui session actions", () => {
         {
           role: "user",
           content: "Current branch prompt",
-          __openclaw: { id: "current-history-user", seq: 2 },
+          __afora: { id: "current-history-user", seq: 2 },
         },
         {
           role: "assistant",
           content: "Current branch reply",
-          __openclaw: { id: "current-assistant", seq: 4 },
+          __afora: { id: "current-assistant", seq: 4 },
         },
       ],
     });
@@ -787,12 +787,12 @@ describe("tui session actions", () => {
         {
           role: "user",
           content: "Persisted browser prompt",
-          __openclaw: { id: "shared-user-2", seq: 1 },
+          __afora: { id: "shared-user-2", seq: 1 },
         },
         {
           role: "assistant",
           content: "Persisted reply",
-          __openclaw: { id: "shared-assistant-2", seq: 2 },
+          __afora: { id: "shared-assistant-2", seq: 2 },
         },
       ],
     });
@@ -823,7 +823,7 @@ describe("tui session actions", () => {
         message: {
           role: "user",
           content: `Imported live prompt ${index + 1}`,
-          __openclaw: {
+          __afora: {
             id: "shared-provider-id",
             importedFrom: "claude-cli",
             cliSessionId,
@@ -841,7 +841,7 @@ describe("tui session actions", () => {
         {
           role: "assistant",
           content: "Current branch reply",
-          __openclaw: { id: "imported-live-reply", seq: 3 },
+          __afora: { id: "imported-live-reply", seq: 3 },
         },
       ],
     });
@@ -867,12 +867,12 @@ describe("tui session actions", () => {
             {
               role: "user",
               content: "Native canonical prompt",
-              __openclaw: { id: sharedId, seq: 1 },
+              __afora: { id: sharedId, seq: 1 },
             },
             {
               role: "user",
               content: "First imported prompt",
-              __openclaw: {
+              __afora: {
                 id: sharedId,
                 importedFrom: "claude-cli",
                 cliSessionId: "first-cli-session",
@@ -883,7 +883,7 @@ describe("tui session actions", () => {
             {
               role: "user",
               content: "Second imported prompt",
-              __openclaw: {
+              __afora: {
                 id: sharedId,
                 importedFrom: "claude-cli",
                 cliSessionId: "second-cli-session",
@@ -894,7 +894,7 @@ describe("tui session actions", () => {
             {
               role: "user",
               content: "First partially imported prompt",
-              __openclaw: {
+              __afora: {
                 id: sharedId,
                 importedFrom: "claude-cli",
                 externalId: sharedId,
@@ -904,7 +904,7 @@ describe("tui session actions", () => {
             {
               role: "user",
               content: "Second partially imported prompt",
-              __openclaw: {
+              __afora: {
                 id: sharedId,
                 importedFrom: "claude-cli",
                 externalId: sharedId,
@@ -960,7 +960,7 @@ describe("tui session actions", () => {
         {
           role: "assistant",
           content: "Other session reply",
-          __openclaw: { id: "other-assistant", seq: 2 },
+          __afora: { id: "other-assistant", seq: 2 },
         },
       ],
     });
@@ -1003,12 +1003,12 @@ describe("tui session actions", () => {
         ...Array.from({ length: 18 }, (_, index) => ({
           role: "user",
           content: `Earlier history ${index + 1}`,
-          __openclaw: { id: `history-user-${index + 1}`, seq: index + 1 },
+          __afora: { id: `history-user-${index + 1}`, seq: index + 1 },
         })),
         {
           role: "assistant",
           content: "Reply at the scrollback limit",
-          __openclaw: { id: "scrollback-assistant", seq: 20 },
+          __afora: { id: "scrollback-assistant", seq: 20 },
         },
       ],
     });
@@ -2547,7 +2547,7 @@ describe("tui session actions", () => {
           role: "user",
           content: "persisted",
           timestamp: 2_000,
-          __openclaw: {
+          __afora: {
             id: "accepted-user",
             idempotencyKey: "run-pending:user",
             seq: 1,
@@ -2594,7 +2594,7 @@ describe("tui session actions", () => {
             {
               role: "user",
               content: "persisted",
-              __openclaw: {
+              __afora: {
                 id: "persisted-pending-user",
                 idempotencyKey: "run-pending:user",
                 seq: 1,
@@ -2637,7 +2637,7 @@ describe("tui session actions", () => {
               role: "user",
               content: "continue",
               timestamp: Date.now(),
-              __openclaw: {
+              __afora: {
                 id: "remote-user",
                 idempotencyKey: "remote-client-run:user",
                 seq: 1,

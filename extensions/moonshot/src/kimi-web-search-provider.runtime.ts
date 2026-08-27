@@ -2,8 +2,8 @@
 import {
   createProviderHttpError,
   readProviderJsonObjectResponse,
-} from "openclaw/plugin-sdk/provider-http";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/provider-onboard";
+} from "afora-agent/plugin-sdk/provider-http";
+import type { AforaConfig } from "afora-agent/plugin-sdk/provider-onboard";
 import {
   buildSearchCacheKey,
   buildUnsupportedSearchFilterResponse,
@@ -25,12 +25,12 @@ import {
   withTrustedWebSearchEndpoint,
   wrapWebContent,
   writeCachedSearchPayload,
-} from "openclaw/plugin-sdk/provider-web-search";
+} from "afora-agent/plugin-sdk/provider-web-search";
 import {
   isRecord,
   normalizeOptionalString,
   uniqueStrings,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   isNativeMoonshotBaseUrl,
   MOONSHOT_BASE_URL,
@@ -112,13 +112,13 @@ function trimTrailingSlashes(url: string): string {
   return url.replace(/\/+$/, "");
 }
 
-function resolveKimiBaseUrl(kimi?: KimiConfig, openClawConfig?: OpenClawConfig): string {
+function resolveKimiBaseUrl(kimi?: KimiConfig, aforaConfig?: AforaConfig): string {
   const explicitBaseUrl = normalizeOptionalString(kimi?.baseUrl) ?? "";
   if (explicitBaseUrl) {
     return trimTrailingSlashes(explicitBaseUrl) || DEFAULT_KIMI_BASE_URL;
   }
 
-  const moonshotBaseUrl = openClawConfig?.models?.providers?.moonshot?.baseUrl;
+  const moonshotBaseUrl = aforaConfig?.models?.providers?.moonshot?.baseUrl;
   if (typeof moonshotBaseUrl === "string") {
     const normalizedMoonshotBaseUrl = trimTrailingSlashes(moonshotBaseUrl.trim());
     if (normalizedMoonshotBaseUrl && isNativeMoonshotBaseUrl(normalizedMoonshotBaseUrl)) {
@@ -341,7 +341,7 @@ async function runKimiSearch(params: {
 }
 
 export async function executeKimiWebSearchProviderTool(
-  ctx: { config?: OpenClawConfig; searchConfig?: SearchConfigRecord },
+  ctx: { config?: AforaConfig; searchConfig?: SearchConfigRecord },
   args: Record<string, unknown>,
   opts?: { signal?: AbortSignal },
 ): Promise<Record<string, unknown>> {
@@ -363,7 +363,7 @@ export async function executeKimiWebSearchProviderTool(
       error: "missing_kimi_api_key",
       message:
         "web_search (kimi) needs a Moonshot API key. Set KIMI_API_KEY or MOONSHOT_API_KEY in the Gateway environment, or configure plugins.entries.moonshot.config.webSearch.apiKey. If you do not want to configure a search API key, use web_fetch for a specific URL or the browser tool for interactive pages.",
-      docs: "https://docs.openclaw.ai/tools/web",
+      docs: "https://docs.afora.ai/tools/web",
     };
   }
 
@@ -407,7 +407,7 @@ export async function executeKimiWebSearchProviderTool(
       query,
       provider: "kimi",
       model,
-      docs: "https://docs.openclaw.ai/tools/kimi-search",
+      docs: "https://docs.afora.ai/tools/kimi-search",
       tookMs: Date.now() - start,
     };
   }

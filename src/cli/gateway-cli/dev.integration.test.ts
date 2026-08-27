@@ -16,17 +16,17 @@ describe("ensureDevGatewayConfig integration", () => {
   });
 
   it("writes the dedicated dev roster into a fresh state directory", async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), "openclaw-dev-config-integration-"));
+    const root = await mkdtemp(path.join(os.tmpdir(), "afora-dev-config-integration-"));
     tempDirs.push(root);
     const stateDir = path.join(root, "state");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const workspace = path.join(root, "workspace");
 
     await withEnvAsync(
       {
-        OPENCLAW_CONFIG_PATH: configPath,
-        OPENCLAW_STATE_DIR: stateDir,
-        OPENCLAW_WORKSPACE_DIR: workspace,
+        AFORA_CONFIG_PATH: configPath,
+        AFORA_STATE_DIR: stateDir,
+        AFORA_WORKSPACE_DIR: workspace,
       },
       async () => {
         resetConfigRuntimeState();

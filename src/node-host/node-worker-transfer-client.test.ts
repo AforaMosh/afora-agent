@@ -75,10 +75,10 @@ async function git(root: string, args: string[]): Promise<string> {
   const result = await runExec("git", ["-C", root, ...args], {
     baseEnv: {
       ...process.env,
-      GIT_AUTHOR_NAME: "OpenClaw Test",
-      GIT_AUTHOR_EMAIL: "test@openclaw.invalid",
-      GIT_COMMITTER_NAME: "OpenClaw Test",
-      GIT_COMMITTER_EMAIL: "test@openclaw.invalid",
+      GIT_AUTHOR_NAME: "Afora Test",
+      GIT_AUTHOR_EMAIL: "test@afora.invalid",
+      GIT_COMMITTER_NAME: "Afora Test",
+      GIT_COMMITTER_EMAIL: "test@afora.invalid",
     },
     logOutput: false,
   });

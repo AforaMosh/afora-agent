@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { sleepWithAbort } from "@openclaw/retry";
+import { sleepWithAbort } from "@afora/retry";
 import { tryListenOnPort } from "../../infra/ports-probe.js";
 import { registerSecretValueForRedaction } from "../../logging/secret-redaction-registry.js";
 import { runCommandBuffered } from "../../process/exec.js";
@@ -210,7 +210,7 @@ export function createManagedLinuxDesktop(
   };
 
   const prepareResources = async (): Promise<ManagedResources> => {
-    const tempDir = await fs.mkdtemp(path.join(tempRoot, "openclaw-managed-desktop-"));
+    const tempDir = await fs.mkdtemp(path.join(tempRoot, "afora-managed-desktop-"));
     await fs.chmod(tempDir, 0o700);
     const plaintextFile = path.join(tempDir, "password.txt");
     const passwordFile = path.join(tempDir, "passwd");

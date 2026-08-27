@@ -1,7 +1,7 @@
 ---
 summary: "Zalo personal account support via native zca-js (QR login), capabilities, and configuration"
 read_when:
-  - Setting up Zalo Personal for OpenClaw
+  - Setting up Zalo Personal for Afora
   - Debugging Zalo Personal login or message flow
 title: "Zalo personal"
 ---
@@ -17,18 +17,18 @@ This is an unofficial integration and may result in account suspension or ban. U
 Zalo Personal is an official external plugin, not bundled in core. Install it before use:
 
 ```bash
-openclaw plugins install @openclaw/zalouser
+afora plugins install @afora/zalouser
 ```
 
-- Pin a version: `openclaw plugins install @openclaw/zalouser@<version>`
-- From a source checkout: `openclaw plugins install ./path/to/local/zalouser-plugin`
+- Pin a version: `afora plugins install @afora/zalouser@<version>`
+- From a source checkout: `afora plugins install ./path/to/local/zalouser-plugin`
 - Details: [Plugins](/tools/plugin)
 
 ## Quick setup
 
 1. Install the plugin (above).
 2. Login (QR, on the Gateway machine):
-   - `openclaw channels login --channel zalouser`
+   - `afora channels login --channel zalouser`
    - Scan the QR code with the Zalo mobile app.
 3. Enable the channel:
 
@@ -60,9 +60,9 @@ Channel id is `zalouser` to make it explicit this automates a **personal Zalo us
 ## Finding IDs (directory)
 
 ```bash
-openclaw directory self --channel zalouser
-openclaw directory peers list --channel zalouser --query "name"
-openclaw directory groups list --channel zalouser --query "work"
+afora directory self --channel zalouser
+afora directory peers list --channel zalouser --query "name"
+afora directory groups list --channel zalouser --query "work"
 ```
 
 ## Limits
@@ -73,9 +73,9 @@ openclaw directory groups list --channel zalouser --query "work"
 
 ## Inbound durability
 
-OpenClaw stores each raw `zca-js` message callback before processing it. Pending messages resume from the account queue after a Gateway restart, and processing stays serialized per direct chat or group.
+Afora stores each raw `zca-js` message callback before processing it. Pending messages resume from the account queue after a Gateway restart, and processing stays serialized per direct chat or group.
 
-The `zca-js` socket listener does not expose a delivery acknowledgement or automatically replay old messages after reconnect. The durable queue therefore protects the local crash window after a callback reaches OpenClaw; it cannot recover a message the socket never delivered. Replay tombstones are mostly a safeguard against a repeated callback with the same Zalo message id.
+The `zca-js` socket listener does not expose a delivery acknowledgement or automatically replay old messages after reconnect. The durable queue therefore protects the local crash window after a callback reaches Afora; it cannot recover a message the socket never delivered. Replay tombstones are mostly a safeguard against a repeated callback with the same Zalo message id.
 
 ## Access control (DMs)
 
@@ -87,8 +87,8 @@ If a raw name remains in config, startup resolves it only when `channels.zalouse
 
 Approve via:
 
-- `openclaw pairing list zalouser`
-- `openclaw pairing approve zalouser <code>`
+- `afora pairing list zalouser`
+- `afora pairing approve zalouser <code>`
 
 ## Group access (optional)
 
@@ -121,7 +121,7 @@ Example:
 ```
 
 <Note>
-`channels.zalouser.groups.<id>.allow` is a legacy field name; current config uses `enabled`. `openclaw doctor --fix` migrates `allow` to `enabled` automatically.
+`channels.zalouser.groups.<id>.allow` is a legacy field name; current config uses `enabled`. `afora doctor --fix` migrates `allow` to `enabled` automatically.
 </Note>
 
 ### Group mention gating
@@ -131,7 +131,7 @@ Example:
 - Applies both to allowlisted groups and open group mode.
 - Quoting a bot message counts as an implicit mention for group activation.
 - Authorized control commands (for example `/new`) can bypass mention gating.
-- When a group message is skipped because a mention is required, OpenClaw stores it as pending group history and includes it on the next processed group message.
+- When a group message is skipped because a mention is required, Afora stores it as pending group history and includes it on the next processed group message.
 - Group history limit: `channels.zalouser.historyLimit`, then `messages.groupChat.historyLimit`, then a fallback of `50`.
 
 Example:
@@ -152,7 +152,7 @@ Example:
 
 ## Multi-account
 
-Accounts map to `zalouser` profiles in OpenClaw state. Example:
+Accounts map to `zalouser` profiles in Afora state. Example:
 
 ```json5
 {
@@ -178,7 +178,7 @@ Profile selection can also come from environment variables:
 | `ZALOUSER_PROFILE` | Profile name to use when no `profile` is set in channel or account config. |
 | `ZCA_PROFILE`      | Legacy fallback, used only when `ZALOUSER_PROFILE` is not set.             |
 
-Profile names select the saved Zalo login credentials in OpenClaw state. Resolution order:
+Profile names select the saved Zalo login credentials in Afora state. Resolution order:
 
 1. Explicit `profile` in config.
 2. `ZALOUSER_PROFILE`.
@@ -189,18 +189,18 @@ For multi-account setups, prefer setting `profile` on each account in config so 
 
 ## Typing, reactions, and delivery acknowledgements
 
-- OpenClaw sends a typing event before dispatching a reply (best-effort).
+- Afora sends a typing event before dispatching a reply (best-effort).
 - Message reaction action `react` is supported for `zalouser` in channel actions.
   - Use `remove: true` to remove a specific reaction emoji from a message.
   - Reaction semantics: [Reactions](/tools/reactions)
-- For inbound messages that include event metadata, OpenClaw sends delivered + seen acknowledgements (best-effort).
+- For inbound messages that include event metadata, Afora sends delivered + seen acknowledgements (best-effort).
 
 ## Troubleshooting
 
 **Login doesn't stick:**
 
-- `openclaw channels status --probe`
-- Re-login: `openclaw channels logout --channel zalouser && openclaw channels login --channel zalouser`
+- `afora channels status --probe`
+- Re-login: `afora channels logout --channel zalouser && afora channels login --channel zalouser`
 
 **Allowlist/group name didn't resolve:**
 

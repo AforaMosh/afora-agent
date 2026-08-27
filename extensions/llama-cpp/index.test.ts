@@ -1,20 +1,20 @@
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
-import { createLocalEmbeddingProvider } from "openclaw/plugin-sdk/memory-core-host-engine-embeddings";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+import { expectDefined } from "@afora/normalization-core";
+import { createLocalEmbeddingProvider } from "afora-agent/plugin-sdk/memory-core-host-engine-embeddings";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import {
   createPluginRegistryFixture,
   registerVirtualTestPlugin,
-} from "openclaw/plugin-sdk/plugin-test-contracts";
+} from "afora-agent/plugin-sdk/plugin-test-contracts";
 import {
   clearEmbeddingProviders,
   createEmptyPluginRegistry,
   getActivePluginRegistry,
   getRegisteredEmbeddingProvider,
   setActivePluginRegistry,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
-import type { ProviderPlugin } from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
+import type { ProviderPlugin } from "afora-agent/plugin-sdk/provider-model-shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -24,8 +24,8 @@ const mocks = vi.hoisted(() => ({
   genericCreate: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/embedding-providers", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/embedding-providers")>()),
+vi.mock("afora-agent/plugin-sdk/embedding-providers", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/embedding-providers")>()),
   getEmbeddingProvider: () => ({ create: mocks.genericCreate }),
 }));
 
@@ -45,7 +45,7 @@ import {
 } from "./src/defaults.js";
 import { llamaCppEmbeddingProviderAdapter } from "./src/embedding-provider.js";
 
-const LOCAL_EMBEDDING_RUNTIME_FACTS = Symbol.for("openclaw.localEmbeddingRuntimeFacts");
+const LOCAL_EMBEDDING_RUNTIME_FACTS = Symbol.for("afora.localEmbeddingRuntimeFacts");
 let previousPluginRegistry: ReturnType<typeof getActivePluginRegistry>;
 
 beforeEach(() => {

@@ -32,7 +32,7 @@ afterEach(async () => {
 
 describe("store SecretRef runtime degradation", () => {
   it("isolates a missing store-backed skill instead of failing gateway startup", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-runtime-store-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-runtime-store-"));
     roots.push(root);
     const ref = { source: "store", provider: "default", id: "MISSING_SKILL_API_KEY" } as const;
     const snapshot = await prepareSecretsRuntimeSnapshot({
@@ -40,7 +40,7 @@ describe("store SecretRef runtime degradation", () => {
         agents: { list: [{ id: "main", default: true }] },
         skills: { entries: { unavailable: { apiKey: ref } } },
       }),
-      env: { OPENCLAW_STATE_DIR: path.join(root, "state") },
+      env: { AFORA_STATE_DIR: path.join(root, "state") },
       includeAuthStoreRefs: false,
       allowUnavailableSecretOwners: true,
       loadablePluginOrigins: new Map(),
@@ -58,7 +58,7 @@ describe("store SecretRef runtime degradation", () => {
   });
 
   it("makes an intentionally mutated missing store ref cold instead of retaining its value", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-runtime-store-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-runtime-store-"));
     roots.push(root);
     const ref = { source: "store", provider: "default", id: "SERVICE_API_KEY" } as const;
     const config = asConfig({
@@ -67,7 +67,7 @@ describe("store SecretRef runtime degradation", () => {
     });
     const runtimeOptions = {
       config,
-      env: { OPENCLAW_STATE_DIR: path.join(root, "state") },
+      env: { AFORA_STATE_DIR: path.join(root, "state") },
       includeAuthStoreRefs: false,
       allowUnavailableSecretOwners: true,
       loadablePluginOrigins: new Map(),

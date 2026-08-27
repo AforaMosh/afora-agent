@@ -3,7 +3,7 @@
  *
  * Infers child completion from persisted session entries when registry updates arrive late.
  */
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
+import { asFiniteNumber } from "@afora/normalization-core/number-coercion";
 import { getRuntimeConfig } from "../../../config/config.js";
 import {
   resolveAgentIdFromSessionKey,
@@ -14,7 +14,7 @@ import {
   listSessionEntriesReadOnly,
   loadSessionEntryReadOnly,
 } from "../../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import type { SubagentRunOutcome } from "../announce/subagent-announce-output.js";
 import {
   SUBAGENT_ENDED_REASON_COMPLETE,
@@ -87,7 +87,7 @@ function findSessionEntryByKey(store: Record<string, SessionEntry>, sessionKey: 
 export function loadSubagentSessionEntry(params: {
   childSessionKey: string;
   storeCache?: SubagentSessionStoreCache;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): SessionEntry | undefined {
   const key = params.childSessionKey.trim();
   if (!key) {
@@ -112,7 +112,7 @@ export function loadSubagentSessionEntry(params: {
 /** Resolve a child session entry without depending on the file-backed store shape. */
 function loadSubagentSessionEntryForAccessor(params: {
   childSessionKey: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): SessionEntry | undefined {
   const key = params.childSessionKey.trim();
   if (!key) {
@@ -133,7 +133,7 @@ export function resolveSubagentRunOrphanReason(params: {
   entry: SubagentRunRecord;
   includeStaleUnended?: boolean;
   now?: number;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): SubagentRunOrphanReason | null {
   const childSessionKey = params.entry.childSessionKey?.trim();
   if (!childSessionKey) {
@@ -241,7 +241,7 @@ export function resolveSubagentSessionCompletion(params: {
   fallbackEndedAt: number;
   notBeforeMs?: number;
   storeCache?: SubagentSessionStoreCache;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): SubagentSessionCompletion | null {
   return resolveCompletionFromSessionEntry(
     loadSubagentSessionEntry({
@@ -259,7 +259,7 @@ export function resolveSubagentSessionStartedAt(params: {
   childSessionKey: string;
   notBeforeMs?: number;
   storeCache?: SubagentSessionStoreCache;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): number | undefined {
   const sessionEntry = loadSubagentSessionEntry({
     childSessionKey: params.childSessionKey,

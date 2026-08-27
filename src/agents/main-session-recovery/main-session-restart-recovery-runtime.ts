@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { GatewayRecoveryRuntime } from "../../gateway/server-instance-runtime.types.js";
 import {
   getAgentEventLifecycleGeneration,
@@ -65,7 +65,7 @@ async function runRecoveryRetries(params: {
 }
 
 export async function recoverRestartAbortedMainSessions(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   onExhaustedTarget?: (target: ExhaustedRestartRecoveryTarget) => void;
   stateDir?: string;
   resumedSessionKeys?: Set<string>;
@@ -110,7 +110,7 @@ export async function recoverRestartAbortedMainSessions(params: {
 /** Retries one exact durable Control UI row from its owning per-agent SQLite store. */
 export async function retryRestartAbortedMainSessionRecovery(params: {
   canonicalSessionKey?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   expectedRecoveryRunId?: string;
   expectedRecoverySourceRunId?: string;
   expectedSessionId: string;
@@ -139,7 +139,7 @@ export async function retryRestartAbortedMainSessionRecovery(params: {
 }
 
 async function recoverExpectedRestartRecovery(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   expectedClaim?: ExpectedRestartRecoveryClaim;
   expectedTarget?: ExpectedRestartRecoveryTarget;
   lifecycleGeneration?: string;
@@ -205,7 +205,7 @@ async function recoverExpectedRestartRecovery(params: {
 
 export function scheduleRestartAbortedMainSessionRecoveryAfterOwnerRelease(params: {
   delayMs?: number;
-  getConfig: () => OpenClawConfig;
+  getConfig: () => AforaConfig;
   getGatewayRuntime: () => GatewayRecoveryRuntime | undefined;
   maxRetries?: number;
   expectedSessionId: string;
@@ -266,7 +266,7 @@ export function scheduleRestartAbortedMainSessionRecoveryAfterOwnerRelease(param
 
 export function scheduleRestartAbortedMainSessionRecovery(params: {
   delayMs?: number;
-  getConfig: () => OpenClawConfig;
+  getConfig: () => AforaConfig;
   maxRetries?: number;
   shouldContinue?: () => boolean;
   stateDir?: string;

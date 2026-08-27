@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { AVATAR_MAX_DATA_URL_CHARS } from "../shared/avatar-limits.js";
 import { AVATAR_MAX_BYTES } from "../shared/avatar-policy.js";
 import {
@@ -14,8 +14,8 @@ import {
 
 const tempRoots = useAutoCleanupTempDirTracker(afterEach);
 
-function createWorkspace(): { workspace: string; cfg: OpenClawConfig } {
-  const root = tempRoots.make("openclaw-avatar-file-");
+function createWorkspace(): { workspace: string; cfg: AforaConfig } {
+  const root = tempRoots.make("afora-avatar-file-");
   const workspace = path.join(root, "workspace");
   fs.mkdirSync(workspace);
   return {

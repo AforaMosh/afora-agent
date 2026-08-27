@@ -2,9 +2,9 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import {
   killPidIfAlive,
   readPidFile,
@@ -129,7 +129,7 @@ describe("secret ref resolver", () => {
   }
 
   beforeAll(async () => {
-    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-secrets-resolve-"));
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-secrets-resolve-"));
     const sharedExecDir = path.join(fixtureRoot, "shared-exec");
     await fs.mkdir(sharedExecDir, { recursive: true });
 
@@ -213,7 +213,7 @@ describe("secret ref resolver", () => {
   });
 
   it("resolves env refs via implicit default env provider", async () => {
-    const config: OpenClawConfig = {};
+    const config: AforaConfig = {};
     const value = await resolveSecretRefString(
       { source: "env", provider: "default", id: "OPENAI_API_KEY" },
       {
@@ -351,7 +351,7 @@ describe("secret ref resolver", () => {
     "classifies omitted and NOT_FOUND exec ids as missing but keeps other errors fail-closed",
     async () => {
       const ref = { source: "exec", provider: "execmain", id: "openai/api-key" } as const;
-      const configFor = (command: string): OpenClawConfig => ({
+      const configFor = (command: string): AforaConfig => ({
         secrets: {
           providers: {
             execmain: createExecProviderConfig(command),
@@ -832,7 +832,7 @@ describe("secret ref resolver", () => {
           "Windows path security could not be verified",
         );
         expect(describeSecretResolutionOperatorRecovery(error)).toBe(
-          "Restore Windows path security verification, or use an existing secret file whose owner and ACLs OpenClaw can verify",
+          "Restore Windows path security verification, or use an existing secret file whose owner and ACLs Afora can verify",
         );
       },
     );
@@ -891,7 +891,7 @@ describe("secret ref resolver", () => {
           "Windows path security could not be verified",
         );
         expect(describeSecretResolutionOperatorRecovery(error)).toBe(
-          "Restore Windows path security verification, or use an existing provider command whose owner and ACLs OpenClaw can verify",
+          "Restore Windows path security verification, or use an existing provider command whose owner and ACLs Afora can verify",
         );
         await expect(fs.access(markerPath)).rejects.toThrow();
       },

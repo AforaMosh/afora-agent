@@ -10,7 +10,7 @@ import type { BoardWidget } from "../types.ts";
 import type { PluginBoardWidgetRenderer } from "./index.ts";
 import { WorkboardWidgetElement } from "./workboard-widget.ts";
 
-class OpenClawWorkboardBoardWidget extends WorkboardWidgetElement {
+class AforaWorkboardBoardWidget extends WorkboardWidgetElement {
   override render(): TemplateResult {
     if (this.loading && !this.loaded) {
       return html`<p class="workboard-widget__state">${t("workboard.widget.loading")}</p>`;
@@ -71,8 +71,8 @@ class OpenClawWorkboardBoardWidget extends WorkboardWidgetElement {
   }
 }
 
-if (!customElements.get("openclaw-workboard-board-widget")) {
-  customElements.define("openclaw-workboard-board-widget", OpenClawWorkboardBoardWidget);
+if (!customElements.get("afora-workboard-board-widget")) {
+  customElements.define("afora-workboard-board-widget", AforaWorkboardBoardWidget);
 }
 
 export const renderWorkboardBoardWidget: PluginBoardWidgetRenderer = ({
@@ -88,17 +88,17 @@ export const renderWorkboardBoardWidget: PluginBoardWidgetRenderer = ({
   canMutate: boolean;
   requestUpdate: () => void;
 }) => html`
-  <openclaw-workboard-board-widget
+  <afora-workboard-board-widget
     .widget=${widget}
     .sessionKey=${sessionKey}
     .active=${active}
     .canMutate=${canMutate}
     .hostRequestUpdate=${requestUpdate}
-  ></openclaw-workboard-board-widget>
+  ></afora-workboard-board-widget>
 `;
 
 declare global {
   interface HTMLElementTagNameMap {
-    "openclaw-workboard-board-widget": OpenClawWorkboardBoardWidget;
+    "afora-workboard-board-widget": AforaWorkboardBoardWidget;
   }
 }

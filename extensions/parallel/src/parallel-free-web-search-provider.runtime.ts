@@ -6,7 +6,7 @@ import {
   resolveSearchTimeoutSeconds,
   type SearchConfigRecord,
   writeCachedSearchPayload,
-} from "openclaw/plugin-sdk/provider-web-search";
+} from "afora-agent/plugin-sdk/provider-web-search";
 import { PARALLEL_MCP_SEARCH_URL, runParallelMcpSearch } from "./parallel-mcp-search.runtime.js";
 import {
   buildParallelCacheKey,

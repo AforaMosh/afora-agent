@@ -1,5 +1,5 @@
 // Mattermost plugin module implements setup surface behavior.
-import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/account-id";
+import { DEFAULT_ACCOUNT_ID } from "afora-agent/plugin-sdk/account-id";
 import {
   applySetupAccountConfigPatch,
   baseUrlTextInput,
@@ -9,7 +9,7 @@ import {
   createSetupTranslator,
   setSetupChannelEnabled,
   type ChannelSetupWizard,
-} from "openclaw/plugin-sdk/setup";
+} from "afora-agent/plugin-sdk/setup";
 import {
   applyMattermostSetupConfigPatch,
   isMattermostConfigured,

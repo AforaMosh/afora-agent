@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import { expect } from "vitest";
 import { loadPersistedAuthProfileStore } from "../../../../src/agents/auth-profiles/persisted.js";
-import type { OpenClawTestInstance } from "../../../helpers/openclaw-test-instance.js";
+import type { AforaTestInstance } from "../../../helpers/afora-test-instance.js";
 
 const OAUTH_PROFILE_ID = "openai:qa-oauth";
 const LEGACY_OAUTH_PROFILE_ID = "openai-codex:qa-oauth";
@@ -10,7 +10,7 @@ const API_KEY_PROFILE_ID = "openai:media-api";
 export type CodexAuthMigrationShape = "mixed" | "oauth-only";
 
 export async function runCodexAuthDoctorMigrationProof(
-  instance: OpenClawTestInstance,
+  instance: AforaTestInstance,
   params: {
     accountId: string;
     oauthAccess: string;

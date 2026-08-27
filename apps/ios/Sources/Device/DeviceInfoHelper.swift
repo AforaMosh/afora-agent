@@ -1,5 +1,5 @@
 import Foundation
-import OpenClawKit
+import AforaKit
 
 /// Shared device and platform info for Settings, gateway node payloads, and device status.
 enum DeviceInfoHelper {
@@ -36,7 +36,7 @@ enum DeviceInfoHelper {
 
     /// Canonical app version when present, otherwise the Apple marketing version.
     static func appVersion() -> String {
-        (Bundle.main.infoDictionary?["OpenClawCanonicalVersion"] as? String)
+        (Bundle.main.infoDictionary?["AforaCanonicalVersion"] as? String)
             ?? (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String)
             ?? "dev"
     }
@@ -48,7 +48,7 @@ enum DeviceInfoHelper {
     }
 
     /// Display string for Settings: "1.2.3" or "1.2.3 (456)" when build differs.
-    static func openClawVersionString() -> String {
+    static func aforaVersionString() -> String {
         let version = self.appVersion()
         let build = self.appBuild()
         if build.isEmpty || build == version {
@@ -64,6 +64,6 @@ enum DeviceInfoHelper {
     static func buildMetadata(infoDictionary: [String: Any]) -> ArtifactBuildInfo {
         ArtifactBuildInfo(
             infoDictionary: infoDictionary,
-            versionKeys: ["OpenClawCanonicalVersion", "CFBundleShortVersionString"])
+            versionKeys: ["AforaCanonicalVersion", "CFBundleShortVersionString"])
     }
 }

@@ -1,24 +1,24 @@
 // Zalouser plugin module implements channel.adapters behavior.
-import { createScopedDmSecurityResolver } from "openclaw/plugin-sdk/channel-config-helpers";
+import { createScopedDmSecurityResolver } from "afora-agent/plugin-sdk/channel-config-helpers";
 import {
   defineChannelMessageAdapter,
   type ChannelMessageSendResult,
-} from "openclaw/plugin-sdk/channel-outbound";
-import { createPairingPrefixStripper } from "openclaw/plugin-sdk/channel-pairing";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import { createPairingPrefixStripper } from "afora-agent/plugin-sdk/channel-pairing";
 import {
   resolveScopeRequireMention,
   resolveScopeToolsPolicy,
-} from "openclaw/plugin-sdk/channel-policy";
+} from "afora-agent/plugin-sdk/channel-policy";
 import {
   createEmptyChannelResult,
   type ChannelOutboundAdapter,
   type OutboundDeliveryResult,
-} from "openclaw/plugin-sdk/channel-send-result";
-import { createStaticReplyToModeResolver } from "openclaw/plugin-sdk/conversation-runtime";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { sanitizeAssistantVisibleText } from "openclaw/plugin-sdk/text-chunking";
+} from "afora-agent/plugin-sdk/channel-send-result";
+import { createStaticReplyToModeResolver } from "afora-agent/plugin-sdk/conversation-runtime";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { sanitizeAssistantVisibleText } from "afora-agent/plugin-sdk/text-chunking";
 import {
   checkZcaAuthenticated,
   listZalouserAccountIds,
@@ -30,7 +30,7 @@ import type {
   ChannelGroupContext,
   ChannelMessageActionAdapter,
   GroupToolPolicyConfig,
-  OpenClawConfig,
+  AforaConfig,
 } from "./channel-api.js";
 import {
   DEFAULT_ACCOUNT_ID,
@@ -60,7 +60,7 @@ type ZalouserSendTextContext = {
   to: string;
   text: string;
   accountId?: string | null;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   onDeliveryResult?: (result: ChannelMessageSendResult) => Promise<void> | void;
 };
 
@@ -78,11 +78,11 @@ export function resolveZalouserQrProfile(accountId?: string | null): string {
   return normalized;
 }
 
-function resolveZalouserOutboundChunkMode(cfg: OpenClawConfig, accountId?: string) {
+function resolveZalouserOutboundChunkMode(cfg: AforaConfig, accountId?: string) {
   return getZalouserRuntime().channel.text.resolveChunkMode(cfg, "zalouser", accountId);
 }
 
-function resolveZalouserOutboundTextChunkLimit(cfg: OpenClawConfig, accountId?: string) {
+function resolveZalouserOutboundTextChunkLimit(cfg: AforaConfig, accountId?: string) {
   return getZalouserRuntime().channel.text.resolveTextChunkLimit(cfg, "zalouser", accountId, {
     fallbackLimit: ZALOUSER_TEXT_CHUNK_LIMIT,
   });
@@ -332,7 +332,7 @@ export const zalouserResolverAdapter = {
     kind,
     runtime,
   }: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
     inputs: string[];
     kind: "user" | "group";
@@ -396,7 +396,7 @@ export const zalouserAuthAdapter = {
     accountId,
     runtime,
   }: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string | null;
     runtime: RuntimeEnv;
   }) => {
@@ -437,7 +437,7 @@ export const zalouserAuthAdapter = {
 export const zalouserSecurityAdapter = {
   resolveDmPolicy: resolveZalouserDmPolicy,
   dmRouting: {
-    resolveDmScope: ({ cfg }: { cfg: OpenClawConfig }) => resolveZalouserDmSessionScope(cfg),
+    resolveDmScope: ({ cfg }: { cfg: AforaConfig }) => resolveZalouserDmSessionScope(cfg),
   },
   collectAuditFindings: async (params: {
     accountId?: string | null;
@@ -455,7 +455,7 @@ export const zalouserPairingTextAdapter = {
   idLabel: "zalouserUserId",
   message: "Your pairing request has been approved.",
   normalizeAllowEntry: createPairingPrefixStripper(/^(zalouser|zlu):/i),
-  notify: async ({ cfg, id, message }: { cfg: OpenClawConfig; id: string; message: string }) => {
+  notify: async ({ cfg, id, message }: { cfg: AforaConfig; id: string; message: string }) => {
     const { sendMessageZalouser } = await loadZalouserChannelRuntime();
     const account = resolveZalouserAccountSync({ cfg });
     const authenticated = await checkZcaAuthenticated(account.profile);

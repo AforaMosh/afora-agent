@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { MAX_DATE_TIMESTAMP_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_DATE_TIMESTAMP_MS } from "@afora/normalization-core/number-coercion";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { controlNextRecoverySleep } from "../../../test/helpers/infra/delivery-recovery.js";
 import type { TrustedMessageAuditEvent } from "../../audit/message-audit-events.js";
@@ -18,8 +18,8 @@ import {
 } from "../../config/sessions/session-accessor.js";
 import { buildConversationRef } from "../../routing/conversation-ref.js";
 import { createDeferredCore } from "../../shared/deferred.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
-import { openOpenClawStateDatabase } from "../../state/openclaw-state-db.js";
+import { closeAforaAgentDatabasesForTest } from "../../state/afora-agent-db.js";
+import { openAforaStateDatabase } from "../../state/afora-state-db.js";
 import { normalizeSessionDeliveryState } from "../../utils/delivery-context.shared.js";
 import {
   OutboundDeliveryError,
@@ -133,8 +133,8 @@ async function runIf(condition: unknown, action: () => unknown) {
   }
 }
 function readOutboundQueueStatus(tmpDir: string, id: string): string | undefined {
-  const { db } = openOpenClawStateDatabase({
-    env: { ...process.env, OPENCLAW_STATE_DIR: tmpDir },
+  const { db } = openAforaStateDatabase({
+    env: { ...process.env, AFORA_STATE_DIR: tmpDir },
   });
   const row = db
     .prepare("SELECT status FROM delivery_queue_entries WHERE queue_name = ? AND id = ?")
@@ -435,7 +435,7 @@ describe("delivery-queue recovery", () => {
       });
       expect(await loadPendingDeliveries(tmpDir())).toHaveLength(0);
     } finally {
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
     }
   });
   it("keeps an uncertainty notice owed when recovery returns no delivery identity", async () => {
@@ -514,7 +514,7 @@ describe("delivery-queue recovery", () => {
       );
       expect(await loadPendingDeliveries(tmpDir())).toHaveLength(0);
     } finally {
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
     }
   });
   it.each([
@@ -682,7 +682,7 @@ describe("delivery-queue recovery", () => {
       expect(readOutboundQueueStatus(tmpDir(), id)).toBe("failed");
       expectMockMessageContaining(log.warn, "owner state could not be marked unknown");
     } finally {
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
     }
   });
   it("audits max-retry deadletters as unknown when platform send may have started", async () => {

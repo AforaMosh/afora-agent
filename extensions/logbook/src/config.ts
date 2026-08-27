@@ -1,5 +1,5 @@
 // Logbook plugin config resolution: clamps operator input into safe runtime bounds.
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export type LogbookConfig = {
   captureEnabled: boolean;

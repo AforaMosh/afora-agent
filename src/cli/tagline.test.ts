@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { pickTagline } from "./tagline.js";
 
-const EXPECTED_DEFAULT_TAGLINE = "All your chats, one OpenClaw.";
+const EXPECTED_DEFAULT_TAGLINE = "All your chats, one Afora.";
 
 describe("pickTagline", () => {
   it("returns empty string when mode is off", () => {
@@ -13,10 +13,10 @@ describe("pickTagline", () => {
     expect(pickTagline({ mode: "default" })).toBe(EXPECTED_DEFAULT_TAGLINE);
   });
 
-  it("keeps OPENCLAW_TAGLINE_INDEX behavior in random mode", () => {
+  it("keeps AFORA_TAGLINE_INDEX behavior in random mode", () => {
     const value = pickTagline({
       mode: "random",
-      env: { OPENCLAW_TAGLINE_INDEX: "0" } as NodeJS.ProcessEnv,
+      env: { AFORA_TAGLINE_INDEX: "0" } as NodeJS.ProcessEnv,
     });
     expect(value).toBe(
       "Your terminal just grew claws\u2014type something and let the bot pinch the busywork.",
@@ -24,11 +24,11 @@ describe("pickTagline", () => {
     expect(value).not.toBe(EXPECTED_DEFAULT_TAGLINE);
   });
 
-  it("ignores partial OPENCLAW_TAGLINE_INDEX values", () => {
+  it("ignores partial AFORA_TAGLINE_INDEX values", () => {
     expect(
       pickTagline({
         mode: "random",
-        env: { OPENCLAW_TAGLINE_INDEX: "1abc" } as NodeJS.ProcessEnv,
+        env: { AFORA_TAGLINE_INDEX: "1abc" } as NodeJS.ProcessEnv,
         random: () => 0,
       }),
     ).toBe("Your terminal just grew claws\u2014type something and let the bot pinch the busywork.");

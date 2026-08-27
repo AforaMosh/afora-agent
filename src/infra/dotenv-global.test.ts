@@ -20,7 +20,7 @@ afterEach(() => {
 });
 
 function tmpDir(): string {
-  const d = mkdtempSync(join(tmpdir(), "openclaw-dotenv-global-"));
+  const d = mkdtempSync(join(tmpdir(), "afora-dotenv-global-"));
   cleanups.push(() => rmSync(d, { recursive: true, force: true }));
   return d;
 }

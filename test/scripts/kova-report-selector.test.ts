@@ -9,7 +9,7 @@ const tempRoots = useAutoCleanupTempDirTracker(afterEach);
 const SCRIPT_PATH = "scripts/lib/kova-report-selector.mjs";
 
 function reportDir() {
-  const root = tempRoots.make("openclaw-kova-report-selector-");
+  const root = tempRoots.make("afora-kova-report-selector-");
   const dir = join(root, "reports");
   mkdirSync(dir);
   return dir;

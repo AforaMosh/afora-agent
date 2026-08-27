@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { resolveStateDir } from "../../../config/paths.js";
 import type { HealthFinding } from "../../../flows/health-checks.js";
-import { resolveOpenClawPackageRootSync } from "../../../infra/openclaw-root.js";
+import { resolveAforaPackageRootSync } from "../../../infra/afora-root.js";
 import { isPathInside } from "../../../infra/path-safety.js";
 import { resolveConfigDir, resolveUserPath } from "../../../utils.js";
 import { removeStalePluginRuntimeSymlinks } from "./plugin-runtime-symlinks.js";
@@ -59,21 +59,21 @@ async function pathExists(targetPath: string): Promise<boolean> {
 
 function isRuntimeDependencyMarkerName(name: string): boolean {
   return (
-    name === ".openclaw-runtime-deps.json" ||
-    name === ".openclaw-runtime-deps-stamp.json" ||
-    name.startsWith(".openclaw-runtime-deps-")
+    name === ".afora-runtime-deps.json" ||
+    name === ".afora-runtime-deps-stamp.json" ||
+    name.startsWith(".afora-runtime-deps-")
   );
 }
 
 function isInstallStageDebrisName(name: string): boolean {
-  return /^\.openclaw-install-stage(?:-.+)?$/u.test(name);
+  return /^\.afora-install-stage(?:-.+)?$/u.test(name);
 }
 
 function isLegacyDependencyDebrisName(name: string): boolean {
   return (
     isRuntimeDependencyMarkerName(name) ||
-    name === ".openclaw-pnpm-store" ||
-    name === ".openclaw-install-backups" ||
+    name === ".afora-pnpm-store" ||
+    name === ".afora-install-backups" ||
     isInstallStageDebrisName(name)
   );
 }
@@ -177,16 +177,16 @@ async function collectExistingCleanupRoots(
 }
 
 function collectExplicitStageTargets(env: NodeJS.ProcessEnv): CleanupTarget[] {
-  return splitPathList(env.OPENCLAW_PLUGIN_STAGE_DIR).map((entry) => ({
+  return splitPathList(env.AFORA_PLUGIN_STAGE_DIR).map((entry) => ({
     kind: "explicit-stage",
     path: resolveUserPath(entry, env),
     rawPath: entry,
   }));
 }
 
-async function hasOpenClawRenameResidue(root: string): Promise<boolean> {
+async function hasAforaRenameResidue(root: string): Promise<boolean> {
   const nodeModulesRoot = path.join(root, "node_modules");
-  if (await isFile(path.join(nodeModulesRoot, ".openclaw-rename-tmp"))) {
+  if (await isFile(path.join(nodeModulesRoot, ".afora-rename-tmp"))) {
     return true;
   }
   const entries = await fs.readdir(nodeModulesRoot, { withFileTypes: true }).catch(() => []);
@@ -195,7 +195,7 @@ async function hasOpenClawRenameResidue(root: string): Promise<boolean> {
       continue;
     }
     const entryPath = path.join(nodeModulesRoot, entry.name);
-    if (await isFile(path.join(entryPath, ".openclaw-rename-tmp"))) {
+    if (await isFile(path.join(entryPath, ".afora-rename-tmp"))) {
       return true;
     }
     if (!entry.name.startsWith("@")) {
@@ -206,7 +206,7 @@ async function hasOpenClawRenameResidue(root: string): Promise<boolean> {
       if (!scopedEntry.isDirectory() || scopedEntry.isSymbolicLink()) {
         continue;
       }
-      if (await isFile(path.join(entryPath, scopedEntry.name, ".openclaw-rename-tmp"))) {
+      if (await isFile(path.join(entryPath, scopedEntry.name, ".afora-rename-tmp"))) {
         return true;
       }
     }
@@ -219,7 +219,7 @@ async function hasExplicitStageDebrisProof(root: string): Promise<boolean> {
   if (children.some((childPath) => isRuntimeDependencyMarkerName(path.basename(childPath)))) {
     return true;
   }
-  return await hasOpenClawRenameResidue(root);
+  return await hasAforaRenameResidue(root);
 }
 
 function filterLegacyStaleRootCandidates(
@@ -251,7 +251,7 @@ function filterLegacyStaleRootCandidates(
     }
     if (!cleanupRootPaths.some((rootPath) => isPathInside(rootPath, targetPath))) {
       warnings.push(
-        `Skipped legacy plugin dependency state ${targetPath}: outside OpenClaw cleanup roots`,
+        `Skipped legacy plugin dependency state ${targetPath}: outside Afora cleanup roots`,
       );
       continue;
     }
@@ -293,7 +293,7 @@ async function resolveSafeRemovalTarget(
   }
   if (!cleanupRoots.some((root) => isPathInside(root.realPath, realPath))) {
     return {
-      warning: `Skipped legacy plugin dependency state ${targetPath}: resolved outside OpenClaw cleanup roots`,
+      warning: `Skipped legacy plugin dependency state ${targetPath}: resolved outside Afora cleanup roots`,
     };
   }
   return { target: targetPath };
@@ -331,7 +331,7 @@ async function collectLegacyPluginDependencyTargetEntries(
 ): Promise<CleanupTarget[]> {
   const packageRoot =
     options.packageRoot ??
-    resolveOpenClawPackageRootSync({
+    resolveAforaPackageRootSync({
       argv1: process.argv[1],
       moduleUrl: import.meta.url,
       cwd: process.cwd(),
@@ -397,7 +397,7 @@ export async function detectLegacyPluginDependencyStateIssues(
   const env = params.env ?? process.env;
   const packageRoot =
     params.packageRoot ??
-    resolveOpenClawPackageRootSync({
+    resolveAforaPackageRootSync({
       argv1: process.argv[1],
       moduleUrl: import.meta.url,
       cwd: process.cwd(),
@@ -427,11 +427,11 @@ export function legacyPluginDependencyStateIssueToHealthFinding(
     target: issue.path,
     path: issue.path,
     requirement: "legacy-plugin-dependency-state-removed",
-    fixHint: "Run `openclaw doctor --fix` to remove legacy plugin dependency state.",
+    fixHint: "Run `afora doctor --fix` to remove legacy plugin dependency state.",
   };
 }
 
-/** Remove legacy plugin dependency state under trusted OpenClaw cleanup roots. */
+/** Remove legacy plugin dependency state under trusted Afora cleanup roots. */
 export async function cleanupLegacyPluginDependencyState(params: {
   env?: NodeJS.ProcessEnv;
   packageRoot?: string | null;
@@ -441,7 +441,7 @@ export async function cleanupLegacyPluginDependencyState(params: {
   const warnings: string[] = [];
   const packageRoot =
     params.packageRoot ??
-    resolveOpenClawPackageRootSync({
+    resolveAforaPackageRootSync({
       argv1: process.argv[1],
       moduleUrl: import.meta.url,
       cwd: process.cwd(),
@@ -473,6 +473,6 @@ export async function cleanupLegacyPluginDependencyState(params: {
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
   (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.pluginDependencyCleanupTestApi")
+    Symbol.for("afora.pluginDependencyCleanupTestApi")
   ] = { collectLegacyPluginDependencyTargets };
 }

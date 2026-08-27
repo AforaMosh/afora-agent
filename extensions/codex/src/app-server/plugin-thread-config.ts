@@ -188,7 +188,7 @@ export async function buildCodexPluginThreadConfig(
     shouldRefreshMissingAppInventory(params, policy, inventory);
   if (shouldWaitForInitialAppInventory(params, policy, inventory)) {
     await refreshCodexPluginAppInventory(params, appCache, {
-      // OpenClaw is missing its process-local snapshot, but Codex may already
+      // Afora is missing its process-local snapshot, but Codex may already
       // have a current inventory. Avoid rebuilding the entire remote catalog
       // during thread startup; post-install and readiness repair still force.
       forceRefetch: false,

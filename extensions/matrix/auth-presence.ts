@@ -1,6 +1,6 @@
 // Matrix plugin module implements auth presence behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { createPluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-store-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { createPluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-store-runtime";
 import {
   MATRIX_CREDENTIALS_MAX_ENTRIES,
   MATRIX_CREDENTIALS_NAMESPACE,
@@ -10,10 +10,10 @@ import {
 
 type MatrixAuthPresenceParams =
   | {
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       env?: NodeJS.ProcessEnv;
     }
-  | OpenClawConfig;
+  | AforaConfig;
 
 export function hasAnyMatrixAuth(
   params: MatrixAuthPresenceParams,

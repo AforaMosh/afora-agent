@@ -1,6 +1,6 @@
 // Doctor sandbox tests cover warnings when sandbox mode is enabled without Docker availability.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { DoctorPrompter } from "./doctor-prompter.js";
 import type { DoctorRepairMode } from "./doctor-repair-mode.js";
@@ -78,7 +78,7 @@ describe("maybeRepairSandboxImages", () => {
     migrateLegacySandboxRegistryFiles.mockResolvedValue([]);
   });
 
-  function createSandboxConfig(mode: "off" | "all" | "non-main"): OpenClawConfig {
+  function createSandboxConfig(mode: "off" | "all" | "non-main"): AforaConfig {
     return {
       agents: {
         defaults: {
@@ -90,7 +90,7 @@ describe("maybeRepairSandboxImages", () => {
     };
   }
 
-  function createSandboxConfigWithDockerNetwork(network: string): OpenClawConfig {
+  function createSandboxConfigWithDockerNetwork(network: string): AforaConfig {
     return {
       agents: {
         defaults: {
@@ -137,7 +137,7 @@ describe("maybeRepairSandboxImages", () => {
         "",
         "Options:",
         "- Install Docker and restart the gateway",
-        "- Disable sandbox mode: openclaw config set agents.defaults.sandbox.mode off",
+        "- Disable sandbox mode: afora config set agents.defaults.sandbox.mode off",
       ].join("\n"),
       "Sandbox",
     ]);
@@ -302,7 +302,7 @@ describe("maybeRepairSandboxRegistryFiles", () => {
     inspectLegacySandboxRegistryFiles.mockResolvedValue([
       {
         kind: "containers",
-        path: "/tmp/openclaw/sandbox/containers.json",
+        path: "/tmp/afora/sandbox/containers.json",
         source: "monolithic",
         exists: true,
         valid: true,
@@ -316,8 +316,8 @@ describe("maybeRepairSandboxRegistryFiles", () => {
     expect(note).toHaveBeenCalledWith(
       [
         "Legacy sandbox registry files detected.",
-        "- containers monolithic: /tmp/openclaw/sandbox/containers.json (2 entries)",
-        "Run openclaw doctor --fix to migrate them to SQLite.",
+        "- containers monolithic: /tmp/afora/sandbox/containers.json (2 entries)",
+        "Run afora doctor --fix to migrate them to SQLite.",
       ].join("\n"),
       "Sandbox",
     );
@@ -327,7 +327,7 @@ describe("maybeRepairSandboxRegistryFiles", () => {
     inspectLegacySandboxRegistryFiles.mockResolvedValue([
       {
         kind: "containers",
-        path: "/tmp/openclaw/sandbox/containers.json",
+        path: "/tmp/afora/sandbox/containers.json",
         source: "monolithic",
         exists: true,
         valid: true,
@@ -357,7 +357,7 @@ describe("maybeRepairSandboxRegistryFiles", () => {
   it("maps legacy registry files to structured findings and dry-run effects", () => {
     const monolithicFile = {
       kind: "containers",
-      path: "/tmp/openclaw/sandbox/containers.json",
+      path: "/tmp/afora/sandbox/containers.json",
       source: "monolithic",
       exists: true,
       valid: true,
@@ -365,7 +365,7 @@ describe("maybeRepairSandboxRegistryFiles", () => {
     } as const;
     const shardedFile = {
       ...monolithicFile,
-      path: "/tmp/openclaw/sandbox/containers",
+      path: "/tmp/afora/sandbox/containers",
       source: "sharded",
     } as const;
 
@@ -373,27 +373,27 @@ describe("maybeRepairSandboxRegistryFiles", () => {
       expect.objectContaining({
         checkId: "core/doctor/sandbox/registry-files",
         severity: "warning",
-        path: "/tmp/openclaw/sandbox/containers.json",
-        fixHint: expect.stringContaining("openclaw doctor --fix"),
+        path: "/tmp/afora/sandbox/containers.json",
+        fixHint: expect.stringContaining("afora doctor --fix"),
       }),
     );
     expect(legacySandboxRegistryInspectionToRepairEffect(monolithicFile)).toEqual({
       kind: "state",
       action: "would-migrate-legacy-sandbox-registry",
-      target: "/tmp/openclaw/sandbox/containers.json",
+      target: "/tmp/afora/sandbox/containers.json",
       dryRunSafe: false,
     });
     expect(legacySandboxRegistryInspectionToHealthFinding(shardedFile)).toEqual(
       expect.objectContaining({
-        path: "/tmp/openclaw/sandbox/containers",
+        path: "/tmp/afora/sandbox/containers",
         message: expect.stringContaining(
-          "- containers sharded: /tmp/openclaw/sandbox/containers (2 entries)",
+          "- containers sharded: /tmp/afora/sandbox/containers (2 entries)",
         ),
       }),
     );
     expect(legacySandboxRegistryInspectionToRepairEffect(shardedFile)).toEqual(
       expect.objectContaining({
-        target: "/tmp/openclaw/sandbox/containers",
+        target: "/tmp/afora/sandbox/containers",
       }),
     );
   });
@@ -402,7 +402,7 @@ describe("maybeRepairSandboxRegistryFiles", () => {
     expect(
       legacySandboxRegistryInspectionToRepairEffect({
         kind: "browsers",
-        path: "/tmp/openclaw/sandbox/browsers.json",
+        path: "/tmp/afora/sandbox/browsers.json",
         source: "monolithic",
         exists: true,
         valid: false,
@@ -411,7 +411,7 @@ describe("maybeRepairSandboxRegistryFiles", () => {
     ).toEqual(
       expect.objectContaining({
         action: "would-quarantine-legacy-sandbox-registry",
-        target: "/tmp/openclaw/sandbox/browsers.json",
+        target: "/tmp/afora/sandbox/browsers.json",
       }),
     );
   });
@@ -420,7 +420,7 @@ describe("maybeRepairSandboxRegistryFiles", () => {
     expect(
       legacySandboxRegistryInspectionToRepairEffect({
         kind: "containers",
-        path: "/tmp/openclaw/sandbox/containers.json",
+        path: "/tmp/afora/sandbox/containers.json",
         source: "monolithic",
         exists: true,
         valid: true,
@@ -429,7 +429,7 @@ describe("maybeRepairSandboxRegistryFiles", () => {
     ).toEqual(
       expect.objectContaining({
         action: "would-remove-empty-legacy-sandbox-registry",
-        target: "/tmp/openclaw/sandbox/containers.json",
+        target: "/tmp/afora/sandbox/containers.json",
       }),
     );
   });

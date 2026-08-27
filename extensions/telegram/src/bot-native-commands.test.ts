@@ -2,12 +2,12 @@ import {
   createEmptyPluginRegistry,
   resetPluginRuntimeStateForTest,
   setActivePluginRegistry,
-} from "openclaw/plugin-sdk/channel-test-helpers";
+} from "afora-agent/plugin-sdk/channel-test-helpers";
 // Telegram tests cover bot native commands plugin behavior.
-import type { OpenClawConfig, TelegramAccountConfig } from "openclaw/plugin-sdk/config-contracts";
-import { listNativeCommandSpecsForConfig } from "openclaw/plugin-sdk/native-command-registry";
-import { clearPluginCommands, registerPluginCommand } from "openclaw/plugin-sdk/plugin-runtime";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+import type { AforaConfig, TelegramAccountConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { listNativeCommandSpecsForConfig } from "afora-agent/plugin-sdk/native-command-registry";
+import { clearPluginCommands, registerPluginCommand } from "afora-agent/plugin-sdk/plugin-runtime";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createCommandBot,
@@ -85,7 +85,7 @@ describe("registerTelegramNativeCommands", () => {
   });
 
   it("scopes skill commands when account binding exists", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         list: [{ id: "main", default: true }, { id: "butler" }],
       },
@@ -106,7 +106,7 @@ describe("registerTelegramNativeCommands", () => {
   });
 
   it("scopes skill commands to default agent without a matching binding (#15599)", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         list: [{ id: "main", default: true }, { id: "butler" }],
       },
@@ -158,7 +158,7 @@ describe("registerTelegramNativeCommands", () => {
         description: "Demo skill unchanged",
       },
     ];
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       commands: { native: true, nativeSkills: true },
       agents: { list: [{ id: "main", default: true }] },
     };
@@ -203,7 +203,7 @@ describe("registerTelegramNativeCommands", () => {
   it("promotes /skill when direct skills are omitted by local menu pressure", async () => {
     const { bot, commandHandlers, setMyCommands } = createCommandBot();
     const runtimeLog = vi.fn();
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       commands: { native: true, nativeSkills: true },
       agents: { list: [{ id: "main", default: true }] },
     };
@@ -276,7 +276,7 @@ describe("registerTelegramNativeCommands", () => {
   });
 
   it("resolves plugin commands from one registry-bound runtime", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       commands: { native: true },
       channels: {
         telegram: {
@@ -342,7 +342,7 @@ describe("registerTelegramNativeCommands", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     registerTelegramNativeCommands({
       ...createNativeCommandTestParams(cfg, { bot, allowFrom: [200] }),

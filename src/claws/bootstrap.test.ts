@@ -4,8 +4,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { MAX_WORKSPACE_BOOTSTRAP_FILE_BYTES } from "../agents/workspace-bootstrap-read.js";
 import { readWorkspaceStateSnapshot } from "../agents/workspace-state-store.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import type { AforaConfig } from "../config/types.afora.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { applyClawAddPlan } from "./add.js";
 import { seedClawPackageBootstrap } from "./bootstrap.js";
 import { applyClawRemovePlan, buildClawRemovePlan, readClawStatus } from "./lifecycle-state.js";
@@ -20,17 +20,17 @@ import { parseClawManifest } from "./schema.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
-afterEach(() => closeOpenClawStateDatabaseForTest());
+afterEach(() => closeAforaStateDatabaseForTest());
 
 async function createPackage(bootstrap = "# First run\n\nAsk which repositories matter.\n") {
-  const root = tempDirs.make("openclaw-claw-bootstrap-");
+  const root = tempDirs.make("afora-claw-bootstrap-");
   await mkdir(root, { recursive: true });
   await writeFile(
     join(root, "package.json"),
     JSON.stringify({
       name: "@acme/bootstrap-worker",
       version: "1.0.0",
-      openclaw: { claw: "CLAW.md" },
+      afora: { claw: "CLAW.md" },
     }),
     "utf8",
   );
@@ -100,7 +100,7 @@ describe("package-root BOOTSTRAP.md", () => {
       throw new Error("expected package bootstrap");
     }
     const workspace = join(root, "workspace");
-    const env = { OPENCLAW_STATE_DIR: join(root, "state") };
+    const env = { AFORA_STATE_DIR: join(root, "state") };
     const plan = await buildClawAddPlan({
       manifest: read.manifest,
       clawMarkdownBody: read.clawMarkdownBody,
@@ -108,7 +108,7 @@ describe("package-root BOOTSTRAP.md", () => {
       source: read.source,
       context: { workspace },
     });
-    let config: OpenClawConfig = {};
+    let config: AforaConfig = {};
     const added = await applyClawAddPlan(plan, {
       env,
       nowMs: 1_000,
@@ -146,7 +146,7 @@ describe("package-root BOOTSTRAP.md", () => {
       throw new Error("expected package bootstrap");
     }
     const workspace = join(root, "workspace");
-    const env = { OPENCLAW_STATE_DIR: join(root, "state") };
+    const env = { AFORA_STATE_DIR: join(root, "state") };
     const plan = await buildClawAddPlan({
       manifest: read.manifest,
       clawMarkdownBody: read.clawMarkdownBody,
@@ -154,7 +154,7 @@ describe("package-root BOOTSTRAP.md", () => {
       source: read.source,
       context: { workspace },
     });
-    let config: OpenClawConfig = {};
+    let config: AforaConfig = {};
     const order: string[] = [];
 
     const added = await applyClawAddPlan(plan, {
@@ -182,7 +182,7 @@ describe("package-root BOOTSTRAP.md", () => {
       throw new Error("expected package bootstrap");
     }
     const workspace = join(root, "workspace");
-    const env = { OPENCLAW_STATE_DIR: join(root, "state") };
+    const env = { AFORA_STATE_DIR: join(root, "state") };
     const plan = await buildClawAddPlan({
       manifest: read.manifest,
       clawMarkdownBody: read.clawMarkdownBody,
@@ -190,7 +190,7 @@ describe("package-root BOOTSTRAP.md", () => {
       source: read.source,
       context: { workspace },
     });
-    let config: OpenClawConfig = {};
+    let config: AforaConfig = {};
 
     const added = await applyClawAddPlan(plan, {
       env,
@@ -239,7 +239,7 @@ describe("package-root BOOTSTRAP.md", () => {
       throw new Error("expected package bootstrap");
     }
     const workspace = join(root, "workspace");
-    const env = { OPENCLAW_STATE_DIR: join(root, "state") };
+    const env = { AFORA_STATE_DIR: join(root, "state") };
     const plan = await buildClawAddPlan({
       manifest: read.manifest,
       clawMarkdownBody: read.clawMarkdownBody,
@@ -247,7 +247,7 @@ describe("package-root BOOTSTRAP.md", () => {
       source: read.source,
       context: { workspace },
     });
-    let config: OpenClawConfig = {};
+    let config: AforaConfig = {};
 
     const added = await applyClawAddPlan(plan, {
       env,
@@ -289,7 +289,7 @@ describe("package-root BOOTSTRAP.md", () => {
       throw new Error("expected package bootstrap");
     }
     const workspace = join(root, "workspace");
-    const env = { OPENCLAW_STATE_DIR: join(root, "state") };
+    const env = { AFORA_STATE_DIR: join(root, "state") };
     const addPlan = await buildClawAddPlan({
       manifest: read.manifest,
       clawMarkdownBody: read.clawMarkdownBody,
@@ -297,7 +297,7 @@ describe("package-root BOOTSTRAP.md", () => {
       source: read.source,
       context: { workspace },
     });
-    let config: OpenClawConfig = {};
+    let config: AforaConfig = {};
     let releaseSeed!: () => void;
     const seedReleased = new Promise<void>((resolve) => {
       releaseSeed = resolve;
@@ -340,7 +340,7 @@ describe("package-root BOOTSTRAP.md", () => {
       throw new Error("expected package bootstrap");
     }
     const workspace = join(root, "workspace");
-    const env = { OPENCLAW_STATE_DIR: join(root, "state") };
+    const env = { AFORA_STATE_DIR: join(root, "state") };
     const addPlan = await buildClawAddPlan({
       manifest: read.manifest,
       clawMarkdownBody: read.clawMarkdownBody,
@@ -420,7 +420,7 @@ describe("package-root BOOTSTRAP.md", () => {
     if (!read.ok || !read.packageBootstrap) {
       throw new Error("expected package bootstrap");
     }
-    const env = { OPENCLAW_STATE_DIR: join(root, "state") };
+    const env = { AFORA_STATE_DIR: join(root, "state") };
     const context = { workspace: join(root, "workspace") };
     const addPlan = await buildClawAddPlan({
       manifest: read.manifest,
@@ -451,14 +451,14 @@ describe("package-root BOOTSTRAP.md", () => {
       throw new Error("expected package bootstrap");
     }
     const workspace = join(root, "workspace");
-    const env = { OPENCLAW_STATE_DIR: join(root, "state") };
+    const env = { AFORA_STATE_DIR: join(root, "state") };
     const addPlan = await buildClawAddPlan({
       manifest: read.manifest,
       packageBootstrap: read.packageBootstrap,
       source: read.source,
       context: { workspace },
     });
-    let config: OpenClawConfig = {};
+    let config: AforaConfig = {};
     await applyClawAddPlan(addPlan, {
       env,
       consentPlanIntegrity: addPlan.planIntegrity,
@@ -501,14 +501,14 @@ describe("package-root BOOTSTRAP.md", () => {
       throw new Error("expected package bootstrap");
     }
     const workspace = join(root, "workspace");
-    const env = { OPENCLAW_STATE_DIR: join(root, "state") };
+    const env = { AFORA_STATE_DIR: join(root, "state") };
     const addPlan = await buildClawAddPlan({
       manifest: read.manifest,
       packageBootstrap: read.packageBootstrap,
       source: read.source,
       context: { workspace },
     });
-    let config: OpenClawConfig = {};
+    let config: AforaConfig = {};
     await applyClawAddPlan(addPlan, {
       env,
       consentPlanIntegrity: addPlan.planIntegrity,
@@ -549,14 +549,14 @@ describe("package-root BOOTSTRAP.md", () => {
       throw new Error("expected package bootstrap");
     }
     const workspace = join(root, "workspace");
-    const env = { OPENCLAW_STATE_DIR: join(root, "state") };
+    const env = { AFORA_STATE_DIR: join(root, "state") };
     const addPlan = await buildClawAddPlan({
       manifest: read.manifest,
       packageBootstrap: read.packageBootstrap,
       source: read.source,
       context: { workspace },
     });
-    let config: OpenClawConfig = {};
+    let config: AforaConfig = {};
     await applyClawAddPlan(addPlan, {
       env,
       consentPlanIntegrity: addPlan.planIntegrity,

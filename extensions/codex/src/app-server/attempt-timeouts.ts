@@ -2,7 +2,7 @@
  * Timeout defaults and normalizers for Codex app-server startup and turn
  * liveness watches.
  */
-import { addTimerTimeoutGraceMs, resolveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
+import { addTimerTimeoutGraceMs, resolveTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
 
 /** Minimum startup timeout accepted by the Codex app-server harness. */
 const CODEX_APP_SERVER_STARTUP_TIMEOUT_FLOOR_MS = 100;

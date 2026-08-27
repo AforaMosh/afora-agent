@@ -1,5 +1,5 @@
 import path from "node:path";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import JSON5 from "json5";
 import { VERSION } from "../version.js";
 import { formatConfigIssueLines } from "./issue-format.js";
@@ -347,7 +347,7 @@ function attachConfigIssueDiagnostics(
   const sourceFile =
     typeof params.configPath === "string" && params.configPath.trim()
       ? path.basename(params.configPath)
-      : "openclaw.json";
+      : "afora.json";
   return issues.map((issue) => {
     const segments = issue.pathSegments;
     if (!segments || segments.length === 0) {
@@ -390,7 +390,7 @@ export function renderConfigValidationIssueLines(
   return shouldWarnOnTouchedVersion(VERSION, touchedVersion)
     ? [
         ...lines,
-        `Config was last written by OpenClaw ${touchedVersion}, but you are running ${VERSION} — upgrade or re-run setup.`,
+        `Config was last written by Afora ${touchedVersion}, but you are running ${VERSION} — upgrade or re-run setup.`,
       ]
     : lines;
 }

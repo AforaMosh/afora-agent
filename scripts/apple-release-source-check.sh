@@ -61,8 +61,8 @@ if [[ -z "${EXPECTED_COMMIT}" ]]; then
   exit 1
 fi
 
-EXPECTED_COMMIT="$(openclaw_trim_build_metadata_value "${EXPECTED_COMMIT}")"
-if ! openclaw_is_full_git_commit "${EXPECTED_COMMIT}"; then
+EXPECTED_COMMIT="$(afora_trim_build_metadata_value "${EXPECTED_COMMIT}")"
+if ! afora_is_full_git_commit "${EXPECTED_COMMIT}"; then
   echo "Apple release commit must be a full 40-character hexadecimal SHA." >&2
   exit 1
 fi
@@ -72,7 +72,7 @@ if ! CHECKOUT_COMMIT="$(git -C "${ROOT_DIR}" rev-parse --verify HEAD 2>/dev/null
   echo "Apple release builds require a readable Git checkout." >&2
   exit 1
 fi
-if ! openclaw_is_full_git_commit "${CHECKOUT_COMMIT}"; then
+if ! afora_is_full_git_commit "${CHECKOUT_COMMIT}"; then
   echo "Apple release checkout HEAD must be a full Git commit." >&2
   exit 1
 fi

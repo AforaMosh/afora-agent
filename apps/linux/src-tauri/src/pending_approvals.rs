@@ -1,4 +1,4 @@
-use crate::cli::OpenClawCli;
+use crate::cli::AforaCli;
 use serde::Deserialize;
 use std::collections::HashSet;
 use std::process::Output;
@@ -71,7 +71,7 @@ struct DevicePairingList {
     pending: Vec<DevicePendingRequest>,
 }
 
-pub fn fetch(cli: &OpenClawCli) -> Result<Vec<PendingApproval>, String> {
+pub fn fetch(cli: &AforaCli) -> Result<Vec<PendingApproval>, String> {
     let (nodes, node_output) = cli
         .json::<Vec<NodePendingRequest>, _, _>(["nodes", "pending", "--json"])
         .map_err(|error| error.to_string())?;
@@ -104,7 +104,7 @@ fn require_success(command: &str, output: &Output) -> Result<(), String> {
     if output.status.success() {
         Ok(())
     } else {
-        Err(format!("openclaw {command} exited with {}", output.status))
+        Err(format!("afora {command} exited with {}", output.status))
     }
 }
 

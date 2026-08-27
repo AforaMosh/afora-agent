@@ -1,4 +1,4 @@
-import type { Context, Model } from "@openclaw/llm-core";
+import type { Context, Model } from "@afora/llm-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const sdkState = vi.hoisted(() => ({

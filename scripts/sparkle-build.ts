@@ -1,5 +1,5 @@
 #!/usr/bin/env -S node --import tsx
-// Sparkle Build script supports OpenClaw repository automation.
+// Sparkle Build script supports Afora repository automation.
 
 import { pathToFileURL } from "node:url";
 

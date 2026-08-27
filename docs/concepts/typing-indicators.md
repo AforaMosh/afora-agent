@@ -1,5 +1,5 @@
 ---
-summary: "When OpenClaw shows typing indicators and how to tune them"
+summary: "When Afora shows typing indicators and how to tune them"
 read_when:
   - Changing typing indicator behavior or defaults
 title: "Typing indicators"

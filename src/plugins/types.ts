@@ -88,16 +88,16 @@ export type {
   ProviderThinkingProfile,
 } from "./provider-thinking.types.js";
 export type {
-  OpenClawPluginActiveModelContext,
-  OpenClawPluginHookOptions,
-  OpenClawPluginToolContext,
-  OpenClawPluginToolFactory,
-  OpenClawPluginToolOptions,
+  AforaPluginActiveModelContext,
+  AforaPluginHookOptions,
+  AforaPluginToolContext,
+  AforaPluginToolFactory,
+  AforaPluginToolOptions,
 } from "./tool-types.js";
 export type {
-  OpenClawPluginNodeHostCommand,
-  OpenClawPluginNodeHostCommandAvailabilityContext,
-  OpenClawPluginNodeHostCommandIo,
+  AforaPluginNodeHostCommand,
+  AforaPluginNodeHostCommandAvailabilityContext,
+  AforaPluginNodeHostCommandIo,
 } from "./types.node-host.js";
 export type {
   PluginWebFetchProviderEntry,
@@ -157,26 +157,26 @@ export type {
   MigrationProviderPlugin,
   MigrationSummary,
 } from "./migration-provider.types.js";
-export type { OpenClawPluginApi } from "./plugin-api.types.js";
+export type { AforaPluginApi } from "./plugin-api.types.js";
 export type {
   AgentPromptGuidance,
   AgentPromptGuidanceEntry,
   AgentPromptSurfaceKind,
-  OpenClawPluginCommandDefinition,
+  AforaPluginCommandDefinition,
   PluginCommandContext,
   PluginCommandResult,
 } from "./plugin-command.types.js";
-export type { OpenClawPluginConfigSchema } from "./plugin-config-schema.types.js";
-export type { OpenClawPluginDefinition } from "./plugin-definition.types.js";
+export type { AforaPluginConfigSchema } from "./plugin-config-schema.types.js";
+export type { AforaPluginDefinition } from "./plugin-definition.types.js";
 export type {
-  OpenClawGatewayDiscoveryService,
-  OpenClawPluginNodeInvokePolicy,
-  OpenClawPluginNodeInvokePolicyContext,
-  OpenClawPluginNodeInvokePolicyResult,
-  OpenClawPluginReloadRegistration,
-  OpenClawPluginSecurityAuditCollector,
-  OpenClawPluginService,
-  OpenClawPluginServiceContext,
+  AforaGatewayDiscoveryService,
+  AforaPluginNodeInvokePolicy,
+  AforaPluginNodeInvokePolicyContext,
+  AforaPluginNodeInvokePolicyResult,
+  AforaPluginReloadRegistration,
+  AforaPluginSecurityAuditCollector,
+  AforaPluginService,
+  AforaPluginServiceContext,
 } from "./plugin-registration.types.js";
 export type {
   ProviderAuthContext,
@@ -233,9 +233,9 @@ export type {
   ProviderWrapStreamFnContext,
 } from "./provider-transport.types.js";
 export type {
-  OpenClawGatewayDiscoveryAdvertiseContext,
-  OpenClawPluginHttpRouteHandler,
-  OpenClawPluginSecurityAuditContext,
+  AforaGatewayDiscoveryAdvertiseContext,
+  AforaPluginHttpRouteHandler,
+  AforaPluginSecurityAuditContext,
 } from "./plugin-registration.types.js";
 export type { ProviderUsageAuthToken } from "./provider-runtime.types.js";
 export type { WorkerSshIdentityRequest } from "./capability-provider.types.js";
@@ -246,14 +246,14 @@ export type {
   VideoGenerationProviderPlugin,
 } from "./capability-provider.types.js";
 export type {
-  OpenClawPluginCliRegistrationOptions,
-  OpenClawPluginCliRegistrar,
-  OpenClawPluginCliRootCommandDescriptor,
-  OpenClawPluginGatewayRuntimeScopeSurface,
-  OpenClawPluginHostedMediaResolver,
-  OpenClawPluginHttpRouteAuth,
-  OpenClawPluginHttpRouteMatch,
-  OpenClawPluginHttpRouteUpgradeHandler,
+  AforaPluginCliRegistrationOptions,
+  AforaPluginCliRegistrar,
+  AforaPluginCliRootCommandDescriptor,
+  AforaPluginGatewayRuntimeScopeSurface,
+  AforaPluginHostedMediaResolver,
+  AforaPluginHttpRouteAuth,
+  AforaPluginHttpRouteMatch,
+  AforaPluginHttpRouteUpgradeHandler,
   PluginInteractiveHandlerRegistration,
   PluginRegistrationMode,
 } from "./plugin-registration.types.js";

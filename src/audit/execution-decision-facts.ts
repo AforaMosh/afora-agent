@@ -9,20 +9,20 @@ import {
   getNodeSqliteKysely,
 } from "../infra/kysely-sync.js";
 import { normalizeSqliteNumber } from "../infra/sqlite-number.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../state/openclaw-state-db-readonly.js";
-import { tableExists } from "../state/openclaw-state-db-schema-helpers.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../state/afora-state-db-readonly.js";
+import { tableExists } from "../state/afora-state-db-schema-helpers.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
 
 type ExecutionDecisionDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "execution_decision_facts" | "execution_identity_contexts"
 >;
-type ExecutionDecisionRow = Selectable<OpenClawStateKyselyDatabase["execution_decision_facts"]>;
+type ExecutionDecisionRow = Selectable<AforaStateKyselyDatabase["execution_decision_facts"]>;
 type ExecutionDecisionMetadataRow = Omit<ExecutionDecisionRow, "receipt_json"> & {
   receipt_rowid: number;
   payload_bytes: number;
@@ -70,7 +70,7 @@ CREATE INDEX IF NOT EXISTS execution_decision_facts_run_occurred_idx
   ON execution_decision_facts (run_id, occurred_at, receipt_id);
 `;
 
-type ExecutionDecisionFactOptions = OpenClawStateDatabaseOptions & {
+type ExecutionDecisionFactOptions = AforaStateDatabaseOptions & {
   now?: number;
   limits?: { maxRows: number; pruneBatchRows: number };
 };
@@ -79,12 +79,12 @@ function decisionDb(db: DatabaseSync) {
   return getNodeSqliteKysely<ExecutionDecisionDatabase>(db);
 }
 
-function ensureExecutionDecisionFactSchema(options: OpenClawStateDatabaseOptions = {}): void {
-  const database = openOpenClawStateDatabase(options);
+function ensureExecutionDecisionFactSchema(options: AforaStateDatabaseOptions = {}): void {
+  const database = openAforaStateDatabase(options);
   if (ensuredDatabases.has(database.db)) {
     return;
   }
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       // sqlite-allow-raw -- feature-local additive schema DDL; fact rows use Kysely.
       db.exec(EXECUTION_DECISION_FACT_SCHEMA_SQL);
@@ -161,7 +161,7 @@ function unknownDecisionReceipt(
     remediation: [
       {
         code: "inspect_state_integrity",
-        text: "Run openclaw doctor and inspect the shared state database before trusting this decision.",
+        text: "Run afora doctor and inspect the shared state database before trusting this decision.",
       },
     ],
   };
@@ -242,7 +242,7 @@ export function recordExecutionDecisionFact(
   if (receipt.source.owner === "operator_approvals") {
     throw new Error("operator approvals must be read from their owner-native table");
   }
-  const opened = openOpenClawStateDatabase(options);
+  const opened = openAforaStateDatabase(options);
   if (!hasExactExecutionContext(opened.db, receipt)) {
     throw new Error("execution decision fact requires an exact retained execution context");
   }
@@ -252,7 +252,7 @@ export function recordExecutionDecisionFact(
     throw new Error("execution decision fact exceeds 16 KiB");
   }
   ensureExecutionDecisionFactSchema(options);
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db }) => {
       const kysely = decisionDb(db);
       // The context is the authoritative tuple owner; reread it inside the commit section.
@@ -425,14 +425,14 @@ function projectDecisionRow(
 export function summarizeExecutionDecisionFactsForContext(params: {
   context: ExecutionDecisionContext;
   now?: number;
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): {
   count: number;
   coverageState?: "enforced" | "unknown" | "unsupported";
   missingEvidence: string[];
 } {
   return (
-    withExistingOpenClawStateDatabaseReadOnly(({ db }) => {
+    withExistingAforaStateDatabaseReadOnly(({ db }) => {
       if (!tableExists(db, "execution_decision_facts")) {
         return { count: 0, missingEvidence: [] };
       }
@@ -495,10 +495,10 @@ export function summarizeExecutionDecisionFactsForContext(params: {
 export function hasExecutionDecisionFactsForRun(params: {
   runId: string;
   now?: number;
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): boolean {
   return (
-    withExistingOpenClawStateDatabaseReadOnly(({ db }) => {
+    withExistingAforaStateDatabaseReadOnly(({ db }) => {
       if (!tableExists(db, "execution_decision_facts")) {
         return false;
       }
@@ -527,10 +527,10 @@ export function pageExecutionDecisionFactsForContext(params: {
   offset?: number;
   limit: number;
   now?: number;
-  database?: OpenClawStateDatabaseOptions;
+  database?: AforaStateDatabaseOptions;
 }): ExecutionDecisionFactPage {
   return (
-    withExistingOpenClawStateDatabaseReadOnly(({ db }) => {
+    withExistingAforaStateDatabaseReadOnly(({ db }) => {
       if (!tableExists(db, "execution_decision_facts")) {
         return { receipts: [] };
       }
@@ -580,14 +580,14 @@ export function pageExecutionDecisionFactsForContext(params: {
 
 /** Delete one bounded batch without creating the optional table. */
 export function pruneExpiredExecutionDecisionFacts(
-  params: { now?: number; database?: OpenClawStateDatabaseOptions } = {},
+  params: { now?: number; database?: AforaStateDatabaseOptions } = {},
 ): number {
   const databaseOptions = params.database ?? {};
-  const database = openOpenClawStateDatabase(databaseOptions);
+  const database = openAforaStateDatabase(databaseOptions);
   if (!tableExists(database.db, "execution_decision_facts")) {
     return 0;
   }
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db }) =>
       Number(
         deleteExpiredDecisionFacts(

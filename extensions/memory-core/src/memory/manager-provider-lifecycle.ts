@@ -1,24 +1,24 @@
 // Memory Core plugin module owns embedding provider lifecycle.
-import { resolveAgentConfig } from "openclaw/plugin-sdk/agent-runtime";
+import { resolveAgentConfig } from "afora-agent/plugin-sdk/agent-runtime";
 import {
   formatErrorMessage,
   readErrorName,
   toErrorObject,
-} from "openclaw/plugin-sdk/error-runtime";
-import { listRegisteredMemoryEmbeddingProviderAdapters } from "openclaw/plugin-sdk/memory-core-host-embedding-registry";
+} from "afora-agent/plugin-sdk/error-runtime";
+import { listRegisteredMemoryEmbeddingProviderAdapters } from "afora-agent/plugin-sdk/memory-core-host-embedding-registry";
 import {
   createSubsystemLogger,
   resolveAgentDir,
-  type OpenClawConfig,
+  type AforaConfig,
   type ResolvedMemorySearchConfig,
-} from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-foundation";
 import type {
   MemoryEmbeddingProbeResult,
   MemorySearchRuntimeDebug,
   MemorySyncParams,
-} from "openclaw/plugin-sdk/memory-core-host-engine-storage";
-import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
-import { redactSensitiveText } from "openclaw/plugin-sdk/security-runtime";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
+import { normalizeAgentId } from "afora-agent/plugin-sdk/routing";
+import { redactSensitiveText } from "afora-agent/plugin-sdk/security-runtime";
 import {
   createEmbeddingProvider,
   resolveEmbeddingProviderAdapterTransport,
@@ -76,7 +76,7 @@ export function resolveEffectiveMemorySearchSettings(
 }
 
 function resolveConfiguredMemoryEmbeddingProvider(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
 }): string | undefined {
   const agentEntry = resolveAgentConfig(params.cfg, normalizeAgentId(params.agentId));
@@ -84,7 +84,7 @@ function resolveConfiguredMemoryEmbeddingProvider(params: {
 }
 
 export function resolveMemoryEmbeddingProviderRequirement(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   settings: ResolvedMemorySearchConfig;
 }): MemoryEmbeddingProviderRequirement {

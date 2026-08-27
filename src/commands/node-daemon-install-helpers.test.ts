@@ -42,7 +42,7 @@ describe("buildNodeInstallPlan", () => {
     });
     mocks.renderSystemNodeWarning.mockReturnValue(undefined);
     mocks.buildNodeServiceEnvironment.mockReturnValue({
-      OPENCLAW_SERVICE_MARKER: "openclaw",
+      AFORA_SERVICE_MARKER: "afora",
     });
 
     const plan = await buildNodeInstallPlan({
@@ -54,11 +54,11 @@ describe("buildNodeInstallPlan", () => {
     });
 
     expect(plan.environment).toEqual({
-      OPENCLAW_SERVICE_MARKER: "openclaw",
+      AFORA_SERVICE_MARKER: "afora",
     });
     expect(plan.environmentValueSources).toEqual({
-      OPENCLAW_GATEWAY_TOKEN: "file",
-      OPENCLAW_GATEWAY_PASSWORD: "file", // pragma: allowlist secret
+      AFORA_GATEWAY_TOKEN: "file",
+      AFORA_GATEWAY_PASSWORD: "file", // pragma: allowlist secret
       CF_ACCESS_CLIENT_ID: "file",
       CF_ACCESS_CLIENT_SECRET: "file", // pragma: allowlist secret
     });
@@ -81,7 +81,7 @@ describe("buildNodeInstallPlan", () => {
     });
     mocks.renderSystemNodeWarning.mockReturnValue(undefined);
     mocks.buildNodeServiceEnvironment.mockReturnValue({
-      OPENCLAW_SERVICE_MARKER: "openclaw",
+      AFORA_SERVICE_MARKER: "afora",
     });
 
     await buildNodeInstallPlan({
@@ -110,27 +110,27 @@ describe("buildNodeInstallPlan", () => {
     });
     mocks.renderSystemNodeWarning.mockReturnValue(undefined);
     mocks.buildNodeServiceEnvironment.mockReturnValue({
-      OPENCLAW_GATEWAY_TOKEN: "node-token",
-      OPENCLAW_GATEWAY_PASSWORD: "node-password",
-      OPENCLAW_SERVICE_MARKER: "openclaw",
+      AFORA_GATEWAY_TOKEN: "node-token",
+      AFORA_GATEWAY_PASSWORD: "node-password",
+      AFORA_SERVICE_MARKER: "afora",
     });
 
     const plan = await buildNodeInstallPlan({
       env: {
-        OPENCLAW_GATEWAY_TOKEN: "node-token",
-        OPENCLAW_GATEWAY_PASSWORD: "node-password",
+        AFORA_GATEWAY_TOKEN: "node-token",
+        AFORA_GATEWAY_PASSWORD: "node-password",
       },
       host: "127.0.0.1",
       port: 18789,
       runtime: "node",
     });
 
-    expect(plan.environment.OPENCLAW_GATEWAY_TOKEN).toBe("node-token");
-    expect(plan.environment.OPENCLAW_GATEWAY_PASSWORD).toBe("node-password");
-    expect(plan.description).toBe("OpenClaw Node Host");
+    expect(plan.environment.AFORA_GATEWAY_TOKEN).toBe("node-token");
+    expect(plan.environment.AFORA_GATEWAY_PASSWORD).toBe("node-password");
+    expect(plan.description).toBe("Afora Node Host");
     expect(plan.environmentValueSources).toEqual({
-      OPENCLAW_GATEWAY_TOKEN: "file",
-      OPENCLAW_GATEWAY_PASSWORD: "file", // pragma: allowlist secret
+      AFORA_GATEWAY_TOKEN: "file",
+      AFORA_GATEWAY_PASSWORD: "file", // pragma: allowlist secret
       CF_ACCESS_CLIENT_ID: "file",
       CF_ACCESS_CLIENT_SECRET: "file", // pragma: allowlist secret
     });

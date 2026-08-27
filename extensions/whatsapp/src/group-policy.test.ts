@@ -4,7 +4,7 @@ import {
   resolveWhatsAppGroupRequireMention,
   resolveWhatsAppGroupToolPolicy,
 } from "./group-policy.js";
-import type { OpenClawConfig } from "./runtime-api.js";
+import type { AforaConfig } from "./runtime-api.js";
 
 describe("whatsapp group policy", () => {
   it("resolves exact, wildcard, and unconfigured policies", () => {
@@ -23,7 +23,7 @@ describe("whatsapp group policy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveWhatsAppGroupRequireMention({ cfg, groupId: "1203630@g.us" })).toBe(false);
     expect(resolveWhatsAppGroupRequireMention({ cfg, groupId: "other@g.us" })).toBe(true);
@@ -47,7 +47,7 @@ describe("whatsapp group policy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const fallbackCfg = {
       channels: {
         whatsapp: {
@@ -55,7 +55,7 @@ describe("whatsapp group policy", () => {
           accounts: { work: { groups: {} } },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       resolveWhatsAppGroupRequireMention({
@@ -85,7 +85,7 @@ describe("whatsapp group policy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       resolveWhatsAppGroupToolPolicy({

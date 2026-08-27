@@ -3,7 +3,7 @@
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { resolveAgentMainSessionKey } from "../config/sessions.js";
 import { runHeartbeatOnce } from "../infra/heartbeat-runner.js";
 import {
@@ -33,7 +33,7 @@ afterEach(() => {
 const noopLogger = { debug() {}, info() {}, warn() {}, error() {} };
 
 function makeSandbox() {
-  const dir = tempDirs.make("openclaw-cron-real-heartbeat-");
+  const dir = tempDirs.make("afora-cron-real-heartbeat-");
   return {
     dir,
     cronStorePath: path.join(dir, "cron", "jobs.json"),
@@ -53,7 +53,7 @@ async function runMainCronCase(mode: WakeNowRunMode, wakeMode: "now" | "next-hea
     resolveFinished = resolve;
   });
 
-  const cfg: OpenClawConfig = {
+  const cfg: AforaConfig = {
     agents: {
       defaults: {
         workspace: sandbox.dir,

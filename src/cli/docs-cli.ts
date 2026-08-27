@@ -1,4 +1,4 @@
-// Commander registration for live OpenClaw docs search.
+// Commander registration for live Afora docs search.
 import type { Command } from "commander";
 import { formatDocsLink } from "../../packages/terminal-core/src/links.js";
 import { theme } from "../../packages/terminal-core/src/theme.js";
@@ -9,13 +9,13 @@ import { runCommandWithRuntime } from "./cli-utils.js";
 export function registerDocsCli(program: Command) {
   program
     .command("docs")
-    .description("Search the live OpenClaw docs")
+    .description("Search the live Afora docs")
     .argument("[query...]", "Search query")
     .option("--json", "Output JSON", false)
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/docs", "docs.openclaw.ai/cli/docs")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/docs", "docs.afora.ai/cli/docs")}\n`,
     )
     .action(async (queryParts: string[], opts: { json?: boolean }) => {
       await runCommandWithRuntime(defaultRuntime, async () => {

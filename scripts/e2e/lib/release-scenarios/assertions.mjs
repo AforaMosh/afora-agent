@@ -29,8 +29,8 @@ function assert(condition, message) {
 
 function configPath() {
   return (
-    process.env.OPENCLAW_CONFIG_PATH ??
-    path.join(process.env.HOME ?? "", ".openclaw", "openclaw.json")
+    process.env.AFORA_CONFIG_PATH ??
+    path.join(process.env.HOME ?? "", ".afora", "afora.json")
   );
 }
 
@@ -41,7 +41,7 @@ function writeConfig(cfg) {
 function authProfilesPath() {
   return path.join(
     process.env.HOME ?? "",
-    ".openclaw",
+    ".afora",
     "agents",
     "main",
     "agent",
@@ -52,11 +52,11 @@ function authProfilesPath() {
 function authProfilesDatabasePath() {
   return path.join(
     process.env.HOME ?? "",
-    ".openclaw",
+    ".afora",
     "agents",
     "main",
     "agent",
-    "openclaw-agent.sqlite",
+    "afora-agent.sqlite",
   );
 }
 
@@ -95,7 +95,7 @@ function configureMockOpenAi() {
 
 function assertOpenAiEnvRef() {
   const rawKey = process.argv[3];
-  assert(fs.existsSync(configPath()), "openclaw.json missing");
+  assert(fs.existsSync(configPath()), "afora.json missing");
   assertOpenAiEnvAuthProfileStore(readAuthProfileStoreSqliteText(), {
     missingMessage: "OpenAI env ref was not persisted",
     envRefMessage: "OpenAI env ref was not persisted",
@@ -151,7 +151,7 @@ function assertImageDescribe() {
   assert(payload.ok === true, `image describe failed: ${JSON.stringify(payload)}`);
   assert(payload.capability === "image.describe", "wrong image describe capability");
   const output = payload.outputs?.[0];
-  assert(output?.text?.includes("OPENCLAW_E2E_OK"), "image description marker missing");
+  assert(output?.text?.includes("AFORA_E2E_OK"), "image description marker missing");
   assert(output.provider === "openai", `unexpected image provider: ${output?.provider}`);
   assert(
     fileContainsText(requestLogPath, "/v1/responses"),
@@ -192,7 +192,7 @@ function assertPluginUninstalled() {
   assert(!cfg.plugins?.entries?.[pluginId], `plugin config entry still present for ${pluginId}`);
   const managedRoot = path.join(
     process.env.HOME ?? "",
-    ".openclaw",
+    ".afora",
     "plugins",
     "installed",
     pluginId,

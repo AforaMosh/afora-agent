@@ -1,13 +1,13 @@
 import {
   createMessageReceiptFromOutboundResults,
   defineChannelMessageAdapter,
-} from "openclaw/plugin-sdk/channel-outbound";
+} from "afora-agent/plugin-sdk/channel-outbound";
 import type {
   ChannelOutboundAdapter,
   OutboundDeliveryResult,
-} from "openclaw/plugin-sdk/channel-send-result";
-import { PlatformMessageNotDispatchedError } from "openclaw/plugin-sdk/error-runtime";
-import { sanitizeAssistantVisibleText } from "openclaw/plugin-sdk/text-chunking";
+} from "afora-agent/plugin-sdk/channel-send-result";
+import { PlatformMessageNotDispatchedError } from "afora-agent/plugin-sdk/error-runtime";
+import { sanitizeAssistantVisibleText } from "afora-agent/plugin-sdk/text-chunking";
 import { canonicalBytes, REEF_MAX_PLAINTEXT_BYTES } from "../protocol/index.js";
 import { normalizeReefTarget } from "./config-schema.js";
 import { isPermanentReefOutboundRejection, prepareReefMessageId } from "./flow.js";

@@ -17,7 +17,7 @@ import {
   resetSubagentRegistryForTests,
 } from "../../agents/subagents/registry/subagent-registry.test-helpers.js";
 import type { SubagentRunRecord } from "../../agents/subagents/registry/subagent-registry.types.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { failTaskRunByRunIdCore } from "../../tasks/task-executor.js";
 import { createTaskRecord } from "../../tasks/task-registry.js";
 import { resetTaskRegistryForTests } from "../../tasks/task-runtime.test-helpers.js";
@@ -149,10 +149,10 @@ describe("subagents status", () => {
 describe("subagents info", () => {
   const TEST_SESSION_STORE_PATH = path.join(
     os.tmpdir(),
-    `openclaw-commands-subagents-info-${process.pid}.json`,
+    `afora-commands-subagents-info-${process.pid}.json`,
   );
 
-  function buildCommandTestConfig(): OpenClawConfig {
+  function buildCommandTestConfig(): AforaConfig {
     return {
       ...baseCommandTestConfig,
       session: {
@@ -162,7 +162,7 @@ describe("subagents info", () => {
     };
   }
 
-  function buildInfoContext(params: { cfg: OpenClawConfig; runs: object[]; restTokens: string[] }) {
+  function buildInfoContext(params: { cfg: AforaConfig; runs: object[]; restTokens: string[] }) {
     return {
       params: {
         cfg: params.cfg,
@@ -185,7 +185,7 @@ describe("subagents info", () => {
     const cfg = {
       commands: { text: true },
       channels: { quietchat: { allowFrom: ["*"] } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const result = handleSubagentsInfoAction(buildInfoContext({ cfg, runs: [], restTokens: [] }));
     expect(result.shouldContinue).toBe(false);
     expect(result.reply?.text).toContain("/subagents info <id|#>");
@@ -348,7 +348,7 @@ describe("subagents info", () => {
         outcome: {
           status: "error",
           error: [
-            "OpenClaw runtime context (internal):",
+            "Afora runtime context (internal):",
             "This context is runtime-generated, not user-authored. Keep internal details private.",
             "",
             "[Internal task completion event]",
@@ -371,7 +371,7 @@ describe("subagents info", () => {
       runId,
       endedAt: now - 1_000,
       error: [
-        "OpenClaw runtime context (internal):",
+        "Afora runtime context (internal):",
         "This context is runtime-generated, not user-authored. Keep internal details private.",
         "",
         "[Internal task completion event]",
@@ -389,7 +389,7 @@ describe("subagents info", () => {
     expect(text).toContain("Subagent info");
     expect(text).toContain("Outcome: error");
     expect(text).toContain("Task summary: Needs manual follow-up.");
-    expect(text).not.toContain("OpenClaw runtime context (internal):");
+    expect(text).not.toContain("Afora runtime context (internal):");
     expect(text).not.toContain("Internal task completion event");
   });
 
@@ -427,7 +427,7 @@ describe("subagents info", () => {
       commands: { text: true },
       channels: { quietchat: { allowFrom: ["*"] } },
       session: { mainKey: "main", scope: "per-sender", store: TEST_SESSION_STORE_PATH },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const result = handleSubagentsInfoAction({
       params: {
         cfg,
@@ -466,7 +466,7 @@ describe("subagents log", () => {
   function buildLogContext(restTokens: string[], runs: SubagentRunRecord[]) {
     return {
       params: {
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         sessionKey: "agent:main:main",
       },
       handledPrefix: "/subagents",

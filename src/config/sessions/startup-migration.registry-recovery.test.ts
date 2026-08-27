@@ -4,18 +4,18 @@ import { afterEach, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import * as sessionDirs from "../../agents/session-dirs.js";
 import { EMPTY_LEGACY_SESSION_SURFACES } from "../../plugins/legacy-session-surfaces.types.js";
-import { invalidateRegisteredAgentDatabasesMemo } from "../../state/openclaw-agent-db-registry-listing.js";
-import { unregisterOpenClawAgentDatabase } from "../../state/openclaw-agent-db-registry.js";
+import { invalidateRegisteredAgentDatabasesMemo } from "../../state/afora-agent-db-registry-listing.js";
+import { unregisterAforaAgentDatabase } from "../../state/afora-agent-db-registry.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  listOpenClawRegisteredAgentDatabases,
-} from "../../state/openclaw-agent-db.js";
+  closeAforaAgentDatabasesForTest,
+  listAforaRegisteredAgentDatabases,
+} from "../../state/afora-agent-db.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  repairOpenClawStateDatabaseSchemaIfNeeded,
-} from "../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  repairAforaStateDatabaseSchemaIfNeeded,
+} from "../../state/afora-state-db.js";
 import { withEnvAsync } from "../../test-utils/env.js";
-import type { OpenClawConfig } from "../types.openclaw.js";
+import type { AforaConfig } from "../types.afora.js";
 import { loadCombinedSessionStoreForGatewayCore } from "./combined-store-gateway.js";
 import { replaceSessionEntry } from "./session-accessor.js";
 import { resolveSqliteTargetFromSessionStorePath } from "./session-sqlite-target.js";
@@ -24,17 +24,17 @@ import { runSessionStartupMigration } from "./startup-migration.js";
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 it("re-registers durable lineage children before configured-only runtime reads", async () => {
-  const root = fs.realpathSync.native(tempDirs.make("openclaw-startup-registry-recovery-"));
+  const root = fs.realpathSync.native(tempDirs.make("afora-startup-registry-recovery-"));
   const stateDir = path.join(root, "state");
-  await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+  await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
     const env = { ...process.env };
     const storeTemplate = path.join(stateDir, "agents", "{agentId}", "sessions", "sessions.json");
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: { entries: { ops: { default: true } } },
       session: { store: storeTemplate },
     };
@@ -64,12 +64,12 @@ it("re-registers durable lineage children before configured-only runtime reads",
       agentId: "codex",
       env,
     }).path;
-    closeOpenClawAgentDatabasesForTest();
-    unregisterOpenClawAgentDatabase({ agentId: "codex", env, path: childDatabasePath });
+    closeAforaAgentDatabasesForTest();
+    unregisterAforaAgentDatabase({ agentId: "codex", env, path: childDatabasePath });
 
     expect(fs.existsSync(childDatabasePath)).toBe(true);
     expect(
-      listOpenClawRegisteredAgentDatabases({ env }).some(
+      listAforaRegisteredAgentDatabases({ env }).some(
         (entry) => entry.agentId === "codex" && entry.path === childDatabasePath,
       ),
     ).toBe(false);
@@ -95,7 +95,7 @@ it("re-registers durable lineage children before configured-only runtime reads",
       },
     });
 
-    expect(listOpenClawRegisteredAgentDatabases({ env })).toContainEqual(
+    expect(listAforaRegisteredAgentDatabases({ env })).toContainEqual(
       expect.objectContaining({ agentId: "codex", path: childDatabasePath }),
     );
 
@@ -115,40 +115,40 @@ it("re-registers durable lineage children before configured-only runtime reads",
 });
 
 it("keeps copied state directories self-contained for combined gateway reads", async () => {
-  const root = fs.realpathSync.native(tempDirs.make("openclaw-copied-state-registry-"));
+  const root = fs.realpathSync.native(tempDirs.make("afora-copied-state-registry-"));
   const sourceStateDir = path.join(root, "source");
   fs.mkdirSync(sourceStateDir);
   const canonicalSourceStateDir = fs.realpathSync.native(sourceStateDir);
   const copiedStateDir = path.join(root, "copy");
-  const cfg: OpenClawConfig = {
+  const cfg: AforaConfig = {
     agents: { entries: { main: { default: true } } },
   };
   const sessionKey = "agent:main:copied-state";
 
-  await withEnvAsync({ OPENCLAW_STATE_DIR: canonicalSourceStateDir }, async () => {
+  await withEnvAsync({ AFORA_STATE_DIR: canonicalSourceStateDir }, async () => {
     const env = { ...process.env };
     await replaceSessionEntry(
       { agentId: "main", env, sessionKey },
       { sessionId: "copied-session", updatedAt: 1 },
     );
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     invalidateRegisteredAgentDatabasesMemo({ env });
   });
 
   fs.cpSync(canonicalSourceStateDir, copiedStateDir, { recursive: true });
   const canonicalCopiedStateDir = fs.realpathSync.native(copiedStateDir);
-  await withEnvAsync({ OPENCLAW_STATE_DIR: canonicalCopiedStateDir }, async () => {
+  await withEnvAsync({ AFORA_STATE_DIR: canonicalCopiedStateDir }, async () => {
     const env = { ...process.env };
-    expect(repairOpenClawStateDatabaseSchemaIfNeeded({ env }).warnings).toEqual([]);
+    expect(repairAforaStateDatabaseSchemaIfNeeded({ env }).warnings).toEqual([]);
     const combined = loadCombinedSessionStoreForGatewayCore(cfg, {
       configuredAgentsOnly: true,
     });
 
     expect(combined.store[sessionKey]?.sessionId).toBe("copied-session");
     expect(Object.keys(combined.store).filter((key) => key === sessionKey)).toHaveLength(1);
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     invalidateRegisteredAgentDatabasesMemo({ env });
   });
 });

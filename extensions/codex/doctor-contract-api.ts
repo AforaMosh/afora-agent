@@ -1,8 +1,8 @@
 /**
  * Doctor contract hooks for Codex plugin config and state migrations.
  */
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { asNullableRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { asNullableRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 type LegacyConfigRule = {
   path: string[];
@@ -37,19 +37,19 @@ export const legacyConfigRules: LegacyConfigRule[] = [
   {
     path: ["plugins", "entries", "codex", "config"],
     message:
-      'plugins.entries.codex.config.codexDynamicToolsProfile is retired; Codex app-server always keeps Codex-native workspace tools native. Run "openclaw doctor --fix".',
+      'plugins.entries.codex.config.codexDynamicToolsProfile is retired; Codex app-server always keeps Codex-native workspace tools native. Run "afora doctor --fix".',
     match: hasRetiredDynamicToolsProfile,
   },
   {
     path: ["plugins", "entries", "codex", "config", "codexPlugins"],
     message:
-      'plugins.entries.codex.config.codexPlugins.allow_destructive_actions="on-request" was renamed to "auto". Run "openclaw doctor --fix".',
+      'plugins.entries.codex.config.codexPlugins.allow_destructive_actions="on-request" was renamed to "auto". Run "afora doctor --fix".',
     match: hasLegacyPluginDestructivePolicy,
   },
   {
     path: ["plugins", "entries", "codex", "config", "appServer"],
     message:
-      'plugins.entries.codex.config.appServer.approvalPolicy="on-failure" was retired by Codex 0.143; use "on-request". Run "openclaw doctor --fix".',
+      'plugins.entries.codex.config.appServer.approvalPolicy="on-failure" was retired by Codex 0.143; use "on-request". Run "afora doctor --fix".',
     match: hasRetiredOnFailureApprovalPolicy,
   },
 ];
@@ -57,8 +57,8 @@ export const legacyConfigRules: LegacyConfigRule[] = [
 /**
  * Removes retired Codex plugin config keys while preserving unrelated config.
  */
-export function normalizeCompatibilityConfig({ cfg }: { cfg: OpenClawConfig }): {
-  config: OpenClawConfig;
+export function normalizeCompatibilityConfig({ cfg }: { cfg: AforaConfig }): {
+  config: AforaConfig;
   changes: string[];
 } {
   const rawEntry = asNullableRecord(cfg.plugins?.entries?.codex);
@@ -78,7 +78,7 @@ export function normalizeCompatibilityConfig({ cfg }: { cfg: OpenClawConfig }): 
     return { config: cfg, changes: [] };
   }
 
-  const nextConfig = structuredClone(cfg) as OpenClawConfig & {
+  const nextConfig = structuredClone(cfg) as AforaConfig & {
     plugins?: Record<string, unknown>;
   };
   const nextPlugins = asNullableRecord(nextConfig.plugins);

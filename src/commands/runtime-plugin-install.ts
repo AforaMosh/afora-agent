@@ -6,7 +6,7 @@
  */
 import { existsSync } from "node:fs";
 import path from "node:path";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { enablePluginInConfig } from "../plugins/enable.js";
 import { loadInstalledPluginIndexInstallRecords } from "../plugins/installed-plugin-index-records.js";
@@ -24,7 +24,7 @@ type RuntimePluginInstallDescriptor = {
 
 /** Result returned after ensuring a runtime plugin for a selected model. */
 type RuntimePluginInstallResult = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   required: boolean;
   installed: boolean;
   status?: "installed" | "skipped" | "failed" | "timed_out";
@@ -33,14 +33,14 @@ type RuntimePluginInstallResult = {
 
 /** Predicate that decides whether a config/model pair needs the runtime plugin. */
 type RuntimePluginSelection = (params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   model?: string;
   agentId?: string;
 }) => boolean;
 
 /** Parameters for installing or enabling a runtime plugin during setup. */
 type RuntimePluginEnsureParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   model?: string;
   agentId?: string;
   prompter: WizardPrompter;
@@ -50,7 +50,7 @@ type RuntimePluginEnsureParams = {
 
 /** Parameters for doctor-style runtime plugin repair. */
 type RuntimePluginRepairParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   model?: string;
   agentId?: string;
   env?: NodeJS.ProcessEnv;
@@ -77,7 +77,7 @@ function isInstalledRecordPresentOnDisk(
 
 /** Ensures the runtime plugin required by the selected model is installed and enabled. */
 async function ensureRuntimePluginForModelSelection(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   model?: string;
   agentId?: string;
   prompter: WizardPrompter;
@@ -157,7 +157,7 @@ async function ensureRuntimePluginForModelSelection(params: {
 
 /** Repairs missing install records for runtime plugins required by model selection. */
 async function repairRuntimePluginInstallForModelSelection(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   model?: string;
   agentId?: string;
   env?: NodeJS.ProcessEnv;

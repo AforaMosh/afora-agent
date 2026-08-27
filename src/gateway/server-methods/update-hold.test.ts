@@ -1,5 +1,5 @@
 // Update hold tests cover campaign deferral and its validated schedule response.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 type UpdateScheduleState =

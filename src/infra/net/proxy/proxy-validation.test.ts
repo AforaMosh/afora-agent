@@ -22,7 +22,7 @@ describe("proxy validation", () => {
   });
 
   function writeTempCa(contents = "proxy-ca"): string {
-    const dir = mkdtempSync(path.join(os.tmpdir(), "openclaw-proxy-validation-ca-"));
+    const dir = mkdtempSync(path.join(os.tmpdir(), "afora-proxy-validation-ca-"));
     tempDirs.push(dir);
     const caFile = path.join(dir, "proxy-ca.pem");
     writeFileSync(caFile, contents, "utf8");
@@ -79,7 +79,7 @@ describe("proxy validation", () => {
     }
   });
 
-  it("prefers the configured proxy URL over OPENCLAW_PROXY_URL", async () => {
+  it("prefers the configured proxy URL over AFORA_PROXY_URL", async () => {
     const fetchCheck = vi.fn().mockResolvedValue({ ok: true, status: 200 });
 
     const result = await runProxyValidation({
@@ -87,7 +87,7 @@ describe("proxy validation", () => {
         proxyUrl: "http://config-proxy.example:3128",
       },
       env: {
-        OPENCLAW_PROXY_URL: "http://env-proxy.example:3128",
+        AFORA_PROXY_URL: "http://env-proxy.example:3128",
       },
       allowedUrls: ["https://example.com/"],
       deniedUrls: [],
@@ -112,7 +112,7 @@ describe("proxy validation", () => {
 
     const result = await runProxyValidation({
       config: { enabled: false },
-      env: { OPENCLAW_PROXY_URL: "http://env-proxy.example:3128" },
+      env: { AFORA_PROXY_URL: "http://env-proxy.example:3128" },
       fetchCheck,
     });
 
@@ -158,7 +158,7 @@ describe("proxy validation", () => {
       config: {
         enabled: false,
         source: "disabled",
-        errors: ["proxy validation requires proxy.proxyUrl, OPENCLAW_PROXY_URL, or --proxy-url"],
+        errors: ["proxy validation requires proxy.proxyUrl, AFORA_PROXY_URL, or --proxy-url"],
       },
       checks: [],
     });
@@ -458,7 +458,7 @@ describe("proxy validation", () => {
   });
 
   it("does not load proxy CA files for plain HTTP proxy validation", async () => {
-    const missingCaFile = path.join(os.tmpdir(), "openclaw-missing-http-proxy-validation-ca.pem");
+    const missingCaFile = path.join(os.tmpdir(), "afora-missing-http-proxy-validation-ca.pem");
     const fetchCheck = vi.fn().mockResolvedValue({ ok: true, status: 200 });
 
     const result = await runProxyValidation({
@@ -501,7 +501,7 @@ describe("proxy validation", () => {
   });
 
   it("fails closed before probing when proxy CA file cannot be loaded", async () => {
-    const dir = mkdtempSync(path.join(os.tmpdir(), "openclaw-proxy-validation-missing-ca-"));
+    const dir = mkdtempSync(path.join(os.tmpdir(), "afora-proxy-validation-missing-ca-"));
     tempDirs.push(dir);
     const fetchCheck = vi.fn();
 

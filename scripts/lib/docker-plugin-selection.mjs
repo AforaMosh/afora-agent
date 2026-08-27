@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 const PLUGIN_ID_RE = /^[a-z0-9][a-z0-9-]*$/u;
 
 function readManifestId(pluginDir) {
-  const manifestPath = path.join(pluginDir, "openclaw.plugin.json");
+  const manifestPath = path.join(pluginDir, "afora.plugin.json");
   if (!fs.existsSync(manifestPath)) {
     return null;
   }
@@ -45,17 +45,17 @@ function resolveDockerPluginSelection(params) {
 
   for (const selectedId of selectedIds) {
     if (!PLUGIN_ID_RE.test(selectedId)) {
-      throw new Error(`invalid OPENCLAW_EXTENSIONS plugin id: ${selectedId}`);
+      throw new Error(`invalid AFORA_EXTENSIONS plugin id: ${selectedId}`);
     }
     const matches = plugins.filter(
       (plugin) => plugin.dirName === selectedId || plugin.manifestId === selectedId,
     );
     if (matches.length === 0) {
-      throw new Error(`unknown OPENCLAW_EXTENSIONS plugin id: ${selectedId}`);
+      throw new Error(`unknown AFORA_EXTENSIONS plugin id: ${selectedId}`);
     }
     if (matches.length > 1) {
       throw new Error(
-        `ambiguous OPENCLAW_EXTENSIONS plugin id: ${selectedId} (${matches
+        `ambiguous AFORA_EXTENSIONS plugin id: ${selectedId} (${matches
           .map((plugin) => plugin.dirName)
           .join(", ")})`,
       );

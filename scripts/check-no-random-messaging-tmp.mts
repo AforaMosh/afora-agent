@@ -84,7 +84,7 @@ export async function main() {
     findCallLines: findMessagingTmpdirCallLines,
     header: "Found os.tmpdir()/tmpdir() usage in messaging/channel runtime sources:",
     footer:
-      "Use resolvePreferredOpenClawTmpDir() or plugin-sdk temp helpers instead of host tmp defaults.",
+      "Use resolvePreferredAforaTmpDir() or plugin-sdk temp helpers instead of host tmp defaults.",
     sortViolations: false,
   });
 }

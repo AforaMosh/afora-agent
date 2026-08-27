@@ -8,10 +8,10 @@ import {
   type QueuedSessionDelivery,
 } from "../../../infra/session-delivery-queue-storage.js";
 import {
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabase,
-  type OpenClawStateDatabaseOptions,
-} from "../../../state/openclaw-state-db.js";
+  runAforaStateWriteTransaction,
+  type AforaStateDatabase,
+  type AforaStateDatabaseOptions,
+} from "../../../state/afora-state-db.js";
 import {
   bindTaskRecord,
   upsertTaskRunRowInDatabase,
@@ -27,7 +27,7 @@ type AdmissionTestHooks = {
   afterBind?: () => unknown;
   afterMutation?: (
     phase: "queue" | "subagent" | "task",
-    database: OpenClawStateDatabase,
+    database: AforaStateDatabase,
   ) => unknown;
 };
 
@@ -67,7 +67,7 @@ export function admitSubagentCompletionDelivery(params: {
   queueEntry: QueuedSessionDelivery;
   subagent: SubagentRunRecord;
   task: TaskRecord;
-  databaseOptions?: OpenClawStateDatabaseOptions;
+  databaseOptions?: AforaStateDatabaseOptions;
   /** Transaction cut points used by the real-store crash-consistency tests. */
   testHooks?: AdmissionTestHooks;
 }): { claimed: boolean } {
@@ -81,7 +81,7 @@ export function admitSubagentCompletionDelivery(params: {
   const boundTask = bindTaskRecord(params.task);
   invokeSynchronousHook(params.testHooks?.afterBind);
 
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     (database) => {
       const claimed = upsertBoundDeliveryQueueEntryInDatabase(boundQueue, database);
       invokeSynchronousHook(() => params.testHooks?.afterMutation?.("queue", database));
@@ -121,11 +121,11 @@ export function admitSubagentCompletionDelivery(params: {
 export function settleSubagentCompletionDelivery(params: {
   subagent: SubagentRunRecord;
   task: TaskRecord;
-  databaseOptions?: OpenClawStateDatabaseOptions;
+  databaseOptions?: AforaStateDatabaseOptions;
   mutateSubagent?: (entry: SubagentRunRecord) => unknown;
 }): void {
   const boundTask = bindTaskRecord(params.task);
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     (database) => {
       invokeSynchronousHook(() => params.mutateSubagent?.(params.subagent));
       upsertSubagentRunRowInDatabase(database, bindSubagentRunRecord(params.subagent));

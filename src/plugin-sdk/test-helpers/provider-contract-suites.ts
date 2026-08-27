@@ -1,6 +1,6 @@
 // Provider contract suites provide shared assertions for provider plugin behavior.
 import { expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import type { ProviderPlugin } from "../provider-model-shared.js";
 import type { WebFetchProviderPlugin } from "../provider-web-fetch-contract.js";
 import type { WebSearchProviderPlugin } from "../provider-web-search-contract.js";
@@ -165,13 +165,13 @@ export function installWebFetchProviderContractSuite(params: {
     expect(provider.getCredentialValue(fetchConfigTarget)).toEqual(credentialValue);
 
     if (provider.setConfiguredCredentialValue && provider.getConfiguredCredentialValue) {
-      const configTarget = {} as OpenClawConfig;
+      const configTarget = {} as AforaConfig;
       provider.setConfiguredCredentialValue(configTarget, credentialValue);
       expect(provider.getConfiguredCredentialValue(configTarget)).toEqual(credentialValue);
     }
 
     if (provider.applySelectionConfig && params.pluginId) {
-      const applied = provider.applySelectionConfig({} as OpenClawConfig);
+      const applied = provider.applySelectionConfig({} as AforaConfig);
       expect(applied.plugins?.entries?.[params.pluginId]?.enabled).toBe(true);
     }
   });

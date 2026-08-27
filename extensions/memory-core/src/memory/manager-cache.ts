@@ -1,5 +1,5 @@
 // Memory Core plugin module implements manager cache behavior.
-import { resolveGlobalSingleton } from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
+import { resolveGlobalSingleton } from "afora-agent/plugin-sdk/memory-core-host-engine-foundation";
 
 type ManagedCache<T> = {
   cache: Map<string, T>;

@@ -3,7 +3,7 @@ import {
   channelReadyPatch,
   channelStoppedPatch,
   createTransportActivityStatusPatch,
-} from "openclaw/plugin-sdk/gateway-runtime";
+} from "afora-agent/plugin-sdk/gateway-runtime";
 import type { WebChannelHealthState, WebChannelStatus } from "./types.js";
 
 const LIFECYCLE_BY_HEALTH_STATE = {

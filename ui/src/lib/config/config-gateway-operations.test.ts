@@ -21,13 +21,13 @@ describe("config gateway operations", () => {
         return {
           config: {},
           hash: "hash-1",
-          path: "/tmp/openclaw.json",
+          path: "/tmp/afora.json",
           valid: true,
           issues: [],
         };
       }
       if (method === "config.openFile") {
-        return { ok: false, error: "not supported", path: "/tmp/openclaw.json" };
+        return { ok: false, error: "not supported", path: "/tmp/afora.json" };
       }
       return {};
     });
@@ -37,7 +37,7 @@ describe("config gateway operations", () => {
     await runtimeConfig.ensureLoaded();
 
     await runtimeConfig.openFile();
-    expect(writeText).toHaveBeenCalledWith("/tmp/openclaw.json");
+    expect(writeText).toHaveBeenCalledWith("/tmp/afora.json");
     expect(runtimeConfig.state.lastError).toContain("File path copied to clipboard");
     runtimeConfig.dispose();
   });

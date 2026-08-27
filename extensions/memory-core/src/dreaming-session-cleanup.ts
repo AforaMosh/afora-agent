@@ -1,5 +1,5 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { cleanupSessionLifecycleArtifacts } from "openclaw/plugin-sdk/session-store-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { cleanupSessionLifecycleArtifacts } from "afora-agent/plugin-sdk/session-store-runtime";
 
 export const DREAMING_SESSION_KEY_PREFIX = "dreaming-narrative-";
 export const DREAMING_ORPHAN_MIN_AGE_MS = 300_000;
@@ -7,7 +7,7 @@ const DREAMING_TRANSCRIPT_RUN_MARKER = '"runId":"dreaming-narrative-';
 
 export async function scrubDreamingNarrativeArtifacts(params: {
   agentId: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   logger: { info: (message: string) => void };
   nowMs?: number;
 }): Promise<void> {

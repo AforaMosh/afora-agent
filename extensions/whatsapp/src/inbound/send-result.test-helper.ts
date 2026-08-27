@@ -1,4 +1,4 @@
-import { createMessageReceiptFromOutboundResults } from "openclaw/plugin-sdk/channel-outbound";
+import { createMessageReceiptFromOutboundResults } from "afora-agent/plugin-sdk/channel-outbound";
 import type { WhatsAppSendKind, WhatsAppSendResult } from "./send-result.js";
 
 export function createAcceptedWhatsAppSendResult(

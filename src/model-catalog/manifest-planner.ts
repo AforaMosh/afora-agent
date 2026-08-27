@@ -1,9 +1,9 @@
 // Manifest model-catalog planner turns plugin catalog declarations into normalized rows and suppressions.
-import { normalizeModelCatalogProviderRows } from "@openclaw/model-catalog-core/model-catalog-normalize";
+import { normalizeModelCatalogProviderRows } from "@afora/model-catalog-core/model-catalog-normalize";
 import {
   buildModelCatalogMergeKey,
   normalizeModelCatalogProviderId,
-} from "@openclaw/model-catalog-core/model-catalog-refs";
+} from "@afora/model-catalog-core/model-catalog-refs";
 import type {
   ModelCatalog,
   ModelCatalogAlias,
@@ -11,7 +11,7 @@ import type {
   ModelCatalogModel,
   ModelCatalogProvider,
   NormalizedModelCatalogRow,
-} from "@openclaw/model-catalog-core/model-catalog-types";
+} from "@afora/model-catalog-core/model-catalog-types";
 import { normalizeLowercaseStringOrEmpty } from "../../packages/normalization-core/src/string-coerce.js";
 import { normalizeUniqueStringEntries } from "../../packages/normalization-core/src/string-normalization.js";
 

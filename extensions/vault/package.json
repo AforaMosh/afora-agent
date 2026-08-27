@@ -1,13 +1,13 @@
 {
-  "name": "@openclaw/vault",
+  "name": "@afora/vault",
   "version": "2026.8.1",
   "private": true,
-  "description": "HashiCorp Vault SecretRef provider integration for OpenClaw",
+  "description": "HashiCorp Vault SecretRef provider integration for Afora",
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],

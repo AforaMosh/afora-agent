@@ -1,6 +1,6 @@
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import type { AgentMessage } from "../../packages/agent-core/src/types.js";
 import { applyInputProvenanceToUserMessage, normalizeInputProvenance } from "./input-provenance.js";
 import type {
@@ -83,8 +83,8 @@ export function buildPersistedUserTurnMetadata(
   };
 }
 
-type AgentMessageWithOpenClawMetadata = AgentMessage & {
-  __openclaw?: Record<string, unknown>;
+type AgentMessageWithAforaMetadata = AgentMessage & {
+  __afora?: Record<string, unknown>;
 };
 
 export function rewritePersistedSteerTargetRunId(
@@ -94,15 +94,15 @@ export function rewritePersistedSteerTargetRunId(
   if (!message || targetRunId === undefined) {
     return message;
   }
-  const metadata = { ...message["__openclaw"] };
+  const metadata = { ...message["__afora"] };
   delete metadata.steerTargetRunId;
   if (targetRunId) {
     metadata.steerTargetRunId = targetRunId;
   }
   const nextMessage = { ...message };
-  delete nextMessage["__openclaw"];
+  delete nextMessage["__afora"];
   if (Object.keys(metadata).length > 0) {
-    nextMessage["__openclaw"] = metadata;
+    nextMessage["__afora"] = metadata;
   }
   return nextMessage;
 }
@@ -115,11 +115,11 @@ export function restorePreparedUserTurnOperationalMetaForRuntime(params: {
   if (!params.preparedMessage || params.runtimeMessage.role !== "user") {
     return params.runtimeMessage;
   }
-  const preparedMeta = params.preparedMessage["__openclaw"];
+  const preparedMeta = params.preparedMessage["__afora"];
   const senderIsOwner = preparedMeta?.senderIsOwner;
   const steerTargetRunId = normalizePersistedSteerTargetRunId(preparedMeta?.steerTargetRunId);
-  const nextMessage: AgentMessageWithOpenClawMetadata = { ...params.runtimeMessage };
-  const runtimeMeta = { ...nextMessage["__openclaw"] };
+  const nextMessage: AgentMessageWithAforaMetadata = { ...params.runtimeMessage };
+  const runtimeMeta = { ...nextMessage["__afora"] };
   delete runtimeMeta.steerTargetRunId;
   if (steerTargetRunId) {
     runtimeMeta.steerTargetRunId = steerTargetRunId;
@@ -127,9 +127,9 @@ export function restorePreparedUserTurnOperationalMetaForRuntime(params: {
   if (typeof senderIsOwner === "boolean") {
     runtimeMeta.senderIsOwner = senderIsOwner;
   }
-  delete nextMessage["__openclaw"];
+  delete nextMessage["__afora"];
   if (Object.keys(runtimeMeta).length > 0) {
-    nextMessage["__openclaw"] = runtimeMeta;
+    nextMessage["__afora"] = runtimeMeta;
   }
   return nextMessage;
 }
@@ -146,7 +146,7 @@ export function preparePersistedUserTurnMessageForTranscriptWrite(
   const idempotencyKey =
     typeof originalIdempotencyKey === "string" ? originalIdempotencyKey : undefined;
   const provenance = normalizeInputProvenance(Reflect.get(message, "provenance"));
-  const originalMeta = message["__openclaw"];
+  const originalMeta = message["__afora"];
   const senderIsOwner = originalMeta?.senderIsOwner;
   const replyToId = normalizeOptionalString(originalMeta?.replyToId);
   const originalReplyPreview = asOptionalRecord(originalMeta?.replyToPreview);
@@ -186,7 +186,7 @@ export function preparePersistedUserTurnMessageForTranscriptWrite(
   }
   const nextUserMessage: PersistedUserTurnMessage = { ...preparedUserMessage };
   const protectedMeta: Record<string, unknown> = {
-    ...nextUserMessage["__openclaw"],
+    ...nextUserMessage["__afora"],
     ...(typeof senderIsOwner === "boolean" ? { senderIsOwner } : {}),
     ...(replyToId ? { replyToId } : {}),
     ...(replyToPreview ? { replyToPreview } : {}),
@@ -203,9 +203,9 @@ export function preparePersistedUserTurnMessageForTranscriptWrite(
     ...nextUserMessage,
     ...(idempotencyKey ? { idempotencyKey } : {}),
   };
-  delete protectedMessage["__openclaw"];
+  delete protectedMessage["__afora"];
   if (Object.keys(protectedMeta).length > 0) {
-    protectedMessage["__openclaw"] = protectedMeta;
+    protectedMessage["__afora"] = protectedMeta;
   }
   return protectedMessage;
 }

@@ -5,7 +5,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { writeAcpSessionMetaForMigration } from "../acp/runtime/session-meta.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import {
   mockSessionsConfig,
   resetMockSessionsConfig,
@@ -26,9 +26,9 @@ let originalStateDir: string | undefined;
 let tempStateDirs: string[] = [];
 
 function useTempStateDir(): void {
-  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-acp-sessions-state-"));
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-acp-sessions-state-"));
   tempStateDirs.push(stateDir);
-  process.env.OPENCLAW_STATE_DIR = stateDir;
+  process.env.AFORA_STATE_DIR = stateDir;
 }
 
 function writeAcpRuntimeMeta(sessionKey: string): void {
@@ -80,20 +80,20 @@ async function readSessionRow(sessionKey: string, store: string) {
 
 describe("sessionsCommand ACP model display", () => {
   beforeEach(() => {
-    originalStateDir = process.env.OPENCLAW_STATE_DIR;
+    originalStateDir = process.env.AFORA_STATE_DIR;
     mockAgentConfigWithCopilotModel();
   });
 
   afterEach(() => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     for (const stateDir of tempStateDirs) {
       fs.rmSync(stateDir, { recursive: true, force: true });
     }
     tempStateDirs = [];
     if (originalStateDir === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.AFORA_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = originalStateDir;
+      process.env.AFORA_STATE_DIR = originalStateDir;
     }
     resetMockSessionsConfig();
   });

@@ -127,9 +127,9 @@ async function startSharedSecretServer(
 }
 
 async function writeGatewayConfig(config: Record<string, unknown>) {
-  const configPath = process.env.OPENCLAW_CONFIG_PATH;
+  const configPath = process.env.AFORA_CONFIG_PATH;
   if (!configPath) {
-    throw new Error("OPENCLAW_CONFIG_PATH is required for gateway config tests");
+    throw new Error("AFORA_CONFIG_PATH is required for gateway config tests");
   }
   await fs.mkdir(path.dirname(configPath), { recursive: true });
   await fs.writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
@@ -145,7 +145,7 @@ async function postResponses(
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-openclaw-scopes": "operator.write",
+      "x-afora-scopes": "operator.write",
       ...headers,
     },
     body: JSON.stringify(body),
@@ -335,7 +335,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
       resetConfigRuntimeState();
       agentCommandMock.mockClear();
 
-      const missing = await postResponses(enabledPort, { model: "openclaw", input: "hi" });
+      const missing = await postResponses(enabledPort, { model: "afora", input: "hi" });
       expect(missing.status).toBe(400);
       const missingJson = (await missing.json()) as { error?: { message?: string; type?: string } };
       expect(missingJson.error?.type).toBe("invalid_request_error");
@@ -345,8 +345,8 @@ describe("OpenResponses HTTP API (e2e)", () => {
       agentCommandMock.mockResolvedValueOnce({ payloads: [{ text: "hello" }] } as never);
       const selected = await postResponses(
         enabledPort,
-        { model: "openclaw/default", input: "hi" },
-        { "x-openclaw-agent-id": "main" },
+        { model: "afora-agent/default", input: "hi" },
+        { "x-afora-agent-id": "main" },
       );
       expect(selected.status).toBe(200);
       expect((firstAgentOpts() as { sessionKey?: string }).sessionKey ?? "").toMatch(
@@ -370,11 +370,11 @@ describe("OpenResponses HTTP API (e2e)", () => {
       const client = new OpenAI({
         apiKey: "test",
         baseURL: `http://127.0.0.1:${enabledPort}/v1`,
-        defaultHeaders: { "x-openclaw-scopes": "operator.write" },
+        defaultHeaders: { "x-afora-scopes": "operator.write" },
         maxRetries: 0,
       });
       const request = {
-        model: "openclaw",
+        model: "afora",
         input: "Return the plain-text response.",
         text: { format: { type: "text" as const } },
       };
@@ -434,11 +434,11 @@ describe("OpenResponses HTTP API (e2e)", () => {
       const client = new OpenAI({
         apiKey: "test",
         baseURL: `http://127.0.0.1:${enabledPort}/v1`,
-        defaultHeaders: { "x-openclaw-scopes": "operator.write" },
+        defaultHeaders: { "x-afora-scopes": "operator.write" },
         maxRetries: 0,
       });
       const events = await client.responses.create({
-        model: "openclaw",
+        model: "afora",
         input: "Reject an incompatible replacement snapshot.",
         stream: true,
       });
@@ -535,11 +535,11 @@ describe("OpenResponses HTTP API (e2e)", () => {
       const client = new OpenAI({
         apiKey: "test",
         baseURL: `http://127.0.0.1:${enabledPort}/v1`,
-        defaultHeaders: { "x-openclaw-scopes": "operator.write" },
+        defaultHeaders: { "x-afora-scopes": "operator.write" },
         maxRetries: 0,
       });
       const events = await client.responses.create({
-        model: "openclaw",
+        model: "afora",
         input: "Stream a replacement snapshot exactly once.",
         stream: true,
       });
@@ -590,7 +590,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
     agentCommandMock.mockClear();
 
     const res = await postResponses(enabledPort, {
-      model: "openclaw",
+      model: "afora",
       input: "Return the plain-text response.",
       text,
     });
@@ -619,8 +619,8 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       const resMissingAuth = await fetch(`http://127.0.0.1:${port}/v1/responses`, {
         method: "POST",
-        headers: { "content-type": "application/json", "x-openclaw-agent-id": "main" },
-        body: JSON.stringify({ model: "openclaw", input: "hi" }),
+        headers: { "content-type": "application/json", "x-afora-agent-id": "main" },
+        body: JSON.stringify({ model: "afora", input: "hi" }),
       });
       expect(resMissingAuth.status).toBe(200);
       await ensureResponseConsumed(resMissingAuth);
@@ -641,7 +641,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
       };
       expect(invalidModelJson.error?.type).toBe("invalid_request_error");
       expect(invalidModelJson.error?.message).toBe(
-        "Invalid `model`. Use `openclaw` or `openclaw/<agentId>`.",
+        "Invalid `model`. Use `afora` or `afora/<agentId>`.",
       );
       expect(agentCommandMock).toHaveBeenCalledTimes(0);
       await ensureResponseConsumed(resInvalidModel);
@@ -654,8 +654,8 @@ describe("OpenResponses HTTP API (e2e)", () => {
       resetConfigRuntimeState();
       const resHeader = await postResponses(
         port,
-        { model: "openclaw", input: "hi" },
-        { "x-openclaw-agent-id": "beta" },
+        { model: "afora", input: "hi" },
+        { "x-afora-agent-id": "beta" },
       );
       expect(resHeader.status).toBe(200);
       const optsHeader = firstAgentOpts();
@@ -670,10 +670,10 @@ describe("OpenResponses HTTP API (e2e)", () => {
       mockAgentOnce([{ text: "hello" }]);
       const resSessionOverride = await postResponses(
         port,
-        { model: "openclaw", input: "hi" },
+        { model: "afora", input: "hi" },
         {
-          "x-openclaw-agent-id": "beta",
-          "x-openclaw-session-key": "agent:beta:openresponses:custom",
+          "x-afora-agent-id": "beta",
+          "x-afora-session-key": "agent:beta:openresponses:custom",
         },
       );
       expect(resSessionOverride.status).toBe(200);
@@ -688,8 +688,8 @@ describe("OpenResponses HTTP API (e2e)", () => {
       agentCommandMock.mockClear();
       const resReservedSessionOverride = await postResponses(
         port,
-        { model: "openclaw", input: "hi" },
-        { "x-openclaw-session-key": "agent:main:subagent:spoofed" },
+        { model: "afora", input: "hi" },
+        { "x-afora-session-key": "agent:main:subagent:spoofed" },
       );
       expect(resReservedSessionOverride.status).toBe(400);
       const reservedSessionJson = (await resReservedSessionOverride.json()) as {
@@ -697,15 +697,15 @@ describe("OpenResponses HTTP API (e2e)", () => {
       };
       expect(reservedSessionJson.error?.type).toBe("invalid_request_error");
       expect(reservedSessionJson.error?.message).toBe(
-        "`x-openclaw-session-key` cannot use reserved internal session namespaces.",
+        "`x-afora-session-key` cannot use reserved internal session namespaces.",
       );
       expect(agentCommandMock).toHaveBeenCalledTimes(0);
 
       const resHarnessSessionOverride = await postResponses(
         port,
-        { model: "openclaw", input: "hi" },
+        { model: "afora", input: "hi" },
         {
-          "x-openclaw-session-key": "agent:main:harness:codex:supervision:spoofed-native-thread",
+          "x-afora-session-key": "agent:main:harness:codex:supervision:spoofed-native-thread",
         },
       );
       expect(resHarnessSessionOverride.status).toBe(400);
@@ -714,7 +714,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
       };
       expect(harnessSessionJson.error?.type).toBe("invalid_request_error");
       expect(harnessSessionJson.error?.message).toBe(
-        "`x-openclaw-session-key` cannot use reserved internal session namespaces.",
+        "`x-afora-session-key` cannot use reserved internal session namespaces.",
       );
       expect(agentCommandMock).toHaveBeenCalledTimes(0);
 
@@ -724,7 +724,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
         list: [{ id: "main" }, { id: "beta" }],
       };
       resetConfigRuntimeState();
-      const resModel = await postResponses(port, { model: "openclaw/beta", input: "hi" });
+      const resModel = await postResponses(port, { model: "afora-agent/beta", input: "hi" });
       expect(resModel.status).toBe(200);
       const optsModel = firstAgentOpts();
       expect((optsModel as { sessionKey?: string } | undefined)?.sessionKey ?? "").toMatch(
@@ -736,7 +736,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
       resetConfigRuntimeState();
 
       mockAgentOnce([{ text: "hello" }]);
-      const resDefaultAlias = await postResponses(port, { model: "openclaw/default", input: "hi" });
+      const resDefaultAlias = await postResponses(port, { model: "afora-agent/default", input: "hi" });
       expect(resDefaultAlias.status).toBe(200);
       const optsDefaultAlias = firstAgentOpts();
       expect((optsDefaultAlias as { sessionKey?: string } | undefined)?.sessionKey ?? "").toMatch(
@@ -748,8 +748,8 @@ describe("OpenResponses HTTP API (e2e)", () => {
         agentCommandMock.mockClear();
         const res = await postResponses(
           port,
-          { model: "openclaw", input: "hi" },
-          { "x-openclaw-agent-id": "missing-agent" },
+          { model: "afora", input: "hi" },
+          { "x-afora-agent-id": "missing-agent" },
         );
         expect(res.status).toBe(400);
         const json = (await res.json()) as { error?: { type?: string; message?: string } };
@@ -760,7 +760,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       {
         agentCommandMock.mockClear();
-        const res = await postResponses(port, { model: "openclaw/missing-agent", input: "hi" });
+        const res = await postResponses(port, { model: "afora-agent/missing-agent", input: "hi" });
         expect(res.status).toBe(400);
         const json = (await res.json()) as { error?: { type?: string; message?: string } };
         expect(json.error?.type).toBe("invalid_request_error");
@@ -771,8 +771,8 @@ describe("OpenResponses HTTP API (e2e)", () => {
       mockAgentOnce([{ text: "hello" }]);
       const resChannelHeader = await postResponses(
         port,
-        { model: "openclaw", input: "hi" },
-        { "x-openclaw-message-channel": "custom-client-channel" },
+        { model: "afora", input: "hi" },
+        { "x-afora-message-channel": "custom-client-channel" },
       );
       expect(resChannelHeader.status).toBe(200);
       const optsChannelHeader = firstAgentOpts();
@@ -785,12 +785,12 @@ describe("OpenResponses HTTP API (e2e)", () => {
       const resModelOverride = await postResponses(
         port,
         {
-          model: "openclaw",
+          model: "afora",
           input: "hi",
         },
         {
-          "x-openclaw-model": "openai/gpt-5.4",
-          "x-openclaw-scopes": "operator.admin, operator.write",
+          "x-afora-model": "openai/gpt-5.4",
+          "x-afora-scopes": "operator.admin, operator.write",
         },
       );
       expect(resModelOverride.status).toBe(200);
@@ -801,10 +801,10 @@ describe("OpenResponses HTTP API (e2e)", () => {
       agentCommandMock.mockClear();
       const resInvalidOverride = await postResponses(
         port,
-        { model: "openclaw", input: "hi" },
+        { model: "afora", input: "hi" },
         {
-          "x-openclaw-model": "openai/",
-          "x-openclaw-scopes": "operator.admin, operator.write",
+          "x-afora-model": "openai/",
+          "x-afora-scopes": "operator.admin, operator.write",
         },
       );
       expect(resInvalidOverride.status).toBe(400);
@@ -812,15 +812,15 @@ describe("OpenResponses HTTP API (e2e)", () => {
         error?: { type?: string; message?: string };
       };
       expect(invalidOverrideJson.error?.type).toBe("invalid_request_error");
-      expect(invalidOverrideJson.error?.message).toBe("Invalid `x-openclaw-model`.");
+      expect(invalidOverrideJson.error?.message).toBe("Invalid `x-afora-model`.");
       expect(agentCommandMock).toHaveBeenCalledTimes(0);
       await ensureResponseConsumed(resInvalidOverride);
 
       agentCommandMock.mockClear();
       const resWriteOnlyOverride = await postResponses(
         port,
-        { model: "openclaw", input: "hi" },
-        { "x-openclaw-model": "openai/gpt-5.4" },
+        { model: "afora", input: "hi" },
+        { "x-afora-model": "openai/gpt-5.4" },
       );
       expect(resWriteOnlyOverride.status).toBe(403);
       const writeOnlyJson = (await resWriteOnlyOverride.json()) as {
@@ -834,7 +834,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
       agentCommandMock.mockClear();
       agentCommandMock.mockRejectedValueOnce(createClientToolNameConflictError(["exec"]));
       const resToolConflict = await postResponses(port, {
-        model: "openclaw",
+        model: "afora",
         input: "hi",
         tools: WEATHER_TOOL,
       });
@@ -849,7 +849,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
       mockAgentOnce([{ text: "hello" }]);
       const resUser = await postResponses(port, {
         user: "alice",
-        model: "openclaw",
+        model: "afora",
         input: "hi",
       });
       expect(resUser.status).toBe(200);
@@ -861,7 +861,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       mockAgentOnce([{ text: "hello" }]);
       const resString = await postResponses(port, {
-        model: "openclaw",
+        model: "afora",
         input: "hello world",
       });
       expect(resString.status).toBe(200);
@@ -871,7 +871,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       mockAgentOnce([{ text: "hello" }]);
       const resArray = await postResponses(port, {
-        model: "openclaw",
+        model: "afora",
         input: [{ type: "message", role: "user", content: "hello there" }],
       });
       expect(resArray.status).toBe(200);
@@ -881,7 +881,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       mockAgentOnce([{ text: "hello" }]);
       const resSystemDeveloper = await postResponses(port, {
-        model: "openclaw",
+        model: "afora",
         input: [
           { type: "message", role: "system", content: "You are a helpful assistant." },
           { type: "message", role: "developer", content: "Be concise." },
@@ -899,7 +899,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       mockAgentOnce([{ text: "hello" }]);
       const resInstructions = await postResponses(port, {
-        model: "openclaw",
+        model: "afora",
         input: "hi",
         instructions: "Always respond in French.",
       });
@@ -912,7 +912,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       mockAgentOnce([{ text: "I am Claude" }]);
       const resHistory = await postResponses(port, {
-        model: "openclaw",
+        model: "afora",
         input: [
           { type: "message", role: "system", content: "You are a helpful assistant." },
           { type: "message", role: "user", content: "Hello, who are you?" },
@@ -932,7 +932,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       mockAgentOnce([{ text: "ok" }]);
       const resFunctionOutput = await postResponses(port, {
-        model: "openclaw",
+        model: "afora",
         input: [
           { type: "message", role: "user", content: "What's the weather?" },
           { type: "function_call_output", call_id: "call_1", output: "Sunny, 70F." },
@@ -947,7 +947,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       mockAgentOnce([{ text: "ok" }]);
       const resInputFile = await postResponses(port, {
-        model: "openclaw",
+        model: "afora",
         input: [
           {
             type: "message",
@@ -980,7 +980,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       mockAgentOnce([{ text: "ok" }]);
       const resInputFileWhitespace = await postResponses(port, {
-        model: "openclaw",
+        model: "afora",
         input: [
           {
             type: "message",
@@ -1012,7 +1012,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       mockAgentOnce([{ text: "ok" }]);
       const resInputFileInjection = await postResponses(port, {
-        model: "openclaw",
+        model: "afora",
         input: [
           {
             type: "message",
@@ -1049,7 +1049,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       mockAgentOnce([{ text: "ok" }]);
       const resToolNone = await postResponses(port, {
-        model: "openclaw",
+        model: "afora",
         input: "hi",
         tools: WEATHER_TOOL,
         tool_choice: "none",
@@ -1068,7 +1068,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
         pendingToolCalls: [{ id: "call_1", name: "get_time", arguments: "{}" }],
       });
       const resToolChoice = await postResponses(port, {
-        model: "openclaw",
+        model: "afora",
         input: "hi",
         tools: [
           {
@@ -1105,7 +1105,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
         pendingToolCalls: [{ id: "call_1", name: "get_time", arguments: "{}" }],
       });
       const resWrappedToolChoice = await postResponses(port, {
-        model: "openclaw",
+        model: "afora",
         input: "hi",
         tools: [
           {
@@ -1137,7 +1137,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
       await ensureResponseConsumed(resWrappedToolChoice);
 
       const resUnknownTool = await postResponses(port, {
-        model: "openclaw",
+        model: "afora",
         input: "hi",
         tools: WEATHER_TOOL,
         tool_choice: { type: "function", name: "unknown_tool" },
@@ -1147,7 +1147,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       mockAgentOnce([{ text: "ok" }]);
       const resMaxTokens = await postResponses(port, {
-        model: "openclaw",
+        model: "afora",
         input: "hi",
         max_output_tokens: 123,
       });
@@ -1161,7 +1161,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       mockAgentOnce([{ text: "ok" }]);
       const resSampling = await postResponses(port, {
-        model: "openclaw",
+        model: "afora",
         input: "hi",
         temperature: 0.2,
         top_p: 0.9,
@@ -1176,7 +1176,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       agentCommandMock.mockClear();
       const resInvalidTemperature = await postResponses(port, {
-        model: "openclaw",
+        model: "afora",
         input: "hi",
         temperature: 999,
       });
@@ -1190,7 +1190,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       agentCommandMock.mockClear();
       const resInvalidTopP = await postResponses(port, {
-        model: "openclaw",
+        model: "afora",
         input: "hi",
         top_p: 5,
       });
@@ -1217,7 +1217,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
       });
       const resUsage = await postResponses(port, {
         stream: false,
-        model: "openclaw",
+        model: "afora",
         input: "hi",
       });
       expect(resUsage.status).toBe(200);
@@ -1234,7 +1234,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
       mockAgentOnce([{ text: "hello" }]);
       const resShape = await postResponses(port, {
         stream: false,
-        model: "openclaw",
+        model: "afora",
         input: "hi",
       });
       expect(resShape.status).toBe(200);
@@ -1264,7 +1264,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
       await ensureResponseConsumed(resShape);
 
       const resNoUser = await postResponses(port, {
-        model: "openclaw",
+        model: "afora",
         input: [{ type: "message", role: "system", content: "yo" }],
       });
       expect(resNoUser.status).toBe(400);
@@ -1290,7 +1290,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
     agentCommandMock.mockResolvedValueOnce({ payloads: [{ text: "ok" }] } as never);
 
     const res = await postResponses(enabledPort, {
-      model: "openclaw",
+      model: "afora",
       input: buildUrlInputMessage({
         kind: "input_file",
         url: "https://example.com/notes",
@@ -1320,7 +1320,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       const resDelta = await postResponses(port, {
         stream: true,
-        model: "openclaw",
+        model: "afora",
         input: "hi",
       });
       expect(resDelta.status).toBe(200);
@@ -1364,7 +1364,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       const resFallback = await postResponses(port, {
         stream: true,
-        model: "openclaw",
+        model: "afora",
         input: "hi",
       });
       expect(resFallback.status).toBe(200);
@@ -1379,7 +1379,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       const resTypeMatch = await postResponses(port, {
         stream: true,
-        model: "openclaw",
+        model: "afora",
         input: "hi",
       });
       expect(resTypeMatch.status).toBe(200);
@@ -1423,12 +1423,12 @@ describe("OpenResponses HTTP API (e2e)", () => {
     const client = new OpenAI({
       apiKey: "test",
       baseURL: `http://127.0.0.1:${enabledPort}/v1`,
-      defaultHeaders: { "x-openclaw-scopes": "operator.write" },
+      defaultHeaders: { "x-afora-scopes": "operator.write" },
       maxRetries: 0,
     });
     const response = await client.responses
       .stream({
-        model: "openclaw",
+        model: "afora",
         input: "hi",
       })
       .finalResponse();
@@ -1467,11 +1467,11 @@ describe("OpenResponses HTTP API (e2e)", () => {
     const client = new OpenAI({
       apiKey: "test",
       baseURL: `http://127.0.0.1:${enabledPort}/v1`,
-      defaultHeaders: { "x-openclaw-scopes": "operator.write" },
+      defaultHeaders: { "x-afora-scopes": "operator.write" },
       maxRetries: 0,
     });
     const stream = client.responses.stream({
-      model: "openclaw",
+      model: "afora",
       input: "Finish the streamed response.",
     });
     const deltas: string[] = [];
@@ -1511,11 +1511,11 @@ describe("OpenResponses HTTP API (e2e)", () => {
       const client = new OpenAI({
         apiKey: "test",
         baseURL: `http://127.0.0.1:${enabledPort}/v1`,
-        defaultHeaders: { "x-openclaw-scopes": "operator.write" },
+        defaultHeaders: { "x-afora-scopes": "operator.write" },
         maxRetries: 0,
       });
       const response = await client.responses
-        .stream({ model: "openclaw", input: "Flush the final assistant microtask." })
+        .stream({ model: "afora", input: "Flush the final assistant microtask." })
         .finalResponse();
 
       expect(response.output_text).toBe("start finish");
@@ -1554,11 +1554,11 @@ describe("OpenResponses HTTP API (e2e)", () => {
       const client = new OpenAI({
         apiKey: "test",
         baseURL: `http://127.0.0.1:${enabledPort}/v1`,
-        defaultHeaders: { "x-openclaw-scopes": "operator.write" },
+        defaultHeaders: { "x-afora-scopes": "operator.write" },
         maxRetries: 0,
       });
       const stream = client.responses.stream({
-        model: "openclaw",
+        model: "afora",
         input: "Reject a late incompatible assistant replacement.",
       });
       let completedEvents = 0;
@@ -1608,11 +1608,11 @@ describe("OpenResponses HTTP API (e2e)", () => {
     const client = new OpenAI({
       apiKey: "test",
       baseURL: `http://127.0.0.1:${enabledPort}/v1`,
-      defaultHeaders: { "x-openclaw-scopes": "operator.write" },
+      defaultHeaders: { "x-afora-scopes": "operator.write" },
       maxRetries: 0,
     });
     const stream = client.responses.stream({
-      model: "openclaw",
+      model: "afora",
       input: "Report the provider failure.",
     });
     let completedEvents = 0;
@@ -1735,7 +1735,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
         const client = new OpenAI({
           apiKey: "test",
           baseURL: `http://127.0.0.1:${enabledPort}/v1`,
-          defaultHeaders: { "x-openclaw-scopes": "operator.write" },
+          defaultHeaders: { "x-afora-scopes": "operator.write" },
           maxRetries: 0,
           fetch: async (input, init) => {
             const response = await fetch(input, init);
@@ -1744,7 +1744,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
           },
         });
         const stream = client.responses.stream({
-          model: "openclaw",
+          model: "afora",
           input: "Keep the stream owned.",
         });
         const terminalEvents: string[] = [];
@@ -1794,7 +1794,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
     );
 
     const res = await postResponses(port, {
-      model: "openclaw",
+      model: "afora",
       input: "hi",
     });
     expect(res.status).toBe(400);
@@ -1816,7 +1816,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
       meta: { error: { kind: "incomplete_turn", message: privateDetail } },
     } as never);
 
-    const res = await postResponses(enabledPort, { model: "openclaw", input: "hi" });
+    const res = await postResponses(enabledPort, { model: "afora", input: "hi" });
     const body = await res.text();
     expect(res.status).toBe(500);
     expect(JSON.parse(body)).toMatchObject({
@@ -1834,7 +1834,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
       meta: { stopReason: "error" },
     } as never);
 
-    const res = await postResponses(enabledPort, { model: "openclaw", input: "hi" });
+    const res = await postResponses(enabledPort, { model: "afora", input: "hi" });
     expect(res.status).toBe(500);
   });
 
@@ -1870,7 +1870,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
         enabledPort,
         {
           stream: true,
-          model: "openclaw",
+          model: "afora",
           input: "hi",
           tools,
         },
@@ -1911,10 +1911,10 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
         const res = await postResponses(
           port,
-          { stream, model: "openclaw", input: "hi" },
+          { stream, model: "afora", input: "hi" },
           {
-            "x-openclaw-scopes": scopes,
-            "x-openclaw-sender-is-owner": "true",
+            "x-afora-scopes": scopes,
+            "x-afora-sender-is-owner": "true",
           },
         );
 
@@ -1931,7 +1931,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
   it("preserves verified trusted-proxy owner identity for both response modes", async () => {
     await withEnvAsync(
-      { OPENCLAW_GATEWAY_TOKEN: undefined, OPENCLAW_GATEWAY_PASSWORD: undefined },
+      { AFORA_GATEWAY_TOKEN: undefined, AFORA_GATEWAY_PASSWORD: undefined },
       async () => {
         const port = await getGatewayTestPort();
         const { startGatewayServer } = await import("./server.js");
@@ -1971,13 +1971,13 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
               const res = await postResponses(
                 port,
-                { stream, model: "openclaw", input: "hi" },
+                { stream, model: "afora", input: "hi" },
                 {
                   "x-forwarded-for": "198.51.100.42",
                   "x-forwarded-proto": "https",
                   "x-forwarded-user": "operator@example.com",
-                  "x-openclaw-scopes": scopes,
-                  "x-openclaw-sender-is-owner": "true",
+                  "x-afora-scopes": scopes,
+                  "x-afora-sender-is-owner": "true",
                 },
               );
 
@@ -1997,7 +1997,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
           };
           const aliceResponse = await postResponses(
             port,
-            { model: "openclaw", user: "alice", input: "private alice history" },
+            { model: "afora", user: "alice", input: "private alice history" },
             { ...forwardedHeaders, "x-forwarded-user": "Alice@example.com" },
           );
           expect(aliceResponse.status).toBe(200);
@@ -2010,7 +2010,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
           const aliceContinuation = await postResponses(
             port,
             {
-              model: "openclaw",
+              model: "afora",
               user: "alice",
               previous_response_id: aliceResponseId,
               input: "continue alice history",
@@ -2027,7 +2027,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
           const bobContinuation = await postResponses(
             port,
             {
-              model: "openclaw",
+              model: "afora",
               user: "bob",
               previous_response_id: aliceResponseId,
               input: "attempt alice history",
@@ -2042,12 +2042,12 @@ describe("OpenResponses HTTP API (e2e)", () => {
           agentCommandMock.mockClear();
           const unauthorized = await postResponses(
             port,
-            { model: "openclaw", input: "hi" },
+            { model: "afora", input: "hi" },
             {
               "x-forwarded-for": "198.51.100.42",
               "x-forwarded-proto": "https",
-              "x-openclaw-scopes": "operator.admin, operator.write",
-              "x-openclaw-sender-is-owner": "true",
+              "x-afora-scopes": "operator.admin, operator.write",
+              "x-afora-sender-is-owner": "true",
             },
           );
           expect(unauthorized.status).toBe(401);
@@ -2075,11 +2075,11 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
           const res = await postResponses(
             port,
-            { stream, model: "openclaw", input: "hi" },
+            { stream, model: "afora", input: "hi" },
             {
               authorization: "Bearer secret",
-              "x-openclaw-scopes": "operator.approvals",
-              "x-openclaw-sender-is-owner": "false",
+              "x-afora-scopes": "operator.approvals",
+              "x-afora-sender-is-owner": "false",
             },
           );
 
@@ -2092,8 +2092,8 @@ describe("OpenResponses HTTP API (e2e)", () => {
         agentCommandMock.mockClear();
         const unauthorized = await postResponses(
           port,
-          { model: "openclaw", input: "hi" },
-          { authorization: "Bearer wrong", "x-openclaw-sender-is-owner": "true" },
+          { model: "afora", input: "hi" },
+          { authorization: "Bearer wrong", "x-afora-sender-is-owner": "true" },
         );
         expect(unauthorized.status).toBe(401);
         await ensureResponseConsumed(unauthorized);
@@ -2119,7 +2119,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     const res = await postResponses(enabledPort, {
       stream: true,
-      model: "openclaw",
+      model: "afora",
       input: "hi",
     });
     await new Promise<void>((resolve) => {
@@ -2153,7 +2153,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     const res = await postResponses(port, {
       stream: false,
-      model: "openclaw",
+      model: "afora",
       input: "check the weather",
       tools: WEATHER_TOOL,
     });
@@ -2184,7 +2184,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     const res = await postResponses(port, {
       stream: false,
-      model: "openclaw",
+      model: "afora",
       input: "check the weather",
       tools: WEATHER_TOOL,
       tool_choice: "required",
@@ -2214,7 +2214,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     const res = await postResponses(port, {
       stream: false,
-      model: "openclaw",
+      model: "afora",
       input: "check the weather",
       tools: WEATHER_TOOL,
       tool_choice: "required",
@@ -2244,7 +2244,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     const res = await postResponses(port, {
       stream: false,
-      model: "openclaw",
+      model: "afora",
       input: "check the weather",
       tools: WEATHER_TOOL,
       tool_choice: { type: "function", name: "get_weather" },
@@ -2274,7 +2274,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     const res = await postResponses(port, {
       stream: false,
-      model: "openclaw",
+      model: "afora",
       input: "check the weather",
       tools: [
         {
@@ -2315,7 +2315,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     const res = await postResponses(port, {
       stream: true,
-      model: "openclaw",
+      model: "afora",
       input: "check the weather",
       tools: WEATHER_TOOL,
       tool_choice: "required",
@@ -2354,7 +2354,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     const res = await postResponses(port, {
       stream: true,
-      model: "openclaw",
+      model: "afora",
       input: "check the weather",
       tools: [
         {
@@ -2407,7 +2407,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     const res = await postResponses(port, {
       stream: true,
-      model: "openclaw",
+      model: "afora",
       input: "check the weather",
       tools: WEATHER_TOOL,
       tool_choice: "required",
@@ -2475,7 +2475,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
       const res = await postResponses(enabledPort, {
         stream: true,
-        model: "openclaw",
+        model: "afora",
         input: "check the weather",
         tools: WEATHER_TOOL,
         tool_choice: "required",
@@ -2525,7 +2525,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     const res = await postResponses(port, {
       stream: true,
-      model: "openclaw",
+      model: "afora",
       input: "hi",
     });
 
@@ -2563,7 +2563,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     const res = await postResponses(port, {
       stream: true,
-      model: "openclaw",
+      model: "afora",
       input: "hi",
     });
 
@@ -2599,7 +2599,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     const res = await postResponses(port, {
       stream: true,
-      model: "openclaw",
+      model: "afora",
       input: "check the weather",
       tools: WEATHER_TOOL,
     });
@@ -2650,7 +2650,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     const res = await postResponses(port, {
       stream: false,
-      model: "openclaw",
+      model: "afora",
       input: "call all three tools",
       tools: [
         { type: "function", name: "create_graph", description: "Create graph" },
@@ -2712,7 +2712,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     const res = await postResponses(port, {
       stream: true,
-      model: "openclaw",
+      model: "afora",
       input: "call all three tools",
       tools: [
         { type: "function", name: "create_graph", description: "Create graph" },
@@ -2791,7 +2791,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     const firstResponse = await postResponses(port, {
       stream: false,
-      model: "openclaw",
+      model: "afora",
       input: "check the weather",
       tools: WEATHER_TOOL,
     });
@@ -2807,7 +2807,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     const secondResponse = await postResponses(port, {
       stream: false,
-      model: "openclaw",
+      model: "afora",
       previous_response_id: firstJson.id,
       input: [{ type: "function_call_output", call_id: "call_1", output: "Sunny, 70F." }],
     });
@@ -2826,7 +2826,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     const firstResponse = await postResponses(port, {
       stream: false,
-      model: "openclaw",
+      model: "afora",
       user: "alice",
       input: "hello",
     });
@@ -2841,7 +2841,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     const secondResponse = await postResponses(port, {
       stream: false,
-      model: "openclaw",
+      model: "afora",
       user: "bob",
       previous_response_id: firstJson.id,
       input: "hello again",
@@ -2866,7 +2866,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
 
     const responsePromise = postResponses(port, {
       stream: false,
-      model: "openclaw",
+      model: "afora",
       input: "delayed hello",
     });
 
@@ -2922,7 +2922,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
     agentCommandMock.mockClear();
 
     const blockedPrivate = await postResponses(port, {
-      model: "openclaw",
+      model: "afora",
       input: buildUrlInputMessage({
         kind: "input_file",
         url: "http://127.0.0.1:6379/info",
@@ -2931,7 +2931,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
     await expectInvalidRequest(blockedPrivate, /invalid request|private|internal|blocked/i);
 
     const blockedMetadata = await postResponses(port, {
-      model: "openclaw",
+      model: "afora",
       input: buildUrlInputMessage({
         kind: "input_image",
         url: "http://metadata.google.internal/computeMetadata/v1",
@@ -2940,7 +2940,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
     await expectInvalidRequest(blockedMetadata, /invalid request|blocked|metadata|internal/i);
 
     const blockedScheme = await postResponses(port, {
-      model: "openclaw",
+      model: "afora",
       input: buildUrlInputMessage({
         kind: "input_file",
         url: "file:///etc/passwd",
@@ -2960,7 +2960,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
     agentCommandMock.mockResolvedValueOnce({ payloads: [{ text: "ok" }] } as never);
 
     const res = await postResponses(port, {
-      model: "openclaw",
+      model: "afora",
       input: [
         {
           type: "message",
@@ -2991,7 +2991,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
     agentCommandMock.mockResolvedValueOnce({ payloads: [{ text: "ok" }] } as never);
 
     const res = await postResponses(port, {
-      model: "openclaw",
+      model: "afora",
       instructions: "Summarize the attached document.",
       input: [
         {
@@ -3029,7 +3029,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
     agentCommandMock.mockResolvedValueOnce({ payloads: [{ text: "ok" }] } as never);
 
     const res = await postResponses(port, {
-      model: "openclaw",
+      model: "afora",
       input: [
         {
           type: "message",
@@ -3065,7 +3065,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
     agentCommandMock.mockClear();
 
     const res = await postResponses(port, {
-      model: "openclaw",
+      model: "afora",
       input: [{ type: "message", role: "user", content: [] }],
     });
 
@@ -3083,7 +3083,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
       agentCommandMock.mockClear();
 
       const allowlistBlocked = await postResponses(allowlistPort, {
-        model: "openclaw",
+        model: "afora",
         input: buildUrlInputMessage({
           kind: "input_file",
           text: "fetch this",
@@ -3103,7 +3103,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
     try {
       agentCommandMock.mockClear();
       const maxUrlBlocked = await postResponses(capPort, {
-        model: "openclaw",
+        model: "afora",
         input: buildUrlInputMessage({
           kind: "input_file",
           text: "fetch this",
@@ -3157,7 +3157,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
     clientReq.end(
       JSON.stringify({
         stream: true,
-        model: "openclaw",
+        model: "afora",
         input: "hi",
       }),
     );
@@ -3226,7 +3226,7 @@ describe("OpenResponses HTTP API (e2e)", () => {
       clientReq.on("error", () => {});
       clientReq.end(
         JSON.stringify({
-          model: "openclaw",
+          model: "afora",
           input: "hi",
         }),
       );

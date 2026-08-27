@@ -11,7 +11,7 @@ import { resolveExecWorkdir } from "./bash-tools.exec-workdir.js";
 import type { BashSandboxConfig } from "./bash-tools.shared.js";
 
 async function withTempDir(run: (dir: string) => Promise<void>) {
-  const dir = await mkdtemp(path.join(os.tmpdir(), "openclaw-exec-workdir-"));
+  const dir = await mkdtemp(path.join(os.tmpdir(), "afora-exec-workdir-"));
   try {
     await run(dir);
   } finally {
@@ -299,19 +299,19 @@ describe("resolveExecWorkdir", () => {
         const skillDir = path.join(skillsMountDir, "test-repro-skill");
         await mkdir(skillDir);
         await mkdir(
-          path.join(workspaceDir, ".openclaw", "sandbox-skills", "skills", "test-repro-skill"),
+          path.join(workspaceDir, ".afora", "sandbox-skills", "skills", "test-repro-skill"),
           { recursive: true },
         );
 
         await expect(
           resolveExecWorkdir({
             host: "sandbox",
-            workdir: "/workspace/.openclaw/sandbox-skills/skills/test-repro-skill",
+            workdir: "/workspace/.afora/sandbox-skills/skills/test-repro-skill",
             sandbox: {
               ...sandboxConfig(workspaceDir),
               readOnlyWorkspaceSkillMounts: [
                 {
-                  containerPath: "/workspace/.openclaw/sandbox-skills/skills",
+                  containerPath: "/workspace/.afora/sandbox-skills/skills",
                   hostPath: skillsMountDir,
                 },
               ],
@@ -320,7 +320,7 @@ describe("resolveExecWorkdir", () => {
         ).resolves.toEqual({
           kind: "sandbox",
           hostCwd: skillDir,
-          containerCwd: "/workspace/.openclaw/sandbox-skills/skills/test-repro-skill",
+          containerCwd: "/workspace/.afora/sandbox-skills/skills/test-repro-skill",
           scriptPreflightCwd: skillDir,
         });
       });
@@ -336,12 +336,12 @@ describe("resolveExecWorkdir", () => {
         await expect(
           resolveExecWorkdir({
             host: "sandbox",
-            workdir: "/workspace/.openclaw/sandbox-skills/skills/test-repro-skill/tools",
+            workdir: "/workspace/.afora/sandbox-skills/skills/test-repro-skill/tools",
             sandbox: {
               ...sandboxConfig(workspaceDir),
               readOnlyWorkspaceSkillMounts: [
                 {
-                  containerPath: "/workspace/.openclaw/sandbox-skills/skills",
+                  containerPath: "/workspace/.afora/sandbox-skills/skills",
                   hostPath: skillsMountDir,
                 },
               ],
@@ -350,7 +350,7 @@ describe("resolveExecWorkdir", () => {
         ).resolves.toEqual({
           kind: "sandbox",
           hostCwd: toolsDir,
-          containerCwd: "/workspace/.openclaw/sandbox-skills/skills/test-repro-skill/tools",
+          containerCwd: "/workspace/.afora/sandbox-skills/skills/test-repro-skill/tools",
           scriptPreflightCwd: toolsDir,
         });
       });
@@ -370,16 +370,16 @@ describe("resolveExecWorkdir", () => {
           await expect(
             resolveExecWorkdir({
               host: "sandbox",
-              workdir: "/workspace/.openclaw/sandbox-skills/skills/demo",
+              workdir: "/workspace/.afora/sandbox-skills/skills/demo",
               sandbox: {
                 ...sandboxConfig(workspaceDir),
                 readOnlyWorkspaceSkillMounts: [
                   {
-                    containerPath: "/workspace/.openclaw",
+                    containerPath: "/workspace/.afora",
                     hostPath: broadMountDir,
                   },
                   {
-                    containerPath: "/workspace/.openclaw/sandbox-skills/skills",
+                    containerPath: "/workspace/.afora/sandbox-skills/skills",
                     hostPath: skillsMountDir,
                   },
                 ],
@@ -388,7 +388,7 @@ describe("resolveExecWorkdir", () => {
           ).resolves.toEqual({
             kind: "sandbox",
             hostCwd: skillDir,
-            containerCwd: "/workspace/.openclaw/sandbox-skills/skills/demo",
+            containerCwd: "/workspace/.afora/sandbox-skills/skills/demo",
             scriptPreflightCwd: skillDir,
           });
         });
@@ -402,12 +402,12 @@ describe("resolveExecWorkdir", () => {
         await expect(
           resolveExecWorkdir({
             host: "sandbox",
-            workdir: "/workspace/.openclaw/sandbox-skills/skills/",
+            workdir: "/workspace/.afora/sandbox-skills/skills/",
             sandbox: {
               ...sandboxConfig(workspaceDir),
               readOnlyWorkspaceSkillMounts: [
                 {
-                  containerPath: "/workspace/.openclaw/sandbox-skills/skills",
+                  containerPath: "/workspace/.afora/sandbox-skills/skills",
                   hostPath: skillsMountDir,
                 },
               ],
@@ -416,7 +416,7 @@ describe("resolveExecWorkdir", () => {
         ).resolves.toEqual({
           kind: "sandbox",
           hostCwd: skillsMountDir,
-          containerCwd: "/workspace/.openclaw/sandbox-skills/skills",
+          containerCwd: "/workspace/.afora/sandbox-skills/skills",
           scriptPreflightCwd: skillsMountDir,
         });
       });
@@ -431,12 +431,12 @@ describe("resolveExecWorkdir", () => {
         await expect(
           resolveExecWorkdir({
             host: "sandbox",
-            workdir: "/workspace/.openclaw/sandbox-skills/skills/missing-skill",
+            workdir: "/workspace/.afora/sandbox-skills/skills/missing-skill",
             sandbox: {
               ...sandboxConfig(workspaceDir),
               readOnlyWorkspaceSkillMounts: [
                 {
-                  containerPath: "/workspace/.openclaw/sandbox-skills/skills",
+                  containerPath: "/workspace/.afora/sandbox-skills/skills",
                   hostPath: skillsMountDir,
                 },
               ],
@@ -444,7 +444,7 @@ describe("resolveExecWorkdir", () => {
           }),
         ).resolves.toEqual({
           kind: "unavailable",
-          requestedCwd: "/workspace/.openclaw/sandbox-skills/skills/missing-skill",
+          requestedCwd: "/workspace/.afora/sandbox-skills/skills/missing-skill",
         });
       });
     });
@@ -467,7 +467,7 @@ describe("resolveExecWorkdir", () => {
               ...sandboxConfig(workspaceDir),
               readOnlyWorkspaceSkillMounts: [
                 {
-                  containerPath: "/workspace/.openclaw/sandbox-skills/skills",
+                  containerPath: "/workspace/.afora/sandbox-skills/skills",
                   hostPath: skillsMountDir,
                 },
               ],
@@ -489,7 +489,7 @@ describe("resolveExecWorkdir", () => {
               ...sandboxConfig(workspaceDir),
               readOnlyWorkspaceSkillMounts: [
                 {
-                  containerPath: "/workspace/.openclaw/sandbox-skills/skills",
+                  containerPath: "/workspace/.afora/sandbox-skills/skills",
                   hostPath: skillsMountDir,
                 },
               ],
@@ -514,12 +514,12 @@ describe("resolveExecWorkdir", () => {
         await expect(
           resolveExecWorkdir({
             host: "sandbox",
-            workdir: "/workspace/.openclaw/sandbox-skills/skills/test-skill",
+            workdir: "/workspace/.afora/sandbox-skills/skills/test-skill",
             sandbox: sandboxConfig(workspaceDir),
           }),
         ).resolves.toEqual({
           kind: "unavailable",
-          requestedCwd: "/workspace/.openclaw/sandbox-skills/skills/test-skill",
+          requestedCwd: "/workspace/.afora/sandbox-skills/skills/test-skill",
         });
       });
     });
@@ -533,12 +533,12 @@ describe("resolveExecWorkdir", () => {
         await expect(
           resolveExecWorkdir({
             host: "sandbox",
-            workdir: "/workspace/.openclaw/sandbox-skills/skills-shadow/demo",
+            workdir: "/workspace/.afora/sandbox-skills/skills-shadow/demo",
             sandbox: {
               ...sandboxConfig(workspaceDir),
               readOnlyWorkspaceSkillMounts: [
                 {
-                  containerPath: "/workspace/.openclaw/sandbox-skills/skills",
+                  containerPath: "/workspace/.afora/sandbox-skills/skills",
                   hostPath: skillsMountDir,
                 },
               ],
@@ -546,7 +546,7 @@ describe("resolveExecWorkdir", () => {
           }),
         ).resolves.toEqual({
           kind: "unavailable",
-          requestedCwd: "/workspace/.openclaw/sandbox-skills/skills-shadow/demo",
+          requestedCwd: "/workspace/.afora/sandbox-skills/skills-shadow/demo",
         });
       });
     });
@@ -564,12 +564,12 @@ describe("resolveExecWorkdir", () => {
           await expect(
             resolveExecWorkdir({
               host: "sandbox",
-              workdir: "/workspace/.openclaw/sandbox-skills/skills/test-skill/escape",
+              workdir: "/workspace/.afora/sandbox-skills/skills/test-skill/escape",
               sandbox: {
                 ...sandboxConfig(workspaceDir),
                 readOnlyWorkspaceSkillMounts: [
                   {
-                    containerPath: "/workspace/.openclaw/sandbox-skills/skills",
+                    containerPath: "/workspace/.afora/sandbox-skills/skills",
                     hostPath: skillsMountDir,
                   },
                 ],
@@ -577,7 +577,7 @@ describe("resolveExecWorkdir", () => {
             }),
           ).resolves.toEqual({
             kind: "unavailable",
-            requestedCwd: "/workspace/.openclaw/sandbox-skills/skills/test-skill/escape",
+            requestedCwd: "/workspace/.afora/sandbox-skills/skills/test-skill/escape",
           });
         });
       });
@@ -685,11 +685,11 @@ describe("resolveExecWorkdir", () => {
   it("maps backend-validated skill workdirs to their mounted host root", async () => {
     await withTempDir(async (workspaceDir) => {
       await withTempDir(async (skillsMountDir) => {
-        const containerRoot = "/remote/workspace/.openclaw/sandbox-skills/skills";
+        const containerRoot = "/remote/workspace/.afora/sandbox-skills/skills";
         const mountedSkillDir = path.join(skillsMountDir, "test-skill");
         const shadowSkillDir = path.join(
           workspaceDir,
-          ".openclaw",
+          ".afora",
           "sandbox-skills",
           "skills",
           "test-skill",
@@ -726,7 +726,7 @@ describe("resolveExecWorkdir", () => {
   it("prefers backend skill mounts over an overlapping host workspace path", async () => {
     await withTempDir(async (workspaceDir) => {
       await withTempDir(async (skillsMountDir) => {
-        const containerRoot = path.join(workspaceDir, ".openclaw", "sandbox-skills", "skills");
+        const containerRoot = path.join(workspaceDir, ".afora", "sandbox-skills", "skills");
         const mountedSkillDir = path.join(skillsMountDir, "test-skill");
         const shadowSkillDir = path.join(containerRoot, "test-skill");
         await mkdir(mountedSkillDir, { recursive: true });

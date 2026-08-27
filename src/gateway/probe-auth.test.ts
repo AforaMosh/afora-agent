@@ -1,7 +1,7 @@
 // Probe auth tests cover safe credential resolution, unresolved-secret warnings,
 // local/remote target selection, and redacted auth payload handling.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import {
   resolveGatewayProbeAuthSafe,
   resolveGatewayProbeAuthSafeWithSecretInputs,
@@ -25,7 +25,7 @@ function tokenAuthConfig(id: string) {
   } as const;
 }
 
-function configWithDefaultEnvProvider(gateway: NonNullable<OpenClawConfig["gateway"]>) {
+function configWithDefaultEnvProvider(gateway: NonNullable<AforaConfig["gateway"]>) {
   return {
     gateway,
     secrets: {
@@ -33,10 +33,10 @@ function configWithDefaultEnvProvider(gateway: NonNullable<OpenClawConfig["gatew
         default: { source: "env" },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
-function resolveSafeProbeAuth(cfg: OpenClawConfig, mode: "local" | "remote" = "local") {
+function resolveSafeProbeAuth(cfg: AforaConfig, mode: "local" | "remote" = "local") {
   return resolveGatewayProbeAuthSafe({
     cfg,
     mode,
@@ -44,7 +44,7 @@ function resolveSafeProbeAuth(cfg: OpenClawConfig, mode: "local" | "remote" = "l
   });
 }
 
-function expectUnresolvedProbeTokenWarning(cfg: OpenClawConfig) {
+function expectUnresolvedProbeTokenWarning(cfg: AforaConfig) {
   const result = resolveSafeProbeAuth(cfg);
 
   expect(result.auth).toStrictEqual({});
@@ -60,7 +60,7 @@ describe("resolveGatewayProbeAuthSafe", () => {
           token: "token-value",
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(result).toEqual({
       auth: {
@@ -100,7 +100,7 @@ describe("resolveGatewayProbeAuthSafe", () => {
           password: "remote-password", // pragma: allowlist secret
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(result).toEqual({
       auth: EMPTY_PROBE_AUTH,
@@ -132,7 +132,7 @@ describe("resolveGatewayProbeTarget", () => {
         gateway: {
           mode: "remote",
         },
-      } as OpenClawConfig),
+      } as AforaConfig),
     ).toEqual({
       gatewayMode: "remote",
       mode: "local",
@@ -149,7 +149,7 @@ describe("resolveGatewayProbeTarget", () => {
             url: "wss://gateway.example",
           },
         },
-      } as OpenClawConfig),
+      } as AforaConfig),
     ).toEqual({
       gatewayMode: "remote",
       mode: "remote",
@@ -162,11 +162,11 @@ describe("resolveGatewayProbeAuthSafeWithSecretInputs", () => {
   it("resolves env SecretRef token via async secret-inputs path", async () => {
     const result = await resolveGatewayProbeAuthSafeWithSecretInputs({
       cfg: configWithDefaultEnvProvider({
-        auth: tokenAuthConfig("OPENCLAW_GATEWAY_TOKEN"),
+        auth: tokenAuthConfig("AFORA_GATEWAY_TOKEN"),
       }),
       mode: "local",
       env: {
-        OPENCLAW_GATEWAY_TOKEN: "test-token-from-env",
+        AFORA_GATEWAY_TOKEN: "test-token-from-env",
       } as NodeJS.ProcessEnv,
     });
 
@@ -224,7 +224,7 @@ describe("resolveGatewayProbeAuthSafeWithSecretInputs", () => {
       mode: "remote",
       env: {
         REMOTE_GATEWAY_TOKEN: "resolved-remote-token",
-        OPENCLAW_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
+        AFORA_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
       } as NodeJS.ProcessEnv,
     });
 
@@ -249,8 +249,8 @@ describe("resolveGatewayProbeAuthSafeWithSecretInputs", () => {
       },
       mode: "remote",
       env: {
-        OPENCLAW_GATEWAY_TOKEN: "env-token",
-        OPENCLAW_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
+        AFORA_GATEWAY_TOKEN: "env-token",
+        AFORA_GATEWAY_PASSWORD: "env-password", // pragma: allowlist secret
       } as NodeJS.ProcessEnv,
     });
 
@@ -269,7 +269,7 @@ describe("resolveGatewayProbeAuthSafeWithSecretInputs", () => {
         remote: { url: "wss://gateway.example", token: envSecretRef("MISSING_REMOTE_TOKEN") },
       }),
       mode: "remote",
-      env: { OPENCLAW_GATEWAY_PASSWORD: "ambient-password" } as NodeJS.ProcessEnv, // pragma: allowlist secret
+      env: { AFORA_GATEWAY_PASSWORD: "ambient-password" } as NodeJS.ProcessEnv, // pragma: allowlist secret
     });
 
     expect(result.auth).toStrictEqual({});
@@ -287,7 +287,7 @@ describe("resolveGatewayProbeAuthSafeWithSecretInputs", () => {
         },
       }),
       mode: "remote",
-      env: { OPENCLAW_GATEWAY_PASSWORD: "ambient-password" } as NodeJS.ProcessEnv, // pragma: allowlist secret
+      env: { AFORA_GATEWAY_PASSWORD: "ambient-password" } as NodeJS.ProcessEnv, // pragma: allowlist secret
     });
 
     expect(result.auth).toEqual({ token: undefined, password: "remote-password" }); // pragma: allowlist secret
@@ -304,7 +304,7 @@ describe("resolveGatewayProbeAuthSafeWithSecretInputs", () => {
         },
       }),
       mode: "remote",
-      env: { OPENCLAW_GATEWAY_TOKEN: "ambient-token" } as NodeJS.ProcessEnv,
+      env: { AFORA_GATEWAY_TOKEN: "ambient-token" } as NodeJS.ProcessEnv,
     });
 
     expect(result.auth).toStrictEqual({});
@@ -345,10 +345,10 @@ describe("resolveGatewayProbeAuthSafeWithSecretInputs", () => {
           mode: "remote",
           remote: { url: "wss://configured.example" },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       mode: "remote",
       env: {
-        OPENCLAW_GATEWAY_PASSWORD: "ambient-password", // pragma: allowlist secret
+        AFORA_GATEWAY_PASSWORD: "ambient-password", // pragma: allowlist secret
       } as NodeJS.ProcessEnv,
       urlOverride: "wss://override.example",
       urlOverrideSource: "cli",

@@ -16,7 +16,7 @@ describe("doctor bundled provider catalog validation", () => {
       if (!extension.isDirectory()) {
         continue;
       }
-      const manifestPath = path.join(extensionsDir, extension.name, "openclaw.plugin.json");
+      const manifestPath = path.join(extensionsDir, extension.name, "afora.plugin.json");
       if (!fs.existsSync(manifestPath)) {
         continue;
       }

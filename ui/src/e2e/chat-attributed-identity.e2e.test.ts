@@ -12,7 +12,7 @@ const suite = createControlUiE2eSuite({
 });
 
 function resolveArtifactDir(): string | undefined {
-  return process.env.OPENCLAW_CONTROL_UI_E2E_ARTIFACT_DIR?.trim() || undefined;
+  return process.env.AFORA_CONTROL_UI_E2E_ARTIFACT_DIR?.trim() || undefined;
 }
 
 async function captureProof(page: Page, name: string) {
@@ -57,7 +57,7 @@ suite.define(() => {
           role: "user",
           content: "Can we keep one clear avatar and show who wrote each message?",
           timestamp: now - 120_000,
-          __openclaw: {
+          __afora: {
             id: "riley-message",
             senderId: "profile-riley",
             senderName: "Riley",
@@ -73,7 +73,7 @@ suite.define(() => {
           role: "user",
           content: "This is much easier to scan in a team conversation.",
           timestamp: now - 30_000,
-          __openclaw: {
+          __afora: {
             id: "colin-message",
             senderId: "profile-colin",
             senderName: "Colin",
@@ -90,7 +90,7 @@ suite.define(() => {
     await expect(userGroups).toHaveCount(2);
     await expect(page.locator(".chat-avatar.user")).toHaveCount(2);
     await expect(page.locator(".chat-avatar.user")).toHaveText(["R", "C"]);
-    await expect(page.locator(".sidebar-identity-card openclaw-viewer-avatar")).toContainText("R");
+    await expect(page.locator(".sidebar-identity-card afora-viewer-avatar")).toContainText("R");
 
     await expect(
       page.locator(".chat-group-footer--persistent-identity .chat-sender-name"),

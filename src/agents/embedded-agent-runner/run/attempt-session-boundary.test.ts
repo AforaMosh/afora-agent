@@ -46,7 +46,7 @@ describe("prepareEmbeddedAttemptSessionBoundary", () => {
         role: "user",
         content: [{ type: "text", text: "exact probe" }],
         timestamp: 1,
-        __openclaw: { senderName: "Must not leak" },
+        __afora: { senderName: "Must not leak" },
       } as AgentMessage,
     ]);
 
@@ -90,7 +90,7 @@ describe("prepareEmbeddedAttemptSessionBoundary", () => {
         role: "user",
         content: [{ type: "text", text: "finalize exactly" }],
         timestamp: 1,
-        __openclaw: { senderName: "Must not leak" },
+        __afora: { senderName: "Must not leak" },
       } as AgentMessage,
     ]);
 
@@ -147,7 +147,7 @@ describe("prepareEmbeddedAttemptSessionBoundary", () => {
       role: "user",
       content: "The launch is Friday",
       timestamp: 1,
-      __openclaw: { senderId: "alice-id", senderName: "Alice" },
+      __afora: { senderId: "alice-id", senderName: "Alice" },
     } as AgentMessage;
     const { activeSession } = createActiveSession();
     prepareEmbeddedAttemptSessionBoundary({
@@ -187,7 +187,7 @@ describe("prepareEmbeddedAttemptSessionBoundary", () => {
             role: "user",
             content: "The launch is Friday",
             timestamp: 1,
-            __openclaw: { senderId: "alice-id", senderName: "Alice" },
+            __afora: { senderId: "alice-id", senderName: "Alice" },
           } as AgentMessage,
         },
         {
@@ -196,7 +196,7 @@ describe("prepareEmbeddedAttemptSessionBoundary", () => {
             role: "user",
             content: "I can present it",
             timestamp: 2,
-            __openclaw: { senderId: "bob-id", senderName: "Bob" },
+            __afora: { senderId: "bob-id", senderName: "Bob" },
           } as AgentMessage,
         },
       ],
@@ -234,7 +234,7 @@ describe("prepareEmbeddedAttemptSessionBoundary", () => {
             role: "user",
             content: "same",
             timestamp: 1,
-            __openclaw: { senderName: "Bob" },
+            __afora: { senderName: "Bob" },
           } as AgentMessage,
         },
         {
@@ -243,7 +243,7 @@ describe("prepareEmbeddedAttemptSessionBoundary", () => {
             role: "user",
             content: "same",
             timestamp: 1,
-            __openclaw: { senderName: "Alice" },
+            __afora: { senderName: "Alice" },
           } as AgentMessage,
         },
       ],

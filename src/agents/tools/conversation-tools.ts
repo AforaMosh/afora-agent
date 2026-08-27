@@ -10,7 +10,7 @@ import {
   type ConversationSendResult,
   type ConversationTurnResult,
 } from "../../../packages/gateway-protocol/src/schema/agent.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
 import { optionalPositiveIntegerSchema } from "../schema/typebox.js";
 import type { AnyAgentTool } from "./common.js";
@@ -58,7 +58,7 @@ type ConversationToolOptions = {
   agentId?: string;
   agentSessionId?: string;
   agentSessionKey?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   senderIsOwner?: boolean;
 };
 

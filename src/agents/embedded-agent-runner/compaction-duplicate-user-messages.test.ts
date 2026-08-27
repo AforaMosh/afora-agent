@@ -9,7 +9,7 @@ function userMessage(params: { timestamp: number; senderId?: string; content?: s
     role: "user" as const,
     content: params.content ?? LONG_PROMPT,
     timestamp: params.timestamp,
-    ...(params.senderId ? { __openclaw: { senderId: params.senderId } } : {}),
+    ...(params.senderId ? { __afora: { senderId: params.senderId } } : {}),
   };
 }
 

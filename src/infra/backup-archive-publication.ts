@@ -90,7 +90,7 @@ export async function createBackupArchivePublication(
   const canonicalOutputPath = path.join(canonicalParentPath, path.basename(requestedOutputPath));
   await assertTargetAbsent(canonicalOutputPath);
   const stagingDir = await fs.mkdtemp(
-    path.join(canonicalParentPath, `.openclaw-backup-publish-${randomUUID()}-`),
+    path.join(canonicalParentPath, `.afora-backup-publish-${randomUUID()}-`),
   );
   let stagingIdentity: Stats | undefined;
   try {

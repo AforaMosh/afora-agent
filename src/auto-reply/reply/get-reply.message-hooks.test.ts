@@ -1,6 +1,6 @@
 // Tests get-reply message hooks before and after agent execution.
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { logVerbose } from "../../globals.js";
 import type { ApplyMediaUnderstandingResult } from "../../media-understanding/apply.js";
 import { AGENT_HARNESS_SESSION_KEY_RESERVED_MESSAGE } from "../../sessions/agent-harness-session-key.js";
@@ -124,7 +124,7 @@ function verboseMessages(): string[] {
 
 async function resetMessageHookTestState() {
   await loadGetReplyRuntimeForTest();
-  delete process.env.OPENCLAW_TEST_FAST;
+  delete process.env.AFORA_TEST_FAST;
   mocks.applyMediaUnderstanding.mockReset();
   mocks.applyLinkUnderstanding.mockReset();
   mocks.createInternalHookEvent.mockReset();
@@ -193,7 +193,7 @@ async function resetMessageHookTestState() {
 
 async function runLocalPathSelfServeCase(params: {
   ctx: Partial<MsgContext>;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   opts?: Parameters<typeof getReplyFromConfig>[1];
   provider?: string;
   model?: string;
@@ -844,7 +844,7 @@ describe("getReplyFromConfig message hooks", () => {
     const order: string[] = [];
     const alreadyStagedPath = "/tmp/already-staged.jpg";
     const remotePath = "/Users/demo/Library/Messages/Attachments/ab/cd/photo.jpg";
-    const stagedPath = "/tmp/openclaw-remote-cache/photo.jpg";
+    const stagedPath = "/tmp/afora-remote-cache/photo.jpg";
     vi.mocked(stageSandboxMediaMock).mockImplementationOnce(async (params) => {
       order.push("stage");
       const stagedFacts = [
@@ -922,7 +922,7 @@ describe("getReplyFromConfig message hooks", () => {
   });
 
   it("skips message hooks in fast test mode", async () => {
-    process.env.OPENCLAW_TEST_FAST = "1";
+    process.env.AFORA_TEST_FAST = "1";
 
     await getReplyFromConfig(buildCtx(), undefined, withFastReplyConfig({}));
 
@@ -1018,7 +1018,7 @@ describe("getReplyFromConfig message hooks", () => {
 
   it("continues dispatching when media understanding fails before reply routing", async () => {
     mocks.applyMediaUnderstanding.mockRejectedValueOnce(
-      new Error("Cannot find module '/tmp/openclaw/dist/media-understanding/apply.runtime-old.js'"),
+      new Error("Cannot find module '/tmp/afora/dist/media-understanding/apply.runtime-old.js'"),
     );
 
     const reply = await getReplyFromConfig(buildCtx(), undefined, withFastReplyConfig({}));
@@ -1042,7 +1042,7 @@ describe("getReplyFromConfig message hooks", () => {
 
   it("continues dispatching URL messages when link understanding fails before reply routing", async () => {
     mocks.applyLinkUnderstanding.mockRejectedValueOnce(
-      new Error("Cannot find module '/tmp/openclaw/dist/link-understanding/apply.runtime-old.js'"),
+      new Error("Cannot find module '/tmp/afora/dist/link-understanding/apply.runtime-old.js'"),
     );
 
     const reply = await getReplyFromConfig(

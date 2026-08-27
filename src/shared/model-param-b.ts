@@ -1,5 +1,5 @@
 // Model parameter B helpers normalize provider-specific reasoning budget values.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 
 /** Infers the largest `<number>b` parameter-size token from a model id or display name. */
 export function inferParamBFromIdOrName(text: string): number | null {

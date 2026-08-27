@@ -20,7 +20,7 @@ import type { ConfigWriteOptions, ReadConfigFileSnapshotForWriteResult } from ".
 import { tryResolveLegacyCompatibilityAgentId } from "../config/legacy.default-agent-owner.js";
 import { migratePersistedImplicitMainRoster } from "../config/legacy.js";
 import type { OptionalBootstrapFileName } from "../config/types.agent-defaults.js";
-import type { ConfigFileSnapshot, OpenClawConfig } from "../config/types.js";
+import type { ConfigFileSnapshot, AforaConfig } from "../config/types.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime, writeRuntimeJson } from "../runtime.js";
@@ -33,7 +33,7 @@ type ConfigIO = {
 };
 
 type ReplaceConfigFile = (params: {
-  nextConfig: OpenClawConfig;
+  nextConfig: AforaConfig;
   snapshot: ConfigFileSnapshot;
   afterWrite: { mode: "auto" };
   writeOptions: ConfigWriteOptions;
@@ -152,7 +152,7 @@ export async function setupCommand(
   if (snapshot.exists && !snapshot.valid) {
     const formatConfigFilePath = deps.formatConfigFilePath ?? formatDefaultConfigPath;
     runtime.error(
-      `Config invalid at ${await formatConfigFilePath(configPath)}. Run \`${formatCliCommand("openclaw doctor")}\` to repair it, then re-run setup.`,
+      `Config invalid at ${await formatConfigFilePath(configPath)}. Run \`${formatCliCommand("afora doctor")}\` to repair it, then re-run setup.`,
     );
     runtime.exit(1);
     return;
@@ -163,7 +163,7 @@ export async function setupCommand(
     !snapshot.exists ||
     (!hasResolvedRosterBeforeMigrations(snapshot) && !configIncludeOwnsAgentRoster(snapshot));
   const cfg = shouldPersistRoster
-    ? (migratePersistedImplicitMainRoster(snapshot.sourceConfig).config as OpenClawConfig)
+    ? (migratePersistedImplicitMainRoster(snapshot.sourceConfig).config as AforaConfig)
     : snapshot.sourceConfig;
   const authoredDefaults = cfg.agents?.defaults ?? {};
   const resolvedDefaults = resolvedConfig.agents?.defaults ?? authoredDefaults;
@@ -188,7 +188,7 @@ export async function setupCommand(
 
   // Keep the candidate runtime-shaped. replaceConfigFile persists only its
   // diff against snapshot.parsed, never resolved include/env values wholesale.
-  let next: OpenClawConfig = snapshot.exists ? resolvedConfig : cfg;
+  let next: AforaConfig = snapshot.exists ? resolvedConfig : cfg;
   if (shouldPersistRoster) {
     const { list: _legacyList, ...agents } = next.agents ?? {};
     next = {
@@ -321,9 +321,9 @@ export async function setupCommand(
   runtime.log(`Sessions OK: ${shortenHomePath(sessionsDir)}`);
   runtime.log("");
   runtime.log("Setup complete: config, workspace, and session directories are ready.");
-  runtime.log(`Next guided path: ${formatCliCommand("openclaw onboard")}.`);
+  runtime.log(`Next guided path: ${formatCliCommand("afora onboard")}.`);
   runtime.log(
-    `Next targeted changes: ${formatCliCommand("openclaw configure")} for models, channels, Gateway, plugins, skills, and health checks.`,
+    `Next targeted changes: ${formatCliCommand("afora configure")} for models, channels, Gateway, plugins, skills, and health checks.`,
   );
-  runtime.log(`Add a chat channel later: ${formatCliCommand("openclaw channels add")}.`);
+  runtime.log(`Add a chat channel later: ${formatCliCommand("afora channels add")}.`);
 }

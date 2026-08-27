@@ -1,11 +1,11 @@
 /** Baseten provider plugin entrypoint. */
-import { buildOpenAICompatibleLiveModelProviderConfig } from "openclaw/plugin-sdk/provider-catalog-live-runtime";
-import type { ProviderCatalogContext } from "openclaw/plugin-sdk/provider-catalog-shared";
-import { defineSingleProviderPluginEntry } from "openclaw/plugin-sdk/provider-entry";
-import { buildProviderReplayFamilyHooks } from "openclaw/plugin-sdk/provider-model-shared";
+import { buildOpenAICompatibleLiveModelProviderConfig } from "afora-agent/plugin-sdk/provider-catalog-live-runtime";
+import type { ProviderCatalogContext } from "afora-agent/plugin-sdk/provider-catalog-shared";
+import { defineSingleProviderPluginEntry } from "afora-agent/plugin-sdk/provider-entry";
+import { buildProviderReplayFamilyHooks } from "afora-agent/plugin-sdk/provider-model-shared";
 import { projectBasetenLiveModels, resolveBasetenDynamicModel } from "./models.js";
 import { applyBasetenConfig } from "./onboard.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 import { buildStaticBasetenProvider } from "./provider-catalog.js";
 import { createBasetenThinkingWrapper } from "./stream.js";
 import { resolveBasetenThinkingProfile } from "./thinking.js";

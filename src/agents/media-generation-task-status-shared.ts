@@ -1,15 +1,15 @@
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 /**
  * Shared media generation task status and duplicate-guard helpers.
  *
  * Image/video task modules use this to track recent starts, find active
  * background tasks, and build consistent user/prompt status messages.
  */
-import { resolveNonNegativeIntegerOption } from "@openclaw/normalization-core/number-coercion";
+import { resolveNonNegativeIntegerOption } from "@afora/normalization-core/number-coercion";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { getRuntimeConfig } from "../config/config.js";
 import { parseAgentSessionKey } from "../routing/session-key.js";
 import { listFreshTasksForOwnerKey } from "../tasks/runtime-internal.js";
@@ -316,7 +316,7 @@ function resetRecentMediaGenerationDuplicateGuardsForTests() {
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
   (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.mediaGenerationDuplicateGuardTestApi")
+    Symbol.for("afora.mediaGenerationDuplicateGuardTestApi")
   ] = { resetRecentMediaGenerationDuplicateGuardsForTests };
 }
 

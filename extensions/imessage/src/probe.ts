@@ -1,20 +1,20 @@
 // Imessage plugin module implements probe behavior.
 import path from "node:path";
-import type { BaseProbeResult } from "openclaw/plugin-sdk/channel-contract";
+import type { BaseProbeResult } from "afora-agent/plugin-sdk/channel-contract";
 import {
   asDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "openclaw/plugin-sdk/number-runtime";
-import { runCommandWithTimeout } from "openclaw/plugin-sdk/process-runtime";
-import { getRuntimeConfig } from "openclaw/plugin-sdk/runtime-config-snapshot";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import { detectBinary } from "openclaw/plugin-sdk/setup";
+} from "afora-agent/plugin-sdk/number-runtime";
+import { runCommandWithTimeout } from "afora-agent/plugin-sdk/process-runtime";
+import { getRuntimeConfig } from "afora-agent/plugin-sdk/runtime-config-snapshot";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+import { detectBinary } from "afora-agent/plugin-sdk/setup";
 import {
   filterStringEntries,
   normalizeLowercaseStringOrEmpty,
   normalizeStringEntries,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { expandIMessageUserPath } from "./cli-path.js";
 import { createIMessageRpcClient } from "./client.js";
 import { DEFAULT_IMESSAGE_PROBE_TIMEOUT_MS } from "./constants.js";
@@ -115,7 +115,7 @@ function resolveIMessageNonMacHostError(
   if (platform === "darwin" || !isDefaultLocalIMessageCliPath(cliPath)) {
     return undefined;
   }
-  return "iMessage via the default imsg CLI must run on macOS. Run OpenClaw on the signed-in Messages Mac, or set channels.imessage.cliPath to an SSH wrapper that runs imsg on that Mac.";
+  return "iMessage via the default imsg CLI must run on macOS. Run Afora on the signed-in Messages Mac, or set channels.imessage.cliPath to an SSH wrapper that runs imsg on that Mac.";
 }
 
 async function probeRpcSupport(cliPath: string, timeoutMs: number): Promise<RpcSupportResult> {
@@ -189,7 +189,7 @@ function selectorsFromPayload(payload: Record<string, unknown>): Record<string, 
 }
 
 // Probe whether the installed imsg CLI accepts `--file` on the `send-rich`
-// subcommand (added by openclaw/imsg#114, which lets a single bridge call
+// subcommand (added by afora/imsg#114, which lets a single bridge call
 // combine `--reply-to` and an attachment). We grep the help output rather
 // than trying a real send so the probe is side-effect-free, and we resolve
 // to `false` on any failure (timeout, non-zero exit, missing binary) so
@@ -278,13 +278,13 @@ export async function probeIMessagePrivateApi(
     // 26 AMFI gate). Carry it forward so blocked actions can show the reason.
     const statusMessage = typeof payload?.message === "string" ? payload.message : undefined;
     // Probe `imsg send-rich --help` for the `--file` flag added by
-    // openclaw/imsg#114. We do this even when the bridge is unavailable
+    // afora/imsg#114. We do this even when the bridge is unavailable
     // because the help output ships with the CLI binary itself, and the
     // result is what gates whether reply-with-attachment can route through
     // the threaded send path. Treat any failure as "not supported" so
     // callers fall back to the legacy throw rather than silently dropping.
     const sendRichSupportsAttachment = await probeSendRichSupportsAttachment(key, timeoutMs);
-    // Caption suppression is required for approval polls because OpenClaw
+    // Caption suppression is required for approval polls because Afora
     // renders the details first. Published imsg 0.13.1 lacks --no-comment, so
     // probe the exact CLI contract instead of inferring it from poll selectors.
     const pollSendSupportsNoComment = await probePollSendSupportsNoComment(key, timeoutMs);

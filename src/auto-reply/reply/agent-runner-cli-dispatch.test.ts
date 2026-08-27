@@ -674,7 +674,7 @@ describe("keepCliSessionBindingOnlyWhenReused", () => {
 describe("clearCliSessionBindingForRun", () => {
   it("clears the expected binding from active and stored session entries", async () => {
     const activeEntry = {
-      sessionId: "openclaw-active",
+      sessionId: "afora-active",
       updatedAt: 1,
       cliSessionBindings: { "claude-cli": { sessionId: "stale-session" } },
       cliSessionIds: { "claude-cli": "stale-session" },
@@ -707,7 +707,7 @@ describe("clearCliSessionBindingForRun", () => {
 
   it("does not clear a replacement binding adopted by another turn", async () => {
     const entry = {
-      sessionId: "openclaw-active",
+      sessionId: "afora-active",
       updatedAt: 1,
       cliSessionBindings: { "claude-cli": { sessionId: "replacement-session" } },
       cliSessionIds: { "claude-cli": "replacement-session" },
@@ -791,12 +791,12 @@ describe("createCliToolSummaryTracker", () => {
     await tracker.noteToolEvent(startEvent);
     await tracker.noteToolEvent({
       ...resultEvent,
-      result: [{ type: "web_search_result", title: "OpenClaw", url: "https://example.com" }],
+      result: [{ type: "web_search_result", title: "Afora", url: "https://example.com" }],
     });
 
     const payload = deliver.mock.calls[0]?.[0] as { text: string };
     expect(payload.text).toContain('"type":"web_search_result"');
-    expect(payload.text).toContain('"title":"OpenClaw"');
+    expect(payload.text).toContain('"title":"Afora"');
   });
 
   it("emits nothing while tool summaries are disabled", async () => {

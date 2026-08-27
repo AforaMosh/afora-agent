@@ -3,7 +3,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import { resolvePreferredAforaTmpDir } from "../infra/tmp-afora-dir.js";
 import { withTestDir } from "../test-helpers/temp-dir.js";
 import { MediaAttachmentCache } from "./attachments.js";
 
@@ -72,7 +72,7 @@ describe("media understanding attachment URL fallback", () => {
 
   it("getPath falls back to URL fetch when local path is blocked", async () => {
     await withBlockedLocalAttachmentFallback(
-      "openclaw-media-cache-getpath-url-fallback-",
+      "afora-media-cache-getpath-url-fallback-",
       async ({ cache, fallbackUrl }) => {
         const result = await cache.getPath({
           attachmentIndex: 0,
@@ -81,8 +81,8 @@ describe("media understanding attachment URL fallback", () => {
         });
         // getPath should fall through to getBuffer URL fetch, write a temp file,
         // and return a path to that temp file instead of throwing.
-        expect(path.dirname(result.path)).toBe(resolvePreferredOpenClawTmpDir());
-        expect(path.basename(result.path).startsWith("openclaw-media-")).toBe(true);
+        expect(path.dirname(result.path)).toBe(resolvePreferredAforaTmpDir());
+        expect(path.basename(result.path).startsWith("afora-media-")).toBe(true);
         expect(path.extname(result.path)).toBe(".jpg");
         expect(readRemoteMediaBufferMock).toHaveBeenCalledTimes(1);
         const fetchInput = requireReadRemoteMediaBufferInput();
@@ -103,7 +103,7 @@ describe("media understanding attachment URL fallback", () => {
 
   it("falls back to URL fetch when local attachment canonicalization fails", async () => {
     await withBlockedLocalAttachmentFallback(
-      "openclaw-media-cache-url-fallback-",
+      "afora-media-cache-url-fallback-",
       async ({ cache, fallbackUrl }) => {
         const result = await cache.getBuffer({
           attachmentIndex: 0,
@@ -126,7 +126,7 @@ describe("media understanding attachment URL fallback", () => {
 
   it("keeps HTTP fallback when the supplied local path is missing", async () => {
     await withTestDir(
-      { prefix: "openclaw-media-cache-missing-path-url-fallback-" },
+      { prefix: "afora-media-cache-missing-path-url-fallback-" },
       async (base) => {
         const fallbackUrl = "https://example.com/fallback.jpg";
         readRemoteMediaBufferMock.mockResolvedValue({

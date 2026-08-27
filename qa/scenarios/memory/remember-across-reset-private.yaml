@@ -211,7 +211,7 @@ flow:
             senderId: remember-reset-group-member
             senderName: Remember Reset Group Member
             text:
-              expr: "`@openclaw Stable QA movie night usual favorite snack preference: ${config.groupFact}. This applies only inside this group. Acknowledge briefly.`"
+              expr: "`@afora Stable QA movie night usual favorite snack preference: ${config.groupFact}. This applies only inside this group. Acknowledge briefly.`"
         - waitForOutbound:
             conversation:
               id:

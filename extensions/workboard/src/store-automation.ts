@@ -1,4 +1,4 @@
-import type { WorkboardAutomation, WorkboardWorkspaceAccess } from "@openclaw/workboard-contract";
+import type { WorkboardAutomation, WorkboardWorkspaceAccess } from "@afora/workboard-contract";
 // Workboard automation helpers normalize trusted host-issued workspace provenance.
 import type { WorkboardLinkedCreateInput } from "./store-inputs.js";
 import { normalizeAutomation, normalizeBoundedString } from "./store-normalizers.js";

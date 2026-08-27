@@ -1,5 +1,5 @@
 // Qa Lab tests cover discord live plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { discordQaScenarioSupport } from "./discord-live.runtime.js";
 
@@ -14,11 +14,11 @@ describe("discord live qa runtime", () => {
   it("resolves required Discord QA env vars", () => {
     expect(
       testing.resolveDiscordQaRuntimeEnv({
-        OPENCLAW_QA_DISCORD_GUILD_ID: "123456789012345678",
-        OPENCLAW_QA_DISCORD_CHANNEL_ID: "223456789012345678",
-        OPENCLAW_QA_DISCORD_DRIVER_BOT_TOKEN: "driver",
-        OPENCLAW_QA_DISCORD_SUT_BOT_TOKEN: "sut",
-        OPENCLAW_QA_DISCORD_SUT_APPLICATION_ID: "323456789012345678",
+        AFORA_QA_DISCORD_GUILD_ID: "123456789012345678",
+        AFORA_QA_DISCORD_CHANNEL_ID: "223456789012345678",
+        AFORA_QA_DISCORD_DRIVER_BOT_TOKEN: "driver",
+        AFORA_QA_DISCORD_SUT_BOT_TOKEN: "sut",
+        AFORA_QA_DISCORD_SUT_APPLICATION_ID: "323456789012345678",
       }),
     ).toEqual({
       guildId: "123456789012345678",
@@ -32,12 +32,12 @@ describe("discord live qa runtime", () => {
   it("resolves optional Discord QA voice channel env var", () => {
     expect(
       testing.resolveDiscordQaRuntimeEnv({
-        OPENCLAW_QA_DISCORD_GUILD_ID: "123456789012345678",
-        OPENCLAW_QA_DISCORD_CHANNEL_ID: "223456789012345678",
-        OPENCLAW_QA_DISCORD_VOICE_CHANNEL_ID: "523456789012345678",
-        OPENCLAW_QA_DISCORD_DRIVER_BOT_TOKEN: "driver",
-        OPENCLAW_QA_DISCORD_SUT_BOT_TOKEN: "sut",
-        OPENCLAW_QA_DISCORD_SUT_APPLICATION_ID: "323456789012345678",
+        AFORA_QA_DISCORD_GUILD_ID: "123456789012345678",
+        AFORA_QA_DISCORD_CHANNEL_ID: "223456789012345678",
+        AFORA_QA_DISCORD_VOICE_CHANNEL_ID: "523456789012345678",
+        AFORA_QA_DISCORD_DRIVER_BOT_TOKEN: "driver",
+        AFORA_QA_DISCORD_SUT_BOT_TOKEN: "sut",
+        AFORA_QA_DISCORD_SUT_APPLICATION_ID: "323456789012345678",
       }),
     ).toEqual({
       guildId: "123456789012345678",
@@ -52,24 +52,24 @@ describe("discord live qa runtime", () => {
   it("fails when a required Discord QA env var is missing", () => {
     expect(() =>
       testing.resolveDiscordQaRuntimeEnv({
-        OPENCLAW_QA_DISCORD_GUILD_ID: "123456789012345678",
-        OPENCLAW_QA_DISCORD_CHANNEL_ID: "223456789012345678",
-        OPENCLAW_QA_DISCORD_DRIVER_BOT_TOKEN: "driver",
-        OPENCLAW_QA_DISCORD_SUT_BOT_TOKEN: "sut",
+        AFORA_QA_DISCORD_GUILD_ID: "123456789012345678",
+        AFORA_QA_DISCORD_CHANNEL_ID: "223456789012345678",
+        AFORA_QA_DISCORD_DRIVER_BOT_TOKEN: "driver",
+        AFORA_QA_DISCORD_SUT_BOT_TOKEN: "sut",
       }),
-    ).toThrow("OPENCLAW_QA_DISCORD_SUT_APPLICATION_ID");
+    ).toThrow("AFORA_QA_DISCORD_SUT_APPLICATION_ID");
   });
 
   it("fails when Discord IDs are not snowflakes", () => {
     expect(() =>
       testing.resolveDiscordQaRuntimeEnv({
-        OPENCLAW_QA_DISCORD_GUILD_ID: "qa-guild",
-        OPENCLAW_QA_DISCORD_CHANNEL_ID: "223456789012345678",
-        OPENCLAW_QA_DISCORD_DRIVER_BOT_TOKEN: "driver",
-        OPENCLAW_QA_DISCORD_SUT_BOT_TOKEN: "sut",
-        OPENCLAW_QA_DISCORD_SUT_APPLICATION_ID: "323456789012345678",
+        AFORA_QA_DISCORD_GUILD_ID: "qa-guild",
+        AFORA_QA_DISCORD_CHANNEL_ID: "223456789012345678",
+        AFORA_QA_DISCORD_DRIVER_BOT_TOKEN: "driver",
+        AFORA_QA_DISCORD_SUT_BOT_TOKEN: "sut",
+        AFORA_QA_DISCORD_SUT_APPLICATION_ID: "323456789012345678",
       }),
-    ).toThrow("OPENCLAW_QA_DISCORD_GUILD_ID must be a Discord snowflake.");
+    ).toThrow("AFORA_QA_DISCORD_GUILD_ID must be a Discord snowflake.");
   });
 
   it("parses Discord pooled credential payloads", () => {
@@ -105,7 +105,7 @@ describe("discord live qa runtime", () => {
   });
 
   it("injects a temporary Discord account into the QA gateway config", () => {
-    const baseCfg: OpenClawConfig = {
+    const baseCfg: AforaConfig = {
       plugins: {
         allow: ["memory-core", "qa-channel"],
         entries: {
@@ -117,8 +117,8 @@ describe("discord live qa runtime", () => {
         "qa-channel": {
           enabled: true,
           baseUrl: "http://127.0.0.1:43123",
-          botUserId: "openclaw",
-          botDisplayName: "OpenClaw QA",
+          botUserId: "afora",
+          botDisplayName: "Afora QA",
           allowFrom: ["*"],
         },
       },

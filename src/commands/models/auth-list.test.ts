@@ -1,7 +1,7 @@
 // Model auth-list tests cover provider auth listing and output formatting.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthProfileStore } from "../../agents/auth-profiles.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { OutputRuntimeEnv } from "../../runtime.js";
 import { modelsAuthListCommand } from "./auth-list.js";
 
@@ -10,14 +10,14 @@ const mocks = vi.hoisted(() => ({
   externalCliDiscoveryForProviderAuth: vi.fn(() => ({ kind: "none" })),
   loadModelsConfig: vi.fn(),
   resolveAuthProfileDisplayLabel: vi.fn(({ profileId }: { profileId: string }) => profileId),
-  resolveModelsTargetAgent: vi.fn((_cfg: OpenClawConfig, rawAgentId?: string) => {
+  resolveModelsTargetAgent: vi.fn((_cfg: AforaConfig, rawAgentId?: string) => {
     const agentId = rawAgentId ?? "main";
-    return { agentDir: `/tmp/openclaw/agents/${agentId}`, agentId };
+    return { agentDir: `/tmp/afora/agents/${agentId}`, agentId };
   }),
 }));
 
 vi.mock("../../agents/agent-scope.js", () => ({
-  resolveAgentDir: (_cfg: OpenClawConfig, agentId: string) => `/tmp/openclaw/agents/${agentId}`,
+  resolveAgentDir: (_cfg: AforaConfig, agentId: string) => `/tmp/afora/agents/${agentId}`,
   resolveDefaultAgentId: () => "main",
 }));
 
@@ -25,7 +25,7 @@ vi.mock("../../agents/auth-profiles.js", () => ({
   ensureAuthProfileStore: mocks.ensureAuthProfileStore,
   externalCliDiscoveryForProviderAuth: mocks.externalCliDiscoveryForProviderAuth,
   resolveAuthProfileDisplayLabel: mocks.resolveAuthProfileDisplayLabel,
-  resolveAuthStatePathForDisplay: (agentDir: string) => `${agentDir}/openclaw-agent.sqlite`,
+  resolveAuthStatePathForDisplay: (agentDir: string) => `${agentDir}/afora-agent.sqlite`,
 }));
 
 vi.mock("./load-config.js", () => ({
@@ -58,7 +58,7 @@ function createRuntime(): OutputRuntimeEnv & { logs: string[]; jsonPayloads: unk
 
 describe("modelsAuthListCommand", () => {
   beforeEach(() => {
-    mocks.loadModelsConfig.mockReset().mockResolvedValue({} as OpenClawConfig);
+    mocks.loadModelsConfig.mockReset().mockResolvedValue({} as AforaConfig);
     mocks.ensureAuthProfileStore.mockReset();
     mocks.externalCliDiscoveryForProviderAuth.mockClear();
     mocks.resolveAuthProfileDisplayLabel.mockClear();
@@ -100,9 +100,9 @@ describe("modelsAuthListCommand", () => {
     });
     expect(runtime.jsonPayloads).toStrictEqual([
       {
-        agentDir: "/tmp/openclaw/agents/coder",
+        agentDir: "/tmp/afora/agents/coder",
         agentId: "coder",
-        authStatePath: "/tmp/openclaw/agents/coder/openclaw-agent.sqlite",
+        authStatePath: "/tmp/afora/agents/coder/afora-agent.sqlite",
         profiles: [
           {
             cooldownUntil: "2027-01-15T08:00:10.000Z",
@@ -145,7 +145,7 @@ describe("modelsAuthListCommand", () => {
     await modelsAuthListCommand({}, textRuntime);
     expect(textRuntime.logs.at(-1)).toContain("cooldown:session_expired");
     expect(textRuntime.logs.at(-1)).toContain(
-      "claude auth login && openclaw models auth login --provider anthropic --method cli",
+      "claude auth login && afora models auth login --provider anthropic --method cli",
     );
 
     const jsonRuntime = createRuntime();
@@ -156,7 +156,7 @@ describe("modelsAuthListCommand", () => {
           id: "anthropic:claude-cli",
           cooldownReason: "session_expired",
           recoveryHint:
-            "Re-authenticate with `claude auth login && openclaw models auth login --provider anthropic --method cli --profile-id 'anthropic:claude-cli'`.",
+            "Re-authenticate with `claude auth login && afora models auth login --provider anthropic --method cli --profile-id 'anthropic:claude-cli'`.",
         }),
       ],
     });
@@ -231,9 +231,9 @@ describe("modelsAuthListCommand", () => {
     });
     expect(runtime.jsonPayloads).toStrictEqual([
       {
-        agentDir: "/tmp/openclaw/agents/main",
+        agentDir: "/tmp/afora/agents/main",
         agentId: "main",
-        authStatePath: "/tmp/openclaw/agents/main/openclaw-agent.sqlite",
+        authStatePath: "/tmp/afora/agents/main/afora-agent.sqlite",
         profiles: [
           {
             id: "openai:api-key-backup",
@@ -264,7 +264,7 @@ describe("modelsAuthListCommand", () => {
 
     expect(runtime.logs).toEqual([
       "Agent: main",
-      "Auth state store: /tmp/openclaw/agents/main/openclaw-agent.sqlite",
+      "Auth state store: /tmp/afora/agents/main/afora-agent.sqlite",
       "Profiles: (none)",
     ]);
   });
@@ -295,9 +295,9 @@ describe("modelsAuthListCommand", () => {
 
     expect(runtime.jsonPayloads).toStrictEqual([
       {
-        agentDir: "/tmp/openclaw/agents/main",
+        agentDir: "/tmp/afora/agents/main",
         agentId: "main",
-        authStatePath: "/tmp/openclaw/agents/main/openclaw-agent.sqlite",
+        authStatePath: "/tmp/afora/agents/main/afora-agent.sqlite",
         profiles: [
           {
             email: "user@example.com",

@@ -2,7 +2,7 @@
  * Tests for tool catalog gateway methods and plugin tool visibility.
  */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ErrorCodes } from "../../../packages/gateway-protocol/src/index.js";
 import { createEmptyPluginRegistry } from "../../plugins/registry-empty.js";

@@ -1,5 +1,5 @@
 // Slack-private ask_user button envelope and resolution feedback.
-import { questionGatewayRuntime } from "openclaw/plugin-sdk/question-gateway-runtime";
+import { questionGatewayRuntime } from "afora-agent/plugin-sdk/question-gateway-runtime";
 import { SLACK_BUTTON_VALUE_MAX } from "./presentation.js";
 
 const SLACK_QUESTION_VALUE_PREFIX = "slq1:";

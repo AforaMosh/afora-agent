@@ -7,5 +7,5 @@ export {
   mutateConfigFile,
   type BrowserConfig,
   type BrowserProfileConfig,
-  type OpenClawConfig,
+  type AforaConfig,
 } from "../sdk-config.js";

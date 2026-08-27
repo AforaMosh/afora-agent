@@ -29,7 +29,7 @@ describe("external preview App SDK boundary", () => {
           WorkerEnvironmentMetadata,
           WorkerEnvironmentState,
           WorkerTunnelStatus,
-        } from "@openclaw/sdk";
+        } from "@afora/sdk";
         import type {
           AgentsCreateParams as ProtocolAgentsCreateParams,
           AgentsDeleteParams as ProtocolAgentsDeleteParams,
@@ -44,7 +44,7 @@ describe("external preview App SDK boundary", () => {
           WorkerEnvironmentMetadata as ProtocolWorkerEnvironmentMetadata,
           WorkerEnvironmentState as ProtocolWorkerEnvironmentState,
           WorkerTunnelStatus as ProtocolWorkerTunnelStatus,
-        } from "@openclaw/gateway-protocol";
+        } from "@afora/gateway-protocol";
 
         type Equal<Left, Right> =
           (<Value>() => Value extends Left ? 1 : 2) extends
@@ -86,8 +86,8 @@ describe("external preview App SDK boundary", () => {
           issues: [{
             code: "update-required",
             action: "update-and-reconnect",
-            updateCommand: "openclaw update",
-            headlessReconnectCommand: "openclaw node restart",
+            updateCommand: "afora update",
+            headlessReconnectCommand: "afora node restart",
           }],
           worker: {
             providerId: "worker-provider",
@@ -137,7 +137,7 @@ describe("external preview App SDK boundary", () => {
         ];
       `);
       await consumer.run(`
-        import { GatewayClientTransport, OpenClaw, normalizeGatewayEvent } from "@openclaw/sdk";
+        import { GatewayClientTransport, Afora, normalizeGatewayEvent } from "@afora/sdk";
 
         if (typeof GatewayClientTransport !== "function") throw new Error("missing transport export");
         const event = normalizeGatewayEvent({
@@ -169,7 +169,7 @@ describe("external preview App SDK boundary", () => {
           },
         };
 
-        const client = new OpenClaw({ transport });
+        const client = new Afora({ transport });
         const agents = await client.agents.list();
         const run = await client.runs.wait("packed-run", { timeoutMs: 25 });
         const artifacts = await client.artifacts.list({ sessionKey: "agent:main:external" });

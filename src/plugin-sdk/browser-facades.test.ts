@@ -31,16 +31,16 @@ describe("plugin-sdk browser facades", () => {
 
     const browserProfiles = await import("./browser-profiles.js");
     const cfg = { enabled: true } as unknown as import("../config/config.js").BrowserConfig;
-    const rootConfig = { gateway: { port: 18789 } } as import("../config/config.js").OpenClawConfig;
+    const rootConfig = { gateway: { port: 18789 } } as import("../config/config.js").AforaConfig;
 
     expect(browserProfiles.resolveBrowserConfig(cfg, rootConfig)).toBe(resolvedConfig);
-    expect(browserProfiles.resolveProfile(resolvedConfig, "openclaw")).toBe(resolvedProfile);
+    expect(browserProfiles.resolveProfile(resolvedConfig, "afora")).toBe(resolvedProfile);
     expect(loadBundledPluginPublicSurfaceModuleSyncCore).toHaveBeenCalledWith({
       dirName: "browser",
       artifactBasename: "browser-profiles.js",
     });
     expect(resolveBrowserConfig).toHaveBeenCalledWith(cfg, rootConfig);
-    expect(resolveProfile).toHaveBeenCalledWith(resolvedConfig, "openclaw");
+    expect(resolveProfile).toHaveBeenCalledWith(resolvedConfig, "afora");
   });
 
   it("hard-fails when browser profile facade is unavailable", async () => {
@@ -77,7 +77,7 @@ describe("plugin-sdk browser facades", () => {
     const controlAuth = await import("./browser-control-auth.js");
     const cfg = {
       gateway: { auth: { token: "token-1" } },
-    } as import("../config/config.js").OpenClawConfig;
+    } as import("../config/config.js").AforaConfig;
     const env = {} as NodeJS.ProcessEnv;
 
     expect(controlAuth.resolveBrowserControlAuth(cfg, env)).toBe(resolvedAuth);

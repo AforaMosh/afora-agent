@@ -1,6 +1,6 @@
-import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
+import { resolveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
 import { getRuntimeConfig } from "../../config/io.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { NodePairingGeneration } from "../../infra/device-pairing-node-state.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import {
@@ -36,7 +36,7 @@ async function resolveDirectNodePushConfig() {
 }
 
 function resolveRelayNodePushConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   registration: Extract<
     NonNullable<Awaited<ReturnType<typeof loadApnsRegistration>>>,
     { transport: "relay" }
@@ -80,7 +80,7 @@ export async function maybeWakeNodeWithApns(
   opts?: {
     force?: boolean;
     wakeReason?: string;
-    cfg?: OpenClawConfig;
+    cfg?: AforaConfig;
     lifecycle?: NodeWakeLifecycle;
     generation?: NodePairingGeneration;
   },
@@ -215,7 +215,7 @@ export async function maybeWakeNodeWithApns(
 export async function maybeSendNodeWakeNudge(
   nodeId: string,
   opts?: {
-    cfg?: OpenClawConfig;
+    cfg?: AforaConfig;
     lifecycle?: NodeWakeLifecycle;
     generation?: NodePairingGeneration;
   },
@@ -267,8 +267,8 @@ export async function maybeSendNodeWakeNudge(
             result = await sendApnsAlert({
               registration,
               nodeId,
-              title: "OpenClaw needs a quick reopen",
-              body: "Tap to reopen OpenClaw and restore the node connection.",
+              title: "Afora needs a quick reopen",
+              body: "Tap to reopen Afora and restore the node connection.",
               relayConfig: relay.relayConfig,
               signal: lifecycle,
               isCurrent: isAttemptCurrent,
@@ -289,8 +289,8 @@ export async function maybeSendNodeWakeNudge(
             result = await sendApnsAlert({
               registration,
               nodeId,
-              title: "OpenClaw needs a quick reopen",
-              body: "Tap to reopen OpenClaw and restore the node connection.",
+              title: "Afora needs a quick reopen",
+              body: "Tap to reopen Afora and restore the node connection.",
               auth: auth.auth,
               signal: lifecycle,
               isCurrent: isAttemptCurrent,

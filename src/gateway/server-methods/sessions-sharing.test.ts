@@ -12,11 +12,11 @@ import {
   removeSessionMember,
 } from "../../config/sessions/session-sharing-store.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  resolveIncognitoOpenClawAgentSqlitePath,
-} from "../../state/openclaw-agent-db.js";
+  closeAforaAgentDatabasesForTest,
+  resolveIncognitoAforaAgentSqlitePath,
+} from "../../state/afora-agent-db.js";
 import { ensureProfileForEmail, listProfiles, setDisplayName } from "../../state/user-profiles.js";
-import { withOpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../../test-utils/afora-test-state.js";
 import { createBoardViewTicket } from "../board-view-ticket.js";
 import {
   authorizeResolvedSessionMutation,
@@ -59,7 +59,7 @@ vi.mock("../session-sharing.js", async () => {
 afterEach(() => {
   targetResolutionMock.calls = 0;
   targetResolutionMock.override = undefined;
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
 });
 
 function soloClient(): GatewayClient {
@@ -68,7 +68,7 @@ function soloClient(): GatewayClient {
       minProtocol: 1,
       maxProtocol: 1,
       client: {
-        id: "openclaw-control-ui",
+        id: "afora-control-ui",
         version: "test",
         platform: "test",
         mode: "webchat",
@@ -123,7 +123,7 @@ async function call(
 
 describe("session sharing handlers", () => {
   it("admits bare fixed-store keys only through their persisted owner", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async (state) => {
+    await withAforaTestState({ scenario: "minimal" }, async (state) => {
       const storePath = state.path("shared-sessions.sqlite");
       await upsertSessionEntryCore(
         { agentId: "ops", sessionKey: "global", storePath },
@@ -159,7 +159,7 @@ describe("session sharing handlers", () => {
   });
 
   it("keeps hidden incognito rows from changing non-owner list path metadata", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async (state) => {
+    await withAforaTestState({ scenario: "minimal" }, async (state) => {
       const incognitoKey = "agent:main:dashboard:incognito-private";
       await upsertSessionEntryCore(
         { agentId: "main", sessionKey: "agent:main:main" },
@@ -189,7 +189,7 @@ describe("session sharing handlers", () => {
         {
           agentId: "main",
           sessionKey: incognitoKey,
-          storePath: resolveIncognitoOpenClawAgentSqlitePath({ agentId: "main", env: state.env }),
+          storePath: resolveIncognitoAforaAgentSqlitePath({ agentId: "main", env: state.env }),
         },
         {
           sessionId: "session-incognito",
@@ -213,13 +213,13 @@ describe("session sharing handlers", () => {
   });
 
   it("never previews sessions hidden from sessions.list", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async (state) => {
+    await withAforaTestState({ scenario: "minimal" }, async (state) => {
       const sessionKey = "agent:main:dashboard:incognito-preview";
       await upsertSessionEntryCore(
         {
           agentId: "main",
           sessionKey,
-          storePath: resolveIncognitoOpenClawAgentSqlitePath({ agentId: "main", env: state.env }),
+          storePath: resolveIncognitoAforaAgentSqlitePath({ agentId: "main", env: state.env }),
         },
         {
           sessionId: "session-incognito-preview",
@@ -254,7 +254,7 @@ describe("session sharing handlers", () => {
   });
 
   it("rejects a visibility mutation when the queued session instance changed", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const sessionKey = "agent:main:stale-sharing-mutation";
       await upsertSessionEntryCore(
         { agentId: "main", sessionKey },
@@ -294,7 +294,7 @@ describe("session sharing handlers", () => {
   });
 
   it("authorizes runs against the resolved session so keyless runs cannot bypass restriction", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const sessionKey = "agent:main:main";
       const owner = { id: "owner@example.com", label: "Owner" };
       const outsider = identifiedClient("outsider");
@@ -339,7 +339,7 @@ describe("session sharing handlers", () => {
   });
 
   it("projects a shared session member's truthful role in sessions.list", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const sessionKey = "agent:main:shared-member";
       const memberIdentity = { id: "member@example.com", label: "Member" };
       await upsertSessionEntryCore(
@@ -379,7 +379,7 @@ describe("session sharing handlers", () => {
   });
 
   it("drops a session flipped to draft during the list await from a non-owner", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const sessionKey = "agent:main:mid-await-draft";
       await upsertSessionEntryCore(
         { agentId: "main", sessionKey },
@@ -460,7 +460,7 @@ describe("session sharing handlers", () => {
   });
 
   it("refills a paged session list after its first row becomes a draft", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const hiddenKey = "agent:main:mid-await-paged-draft";
       const visibleKey = "agent:main:mid-await-paged-visible";
       await upsertSessionEntryCore(
@@ -513,7 +513,7 @@ describe("session sharing handlers", () => {
   });
 
   it("lists profile ids and authorizes a selected profile as a member", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const sessionKey = "agent:main:profile-member";
       const profile = ensureProfileForEmail("member@example.com");
       setDisplayName(profile.id, "Member");
@@ -557,7 +557,7 @@ describe("session sharing handlers", () => {
   });
 
   it("authorizes board tickets against their signed agent-relative session", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       await upsertSessionEntryCore(
         { agentId: "main", sessionKey: "global" },
         { sessionId: "session-main-global", updatedAt: 1, visibility: "shared" },
@@ -611,7 +611,7 @@ describe("session sharing handlers", () => {
   });
 
   it("revokes all member access while a session is draft and restores it when shared", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const sessionKey = "agent:main:member-transition";
       const owner = { id: "owner@example.com", label: "Owner" };
       const memberIdentity = { id: "member@example.com", label: "Member" };
@@ -689,7 +689,7 @@ describe("session sharing handlers", () => {
   });
 
   it("persists visibility and membership changes as transcript system notes", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const sessionKey = "agent:main:main";
       await upsertSessionEntryCore(
         { agentId: "main", sessionKey },
@@ -727,13 +727,13 @@ describe("session sharing handlers", () => {
         expect.arrayContaining([
           expect.objectContaining({
             message: expect.objectContaining({
-              customType: "openclaw.system-note",
+              customType: "afora.system-note",
               content: expect.stringContaining("changed session visibility"),
             }),
           }),
           expect.objectContaining({
             message: expect.objectContaining({
-              customType: "openclaw.system-note",
+              customType: "afora.system-note",
               content: expect.stringContaining("added local-operator"),
             }),
           }),

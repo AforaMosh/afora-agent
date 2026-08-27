@@ -1,14 +1,14 @@
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import type { GatewayRequestHandlerOptions } from "openclaw/plugin-sdk/gateway-runtime";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import type { GatewayRequestHandlerOptions } from "afora-agent/plugin-sdk/gateway-runtime";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 import type {
-  OpenClawPluginApi,
-  OpenClawPluginNodeInvokePolicy,
-} from "openclaw/plugin-sdk/plugin-entry";
+  AforaPluginApi,
+  AforaPluginNodeInvokePolicy,
+} from "afora-agent/plugin-sdk/plugin-entry";
 import {
   asNonArrayRecord as asParamRecord,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { isGoogleMeetBrowserManualActionError } from "./browser-manual-action-error.js";
 import {
   resolveGoogleMeetGatewayOperationTimeoutMs,
@@ -32,7 +32,7 @@ const loadGoogleMeetNodeInvokePolicyModule = createLazyRuntimeModule(
   () => import("./node-invoke-policy.js"),
 );
 const loadGoogleMeetGatewayRuntimeModule = createLazyRuntimeModule(
-  () => import("openclaw/plugin-sdk/gateway-runtime"),
+  () => import("afora-agent/plugin-sdk/gateway-runtime"),
 );
 
 type GoogleMeetGatewayRuntimeModule = Awaited<
@@ -44,7 +44,7 @@ type GoogleMeetGatewayErrorCode = GoogleMeetGatewayError["code"];
 
 type LoadGoogleMeetNodeInvokePolicy = (
   config: GoogleMeetConfig,
-) => Promise<OpenClawPluginNodeInvokePolicy>;
+) => Promise<AforaPluginNodeInvokePolicy>;
 
 const loadGoogleMeetNodeInvokePolicy: LoadGoogleMeetNodeInvokePolicy = async (config) =>
   (await loadGoogleMeetNodeInvokePolicyModule()).createGoogleMeetChromeNodeInvokePolicy(config);
@@ -157,7 +157,7 @@ export async function callGoogleMeetGatewayFromTool(params: {
   config: GoogleMeetConfig;
   action: GoogleMeetGatewayToolAction;
   raw: Record<string, unknown>;
-  runtime?: OpenClawPluginApi["runtime"];
+  runtime?: AforaPluginApi["runtime"];
 }): Promise<unknown> {
   try {
     if (params.runtime) {
@@ -206,7 +206,7 @@ export function keepTrustedToolAgentId(
 }
 
 export function createGoogleMeetRuntimeAccessor(params: {
-  api: OpenClawPluginApi;
+  api: AforaPluginApi;
   config: GoogleMeetConfig;
 }): () => Promise<GoogleMeetRuntime> {
   let runtimePromise: Promise<GoogleMeetRuntime> | undefined;
@@ -232,13 +232,13 @@ export function createGoogleMeetRuntimeAccessor(params: {
 export function createLazyGoogleMeetNodeInvokePolicy(
   config: GoogleMeetConfig,
   loadPolicy: LoadGoogleMeetNodeInvokePolicy = loadGoogleMeetNodeInvokePolicy,
-): OpenClawPluginNodeInvokePolicy {
-  let policyPromise: Promise<OpenClawPluginNodeInvokePolicy> | undefined;
+): AforaPluginNodeInvokePolicy {
+  let policyPromise: Promise<AforaPluginNodeInvokePolicy> | undefined;
   return {
     commands: [GOOGLE_MEET_NODE_COMMAND],
     dangerous: true,
     async handle(ctx) {
-      let policy: OpenClawPluginNodeInvokePolicy;
+      let policy: AforaPluginNodeInvokePolicy;
       try {
         policyPromise ??= loadPolicy(config);
         policy = await policyPromise;

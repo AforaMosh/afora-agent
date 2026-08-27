@@ -1,4 +1,4 @@
-/** Persists hosted official external plugin catalog snapshots in OpenClaw state. */
+/** Persists hosted official external plugin catalog snapshots in Afora state. */
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import {
@@ -6,13 +6,13 @@ import {
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../infra/kysely-sync.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import {
   HostedCatalogSignedFeedMonotonicityError,
   type HostedOfficialExternalPluginCatalogMetadata,
@@ -46,7 +46,7 @@ type HostedCatalogSnapshotRow = {
 };
 
 type HostedCatalogSnapshotDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "official_external_plugin_catalog_snapshots"
 >;
 
@@ -64,13 +64,13 @@ function resolveStoreEnv(
   }
   return {
     ...(options.env ?? process.env),
-    OPENCLAW_STATE_DIR: options.stateDir,
+    AFORA_STATE_DIR: options.stateDir,
   };
 }
 
 function resolveStateDatabaseOptions(
   options: HostedOfficialExternalPluginCatalogSnapshotStoreOptions,
-): OpenClawStateDatabaseOptions {
+): AforaStateDatabaseOptions {
   const env = resolveStoreEnv(options);
   return {
     ...(env ? { env } : {}),
@@ -84,7 +84,7 @@ function resolveStateDatabasePath(
   if (options.stateDatabasePath) {
     return options.stateDatabasePath;
   }
-  return resolveOpenClawStateSqlitePath(resolveStoreEnv(options) ?? process.env);
+  return resolveAforaStateSqlitePath(resolveStoreEnv(options) ?? process.env);
 }
 
 function rowToTrustState(
@@ -229,7 +229,7 @@ function rowToSnapshot(
   };
 }
 
-/** Creates a snapshot store backed by the shared `state/openclaw.sqlite` database. */
+/** Creates a snapshot store backed by the shared `state/afora.sqlite` database. */
 export function createSqliteHostedOfficialExternalPluginCatalogSnapshotStore(
   options: HostedOfficialExternalPluginCatalogSnapshotStoreOptions = {},
 ): HostedOfficialExternalPluginCatalogSnapshotStore {
@@ -239,7 +239,7 @@ export function createSqliteHostedOfficialExternalPluginCatalogSnapshotStore(
       if (!existsSync(pathname)) {
         return null;
       }
-      const database = openOpenClawStateDatabase(resolveStateDatabaseOptions(options));
+      const database = openAforaStateDatabase(resolveStateDatabaseOptions(options));
       const stateDb = getNodeSqliteKysely<HostedCatalogSnapshotDatabase>(database.db);
       const row = executeSqliteQueryTakeFirstSync(
         database.db,
@@ -265,7 +265,7 @@ export function createSqliteHostedOfficialExternalPluginCatalogSnapshotStore(
     },
     async write(snapshot) {
       const now = Date.now();
-      runOpenClawStateWriteTransaction((database) => {
+      runAforaStateWriteTransaction((database) => {
         const stateDb = getNodeSqliteKysely<HostedCatalogSnapshotDatabase>(database.db);
         const current = executeSqliteQueryTakeFirstSync(
           database.db,

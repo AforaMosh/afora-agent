@@ -17,7 +17,7 @@ import { normalizeStateDirEnv } from "../config/paths.js";
 import { captureConfigOverrideApplier } from "../config/runtime-overrides.js";
 import { resolveSystemMainSessionTarget } from "../config/sessions.js";
 import type { GatewayAuthConfig } from "../config/types.gateway.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isSecretRef } from "../config/types.secrets.js";
 import { getActiveCronJobCount } from "../cron/active-jobs.js";
 import {
@@ -26,7 +26,7 @@ import {
 } from "../infra/diagnostic-events.js";
 import { isVitestRuntimeEnv, logAcceptedEnvOption } from "../infra/env.js";
 import { formatErrorMessage } from "../infra/errors.js";
-import { prepareGatewayAgentCliShim } from "../infra/openclaw-cli-shim.js";
+import { prepareGatewayAgentCliShim } from "../infra/afora-cli-shim.js";
 import { readGatewayRestartHandoffSync } from "../infra/restart-handoff.js";
 import { setGatewaySigusr1RestartPolicy, setPreRestartDeferralCheck } from "../infra/restart.js";
 import { withSystemEventOwner } from "../infra/system-event-ownership.js";
@@ -37,8 +37,8 @@ import { completePluginMetadataSnapshot } from "../plugins/plugin-metadata-snaps
 import { getTotalQueueSize } from "../process/command-queue.js";
 import { getActiveGatewayRootWorkCount } from "../process/gateway-work-admission.js";
 import { createLazyPromise } from "../shared/lazy-runtime.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
-import { assertOpenClawStateWriteAllowedAtPath } from "../state/openclaw-state-ownership.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
+import { assertAforaStateWriteAllowedAtPath } from "../state/afora-state-ownership.js";
 import { ADMIN_SCOPE } from "./method-scopes.js";
 import { listCoreGatewayMethodNames } from "./methods/core-descriptors.js";
 import {
@@ -60,8 +60,8 @@ type WorkerEnvironmentStartupLoader = () => Promise<
 >;
 
 function publishGatewayPluginRuntimeConfigAtStartup(params: {
-  runtimeConfig: OpenClawConfig;
-  sourceConfig: OpenClawConfig;
+  runtimeConfig: AforaConfig;
+  sourceConfig: AforaConfig;
 }): void {
   setAppliedRuntimeConfigSnapshot(params.runtimeConfig, params.sourceConfig);
 }
@@ -77,28 +77,28 @@ export async function prepareGatewayServerBootstrap(input: {
   const { port, opts, log, logSecrets, loadWorkerEnvironmentStartupModule } = input;
   const formatRuntimeGatewayAuthTokenWarning = input.formatRuntimeGatewayAuthTokenWarning;
   normalizeStateDirEnv(process.env);
-  await assertOpenClawStateWriteAllowedAtPath({
-    databasePath: resolveOpenClawStateSqlitePath(process.env),
+  await assertAforaStateWriteAllowedAtPath({
+    databasePath: resolveAforaStateSqlitePath(process.env),
     env: process.env,
   });
   const [
     {
-      OPENCLAW_DATABASE_SCHEMA_DOCS_URL,
-      OpenClawDatabaseSchemaPreflightError,
-      preflightOpenClawDatabaseSchemas,
+      AFORA_DATABASE_SCHEMA_DOCS_URL,
+      AforaDatabaseSchemaPreflightError,
+      preflightAforaDatabaseSchemas,
     },
     agentDatabase,
     stateDatabase,
   ] = await Promise.all([
-    import("../state/openclaw-database-preflight.js"),
-    import("../state/openclaw-agent-db.js"),
-    import("../state/openclaw-state-db.js"),
+    import("../state/afora-database-preflight.js"),
+    import("../state/afora-agent-db.js"),
+    import("../state/afora-state-db.js"),
   ]);
-  const databaseSchemas = preflightOpenClawDatabaseSchemas({
+  const databaseSchemas = preflightAforaDatabaseSchemas({
     env: process.env,
     supportedVersions: {
-      state: stateDatabase.OPENCLAW_STATE_SCHEMA_VERSION,
-      agent: agentDatabase.OPENCLAW_AGENT_SCHEMA_VERSION,
+      state: stateDatabase.AFORA_STATE_SCHEMA_VERSION,
+      agent: agentDatabase.AFORA_AGENT_SCHEMA_VERSION,
     },
   });
   if (databaseSchemas.incompatible.length > 0) {
@@ -110,34 +110,34 @@ export async function prepareGatewayServerBootstrap(input: {
         foundVersion: database.foundVersion,
         supportedVersion: database.supportedVersion,
         writerAppVersion: database.writerAppVersion ?? "unknown",
-        docsUrl: OPENCLAW_DATABASE_SCHEMA_DOCS_URL,
+        docsUrl: AFORA_DATABASE_SCHEMA_DOCS_URL,
       });
     }
-    throw new OpenClawDatabaseSchemaPreflightError(databaseSchemas.incompatible);
+    throw new AforaDatabaseSchemaPreflightError(databaseSchemas.incompatible);
   }
   for (const database of databaseSchemas.indeterminate) {
     log.warn("database schema preflight could not inspect database; continuing to real open", {
       kind: database.kind,
       path: database.path,
       reason: database.reason,
-      docsUrl: OPENCLAW_DATABASE_SCHEMA_DOCS_URL,
+      docsUrl: AFORA_DATABASE_SCHEMA_DOCS_URL,
     });
   }
   const { bootstrapGatewayNetworkRuntime } = await import("./server-network-runtime.js");
   bootstrapGatewayNetworkRuntime();
 
   const minimalTestGateway =
-    isVitestRuntimeEnv() && process.env.OPENCLAW_TEST_MINIMAL_GATEWAY === "1";
+    isVitestRuntimeEnv() && process.env.AFORA_TEST_MINIMAL_GATEWAY === "1";
   const ambientEnvTriggers = opts.ambientEnvTriggers ?? "suppress";
 
   // Ensure all default port derivations (browser/canvas) see the actual runtime port.
-  process.env.OPENCLAW_GATEWAY_PORT = String(port);
+  process.env.AFORA_GATEWAY_PORT = String(port);
   logAcceptedEnvOption({
-    key: "OPENCLAW_RAW_STREAM",
+    key: "AFORA_RAW_STREAM",
     description: "raw stream logging enabled",
   });
   logAcceptedEnvOption({
-    key: "OPENCLAW_RAW_STREAM_PATH",
+    key: "AFORA_RAW_STREAM_PATH",
     description: "raw stream log path override",
   });
   if (!resumeGatewayRestartTraceFromEnv(process.env, [["source", "env"]])) {
@@ -195,7 +195,7 @@ export async function prepareGatewayServerBootstrap(input: {
   const emitSecretsStateEvent = (
     code: "SECRETS_RELOADER_DEGRADED" | "SECRETS_RELOADER_RECOVERED",
     message: string,
-    cfg: OpenClawConfig,
+    cfg: AforaConfig,
   ) => {
     const text = `[${code}] ${message}`;
     try {
@@ -306,7 +306,7 @@ export async function prepareGatewayServerBootstrap(input: {
   const seededControlUiAllowedOrigins = controlUiSeed.seededAllowedOrigins
     ? cfgAtStart.gateway?.controlUi?.allowedOrigins
     : undefined;
-  const applyFixedGatewayOverlays = (config: OpenClawConfig): OpenClawConfig => {
+  const applyFixedGatewayOverlays = (config: AforaConfig): AforaConfig => {
     let runtimeConfig = config;
     if (reloadAuthOverride || startupTailscaleOverride) {
       runtimeConfig = {
@@ -344,7 +344,7 @@ export async function prepareGatewayServerBootstrap(input: {
     }
     return runtimeConfig;
   };
-  const applyReloadableGatewayAuthRefs = (config: OpenClawConfig): OpenClawConfig => {
+  const applyReloadableGatewayAuthRefs = (config: AforaConfig): AforaConfig => {
     if (!startupAuthSecretRefOverride?.token && !startupAuthSecretRefOverride?.password) {
       return config;
     }
@@ -357,9 +357,9 @@ export async function prepareGatewayServerBootstrap(input: {
     };
   };
   const prepareReloadCandidate = (params: {
-    runtimeConfig: OpenClawConfig;
-    sourceConfig: OpenClawConfig;
-    previousSourceConfig?: OpenClawConfig;
+    runtimeConfig: AforaConfig;
+    sourceConfig: AforaConfig;
+    previousSourceConfig?: AforaConfig;
   }) => {
     const previousSourceConfig =
       params.previousSourceConfig ??
@@ -381,14 +381,14 @@ export async function prepareGatewayServerBootstrap(input: {
           ambientEnvTriggers,
         });
     const applyCandidateOverrides = captureConfigOverrideApplier();
-    const reapplyCompareOverlays = (config: OpenClawConfig): OpenClawConfig =>
+    const reapplyCompareOverlays = (config: AforaConfig): AforaConfig =>
       applyCandidateOverrides(
         mergeActivationSectionsIntoRuntimeConfig({
           runtimeConfig: config,
           activationConfig: pluginCandidate.compareConfig,
         }),
       );
-    const reapplyRuntimeOverlays = (config: OpenClawConfig): OpenClawConfig =>
+    const reapplyRuntimeOverlays = (config: AforaConfig): AforaConfig =>
       applyFixedGatewayOverlays(applyReloadableGatewayAuthRefs(reapplyCompareOverlays(config)));
     return {
       runtimeConfig: reapplyRuntimeOverlays(params.runtimeConfig),

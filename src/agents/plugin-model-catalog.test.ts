@@ -14,7 +14,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, describe, expect, it } from "vitest";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
 import {
   decodePluginModelCatalogRelativePathPluginId,
   encodePluginModelCatalogRelativePath,
@@ -32,7 +32,7 @@ function listPersistedPluginModelCatalogs(agentDir: string) {
 const tempDirs: string[] = [];
 
 function createAgentDir(): string {
-  const agentDir = mkdtempSync(join(tmpdir(), "openclaw-plugin-model-catalog-"));
+  const agentDir = mkdtempSync(join(tmpdir(), "afora-plugin-model-catalog-"));
   tempDirs.push(agentDir);
   return agentDir;
 }
@@ -58,7 +58,7 @@ function readCatalogCacheRow(
   value_json: string;
   updated_at: number;
 } {
-  const database = new DatabaseSync(join(agentDir, "openclaw-agent.sqlite"), {
+  const database = new DatabaseSync(join(agentDir, "afora-agent.sqlite"), {
     readOnly: true,
   });
   try {
@@ -77,7 +77,7 @@ function readCatalogCacheRow(
 }
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
   for (const agentDir of tempDirs.splice(0)) {
     rmSync(agentDir, { recursive: true, force: true });
   }
@@ -166,7 +166,7 @@ describe("SQLite-backed plugin model catalogs", () => {
         },
       },
     });
-    const database = new DatabaseSync(join(agentDir, "openclaw-agent.sqlite"));
+    const database = new DatabaseSync(join(agentDir, "afora-agent.sqlite"));
     try {
       database
         .prepare(
@@ -215,7 +215,7 @@ describe("SQLite-backed plugin model catalogs", () => {
         },
       },
     });
-    const database = new DatabaseSync(join(agentDir, "openclaw-agent.sqlite"));
+    const database = new DatabaseSync(join(agentDir, "afora-agent.sqlite"));
     try {
       database
         .prepare(
@@ -254,7 +254,7 @@ describe("SQLite-backed plugin model catalogs", () => {
     const agentDir = createAgentDir();
 
     expect(listPersistedPluginModelCatalogs(agentDir)).toEqual([]);
-    expect(existsSync(join(agentDir, "openclaw-agent.sqlite"))).toBe(false);
+    expect(existsSync(join(agentDir, "afora-agent.sqlite"))).toBe(false);
     expect(existsSync(join(agentDir, "plugins"))).toBe(false);
   });
 
@@ -262,7 +262,7 @@ describe("SQLite-backed plugin model catalogs", () => {
     const agentDir = createAgentDir();
 
     expect(replacePersistedPluginModelCatalogs({ agentDir, pluginCatalogWrites: {} })).toBe(false);
-    expect(existsSync(join(agentDir, "openclaw-agent.sqlite"))).toBe(false);
+    expect(existsSync(join(agentDir, "afora-agent.sqlite"))).toBe(false);
     expect(existsSync(join(agentDir, "plugins"))).toBe(false);
   });
 
@@ -274,7 +274,7 @@ describe("SQLite-backed plugin model catalogs", () => {
     writeFileSync(sourcePath, contents, "utf8");
 
     expect(listPersistedPluginModelCatalogs(agentDir)).toEqual([{ pluginId: "zai", contents }]);
-    expect(existsSync(join(agentDir, "openclaw-agent.sqlite"))).toBe(true);
+    expect(existsSync(join(agentDir, "afora-agent.sqlite"))).toBe(true);
     expect(existsSync(sourcePath)).toBe(false);
   });
 
@@ -286,7 +286,7 @@ describe("SQLite-backed plugin model catalogs", () => {
     writeFileSync(sourcePath, contents, "utf8");
 
     expect(listPersistedPluginModelCatalogs(agentDir)).toEqual([{ pluginId: "zai", contents }]);
-    const database = new DatabaseSync(join(agentDir, "openclaw-agent.sqlite"), {
+    const database = new DatabaseSync(join(agentDir, "afora-agent.sqlite"), {
       readOnly: true,
     });
     try {
@@ -309,7 +309,7 @@ describe("SQLite-backed plugin model catalogs", () => {
         [encodePluginModelCatalogRelativePath("zai")]: contents,
       },
     });
-    const database = new DatabaseSync(join(agentDir, "openclaw-agent.sqlite"));
+    const database = new DatabaseSync(join(agentDir, "afora-agent.sqlite"));
     try {
       database
         .prepare(
@@ -321,7 +321,7 @@ describe("SQLite-backed plugin model catalogs", () => {
     }
 
     expect(listPersistedPluginModelCatalogs(agentDir)).toEqual([{ pluginId: "zai", contents }]);
-    const verified = new DatabaseSync(join(agentDir, "openclaw-agent.sqlite"), {
+    const verified = new DatabaseSync(join(agentDir, "afora-agent.sqlite"), {
       readOnly: true,
     });
     try {
@@ -348,7 +348,7 @@ describe("SQLite-backed plugin model catalogs", () => {
         [encodePluginModelCatalogRelativePath("zai")]: contents,
       },
     });
-    const database = new DatabaseSync(join(agentDir, "openclaw-agent.sqlite"));
+    const database = new DatabaseSync(join(agentDir, "afora-agent.sqlite"));
     try {
       database
         .prepare(
@@ -368,7 +368,7 @@ describe("SQLite-backed plugin model catalogs", () => {
         migrated: 0,
         warnings: [expect.stringContaining("Could not inspect legacy provider catalogs")],
       });
-      const verified = new DatabaseSync(join(agentDir, "openclaw-agent.sqlite"), {
+      const verified = new DatabaseSync(join(agentDir, "afora-agent.sqlite"), {
         readOnly: true,
       });
       try {
@@ -699,7 +699,7 @@ describe("SQLite-backed plugin model catalogs", () => {
       ],
     });
     expect(existsSync(claimPath)).toBe(true);
-    expect(existsSync(join(agentDir, "openclaw-agent.sqlite"))).toBe(false);
+    expect(existsSync(join(agentDir, "afora-agent.sqlite"))).toBe(false);
     expect(listPersistedPluginModelCatalogs(agentDir)).toEqual([{ pluginId: "zai", contents }]);
     expect(existsSync(claimPath)).toBe(false);
   });
@@ -727,7 +727,7 @@ describe("SQLite-backed plugin model catalogs", () => {
       });
       expect(existsSync(claimPath)).toBe(true);
       expect(existsSync(sourcePath)).toBe(true);
-      expect(existsSync(join(agentDir, "openclaw-agent.sqlite"))).toBe(false);
+      expect(existsSync(join(agentDir, "afora-agent.sqlite"))).toBe(false);
     } finally {
       chmodSync(claimPath, 0o600);
     }
@@ -788,7 +788,7 @@ describe("SQLite-backed plugin model catalogs", () => {
     });
     expect(existsSync(olderPath)).toBe(true);
     expect(existsSync(newerPath)).toBe(true);
-    expect(existsSync(join(agentDir, "openclaw-agent.sqlite"))).toBe(false);
+    expect(existsSync(join(agentDir, "afora-agent.sqlite"))).toBe(false);
   });
 
   it("does not let an unreadable sidecar hide other committed provider catalogs", () => {
@@ -835,7 +835,7 @@ describe("SQLite-backed plugin model catalogs", () => {
     writeFileSync(sourcePath, contents, "utf8");
 
     expect(listPersistedPluginModelCatalogs(agentDir)).toEqual([]);
-    expect(existsSync(join(agentDir, "openclaw-agent.sqlite"))).toBe(false);
+    expect(existsSync(join(agentDir, "afora-agent.sqlite"))).toBe(false);
     expect(existsSync(sourcePath)).toBe(true);
   });
 
@@ -858,7 +858,7 @@ describe("SQLite-backed plugin model catalogs", () => {
       { pluginId: "anthropic", contents: anthropic },
       { pluginId: "zai", contents: zai },
     ]);
-    expect(existsSync(join(agentDir, "openclaw-agent.sqlite"))).toBe(true);
+    expect(existsSync(join(agentDir, "afora-agent.sqlite"))).toBe(true);
     expect(existsSync(join(agentDir, "plugins"))).toBe(false);
   });
 

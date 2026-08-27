@@ -1,6 +1,6 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { resolveSessionAgentId } from "../agents/agent-scope.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { parseAgentSessionKey } from "../routing/session-key.js";
 import { clearTaskActivity } from "./task-registry-activity.js";
 import { isActiveTaskStatus, ensureLinkedTaskFlowRegistryReady } from "./task-registry-common.js";
@@ -47,7 +47,7 @@ function taskMatchesRelatedSession(
   task: TaskRecord,
   sessionKey: string | undefined,
   sessionAgentId?: string,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): boolean {
   if (!sessionKey) {
     return true;
@@ -81,7 +81,7 @@ function taskMatchesRelatedSession(
 function taskMatchesAgent(
   task: TaskRecord,
   agentId: string | undefined,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): boolean {
   if (!agentId) {
     return true;
@@ -121,7 +121,7 @@ export function listTaskRecordPage(params: {
   agentId?: string;
   sessionKey?: string;
   sessionAgentId?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): { tasks: TaskRecord[]; hasMore: boolean } {
   ensureTaskRegistryReady();
   const statuses = params.statuses ? new Set(params.statuses) : null;

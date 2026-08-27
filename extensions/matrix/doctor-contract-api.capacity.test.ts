@@ -1,20 +1,20 @@
 // Matrix tests cover plugin-wide capacity during inbound dedupe migration.
 import fs from "node:fs";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   createPersistentDedupeImportEntry,
   type PersistentDedupeEntry,
-} from "openclaw/plugin-sdk/persistent-dedupe";
-import type { OpenKeyedStoreOptions } from "openclaw/plugin-sdk/plugin-state-runtime";
+} from "afora-agent/plugin-sdk/persistent-dedupe";
+import type { OpenKeyedStoreOptions } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateKeyedStoreForTests,
   getPluginStateCapacityForTests,
   importPluginStateEntriesForDoctorForTests,
   resetPluginStateStoreForTests,
   setMaxPluginStateEntriesPerPluginForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import type { PluginDoctorStateMigrationContext } from "openclaw/plugin-sdk/runtime-doctor-migrations";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import type { PluginDoctorStateMigrationContext } from "afora-agent/plugin-sdk/runtime-doctor-migrations";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { stateMigrations } from "./doctor-contract-api.js";
 import {
@@ -24,7 +24,7 @@ import {
 import { useAutoCleanupTempDirTracker } from "./test-support.js";
 
 function createMigrationParams(stateDir: string) {
-  const env = { OPENCLAW_STATE_DIR: stateDir };
+  const env = { AFORA_STATE_DIR: stateDir };
   const context: PluginDoctorStateMigrationContext = {
     getPluginStateCapacity() {
       return getPluginStateCapacityForTests("matrix", env);
@@ -37,7 +37,7 @@ function createMigrationParams(stateDir: string) {
     },
   };
   return {
-    config: {} as OpenClawConfig,
+    config: {} as AforaConfig,
     env,
     stateDir,
     oauthDir: path.join(stateDir, "oauth"),
@@ -95,7 +95,7 @@ describe("matrix inbound dedupe migration capacity", () => {
   });
 
   it("keeps sources when completion capacity cannot be reserved", async () => {
-    const stateDir = tempDirs.make("openclaw-matrix-capacity-");
+    const stateDir = tempDirs.make("afora-matrix-capacity-");
     const jsonPath = writeLegacyDedupeSource(stateDir, Date.now());
     const params = createMigrationParams(stateDir);
     setMaxPluginStateEntriesPerPluginForTests(3);
@@ -131,7 +131,7 @@ describe("matrix inbound dedupe migration capacity", () => {
   });
 
   it("reserves completion capacity before bounded import", async () => {
-    const stateDir = tempDirs.make("openclaw-matrix-capacity-");
+    const stateDir = tempDirs.make("afora-matrix-capacity-");
     const now = Date.now();
     const jsonPath = writeLegacyDedupeSource(stateDir, now, true);
     const params = createMigrationParams(stateDir);

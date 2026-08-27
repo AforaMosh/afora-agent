@@ -3,9 +3,9 @@ export type PluginInstallTransaction = {
   rollback(): Promise<void>;
 };
 
-const PLUGIN_INSTALL_TRANSACTION = Symbol.for("openclaw.pluginInstallTransaction");
-const PLUGIN_INSTALL_TRANSACTION_REQUEST = Symbol.for("openclaw.pluginInstallTransactionRequest");
-const PLUGIN_INSTALL_OWNER_MIGRATIONS = Symbol.for("openclaw.pluginInstallOwnerMigrations");
+const PLUGIN_INSTALL_TRANSACTION = Symbol.for("afora.pluginInstallTransaction");
+const PLUGIN_INSTALL_TRANSACTION_REQUEST = Symbol.for("afora.pluginInstallTransactionRequest");
+const PLUGIN_INSTALL_OWNER_MIGRATIONS = Symbol.for("afora.pluginInstallOwnerMigrations");
 
 type PluginInstallTransactionRequest = {
   deferCommit: true;

@@ -1,7 +1,7 @@
 {
-  "name": "@openclaw/ai",
+  "name": "@afora/ai",
   "version": "2026.8.1",
-  "description": "Reusable model provider adapters and streaming runtime from OpenClaw",
+  "description": "Reusable model provider adapters and streaming runtime from Afora",
   "keywords": [
     "ai",
     "anthropic",
@@ -11,15 +11,15 @@
     "openai",
     "streaming"
   ],
-  "homepage": "https://github.com/openclaw/openclaw#readme",
+  "homepage": "https://github.com/AforaMosh/afora-agent#readme",
   "bugs": {
-    "url": "https://github.com/openclaw/openclaw/issues"
+    "url": "https://github.com/AforaMosh/afora-agent/issues"
   },
   "license": "MIT",
-  "author": "OpenClaw Foundation (https://openclaw.org)",
+  "author": "Afora Foundation (https://afora.ai)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/openclaw/openclaw.git",
+    "url": "git+https://github.com/AforaMosh/afora-agent.git",
     "directory": "packages/ai"
   },
   "files": [
@@ -111,8 +111,8 @@
     "typebox": "1.3.6"
   },
   "devDependencies": {
-    "@openclaw/model-catalog-core": "workspace:*",
-    "@openclaw/normalization-core": "workspace:*"
+    "@afora/model-catalog-core": "workspace:*",
+    "@afora/normalization-core": "workspace:*"
   },
   "engines": {
     "node": ">=22.19.0"
@@ -120,7 +120,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "openclaw": {
+  "afora": {
     "release": {
       "publishToNpm": true
     }

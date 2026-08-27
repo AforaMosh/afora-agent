@@ -1,21 +1,21 @@
 // Memory Core plugin module owns manager cache and close serialization.
-import { toErrorObject } from "openclaw/plugin-sdk/error-runtime";
+import { toErrorObject } from "afora-agent/plugin-sdk/error-runtime";
 import {
   createSubsystemLogger,
   resolveGlobalSingleton,
   type ResolvedMemorySearchConfig,
-} from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
-import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-foundation";
+import { normalizeAgentId } from "afora-agent/plugin-sdk/routing";
 import {
   resolveMemoryCoreLocalServiceHostIdentity,
   type MemoryCoreAcquireLocalService,
 } from "./embedding-local-service.js";
 import { getOrCreateManagedCacheEntry, resolveSingletonManagedCache } from "./manager-cache.js";
 
-const MEMORY_INDEX_MANAGER_CACHE_KEY = Symbol.for("openclaw.memoryIndexManagerCache");
-const MEMORY_INDEX_MANAGER_SCOPE_CLOSES_KEY = Symbol.for("openclaw.memoryIndexManagerScopeCloses");
+const MEMORY_INDEX_MANAGER_CACHE_KEY = Symbol.for("afora.memoryIndexManagerCache");
+const MEMORY_INDEX_MANAGER_SCOPE_CLOSES_KEY = Symbol.for("afora.memoryIndexManagerScopeCloses");
 const MEMORY_INDEX_MANAGER_GLOBAL_LIFECYCLE_KEY = Symbol.for(
-  "openclaw.memoryIndexManagerGlobalLifecycle.v3",
+  "afora.memoryIndexManagerGlobalLifecycle.v3",
 );
 const log = createSubsystemLogger("memory");
 

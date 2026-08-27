@@ -1,5 +1,5 @@
 // Upload install helpers install skills from staged uploaded archives.
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ArchiveLogger } from "../../infra/archive.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import {
@@ -21,7 +21,7 @@ type UploadedSkillInstallErrorKind = "invalid-request" | "unavailable";
 export const UPLOADED_SKILL_ARCHIVES_DISABLED_MESSAGE =
   "Uploaded skill archive installs are disabled by skills.install.allowUploadedArchives";
 
-export function areUploadedSkillArchivesEnabled(config: OpenClawConfig): boolean {
+export function areUploadedSkillArchivesEnabled(config: AforaConfig): boolean {
   return config.skills?.install?.allowUploadedArchives === true;
 }
 
@@ -56,7 +56,7 @@ export async function installUploadedSkillArchive(params: {
   sha256?: string;
   timeoutMs?: number;
   workspaceDir: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   log?: ArchiveLogger;
   store?: SkillUploadStore;
 }): Promise<UploadedSkillInstallResult> {

@@ -55,6 +55,6 @@ export const page = definePage({
     import("./dashboards-page.ts").then(() => ({
       header: true,
       render: (data: DashboardsRouteData | undefined) =>
-        html`<openclaw-dashboards-page .routeData=${data}></openclaw-dashboards-page>`,
+        html`<afora-dashboards-page .routeData=${data}></afora-dashboards-page>`,
     })),
 });

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import { resolveConversationCapabilityProfile } from "../../agents/conversation-capability-profile.js";
 import { resolveSandboxRuntimeStatus } from "../../agents/sandbox/runtime-status.js";
 import { readToolAllowlistIntersection } from "../../agents/tool-policy.js";

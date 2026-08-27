@@ -2,9 +2,9 @@
 import type {
   ProviderResolveTransportTurnStateContext,
   ProviderTransportTurnState,
-} from "openclaw/plugin-sdk/plugin-entry";
-import { normalizeProviderId } from "openclaw/plugin-sdk/provider-model-shared";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/plugin-entry";
+import { normalizeProviderId } from "afora-agent/plugin-sdk/provider-model-shared";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { isOpenAIApiBaseUrl, isOpenAICodexBaseUrl } from "./base-url.js";
 
 const DEFAULT_OPENAI_WS_DEGRADE_COOLDOWN_MS = 60_000;
@@ -51,7 +51,7 @@ function resolveSessionHeaders(sessionIdValue?: string): Record<string, string> 
   }
   return {
     "x-client-request-id": sessionId,
-    "x-openclaw-session-id": sessionId,
+    "x-afora-session-id": sessionId,
   };
 }
 
@@ -74,14 +74,14 @@ export function resolveOpenAITransportTurnState(
   return {
     headers: {
       ...sessionHeaders,
-      "x-openclaw-turn-id": turnId,
-      "x-openclaw-turn-attempt": attempt,
+      "x-afora-turn-id": turnId,
+      "x-afora-turn-attempt": attempt,
     },
     metadata: {
-      openclaw_session_id: sessionHeaders["x-openclaw-session-id"] ?? "",
-      openclaw_turn_id: turnId,
-      openclaw_turn_attempt: attempt,
-      openclaw_transport: ctx.transport,
+      afora_session_id: sessionHeaders["x-afora-session-id"] ?? "",
+      afora_turn_id: turnId,
+      afora_turn_attempt: attempt,
+      afora_transport: ctx.transport,
     },
     ...(ctx.transport === "websocket"
       ? {

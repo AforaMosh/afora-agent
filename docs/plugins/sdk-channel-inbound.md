@@ -13,9 +13,9 @@ Channel receive paths follow one flow:
 platform event -> inbound facts/context -> agent reply -> message delivery
 ```
 
-Use `openclaw/plugin-sdk/channel-inbound` for inbound event normalization,
+Use `afora/plugin-sdk/channel-inbound` for inbound event normalization,
 formatting, roots, and orchestration. Use
-`openclaw/plugin-sdk/channel-outbound` for native send, receipt, durable
+`afora/plugin-sdk/channel-outbound` for native send, receipt, durable
 delivery, and live preview behavior.
 
 ## Core helpers
@@ -25,7 +25,7 @@ import {
   buildChannelInboundEventContext,
   runChannelInboundEvent,
   dispatchChannelInboundReply,
-} from "openclaw/plugin-sdk/channel-inbound";
+} from "afora-agent/plugin-sdk/channel-inbound";
 ```
 
 - `buildChannelInboundEventContext(...)`: projects normalized channel facts
@@ -162,12 +162,12 @@ surrounding whitespace.
 
 Reject `deliver` or `finalization` when native delivery fails. If no provider
 send was attempted, throw `PlatformMessageNotDispatchedError` from
-`openclaw/plugin-sdk/error-runtime`; core suppresses a false `message_sent`
+`afora/plugin-sdk/error-runtime`; core suppresses a false `message_sent`
 event. If a native send became visible before a later operation failed,
 preserve the visible subset on the error:
 
 ```ts
-import { createChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
+import { createChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
 
 throw createChannelPartialDeliveryError(cause, {
   visibleReplySent: true,

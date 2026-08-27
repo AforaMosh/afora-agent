@@ -13,7 +13,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { canUseRootFileOpen, openRootFileSync } from "../infra/boundary-file-read.js";
 import { resolvePathViaExistingAncestorSync } from "../infra/boundary-path.js";
 import { mergeDeep as mergeDeepValues } from "../infra/deep-merge.js";
@@ -114,7 +114,7 @@ type IncludeBoundary = {
 type ResolveConfigIncludesOptions = {
   /**
    * Additional directories outside the config directory that `$include` paths
-   * may resolve into. Typically populated from `OPENCLAW_INCLUDE_ROOTS`.
+   * may resolve into. Typically populated from `AFORA_INCLUDE_ROOTS`.
    * Each entry must be an absolute path; symlinks are resolved before the
    * containment check, consistent with the config-directory boundary check.
    */
@@ -325,7 +325,7 @@ class IncludeProcessor {
 
     // SECURITY: Reject paths outside the config directory and any caller-allowed
     // roots (CWE-22: Path Traversal). Allowed roots come from
-    // OPENCLAW_INCLUDE_ROOTS and let operators opt into shared include trees
+    // AFORA_INCLUDE_ROOTS and let operators opt into shared include trees
     // without weakening the default lock-down.
     const lexicalMatch = this.findContainingRoot(normalized, "rootDir");
     if (!lexicalMatch) {

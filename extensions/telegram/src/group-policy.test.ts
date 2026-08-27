@@ -1,5 +1,5 @@
 // Telegram tests cover group policy plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import {
   resolveTelegramGroupRequireMention,
@@ -10,10 +10,10 @@ import {
 // assignment in review bundles; the value is a fake test string.
 const TEST_BOT_AUTH = Object.fromEntries([["botToken", "telegram-test"]]);
 
-function createCfg(telegram: Record<string, unknown>): OpenClawConfig {
+function createCfg(telegram: Record<string, unknown>): AforaConfig {
   return {
     channels: { telegram: { ...TEST_BOT_AUTH, ...telegram } },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 describe("resolveTelegramGroupRequireMention", () => {

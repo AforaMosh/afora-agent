@@ -1,10 +1,10 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { ErrorCodes, errorShape } from "../../../packages/gateway-protocol/src/index.js";
 import { listAgentIds } from "../../agents/agent-scope.js";
 import { isExecApprovalFollowupSessionRebound } from "../../agents/bash-tools.exec-approval-followup-state.js";
 import { resolveExistingSessionKeyForRequest } from "../../agents/command/session.js";
 import { resolveExplicitAgentSessionKey } from "../../config/sessions.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { emitDiagnosticEvent } from "../../infra/diagnostic-events.js";
 import { resolveAgentExplicitRecipientSession } from "../../infra/outbound/agent-delivery.js";
 import { classifySessionKeyShape, normalizeAgentId } from "../../routing/session-key.js";
@@ -45,7 +45,7 @@ type AgentRequestRouting = {
 
 export async function prepareAgentRequestRouting(params: {
   request: AgentRunRequest;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   expectedSession?: ExpectedExistingSessionConstraint;
   isRawModelRun: boolean;
   execApprovalFollowupApprovalId?: string;
@@ -253,7 +253,7 @@ export async function prepareAgentRequestRouting(params: {
   };
 }
 
-function resolveAgentExplicitRecipientSessionKey(cfg: OpenClawConfig, agentId?: string) {
+function resolveAgentExplicitRecipientSessionKey(cfg: AforaConfig, agentId?: string) {
   return resolveExplicitAgentSessionKey({ cfg, agentId });
 }
 

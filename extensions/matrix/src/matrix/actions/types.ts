@@ -1,5 +1,5 @@
 // Matrix type declarations define plugin contracts.
-import type { OutboundMediaAccess } from "openclaw/plugin-sdk/media-runtime";
+import type { OutboundMediaAccess } from "afora-agent/plugin-sdk/media-runtime";
 import type { CoreConfig } from "../../types.js";
 import { MATRIX_REACTION_EVENT_TYPE } from "../reaction-common.js";
 import type { MatrixClient, MessageEventContent } from "../sdk.js";

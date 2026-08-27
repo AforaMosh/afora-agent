@@ -4,29 +4,29 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { createConfigIO, resetConfigRuntimeState } from "../../../config/io.js";
 import { tryResolveLegacyCompatibilityAgentId } from "../../../config/legacy.default-agent-owner.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { makeCronJob } from "../../../cron/delivery.test-helpers.js";
 import { cronStoreKey } from "../../../cron/store/key.js";
 import { loadCronRows, replaceCronRows } from "../../../cron/store/row-codec.js";
 import { writeConfigMachineState } from "../../../state/config-machine-state.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../../../state/afora-state-db.js";
 
 const roots: string[] = [];
 
 afterEach(async () => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   resetConfigRuntimeState();
   await Promise.all(roots.splice(0).map((root) => fs.rm(root, { recursive: true, force: true })));
 });
 
 describe("default role materialization authored writes", () => {
   it("preserves env references and includes and is idempotent after persistence", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-default-roles-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-default-roles-"));
     roots.push(root);
-    const configPath = path.join(root, "openclaw.json");
+    const configPath = path.join(root, "afora.json");
     const channelsPath = path.join(root, "channels.json5");
     const includeRaw = `${JSON.stringify({ telegram: { enabled: true } }, null, 2)}\n`;
     await fs.writeFile(channelsPath, includeRaw, "utf-8");
@@ -53,7 +53,7 @@ describe("default role materialization authored writes", () => {
       configPath,
       env: {
         HOME: root,
-        OPENCLAW_TEST_FAST: "1",
+        AFORA_TEST_FAST: "1",
         DEFAULT_MODEL: "openai/default-model",
         RESEARCH_MODEL: "openai/research-model",
       } as NodeJS.ProcessEnv,
@@ -78,7 +78,7 @@ describe("default role materialization authored writes", () => {
       explicitSetValueSource: doctorCandidate,
     });
 
-    const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as OpenClawConfig;
+    const persisted = JSON.parse(await fs.readFile(configPath, "utf-8")) as AforaConfig;
     expect(persisted.agents?.defaults?.model).toBe("${DEFAULT_MODEL}");
     expect(persisted.agents?.entries?.ops?.workspace).toBe("/srv/ops");
     expect(persisted.agents?.ownership).toBe("explicit");
@@ -118,9 +118,9 @@ describe("default role materialization authored writes", () => {
   it.each([true, false])(
     "pins a replaced sole fixed-store owner only when the store is unchanged: %s",
     async (sameStore) => {
-      const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-session-owner-"));
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-session-owner-"));
       roots.push(root);
-      const configPath = path.join(root, "openclaw.json");
+      const configPath = path.join(root, "afora.json");
       const sourceStore = path.join(root, "source-sessions.json");
       await fs.writeFile(
         configPath,
@@ -128,7 +128,7 @@ describe("default role materialization authored writes", () => {
       );
       const io = createConfigIO({
         configPath,
-        env: { HOME: root, OPENCLAW_TEST_FAST: "1" } as NodeJS.ProcessEnv,
+        env: { HOME: root, AFORA_TEST_FAST: "1" } as NodeJS.ProcessEnv,
         homedir: () => root,
         observe: false,
         logger: { warn: () => {}, error: () => {} },
@@ -153,9 +153,9 @@ describe("default role materialization authored writes", () => {
     ["another fixed store", "destination-sessions.json"],
     ["a per-agent store", "sessions-{agentId}.json"],
   ])("drops a persisted fixed-store owner when switching to %s", async (_label, storeName) => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-session-owner-switch-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-session-owner-switch-"));
     roots.push(root);
-    const configPath = path.join(root, "openclaw.json");
+    const configPath = path.join(root, "afora.json");
     await fs.writeFile(
       configPath,
       JSON.stringify({
@@ -169,7 +169,7 @@ describe("default role materialization authored writes", () => {
     );
     const io = createConfigIO({
       configPath,
-      env: { HOME: root, OPENCLAW_TEST_FAST: "1" } as NodeJS.ProcessEnv,
+      env: { HOME: root, AFORA_TEST_FAST: "1" } as NodeJS.ProcessEnv,
       homedir: () => root,
       observe: false,
       logger: { warn: () => {}, error: () => {} },
@@ -184,14 +184,14 @@ describe("default role materialization authored writes", () => {
       { baseSnapshot: snapshot },
     );
 
-    const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as OpenClawConfig;
+    const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as AforaConfig;
     expect(persisted.agents?.defaults?.sessionStore?.agentId).toBeUndefined();
   });
 
   it("keeps an explicitly supplied owner when switching fixed stores", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-session-owner-switch-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-session-owner-switch-"));
     roots.push(root);
-    const configPath = path.join(root, "openclaw.json");
+    const configPath = path.join(root, "afora.json");
     await fs.writeFile(
       configPath,
       JSON.stringify({
@@ -205,13 +205,13 @@ describe("default role materialization authored writes", () => {
     );
     const io = createConfigIO({
       configPath,
-      env: { HOME: root, OPENCLAW_TEST_FAST: "1" } as NodeJS.ProcessEnv,
+      env: { HOME: root, AFORA_TEST_FAST: "1" } as NodeJS.ProcessEnv,
       homedir: () => root,
       observe: false,
       logger: { warn: () => {}, error: () => {} },
     });
     const snapshot = await io.readConfigFileSnapshot();
-    const nextConfig: OpenClawConfig = {
+    const nextConfig: AforaConfig = {
       ...snapshot.config,
       agents: {
         ...snapshot.config.agents,
@@ -229,14 +229,14 @@ describe("default role materialization authored writes", () => {
       explicitSetValueSource: nextConfig,
     });
 
-    const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as OpenClawConfig;
+    const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as AforaConfig;
     expect(persisted.agents?.defaults?.sessionStore?.agentId).toBe("research");
   });
 
   it("pins the survivor's previous workspace during a generic roster collapse", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-workspace-collapse-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-workspace-collapse-"));
     roots.push(root);
-    const configPath = path.join(root, "openclaw.json");
+    const configPath = path.join(root, "afora.json");
     await fs.writeFile(
       configPath,
       JSON.stringify({
@@ -249,7 +249,7 @@ describe("default role materialization authored writes", () => {
     );
     const io = createConfigIO({
       configPath,
-      env: { HOME: root, OPENCLAW_TEST_FAST: "1" } as NodeJS.ProcessEnv,
+      env: { HOME: root, AFORA_TEST_FAST: "1" } as NodeJS.ProcessEnv,
       homedir: () => root,
       observe: false,
       logger: { warn: () => {}, error: () => {} },
@@ -268,7 +268,7 @@ describe("default role materialization authored writes", () => {
       { baseSnapshot: snapshot, allowedAgentRosterRemovals: ["ops"] },
     );
 
-    const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as OpenClawConfig;
+    const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as AforaConfig;
     expect(persisted.agents?.entries?.research?.workspace).toBe("/srv/fleet/research");
   });
 
@@ -279,19 +279,19 @@ describe("default role materialization authored writes", () => {
   ] as const)(
     "%s during generic roster writes",
     async (_label, targetAgentId, explicit, expected) => {
-      const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-auth-owner-transition-"));
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-auth-owner-transition-"));
       roots.push(root);
-      const configPath = path.join(root, "openclaw.json");
+      const configPath = path.join(root, "afora.json");
       await fs.writeFile(configPath, JSON.stringify({ agents: { entries: { ops: {} } } }));
       const io = createConfigIO({
         configPath,
-        env: { HOME: root, OPENCLAW_TEST_FAST: "1" } as NodeJS.ProcessEnv,
+        env: { HOME: root, AFORA_TEST_FAST: "1" } as NodeJS.ProcessEnv,
         homedir: () => root,
         observe: false,
         logger: { warn: () => {}, error: () => {} },
       });
       const snapshot = await io.readConfigFileSnapshot();
-      const nextConfig: OpenClawConfig = {
+      const nextConfig: AforaConfig = {
         ...snapshot.config,
         agents: {
           ownership: "explicit",
@@ -309,15 +309,15 @@ describe("default role materialization authored writes", () => {
         explicitSetValueSource: nextConfig,
       });
 
-      const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as OpenClawConfig;
+      const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as AforaConfig;
       expect(persisted.agents?.defaults?.authInheritance?.agentId).toBe(expected);
     },
   );
 
   it("refuses to remove an inherited-auth owner with a custom agentDir", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-custom-auth-owner-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-custom-auth-owner-"));
     roots.push(root);
-    const configPath = path.join(root, "openclaw.json");
+    const configPath = path.join(root, "afora.json");
     const customAgentDir = path.join(root, "custom-ops-agent");
     await fs.writeFile(
       configPath,
@@ -325,7 +325,7 @@ describe("default role materialization authored writes", () => {
     );
     const io = createConfigIO({
       configPath,
-      env: { HOME: root, OPENCLAW_TEST_FAST: "1" } as NodeJS.ProcessEnv,
+      env: { HOME: root, AFORA_TEST_FAST: "1" } as NodeJS.ProcessEnv,
       homedir: () => root,
       observe: false,
       logger: { warn: () => {}, error: () => {} },
@@ -347,9 +347,9 @@ describe("default role materialization authored writes", () => {
   });
 
   it("replaces a legacy list when persisting explicit ownership", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-legacy-roster-write-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-legacy-roster-write-"));
     roots.push(root);
-    const configPath = path.join(root, "openclaw.json");
+    const configPath = path.join(root, "afora.json");
     await fs.writeFile(
       configPath,
       JSON.stringify({
@@ -363,13 +363,13 @@ describe("default role materialization authored writes", () => {
     );
     const io = createConfigIO({
       configPath,
-      env: { HOME: root, OPENCLAW_TEST_FAST: "1" } as NodeJS.ProcessEnv,
+      env: { HOME: root, AFORA_TEST_FAST: "1" } as NodeJS.ProcessEnv,
       homedir: () => root,
       observe: false,
       logger: { warn: () => {}, error: () => {} },
     });
     const snapshot = await io.readConfigFileSnapshot();
-    const nextConfig: OpenClawConfig = {
+    const nextConfig: AforaConfig = {
       ...snapshot.config,
       agents: { ...snapshot.config.agents, ownership: "explicit" },
     };
@@ -380,7 +380,7 @@ describe("default role materialization authored writes", () => {
       explicitSetValueSource: nextConfig,
     });
 
-    const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as OpenClawConfig;
+    const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as AforaConfig;
     expect(persisted.agents).toEqual({
       ownership: "explicit",
       defaults: {
@@ -401,14 +401,14 @@ describe("default role materialization authored writes", () => {
   });
 
   it("assigns only ownerless cron rows before retiring the retained legacy owner", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-legacy-cron-owner-write-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-legacy-cron-owner-write-"));
     roots.push(root);
-    const configPath = path.join(root, "openclaw.json");
+    const configPath = path.join(root, "afora.json");
     const storePath = path.join(root, "custom-cron", "jobs.json");
     const env = {
       HOME: root,
-      OPENCLAW_STATE_DIR: root,
-      OPENCLAW_TEST_FAST: "1",
+      AFORA_STATE_DIR: root,
+      AFORA_TEST_FAST: "1",
     } as NodeJS.ProcessEnv;
     await fs.writeFile(
       configPath,
@@ -420,7 +420,7 @@ describe("default role materialization authored writes", () => {
     );
     writeConfigMachineState("cron.store", storePath, { env });
     const storeKey = cronStoreKey(storePath);
-    const database = openOpenClawStateDatabase({ env }).db;
+    const database = openAforaStateDatabase({ env }).db;
     replaceCronRows(database, storeKey, {
       version: 1,
       jobs: [makeCronJob({ id: "ownerless" }), makeCronJob({ id: "owned", agentId: "research" })],
@@ -438,7 +438,7 @@ describe("default role materialization authored writes", () => {
       logger: { warn: () => {}, error: () => {} },
     });
     const snapshot = await io.readConfigFileSnapshot();
-    const nextConfig: OpenClawConfig = {
+    const nextConfig: AforaConfig = {
       ...snapshot.config,
       agents: { ...snapshot.config.agents, ownership: "explicit" },
     };
@@ -449,10 +449,10 @@ describe("default role materialization authored writes", () => {
       explicitSetValueSource: nextConfig,
     });
 
-    const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as OpenClawConfig;
+    const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as AforaConfig;
     expect(persisted.agents?.ownership).toBe("explicit");
     expect(persisted.agents?.entries?.ops).not.toHaveProperty("default");
-    expect(loadCronRows(openOpenClawStateDatabase({ env }).db, storeKey)).toMatchObject([
+    expect(loadCronRows(openAforaStateDatabase({ env }).db, storeKey)).toMatchObject([
       { job_id: "ownerless", agent_id: "ops" },
       { job_id: "owned", agent_id: "research" },
     ]);
@@ -467,14 +467,14 @@ describe("default role materialization authored writes", () => {
   });
 
   it("assigns ownerless jobs in an unmigrated legacy cron file", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-legacy-json-cron-owner-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-legacy-json-cron-owner-"));
     roots.push(root);
-    const configPath = path.join(root, "openclaw.json");
+    const configPath = path.join(root, "afora.json");
     const storePath = path.join(root, "cron", "jobs.json");
     const env = {
       HOME: root,
-      OPENCLAW_STATE_DIR: root,
-      OPENCLAW_TEST_FAST: "1",
+      AFORA_STATE_DIR: root,
+      AFORA_TEST_FAST: "1",
     } as NodeJS.ProcessEnv;
     await fs.mkdir(path.dirname(storePath), { recursive: true });
     await fs.writeFile(
@@ -501,7 +501,7 @@ describe("default role materialization authored writes", () => {
       logger: { warn: () => {}, error: () => {} },
     });
     const snapshot = await io.readConfigFileSnapshot();
-    const nextConfig: OpenClawConfig = {
+    const nextConfig: AforaConfig = {
       ...snapshot.config,
       agents: { ...snapshot.config.agents, ownership: "explicit" },
     };
@@ -527,13 +527,13 @@ describe("default role materialization authored writes", () => {
   });
 
   it("leaves the legacy owner marker intact when a cron row is corrupt", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-corrupt-cron-owner-write-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-corrupt-cron-owner-write-"));
     roots.push(root);
-    const configPath = path.join(root, "openclaw.json");
+    const configPath = path.join(root, "afora.json");
     const env = {
       HOME: root,
-      OPENCLAW_STATE_DIR: root,
-      OPENCLAW_TEST_FAST: "1",
+      AFORA_STATE_DIR: root,
+      AFORA_TEST_FAST: "1",
     } as NodeJS.ProcessEnv;
     const storePath = path.join(root, "cron", "jobs.json");
     const source = JSON.stringify({
@@ -541,7 +541,7 @@ describe("default role materialization authored writes", () => {
     });
     await fs.writeFile(configPath, source);
     writeConfigMachineState("cron.store", storePath, { env });
-    const database = openOpenClawStateDatabase({ env }).db;
+    const database = openAforaStateDatabase({ env }).db;
     replaceCronRows(database, cronStoreKey(storePath), {
       version: 1,
       jobs: [makeCronJob({ id: "corrupt" })],
@@ -559,7 +559,7 @@ describe("default role materialization authored writes", () => {
       logger: { warn: () => {}, error: () => {} },
     });
     const snapshot = await io.readConfigFileSnapshot();
-    const nextConfig: OpenClawConfig = {
+    const nextConfig: AforaConfig = {
       ...snapshot.config,
       agents: { ...snapshot.config.agents, ownership: "explicit" },
     };
@@ -575,9 +575,9 @@ describe("default role materialization authored writes", () => {
   });
 
   it("preserves migrated legacy ownership during an unrelated write", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-legacy-owner-roundtrip-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-legacy-owner-roundtrip-"));
     roots.push(root);
-    const configPath = path.join(root, "openclaw.json");
+    const configPath = path.join(root, "afora.json");
     await fs.writeFile(
       configPath,
       JSON.stringify({
@@ -592,7 +592,7 @@ describe("default role materialization authored writes", () => {
     );
     const io = createConfigIO({
       configPath,
-      env: { HOME: root, OPENCLAW_TEST_FAST: "1" } as NodeJS.ProcessEnv,
+      env: { HOME: root, AFORA_TEST_FAST: "1" } as NodeJS.ProcessEnv,
       homedir: () => root,
       observe: false,
       logger: { warn: () => {}, error: () => {} },
@@ -605,7 +605,7 @@ describe("default role materialization authored writes", () => {
       { baseSnapshot: snapshot, explicitSetPaths: [["gateway", "port"]] },
     );
 
-    const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as OpenClawConfig;
+    const persisted = JSON.parse(await fs.readFile(configPath, "utf8")) as AforaConfig;
     expect(persisted.agents?.ownership).toBeUndefined();
     expect(persisted.agents?.entries?.research?.default).toBe(true);
     const reread = await io.readConfigFileSnapshot();

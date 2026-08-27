@@ -24,14 +24,14 @@ function normalizeUpstreamRegistry(raw) {
     url.search ||
     url.hash
   ) {
-    throw new Error("OPENCLAW_NPM_REGISTRY_UPSTREAM must be an HTTP(S) origin");
+    throw new Error("AFORA_NPM_REGISTRY_UPSTREAM must be an HTTP(S) origin");
   }
   return url.origin;
 }
 
-const upstreamRegistry = normalizeUpstreamRegistry(process.env.OPENCLAW_NPM_REGISTRY_UPSTREAM);
+const upstreamRegistry = normalizeUpstreamRegistry(process.env.AFORA_NPM_REGISTRY_UPSTREAM);
 const distTagOverrides = new Map(
-  (process.env.OPENCLAW_NPM_REGISTRY_DIST_TAGS ?? "")
+  (process.env.AFORA_NPM_REGISTRY_DIST_TAGS ?? "")
     .split(",")
     .map((entry) => entry.trim())
     .filter(Boolean)
@@ -39,7 +39,7 @@ const distTagOverrides = new Map(
       const separator = entry.indexOf("=");
       if (separator <= 0 || separator === entry.length - 1) {
         throw new Error(
-          "OPENCLAW_NPM_REGISTRY_DIST_TAGS must contain comma-separated tag=version entries",
+          "AFORA_NPM_REGISTRY_DIST_TAGS must contain comma-separated tag=version entries",
         );
       }
       return [entry.slice(0, separator).trim(), entry.slice(separator + 1).trim()];
@@ -72,7 +72,7 @@ function readPackageManifest(tarballPath, packageName) {
       ? packageJson
       : {};
   } catch {
-    return packageName === "@openclaw/demo-plugin-npm"
+    return packageName === "@afora/demo-plugin-npm"
       ? { dependencies: { "is-number": "7.0.0" } }
       : {};
   }
@@ -285,8 +285,8 @@ const server = http.createServer((request, response) => {
   });
 });
 
-const bindHost = process.env.OPENCLAW_NPM_REGISTRY_BIND_HOST || "127.0.0.1";
-const requestedPort = Number(process.env.OPENCLAW_NPM_REGISTRY_PORT || 0);
+const bindHost = process.env.AFORA_NPM_REGISTRY_BIND_HOST || "127.0.0.1";
+const requestedPort = Number(process.env.AFORA_NPM_REGISTRY_PORT || 0);
 server.listen(requestedPort, bindHost, () => {
   fs.writeFileSync(portFile, String(server.address().port));
 });

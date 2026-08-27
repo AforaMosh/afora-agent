@@ -9,7 +9,7 @@ import { withRealpathSymlinkRebindRace } from "../test-utils/symlink-rebind-race
 import { createZipCentralDirectoryArchive } from "../test-utils/zip-central-directory-fixture.js";
 import { extractArchive, resolvePackedRootDir } from "./archive.js";
 
-const fixtureRootTracker = createSuiteTempRootTracker({ prefix: "openclaw-archive-" });
+const fixtureRootTracker = createSuiteTempRootTracker({ prefix: "afora-archive-" });
 const directorySymlinkType = process.platform === "win32" ? "junction" : undefined;
 const ARCHIVE_EXTRACT_TIMEOUT_MS = 15_000;
 

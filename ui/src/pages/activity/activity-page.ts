@@ -22,7 +22,7 @@ import { isMissingOperatorReadScopeError } from "../../lib/gateway-errors.ts";
 import { canCallGatewayMethod, isGatewayMethodAdvertised } from "../../lib/gateway-methods.ts";
 import { resolveSessionKey } from "../../lib/sessions/index.ts";
 import { uiSessionEventMatches } from "../../lib/sessions/session-key.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { StreamAutoFollowController } from "../../lit/stream-auto-follow-controller.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import {
@@ -46,7 +46,7 @@ function selectorKey(selector: RunInspectorSelector | null): string | null {
   return selector ? `${selector.kind}:${selector.id}` : null;
 }
 
-class ActivityPage extends OpenClawLightDomElement {
+class ActivityPage extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context!: ApplicationContext;
 
@@ -475,11 +475,11 @@ class ActivityPage extends OpenClawLightDomElement {
 
 export const activityPageComponent = {
   header: true,
-  render: (search: unknown) => html`<openclaw-activity-page
+  render: (search: unknown) => html`<afora-activity-page
     .routeSearch=${typeof search === "string" ? search : ""}
-  ></openclaw-activity-page>`,
+  ></afora-activity-page>`,
 };
 
-if (!customElements.get("openclaw-activity-page")) {
-  customElements.define("openclaw-activity-page", ActivityPage);
+if (!customElements.get("afora-activity-page")) {
+  customElements.define("afora-activity-page", ActivityPage);
 }

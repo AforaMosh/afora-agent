@@ -5,5 +5,5 @@
 // normalize model refs during config migration and doctor enumeration
 // cold-loads those closures for every declaring plugin.
 
-export { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+export { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 export { parseModelRef } from "../agents/model-selection-normalize.js";

@@ -1,7 +1,7 @@
 // Discord tests cover security audit plugin behavior.
 import { describe, expect, it, vi } from "vitest";
 import type { ResolvedDiscordAccount } from "./accounts.js";
-import type { OpenClawConfig } from "./runtime-api.js";
+import type { AforaConfig } from "./runtime-api.js";
 import { collectDiscordSecurityAuditFindings } from "./security-audit.js";
 
 type DiscordAccountConfig = ResolvedDiscordAccount["config"];
@@ -10,7 +10,7 @@ const { readChannelAllowFromStoreMock } = vi.hoisted(() => ({
   readChannelAllowFromStoreMock: vi.fn(async () => [] as string[]),
 }));
 
-vi.mock("openclaw/plugin-sdk/conversation-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/conversation-runtime", () => ({
   readChannelAllowFromStore: readChannelAllowFromStoreMock,
 }));
 
@@ -87,7 +87,7 @@ const broadMemberCases: BroadMemberCase[] = [
 ];
 
 async function collectFindings(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   config: DiscordAccountConfig;
   accountId?: string;
   orderedAccountIds?: string[];
@@ -159,7 +159,7 @@ describe("Discord security audit findings", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       expectFinding: true,
     },
     {
@@ -181,7 +181,7 @@ describe("Discord security audit findings", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       expectFinding: false,
     },
   ])("$name", async (testCase) => {
@@ -225,7 +225,7 @@ describe("Discord security audit findings", () => {
         "channels.discord.allowFrom:Alice#1234",
         "channels.discord.guilds.123.users:trusted.operator",
         "channels.discord.guilds.123.channels.general.users:security-team",
-        "~/.openclaw/credentials/discord-allowFrom.json:team.owner",
+        "~/.afora/credentials/discord-allowFrom.json:team.owner",
       ],
       detailExcludes: ["<@123456789012345678>"],
     },

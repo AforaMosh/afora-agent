@@ -474,14 +474,14 @@ export async function updateGitCheckout(params: {
       }
     }
 
-    const doctorEntry = path.join(gitRoot, "openclaw.mjs");
+    const doctorEntry = path.join(gitRoot, "afora.mjs");
     const doctorEntryExists = await fs.stat(doctorEntry).then(
       () => true,
       () => false,
     );
     if (!doctorEntryExists) {
       steps.push({
-        name: "openclaw doctor entry",
+        name: "afora doctor entry",
         command: `verify ${doctorEntry}`,
         cwd: gitRoot,
         durationMs: 0,
@@ -498,7 +498,7 @@ export async function updateGitCheckout(params: {
     });
     const doctorStep = await runStep(
       step(
-        "openclaw doctor",
+        "afora doctor",
         [
           doctorNodePath,
           doctorEntry,

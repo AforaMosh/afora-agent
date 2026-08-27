@@ -4,15 +4,15 @@ import type {
   PluginBlobEntryInfo,
   PluginBlobStore,
   PluginStateEntry,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+} from "afora-agent/plugin-sdk/plugin-state-runtime";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import {
-  resolvePreferredOpenClawTmpDir,
+  resolvePreferredAforaTmpDir,
   tempWorkspace,
   type TempWorkspace,
-} from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/temp-path";
 import { afterEach, vi } from "vitest";
-import type { OpenClawPluginApi } from "../api.js";
+import type { AforaPluginApi } from "../api.js";
 import {
   configureMemoryWikiCompiledCacheStore,
   createMemoryWikiCompiledCacheStore,
@@ -32,7 +32,7 @@ type MemoryWikiTestVault = {
 };
 
 type MemoryWikiPluginApiHarness = {
-  api: OpenClawPluginApi;
+  api: AforaPluginApi;
   registerCli: ReturnType<typeof vi.fn>;
   registerGatewayMethod: ReturnType<typeof vi.fn>;
   registerMemoryCorpusSupplement: ReturnType<typeof vi.fn>;
@@ -163,11 +163,11 @@ export function createMemoryWikiTestHarness() {
     await Promise.all(tempWorkspaces.splice(0).map((workspace) => workspace.cleanup()));
   });
 
-  // openclaw-temp-dir: allow this shared harness couples workspace cleanup to cache and vault lifecycle.
+  // afora-temp-dir: allow this shared harness couples workspace cleanup to cache and vault lifecycle.
   async function createTempDir(prefix: string): Promise<string> {
     configureCompiledCacheStore();
     const workspace = await tempWorkspace({
-      rootDir: resolvePreferredOpenClawTmpDir(),
+      rootDir: resolvePreferredAforaTmpDir(),
       prefix,
     });
     tempWorkspaces.push(workspace);
@@ -219,7 +219,7 @@ export function createMemoryWikiTestHarness() {
           openKeyedStore: vi.fn(<T>() => createMemoryKeyedStore<T>()),
           openBlobStore: vi.fn(<T>() => createMemoryBlobStore<T>()),
         },
-      } as unknown as OpenClawPluginApi["runtime"],
+      } as unknown as AforaPluginApi["runtime"],
       registerCli,
       registerGatewayMethod,
       registerMemoryCorpusSupplement,

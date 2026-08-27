@@ -1,11 +1,11 @@
-import { parseStrictNonNegativeInteger } from "@openclaw/normalization-core/number-coercion";
+import { parseStrictNonNegativeInteger } from "@afora/normalization-core/number-coercion";
 /**
  * Interactive remote gateway onboarding.
  *
  * It can discover gateways, validate remote WebSocket security, and store
  * remote token/password auth as plaintext or secret references.
  */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { SecretInput } from "../config/types.secrets.js";
 import { isSecureWebSocketUrl } from "../gateway/net.js";
 import { discoverGatewayBeacons, type GatewayBonjourBeacon } from "../infra/bonjour-discovery.js";
@@ -43,7 +43,7 @@ export function validateGatewayWebSocketUrl(value: string): string | undefined {
   }
   if (
     !isSecureWebSocketUrl(trimmed, {
-      allowPrivateWs: process.env.OPENCLAW_ALLOW_INSECURE_PRIVATE_WS === "1",
+      allowPrivateWs: process.env.AFORA_ALLOW_INSECURE_PRIVATE_WS === "1",
     })
   ) {
     return t("wizard.remote.insecureRemoteUrl");
@@ -53,10 +53,10 @@ export function validateGatewayWebSocketUrl(value: string): string | undefined {
 
 /** Prompts for remote gateway connection and auth settings. */
 export async function promptRemoteGatewayConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   prompter: WizardPrompter,
   options?: { secretInputMode?: SecretInputMode },
-): Promise<OpenClawConfig> {
+): Promise<AforaConfig> {
   let selectedBeacon: GatewayBonjourBeacon | null = null;
   let suggestedUrl = cfg.gateway?.remote?.url ?? DEFAULT_GATEWAY_URL;
   let discoveryTlsFingerprint: string | undefined;
@@ -74,7 +74,7 @@ export async function promptRemoteGatewayConfig(
     await prompter.note(
       [
         "Bonjour discovery requires dns-sd (macOS) or avahi-browse (Linux).",
-        "Docs: https://docs.openclaw.ai/gateway/discovery",
+        "Docs: https://docs.afora.ai/gateway/discovery",
       ].join("\n"),
       "Discovery",
     );
@@ -160,7 +160,7 @@ export async function promptRemoteGatewayConfig(
           [
             "Start a tunnel before using the CLI:",
             `ssh -N -L 18789:127.0.0.1:18789 <user>@${host}${target.sshPort ? ` -p ${target.sshPort}` : ""}`,
-            "Docs: https://docs.openclaw.ai/gateway/remote",
+            "Docs: https://docs.afora.ai/gateway/remote",
           ].join("\n"),
           t("wizard.remote.sshTunnelTitle"),
         );
@@ -205,10 +205,10 @@ export async function promptRemoteGatewayConfig(
         provider: "gateway-remote-token",
         config: cfg,
         prompter,
-        preferredEnvVar: "OPENCLAW_GATEWAY_TOKEN",
+        preferredEnvVar: "AFORA_GATEWAY_TOKEN",
         copy: {
           sourceMessage: t("wizard.remote.gatewayTokenStoredMessage"),
-          envVarPlaceholder: "OPENCLAW_GATEWAY_TOKEN",
+          envVarPlaceholder: "AFORA_GATEWAY_TOKEN",
         },
       });
       token = resolved.ref;
@@ -250,10 +250,10 @@ export async function promptRemoteGatewayConfig(
         provider: "gateway-remote-password",
         config: cfg,
         prompter,
-        preferredEnvVar: "OPENCLAW_GATEWAY_PASSWORD",
+        preferredEnvVar: "AFORA_GATEWAY_PASSWORD",
         copy: {
           sourceMessage: t("wizard.remote.gatewayPasswordStoredMessage"),
-          envVarPlaceholder: "OPENCLAW_GATEWAY_PASSWORD",
+          envVarPlaceholder: "AFORA_GATEWAY_PASSWORD",
         },
       });
       password = resolved.ref;

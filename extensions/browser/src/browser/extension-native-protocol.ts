@@ -1,5 +1,5 @@
 import os from "node:os";
-import { asNullableRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { asNullableRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 const BROWSER_NATIVE_REQUEST_MAX_BYTES = 4 * 1024;
 const BROWSER_NATIVE_RESPONSE_MAX_BYTES = 1024 * 1024;

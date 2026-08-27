@@ -1,24 +1,24 @@
 ---
-summary: "Run OpenClaw through inferrs (OpenAI-compatible local server)"
+summary: "Run Afora through inferrs (OpenAI-compatible local server)"
 read_when:
-  - You want to run OpenClaw against a local inferrs server
+  - You want to run Afora against a local inferrs server
   - You are serving Gemma or another model through inferrs
-  - You need the exact OpenClaw compat flags for inferrs
+  - You need the exact Afora compat flags for inferrs
 title: "Inferrs"
 ---
 
-[inferrs](https://github.com/ericcurtin/inferrs) serves local models behind an OpenAI-compatible `/v1` API. OpenClaw talks to it through the generic `openai-completions` adapter.
+[inferrs](https://github.com/ericcurtin/inferrs) serves local models behind an OpenAI-compatible `/v1` API. Afora talks to it through the generic `openai-completions` adapter.
 
 | Property           | Value                                                                |
 | ------------------ | -------------------------------------------------------------------- |
 | Provider id        | `inferrs` (custom; configure under `models.providers.inferrs`)       |
-| Plugin             | none — not a bundled OpenClaw provider plugin                        |
+| Plugin             | none — not a bundled Afora provider plugin                        |
 | Auth env var       | none required; any value works if your inferrs server has no auth    |
 | API                | OpenAI-compatible (`openai-completions`)                             |
 | Suggested base URL | `http://127.0.0.1:8080/v1` (or wherever your inferrs server listens) |
 
 <Note>
-  `inferrs` is a custom self-hosted OpenAI-compatible backend, not a dedicated OpenClaw provider plugin: you configure it under `models.providers.inferrs` instead of picking an onboarding auth choice. For a bundled plugin with auto-discovery, see [SGLang](/providers/sglang) or [vLLM](/providers/vllm).
+  `inferrs` is a custom self-hosted OpenAI-compatible backend, not a dedicated Afora provider plugin: you configure it under `models.providers.inferrs` instead of picking an onboarding auth choice. For a bundled plugin with auto-discovery, see [SGLang](/providers/sglang) or [vLLM](/providers/vllm).
 </Note>
 
 ## Getting started
@@ -38,7 +38,7 @@ title: "Inferrs"
     curl http://127.0.0.1:8080/v1/models
     ```
   </Step>
-  <Step title="Add an OpenClaw provider entry">
+  <Step title="Add an Afora provider entry">
     Add an explicit provider entry and point your default model at it. See the config example below.
   </Step>
 </Steps>
@@ -88,7 +88,7 @@ Gemma 4 on a local `inferrs` server:
 
 ## On-demand startup
 
-OpenClaw can start `inferrs` itself only when an `inferrs/...` model is selected. Add `localService` to the same provider entry:
+Afora can start `inferrs` itself only when an `inferrs/...` model is selected. Add `localService` to the same provider entry:
 
 ```json5
 {
@@ -144,19 +144,19 @@ OpenClaw can start `inferrs` itself only when an `inferrs/...` model is selected
     Some `inferrs` Chat Completions routes accept only string `messages[].content`, not structured content-part arrays.
 
     <Warning>
-    If OpenClaw runs fail with:
+    If Afora runs fail with:
 
     ```text
     messages[1].content: invalid type: sequence, expected a string
     ```
 
-    set `compat.requiresStringContent: true` in the model entry. OpenClaw then flattens pure text content parts into plain strings before sending the request.
+    set `compat.requiresStringContent: true` in the model entry. Afora then flattens pure text content parts into plain strings before sending the request.
     </Warning>
 
   </Accordion>
 
   <Accordion title="Gemma and tool-schema caveat">
-    Some `inferrs` + Gemma combinations accept small direct `/v1/chat/completions` requests but fail on full OpenClaw agent-runtime turns. Try disabling the tool schema surface first:
+    Some `inferrs` + Gemma combinations accept small direct `/v1/chat/completions` requests but fail on full Afora agent-runtime turns. Try disabling the tool schema surface first:
 
     ```json5
     compat: {
@@ -165,7 +165,7 @@ OpenClaw can start `inferrs` itself only when an `inferrs/...` model is selected
     }
     ```
 
-    That reduces prompt pressure on stricter local backends. If tiny direct requests still work but normal OpenClaw agent turns keep crashing inside `inferrs`, treat it as an upstream model/server limitation rather than an OpenClaw transport issue.
+    That reduces prompt pressure on stricter local backends. If tiny direct requests still work but normal Afora agent turns keep crashing inside `inferrs`, treat it as an upstream model/server limitation rather than an Afora transport issue.
 
   </Accordion>
 
@@ -179,7 +179,7 @@ OpenClaw can start `inferrs` itself only when an `inferrs/...` model is selected
     ```
 
     ```bash
-    openclaw infer model run \
+    afora infer model run \
       --model inferrs/google/gemma-4-E2B-it \
       --prompt "What is 2 + 2? Reply with one short sentence." \
       --json
@@ -205,7 +205,7 @@ OpenClaw can start `inferrs` itself only when an `inferrs/...` model is selected
     Set `compat.requiresStringContent: true` in the model entry (see above).
   </Accordion>
 
-  <Accordion title="Direct /v1/chat/completions calls pass but openclaw infer model run fails">
+  <Accordion title="Direct /v1/chat/completions calls pass but afora infer model run fails">
     Set `compat.supportsTools: false` to disable the tool schema surface (see the Gemma caveat above).
   </Accordion>
 
@@ -222,7 +222,7 @@ For general help, see [Troubleshooting](/help/troubleshooting) and [FAQ](/help/f
 
 <CardGroup cols={2}>
   <Card title="Local models" href="/gateway/local-models" icon="server">
-    Running OpenClaw against local model servers.
+    Running Afora against local model servers.
   </Card>
   <Card title="Local model services" href="/gateway/local-model-services" icon="play">
     Starting local model servers on demand for configured providers.

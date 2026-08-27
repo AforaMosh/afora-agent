@@ -274,8 +274,8 @@ describe("redactSensitiveText", () => {
   });
 
   it("preserves marker-shaped input while redacting structured auth", () => {
-    const markerZero = ";__openclaw_structured_auth_redacted_0;";
-    const markerOne = ";__openclaw_structured_auth_redacted_1;";
+    const markerZero = ";__afora_structured_auth_redacted_0;";
+    const markerOne = ";__afora_structured_auth_redacted_1;";
     const response = ["collision", "response", "1234567890abcdef"].join("-");
     const input = [
       markerZero,

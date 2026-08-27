@@ -62,20 +62,20 @@ const allowFailing = new Set(
 );
 const allowDegradedReady =
   args.includes("--allow-degraded-ready") ||
-  process.env.OPENCLAW_UPGRADE_SURVIVOR_READYZ_ALLOW_DEGRADED === "1";
+  process.env.AFORA_UPGRADE_SURVIVOR_READYZ_ALLOW_DEGRADED === "1";
 const timeoutOption = optionValue(
   "--timeout-ms",
-  "OPENCLAW_UPGRADE_SURVIVOR_PROBE_TIMEOUT_MS",
+  "AFORA_UPGRADE_SURVIVOR_PROBE_TIMEOUT_MS",
   "60000",
 );
 const attemptTimeoutOption = optionValue(
   "--attempt-timeout-ms",
-  "OPENCLAW_UPGRADE_SURVIVOR_PROBE_ATTEMPT_TIMEOUT_MS",
+  "AFORA_UPGRADE_SURVIVOR_PROBE_ATTEMPT_TIMEOUT_MS",
   "5000",
 );
 const maxBodyOption = optionValue(
   "--max-body-bytes",
-  "OPENCLAW_UPGRADE_SURVIVOR_PROBE_MAX_BODY_BYTES",
+  "AFORA_UPGRADE_SURVIVOR_PROBE_MAX_BODY_BYTES",
   "1048576",
 );
 const timeoutMs = readStrictInteger({ ...timeoutOption, allowZero: true });

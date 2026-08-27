@@ -1,7 +1,7 @@
 /** Gateway runtime for core-owned Canvas document HTTP responses. */
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
-import { detectMime } from "@openclaw/media-core/mime";
+import { detectMime } from "@afora/media-core/mime";
 import { FsSafeError, root as fsRoot } from "../infra/fs-safe.js";
 import {
   resolveCanvasDocumentsDir,

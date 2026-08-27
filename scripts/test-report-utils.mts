@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 
 const normalizeRepoPath = (value: string) => value.split(path.sep).join("/");
 const identity = (value: string) => value;
@@ -74,7 +74,7 @@ function defaultVitestJsonReportPath(prefix: string) {
 export function runVitestJsonReport({
   config,
   reportPath = "",
-  prefix = "openclaw-vitest-report",
+  prefix = "afora-vitest-report",
 }: {
   config: string;
   reportPath?: string;

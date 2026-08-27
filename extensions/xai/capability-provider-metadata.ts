@@ -1,29 +1,29 @@
-import type { ImageGenerationProvider } from "openclaw/plugin-sdk/image-generation";
-import type { MediaUnderstandingProvider } from "openclaw/plugin-sdk/media-understanding";
+import type { ImageGenerationProvider } from "afora-agent/plugin-sdk/image-generation";
+import type { MediaUnderstandingProvider } from "afora-agent/plugin-sdk/media-understanding";
 import {
   isProviderApiKeyConfigured,
   isProviderAuthProfileConfigured,
-} from "openclaw/plugin-sdk/provider-auth";
+} from "afora-agent/plugin-sdk/provider-auth";
 import type {
   RealtimeTranscriptionProviderConfig,
   RealtimeTranscriptionProviderPlugin,
-} from "openclaw/plugin-sdk/realtime-transcription";
+} from "afora-agent/plugin-sdk/realtime-transcription";
 import type {
   RealtimeVoiceAudioFormat,
   RealtimeVoiceBridgeCreateRequest,
   RealtimeVoiceProviderPlugin,
-} from "openclaw/plugin-sdk/realtime-voice";
-import { normalizeResolvedSecretInputString } from "openclaw/plugin-sdk/secret-input";
+} from "afora-agent/plugin-sdk/realtime-voice";
+import { normalizeResolvedSecretInputString } from "afora-agent/plugin-sdk/secret-input";
 import {
   isRecord,
   normalizeOptionalString,
   parseBooleanValue,
   parseFiniteNumber,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type {
   VideoGenerationProvider,
   VideoGenerationProviderCapabilities,
-} from "openclaw/plugin-sdk/video-generation";
+} from "afora-agent/plugin-sdk/video-generation";
 import { XAI_DEFAULT_IMAGE_MODEL, XAI_IMAGE_MODELS } from "./model-definitions.js";
 import {
   XAI_REALTIME_DEFAULT_MODEL,

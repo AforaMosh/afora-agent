@@ -1,7 +1,7 @@
 // Doctor-only import for the retired exec approvals JSON store.
 import { isDeepStrictEqual } from "node:util";
 import { root, type Root } from "@openclaw/fs-safe";
-import { runOpenClawStateWriteTransaction } from "../state/openclaw-state-db.js";
+import { runAforaStateWriteTransaction } from "../state/afora-state-db.js";
 import {
   resolveExecApprovalsPath,
   tryParsePersistedExecApprovals,
@@ -48,7 +48,7 @@ export function detectLegacyExecApprovals(params: {
   stateDir: string;
   doctorOnlyStateMigrations?: boolean;
 }): LegacyExecApprovalsDetection {
-  const env = { ...process.env, OPENCLAW_STATE_DIR: params.stateDir };
+  const env = { ...process.env, AFORA_STATE_DIR: params.stateDir };
   const sourcePath = resolveExecApprovalsPath(env);
   const sourcePresent = legacyMigrationSourceOrClaimMayExist(sourcePath, DOCTOR_CLAIM_SUFFIX);
   return {
@@ -89,7 +89,7 @@ function decideAndRecordMigration(params: {
   const legacyFile =
     params.snapshot.raw === null ? null : tryParsePersistedExecApprovals(params.snapshot.raw);
 
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db }) => {
       const canonical = readExecApprovalsConfigRow(db);
       const canonicalFile = canonical ? tryParsePersistedExecApprovals(canonical.raw_json) : null;
@@ -346,7 +346,7 @@ export async function migrateLegacyExecApprovals(params: {
     label: "legacy exec approvals",
     releaseLabel: "Exec approvals",
     errorLabel: "Failed reading legacy exec approvals",
-    retryGuidance: "Stop the Gateway, then run `openclaw doctor --fix` again.",
+    retryGuidance: "Stop the Gateway, then run `afora doctor --fix` again.",
     run: async (env) => {
       const stateRoot = await root(params.stateDir, {
         hardlinks: "reject",

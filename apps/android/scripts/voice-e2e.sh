@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 ANDROID_DIR="$ROOT_DIR/apps/android"
-APP_NAMESPACE="ai.openclaw.app"
+APP_NAMESPACE="ai.afora.app"
 PACKAGE_NAME="$APP_NAMESPACE.debug"
 MAIN_ACTIVITY="$PACKAGE_NAME/$APP_NAMESPACE.MainActivity"
 RECEIVER="$PACKAGE_NAME/$APP_NAMESPACE.VoiceE2eReceiver"
@@ -98,7 +98,7 @@ export ANDROID_HOME="${ANDROID_HOME:-/opt/homebrew/share/android-commandlinetool
 export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
 export PATH="/opt/homebrew/opt/openjdk@17/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
 
-ARTIFACT_DIR="/tmp/openclaw-android-voice-e2e-$(date +%Y%m%d-%H%M%S)"
+ARTIFACT_DIR="/tmp/afora-android-voice-e2e-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$ARTIFACT_DIR"
 
 cleanup_gateway() {
@@ -118,14 +118,14 @@ adb reverse "tcp:$PORT" "tcp:$PORT" >/dev/null
 
 if [[ "$START_GATEWAY" -eq 1 ]]; then
   if command -v bws_get_secret >/dev/null 2>&1; then
-    OPENCLAW_OPENAI_API_KEY="$(bws_get_secret OPENCLAW_OPENAI_API_KEY)"
+    AFORA_OPENAI_API_KEY="$(bws_get_secret AFORA_OPENAI_API_KEY)"
   else
-    OPENCLAW_OPENAI_API_KEY="$(zsh -ic 'bws_get_secret OPENCLAW_OPENAI_API_KEY')"
+    AFORA_OPENAI_API_KEY="$(zsh -ic 'bws_get_secret AFORA_OPENAI_API_KEY')"
   fi
   (
     cd "$ROOT_DIR"
-    OPENAI_API_KEY="$OPENCLAW_OPENAI_API_KEY" \
-      pnpm openclaw gateway run \
+    OPENAI_API_KEY="$AFORA_OPENAI_API_KEY" \
+      pnpm afora gateway run \
         --port "$PORT" \
         --auth none \
         --bind loopback \
@@ -139,7 +139,7 @@ if [[ "$START_GATEWAY" -eq 1 ]]; then
     cat "$ARTIFACT_DIR/gateway.log" >&2
     exit 1
   fi
-  unset OPENCLAW_OPENAI_API_KEY
+  unset AFORA_OPENAI_API_KEY
 fi
 
 if [[ "$INSTALL" -eq 1 ]]; then
@@ -222,7 +222,7 @@ case "$MODE" in
 esac
 
 adb logcat -d -v time |
-  rg -i 'OpenClaw|TalkMode|MicCapture|AudioRecord|SpeechRecognizer|realtime|talk.session|appendAudio|transcript|Talk failed|Transcription failed|Speech network|VoiceE2E' |
+  rg -i 'Afora|TalkMode|MicCapture|AudioRecord|SpeechRecognizer|realtime|talk.session|appendAudio|transcript|Talk failed|Transcription failed|Speech network|VoiceE2E' |
   tail -250 >"$ARTIFACT_DIR/logcat.txt" || true
 
 if [[ "$CLEANUP" -eq 1 ]]; then

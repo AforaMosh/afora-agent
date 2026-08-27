@@ -5,7 +5,7 @@ const MATRIX_CRYPTO_DATABASE_SUFFIXES = [
   "::matrix-sdk-crypto",
   "::matrix-sdk-crypto-meta",
 ] as const;
-const PRUNER_INSTALLED = Symbol.for("openclaw.matrix.fakeIndexedDbTransactionPruner");
+const PRUNER_INSTALLED = Symbol.for("afora.matrix.fakeIndexedDbTransactionPruner");
 
 type FakeIndexedDbTransaction = IDBTransaction & {
   _state: string;

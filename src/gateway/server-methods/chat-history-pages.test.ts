@@ -6,7 +6,7 @@ describe("enrichChatHistoryCompactionMarkers", () => {
   it("joins checkpoint token metrics to the matching transcript marker", () => {
     const marker = {
       role: "system",
-      __openclaw: { kind: "compaction", id: "compact-entry-1", seq: 4 },
+      __afora: { kind: "compaction", id: "compact-entry-1", seq: 4 },
     };
     const entry = {
       compactionCheckpoints: [
@@ -28,19 +28,19 @@ describe("enrichChatHistoryCompactionMarkers", () => {
 
     expect(result[0]).toEqual({
       ...marker,
-      __openclaw: {
-        ...marker["__openclaw"],
+      __afora: {
+        ...marker["__afora"],
         tokensBefore: 900_000,
         tokensAfter: 24_700,
       },
     });
-    expect(marker["__openclaw"]).not.toHaveProperty("tokensBefore");
+    expect(marker["__afora"]).not.toHaveProperty("tokensBefore");
   });
 
   it("preserves message identity without a matching checkpoint", () => {
     const marker = {
       role: "system",
-      __openclaw: { kind: "compaction", id: "compact-entry-1" },
+      __afora: { kind: "compaction", id: "compact-entry-1" },
     };
 
     const result = enrichChatHistoryCompactionMarkers([marker], undefined);

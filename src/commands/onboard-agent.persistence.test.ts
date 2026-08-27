@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { withTempHome } from "openclaw/plugin-sdk/test-env";
+import { withTempHome } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   readConfigFileSnapshot,
@@ -13,12 +13,12 @@ import { appendTranscriptEventInTransaction } from "../config/sessions/session-a
 import { runSessionStartupMigration } from "../config/sessions/startup-migration.js";
 import { EMPTY_LEGACY_SESSION_SURFACES } from "../plugins/legacy-session-surfaces.types.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-} from "../state/openclaw-agent-db.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../state/openclaw-state-db-readonly.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+} from "../state/afora-agent-db.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../state/afora-state-db-readonly.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { captureEnv, deleteTestEnvValue, setTestEnvValue } from "../test-utils/env.js";
 import { ensureOnboardingAgent } from "./onboard-agent.js";
 
@@ -26,20 +26,20 @@ describe("onboarding authored config persistence", () => {
   let envSnapshot: ReturnType<typeof captureEnv>;
 
   beforeEach(() => {
-    envSnapshot = captureEnv(["OPENCLAW_AGENT_DIR", "OPENCLAW_STATE_DIR", "OPENCLAW_TOKEN"]);
+    envSnapshot = captureEnv(["AFORA_AGENT_DIR", "AFORA_STATE_DIR", "AFORA_TOKEN"]);
   });
 
   afterEach(() => {
     envSnapshot.restore();
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     resetConfigRuntimeState();
   });
 
   it("retains env references and includes through the real snapshot writer", async () => {
     await withTempHome(async (home) => {
-      const configDir = path.join(home, ".openclaw");
-      const configPath = path.join(configDir, "openclaw.json");
+      const configDir = path.join(home, ".afora");
+      const configPath = path.join(configDir, "afora.json");
       const includePath = path.join(configDir, "channels.json");
       const includeRaw = JSON.stringify({ channels: { telegram: { enabled: true } } });
       await fs.mkdir(configDir, { recursive: true });
@@ -48,10 +48,10 @@ describe("onboarding authored config persistence", () => {
         configPath,
         `{
           $include: "./channels.json",
-          gateway: { auth: { mode: "token", token: "\${OPENCLAW_TOKEN}" } }
+          gateway: { auth: { mode: "token", token: "\${AFORA_TOKEN}" } }
         }`,
       );
-      setTestEnvValue("OPENCLAW_TOKEN", "plaintext-secret");
+      setTestEnvValue("AFORA_TOKEN", "plaintext-secret");
       resetConfigRuntimeState();
 
       const snapshot = await readConfigFileSnapshot();
@@ -67,7 +67,7 @@ describe("onboarding authored config persistence", () => {
       await replaceConfigFile({ nextConfig: result.config, afterWrite: { mode: "auto" } });
 
       const persistedRaw = await fs.readFile(configPath, "utf8");
-      expect(persistedRaw).toContain("${OPENCLAW_TOKEN}");
+      expect(persistedRaw).toContain("${AFORA_TOKEN}");
       expect(persistedRaw).not.toContain("plaintext-secret");
       expect(persistedRaw).toContain("./channels.json");
       expect(await fs.readFile(includePath, "utf8")).toBe(includeRaw);
@@ -76,8 +76,8 @@ describe("onboarding authored config persistence", () => {
 
   it("leaves an existing roster config byte-identical", async () => {
     await withTempHome(async (home) => {
-      const configDir = path.join(home, ".openclaw");
-      const configPath = path.join(configDir, "openclaw.json");
+      const configDir = path.join(home, ".afora");
+      const configPath = path.join(configDir, "afora.json");
       const raw = `{
   agents: { entries: { existing: { name: "Existing" } } },
 }\n`;
@@ -99,9 +99,9 @@ describe("onboarding authored config persistence", () => {
   it("renames a legacy install and converges its main session before returning", async () => {
     await withTempHome(async (rawHome) => {
       const home = await fs.realpath(rawHome);
-      const stateDir = path.join(home, ".openclaw");
-      setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
-      deleteTestEnvValue("OPENCLAW_AGENT_DIR");
+      const stateDir = path.join(home, ".afora");
+      setTestEnvValue("AFORA_STATE_DIR", stateDir);
+      deleteTestEnvValue("AFORA_AGENT_DIR");
       resetConfigRuntimeState();
       await replaceConfigFile({ nextConfig: {}, afterWrite: { mode: "auto" } });
 
@@ -112,10 +112,10 @@ describe("onboarding authored config persistence", () => {
         "agents",
         "main",
         "agent",
-        "openclaw-agent.sqlite",
+        "afora-agent.sqlite",
       );
       const entry = { sessionId: "legacy-main-session", updatedAt: 100 };
-      runOpenClawAgentWriteTransaction(
+      runAforaAgentWriteTransaction(
         (database) => {
           writeSessionEntry(database, legacyKey, entry, {
             allowStoredAliases: true,
@@ -146,10 +146,10 @@ describe("onboarding authored config persistence", () => {
         "agents",
         "robby",
         "agent",
-        "openclaw-agent.sqlite",
+        "afora-agent.sqlite",
       );
       const readEntry = (databasePath: string, agentId: string, key: string) =>
-        runOpenClawAgentWriteTransaction(
+        runAforaAgentWriteTransaction(
           (database) => readExactSessionEntryRowForCanonicalRepair(database, key)?.entry,
           { agentId, path: databasePath },
         );
@@ -158,7 +158,7 @@ describe("onboarding authored config persistence", () => {
       expect(readEntry(ownerDatabasePath, "robby", canonicalKey)).toMatchObject(entry);
       expect(readEntry(legacyDatabasePath, "main", legacyKey)).toBeUndefined();
       expect(
-        withExistingOpenClawStateDatabaseReadOnly(
+        withExistingAforaStateDatabaseReadOnly(
           ({ db }) =>
             db
               .prepare(
@@ -173,9 +173,9 @@ describe("onboarding authored config persistence", () => {
   it("surfaces a locked migration and converges it on the next startup", async () => {
     await withTempHome(async (rawHome) => {
       const home = await fs.realpath(rawHome);
-      const stateDir = path.join(home, ".openclaw");
-      setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
-      deleteTestEnvValue("OPENCLAW_AGENT_DIR");
+      const stateDir = path.join(home, ".afora");
+      setTestEnvValue("AFORA_STATE_DIR", stateDir);
+      deleteTestEnvValue("AFORA_AGENT_DIR");
       resetConfigRuntimeState();
       await replaceConfigFile({ nextConfig: {}, afterWrite: { mode: "auto" } });
 
@@ -186,10 +186,10 @@ describe("onboarding authored config persistence", () => {
         "agents",
         "main",
         "agent",
-        "openclaw-agent.sqlite",
+        "afora-agent.sqlite",
       );
       const entry = { sessionId: "locked-legacy-session", updatedAt: 100 };
-      runOpenClawAgentWriteTransaction(
+      runAforaAgentWriteTransaction(
         (database) => {
           writeSessionEntry(database, legacyKey, entry, {
             allowStoredAliases: true,
@@ -209,7 +209,7 @@ describe("onboarding authored config persistence", () => {
         },
         { agentId: "main", path: legacyDatabasePath },
       );
-      const sourceDatabase = openOpenClawAgentDatabase({
+      const sourceDatabase = openAforaAgentDatabase({
         agentId: "main",
         path: legacyDatabasePath,
       });
@@ -226,10 +226,10 @@ describe("onboarding authored config persistence", () => {
       }
 
       expect(result.sessionMigrationWarnings).toEqual([
-        expect.stringMatching(/incomplete.*openclaw doctor --fix/),
+        expect.stringMatching(/incomplete.*afora doctor --fix/),
       ]);
       const readLedgerStatus = () =>
-        withExistingOpenClawStateDatabaseReadOnly(
+        withExistingAforaStateDatabaseReadOnly(
           ({ db }) =>
             db
               .prepare(
@@ -255,10 +255,10 @@ describe("onboarding authored config persistence", () => {
         "agents",
         "robby",
         "agent",
-        "openclaw-agent.sqlite",
+        "afora-agent.sqlite",
       );
       const readEntry = (databasePath: string, agentId: string, key: string) =>
-        runOpenClawAgentWriteTransaction(
+        runAforaAgentWriteTransaction(
           (database) => readExactSessionEntryRowForCanonicalRepair(database, key)?.entry,
           { agentId, path: databasePath },
         );

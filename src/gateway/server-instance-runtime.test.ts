@@ -10,7 +10,7 @@ import {
 } from "../plugins/runtime.js";
 import { waitForActiveGatewayRootWork } from "../process/gateway-work-admission.js";
 import { createTestRegistry } from "../test-utils/channel-plugins.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import { captureAgentTurnPrincipal } from "./agent-turn/principal.js";
 import { APPROVALS_SCOPE, WRITE_SCOPE } from "./method-scopes.js";
 import { createGatewayMethodRegistry } from "./methods/registry.js";
@@ -130,7 +130,7 @@ describe("createGatewayInstanceRuntime", () => {
   });
 
   it("sends recovery notices through normal outbound without invoking plugin actions", async () => {
-    await withOpenClawTestState({ layout: "state-only", prefix: "recovery-notice-" }, async () => {
+    await withAforaTestState({ layout: "state-only", prefix: "recovery-notice-" }, async () => {
       const sendText = vi.fn(async () => ({ channel: "signal", messageId: "signal-message-1" }));
       const handleAction = vi.fn(async () => {
         throw new Error("recovery notice must not invoke message actions");

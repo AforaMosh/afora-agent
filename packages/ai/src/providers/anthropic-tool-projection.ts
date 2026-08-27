@@ -1,4 +1,4 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import type { AnthropicOptions } from "../provider-options.js";
 import { sortPromptCacheToolsByName } from "../utils/prompt-cache-stability.js";
 import { projectRuntimeToolInputSchema } from "./tool-schema-json-projection.js";

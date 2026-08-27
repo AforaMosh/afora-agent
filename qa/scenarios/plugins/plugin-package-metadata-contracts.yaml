@@ -10,8 +10,8 @@ scenario:
       - plugins.validation-feedback
   objective: Verify package.json exposes plugin discovery and release metadata and rejects malformed or inconsistent entrypoint declarations.
   successCriteria:
-    - The openclaw package block exposes source, runtime, setup, compatibility, and install metadata.
-    - Malformed openclaw and extensions fields fail with actionable field-specific errors.
+    - The afora package block exposes source, runtime, setup, compatibility, and install metadata.
+    - Malformed afora and extensions fields fail with actionable field-specific errors.
     - Runtime extension counts must match source extension counts.
     - runtimeSetupEntry requires a matching setupEntry.
   docsRefs:

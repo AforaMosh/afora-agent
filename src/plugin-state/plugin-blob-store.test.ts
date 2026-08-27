@@ -1,7 +1,7 @@
 // Plugin blob store tests cover persistence, quotas, expiry, and copied bytes.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { openOpenClawStateDatabase } from "../state/openclaw-state-db.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { openAforaStateDatabase } from "../state/afora-state-db.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import {
   createPluginBlobStoreForTests,
   resetPluginBlobStoreForTests,
@@ -37,7 +37,7 @@ function createPluginBlobStore<TMetadata>(pluginId: string, testOptions: TestBlo
 
 describe("plugin blob store", () => {
   it("round-trips metadata and copies bytes on both sides", async () => {
-    await withOpenClawTestState({ label: "plugin-blob-roundtrip" }, async (state) => {
+    await withAforaTestState({ label: "plugin-blob-roundtrip" }, async (state) => {
       const store = createPluginBlobStore<{ kind: string }>("diffs", options(state.env));
       const source = new Uint8Array([1, 2, 3]);
       await store.register("viewer", source, { kind: "viewer" });
@@ -60,7 +60,7 @@ describe("plugin blob store", () => {
   });
 
   it("rejects quota overflow without disturbing existing rows", async () => {
-    await withOpenClawTestState({ label: "plugin-blob-reject" }, async (state) => {
+    await withAforaTestState({ label: "plugin-blob-reject" }, async (state) => {
       const store = createPluginBlobStore<{ order: number }>(
         "diffs",
         options(state.env, {
@@ -81,7 +81,7 @@ describe("plugin blob store", () => {
   it("evicts the oldest namespace row while protecting the current write", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(1_000);
-    await withOpenClawTestState({ label: "plugin-blob-evict" }, async (state) => {
+    await withAforaTestState({ label: "plugin-blob-evict" }, async (state) => {
       const store = createPluginBlobStore<{ order: number }>(
         "diffs",
         options(state.env, { maxEntries: 2 }),
@@ -98,7 +98,7 @@ describe("plugin blob store", () => {
   it("keeps expired metadata owner-managed across later writes", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(2_000);
-    await withOpenClawTestState({ label: "plugin-blob-expiry" }, async (state) => {
+    await withAforaTestState({ label: "plugin-blob-expiry" }, async (state) => {
       const store = createPluginBlobStore<{ order: number }>("diffs", options(state.env));
       await store.register("one", new Uint8Array([1]), { order: 1 }, { ttlMs: 10 });
       vi.setSystemTime(2_011);
@@ -115,7 +115,7 @@ describe("plugin blob store", () => {
   it("counts expired rows toward physical limits without evicting cleanup metadata", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(2_500);
-    await withOpenClawTestState({ label: "plugin-blob-expired-quota" }, async (state) => {
+    await withAforaTestState({ label: "plugin-blob-expired-quota" }, async (state) => {
       const rejectingStore = createPluginBlobStore<{ path: string }>(
         "diffs",
         options(state.env, { maxEntries: 1, overflowPolicy: "reject-new" }),
@@ -193,7 +193,7 @@ describe("plugin blob store", () => {
   });
 
   it("validates hard limits and consistent namespace options", async () => {
-    await withOpenClawTestState({ label: "plugin-blob-validation" }, async (state) => {
+    await withAforaTestState({ label: "plugin-blob-validation" }, async (state) => {
       const store = createPluginBlobStore("diffs", options(state.env, { maxBytesPerEntry: 2 }));
       await expect(store.register("big", new Uint8Array([1, 2, 3]), {})).rejects.toBeInstanceOf(
         PluginBlobStoreError,
@@ -205,7 +205,7 @@ describe("plugin blob store", () => {
   });
 
   it("isolates plugin ids and namespaces and persists across reopen", async () => {
-    await withOpenClawTestState({ label: "plugin-blob-isolation" }, async (state) => {
+    await withAforaTestState({ label: "plugin-blob-isolation" }, async (state) => {
       const diffs = createPluginBlobStore<{ owner: string }>("diffs", options(state.env));
       const otherPlugin = createPluginBlobStore<{ owner: string }>("other", options(state.env));
       const otherNamespace = createPluginBlobStore<{ owner: string }>(
@@ -227,7 +227,7 @@ describe("plugin blob store", () => {
   });
 
   it("keeps the first row when registerIfAbsent loses a collision", async () => {
-    await withOpenClawTestState({ label: "plugin-blob-if-absent" }, async (state) => {
+    await withAforaTestState({ label: "plugin-blob-if-absent" }, async (state) => {
       const store = createPluginBlobStore<{ order: number }>("diffs", options(state.env));
       await expect(store.registerIfAbsent("same", new Uint8Array([1]), { order: 1 })).resolves.toBe(
         true,
@@ -245,7 +245,7 @@ describe("plugin blob store", () => {
   it("keeps an expired stable key occupied until the owner claims its metadata", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(4_000);
-    await withOpenClawTestState({ label: "plugin-blob-expired-if-absent" }, async (state) => {
+    await withAforaTestState({ label: "plugin-blob-expired-if-absent" }, async (state) => {
       const store = createPluginBlobStore<{ path: string }>("diffs", options(state.env));
       await expect(
         store.registerIfAbsent("stable", new Uint8Array([1]), { path: "old" }, { ttlMs: 10 }),
@@ -272,7 +272,7 @@ describe("plugin blob store", () => {
   it("lets explicit register overwrite an expired key", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(4_500);
-    await withOpenClawTestState({ label: "plugin-blob-expired-overwrite" }, async (state) => {
+    await withAforaTestState({ label: "plugin-blob-expired-overwrite" }, async (state) => {
       const store = createPluginBlobStore<{ version: string }>("diffs", options(state.env));
       await store.register("stable", new Uint8Array([1]), { version: "old" }, { ttlMs: 10 });
 
@@ -290,7 +290,7 @@ describe("plugin blob store", () => {
   it("evicts by namespace bytes without touching sibling namespaces", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(3_000);
-    await withOpenClawTestState({ label: "plugin-blob-byte-evict" }, async (state) => {
+    await withAforaTestState({ label: "plugin-blob-byte-evict" }, async (state) => {
       const store = createPluginBlobStore<{ order: number }>(
         "diffs",
         options(state.env, { maxBytesPerEntry: 3, maxBytesPerNamespace: 3 }),
@@ -316,7 +316,7 @@ describe("plugin blob store", () => {
   });
 
   it("rolls back a rejected replacement and rejects corrupt metadata", async () => {
-    await withOpenClawTestState({ label: "plugin-blob-corrupt" }, async (state) => {
+    await withAforaTestState({ label: "plugin-blob-corrupt" }, async (state) => {
       const store = createPluginBlobStore<{ ok: boolean }>(
         "diffs",
         options(state.env, {
@@ -334,7 +334,7 @@ describe("plugin blob store", () => {
         bytes: new Uint8Array([1, 2]),
       });
 
-      const { db } = openOpenClawStateDatabase({ env: state.env });
+      const { db } = openAforaStateDatabase({ env: state.env });
       db.prepare(
         `INSERT INTO plugin_blob_entries
           (plugin_id, namespace, entry_key, metadata_json, blob, created_at, expires_at)
@@ -349,10 +349,10 @@ describe("plugin blob store", () => {
   it("preserves expired rows when owner metadata is corrupt", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(5_000);
-    await withOpenClawTestState({ label: "plugin-blob-corrupt-expired" }, async (state) => {
+    await withAforaTestState({ label: "plugin-blob-corrupt-expired" }, async (state) => {
       const store = createPluginBlobStore<{ path: string }>("diffs", options(state.env));
       await store.register("valid", new Uint8Array([1]), { path: "valid" }, { ttlMs: 10 });
-      const { db } = openOpenClawStateDatabase({ env: state.env });
+      const { db } = openAforaStateDatabase({ env: state.env });
       db.prepare(
         `INSERT INTO plugin_blob_entries
           (plugin_id, namespace, entry_key, metadata_json, blob, created_at, expires_at)

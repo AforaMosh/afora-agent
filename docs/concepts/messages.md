@@ -28,7 +28,7 @@ See [Configuration](/gateway/configuration) for the full schema.
 
 ## Inbound dedupe
 
-Channels can redeliver the same message after a reconnect. OpenClaw keeps an in-memory cache keyed by agent scope, channel route (channel + peer + account + thread), and message id, so a redelivered message does not trigger a second agent run. The cache entry expires after 20 minutes or once 5000 entries are tracked, whichever comes first.
+Channels can redeliver the same message after a reconnect. Afora keeps an in-memory cache keyed by agent scope, channel route (channel + peer + account + thread), and message id, so a redelivered message does not trigger a second agent run. The cache entry expires after 20 minutes or once 5000 entries are tracked, whichever comes first.
 
 ## Inbound debouncing
 
@@ -52,7 +52,7 @@ Rapid consecutive text messages from the same sender can be batched into one age
 - Debounce applies to text-only messages; media/attachments flush immediately.
 - Control commands (stop/abort/status, etc.) bypass debouncing so they dispatch immediately.
 - Disabled by default: `messages.inbound.debounceMs` has no built-in default, so debouncing only activates once you set it (globally or per channel).
-- iMessage follows the same generic debounce policy. `imsg` 0.13.1 and newer coalesces Apple URL-preview split-sends before OpenClaw receives them, so no iMessage-specific debounce setting is needed.
+- iMessage follows the same generic debounce policy. `imsg` 0.13.1 and newer coalesces Apple URL-preview split-sends before Afora receives them, so no iMessage-specific debounce setting is needed.
 
 ## Sessions and devices
 
@@ -125,7 +125,7 @@ Block streaming sends partial replies as the model produces text blocks; chunkin
 - `agents.defaults.blockStreamingChunk` (`minChars|maxChars|breakPreference`)
 - `agents.defaults.blockStreamingCoalesce` (idle-based batching)
 - `agents.defaults.humanDelay` (human-like pause between block replies)
-- Channel overrides: `*.streaming.block.enabled` and `*.streaming.block.coalesce` on bundled channels; stale flat keys are migrated by `openclaw doctor --fix`. Block streaming is off unless explicitly enabled, on every channel including Telegram. QQ Bot is the exception: it has no `streaming.block` keys and streams block replies unless `channels.qqbot.streaming.mode` is `"off"`.
+- Channel overrides: `*.streaming.block.enabled` and `*.streaming.block.coalesce` on bundled channels; stale flat keys are migrated by `afora doctor --fix`. Block streaming is off unless explicitly enabled, on every channel including Telegram. QQ Bot is the exception: it has no `streaming.block` keys and streams block replies unless `channels.qqbot.streaming.mode` is `"off"`.
 
 Details: [Streaming + chunking](/concepts/streaming).
 
@@ -146,17 +146,17 @@ Details: [Configuration](/gateway/config-agents#messages) and channel docs.
 
 ## Silent replies
 
-The silent token `NO_REPLY` (case-insensitive, so `no_reply` also matches) means "do not deliver a user-visible reply." When a turn also has pending tool media, such as generated TTS audio, OpenClaw strips the silent text but still delivers the media attachment.
+The silent token `NO_REPLY` (case-insensitive, so `no_reply` also matches) means "do not deliver a user-visible reply." When a turn also has pending tool media, such as generated TTS audio, Afora strips the silent text but still delivers the media attachment.
 
 Silence policy resolves by conversation type:
 
-- Direct conversations never receive `NO_REPLY` prompt guidance. If a direct run accidentally returns a bare silent token, OpenClaw suppresses it instead of rewriting or delivering it.
+- Direct conversations never receive `NO_REPLY` prompt guidance. If a direct run accidentally returns a bare silent token, Afora suppresses it instead of rewriting or delivering it.
 - Groups/channels allow silence by default. In `message_tool` visible-reply mode, silence means the model does not call `message(action=send)`.
 - Internal orchestration allows silence by default.
 
 Defaults live under `agents.defaults.silentReply`; `surfaces.<id>.silentReply` can override group/internal policy per surface.
 
-OpenClaw also uses silent replies for generic internal runner failures in non-direct chats, so groups/channels do not see gateway error boilerplate. Classified failures with user-facing recovery copy, such as missing auth, rate-limit, or overload notices, can still be delivered. Direct chats show compact failure copy by default; raw runner details show only when `/verbose full` is enabled.
+Afora also uses silent replies for generic internal runner failures in non-direct chats, so groups/channels do not see gateway error boilerplate. Classified failures with user-facing recovery copy, such as missing auth, rate-limit, or overload notices, can still be delivered. Direct chats show compact failure copy by default; raw runner details show only when `/verbose full` is enabled.
 
 Bare silent replies are dropped on all surfaces, so parent sessions stay quiet instead of rewriting sentinel text into fallback chatter.
 

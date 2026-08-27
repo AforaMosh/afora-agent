@@ -2,8 +2,8 @@
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createBundledBrowserPluginFixture } from "../../test/helpers/browser-bundled-plugin-fixture.js";
-import type { OpenClawConfig } from "../config/config.js";
-import { clearPluginLoaderCache, loadOpenClawPlugins } from "./loader.test-fixtures.js";
+import type { AforaConfig } from "../config/config.js";
+import { clearPluginLoaderCache, loadAforaPlugins } from "./loader.test-fixtures.js";
 import { resetPluginRuntimeStateForTest } from "./runtime.js";
 
 function resetPluginState() {
@@ -16,7 +16,7 @@ describe("registerPluginCliCommands browser plugin integration", () => {
 
   beforeEach(() => {
     bundledFixture = createBundledBrowserPluginFixture();
-    vi.stubEnv("OPENCLAW_BUNDLED_PLUGINS_DIR", bundledFixture.rootDir);
+    vi.stubEnv("AFORA_BUNDLED_PLUGINS_DIR", bundledFixture.rootDir);
     resetPluginState();
   });
 
@@ -28,17 +28,17 @@ describe("registerPluginCliCommands browser plugin integration", () => {
   });
 
   it("registers the browser command from the bundled browser plugin", () => {
-    const registry = loadOpenClawPlugins({
+    const registry = loadAforaPlugins({
       config: {
         plugins: {
           allow: ["browser"],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       cache: false,
       env: {
         ...process.env,
-        OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
-        OPENCLAW_BUNDLED_PLUGINS_DIR:
+        AFORA_DISABLE_BUNDLED_PLUGINS: undefined,
+        AFORA_BUNDLED_PLUGINS_DIR:
           bundledFixture?.rootDir ?? path.join(process.cwd(), "extensions"),
       } as NodeJS.ProcessEnv,
     });
@@ -47,7 +47,7 @@ describe("registerPluginCliCommands browser plugin integration", () => {
   });
 
   it("omits the browser command when the bundled browser plugin is disabled", () => {
-    const registry = loadOpenClawPlugins({
+    const registry = loadAforaPlugins({
       config: {
         plugins: {
           allow: ["browser"],
@@ -57,12 +57,12 @@ describe("registerPluginCliCommands browser plugin integration", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       cache: false,
       env: {
         ...process.env,
-        OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
-        OPENCLAW_BUNDLED_PLUGINS_DIR:
+        AFORA_DISABLE_BUNDLED_PLUGINS: undefined,
+        AFORA_BUNDLED_PLUGINS_DIR:
           bundledFixture?.rootDir ?? path.join(process.cwd(), "extensions"),
       } as NodeJS.ProcessEnv,
     });

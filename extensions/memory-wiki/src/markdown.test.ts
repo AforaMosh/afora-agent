@@ -68,8 +68,8 @@ describe("slugifyWikiSegment", () => {
 });
 
 describe("human Notes blocks", () => {
-  const startMarker = "<!-- openclaw:human:start -->";
-  const endMarker = "<!-- openclaw:human:end -->";
+  const startMarker = "<!-- afora:human:start -->";
+  const endMarker = "<!-- afora:human:end -->";
   const rendered = ["# Source", "", "## Notes", startMarker, endMarker, ""].join("\n");
 
   it("extracts and preserves complete human Notes blocks", () => {
@@ -206,8 +206,8 @@ describe("toWikiPageSummary", () => {
         "alpha",
         "",
         "## Notes",
-        "<!-- openclaw:human:start -->",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:start -->",
+        "<!-- afora:human:end -->",
         "",
       ].join("\n"),
     });
@@ -228,8 +228,8 @@ describe("toWikiPageSummary", () => {
         "alpha",
         "",
         "## Notes",
-        "<!-- openclaw:human:start -->",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:start -->",
+        "<!-- afora:human:end -->",
         "",
       ].join("\n"),
     });
@@ -245,8 +245,8 @@ describe("toWikiPageSummary", () => {
         "alpha",
         "",
         "## Notes",
-        "<!-- openclaw:human:start -->",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:start -->",
+        "<!-- afora:human:end -->",
         "",
       ].join("\n"),
     });
@@ -262,8 +262,8 @@ describe("toWikiPageSummary", () => {
         "alpha",
         "",
         "## Notes",
-        "<!-- openclaw:human:start -->",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:start -->",
+        "<!-- afora:human:end -->",
         "",
       ].join("\n"),
     });
@@ -281,8 +281,8 @@ describe("toWikiPageSummary", () => {
         "alpha",
         "",
         "## Notes",
-        "<!-- openclaw:human:start -->",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:start -->",
+        "<!-- afora:human:end -->",
         "",
       ].join("\n"),
     });
@@ -302,8 +302,8 @@ describe("toWikiPageSummary", () => {
         "alpha",
         "",
         "## Notes",
-        "<!-- openclaw:human:start -->",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:start -->",
+        "<!-- afora:human:end -->",
         "",
       ].join("\n"),
     });
@@ -323,8 +323,8 @@ describe("toWikiPageSummary", () => {
         "alpha",
         "",
         "## Notes",
-        "<!-- openclaw:human:start -->",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:start -->",
+        "<!-- afora:human:end -->",
         "",
       ].join("\n"),
     });
@@ -349,8 +349,8 @@ describe("toWikiPageSummary", () => {
           "alpha",
           "",
           "## Notes",
-          "<!-- openclaw:human:start -->",
-          "<!-- openclaw:human:end -->",
+          "<!-- afora:human:start -->",
+          "<!-- afora:human:end -->",
           "",
         ].join("\n"),
       }),
@@ -370,8 +370,8 @@ describe("toWikiPageSummary", () => {
         "alpha",
         "",
         "## Notes",
-        "<!-- openclaw:human:start -->",
-        "<!-- openclaw:human:end -->",
+        "<!-- afora:human:start -->",
+        "<!-- afora:human:end -->",
         "",
       ].join("\n"),
     });

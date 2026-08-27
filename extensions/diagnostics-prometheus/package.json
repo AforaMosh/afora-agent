@@ -1,22 +1,22 @@
 {
-  "name": "@openclaw/diagnostics-prometheus",
+  "name": "@afora/diagnostics-prometheus",
   "version": "2026.8.1",
-  "description": "OpenClaw diagnostics Prometheus exporter for runtime metrics.",
+  "description": "Afora diagnostics Prometheus exporter for runtime metrics.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   },
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
     "install": {
-      "clawhubSpec": "clawhub:@openclaw/diagnostics-prometheus",
-      "npmSpec": "@openclaw/diagnostics-prometheus",
+      "clawhubSpec": "clawhub:@afora/diagnostics-prometheus",
+      "npmSpec": "@afora/diagnostics-prometheus",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.4.25"
     },
@@ -24,7 +24,7 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1"
+      "aforaVersion": "2026.8.1"
     },
     "release": {
       "publishToClawHub": true,

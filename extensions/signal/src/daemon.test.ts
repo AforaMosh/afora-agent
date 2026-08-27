@@ -45,7 +45,7 @@ describe("spawnSignalDaemon", () => {
   it("expands home-relative configPath before passing it to signal-cli", () => {
     spawnSignalDaemon({
       cliPath: "signal-cli",
-      configPath: "~/.openclaw/signal-cli",
+      configPath: "~/.afora/signal-cli",
       httpHost: "127.0.0.1",
       httpPort: 8080,
     });
@@ -54,7 +54,7 @@ describe("spawnSignalDaemon", () => {
       "signal-cli",
       [
         "--config",
-        path.join(os.homedir(), ".openclaw/signal-cli"),
+        path.join(os.homedir(), ".afora/signal-cli"),
         "daemon",
         "--http",
         "127.0.0.1:8080",

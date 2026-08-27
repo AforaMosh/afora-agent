@@ -86,7 +86,7 @@ export type IMessageAccountConfig = Omit<
     /**
      * Catchup: replay inbound messages that arrived in `chat.db` while the
      * gateway was offline (crash, restart, mac sleep). Disabled by default.
-     * See https://github.com/openclaw/openclaw/issues/78649.
+     * See https://github.com/AforaMosh/afora-agent/issues/78649.
      */
     catchup?: {
       /** Master switch. Default `false`. */

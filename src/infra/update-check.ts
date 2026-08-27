@@ -1,4 +1,4 @@
-// Computes git, dependency, and registry update status for OpenClaw installs.
+// Computes git, dependency, and registry update status for Afora installs.
 import fs from "node:fs/promises";
 import path from "node:path";
 import { runCommandWithTimeout } from "../process/exec.js";
@@ -8,7 +8,7 @@ import {
   isPnpmOwnedPackageRoot,
   resolvePnpmNodeModulesRoot,
 } from "./detect-package-manager.js";
-import { compareOpenClawReleaseVersions } from "./npm-registry-spec.js";
+import { compareAforaReleaseVersions } from "./npm-registry-spec.js";
 import { compareValidSemver, normalizeLegacyDotBetaVersion } from "./semver.js";
 import {
   channelToNpmTag,
@@ -94,7 +94,7 @@ export type UpdateCheckResult = {
 };
 
 const PUBLIC_NPM_REGISTRY_URL = "https://registry.npmjs.org/";
-const PUBLIC_NPM_PACKAGE_NAME = "openclaw";
+const PUBLIC_NPM_PACKAGE_NAME = "afora";
 
 function isLoopbackNpmRegistry(raw: string): boolean {
   try {
@@ -114,7 +114,7 @@ function resolveExtendedStableRegistryTarget(params: {
 }): { registryUrl: string; packageName: string } {
   const env = params.env ?? process.env;
   const packageName = params.packageName?.trim() || PUBLIC_NPM_PACKAGE_NAME;
-  const packageSpecOverride = env.OPENCLAW_UPDATE_PACKAGE_SPEC?.trim();
+  const packageSpecOverride = env.AFORA_UPDATE_PACKAGE_SPEC?.trim();
   const registryOverride = env.NPM_CONFIG_REGISTRY?.trim() || env.npm_config_registry?.trim() || "";
 
   // A matching package override plus a loopback registry is the explicit local
@@ -200,7 +200,7 @@ async function detectPackageManager(root: string): Promise<PackageManager> {
 
 // Packed manifests advertise the workspace pnpm packageManager, so installed roots need
 // topology proof (pnpm virtual store, Bun global root, or otherwise npm); mistakes break self-update.
-async function isLocklessOpenClawNpmInstall(params: {
+async function isLocklessAforaNpmInstall(params: {
   root: string;
   manager: PackageManager;
 }): Promise<boolean> {
@@ -209,7 +209,7 @@ async function isLocklessOpenClawNpmInstall(params: {
   }
   try {
     const manifest = JSON.parse(await fs.readFile(path.join(params.root, "package.json"), "utf8"));
-    if (manifest?.name !== "openclaw") {
+    if (manifest?.name !== "afora") {
       return false;
     }
     if (
@@ -570,9 +570,9 @@ export async function resolveNpmChannelTag(params: {
 
 export function compareSemverStrings(a: string | null, b: string | null): number | null {
   if (a && b) {
-    const openClawReleaseCmp = compareOpenClawReleaseVersions(a, b);
-    if (openClawReleaseCmp != null) {
-      return openClawReleaseCmp;
+    const aforaReleaseCmp = compareAforaReleaseVersions(a, b);
+    if (aforaReleaseCmp != null) {
+      return aforaReleaseCmp;
     }
   }
   const normalizedA = a ? normalizeLegacyDotBetaVersion(a) : null;
@@ -621,7 +621,7 @@ export async function checkUpdateStatus(params: {
   const isGit = gitRoot && path.resolve(gitRoot) === path.resolve(rootRealpath);
   const packageManager =
     !isGit &&
-    (await isLocklessOpenClawNpmInstall({
+    (await isLocklessAforaNpmInstall({
       root,
       manager: detectedPackageManager,
     }))

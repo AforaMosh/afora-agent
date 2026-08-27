@@ -1,10 +1,10 @@
 // Telegram plugin module implements security behavior.
-import { createScopedDmSecurityResolver } from "openclaw/plugin-sdk/channel-config-helpers";
-import type { ChannelPlugin } from "openclaw/plugin-sdk/channel-core";
+import { createScopedDmSecurityResolver } from "afora-agent/plugin-sdk/channel-config-helpers";
+import type { ChannelPlugin } from "afora-agent/plugin-sdk/channel-core";
 import {
   createAllowlistProviderRouteAllowlistWarningCollector,
   createConditionalWarningCollector,
-} from "openclaw/plugin-sdk/channel-policy";
+} from "afora-agent/plugin-sdk/channel-policy";
 import { resolveDefaultTelegramAccountId } from "./account-selection.js";
 import type { ResolvedTelegramAccount } from "./accounts.js";
 import { resolveTelegramSecurityDmRoute } from "./dm-session-key.js";

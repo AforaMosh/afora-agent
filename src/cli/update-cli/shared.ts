@@ -3,12 +3,12 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-coercion";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { theme } from "../../../packages/terminal-core/src/theme.js";
 import { hasErrnoCode } from "../../infra/errors.js";
 import { resolveRequiredHomeDir } from "../../infra/home-dir.js";
-import { resolveOpenClawPackageRoot } from "../../infra/openclaw-root.js";
+import { resolveAforaPackageRoot } from "../../infra/afora-root.js";
 import { readPackageName, readPackageVersion } from "../../infra/package-json.js";
 import { normalizePackageTagInput } from "../../infra/package-tag.js";
 import { trimLogTail } from "../../infra/restart-sentinel.js";
@@ -79,18 +79,18 @@ export function parseTimeoutMsOrExit(timeout?: string): number | undefined | nul
   return seconds * 1000;
 }
 
-const OPENCLAW_REPO_URL = "https://github.com/openclaw/openclaw.git";
+const AFORA_REPO_URL = "https://github.com/AforaMosh/afora-agent.git";
 // Keep the full commit graph for dev ref switching while deferring historical blobs.
 // A shallow clone would make older or non-default dev targets unreachable.
 const GIT_CLONE_BLOB_FILTER = "--filter=blob:none";
 const MAX_LOG_CHARS = 8000;
 
-export const DEFAULT_PACKAGE_NAME = "openclaw";
+export const DEFAULT_PACKAGE_NAME = "afora";
 const CORE_PACKAGE_NAMES = new Set([DEFAULT_PACKAGE_NAME]);
 
 /** Normalize a CLI tag/version/spec into the npm target form accepted by update flows. */
 export function normalizeTag(value?: string | null): string | null {
-  return normalizePackageTagInput(value, ["openclaw", DEFAULT_PACKAGE_NAME]);
+  return normalizePackageTagInput(value, ["afora", DEFAULT_PACKAGE_NAME]);
 }
 
 function normalizeVersionTag(tag: string): string | null {
@@ -155,7 +155,7 @@ export async function isEmptyDir(targetPath: string): Promise<boolean> {
 
 /** Resolve the checkout path used by source-based self-update. */
 export function resolveGitInstallDir(): string {
-  const override = process.env.OPENCLAW_GIT_DIR?.trim();
+  const override = process.env.AFORA_GIT_DIR?.trim();
   if (override) {
     return path.resolve(override);
   }
@@ -165,9 +165,9 @@ export function resolveGitInstallDir(): string {
 function resolveDefaultGitDir(): string {
   const home = resolveRequiredHomeDir(process.env, os.homedir);
   if (home.startsWith("/")) {
-    return path.posix.join(home, "openclaw");
+    return path.posix.join(home, "afora");
   }
-  return path.join(home, "openclaw");
+  return path.join(home, "afora");
 }
 
 /** Prefer the current Node executable, falling back to `node` when run through another shim. */
@@ -179,16 +179,16 @@ export function resolveNodeRunner(): string {
   return "node";
 }
 
-/** Locate the installed OpenClaw package root that should receive update operations. */
+/** Locate the installed Afora package root that should receive update operations. */
 export async function resolveUpdateRoot(): Promise<string> {
   // Preserve the lexical package path from the invoking shim. pnpm 11 package
   // modules realpath into a shared store, which is not the install owner.
   const invocationRoot = process.argv[1]
-    ? await resolveOpenClawPackageRoot({ cwd: path.dirname(path.resolve(process.argv[1])) })
+    ? await resolveAforaPackageRoot({ cwd: path.dirname(path.resolve(process.argv[1])) })
     : null;
   return (
     invocationRoot ??
-    (await resolveOpenClawPackageRoot({ moduleUrl: import.meta.url, cwd: process.cwd() })) ??
+    (await resolveAforaPackageRoot({ moduleUrl: import.meta.url, cwd: process.cwd() })) ??
     process.cwd()
   );
 }
@@ -265,13 +265,13 @@ async function cloneGitCheckoutTransactionally(params: {
     ? await fs.realpath(params.dir)
     : path.join(canonicalParentDir, path.basename(params.dir));
   const stagingParent = preserveDir ? targetDir : canonicalParentDir;
-  const stagingDir = await fs.mkdtemp(path.join(stagingParent, ".openclaw-clone-"));
+  const stagingDir = await fs.mkdtemp(path.join(stagingParent, ".afora-clone-"));
   let cleanupStaging = true;
 
   try {
     const result = await runUpdateStep({
       name: "git clone",
-      argv: ["git", "clone", GIT_CLONE_BLOB_FILTER, OPENCLAW_REPO_URL, stagingDir],
+      argv: ["git", "clone", GIT_CLONE_BLOB_FILTER, AFORA_REPO_URL, stagingDir],
       env: params.env,
       timeoutMs: params.timeoutMs,
       progress: params.progress,
@@ -294,7 +294,7 @@ async function cloneGitCheckoutTransactionally(params: {
 
     if (!preserveDir) {
       throw new Error(
-        `OPENCLAW_GIT_DIR appeared while cloning: ${params.dir}. The existing path was left unchanged; move it or choose another OPENCLAW_GIT_DIR, then retry.`,
+        `AFORA_GIT_DIR appeared while cloning: ${params.dir}. The existing path was left unchanged; move it or choose another AFORA_GIT_DIR, then retry.`,
       );
     }
 
@@ -302,7 +302,7 @@ async function cloneGitCheckoutTransactionally(params: {
     const destinationEntries = await fs.readdir(targetDir);
     if (destinationEntries.toSorted().join("\0") !== expectedEntries.toSorted().join("\0")) {
       throw new Error(
-        `OPENCLAW_GIT_DIR appeared while cloning: ${params.dir}. The existing path was left unchanged; move it or choose another OPENCLAW_GIT_DIR, then retry.`,
+        `AFORA_GIT_DIR appeared while cloning: ${params.dir}. The existing path was left unchanged; move it or choose another AFORA_GIT_DIR, then retry.`,
       );
     }
 
@@ -345,7 +345,7 @@ async function cloneGitCheckoutTransactionally(params: {
   }
 }
 
-/** Ensure the configured source-update directory exists and points at an OpenClaw checkout. */
+/** Ensure the configured source-update directory exists and points at an Afora checkout. */
 export async function ensureGitCheckout(params: {
   dir: string;
   timeoutMs: number;
@@ -367,7 +367,7 @@ export async function ensureGitCheckout(params: {
     const empty = await isEmptyDir(params.dir);
     if (!empty) {
       throw new Error(
-        `OPENCLAW_GIT_DIR points at a non-git directory: ${params.dir}. Set OPENCLAW_GIT_DIR to an empty folder or an openclaw checkout.`,
+        `AFORA_GIT_DIR points at a non-git directory: ${params.dir}. Set AFORA_GIT_DIR to an empty folder or an afora checkout.`,
       );
     }
 
@@ -380,13 +380,13 @@ export async function ensureGitCheckout(params: {
   }
 
   if (!(await isCorePackage(params.dir))) {
-    throw new Error(`OPENCLAW_GIT_DIR does not look like a core checkout: ${params.dir}.`);
+    throw new Error(`AFORA_GIT_DIR does not look like a core checkout: ${params.dir}.`);
   }
 
   return { checkoutDir: await fs.realpath(params.dir), step: null };
 }
 
-/** Detect the package manager that owns a global/package OpenClaw install. */
+/** Detect the package manager that owns a global/package Afora install. */
 export async function resolveGlobalManager(params: {
   root: string;
   installKind: "git" | "package" | "unknown";
@@ -411,11 +411,11 @@ export async function resolveGlobalManager(params: {
 
 const COMPLETION_CACHE_WRITE_TIMEOUT_MS = 30_000;
 const COMPLETION_CACHE_MANUAL_REFRESH_HINT =
-  "Shell tab-completion may be stale; refresh manually with: openclaw completion --write-state";
+  "Shell tab-completion may be stale; refresh manually with: afora completion --write-state";
 
 /** Best-effort refresh of shell completion state after a successful update. */
 export async function tryWriteCompletionCache(root: string, jsonMode: boolean): Promise<void> {
-  const binPath = path.join(root, "openclaw.mjs");
+  const binPath = path.join(root, "afora.mjs");
   if (!(await pathExists(binPath))) {
     return;
   }

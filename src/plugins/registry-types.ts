@@ -54,8 +54,8 @@ import type { PluginRuntime } from "./runtime/types.js";
 import type { SessionCatalogProvider } from "./session-catalog.js";
 import type { PluginDependencyStatus } from "./status-dependencies-core.js";
 import type {
-  OpenClawPluginHttpRouteAuth,
-  OpenClawPluginHttpRouteUpgradeHandler,
+  AforaPluginHttpRouteAuth,
+  AforaPluginHttpRouteUpgradeHandler,
 } from "./types.js";
 import type { PluginMcpServerConnectionResolverRegistration } from "./types.mcp-connection.js";
 type ChannelPlugin = import("../channels/plugins/types.plugin.js").ChannelPlugin;
@@ -64,23 +64,23 @@ type ImageGenerationProviderPlugin = import("./types.js").ImageGenerationProvide
 type MediaUnderstandingProviderPlugin = import("./types.js").MediaUnderstandingProviderPlugin;
 type TranscriptSourceProvider = import("./types.js").TranscriptSourceProvider;
 type MusicGenerationProviderPlugin = import("./types.js").MusicGenerationProviderPlugin;
-type OpenClawPluginCliRootCommandDescriptor =
-  import("./types.js").OpenClawPluginCliRootCommandDescriptor;
-type OpenClawPluginCliRegistrar = import("./types.js").OpenClawPluginCliRegistrar;
-type OpenClawPluginCommandDefinition = import("./types.js").OpenClawPluginCommandDefinition;
+type AforaPluginCliRootCommandDescriptor =
+  import("./types.js").AforaPluginCliRootCommandDescriptor;
+type AforaPluginCliRegistrar = import("./types.js").AforaPluginCliRegistrar;
+type AforaPluginCommandDefinition = import("./types.js").AforaPluginCommandDefinition;
 type PluginInteractiveHandlerRegistration =
   import("./types.js").PluginInteractiveHandlerRegistration;
-type OpenClawPluginGatewayRuntimeScopeSurface =
-  import("./types.js").OpenClawPluginGatewayRuntimeScopeSurface;
-type OpenClawGatewayDiscoveryService = import("./types.js").OpenClawGatewayDiscoveryService;
-type OpenClawPluginHttpRouteHandler = import("./types.js").OpenClawPluginHttpRouteHandler;
-type OpenClawPluginHttpRouteMatch = import("./types.js").OpenClawPluginHttpRouteMatch;
-type OpenClawPluginHostedMediaResolver = import("./types.js").OpenClawPluginHostedMediaResolver;
-type OpenClawPluginReloadRegistration = import("./types.js").OpenClawPluginReloadRegistration;
-type OpenClawPluginSecurityAuditCollector =
-  import("./types.js").OpenClawPluginSecurityAuditCollector;
-type OpenClawPluginService = import("./types.js").OpenClawPluginService;
-type OpenClawPluginToolFactory = import("./types.js").OpenClawPluginToolFactory;
+type AforaPluginGatewayRuntimeScopeSurface =
+  import("./types.js").AforaPluginGatewayRuntimeScopeSurface;
+type AforaGatewayDiscoveryService = import("./types.js").AforaGatewayDiscoveryService;
+type AforaPluginHttpRouteHandler = import("./types.js").AforaPluginHttpRouteHandler;
+type AforaPluginHttpRouteMatch = import("./types.js").AforaPluginHttpRouteMatch;
+type AforaPluginHostedMediaResolver = import("./types.js").AforaPluginHostedMediaResolver;
+type AforaPluginReloadRegistration = import("./types.js").AforaPluginReloadRegistration;
+type AforaPluginSecurityAuditCollector =
+  import("./types.js").AforaPluginSecurityAuditCollector;
+type AforaPluginService = import("./types.js").AforaPluginService;
+type AforaPluginToolFactory = import("./types.js").AforaPluginToolFactory;
 type PluginConversationBindingResolvedEvent =
   import("./types.js").PluginConversationBindingResolvedEvent;
 type TypedPluginHookRegistration = import("./types.js").PluginHookRegistration;
@@ -102,7 +102,7 @@ type UnifiedModelCatalogProviderPlugin = import("./types.js").UnifiedModelCatalo
 export type PluginToolRegistration = {
   pluginId: string;
   pluginName?: string;
-  factory: OpenClawPluginToolFactory;
+  factory: AforaPluginToolFactory;
   names: string[];
   declaredNames?: string[];
   optional: boolean;
@@ -114,10 +114,10 @@ export type PluginToolRegistration = {
 type PluginCliRegistration = {
   pluginId: string;
   pluginName?: string;
-  register: OpenClawPluginCliRegistrar;
+  register: AforaPluginCliRegistrar;
   parentPath: string[];
   commands: string[];
-  descriptors: OpenClawPluginCliRootCommandDescriptor[];
+  descriptors: AforaPluginCliRootCommandDescriptor[];
   source: string;
   rootDir?: string;
 };
@@ -126,11 +126,11 @@ type PluginCliRegistration = {
 export type PluginHttpRouteRegistration = {
   pluginId?: string;
   path: string;
-  handler: OpenClawPluginHttpRouteHandler;
-  handleUpgrade?: OpenClawPluginHttpRouteUpgradeHandler;
-  auth: OpenClawPluginHttpRouteAuth;
-  match: OpenClawPluginHttpRouteMatch;
-  gatewayRuntimeScopeSurface?: OpenClawPluginGatewayRuntimeScopeSurface;
+  handler: AforaPluginHttpRouteHandler;
+  handleUpgrade?: AforaPluginHttpRouteUpgradeHandler;
+  auth: AforaPluginHttpRouteAuth;
+  match: AforaPluginHttpRouteMatch;
+  gatewayRuntimeScopeSurface?: AforaPluginGatewayRuntimeScopeSurface;
   gatewayMethodDispatchAllowed?: boolean;
   nodeCapability?: {
     surface: string;
@@ -142,7 +142,7 @@ export type PluginHttpRouteRegistration = {
 type PluginHostedMediaResolverRegistration = {
   pluginId: string;
   pluginName?: string;
-  resolver: OpenClawPluginHostedMediaResolver;
+  resolver: AforaPluginHostedMediaResolver;
   source: string;
   rootDir?: string;
 };
@@ -209,7 +209,7 @@ export type PluginDashboardActionVerbRegistration = PluginManifestDashboardActio
 type PluginCliBackendRegistration = {
   pluginId: string;
   pluginName?: string;
-  builtWithOpenClawVersion?: string;
+  builtWithAforaVersion?: string;
   backend: CliBackendPlugin;
   source: string;
   rootDir?: string;
@@ -295,7 +295,7 @@ type PluginHookRegistration = {
 export type PluginServiceRegistration = {
   pluginId: string;
   pluginName?: string;
-  service: OpenClawPluginService;
+  service: AforaPluginService;
   source: string;
   origin: PluginOrigin;
   trustedOfficialInstall?: boolean;
@@ -305,7 +305,7 @@ export type PluginServiceRegistration = {
 export type PluginGatewayDiscoveryServiceRegistration = {
   pluginId: string;
   pluginName?: string;
-  service: OpenClawGatewayDiscoveryService;
+  service: AforaGatewayDiscoveryService;
   source: string;
   rootDir?: string;
 };
@@ -313,7 +313,7 @@ export type PluginGatewayDiscoveryServiceRegistration = {
 type PluginReloadRegistration = {
   pluginId: string;
   pluginName?: string;
-  registration: OpenClawPluginReloadRegistration;
+  registration: AforaPluginReloadRegistration;
   source: string;
   rootDir?: string;
 };
@@ -321,7 +321,7 @@ type PluginReloadRegistration = {
 export type PluginNodeHostCommandRegistration = {
   pluginId: string;
   pluginName?: string;
-  command: import("./types.js").OpenClawPluginNodeHostCommand;
+  command: import("./types.js").AforaPluginNodeHostCommand;
   source: string;
   rootDir?: string;
 };
@@ -329,7 +329,7 @@ export type PluginNodeHostCommandRegistration = {
 type PluginNodeInvokePolicyRegistration = {
   pluginId: string;
   pluginName?: string;
-  policy: import("./types.js").OpenClawPluginNodeInvokePolicy;
+  policy: import("./types.js").AforaPluginNodeInvokePolicy;
   pluginConfig?: Record<string, unknown>;
   source: string;
   rootDir?: string;
@@ -338,7 +338,7 @@ type PluginNodeInvokePolicyRegistration = {
 type PluginSecurityAuditCollectorRegistration = {
   pluginId: string;
   pluginName?: string;
-  collector: OpenClawPluginSecurityAuditCollector;
+  collector: AforaPluginSecurityAuditCollector;
   source: string;
   rootDir?: string;
 };
@@ -346,7 +346,7 @@ type PluginSecurityAuditCollectorRegistration = {
 export type PluginCommandRegistration = {
   pluginId: string;
   pluginName?: string;
-  command: OpenClawPluginCommandDefinition;
+  command: AforaPluginCommandDefinition;
   source: string;
   rootDir?: string;
   trustedOwnerStatusExposure?: true;
@@ -450,7 +450,7 @@ export type PluginRecord = {
   name: string;
   packageVersion?: string;
   version?: string;
-  builtWithOpenClawVersion?: string;
+  builtWithAforaVersion?: string;
   packageName?: string;
   description?: string;
   format?: PluginFormat;

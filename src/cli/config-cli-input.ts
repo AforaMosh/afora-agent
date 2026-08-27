@@ -1,8 +1,8 @@
-import { readByteStreamWithLimit } from "@openclaw/media-core/read-byte-stream-with-limit";
-import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-coercion";
-import { isRecord as isPlainRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { readByteStreamWithLimit } from "@afora/media-core/read-byte-stream-with-limit";
+import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
+import { isRecord as isPlainRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 import JSON5 from "json5";
 import {
   coerceSecretRef,
@@ -646,8 +646,8 @@ export function formatPluginInstallConfigSetError(): string {
     "plugins.installs is managed by the plugin index and cannot be edited with config set.",
     "",
     "Use plugin commands instead:",
-    `  ${formatCliCommand("openclaw plugins install <spec>")}`,
-    `  ${formatCliCommand("openclaw plugins update <plugin-id>")}`,
-    `  ${formatCliCommand("openclaw plugins uninstall <plugin-id>")}`,
+    `  ${formatCliCommand("afora plugins install <spec>")}`,
+    `  ${formatCliCommand("afora plugins update <plugin-id>")}`,
+    `  ${formatCliCommand("afora plugins uninstall <plugin-id>")}`,
   ].join("\n");
 }

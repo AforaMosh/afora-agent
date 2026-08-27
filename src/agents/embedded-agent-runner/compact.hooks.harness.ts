@@ -106,14 +106,14 @@ export const resolveSessionAgentIdsMock = vi.fn(() => ({
 }));
 export const resolveDefaultAgentDirMock = vi.fn(() => "/tmp/agents/main/agent");
 export const estimateTokensMock = vi.fn((_message?: unknown) => 10);
-export const resolveAgentHarnessPolicyMock = vi.fn(() => ({ runtime: "openclaw" }));
+export const resolveAgentHarnessPolicyMock = vi.fn(() => ({ runtime: "afora" }));
 function createSelectedAgentHarnessMock(params: {
   agentHarnessId?: string;
   agentHarnessRuntimeOverride?: string;
 }): AgentHarness {
   const configured = resolveAgentHarnessPolicyMock() as { runtime?: string };
   const id =
-    params.agentHarnessId ?? params.agentHarnessRuntimeOverride ?? configured.runtime ?? "openclaw";
+    params.agentHarnessId ?? params.agentHarnessRuntimeOverride ?? configured.runtime ?? "afora";
   return {
     id,
     label: `${id} test harness`,
@@ -202,7 +202,7 @@ function createMockToolDefinitions(tools: unknown[] = []) {
     };
   });
 }
-export const createOpenClawCodingToolsMock = vi.fn(() => []);
+export const createAforaCodingToolsMock = vi.fn(() => []);
 export const buildEmbeddedExtensionFactoriesMock = vi.fn(() => []);
 export const resolveEffectiveCompactionModeMock = vi.fn(() => "default");
 export const guardSessionManagerMock = vi.fn(() => ({
@@ -539,7 +539,7 @@ export function resetCompactSessionStateMocks(): void {
   maybeCompactAgentHarnessSessionMock.mockReset();
   maybeCompactAgentHarnessSessionMock.mockResolvedValue(undefined);
   resolveAgentHarnessPolicyMock.mockReset();
-  resolveAgentHarnessPolicyMock.mockReturnValue({ runtime: "openclaw" });
+  resolveAgentHarnessPolicyMock.mockReturnValue({ runtime: "afora" });
   selectAgentHarnessMock.mockReset();
   selectAgentHarnessMock.mockImplementation(createSelectedAgentHarnessMock);
   selectAgentHarnessForPreparedModelProvidersMock.mockReset();
@@ -625,7 +625,7 @@ export function resetCompactHooksHarnessMocks(): void {
     ) => resolveModelMock(provider, modelId, agentDir, cfg),
   );
   resolveAgentHarnessPolicyMock.mockReset();
-  resolveAgentHarnessPolicyMock.mockReturnValue({ runtime: "openclaw" });
+  resolveAgentHarnessPolicyMock.mockReturnValue({ runtime: "afora" });
   resolveContextWindowInfoMock.mockReset();
   resolveContextWindowInfoMock.mockReturnValue({ tokens: 128_000 });
 
@@ -639,8 +639,8 @@ export function resetCompactHooksHarnessMocks(): void {
 
   triggerInternalHookMock.mockReset();
   resetCompactSessionStateMocks();
-  createOpenClawCodingToolsMock.mockReset();
-  createOpenClawCodingToolsMock.mockReturnValue([]);
+  createAforaCodingToolsMock.mockReset();
+  createAforaCodingToolsMock.mockReturnValue([]);
   guardSessionManagerMock.mockReset();
   guardSessionManagerMock.mockReturnValue({
     flushPendingToolResults: vi.fn(),
@@ -789,7 +789,7 @@ export async function loadCompactHooksHarness(): Promise<{
   }));
 
   vi.doMock("../models-config.js", () => ({
-    ensureOpenClawModelsJson: vi.fn(async () => {}),
+    ensureAforaModelsJson: vi.fn(async () => {}),
   }));
 
   vi.doMock("../prepared-model-runtime.js", () => ({
@@ -895,7 +895,7 @@ export async function loadCompactHooksHarness(): Promise<{
   }));
 
   vi.doMock("../docs-path.js", () => ({
-    resolveOpenClawReferencePaths: vi.fn(async () => ({
+    resolveAforaReferencePaths: vi.fn(async () => ({
       docsPath: undefined,
       sourcePath: undefined,
     })),
@@ -907,7 +907,7 @@ export async function loadCompactHooksHarness(): Promise<{
   }));
 
   vi.doMock("../agent-tools.js", () => ({
-    createOpenClawCodingTools: createOpenClawCodingToolsMock,
+    createAforaCodingTools: createAforaCodingToolsMock,
   }));
 
   vi.doMock("./replay-history.js", () => ({

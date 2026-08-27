@@ -5,9 +5,9 @@ import {
   setupCronRegressionFixtures,
 } from "../../../test/helpers/cron/service-regression-fixtures.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../../state/afora-state-db.js";
 import { loadCronStore, saveCronStore } from "../store.js";
 import { cronStoreKey } from "../store/key.js";
 import {
@@ -37,7 +37,7 @@ function claimReceipt(storePath: string, job: ReturnType<typeof createDueIsolate
     agentId: job.agentId ?? "main",
     startedAtMs: at,
   });
-  return runOpenClawStateWriteTransaction(({ db }) =>
+  return runAforaStateWriteTransaction(({ db }) =>
     claimCronRunReceiptInDatabase({
       database: db,
       prepared,
@@ -119,7 +119,7 @@ it("recovers a dead running owner on timer refresh without an admission conflict
     lastRunStatus: "error",
   });
   expect((await loadCronStore(store.storePath)).jobs[0]?.state.runningAtMs).toBeUndefined();
-  const receiptRows = runOpenClawStateWriteTransaction(({ db }) =>
+  const receiptRows = runAforaStateWriteTransaction(({ db }) =>
     db
       .prepare(
         "SELECT status FROM cron_run_receipts WHERE store_key = ? AND job_id = ? ORDER BY started_at_ms",
@@ -297,7 +297,7 @@ it("terminalizes an owned reservation after another gateway deletes the job", as
     reservations: [{ jobId: job.id, reservationIdentity }],
   });
 
-  const receipt = runOpenClawStateWriteTransaction(({ db }) =>
+  const receipt = runAforaStateWriteTransaction(({ db }) =>
     db
       .prepare("SELECT status FROM cron_run_receipts WHERE receipt_id = ?")
       .get(reservation.runReceipt.receiptId),
@@ -325,7 +325,7 @@ it("retires a reservation when its row disappears during the post-commit reload"
     runIsolatedAgentJob: vi.fn(),
   });
   await list(state);
-  const database = openOpenClawStateDatabase().db;
+  const database = openAforaStateDatabase().db;
   database.exec(`
     CREATE TEMP TRIGGER delete_reserved_job_before_reload
     AFTER UPDATE OF state_json ON cron_jobs

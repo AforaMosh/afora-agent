@@ -5,11 +5,11 @@ import type {
   ProviderAppGuidedSetupContext,
   ProviderAuthContext,
   ProviderAuthResult,
-} from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/plugin-entry";
 import type {
   ModelDefinitionConfig,
   ModelProviderConfig,
-} from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/provider-model-shared";
 import {
   DEFAULT_LLAMA_CPP_EMBEDDING_MODEL,
   DEFAULT_LLAMA_CPP_MODEL_CACHE_FILE,
@@ -209,7 +209,7 @@ export async function runLlamaCppSetup(ctx: ProviderAuthContext): Promise<Provid
     }
     const consent = await ctx.prompter.confirm({
       message:
-        "OpenClaw will install a verified llama.cpp server and download Gemma 4 E4B IT Q4_K_M (about 5.0 GB) plus the local embedding model (about 0.3 GB). Continue?",
+        "Afora will install a verified llama.cpp server and download Gemma 4 E4B IT Q4_K_M (about 5.0 GB) plus the local embedding model (about 0.3 GB). Continue?",
       initialValue: false,
     });
     if (!consent) {
@@ -262,7 +262,7 @@ export async function runLlamaCppSetup(ctx: ProviderAuthContext): Promise<Provid
     progress.stop("llama.cpp setup failed");
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(
-      `Managed llama.cpp setup failed. Run openclaw doctor, fix the reported runtime or model issue, then retry. ${detail}`,
+      `Managed llama.cpp setup failed. Run afora doctor, fix the reported runtime or model issue, then retry. ${detail}`,
       { cause: error },
     );
   }

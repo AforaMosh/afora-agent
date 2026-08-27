@@ -3,9 +3,9 @@ import {
   createStatusReactionController,
   logAckFailure,
   type StatusReactionAdapter,
-} from "openclaw/plugin-sdk/channel-feedback";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/channel-feedback";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
 import { createDiscordRuntimeAccountContext } from "../client.js";
 import type { RequestClient } from "../internal/discord.js";
 import { reactMessageDiscord, removeReactionDiscord } from "../send.js";
@@ -13,7 +13,7 @@ import type { DiscordReactionRuntimeContext } from "../send.types.js";
 
 export function createDiscordAckReactionContext(params: {
   rest: RequestClient;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
 }): DiscordReactionRuntimeContext {
   return {

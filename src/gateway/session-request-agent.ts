@@ -6,7 +6,7 @@ import {
 import { AgentSelectionRequiredError, listAgentIds } from "../agents/agent-scope.js";
 import { tryResolveLegacyCompatibilityAgentId } from "../config/legacy.default-agent-owner.js";
 import { resolvePersistedSessionStoreOwnerForKey } from "../config/sessions/session-store-owner.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   normalizeAgentId,
   normalizeAgentIdStrict,
@@ -20,7 +20,7 @@ type RequestedSessionAgentIdResolution =
 
 /** Resolves only stable implicit ownership for unscoped session rows and active runs. */
 export function tryResolveSessionCompatibilityOwnerAgentId(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   key: string,
 ): string | undefined {
   const persistedStoreOwner = resolvePersistedSessionStoreOwnerForKey(cfg, key);
@@ -33,7 +33,7 @@ export function tryResolveSessionCompatibilityOwnerAgentId(
 }
 
 export function resolveRequestedSessionAgentId(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   key: string,
   explicitAgentId?: string,
   options?: { allowUnconfiguredExplicitAgent?: boolean },

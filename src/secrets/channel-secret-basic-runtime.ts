@@ -42,7 +42,7 @@ function buildChannelSecretTargetRegistryEntry(params: {
     id: pathPattern,
     targetType: spec.targetType ?? pathPattern,
     ...(spec.targetTypeAliases ? { targetTypeAliases: spec.targetTypeAliases } : {}),
-    configFile: "openclaw.json",
+    configFile: "afora.json",
     pathPattern,
     ...(spec.refPath ? { refPathPattern: `${scopePrefix}.${spec.refPath}` } : {}),
     secretShape: spec.secretShape ?? "secret_input",

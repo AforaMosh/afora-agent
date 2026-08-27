@@ -1,6 +1,6 @@
 // Covers loopback logging exposure audit findings.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { collectSecurityAuditFindings } from "./audit.test-support.js";
 import type { SecurityAuditFinding } from "./audit.types.js";
@@ -25,7 +25,7 @@ describe("security audit loopback and logging findings", () => {
   it("evaluates loopback control UI and logging exposure findings", async () => {
     await Promise.all([
       (async () => {
-        const cfg: OpenClawConfig = {
+        const cfg: AforaConfig = {
           agents: { list: [{ id: "main", default: true }] },
           gateway: {
             bind: "loopback",
@@ -42,11 +42,11 @@ describe("security audit loopback and logging findings", () => {
       })(),
       withEnvAsync(
         {
-          OPENCLAW_GATEWAY_TOKEN: undefined,
-          OPENCLAW_GATEWAY_PASSWORD: undefined,
+          AFORA_GATEWAY_TOKEN: undefined,
+          AFORA_GATEWAY_PASSWORD: undefined,
         },
         async () => {
-          const cfg: OpenClawConfig = {
+          const cfg: AforaConfig = {
             agents: { list: [{ id: "main", default: true }] },
             gateway: {
               bind: "loopback",
@@ -64,7 +64,7 @@ describe("security audit loopback and logging findings", () => {
         },
       ),
       (async () => {
-        const cfg: OpenClawConfig = {};
+        const cfg: AforaConfig = {};
         expect(
           hasLoggingFinding("logging.redact_off", "warn", await collectSecurityAuditFindings(cfg)),
         ).toBe(false);

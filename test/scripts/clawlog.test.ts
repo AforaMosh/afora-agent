@@ -12,7 +12,7 @@ const SCRIPT_PATH = fileURLToPath(new URL("../../scripts/clawlog.sh", import.met
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 function runClawlog(args: string[] = []) {
-  const cwd = tempDirs.make("openclaw-clawlog-test-");
+  const cwd = tempDirs.make("afora-clawlog-test-");
   const binDir = path.join(cwd, "bin");
   mkdirSync(binDir);
   const sudoPath = path.join(binDir, "sudo");

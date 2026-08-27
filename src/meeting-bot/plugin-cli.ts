@@ -1,4 +1,4 @@
-import { parseStrictNonNegativeInteger } from "@openclaw/normalization-core/number-coercion";
+import { parseStrictNonNegativeInteger } from "@afora/normalization-core/number-coercion";
 import type { Command } from "commander";
 import type { callGatewayFromCli } from "../cli/gateway-rpc.js";
 import type { MeetingPluginConfig } from "./plugin-config.js";

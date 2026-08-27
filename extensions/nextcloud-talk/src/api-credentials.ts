@@ -1,5 +1,5 @@
 // Nextcloud Talk plugin module implements api credentials behavior.
-import { tryReadSecretFileSync } from "openclaw/plugin-sdk/secret-file-runtime";
+import { tryReadSecretFileSync } from "afora-agent/plugin-sdk/secret-file-runtime";
 import { normalizeResolvedSecretInputString } from "./secret-input.js";
 
 export type NextcloudTalkCredentialUnavailableDiagnostic = Extract<

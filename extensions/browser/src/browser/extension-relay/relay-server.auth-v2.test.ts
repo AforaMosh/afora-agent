@@ -449,9 +449,9 @@ describe.sequential("extension relay HTTP auth v2", () => {
   let handle: ExtensionRelayHandle | null = null;
 
   beforeEach(async () => {
-    previousStateDir = process.env.OPENCLAW_STATE_DIR;
-    stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-relay-auth-v2-"));
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+    previousStateDir = process.env.AFORA_STATE_DIR;
+    stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-relay-auth-v2-"));
+    process.env.AFORA_STATE_DIR = stateDir;
     await fs.mkdir(path.join(stateDir, "credentials"), { recursive: true });
     await fs.writeFile(
       path.join(stateDir, "credentials", "browser-extension-relay.secret"),
@@ -468,9 +468,9 @@ describe.sequential("extension relay HTTP auth v2", () => {
     handle = null;
     invalidateBrowserRelayAuthV2Authority();
     if (previousStateDir === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.AFORA_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = previousStateDir;
+      process.env.AFORA_STATE_DIR = previousStateDir;
     }
     await fs.rm(stateDir, { recursive: true, force: true });
   });
@@ -600,7 +600,7 @@ describe.sequential("extension relay HTTP auth v2", () => {
       );
       await vi.waitFor(() => expect(handle?.bridge.extensionConnected).toBe(true));
 
-      const credential = Buffer.from(`openclaw-internal:${handle.internalToken}`).toString(
+      const credential = Buffer.from(`afora-internal:${handle.internalToken}`).toString(
         "base64",
       );
       client = new WebSocket(`ws://127.0.0.1:${handle.port}/cdp`, {
@@ -738,8 +738,8 @@ describe.sequential("extension relay HTTP auth v2", () => {
   it("keeps an active extension while pending admission is full and recovers after release", async () => {
     handle = await startExtensionRelayServer({ port: 0, token: KEY, allowLegacyAuth: true });
     const active = await openExtensionSocket(handle, [
-      "openclaw-extension-relay",
-      `openclaw-extension-token.${KEY}`,
+      "afora-extension-relay",
+      `afora-extension-token.${KEY}`,
     ]);
     active.send(
       JSON.stringify({
@@ -878,7 +878,7 @@ describe.sequential("extension relay HTTP auth v2", () => {
     query.close();
 
     const internal = await RawHttpConnection.connect(handle.port);
-    const credential = Buffer.from(`openclaw-internal:${handle.internalToken}`).toString("base64");
+    const credential = Buffer.from(`afora-internal:${handle.internalToken}`).toString("base64");
     expect(
       (await internal.request("GET", "/json/version", "", { Authorization: `Basic ${credential}` }))
         .status,

@@ -34,7 +34,7 @@ describe("agent-runtime model catalog compatibility", () => {
   it("accepts legacy options without overriding lifecycle metadata", async () => {
     mocks.loadCatalog.mockResolvedValue([]);
     const config = {};
-    const env = { OPENCLAW_STATE_DIR: "/tmp/plugin-state" };
+    const env = { AFORA_STATE_DIR: "/tmp/plugin-state" };
 
     await loadModelCatalog({
       agentDir: "/tmp/plugin-agent",

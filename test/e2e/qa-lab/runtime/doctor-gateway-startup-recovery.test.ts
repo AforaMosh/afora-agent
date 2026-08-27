@@ -27,16 +27,16 @@ describe("doctor gateway startup recovery producer", () => {
       "qa-doctor-policy",
       {
         HOME: "/tmp/sandbox-home",
-        OPENCLAW_CONFIG_PATH: "/tmp/host-config.json",
-        OPENCLAW_GATEWAY_PORT: "28789",
-        OPENCLAW_GATEWAY_TOKEN: "host-token",
-        OPENCLAW_GATEWAY_URL: "wss://ambient.example.invalid",
-        OPENCLAW_SERVICE_REPAIR_POLICY: "external",
-        OPENCLAW_STATE_DIR: "/tmp/host-state",
-        OPENCLAW_SUPERVISOR_MODE: "external",
+        AFORA_CONFIG_PATH: "/tmp/host-config.json",
+        AFORA_GATEWAY_PORT: "28789",
+        AFORA_GATEWAY_TOKEN: "host-token",
+        AFORA_GATEWAY_URL: "wss://ambient.example.invalid",
+        AFORA_SERVICE_REPAIR_POLICY: "external",
+        AFORA_STATE_DIR: "/tmp/host-state",
+        AFORA_SUPERVISOR_MODE: "external",
         PATH: "/usr/bin",
         DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/999/bus",
-        SUDO_COMMAND: "/usr/bin/sudo openclaw doctor",
+        SUDO_COMMAND: "/usr/bin/sudo afora doctor",
         SUDO_GID: "1000",
         SUDO_UID: "1000",
         SUDO_USER: "ambient-admin",
@@ -49,18 +49,18 @@ describe("doctor gateway startup recovery producer", () => {
     expect(env).toMatchObject({
       DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1001/bus",
       HOME: accountHome,
-      OPENCLAW_CONFIG_PATH: path.join(accountHome, ".openclaw-qa-doctor-policy", "openclaw.json"),
-      OPENCLAW_PROFILE: "qa-doctor-policy",
-      OPENCLAW_SKIP_CHANNELS: "1",
-      OPENCLAW_STATE_DIR: path.join(accountHome, ".openclaw-qa-doctor-policy"),
+      AFORA_CONFIG_PATH: path.join(accountHome, ".afora-qa-doctor-policy", "afora.json"),
+      AFORA_PROFILE: "qa-doctor-policy",
+      AFORA_SKIP_CHANNELS: "1",
+      AFORA_STATE_DIR: path.join(accountHome, ".afora-qa-doctor-policy"),
       PATH: "/usr/bin",
       XDG_RUNTIME_DIR: "/run/user/1001",
     });
-    expect(env.OPENCLAW_GATEWAY_TOKEN).toBeUndefined();
-    expect(env.OPENCLAW_GATEWAY_PORT).toBeUndefined();
-    expect(env.OPENCLAW_GATEWAY_URL).toBeUndefined();
-    expect(env.OPENCLAW_SERVICE_REPAIR_POLICY).toBeUndefined();
-    expect(env.OPENCLAW_SUPERVISOR_MODE).toBeUndefined();
+    expect(env.AFORA_GATEWAY_TOKEN).toBeUndefined();
+    expect(env.AFORA_GATEWAY_PORT).toBeUndefined();
+    expect(env.AFORA_GATEWAY_URL).toBeUndefined();
+    expect(env.AFORA_SERVICE_REPAIR_POLICY).toBeUndefined();
+    expect(env.AFORA_SUPERVISOR_MODE).toBeUndefined();
     expect(env.SUDO_COMMAND).toBeUndefined();
     expect(env.SUDO_GID).toBeUndefined();
     expect(env.SUDO_UID).toBeUndefined();
@@ -69,14 +69,14 @@ describe("doctor gateway startup recovery producer", () => {
 
   it("uses the stable built launcher for every child CLI command", () => {
     expect(
-      testing.resolveOpenClawInvocation(
-        { artifactBase: "/tmp/artifacts", repoRoot: "/workspace/openclaw" },
+      testing.resolveAforaInvocation(
+        { artifactBase: "/tmp/artifacts", repoRoot: "/workspace/afora" },
         "qa-doctor-stable",
         ["gateway", "status", "--json"],
       ),
     ).toEqual({
       args: [
-        path.join("/workspace/openclaw", "openclaw.mjs"),
+        path.join("/workspace/afora", "afora.mjs"),
         "--profile",
         "qa-doctor-stable",
         "gateway",
@@ -95,9 +95,9 @@ describe("doctor gateway startup recovery producer", () => {
     expect(resolveSystemdRecoveryPermission({})).toEqual({
       available: false,
       reason:
-        "blocked native systemd recovery proof; set OPENCLAW_QA_ALLOW_SYSTEMD_RECOVERY=1 on a prepared host",
+        "blocked native systemd recovery proof; set AFORA_QA_ALLOW_SYSTEMD_RECOVERY=1 on a prepared host",
     });
-    expect(resolveSystemdRecoveryPermission({ OPENCLAW_QA_ALLOW_SYSTEMD_RECOVERY: "1" })).toEqual({
+    expect(resolveSystemdRecoveryPermission({ AFORA_QA_ALLOW_SYSTEMD_RECOVERY: "1" })).toEqual({
       available: true,
     });
   });
@@ -113,7 +113,7 @@ describe("doctor gateway startup recovery producer", () => {
   });
 
   it("writes honest blocked evidence before native execution is enabled", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-doctor-systemd-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-doctor-systemd-"));
     const artifactBase = path.join(root, "artifacts");
     tempRoots.push(root);
 
@@ -132,7 +132,7 @@ describe("doctor gateway startup recovery producer", () => {
     expect(diskEvidence.entries[0]).toMatchObject({
       result: {
         failure: {
-          reason: expect.stringContaining("OPENCLAW_QA_ALLOW_SYSTEMD_RECOVERY=1"),
+          reason: expect.stringContaining("AFORA_QA_ALLOW_SYSTEMD_RECOVERY=1"),
         },
         status: "blocked",
       },
@@ -143,7 +143,7 @@ describe("doctor gateway startup recovery producer", () => {
   });
 
   it("persists the observed status and health payloads without reconstructing them", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-doctor-artifacts-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-doctor-artifacts-"));
     const artifactBase = path.join(root, "artifacts");
     tempRoots.push(root);
     const statusJson = {

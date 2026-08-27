@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { detectUnsafeExecControlShellCommand } from "../infra/exec-control-command-guard.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { withTempDir } from "../test-utils/temp-dir.js";
 import { createExecTool } from "./bash-tools.exec-run.js";
@@ -25,15 +25,15 @@ const describeNonWin = process.platform === "win32" ? describe.skip : describe;
 const quote = (value: string) => JSON.stringify(value);
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   vi.restoreAllMocks();
 });
 
-describeNonWin("exec live OpenClaw state SQLite guard", () => {
+describeNonWin("exec live Afora state SQLite guard", () => {
   it("detects direct and carrier-wrapped SQLite targets under the active state directory", async () => {
-    await withTempDir("openclaw-exec-live-sqlite-", async (root) => {
+    await withTempDir("afora-exec-live-sqlite-", async (root) => {
       const stateDir = path.join(root, "state with spaces");
-      const databasePath = path.join(stateDir, "state", "openclaw.sqlite");
+      const databasePath = path.join(stateDir, "state", "afora.sqlite");
       await fs.mkdir(path.dirname(databasePath), { recursive: true });
       await fs.writeFile(databasePath, "fixture");
 
@@ -43,13 +43,13 @@ describeNonWin("exec live OpenClaw state SQLite guard", () => {
       ).resolves.toBe("live-state-sqlite");
       await expect(
         detectUnsafeExecControlShellCommand(
-          `sudo -u openclaw env sqlite3 -header -column ${quote(databasePath)}`,
+          `sudo -u afora env sqlite3 -header -column ${quote(databasePath)}`,
           context,
         ),
       ).resolves.toBe("live-state-sqlite");
       await expect(
         detectUnsafeExecControlShellCommand(
-          'sqlite3 -cmd ".timeout 1000" "$OPENCLAW_STATE_DIR/state/openclaw.sqlite"',
+          'sqlite3 -cmd ".timeout 1000" "$AFORA_STATE_DIR/state/afora.sqlite"',
           context,
         ),
       ).resolves.toBe("live-state-sqlite");
@@ -75,7 +75,7 @@ describeNonWin("exec live OpenClaw state SQLite guard", () => {
   });
 
   it("detects relative and symlink-aliased live state targets", async () => {
-    await withTempDir("openclaw-exec-live-sqlite-alias-", async (root) => {
+    await withTempDir("afora-exec-live-sqlite-alias-", async (root) => {
       const stateDir = path.join(root, "state");
       const databasePath = path.join(stateDir, "agents", "main", "state.sqlite");
       const aliasDir = path.join(root, "state-alias");
@@ -97,9 +97,9 @@ describeNonWin("exec live OpenClaw state SQLite guard", () => {
   });
 
   it("allows SQLite inspection of a private copy outside the active state directory", async () => {
-    await withTempDir("openclaw-exec-copied-sqlite-", async (root) => {
+    await withTempDir("afora-exec-copied-sqlite-", async (root) => {
       const stateDir = path.join(root, "state");
-      const copiedDatabasePath = path.join(root, "snapshot", "openclaw.sqlite");
+      const copiedDatabasePath = path.join(root, "snapshot", "afora.sqlite");
       await fs.mkdir(path.dirname(copiedDatabasePath), { recursive: true });
       await fs.writeFile(copiedDatabasePath, "fixture");
 
@@ -131,7 +131,7 @@ describeNonWin("exec live OpenClaw state SQLite guard", () => {
   });
 
   it("rejects the live target before the external SQLite process starts", async () => {
-    await withTempDir("openclaw-exec-live-sqlite-spawn-", async (root) => {
+    await withTempDir("afora-exec-live-sqlite-spawn-", async (root) => {
       const stateDir = path.join(root, "state");
       const databasePath = path.join(stateDir, "agents", "main", "state.sqlite");
       const markerPath = path.join(root, "sqlite-spawned");
@@ -145,8 +145,8 @@ describeNonWin("exec live OpenClaw state SQLite guard", () => {
         {
           HOME: root,
           USERPROFILE: root,
-          OPENCLAW_HOME: root,
-          OPENCLAW_STATE_DIR: stateDir,
+          AFORA_HOME: root,
+          AFORA_STATE_DIR: stateDir,
         },
         async () => {
           const tool = createExecTool({
@@ -161,7 +161,7 @@ describeNonWin("exec live OpenClaw state SQLite guard", () => {
               workdir: root,
             }),
           ).rejects.toThrow(
-            /external sqlite3 cannot open databases under the active OpenClaw state directory/,
+            /external sqlite3 cannot open databases under the active Afora state directory/,
           );
         },
       );

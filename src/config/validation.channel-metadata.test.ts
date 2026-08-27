@@ -1,6 +1,6 @@
 // Verifies channel metadata validation and plugin capability lookups.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PluginManifestRecord, PluginManifestRegistry } from "../plugins/manifest-registry.js";
 import {
@@ -81,7 +81,7 @@ function createExternalFeishuSchemaRegistry(): PluginManifestRegistry {
     diagnostics: [],
     plugins: [
       createPluginManifestRecord({
-        id: "openclaw-lark",
+        id: "afora-lark",
         origin: "global",
         channels: ["feishu"],
         channelConfigs: {
@@ -231,7 +231,7 @@ function createPluginManifestRecord(
     channels: [],
     cliBackends: [],
     hooks: [],
-    manifestPath: `/tmp/${overrides.id}/openclaw.plugin.json`,
+    manifestPath: `/tmp/${overrides.id}/afora.plugin.json`,
     origin: "bundled",
     providers: [],
     rootDir: `/tmp/${overrides.id}`,
@@ -275,7 +275,7 @@ vi.mock("../channels/plugins/legacy-config.js", () => ({
 }));
 
 vi.mock("./zod-schema.js", () => ({
-  OpenClawSchema: {
+  AforaSchema: {
     safeParse: (raw: unknown) => ({ success: true, data: raw }),
   },
 }));
@@ -607,7 +607,7 @@ describe("validateConfigObjectRawWithPlugins channel metadata", () => {
           appId: "app-id",
           appSecret: "secret",
           replyMode: "thread",
-          footer: "OpenClaw",
+          footer: "Afora",
         },
       },
     });
@@ -882,7 +882,7 @@ describe("validateConfigObjectRawWithPlugins channel metadata", () => {
         expect.objectContaining({
           path: "channels.feishu",
           message:
-            'invalid config for plugin openclaw-lark: must not have additional properties: "unsupportedField"',
+            'invalid config for plugin afora-lark: must not have additional properties: "unsupportedField"',
         }),
       );
       if (rejectedOwner) {
@@ -894,7 +894,7 @@ describe("validateConfigObjectRawWithPlugins channel metadata", () => {
   });
 
   it("sanitizes the schema owner in validation diagnostics", () => {
-    const unsafeId = `openclaw${String.fromCharCode(10)}${String.fromCharCode(27)}[31m-lark`;
+    const unsafeId = `afora${String.fromCharCode(10)}${String.fromCharCode(27)}[31m-lark`;
     const registry = createExternalFeishuSchemaRegistry();
     const plugin = expectDefined(registry.plugins[0], "external Feishu plugin manifest");
     registry.plugins[0] = {
@@ -919,7 +919,7 @@ describe("validateConfigObjectRawWithPlugins channel metadata", () => {
         expect.objectContaining({
           path: "channels.feishu",
           message:
-            'invalid config for plugin openclaw-lark: must not have additional properties: "unsupportedField"',
+            'invalid config for plugin afora-lark: must not have additional properties: "unsupportedField"',
         }),
       );
     }
@@ -943,7 +943,7 @@ describe("validateConfigObjectRawWithPlugins channel metadata", () => {
         }),
       );
       expect(result.issues[0]?.message).not.toContain("Telegram groups");
-      expect(result.issues[0]?.message).not.toContain("openclaw doctor --fix");
+      expect(result.issues[0]?.message).not.toContain("afora doctor --fix");
     }
   });
 });

@@ -1,19 +1,19 @@
 // Control UI modal presents approvals after an explicit operator action.
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { html, nothing, type PropertyValues } from "lit";
 import { property, query, state } from "lit/decorators.js";
 import type { ExecApprovalDecision, ExecApprovalRequest } from "../app/exec-approval.ts";
 import { t } from "../i18n/index.ts";
 import { formatCountdown } from "../lib/format.ts";
 import { resolveAsciiShortcutKey } from "../lib/keyboard-shortcuts.ts";
-import { OpenClawLightDomContentsElement } from "../lit/openclaw-element.ts";
+import { AforaLightDomContentsElement } from "../lit/afora-element.ts";
 import {
   approvalRemainingLabel,
   approvalTitle,
   renderExecApprovalCard,
   resolveApprovalDecisions,
 } from "./exec-approval-card.ts";
-import type { OpenClawModalDialog } from "./modal-dialog.ts";
+import type { AforaModalDialog } from "./modal-dialog.ts";
 import "./modal-dialog.ts";
 
 type ExecApprovalProps = {
@@ -88,9 +88,9 @@ function shortcutDecision(event: KeyboardEvent): ExecApprovalDecision | null {
   return !event.shiftKey && resolveAsciiShortcutKey(event) === "d" ? "deny" : null;
 }
 
-class ExecApproval extends OpenClawLightDomContentsElement {
+class ExecApproval extends AforaLightDomContentsElement {
   @property({ attribute: false }) props?: ExecApprovalProps;
-  @query("openclaw-modal-dialog") private dialog?: OpenClawModalDialog;
+  @query("afora-modal-dialog") private dialog?: AforaModalDialog;
   @state() private selectedApprovalId: string | null = null;
   @state() private explicitlyOpen = false;
 
@@ -158,7 +158,7 @@ class ExecApproval extends OpenClawLightDomContentsElement {
       this.explicitlyOpen = false;
     };
     return html`
-      <openclaw-modal-dialog
+      <afora-modal-dialog
         label=${approvalTitle(active)}
         description=${approvalRemainingLabel(active.expiresAtMs, props.nowMs)}
         @keydown=${(event: KeyboardEvent) => this.handleKeydown(event, active)}
@@ -183,11 +183,11 @@ class ExecApproval extends OpenClawLightDomContentsElement {
             },
           })}
         </div>
-      </openclaw-modal-dialog>
+      </afora-modal-dialog>
     `;
   }
 }
 
-if (!customElements.get("openclaw-exec-approval")) {
-  customElements.define("openclaw-exec-approval", ExecApproval);
+if (!customElements.get("afora-exec-approval")) {
+  customElements.define("afora-exec-approval", ExecApproval);
 }

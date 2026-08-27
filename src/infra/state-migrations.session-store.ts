@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { writeAcpSessionMetaForMigration } from "../acp/runtime/session-meta.js";
 import { listAgentEntries } from "../agents/agent-scope-config.js";
 import { resolveStateDir } from "../config/paths.js";
@@ -16,7 +16,7 @@ import {
   resolveSessionStoreTargets,
 } from "../config/sessions/targets.js";
 import type { SessionScope } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   collectRelevantDoctorPluginIds,
   listPluginDoctorSessionStoreAgentIds,
@@ -379,15 +379,15 @@ export function aliasedSessionStoreMigrationWarning(params: {
   count: number;
   storePath: string;
 }): string {
-  return `Deferred ${params.subject} ${params.count} ambiguous session key(s) in aliased store ${params.storePath}; remove filesystem aliases or configure one canonical session.store path, then rerun openclaw doctor --fix`;
+  return `Deferred ${params.subject} ${params.count} ambiguous session key(s) in aliased store ${params.storePath}; remove filesystem aliases or configure one canonical session.store path, then rerun afora doctor --fix`;
 }
 
 export function unresolvedSessionStoreIdentityWarning(subject: string, storePath: string): string {
-  return `Deferred ${subject} for ${storePath}; filesystem identity could not be established for every configured store path. Restore path access or configure one canonical session.store path, then rerun openclaw doctor --fix`;
+  return `Deferred ${subject} for ${storePath}; filesystem identity could not be established for every configured store path. Restore path access or configure one canonical session.store path, then rerun afora doctor --fix`;
 }
 
 export function distinctSessionStoreAliasWarning(subject: string, storePath: string): string {
-  return `Deferred ${subject} in aliased store ${storePath}; atomic replacement cannot update distinct filesystem aliases as one operation. Remove filesystem aliases or configure one canonical session.store path, then rerun openclaw doctor --fix`;
+  return `Deferred ${subject} in aliased store ${storePath}; atomic replacement cannot update distinct filesystem aliases as one operation. Remove filesystem aliases or configure one canonical session.store path, then rerun afora doctor --fix`;
 }
 
 export function resolveStaleLegacySessionFile(params: {
@@ -596,7 +596,7 @@ export function removeDirIfEmpty(dir: string) {
 }
 
 export async function migrateOrphanedSessionKeys(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   additionalAgentIds?: readonly string[];
   legacySessionSurfaces: PreparedLegacySessionSurfaces;
@@ -750,7 +750,7 @@ export async function migrateOrphanedSessionKeys(params: {
     }
     if (storeAliases.hasFinalSymlink) {
       warnings.push(
-        `Deferred session key migration in final-component symlink store ${storePath}; configure one canonical session.store path, then rerun openclaw doctor --fix`,
+        `Deferred session key migration in final-component symlink store ${storePath}; configure one canonical session.store path, then rerun afora doctor --fix`,
       );
       continue;
     }
@@ -802,7 +802,7 @@ export async function migrateOrphanedSessionKeys(params: {
 }
 
 export async function migrateLegacyAcpSessionMetadata(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   now?: () => number;
   pluginSessionStoreAgentIds?: readonly string[];
@@ -857,7 +857,7 @@ export async function migrateLegacyAcpSessionMetadata(params: {
               .map((id) => ({ id })),
           ],
         },
-      } as OpenClawConfig)
+      } as AforaConfig)
     : params.cfg;
   // Reuse the validated resolver for every declared owner. Owner multiplicity
   // is restored below as metadata without re-adding rejected raw paths.
@@ -932,7 +932,7 @@ export async function migrateLegacyAcpSessionMetadata(params: {
     }
     if (hasLegacyAcpMetadata && storeAliases.hasFinalSymlink) {
       warnings.push(
-        `Deferred ACP metadata migration in final-component symlink store ${storePath}; configure one canonical session.store path, then rerun openclaw doctor --fix`,
+        `Deferred ACP metadata migration in final-component symlink store ${storePath}; configure one canonical session.store path, then rerun afora doctor --fix`,
       );
       continue;
     }
@@ -1014,7 +1014,7 @@ export async function migrateLegacyAcpSessionMetadata(params: {
 // Doctor migration must read legacy session stores even before a per-agent
 // SQLite DB exists; active runtime discovery remains SQLite-validated.
 function resolveLegacyAcpMetadataSessionStoreTargets(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   env: NodeJS.ProcessEnv,
 ): Array<{ agentId: string; storePath: string }> {
   const stateDir = resolveStateDir(env);
@@ -1244,7 +1244,7 @@ export type SessionStoreOwnership = {
 };
 
 export function resolveSessionStoreOwnership(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   stateDir: string;
   targetAgentId: string;

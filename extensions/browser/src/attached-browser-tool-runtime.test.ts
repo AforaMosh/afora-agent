@@ -60,7 +60,7 @@ describe("attached Browser tool runtime", () => {
         defaultProfile: "worker",
         profiles: {
           worker: {
-            driver: "openclaw",
+            driver: "afora",
             attachOnly: true,
             cdpUrl: "http://127.0.0.1:9222",
           },

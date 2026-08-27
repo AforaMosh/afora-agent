@@ -2,16 +2,16 @@
 import type {
   ChannelAccountSnapshot,
   ChannelStatusIssue,
-} from "openclaw/plugin-sdk/channel-contract";
-import { formatCliCommand } from "openclaw/plugin-sdk/cli-runtime";
+} from "afora-agent/plugin-sdk/channel-contract";
+import { formatCliCommand } from "afora-agent/plugin-sdk/cli-runtime";
 import {
   appendMatchMetadata,
   isRecord,
   readAccountStatusSnapshot,
   resolveEnabledConfiguredAccountId,
   type AccountStatusSnapshot,
-} from "openclaw/plugin-sdk/status-helpers";
-import { asFiniteNumber, normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/status-helpers";
+import { asFiniteNumber, normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 const TELEGRAM_POLLING_CONNECT_GRACE_MS = 120_000;
 const TELEGRAM_POLLING_STALE_TRANSPORT_MS = 30 * 60_000;
@@ -67,7 +67,7 @@ function collectTelegramPollingRuntimeIssues(params: {
 
   const lastStartAt = asFiniteNumber(account.lastStartAt) ?? null;
   const lastTransportActivityAt = asFiniteNumber(account.lastTransportActivityAt) ?? null;
-  const fix = `Run: ${formatCliCommand("openclaw channels status --probe")} (or restart the gateway). Check the bot token, proxy/network settings, and logs if it persists.`;
+  const fix = `Run: ${formatCliCommand("afora channels status --probe")} (or restart the gateway). Check the bot token, proxy/network settings, and logs if it persists.`;
 
   if (account.connected === false) {
     const withinStartupGrace =
@@ -140,7 +140,7 @@ function collectTelegramWebhookRuntimeIssues(params: {
       "Telegram webhook listener is running but setWebhook has not completed since startup",
       account.lastError,
     ),
-    fix: `Run: ${formatCliCommand("openclaw channels status --probe")} (or restart the gateway). Check the webhook URL, secret, TLS/proxy reachability, and Telegram setWebhook logs if it persists.`,
+    fix: `Run: ${formatCliCommand("afora channels status --probe")} (or restart the gateway). Check the webhook URL, secret, TLS/proxy reachability, and Telegram setWebhook logs if it persists.`,
   });
 }
 

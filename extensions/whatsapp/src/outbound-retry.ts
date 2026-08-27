@@ -1,6 +1,6 @@
 // WhatsApp plugin module implements outbound retry behavior.
-import { isChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
-import { createChannelApiRetryRunner } from "openclaw/plugin-sdk/retry-runtime";
+import { isChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
+import { createChannelApiRetryRunner } from "afora-agent/plugin-sdk/retry-runtime";
 import { formatError } from "./session-errors.js";
 import { isWhatsAppSocketOperationTimeoutError } from "./socket-timing.js";
 

@@ -1,5 +1,5 @@
 import { isDeepStrictEqual } from "node:util";
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import { normalizeOptionalAgentRuntimeId } from "../../../agents/agent-runtime-id.js";
 import { getRecord, type LegacyConfigRule } from "../../../config/legacy.shared.js";
 import type { ModelDefinitionConfig } from "../../../config/types.models.js";
@@ -323,7 +323,7 @@ function buildBlockedLegacyOpenAICodexProviderPlan(
           warning: [
             "Legacy Codex provider routes require manual reconciliation before matching refs can migrate.",
             ...warningLines,
-            "- Doctor retained matching legacy refs in config, sessions, and cron. These refs will not execute until reconciled: fix the model route/auth metadata, remove the legacy provider entry, then rerun `openclaw doctor --fix`.",
+            "- Doctor retained matching legacy refs in config, sessions, and cron. These refs will not execute until reconciled: fix the model route/auth metadata, remove the legacy provider entry, then rerun `afora doctor --fix`.",
           ].join("\n"),
         }
       : {}),

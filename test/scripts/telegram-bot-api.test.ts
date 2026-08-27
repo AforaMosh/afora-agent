@@ -10,18 +10,18 @@ describe("Telegram Bot API helper", () => {
   it("rejects loose numeric env limits instead of parsing prefixes", () => {
     expect(() =>
       readTelegramBotApiLimits({
-        OPENCLAW_TELEGRAM_USER_BOT_API_TIMEOUT_MS: "1e3",
+        AFORA_TELEGRAM_USER_BOT_API_TIMEOUT_MS: "1e3",
       }),
-    ).toThrow("invalid OPENCLAW_TELEGRAM_USER_BOT_API_TIMEOUT_MS: 1e3");
+    ).toThrow("invalid AFORA_TELEGRAM_USER_BOT_API_TIMEOUT_MS: 1e3");
     expect(() =>
       readTelegramBotApiLimits({
-        OPENCLAW_TELEGRAM_USER_BOT_API_BODY_MAX_BYTES: "1000ms",
+        AFORA_TELEGRAM_USER_BOT_API_BODY_MAX_BYTES: "1000ms",
       }),
-    ).toThrow("invalid OPENCLAW_TELEGRAM_USER_BOT_API_BODY_MAX_BYTES: 1000ms");
+    ).toThrow("invalid AFORA_TELEGRAM_USER_BOT_API_BODY_MAX_BYTES: 1000ms");
     expect(
       readTelegramBotApiLimits({
-        OPENCLAW_TELEGRAM_USER_BOT_API_BODY_MAX_BYTES: "2048",
-        OPENCLAW_TELEGRAM_USER_BOT_API_TIMEOUT_MS: "15000",
+        AFORA_TELEGRAM_USER_BOT_API_BODY_MAX_BYTES: "2048",
+        AFORA_TELEGRAM_USER_BOT_API_TIMEOUT_MS: "15000",
       }),
     ).toEqual({
       bodyMaxBytes: 2048,
@@ -31,14 +31,14 @@ describe("Telegram Bot API helper", () => {
 
   it("returns successful Bot API results", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ ok: true, result: { username: "OpenClawBot" } }), {
+      new Response(JSON.stringify({ ok: true, result: { username: "AforaBot" } }), {
         status: 200,
       }),
     );
 
     await expect(
       telegramBotApi("test-token", "getMe", {}, { baseUrl: "https://telegram.test", fetchImpl }),
-    ).resolves.toEqual({ username: "OpenClawBot" });
+    ).resolves.toEqual({ username: "AforaBot" });
     expect(fetchImpl).toHaveBeenCalledWith(
       "https://telegram.test/bottest-token/getMe",
       expect.objectContaining({

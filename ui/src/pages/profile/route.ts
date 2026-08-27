@@ -12,6 +12,6 @@ export const page = definePage({
   component: () =>
     import("./profile-page.ts").then(() => ({
       header: true,
-      render: () => html`<openclaw-profile-page></openclaw-profile-page>`,
+      render: () => html`<afora-profile-page></afora-profile-page>`,
     })),
 });

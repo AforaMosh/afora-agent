@@ -10,7 +10,7 @@ type LoginGateElement = HTMLElement & {
 };
 
 async function mountFailure(lastError: string, lastErrorCode: string | null) {
-  const element = document.createElement("openclaw-login-gate") as LoginGateElement;
+  const element = document.createElement("afora-login-gate") as LoginGateElement;
   element.props = {
     basePath: "",
     connected: false,
@@ -94,8 +94,8 @@ describe("login gate failure recovery", () => {
       (entry) => entry.textContent?.trim(),
     );
     expect(steps).toEqual([
-      "On the Gateway host, run openclaw dashboard to open a secure one-time pairing link.",
-      "Run openclaw devices list on the Gateway host.",
+      "On the Gateway host, run afora dashboard to open a secure one-time pairing link.",
+      "Run afora devices list on the Gateway host.",
       "Approve the pending browser/device request from that list.",
       "Reconnect after the approval completes.",
     ]);

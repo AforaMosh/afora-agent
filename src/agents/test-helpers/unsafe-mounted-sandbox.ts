@@ -23,11 +23,11 @@ function createUnsafeMountedBridge(params: {
   const workspaceContainerRoot = params.workspaceContainerRoot ?? "/workspace";
   const skillsContainerRoot = path.posix.join(
     workspaceContainerRoot,
-    ".openclaw",
+    ".afora",
     "sandbox-skills",
     "skills",
   );
-  const skillsRelativeRoot = ".openclaw/sandbox-skills/skills";
+  const skillsRelativeRoot = ".afora/sandbox-skills/skills";
 
   const resolvePath = (filePath: string, cwd?: string): SandboxResolvedPath => {
     const normalizedRelativePath = path.posix.normalize(filePath.replace(/\\/g, "/"));
@@ -110,7 +110,7 @@ export async function withUnsafeMountedSandboxHarness(
     workspaceAccess?: "none" | "ro" | "rw";
   },
 ) {
-  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-sbx-mounts-"));
+  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-sbx-mounts-"));
   const sandboxRoot = path.join(stateDir, "sandbox");
   const agentRoot = path.join(stateDir, "agent");
   const skillsWorkspaceDir =

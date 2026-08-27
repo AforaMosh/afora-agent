@@ -1,18 +1,18 @@
 // Xai plugin module implements tool auth shared behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   coerceSecretRef,
   resolveNonEnvSecretRefApiKeyMarker,
-} from "openclaw/plugin-sdk/provider-auth";
+} from "afora-agent/plugin-sdk/provider-auth";
 import {
   readProviderEnvValue,
   resolveProviderWebSearchPluginConfig,
-} from "openclaw/plugin-sdk/provider-web-search";
-import { normalizeSecretInputString } from "openclaw/plugin-sdk/secret-input";
+} from "afora-agent/plugin-sdk/provider-web-search";
+import { normalizeSecretInputString } from "afora-agent/plugin-sdk/secret-input";
 import {
   resolveReadOnlyEnvSecretRef,
   type ReadOnlyEnvSecretRefResolution,
-} from "openclaw/plugin-sdk/secret-ref-readonly";
+} from "afora-agent/plugin-sdk/secret-ref-readonly";
 
 type XaiFallbackAuth = {
   apiKey: string;
@@ -38,7 +38,7 @@ function readConfiguredOrManagedApiKey(value: unknown): string | undefined {
 function readConfiguredRuntimeApiKey(
   value: unknown,
   path: string,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): ReadOnlyEnvSecretRefResolution {
   return resolveReadOnlyEnvSecretRef({
     value,
@@ -49,7 +49,7 @@ function readConfiguredRuntimeApiKey(
   });
 }
 
-function readPluginXaiWebSearchApiKeyResult(cfg?: OpenClawConfig): ReadOnlyEnvSecretRefResolution {
+function readPluginXaiWebSearchApiKeyResult(cfg?: AforaConfig): ReadOnlyEnvSecretRefResolution {
   return readConfiguredRuntimeApiKey(
     resolveProviderWebSearchPluginConfig(cfg as Record<string, unknown> | undefined, "xai")?.apiKey,
     "plugins.entries.xai.config.webSearch.apiKey",
@@ -58,8 +58,8 @@ function readPluginXaiWebSearchApiKeyResult(cfg?: OpenClawConfig): ReadOnlyEnvSe
 }
 
 function resolveConfiguredXaiToolApiKeyResult(params: {
-  runtimeConfig?: OpenClawConfig;
-  sourceConfig?: OpenClawConfig;
+  runtimeConfig?: AforaConfig;
+  sourceConfig?: AforaConfig;
 }): ReadOnlyEnvSecretRefResolution {
   const runtimePlugin = readPluginXaiWebSearchApiKeyResult(params.runtimeConfig);
   if (runtimePlugin.status === "available" || runtimePlugin.status === "blocked") {
@@ -81,7 +81,7 @@ async function resolveXaiAuthProfileApiKey(auth?: XaiToolAuthContext): Promise<s
   return normalizeSecretInputString(value);
 }
 
-export function resolveFallbackXaiAuth(cfg?: OpenClawConfig): XaiFallbackAuth | undefined {
+export function resolveFallbackXaiAuth(cfg?: AforaConfig): XaiFallbackAuth | undefined {
   const pluginApiKey = readConfiguredOrManagedApiKey(
     resolveProviderWebSearchPluginConfig(cfg as Record<string, unknown> | undefined, "xai")?.apiKey,
   );
@@ -95,8 +95,8 @@ export function resolveFallbackXaiAuth(cfg?: OpenClawConfig): XaiFallbackAuth | 
 }
 
 export async function resolveXaiToolApiKeyWithAuth(params: {
-  runtimeConfig?: OpenClawConfig;
-  sourceConfig?: OpenClawConfig;
+  runtimeConfig?: AforaConfig;
+  sourceConfig?: AforaConfig;
   auth?: XaiToolAuthContext;
 }): Promise<string | undefined> {
   const configured = resolveConfiguredXaiToolApiKeyResult(params);
@@ -113,8 +113,8 @@ export async function resolveXaiToolApiKeyWithAuth(params: {
 
 export function isXaiToolEnabled(params: {
   enabled?: boolean;
-  runtimeConfig?: OpenClawConfig;
-  sourceConfig?: OpenClawConfig;
+  runtimeConfig?: AforaConfig;
+  sourceConfig?: AforaConfig;
   auth?: XaiToolAuthContext;
 }): boolean {
   if (params.enabled === false) {

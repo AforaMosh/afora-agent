@@ -2,8 +2,8 @@
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-coerce";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 import {
   getLoadedChannelPluginById,
   listLoadedChannelPlugins,
@@ -11,7 +11,7 @@ import {
 import type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 import type { ChannelId } from "../channels/plugins/types.public.js";
 import { normalizeAnyChannelId } from "../channels/registry.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveAccountEntry } from "../routing/account-lookup.js";
 import {
   INTERNAL_MESSAGE_CHANNEL,
@@ -39,7 +39,7 @@ type ProviderResolution = {
 
 type AllowFromParams = {
   plugin?: ChannelPlugin;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 };
 
@@ -66,7 +66,7 @@ type OwnerAuthorizationState = {
 
 function resolveProviderFromContext(
   ctx: MsgContext,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): { providerId: ChannelId | undefined; hadResolutionError: boolean } {
   const explicitMessageChannels = [ctx.Surface, ctx.OriginatingChannel, ctx.Provider]
     .map((value) => normalizeMessageChannel(value))
@@ -115,7 +115,7 @@ function resolveProviderFromContext(
   };
 }
 
-function probeInferredProviders(ctx: MsgContext, cfg: OpenClawConfig) {
+function probeInferredProviders(ctx: MsgContext, cfg: AforaConfig) {
   let droppedResolutionError = false;
   const candidates: ProviderResolution[] = [];
   for (const plugin of listLoadedChannelPlugins()) {
@@ -405,7 +405,7 @@ function resolveSenderCandidates(
 }
 
 function resolveFallbackAllowFrom(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   providerId?: ChannelId;
   accountId?: string | null;
 }): Array<string | number> {
@@ -457,7 +457,7 @@ function resolveFallbackDefaultAccountConfig(channelCfg: AllowFromChannelConfig 
 
 export function resolveCommandAuthorization(params: {
   ctx: MsgContext;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   commandAuthorized: boolean;
 }): CommandAuthorization {
   const { ctx, cfg, commandAuthorized } = params;

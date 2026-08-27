@@ -1,13 +1,13 @@
 ---
-summary: "CLI reference for `openclaw tasks` (background task ledger and Task Flow state)"
+summary: "CLI reference for `afora tasks` (background task ledger and Task Flow state)"
 read_when:
   - You want to inspect, audit, or cancel background task records
-  - You are documenting Task Flow commands under `openclaw tasks flow`
-title: "`openclaw tasks`"
+  - You are documenting Task Flow commands under `afora tasks flow`
+title: "`afora tasks`"
 ---
 
 Inspect durable background tasks and Task Flow state. With no subcommand,
-`openclaw tasks` is equivalent to `openclaw tasks list`.
+`afora tasks` is equivalent to `afora tasks list`.
 
 See [Background Tasks](/automation/tasks) for the lifecycle and delivery
 model, and its `tasks audit` section for full finding descriptions.
@@ -15,21 +15,21 @@ model, and its `tasks audit` section for full finding descriptions.
 ## Usage
 
 ```bash
-openclaw tasks
-openclaw tasks list
-openclaw tasks list --runtime acp
-openclaw tasks list --status running
-openclaw tasks show <lookup>
-openclaw tasks notify <lookup> state_changes
-openclaw tasks cancel <lookup>
-openclaw tasks retry <lookup> [lookup...]
-openclaw tasks dismiss <lookup> [lookup...]
-openclaw tasks audit
-openclaw tasks maintenance
-openclaw tasks maintenance --apply
-openclaw tasks flow list
-openclaw tasks flow show <lookup>
-openclaw tasks flow cancel <lookup>
+afora tasks
+afora tasks list
+afora tasks list --runtime acp
+afora tasks list --status running
+afora tasks show <lookup>
+afora tasks notify <lookup> state_changes
+afora tasks cancel <lookup>
+afora tasks retry <lookup> [lookup...]
+afora tasks dismiss <lookup> [lookup...]
+afora tasks audit
+afora tasks maintenance
+afora tasks maintenance --apply
+afora tasks flow list
+afora tasks flow show <lookup>
+afora tasks flow cancel <lookup>
 ```
 
 ## Root Options
@@ -45,7 +45,7 @@ openclaw tasks flow cancel <lookup>
 ### `list`
 
 ```bash
-openclaw tasks list [--runtime <name>] [--status <name>] [--json]
+afora tasks list [--runtime <name>] [--status <name>] [--json]
 ```
 
 Lists tracked background tasks newest first.
@@ -53,7 +53,7 @@ Lists tracked background tasks newest first.
 ### `show`
 
 ```bash
-openclaw tasks show <lookup> [--json]
+afora tasks show <lookup> [--json]
 ```
 
 Shows one task by task ID, run ID, or session key.
@@ -61,7 +61,7 @@ Shows one task by task ID, run ID, or session key.
 ### `notify`
 
 ```bash
-openclaw tasks notify <lookup> <done_only|state_changes|silent>
+afora tasks notify <lookup> <done_only|state_changes|silent>
 ```
 
 Changes the notification policy for a running task.
@@ -69,7 +69,7 @@ Changes the notification policy for a running task.
 ### `cancel`
 
 ```bash
-openclaw tasks cancel <lookup>
+afora tasks cancel <lookup>
 ```
 
 Cancels a running background task.
@@ -77,7 +77,7 @@ Cancels a running background task.
 ### `retry`
 
 ```bash
-openclaw tasks retry <lookup> [lookup...]
+afora tasks retry <lookup> [lookup...]
 ```
 
 Retries 1-10 blocked subagent completion deliveries. The child execution stays
@@ -88,7 +88,7 @@ duplicate visible result.
 ### `dismiss`
 
 ```bash
-openclaw tasks dismiss <lookup> [lookup...]
+afora tasks dismiss <lookup> [lookup...]
 ```
 
 Records intentional non-delivery for 1-10 blocked subagent completions. The task
@@ -98,7 +98,7 @@ continues to show a blocked terminal outcome and retains its result until the
 ### `audit`
 
 ```bash
-openclaw tasks audit [--severity <warn|error>] [--code <name>] [--limit <n>] [--json]
+afora tasks audit [--severity <warn|error>] [--code <name>] [--limit <n>] [--json]
 ```
 
 Surfaces stale, lost, delivery-failed, or otherwise inconsistent task and
@@ -115,7 +115,7 @@ code.
 ### `maintenance`
 
 ```bash
-openclaw tasks maintenance [--apply] [--json]
+afora tasks maintenance [--apply] [--json]
 ```
 
 Previews or applies task and Task Flow reconciliation, cleanup stamping,
@@ -136,9 +136,9 @@ jobs and leaving non-cron session rows untouched.
 ### `flow`
 
 ```bash
-openclaw tasks flow list [--status <name>] [--json]
-openclaw tasks flow show <lookup> [--json]
-openclaw tasks flow cancel <lookup>
+afora tasks flow list [--status <name>] [--json]
+afora tasks flow show <lookup> [--json]
+afora tasks flow cancel <lookup>
 ```
 
 Inspects or cancels durable Task Flow state under the task ledger.

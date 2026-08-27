@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { SessionEntry } from "../../config/sessions/types.js";
 import {
   sessionDeliveryChannel,

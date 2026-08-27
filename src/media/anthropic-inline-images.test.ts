@@ -6,7 +6,7 @@ const { convertImageToJpegMock, convertImageToPngMock, detectMimeMock } = vi.hoi
   detectMimeMock: vi.fn(),
 }));
 
-vi.mock("@openclaw/media-core/mime", () => ({
+vi.mock("@afora/media-core/mime", () => ({
   detectMime: detectMimeMock,
   normalizeMimeType: (value?: string | null) => value?.split(";", 1)[0]?.trim().toLowerCase(),
 }));

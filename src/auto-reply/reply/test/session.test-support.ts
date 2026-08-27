@@ -1,7 +1,7 @@
 // Shared store and reset fixtures for session.test.ts.
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { AforaConfig } from "../../../config/config.js";
 import type { InternalSessionEntry as SessionEntry } from "../../../config/sessions.js";
 import {
   listSessionEntriesCore,
@@ -77,7 +77,7 @@ export async function runExplicitResetCases(params: {
   sessionId: string;
   entry?: Record<string, unknown>;
   ctx?: Record<string, unknown>;
-  cfg?: Omit<OpenClawConfig, "session">;
+  cfg?: Omit<AforaConfig, "session">;
 }) {
   const results = [];
   for (const testCase of [
@@ -107,7 +107,7 @@ export async function runExplicitResetCases(params: {
       cfg: {
         ...params.cfg,
         session: { store: params.storePath, idleMinutes: 999 },
-      } as OpenClawConfig,
+      } as AforaConfig,
       commandAuthorized: true,
     });
     results.push({ ...testCase, result, stored: readSessionStore(params.storePath) });

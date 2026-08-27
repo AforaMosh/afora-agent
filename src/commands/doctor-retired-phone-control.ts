@@ -1,9 +1,9 @@
 // Doctor migration for config and state left by the retired Phone Control lease model.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { resolveStateDir } from "../config/paths.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isMissingPathError } from "../infra/errors.js";
 import { createPluginStateKeyedStore } from "../plugin-state/plugin-state-store.js";
 import { archiveLegacyStateSource } from "../plugins/doctor-state-migration-fs.js";
@@ -36,7 +36,7 @@ type RetiredArmState = {
 };
 
 type RetiredPhoneControlCleanupPlan = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   configChanges: string[];
   cleanupPending: boolean;
   cleanupSafe: boolean;
@@ -48,7 +48,7 @@ function resolveLegacyArmStatePath(env: NodeJS.ProcessEnv): string {
 }
 
 function resolveStateDatabasePath(env: NodeJS.ProcessEnv): string {
-  return path.join(resolveStateDir(env), "state", "openclaw.sqlite");
+  return path.join(resolveStateDir(env), "state", "afora.sqlite");
 }
 
 type StatePathInspection =
@@ -144,7 +144,7 @@ async function readRetiredArmStates(env: NodeJS.ProcessEnv): Promise<{
   const databasePath = resolveStateDatabasePath(env);
   const [legacyInspection, databaseInspection] = await Promise.all([
     inspectStatePath(legacyPath, "retired Phone Control lease state"),
-    inspectStatePath(databasePath, "OpenClaw state database"),
+    inspectStatePath(databasePath, "Afora state database"),
   ]);
   const warnings: string[] = [];
   const inspectionUnsafe =
@@ -225,9 +225,9 @@ function isExactSeededDenyList(values: readonly string[]): boolean {
 }
 
 function withCommandLists(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   params: { allow?: string[]; deny?: string[] },
-): OpenClawConfig {
+): AforaConfig {
   const commands = { ...cfg.gateway?.nodes?.commands };
   if (params.allow === undefined || params.allow.length === 0) {
     delete commands.allow;
@@ -255,7 +255,7 @@ function withCommandLists(
 
 /** Plans canonical config cleanup while retaining the journal until the config write succeeds. */
 export async function prepareRetiredPhoneControlCleanup(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
 }): Promise<RetiredPhoneControlCleanupPlan> {
   const env = params.env ?? process.env;
@@ -365,7 +365,7 @@ export async function finalizeRetiredPhoneControlCleanup(params: {
 
   const databaseInspection = await inspectStatePath(
     resolveStateDatabasePath(env),
-    "OpenClaw state database",
+    "Afora state database",
   );
   if (databaseInspection.status === "unsafe") {
     warnings.push(databaseInspection.warning);

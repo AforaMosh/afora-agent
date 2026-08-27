@@ -1,13 +1,13 @@
 // Codex catalog terminal ownership: validated resume commands and terminal plans.
-import { resolveAgentDir, resolveDefaultAgentDir } from "openclaw/plugin-sdk/agent-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { decodeNodePtyResumeParams } from "openclaw/plugin-sdk/node-host";
+import { resolveAgentDir, resolveDefaultAgentDir } from "afora-agent/plugin-sdk/agent-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { decodeNodePtyResumeParams } from "afora-agent/plugin-sdk/node-host";
 import type {
-  OpenClawPluginApi,
-  OpenClawPluginNodeHostCommand,
-} from "openclaw/plugin-sdk/plugin-entry";
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
-import type { SessionCatalogTerminalPlan } from "openclaw/plugin-sdk/session-catalog";
+  AforaPluginApi,
+  AforaPluginNodeHostCommand,
+} from "afora-agent/plugin-sdk/plugin-entry";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
+import type { SessionCatalogTerminalPlan } from "afora-agent/plugin-sdk/session-catalog";
 import { resolveCodexAppServerLocalHomeDir } from "./app-server/auth-start-options.js";
 import { resolveCodexSupervisionAppServerRuntimeOptions } from "./app-server/config.js";
 import type { CodexCatalogHome } from "./session-catalog-homes.js";
@@ -33,7 +33,7 @@ export const CODEX_TERMINAL_RESUME_COMMAND = "codex.terminal.resume.v1";
 
 export type CodexTerminalConfigSources = {
   getPluginConfig: () => unknown;
-  getRuntimeConfig: () => OpenClawConfig | undefined;
+  getRuntimeConfig: () => AforaConfig | undefined;
 };
 
 function resolveCodexCatalogTerminalHome(
@@ -41,7 +41,7 @@ function resolveCodexCatalogTerminalHome(
 ): string {
   const runtimeConfig = sources.getRuntimeConfig();
   if (!runtimeConfig) {
-    throw new Error("OpenClaw runtime config is unavailable");
+    throw new Error("Afora runtime config is unavailable");
   }
   const agentDir =
     sources.source?.agentDir ??
@@ -138,7 +138,7 @@ export function createCodexTerminalNodeHostCommand(
     paramsJSON: string;
   },
   configSources: CodexTerminalConfigSources,
-): OpenClawPluginNodeHostCommand {
+): AforaPluginNodeHostCommand {
   return {
     command: CODEX_TERMINAL_RESUME_COMMAND,
     cap: CODEX_APP_SERVER_THREADS_CAPABILITY,
@@ -239,7 +239,7 @@ async function resolveNodeCatalogEligibleThread(params: {
 export async function openCodexCatalogTerminal(
   params: {
     agentId: string;
-    api: OpenClawPluginApi;
+    api: AforaPluginApi;
     control: CodexSessionCatalogControl;
     hostId: string;
     threadId: string;

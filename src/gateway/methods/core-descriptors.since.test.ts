@@ -55,7 +55,7 @@ const TRAIN_2026_7_METHODS = [
   "approval.resolve",
   "approval.history",
   "migrations.memory.plan",
-  "openclaw.chat.history",
+  "afora.chat.history",
   "migrations.memory.apply",
   "gateway.suspend.prepare",
   "gateway.suspend.status",

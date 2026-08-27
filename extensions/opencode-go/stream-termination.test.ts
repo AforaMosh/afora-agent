@@ -3,7 +3,7 @@
 import type {
   AssistantMessageEvent,
   AssistantMessageEventStreamContract,
-} from "openclaw/plugin-sdk/llm";
+} from "afora-agent/plugin-sdk/llm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createOpencodeGoStalledStreamWrapper } from "./stream-termination.js";
 
@@ -553,7 +553,7 @@ describe("createOpencodeGoStalledStreamWrapper", () => {
   });
 
   it("must NOT abort a live stream that keeps emitting block-boundary events between deltas", async () => {
-    // Regression for https://github.com/openclaw/openclaw/issues/96518:
+    // Regression for https://github.com/AforaMosh/afora-agent/issues/96518:
     // the idle timer must re-arm on block-boundary events (text_end,
     // thinking_end, toolcall_start, toolcall_end), not only on token
     // deltas. A stream that keeps producing boundary events between

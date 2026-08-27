@@ -2,10 +2,10 @@ import fs from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-  type OpenClawStateDatabaseOptions,
-} from "../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+  type AforaStateDatabaseOptions,
+} from "../../state/afora-state-db.js";
 import type { AgentRuntimeIdentity } from "../agent-runtime-identity-token.js";
 import { ExecApprovalManager } from "../exec-approval-manager.js";
 import { createChatRunState } from "../server-chat-state.js";
@@ -18,9 +18,9 @@ vi.mock("../../infra/command-analysis/explain.js", () => ({
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
-function databaseOptions(): OpenClawStateDatabaseOptions {
+function databaseOptions(): AforaStateDatabaseOptions {
   const stateDir = fs.realpathSync(tempDirs.make("exec-approval-id-"));
-  return { env: { ...process.env, OPENCLAW_STATE_DIR: stateDir } };
+  return { env: { ...process.env, AFORA_STATE_DIR: stateDir } };
 }
 
 function identity(enabled: boolean): AgentRuntimeIdentity {
@@ -93,7 +93,7 @@ function requestOptions(
 }
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 describe("exec approval signed agent runtime", () => {
@@ -184,7 +184,7 @@ describe("exec approval signed agent runtime", () => {
       turnSourceAccountId: "default",
       turnSourceThreadId: "thread-1",
     });
-    const db = openOpenClawStateDatabase(options).db;
+    const db = openAforaStateDatabase(options).db;
     if (enabled) {
       expect(
         db

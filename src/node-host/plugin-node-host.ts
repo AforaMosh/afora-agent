@@ -1,8 +1,8 @@
 /** Plugin node-host bridge for loading plugin registry commands and dispatching node capabilities. */
-import { asOptionalRecord as normalizeRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { asOptionalRecord as normalizeRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { NodePluginToolDescriptor } from "../../packages/gateway-protocol/src/schema/nodes.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   parseComputerUseCapabilityDescriptor,
   type ComputerUseCapabilityDescriptor,
@@ -14,10 +14,10 @@ import type {
 import { getActivePluginRegistry } from "../plugins/runtime.js";
 import { withPluginRuntimeRegistryScope } from "../plugins/runtime/gateway-request-scope.js";
 import type {
-  OpenClawPluginNodeHostCommandAvailabilityContext,
-  OpenClawPluginNodeHostCommandIo,
+  AforaPluginNodeHostCommandAvailabilityContext,
+  AforaPluginNodeHostCommandIo,
 } from "../plugins/types.js";
-import type { OpenClawPluginNodeHostCommandContext } from "../plugins/types.node-host.js";
+import type { AforaPluginNodeHostCommandContext } from "../plugins/types.node-host.js";
 import { createLazyRuntimeModule } from "../shared/lazy-runtime.js";
 
 /**
@@ -38,7 +38,7 @@ function resolveNodeHostPluginRegistry() {
 
 /** Ensure plugin registry data is loaded before node-host command dispatch. */
 export async function ensureNodeHostPluginRegistry(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
 }): Promise<void> {
   nodeHostPluginRegistry = (await loadPluginRegistryLoaderModule()).loadPluginRegistryHandle({
@@ -50,7 +50,7 @@ export async function ensureNodeHostPluginRegistry(params: {
 
 /** List registered node-host capabilities and command ids in deterministic order. */
 export function listRegisteredNodeHostCapsAndCommands(
-  context: OpenClawPluginNodeHostCommandAvailabilityContext,
+  context: AforaPluginNodeHostCommandAvailabilityContext,
   options: { includeDuplex?: boolean } = {},
 ): {
   caps: string[];
@@ -99,7 +99,7 @@ export function listRegisteredNodeHostCapsAndCommands(
 
 /** Watch plugin-owned availability inputs that can change during this process. */
 export function watchRegisteredNodeHostCommandAvailability(
-  context: OpenClawPluginNodeHostCommandAvailabilityContext,
+  context: AforaPluginNodeHostCommandAvailabilityContext,
   onChange: () => void,
 ): () => void {
   const registry = resolveNodeHostPluginRegistry();
@@ -185,8 +185,8 @@ function buildNodePluginToolDescriptor(
 export async function invokeRegisteredNodeHostCommand(
   command: string,
   paramsJSON?: string | null,
-  io?: OpenClawPluginNodeHostCommandIo,
-  context?: OpenClawPluginNodeHostCommandContext,
+  io?: AforaPluginNodeHostCommandIo,
+  context?: AforaPluginNodeHostCommandContext,
 ): Promise<string | null> {
   const registry = resolveNodeHostPluginRegistry();
   const match = (registry?.nodeHostCommands ?? []).find(
@@ -223,7 +223,7 @@ function resetNodeHostPluginRegistry(): void {
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.nodeHostPluginTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.nodeHostPluginTestApi")] = {
     getNodeHostPluginRegistry: () => nodeHostPluginRegistry,
     resetNodeHostPluginRegistry,
   };

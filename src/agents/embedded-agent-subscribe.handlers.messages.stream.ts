@@ -1,9 +1,9 @@
 /**
  * Projects provider assistant messages into ordered visible stream state.
  */
-import { asOptionalRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { resolveSendableOutboundReplyParts } from "openclaw/plugin-sdk/reply-payload";
+import { asOptionalRecord as asRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { resolveSendableOutboundReplyParts } from "afora-agent/plugin-sdk/reply-payload";
 import {
   parseReplyDirectives,
   type ReplyDirectiveParseResult,
@@ -28,7 +28,7 @@ export function shouldSuppressAssistantVisibleOutput(message: AgentMessage | und
   return resolveAssistantMessagePhase(message) === "commentary";
 }
 
-export function isSubscribeTranscriptOnlyOpenClawAssistantMessage(
+export function isSubscribeTranscriptOnlyAforaAssistantMessage(
   message: AgentMessage | undefined,
 ): boolean {
   if (!message || message.role !== "assistant") {
@@ -36,16 +36,16 @@ export function isSubscribeTranscriptOnlyOpenClawAssistantMessage(
   }
   const provider = normalizeOptionalString(message.provider) ?? "";
   const model = normalizeOptionalString(message.model) ?? "";
-  return provider === "openclaw" && (model === "delivery-mirror" || model === "gateway-injected");
+  return provider === "afora" && (model === "delivery-mirror" || model === "gateway-injected");
 }
 
 const RESPONSES_API_IDS = new Set([
   "openai-responses",
   "openai-chatgpt-responses",
   "azure-openai-responses",
-  "openclaw-openai-responses-transport",
-  "openclaw-openai-chatgpt-responses-transport",
-  "openclaw-azure-openai-responses-transport",
+  "afora-openai-responses-transport",
+  "afora-openai-chatgpt-responses-transport",
+  "afora-azure-openai-responses-transport",
 ]);
 
 export function isResponsesApiAssistantMessage(message: AgentMessage | undefined): boolean {
@@ -69,7 +69,7 @@ export function isOpenAiCompletionsAssistantMessage(message: AgentMessage | unde
     return false;
   }
   const api = normalizeOptionalString((message as { api?: unknown }).api) ?? "";
-  return api === "openai-completions" || api === "openclaw-openai-completions-transport";
+  return api === "openai-completions" || api === "afora-openai-completions-transport";
 }
 
 export function extractStandaloneMessageToolText(

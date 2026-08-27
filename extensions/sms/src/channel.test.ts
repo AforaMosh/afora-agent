@@ -1,6 +1,6 @@
 // Sms tests cover channel plugin behavior.
-import { isChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
-import { PlatformMessageNotDispatchedError } from "openclaw/plugin-sdk/error-runtime";
+import { isChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
+import { PlatformMessageNotDispatchedError } from "afora-agent/plugin-sdk/error-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { smsPlugin } from "./channel.js";
 import type { SmsDeliveryRecord } from "./delivery-observations.js";

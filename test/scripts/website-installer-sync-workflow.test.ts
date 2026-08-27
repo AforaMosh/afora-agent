@@ -9,7 +9,7 @@ const WORKFLOW_PATH = ".github/workflows/website-installer-sync.yml";
 describe("website installer sync workflow", () => {
   const workflow = readFileSync(WORKFLOW_PATH, "utf8");
 
-  it("treats all website installer scripts as OpenClaw-owned inputs", () => {
+  it("treats all website installer scripts as Afora-owned inputs", () => {
     for (const path of ["scripts/install.sh", "scripts/install-cli.sh", "scripts/install.ps1"]) {
       expect(workflow).toContain(path);
       expect(detectInstallSmokeScope([path]).runFullInstallSmoke).toBe(true);
@@ -34,16 +34,16 @@ describe("website installer sync workflow", () => {
     expect(workflow.match(/fedora:44/g)?.length).toBe(2);
     expect(workflow).not.toContain("timeout 20m docker run --rm");
     expect(workflow).not.toMatch(/(^|\n)\s+docker run --rm/u);
-    expect(workflow).toContain("bash /tmp/install.sh --version latest && openclaw --version");
+    expect(workflow).toContain("bash /tmp/install.sh --version latest && afora --version");
     expect(workflow).not.toContain("bash /tmp/install.sh --no-prompt --no-onboard");
-    expect(workflow).toContain("bash /tmp/install-cli.sh --prefix /tmp/openclaw");
+    expect(workflow).toContain("bash /tmp/install-cli.sh --prefix /tmp/afora");
     expect(workflow).toContain("macos-installer:");
     expect(workflow).toContain("runs-on: macos-15");
     expect(workflow).toContain("node-version: 24");
-    expect(workflow).toContain('OPENCLAW_NO_ONBOARD: "1"');
-    expect(workflow).toContain('OPENCLAW_NO_PROMPT: "1"');
+    expect(workflow).toContain('AFORA_NO_ONBOARD: "1"');
+    expect(workflow).toContain('AFORA_NO_PROMPT: "1"');
     expect(workflow).toContain("bash scripts/install.sh --no-onboard --no-prompt --version latest");
-    expect(workflow).toContain("openclaw --version");
+    expect(workflow).toContain("afora --version");
     expect(workflow).toContain("windows-installer:");
     expect(workflow).toContain("runs-on: windows-latest");
     expect(workflow).toContain(".\\scripts\\install.ps1 -DryRun");
@@ -51,7 +51,7 @@ describe("website installer sync workflow", () => {
     expect(workflow).not.toContain(".\\scripts\\install.cmd");
   });
 
-  it("syncs verified scripts to openclaw.ai only after all installer checks pass", () => {
+  it("syncs verified scripts to afora.ai only after all installer checks pass", () => {
     const syncNeeds = workflow.match(/  sync-website:\n    needs:\n((?:      - [^\n]+\n)+)/u);
     expect(syncNeeds?.[1]).toBe(
       [
@@ -66,16 +66,16 @@ describe("website installer sync workflow", () => {
         .map((job) => `      - ${job}\n`)
         .join(""),
     );
-    expect(workflow).toContain("repository: openclaw/openclaw.ai");
-    expect(workflow).toContain("OPENCLAW_GH_TOKEN: ${{ secrets.OPENCLAW_GH_TOKEN }}");
-    expect(workflow).toContain("OPENCLAW_GH_TOKEN is not configured");
-    expect(workflow).toContain("token: ${{ env.OPENCLAW_GH_TOKEN }}");
-    expect(workflow).toContain("cp openclaw/scripts/install.sh openclaw.ai/public/install.sh");
+    expect(workflow).toContain("repository: AforaMosh/afora-agent.ai");
+    expect(workflow).toContain("AFORA_GH_TOKEN: ${{ secrets.AFORA_GH_TOKEN }}");
+    expect(workflow).toContain("AFORA_GH_TOKEN is not configured");
+    expect(workflow).toContain("token: ${{ env.AFORA_GH_TOKEN }}");
+    expect(workflow).toContain("cp afora/scripts/install.sh afora.ai/public/install.sh");
     expect(workflow).toContain(
-      "cp openclaw/scripts/install-cli.sh openclaw.ai/public/install-cli.sh",
+      "cp afora/scripts/install-cli.sh afora.ai/public/install-cli.sh",
     );
-    expect(workflow).toContain("cp openclaw/scripts/install.ps1 openclaw.ai/public/install.ps1");
-    expect(workflow).toContain("rm -f openclaw.ai/public/install.cmd");
+    expect(workflow).toContain("cp afora/scripts/install.ps1 afora.ai/public/install.ps1");
+    expect(workflow).toContain("rm -f afora.ai/public/install.cmd");
     expect(workflow).toContain("bun run build");
     expect(workflow).toContain("git push origin HEAD:main");
   });

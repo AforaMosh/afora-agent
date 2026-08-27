@@ -1,5 +1,5 @@
-import { parseStreamingJson } from "@openclaw/ai/internal/runtime";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { parseStreamingJson } from "@afora/ai/internal/runtime";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { countStreamingFileMutationLines } from "./file-mutation-args.js";
 import { resolveFileMutationToolName } from "./tool-mutation-names.js";
 

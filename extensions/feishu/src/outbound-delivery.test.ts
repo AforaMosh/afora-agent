@@ -1,16 +1,16 @@
 // Feishu tests cover the shared outbound delivery path.
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { sendDurableMessageBatch } from "openclaw/plugin-sdk/channel-outbound";
+import { sendDurableMessageBatch } from "afora-agent/plugin-sdk/channel-outbound";
 import {
   createOutboundTestPlugin,
   createTestRegistry,
   resetPluginRuntimeStateForTest,
   resetGlobalHookRunner,
   setActivePluginRegistry,
-} from "openclaw/plugin-sdk/channel-test-helpers";
-import { drainPendingDeliveries } from "openclaw/plugin-sdk/delivery-queue-runtime";
-import { withStateDirEnv } from "openclaw/plugin-sdk/test-env";
+} from "afora-agent/plugin-sdk/channel-test-helpers";
+import { drainPendingDeliveries } from "afora-agent/plugin-sdk/delivery-queue-runtime";
+import { withStateDirEnv } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const sendMediaFeishuMock = vi.hoisted(() => vi.fn());
@@ -48,7 +48,7 @@ const completionRetention = {
 } as const;
 
 function readDeliveryQueueRow(stateDir: string, id: string): DeliveryQueueRow | undefined {
-  const database = new DatabaseSync(path.join(stateDir, "state", "openclaw.sqlite"), {
+  const database = new DatabaseSync(path.join(stateDir, "state", "afora.sqlite"), {
     readOnly: true,
   });
   try {
@@ -170,7 +170,7 @@ describe("Feishu outbound shared delivery", () => {
     feishuChannelRuntime.feishuOutbound.sendText = undefined;
 
     try {
-      await withStateDirEnv("openclaw-feishu-runtime-availability-", async ({ stateDir }) => {
+      await withStateDirEnv("afora-feishu-runtime-availability-", async ({ stateDir }) => {
         const initial = await sendDurableMessageBatch({
           cfg: {},
           channel: "feishu",
@@ -224,7 +224,7 @@ describe("Feishu outbound shared delivery", () => {
       createTestRegistry([{ pluginId: "feishu", plugin: feishuPlugin, source: "test" }]),
     );
 
-    await withStateDirEnv("openclaw-feishu-ambiguous-provider-", async ({ stateDir }) => {
+    await withStateDirEnv("afora-feishu-ambiguous-provider-", async ({ stateDir }) => {
       const initial = await sendDurableMessageBatch({
         cfg: {},
         channel: "feishu",

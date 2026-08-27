@@ -2,7 +2,7 @@
 import path from "node:path";
 import { repairMissingConfiguredPluginInstalls } from "../../commands/doctor/shared/missing-configured-plugin-install.js";
 import { UPDATE_POST_CORE_CONVERGENCE_ENV } from "../../commands/doctor/shared/update-phase.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { PluginInstallRecord } from "../../config/types.plugins.js";
 import type { ClawHubRiskAcknowledgementRequest } from "../../infra/clawhub-install-trust.js";
 import {
@@ -11,8 +11,8 @@ import {
 } from "../../plugins/install-paths.js";
 import { listManagedPluginNpmRoots } from "../../plugins/npm-project-roots.js";
 import {
-  reconcileRegisteredOpenClawHostLinks,
-  relinkOpenClawPeerDependenciesInManagedNpmRoot,
+  reconcileRegisteredAforaHostLinks,
+  relinkAforaPeerDependenciesInManagedNpmRoot,
 } from "../../plugins/plugin-peer-link.js";
 import { pruneStaleLocalBundledPluginInstallRecords } from "../../plugins/stale-local-bundled-plugin-install-records.js";
 import { resolveUserPath } from "../../utils.js";
@@ -49,9 +49,9 @@ type PostCoreConvergenceResult = {
   installRecords: Record<string, PluginInstallRecord>;
 };
 
-const REPAIR_GUIDANCE = "Run `openclaw update repair` to retry plugin repair.";
+const REPAIR_GUIDANCE = "Run `afora update repair` to retry plugin repair.";
 const inspectGuidance = (pluginId: string) =>
-  `Run \`openclaw plugins inspect ${pluginId} --runtime --json\` for details.`;
+  `Run \`afora plugins inspect ${pluginId} --runtime --json\` for details.`;
 
 function smokeFailureGuidance(failure: PluginPayloadSmokeFailure): string[] {
   if (failure.reason !== "unreadable-package-json") {
@@ -61,12 +61,12 @@ function smokeFailureGuidance(failure: PluginPayloadSmokeFailure): string[] {
     ? path.join(failure.installPath, "package.json")
     : "the plugin package.json";
   return [
-    `Fix file access for ${packageJsonPath} so it is readable by the user running OpenClaw. For EACCES or EPERM, correct its ownership or permissions; otherwise resolve the reported filesystem I/O error, then retry.`,
+    `Fix file access for ${packageJsonPath} so it is readable by the user running Afora. For EACCES or EPERM, correct its ownership or permissions; otherwise resolve the reported filesystem I/O error, then retry.`,
     inspectGuidance(failure.pluginId),
   ];
 }
 
-async function repairInstalledNpmOpenClawHostLinks(params: {
+async function repairInstalledNpmAforaHostLinks(params: {
   env: NodeJS.ProcessEnv;
   installRecords: Record<string, PluginInstallRecord>;
 }): Promise<{
@@ -79,7 +79,7 @@ async function repairInstalledNpmOpenClawHostLinks(params: {
     const npmRoots = await listManagedPluginNpmRoots(resolveDefaultPluginNpmDir(params.env));
     const results = await Promise.all(
       npmRoots.map((npmRoot) =>
-        relinkOpenClawPeerDependenciesInManagedNpmRoot({
+        relinkAforaPeerDependenciesInManagedNpmRoot({
           npmRoot,
           logger: {},
           onPackageReadError: (error, packageDir) => {
@@ -90,7 +90,7 @@ async function repairInstalledNpmOpenClawHostLinks(params: {
     );
     const repaired = results.reduce((total, result) => total + result.repaired, 0);
     // Legacy npm-owned installs live under extensions/, outside every managed npm project root.
-    const registeredRepair = await reconcileRegisteredOpenClawHostLinks({
+    const registeredRepair = await reconcileRegisteredAforaHostLinks({
       installRecords: params.installRecords,
       extensionsDir: resolveDefaultPluginExtensionsDir(params.env),
       env: params.env,
@@ -102,11 +102,11 @@ async function repairInstalledNpmOpenClawHostLinks(params: {
     return {
       changes: [
         ...(repaired > 0
-          ? [`Repaired OpenClaw host peer link(s) for ${repaired} managed npm plugin package(s).`]
+          ? [`Repaired Afora host peer link(s) for ${repaired} managed npm plugin package(s).`]
           : []),
         ...(registeredRepair.repaired > 0
           ? [
-              `Repaired OpenClaw host peer link(s) for ${registeredRepair.repaired} registered npm plugin package(s).`,
+              `Repaired Afora host peer link(s) for ${registeredRepair.repaired} registered npm plugin package(s).`,
             ]
           : []),
       ],
@@ -114,7 +114,7 @@ async function repairInstalledNpmOpenClawHostLinks(params: {
       packageReadFailures,
     };
   } catch (err) {
-    const message = `Failed to repair managed npm OpenClaw host peer links: ${err instanceof Error ? err.message : String(err)}`;
+    const message = `Failed to repair managed npm Afora host peer links: ${err instanceof Error ? err.message : String(err)}`;
     return {
       changes: [],
       warnings: [
@@ -130,7 +130,7 @@ async function repairInstalledNpmOpenClawHostLinks(params: {
 }
 
 function formatPeerLinkPackageReadWarning(failure: { error: unknown }): PostCoreConvergenceWarning {
-  const message = `Failed to repair managed npm OpenClaw host peer links: ${failure.error instanceof Error ? failure.error.message : String(failure.error)}`;
+  const message = `Failed to repair managed npm Afora host peer links: ${failure.error instanceof Error ? failure.error.message : String(failure.error)}`;
   return {
     reason: message,
     message,
@@ -143,13 +143,13 @@ function formatPeerLinkPackageReadWarning(failure: { error: unknown }): PostCore
  * are swapped and the in-update doctor pass has already returned, but BEFORE
  * the gateway is restarted. Missing-plugin repair failures stay nonblocking:
  * an external package fetch may be transient, and failing the core update
- * would strand the user. Explicit `openclaw update` callers keep reporting
+ * would strand the user. Explicit `afora update` callers keep reporting
  * payload smoke failures as errors. Gateway startup consumes the same typed
  * failures by quarantining each known plugin owner before any module import,
  * then boots with that plugin marked configured-unavailable.
  */
 export async function runPostCorePluginConvergence(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   compatibilityHostVersion?: string;
   /**
@@ -166,7 +166,7 @@ export async function runPostCorePluginConvergence(params: {
 }): Promise<PostCoreConvergenceResult> {
   const env: NodeJS.ProcessEnv = {
     ...params.env,
-    OPENCLAW_COMPATIBILITY_HOST_VERSION: params.compatibilityHostVersion ?? VERSION,
+    AFORA_COMPATIBILITY_HOST_VERSION: params.compatibilityHostVersion ?? VERSION,
     [UPDATE_POST_CORE_CONVERGENCE_ENV]: "1",
   };
   // Retire obsolete managed shadows before relinking or smoke-checking them. A package that
@@ -201,7 +201,7 @@ export async function runPostCorePluginConvergence(params: {
     message,
     guidance: [REPAIR_GUIDANCE],
   }));
-  const peerLinkRepair = await repairInstalledNpmOpenClawHostLinks({
+  const peerLinkRepair = await repairInstalledNpmAforaHostLinks({
     env,
     installRecords: repair.records,
   });

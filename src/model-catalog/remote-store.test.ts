@@ -4,9 +4,9 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { requireNodeSqlite } from "../infra/node-sqlite.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import {
   markRemoteModelCatalogChecked,
   readRemoteModelCatalog,
@@ -15,7 +15,7 @@ import {
 
 const roots: string[] = [];
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   for (const root of roots.splice(0)) {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -23,11 +23,11 @@ afterEach(() => {
 
 describe("remote model catalog store", () => {
   it("lazily adds the cache table to an existing current-schema database", () => {
-    const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-catalog-")));
+    const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "afora-catalog-")));
     roots.push(root);
     const options = { path: path.join(root, "state.sqlite") };
-    openOpenClawStateDatabase(options);
-    closeOpenClawStateDatabaseForTest();
+    openAforaStateDatabase(options);
+    closeAforaStateDatabaseForTest();
 
     const { DatabaseSync } = requireNodeSqlite();
     const preCatalog = new DatabaseSync(options.path);
@@ -35,7 +35,7 @@ describe("remote model catalog store", () => {
     preCatalog.exec("DROP INDEX idx_task_runs_status;");
     preCatalog.close();
 
-    const reopened = openOpenClawStateDatabase(options);
+    const reopened = openAforaStateDatabase(options);
     expect(
       reopened.db
         .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = ?")
@@ -46,7 +46,7 @@ describe("remote model catalog store", () => {
         .prepare("SELECT name FROM sqlite_schema WHERE type = 'index' AND name = ?")
         .get("idx_task_runs_status"),
     ).toEqual({ name: "idx_task_runs_status" });
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
 
     expect(readRemoteModelCatalog(options)).toBeUndefined();
     const upgraded = new DatabaseSync(options.path, { readOnly: true });
@@ -59,7 +59,7 @@ describe("remote model catalog store", () => {
   });
 
   it("lazily ensures twice and upserts the single slot", () => {
-    const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-catalog-")));
+    const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "afora-catalog-")));
     roots.push(root);
     const options = { path: path.join(root, "state.sqlite") };
     expect(readRemoteModelCatalog(options)).toBeUndefined();

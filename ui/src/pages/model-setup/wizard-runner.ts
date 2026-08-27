@@ -10,8 +10,8 @@ import {
 } from "./state.ts";
 
 export type ModelSetupWizardStartMethod =
-  | "openclaw.setup.auth.start"
-  | "openclaw.setup.prepare.start";
+  | "afora.setup.auth.start"
+  | "afora.setup.prepare.start";
 
 export type ModelSetupWizardCompletion = {
   startMethod: ModelSetupWizardStartMethod;
@@ -32,7 +32,7 @@ export class ModelSetupWizardRunner {
   private sessionId: string | null = null;
   private abortController: AbortController | null = null;
   private generation = 0;
-  private startMethod: ModelSetupWizardStartMethod = "openclaw.setup.auth.start";
+  private startMethod: ModelSetupWizardStartMethod = "afora.setup.auth.start";
 
   constructor(private readonly options: WizardRunnerOptions) {}
 
@@ -42,7 +42,7 @@ export class ModelSetupWizardRunner {
 
   async start(
     authChoice: string,
-    startMethod: ModelSetupWizardStartMethod = "openclaw.setup.auth.start",
+    startMethod: ModelSetupWizardStartMethod = "afora.setup.auth.start",
   ): Promise<ModelSetupWizardCompletion | null> {
     const client = this.options.getClient();
     if (!client || this.currentState.phase !== "idle") {

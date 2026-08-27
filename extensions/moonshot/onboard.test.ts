@@ -1,7 +1,7 @@
-import { resolveAgentModelPrimaryValue } from "openclaw/plugin-sdk/provider-onboard";
+import { resolveAgentModelPrimaryValue } from "afora-agent/plugin-sdk/provider-onboard";
 import { describe, expect, it } from "vitest";
 import { applyMoonshotConfig, applyMoonshotConfigCn } from "./onboard.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 import {
   MOONSHOT_BASE_URL,
   MOONSHOT_CN_BASE_URL,

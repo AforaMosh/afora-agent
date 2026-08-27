@@ -1,5 +1,5 @@
 ---
-summary: "How to contribute to the OpenClaw threat model"
+summary: "How to contribute to the Afora threat model"
 title: "Contributing to the threat model"
 read_when:
   - You want to contribute security findings or threat scenarios
@@ -9,12 +9,12 @@ read_when:
 The [threat model](/security/THREAT-MODEL-ATLAS) is a living document. Contributions are welcome from anyone; you do not need security or MITRE ATLAS background.
 
 <Note>
-This is for adding to the threat model, not reporting live vulnerabilities. If you found an exploitable vulnerability, follow the responsible-disclosure instructions on the [Trust page](https://trust.openclaw.ai) instead.
+This is for adding to the threat model, not reporting live vulnerabilities. If you found an exploitable vulnerability, follow the responsible-disclosure instructions on the [Trust page](https://trust.afora.ai) instead.
 </Note>
 
 ## Ways to contribute
 
-**Add a threat.** Open a [documentation issue](https://github.com/openclaw/openclaw/issues/new?template=docs_bug_report.yml) describing the attack scenario in your own words. Helpful but not required:
+**Add a threat.** Open a [documentation issue](https://github.com/AforaMosh/afora-agent/issues/new?template=docs_bug_report.yml) describing the attack scenario in your own words. Helpful but not required:
 
 - The attack scenario and how it could be exploited.
 - Which components are affected (CLI, gateway, channels, ClawHub, MCP servers, etc.).
@@ -69,13 +69,13 @@ Threats are mapped to [MITRE ATLAS](https://atlas.mitre.org/) (Adversarial Threa
 
 ## Contact
 
-- **Security vulnerabilities:** [Trust page](https://trust.openclaw.ai) for reporting instructions, or `security@openclaw.ai`.
-- **Threat model questions:** open a [documentation issue](https://github.com/openclaw/openclaw/issues/new?template=docs_bug_report.yml).
+- **Security vulnerabilities:** [Trust page](https://trust.afora.ai) for reporting instructions, or `security@afora.ai`.
+- **Threat model questions:** open a [documentation issue](https://github.com/AforaMosh/afora-agent/issues/new?template=docs_bug_report.yml).
 - **General chat:** Discord `#security` channel.
 
 ## Recognition
 
-Contributors to the threat model are recognized in the threat model acknowledgments, release notes, and the OpenClaw security hall of fame for significant contributions.
+Contributors to the threat model are recognized in the threat model acknowledgments, release notes, and the Afora security hall of fame for significant contributions.
 
 ## Related
 

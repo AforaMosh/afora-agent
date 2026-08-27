@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 // Coverage for model-call diagnostic events around attempt stream functions.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../../test/helpers/temp-dir.js";
 import {
@@ -83,12 +83,12 @@ function requireMockRecordArg(
 }
 
 async function collectProviderTimelineEvents(run: () => Promise<void>) {
-  const root = tempDirs.make("openclaw-provider-timeline-");
+  const root = tempDirs.make("afora-provider-timeline-");
   const timelinePath = join(root, "timeline.jsonl");
   await withEnvAsync(
     {
-      OPENCLAW_DIAGNOSTICS: "1",
-      OPENCLAW_DIAGNOSTICS_TIMELINE_PATH: timelinePath,
+      AFORA_DIAGNOSTICS: "1",
+      AFORA_DIAGNOSTICS_TIMELINE_PATH: timelinePath,
     },
     run,
   );

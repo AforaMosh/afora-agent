@@ -1,5 +1,5 @@
 // Normalizes error objects for codes, names, messages, and redacted logs.
-import { formatErrorMessage as formatSharedErrorMessage } from "@openclaw/normalization-core/error-coercion";
+import { formatErrorMessage as formatSharedErrorMessage } from "@afora/normalization-core/error-coercion";
 import { redactSensitiveText } from "../logging/redact.js";
 export { hasErrnoCode, isErrno, isMissingPathError } from "./errno.js";
 
@@ -62,7 +62,7 @@ export function formatErrorMessageWithCode(err: unknown): string {
   return formatSharedErrorMessage(err, { includeCode: true, redact: redactSensitiveText });
 }
 
-export { stringifyNonErrorCause, toErrorObject } from "@openclaw/normalization-core/error-coercion";
+export { stringifyNonErrorCause, toErrorObject } from "@afora/normalization-core/error-coercion";
 
 export function formatUncaughtError(err: unknown): string {
   if (extractErrorCode(err) === "INVALID_CONFIG") {

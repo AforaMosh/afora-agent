@@ -1891,8 +1891,8 @@
 /* Hover preview on the status row: the latest tasks in a read-only card. The
    tooltip body is content-sized (width: max-content up to --max-width), so a
    single task stays one compact line instead of a fixed-size panel. */
-openclaw-tooltip.chat-tasks-status__preview {
-  --openclaw-tooltip-max-width: min(360px, calc(100vw - 24px));
+afora-tooltip.chat-tasks-status__preview {
+  --afora-tooltip-max-width: min(360px, calc(100vw - 24px));
 }
 
 .chat-tasks-preview {

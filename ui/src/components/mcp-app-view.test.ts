@@ -1,4 +1,4 @@
-import { GatewayErrorDetailCodes } from "@openclaw/gateway-protocol";
+import { GatewayErrorDetailCodes } from "@afora/gateway-protocol";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "../i18n/index.ts";
 import {
@@ -137,7 +137,7 @@ describe("mcp-app-view localization", () => {
     Reflect.set(view, "context", {
       gateway: {
         snapshot: { client: { request } },
-        connection: { gatewayUrl: "ws://gateway.example:8443/openclaw" },
+        connection: { gatewayUrl: "ws://gateway.example:8443/afora" },
       },
       theme: {
         subscribe(listener: () => void) {
@@ -254,7 +254,7 @@ describe("mcp-app-view localization", () => {
     Reflect.set(view, "context", {
       gateway: {
         snapshot: { client: { request } },
-        connection: { gatewayUrl: "ws://gateway.example:8443/openclaw" },
+        connection: { gatewayUrl: "ws://gateway.example:8443/afora" },
       },
     });
     view.sessionKey = "agent:main:main";
@@ -277,7 +277,7 @@ describe("mcp-app-view localization", () => {
     Reflect.set(view, "context", {
       gateway: {
         snapshot: { client: { request } },
-        connection: { gatewayUrl: "ws://gateway.example:8443/openclaw" },
+        connection: { gatewayUrl: "ws://gateway.example:8443/afora" },
       },
     });
     view.sessionKey = "agent:main:main";
@@ -500,7 +500,7 @@ describe("mcp-app-view localization", () => {
       Reflect.set(view, "context", {
         gateway: {
           snapshot: { client: { request } },
-          connection: { gatewayUrl: "ws://gateway.example:8443/openclaw" },
+          connection: { gatewayUrl: "ws://gateway.example:8443/afora" },
         },
       });
       view.sessionKey = "agent:main:main";

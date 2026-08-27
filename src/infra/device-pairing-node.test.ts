@@ -1,5 +1,5 @@
 // Tests node-role capability approvals stored on canonical paired-device records.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { createDeferred } from "../../test/helpers/promise.js";
 import { createSuiteTempRootTracker } from "../test-helpers/temp-dir.js";
@@ -24,7 +24,7 @@ import {
   withPairedDeviceRecords,
 } from "./device-pairing.js";
 
-const tempDirs = createSuiteTempRootTracker({ prefix: "openclaw-node-pairing-" });
+const tempDirs = createSuiteTempRootTracker({ prefix: "afora-node-pairing-" });
 
 async function withNodePairingDir<T>(run: (baseDir: string) => Promise<T>): Promise<T> {
   return await run(await tempDirs.make("case"));

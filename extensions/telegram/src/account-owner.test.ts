@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import { resolveTelegramAccountOwnerAgentId } from "./account-owner.js";
 
@@ -21,7 +21,7 @@ describe("resolveTelegramAccountOwnerAgentId", () => {
         { agentId: "main", match: { channel: "telegram", accountId: "primary" } },
         { agentId: "ops", match: { channel: "telegram", accountId: "alerts" } },
       ],
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveTelegramAccountOwnerAgentId({ cfg, accountId: "primary" })).toBe("main");
     expect(resolveTelegramAccountOwnerAgentId({ cfg, accountId: "alerts" })).toBe("ops");
@@ -33,7 +33,7 @@ describe("resolveTelegramAccountOwnerAgentId", () => {
         ownership: "explicit",
         entries: { main: {}, ops: {} },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(() => resolveTelegramAccountOwnerAgentId({ cfg, accountId: "default" })).toThrow(
       /Add a channel-wide binding for telegram:default/,

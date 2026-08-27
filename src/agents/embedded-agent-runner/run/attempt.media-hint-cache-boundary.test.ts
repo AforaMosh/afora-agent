@@ -37,7 +37,7 @@ import {
   ensureSystemPromptCacheBoundary,
   SYSTEM_PROMPT_CACHE_BOUNDARY,
   splitSystemPromptCacheBoundary,
-} from "@openclaw/ai/internal/shared";
+} from "@afora/ai/internal/shared";
 import {
   appendModelIdentitySystemPrompt,
   buildModelIdentityPromptLine,

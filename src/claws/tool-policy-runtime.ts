@@ -1,7 +1,7 @@
 import { listAgentEntries } from "../agents/agent-scope.js";
 import { registerRuntimeConfigSnapshotPreparer } from "../config/runtime-snapshot.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
-import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
+import type { AforaConfig } from "../config/types.afora.js";
+import type { AforaStateDatabaseOptions } from "../state/afora-state-db.js";
 import { digestClawAgentConfig } from "./agent-config-digest.js";
 import {
   initializeCachedClawInstallSchemaVersions,
@@ -18,10 +18,10 @@ type PreparedClawToolPolicy =
 const preparedClawToolPolicies = new WeakMap<object, PreparedClawToolPolicy>();
 type ClawToolPolicyCandidate = { agentId: string; agentConfigDigest: string; tools: object };
 let preparedCandidates: ClawToolPolicyCandidate[] = [];
-let preparedStateOptions: OpenClawStateDatabaseOptions = {};
+let preparedStateOptions: AforaStateDatabaseOptions = {};
 let readPreparedSchemaVersions = readCachedClawInstallSchemaVersions;
 const uninitializedStateError = new Error(
-  "OpenClaw state database has not initialized Claw consent provenance.",
+  "Afora state database has not initialized Claw consent provenance.",
 );
 
 export function markFrozenClawToolAllowPolicy(policy: object | undefined): void {
@@ -87,8 +87,8 @@ function applyPreparedClawToolPolicyConsent(): void {
 }
 
 function prepareClawToolPolicyConsent(
-  config: OpenClawConfig,
-  options: OpenClawStateDatabaseOptions & {
+  config: AforaConfig,
+  options: AforaStateDatabaseOptions & {
     readSchemaVersions?: typeof readCachedClawInstallSchemaVersions;
   } = {},
 ): void {
@@ -118,10 +118,10 @@ class ClawToolProfileConsentError extends Error {
     super(
       options.unboundedFullProfile
         ? `Claw-managed agent ${JSON.stringify(agentId)} uses the legacy unbounded full tool profile. ` +
-            "Add an explicit tools.allow list to its package OpenClaw profile, then " +
-            `run \`openclaw claws update ${agentId}\` and approve the refreshed tool authority.`
+            "Add an explicit tools.allow list to its package Afora profile, then " +
+            `run \`afora claws update ${agentId}\` and approve the refreshed tool authority.`
         : `Claw-managed agent ${JSON.stringify(agentId)} uses a legacy dynamic tool policy. ` +
-            `Run \`openclaw claws update ${agentId}\` and approve the refreshed tool authority before running it.`,
+            `Run \`afora claws update ${agentId}\` and approve the refreshed tool authority before running it.`,
     );
     this.name = "ClawToolProfileConsentError";
   }
@@ -131,7 +131,7 @@ class ClawToolProfileConsentStateError extends Error {
   constructor(agentId: string, cause: unknown) {
     super(
       `Cannot verify the installed tool authority for Claw-managed agent ${JSON.stringify(agentId)}. ` +
-        "Repair the OpenClaw state database before running it.",
+        "Repair the Afora state database before running it.",
       { cause },
     );
     this.name = "ClawToolProfileConsentStateError";

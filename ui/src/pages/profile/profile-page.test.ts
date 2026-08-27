@@ -11,7 +11,7 @@ import { createApplicationContextProvider } from "../../test-helpers/application
 import { waitForFast } from "../../test-helpers/wait-for.ts";
 import { ProfilePage } from "./profile-page.ts";
 
-const PROFILE_PAGE_TEST_TAG = "test-openclaw-profile-page";
+const PROFILE_PAGE_TEST_TAG = "test-afora-profile-page";
 // Keep the element class on the same post-reset i18n module as this test.
 if (!customElements.get(PROFILE_PAGE_TEST_TAG)) {
   customElements.define(PROFILE_PAGE_TEST_TAG, class extends ProfilePage {});
@@ -109,7 +109,7 @@ function createConnectedContext(
     config: {
       current: {
         assistantIdentity: {
-          name: "OpenClaw",
+          name: "Afora",
           avatar: null,
           avatarSource: null,
           avatarStatus: null,
@@ -222,7 +222,7 @@ it("renders identity before a Usage statistics link without requesting usage dat
   expect(request.mock.calls.map(([method]) => method)).toEqual(["users.self"]);
   const docsLink = page.querySelector<HTMLAnchorElement>(".page-subtitle a");
   expect(docsLink?.textContent?.trim()).toBe("Learn more");
-  expect(docsLink?.href).toBe("https://docs.openclaw.ai/concepts/user-model");
+  expect(docsLink?.href).toBe("https://docs.afora.ai/concepts/user-model");
   expect(page.querySelector(".profile-stats")).toBeNull();
   expect(page.querySelector(".profile-heatmap")).toBeNull();
   const usageRow = page.querySelector<HTMLButtonElement>(".settings-row--nav");
@@ -635,7 +635,7 @@ it("bootstraps and refreshes the connected user's profile through users.self", a
   );
   expect(
     (
-      page.querySelector("openclaw-viewer-avatar") as
+      page.querySelector("afora-viewer-avatar") as
         | (HTMLElement & { user?: AuthenticatedUser })
         | null
     )?.user?.avatarUrl,
@@ -663,7 +663,7 @@ it("bootstraps and refreshes the connected user's profile through users.self", a
   await waitForFast(() =>
     expect(
       (
-        page.querySelector("openclaw-viewer-avatar") as
+        page.querySelector("afora-viewer-avatar") as
           | (HTMLElement & { user?: AuthenticatedUser })
           | null
       )?.user?.avatarUrl,

@@ -1,9 +1,9 @@
 // Discord plugin module implements native command dispatch behavior.
-import type { ChatCommandDefinition, CommandArgs } from "openclaw/plugin-sdk/command-auth-native";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { PluginCommandCatalogDecision } from "openclaw/plugin-sdk/plugin-command-runtime";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-dispatch-runtime";
-import type { ResolvedAgentRoute } from "openclaw/plugin-sdk/routing";
+import type { ChatCommandDefinition, CommandArgs } from "afora-agent/plugin-sdk/command-auth-native";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { PluginCommandCatalogDecision } from "afora-agent/plugin-sdk/plugin-command-runtime";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-dispatch-runtime";
+import type { ResolvedAgentRoute } from "afora-agent/plugin-sdk/routing";
 import type {
   ButtonInteraction,
   CommandInteraction,
@@ -11,14 +11,14 @@ import type {
 } from "../internal/discord.js";
 import type { ThreadBindingManager } from "./thread-bindings.js";
 
-type DiscordConfig = NonNullable<OpenClawConfig["channels"]>["discord"];
+type DiscordConfig = NonNullable<AforaConfig["channels"]>["discord"];
 
 type DispatchDiscordCommandInteractionParams = {
   interaction: CommandInteraction | ButtonInteraction | StringSelectMenuInteraction;
   prompt: string;
   command: ChatCommandDefinition;
   commandArgs?: CommandArgs;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   discordConfig: DiscordConfig;
   accountId: string;
   sessionPrefix: string;

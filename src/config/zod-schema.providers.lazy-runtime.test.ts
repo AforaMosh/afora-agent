@@ -1,5 +1,5 @@
 // Verifies provider schema lazy-runtime loading stays side-effect bounded.
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const loadPluginMetadataSnapshotMock = vi.hoisted(() => vi.fn());

@@ -1,5 +1,5 @@
 /** Merges configured and persisted allowFrom entries for channel security audit. */
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 import type { ChannelId } from "../plugins/types.public.js";
 import { readChannelIngressStoreAllowFromForDmPolicy } from "./store-allow-from.js";
 

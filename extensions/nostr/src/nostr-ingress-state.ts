@@ -1,6 +1,6 @@
 // Nostr plugin module owns durable ingress identity and legacy-state migration.
-import type { ChannelIngressQueue } from "openclaw/plugin-sdk/channel-outbound";
-import { isRecord as isNostrIngressRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { ChannelIngressQueue } from "afora-agent/plugin-sdk/channel-outbound";
+import { isRecord as isNostrIngressRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export { isNostrIngressRecord };
 

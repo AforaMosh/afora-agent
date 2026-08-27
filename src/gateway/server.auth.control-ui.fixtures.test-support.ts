@@ -44,9 +44,9 @@ export const REMOTE_BOOTSTRAP_HEADERS = {
 
 export const createOperatorIdentityFixture = async (identityPrefix: string) => {
   const { loadOrCreateDeviceIdentity } = await import("../infra/device-identity.js");
-  const stateDir = process.env.OPENCLAW_STATE_DIR;
+  const stateDir = process.env.AFORA_STATE_DIR;
   if (!stateDir) {
-    throw new Error("OPENCLAW_STATE_DIR must be set by the gateway test hooks");
+    throw new Error("AFORA_STATE_DIR must be set by the gateway test hooks");
   }
   const identityPath = path.join(stateDir, `${identityPrefix}${randomUUID()}.sqlite`);
   const identity = loadOrCreateDeviceIdentity({ path: identityPath });
@@ -58,7 +58,7 @@ export const createOperatorIdentityFixture = async (identityPrefix: string) => {
 };
 
 export const startControlUiServerWithOperatorIdentity = async (
-  identityPrefix = "openclaw-device-scope-",
+  identityPrefix = "afora-device-scope-",
 ) => {
   const { server, port, prevToken } = await startControlUiServer("secret");
   const { identityPath, identity, client } = await createOperatorIdentityFixture(identityPrefix);

@@ -3,17 +3,17 @@ import {
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../../infra/kysely-sync.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
+import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.generated.js";
 import {
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-  type OpenClawAgentDatabaseOptions,
-} from "../../state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabase,
+  type AforaAgentDatabaseOptions,
+} from "../../state/afora-agent-db.js";
 import type { SessionAccessScope } from "./session-accessor.sqlite-contract.js";
 import { resolveSqliteScope, toDatabaseOptions } from "./session-accessor.sqlite-scope.js";
 
-type SessionMemberDatabase = Pick<OpenClawAgentKyselyDatabase, "session_members">;
+type SessionMemberDatabase = Pick<AforaAgentKyselyDatabase, "session_members">;
 
 type SessionMember = {
   identityId: string;
@@ -23,16 +23,16 @@ type SessionMember = {
 
 const SESSION_MEMBERSHIP_QUERY_CHUNK_SIZE = 400;
 
-function resolveDatabaseOptions(scope: SessionAccessScope): OpenClawAgentDatabaseOptions {
+function resolveDatabaseOptions(scope: SessionAccessScope): AforaAgentDatabaseOptions {
   return toDatabaseOptions(resolveSqliteScope(scope));
 }
 
-function getSessionMemberKysely(database: OpenClawAgentDatabase) {
+function getSessionMemberKysely(database: AforaAgentDatabase) {
   return getNodeSqliteKysely<SessionMemberDatabase>(database.db);
 }
 
 export function listSessionMembers(scope: SessionAccessScope): SessionMember[] {
-  const database = openOpenClawAgentDatabase(resolveDatabaseOptions(scope));
+  const database = openAforaAgentDatabase(resolveDatabaseOptions(scope));
   const db = getSessionMemberKysely(database);
   return executeSqliteQuerySync(
     database.db,
@@ -58,7 +58,7 @@ export function listSessionMembershipKeys(
   if (!normalizedIdentityId || normalizedSessionKeys.length === 0) {
     return new Set();
   }
-  const database = openOpenClawAgentDatabase(resolveDatabaseOptions(scope));
+  const database = openAforaAgentDatabase(resolveDatabaseOptions(scope));
   const db = getSessionMemberKysely(database);
   const memberships = new Set<string>();
   for (
@@ -87,7 +87,7 @@ export function isSessionMember(scope: SessionAccessScope, identityId: string): 
   if (!normalizedIdentityId) {
     return false;
   }
-  const database = openOpenClawAgentDatabase(resolveDatabaseOptions(scope));
+  const database = openAforaAgentDatabase(resolveDatabaseOptions(scope));
   const db = getSessionMemberKysely(database);
   return Boolean(
     executeSqliteQueryTakeFirstSync(
@@ -106,7 +106,7 @@ export function isSessionMember(scope: SessionAccessScope, identityId: string): 
 // can replace the row under the same key in between; the optional expected id
 // adds a caller snapshot check after the canonical node/entry check.
 function assertAuthorizedSessionInstance(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionKey: string,
   expectedSessionId: string | undefined,
 ): void {
@@ -146,7 +146,7 @@ export function addSessionMember(
   }
   const options = resolveDatabaseOptions(scope);
   const addedAt = params.addedAt ?? Date.now();
-  const inserted = runOpenClawAgentWriteTransaction((database) => {
+  const inserted = runAforaAgentWriteTransaction((database) => {
     assertAuthorizedSessionInstance(
       database,
       resolveSqliteScope(scope).sessionKey,
@@ -181,7 +181,7 @@ export function removeSessionMember(
     return null;
   }
   const options = resolveDatabaseOptions(scope);
-  return runOpenClawAgentWriteTransaction((database) => {
+  return runAforaAgentWriteTransaction((database) => {
     assertAuthorizedSessionInstance(
       database,
       resolveSqliteScope(scope).sessionKey,

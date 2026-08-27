@@ -2,12 +2,12 @@ import type { Command } from "commander";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { defaultRuntime, writeRuntimeJson, writeRuntimeStdout } from "../../runtime.js";
 import {
-  OPENCLAW_DATABASE_SCHEMA_DOCS_URL,
-  preflightOpenClawStateDatabasePath,
-} from "../../state/openclaw-database-preflight.js";
-import { resolveDatabasePath } from "../../state/openclaw-state-db-maintenance.js";
-import { claimOpenClawStateOwnership } from "../../state/openclaw-state-ownership-operations.js";
-import { inspectOpenClawStateOwnershipAtPath } from "../../state/openclaw-state-ownership.js";
+  AFORA_DATABASE_SCHEMA_DOCS_URL,
+  preflightAforaStateDatabasePath,
+} from "../../state/afora-database-preflight.js";
+import { resolveDatabasePath } from "../../state/afora-state-db-maintenance.js";
+import { claimAforaStateOwnership } from "../../state/afora-state-ownership-operations.js";
+import { inspectAforaStateOwnershipAtPath } from "../../state/afora-state-ownership.js";
 import { applyParentDefaultHelpAction } from "./parent-default-help.js";
 
 type DatabaseOutputOptions = { json?: boolean };
@@ -23,14 +23,14 @@ function writeDatabaseError(error: unknown, json: boolean): void {
 }
 
 async function runDatabasePreflight(databasePath: string, options: DatabaseOutputOptions) {
-  const result = await preflightOpenClawStateDatabasePath(databasePath);
+  const result = await preflightAforaStateDatabasePath(databasePath);
   if (options.json) {
     writeRuntimeJson(defaultRuntime, result);
   } else {
     const detail = result.reason ?? result.issues[0]?.message;
     writeRuntimeStdout(
       defaultRuntime,
-      `Database preflight: ${result.status} (found ${result.foundVersion ?? "unknown"}, target ${result.targetVersion}).${detail ? `\n${detail}` : ""}\nSee ${OPENCLAW_DATABASE_SCHEMA_DOCS_URL}.\n`,
+      `Database preflight: ${result.status} (found ${result.foundVersion ?? "unknown"}, target ${result.targetVersion}).${detail ? `\n${detail}` : ""}\nSee ${AFORA_DATABASE_SCHEMA_DOCS_URL}.\n`,
     );
   }
   if (result.status === "incompatible" || result.status === "indeterminate") {
@@ -43,11 +43,11 @@ function runDatabaseOwnership(options: DatabaseOutputOptions & { manager?: strin
     const databasePath = resolveDatabasePath({ env: process.env });
     const ownership =
       options.manager !== undefined
-        ? claimOpenClawStateOwnership(options.manager, {
+        ? claimAforaStateOwnership(options.manager, {
             path: databasePath,
             env: process.env,
           })
-        : inspectOpenClawStateOwnershipAtPath(databasePath);
+        : inspectAforaStateOwnershipAtPath(databasePath);
     const status = ownership
       ? { status: "external" as const, ownership }
       : { status: "unowned" as const };
@@ -59,7 +59,7 @@ function runDatabaseOwnership(options: DatabaseOutputOptions & { manager?: strin
       status.status === "external"
         ? `Shared state is externally owned by ${status.ownership.managerId}.`
         : "Shared state is not externally owned.";
-    writeRuntimeStdout(defaultRuntime, `${message}\nSee ${OPENCLAW_DATABASE_SCHEMA_DOCS_URL}.\n`);
+    writeRuntimeStdout(defaultRuntime, `${message}\nSee ${AFORA_DATABASE_SCHEMA_DOCS_URL}.\n`);
   } catch (error) {
     writeDatabaseError(error, options.json === true);
   }
@@ -69,7 +69,7 @@ export function registerDatabaseCommand(program: Command): void {
   const database = program
     .command("database")
     .description("Inspect shared-state schema compatibility and write ownership")
-    .addHelpText("after", `\nDocs: ${OPENCLAW_DATABASE_SCHEMA_DOCS_URL}\n`);
+    .addHelpText("after", `\nDocs: ${AFORA_DATABASE_SCHEMA_DOCS_URL}\n`);
 
   database
     .command("preflight")

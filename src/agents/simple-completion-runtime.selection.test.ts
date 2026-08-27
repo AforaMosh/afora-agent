@@ -1,6 +1,6 @@
 // Verifies simple-completion model selection preserves provider, model, and profile refs.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { migratePersistedImplicitMainRoster } from "../config/legacy.roster.js";
 import { resolveSimpleCompletionSelectionForAgent as resolveSimpleCompletionSelectionForAgentBase } from "./simple-completion-runtime.js";
 
@@ -9,7 +9,7 @@ function resolveSimpleCompletionSelectionForAgent(
 ) {
   return resolveSimpleCompletionSelectionForAgentBase({
     ...params,
-    cfg: migratePersistedImplicitMainRoster(params.cfg).config as OpenClawConfig,
+    cfg: migratePersistedImplicitMainRoster(params.cfg).config as AforaConfig,
   });
 }
 
@@ -27,7 +27,7 @@ describe("resolveSimpleCompletionSelectionForAgent", () => {
       agents: {
         defaults: { model: "openrouter/anthropic/claude-sonnet-4-6" },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const selection = requireSelection(
       resolveSimpleCompletionSelectionForAgent({ cfg, agentId: "main" }),
@@ -42,7 +42,7 @@ describe("resolveSimpleCompletionSelectionForAgent", () => {
         defaults: { model: "anthropic/claude-opus-4-6" },
         list: [{ id: "ops", model: "openrouter/aurora-alpha" }],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const selection = requireSelection(
       resolveSimpleCompletionSelectionForAgent({ cfg, agentId: "ops" }),
@@ -59,7 +59,7 @@ describe("resolveSimpleCompletionSelectionForAgent", () => {
           utilityModel: "openai/gpt-5.4-mini",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const utilitySelection = requireSelection(
       resolveSimpleCompletionSelectionForAgent({
@@ -85,7 +85,7 @@ describe("resolveSimpleCompletionSelectionForAgent", () => {
         },
         list: [{ id: "ops", utilityModel: "google/gemini-3.1-flash-lite-preview" }],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const agentSelection = requireSelection(
       resolveSimpleCompletionSelectionForAgent({
@@ -121,7 +121,7 @@ describe("resolveSimpleCompletionSelectionForAgent", () => {
           utilityModel: "",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const selection = requireSelection(
       resolveSimpleCompletionSelectionForAgent({
@@ -138,7 +138,7 @@ describe("resolveSimpleCompletionSelectionForAgent", () => {
       agents: {
         defaults: { model: "anthropic/claude-opus-4-6@work" },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const selection = requireSelection(
       resolveSimpleCompletionSelectionForAgent({ cfg, agentId: "main" }),
@@ -158,7 +158,7 @@ describe("resolveSimpleCompletionSelectionForAgent", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const selection = requireSelection(
       resolveSimpleCompletionSelectionForAgent({ cfg, agentId: "main" }),
@@ -178,7 +178,7 @@ describe("resolveSimpleCompletionSelectionForAgent", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const selection = requireSelection(
       resolveSimpleCompletionSelectionForAgent({ cfg, agentId: "main" }),
@@ -189,7 +189,7 @@ describe("resolveSimpleCompletionSelectionForAgent", () => {
   });
 
   it("falls back to runtime default model when no explicit model is configured", () => {
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
 
     const selection = requireSelection(
       resolveSimpleCompletionSelectionForAgent({ cfg, agentId: "main" }),
@@ -223,7 +223,7 @@ describe("resolveSimpleCompletionSelectionForAgent", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const selection = requireSelection(
       resolveSimpleCompletionSelectionForAgent({ cfg, agentId: "main" }),

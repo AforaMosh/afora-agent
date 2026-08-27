@@ -8,10 +8,10 @@ const { close, configureSqliteConnectionPragmas } = vi.hoisted(() => ({
   configureSqliteConnectionPragmas: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/sqlite-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/sqlite-runtime", () => ({
   openNodeSqliteDatabase: vi.fn(() => ({ close })),
 }));
-vi.mock("openclaw/plugin-sdk/plugin-state-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/plugin-state-runtime", () => ({
   configureSqliteConnectionPragmas,
 }));
 
@@ -24,7 +24,7 @@ describe("Workboard SQLite policy", () => {
   });
 
   it("closes a newly opened database when filesystem policy refuses it", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-workboard-policy-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-workboard-policy-"));
     const dbPath = path.join(dir, "workboard.sqlite");
     configureSqliteConnectionPragmas.mockImplementation(() => {
       throw new Error("SSHFS is unsupported");

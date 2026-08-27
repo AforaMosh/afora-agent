@@ -3,9 +3,9 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {
-  closeOpenClawStateDatabaseForTest,
+  closeAforaStateDatabaseForTest,
   createChannelIngressQueueForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PluginRuntime } from "../runtime-api.js";
 import { startNostrBus } from "./nostr-bus.js";
@@ -68,7 +68,7 @@ let stateDir = "";
 
 describe("Nostr outbound relay failover", () => {
   beforeEach(async () => {
-    const created = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-nostr-outbound-"));
+    const created = await fs.mkdtemp(path.join(os.tmpdir(), "afora-nostr-outbound-"));
     stateDir = await fs.realpath(created);
     const ingressQueue = createChannelIngressQueueForTests<Record<string, unknown>>({
       channelId: "nostr",
@@ -91,7 +91,7 @@ describe("Nostr outbound relay failover", () => {
   });
 
   afterEach(async () => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(stateDir, { recursive: true, force: true });
   });
 

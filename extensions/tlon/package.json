@@ -1,10 +1,10 @@
 {
-  "name": "@openclaw/tlon",
+  "name": "@afora/tlon",
   "version": "2026.8.1",
-  "description": "OpenClaw Tlon/Urbit channel plugin for chat workflows.",
+  "description": "Afora Tlon/Urbit channel plugin for chat workflows.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   },
   "type": "module",
   "dependencies": {
@@ -15,18 +15,18 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*",
-    "openclaw": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*",
+    "afora-agent": "workspace:*"
   },
   "peerDependencies": {
-    "openclaw": ">=2026.8.1"
+    "afora-agent": ">=2026.8.1"
   },
   "peerDependenciesMeta": {
-    "openclaw": {
+    "afora": {
       "optional": true
     }
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
@@ -115,7 +115,7 @@
       }
     },
     "install": {
-      "npmSpec": "@openclaw/tlon",
+      "npmSpec": "@afora/tlon",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.4.10"
     },
@@ -123,7 +123,7 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1"
+      "aforaVersion": "2026.8.1"
     },
     "release": {
       "bundleRuntimeDependencies": false,

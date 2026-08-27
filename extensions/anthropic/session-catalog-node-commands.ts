@@ -1,9 +1,9 @@
 import {
   decodeNodePtyResumeParams,
-  type OpenClawPluginNodeHostCommandIo,
+  type AforaPluginNodeHostCommandIo,
   runNodePtyCommand,
   validateClaudeSessionId,
-} from "openclaw/plugin-sdk/node-host";
+} from "afora-agent/plugin-sdk/node-host";
 import { isExactClaudeSessionCursor } from "./session-catalog-cursor.js";
 import { resolveClaudeTerminalExecutable } from "./session-catalog-executable.js";
 import { isResumableClaudeSource } from "./session-catalog-shared.js";
@@ -63,7 +63,7 @@ export async function readClaudeSession(paramsJSON?: string | null): Promise<str
 
 export async function resumeClaudeSession(
   paramsJSON: string | null | undefined,
-  io: OpenClawPluginNodeHostCommandIo | undefined,
+  io: AforaPluginNodeHostCommandIo | undefined,
 ): Promise<string> {
   if (!io) {
     throw new Error("Claude terminal command requires duplex transport");

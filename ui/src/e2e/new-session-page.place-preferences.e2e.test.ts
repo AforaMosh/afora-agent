@@ -1,4 +1,4 @@
-import { gatewayOriginScope } from "@openclaw/gateway-client/browser";
+import { gatewayOriginScope } from "@afora/gateway-client/browser";
 import { expect, it } from "vitest";
 import {
   WORKSPACE,
@@ -26,7 +26,7 @@ suite.define(() => {
     const page = await context.newPage();
     const appUrl = new URL(suite.server.baseUrl);
     const gatewayUrl = `${appUrl.protocol === "https:" ? "wss:" : "ws:"}//${appUrl.host}`;
-    const storageKey = `openclaw.new-session.preferences.v1:${gatewayOriginScope(gatewayUrl)}`;
+    const storageKey = `afora.new-session.preferences.v1:${gatewayOriginScope(gatewayUrl)}`;
     await page.addInitScript(
       ({ key, workspace }) => {
         localStorage.setItem(

@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { InstalledPluginIndex } from "./installed-plugin-index.js";
 import {
   resolveInstalledPluginPackageOwnership,
@@ -52,13 +52,13 @@ function contributionKeys(
 
 /** Reconcile policy for children removed by a package update. */
 export function reconcilePluginPackageUpdateConfig(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   beforeIndex: InstalledPluginIndex;
   afterIndex: InstalledPluginIndex;
   snapshot: PluginPackageUpdateSnapshot;
   installOwnerMigrations?: Readonly<Record<string, string>>;
   env?: NodeJS.ProcessEnv;
-}): { ok: true; config: OpenClawConfig } | { ok: false; error: string } {
+}): { ok: true; config: AforaConfig } | { ok: false; error: string } {
   let config = params.config;
   for (const [installOwner, before] of params.snapshot) {
     const nextInstallOwner = params.installOwnerMigrations?.[installOwner] ?? installOwner;
@@ -92,7 +92,7 @@ export function reconcilePluginPackageUpdateConfig(params: {
 }
 
 export function pluginPackageUpdateMayMutateConfig(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   index: InstalledPluginIndex;
   snapshot: PluginPackageUpdateSnapshot;
 }): boolean {

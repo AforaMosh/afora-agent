@@ -1,9 +1,9 @@
 // Google tests cover embedding provider plugin behavior.
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("openclaw/plugin-sdk/memory-core-host-engine-embeddings", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/memory-core-host-engine-embeddings", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("openclaw/plugin-sdk/memory-core-host-engine-embeddings")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/memory-core-host-engine-embeddings")>();
   return {
     ...actual,
     withRemoteHttpResponse: (async <T>(params: {

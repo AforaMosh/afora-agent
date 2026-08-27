@@ -131,7 +131,7 @@ describe("oversized multimodal chat history", () => {
           blob: encoded,
           path: "/private/short-circuit-video.mp4",
           url: "https://media-user@media.example/video.mp4?signature=private-signature#private-fragment",
-          openclawReasoningReplay: { private: true },
+          aforaReasoningReplay: { private: true },
         },
       ],
     };
@@ -159,7 +159,7 @@ describe("oversized multimodal chat history", () => {
       "media-user",
       "private-signature",
       "private-fragment",
-      "openclawReasoningReplay",
+      "aforaReasoningReplay",
     ]) {
       expect(serialized).not.toContain(privateValue);
     }
@@ -250,7 +250,7 @@ describe("oversized multimodal chat history", () => {
         audio_url: "media://inbound/audio.wav",
         source: { type: "url", url: "/api/chat/media/outgoing/audio.wav" },
       },
-      { type: "audio", url: "/media/audio.wav", openUrl: "/__openclaw__/audio/clip.wav" },
+      { type: "audio", url: "/media/audio.wav", openUrl: "/__afora__/audio/clip.wav" },
     ];
     const message = {
       role: "user",
@@ -342,7 +342,7 @@ describe("transcript metadata projection", () => {
     const message = {
       role: "user",
       content: "Keep this visible user message.",
-      __openclaw: {
+      __afora: {
         id: "message-1",
         mirrorIdentity: "turn-1:prompt",
         replyToId: "message-0",
@@ -354,7 +354,7 @@ describe("transcript metadata projection", () => {
         {
           role: "user",
           content: "Keep this visible user message.",
-          __openclaw: {
+          __afora: {
             id: "message-1",
             mirrorIdentity: "turn-1:prompt",
             replyToId: "message-0",
@@ -372,20 +372,20 @@ describe("managed inbound media fact projection", () => {
   const inboundMediaId = "photo---11111111-2222-3333-4444-555555555555.png";
   const managedInboundPath = path.join(getMediaDir(), "inbound", inboundMediaId);
 
-  function projectedOpenClawMeta(message: Record<string, unknown>) {
+  function projectedAforaMeta(message: Record<string, unknown>) {
     const projected = sanitizeChatHistoryMessages([message]);
-    return (projected[0] as Record<string, unknown> | undefined)?.["__openclaw"];
+    return (projected[0] as Record<string, unknown> | undefined)?.["__afora"];
   }
 
   it("rewrites a configured-store managed inbound path to a canonical media URI", () => {
     const message = {
       role: "user",
       content: "first message with an image",
-      __openclaw: {
+      __afora: {
         media: [{ path: managedInboundPath, contentType: "image/png" }],
       },
     };
-    expect(projectedOpenClawMeta(message)).toEqual({
+    expect(projectedAforaMeta(message)).toEqual({
       media: [
         {
           path: `media://inbound/${inboundMediaId}`,
@@ -402,11 +402,11 @@ describe("managed inbound media fact projection", () => {
     const message = {
       role: "user",
       content: "lookalike inbound path",
-      __openclaw: {
+      __afora: {
         media: [{ path: lookalike, contentType: "image/png" }],
       },
     };
-    expect(projectedOpenClawMeta(message)).toEqual({
+    expect(projectedAforaMeta(message)).toEqual({
       media: [{ contentType: "image/png" }],
     });
   });
@@ -415,7 +415,7 @@ describe("managed inbound media fact projection", () => {
     const message = {
       role: "user",
       content: "private local image",
-      __openclaw: {
+      __afora: {
         media: [
           { path: "/tmp/private-image.png", contentType: "image/png" },
           {
@@ -425,7 +425,7 @@ describe("managed inbound media fact projection", () => {
         ],
       },
     };
-    expect(projectedOpenClawMeta(message)).toEqual({
+    expect(projectedAforaMeta(message)).toEqual({
       media: [{ contentType: "image/png" }, { contentType: "image/png" }],
     });
   });
@@ -434,7 +434,7 @@ describe("managed inbound media fact projection", () => {
     const message = {
       role: "user",
       content: "traversal attempt",
-      __openclaw: {
+      __afora: {
         media: [
           {
             path: path.join(getMediaDir(), "inbound", "..", "..", "etc", "passwd"),
@@ -443,7 +443,7 @@ describe("managed inbound media fact projection", () => {
         ],
       },
     };
-    expect(projectedOpenClawMeta(message)).toEqual({
+    expect(projectedAforaMeta(message)).toEqual({
       media: [{ contentType: "image/png" }],
     });
   });
@@ -454,12 +454,12 @@ describe("managed inbound media fact projection", () => {
     const message = {
       role: "user",
       content: "malformed percent escape",
-      __openclaw: {
+      __afora: {
         media: [{ path: path.join(getMediaDir(), "inbound", "%"), contentType: "image/png" }],
       },
     };
     expect(() => sanitizeChatHistoryMessages([message])).not.toThrow();
-    expect(projectedOpenClawMeta(message)).toEqual({
+    expect(projectedAforaMeta(message)).toEqual({
       media: [{ contentType: "image/png" }],
     });
   });
@@ -468,7 +468,7 @@ describe("managed inbound media fact projection", () => {
     const message = {
       role: "user",
       content: "canonical inbound image",
-      __openclaw: {
+      __afora: {
         media: [
           {
             path: `media://inbound/${inboundMediaId}`,
@@ -477,7 +477,7 @@ describe("managed inbound media fact projection", () => {
         ],
       },
     };
-    expect(projectedOpenClawMeta(message)).toEqual({
+    expect(projectedAforaMeta(message)).toEqual({
       media: [
         {
           path: `media://inbound/${inboundMediaId}`,
@@ -494,7 +494,7 @@ describe("current user profile display projection", () => {
       {
         role: "user",
         content: "first",
-        __openclaw: {
+        __afora: {
           senderId: "profile-ada",
           senderName: "Historical Ada",
           senderUsername: "ada",
@@ -503,17 +503,17 @@ describe("current user profile display projection", () => {
       {
         role: "user",
         content: "second",
-        __openclaw: { senderId: "profile-ada", senderName: "Earlier Ada" },
+        __afora: { senderId: "profile-ada", senderName: "Earlier Ada" },
       },
       {
         role: "user",
         content: "third",
-        __openclaw: { senderId: "profile-bob" },
+        __afora: { senderId: "profile-bob" },
       },
       {
         role: "user",
         content: "unknown",
-        __openclaw: {
+        __afora: {
           senderId: "channel-sender",
           senderProfileAvatarUrl: "/channel/avatar",
         },
@@ -522,14 +522,14 @@ describe("current user profile display projection", () => {
       {
         role: "assistant",
         content: [{ type: "text", text: "hostile assistant metadata" }],
-        __openclaw: { senderId: "hostile-assistant" },
+        __afora: { senderId: "hostile-assistant" },
       },
       {
         role: "toolResult",
         toolCallId: "hostile-tool-call",
         toolName: "read",
         content: [{ type: "text", text: "hostile tool metadata" }],
-        __openclaw: { senderId: "hostile-tool" },
+        __afora: { senderId: "hostile-tool" },
       },
     ];
     const originalMessages = structuredClone(messages);
@@ -563,7 +563,7 @@ describe("current user profile display projection", () => {
       "profile-bob",
       "channel-sender",
     ]);
-    expect(projected.map((message) => message["__openclaw"])).toEqual([
+    expect(projected.map((message) => message["__afora"])).toEqual([
       {
         senderId: "profile-ada",
         senderName: "Historical Ada",
@@ -598,7 +598,7 @@ describe("current user profile display projection", () => {
     const staleAvatar = {
       role: "user",
       content: "stale avatar",
-      __openclaw: {
+      __afora: {
         senderId: "with-avatar",
         senderName: "Historical Name",
         senderProfileAvatarUrl: "/api/users/with-avatar/avatar?v=10",
@@ -607,7 +607,7 @@ describe("current user profile display projection", () => {
     const noUploadAvatar = {
       role: "user",
       content: "removed avatar",
-      __openclaw: {
+      __afora: {
         senderId: "without-avatar",
         senderProfileAvatarUrl: "/api/users/without-avatar/avatar?v=10",
       },
@@ -615,7 +615,7 @@ describe("current user profile display projection", () => {
     const failedLookup = {
       role: "user",
       content: "lookup failed",
-      __openclaw: {
+      __afora: {
         senderId: "lookup-failed",
         senderProfileAvatarUrl: "/existing/projected/avatar",
       },
@@ -643,12 +643,12 @@ describe("current user profile display projection", () => {
       },
     });
 
-    expect(projected[0]?.["__openclaw"]).toEqual({
+    expect(projected[0]?.["__afora"]).toEqual({
       senderId: "with-avatar",
       senderName: "Historical Name",
       senderProfileAvatarUrl: "/api/users/with-avatar/avatar?v=20",
     });
-    expect(projected[1]?.["__openclaw"]).toEqual({
+    expect(projected[1]?.["__afora"]).toEqual({
       senderId: "without-avatar",
       senderProfileAvatarUrl: "/api/users/without-avatar/avatar?v=20",
     });
@@ -659,7 +659,7 @@ describe("current user profile display projection", () => {
     const message = {
       role: "user",
       content: "unchanged",
-      __openclaw: {
+      __afora: {
         senderId: "profile-ada",
         senderProfileAvatarUrl: "/api/users/profile-ada/avatar?v=old",
       },
@@ -707,7 +707,7 @@ describe("chat display message-tool projection", () => {
       expect.objectContaining({
         role: "assistant",
         content: [{ type: "text", text: sourceReply }],
-        openclawMessageToolMirror: expect.objectContaining({
+        aforaMessageToolMirror: expect.objectContaining({
           toolCallId: "call-message-current-source",
         }),
       }),

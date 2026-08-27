@@ -1,5 +1,5 @@
 // Resolves inline reply directives that alter a single reply turn.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 
 const INLINE_HORIZONTAL_WHITESPACE_RE = /[^\S\n]+/g;
 

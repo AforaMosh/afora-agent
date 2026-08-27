@@ -1,6 +1,6 @@
 // Best-effort delivery helpers normalize optional external destinations and
 // decide when a reply should stay session-only.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { stringifyRouteThreadId } from "../../plugin-sdk/channel-route.js";
 import {
   INTERNAL_MESSAGE_CHANNEL,

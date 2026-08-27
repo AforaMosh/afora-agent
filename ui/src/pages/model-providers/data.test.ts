@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import type { ModelAuthStatusResult, ModelCatalogEntry } from "../../api/types.ts";
 import {

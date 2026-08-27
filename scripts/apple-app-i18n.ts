@@ -37,17 +37,17 @@ const INFLECTED_COUNT_SEGMENT_RE =
   /\^\[[^\]]*\\\([A-Za-z_][A-Za-z0-9_]*\)[^\]]*\]\(inflect: true\)/gu;
 const INFLECTED_COUNT_MARKER = "](inflect: true)";
 const IOS_CATALOG_PATH = "apps/ios/Resources/Localizable.xcstrings";
-const MACOS_CATALOG_PATH = "apps/macos/Sources/OpenClaw/Resources/Localizable.xcstrings";
-const MACOS_INFO_PLIST_PATH = "apps/macos/Sources/OpenClaw/Resources/Info.plist";
+const MACOS_CATALOG_PATH = "apps/macos/Sources/Afora/Resources/Localizable.xcstrings";
+const MACOS_INFO_PLIST_PATH = "apps/macos/Sources/Afora/Resources/Info.plist";
 const NATIVE_SOURCE_PATH = "apps/.i18n/native-source.json";
 const NATIVE_TRANSLATIONS_DIR = "apps/.i18n/native";
-const SHARED_CHAT_UI_SOURCE_PREFIX = "apps/shared/OpenClawKit/Sources/OpenClawChatUI/";
+const SHARED_CHAT_UI_SOURCE_PREFIX = "apps/shared/AforaKit/Sources/AforaChatUI/";
 const SHARED_GATEWAY_DISCOVERY_STATUS_SOURCE =
-  "apps/shared/OpenClawKit/Sources/OpenClawKit/GatewayDiscoveryStatusText.swift";
+  "apps/shared/AforaKit/Sources/AforaKit/GatewayDiscoveryStatusText.swift";
 const IOS_SOURCE_PREFIXES = [
   "apps/ios/",
   SHARED_CHAT_UI_SOURCE_PREFIX,
-  "apps/shared/OpenClawKit/Sources/OpenClawKit/",
+  "apps/shared/AforaKit/Sources/AforaKit/",
 ] as const;
 const APPLE_CATALOG_KINDS = new Set([
   "conditional-branch",
@@ -61,17 +61,17 @@ const APPLE_CATALOG_KINDS = new Set([
 ]);
 const IOS_CATALOG_EXCLUSIONS = new Set([
   // Product names and preview-only single-character fixtures are intentionally verbatim.
-  "OpenClaw",
+  "Afora",
   "z",
 ]);
 const MACOS_SOURCE_PREFIXES = [
-  "apps/macos/Sources/OpenClaw/",
+  "apps/macos/Sources/Afora/",
   SHARED_CHAT_UI_SOURCE_PREFIX,
   SHARED_GATEWAY_DISCOVERY_STATUS_SOURCE,
 ] as const;
 const MACOS_CATALOG_EXCLUSIONS = new Set([
   // Product names are intentionally verbatim.
-  "OpenClaw",
+  "Afora",
 ]);
 const IOS_INFO_PLIST_TARGETS = [
   {
@@ -157,7 +157,7 @@ const APPLE_LOCALE_DIRECTORIES: Record<string, string> = {
   "zh-TW": "zh-Hant",
 };
 const LOCALIZED_WRAPPER_CONTRACTS: Record<string, readonly string[]> = {
-  "apps/macos/Sources/OpenClaw/SettingsComponents.swift": [
+  "apps/macos/Sources/Afora/SettingsComponents.swift": [
     "enum SettingsTextValue: ExpressibleByStringLiteral",
     "case localized(LocalizedStringKey)",
     "case verbatim(String)",
@@ -168,21 +168,21 @@ const LOCALIZED_WRAPPER_CONTRACTS: Record<string, readonly string[]> = {
     "struct SettingsCardToggleRow: View {\n    let title: SettingsTextValue\n    let subtitle: SettingsTextValue?",
     "Text(verbatim: value)",
   ],
-  "apps/ios/Sources/Design/OpenClawProComponents.swift": [
-    "enum OpenClawTextValue: ExpressibleByStringLiteral",
-    "struct ProSectionHeader: View {\n    let title: OpenClawTextValue",
-    "struct OpenClawNoticeBanner: View {\n    let icon: String\n    let title: OpenClawTextValue\n    let message: OpenClawTextValue",
-    "struct OpenClawAdaptiveHeaderRow<Leading: View, Accessory: View>: View {\n    let title: OpenClawTextValue\n    let subtitle: OpenClawTextValue?",
-    "struct OpenClawStatusBadge: View {\n    @Environment(\\.colorScheme) private var colorScheme\n    let label: OpenClawTextValue",
-    "struct ProMetricTile: View {\n    @Environment(\\.colorScheme) private var colorScheme\n    let title: OpenClawTextValue",
-    "struct ProPanelHeader: View {\n    let title: OpenClawTextValue",
-    "struct ProStatusRow: View {\n    let icon: String\n    let title: OpenClawTextValue\n    let detail: OpenClawTextValue",
+  "apps/ios/Sources/Design/AforaProComponents.swift": [
+    "enum AforaTextValue: ExpressibleByStringLiteral",
+    "struct ProSectionHeader: View {\n    let title: AforaTextValue",
+    "struct AforaNoticeBanner: View {\n    let icon: String\n    let title: AforaTextValue\n    let message: AforaTextValue",
+    "struct AforaAdaptiveHeaderRow<Leading: View, Accessory: View>: View {\n    let title: AforaTextValue\n    let subtitle: AforaTextValue?",
+    "struct AforaStatusBadge: View {\n    @Environment(\\.colorScheme) private var colorScheme\n    let label: AforaTextValue",
+    "struct ProMetricTile: View {\n    @Environment(\\.colorScheme) private var colorScheme\n    let title: AforaTextValue",
+    "struct ProPanelHeader: View {\n    let title: AforaTextValue",
+    "struct ProStatusRow: View {\n    let icon: String\n    let title: AforaTextValue\n    let detail: AforaTextValue",
   ],
   "apps/ios/Sources/Design/SettingsProTabSupport.swift": [
-    "struct SettingsDetailRow: View {\n    let label: LocalizedStringKey\n    let value: OpenClawTextValue",
-    "init(_ label: LocalizedStringKey, value: OpenClawTextValue)",
+    "struct SettingsDetailRow: View {\n    let label: LocalizedStringKey\n    let value: AforaTextValue",
+    "init(_ label: LocalizedStringKey, value: AforaTextValue)",
     "self.value.text",
-    "struct SettingsApprovalItem: Identifiable {\n    let id: String\n    let icon: String\n    let title: OpenClawTextValue\n    let detail: OpenClawTextValue\n    let priority: OpenClawTextValue",
+    "struct SettingsApprovalItem: Identifiable {\n    let id: String\n    let icon: String\n    let title: AforaTextValue\n    let detail: AforaTextValue\n    let priority: AforaTextValue",
     "self.item.title.text",
     "self.item.detail.text",
     "self.item.priority.text",
@@ -195,9 +195,9 @@ const LOCALIZED_WRAPPER_CONTRACTS: Record<string, readonly string[]> = {
     "Text(verbatim: account.detailText)",
   ],
   "apps/ios/Sources/Design/SettingsProTabActions.swift": [
-    "func detailStatusCard(\n        icon: String,\n        title: OpenClawTextValue,\n        detail: OpenClawTextValue,\n        value: OpenClawTextValue",
-    "func diagnosticCheckRow(\n        icon: String,\n        title: OpenClawTextValue,\n        detail: OpenClawTextValue,\n        value: OpenClawTextValue",
-    "pendingApproval.commandPreview.map(OpenClawTextValue.verbatim)",
+    "func detailStatusCard(\n        icon: String,\n        title: AforaTextValue,\n        detail: AforaTextValue,\n        value: AforaTextValue",
+    "func diagnosticCheckRow(\n        icon: String,\n        title: AforaTextValue,\n        detail: AforaTextValue,\n        value: AforaTextValue",
+    "pendingApproval.commandPreview.map(AforaTextValue.verbatim)",
     'format: String(localized: "Agent: %@")',
   ],
   "apps/ios/Sources/Design/SettingsProTabSections.swift": [
@@ -234,24 +234,24 @@ const LOCALIZED_WRAPPER_CONTRACTS: Record<string, readonly string[]> = {
   "apps/ios/Sources/Design/AgentProTab+Overview.swift": [
     "subtitle: .verbatim(self.agentTotalText)",
     'AttributedString(localized: "^[\\(count) agent](inflect: true) total")',
-    "func agentMenuRow(\n        icon: String,\n        title: OpenClawTextValue,\n        detail: OpenClawTextValue",
-    "func metricTile(\n        icon: String,\n        title: OpenClawTextValue,\n        value: String,\n        detail: OpenClawTextValue",
+    "func agentMenuRow(\n        icon: String,\n        title: AforaTextValue,\n        detail: AforaTextValue",
+    "func metricTile(\n        icon: String,\n        title: AforaTextValue,\n        value: String,\n        detail: AforaTextValue",
   ],
   "apps/ios/Sources/Design/AgentProNodesDestination.swift": [
-    "private func nodeDetailRow(\n        _ title: OpenClawTextValue,\n        copyLabel: LocalizedStringKey",
-    "private func nodeListCard(title: OpenClawTextValue, values: [String])",
-    "private func detailMetric(label: OpenClawTextValue, value: String)",
-    "title: OpenClawTextValue,\n        detail: OpenClawTextValue",
+    "private func nodeDetailRow(\n        _ title: AforaTextValue,\n        copyLabel: LocalizedStringKey",
+    "private func nodeListCard(title: AforaTextValue, values: [String])",
+    "private func detailMetric(label: AforaTextValue, value: String)",
+    "title: AforaTextValue,\n        detail: AforaTextValue",
   ],
   "apps/ios/Sources/Design/AgentProDreamingDestination.swift": [
-    "private func detailMetric(label: OpenClawTextValue, value: String)",
+    "private func detailMetric(label: AforaTextValue, value: String)",
     "label.text",
     "Text(verbatim: value)",
   ],
   "apps/ios/Sources/Design/AgentProTab+DetailComponents.swift": [
-    "func detailMetric(label: OpenClawTextValue, value: String)",
+    "func detailMetric(label: AforaTextValue, value: String)",
     "Text(verbatim: value)",
-    "func emptyDetailRow(\n        icon: String,\n        title: OpenClawTextValue,\n        detail: OpenClawTextValue)",
+    "func emptyDetailRow(\n        icon: String,\n        title: AforaTextValue,\n        detail: AforaTextValue)",
     "title.text",
     "detail.text",
   ],
@@ -259,8 +259,8 @@ const LOCALIZED_WRAPPER_CONTRACTS: Record<string, readonly string[]> = {
     "Text(verbatim: self.item.title)",
     "Text(verbatim: self.item.trailing)",
     "Text(verbatim: self.item.detail)",
-    "struct CommandEmptyStateRow: View {\n    let icon: String\n    let title: OpenClawTextValue\n    let detail: OpenClawTextValue",
-    "private func actionButton(\n        _ title: OpenClawTextValue",
+    "struct CommandEmptyStateRow: View {\n    let icon: String\n    let title: AforaTextValue\n    let detail: AforaTextValue",
+    "private func actionButton(\n        _ title: AforaTextValue",
     "self.actionButton(.verbatim(category)",
   ],
   "apps/ios/Sources/Design/IPadSkillWorkshopScreen.swift": [
@@ -320,7 +320,7 @@ const LOCALIZED_WRAPPER_CONTRACTS: Record<string, readonly string[]> = {
   ],
 };
 const RAW_LOCALIZATION_BYPASSES: Record<string, readonly string[]> = {
-  "apps/macos/Sources/OpenClaw/SettingsComponents.swift": [
+  "apps/macos/Sources/Afora/SettingsComponents.swift": [
     "let title: String",
     "let subtitle: String?",
     "Text(self.title)",
@@ -504,7 +504,7 @@ type InfoPlistTranslation = {
 function parseStringsFile(source: string): Map<string, InfoPlistTranslation> {
   const values = new Map<string, InfoPlistTranslation>();
   for (const match of source.matchAll(
-    /(?:^\/\* OpenClaw source: ("(?:\\.|[^"\\])*") \*\/\n)?^\s*("(?:\\.|[^"\\])*")\s*=\s*("(?:\\.|[^"\\])*");/gmu,
+    /(?:^\/\* Afora source: ("(?:\\.|[^"\\])*") \*\/\n)?^\s*("(?:\\.|[^"\\])*")\s*=\s*("(?:\\.|[^"\\])*");/gmu,
   )) {
     values.set(JSON.parse(match[2] ?? '""') as string, {
       source: match[1] ? (JSON.parse(match[1]) as string) : undefined,
@@ -562,7 +562,7 @@ function renderInfoPlistStrings(
     const candidates = infoPlistTranslationCandidates(artifact, sourceId, source);
     const value = selectInfoPlistTranslation(source, candidates, existing.get(key));
     return [
-      `/* OpenClaw source: ${stringsLiteral(source)} */`,
+      `/* Afora source: ${stringsLiteral(source)} */`,
       `${stringsLiteral(key)} = ${stringsLiteral(value)};`,
     ].join("\n");
   });

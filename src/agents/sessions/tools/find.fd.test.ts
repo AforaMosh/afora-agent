@@ -104,7 +104,7 @@ it.each([
   { name: "inside a repository", gitBoundary: true, expected: false },
   { name: "outside a repository", gitBoundary: false, expected: true },
 ])("sets --no-require-git only $name", async ({ gitBoundary, expected }) => {
-  const tempDir = tempDirs.make("openclaw-find-fd-");
+  const tempDir = tempDirs.make("afora-find-fd-");
   const searchPath = path.join(tempDir, "nested");
   await fs.mkdir(searchPath, { recursive: true });
   if (gitBoundary) {

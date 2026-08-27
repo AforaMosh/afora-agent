@@ -34,7 +34,7 @@ export function renderFloatingUpdateCard(params: {
   if (params.onboarding ? !params.refreshRequired : !params.navigationSurfaceHidden) {
     return nothing;
   }
-  return html`<openclaw-sidebar-update-card
+  return html`<afora-sidebar-update-card
     class="sidebar-update-card--floating"
     .updateAvailable=${params.updateAvailable}
     .updateSchedule=${params.updateSchedule ?? null}
@@ -48,5 +48,5 @@ export function renderFloatingUpdateCard(params: {
     .refreshRequired=${params.refreshRequired}
     .onRefresh=${params.onRefresh}
     .onHoldUpdate=${params.onHoldUpdate ?? (async () => false)}
-  ></openclaw-sidebar-update-card>`;
+  ></afora-sidebar-update-card>`;
 }

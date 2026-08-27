@@ -1,11 +1,11 @@
-import { downloadGeneratedVideoAsset } from "openclaw/plugin-sdk/media-generation-runtime";
+import { downloadGeneratedVideoAsset } from "afora-agent/plugin-sdk/media-generation-runtime";
 import {
   assertOkOrThrowHttpError,
   executeProviderOperationWithRetry,
   fetchWithTimeoutGuarded,
   type ProviderOperationTimeoutMs,
-} from "openclaw/plugin-sdk/provider-http";
-import type { GeneratedVideoAsset } from "openclaw/plugin-sdk/video-generation";
+} from "afora-agent/plugin-sdk/provider-http";
+import type { GeneratedVideoAsset } from "afora-agent/plugin-sdk/video-generation";
 
 export type XaiVideoRequestPolicy = {
   allowPrivateNetwork: boolean;

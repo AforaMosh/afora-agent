@@ -25,7 +25,7 @@ describe("restart health", () => {
     inspectPortUsage.mockResolvedValue({
       port: 18789,
       status: "busy",
-      listeners: [{ pid: 8000, commandLine: "openclaw-gateway" }],
+      listeners: [{ pid: 8000, commandLine: "afora-gateway" }],
       hints: [],
     });
     const readRuntime = vi
@@ -59,7 +59,7 @@ describe("restart health", () => {
     inspectPortUsage.mockResolvedValue({
       port: 18789,
       status: "busy",
-      listeners: [{ pid: 5151, commandLine: "openclaw-gateway" }],
+      listeners: [{ pid: 5151, commandLine: "afora-gateway" }],
       hints: [],
     });
 
@@ -94,7 +94,7 @@ describe("restart health", () => {
       return {
         port: 18789,
         status: "busy",
-        listeners: [{ pid: 8000, commandLine: "openclaw-gateway" }],
+        listeners: [{ pid: 8000, commandLine: "afora-gateway" }],
         hints: [],
       };
     });
@@ -125,7 +125,7 @@ describe("restart health", () => {
         : {
             port: 18789,
             status: "busy",
-            listeners: [{ pid: 8000, commandLine: "openclaw-gateway" }],
+            listeners: [{ pid: 8000, commandLine: "afora-gateway" }],
             hints: [],
           };
     });
@@ -291,7 +291,7 @@ describe("restart health", () => {
         ? {
             port: 18789,
             status: "busy",
-            listeners: [{ pid: 8000, commandLine: "openclaw-gateway" }],
+            listeners: [{ pid: 8000, commandLine: "afora-gateway" }],
             hints: [],
           }
         : { port: 18789, status: "free", listeners: [], hints: [] },
@@ -337,7 +337,7 @@ describe("restart health", () => {
       .mockResolvedValueOnce({
         port: 18789,
         status: "busy",
-        listeners: [{ pid: 8000, commandLine: "openclaw-gateway" }],
+        listeners: [{ pid: 8000, commandLine: "afora-gateway" }],
         hints: [],
       });
     probeGateway.mockResolvedValue({

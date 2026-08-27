@@ -85,7 +85,7 @@ import { migratePersistedImplicitMainRoster } from "./legacy.roster.js";
 import { assertConfigWriteAllowedInCurrentMode } from "./nix-mode-write-guard.js";
 import { resolveIncludeRoots } from "./paths.js";
 import { preflightRuntimeSnapshotWrite } from "./runtime-snapshot.js";
-import type { OpenClawConfig } from "./types.js";
+import type { AforaConfig } from "./types.js";
 import {
   materializeLegacyAgentOwnershipForActiveChannelsResult,
   validateConfigObjectRawWithPlugins,
@@ -114,7 +114,7 @@ function hasIncludedGatewayModeOwner(value: unknown): boolean {
 
 export async function writeConfigFileFromContext(
   context: ConfigIoContext,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   options: ConfigWriteOptions,
   readSnapshot: () => Promise<ReadConfigFileSnapshotInternalResult>,
 ): Promise<InternalConfigWriteResult> {
@@ -351,13 +351,13 @@ export async function writeConfigFileFromContext(
     }
   }
 
-  persistCandidate = applyUnsetPathsForWrite(persistCandidate as OpenClawConfig, unsetPaths);
+  persistCandidate = applyUnsetPathsForWrite(persistCandidate as AforaConfig, unsetPaths);
   const envForRestore = options.envSnapshotForRestore ?? deps.env;
   const validationSourceCandidate = containsConfigIncludeDirective(persistCandidate)
     ? restoreEnvVarRefs(persistCandidate, snapshot.parsed, envForRestore)
     : persistCandidate;
   const validationCandidate = containsConfigIncludeDirective(validationSourceCandidate)
-    ? context.resolveRuntimePreflightSourceConfig(validationSourceCandidate as OpenClawConfig)
+    ? context.resolveRuntimePreflightSourceConfig(validationSourceCandidate as AforaConfig)
     : validationSourceCandidate;
   const validated = validateConfigObjectRawWithPlugins(validationCandidate, {
     env: deps.env,
@@ -374,14 +374,14 @@ export async function writeConfigFileFromContext(
     homedir: deps.homedir,
   });
 
-  let cfgToWrite = persistCandidate as OpenClawConfig;
+  let cfgToWrite = persistCandidate as AforaConfig;
   try {
     if (deps.fs.existsSync(configPath)) {
       const currentRaw = await deps.fs.promises.readFile(configPath, "utf-8");
       const parsed = parseConfigJson5(currentRaw, deps.json5);
       if (parsed.ok) {
         const beforeIdentityRestore = cfgToWrite;
-        cfgToWrite = restoreEnvVarRefs(cfgToWrite, parsed.parsed, envForRestore) as OpenClawConfig;
+        cfgToWrite = restoreEnvVarRefs(cfgToWrite, parsed.parsed, envForRestore) as AforaConfig;
         collectChangedPaths(beforeIdentityRestore, cfgToWrite, "", identityRestoredPaths);
       }
     }
@@ -406,14 +406,14 @@ export async function writeConfigFileFromContext(
         envRefMap,
         changedPaths,
         identityRestoredPaths,
-      ) as OpenClawConfig)
+      ) as AforaConfig)
     : cfgToWrite;
   const tildeRestoredOutputConfig = restoreAuthoredTildePathsForWrite(
     outputConfigBase,
     snapshot.parsed,
     undefined,
     deps.homedir(),
-  ) as OpenClawConfig;
+  ) as AforaConfig;
   const outputConfig = applyUnsetPathsForWrite(tildeRestoredOutputConfig, unsetPaths);
   const stampedOutputConfig = stampConfigVersion(
     outputConfig,
@@ -476,12 +476,12 @@ export async function writeConfigFileFromContext(
     if (
       !snapshot.exists ||
       options.skipOutputLogs ||
-      (isVitestRuntimeEnv(deps.env) && !readTestLogFlag("OPENCLAW_TEST_CONFIG_WRITE_LOG"))
+      (isVitestRuntimeEnv(deps.env) && !readTestLogFlag("AFORA_TEST_CONFIG_WRITE_LOG"))
     ) {
       return;
     }
-    const testLog = readTestLogFlag("OPENCLAW_TEST_CONFIG_WRITE_LOG");
-    if (!isVerbose() && deps.env.OPENCLAW_CONFIG_OVERWRITE_LOG !== "1" && !testLog) {
+    const testLog = readTestLogFlag("AFORA_TEST_CONFIG_WRITE_LOG");
+    if (!isVerbose() && deps.env.AFORA_CONFIG_OVERWRITE_LOG !== "1" && !testLog) {
       return;
     }
     deps.logger.warn(
@@ -494,7 +494,7 @@ export async function writeConfigFileFromContext(
     );
   };
   const logConfigWriteAnomalies = () => {
-    const testLog = readTestLogFlag("OPENCLAW_TEST_CONFIG_WRITE_LOG");
+    const testLog = readTestLogFlag("AFORA_TEST_CONFIG_WRITE_LOG");
     if (
       suspiciousReasons.length === 0 ||
       options.skipOutputLogs ||
@@ -503,7 +503,7 @@ export async function writeConfigFileFromContext(
       return;
     }
     const showMissingMeta =
-      isVerbose() || deps.env.OPENCLAW_CONFIG_WRITE_ANOMALY_LOG === "1" || testLog;
+      isVerbose() || deps.env.AFORA_CONFIG_WRITE_ANOMALY_LOG === "1" || testLog;
     const visibleReasons = showMissingMeta
       ? suspiciousReasons
       : suspiciousReasons.filter((reason) => reason !== "missing-meta-before-write");
@@ -565,7 +565,7 @@ export async function writeConfigFileFromContext(
 
   const preCommitRuntimePreflight =
     options.preCommitRuntimePreflight ??
-    (async (sourceConfig: OpenClawConfig) => {
+    (async (sourceConfig: AforaConfig) => {
       await preflightRuntimeSnapshotWrite({
         nextSourceConfig: sourceConfig,
         refreshOptions: options.runtimeRefresh,

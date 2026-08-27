@@ -5,24 +5,24 @@ import { cleanupTempDirs, makeTempDir } from "../../test/helpers/temp-dir.js";
 import { resolveSessionStorePathCore } from "../config/sessions/paths.js";
 import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/session-sqlite-target.js";
 import {
-  registerOpenClawAgentDatabase,
-  unregisterOpenClawAgentDatabase,
-} from "../state/openclaw-agent-db-registry.js";
+  registerAforaAgentDatabase,
+  unregisterAforaAgentDatabase,
+} from "../state/afora-agent-db-registry.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  listOpenClawRegisteredAgentDatabases,
-  OPENCLAW_AGENT_SCHEMA_VERSION,
-  openOpenClawAgentDatabase,
-} from "../state/openclaw-agent-db.js";
+  closeAforaAgentDatabasesForTest,
+  listAforaRegisteredAgentDatabases,
+  AFORA_AGENT_SCHEMA_VERSION,
+  openAforaAgentDatabase,
+} from "../state/afora-agent-db.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { requireNodeSqlite } from "./node-sqlite.js";
 import { migrateLegacyMediaPersistence } from "./state-migrations.media-persistence.js";
 
 const tempDirs: string[] = [];
-const PREVIOUS_VERSION = OPENCLAW_AGENT_SCHEMA_VERSION - 1;
+const PREVIOUS_VERSION = AFORA_AGENT_SCHEMA_VERSION - 1;
 
 function createLegacyAgentDatabase(params: {
   agentId?: string;
@@ -30,13 +30,13 @@ function createLegacyAgentDatabase(params: {
   path?: string;
 }): string {
   const agentId = params.agentId ?? "main";
-  const opened = openOpenClawAgentDatabase({
+  const opened = openAforaAgentDatabase({
     agentId,
     env: params.env,
     ...(params.path ? { path: params.path } : {}),
   });
   const databasePath = opened.path;
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
   const { DatabaseSync } = requireNodeSqlite();
   const database = new DatabaseSync(databasePath);
   try {
@@ -61,24 +61,24 @@ function readUserVersion(databasePath: string): number {
 }
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   cleanupTempDirs(tempDirs);
 });
 
 describe("media persistence migration targets", () => {
   it("migrates and registers an unregistered default-layout agent database", () => {
     const stateDir = fs.realpathSync.native(makeTempDir(tempDirs, "media-persistence-disk-scan-"));
-    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const env = { AFORA_STATE_DIR: stateDir };
     const databasePath = createLegacyAgentDatabase({ env });
-    unregisterOpenClawAgentDatabase({ agentId: "main", env, path: databasePath });
+    unregisterAforaAgentDatabase({ agentId: "main", env, path: databasePath });
 
     const result = migrateLegacyMediaPersistence({ env });
 
     expect(result.warnings).toEqual([]);
-    expect(readUserVersion(databasePath)).toBe(OPENCLAW_AGENT_SCHEMA_VERSION);
+    expect(readUserVersion(databasePath)).toBe(AFORA_AGENT_SCHEMA_VERSION);
     expect(
-      listOpenClawRegisteredAgentDatabases({
+      listAforaRegisteredAgentDatabases({
         env,
         includeIncompatibleSchemaVersions: true,
       }),
@@ -86,7 +86,7 @@ describe("media persistence migration targets", () => {
       expect.objectContaining({
         agentId: "main",
         path: databasePath,
-        schemaVersion: OPENCLAW_AGENT_SCHEMA_VERSION,
+        schemaVersion: AFORA_AGENT_SCHEMA_VERSION,
       }),
     ]);
   });
@@ -95,10 +95,10 @@ describe("media persistence migration targets", () => {
     const stateDir = fs.realpathSync.native(
       makeTempDir(tempDirs, "media-persistence-renamed-owner-"),
     );
-    const env = { OPENCLAW_STATE_DIR: stateDir };
-    const databasePath = path.join(stateDir, "agents", "oldname", "agent", "openclaw-agent.sqlite");
+    const env = { AFORA_STATE_DIR: stateDir };
+    const databasePath = path.join(stateDir, "agents", "oldname", "agent", "afora-agent.sqlite");
     createLegacyAgentDatabase({ agentId: "renamed", env, path: databasePath });
-    unregisterOpenClawAgentDatabase({ agentId: "renamed", env, path: databasePath });
+    unregisterAforaAgentDatabase({ agentId: "renamed", env, path: databasePath });
 
     const result = migrateLegacyMediaPersistence({
       configuredAgentDatabaseTargets: [{ agentId: "renamed", path: databasePath }],
@@ -106,9 +106,9 @@ describe("media persistence migration targets", () => {
     });
 
     expect(result.warnings).toEqual([]);
-    expect(readUserVersion(databasePath)).toBe(OPENCLAW_AGENT_SCHEMA_VERSION);
+    expect(readUserVersion(databasePath)).toBe(AFORA_AGENT_SCHEMA_VERSION);
     expect(
-      listOpenClawRegisteredAgentDatabases({
+      listAforaRegisteredAgentDatabases({
         env,
         includeIncompatibleSchemaVersions: true,
       }),
@@ -119,16 +119,16 @@ describe("media persistence migration targets", () => {
     const stateDir = fs.realpathSync.native(
       makeTempDir(tempDirs, "media-persistence-recorded-owner-"),
     );
-    const env = { OPENCLAW_STATE_DIR: stateDir };
-    const databasePath = path.join(stateDir, "agents", "dirname", "agent", "openclaw-agent.sqlite");
+    const env = { AFORA_STATE_DIR: stateDir };
+    const databasePath = path.join(stateDir, "agents", "dirname", "agent", "afora-agent.sqlite");
     createLegacyAgentDatabase({ agentId: "recorded", env, path: databasePath });
 
     const result = migrateLegacyMediaPersistence({ env });
 
     expect(result.warnings).toEqual([]);
-    expect(readUserVersion(databasePath)).toBe(OPENCLAW_AGENT_SCHEMA_VERSION);
+    expect(readUserVersion(databasePath)).toBe(AFORA_AGENT_SCHEMA_VERSION);
     expect(
-      listOpenClawRegisteredAgentDatabases({
+      listAforaRegisteredAgentDatabases({
         env,
         includeIncompatibleSchemaVersions: true,
       }),
@@ -139,20 +139,20 @@ describe("media persistence migration targets", () => {
     const stateDir = fs.realpathSync.native(
       makeTempDir(tempDirs, "media-persistence-symlink-path-"),
     );
-    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const env = { AFORA_STATE_DIR: stateDir };
     const symlinkTarget = path.join(stateDir, "external", "subdir");
     fs.mkdirSync(symlinkTarget, { recursive: true });
     fs.symlinkSync(symlinkTarget, path.join(stateDir, "link"), "dir");
-    const filesystemPath = path.join(stateDir, "external", "x", "openclaw-agent.sqlite");
-    const lexicalPath = path.join(stateDir, "x", "openclaw-agent.sqlite");
+    const filesystemPath = path.join(stateDir, "external", "x", "afora-agent.sqlite");
+    const lexicalPath = path.join(stateDir, "x", "afora-agent.sqlite");
     createLegacyAgentDatabase({ env, path: filesystemPath });
     createLegacyAgentDatabase({ env, path: lexicalPath });
-    unregisterOpenClawAgentDatabase({ agentId: "main", env, path: filesystemPath });
-    unregisterOpenClawAgentDatabase({ agentId: "main", env, path: lexicalPath });
-    const registeredPath = `${path.join(stateDir, "link")}${path.sep}..${path.sep}x${path.sep}openclaw-agent.sqlite`;
+    unregisterAforaAgentDatabase({ agentId: "main", env, path: filesystemPath });
+    unregisterAforaAgentDatabase({ agentId: "main", env, path: lexicalPath });
+    const registeredPath = `${path.join(stateDir, "link")}${path.sep}..${path.sep}x${path.sep}afora-agent.sqlite`;
     expect(fs.realpathSync.native(registeredPath)).toBe(filesystemPath);
     expect(path.resolve(registeredPath)).toBe(lexicalPath);
-    registerOpenClawAgentDatabase({
+    registerAforaAgentDatabase({
       agentId: "main",
       env,
       path: registeredPath,
@@ -162,7 +162,7 @@ describe("media persistence migration targets", () => {
     const result = migrateLegacyMediaPersistence({ env });
 
     expect(result.warnings).toEqual([]);
-    expect(readUserVersion(filesystemPath)).toBe(OPENCLAW_AGENT_SCHEMA_VERSION);
+    expect(readUserVersion(filesystemPath)).toBe(AFORA_AGENT_SCHEMA_VERSION);
     expect(readUserVersion(lexicalPath)).toBe(PREVIOUS_VERSION);
   });
 
@@ -173,13 +173,13 @@ describe("media persistence migration targets", () => {
     const foreignStateDir = fs.realpathSync.native(
       makeTempDir(tempDirs, "media-persistence-foreign-state-"),
     );
-    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const env = { AFORA_STATE_DIR: stateDir };
     const databasePath = path.join(
       foreignStateDir,
       "agents",
       "main",
       "agent",
-      "openclaw-agent.sqlite",
+      "afora-agent.sqlite",
     );
     createLegacyAgentDatabase({ env, path: databasePath });
     const beforeBytes = fs.readFileSync(databasePath);
@@ -191,7 +191,7 @@ describe("media persistence migration targets", () => {
       `Skipped foreign agent database ${databasePath}; it is outside the active state directory and is not a configured session store.`,
     );
     expect(
-      listOpenClawRegisteredAgentDatabases({
+      listAforaRegisteredAgentDatabases({
         env,
         includeIncompatibleSchemaVersions: true,
       }),
@@ -207,7 +207,7 @@ describe("media persistence migration targets", () => {
     const customRoot = fs.realpathSync.native(
       makeTempDir(tempDirs, "media-persistence-custom-store-"),
     );
-    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const env = { AFORA_STATE_DIR: stateDir };
     const storePath = resolveSessionStorePathCore(
       path.join(customRoot, "{agentId}", "sessions.json"),
       {
@@ -221,9 +221,9 @@ describe("media persistence migration targets", () => {
       env,
     }).path;
     createLegacyAgentDatabase({ env, path: databasePath });
-    unregisterOpenClawAgentDatabase({ agentId: "main", env, path: databasePath });
+    unregisterAforaAgentDatabase({ agentId: "main", env, path: databasePath });
     expect(
-      listOpenClawRegisteredAgentDatabases({
+      listAforaRegisteredAgentDatabases({
         env,
         includeIncompatibleSchemaVersions: true,
       }),
@@ -235,9 +235,9 @@ describe("media persistence migration targets", () => {
     });
 
     expect(result.warnings).toEqual([]);
-    expect(readUserVersion(databasePath)).toBe(OPENCLAW_AGENT_SCHEMA_VERSION);
+    expect(readUserVersion(databasePath)).toBe(AFORA_AGENT_SCHEMA_VERSION);
     expect(
-      listOpenClawRegisteredAgentDatabases({
+      listAforaRegisteredAgentDatabases({
         env,
         includeIncompatibleSchemaVersions: true,
       }),
@@ -251,11 +251,11 @@ describe("media persistence migration targets", () => {
     const customRoot = fs.realpathSync.native(
       makeTempDir(tempDirs, "media-persistence-stale-owner-store-"),
     );
-    const env = { OPENCLAW_STATE_DIR: stateDir };
-    const databasePath = path.join(customRoot, "openclaw-agent.sqlite");
+    const env = { AFORA_STATE_DIR: stateDir };
+    const databasePath = path.join(customRoot, "afora-agent.sqlite");
     createLegacyAgentDatabase({ agentId: "new", env, path: databasePath });
-    unregisterOpenClawAgentDatabase({ agentId: "new", env, path: databasePath });
-    registerOpenClawAgentDatabase({
+    unregisterAforaAgentDatabase({ agentId: "new", env, path: databasePath });
+    registerAforaAgentDatabase({
       agentId: "old",
       env,
       path: databasePath,
@@ -270,9 +270,9 @@ describe("media persistence migration targets", () => {
     expect(result.warnings).toContain(
       `Skipped foreign agent database ${databasePath}; it is outside the active state directory and is not a configured session store.`,
     );
-    expect(readUserVersion(databasePath)).toBe(OPENCLAW_AGENT_SCHEMA_VERSION);
+    expect(readUserVersion(databasePath)).toBe(AFORA_AGENT_SCHEMA_VERSION);
     expect(
-      listOpenClawRegisteredAgentDatabases({
+      listAforaRegisteredAgentDatabases({
         env,
         includeIncompatibleSchemaVersions: true,
       }),
@@ -283,16 +283,16 @@ describe("media persistence migration targets", () => {
     const stateDir = fs.realpathSync.native(
       makeTempDir(tempDirs, "media-persistence-registry-hygiene-"),
     );
-    const env = { OPENCLAW_STATE_DIR: stateDir };
-    const missingPath = path.join(stateDir, "agents", "missing", "agent", "openclaw-agent.sqlite");
-    const archivedPath = path.join(stateDir, "imports", "archived", "openclaw-agent.sqlite");
+    const env = { AFORA_STATE_DIR: stateDir };
+    const missingPath = path.join(stateDir, "agents", "missing", "agent", "afora-agent.sqlite");
+    const archivedPath = path.join(stateDir, "imports", "archived", "afora-agent.sqlite");
     fs.mkdirSync(path.dirname(archivedPath), { recursive: true });
     fs.writeFileSync(archivedPath, "archived fixture");
-    const state = openOpenClawStateDatabase({ env });
+    const state = openAforaStateDatabase({ env });
     const insert = state.db.prepare(
       "INSERT INTO agent_databases(agent_id,path,schema_version,last_seen_at,size_bytes) VALUES(?,?,?,?,?)",
     );
-    insert.run("missing", missingPath, OPENCLAW_AGENT_SCHEMA_VERSION, 1, null);
+    insert.run("missing", missingPath, AFORA_AGENT_SCHEMA_VERSION, 1, null);
     insert.run("archived", archivedPath, 8, 1, null);
 
     const result = migrateLegacyMediaPersistence({ env });
@@ -305,7 +305,7 @@ describe("media persistence migration targets", () => {
     );
     expect(result.warnings).toContain(`Skipped missing registered agent database ${missingPath}.`);
     expect(
-      listOpenClawRegisteredAgentDatabases({
+      listAforaRegisteredAgentDatabases({
         env,
         includeIncompatibleSchemaVersions: true,
       }),

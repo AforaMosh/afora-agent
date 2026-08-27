@@ -168,7 +168,7 @@ function familyTitle(value: string): string {
     imessage: "iMessage",
     msteams: "Microsoft Teams",
     openai: "OpenAI",
-    openclaw: "OpenClaw",
+    afora: "Afora",
     "platform-app": "Platform",
     "provider-tool": "Provider and tool",
     whatsapp: "WhatsApp",
@@ -821,7 +821,7 @@ function evidenceScorecardWarnings(
       .filter((item) => (item.profile === "all" || item.profile === "release") && !item.scorecard)
       .map(
         (item) =>
-          `${item.path}: ${item.profile} profile qa-evidence.json does not include a scorecard field; run pnpm openclaw qa run --qa-profile ${item.profile} to produce deterministic scorecard rows`,
+          `${item.path}: ${item.profile} profile qa-evidence.json does not include a scorecard field; run pnpm afora qa run --qa-profile ${item.profile} to produce deterministic scorecard rows`,
       ),
     ...coverage.warnings,
   ];
@@ -983,7 +983,7 @@ function renderMaturityScorecard({
   const lines = [
     ...frontmatter(
       "Maturity scorecard",
-      "OpenClaw release readiness scores for product areas, integrations, and supported workflows.",
+      "Afora release readiness scores for product areas, integrations, and supported workflows.",
     ),
     "# Maturity scorecard",
     "",
@@ -996,7 +996,7 @@ function renderMaturityScorecard({
     "",
     "## What this page is for",
     "",
-    "Use this page to answer one question: which OpenClaw surfaces are credible choices for a release, and what evidence supports that judgment? Coverage comes from deterministic QA evidence; quality and completeness are maintained as reviewed maturity scores.",
+    "Use this page to answer one question: which Afora surfaces are credible choices for a release, and what evidence supports that judgment? Coverage comes from deterministic QA evidence; quality and completeness are maintained as reviewed maturity scores.",
     "",
     "## At a glance",
     "",
@@ -1011,7 +1011,7 @@ function renderMaturityScorecard({
     ),
     "</div>",
     "",
-    'Coverage is deliberately evidence-led: an area does not become "ready" just because the implementation exists. It is not an input to the maturity score, but OpenClaw aims to keep end-to-end coverage above 90% for mature Stable-or-better features over time.',
+    'Coverage is deliberately evidence-led: an area does not become "ready" just because the implementation exists. It is not an input to the maturity score, but Afora aims to keep end-to-end coverage above 90% for mature Stable-or-better features over time.',
     "",
     ...renderScoreBands(),
   ];
@@ -1049,7 +1049,7 @@ function renderTaxonomy({
   const lines = [
     ...frontmatter(
       "Maturity taxonomy",
-      "Detailed reference for the product areas and checks behind the OpenClaw maturity scorecard.",
+      "Detailed reference for the product areas and checks behind the Afora maturity scorecard.",
     ),
     "# Maturity taxonomy",
     "",

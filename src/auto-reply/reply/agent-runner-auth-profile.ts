@@ -1,5 +1,5 @@
 // Resolves auth profile settings that agent runner forwards to providers.
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import {
   resolveProviderIdForAuth,
   type ProviderAuthAliasLookupParams,

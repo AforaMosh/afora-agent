@@ -19,10 +19,10 @@ vi.mock("./windows-encoding.js", async () => {
   };
 });
 
-const CJK_SCRIPT_PATH = "C:\\Users\\苗振\\.openclaw\\gateway.cmd";
+const CJK_SCRIPT_PATH = "C:\\Users\\苗振\\.afora\\gateway.cmd";
 const REPLACEMENT_CHAR = String.fromCharCode(0xfffd);
 const marker = (codePage: number, encoding: string) =>
-  `@chcp ${codePage} >nul\r\n@rem openclaw-launcher-encoding=${encoding}\r\n`;
+  `@chcp ${codePage} >nul\r\n@rem afora-launcher-encoding=${encoding}\r\n`;
 const GBK_MARKER = marker(936, "gbk");
 const EUC_KR_MARKER = marker(949, "euc-kr");
 const CP857_MARKER = marker(857, "cp857");
@@ -77,7 +77,7 @@ describe("encodeWindowsLauncherScript", () => {
 
   it("encodes non-ASCII cmd scripts with a code-page preamble and marker", () => {
     resolveWindowsOemEncodingMock.mockReturnValue("gbk");
-    const content = `@echo off\r\ncd /d "C:\\Users\\苗振\\.openclaw"\r\nnode gateway.js\r\n`;
+    const content = `@echo off\r\ncd /d "C:\\Users\\苗振\\.afora"\r\nnode gateway.js\r\n`;
     const encoded = encodeWindowsLauncherScript({ format: "cmd", content });
 
     expect(encoded.equals(Buffer.from(content, "utf8"))).toBe(false);
@@ -95,7 +95,7 @@ describe("encodeWindowsLauncherScript", () => {
     expect(collisionBytes.toString("utf8")).not.toBe("隆");
     expect(collisionBytes.toString("utf8")).not.toContain(REPLACEMENT_CHAR);
 
-    const content = `@echo off\r\ncd /d "C:\\Users\\隆\\.openclaw"\r\nnode gateway.js\r\n`;
+    const content = `@echo off\r\ncd /d "C:\\Users\\隆\\.afora"\r\nnode gateway.js\r\n`;
     const encoded = encodeWindowsLauncherScript({ format: "cmd", content });
 
     expect(encoded.equals(iconv.encode(GBK_MARKER + content, "gbk"))).toBe(true);
@@ -115,7 +115,7 @@ describe("encodeWindowsLauncherScript", () => {
     expect(iconv.decode(extensionBytes, "euc-kr")).toBe("똠");
     expect(new TextDecoder("euc-kr").decode(extensionBytes)).not.toBe("똠");
 
-    const content = `@echo off\r\ncd /d "C:\\Users\\똠이\\.openclaw"\r\nnode gateway.js\r\n`;
+    const content = `@echo off\r\ncd /d "C:\\Users\\똠이\\.afora"\r\nnode gateway.js\r\n`;
     const encoded = encodeWindowsLauncherScript({ format: "cmd", content });
 
     expect(encoded.equals(iconv.encode(EUC_KR_MARKER + content, "euc-kr"))).toBe(true);
@@ -124,7 +124,7 @@ describe("encodeWindowsLauncherScript", () => {
 
   it("encodes Turkish profile paths with the cp857 OEM page cmd.exe reads (#108774)", () => {
     resolveWindowsOemEncodingMock.mockReturnValue("cp857");
-    const content = `@echo off\r\ncd /d "C:\\Users\\Yiğit Öğün\\.openclaw"\r\nnode gateway.js\r\n`;
+    const content = `@echo off\r\ncd /d "C:\\Users\\Yiğit Öğün\\.afora"\r\nnode gateway.js\r\n`;
     const encoded = encodeWindowsLauncherScript({ format: "cmd", content });
 
     expect(encoded.equals(Buffer.from(content, "utf8"))).toBe(false);
@@ -205,7 +205,7 @@ describe("decodeWindowsLauncherScript", () => {
   });
 
   it("decodes unmarked legacy UTF-8 scripts with CJK paths", () => {
-    const content = `@echo off\r\ncd /d "C:\\Users\\苗振\\.openclaw"\r\nnode gateway.js\r\n`;
+    const content = `@echo off\r\ncd /d "C:\\Users\\苗振\\.afora"\r\nnode gateway.js\r\n`;
     const buffer = Buffer.from(content, "utf8");
 
     expect(decodeWindowsLauncherScript({ buffer })).toBe(content);
@@ -220,13 +220,13 @@ describe("decodeWindowsLauncherScript", () => {
 
   it("decodes pre-preamble marked code-page scripts", () => {
     const content = "@echo off\r\nrem 你好\r\n";
-    const buffer = iconv.encode(`@rem openclaw-launcher-encoding=gbk\r\n${content}`, "gbk");
+    const buffer = iconv.encode(`@rem afora-launcher-encoding=gbk\r\n${content}`, "gbk");
 
     expect(decodeWindowsLauncherScript({ buffer })).toBe(content);
   });
 
   it("falls back to UTF-8 for marker labels iconv cannot decode", () => {
-    const content = "@rem openclaw-launcher-encoding=bogus\r\nnode gateway.js\r\n";
+    const content = "@rem afora-launcher-encoding=bogus\r\nnode gateway.js\r\n";
     const buffer = Buffer.from(content, "utf8");
 
     expect(decodeWindowsLauncherScript({ buffer })).toBe(content);

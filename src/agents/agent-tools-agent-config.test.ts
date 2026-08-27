@@ -1,7 +1,7 @@
 /**
  * Tests agent-specific tool filtering and filesystem policy.
  * Covers sandbox inheritance, group policies, and workspace-only behavior in
- * createOpenClawCodingTools.
+ * createAforaCodingTools.
  */
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -9,12 +9,12 @@ import path from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import "./test-helpers/fast-bash-tools.js";
 import "./test-helpers/fast-coding-tools.js";
-import "./test-helpers/fast-openclaw-tools.js";
-import type { OpenClawConfig } from "../config/config.js";
+import "./test-helpers/fast-afora-tools.js";
+import type { AforaConfig } from "../config/config.js";
 import { resolveChannelGroupToolsPolicy } from "../config/group-policy.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createSessionConversationTestRegistry } from "../test-utils/session-conversation-registry.js";
-import { createOpenClawCodingTools } from "./agent-tools.js";
+import { createAforaCodingTools } from "./agent-tools.js";
 import { resolveEffectiveToolPolicy } from "./agent-tools.policy.js";
 import type { SandboxFsBridge } from "./sandbox/fs-bridge.js";
 import type { SandboxDockerConfig } from "./sandbox/types.docker.js";
@@ -62,7 +62,7 @@ describe("Agent-specific tool filtering", () => {
       patch: string;
     }) => Promise<void>,
   ) {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-agent-tools-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-agent-tools-"));
     const escapedPath = path.join(
       path.dirname(workspaceDir),
       `escaped-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}.txt`,
@@ -70,7 +70,7 @@ describe("Agent-specific tool filtering", () => {
     const relativeEscape = path.relative(workspaceDir, escapedPath);
 
     try {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         tools: {
           allow: ["read", "write", "exec"],
           exec: {
@@ -79,7 +79,7 @@ describe("Agent-specific tool filtering", () => {
         },
       };
 
-      const tools = createOpenClawCodingTools({
+      const tools = createAforaCodingTools({
         config: cfg,
         sessionKey: "agent:main:main",
         workspaceDir,
@@ -109,8 +109,8 @@ describe("Agent-specific tool filtering", () => {
     }
   }
 
-  function createMainSessionTools(cfg: OpenClawConfig) {
-    return createOpenClawCodingTools({
+  function createMainSessionTools(cfg: AforaConfig) {
+    return createAforaCodingTools({
       config: cfg,
       sessionKey: "agent:main:main",
       workspaceDir: "/tmp/test",
@@ -119,16 +119,16 @@ describe("Agent-specific tool filtering", () => {
   }
 
   function createMainAgentConfig(params: {
-    tools: NonNullable<OpenClawConfig["tools"]>;
-    agentTools?: NonNullable<NonNullable<OpenClawConfig["agents"]>["list"]>[number]["tools"];
-  }): OpenClawConfig {
+    tools: NonNullable<AforaConfig["tools"]>;
+    agentTools?: NonNullable<NonNullable<AforaConfig["agents"]>["list"]>[number]["tools"];
+  }): AforaConfig {
     return {
       tools: params.tools,
       agents: {
         list: [
           {
             id: "main",
-            workspace: "~/openclaw",
+            workspace: "~/afora",
             ...(params.agentTools ? { tools: params.agentTools } : {}),
           },
         ],
@@ -174,7 +174,7 @@ describe("Agent-specific tool filtering", () => {
   });
 
   it("uses the configured default agent for lean local-model filtering on legacy session keys", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         list: [
           {
@@ -188,7 +188,7 @@ describe("Agent-specific tool filtering", () => {
       },
     };
 
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: cfg,
       sessionKey: "main",
       workspaceDir: "/tmp/test",
@@ -205,13 +205,13 @@ describe("Agent-specific tool filtering", () => {
   });
 
   it("should allow apply_patch for OpenAI models when write is allow-listed", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         allow: ["read", "write", "exec"],
       },
     };
 
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: cfg,
       sessionKey: "agent:main:main",
       workspaceDir: "/tmp/test",
@@ -227,7 +227,7 @@ describe("Agent-specific tool filtering", () => {
   });
 
   it("should allow disabling apply_patch explicitly", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         allow: ["read", "write", "exec"],
         exec: {
@@ -236,7 +236,7 @@ describe("Agent-specific tool filtering", () => {
       },
     };
 
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: cfg,
       sessionKey: "agent:main:main",
       workspaceDir: "/tmp/test",
@@ -275,7 +275,7 @@ describe("Agent-specific tool filtering", () => {
   });
 
   it("should apply agent-specific tool policy", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         allow: ["read", "write", "exec"],
         deny: [],
@@ -284,7 +284,7 @@ describe("Agent-specific tool filtering", () => {
         list: [
           {
             id: "restricted",
-            workspace: "~/openclaw-restricted",
+            workspace: "~/afora-restricted",
             tools: {
               allow: ["read"], // Agent override: only read
               deny: ["exec", "write", "edit"],
@@ -294,7 +294,7 @@ describe("Agent-specific tool filtering", () => {
       },
     };
 
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: cfg,
       sessionKey: "agent:restricted:main",
       workspaceDir: "/tmp/test-restricted",
@@ -308,7 +308,7 @@ describe("Agent-specific tool filtering", () => {
   });
 
   it("should apply provider-specific tool policy", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         allow: ["read", "write", "exec"],
         byProvider: {
@@ -319,7 +319,7 @@ describe("Agent-specific tool filtering", () => {
       },
     };
 
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: cfg,
       sessionKey: "agent:main:main",
       workspaceDir: "/tmp/test-provider",
@@ -332,7 +332,7 @@ describe("Agent-specific tool filtering", () => {
   });
 
   it("should apply provider-specific tool profile overrides", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         profile: "coding",
         byProvider: {
@@ -343,7 +343,7 @@ describe("Agent-specific tool filtering", () => {
       },
     };
 
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: cfg,
       sessionKey: "agent:main:main",
       workspaceDir: "/tmp/test-provider-profile",
@@ -357,17 +357,17 @@ describe("Agent-specific tool filtering", () => {
   });
 
   it("should resolve different tool policies for different agents", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         list: [
           {
             id: "main",
-            workspace: "~/openclaw",
+            workspace: "~/afora",
             // No tools restriction - all tools available
           },
           {
             id: "family",
-            workspace: "~/openclaw-family",
+            workspace: "~/afora-family",
             tools: {
               allow: ["read"],
               deny: ["exec", "write", "edit", "process"],
@@ -398,7 +398,7 @@ describe("Agent-specific tool filtering", () => {
   });
 
   it("should resolve group tool policy overrides (group-specific beats wildcard)", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         whatsapp: {
           groups: {
@@ -423,7 +423,7 @@ describe("Agent-specific tool filtering", () => {
   });
 
   it("should apply per-sender tool policies for group tools", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         whatsapp: {
           groups: {
@@ -458,7 +458,7 @@ describe("Agent-specific tool filtering", () => {
   });
 
   it("should apply global per-sender tool policy to core tools", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         toolsBySender: {
           "id:guest": { deny: ["exec", "process"] },
@@ -466,7 +466,7 @@ describe("Agent-specific tool filtering", () => {
       },
     };
 
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: cfg,
       messageProvider: "discord",
       senderId: "guest",
@@ -481,7 +481,7 @@ describe("Agent-specific tool filtering", () => {
   });
 
   it("keeps core tools for owner WebChat while restricting non-owners", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         toolsBySender: {
           "*": { deny: ["exec", "process"] },
@@ -489,7 +489,7 @@ describe("Agent-specific tool filtering", () => {
       },
     };
     const createWebChatTools = (senderIsOwner: boolean) =>
-      createOpenClawCodingTools({
+      createAforaCodingTools({
         config: cfg,
         messageProvider: "webchat",
         senderIsOwner,
@@ -505,7 +505,7 @@ describe("Agent-specific tool filtering", () => {
     expect(ownerTools).toContain("automations");
     expect(ownerTools).toContain("gateway");
     expect(ownerTools).toContain("nodes");
-    expect(ownerTools).toContain("openclaw");
+    expect(ownerTools).toContain("afora");
     expect(ownerTools).toContain("conversations_list");
     expect(ownerTools).toContain("conversations_send");
     expect(ownerTools).toContain("conversations_turn");
@@ -514,14 +514,14 @@ describe("Agent-specific tool filtering", () => {
     expect(nonOwnerTools).not.toContain("automations");
     expect(nonOwnerTools).not.toContain("gateway");
     expect(nonOwnerTools).not.toContain("nodes");
-    expect(nonOwnerTools).not.toContain("openclaw");
+    expect(nonOwnerTools).not.toContain("afora");
     expect(nonOwnerTools).not.toContain("conversations_list");
     expect(nonOwnerTools).not.toContain("conversations_send");
     expect(nonOwnerTools).not.toContain("conversations_turn");
   });
 
   it("should let agent per-sender policy override global sender wildcard", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         toolsBySender: {
           "*": { deny: ["exec"] },
@@ -531,7 +531,7 @@ describe("Agent-specific tool filtering", () => {
         list: [
           {
             id: "trusted",
-            workspace: "~/openclaw-trusted",
+            workspace: "~/afora-trusted",
             tools: {
               toolsBySender: {
                 "id:alice": {},
@@ -542,7 +542,7 @@ describe("Agent-specific tool filtering", () => {
       },
     };
 
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: cfg,
       sessionKey: "agent:trusted:discord:dm:alice",
       messageProvider: "discord",
@@ -557,7 +557,7 @@ describe("Agent-specific tool filtering", () => {
   });
 
   it("should not let default sender policy override group tools", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         whatsapp: {
           groups: {
@@ -585,7 +585,7 @@ describe("Agent-specific tool filtering", () => {
   });
 
   it("should resolve telegram group tool policy for topic session keys", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         telegram: {
           groups: {
@@ -603,7 +603,7 @@ describe("Agent-specific tool filtering", () => {
   });
 
   it("should not apply forged caller group tool policy for non-group sessions", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: { allow: ["read"] },
       channels: {
         whatsapp: {
@@ -616,7 +616,7 @@ describe("Agent-specific tool filtering", () => {
       },
     };
 
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: cfg,
       sessionKey: "agent:main:main",
       messageProvider: "whatsapp",
@@ -633,7 +633,7 @@ describe("Agent-specific tool filtering", () => {
   });
 
   it("should resolve feishu group tool policy for sender-scoped session keys", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         feishu: {
           groups: {
@@ -645,7 +645,7 @@ describe("Agent-specific tool filtering", () => {
       },
     };
 
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: cfg,
       sessionKey: "agent:main:feishu:group:oc_group_chat:topic:om_topic_root:sender:ou_topic_user",
       messageProvider: "feishu",
@@ -658,7 +658,7 @@ describe("Agent-specific tool filtering", () => {
   });
 
   it("should prefer scoped group candidates before wildcard tool policy", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         feishu: {
           groups: {
@@ -673,7 +673,7 @@ describe("Agent-specific tool filtering", () => {
       },
     };
 
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: cfg,
       sessionKey: "agent:main:feishu:group:oc_group_chat:topic:om_topic_root:sender:ou_topic_user",
       messageProvider: "feishu",
@@ -686,7 +686,7 @@ describe("Agent-specific tool filtering", () => {
   });
 
   it("should resolve inherited group tool policy for subagent parent groups", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         whatsapp: {
           groups: {
@@ -704,7 +704,7 @@ describe("Agent-specific tool filtering", () => {
   });
 
   it("should apply global tool policy before agent-specific policy", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         deny: ["browser"], // Global deny
       },
@@ -712,7 +712,7 @@ describe("Agent-specific tool filtering", () => {
         list: [
           {
             id: "work",
-            workspace: "~/openclaw-work",
+            workspace: "~/afora-work",
             tools: {
               deny: ["exec", "process"], // Agent deny (override)
             },
@@ -721,7 +721,7 @@ describe("Agent-specific tool filtering", () => {
       },
     };
 
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: cfg,
       sessionKey: "agent:work:slack:dm:user123",
       workspaceDir: "/tmp/test-work",
@@ -748,7 +748,7 @@ describe("Agent-specific tool filtering", () => {
       },
     });
 
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: cfg,
       sessionKey: "agent:restricted:main",
       workspaceDir: "/tmp/test-restricted",

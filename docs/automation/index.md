@@ -2,13 +2,13 @@
 doc-schema-version: 1
 summary: "Overview of automation mechanisms: tasks, automations, hooks, standing orders, and Task Flow"
 read_when:
-  - Deciding how to automate work with OpenClaw
+  - Deciding how to automate work with Afora
   - Choosing between heartbeat, automations, hooks, and standing orders
   - Looking for the right automation entry point
 title: "Automation"
 ---
 
-OpenClaw runs work in the background through tasks, scheduled jobs, event hooks,
+Afora runs work in the background through tasks, scheduled jobs, event hooks,
 and standing instructions. Use this page to pick the right mechanism.
 
 ## Quick decision guide
@@ -39,7 +39,7 @@ flowchart TD
 | Check inbox every 30 min                | Heartbeat        | Batches with other checks, context-aware         |
 | Monitor calendar for upcoming events    | Heartbeat        | Natural fit for periodic awareness               |
 | Inspect status of a subagent or ACP run | Background Tasks | Tasks ledger tracks all detached work            |
-| Audit what ran and when                 | Background Tasks | `openclaw tasks list` and `openclaw tasks audit` |
+| Audit what ran and when                 | Background Tasks | `afora tasks list` and `afora tasks audit` |
 | Multi-step research then summarize      | Task Flow        | Durable orchestration with revision tracking     |
 | Run a script on session reset           | Hooks            | Event-driven, fires on lifecycle events          |
 | Execute code on every tool call         | Plugin hooks     | In-process hooks can intercept tool calls        |
@@ -61,19 +61,19 @@ Use Automations when you need precise timing or isolated execution. Use Heartbea
 
 ### Automations
 
-Automations are OpenClaw's built-in scheduler for precise timing. The scheduler persists jobs, wakes the agent at the right time, and can deliver output to a chat channel or webhook endpoint. Supports one-shot reminders, recurring cron expressions, and inbound webhook triggers.
+Automations are Afora's built-in scheduler for precise timing. The scheduler persists jobs, wakes the agent at the right time, and can deliver output to a chat channel or webhook endpoint. Supports one-shot reminders, recurring cron expressions, and inbound webhook triggers.
 
 See [Automations](/automation/cron-jobs).
 
 ### Tasks
 
-The background task ledger tracks all detached work: ACP runs, subagent spawns, isolated automation runs, and CLI operations. Tasks are records, not schedulers. Use `openclaw tasks list` and `openclaw tasks audit` to inspect them.
+The background task ledger tracks all detached work: ACP runs, subagent spawns, isolated automation runs, and CLI operations. Tasks are records, not schedulers. Use `afora tasks list` and `afora tasks audit` to inspect them.
 
 See [Background Tasks](/automation/tasks).
 
 ### Task Flow
 
-Task Flow is the flow orchestration substrate above background tasks. It manages durable multi-step flows with managed and mirrored sync modes, revision tracking, and `openclaw tasks flow list|show|cancel` for inspection.
+Task Flow is the flow orchestration substrate above background tasks. It manages durable multi-step flows with managed and mirrored sync modes, revision tracking, and `afora tasks flow list|show|cancel` for inspection.
 
 See [Task Flow](/automation/taskflow).
 
@@ -88,7 +88,7 @@ See [Standing Orders](/automation/standing-orders).
 Internal hooks are event-driven scripts triggered by agent lifecycle events
 (`/new`, `/reset`, `/stop`), session compaction, gateway startup, and message
 flow. They are discovered from hook directories and managed with
-`openclaw hooks`. For in-process tool-call interception, use
+`afora hooks`. For in-process tool-call interception, use
 [Plugin hooks](/plugins/hooks).
 
 See [Hooks](/automation/hooks).

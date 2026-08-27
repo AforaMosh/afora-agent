@@ -12,7 +12,7 @@ export function registerPromosCli(program: Command) {
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/promos", "docs.openclaw.ai/cli/promos")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/promos", "docs.afora.ai/cli/promos")}\n`,
     );
 
   promos
@@ -29,7 +29,7 @@ export function registerPromosCli(program: Command) {
   promos
     .command("claim")
     .description("Claim a promotion: set up provider auth and register its models")
-    .argument("<slug>", "Promotion slug from `openclaw promos list`")
+    .argument("<slug>", "Promotion slug from `afora promos list`")
     // Credential-on-argv matches the shipped `onboard --<provider>-api-key` /
     // `onboard --token` non-interactive contract (AGENTS.md: public API). The
     // no-argv alternative is the provider's env var, detected as existing auth.

@@ -4,7 +4,7 @@ import type {
   CommandArgDefinition,
   CommandArgValues,
   NativeCommandSpec,
-} from "openclaw/plugin-sdk/native-command-registry";
+} from "afora-agent/plugin-sdk/native-command-registry";
 import type { CommandInteraction } from "../internal/discord.js";
 import type { DiscordCommandArgs } from "./native-command.types.js";
 

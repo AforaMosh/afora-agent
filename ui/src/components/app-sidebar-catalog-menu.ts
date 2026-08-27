@@ -64,7 +64,7 @@ export class SidebarCatalogMenuController {
       return nothing;
     }
     return html`
-      <openclaw-catalog-session-menu
+      <afora-catalog-session-menu
         .x=${menu.x}
         .y=${menu.y}
         .trigger=${this.trigger}
@@ -72,7 +72,7 @@ export class SidebarCatalogMenuController {
         .terminalDisabled=${!menu.canOpenTerminal || !this.hooks.terminalAvailable()}
         .onAction=${(action: CatalogSessionMenuAction) => this.handleAction(menu, action)}
         .onClose=${() => this.close()}
-      ></openclaw-catalog-session-menu>
+      ></afora-catalog-session-menu>
     `;
   }
 }

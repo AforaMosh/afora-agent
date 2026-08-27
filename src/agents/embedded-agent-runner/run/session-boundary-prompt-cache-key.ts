@@ -1,4 +1,4 @@
-import { clampOpenAIPromptCacheKey } from "@openclaw/ai/providers";
+import { clampOpenAIPromptCacheKey } from "@afora/ai/providers";
 
 export function resolveSessionBoundaryPromptCacheKey(params: {
   api: string;

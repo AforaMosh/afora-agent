@@ -1,5 +1,5 @@
 import type { LegacyConfigRule } from "../config/legacy.shared.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import type {
   OpenKeyedStoreOptions,
   PluginStateKeyedStore,
@@ -28,7 +28,7 @@ export type PluginDoctorStateMigration = {
   /** Import retired file state only during explicit `doctor --fix` repair. */
   doctorOnly?: boolean;
   detectLegacyState: (params: {
-    config: OpenClawConfig;
+    config: AforaConfig;
     env: NodeJS.ProcessEnv;
     stateDir: string;
     oauthDir: string;
@@ -38,7 +38,7 @@ export type PluginDoctorStateMigration = {
     | PluginDoctorStateMigrationDetection
     | null;
   migrateLegacyState: (params: {
-    config: OpenClawConfig;
+    config: AforaConfig;
     env: NodeJS.ProcessEnv;
     stateDir: string;
     oauthDir: string;
@@ -53,20 +53,20 @@ export type PluginDoctorContractModule = {
   normalizeCompatibilityConfig?: unknown;
   resolveSessionStoreAgentIds?: unknown;
   /**
-   * @deprecated Declare static ownership in openclaw.plugin.json sessionRouteStateOwners.
-   * Removal plan: remove the module fallback in OpenClaw 2027.1 after external plugins migrate.
+   * @deprecated Declare static ownership in afora.plugin.json sessionRouteStateOwners.
+   * Removal plan: remove the module fallback in Afora 2027.1 after external plugins migrate.
    */
   sessionRouteStateOwners?: unknown;
   stateMigrations?: unknown;
 };
 
-type PluginDoctorCompatibilityNormalizer = (params: { cfg: OpenClawConfig }) => {
-  config: OpenClawConfig;
+type PluginDoctorCompatibilityNormalizer = (params: { cfg: AforaConfig }) => {
+  config: AforaConfig;
   changes: string[];
 };
 
 type PluginDoctorSessionStoreAgentIdsResolver = (params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }) => readonly string[];
 
 function coerceLegacyConfigRules(value: unknown): LegacyConfigRule[] {

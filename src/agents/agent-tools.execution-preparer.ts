@@ -1,7 +1,7 @@
 import type { AgentToolResult } from "./runtime/index.js";
 import type { InternalToolExecutionPreparer } from "./runtime/internal-hooks.js";
 
-const INTERNAL_EXECUTION_CONTROL = Symbol("openclawInternalExecutionControl");
+const INTERNAL_EXECUTION_CONTROL = Symbol("aforaInternalExecutionControl");
 
 type InternalExecutionControl = {
   [INTERNAL_EXECUTION_CONTROL]: true;

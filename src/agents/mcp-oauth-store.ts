@@ -10,23 +10,23 @@ import {
   type OAuthClientInformationMixed,
   type OAuthTokens,
 } from "@modelcontextprotocol/sdk/shared/auth.js";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../infra/kysely-sync.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../state/openclaw-state-db-readonly.js";
-import { ensureMcpOAuthPendingSchema } from "../state/openclaw-state-db-schema-additive.js";
-import { tableExists } from "../state/openclaw-state-db-schema-helpers.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../state/afora-state-db-readonly.js";
+import { ensureMcpOAuthPendingSchema } from "../state/afora-state-db-schema-additive.js";
+import { tableExists } from "../state/afora-state-db-schema-helpers.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../state/afora-state-db.js";
 
 type McpOAuthDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "mcp_oauth_pending_authorizations" | "mcp_oauth_stores"
 >;
 
@@ -238,13 +238,13 @@ function readFromDatabase(database: DatabaseSync, storeKey: string): McpOAuthSto
 
 /** Read canonical state, opening the writable lifecycle when runtime owns it. */
 export function readMcpOAuthStore(storeKey: string): McpOAuthStore {
-  return readFromDatabase(openOpenClawStateDatabase().db, storeKey);
+  return readFromDatabase(openAforaStateDatabase().db, storeKey);
 }
 
 /** Read status state without creating or repairing the shared database. */
 export function readMcpOAuthStoreReadOnly(storeKey: string): McpOAuthStore {
   return (
-    withExistingOpenClawStateDatabaseReadOnly(({ db }) => {
+    withExistingAforaStateDatabaseReadOnly(({ db }) => {
       if (!tableExists(db, "mcp_oauth_stores")) {
         return {};
       }
@@ -256,7 +256,7 @@ export function readMcpOAuthStoreReadOnly(storeKey: string): McpOAuthStore {
 /** List canonical store keys matching one server/principal prefix without creating state. */
 export function listMcpOAuthStoreKeysByPrefix(prefix: string): string[] {
   return (
-    withExistingOpenClawStateDatabaseReadOnly(({ db }) => {
+    withExistingAforaStateDatabaseReadOnly(({ db }) => {
       if (!tableExists(db, "mcp_oauth_stores")) {
         return [];
       }
@@ -281,8 +281,8 @@ function ensurePendingSchema(database: DatabaseSync): void {
 }
 
 function runPendingWrite<T>(run: (database: DatabaseSync) => T): T {
-  ensurePendingSchema(openOpenClawStateDatabase().db);
-  return runOpenClawStateWriteTransaction(({ db }) => run(db));
+  ensurePendingSchema(openAforaStateDatabase().db);
+  return runAforaStateWriteTransaction(({ db }) => run(db));
 }
 
 function deletePendingForStore(
@@ -309,7 +309,7 @@ const MCP_OAUTH_PENDING_STATE_TTL_MS = 10 * 60 * 1000;
 export function readMcpOAuthPendingAuthorization(state: string): string | undefined {
   // Public unauthenticated callback path: must stay read-only. Table creation
   // belongs to start-authorization; an unknown state must not write anything.
-  return withExistingOpenClawStateDatabaseReadOnly(({ db }) => {
+  return withExistingAforaStateDatabaseReadOnly(({ db }) => {
     if (!tableExists(db, "mcp_oauth_pending_authorizations")) {
       return undefined;
     }
@@ -432,7 +432,7 @@ export function updateMcpOAuthStore(
   update: (current: McpOAuthStore) => McpOAuthStore,
   assertOwnedInTransaction?: (database: DatabaseSync) => void,
 ): McpOAuthStore {
-  return runOpenClawStateWriteTransaction(({ db }) => {
+  return runAforaStateWriteTransaction(({ db }) => {
     const current = readFromDatabase(db, storeKey);
     return replaceMcpOAuthStore(db, storeKey, update(current), assertOwnedInTransaction);
   });

@@ -3,7 +3,7 @@ import { resolveSandboxConfigForAgent } from "../../agents/sandbox/config.js";
 import { createSandboxFsBridge } from "../../agents/sandbox/fs-bridge.js";
 import { createPreprovisionedSshSandboxBackend } from "../../agents/sandbox/ssh-backend.js";
 import type { SandboxConfig, SandboxContext } from "../../agents/sandbox/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { WorkerSessionPlacementRecord } from "./placement-record.js";
 import type { WorkerEnvironmentService } from "./service.js";
 import { resolveWorkerSshSandboxSettings } from "./ssh.js";
@@ -29,7 +29,7 @@ function requireRemoteWorkspaceDir(value: string): string {
 
 /** Builds the SSH sandbox owned by one exact active placement generation. */
 export async function createRemoteExecPlacementSandbox(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   environments: PlacementSandboxEnvironmentService;
   localWorkspaceDir: string;
   placement: ActiveRemoteExecPlacement;

@@ -11,7 +11,7 @@ describe("security audit rosterless configs", () => {
   const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
   function makeAuditPaths(label: string) {
-    const rootDir = tempDirs.make(`openclaw-audit-${label}-`);
+    const rootDir = tempDirs.make(`afora-audit-${label}-`);
     const stateDir = path.join(rootDir, "state");
     const workspaceDir = path.join(rootDir, "workspace");
     fs.mkdirSync(stateDir, { recursive: true });
@@ -39,7 +39,7 @@ describe("security audit rosterless configs", () => {
       runSecurityAuditCore({
         config: {},
         stateDir,
-        configPath: path.join(stateDir, "openclaw.json"),
+        configPath: path.join(stateDir, "afora.json"),
         workspaceDir,
         env: {},
         includeFilesystem: true,
@@ -49,16 +49,16 @@ describe("security audit rosterless configs", () => {
   });
 
   it("keeps the implicit main workspace for a rosterless compatibility config", async () => {
-    const rootDir = tempDirs.make("openclaw-audit-rosterless-default-");
+    const rootDir = tempDirs.make("afora-audit-rosterless-default-");
     const stateDir = path.join(rootDir, "state");
-    const workspaceDir = path.join(rootDir, ".openclaw", "workspace");
+    const workspaceDir = path.join(rootDir, ".afora", "workspace");
     fs.mkdirSync(stateDir, { recursive: true });
     makeEscapingWorkspace(rootDir, workspaceDir);
 
     const report = await runSecurityAuditCore({
       config: {},
       stateDir,
-      configPath: path.join(stateDir, "openclaw.json"),
+      configPath: path.join(stateDir, "afora.json"),
       env: { HOME: rootDir },
       includeFilesystem: true,
       includeChannelSecurity: false,
@@ -78,7 +78,7 @@ describe("security audit rosterless configs", () => {
     const baseOptions = {
       config,
       stateDir,
-      configPath: path.join(stateDir, "openclaw.json"),
+      configPath: path.join(stateDir, "afora.json"),
       workspaceDir,
       env: {},
       includeFilesystem: true,
@@ -105,12 +105,12 @@ describe("security audit rosterless configs", () => {
   it("accepts a fresh-install sole-agent roster without a default marker", async () => {
     const { stateDir, workspaceDir } = makeAuditPaths("fresh-install-roster");
 
-    // `openclaw onboard` and `agents add` write markerless entries; runtime
+    // `afora onboard` and `agents add` write markerless entries; runtime
     // resolves the sole agent as default, so the audit must not warn.
     const report = await runSecurityAuditCore({
       config: { agents: { entries: { main: {} } } } as never,
       stateDir,
-      configPath: path.join(stateDir, "openclaw.json"),
+      configPath: path.join(stateDir, "afora.json"),
       workspaceDir,
       env: {},
       includeFilesystem: true,
@@ -146,7 +146,7 @@ describe("security audit rosterless configs", () => {
       const report = await runSecurityAuditCore({
         config: { agents: { entries } } as never,
         stateDir,
-        configPath: path.join(stateDir, "openclaw.json"),
+        configPath: path.join(stateDir, "afora.json"),
         workspaceDir,
         env: {},
         includeFilesystem: true,
@@ -172,7 +172,7 @@ describe("security audit rosterless configs", () => {
         },
       } as never,
       stateDir,
-      configPath: path.join(stateDir, "openclaw.json"),
+      configPath: path.join(stateDir, "afora.json"),
       workspaceDir,
       env: {},
       includeFilesystem: true,
@@ -194,7 +194,7 @@ describe("security audit rosterless configs", () => {
         },
       } as never,
       stateDir,
-      configPath: path.join(stateDir, "openclaw.json"),
+      configPath: path.join(stateDir, "afora.json"),
       workspaceDir,
       env: {},
       includeFilesystem: true,
@@ -210,7 +210,7 @@ describe("security audit rosterless configs", () => {
   });
 
   it("scans every explicit fleet workspace without fabricating a legacy default workspace", async () => {
-    const rootDir = tempDirs.make("openclaw-audit-explicit-workspaces-");
+    const rootDir = tempDirs.make("afora-audit-explicit-workspaces-");
     const stateDir = path.join(rootDir, "state");
     const unusedDefaultsWorkspace = path.join(rootDir, "unused-defaults");
     const alphaWorkspace = path.join(rootDir, "alpha");
@@ -233,7 +233,7 @@ describe("security audit rosterless configs", () => {
         },
       } as never,
       stateDir,
-      configPath: path.join(stateDir, "openclaw.json"),
+      configPath: path.join(stateDir, "afora.json"),
       env: { HOME: rootDir },
       includeFilesystem: true,
       includeChannelSecurity: false,

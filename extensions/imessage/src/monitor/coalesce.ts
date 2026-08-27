@@ -1,10 +1,10 @@
 // Imessage plugin module implements the same-sender inbound debounce merge.
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
-import { sliceUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
+import { sliceUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import type { IMessagePayload } from "./types.js";
 
 // Keep the merge contract narrow (caps, ID tracking, reply-context preference)
-// so a future SDK lift into `openclaw/plugin-sdk/channel-inbound` is a
+// so a future SDK lift into `afora/plugin-sdk/channel-inbound` is a
 // mechanical extraction instead of a behavioral redesign.
 
 /**

@@ -12,7 +12,7 @@ describe.runIf(process.platform === "win32")("Windows web media file URLs", () =
   let fixtureRoot = "";
 
   beforeAll(async () => {
-    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-web-media-file-url-"));
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-web-media-file-url-"));
   });
 
   afterAll(async () => {

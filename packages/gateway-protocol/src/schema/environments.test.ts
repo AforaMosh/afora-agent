@@ -258,8 +258,8 @@ describe("worker environment protocol schemas", () => {
           {
             code: "update-required",
             action: "update-and-reconnect",
-            updateCommand: "openclaw update",
-            headlessReconnectCommand: "openclaw node restart",
+            updateCommand: "afora update",
+            headlessReconnectCommand: "afora node restart",
           },
         ],
       }),

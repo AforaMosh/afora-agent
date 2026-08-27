@@ -562,7 +562,7 @@ export async function scrubLegacyAuditRecoveryArchive(params: {
   try {
     if (!legacyAuditRawCheckpointsMatch(params.expectedSnapshot, writable.stat)) {
       params.warnings.push(
-        `Skipped scrubbing changed ${params.label} legacy recovery archive; rerun openclaw doctor --fix`,
+        `Skipped scrubbing changed ${params.label} legacy recovery archive; rerun afora doctor --fix`,
       );
       return undefined;
     }
@@ -603,14 +603,14 @@ export async function scrubLegacyAuditRecoveryArchive(params: {
     scrubbedSnapshot = await readLegacyAuditSourceSnapshot(params.root, params.relativePath);
   } catch (error) {
     params.warnings.push(
-      `Changed ${params.label} legacy recovery archive during scrub verification; rerun openclaw doctor --fix: ${String(error)}`,
+      `Changed ${params.label} legacy recovery archive during scrub verification; rerun afora doctor --fix: ${String(error)}`,
     );
     return undefined;
   }
   const scrubbedPrefix = scrubbedSnapshot.rawBytes.subarray(0, scrubbedContent.length);
   if (!scrubbedPrefix.equals(scrubbedContent)) {
     params.warnings.push(
-      `Failed verifying scrubbed ${params.label} legacy recovery archive; rerun openclaw doctor --fix`,
+      `Failed verifying scrubbed ${params.label} legacy recovery archive; rerun afora doctor --fix`,
     );
     return undefined;
   }
@@ -656,7 +656,7 @@ export async function recordLegacyAuditRawCheckpoint(params: {
     }
     if (!legacyAuditRawCheckpointsMatch(checkpoint, params.snapshot)) {
       params.warnings.push(
-        `Retained changed legacy audit backup ${params.rawPath}; rerun openclaw doctor --fix to import its later rows`,
+        `Retained changed legacy audit backup ${params.rawPath}; rerun afora doctor --fix to import its later rows`,
       );
       return false;
     }

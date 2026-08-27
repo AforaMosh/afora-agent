@@ -4,8 +4,8 @@ import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
-import { withFileLock } from "openclaw/plugin-sdk/file-lock";
-import type { PluginDoctorStateMigrationContext } from "openclaw/plugin-sdk/runtime-doctor-migrations";
+import { withFileLock } from "afora-agent/plugin-sdk/file-lock";
+import type { PluginDoctorStateMigrationContext } from "afora-agent/plugin-sdk/runtime-doctor-migrations";
 import {
   MATRIX_IDB_SNAPSHOT_FILENAME,
   openMatrixIdbSnapshotStoreOptions,

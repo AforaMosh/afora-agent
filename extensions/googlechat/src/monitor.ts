@@ -1,4 +1,4 @@
-import { resolveAgentConfig } from "openclaw/plugin-sdk/agent-scope-runtime";
+import { resolveAgentConfig } from "afora-agent/plugin-sdk/agent-scope-runtime";
 // Googlechat plugin module implements monitor behavior.
 import {
   formatInboundMediaUnavailableText,
@@ -7,13 +7,13 @@ import {
   toInboundMediaFactsWithMetadata,
   type ChannelBotLoopProtectionFacts,
   type ChannelInboundMediaInput,
-} from "openclaw/plugin-sdk/channel-inbound";
-import { channelBlockedPatch, channelReadyPatch } from "openclaw/plugin-sdk/gateway-runtime";
-import { MediaFetchError } from "openclaw/plugin-sdk/media-runtime";
-import { parseDateStringTimestampMs as resolveGoogleChatTimestampMs } from "openclaw/plugin-sdk/number-runtime";
-import { mergePairLoopGuardConfig } from "openclaw/plugin-sdk/pair-loop-guard-runtime";
-import { normalizeOptionalLowercaseString } from "openclaw/plugin-sdk/string-coerce-runtime";
-import type { OpenClawConfig } from "../runtime-api.js";
+} from "afora-agent/plugin-sdk/channel-inbound";
+import { channelBlockedPatch, channelReadyPatch } from "afora-agent/plugin-sdk/gateway-runtime";
+import { MediaFetchError } from "afora-agent/plugin-sdk/media-runtime";
+import { parseDateStringTimestampMs as resolveGoogleChatTimestampMs } from "afora-agent/plugin-sdk/number-runtime";
+import { mergePairLoopGuardConfig } from "afora-agent/plugin-sdk/pair-loop-guard-runtime";
+import { normalizeOptionalLowercaseString } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import type { AforaConfig } from "../runtime-api.js";
 import { resolveWebhookPath } from "../runtime-api.js";
 import type { ResolvedGoogleChatAccount } from "./accounts.js";
 import { downloadGoogleChatMedia, sendGoogleChatMessage } from "./api.js";
@@ -160,12 +160,12 @@ async function processGoogleChatEvent(
  * Resolve bot display name with fallback chain:
  * 1. Account config name
  * 2. Agent name from config
- * 3. "OpenClaw" as generic fallback
+ * 3. "Afora" as generic fallback
  */
 function resolveBotDisplayName(params: {
   accountName?: string;
   agentId: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
 }): string {
   const { accountName, agentId, config } = params;
   if (accountName?.trim()) {
@@ -175,13 +175,13 @@ function resolveBotDisplayName(params: {
   if (agent?.name?.trim()) {
     return agent.name.trim();
   }
-  return "OpenClaw";
+  return "Afora";
 }
 
 async function processMessageWithPipeline(params: {
   event: GoogleChatEvent;
   account: ResolvedGoogleChatAccount;
-  config: OpenClawConfig;
+  config: AforaConfig;
   runtime: GoogleChatRuntimeEnv;
   core: GoogleChatCoreRuntime;
   statusSink?: GoogleChatStatusSink;

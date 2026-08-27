@@ -1,9 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { OpenClawSchema } from "./zod-schema.js";
+import { AforaSchema } from "./zod-schema.js";
 
 describe("gateway trusted-proxy device auto-approval config", () => {
   test("accepts bounded non-admin scopes", () => {
-    const result = OpenClawSchema.safeParse({
+    const result = AforaSchema.safeParse({
       gateway: {
         auth: {
           mode: "trusted-proxy",
@@ -24,7 +24,7 @@ describe("gateway trusted-proxy device auto-approval config", () => {
   test.each(["operator.admin", " operator.admin "])(
     "accepts %j as an explicit admin opt-in",
     (adminScope) => {
-      const result = OpenClawSchema.safeParse({
+      const result = AforaSchema.safeParse({
         gateway: {
           auth: {
             mode: "trusted-proxy",
@@ -49,7 +49,7 @@ describe("gateway identity scope grants config", () => {
     { scope: "operator.admin", success: true },
     { scope: "operator.superuser", success: false },
   ])("validates configured scope $scope", ({ scope, success }) => {
-    const result = OpenClawSchema.safeParse({
+    const result = AforaSchema.safeParse({
       gateway: {
         auth: {
           identityScopes: {

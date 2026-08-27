@@ -1,15 +1,15 @@
 import { createHash } from "node:crypto";
 import { readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { requireNodeSqlite } from "../infra/node-sqlite.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import { persistClawPackageRef } from "./provenance.js";
 import { parseClawManifest } from "./schema.js";
 import type { ClawPackage } from "./types.js";
@@ -22,18 +22,18 @@ import {
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
-afterEach(() => closeOpenClawStateDatabaseForTest());
+afterEach(() => closeAforaStateDatabaseForTest());
 
 async function fixture() {
-  const root = tempDirs.make("openclaw-claw-update-");
+  const root = tempDirs.make("afora-claw-update-");
   return await createUpdatePlanFixture(root);
 }
 
 describe("buildClawUpdatePlan", () => {
   it("reads pre-bootstrap-column v6 state without mutating it", async () => {
     const current = await fixture();
-    closeOpenClawStateDatabaseForTest();
-    const databasePath = resolveOpenClawStateSqlitePath(current.env);
+    closeAforaStateDatabaseForTest();
+    const databasePath = resolveAforaStateSqlitePath(current.env);
     const sqlite = requireNodeSqlite();
     const database = new sqlite.DatabaseSync(databasePath);
     try {
@@ -75,7 +75,7 @@ describe("buildClawUpdatePlan", () => {
     const plan = await buildClawUpdatePlan({
       agentId: "worker",
       targetManifest: parsed.manifest,
-      targetOpenClawProfile: {
+      targetAforaProfile: {
         schemaVersion: 1,
         agent: {},
         extensions: [
@@ -111,7 +111,7 @@ describe("buildClawUpdatePlan", () => {
         detectedFormat: "claude",
         mapped: ["skills"],
         unavailable: ["agents"],
-        adapterIdentity: "openclaw/test",
+        adapterIdentity: "afora-agent/test",
       }),
     });
 
@@ -140,8 +140,8 @@ describe("buildClawUpdatePlan", () => {
   it("plans missing package restoration without mutating state", async () => {
     const current = await fixture();
     const beforeConfig = structuredClone(current.config);
-    closeOpenClawStateDatabaseForTest();
-    const databasePath = resolveOpenClawStateSqlitePath(current.env);
+    closeAforaStateDatabaseForTest();
+    const databasePath = resolveAforaStateSqlitePath(current.env);
     const beforeBytes = await readFile(databasePath);
     const beforeStat = await stat(databasePath);
 
@@ -156,7 +156,7 @@ describe("buildClawUpdatePlan", () => {
     });
 
     expect(plan).toMatchObject({
-      schemaVersion: "openclaw.clawUpdatePlan.v1",
+      schemaVersion: "afora.clawUpdatePlan.v1",
       stability: "experimental",
       dryRun: true,
       mutationAllowed: false,
@@ -298,7 +298,7 @@ describe("buildClawUpdatePlan", () => {
     const plan = await buildClawUpdatePlan({
       agentId: "worker",
       targetManifest: parsed.manifest,
-      targetOpenClawProfile: {
+      targetAforaProfile: {
         schemaVersion: 1,
         agent: {
           sandbox: { mode: "all", scope: "agent", workspaceAccess: "rw" },
@@ -459,7 +459,7 @@ describe("buildClawUpdatePlan", () => {
     const current = await fixture();
     await writeFile(join(current.root, "workspace-worker", "SOUL.md"), "operator edit\n", "utf8");
     current.config.mcp!.servers!.docs = { command: "node", args: ["operator.mjs"] };
-    openOpenClawStateDatabase({ env: current.env })
+    openAforaStateDatabase({ env: current.env })
       .db.prepare("UPDATE claw_cron_refs SET status = 'pending' WHERE agent_id = 'worker'")
       .run();
 
@@ -489,7 +489,7 @@ describe("buildClawUpdatePlan", () => {
 
   it("classifies blocked MCP and cron removals as capability reductions", async () => {
     const current = await fixture();
-    const database = openOpenClawStateDatabase({ env: current.env }).db;
+    const database = openAforaStateDatabase({ env: current.env }).db;
     database
       .prepare("UPDATE claw_mcp_server_refs SET status = 'pending' WHERE agent_id = 'worker'")
       .run();
@@ -620,7 +620,7 @@ describe("buildClawUpdatePlan", () => {
 
   it("blocks incomplete packages and independently owned MCP changes", async () => {
     const current = await fixture();
-    const database = openOpenClawStateDatabase({ env: current.env }).db;
+    const database = openAforaStateDatabase({ env: current.env }).db;
     database
       .prepare(
         "UPDATE claw_package_refs SET package_status = 'pending' WHERE agent_id = 'worker' AND package_ref = 'triage'",
@@ -669,7 +669,7 @@ describe("buildClawUpdatePlan", () => {
 
   it("blocks restoring independently owned packages and MCP configuration", async () => {
     const current = await fixture();
-    const database = openOpenClawStateDatabase({ env: current.env }).db;
+    const database = openAforaStateDatabase({ env: current.env }).db;
     database
       .prepare(
         "UPDATE claw_package_refs SET relationship = 'referenced', origin = 'pre-existing', independent_owner = 1 WHERE agent_id = 'worker' AND package_ref = 'triage'",
@@ -852,7 +852,7 @@ describe("buildClawUpdatePlan", () => {
 
   it("blocks changing an MCP declaration shared by another Claw", async () => {
     const current = await fixture();
-    openOpenClawStateDatabase({ env: current.env })
+    openAforaStateDatabase({ env: current.env })
       .db.prepare(
         `INSERT INTO claw_mcp_server_refs (
            agent_id, name, schema_version, config_digest, relationship, origin,
@@ -897,7 +897,7 @@ describe("buildClawUpdatePlan", () => {
 
   it("releases shared and independently owned MCP declarations without removing config", async () => {
     const current = await fixture();
-    const database = openOpenClawStateDatabase({ env: current.env }).db;
+    const database = openAforaStateDatabase({ env: current.env }).db;
     database
       .prepare(
         `INSERT INTO claw_mcp_server_refs (

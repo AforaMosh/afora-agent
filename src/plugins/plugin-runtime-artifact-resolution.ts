@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { resolveRealpathOrAbsolute } from "../infra/boundary-path.js";
-import type { OpenClawPackageManifest } from "./manifest.js";
+import type { AforaPackageManifest } from "./manifest.js";
 import type { PluginOrigin } from "./plugin-origin.types.js";
 import type { PluginRegistry } from "./registry-types.js";
 import { getActivePluginRegistry, requireActivePluginRegistry } from "./runtime.js";
@@ -103,7 +103,7 @@ function resolvePreferredBuiltRuntimeArtifact(params: {
   rootDir: string;
   origin: PluginOrigin;
   preferBuiltPluginArtifacts: boolean;
-  packageManifest?: OpenClawPackageManifest;
+  packageManifest?: AforaPackageManifest;
 }): { source: string; rootDir: string } {
   const rootDir = resolveRealpathOrAbsolute(params.rootDir);
   const source = resolveRealpathOrAbsolute(params.source);
@@ -167,7 +167,7 @@ export function resolvePluginRuntimeArtifact(params: {
   rootDir: string;
   origin: PluginOrigin;
   preferBuiltPluginArtifacts: boolean;
-  packageManifest?: OpenClawPackageManifest;
+  packageManifest?: AforaPackageManifest;
   registry?: PluginRegistry;
 }): { source: string; rootDir: string } {
   const rootDir = resolveCanonicalDistRuntimeSource(resolveRealpathOrAbsolute(params.rootDir));

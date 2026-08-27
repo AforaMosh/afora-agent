@@ -1,6 +1,6 @@
-import { readProviderJsonResponse } from "openclaw/plugin-sdk/provider-http";
+import { readProviderJsonResponse } from "afora-agent/plugin-sdk/provider-http";
 // Google Meet plugin module implements meet behavior.
-import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
+import { fetchWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { googleApiError } from "./google-api-errors.js";
 
 const GOOGLE_MEET_API_ORIGIN = "https://meet.googleapis.com";

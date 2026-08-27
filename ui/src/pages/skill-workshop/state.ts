@@ -7,7 +7,7 @@ import type {
 } from "../../lib/skill-workshop/index.ts";
 
 export type SkillWorkshopHistoryScanResult = {
-  schema: "openclaw.skill-workshop.history-scan.v1";
+  schema: "afora.skill-workshop.history-scan.v1";
   hasScanned: boolean;
   reviewedSessions: number;
   ideasFound: number;

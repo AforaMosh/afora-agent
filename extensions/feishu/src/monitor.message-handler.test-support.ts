@@ -1,5 +1,5 @@
 // Feishu test support covers monitor.message handler plugin behavior.
-import { createTestInboundDebounceFlush } from "openclaw/plugin-sdk/channel-test-helpers";
+import { createTestInboundDebounceFlush } from "afora-agent/plugin-sdk/channel-test-helpers";
 import { describe, expect, it, vi } from "vitest";
 import type { ClawdbotConfig, PluginRuntime } from "../runtime-api.js";
 import type { FeishuMessageEvent } from "./event-types.js";

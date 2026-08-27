@@ -4,7 +4,7 @@ import path from "node:path";
 import { expect } from "vitest";
 import type { AuthProfileStore } from "../agents/auth-profiles.js";
 import { getRuntimeConfig } from "../config/config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginOrigin } from "../plugins/plugin-origin.types.js";
 import type { captureEnv } from "../test-utils/env.js";
 import { getActiveSecretsRuntimeSnapshot } from "./runtime.js";
@@ -24,8 +24,8 @@ export const OPENAI_FILE_KEY_REF = {
 export const EMPTY_LOADABLE_PLUGIN_ORIGINS: ReadonlyMap<string, PluginOrigin> = new Map();
 export type SecretsRuntimeEnvSnapshot = ReturnType<typeof captureEnv>;
 
-export function asConfig(value: unknown): OpenClawConfig {
-  return value as OpenClawConfig;
+export function asConfig(value: unknown): AforaConfig {
+  return value as AforaConfig;
 }
 
 export function loadAuthStoreWithProfiles(
@@ -38,7 +38,7 @@ export function loadAuthStoreWithProfiles(
 }
 
 export async function createOpenAIFileRuntimeFixture(home: string) {
-  const configDir = path.join(home, ".openclaw");
+  const configDir = path.join(home, ".afora");
   const secretFile = path.join(configDir, "secrets.json");
   const agentDir = path.join(configDir, "agents", "main", "agent");
   const authStorePath = path.join(agentDir, "auth-profiles.json");
@@ -76,7 +76,7 @@ export async function createOpenAIFileRuntimeFixture(home: string) {
   };
 }
 
-export function createOpenAIFileRuntimeConfig(secretFile: string): OpenClawConfig {
+export function createOpenAIFileRuntimeConfig(secretFile: string): AforaConfig {
   return asConfig({
     secrets: {
       providers: {

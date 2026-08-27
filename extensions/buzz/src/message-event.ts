@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 import type { Event } from "nostr-tools";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { BUZZ_MENTION_MAX_COUNT } from "./mentions.js";
 
 export const BUZZ_NORMAL_MESSAGE_KIND = 9;

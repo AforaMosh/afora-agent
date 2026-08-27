@@ -265,7 +265,7 @@ describe("channel doctor compatibility mutations", () => {
 
     const result = await collectChannelDoctorPreviewWarnings({
       cfg: cfg as never,
-      doctorFixCommand: "openclaw doctor --fix",
+      doctorFixCommand: "afora doctor --fix",
     });
 
     expect(result).toEqual([
@@ -336,7 +336,7 @@ describe("channel doctor compatibility mutations", () => {
 
   it("passes explicit env into read-only channel plugin discovery", () => {
     const cfg = createMatrixEnabledConfig();
-    const env = { OPENCLAW_HOME: "/tmp/openclaw-test-home" };
+    const env = { AFORA_HOME: "/tmp/afora-test-home" };
 
     collectChannelDoctorCompatibilityMutations(cfg as never, { env });
 
@@ -426,7 +426,7 @@ describe("channel doctor compatibility mutations", () => {
         },
       },
     };
-    const env = { OPENCLAW_HOME: "/tmp/openclaw-test-home" };
+    const env = { AFORA_HOME: "/tmp/afora-test-home" };
     mocks.resolveReadOnlyChannelPluginsForConfig.mockReturnValue({
       plugins: [
         {

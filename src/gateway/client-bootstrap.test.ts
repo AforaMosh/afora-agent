@@ -135,7 +135,7 @@ describe("resolveGatewayClientBootstrap", () => {
   });
 
   it("reuses local auth without pinning an exact public-origin target to the local certificate", async () => {
-    const publicUrl = "wss://gateway.example/openclaw";
+    const publicUrl = "wss://gateway.example/afora";
     const tlsConfig = { enabled: true };
     mockState.buildGatewayConnectionDetails
       .mockReturnValueOnce({
@@ -159,7 +159,7 @@ describe("resolveGatewayClientBootstrap", () => {
         gateway: {
           mode: "local",
           publicOrigin: "https://gateway.example",
-          controlUi: { basePath: "/openclaw" },
+          controlUi: { basePath: "/afora" },
           tls: tlsConfig,
           auth: { mode: "token", token: "configured-token" },
         },
@@ -176,7 +176,7 @@ describe("resolveGatewayClientBootstrap", () => {
   });
 
   it("retains the local certificate pin for an exact direct-local target", async () => {
-    const localUrl = "wss://127.0.0.1:18789/openclaw";
+    const localUrl = "wss://127.0.0.1:18789/afora";
     const tlsConfig = { enabled: true };
     mockState.buildGatewayConnectionDetails
       .mockReturnValueOnce({
@@ -199,7 +199,7 @@ describe("resolveGatewayClientBootstrap", () => {
       config: {
         gateway: {
           mode: "local",
-          controlUi: { basePath: "/openclaw" },
+          controlUi: { basePath: "/afora" },
           tls: tlsConfig,
           auth: { mode: "token", token: "configured-token" },
         },
@@ -217,7 +217,7 @@ describe("resolveGatewayClientBootstrap", () => {
   });
 
   it("prefers direct-local TLS ownership when publicOrigin resolves to the same URL", async () => {
-    const localUrl = "wss://127.0.0.1:18789/openclaw";
+    const localUrl = "wss://127.0.0.1:18789/afora";
     const tlsConfig = { enabled: true };
     mockState.buildGatewayConnectionDetails
       .mockReturnValueOnce({
@@ -241,7 +241,7 @@ describe("resolveGatewayClientBootstrap", () => {
         gateway: {
           mode: "local",
           publicOrigin: "https://127.0.0.1:18789",
-          controlUi: { basePath: "/openclaw" },
+          controlUi: { basePath: "/afora" },
           tls: tlsConfig,
           auth: { mode: "token", token: "configured-token" },
         },
@@ -264,7 +264,7 @@ describe("resolveGatewayClientBootstrap", () => {
     },
     {
       url: "wss://override.example/ws",
-      urlSource: "env OPENCLAW_GATEWAY_URL",
+      urlSource: "env AFORA_GATEWAY_URL",
     },
   ])("returns the configured remote pin for $urlSource", async ({ url, urlSource }) => {
     mockState.buildGatewayConnectionDetails.mockReturnValue({

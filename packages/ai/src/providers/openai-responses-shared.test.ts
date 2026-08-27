@@ -126,7 +126,7 @@ async function* responseEvents(events: Array<Record<string, unknown>>) {
 
 describe("convertResponsesToolPayload", () => {
   beforeEach(() => {
-    // Mimic the OpenClaw host strict-tool policy: native OpenAI routes force
+    // Mimic the Afora host strict-tool policy: native OpenAI routes force
     // strict=true, proxy-like routes leave the flag unset.
     configureAiTransportHost({
       resolveOpenAIStrictToolSetting: (model, options) => {
@@ -415,7 +415,7 @@ describe("convertResponsesMessages", () => {
       role: "developer",
       content: [{ type: "input_text", text: "Stable\nDynamic" }],
     });
-    expect(JSON.stringify(input)).not.toContain("OPENCLAW_CACHE_BOUNDARY");
+    expect(JSON.stringify(input)).not.toContain("AFORA_CACHE_BOUNDARY");
   });
 
   it("omits phase-tagged assistant replay ids without reasoning", () => {
@@ -878,11 +878,11 @@ describe("convertResponsesMessages", () => {
                     content: [{ type: "reasoning_text", text: "safe content" }],
                     encrypted_content: "route-bound-ciphertext",
                     ...(embeddedMetadata !== undefined
-                      ? { __openclaw_replay: embeddedMetadata }
+                      ? { __afora_replay: embeddedMetadata }
                       : {}),
                   }),
                   ...(blockMetadata !== undefined
-                    ? { openclawReasoningReplay: blockMetadata }
+                    ? { aforaReasoningReplay: blockMetadata }
                     : {}),
                 },
               ] as unknown as AssistantMessage["content"],
@@ -904,7 +904,7 @@ describe("convertResponsesMessages", () => {
         summary: [{ type: "summary_text", text: "safe summary" }],
         content: [{ type: "reasoning_text", text: "safe content" }],
       });
-      expect(reasoningItem).not.toHaveProperty("__openclaw_replay");
+      expect(reasoningItem).not.toHaveProperty("__afora_replay");
       if (preservesCiphertext) {
         expect(reasoningItem).toHaveProperty("encrypted_content", "route-bound-ciphertext");
       } else {

@@ -2,15 +2,15 @@
 import type {
   AudioTranscriptionRequest,
   AudioTranscriptionResult,
-} from "openclaw/plugin-sdk/media-understanding";
+} from "afora-agent/plugin-sdk/media-understanding";
 import {
   assertOkOrThrowHttpError,
   postTranscriptionRequest,
   readProviderJsonObjectResponse,
   resolveProviderHttpRequestConfig,
   requireTranscriptionText,
-} from "openclaw/plugin-sdk/provider-http";
-import { asOptionalRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/provider-http";
+import { asOptionalRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export const DEFAULT_DEEPGRAM_AUDIO_BASE_URL = "https://api.deepgram.com/v1";
 export const DEFAULT_DEEPGRAM_AUDIO_MODEL = "nova-3";

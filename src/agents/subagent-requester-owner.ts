@@ -1,11 +1,11 @@
 import { tryResolveLegacyCompatibilityAgentId } from "../config/legacy.default-agent-owner.js";
 import { resolvePersistedSessionStoreOwnerForKey } from "../config/sessions/session-store-owner.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { parseAgentSessionKey } from "../routing/session-key.js";
 
 /** Resolves the durable requester owner for legacy rows that predate requesterAgentId. */
 export function resolveSubagentRequesterAgentId(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   entry: { requesterSessionKey: string; requesterAgentId?: string },
 ): string | undefined {
   if (entry.requesterAgentId) {
@@ -25,7 +25,7 @@ export function resolveSubagentRequesterAgentId(
 
 /** Materializes the compatibility owner once so every registry selector sees the same tuple. */
 export function backfillSubagentRequesterAgentIds(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   entries: Iterable<{ requesterSessionKey: string; requesterAgentId?: string }>,
 ): number {
   let changed = 0;

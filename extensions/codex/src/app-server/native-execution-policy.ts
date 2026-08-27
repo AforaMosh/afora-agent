@@ -1,15 +1,15 @@
 import {
   resolveAgentConfig,
   tryResolveDefaultAgentId,
-} from "openclaw/plugin-sdk/agent-scope-runtime";
+} from "afora-agent/plugin-sdk/agent-scope-runtime";
 /**
  * Resolves whether Codex app-server native execution can own shell/file work,
- * or whether OpenClaw must keep exec/process on a configured node host.
+ * or whether Afora must keep exec/process on a configured node host.
  */
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { normalizeAgentId, parseAgentSessionKey } from "openclaw/plugin-sdk/routing";
-import { resolveSandboxRuntimeStatus } from "openclaw/plugin-sdk/sandbox";
-import { getSessionEntry, type SessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { normalizeAgentId, parseAgentSessionKey } from "afora-agent/plugin-sdk/routing";
+import { resolveSandboxRuntimeStatus } from "afora-agent/plugin-sdk/sandbox";
+import { getSessionEntry, type SessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
 
 type ExecHost = "sandbox" | "gateway" | "node";
 type ExecTarget = "auto" | ExecHost;
@@ -41,7 +41,7 @@ export function resolveCodexNodeExecToolOverrides(
 
 /** Resolves node/gateway/sandbox execution ownership from overrides, session, agent, and config. */
 export function resolveCodexNativeExecutionPolicy(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   sessionEntry?: SessionEntry;
   sessionKey?: string;
   sessionId?: string;
@@ -101,7 +101,7 @@ export function resolveCodexNativeExecutionPolicy(params: {
     effectiveExecHost,
     node,
     blockReason:
-      "OpenClaw exec host=node is active for this session. Codex app-server native execution cannot route shell, filesystem, MCP, or app-backed work through the selected OpenClaw node.",
+      "Afora exec host=node is active for this session. Codex app-server native execution cannot route shell, filesystem, MCP, or app-backed work through the selected Afora node.",
   };
 }
 
@@ -111,15 +111,15 @@ export function formatCodexNativeNodeExecBlock(params: {
   reason?: string;
 }): string {
   return [
-    `Codex-native ${params.surface} is unavailable because OpenClaw exec host=node is active for this session.`,
+    `Codex-native ${params.surface} is unavailable because Afora exec host=node is active for this session.`,
     params.reason ??
-      "Codex app-server native execution cannot route execution through the selected OpenClaw node.",
-    "Use a normal Codex harness turn so OpenClaw exec/process tools run on the node, or switch exec host to gateway for native Codex app-server execution.",
+      "Codex app-server native execution cannot route execution through the selected Afora node.",
+    "Use a normal Codex harness turn so Afora exec/process tools run on the node, or switch exec host to gateway for native Codex app-server execution.",
   ].join(" ");
 }
 
 function resolvePolicyAgentId(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   sessionKey?: string;
   agentId?: string;
 }): string | undefined {
@@ -135,7 +135,7 @@ function resolvePolicyAgentId(params: {
 }
 
 function resolvePolicyAgentExec(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentId: string;
 }): ExecHostOverride | undefined {
   return resolveAgentConfig(params.config, params.agentId)?.tools?.exec;
@@ -154,7 +154,7 @@ function parseAgentIdFromSessionKey(sessionKey?: string): string | undefined {
 }
 
 function shouldReadRuntimeSessionEntry(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   sessionKey?: string;
   agentId?: string;
 }): boolean {
@@ -173,7 +173,7 @@ function shouldReadRuntimeSessionEntry(params: {
 }
 
 function isDefaultAgentSessionKeyForAgent(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentId: string;
 }): boolean {
   return normalizeAgentId(params.agentId) === tryResolveDefaultAgentId(params.config);

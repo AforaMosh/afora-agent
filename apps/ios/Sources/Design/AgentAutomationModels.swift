@@ -1,6 +1,6 @@
 import Foundation
 import Observation
-import OpenClawProtocol
+import AforaProtocol
 
 enum AgentAutomationScheduleDraft: Equatable {
     case at(at: String)

@@ -1,6 +1,6 @@
-import { readSessionMessageIdentity } from "@openclaw/gateway-client/browser";
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { readSessionMessageIdentity } from "@afora/gateway-client/browser";
+import { asNullableRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   advanceAccumulatedStreamText,
   streamSegmentUsesAccumulatedText,
@@ -33,7 +33,7 @@ function lastUserMessageIndex(messages: unknown[], beforeIndex = messages.length
 }
 
 export function persistedSteerTargetRunId(message: unknown): string | null {
-  const metadata = asNullableRecord(asNullableRecord(message)?.["__openclaw"]);
+  const metadata = asNullableRecord(asNullableRecord(message)?.["__afora"]);
   return normalizeOptionalString(metadata?.steerTargetRunId) ?? null;
 }
 

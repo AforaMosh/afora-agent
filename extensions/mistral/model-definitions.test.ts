@@ -1,7 +1,7 @@
 // Mistral tests cover model definitions plugin behavior.
 import { describe, expect, it } from "vitest";
 import { buildMistralModelDefinition, MISTRAL_DEFAULT_MODEL_ID } from "./model-definitions.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 import { buildMistralProvider } from "./provider-catalog.js";
 
 function buildCatalogModels() {
@@ -17,7 +17,7 @@ function catalogModelById(models: ReturnType<typeof buildCatalogModels>, id: str
 }
 
 describe("mistral model definitions", () => {
-  it("uses current OpenClaw pricing for the default model", () => {
+  it("uses current Afora pricing for the default model", () => {
     const model = buildMistralModelDefinition();
     expect(model.id).toBe(MISTRAL_DEFAULT_MODEL_ID);
     expect(model.contextWindow).toBe(262144);

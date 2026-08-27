@@ -1,4 +1,4 @@
-// Payload Validation module supports OpenClaw QA credential workflows.
+// Payload Validation module supports Afora QA credential workflows.
 import { getPublicKey, nip19 } from "nostr-tools";
 
 class CredentialPayloadValidationError extends Error {

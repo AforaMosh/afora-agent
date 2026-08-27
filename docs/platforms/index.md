@@ -6,7 +6,7 @@ read_when:
 title: "Platforms"
 ---
 
-OpenClaw core is written in TypeScript. **Node is the required runtime** because
+Afora core is written in TypeScript. **Node is the required runtime** because
 the canonical state store uses `node:sqlite`. Bun remains available for
 dependency installation and package scripts; see [Bun](/install/bun).
 
@@ -42,22 +42,22 @@ Linux-compatible Gateway runtime.
 - Windows Hub: [Windows](/platforms/windows)
 - Gateway runbook: [Gateway](/gateway)
 - Gateway configuration: [Configuration](/gateway/configuration)
-- Service status: `openclaw gateway status`
+- Service status: `afora gateway status`
 
 ## Gateway service install (CLI)
 
 Use one of these (all supported):
 
-- Wizard (recommended): `openclaw onboard --install-daemon`
-- Direct: `openclaw gateway install`
-- Configure flow: `openclaw configure` → select **Gateway service**
-- Repair/migrate: `openclaw doctor` (offers to install or fix the service)
+- Wizard (recommended): `afora onboard --install-daemon`
+- Direct: `afora gateway install`
+- Configure flow: `afora configure` → select **Gateway service**
+- Repair/migrate: `afora doctor` (offers to install or fix the service)
 
 The service target depends on OS:
 
-- macOS: LaunchAgent (`ai.openclaw.gateway`, or `ai.openclaw.<profile>` for a named profile)
-- Linux/WSL2: systemd user service (`openclaw-gateway[-<profile>].service`)
-- Native Windows: Scheduled Task (`OpenClaw Gateway` or `OpenClaw Gateway (<profile>)`), with a per-user Startup-folder login item fallback if task creation is denied
+- macOS: LaunchAgent (`ai.afora.gateway`, or `ai.afora.<profile>` for a named profile)
+- Linux/WSL2: systemd user service (`afora-gateway[-<profile>].service`)
+- Native Windows: Scheduled Task (`Afora Gateway` or `Afora Gateway (<profile>)`), with a per-user Startup-folder login item fallback if task creation is denied
 
 ## Related
 

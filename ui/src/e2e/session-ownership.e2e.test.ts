@@ -11,7 +11,7 @@ const suite = createControlUiE2eSuite({
   name: "Control UI session ownership",
 });
 
-const captureUiProofEnabled = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+const captureUiProofEnabled = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 const uiProofArtifactDir = path.join(process.cwd(), ".artifacts", "control-ui-e2e", "drafts-ux");
 
 let page: Page | undefined;
@@ -83,11 +83,11 @@ async function openSidebarSortMenu(targetPage: Page) {
 
 async function replaceGatewayClient(targetPage: Page) {
   await targetPage.evaluate(() => {
-    const app = document.querySelector("openclaw-app") as HTMLElement & {
+    const app = document.querySelector("afora-app") as HTMLElement & {
       runtime?: { context: { gateway: { connect: () => void } } };
     };
     if (!app.runtime) {
-      throw new Error("OpenClaw application runtime is unavailable");
+      throw new Error("Afora application runtime is unavailable");
     }
     app.runtime.context.gateway.connect();
   });
@@ -118,7 +118,7 @@ suite.define(() => {
     await currentPage.getByText("Bob operations", { exact: true }).first().waitFor();
     await currentPage.locator('[data-session-key="agent:main:ada"] a').click();
     await currentPage.getByText("Ready.", { exact: true }).waitFor();
-    await expect.poll(() => currentPage.locator("openclaw-session-owner-chip").count()).toBe(3);
+    await expect.poll(() => currentPage.locator("afora-session-owner-chip").count()).toBe(3);
 
     const creatorMenu = await openSidebarSortMenu(currentPage);
     await creatorMenu.locator('[value="sort:people"]').waitFor();
@@ -185,7 +185,7 @@ suite.define(() => {
       await creatorMenu.locator(".sidebar-session-sort-menu__title", { hasText: "People" }).count(),
     ).toBe(0);
     expect(await creatorMenu.locator('[value^="creator:"]').count()).toBe(0);
-    expect(await currentPage.locator("openclaw-session-owner-chip").count()).toBe(0);
+    expect(await currentPage.locator("afora-session-owner-chip").count()).toBe(0);
   });
 
   it("keeps grouped single-creator thread actions accessible to keyboard users", async () => {
@@ -675,7 +675,7 @@ suite.define(() => {
     expect(afterScroll.membersTitleTop).toBeLessThan(beforeScroll.menuTop);
     expect(afterScroll.firstMemberTop).toBeLessThan(beforeScroll.firstMemberTop);
     await expectBrowser(
-      dropdown.locator(".chat-pane__sharing-member openclaw-session-owner-chip"),
+      dropdown.locator(".chat-pane__sharing-member afora-session-owner-chip"),
     ).toHaveCount(30);
     // Agent and system identities render the non-human icon from identity.type,
     // not from an ID-string heuristic; owner-chip presentation is human-only.

@@ -1,5 +1,5 @@
 /** Rejects runtime options whose file/cwd effects cannot fit one operand binding. */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { parseInlineOptionToken } from "./inline-option-token.js";
 import {
   BUN_UNBINDABLE_APPROVAL_OPTIONS,

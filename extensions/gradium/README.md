@@ -1,12 +1,12 @@
-# OpenClaw Gradium Plugin
+# Afora Gradium Plugin
 
-Official OpenClaw plugin for Gradium.
+Official Afora plugin for Gradium.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/gradium-speech
-openclaw gateway restart
+afora plugins install @afora/gradium-speech
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/providers/gradium> for setup and configuration.
+See <https://docs.afora.ai/providers/gradium> for setup and configuration.

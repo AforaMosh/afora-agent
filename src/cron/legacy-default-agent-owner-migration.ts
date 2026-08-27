@@ -1,11 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { isMissingPathError } from "../infra/errors.js";
 import { writeTextAtomic } from "../infra/json-files.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
-import { runOpenClawStateWriteTransaction } from "../state/openclaw-state-db.js";
+import { runAforaStateWriteTransaction } from "../state/afora-state-db.js";
 import { parseJsonWithJson5Fallback } from "../utils/parse-json-compat.js";
 import { cronStoreKey } from "./store/key.js";
 import { materializeCronRowAgentOwners } from "./store/row-codec.js";
@@ -61,7 +61,7 @@ export async function materializeLegacyDefaultCronJobOwners(params: {
 }): Promise<number> {
   const agentId = normalizeAgentId(params.legacyDefaultAgentId);
   const storePath = path.resolve(params.storePath);
-  const sqliteCount = runOpenClawStateWriteTransaction(
+  const sqliteCount = runAforaStateWriteTransaction(
     ({ db }) => materializeCronRowAgentOwners(db, cronStoreKey(storePath), agentId),
     { env: params.env },
     { operationLabel: "cron.legacy-default-owner" },

@@ -8,7 +8,7 @@ import { writeGeneratedTextAsset } from "./lib/generated-text-asset.mts";
 
 const modulePath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(modulePath), "..");
-const pierreDiffsEmptySideEffectNamespace = "openclaw-diffs-empty-side-effect";
+const pierreDiffsEmptySideEffectNamespace = "afora-diffs-empty-side-effect";
 const pierreDiffsEmptySideEffectPath = "pierre-diffs-parse-decorations-side-effect";
 
 const targets = {
@@ -38,7 +38,7 @@ export function createPierreDiffsSideEffectImportPlugin(): {
 };
 export function createPierreDiffsSideEffectImportPlugin() {
   return {
-    name: "openclaw-diffs-pierre-side-effect-imports",
+    name: "afora-diffs-pierre-side-effect-imports",
     setup(buildContext) {
       buildContext.onResolve({ filter: /^diff$/ }, (args) => {
         const importer = toPosixPath(args.importer);
@@ -86,7 +86,7 @@ async function buildDiffsViewerRuntime(targetName: string | undefined) {
     format: "esm",
     minify: true,
     define: {
-      __OPENCLAW_DIFFS_LANGUAGE_PACK__: String(target.languagePackAvailable),
+      __AFORA_DIFFS_LANGUAGE_PACK__: String(target.languagePackAvailable),
       NaN: "Number.NaN",
     },
     legalComments: "none",
@@ -97,7 +97,7 @@ async function buildDiffsViewerRuntime(targetName: string | undefined) {
       ...(shikiAlias
         ? [
             {
-              name: "openclaw-diffs-curated-shiki",
+              name: "afora-diffs-curated-shiki",
               setup(buildContext) {
                 buildContext.onResolve({ filter: /^shiki$/ }, () => ({
                   path: path.join(repoRoot, shikiAlias),

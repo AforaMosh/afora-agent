@@ -1,7 +1,7 @@
 import { type FSWatcher, readFileSync, watch } from "node:fs";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
-import { isRecord as isPlainObject } from "@openclaw/normalization-core/record-coerce";
+import { isRecord as isPlainObject } from "@afora/normalization-core/record-coerce";
 import { createDedupeCache } from "../../infra/dedupe.js";
 import { expandHomePrefix } from "../../infra/home-dir.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
@@ -192,7 +192,7 @@ function clearUsageBarTemplateCacheForTest(): void {
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.usageBarTemplateTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.usageBarTemplateTestApi")] = {
     clearUsageBarTemplateCacheForTest,
   };
 }

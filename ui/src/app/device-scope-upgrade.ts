@@ -2,7 +2,7 @@ import { isGatewayMethodAdvertised } from "../lib/gateway-methods.ts";
 import type { ApplicationGatewaySnapshot } from "./gateway.ts";
 import { hasOperatorAdminAccess } from "./operator-access.ts";
 
-const SCOPE_UPGRADE_BANNER_DISMISSED_KEY = "openclaw.control.scopeUpgradeBannerDismissed.v1";
+const SCOPE_UPGRADE_BANNER_DISMISSED_KEY = "afora.control.scopeUpgradeBannerDismissed.v1";
 
 export function hasDismissedScopeUpgradeBanner(): boolean {
   try {

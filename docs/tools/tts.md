@@ -8,7 +8,7 @@ title: "Text-to-speech"
 sidebarTitle: "Text to speech (TTS)"
 ---
 
-OpenClaw converts outbound replies into audio across **14 speech providers**:
+Afora converts outbound replies into audio across **14 speech providers**:
 native voice messages on Feishu, Matrix, Telegram, and WhatsApp; audio
 attachments everywhere else; and PCM/Ulaw streams for telephony and Talk.
 
@@ -43,14 +43,14 @@ synthesize an assistant voice reply.
 
   </Step>
   <Step title="Try it in chat">
-    `/tts status` shows the current state. `/tts audio Hello from OpenClaw`
+    `/tts status` shows the current state. `/tts audio Hello from Afora`
     sends a one-off audio reply.
   </Step>
 </Steps>
 
 <Note>
 Auto-TTS is **off** by default. When `tts.provider` is unset,
-OpenClaw picks the first configured provider in registry auto-select order.
+Afora picks the first configured provider in registry auto-select order.
 The built-in `tts` agent tool is explicit-intent only: ordinary chat stays
 text unless the user asks for audio, uses `/tts`, or enables Auto-TTS/directive
 speech.
@@ -86,13 +86,13 @@ if you keep summaries enabled.
 The bundled **Microsoft** provider uses Microsoft Edge's online neural TTS
 service via `node-edge-tts`. It is a public web service without a published
 SLA or quota — treat it as best-effort. The legacy provider id `edge` is
-normalized to `microsoft` and `openclaw doctor --fix` rewrites persisted
+normalized to `microsoft` and `afora doctor --fix` rewrites persisted
 config; new configs should always use `microsoft`.
 </Warning>
 
 ## Configuration
 
-TTS config lives under `tts` in `~/.openclaw/openclaw.json`. Pick a
+TTS config lives under `tts` in `~/.AforaMosh/afora-agent.json`. Pick a
 preset and adapt the provider block. The `speakerVoice`/`speakerVoiceId`
 fields shown below are canonical; each provider's own `voice`/`voiceId`/
 `voiceName` field names still work as legacy aliases.
@@ -366,7 +366,7 @@ fields shown below are canonical; each provider's own `voice`/`voiceId`/
 </Tabs>
 
 For Xiaomi `mimo-v2.5-tts-voicedesign`, omit `speakerVoice` and set `style` to
-the voice-design prompt. OpenClaw sends that prompt as the TTS `user` message
+the voice-design prompt. Afora sends that prompt as the TTS `user` message
 and does not send `audio.voice` for the voicedesign model.
 
 ### Local Speech Swift and speech-core
@@ -374,10 +374,10 @@ and does not send `audio.voice` for the voicedesign model.
 [Speech Swift](https://github.com/soniqo/speech-swift) and
 [speech-core](https://github.com/soniqo/speech-core) provide local speech
 inference across macOS, Linux, and Windows. Use the OpenAI-compatible HTTP
-provider when Speech Swift and OpenClaw run on the same Mac. Use Local CLI for
+provider when Speech Swift and Afora run on the same Mac. Use Local CLI for
 direct executable integration on any supported host.
 
-Install `ffmpeg` when a channel needs OpenClaw to convert WAV output to Opus or
+Install `ffmpeg` when a channel needs Afora to convert WAV output to Opus or
 raw PCM.
 
 <Tabs>
@@ -417,11 +417,11 @@ must be `wav` because the local endpoint does not emit compressed audio:
 
 `tts-1` selects Kokoro. Speech Swift registry aliases such as `qwen3-tts`,
 `cosyvoice`, and `voxcpm2` select other local engines. The placeholder API key
-is required by OpenClaw's provider configuration but is not validated by the
+is required by Afora's provider configuration but is not validated by the
 loopback server.
 </Tab>
 <Tab title="macOS CLI">
-The Homebrew `speech` executable can write directly to OpenClaw's
+The Homebrew `speech` executable can write directly to Afora's
 per-invocation output path:
 
 ```json5
@@ -444,11 +444,11 @@ per-invocation output path:
   </Tab>
   <Tab title="Linux CLI">
 Install a speech-core Linux release package, download the ONNX model set once,
-and verify synthesis before starting OpenClaw:
+and verify synthesis before starting Afora:
 
 ```bash
 speech download-models
-speech speak "Hello from OpenClaw" hello.wav
+speech speak "Hello from Afora" hello.wav
 ```
 
 Then configure the packaged Kokoro command:
@@ -669,7 +669,7 @@ Provider selection runs explicit-first:
 4. `tts.provider`.
 5. Registry auto-select.
 
-For each provider attempt, OpenClaw merges configs in this order:
+For each provider attempt, Afora merges configs in this order:
 
 1. `tts.providers.<id>`
 2. `tts.personas.<persona>.providers.<id>`
@@ -755,7 +755,7 @@ directive warnings.
 
 ## Slash commands
 
-Single command `/tts`. On Discord, OpenClaw also registers `/voice` because
+Single command `/tts`. On Discord, Afora also registers `/voice` because
 `/tts` is a built-in Discord command — text `/tts ...` still works.
 
 ```text
@@ -789,7 +789,7 @@ Behavior notes:
 ## Per-user preferences
 
 Slash commands write local overrides to the TTS preferences path. The default is
-`~/.openclaw/settings/tts.json`; override it with `OPENCLAW_TTS_PREFS`. Doctor
+`~/.afora/settings/tts.json`; override it with `AFORA_TTS_PREFS`. Doctor
 moves the retired global `tts.prefsPath` value into shared machine state.
 Advanced multi-agent setups may still set `agents.entries.<id>.tts.prefsPath`
 when agents intentionally use separate preference stores.
@@ -816,15 +816,15 @@ Telegram also advertises captioned final TTS. With `tts.mode: "final"` and
 Auto-TTS set to `always` (or eligible `inbound` mode), streamed text is held
 until synthesis finishes and sent as the voice-note caption. Text beyond
 Telegram's caption limit follows the voice note as a normal text message. If
-synthesis or a proven pre-send delivery step fails, OpenClaw sends the visible
+synthesis or a proven pre-send delivery step fails, Afora sends the visible
 text instead. `tagged` mode keeps its normal streaming behavior, and text
 inside a `[[tts:text]]` block remains audio-only.
 
-After synthesis, OpenClaw persists batch TTS output in the media store under
+After synthesis, Afora persists batch TTS output in the media store under
 `tool-speech-synthesis`. The reply uses that stable media path instead of a
 provider temporary file, and normal media maintenance prunes expired output.
 Local CLI providers may still use `{{OutputPath}}` as scratch space before
-OpenClaw imports the completed bytes. See [Media playback](/nodes/media-playback)
+Afora imports the completed bytes. See [Media playback](/nodes/media-playback)
 for inline-player formats and limits.
 
 | Target                                | Format                                                                                                                                |
@@ -839,7 +839,7 @@ Per-provider notes:
 - **MiniMax:** MP3 (`speech-2.8-hd` model, 32 kHz sample rate) for normal audio attachments; transcoded to 48 kHz Opus with `ffmpeg` for channel-advertised voice-note targets.
 - **Xiaomi MiMo:** MP3 by default, or WAV when configured; transcoded to 48 kHz Opus with `ffmpeg` for channel-advertised voice-note targets.
 - **Local CLI:** uses the configured `outputFormat`. Voice-note targets are converted to Ogg/Opus and telephony output is converted to raw 16 kHz mono PCM with `ffmpeg`.
-- **Google Gemini:** returns raw 24 kHz PCM. OpenClaw wraps it as WAV for audio attachments, transcodes it to 48 kHz Opus for voice-note targets, and returns PCM directly for Talk/telephony.
+- **Google Gemini:** returns raw 24 kHz PCM. Afora wraps it as WAV for audio attachments, transcodes it to 48 kHz Opus for voice-note targets, and returns PCM directly for Talk/telephony.
 - **Gradium:** WAV for audio attachments, Opus for voice-note targets, and `ulaw_8000` at 8 kHz for telephony.
 - **Inworld:** MP3 for normal audio attachments, native `OGG_OPUS` for voice-note targets, and raw `PCM` at 22050 Hz for Talk/telephony.
 - **xAI:** MP3 by default; audio-file synthesis may use `mp3`, `wav`, `pcm`, `mulaw`, or `alaw` for both buffered and streaming output. Voice-note targets use MP3 for streaming and buffered fallback because xAI's `pcm`, `mulaw`, and `alaw` outputs are headerless raw audio. Buffered synthesis uses xAI's batch REST `/v1/tts` endpoint; `textToSpeechStream` uses native `wss://api.x.ai/v1/tts`. This is not the realtime voice contract. Native Opus voice-note format is not supported.
@@ -847,8 +847,8 @@ Per-provider notes:
   - The bundled transport accepts an `outputFormat`, but not all formats are available from the service.
   - Output format values follow Microsoft Speech output formats (including Ogg/WebM Opus).
   - Telegram `sendVoice` accepts OGG/MP3/M4A; use OpenAI/ElevenLabs if you need guaranteed Opus voice messages.
-  - If the configured Microsoft output format fails, OpenClaw retries with MP3.
-  - When no explicit voice override is set and the default English voice is used, OpenClaw auto-switches to a Chinese neural voice (`zh-CN-XiaoxiaoNeural`, `zh-CN` locale) if the reply text is CJK-dominant.
+  - If the configured Microsoft output format fails, Afora retries with MP3.
+  - When no explicit voice override is set and the default English voice is used, Afora auto-switches to a Chinese neural voice (`zh-CN-XiaoxiaoNeural`, `zh-CN` locale) if the reply text is CJK-dominant.
 
 OpenAI and ElevenLabs choose output formats per channel as listed above. An
 explicit OpenAI `responseFormat` overrides that selection; a format that is not
@@ -857,7 +857,7 @@ channel that supports conversion.
 
 ## Auto-TTS behavior
 
-When `tts.auto` is enabled, OpenClaw:
+When `tts.auto` is enabled, Afora:
 
 - Skips TTS if the reply already contains structured media.
 - Skips very short replies (under 10 chars).
@@ -870,7 +870,7 @@ When `tts.auto` is enabled, OpenClaw:
   text. Generated media goes through the same channel media normalization as
   normal reply attachments.
 
-If the reply exceeds `maxLength`, OpenClaw never skips audio outright:
+If the reply exceeds `maxLength`, Afora never skips audio outright:
 
 - **Summary on** (default) and a summary model is available: summarizes the
   text to roughly `maxLength` chars, then synthesizes the summary.
@@ -898,13 +898,13 @@ Reply -> TTS enabled?
       Auto-TTS mode. `inbound` only sends audio after an inbound voice message; `tagged` only sends audio when the reply includes `[[tts:...]]` directives or a `[[tts:text]]` block.
     </ParamField>
     <ParamField path="enabled" type="boolean" deprecated>
-      Legacy toggle. `openclaw doctor --fix` migrates this to `auto`.
+      Legacy toggle. `afora doctor --fix` migrates this to `auto`.
     </ParamField>
     <ParamField path="mode" type='"final" | "all"' default="final">
       `"all"` includes tool/block replies in addition to final replies.
     </ParamField>
     <ParamField path="provider" type="string">
-      Speech provider id. When unset, OpenClaw uses the first configured provider in registry auto-select order. Legacy `provider: "edge"` is rewritten to `"microsoft"` by `openclaw doctor --fix`.
+      Speech provider id. When unset, Afora uses the first configured provider in registry auto-select order. Legacy `provider: "edge"` is rewritten to `"microsoft"` by `afora doctor --fix`.
     </ParamField>
     <ParamField path="persona" type="string">
       Active persona id from `personas`. Normalized to lowercase.
@@ -919,7 +919,7 @@ Reply -> TTS enabled?
       Allow the model to emit TTS directives. `enabled` defaults to `true`; `allowProvider` defaults to `false`.
     </ParamField>
     <ParamField path="providers.<id>" type="object">
-      Provider-owned settings keyed by speech provider id. Legacy direct blocks (`tts.openai`, `.elevenlabs`, `.microsoft`, `.edge`) are rewritten by `openclaw doctor --fix`; commit only `tts.providers.<id>`.
+      Provider-owned settings keyed by speech provider id. Legacy direct blocks (`tts.openai`, `.elevenlabs`, `.microsoft`, `.edge`) are rewritten by `afora doctor --fix`; commit only `tts.providers.<id>`.
     </ParamField>
     <ParamField path="maxTextLength" type="number" default="4096">
       Hard cap for TTS input characters. `/tts audio`, `tts.convert`, and `tts.speak` fail if exceeded.
@@ -1000,20 +1000,20 @@ and resolved values still fail startup or reject the update.
     <ParamField path="cwd" type="string">Optional command working directory.</ParamField>
     <ParamField path="env" type="Record<string, string>">Optional environment overrides for the command.</ParamField>
 
-    Command stdout and generated or converted audio are limited to 50 MiB. Diagnostic stderr is limited to 1 MiB. OpenClaw terminates the command and fails synthesis when either limit is exceeded.
+    Command stdout and generated or converted audio are limited to 50 MiB. Diagnostic stderr is limited to 1 MiB. Afora terminates the command and fails synthesis when either limit is exceeded.
 
   </Accordion>
 
   <Accordion title="Microsoft (no API key)">
     <ParamField path="enabled" type="boolean" default="true">Allow Microsoft speech usage.</ParamField>
-    <ParamField path="speakerVoice" type="string">Microsoft neural voice name (e.g. `en-US-MichelleNeural`). Legacy alias: `voice`. If the default English voice is in effect and reply text is CJK-dominant, OpenClaw auto-switches to `zh-CN-XiaoxiaoNeural`.</ParamField>
+    <ParamField path="speakerVoice" type="string">Microsoft neural voice name (e.g. `en-US-MichelleNeural`). Legacy alias: `voice`. If the default English voice is in effect and reply text is CJK-dominant, Afora auto-switches to `zh-CN-XiaoxiaoNeural`.</ParamField>
     <ParamField path="lang" type="string">Language code (e.g. `en-US`).</ParamField>
     <ParamField path="outputFormat" type="string">Microsoft output format. Default `audio-24khz-48kbitrate-mono-mp3`. Not all formats are supported by the bundled Edge-backed transport.</ParamField>
     <ParamField path="rate / pitch / volume" type="string">Percent strings (e.g. `+10%`, `-5%`).</ParamField>
     <ParamField path="saveSubtitles" type="boolean">Write JSON subtitles alongside the audio file.</ParamField>
     <ParamField path="proxy" type="string">Proxy URL for Microsoft speech requests.</ParamField>
     <ParamField path="timeoutMs" type="number">Request timeout override (ms).</ParamField>
-    <ParamField path="edge.*" type="object" deprecated>Legacy alias. Run `openclaw doctor --fix` to rewrite persisted config to `providers.microsoft`.</ParamField>
+    <ParamField path="edge.*" type="object" deprecated>Legacy alias. Run `afora doctor --fix` to rewrite persisted config to `providers.microsoft`.</ParamField>
   </Accordion>
 
   <Accordion title="MiniMax">
@@ -1031,7 +1031,7 @@ and resolved values still fail startup or reject the update.
     <ParamField path="model" type="string">OpenAI TTS model id. Default `gpt-4o-mini-tts`.</ParamField>
     <ParamField path="speakerVoice" type="string">Voice name (e.g. `alloy`, `cedar`). Default `coral`. Legacy alias: `voice`.</ParamField>
     <ParamField path="instructions" type="string">Explicit OpenAI `instructions` field. When set, persona prompt fields are **not** auto-mapped.</ParamField>
-    <ParamField path="responseFormat" type='"mp3" | "opus" | "wav"'>Explicit response format. When omitted, OpenClaw selects Opus for voice-note targets and MP3 otherwise. Use `wav` for compatible local endpoints that do not encode compressed audio.</ParamField>
+    <ParamField path="responseFormat" type='"mp3" | "opus" | "wav"'>Explicit response format. When omitted, Afora selects Opus for voice-note targets and MP3 otherwise. Use `wav` for compatible local endpoints that do not encode compressed audio.</ParamField>
     <ParamField path="extraBody / extra_body" type="Record<string, unknown>">Extra JSON fields merged into `/audio/speech` request bodies after generated OpenAI TTS fields. Use this for OpenAI-compatible endpoints such as Kokoro that require provider-specific keys like `lang`; unsafe prototype keys are ignored.</ParamField>
     <ParamField path="baseUrl" type="string">
       Override the OpenAI TTS endpoint. Resolution order: config → `OPENAI_TTS_BASE_URL` → `https://api.openai.com/v1`. Non-default values are treated as OpenAI-compatible TTS endpoints, so custom model and voice names are accepted, and `speed` loses its `0.25..4.0` range check.
@@ -1061,7 +1061,7 @@ and resolved values still fail startup or reject the update.
   <Accordion title="xAI">
     <ParamField path="apiKey" type="string">Env: `XAI_API_KEY`.</ParamField>
     <ParamField path="baseUrl" type="string">Default `https://api.x.ai/v1`. Env: `XAI_BASE_URL`.</ParamField>
-    <ParamField path="speakerVoiceId" type="string">Default `eve`. With auth, `openclaw infer tts voices --provider xai` fetches the current built-in catalog; without auth it lists offline fallbacks `ara`, `eve`, `leo`, `rex`, and `sal`. Account custom voice IDs are forwarded even when absent from the built-in list. Legacy alias: `voiceId`.</ParamField>
+    <ParamField path="speakerVoiceId" type="string">Default `eve`. With auth, `afora infer tts voices --provider xai` fetches the current built-in catalog; without auth it lists offline fallbacks `ara`, `eve`, `leo`, `rex`, and `sal`. Account custom voice IDs are forwarded even when absent from the built-in list. Legacy alias: `voiceId`.</ParamField>
     <ParamField path="language" type="string">BCP-47 language code or `auto`. Default `en`.</ParamField>
     <ParamField path="responseFormat" type='"mp3" | "wav" | "pcm" | "mulaw" | "alaw"'>Default `mp3`.</ParamField>
     <ParamField path="speed" type="number">Provider-native speed override, `0.7..1.5`.</ParamField>
@@ -1073,7 +1073,7 @@ and resolved values still fail startup or reject the update.
     <ParamField path="model" type="string">Default `mimo-v2.5-tts`. Env: `XIAOMI_TTS_MODEL`. Also supports `mimo-v2.5-tts-voicedesign`.</ParamField>
     <ParamField path="speakerVoice" type="string">Default `mimo_default` for preset-voice models. Env: `XIAOMI_TTS_VOICE`. Legacy alias: `voice`. Not sent for `mimo-v2.5-tts-voicedesign`.</ParamField>
     <ParamField path="format" type='"mp3" | "wav"'>Default `mp3`. Env: `XIAOMI_TTS_FORMAT`.</ParamField>
-    <ParamField path="style" type="string">Optional natural-language style instruction sent as the user message; not spoken. For `mimo-v2.5-tts-voicedesign`, this is the voice-design prompt; OpenClaw supplies a default when omitted.</ParamField>
+    <ParamField path="style" type="string">Optional natural-language style instruction sent as the user message; not spoken. For `mimo-v2.5-tts-voicedesign`, this is the voice-design prompt; Afora supplies a default when omitted.</ParamField>
   </Accordion>
 </AccordionGroup>
 

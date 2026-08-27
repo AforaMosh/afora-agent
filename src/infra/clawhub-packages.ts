@@ -1,6 +1,6 @@
 // ClawHub package metadata, security, search, and telemetry operations.
-import { isRecord as isJsonObject } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord as isJsonObject } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   createClawHubError,
   fetchClawHubJson,
@@ -15,10 +15,10 @@ import {
 
 export type ClawHubPackageFamily = "skill" | "code-plugin" | "bundle-plugin";
 export type ClawHubPackageChannel = "official" | "community" | "private";
-// Keep aligned with @openclaw/plugin-package-contract ExternalPluginCompatibility.
+// Keep aligned with @afora/plugin-package-contract ExternalPluginCompatibility.
 export type ClawHubPackageCompatibility = {
   pluginApiRange?: string;
-  builtWithOpenClawVersion?: string;
+  builtWithAforaVersion?: string;
   pluginSdkVersion?: string;
   minGatewayVersion?: string;
 };

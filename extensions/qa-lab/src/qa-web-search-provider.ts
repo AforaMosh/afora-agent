@@ -6,7 +6,7 @@ import {
   resolveSiteName,
   wrapWebContent,
   type WebSearchProviderPlugin,
-} from "openclaw/plugin-sdk/provider-web-search";
+} from "afora-agent/plugin-sdk/provider-web-search";
 import {
   createQaLabWebSearchProviderBase,
   QA_LAB_WEB_SEARCH_DENIED_INPUT_QUERY,
@@ -33,7 +33,7 @@ const QaLabWebSearchSchema = {
 } satisfies Record<string, unknown>;
 
 function buildQaLabSearchResult(query: string, index: number) {
-  const url = `https://docs.openclaw.ai/qa-lab/search-fixture/${index + 1}`;
+  const url = `https://docs.afora.ai/qa-lab/search-fixture/${index + 1}`;
   return {
     title: wrapWebContent(`QA Lab search fixture result ${index + 1}`, "web_search"),
     url,
@@ -41,7 +41,7 @@ function buildQaLabSearchResult(query: string, index: number) {
       `Deterministic QA Lab web_search result for query: ${query}`,
       "web_search",
     ),
-    siteName: resolveSiteName(url) || "docs.openclaw.ai",
+    siteName: resolveSiteName(url) || "docs.afora.ai",
   };
 }
 

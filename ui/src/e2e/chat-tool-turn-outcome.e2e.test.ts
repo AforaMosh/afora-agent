@@ -21,7 +21,7 @@ function failedTool(timestamp: number) {
 }
 
 async function captureToolActivityProof(page: import("playwright").Page, name: string) {
-  const artifactDir = process.env.OPENCLAW_CONTROL_UI_E2E_ARTIFACT_DIR?.trim();
+  const artifactDir = process.env.AFORA_CONTROL_UI_E2E_ARTIFACT_DIR?.trim();
   if (!artifactDir) {
     return;
   }
@@ -34,11 +34,11 @@ async function captureFactrowProof(
   activity: import("playwright").Locator,
   theme: "dark" | "light",
 ) {
-  const artifactDir = process.env.OPENCLAW_CONTROL_UI_E2E_ARTIFACT_DIR?.trim();
+  const artifactDir = process.env.AFORA_CONTROL_UI_E2E_ARTIFACT_DIR?.trim();
   if (!artifactDir) {
     return;
   }
-  const state = process.env.OPENCLAW_FACTROW_PROOF_STATE?.trim() || "after";
+  const state = process.env.AFORA_FACTROW_PROOF_STATE?.trim() || "after";
   await fs.mkdir(artifactDir, { recursive: true });
   await page.locator(".chat-main").screenshot({
     path: path.join(artifactDir, `factrow-${state}-${theme}-context.png`),
@@ -108,7 +108,7 @@ suite.define(() => {
   });
 
   it("pairs a canonical parallel batch and renders per-file patch sections", async () => {
-    const artifactDir = process.env.OPENCLAW_CONTROL_UI_E2E_ARTIFACT_DIR?.trim();
+    const artifactDir = process.env.AFORA_CONTROL_UI_E2E_ARTIFACT_DIR?.trim();
     if (artifactDir) {
       await fs.mkdir(artifactDir, { recursive: true });
     }

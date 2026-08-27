@@ -4,7 +4,7 @@ const { estimateBase64DecodedBytesMock } = vi.hoisted(() => ({
   estimateBase64DecodedBytesMock: vi.fn(),
 }));
 
-vi.mock("@openclaw/media-core/base64", () => ({
+vi.mock("@afora/media-core/base64", () => ({
   estimateBase64DecodedBytes: estimateBase64DecodedBytesMock,
 }));
 

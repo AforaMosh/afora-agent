@@ -178,7 +178,7 @@ describe("security-sensitive guard script", () => {
 
   it("trusts only configured security-sensitive guard marker comment authors", () => {
     const trustedAuthors = securitySensitiveGuardCommentAuthors(
-      "github-actions[bot], openclaw-security-guard[bot]",
+      "github-actions[bot], afora-security-guard[bot]",
     );
     expect(securitySensitiveGuardCommentAuthors(undefined)).toEqual(
       new Set(["github-actions[bot]"]),
@@ -188,7 +188,7 @@ describe("security-sensitive guard script", () => {
       isSecuritySensitiveGuardMarkerComment(
         {
           body: securitySensitiveGuardMarker,
-          user: { login: "openclaw-security-guard[bot]" },
+          user: { login: "afora-security-guard[bot]" },
         },
         trustedAuthors,
       ),

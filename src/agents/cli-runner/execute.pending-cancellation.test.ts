@@ -66,7 +66,7 @@ function createRunContext(params: {
       agentId: "main",
       sessionId: "session-1",
       sessionKey: "agent:main:main",
-      sessionFile: "/tmp/openclaw-cli-cancellation-test.jsonl",
+      sessionFile: "/tmp/afora-cli-cancellation-test.jsonl",
       workspaceDir: "/tmp",
       prompt: "hello",
       provider: "test-cli",

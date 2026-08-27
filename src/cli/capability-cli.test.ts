@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { Command } from "commander";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
@@ -1025,7 +1025,7 @@ describe("capability cli", () => {
   });
 
   it("passes image files to local model probes", async () => {
-    const tempInput = path.join(os.tmpdir(), `openclaw-model-run-image-${Date.now()}.png`);
+    const tempInput = path.join(os.tmpdir(), `afora-model-run-image-${Date.now()}.png`);
     await fs.writeFile(tempInput, Buffer.from(PNG_1X1_BASE64, "base64"));
 
     await runCapability("model", "run", "--prompt", "describe this", "--file", tempInput, "--json");
@@ -1067,7 +1067,7 @@ describe("capability cli", () => {
 
     const call = firstCompletionCall();
     expect(call?.context?.systemPrompt).toBe(
-      "You are a personal assistant running inside OpenClaw.",
+      "You are a personal assistant running inside Afora.",
     );
     expect(call?.context?.messages?.[0]?.role).toBe("user");
     expect(call?.context?.messages?.[0]?.content).toBe("hello");
@@ -1080,7 +1080,7 @@ describe("capability cli", () => {
   });
 
   it("passes image files to gateway model probes as attachments", async () => {
-    const tempInput = path.join(os.tmpdir(), `openclaw-model-run-gateway-image-${Date.now()}.png`);
+    const tempInput = path.join(os.tmpdir(), `afora-model-run-gateway-image-${Date.now()}.png`);
     await fs.writeFile(tempInput, Buffer.from(PNG_1X1_BASE64, "base64"));
 
     await runCapability(
@@ -1110,7 +1110,7 @@ describe("capability cli", () => {
   });
 
   it("normalizes HEIC files to JPEG before local model probes", async () => {
-    const tempInput = path.join(os.tmpdir(), `openclaw-model-run-image-${Date.now()}.heic`);
+    const tempInput = path.join(os.tmpdir(), `afora-model-run-image-${Date.now()}.heic`);
     await fs.writeFile(tempInput, Buffer.from("heic-like"));
 
     await runCapability("model", "run", "--prompt", "describe this", "--file", tempInput, "--json");
@@ -1133,7 +1133,7 @@ describe("capability cli", () => {
   });
 
   it("rejects non-image files for model probes", async () => {
-    const tempInput = path.join(os.tmpdir(), `openclaw-model-run-audio-${Date.now()}.mp3`);
+    const tempInput = path.join(os.tmpdir(), `afora-model-run-audio-${Date.now()}.mp3`);
     await fs.writeFile(tempInput, Buffer.from("not really audio"));
 
     await expect(
@@ -1715,7 +1715,7 @@ describe("capability cli", () => {
       ],
     });
 
-    const tempOutput = path.join(os.tmpdir(), `openclaw-image-mismatch-${Date.now()}.png`);
+    const tempOutput = path.join(os.tmpdir(), `afora-image-mismatch-${Date.now()}.png`);
     await fs.rm(tempOutput, { force: true });
     await fs.rm(tempOutput.replace(/\.png$/, ".jpg"), { force: true });
 
@@ -1804,7 +1804,7 @@ describe("capability cli", () => {
 
   it("passes image output format, quality, and OpenAI hints through to edit runtime", async () => {
     primeGeneratedImage("gpt-image-1.5", "transparent-edit.png");
-    const inputPath = path.join(os.tmpdir(), `openclaw-image-edit-${Date.now()}.png`);
+    const inputPath = path.join(os.tmpdir(), `afora-image-edit-${Date.now()}.png`);
     await fs.writeFile(inputPath, Buffer.from("png-input"));
 
     await runCapability(
@@ -1846,7 +1846,7 @@ describe("capability cli", () => {
 
   it("forwards --count through to the image edit runtime", async () => {
     primeGeneratedImage("gpt-image-1.5", "edit.png");
-    const inputPath = path.join(os.tmpdir(), `openclaw-image-edit-count-${Date.now()}.png`);
+    const inputPath = path.join(os.tmpdir(), `afora-image-edit-count-${Date.now()}.png`);
     await fs.writeFile(inputPath, Buffer.from("png-input"));
 
     await runCapability(
@@ -1961,8 +1961,8 @@ describe("capability cli", () => {
       ],
     });
 
-    const tempInput = path.join(os.tmpdir(), `openclaw-image-edit-input-${Date.now()}.png`);
-    const tempOutput = path.join(os.tmpdir(), `openclaw-image-edit-output-${Date.now()}.png`);
+    const tempInput = path.join(os.tmpdir(), `afora-image-edit-input-${Date.now()}.png`);
+    const tempOutput = path.join(os.tmpdir(), `afora-image-edit-output-${Date.now()}.png`);
     await fs.writeFile(tempInput, Buffer.from(pngBase64, "base64"));
     await fs.rm(tempOutput, { force: true });
 
@@ -2085,7 +2085,7 @@ describe("capability cli", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    const tempDir = tempDirs.make("openclaw-video-generate-");
+    const tempDir = tempDirs.make("afora-video-generate-");
     const outputBase = path.join(tempDir, "result");
     const outputPath = `${outputBase}.mp4`;
     await fs.writeFile(outputPath, "previous-video");
@@ -2142,7 +2142,7 @@ describe("capability cli", () => {
           }),
       ),
     );
-    const tempDir = tempDirs.make("openclaw-video-stream-fail-");
+    const tempDir = tempDirs.make("afora-video-stream-fail-");
     const outputBase = path.join(tempDir, "result");
     const outputPath = `${outputBase}.mp4`;
     await fs.writeFile(outputPath, "keep-existing-video");
@@ -2191,7 +2191,7 @@ describe("capability cli", () => {
         });
       }
 
-      const tempDir = tempDirs.make(`openclaw-buffered-${kind}-fail-`);
+      const tempDir = tempDirs.make(`afora-buffered-${kind}-fail-`);
       const outputBase = path.join(tempDir, "result");
       const outputPath = `${outputBase}${extension}`;
       await fs.writeFile(outputPath, original);
@@ -2504,7 +2504,7 @@ describe("capability cli", () => {
         }),
     );
     vi.stubGlobal("fetch", fetchMock);
-    const tempDir = withOutput ? tempDirs.make("openclaw-empty-video-") : undefined;
+    const tempDir = withOutput ? tempDirs.make("afora-empty-video-") : undefined;
     const outputBase = tempDir ? path.join(tempDir, "result") : undefined;
     const outputPath = outputBase ? `${outputBase}.mp4` : undefined;
     if (outputPath) {
@@ -3047,7 +3047,7 @@ describe("capability cli", () => {
   it.each(["local", "gateway"] as const)(
     "preserves an existing %s TTS --output when the final copy fails",
     async (transport) => {
-      const tempDir = tempDirs.make(`openclaw-tts-${transport}-copy-fail-`);
+      const tempDir = tempDirs.make(`afora-tts-${transport}-copy-fail-`);
       const sourcePath = path.join(tempDir, "source.mp3");
       const outputDir = path.join(tempDir, "output");
       const outputPath = path.join(outputDir, "speech.mp3");

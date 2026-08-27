@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { buildModelsListResult } from "../gateway/server-methods/models-list-result.js";
 import type { GatewayRequestContext } from "../gateway/server-methods/types.js";
 import { registerGatewayModelCatalogPrivateAccess } from "../gateway/server-model-catalog-auth.js";
@@ -10,7 +10,7 @@ import {
   loadGatewayModelCatalogSnapshot,
   loadPreparedGatewayModelCatalogSnapshot,
 } from "../gateway/server-model-catalog.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
 import { OPENAI_CODEX_DEFAULT_PROFILE_ID } from "./auth-profiles/constants.js";
 import { getRuntimeExternalCliProfileIds } from "./auth-profiles/runtime-external-profile-references.js";
 import {
@@ -44,17 +44,17 @@ const PROFILE_ID = `${SHARED_AUTH_PROVIDER_ID}:named`;
 const MATERIALIZED_SECRET = "materialized-worker-secret-not-real";
 const UNRELATED_SECRET = "unrelated-worker-secret-not-real";
 const REF_ONLY_API_PROVIDER_ID = `${PROVIDER_ID}-ref-api`;
-const REF_ONLY_API_ENV = "OPENCLAW_WORKER_REF_ONLY_API_KEY";
+const REF_ONLY_API_ENV = "AFORA_WORKER_REF_ONLY_API_KEY";
 const REF_ONLY_TOKEN_PROVIDER_ID = `${PROVIDER_ID}-ref-token`;
-const REF_ONLY_TOKEN_ENV = "OPENCLAW_WORKER_REF_ONLY_TOKEN";
+const REF_ONLY_TOKEN_ENV = "AFORA_WORKER_REF_ONLY_TOKEN";
 const DURABLE_AUTH_PROVIDER_ID = `${PROVIDER_ID}-durable-auth`;
 const DURABLE_AUTH_KEY = "post-startup-durable-key-not-real";
 const EXTERNAL_AUTH_PROFILE_ID = `${PROVIDER_ID}:external`;
-const EXTERNAL_AUTH_PATH_ENV = "OPENCLAW_WORKER_EXTERNAL_AUTH_PATH";
+const EXTERNAL_AUTH_PATH_ENV = "AFORA_WORKER_EXTERNAL_AUTH_PATH";
 const tempDirs = useAutoCleanupTempDirTracker((cleanup) => {
   afterEach(() => {
     clearRuntimeAuthProfileStoreSnapshots();
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
     cleanup();
   });
 });
@@ -146,18 +146,18 @@ module.exports = {
         },
       },
       augmentModelCatalog(context) {
-        const marker = process.env.OPENCLAW_WORKER_CATALOG_MARKER;
+        const marker = process.env.AFORA_WORKER_CATALOG_MARKER;
         const invocation = fs.existsSync(marker)
           ? fs.readFileSync(marker, "utf8").split("start\\n").length
           : 1;
-        fs.appendFileSync(process.env.OPENCLAW_WORKER_CATALOG_MARKER, "start\\n");
+        fs.appendFileSync(process.env.AFORA_WORKER_CATALOG_MARKER, "start\\n");
         const until = Date.now() + ${params.spinMs};
         while (Date.now() < until) {}
         const hasSqlite = context.entries.some((entry) =>
           entry.provider === ${JSON.stringify(PROVIDER_ID)} && entry.id === "sqlite-model");
         const hasShared = context.resolveProviderApiKey(${JSON.stringify(SHARED_AUTH_PROVIDER_ID)}).apiKey === ${JSON.stringify(MATERIALIZED_SECRET)};
         const hasUnrelated = context.resolveProviderApiKey("unrelated-provider").apiKey === ${JSON.stringify(UNRELATED_SECRET)};
-        fs.appendFileSync(process.env.OPENCLAW_WORKER_CATALOG_MARKER, "done\\n");
+        fs.appendFileSync(process.env.AFORA_WORKER_CATALOG_MARKER, "done\\n");
         return [{
           provider: ${JSON.stringify(PROVIDER_ID)},
           id: \`proof-refresh-\${invocation}-sqlite-\${hasSqlite}-shared-\${hasShared}-unrelated-\${hasUnrelated}\`,
@@ -171,7 +171,7 @@ module.exports = {
     "utf8",
   );
   fs.writeFileSync(
-    path.join(pluginDir, "openclaw.plugin.json"),
+    path.join(pluginDir, "afora.plugin.json"),
     JSON.stringify({
       id: PLUGIN_ID,
       providers: [PROVIDER_ID],
@@ -189,7 +189,7 @@ async function createStaticSnapshot(
   envOverride: NodeJS.ProcessEnv = {},
   options?: { hydrateExternalCliProviderIds?: readonly string[] },
 ) {
-  const root = tempDirs.make("openclaw-model-catalog-worker-");
+  const root = tempDirs.make("afora-model-catalog-worker-");
   const stateDir = path.join(root, "state");
   const agentDir = path.join(stateDir, "agents", "main", "agent");
   const workspaceDir = path.join(root, "workspace");
@@ -201,9 +201,9 @@ async function createStaticSnapshot(
   fs.writeFileSync(externalAuthPath, "A", "utf8");
   const env = {
     ...process.env,
-    OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-    OPENCLAW_STATE_DIR: stateDir,
-    OPENCLAW_WORKER_CATALOG_MARKER: marker,
+    AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+    AFORA_STATE_DIR: stateDir,
+    AFORA_WORKER_CATALOG_MARKER: marker,
     [EXTERNAL_AUTH_PATH_ENV]: externalAuthPath,
     ...envOverride,
     [REF_ONLY_API_ENV]: "ref-only-api-secret-not-real",
@@ -216,7 +216,7 @@ async function createStaticSnapshot(
       load: { paths: [pluginFile] },
       entries: { [PLUGIN_ID]: { enabled: true } },
     },
-  } satisfies OpenClawConfig;
+  } satisfies AforaConfig;
   replaceRuntimeAuthProfileStoreSnapshots([
     {
       agentDir,
@@ -387,7 +387,7 @@ describe("prepared model catalog worker boundary", () => {
           },
         ],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const owner = Object.freeze({
       ...fixture.snapshot,
       config,
@@ -535,7 +535,7 @@ describe("prepared model catalog worker boundary", () => {
   });
 
   it("makes a post-startup Codex login available to direct models.list", async () => {
-    const codexHome = tempDirs.make("openclaw-models-list-codex-");
+    const codexHome = tempDirs.make("afora-models-list-codex-");
     const fixture = await createStaticSnapshot(0, { CODEX_HOME: codexHome });
     const route = {
       provider: "openai",
@@ -557,7 +557,7 @@ describe("prepared model catalog worker boundary", () => {
           },
         ],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const owner = Object.freeze({
       ...fixture.snapshot,
       config,
@@ -623,7 +623,7 @@ describe("prepared model catalog worker boundary", () => {
   });
 
   it("refreshes and removes a Codex login that existed in the prepared generation", async () => {
-    const codexHome = tempDirs.make("openclaw-prepared-codex-");
+    const codexHome = tempDirs.make("afora-prepared-codex-");
     writeCodexAuth(codexHome, "startup");
     const previousCodexHome = process.env.CODEX_HOME;
     process.env.CODEX_HOME = codexHome;

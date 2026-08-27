@@ -1,5 +1,5 @@
 import { clearTimeout as clearRealTimeout, setTimeout as setRealTimeout } from "node:timers";
-import { withServer } from "openclaw/plugin-sdk/test-env";
+import { withServer } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { listInworldVoices } from "./tts.js";
 

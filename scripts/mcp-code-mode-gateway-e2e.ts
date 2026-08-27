@@ -1,4 +1,4 @@
-// Mcp Code Mode Gateway E2E script supports OpenClaw repository automation.
+// Mcp Code Mode Gateway E2E script supports Afora repository automation.
 import fs from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
@@ -173,12 +173,12 @@ async function writeConfig(params: {
 }
 
 async function main() {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-mcp-code-mode-"));
-  const keep = process.env.OPENCLAW_MCP_CODE_MODE_GATEWAY_E2E_KEEP === "1";
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-mcp-code-mode-"));
+  const keep = process.env.AFORA_MCP_CODE_MODE_GATEWAY_E2E_KEEP === "1";
   const previousEnv = {
-    configPath: process.env.OPENCLAW_CONFIG_PATH,
-    stateDir: process.env.OPENCLAW_STATE_DIR,
-    testFast: process.env.OPENCLAW_TEST_FAST,
+    configPath: process.env.AFORA_CONFIG_PATH,
+    stateDir: process.env.AFORA_STATE_DIR,
+    testFast: process.env.AFORA_TEST_FAST,
   };
   let provider: Awaited<ReturnType<typeof startQaMockOpenAiServer>> | undefined;
   let server: Awaited<ReturnType<typeof startGatewayServer>> | undefined;
@@ -187,7 +187,7 @@ async function main() {
     const stateDir = path.join(rootDir, "state");
     const workspaceDir = path.join(rootDir, "workspace");
     const serverPath = path.join(rootDir, "mcp", "fixture-server.mjs");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const gatewayPort = await freePort();
     await fs.mkdir(workspaceDir, { recursive: true });
     await writeProbeMcpServer(serverPath);
@@ -200,9 +200,9 @@ async function main() {
       serverPath,
     });
 
-    setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
-    setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
-    setTestEnvValue("OPENCLAW_TEST_FAST", "1");
+    setTestEnvValue("AFORA_STATE_DIR", stateDir);
+    setTestEnvValue("AFORA_CONFIG_PATH", configPath);
+    setTestEnvValue("AFORA_TEST_FAST", "1");
     resetConfigRuntimeState();
 
     server = await startGatewayServer(gatewayPort, {
@@ -219,11 +219,11 @@ async function main() {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-openclaw-scopes": "operator.write",
-        "x-openclaw-agent": "qa",
+        "x-afora-scopes": "operator.write",
+        "x-afora-agent": "qa",
       },
       body: JSON.stringify({
-        model: "openclaw/qa",
+        model: "afora-agent/qa",
         input: [
           {
             type: "message",
@@ -276,9 +276,9 @@ async function main() {
     await server?.close({ reason: "mcp code-mode gateway e2e complete" });
     await provider?.stop();
     resetConfigRuntimeState();
-    restoreEnvValue("OPENCLAW_STATE_DIR", previousEnv.stateDir);
-    restoreEnvValue("OPENCLAW_CONFIG_PATH", previousEnv.configPath);
-    restoreEnvValue("OPENCLAW_TEST_FAST", previousEnv.testFast);
+    restoreEnvValue("AFORA_STATE_DIR", previousEnv.stateDir);
+    restoreEnvValue("AFORA_CONFIG_PATH", previousEnv.configPath);
+    restoreEnvValue("AFORA_TEST_FAST", previousEnv.testFast);
     if (!keep) {
       await fs.rm(rootDir, { recursive: true, force: true });
     }

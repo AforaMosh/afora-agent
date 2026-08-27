@@ -1,4 +1,4 @@
-// Context script supports OpenClaw repository automation.
+// Context script supports Afora repository automation.
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import ts from "typescript";

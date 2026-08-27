@@ -5,7 +5,7 @@
  * It is only intended for CLI use, not browser environments.
  */
 
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 import {
   createOAuthLoginCancelledError,
   oauthErrorHtml,
@@ -15,7 +15,7 @@ import {
   withOAuthLoginAbort,
   type OAuthCredentials,
   type OAuthPrompt,
-} from "openclaw/plugin-sdk/provider-oauth-runtime";
+} from "afora-agent/plugin-sdk/provider-oauth-runtime";
 import { resolveCodexAuthIdentity } from "./openai-chatgpt-auth-identity.js";
 import {
   createOpenAIAuthorizationFlow,
@@ -193,7 +193,7 @@ function resolveOpenAICredentials(
  * @param options.onManualCodeInput - Optional promise that resolves with user-pasted code.
  *                                    Races with browser callback - whichever completes first wins.
  *                                    Useful for showing paste input immediately alongside browser flow.
- * @param options.originator - OAuth originator parameter (defaults to "openclaw")
+ * @param options.originator - OAuth originator parameter (defaults to "afora")
  */
 export async function loginOpenAICodex(options: {
   onAuth: (info: { url: string; instructions?: string }) => Promise<void> | void;
@@ -205,7 +205,7 @@ export async function loginOpenAICodex(options: {
 }): Promise<OAuthCredentials> {
   throwIfOAuthLoginAborted(options.signal);
   const { verifier, redirectUri, state, url } = await createOpenAIAuthorizationFlow(
-    options.originator ?? "openclaw",
+    options.originator ?? "afora",
     REDIRECT_URI,
   );
   const server = await startLocalOAuthServer(state);

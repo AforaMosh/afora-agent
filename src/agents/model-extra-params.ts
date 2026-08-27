@@ -1,6 +1,6 @@
-import { normalizeFastMode } from "@openclaw/normalization-core/string-coerce";
+import { normalizeFastMode } from "@afora/normalization-core/string-coerce";
 import { normalizeThinkLevel } from "../auto-reply/thinking.shared.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { modelKey } from "../shared/model-key.js";
 import { resolveAgentConfig } from "./agent-scope-config.js";
 
@@ -47,7 +47,7 @@ function legacyModelKey(provider: string, modelId: string): string | undefined {
 
 /** Resolves the config records merged into one model request. */
 export function resolveModelExtraParamSources(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   provider: string;
   modelId?: string;
   agentId?: string;
@@ -67,7 +67,7 @@ export function resolveModelExtraParamSources(params: {
   return { defaultParams, modelParams, agentParams };
 }
 
-/** Returns whether embedded OpenClaw would apply authored provider request parameters. */
+/** Returns whether embedded Afora would apply authored provider request parameters. */
 export function hasAuthoredProviderRequestParams(
   params: Parameters<typeof resolveModelExtraParamSources>[0],
 ): boolean {

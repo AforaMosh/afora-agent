@@ -1,4 +1,4 @@
-// Regression coverage for cron wake origin capture (openclaw/openclaw#46886,
+// Regression coverage for cron wake origin capture (AforaMosh/afora-agent#46886,
 // #64556): wake must thread sessionKey + agentId through to enqueueSystemEvent
 // and the heartbeat request so multi-agent / non-main-session wakes land on the
 // originating conversation lane. Base sessionKey threading and the no-origin

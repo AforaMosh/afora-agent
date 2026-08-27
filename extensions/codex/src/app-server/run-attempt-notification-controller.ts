@@ -1,4 +1,4 @@
-import { embeddedAgentLog } from "openclaw/plugin-sdk/agent-harness-runtime";
+import { embeddedAgentLog } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   applyCodexTurnNotificationState,
   isTerminalCodexTurnNotificationForTurn,
@@ -43,7 +43,7 @@ export function createCodexAttemptNotificationController(
     activeCompletionBlockerItemIds,
     activeFinalizationHookRunIds,
     finalizationHookBatchStatuses,
-    pendingOpenClawDynamicToolCompletionIds,
+    pendingAforaDynamicToolCompletionIds,
     postToolRawAssistantCompletionIdleTimeoutMs,
     completeTurn,
   } = turnRuntime;
@@ -91,7 +91,7 @@ export function createCodexAttemptNotificationController(
       activeTurnItemIds,
       activeCompletionBlockerItemIds,
       activeAppServerTurnRequests: state.activeAppServerTurnRequests,
-      pendingOpenClawDynamicToolCompletionIds,
+      pendingAforaDynamicToolCompletionIds,
       turnCrossedToolHandoff: state.turnCrossedToolHandoff,
       postToolRawAssistantCompletionIdleTimeoutMs,
       onScheduleTerminalDynamicToolReleaseCheck: scheduleTerminalDynamicToolReleaseCheck,
@@ -147,7 +147,7 @@ export function createCodexAttemptNotificationController(
           state.activeAppServerTurnRequests === 0 &&
           activeTurnItemIds.size === 0 &&
           activeCompletionBlockerItemIds.size === 0 &&
-          pendingOpenClawDynamicToolCompletionIds.size === 0 &&
+          pendingAforaDynamicToolCompletionIds.size === 0 &&
           projector.hasLatestTerminalAssistantCandidateText()
         ) {
           turnWatches.armAssistantCompletionIdleWatch(describeNotificationActivity(notification));
@@ -190,7 +190,7 @@ export function createCodexAttemptNotificationController(
           state.activeAppServerTurnRequests === 0 &&
           activeTurnItemIds.size === 0 &&
           activeCompletionBlockerItemIds.size === 0 &&
-          pendingOpenClawDynamicToolCompletionIds.size === 0 &&
+          pendingAforaDynamicToolCompletionIds.size === 0 &&
           projector.hasLatestTerminalAssistantCandidateText()
         ) {
           turnWatches.armAssistantCompletionIdleWatch({

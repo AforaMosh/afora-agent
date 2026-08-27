@@ -1,7 +1,7 @@
 /** Ensures configured channel-to-ACP bindings have live sessions and matching runtime options. */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import type { SessionAcpMeta } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { logVerbose } from "../globals.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { getAcpSessionManager } from "./control-plane/manager.js";
@@ -14,7 +14,7 @@ import {
 
 // Binding lifecycle keeps configured channel conversations attached to matching ACP sessions.
 function sessionStructurallyMatchesConfiguredBinding(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   spec: ConfiguredAcpBindingSpec;
   meta: SessionAcpMeta;
 }): boolean {
@@ -55,7 +55,7 @@ function sessionStructurallyMatchesConfiguredBinding(params: {
 
 /** Creates or replaces the ACP session required by one configured binding. */
 export async function ensureConfiguredAcpBindingSession(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   spec: ConfiguredAcpBindingSpec;
 }): Promise<{ ok: true; sessionKey: string } | { ok: false; sessionKey: string; error: string }> {
   const sessionKey = buildConfiguredAcpSessionKey(params.spec);
@@ -130,7 +130,7 @@ export async function ensureConfiguredAcpBindingSession(params: {
 
 /** Resolves a configured binding for a conversation and ensures its ACP session exists. */
 export async function ensureConfiguredAcpBindingReadyCore(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   configuredBinding: ResolvedConfiguredAcpBinding | null;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!params.configuredBinding) {

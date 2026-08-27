@@ -12,28 +12,28 @@ vi.mock("@clack/prompts", () => ({
 }));
 
 vi.mock("../config/paths.js", () => ({
-  resolveStateDir: () => "/tmp/openclaw-doctor-state-does-not-exist",
+  resolveStateDir: () => "/tmp/afora-doctor-state-does-not-exist",
 }));
 
-vi.mock("../state/openclaw-database-preflight.js", () => ({
-  OpenClawDatabaseSchemaPreflightError: class extends Error {},
-  preflightOpenClawDatabaseSchemas: () => ({ incompatible: [] }),
+vi.mock("../state/afora-database-preflight.js", () => ({
+  AforaDatabaseSchemaPreflightError: class extends Error {},
+  preflightAforaDatabaseSchemas: () => ({ incompatible: [] }),
 }));
 
-vi.mock("../state/openclaw-agent-db.js", () => ({
-  OPENCLAW_AGENT_SCHEMA_VERSION: 1,
+vi.mock("../state/afora-agent-db.js", () => ({
+  AFORA_AGENT_SCHEMA_VERSION: 1,
 }));
 
-vi.mock("../state/openclaw-state-db.js", () => ({
-  OPENCLAW_STATE_SCHEMA_VERSION: 1,
+vi.mock("../state/afora-state-db.js", () => ({
+  AFORA_STATE_SCHEMA_VERSION: 1,
 }));
 
 vi.mock("../commands/doctor-prompter.js", () => ({
   createDoctorPrompter: () => ({}),
 }));
 
-vi.mock("../infra/openclaw-root.js", () => ({
-  resolveOpenClawPackageRoot: async () => undefined,
+vi.mock("../infra/afora-root.js", () => ({
+  resolveAforaPackageRoot: async () => undefined,
 }));
 
 vi.mock("../commands/doctor-update.js", () => ({
@@ -61,12 +61,12 @@ vi.mock("../commands/doctor-config-flow.js", () => ({
 }));
 
 vi.mock("../config/config.js", () => ({
-  CONFIG_PATH: "/tmp/openclaw.json",
+  CONFIG_PATH: "/tmp/afora.json",
 }));
 
 vi.mock("../infra/update-doctor-result.js", () => ({
   UPDATE_POST_INSTALL_DOCTOR_ADVISORY_EXIT_CODE: 86,
-  UPDATE_POST_INSTALL_DOCTOR_RESULT_PATH_ENV: "OPENCLAW_UPDATE_POST_INSTALL_DOCTOR_RESULT_PATH",
+  UPDATE_POST_INSTALL_DOCTOR_RESULT_PATH_ENV: "AFORA_UPDATE_POST_INSTALL_DOCTOR_RESULT_PATH",
   writeUpdatePostInstallDoctorResult: mocks.writeUpdatePostInstallDoctorResult,
 }));
 
@@ -109,8 +109,8 @@ describe("runDoctorHealthFlow", () => {
       exit: vi.fn(),
     };
     vi.stubEnv(
-      "OPENCLAW_UPDATE_POST_INSTALL_DOCTOR_RESULT_PATH",
-      "/tmp/openclaw-update-doctor-result.json",
+      "AFORA_UPDATE_POST_INSTALL_DOCTOR_RESULT_PATH",
+      "/tmp/afora-update-doctor-result.json",
     );
 
     try {

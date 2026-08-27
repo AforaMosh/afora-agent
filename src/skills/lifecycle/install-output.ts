@@ -1,6 +1,6 @@
 // Install output helpers format skill installation results for CLI callers.
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 
 type InstallCommandResult = {
   code: number | null;

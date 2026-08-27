@@ -2,14 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { requireNodeSqlite } from "../infra/node-sqlite.js";
-import { OPENCLAW_STATE_SCHEMA_VERSION } from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+import { AFORA_STATE_SCHEMA_VERSION } from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import {
   autoMigrateLegacyStateDir,
   createDoctorRuntime,
   mockDoctorConfigSnapshot,
   readConfigFileSnapshot,
-  resolveOpenClawPackageRoot,
+  resolveAforaPackageRoot,
   runCommandWithTimeout,
   runGatewayUpdate,
 } from "./doctor.e2e-harness.js";
@@ -24,7 +24,7 @@ describe("doctor database schema preflight", () => {
   });
 
   it("lets a successful interactive update replace the stale doctor", async () => {
-    writeStateSchemaVersion(OPENCLAW_STATE_SCHEMA_VERSION + 1);
+    writeStateSchemaVersion(AFORA_STATE_SCHEMA_VERSION + 1);
     mockDoctorConfigSnapshot();
     mockInteractiveGitUpdate("ok");
 
@@ -36,7 +36,7 @@ describe("doctor database schema preflight", () => {
   });
 
   it("refuses after an interactive update does not handle doctor", async () => {
-    writeStateSchemaVersion(OPENCLAW_STATE_SCHEMA_VERSION + 1);
+    writeStateSchemaVersion(AFORA_STATE_SCHEMA_VERSION + 1);
     mockDoctorConfigSnapshot();
     mockInteractiveGitUpdate("skipped");
 
@@ -50,7 +50,7 @@ describe("doctor database schema preflight", () => {
   });
 
   it("refuses before config repair flows when updates are disabled", async () => {
-    writeStateSchemaVersion(OPENCLAW_STATE_SCHEMA_VERSION + 1);
+    writeStateSchemaVersion(AFORA_STATE_SCHEMA_VERSION + 1);
     mockDoctorConfigSnapshot();
 
     await expect(doctorCommand(createDoctorRuntime(), { nonInteractive: true })).rejects.toThrow(
@@ -64,8 +64,8 @@ describe("doctor database schema preflight", () => {
 });
 
 function mockInteractiveGitUpdate(status: "ok" | "skipped"): void {
-  delete process.env.OPENCLAW_UPDATE_IN_PROGRESS;
-  resolveOpenClawPackageRoot.mockResolvedValue("/repo");
+  delete process.env.AFORA_UPDATE_IN_PROGRESS;
+  resolveAforaPackageRoot.mockResolvedValue("/repo");
   runCommandWithTimeout.mockResolvedValue({
     stdout: "/repo\n",
     stderr: "",
@@ -83,7 +83,7 @@ function mockInteractiveGitUpdate(status: "ok" | "skipped"): void {
 }
 
 function writeStateSchemaVersion(version: number): void {
-  const statePath = resolveOpenClawStateSqlitePath(process.env);
+  const statePath = resolveAforaStateSqlitePath(process.env);
   fs.mkdirSync(path.dirname(statePath), { recursive: true });
   const { DatabaseSync } = requireNodeSqlite();
   const database = new DatabaseSync(statePath);

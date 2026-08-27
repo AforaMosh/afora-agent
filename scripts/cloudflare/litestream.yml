@@ -1,4 +1,4 @@
-# Both roots need watch:true because OpenClaw creates the shared and per-agent
+# Both roots need watch:true because Afora creates the shared and per-agent
 # databases after Litestream starts on a new ephemeral container.
 sync-interval: 1s
 logging:
@@ -7,7 +7,7 @@ logging:
   stderr: false
 
 dbs:
-  - dir: /home/node/.openclaw/state
+  - dir: /home/node/.afora/state
     pattern: "*.sqlite"
     recursive: false
     watch: true
@@ -21,7 +21,7 @@ dbs:
       secret-access-key: ${LITESTREAM_SECRET_ACCESS_KEY}
       force-path-style: true
 
-  - dir: /home/node/.openclaw/agents
+  - dir: /home/node/.afora/agents
     pattern: "*.sqlite"
     recursive: true
     watch: true

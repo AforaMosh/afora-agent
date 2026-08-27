@@ -1,10 +1,10 @@
 /**
  * JSONL parser — splits on `\n`, parses each non-empty line as JSONC
  * (allowing comments/trailing-comma is harmless and matches what
- * openclaw session logs actually emit). Soft-error policy: malformed
+ * afora session logs actually emit). Soft-error policy: malformed
  * lines surface as `kind: 'malformed'` AST entries plus a diagnostic.
  *
- * @module @openclaw/oc-path/jsonl/parse
+ * @module @afora/oc-path/jsonl/parse
  */
 
 import type { Diagnostic } from "../ast.js";

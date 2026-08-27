@@ -1,5 +1,5 @@
 // Slack tests cover progress blocks plugin behavior.
-import type { ChannelProgressDraftLine } from "openclaw/plugin-sdk/channel-outbound";
+import type { ChannelProgressDraftLine } from "afora-agent/plugin-sdk/channel-outbound";
 import { describe, expect, it } from "vitest";
 import {
   buildSlackProgressCardBlocks,
@@ -109,7 +109,7 @@ describe("buildSlackProgressCardBlocks", () => {
         title: "Implementing",
         lines: [toolLine("run tests")],
         diffStat: { files: 2, added: 1, removed: 1 },
-        sessionUrl: "https://team.openclaw.ai/openclaw/chat/main",
+        sessionUrl: "https://team.afora.ai/afora/chat/main",
       });
 
       expect(blocks[0]).toEqual({
@@ -126,9 +126,9 @@ describe("buildSlackProgressCardBlocks", () => {
         elements: [
           {
             type: "button",
-            action_id: "openclaw:session_link",
-            text: { type: "plain_text", text: "Open in OpenClaw" },
-            url: "https://team.openclaw.ai/openclaw/chat/main",
+            action_id: "afora:session_link",
+            text: { type: "plain_text", text: "Open in Afora" },
+            url: "https://team.afora.ai/afora/chat/main",
           },
         ],
       });
@@ -404,8 +404,8 @@ describe("native Slack progress stream chunks", () => {
             kind: "tool",
             icon: "🛠️",
             label: "Exec",
-            detail: "run tests in /Users/example/Projects/openclaw/packages/very/deep/path/example",
-            text: "🛠️ Exec: run tests in /Users/example/Projects/openclaw/packages/very/deep/path/example",
+            detail: "run tests in /Users/example/Projects/afora/packages/very/deep/path/example",
+            text: "🛠️ Exec: run tests in /Users/example/Projects/afora/packages/very/deep/path/example",
           },
         ],
       }),
@@ -673,7 +673,7 @@ describe("native Slack progress stream chunks", () => {
       buildSlackProgressStreamCompletionChunks({
         lines: [toolLine("src/native-card.ts", "Write")],
         diffStat: { files: 1, added: 3, removed: 1 },
-        sessionUrl: "https://team.openclaw.ai/openclaw/chat/main",
+        sessionUrl: "https://team.afora.ai/afora/chat/main",
       }),
     ).toEqual([
       planUpdate("Write — src/native-card.ts"),
@@ -683,8 +683,8 @@ describe("native Slack progress stream chunks", () => {
         sources: [
           {
             type: "url_source",
-            url: "https://team.openclaw.ai/openclaw/chat/main",
-            text: "Open in OpenClaw",
+            url: "https://team.afora.ai/afora/chat/main",
+            text: "Open in Afora",
           },
         ],
       }),

@@ -3,7 +3,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 type ResolveAcpSessionAvailability =
-  (typeof import("openclaw/plugin-sdk/acp-runtime"))["resolveAcpSessionAvailability"];
+  (typeof import("afora-agent/plugin-sdk/acp-runtime"))["resolveAcpSessionAvailability"];
 
 const acpRuntimeMocks = vi.hoisted(() => ({
   resolveAcpSessionAvailability: vi.fn<ResolveAcpSessionAvailability>(() => ({ available: true })),
@@ -13,14 +13,14 @@ const transcriptMocks = vi.hoisted(() => ({
   failAfter: undefined as number | undefined,
 }));
 
-vi.mock("openclaw/plugin-sdk/acp-runtime", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/acp-runtime")>()),
+vi.mock("afora-agent/plugin-sdk/acp-runtime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/acp-runtime")>()),
   resolveAcpSessionAvailability: acpRuntimeMocks.resolveAcpSessionAvailability,
 }));
 
-vi.mock("openclaw/plugin-sdk/session-transcript-runtime", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/session-transcript-runtime", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("openclaw/plugin-sdk/session-transcript-runtime")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/session-transcript-runtime")>();
   return {
     ...actual,
     withSessionTranscriptWriteLock: async (
@@ -90,7 +90,7 @@ afterEach(async () => {
 });
 
 describe("Pi session catalog continuation", () => {
-  it("projects only adopted Pi rows with their OpenClaw session key", async () => {
+  it("projects only adopted Pi rows with their Afora session key", async () => {
     await createPiStoreFixture(
       temporaryDirectories,
       "hi",
@@ -168,7 +168,7 @@ describe("Pi session catalog continuation", () => {
       'Tool call\n\nbash\n{"command":"pwd"}',
       "Tool result\n\nbash\n/workspace",
     ]);
-    expect(transcriptMocks.messages[0]?.["__openclaw"]).toEqual({
+    expect(transcriptMocks.messages[0]?.["__afora"]).toEqual({
       mirrorOrigin: "pi-catalog-import",
     });
 

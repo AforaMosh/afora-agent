@@ -1,6 +1,6 @@
-import type { HealthFinding } from "openclaw/plugin-sdk/health";
-import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { HealthFinding } from "afora-agent/plugin-sdk/health";
+import { normalizeAgentId } from "afora-agent/plugin-sdk/routing";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   execApprovalsPolicyShapeFinding,
   ingressPolicyShapeFinding,

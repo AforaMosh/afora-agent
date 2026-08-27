@@ -5,9 +5,9 @@ import {
   createChannelIngressMonitor,
   type ChannelIngressQueue,
   type ChannelIngressMonitorLifecycle,
-} from "openclaw/plugin-sdk/channel-outbound";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { normalizeNullableString as nonEmptyString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { normalizeNullableString as nonEmptyString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { getTwitchRuntime } from "./runtime.js";
 import type { TwitchChatMessage } from "./types.js";
 import { normalizeTwitchChannel } from "./utils/twitch.js";

@@ -56,7 +56,7 @@ flow:
             senderId: "@driver:matrix.test"
             senderName: QA Driver
             text:
-              expr: "`@openclaw ${config.prompt}`"
+              expr: "`@afora ${config.prompt}`"
         - waitForOutbound:
             conversation:
               id:

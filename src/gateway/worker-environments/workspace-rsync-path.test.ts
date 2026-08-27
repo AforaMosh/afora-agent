@@ -21,14 +21,14 @@ describe.skipIf(process.platform === "win32")("workspace rsync receiver path", (
     { mode: "git-pack", sourceKind: "file" },
     { mode: "accepted-next", sourceKind: "file" },
   ] as const)("crosses the real rsync and OpenSSH argv boundary for $mode", async (testCase) => {
-    const root = path.join(tempDirs.make("openclaw-rsync-path-"), "paths with spaces");
+    const root = path.join(tempDirs.make("afora-rsync-path-"), "paths with spaces");
     const home = path.join(root, "remote home");
-    const workspace = path.join(home, ".openclaw-worker/workspaces/env/session/1");
+    const workspace = path.join(home, ".afora-worker/workspaces/env/session/1");
     const source = path.join(
       root,
       testCase.sourceKind === "directory" ? "source dir" : "input.bin",
     );
-    const tools = tempDirs.make("openclaw-rsync-tools-");
+    const tools = tempDirs.make("afora-rsync-tools-");
     const sshArgvPath = path.join(root, "ssh-argv");
     const receiverArgvPath = path.join(root, "receiver-argv");
     await fs.mkdir(workspace, { recursive: true });
@@ -54,13 +54,13 @@ describe.skipIf(process.platform === "win32")("workspace rsync receiver path", (
     const rsync = resolvedRsync.stdout.trim();
     await fs.writeFile(
       path.join(tools, "rsync"),
-      '#!/bin/sh\nset -eu\nprintf "%s\\0" "$@" > "$OPENCLAW_TEST_RECEIVER_ARGV"\nexec "$OPENCLAW_TEST_REAL_RSYNC" "$@"\n',
+      '#!/bin/sh\nset -eu\nprintf "%s\\0" "$@" > "$AFORA_TEST_RECEIVER_ARGV"\nexec "$AFORA_TEST_REAL_RSYNC" "$@"\n',
       { mode: 0o755 },
     );
     const fakeSsh = path.join(tools, "ssh");
     await fs.writeFile(
       fakeSsh,
-      '#!/bin/sh\nset -eu\nshift\nprintf "%s\\0" "$@" > "$OPENCLAW_TEST_SSH_ARGV"\ncd "$HOME"\nexec sh -c "$*"\n',
+      '#!/bin/sh\nset -eu\nshift\nprintf "%s\\0" "$@" > "$AFORA_TEST_SSH_ARGV"\ncd "$HOME"\nexec sh -c "$*"\n',
       { mode: 0o755 },
     );
 
@@ -70,7 +70,7 @@ describe.skipIf(process.platform === "win32")("workspace rsync receiver path", (
       const workspaceKey = createHash("sha256").update(canonicalWorkspace).digest("hex");
       const transaction = path.join(
         path.dirname(canonicalWorkspace),
-        `.openclaw-accepted-${workspaceKey}-${nonce}`,
+        `.afora-accepted-${workspaceKey}-${nonce}`,
       );
       receiverTarget = path.join(transaction, "next");
       await fs.mkdir(receiverTarget, { recursive: true });
@@ -86,7 +86,7 @@ describe.skipIf(process.platform === "win32")("workspace rsync receiver path", (
     } else {
       receiverTarget =
         testCase.mode === "git-pack"
-          ? path.join(canonicalWorkspace, ".openclaw-base.pack")
+          ? path.join(canonicalWorkspace, ".afora-base.pack")
           : canonicalWorkspace;
       receiverCommand = createWorkerWorkspaceRsyncReceiverPathFactory({
         receiverEntryPath,
@@ -121,9 +121,9 @@ describe.skipIf(process.platform === "win32")("workspace rsync receiver path", (
           ...process.env,
           HOME: canonicalHome,
           PATH: `${tools}:${process.env.PATH ?? ""}`,
-          OPENCLAW_TEST_REAL_RSYNC: rsync,
-          OPENCLAW_TEST_RECEIVER_ARGV: receiverArgvPath,
-          OPENCLAW_TEST_SSH_ARGV: sshArgvPath,
+          AFORA_TEST_REAL_RSYNC: rsync,
+          AFORA_TEST_RECEIVER_ARGV: receiverArgvPath,
+          AFORA_TEST_SSH_ARGV: sshArgvPath,
         },
       },
     );

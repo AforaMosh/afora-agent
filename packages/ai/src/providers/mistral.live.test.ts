@@ -3,7 +3,7 @@ import type { Model } from "../types.js";
 import { streamSimpleMistral } from "./mistral.js";
 
 const apiKey = process.env.MISTRAL_API_KEY?.trim() ?? "";
-const live = process.env.OPENCLAW_LIVE_TEST === "1" && apiKey.length > 0;
+const live = process.env.AFORA_LIVE_TEST === "1" && apiKey.length > 0;
 const describeLive = live ? describe : describe.skip;
 
 const model: Model<"mistral-conversations"> = {
@@ -27,7 +27,7 @@ describeLive("Mistral provider live", () => {
       {
         apiKey,
         maxTokens: 32,
-        sessionId: `openclaw-live-${Date.now()}`,
+        sessionId: `afora-live-${Date.now()}`,
       },
     ).result();
 

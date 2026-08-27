@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 // Devices page renders the pending device pairing-request rows.
 import { html, nothing } from "lit";
 import {

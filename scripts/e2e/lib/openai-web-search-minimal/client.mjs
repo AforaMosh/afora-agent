@@ -19,7 +19,7 @@ async function loadCallGateway() {
 const DEFAULT_RAW_SCHEMA_ERROR =
   "400 The following tools cannot be used with reasoning.effort 'minimal': web_search.";
 const DEFAULT_GATEWAY_SCHEMA_ERROR = "provider rejected the request schema or tool payload";
-const SUCCESS_MARKER = "OPENCLAW_SCHEMA_E2E_OK";
+const SUCCESS_MARKER = "AFORA_SCHEMA_E2E_OK";
 
 function readExpectedRawSchemaError() {
   return process.env.RAW_SCHEMA_ERROR?.trim() || DEFAULT_RAW_SCHEMA_ERROR;
@@ -34,9 +34,9 @@ function resolveGatewayPort(env = process.env) {
 }
 
 async function gatewayAgent(params) {
-  const token = process.env.OPENCLAW_GATEWAY_TOKEN;
+  const token = process.env.AFORA_GATEWAY_TOKEN;
   if (!token) {
-    throw new Error("missing PORT/OPENCLAW_GATEWAY_TOKEN");
+    throw new Error("missing PORT/AFORA_GATEWAY_TOKEN");
   }
   const port = resolveGatewayPort();
 

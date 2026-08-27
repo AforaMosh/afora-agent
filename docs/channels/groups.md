@@ -7,13 +7,13 @@ title: "Groups"
 sidebarTitle: "Groups"
 ---
 
-OpenClaw applies the same group rules across group-capable channels, including Discord, iMessage, Matrix, Microsoft Teams, QQBot, Signal, Slack, Telegram, WhatsApp, and Zalo.
+Afora applies the same group rules across group-capable channels, including Discord, iMessage, Matrix, Microsoft Teams, QQBot, Signal, Slack, Telegram, WhatsApp, and Zalo.
 
 For always-on rooms that should provide quiet context unless the agent explicitly sends a visible message, see [Ambient room events](/channels/ambient-room-events).
 
 ## Beginner intro (2 minutes)
 
-OpenClaw "lives" on your own messaging accounts. There is no separate WhatsApp bot user: if **you** are in a group, OpenClaw can see that group and respond there.
+Afora "lives" on your own messaging accounts. There is no separate WhatsApp bot user: if **you** are in a group, Afora can see that group and respond there.
 
 Default behavior:
 
@@ -21,7 +21,7 @@ Default behavior:
 - Replies require a mention unless you disable mention gating for a group.
 - Final reply text posts to the room automatically (`visibleReplies: "automatic"`).
 
-Translation: allowlisted senders can trigger OpenClaw by mentioning it.
+Translation: allowlisted senders can trigger Afora by mentioning it.
 
 <Note>
 **TL;DR**
@@ -44,13 +44,13 @@ always-on group chatter -> user request, or room event when configured
 
 ## Visible replies
 
-For normal group/channel requests, OpenClaw defaults to `messages.groupChat.visibleReplies: "automatic"`: the final assistant text posts to the room as the visible reply.
+For normal group/channel requests, Afora defaults to `messages.groupChat.visibleReplies: "automatic"`: the final assistant text posts to the room as the visible reply.
 
-Use `messages.groupChat.visibleReplies: "message_tool"` when a shared room should let the agent decide when to speak by calling `message(action=send)`. This works best with tool-reliable models (for example GPT-5.6 Sol). If the model misses the tool and returns substantive final text, OpenClaw keeps that text private instead of posting it to the room.
+Use `messages.groupChat.visibleReplies: "message_tool"` when a shared room should let the agent decide when to speak by calling `message(action=send)`. This works best with tool-reliable models (for example GPT-5.6 Sol). If the model misses the tool and returns substantive final text, Afora keeps that text private instead of posting it to the room.
 
 Use `"automatic"` for models or runtimes that do not reliably follow tool-only delivery: normal text finals post directly to the room, and the agent may still call `message(action=send)` for files, images, or other attachments that cannot ride along with the final text.
 
-If the message tool is unavailable under the active tool policy, OpenClaw falls back to automatic visible replies instead of silently suppressing the response. `openclaw doctor` warns about this mismatch.
+If the message tool is unavailable under the active tool policy, Afora falls back to automatic visible replies instead of silently suppressing the response. `afora doctor` warns about this mismatch.
 
 For direct chats and any other source event, `messages.visibleReplies: "message_tool"` applies the same tool-only behavior globally; `messages.groupChat.visibleReplies` remains the more specific override for group/channel rooms. Internal WebChat direct turns default to automatic final-reply delivery so Pi and Codex receive the same visible-reply contract.
 
@@ -109,7 +109,7 @@ Two different controls are involved in group safety:
 - **Trigger authorization**: who can trigger the agent (`groupPolicy`, `groups`, `groupAllowFrom`, channel-specific allowlists).
 - **Context visibility**: what supplemental context is injected into the model (reply/quote text, thread history, forwarded metadata).
 
-By default OpenClaw keeps context as received: allowlists decide who can trigger actions, not what quoted or historical snippets the model sees. To also filter supplemental context, set `contextVisibility`:
+By default Afora keeps context as received: allowlists decide who can trigger actions, not what quoted or historical snippets the model sees. To also filter supplemental context, set `contextVisibility`:
 
 | Mode                | Behavior                                                                         |
 | ------------------- | -------------------------------------------------------------------------------- |
@@ -372,7 +372,7 @@ Each fact defaults to enabled when the channel produces it. Set the correspondin
       main: {
         default: true,
         groupChat: {
-          mentionPatterns: ["@openclaw", "openclaw", "\\+15555550123"],
+          mentionPatterns: ["@afora", "afora", "\\+15555550123"],
           historyLimit: 50,
         },
       },
@@ -385,7 +385,7 @@ Each fact defaults to enabled when the channel produces it. Set the correspondin
 
 Configured `mentionPatterns` are regex fallback triggers. Use them when the
 platform does not expose a native bot mention, or when you want plain text such
-as `openclaw:` to count as a mention. Native platform mentions are separate:
+as `afora:` to count as a mention. Native platform mentions are separate:
 when Discord, Slack, Telegram, Matrix, Signal, or another channel can prove the message
 explicitly mentioned the bot, that native mention still triggers even if
 configured regex patterns are denied.
@@ -398,7 +398,7 @@ Use `mode: "deny"` when regex mention patterns should be off by default for a ch
 {
   messages: {
     groupChat: {
-      mentionPatterns: ["\\bopenclaw\\b", "\\bops bot\\b"],
+      mentionPatterns: ["\\bafora\\b", "\\bops bot\\b"],
     },
   },
   channels: {
@@ -418,7 +418,7 @@ Use the default `mode: "allow"` (or omit `mode`) when regex mention patterns sho
 {
   messages: {
     groupChat: {
-      mentionPatterns: ["\\bopenclaw\\b"],
+      mentionPatterns: ["\\bafora\\b"],
     },
   },
   channels: {
@@ -473,7 +473,7 @@ Account-level channel configs can set the same policy under `channels.<channel>.
 Some channel configs support restricting which tools are available **inside a specific group/room/channel**.
 
 - `tools`: allow/deny tools for the whole group (`allow`, `alsoAllow`, `deny`; deny wins).
-- `toolsBySender`: per-sender overrides within the group. Use explicit key prefixes: `channel:<channelId>:<senderId>`, `id:<senderId>`, `e164:<phone>`, `username:<handle>`, `name:<displayName>`, and `"*"` wildcard. Channel ids use canonical OpenClaw channel ids; aliases such as `teams` normalize to `msteams`. Legacy unprefixed keys are still accepted, matched as `id:` only, and log a deprecation warning.
+- `toolsBySender`: per-sender overrides within the group. Use explicit key prefixes: `channel:<channelId>:<senderId>`, `id:<senderId>`, `e164:<phone>`, `username:<handle>`, `name:<displayName>`, and `"*"` wildcard. Channel ids use canonical Afora channel ids; aliases such as `teams` normalize to `msteams`. Legacy unprefixed keys are still accepted, matched as `id:` only, and log a deprecation warning.
 
 Resolution order (most specific wins):
 

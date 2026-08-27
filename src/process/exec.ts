@@ -1,4 +1,4 @@
-import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
+import { resolveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
 // Exec helpers run subprocesses with normalized output, timeout, and abort handling.
 import { danger, shouldLogVerbose } from "../globals.js";
 import {

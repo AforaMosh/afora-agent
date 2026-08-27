@@ -1,26 +1,26 @@
 // Browser tests cover control auth.auto token plugin behavior.
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { expectGeneratedTokenPersistedToGatewayAuth } from "../../test-support.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 
 const mocks = vi.hoisted(() => ({
-  getRuntimeConfig: vi.fn<() => OpenClawConfig>(),
-  writeConfigFile: vi.fn<(cfg: OpenClawConfig) => Promise<void>>(async (_cfg) => {}),
-  replaceConfigFile: vi.fn(async ({ nextConfig }: { nextConfig: OpenClawConfig }) => {
+  getRuntimeConfig: vi.fn<() => AforaConfig>(),
+  writeConfigFile: vi.fn<(cfg: AforaConfig) => Promise<void>>(async (_cfg) => {}),
+  replaceConfigFile: vi.fn(async ({ nextConfig }: { nextConfig: AforaConfig }) => {
     await mocks.writeConfigFile(nextConfig);
   }),
   mutateConfigFile: vi.fn(
     async (params: {
-      mutate: (draft: OpenClawConfig, context: { snapshot: { path: string } }) => unknown;
+      mutate: (draft: AforaConfig, context: { snapshot: { path: string } }) => unknown;
     }) => {
       const draft = structuredClone(mocks.getRuntimeConfig());
-      const result = await params.mutate(draft, { snapshot: { path: "/tmp/openclaw.json" } });
+      const result = await params.mutate(draft, { snapshot: { path: "/tmp/afora.json" } });
       await mocks.writeConfigFile(draft);
       return {
-        path: "/tmp/openclaw.json",
+        path: "/tmp/afora.json",
         previousHash: "test-hash",
         persistedHash: "test-hash",
-        snapshot: { path: "/tmp/openclaw.json" },
+        snapshot: { path: "/tmp/afora.json" },
         nextConfig: draft,
         result,
         attempts: 1,
@@ -33,7 +33,7 @@ const mocks = vi.hoisted(() => ({
     ({
       authConfig,
     }: {
-      authConfig?: NonNullable<NonNullable<OpenClawConfig["gateway"]>["auth"]>;
+      authConfig?: NonNullable<NonNullable<AforaConfig["gateway"]>["auth"]>;
     }) => {
       const token =
         typeof authConfig?.token === "string"
@@ -50,7 +50,7 @@ const mocks = vi.hoisted(() => ({
       };
     },
   ),
-  ensureGatewayStartupAuth: vi.fn(async ({ cfg }: { cfg: OpenClawConfig }) => ({
+  ensureGatewayStartupAuth: vi.fn(async ({ cfg }: { cfg: AforaConfig }) => ({
     cfg: {
       ...cfg,
       gateway: {
@@ -85,7 +85,7 @@ vi.mock("../gateway/auth.js", () => ({
   resolveGatewayAuth: mocks.resolveGatewayAuth,
 }));
 
-function readPersistedConfig(): OpenClawConfig {
+function readPersistedConfig(): AforaConfig {
   const [call] = mocks.writeConfigFile.mock.calls;
   if (!call) {
     throw new Error("expected persisted config write");
@@ -98,7 +98,7 @@ function readPersistedConfig(): OpenClawConfig {
 }
 
 async function expectGeneratedBrowserAuthPersistence(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   mode: "none" | "trusted-proxy";
   generatedAuthField: "token" | "password";
 }) {
@@ -116,7 +116,7 @@ async function expectGeneratedBrowserAuthPersistence(params: {
   expect(mocks.ensureGatewayStartupAuth).not.toHaveBeenCalled();
 }
 
-async function expectUnresolvedBrowserSecretRefSkipsPersistence(cfg: OpenClawConfig) {
+async function expectUnresolvedBrowserSecretRefSkipsPersistence(cfg: AforaConfig) {
   mocks.getRuntimeConfig.mockReturnValue(cfg);
 
   const result = await ensureBrowserControlAuth({ cfg, env: {} as NodeJS.ProcessEnv });
@@ -131,7 +131,7 @@ let resolveBrowserControlAuth: typeof import("./control-auth.js").resolveBrowser
 
 describe("ensureBrowserControlAuth", () => {
   const expectExplicitModeSkipsAutoAuth = async (mode: "password") => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: { mode },
       },
@@ -174,7 +174,7 @@ describe("ensureBrowserControlAuth", () => {
   });
 
   it("returns existing auth and skips writes", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: {
           token: "already-set",
@@ -191,7 +191,7 @@ describe("ensureBrowserControlAuth", () => {
   });
 
   it("returns only the active credential in password mode", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: {
           mode: "password",
@@ -207,7 +207,7 @@ describe("ensureBrowserControlAuth", () => {
   });
 
   it("returns only the resolved active credential when mode is inferred", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: {
           token: "inactive-token",
@@ -222,7 +222,7 @@ describe("ensureBrowserControlAuth", () => {
   });
 
   it("returns only the browser token in none mode", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: {
           mode: "none",
@@ -238,7 +238,7 @@ describe("ensureBrowserControlAuth", () => {
   });
 
   it("returns only the active token in token mode", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: {
           mode: "token",
@@ -254,7 +254,7 @@ describe("ensureBrowserControlAuth", () => {
   });
 
   it("returns only the browser password in trusted-proxy mode", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: {
           mode: "trusted-proxy",
@@ -271,7 +271,7 @@ describe("ensureBrowserControlAuth", () => {
   });
 
   it("does not accept an inactive token in trusted-proxy mode", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: {
           mode: "trusted-proxy",
@@ -285,7 +285,7 @@ describe("ensureBrowserControlAuth", () => {
   });
 
   it("auto-generates and persists a token when auth is missing", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       browser: {
         enabled: true,
       },
@@ -302,7 +302,7 @@ describe("ensureBrowserControlAuth", () => {
   });
 
   it("skips auto-generation in test env", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       browser: {
         enabled: true,
       },
@@ -324,7 +324,7 @@ describe("ensureBrowserControlAuth", () => {
   });
 
   it("auto-generates and persists browser auth token in none mode", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: { mode: "none" },
       },
@@ -340,7 +340,7 @@ describe("ensureBrowserControlAuth", () => {
   });
 
   it("does not persist over unresolved token SecretRef in none mode", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: {
           mode: "none",
@@ -355,7 +355,7 @@ describe("ensureBrowserControlAuth", () => {
   });
 
   it("still auto-generates in none mode when only password SecretRef is set", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: {
           mode: "none",
@@ -374,7 +374,7 @@ describe("ensureBrowserControlAuth", () => {
   });
 
   it("auto-generates in trusted-proxy mode and persists browser auth password", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: { mode: "trusted-proxy", trustedProxy: { userHeader: "x-forwarded-user" } },
       },
@@ -390,7 +390,7 @@ describe("ensureBrowserControlAuth", () => {
   });
 
   it("still auto-generates in trusted-proxy mode when only token SecretRef is set", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: {
           mode: "trusted-proxy",
@@ -410,7 +410,7 @@ describe("ensureBrowserControlAuth", () => {
   });
 
   it("does not persist over unresolved password SecretRef in trusted-proxy mode", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: {
           mode: "trusted-proxy",
@@ -426,7 +426,7 @@ describe("ensureBrowserControlAuth", () => {
   });
 
   it("reuses auth from latest config snapshot", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       browser: {
         enabled: true,
       },
@@ -450,7 +450,7 @@ describe("ensureBrowserControlAuth", () => {
   });
 
   it("fails when gateway.auth.token SecretRef is unresolved", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       gateway: {
         auth: {
           mode: "token",

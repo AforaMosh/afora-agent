@@ -1,10 +1,10 @@
-import type { AssistantMessage, Model } from "@openclaw/llm-core";
+import type { AssistantMessage, Model } from "@afora/llm-core";
 /**
  * Tests Anthropic Messages transport streaming.
  * Covers request construction, SSE parsing, aborts, tool calls, usage, and
  * provider transport hooks.
  */
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   configureAiTransportHost,
@@ -81,7 +81,7 @@ type RequestTransportConfig = {
   allowPrivateNetwork?: boolean;
 };
 const MODEL_PROVIDER_REQUEST_TRANSPORT_SYMBOL = Symbol.for(
-  "openclaw.modelProviderRequestTransport",
+  "afora.modelProviderRequestTransport",
 );
 
 function attachModelProviderRequestTransport<TModel extends object>(
@@ -1659,7 +1659,7 @@ describe("anthropic transport stream", () => {
     );
 
     expect(result.stopReason).toBe("error");
-    expect(result.errorMessage).toBe("OpenClaw transport error: malformed_streaming_fragment");
+    expect(result.errorMessage).toBe("Afora transport error: malformed_streaming_fragment");
   });
 
   it.each([
@@ -3130,7 +3130,7 @@ describe("anthropic transport stream", () => {
       absent: ["reasoning_content"],
     },
     {
-      name: "backfills MiMo v2-flash tool-use replay when OpenClaw thinking is off",
+      name: "backfills MiMo v2-flash tool-use replay when Afora thinking is off",
       model: {
         id: "mimo-v2-flash",
         name: "MiMo V2 Flash",

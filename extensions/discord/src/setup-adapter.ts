@@ -1,9 +1,9 @@
-import { defineChannelSetupContract } from "openclaw/plugin-sdk/channel-setup";
+import { defineChannelSetupContract } from "afora-agent/plugin-sdk/channel-setup";
 // Discord plugin module implements setup adapter behavior.
 import {
   createEnvPatchedAccountSetupAdapter,
   type ChannelSetupAdapter,
-} from "openclaw/plugin-sdk/setup-runtime";
+} from "afora-agent/plugin-sdk/setup-runtime";
 
 const channel = "discord" as const;
 

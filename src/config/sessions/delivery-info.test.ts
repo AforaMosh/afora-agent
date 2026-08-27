@@ -463,7 +463,7 @@ describe("extractDeliveryInfo", () => {
   });
 
   it("prefers the exact mixed-case Matrix entry over a fresher folded legacy alias", () => {
-    // Matrix room IDs are case-sensitive (openclaw#75670): the exact mixed-case
+    // Matrix room IDs are case-sensitive (afora#75670): the exact mixed-case
     // session is canonical and must win over a stale lowercased legacy alias even
     // when the alias is fresher. (Previously these collapsed to one lowercased key
     // and freshest won — that collapse was the bug.)

@@ -1,6 +1,6 @@
 // Zalo test support covers monitor.image.polling plugin behavior.
-import { createRuntimeEnv } from "openclaw/plugin-sdk/plugin-test-runtime";
-import { withServer } from "openclaw/plugin-sdk/test-env";
+import { createRuntimeEnv } from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { withServer } from "afora-agent/plugin-sdk/test-env";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createImageLifecycleCore,
@@ -241,7 +241,7 @@ describe("Zalo polling image handling", () => {
 
   it("times out inbound image downloads when photo_url headers never arrive", async () => {
     const { createServer } = await import("node:http");
-    const { saveRemoteMedia } = await import("openclaw/plugin-sdk/media-runtime");
+    const { saveRemoteMedia } = await import("afora-agent/plugin-sdk/media-runtime");
 
     const server = createServer((_req, _res) => {
       // Accept the connection but never write status/headers.

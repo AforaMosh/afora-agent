@@ -1,7 +1,7 @@
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
+import { closeAforaAgentDatabasesForTest } from "../../state/afora-agent-db.js";
 
 const cleanupRace = vi.hoisted(() => ({
   afterPreview: undefined as (() => void) | undefined,
@@ -35,12 +35,12 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 describe("sessions cleanup applied summary", () => {
   afterEach(() => {
     cleanupRace.afterPreview = undefined;
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
   });
 
   it("reports authoritative counts when a preview removal becomes stale before apply", async () => {
     const storePath = path.join(
-      tempDirs.make("openclaw-cleanup-applied-summary-"),
+      tempDirs.make("afora-cleanup-applied-summary-"),
       "agents",
       "main",
       "sessions",

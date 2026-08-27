@@ -4,8 +4,8 @@ import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { markInboundContextLabel } from "../auto-reply/reply/inbound-context-marker.js";
 import type { SessionEntry } from "../config/sessions.js";
 import { persistSessionTranscriptTurn } from "../config/sessions/session-accessor.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { captureEnv, setTestEnvValue } from "../test-utils/env.js";
 import {
   readSessionTitleFieldsFromTranscript,
@@ -17,7 +17,7 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 const senderMetadata = `${markInboundContextLabel("Sender:")}
 \`\`\`json
-{"label":"openclaw-tui (gateway-client)","id":"gateway-client"}
+{"label":"afora-tui (gateway-client)","id":"gateway-client"}
 \`\`\``;
 
 describe("session titles with inbound Gateway metadata", () => {
@@ -25,14 +25,14 @@ describe("session titles with inbound Gateway metadata", () => {
   let envSnapshot: ReturnType<typeof captureEnv>;
 
   beforeEach(() => {
-    envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
-    tempDir = tempDirs.make("openclaw-session-title-inbound-");
-    setTestEnvValue("OPENCLAW_STATE_DIR", tempDir);
+    envSnapshot = captureEnv(["AFORA_STATE_DIR"]);
+    tempDir = tempDirs.make("afora-session-title-inbound-");
+    setTestEnvValue("AFORA_STATE_DIR", tempDir);
   });
 
   afterEach(() => {
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     envSnapshot.restore();
   });
 
@@ -105,9 +105,9 @@ describe("session titles with inbound Gateway metadata", () => {
       deriveSessionTitle(
         entry,
         `${senderMetadata}\n\nHelp me investigate the flaky deployment`,
-        "  openclaw-tui  ",
+        "  afora-tui  ",
       ),
-    ).toBe("openclaw-tui");
+    ).toBe("afora-tui");
   });
 
   test("keeps a user-assigned session label ahead of the Gateway display name", () => {
@@ -117,7 +117,7 @@ describe("session titles with inbound Gateway metadata", () => {
       label: "Deployment investigation",
     };
 
-    expect(deriveSessionTitle(entry, senderMetadata, "openclaw-tui")).toBe(
+    expect(deriveSessionTitle(entry, senderMetadata, "afora-tui")).toBe(
       "Deployment investigation",
     );
   });

@@ -1,8 +1,8 @@
 // Usage gateway methods aggregate provider and session cost/token metrics from
 // caches, logs, session stores, and discovered transcript files.
 import fs from "node:fs";
-import { expectDefined } from "@openclaw/normalization-core";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { expectDefined } from "@afora/normalization-core";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   ErrorCodes,
   errorShape,
@@ -15,7 +15,7 @@ import {
   resolveSessionFilePathOptions,
 } from "../../config/sessions/paths.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   createTimeZoneDayKeyFormatter,
   resolveTimezone,
@@ -131,7 +131,7 @@ type ResolvedSessionUsageTarget = {
 
 function resolveSessionUsageTarget(
   key: string,
-  config: OpenClawConfig,
+  config: AforaConfig,
   agentIdHint?: string,
 ): ResolvedSessionUsageTarget | undefined {
   const { canonicalKey, entry, storePath } = loadGatewaySessionEntryReadOnly(
@@ -295,8 +295,8 @@ async function loadSessionsUsageResultCached(
 function resolveSessionUsageFileOrRespond(
   key: string,
   respond: RespondFn,
-  config: OpenClawConfig,
-): (ResolvedSessionUsageTarget & { config: OpenClawConfig }) | null {
+  config: AforaConfig,
+): (ResolvedSessionUsageTarget & { config: AforaConfig }) | null {
   const sessionOwner = resolveRequestedSessionAgentId(config, key);
   if (!sessionOwner.ok) {
     respond(false, undefined, sessionOwner.error);
@@ -721,7 +721,7 @@ function buildStoreBySessionId(
 }
 
 function filterSessionStoreByAgent(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   store: Record<string, SessionEntry>;
   agentId: string;
 }): Record<string, SessionEntry> {
@@ -740,7 +740,7 @@ function filterSessionStoreByAgent(params: {
 }
 
 async function discoverAllSessionsForUsage(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentId?: string;
   startMs: number;
   endMs: number;
@@ -1012,7 +1012,7 @@ async function loadCostUsageSummaryCached(params: {
   startMs: number;
   endMs: number;
   dayBucket?: UsageDailyBucket;
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentId?: string;
   agentScope?: "all";
 }): Promise<CostUsageSummary> {
@@ -1049,7 +1049,7 @@ async function loadAllAgentCostUsageSummary(params: {
   startMs: number;
   endMs: number;
   dayBucket?: UsageDailyBucket;
-  config: OpenClawConfig;
+  config: AforaConfig;
 }): Promise<CostUsageSummary> {
   // Same agent universe as discoverAllSessionsForUsage: enumerating configured
   // ids only would list system-agent sessions whose cost never reaches totals.

@@ -5,20 +5,20 @@ import {
   dispatchChannelInboundReply,
   isChannelPartialDeliveryError,
   type ChannelInboundTurnPlan,
-} from "openclaw/plugin-sdk/channel-inbound";
+} from "afora-agent/plugin-sdk/channel-inbound";
 import {
   createMessageReceiptFromOutboundResults,
   type MessageReceiptSourceResult,
-} from "openclaw/plugin-sdk/channel-outbound";
+} from "afora-agent/plugin-sdk/channel-outbound";
 import {
   addTestHook,
   createEmptyPluginRegistry,
   initializeGlobalHookRunner,
   resetGlobalHookRunner,
   type PluginHookRegistration,
-} from "openclaw/plugin-sdk/channel-test-helpers";
-import { PlatformMessageNotDispatchedError } from "openclaw/plugin-sdk/error-runtime";
-import { clearInternalHooks, registerInternalHook } from "openclaw/plugin-sdk/hook-runtime";
+} from "afora-agent/plugin-sdk/channel-test-helpers";
+import { PlatformMessageNotDispatchedError } from "afora-agent/plugin-sdk/error-runtime";
+import { clearInternalHooks, registerInternalHook } from "afora-agent/plugin-sdk/hook-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createWebSendApi } from "../../inbound/send-api.js";
 import { normalizeWhatsAppSendResult } from "../../inbound/send-result.js";
@@ -36,10 +36,10 @@ type InternalHookEvent = Parameters<Parameters<typeof registerInternalHook>[1]>[
 
 const recordChannelActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("openclaw/plugin-sdk/channel-activity-runtime", async () => {
+vi.mock("afora-agent/plugin-sdk/channel-activity-runtime", async () => {
   const actual = await vi.importActual<
-    typeof import("openclaw/plugin-sdk/channel-activity-runtime")
-  >("openclaw/plugin-sdk/channel-activity-runtime");
+    typeof import("afora-agent/plugin-sdk/channel-activity-runtime")
+  >("afora-agent/plugin-sdk/channel-activity-runtime");
   return {
     ...actual,
     recordChannelActivity: (...args: unknown[]) => recordChannelActivity(...args),

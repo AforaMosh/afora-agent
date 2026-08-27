@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { appendTranscriptEvent, persistSessionTranscriptTurn } from "./session-accessor.js";
 import {
   readRecentSessionTranscriptHistoryEvents,
@@ -21,7 +21,7 @@ function historyEventId(entry: { event: unknown } | undefined): unknown {
   return event && typeof event === "object" && "id" in event ? event.id : undefined;
 }
 
-function enforceSqliteVariableLimit(database: OpenClawAgentDatabase): void {
+function enforceSqliteVariableLimit(database: AforaAgentDatabase): void {
   const prepare = database.db.prepare.bind(database.db);
   vi.spyOn(database.db, "prepare").mockImplementation((source) => {
     const variableCount = source.match(/\?/gu)?.length ?? 0;
@@ -33,7 +33,7 @@ function enforceSqliteVariableLimit(database: OpenClawAgentDatabase): void {
 }
 
 function insertSyntheticMessages(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionId: string,
   additionalCount: number,
 ): void {
@@ -88,7 +88,7 @@ function insertSyntheticMessages(
 }
 
 function insertSyntheticBoundaryPairs(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionId: string,
   pairCount: number,
 ): void {
@@ -174,7 +174,7 @@ describe("SQLite transcript history events", () => {
   beforeEach(() => {
     scope = {
       agentId: "main",
-      env: { ...process.env, OPENCLAW_STATE_DIR: tempDirs.make("openclaw-history-events-") },
+      env: { ...process.env, AFORA_STATE_DIR: tempDirs.make("afora-history-events-") },
       sessionId: "history-events-test",
       sessionKey: "agent:main:history-events-test",
     };
@@ -182,8 +182,8 @@ describe("SQLite transcript history events", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
   });
 
   it("retains an oversized newest history row without parsing excluded older payloads", async () => {
@@ -208,7 +208,7 @@ describe("SQLite transcript history events", () => {
       ],
       touchSessionEntry: false,
     });
-    const database = openOpenClawAgentDatabase({ agentId: scope.agentId, env: scope.env });
+    const database = openAforaAgentDatabase({ agentId: scope.agentId, env: scope.env });
     database.db
       .prepare(
         `UPDATE transcript_events
@@ -238,7 +238,7 @@ describe("SQLite transcript history events", () => {
       messages: [{ eventId: "seed", parentId: null, message: { role: "user", content: "seed" } }],
       touchSessionEntry: false,
     });
-    const database = openOpenClawAgentDatabase({ agentId: scope.agentId, env: scope.env });
+    const database = openAforaAgentDatabase({ agentId: scope.agentId, env: scope.env });
     const boundaryEvents = [
       {
         seq: 2,
@@ -304,7 +304,7 @@ describe("SQLite transcript history events", () => {
       messages: [{ eventId: "seed", parentId: null, message: { role: "user", content: "seed" } }],
       touchSessionEntry: false,
     });
-    const database = openOpenClawAgentDatabase({ agentId: scope.agentId, env: scope.env });
+    const database = openAforaAgentDatabase({ agentId: scope.agentId, env: scope.env });
     const bindingCount = REGRESSION_SQLITE_VARIABLE_LIMIT;
     insertSyntheticMessages(database, scope.sessionId, bindingCount);
     enforceSqliteVariableLimit(database);
@@ -330,7 +330,7 @@ describe("SQLite transcript history events", () => {
       messages: [{ eventId: "seed", parentId: null, message: { role: "user", content: "seed" } }],
       touchSessionEntry: false,
     });
-    const database = openOpenClawAgentDatabase({ agentId: scope.agentId, env: scope.env });
+    const database = openAforaAgentDatabase({ agentId: scope.agentId, env: scope.env });
     const bindingCount = REGRESSION_SQLITE_VARIABLE_LIMIT;
     insertSyntheticBoundaryPairs(database, scope.sessionId, bindingCount);
     enforceSqliteVariableLimit(database);

@@ -1,7 +1,7 @@
 // QA Lab Slack native approval observation and resolution.
 import { randomUUID } from "node:crypto";
 import type { WebClient } from "@slack/web-api";
-import type { ChannelApprovalKind } from "openclaw/plugin-sdk/approval-handler-runtime";
+import type { ChannelApprovalKind } from "afora-agent/plugin-sdk/approval-handler-runtime";
 import { assertApprovalDecisionResult } from "../shared/live-approval-result.js";
 import {
   writeSlackApprovalCheckpoint,

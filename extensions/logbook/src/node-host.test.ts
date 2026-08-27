@@ -15,9 +15,9 @@ vi.mock("node:fs/promises", () => ({
   writeFile: vi.fn(async () => undefined),
 }));
 
-vi.mock("openclaw/plugin-sdk/process-runtime", () => ({ runExec: runExecMock }));
-vi.mock("openclaw/plugin-sdk/temp-path", () => ({
-  resolvePreferredOpenClawTmpDir: () => "/data/openclaw-tests",
+vi.mock("afora-agent/plugin-sdk/process-runtime", () => ({ runExec: runExecMock }));
+vi.mock("afora-agent/plugin-sdk/temp-path", () => ({
+  resolvePreferredAforaTmpDir: () => "/data/afora-tests",
 }));
 
 import { handleLogbookSnapshot } from "./node-host.js";

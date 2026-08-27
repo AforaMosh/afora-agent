@@ -1,4 +1,4 @@
-import type { WhatsAppQaDriverObservedMessage } from "@openclaw/whatsapp/api.js";
+import type { WhatsAppQaDriverObservedMessage } from "@afora/whatsapp/api.js";
 import type { WhatsAppQaScenarioEnvironment } from "./scenario-environment.js";
 import { runWhatsAppApprovalScenario } from "./whatsapp-live.approvals.js";
 import {

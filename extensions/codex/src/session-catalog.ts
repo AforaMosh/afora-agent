@@ -1,13 +1,13 @@
-import { resolveSessionAgentIds } from "openclaw/plugin-sdk/agent-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import { resolveSessionAgentIds } from "afora-agent/plugin-sdk/agent-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import type {
-  OpenClawPluginApi,
-  OpenClawPluginNodeInvokePolicy,
-} from "openclaw/plugin-sdk/plugin-entry";
+  AforaPluginApi,
+  AforaPluginNodeInvokePolicy,
+} from "afora-agent/plugin-sdk/plugin-entry";
 import type {
   SessionCatalogHost,
   SessionCatalogProvider,
-} from "openclaw/plugin-sdk/session-catalog";
+} from "afora-agent/plugin-sdk/session-catalog";
 import type { CodexAppServerBindingStore } from "./app-server/session-binding.js";
 import { continueLocalCodexSession } from "./session-catalog-adoption.js";
 import { archiveLocalCodexSession } from "./session-catalog-archive.js";
@@ -49,7 +49,7 @@ export {
 } from "./session-catalog-parsing.js";
 
 /** Allows read-only catalog and transcript commands on supported paired-node platforms. */
-export function createCodexSessionCatalogNodeInvokePolicies(): OpenClawPluginNodeInvokePolicy[] {
+export function createCodexSessionCatalogNodeInvokePolicies(): AforaPluginNodeInvokePolicy[] {
   return [
     {
       commands: [
@@ -136,11 +136,11 @@ function resolveLocalCatalogHomeForThread(params: {
 }
 
 function registerCodexSessionCatalog(params: {
-  api: OpenClawPluginApi;
+  api: AforaPluginApi;
   bindingStore: CodexAppServerBindingStore;
   control: CodexSessionCatalogControlFactory;
   getPluginConfig: () => unknown;
-  getRuntimeConfig: () => OpenClawConfig | undefined;
+  getRuntimeConfig: () => AforaConfig | undefined;
 }): void {
   const catalogHomes = (agentId: string, allowProcessHomeFallback?: boolean) => {
     const homes = params.control.homesForAgent(agentId);
@@ -150,7 +150,7 @@ function registerCodexSessionCatalog(params: {
   };
   const resolveRequestAgentId = (agentId?: string) =>
     resolveSessionAgentIds({
-      config: params.getRuntimeConfig() ?? (params.api.config as OpenClawConfig),
+      config: params.getRuntimeConfig() ?? (params.api.config as AforaConfig),
       agentId,
     }).sessionAgentId;
   const bindRequest = (request: {
@@ -183,7 +183,7 @@ function registerCodexSessionCatalog(params: {
     supportsProcessHomeIsolation: true,
     resolveCreateSession: ({ agentId }) =>
       resolveCodexCatalogCreateSession(
-        params.getRuntimeConfig() ?? (params.api.config as OpenClawConfig),
+        params.getRuntimeConfig() ?? (params.api.config as AforaConfig),
         agentId,
       ),
     list: async (query) => {
@@ -232,7 +232,7 @@ function registerCodexSessionCatalog(params: {
     continueSession: async (request) => {
       const config = params.getRuntimeConfig();
       if (!config) {
-        throw new Error("OpenClaw runtime config is unavailable");
+        throw new Error("Afora runtime config is unavailable");
       }
       if (request.hostId.startsWith("node:")) {
         const agentId = resolveRequestAgentId(request.agentId);
@@ -287,7 +287,7 @@ function registerCodexSessionCatalog(params: {
       }
       const config = params.getRuntimeConfig();
       if (!config) {
-        throw new Error("OpenClaw runtime config is unavailable");
+        throw new Error("Afora runtime config is unavailable");
       }
       const { agentId, source, control } = bindLocalRequest(request);
       await archiveLocalCodexSession({

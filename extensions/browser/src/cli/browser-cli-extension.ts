@@ -1,5 +1,5 @@
 /**
- * `openclaw browser extension` CLI: register the Store and development extension
+ * `afora browser extension` CLI: register the Store and development extension
  * native bootstrap host, and retain advanced manual pairing.
  */
 import path from "node:path";
@@ -138,7 +138,7 @@ async function buildCdpEndpoint(options: {
   };
 }
 
-/** Register `openclaw browser extension` lifecycle and compatibility commands. */
+/** Register `afora browser extension` lifecycle and compatibility commands. */
 export function registerBrowserExtensionCommands(
   browser: Command,
   _parentOpts: (cmd: Command) => BrowserParentOpts,
@@ -146,7 +146,7 @@ export function registerBrowserExtensionCommands(
 ) {
   const extension = browser
     .command("extension")
-    .description("Install and inspect the OpenClaw Chrome extension bootstrap");
+    .description("Install and inspect the Afora Chrome extension bootstrap");
 
   extension
     .command("path")
@@ -176,7 +176,7 @@ export function registerBrowserExtensionCommands(
           const bundledDir = resolveChromeExtensionDir(pluginRoot);
           if (opts.json !== true) {
             defaultRuntime.log(
-              info("Preparing the OpenClaw Chrome native bootstrap. Keep Chrome running…"),
+              info("Preparing the Afora Chrome native bootstrap. Keep Chrome running…"),
             );
           }
           const status = await installChromeExtensionBootstrap({
@@ -197,7 +197,7 @@ export function registerBrowserExtensionCommands(
                 ? theme.warn(
                     status.platformSupport === "manual_required"
                       ? "Automatic native bootstrap is not supported on this platform; use Settings for manual pairing."
-                      : `Automatic setup was not verified. Run install before adding OpenClaw from ${FOUNDATION_CHROME_WEB_STORE_URL}. Use Load unpacked only as a development fallback after pre-registration. If this extension already attempted setup before the host existed, restart Chrome once before retrying.`,
+                      : `Automatic setup was not verified. Run install before adding Afora from ${FOUNDATION_CHROME_WEB_STORE_URL}. Use Load unpacked only as a development fallback after pre-registration. If this extension already attempted setup before the host existed, restart Chrome once before retrying.`,
                   )
                 : info(
                     `Native host and extension identity verified for ${status.discovered.length + status.storeDiscovered.length} profile registration(s). The extension connects automatically.`,
@@ -243,7 +243,7 @@ export function registerBrowserExtensionCommands(
 
   extension
     .command("uninstall-host")
-    .description("Remove only OpenClaw-owned Chrome native-host registrations")
+    .description("Remove only Afora-owned Chrome native-host registrations")
     .option("--json", "Print a machine-readable removal report")
     .action(async (opts) => {
       await runCommandWithRuntime(defaultRuntime, async () => {
@@ -296,7 +296,7 @@ export function registerBrowserExtensionCommands(
               setupLine,
               info("1. Load the extension: chrome://extensions → Developer mode → Load unpacked →"),
               `   ${resolveChromeExtensionDir(pluginRoot)}`,
-              info("2. Open the OpenClaw popup and paste this pairing string:"),
+              info("2. Open the Afora popup and paste this pairing string:"),
               "",
               theme.heading(result.pairing),
               "",

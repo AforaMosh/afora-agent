@@ -105,7 +105,7 @@ describe("resolveNativeSkillsEnabled", () => {
     setActivePluginRegistry(createTestRegistry([]));
     const env = {
       ...process.env,
-      OPENCLAW_BUNDLED_PLUGINS_DIR: path.resolve("extensions"),
+      AFORA_BUNDLED_PLUGINS_DIR: path.resolve("extensions"),
     };
 
     expect(

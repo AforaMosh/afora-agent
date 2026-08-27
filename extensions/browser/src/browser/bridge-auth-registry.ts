@@ -4,7 +4,7 @@
  * Dynamic sandbox/host ports need auth lookup without persisting tokens in
  * config files, so callers store credentials only for the current process.
  */
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 type BridgeAuth = {
   token?: string;

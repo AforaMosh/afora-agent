@@ -1,4 +1,4 @@
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 // Forced consult coordinator tests cover forced handoff to agent consultation.
 import { describe, expect, it, vi } from "vitest";
 import { createRealtimeVoiceForcedConsultCoordinator } from "./forced-consult-coordinator.js";

@@ -4,7 +4,7 @@
  * providers and profile ids relevant for the current agent.
  */
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveExternalCliAuthScopeFromConfig } from "./auth-profiles/external-cli-scope.js";
 
 describe("external CLI auth scope", () => {
@@ -71,7 +71,7 @@ describe("external CLI auth scope", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const scope = resolveExternalCliAuthScopeFromConfig(cfg);
 

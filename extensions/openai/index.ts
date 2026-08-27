@@ -1,9 +1,9 @@
-// Openai plugin entrypoint registers its OpenClaw integration.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { adaptMemoryEmbeddingProviderAdapter } from "openclaw/plugin-sdk/memory-core-host-engine-embeddings";
-import { resolvePluginConfigObject } from "openclaw/plugin-sdk/plugin-config-runtime";
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
-import { buildProviderToolCompatFamilyHooks } from "openclaw/plugin-sdk/provider-tools";
+// Openai plugin entrypoint registers its Afora integration.
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { adaptMemoryEmbeddingProviderAdapter } from "afora-agent/plugin-sdk/memory-core-host-engine-embeddings";
+import { resolvePluginConfigObject } from "afora-agent/plugin-sdk/plugin-config-runtime";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
+import { buildProviderToolCompatFamilyHooks } from "afora-agent/plugin-sdk/provider-tools";
 import { buildOpenAIImageGenerationProvider } from "./image-generation-provider.js";
 import { openaiMediaUnderstandingProvider } from "./media-understanding-provider.js";
 import { openAiMemoryEmbeddingProviderAdapter } from "./memory-embedding-adapter.js";
@@ -30,7 +30,7 @@ export default definePluginEntry({
     const quicksilverSession =
       api.registrationMode === "full"
         ? acquireOpenAIQuicksilverBrowserSessionBroker({
-            getConfig: () => api.runtime.config.current() as OpenClawConfig,
+            getConfig: () => api.runtime.config.current() as AforaConfig,
             logger: api.logger,
           })
         : undefined;

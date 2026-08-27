@@ -1,4 +1,4 @@
-import type { BoardOp, BoardSnapshot } from "@openclaw/gateway-protocol";
+import type { BoardOp, BoardSnapshot } from "@afora/gateway-protocol";
 
 export function normalizeMockBoardSnapshot(snapshot: BoardSnapshot): BoardSnapshot {
   const tabs = snapshot.tabs

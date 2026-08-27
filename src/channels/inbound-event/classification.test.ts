@@ -1,6 +1,6 @@
 // Inbound event classification tests cover message type and routing classification.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   classifyChannelInboundEvent,
   resolveUnmentionedGroupInboundPolicy,
@@ -50,7 +50,7 @@ describe("resolveUnmentionedGroupInboundPolicy", () => {
           },
         ],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(resolveUnmentionedGroupInboundPolicy({ cfg, agentId: "room-agent" })).toBe("room_event");
     expect(resolveUnmentionedGroupInboundPolicy({ cfg, agentId: "other" })).toBe("user_request");

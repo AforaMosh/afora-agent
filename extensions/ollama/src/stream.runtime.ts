@@ -1,11 +1,11 @@
 // Ollama stream runtime implements native transport behavior.
 import { randomUUID } from "node:crypto";
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import {
   parseJsonObjectPreservingUnsafeIntegers,
   parseJsonPreservingUnsafeIntegers,
-} from "openclaw/plugin-sdk/json-unsafe-integers";
+} from "afora-agent/plugin-sdk/json-unsafe-integers";
 import type {
   AssistantMessage,
   StopReason,
@@ -14,20 +14,20 @@ import type {
   ToolCall,
   Tool,
   Usage,
-} from "openclaw/plugin-sdk/llm";
-import { createAssistantMessageEventStream } from "openclaw/plugin-sdk/llm";
-import type { ProviderRuntimeModel } from "openclaw/plugin-sdk/plugin-entry";
-import { isNonSecretApiKeyMarker } from "openclaw/plugin-sdk/provider-auth";
-import { readResponseTextLimited } from "openclaw/plugin-sdk/provider-http";
-import { createPlainTextToolCallCompatWrapper } from "openclaw/plugin-sdk/provider-stream-shared";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
-import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/llm";
+import { createAssistantMessageEventStream } from "afora-agent/plugin-sdk/llm";
+import type { ProviderRuntimeModel } from "afora-agent/plugin-sdk/plugin-entry";
+import { isNonSecretApiKeyMarker } from "afora-agent/plugin-sdk/provider-auth";
+import { readResponseTextLimited } from "afora-agent/plugin-sdk/provider-http";
+import { createPlainTextToolCallCompatWrapper } from "afora-agent/plugin-sdk/provider-stream-shared";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/runtime-env";
+import { fetchWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime";
 import {
   isRecord,
   normalizeOptionalString,
   readStringValue,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
-import { estimateStringChars, truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { estimateStringChars, truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { OLLAMA_CLOUD_BASE_URL, OLLAMA_DEFAULT_BASE_URL } from "./defaults.js";
 import { normalizeOllamaWireModelId } from "./model-id.js";
 import { buildOllamaBaseUrlSsrFPolicy, isOllamaCloudModel } from "./provider-models.js";

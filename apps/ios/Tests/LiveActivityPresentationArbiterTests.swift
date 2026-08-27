@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 struct LiveActivityPresentationArbiterTests {
     @Test func `voice sample buffer quantizes clamps and stays bounded`() {
@@ -194,7 +194,7 @@ struct LiveActivityPresentationArbiterTests {
         let testsDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         let sourcesDirectory = testsDirectory.deletingLastPathComponent().appendingPathComponent("Sources")
         let appSource = try String(
-            contentsOf: sourcesDirectory.appendingPathComponent("OpenClawApp.swift"),
+            contentsOf: sourcesDirectory.appendingPathComponent("AforaApp.swift"),
             encoding: .utf8)
         let chatSource = try String(
             contentsOf: sourcesDirectory.appendingPathComponent("Design/ChatProTab.swift"),
@@ -213,13 +213,13 @@ struct LiveActivityPresentationArbiterTests {
     }
 
     private static func request(
-        status: OpenClawActivityAttributes.ContentState.Status,
+        status: AforaActivityAttributes.ContentState.Status,
         detail: String?,
         startedAt: Date,
         sessionKey: String = "main") -> LiveActivityPresentationRequest
     {
         LiveActivityPresentationRequest(
-            state: OpenClawActivityAttributes.ContentState(
+            state: AforaActivityAttributes.ContentState(
                 status: status,
                 verbatimDetail: detail,
                 startedAt: startedAt),

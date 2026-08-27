@@ -4,7 +4,7 @@
 
 import { IncomingMessage, ServerResponse } from "node:http";
 import { Socket } from "node:net";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createNostrProfileHttpHandler } from "./nostr-profile-http.js";
 
@@ -14,8 +14,8 @@ const runtimeScopeMock = vi.hoisted(() => vi.fn());
 const clearProfileRateLimiterMock = vi.hoisted(() => vi.fn());
 
 vi.mock("./nostr-profile-http-runtime.js", async () => {
-  const webhookIngress = await import("openclaw/plugin-sdk/webhook-ingress");
-  const requestGuards = await import("openclaw/plugin-sdk/webhook-request-guards");
+  const webhookIngress = await import("afora-agent/plugin-sdk/webhook-ingress");
+  const requestGuards = await import("afora-agent/plugin-sdk/webhook-request-guards");
   return {
     createFixedWindowRateLimiter: (
       ...args: Parameters<typeof webhookIngress.createFixedWindowRateLimiter>

@@ -1,5 +1,5 @@
 /** Invokes optional startup maintenance for loaded channel plugins. */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { listLoadedChannelPlugins } from "./registry-loaded.js";
 import type { ChannelPlugin } from "./types.plugin.js";
 
@@ -12,7 +12,7 @@ type ChannelStartupLogger = {
  * Runs startup maintenance hooks for all loaded channel plugins.
  */
 export async function runChannelPluginStartupMaintenance(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   log: ChannelStartupLogger;
   trigger?: string;

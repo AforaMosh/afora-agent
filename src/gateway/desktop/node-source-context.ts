@@ -1,6 +1,6 @@
 import type { NodeDesktopService } from "./node-source.js";
 
-export const NODE_DESKTOP_SERVICE_CONTEXT = Symbol("openclaw.nodeDesktopService");
+export const NODE_DESKTOP_SERVICE_CONTEXT = Symbol("afora.nodeDesktopService");
 
 type NodeDesktopServiceContext = {
   [NODE_DESKTOP_SERVICE_CONTEXT]?: NodeDesktopService;

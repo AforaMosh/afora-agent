@@ -1,7 +1,7 @@
 import { html, nothing, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import { t } from "../i18n/index.ts";
-import { OpenClawLightDomElement } from "../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../lit/afora-element.ts";
 import { configValuesEqual, isSupportedConfigValueValid } from "./config-form.constraints.ts";
 import { schemaType, type JsonSchema } from "./config-form.shared.ts";
 
@@ -21,7 +21,7 @@ export type ConfigFormCollectionDraftCommit = {
   value: unknown;
 };
 
-export class ConfigFormCollectionDraft extends OpenClawLightDomElement {
+export class ConfigFormCollectionDraft extends AforaLightDomElement {
   @property({ attribute: false }) props?: ConfigFormCollectionDraftProps;
 
   @state() private draftOpen = false;
@@ -268,6 +268,6 @@ export class ConfigFormCollectionDraft extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-config-form-collection-draft")) {
-  customElements.define("openclaw-config-form-collection-draft", ConfigFormCollectionDraft);
+if (!customElements.get("afora-config-form-collection-draft")) {
+  customElements.define("afora-config-form-collection-draft", ConfigFormCollectionDraft);
 }

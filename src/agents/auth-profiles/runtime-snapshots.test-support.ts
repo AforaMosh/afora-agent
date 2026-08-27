@@ -9,7 +9,7 @@ type RuntimeSnapshotsTestApi = {
 
 function getTestApi(): RuntimeSnapshotsTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.runtimeAuthSnapshotsTestApi")
+    Symbol.for("afora.runtimeAuthSnapshotsTestApi")
   ] as RuntimeSnapshotsTestApi;
 }
 

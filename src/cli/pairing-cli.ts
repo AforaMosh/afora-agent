@@ -2,7 +2,7 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeStringifiedOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import type { Command } from "commander";
 import { formatDocsLink } from "../../packages/terminal-core/src/links.js";
 import { getTerminalTableWidth, renderTable } from "../../packages/terminal-core/src/table.js";
@@ -22,7 +22,7 @@ function parseChannel(raw: unknown, channels: PairingChannel[]): PairingChannel 
   const value = normalizeLowercaseStringOrEmpty(normalizeStringifiedOptionalString(raw) ?? "");
   if (!value) {
     throw new Error(
-      `Missing channel. Use ${formatCliCommand("openclaw pairing list --channel <channel>")}.`,
+      `Missing channel. Use ${formatCliCommand("afora pairing list --channel <channel>")}.`,
     );
   }
 
@@ -71,7 +71,7 @@ export function registerPairingCli(program: Command) {
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/pairing", "docs.openclaw.ai/cli/pairing")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/pairing", "docs.afora.ai/cli/pairing")}\n`,
     );
 
   pairing
@@ -85,10 +85,10 @@ export function registerPairingCli(program: Command) {
       const channelRaw = opts.channel ?? channelArg ?? (channels.length === 1 ? channels[0] : "");
       if (!channelRaw) {
         if (channels.length === 0) {
-          // `pairing` is chat DM only; TUI/device approvals live under `openclaw devices`.
+          // `pairing` is chat DM only; TUI/device approvals live under `afora devices`.
           throw new Error(
             `No chat DM pairing channels are configured. To approve a TUI or device request, ` +
-              `use ${formatCliCommand("openclaw devices approve")} instead.`,
+              `use ${formatCliCommand("afora devices approve")} instead.`,
           );
         }
         throw new Error(`Channel required (expected one of: ${channelHint}).`);
@@ -163,12 +163,12 @@ export function registerPairingCli(program: Command) {
           : codeOrChannel;
       if (!channelRaw || !resolvedCode) {
         throw new Error(
-          `Usage: ${formatCliCommand("openclaw pairing approve <channel> <code>")} (or: ${formatCliCommand("openclaw pairing approve --channel <channel> <code>")})`,
+          `Usage: ${formatCliCommand("afora pairing approve <channel> <code>")} (or: ${formatCliCommand("afora pairing approve --channel <channel> <code>")})`,
         );
       }
       if (opts.channel && code != null) {
         throw new Error(
-          `Too many arguments. Use: ${formatCliCommand("openclaw pairing approve --channel <channel> <code>")}`,
+          `Too many arguments. Use: ${formatCliCommand("afora pairing approve --channel <channel> <code>")}`,
         );
       }
       const channel = parseChannel(channelRaw, channels);
@@ -185,7 +185,7 @@ export function registerPairingCli(program: Command) {
           });
       if (!approved) {
         throw new Error(
-          `No pending pairing request found for code "${String(resolvedCode)}". Run ${formatCliCommand(`openclaw pairing list --channel ${channel}`)} to list pending requests.`,
+          `No pending pairing request found for code "${String(resolvedCode)}". Run ${formatCliCommand(`afora pairing list --channel ${channel}`)} to list pending requests.`,
         );
       }
 

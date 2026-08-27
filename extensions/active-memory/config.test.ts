@@ -3,12 +3,12 @@ import fs from "node:fs";
 import {
   type JsonSchemaObject,
   validateJsonSchemaValue,
-} from "openclaw/plugin-sdk/json-schema-runtime";
+} from "afora-agent/plugin-sdk/json-schema-runtime";
 import { describe, expect, it } from "vitest";
 import { normalizePluginConfig } from "./config.js";
 
 const manifest = JSON.parse(
-  fs.readFileSync(new URL("./openclaw.plugin.json", import.meta.url), "utf-8"),
+  fs.readFileSync(new URL("./afora.plugin.json", import.meta.url), "utf-8"),
 ) as { configSchema: JsonSchemaObject };
 
 describe("active-memory manifest config schema", () => {

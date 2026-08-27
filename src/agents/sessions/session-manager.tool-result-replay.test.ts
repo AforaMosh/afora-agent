@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { streamAnthropic } from "@openclaw/ai/internal/anthropic";
+import { streamAnthropic } from "@afora/ai/internal/anthropic";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import type { Context, Message, Model } from "../../llm/types.js";
@@ -147,7 +147,7 @@ async function openSessionFile(sessionFile: string): Promise<SessionManager> {
 
 describe("SessionManager tool-result replay", () => {
   it("normalizes string tool-result content loaded from JSONL", async () => {
-    const dir = tempDirs.make("openclaw-tool-result-replay-");
+    const dir = tempDirs.make("afora-tool-result-replay-");
     const sessionFile = path.join(dir, "session.jsonl");
     await writeSessionWithToolResultContent(sessionFile, "lookup result text");
 
@@ -162,7 +162,7 @@ describe("SessionManager tool-result replay", () => {
   });
 
   it("replays string assistant JSONL content as Anthropic assistant text", async () => {
-    const dir = tempDirs.make("openclaw-tool-result-replay-");
+    const dir = tempDirs.make("afora-tool-result-replay-");
     const sessionFile = path.join(dir, "session.jsonl");
     await writeSessionWithAssistantContent(sessionFile, "assistant replay text");
     const context = (await openSessionFile(sessionFile)).buildSessionContext();
@@ -195,7 +195,7 @@ describe("SessionManager tool-result replay", () => {
   });
 
   it("replays string tool-result JSONL content as Anthropic tool text", async () => {
-    const dir = tempDirs.make("openclaw-tool-result-replay-");
+    const dir = tempDirs.make("afora-tool-result-replay-");
     const sessionFile = path.join(dir, "session.jsonl");
     await writeSessionWithToolResultContent(sessionFile, "lookup result text");
     const context = (await openSessionFile(sessionFile)).buildSessionContext();
@@ -225,7 +225,7 @@ describe("SessionManager tool-result replay", () => {
   });
 
   it("replays object tool-result JSONL content as structured Anthropic tool text", async () => {
-    const dir = tempDirs.make("openclaw-tool-result-replay-");
+    const dir = tempDirs.make("afora-tool-result-replay-");
     const sessionFile = path.join(dir, "session.jsonl");
     const content = { output: "status card text" };
     await writeSessionWithToolResultContent(sessionFile, content);

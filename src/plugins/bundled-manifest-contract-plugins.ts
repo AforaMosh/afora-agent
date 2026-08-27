@@ -1,5 +1,5 @@
 /** Resolves enabled bundled plugins that advertise a specific manifest contract list. */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveBundledCompatActivationInputs } from "./activation-context.js";
 import { resolveEffectivePluginActivationState } from "./config-state.js";
 import { isPluginEnabledByDefaultForPlatform } from "./default-enablement.js";
@@ -27,7 +27,7 @@ function listBundledManifestContractPluginIds(params: {
 
 /** Applies config activation and compatibility rules before returning bundled contract owners. */
 export function resolveEnabledBundledManifestContractPlugins(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   onlyPluginIds?: readonly string[];
@@ -37,7 +37,7 @@ export function resolveEnabledBundledManifestContractPlugins(params: {
     return [];
   }
   let manifestRecords: readonly PluginManifestRecord[] | undefined;
-  const loadManifestRecords = (config?: OpenClawConfig) => {
+  const loadManifestRecords = (config?: AforaConfig) => {
     manifestRecords ??= loadManifestContractSnapshot({
       config,
       workspaceDir: params.workspaceDir,

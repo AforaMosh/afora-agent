@@ -2,11 +2,11 @@
  * Thin ClickClack REST/websocket client used by gateway, resolver, and outbound
  * delivery code.
  */
-import { redactToolPayloadText } from "openclaw/plugin-sdk/logging-core";
+import { redactToolPayloadText } from "afora-agent/plugin-sdk/logging-core";
 import {
   readProviderJsonResponse,
   readResponseTextLimited,
-} from "openclaw/plugin-sdk/provider-http";
+} from "afora-agent/plugin-sdk/provider-http";
 import { WebSocket } from "ws";
 import type {
   ClickClackBotCommand,

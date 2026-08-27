@@ -57,7 +57,7 @@ type McpLoopbackToolCallCaptureHandle = {
 let activeRuntime: McpLoopbackRuntime | undefined;
 let nextToolCallCaptureGeneration = 0;
 const toolCallCaptures = resolveGlobalMap<string, McpLoopbackToolCallCapture>(
-  Symbol.for("openclaw.mcpLoopbackToolCallCaptures"),
+  Symbol.for("afora.mcpLoopbackToolCallCaptures"),
   (captures) => {
     for (const key of captures.keys()) {
       deleteMcpLoopbackToolCallCapture(key);
@@ -380,17 +380,17 @@ export function clearActiveMcpLoopbackRuntimeByOwnerToken(ownerToken: string): v
 }
 
 const MCP_AUTH_HEADERS = {
-  Authorization: "Bearer ${OPENCLAW_MCP_TOKEN}",
+  Authorization: "Bearer ${AFORA_MCP_TOKEN}",
 } as const;
 
 const MCP_CAPTURE_HEADERS = {
-  "x-openclaw-cli-capture-key": "${OPENCLAW_MCP_CLI_CAPTURE_KEY}",
+  "x-afora-cli-capture-key": "${AFORA_MCP_CLI_CAPTURE_KEY}",
 } as const;
 
 function createMcpServerConfig(port: number, headers: Record<string, string>) {
   return {
     mcpServers: {
-      openclaw: {
+      afora: {
         type: "http",
         url: `http://127.0.0.1:${port}/mcp`,
         alwaysLoad: true,

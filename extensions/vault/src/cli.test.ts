@@ -30,7 +30,7 @@ function createProgram(config: Record<string, unknown> = {}): Command {
 }
 
 async function createSetupPlan(args: string[]): Promise<VaultPlan> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-vault-cli-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-vault-cli-"));
   const planPath = path.join(dir, "plan.json");
   try {
     await runSetup(planPath, args);
@@ -77,7 +77,7 @@ describe("vault CLI setup plan", () => {
   it.skipIf(process.platform === "win32")(
     "creates plans privately without overwriting files or following symlinks",
     async () => {
-      const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-vault-plan-security-"));
+      const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-vault-plan-security-"));
       const privatePath = path.join(dir, "private.json");
       const existingPath = path.join(dir, "existing.json");
       const targetPath = path.join(dir, "target.json");
@@ -134,7 +134,7 @@ describe("vault CLI setup plan", () => {
     ]);
   });
 
-  it("generates arbitrary known OpenClaw and auth-profile targets", async () => {
+  it("generates arbitrary known Afora and auth-profile targets", async () => {
     const plan = await createSetupPlan([
       "--target",
       "channels.telegram.botToken=channels/telegram/botToken",
@@ -200,15 +200,15 @@ describe("vault CLI setup plan", () => {
   });
 
   it("prints shell-safe commands using the canonical plan path", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-vault-command-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-vault-command-"));
     const planPath = path.join(dir, "plan with spaces.json");
     const canonicalPlanPath = path.join(await fs.realpath(dir), "plan with spaces.json");
     try {
       const output = await runSetup(planPath, setupArgs);
       expect(output).toContain(
-        `openclaw secrets apply --from '${canonicalPlanPath}' --dry-run --allow-exec`,
+        `afora secrets apply --from '${canonicalPlanPath}' --dry-run --allow-exec`,
       );
-      expect(output).toContain(`openclaw secrets apply --from '${canonicalPlanPath}' --allow-exec`);
+      expect(output).toContain(`afora secrets apply --from '${canonicalPlanPath}' --allow-exec`);
     } finally {
       await fs.rm(dir, { recursive: true, force: true });
     }

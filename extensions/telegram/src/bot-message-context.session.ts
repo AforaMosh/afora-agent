@@ -9,22 +9,22 @@ import {
   toLocationContext,
   type NormalizedLocation,
   type InboundEventKind,
-} from "openclaw/plugin-sdk/channel-inbound";
-import { normalizeCommandBody } from "openclaw/plugin-sdk/command-surface";
+} from "afora-agent/plugin-sdk/channel-inbound";
+import { normalizeCommandBody } from "afora-agent/plugin-sdk/command-surface";
 import type {
-  OpenClawConfig,
+  AforaConfig,
   TelegramDirectConfig,
   TelegramGroupConfig,
   TelegramTopicConfig,
-} from "openclaw/plugin-sdk/config-contracts";
-import { resolveChannelContextVisibilityMode } from "openclaw/plugin-sdk/context-visibility-runtime";
-import { timestampMsToIsoString } from "openclaw/plugin-sdk/number-runtime";
-import { createChannelHistoryWindow, type HistoryEntry } from "openclaw/plugin-sdk/reply-history";
-import type { ResolvedAgentRoute } from "openclaw/plugin-sdk/routing";
-import { logVerbose, shouldLogVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { evaluateSupplementalContextVisibility } from "openclaw/plugin-sdk/security-runtime";
-import { normalizeOptionalLowercaseString } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/config-contracts";
+import { resolveChannelContextVisibilityMode } from "afora-agent/plugin-sdk/context-visibility-runtime";
+import { timestampMsToIsoString } from "afora-agent/plugin-sdk/number-runtime";
+import { createChannelHistoryWindow, type HistoryEntry } from "afora-agent/plugin-sdk/reply-history";
+import type { ResolvedAgentRoute } from "afora-agent/plugin-sdk/routing";
+import { logVerbose, shouldLogVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { evaluateSupplementalContextVisibility } from "afora-agent/plugin-sdk/security-runtime";
+import { normalizeOptionalLowercaseString } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import type { NormalizedAllowFrom } from "./bot-access.js";
 import { isSenderAllowed, normalizeAllowFrom } from "./bot-access.js";
 import type {
@@ -114,7 +114,7 @@ async function loadTelegramMessageContextSessionRuntime(
 }
 
 export async function resolveTelegramMessageContextStorePath(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   sessionRuntime?: TelegramMessageContextSessionRuntimeOverrides;
 }): Promise<string> {
@@ -213,7 +213,7 @@ function isTelegramMediaKind(value: string): value is TelegramMediaKind {
 }
 
 export async function buildTelegramInboundContextPayload(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   primaryCtx: TelegramContext;
   msg: TelegramContext["message"];
   allMedia: TelegramMediaRef[];
@@ -704,7 +704,7 @@ export async function buildTelegramInboundContextPayload(params: {
       historyLimit: isGroup ? historyLimit : dmHistoryLimit,
       beforeTimestampMs: options?.receivedAtMs ?? (msg.date ? msg.date * 1000 : undefined),
       minTimestampMs: options?.promptContextMinTimestampMs,
-      senderLabels: { assistant: "OpenClaw", user: "User" },
+      senderLabels: { assistant: "Afora", user: "User" },
     },
     access: {
       commands: {

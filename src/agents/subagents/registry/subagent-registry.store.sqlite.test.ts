@@ -4,11 +4,11 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../../../infra/kysely-sync.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../../../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../../../state/afora-state-db.generated.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../../../state/afora-state-db.js";
 import { withEnvAsync } from "../../../test-utils/env.js";
 import {
   loadSubagentRunsForChildSessionFromSqlite,
@@ -20,7 +20,7 @@ import {
 } from "./subagent-registry.store.sqlite.js";
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
-type SubagentRegistryDatabase = Pick<OpenClawStateKyselyDatabase, "subagent_runs">;
+type SubagentRegistryDatabase = Pick<AforaStateKyselyDatabase, "subagent_runs">;
 
 function createRun(overrides: Partial<SubagentRunRecord> = {}): SubagentRunRecord {
   return {
@@ -70,11 +70,11 @@ describe("subagent registry sqlite store", () => {
   let tempStateDir: string | null = null;
 
   beforeEach(async () => {
-    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-subagent-sqlite-"));
+    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-subagent-sqlite-"));
   });
 
   afterEach(async () => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     if (tempStateDir) {
       await fs.rm(tempStateDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
       tempStateDir = null;
@@ -85,7 +85,7 @@ describe("subagent registry sqlite store", () => {
     if (!tempStateDir) {
       throw new Error("expected temp state dir");
     }
-    return await withEnvAsync({ OPENCLAW_STATE_DIR: tempStateDir }, fn);
+    return await withEnvAsync({ AFORA_STATE_DIR: tempStateDir }, fn);
   }
 
   it("persists subagent runs in the shared sqlite state database", async () => {
@@ -134,7 +134,7 @@ describe("subagent registry sqlite store", () => {
         delivery: run.delivery,
         requesterSettleWake: run.requesterSettleWake,
       });
-      expect(await fs.stat(path.join(tempStateDir!, "state", "openclaw.sqlite"))).toBeTruthy();
+      expect(await fs.stat(path.join(tempStateDir!, "state", "afora.sqlite"))).toBeTruthy();
       await expect(fs.stat(path.join(tempStateDir!, "subagents", "runs.json"))).rejects.toThrow();
     });
   });
@@ -189,7 +189,7 @@ describe("subagent registry sqlite store", () => {
         });
 
         saveSubagentRegistryToSqlite(new Map([[runId, run]]));
-        closeOpenClawStateDatabaseForTest();
+        closeAforaStateDatabaseForTest();
 
         const restored = loadSubagentRegistryFromSqlite().get(runId);
         expect(restored?.completion).toMatchObject({ terminalReply, resultText });
@@ -229,7 +229,7 @@ describe("subagent registry sqlite store", () => {
       });
       saveSubagentRegistryToSqlite(new Map([[run.runId, run]]));
 
-      const { db } = openOpenClawStateDatabase();
+      const { db } = openAforaStateDatabase();
       executeSqliteQuerySync(
         db,
         getNodeSqliteKysely<SubagentRegistryDatabase>(db)
@@ -245,7 +245,7 @@ describe("subagent registry sqlite store", () => {
           .where("run_id", "=", run.runId),
       );
 
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       const restored = loadSubagentRegistryFromSqlite().get(run.runId);
       expect(restored?.expectsCompletionMessage).toBe(true);
       expect(restored?.completion?.resultText).toBe("done");
@@ -283,7 +283,7 @@ describe("subagent registry sqlite store", () => {
         },
       });
       saveSubagentRegistryToSqlite(new Map([[run.runId, run]]));
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
 
       const restored = loadSubagentRegistryFromSqlite().get(run.runId);
       expect(restored?.completion).toMatchObject({
@@ -293,7 +293,7 @@ describe("subagent registry sqlite store", () => {
       expect(restored?.delivery?.payload).not.toHaveProperty("frozenResultText");
       expect(restored?.delivery?.payload).not.toHaveProperty("fallbackFrozenResultText");
 
-      const stored = openOpenClawStateDatabase()
+      const stored = openAforaStateDatabase()
         .db.prepare(
           "SELECT payload_json, frozen_result_text, fallback_frozen_result_text FROM subagent_runs WHERE run_id = ?",
         )
@@ -313,7 +313,7 @@ describe("subagent registry sqlite store", () => {
       expect(storedPayload.delivery?.payload).not.toHaveProperty("frozenResultText");
       expect(storedPayload.delivery?.payload).not.toHaveProperty("fallbackFrozenResultText");
 
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       expect(loadSubagentRegistryFromSqlite().get(run.runId)?.completion).toMatchObject({
         resultText: "NO_REPLY",
         fallbackResultText: "legacy retained result",
@@ -379,7 +379,7 @@ describe("subagent registry sqlite store", () => {
       const runs = new Map([first, removed, untouched].map((run) => [run.runId, run] as const));
       saveSubagentRegistryToSqlite(runs);
 
-      const { db } = openOpenClawStateDatabase();
+      const { db } = openAforaStateDatabase();
       db.exec(`
         CREATE TEMP TABLE subagent_run_write_audit (
           action TEXT NOT NULL,
@@ -463,7 +463,7 @@ describe("subagent registry sqlite store", () => {
       });
       saveSubagentRegistryToSqlite(new Map([[run.runId, run]]));
 
-      const { db } = openOpenClawStateDatabase();
+      const { db } = openAforaStateDatabase();
       const stateDb = getNodeSqliteKysely<SubagentRegistryDatabase>(db);
       executeSqliteQuerySync(
         db,
@@ -508,7 +508,7 @@ describe("subagent registry sqlite store", () => {
       expect(restored).toEqual(new Map());
       await expect(fs.stat(registryPath)).resolves.toBeTruthy();
       expect(
-        openOpenClawStateDatabase().db.prepare("SELECT COUNT(*) AS count FROM subagent_runs").get(),
+        openAforaStateDatabase().db.prepare("SELECT COUNT(*) AS count FROM subagent_runs").get(),
       ).toEqual({ count: 0 });
     });
   });
@@ -518,7 +518,7 @@ describe("subagent registry sqlite store", () => {
       const run = createRun();
       saveSubagentRegistryToSqlite(new Map([[run.runId, run]]));
 
-      const { db } = openOpenClawStateDatabase();
+      const { db } = openAforaStateDatabase();
       db.prepare("UPDATE subagent_runs SET payload_json = ? WHERE run_id = ?").run(
         JSON.stringify({
           ...run,

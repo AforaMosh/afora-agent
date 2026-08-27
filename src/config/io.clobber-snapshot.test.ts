@@ -3,7 +3,7 @@ import fs from "node:fs";
 import fsp from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   persistBoundedClobberedConfigSnapshot,
@@ -17,7 +17,7 @@ describe("config clobber snapshots", () => {
   let caseId = 0;
 
   beforeAll(async () => {
-    fixtureRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "openclaw-config-clobber-"));
+    fixtureRoot = await fsp.mkdtemp(path.join(os.tmpdir(), "afora-config-clobber-"));
   });
 
   afterAll(async () => {
@@ -26,7 +26,7 @@ describe("config clobber snapshots", () => {
 
   async function withCase<T>(fn: (configPath: string) => Promise<T>): Promise<T> {
     const home = path.join(fixtureRoot, `case-${caseId++}`);
-    const configPath = path.join(home, ".openclaw", "openclaw.json");
+    const configPath = path.join(home, ".afora", "afora.json");
     await fsp.mkdir(path.dirname(configPath), { recursive: true });
     await fsp.writeFile(configPath, "{}\n", "utf-8");
     return await fn(configPath);

@@ -1,6 +1,6 @@
 // Normalizes system-run metadata and string-array inputs.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { mapAllowFromEntries } from "openclaw/plugin-sdk/channel-config-helpers";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { mapAllowFromEntries } from "afora-agent/plugin-sdk/channel-config-helpers";
 
 /** Normalizes unknown system-run metadata to a trimmed non-empty string. */
 export function normalizeNonEmptyString(value: unknown): string | null {

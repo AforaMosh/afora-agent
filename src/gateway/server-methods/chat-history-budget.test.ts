@@ -39,7 +39,7 @@ describe("replaceOversizedChatHistoryMessages", () => {
       role: "assistant",
       timestamp: 1,
       content: [{ type: "text", text: "y".repeat(4000) }],
-      __openclaw: { id: "abc", seq: 7, turnBoundary: true },
+      __afora: { id: "abc", seq: 7, turnBoundary: true },
     };
     const result = replaceOversizedChatHistoryMessages({
       messages: [last],
@@ -48,7 +48,7 @@ describe("replaceOversizedChatHistoryMessages", () => {
     expect(result.messages).toHaveLength(1);
     expect(firstText(result.messages)).toContain("chat.history omitted: message too large");
     expect(
-      (result.messages[0] as { __openclaw?: { turnBoundary?: boolean } })["__openclaw"]
+      (result.messages[0] as { __afora?: { turnBoundary?: boolean } })["__afora"]
         ?.turnBoundary,
     ).toBe(true);
     // The placeholder is a new object, not the oversized original.
@@ -63,7 +63,7 @@ describe("replaceOversizedChatHistoryMessages", () => {
       role: "user",
       timestamp: 1,
       content: [{ type: "text", text: "hi" }],
-      __openclaw: { id: hugeId, seq: 1 },
+      __afora: { id: hugeId, seq: 1 },
     };
     const result = replaceOversizedChatHistoryMessages({
       messages: [message],
@@ -74,6 +74,6 @@ describe("replaceOversizedChatHistoryMessages", () => {
     expect(result.messages).toHaveLength(1);
     expect(firstText(result.messages)).toContain("chat.history unavailable");
     // The sentinel does not carry the oversized source metadata.
-    expect((result.messages[0] as Record<string, unknown>)["__openclaw"]).toBeUndefined();
+    expect((result.messages[0] as Record<string, unknown>)["__afora"]).toBeUndefined();
   });
 });

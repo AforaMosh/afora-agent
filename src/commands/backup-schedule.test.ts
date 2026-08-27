@@ -22,13 +22,13 @@ vi.mock("../cli/gateway-rpc.js", async (importOriginal) => {
 import { GIT_BACKUP_PUSH_CREDENTIAL_WARNING } from "./backup-git.js";
 import { backupDisableCommand, backupEnableCommand } from "./backup-schedule.js";
 
-const BACKUP_CRON_JOB_NAME = "openclaw-backup-scheduled";
+const BACKUP_CRON_JOB_NAME = "afora-backup-scheduled";
 
 const roots: string[] = [];
 
 // enable --push preflights an origin remote, so push fixtures need a real repo.
 async function pushReadyRepository(): Promise<string> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-backup-schedule-test-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-backup-schedule-test-"));
   roots.push(root);
   execFileSync("git", ["-C", root, "init"], { stdio: "ignore" });
   execFileSync("git", ["-C", root, "remote", "add", "origin", "git@example.invalid:backups.git"], {
@@ -77,7 +77,7 @@ describe("scheduled backups", () => {
         payload: {
           kind: "command",
           argv: [
-            "openclaw",
+            "afora",
             "backup",
             "git",
             "create",
@@ -103,7 +103,7 @@ describe("scheduled backups", () => {
     const runtime = createTestRuntime();
     await expect(
       backupEnableCommand(runtime, {
-        repository: "/tmp/openclaw-backups",
+        repository: "/tmp/afora-backups",
         globalOnly: true,
       }),
     ).resolves.toEqual({ id: "existing", updated: true });
@@ -186,7 +186,7 @@ describe("scheduled backups", () => {
 
   it("refuses a pushed schedule when the repository has no origin remote", async () => {
     const runtime = createTestRuntime();
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-backup-schedule-test-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-backup-schedule-test-"));
     roots.push(root);
     execFileSync("git", ["-C", root, "init"], { stdio: "ignore" });
     await expect(backupEnableCommand(runtime, { repository: root, push: true })).rejects.toThrow(
@@ -199,7 +199,7 @@ describe("scheduled backups", () => {
     gatewayRpc.isImplicitLocalTarget.mockResolvedValue(false);
     const runtime = createTestRuntime();
     const expected =
-      "backup enable manages backups on the Gateway host and currently requires a local Gateway. Create the cron job manually with openclaw cron add for remote Gateways.";
+      "backup enable manages backups on the Gateway host and currently requires a local Gateway. Create the cron job manually with afora cron add for remote Gateways.";
 
     await expect(
       backupEnableCommand(runtime, {

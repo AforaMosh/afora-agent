@@ -1,16 +1,16 @@
-import { collectErrorGraphCandidates, extractErrorCode } from "openclaw/plugin-sdk/error-runtime";
+import { collectErrorGraphCandidates, extractErrorCode } from "afora-agent/plugin-sdk/error-runtime";
 // Openai plugin module implements openai chatgpt device code behavior.
 import {
   shouldUseEnvHttpProxyForUrl,
   withTrustedEnvProxyGuardedFetchMode,
-} from "openclaw/plugin-sdk/fetch-runtime";
+} from "afora-agent/plugin-sdk/fetch-runtime";
 import {
   positiveSecondsToSafeMilliseconds,
   resolveExpiresAtMsFromDurationSeconds,
-} from "openclaw/plugin-sdk/number-runtime";
-import { readResponseTextLimited } from "openclaw/plugin-sdk/provider-http";
-import { classifyTransientNetworkErrorCode } from "openclaw/plugin-sdk/retry-runtime";
-import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/number-runtime";
+import { readResponseTextLimited } from "afora-agent/plugin-sdk/provider-http";
+import { classifyTransientNetworkErrorCode } from "afora-agent/plugin-sdk/retry-runtime";
+import { fetchWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { resolveCodexAccessTokenExpiry } from "./openai-chatgpt-auth-identity.js";
 import { trimNonEmptyString } from "./openai-chatgpt-shared.js";
 
@@ -25,12 +25,12 @@ const OPENAI_CODEX_DEVICE_ERROR_BODY_LIMIT_BYTES = 8 * 1024;
 const OPENAI_CODEX_DEVICE_JSON_BODY_LIMIT_BYTES = 256 * 1024;
 
 function resolveOpenAICodexDeviceCodeHeaders(contentType: string): Record<string, string> {
-  const version = process.env.OPENCLAW_VERSION?.trim();
+  const version = process.env.AFORA_VERSION?.trim();
   return {
     "Content-Type": contentType,
-    originator: "openclaw",
+    originator: "afora",
     ...(version ? { version } : {}),
-    "User-Agent": version ? `openclaw/${version}` : "openclaw",
+    "User-Agent": version ? `afora/${version}` : "afora",
   };
 }
 

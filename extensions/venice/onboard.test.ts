@@ -1,8 +1,8 @@
-import { resolveAgentModelPrimaryValue } from "openclaw/plugin-sdk/provider-onboard";
+import { resolveAgentModelPrimaryValue } from "afora-agent/plugin-sdk/provider-onboard";
 import { describe, expect, it } from "vitest";
 import { VENICE_DEFAULT_MODEL_REF } from "./models.js";
 import { applyVeniceConfig } from "./onboard.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 
 describe("Venice onboarding", () => {
   it("applies the manifest catalog, default, and alias", () => {

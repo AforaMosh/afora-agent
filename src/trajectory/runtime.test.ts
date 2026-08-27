@@ -1,13 +1,13 @@
 // Trajectory runtime tests cover event recording and runtime file handling.
 import fs from "node:fs";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { formatSqliteSessionFileMarker } from "../config/sessions/legacy-sqlite-marker.js";
 import { replaceSessionEntry } from "../config/sessions/session-accessor.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { TRAJECTORY_RUNTIME_EVENT_MAX_BYTES } from "./paths.js";
 import { loadSqliteTrajectoryRuntimeEvents } from "./runtime-store.sqlite.js";
 import { createTrajectoryRuntimeRecorder, toTrajectoryToolDefinitions } from "./runtime.js";
@@ -18,8 +18,8 @@ const tempDirs = createTempDirTracker();
 
 afterEach(() => {
   vi.useRealTimers();
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   tempDirs.cleanup();
 });
 
@@ -83,7 +83,7 @@ describe("trajectory runtime", () => {
   });
 
   it("records SQLite marker runtime events without active JSONL sidecars", async () => {
-    const tempDir = tempDirs.make("openclaw-trajectory-runtime-");
+    const tempDir = tempDirs.make("afora-trajectory-runtime-");
     const storePath = path.join(tempDir, "agents", "main", "sessions", "sessions.json");
     const sessionKey = "agent:main:main";
     await replaceSessionEntry({ sessionKey, storePath }, { sessionId: "session-1", updatedAt: 10 });
@@ -126,7 +126,7 @@ describe("trajectory runtime", () => {
     // Attempt dispatch stopped passing legacy `sqlite:` markers and now hands
     // the canonical session key plus a complete target. Recording must not
     // depend on the marker, or every harness capture silently disappears.
-    const tempDir = tempDirs.make("openclaw-trajectory-runtime-");
+    const tempDir = tempDirs.make("afora-trajectory-runtime-");
     const storePath = path.join(tempDir, "agents", "main", "sessions", "sessions.json");
     const sessionKey = "agent:main:main";
     await replaceSessionEntry({ sessionKey, storePath }, { sessionId: "session-1", updatedAt: 10 });
@@ -151,7 +151,7 @@ describe("trajectory runtime", () => {
   });
 
   it("rejects a legacy SQLite marker for another session", () => {
-    const storePath = path.join(tempDirs.make("openclaw-trajectory-runtime-"), "sessions.json");
+    const storePath = path.join(tempDirs.make("afora-trajectory-runtime-"), "sessions.json");
 
     expect(
       createTrajectoryRuntimeRecorder({
@@ -171,7 +171,7 @@ describe("trajectory runtime", () => {
   ])(
     "rejects a complete target that conflicts with the %s",
     (_label, sessionKey, agentId, targetKey) => {
-      const storePath = path.join(tempDirs.make("openclaw-trajectory-runtime-"), "sessions.json");
+      const storePath = path.join(tempDirs.make("afora-trajectory-runtime-"), "sessions.json");
 
       expect(
         createTrajectoryRuntimeRecorder({
@@ -189,7 +189,7 @@ describe("trajectory runtime", () => {
   );
 
   it("rejects a complete target whose key maps to another session", async () => {
-    const storePath = path.join(tempDirs.make("openclaw-trajectory-runtime-"), "sessions.json");
+    const storePath = path.join(tempDirs.make("afora-trajectory-runtime-"), "sessions.json");
     const sessionKey = "agent:main:stored-session";
     await replaceSessionEntry(
       { agentId: "main", sessionKey, storePath },
@@ -214,7 +214,7 @@ describe("trajectory runtime", () => {
   });
 
   it("stores bounded oversized runtime events in SQLite", async () => {
-    const tempDir = tempDirs.make("openclaw-trajectory-runtime-");
+    const tempDir = tempDirs.make("afora-trajectory-runtime-");
     const storePath = path.join(tempDir, "agents", "main", "sessions", "sessions.json");
     const sessionKey = "agent:main:main";
     const usage = {
@@ -697,7 +697,7 @@ describe("trajectory runtime", () => {
   it("does not record runtime events when explicitly disabled", () => {
     const recorder = createTrajectoryRuntimeRecorder({
       env: {
-        OPENCLAW_TRAJECTORY: "0",
+        AFORA_TRAJECTORY: "0",
       },
       sessionId: "session-1",
       sessionKey: "agent:main:session-1",

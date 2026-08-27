@@ -2,12 +2,12 @@
 import fs from "node:fs";
 import type { SessionStoreTarget } from "../config/sessions/targets.js";
 import {
-  assertOpenClawAgentDatabaseForMaintenance,
-  clearOpenClawAgentDatabaseOpenFailure,
-  ensureOpenClawAgentDatabasePermissions,
-  isOpenClawAgentDatabaseOpen,
-  migrateOpenClawAgentDatabaseForMaintenance,
-} from "../state/openclaw-agent-db.js";
+  assertAforaAgentDatabaseForMaintenance,
+  clearAforaAgentDatabaseOpenFailure,
+  ensureAforaAgentDatabasePermissions,
+  isAforaAgentDatabaseOpen,
+  migrateAforaAgentDatabaseForMaintenance,
+} from "../state/afora-agent-db.js";
 import { resolveTargetSqlitePath } from "./doctor-session-sqlite-readers.js";
 import type { DoctorSessionSqliteCompactReport } from "./doctor-session-sqlite-types.js";
 import { compactDoctorSqliteFile } from "./doctor-sqlite-compact.js";
@@ -34,22 +34,22 @@ export function compactDoctorSessionSqliteTarget(
     };
   }
   if (!stat.isFile()) {
-    throw new Error(`OpenClaw agent database is not a regular file: ${sqlitePath}`);
+    throw new Error(`Afora agent database is not a regular file: ${sqlitePath}`);
   }
-  if (isOpenClawAgentDatabaseOpen(sqlitePath)) {
+  if (isAforaAgentDatabaseOpen(sqlitePath)) {
     throw new Error(
-      `OpenClaw agent database ${sqlitePath} is already open in this process. Stop OpenClaw and retry.`,
+      `Afora agent database ${sqlitePath} is already open in this process. Stop Afora and retry.`,
     );
   }
   const requireQuarantineCleared = () => {
-    if (!clearOpenClawAgentDatabaseOpenFailure(sqlitePath, { env: options.env })) {
+    if (!clearAforaAgentDatabaseOpenFailure(sqlitePath, { env: options.env })) {
       throw new Error(
-        `OpenClaw agent database ${sqlitePath} was repaired, but its persisted quarantine record could not be cleared. Rerun openclaw doctor --fix so the database is not refused again.`,
+        `Afora agent database ${sqlitePath} was repaired, but its persisted quarantine record could not be cleared. Rerun afora doctor --fix so the database is not refused again.`,
       );
     }
   };
   if (options.migrateOlderSchema) {
-    migrateOpenClawAgentDatabaseForMaintenance({
+    migrateAforaAgentDatabaseForMaintenance({
       agentId: target.agentId,
       pathname: sqlitePath,
     });
@@ -59,14 +59,14 @@ export function compactDoctorSessionSqliteTarget(
   const compact = compactDoctorSqliteFile({
     afterSuccess: () => {
       requireQuarantineCleared();
-      ensureOpenClawAgentDatabasePermissions(sqlitePath, {
+      ensureAforaAgentDatabasePermissions(sqlitePath, {
         agentId: target.agentId,
         path: sqlitePath,
       });
     },
     sqlitePath,
     validateBeforeMutation: (database) =>
-      assertOpenClawAgentDatabaseForMaintenance(database, {
+      assertAforaAgentDatabaseForMaintenance(database, {
         agentId: target.agentId,
         pathname: sqlitePath,
       }),

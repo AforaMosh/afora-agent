@@ -1,8 +1,8 @@
 {
-  "name": "@openclaw/qa-lab",
+  "name": "@afora/qa-lab",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw QA lab plugin with private debugger UI and scenario runner",
+  "description": "Afora QA lab plugin with private debugger UI and scenario runner",
   "type": "module",
   "dependencies": {
     "@copilotkit/aimock": "1.37.4",
@@ -18,23 +18,23 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@openclaw/discord": "workspace:*",
-    "@openclaw/matrix": "workspace:*",
-    "@openclaw/plugin-sdk": "workspace:*",
-    "@openclaw/slack": "workspace:*",
-    "@openclaw/whatsapp": "workspace:*",
-    "openclaw": "workspace:*",
+    "@afora/discord": "workspace:*",
+    "@afora/matrix": "workspace:*",
+    "@afora/plugin-sdk": "workspace:*",
+    "@afora/slack": "workspace:*",
+    "@afora/whatsapp": "workspace:*",
+    "afora-agent": "workspace:*",
     "vite": "8.1.5"
   },
   "peerDependencies": {
-    "openclaw": ">=2026.8.1"
+    "afora-agent": ">=2026.8.1"
   },
   "peerDependenciesMeta": {
-    "openclaw": {
+    "afora": {
       "optional": true
     }
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],

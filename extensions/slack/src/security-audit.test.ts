@@ -1,18 +1,18 @@
 // Slack tests cover security audit plugin behavior.
 import { describe, expect, it, vi } from "vitest";
 import type { ResolvedSlackAccount } from "./accounts.js";
-import type { OpenClawConfig } from "./runtime-api.js";
+import type { AforaConfig } from "./runtime-api.js";
 import { collectSlackSecurityAuditFindings } from "./security-audit.js";
 
 const { readChannelAllowFromStoreMock } = vi.hoisted(() => ({
   readChannelAllowFromStoreMock: vi.fn(async () => [] as string[]),
 }));
 
-vi.mock("openclaw/plugin-sdk/conversation-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/conversation-runtime", () => ({
   readChannelAllowFromStore: readChannelAllowFromStoreMock,
 }));
 
-function createSlackAccount(config: NonNullable<OpenClawConfig["channels"]>["slack"]) {
+function createSlackAccount(config: NonNullable<AforaConfig["channels"]>["slack"]) {
   return {
     accountId: "default",
     enabled: true,
@@ -23,7 +23,7 @@ function createSlackAccount(config: NonNullable<OpenClawConfig["channels"]>["sla
   } as ResolvedSlackAccount;
 }
 
-function createSlashCommandSlackConfig(): OpenClawConfig {
+function createSlashCommandSlackConfig(): AforaConfig {
   return {
     channels: {
       slack: {
@@ -37,7 +37,7 @@ function createSlashCommandSlackConfig(): OpenClawConfig {
   };
 }
 
-async function collectSlackFindingsForConfig(cfg: OpenClawConfig) {
+async function collectSlackFindingsForConfig(cfg: AforaConfig) {
   readChannelAllowFromStoreMock.mockResolvedValue([]);
   return await collectSlackSecurityAuditFindings({
     cfg,

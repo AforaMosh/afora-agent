@@ -18,8 +18,8 @@ import {
 } from "./outbox-store-codec.ts";
 import { observeDraftRevision, rememberDraftRevision } from "./outbox-store-draft-state.ts";
 
-const LEGACY_STORAGE_KEY_PREFIX = "openclaw.control.chatComposer.v1:";
-const STORAGE_KEY_PREFIX = "openclaw.control.chatComposer.v2:";
+const LEGACY_STORAGE_KEY_PREFIX = "afora.control.chatComposer.v1:";
+const STORAGE_KEY_PREFIX = "afora.control.chatComposer.v2:";
 export const UNRESOLVED_GLOBAL_AGENT_SCOPE = "@unresolved";
 const storedChatOutboxChangeListeners = new Set<() => void>();
 let storageChangeListenerInstalled = false;
@@ -106,7 +106,7 @@ export function notifyStoredChatOutboxChanges(): void {
     try {
       listener();
     } catch (error) {
-      console.error("[openclaw] stored chat outbox listener failed", error);
+      console.error("[afora] stored chat outbox listener failed", error);
     }
   }
 }

@@ -13,26 +13,26 @@ import {
   setRuntimeConfigSnapshot,
 } from "../config/runtime-snapshot.js";
 import {
-  closeOpenClawStateDatabase,
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+  closeAforaStateDatabase,
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import { persistClawInstallRecord } from "./provenance.js";
 import { makeProvenancePlan, stateEnv } from "./provenance.test-helpers.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   clearRuntimeConfigSnapshot();
   vi.unstubAllEnvs();
 });
 
 describe("Claw tool policy consent provenance", () => {
   it("does not create writable state for an ordinary named profile", () => {
-    const root = tempDirs.make("openclaw-non-claw-tool-consent-");
-    vi.stubEnv("OPENCLAW_STATE_DIR", join(root, "state"));
+    const root = tempDirs.make("afora-non-claw-tool-consent-");
+    vi.stubEnv("AFORA_STATE_DIR", join(root, "state"));
     const config = { agents: { list: [{ id: "worker", tools: { profile: "coding" as const } }] } };
     setRuntimeConfigSnapshot(config);
 
@@ -46,9 +46,9 @@ describe("Claw tool policy consent provenance", () => {
   });
 
   it("does not infer Claw ownership before consent provenance is initialized", () => {
-    const root = tempDirs.make("openclaw-uninitialized-claw-tool-consent-");
+    const root = tempDirs.make("afora-uninitialized-claw-tool-consent-");
     const stateDir = join(root, "state");
-    vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+    vi.stubEnv("AFORA_STATE_DIR", stateDir);
     const config = {
       agents: {
         list: [{ id: "worker", tools: { profile: "full" as const, allow: ["read"] } }],
@@ -66,14 +66,14 @@ describe("Claw tool policy consent provenance", () => {
   });
 
   it("fails an ordinary named profile closed when initial ownership is unreadable", () => {
-    const root = tempDirs.make("openclaw-unreadable-non-claw-tool-consent-");
+    const root = tempDirs.make("afora-unreadable-non-claw-tool-consent-");
     const stateDir = join(root, "state");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
-    const databasePath = resolveOpenClawStateSqlitePath(env);
+    const env = { AFORA_STATE_DIR: stateDir };
+    const databasePath = resolveAforaStateSqlitePath(env);
     mkdirSync(dirname(databasePath), { recursive: true });
     writeFileSync(databasePath, "not a sqlite database");
     const before = readFileSync(databasePath);
-    vi.stubEnv("OPENCLAW_STATE_DIR", env.OPENCLAW_STATE_DIR);
+    vi.stubEnv("AFORA_STATE_DIR", env.AFORA_STATE_DIR);
 
     const config = {
       agents: {
@@ -92,28 +92,28 @@ describe("Claw tool policy consent provenance", () => {
   });
 
   it("fails a known Claw closed without mutating unreadable consent provenance", async () => {
-    const root = tempDirs.make("openclaw-unreadable-claw-tool-consent-");
+    const root = tempDirs.make("afora-unreadable-claw-tool-consent-");
     const stateDir = join(root, "state");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
-    const databasePath = resolveOpenClawStateSqlitePath(env);
-    vi.stubEnv("OPENCLAW_STATE_DIR", env.OPENCLAW_STATE_DIR);
+    const env = { AFORA_STATE_DIR: stateDir };
+    const databasePath = resolveAforaStateSqlitePath(env);
+    vi.stubEnv("AFORA_STATE_DIR", env.AFORA_STATE_DIR);
     const { plan } = await makeProvenancePlan(
       root,
       { schemaVersion: 1, agent: { id: "worker" } },
       {
-        openClawProfile: {
+        aforaProfile: {
           schemaVersion: 1,
           agent: { tools: { profile: "full", allow: ["read"] } },
         },
       },
     );
     persistClawInstallRecord(plan, { env });
-    closeOpenClawStateDatabase();
+    closeAforaStateDatabase();
     writeFileSync(databasePath, "not a sqlite database");
     const before = readFileSync(databasePath);
 
     const config = { agents: { list: [plan.agent.config] } };
-    expect(() => openOpenClawStateDatabase({ env })).toThrow();
+    expect(() => openAforaStateDatabase({ env })).toThrow();
     setRuntimeConfigSnapshot(config);
 
     expect(() =>
@@ -126,14 +126,14 @@ describe("Claw tool policy consent provenance", () => {
   });
 
   it("fails closed after the prepared state database closes", async () => {
-    const root = tempDirs.make("openclaw-closed-claw-tool-consent-");
+    const root = tempDirs.make("afora-closed-claw-tool-consent-");
     const env = stateEnv(root);
-    vi.stubEnv("OPENCLAW_STATE_DIR", env.OPENCLAW_STATE_DIR);
+    vi.stubEnv("AFORA_STATE_DIR", env.AFORA_STATE_DIR);
     const { plan } = await makeProvenancePlan(
       root,
       { schemaVersion: 1, agent: { id: "worker" } },
       {
-        openClawProfile: {
+        aforaProfile: {
           schemaVersion: 1,
           agent: { tools: { profile: "full", allow: ["read"] } },
         },
@@ -142,7 +142,7 @@ describe("Claw tool policy consent provenance", () => {
     persistClawInstallRecord(plan, { env });
     const config = { agents: { list: [plan.agent.config] } };
     setRuntimeConfigSnapshot(config);
-    closeOpenClawStateDatabase();
+    closeAforaStateDatabase();
 
     expect(() =>
       resolveConversationCapabilityProfile({
@@ -153,14 +153,14 @@ describe("Claw tool policy consent provenance", () => {
   });
 
   it("fails closed when the active agent config does not match consent provenance", async () => {
-    const root = tempDirs.make("openclaw-modified-claw-tool-consent-");
+    const root = tempDirs.make("afora-modified-claw-tool-consent-");
     const env = stateEnv(root);
-    vi.stubEnv("OPENCLAW_STATE_DIR", env.OPENCLAW_STATE_DIR);
+    vi.stubEnv("AFORA_STATE_DIR", env.AFORA_STATE_DIR);
     const { plan } = await makeProvenancePlan(
       root,
       { schemaVersion: 1, agent: { id: "worker" } },
       {
-        openClawProfile: {
+        aforaProfile: {
           schemaVersion: 1,
           agent: { tools: { profile: "full", allow: ["read"] } },
         },
@@ -188,14 +188,14 @@ describe("Claw tool policy consent provenance", () => {
   });
 
   it("fails closed after a host upgrade leaves legacy profile provenance", async () => {
-    const root = tempDirs.make("openclaw-claw-tool-consent-");
+    const root = tempDirs.make("afora-claw-tool-consent-");
     const env = stateEnv(root);
-    vi.stubEnv("OPENCLAW_STATE_DIR", join(root, "state"));
+    vi.stubEnv("AFORA_STATE_DIR", join(root, "state"));
     const { plan } = await makeProvenancePlan(
       root,
       { schemaVersion: 1, agent: { id: "worker" } },
       {
-        openClawProfile: {
+        aforaProfile: {
           schemaVersion: 1,
           agent: { tools: { profile: "coding", allow: ["read"] } },
         },
@@ -222,12 +222,12 @@ describe("Claw tool policy consent provenance", () => {
     });
     expect(filtered.map((tool) => tool.name)).toEqual(["read"]);
 
-    openOpenClawStateDatabase({ env })
+    openAforaStateDatabase({ env })
       .db /* sqlite-allow-raw: test-only downgrade simulates an install created by the previous host. */
       .prepare("UPDATE claw_installs SET schema_version = ? WHERE agent_id = ?")
-      .run("openclaw.clawInstallRecord.v1", "worker");
-    closeOpenClawStateDatabase();
-    openOpenClawStateDatabase({ env });
+      .run("afora.clawInstallRecord.v1", "worker");
+    closeAforaStateDatabase();
+    openAforaStateDatabase({ env });
 
     const legacyConfig = {
       agents: {
@@ -249,26 +249,26 @@ describe("Claw tool policy consent provenance", () => {
   });
 
   it("gives a legacy unbounded full profile an actionable repair path", async () => {
-    const root = tempDirs.make("openclaw-claw-full-tool-consent-");
+    const root = tempDirs.make("afora-claw-full-tool-consent-");
     const env = stateEnv(root);
-    vi.stubEnv("OPENCLAW_STATE_DIR", join(root, "state"));
+    vi.stubEnv("AFORA_STATE_DIR", join(root, "state"));
     const { plan } = await makeProvenancePlan(
       root,
       { schemaVersion: 1, agent: { id: "worker" } },
       {
-        openClawProfile: {
+        aforaProfile: {
           schemaVersion: 1,
           agent: { tools: { profile: "full", allow: ["read"] } },
         },
       },
     );
     persistClawInstallRecord(plan, { env });
-    openOpenClawStateDatabase({ env })
+    openAforaStateDatabase({ env })
       .db /* sqlite-allow-raw: test-only downgrade simulates a legacy unbounded full profile. */
       .prepare("UPDATE claw_installs SET schema_version = ? WHERE agent_id = ?")
-      .run("openclaw.clawInstallRecord.v1", "worker");
-    closeOpenClawStateDatabase();
-    openOpenClawStateDatabase({ env });
+      .run("afora.clawInstallRecord.v1", "worker");
+    closeAforaStateDatabase();
+    openAforaStateDatabase({ env });
 
     const config = {
       agents: {
@@ -288,23 +288,23 @@ describe("Claw tool policy consent provenance", () => {
         config,
       }),
     ).toThrow(
-      "Add an explicit tools.allow list to its package OpenClaw profile, then run `openclaw claws update worker`",
+      "Add an explicit tools.allow list to its package Afora profile, then run `afora claws update worker`",
     );
   });
 
   it("isolates an unsupported install record from other agents", async () => {
-    const root = tempDirs.make("openclaw-claw-tool-consent-isolation-");
+    const root = tempDirs.make("afora-claw-tool-consent-isolation-");
     const env = stateEnv(root);
     const validRoot = join(root, "valid");
     const invalidRoot = join(root, "invalid");
     mkdirSync(validRoot);
     mkdirSync(invalidRoot);
-    vi.stubEnv("OPENCLAW_STATE_DIR", env.OPENCLAW_STATE_DIR);
+    vi.stubEnv("AFORA_STATE_DIR", env.AFORA_STATE_DIR);
     const { plan: validPlan } = await makeProvenancePlan(
       validRoot,
       { schemaVersion: 1, agent: { id: "valid" } },
       {
-        openClawProfile: {
+        aforaProfile: {
           schemaVersion: 1,
           agent: { tools: { profile: "full", allow: ["read"] } },
         },
@@ -314,7 +314,7 @@ describe("Claw tool policy consent provenance", () => {
       invalidRoot,
       { schemaVersion: 1, agent: { id: "invalid" } },
       {
-        openClawProfile: {
+        aforaProfile: {
           schemaVersion: 1,
           agent: { tools: { profile: "full", allow: ["read"] } },
         },
@@ -322,12 +322,12 @@ describe("Claw tool policy consent provenance", () => {
     );
     persistClawInstallRecord(validPlan, { env });
     persistClawInstallRecord(invalidPlan, { env });
-    openOpenClawStateDatabase({ env })
+    openAforaStateDatabase({ env })
       .db /* sqlite-allow-raw: test-only corruption verifies per-agent failure isolation. */
       .prepare("UPDATE claw_installs SET schema_version = ? WHERE agent_id = ?")
-      .run("openclaw.clawInstallRecord.unsupported", "invalid");
-    closeOpenClawStateDatabase();
-    openOpenClawStateDatabase({ env });
+      .run("afora.clawInstallRecord.unsupported", "invalid");
+    closeAforaStateDatabase();
+    openAforaStateDatabase({ env });
 
     const config = { agents: { list: [validPlan.agent.config, invalidPlan.agent.config] } };
     setRuntimeConfigSnapshot(config);
@@ -347,14 +347,14 @@ describe("Claw tool policy consent provenance", () => {
   });
 
   it("does not intersect a standalone Claw allowlist with the host profile", async () => {
-    const root = tempDirs.make("openclaw-claw-standalone-tool-consent-");
+    const root = tempDirs.make("afora-claw-standalone-tool-consent-");
     const env = stateEnv(root);
-    vi.stubEnv("OPENCLAW_STATE_DIR", join(root, "state"));
+    vi.stubEnv("AFORA_STATE_DIR", join(root, "state"));
     const { plan } = await makeProvenancePlan(
       root,
       { schemaVersion: 1, agent: { id: "worker" } },
       {
-        openClawProfile: {
+        aforaProfile: {
           schemaVersion: 1,
           agent: { tools: { allow: ["read"] } },
         },

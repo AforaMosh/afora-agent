@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   materializeSessionArchiveForRead,
   SESSION_ARCHIVE_ZSTD_SUFFIX,
@@ -33,7 +33,7 @@ import { streamSessionTranscriptLines } from "../config/sessions/transcript-stre
 import { selectVisibleTranscriptEvents } from "../config/sessions/transcript-visible-events.js";
 import type { SessionEntry } from "../config/sessions/types.js";
 import { parseAgentSessionKey } from "../routing/session-key.js";
-import { resolveOpenClawAgentSqlitePath } from "../state/openclaw-agent-db.js";
+import { resolveAforaAgentSqlitePath } from "../state/afora-agent-db.js";
 import { runTasksWithConcurrency } from "../utils/run-with-concurrency.js";
 
 export const USAGE_COST_TRANSCRIPT_STAT_CONCURRENCY = 32;
@@ -171,7 +171,7 @@ function listUsageCountedSqliteTranscriptStats(
 function formatCanonicalUsageCostSqliteMarker(marker: SqliteSessionFileMarker): string {
   const storePath =
     resolveSqliteTargetFromSessionStorePath(marker.storePath, { agentId: marker.agentId }).path ??
-    resolveOpenClawAgentSqlitePath({ agentId: marker.agentId });
+    resolveAforaAgentSqlitePath({ agentId: marker.agentId });
   return formatSqliteSessionFileMarker({ ...marker, storePath });
 }
 

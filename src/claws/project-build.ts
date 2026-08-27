@@ -23,7 +23,7 @@ import { readClawManifestFile } from "./reader.js";
 import { isSafeClawRelativePath } from "./schema-portability.js";
 import { MAX_MANAGED_FILE_BYTES } from "./source-limits.js";
 
-export const CLAW_BUILD_RESULT_SCHEMA_VERSION = "openclaw.clawBuild.v1" as const;
+export const CLAW_BUILD_RESULT_SCHEMA_VERSION = "afora.clawBuild.v1" as const;
 
 type ClawBuildResult = {
   schemaVersion: typeof CLAW_BUILD_RESULT_SCHEMA_VERSION;
@@ -85,7 +85,7 @@ export async function extractBuiltClawArtifact(artifact: string): Promise<{
   packageRoot: string;
   dispose: () => Promise<void>;
 }> {
-  const temporaryDirectory = await mkdtemp(join(tmpdir(), "openclaw-claw-artifact-"));
+  const temporaryDirectory = await mkdtemp(join(tmpdir(), "afora-claw-artifact-"));
   try {
     await tar.x({ cwd: temporaryDirectory, file: resolve(artifact), strict: true });
     const packageRoot = join(temporaryDirectory, "package");
@@ -137,7 +137,7 @@ export async function buildClawProject(
     );
   }
 
-  const temporaryDirectory = await mkdtemp(join(dirname(artifact), ".openclaw-claw-build-"));
+  const temporaryDirectory = await mkdtemp(join(dirname(artifact), ".afora-claw-build-"));
   const stagingRoot = join(temporaryDirectory, "staging");
   const temporaryArtifact = join(temporaryDirectory, "claw.tgz");
   try {
@@ -152,12 +152,12 @@ export async function buildClawProject(
       assertValidatedBytes("BOOTSTRAP.md", bootstrap, project.claw.packageBootstrap);
       files.set("BOOTSTRAP.md", bootstrap);
     }
-    if (project.claw.openClawProfile) {
-      const profileSnapshot = project.claw.snapshot.openClawProfile;
+    if (project.claw.aforaProfile) {
+      const profileSnapshot = project.claw.snapshot.aforaProfile;
       if (!profileSnapshot) {
         throw new ClawProjectError(
           "project_invalid",
-          "Validated OpenClaw profile is missing its source snapshot.",
+          "Validated Afora profile is missing its source snapshot.",
         );
       }
       const profile = await readSelectedProjectFile(project.root, profileSnapshot.sourcePath);

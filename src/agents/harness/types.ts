@@ -1,5 +1,5 @@
 import type { SessionToolOverrides } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 /**
  * Public native agent harness contracts and capability shapes.
  */
@@ -50,7 +50,7 @@ export type AgentHarnessSupport =
       supported: false;
       reason?: string;
       /** Lossless host fallback when this harness cannot reproduce the prepared request. */
-      fallbackRuntime?: "openclaw";
+      fallbackRuntime?: "afora";
     };
 
 type InternalEmbeddedRunAttemptParams =
@@ -151,7 +151,7 @@ type AgentHarnessIsolatedCompletionParams = {
   auth: import("../model-auth-runtime-shared.js").ResolvedProviderAuth;
   /** Non-reversible proof of the prepared credential owner when available. */
   sourceAuthFingerprint?: string;
-  config: import("../../config/types.openclaw.js").OpenClawConfig;
+  config: import("../../config/types.afora.js").AforaConfig;
   agentId: string;
   agentDir: string;
   workspaceDir: string;
@@ -167,7 +167,7 @@ type AgentHarnessIsolatedCompletionParams = {
 };
 export type AgentHarnessIsolatedCompletionAuthorization =
   | {
-      /** OpenClaw resolved the exact transport model and credential before handoff. */
+      /** Afora resolved the exact transport model and credential before handoff. */
       owner: "host";
       model: import("../../llm/types.js").Model;
       auth: import("../model-auth-runtime-shared.js").ResolvedProviderAuth;
@@ -195,7 +195,7 @@ export type AgentHarnessAuthBindingFingerprintParams = {
   authProfileId: string;
   authProfileStore: import("../auth-profiles/types.js").AuthProfileStore;
   agentDir: string;
-  config?: import("../../config/types.openclaw.js").OpenClawConfig;
+  config?: import("../../config/types.afora.js").AforaConfig;
 };
 /**
  * @deprecated Use {@link AgentHarnessSideQuestionParamsV2}. This compatibility
@@ -208,11 +208,11 @@ export type AgentHarnessSideQuestionParams = {
   sandbox?: import("../sandbox/types.js").SandboxContext | null;
   /** Prepared plugin/model generation that owns this side execution. */
   preparedModelRuntime?: import("../prepared-model-runtime.types.js").PreparedModelRuntimeSnapshot;
-  cfg: import("../../config/types.openclaw.js").OpenClawConfig;
+  cfg: import("../../config/types.afora.js").AforaConfig;
   agentDir: string;
   provider: string;
   model: string;
-  runtimeModel?: import("openclaw/plugin-sdk/llm").Model<import("openclaw/plugin-sdk/llm").Api>;
+  runtimeModel?: import("afora-agent/plugin-sdk/llm").Model<import("afora-agent/plugin-sdk/llm").Api>;
   /** One atomic route/profile/store snapshot prepared before native dispatch. */
   preparedRuntimeAuth: {
     plan: import("../runtime-plan/types.js").AgentRuntimeAuthPlan;
@@ -369,7 +369,7 @@ type AgentHarnessRunCapability<
   /** Certifies exact runAttempt enforcement; direct-policy-restricted channel side questions fail in core. */
   conversationToolPolicySupport?: "exact";
   /**
-   * Canonical OpenClaw tool names whose exact denies the harness can also enforce
+   * Canonical Afora tool names whose exact denies the harness can also enforce
    * against native equivalents. Every other deny remains fail-closed.
    */
   conversationToolPolicySafeDenyTools?: readonly string[];
@@ -459,12 +459,12 @@ type AgentHarnessProviderUsageCapability = {
 };
 
 type AgentHarnessMcpCatalogParams = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentId: string;
   sessionId: string;
   sessionKey: string;
   workspaceDir: string;
-  /** OpenClaw-configured servers whose session policy this harness can enforce. */
+  /** Afora-configured servers whose session policy this harness can enforce. */
   mcpServerNames: readonly string[];
   toolOverrides?: Pick<SessionToolOverrides, "mcpServers" | "mcpToolsDeny">;
 };

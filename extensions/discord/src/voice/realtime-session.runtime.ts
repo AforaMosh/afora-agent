@@ -1,4 +1,4 @@
-import type { DiscordAccountConfig, OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { DiscordAccountConfig, AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   buildRealtimeVoiceSessionInstructions,
   buildRealtimeVoiceSpeakExactMessage,
@@ -19,9 +19,9 @@ import {
   type RealtimeVoiceProviderConfig,
   type RealtimeVoiceSessionHarness,
   type RealtimeVoiceWakeNamePolicy,
-} from "openclaw/plugin-sdk/realtime-voice";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
-import { formatErrorMessage } from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/realtime-voice";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/runtime-env";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { formatVoiceLogPreview } from "./log-preview.js";
 import { DiscordRealtimeConsults, type AgentProxyConsultState } from "./realtime-consults.js";
 import { DiscordRealtimePlayback } from "./realtime-playback.js";
@@ -127,7 +127,7 @@ export class DiscordRealtimeVoiceSession implements VoiceRealtimeSession {
 
   constructor(
     private readonly params: {
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       discordConfig: DiscordAccountConfig;
       entry: VoiceSessionEntry;
       mode: Exclude<DiscordVoiceMode, "stt-tts">;
@@ -274,7 +274,7 @@ export class DiscordRealtimeVoiceSession implements VoiceRealtimeSession {
       base:
         this.realtimeConfig?.instructions ??
         [
-          "You are OpenClaw's Discord voice interface.",
+          "You are Afora's Discord voice interface.",
           "Keep spoken replies concise, natural, and suitable for a live Discord voice channel.",
         ].join("\n"),
       isAgentProxy,

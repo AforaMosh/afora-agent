@@ -29,7 +29,7 @@ const EVENT = {
 
 describe("agent harness lifecycle hook helpers", () => {
   afterEach(() => {
-    Reflect.deleteProperty(globalThis, Symbol.for("openclaw.pluginFinalizeRetryBudget"));
+    Reflect.deleteProperty(globalThis, Symbol.for("afora.pluginFinalizeRetryBudget"));
   });
 
   it("ignores legacy hook runners that advertise llm_input without a runner method", () => {

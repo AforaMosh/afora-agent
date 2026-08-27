@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Ts Topology script supports OpenClaw repository automation.
+// Ts Topology script supports Afora repository automation.
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { expectDefined } from "../packages/normalization-core/src/expect.js";

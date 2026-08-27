@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 // Tests inline action skipping when channel config does not define actions.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionEntry } from "../../config/sessions.js";
 import { replaceSessionEntry } from "../../config/sessions/session-accessor.js";
@@ -18,13 +18,13 @@ import type { TypingController } from "./typing.js";
 
 const {
   buildStatusReplyMock,
-  createOpenClawToolsMock,
+  createAforaToolsMock,
   getChannelPluginMock,
   handleCommandsMock,
   listSkillCommandsForWorkspaceMock,
 } = vi.hoisted(() => ({
   buildStatusReplyMock: vi.fn(),
-  createOpenClawToolsMock: vi.fn(),
+  createAforaToolsMock: vi.fn(),
   getChannelPluginMock: vi.fn(),
   handleCommandsMock: vi.fn(),
   listSkillCommandsForWorkspaceMock: vi.fn(),
@@ -37,7 +37,7 @@ type HandleInlineActionsInput = Parameters<
 const skillToolDispatchDependencies: NonNullable<
   HandleInlineActionsInput["skillToolDispatchDependencies"]
 > = {
-  createOpenClawTools: createOpenClawToolsMock,
+  createAforaTools: createAforaToolsMock,
 };
 
 vi.mock("./commands.runtime.js", () => ({
@@ -197,7 +197,7 @@ function mockCallArgs(mock: ReturnType<typeof vi.fn>, label: string, callIndex =
 
 function mockToolDispatchedSkillCommand() {
   const toolExecute = vi.fn(async () => ({ text: "sent" }));
-  createOpenClawToolsMock.mockReturnValue([
+  createAforaToolsMock.mockReturnValue([
     {
       name: "send_status",
       execute: toolExecute,
@@ -237,10 +237,10 @@ describe("handleInlineActions", () => {
     listSkillCommandsForWorkspaceMock.mockReset();
     listSkillCommandsForWorkspaceMock.mockReturnValue([]);
     getChannelPluginMock.mockReset();
-    createOpenClawToolsMock.mockReset();
+    createAforaToolsMock.mockReset();
     buildStatusReplyMock.mockReset();
     buildStatusReplyMock.mockResolvedValue({ text: "status" });
-    createOpenClawToolsMock.mockReturnValue([]);
+    createAforaToolsMock.mockReturnValue([]);
     getChannelPluginMock.mockImplementation((channelId?: string) =>
       channelId === "whatsapp"
         ? { commands: { skipWhenConfigEmpty: true } }
@@ -614,7 +614,7 @@ describe("handleInlineActions", () => {
     });
 
     expect(listSkillCommandsForWorkspaceMock).not.toHaveBeenCalled();
-    expect(createOpenClawToolsMock).not.toHaveBeenCalled();
+    expect(createAforaToolsMock).not.toHaveBeenCalled();
     expect(toolExecute).not.toHaveBeenCalled();
   });
 
@@ -645,7 +645,7 @@ describe("handleInlineActions", () => {
     });
 
     expect(listSkillCommandsForWorkspaceMock).not.toHaveBeenCalled();
-    expect(createOpenClawToolsMock).not.toHaveBeenCalled();
+    expect(createAforaToolsMock).not.toHaveBeenCalled();
     expect(toolExecute).not.toHaveBeenCalled();
   });
 
@@ -1086,7 +1086,7 @@ describe("handleInlineActions", () => {
   it("passes requesterAgentIdOverride into inline tool runtimes", async () => {
     const typing = createTypingController();
     const toolExecute = vi.fn(async () => ({ text: "spawned" }));
-    createOpenClawToolsMock.mockReturnValue([
+    createAforaToolsMock.mockReturnValue([
       {
         name: "sessions_spawn",
         execute: toolExecute,
@@ -1133,7 +1133,7 @@ describe("handleInlineActions", () => {
 
     expect(result).toEqual({ kind: "reply", reply: { text: "✅ Done." } });
     expect(
-      mockObjectArg(createOpenClawToolsMock, "createOpenClawTools").requesterAgentIdOverride,
+      mockObjectArg(createAforaToolsMock, "createAforaTools").requesterAgentIdOverride,
     ).toBe("named-worker");
     expect(toolExecute).toHaveBeenCalledTimes(1);
   });
@@ -1141,7 +1141,7 @@ describe("handleInlineActions", () => {
   it("passes sender identity into inline tool runtimes", async () => {
     const typing = createTypingController();
     const toolExecute = vi.fn(async () => ({ text: "updated" }));
-    createOpenClawToolsMock.mockReturnValue([
+    createAforaToolsMock.mockReturnValue([
       {
         name: "message",
         execute: toolExecute,
@@ -1188,7 +1188,7 @@ describe("handleInlineActions", () => {
     });
 
     expect(result).toEqual({ kind: "reply", reply: { text: "✅ Done." } });
-    const toolsArgs = mockObjectArg(createOpenClawToolsMock, "createOpenClawTools");
+    const toolsArgs = mockObjectArg(createAforaToolsMock, "createAforaTools");
     expect(toolsArgs.senderIsOwner).toBe(true);
     expect(toolsArgs.nativeChannelId).toBe("oc_native_chat");
     expect(toolsArgs.beforeToolCallHookContext).toMatchObject({
@@ -1222,7 +1222,7 @@ describe("handleInlineActions", () => {
         reason: "denied by policy",
       },
     }));
-    createOpenClawToolsMock.mockReturnValue([
+    createAforaToolsMock.mockReturnValue([
       {
         name: "message",
         execute: toolExecute,
@@ -1289,7 +1289,7 @@ describe("handleInlineActions", () => {
       kind: "reply",
       reply: { text: "❌ Tool call blocked: denied by policy" },
     });
-    const toolsArgs = mockObjectArg(createOpenClawToolsMock, "createOpenClawTools");
+    const toolsArgs = mockObjectArg(createAforaToolsMock, "createAforaTools");
     expect(toolsArgs.sessionId).toBe("target-session");
     expect(toolsArgs.currentChannelId).toBe("whatsapp");
     const blockedToolCall = mockCallArgs(toolExecute, "toolExecute");
@@ -1306,7 +1306,7 @@ describe("handleInlineActions", () => {
   it("does not execute inline tool dispatch targets denied by tool policy", async () => {
     const typing = createTypingController();
     const toolExecute = vi.fn(async () => ({ content: "sent" }));
-    createOpenClawToolsMock.mockReturnValue([
+    createAforaToolsMock.mockReturnValue([
       {
         name: "message",
         execute: toolExecute,
@@ -1361,7 +1361,7 @@ describe("handleInlineActions", () => {
     const typing = createTypingController();
     const messageExecute = vi.fn(async () => ({ content: "sent" }));
     const sessionsExecute = vi.fn(async () => ({ content: "listed" }));
-    createOpenClawToolsMock.mockReturnValue([
+    createAforaToolsMock.mockReturnValue([
       {
         name: "message",
         execute: messageExecute,
@@ -1420,7 +1420,7 @@ describe("handleInlineActions", () => {
   it("applies sender-specific tool policy to inline tool dispatch", async () => {
     const typing = createTypingController();
     const toolExecute = vi.fn(async () => ({ content: "sent" }));
-    createOpenClawToolsMock.mockReturnValue([
+    createAforaToolsMock.mockReturnValue([
       {
         name: "message",
         execute: toolExecute,
@@ -1477,7 +1477,7 @@ describe("handleInlineActions", () => {
   it("does not expose owner-only tools to authorized non-owner skill dispatch", async () => {
     const typing = createTypingController();
     const toolExecute = vi.fn(async () => ({ content: "sent" }));
-    createOpenClawToolsMock.mockReturnValue([
+    createAforaToolsMock.mockReturnValue([
       {
         name: "conversations_send",
         execute: toolExecute,
@@ -1525,13 +1525,13 @@ describe("handleInlineActions", () => {
       kind: "reply",
       reply: { text: "❌ Tool not available: conversations_send" },
     });
-    const toolsArgs = mockObjectArg(createOpenClawToolsMock, "createOpenClawTools");
+    const toolsArgs = mockObjectArg(createAforaToolsMock, "createAforaTools");
     expect(toolsArgs.senderIsOwner).toBe(false);
     expect(toolExecute).not.toHaveBeenCalled();
   });
 
   it("applies subagent policy to ACP envelope inline dispatch sessions", async () => {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-inline-acp-policy-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-inline-acp-policy-"));
     try {
       const storeTemplate = path.join(tmpDir, "sessions-{agentId}.json");
       await writeSessionStore(storeTemplate, "main", {
@@ -1547,7 +1547,7 @@ describe("handleInlineActions", () => {
 
       const typing = createTypingController();
       const toolExecute = vi.fn(async () => ({ content: "spawned" }));
-      createOpenClawToolsMock.mockReturnValue([
+      createAforaToolsMock.mockReturnValue([
         {
           name: "sessions_spawn",
           execute: toolExecute,
@@ -1609,7 +1609,7 @@ describe("handleInlineActions", () => {
   it("passes sandboxed runtime state into inline tool construction", async () => {
     const typing = createTypingController();
     const toolExecute = vi.fn(async () => ({ content: "listed" }));
-    createOpenClawToolsMock.mockReturnValue([
+    createAforaToolsMock.mockReturnValue([
       {
         name: "sessions_list",
         execute: toolExecute,
@@ -1658,7 +1658,7 @@ describe("handleInlineActions", () => {
     });
 
     expect(result).toEqual({ kind: "reply", reply: { text: "listed" } });
-    expect(createOpenClawToolsMock).toHaveBeenCalledWith(
+    expect(createAforaToolsMock).toHaveBeenCalledWith(
       expect.objectContaining({
         sandboxed: true,
       }),

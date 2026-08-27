@@ -1,4 +1,4 @@
-import { sanitizeForPlainText } from "openclaw/plugin-sdk/channel-outbound";
+import { sanitizeForPlainText } from "afora-agent/plugin-sdk/channel-outbound";
 import {
   FormatCapabilityProfile,
   markdownToIR,
@@ -6,7 +6,7 @@ import {
   renderMarkdownWithMarkers,
   sanitizeAssistantVisibleText,
   type MarkdownIR,
-} from "openclaw/plugin-sdk/text-chunking";
+} from "afora-agent/plugin-sdk/text-chunking";
 
 export const GOOGLE_CHAT_FORMAT_PROFILE = FormatCapabilityProfile.define({
   mechanism: "markdown",

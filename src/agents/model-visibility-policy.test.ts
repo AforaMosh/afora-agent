@@ -1,9 +1,9 @@
 // Explicit model policy tests keep catalog metadata separate from override restrictions.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { createModelVisibilityPolicy } from "./model-visibility-policy.js";
 
-function createPolicy(cfg: OpenClawConfig, agentId?: string) {
+function createPolicy(cfg: AforaConfig, agentId?: string) {
   return createModelVisibilityPolicy({
     cfg,
     catalog: [
@@ -55,7 +55,7 @@ describe("explicit model visibility policy", () => {
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const policy = createModelVisibilityPolicy({
       cfg,
       catalog: [],
@@ -249,7 +249,7 @@ describe("explicit model visibility policy", () => {
   });
 
   it("resolves conflicting policy aliases in each agent's model map", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         list: [
           {
@@ -325,7 +325,7 @@ describe("explicit model visibility policy", () => {
   });
 
   it("supports per-agent replacement and explicit allow-any", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           modelPolicy: { allow: ["openai/*"] },

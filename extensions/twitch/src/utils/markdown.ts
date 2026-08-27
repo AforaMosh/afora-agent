@@ -3,7 +3,7 @@
  *
  * Twitch chat doesn't support markdown formatting, so we strip it before sending.
  */
-import { chunkTextForOutbound, stripMarkdown } from "openclaw/plugin-sdk/text-chunking";
+import { chunkTextForOutbound, stripMarkdown } from "afora-agent/plugin-sdk/text-chunking";
 
 /** Strip markdown, then flatten newlines for Twitch's single-line chat. */
 export function stripMarkdownForTwitch(markdown: string): string {

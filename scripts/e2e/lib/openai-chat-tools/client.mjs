@@ -2,21 +2,21 @@
 import { readPositiveIntEnv, readTcpPortEnv } from "../env-limits.mjs";
 
 const portText = process.env.PORT;
-const token = process.env.OPENCLAW_GATEWAY_TOKEN;
+const token = process.env.AFORA_GATEWAY_TOKEN;
 const backendModel = process.env.MODEL_REF || "openai/gpt-5.4-mini";
 
-const timeoutSeconds = readPositiveIntEnv("OPENCLAW_OPENAI_CHAT_TOOLS_TIMEOUT_SECONDS", 180);
-const maxBodyBytes = readPositiveIntEnv("OPENCLAW_OPENAI_CHAT_TOOLS_MAX_BODY_BYTES", 1048576);
+const timeoutSeconds = readPositiveIntEnv("AFORA_OPENAI_CHAT_TOOLS_TIMEOUT_SECONDS", 180);
+const maxBodyBytes = readPositiveIntEnv("AFORA_OPENAI_CHAT_TOOLS_MAX_BODY_BYTES", 1048576);
 
 if (!portText || !token) {
-  throw new Error("missing PORT/OPENCLAW_GATEWAY_TOKEN");
+  throw new Error("missing PORT/AFORA_GATEWAY_TOKEN");
 }
 const port = readTcpPortEnv("PORT", portText);
 if (!Number.isFinite(timeoutSeconds) || timeoutSeconds <= 0) {
-  throw new Error(`invalid OPENCLAW_OPENAI_CHAT_TOOLS_TIMEOUT_SECONDS: ${timeoutSeconds}`);
+  throw new Error(`invalid AFORA_OPENAI_CHAT_TOOLS_TIMEOUT_SECONDS: ${timeoutSeconds}`);
 }
 if (!Number.isFinite(maxBodyBytes) || maxBodyBytes <= 0) {
-  throw new Error(`invalid OPENCLAW_OPENAI_CHAT_TOOLS_MAX_BODY_BYTES: ${maxBodyBytes}`);
+  throw new Error(`invalid AFORA_OPENAI_CHAT_TOOLS_MAX_BODY_BYTES: ${maxBodyBytes}`);
 }
 
 function cancelReaderSoon(reader) {
@@ -108,10 +108,10 @@ try {
       headers: {
         authorization: `Bearer ${token}`,
         "content-type": "application/json",
-        "x-openclaw-model": backendModel,
+        "x-afora-model": backendModel,
       },
       body: JSON.stringify({
-        model: "openclaw",
+        model: "afora",
         stream: false,
         messages: [
           {

@@ -1,11 +1,11 @@
 // Sms plugin module implements webhook behavior.
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   createFixedWindowRateLimiter,
   isRequestBodyLimitError,
   resolveRequestClientIp,
-} from "openclaw/plugin-sdk/webhook-ingress";
+} from "afora-agent/plugin-sdk/webhook-ingress";
 import {
   createSmsDeliveryRecorder,
   isTwilioDeliveryStatusForm,
@@ -25,7 +25,7 @@ const INVALID_REQUEST_MAX_REQUESTS = 300;
 const INBOUND_DISPATCH_MAX_REQUESTS = 30;
 const DELIVERY_CALLBACK_MAX_REQUESTS = 3_000;
 const DELIVERY_CALLBACK_WINDOW_MS = 60_000;
-const SMS_WEBHOOK_ACCEPTED_HEADER = "x-openclaw-delivery-accepted";
+const SMS_WEBHOOK_ACCEPTED_HEADER = "x-afora-delivery-accepted";
 const SMS_WEBHOOK_ACCEPTED_VALUE = "durable";
 
 // Count failed-auth traffic separately from the stricter dispatchable inbound quota.
@@ -55,7 +55,7 @@ type SmsWebhookLog = {
 };
 
 export type SmsWebhookHandlerParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   account: ResolvedSmsAccount;
   ingress: {
     enqueue: (form: Record<string, string>) => Promise<{ duplicate: boolean }>;
@@ -71,7 +71,7 @@ function headerValue(value: string | string[] | undefined): string | undefined {
   return value;
 }
 
-function resolvedClientAddress(params: { cfg: OpenClawConfig; req: IncomingMessage }): string {
+function resolvedClientAddress(params: { cfg: AforaConfig; req: IncomingMessage }): string {
   return (
     resolveRequestClientIp(
       params.req,

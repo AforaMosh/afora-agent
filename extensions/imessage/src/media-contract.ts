@@ -1,12 +1,12 @@
 // Imessage plugin module implements media contract behavior.
-import { mergeInboundPathRoots } from "openclaw/plugin-sdk/channel-inbound";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import { mergeInboundPathRoots } from "afora-agent/plugin-sdk/channel-inbound";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { resolveIMessageAccount } from "./accounts.js";
 
 export const DEFAULT_IMESSAGE_ATTACHMENT_ROOTS = ["/Users/*/Library/Messages/Attachments"] as const;
 
 export function resolveIMessageAttachmentRoots(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): string[] {
   const account = resolveIMessageAccount(params);
@@ -18,7 +18,7 @@ export function resolveIMessageAttachmentRoots(params: {
 }
 
 export function resolveIMessageRemoteAttachmentRoots(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): string[] {
   const account = resolveIMessageAccount(params);

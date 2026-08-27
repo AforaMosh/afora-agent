@@ -11,7 +11,7 @@ export function detectModelSetup(
   signal?: AbortSignal,
 ): Promise<SystemAgentSetupDetectResult> {
   return client.request<SystemAgentSetupDetectResult>(
-    "openclaw.setup.detect",
+    "afora.setup.detect",
     agentId ? { agentId } : {},
     { timeoutMs: MODEL_SETUP_DETECT_TIMEOUT_MS, ...(signal ? { signal } : {}) },
   );
@@ -23,7 +23,7 @@ export function verifyModelSetup(
   signal?: AbortSignal,
 ): Promise<SystemAgentSetupVerifyResult> {
   return client.request<SystemAgentSetupVerifyResult>(
-    "openclaw.setup.verify",
+    "afora.setup.verify",
     agentId ? { agentId } : {},
     { timeoutMs: MODEL_SETUP_VERIFY_TIMEOUT_MS, ...(signal ? { signal } : {}) },
   );

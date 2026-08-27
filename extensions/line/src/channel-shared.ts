@@ -1,5 +1,5 @@
 // Line plugin module implements channel shared behavior.
-import { describeWebhookAccountSnapshot } from "openclaw/plugin-sdk/account-helpers";
+import { describeWebhookAccountSnapshot } from "afora-agent/plugin-sdk/account-helpers";
 import { hasLineCredentials } from "./account-helpers.js";
 import type { ChannelPlugin, ResolvedLineAccount } from "./channel-api.js";
 import { lineConfigAdapter } from "./config-adapter.js";

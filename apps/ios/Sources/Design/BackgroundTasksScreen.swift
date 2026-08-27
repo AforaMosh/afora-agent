@@ -168,30 +168,30 @@ struct BackgroundTasksScreen: View {
                 if self.loading, self.tasks.isEmpty {
                     ProgressView {
                         Text("Loading background tasks…")
-                            .font(OpenClawType.body)
+                            .font(AforaType.body)
                     }
                 } else if let errorMessage, self.tasks.isEmpty {
                     ContentUnavailableView(
                         "Couldn’t Load Tasks",
                         systemImage: "exclamationmark.triangle",
-                        description: Text(errorMessage).font(OpenClawType.body))
+                        description: Text(errorMessage).font(AforaType.body))
                 } else if self.tasks.isEmpty {
                     ContentUnavailableView(
                         "No Background Tasks",
                         systemImage: "clock.arrow.circlepath",
                         description: Text("Tasks for this agent will appear here.")
-                            .font(OpenClawType.body))
+                            .font(AforaType.body))
                 } else {
                     List {
                         if let errorMessage {
                             Text(errorMessage)
-                                .font(OpenClawType.footnote)
-                                .foregroundStyle(OpenClawBrand.warn)
+                                .font(AforaType.footnote)
+                                .foregroundStyle(AforaBrand.warn)
                         }
                         Section {
                             if self.activeTasks.isEmpty {
                                 Text("No running tasks")
-                                    .font(OpenClawType.body)
+                                    .font(AforaType.body)
                                     .foregroundStyle(.secondary)
                             } else {
                                 ForEach(self.activeTasks) { task in
@@ -199,12 +199,12 @@ struct BackgroundTasksScreen: View {
                                 }
                             }
                         } header: {
-                            Text("Running").font(OpenClawType.captionMedium)
+                            Text("Running").font(AforaType.captionMedium)
                         }
                         Section {
                             if self.finishedTasks.isEmpty {
                                 Text("No finished tasks")
-                                    .font(OpenClawType.body)
+                                    .font(AforaType.body)
                                     .foregroundStyle(.secondary)
                             } else {
                                 ForEach(self.finishedTasks) { task in
@@ -212,7 +212,7 @@ struct BackgroundTasksScreen: View {
                                 }
                             }
                         } header: {
-                            Text("Finished").font(OpenClawType.captionMedium)
+                            Text("Finished").font(AforaType.captionMedium)
                         }
                     }
                     .listStyle(.insetGrouped)
@@ -227,7 +227,7 @@ struct BackgroundTasksScreen: View {
                         Task { await self.loadTasks() }
                     } label: {
                         Label {
-                            Text("Refresh").font(OpenClawType.body)
+                            Text("Refresh").font(AforaType.body)
                         } icon: {
                             Image(systemName: "arrow.clockwise")
                         }
@@ -245,21 +245,21 @@ struct BackgroundTasksScreen: View {
         } label: {
             VStack(alignment: .leading, spacing: 7) {
                 Text(task.displayTitle)
-                    .font(OpenClawType.subheadMedium)
+                    .font(AforaType.subheadMedium)
                     .foregroundStyle(.primary)
                     .lineLimit(2)
                 HStack(spacing: 7) {
                     Text(task.statusLabel)
-                        .font(OpenClawType.captionMedium)
+                        .font(AforaType.captionMedium)
                         .foregroundStyle(self.statusColor(task))
                     Text(task.runtimeLabel)
-                        .font(OpenClawType.caption)
+                        .font(AforaType.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
                 }
                 if let output = task.output {
                     Text(output)
-                        .font(OpenClawType.footnote)
+                        .font(AforaType.footnote)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }
@@ -271,9 +271,9 @@ struct BackgroundTasksScreen: View {
 
     private func statusColor(_ task: MobileBackgroundTask) -> Color {
         switch task.status {
-        case "completed": OpenClawBrand.ok
-        case "failed", "timed_out": OpenClawBrand.warn
-        case "queued", "running": OpenClawBrand.accent
+        case "completed": AforaBrand.ok
+        case "failed", "timed_out": AforaBrand.warn
+        case "queued", "running": AforaBrand.accent
         default: .secondary
         }
     }
@@ -325,11 +325,11 @@ private struct BackgroundTaskDetailScreen: View {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 7) {
                     Text(self.task.displayTitle)
-                        .font(OpenClawType.title3)
+                        .font(AforaType.title3)
                     HStack(spacing: 8) {
-                        Text(self.task.statusLabel).font(OpenClawType.captionMedium)
+                        Text(self.task.statusLabel).font(AforaType.captionMedium)
                         Text(self.task.runtimeLabel)
-                            .font(OpenClawType.caption)
+                            .font(AforaType.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -343,8 +343,8 @@ private struct BackgroundTaskDetailScreen: View {
                     body: self.task.output ?? String(localized: "No output yet."))
                 if let errorMessage {
                     Text(errorMessage)
-                        .font(OpenClawType.footnote)
-                        .foregroundStyle(OpenClawBrand.warn)
+                        .font(AforaType.footnote)
+                        .foregroundStyle(AforaBrand.warn)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -358,11 +358,11 @@ private struct BackgroundTaskDetailScreen: View {
     private func detailBlock(title: String, body: String) -> some View {
         VStack(alignment: .leading, spacing: 7) {
             Text(title)
-                .font(OpenClawType.captionMedium)
+                .font(AforaType.captionMedium)
                 .foregroundStyle(.secondary)
                 .textCase(.uppercase)
             Text(body)
-                .font(OpenClawType.monoFootnote)
+                .font(AforaType.monoFootnote)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)

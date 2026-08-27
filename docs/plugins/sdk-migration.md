@@ -3,12 +3,12 @@ summary: "Migrate from the legacy backwards-compatibility layer to the modern pl
 title: "Plugin SDK migration"
 sidebarTitle: "Migrate to SDK"
 read_when:
-  - You used api.registerEmbeddedExtensionFactory before OpenClaw 2026.4.25
+  - You used api.registerEmbeddedExtensionFactory before Afora 2026.4.25
   - You are updating a plugin to the modern plugin architecture
-  - You maintain an external OpenClaw plugin
+  - You maintain an external Afora plugin
 ---
 
-OpenClaw replaced a broad backwards-compatibility layer with a modern plugin
+Afora replaced a broad backwards-compatibility layer with a modern plugin
 architecture built from small, focused imports. If your plugin predates that
 change, this guide gets it onto the current contracts.
 
@@ -17,16 +17,16 @@ change, this guide gets it onto the current contracts.
 Several wide-open import surfaces used to let plugins reach almost anything
 from a single entry point:
 
-- **`openclaw/plugin-sdk`** and **`openclaw/plugin-sdk/compat`** - re-exported
+- **`afora/plugin-sdk`** and **`afora/plugin-sdk/compat`** - re-exported
   dozens of helpers while the focused SDK was being built. Both roots are now
   removed; import a documented subpath instead.
-- **`openclaw/plugin-sdk/infra-runtime`** - a broad barrel mixing system
+- **`afora/plugin-sdk/infra-runtime`** - a broad barrel mixing system
   events, heartbeat state, delivery queues, fetch/proxy helpers, file helpers,
   approval types, and unrelated utilities.
-- **`openclaw/plugin-sdk/config-runtime`** - a broad config barrel retained
+- **`afora/plugin-sdk/config-runtime`** - a broad config barrel retained
   only for its later compatibility window; direct runtime load/write helpers
   have been removed.
-- **`openclaw/extension-api`** - a removed bridge that gave plugins direct
+- **`afora/extension-api`** - a removed bridge that gave plugins direct
   access to host-side helpers like the embedded agent runner.
 - **`api.registerEmbeddedExtensionFactory(...)`** - a removed embedded-runner-only
   hook that observed embedded-runner events such as `tool_result`. Use agent
@@ -42,7 +42,7 @@ separately recorded later windows; new plugins should use focused subpaths.
   load. Follow the mappings below before upgrading.
 </Warning>
 
-OpenClaw does not remove or reinterpret documented plugin behavior in the same
+Afora does not remove or reinterpret documented plugin behavior in the same
 change that introduces a replacement. Breaking contract changes go through a
 compatibility adapter, diagnostics, docs, and a deprecation window first. That
 applies to SDK imports, manifest fields, setup APIs, hooks, and runtime
@@ -55,7 +55,7 @@ registration behavior.
   create.
 - **Unclear API surface** - no way to tell stable exports from internal ones.
 
-Each `openclaw/plugin-sdk/<subpath>` is now a small, self-contained module with
+Each `afora/plugin-sdk/<subpath>` is now a small, self-contained module with
 a documented contract.
 
 Legacy provider convenience seams for bundled channels are gone too -
@@ -86,10 +86,10 @@ External-plugin compatibility work follows this order:
 ### Channel state migration declarations
 
 Channel plugins should declare `doctorContract.stateMigrations: true` in
-`openclaw.plugin.json` and export `stateMigrations` from their doctor-contract
+`afora.plugin.json` and export `stateMigrations` from their doctor-contract
 artifact. Plan-based migrations can use
 `definePluginDoctorMigrationFromPlans(...)` from
-`openclaw/plugin-sdk/runtime-doctor-migrations` to preserve existing move, copy, preview,
+`afora/plugin-sdk/runtime-doctor-migrations` to preserve existing move, copy, preview,
 and plugin-state import behavior.
 
 The setup-entry `legacyStateMigrations` option and feature flag,
@@ -97,14 +97,14 @@ The setup-entry `legacyStateMigrations` option and feature flag,
 `BundledChannelLegacyStateMigrationDetector`, and
 `ChannelPlugin.lifecycle.detectLegacyStateMigrations` remain supported through
 one doctor-pipeline adapter for external plugins, but are deprecated. Removal
-plan: remove that adapter after OpenClaw 2027.1 only when a published-plugin
+plan: remove that adapter after Afora 2027.1 only when a published-plugin
 reader sweep finds no remaining users.
 
 ### AuthStorage SQLite migration
 
 `AuthStorage.forAgent(agentDir)` is the canonical provider-keyed session SDK
 facade. It persists provider-default credentials through the agent's
-`openclaw-agent.sqlite` auth-profile rows and never creates `auth.json`.
+`afora-agent.sqlite` auth-profile rows and never creates `auth.json`.
 
 `AuthStorage.create(authPath)` remains as a named deprecated adapter for
 existing plugins. The path is used only to derive the owning agent directory;
@@ -143,10 +143,10 @@ review date; removal still requires the reader condition in the final column.
 
 Slack, Discord, Signal, and Microsoft Teams packages published through
 `2026.7.1` imported channel-specific config schemas from
-`openclaw/plugin-sdk/bundled-channel-config-schema`. The published Slack and
+`afora/plugin-sdk/bundled-channel-config-schema`. The published Slack and
 Discord packages also imported `createLegacyCompatChannelDmPolicy` and
 `promptLegacyChannelAllowFromForAccount` from
-`openclaw/plugin-sdk/setup-runtime`.
+`afora/plugin-sdk/setup-runtime`.
 
 Those compatibility exports were removed in August 2026. Channel plugins must
 own their config schemas and setup policy locally, using generic primitives
@@ -159,7 +159,7 @@ permanently. Channel-specific fields remain typed in a deprecated compatibility
 tier so existing external plugins still compile while plugin authors move those
 fields into plugin-local setup input types.
 
-OpenClaw does not ship major releases. A registry sweep on 2026-07-22 inspected
+Afora does not ship major releases. A registry sweep on 2026-07-22 inspected
 426 published out-of-tree channel plugins and removed 21 fields with no readers.
 The 22 retained fields each have a known published reader. Each further field is
 deleted as soon as no published plugin reads it; the retained set shrinks as
@@ -185,7 +185,7 @@ key at a time.
 #### Verifying readers
 
 1. Page through `https://clawhub.ai/api/v1/packages?family=code-plugin&limit=100` with each `nextCursor`, and keep packages whose `categories` include `channels`.
-2. Add npm candidates from `npm search --json --searchlimit=1000 "openclaw channel plugin"`. Add source-only candidates from GitHub code searches for `openclaw/plugin-sdk/channel-setup`, `openclaw/plugin-sdk/setup`, and `openclaw/plugin-sdk/core`.
+2. Add npm candidates from `npm search --json --searchlimit=1000 "afora channel plugin"`. Add source-only candidates from GitHub code searches for `afora/plugin-sdk/channel-setup`, `afora/plugin-sdk/setup`, and `afora/plugin-sdk/core`.
 3. Resolve each candidate's latest published version. Run `npm pack <package>@<version> --json --pack-destination <temp-dir>`, unpack it, and inspect shipped `dist` JavaScript and declarations for direct or destructured field reads. Download the ClawHub artifact when a package has no npm release.
 4. Record package, version, field or promotion key, and matching file. A field or key is deletable only when no published plugin artifact reads it. Keep the reader names in the code comments beside the retained field and key lists synchronized with the sweep.
 
@@ -228,7 +228,7 @@ For channel ingress, replace singular/plural `MediaPath`, `MediaUrl`,
 facts:
 
 ```ts
-import { toInboundMediaFacts } from "openclaw/plugin-sdk/channel-inbound";
+import { toInboundMediaFacts } from "afora-agent/plugin-sdk/channel-inbound";
 
 const media = toInboundMediaFacts([
   { path: saved.path, url: nativeUrl, contentType: saved.contentType, messageId },
@@ -250,8 +250,8 @@ and `{{MediaDir}}` with `{{AttachmentPath}}`, `{{AttachmentUrl}}`,
 
 For local media read policy, import `getAgentScopedMediaLocalRoots(...)` or
 `getAgentScopedMediaLocalRootsForSources(...)` from
-`openclaw/plugin-sdk/media-local-roots`. The
-`openclaw/plugin-sdk/agent-media-payload` facade and its
+`afora/plugin-sdk/media-local-roots`. The
+`afora/plugin-sdk/agent-media-payload` facade and its
 `buildAgentMediaPayload(...)` projection are deprecated.
 
 ## How to migrate
@@ -293,21 +293,21 @@ For local media read policy, import `getAgentScopedMediaLocalRoots(...)` or
     must receive config from their boundary, and long-lived runtime modules
     allow zero ambient `loadConfig()` calls.
 
-    New plugin code should avoid the broad `openclaw/plugin-sdk/config-runtime`
+    New plugin code should avoid the broad `afora/plugin-sdk/config-runtime`
     barrel. Use the narrow subpath for the job:
 
     | Need | Import |
     | --- | --- |
-    | Config types such as `OpenClawConfig` | `openclaw/plugin-sdk/config-contracts` |
+    | Config types such as `AforaConfig` | `afora/plugin-sdk/config-contracts` |
     | Plugin-entry config lookup | `api.pluginConfig` |
     | Config merging | Plugin-local logic at the config boundary |
-    | Current runtime snapshot reads | `openclaw/plugin-sdk/runtime-config-snapshot` |
-    | Config writes | `openclaw/plugin-sdk/config-mutation` |
-    | Session store helpers | `openclaw/plugin-sdk/session-store-runtime` |
-    | Markdown table config | `openclaw/plugin-sdk/markdown-table-runtime` |
-    | Group policy runtime helpers | `openclaw/plugin-sdk/runtime-group-policy` |
-    | Secret input resolution | `openclaw/plugin-sdk/secret-input-runtime` |
-    | Model/session overrides | `openclaw/plugin-sdk/model-session-runtime` |
+    | Current runtime snapshot reads | `afora/plugin-sdk/runtime-config-snapshot` |
+    | Config writes | `afora/plugin-sdk/config-mutation` |
+    | Session store helpers | `afora/plugin-sdk/session-store-runtime` |
+    | Markdown table config | `afora/plugin-sdk/markdown-table-runtime` |
+    | Group policy runtime helpers | `afora/plugin-sdk/runtime-group-policy` |
+    | Secret input resolution | `afora/plugin-sdk/secret-input-runtime` |
+    | Model/session overrides | `afora/plugin-sdk/model-session-runtime` |
 
     Bundled plugins and their tests are scanner-guarded against the broad
     barrel so imports and mocks stay local to the behavior they need. The
@@ -322,14 +322,14 @@ For local media read policy, import `getAgentScopedMediaLocalRoots(...)` or
     runtime-neutral middleware:
 
     ```typescript
-    // OpenClaw runtime tools and Codex runtime dynamic tools (result may be
+    // Afora runtime tools and Codex runtime dynamic tools (result may be
     // transformed). Codex-native tool results are also relayed for observation,
     // but their transformed output never reaches the model: the Codex
     // PostToolUse hook contract cannot replace a native tool response.
     api.registerAgentToolResultMiddleware(async (event) => {
       return compactToolResult(event);
     }, {
-      runtimes: ["openclaw", "codex"],
+      runtimes: ["afora", "codex"],
     });
     ```
 
@@ -338,7 +338,7 @@ For local media read policy, import `getAgentScopedMediaLocalRoots(...)` or
     ```json
     {
       "contracts": {
-        "agentToolResultMiddleware": ["openclaw", "codex"]
+        "agentToolResultMiddleware": ["afora", "codex"]
       }
     }
     ```
@@ -365,7 +365,7 @@ For local media read policy, import `getAgentScopedMediaLocalRoots(...)` or
     - `plugin.auth` remains for channel login/logout flows only; core no
       longer reads approval auth hooks there.
     - Register channel-owned runtime objects (clients, tokens, Bolt apps)
-      through `openclaw/plugin-sdk/channel-runtime-context`.
+      through `afora/plugin-sdk/channel-runtime-context`.
     - Do not send plugin-owned reroute notices from native approval handlers;
       core owns routed-elsewhere notices from actual delivery results.
     - When passing `channelRuntime` into `createChannelManager(...)`, provide a
@@ -378,7 +378,7 @@ For local media read policy, import `getAgentScopedMediaLocalRoots(...)` or
   </Step>
 
   <Step title="Audit Windows wrapper fallback behavior">
-    If your plugin uses `openclaw/plugin-sdk/windows-spawn`, unresolved Windows
+    If your plugin uses `afora/plugin-sdk/windows-spawn`, unresolved Windows
     `.cmd`/`.bat` wrappers now fail closed unless you explicitly pass
     `allowShellFallback: true`:
 
@@ -405,7 +405,7 @@ For local media read policy, import `getAgentScopedMediaLocalRoots(...)` or
     grep -r "plugin-sdk/compat" my-plugin/
     grep -r "plugin-sdk/infra-runtime" my-plugin/
     grep -r "plugin-sdk/config-runtime" my-plugin/
-    grep -r "openclaw/extension-api" my-plugin/
+    grep -r "afora-agent/extension-api" my-plugin/
     ```
   </Step>
 
@@ -418,12 +418,12 @@ For local media read policy, import `getAgentScopedMediaLocalRoots(...)` or
       createChannelReplyPipeline,
       createPluginRuntimeStore,
       resolveControlCommandGate,
-    } from "openclaw/plugin-sdk/compat";
+    } from "afora-agent/plugin-sdk/compat";
 
     // After (modern focused imports)
-    import { createChannelReplyPipeline } from "openclaw/plugin-sdk/channel-reply-pipeline";
-    import { createPluginRuntimeStore } from "openclaw/plugin-sdk/runtime-store";
-    import { resolveControlCommandGate } from "openclaw/plugin-sdk/command-auth";
+    import { createChannelReplyPipeline } from "afora-agent/plugin-sdk/channel-reply-pipeline";
+    import { createPluginRuntimeStore } from "afora-agent/plugin-sdk/runtime-store";
+    import { resolveControlCommandGate } from "afora-agent/plugin-sdk/command-auth";
     ```
 
     For host-side helpers, use the injected plugin runtime instead of
@@ -431,7 +431,7 @@ For local media read policy, import `getAgentScopedMediaLocalRoots(...)` or
 
     ```typescript
     // Before (deprecated extension-api bridge)
-    import { runEmbeddedAgent } from "openclaw/extension-api";
+    import { runEmbeddedAgent } from "afora-agent/extension-api";
     const result = await runEmbeddedAgent({ sessionId, prompt });
 
     // After (injected runtime)
@@ -453,34 +453,34 @@ For local media read policy, import `getAgentScopedMediaLocalRoots(...)` or
   </Step>
 
   <Step title="Replace broad infra-runtime imports">
-    `openclaw/plugin-sdk/infra-runtime` still exists for external
+    `afora/plugin-sdk/infra-runtime` still exists for external
     compatibility, but new code should use the supported surface it actually
     needs:
 
     | Need | Replacement |
     | --- | --- |
     | New system event producers | `api.runtime.system.enqueueSystemEvent` |
-    | Heartbeat wake, event, and visibility helpers | `openclaw/plugin-sdk/heartbeat-runtime` |
-    | Pending delivery queue drain | `openclaw/plugin-sdk/delivery-queue-runtime` |
-    | Channel activity telemetry | `openclaw/plugin-sdk/channel-activity-runtime` |
-    | In-memory and persistent-backed dedupe caches | `openclaw/plugin-sdk/dedupe-runtime` |
-    | Safe local-file/media path helpers | `openclaw/plugin-sdk/file-access-runtime` |
-    | Dispatcher-aware fetch | `openclaw/plugin-sdk/runtime-fetch` |
-    | Proxy and guarded fetch helpers | `openclaw/plugin-sdk/fetch-runtime` |
-    | SSRF dispatcher policy types | `openclaw/plugin-sdk/ssrf-dispatcher` |
-    | Approval request/resolution types | `openclaw/plugin-sdk/approval-runtime` |
-    | Approval reply payload and command helpers | `openclaw/plugin-sdk/approval-reply-runtime` |
-    | Error formatting helpers | `openclaw/plugin-sdk/error-runtime` |
-    | Transport readiness waits | `openclaw/plugin-sdk/transport-ready-runtime` |
-    | Secure token helpers | `openclaw/plugin-sdk/secure-random-runtime` |
-    | Bounded async task concurrency | `openclaw/plugin-sdk/concurrency-runtime` |
-    | Required-value assertions for provable invariants | `openclaw/plugin-sdk/expect-runtime` |
-    | Numeric coercion | `openclaw/plugin-sdk/number-runtime` |
-    | Process-local async lock | `openclaw/plugin-sdk/async-lock-runtime` |
-    | File locks | `openclaw/plugin-sdk/file-lock` |
+    | Heartbeat wake, event, and visibility helpers | `afora/plugin-sdk/heartbeat-runtime` |
+    | Pending delivery queue drain | `afora/plugin-sdk/delivery-queue-runtime` |
+    | Channel activity telemetry | `afora/plugin-sdk/channel-activity-runtime` |
+    | In-memory and persistent-backed dedupe caches | `afora/plugin-sdk/dedupe-runtime` |
+    | Safe local-file/media path helpers | `afora/plugin-sdk/file-access-runtime` |
+    | Dispatcher-aware fetch | `afora/plugin-sdk/runtime-fetch` |
+    | Proxy and guarded fetch helpers | `afora/plugin-sdk/fetch-runtime` |
+    | SSRF dispatcher policy types | `afora/plugin-sdk/ssrf-dispatcher` |
+    | Approval request/resolution types | `afora/plugin-sdk/approval-runtime` |
+    | Approval reply payload and command helpers | `afora/plugin-sdk/approval-reply-runtime` |
+    | Error formatting helpers | `afora/plugin-sdk/error-runtime` |
+    | Transport readiness waits | `afora/plugin-sdk/transport-ready-runtime` |
+    | Secure token helpers | `afora/plugin-sdk/secure-random-runtime` |
+    | Bounded async task concurrency | `afora/plugin-sdk/concurrency-runtime` |
+    | Required-value assertions for provable invariants | `afora/plugin-sdk/expect-runtime` |
+    | Numeric coercion | `afora/plugin-sdk/number-runtime` |
+    | Process-local async lock | `afora/plugin-sdk/async-lock-runtime` |
+    | File locks | `afora/plugin-sdk/file-lock` |
 
     System event snapshot inspection and consume helpers remain available only
-    through the deprecated `openclaw/plugin-sdk/infra-runtime` compatibility
+    through the deprecated `afora/plugin-sdk/infra-runtime` compatibility
     surface; there is no modern public replacement. Current snapshots carry an
     opaque `id` for one queued occurrence. Preserve it through copies and
     serialization when returning a snapshot to consume. Legacy ID-less callers
@@ -498,7 +498,7 @@ For local media read policy, import `getAgentScopedMediaLocalRoots(...)` or
   </Step>
 
   <Step title="Migrate channel route helpers">
-    New channel route code uses `openclaw/plugin-sdk/channel-route`. The older
+    New channel route code uses `afora/plugin-sdk/channel-route`. The older
     route-key names remain as compatibility aliases:
 
     | Old helper | Modern helper |
@@ -541,7 +541,7 @@ package exports are generated from the public subset.
 Reserved bundled-plugin helper seams have been retired from the public SDK
 export map except for explicitly documented compatibility facades such as the
 deprecated `plugin-sdk/discord` shim retained for external plugins that still
-import the published `@openclaw/discord` package directly. Owner-specific
+import the published `@afora/discord` package directly. Owner-specific
 helpers live inside the owning plugin package; shared host behavior moves
 through generic SDK contracts such as `plugin-sdk/gateway-runtime`,
 `plugin-sdk/security-runtime`, and the injected plugin API.
@@ -561,7 +561,7 @@ importable from the published package.
 ### Process-global API-provider publication
 
 `registerApiProvider(...)` and `unregisterApiProviders(...)` were removed from
-`openclaw/plugin-sdk/llm`. They published API transports into process-global
+`afora/plugin-sdk/llm`. They published API transports into process-global
 state, which lifecycle-owned model runtimes then had to copy into each prepared
 registry.
 
@@ -589,7 +589,7 @@ api.on("gateway_stop", async (event, ctx) => {
 
 ### Private testing barrel
 
-`openclaw/plugin-sdk/testing` was repo-local and excluded from shipped package
+`afora/plugin-sdk/testing` was repo-local and excluded from shipped package
 artifacts, so it was removed before its 2026-07-28 `removeAfter` date. Repository
 tests use focused subpaths such as `plugin-sdk/plugin-test-runtime`,
 `plugin-sdk/channel-test-helpers`, `plugin-sdk/channel-target-testing`,
@@ -604,19 +604,19 @@ timeline for current status.
 
 <AccordionGroup>
   <Accordion title="command-auth help builders -> command-status">
-    **Old (`openclaw/plugin-sdk/command-auth`)**: `buildCommandsMessage`,
+    **Old (`afora/plugin-sdk/command-auth`)**: `buildCommandsMessage`,
     `buildCommandsMessagePaginated`, `buildHelpMessage`.
 
-    **New (`openclaw/plugin-sdk/command-status`)**: same signatures, imported
+    **New (`afora/plugin-sdk/command-status`)**: same signatures, imported
     from the narrower subpath. The `command-auth` compatibility re-exports
     have been removed.
 
     ```typescript
     // Before
-    import { buildHelpMessage } from "openclaw/plugin-sdk/command-auth";
+    import { buildHelpMessage } from "afora-agent/plugin-sdk/command-auth";
 
     // After
-    import { buildHelpMessage } from "openclaw/plugin-sdk/command-status";
+    import { buildHelpMessage } from "afora-agent/plugin-sdk/command-status";
     ```
 
   </Accordion>
@@ -624,8 +624,8 @@ timeline for current status.
   <Accordion title="Mention gating helpers -> resolveInboundMentionDecision">
     **Old**: `resolveMentionGating(params)` and
     `resolveMentionGatingWithBypass(params)` from
-    `openclaw/plugin-sdk/channel-inbound` or
-    `openclaw/plugin-sdk/channel-mention-gating`.
+    `afora/plugin-sdk/channel-inbound` or
+    `afora/plugin-sdk/channel-mention-gating`.
 
     **New**: `resolveInboundMentionDecision({ facts, policy })` - one decision
     object instead of two split call shapes.
@@ -637,11 +637,11 @@ timeline for current status.
   </Accordion>
 
   <Accordion title="Channel runtime shim and channel actions helpers">
-    `openclaw/plugin-sdk/channel-runtime` has been removed. Use
-    `openclaw/plugin-sdk/channel-runtime-context` for registering runtime
+    `afora/plugin-sdk/channel-runtime` has been removed. Use
+    `afora/plugin-sdk/channel-runtime-context` for registering runtime
     objects.
 
-    The native message schema helpers in `openclaw/plugin-sdk/channel-actions`
+    The native message schema helpers in `afora/plugin-sdk/channel-actions`
     were removed alongside raw "actions" channel exports. Expose capabilities
     through the semantic `presentation` surface instead - channel plugins
     declare what they render (cards, buttons, selects) rather than which raw
@@ -650,10 +650,10 @@ timeline for current status.
   </Accordion>
 
   <Accordion title="Web search provider tool() helper -> createTool() on the plugin">
-    **Old**: `tool()` factory from `openclaw/plugin-sdk/provider-web-search`.
+    **Old**: `tool()` factory from `afora/plugin-sdk/provider-web-search`.
 
     **New**: implement `createTool(...)` directly on the provider plugin.
-    OpenClaw no longer needs the SDK helper to register the tool wrapper.
+    Afora no longer needs the SDK helper to register the tool wrapper.
 
   </Accordion>
 
@@ -726,7 +726,7 @@ timeline for current status.
 
     **New**: a single `resolveThinkingProfile(ctx)` that returns a
     `ProviderThinkingProfile` with the canonical `id`, optional `label`, and a
-    ranked level list. OpenClaw downgrades stale stored values by profile rank
+    ranked level list. Afora downgrades stale stored values by profile rank
     automatically.
 
     The context includes `provider`, `modelId`, optional merged `reasoning`,
@@ -844,14 +844,14 @@ timeline for current status.
     active sessions.
 
     Official plugins released with `v2026.7.1-beta.5` imported the four
-    deprecated helpers above. `openclaw/plugin-sdk/session-store-runtime` keeps
+    deprecated helpers above. `afora/plugin-sdk/session-store-runtime` keeps
     that exact bridge through 2026-10-12; new plugins must use the replacements.
     `resolveStorePath(...)` remains a supported SDK helper and is not part of
     this deprecation.
 
-    `openclaw plugins inspect --all --runtime` reports non-bundled plugins whose
+    `afora plugins inspect --all --runtime` reports non-bundled plugins whose
     load errors or diagnostics still reference these removed file APIs. The
-    `@openclaw/plugin-inspector` advisory sweep must use version `0.3.17` or
+    `@afora/plugin-inspector` advisory sweep must use version `0.3.17` or
     newer so external package scans also flag whole-store session helpers,
     session file-path helpers, legacy transcript file targets, and low-level
     transcript helpers before release.
@@ -864,7 +864,7 @@ timeline for current status.
     `AgentHarnessSideQuestionParamsV2`. The V2 parameter types require
     `hostCapabilities`, matching what core supplies at the selected-harness
     boundary. A plugin that adopts these V2 contracts must declare
-    `openclaw.compat.pluginApi: ">=2026.8.1"` (or a newer floor) in its package
+    `afora.compat.pluginApi: ">=2026.8.1"` (or a newer floor) in its package
     manifest so an older host rejects the plugin before loading it.
 
     Existing plugins may continue implementing `AgentHarness` and constructing
@@ -905,15 +905,15 @@ timeline for current status.
     in `contracts.agentToolResultMiddleware`.
   </Accordion>
 
-  <Accordion title="OpenClawSchemaType alias -> OpenClawConfig">
-    The `OpenClawSchemaType` root-SDK alias was removed. Use the canonical
-    `OpenClawConfig` name.
+  <Accordion title="AforaSchemaType alias -> AforaConfig">
+    The `AforaSchemaType` root-SDK alias was removed. Use the canonical
+    `AforaConfig` name.
 
     ```typescript
     // Before
-    import type { OpenClawSchemaType } from "openclaw/plugin-sdk";
+    import type { AforaSchemaType } from "afora-agent/plugin-sdk";
     // After
-    import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+    import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
     ```
 
   </Accordion>
@@ -930,11 +930,11 @@ deprecation comments in that barrel before upgrading.
 ## Talk and realtime voice migration
 
 Realtime voice, telephony, meeting, and browser Talk code shares one Talk
-session controller exported by `openclaw/plugin-sdk/realtime-voice`. The
+session controller exported by `afora/plugin-sdk/realtime-voice`. The
 controller owns the common Talk event envelope, active turn state, capture
 state, output-audio state, recent event history, and stale-turn rejection.
 Provider plugins own vendor-specific realtime sessions. Browser-meeting plugins
-use `openclaw/plugin-sdk/meeting-runtime` for session, browser, audio, node-host,
+use `afora/plugin-sdk/meeting-runtime` for session, browser, audio, node-host,
 agent-consult, and voice-call mechanics, then implement `MeetingPlatformAdapter`
 for URL rules, DOM scripts, manual-action mapping, captions, creation, and dial-in
 plans. Platform REST APIs, OAuth, artifacts, selectors, and wire names remain in
@@ -1001,7 +1001,7 @@ the common Gateway-managed surface for gateway-relay realtime, gateway-relay
 transcription, and managed-room native STT/TTS sessions.
 
 Legacy configs that place realtime selectors beside `talk.provider` /
-`talk.providers` should be repaired with `openclaw doctor --fix`; runtime Talk
+`talk.providers` should be repaired with `afora doctor --fix`; runtime Talk
 does not reinterpret speech/TTS provider config as realtime provider config.
 
 The supported `talk.session.create` combinations are intentionally small:

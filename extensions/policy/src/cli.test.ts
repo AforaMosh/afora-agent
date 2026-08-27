@@ -3,8 +3,8 @@ import { promises as fs } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, join } from "node:path";
 import { Command } from "commander";
-import { defaultRuntime as cliRuntime } from "openclaw/plugin-sdk/runtime";
-import { clearConfigCache } from "openclaw/plugin-sdk/runtime-config-snapshot";
+import { defaultRuntime as cliRuntime } from "afora-agent/plugin-sdk/runtime";
+import { clearConfigCache } from "afora-agent/plugin-sdk/runtime-config-snapshot";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { registerPolicyCli } from "./cli.js";
 import { createPolicyAttestation, policyDocumentHash } from "./policy-state.js";
@@ -40,7 +40,7 @@ async function runPolicyCli(args: readonly string[]) {
   const previousExitCode = process.exitCode;
   process.exitCode = undefined;
   try {
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
     registerPolicyCli(program);
     await program.parseAsync(["policy", ...args], { from: "user" });
     const lastOutput = output.at(-1) ?? "";
@@ -98,7 +98,7 @@ async function runPolicyCompareFixture(baseline: unknown, policy: unknown = {}) 
 describe("policy commands", () => {
   beforeEach(async () => {
     workspaceDir = await fs.mkdtemp(join(tmpdir(), "policy-cli-"));
-    vi.stubEnv("OPENCLAW_WORKSPACE_DIR", workspaceDir);
+    vi.stubEnv("AFORA_WORKSPACE_DIR", workspaceDir);
   });
 
   afterEach(async () => {
@@ -166,8 +166,8 @@ describe("policy commands", () => {
 
   it("checks authored routing probes without exposing route identifiers", async () => {
     const peerId = "+15555550123-private";
-    const configPath = join(workspaceDir, "openclaw.jsonc");
-    vi.stubEnv("OPENCLAW_CONFIG_PATH", configPath);
+    const configPath = join(workspaceDir, "afora.jsonc");
+    vi.stubEnv("AFORA_CONFIG_PATH", configPath);
     await writeFixture(configPath, {
       plugins: { entries: { policy: { enabled: true, config: { enabled: true } } } },
       agents: { entries: { main: {} } },
@@ -242,8 +242,8 @@ describe("policy commands", () => {
   });
 
   it("links policy findings to evidence and policy requirement refs", async () => {
-    const configPath = join(workspaceDir, "openclaw.jsonc");
-    vi.stubEnv("OPENCLAW_CONFIG_PATH", configPath);
+    const configPath = join(workspaceDir, "afora.jsonc");
+    vi.stubEnv("AFORA_CONFIG_PATH", configPath);
     await writeFixture(configPath, {
       plugins: {
         entries: {
@@ -265,15 +265,15 @@ describe("policy commands", () => {
         channels: [
           {
             id: "telegram",
-            source: "oc://openclaw.config/channels/telegram",
+            source: "oc://afora.config/channels/telegram",
           },
         ],
       },
       findings: [
         {
           checkId: "policy/channels-denied-provider",
-          ocPath: "oc://openclaw.config/channels/telegram",
-          target: "oc://openclaw.config/channels/telegram",
+          ocPath: "oc://afora.config/channels/telegram",
+          target: "oc://afora.config/channels/telegram",
           requirement: "oc://policy.jsonc/channels/denyRules/#0",
           policy: {
             fixRecommendation: {
@@ -310,8 +310,8 @@ describe("policy commands", () => {
   });
 
   it("attests underlying policy findings when the accepted attestation is stale", async () => {
-    const configPath = join(workspaceDir, "openclaw.jsonc");
-    vi.stubEnv("OPENCLAW_CONFIG_PATH", configPath);
+    const configPath = join(workspaceDir, "afora.jsonc");
+    vi.stubEnv("AFORA_CONFIG_PATH", configPath);
     await writeFixture(configPath, {
       plugins: {
         entries: {
@@ -347,8 +347,8 @@ describe("policy commands", () => {
   });
 
   it("reports stale accepted attestations in policy watch", async () => {
-    const configPath = join(workspaceDir, "openclaw.jsonc");
-    vi.stubEnv("OPENCLAW_CONFIG_PATH", configPath);
+    const configPath = join(workspaceDir, "afora.jsonc");
+    vi.stubEnv("AFORA_CONFIG_PATH", configPath);
     await writeFixture(configPath, {
       plugins: {
         entries: {
@@ -408,8 +408,8 @@ describe("policy commands", () => {
   });
 
   it("reports findings before stale when accepted attestation exists", async () => {
-    const configPath = join(workspaceDir, "openclaw.jsonc");
-    vi.stubEnv("OPENCLAW_CONFIG_PATH", configPath);
+    const configPath = join(workspaceDir, "afora.jsonc");
+    vi.stubEnv("AFORA_CONFIG_PATH", configPath);
     await writeFixture(configPath, {
       plugins: {
         entries: {
@@ -453,9 +453,9 @@ describe("policy commands", () => {
     }
   });
 
-  it("fails closed when the OpenClaw config is invalid", async () => {
-    const configPath = join(workspaceDir, "openclaw.jsonc");
-    vi.stubEnv("OPENCLAW_CONFIG_PATH", configPath);
+  it("fails closed when the Afora config is invalid", async () => {
+    const configPath = join(workspaceDir, "afora.jsonc");
+    vi.stubEnv("AFORA_CONFIG_PATH", configPath);
     await writeFixture(configPath, "{");
     const { exitCode, parsed } = await runPolicyCheckJson();
 
@@ -838,8 +838,8 @@ describe("policy commands", () => {
   it("resolves the default compare policy path from the configured agent workspace", async () => {
     const agentWorkspace = join(workspaceDir, "agent-workspace");
     await fs.mkdir(agentWorkspace, { recursive: true });
-    const configPath = join(workspaceDir, "openclaw.jsonc");
-    vi.stubEnv("OPENCLAW_CONFIG_PATH", configPath);
+    const configPath = join(workspaceDir, "afora.jsonc");
+    vi.stubEnv("AFORA_CONFIG_PATH", configPath);
     await writeFixture(configPath, {
       agents: { defaults: { workspace: agentWorkspace } },
       plugins: {

@@ -7,16 +7,16 @@ import {
 } from "../config/sessions/session-accessor.js";
 import { buildSessionCreationStamp } from "../config/sessions/session-entry-provenance.js";
 import { mergeSessionEntry } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   onTrustedInternalDiagnosticEvent,
   onTrustedToolExecutionEvent,
   type TrustedToolExecutionEvent,
 } from "../infra/diagnostic-events.js";
 import {
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-} from "../state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+} from "../state/afora-agent-db.js";
 import {
   deactivateClientVoiceConfirmationSession,
   noteClientVoiceConfirmationUtterance,
@@ -110,7 +110,7 @@ function recordClientVoiceToolEffect(event: TrustedToolExecutionEvent): void {
   if (!binding) {
     return;
   }
-  runOpenClawAgentWriteTransaction(
+  runAforaAgentWriteTransaction(
     (database) => {
       const record = readRecordInTransaction(database, binding.voiceSessionId);
       if (!record) {
@@ -177,7 +177,7 @@ export function createOrResumeClientVoiceSession(params: {
   const voiceSessionId = params.voiceSessionId?.trim() || randomUUID();
   const provider = params.provider?.trim() || undefined;
   const now = params.now ?? Date.now();
-  runOpenClawAgentWriteTransaction(
+  runAforaAgentWriteTransaction(
     (database) => {
       const existing = readRecordInTransaction(database, voiceSessionId);
       if (existing) {
@@ -266,10 +266,10 @@ export function registerClientVoiceConsultRun(params: {
   sessionKey: string;
   voiceSessionId: string;
   runId: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): void {
   let recordClosed = false;
-  runOpenClawAgentWriteTransaction(
+  runAforaAgentWriteTransaction(
     (database) => {
       const record = readRecordInTransaction(database, params.voiceSessionId);
       if (!record) {
@@ -360,7 +360,7 @@ export function resolveOpenClientVoiceSessionId(params: {
   agentId: string;
   sessionKey: string;
 }): string | undefined {
-  const database = openOpenClawAgentDatabase({ agentId: params.agentId });
+  const database = openAforaAgentDatabase({ agentId: params.agentId });
   const rows = database.db
     .prepare("SELECT value_json FROM cache_entries WHERE scope = ? ORDER BY updated_at DESC")
     .all(CACHE_SCOPE) as Array<{ value_json?: unknown }>;
@@ -422,7 +422,7 @@ function appendVoiceTranscript(params: {
   role: "user" | "assistant";
   text: string;
   timestamp?: number;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): Promise<void> {
   // Normalize before admission so the queued task retains only bounded text.
   const normalized = { ...params, text: normalizeVoiceTranscriptText(params.text) };
@@ -462,7 +462,7 @@ function appendVoiceTranscript(params: {
       const timestamp = normalized.timestamp ?? observedAt;
       // Reserve before the fallible append. A crash can leave a conservative
       // retry requirement, but can never let close skip an accepted entry.
-      runOpenClawAgentWriteTransaction(
+      runAforaAgentWriteTransaction(
         (database) => {
           const current = readRecordInTransaction(database, normalized.voiceSessionId);
           if (!current) {
@@ -495,7 +495,7 @@ function appendVoiceTranscript(params: {
           now: timestamp,
         },
       );
-      runOpenClawAgentWriteTransaction(
+      runAforaAgentWriteTransaction(
         (database) => {
           const current = readRecordInTransaction(database, normalized.voiceSessionId);
           if (!current) {
@@ -551,7 +551,7 @@ export function appendRelayVoiceTranscript(
   return appendVoiceTranscript({ ...params, origin: "relay" });
 }
 
-const mutationDigestDeliveryOwner = new ClientVoiceMutationDigestOwner<OpenClawConfig>({
+const mutationDigestDeliveryOwner = new ClientVoiceMutationDigestOwner<AforaConfig>({
   attempt: async ({ agentId, voiceSessionId, context: config, signal }) => {
     const record = readRecord(agentId, voiceSessionId);
     if (!record) {
@@ -570,7 +570,7 @@ async function closeClientVoiceSessionInternal(params: {
   agentId: string;
   sessionKey: string;
   voiceSessionId: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   transcriptFailurePolicy: "require-success" | "retain-and-close";
   now?: number;
 }): Promise<void> {
@@ -580,7 +580,7 @@ async function closeClientVoiceSessionInternal(params: {
   }
   assertOwnership(existing, params);
   const now = params.now ?? Date.now();
-  runOpenClawAgentWriteTransaction(
+  runAforaAgentWriteTransaction(
     (database) => {
       const current = readRecordInTransaction(database, params.voiceSessionId);
       if (!current) {
@@ -630,7 +630,7 @@ export async function closeClientVoiceSession(params: {
   agentId: string;
   sessionKey: string;
   voiceSessionId: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   now?: number;
 }): Promise<void> {
   await closeVoiceSessionOperationOwner({
@@ -647,7 +647,7 @@ export async function closeRelayVoiceSessionRecord(params: {
   agentId: string;
   sessionKey: string;
   voiceSessionId: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   now?: number;
 }): Promise<void> {
   await closeVoiceSessionOperationOwner({
@@ -659,7 +659,7 @@ export async function closeRelayVoiceSessionRecord(params: {
 /** Close abandoned open calls idle for the fixed six-hour recovery window. */
 export async function closeStaleClientVoiceSessions(params: {
   agentId: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   excludeVoiceSessionId?: string;
   now?: number;
   warn?: (message: string) => void;
@@ -668,7 +668,7 @@ export async function closeStaleClientVoiceSessions(params: {
   // A new voice session remains a retry point, but channel I/O is detached so a
   // stalled adapter cannot block stale-session recovery.
   mutationDigestDeliveryOwner.retryAgent(params.agentId, params.config);
-  const database = openOpenClawAgentDatabase({ agentId: params.agentId });
+  const database = openAforaAgentDatabase({ agentId: params.agentId });
   const rows = database.db
     .prepare("SELECT value_json FROM cache_entries WHERE scope = ? AND updated_at <= ?")
     .all(CACHE_SCOPE, now - STALE_AFTER_MS) as Array<{ value_json?: unknown }>;
@@ -716,6 +716,6 @@ const clientVoiceSessionTesting = {
 };
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.clientVoiceSessionTestApi")] =
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.clientVoiceSessionTestApi")] =
     clientVoiceSessionTesting;
 }

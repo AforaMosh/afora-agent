@@ -1,4 +1,4 @@
-import { parseStrictFiniteNumber } from "@openclaw/normalization-core/number-coercion";
+import { parseStrictFiniteNumber } from "@afora/normalization-core/number-coercion";
 // Fetches Codex provider usage windows.
 import { resolveProviderRequestHeaders } from "../agents/provider-request-config.js";
 import { fetchUsageJson } from "./provider-usage.fetch.shared.js";
@@ -56,13 +56,13 @@ export async function fetchCodexUsage(
   timeoutMs: number,
   fetchFn: typeof fetch,
 ): Promise<ProviderUsageSnapshot> {
-  const version = process.env.OPENCLAW_VERSION?.trim();
+  const version = process.env.AFORA_VERSION?.trim();
   const defaultHeaders: Record<string, string> = {
     Authorization: `Bearer ${token}`,
     Accept: "application/json",
-    originator: "openclaw",
+    originator: "afora",
     ...(version ? { version } : {}),
-    "User-Agent": `openclaw/${version || "dev"}`,
+    "User-Agent": `afora/${version || "dev"}`,
   };
   if (accountId) {
     defaultHeaders["ChatGPT-Account-Id"] = accountId;

@@ -16,19 +16,19 @@ import { useAutoCleanupTempDirTracker } from "../../../helpers/temp-dir.js";
 import { runGatewaySshTunnels } from "./gateway-ssh-tunnels.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
-const describeOnTestbox = process.env.OPENCLAW_TESTBOX === "1" ? describe : describe.skip;
+const describeOnTestbox = process.env.AFORA_TESTBOX === "1" ? describe : describe.skip;
 const activeChildren = new Set<ChildProcessWithoutNullStreams>();
 const producerPath = path.resolve(process.cwd(), "test/e2e/qa-lab/runtime/gateway-ssh-tunnels.ts");
 const accountKnownHostsPath = path.join(os.userInfo().homedir, ".ssh", "known_hosts");
-const producerReadyMarker = "OPENCLAW_QA_PRODUCER_READY";
+const producerReadyMarker = "AFORA_QA_PRODUCER_READY";
 const execFile = promisify(execFileCallback);
 const producerChildSource = `
 import { pathToFileURL } from "node:url";
-const producerPath = process.env.OPENCLAW_QA_PRODUCER_PATH;
-const artifactBase = process.env.OPENCLAW_QA_ARTIFACT_BASE;
-const fixtureReadyPath = process.env.OPENCLAW_QA_FIXTURE_READY_PATH;
-const fixtureProcessPath = process.env.OPENCLAW_QA_FIXTURE_PROCESS_PATH;
-const fixtureRoot = process.env.OPENCLAW_QA_FIXTURE_ROOT;
+const producerPath = process.env.AFORA_QA_PRODUCER_PATH;
+const artifactBase = process.env.AFORA_QA_ARTIFACT_BASE;
+const fixtureReadyPath = process.env.AFORA_QA_FIXTURE_READY_PATH;
+const fixtureProcessPath = process.env.AFORA_QA_FIXTURE_PROCESS_PATH;
+const fixtureRoot = process.env.AFORA_QA_FIXTURE_ROOT;
 if (!producerPath || !artifactBase) {
   throw new Error("missing producer child paths");
 }
@@ -48,8 +48,8 @@ process.exitCode = evidence.entries[0]?.result.status === "pass" ? 0 : 1;
 
 describe("Gateway SSH tunnel QA preflight", () => {
   it("records blocked evidence outside Testbox without privileged setup", async () => {
-    const artifactBase = tempDirs.make("openclaw-gateway-ssh-guard-");
-    const evidence = await withEnvAsync({ OPENCLAW_TESTBOX: undefined }, async () =>
+    const artifactBase = tempDirs.make("afora-gateway-ssh-guard-");
+    const evidence = await withEnvAsync({ AFORA_TESTBOX: undefined }, async () =>
       runGatewaySshTunnels({ artifactBase, repoRoot: process.cwd() }),
     );
 
@@ -84,11 +84,11 @@ function startProducer(
       cwd: process.cwd(),
       env: {
         ...process.env,
-        OPENCLAW_QA_ARTIFACT_BASE: artifactBase,
-        OPENCLAW_QA_FIXTURE_PROCESS_PATH: fixture?.processPath,
-        OPENCLAW_QA_FIXTURE_READY_PATH: fixture?.readyPath,
-        OPENCLAW_QA_FIXTURE_ROOT: fixture?.root,
-        OPENCLAW_QA_PRODUCER_PATH: producerPath,
+        AFORA_QA_ARTIFACT_BASE: artifactBase,
+        AFORA_QA_FIXTURE_PROCESS_PATH: fixture?.processPath,
+        AFORA_QA_FIXTURE_READY_PATH: fixture?.readyPath,
+        AFORA_QA_FIXTURE_ROOT: fixture?.root,
+        AFORA_QA_PRODUCER_PATH: producerPath,
       },
       stdio: ["pipe", "pipe", "pipe"],
     },
@@ -170,7 +170,7 @@ async function readOptionalFile(filePath: string) {
 
 describeOnTestbox("Gateway SSH tunnel QA producer", () => {
   it("proves real forwarding, cleanup, and operator diagnostics", async () => {
-    const artifactBase = tempDirs.make("openclaw-gateway-ssh-evidence-");
+    const artifactBase = tempDirs.make("afora-gateway-ssh-evidence-");
     const gatewayStartupEnv = snapshotGatewayStartupEnv();
     const evidence = await runGatewaySshTunnels({
       artifactBase,
@@ -198,8 +198,8 @@ describeOnTestbox("Gateway SSH tunnel QA producer", () => {
 
   it("keeps overlapping and killed producers isolated from account SSH state", async () => {
     const accountKnownHostsBefore = await readOptionalFile(accountKnownHostsPath);
-    const firstArtifactBase = tempDirs.make("openclaw-gateway-ssh-overlap-first-");
-    const secondArtifactBase = tempDirs.make("openclaw-gateway-ssh-overlap-second-");
+    const firstArtifactBase = tempDirs.make("afora-gateway-ssh-overlap-first-");
+    const secondArtifactBase = tempDirs.make("afora-gateway-ssh-overlap-second-");
     const first = startProducer(firstArtifactBase);
     const second = startProducer(secondArtifactBase);
     await Promise.all([first.ready, second.ready]);
@@ -215,8 +215,8 @@ describeOnTestbox("Gateway SSH tunnel QA producer", () => {
     expect(summaries.every((summary) => summary.knownHostsIsolated === true)).toBe(true);
     expect(await readOptionalFile(accountKnownHostsPath)).toEqual(accountKnownHostsBefore);
 
-    const killedArtifactBase = tempDirs.make("openclaw-gateway-ssh-killed-");
-    const killedRoot = tempDirs.make("openclaw-gateway-ssh-killed-root-");
+    const killedArtifactBase = tempDirs.make("afora-gateway-ssh-killed-");
+    const killedRoot = tempDirs.make("afora-gateway-ssh-killed-root-");
     const fixtureReadyPath = path.join(killedArtifactBase, "trust-prepared");
     const fixtureProcessPath = path.join(killedArtifactBase, "namespace-pid");
     const killed = startProducer(killedArtifactBase, {

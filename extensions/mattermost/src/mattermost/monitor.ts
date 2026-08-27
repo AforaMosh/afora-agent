@@ -1,11 +1,11 @@
 // Mattermost plugin module orchestrates monitor setup, ingress, and teardown.
-import { fanInChannelIngressLifecycles } from "openclaw/plugin-sdk/channel-ingress-runtime";
-import { isLoopbackHost } from "openclaw/plugin-sdk/gateway-runtime";
-import { isPrivateNetworkOptInEnabled } from "openclaw/plugin-sdk/ssrf-runtime";
+import { fanInChannelIngressLifecycles } from "afora-agent/plugin-sdk/channel-ingress-runtime";
+import { isLoopbackHost } from "afora-agent/plugin-sdk/gateway-runtime";
+import { isPrivateNetworkOptInEnabled } from "afora-agent/plugin-sdk/ssrf-runtime";
 import {
   normalizeOptionalString,
   normalizeTrimmedStringList,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { getMattermostRuntime } from "../runtime.js";
 import { resolveMattermostAccount } from "./accounts.js";
 import {
@@ -38,7 +38,7 @@ import {
   type MattermostWebSocketFactory,
 } from "./monitor-websocket.js";
 import { runWithReconnect } from "./reconnect.js";
-import type { ChannelAccountSnapshot, OpenClawConfig, RuntimeEnv } from "./runtime-api.js";
+import type { ChannelAccountSnapshot, AforaConfig, RuntimeEnv } from "./runtime-api.js";
 import {
   createChannelPairingController,
   resolveAllowlistProviderRuntimeGroupPolicy,
@@ -53,7 +53,7 @@ type MonitorMattermostOpts = {
   botToken?: string;
   baseUrl?: string;
   accountId?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   runtime?: RuntimeEnv;
   abortSignal?: AbortSignal;
   statusSink?: (patch: Partial<ChannelAccountSnapshot>) => void;
@@ -82,7 +82,7 @@ export async function monitorMattermostProvider(opts: MonitorMattermostOpts = {}
         throw new Error(`exit ${code}`);
       },
     } satisfies RuntimeEnv);
-  const cfg = (opts.config ?? core.config.current()) as OpenClawConfig;
+  const cfg = (opts.config ?? core.config.current()) as AforaConfig;
   const account = resolveMattermostAccount({ cfg, accountId: opts.accountId });
   const pairing = createChannelPairingController({
     core,

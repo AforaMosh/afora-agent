@@ -1,5 +1,5 @@
 // Shared Commander registration helpers for repeated options and positive integers.
-import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-coercion";
+import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
 import { InvalidArgumentError } from "commander";
 
 /** Commander option collector for repeatable string flags. */

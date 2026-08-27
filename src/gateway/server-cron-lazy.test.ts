@@ -3,7 +3,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CliDeps } from "../cli/deps.types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { GatewayCronServiceContract } from "./server-cron-contract.js";
 import type { GatewayCronState } from "./server-cron.js";
 
@@ -38,10 +38,10 @@ describe("createLazyGatewayCronState", () => {
   });
 
   it("resolves its default store path from the prepared env", () => {
-    const stateRoot = "/tmp/openclaw-candidate-state";
+    const stateRoot = "/tmp/afora-candidate-state";
     const lazy = createLazyGatewayCronState({
       ...createParams(),
-      env: { ...process.env, OPENCLAW_STATE_DIR: stateRoot },
+      env: { ...process.env, AFORA_STATE_DIR: stateRoot },
     });
 
     expect(lazy.storePath).toBe(`${stateRoot}/cron/jobs.json`);
@@ -49,11 +49,11 @@ describe("createLazyGatewayCronState", () => {
   });
 
   it("respects a configured legacy cron store partition", () => {
-    const customStore = "/tmp/openclaw-custom-cron/jobs.json";
+    const customStore = "/tmp/afora-custom-cron/jobs.json";
     const params = createParams();
     const lazy = createLazyGatewayCronState({
       ...params,
-      cfg: { ...params.cfg, cron: { store: customStore } } as unknown as OpenClawConfig,
+      cfg: { ...params.cfg, cron: { store: customStore } } as unknown as AforaConfig,
     });
 
     expect(lazy.storePath).toBe(customStore);
@@ -231,7 +231,7 @@ describe("createLazyGatewayCronState", () => {
   });
 
   it("preserves the startup cron enabled flag without loading cron runtime", () => {
-    vi.stubEnv("OPENCLAW_SKIP_CRON", "1");
+    vi.stubEnv("AFORA_SKIP_CRON", "1");
 
     const lazy = createLazyGatewayCronState(createParams());
 
@@ -343,7 +343,7 @@ describe("createLazyGatewayCronState", () => {
     hoisted.setState(state);
 
     const lazy = createLazyGatewayCronState(createParams());
-    const cfg = { agents: { defaults: { heartbeat: { every: "5m" } } } } as OpenClawConfig;
+    const cfg = { agents: { defaults: { heartbeat: { every: "5m" } } } } as AforaConfig;
     await lazy.reconcileHeartbeatJobs(cfg);
 
     expect(hoisted.buildGatewayCronService).toHaveBeenCalledTimes(1);
@@ -390,11 +390,11 @@ describe("createLazyGatewayCronState", () => {
   });
 });
 
-function createParams(overrides: Partial<OpenClawConfig> = {}) {
+function createParams(overrides: Partial<AforaConfig> = {}) {
   return {
     cfg: {
       ...overrides,
-    } as OpenClawConfig,
+    } as AforaConfig,
     deps: {} as CliDeps,
     broadcast: vi.fn(),
   };
@@ -403,7 +403,7 @@ function createParams(overrides: Partial<OpenClawConfig> = {}) {
 function createCronState(cron: GatewayCronServiceContract): GatewayCronState {
   return {
     cron,
-    storePath: "/tmp/openclaw-cron.json",
+    storePath: "/tmp/afora-cron.json",
     cronEnabled: true,
     reconcileExitWatchers: vi.fn(async () => {}),
     stopExitWatchers: vi.fn(),

@@ -44,7 +44,7 @@ private conversations with one per-agent setting:
 The setting defaults on for personal installs: global `session.dmScope` must be
 unset or `"main"`, and no binding may override `session.dmScope`. Any configured
 DM isolation defaults it off. An explicit `true` or `false` always wins. When
-enabled, OpenClaw indexes that agent's session transcripts and runs an Active
+enabled, Afora indexes that agent's session transcripts and runs an Active
 Memory retrieval pass before eligible private replies. The pass can read
 relevant transcript excerpts from the same agent's other private conversations.
 It excludes the conversation already being answered.
@@ -62,14 +62,14 @@ workspace memory (`MEMORY.md` and `memory/*.md`) keeps its existing behavior.
 
 Active Memory must remain enabled. Retrieval adds a bounded blocking step to
 eligible replies; timeout, unavailable search, and empty results all continue
-the reply without recalled transcript context. OpenClaw's built-in memory
+the reply without recalled transcript context. Afora's built-in memory
 provider supports this protected transcript-recall path. Other memory providers keep their own recall behavior but do
-not automatically receive private transcript authorization. `openclaw doctor`
+not automatically receive private transcript authorization. `afora doctor`
 reports an unsupported provider or missing `memory_search` tool.
 
 ## Advanced Active Memory quick start
 
-Paste into `openclaw.json` for an advanced safe default: plugin on, scoped to
+Paste into `afora.json` for an advanced safe default: plugin on, scoped to
 `main`, direct-message sessions only, model inherited from the session.
 
 ```json5
@@ -103,7 +103,7 @@ the Gateway reloads the plugin runtime automatically and no manual restart is
 needed. If you want to force a full restart anyway, run:
 
 ```bash
-openclaw gateway restart
+afora gateway restart
 ```
 
 To inspect it live in a conversation:
@@ -226,7 +226,7 @@ For narrower rollout inside an allowed chat type, add
 
 Ids come from the persistent channel session key (for example Feishu
 `chat_id`/`open_id`, Telegram chat id, Slack channel id). Matching is
-case-insensitive. If `allowedChatIds` is non-empty and OpenClaw cannot
+case-insensitive. If `allowedChatIds` is non-empty and Afora cannot
 resolve a conversation id for the session, active memory skips the turn
 instead of guessing.
 
@@ -276,7 +276,7 @@ output you want:
 /trace on
 ```
 
-With those on, OpenClaw appends diagnostic lines after the normal reply (as a
+With those on, Afora appends diagnostic lines after the normal reply (as a
 follow-up, so channel clients do not flash a separate pre-reply bubble):
 
 - `/verbose on` adds a status line: `🧩 Active Memory: status=ok elapsed=842ms query=recent summary=34 chars`
@@ -523,7 +523,7 @@ configuration above when LanceDB is the active memory provider.
 ### Lossless Claw
 
 [Lossless Claw](https://github.com/martian-engineering/lossless-claw) is an
-external context-engine plugin (`openclaw plugins install
+external context-engine plugin (`afora plugins install
 @martian-engineering/lossless-claw`) with its own recall tools. Set it up as
 a context engine first; see [Context engine](/concepts/context-engine). Then
 point active memory at its tools:
@@ -600,7 +600,7 @@ promptOverride: "You are a memory search agent. Return NONE or one compact user 
 ## Transcript persistence
 
 Blocking sub-agent runs keep their runtime transcript in the agent's SQLite
-store. By default, OpenClaw removes the temporary sub-agent session rows after
+store. By default, Afora removes the temporary sub-agent session rows after
 the run finishes and does not create a JSONL file.
 
 To export those transcripts as JSONL artifacts for debugging:
@@ -755,14 +755,14 @@ If active memory is not showing up where you expect:
 1. Confirm the plugin is enabled under `plugins.entries.active-memory.enabled`.
 2. For Remember across conversations, confirm the agent's effective
    `memory.search.rememberAcrossConversations` setting is enabled, run
-   `openclaw doctor` to verify the current memory provider supports protected
+   `afora doctor` to verify the current memory provider supports protected
    transcript recall, and confirm `config.toolsAllow` includes `memory_search`
    when explicitly configured. For advanced Active Memory, confirm the agent ID
    is listed in `config.agents`.
 3. Confirm you are testing through an eligible interactive persistent conversation.
 4. Remember that groups and channels never use cross-conversation transcript recall.
 5. Turn on `config.logging: true` and watch the gateway logs.
-6. Verify memory search itself works with `openclaw status --deep`.
+6. Verify memory search itself works with `afora status --deep`.
 
 If memory hits are noisy, tighten `maxSummaryChars`. If active memory is too
 slow, lower `queryMode`, lower `timeoutMs`, or reduce recent turn counts and
@@ -776,12 +776,12 @@ active-memory bugs. The default `memory-core` path uses `memory_search` and
 `memory_get`; the `memory-lancedb` slot uses `memory_recall`. If you use another
 memory plugin, confirm `config.toolsAllow` names the tools that plugin actually
 registers. Remember across conversations is narrower: the current memory
-provider must support OpenClaw's protected same-agent/private-session recall
+provider must support Afora's protected same-agent/private-session recall
 path.
 
 <AccordionGroup>
   <Accordion title="Embedding provider switched or stopped working">
-    If `memory.search.provider` is unset, OpenClaw uses OpenAI embeddings. Set
+    If `memory.search.provider` is unset, Afora uses OpenAI embeddings. Set
     `memory.search.provider` explicitly for Bedrock, DeepInfra, Gemini, GitHub
     Copilot, LM Studio, local, Mistral, Ollama, Voyage, or OpenAI-compatible
     embeddings. If the configured provider cannot run, `memory_search` may
@@ -801,7 +801,7 @@ path.
       after each reply.
     - Watch gateway logs for `active-memory: ... start|done`,
       `memory sync failed (search-bootstrap)`, or provider embedding errors.
-    - Run `openclaw status --deep` to inspect the memory-search backend and
+    - Run `afora status --deep` to inspect the memory-search backend and
       index health.
     - If you use `ollama`, confirm the embedding model is installed
       (`ollama list`).

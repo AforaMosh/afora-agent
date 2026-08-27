@@ -24,7 +24,7 @@ function runControlUiPerformanceCli(scriptPath: string, args: string[], cwd: str
 }
 
 function createDistFixture() {
-  const distDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-control-ui-performance-"));
+  const distDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-control-ui-performance-"));
   const assetsDir = path.join(distDir, "assets");
   fs.mkdirSync(assetsDir);
   tempDirs.push(distDir);
@@ -322,7 +322,7 @@ describe("Control UI performance budgets", () => {
   });
 
   it("updates the baseline from local or explicit CI metrics", () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-control-ui-budget-cli-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-control-ui-budget-cli-"));
     tempDirs.push(rootDir);
     const scriptsDir = path.join(rootDir, "scripts");
     const configDir = path.join(rootDir, "config");

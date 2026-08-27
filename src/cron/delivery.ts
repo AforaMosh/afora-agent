@@ -4,7 +4,7 @@ import type { ReplyPayload } from "../auto-reply/reply-payload.js";
 import { sendDurableMessageBatchCore } from "../channels/message/runtime.js";
 import type { CliDeps } from "../cli/deps.types.js";
 import { createOutboundSendDeps } from "../cli/outbound-send-deps.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { withTimeout } from "../infra/fs-safe.js";
 import { resolveAgentOutboundIdentity } from "../infra/outbound/identity.js";
@@ -36,7 +36,7 @@ type CronAnnounceTarget = {
 type SuccessfulDeliveryTarget = Extract<DeliveryTargetResolution, { ok: true }>;
 
 async function resolveCronAnnounceDelivery(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   jobId: string;
   target: CronAnnounceTarget;
@@ -90,7 +90,7 @@ async function resolveCronAnnounceDelivery(params: {
 
 async function deliverCronAnnouncePayload(params: {
   deps: CliDeps;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   delivery: {
     resolvedTarget: SuccessfulDeliveryTarget;
     session: ReturnType<typeof buildOutboundSessionContext>;
@@ -122,7 +122,7 @@ async function deliverCronAnnouncePayload(params: {
 /** Sends a cron announce payload and throws if target resolution or delivery fails. */
 export async function sendCronAnnouncePayloadStrict(params: {
   deps: CliDeps;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   jobId: string;
   target: CronAnnounceTarget;
@@ -148,7 +148,7 @@ export async function sendCronAnnouncePayloadStrict(params: {
 /** Sends a best-effort cron failure notification, logging resolution/send failures. */
 export async function sendFailureNotificationAnnounce(
   deps: CliDeps,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
   jobId: string,
   target: CronAnnounceTarget,

@@ -16,7 +16,7 @@ export type QaLabRunSelection = {
   primaryModel: string;
   alternateModel: string;
   fastMode: boolean;
-  runtimePair: ["openclaw", "codex"] | null;
+  runtimePair: ["afora", "codex"] | null;
   runtimePairLane: QaRuntimePairLane | null;
   scenarioIds: string[] | null;
 };

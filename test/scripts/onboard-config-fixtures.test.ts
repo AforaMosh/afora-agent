@@ -26,8 +26,8 @@ function readJson(file: string) {
 
 describe("onboard config fixture helpers", () => {
   it("writes reset fixtures consumed by the reset assertion", () => {
-    const root = makeTempDir(tempDirs, "openclaw-onboard-config-");
-    const configPath = path.join(root, "openclaw.json");
+    const root = makeTempDir(tempDirs, "afora-onboard-config-");
+    const configPath = path.join(root, "afora.json");
 
     const writeResult = runScript(WRITE_CONFIG_SCRIPT, ["reset", configPath]);
 
@@ -58,8 +58,8 @@ describe("onboard config fixture helpers", () => {
   });
 
   it("writes skills fixtures consumed by the skills assertion", () => {
-    const root = makeTempDir(tempDirs, "openclaw-onboard-config-skills-");
-    const configPath = path.join(root, "openclaw.json");
+    const root = makeTempDir(tempDirs, "afora-onboard-config-skills-");
+    const configPath = path.join(root, "afora.json");
 
     const writeResult = runScript(WRITE_CONFIG_SCRIPT, ["skills", configPath]);
 
@@ -88,8 +88,8 @@ describe("onboard config fixture helpers", () => {
   });
 
   it("writes configured guided skip-UI fixtures with a local mock model", () => {
-    const root = makeTempDir(tempDirs, "openclaw-onboard-config-guided-");
-    const configPath = path.join(root, "openclaw.json");
+    const root = makeTempDir(tempDirs, "afora-onboard-config-guided-");
+    const configPath = path.join(root, "afora.json");
     const workspace = path.join(root, "workspace");
 
     const writeResult = runScript(WRITE_CONFIG_SCRIPT, [
@@ -123,7 +123,7 @@ describe("onboard config fixture helpers", () => {
   });
 
   it("accepts local and remote onboard assertion fixtures", () => {
-    const root = makeTempDir(tempDirs, "openclaw-onboard-config-success-");
+    const root = makeTempDir(tempDirs, "afora-onboard-config-success-");
     const workspace = path.join(root, "workspace");
     const localConfigPath = path.join(root, "local.json");
     const remoteConfigPath = path.join(root, "remote.json");
@@ -178,8 +178,8 @@ describe("onboard config fixture helpers", () => {
   });
 
   it("accepts provider and gateway environment references from non-interactive onboarding", () => {
-    const root = makeTempDir(tempDirs, "openclaw-onboard-config-auth-refs-");
-    const configPath = path.join(root, "openclaw.json");
+    const root = makeTempDir(tempDirs, "afora-onboard-config-auth-refs-");
+    const configPath = path.join(root, "afora.json");
     writeFileSync(
       configPath,
       `${JSON.stringify(
@@ -191,7 +191,7 @@ describe("onboard config fixture helpers", () => {
               token: {
                 source: "env",
                 provider: "default",
-                id: "OPENCLAW_GATEWAY_TOKEN",
+                id: "AFORA_GATEWAY_TOKEN",
               },
             },
           },
@@ -210,7 +210,7 @@ describe("onboard config fixture helpers", () => {
   });
 
   it("accepts password Gateway fixtures", () => {
-    const root = makeTempDir(tempDirs, "openclaw-onboard-config-password-");
+    const root = makeTempDir(tempDirs, "afora-onboard-config-password-");
     const passwordConfigPath = path.join(root, "password.json");
     writeFileSync(
       passwordConfigPath,
@@ -218,7 +218,7 @@ describe("onboard config fixture helpers", () => {
         {
           gateway: {
             mode: "local",
-            auth: { mode: "password", password: "openclaw-onboard-password-e2e" },
+            auth: { mode: "password", password: "afora-onboard-password-e2e" },
           },
           wizard: { lastRunMode: "local" },
         },
@@ -255,7 +255,7 @@ describe("onboard config fixture helpers", () => {
   });
 
   it("accepts channel configuration assertions for scrubbed channel secrets", () => {
-    const root = makeTempDir(tempDirs, "openclaw-onboard-config-channels-");
+    const root = makeTempDir(tempDirs, "afora-onboard-config-channels-");
     const configPath = path.join(root, "channels.json");
     writeFileSync(
       configPath,
@@ -276,8 +276,8 @@ describe("onboard config fixture helpers", () => {
   });
 
   it("reports assertion mismatches with stable field labels", () => {
-    const root = makeTempDir(tempDirs, "openclaw-onboard-config-mismatch-");
-    const configPath = path.join(root, "openclaw.json");
+    const root = makeTempDir(tempDirs, "afora-onboard-config-mismatch-");
+    const configPath = path.join(root, "afora.json");
     writeFileSync(
       configPath,
       `${JSON.stringify(
@@ -306,8 +306,8 @@ describe("onboard config fixture helpers", () => {
   });
 
   it("rejects unknown writer and assertion scenarios", () => {
-    const root = makeTempDir(tempDirs, "openclaw-onboard-config-unknown-");
-    const configPath = path.join(root, "openclaw.json");
+    const root = makeTempDir(tempDirs, "afora-onboard-config-unknown-");
+    const configPath = path.join(root, "afora.json");
     writeFileSync(configPath, "{}\n", "utf8");
 
     const writeResult = runScript(WRITE_CONFIG_SCRIPT, ["unknown", configPath]);

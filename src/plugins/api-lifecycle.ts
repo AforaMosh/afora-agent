@@ -1,5 +1,5 @@
 /** Tracks plugin API lifecycle callbacks registered during runtime activation. */
-import type { OpenClawPluginApi } from "./types.js";
+import type { AforaPluginApi } from "./types.js";
 
 type FunctionPropertyNames<T> = Extract<
   {
@@ -8,8 +8,8 @@ type FunctionPropertyNames<T> = Extract<
   string
 >;
 
-/** Names of plugin API methods exposed on the OpenClaw plugin API. */
-type PluginApiMethodName = FunctionPropertyNames<OpenClawPluginApi>;
+/** Names of plugin API methods exposed on the Afora plugin API. */
+type PluginApiMethodName = FunctionPropertyNames<AforaPluginApi>;
 
 /** Lifecycle policy for whether a plugin API method can be called after registration. */
 type PluginApiLifecyclePolicy = {

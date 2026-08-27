@@ -1,5 +1,5 @@
 // Provides live-test helpers for media-generation provider checks.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import type { AuthProfileStore } from "../agents/auth-profiles/types.js";
 
 // Helpers shared by live media-generation tests. They keep provider/model/env

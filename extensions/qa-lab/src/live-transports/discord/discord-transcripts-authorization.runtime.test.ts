@@ -1,10 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { useAutoCleanupTempDirTracker } from "openclaw/plugin-sdk/test-env";
+import { useAutoCleanupTempDirTracker } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, describe, expect, it, vi } from "vitest";
 const { requestDiscordMock } = vi.hoisted(() => ({ requestDiscordMock: vi.fn() }));
 
-vi.mock("@openclaw/discord/api.js", () => ({ requestDiscord: requestDiscordMock }));
+vi.mock("@afora/discord/api.js", () => ({ requestDiscord: requestDiscordMock }));
 
 import { discordQaScenarioSupport } from "./discord-live.runtime.js";
 import {

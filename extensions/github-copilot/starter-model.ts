@@ -1,5 +1,5 @@
 // Resolves a safe setup default from the authenticated Copilot model catalog.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { DEFAULT_COPILOT_MODEL } from "./model-metadata.js";
 import { fetchCopilotModelCatalog, PROVIDER_ID, selectCopilotStarterModel } from "./models.js";
 import { resolveCopilotRuntimeAuth } from "./runtime-auth.js";
@@ -15,7 +15,7 @@ export async function resolveCopilotStarterModel(params: {
   githubToken: string;
   env?: NodeJS.ProcessEnv;
   githubDomain?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): Promise<string> {
   const auth = await resolveCopilotRuntimeAuth({
     githubToken: params.githubToken,

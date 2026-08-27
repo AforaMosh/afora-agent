@@ -1,6 +1,6 @@
 import { ChannelType, MessageFlags, PermissionFlagsBits, Routes } from "discord-api-types/v10";
 // Discord tests cover send.sends basic channel messages plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Container, TextDisplay } from "./internal/discord.js";
 import {
@@ -9,7 +9,7 @@ import {
   makeDiscordRest,
 } from "./send.test-harness.js";
 
-vi.mock("openclaw/plugin-sdk/web-media", () => discordWebMediaMockFactory());
+vi.mock("afora-agent/plugin-sdk/web-media", () => discordWebMediaMockFactory());
 
 let deleteMessageDiscord: typeof import("./send.js").deleteMessageDiscord;
 let editMessageDiscord: typeof import("./send.js").editMessageDiscord;
@@ -25,7 +25,7 @@ let searchMessagesDiscord: typeof import("./send.js").searchMessagesDiscord;
 let sendMessageDiscord: typeof import("./send.js").sendMessageDiscord;
 let unpinMessageDiscord: typeof import("./send.js").unpinMessageDiscord;
 let resolveDiscordTargetChannelId: typeof import("./send.shared.js").resolveDiscordTargetChannelId;
-let loadWebMedia: typeof import("openclaw/plugin-sdk/web-media").loadWebMedia;
+let loadWebMedia: typeof import("afora-agent/plugin-sdk/web-media").loadWebMedia;
 let clearDiscordDirectoryCacheForTest: typeof import("./directory-cache.test-support.js").clearDiscordDirectoryCacheForTest;
 let rememberDiscordDirectoryUser: typeof import("./directory-cache.js").rememberDiscordDirectoryUser;
 
@@ -108,7 +108,7 @@ beforeAll(async () => {
     unpinMessageDiscord,
   } = await import("./send.js"));
   ({ resolveDiscordTargetChannelId } = await import("./send.shared.js"));
-  ({ loadWebMedia } = await import("openclaw/plugin-sdk/web-media"));
+  ({ loadWebMedia } = await import("afora-agent/plugin-sdk/web-media"));
   ({ rememberDiscordDirectoryUser } = await import("./directory-cache.js"));
   ({ clearDiscordDirectoryCacheForTest } = await import("./directory-cache.test-support.js"));
 });

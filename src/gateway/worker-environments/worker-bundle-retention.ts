@@ -1,4 +1,4 @@
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import type { WorkerSessionPlacementRecord } from "./placement-store.js";
 import type { WorkerEnvironmentRecord } from "./store.js";
 

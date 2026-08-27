@@ -1,8 +1,8 @@
 /**
  * Registers caller-supplied custom API stream functions with the LLM registry.
  */
-import type { ApiRegistry } from "@openclaw/ai";
-import type { StreamFn } from "@openclaw/llm-core";
+import type { ApiRegistry } from "@afora/ai";
+import type { StreamFn } from "@afora/llm-core";
 import type {
   Api,
   AssistantMessageEventStreamContract,
@@ -12,7 +12,7 @@ import type {
 import { createAssistantMessageEventStream } from "../llm/utils/event-stream.js";
 import { buildStreamErrorAssistantMessage } from "./stream-message-shared.js";
 
-const CUSTOM_API_SOURCE_PREFIX = "openclaw-custom-api:";
+const CUSTOM_API_SOURCE_PREFIX = "afora-custom-api:";
 
 /** Returns the registry source id used for a custom API stream function. */
 function getCustomApiRegistrySourceId(api: Api): string {

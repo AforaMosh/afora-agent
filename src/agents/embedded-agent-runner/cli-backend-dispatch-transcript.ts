@@ -2,7 +2,7 @@
  * Transcript recorder for CLI-dispatched embedded runs.
  *
  * The CLI backend runs its tool loop inside the external process and writes
- * no OpenClaw transcript records, but one-shot callers (e.g. active-memory
+ * no Afora transcript records, but one-shot callers (e.g. active-memory
  * recall) read the run's transcript for timeout partial-text salvage,
  * tool-result evidence, and a live terminal-search watcher that polls
  * mid-run. Mirror the run into canonical transcript records through the
@@ -10,7 +10,7 @@
  * stream, and the final assistant snapshot at run end.
  */
 import { appendTranscriptMessage } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import type { AgentMessage } from "../runtime/index.js";
 import { buildAssistantMessage, buildUsageWithNoCost } from "../stream-message-shared.js";
@@ -62,7 +62,7 @@ export function createCliDispatchTranscriptRecorder(params: {
   provider: string;
   model?: string;
   cwd?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   expectedLifecycleRevision?: string;
   expectedWriterRunId?: string;
   senderIsOwner?: boolean;
@@ -120,7 +120,7 @@ export function createCliDispatchTranscriptRecorder(params: {
       stopReason,
       usage: buildUsageWithNoCost({}),
     });
-    return tainted ? ({ ...message, __openclaw: { turnTainted: true } } as AgentMessage) : message;
+    return tainted ? ({ ...message, __afora: { turnTainted: true } } as AgentMessage) : message;
   };
 
   enqueue(() => ({
@@ -128,7 +128,7 @@ export function createCliDispatchTranscriptRecorder(params: {
     content: [{ type: "text", text: params.prompt }],
     timestamp: Date.now(),
     ...(params.senderIsOwner !== undefined
-      ? { __openclaw: { senderIsOwner: params.senderIsOwner } }
+      ? { __afora: { senderIsOwner: params.senderIsOwner } }
       : {}),
   }));
 
@@ -168,7 +168,7 @@ export function createCliDispatchTranscriptRecorder(params: {
         isError: event.isError === true,
         timestamp: Date.now(),
         ...(event.resultContentSource
-          ? { __openclaw: { resultContentSource: event.resultContentSource } }
+          ? { __afora: { resultContentSource: event.resultContentSource } }
           : {}),
       }));
     },

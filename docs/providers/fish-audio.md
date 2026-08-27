@@ -1,13 +1,13 @@
 ---
 summary: "Use Fish Audio S2.1 hosted TTS or local S2 Pro on Apple silicon"
 read_when:
-  - You want Fish Audio text-to-speech in OpenClaw
+  - You want Fish Audio text-to-speech in Afora
   - You want expressive or cloned voices with Fish Audio
   - You want local Fish S2 Pro speech in macOS Talk mode
 title: "Fish Audio"
 ---
 
-OpenClaw supports Fish Audio in two distinct ways:
+Afora supports Fish Audio in two distinct ways:
 
 - **Hosted S2.1** runs through the `fish-audio` speech provider on the Gateway and works across channels, voice notes, Talk, and telephony.
 - **Local S2 Pro** runs inside the native macOS app through the existing `mlx` Talk provider. It stays on the Mac and does not require a Fish API key.
@@ -23,7 +23,7 @@ separate Fish Audio license. Hosted API use follows Fish Audio's service terms.
 Install the `fish-audio-speech` plugin:
 
 ```bash
-openclaw plugins install @openclaw/fish-audio-speech
+afora plugins install @afora/fish-audio-speech
 ```
 
 The plugin id is `fish-audio-speech`. The provider and TTS configuration id
@@ -69,7 +69,7 @@ plugins, but `FISH_API_KEY` is the canonical Fish SDK environment variable.
 | `s1`            | Previous generation with parenthesized emotion controls.                                                       |
 
 The provider requests MP3 for ordinary audio, Opus at 48 kHz for native voice
-notes, and raw PCM at 8 kHz for telephony. For Discord voice, OpenClaw consumes
+notes, and raw PCM at 8 kHz for telephony. For Discord voice, Afora consumes
 Fish Audio's chunked HTTP response as it arrives instead of waiting for the
 entire clip.
 
@@ -88,7 +88,7 @@ and free-form instructions such as `[professional broadcast tone]`.
 
 Use `/tts status` to inspect the active provider and `/tts audio <text>` for a
 one-off clip. Fish voice ids can come from your own trained voices or the public
-Fish voice library. OpenClaw lists your voices first, then a bounded page of
+Fish voice library. Afora lists your voices first, then a bounded page of
 popular public voices.
 
 The speech provider consumes existing voice ids; it does not upload recordings
@@ -113,7 +113,7 @@ the existing `mlx` Talk provider at the 8-bit Fish conversion:
 }
 ```
 
-The first utterance downloads about 6.8 GB of model and codec data. OpenClaw
+The first utterance downloads about 6.8 GB of model and codec data. Afora
 keeps one selected MLX model resident for repeated utterances, then unloads it
 after five idle minutes, app shutdown, or memory pressure.
 

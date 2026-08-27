@@ -24,4 +24,4 @@ export {
   createFeishuThreadBindingManager,
   getFeishuThreadBindingManager,
 } from "./src/thread-bindings.js";
-export { createClackPrompter } from "openclaw/plugin-sdk/setup-runtime";
+export { createClackPrompter } from "afora-agent/plugin-sdk/setup-runtime";

@@ -1,10 +1,10 @@
 // TTS contract suites provide reusable text-to-speech plugin contract assertions.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { ResolvedTtsConfig, SpeechProviderPlugin } from "openclaw/plugin-sdk/speech-core";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { ResolvedTtsConfig, SpeechProviderPlugin } from "afora-agent/plugin-sdk/speech-core";
 import {
   fetchWithSsrFGuard,
   ssrfPolicyFromHttpBaseUrlAllowedHostname,
-} from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/ssrf-runtime";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AssistantMessage, Model } from "../../llm/types.js";
 import {
@@ -15,8 +15,8 @@ import {
 import { withEnv, withEnvAsync, withServer } from "../../plugin-sdk/test-env.js";
 import { createLazyRuntimeModule } from "../../shared/lazy-runtime.js";
 
-type TtsRuntimeModule = typeof import("openclaw/plugin-sdk/tts-runtime");
-type TtsCoreModule = typeof import("openclaw/plugin-sdk/speech-core");
+type TtsRuntimeModule = typeof import("afora-agent/plugin-sdk/tts-runtime");
+type TtsCoreModule = typeof import("afora-agent/plugin-sdk/speech-core");
 type SummarizeTextDeps = NonNullable<Parameters<TtsCoreModule["summarizeText"]>[1]>;
 
 let ttsRuntime: TtsRuntimeModule;
@@ -65,7 +65,7 @@ async function withIsolatedSpeechProviderEnvAsync<T>(
   return await withEnvAsync(isolatedSpeechProviderEnv(overrides), fn);
 }
 
-vi.mock("openclaw/plugin-sdk/llm", () => {
+vi.mock("afora-agent/plugin-sdk/llm", () => {
   const getApiProvider = vi.fn(() => undefined);
   return {
     completeSimple: vi.fn(),
@@ -95,11 +95,11 @@ function createResolvedModel(provider: string, modelId: string) {
   };
 }
 
-function asLegacyTtsConfig(value: unknown): OpenClawConfig {
-  return value as OpenClawConfig;
+function asLegacyTtsConfig(value: unknown): AforaConfig {
+  return value as AforaConfig;
 }
 
-function asLegacyOpenClawConfig(value: Record<string, unknown>): OpenClawConfig {
+function asLegacyAforaConfig(value: Record<string, unknown>): AforaConfig {
   return asLegacyTtsConfig(value);
 }
 
@@ -143,7 +143,7 @@ function createSummarizeTextDeps() {
   };
 }
 
-function createOpenAiTelephonyCfg(model: "tts-1" | "gpt-4o-mini-tts"): OpenClawConfig {
+function createOpenAiTelephonyCfg(model: "tts-1" | "gpt-4o-mini-tts"): AforaConfig {
   return asLegacyTtsConfig({
     tts: {
       provider: "openai",
@@ -487,7 +487,7 @@ function setupTestSpeechProviderRegistry() {
   setActivePluginRegistry(registry);
 }
 
-function createResolvedSummarizationConfig(cfg: OpenClawConfig): ResolvedTtsConfig {
+function createResolvedSummarizationConfig(cfg: AforaConfig): ResolvedTtsConfig {
   const rawConfig = typeof cfg.tts === "object" && cfg.tts !== null ? cfg.tts : {};
   return {
     auto: "off",
@@ -543,7 +543,7 @@ export function describeTtsConfigContract() {
     beforeEach(setupTtsContractTest);
 
     describe("resolveEdgeOutputFormat", () => {
-      const baseCfg: OpenClawConfig = {
+      const baseCfg: AforaConfig = {
         agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
         tts: {},
       };
@@ -725,7 +725,7 @@ export function describeTtsConfigContract() {
             GOOGLE_API_KEY: undefined,
           },
           () => {
-            const cfg = asLegacyOpenClawConfig({
+            const cfg = asLegacyAforaConfig({
               agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
               models: {
                 providers: {
@@ -754,7 +754,7 @@ export function describeTtsConfigContract() {
     describe("resolveTtsConfig provider normalization", () => {
       it("normalizes legacy edge provider ids to microsoft", () => {
         const config = resolveTtsConfig(
-          asLegacyOpenClawConfig({
+          asLegacyAforaConfig({
             agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
             tts: {
               provider: "edge",
@@ -773,7 +773,7 @@ export function describeTtsConfigContract() {
     });
 
     describe("resolveTtsConfig – openai.baseUrl", () => {
-      const baseCfg: OpenClawConfig = {
+      const baseCfg: AforaConfig = {
         agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
         tts: {},
       };
@@ -850,7 +850,7 @@ export function describeTtsSummarizationContract() {
   describe("tts summarization contract", () => {
     beforeEach(setupTtsSummarizationTest);
 
-    const baseCfg: OpenClawConfig = {
+    const baseCfg: AforaConfig = {
       agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
       tts: {},
     };
@@ -858,7 +858,7 @@ export function describeTtsSummarizationContract() {
     async function runSummarizeText(params?: {
       text?: string;
       targetLength?: number;
-      cfg?: OpenClawConfig;
+      cfg?: AforaConfig;
     }) {
       const cfg = params?.cfg ?? baseCfg;
       const config = createResolvedSummarizationConfig(cfg);
@@ -914,7 +914,7 @@ export function describeTtsSummarizationContract() {
     });
 
     it("uses summaryModel override when configured", async () => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: { defaults: { model: { primary: "anthropic/claude-opus-4-5" } } },
         tts: { summaryModel: "openai/gpt-4.1-mini" },
       };
@@ -1167,7 +1167,7 @@ export function describeTtsProviderRuntimeContract() {
             async (baseUrl) => {
               const result = await ttsRuntime.synthesizeSpeech({
                 text: "hello cancel",
-                cfg: asLegacyOpenClawConfig({
+                cfg: asLegacyAforaConfig({
                   agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
                   tts: {
                     provider: "openai",
@@ -1266,7 +1266,7 @@ export function describeTtsProviderRuntimeContract() {
     it.each([
       {
         name: "ordinary synthesis",
-        run: async (cfg: OpenClawConfig, timeoutMs: number) =>
+        run: async (cfg: AforaConfig, timeoutMs: number) =>
           await ttsRuntime.textToSpeech({
             text: "Hello from the timeout contract.",
             cfg,
@@ -1276,7 +1276,7 @@ export function describeTtsProviderRuntimeContract() {
       },
       {
         name: "telephony synthesis",
-        run: async (cfg: OpenClawConfig, timeoutMs: number) =>
+        run: async (cfg: AforaConfig, timeoutMs: number) =>
           await ttsRuntime.textToSpeechTelephony({
             text: "Hello from the telephony timeout contract.",
             cfg,
@@ -1341,7 +1341,7 @@ export function describeTtsAutoApplyContract() {
     beforeAll(setupTtsRuntime);
     beforeEach(setupTtsContractTest);
 
-    const baseCfg: OpenClawConfig = asLegacyOpenClawConfig({
+    const baseCfg: AforaConfig = asLegacyAforaConfig({
       agents: { defaults: { model: { primary: "openai/gpt-4o-mini" } } },
       tts: {
         auto: "inbound",
@@ -1355,22 +1355,22 @@ export function describeTtsAutoApplyContract() {
     const withMockedAutoTtsFetch = async (
       run: (fetchMock: ReturnType<typeof vi.fn>) => Promise<void>,
     ) => {
-      const prevPrefs = process.env.OPENCLAW_TTS_PREFS;
-      process.env.OPENCLAW_TTS_PREFS = `/tmp/tts-test-${Date.now()}.json`;
+      const prevPrefs = process.env.AFORA_TTS_PREFS;
+      process.env.AFORA_TTS_PREFS = `/tmp/tts-test-${Date.now()}.json`;
       try {
         await withMockedSpeechFetch(run, 1);
       } finally {
-        process.env.OPENCLAW_TTS_PREFS = prevPrefs;
+        process.env.AFORA_TTS_PREFS = prevPrefs;
       }
     };
 
-    const taggedCfg: OpenClawConfig = {
+    const taggedCfg: AforaConfig = {
       ...baseCfg,
       tts: { ...baseCfg.tts, auto: "tagged" },
     };
 
     async function expectAutoTtsOutcome(params: {
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       payload: { text: string };
       inboundAudio?: boolean;
       expectedFetchCalls: number;

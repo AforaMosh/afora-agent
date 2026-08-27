@@ -13,13 +13,13 @@ portable formats, byte limits, and lazy transcoding, see
 
 ## Goals
 
-- Send media with an optional caption via `openclaw message send --media`.
+- Send media with an optional caption via `afora message send --media`.
 - Allow auto-replies from the web inbox to include media alongside text.
 - Keep per-type limits sane and predictable.
 
 ## CLI Surface
 
-`openclaw message send --target <dest> --media <path-or-url> [--message <caption>]`
+`afora message send --target <dest> --media <path-or-url> [--message <caption>]`
 
 - `--media <path-or-url>` — attach media (image/audio/video/document); accepts local paths or URLs. Optional; caption can be empty for media-only sends.
 - `--gif-playback` — treat video media as GIF playback (WhatsApp only).
@@ -48,12 +48,12 @@ The 16MB audio/video and 100MB document figures above are the shared per-kind me
 ## Auto-Reply Pipeline
 
 - `getReplyFromConfig` returns a reply payload (or array of payloads) with `text?`, `mediaUrl?`, and `mediaUrls?` among other fields.
-- When media is present, the web sender resolves local paths or URLs using the same pipeline as `openclaw message send`.
+- When media is present, the web sender resolves local paths or URLs using the same pipeline as `afora message send`.
 - Multiple media entries are sent sequentially if provided.
 
 ## Inbound Media To Commands
 
-- When inbound web messages include media, OpenClaw downloads it to a temp file and exposes templating variables:
+- When inbound web messages include media, Afora downloads it to a temp file and exposes templating variables:
   - `{{AttachmentUrl}}` — original URL or provider reference for the current attachment.
   - `{{AttachmentPath}}` — local temp path written before running the command.
   - `{{AttachmentContentType}}` — MIME content type.
@@ -64,7 +64,7 @@ The 16MB audio/video and 100MB document figures above are the shared per-kind me
 - Media understanding (configured via `tools.media.*` or shared `tools.media.models`) runs before templating and can insert `[Image]`, `[Audio]`, and `[Video]` blocks into `Body`.
   - Audio sets `{{Transcript}}` and uses the transcript for command parsing so slash commands still work.
   - Video and image descriptions preserve any caption text for command parsing.
-  - If the active primary model already supports vision natively, OpenClaw skips the `[Image]` summary block and passes the original image to the model instead.
+  - If the active primary model already supports vision natively, Afora skips the `[Image]` summary block and passes the original image to the model instead.
 - By default only the first matching image/audio/video attachment is processed; use `tools.media.<capability>.attachments` to select multiple attachments.
 
 ## Limits and errors

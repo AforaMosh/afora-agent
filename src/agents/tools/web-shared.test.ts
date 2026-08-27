@@ -1,6 +1,6 @@
 // Shared web helper tests cover timeout normalization, process-local cache
 // expiry guards, and bounded response body cleanup.
-import { MAX_TIMER_TIMEOUT_SECONDS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_SECONDS } from "@afora/normalization-core/number-coercion";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   normalizeCacheKey,
@@ -53,11 +53,11 @@ function responseFromReader(params: {
 
 describe("web cache keys", () => {
   it("keeps case-sensitive request components distinct in cache keys", () => {
-    const upper = normalizeCacheKey(" fetch:https://example.com/get?marker=OpenClawCase ");
-    const lower = normalizeCacheKey("fetch:https://example.com/get?marker=openclawcase");
+    const upper = normalizeCacheKey(" fetch:https://example.com/get?marker=AforaCase ");
+    const lower = normalizeCacheKey("fetch:https://example.com/get?marker=aforacase");
 
-    expect(upper).toBe("fetch:https://example.com/get?marker=OpenClawCase");
-    expect(lower).toBe("fetch:https://example.com/get?marker=openclawcase");
+    expect(upper).toBe("fetch:https://example.com/get?marker=AforaCase");
+    expect(lower).toBe("fetch:https://example.com/get?marker=aforacase");
     expect(upper).not.toBe(lower);
   });
 });

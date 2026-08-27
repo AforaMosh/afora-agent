@@ -1,6 +1,6 @@
 // Covers compaction token splitting and history pruning helpers.
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
-import type { AssistantMessage, ToolResultMessage } from "openclaw/plugin-sdk/llm";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
+import type { AssistantMessage, ToolResultMessage } from "afora-agent/plugin-sdk/llm";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { makeAgentAssistantMessage } from "./test-helpers/agent-message-fixtures.js";
 import "./test-helpers/agent-session-token-mock.js";

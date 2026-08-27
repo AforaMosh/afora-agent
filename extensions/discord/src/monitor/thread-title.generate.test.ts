@@ -1,9 +1,9 @@
 // Discord tests cover thread title.generate plugin behavior.
-import { generateConversationLabel } from "openclaw/plugin-sdk/reply-dispatch-runtime";
+import { generateConversationLabel } from "afora-agent/plugin-sdk/reply-dispatch-runtime";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { EMPTY_DISCORD_TEST_CONFIG } from "../test-support/config.js";
 
-vi.mock("openclaw/plugin-sdk/reply-dispatch-runtime", { spy: true });
+vi.mock("afora-agent/plugin-sdk/reply-dispatch-runtime", { spy: true });
 
 const generateConversationLabelMock = vi.fn<typeof generateConversationLabel>();
 let generateThreadTitle: typeof import("./thread-title.js").generateThreadTitle;

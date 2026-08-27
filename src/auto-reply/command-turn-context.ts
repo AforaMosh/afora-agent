@@ -1,5 +1,5 @@
 /** Command-source normalization for native slash commands, text slash commands, and plain messages. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 
 export type CommandTurnKind = "native" | "text-slash" | "normal";
 /** Transport-level source labels carried through auto-reply dispatch. */

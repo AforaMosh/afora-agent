@@ -15,7 +15,7 @@ import {
 } from "../runtime/script-evidence.js";
 
 const SOURCE_PATH = "test/e2e/qa-lab/media/hosted-media-provider-live.ts";
-const DEFAULT_PROVIDERS_ENV = "OPENCLAW_QA_HOSTED_MEDIA_PROVIDERS";
+const DEFAULT_PROVIDERS_ENV = "AFORA_QA_HOSTED_MEDIA_PROVIDERS";
 
 export type MediaSuiteId = "image" | "music" | "video";
 type EvidenceSuiteId = "image" | "video";
@@ -32,19 +32,19 @@ export const MEDIA_SUITES: Record<MediaSuiteId, MediaSuiteConfig> = {
   image: {
     id: "image",
     testFile: "test/image-generation.runtime.live.test.ts",
-    providerEnvVar: "OPENCLAW_LIVE_IMAGE_GENERATION_PROVIDERS",
+    providerEnvVar: "AFORA_LIVE_IMAGE_GENERATION_PROVIDERS",
     providers: ["deepinfra", "fal", "google", "minimax", "openai", "openrouter", "vydra", "xai"],
   },
   music: {
     id: "music",
     testFile: "extensions/music-generation-providers.live.test.ts",
-    providerEnvVar: "OPENCLAW_LIVE_MUSIC_GENERATION_PROVIDERS",
+    providerEnvVar: "AFORA_LIVE_MUSIC_GENERATION_PROVIDERS",
     providers: ["fal", "google", "minimax", "openrouter"],
   },
   video: {
     id: "video",
     testFile: "extensions/video-generation-providers.live.test.ts",
-    providerEnvVar: "OPENCLAW_LIVE_VIDEO_GENERATION_PROVIDERS",
+    providerEnvVar: "AFORA_LIVE_VIDEO_GENERATION_PROVIDERS",
     providers: [
       "alibaba",
       "byteplus",
@@ -663,7 +663,7 @@ export function parseHostedMediaOptions(argv: readonly string[]): HostedMediaOpt
 }
 
 function suiteProviderFilter(options: HostedMediaOptions, env: NodeJS.ProcessEnv) {
-  const suiteEnv = `OPENCLAW_QA_HOSTED_${options.suiteId.toUpperCase()}_PROVIDERS`;
+  const suiteEnv = `AFORA_QA_HOSTED_${options.suiteId.toUpperCase()}_PROVIDERS`;
   return env[suiteEnv]?.trim() || env[options.providersEnv]?.trim() || "";
 }
 
@@ -679,7 +679,7 @@ export function buildHostedMediaCommand(params: {
     args.push(`--${params.options.suiteId}-providers`, providerFilter);
   }
   if (definition.videoFullModes) {
-    env.OPENCLAW_LIVE_VIDEO_GENERATION_FULL_MODES = "1";
+    env.AFORA_LIVE_VIDEO_GENERATION_FULL_MODES = "1";
   }
   return {
     args,

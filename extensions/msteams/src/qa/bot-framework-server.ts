@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { once } from "node:events";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
-import { coerceErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { coerceErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 
 type MSTeamsQaOutboundActivity = {
   activity: Record<string, unknown>;
@@ -54,7 +54,7 @@ export async function startMSTeamsQaBotFrameworkServer(options: ServerOptions) {
   const server = createServer((request, response) => {
     void (async () => {
       if (
-        request.headers["x-openclaw-msteams-qa-nonce"] !== options.nonce ||
+        request.headers["x-afora-msteams-qa-nonce"] !== options.nonce ||
         request.headers.authorization !== `Bearer ${options.botToken}`
       ) {
         sendJson(response, 401, { error: "unauthorized" });

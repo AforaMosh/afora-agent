@@ -69,7 +69,7 @@ vi.mock("node:fs/promises", () => ({
   },
 }));
 
-vi.mock("openclaw/plugin-sdk/media-mime", () => ({
+vi.mock("afora-agent/plugin-sdk/media-mime", () => ({
   detectMime,
 }));
 
@@ -107,7 +107,7 @@ describe("setFileChooserFilesViaPlaywright", () => {
     detectMime.mockResolvedValue("text/plain");
     resolveStrictExistingUploadPaths.mockResolvedValue({
       ok: true,
-      paths: ["/private/tmp/openclaw/uploads/ok.txt"],
+      paths: ["/private/tmp/afora/uploads/ok.txt"],
     });
   });
 
@@ -119,16 +119,16 @@ describe("setFileChooserFilesViaPlaywright", () => {
       targetId: "T1",
       page: page as never,
       fileChooser: fileChooser as never,
-      paths: ["/tmp/openclaw/uploads/ok.txt"],
+      paths: ["/tmp/afora/uploads/ok.txt"],
       timeoutMs: 250,
     });
 
     expect(resolveStrictExistingUploadPaths).toHaveBeenCalledWith({
-      requestedPaths: ["/tmp/openclaw/uploads/ok.txt"],
+      requestedPaths: ["/tmp/afora/uploads/ok.txt"],
     });
     expect(stat).not.toHaveBeenCalled();
     expect(readFile).not.toHaveBeenCalled();
-    expect(fileChooser.setFiles).toHaveBeenCalledWith(["/private/tmp/openclaw/uploads/ok.txt"], {
+    expect(fileChooser.setFiles).toHaveBeenCalledWith(["/private/tmp/afora/uploads/ok.txt"], {
       timeout: 250,
     });
   });
@@ -141,13 +141,13 @@ describe("setFileChooserFilesViaPlaywright", () => {
       targetId: "T1",
       page: page as never,
       fileChooser: fileChooser as never,
-      paths: ["/tmp/openclaw/uploads/ok.txt"],
+      paths: ["/tmp/afora/uploads/ok.txt"],
       timeoutMs: 250,
       ssrfPolicy: {},
     });
 
-    expect(stat).toHaveBeenCalledWith("/private/tmp/openclaw/uploads/ok.txt");
-    expect(readFile).toHaveBeenCalledWith("/private/tmp/openclaw/uploads/ok.txt");
+    expect(stat).toHaveBeenCalledWith("/private/tmp/afora/uploads/ok.txt");
+    expect(readFile).toHaveBeenCalledWith("/private/tmp/afora/uploads/ok.txt");
     expect(fileChooser.setFiles).toHaveBeenCalledWith(
       [
         {
@@ -172,7 +172,7 @@ describe("setInputFilesViaPlaywright", () => {
     detectMime.mockResolvedValue("text/plain");
     resolveStrictExistingUploadPaths.mockResolvedValue({
       ok: true,
-      paths: ["/private/tmp/openclaw/uploads/ok.txt"],
+      paths: ["/private/tmp/afora/uploads/ok.txt"],
     });
   });
 
@@ -183,17 +183,17 @@ describe("setInputFilesViaPlaywright", () => {
       cdpUrl: "http://127.0.0.1:18792",
       targetId: "T1",
       inputRef: "e7",
-      paths: ["/tmp/openclaw/uploads/ok.txt"],
+      paths: ["/tmp/afora/uploads/ok.txt"],
     });
 
     expect(resolveStrictExistingUploadPaths).toHaveBeenCalledWith({
-      requestedPaths: ["/tmp/openclaw/uploads/ok.txt"],
+      requestedPaths: ["/tmp/afora/uploads/ok.txt"],
     });
     expect(refLocator).toHaveBeenCalledWith(page, "e7");
     expect(stat).not.toHaveBeenCalled();
     expect(readFile).not.toHaveBeenCalled();
     expect(detectMime).not.toHaveBeenCalled();
-    expect(setInputFiles).toHaveBeenCalledWith(["/private/tmp/openclaw/uploads/ok.txt"]);
+    expect(setInputFiles).toHaveBeenCalledWith(["/private/tmp/afora/uploads/ok.txt"]);
     expect(setInputFiles).toHaveBeenCalledTimes(1);
     expect(elementHandle).not.toHaveBeenCalled();
   });
@@ -205,15 +205,15 @@ describe("setInputFilesViaPlaywright", () => {
       cdpUrl: "https://browser.example/cdp",
       targetId: "T1",
       inputRef: "e7",
-      paths: ["/tmp/openclaw/uploads/ok.txt"],
+      paths: ["/tmp/afora/uploads/ok.txt"],
       ssrfPolicy: {},
     });
 
-    expect(stat).toHaveBeenCalledWith("/private/tmp/openclaw/uploads/ok.txt");
-    expect(readFile).toHaveBeenCalledWith("/private/tmp/openclaw/uploads/ok.txt");
+    expect(stat).toHaveBeenCalledWith("/private/tmp/afora/uploads/ok.txt");
+    expect(readFile).toHaveBeenCalledWith("/private/tmp/afora/uploads/ok.txt");
     expect(detectMime).toHaveBeenCalledWith({
       buffer: Buffer.from("upload contents"),
-      filePath: "/private/tmp/openclaw/uploads/ok.txt",
+      filePath: "/private/tmp/afora/uploads/ok.txt",
     });
     expect(setInputFiles).toHaveBeenCalledWith([
       {
@@ -235,7 +235,7 @@ describe("setInputFilesViaPlaywright", () => {
       cdpUrl: "https://browser.example/cdp",
       targetId: "T1",
       inputRef: "e7",
-      paths: ["/tmp/openclaw/uploads/ok.txt"],
+      paths: ["/tmp/afora/uploads/ok.txt"],
       ssrfPolicy: {},
     });
 
@@ -258,7 +258,7 @@ describe("setInputFilesViaPlaywright", () => {
         cdpUrl: "https://browser.example/cdp",
         targetId: "T1",
         inputRef: "e7",
-        paths: ["/tmp/openclaw/uploads/too-large.bin"],
+        paths: ["/tmp/afora/uploads/too-large.bin"],
         ssrfPolicy: {},
       }),
     ).rejects.toThrow("Cannot set buffer larger than 50Mb");
@@ -275,11 +275,11 @@ describe("setInputFilesViaPlaywright", () => {
       cdpUrl: "https://browser.example/cdp",
       targetId: "T1",
       inputRef: "e7",
-      paths: ["/tmp/openclaw/uploads/limit.bin"],
+      paths: ["/tmp/afora/uploads/limit.bin"],
       ssrfPolicy: {},
     });
 
-    expect(readFile).toHaveBeenCalledWith("/private/tmp/openclaw/uploads/ok.txt");
+    expect(readFile).toHaveBeenCalledWith("/private/tmp/afora/uploads/ok.txt");
     expect(setInputFiles).toHaveBeenCalledWith([
       {
         name: "ok.txt",
@@ -296,7 +296,7 @@ describe("setInputFilesViaPlaywright", () => {
       .mockResolvedValueOnce({ size: 30 * 1024 * 1024, mtimeMs: 1700000001000 });
     resolveStrictExistingUploadPaths.mockResolvedValueOnce({
       ok: true,
-      paths: ["/private/tmp/openclaw/uploads/one.txt", "/private/tmp/openclaw/uploads/two.txt"],
+      paths: ["/private/tmp/afora/uploads/one.txt", "/private/tmp/afora/uploads/two.txt"],
     });
     const { setInputFiles } = seedSingleLocatorPage();
 
@@ -305,7 +305,7 @@ describe("setInputFilesViaPlaywright", () => {
         cdpUrl: "https://browser.example/cdp",
         targetId: "T1",
         inputRef: "e7",
-        paths: ["/tmp/openclaw/uploads/one.txt", "/tmp/openclaw/uploads/two.txt"],
+        paths: ["/tmp/afora/uploads/one.txt", "/tmp/afora/uploads/two.txt"],
         ssrfPolicy: {},
       }),
     ).rejects.toThrow("Cannot set buffer larger than 50Mb");
@@ -322,14 +322,14 @@ describe("setInputFilesViaPlaywright", () => {
       browserFilesystemLocal: true,
       targetId: "T1",
       inputRef: "e7",
-      paths: ["/tmp/openclaw/uploads/ok.txt"],
+      paths: ["/tmp/afora/uploads/ok.txt"],
       ssrfPolicy: { dangerouslyAllowPrivateNetwork: true },
     });
 
     expect(stat).not.toHaveBeenCalled();
     expect(readFile).not.toHaveBeenCalled();
     expect(detectMime).not.toHaveBeenCalled();
-    expect(setInputFiles).toHaveBeenCalledWith(["/private/tmp/openclaw/uploads/ok.txt"]);
+    expect(setInputFiles).toHaveBeenCalledWith(["/private/tmp/afora/uploads/ok.txt"]);
     expect(withPageNavigationRequestGuard).toHaveBeenCalledTimes(1);
     expect(setInputFiles).toHaveBeenCalledTimes(1);
     expect(assertPageNavigationCompletedSafely).toHaveBeenCalledTimes(1);
@@ -343,15 +343,15 @@ describe("setInputFilesViaPlaywright", () => {
       browserFilesystemLocal: false,
       targetId: "T1",
       inputRef: "e7",
-      paths: ["/tmp/openclaw/uploads/ok.txt"],
+      paths: ["/tmp/afora/uploads/ok.txt"],
       ssrfPolicy: { dangerouslyAllowPrivateNetwork: true },
     });
 
-    expect(stat).toHaveBeenCalledWith("/private/tmp/openclaw/uploads/ok.txt");
-    expect(readFile).toHaveBeenCalledWith("/private/tmp/openclaw/uploads/ok.txt");
+    expect(stat).toHaveBeenCalledWith("/private/tmp/afora/uploads/ok.txt");
+    expect(readFile).toHaveBeenCalledWith("/private/tmp/afora/uploads/ok.txt");
     expect(detectMime).toHaveBeenCalledWith({
       buffer: Buffer.from("upload contents"),
-      filePath: "/private/tmp/openclaw/uploads/ok.txt",
+      filePath: "/private/tmp/afora/uploads/ok.txt",
     });
     expect(setInputFiles).toHaveBeenCalledWith([
       {
@@ -379,7 +379,7 @@ describe("setInputFilesViaPlaywright", () => {
         cdpUrl: "http://127.0.0.1:18792",
         targetId: "T1",
         element: "input[type=file]",
-        paths: ["/tmp/openclaw/uploads/missing.txt"],
+        paths: ["/tmp/afora/uploads/missing.txt"],
       }),
     ).rejects.toThrow("Invalid path: must stay within inbound media directory");
 

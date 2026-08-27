@@ -1,9 +1,9 @@
 // Embedding provider contract tests cover plugin embedding provider SDK behavior.
-import * as embeddingProviderSdk from "openclaw/plugin-sdk/embedding-providers";
+import * as embeddingProviderSdk from "afora-agent/plugin-sdk/embedding-providers";
 import {
   createPluginRegistryFixture,
   registerVirtualTestPlugin,
-} from "openclaw/plugin-sdk/plugin-test-contracts";
+} from "afora-agent/plugin-sdk/plugin-test-contracts";
 import { describe, expect, it } from "vitest";
 
 describe("embedding provider registration", () => {

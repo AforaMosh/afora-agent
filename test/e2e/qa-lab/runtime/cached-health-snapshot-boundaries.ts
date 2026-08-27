@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { startQaGatewayChild } from "../../../../extensions/qa-lab/api.js";
-import type { OpenClawConfig } from "../../../../src/config/types.openclaw.js";
+import type { AforaConfig } from "../../../../src/config/types.afora.js";
 import type { HealthSummary } from "../../../../src/gateway/health/types.js";
 import { healthHandlers } from "../../../../src/gateway/server-methods/health.js";
 import { createQaScriptEvidenceWriter } from "./script-evidence.js";
@@ -185,12 +185,12 @@ export async function runHandlerBoundaryProof() {
 }
 
 export async function createFixturePlugin() {
-  // openclaw-temp-dir: standalone producer removes this fixture root in its finally block
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-cached-health-tool-"));
+  // afora-temp-dir: standalone producer removes this fixture root in its finally block
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-cached-health-tool-"));
   const pluginDir = path.join(root, FIXTURE_PLUGIN_ID);
   await fs.mkdir(pluginDir, { recursive: true });
   await fs.writeFile(
-    path.join(pluginDir, "openclaw.plugin.json"),
+    path.join(pluginDir, "afora.plugin.json"),
     `${JSON.stringify(
       {
         id: FIXTURE_PLUGIN_ID,
@@ -229,7 +229,7 @@ export async function createFixturePlugin() {
   return { pluginDir, cleanup: () => fs.rm(root, { recursive: true, force: true }) };
 }
 
-export function withFixturePlugin(config: OpenClawConfig, pluginDir: string): OpenClawConfig {
+export function withFixturePlugin(config: AforaConfig, pluginDir: string): AforaConfig {
   return {
     ...config,
     plugins: {

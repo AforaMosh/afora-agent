@@ -8,16 +8,16 @@ import { listSessionEntriesReadOnly } from "../config/sessions/session-accessor.
 import { readExactSessionEntryRowForCanonicalRepair } from "../config/sessions/session-accessor.sqlite-canonical-repair.js";
 import { writeSessionEntry } from "../config/sessions/session-accessor.sqlite-entry-store.js";
 import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/session-sqlite-target.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { readAgentProvenance } from "../state/agent-provenance.js";
 import { writeConfigMachineState } from "../state/config-machine-state.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  runOpenClawAgentWriteTransaction,
-} from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
-import { createOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+  closeAforaAgentDatabasesForTest,
+  runAforaAgentWriteTransaction,
+} from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
+import { createAforaTestState } from "../test-utils/afora-test-state.js";
 import { createAgent } from "./agent-create.js";
 import { resolveSharedAuthStorePath } from "./auth-profiles/path-resolve.js";
 import { resolveAuthProfileDatabasePath } from "./auth-profiles/sqlite.js";
@@ -28,7 +28,7 @@ import {
 } from "./workspace.js";
 
 it("keeps a fresh named workspace pending through the first run setup", async () => {
-  const state = await createOpenClawTestState({
+  const state = await createAforaTestState({
     layout: "state-only",
     scenario: "minimal",
     label: "named-agent-hatch",
@@ -51,13 +51,13 @@ it("keeps a fresh named workspace pending through the first run setup", async ()
       await fs.readFile(path.join(workspace, DEFAULT_IDENTITY_FILENAME), "utf8"),
     ).not.toContain("Researcher");
   } finally {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await state.cleanup();
   }
 });
 
 it("records operator and agent creation provenance after roster commits", async () => {
-  const state = await createOpenClawTestState({
+  const state = await createAforaTestState({
     layout: "state-only",
     scenario: "empty",
     label: "agent-creation-provenance",
@@ -83,14 +83,14 @@ it("records operator and agent creation provenance after roster commits", async 
       createdAtMs: expect.any(Number),
     });
   } finally {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await state.cleanup();
   }
 });
 
 describe("agent roster persistence", () => {
-  async function addWorkerToConfig(config: unknown): Promise<OpenClawConfig> {
-    const state = await createOpenClawTestState({
+  async function addWorkerToConfig(config: unknown): Promise<AforaConfig> {
+    const state = await createAforaTestState({
       layout: "state-only",
       scenario: "empty",
       label: "agent-roster-write",
@@ -99,9 +99,9 @@ describe("agent roster persistence", () => {
       await state.writeConfig(config);
       const result = await createAgent({ name: "Worker", workspace: state.path("worker") });
       expect(result).toMatchObject({ status: "created", agentId: "worker" });
-      return JSON.parse(await fs.readFile(state.configPath, "utf8")) as OpenClawConfig;
+      return JSON.parse(await fs.readFile(state.configPath, "utf8")) as AforaConfig;
     } finally {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       await state.cleanup();
     }
   }
@@ -135,7 +135,7 @@ describe("agent roster persistence", () => {
   });
 
   it("preserves a legacy list byte-for-byte during a non-roster mutation", async () => {
-    const state = await createOpenClawTestState({
+    const state = await createAforaTestState({
       layout: "state-only",
       scenario: "empty",
       label: "legacy-roster-non-roster-write",
@@ -152,28 +152,28 @@ describe("agent roster persistence", () => {
         },
       });
 
-      const persisted = JSON.parse(await fs.readFile(state.configPath, "utf8")) as OpenClawConfig;
+      const persisted = JSON.parse(await fs.readFile(state.configPath, "utf8")) as AforaConfig;
       expect(JSON.stringify(persisted.agents?.list)).toBe(JSON.stringify(list));
       expect(persisted.agents).not.toHaveProperty("entries");
       expect(persisted.gateway?.port).toBe(19001);
     } finally {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       await state.cleanup();
     }
   });
 });
 
 it("creates main as an ordinary fresh agent after doctor completes both ownership handoffs", async () => {
-  const state = await createOpenClawTestState({
+  const state = await createAforaTestState({
     layout: "state-only",
     scenario: "empty",
     label: "ordinary-main-agent",
   });
-  const cfg: OpenClawConfig = {
+  const cfg: AforaConfig = {
     agents: { entries: { robby: { workspace: state.path("workspace-robby") } } },
   };
-  const legacyDatabasePath = path.join(state.agentDir("main"), "openclaw-agent.sqlite");
-  const ownerDatabasePath = path.join(state.agentDir("robby"), "openclaw-agent.sqlite");
+  const legacyDatabasePath = path.join(state.agentDir("main"), "afora-agent.sqlite");
+  const ownerDatabasePath = path.join(state.agentDir("robby"), "afora-agent.sqlite");
   const legacyKey = "agent:main:main";
   const canonicalKey = "agent:robby:main";
   const lateLegacyKey = "agent:main:late";
@@ -181,7 +181,7 @@ it("creates main as an ordinary fresh agent after doctor completes both ownershi
 
   try {
     await state.writeConfig(cfg);
-    runOpenClawAgentWriteTransaction(
+    runAforaAgentWriteTransaction(
       (database) => {
         writeSessionEntry(
           database,
@@ -194,7 +194,7 @@ it("creates main as an ordinary fresh agent after doctor completes both ownershi
     );
     await migrateLegacyMainSessionKeys({ cfg, env: state.env, mode: "doctor-fix" });
     writeConfigMachineState("auth.sharedStore", { location: "state-db" }, { env: state.env });
-    runOpenClawAgentWriteTransaction(
+    runAforaAgentWriteTransaction(
       (database) => {
         writeSessionEntry(
           database,
@@ -212,7 +212,7 @@ it("creates main as an ordinary fresh agent after doctor completes both ownershi
       reason: "legacy-session-migration-required",
     });
     expect(
-      runOpenClawAgentWriteTransaction(
+      runAforaAgentWriteTransaction(
         (database) => readExactSessionEntryRowForCanonicalRepair(database, lateLegacyKey)?.entry,
         { agentId: "main", env: state.env, path: legacyDatabasePath },
       ),
@@ -226,14 +226,14 @@ it("creates main as an ordinary fresh agent after doctor completes both ownershi
     if (created.status !== "created") {
       throw new Error(`expected main creation, got ${JSON.stringify(created)}`);
     }
-    const persisted = JSON.parse(await fs.readFile(state.configPath, "utf8")) as OpenClawConfig;
+    const persisted = JSON.parse(await fs.readFile(state.configPath, "utf8")) as AforaConfig;
     const mainSessionTarget = resolveSqliteTargetFromSessionStorePath(
       resolveSessionStorePathCore(persisted.session?.store, { agentId: "main", env: state.env }),
       { agentId: "main", env: state.env },
     );
     expect(mainSessionTarget).toMatchObject({ agentId: "main", path: legacyDatabasePath });
     expect(resolveAuthProfileDatabasePath(created.agentDir)).toBe(legacyDatabasePath);
-    expect(resolveSharedAuthStorePath(state.env)).toBe(resolveOpenClawStateSqlitePath(state.env));
+    expect(resolveSharedAuthStorePath(state.env)).toBe(resolveAforaStateSqlitePath(state.env));
     expect(resolveAuthProfileDatabasePath(created.agentDir)).not.toBe(
       resolveSharedAuthStorePath(state.env),
     );
@@ -245,20 +245,20 @@ it("creates main as an ordinary fresh agent after doctor completes both ownershi
       }).filter((entry) => entry.sessionKey.startsWith("agent:main:")),
     ).toEqual([]);
     expect(
-      runOpenClawAgentWriteTransaction(
+      runAforaAgentWriteTransaction(
         (database) => readExactSessionEntryRowForCanonicalRepair(database, canonicalKey)?.entry,
         { agentId: "robby", env: state.env, path: ownerDatabasePath },
       ),
     ).toMatchObject({ sessionId: "legacy-before-main-reuse" });
     expect(
-      runOpenClawAgentWriteTransaction(
+      runAforaAgentWriteTransaction(
         (database) => readExactSessionEntryRowForCanonicalRepair(database, lateCanonicalKey)?.entry,
         { agentId: "robby", env: state.env, path: ownerDatabasePath },
       ),
     ).toMatchObject({ sessionId: "late-legacy-before-main-reuse" });
   } finally {
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     await state.cleanup();
   }
 });

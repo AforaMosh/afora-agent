@@ -1,6 +1,6 @@
 // Msteams plugin module implements message handler support behavior.
 import { vi } from "vitest";
-import type { OpenClawConfig, PluginRuntime, RuntimeEnv } from "../../runtime-api.js";
+import type { AforaConfig, PluginRuntime, RuntimeEnv } from "../../runtime-api.js";
 import { installMSTeamsTestRuntime } from "../monitor-handler.test-helpers.js";
 import type { MSTeamsMessageHandlerDeps } from "../monitor-handler.types.js";
 
@@ -22,7 +22,7 @@ type MessageHandlerDepsOptions = {
 };
 
 export function createMessageHandlerDeps(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   options: MessageHandlerDepsOptions = {},
 ) {
   const enqueueSystemEvent = options.enqueueSystemEvent ?? vi.fn();

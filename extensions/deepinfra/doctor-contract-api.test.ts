@@ -1,13 +1,13 @@
 // DeepInfra tests cover plugin-owned doctor compatibility migrations.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import { legacyConfigRules, normalizeCompatibilityConfig } from "./doctor-contract-api.js";
 
-function deepinfraConfig(provider: Record<string, unknown>): OpenClawConfig {
-  return { models: { providers: { deepinfra: provider } } } as unknown as OpenClawConfig;
+function deepinfraConfig(provider: Record<string, unknown>): AforaConfig {
+  return { models: { providers: { deepinfra: provider } } } as unknown as AforaConfig;
 }
 
-function migratedProvider(cfg: OpenClawConfig): Record<string, unknown> {
+function migratedProvider(cfg: AforaConfig): Record<string, unknown> {
   const providers = cfg.models?.providers as Record<string, Record<string, unknown>> | undefined;
   return providers?.deepinfra ?? {};
 }
@@ -22,15 +22,15 @@ describe("DeepInfra doctor contract", () => {
   it("flags legacy nativeBaseUrl and /v1/inference baseUrl values", () => {
     const nativeRule = legacyConfigRules.find((rule) => rule.path.at(-1) === "nativeBaseUrl");
     const baseUrlRule = legacyConfigRules.find((rule) => rule.path.at(-1) === "baseUrl");
-    expect(nativeRule?.message).toContain("openclaw doctor --fix");
+    expect(nativeRule?.message).toContain("afora doctor --fix");
     expect(baseUrlRule?.match?.("https://api.deepinfra.com/v1/inference")).toBe(true);
     expect(baseUrlRule?.match?.("https://api.deepinfra.com/v1/openai")).toBe(false);
   });
 
   it("returns the same config when no deepinfra provider is configured", () => {
-    const cfg = { models: { providers: {} } } as OpenClawConfig;
+    const cfg = { models: { providers: {} } } as AforaConfig;
     expect(normalizeCompatibilityConfig({ cfg })).toEqual({ config: cfg, changes: [] });
-    expect(normalizeCompatibilityConfig({ cfg: {} as OpenClawConfig }).changes).toEqual([]);
+    expect(normalizeCompatibilityConfig({ cfg: {} as AforaConfig }).changes).toEqual([]);
   });
 
   it("replaces a default-valued nativeBaseUrl with the canonical baseUrl", () => {

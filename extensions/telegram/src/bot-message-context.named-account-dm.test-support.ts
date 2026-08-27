@@ -7,12 +7,12 @@ import {
 } from "./bot-message-context.route-test-support.js";
 
 let buildTelegramMessageContextForTest: typeof import("./bot-message-context.test-harness.js").buildTelegramMessageContextForTest;
-let clearRuntimeConfigSnapshot: typeof import("openclaw/plugin-sdk/runtime-config-snapshot").clearRuntimeConfigSnapshot;
-let setRuntimeConfigSnapshot: typeof import("openclaw/plugin-sdk/runtime-config-snapshot").setRuntimeConfigSnapshot;
+let clearRuntimeConfigSnapshot: typeof import("afora-agent/plugin-sdk/runtime-config-snapshot").clearRuntimeConfigSnapshot;
+let setRuntimeConfigSnapshot: typeof import("afora-agent/plugin-sdk/runtime-config-snapshot").setRuntimeConfigSnapshot;
 
 describe("buildTelegramMessageContext named-account DM fallback", () => {
   const baseCfg = {
-    agents: { defaults: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/openclaw" } },
+    agents: { defaults: { model: "anthropic/claude-opus-4-5", workspace: "/tmp/afora" } },
     channels: { telegram: {} },
     messages: { groupChat: { mentionPatterns: [] } },
   };

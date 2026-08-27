@@ -1,17 +1,17 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { parseClawManifest } from "./schema.js";
 import { buildClawUpdatePlan } from "./update-plan.js";
 import { createUpdatePlanFixture, targetSource } from "./update-plan.test-helpers.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
-afterEach(() => closeOpenClawStateDatabaseForTest());
+afterEach(() => closeAforaStateDatabaseForTest());
 
 describe("buildClawUpdatePlan readiness", () => {
   it("projects and integrity-binds plugin setup prerequisites", async () => {
-    const current = await createUpdatePlanFixture(tempDirs.make("openclaw-claw-readiness-"));
+    const current = await createUpdatePlanFixture(tempDirs.make("afora-claw-readiness-"));
     const requirement = (envVars: string[]) => ({
       kind: "plugin-setup" as const,
       plugin: "obsolete",
@@ -68,7 +68,7 @@ describe("buildClawUpdatePlan readiness", () => {
   });
 
   it("preserves prerequisites from an accepted owned plugin upgrade conflict", async () => {
-    const current = await createUpdatePlanFixture(tempDirs.make("openclaw-claw-upgrade-ready-"));
+    const current = await createUpdatePlanFixture(tempDirs.make("afora-claw-upgrade-ready-"));
     const parsed = parseClawManifest({
       ...current.manifest,
       packages: current.manifest.packages.map((pkg) =>
@@ -130,8 +130,8 @@ describe("buildClawUpdatePlan readiness", () => {
     });
   });
 
-  it("accepts an owned plugin upgrade declared through the OpenClaw profile", async () => {
-    const current = await createUpdatePlanFixture(tempDirs.make("openclaw-claw-profile-upgrade-"));
+  it("accepts an owned plugin upgrade declared through the Afora profile", async () => {
+    const current = await createUpdatePlanFixture(tempDirs.make("afora-claw-profile-upgrade-"));
     const parsed = parseClawManifest({
       ...current.manifest,
       packages: current.manifest.packages.filter((pkg) => pkg.kind !== "plugin"),
@@ -143,7 +143,7 @@ describe("buildClawUpdatePlan readiness", () => {
     const plan = await buildClawUpdatePlan({
       agentId: "worker",
       targetManifest: parsed.manifest,
-      targetOpenClawProfile: {
+      targetAforaProfile: {
         schemaVersion: 1,
         agent: {},
         extensions: [
@@ -180,7 +180,7 @@ describe("buildClawUpdatePlan readiness", () => {
         detectedFormat: "claude",
         mapped: ["skills"],
         unavailable: ["agents"],
-        adapterIdentity: "openclaw/test",
+        adapterIdentity: "afora-agent/test",
         message: "The Claw owns the installed previous version.",
       }),
     });
@@ -191,7 +191,7 @@ describe("buildClawUpdatePlan readiness", () => {
     expect(plan.blockers).not.toContainEqual(
       expect.objectContaining({
         code: "plugin_version_conflict",
-        path: "$.profiles.openclaw.extensions[0]",
+        path: "$.profiles.afora.extensions[0]",
       }),
     );
     expect(

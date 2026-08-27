@@ -11,7 +11,7 @@ const suite = createControlUiE2eSuite({
   name: "Control UI responsive login gate E2E",
   startServerBeforeBrowser: true,
   unavailableMessage: (executablePath) =>
-    `Playwright Chromium is not installed or cannot start at ${executablePath}. Run \`pnpm --dir ui exec playwright install --with-deps chromium\`, or set OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
+    `Playwright Chromium is not installed or cannot start at ${executablePath}. Run \`pnpm --dir ui exec playwright install --with-deps chromium\`, or set AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
 });
 const RECOVERY_ARTIFACT_DIR = path.resolve(".artifacts/control-ui-e2e/zombie-reload");
 
@@ -24,8 +24,8 @@ async function renderLoginGate(page: Page): Promise<void> {
 
 async function mountLoginGate(page: Page): Promise<void> {
   await page.evaluate(async () => {
-    await customElements.whenDefined("openclaw-login-gate");
-    const gate = document.createElement("openclaw-login-gate") as HTMLElement & {
+    await customElements.whenDefined("afora-login-gate");
+    const gate = document.createElement("afora-login-gate") as HTMLElement & {
       props: Record<string, unknown>;
       updateComplete: Promise<unknown>;
     };
@@ -75,7 +75,7 @@ suite.define(() => {
       if (request.resourceType() === "document") {
         const url = new URL(request.url());
         documentRequests.push({
-          fresh: url.searchParams.has("openclaw_mount_recovery"),
+          fresh: url.searchParams.has("afora_mount_recovery"),
           pathname: url.pathname,
         });
       }
@@ -110,8 +110,8 @@ suite.define(() => {
       ]);
       await gateway.resolveDeferred("connect");
 
-      await page.locator("openclaw-app-shell").waitFor();
-      expect(await page.locator("openclaw-login-gate").count()).toBe(0);
+      await page.locator("afora-app-shell").waitFor();
+      expect(await page.locator("afora-login-gate").count()).toBe(0);
       await expect.poll(() => page.url()).toBe(target.href);
     } finally {
       await closeContext(context);
@@ -122,7 +122,7 @@ suite.define(() => {
     const context = await suite.browser.newContext({ viewport: { height: 900, width: 1280 } });
     const page = await context.newPage();
     await page.addInitScript(() => {
-      const key = "openclaw.control-ui-e2e.build-rejection-loads";
+      const key = "afora.control-ui-e2e.build-rejection-loads";
       const count = Number.parseInt(sessionStorage.getItem(key) ?? "0", 10);
       sessionStorage.setItem(key, String(count + 1));
     });
@@ -144,16 +144,16 @@ suite.define(() => {
       await gateway.rejectDeferred("connect", mismatch);
       await page.waitForFunction(
         () =>
-          sessionStorage.getItem("openclaw.controlUi.staleChunkReloadBuildId") ===
+          sessionStorage.getItem("afora.controlUi.staleChunkReloadBuildId") ===
             "replacement-build" &&
-          sessionStorage.getItem("openclaw.control-ui-e2e.build-rejection-loads") === "2",
+          sessionStorage.getItem("afora.control-ui-e2e.build-rejection-loads") === "2",
       );
 
       await gateway.waitForRequest("connect");
       await gateway.rejectDeferred("connect", mismatch);
       await page.getByRole("button", { name: /Server updated/u }).waitFor({ timeout: 10_000 });
-      expect(await page.locator("openclaw-login-gate").count()).toBe(0);
-      expect(await page.locator("openclaw-router-outlet").getAttribute("inert")).not.toBeNull();
+      expect(await page.locator("afora-login-gate").count()).toBe(0);
+      expect(await page.locator("afora-router-outlet").getAttribute("inert")).not.toBeNull();
       await mkdir(RECOVERY_ARTIFACT_DIR, { recursive: true });
       await page.screenshot({
         path: path.join(RECOVERY_ARTIFACT_DIR, "01-reload-required.png"),
@@ -162,7 +162,7 @@ suite.define(() => {
       expect(await gateway.getRequests("terminal.open")).toHaveLength(0);
       expect(
         await page.evaluate(() =>
-          sessionStorage.getItem("openclaw.control-ui-e2e.build-rejection-loads"),
+          sessionStorage.getItem("afora.control-ui-e2e.build-rejection-loads"),
         ),
       ).toBe("2");
     } finally {
@@ -202,7 +202,7 @@ suite.define(() => {
     const context = await suite.browser.newContext({ viewport: { height: 900, width: 1280 } });
     const page = await context.newPage();
     await page.addInitScript(() => {
-      sessionStorage.setItem("openclaw.controlUi.staleChunkReloadBuildId", "replacement-build");
+      sessionStorage.setItem("afora.controlUi.staleChunkReloadBuildId", "replacement-build");
     });
     const gateway = await installMockGateway(page, { deferredMethods: ["connect"] });
 
@@ -233,7 +233,7 @@ suite.define(() => {
       await expect
         .poll(() =>
           page.evaluate(() => {
-            const app = document.querySelector("openclaw-app") as HTMLElement & {
+            const app = document.querySelector("afora-app") as HTMLElement & {
               runtime?: { context: { gateway: { snapshot: { phase: string } } } };
             };
             return app.runtime?.context.gateway.snapshot.phase;
@@ -241,7 +241,7 @@ suite.define(() => {
         )
         .toBe("reload-required");
       await page.getByRole("button", { name: /Server updated/u }).waitFor();
-      expect(await page.locator("openclaw-login-gate").count()).toBe(0);
+      expect(await page.locator("afora-login-gate").count()).toBe(0);
     } finally {
       await closeContext(context);
     }
@@ -254,12 +254,12 @@ suite.define(() => {
 
     try {
       await page.goto(new URL("settings/connection", suite.server.baseUrl).href);
-      await page.locator("openclaw-app-shell").waitFor();
+      await page.locator("afora-app-shell").waitFor();
       await gateway.deferNext("connect");
       await gateway.closeLatest(1012, "test reconnect");
 
       await page.getByText("Actions are unavailable while the Gateway reconnects.").waitFor();
-      const outlet = page.locator("openclaw-router-outlet");
+      const outlet = page.locator("afora-router-outlet");
       expect(await outlet.getAttribute("inert")).not.toBeNull();
       expect(await outlet.getAttribute("aria-disabled")).toBe("true");
       await mkdir(RECOVERY_ARTIFACT_DIR, { recursive: true });
@@ -326,8 +326,8 @@ suite.define(() => {
     const context = await suite.browser.newContext({ viewport: { height: 900, width: 1280 } });
     const page = await context.newPage();
     await page.addInitScript(() => {
-      window.addEventListener("openclaw-control-ui-rendered", () => {
-        const key = "openclaw.control-ui-e2e.render-count";
+      window.addEventListener("afora-control-ui-rendered", () => {
+        const key = "afora.control-ui-e2e.render-count";
         const count = Number.parseInt(sessionStorage.getItem(key) ?? "0", 10);
         sessionStorage.setItem(key, String(count + 1));
       });
@@ -349,12 +349,12 @@ suite.define(() => {
       await page.clock.runFor(12_001);
 
       expect(await authRequired.isVisible()).toBe(true);
-      expect(await page.locator("#openclaw-mount-fallback").isHidden()).toBe(true);
+      expect(await page.locator("#afora-mount-fallback").isHidden()).toBe(true);
       expect((await page.locator("body").getAttribute("class")) ?? "").not.toContain(
-        "openclaw-mount-fallback-active",
+        "afora-mount-fallback-active",
       );
       expect(
-        await page.evaluate(() => sessionStorage.getItem("openclaw.control-ui-e2e.render-count")),
+        await page.evaluate(() => sessionStorage.getItem("afora.control-ui-e2e.render-count")),
       ).toBe("1");
     } finally {
       await closeContext(context);

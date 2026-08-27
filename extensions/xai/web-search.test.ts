@@ -1,8 +1,8 @@
 // Xai tests cover web search plugin behavior.
-import { createTestWizardPrompter } from "openclaw/plugin-sdk/plugin-test-runtime";
-import { NON_ENV_SECRETREF_MARKER } from "openclaw/plugin-sdk/provider-auth-runtime";
-import { createNonExitingRuntime } from "openclaw/plugin-sdk/runtime-env";
-import { withEnv, withEnvAsync, withFetchPreconnect } from "openclaw/plugin-sdk/test-env";
+import { createTestWizardPrompter } from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { NON_ENV_SECRETREF_MARKER } from "afora-agent/plugin-sdk/provider-auth-runtime";
+import { createNonExitingRuntime } from "afora-agent/plugin-sdk/runtime-env";
+import { withEnv, withEnvAsync, withFetchPreconnect } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildXaiCatalogModels, resolveXaiCatalogEntry } from "./model-definitions.js";
 import { isModernXaiModel, resolveXaiForwardCompatModel } from "./provider-models.js";
@@ -21,8 +21,8 @@ const providerAuthMocks = vi.hoisted(() => ({
   listUsableProviderAuthProfileIds: vi.fn(() => ({ agentDir: "", profileIds: [] as string[] })),
 }));
 
-vi.mock("openclaw/plugin-sdk/provider-auth", async (importOriginal) => {
-  const original = await importOriginal<typeof import("openclaw/plugin-sdk/provider-auth")>();
+vi.mock("afora-agent/plugin-sdk/provider-auth", async (importOriginal) => {
+  const original = await importOriginal<typeof import("afora-agent/plugin-sdk/provider-auth")>();
   return {
     ...original,
     ensureAuthProfileStore: providerAuthMocks.ensureAuthProfileStore,
@@ -30,17 +30,17 @@ vi.mock("openclaw/plugin-sdk/provider-auth", async (importOriginal) => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/provider-auth-runtime", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/provider-auth-runtime", async (importOriginal) => {
   const original =
-    await importOriginal<typeof import("openclaw/plugin-sdk/provider-auth-runtime")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/provider-auth-runtime")>();
   return {
     ...original,
     resolveApiKeyForProvider: providerAuthRuntimeMocks.resolveApiKeyForProvider,
   };
 });
 
-vi.mock("openclaw/plugin-sdk/provider-web-search", async (importOriginal) => {
-  const original = await importOriginal<typeof import("openclaw/plugin-sdk/provider-web-search")>();
+vi.mock("afora-agent/plugin-sdk/provider-web-search", async (importOriginal) => {
+  const original = await importOriginal<typeof import("afora-agent/plugin-sdk/provider-web-search")>();
   return {
     ...original,
     postTrustedWebToolsJson: async (
@@ -188,7 +188,7 @@ function createAuthSearchTool() {
   return requireXaiWebSearchTool({
     config: {
       agents: {
-        list: [{ id: "main", default: true, agentDir: "/tmp/openclaw-xai-main-agent" }],
+        list: [{ id: "main", default: true, agentDir: "/tmp/afora-xai-main-agent" }],
       },
       tools: { web: { search: { provider: "grok" } } },
     },
@@ -309,7 +309,7 @@ describe("xai web search config resolution", () => {
         }),
       });
 
-      const result = await maybeTool.execute({ query: "OpenClaw" });
+      const result = await maybeTool.execute({ query: "Afora" });
       expect(result.error).toBe("missing_xai_api_key");
       expect(result.message).toContain("use web_fetch for a specific URL or the browser tool");
     });
@@ -326,18 +326,18 @@ describe("xai web search config resolution", () => {
     const tool = requireXaiWebSearchTool({
       config: {
         agents: {
-          list: [{ id: "main", default: true, agentDir: "/tmp/openclaw-xai-main-agent" }],
+          list: [{ id: "main", default: true, agentDir: "/tmp/afora-xai-main-agent" }],
         },
         ...xaiPluginConfig({ webSearch: { apiKey: "configured-xai-key" } }),
       },
     });
 
-    await tool.execute({ query: "OpenClaw Grok OAuth web search" });
+    await tool.execute({ query: "Afora Grok OAuth web search" });
 
     expect(providerAuthRuntimeMocks.resolveApiKeyForProvider).toHaveBeenCalledWith(
       expect.objectContaining({
         provider: "xai",
-        agentDir: "/tmp/openclaw-xai-main-agent",
+        agentDir: "/tmp/afora-xai-main-agent",
       }),
     );
     expect(fetchCallHeader(mockFetch, 0, "Authorization")).toBe("Bearer oauth-web-search-token");
@@ -352,23 +352,23 @@ describe("xai web search config resolution", () => {
     });
     const mockFetch = installXaiWebSearchFetch();
     const tool = requireXaiWebSearchTool({
-      agentDir: "/tmp/openclaw-xai-active-agent",
+      agentDir: "/tmp/afora-xai-active-agent",
       config: {
         agents: {
           list: [
-            { id: "main", default: true, agentDir: "/tmp/openclaw-xai-main-agent" },
-            { id: "side", agentDir: "/tmp/openclaw-xai-active-agent" },
+            { id: "main", default: true, agentDir: "/tmp/afora-xai-main-agent" },
+            { id: "side", agentDir: "/tmp/afora-xai-active-agent" },
           ],
         },
       },
     });
 
-    await tool.execute({ query: "OpenClaw Grok active agent OAuth web search" });
+    await tool.execute({ query: "Afora Grok active agent OAuth web search" });
 
     expect(providerAuthRuntimeMocks.resolveApiKeyForProvider).toHaveBeenCalledWith(
       expect.objectContaining({
         provider: "xai",
-        agentDir: "/tmp/openclaw-xai-active-agent",
+        agentDir: "/tmp/afora-xai-active-agent",
       }),
     );
     expect(fetchCallHeader(mockFetch, 0, "Authorization")).toBe("Bearer active-agent-oauth-token");
@@ -395,14 +395,14 @@ describe("xai web search config resolution", () => {
     global.fetch = withFetchPreconnect(mockFetch);
     const tool = createAuthSearchTool();
 
-    const result = await tool.execute({ query: "OpenClaw Grok OAuth refresh test" });
+    const result = await tool.execute({ query: "Afora Grok OAuth refresh test" });
 
     expect(result.content).toContain("Fresh OAuth Grok answer");
     expect(providerAuthRuntimeMocks.resolveApiKeyForProvider).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
         provider: "xai",
-        agentDir: "/tmp/openclaw-xai-main-agent",
+        agentDir: "/tmp/afora-xai-main-agent",
         profileId: "xai:default",
         lockedProfile: true,
         forceRefresh: true,
@@ -438,14 +438,14 @@ describe("xai web search config resolution", () => {
     global.fetch = withFetchPreconnect(mockFetch);
     const tool = createAuthSearchTool();
 
-    const result = await tool.execute({ query: "OpenClaw Grok API fallback test" });
+    const result = await tool.execute({ query: "Afora Grok API fallback test" });
 
     expect(result.content).toContain("API key fallback Grok answer");
     expect(providerAuthRuntimeMocks.resolveApiKeyForProvider).toHaveBeenNthCalledWith(
       3,
       expect.objectContaining({
         provider: "xai",
-        agentDir: "/tmp/openclaw-xai-main-agent",
+        agentDir: "/tmp/afora-xai-main-agent",
         credentialPrecedence: "env-first",
       }),
     );
@@ -479,7 +479,7 @@ describe("xai web search config resolution", () => {
         profileId: "xai:key",
       });
     providerAuthMocks.listUsableProviderAuthProfileIds.mockReturnValue({
-      agentDir: "/tmp/openclaw-xai-main-agent",
+      agentDir: "/tmp/afora-xai-main-agent",
       profileIds: ["xai:default", "xai:key"],
     });
     providerAuthMocks.ensureAuthProfileStore.mockReturnValue({
@@ -507,14 +507,14 @@ describe("xai web search config resolution", () => {
     global.fetch = withFetchPreconnect(mockFetch);
     const tool = createAuthSearchTool();
 
-    const result = await tool.execute({ query: "OpenClaw Grok profile fallback test" });
+    const result = await tool.execute({ query: "Afora Grok profile fallback test" });
 
     expect(result.content).toContain("Profile API key Grok answer");
     expect(providerAuthRuntimeMocks.resolveApiKeyForProvider).toHaveBeenNthCalledWith(
       4,
       expect.objectContaining({
         provider: "xai",
-        agentDir: "/tmp/openclaw-xai-main-agent",
+        agentDir: "/tmp/afora-xai-main-agent",
         profileId: "xai:key",
         lockedProfile: true,
       }),
@@ -544,14 +544,14 @@ describe("xai web search config resolution", () => {
     global.fetch = withFetchPreconnect(mockFetch);
     const tool = createAuthSearchTool();
 
-    const result = await tool.execute({ query: "OpenClaw Grok API-key fallback test" });
+    const result = await tool.execute({ query: "Afora Grok API-key fallback test" });
 
     expect(result.content).toContain("Env fallback Grok answer");
     expect(providerAuthRuntimeMocks.resolveApiKeyForProvider).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
         provider: "xai",
-        agentDir: "/tmp/openclaw-xai-main-agent",
+        agentDir: "/tmp/afora-xai-main-agent",
         credentialPrecedence: "env-first",
       }),
     );
@@ -672,7 +672,7 @@ describe("xai web search config resolution", () => {
       searchConfig: { provider: "grok" },
     });
 
-    await tool.execute({ query: "OpenClaw Grok proxy test" });
+    await tool.execute({ query: "Afora Grok proxy test" });
 
     expect(firstFetchUrl(mockFetch)).toBe("https://api.x.ai/proxy/v1/responses");
     expect(firstFetchBody(mockFetch)).toMatchObject({
@@ -697,7 +697,7 @@ describe("xai web search config resolution", () => {
       config: xaiPluginConfig({ webSearch: { apiKey: "xai-test-key" } }),
     });
 
-    await expect(tool.execute({ query: "OpenClaw" })).rejects.toThrow(
+    await expect(tool.execute({ query: "Afora" })).rejects.toThrow(
       "xAI web search failed: malformed JSON response",
     );
   });
@@ -711,7 +711,7 @@ describe("xai web search config resolution", () => {
       config: xaiPluginConfig({ webSearch: { apiKey: "xai-test-key" } }),
     });
 
-    await expect(tool.execute({ query: "OpenClaw" })).rejects.toThrow(
+    await expect(tool.execute({ query: "Afora" })).rejects.toThrow(
       "xAI web search failed: malformed JSON response",
     );
   });
@@ -762,7 +762,7 @@ describe("xai web search config resolution", () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(abort));
     const request = () =>
       requestXaiWebSearch({
-        query: "OpenClaw",
+        query: "Afora",
         model: "grok-4.3",
         apiKey: "xai-test-key",
         endpoint: "https://api.x.ai/v1/responses",
@@ -1062,7 +1062,7 @@ describe("xai provider models", () => {
     });
   });
 
-  it("publishes the remaining Grok 3 family in the OpenClaw catalog", () => {
+  it("publishes the remaining Grok 3 family in the Afora catalog", () => {
     expectCatalogEntry("grok-3-mini-fast", {
       id: "grok-3-mini-fast",
       reasoning: true,

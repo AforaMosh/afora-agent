@@ -1,5 +1,5 @@
 // Voice Call plugin module implements call status behavior.
-import { normalizeOptionalLowercaseString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalLowercaseString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { EndReason } from "../../types.js";
 
 // Shared provider status normalization and terminal-state mapping.
@@ -18,7 +18,7 @@ export function normalizeProviderStatus(status: string | null | undefined): stri
   return normalized && normalized.length > 0 ? normalized : "unknown";
 }
 
-/** Map terminal provider status strings to OpenClaw end reasons. */
+/** Map terminal provider status strings to Afora end reasons. */
 export function mapProviderStatusToEndReason(status: string | null | undefined): EndReason | null {
   const normalized = normalizeProviderStatus(status);
   return TERMINAL_PROVIDER_STATUS_TO_END_REASON[normalized] ?? null;

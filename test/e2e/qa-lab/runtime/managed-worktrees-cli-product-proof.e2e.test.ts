@@ -10,23 +10,23 @@ import type {
   ManagedWorktreeRecord,
   RemoveManagedWorktreeResult,
 } from "../../../../src/agents/worktrees/types.js";
-import { closeOpenClawStateDatabaseForTest } from "../../../../src/state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../../../../src/state/afora-state-db.js";
 import {
-  createOpenClawTestInstance,
-  type OpenClawTestInstance,
-} from "../../../helpers/openclaw-test-instance.js";
+  createAforaTestInstance,
+  type AforaTestInstance,
+} from "../../../helpers/afora-test-instance.js";
 
 const execFileAsync = promisify(execFile);
 const WORKTREE_NAME = "qa-managed-worktree";
 
-type CommandResult = Awaited<ReturnType<OpenClawTestInstance["cli"]>>;
+type CommandResult = Awaited<ReturnType<AforaTestInstance["cli"]>>;
 type WorktreeListJson = { worktrees: ManagedWorktreeRecord[] };
 
-let instance: OpenClawTestInstance | undefined;
+let instance: AforaTestInstance | undefined;
 let tempRoot: string | undefined;
 
 afterEach(async () => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   await instance?.cleanup();
   instance = undefined;
   if (tempRoot) {
@@ -55,18 +55,18 @@ async function git(cwd: string, ...args: string[]): Promise<string> {
 
 async function initializeRepository(root: string): Promise<{ baseCommit: string; repo: string }> {
   const repo = path.join(root, "source");
-  await fs.mkdir(path.join(repo, ".openclaw"), { recursive: true });
+  await fs.mkdir(path.join(repo, ".afora"), { recursive: true });
   await fs.mkdir(path.join(repo, "generated"), { recursive: true });
   await git(repo, "init", "-b", "main");
-  await git(repo, "config", "user.name", "OpenClaw Test");
-  await git(repo, "config", "user.email", "openclaw-test@example.invalid");
+  await git(repo, "config", "user.name", "Afora Test");
+  await git(repo, "config", "user.email", "afora-test@example.invalid");
   await fs.writeFile(path.join(repo, "README.md"), "base\n");
   await fs.writeFile(path.join(repo, ".gitignore"), ".env.local\ngenerated/\n");
   await fs.writeFile(path.join(repo, ".worktreeinclude"), ".env.local\ngenerated/**\n");
-  const setupScript = path.join(repo, ".openclaw", "worktree-setup.sh");
+  const setupScript = path.join(repo, ".afora", "worktree-setup.sh");
   await fs.writeFile(
     setupScript,
-    '#!/bin/sh\nset -eu\nprintf "%s\\n%s\\n" "$OPENCLAW_SOURCE_TREE_PATH" "$OPENCLAW_WORKTREE_PATH" > "$OPENCLAW_WORKTREE_PATH/setup-marker.txt"\n',
+    '#!/bin/sh\nset -eu\nprintf "%s\\n%s\\n" "$AFORA_SOURCE_TREE_PATH" "$AFORA_WORKTREE_PATH" > "$AFORA_WORKTREE_PATH/setup-marker.txt"\n',
   );
   await fs.chmod(setupScript, 0o755);
   await git(repo, "add", "README.md", ".gitignore", ".worktreeinclude", setupScript);
@@ -89,9 +89,9 @@ describe("managed worktrees child CLI product proof", () => {
     { timeout: 180_000 },
     async () => {
       const canonicalTmp = await fs.realpath(os.tmpdir());
-      tempRoot = await fs.mkdtemp(path.join(canonicalTmp, "openclaw-managed-worktree-cli-"));
+      tempRoot = await fs.mkdtemp(path.join(canonicalTmp, "afora-managed-worktree-cli-"));
       const { baseCommit, repo } = await initializeRepository(tempRoot);
-      instance = await createOpenClawTestInstance({ name: "qa-managed-worktree-cli" });
+      instance = await createAforaTestInstance({ name: "qa-managed-worktree-cli" });
       const stateDir = await fs.realpath(instance.stateDir);
 
       const created = parseCommandJson<ManagedWorktreeRecord>(
@@ -101,7 +101,7 @@ describe("managed worktrees child CLI product proof", () => {
       expect(created).toMatchObject({
         name: WORKTREE_NAME,
         repoRoot: repo,
-        branch: `openclaw/${WORKTREE_NAME}`,
+        branch: `afora/${WORKTREE_NAME}`,
         baseRef: "HEAD",
         ownerKind: "manual",
       });
@@ -135,7 +135,7 @@ describe("managed worktrees child CLI product proof", () => {
         "worktrees remove",
         await instance.cli(["worktrees", "remove", created.id, "--json"]),
       );
-      const expectedSnapshotRef = `refs/openclaw/snapshots/${created.id}`;
+      const expectedSnapshotRef = `refs/afora/snapshots/${created.id}`;
       expect(removed).toEqual({ removed: true, snapshotRef: expectedSnapshotRef });
       const snapshotCommit = await git(repo, "rev-parse", expectedSnapshotRef);
       expect(await git(repo, "show-ref", "--verify", expectedSnapshotRef)).toContain(

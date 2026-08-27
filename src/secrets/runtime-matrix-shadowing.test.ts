@@ -49,7 +49,7 @@ describe("secrets runtime snapshot matrix shadowing", () => {
       env: {
         MATRIX_OPS_ACCESS_TOKEN: "ops-token",
       },
-      agentDirs: ["/tmp/openclaw-agent-main"],
+      agentDirs: ["/tmp/afora-agent-main"],
       loadAuthStore: () => loadAuthStoreWithProfiles({}),
     });
 
@@ -152,7 +152,7 @@ describe("secrets runtime snapshot matrix shadowing", () => {
     const snapshot = await prepareSecretsRuntimeSnapshot({
       config: asConfig(config),
       env,
-      agentDirs: ["/tmp/openclaw-agent-main"],
+      agentDirs: ["/tmp/afora-agent-main"],
       loadAuthStore: () => loadAuthStoreWithProfiles({}),
     });
 
@@ -184,7 +184,7 @@ describe("secrets runtime snapshot matrix shadowing", () => {
       }),
       env: {},
       allowUnavailableSecretOwners: true,
-      agentDirs: ["/tmp/openclaw-agent-main"],
+      agentDirs: ["/tmp/afora-agent-main"],
       loadAuthStore: () => loadAuthStoreWithProfiles({}),
     });
 
@@ -269,7 +269,7 @@ describe("secrets runtime snapshot matrix shadowing", () => {
     const snapshot = await prepareSecretsRuntimeSnapshot({
       config: asConfig(config),
       env,
-      agentDirs: ["/tmp/openclaw-agent-main"],
+      agentDirs: ["/tmp/afora-agent-main"],
       loadAuthStore: () => loadAuthStoreWithProfiles({}),
     });
 

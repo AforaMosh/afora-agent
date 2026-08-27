@@ -1,10 +1,10 @@
 /** Baseten request payload policy for models with opt-in chat-template reasoning. */
-import type { ProviderWrapStreamFnContext } from "openclaw/plugin-sdk/plugin-entry";
+import type { ProviderWrapStreamFnContext } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   createPayloadPatchStreamWrapper,
   normalizeOpenAICompatibleReasoningReplay,
-} from "openclaw/plugin-sdk/provider-stream-shared";
-import { asNonArrayRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/provider-stream-shared";
+import { asNonArrayRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { usesBasetenChatTemplateThinking } from "./models.js";
 
 const BASETEN_DEEPSEEK_V4_MODEL_ID = "deepseek-ai/deepseek-v4-pro";

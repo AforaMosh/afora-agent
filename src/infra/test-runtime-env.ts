@@ -15,5 +15,5 @@ export function isVitestRuntimeEnv(env: NodeJS.ProcessEnv = process.env): boolea
 export function isFastTestRuntimeEnv(env: NodeJS.ProcessEnv = process.env): boolean {
   const isTestRuntime =
     isVitestRuntimeEnv(env) || (env !== process.env && isVitestRuntimeEnv(process.env));
-  return isTestRuntime && env.OPENCLAW_TEST_FAST === "1";
+  return isTestRuntime && env.AFORA_TEST_FAST === "1";
 }

@@ -2,7 +2,7 @@ import type { QueueMode } from "../../../packages/gateway-protocol/src/schema/lo
 import type { CronCreatorAuthorityCapability } from "../../agents/cron-creator-authority-context.js";
 import type { SessionToolOverrides } from "../../config/sessions/types.js";
 // Shared get-reply type contracts for command, directive, and runtime layers.
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { PluginCommandReplyOptions } from "../../plugins/plugin-command-dispatch-contract.js";
 import type { GetReplyOptions } from "../get-reply-options.types.js";
 import type { ReplyPayload } from "../reply-payload.js";
@@ -53,11 +53,11 @@ export function shouldBridgeCliPreambleEvents(opts: InternalGetReplyOptions | un
 export type GetReplyFromConfig = (
   ctx: MsgContext,
   opts?: GetReplyOptions,
-  configOverride?: OpenClawConfig,
+  configOverride?: AforaConfig,
 ) => Promise<ReplyPayload | ReplyPayload[] | undefined>;
 
 export type InternalGetReplyFromConfig = (
   ctx: MsgContext,
   opts?: InternalGetReplyOptions,
-  configOverride?: OpenClawConfig,
+  configOverride?: AforaConfig,
 ) => Promise<ReplyPayload | ReplyPayload[] | undefined>;

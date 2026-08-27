@@ -1,5 +1,5 @@
 // Discord tests cover message handler.inbound context plugin behavior.
-import { finalizeInboundContext } from "openclaw/plugin-sdk/reply-dispatch-runtime";
+import { finalizeInboundContext } from "afora-agent/plugin-sdk/reply-dispatch-runtime";
 import { describe, expect, it } from "vitest";
 import { buildDiscordInboundAccessContext } from "./inbound-context.js";
 

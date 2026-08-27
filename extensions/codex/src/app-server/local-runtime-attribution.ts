@@ -2,8 +2,8 @@
  * Resolves the provider/api attribution used when a local Codex runtime is
  * backed by OpenAI auth but should still report Codex Responses semantics.
  */
-import type { AgentHarnessAttemptParamsV2 } from "openclaw/plugin-sdk/agent-harness-runtime";
-import { normalizeLowercaseStringOrEmpty as normalizeRuntimeId } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { AgentHarnessAttemptParamsV2 } from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { normalizeLowercaseStringOrEmpty as normalizeRuntimeId } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export type CodexLocalRuntimeAttributionParams = Pick<
   AgentHarnessAttemptParamsV2,

@@ -10,7 +10,7 @@ const BASE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const TEMPLATES_PATH = path.join(BASE_DIR, "references", "templates.json");
 const IMGFLIP_GET_MEMES_URL = "https://api.imgflip.com/get_memes";
 const IMGFLIP_CAPTION_URL = "https://api.imgflip.com/caption_image";
-const USER_AGENT = "OpenClawMemeMaker/1.0";
+const USER_AGENT = "AforaMemeMaker/1.0";
 const STOPWORDS = new Set([
   "a",
   "an",
@@ -146,7 +146,7 @@ function cacheRoot() {
     (process.platform === "darwin"
       ? path.join(homedir(), "Library", "Caches")
       : path.join(homedir(), ".cache"));
-  return path.join(root, "openclaw", "meme-maker");
+  return path.join(root, "afora", "meme-maker");
 }
 
 function extFromUrl(url) {
@@ -284,7 +284,7 @@ async function renderLocal(template, texts, flags) {
       sharp = (await import("sharp")).default;
     } catch {
       // Keep this message free of package-install advice: agents follow it
-      // literally and can corrupt pnpm-managed OpenClaw installs (see #109405).
+      // literally and can corrupt pnpm-managed Afora installs (see #109405).
       throw new Error("PNG output needs the optional sharp package. Use --out meme.svg instead.");
     }
     await sharp(Buffer.from(svg)).png().toFile(out);

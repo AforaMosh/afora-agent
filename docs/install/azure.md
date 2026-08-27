@@ -1,20 +1,20 @@
 ---
-summary: "Run OpenClaw Gateway 24/7 on an Azure Linux VM with durable state"
+summary: "Run Afora Gateway 24/7 on an Azure Linux VM with durable state"
 read_when:
-  - You want OpenClaw running 24/7 on Azure with Network Security Group hardening
-  - You want a production-grade, always-on OpenClaw Gateway on your own Azure Linux VM
+  - You want Afora running 24/7 on Azure with Network Security Group hardening
+  - You want a production-grade, always-on Afora Gateway on your own Azure Linux VM
   - You want secure administration with Azure Bastion SSH
 title: "Azure"
 ---
 
-Set up an Azure Linux VM with the Azure CLI, apply Network Security Group (NSG) hardening, configure Azure Bastion for SSH access, and install OpenClaw.
+Set up an Azure Linux VM with the Azure CLI, apply Network Security Group (NSG) hardening, configure Azure Bastion for SSH access, and install Afora.
 
 ## What you will do
 
 - Create Azure networking (VNet, subnets, NSG) and compute resources with the Azure CLI
 - Apply NSG rules so VM SSH is allowed only from Azure Bastion
 - Use Azure Bastion for SSH access (no public IP on the VM)
-- Install OpenClaw with the installer script
+- Install Afora with the installer script
 - Verify the gateway
 
 ## What you need
@@ -54,18 +54,18 @@ Set up an Azure Linux VM with the Azure CLI, apply Network Security Group (NSG) 
 
   <Step title="Set deployment variables">
     ```bash
-    RG="rg-openclaw"
+    RG="rg-afora"
     LOCATION="westus2"
-    VNET_NAME="vnet-openclaw"
+    VNET_NAME="vnet-afora"
     VNET_PREFIX="10.40.0.0/16"
-    VM_SUBNET_NAME="snet-openclaw-vm"
+    VM_SUBNET_NAME="snet-afora-vm"
     VM_SUBNET_PREFIX="10.40.2.0/24"
     BASTION_SUBNET_PREFIX="10.40.1.0/26"
-    NSG_NAME="nsg-openclaw-vm"
-    VM_NAME="vm-openclaw"
-    ADMIN_USERNAME="openclaw"
-    BASTION_NAME="bas-openclaw"
-    BASTION_PIP_NAME="pip-openclaw-bastion"
+    NSG_NAME="nsg-afora-vm"
+    VM_NAME="vm-afora"
+    ADMIN_USERNAME="afora"
+    BASTION_NAME="bas-afora"
+    BASTION_PIP_NAME="pip-afora-bastion"
     ```
 
     Adjust names and CIDR ranges to fit your environment. The Bastion subnet must be at least `/26`.
@@ -232,7 +232,7 @@ Set up an Azure Linux VM with the Azure CLI, apply Network Security Group (NSG) 
   </Step>
 </Steps>
 
-## Install OpenClaw
+## Install Afora
 
 <Steps>
   <Step title="SSH into the VM through Azure Bastion">
@@ -250,14 +250,14 @@ Set up an Azure Linux VM with the Azure CLI, apply Network Security Group (NSG) 
 
   </Step>
 
-  <Step title="Install OpenClaw (in the VM shell)">
+  <Step title="Install Afora (in the VM shell)">
     ```bash
-    curl -fsSL https://openclaw.ai/install.sh -o /tmp/install.sh
+    curl -fsSL https://afora.ai/install.sh -o /tmp/install.sh
     bash /tmp/install.sh
     rm -f /tmp/install.sh
     ```
 
-    The installer installs Node and dependencies if not already present, installs OpenClaw, and launches onboarding. See [Install](/install) for details.
+    The installer installs Node and dependencies if not already present, installs Afora, and launches onboarding. See [Install](/install) for details.
 
   </Step>
 
@@ -265,8 +265,8 @@ Set up an Azure Linux VM with the Azure CLI, apply Network Security Group (NSG) 
     After onboarding completes:
 
     ```bash
-    openclaw doctor --json
-    openclaw gateway status
+    afora doctor --json
+    afora gateway status
     ```
 
     If your organization already has GitHub Copilot licenses, you can choose the GitHub Copilot provider during onboarding instead of a separate model API key. See [GitHub Copilot provider](/providers/github-copilot).
@@ -308,7 +308,7 @@ This removes the resource group and everything inside it (VM, VNet, NSG, Bastion
 - Set up messaging channels: [Channels](/channels)
 - Pair local devices as nodes: [Nodes](/nodes)
 - Configure the gateway: [Gateway configuration](/gateway/configuration)
-- More detail on Azure deployment with the GitHub Copilot model provider: [OpenClaw on Azure with GitHub Copilot](https://github.com/johnsonshi/openclaw-azure-github-copilot)
+- More detail on Azure deployment with the GitHub Copilot model provider: [Afora on Azure with GitHub Copilot](https://github.com/johnsonshi/afora-azure-github-copilot)
 
 ## Related
 

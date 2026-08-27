@@ -272,24 +272,24 @@ describe("toWhatsappJid", () => {
 
 describe("jidToE164", () => {
   it("maps @lid using reverse mapping file", async () => {
-    await withTempDir("openclaw-state-", async (stateDir) => {
-      const previousStateDir = process.env.OPENCLAW_STATE_DIR;
+    await withTempDir("afora-state-", async (stateDir) => {
+      const previousStateDir = process.env.AFORA_STATE_DIR;
       const credentialsDir = path.join(stateDir, "credentials");
       fs.mkdirSync(credentialsDir, { recursive: true });
       fs.writeFileSync(
         path.join(credentialsDir, "lid-mapping-123_reverse.json"),
         JSON.stringify("5551234"),
       );
-      process.env.OPENCLAW_STATE_DIR = stateDir;
+      process.env.AFORA_STATE_DIR = stateDir;
       vi.resetModules();
       try {
         const { jidToE164: freshJidToE164 } = await import("./text-runtime.js");
         expect(freshJidToE164("123@lid")).toBe("+5551234");
       } finally {
         if (previousStateDir === undefined) {
-          delete process.env.OPENCLAW_STATE_DIR;
+          delete process.env.AFORA_STATE_DIR;
         } else {
-          process.env.OPENCLAW_STATE_DIR = previousStateDir;
+          process.env.AFORA_STATE_DIR = previousStateDir;
         }
         vi.resetModules();
       }
@@ -297,7 +297,7 @@ describe("jidToE164", () => {
   });
 
   it("maps @lid from authDir mapping files", async () => {
-    await withTempDir("openclaw-auth-", (authDir) => {
+    await withTempDir("afora-auth-", (authDir) => {
       const mappingPath = path.join(authDir, "lid-mapping-456_reverse.json");
       fs.writeFileSync(mappingPath, JSON.stringify("5559876"));
       expect(jidToE164("456@lid", { authDir })).toBe("+5559876");
@@ -305,7 +305,7 @@ describe("jidToE164", () => {
   });
 
   it("maps @hosted.lid from authDir mapping files", async () => {
-    await withTempDir("openclaw-auth-", (authDir) => {
+    await withTempDir("afora-auth-", (authDir) => {
       const mappingPath = path.join(authDir, "lid-mapping-789_reverse.json");
       fs.writeFileSync(mappingPath, JSON.stringify(4440001));
       expect(jidToE164("789@hosted.lid", { authDir })).toBe("+4440001");
@@ -317,8 +317,8 @@ describe("jidToE164", () => {
   });
 
   it("falls back through lidMappingDirs in order", async () => {
-    await withTempDir("openclaw-lid-a-", async (first) => {
-      await withTempDir("openclaw-lid-b-", (second) => {
+    await withTempDir("afora-lid-a-", async (first) => {
+      await withTempDir("afora-lid-b-", (second) => {
         const mappingPath = path.join(second, "lid-mapping-321_reverse.json");
         fs.writeFileSync(mappingPath, JSON.stringify("123321"));
         expect(jidToE164("321@lid", { lidMappingDirs: [first, second] })).toBe("+123321");
@@ -329,7 +329,7 @@ describe("jidToE164", () => {
 
 describe("toWhatsappJidWithLid (issue #67378)", () => {
   it("resolves PN to LID when forward mapping file exists in authDir", async () => {
-    await withTempDir("openclaw-fwd-", (authDir) => {
+    await withTempDir("afora-fwd-", (authDir) => {
       const mappingPath = path.join(authDir, "lid-mapping-15555550000.json");
       fs.writeFileSync(mappingPath, JSON.stringify("987654"));
       expect(toWhatsappJidWithLid("+15555550000", { authDir })).toBe("987654@lid");
@@ -337,13 +337,13 @@ describe("toWhatsappJidWithLid (issue #67378)", () => {
   });
 
   it("falls back to PN s.whatsapp.net JID when no forward mapping exists", async () => {
-    await withTempDir("openclaw-fwd-", (authDir) => {
+    await withTempDir("afora-fwd-", (authDir) => {
       expect(toWhatsappJidWithLid("+33123456789", { authDir })).toBe("33123456789@s.whatsapp.net");
     });
   });
 
   it("accepts numeric LID values in mapping files (Baileys writes either string or number)", async () => {
-    await withTempDir("openclaw-fwd-", (authDir) => {
+    await withTempDir("afora-fwd-", (authDir) => {
       const mappingPath = path.join(authDir, "lid-mapping-447700900123.json");
       fs.writeFileSync(mappingPath, JSON.stringify(42424242));
       expect(toWhatsappJidWithLid("+447700900123", { authDir })).toBe("42424242@lid");
@@ -351,7 +351,7 @@ describe("toWhatsappJidWithLid (issue #67378)", () => {
   });
 
   it("preserves already-formed JIDs without consulting mapping", async () => {
-    await withTempDir("openclaw-fwd-", (authDir) => {
+    await withTempDir("afora-fwd-", (authDir) => {
       // Existing JIDs (group, s.whatsapp.net, lid) should pass through.
       expect(toWhatsappJidWithLid("123456789-987654321@g.us", { authDir })).toBe(
         "123456789-987654321@g.us",

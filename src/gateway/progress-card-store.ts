@@ -3,11 +3,11 @@ import {
   readSessionProgressCard,
   writeSessionProgressCard,
 } from "../session-cards/progress-card-store.js";
-import { withOpenClawAgentDatabaseReadOnly } from "../state/openclaw-agent-db-readonly.js";
+import { withAforaAgentDatabaseReadOnly } from "../state/afora-agent-db-readonly.js";
 import {
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-} from "../state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+} from "../state/afora-agent-db.js";
 import { resolveGatewaySessionDatabase } from "./board-store.js";
 
 export type ProgressCardStore = {
@@ -21,7 +21,7 @@ export type ProgressCardStore = {
 export const progressCardStore: ProgressCardStore = {
   get(sessionKey) {
     const resolved = resolveGatewaySessionDatabase(sessionKey);
-    const result = withOpenClawAgentDatabaseReadOnly(
+    const result = withAforaAgentDatabaseReadOnly(
       (database) => readSessionProgressCard(database.db, resolved.sessionKey),
       {
         agentId: resolved.agentId,
@@ -32,11 +32,11 @@ export const progressCardStore: ProgressCardStore = {
   },
   put(sessionKey, input) {
     const resolved = resolveGatewaySessionDatabase(sessionKey);
-    const database = openOpenClawAgentDatabase({
+    const database = openAforaAgentDatabase({
       agentId: resolved.agentId,
       ...(resolved.path ? { path: resolved.path } : {}),
     });
-    const result = runOpenClawAgentWriteTransaction(
+    const result = runAforaAgentWriteTransaction(
       (transactionDatabase) =>
         writeSessionProgressCard(transactionDatabase.db, resolved.sessionKey, input),
       { agentId: resolved.agentId, path: database.path },

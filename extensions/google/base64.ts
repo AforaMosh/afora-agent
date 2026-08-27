@@ -3,7 +3,7 @@
 // music) normalizes the URL-safe alphabet here before the shared strict
 // validator, so ProtoJSON bytes fields are accepted without weakening the
 // malformed-base64 guard for any surface.
-import { canonicalizeBase64 } from "openclaw/plugin-sdk/media-runtime";
+import { canonicalizeBase64 } from "afora-agent/plugin-sdk/media-runtime";
 
 /**
  * Convert a ProtoJSON URL-safe Base64 payload to the standard alphabet without

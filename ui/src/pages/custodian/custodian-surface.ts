@@ -4,9 +4,9 @@ import { property } from "lit/decorators.js";
 import { applicationContext, type ApplicationContext } from "../../app/context.ts";
 import { controlUiPublicAssetPath } from "../../app/public-assets.ts";
 import { icons } from "../../components/icons.ts";
-import "../../components/openclaw-mascot.ts";
+import "../../components/afora-mascot.ts";
 import { t } from "../../i18n/index.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import "../../styles/chat/grouped.css";
 import "../../styles/chat/layout.css";
 import "../../styles/chat/text.css";
@@ -16,7 +16,7 @@ import * as eventNudgeState from "./event-nudge.ts";
 import { sessionVariant } from "./session-lifecycle.ts";
 import { renderCustodianTranscriptEntry } from "./transcript.ts";
 
-class CustodianSurface extends OpenClawLightDomElement {
+class CustodianSurface extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context!: ApplicationContext;
 
@@ -51,7 +51,7 @@ class CustodianSurface extends OpenClawLightDomElement {
     await Promise.all(
       Array.from(
         this.querySelectorAll<HTMLElement & { updateComplete: Promise<boolean> }>(
-          "openclaw-option-card",
+          "afora-option-card",
         ),
       ).map((card) => card.updateComplete),
     );
@@ -105,7 +105,7 @@ class CustodianSurface extends OpenClawLightDomElement {
             : ""}"
         >
           <div class="custodian__setup-state" role="alert">
-            <openclaw-mascot mood="idle" .size=${this.compact ? 72 : 96}></openclaw-mascot>
+            <afora-mascot mood="idle" .size=${this.compact ? 72 : 96}></afora-mascot>
             <h2>
               ${t(unavailable ? "modelSetup.connectionFailure.title" : "modelSetup.required.title")}
             </h2>
@@ -198,7 +198,7 @@ class CustodianSurface extends OpenClawLightDomElement {
           ${store.sending
             ? html`<div class="chat-group assistant custodian__thinking-row" role="status">
                 <div class="chat-avatar assistant custodian__mascot-avatar" aria-hidden="true">
-                  <openclaw-mascot mood="thinking" .size=${26}></openclaw-mascot>
+                  <afora-mascot mood="thinking" .size=${26}></afora-mascot>
                 </div>
                 <div class="chat-group-messages custodian__thinking">
                   <span></span><span></span><span></span>
@@ -285,12 +285,12 @@ class CustodianSurface extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-custodian-surface")) {
-  customElements.define("openclaw-custodian-surface", CustodianSurface);
+if (!customElements.get("afora-custodian-surface")) {
+  customElements.define("afora-custodian-surface", CustodianSurface);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "openclaw-custodian-surface": CustodianSurface;
+    "afora-custodian-surface": CustodianSurface;
   }
 }

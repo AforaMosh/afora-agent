@@ -295,7 +295,7 @@ export function renderChannelPairingPrompt(props: ChannelsProps) {
     ? t("channels.pairing.approveDialogTitle")
     : t("channels.pairing.dismissDialogTitle");
   return html`
-    <openclaw-modal-dialog label=${dialogTitle} @modal-cancel=${props.onPairingPromptCancel}>
+    <afora-modal-dialog label=${dialogTitle} @modal-cancel=${props.onPairingPromptCancel}>
       <div class="channels-pairing-dialog">
         <div class="settings-row__title">${dialogTitle}</div>
         <div class="settings-row__desc">
@@ -364,6 +364,6 @@ export function renderChannelPairingPrompt(props: ChannelsProps) {
           </button>
         </div>
       </div>
-    </openclaw-modal-dialog>
+    </afora-modal-dialog>
   `;
 }

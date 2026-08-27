@@ -55,7 +55,7 @@ export function configAuditRecord(
     ts: "2026-07-01T00:00:00.000Z",
     source: "config-io",
     event: "config.write",
-    argv: ["openclaw", "config", "set", "token", marker],
+    argv: ["afora", "config", "set", "token", marker],
     execArgv: [],
     ...overrides,
   };
@@ -67,7 +67,7 @@ export class AuditMigrationFixture {
   readonly system;
 
   constructor(readonly stateDir: string) {
-    this.env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    this.env = { ...process.env, AFORA_STATE_DIR: stateDir };
     this.config = auditPaths(stateDir, path.join("logs", "config-audit.jsonl"));
     this.system = auditPaths(stateDir, path.join("audit", "system-agent.jsonl"));
   }
@@ -121,7 +121,7 @@ export class AuditMigrationFixture {
 export const withAuditMigrationFixture = (
   run: (fixture: AuditMigrationFixture) => Promise<void>,
 ): Promise<void> =>
-  withTestDir({ prefix: "openclaw-audit-migration-" }, (stateDir) =>
+  withTestDir({ prefix: "afora-audit-migration-" }, (stateDir) =>
     run(new AuditMigrationFixture(stateDir)),
   );
 

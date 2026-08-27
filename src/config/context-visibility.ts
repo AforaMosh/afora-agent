@@ -1,7 +1,7 @@
 // Resolves context visibility policy for accounts and sessions.
 import { resolveAccountEntry } from "../routing/account-lookup.js";
 import { normalizeAccountId } from "../routing/session-key.js";
-import type { OpenClawConfig } from "./config.js";
+import type { AforaConfig } from "./config.js";
 import type { ContextVisibilityMode } from "./types.base.js";
 
 type ChannelContextVisibilityConfig = {
@@ -35,8 +35,8 @@ export function resolveDefaultContextVisibility(
 
 /** Resolves supplemental context visibility using explicit, account, channel, default precedence. */
 export function resolveChannelContextVisibilityMode(params: {
-  /** Full OpenClaw config containing channel defaults and per-channel overrides. */
-  cfg: OpenClawConfig;
+  /** Full Afora config containing channel defaults and per-channel overrides. */
+  cfg: AforaConfig;
   /** Channel id whose visibility policy is being resolved. */
   channel: string;
   /** Optional channel account id used for account-specific overrides. */

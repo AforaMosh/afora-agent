@@ -45,7 +45,7 @@ describe("OpenAI long-context live settings", () => {
   it("fails closed on incomplete gates, missing keys, and malformed profiles", () => {
     expect(() =>
       resolveOpenAILongContextLiveSettings({ [OPENAI_LONG_CONTEXT_LIVE_ENV]: "1" }, false),
-    ).toThrow("also requires OPENCLAW_LIVE_TEST=1");
+    ).toThrow("also requires AFORA_LIVE_TEST=1");
     expect(() =>
       resolveOpenAILongContextLiveSettings(
         {
@@ -144,7 +144,7 @@ describe("OpenAI long-context live settings", () => {
         compactThreshold: 700_000,
         api: "openai-responses",
         baseUrl: "https://api.openai.com/v1",
-        runtime: "openclaw",
+        runtime: "afora",
       },
     });
   });
@@ -362,7 +362,7 @@ describe("OpenAI deterministic large tool output", () => {
           phase: "start",
           name: "read",
           toolCallId: "call-secret",
-          args: { file_path: "/tmp/workspace/.openclaw/tmp/tool-output.txt" },
+          args: { file_path: "/tmp/workspace/.afora/tmp/tool-output.txt" },
         },
       },
       {
@@ -384,13 +384,13 @@ describe("OpenAI deterministic large tool output", () => {
     ];
     const evidence = readToolOutputEvidence({
       events,
-      expectedPath: ".openclaw/tmp/tool-output.txt",
+      expectedPath: ".afora/tmp/tool-output.txt",
       expectedMarker: "TOOL-MARKER",
       expectedBytes: fixture.bytes,
       fixtureHash: fixture.sha256,
     });
     expect(evidence).toMatchObject({
-      path: ".openclaw/tmp/tool-output.txt",
+      path: ".afora/tmp/tool-output.txt",
       marker: "TOOL-MARKER",
       originalBytes: 512_000,
       fixtureHash: fixture.sha256,
@@ -439,7 +439,7 @@ describe("OpenAI turn metrics", () => {
         markerStatus: { begin: true, middle: true, end: true },
       }),
     ).toEqual({
-      runtime: "openclaw",
+      runtime: "afora",
       model: "openai/gpt-5.6-sol",
       phase: "dense-2",
       inputChars: 900_000,

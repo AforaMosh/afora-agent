@@ -173,7 +173,7 @@ export function createDependencyEvidenceManifest({
     releaseRef,
     releaseSha,
     npmDistTag,
-    packageName: "openclaw",
+    packageName: "afora",
     packageVersion,
     workflowRunId,
     workflowRunAttempt,
@@ -427,7 +427,7 @@ async function generateDependencyReleaseEvidence({
     await appendFile(
       githubStepSummary,
       renderDependencyEvidenceStepSummary({
-        evidenceArtifactName: `openclaw-release-dependency-evidence-${releaseRef}`,
+        evidenceArtifactName: `afora-release-dependency-evidence-${releaseRef}`,
         baseRef: dependencyChangeBaseRef,
         counts,
       }),

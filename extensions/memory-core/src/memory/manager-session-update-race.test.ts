@@ -1,7 +1,7 @@
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import type { MemorySessionSyncTarget } from "openclaw/plugin-sdk/memory-core-host-engine-storage";
-import { resolveOpenClawAgentSqlitePath } from "openclaw/plugin-sdk/sqlite-runtime";
+import type { MemorySessionSyncTarget } from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
+import { resolveAforaAgentSqlitePath } from "afora-agent/plugin-sdk/sqlite-runtime";
 import { describe, expect, it, vi } from "vitest";
 import { createManagerIndexFixture } from "./manager-index.test-support.js";
 
@@ -75,7 +75,7 @@ describe("memory session update sync", () => {
       await activeSync;
       await queuedSessionSync;
 
-      const observer = new DatabaseSync(resolveOpenClawAgentSqlitePath({ agentId: "main" }), {
+      const observer = new DatabaseSync(resolveAforaAgentSqlitePath({ agentId: "main" }), {
         readOnly: true,
       });
       try {

@@ -61,8 +61,8 @@ describe("AppSidebar footer identity menu", () => {
     ).toMatch(/^(⌘⇧,|Ctrl\+Shift\+,)$/u);
     expect(menu?.style.getPropertyValue("--sidebar-identity-menu-min-width")).toBe("212px");
     expect(menu?.querySelector(".sidebar-pair-mobile")?.hasAttribute("disabled")).toBe(true);
-    expect(menu?.querySelector("openclaw-sidebar-build-chip")).not.toBeNull();
-    expect(menu?.querySelector("openclaw-theme-mode-toggle")).not.toBeNull();
+    expect(menu?.querySelector("afora-sidebar-build-chip")).not.toBeNull();
+    expect(menu?.querySelector("afora-theme-mode-toggle")).not.toBeNull();
 
     const helpRow = menu?.querySelector<HTMLElement>(".sidebar-identity-menu__help");
     await (helpRow as (HTMLElement & { updateComplete?: Promise<unknown> }) | null)?.updateComplete;
@@ -72,10 +72,10 @@ describe("AppSidebar footer identity menu", () => {
         (link) => link.getAttribute("href"),
       ),
     ).toEqual([
-      "https://docs.openclaw.ai",
-      "https://docs.openclaw.ai/help",
+      "https://docs.afora.ai",
+      "https://docs.afora.ai/help",
       "https://discord.gg/clawd",
-      "https://docs.openclaw.ai/releases",
+      "https://docs.afora.ai/releases",
     ]);
 
     menu?.querySelector<HTMLElement>('wa-dropdown-item[value="command:profile"]')?.focus();

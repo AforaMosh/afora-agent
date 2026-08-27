@@ -1,4 +1,4 @@
-import { MAX_TIMER_TIMEOUT_SECONDS } from "openclaw/plugin-sdk/number-runtime";
+import { MAX_TIMER_TIMEOUT_SECONDS } from "afora-agent/plugin-sdk/number-runtime";
 import { describe, expect, test } from "vitest";
 import { createMxcPluginConfigSchema, resolveConfig } from "../src/config.js";
 
@@ -32,8 +32,8 @@ describe("resolveConfig", () => {
       timeoutSeconds: 60,
       debug: true,
       mxcPolicyPaths: [
-        "  C:\\ProgramData\\openclaw\\mxc-machine-policy.json  ",
-        "  /opt/openclaw/mxc-user-policy.json  ",
+        "  C:\\ProgramData\\afora\\mxc-machine-policy.json  ",
+        "  /opt/afora/mxc-user-policy.json  ",
       ],
     });
 
@@ -45,8 +45,8 @@ describe("resolveConfig", () => {
       timeoutSecondsConfigured: true,
       debug: true,
       mxcPolicyPaths: [
-        "C:\\ProgramData\\openclaw\\mxc-machine-policy.json",
-        "/opt/openclaw/mxc-user-policy.json",
+        "C:\\ProgramData\\afora\\mxc-machine-policy.json",
+        "/opt/afora/mxc-user-policy.json",
       ],
     });
   });

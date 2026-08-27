@@ -1,6 +1,6 @@
 // Qa Channel setup module handles plugin onboarding behavior.
-import type { ChannelSetupInput } from "openclaw/plugin-sdk/channel-setup";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { ChannelSetupInput } from "afora-agent/plugin-sdk/channel-setup";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { DEFAULT_ACCOUNT_ID } from "./accounts.js";
 import type { CoreConfig } from "./types.js";
 
@@ -11,10 +11,10 @@ export type QaChannelSetupInput = ChannelSetupInput & {
 };
 
 export function applyQaSetup(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   input: QaChannelSetupInput;
-}): OpenClawConfig {
+}): AforaConfig {
   const nextCfg = structuredClone(params.cfg) as CoreConfig;
   const section = nextCfg.channels?.["qa-channel"] ?? {};
   const accounts = { ...section.accounts };
@@ -42,5 +42,5 @@ export function applyQaSetup(params: {
       accounts,
     };
   }
-  return nextCfg as OpenClawConfig;
+  return nextCfg as AforaConfig;
 }

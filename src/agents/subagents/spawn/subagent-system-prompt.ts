@@ -3,7 +3,7 @@
  *
  * Produces role, completion, delegation, ACP, and native-command guidance for spawned child sessions.
  */
-import { normalizeUniqueStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeUniqueStringEntries } from "@afora/normalization-core/string-normalization";
 import { DEFAULT_SUBAGENT_MAX_SPAWN_DEPTH } from "../../../config/agent-limits.js";
 import type { DeliveryContext } from "../../../utils/delivery-context.types.js";
 
@@ -81,8 +81,8 @@ export function buildSubagentSystemPrompt(params: {
       ...(acpEnabled
         ? [
             "ACP harness: use the available ACP spawn capability; set `agentId` unless default. Codex only explicit ACP/acpx.",
-            "Local subagent list/status tools cover OpenClaw runtime=subagent only; ACP ids come from `acp.allowedAgents`.",
-            "Never ask the user for slash/CLI or exec openclaw/acpx when delegation tools can act.",
+            "Local subagent list/status tools cover Afora runtime=subagent only; ACP ids come from `acp.allowedAgents`.",
+            "Never ask the user for slash/CLI or exec afora/acpx when delegation tools can act.",
             "Subagent results auto-announce; ACP continues bound thread. No polling.",
           ]
         : []),

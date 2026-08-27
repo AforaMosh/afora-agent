@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing OpenClaw release tag to receive Windows Hub installers, for example v2026.6.1
+        description: Existing Afora release tag to receive Windows Hub installers, for example v2026.6.1
         required: true
         type: string
       windows_node_tag:
-        description: Exact openclaw-windows-node release tag to promote, for example v0.6.3
+        description: Exact afora-windows-node release tag to promote, for example v0.6.3
         required: true
         type: string
       expected_installer_digests:
@@ -38,14 +38,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if ($env:RELEASE_TAG -notmatch '^v[0-9]{4}\.[1-9][0-9]*\.[1-9][0-9]*((-(alpha|beta)\.[1-9][0-9]*)|(-[1-9][0-9]*))?$') {
-            throw "Invalid OpenClaw release tag: $env:RELEASE_TAG"
+            throw "Invalid Afora release tag: $env:RELEASE_TAG"
           }
           $stableRelease = -not (
             $env:RELEASE_TAG.Contains("-alpha.") -or
             $env:RELEASE_TAG.Contains("-beta.")
           )
           if ($env:WINDOWS_NODE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$') {
-            throw "windows_node_tag must be an explicit openclaw-windows-node release tag, not latest: $env:WINDOWS_NODE_TAG"
+            throw "windows_node_tag must be an explicit afora-windows-node release tag, not latest: $env:WINDOWS_NODE_TAG"
           }
 
           try {
@@ -55,12 +55,12 @@ jobs:
           }
           # Add future signed installer names, such as MSIX x64/ARM64, here.
           $requiredInstallerNames = @(
-            "OpenClawCompanion-Setup-x64.exe",
-            "OpenClawCompanion-Setup-arm64.exe"
+            "AforaCompanion-Setup-x64.exe",
+            "AforaCompanion-Setup-arm64.exe"
           )
           $allowedTargetCompanionAssetNames = @(
             $requiredInstallerNames
-            "OpenClawCompanion-SHA256SUMS.txt"
+            "AforaCompanion-SHA256SUMS.txt"
           )
           if ($expectedDigests.Count -ne $requiredInstallerNames.Count) {
             throw "expected_installer_digests must contain exactly the current installer asset contract."
@@ -74,22 +74,22 @@ jobs:
 
           $targetRelease = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json tagName,isDraft,isPrerelease,assets,url | ConvertFrom-Json
           if ($targetRelease.tagName -ne $env:RELEASE_TAG) {
-            throw "OpenClaw release tag mismatch: expected $env:RELEASE_TAG, got $($targetRelease.tagName)"
+            throw "Afora release tag mismatch: expected $env:RELEASE_TAG, got $($targetRelease.tagName)"
           }
           $unexpectedTargetCompanionAssets = @(
             $targetRelease.assets |
               Where-Object {
-                $_.name.StartsWith("OpenClawCompanion-") -and
+                $_.name.StartsWith("AforaCompanion-") -and
                 $_.name -notin $allowedTargetCompanionAssetNames
               } |
               ForEach-Object name |
               Sort-Object
           )
           if ($unexpectedTargetCompanionAssets.Count -ne 0) {
-            throw "Target OpenClaw release contains unexpected OpenClawCompanion assets before upload: $($unexpectedTargetCompanionAssets -join ', ')"
+            throw "Target Afora release contains unexpected AforaCompanion assets before upload: $($unexpectedTargetCompanionAssets -join ', ')"
           }
 
-          $sourceRelease = gh release view $env:WINDOWS_NODE_TAG --repo openclaw/openclaw-windows-node --json tagName,isDraft,isPrerelease,assets,url | ConvertFrom-Json
+          $sourceRelease = gh release view $env:WINDOWS_NODE_TAG --repo AforaMosh/afora-agent-windows-node --json tagName,isDraft,isPrerelease,assets,url | ConvertFrom-Json
           if ($sourceRelease.tagName -ne $env:WINDOWS_NODE_TAG) {
             throw "Windows source release tag mismatch: expected $env:WINDOWS_NODE_TAG, got $($sourceRelease.tagName)"
           }
@@ -97,7 +97,7 @@ jobs:
             throw "Windows source release must be published: $($sourceRelease.url)"
           }
           if ($stableRelease -and $sourceRelease.isPrerelease) {
-            throw "Stable OpenClaw releases require a non-prerelease Windows source release: $($sourceRelease.url)"
+            throw "Stable Afora releases require a non-prerelease Windows source release: $($sourceRelease.url)"
           }
           foreach ($name in $requiredInstallerNames) {
             $sourceAssets = @($sourceRelease.assets | Where-Object name -eq $name)
@@ -120,12 +120,12 @@ jobs:
           # Add future signed installer patterns, such as MSIX x64/ARM64, here.
           # Every matched installer is signature-checked, checksummed, and promoted.
           $installerPatterns = @(
-            "OpenClawCompanion-Setup-x64.exe",
-            "OpenClawCompanion-Setup-arm64.exe"
+            "AforaCompanion-Setup-x64.exe",
+            "AforaCompanion-Setup-arm64.exe"
           )
           $downloadArgs = @(
             $env:WINDOWS_NODE_TAG,
-            "--repo", "openclaw/openclaw-windows-node",
+            "--repo", "AforaMosh/afora-agent-windows-node",
             "--dir", "dist"
           )
           foreach ($pattern in $installerPatterns) {
@@ -155,7 +155,7 @@ jobs:
       - name: Verify Authenticode signatures
         shell: pwsh
         run: |
-          $expectedSignerSubject = "CN=OpenClaw Foundation, O=OpenClaw Foundation, L=Mill Valley, S=California, C=US"
+          $expectedSignerSubject = "CN=Afora Foundation, O=Afora Foundation, L=Mill Valley, S=California, C=US"
           Get-ChildItem -LiteralPath dist -File | ForEach-Object {
             $signature = Get-AuthenticodeSignature -LiteralPath $_.FullName
             if ($signature.Status -ne "Valid") {
@@ -182,9 +182,9 @@ jobs:
             ForEach-Object {
               $hash = Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName
               "$($hash.Hash.ToLowerInvariant())  $($_.Name)"
-            } | Set-Content -Encoding utf8NoBOM -Path dist/OpenClawCompanion-SHA256SUMS.txt
+            } | Set-Content -Encoding utf8NoBOM -Path dist/AforaCompanion-SHA256SUMS.txt
 
-      - name: Upload to OpenClaw release
+      - name: Upload to Afora release
         shell: pwsh
         env:
           RELEASE_TAG: ${{ inputs.tag }}
@@ -208,7 +208,7 @@ jobs:
           $targetRelease = gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --json assets | ConvertFrom-Json
           $actualCompanionAssetNames = @(
             $targetRelease.assets |
-              Where-Object { $_.name.StartsWith("OpenClawCompanion-") } |
+              Where-Object { $_.name.StartsWith("AforaCompanion-") } |
               ForEach-Object name |
               Sort-Object
           )
@@ -221,7 +221,7 @@ jobs:
             $actualCompanionAssetNames.Count -ne $expectedCompanionAssetNames.Count -or
             $assetContractDiff.Count -ne 0
           ) {
-            throw "Promoted OpenClawCompanion asset names do not exactly match the current contract."
+            throw "Promoted AforaCompanion asset names do not exactly match the current contract."
           }
 
           foreach ($asset in $expectedAssets) {
@@ -234,7 +234,7 @@ jobs:
             }
           }
 
-          $manifestPath = "verified/OpenClawCompanion-SHA256SUMS.txt"
+          $manifestPath = "verified/AforaCompanion-SHA256SUMS.txt"
           $manifestEntries = @(Get-Content -LiteralPath $manifestPath | ForEach-Object {
             if ($_ -notmatch '^([A-Fa-f0-9]{64})  ([^\\/]+)$') {
               throw "Invalid Windows SHA-256 manifest entry: $_"
@@ -246,7 +246,7 @@ jobs:
           })
           $expectedInstallerNames = @(
             $expectedAssets |
-              Where-Object Name -ne "OpenClawCompanion-SHA256SUMS.txt" |
+              Where-Object Name -ne "AforaCompanion-SHA256SUMS.txt" |
               ForEach-Object Name
           )
           $manifestInstallerNames = @($manifestEntries | ForEach-Object Name | Sort-Object)
@@ -275,11 +275,11 @@ jobs:
           @"
           ## Windows Hub installers promoted
 
-          OpenClaw release: $env:RELEASE_TAG
-          Source release: openclaw/openclaw-windows-node@$env:WINDOWS_NODE_TAG
+          Afora release: $env:RELEASE_TAG
+          Source release: AforaMosh/afora-agent-windows-node@$env:WINDOWS_NODE_TAG
           "@ >> $env:GITHUB_STEP_SUMMARY
           Get-ChildItem -LiteralPath dist -File |
             Sort-Object Name |
             ForEach-Object {
-              "- https://github.com/openclaw/openclaw/releases/download/$env:RELEASE_TAG/$($_.Name)"
+              "- https://github.com/AforaMosh/afora-agent/releases/download/$env:RELEASE_TAG/$($_.Name)"
             } >> $env:GITHUB_STEP_SUMMARY

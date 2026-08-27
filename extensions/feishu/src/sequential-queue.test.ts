@@ -1,6 +1,6 @@
 // Feishu tests cover sequential queue plugin behavior.
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
-import { MAX_TIMER_TIMEOUT_MS } from "openclaw/plugin-sdk/number-runtime";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
+import { MAX_TIMER_TIMEOUT_MS } from "afora-agent/plugin-sdk/number-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createSequentialQueue } from "./sequential-queue.js";
 

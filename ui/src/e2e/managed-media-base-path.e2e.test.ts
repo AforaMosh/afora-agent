@@ -9,7 +9,7 @@ import {
   type ControlUiE2eServer,
 } from "../test-helpers/control-ui-e2e.ts";
 
-const proofDir = process.env.OPENCLAW_MEDIA_PROOF_DIR?.trim() || null;
+const proofDir = process.env.AFORA_MEDIA_PROOF_DIR?.trim() || null;
 
 let server: ControlUiE2eServer;
 
@@ -38,7 +38,7 @@ describe("Control UI managed media under a UI base path", () => {
       "/api/chat/media/outgoing/agent%3Amain%3Amain/00000000-0000-4000-8000-000000000001/full";
     const previewPath = `/rosita${sourcePath.replace(/\/full$/u, "/thumbnail")}`;
     const imageBytes = await readFile(
-      path.join(process.cwd(), "docs/assets/openclaw-banner-dark.png"),
+      path.join(process.cwd(), "docs/assets/afora-banner-dark.png"),
     );
     const requests: Array<{ contentType: string; path: string }> = [];
 
@@ -51,7 +51,7 @@ describe("Control UI managed media under a UI base path", () => {
       }
       requests.push({ contentType: "text/html", path: requestPath });
       await route.fulfill({
-        body: "<!doctype html><title>OpenClaw</title>",
+        body: "<!doctype html><title>Afora</title>",
         contentType: "text/html",
         status: 200,
       });

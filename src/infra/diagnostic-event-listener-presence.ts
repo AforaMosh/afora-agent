@@ -1,7 +1,7 @@
 /** Process-wide listener counts used to avoid telemetry work without consumers. */
 
 const DIAGNOSTIC_EVENT_LISTENER_PRESENCE_KEY = Symbol.for(
-  "openclaw.diagnosticEventListenerPresence.v1",
+  "afora.diagnosticEventListenerPresence.v1",
 );
 
 type DiagnosticEventListenerPresence = {

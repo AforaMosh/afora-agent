@@ -1,10 +1,10 @@
-import type { ChannelBotLoopProtectionFacts } from "openclaw/plugin-sdk/channel-inbound";
-import { resolveChannelProgressDraftConfig } from "openclaw/plugin-sdk/channel-outbound";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { mergePairLoopGuardConfig } from "openclaw/plugin-sdk/pair-loop-guard-runtime";
-import { resolveSendableOutboundReplyParts } from "openclaw/plugin-sdk/reply-payload";
-import type { ReplyDispatchKind, ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
+import type { ChannelBotLoopProtectionFacts } from "afora-agent/plugin-sdk/channel-inbound";
+import { resolveChannelProgressDraftConfig } from "afora-agent/plugin-sdk/channel-outbound";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { mergePairLoopGuardConfig } from "afora-agent/plugin-sdk/pair-loop-guard-runtime";
+import { resolveSendableOutboundReplyParts } from "afora-agent/plugin-sdk/reply-payload";
+import type { ReplyDispatchKind, ReplyPayload } from "afora-agent/plugin-sdk/reply-runtime";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
 import { resolveSlackReplyRenderPlan } from "../../reply-blocks.js";
 import type { SlackMessageEvent } from "../../types.js";
 import { readSlackReplyBlocks, resolveSlackThreadTs } from "../replies.js";

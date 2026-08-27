@@ -3,7 +3,7 @@
  * These types describe credential payloads, runtime selection state, and repair
  * results consumed by providers, sessions, doctor, and plugin-facing seams.
  */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { SecretRef } from "../../config/types.secrets.js";
 import type { LegacyOAuthRef } from "./legacy-oauth-ref.js";
 
@@ -42,11 +42,11 @@ export type ApiKeyCredential = {
   metadata?: Record<string, string>;
 };
 
-/** Static token credential that OpenClaw does not refresh. */
+/** Static token credential that Afora does not refresh. */
 export type TokenCredential = {
   /**
    * Static bearer-style token (often OAuth access token / PAT).
-   * Not refreshable by OpenClaw (unlike `type: "oauth"`).
+   * Not refreshable by Afora (unlike `type: "oauth"`).
    */
   type: "token";
   provider: string;
@@ -163,7 +163,7 @@ export type RuntimeAuthProfileStore = AuthProfileStore & {
 
 /** Result returned by config/store auth profile id repair. */
 export type AuthProfileIdRepairResult = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   changes: string[];
   migrated: boolean;
   fromProfileId?: string;

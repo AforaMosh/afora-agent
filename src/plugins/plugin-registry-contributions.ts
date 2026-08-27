@@ -1,6 +1,6 @@
 /** Loads manifest and installed-index contributions used to build plugin registry snapshots. */
-import { normalizeSortedUniqueStringEntries } from "@openclaw/normalization-core/string-normalization";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeSortedUniqueStringEntries } from "@afora/normalization-core/string-normalization";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   normalizePluginsConfigWithResolverCore,
   type NormalizedPluginsConfig,
@@ -142,7 +142,7 @@ function listManifestContributionIds(
 function resolveContributionPluginIds(params: {
   index: PluginRegistrySnapshot;
   includeDisabled?: boolean;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): readonly string[] {
   if (params.includeDisabled) {
     return params.index.plugins.map((plugin) => plugin.pluginId);
@@ -223,7 +223,7 @@ function filterContributionOwnerIds(params: {
   owners: readonly string[];
   index: PluginRegistrySnapshot;
   includeDisabled?: boolean;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): readonly string[] {
   const enabledPluginIds = new Set(
     resolveContributionPluginIds({
@@ -256,7 +256,7 @@ export function loadPluginManifestRegistryForPluginRegistry(
 }
 
 export function normalizePluginsConfigWithRegistry(
-  config: OpenClawConfig["plugins"] | undefined,
+  config: AforaConfig["plugins"] | undefined,
   index: PluginRegistrySnapshot,
   options: PluginRegistryIdNormalizerOptions = {},
 ): NormalizedPluginsConfig {

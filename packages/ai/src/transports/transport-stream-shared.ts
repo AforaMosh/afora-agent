@@ -3,8 +3,8 @@
  *
  * Sanitizes provider payloads, merges metadata, and formats streamed assistant events.
  */
-import type { AssistantMessage, Usage } from "@openclaw/llm-core";
-import { asNonArrayRecord, asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
+import type { AssistantMessage, Usage } from "@afora/llm-core";
+import { asNonArrayRecord, asOptionalRecord } from "@afora/normalization-core/record-coerce";
 import { createAssistantMessageEventStream } from "../utils/event-stream.js";
 import { projectProviderError, type ProviderErrorProjection } from "../utils/provider-error.js";
 import { sanitizeSurrogates } from "../utils/sanitize-unicode.js";

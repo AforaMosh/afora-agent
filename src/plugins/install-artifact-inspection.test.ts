@@ -13,7 +13,7 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 describe("plugin install artifact inspection", () => {
   it("classifies native plugins as canonically mapped", () => {
     expect(inspectNativePluginArtifact()).toEqual({
-      format: "openclaw",
+      format: "afora",
       mapped: ["plugin"],
       unavailable: [],
     });
@@ -46,7 +46,7 @@ describe("plugin install artifact inspection", () => {
   });
 
   it("returns canonical inspection from the verified bundle install path", async () => {
-    const root = tempDirs.make("openclaw-plugin-artifact-inspection-");
+    const root = tempDirs.make("afora-plugin-artifact-inspection-");
     const bundle = join(root, "bundle");
     await mkdir(join(bundle, ".claude-plugin"), { recursive: true });
     await mkdir(join(bundle, "skills", "triage"), { recursive: true });
@@ -74,7 +74,7 @@ describe("plugin install artifact inspection", () => {
   });
 
   it("preflights a cursor bundle with detected but unmapped agents", async () => {
-    const root = tempDirs.make("openclaw-plugin-artifact-inspection-cursor-");
+    const root = tempDirs.make("afora-plugin-artifact-inspection-cursor-");
     const bundle = join(root, "bundle");
     await mkdir(join(bundle, ".cursor-plugin"), { recursive: true });
     await mkdir(join(bundle, "skills", "triage"), { recursive: true });

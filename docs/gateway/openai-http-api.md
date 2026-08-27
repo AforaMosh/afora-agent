@@ -17,7 +17,7 @@ Once enabled, it serves all of these on the same port as the Gateway (WS + HTTP 
 | POST   | `/v1/embeddings`       |
 | POST   | `/v1/responses`        |
 
-Requests run as a normal Gateway agent run (same codepath as `openclaw agent`), so routing, permissions, and config match your Gateway.
+Requests run as a normal Gateway agent run (same codepath as `afora agent`), so routing, permissions, and config match your Gateway.
 
 ## Enabling the endpoint
 
@@ -47,8 +47,8 @@ Auth matrix:
 
 | Auth path                                                                                            | Behavior                                                                                                                                                                                                                                                                                                  |
 | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `gateway.auth.mode="token"` or `"password"` + `Authorization: Bearer ...`                            | Proves possession of the shared gateway secret. Ignores any `x-openclaw-scopes` header and restores the full default operator scope set: `operator.admin`, `operator.approvals`, `operator.pairing`, `operator.read`, `operator.talk.secrets`, `operator.write`. Treats chat turns as owner-sender turns. |
-| Trusted identity-bearing HTTP (trusted-proxy auth, or `gateway.auth.mode="none"` on private ingress) | Honors `x-openclaw-scopes` when present; falls back to the default operator scope set when absent. Loses owner semantics only when the caller explicitly narrows scopes and omits `operator.admin`. Requires `operator.admin` for owner-level controls such as `x-openclaw-model`.                        |
+| `gateway.auth.mode="token"` or `"password"` + `Authorization: Bearer ...`                            | Proves possession of the shared gateway secret. Ignores any `x-afora-scopes` header and restores the full default operator scope set: `operator.admin`, `operator.approvals`, `operator.pairing`, `operator.read`, `operator.talk.secrets`, `operator.write`. Treats chat turns as owner-sender turns. |
+| Trusted identity-bearing HTTP (trusted-proxy auth, or `gateway.auth.mode="none"` on private ingress) | Honors `x-afora-scopes` when present; falls back to the default operator scope set when absent. Loses owner semantics only when the caller explicitly narrows scopes and omits `operator.admin`. Requires `operator.admin` for owner-level controls such as `x-afora-model`.                        |
 
 See [Operator scopes](/gateway/operator-scopes), [Security](/gateway/security), and [Remote access](/gateway/remote).
 
@@ -58,14 +58,14 @@ Uses the Gateway auth configuration (see [Trusted proxy auth](/gateway/trusted-p
 
 | Mode                                | How to authenticate                                                                                                                                                                     |
 | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `gateway.auth.mode="token"`         | `Authorization: Bearer <token>`. Set via `gateway.auth.token` or `OPENCLAW_GATEWAY_TOKEN`.                                                                                              |
-| `gateway.auth.mode="password"`      | `Authorization: Bearer <password>`. Set via `gateway.auth.password` or `OPENCLAW_GATEWAY_PASSWORD`.                                                                                     |
+| `gateway.auth.mode="token"`         | `Authorization: Bearer <token>`. Set via `gateway.auth.token` or `AFORA_GATEWAY_TOKEN`.                                                                                              |
+| `gateway.auth.mode="password"`      | `Authorization: Bearer <password>`. Set via `gateway.auth.password` or `AFORA_GATEWAY_PASSWORD`.                                                                                     |
 | `gateway.auth.mode="trusted-proxy"` | Route through the configured identity-aware proxy; it injects the required identity headers. Same-host loopback proxies need explicit `gateway.auth.trustedProxy.allowLoopback = true`. |
 | `gateway.auth.mode="none"`          | No auth header required (private ingress only).                                                                                                                                         |
 
 Notes:
 
-- Same-host callers that bypass the proxy on a `trusted-proxy` gateway can fall back to `gateway.auth.password` / `OPENCLAW_GATEWAY_PASSWORD` directly. Any `Forwarded`, `X-Forwarded-*`, or `X-Real-IP` header evidence keeps the request on the trusted-proxy path instead.
+- Same-host callers that bypass the proxy on a `trusted-proxy` gateway can fall back to `gateway.auth.password` / `AFORA_GATEWAY_PASSWORD` directly. Any `Forwarded`, `X-Forwarded-*`, or `X-Real-IP` header evidence keeps the request on the trusted-proxy path instead.
 - If `gateway.auth.rateLimit` is configured and too many auth attempts fail, the endpoint returns `429` with a `Retry-After` header.
 
 ## When to use this endpoint
@@ -76,33 +76,33 @@ Notes:
 
 ## Agent-first model contract
 
-OpenClaw treats the OpenAI `model` field as an **agent target**, not a raw provider model id.
+Afora treats the OpenAI `model` field as an **agent target**, not a raw provider model id.
 
 | `model` value                                | Routes to                                                                                                                |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `openclaw`                                   | Configured default agent                                                                                                 |
-| `openclaw/default`                           | Configured default agent (stable alias; safe to hardcode even if the real default agent id changes between environments) |
-| `openclaw/<agentId>` or `openclaw:<agentId>` | Specific agent                                                                                                           |
+| `afora`                                   | Configured default agent                                                                                                 |
+| `afora/default`                           | Configured default agent (stable alias; safe to hardcode even if the real default agent id changes between environments) |
+| `afora/<agentId>` or `afora:<agentId>` | Specific agent                                                                                                           |
 | `agent:<agentId>`                            | Specific agent (compatibility alias)                                                                                     |
 
 Optional request headers:
 
 | Header                                          | Effect                                                                                                                                                                                                                                                                      |
 | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x-openclaw-model: <provider/model-or-bare-id>` | Overrides the backend model for the selected agent. Shared-secret bearer callers can use this directly; identity-bearing callers (trusted-proxy, or private no-auth ingress with `x-openclaw-scopes`) need `operator.admin`, otherwise `403 missing scope: operator.admin`. |
-| `x-openclaw-agent-id: <agentId>`                | Compatibility override for agent selection.                                                                                                                                                                                                                                 |
-| `x-openclaw-session-key: <sessionKey>`          | Explicit session routing. Rejected with `400 invalid_request_error` if it uses a reserved internal namespace (`subagent:`, `cron:`, `acp:`).                                                                                                                                |
-| `x-openclaw-message-channel: <channel>`         | Sets the synthetic ingress channel context for channel-aware prompts/policies.                                                                                                                                                                                              |
+| `x-afora-model: <provider/model-or-bare-id>` | Overrides the backend model for the selected agent. Shared-secret bearer callers can use this directly; identity-bearing callers (trusted-proxy, or private no-auth ingress with `x-afora-scopes`) need `operator.admin`, otherwise `403 missing scope: operator.admin`. |
+| `x-afora-agent-id: <agentId>`                | Compatibility override for agent selection.                                                                                                                                                                                                                                 |
+| `x-afora-session-key: <sessionKey>`          | Explicit session routing. Rejected with `400 invalid_request_error` if it uses a reserved internal namespace (`subagent:`, `cron:`, `acp:`).                                                                                                                                |
+| `x-afora-message-channel: <channel>`         | Sets the synthetic ingress channel context for channel-aware prompts/policies.                                                                                                                                                                                              |
 
-`/v1/models` lists top-level agent targets (`openclaw`, `openclaw/default`, `openclaw/<agentId>`), not backend provider models and not sub-agents; sub-agents stay internal execution topology. If you omit `x-openclaw-model`, the selected agent runs with its normal configured model.
+`/v1/models` lists top-level agent targets (`afora`, `afora/default`, `afora/<agentId>`), not backend provider models and not sub-agents; sub-agents stay internal execution topology. If you omit `x-afora-model`, the selected agent runs with its normal configured model.
 
-`/v1/embeddings` uses the same agent-target `model` ids. Send `x-openclaw-model` (from a shared-secret caller, or an identity-bearing caller with `operator.admin`) to pick a specific embedding model; otherwise the request uses the selected agent's normal embedding setup.
+`/v1/embeddings` uses the same agent-target `model` ids. Send `x-afora-model` (from a shared-secret caller, or an identity-bearing caller with `operator.admin`) to pick a specific embedding model; otherwise the request uses the selected agent's normal embedding setup.
 
 ## Session behavior
 
 By default the endpoint is **stateless per request** (a new session key is generated each call).
 
-If the request includes an OpenAI `user` string, the Gateway derives a stable session key from it so repeated calls can share an agent session. For custom apps, reuse the same `user` value per conversation thread; avoid account-level identifiers unless you want multiple conversations/devices to share one OpenClaw session. Use `x-openclaw-session-key` only when you need explicit routing control across multiple clients/threads, with application-owned keys that avoid the reserved namespaces above.
+If the request includes an OpenAI `user` string, the Gateway derives a stable session key from it so repeated calls can share an agent session. For custom apps, reuse the same `user` value per conversation thread; avoid account-level identifiers unless you want multiple conversations/devices to share one Afora session. Use `x-afora-session-key` only when you need explicit routing control across multiple clients/threads, with application-owned keys that avoid the reserved namespaces above.
 
 ## Request limits
 
@@ -149,7 +149,7 @@ Image settings default to:
 | `images.maxRedirects` | 3                                                                   |
 | `images.timeoutMs`    | 10s                                                                 |
 
-HEIC/HEIF `image_url` sources are accepted and normalized to JPEG before provider delivery through the shared OpenClaw image processor (Rastermill), which falls back to a system converter (`sips`, ImageMagick, GraphicsMagick, or ffmpeg) for formats needing external codec support.
+HEIC/HEIF `image_url` sources are accepted and normalized to JPEG before provider delivery through the shared Afora image processor (Rastermill), which falls back to a system converter (`sips`, ImageMagick, GraphicsMagick, or ffmpeg) for formats needing external codec support.
 
 Security note: allowlisting a hostname does not bypass private/internal IP blocking. For internet-exposed gateways, apply network egress controls in addition to app-level guards. See [Security](/gateway/security).
 
@@ -188,7 +188,7 @@ Returns `400 invalid_request_error` for:
 - `tool_choice` variants such as `allowed_tools` and `custom`
 - `tool_choice.function.name` values that do not match a provided tool
 
-For `tool_choice: "required"` and function-pinned `tool_choice`, the endpoint narrows the exposed client function-tool set, instructs the runtime to call a client tool before responding, and errors if the agent response has no matching structured client-tool call. This applies to the caller-supplied HTTP `tools` list, not every internal OpenClaw agent tool.
+For `tool_choice: "required"` and function-pinned `tool_choice`, the endpoint narrows the exposed client function-tool set, instructs the runtime to call a client tool before responding, and errors if the agent response has no matching structured client-tool call. This applies to the caller-supplied HTTP `tools` list, not every internal Afora agent tool.
 
 ### Non-streaming tool response shape
 
@@ -221,9 +221,9 @@ Set `stream: true` to receive Server-Sent Events:
 - Base URL: `http://127.0.0.1:18789/v1`
 - Docker on macOS base URL: `http://host.docker.internal:18789/v1`
 - API key: your Gateway bearer token
-- Model: `openclaw/default`
+- Model: `afora/default`
 
-Expected behavior: `GET /v1/models` lists `openclaw/default`, and Open WebUI uses it as the chat model id. For a specific backend provider/model, set the agent's normal default model, or send `x-openclaw-model` (shared-secret caller, or identity-bearing caller with `operator.admin`).
+Expected behavior: `GET /v1/models` lists `afora/default`, and Open WebUI uses it as the chat model id. For a specific backend provider/model, set the agent's normal default model, or send `x-afora-model` (shared-secret caller, or identity-bearing caller with `operator.admin`).
 
 Quick smoke test:
 
@@ -232,7 +232,7 @@ curl -sS http://127.0.0.1:18789/v1/models \
   -H 'Authorization: Bearer YOUR_TOKEN'
 ```
 
-If that returns `openclaw/default`, most Open WebUI setups can connect with the same base URL and token.
+If that returns `afora/default`, most Open WebUI setups can connect with the same base URL and token.
 
 ## Examples
 
@@ -243,7 +243,7 @@ curl -sS http://127.0.0.1:18789/v1/chat/completions \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
   -d '{
-    "model": "openclaw/default",
+    "model": "afora-agent/default",
     "user": "conv:YOUR_CONVERSATION_ID",
     "messages": [{"role":"user","content":"Summarize my tasks for today"}]
   }'
@@ -258,7 +258,7 @@ curl -sS http://127.0.0.1:18789/v1/chat/completions \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
   -d '{
-    "model": "openclaw/default",
+    "model": "afora-agent/default",
     "messages": [{"role":"user","content":"hi"}]
   }'
 ```
@@ -269,9 +269,9 @@ Streaming:
 curl -N http://127.0.0.1:18789/v1/chat/completions \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
-  -H 'x-openclaw-model: openai/gpt-5.4' \
+  -H 'x-afora-model: openai/gpt-5.4' \
   -d '{
-    "model": "openclaw/research",
+    "model": "afora-agent/research",
     "stream": true,
     "messages": [{"role":"user","content":"hi"}]
   }'
@@ -287,7 +287,7 @@ curl -sS http://127.0.0.1:18789/v1/models \
 Fetch one model:
 
 ```bash
-curl -sS http://127.0.0.1:18789/v1/models/openclaw%2Fdefault \
+curl -sS http://127.0.0.1:18789/v1/models/afora%2Fdefault \
   -H 'Authorization: Bearer YOUR_TOKEN'
 ```
 
@@ -297,9 +297,9 @@ Create embeddings:
 curl -sS http://127.0.0.1:18789/v1/embeddings \
   -H 'Authorization: Bearer YOUR_TOKEN' \
   -H 'Content-Type: application/json' \
-  -H 'x-openclaw-model: openai/text-embedding-3-small' \
+  -H 'x-afora-model: openai/text-embedding-3-small' \
   -d '{
-    "model": "openclaw/default",
+    "model": "afora-agent/default",
     "input": ["alpha", "beta"]
   }'
 ```

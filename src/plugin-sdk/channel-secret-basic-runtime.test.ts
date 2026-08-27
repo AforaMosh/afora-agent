@@ -30,7 +30,7 @@ describe("createChannelSecretTargetRegistryEntries", () => {
       {
         id: "channels.example.accounts.*.token",
         targetType: "channels.example.accounts.*.token",
-        configFile: "openclaw.json",
+        configFile: "afora.json",
         pathPattern: "channels.example.accounts.*.token",
         secretShape: "secret_input",
         expectedResolvedValue: "string",
@@ -41,7 +41,7 @@ describe("createChannelSecretTargetRegistryEntries", () => {
       {
         id: "channels.example.token",
         targetType: "channels.example.token",
-        configFile: "openclaw.json",
+        configFile: "afora.json",
         pathPattern: "channels.example.token",
         secretShape: "secret_input",
         expectedResolvedValue: "string",

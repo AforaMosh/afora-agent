@@ -3,11 +3,11 @@ import {
   readRemoteMediaBuffer,
   MAX_IMAGE_BYTES,
   saveRemoteMedia,
-} from "openclaw/plugin-sdk/media-runtime";
+} from "afora-agent/plugin-sdk/media-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildTlonInboundMediaPrompt, downloadMessageImages } from "./media.js";
 
-vi.mock("openclaw/plugin-sdk/media-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/media-runtime", () => ({
   MAX_IMAGE_BYTES: 6 * 1024 * 1024,
   readRemoteMediaBuffer: vi.fn(),
   saveRemoteMedia: vi.fn(),
@@ -33,7 +33,7 @@ describe("tlon monitor media", () => {
     }));
     saveRemoteMediaMock.mockImplementation(async ({ url }) => ({
       id: `photo-${url}.png`,
-      path: `/tmp/openclaw/media/inbound/${url.split("/").pop()}`,
+      path: `/tmp/afora/media/inbound/${url.split("/").pop()}`,
       size: 10,
       contentType: "image/png",
     }));
@@ -69,7 +69,7 @@ describe("tlon monitor media", () => {
   it("stores fetched media through the shared inbound media store with the image cap", async () => {
     saveRemoteMediaMock.mockResolvedValue({
       id: "photo---uuid.png",
-      path: "/tmp/openclaw/media/inbound/photo---uuid.png",
+      path: "/tmp/afora/media/inbound/photo---uuid.png",
       size: "image-data".length,
       contentType: "image/png",
     });
@@ -90,7 +90,7 @@ describe("tlon monitor media", () => {
     });
     expect(result).toEqual({
       attachments: [
-        { path: "/tmp/openclaw/media/inbound/photo---uuid.png", contentType: "image/png" },
+        { path: "/tmp/afora/media/inbound/photo---uuid.png", contentType: "image/png" },
       ],
       unavailableCount: 0,
     });

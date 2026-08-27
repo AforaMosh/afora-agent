@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { HealthCheck } from "openclaw/plugin-sdk/health";
+import type { HealthCheck } from "afora-agent/plugin-sdk/health";
 import {
   CODEX_MANAGED_APP_SERVER_CHECK_ID,
   registerCodexManagedAppServerDoctorChecks as registerChecks,

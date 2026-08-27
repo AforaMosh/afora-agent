@@ -1,7 +1,7 @@
 import { observeConfigSnapshot } from "./io.observe.js";
 import type { NormalizedConfigIoDeps, ReadConfigFileSnapshotInternalResult } from "./io.types.js";
 import { asResolvedSourceConfig, asRuntimeConfig } from "./materialize.js";
-import type { ConfigFileSnapshot, LegacyConfigIssue, OpenClawConfig } from "./types.js";
+import type { ConfigFileSnapshot, LegacyConfigIssue, AforaConfig } from "./types.js";
 
 export function createConfigFileSnapshot(params: {
   path: string;
@@ -12,10 +12,10 @@ export function createConfigFileSnapshot(params: {
   exists: boolean;
   raw: string | null;
   parsed: unknown;
-  sourceConfigBeforeMigrations?: OpenClawConfig;
-  sourceConfig: OpenClawConfig;
+  sourceConfigBeforeMigrations?: AforaConfig;
+  sourceConfig: AforaConfig;
   valid: boolean;
-  runtimeConfig: OpenClawConfig;
+  runtimeConfig: AforaConfig;
   hash?: string;
   readError?: { code: string | null };
   issues: ConfigFileSnapshot["issues"];

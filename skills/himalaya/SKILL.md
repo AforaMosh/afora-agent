@@ -4,7 +4,7 @@ description: "Himalaya CLI for IMAP/SMTP mail: list, read, search, compose, repl
 homepage: https://github.com/pimalaya/himalaya
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "emoji": "📧",
         "requires": { "bins": ["himalaya"] },

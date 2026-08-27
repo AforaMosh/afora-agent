@@ -1,4 +1,4 @@
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 // Covers shared provider usage helpers.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clampPercent, raceUsageTimeout, resolveUsageProviderId } from "./provider-usage.shared.js";

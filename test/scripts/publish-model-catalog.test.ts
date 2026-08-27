@@ -40,14 +40,14 @@ function writeFixtureManifest(root: string, pluginId: string, providers: Record<
   const pluginDir = path.join(root, "extensions", pluginId);
   fs.mkdirSync(pluginDir, { recursive: true });
   fs.writeFileSync(
-    path.join(pluginDir, "openclaw.plugin.json"),
+    path.join(pluginDir, "afora.plugin.json"),
     `${JSON.stringify({ id: pluginId, modelCatalog: { providers } }, null, 2)}\n`,
   );
 }
 
 describe("publish model catalog", () => {
   it("assembles and validates fixture manifests at the 200-model floor", async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-publish-catalog-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-publish-catalog-"));
     tempDirs.push(root);
     writeFixtureManifest(root, "anthropic", { anthropic: fixtureProvider("claude", 100) });
     writeFixtureManifest(root, "openai", { openai: fixtureProvider("gpt", 100) });
@@ -114,7 +114,7 @@ describe("publish model catalog", () => {
 
   it("dry-runs the repository manifests without writing output", () => {
     const root = process.cwd();
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-publish-catalog-smoke-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-publish-catalog-smoke-"));
     tempDirs.push(tempDir);
     const out = path.join(tempDir, "catalog.json");
     const result = spawnSync(

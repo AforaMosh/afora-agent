@@ -48,7 +48,7 @@ flow:
             senderId: observer
             senderName: QA Observer
             text:
-              expr: "`@openclaw reply exactly: ${config.blockedMarker}`"
+              expr: "`@afora reply exactly: ${config.blockedMarker}`"
         - waitForNoOutbound:
             quietMs: 1500
             sinceIndex: { ref: outboundStartIndex }
@@ -59,7 +59,7 @@ flow:
             senderId: driver
             senderName: QA Driver
             text:
-              expr: "`@openclaw reply exactly: ${config.expectedMarker}`"
+              expr: "`@afora reply exactly: ${config.expectedMarker}`"
         - waitForOutbound:
             conversation:
               id: { ref: config.conversationId }

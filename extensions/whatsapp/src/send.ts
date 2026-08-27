@@ -1,15 +1,15 @@
 // Whatsapp plugin module implements send behavior.
-import { formatCliCommand } from "openclaw/plugin-sdk/cli-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { generateSecureUuid } from "openclaw/plugin-sdk/core";
-import { PlatformMessageNotDispatchedError } from "openclaw/plugin-sdk/error-runtime";
-import { redactIdentifier } from "openclaw/plugin-sdk/logging-core";
-import { resolveMarkdownTableMode } from "openclaw/plugin-sdk/markdown-table-runtime";
-import { loadOutboundMediaFromUrl } from "openclaw/plugin-sdk/outbound-media";
-import { requireRuntimeConfig } from "openclaw/plugin-sdk/plugin-config-runtime";
-import { normalizePollInput, type PollInput } from "openclaw/plugin-sdk/poll-runtime";
-import { resolveChunkMode, resolveTextChunkLimit } from "openclaw/plugin-sdk/reply-chunking";
-import { createSubsystemLogger, getChildLogger } from "openclaw/plugin-sdk/runtime-env";
+import { formatCliCommand } from "afora-agent/plugin-sdk/cli-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { generateSecureUuid } from "afora-agent/plugin-sdk/core";
+import { PlatformMessageNotDispatchedError } from "afora-agent/plugin-sdk/error-runtime";
+import { redactIdentifier } from "afora-agent/plugin-sdk/logging-core";
+import { resolveMarkdownTableMode } from "afora-agent/plugin-sdk/markdown-table-runtime";
+import { loadOutboundMediaFromUrl } from "afora-agent/plugin-sdk/outbound-media";
+import { requireRuntimeConfig } from "afora-agent/plugin-sdk/plugin-config-runtime";
+import { normalizePollInput, type PollInput } from "afora-agent/plugin-sdk/poll-runtime";
+import { resolveChunkMode, resolveTextChunkLimit } from "afora-agent/plugin-sdk/reply-chunking";
+import { createSubsystemLogger, getChildLogger } from "afora-agent/plugin-sdk/runtime-env";
 import {
   resolveDefaultWhatsAppAccountId,
   resolveWhatsAppAccount,
@@ -84,7 +84,7 @@ function buildWhatsAppMediaSendState(params: {
 }
 
 function resolveOutboundWhatsAppAccountId(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string;
 }): string | undefined {
   const explicitAccountId = params.accountId?.trim();
@@ -94,7 +94,7 @@ function resolveOutboundWhatsAppAccountId(params: {
   return resolveDefaultWhatsAppAccountId(params.cfg);
 }
 
-function requireOutboundActiveWebListener(params: { cfg: OpenClawConfig; accountId?: string }): {
+function requireOutboundActiveWebListener(params: { cfg: AforaConfig; accountId?: string }): {
   accountId: string;
   listener: ActiveWebListener;
 } {
@@ -103,7 +103,7 @@ function requireOutboundActiveWebListener(params: { cfg: OpenClawConfig; account
   const listener = getWhatsAppConnectionController(resolvedAccountId)?.getActiveListener() ?? null;
   if (!listener) {
     const cause = new Error(
-      `No active WhatsApp Web listener (account: ${resolvedAccountId}). Start the gateway, then link WhatsApp with: ${formatCliCommand(`openclaw channels login --channel whatsapp --account ${resolvedAccountId}`)}.`,
+      `No active WhatsApp Web listener (account: ${resolvedAccountId}). Start the gateway, then link WhatsApp with: ${formatCliCommand(`afora channels login --channel whatsapp --account ${resolvedAccountId}`)}.`,
     );
     throw new PlatformMessageNotDispatchedError(cause.message, { cause });
   }
@@ -129,7 +129,7 @@ export async function sendMessageWhatsApp(
   body: string,
   options: {
     verbose: boolean;
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     mediaUrl?: string;
     mediaUrls?: readonly string[];
     mediaAccess?: {
@@ -326,7 +326,7 @@ async function sendMessageWhatsAppInActivityScope(
 export async function sendTypingWhatsApp(
   to: string,
   options: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string;
   },
 ): Promise<void> {
@@ -350,7 +350,7 @@ export async function sendReactionWhatsApp(
     fromMe?: boolean;
     participant?: string;
     accountId?: string;
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
   },
 ): Promise<void> {
   const correlationId = generateSecureUuid();
@@ -392,7 +392,7 @@ export async function sendReactionWhatsApp(
 export async function sendPollWhatsApp(
   to: string,
   poll: PollInput,
-  options: { verbose: boolean; accountId?: string; cfg: OpenClawConfig },
+  options: { verbose: boolean; accountId?: string; cfg: AforaConfig },
 ): Promise<{ messageId: string; toJid: string }> {
   const correlationId = generateSecureUuid();
   const startedAt = Date.now();

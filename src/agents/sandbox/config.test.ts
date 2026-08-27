@@ -1,8 +1,8 @@
 // Sandbox config tests cover resolved agent sandbox settings after config
 // normalization and timer-safe clamping.
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { resolveSandboxConfigForAgent } from "./config.js";
 
 describe("sandbox config", () => {
@@ -24,7 +24,7 @@ describe("sandbox config", () => {
   it("caps browser autostart timeout to a timer-safe delay", () => {
     // Browser startup timeouts flow into Node timers; huge config values must
     // not overflow or become immediate delays.
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           sandbox: {

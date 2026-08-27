@@ -1,13 +1,13 @@
 // Verifies Slack channel source-config audit behavior.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { stubAuditChannelPlugin } from "./audit-channel-test-helpers.js";
 import { collectChannelSecurityFindingsCore } from "./audit-channel.js";
 
 function stubSlackPlugin(params: {
-  resolveAccount: (cfg: OpenClawConfig, accountId: string | null | undefined) => unknown;
-  inspectAccount?: (cfg: OpenClawConfig, accountId: string | null | undefined) => unknown;
-  isConfigured?: (account: unknown, cfg: OpenClawConfig) => boolean;
+  resolveAccount: (cfg: AforaConfig, accountId: string | null | undefined) => unknown;
+  inspectAccount?: (cfg: AforaConfig, accountId: string | null | undefined) => unknown;
+  isConfigured?: (account: unknown, cfg: AforaConfig) => boolean;
 }) {
   return stubAuditChannelPlugin({
     id: "slack",
@@ -39,7 +39,7 @@ function stubSlackPlugin(params: {
   });
 }
 
-function makeSlackHttpConfig(): OpenClawConfig {
+function makeSlackHttpConfig(): AforaConfig {
   return {
     channels: {
       slack: {
@@ -49,7 +49,7 @@ function makeSlackHttpConfig(): OpenClawConfig {
         slashCommand: { enabled: true },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function makeSlackInspection(
@@ -81,7 +81,7 @@ describe("security audit channel source-config fallback slack", () => {
         name: "slack resolved inspection only exposes signingSecret status",
         sourceConfig: makeSlackHttpConfig(),
         resolvedConfig: makeSlackHttpConfig(),
-        plugin: (sourceConfig: OpenClawConfig) =>
+        plugin: (sourceConfig: AforaConfig) =>
           stubSlackPlugin({
             inspectAccount: (cfg) => {
               const channel = cfg.channels?.slack ?? {};
@@ -103,7 +103,7 @@ describe("security audit channel source-config fallback slack", () => {
         name: "slack source config still wins when resolved inspection is unconfigured",
         sourceConfig: makeSlackHttpConfig(),
         resolvedConfig: makeSlackHttpConfig(),
-        plugin: (sourceConfig: OpenClawConfig) =>
+        plugin: (sourceConfig: AforaConfig) =>
           stubSlackPlugin({
             inspectAccount: (cfg) => {
               const channel = cfg.channels?.slack ?? {};

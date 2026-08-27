@@ -6,7 +6,7 @@ type WebFetchTestApi = {
 
 function getTestApi(): WebFetchTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.webFetchTestApi")
+    Symbol.for("afora.webFetchTestApi")
   ] as WebFetchTestApi;
 }
 

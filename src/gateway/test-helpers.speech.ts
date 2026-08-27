@@ -1,6 +1,6 @@
 // Speech test helpers provide stub speech providers and fetch-backed audio
 // synthesis fixtures for gateway Talk and media suites.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { SpeechProviderPlugin } from "../plugins/types.js";
 import {
   TALK_TEST_PROVIDER_ID,

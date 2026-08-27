@@ -2,8 +2,8 @@
 // owners must snapshot them so later files never inherit a closed server or stale PATH.
 export const GATEWAY_STARTUP_MUTATED_ENV_KEYS = [
   "PATH",
-  "OPENCLAW_GATEWAY_PORT",
-  "OPENCLAW_PATH_BOOTSTRAPPED",
+  "AFORA_GATEWAY_PORT",
+  "AFORA_PATH_BOOTSTRAPPED",
 ] as const;
 
 /** Captures values that in-process Gateway startup can mutate. */

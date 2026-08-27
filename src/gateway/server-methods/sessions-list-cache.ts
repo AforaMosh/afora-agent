@@ -1,12 +1,12 @@
 import type { SessionsListParams } from "../../../packages/gateway-protocol/src/index.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { readAgentRunIndexVersion } from "../../infra/agent-run-registry.js";
 import { readSessionIdentityMutationVersion } from "../../sessions/session-lifecycle-events.js";
 import { readSessionTranscriptUpdateVersion } from "../../sessions/transcript-events.js";
 import {
-  readOpenClawAgentDatabaseRegistryToken,
+  readAforaAgentDatabaseRegistryToken,
   readOpenIncognitoAgentDatabaseGeneration,
-} from "../../state/openclaw-agent-db.js";
+} from "../../state/afora-agent-db.js";
 import { readSessionAutomationVersion } from "../session-automation-index.js";
 import { readSessionLifecyclePersistenceVersion } from "../session-lifecycle-state.js";
 import { isGatewayAdmin } from "../session-sharing.js";
@@ -32,7 +32,7 @@ type SessionListOperation = SessionListFence & { promise: Promise<SessionsListRe
 type SessionListCompleted = SessionListFence & { expiresAt?: number; result: SessionsListResult };
 type SessionListState = {
   completed: Map<string, SessionListCompleted>;
-  config: OpenClawConfig;
+  config: AforaConfig;
   inFlight: Map<string, SessionListOperation>;
 };
 
@@ -42,7 +42,7 @@ const sessionListsByContext = new WeakMap<GatewayRequestContext, SessionListStat
 function readSessionListFence(context: GatewayRequestContext): SessionListFence {
   return {
     agentRunIndexVersion: readAgentRunIndexVersion(),
-    agentDatabaseRegistryToken: readOpenClawAgentDatabaseRegistryToken(),
+    agentDatabaseRegistryToken: readAforaAgentDatabaseRegistryToken(),
     incognitoDatabaseGeneration: readOpenIncognitoAgentDatabaseGeneration(),
     lifecyclePersistenceVersion: readSessionLifecyclePersistenceVersion(),
     sessionAutomationVersion: readSessionAutomationVersion(),
@@ -88,7 +88,7 @@ function sessionListWorkKey(params: SessionsListParams, client: GatewayClient | 
 
 function sessionListState(
   context: GatewayRequestContext,
-  config: OpenClawConfig,
+  config: AforaConfig,
 ): SessionListState {
   let state = sessionListsByContext.get(context);
   if (!state || state.config !== config) {
@@ -135,7 +135,7 @@ function resolveSessionListExpiration(result: SessionsListResult): number | null
 
 export async function respondWithCachedSessionList(params: {
   client: GatewayClient | null;
-  config: OpenClawConfig;
+  config: AforaConfig;
   context: GatewayRequestContext;
   request: SessionsListParams;
   respond: RespondFn;

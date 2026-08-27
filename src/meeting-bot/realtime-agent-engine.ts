@@ -1,5 +1,5 @@
 // Shared STT plus agent-consult meeting engine.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import type { PluginRuntime, RuntimeLogger } from "../plugins/runtime/types.js";
 import type { RealtimeTranscriptionProviderPlugin } from "../plugins/types.js";
@@ -31,7 +31,7 @@ import {
 
 export async function startMeetingAgentRealtimeEngine(params: {
   config: MeetingRealtimeEngineConfig;
-  fullConfig: OpenClawConfig;
+  fullConfig: AforaConfig;
   runtime: PluginRuntime;
   platform: MeetingRuntimePlatform;
   meetingSessionId: string;

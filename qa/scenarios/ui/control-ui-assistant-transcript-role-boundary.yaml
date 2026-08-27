@@ -156,7 +156,7 @@ flow:
           args:
             - pageId:
                 ref: uiPageId
-              selector: openclaw-app
+              selector: afora-app
               timeoutMs:
                 expr: liveTurnTimeoutMs(env, 45000)
         - call: waitForCondition

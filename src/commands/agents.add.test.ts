@@ -10,8 +10,8 @@ import { saveAuthProfileStore } from "../agents/auth-profiles/store.js";
 import type { AuthProfileStore } from "../agents/auth-profiles/types.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { writeConfigMachineState } from "../state/config-machine-state.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { createSuiteTempRootTracker } from "../test-helpers/temp-dir.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { baseConfigSnapshot, createTestRuntime } from "./test-runtime-config-helpers.js";
@@ -56,7 +56,7 @@ const transformConfigWithPendingPluginInstallsMock = vi.hoisted(() =>
       });
       await writeConfigFileMock(transformed.nextConfig);
       return {
-        path: snapshot.path ?? "/tmp/openclaw.json",
+        path: snapshot.path ?? "/tmp/afora.json",
         previousHash: snapshot.hash ?? null,
         persistedHash: "persisted-hash",
         snapshot,
@@ -136,18 +136,18 @@ import { WizardCancelledError } from "../wizard/prompts.js";
 import { agentsAddCommand } from "./agents.commands.add.js";
 
 const runtime = createTestRuntime();
-const RESERVED_SYSTEM_AGENT_IDS_FOR_TEST = ["openclaw", "crestodian"] as const; // reserved ids
+const RESERVED_SYSTEM_AGENT_IDS_FOR_TEST = ["afora", "crestodian"] as const; // reserved ids
 
 describe("agents add command", () => {
-  const suiteTempDirs = createSuiteTempRootTracker({ prefix: "openclaw-agents-add-" });
+  const suiteTempDirs = createSuiteTempRootTracker({ prefix: "afora-agents-add-" });
 
   beforeAll(async () => {
     await suiteTempDirs.setup();
   });
 
   afterAll(async () => {
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     await suiteTempDirs.cleanup();
   });
 
@@ -168,7 +168,7 @@ describe("agents add command", () => {
       }) => {
         const name = params.name ?? params.entry?.name ?? params.entry?.id ?? "";
         const agentId = (params.entry?.id ?? name).toLowerCase();
-        if (agentId === "openclaw" || agentId === "crestodian") {
+        if (agentId === "afora" || agentId === "crestodian") {
           return { status: "error", reason: "reserved-id", agentId };
         }
         const binding = params.bindingSpecs?.[0]
@@ -215,7 +215,7 @@ describe("agents add command", () => {
     run: (root: string) => Promise<void>,
   ): Promise<void> {
     const root = await suiteTempDirs.make(prefix);
-    await withEnvAsync({ OPENCLAW_STATE_DIR: root }, async () => await run(root));
+    await withEnvAsync({ AFORA_STATE_DIR: root }, async () => await run(root));
   }
 
   it("requires --workspace when flags are present", async () => {
@@ -225,7 +225,7 @@ describe("agents add command", () => {
 
     expect(runtime.error).toHaveBeenCalledOnce();
     expect(runtime.error).toHaveBeenCalledWith(
-      `Non-interactive agent creation requires --workspace. Re-run ${formatCliCommand("openclaw agents add <id> --workspace <path>")} or omit flags to use the wizard.`,
+      `Non-interactive agent creation requires --workspace. Re-run ${formatCliCommand("afora agents add <id> --workspace <path>")} or omit flags to use the wizard.`,
     );
     expect(runtime.exit).toHaveBeenCalledWith(1);
     expect(writeConfigFileMock).not.toHaveBeenCalled();
@@ -240,7 +240,7 @@ describe("agents add command", () => {
 
     expect(runtime.error).toHaveBeenCalledOnce();
     expect(runtime.error).toHaveBeenCalledWith(
-      `Non-interactive agent creation requires --workspace. Re-run ${formatCliCommand("openclaw agents add <id> --workspace <path>")} or omit flags to use the wizard.`,
+      `Non-interactive agent creation requires --workspace. Re-run ${formatCliCommand("afora agents add <id> --workspace <path>")} or omit flags to use the wizard.`,
     );
     expect(runtime.exit).toHaveBeenCalledWith(1);
     expect(writeConfigFileMock).not.toHaveBeenCalled();
@@ -254,7 +254,7 @@ describe("agents add command", () => {
       await agentsAddCommand({ name, workspace: "/tmp/reserved" }, runtime, { hasFlags: true });
 
       expect(runtime.error).toHaveBeenCalledWith(
-        `"${name}" is reserved. Choose another name, or run ${formatCliCommand("openclaw agents list")} to inspect configured agents.`,
+        `"${name}" is reserved. Choose another name, or run ${formatCliCommand("afora agents list")} to inspect configured agents.`,
       );
       expect(runtime.exit).toHaveBeenCalledWith(1);
       expect(writeConfigFileMock).not.toHaveBeenCalled();
@@ -341,7 +341,7 @@ describe("agents add command", () => {
       await agentsAddCommand({ json }, runtime);
 
       expect(runtime.error).toHaveBeenCalledWith(
-        "Agent creation needs an interactive TTY. Use `openclaw agents add <id> --non-interactive --workspace <dir>` for automation.",
+        "Agent creation needs an interactive TTY. Use `afora agents add <id> --non-interactive --workspace <dir>` for automation.",
       );
       expect(runtime.exit).toHaveBeenCalledWith(1);
       expect(runtime.log).not.toHaveBeenCalled();
@@ -359,7 +359,7 @@ describe("agents add command", () => {
     });
     const prompter = {
       intro: vi.fn(),
-      text: vi.fn().mockResolvedValueOnce("Jon").mockResolvedValueOnce("/tmp/openclaw-jon"),
+      text: vi.fn().mockResolvedValueOnce("Jon").mockResolvedValueOnce("/tmp/afora-jon"),
       confirm: vi.fn().mockResolvedValue(false),
       note: vi.fn(),
       outro: vi.fn(),
@@ -369,7 +369,7 @@ describe("agents add command", () => {
     await agentsAddCommand({}, runtime);
 
     expect(terminalMocks.isTerminalInteractive).toHaveBeenCalledOnce();
-    expect(prompter.intro).toHaveBeenCalledWith("Add OpenClaw agent");
+    expect(prompter.intro).toHaveBeenCalledWith("Add Afora agent");
     expect(authChoiceMocks.warnIfModelConfigLooksOff).toHaveBeenCalledOnce();
     expect(authChoiceMocks.warnIfModelConfigLooksOff).toHaveBeenCalledWith(
       expect.objectContaining({ agents: expect.any(Object) }),
@@ -382,7 +382,7 @@ describe("agents add command", () => {
     expect(checkAgentCreationGateMock).toHaveBeenCalledWith("jon");
     expect(createAgentMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        entry: expect.objectContaining({ id: "jon", workspace: "/tmp/openclaw-jon" }),
+        entry: expect.objectContaining({ id: "jon", workspace: "/tmp/afora-jon" }),
         stagedConfig: expect.any(Object),
         transformConfig: transformConfigWithPendingPluginInstallsMock,
       }),
@@ -407,13 +407,13 @@ describe("agents add command", () => {
       status: "error",
       reason: "legacy-session-migration-required",
       agentId: "main",
-      message: "Run openclaw doctor --fix, then retry.",
+      message: "Run afora doctor --fix, then retry.",
     });
 
     await agentsAddCommand({ name: "main" }, runtime);
 
     expect(checkAgentCreationGateMock).toHaveBeenCalledWith("main");
-    expect(prompter.outro).toHaveBeenCalledWith("Run openclaw doctor --fix, then retry.");
+    expect(prompter.outro).toHaveBeenCalledWith("Run afora doctor --fix, then retry.");
     expect(prompter.text).not.toHaveBeenCalled();
     expect(authChoiceMocks.applyAuthChoice).not.toHaveBeenCalled();
     expect(createAgentMock).not.toHaveBeenCalled();
@@ -422,7 +422,7 @@ describe("agents add command", () => {
   it.each(["legacy-main", "state-db"] as const)(
     "reports only auth profiles persisted to the new agent store with %s shared auth",
     async (location) => {
-      await withAgentsAddStateRoot("openclaw-agents-add-auth-copy-", async (root) => {
+      await withAgentsAddStateRoot("afora-agents-add-auth-copy-", async (root) => {
         const sourceAgentDir = path.join(root, "agents", "main", "agent");
         const destAgentDir = path.join(root, "agents", "work", "agent");
         const workspaceDir = path.join(root, "workspace-work");
@@ -479,7 +479,7 @@ describe("agents add command", () => {
   );
 
   it("fails before config mutation when the source auth store is unreadable", async () => {
-    await withAgentsAddStateRoot("openclaw-agents-add-auth-unreadable-", async (root) => {
+    await withAgentsAddStateRoot("afora-agents-add-auth-unreadable-", async (root) => {
       const sourceAgentDir = path.join(root, "agents", "main", "agent");
       const workspaceDir = path.join(root, "workspace-work");
       await fs.mkdir(sourceAgentDir, { recursive: true });

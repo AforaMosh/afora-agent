@@ -11,7 +11,7 @@ import {
 } from "../../lib/sessions/session-key.ts";
 import { publishSnapshotInvalidation } from "./session-snapshot-invalidation-events.ts";
 
-export const CHAT_SNAPSHOT_DB_NAME = "openclaw-chat-snapshots";
+export const CHAT_SNAPSHOT_DB_NAME = "afora-chat-snapshots";
 export const CHAT_SNAPSHOT_STORE_NAME = "snapshots";
 
 type ChatSnapshotKeyHost = Pick<UiSessionDefaultsHost, "assistantAgentId" | "agentsList" | "hello">;

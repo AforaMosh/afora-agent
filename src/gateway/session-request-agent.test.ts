@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   resolveRequestedSessionAgentId,
   tryResolveSessionCompatibilityOwnerAgentId,
 } from "./session-request-agent.js";
 
-function fixedStoreConfig(owner: string): OpenClawConfig {
+function fixedStoreConfig(owner: string): AforaConfig {
   return {
     session: { store: "/tmp/shared.sqlite" },
     agents: {
@@ -35,7 +35,7 @@ describe("requested session agent ownership", () => {
   });
 
   it("uses a legacy compatibility owner for a bare key", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: { entries: { ops: { default: true }, research: {} } },
     };
 
@@ -46,7 +46,7 @@ describe("requested session agent ownership", () => {
   });
 
   it("returns a typed selection error for an ownerless bare key", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: { ownership: "explicit", entries: { ops: {}, research: {} } },
     };
 
@@ -61,7 +61,7 @@ describe("requested session agent ownership", () => {
   });
 
   it("returns typed ownership results for arbitrary bare keys before canonicalization", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: { ownership: "explicit", entries: { ops: {}, research: {} } },
     };
 
@@ -78,7 +78,7 @@ describe("requested session agent ownership", () => {
   it.each(["", "   ", "агент✨", "---"])(
     "rejects explicit unrepresentable agent id %j instead of selecting main",
     (agentId) => {
-      const cfg: OpenClawConfig = {
+      const cfg: AforaConfig = {
         agents: { ownership: "explicit", entries: { main: {}, ops: {} } },
       };
 
@@ -93,7 +93,7 @@ describe("requested session agent ownership", () => {
   );
 
   it("keeps retired agent-qualified history readable outside global scope", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: { ownership: "explicit", entries: { ops: {}, research: {} } },
     };
 

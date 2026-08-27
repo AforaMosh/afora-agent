@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/run-opengrep.sh
 #
-# Run the OpenClaw precise OpenGrep rulepack against the local working tree
+# Run the Afora precise OpenGrep rulepack against the local working tree
 # using the same paths and exclusions as CI. The .semgrepignore at the repo root
 # is the single source of truth for skipped paths.
 #
@@ -137,7 +137,7 @@ if (( CHANGED_ONLY && PATHS_PASSED )); then
 fi
 
 resolve_changed_diff_ref() {
-  local diff_ref="${OPENCLAW_OPENGREP_BASE_REF:-origin/main...HEAD}"
+  local diff_ref="${AFORA_OPENGREP_BASE_REF:-origin/main...HEAD}"
   local base_ref
   local head_ref
   local resolved_base
@@ -146,7 +146,7 @@ resolve_changed_diff_ref() {
     printf '%s\n' "$diff_ref"
     return 0
   fi
-  if [[ "${OPENCLAW_OPENGREP_MERGE_HEAD_FIRST_PARENT:-0}" != "1" ]]; then
+  if [[ "${AFORA_OPENGREP_MERGE_HEAD_FIRST_PARENT:-0}" != "1" ]]; then
     printf '%s\n' "$diff_ref"
     return 0
   fi

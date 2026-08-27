@@ -13,7 +13,7 @@ describe("plugin install overrides", () => {
       resolvePluginInstallOverride({
         pluginId: "codex",
         env: {
-          [PLUGIN_INSTALL_OVERRIDES_ENV]: JSON.stringify({ codex: "npm:@openclaw/codex@1.0.0" }),
+          [PLUGIN_INSTALL_OVERRIDES_ENV]: JSON.stringify({ codex: "npm:@afora/codex@1.0.0" }),
         },
       }),
     ).toBeNull();
@@ -26,12 +26,12 @@ describe("plugin install overrides", () => {
         env: {
           [ALLOW_PLUGIN_INSTALL_OVERRIDES_ENV]: "1",
           [PLUGIN_INSTALL_OVERRIDES_ENV]: JSON.stringify({
-            codex: "npm:@openclaw/codex@2026.5.8",
+            codex: "npm:@afora/codex@2026.5.8",
             "demo-plugin": "npm-pack:./demo.tgz",
           }),
         },
       }),
-    ).toEqual({ kind: "npm", spec: "@openclaw/codex@2026.5.8" });
+    ).toEqual({ kind: "npm", spec: "@afora/codex@2026.5.8" });
   });
 
   it("resolves npm-pack paths to absolute archive paths", () => {

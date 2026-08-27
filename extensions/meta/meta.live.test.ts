@@ -1,7 +1,7 @@
 // Meta live tests prove muse-spark auth and Responses API completion.
 import { createHash } from "node:crypto";
-import { streamSimple, type Context, type Model } from "openclaw/plugin-sdk/llm";
-import { extractNonEmptyAssistantText, isLiveTestEnabled } from "openclaw/plugin-sdk/test-live";
+import { streamSimple, type Context, type Model } from "afora-agent/plugin-sdk/llm";
+import { extractNonEmptyAssistantText, isLiveTestEnabled } from "afora-agent/plugin-sdk/test-live";
 import { describe, expect, it } from "vitest";
 import { buildMetaProvider } from "./provider-catalog.js";
 import { wrapMetaProviderStream } from "./stream.js";
@@ -19,7 +19,7 @@ const LIVE =
   isLiveTestEnabled(["META_LIVE_TEST", "MODEL_API_LIVE_TEST"]) && MODEL_API_KEY.length > 0;
 // Contributor prompts and completions may train future Meta models, so sending live
 // test content requires deliberate opt-in even though the fixture is synthetic.
-const CONTRIBUTOR_LIVE = LIVE && process.env.OPENCLAW_LIVE_META_CONTRIBUTOR === "1";
+const CONTRIBUTOR_LIVE = LIVE && process.env.AFORA_LIVE_META_CONTRIBUTOR === "1";
 const describeLive = LIVE ? describe : describe.skip;
 const describeContributorLive = CONTRIBUTOR_LIVE ? describe : describe.skip;
 

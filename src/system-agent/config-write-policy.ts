@@ -14,12 +14,12 @@
  * config-write-parity contract test enforces that classification.
  */
 export const SYSTEM_AGENT_CONFIG_WRITE_DENYLIST: Readonly<Record<string, string>> = {
-  $include: "alternate-config inclusion; edit openclaw.json in a trusted shell",
-  auth: "provider auth; `openclaw onboard` on the machine running OpenClaw",
-  env: "environment/credential injection; edit openclaw.json in a trusted shell",
+  $include: "alternate-config inclusion; edit afora.json in a trusted shell",
+  auth: "provider auth; `afora onboard` on the machine running Afora",
+  env: "environment/credential injection; edit afora.json in a trusted shell",
   models:
-    "provider/catalog definitions feed routing; use `set_default_model` or `openclaw onboard`",
-  secrets: "secret providers; edit openclaw.json in a trusted shell",
+    "provider/catalog definitions feed routing; use `set_default_model` or `afora onboard`",
+  secrets: "secret providers; edit afora.json in a trusted shell",
 };
 
 export type InferenceRoutePathVerdict = "allowed" | "blocked" | "agent-route" | "plugin-entry";

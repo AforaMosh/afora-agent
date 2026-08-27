@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 // Web search runtime tests cover provider resolution and search execution.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   clearRuntimeAuthProfileStoreSnapshots,
@@ -10,7 +10,7 @@ import {
   replaceRuntimeAuthProfileStoreSnapshots,
 } from "../agents/auth-profiles/runtime-snapshots.js";
 import type { AuthProfileStore } from "../agents/auth-profiles/types.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import type { PluginWebSearchProviderEntry } from "../plugins/web-provider-types.js";
 import {
   createWebSearchTestProvider,
@@ -24,13 +24,13 @@ type TestPluginWebSearchConfig = {
 };
 
 type WebSearchProviderResolverParams = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   onlyPluginIds?: readonly string[];
   origin?: string;
 };
 
 type ManifestContractOwnerParams = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   contract?: string;
   origin?: string;
   value?: string;
@@ -69,7 +69,7 @@ function createCustomSearchTool() {
   };
 }
 
-function getCustomSearchApiKey(config?: OpenClawConfig): unknown {
+function getCustomSearchApiKey(config?: AforaConfig): unknown {
   const pluginConfig = config?.plugins?.entries?.["custom-search"]?.config as
     | TestPluginWebSearchConfig
     | undefined;
@@ -90,7 +90,7 @@ function createCustomSearchProvider(
   });
 }
 
-function createCustomSearchConfig(apiKey: unknown): OpenClawConfig {
+function createCustomSearchConfig(apiKey: unknown): AforaConfig {
   return {
     plugins: {
       entries: {
@@ -424,7 +424,7 @@ describe("web search runtime", () => {
   });
 
   it("auto-detects a provider from a model-provider auth profile", async () => {
-    const agentDir = mkdtempSync(path.join(os.tmpdir(), "openclaw-web-search-auth-"));
+    const agentDir = mkdtempSync(path.join(os.tmpdir(), "afora-web-search-auth-"));
     tempDirs.push(agentDir);
     replaceRuntimeAuthProfileStoreSnapshots([
       {
@@ -466,8 +466,8 @@ describe("web search runtime", () => {
   });
 
   it("auto-detects a provider from the active agent auth profile", async () => {
-    const defaultAgentDir = mkdtempSync(path.join(os.tmpdir(), "openclaw-web-search-default-"));
-    const activeAgentDir = mkdtempSync(path.join(os.tmpdir(), "openclaw-web-search-active-"));
+    const defaultAgentDir = mkdtempSync(path.join(os.tmpdir(), "afora-web-search-default-"));
+    const activeAgentDir = mkdtempSync(path.join(os.tmpdir(), "afora-web-search-active-"));
     tempDirs.push(defaultAgentDir, activeAgentDir);
     replaceRuntimeAuthProfileStoreSnapshots([
       {
@@ -499,7 +499,7 @@ describe("web search runtime", () => {
           { id: "side", agentDir: activeAgentDir },
         ],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(
       hasUsableWebSearchProvider({
@@ -522,7 +522,7 @@ describe("web search runtime", () => {
   });
 
   it("passes the active agentDir into selected provider tools", async () => {
-    const activeAgentDir = mkdtempSync(path.join(os.tmpdir(), "openclaw-web-search-tool-agent-"));
+    const activeAgentDir = mkdtempSync(path.join(os.tmpdir(), "afora-web-search-tool-agent-"));
     tempDirs.push(activeAgentDir);
     const provider = createCustomSearchProvider({
       credentialPath: "",

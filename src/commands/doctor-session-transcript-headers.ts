@@ -15,14 +15,14 @@ import {
   isCanonicalSessionTranscriptEntry,
   isSessionTranscriptLeafControl,
 } from "../config/sessions/transcript-tree.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { executeSqliteQueryTakeFirstSync } from "../infra/kysely-sync.js";
 import { parseAgentSessionKey } from "../routing/session-key.js";
 import {
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-} from "../state/openclaw-agent-db.js";
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabase,
+} from "../state/afora-agent-db.js";
 import {
   readOnlySqliteTranscriptSessionIds,
   readOnlySqliteTranscriptStorageSnapshot,
@@ -104,7 +104,7 @@ function snapshotsMatch(
 }
 
 function readHeaderRepairContext(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionId: string,
 ): HeaderRepairContext | undefined {
   const db = getSessionKysely(database.db);
@@ -162,7 +162,7 @@ function formatHeaderTimestamp(createdAt: number): string | undefined {
 
 function assertRepairPreservedEvents(params: {
   before: readonly SqliteTranscriptStorageRow[];
-  database: OpenClawAgentDatabase;
+  database: AforaAgentDatabase;
   sessionId: string;
 }): void {
   const after = readTranscriptStorageRows(params.database, params.sessionId);
@@ -193,7 +193,7 @@ function formatCount(count: number, singular: string): string {
 
 /** Reports or repairs canonical SQLite transcripts whose first header was never persisted. */
 export async function noteSessionTranscriptHeaderHealth(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   shouldRepair: boolean;
 }): Promise<HeaderRepairReport> {
@@ -244,7 +244,7 @@ export async function noteSessionTranscriptHeaderHealth(params: {
         const logicalAgentId = parseAgentSessionKey(snapshot.sessionKey)?.agentId ?? target.agentId;
         const workspaceCwd = resolveAgentWorkspaceDir(params.cfg, logicalAgentId, env);
         try {
-          runOpenClawAgentWriteTransaction(
+          runAforaAgentWriteTransaction(
             (database) => {
               const currentRows = readTranscriptStorageRows(database, sessionId);
               if (!snapshotsMatch(snapshot.rows, currentRows)) {
@@ -319,7 +319,7 @@ export async function noteSessionTranscriptHeaderHealth(params: {
     note(
       [
         `- Found ${formatCount(found, "canonical session transcript")} without a header.`,
-        `- Run "openclaw doctor --fix" to repair ${found === 1 ? "it" : "them"} before resuming the session.`,
+        `- Run "afora doctor --fix" to repair ${found === 1 ? "it" : "them"} before resuming the session.`,
       ].join("\n"),
       NOTE_TITLE,
     );

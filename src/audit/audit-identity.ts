@@ -8,10 +8,10 @@ import {
   getNodeSqliteKysely,
 } from "../infra/kysely-sync.js";
 import { registerSecretValueForRedaction } from "../logging/secret-redaction-registry.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 
 type AuditIdentityDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "audit_events" | "audit_identity_keys" | "execution_identity_contexts"
 >;
 type AuditIdentityKeyRow = Pick<
@@ -23,7 +23,7 @@ const AUDIT_IDENTITY_SINGLETON_ID = 1;
 const AUDIT_IDENTITY_KEY_BYTES = 32;
 const AUDIT_IDENTITY_KEY_ID_BYTES = 16;
 const AUDIT_IDENTITY_KEY_ID_RE = /^[a-f0-9]{32}$/u;
-const AUDIT_IDENTITY_DOMAIN = "openclaw.audit.identity.v1";
+const AUDIT_IDENTITY_DOMAIN = "afora.audit.identity.v1";
 // Only a top-level (depth-0) audit/evidence write may create the key: each
 // caller clears this cache on rollback, because a rolled-back outer transaction
 // around a nested creation would leave a cached key that was never persisted.
@@ -174,7 +174,7 @@ export function pseudonymizeExecutionIdentityRef(params: {
   const digest = createHmac("sha256", identity.key)
     .update(
       JSON.stringify([
-        "openclaw.audit.execution-identity.v1",
+        "afora.audit.execution-identity.v1",
         params.kind,
         params.scope,
         params.value,

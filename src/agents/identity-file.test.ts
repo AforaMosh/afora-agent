@@ -17,7 +17,7 @@ const TEST_MAX_IDENTITY_FILE_BYTES = 4 * 1024 * 1024;
 async function parseIdentityFromContent(
   content: string,
 ): Promise<import("./identity-file.js").AgentIdentityFile | null> {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-identity-parse-"));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-identity-parse-"));
   const filePath = path.join(tempDir, "IDENTITY.md");
   fs.writeFileSync(filePath, content, "utf-8");
   try {
@@ -48,7 +48,7 @@ describe("parseIdentityMarkdown", () => {
 - **Creature:** Robot
 - **Vibe:** Warm
 - **Emoji:** :robot:
-- **Avatar:** avatars/openclaw.png
+- **Avatar:** avatars/afora.png
 `;
     const parsed = await parseIdentityFromContent(content);
     expect(parsed).toEqual({
@@ -56,7 +56,7 @@ describe("parseIdentityMarkdown", () => {
       creature: "Robot",
       vibe: "Warm",
       emoji: ":robot:",
-      avatar: "avatars/openclaw.png",
+      avatar: "avatars/afora.png",
     });
   });
 
@@ -64,13 +64,13 @@ describe("parseIdentityMarkdown", () => {
     const content = [
       "- **Name:** `Samantha`",
       "- `Creature`: Robot",
-      "- **`Avatar`**: `avatars/openclaw.png`",
+      "- **`Avatar`**: `avatars/afora.png`",
     ].join("\n");
     const parsed = await parseIdentityFromContent(content);
     expect(parsed).toEqual({
       name: "Samantha",
       creature: "Robot",
-      avatar: "avatars/openclaw.png",
+      avatar: "avatars/afora.png",
     });
   });
 
@@ -144,7 +144,7 @@ describe("loadAgentIdentityFromWorkspace", () => {
   let tempDir: string;
 
   beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-identity-"));
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-identity-"));
   });
 
   afterEach(() => {

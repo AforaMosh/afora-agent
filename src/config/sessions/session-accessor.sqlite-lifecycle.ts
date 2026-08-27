@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../../infra/kysely-sync.js";
 import { parseAgentSessionKey } from "../../routing/session-key.js";
 import {
@@ -8,13 +8,13 @@ import {
   resolveAgentHarnessSessionStoreEntryError,
 } from "../../sessions/agent-harness-session-key.js";
 import { emitSessionIdentityMutation } from "../../sessions/session-lifecycle-events.js";
-import { withOpenClawAgentDatabaseReadOnly } from "../../state/openclaw-agent-db-readonly.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
+import { withAforaAgentDatabaseReadOnly } from "../../state/afora-agent-db-readonly.js";
+import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.generated.js";
 import {
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import type { ResetSessionEntryLifecycleMutation } from "./session-accessor.lifecycle-types.js";
 import { publishSessionStateArchives } from "./session-accessor.sqlite-archive-store.js";
 import { materializeSessionStateDeletePlans } from "./session-accessor.sqlite-archive.js";
@@ -73,7 +73,7 @@ import type { InternalSessionEntry as SessionEntry } from "./types.js";
 // Single-target lifecycle owner: cleanup, reset, guarded delete, and trusted rollback.
 
 type SessionBoardCleanupDatabase = Pick<
-  OpenClawAgentKyselyDatabase,
+  AforaAgentKyselyDatabase,
   "board_tabs" | "board_widgets"
 > & {
   sqlite_schema: {
@@ -83,7 +83,7 @@ type SessionBoardCleanupDatabase = Pick<
 };
 
 function deleteSessionBoardRows(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionKeys: readonly string[],
 ): void {
   const keys = [...new Set(sessionKeys)];
@@ -126,11 +126,11 @@ export async function cleanupSessionLifecycleArtifactsCore(
   });
   const databaseOptions = toDatabaseOptions(resolved);
   // Maintenance must not turn a read-only startup probe into a newly materialized agent store.
-  if (!withOpenClawAgentDatabaseReadOnly(() => true, databaseOptions).found) {
+  if (!withAforaAgentDatabaseReadOnly(() => true, databaseOptions).found) {
     return { removedEntries: 0, archivedTranscriptArtifacts: 0 };
   }
   const cleanupPlan = await runExclusiveSqliteSessionWrite(resolved, async () => {
-    const database = openOpenClawAgentDatabase(databaseOptions);
+    const database = openAforaAgentDatabase(databaseOptions);
     return planSessionLifecycleArtifactCleanup(database, {
       ...(params.agentId !== undefined ? { agentId: resolved.agentId } : {}),
       archiveRemovedEntryTranscripts: params.archiveRemovedEntryTranscripts !== false,
@@ -146,7 +146,7 @@ export async function cleanupSessionLifecycleArtifactsCore(
   const committed = await runExclusiveSqliteSessionWrite(resolved, async () => {
     let removedEntries = 0;
     let archivedTranscripts: SessionLifecycleArchivedTranscript[] = [];
-    runOpenClawAgentWriteTransaction((transactionDb) => {
+    runAforaAgentWriteTransaction((transactionDb) => {
       assertPlannedLifecycleArtifactEntriesUnchanged(transactionDb, cleanupPlan.entries);
       archivedTranscripts = deleteMaterializedSessionStatePlans(
         transactionDb,
@@ -182,7 +182,7 @@ export async function resetSessionEntryLifecycle(
   // budget pass a chance to extract-and-evict once we finish.
   try {
     return await runExclusiveSqliteSessionWrite(resolved, async () => {
-      const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+      const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
       const targetSnapshot = readLifecycleTargetSnapshot(database, params.target);
       const current = targetSnapshot.primary;
       const nextEntry = await params.buildNextEntry({
@@ -203,7 +203,7 @@ export async function resetSessionEntryLifecycle(
         ...(current ? { previousEntry: cloneSessionEntry(current.entry) } : {}),
         ...(current?.entry.sessionId ? { previousSessionId: current.entry.sessionId } : {}),
       };
-      runOpenClawAgentWriteTransaction((transactionDb) => {
+      runAforaAgentWriteTransaction((transactionDb) => {
         assertLifecycleTargetUnchanged(transactionDb, params.target, current?.entry, "reset");
         if (resetBoundaryPlan && current?.entry.sessionId) {
           const events = [...resetBoundaryPlan.seedEvents, resetBoundaryPlan.event];
@@ -308,7 +308,7 @@ async function deleteSqliteSessionEntryLifecycleLocked(
   expectedPluginOwnerId?: string,
 ): Promise<DeleteSessionEntryLifecycleResult> {
   const prepared = await runExclusiveSqliteSessionWrite(resolved, async () => {
-    const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+    const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
     const targetSnapshot = readLifecycleTargetSnapshot(database, params.target);
     const current = targetSnapshot.primary;
     if (!current) {
@@ -396,7 +396,7 @@ async function deleteSqliteSessionEntryLifecycleLocked(
   const historicalArchivedTranscripts: SessionLifecycleArchivedTranscript[] = [];
   for (const sessionId of prepared.historicalGenerationIds) {
     const plan = await runExclusiveSqliteSessionWrite(resolved, async () => {
-      const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+      const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
       const targetSnapshot = readLifecycleTargetSnapshot(database, params.target);
       if (
         !sqliteLifecycleTargetSnapshotsEqual(prepared.targetSnapshot, targetSnapshot) ||
@@ -437,7 +437,7 @@ async function deleteSqliteSessionEntryLifecycleLocked(
     }
     const materializedGeneration = await materializeSessionStateDeletePlans([plan]);
     const archivedGeneration = await runExclusiveSqliteSessionWrite(resolved, async () =>
-      runOpenClawAgentWriteTransaction((transactionDb) => {
+      runAforaAgentWriteTransaction((transactionDb) => {
         const targetSnapshot = readLifecycleTargetSnapshot(transactionDb, params.target);
         if (
           !sqliteLifecycleTargetSnapshotsEqual(prepared.targetSnapshot, targetSnapshot) ||
@@ -476,7 +476,7 @@ async function deleteSqliteSessionEntryLifecycleLocked(
   // writer-lane sections so unrelated writes to this store can keep progressing.
   const materializedPlans = await materializeSessionStateDeletePlans(prepared.entryPlans);
   const result = await runExclusiveSqliteSessionWrite(resolved, async () =>
-    runOpenClawAgentWriteTransaction<DeleteSessionEntryLifecycleResult>((transactionDb) => {
+    runAforaAgentWriteTransaction<DeleteSessionEntryLifecycleResult>((transactionDb) => {
       const transactionSnapshot = readLifecycleTargetSnapshot(transactionDb, params.target);
       const transactionEntry = transactionSnapshot.primary?.entry;
       if (
@@ -598,7 +598,7 @@ export async function rollbackPluginOwnedSessionEntryLifecycle(
 /** Applies prepared full-row replacements in one validated SQLite transaction. */
 
 function shouldDeleteSqliteSessionEntryLifecycle(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   entry: SessionEntry | undefined,
   params: DeleteSessionEntryLifecycleParams,
 ): entry is SessionEntry {

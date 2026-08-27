@@ -5,7 +5,7 @@ import {
   resolveScopeToolsPolicy,
   type GroupToolPolicyConfig,
   type ScopeTree,
-} from "openclaw/plugin-sdk/channel-policy";
+} from "afora-agent/plugin-sdk/channel-policy";
 import type { IrcChannelConfig } from "./types.js";
 
 type IrcGroupMatch = {

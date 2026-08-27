@@ -2,7 +2,7 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import type { ResolvedSubagentController } from "../../../agents/subagents/registry/subagent-control.js";
 import { buildSubagentRunReadIndex } from "../../../agents/subagents/registry/subagent-registry-read.js";
 import type { SubagentRunRecord } from "../../../agents/subagents/registry/subagent-registry.types.js";

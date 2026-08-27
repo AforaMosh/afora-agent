@@ -240,7 +240,7 @@ export async function compactEmbeddedAgentSessionDirect(
   const deferLockedHarnessFailure = lockedCliBackend?.ownsNativeCompaction === true;
   if (
     paramsBase.modelSelectionLocked === true &&
-    lockedHarnessRuntime !== "openclaw" &&
+    lockedHarnessRuntime !== "afora" &&
     !deferLockedHarnessFailure
   ) {
     return lockedHarnessCompactionFailure(lockedHarnessRuntime);
@@ -277,7 +277,7 @@ export async function compactEmbeddedAgentSessionDirect(
   });
   // Native control operations reuse the backend's existing authenticated session.
   // Run them before generic model preparation so subscription-only CLI sessions do
-  // not incorrectly require an OpenClaw model API credential.
+  // not incorrectly require an Afora model API credential.
   const nativeCliResult = await compactNativeCliSession({
     runtime: runtimeSelection.selectedHarnessRuntime,
     compactParams: {
@@ -289,7 +289,7 @@ export async function compactEmbeddedAgentSessionDirect(
   if (nativeCliResult) {
     return nativeCliResult;
   }
-  if (requestedParams.modelSelectionLocked === true && lockedHarnessRuntime !== "openclaw") {
+  if (requestedParams.modelSelectionLocked === true && lockedHarnessRuntime !== "afora") {
     return lockedHarnessCompactionFailure(lockedHarnessRuntime);
   }
   const pluginPlanCompactionTarget = resolveEmbeddedCompactionTarget({

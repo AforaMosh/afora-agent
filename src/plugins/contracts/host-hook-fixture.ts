@@ -1,7 +1,7 @@
 // Host hook fixtures provide reusable plugin host-hook doubles for contract tests.
-import type { OpenClawPluginApi } from "../types.js";
+import type { AforaPluginApi } from "../types.js";
 
-export function registerHostHookFixture(api: OpenClawPluginApi) {
+export function registerHostHookFixture(api: AforaPluginApi) {
   api.session.state.registerSessionExtension({
     namespace: "workflow",
     description: "Generic approval-workflow state projection",
@@ -60,7 +60,7 @@ export function registerHostHookFixture(api: OpenClawPluginApi) {
   }));
 }
 
-export function registerTrustedHostHookFixture(api: OpenClawPluginApi) {
+export function registerTrustedHostHookFixture(api: AforaPluginApi) {
   registerHostHookFixture(api);
   api.registerTrustedToolPolicy({
     id: "budget-policy",

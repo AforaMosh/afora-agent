@@ -3,7 +3,7 @@
  * Verifies plugin-provided env values are filtered and forwarded to the chosen
  * exec host without leaking unsafe overrides.
  */
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExecuteNodeHostCommandParams } from "./bash-tools.exec-host-node.types.js";
 import type { BashSandboxConfig } from "./bash-tools.shared.js";
@@ -15,8 +15,8 @@ declare module "../plugins/hook-types.js" {
   }
 }
 
-const CHANNEL_CONTEXT_ENV_KEY = "OPENCLAW_CHANNEL_CONTEXT";
-const OPENCLAW_CLI_ENV_VALUE = "1";
+const CHANNEL_CONTEXT_ENV_KEY = "AFORA_CHANNEL_CONTEXT";
+const AFORA_CLI_ENV_VALUE = "1";
 type CapturedNodeHostParams = Pick<
   ExecuteNodeHostCommandParams,
   "env" | "requestedEnv" | "workdir"
@@ -117,7 +117,7 @@ vi.mock("../process/supervisor/index.js", () => ({
 
 let createExecTool: typeof import("./bash-tools.exec-run.js").createExecTool;
 let toToolDefinitions: typeof import("./agent-tool-definition-adapter.js").toToolDefinitions;
-let createOpenClawCodingTools: typeof import("./agent-tools.js").createOpenClawCodingTools;
+let createAforaCodingTools: typeof import("./agent-tools.js").createAforaCodingTools;
 const testExtensionContext = {} as ExtensionContext;
 
 function installResolveExecEnvHook(result: Record<string, string>) {
@@ -131,7 +131,7 @@ describe("exec resolve_exec_env hook wiring", () => {
   beforeAll(async () => {
     ({ createExecTool } = await import("./bash-tools.exec-run.js"));
     ({ toToolDefinitions } = await import("./agent-tool-definition-adapter.js"));
-    ({ createOpenClawCodingTools } = await import("./agent-tools.js"));
+    ({ createAforaCodingTools } = await import("./agent-tools.js"));
   });
 
   beforeEach(() => {
@@ -173,7 +173,7 @@ describe("exec resolve_exec_env hook wiring", () => {
       PLUGIN_SAFE: "yes",
       PATH: "/tmp/plugin-bin",
       NODE_OPTIONS: "--require /tmp/hook.js",
-      OPENCLAW_CLI: "0",
+      AFORA_CLI: "0",
       "bad-key": "bad",
     });
 
@@ -227,7 +227,7 @@ describe("exec resolve_exec_env hook wiring", () => {
       PLUGIN_SAFE: "yes",
     });
     expect(mocks.gatewayParams[0]?.env).not.toHaveProperty("NODE_OPTIONS");
-    expect(mocks.gatewayParams[0]?.env.OPENCLAW_CLI).toBe(OPENCLAW_CLI_ENV_VALUE);
+    expect(mocks.gatewayParams[0]?.env.AFORA_CLI).toBe(AFORA_CLI_ENV_VALUE);
     expect(mocks.gatewayParams[0]?.env.PATH).not.toBe("/tmp/plugin-bin");
     expect(mocks.spawnInputs[0]?.env).toMatchObject({
       EXISTING: "plugin",
@@ -592,7 +592,7 @@ describe("exec resolve_exec_env hook wiring", () => {
       runBeforeToolCall: vi.fn(async () => undefined),
     };
 
-    const exec = createOpenClawCodingTools({
+    const exec = createAforaCodingTools({
       agentId: "main",
       sessionKey: "agent:main:telegram:chat-1",
       cwd: process.cwd(),
@@ -703,7 +703,7 @@ describe("exec resolve_exec_env hook wiring", () => {
       }),
     };
 
-    const exec = createOpenClawCodingTools({
+    const exec = createAforaCodingTools({
       agentId: "main",
       sessionKey: "agent:main:telegram:chat-1",
       cwd: process.cwd(),

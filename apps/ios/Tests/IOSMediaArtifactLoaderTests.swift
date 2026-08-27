@@ -1,9 +1,9 @@
 import Foundation
-import OpenClawChatUI
-import OpenClawKit
-import OpenClawProtocol
+import AforaChatUI
+import AforaKit
+import AforaProtocol
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 @Suite("iOS managed media artifact loader")
 struct IOSMediaArtifactLoaderTests {

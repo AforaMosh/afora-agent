@@ -15,7 +15,7 @@ type RecentQueueMessageIdOwnership = {
  * are rejected no matter which chunk receives the enqueue call.
  */
 const RECENT_QUEUE_MESSAGE_IDS = resolveGlobalDedupeCache(
-  Symbol.for("openclaw.recentQueueMessageIdOwners"),
+  Symbol.for("afora.recentQueueMessageIdOwners"),
   {
     ttlMs: RECENT_QUEUE_MESSAGE_ID_TTL_MS,
     maxSize: RECENT_QUEUE_MESSAGE_ID_MAX_SIZE,
@@ -24,7 +24,7 @@ const RECENT_QUEUE_MESSAGE_IDS = resolveGlobalDedupeCache(
 
 /** Chunk-shared identity→key association so abandonment can free the entry. */
 const DEDUPE_IDENTITY_OWNERSHIPS = resolveGlobalSingleton(
-  Symbol.for("openclaw.recentQueueMessageIdOwnerships"),
+  Symbol.for("afora.recentQueueMessageIdOwnerships"),
   () => new WeakMap<object, RecentQueueMessageIdOwnership>(),
 );
 

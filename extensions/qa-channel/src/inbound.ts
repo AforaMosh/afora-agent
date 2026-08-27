@@ -2,18 +2,18 @@ import {
   buildChannelInboundEventContext,
   resolveChannelInboundRouteEnvelope,
   toInboundMediaFactsWithMetadata,
-} from "openclaw/plugin-sdk/channel-inbound";
+} from "afora-agent/plugin-sdk/channel-inbound";
 // Qa Channel plugin module implements inbound behavior.
-import { resolveStableChannelMessageIngress } from "openclaw/plugin-sdk/channel-ingress-runtime";
-import { resolveNativeCommandSessionTargets } from "openclaw/plugin-sdk/command-auth-native";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { getAgentScopedMediaLocalRoots } from "openclaw/plugin-sdk/media-local-roots";
-import { saveMediaBuffer, saveMediaSource } from "openclaw/plugin-sdk/media-store";
+import { resolveStableChannelMessageIngress } from "afora-agent/plugin-sdk/channel-ingress-runtime";
+import { resolveNativeCommandSessionTargets } from "afora-agent/plugin-sdk/command-auth-native";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { getAgentScopedMediaLocalRoots } from "afora-agent/plugin-sdk/media-local-roots";
+import { saveMediaBuffer, saveMediaSource } from "afora-agent/plugin-sdk/media-store";
 import {
   sanitizeQaBusToolCallArguments,
   type QaBusToolCall,
-} from "openclaw/plugin-sdk/qa-channel-protocol";
+} from "afora-agent/plugin-sdk/qa-channel-protocol";
 import {
   buildQaTarget,
   deleteQaBusMessage,
@@ -282,7 +282,7 @@ export async function handleQaInbound(params: {
     toolCalls,
   });
   const { route, buildEnvelope } = resolveChannelInboundRouteEnvelope({
-    cfg: params.config as OpenClawConfig,
+    cfg: params.config as AforaConfig,
     channel: params.channelId,
     accountId: params.account.accountId,
     peer: {
@@ -300,7 +300,7 @@ export async function handleQaInbound(params: {
     ? runtime.channel.mentions.matchesMentionPatterns(
         inbound.text,
         runtime.channel.mentions.buildMentionRegexes(
-          params.config as OpenClawConfig,
+          params.config as AforaConfig,
           route.agentId,
         ),
       )
@@ -423,7 +423,7 @@ export async function handleQaInbound(params: {
   });
 
   await runtime.channel.inbound.dispatch({
-    cfg: params.config as OpenClawConfig,
+    cfg: params.config as AforaConfig,
     channel: params.channelId,
     accountId: params.account.accountId,
     route: { agentId: route.agentId, dmScope: route.dmScope, sessionKey: route.sessionKey },
@@ -465,7 +465,7 @@ export async function handleQaInbound(params: {
             isError: reply?.isError,
             mediaUrls,
             mediaLocalRoots: getAgentScopedMediaLocalRoots(
-              params.config as OpenClawConfig,
+              params.config as AforaConfig,
               route.agentId,
             ),
             threadId: inbound.threadId,

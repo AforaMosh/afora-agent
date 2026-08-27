@@ -15,7 +15,7 @@ import { openChatSidePanelType } from "./chat-side-panel.test-support.ts";
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
 const artifactDir = path.resolve(process.cwd(), ".artifacts/control-ui-e2e/chat-file-links");
 
@@ -208,7 +208,7 @@ describeControlUiE2e("Control UI chat file links", () => {
           workspacePath: "notes.txt",
         },
       },
-      "/workspace/openclaw.png": {
+      "/workspace/afora.png": {
         root: "/workspace",
         sessionKey: "main",
         file: {
@@ -217,11 +217,11 @@ describeControlUiE2e("Control UI chat file links", () => {
           kind: "read",
           mimeType: "image/png",
           missing: false,
-          name: "openclaw.png",
-          path: "openclaw.png",
+          name: "afora.png",
+          path: "afora.png",
           previewKind: "image",
           size: png.byteLength,
-          workspacePath: "openclaw.png",
+          workspacePath: "afora.png",
         },
       },
       "/workspace/unsupported-binary.bmp": {
@@ -276,7 +276,7 @@ describeControlUiE2e("Control UI chat file links", () => {
       };
       const closePreview = async () => {
         await page.getByRole("button", { name: "Close Review" }).click();
-        await page.locator("openclaw-chat-detail-panel").waitFor({ state: "detached" });
+        await page.locator("afora-chat-detail-panel").waitFor({ state: "detached" });
       };
 
       await page.goto(`${server.baseUrl}chat`);
@@ -291,7 +291,7 @@ describeControlUiE2e("Control UI chat file links", () => {
       await page.screenshot({ path: path.join(artifactDir, "04-text-preview.png") });
       await closePreview();
 
-      await openPreview("openclaw.png");
+      await openPreview("afora.png");
       const image = page.locator('.chat-tool-card__preview[data-kind="image"] img');
       await image.waitFor({ state: "visible" });
       expect(await image.getAttribute("src")).toBe(`data:image/png;base64,${pngBase64}`);
@@ -319,7 +319,7 @@ describeControlUiE2e("Control UI chat file links", () => {
         (await gateway.getRequests("sessions.files.get")).map((request) => request.params),
       ).toEqual([
         { agentId: "main", path: "/workspace/notes.txt", sessionKey: "main" },
-        { agentId: "main", path: "/workspace/openclaw.png", sessionKey: "main" },
+        { agentId: "main", path: "/workspace/afora.png", sessionKey: "main" },
         {
           agentId: "main",
           path: "/workspace/unsupported-binary.bmp",

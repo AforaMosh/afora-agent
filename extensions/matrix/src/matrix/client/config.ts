@@ -1,15 +1,15 @@
 // Matrix helper module supports config behavior.
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
-import { resolveOptionalIntegerOption } from "openclaw/plugin-sdk/number-runtime";
-import { requireRuntimeConfig } from "openclaw/plugin-sdk/plugin-config-runtime";
-import { retryAsync } from "openclaw/plugin-sdk/retry-runtime";
-import { sleepWithAbort } from "openclaw/plugin-sdk/runtime-env";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
+import { resolveOptionalIntegerOption } from "afora-agent/plugin-sdk/number-runtime";
+import { requireRuntimeConfig } from "afora-agent/plugin-sdk/plugin-config-runtime";
+import { retryAsync } from "afora-agent/plugin-sdk/retry-runtime";
+import { sleepWithAbort } from "afora-agent/plugin-sdk/runtime-env";
 import {
   coerceSecretRef,
   normalizeResolvedSecretInputString,
-} from "openclaw/plugin-sdk/secret-input-runtime";
-import type { PinnedDispatcherPolicy } from "openclaw/plugin-sdk/ssrf-dispatcher";
+} from "afora-agent/plugin-sdk/secret-input-runtime";
+import type { PinnedDispatcherPolicy } from "afora-agent/plugin-sdk/ssrf-dispatcher";
 import {
   requiresExplicitMatrixDefaultAccount,
   resolveMatrixDefaultOrOnlyAccountId,
@@ -624,7 +624,7 @@ export async function resolveMatrixAuth(params?: {
         identifier: { type: "m.id.user", user: resolved.userId },
         password,
         device_id: resolved.deviceId,
-        initial_device_display_name: resolved.deviceName ?? "OpenClaw Gateway",
+        initial_device_display_name: resolved.deviceName ?? "Afora Gateway",
       })) as MatrixLoginResponse,
   );
 

@@ -17,7 +17,7 @@ describe("bundled discovery state", () => {
   });
 
   it("reads machine state from the active plugin registry state directory", async () => {
-    const sourceEnv = { OPENCLAW_STATE_DIR: "/operator/openclaw" };
+    const sourceEnv = { AFORA_STATE_DIR: "/operator/afora" };
     const isolatedRoots = {
       ...resolvePluginInstallRoots(sourceEnv),
       stateDir: "/tmp/private-plugin-state",
@@ -30,13 +30,13 @@ describe("bundled discovery state", () => {
 
     expect(mocks.readConfigMachineState).toHaveBeenCalledWith("plugins.bundledDiscovery", {
       env: {
-        OPENCLAW_STATE_DIR: "/tmp/private-plugin-state",
+        AFORA_STATE_DIR: "/tmp/private-plugin-state",
       },
     });
   });
 
   it("preserves explicit database path ownership", async () => {
-    const sourceEnv = { OPENCLAW_STATE_DIR: "/operator/openclaw" };
+    const sourceEnv = { AFORA_STATE_DIR: "/operator/afora" };
     const isolatedRoots = {
       ...resolvePluginInstallRoots(sourceEnv),
       stateDir: "/tmp/private-plugin-state",
@@ -47,14 +47,14 @@ describe("bundled discovery state", () => {
       expect(
         readBundledDiscoveryMode({
           env: sourceEnv,
-          path: "/explicit/openclaw.sqlite",
+          path: "/explicit/afora.sqlite",
         }),
       ).toBe("compat");
     });
 
     expect(mocks.readConfigMachineState).toHaveBeenCalledWith("plugins.bundledDiscovery", {
       env: sourceEnv,
-      path: "/explicit/openclaw.sqlite",
+      path: "/explicit/afora.sqlite",
     });
   });
 });

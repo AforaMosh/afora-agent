@@ -1,10 +1,10 @@
 // Migrate Claude plugin module implements plan behavior.
-import { createMigrationItem, summarizeMigrationItems } from "openclaw/plugin-sdk/migration";
+import { createMigrationItem, summarizeMigrationItems } from "afora-agent/plugin-sdk/migration";
 import type {
   MigrationItem,
   MigrationPlan,
   MigrationProviderContext,
-} from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/plugin-entry";
 import { buildConfigItems } from "./config.js";
 import { buildMemoryItems } from "./memory.js";
 import { buildSkillItems } from "./skills.js";
@@ -95,7 +95,7 @@ export async function buildClaudePlan(ctx: MigrationProviderContext): Promise<Mi
       : []),
     ...(items.some((item) => item.kind === "archive")
       ? [
-          "Some Claude files are archive-only. They will be copied into the migration report for manual review, not loaded into OpenClaw.",
+          "Some Claude files are archive-only. They will be copied into the migration report for manual review, not loaded into Afora.",
         ]
       : []),
     ...(items.some((item) => item.kind === "manual")
@@ -109,7 +109,7 @@ export async function buildClaudePlan(ctx: MigrationProviderContext): Promise<Mi
     summary: summarizeMigrationItems(items),
     items,
     warnings,
-    nextSteps: memoryOnly ? [] : ["Run openclaw doctor after applying the migration."],
+    nextSteps: memoryOnly ? [] : ["Run afora doctor after applying the migration."],
     metadata: { agentDir: targets.agentDir },
   };
 }

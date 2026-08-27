@@ -1,9 +1,9 @@
 import fs from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { OutboundMediaAccess } from "openclaw/plugin-sdk/media-runtime";
-import { createOpenClawTestState, type OpenClawTestState } from "openclaw/plugin-sdk/test-state";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { OutboundMediaAccess } from "afora-agent/plugin-sdk/media-runtime";
+import { createAforaTestState, type AforaTestState } from "afora-agent/plugin-sdk/test-state";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clearSignalApprovalReactionTargetsForTest } from "./approval-reactions.js";
 import { signalPlugin } from "./channel.js";
@@ -16,7 +16,7 @@ const SIGNAL_IMAGE = Buffer.from(
 );
 
 type SignalMediaContext = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   to: string;
   text: string;
   mediaUrl: string;
@@ -75,15 +75,15 @@ const SIGNAL_MEDIA_ADAPTERS = [
 ] as const;
 
 describe("Signal host-owned outbound media access", () => {
-  let state: OpenClawTestState;
+  let state: AforaTestState;
   let server: http.Server;
-  let cfg: OpenClawConfig;
+  let cfg: AforaConfig;
   let requests: Array<{ envelope: SignalRpcEnvelope; attachment: Buffer | undefined }>;
 
   beforeEach(async () => {
-    state = await createOpenClawTestState({
+    state = await createAforaTestState({
       layout: "state-only",
-      prefix: "openclaw-signal-media-access-",
+      prefix: "afora-signal-media-access-",
     });
     requests = [];
     server = http.createServer((request, response) => {

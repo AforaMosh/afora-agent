@@ -1,7 +1,7 @@
 // Run fallback policy tests cover isolated agent fallback behavior after run failures.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { CronJob } from "../types.js";
 import {
   resolveCronFallbacksOverride,
@@ -19,7 +19,7 @@ function makeJob(payload: CronJob["payload"]): CronJob {
   } as CronJob;
 }
 
-function makeConfig(fallbacks?: string[]): OpenClawConfig {
+function makeConfig(fallbacks?: string[]): AforaConfig {
   return {
     agents: {
       defaults: {

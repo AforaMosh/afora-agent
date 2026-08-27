@@ -1,7 +1,7 @@
-import type { OpenClawPluginNodeHostCommandAvailabilityContext } from "openclaw/plugin-sdk/plugin-entry";
-import type { CommandOptions, SpawnResult } from "openclaw/plugin-sdk/process-runtime";
-import { asFiniteNumber, asNonArrayRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import type { AforaPluginNodeHostCommandAvailabilityContext } from "afora-agent/plugin-sdk/plugin-entry";
+import type { CommandOptions, SpawnResult } from "afora-agent/plugin-sdk/process-runtime";
+import { asFiniteNumber, asNonArrayRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import {
   resolveLinuxNodePluginConfigFromHost,
   type ResolvedLinuxNodePluginConfig,
@@ -44,7 +44,7 @@ export function assertToolResult(result: SpawnResult, code: string): void {
 }
 
 export function isCapabilityEnabledForHost(
-  context: OpenClawPluginNodeHostCommandAvailabilityContext,
+  context: AforaPluginNodeHostCommandAvailabilityContext,
   capability: keyof ResolvedLinuxNodePluginConfig,
 ): boolean {
   return resolveLinuxNodePluginConfigFromHost(context.config)?.[capability].enabled === true;

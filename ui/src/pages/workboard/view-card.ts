@@ -248,7 +248,7 @@ function renderCard(props: WorkboardProps, card: WorkboardCard, surface: Workboa
   const detailAction = widget
     ? nothing
     : html`
-        <openclaw-tooltip .content=${t("workboard.viewDetails")}>
+        <afora-tooltip .content=${t("workboard.viewDetails")}>
           <button
             class="btn btn--icon workboard-card__icon"
             aria-label=${t("workboard.viewDetails")}
@@ -262,7 +262,7 @@ function renderCard(props: WorkboardProps, card: WorkboardCard, surface: Workboa
           >
             ${icons.panelRightOpen}
           </button>
-        </openclaw-tooltip>
+        </afora-tooltip>
       `;
   const sessionAction = widget
     ? nothing

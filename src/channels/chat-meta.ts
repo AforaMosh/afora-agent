@@ -3,7 +3,7 @@
  *
  * Provides ordered channel metadata for setup, status, and selection surfaces.
  */
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { resolveBundledPluginsDir } from "../plugins/bundled-dir.js";
 import { buildChatChannelMetaById, type ChatChannelMeta } from "./chat-meta-shared.js";
 import { CHAT_CHANNEL_ORDER, type ChatChannelId } from "./ids.js";

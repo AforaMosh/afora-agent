@@ -6,14 +6,14 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readSkillProposalEvents } from "../../skills/workshop/store-evaluation.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../../test-utils/afora-test-state.js";
 import { createTrackedTempDirs } from "../../test-utils/tracked-temp-dirs.js";
 import { callGatewayHandler } from "./skills.test-helpers.js";
 
 const tempDirs = createTrackedTempDirs();
-let testState: OpenClawTestState;
+let testState: AforaTestState;
 let stateDir = "";
 
 const mocks = vi.hoisted(() => ({
@@ -61,7 +61,7 @@ vi.mock("../../infra/clawhub-skills.js", () => ({
 
 vi.mock("../../skills/security/clawhub-verdicts.js", () => ({
   collectClawHubVerdictTargets: vi.fn(() => []),
-  fetchOpenClawSkillSecurityVerdicts: vi.fn(),
+  fetchAforaSkillSecurityVerdicts: vi.fn(),
 }));
 
 vi.mock("../../skills/workshop/service.js", async (importOriginal) => {
@@ -99,9 +99,9 @@ function callHandler(method: string, params: Record<string, unknown>) {
 
 describe("skills proposal gateway handlers", () => {
   beforeEach(async () => {
-    testState = await createOpenClawTestState({
+    testState = await createAforaTestState({
       layout: "state-only",
-      prefix: "openclaw-skills-proposals-gateway-state-",
+      prefix: "afora-skills-proposals-gateway-state-",
     });
     mocks.chatSend.mockReset();
     mocks.chatSend.mockImplementation(async ({ respond }) => {
@@ -127,7 +127,7 @@ describe("skills proposal gateway handlers", () => {
     mocks.quarantineSkillProposal.mockClear();
     mocks.rejectSkillProposal.mockClear();
     mocks.reviseSkillProposal.mockClear();
-    mocks.workspaceDir = await tempDirs.make("openclaw-skills-proposals-gateway-");
+    mocks.workspaceDir = await tempDirs.make("afora-skills-proposals-gateway-");
     stateDir = testState.stateDir;
   });
 
@@ -260,7 +260,7 @@ describe("skills proposal gateway handlers", () => {
     expect(first.ok).toBe(true);
     const firstCreated = first.response as { record: { id: string } };
 
-    const secondWorkspaceDir = await tempDirs.make("openclaw-skills-proposals-gateway-second-");
+    const secondWorkspaceDir = await tempDirs.make("afora-skills-proposals-gateway-second-");
     mocks.workspaceDir = secondWorkspaceDir;
     const second = await callHandler("skills.proposals.create", {
       name: "Second Gateway Skill",
@@ -400,7 +400,7 @@ describe("skills proposal gateway handlers", () => {
     expect(status).toMatchObject({
       ok: true,
       response: {
-        schema: "openclaw.skill-workshop.history-scan.v1",
+        schema: "afora.skill-workshop.history-scan.v1",
         hasScanned: false,
         reviewedSessions: 0,
         ideasFound: 0,

@@ -39,7 +39,7 @@ function loadEmbeddedRunAuthProfileStore(params: {
 // Test-only seam access mirrors external-auth.ts; the config-threading regression
 // must stay provable without composing a full embedded runner.
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.embeddedRunAuthPlanTestApi")] =
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.embeddedRunAuthPlanTestApi")] =
     { loadEmbeddedRunAuthProfileStore };
 }
 
@@ -69,14 +69,14 @@ export async function prepareEmbeddedRunAuthPlan(params: {
   const runParams = params.runParams;
   const usesOpenAIAuthRouting = params.provider === OPENAI_PROVIDER_ID;
   const initialHarness = params.getAgentHarness();
-  const initialPluginHarnessOwnsTransport = initialHarness.id !== "openclaw";
-  const openClawNativeCodexResponsesNeedsAuthBootstrap =
+  const initialPluginHarnessOwnsTransport = initialHarness.id !== "afora";
+  const aforaNativeCodexResponsesNeedsAuthBootstrap =
     !initialPluginHarnessOwnsTransport &&
     usesOpenAIAuthRouting &&
     params.getEffectiveModel().api === "openai-chatgpt-responses";
   let externalCliAuthScope = initialPluginHarnessOwnsTransport
     ? { ignoreAutoPreferredProfile: false }
-    : openClawNativeCodexResponsesNeedsAuthBootstrap
+    : aforaNativeCodexResponsesNeedsAuthBootstrap
       ? {
           providerIds: [OPENAI_PROVIDER_ID],
           ignoreAutoPreferredProfile: false,

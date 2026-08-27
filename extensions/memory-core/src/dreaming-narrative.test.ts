@@ -5,17 +5,17 @@ import path from "node:path";
 import {
   RequestScopedSubagentRuntimeError,
   SUBAGENT_RUNTIME_REQUEST_SCOPE_ERROR_CODE,
-} from "openclaw/plugin-sdk/error-runtime";
-import { resolveGlobalMap } from "openclaw/plugin-sdk/global-singleton";
-import { resolveStateDir } from "openclaw/plugin-sdk/memory-core-host-runtime-core";
-import * as runtimeConfigSnapshotModule from "openclaw/plugin-sdk/runtime-config-snapshot";
+} from "afora-agent/plugin-sdk/error-runtime";
+import { resolveGlobalMap } from "afora-agent/plugin-sdk/global-singleton";
+import { resolveStateDir } from "afora-agent/plugin-sdk/memory-core-host-runtime-core";
+import * as runtimeConfigSnapshotModule from "afora-agent/plugin-sdk/runtime-config-snapshot";
 import {
   listSessionEntries,
   loadTranscriptEventsSync,
   upsertSessionEntry,
   type SessionEntry,
-} from "openclaw/plugin-sdk/session-store-runtime";
-import { appendSqliteSessionTranscriptEventForTest } from "openclaw/plugin-sdk/sqlite-runtime-testing";
+} from "afora-agent/plugin-sdk/session-store-runtime";
+import { appendSqliteSessionTranscriptEventForTest } from "afora-agent/plugin-sdk/sqlite-runtime-testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   dedupeDreamDiaryEntries,
@@ -26,25 +26,25 @@ import {
 } from "./dreaming-narrative.js";
 import { createMemoryCoreTestHarness } from "./test-helpers.js";
 
-vi.mock("openclaw/plugin-sdk/memory-core-host-runtime-core", { spy: true });
+vi.mock("afora-agent/plugin-sdk/memory-core-host-runtime-core", { spy: true });
 
 const { createTempWorkspace } = createMemoryCoreTestHarness();
-const DREAMS_FILE_LOCKS_KEY = Symbol.for("openclaw.memoryCore.dreamingNarrative.fileLocks");
+const DREAMS_FILE_LOCKS_KEY = Symbol.for("afora.memoryCore.dreamingNarrative.fileLocks");
 const NARRATIVE_SESSION_LOCKS_KEY = Symbol.for(
-  "openclaw.memoryCore.dreamingNarrative.sessionLocks",
+  "afora.memoryCore.dreamingNarrative.sessionLocks",
 );
 const EXPECTS_POSIX_PRIVATE_FILE_MODE = process.platform !== "win32";
-const originalNarrativeStateDir = process.env.OPENCLAW_STATE_DIR;
+const originalNarrativeStateDir = process.env.AFORA_STATE_DIR;
 
 function setNarrativeTestEnv(stateDir: string): void {
-  Reflect.set(process.env, "OPENCLAW_STATE_DIR", stateDir);
+  Reflect.set(process.env, "AFORA_STATE_DIR", stateDir);
 }
 
 function restoreNarrativeTestEnv(): void {
   if (originalNarrativeStateDir === undefined) {
-    Reflect.deleteProperty(process.env, "OPENCLAW_STATE_DIR");
+    Reflect.deleteProperty(process.env, "AFORA_STATE_DIR");
   } else {
-    Reflect.set(process.env, "OPENCLAW_STATE_DIR", originalNarrativeStateDir);
+    Reflect.set(process.env, "AFORA_STATE_DIR", originalNarrativeStateDir);
   }
 }
 
@@ -158,8 +158,8 @@ describe("dream diary file behavior", () => {
     expect(written.written).toBe(1);
 
     const existing = await fs.readFile(written.dreamsPath, "utf8");
-    const startMarker = "<!-- openclaw:dreaming:diary:start -->";
-    const endMarker = "<!-- openclaw:dreaming:diary:end -->";
+    const startMarker = "<!-- afora:dreaming:diary:start -->";
+    const endMarker = "<!-- afora:dreaming:diary:end -->";
     const block = existing.slice(
       existing.indexOf(startMarker) + startMarker.length,
       existing.indexOf(endMarker),
@@ -221,14 +221,14 @@ describe("dream diary file behavior", () => {
       [
         "# Dream Diary",
         "",
-        "<!-- openclaw:dreaming:diary:start -->",
+        "<!-- afora:dreaming:diary:start -->",
         "---",
         "",
         "*April 5, 2026*",
         "",
         "Symlink target diary text must not enter the prompt.",
         "",
-        "<!-- openclaw:dreaming:diary:end -->",
+        "<!-- afora:dreaming:diary:end -->",
         "",
       ].join("\n"),
       "utf8",
@@ -299,7 +299,7 @@ describe("dream diary file behavior", () => {
       [
         "# Dream Diary",
         "",
-        "<!-- openclaw:dreaming:diary:start -->",
+        "<!-- afora:dreaming:diary:start -->",
         "---",
         "",
         "*April 11, 2026, 8:00 AM*",
@@ -320,7 +320,7 @@ describe("dream diary file behavior", () => {
         "",
         "The server room smelled like rain.",
         "",
-        "<!-- openclaw:dreaming:diary:end -->",
+        "<!-- afora:dreaming:diary:end -->",
         "",
       ].join("\n"),
       "utf8",
@@ -344,7 +344,7 @@ describe("dream diary file behavior", () => {
       [
         "# Dream Diary",
         "",
-        "<!-- openclaw:dreaming:diary:start -->",
+        "<!-- afora:dreaming:diary:start -->",
         "---",
         "",
         "*April 11, 2026, 8:00 AM*",
@@ -357,7 +357,7 @@ describe("dream diary file behavior", () => {
         "",
         "The server room smelled like rain.",
         "",
-        "<!-- openclaw:dreaming:diary:end -->",
+        "<!-- afora:dreaming:diary:end -->",
         "",
       ].join("\n"),
       "utf8",
@@ -407,7 +407,7 @@ describe("runDreamNarrative", () => {
   }
 
   it("generates narrative and writes diary entry", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
     const subagent = createMockSubagent("The repository whispered of forgotten endpoints.");
     const logger = createMockLogger();
     const nowMs = Date.parse("2026-04-05T03:00:00Z");
@@ -449,7 +449,7 @@ describe("runDreamNarrative", () => {
   });
 
   it("keeps creation and cleanup on the memory-core-owned session identity", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-owner-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-owner-");
     const workspaceHash = createHash("sha1").update(workspaceDir).digest("hex").slice(0, 12);
     const legacyUnownedKey = `agent:blockdigest:dreaming-narrative-rem-${workspaceHash}`;
     const ownedKey = `agent:blockdigest:dreaming-narrative-memory-core-v2-rem-${workspaceHash}`;
@@ -483,7 +483,7 @@ describe("runDreamNarrative", () => {
   // store, so every subagent call failed with "Cannot resolve SQLite session scope without
   // an agent id" and the whole dreaming pipeline produced nothing.
   it("scopes narrative sessions to the workspace's owning agent", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
     const subagent = createMockSubagent("The night shift agent kept its own notebook.");
     const logger = createMockLogger();
     const nowMs = Date.parse("2026-04-05T03:00:00Z");
@@ -517,7 +517,7 @@ describe("runDreamNarrative", () => {
   it("waits for persisted assistant text before falling back", async () => {
     vi.useFakeTimers();
     try {
-      const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+      const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
       const subagent = createMockSubagent("");
       subagent.getSessionMessages
         .mockResolvedValueOnce({
@@ -569,7 +569,7 @@ describe("runDreamNarrative", () => {
   it("falls back after settled assistant text never appears", async () => {
     vi.useFakeTimers();
     try {
-      const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+      const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
       const subagent = createMockSubagent("");
       const logger = createMockLogger();
 
@@ -599,7 +599,7 @@ describe("runDreamNarrative", () => {
   });
 
   it("retries with the session default when the configured model cannot start", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
     const subagent = createMockSubagent("The default model carried the diary home.");
     subagent.run.mockRejectedValueOnce(new Error("model unavailable"));
     const logger = createMockLogger();
@@ -647,7 +647,7 @@ describe("runDreamNarrative", () => {
   });
 
   it("retries with the session default when the configured model run ends unavailable", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
     const subagent = createMockSubagent("The default model carried the diary home.");
     subagent.run
       .mockResolvedValueOnce({ runId: "run-configured" })
@@ -697,7 +697,7 @@ describe("runDreamNarrative", () => {
   });
 
   it("does not hide configured model authorization failures by retrying", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
     const subagent = createMockSubagent("");
     subagent.run.mockRejectedValue(
       new Error("provider/model override is not authorized for this plugin subagent run."),
@@ -723,7 +723,7 @@ describe("runDreamNarrative", () => {
   });
 
   it("skips narrative when no snippets are available", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
     const subagent = createMockSubagent("Should not appear.");
     const logger = createMockLogger();
 
@@ -744,7 +744,7 @@ describe("runDreamNarrative", () => {
   });
 
   it("writes a fallback diary entry when the subagent times out", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
     const subagent = createMockSubagent("");
     subagent.waitForRun.mockResolvedValue({ status: "timeout" });
     const logger = createMockLogger();
@@ -768,7 +768,7 @@ describe("runDreamNarrative", () => {
   });
 
   it("does not leak sensitive raw staging fragments into the diary on fallback", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
     const subagent = createMockSubagent("");
     subagent.waitForRun.mockResolvedValue({ status: "timeout" });
     const logger = createMockLogger();
@@ -799,7 +799,7 @@ describe("runDreamNarrative", () => {
   });
 
   it("skips extra settle waits after timeout and still attempts cleanup", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
     const subagent = createMockSubagent("");
     subagent.waitForRun.mockResolvedValueOnce({ status: "timeout" });
     subagent.deleteSession.mockRejectedValue(new Error("still active"));
@@ -820,7 +820,7 @@ describe("runDreamNarrative", () => {
   });
 
   it("handles subagent error gracefully", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
     const subagent = createMockSubagent("");
     subagent.run.mockRejectedValue(
       new Error("connection failed", {
@@ -846,7 +846,7 @@ describe("runDreamNarrative", () => {
   });
 
   it("falls back to a local narrative when subagent runtime is request-scoped", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
     const subagent = createMockSubagent("");
     subagent.deleteSession.mockRejectedValueOnce(new RequestScopedSubagentRuntimeError());
     subagent.run.mockRejectedValue(new RequestScopedSubagentRuntimeError());
@@ -875,7 +875,7 @@ describe("runDreamNarrative", () => {
   });
 
   it("falls back when the request-scoped runtime error is detected by stable code", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
     const subagent = createMockSubagent("");
     const crossBoundaryError = new Error("different wrapper text");
     crossBoundaryError.name = "RequestScopedSubagentRuntimeError";
@@ -905,7 +905,7 @@ describe("runDreamNarrative", () => {
   });
 
   it("does not fall back for non-Error objects that only spoof the stable code", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
     const subagent = createMockSubagent("");
     subagent.run.mockRejectedValue({
       code: SUBAGENT_RUNTIME_REQUEST_SCOPE_ERROR_CODE,
@@ -932,7 +932,7 @@ describe("runDreamNarrative", () => {
   });
 
   it("cleans up session even on failure", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
     const subagent = createMockSubagent("");
     subagent.getSessionMessages.mockRejectedValue(new Error("fetch failed"));
     const logger = createMockLogger();
@@ -949,8 +949,8 @@ describe("runDreamNarrative", () => {
   });
 
   it("scrubs stale dreaming entries and orphan transcripts after cleanup", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
-    const stateDir = await createTempWorkspace("openclaw-dreaming-state-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
+    const stateDir = await createTempWorkspace("afora-dreaming-state-");
     const sessionsDir = path.join(stateDir, "agents", "main", "sessions");
     await fs.mkdir(sessionsDir, { recursive: true });
     const storePath = path.join(sessionsDir, "sessions.json");
@@ -1036,8 +1036,8 @@ describe("runDreamNarrative", () => {
   });
 
   it("reclaims an aged dreaming row whose transcript still exists (failed deleteSession)", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
-    const stateDir = await createTempWorkspace("openclaw-dreaming-state-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
+    const stateDir = await createTempWorkspace("afora-dreaming-state-");
     const sessionsDir = path.join(stateDir, "agents", "main", "sessions");
     await fs.mkdir(sessionsDir, { recursive: true });
     const storePath = path.join(sessionsDir, "sessions.json");
@@ -1125,8 +1125,8 @@ describe("runDreamNarrative", () => {
   });
 
   it("isolates narrative sessions across workspaces even at the same timestamp", async () => {
-    const firstWorkspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
-    const secondWorkspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+    const firstWorkspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
+    const secondWorkspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
     const subagent = createMockSubagent("A quiet memory took shape.");
     const logger = createMockLogger();
     const nowMs = Date.parse("2026-04-05T03:00:00Z");
@@ -1165,7 +1165,7 @@ describe("runDreamNarrative", () => {
 
 describe("runDreamNarrative ownership gate", () => {
   it("keeps the sweep alive with a local fallback when no owning agent is known", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
     const subagent = {
       run: vi.fn(),
       waitForRun: vi.fn(),
@@ -1193,7 +1193,7 @@ describe("runDreamNarrative ownership gate", () => {
   });
 
   it("queues the ownerless fallback through detached dispatch", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
     const subagent = {
       run: vi.fn(),
       waitForRun: vi.fn(),
@@ -1223,7 +1223,7 @@ describe("runDreamNarrative ownership gate", () => {
   });
 
   it("stays a no-op for an ownerless sweep with nothing to narrate", async () => {
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-narrative-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-narrative-");
     const subagent = {
       run: vi.fn(),
       waitForRun: vi.fn(),
@@ -1291,7 +1291,7 @@ describe("runDreamNarrative detached dispatch", () => {
   it("caps the number of in-flight detached narratives at 3", async () => {
     const { subagent, runDeferreds } = createBlockingSubagent();
     const workspaceDirs = await Promise.all(
-      Array.from({ length: 5 }, () => createTempWorkspace("openclaw-dreaming-detach-")),
+      Array.from({ length: 5 }, () => createTempWorkspace("afora-dreaming-detach-")),
     );
     const logger = createMockLogger();
 
@@ -1353,7 +1353,7 @@ describe("runDreamNarrative detached dispatch", () => {
       getSessionMessages: vi.fn().mockResolvedValue({ messages: [] }),
       deleteSession: vi.fn().mockResolvedValue(undefined),
     };
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-detach-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-detach-");
     const logger = createMockLogger();
 
     for (let i = 0; i < 5; i += 1) {
@@ -1406,7 +1406,7 @@ describe("runDreamNarrative detached dispatch", () => {
       deleteSession: vi.fn().mockResolvedValue(undefined),
     };
     const logger = createMockLogger();
-    const workspaceDir = await createTempWorkspace("openclaw-dreaming-detach-");
+    const workspaceDir = await createTempWorkspace("afora-dreaming-detach-");
     const unhandled = vi.fn();
     process.on("unhandledRejection", unhandled);
 

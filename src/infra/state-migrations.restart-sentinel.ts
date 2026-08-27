@@ -2,7 +2,7 @@
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { root, type Root } from "@openclaw/fs-safe";
-import { runOpenClawStateWriteTransaction } from "../state/openclaw-state-db.js";
+import { runAforaStateWriteTransaction } from "../state/afora-state-db.js";
 import {
   parseRestartSentinelEnvelope,
   readRestartSentinelRowSync,
@@ -68,7 +68,7 @@ function decideAndRecordMigration(params: {
   const sourceKey = resolveLegacyMigrationSourceKey("restart-sentinel-json", params.sourcePath);
   const runId = `${sourceKey}:${params.snapshot.sha256.slice(0, 16)}`;
   const now = Date.now();
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db }) => {
       const receipt = readLegacyMigrationReceiptFromDatabase(db, sourceKey);
       const before = readRestartSentinelRowSync(db);
@@ -301,7 +301,7 @@ export async function migrateLegacyRestartSentinel(params: {
     label: "the legacy restart sentinel",
     releaseLabel: "Restart sentinel",
     errorLabel: "Failed reading the legacy restart sentinel",
-    retryGuidance: "Stop the Gateway, then run `openclaw doctor --fix` again.",
+    retryGuidance: "Stop the Gateway, then run `afora doctor --fix` again.",
     run: async (env) => {
       const stateRoot = await root(params.stateDir, {
         hardlinks: "reject",

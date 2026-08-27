@@ -1,8 +1,8 @@
 // Transcript echo delivery sends best-effort preflight audio transcripts back
 // through deliverable message channels.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import type { MsgContext } from "../auto-reply/templating.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { logVerbose, shouldLogVerbose } from "../globals.js";
 import { createLazyRuntimeModule } from "../shared/lazy-runtime.js";
 import { isDeliverableMessageChannel } from "../utils/message-channel.js";
@@ -23,7 +23,7 @@ function formatEchoTranscript(transcript: string, format: string): string {
 /** Sends a best-effort transcript echo back to the originating deliverable chat. */
 export async function sendTranscriptEcho(params: {
   ctx: MsgContext;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   transcript: string;
   format?: string;
   logSuccess?: boolean;

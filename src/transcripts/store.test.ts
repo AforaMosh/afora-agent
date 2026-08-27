@@ -3,23 +3,23 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import type { TranscriptSessionDescriptor } from "./provider-types.js";
 import { safeTranscriptPathSegment, TranscriptsStore } from "./store.js";
 import { summarizeTranscripts } from "./summary.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
-afterEach(() => closeOpenClawStateDatabaseForTest());
+afterEach(() => closeAforaStateDatabaseForTest());
 
 function createStore(): { stateDir: string; store: TranscriptsStore } {
-  const stateDir = tempDirs.make("openclaw-transcript-test-");
+  const stateDir = tempDirs.make("afora-transcript-test-");
   return {
     stateDir,
     store: new TranscriptsStore(path.join(stateDir, "transcripts"), {
-      env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+      env: { ...process.env, AFORA_STATE_DIR: stateDir },
     }),
   };
 }
@@ -56,7 +56,7 @@ describe("TranscriptsStore", () => {
       { sessionId: target.sessionId, text: "world", final: true },
     ]);
     expect(fs.existsSync(path.join(stateDir, "transcripts"))).toBe(false);
-    expect(fs.existsSync(path.join(stateDir, "state", "openclaw.sqlite"))).toBe(true);
+    expect(fs.existsSync(path.join(stateDir, "state", "afora.sqlite"))).toBe(true);
   });
 
   it("returns the requested ordered utterance tail", async () => {
@@ -188,7 +188,7 @@ describe("TranscriptsStore", () => {
     const upper = session("Capital", "2026-07-01T10:00:00.000Z");
     const lower = session("capital", "2026-07-01T11:00:00.000Z");
     await store.writeSession(upper);
-    openOpenClawStateDatabase({ env: { ...process.env, OPENCLAW_STATE_DIR: stateDir } })
+    openAforaStateDatabase({ env: { ...process.env, AFORA_STATE_DIR: stateDir } })
       .db.prepare(
         "UPDATE meeting_transcript_sessions SET export_pending_json = ? WHERE session_id = ?",
       )
@@ -196,7 +196,7 @@ describe("TranscriptsStore", () => {
     fs.mkdirSync(store.sessionDir(lower), { recursive: true });
     fs.writeFileSync(path.join(store.sessionDir(lower), "transcript.jsonl"), "legacy\n");
 
-    await expect(store.writeSession(lower)).rejects.toThrow("run openclaw doctor --fix");
+    await expect(store.writeSession(lower)).rejects.toThrow("run afora doctor --fix");
     await expect(store.readSession(lower.sessionId)).resolves.toBeUndefined();
   });
 
@@ -212,7 +212,7 @@ describe("TranscriptsStore", () => {
     expect(fs.readdirSync(store.sessionDir(lower))).toContain("TRANSCRIPT.JSONL");
 
     if (fs.existsSync(path.join(store.sessionDir(lower), "transcript.jsonl"))) {
-      await expect(store.writeSession(lower)).rejects.toThrow("run openclaw doctor --fix");
+      await expect(store.writeSession(lower)).rejects.toThrow("run afora doctor --fix");
     } else {
       await expect(store.writeSession(lower)).resolves.toBeUndefined();
     }
@@ -226,7 +226,7 @@ describe("TranscriptsStore", () => {
     const transcriptPath = path.join(sessionDir, "transcript.jsonl");
     fs.writeFileSync(transcriptPath, '{"text":"legacy line"}\n');
 
-    await expect(store.writeSession(target)).rejects.toThrow("run openclaw doctor --fix");
+    await expect(store.writeSession(target)).rejects.toThrow("run afora doctor --fix");
     expect(fs.readFileSync(transcriptPath, "utf8")).toContain("legacy line");
   });
 
@@ -239,7 +239,7 @@ describe("TranscriptsStore", () => {
       fs.mkdirSync(legacyDir, { recursive: true });
       fs.writeFileSync(path.join(legacyDir, "transcript.jsonl"), "legacy\n");
 
-      await expect(store.writeSession(target)).rejects.toThrow("run openclaw doctor --fix");
+      await expect(store.writeSession(target)).rejects.toThrow("run afora doctor --fix");
       await expect(store.readSession(target.sessionId)).resolves.toBeUndefined();
     },
   );
@@ -251,7 +251,7 @@ describe("TranscriptsStore", () => {
     fs.mkdirSync(transcriptRoot, { recursive: true });
     fs.writeFileSync(path.join(transcriptRoot, "transcript.jsonl"), "legacy root transcript\n");
 
-    await expect(store.writeSession(session(".."))).rejects.toThrow("run openclaw doctor --fix");
+    await expect(store.writeSession(session(".."))).rejects.toThrow("run afora doctor --fix");
     await expect(store.readSession("..")).resolves.toBeUndefined();
   });
 
@@ -277,7 +277,7 @@ describe("TranscriptsStore", () => {
       summary: { sessionId: target.sessionId },
     });
     await expect(store.materializeSessionArtifacts(target, "transcript")).rejects.toThrow(
-      "run openclaw doctor --fix",
+      "run afora doctor --fix",
     );
   });
 
@@ -323,9 +323,9 @@ describe("TranscriptsStore", () => {
     expect(fs.readFileSync(artifacts.transcriptPath, "utf8")).toContain(
       '"text":"We decided to ship the CLI."',
     );
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const reopened = new TranscriptsStore(path.join(stateDir, "transcripts"), {
-      env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+      env: { ...process.env, AFORA_STATE_DIR: stateDir },
     });
     await expect(reopened.readSummary(target)).resolves.toMatchObject({
       summary: { sessionId: target.sessionId },
@@ -340,7 +340,7 @@ describe("TranscriptsStore", () => {
       summarizeTranscripts({ session: target, utterances: [{ text: "stale" }] }),
       target,
     );
-    openOpenClawStateDatabase({ env: { ...process.env, OPENCLAW_STATE_DIR: stateDir } })
+    openAforaStateDatabase({ env: { ...process.env, AFORA_STATE_DIR: stateDir } })
       .db.prepare("DELETE FROM meeting_transcript_summaries WHERE session_id = ?")
       .run(target.sessionId);
 
@@ -360,7 +360,7 @@ describe("TranscriptsStore", () => {
       summarizeTranscripts({ session: target, utterances: [{ text: "recover me" }] }),
       target,
     );
-    openOpenClawStateDatabase({ env: { ...process.env, OPENCLAW_STATE_DIR: stateDir } })
+    openAforaStateDatabase({ env: { ...process.env, AFORA_STATE_DIR: stateDir } })
       .db.prepare(
         "UPDATE meeting_transcript_sessions SET export_manifest_json = '{}' WHERE session_id = ?",
       )
@@ -373,8 +373,8 @@ describe("TranscriptsStore", () => {
       ]),
     ).resolves.toHaveLength(2);
 
-    const manifest = openOpenClawStateDatabase({
-      env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+    const manifest = openAforaStateDatabase({
+      env: { ...process.env, AFORA_STATE_DIR: stateDir },
     })
       .db.prepare(
         "SELECT export_manifest_json FROM meeting_transcript_sessions WHERE session_id = ?",

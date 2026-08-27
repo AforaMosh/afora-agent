@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   listManagedPluginNpmRoots: vi.fn(),
   maybeRepairStaleManagedNpmBundledPlugins: vi.fn(),
   repairMissingConfiguredPluginInstalls: vi.fn(),
-  relinkOpenClawPeerDependenciesInManagedNpmRoot: vi.fn(),
+  relinkAforaPeerDependenciesInManagedNpmRoot: vi.fn(),
   runPluginPayloadSmokeCheck: vi.fn(),
 }));
 
@@ -21,8 +21,8 @@ vi.mock("../../plugins/plugin-peer-link.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../plugins/plugin-peer-link.js")>();
   return {
     ...actual,
-    relinkOpenClawPeerDependenciesInManagedNpmRoot:
-      mocks.relinkOpenClawPeerDependenciesInManagedNpmRoot,
+    relinkAforaPeerDependenciesInManagedNpmRoot:
+      mocks.relinkAforaPeerDependenciesInManagedNpmRoot,
   };
 });
 vi.mock("../../plugins/npm-project-roots.js", async (importOriginal) => {
@@ -53,7 +53,7 @@ describe("post-core bundled plugin retirement", () => {
     mocks.listManagedPluginNpmRoots.mockImplementation((npmRoot: string) =>
       Promise.resolve([npmRoot]),
     );
-    mocks.relinkOpenClawPeerDependenciesInManagedNpmRoot.mockResolvedValue({
+    mocks.relinkAforaPeerDependenciesInManagedNpmRoot.mockResolvedValue({
       checked: 0,
       attempted: 0,
       repaired: 0,
@@ -63,23 +63,23 @@ describe("post-core bundled plugin retirement", () => {
   });
 
   it("retires payload and record state before repair across two starts", async () => {
-    const stateDir = tempDirs.make("openclaw-post-core-convergence-");
-    const bundledRoot = tempDirs.make("openclaw-post-core-bundled-");
+    const stateDir = tempDirs.make("afora-post-core-convergence-");
+    const bundledRoot = tempDirs.make("afora-post-core-bundled-");
     const cfg = {
       update: { channel: "beta" as const },
       plugins: { allow: ["codex"], entries: { codex: { enabled: true } } },
     };
     const env = {
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_BUNDLED_PLUGINS_DIR: bundledRoot,
-      OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
+      AFORA_STATE_DIR: stateDir,
+      AFORA_BUNDLED_PLUGINS_DIR: bundledRoot,
+      AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
       VITEST: "true",
     };
     const bundledDir = path.join(bundledRoot, "codex");
     fs.mkdirSync(bundledDir, { recursive: true });
     fs.writeFileSync(path.join(bundledDir, "index.js"), "export default {};\n", "utf8");
     fs.writeFileSync(
-      path.join(bundledDir, "openclaw.plugin.json"),
+      path.join(bundledDir, "afora.plugin.json"),
       JSON.stringify({
         id: "codex",
         name: "codex",
@@ -90,28 +90,28 @@ describe("post-core bundled plugin retirement", () => {
     );
     fs.writeFileSync(
       path.join(bundledDir, "package.json"),
-      JSON.stringify({ name: "@openclaw/codex", version: VERSION }),
+      JSON.stringify({ name: "@afora/codex", version: VERSION }),
       "utf8",
     );
     const npmRoot = resolvePluginNpmGenerationProjectDir({
       npmDir: path.join(stateDir, "npm"),
-      packageName: "@openclaw/codex",
-      generationKey: "@openclaw/codex@2026.7.2-beta.7",
+      packageName: "@afora/codex",
+      generationKey: "@afora/codex@2026.7.2-beta.7",
     });
-    const packageDir = path.join(npmRoot, "node_modules", "@openclaw", "codex");
+    const packageDir = path.join(npmRoot, "node_modules", "@afora", "codex");
     fs.mkdirSync(packageDir, { recursive: true });
     fs.writeFileSync(
       path.join(npmRoot, "package.json"),
-      JSON.stringify({ dependencies: { "@openclaw/codex": "2026.7.2-beta.7" } }),
+      JSON.stringify({ dependencies: { "@afora/codex": "2026.7.2-beta.7" } }),
       "utf8",
     );
     fs.writeFileSync(
       path.join(packageDir, "package.json"),
-      JSON.stringify({ name: "@openclaw/codex", version: "2026.7.2-beta.7" }),
+      JSON.stringify({ name: "@afora/codex", version: "2026.7.2-beta.7" }),
       "utf8",
     );
     fs.writeFileSync(
-      path.join(packageDir, "openclaw.plugin.json"),
+      path.join(packageDir, "afora.plugin.json"),
       JSON.stringify({ id: "codex", name: "codex", configSchema: { type: "object" } }),
       "utf8",
     );
@@ -119,11 +119,11 @@ describe("post-core bundled plugin retirement", () => {
       {
         codex: {
           source: "npm",
-          spec: "@openclaw/codex@beta",
+          spec: "@afora/codex@beta",
           installPath: packageDir,
           version: "2026.7.2-beta.7",
-          resolvedName: "@openclaw/codex",
-          resolvedSpec: "@openclaw/codex@2026.7.2-beta.7",
+          resolvedName: "@afora/codex",
+          resolvedSpec: "@afora/codex@2026.7.2-beta.7",
           resolvedVersion: "2026.7.2-beta.7",
         },
       },
@@ -145,10 +145,10 @@ describe("post-core bundled plugin retirement", () => {
         installAttempts += 1;
         const retryRoot = resolvePluginNpmGenerationProjectDir({
           npmDir: path.join(stateDir, "npm"),
-          packageName: "@openclaw/codex",
-          generationKey: `@openclaw/codex@retry-${installAttempts}`,
+          packageName: "@afora/codex",
+          generationKey: `@afora/codex@retry-${installAttempts}`,
         });
-        const retryPackageDir = path.join(retryRoot, "node_modules", "@openclaw", "codex");
+        const retryPackageDir = path.join(retryRoot, "node_modules", "@afora", "codex");
         fs.mkdirSync(retryPackageDir, { recursive: true });
         const nextRecords = {
           ...records,
@@ -159,7 +159,7 @@ describe("post-core bundled plugin retirement", () => {
           env: params.env,
         });
         return {
-          changes: ['Refreshed stale configured plugin "codex" from @openclaw/codex@beta.'],
+          changes: ['Refreshed stale configured plugin "codex" from @afora/codex@beta.'],
           warnings: [],
           records: nextRecords,
         };

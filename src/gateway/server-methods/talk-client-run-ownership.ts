@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { GatewayRequestHandlers } from "./types.js";
 
 export function hasOwnedActiveTalkClientRun(params: {

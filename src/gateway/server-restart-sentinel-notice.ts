@@ -1,7 +1,7 @@
 // Durable outbound notice ownership for restart-sentinel recovery.
 import { sendDurableMessageBatchCore } from "../channels/message/runtime.js";
 import type { CliDeps } from "../cli/deps.types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   findPlatformMessageRejectedError,
   isProvenDeliveryNotSentError,
@@ -61,7 +61,7 @@ const activeRestartNoticeEnqueues = new Map<string, Promise<RestartSentinelNotic
 
 export async function enqueueRestartSentinelNotice(
   params: RestartSentinelNoticeRoute & {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     message: string;
     sessionKey: string;
     revision: number;
@@ -86,7 +86,7 @@ export async function enqueueRestartSentinelNotice(
 
 async function enqueueRestartSentinelNoticeOwned(
   params: RestartSentinelNoticeRoute & {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     message: string;
     sessionKey: string;
     revision: number;
@@ -118,7 +118,7 @@ async function enqueueRestartSentinelNoticeOwned(
 
 async function enqueueRestartSentinelNoticeClaimed(
   params: RestartSentinelNoticeRoute & {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     message: string;
     sessionKey: string;
     revision: number;
@@ -163,7 +163,7 @@ async function waitForRecoveryDrain(): Promise<void> {
 }
 
 async function drainFailedRestartSentinelNotice(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   queueId: string;
   sessionKey: string;
   summary: string;
@@ -230,7 +230,7 @@ async function drainFailedRestartSentinelNotice(params: {
 export async function deliverRestartSentinelNotice(
   params: RestartSentinelNoticeRoute & {
     deps: CliDeps;
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     sessionKey: string;
     summary: string;
     message: string;

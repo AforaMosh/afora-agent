@@ -1,7 +1,7 @@
 /**
  * Target id resolution helpers for Browser tab aliases and user-facing ids.
  */
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { BrowserTab, ProfileRuntimeState } from "./server-context.types.js";
 
 const TAB_LABEL_PATTERN = /^[A-Za-z0-9_.:-]{1,64}$/;

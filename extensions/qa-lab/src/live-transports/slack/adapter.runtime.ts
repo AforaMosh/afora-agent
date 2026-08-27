@@ -5,12 +5,12 @@ import {
   createSlackWebClient,
   createSlackWriteClient,
   resolveSlackWebClientOptions,
-} from "@openclaw/slack/api.js";
+} from "@afora/slack/api.js";
 import type { FetchFunction } from "@slack/web-api";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { toStringifiedError } from "openclaw/plugin-sdk/error-runtime";
-import { acquireDebugProxyCaptureStore } from "openclaw/plugin-sdk/proxy-capture";
-import type { QaRunnerCliRegistration } from "openclaw/plugin-sdk/qa-runner-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { toStringifiedError } from "afora-agent/plugin-sdk/error-runtime";
+import { acquireDebugProxyCaptureStore } from "afora-agent/plugin-sdk/proxy-capture";
+import type { QaRunnerCliRegistration } from "afora-agent/plugin-sdk/qa-runner-runtime";
 import {
   acquireQaCredentialLease,
   startQaCredentialLeaseHeartbeat,
@@ -270,7 +270,7 @@ export async function createSlackQaTransportAdapter(
     async sendInbound(input) {
       heartbeat.throwIfFailed();
       logicalConversationId = input.conversation.id;
-      const text = input.text.replaceAll("@openclaw", `<@${sutIdentity.userId}>`);
+      const text = input.text.replaceAll("@afora", `<@${sutIdentity.userId}>`);
       const nativeThreadTs = input.threadId ? nativeMessageIds.get(input.threadId) : undefined;
       const sent = await sendSlackChannelMessage({
         channelId: runtimeEnv.channelId,
@@ -298,7 +298,7 @@ export async function createSlackQaTransportAdapter(
       activeThreadRoots.clear();
     },
     createGatewayConfig: () =>
-      buildSlackQaConfig({} as OpenClawConfig, {
+      buildSlackQaConfig({} as AforaConfig, {
         channelId: runtimeEnv.channelId,
         driverBotUserId: driverIdentity.userId,
         sutAccountId: accountId,
@@ -306,8 +306,8 @@ export async function createSlackQaTransportAdapter(
         sutBotToken: runtimeEnv.sutBotToken,
       }),
     createRuntimeEnvPatch: () => ({
-      OPENCLAW_DEBUG_PROXY_ENABLED: "1",
-      OPENCLAW_DEBUG_PROXY_SESSION_ID: captureSessionId,
+      AFORA_DEBUG_PROXY_ENABLED: "1",
+      AFORA_DEBUG_PROXY_SESSION_ID: captureSessionId,
     }),
     prepareFlow: async (input) => {
       captureStoreLease ??= acquireDebugProxyCaptureStore({

@@ -2,9 +2,9 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-coercion";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { uniqueValues } from "@openclaw/normalization-core/string-normalization";
+import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import { uniqueValues } from "@afora/normalization-core/string-normalization";
 import { resolveGatewayPort } from "../config/paths.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { killProcessTree } from "../process/kill-tree.js";
@@ -32,7 +32,7 @@ const STALE_SIGKILL_WAIT_MS = 400;
 /**
  * After SIGKILL, the kernel may not release the TCP port immediately.
  * Poll until the port is confirmed free (or until the budget expires) before
- * returning control to the caller (typically `triggerOpenClawRestart` →
+ * returning control to the caller (typically `triggerAforaRestart` →
  * `systemctl restart`). Without this wait the new process races the dying
  * process for the port and systemd enters an EADDRINUSE restart loop.
  *
@@ -298,7 +298,7 @@ function parsePidsFromLsofOutput(
     if (excluded.has(entry.pid)) {
       continue;
     }
-    if (entry.cmd && normalizeLowercaseStringOrEmpty(entry.cmd).includes("openclaw")) {
+    if (entry.cmd && normalizeLowercaseStringOrEmpty(entry.cmd).includes("afora")) {
       pids.push(entry.pid);
       continue;
     }
@@ -310,7 +310,7 @@ function parsePidsFromLsofOutput(
 }
 
 /**
- * Windows: find listening PIDs on the port, then verify each is an openclaw
+ * Windows: find listening PIDs on the port, then verify each is an afora
  * gateway process via command-line inspection. Excludes the current process
  * and its ancestors (same invariant as the lsof path — see
  * `getSelfAndAncestorPidsSync`).
@@ -391,7 +391,7 @@ function findGatewayPidsOnPortWithProtectedPidSync(
 ): number[] {
   if (process.platform === "win32") {
     // Use the shared Windows port inspection (PowerShell / netstat) with
-    // command-line verification to find only openclaw gateway processes.
+    // command-line verification to find only afora gateway processes.
     return findVerifiedWindowsGatewayPidsOnPortSync(port, options);
   }
   const lsof = resolveLsofCommandSync();
@@ -433,7 +433,7 @@ function findGatewayPidsOnPortWithProtectedPidSync(
 
 /**
  * Find PIDs of gateway processes listening on the given port using synchronous lsof.
- * Returns only PIDs that belong to openclaw gateway processes (not the current process).
+ * Returns only PIDs that belong to afora gateway processes (not the current process).
  */
 export function findGatewayPidsOnPortSync(port: number, spawnTimeoutMs?: number): number[] {
   // An explicit timeout keeps the existing contract: it bounds every child
@@ -497,7 +497,7 @@ function pollPortOnce(port: number): PollResult {
       return { free: null, permanent: false };
     }
     // status === 0: lsof found a listener. Occupancy does not depend on whether
-    // its PID field is present, valid, or attributable to an OpenClaw process.
+    // its PID field is present, valid, or attributable to an Afora process.
     return { free: false };
   } catch {
     return { free: null, permanent: false };

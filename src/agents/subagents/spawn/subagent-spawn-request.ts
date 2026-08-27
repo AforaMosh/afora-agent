@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import type { SubagentLifecycleHookRunner } from "../../../plugins/hooks.js";
 import { isValidAgentId, normalizeAgentId } from "../../../routing/session-key.js";
 import { listAgentIds } from "../../agent-scope-config.js";
@@ -33,7 +33,7 @@ type ResolvedSubagentSpawnRequest = {
   };
   runtime: {
     hookRunner: SubagentLifecycleHookRunner | null;
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     runTimeoutSeconds: number;
     contextMode: ReturnType<typeof resolveSubagentContextMode>;
     requesterInternalKey: string;

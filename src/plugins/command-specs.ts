@@ -1,21 +1,21 @@
 // Normalizes plugin command specs for CLI and slash command surfaces.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { getLoadedChannelPlugin } from "../channels/plugins/index.js";
 import { resolveReadOnlyChannelCommandDefaults } from "../channels/plugins/read-only-command-defaults.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { pluginCommands } from "./command-registry-state.js";
 import {
   pluginCommandSupportsChannel,
   projectPluginCommandNativeMetadata,
 } from "./plugin-command-metadata.js";
 import type { PluginCommandRegistration } from "./registry-types.js";
-import type { OpenClawPluginCommandDefinition } from "./types.js";
+import type { AforaPluginCommandDefinition } from "./types.js";
 
 type PluginCommandSpecOptions = {
   env?: NodeJS.ProcessEnv;
   stateDir?: string;
   workspaceDir?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 };
 
 type PluginCommandEntrySpec = {
@@ -23,10 +23,10 @@ type PluginCommandEntrySpec = {
   description: string;
   acceptsArgs: boolean;
   nativeName?: string;
-  clientPresentation?: NonNullable<OpenClawPluginCommandDefinition["clientPresentation"]>;
+  clientPresentation?: NonNullable<AforaPluginCommandDefinition["clientPresentation"]>;
 };
 
-function resolvePluginTextName(command: OpenClawPluginCommandDefinition): string {
+function resolvePluginTextName(command: AforaPluginCommandDefinition): string {
   const name = command.name.trim();
   return name || command.name;
 }
@@ -104,7 +104,7 @@ export function listProviderPluginCommandSpecs(provider?: string): Array<{
 }
 
 function serializePluginCommandSpec(
-  cmd: OpenClawPluginCommandDefinition,
+  cmd: AforaPluginCommandDefinition,
   provider?: string,
 ): {
   name: string;
@@ -130,7 +130,7 @@ function serializePluginCommandSpec(
 }
 
 function serializePluginCommandEntrySpec(
-  cmd: OpenClawPluginCommandDefinition,
+  cmd: AforaPluginCommandDefinition,
   provider: string | undefined,
   nativeCommandsEnabled: boolean,
 ): PluginCommandEntrySpec | null {

@@ -3,7 +3,7 @@
  *
  * Resolves active secrets/runtime provider metadata for long-lived tool instances.
  */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveManifestContractOwnerPluginId } from "../../plugins/plugin-registry.js";
 import { getActiveSecretsRuntimeConfigSnapshot } from "../../secrets/runtime-state.js";
 import { getActiveRuntimeWebToolsMetadataFromState } from "../../secrets/runtime-web-tools-state.js";
@@ -17,14 +17,14 @@ type WebProviderKind = "fetch" | "search";
 type WebProviderRuntimeMetadata = RuntimeWebFetchMetadata | RuntimeWebSearchMetadata;
 
 type ResolvedWebToolRuntimeContext<TMetadata extends WebProviderRuntimeMetadata> = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   preferRuntimeProviders: boolean;
   providerSelectionId: string;
   runtimeMetadata?: TMetadata;
 };
 
 function resolveConfiguredWebProviderId(
-  config: OpenClawConfig | undefined,
+  config: AforaConfig | undefined,
   kind: WebProviderKind,
 ): string {
   const provider = config?.tools?.web?.[kind]?.provider;
@@ -36,7 +36,7 @@ function resolveRuntimeWebProviderId(metadata: WebProviderRuntimeMetadata | unde
 }
 
 function shouldPreferRuntimeProviders(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   kind: WebProviderKind;
   providerSelectionId: string;
 }): boolean {
@@ -55,7 +55,7 @@ function shouldPreferRuntimeProviders(params: {
 }
 
 function resolveWebToolRuntimeContext<TMetadata extends WebProviderRuntimeMetadata>(params: {
-  capturedConfig?: OpenClawConfig;
+  capturedConfig?: AforaConfig;
   capturedRuntimeMetadata?: TMetadata;
   kind: WebProviderKind;
   lateBindRuntimeConfig?: boolean;
@@ -87,7 +87,7 @@ function resolveWebToolRuntimeContext<TMetadata extends WebProviderRuntimeMetada
 
 /** Resolves runtime provider context for the web_search tool. */
 export function resolveWebSearchToolRuntimeContext(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   lateBindRuntimeConfig?: boolean;
   runtimeWebSearch?: RuntimeWebSearchMetadata;
 }) {
@@ -107,7 +107,7 @@ export function resolveWebSearchToolRuntimeContext(params: {
 
 /** Resolves runtime provider context for the web_fetch tool. */
 export function resolveWebFetchToolRuntimeContext(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   lateBindRuntimeConfig?: boolean;
   runtimeWebFetch?: RuntimeWebFetchMetadata;
 }) {

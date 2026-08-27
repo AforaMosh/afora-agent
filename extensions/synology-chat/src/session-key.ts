@@ -1,5 +1,5 @@
 // Synology Chat plugin module implements session key behavior.
-import { buildAgentSessionKey } from "openclaw/plugin-sdk/routing";
+import { buildAgentSessionKey } from "afora-agent/plugin-sdk/routing";
 
 const CHANNEL_ID = "synology-chat";
 

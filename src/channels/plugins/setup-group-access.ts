@@ -3,7 +3,7 @@
  *
  * Prompts and normalizes allowlist/open/disabled group access policy choices.
  */
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 import type { WizardPrompter } from "../../wizard/prompts.js";
 
 /**

@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, test } from "vitest";
 import type { WebSocket } from "ws";
 import { appendTranscriptMessageSync } from "../../config/sessions/session-accessor.js";
@@ -27,7 +27,7 @@ describe("chat.history request truncation diagnostic", () => {
     const messageCount = 70;
     const textBytes = 100_000;
     const budgetBytes = getMaxChatHistoryMessagesBytes();
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-chat-history-omit-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-chat-history-omit-"));
     const captured: DiagnosticPayloadLargeEvent[] = [];
     const unsubscribe = onDiagnosticEvent((event) => {
       if (event.type === "payload.large" && event.surface === "gateway.chat.history") {

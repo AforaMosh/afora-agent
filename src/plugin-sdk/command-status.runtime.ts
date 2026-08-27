@@ -7,13 +7,13 @@ import { resolveDefaultModel } from "../auto-reply/reply/directive-handling.defa
 import { resolveCurrentDirectiveLevels } from "../auto-reply/reply/directive-handling.levels.js";
 import { createModelSelectionState } from "../auto-reply/reply/model-selection.js";
 import type { ReplyPayload } from "../auto-reply/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { loadGatewaySessionEntryReadOnly } from "../gateway/session-utils.js";
 
 /** Inputs for rendering direct-session status replies outside the active channel turn. */
 export type ResolveDirectStatusReplyForSessionParams = {
   /** Caller config used when the target session cannot load a config snapshot. */
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   /** Requested session key; whitespace-only keys produce no status reply. */
   sessionKey: string;
   /** Channel/surface name used when rendering the status command context. */

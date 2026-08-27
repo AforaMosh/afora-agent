@@ -3,18 +3,18 @@ import {
   resolveSqliteScope,
   toDatabaseOptions,
 } from "../config/sessions/session-accessor.sqlite-scope.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../state/openclaw-agent-db.generated.js";
+import type { DB as AforaAgentKyselyDatabase } from "../state/afora-agent-db.generated.js";
 import {
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-} from "../state/openclaw-agent-db.js";
-import { ensureMessageToolRunOutcomeSchema } from "../state/openclaw-agent-message-tool-outcome-schema.js";
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+} from "../state/afora-agent-db.js";
+import { ensureMessageToolRunOutcomeSchema } from "../state/afora-agent-message-tool-outcome-schema.js";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "./kysely-sync.js";
 
 const MESSAGE_TOOL_RUN_OUTCOME_MAX_ROWS = 10_000;
 
-type MessageToolRunOutcomeTable = OpenClawAgentKyselyDatabase["message_tool_run_outcomes"];
-type MessageToolRunOutcomeDatabase = Pick<OpenClawAgentKyselyDatabase, "message_tool_run_outcomes">;
+type MessageToolRunOutcomeTable = AforaAgentKyselyDatabase["message_tool_run_outcomes"];
+type MessageToolRunOutcomeDatabase = Pick<AforaAgentKyselyDatabase, "message_tool_run_outcomes">;
 type MessageToolRunOutcomeInsert = Insertable<MessageToolRunOutcomeTable>;
 
 /** Records one bounded completion fact for a message-tool-only run. */
@@ -41,8 +41,8 @@ export function recordMessageToolRunOutcome(params: {
     occurred_at: params.occurredAt,
   };
   const databaseOptions = toDatabaseOptions(resolveSqliteScope(params));
-  ensureMessageToolRunOutcomeSchema(openOpenClawAgentDatabase(databaseOptions).db);
-  runOpenClawAgentWriteTransaction(
+  ensureMessageToolRunOutcomeSchema(openAforaAgentDatabase(databaseOptions).db);
+  runAforaAgentWriteTransaction(
     ({ db }) => {
       const agentDb = getNodeSqliteKysely<MessageToolRunOutcomeDatabase>(db);
       executeSqliteQuerySync(db, agentDb.insertInto("message_tool_run_outcomes").values(values));

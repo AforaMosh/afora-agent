@@ -2,8 +2,8 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import { normalizeTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-coerce";
+import { normalizeTrimmedStringList } from "@afora/normalization-core/string-normalization";
 import { getActivePluginChannelRegistry } from "../../plugins/runtime.js";
 import {
   normalizeSessionDeliveryState,

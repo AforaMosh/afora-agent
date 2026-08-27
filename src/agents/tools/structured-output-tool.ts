@@ -117,6 +117,6 @@ const testing = {
 };
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.structuredOutputToolTestApi")] =
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.structuredOutputToolTestApi")] =
     { testing };
 }

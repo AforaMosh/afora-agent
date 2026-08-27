@@ -2,7 +2,7 @@
  * Claude CLI auth seam. Setup may prompt for keychain-backed credentials while
  * runtime paths stay non-interactive.
  */
-import { readClaudeCliCredentialsCached } from "openclaw/plugin-sdk/provider-auth";
+import { readClaudeCliCredentialsCached } from "afora-agent/plugin-sdk/provider-auth";
 
 /** Read Claude CLI credentials for interactive setup paths. */
 export function readClaudeCliCredentialsForSetup() {

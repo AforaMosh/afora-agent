@@ -1,7 +1,7 @@
 import {
   asNullableRecord as asConfigRecord,
   isRecord,
-} from "@openclaw/normalization-core/record-coerce";
+} from "@afora/normalization-core/record-coerce";
 import type { GatewayBrowserClient, GatewayHelloOk } from "../../api/gateway.ts";
 import type { ConfigSnapshot, ConfigUiHints } from "../../api/types.ts";
 import type { ApplicationGatewayPhase } from "../../app/gateway.ts";

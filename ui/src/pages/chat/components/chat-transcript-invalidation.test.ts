@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { render } from "lit";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BoardProvider } from "../../../lib/board/provider.ts";
@@ -211,11 +211,11 @@ describe("chat transcript invalidation", () => {
     state.hello = {
       auth: { deviceToken: "test-auth-token" },
     } as typeof state.hello;
-    state.localMediaPreviewRoots = ["/tmp/openclaw"];
+    state.localMediaPreviewRoots = ["/tmp/afora"];
     state.embedSandboxMode = "scripts";
     state.allowExternalEmbedUrls = false;
 
-    const source = `/tmp/openclaw/${crypto.randomUUID()}.pdf`;
+    const source = `/tmp/afora/${crypto.randomUUID()}.pdf`;
     const messages = [
       {
         role: "assistant",
@@ -272,7 +272,7 @@ describe("chat transcript invalidation", () => {
 
     configPane.applyApplicationConfig({
       ...config,
-      localMediaPreviewRoots: ["/tmp/openclaw"],
+      localMediaPreviewRoots: ["/tmp/afora"],
     });
     await flushDeferredRowPrune();
 

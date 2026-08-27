@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       package_spec:
-        description: Published OpenClaw package spec to test when no artifact is supplied
+        description: Published Afora package spec to test when no artifact is supplied
         required: true
-        default: openclaw@beta
+        default: afora@beta
         type: string
       package_label:
         description: Optional display label for an artifact-backed package candidate
@@ -31,7 +31,7 @@ on:
         default: ""
         type: string
       package_sha256:
-        description: Expected SHA-256 for the OpenClaw package tarball
+        description: Expected SHA-256 for the Afora package tarball
         required: false
         default: ""
         type: string
@@ -46,7 +46,7 @@ on:
         default: ""
         type: string
       package_file_name:
-        description: Exact OpenClaw tarball filename inside package_artifact_name
+        description: Exact Afora tarball filename inside package_artifact_name
         required: false
         default: ""
         type: string
@@ -56,7 +56,7 @@ on:
         default: ""
         type: string
       package_version:
-        description: Exact OpenClaw package version
+        description: Exact Afora package version
         required: false
         default: ""
         type: string
@@ -95,7 +95,7 @@ on:
         default: false
         type: boolean
       package_spec:
-        description: Published OpenClaw package spec to test when no artifact is supplied
+        description: Published Afora package spec to test when no artifact is supplied
         required: true
         type: string
       package_artifact_name:
@@ -124,12 +124,12 @@ on:
         default: ""
         type: string
       package_sha256:
-        description: Expected SHA-256 for the OpenClaw package tarball
+        description: Expected SHA-256 for the Afora package tarball
         required: false
         default: ""
         type: string
       package_file_name:
-        description: Exact OpenClaw tarball filename inside package_artifact_name
+        description: Exact Afora tarball filename inside package_artifact_name
         required: false
         default: ""
         type: string
@@ -139,7 +139,7 @@ on:
         default: ""
         type: string
       package_version:
-        description: Exact OpenClaw package version
+        description: Exact Afora package version
         required: false
         default: ""
         type: string
@@ -171,9 +171,9 @@ on:
     secrets:
       OPENAI_API_KEY:
         required: false
-      OPENCLAW_QA_CONVEX_SITE_URL:
+      AFORA_QA_CONVEX_SITE_URL:
         required: false
-      OPENCLAW_QA_CONVEX_SECRET_CI:
+      AFORA_QA_CONVEX_SECRET_CI:
         required: false
 
 permissions:
@@ -220,7 +220,7 @@ jobs:
           file: ./scripts/e2e/Dockerfile
           target: build
           platforms: linux/amd64
-          tags: openclaw-docker-e2e:local
+          tags: afora-docker-e2e:local
           load: true
           push: false
           provenance: false
@@ -234,7 +234,7 @@ jobs:
       - name: Build private QA harness runtime
         env:
           NODE_OPTIONS: --max-old-space-size=8192
-          OPENCLAW_BUILD_PRIVATE_QA: "1"
+          AFORA_BUILD_PRIVATE_QA: "1"
         run: |
           set -euo pipefail
           pnpm build qaRuntime
@@ -255,8 +255,8 @@ jobs:
           PACKAGE_VERSION: ${{ inputs.package_version || '' }}
           PROVIDER_MODE: ${{ inputs.provider_mode }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENCLAW_QA_CONVEX_SITE_URL: ${{ secrets.OPENCLAW_QA_CONVEX_SITE_URL }}
-          OPENCLAW_QA_CONVEX_SECRET_CI: ${{ secrets.OPENCLAW_QA_CONVEX_SECRET_CI }}
+          AFORA_QA_CONVEX_SITE_URL: ${{ secrets.AFORA_QA_CONVEX_SITE_URL }}
+          AFORA_QA_CONVEX_SECRET_CI: ${{ secrets.AFORA_QA_CONVEX_SECRET_CI }}
         shell: bash
         run: |
           set -euo pipefail
@@ -281,8 +281,8 @@ jobs:
               echo "Artifact-backed Telegram E2E requires all artifact identity fields or none." >&2
               exit 1
             fi
-            if [[ ! "${PACKAGE_SPEC}" =~ ^openclaw@(alpha|beta|latest|[0-9]{4}\.[1-9][0-9]*\.[1-9][0-9]*(-[1-9][0-9]*|-(alpha|beta)\.[1-9][0-9]*)?)$ ]]; then
-              echo "package_spec must be openclaw@alpha, openclaw@beta, openclaw@latest, or an exact OpenClaw release version; got: ${PACKAGE_SPEC}" >&2
+            if [[ ! "${PACKAGE_SPEC}" =~ ^afora@(alpha|beta|latest|[0-9]{4}\.[1-9][0-9]*\.[1-9][0-9]*(-[1-9][0-9]*|-(alpha|beta)\.[1-9][0-9]*)?)$ ]]; then
+              echo "package_spec must be afora@alpha, afora@beta, afora@latest, or an exact Afora release version; got: ${PACKAGE_SPEC}" >&2
               exit 1
             fi
           elif [[ ! "$PACKAGE_ARTIFACT_DIGEST" =~ ^[0-9a-f]{64}$ ||
@@ -312,8 +312,8 @@ jobs:
             fi
           }
 
-          require_var OPENCLAW_QA_CONVEX_SITE_URL
-          require_var OPENCLAW_QA_CONVEX_SECRET_CI
+          require_var AFORA_QA_CONVEX_SITE_URL
+          require_var AFORA_QA_CONVEX_SECRET_CI
           if [[ "${PROVIDER_MODE}" == "live-frontier" ]]; then
             require_var OPENAI_API_KEY
           fi
@@ -407,18 +407,18 @@ jobs:
         shell: bash
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENCLAW_SKIP_DOCKER_BUILD: "1"
-          OPENCLAW_DOCKER_E2E_IMAGE: openclaw-docker-e2e:local
-          OPENCLAW_NPM_TELEGRAM_PACKAGE_SPEC: ${{ inputs.package_spec }}
-          OPENCLAW_NPM_TELEGRAM_PACKAGE_LABEL: ${{ inputs.package_label }}
-          OPENCLAW_NPM_TELEGRAM_PROVIDER_MODE: ${{ inputs.provider_mode }}
-          OPENCLAW_NPM_TELEGRAM_CREDENTIAL_SOURCE: convex
-          OPENCLAW_NPM_TELEGRAM_CREDENTIAL_ROLE: ci
-          OPENCLAW_QA_CONVEX_SITE_URL: ${{ secrets.OPENCLAW_QA_CONVEX_SITE_URL }}
-          OPENCLAW_QA_CONVEX_SECRET_CI: ${{ secrets.OPENCLAW_QA_CONVEX_SECRET_CI }}
-          OPENCLAW_QA_CREDENTIAL_ACQUIRE_TIMEOUT_MS: "600000"
-          OPENCLAW_QA_SUITE_PROGRESS: "1"
-          OPENCLAW_QA_REDACT_PUBLIC_METADATA: "1"
+          AFORA_SKIP_DOCKER_BUILD: "1"
+          AFORA_DOCKER_E2E_IMAGE: afora-docker-e2e:local
+          AFORA_NPM_TELEGRAM_PACKAGE_SPEC: ${{ inputs.package_spec }}
+          AFORA_NPM_TELEGRAM_PACKAGE_LABEL: ${{ inputs.package_label }}
+          AFORA_NPM_TELEGRAM_PROVIDER_MODE: ${{ inputs.provider_mode }}
+          AFORA_NPM_TELEGRAM_CREDENTIAL_SOURCE: convex
+          AFORA_NPM_TELEGRAM_CREDENTIAL_ROLE: ci
+          AFORA_QA_CONVEX_SITE_URL: ${{ secrets.AFORA_QA_CONVEX_SITE_URL }}
+          AFORA_QA_CONVEX_SECRET_CI: ${{ secrets.AFORA_QA_CONVEX_SECRET_CI }}
+          AFORA_QA_CREDENTIAL_ACQUIRE_TIMEOUT_MS: "600000"
+          AFORA_QA_SUITE_PROGRESS: "1"
+          AFORA_QA_REDACT_PUBLIC_METADATA: "1"
           INPUT_SCENARIO: ${{ inputs.scenario }}
           PACKAGE_ARTIFACT_NAME: ${{ inputs.package_artifact_name || '' }}
           PACKAGE_FILE_NAME: ${{ inputs.package_file_name || '' }}
@@ -430,7 +430,7 @@ jobs:
 
           output_dir=".artifacts/qa-e2e/npm-telegram-beta-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           echo "output_dir=${output_dir}" >> "$GITHUB_OUTPUT"
-          export OPENCLAW_NPM_TELEGRAM_OUTPUT_DIR="${output_dir}"
+          export AFORA_NPM_TELEGRAM_OUTPUT_DIR="${output_dir}"
 
           append_telegram_summary() {
             local status=$?
@@ -439,8 +439,8 @@ jobs:
               {
                 echo "## Package Telegram E2E"
                 echo
-                echo "- Package: ${OPENCLAW_NPM_TELEGRAM_PACKAGE_LABEL:-${OPENCLAW_NPM_TELEGRAM_PACKAGE_SPEC}}"
-                echo "- Provider mode: ${OPENCLAW_NPM_TELEGRAM_PROVIDER_MODE}"
+                echo "- Package: ${AFORA_NPM_TELEGRAM_PACKAGE_LABEL:-${AFORA_NPM_TELEGRAM_PACKAGE_SPEC}}"
+                echo "- Provider mode: ${AFORA_NPM_TELEGRAM_PROVIDER_MODE}"
                 echo
                 cat "${report}"
               } >> "${GITHUB_STEP_SUMMARY}"
@@ -476,7 +476,7 @@ jobs:
           }
           const entries = [
             {
-              packageName: "openclaw",
+              packageName: "afora",
               packageVersion: manifest.packageVersion,
               tarballName: manifest.tarballName,
               tarballSha256: manifest.tarballSha256,
@@ -530,7 +530,7 @@ jobs:
           process.stdout.write(path.join(packageDir, manifest.tarballName));
           NODE
               )"
-              export OPENCLAW_NPM_TELEGRAM_PACKAGE_DIR="${package_dir}"
+              export AFORA_NPM_TELEGRAM_PACKAGE_DIR="${package_dir}"
             else
               mapfile -t package_tgzs < <(find "${package_dir}" -type f -name "*.tgz" | sort)
               if [[ "${#package_tgzs[@]}" -ne 1 ]]; then
@@ -550,19 +550,19 @@ jobs:
               encoding: "utf8",
             }),
           );
-          if (packageJson.name !== "openclaw" || typeof packageJson.version !== "string") {
-            throw new Error("package artifact tgz is not a versioned openclaw package");
+          if (packageJson.name !== "afora" || typeof packageJson.version !== "string") {
+            throw new Error("package artifact tgz is not a versioned afora package");
           }
           if (fs.existsSync(manifestPath)) {
             const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
             const expectedTarballName = path.basename(manifest.tarball || "");
             if (
-              manifest.name !== "openclaw" ||
+              manifest.name !== "afora" ||
               manifest.version !== packageJson.version ||
               expectedTarballName !== path.basename(tarballPath) ||
               typeof manifest.sha256 !== "string"
             ) {
-              throw new Error("package candidate manifest does not match the OpenClaw tarball");
+              throw new Error("package candidate manifest does not match the Afora tarball");
             }
             const digest = crypto.createHash("sha256").update(fs.readFileSync(tarballPath)).digest("hex");
             if (digest !== manifest.sha256) {
@@ -593,16 +593,16 @@ jobs:
               echo "Package Telegram artifact source SHA/version differs from the declared identity." >&2
               exit 1
             }
-            export OPENCLAW_NPM_TELEGRAM_PACKAGE_TGZ="${package_tgz}"
-            if [[ -z "${OPENCLAW_NPM_TELEGRAM_PACKAGE_LABEL// }" ]]; then
-              export OPENCLAW_NPM_TELEGRAM_PACKAGE_LABEL="$(basename "${package_tgz}")"
+            export AFORA_NPM_TELEGRAM_PACKAGE_TGZ="${package_tgz}"
+            if [[ -z "${AFORA_NPM_TELEGRAM_PACKAGE_LABEL// }" ]]; then
+              export AFORA_NPM_TELEGRAM_PACKAGE_LABEL="$(basename "${package_tgz}")"
             fi
-          elif [[ -z "${OPENCLAW_NPM_TELEGRAM_PACKAGE_LABEL// }" ]]; then
-            export OPENCLAW_NPM_TELEGRAM_PACKAGE_LABEL="${OPENCLAW_NPM_TELEGRAM_PACKAGE_SPEC}"
+          elif [[ -z "${AFORA_NPM_TELEGRAM_PACKAGE_LABEL// }" ]]; then
+            export AFORA_NPM_TELEGRAM_PACKAGE_LABEL="${AFORA_NPM_TELEGRAM_PACKAGE_SPEC}"
           fi
 
           if [[ -n "${INPUT_SCENARIO// }" ]]; then
-            export OPENCLAW_NPM_TELEGRAM_SCENARIOS="${INPUT_SCENARIO}"
+            export AFORA_NPM_TELEGRAM_SCENARIOS="${INPUT_SCENARIO}"
           fi
 
           pnpm test:docker:npm-telegram-live

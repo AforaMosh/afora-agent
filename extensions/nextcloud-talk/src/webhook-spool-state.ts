@@ -1,6 +1,6 @@
 // Nextcloud Talk plugin module owns webhook ingress identity and legacy-state migration.
-import type { ChannelIngressQueue } from "openclaw/plugin-sdk/channel-outbound";
-import { isRecord } from "openclaw/plugin-sdk/channel-secret-basic-runtime";
+import type { ChannelIngressQueue } from "afora-agent/plugin-sdk/channel-outbound";
+import { isRecord } from "afora-agent/plugin-sdk/channel-secret-basic-runtime";
 
 export const NEXTCLOUD_TALK_INGRESS_PAYLOAD_VERSION = 1;
 

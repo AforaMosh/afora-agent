@@ -1,7 +1,7 @@
 // Nostr API module exposes the plugin public contract.
 export {
   getPluginRuntimeGatewayRequestScope,
-  type OpenClawConfig,
+  type AforaConfig,
   type PluginRuntime,
 } from "./runtime-api.js";
 export { nostrPlugin } from "./src/channel.js";

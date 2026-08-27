@@ -4,9 +4,9 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AgentDeletionCommitUncertainError } from "../../agents/agent-lifecycle-registry.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../../state/afora-state-db.js";
 import * as taskExecutor from "../../tasks/task-executor.js";
 import { findTaskByRunId, listTaskRecordsUnsorted } from "../../tasks/task-registry.js";
 import { resetTaskRegistryForTests } from "../../tasks/task-runtime.test-helpers.js";
@@ -297,7 +297,7 @@ describe("scheduled tool policy provenance", () => {
     );
     expect(persistedNonToolRuntime?.runtimeAuthority).toBeUndefined();
     expect(persistedNonToolRuntime?.runtimeAuthorityRecoveryRequired).toBeUndefined();
-    const persistedAuthorityRow = runOpenClawStateWriteTransaction(({ db }) =>
+    const persistedAuthorityRow = runAforaStateWriteTransaction(({ db }) =>
       db
         .prepare("SELECT job_id FROM cron_job_runtime_authorities WHERE job_id = ?")
         .get(triggeredTransport.id),
@@ -472,7 +472,7 @@ async function withStateDirForStorePath<T>(
   const stateRoot = path.dirname(path.dirname(storePath));
   resetTaskRegistryForTests();
   try {
-    return await withEnvAsync({ OPENCLAW_STATE_DIR: stateRoot }, runWithStateDir);
+    return await withEnvAsync({ AFORA_STATE_DIR: stateRoot }, runWithStateDir);
   } finally {
     resetTaskRegistryForTests();
   }
@@ -579,7 +579,7 @@ async function writeLegacyCronArraySnapshot(storePath: string, jobs: CronJob[]) 
 }
 
 function insertCronJobRow(storePath: string, job: CronJob) {
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     db.prepare(
       `INSERT INTO cron_jobs (
         store_key, job_id, declaration_key, name, description, enabled, created_at_ms, schedule_kind,
@@ -659,7 +659,7 @@ describe("cron stale job-family adoption", () => {
 
     await expect(removeStaleJobFamily(state, family)).resolves.toBe(1);
 
-    const remaining = runOpenClawStateWriteTransaction(({ db }) =>
+    const remaining = runAforaStateWriteTransaction(({ db }) =>
       db
         .prepare("SELECT store_key, job_id FROM cron_jobs WHERE name = ? ORDER BY job_id")
         .all(family.name),
@@ -796,7 +796,7 @@ describe("cron service ops seam coverage", () => {
     const now = Date.parse("2026-05-20T08:30:00.000Z");
     const job = createFutureEveryJob({ id: "pre-receipt-upgrade", now });
     await writeCronStoreSnapshot({ storePath, jobs: [job] });
-    openOpenClawStateDatabase().db.exec("DROP TABLE cron_run_receipts");
+    openAforaStateDatabase().db.exec("DROP TABLE cron_run_receipts");
     const state = createOkIsolatedCronState({ storePath, now });
 
     try {
@@ -806,7 +806,7 @@ describe("cron service ops seam coverage", () => {
         expect.objectContaining({ id: job.id, enabled: true }),
       ]);
       expect(
-        openOpenClawStateDatabase()
+        openAforaStateDatabase()
           .db.prepare(
             "SELECT name FROM sqlite_schema WHERE type = 'table' AND name = 'cron_run_receipts'",
           )
@@ -941,7 +941,7 @@ describe("cron service ops seam coverage", () => {
 
     const order: string[] = [];
     const enqueueSystemEvent = vi.fn(() => {
-      const row = runOpenClawStateWriteTransaction(({ db }) =>
+      const row = runAforaStateWriteTransaction(({ db }) =>
         db.prepare("SELECT enabled FROM cron_jobs WHERE job_id = ?").get(job.id),
       ) as { enabled: number };
       expect(row.enabled).toBe(0);
@@ -986,7 +986,7 @@ describe("cron service ops seam coverage", () => {
       agentId: "main",
       startedAtMs: startedAt,
     });
-    const receipt = runOpenClawStateWriteTransaction(({ db }) =>
+    const receipt = runAforaStateWriteTransaction(({ db }) =>
       runReceiptStore.claimCronRunReceiptInDatabase({
         database: db,
         prepared: preparedReceipt,
@@ -1066,7 +1066,7 @@ describe("cron service ops seam coverage", () => {
           agentId: "main",
           startedAtMs: startedAt,
         });
-        const receipt = runOpenClawStateWriteTransaction(({ db }) =>
+        const receipt = runAforaStateWriteTransaction(({ db }) =>
           runReceiptStore.claimCronRunReceiptInDatabase({
             database: db,
             prepared: preparedReceipt,
@@ -1159,7 +1159,7 @@ describe("cron service ops seam coverage", () => {
         expect(persisted.jobs[0]?.state.runningAtMs).toBeUndefined();
         expect(persisted.jobs[0]?.state.lastError).toBeUndefined();
         expect(persisted.jobs[0]?.state.nextRunAtMs).toBeUndefined();
-        const receiptRow = runOpenClawStateWriteTransaction(({ db }) =>
+        const receiptRow = runAforaStateWriteTransaction(({ db }) =>
           db
             .prepare(
               "SELECT status, finished_at_ms AS finishedAtMs, error_text AS error FROM cron_run_receipts WHERE receipt_id = ?",
@@ -1188,7 +1188,7 @@ describe("cron service ops seam coverage", () => {
         agentId: "main",
         startedAtMs: startedAt,
       });
-      const receipt = runOpenClawStateWriteTransaction(({ db }) =>
+      const receipt = runAforaStateWriteTransaction(({ db }) =>
         runReceiptStore.claimCronRunReceiptInDatabase({
           database: db,
           prepared: preparedReceipt,
@@ -1221,7 +1221,7 @@ describe("cron service ops seam coverage", () => {
           durationMs: 1_000,
         },
       });
-      runOpenClawStateWriteTransaction(({ db }) => {
+      runAforaStateWriteTransaction(({ db }) => {
         db.prepare("UPDATE task_runs SET ended_at = -1 WHERE run_id = ?").run(taskRunId);
       });
 
@@ -1229,7 +1229,7 @@ describe("cron service ops seam coverage", () => {
 
       const persisted = (await loadCronStore(storePath)).jobs[0];
       expect(persisted?.state.lastRunStatus).toBe("error");
-      const receiptRow = runOpenClawStateWriteTransaction(({ db }) =>
+      const receiptRow = runAforaStateWriteTransaction(({ db }) =>
         db
           .prepare("SELECT status FROM cron_run_receipts WHERE receipt_id = ?")
           .get(receipt.receiptId),

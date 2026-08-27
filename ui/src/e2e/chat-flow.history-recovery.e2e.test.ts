@@ -20,7 +20,7 @@ const suite = createChatFlowE2eSuite();
 
 suite.define(() => {
   it("restores reasoning and tool activity after navigating away from a session", async () => {
-    const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+    const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
     if (artifactDir) {
       await mkdir(artifactDir, { recursive: true });
     }
@@ -298,7 +298,7 @@ suite.define(() => {
   });
 
   it("keeps retained paginated history stable when returning to a session", async () => {
-    const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+    const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
     const context = await suite.newBrowserContext({
       locale: "en-US",
       ...(artifactDir
@@ -309,7 +309,7 @@ suite.define(() => {
     });
     const page = await context.newPage();
     const historyMessage = (seq: number, label: string) => ({
-      __openclaw: { id: `history-${seq}`, seq },
+      __afora: { id: `history-${seq}`, seq },
       content: [
         {
           text: `${label} ${seq}\n${"retained transcript detail\n".repeat(3)}`,
@@ -406,7 +406,7 @@ suite.define(() => {
       );
       await sessionB.click();
       await page.getByText(/^recent retained message 140\n/).waitFor({ timeout: 10_000 });
-      const activePane = page.locator('openclaw-chat-pane[aria-hidden="false"]');
+      const activePane = page.locator('afora-chat-pane[aria-hidden="false"]');
       const thread = activePane.locator(".chat-thread");
       await thread.hover();
       await page.mouse.wheel(0, -1_000_000);
@@ -443,7 +443,7 @@ suite.define(() => {
         ).chatSessionReturnSamples = samples;
         const deadline = performance.now() + 750;
         const sample = () => {
-          const pane = document.querySelector('openclaw-chat-pane[aria-hidden="false"]') as
+          const pane = document.querySelector('afora-chat-pane[aria-hidden="false"]') as
             | (HTMLElement & {
                 state?: { chatMessages?: unknown[]; sessionKey?: string };
               })
@@ -590,7 +590,7 @@ suite.define(() => {
   });
 
   it("dismisses an ACK-lost banner after exact authoritative history proof", async () => {
-    const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+    const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
     const context = await suite.newBrowserContext({
       locale: "en-US",
       ...(artifactDir
@@ -685,7 +685,7 @@ suite.define(() => {
   });
 
   it("stores new input while offline and sends it after reconnect", async () => {
-    const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+    const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
     const context = await suite.newBrowserContext({
       locale: "en-US",
       ...(artifactDir
@@ -745,7 +745,7 @@ suite.define(() => {
         page.evaluate(
           ({ expectedAttachmentName, expectedAttachmentDataUrl, expectedPrompt }) => {
             const storedValues = Object.entries(sessionStorage)
-              .filter(([key]) => key.startsWith("openclaw.control.chatComposer.v2:"))
+              .filter(([key]) => key.startsWith("afora.control.chatComposer.v2:"))
               .map(([, value]) => value);
             const stored = storedValues.join("\n");
             let runId: string | null = null;
@@ -819,7 +819,7 @@ suite.define(() => {
       expect(await gateway.getRequests("chat.send")).toHaveLength(0);
 
       await gateway.setOnline(true);
-      await page.locator("openclaw-chat-pane").waitFor({ state: "attached", timeout: 10_000 });
+      await page.locator("afora-chat-pane").waitFor({ state: "attached", timeout: 10_000 });
 
       const request = await gateway.waitForRequest("chat.send");
       const params = requireRecord(request.params);
@@ -844,7 +844,7 @@ suite.define(() => {
       await gateway.setHistoryMessages([
         {
           role: "user",
-          __openclaw: { idempotencyKey: `${runId}:user` },
+          __afora: { idempotencyKey: `${runId}:user` },
         },
       ]);
       await gateway.emitChatFinal({ runId, text: "Delivered after reconnect." });
@@ -861,7 +861,7 @@ suite.define(() => {
       if (artifactDir) {
         await page.screenshot({ path: `${artifactDir}/03-online-delivered.png`, fullPage: true });
       }
-      if (process.env.OPENCLAW_BEHAVIOR_PROOF === "1") {
+      if (process.env.AFORA_BEHAVIOR_PROOF === "1") {
         process.stdout.write(
           `${JSON.stringify({
             proof: "offline-chat-reconnect",

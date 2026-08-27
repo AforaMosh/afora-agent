@@ -1,5 +1,5 @@
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { Value } from "typebox/value";
 import {
   GATEWAY_CLIENT_IDS,
@@ -277,7 +277,7 @@ export function buildWorkerConnectParams(
     maxProtocol: PROTOCOL_VERSION,
     client: {
       id: GATEWAY_CLIENT_IDS.WORKER,
-      version: descriptor.admission.handshake.openclawVersion,
+      version: descriptor.admission.handshake.aforaVersion,
       platform: process.platform,
       mode: GATEWAY_CLIENT_MODES.WORKER,
     },

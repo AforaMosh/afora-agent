@@ -53,7 +53,7 @@ async function main(argv: string[]): Promise<void> {
         originalExec(sql);
         // The repair drops its probe only after replacing the canonical index.
         // Pause here with every repair DDL change inside the unreleased savepoint.
-        if (sql.startsWith("DROP INDEX main.openclaw_probe_")) {
+        if (sql.startsWith("DROP INDEX main.afora_probe_")) {
           process.send?.({ kind: "crash-point" });
           while (true) {
             Atomics.wait(SLEEP_BUFFER, 0, 0, 60_000);

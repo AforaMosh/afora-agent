@@ -1,7 +1,7 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 // Qa Lab tests cover cli plugin behavior.
 import { Command } from "commander";
-import type { QaRunnerCliContribution } from "openclaw/plugin-sdk/qa-runner-runtime";
+import type { QaRunnerCliContribution } from "afora-agent/plugin-sdk/qa-runner-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const TEST_QA_RUNNER = {
@@ -102,7 +102,7 @@ function requireQaSuiteOptions() {
   return options;
 }
 
-vi.mock("openclaw/plugin-sdk/qa-runner-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/qa-runner-runtime", () => ({
   listQaRunnerCliContributions,
 }));
 
@@ -190,17 +190,17 @@ describe("qa cli registration", () => {
   it("keeps qa run without a profile on the self-check command", async () => {
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "qa",
       "run",
       "--repo-root",
-      "/tmp/openclaw-repo",
+      "/tmp/afora-repo",
       "--output",
       ".artifacts/qa-self-check.md",
     ]);
 
     expect(runQaLabSelfCheckCommand).toHaveBeenCalledWith({
-      repoRoot: "/tmp/openclaw-repo",
+      repoRoot: "/tmp/afora-repo",
       output: ".artifacts/qa-self-check.md",
     });
     expect(runQaProfileCommand).not.toHaveBeenCalled();
@@ -209,11 +209,11 @@ describe("qa cli registration", () => {
   it("routes qa run qa-profile flags into the taxonomy-backed profile command", async () => {
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "qa",
       "run",
       "--repo-root",
-      "/tmp/openclaw-repo",
+      "/tmp/afora-repo",
       "--output-dir",
       ".artifacts/qa-e2e/smoke-ci",
       "--qa-profile",
@@ -241,7 +241,7 @@ describe("qa cli registration", () => {
     ]);
 
     expect(runQaProfileCommand).toHaveBeenCalledWith({
-      repoRoot: "/tmp/openclaw-repo",
+      repoRoot: "/tmp/afora-repo",
       outputDir: ".artifacts/qa-e2e/smoke-ci",
       profile: "smoke-ci",
       surface: "channels",
@@ -262,7 +262,7 @@ describe("qa cli registration", () => {
   it("forwards fail-fast to taxonomy-backed QA profile runs", async () => {
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "qa",
       "run",
       "--qa-profile",
@@ -293,7 +293,7 @@ describe("qa cli registration", () => {
     ["--fast", []],
   ])("rejects qa run profile-only flag %s without --qa-profile", async (flag, values) => {
     await expect(
-      program.parseAsync(["node", "openclaw", "qa", "run", flag, ...values]),
+      program.parseAsync(["node", "afora", "qa", "run", flag, ...values]),
     ).rejects.toThrow(`qa run ${flag} requires --qa-profile`);
 
     expect(runQaLabSelfCheckCommand).not.toHaveBeenCalled();
@@ -305,7 +305,7 @@ describe("qa cli registration", () => {
     async (...flags) => {
       await program.parseAsync([
         "node",
-        "openclaw",
+        "afora",
         "qa",
         "run",
         "--qa-profile",
@@ -326,7 +326,7 @@ describe("qa cli registration", () => {
     await expect(
       program.parseAsync([
         "node",
-        "openclaw",
+        "afora",
         "qa",
         "run",
         "--qa-profile",
@@ -352,7 +352,7 @@ describe("qa cli registration", () => {
     await expect(
       invalidProgram.parseAsync([
         "node",
-        "openclaw",
+        "afora",
         "qa",
         "run",
         "--qa-profile",
@@ -368,7 +368,7 @@ describe("qa cli registration", () => {
 
   it("rejects an empty qa run --qa-profile instead of falling back to self-check", async () => {
     await expect(
-      program.parseAsync(["node", "openclaw", "qa", "run", "--qa-profile", ""]),
+      program.parseAsync(["node", "afora", "qa", "run", "--qa-profile", ""]),
     ).rejects.toThrow("--qa-profile must not be empty.");
 
     expect(runQaLabSelfCheckCommand).not.toHaveBeenCalled();
@@ -379,7 +379,7 @@ describe("qa cli registration", () => {
     await expect(
       program.parseAsync([
         "node",
-        "openclaw",
+        "afora",
         "qa",
         "run",
         "--qa-profile",
@@ -396,12 +396,12 @@ describe("qa cli registration", () => {
   it("routes mantis discord-smoke flags into the mantis runtime command", async () => {
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "qa",
       "mantis",
       "discord-smoke",
       "--repo-root",
-      "/tmp/openclaw-repo",
+      "/tmp/afora-repo",
       "--output-dir",
       ".artifacts/qa-e2e/mantis/discord-smoke",
       "--guild-id",
@@ -416,7 +416,7 @@ describe("qa cli registration", () => {
     ]);
 
     expect(runMantisDiscordSmokeCommand).toHaveBeenCalledWith({
-      repoRoot: "/tmp/openclaw-repo",
+      repoRoot: "/tmp/afora-repo",
       outputDir: ".artifacts/qa-e2e/mantis/discord-smoke",
       guildId: "123456789012345678",
       channelId: "223456789012345678",
@@ -431,7 +431,7 @@ describe("qa cli registration", () => {
   it("routes mantis before/after flags into the mantis runtime command", async () => {
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "qa",
       "mantis",
       "run",
@@ -444,7 +444,7 @@ describe("qa cli registration", () => {
       "--candidate",
       "HEAD",
       "--repo-root",
-      "/tmp/openclaw-repo",
+      "/tmp/afora-repo",
       "--output-dir",
       ".artifacts/qa-e2e/mantis/local-discord-status-reactions",
       "--credential-source",
@@ -463,7 +463,7 @@ describe("qa cli registration", () => {
       fastMode: true,
       outputDir: ".artifacts/qa-e2e/mantis/local-discord-status-reactions",
       providerMode: "live-frontier",
-      repoRoot: "/tmp/openclaw-repo",
+      repoRoot: "/tmp/afora-repo",
       scenario: "discord-status-reactions-tool-only",
       skipBuild: true,
       skipInstall: true,
@@ -474,16 +474,16 @@ describe("qa cli registration", () => {
   it("routes mantis desktop browser smoke flags into the mantis runtime command", async () => {
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "qa",
       "mantis",
       "desktop-browser-smoke",
       "--repo-root",
-      "/tmp/openclaw-repo",
+      "/tmp/afora-repo",
       "--output-dir",
       ".artifacts/qa-e2e/mantis/desktop-browser",
       "--browser-url",
-      "https://openclaw.ai/docs",
+      "https://afora.ai/docs",
       "--html-file",
       "qa-artifacts/timeline.html",
       "--crabbox-bin",
@@ -502,7 +502,7 @@ describe("qa cli registration", () => {
     ]);
 
     expect(runMantisDesktopBrowserSmokeCommand).toHaveBeenCalledWith({
-      browserUrl: "https://openclaw.ai/docs",
+      browserUrl: "https://afora.ai/docs",
       crabboxBin: "/tmp/crabbox",
       htmlFile: "qa-artifacts/timeline.html",
       idleTimeout: "30m",
@@ -511,7 +511,7 @@ describe("qa cli registration", () => {
       machineClass: "beast",
       outputDir: ".artifacts/qa-e2e/mantis/desktop-browser",
       provider: "hetzner",
-      repoRoot: "/tmp/openclaw-repo",
+      repoRoot: "/tmp/afora-repo",
       ttl: "90m",
     });
   });
@@ -519,12 +519,12 @@ describe("qa cli registration", () => {
   it("does not shadow mantis desktop browser runtime env defaults", async () => {
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "qa",
       "mantis",
       "desktop-browser-smoke",
       "--repo-root",
-      "/tmp/openclaw-repo",
+      "/tmp/afora-repo",
     ]);
 
     expect(runMantisDesktopBrowserSmokeCommand).toHaveBeenCalledWith({
@@ -537,7 +537,7 @@ describe("qa cli registration", () => {
       machineClass: undefined,
       outputDir: undefined,
       provider: undefined,
-      repoRoot: "/tmp/openclaw-repo",
+      repoRoot: "/tmp/afora-repo",
       ttl: undefined,
     });
   });
@@ -545,12 +545,12 @@ describe("qa cli registration", () => {
   it("routes mantis Slack desktop smoke flags into the mantis runtime command", async () => {
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "qa",
       "mantis",
       "slack-desktop-smoke",
       "--repo-root",
-      "/tmp/openclaw-repo",
+      "/tmp/afora-repo",
       "--output-dir",
       ".artifacts/qa-e2e/mantis/slack-desktop",
       "--crabbox-bin",
@@ -564,7 +564,7 @@ describe("qa cli registration", () => {
       "--lease-id",
       "cbx_123abc",
       "--fresh-pr",
-      "openclaw/openclaw#85141",
+      "AforaMosh/afora-agent#85141",
       "--idle-timeout",
       "45m",
       "--ttl",
@@ -593,7 +593,7 @@ describe("qa cli registration", () => {
       credentialRole: "maintainer",
       credentialSource: "env",
       fastMode: true,
-      freshPr: "openclaw/openclaw#85141",
+      freshPr: "AforaMosh/afora-agent#85141",
       gatewaySetup: undefined,
       idleTimeout: "45m",
       keepLease: true,
@@ -604,7 +604,7 @@ describe("qa cli registration", () => {
       primaryModel: "openai/gpt-5.6-luna",
       provider: "hetzner",
       providerMode: "live-frontier",
-      repoRoot: "/tmp/openclaw-repo",
+      repoRoot: "/tmp/afora-repo",
       scenarioIds: ["slack-canary"],
       slackChannelId: undefined,
       slackUrl: "https://app.slack.com/client/T123/C123",
@@ -615,12 +615,12 @@ describe("qa cli registration", () => {
   it("routes mantis Telegram desktop builder flags into the mantis runtime command", async () => {
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "qa",
       "mantis",
       "telegram-desktop-builder",
       "--repo-root",
-      "/tmp/openclaw-repo",
+      "/tmp/afora-repo",
       "--output-dir",
       ".artifacts/qa-e2e/mantis/telegram-desktop",
       "--crabbox-bin",
@@ -661,7 +661,7 @@ describe("qa cli registration", () => {
       machineClass: "beast",
       outputDir: ".artifacts/qa-e2e/mantis/telegram-desktop",
       provider: "hetzner",
-      repoRoot: "/tmp/openclaw-repo",
+      repoRoot: "/tmp/afora-repo",
       telegramProfileArchiveEnv: "TELEGRAM_PROFILE_TGZ_B64",
       telegramProfileDir: "/home/crabbox/.local/share/TelegramDesktop",
       ttl: "120m",
@@ -671,18 +671,18 @@ describe("qa cli registration", () => {
   it("routes coverage report flags into the qa runtime command", async () => {
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "qa",
       "coverage",
       "--repo-root",
-      "/tmp/openclaw-repo",
+      "/tmp/afora-repo",
       "--output",
       ".artifacts/qa-coverage.md",
       "--json",
     ]);
 
     expect(runQaCoverageReportCommand).toHaveBeenCalledWith({
-      repoRoot: "/tmp/openclaw-repo",
+      repoRoot: "/tmp/afora-repo",
       output: ".artifacts/qa-coverage.md",
       json: true,
       tools: false,
@@ -693,18 +693,18 @@ describe("qa cli registration", () => {
   it("routes tool coverage report flags into the qa runtime command", async () => {
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "qa",
       "coverage",
       "--repo-root",
-      "/tmp/openclaw-repo",
+      "/tmp/afora-repo",
       "--tools",
       "--summary",
       ".artifacts/runtime-summary.json",
     ]);
 
     expect(runQaCoverageReportCommand).toHaveBeenCalledWith({
-      repoRoot: "/tmp/openclaw-repo",
+      repoRoot: "/tmp/afora-repo",
       tools: true,
       json: false,
       summary: ".artifacts/runtime-summary.json",
@@ -715,7 +715,7 @@ describe("qa cli registration", () => {
   it("routes coverage match queries into the qa runtime command", async () => {
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "qa",
       "coverage",
       "--match",
@@ -734,15 +734,15 @@ describe("qa cli registration", () => {
   it("routes JSONL replay flags into the qa runtime command", async () => {
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "qa",
       "jsonl-replay",
       "--repo-root",
-      "/tmp/openclaw-repo",
+      "/tmp/afora-repo",
       "--transcripts",
       "qa/scenarios/jsonl-replay",
       "--runtime-pair",
-      "openclaw,codex",
+      "afora,codex",
       "--provider-mode",
       "mock-openai",
       "--output-dir",
@@ -750,9 +750,9 @@ describe("qa cli registration", () => {
     ]);
 
     expect(runQaJsonlReplayCommand).toHaveBeenCalledWith({
-      repoRoot: "/tmp/openclaw-repo",
+      repoRoot: "/tmp/afora-repo",
       transcripts: "qa/scenarios/jsonl-replay",
-      runtimePair: "openclaw,codex",
+      runtimePair: "afora,codex",
       providerMode: "mock-openai",
       outputDir: ".artifacts/qa-e2e/jsonl-replay-test",
     });
@@ -784,7 +784,7 @@ describe("qa cli registration", () => {
     expect(commandNames).toContain("mock-openai");
     expect(commandNames).toContain("aimock");
 
-    await program.parseAsync(["node", "openclaw", "qa", "aimock", "--port", "44080"]);
+    await program.parseAsync(["node", "afora", "qa", "aimock", "--port", "44080"]);
 
     expect(runQaProviderServerCommand).toHaveBeenCalledWith("aimock", {
       host: "127.0.0.1",
@@ -793,7 +793,7 @@ describe("qa cli registration", () => {
   });
 
   it("normalizes signed decimal QA numeric option values through the shared parser", async () => {
-    await program.parseAsync(["node", "openclaw", "qa", "aimock", "--port", "+044080"]);
+    await program.parseAsync(["node", "afora", "qa", "aimock", "--port", "+044080"]);
 
     expect(runQaProviderServerCommand).toHaveBeenCalledWith("aimock", {
       host: "127.0.0.1",
@@ -825,7 +825,7 @@ describe("qa cli registration", () => {
     });
     registerQaLabCli(invalidProgram);
 
-    await expect(invalidProgram.parseAsync(["node", "openclaw", ...args])).rejects.toThrow(message);
+    await expect(invalidProgram.parseAsync(["node", "afora", ...args])).rejects.toThrow(message);
   });
 
   it.each([
@@ -852,7 +852,7 @@ describe("qa cli registration", () => {
     });
     registerQaLabCli(invalidProgram);
 
-    await expect(invalidProgram.parseAsync(["node", "openclaw", ...args])).rejects.toThrow(message);
+    await expect(invalidProgram.parseAsync(["node", "afora", ...args])).rejects.toThrow(message);
   });
 
   it("shows an enable hint when a discovered runner plugin is installed but blocked", async () => {
@@ -861,7 +861,7 @@ describe("qa cli registration", () => {
     registerQaLabCli(blockedProgram);
 
     await expect(
-      blockedProgram.parseAsync(["node", "openclaw", "qa", TEST_QA_RUNNER.commandName]),
+      blockedProgram.parseAsync(["node", "afora", "qa", TEST_QA_RUNNER.commandName]),
     ).rejects.toThrow(`Enable or allow plugin "${TEST_QA_RUNNER.pluginId}"`);
   });
 
@@ -876,7 +876,7 @@ describe("qa cli registration", () => {
   });
 
   it("routes telegram CLI defaults into the lane runtime", async () => {
-    await program.parseAsync(["node", "openclaw", "qa", "telegram"]);
+    await program.parseAsync(["node", "afora", "qa", "telegram"]);
 
     expect(runQaTelegramCommand).toHaveBeenCalledWith({
       repoRoot: undefined,
@@ -899,7 +899,7 @@ describe("qa cli registration", () => {
     ["profile", ["qa", "run", "--qa-profile", "smoke-ci"]],
     ["manual", ["qa", "manual", "--message", "hello"]],
   ])("preserves omitted --fast intent for %s runs", async (_name, args) => {
-    await program.parseAsync(["node", "openclaw", ...args]);
+    await program.parseAsync(["node", "afora", ...args]);
 
     const call =
       runQaSuiteCommand.mock.calls[0]?.[0] ??
@@ -909,21 +909,21 @@ describe("qa cli registration", () => {
   });
 
   it("forwards --list-scenarios for telegram runs", async () => {
-    await program.parseAsync(["node", "openclaw", "qa", "telegram", "--list-scenarios"]);
+    await program.parseAsync(["node", "afora", "qa", "telegram", "--list-scenarios"]);
 
     const options = requireQaTelegramOptions();
     expect(options.listScenarios).toBe(true);
   });
 
   it("forwards --allow-failures for telegram runs", async () => {
-    await program.parseAsync(["node", "openclaw", "qa", "telegram", "--allow-failures"]);
+    await program.parseAsync(["node", "afora", "qa", "telegram", "--allow-failures"]);
 
     const options = requireQaTelegramOptions();
     expect(options.allowFailures).toBe(true);
   });
 
   it("forwards --allow-failures for suite runs", async () => {
-    await program.parseAsync(["node", "openclaw", "qa", "suite", "--allow-failures"]);
+    await program.parseAsync(["node", "afora", "qa", "suite", "--allow-failures"]);
 
     const options = requireQaSuiteOptions();
     expect(options.allowFailures).toBe(true);
@@ -933,7 +933,7 @@ describe("qa cli registration", () => {
   it.each(["host", "multipass"])("forwards --fail-fast to the %s suite runner", async (runner) => {
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "qa",
       "suite",
       "--runner",
@@ -947,7 +947,7 @@ describe("qa cli registration", () => {
   it("forwards --runtime-pair-lane for suite runs", async () => {
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "qa",
       "suite",
       "--runtime-pair-lane",
@@ -963,7 +963,7 @@ describe("qa cli registration", () => {
   it("routes credential add flags into the qa runtime command", async () => {
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "qa",
       "credentials",
       "add",
@@ -972,7 +972,7 @@ describe("qa cli registration", () => {
       "--payload-file",
       "qa/payload.json",
       "--repo-root",
-      "/tmp/openclaw-repo",
+      "/tmp/afora-repo",
       "--note",
       "shared lane",
       "--site-url",
@@ -987,7 +987,7 @@ describe("qa cli registration", () => {
     expect(runQaCredentialsAddCommand).toHaveBeenCalledWith({
       kind: "telegram",
       payloadFile: "qa/payload.json",
-      repoRoot: "/tmp/openclaw-repo",
+      repoRoot: "/tmp/afora-repo",
       note: "shared lane",
       siteUrl: "https://first-schnauzer-821.convex.site",
       endpointPrefix: "/qa-credentials/v1",
@@ -999,7 +999,7 @@ describe("qa cli registration", () => {
   it("routes credential remove flags into the qa runtime command", async () => {
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "qa",
       "credentials",
       "remove",
@@ -1024,7 +1024,7 @@ describe("qa cli registration", () => {
   it("routes credential list defaults into the qa runtime command", async () => {
     await program.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "qa",
       "credentials",
       "list",

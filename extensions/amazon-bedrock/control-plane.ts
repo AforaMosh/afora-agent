@@ -7,7 +7,7 @@ import type {
   ListInferenceProfilesCommand,
   ListInferenceProfilesCommandInput,
 } from "@aws-sdk/client-bedrock";
-import { buildTimeoutAbortSignal } from "openclaw/plugin-sdk/extension-shared";
+import { buildTimeoutAbortSignal } from "afora-agent/plugin-sdk/extension-shared";
 
 const BEDROCK_CONTROL_PLANE_REQUEST_TIMEOUT_MS = 30_000;
 

@@ -1,8 +1,8 @@
 // Doctor detection for legacy meeting transcript files and interrupted imports.
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import { openNodeSqliteDatabase } from "./node-sqlite.js";
 import {
   hasMatchingRecordedTranscriptArtifact,
@@ -116,7 +116,7 @@ export function detectLegacyMeetingTranscripts(params: {
     return { sourceDir, hasLegacy: false, pendingImportCount: 0 };
   }
   const databaseState = readMeetingTranscriptMigrationDetectionState({
-    env: { ...(params.env ?? process.env), OPENCLAW_STATE_DIR: params.stateDir },
+    env: { ...(params.env ?? process.env), AFORA_STATE_DIR: params.stateDir },
   });
   const pendingImportCount = databaseState.pendingImportCount;
   try {
@@ -181,7 +181,7 @@ export function detectLegacyMeetingTranscripts(params: {
 export function readMeetingTranscriptMigrationDetectionState(params: {
   env: NodeJS.ProcessEnv;
 }): MeetingTranscriptMigrationDetectionState {
-  const databasePath = resolveOpenClawStateSqlitePath(params.env);
+  const databasePath = resolveAforaStateSqlitePath(params.env);
   if (!fs.existsSync(databasePath)) {
     return {
       exportOwnership: new Map(),

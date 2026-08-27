@@ -17,7 +17,7 @@ import {
   scanSessionTranscriptTree,
   selectSessionTranscriptTreePathNodes,
 } from "../config/sessions/transcript-tree.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { HealthFinding, HealthRepairEffect } from "../flows/health-checks.js";
 import { shortenHomePath } from "../utils.js";
 import {
@@ -433,7 +433,7 @@ export function sessionTranscriptIssueToHealthFinding(
     message: `Session transcript has legacy branch or provider metadata that can be cleaned up.${metadata}`,
     path: issue.filePath,
     fixHint:
-      "To clean up the advisory artifact, run `openclaw doctor --fix` to rewrite affected transcripts to their active branch.",
+      "To clean up the advisory artifact, run `afora doctor --fix` to rewrite affected transcripts to their active branch.",
   };
 }
 
@@ -450,7 +450,7 @@ export function sessionTranscriptIssueToRepairEffect(
 
 /** Scans session transcript files and reports or repairs legacy/broken transcript state. */
 export async function noteSessionTranscriptHealth(params?: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   sessionSqlite?: boolean;
   shouldRepair?: boolean;
@@ -493,7 +493,7 @@ export async function noteSessionTranscriptHealth(params?: {
       lines.push(`- ...and ${broken.length - 20} more.`);
     }
     if (!shouldRepair) {
-      lines.push('- Run "openclaw doctor --fix" to rewrite affected files to their active branch.');
+      lines.push('- Run "afora doctor --fix" to rewrite affected files to their active branch.');
     } else if (repairedCount > 0) {
       lines.push(`- Repaired ${repairedCount} transcript file${repairedCount === 1 ? "" : "s"}.`);
     }
@@ -510,7 +510,7 @@ export async function noteSessionTranscriptHealth(params?: {
 }
 
 async function noteSessionSqliteMigrationHealth(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   env: NodeJS.ProcessEnv;
   shouldRepair: boolean;
 }): Promise<void> {
@@ -584,7 +584,7 @@ async function noteSessionSqliteMigrationHealth(params: {
       throw error;
     }
     note(
-      `- Skipped: Gateway or another SQLite maintenance command owns the state directory. Stop the Gateway, then run "${formatCliCommand("openclaw doctor --fix", params.env)}" for session-store maintenance.`,
+      `- Skipped: Gateway or another SQLite maintenance command owns the state directory. Stop the Gateway, then run "${formatCliCommand("afora doctor --fix", params.env)}" for session-store maintenance.`,
       "Session SQLite",
     );
     return;
@@ -593,7 +593,7 @@ async function noteSessionSqliteMigrationHealth(params: {
     note(
       params.shouldRepair
         ? `- Renamed ${reservedKeyReport.repaired} durable session key(s) that collided with the reserved incognito namespace.`
-        : `- Found ${reservedKeyReport.found} durable session key(s) that collide with the reserved incognito namespace. Run "openclaw doctor --fix" to rename them.`,
+        : `- Found ${reservedKeyReport.found} durable session key(s) that collide with the reserved incognito namespace. Run "afora doctor --fix" to rename them.`,
       "Session SQLite",
     );
   }
@@ -601,7 +601,7 @@ async function noteSessionSqliteMigrationHealth(params: {
     note(
       params.shouldRepair
         ? `- Canonicalized ${canonicalKeyReport.repairedGroups} session-key group(s) in ${canonicalKeyReport.repairBatches} transaction batch(es), removed ${canonicalKeyReport.removedRows} duplicate or alias row(s), and preserved cross-store history in ${canonicalKeyReport.archivedTranscriptDirectories.length} archive director${canonicalKeyReport.archivedTranscriptDirectories.length === 1 ? "y" : "ies"}.`
-        : `- Found ${canonicalKeyReport.foundGroups} non-canonical or duplicate session-key group(s). Run "openclaw doctor --fix" to preserve their history and canonicalize the rows.`,
+        : `- Found ${canonicalKeyReport.foundGroups} non-canonical or duplicate session-key group(s). Run "afora doctor --fix" to preserve their history and canonicalize the rows.`,
       "Session SQLite",
     );
   }
@@ -609,7 +609,7 @@ async function noteSessionSqliteMigrationHealth(params: {
     note(
       params.shouldRepair
         ? `- Canonicalized delivery state for ${deliveryReport.repaired} durable session row(s).`
-        : `- Found ${deliveryReport.found} durable session row(s) with legacy delivery fields. Run "openclaw doctor --fix" to canonicalize them.`,
+        : `- Found ${deliveryReport.found} durable session row(s) with legacy delivery fields. Run "afora doctor --fix" to canonicalize them.`,
       "Session SQLite",
     );
   }
@@ -651,7 +651,7 @@ async function noteSessionSqliteMigrationHealth(params: {
   }
   if (!params.shouldRepair) {
     lines.push(
-      '- Run "openclaw doctor --fix" to migrate legacy session metadata/transcripts to SQLite.',
+      '- Run "afora doctor --fix" to migrate legacy session metadata/transcripts to SQLite.',
     );
   }
   note(lines.join("\n"), "Session SQLite");

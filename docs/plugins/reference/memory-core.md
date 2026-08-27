@@ -11,8 +11,8 @@ Adds agent-callable tools.
 
 ## Distribution
 
-- Package: `@openclaw/memory-core`
-- Install route: included in OpenClaw
+- Package: `@afora/memory-core`
+- Install route: included in Afora
 
 ## Surface
 

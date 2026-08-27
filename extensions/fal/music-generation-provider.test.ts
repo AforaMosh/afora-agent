@@ -1,5 +1,5 @@
 // Fal tests cover music generation provider plugin behavior.
-import { expectExplicitMusicGenerationCapabilities } from "openclaw/plugin-sdk/provider-test-contracts";
+import { expectExplicitMusicGenerationCapabilities } from "afora-agent/plugin-sdk/provider-test-contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildFalMusicGenerationProvider } from "./music-generation-provider.js";
 
@@ -24,12 +24,12 @@ const {
   })),
 }));
 
-vi.mock("openclaw/plugin-sdk/provider-auth-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/provider-auth-runtime", () => ({
   resolveApiKeyForProvider: resolveApiKeyForProviderMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/provider-http", async (importOriginal) => {
-  const original = await importOriginal<typeof import("openclaw/plugin-sdk/provider-http")>();
+vi.mock("afora-agent/plugin-sdk/provider-http", async (importOriginal) => {
+  const original = await importOriginal<typeof import("afora-agent/plugin-sdk/provider-http")>();
   return {
     ...original,
     assertOkOrThrowHttpError: assertOkOrThrowHttpErrorMock,

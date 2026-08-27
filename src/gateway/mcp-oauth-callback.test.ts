@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { requesterMcpOAuthStoreKeyPrefix } from "../agents/mcp-oauth-identity.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 const mocks = vi.hoisted(() => ({
   complete: vi.fn(),
@@ -22,9 +22,9 @@ import { createRequest, createResponse } from "./server-http.test-harness.js";
 const SERVER_URL = "https://calendar.example.com/mcp";
 const STORE_KEY = `${requesterMcpOAuthStoreKeyPrefix("calendar", SERVER_URL)}fedcba9876543210`;
 const AUTHORIZATION_URL =
-  "https://accounts.example.com/authorize?state=state-1234567890&client_id=openclaw";
+  "https://accounts.example.com/authorize?state=state-1234567890&client_id=afora";
 
-function callbackConfig(serverName = "calendar"): OpenClawConfig {
+function callbackConfig(serverName = "calendar"): AforaConfig {
   return {
     mcp: {
       servers: {
@@ -49,7 +49,7 @@ function pendingStore() {
 
 async function dispatch(
   path: string,
-  options?: { config?: OpenClawConfig; method?: string },
+  options?: { config?: AforaConfig; method?: string },
 ): Promise<{
   handled: boolean;
   response: ReturnType<typeof createResponse>;

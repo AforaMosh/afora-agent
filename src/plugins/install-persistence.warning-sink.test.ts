@@ -15,7 +15,7 @@ import { recordPluginManifestInstallOwner } from "./manifest-install-owner.js";
 const snapshot = {
   config: {},
   baseHash: "config-1",
-  writeOptions: { expectedConfigPath: "/tmp/openclaw.json" },
+  writeOptions: { expectedConfigPath: "/tmp/afora.json" },
 };
 
 const install = {
@@ -37,7 +37,7 @@ describe("plugin install persistence warning audiences", () => {
         recordPluginManifestInstallOwner(
           {
             id: "workboard",
-            manifestPath: `${install.installPath}/openclaw.plugin.json`,
+            manifestPath: `${install.installPath}/afora.plugin.json`,
             configSchema: {
               type: "object",
               required: ["token"],
@@ -59,7 +59,7 @@ describe("plugin install persistence warning audiences", () => {
 
     expect(next.plugins?.entries?.workboard).toEqual({ enabled: false });
     expect(warn).toHaveBeenCalledExactlyOnceWith(
-      'Installed plugin "workboard" without enabling it because it requires configuration first. Configure it, then run `openclaw plugins enable workboard`.',
+      'Installed plugin "workboard" without enabling it because it requires configuration first. Configure it, then run `afora plugins enable workboard`.',
     );
     expect(pluginsCliRuntimeLogs.join("\n")).toContain("requires configuration first");
     expect(pluginsCliRuntimeLogs).toContain("Installed plugin: workboard");
@@ -84,7 +84,7 @@ describe("plugin install persistence warning audiences", () => {
             origin: "config",
             rootDir: install.installPath,
             source: `${install.installPath}/index.js`,
-            manifestPath: `${install.installPath}/openclaw.plugin.json`,
+            manifestPath: `${install.installPath}/afora.plugin.json`,
           },
           "workboard",
         ),

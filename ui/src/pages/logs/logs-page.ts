@@ -18,7 +18,7 @@ import {
   isMissingOperatorReadScopeError,
 } from "../../lib/gateway-errors.ts";
 import { GatewayPageController } from "../../lit/gateway-page-controller.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { PollController } from "../../lit/poll-controller.ts";
 import { StreamAutoFollowController } from "../../lit/stream-auto-follow-controller.ts";
 import {
@@ -32,7 +32,7 @@ import { renderLogs } from "./view.ts";
 const LOG_BUFFER_LIMIT = 2000;
 const LOGS_POLL_INTERVAL_MS = 2000;
 
-class LogsPage extends OpenClawLightDomElement {
+class LogsPage extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context!: ApplicationContext;
 
@@ -251,7 +251,7 @@ class LogsPage extends OpenClawLightDomElement {
     const anchor = document.createElement("a");
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
     anchor.href = url;
-    anchor.download = `openclaw-logs-${label}-${stamp}.log`;
+    anchor.download = `afora-logs-${label}-${stamp}.log`;
     anchor.click();
     URL.revokeObjectURL(url);
   }
@@ -291,6 +291,6 @@ class LogsPage extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-logs-page")) {
-  customElements.define("openclaw-logs-page", LogsPage);
+if (!customElements.get("afora-logs-page")) {
+  customElements.define("afora-logs-page", LogsPage);
 }

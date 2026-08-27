@@ -1,8 +1,8 @@
 // Telegram plugin module implements bot info cache behavior.
 import os from "node:os";
 import path from "node:path";
-import { readJsonFileWithFallback } from "openclaw/plugin-sdk/json-store";
-import { resolveStateDir } from "openclaw/plugin-sdk/state-paths";
+import { readJsonFileWithFallback } from "afora-agent/plugin-sdk/json-store";
+import { resolveStateDir } from "afora-agent/plugin-sdk/state-paths";
 import { normalizeTelegramBotInfo, type TelegramBotInfo } from "./bot-info.js";
 import { getTelegramRuntime } from "./runtime.js";
 import { normalizeTelegramStateAccountId } from "./state-account-id.js";

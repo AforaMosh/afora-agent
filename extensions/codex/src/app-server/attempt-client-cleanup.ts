@@ -1,7 +1,7 @@
 /**
  * Best-effort cleanup helpers for Codex app-server startup attempts and turns.
  */
-import { embeddedAgentLog } from "openclaw/plugin-sdk/agent-harness-runtime";
+import { embeddedAgentLog } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import { unsubscribeCodexAppServerLiveThread } from "./client-runtime.js";
 import { CodexAppServerRpcError, type CodexAppServerClient } from "./client.js";
 import { retireSharedCodexAppServerClientIfCurrent } from "./shared-client.js";
@@ -25,7 +25,7 @@ export function isCodexAlreadyTerminalInterruptError(
   );
 }
 
-/** Raised when a thread subscription may be live on a client OpenClaw no longer controls. */
+/** Raised when a thread subscription may be live on a client Afora no longer controls. */
 export class CodexAppServerUnsafeSubscriptionError extends Error {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);

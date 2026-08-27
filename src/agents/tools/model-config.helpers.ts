@@ -10,7 +10,7 @@ import {
   resolveAgentModelTimeoutMsValue,
 } from "../../config/model-input.js";
 import type { AgentToolModelConfig } from "../../config/types.agents-shared.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   externalCliDiscoveryForProviderAuth,
   ensureAuthProfileStore,
@@ -50,8 +50,8 @@ export function hasToolModelConfig(model: ToolModelConfig | undefined): boolean 
   );
 }
 
-/** Resolves the configured default model ref, falling back to OpenClaw defaults. */
-export function resolveDefaultModelRef(cfg?: OpenClawConfig): { provider: string; model: string } {
+/** Resolves the configured default model ref, falling back to Afora defaults. */
+export function resolveDefaultModelRef(cfg?: AforaConfig): { provider: string; model: string } {
   if (cfg) {
     const resolved = resolveConfiguredModelRef({
       cfg,
@@ -66,7 +66,7 @@ export function resolveDefaultModelRef(cfg?: OpenClawConfig): { provider: string
 /** Returns whether a provider has env, profile, or external CLI auth available. */
 export function hasAuthForProvider(params: {
   provider: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   workspaceDir?: string;
   agentDir?: string;
   authStore?: AuthProfileStore;
@@ -130,7 +130,7 @@ export function hasAuthProfileForProvider(params: {
 /** Returns whether a provider can be used by a model-backed tool. */
 export function hasProviderAuthForTool(params: {
   provider: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   workspaceDir?: string;
   agentDir?: string;
   authStore?: AuthProfileStore;
@@ -171,7 +171,7 @@ function formatProviderModelRef(provider: string, model: string): string {
 
 function loadAuthStoreForProvider(params: {
   provider: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentDir?: string;
   authStore?: AuthProfileStore;
   includeExternalCli?: boolean;
@@ -211,7 +211,7 @@ function overlayExternalCliAuthStoreForProvider(params: {
 
 function hasAuthProfileTypeInStore(params: {
   provider: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   store: AuthProfileStore;
   type: AuthProfileCredential["type"] | readonly AuthProfileCredential["type"][];
 }): boolean {
@@ -225,7 +225,7 @@ function hasAuthProfileTypeInStore(params: {
 
 function hasAuthProfileTypeForProvider(params: {
   provider: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentDir?: string;
   authStore?: AuthProfileStore;
   includeExternalCli?: boolean;
@@ -251,7 +251,7 @@ function hasAuthProfileTypeForProvider(params: {
 /** Returns whether a provider has direct API-key-capable auth for model-backed tools. */
 function hasDirectProviderApiKeyAuthForTool(params: {
   provider: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   workspaceDir?: string;
   agentDir?: string;
   authStore?: AuthProfileStore;
@@ -290,13 +290,13 @@ function hasDirectProviderApiKeyAuthForTool(params: {
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.modelConfigHelpersTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.modelConfigHelpersTestApi")] = {
     hasDirectProviderApiKeyAuthForTool,
   };
 }
 
 function hasCanonicalOpenAiCodexAuthSignal(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentDir?: string;
   authStore?: AuthProfileStore;
 }): boolean {
@@ -312,7 +312,7 @@ function hasCanonicalOpenAiCodexAuthSignal(params: {
 
 function resolveDirectProviderEntryAuthFromProfileReference(params: {
   provider: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentDir?: string;
   authStore?: AuthProfileStore;
 }): boolean | undefined {
@@ -357,7 +357,7 @@ function resolveDirectProviderEntryAuthFromProfileReference(params: {
 
 /** Resolves the implicit OpenAI image slot without letting OAuth-only auth pick direct OpenAI. */
 export function resolveOpenAiImageMediaCandidate(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   workspaceDir?: string;
   agentDir: string;
   authStore?: AuthProfileStore;
@@ -416,7 +416,7 @@ export function coerceToolModelConfig(model?: AgentToolModelConfig): ToolModelCo
 /** Builds a tool model config from configured auth-aware candidate model refs. */
 export function buildToolModelConfigFromCandidates(params: {
   explicit: ToolModelConfig;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   workspaceDir?: string;
   agentDir?: string;
   authStore?: AuthProfileStore;

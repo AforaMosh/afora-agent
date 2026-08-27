@@ -71,7 +71,7 @@ function applyThemePresentation(settings: ReturnType<typeof loadSettings>): void
   const resolvedTheme = resolveTheme(settings.theme, settings.themeMode);
   root.dataset.theme = resolvedTheme;
   root.dataset.themeMode = resolvedTheme.endsWith("light") ? "light" : "dark";
-  // Carapace CSS (openclaw/carapace) selects on [data-theme-resolved]; keep it
+  // Carapace CSS (afora/carapace) selects on [data-theme-resolved]; keep it
   // in lockstep with data-theme-mode so its stylesheets work unmodified here.
   root.dataset.themeResolved = root.dataset.themeMode;
   root.classList.toggle("wa-light", root.dataset.themeMode === "light");
@@ -289,7 +289,7 @@ export function bootstrapApplication(
     dependencies.sessionPathBuilderReady ??
     (documentMode
       ? Promise.resolve()
-      : import("@openclaw/session-url-contract").then((contract) => {
+      : import("@afora/session-url-contract").then((contract) => {
           setSessionPathBuilder(contract.buildControlUiSessionPath);
         }));
 
@@ -373,7 +373,7 @@ export function bootstrapApplication(
     shouldOpenInControlUiBrowser: () =>
       loadSettings().openLinksInControlUiBrowser === true &&
       isBrowserPanelAvailable(gateway.snapshot) &&
-      document.querySelector("openclaw-app-shell")?.isConnected === true,
+      document.querySelector("afora-app-shell")?.isConnected === true,
   });
   const nativeNotifications = createNativeNotificationsCapability();
   const webPush = createWebPushCapability(gateway);
@@ -483,7 +483,7 @@ export function bootstrapApplication(
     const historyMode = samePage ? "replace" : requested;
     const navigationPromise = router.navigate(routeId, context, { history: historyMode }, location);
     void navigationPromise.catch((error: unknown) => {
-      console.error("[openclaw] route navigation failed", error);
+      console.error("[afora] route navigation failed", error);
     });
     return navigationPromise;
   };
@@ -588,7 +588,7 @@ export function bootstrapApplication(
                 isDefaultChatLanding(history.location(), basePath, routeIdFromPath),
             }),
             (error) => {
-              console.error("[openclaw] initial session location failed", error);
+              console.error("[afora] initial session location failed", error);
             },
           );
         });

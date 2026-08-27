@@ -1,14 +1,14 @@
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   findPersistedAuthProfileCredential,
   getRuntimeAuthProfileStoreSnapshot,
 } from "../agents/auth-profiles/store.js";
 import { resolveProviderIdForAuth } from "../agents/provider-auth-aliases.js";
 import type { SessionEntry } from "../config/sessions.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.types.js";
 import { applyModelOverrideToSessionEntry } from "./model-overrides.js";
 
@@ -19,7 +19,7 @@ type ModelOverrideSelection = {
 };
 
 function resolvePinnedAuthProfileProvider(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentDir: string;
   profileId: string;
 }): string | undefined {
@@ -34,7 +34,7 @@ function resolvePinnedAuthProfileProvider(params: {
 
 /** Checks whether a pinned session auth profile can authenticate the selected provider. */
 export function shouldPreserveSessionAuthProfileOverride(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentDir: string;
   entry: SessionEntry;
   currentProvider: string;
@@ -75,7 +75,7 @@ export function shouldPreserveSessionAuthProfileOverride(params: {
 
 /** Applies a user model selection without dropping a compatible pinned auth profile. */
 export function applyModelOverrideWithAuthProfileCompatibility(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentDir: string;
   entry: SessionEntry;
   currentProvider: string;

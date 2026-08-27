@@ -4,7 +4,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { formatSqliteSessionFileMarker } from "../../config/sessions/legacy-sqlite-marker.js";
 import {
@@ -13,8 +13,8 @@ import {
   replaceSessionEntry,
 } from "../../config/sessions/session-accessor.js";
 import { onAgentEvent, resetAgentEventsForTest } from "../../infra/agent-events.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaAgentDatabasesForTest } from "../../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { createChatRunState } from "../server-chat-state.js";
 import {
   createActiveRun,
@@ -159,7 +159,7 @@ function expectPersistedAbortMessage(
   if (expected.stopReason) {
     expect(actual.stopReason).toBe(expected.stopReason);
   }
-  const abort = expectRecord(actual.openclawAbort, "persisted abort metadata");
+  const abort = expectRecord(actual.aforaAbort, "persisted abort metadata");
   expect(abort.aborted).toBe(true);
   expect(abort.origin).toBe(expected.origin);
   expect(abort.runId).toBe(expected.runId);
@@ -243,8 +243,8 @@ async function createMissingEntryFixture(prefix: string) {
 afterEach(async () => {
   vi.restoreAllMocks();
   resetAgentEventsForTest();
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   transcriptFixtures.clear();
   const dirs = [...fixtureDirs];
   fixtureDirs.clear();
@@ -257,7 +257,7 @@ afterEach(async () => {
 
 describe("chat abort transcript persistence", () => {
   it("persists run-scoped abort partial with rpc metadata and idempotency", async () => {
-    const { transcriptPath, sessionId } = await createTranscriptFixture("openclaw-chat-abort-run-");
+    const { transcriptPath, sessionId } = await createTranscriptFixture("afora-chat-abort-run-");
     const runId = "idem-abort-run-1";
     const respond = vi.fn();
     const context = createChatAbortContext({
@@ -320,7 +320,7 @@ describe("chat abort transcript persistence", () => {
 
   it("does not let non-assistant idempotency collisions suppress abort partial persistence", async () => {
     const { transcriptPath, sessionId, storePath } = await createTranscriptFixture(
-      "openclaw-chat-abort-idempotency-collision-",
+      "afora-chat-abort-idempotency-collision-",
     );
     const runId = "idem-abort-collision";
     const idempotencyKey = `${runId}:assistant`;
@@ -370,7 +370,7 @@ describe("chat abort transcript persistence", () => {
 
   it("persists session-scoped abort partials with rpc metadata", async () => {
     const { transcriptPath, sessionId } = await createTranscriptFixture(
-      "openclaw-chat-abort-session-",
+      "afora-chat-abort-session-",
     );
     const respond = vi.fn();
     const context = createChatAbortContext({
@@ -412,7 +412,7 @@ describe("chat abort transcript persistence", () => {
 
   it("does not persist partials from finalizing runs that reject a session abort", async () => {
     const { transcriptPath, sessionId } = await createTranscriptFixture(
-      "openclaw-chat-abort-finalizing-",
+      "afora-chat-abort-finalizing-",
     );
     const respond = vi.fn();
     const finalizingRun = {
@@ -452,7 +452,7 @@ describe("chat abort transcript persistence", () => {
   });
 
   it("persists /stop partials with stop-command metadata", async () => {
-    const { transcriptPath, sessionId } = await createTranscriptFixture("openclaw-chat-stop-");
+    const { transcriptPath, sessionId } = await createTranscriptFixture("afora-chat-stop-");
     const respond = vi.fn();
     const context = createChatAbortContext({
       chatAbortControllers: new Map([["run-stop-1", createActiveRun("main", { sessionId })]]),
@@ -507,7 +507,7 @@ describe("chat abort transcript persistence", () => {
       "main",
     ],
   ])("%s", async (_name, caseId, activeSessionKey, requestedSessionKey) => {
-    const { sessionId } = await createTranscriptFixture(`openclaw-chat-stop-${caseId}-`);
+    const { sessionId } = await createTranscriptFixture(`afora-chat-stop-${caseId}-`);
     const respond = vi.fn();
     const runId = `run-stop-${caseId}`;
     const active = createActiveRun(activeSessionKey, { sessionId });
@@ -543,7 +543,7 @@ describe("chat abort transcript persistence", () => {
     ["scopes global stop commands to the selected agent", "work", "agent"],
     ["scopes bare global stop commands to the default agent", "main", "default"],
   ])("%s", async (_name, selectedAgentId, fixtureId) => {
-    const { sessionId } = await createTranscriptFixture(`openclaw-chat-stop-global-${fixtureId}-`);
+    const { sessionId } = await createTranscriptFixture(`afora-chat-stop-global-${fixtureId}-`);
     const cfg = {
       agents: { list: [{ id: "main", default: true }, { id: "work" }] },
       session: { scope: "global" as const },
@@ -1029,7 +1029,7 @@ describe("chat abort transcript persistence", () => {
   });
 
   it("does not match stop targets by client-supplied session id without a stored entry", async () => {
-    const { sessionId } = await createMissingEntryFixture("openclaw-chat-stop-client-session-");
+    const { sessionId } = await createMissingEntryFixture("afora-chat-stop-client-session-");
     const respond = vi.fn();
     const active = createActiveRun("third-session", { sessionId });
     const context = createChatAbortContext({
@@ -1062,7 +1062,7 @@ describe("chat abort transcript persistence", () => {
 
   it("skips run-scoped transcript persistence when partial text is blank", async () => {
     const { transcriptPath, sessionId } = await createTranscriptFixture(
-      "openclaw-chat-abort-run-blank-",
+      "afora-chat-abort-run-blank-",
     );
     const runId = "idem-abort-run-blank";
     const respond = vi.fn();
@@ -1094,7 +1094,7 @@ describe("chat abort transcript persistence", () => {
 
   it("skips run-scoped transcript persistence for hidden internal runs", async () => {
     const { transcriptPath, sessionId } = await createTranscriptFixture(
-      "openclaw-chat-abort-run-hidden-",
+      "afora-chat-abort-run-hidden-",
     );
     const runId = "idem-abort-run-hidden";
     const respond = vi.fn();

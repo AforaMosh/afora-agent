@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { setLoggerOverride } from "../logging/logger.js";
 import { loggingState } from "../logging/state.js";
 import { captureEnv } from "../test-utils/env.js";
@@ -25,7 +25,7 @@ describe("loader", () => {
   let envSnapshot: ReturnType<typeof captureEnv>;
 
   beforeAll(async () => {
-    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-hooks-loader-"));
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-hooks-loader-"));
   });
 
   beforeEach(async () => {
@@ -36,8 +36,8 @@ describe("loader", () => {
     await fs.mkdir(tmpDir, { recursive: true });
 
     // Disable bundled hooks during tests by setting env var to non-existent directory
-    envSnapshot = captureEnv(["OPENCLAW_BUNDLED_HOOKS_DIR"]);
-    process.env.OPENCLAW_BUNDLED_HOOKS_DIR = "/nonexistent/bundled/hooks";
+    envSnapshot = captureEnv(["AFORA_BUNDLED_HOOKS_DIR"]);
+    process.env.AFORA_BUNDLED_HOOKS_DIR = "/nonexistent/bundled/hooks";
     setLoggerOverride({ level: "silent", consoleLevel: "error" });
     loggingState.rawConsole = {
       log: vi.fn(),
@@ -70,7 +70,7 @@ describe("loader", () => {
         "---",
         `name: ${params.hookName}`,
         `description: ${params.hookName} test hook`,
-        `metadata: ${JSON.stringify({ openclaw: metadata })}`,
+        `metadata: ${JSON.stringify({ afora: metadata })}`,
         "---",
         "",
         `# ${params.hookName}`,
@@ -86,7 +86,7 @@ describe("loader", () => {
     return hookDir;
   }
 
-  function createEnabledHooksConfig(): OpenClawConfig {
+  function createEnabledHooksConfig(): AforaConfig {
     return { hooks: { internal: { enabled: true } } };
   }
 
@@ -107,35 +107,35 @@ describe("loader", () => {
 
   describe("loadInternalHooks", () => {
     it("detects configured internal hook surfaces", () => {
-      expect(hasConfiguredInternalHooks({} satisfies OpenClawConfig)).toBe(false);
+      expect(hasConfiguredInternalHooks({} satisfies AforaConfig)).toBe(false);
       expect(
         hasConfiguredInternalHooks({
           hooks: { internal: { entries: { "session-memory": { enabled: true } } } },
-        } satisfies OpenClawConfig),
+        } satisfies AforaConfig),
       ).toBe(true);
       expect(
         hasConfiguredInternalHooks({
           hooks: { internal: { entries: { "session-memory": { enabled: false } } } },
-        } satisfies OpenClawConfig),
+        } satisfies AforaConfig),
       ).toBe(false);
       expect(
         hasConfiguredInternalHooks({
           hooks: { internal: { load: { extraDirs: ["/tmp/hooks"] } } },
-        } satisfies OpenClawConfig),
+        } satisfies AforaConfig),
       ).toBe(true);
       expect(
         resolveConfiguredInternalHookNames({
           hooks: { internal: { entries: { "session-memory": { enabled: true } } } },
-        } satisfies OpenClawConfig),
+        } satisfies AforaConfig),
       ).toEqual(new Set(["session-memory"]));
       expect(
         resolveConfiguredInternalHookNames({
           hooks: { internal: { enabled: true } },
-        } satisfies OpenClawConfig),
+        } satisfies AforaConfig),
       ).toBeNull();
     });
 
-    const expectNoCommandHookRegistration = async (cfg: OpenClawConfig) => {
+    const expectNoCommandHookRegistration = async (cfg: AforaConfig) => {
       const count = await loadInternalHooks(cfg, tmpDir);
       expect(count).toBe(0);
       expect(getRegisteredEventKeys()).not.toContain("command:new");
@@ -143,7 +143,7 @@ describe("loader", () => {
 
     it("should return 0 when hooks are explicitly disabled", async () => {
       const count = await loadInternalHooks(
-        { hooks: { internal: { enabled: false } } } satisfies OpenClawConfig,
+        { hooks: { internal: { enabled: false } } } satisfies AforaConfig,
         tmpDir,
       );
       expect(count).toBe(0);
@@ -151,9 +151,9 @@ describe("loader", () => {
 
     it("skips hook discovery until internal hooks are configured", async () => {
       for (const cfg of [
-        {} satisfies OpenClawConfig,
-        { hooks: {} } satisfies OpenClawConfig,
-        { hooks: { internal: {} } } satisfies OpenClawConfig,
+        {} satisfies AforaConfig,
+        { hooks: {} } satisfies AforaConfig,
+        { hooks: { internal: {} } } satisfies AforaConfig,
       ]) {
         const count = await loadInternalHooks(cfg, tmpDir);
         expect(count).toBe(0);
@@ -175,7 +175,7 @@ describe("loader", () => {
               },
             },
           },
-        } satisfies OpenClawConfig,
+        } satisfies AforaConfig,
         tmpDir,
         { managedHooksDir: hooksDir, bundledHooksDir: "/nonexistent/bundled/hooks" },
       );
@@ -231,7 +231,7 @@ describe("loader", () => {
               },
             },
           },
-        } satisfies OpenClawConfig,
+        } satisfies AforaConfig,
         tmpDir,
         { managedHooksDir: hooksDir, bundledHooksDir: "/nonexistent/bundled/hooks" },
       );
@@ -273,7 +273,7 @@ describe("loader", () => {
             entries: { "reloadable-hook": { enabled: true } },
           },
         },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       const options = { managedHooksDir: hooksDir, bundledHooksDir: "/nonexistent/bundled/hooks" };
 
       expect(await loadInternalHooks(cfg, tmpDir, options)).toBe(1);
@@ -304,7 +304,7 @@ describe("loader", () => {
             entries: { "named-export": { enabled: true } },
           },
         },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
 
       const count = await loadInternalHooks(cfg, tmpDir, {
         managedHooksDir: hooksDir,
@@ -377,7 +377,7 @@ describe("loader", () => {
           "---",
           "name: symlink-hook",
           "description: symlink test",
-          'metadata: {"openclaw":{"events":["command:new"]}}',
+          'metadata: {"afora":{"events":["command:new"]}}',
           "---",
           "",
           "# Symlink Hook",
@@ -408,7 +408,7 @@ describe("loader", () => {
           "---",
           "name: hardlink-hook",
           "description: hardlink test",
-          'metadata: {"openclaw":{"events":["command:new"]}}',
+          'metadata: {"afora":{"events":["command:new"]}}',
           "---",
           "",
           "# Hardlink Hook",

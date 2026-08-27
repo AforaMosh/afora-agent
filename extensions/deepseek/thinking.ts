@@ -1,5 +1,5 @@
 // Deepseek plugin module implements thinking behavior.
-import type { ProviderThinkingProfile } from "openclaw/plugin-sdk/plugin-entry";
+import type { ProviderThinkingProfile } from "afora-agent/plugin-sdk/plugin-entry";
 import { isDeepSeekV4ModelId } from "./models.js";
 
 const V4_THINKING_LEVEL_IDS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"] as const;

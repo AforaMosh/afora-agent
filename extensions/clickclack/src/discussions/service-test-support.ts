@@ -1,6 +1,6 @@
-import { createPluginRuntimeMock } from "openclaw/plugin-sdk/channel-test-helpers";
-import type { OpenClawPluginGatewayEvents, PluginRuntime } from "openclaw/plugin-sdk/core";
-import type { PluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
+import { createPluginRuntimeMock } from "afora-agent/plugin-sdk/channel-test-helpers";
+import type { AforaPluginGatewayEvents, PluginRuntime } from "afora-agent/plugin-sdk/core";
+import type { PluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import { vi } from "vitest";
 import type { ClickClackClient } from "../http-client.js";
 import type { ClickClackChannel, ClickClackMessage, CoreConfig } from "../types.js";
@@ -79,7 +79,7 @@ export function createHarness(
     | undefined,
   options: {
     bindingGenerationFactory?: () => string;
-    gatewayEvents?: Pick<OpenClawPluginGatewayEvents, "onSessionsChanged">;
+    gatewayEvents?: Pick<AforaPluginGatewayEvents, "onSessionsChanged">;
     startTimer?: boolean;
     maxRetainedDetachedBindings?: number;
     openSyncKeyedStore?: PluginRuntime["state"]["openSyncKeyedStore"];

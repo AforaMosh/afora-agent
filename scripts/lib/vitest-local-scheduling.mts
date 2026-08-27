@@ -32,7 +32,7 @@ function parsePositiveInt(value: string | undefined, label: string) {
 }
 
 function isSystemThrottleDisabled(env: Record<string, string | undefined>) {
-  const normalized = env.OPENCLAW_VITEST_DISABLE_SYSTEM_THROTTLE?.trim().toLowerCase();
+  const normalized = env.AFORA_VITEST_DISABLE_SYSTEM_THROTTLE?.trim().toLowerCase();
   return normalized === "1" || normalized === "true";
 }
 
@@ -48,14 +48,14 @@ export function isCiLikeEnv(env: Record<string, string | undefined> = process.en
 export function resolveLocalVitestEnv(
   env: Record<string, string | undefined> = process.env,
 ): Record<string, string | undefined> {
-  const normalizedLocalCheck = env.OPENCLAW_LOCAL_CHECK?.trim().toLowerCase();
+  const normalizedLocalCheck = env.AFORA_LOCAL_CHECK?.trim().toLowerCase();
   if (isCiLikeEnv(env) || (normalizedLocalCheck !== "0" && normalizedLocalCheck !== "false")) {
     return env;
   }
 
   return {
     ...env,
-    OPENCLAW_LOCAL_CHECK: "1",
+    AFORA_LOCAL_CHECK: "1",
   };
 }
 
@@ -93,10 +93,10 @@ export function resolveLocalVitestScheduling(
   pool: "forks" | "threads" = "threads",
 ): LocalVitestScheduling {
   const override = parsePositiveInt(
-    env.OPENCLAW_VITEST_MAX_WORKERS ?? env.OPENCLAW_TEST_WORKERS,
-    env.OPENCLAW_VITEST_MAX_WORKERS === undefined
-      ? "OPENCLAW_TEST_WORKERS"
-      : "OPENCLAW_VITEST_MAX_WORKERS",
+    env.AFORA_VITEST_MAX_WORKERS ?? env.AFORA_TEST_WORKERS,
+    env.AFORA_VITEST_MAX_WORKERS === undefined
+      ? "AFORA_TEST_WORKERS"
+      : "AFORA_VITEST_MAX_WORKERS",
   );
   if (override !== null) {
     const maxWorkers = clamp(override, 1, 16);

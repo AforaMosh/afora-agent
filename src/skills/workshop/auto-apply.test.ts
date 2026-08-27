@@ -1,19 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../../test-utils/afora-test-state.js";
 import { createTrackedTempDirs } from "../../test-utils/tracked-temp-dirs.js";
 import { autoApplySkillProposal } from "./auto-apply.js";
 import { inspectSkillProposal, proposeCreateSkill } from "./service.js";
 
 const tempDirs = createTrackedTempDirs();
-let testState: OpenClawTestState;
+let testState: AforaTestState;
 
 beforeEach(async () => {
-  testState = await createOpenClawTestState({
+  testState = await createAforaTestState({
     layout: "state-only",
-    prefix: "openclaw-skill-auto-apply-state-",
+    prefix: "afora-skill-auto-apply-state-",
   });
 });
 
@@ -24,7 +24,7 @@ afterEach(async () => {
 
 describe("autoApplySkillProposal", () => {
   it("leaves a proposal pending after one failed apply attempt", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-auto-apply-workspace-");
+    const workspaceDir = await tempDirs.make("afora-skill-auto-apply-workspace-");
     const proposal = await proposeCreateSkill({
       workspaceDir,
       name: "safe-recovery",

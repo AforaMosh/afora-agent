@@ -1,7 +1,7 @@
 // Startup control-UI origin tests cover runtime-only origin seeding for LAN
 // gateway binds without mutating persisted config.
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { maybeSeedControlUiAllowedOriginsAtStartup } from "./startup-control-ui-origins.js";
 
 describe("maybeSeedControlUiAllowedOriginsAtStartup", () => {
@@ -25,7 +25,7 @@ describe("maybeSeedControlUiAllowedOriginsAtStartup", () => {
   });
 
   it("does not rewrite config when origins already exist", async () => {
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       gateway: {
         controlUi: { allowedOrigins: ["https://control.example.com"] },
       },

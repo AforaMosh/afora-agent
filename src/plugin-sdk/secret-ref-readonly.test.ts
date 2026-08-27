@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "./config-contracts.js";
+import type { AforaConfig } from "./config-contracts.js";
 import { resolveReadOnlyEnvSecretRef } from "./secret-ref-readonly.js";
 
 describe("resolveReadOnlyEnvSecretRef", () => {
@@ -21,7 +21,7 @@ describe("resolveReadOnlyEnvSecretRef", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       resolveReadOnlyEnvSecretRef({

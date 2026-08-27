@@ -1,13 +1,13 @@
 // Discord tests pin guild/channel ScopeTree policy precedence.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/core";
+import type { AforaConfig } from "afora-agent/plugin-sdk/core";
 import { describe, expect, it } from "vitest";
 import {
   resolveDiscordGroupRequireMention,
   resolveDiscordGroupToolPolicy,
 } from "./group-policy.js";
 
-function createCfg(discord: Record<string, unknown>): OpenClawConfig {
-  return { channels: { discord } } as OpenClawConfig;
+function createCfg(discord: Record<string, unknown>): AforaConfig {
+  return { channels: { discord } } as AforaConfig;
 }
 
 describe("discord group policy", () => {

@@ -1,5 +1,5 @@
 // Memory Core plugin module implements tokenize behavior.
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 /**
  * Shared CJK-aware tokenizer + Jaccard similarity helpers.

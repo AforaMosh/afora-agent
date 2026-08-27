@@ -1,5 +1,5 @@
 // Mattermost plugin module implements monitor onchar behavior.
-import { normalizeStringEntries } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeStringEntries } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 const DEFAULT_ONCHAR_PREFIXES = [">", "!"];
 

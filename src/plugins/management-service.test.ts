@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   configSnapshot,
@@ -34,7 +34,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../config/config.js", () => ({
   assertConfigWriteAllowedInCurrentMode: (params?: { env?: NodeJS.ProcessEnv }) => {
-    if (params?.env?.OPENCLAW_NIX_MODE === "1") {
+    if (params?.env?.AFORA_NIX_MODE === "1") {
       throw new Error("Config is managed by Nix");
     }
   },
@@ -179,7 +179,7 @@ describe("plugin management service", () => {
         version: "2.0.0",
         featured: true,
         order: 40,
-        install: { source: "clawhub", packageName: "@openclaw/diffs" },
+        install: { source: "clawhub", packageName: "@afora/diffs" },
       }),
     ]);
   });
@@ -214,8 +214,8 @@ describe("plugin management service", () => {
       {
         ...hostedDiffsEntry,
         name: "community/impostor",
-        openclaw: {
-          ...hostedDiffsEntry.openclaw,
+        afora: {
+          ...hostedDiffsEntry.afora,
           install: { clawhubSpec: "clawhub:community/impostor", defaultChoice: "clawhub" },
         },
       },
@@ -236,14 +236,14 @@ describe("plugin management service", () => {
         entries: [
           {
             name: "community/partial",
-            openclaw: {
+            afora: {
               plugin: { id: "partial", label: "Partial" },
               catalog: { featured: "yes", order: 25 },
             },
           },
           {
             name: "community/invalid",
-            openclaw: {
+            afora: {
               plugin: { id: "invalid", label: "Invalid" },
               catalog: { featured: "yes", order: "first" },
             },
@@ -273,7 +273,7 @@ describe("plugin management service", () => {
     expect(catalog.plugins).toEqual([
       expect.objectContaining({
         id: "workboard",
-        packageName: "@openclaw/workboard",
+        packageName: "@afora/workboard",
         installed: true,
         enabled: false,
         state: "disabled",
@@ -295,7 +295,7 @@ describe("plugin management service", () => {
         ],
       },
     };
-    const env = { HOME: "/tmp/openclaw-managed-plugin-home" };
+    const env = { HOME: "/tmp/afora-managed-plugin-home" };
     mocks.metadata.mockReturnValue(metadataSnapshot({ enabled: false, icon }));
 
     const catalog = await listManagedPlugins({
@@ -315,12 +315,12 @@ describe("plugin management service", () => {
     expect(mocks.metadata).toHaveBeenNthCalledWith(1, {
       config,
       env,
-      workspaceDir: "/tmp/openclaw-managed-plugin-home/research-workspace",
+      workspaceDir: "/tmp/afora-managed-plugin-home/research-workspace",
     });
     expect(mocks.metadata).toHaveBeenNthCalledWith(2, {
       config,
       env,
-      workspaceDir: "/tmp/openclaw-managed-plugin-home/research-workspace",
+      workspaceDir: "/tmp/afora-managed-plugin-home/research-workspace",
     });
   });
 
@@ -329,9 +329,9 @@ describe("plugin management service", () => {
     const officialCatalog = {
       entries: [
         {
-          name: "@openclaw/firecrawl",
+          name: "@afora/firecrawl",
           description: "Web extraction and crawling.",
-          openclaw: {
+          afora: {
             plugin: { id: "firecrawl", label: "FireCrawl" },
             catalog: { featured: true, order: 60 },
             icon,
@@ -398,7 +398,7 @@ describe("plugin management service", () => {
       setManagedPluginEnabled({
         pluginId: "workboard",
         enabled: true,
-        env: { OPENCLAW_NIX_MODE: "1" },
+        env: { AFORA_NIX_MODE: "1" },
       }),
     ).rejects.toThrow("managed by Nix");
     expect(mocks.readConfig).not.toHaveBeenCalled();
@@ -419,7 +419,7 @@ describe("plugin management service", () => {
   });
 
   it("preserves config hash and include ownership when enabling Workboard", async () => {
-    const env = { HOME: "/tmp/openclaw-managed-toggle-home" };
+    const env = { HOME: "/tmp/afora-managed-toggle-home" };
     const prepared = configSnapshot({
       agents: { defaults: { workspace: "~/managed-toggle-workspace" } },
     });
@@ -441,14 +441,14 @@ describe("plugin management service", () => {
       expect.objectContaining({
         config: prepared.snapshot.sourceConfig,
         env,
-        workspaceDir: "/tmp/openclaw-managed-toggle-home/managed-toggle-workspace",
+        workspaceDir: "/tmp/afora-managed-toggle-home/managed-toggle-workspace",
       }),
     );
     expect(mocks.metadata).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
         env,
-        workspaceDir: "/tmp/openclaw-managed-toggle-home/managed-toggle-workspace",
+        workspaceDir: "/tmp/afora-managed-toggle-home/managed-toggle-workspace",
       }),
     );
     expect(mocks.replaceConfig).toHaveBeenCalledWith(
@@ -588,13 +588,13 @@ describe("plugin management service", () => {
   it("pins curated ClawHub installs to the expected runtime id", async () => {
     mocks.readConfig.mockResolvedValue(configSnapshot());
     mockHostedOfficialCatalog([hostedFeedDiffsEntry]);
-    mockClawHubInstall("impostor", "@openclaw/diffs");
+    mockClawHubInstall("impostor", "@afora/diffs");
 
     await expect(
       installManagedPlugin({
         request: {
           source: "clawhub",
-          packageName: "@openclaw/diffs",
+          packageName: "@afora/diffs",
           acknowledgeClawHubRisk: true,
         },
         env: {},
@@ -602,7 +602,7 @@ describe("plugin management service", () => {
     ).rejects.toThrow("expected diffs, got impostor");
     expect(mocks.clawhubInstall).toHaveBeenCalledWith(
       expect.objectContaining({
-        spec: "clawhub:@openclaw/diffs@2026.6.11",
+        spec: "clawhub:@afora/diffs@2026.6.11",
         expectedPluginId: "diffs",
         expectedIntegrity: `sha256-${Buffer.from("a".repeat(64), "hex").toString("base64")}`,
         acknowledgeClawHubRisk: true,
@@ -614,23 +614,23 @@ describe("plugin management service", () => {
   it("does not pin a runtime id when the hosted entry only exposes its package name", async () => {
     const installRecord = {
       source: "clawhub",
-      spec: "clawhub:@openclaw/bluebubbles",
+      spec: "clawhub:@afora/bluebubbles",
       installPath: "/tmp/extensions/bluebubbles",
     };
     mocks.readConfig.mockResolvedValue(configSnapshot());
     // Package identity without a declared runtime id must not become an expectedPluginId pin.
     mockHostedOfficialCatalog([
       {
-        id: "@openclaw/bluebubbles",
+        id: "@afora/bluebubbles",
         title: "BlueBubbles",
         state: "available",
-        publisher: { id: "openclaw", trust: "official" },
+        publisher: { id: "afora", trust: "official" },
         install: {
-          candidates: [{ sourceRef: "public-clawhub", package: "@openclaw/bluebubbles" }],
+          candidates: [{ sourceRef: "public-clawhub", package: "@afora/bluebubbles" }],
         },
       },
     ]);
-    mockClawHubInstall("bluebubbles", "@openclaw/bluebubbles");
+    mockClawHubInstall("bluebubbles", "@afora/bluebubbles");
     mocks.persistInstall.mockResolvedValue({});
     mocks.refreshRegistry.mockResolvedValue(undefined);
     mocks.metadata.mockReturnValue(
@@ -644,7 +644,7 @@ describe("plugin management service", () => {
     );
 
     const result = await installManagedPlugin({
-      request: { source: "clawhub", packageName: "@openclaw/bluebubbles" },
+      request: { source: "clawhub", packageName: "@afora/bluebubbles" },
       env: {},
     });
 
@@ -662,8 +662,8 @@ describe("plugin management service", () => {
         id: "sonos",
         title: "Sonos",
         state: "available",
-        publisher: { id: "openclaw", trust: "official" },
-        openclaw: { plugin: { id: "sonos" } },
+        publisher: { id: "afora", trust: "official" },
+        afora: { plugin: { id: "sonos" } },
         install: { candidates: [{ sourceRef: "public-clawhub", package: "sonos" }] },
       },
     ]);
@@ -683,7 +683,7 @@ describe("plugin management service", () => {
   it("threads hosted ClawHub candidate integrity into official installs", async () => {
     mocks.readConfig.mockResolvedValue(configSnapshot());
     mockHostedOfficialCatalog([hostedFeedDiffsEntry]);
-    mockClawHubInstall("diffs", "@openclaw/diffs");
+    mockClawHubInstall("diffs", "@afora/diffs");
     mocks.persistInstall.mockResolvedValue({});
     mocks.metadata.mockReturnValue(
       metadataSnapshot({ enabled: true, id: "diffs", name: "Diffs", origin: "global" }),
@@ -696,7 +696,7 @@ describe("plugin management service", () => {
 
     expect(mocks.clawhubInstall).toHaveBeenCalledWith(
       expect.objectContaining({
-        spec: "clawhub:@openclaw/diffs@2026.6.11",
+        spec: "clawhub:@afora/diffs@2026.6.11",
         expectedPluginId: "diffs",
         expectedIntegrity: `sha256-${Buffer.from("a".repeat(64), "hex").toString("base64")}`,
       }),
@@ -741,11 +741,11 @@ describe("plugin management service", () => {
         pluginId: "diffs",
         targetDir: "/tmp/extensions/diffs",
         extensions: ["index.js"],
-        packageName: "@openclaw/diffs",
+        packageName: "@afora/diffs",
         clawhub: {
           source: "clawhub",
           clawhubUrl: "https://clawhub.ai",
-          clawhubPackage: "@openclaw/diffs",
+          clawhubPackage: "@afora/diffs",
           clawhubFamily: "code-plugin",
         },
       };
@@ -766,7 +766,7 @@ describe("plugin management service", () => {
   });
 
   it("removes only the newly installed managed target after persistence conflicts", async () => {
-    const env = { HOME: "/tmp/openclaw-managed-install-conflict-home" };
+    const env = { HOME: "/tmp/afora-managed-install-conflict-home" };
     const conflict = new Error("config changed during plugin install");
     const targetDir = "/tmp/extensions/demo";
     mocks.readConfig.mockResolvedValue(configSnapshot());
@@ -805,9 +805,9 @@ describe("plugin management service", () => {
   });
 
   it("retains a failed install target when the durable record already owns it", async () => {
-    const env = { HOME: "/tmp/openclaw-managed-install-committed-home" };
+    const env = { HOME: "/tmp/afora-managed-install-committed-home" };
     const persistenceError = new Error("post-commit refresh failed");
-    const targetDir = "/tmp/openclaw-managed-install-committed-home/extensions/demo";
+    const targetDir = "/tmp/afora-managed-install-committed-home/extensions/demo";
     mocks.readConfig.mockResolvedValue(configSnapshot());
     mockClawHubInstall("demo", "community/demo", targetDir);
     let committedInstallRecords: Record<string, { source: string; installPath: string }> = {};
@@ -843,9 +843,9 @@ describe("plugin management service", () => {
   });
 
   it("retains a failed install target when its durable records cannot be verified", async () => {
-    const env = { HOME: "/tmp/openclaw-managed-install-unavailable-home" };
+    const env = { HOME: "/tmp/afora-managed-install-unavailable-home" };
     const persistenceError = new Error("post-commit refresh failed");
-    const targetDir = "/tmp/openclaw-managed-install-unavailable-home/extensions/demo";
+    const targetDir = "/tmp/afora-managed-install-unavailable-home/extensions/demo";
     mocks.readConfig.mockResolvedValue(configSnapshot());
     mockClawHubInstall("demo", "community/demo", targetDir);
     mocks.persistInstall.mockRejectedValue(persistenceError);
@@ -952,10 +952,10 @@ describe("plugin management service", () => {
   });
 
   it("uninstalls an external plugin through commit, file removal, and registry refresh", async () => {
-    const env = { HOME: "/tmp/openclaw-managed-uninstall-home" };
+    const env = { HOME: "/tmp/afora-managed-uninstall-home" };
     const installRecord = {
       source: "clawhub",
-      spec: "clawhub:@openclaw/diffs",
+      spec: "clawhub:@afora/diffs",
       installPath: "/tmp/extensions/diffs",
     };
     const prepared = configSnapshot({
@@ -1003,7 +1003,7 @@ describe("plugin management service", () => {
     expect(mocks.metadata).toHaveBeenCalledWith(
       expect.objectContaining({
         env,
-        workspaceDir: "/tmp/openclaw-managed-uninstall-home/managed-uninstall-workspace",
+        workspaceDir: "/tmp/afora-managed-uninstall-home/managed-uninstall-workspace",
       }),
     );
     expect(mocks.planUninstall).toHaveBeenCalledWith(

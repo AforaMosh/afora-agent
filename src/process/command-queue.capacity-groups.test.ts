@@ -3,7 +3,7 @@
  * per-member reservations.
  *
  * The invariant under test is the one the upstream maintainer asked for on
- * openclaw#98813: giving hook dispatch its own lane must NOT add a concurrent
+ * afora#98813: giving hook dispatch its own lane must NOT add a concurrent
  * slot outside the existing cron budget. A group whose budget equals that cap
  * is what makes the separate lane safe.
  */

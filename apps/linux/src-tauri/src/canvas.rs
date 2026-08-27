@@ -22,16 +22,16 @@ use tauri::{
 use webkit2gtk::{SnapshotOptions, SnapshotRegion, WebViewExt};
 
 const CANVAS_LABEL: &str = "canvas";
-const CANVAS_SCHEME: &str = "openclaw-canvas";
-const BUNDLED_CANVAS_HREF: &str = "openclaw-canvas://localhost/index.html";
+const CANVAS_SCHEME: &str = "afora-canvas";
+const BUNDLED_CANVAS_HREF: &str = "afora-canvas://localhost/index.html";
 const MAX_FRAME_BYTES: usize = 32 * 1024 * 1024;
 const WEBVIEW_TIMEOUT: Duration = Duration::from_secs(8);
 const A2UI_READY_TIMEOUT: Duration = Duration::from_secs(6);
 const A2UI_READY_INTERVAL: Duration = Duration::from_millis(100);
 const A2UI_READY_EVAL_TIMEOUT: Duration = Duration::from_millis(100);
 
-const A2UI_INDEX: &[u8] = include_bytes!(env!("OPENCLAW_CANVAS_A2UI_INDEX_HTML"));
-const A2UI_BUNDLE: &[u8] = include_bytes!(env!("OPENCLAW_CANVAS_A2UI_BUNDLE_JS"));
+const A2UI_INDEX: &[u8] = include_bytes!(env!("AFORA_CANVAS_A2UI_INDEX_HTML"));
+const A2UI_BUNDLE: &[u8] = include_bytes!(env!("AFORA_CANVAS_A2UI_BUNDLE_JS"));
 
 const ACTION_BRIDGE_SCRIPT: &str = r#"
 (() => {
@@ -40,17 +40,17 @@ const ACTION_BRIDGE_SCRIPT: &str = r#"
       const parsed = JSON.parse(String(message));
       const id = parsed?.userAction?.id;
       if (typeof id === "string") {
-        window.dispatchEvent(new CustomEvent("openclaw:a2ui-action-status", {
+        window.dispatchEvent(new CustomEvent("afora:a2ui-action-status", {
           detail: { id, ok: false, error: String(error) }
         }));
       }
     } catch {}
   };
-  Object.defineProperty(window, "openclawCanvasA2UIAction", {
+  Object.defineProperty(window, "aforaCanvasA2UIAction", {
     configurable: false,
     value: {
       postMessage(message) {
-        if (window.location.protocol !== "openclaw-canvas:") return;
+        if (window.location.protocol !== "afora-canvas:") return;
         const invoke = window.__TAURI__?.core?.invoke;
         if (typeof invoke !== "function") {
           dispatchFailure(message, "desktop action bridge unavailable");
@@ -362,7 +362,7 @@ impl CanvasBridge {
             .lock()
             .map_err(|_| "Canvas client registry is unavailable.".to_string())?;
         if clients.is_empty() {
-            return Err("OpenClaw node host is not connected.".to_string());
+            return Err("Afora node host is not connected.".to_string());
         }
         for (client_id, writer) in clients.iter() {
             if write_frame(writer, &frame).is_err() {
@@ -385,7 +385,7 @@ impl CanvasBridge {
         if delivered {
             Ok(())
         } else {
-            Err("OpenClaw node host disconnected before the action was sent.".to_string())
+            Err("Afora node host disconnected before the action was sent.".to_string())
         }
     }
 }
@@ -533,7 +533,7 @@ fn apply_a2ui_messages(
     let result = eval_json(
         &window,
         &guarded_a2ui_script(&format!(
-            "return globalThis.openclawA2UI.applyMessages({messages_json});"
+            "return globalThis.aforaA2UI.applyMessages({messages_json});"
         )),
     )?;
     if result.get("ok").and_then(Value::as_bool) != Some(true) {
@@ -563,13 +563,13 @@ fn ensure_canvas_window(app: &AppHandle) -> Result<WebviewWindow, CanvasError> {
         .map_err(|error| CanvasError::unavailable(format!("cache path unavailable: {error}")))?
         .join("canvas-webview");
     WebviewWindowBuilder::new(app, CANVAS_LABEL, WebviewUrl::CustomProtocol(url))
-        .title("OpenClaw Canvas")
+        .title("Afora Canvas")
         .inner_size(900.0, 700.0)
         .visible(false)
         // Canvas is agent-scriptable: it must not share storage with the
         // privileged dashboard window, and must not persist browser state
         // across restarts. A dedicated data_directory gives Tauri a distinct
-        // WebContext key so it attaches the openclaw-canvas:// protocol closure;
+        // WebContext key so it attaches the afora-canvas:// protocol closure;
         // incognito then makes Wry swap in a fresh *ephemeral* context carrying
         // those protocols. Incognito alone reused the default context and lost
         // the handler (page never loaded); the directory alone persisted cookies
@@ -793,7 +793,7 @@ fn bundled_canvas_url() -> Result<Url, CanvasError> {
 
 fn a2ui_ready_script() -> String {
     format!(
-        "Boolean(globalThis.location.href === {href:?} && globalThis.openclawA2UI?.applyMessages && globalThis.openclawA2UI?.reset)",
+        "Boolean(globalThis.location.href === {href:?} && globalThis.aforaA2UI?.applyMessages && globalThis.aforaA2UI?.reset)",
         href = BUNDLED_CANVAS_HREF
     )
 }
@@ -806,7 +806,7 @@ fn guarded_a2ui_script(body: &str) -> String {
 }
 
 fn a2ui_reset_script() -> String {
-    guarded_a2ui_script("globalThis.openclawA2UI.reset(); return {ok:true};")
+    guarded_a2ui_script("globalThis.aforaA2UI.reset(); return {ok:true};")
 }
 
 fn decode_params<T: for<'de> Deserialize<'de>>(params_json: &str) -> Result<T, CanvasError> {
@@ -845,16 +845,16 @@ fn dispatch_action_status(app: &AppHandle, frame: &Value) {
         "error": frame.get("error").and_then(Value::as_str).unwrap_or("")
     });
     let _ = window.eval(format!(
-        "window.dispatchEvent(new CustomEvent('openclaw:a2ui-action-status', {{detail:{detail}}}));"
+        "window.dispatchEvent(new CustomEvent('afora:a2ui-action-status', {{detail:{detail}}}));"
     ));
 }
 
 fn socket_path() -> PathBuf {
     match std::env::var_os("XDG_RUNTIME_DIR").filter(|value| !value.is_empty()) {
-        Some(runtime_dir) => PathBuf::from(runtime_dir).join("openclaw-canvas.sock"),
+        Some(runtime_dir) => PathBuf::from(runtime_dir).join("afora-canvas.sock"),
         // Both independently started processes need the specified rendezvous
         // path. Foreign-owned entries fail closed; desktop startup stays usable.
-        None => PathBuf::from(format!("/tmp/openclaw-canvas-{}.sock", unsafe {
+        None => PathBuf::from(format!("/tmp/afora-canvas-{}.sock", unsafe {
             libc::geteuid()
         })),
     }
@@ -871,7 +871,7 @@ fn prepare_socket_path(path: &Path) -> Result<(), String> {
     let socket_table = fs::read_to_string("/proc/net/unix")
         .map_err(|error| format!("Could not inspect the existing Canvas socket: {error}"))?;
     if socket_table_contains(&socket_table, path) {
-        return Err("Another OpenClaw desktop app already owns the Canvas socket.".to_string());
+        return Err("Another Afora desktop app already owns the Canvas socket.".to_string());
     }
     fs::remove_file(path).map_err(|error| format!("Could not remove stale Canvas socket: {error}"))
 }
@@ -927,9 +927,9 @@ mod tests {
     #[test]
     fn navigation_allows_only_http_and_bundled_renderer() {
         assert!(parse_canvas_url("https://example.com/canvas").is_ok());
-        assert!(parse_canvas_url("openclaw-canvas://localhost/index.html").is_ok());
+        assert!(parse_canvas_url("afora-canvas://localhost/index.html").is_ok());
         assert!(parse_canvas_url("file:///tmp/secret").is_err());
-        assert!(parse_canvas_url("openclaw-canvas://other/index.html").is_err());
+        assert!(parse_canvas_url("afora-canvas://other/index.html").is_err());
     }
 
     #[test]
@@ -944,7 +944,7 @@ mod tests {
         assert!(guarded.find("location.href").unwrap() < guarded.find("return true").unwrap());
 
         let reset = a2ui_reset_script();
-        assert!(reset.contains("globalThis.openclawA2UI.reset(); return {ok:true};"));
+        assert!(reset.contains("globalThis.aforaA2UI.reset(); return {ok:true};"));
     }
 
     #[test]
@@ -990,23 +990,23 @@ mod tests {
     fn socket_table_matches_only_the_exact_rendezvous_path() {
         let table = concat!(
             "Num RefCount Protocol Flags Type St Inode Path\n",
-            "000: 00000002 00000000 00010000 0001 01 1 /tmp/openclaw-canvas-501.sock.old\n",
-            "001: 00000002 00000000 00010000 0001 01 2 /tmp/openclaw-canvas-501.sock\n",
+            "000: 00000002 00000000 00010000 0001 01 1 /tmp/afora-canvas-501.sock.old\n",
+            "001: 00000002 00000000 00010000 0001 01 2 /tmp/afora-canvas-501.sock\n",
         );
         assert!(socket_table_contains(
             table,
-            Path::new("/tmp/openclaw-canvas-501.sock")
+            Path::new("/tmp/afora-canvas-501.sock")
         ));
         assert!(!socket_table_contains(
             table,
-            Path::new("/tmp/openclaw-canvas-502.sock")
+            Path::new("/tmp/afora-canvas-502.sock")
         ));
     }
 
     #[test]
     fn shutdown_removes_only_the_socket_inode_it_bound() {
         let path =
-            std::env::temp_dir().join(format!("openclaw-canvas-test-{}.sock", std::process::id()));
+            std::env::temp_dir().join(format!("afora-canvas-test-{}.sock", std::process::id()));
         let _ = fs::remove_file(&path);
         let listener = UnixListener::bind(&path).expect("test socket should bind");
         let inode = fs::symlink_metadata(&path)

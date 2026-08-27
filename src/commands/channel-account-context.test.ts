@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { resolveDefaultChannelAccountContext } from "../channels/account-context.js";
 import type { ChannelPlugin } from "../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 
 vi.mock("../channels/read-only-account-inspect.js", () => ({
   inspectReadOnlyChannelAccount: vi.fn(async () => null),
@@ -19,7 +19,7 @@ describe("resolveDefaultChannelAccountContext", () => {
       },
     } as unknown as ChannelPlugin;
 
-    const result = await resolveDefaultChannelAccountContext(plugin, {} as OpenClawConfig);
+    const result = await resolveDefaultChannelAccountContext(plugin, {} as AforaConfig);
 
     expect(result.accountIds).toEqual(["acc-1"]);
     expect(result.defaultAccountId).toBe("acc-1");
@@ -44,7 +44,7 @@ describe("resolveDefaultChannelAccountContext", () => {
       },
     } as unknown as ChannelPlugin;
 
-    const result = await resolveDefaultChannelAccountContext(plugin, {} as OpenClawConfig);
+    const result = await resolveDefaultChannelAccountContext(plugin, {} as AforaConfig);
 
     expect(isEnabled).toHaveBeenCalledWith(account, {});
     expect(isConfigured).toHaveBeenCalledWith(account, {});
@@ -65,11 +65,11 @@ describe("resolveDefaultChannelAccountContext", () => {
       },
     } as unknown as ChannelPlugin;
 
-    await expect(resolveDefaultChannelAccountContext(plugin, {} as OpenClawConfig)).rejects.toThrow(
+    await expect(resolveDefaultChannelAccountContext(plugin, {} as AforaConfig)).rejects.toThrow(
       /missing secret/i,
     );
 
-    const result = await resolveDefaultChannelAccountContext(plugin, {} as OpenClawConfig, {
+    const result = await resolveDefaultChannelAccountContext(plugin, {} as AforaConfig, {
       mode: "read_only",
       commandName: "status",
     });
@@ -94,7 +94,7 @@ describe("resolveDefaultChannelAccountContext", () => {
       },
     } as unknown as ChannelPlugin;
 
-    const result = await resolveDefaultChannelAccountContext(plugin, {} as OpenClawConfig, {
+    const result = await resolveDefaultChannelAccountContext(plugin, {} as AforaConfig, {
       mode: "read_only",
     });
 

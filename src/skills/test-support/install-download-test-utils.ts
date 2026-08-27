@@ -1,13 +1,13 @@
 // Install download test utilities provide isolated state and workspace paths.
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../../test-utils/afora-test-state.js";
 
-/** Creates isolated OpenClaw state for install download tests. */
-export async function createInstallDownloadTestState(): Promise<OpenClawTestState> {
-  return await createOpenClawTestState({
+/** Creates isolated Afora state for install download tests. */
+export async function createInstallDownloadTestState(): Promise<AforaTestState> {
+  return await createAforaTestState({
     layout: "state-only",
-    prefix: "openclaw-skills-install-",
+    prefix: "afora-skills-install-",
   });
 }

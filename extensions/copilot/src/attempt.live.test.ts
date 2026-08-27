@@ -7,8 +7,8 @@ import type { SessionConfig } from "@github/copilot-sdk";
 import type {
   AgentHarnessAttemptParamsV2 as AgentHarnessAttemptParams,
   AgentHarnessV2,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { isLiveTestEnabled } from "openclaw/plugin-sdk/test-live";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { isLiveTestEnabled } from "afora-agent/plugin-sdk/test-live";
 import { describe, expect, it, vi } from "vitest";
 import { createCopilotAgentHarness } from "../harness.js";
 import { createCopilotTestHostCapabilities } from "./host-capability.test-support.js";
@@ -29,12 +29,12 @@ const liveToolState = vi.hoisted(() => ({
 
 const LIVE_MODEL_PREFERENCES = ["gpt-5.4-mini", "gpt-5.4", "gpt-5.6-luna"] as const;
 
-vi.mock("openclaw/plugin-sdk/agent-harness", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/agent-harness")>();
+vi.mock("afora-agent/plugin-sdk/agent-harness", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/agent-harness")>();
 
   return {
     ...actual,
-    createOpenClawCodingTools: vi.fn(() => [
+    createAforaCodingTools: vi.fn(() => [
       {
         name: liveToolState.toolName,
         label: liveToolState.toolName,
@@ -71,9 +71,9 @@ vi.mock("openclaw/plugin-sdk/agent-harness", async (importOriginal) => {
   };
 });
 
-const LIVE = isLiveTestEnabled(["OPENCLAW_COPILOT_AGENT_LIVE_TEST"]);
+const LIVE = isLiveTestEnabled(["AFORA_COPILOT_AGENT_LIVE_TEST"]);
 const TOKEN =
-  process.env.OPENCLAW_COPILOT_AGENT_LIVE_TOKEN ||
+  process.env.AFORA_COPILOT_AGENT_LIVE_TOKEN ||
   process.env.GITHUB_TOKEN ||
   process.env.GH_TOKEN ||
   "";
@@ -227,7 +227,7 @@ describeLive("copilot agent runtime live smoke", () => {
     const streamedTexts: string[] = [];
     const finalEventTypes: string[] = [];
     const prompt = `Use the ${liveToolState.toolName} tool exactly once with text '${liveToolState.expectedText}', then reply with one short sentence.`;
-    const copilotHome = await mkdtemp(join(tmpdir(), "openclaw-copilot-live-"));
+    const copilotHome = await mkdtemp(join(tmpdir(), "afora-copilot-live-"));
     const modelId = await resolveLiveModelId(copilotHome);
     const harness = createCopilotAgentHarness({ pool: createLivePool() });
 

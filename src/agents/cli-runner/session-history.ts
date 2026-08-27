@@ -4,9 +4,9 @@
  */
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { timestampMsToIsoString } from "@openclaw/normalization-core/number-coercion";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { sliceUtf16Safe, truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { timestampMsToIsoString } from "@afora/normalization-core/number-coercion";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { sliceUtf16Safe, truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import {
   resolveSessionFilePathCore,
   resolveSessionFilePathOptions,
@@ -16,7 +16,7 @@ import {
   scanSessionTranscriptTree,
   selectSessionTranscriptLeafControlledPath,
 } from "../../config/sessions/transcript-tree.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { readFileWindowFully } from "../../infra/file-read.js";
 import { isPathInside } from "../../infra/path-guards.js";
@@ -201,7 +201,7 @@ function renderHistoryMessage(message: unknown): string | undefined {
   return `${timestamp ? `[${timestamp}] ` : ""}${role}: ${text}`;
 }
 
-/** Builds a reseed prompt that carries prior OpenClaw transcript context. */
+/** Builds a reseed prompt that carries prior Afora transcript context. */
 export function buildCliSessionHistoryPrompt(params: {
   messages: unknown[];
   prompt: string;
@@ -235,7 +235,7 @@ export function buildCliSessionHistoryPrompt(params: {
     .join("\n\n")
     .trim();
 
-  const truncationMarker = "[OpenClaw reseed history truncated; older turns dropped]";
+  const truncationMarker = "[Afora reseed history truncated; older turns dropped]";
   const renderTruncatedTail = (raw: string, budget: number): string => {
     if (budget <= truncationMarker.length + "\n".length) {
       return sliceUtf16Safe(raw, -budget).trimStart();
@@ -302,7 +302,7 @@ export function buildCliSessionHistoryPrompt(params: {
   }
 
   return [
-    "Continue this conversation using the OpenClaw transcript below as prior session history.",
+    "Continue this conversation using the Afora transcript below as prior session history.",
     "Treat it as authoritative context for this fresh CLI session.",
     "",
     "<conversation_history>",
@@ -452,7 +452,7 @@ function resolveSafeCliSessionFile(params: {
   sessionFile: string;
   sessionKey?: string;
   agentId?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): { sessionFile: string; sessionsDir: string } {
   const { defaultAgentId, sessionAgentId } = resolveSessionAgentIds({
     sessionKey: params.sessionKey,
@@ -479,7 +479,7 @@ async function loadCliSessionEntries(params: {
   sessionFile: string;
   sessionKey?: string;
   agentId?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): Promise<unknown[]> {
   try {
     const { sessionFile, sessionsDir } = resolveSafeCliSessionFile(params);
@@ -574,7 +574,7 @@ export async function hasCliSessionTranscript(params: {
   sessionFile: string;
   sessionKey?: string;
   agentId?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): Promise<boolean> {
   try {
     const { sessionFile, sessionsDir } = resolveSafeCliSessionFile(params);
@@ -604,7 +604,7 @@ export async function loadCliSessionHistoryMessages(params: {
   sessionFile: string;
   sessionKey?: string;
   agentId?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): Promise<unknown[]> {
   const history = (await loadCliSessionEntries(params)).flatMap((entry) => {
     const candidate = entry as HistoryEntry;
@@ -619,7 +619,7 @@ export async function loadCliSessionContextEngineMessages(params: {
   sessionFile: string;
   sessionKey?: string;
   agentId?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): Promise<unknown[]> {
   const entries = await loadCliSessionEntries(params);
   const latestCompactionIndex = entries.findLastIndex((entry) => {
@@ -663,7 +663,7 @@ export async function loadCliSessionReseedMessages(params: {
   sessionFile: string;
   sessionKey?: string;
   agentId?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   allowRawTranscriptReseed?: boolean;
   rawTranscriptReseedReason?: RawTranscriptReseedReason;
 }): Promise<unknown[]> {

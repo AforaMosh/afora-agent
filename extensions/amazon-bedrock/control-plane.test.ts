@@ -6,7 +6,7 @@ import {
   GetInferenceProfileCommand,
   ListFoundationModelsCommand,
 } from "@aws-sdk/client-bedrock";
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
 import { describe, expect, it, vi } from "vitest";
 import { runBedrockControlPlaneRequest } from "./control-plane.js";
 

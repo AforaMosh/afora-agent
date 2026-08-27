@@ -2,13 +2,13 @@
 import { createHash } from "node:crypto";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../../infra/kysely-sync.js";
 import { createSqliteAuditRecordStore } from "../../infra/sqlite-audit-record-store.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../../state/openclaw-state-db-readonly.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../../state/openclaw-state-db.generated.js";
-import type { OpenClawStateDatabase } from "../../state/openclaw-state-db.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../../state/afora-state-db-readonly.js";
+import type { DB as AforaStateKyselyDatabase } from "../../state/afora-state-db.generated.js";
+import type { AforaStateDatabase } from "../../state/afora-state-db.js";
 import { cronStoreKey } from "./key.js";
 import type { CronQuarantinedJob, QuarantinedCronConfigJob } from "./types.js";
 
-type CronQuarantineDatabase = Pick<OpenClawStateKyselyDatabase, "diagnostic_events">;
+type CronQuarantineDatabase = Pick<AforaStateKyselyDatabase, "diagnostic_events">;
 
 function cronQuarantineScope(storePath: string): string {
   return `cron.quarantine:${cronStoreKey(storePath)}`;
@@ -34,7 +34,7 @@ export function loadCronQuarantinedJobs(
 ): CronQuarantinedJob[] {
   const scope = cronQuarantineScope(storePath);
   return (
-    withExistingOpenClawStateDatabaseReadOnly(
+    withExistingAforaStateDatabaseReadOnly(
       ({ db }) =>
         executeSqliteQuerySync(
           db,
@@ -54,7 +54,7 @@ export function saveCronQuarantinedJobs(params: {
   storePath: string;
   entries: readonly (QuarantinedCronConfigJob | CronQuarantinedJob)[];
   nowMs: number;
-  database?: OpenClawStateDatabase;
+  database?: AforaStateDatabase;
 }): void {
   if (params.entries.length === 0) {
     return;

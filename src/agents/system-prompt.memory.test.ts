@@ -18,10 +18,10 @@ describe("buildAgentSystemPrompt memory guidance", () => {
     registerTestMemoryPromptBuilder(() => ["## Memory Recall", "Use memory carefully.", ""]);
 
     const promptWithMemory = buildAgentSystemPrompt({
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
     });
     const promptWithoutMemory = buildAgentSystemPrompt({
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
       includeMemorySection: false,
     });
 
@@ -43,7 +43,7 @@ describe("buildAgentSystemPrompt memory guidance", () => {
     });
 
     const prompt = buildAgentSystemPrompt({
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
       toolNames: ["memory_search", "memory_get"],
       runtimeInfo: {
         agentId: "marketing-agent",
@@ -73,7 +73,7 @@ describe("buildAgentSystemPrompt memory guidance", () => {
     });
 
     const prompt = buildAgentSystemPrompt({
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
       toolNames: ["WIKI_SEARCH"],
       runtimeInfo: { agentId: "main", sessionKey: "agent:main:main" },
       preparedMemoryPrompt,

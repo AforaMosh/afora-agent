@@ -1,5 +1,5 @@
 // Matrix plugin module implements startup abort behavior.
-import { toErrorObject } from "openclaw/plugin-sdk/error-runtime";
+import { toErrorObject } from "afora-agent/plugin-sdk/error-runtime";
 
 export function createMatrixStartupAbortError(): Error {
   const error = new Error("Matrix startup aborted");

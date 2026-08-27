@@ -34,10 +34,10 @@ const mocks = vi.hoisted(() => ({
   })),
 }));
 
-vi.mock("openclaw/plugin-sdk/agent-harness", () => ({
+vi.mock("afora-agent/plugin-sdk/agent-harness", () => ({
   disposeRegisteredAgentHarnesses: mocks.disposeRegisteredAgentHarnesses,
 }));
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ({
   fetchWithSsrFGuard: mocks.fetchWithSsrFGuard,
 }));
 vi.mock("./gateway-child.js", () => ({

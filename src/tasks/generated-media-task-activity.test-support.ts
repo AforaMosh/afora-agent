@@ -6,7 +6,7 @@ type GeneratedMediaTaskActivityTestApi = {
 
 function getTestApi(): GeneratedMediaTaskActivityTestApi {
   const api = (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.generatedMediaTaskActivityTestApi")
+    Symbol.for("afora.generatedMediaTaskActivityTestApi")
   ];
   if (!api) {
     throw new Error("generated media task activity test API is unavailable");

@@ -60,7 +60,7 @@ struct ShareAttachmentSummary: Equatable {
         if !unsupported.isEmpty {
             details.append(String(
                 format: NSLocalizedString(
-                    "OpenClaw Share cannot send %@ yet.",
+                    "Afora Share cannot send %@ yet.",
                     comment: "Share extension unsupported attachment warning"),
                 unsupported.joined(separator: ", ")))
         }

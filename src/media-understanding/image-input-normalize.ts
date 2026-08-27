@@ -1,6 +1,6 @@
 // Image input normalization converts HEIC/HEIF payloads through the shared
 // input-file media path before provider execution.
-import { normalizeMimeType } from "@openclaw/media-core/mime";
+import { normalizeMimeType } from "@afora/media-core/mime";
 import { extractImageContentFromSource } from "../media/input-files.js";
 import { DEFAULT_MAX_BYTES } from "./defaults.constants.js";
 

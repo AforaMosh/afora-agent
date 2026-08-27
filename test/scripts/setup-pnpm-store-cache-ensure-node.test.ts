@@ -47,7 +47,7 @@ function writeFakeCurl(binDir: string) {
     curlPath,
     `#!/usr/bin/env bash
 set -euo pipefail
-printf '%s\\n' "$*" >> "$OPENCLAW_FAKE_CURL_LOG"
+printf '%s\\n' "$*" >> "$AFORA_FAKE_CURL_LOG"
 output=""
 url=""
 while [[ $# -gt 0 ]]; do
@@ -65,7 +65,7 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
-if [[ -n "\${OPENCLAW_FAKE_CURL_FAIL_SUFFIX:-}" && "$url" == *"\${OPENCLAW_FAKE_CURL_FAIL_SUFFIX:-}" ]]; then
+if [[ -n "\${AFORA_FAKE_CURL_FAIL_SUFFIX:-}" && "$url" == *"\${AFORA_FAKE_CURL_FAIL_SUFFIX:-}" ]]; then
   if [[ -n "$output" ]]; then
     printf '%s' 'partial archive' > "$output"
   fi
@@ -94,7 +94,7 @@ function runEnsureNode(root: string, requested: string, extraEnv: NodeJS.Process
         "set -e",
         ...(pathOverride ? [`export PATH=${JSON.stringify(pathOverride)}`] : []),
         `source "${ensureNodeScript}"`,
-        `openclaw_ensure_node "${requested}"`,
+        `afora_ensure_node "${requested}"`,
         "command -v node",
         "node -p 'process.versions.node'",
       ].join("; "),
@@ -118,7 +118,7 @@ function runVersionMatch(actual: string, requested: string) {
       "-c",
       [
         `source "${ensureNodeScript}"`,
-        `openclaw_node_version_matches "${actual}" "${requested}"`,
+        `afora_node_version_matches "${actual}" "${requested}"`,
       ].join("; "),
     ],
     { encoding: "utf8", env: process.env },
@@ -127,7 +127,7 @@ function runVersionMatch(actual: string, requested: string) {
 
 describe("setup-pnpm-store-cache ensure-node", () => {
   beforeAll(() => {
-    const root = mkdtempSync(join(tmpdir(), "openclaw-ensure-node-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-ensure-node-"));
     try {
       const result = spawnSync(
         "bash",
@@ -136,7 +136,7 @@ describe("setup-pnpm-store-cache ensure-node", () => {
           [
             "set -euo pipefail",
             `source "${ensureNodeScript}"`,
-            `openclaw_find_toolcache_node "99.99.99"`,
+            `afora_find_toolcache_node "99.99.99"`,
           ].join("; "),
         ],
         {
@@ -146,7 +146,7 @@ describe("setup-pnpm-store-cache ensure-node", () => {
             RUNNER_TOOL_CACHE: join(root, "missing-toolcache"),
             AGENT_TOOLSDIRECTORY: join(root, "missing-agent-tools"),
             ACTIONS_RUNNER_TOOL_CACHE: join(root, "missing-actions-cache"),
-            OPENCLAW_CONTAINER_TOOL_CACHE: join(root, "missing-container-cache"),
+            AFORA_CONTAINER_TOOL_CACHE: join(root, "missing-container-cache"),
           },
         },
       );
@@ -160,7 +160,7 @@ describe("setup-pnpm-store-cache ensure-node", () => {
   });
 
   it("uses a matching active node", () => {
-    const root = mkdtempSync(join(tmpdir(), "openclaw-ensure-node-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-ensure-node-"));
     try {
       const activeBin = join(root, "active", "bin");
       const activeNode = writeFakeNode(activeBin, "24.15.0");
@@ -178,7 +178,7 @@ describe("setup-pnpm-store-cache ensure-node", () => {
   });
 
   it("repairs PATH from the toolcache when setup-node leaves an old node active", () => {
-    const root = mkdtempSync(join(tmpdir(), "openclaw-ensure-node-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-ensure-node-"));
     try {
       const activeBin = join(root, "active", "bin");
       writeFakeNode(activeBin, "20.20.0");
@@ -198,7 +198,7 @@ describe("setup-pnpm-store-cache ensure-node", () => {
   });
 
   it("normalizes Windows toolcache paths for Git Bash before prepending PATH", () => {
-    const root = mkdtempSync(join(tmpdir(), "openclaw-ensure-node-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-ensure-node-"));
     try {
       const activeBin = join(root, "active", "bin");
       writeFakeNode(activeBin, "22.22.3");
@@ -232,7 +232,7 @@ exit 1
             `export PATH=${JSON.stringify(`${helperBin}:${activeBin}:${process.env.PATH ?? ""}`)}`,
             `export GITHUB_PATH=${JSON.stringify(githubPath)}`,
             `source "${ensureNodeScript}"`,
-            `openclaw_prepend_node_bin "C:\\\\hostedtoolcache\\\\windows/node/24.15.0/x64"`,
+            `afora_prepend_node_bin "C:\\\\hostedtoolcache\\\\windows/node/24.15.0/x64"`,
             "command -v node",
             "node -p 'process.versions.node'",
             `cat "${githubPath}"`,
@@ -250,7 +250,7 @@ exit 1
   });
 
   it("repairs PATH from the container-mounted GitHub Actions toolcache", () => {
-    const root = mkdtempSync(join(tmpdir(), "openclaw-ensure-node-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-ensure-node-"));
     try {
       const activeBin = join(root, "active", "bin");
       writeFakeNode(activeBin, "20.20.0");
@@ -258,7 +258,7 @@ exit 1
       const toolcacheNode = writeFakeNode(toolcacheBin, "24.99.99");
       const result = runEnsureNode(root, "24.99.99", {
         PATH: `${activeBin}:${process.env.PATH ?? ""}`,
-        OPENCLAW_CONTAINER_TOOL_CACHE: join(root, "__t"),
+        AFORA_CONTAINER_TOOL_CACHE: join(root, "__t"),
         RUNNER_TOOL_CACHE: join(root, "hostedtoolcache"),
       });
 
@@ -271,7 +271,7 @@ exit 1
   });
 
   it("accepts major wildcard requests when selecting a toolcache node", () => {
-    const root = mkdtempSync(join(tmpdir(), "openclaw-ensure-node-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-ensure-node-"));
     try {
       const activeBin = join(root, "active", "bin");
       writeFakeNode(activeBin, "20.20.0");
@@ -292,7 +292,7 @@ exit 1
   it("prefers the repo-owned cached toolchain over an image toolcache below the floor", () => {
     // Blacksmith's image ships Node 24.13.0/22.22.0, just under this repo's
     // engines floor, so without a cached toolchain every job re-downloads.
-    const root = mkdtempSync(join(tmpdir(), "openclaw-ensure-node-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-ensure-node-"));
     try {
       const activeBin = join(root, "active", "bin");
       writeFakeNode(activeBin, "20.20.0");
@@ -302,7 +302,7 @@ exit 1
       const result = runEnsureNode(root, "24.x", {
         PATH: `${activeBin}:${process.env.PATH ?? ""}`,
         RUNNER_TOOL_CACHE: join(root, "toolcache"),
-        OPENCLAW_NODE_TOOLCHAIN_ROOT: join(root, "cached", "node"),
+        AFORA_NODE_TOOLCHAIN_ROOT: join(root, "cached", "node"),
       });
 
       expect(result.status).toBe(0);
@@ -315,7 +315,7 @@ exit 1
   });
 
   it("keeps the Node 22 wildcard at the supported minimum", () => {
-    const root = mkdtempSync(join(tmpdir(), "openclaw-ensure-node-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-ensure-node-"));
     try {
       const activeBin = join(root, "active", "bin");
       writeFakeNode(activeBin, "22.18.0");
@@ -350,7 +350,7 @@ exit 1
   it("replaces a rejected payload in the cached toolchain root instead of accreting", () => {
     // The cache entry is saved wholesale, so a rejected install left beside the
     // replacement would ride along in every future save and grow without bound.
-    const root = mkdtempSync(join(tmpdir(), "openclaw-ensure-node-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-ensure-node-"));
     try {
       const helperBin = join(root, "bin");
       const toolchainRoot = join(root, "toolchain", "node");
@@ -363,13 +363,13 @@ exit 1
           [
             "set -euo pipefail",
             `export PATH=${JSON.stringify(`${helperBin}:${process.env.PATH ?? ""}`)}`,
-            `export OPENCLAW_FAKE_CURL_LOG=${JSON.stringify(join(root, "curl.log"))}`,
-            `export OPENCLAW_NODE_TOOLCHAIN_ROOT=${JSON.stringify(toolchainRoot)}`,
+            `export AFORA_FAKE_CURL_LOG=${JSON.stringify(join(root, "curl.log"))}`,
+            `export AFORA_NODE_TOOLCHAIN_ROOT=${JSON.stringify(toolchainRoot)}`,
             `source "${ensureNodeScript}"`,
-            "openclaw_prepend_node_bin() { :; }",
-            'openclaw_node_download_platform() { printf "linux-x64\\n"; }',
+            "afora_prepend_node_bin() { :; }",
+            'afora_node_download_platform() { printf "linux-x64\\n"; }',
             "tar() { :; }",
-            `RUNNER_TEMP=${JSON.stringify(root)} openclaw_download_node "24.15.0"`,
+            `RUNNER_TEMP=${JSON.stringify(root)} afora_download_node "24.15.0"`,
           ].join("\n"),
         ],
         { encoding: "utf8", env: process.env },
@@ -384,7 +384,7 @@ exit 1
   });
 
   it("bounds every Node distribution request", () => {
-    const root = mkdtempSync(join(tmpdir(), "openclaw-ensure-node-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-ensure-node-"));
     try {
       const helperBin = join(root, "bin");
       const curlLog = join(root, "curl.log");
@@ -396,16 +396,16 @@ exit 1
           [
             "set -euo pipefail",
             `export PATH=${JSON.stringify(`${helperBin}:${process.env.PATH ?? ""}`)}`,
-            `export OPENCLAW_FAKE_CURL_LOG=${JSON.stringify(curlLog)}`,
+            `export AFORA_FAKE_CURL_LOG=${JSON.stringify(curlLog)}`,
             `source "${ensureNodeScript}"`,
-            'openclaw_resolve_node_download_version "24.x"',
-            "openclaw_prepend_node_bin() { :; }",
-            'openclaw_node_download_platform() { printf "win-x64\\n"; }',
+            'afora_resolve_node_download_version "24.x"',
+            "afora_prepend_node_bin() { :; }",
+            'afora_node_download_platform() { printf "win-x64\\n"; }',
             "pwsh() { :; }",
-            `RUNNER_TEMP=${JSON.stringify(root)} openclaw_download_node "24.15.0"`,
-            'openclaw_node_download_platform() { printf "linux-x64\\n"; }',
+            `RUNNER_TEMP=${JSON.stringify(root)} afora_download_node "24.15.0"`,
+            'afora_node_download_platform() { printf "linux-x64\\n"; }',
             "tar() { :; }",
-            `RUNNER_TEMP=${JSON.stringify(root)} openclaw_download_node "24.15.0"`,
+            `RUNNER_TEMP=${JSON.stringify(root)} afora_download_node "24.15.0"`,
           ].join("\n"),
         ],
         { encoding: "utf8", env: process.env },
@@ -431,7 +431,7 @@ exit 1
   });
 
   it("removes a partial POSIX archive after a timed-out download", () => {
-    const root = mkdtempSync(join(tmpdir(), "openclaw-ensure-node-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-ensure-node-"));
     try {
       const helperBin = join(root, "bin");
       writeFakeCurl(helperBin);
@@ -442,12 +442,12 @@ exit 1
           [
             "set -uo pipefail",
             `export PATH=${JSON.stringify(`${helperBin}:${process.env.PATH ?? ""}`)}`,
-            `export OPENCLAW_FAKE_CURL_LOG=${JSON.stringify(join(root, "curl.log"))}`,
-            `export OPENCLAW_FAKE_CURL_FAIL_SUFFIX=${JSON.stringify(".tar.xz")}`,
+            `export AFORA_FAKE_CURL_LOG=${JSON.stringify(join(root, "curl.log"))}`,
+            `export AFORA_FAKE_CURL_FAIL_SUFFIX=${JSON.stringify(".tar.xz")}`,
             `source "${ensureNodeScript}"`,
-            "openclaw_prepend_node_bin() { :; }",
-            'openclaw_node_download_platform() { printf "linux-x64\\n"; }',
-            `RUNNER_TEMP=${JSON.stringify(root)} openclaw_download_node "24.15.0"`,
+            "afora_prepend_node_bin() { :; }",
+            'afora_node_download_platform() { printf "linux-x64\\n"; }',
+            `RUNNER_TEMP=${JSON.stringify(root)} afora_download_node "24.15.0"`,
           ].join("\n"),
         ],
         { encoding: "utf8", env: process.env },
@@ -461,7 +461,7 @@ exit 1
   });
 
   it("fails clearly when no matching node is available", () => {
-    const root = mkdtempSync(join(tmpdir(), "openclaw-ensure-node-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-ensure-node-"));
     try {
       const activeBin = join(root, "active", "bin");
       writeFakeNode(activeBin, "20.20.0");

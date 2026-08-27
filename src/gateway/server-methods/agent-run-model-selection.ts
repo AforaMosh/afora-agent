@@ -2,15 +2,15 @@ import { resolveCliRuntimeExecutionProvider } from "../../agents/model-runtime-a
 import { isCliProvider } from "../../agents/model-selection.js";
 import { resolveProviderIdForAuth } from "../../agents/provider-auth-aliases.js";
 import { applySessionEntryReplacements } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { AgentTurnContext } from "../agent-turn/types.js";
 import { updateChatRunProvider } from "../chat-abort.js";
 
 export function createAgentRunModelSelectionHandler(params: {
   context: Pick<AgentTurnContext, "chatAbortControllers">;
   runId: string;
-  cfg: OpenClawConfig;
-  cfgForAgent?: OpenClawConfig;
+  cfg: AforaConfig;
+  cfgForAgent?: AforaConfig;
   restoredCronContinuationLifecycleRevision?: string;
   resolvedSessionKey?: string;
   lifecycleStorePath: string;

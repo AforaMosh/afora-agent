@@ -1,5 +1,5 @@
 // Covers question message finalization lifecycle and delivery races.
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, it, vi } from "vitest";
 import type { QuestionRecord } from "../../packages/gateway-protocol/src/schema/questions.js";
 import { drainGlobalSingletonLifecycleState } from "../shared/global-singleton.js";

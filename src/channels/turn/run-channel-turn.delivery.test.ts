@@ -7,7 +7,7 @@ import {
 } from "../../auto-reply/reply-payload.js";
 import type { DispatchReplyWithBufferedBlockDispatcher } from "../../auto-reply/reply/provider-dispatcher.types.js";
 import type { ReplyDispatchReceipt } from "../../auto-reply/reply/reply-dispatcher.types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resetDiagnosticEventsForTest } from "../../infra/diagnostic-events.js";
 import { resetLogger, setLoggerOverride } from "../../logging/logger.js";
 import { outboundMessageIdentities } from "../message/outbound-echo-state.js";
@@ -103,7 +103,7 @@ vi.mock("../../infra/outbound/delivery-completion.js", async (importOriginal) =>
   return { ...actual, settlePendingFinalDelivery };
 });
 
-const cfg = {} as OpenClawConfig;
+const cfg = {} as AforaConfig;
 
 function dispatchTestAssembledTurn(
   overrides: Omit<

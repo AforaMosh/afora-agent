@@ -4,7 +4,7 @@
  * Converts markdown-like text to Tlon's story format.
  */
 
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
 
 // Inline content types
 type StoryInline =

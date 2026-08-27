@@ -45,7 +45,7 @@ function writeStartupMetadataSourceSignatureFixture(rootDir: string): void {
     ["extensions/canvas/src/a2ui-jsonl.ts", "export const a2uiJsonl = 'canvas';\n"],
     ["extensions/canvas/src/cli-helpers.ts", "export const canvasHelpers = 'canvas';\n"],
     ["extensions/canvas/src/cli.ts", "export const canvasCliHelp = 'canvas';\n"],
-    ["src/cli/banner.ts", "export const banner = 'openclaw';\n"],
+    ["src/cli/banner.ts", "export const banner = 'afora';\n"],
     [
       "src/cli/daemon-cli/register-service-commands.ts",
       "export const gatewayServiceCommands = 'gateway';\n",
@@ -145,14 +145,14 @@ describe("write-cli-startup-metadata", () => {
     });
 
     const render = testing.renderSourceRootHelpText();
-    child.stdout.write("Usage: openclaw\n");
+    child.stdout.write("Usage: afora\n");
     setImmediate(() => {
       child.emit("close", 0, null);
     });
 
     await siblingEvent;
     expect(siblingEventObserved).toBe(true);
-    await expect(render).resolves.toBe("Usage: openclaw\n");
+    await expect(render).resolves.toBe("Usage: afora\n");
     expect(spawnMock).toHaveBeenCalledOnce();
     expect(spawnMock.mock.calls[0]?.[1]).toEqual([
       "--import",
@@ -172,7 +172,7 @@ describe("write-cli-startup-metadata", () => {
       await vi.importActual<typeof import("node:child_process")>("node:child_process")
     ).spawn;
     const spawnMock = vi.mocked(spawn);
-    const tempRoot = createTempDir("openclaw-startup-metadata-scheduling-");
+    const tempRoot = createTempDir("afora-startup-metadata-scheduling-");
     const distDir = path.join(tempRoot, "dist");
     const extensionsDir = path.join(tempRoot, "extensions");
     const outputPath = path.join(distDir, "cli-startup-metadata.json");
@@ -199,7 +199,7 @@ describe("write-cli-startup-metadata", () => {
       activeCommands += 1;
       maxActiveCommands = Math.max(maxActiveCommands, activeCommands);
       setImmediate(() => {
-        child.stdout.write(`Usage: openclaw ${commandName}\n`);
+        child.stdout.write(`Usage: afora ${commandName}\n`);
         activeCommands -= 1;
         child.emit("close", 0, null);
       });
@@ -215,7 +215,7 @@ describe("write-cli-startup-metadata", () => {
         renderBundledRootHelpText: async () => {
           reportRootHelpStarted();
           await rootHelpBlocked;
-          return "Usage: openclaw\n";
+          return "Usage: afora\n";
         },
       });
 
@@ -303,7 +303,7 @@ describe("write-cli-startup-metadata", () => {
       await vi.importActual<typeof import("node:child_process")>("node:child_process")
     ).spawn;
     const spawnMock = vi.mocked(spawn);
-    const tempRoot = createTempDir("openclaw-startup-metadata-batch-failure-");
+    const tempRoot = createTempDir("afora-startup-metadata-batch-failure-");
     const distDir = path.join(tempRoot, "dist");
     const extensionsDir = path.join(tempRoot, "extensions");
     const outputPath = path.join(distDir, "cli-startup-metadata.json");
@@ -339,7 +339,7 @@ describe("write-cli-startup-metadata", () => {
         outputPath,
         extensionsDir,
         sourceRootDir: tempRoot,
-        renderBundledRootHelpText: async () => "Usage: openclaw\n",
+        renderBundledRootHelpText: async () => "Usage: afora\n",
       });
       const deadline = Date.now() + 1_000;
       while (children.length < COMMAND_HELP_RENDER_CONCURRENCY && Date.now() < deadline) {
@@ -378,7 +378,7 @@ describe("write-cli-startup-metadata", () => {
   it.runIf(process.platform !== "win32")(
     "preserves shared state when a canceled process group cannot be proven dead",
     async () => {
-      const tempRoot = createTempDir("openclaw-startup-metadata-undrained-tree-");
+      const tempRoot = createTempDir("afora-startup-metadata-undrained-tree-");
       const distDir = path.join(tempRoot, "dist");
       const extensionsDir = path.join(tempRoot, "extensions");
       const outputPath = path.join(distDir, "cli-startup-metadata.json");
@@ -401,13 +401,13 @@ describe("write-cli-startup-metadata", () => {
           outputPath,
           extensionsDir,
           sourceRootDir: tempRoot,
-          renderBundledRootHelpText: async () => "Usage: openclaw\n",
+          renderBundledRootHelpText: async () => "Usage: afora\n",
           renderSourceBrowserHelpText: (renderContext, taskContext) => {
-            renderStateDir = renderContext.env?.OPENCLAW_STATE_DIR ?? "";
+            renderStateDir = renderContext.env?.AFORA_STATE_DIR ?? "";
             if (!taskContext) {
               throw new Error("missing render task context");
             }
-            return testing.spawnText(["openclaw.mjs", "browser", "--help"], {
+            return testing.spawnText(["afora.mjs", "browser", "--help"], {
               cwd: tempRoot,
               env: process.env,
               failureMessage: "browser render failed",
@@ -419,15 +419,15 @@ describe("write-cli-startup-metadata", () => {
               timeoutMs: 5_000,
             });
           },
-          renderSourceSecretsHelpText: () => "Usage: openclaw secrets\n",
-          renderSourceNodesHelpText: () => "Usage: openclaw nodes\n",
+          renderSourceSecretsHelpText: () => "Usage: afora secrets\n",
+          renderSourceNodesHelpText: () => "Usage: afora nodes\n",
           renderSourceSubcommandHelpTextRecord: () => ({
-            doctor: "Usage: openclaw doctor\n",
-            gateway: "Usage: openclaw gateway\n",
-            models: "Usage: openclaw models\n",
-            plugins: "Usage: openclaw plugins\n",
-            sessions: "Usage: openclaw sessions\n",
-            tasks: "Usage: openclaw tasks\n",
+            doctor: "Usage: afora doctor\n",
+            gateway: "Usage: afora gateway\n",
+            models: "Usage: afora models\n",
+            plugins: "Usage: afora plugins\n",
+            sessions: "Usage: afora sessions\n",
+            tasks: "Usage: afora tasks\n",
           }),
         });
         await new Promise((resolve) => setImmediate(resolve));
@@ -467,7 +467,7 @@ describe("write-cli-startup-metadata", () => {
         await vi.importActual<typeof import("node:child_process")>("node:child_process")
       ).spawn;
       const spawnMock = vi.mocked(spawn);
-      const tempRoot = createTempDir("openclaw-startup-metadata-batch-tree-");
+      const tempRoot = createTempDir("afora-startup-metadata-batch-tree-");
       const distDir = path.join(tempRoot, "dist");
       const extensionsDir = path.join(tempRoot, "extensions");
       const outputPath = path.join(distDir, "cli-startup-metadata.json");
@@ -531,7 +531,7 @@ describe("write-cli-startup-metadata", () => {
             outputPath,
             extensionsDir,
             sourceRootDir: tempRoot,
-            renderBundledRootHelpText: async () => "Usage: openclaw\n",
+            renderBundledRootHelpText: async () => "Usage: afora\n",
           })
           .then(
             () => undefined,
@@ -620,7 +620,7 @@ describe("write-cli-startup-metadata", () => {
   it.runIf(process.platform !== "win32")(
     "kills descendant processes when command help rendering times out",
     async () => {
-      const tempRoot = createTempDir("openclaw-startup-metadata-timeout-");
+      const tempRoot = createTempDir("afora-startup-metadata-timeout-");
       const markerPath = path.join(tempRoot, "grandchild.pid");
       const grandchildScript = [
         "process.on('SIGTERM', () => {});",
@@ -654,7 +654,7 @@ describe("write-cli-startup-metadata", () => {
   it.runIf(process.platform !== "win32")(
     "drains descendants when a command leader exits nonzero",
     async () => {
-      const tempRoot = createTempDir("openclaw-startup-metadata-nonzero-tree-");
+      const tempRoot = createTempDir("afora-startup-metadata-nonzero-tree-");
       const markerPath = path.join(tempRoot, "grandchild.pid");
       const grandchildScript = [
         "process.on('SIGTERM', () => {});",
@@ -687,7 +687,7 @@ describe("write-cli-startup-metadata", () => {
   it.runIf(process.platform !== "win32")(
     "waits for all command help descendants before re-raising parent signals",
     async () => {
-      const tempRoot = createTempDir("openclaw-startup-metadata-signal-");
+      const tempRoot = createTempDir("afora-startup-metadata-signal-");
       const fastCommandPath = path.join(tempRoot, "fast-command.mjs");
       const fastReadyPath = path.join(tempRoot, "fast-ready");
       const commandPath = path.join(tempRoot, "command.mjs");
@@ -736,7 +736,7 @@ describe("write-cli-startup-metadata", () => {
           "const { writeFileSync } = await import('node:fs');",
           "const renderCommand = (commandPath, failureMessage) => (context, taskContext) => {",
           "  if (!taskContext) throw new Error('missing render task context');",
-          `  writeFileSync(${JSON.stringify(renderStatePath)}, context.env.OPENCLAW_STATE_DIR);`,
+          `  writeFileSync(${JSON.stringify(renderStatePath)}, context.env.AFORA_STATE_DIR);`,
           "  return testing.spawnText([commandPath], {",
           `    cwd: ${JSON.stringify(tempRoot)},`,
           "    env: process.env,",
@@ -753,14 +753,14 @@ describe("write-cli-startup-metadata", () => {
           `  outputPath: ${JSON.stringify(outputPath)},`,
           `  extensionsDir: ${JSON.stringify(path.join(tempRoot, "extensions"))},`,
           `  sourceRootDir: ${JSON.stringify(tempRoot)},`,
-          "  renderBundledRootHelpText: async () => 'Usage: openclaw\\n',",
+          "  renderBundledRootHelpText: async () => 'Usage: afora\\n',",
           `  renderSourceBrowserHelpText: renderCommand(${JSON.stringify(fastCommandPath)}, 'fast render failed'),`,
           `  renderSourceSecretsHelpText: renderCommand(${JSON.stringify(commandPath)}, 'render failed'),`,
-          "  renderSourceNodesHelpText: () => 'Usage: openclaw nodes\\n',",
+          "  renderSourceNodesHelpText: () => 'Usage: afora nodes\\n',",
           "  renderSourceSubcommandHelpTextRecord: () => ({",
-          "    doctor: 'Usage: openclaw doctor\\n', gateway: 'Usage: openclaw gateway\\n',",
-          "    models: 'Usage: openclaw models\\n', plugins: 'Usage: openclaw plugins\\n',",
-          "    sessions: 'Usage: openclaw sessions\\n', tasks: 'Usage: openclaw tasks\\n',",
+          "    doctor: 'Usage: afora doctor\\n', gateway: 'Usage: afora gateway\\n',",
+          "    models: 'Usage: afora models\\n', plugins: 'Usage: afora plugins\\n',",
+          "    sessions: 'Usage: afora sessions\\n', tasks: 'Usage: afora tasks\\n',",
           "  }),",
           "});",
         ].join("\n"),
@@ -812,7 +812,7 @@ describe("write-cli-startup-metadata", () => {
   );
 
   it("writes startup metadata with populated root help text when dist falls back to source rendering", async () => {
-    const tempRoot = createTempDir("openclaw-startup-metadata-");
+    const tempRoot = createTempDir("afora-startup-metadata-");
     const distDir = path.join(tempRoot, "dist");
     const extensionsDir = path.join(tempRoot, "extensions");
     const outputPath = path.join(distDir, "cli-startup-metadata.json");
@@ -822,7 +822,7 @@ describe("write-cli-startup-metadata", () => {
     writeFileSync(
       path.join(extensionsDir, "matrix", "package.json"),
       JSON.stringify({
-        openclaw: {
+        afora: {
           channel: {
             id: "matrix",
             order: 120,
@@ -837,17 +837,17 @@ describe("write-cli-startup-metadata", () => {
       distDir,
       outputPath,
       extensionsDir,
-      renderSourceRootHelpText: () => "Usage: openclaw\n",
-      renderSourceBrowserHelpText: () => "Usage: openclaw browser\n",
-      renderSourceSecretsHelpText: () => "Usage: openclaw secrets\n",
-      renderSourceNodesHelpText: () => "Usage: openclaw nodes\n",
+      renderSourceRootHelpText: () => "Usage: afora\n",
+      renderSourceBrowserHelpText: () => "Usage: afora browser\n",
+      renderSourceSecretsHelpText: () => "Usage: afora secrets\n",
+      renderSourceNodesHelpText: () => "Usage: afora nodes\n",
       renderSourceSubcommandHelpTextRecord: () => ({
-        doctor: "Usage: openclaw doctor\n",
-        gateway: "Usage: openclaw gateway\n",
-        models: "Usage: openclaw models\n",
-        plugins: "Usage: openclaw plugins\n",
-        sessions: "Usage: openclaw sessions\n",
-        tasks: "Usage: openclaw tasks\n",
+        doctor: "Usage: afora doctor\n",
+        gateway: "Usage: afora gateway\n",
+        models: "Usage: afora models\n",
+        plugins: "Usage: afora plugins\n",
+        sessions: "Usage: afora sessions\n",
+        tasks: "Usage: afora tasks\n",
       }),
     });
 
@@ -870,23 +870,23 @@ describe("write-cli-startup-metadata", () => {
     expect(written.channelOptions).toContain("matrix");
     expect(written.generatorSignature).toMatch(/^[a-f0-9]{40}$/u);
     expect(written.browserHelpText).toContain("Usage:");
-    expect(written.browserHelpText).toContain("openclaw browser");
+    expect(written.browserHelpText).toContain("afora browser");
     expect(written.secretsHelpText).toContain("Usage:");
-    expect(written.secretsHelpText).toContain("openclaw secrets");
+    expect(written.secretsHelpText).toContain("afora secrets");
     expect(written.nodesHelpText).toContain("Usage:");
-    expect(written.nodesHelpText).toContain("openclaw nodes");
+    expect(written.nodesHelpText).toContain("afora nodes");
     expect(written.rootHelpText).toContain("Usage:");
-    expect(written.rootHelpText).toContain("openclaw");
-    expect(written.subcommandHelpText.doctor).toContain("openclaw doctor");
-    expect(written.subcommandHelpText.gateway).toContain("openclaw gateway");
-    expect(written.subcommandHelpText.models).toContain("openclaw models");
-    expect(written.subcommandHelpText.plugins).toContain("openclaw plugins");
-    expect(written.subcommandHelpText.sessions).toContain("openclaw sessions");
-    expect(written.subcommandHelpText.tasks).toContain("openclaw tasks");
+    expect(written.rootHelpText).toContain("afora");
+    expect(written.subcommandHelpText.doctor).toContain("afora doctor");
+    expect(written.subcommandHelpText.gateway).toContain("afora gateway");
+    expect(written.subcommandHelpText.models).toContain("afora models");
+    expect(written.subcommandHelpText.plugins).toContain("afora plugins");
+    expect(written.subcommandHelpText.sessions).toContain("afora sessions");
+    expect(written.subcommandHelpText.tasks).toContain("afora tasks");
   });
 
   it("does not source-fallback a bundled root resource failure", async () => {
-    const tempRoot = createTempDir("openclaw-startup-metadata-root-resource-failure-");
+    const tempRoot = createTempDir("afora-startup-metadata-root-resource-failure-");
     const distDir = path.join(tempRoot, "dist");
     const extensionsDir = path.join(tempRoot, "extensions");
     const outputPath = path.join(distDir, "cli-startup-metadata.json");
@@ -905,16 +905,16 @@ describe("write-cli-startup-metadata", () => {
           throw Object.assign(new Error("bundled root timed out"), { code: "ETIMEDOUT" });
         },
         renderSourceRootHelpText,
-        renderSourceBrowserHelpText: () => "Usage: openclaw browser\n",
-        renderSourceSecretsHelpText: () => "Usage: openclaw secrets\n",
-        renderSourceNodesHelpText: () => "Usage: openclaw nodes\n",
+        renderSourceBrowserHelpText: () => "Usage: afora browser\n",
+        renderSourceSecretsHelpText: () => "Usage: afora secrets\n",
+        renderSourceNodesHelpText: () => "Usage: afora nodes\n",
         renderSourceSubcommandHelpTextRecord: () => ({
-          doctor: "Usage: openclaw doctor\n",
-          gateway: "Usage: openclaw gateway\n",
-          models: "Usage: openclaw models\n",
-          plugins: "Usage: openclaw plugins\n",
-          sessions: "Usage: openclaw sessions\n",
-          tasks: "Usage: openclaw tasks\n",
+          doctor: "Usage: afora doctor\n",
+          gateway: "Usage: afora gateway\n",
+          models: "Usage: afora models\n",
+          plugins: "Usage: afora plugins\n",
+          sessions: "Usage: afora sessions\n",
+          tasks: "Usage: afora tasks\n",
         }),
       })
       .then(
@@ -929,7 +929,7 @@ describe("write-cli-startup-metadata", () => {
   });
 
   it("selects the root-help bundle that exports the renderer", async () => {
-    const tempRoot = createTempDir("openclaw-startup-metadata-bundle-selection-");
+    const tempRoot = createTempDir("afora-startup-metadata-bundle-selection-");
     const distDir = path.join(tempRoot, "dist");
     const extensionsDir = path.join(tempRoot, "extensions");
     const outputPath = path.join(distDir, "cli-startup-metadata.json");
@@ -954,16 +954,16 @@ describe("write-cli-startup-metadata", () => {
       extensionsDir,
       sourceRootDir: tempRoot,
       renderSourceRootHelpText,
-      renderSourceBrowserHelpText: () => "Usage: openclaw browser\n",
-      renderSourceSecretsHelpText: () => "Usage: openclaw secrets\n",
-      renderSourceNodesHelpText: () => "Usage: openclaw nodes\n",
+      renderSourceBrowserHelpText: () => "Usage: afora browser\n",
+      renderSourceSecretsHelpText: () => "Usage: afora secrets\n",
+      renderSourceNodesHelpText: () => "Usage: afora nodes\n",
       renderSourceSubcommandHelpTextRecord: () => ({
-        doctor: "Usage: openclaw doctor\n",
-        gateway: "Usage: openclaw gateway\n",
-        models: "Usage: openclaw models\n",
-        plugins: "Usage: openclaw plugins\n",
-        sessions: "Usage: openclaw sessions\n",
-        tasks: "Usage: openclaw tasks\n",
+        doctor: "Usage: afora doctor\n",
+        gateway: "Usage: afora gateway\n",
+        models: "Usage: afora models\n",
+        plugins: "Usage: afora plugins\n",
+        sessions: "Usage: afora sessions\n",
+        tasks: "Usage: afora tasks\n",
       }),
     });
 
@@ -975,7 +975,7 @@ describe("write-cli-startup-metadata", () => {
   });
 
   it("renders independent startup help snapshots concurrently", async () => {
-    const tempRoot = createTempDir("openclaw-startup-metadata-concurrency-");
+    const tempRoot = createTempDir("afora-startup-metadata-concurrency-");
     const distDir = path.join(tempRoot, "dist");
     const extensionsDir = path.join(tempRoot, "extensions");
     const outputPath = path.join(distDir, "cli-startup-metadata.json");
@@ -1015,22 +1015,22 @@ describe("write-cli-startup-metadata", () => {
       outputPath,
       extensionsDir,
       sourceRootDir: tempRoot,
-      renderBundledRootHelpText: async () => "Usage: openclaw\n",
-      renderSourceBrowserHelpText: renderAfterUnblock("browser", "Usage: openclaw browser\n"),
-      renderSourceSecretsHelpText: renderAfterUnblock("secrets", "Usage: openclaw secrets\n"),
-      renderSourceNodesHelpText: renderAfterUnblock("nodes", "Usage: openclaw nodes\n"),
+      renderBundledRootHelpText: async () => "Usage: afora\n",
+      renderSourceBrowserHelpText: renderAfterUnblock("browser", "Usage: afora browser\n"),
+      renderSourceSecretsHelpText: renderAfterUnblock("secrets", "Usage: afora secrets\n"),
+      renderSourceNodesHelpText: renderAfterUnblock("nodes", "Usage: afora nodes\n"),
       renderSourceSubcommandHelpTextRecord: async () => {
         started.push("subcommands");
         await new Promise<void>((resolve) => {
           unblockers.set("subcommands", resolve);
         });
         return {
-          doctor: "Usage: openclaw doctor\n",
-          gateway: "Usage: openclaw gateway\n",
-          models: "Usage: openclaw models\n",
-          plugins: "Usage: openclaw plugins\n",
-          sessions: "Usage: openclaw sessions\n",
-          tasks: "Usage: openclaw tasks\n",
+          doctor: "Usage: afora doctor\n",
+          gateway: "Usage: afora gateway\n",
+          models: "Usage: afora models\n",
+          plugins: "Usage: afora plugins\n",
+          sessions: "Usage: afora sessions\n",
+          tasks: "Usage: afora tasks\n",
         };
       },
     });
@@ -1046,9 +1046,9 @@ describe("write-cli-startup-metadata", () => {
       nodesHelpText: string;
       secretsHelpText: string;
     };
-    expect(written.browserHelpText).toContain("openclaw browser");
-    expect(written.secretsHelpText).toContain("openclaw secrets");
-    expect(written.nodesHelpText).toContain("openclaw nodes");
+    expect(written.browserHelpText).toContain("afora browser");
+    expect(written.secretsHelpText).toContain("afora secrets");
+    expect(written.nodesHelpText).toContain("afora nodes");
   });
 
   it.each([
@@ -1056,7 +1056,7 @@ describe("write-cli-startup-metadata", () => {
     { title: "when rendering fails", failRender: true },
   ])("removes isolated root-help state $title", async ({ failRender }) => {
     const removeState = vi.spyOn(fs, "rmSync");
-    const tempRoot = createTempDir("openclaw-startup-metadata-cleanup-");
+    const tempRoot = createTempDir("afora-startup-metadata-cleanup-");
     const distDir = path.join(tempRoot, "dist");
     const extensionsDir = path.join(tempRoot, "extensions");
     const outputPath = path.join(distDir, "cli-startup-metadata.json");
@@ -1071,35 +1071,35 @@ describe("write-cli-startup-metadata", () => {
       outputPath,
       extensionsDir,
       sourceRootDir: tempRoot,
-      renderBundledRootHelpText: async () => "Usage: openclaw\n",
+      renderBundledRootHelpText: async () => "Usage: afora\n",
       renderSourceBrowserHelpText: async (renderContext) => {
-        stateDir = renderContext.env?.OPENCLAW_STATE_DIR ?? "";
+        stateDir = renderContext.env?.AFORA_STATE_DIR ?? "";
         const sqliteDir = path.join(stateDir, "state");
         mkdirSync(sqliteDir, { recursive: true });
         for (const suffix of ["", "-shm", "-wal"]) {
-          writeFileSync(path.join(sqliteDir, `openclaw.sqlite${suffix}`), "fixture", "utf8");
+          writeFileSync(path.join(sqliteDir, `afora.sqlite${suffix}`), "fixture", "utf8");
         }
         await new Promise((resolve) => setImmediate(resolve));
         if (failRender) {
           throw new Error("browser help failed");
         }
-        return "Usage: openclaw browser\n";
+        return "Usage: afora browser\n";
       },
       renderSourceSecretsHelpText: async () => {
         await new Promise((resolve) => {
           setImmediate(resolve);
         });
         statePresentDuringSiblingRender = existsSync(stateDir);
-        return "Usage: openclaw secrets\n";
+        return "Usage: afora secrets\n";
       },
-      renderSourceNodesHelpText: () => "Usage: openclaw nodes\n",
+      renderSourceNodesHelpText: () => "Usage: afora nodes\n",
       renderSourceSubcommandHelpTextRecord: () => ({
-        doctor: "Usage: openclaw doctor\n",
-        gateway: "Usage: openclaw gateway\n",
-        models: "Usage: openclaw models\n",
-        plugins: "Usage: openclaw plugins\n",
-        sessions: "Usage: openclaw sessions\n",
-        tasks: "Usage: openclaw tasks\n",
+        doctor: "Usage: afora doctor\n",
+        gateway: "Usage: afora gateway\n",
+        models: "Usage: afora models\n",
+        plugins: "Usage: afora plugins\n",
+        sessions: "Usage: afora sessions\n",
+        tasks: "Usage: afora tasks\n",
       }),
     });
 
@@ -1121,7 +1121,7 @@ describe("write-cli-startup-metadata", () => {
   });
 
   it("does not let shared-state cleanup mask the primary render failure", async () => {
-    const tempRoot = createTempDir("openclaw-startup-metadata-cleanup-failure-");
+    const tempRoot = createTempDir("afora-startup-metadata-cleanup-failure-");
     const distDir = path.join(tempRoot, "dist");
     const extensionsDir = path.join(tempRoot, "extensions");
     const outputPath = path.join(distDir, "cli-startup-metadata.json");
@@ -1145,20 +1145,20 @@ describe("write-cli-startup-metadata", () => {
           outputPath,
           extensionsDir,
           sourceRootDir: tempRoot,
-          renderBundledRootHelpText: async () => "Usage: openclaw\n",
+          renderBundledRootHelpText: async () => "Usage: afora\n",
           renderSourceBrowserHelpText: (renderContext) => {
-            renderStateDir = renderContext.env?.OPENCLAW_STATE_DIR ?? "";
+            renderStateDir = renderContext.env?.AFORA_STATE_DIR ?? "";
             throw new Error("primary browser failure");
           },
-          renderSourceSecretsHelpText: () => "Usage: openclaw secrets\n",
-          renderSourceNodesHelpText: () => "Usage: openclaw nodes\n",
+          renderSourceSecretsHelpText: () => "Usage: afora secrets\n",
+          renderSourceNodesHelpText: () => "Usage: afora nodes\n",
           renderSourceSubcommandHelpTextRecord: () => ({
-            doctor: "Usage: openclaw doctor\n",
-            gateway: "Usage: openclaw gateway\n",
-            models: "Usage: openclaw models\n",
-            plugins: "Usage: openclaw plugins\n",
-            sessions: "Usage: openclaw sessions\n",
-            tasks: "Usage: openclaw tasks\n",
+            doctor: "Usage: afora doctor\n",
+            gateway: "Usage: afora gateway\n",
+            models: "Usage: afora models\n",
+            plugins: "Usage: afora plugins\n",
+            sessions: "Usage: afora sessions\n",
+            tasks: "Usage: afora tasks\n",
           }),
         })
         .then(
@@ -1178,7 +1178,7 @@ describe("write-cli-startup-metadata", () => {
   });
 
   it("regenerates nodes help when bundled canvas CLI help sources change", async () => {
-    const tempRoot = createTempDir("openclaw-startup-metadata-signature-");
+    const tempRoot = createTempDir("afora-startup-metadata-signature-");
     const distDir = path.join(tempRoot, "dist");
     const extensionsDir = path.join(tempRoot, "extensions");
     const outputPath = path.join(distDir, "cli-startup-metadata.json");
@@ -1193,20 +1193,20 @@ describe("write-cli-startup-metadata", () => {
         outputPath,
         extensionsDir,
         sourceRootDir: tempRoot,
-        renderBundledRootHelpText: async () => "Usage: openclaw\n",
-        renderSourceBrowserHelpText: () => "Usage: openclaw browser\n",
-        renderSourceSecretsHelpText: () => "Usage: openclaw secrets\n",
+        renderBundledRootHelpText: async () => "Usage: afora\n",
+        renderSourceBrowserHelpText: () => "Usage: afora browser\n",
+        renderSourceSecretsHelpText: () => "Usage: afora secrets\n",
         renderSourceNodesHelpText: () => {
           nodesRenderCount += 1;
-          return `Usage: openclaw nodes ${nodesRenderCount}\n`;
+          return `Usage: afora nodes ${nodesRenderCount}\n`;
         },
         renderSourceSubcommandHelpTextRecord: () => ({
-          doctor: "Usage: openclaw doctor\n",
-          gateway: "Usage: openclaw gateway\n",
-          models: "Usage: openclaw models\n",
-          plugins: "Usage: openclaw plugins\n",
-          sessions: "Usage: openclaw sessions\n",
-          tasks: "Usage: openclaw tasks\n",
+          doctor: "Usage: afora doctor\n",
+          gateway: "Usage: afora gateway\n",
+          models: "Usage: afora models\n",
+          plugins: "Usage: afora plugins\n",
+          sessions: "Usage: afora sessions\n",
+          tasks: "Usage: afora tasks\n",
         }),
       });
     };
@@ -1237,11 +1237,11 @@ describe("write-cli-startup-metadata", () => {
       nodesHelpText: string;
     };
     expect(nodesRenderCount).toBe(3);
-    expect(written.nodesHelpText).toContain("openclaw nodes 3");
+    expect(written.nodesHelpText).toContain("afora nodes 3");
   });
 
   it("regenerates help when build version or commit changes", async () => {
-    const tempRoot = createTempDir("openclaw-startup-metadata-build-identity-");
+    const tempRoot = createTempDir("afora-startup-metadata-build-identity-");
     const distDir = path.join(tempRoot, "dist");
     const extensionsDir = path.join(tempRoot, "extensions");
     const outputPath = path.join(distDir, "cli-startup-metadata.json");
@@ -1254,14 +1254,14 @@ describe("write-cli-startup-metadata", () => {
         commit: string;
         version: string;
       };
-      const banner = `OpenClaw ${buildInfo.version} (${buildInfo.commit.slice(0, 7)})`;
+      const banner = `Afora ${buildInfo.version} (${buildInfo.commit.slice(0, 7)})`;
       return {
-        doctor: `${banner}\nUsage: openclaw doctor\n`,
-        gateway: `${banner}\nUsage: openclaw gateway\n`,
-        models: `${banner}\nUsage: openclaw models\n`,
-        plugins: `${banner}\nUsage: openclaw plugins\n`,
-        sessions: `${banner}\nUsage: openclaw sessions\n`,
-        tasks: `${banner}\nUsage: openclaw tasks\n`,
+        doctor: `${banner}\nUsage: afora doctor\n`,
+        gateway: `${banner}\nUsage: afora gateway\n`,
+        models: `${banner}\nUsage: afora models\n`,
+        plugins: `${banner}\nUsage: afora plugins\n`,
+        sessions: `${banner}\nUsage: afora sessions\n`,
+        tasks: `${banner}\nUsage: afora tasks\n`,
       };
     };
 
@@ -1276,19 +1276,19 @@ describe("write-cli-startup-metadata", () => {
         sourceRootDir: tempRoot,
         renderBundledRootHelpText: async () => {
           renderCount += 1;
-          return `Usage: openclaw ${renderCount}\n`;
+          return `Usage: afora ${renderCount}\n`;
         },
         renderSourceBrowserHelpText: () => {
           commandRenderCount += 1;
-          return "Usage: openclaw browser\n";
+          return "Usage: afora browser\n";
         },
         renderSourceSecretsHelpText: () => {
           commandRenderCount += 1;
-          return "Usage: openclaw secrets\n";
+          return "Usage: afora secrets\n";
         },
         renderSourceNodesHelpText: () => {
           commandRenderCount += 1;
-          return "Usage: openclaw nodes\n";
+          return "Usage: afora nodes\n";
         },
         renderSourceSubcommandHelpTextRecord: renderSubcommandHelp,
       });
@@ -1303,7 +1303,7 @@ describe("write-cli-startup-metadata", () => {
     await writeMetadata();
     expect(renderCount).toBe(1);
     expect(commandRenderCount).toBe(4);
-    expect(readFileSync(outputPath, "utf8")).toContain("OpenClaw 2026.7.2 (aaaaaaa)");
+    expect(readFileSync(outputPath, "utf8")).toContain("Afora 2026.7.2 (aaaaaaa)");
 
     writeFixtureFile(
       distDir,
@@ -1313,7 +1313,7 @@ describe("write-cli-startup-metadata", () => {
     await writeMetadata();
     expect(renderCount).toBe(2);
     expect(commandRenderCount).toBe(8);
-    expect(readFileSync(outputPath, "utf8")).toContain("OpenClaw 2026.7.2 (bbbbbbb)");
+    expect(readFileSync(outputPath, "utf8")).toContain("Afora 2026.7.2 (bbbbbbb)");
 
     writeFixtureFile(
       distDir,
@@ -1326,6 +1326,6 @@ describe("write-cli-startup-metadata", () => {
     const written = JSON.parse(readFileSync(outputPath, "utf8")) as {
       subcommandHelpText: { models: string };
     };
-    expect(written.subcommandHelpText.models).toContain("OpenClaw 2026.7.3 (bbbbbbb)");
+    expect(written.subcommandHelpText.models).toContain("Afora 2026.7.3 (bbbbbbb)");
   });
 });

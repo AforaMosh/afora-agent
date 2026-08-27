@@ -1,11 +1,11 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 type ResolveAcpSessionAvailability =
-  (typeof import("openclaw/plugin-sdk/acp-runtime"))["resolveAcpSessionAvailability"];
+  (typeof import("afora-agent/plugin-sdk/acp-runtime"))["resolveAcpSessionAvailability"];
 
 const nodeHostMocks = vi.hoisted(() => ({
   runNodePtyCommand: vi.fn(async () => ({ exitCode: 0 })),
@@ -14,13 +14,13 @@ const acpRuntimeMocks = vi.hoisted(() => ({
   resolveAcpSessionAvailability: vi.fn<ResolveAcpSessionAvailability>(() => ({ available: true })),
 }));
 
-vi.mock("openclaw/plugin-sdk/acp-runtime", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/acp-runtime")>()),
+vi.mock("afora-agent/plugin-sdk/acp-runtime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/acp-runtime")>()),
   resolveAcpSessionAvailability: acpRuntimeMocks.resolveAcpSessionAvailability,
 }));
 
-vi.mock("openclaw/plugin-sdk/node-host", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/node-host")>();
+vi.mock("afora-agent/plugin-sdk/node-host", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/node-host")>();
   return {
     ...actual,
     runNodePtyCommand: nodeHostMocks.runNodePtyCommand,
@@ -189,13 +189,13 @@ describe("Pi session catalog", () => {
       pluginConfig: {},
       runtime: { nodes: { list: vi.fn().mockResolvedValue({ nodes: [] }) } },
       registerSessionCatalog: (
-        value: Parameters<OpenClawPluginApi["registerSessionCatalog"]>[0],
+        value: Parameters<AforaPluginApi["registerSessionCatalog"]>[0],
       ) => {
         provider = bindTestCatalogOwner(value);
       },
       registerNodeHostCommand: vi.fn(),
       registerNodeInvokePolicy: vi.fn(),
-    } as unknown as OpenClawPluginApi);
+    } as unknown as AforaPluginApi);
     await expect(
       provider!.read({
         allowProcessHomeFallback: false,
@@ -211,7 +211,7 @@ describe("Pi session catalog", () => {
     for (const key of ["PI_CODING_AGENT_SESSION_DIR", "PI_CODING_AGENT_DIR"] as const) {
       delete process.env[key];
     }
-    process.env.HOME = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-pi-isolated-home-"));
+    process.env.HOME = await fs.mkdtemp(path.join(os.tmpdir(), "afora-pi-isolated-home-"));
     temporaryDirectories.push(process.env.HOME);
     const request = { hostId: "gateway", threadId: "pi-session" };
     const isolatedRequest = { ...request, allowProcessHomeFallback: false };
@@ -224,8 +224,8 @@ describe("Pi session catalog", () => {
 
   it("recognizes Pi sessions when the agent directory uses a symlinked path", async () => {
     const sessionDirectory = await createPiStore();
-    const agentDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-pi-agent-real-"));
-    const symlinkParent = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-pi-agent-link-"));
+    const agentDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "afora-pi-agent-real-"));
+    const symlinkParent = await fs.mkdtemp(path.join(os.tmpdir(), "afora-pi-agent-link-"));
     const linkedAgentDirectory = path.join(symlinkParent, "agent");
     temporaryDirectories.push(agentDirectory, symlinkParent);
     await fs.mkdir(path.join(agentDirectory, "sessions"), { recursive: true });
@@ -252,7 +252,7 @@ describe("Pi session catalog", () => {
     );
     const agentDirectory = path.dirname(path.dirname(sessionDirectory));
     const unrelatedAgentDirectory = await fs.mkdtemp(
-      path.join(os.tmpdir(), "openclaw-pi-agent-unrelated-"),
+      path.join(os.tmpdir(), "afora-pi-agent-unrelated-"),
     );
     temporaryDirectories.push(unrelatedAgentDirectory);
     const baseEnv = {
@@ -531,7 +531,7 @@ describe("Pi session catalog", () => {
   });
 
   it("paginates, searches, and reads beyond the newest summary batch", async () => {
-    const directory = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-pi-catalog-"));
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), "afora-pi-catalog-"));
     temporaryDirectories.push(directory);
     process.env.PI_CODING_AGENT_SESSION_DIR = directory;
     const baseTime = Date.parse("2026-07-13T10:00:00Z") / 1_000;
@@ -576,8 +576,8 @@ describe("Pi session catalog", () => {
   });
 
   it("uses the configured Pi session directory and lists oversized sessions", async () => {
-    const agentDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-pi-agent-"));
-    const homeDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-pi-home-"));
+    const agentDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "afora-pi-agent-"));
+    const homeDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "afora-pi-home-"));
     temporaryDirectories.push(agentDirectory, homeDirectory);
     const sessionDirectory = path.join(homeDirectory, "custom-sessions");
     await fs.mkdir(sessionDirectory, { recursive: true });
@@ -691,20 +691,20 @@ describe("Pi session catalog", () => {
     const binDirectory = await installFakePi();
     const executable = path.join(binDirectory, process.platform === "win32" ? "pi.cmd" : "pi");
     let provider: TestSessionCatalogProvider | undefined;
-    const commands: Parameters<OpenClawPluginApi["registerNodeHostCommand"]>[0][] = [];
+    const commands: Parameters<AforaPluginApi["registerNodeHostCommand"]>[0][] = [];
     registerPiSessionCatalog({
       pluginConfig: {},
       runtime: { nodes: { list: vi.fn().mockResolvedValue({ nodes: [] }) } },
       registerSessionCatalog: (
-        value: Parameters<OpenClawPluginApi["registerSessionCatalog"]>[0],
+        value: Parameters<AforaPluginApi["registerSessionCatalog"]>[0],
       ) => {
         provider = bindTestCatalogOwner(value);
       },
       registerNodeHostCommand: (
-        command: Parameters<OpenClawPluginApi["registerNodeHostCommand"]>[0],
+        command: Parameters<AforaPluginApi["registerNodeHostCommand"]>[0],
       ) => commands.push(command),
       registerNodeInvokePolicy: vi.fn(),
-    } as unknown as OpenClawPluginApi);
+    } as unknown as AforaPluginApi);
 
     await expect(provider!.list({ hostIds: ["gateway"] })).resolves.toEqual([
       expect.objectContaining({
@@ -834,13 +834,13 @@ describe("Pi session catalog", () => {
         },
       },
       registerSessionCatalog: (
-        value: Parameters<OpenClawPluginApi["registerSessionCatalog"]>[0],
+        value: Parameters<AforaPluginApi["registerSessionCatalog"]>[0],
       ) => {
         provider = bindTestCatalogOwner(value);
       },
       registerNodeHostCommand: vi.fn(),
       registerNodeInvokePolicy: vi.fn(),
-    } as unknown as OpenClawPluginApi);
+    } as unknown as AforaPluginApi);
 
     await expect(
       provider!.list({
@@ -892,7 +892,7 @@ describe("Pi session catalog", () => {
     const api = {
       pluginConfig: { piSessionCatalog: { enabled: false } },
       registerSessionCatalog,
-    } as unknown as OpenClawPluginApi;
+    } as unknown as AforaPluginApi;
     registerPiSessionCatalog(api);
     expect(registerSessionCatalog).not.toHaveBeenCalled();
   });

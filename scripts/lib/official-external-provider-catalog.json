@@ -1,11 +1,11 @@
 {
   "entries": [
     {
-      "name": "@openclaw/amazon-bedrock-provider",
-      "description": "OpenClaw Amazon Bedrock provider plugin",
+      "name": "@afora/amazon-bedrock-provider",
+      "description": "Afora Amazon Bedrock provider plugin",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "amazon-bedrock",
           "label": "Amazon Bedrock"
@@ -19,18 +19,18 @@
           }
         ],
         "install": {
-          "npmSpec": "@openclaw/amazon-bedrock-provider",
+          "npmSpec": "@afora/amazon-bedrock-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.5.12-beta.1"
         }
       }
     },
     {
-      "name": "@openclaw/amazon-bedrock-mantle-provider",
-      "description": "OpenClaw Amazon Bedrock Mantle provider plugin",
+      "name": "@afora/amazon-bedrock-mantle-provider",
+      "description": "Afora Amazon Bedrock Mantle provider plugin",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "amazon-bedrock-mantle",
           "label": "Amazon Bedrock Mantle"
@@ -44,18 +44,18 @@
           }
         ],
         "install": {
-          "npmSpec": "@openclaw/amazon-bedrock-mantle-provider",
+          "npmSpec": "@afora/amazon-bedrock-mantle-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.5.12-beta.1"
         }
       }
     },
     {
-      "name": "@openclaw/anthropic-vertex-provider",
-      "description": "OpenClaw Anthropic Vertex provider plugin",
+      "name": "@afora/anthropic-vertex-provider",
+      "description": "Afora Anthropic Vertex provider plugin",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "anthropic-vertex",
           "label": "Anthropic Vertex"
@@ -69,18 +69,18 @@
           }
         ],
         "install": {
-          "npmSpec": "@openclaw/anthropic-vertex-provider",
+          "npmSpec": "@afora/anthropic-vertex-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.5.12-beta.1"
         }
       }
     },
     {
-      "name": "@openclaw/arcee-provider",
-      "description": "OpenClaw Arcee provider plugin.",
+      "name": "@afora/arcee-provider",
+      "description": "Afora Arcee provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "arcee",
           "label": "Arcee AI"
@@ -134,19 +134,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/arcee-provider",
-          "npmSpec": "@openclaw/arcee-provider",
+          "clawhubSpec": "clawhub:@afora/arcee-provider",
+          "npmSpec": "@afora/arcee-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/baseten-provider",
-      "description": "OpenClaw Baseten provider plugin.",
+      "name": "@afora/baseten-provider",
+      "description": "Afora Baseten provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "baseten",
           "label": "Baseten"
@@ -183,19 +183,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/baseten-provider",
-          "npmSpec": "@openclaw/baseten-provider",
+          "clawhubSpec": "clawhub:@afora/baseten-provider",
+          "npmSpec": "@afora/baseten-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.7.2"
         }
       }
     },
     {
-      "name": "@openclaw/byteplus-provider",
-      "description": "OpenClaw BytePlus provider plugin.",
+      "name": "@afora/byteplus-provider",
+      "description": "Afora BytePlus provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "byteplus",
           "label": "BytePlus"
@@ -240,19 +240,19 @@
           ]
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/byteplus-provider",
-          "npmSpec": "@openclaw/byteplus-provider",
+          "clawhubSpec": "clawhub:@afora/byteplus-provider",
+          "npmSpec": "@afora/byteplus-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.7.2"
         }
       }
     },
     {
-      "name": "@openclaw/cerebras-provider",
-      "description": "OpenClaw Cerebras provider plugin.",
+      "name": "@afora/cerebras-provider",
+      "description": "Afora Cerebras provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "cerebras",
           "label": "Cerebras"
@@ -297,19 +297,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/cerebras-provider",
-          "npmSpec": "@openclaw/cerebras-provider",
+          "clawhubSpec": "clawhub:@afora/cerebras-provider",
+          "npmSpec": "@afora/cerebras-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/chutes-provider",
-      "description": "OpenClaw Chutes.ai provider plugin.",
+      "name": "@afora/chutes-provider",
+      "description": "Afora Chutes.ai provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "chutes",
           "label": "Chutes"
@@ -368,19 +368,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/chutes-provider",
-          "npmSpec": "@openclaw/chutes-provider",
+          "clawhubSpec": "clawhub:@afora/chutes-provider",
+          "npmSpec": "@afora/chutes-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/cohere-provider",
-      "description": "OpenClaw Cohere provider plugin",
+      "name": "@afora/cohere-provider",
+      "description": "Afora Cohere provider plugin",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "cohere",
           "label": "Cohere"
@@ -414,19 +414,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/cohere-provider",
-          "npmSpec": "@openclaw/cohere-provider",
+          "clawhubSpec": "clawhub:@afora/cohere-provider",
+          "npmSpec": "@afora/cohere-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/cloudflare-ai-gateway-provider",
-      "description": "OpenClaw Cloudflare AI Gateway provider plugin.",
+      "name": "@afora/cloudflare-ai-gateway-provider",
+      "description": "Afora Cloudflare AI Gateway provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "cloudflare-ai-gateway",
           "label": "Cloudflare AI Gateway"
@@ -464,19 +464,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/cloudflare-ai-gateway-provider",
-          "npmSpec": "@openclaw/cloudflare-ai-gateway-provider",
+          "clawhubSpec": "clawhub:@afora/cloudflare-ai-gateway-provider",
+          "npmSpec": "@afora/cloudflare-ai-gateway-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/comfy-provider",
-      "description": "OpenClaw ComfyUI provider plugin.",
+      "name": "@afora/comfy-provider",
+      "description": "Afora ComfyUI provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "comfy",
           "label": "ComfyUI"
@@ -527,19 +527,19 @@
           ]
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/comfy-provider",
-          "npmSpec": "@openclaw/comfy-provider",
+          "clawhubSpec": "clawhub:@afora/comfy-provider",
+          "npmSpec": "@afora/comfy-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.7.2"
         }
       }
     },
     {
-      "name": "@openclaw/deepinfra-provider",
-      "description": "OpenClaw DeepInfra provider plugin.",
+      "name": "@afora/deepinfra-provider",
+      "description": "Afora DeepInfra provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "deepinfra",
           "label": "DeepInfra"
@@ -602,19 +602,19 @@
           ]
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/deepinfra-provider",
-          "npmSpec": "@openclaw/deepinfra-provider",
+          "clawhubSpec": "clawhub:@afora/deepinfra-provider",
+          "npmSpec": "@afora/deepinfra-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/deepseek-provider",
-      "description": "OpenClaw DeepSeek provider plugin.",
+      "name": "@afora/deepseek-provider",
+      "description": "Afora DeepSeek provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "deepseek",
           "label": "DeepSeek"
@@ -659,19 +659,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/deepseek-provider",
-          "npmSpec": "@openclaw/deepseek-provider",
+          "clawhubSpec": "clawhub:@afora/deepseek-provider",
+          "npmSpec": "@afora/deepseek-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/featherless-provider",
-      "description": "OpenClaw Featherless AI provider plugin.",
+      "name": "@afora/featherless-provider",
+      "description": "Afora Featherless AI provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "featherless",
           "label": "Featherless AI"
@@ -709,19 +709,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/featherless-provider",
-          "npmSpec": "@openclaw/featherless-provider",
+          "clawhubSpec": "clawhub:@afora/featherless-provider",
+          "npmSpec": "@afora/featherless-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.11"
         }
       }
     },
     {
-      "name": "@openclaw/gmi-provider",
-      "description": "OpenClaw GMI Cloud provider plugin",
+      "name": "@afora/gmi-provider",
+      "description": "Afora GMI Cloud provider plugin",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "gmi",
           "label": "GMI Cloud"
@@ -760,19 +760,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/gmi-provider",
-          "npmSpec": "@openclaw/gmi-provider",
+          "clawhubSpec": "clawhub:@afora/gmi-provider",
+          "npmSpec": "@afora/gmi-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/longcat-provider",
-      "description": "OpenClaw LongCat provider plugin",
+      "name": "@afora/longcat-provider",
+      "description": "Afora LongCat provider plugin",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "longcat",
           "label": "LongCat"
@@ -803,19 +803,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/longcat-provider",
-          "npmSpec": "@openclaw/longcat-provider",
+          "clawhubSpec": "clawhub:@afora/longcat-provider",
+          "npmSpec": "@afora/longcat-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/meta-provider",
-      "description": "OpenClaw Meta provider plugin.",
+      "name": "@afora/meta-provider",
+      "description": "Afora Meta provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "meta",
           "label": "Meta"
@@ -852,19 +852,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/meta-provider",
-          "npmSpec": "@openclaw/meta-provider",
+          "clawhubSpec": "clawhub:@afora/meta-provider",
+          "npmSpec": "@afora/meta-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.11"
         }
       }
     },
     {
-      "name": "@openclaw/mistral-provider",
-      "description": "OpenClaw Mistral provider plugin",
+      "name": "@afora/mistral-provider",
+      "description": "Afora Mistral provider plugin",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "mistral",
           "label": "Mistral"
@@ -905,19 +905,19 @@
           "realtimeTranscriptionProviders": ["mistral"]
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/mistral-provider",
-          "npmSpec": "@openclaw/mistral-provider",
+          "clawhubSpec": "clawhub:@afora/mistral-provider",
+          "npmSpec": "@afora/mistral-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.7.2"
         }
       }
     },
     {
-      "name": "@openclaw/novita-provider",
-      "description": "OpenClaw NovitaAI provider plugin",
+      "name": "@afora/novita-provider",
+      "description": "Afora NovitaAI provider plugin",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "novita",
           "label": "NovitaAI"
@@ -955,19 +955,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/novita-provider",
-          "npmSpec": "@openclaw/novita-provider",
+          "clawhubSpec": "clawhub:@afora/novita-provider",
+          "npmSpec": "@afora/novita-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.7.2"
         }
       }
     },
     {
-      "name": "@openclaw/opencode-provider",
-      "description": "OpenClaw OpenCode Zen provider plugin",
+      "name": "@afora/opencode-provider",
+      "description": "Afora OpenCode Zen provider plugin",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "opencode",
           "label": "OpenCode Zen"
@@ -1018,19 +1018,19 @@
           ]
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/opencode-provider",
-          "npmSpec": "@openclaw/opencode-provider",
+          "clawhubSpec": "clawhub:@afora/opencode-provider",
+          "npmSpec": "@afora/opencode-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.7.2"
         }
       }
     },
     {
-      "name": "@openclaw/groq-provider",
-      "description": "OpenClaw Groq media-understanding provider.",
+      "name": "@afora/groq-provider",
+      "description": "Afora Groq media-understanding provider.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "groq",
           "label": "Groq"
@@ -1080,19 +1080,19 @@
           ]
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/groq-provider",
-          "npmSpec": "@openclaw/groq-provider",
+          "clawhubSpec": "clawhub:@afora/groq-provider",
+          "npmSpec": "@afora/groq-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/kilocode-provider",
-      "description": "OpenClaw Kilo Gateway provider plugin.",
+      "name": "@afora/kilocode-provider",
+      "description": "Afora Kilo Gateway provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "kilocode",
           "label": "Kilo Gateway"
@@ -1130,19 +1130,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/kilocode-provider",
-          "npmSpec": "@openclaw/kilocode-provider",
+          "clawhubSpec": "clawhub:@afora/kilocode-provider",
+          "npmSpec": "@afora/kilocode-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/kimi-provider",
-      "description": "OpenClaw Kimi provider plugin.",
+      "name": "@afora/kimi-provider",
+      "description": "Afora Kimi provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "kimi",
           "label": "Kimi Coding"
@@ -1183,19 +1183,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/kimi-provider",
-          "npmSpec": "@openclaw/kimi-provider",
+          "clawhubSpec": "clawhub:@afora/kimi-provider",
+          "npmSpec": "@afora/kimi-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/opencode-go-provider",
-      "description": "OpenClaw OpenCode Go provider plugin",
+      "name": "@afora/opencode-go-provider",
+      "description": "Afora OpenCode Go provider plugin",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "opencode-go",
           "label": "OpenCode Go"
@@ -1246,19 +1246,19 @@
           ]
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/opencode-go-provider",
-          "npmSpec": "@openclaw/opencode-go-provider",
+          "clawhubSpec": "clawhub:@afora/opencode-go-provider",
+          "npmSpec": "@afora/opencode-go-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.7.2"
         }
       }
     },
     {
-      "name": "@openclaw/pixverse-provider",
-      "description": "OpenClaw PixVerse video provider plugin",
+      "name": "@afora/pixverse-provider",
+      "description": "Afora PixVerse video provider plugin",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "pixverse",
           "label": "PixVerse"
@@ -1288,18 +1288,18 @@
           }
         ],
         "install": {
-          "npmSpec": "@openclaw/pixverse-provider",
+          "npmSpec": "@afora/pixverse-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.5.26"
         }
       }
     },
     {
-      "name": "@openclaw/qianfan-provider",
-      "description": "OpenClaw Qianfan provider plugin.",
+      "name": "@afora/qianfan-provider",
+      "description": "Afora Qianfan provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "qianfan",
           "label": "Qianfan"
@@ -1336,19 +1336,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/qianfan-provider",
-          "npmSpec": "@openclaw/qianfan-provider",
+          "clawhubSpec": "clawhub:@afora/qianfan-provider",
+          "npmSpec": "@afora/qianfan-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/qwen-provider",
-      "description": "OpenClaw Qwen Cloud provider plugin.",
+      "name": "@afora/qwen-provider",
+      "description": "Afora Qwen Cloud provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "qwen",
           "label": "Qwen Cloud"
@@ -1529,19 +1529,19 @@
           ]
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/qwen-provider",
-          "npmSpec": "@openclaw/qwen-provider",
+          "clawhubSpec": "clawhub:@afora/qwen-provider",
+          "npmSpec": "@afora/qwen-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/fireworks-provider",
-      "description": "OpenClaw Fireworks provider plugin",
+      "name": "@afora/fireworks-provider",
+      "description": "Afora Fireworks provider plugin",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "fireworks",
           "label": "Fireworks"
@@ -1582,19 +1582,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/fireworks-provider",
-          "npmSpec": "@openclaw/fireworks-provider",
+          "clawhubSpec": "clawhub:@afora/fireworks-provider",
+          "npmSpec": "@afora/fireworks-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.9"
         }
       }
     },
     {
-      "name": "@openclaw/moonshot-provider",
-      "description": "OpenClaw Moonshot provider plugin",
+      "name": "@afora/moonshot-provider",
+      "description": "Afora Moonshot provider plugin",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "moonshot",
           "label": "Moonshot"
@@ -1684,25 +1684,25 @@
             ],
             "placeholder": "sk-...",
             "signupUrl": "https://platform.moonshot.cn/",
-            "docsUrl": "https://docs.openclaw.ai/tools/web",
+            "docsUrl": "https://docs.afora.ai/tools/web",
             "credentialPath": "plugins.entries.moonshot.config.webSearch.apiKey",
             "autoDetectOrder": 40
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/moonshot-provider",
-          "npmSpec": "@openclaw/moonshot-provider",
+          "clawhubSpec": "clawhub:@afora/moonshot-provider",
+          "npmSpec": "@afora/moonshot-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.9"
         }
       }
     },
     {
-      "name": "@openclaw/tencent-provider",
-      "description": "OpenClaw Tencent Cloud provider plugin (TokenHub + Token Plan)",
+      "name": "@afora/tencent-provider",
+      "description": "Afora Tencent Cloud provider plugin (TokenHub + Token Plan)",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "tencent",
           "label": "Tencent Cloud"
@@ -1770,19 +1770,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/tencent-provider",
-          "npmSpec": "@openclaw/tencent-provider",
+          "clawhubSpec": "clawhub:@afora/tencent-provider",
+          "npmSpec": "@afora/tencent-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.9"
         }
       }
     },
     {
-      "name": "@openclaw/venice-provider",
-      "description": "OpenClaw Venice provider plugin",
+      "name": "@afora/venice-provider",
+      "description": "Afora Venice provider plugin",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "venice",
           "label": "Venice"
@@ -1820,19 +1820,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/venice-provider",
-          "npmSpec": "@openclaw/venice-provider",
+          "clawhubSpec": "clawhub:@afora/venice-provider",
+          "npmSpec": "@afora/venice-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.9"
         }
       }
     },
     {
-      "name": "@openclaw/vercel-ai-gateway-provider",
-      "description": "OpenClaw Vercel AI Gateway provider plugin",
+      "name": "@afora/vercel-ai-gateway-provider",
+      "description": "Afora Vercel AI Gateway provider plugin",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "vercel-ai-gateway",
           "label": "Vercel AI Gateway"
@@ -1870,19 +1870,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/vercel-ai-gateway-provider",
-          "npmSpec": "@openclaw/vercel-ai-gateway-provider",
+          "clawhubSpec": "clawhub:@afora/vercel-ai-gateway-provider",
+          "npmSpec": "@afora/vercel-ai-gateway-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.9"
         }
       }
     },
     {
-      "name": "@openclaw/vydra-provider",
-      "description": "OpenClaw Vydra media provider plugin.",
+      "name": "@afora/vydra-provider",
+      "description": "Afora Vydra media provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "vydra",
           "label": "Vydra"
@@ -1930,19 +1930,19 @@
           ]
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/vydra-provider",
-          "npmSpec": "@openclaw/vydra-provider",
+          "clawhubSpec": "clawhub:@afora/vydra-provider",
+          "npmSpec": "@afora/vydra-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.7.2"
         }
       }
     },
     {
-      "name": "@openclaw/xiaomi-provider",
-      "description": "OpenClaw Xiaomi provider plugin.",
+      "name": "@afora/xiaomi-provider",
+      "description": "Afora Xiaomi provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "xiaomi",
           "label": "Xiaomi"
@@ -2062,19 +2062,19 @@
           ]
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/xiaomi-provider",
-          "npmSpec": "@openclaw/xiaomi-provider",
+          "clawhubSpec": "clawhub:@afora/xiaomi-provider",
+          "npmSpec": "@afora/xiaomi-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.7.2"
         }
       }
     },
     {
-      "name": "@openclaw/zai-provider",
-      "description": "OpenClaw Z.AI provider plugin",
+      "name": "@afora/zai-provider",
+      "description": "Afora Z.AI provider plugin",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "zai",
           "label": "Z.AI"
@@ -2193,19 +2193,19 @@
           ]
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/zai-provider",
-          "npmSpec": "@openclaw/zai-provider",
+          "clawhubSpec": "clawhub:@afora/zai-provider",
+          "npmSpec": "@afora/zai-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.9"
         }
       }
     },
     {
-      "name": "@openclaw/synthetic-provider",
-      "description": "OpenClaw Synthetic provider plugin.",
+      "name": "@afora/synthetic-provider",
+      "description": "Afora Synthetic provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "synthetic",
           "label": "Synthetic"
@@ -2242,19 +2242,19 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/synthetic-provider",
-          "npmSpec": "@openclaw/synthetic-provider",
+          "clawhubSpec": "clawhub:@afora/synthetic-provider",
+          "npmSpec": "@afora/synthetic-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.7.2"
         }
       }
     },
     {
-      "name": "@openclaw/voyage-provider",
-      "description": "OpenClaw Voyage embedding provider plugin.",
+      "name": "@afora/voyage-provider",
+      "description": "Afora Voyage embedding provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "voyage",
           "label": "Voyage"
@@ -2278,19 +2278,19 @@
           ]
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/voyage-provider",
-          "npmSpec": "@openclaw/voyage-provider",
+          "clawhubSpec": "clawhub:@afora/voyage-provider",
+          "npmSpec": "@afora/voyage-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.7.2"
         }
       }
     },
     {
-      "name": "@openclaw/volcengine-provider",
-      "description": "OpenClaw Volcengine provider plugin.",
+      "name": "@afora/volcengine-provider",
+      "description": "Afora Volcengine provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "volcengine",
           "label": "Volcengine"
@@ -2347,19 +2347,19 @@
           ]
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/volcengine-provider",
-          "npmSpec": "@openclaw/volcengine-provider",
+          "clawhubSpec": "clawhub:@afora/volcengine-provider",
+          "npmSpec": "@afora/volcengine-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.7.2"
         }
       }
     },
     {
-      "name": "@openclaw/stepfun-provider",
-      "description": "OpenClaw StepFun provider plugin.",
+      "name": "@afora/stepfun-provider",
+      "description": "Afora StepFun provider plugin.",
       "source": "official",
       "kind": "provider",
-      "openclaw": {
+      "afora": {
         "plugin": {
           "id": "stepfun",
           "label": "StepFun"
@@ -2459,8 +2459,8 @@
           }
         ],
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/stepfun-provider",
-          "npmSpec": "@openclaw/stepfun-provider",
+          "clawhubSpec": "clawhub:@afora/stepfun-provider",
+          "npmSpec": "@afora/stepfun-provider",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.9"
         }

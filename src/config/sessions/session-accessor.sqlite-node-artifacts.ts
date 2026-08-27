@@ -1,16 +1,16 @@
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
 } from "../../infra/kysely-sync.js";
-import type { OpenClawAgentDatabase } from "../../state/openclaw-agent-db.js";
-import { ensureSessionParticipantsSchema } from "../../state/openclaw-agent-session-participants-schema.js";
+import type { AforaAgentDatabase } from "../../state/afora-agent-db.js";
+import { ensureSessionParticipantsSchema } from "../../state/afora-agent-session-participants-schema.js";
 import { getSessionKysely } from "./session-accessor.sqlite-scope.js";
 import { mergeSessionParticipantSource } from "./session-entry-provenance.js";
 import { normalizeStoreSessionKey } from "./store-entry.js";
 
 export function clearSessionCollaborationForKey(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionKey: string,
   options: { clearSuggestions?: boolean } = {},
 ): void {
@@ -31,7 +31,7 @@ export function clearSessionCollaborationForKey(
 }
 
 export function rehomeLegacySessionNodeArtifacts(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   legacyKey: string,
   canonicalKey: string,
   options: { rehomeMembers?: boolean },
@@ -224,8 +224,8 @@ export function rehomeLegacySessionNodeArtifacts(
 
 /** Copy logical-session artifacts while doctor moves a node between agent databases. */
 export function copySessionNodeArtifactsForRepair(
-  source: OpenClawAgentDatabase,
-  destination: OpenClawAgentDatabase,
+  source: AforaAgentDatabase,
+  destination: AforaAgentDatabase,
   sourceKeys: readonly string[],
   canonicalKey: string,
   options: { includeMembers?: boolean } = {},
@@ -424,7 +424,7 @@ export function copySessionNodeArtifactsForRepair(
 
 /** Membership is authorization state; canonical repair replaces it from the selected winner. */
 export function deleteSessionMembersForRepair(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionKey: string,
 ): void {
   if (!readSessionNodeArtifactTables(database).has("session_members")) {
@@ -438,7 +438,7 @@ export function deleteSessionMembersForRepair(
 }
 
 export function deleteSessionDeliveryArtifacts(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionKey: string,
   additionalKeys: readonly string[] = [],
 ): void {
@@ -468,7 +468,7 @@ export function deleteSessionDeliveryArtifacts(
 }
 
 export function deleteSessionNodeArtifacts(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionKey: string,
 ): void {
   const db = getSessionKysely(database.db);
@@ -498,7 +498,7 @@ export function deleteSessionNodeArtifacts(
   clearSessionCollaborationForKey(database, sessionKey);
 }
 
-function readSessionNodeArtifactTables(database: OpenClawAgentDatabase): Set<string> {
+function readSessionNodeArtifactTables(database: AforaAgentDatabase): Set<string> {
   const db = getSessionKysely(database.db);
   return new Set(
     executeSqliteQuerySync(

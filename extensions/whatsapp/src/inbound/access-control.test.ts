@@ -714,7 +714,7 @@ describe("WhatsApp dmPolicy precedence", () => {
   it("authorizes group commands when owner sender is a LID JID with authDir (issue #77755)", async () => {
     const lidDigits = "9876543210";
     const ownerE164 = "+15550001111";
-    const authDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-wa-lid-77755-"));
+    const authDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-wa-lid-77755-"));
     try {
       // Write reverse LID mapping so the LID JID resolves to the owner's phone
       fs.writeFileSync(

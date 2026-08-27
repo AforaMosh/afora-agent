@@ -1,6 +1,6 @@
 // Agent session command tests cover session resolution, agent scoping, and temp-home session stores.
 import path from "node:path";
-import { withTempHome as withTempHomeBase } from "openclaw/plugin-sdk/test-env";
+import { withTempHome as withTempHomeBase } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveAgentDir, resolveSessionAgentId } from "../agents/agent-scope.js";
 import { resolveSession } from "../agents/command/session.js";
@@ -12,13 +12,13 @@ import {
 import { clearSessionStoreCacheForTest } from "../config/sessions/store-writer-state.js";
 import { resolveSessionTranscriptFile } from "../config/sessions/transcript.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { buildOutboundSessionContext } from "../infra/outbound/session-context.js";
 import { normalizeSessionDeliveryState } from "../utils/delivery-context.shared.js";
 
 async function withTempHome<T>(fn: (home: string) => Promise<T>): Promise<T> {
   return withTempHomeBase(fn, {
-    prefix: "openclaw-agent-session-",
+    prefix: "afora-agent-session-",
     skipSessionCleanup: true,
   });
 }
@@ -27,18 +27,18 @@ function mockConfig(
   home: string,
   storePath: string,
   agentsList?: Array<{ id: string; default?: boolean }>,
-): OpenClawConfig {
+): AforaConfig {
   return {
     agents: {
       defaults: {
         model: { primary: "anthropic/claude-opus-4-6" },
         models: { "anthropic/claude-opus-4-6": {} },
-        workspace: path.join(home, "openclaw"),
+        workspace: path.join(home, "afora"),
       },
       list: agentsList,
     },
     session: { store: storePath, mainKey: "main" },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 async function writeSessionStoreSeed(
@@ -53,7 +53,7 @@ async function writeSessionStoreSeed(
 }
 
 async function withCrossAgentResumeFixture(
-  run: (params: { sessionId: string; sessionKey: string; cfg: OpenClawConfig }) => Promise<void>,
+  run: (params: { sessionId: string; sessionKey: string; cfg: AforaConfig }) => Promise<void>,
 ): Promise<void> {
   await withTempHome(async (home) => {
     const storePattern = path.join(home, "agents", "{agentId}", "sessions", "sessions.json");
@@ -124,7 +124,7 @@ describe("agent session resolution", () => {
           ownership: "explicit",
           entries: { ops: {}, research: {} },
         },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       await replaceSessionEntry(
         { agentId: "research", sessionKey: "main", storePath: researchStore },
         { sessionId: "research-session", updatedAt: Date.now() },

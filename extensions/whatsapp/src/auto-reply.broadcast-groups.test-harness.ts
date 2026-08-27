@@ -1,5 +1,5 @@
 // Whatsapp plugin module implements auto reply.broadcast groups harness behavior.
-import { createPluginRuntimeMock } from "openclaw/plugin-sdk/plugin-test-runtime";
+import { createPluginRuntimeMock } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { vi } from "vitest";
 import {
   createWebInboundDeliverySpies,
@@ -9,8 +9,8 @@ import {
 import { monitorWebChannel } from "./auto-reply/monitor.js";
 import type { WebInboundCallbackMessage } from "./inbound.js";
 
-vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/channel-inbound")>();
+vi.mock("afora-agent/plugin-sdk/channel-inbound", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/channel-inbound")>();
   type RunParams = Parameters<typeof actual.runChannelInboundEvent>[0];
   return {
     ...actual,

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-export const WORKER_BUNDLE_MANIFEST_VERSION = "openclaw-worker-bundle-v1";
+export const WORKER_BUNDLE_MANIFEST_VERSION = "afora-worker-bundle-v1";
 export const WORKER_BUNDLE_ENTRY_PATH = "worker.mjs";
 export const WORKER_BUNDLE_RSYNC_RECEIVER_PATH = "workspace-rsync-receiver.mjs";
 

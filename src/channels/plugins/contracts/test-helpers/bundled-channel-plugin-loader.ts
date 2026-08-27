@@ -126,7 +126,7 @@ function hasExternalDistArtifactPath(text: string): boolean {
 }
 
 function canFallbackToPackageSource(): boolean {
-  return !process.env.OPENCLAW_BUNDLED_PLUGINS_DIR?.trim();
+  return !process.env.AFORA_BUNDLED_PLUGINS_DIR?.trim();
 }
 
 function isExternalDistArtifactPath(entry: string): boolean {

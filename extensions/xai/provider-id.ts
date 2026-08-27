@@ -1,4 +1,4 @@
-import { normalizeProviderId } from "openclaw/plugin-sdk/provider-model-shared";
+import { normalizeProviderId } from "afora-agent/plugin-sdk/provider-model-shared";
 
 const XAI_PROVIDER_IDS = new Set(["xai", "x-ai"]);
 

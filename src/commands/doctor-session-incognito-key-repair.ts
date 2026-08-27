@@ -2,21 +2,21 @@ import fs from "node:fs";
 import type { DatabaseSync } from "node:sqlite";
 import { publishSessionEntryCacheInvalidation } from "../config/sessions/session-accessor.sqlite-entry-cache.js";
 import { resolveAllAgentSessionStoreCandidateTargetsSync } from "../config/sessions/targets.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../infra/kysely-sync.js";
 import { isIncognitoSessionKey, parseAgentSessionKey } from "../routing/session-key.js";
-import { withOpenClawAgentDatabaseReadOnly } from "../state/openclaw-agent-db-readonly.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../state/openclaw-agent-db.generated.js";
+import { withAforaAgentDatabaseReadOnly } from "../state/afora-agent-db-readonly.js";
+import type { DB as AforaAgentKyselyDatabase } from "../state/afora-agent-db.generated.js";
 import {
-  closeOpenClawAgentDatabaseByPath,
-  isOpenClawAgentDatabaseOpen,
-  type OpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-} from "../state/openclaw-agent-db.js";
+  closeAforaAgentDatabaseByPath,
+  isAforaAgentDatabaseOpen,
+  type AforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+} from "../state/afora-agent-db.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../state/afora-state-db.js";
 import { runDoctorAgentDatabaseOperation } from "./doctor-agent-database-operation.js";
 import { writeValidatedDoctorSessionEntryJson } from "./doctor-session-entry-rewrite.js";
 import {
@@ -37,12 +37,12 @@ export type ReservedIncognitoKeyRepairReport = {
 
 export function repairReservedIncognitoSessionKeys(params: {
   apply: boolean;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
 }): ReservedIncognitoKeyRepairReport {
   const targets = listExistingAgentDatabaseTargets(params.cfg, params.env);
   const reservedKeys = new Set<string>();
-  const sharedDatabase = params.apply ? openOpenClawStateDatabase({ env: params.env }) : undefined;
+  const sharedDatabase = params.apply ? openAforaStateDatabase({ env: params.env }) : undefined;
   const journalRenames = sharedDatabase
     ? readRepairJournal(sharedDatabase.db)
     : readRepairJournalReadOnly(params.env);
@@ -54,7 +54,7 @@ export function repairReservedIncognitoSessionKeys(params: {
       agentId: target.agentId,
       path: target.sqlitePath,
       run: () =>
-        withOpenClawAgentDatabaseReadOnly(
+        withAforaAgentDatabaseReadOnly(
           (database) => ({
             occupied: params.apply ? collectOccupiedSessionKeys(database.db) : new Set<string>(),
             reserved: listReservedIncognitoKeys(database.db),
@@ -93,32 +93,32 @@ export function repairReservedIncognitoSessionKeys(params: {
   );
   const renames = [...journalRenames, ...newRenames];
   const renameMap = new Map(renames.map((item) => [item.from, item.to]));
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     (database) => writeRepairJournal(database.db, renames),
     { env: params.env },
     { operationLabel: "doctor.journal-reserved-incognito-session-keys" },
   );
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     (database) => rewriteSharedStateSessionKeys(database.db, renameMap),
     { env: params.env },
     { operationLabel: "doctor.rename-reserved-incognito-shared-state-keys" },
   );
   for (const target of targets) {
-    const wasOpen = isOpenClawAgentDatabaseOpen(target.sqlitePath);
+    const wasOpen = isAforaAgentDatabaseOpen(target.sqlitePath);
     const options = { agentId: target.agentId, env: params.env, path: target.sqlitePath };
     try {
-      runOpenClawAgentWriteTransaction(
+      runAforaAgentWriteTransaction(
         (database) => applyReservedIncognitoKeyRenames(database, renames),
         options,
         { operationLabel: "doctor.rename-reserved-incognito-session-keys" },
       );
     } finally {
       if (!wasOpen) {
-        closeOpenClawAgentDatabaseByPath(target.sqlitePath);
+        closeAforaAgentDatabaseByPath(target.sqlitePath);
       }
     }
   }
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     (database) => deleteRepairJournal(database.db),
     { env: params.env },
     { operationLabel: "doctor.complete-reserved-incognito-session-keys" },
@@ -127,7 +127,7 @@ export function repairReservedIncognitoSessionKeys(params: {
 }
 
 function listExistingAgentDatabaseTargets(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   env: NodeJS.ProcessEnv,
 ): Array<{ agentId: string; sqlitePath: string }> {
   const seenPaths = new Set<string>();
@@ -165,7 +165,7 @@ function planReservedIncognitoKeyRenames(
 }
 
 function applyReservedIncognitoKeyRenames(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   renames: readonly ReservedKeyRename[],
 ): void {
   if (renames.length === 0) {
@@ -190,7 +190,7 @@ function legacyIncognitoSessionKey(sessionKey: string): string {
 }
 
 function listReservedIncognitoKeys(database: DatabaseSync): string[] {
-  const db = getNodeSqliteKysely<OpenClawAgentKyselyDatabase>(database);
+  const db = getNodeSqliteKysely<AforaAgentKyselyDatabase>(database);
   const keys = new Set<string>();
   for (const row of executeSqliteQuerySync(
     database,
@@ -208,7 +208,7 @@ function listReservedIncognitoKeys(database: DatabaseSync): string[] {
 }
 
 function collectOccupiedSessionKeys(database: DatabaseSync): Set<string> {
-  const db = getNodeSqliteKysely<OpenClawAgentKyselyDatabase>(database);
+  const db = getNodeSqliteKysely<AforaAgentKyselyDatabase>(database);
   const keys = new Set<string>();
   const collect = (values: Array<string | null>) => {
     for (const value of values) {
@@ -272,7 +272,7 @@ function collectOccupiedSessionKeys(database: DatabaseSync): Set<string> {
 }
 
 function updateSessionKeyColumns(database: DatabaseSync, rename: ReservedKeyRename): void {
-  const db = getNodeSqliteKysely<OpenClawAgentKyselyDatabase>(database);
+  const db = getNodeSqliteKysely<AforaAgentKyselyDatabase>(database);
   const update = (query: Parameters<typeof executeSqliteQuerySync>[1]) =>
     executeSqliteQuerySync(database, query);
   update(
@@ -356,10 +356,10 @@ function updateSessionKeyColumns(database: DatabaseSync, rename: ReservedKeyRena
 }
 
 function rewriteSessionEntryJsonReferences(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   renames: ReadonlyMap<string, string>,
 ): void {
-  const db = getNodeSqliteKysely<OpenClawAgentKyselyDatabase>(database.db);
+  const db = getNodeSqliteKysely<AforaAgentKyselyDatabase>(database.db);
   const rows = executeSqliteQuerySync(
     database.db,
     db

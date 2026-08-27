@@ -1,6 +1,6 @@
 // Signal plugin module implements approval reactions behavior.
-import type { ApprovalResolveResult } from "openclaw/plugin-sdk/approval-gateway-runtime";
-import type { ChannelApprovalKind } from "openclaw/plugin-sdk/approval-handler-runtime";
+import type { ApprovalResolveResult } from "afora-agent/plugin-sdk/approval-gateway-runtime";
+import type { ChannelApprovalKind } from "afora-agent/plugin-sdk/approval-handler-runtime";
 import {
   addApprovalReactionHintToText,
   createApprovalReactionTargetStore,
@@ -9,22 +9,22 @@ import {
   readApprovalReactionDecisionList,
   resolveTypedApprovalReactionTarget,
   type ApprovalReactionTargetRecord,
-} from "openclaw/plugin-sdk/approval-reaction-runtime";
+} from "afora-agent/plugin-sdk/approval-reaction-runtime";
 import {
   getExecApprovalReplyMetadata,
   type ExecApprovalReplyDecision,
-} from "openclaw/plugin-sdk/approval-reply-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { isApprovalNotFoundError } from "openclaw/plugin-sdk/error-runtime";
-import { createLazyRuntimeSurface } from "openclaw/plugin-sdk/lazy-runtime";
-import { createPluginStateErrorReporter } from "openclaw/plugin-sdk/plugin-state-runtime";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
-import { normalizeAccountId } from "openclaw/plugin-sdk/routing";
+} from "afora-agent/plugin-sdk/approval-reply-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { isApprovalNotFoundError } from "afora-agent/plugin-sdk/error-runtime";
+import { createLazyRuntimeSurface } from "afora-agent/plugin-sdk/lazy-runtime";
+import { createPluginStateErrorReporter } from "afora-agent/plugin-sdk/plugin-state-runtime";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-runtime";
+import { normalizeAccountId } from "afora-agent/plugin-sdk/routing";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
-import { normalizeE164 } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { normalizeE164 } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { resolveSignalTarget } from "./aliases.js";
 import { getSignalApprovalApprovers, signalApprovalAuth } from "./approval-auth.js";
 import {
@@ -67,7 +67,7 @@ type SignalApprovalDeliveryResult = {
 };
 
 const loadResolveApprovalOverGateway = createLazyRuntimeSurface(
-  () => import("openclaw/plugin-sdk/approval-gateway-runtime"),
+  () => import("afora-agent/plugin-sdk/approval-gateway-runtime"),
   (runtime) => runtime.resolveApprovalOverGateway,
 );
 
@@ -93,7 +93,7 @@ export function resolveSignalApprovalConversationKey(to: string): string | null 
 }
 
 function resolveSignalApprovalConversationKeyForDeliveredTarget(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   to: string;
 }): string | null {
@@ -211,7 +211,7 @@ function readPersistedTarget(target: unknown): SignalApprovalReactionTarget | nu
 }
 
 export function hasSignalApprovalReactionApprovers(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): boolean {
   return getSignalApprovalApprovers(params).length > 0;
@@ -294,7 +294,7 @@ function formatSignalApprovalTerminalTruth(approval: ApprovalResolveResult["appr
 }
 
 export function addSignalApprovalReactionHintToStructuredPayload(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   to: string;
   payload: ReplyPayload;
@@ -362,7 +362,7 @@ function listDeliveredSignalMessageIdsWithVisibleHint(params: {
 }
 
 export function registerSignalApprovalReactionTargetForDeliveredPayload(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   target: SignalApprovalDeliveryTarget;
   payload: ReplyPayload;
   results: readonly SignalApprovalDeliveryResult[];
@@ -498,7 +498,7 @@ export async function resolveSignalApprovalReactionTargetWithPersistence(params:
 }
 
 export async function maybeResolveSignalApprovalReaction(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   conversationKey: string;
   messageId: string;

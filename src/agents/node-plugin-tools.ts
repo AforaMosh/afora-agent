@@ -1,5 +1,5 @@
 /** Materializes connected node-hosted plugin tools for agent runs. */
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { listConnectedNodePluginTools } from "../gateway/node-plugin-tool-snapshot.js";
 import {
   NODE_MCP_TOOL_CALL_GATEWAY_TIMEOUT_MS,

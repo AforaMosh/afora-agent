@@ -16,8 +16,8 @@ import { loadAgentRuntimePluginRegistryHandle } from "./runtime-plugins.js";
 import { getSandboxBackendFactory, registerSandboxBackend } from "./sandbox/backend.js";
 
 const SANDBOX_PROBE_ID = "scoped-load-probe";
-const REGISTER_SANDBOX_BACKEND = Symbol.for("openclaw.test.registerSandboxBackend");
-const REGISTRATION_MODES = Symbol.for("openclaw.test.pluginRegistrationModes");
+const REGISTER_SANDBOX_BACKEND = Symbol.for("afora.test.registerSandboxBackend");
+const REGISTRATION_MODES = Symbol.for("afora.test.pluginRegistrationModes");
 
 type ProbeGlobal = typeof globalThis & {
   [REGISTER_SANDBOX_BACKEND]?: typeof registerSandboxBackend;
@@ -105,7 +105,7 @@ it("selects a full-mode-only context engine on caller-owned handles without full
     body: `module.exports = {
   id: "ce-probe",
   register(api) {
-    const seen = globalThis[Symbol.for("openclaw.test.pluginRegistrationModes")];
+    const seen = globalThis[Symbol.for("afora.test.pluginRegistrationModes")];
     seen.push({ id: "ce-probe", mode: api.registrationMode });
     if (api.registrationMode === "full") {
       api.registerContextEngine("ce-probe", async () => ({
@@ -124,12 +124,12 @@ it("selects a full-mode-only context engine on caller-owned handles without full
     body: `module.exports = {
   id: "sandbox-probe",
   register(api) {
-    const seen = globalThis[Symbol.for("openclaw.test.pluginRegistrationModes")];
+    const seen = globalThis[Symbol.for("afora.test.pluginRegistrationModes")];
     seen.push({ id: "sandbox-probe", mode: api.registrationMode });
     if (api.registrationMode !== "full") {
       return;
     }
-    const registerSandboxBackend = globalThis[Symbol.for("openclaw.test.registerSandboxBackend")];
+    const registerSandboxBackend = globalThis[Symbol.for("afora.test.registerSandboxBackend")];
     registerSandboxBackend(${JSON.stringify(SANDBOX_PROBE_ID)}, async () => {
       throw new Error("sandbox probe backend should not run");
     });

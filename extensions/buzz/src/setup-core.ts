@@ -2,10 +2,10 @@ import {
   defineChannelSetupContract,
   type ChannelSetupAdapter,
   type ChannelSetupInput,
-} from "openclaw/plugin-sdk/channel-setup";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { applyAccountNameToChannelSection } from "openclaw/plugin-sdk/setup";
-import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/setup-runtime";
+} from "afora-agent/plugin-sdk/channel-setup";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { applyAccountNameToChannelSection } from "afora-agent/plugin-sdk/setup";
+import { DEFAULT_ACCOUNT_ID } from "afora-agent/plugin-sdk/setup-runtime";
 import { decodeBuzzPrivateKey, resolveBuzzPublicKey } from "./types.js";
 
 type BuzzSetupInput = ChannelSetupInput & {
@@ -22,7 +22,7 @@ function validRelayUrl(value: string | undefined): boolean {
   }
 }
 
-function resolveComparableCurrentKey(cfg: OpenClawConfig): string | undefined {
+function resolveComparableCurrentKey(cfg: AforaConfig): string | undefined {
   const configured = cfg.channels?.buzz?.privateKey;
   if (configured !== undefined) {
     return typeof configured === "string" ? configured.trim() || undefined : undefined;
@@ -90,7 +90,7 @@ const buzzSetupAdapter: ChannelSetupAdapter<BuzzSetupInput> = {
           ...(input.useEnv ? {} : { privateKey: input.privateKey?.trim() }),
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
   },
 };
 

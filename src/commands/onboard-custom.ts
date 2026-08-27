@@ -5,7 +5,7 @@
  * flows import this command module as their custom API entrypoint.
  */
 import { modelKey } from "../agents/model-selection.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { SecretInput } from "../config/types.secrets.js";
 import { ensureApiKeyFromEnvOrPrompt } from "../plugins/provider-auth-input.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -148,7 +148,7 @@ async function requestAnthropicVerification(params: {
 
 async function promptBaseUrlAndKey(params: {
   prompter: WizardPrompter;
-  config: OpenClawConfig;
+  config: AforaConfig;
   secretInputMode?: SecretInputMode;
   initialBaseUrl?: string;
 }): Promise<{ baseUrl: string; apiKey?: SecretInput; resolvedApiKey: string }> {
@@ -210,7 +210,7 @@ async function promptCustomApiModelId(prompter: WizardPrompter): Promise<string>
 
 async function applyCustomApiRetryChoice(params: {
   prompter: WizardPrompter;
-  config: OpenClawConfig;
+  config: AforaConfig;
   secretInputMode?: SecretInputMode;
   retryChoice: CustomApiRetryChoice;
   current: { baseUrl: string; apiKey?: SecretInput; resolvedApiKey: string; modelId: string };
@@ -237,7 +237,7 @@ async function applyCustomApiRetryChoice(params: {
 export async function promptCustomApiConfig(params: {
   prompter: WizardPrompter;
   runtime: RuntimeEnv;
-  config: OpenClawConfig;
+  config: AforaConfig;
   secretInputMode?: SecretInputMode;
 }): Promise<CustomApiResult> {
   const { prompter, runtime, config } = params;

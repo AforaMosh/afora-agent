@@ -1,10 +1,10 @@
 import {
   buildChannelInboundEventContext,
   resolveChannelInboundRouteEnvelope,
-} from "openclaw/plugin-sdk/channel-inbound";
-import { resolveStableChannelMessageIngress } from "openclaw/plugin-sdk/channel-ingress-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/logging-core";
+} from "afora-agent/plugin-sdk/channel-inbound";
+import { resolveStableChannelMessageIngress } from "afora-agent/plugin-sdk/channel-ingress-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/logging-core";
 import type { BuzzBus } from "./buzz-bus.js";
 import {
   BUZZ_DIFF_MESSAGE_KIND,
@@ -19,7 +19,7 @@ const log = createSubsystemLogger("buzz/inbound");
 
 export async function handleBuzzInbound(params: {
   account: ResolvedBuzzAccount;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   bus: BuzzBus;
   message: BuzzInboundMessage;
   signal: AbortSignal;

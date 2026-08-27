@@ -1,6 +1,6 @@
-import type { DiscordAccountConfig, OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+import type { DiscordAccountConfig, AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
 import type { APIVoiceState, Client } from "../internal/discord.js";
 import { formatMention } from "../mentions.js";
 import { resolveFetchedDiscordThreadLikeChannelContext } from "../monitor/thread-channel-context.js";
@@ -89,7 +89,7 @@ export class DiscordVoiceManager {
 
   constructor(params: {
     client: Client;
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     discordConfig: DiscordAccountConfig;
     accountId: string;
     runtime: RuntimeEnv;

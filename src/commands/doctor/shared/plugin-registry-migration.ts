@@ -1,6 +1,6 @@
 // Doctor migration from legacy shipped plugin install config into persisted install registry.
 import fs from "node:fs";
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import {
   extractShippedPluginInstallConfigRecords,
   inspectShippedPluginInstallConfigRecords,
@@ -10,7 +10,7 @@ import {
   copyPluginInstallRecordMap,
   setPluginInstallRecordMapEntry,
 } from "../../../config/plugin-install-record-map.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { inspectPersistedInstalledPluginIndexInstallRecordsSync } from "../../../plugins/installed-plugin-index-record-state.js";
 import { loadInstalledPluginIndexInstallRecords } from "../../../plugins/installed-plugin-index-records.js";
 import {
@@ -64,18 +64,18 @@ export class InvalidPluginInstallRecordStateError extends Error {}
 function invalidPersistedInstallRecordMessage(filePath: string): string {
   return [
     `Persisted plugin install records are invalid at ${filePath}.`,
-    "Stop the Gateway, back up this database, delete only the installed_plugin_index row with index_key='installed-plugin-index' using SQLite tooling, then rerun `openclaw doctor --fix` to rebuild it.",
+    "Stop the Gateway, back up this database, delete only the installed_plugin_index row with index_key='installed-plugin-index' using SQLite tooling, then rerun `afora doctor --fix` to rebuild it.",
   ].join(" ");
 }
 
 const INVALID_CONFIG_INSTALL_RECORD_MESSAGE =
-  "plugins.installs contains invalid records. Back up openclaw.json, correct or remove the invalid retired plugins.installs record, then rerun `openclaw doctor --fix`.";
+  "plugins.installs contains invalid records. Back up afora.json, correct or remove the invalid retired plugins.installs record, then rerun `afora doctor --fix`.";
 
 export type PluginRegistryInstallMigrationParams = LoadInstalledPluginIndexParams &
   InstalledPluginIndexStoreOptions & {
     dryRun?: boolean;
     existsSync?: (path: string) => boolean;
-    readConfig?: () => Promise<OpenClawConfig> | OpenClawConfig;
+    readConfig?: () => Promise<AforaConfig> | AforaConfig;
   };
 
 /** Decide whether plugin install registry migration should run for this environment. */
@@ -112,7 +112,7 @@ export function preflightPluginRegistryInstallMigration(
 
 async function readMigrationConfig(
   params: PluginRegistryInstallMigrationParams,
-): Promise<OpenClawConfig> {
+): Promise<AforaConfig> {
   if (params.config) {
     return params.config;
   }
@@ -185,7 +185,7 @@ function addPluginReference(
   }
 }
 
-function listConfiguredChannelIds(config: OpenClawConfig): Set<string> {
+function listConfiguredChannelIds(config: AforaConfig): Set<string> {
   const channels = config.channels;
   if (!channels || typeof channels !== "object" || Array.isArray(channels)) {
     return new Set();
@@ -197,7 +197,7 @@ function listConfiguredChannelIds(config: OpenClawConfig): Set<string> {
   );
 }
 
-function listConfiguredModelProviderIds(config: OpenClawConfig): Set<string> {
+function listConfiguredModelProviderIds(config: AforaConfig): Set<string> {
   const providers = config.models?.providers;
   if (!providers || typeof providers !== "object" || Array.isArray(providers)) {
     return new Set();
@@ -211,7 +211,7 @@ function listConfiguredModelProviderIds(config: OpenClawConfig): Set<string> {
 
 function listMigrationRelevantPluginRecords(params: {
   index: InstalledPluginIndex;
-  config: OpenClawConfig;
+  config: AforaConfig;
   installRecords: Record<string, unknown>;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
@@ -304,7 +304,7 @@ export async function migratePluginRegistryForInstall(
   if (inspectShippedPluginInstallConfigRecords(rawConfig).status === "invalid") {
     throw new InvalidPluginInstallRecordStateError(INVALID_CONFIG_INSTALL_RECORD_MESSAGE);
   }
-  const config = stripShippedPluginInstallConfigRecords(rawConfig) as OpenClawConfig;
+  const config = stripShippedPluginInstallConfigRecords(rawConfig) as AforaConfig;
   const durableInstallRecords =
     params.installRecords ?? (await loadInstalledPluginIndexInstallRecords(params));
   const installRecords = copyPluginInstallRecordMap(

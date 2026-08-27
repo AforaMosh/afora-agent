@@ -1,15 +1,15 @@
-import type { MediaKind } from "@openclaw/media-core/constants";
+import type { MediaKind } from "@afora/media-core/constants";
 import {
   getFileExtension,
   kindFromMime,
   mimeTypeFromFilePath,
   normalizeMimeType,
-} from "@openclaw/media-core/mime";
+} from "@afora/media-core/mime";
 import {
   asFiniteNumberInRange,
   asPositiveSafeInteger as normalizePositiveInteger,
-} from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { PromptImageOrderEntry } from "./prompt-image-order.js";
 
 /** One ordered runtime attachment; array position is its alignment identity. */
@@ -38,7 +38,7 @@ export type MediaFactInput = {
   [Key in keyof MediaFact]?: MediaFact[Key] | null;
 };
 
-const RUNTIME_PROMPT_MEDIA_FACTS = Symbol.for("openclaw.runtimePromptMediaFacts");
+const RUNTIME_PROMPT_MEDIA_FACTS = Symbol.for("afora.runtimePromptMediaFacts");
 
 function normalizeNonNegativeNumber(value: number | null | undefined): number | undefined {
   return asFiniteNumberInRange(value, { min: 0 });
@@ -73,7 +73,7 @@ export function readPersistedMediaFacts(message: object): MediaFact[] | undefine
 }
 
 function readPersistedMediaFactInputs(message: object): MediaFactInput[] | undefined {
-  const metadata = (message as Record<string, unknown>)["__openclaw"];
+  const metadata = (message as Record<string, unknown>)["__afora"];
   const media =
     metadata && typeof metadata === "object" && !Array.isArray(metadata)
       ? (metadata as Record<string, unknown>).media
@@ -248,18 +248,18 @@ export function canonicalizePersistedUserMessageMedia<T extends object>(
   for (const key of PERSISTED_LEGACY_MEDIA_KEYS) {
     delete next[key];
   }
-  const metadata = record["__openclaw"];
-  const openclaw =
+  const metadata = record["__afora"];
+  const afora =
     metadata && typeof metadata === "object" && !Array.isArray(metadata)
       ? { ...(metadata as Record<string, unknown>) }
       : {};
   if (media.length > 0 || canonical !== undefined || topLevelMedia !== undefined) {
-    openclaw.media = media;
+    afora.media = media;
   }
-  if (Object.keys(openclaw).length > 0) {
-    next["__openclaw"] = openclaw;
+  if (Object.keys(afora).length > 0) {
+    next["__afora"] = afora;
   } else {
-    delete next["__openclaw"];
+    delete next["__afora"];
   }
   return {
     changed: JSON.stringify(next) !== JSON.stringify(record),

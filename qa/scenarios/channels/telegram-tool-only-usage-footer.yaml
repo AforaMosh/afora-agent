@@ -10,7 +10,7 @@ scenario:
     secondary:
       - telegram.built-in-commands
   regressionRefs:
-    - openclaw/openclaw#87392
+    - AforaMosh/afora-agent#87392
   objective: Verify Telegram usage mode decorates a message-tool-only visible reply.
   successCriteria:
     - The usage command enables token footer mode.
@@ -50,7 +50,7 @@ flow:
                   senderId: qa-command-operator
                   senderName: QA Command Operator
                   text:
-                    expr: "`@openclaw Telegram usage footer QA. Reply exactly: ${config.marker}`"
+                    expr: "`@afora Telegram usage footer QA. Reply exactly: ${config.marker}`"
               - waitForOutbound:
                   conversation: { id: telegram-command-room, kind: channel }
                   sinceIndex: { ref: startIndex }

@@ -3,8 +3,8 @@ import type {
   RealtimeVoiceAudioFormat,
   RealtimeVoiceBargeInOptions,
   RealtimeVoiceToolResultOptions,
-} from "openclaw/plugin-sdk/realtime-voice";
-import { REALTIME_VOICE_AUDIO_FORMAT_G711_ULAW_8KHZ } from "openclaw/plugin-sdk/realtime-voice";
+} from "afora-agent/plugin-sdk/realtime-voice";
+import { REALTIME_VOICE_AUDIO_FORMAT_G711_ULAW_8KHZ } from "afora-agent/plugin-sdk/realtime-voice";
 import {
   AZURE_OPENAI_REALTIME_TOOL_NAME_MAX_LENGTH,
   OPENAI_REALTIME_DEFAULT_MIN_BARGE_IN_AUDIO_END_MS,
@@ -261,7 +261,7 @@ export abstract class OpenAIRealtimeProtocol {
       this.responseActive &&
       !this.responseCancelInFlight
     ) {
-      const eventId = `openclaw-response-cancel-${randomUUID()}`;
+      const eventId = `afora-response-cancel-${randomUUID()}`;
       this.manualResponseCancelEventId = eventId;
       this.sendEvent({ type: "response.cancel", event_id: eventId }, "reason=barge-in");
       this.responseCancelInFlight = true;
@@ -299,7 +299,7 @@ export abstract class OpenAIRealtimeProtocol {
     this.responseCreatePending = false;
     this.responseCreateInFlight = true;
     this.suppressAutoRespondForManualResponse();
-    const eventId = `openclaw-response-create-${randomUUID()}`;
+    const eventId = `afora-response-create-${randomUUID()}`;
     // Realtime errors can describe unrelated client events. Keep this id until
     // the manual turn settles so only its rejection may release VAD suppression.
     this.manualResponseCreateEventId = eventId;
@@ -325,7 +325,7 @@ export abstract class OpenAIRealtimeProtocol {
     if (!text) {
       return;
     }
-    const eventId = `openclaw-standalone-speech-${randomUUID()}`;
+    const eventId = `afora-standalone-speech-${randomUUID()}`;
     this.standaloneSpeechActive = true;
     this.standaloneSpeechEventId = eventId;
     this.responseCreateInFlight = true;

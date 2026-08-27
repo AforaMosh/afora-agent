@@ -5,12 +5,12 @@ import {
   getNodeSqliteKysely,
 } from "../infra/kysely-sync.js";
 import { normalizeAgentId } from "../routing/session-key.js";
-import type { DB as OpenClawStateKyselyDatabase } from "./openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "./afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "./openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "./afora-state-db.js";
 
 export type AgentCreatedVia = "operator" | "agent" | "claw";
 
@@ -21,8 +21,8 @@ export type AgentProvenance = {
   createdAtMs: number;
 };
 
-type AgentProvenanceDatabase = Pick<OpenClawStateKyselyDatabase, "agent_provenance">;
-type AgentProvenanceOptions = OpenClawStateDatabaseOptions & { nowMs?: number };
+type AgentProvenanceDatabase = Pick<AforaStateKyselyDatabase, "agent_provenance">;
+type AgentProvenanceOptions = AforaStateDatabaseOptions & { nowMs?: number };
 
 const ensuredDatabases = new WeakSet<DatabaseSync>();
 const AGENT_PROVENANCE_SCHEMA_SQL = `
@@ -34,12 +34,12 @@ CREATE TABLE IF NOT EXISTS agent_provenance (
 ) STRICT;
 `;
 
-export function ensureAgentProvenanceSchema(options: OpenClawStateDatabaseOptions = {}): void {
-  const database = openOpenClawStateDatabase(options);
+export function ensureAgentProvenanceSchema(options: AforaStateDatabaseOptions = {}): void {
+  const database = openAforaStateDatabase(options);
   if (ensuredDatabases.has(database.db)) {
     return;
   }
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       // sqlite-allow-raw -- feature-local additive schema DDL; provenance rows use Kysely.
       db.exec(AGENT_PROVENANCE_SCHEMA_SQL);
@@ -85,7 +85,7 @@ export function recordAgentProvenance(
     ? normalizeAgentId(provenance.creatorAgentId)
     : null;
   const createdAtMs = options.nowMs ?? Date.now();
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db: sqlite }) => {
       const db = getNodeSqliteKysely<AgentProvenanceDatabase>(sqlite);
       executeSqliteQuerySync(
@@ -114,10 +114,10 @@ export function recordAgentProvenance(
 
 export function readAgentProvenance(
   agentId: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): AgentProvenance | undefined {
   ensureAgentProvenanceSchema(options);
-  const database = openOpenClawStateDatabase(options);
+  const database = openAforaStateDatabase(options);
   const db = getNodeSqliteKysely<AgentProvenanceDatabase>(database.db);
   const row = executeSqliteQueryTakeFirstSync(
     database.db,
@@ -126,9 +126,9 @@ export function readAgentProvenance(
   return row ? fromRow(row) : undefined;
 }
 
-export function listAgentProvenance(options: OpenClawStateDatabaseOptions = {}): AgentProvenance[] {
+export function listAgentProvenance(options: AforaStateDatabaseOptions = {}): AgentProvenance[] {
   ensureAgentProvenanceSchema(options);
-  const database = openOpenClawStateDatabase(options);
+  const database = openAforaStateDatabase(options);
   const db = getNodeSqliteKysely<AgentProvenanceDatabase>(database.db);
   return executeSqliteQuerySync(
     database.db,

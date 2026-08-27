@@ -198,7 +198,7 @@ function createRealtimeTalkEvidenceWriter(
   options: RealtimeTalkLiveOptions,
   env: NodeJS.ProcessEnv,
 ) {
-  const model = env.OPENCLAW_REALTIME_OPENAI_MODEL?.trim() || DEFAULT_OPENAI_MODEL;
+  const model = env.AFORA_REALTIME_OPENAI_MODEL?.trim() || DEFAULT_OPENAI_MODEL;
   return createQaScriptEvidenceWriter({
     artifactBase: options.artifactBase,
     env,
@@ -244,8 +244,8 @@ async function runRealtimeTalkLiveProof(params: {
 }): Promise<RealtimeTalkProofResult> {
   const startedAt = Date.now();
   const openAIKey = params.env.OPENAI_API_KEY?.trim();
-  const model = params.env.OPENCLAW_REALTIME_OPENAI_MODEL?.trim() || DEFAULT_OPENAI_MODEL;
-  const voice = params.env.OPENCLAW_REALTIME_OPENAI_VOICE?.trim() || DEFAULT_OPENAI_VOICE;
+  const model = params.env.AFORA_REALTIME_OPENAI_MODEL?.trim() || DEFAULT_OPENAI_MODEL;
+  const voice = params.env.AFORA_REALTIME_OPENAI_VOICE?.trim() || DEFAULT_OPENAI_VOICE;
 
   params.writer.appendLog(
     [

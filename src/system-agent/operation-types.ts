@@ -1,9 +1,9 @@
-// Leaf contract for the parsed OpenClaw operation shape. Kept import-free so
+// Leaf contract for the parsed Afora operation shape. Kept import-free so
 // gateway server types can reference it without pulling the system-agent
 // runtime graph (operations-parse -> overview -> config -> gateway) into a
 // type-only import cycle.
 
-/** Parsed OpenClaw operation before approval/execution. */
+/** Parsed Afora operation before approval/execution. */
 export type SystemAgentOperation =
   | { kind: "none"; message: string }
   | { kind: "overview" }

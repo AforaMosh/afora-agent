@@ -2,7 +2,7 @@ import {
   tryResolveLegacyCompatibilityAgentId,
   tryResolveSystemAgentTargetAgentId,
 } from "../agents/agent-scope-config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
 
 type CronAgentScope = {
@@ -14,7 +14,7 @@ export const CRON_AGENT_SELECTION_REQUIRED_MESSAGE =
   "Agent-less cron job has no resolvable owner. Pass --agent <id> when creating or editing the job, or set agents.defaults.systemAgent.agentId.";
 
 /** Keeps shipped legacy defaults while routing modern ambient jobs through the system owner. */
-export function tryResolveCronDefaultAgentId(cfg: OpenClawConfig): string | undefined {
+export function tryResolveCronDefaultAgentId(cfg: AforaConfig): string | undefined {
   return tryResolveLegacyCompatibilityAgentId(cfg) ?? tryResolveSystemAgentTargetAgentId(cfg);
 }
 

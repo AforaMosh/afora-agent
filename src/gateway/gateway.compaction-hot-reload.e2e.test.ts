@@ -18,7 +18,7 @@ import {
   upsertSessionEntryCore,
 } from "../config/sessions/session-accessor.js";
 import { clearSessionStoreCacheForTest } from "../config/sessions/store-writer-state.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resetAgentEventsForTest } from "../infra/agent-events.js";
 import { captureEnv, deleteTestEnvValue, setTestEnvValue } from "../test-utils/env.js";
 import { disconnectGatewayClient, startGatewayWithClient } from "./test-helpers.e2e.js";
@@ -26,20 +26,20 @@ import { buildMockOpenAiResponsesProvider } from "./test-openai-responses-model.
 
 const ISOLATED_GATEWAY_ENV_KEYS = [
   "HOME",
-  "OPENCLAW_STATE_DIR",
-  "OPENCLAW_CONFIG_PATH",
-  "OPENCLAW_GATEWAY_TOKEN",
-  "OPENCLAW_TEST_GATEWAY_OVERRIDE_TOKEN",
-  "OPENCLAW_TEST_RUNTIME_OVERRIDE_TOKEN",
-  "OPENCLAW_TEST_MINIMAL_GATEWAY",
-  "OPENCLAW_SKIP_CHANNELS",
-  "OPENCLAW_SKIP_GMAIL_WATCHER",
-  "OPENCLAW_SKIP_CRON",
-  "OPENCLAW_SKIP_CANVAS_HOST",
-  "OPENCLAW_SKIP_BROWSER_CONTROL_SERVER",
-  "OPENCLAW_SKIP_PROVIDERS",
-  "OPENCLAW_BUNDLED_PLUGINS_DIR",
-  "OPENCLAW_DISABLE_BUNDLED_PLUGINS",
+  "AFORA_STATE_DIR",
+  "AFORA_CONFIG_PATH",
+  "AFORA_GATEWAY_TOKEN",
+  "AFORA_TEST_GATEWAY_OVERRIDE_TOKEN",
+  "AFORA_TEST_RUNTIME_OVERRIDE_TOKEN",
+  "AFORA_TEST_MINIMAL_GATEWAY",
+  "AFORA_SKIP_CHANNELS",
+  "AFORA_SKIP_GMAIL_WATCHER",
+  "AFORA_SKIP_CRON",
+  "AFORA_SKIP_CANVAS_HOST",
+  "AFORA_SKIP_BROWSER_CONTROL_SERVER",
+  "AFORA_SKIP_PROVIDERS",
+  "AFORA_BUNDLED_PLUGINS_DIR",
+  "AFORA_DISABLE_BUNDLED_PLUGINS",
 ] as const;
 
 let sequence = 0;
@@ -66,11 +66,11 @@ describe("gateway compaction hot reload", () => {
     async () => {
       const envSnapshot = captureEnv([...ISOLATED_GATEWAY_ENV_KEYS]);
       const tempHome = await fs.mkdtemp(
-        path.join(os.tmpdir(), "openclaw-gw-compaction-hot-reload-"),
+        path.join(os.tmpdir(), "afora-gw-compaction-hot-reload-"),
       );
-      const workspaceDir = path.join(tempHome, "openclaw");
-      const bundledPluginsDir = path.join(tempHome, "openclaw-test-empty-bundled-plugins");
-      const configPath = path.join(tempHome, ".openclaw", "openclaw.json");
+      const workspaceDir = path.join(tempHome, "afora");
+      const bundledPluginsDir = path.join(tempHome, "afora-test-empty-bundled-plugins");
+      const configPath = path.join(tempHome, ".afora", "afora.json");
       await Promise.all([
         fs.mkdir(workspaceDir, { recursive: true }),
         fs.mkdir(bundledPluginsDir, { recursive: true }),
@@ -79,21 +79,21 @@ describe("gateway compaction hot reload", () => {
       const token = nextId("compaction-hot-reload-token");
       for (const [key, value] of Object.entries({
         HOME: tempHome,
-        OPENCLAW_STATE_DIR: path.join(tempHome, ".openclaw"),
-        OPENCLAW_GATEWAY_TOKEN: token,
-        OPENCLAW_SKIP_CHANNELS: "1",
-        OPENCLAW_SKIP_GMAIL_WATCHER: "1",
-        OPENCLAW_SKIP_CRON: "1",
-        OPENCLAW_SKIP_CANVAS_HOST: "1",
-        OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-        OPENCLAW_SKIP_PROVIDERS: "1",
-        OPENCLAW_BUNDLED_PLUGINS_DIR: bundledPluginsDir,
-        OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
+        AFORA_STATE_DIR: path.join(tempHome, ".afora"),
+        AFORA_GATEWAY_TOKEN: token,
+        AFORA_SKIP_CHANNELS: "1",
+        AFORA_SKIP_GMAIL_WATCHER: "1",
+        AFORA_SKIP_CRON: "1",
+        AFORA_SKIP_CANVAS_HOST: "1",
+        AFORA_SKIP_BROWSER_CONTROL_SERVER: "1",
+        AFORA_SKIP_PROVIDERS: "1",
+        AFORA_BUNDLED_PLUGINS_DIR: bundledPluginsDir,
+        AFORA_DISABLE_BUNDLED_PLUGINS: "1",
       })) {
         setTestEnvValue(key, value);
       }
-      deleteTestEnvValue("OPENCLAW_CONFIG_PATH");
-      deleteTestEnvValue("OPENCLAW_TEST_MINIMAL_GATEWAY");
+      deleteTestEnvValue("AFORA_CONFIG_PATH");
+      deleteTestEnvValue("AFORA_TEST_MINIMAL_GATEWAY");
 
       const providerRequests: string[] = [];
       const providerRequestToolNames: string[][] = [];
@@ -201,7 +201,7 @@ describe("gateway compaction hot reload", () => {
             },
           },
           gateway: { auth: { mode: "token", token } },
-        } satisfies OpenClawConfig;
+        } satisfies AforaConfig;
 
         gateway = await startGatewayWithClient({
           cfg: initialConfig,

@@ -1,9 +1,9 @@
 /** Exact-registry plugin command execution shared by focused and compatibility runtimes. */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { resolveBoundAgentIdForSession } from "../agents/session-agent-binding.js";
 import { resolveConversationBindingContext } from "../channels/conversation-binding-context.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { ADMIN_SCOPE, isOperatorScope } from "../gateway/operator-scopes.js";
 import { logVerbose } from "../globals.js";
 import { withPluginCommandExecution } from "./command-execution-lock.js";
@@ -49,7 +49,7 @@ function sanitizeArgs(args: string | undefined): string | undefined {
 
 function resolveBindingConversation(params: {
   registry: PluginRegistry;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   channel: string;
   senderId?: string;
   from?: string;
@@ -66,7 +66,7 @@ function resolveBindingConversation(params: {
     return null;
   }
   return resolveConversationBindingContext({
-    cfg: params.config ?? ({} as OpenClawConfig),
+    cfg: params.config ?? ({} as AforaConfig),
     channel: params.channel,
     accountId: params.accountId,
     threadId: params.messageThreadId,

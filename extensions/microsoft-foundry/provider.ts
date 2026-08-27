@@ -1,12 +1,12 @@
 // Microsoft Foundry provider module implements model/runtime integration.
-import type { ProviderNormalizeResolvedModelContext } from "openclaw/plugin-sdk/core";
+import type { ProviderNormalizeResolvedModelContext } from "afora-agent/plugin-sdk/core";
 import {
   resolveClaudeThinkingProfile,
   supportsClaudeNativeMaxEffort,
   type ModelProviderConfig,
   type ProviderPlugin,
-} from "openclaw/plugin-sdk/provider-model-shared";
-import { buildProviderStreamFamilyHooks } from "openclaw/plugin-sdk/provider-stream-family";
+} from "afora-agent/plugin-sdk/provider-model-shared";
+import { buildProviderStreamFamilyHooks } from "afora-agent/plugin-sdk/provider-stream-family";
 import { apiKeyAuthMethod, entraIdAuthMethod } from "./auth.js";
 import { prepareFoundryRuntimeAuth } from "./runtime.js";
 import {

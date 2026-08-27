@@ -1,5 +1,5 @@
 // Irc tests cover runtime api plugin behavior.
-import { runDirectImportSmoke } from "openclaw/plugin-sdk/test-fixtures";
+import { runDirectImportSmoke } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeAll, describe, expect, it } from "vitest";
 
 describe("irc bundled api seams", () => {

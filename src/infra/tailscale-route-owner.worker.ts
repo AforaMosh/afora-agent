@@ -1,7 +1,7 @@
 // Owns one foreground Tailscale route claim and releases it when Gateway IPC closes.
 import { spawn, type ChildProcess } from "node:child_process";
 import process from "node:process";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { signalProcessTree } from "../process/kill-tree.js";
 import {
   TAILSCALE_ROUTE_OWNER_ARG,

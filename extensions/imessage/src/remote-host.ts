@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
-import { normalizeScpRemoteHost } from "openclaw/plugin-sdk/host-runtime";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
+import { normalizeScpRemoteHost } from "afora-agent/plugin-sdk/host-runtime";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
 import { expandIMessageUserPath } from "./cli-path.js";
 
 // CLI installation and wrapper contents are process-stable channel metadata.

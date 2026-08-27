@@ -1,5 +1,5 @@
 // Openai tests cover provider auth.contract plugin behavior.
-import { describeOpenAICodexProviderAuthContract } from "openclaw/plugin-sdk/provider-test-contracts";
+import { describeOpenAICodexProviderAuthContract } from "afora-agent/plugin-sdk/provider-test-contracts";
 import { vi } from "vitest";
 import { OPENAI_CODEX_DEFAULT_MODEL } from "./default-models.js";
 

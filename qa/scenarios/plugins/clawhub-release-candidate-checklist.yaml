@@ -32,4 +32,4 @@ scenario:
       - --artifact-base
       - ${outputDir}
       - --tarball-env
-      - OPENCLAW_QA_RELEASE_CANDIDATE_TARBALL
+      - AFORA_QA_RELEASE_CANDIDATE_TARBALL

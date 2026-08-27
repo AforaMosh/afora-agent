@@ -9,7 +9,7 @@ import { prepareContextWindowCaches } from "../agents/context-cache-projection.j
 import { getContextWindowCaches, replaceContextWindowCaches } from "../agents/context-cache.js";
 import { resetContextWindowCacheForTest } from "../agents/context-runtime-state.js";
 import { resetPreparedModelRuntimeSnapshotsForTest } from "../agents/prepared-model-runtime.test-support.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { connectGatewayClient, disconnectGatewayClient } from "./test-helpers.e2e.js";
 import {
   getGatewayTestPort,
@@ -59,8 +59,8 @@ describe("Gateway context cache remote proof", () => {
             workspace: process.cwd(),
             model: { primary: "synthetic-a/shared-model" },
             models: {
-              "synthetic-a/shared-model": { agentRuntime: { id: "openclaw" } },
-              "synthetic-b/shared-model": { agentRuntime: { id: "openclaw" } },
+              "synthetic-a/shared-model": { agentRuntime: { id: "afora" } },
+              "synthetic-b/shared-model": { agentRuntime: { id: "afora" } },
             },
           },
         },
@@ -78,7 +78,7 @@ describe("Gateway context cache remote proof", () => {
             },
           },
         },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       const { refreshPreparedModelRuntimeSnapshots } =
         await import("../agents/prepared-model-runtime.js");
       await refreshPreparedModelRuntimeSnapshots(warmConfig, {

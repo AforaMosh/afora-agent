@@ -62,8 +62,8 @@ function makeRegistry(pluginId: string, channels: string[] = [pluginId]): Plugin
         activation: {},
         startup: {},
         packageInstall: {
-          clawhubSpec: `clawhub:@openclaw/${pluginId}`,
-          npmSpec: `@openclaw/${pluginId}`,
+          clawhubSpec: `clawhub:@afora/${pluginId}`,
+          npmSpec: `@afora/${pluginId}`,
           defaultChoice: "clawhub",
         },
       },
@@ -82,7 +82,7 @@ describe("listPersistedBundledPluginLocationBridges", () => {
     readPersistedInstalledPluginIndexMock.mockResolvedValue(
       makeIndex({
         pluginId: "diagnostics-otel",
-        manifestPath: "/app/dist/extensions/diagnostics-otel/openclaw.plugin.json",
+        manifestPath: "/app/dist/extensions/diagnostics-otel/afora.plugin.json",
         manifestHash: "hash",
         source: "/app/dist/extensions/diagnostics-otel/index.js",
         rootDir: "/app/dist/extensions/diagnostics-otel",
@@ -93,13 +93,13 @@ describe("listPersistedBundledPluginLocationBridges", () => {
         packageInstall: {
           defaultChoice: "clawhub",
           clawhub: {
-            spec: "clawhub:@openclaw/diagnostics-otel",
-            packageName: "@openclaw/diagnostics-otel",
+            spec: "clawhub:@afora/diagnostics-otel",
+            packageName: "@afora/diagnostics-otel",
             exactVersion: false,
           },
           npm: {
-            spec: "@openclaw/diagnostics-otel",
-            packageName: "@openclaw/diagnostics-otel",
+            spec: "@afora/diagnostics-otel",
+            packageName: "@afora/diagnostics-otel",
             selectorKind: "none",
             exactVersion: false,
             pinState: "floating-without-integrity",
@@ -117,8 +117,8 @@ describe("listPersistedBundledPluginLocationBridges", () => {
         bundledPluginId: "diagnostics-otel",
         pluginId: "diagnostics-otel",
         preferredSource: "npm",
-        npmSpec: "@openclaw/diagnostics-otel",
-        clawhubSpec: "clawhub:@openclaw/diagnostics-otel",
+        npmSpec: "@afora/diagnostics-otel",
+        clawhubSpec: "clawhub:@afora/diagnostics-otel",
         channelIds: ["diagnostics-otel"],
       },
     ]);
@@ -128,7 +128,7 @@ describe("listPersistedBundledPluginLocationBridges", () => {
     readPersistedInstalledPluginIndexMock.mockResolvedValue(
       makeIndex({
         pluginId: "diagnostics-otel",
-        manifestPath: "/app/dist/extensions/diagnostics-otel/openclaw.plugin.json",
+        manifestPath: "/app/dist/extensions/diagnostics-otel/afora.plugin.json",
         manifestHash: "hash",
         source: "/app/dist/extensions/diagnostics-otel/index.js",
         rootDir: "/app/dist/extensions/diagnostics-otel",
@@ -139,8 +139,8 @@ describe("listPersistedBundledPluginLocationBridges", () => {
         packageInstall: {
           defaultChoice: "clawhub",
           clawhub: {
-            spec: "clawhub:@openclaw/diagnostics-otel",
-            packageName: "@openclaw/diagnostics-otel",
+            spec: "clawhub:@afora/diagnostics-otel",
+            packageName: "@afora/diagnostics-otel",
             exactVersion: false,
           },
           warnings: [],
@@ -156,8 +156,8 @@ describe("listPersistedBundledPluginLocationBridges", () => {
         bundledPluginId: "diagnostics-otel",
         pluginId: "diagnostics-otel",
         preferredSource: "npm",
-        npmSpec: "@openclaw/diagnostics-otel",
-        clawhubSpec: "clawhub:@openclaw/diagnostics-otel",
+        npmSpec: "@afora/diagnostics-otel",
+        clawhubSpec: "clawhub:@afora/diagnostics-otel",
         channelIds: ["diagnostics-otel"],
       },
     ]);
@@ -167,7 +167,7 @@ describe("listPersistedBundledPluginLocationBridges", () => {
     readPersistedInstalledPluginIndexMock.mockResolvedValue(
       makeIndex({
         pluginId: "qqbot",
-        manifestPath: "/app/dist/extensions/qqbot/openclaw.plugin.json",
+        manifestPath: "/app/dist/extensions/qqbot/afora.plugin.json",
         manifestHash: "hash",
         source: "/app/dist/extensions/qqbot/index.js",
         rootDir: "/app/dist/extensions/qqbot",
@@ -183,9 +183,9 @@ describe("listPersistedBundledPluginLocationBridges", () => {
     await expect(listPersistedBundledPluginLocationBridges({})).resolves.toEqual([
       {
         bundledPluginId: "qqbot",
-        pluginId: "openclaw-qqbot",
+        pluginId: "afora-qqbot",
         preferredSource: "npm",
-        npmSpec: "@tencent-connect/openclaw-qqbot@2.0.1",
+        npmSpec: "@tencent-connect/afora-qqbot@2.0.1",
         expectedIntegrity:
           "sha512-2010PaCummeQaxerLtaGfQ/5HChiXaW/KpTERid7V/1zyTs46S2ACi0hgZQ1SB7tH0t1InWr8tzVBJV/pLss3Q==",
         channelIds: ["qqbot"],
@@ -194,26 +194,26 @@ describe("listPersistedBundledPluginLocationBridges", () => {
   });
 
   it.each([
-    ["byteplus", "@openclaw/byteplus-provider", true],
-    ["duckduckgo", "@openclaw/duckduckgo-plugin", false],
-    ["mistral", "@openclaw/mistral-provider", true],
-    ["novita", "@openclaw/novita-provider", true],
-    ["opencode", "@openclaw/opencode-provider", true],
-    ["opencode-go", "@openclaw/opencode-go-provider", true],
-    ["synthetic", "@openclaw/synthetic-provider", true],
-    ["teams-meetings", "@openclaw/teams-meetings", true],
-    ["volcengine", "@openclaw/volcengine-provider", true],
-    ["voyage", "@openclaw/voyage-provider", true],
-    ["vydra", "@openclaw/vydra-provider", true],
-    ["xiaomi", "@openclaw/xiaomi-provider", true],
-    ["zoom-meetings", "@openclaw/zoom-meetings", true],
+    ["byteplus", "@afora/byteplus-provider", true],
+    ["duckduckgo", "@afora/duckduckgo-plugin", false],
+    ["mistral", "@afora/mistral-provider", true],
+    ["novita", "@afora/novita-provider", true],
+    ["opencode", "@afora/opencode-provider", true],
+    ["opencode-go", "@afora/opencode-go-provider", true],
+    ["synthetic", "@afora/synthetic-provider", true],
+    ["teams-meetings", "@afora/teams-meetings", true],
+    ["volcengine", "@afora/volcengine-provider", true],
+    ["voyage", "@afora/voyage-provider", true],
+    ["vydra", "@afora/vydra-provider", true],
+    ["xiaomi", "@afora/xiaomi-provider", true],
+    ["zoom-meetings", "@afora/zoom-meetings", true],
   ] as const)(
     "externalizes the shipped bundled %s plugin using official install metadata",
     async (pluginId, npmSpec, enabledByDefault) => {
       readPersistedInstalledPluginIndexMock.mockResolvedValue(
         makeIndex({
           pluginId,
-          manifestPath: `/app/dist/extensions/${pluginId}/openclaw.plugin.json`,
+          manifestPath: `/app/dist/extensions/${pluginId}/afora.plugin.json`,
           manifestHash: "hash",
           source: `/app/dist/extensions/${pluginId}/index.js`,
           rootDir: `/app/dist/extensions/${pluginId}`,
@@ -246,7 +246,7 @@ describe("listPersistedBundledPluginLocationBridges", () => {
     readPersistedInstalledPluginIndexMock.mockResolvedValue(
       makeIndex({
         pluginId: "comfy",
-        manifestPath: "/app/dist/extensions/comfy/openclaw.plugin.json",
+        manifestPath: "/app/dist/extensions/comfy/afora.plugin.json",
         manifestHash: "hash",
         source: "/app/dist/extensions/comfy/index.js",
         rootDir: "/app/dist/extensions/comfy",
@@ -267,8 +267,8 @@ describe("listPersistedBundledPluginLocationBridges", () => {
         bundledPluginId: "comfy",
         pluginId: "comfy",
         preferredSource: "npm",
-        npmSpec: "@openclaw/comfy-provider",
-        clawhubSpec: "clawhub:@openclaw/comfy-provider",
+        npmSpec: "@afora/comfy-provider",
+        clawhubSpec: "clawhub:@afora/comfy-provider",
         enabledByDefault: true,
       },
     ]);
@@ -278,7 +278,7 @@ describe("listPersistedBundledPluginLocationBridges", () => {
     readPersistedInstalledPluginIndexMock.mockResolvedValue(
       makeIndex({
         pluginId: "imessage",
-        manifestPath: "/app/dist/extensions/imessage/openclaw.plugin.json",
+        manifestPath: "/app/dist/extensions/imessage/afora.plugin.json",
         manifestHash: "hash",
         source: "/app/dist/extensions/imessage/index.js",
         rootDir: "/app/dist/extensions/imessage",
@@ -299,8 +299,8 @@ describe("listPersistedBundledPluginLocationBridges", () => {
         bundledPluginId: "imessage",
         pluginId: "imessage",
         preferredSource: "npm",
-        npmSpec: "@openclaw/imessage",
-        clawhubSpec: "clawhub:@openclaw/imessage",
+        npmSpec: "@afora/imessage",
+        clawhubSpec: "clawhub:@afora/imessage",
         enabledByDefault: true,
         channelIds: ["imessage"],
       },
@@ -311,7 +311,7 @@ describe("listPersistedBundledPluginLocationBridges", () => {
     readPersistedInstalledPluginIndexMock.mockResolvedValue(
       makeIndex({
         pluginId: "local-only",
-        manifestPath: "/app/dist/extensions/local-only/openclaw.plugin.json",
+        manifestPath: "/app/dist/extensions/local-only/afora.plugin.json",
         manifestHash: "hash",
         source: "/app/dist/extensions/local-only/index.js",
         rootDir: "/app/dist/extensions/local-only",
@@ -340,7 +340,7 @@ describe("listPersistedBundledPluginRecoveryLocations", () => {
     readPersistedInstalledPluginIndexMock.mockResolvedValue(
       makeIndex({
         pluginId: "diagnostics-otel",
-        manifestPath: "/app/dist/extensions/diagnostics-otel/openclaw.plugin.json",
+        manifestPath: "/app/dist/extensions/diagnostics-otel/afora.plugin.json",
         manifestHash: "hash",
         source: "/app/dist/extensions/diagnostics-otel/index.js",
         rootDir: "/app/dist/extensions/diagnostics-otel",
@@ -363,7 +363,7 @@ describe("listPersistedBundledPluginRecoveryLocations", () => {
     readPersistedInstalledPluginIndexMock.mockResolvedValue(
       makeIndex({
         pluginId: "diagnostics-otel",
-        manifestPath: "extensions/diagnostics-otel/openclaw.plugin.json",
+        manifestPath: "extensions/diagnostics-otel/afora.plugin.json",
         manifestHash: "hash",
         source: "extensions/diagnostics-otel/index.js",
         rootDir: "extensions/diagnostics-otel",

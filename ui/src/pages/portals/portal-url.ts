@@ -1,4 +1,4 @@
-import type { PortalSummary } from "@openclaw/gateway-protocol";
+import type { PortalSummary } from "@afora/gateway-protocol";
 import { resolveGatewayHttpOrigin } from "../../components/sandbox-host.ts";
 
 export function resolvePortalUrl(

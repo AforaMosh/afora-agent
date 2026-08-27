@@ -8,19 +8,19 @@ import {
   buildLiveCronProbeMessage,
   createLiveCronProbeSpec,
   isClaudeLikeLiveAgent,
-  resolveOpenClawCliProcessArgs,
+  resolveAforaCliProcessArgs,
   shouldRunLiveImageProbe,
 } from "./live-agent-probes.js";
 
 describe("live-agent-probes", () => {
   it("uses the source runner when packaged CLI output is absent", () => {
-    expect(resolveOpenClawCliProcessArgs(["cron", "list"], false)).toEqual([
+    expect(resolveAforaCliProcessArgs(["cron", "list"], false)).toEqual([
       "scripts/run-node.mjs",
       "cron",
       "list",
     ]);
-    expect(resolveOpenClawCliProcessArgs(["cron", "list"], true)).toEqual([
-      "openclaw.mjs",
+    expect(resolveAforaCliProcessArgs(["cron", "list"], true)).toEqual([
+      "afora.mjs",
       "cron",
       "list",
     ]);
@@ -68,11 +68,11 @@ describe("live-agent-probes", () => {
       "Preserve job.sessionTarget and job.sessionKey exactly as provided.",
     );
     expect(claudeRetryPrompt).toContain(
-      "search/load MCP tools for `openclaw automations` or `automations`",
+      "search/load MCP tools for `afora automations` or `automations`",
     );
-    expect(claudeRetryPrompt).toContain("mcp__openclaw__automations");
+    expect(claudeRetryPrompt).toContain("mcp__afora__automations");
     expect(claudeRetryPrompt).toContain("Do not use Claude native `CronCreate`");
-    expect(claudeRetryPrompt).not.toContain("openclaw-tools");
+    expect(claudeRetryPrompt).not.toContain("afora-tools");
     expect(
       buildLiveCronProbeMessage({
         agent: "future-agent",
@@ -88,7 +88,7 @@ describe("live-agent-probes", () => {
         attempt: 1,
         exactReply: spec.name,
       }),
-    ).toContain("previous OpenClaw automations MCP tool call was cancelled");
+    ).toContain("previous Afora automations MCP tool call was cancelled");
     const args = JSON.parse(spec.argsJson) as {
       job?: {
         sessionTarget?: string;

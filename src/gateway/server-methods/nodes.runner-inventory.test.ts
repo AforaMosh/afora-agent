@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it, vi } from "vitest";
 import { WORKER_PROTOCOL_FEATURES } from "../../../packages/gateway-protocol/src/schema/worker-admission.js";
 import { NODE_WORKER_SUPERVISOR_STATUS_COMMAND } from "../../infra/node-commands.js";
@@ -22,7 +22,7 @@ import type { GatewayRequestHandlerOptions } from "./types.js";
 
 const LEGACY_WORKER_RUNS = {
   bundleHash: "a".repeat(64),
-  openclawVersion: "2026.8.1",
+  aforaVersion: "2026.8.1",
   protocolFeatures: [...WORKER_PROTOCOL_FEATURES],
 };
 
@@ -316,7 +316,7 @@ describe("nodeHandlers node.runnerInventory.update", () => {
       undefined,
       expect.objectContaining({
         code: "INVALID_REQUEST",
-        message: expect.stringContaining("openclaw update"),
+        message: expect.stringContaining("afora update"),
       }),
     );
     expect(inventoryChanged).toHaveBeenLastCalledWith("node-1");
@@ -404,7 +404,7 @@ describe("nodeHandlers node.runnerInventory.update", () => {
     expect(opts.respond).toHaveBeenCalledWith(
       false,
       undefined,
-      expect.objectContaining({ message: expect.stringContaining("openclaw update") }),
+      expect.objectContaining({ message: expect.stringContaining("afora update") }),
     );
     expect(runtime.nodeWorkerSupervisorTransport.getIssue?.("node-1")).toEqual(
       NODE_RUNNER_UPDATE_REQUIRED_ISSUE,

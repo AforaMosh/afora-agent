@@ -1,11 +1,11 @@
 // Ollama web-search runtime implements provider integration.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   isNonSecretApiKeyMarker,
   normalizeOptionalSecretInput,
-} from "openclaw/plugin-sdk/provider-auth";
-import { resolveEnvApiKey } from "openclaw/plugin-sdk/provider-auth-runtime";
-import { readProviderJsonResponse } from "openclaw/plugin-sdk/provider-http";
+} from "afora-agent/plugin-sdk/provider-auth";
+import { resolveEnvApiKey } from "afora-agent/plugin-sdk/provider-auth-runtime";
+import { readProviderJsonResponse } from "afora-agent/plugin-sdk/provider-http";
 import {
   enablePluginInConfig,
   readPositiveIntegerParam,
@@ -18,10 +18,10 @@ import {
   truncateText,
   wrapWebContent,
   type WebSearchProviderPlugin,
-} from "openclaw/plugin-sdk/provider-web-search";
-import { coerceSecretRef } from "openclaw/plugin-sdk/secret-input";
-import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/provider-web-search";
+import { coerceSecretRef } from "afora-agent/plugin-sdk/secret-input";
+import { fetchWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { OLLAMA_DEFAULT_BASE_URL } from "./defaults.js";
 import { readProviderBaseUrl } from "./provider-base-url.js";
 import {
@@ -90,7 +90,7 @@ function createOllamaWebSearchCredentialError(ref: { source: string; id: string 
 // Delegate configured-key resolution (literal value or env-backed SecretRef) to the shared
 // web-search resolver, then apply Ollama's marker filter so persisted non-secret placeholders
 // (e.g. the OAuth/signin marker) fall through to the ambient OLLAMA_API_KEY instead of being sent.
-function resolveConfiguredOllamaWebSearchApiKey(config?: OpenClawConfig): string | undefined {
+function resolveConfiguredOllamaWebSearchApiKey(config?: AforaConfig): string | undefined {
   const credentialValue = config?.models?.providers?.ollama?.apiKey;
   const credentialRef = coerceSecretRef(credentialValue);
   const resolvedValue = normalizeOllamaWebSearchApiKey(
@@ -108,7 +108,7 @@ function resolveConfiguredOllamaWebSearchApiKey(config?: OpenClawConfig): string
   return resolvedValue;
 }
 
-function resolveOllamaWebSearchBaseUrl(config?: OpenClawConfig): string {
+function resolveOllamaWebSearchBaseUrl(config?: AforaConfig): string {
   const pluginBaseUrl = normalizeOptionalString(
     resolveProviderWebSearchPluginConfig(config, "ollama")?.baseUrl,
   );
@@ -174,7 +174,7 @@ function buildOllamaWebSearchAttempts(params: {
 }
 
 async function runOllamaWebSearch(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   query: string;
   count?: number;
   signal?: AbortSignal;
@@ -292,11 +292,11 @@ async function runOllamaWebSearch(params: {
 }
 
 async function warnOllamaWebSearchPrereqs(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   prompter: {
     note: (message: string, title?: string) => Promise<void>;
   };
-}): Promise<OpenClawConfig> {
+}): Promise<AforaConfig> {
   const baseUrl = resolveOllamaWebSearchBaseUrl(params.config);
   const { reachable } = await fetchOllamaModels(baseUrl);
   if (!reachable) {
@@ -336,7 +336,7 @@ export function createOllamaWebSearchProvider(): WebSearchProviderPlugin {
     envVars: [],
     placeholder: "(run ollama signin)",
     signupUrl: "https://ollama.com/",
-    docsUrl: "https://docs.openclaw.ai/tools/web",
+    docsUrl: "https://docs.afora.ai/tools/web",
     autoDetectOrder: 110,
     credentialPath: "",
     getCredentialValue: () => undefined,

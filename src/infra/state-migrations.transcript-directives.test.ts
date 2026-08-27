@@ -7,10 +7,10 @@ import { readSessionArchiveContentSync } from "../config/sessions/archive-compre
 import { resolveSqliteTranscriptArchiveDirectory } from "../config/sessions/session-accessor.sqlite-scope.js";
 import { reconcileSessionTranscriptIndexInTransaction } from "../config/sessions/session-transcript-index.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { requireNodeSqlite } from "./node-sqlite.js";
 import { migrateHistoricalTranscriptDirectives } from "./state-migrations.transcript-directives.js";
 
@@ -151,16 +151,16 @@ function parseArchive(content: string): FixtureEvent[] {
 }
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   cleanupTempDirs(tempDirs);
 });
 
 describe("historical transcript directive migration", () => {
   it("migrates assistant rows and archives while preserving code and derived indexes", () => {
     const stateDir = makeTempDir(tempDirs, "transcript-directive-migration-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
-    const opened = openOpenClawAgentDatabase({ agentId: "main", env });
+    const env = { AFORA_STATE_DIR: stateDir };
+    const opened = openAforaAgentDatabase({ agentId: "main", env });
     const databasePath = opened.path;
     const tagged = messageEvent({
       id: "tagged-assistant",
@@ -277,7 +277,7 @@ describe("historical transcript directive migration", () => {
     const toolEventJson = JSON.stringify(tool);
     const archivedCodeJson = JSON.stringify(archivedCode);
     const archivedUserJson = JSON.stringify(archivedUser);
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
 
     const result = migrateHistoricalTranscriptDirectives({ env });
     expect(result.warnings).toEqual([]);
@@ -288,7 +288,7 @@ describe("historical transcript directive migration", () => {
     };
     expect(migratedTagged.message).toMatchObject({
       content: [{ type: "text", text: "Final answer" }],
-      openclawDelivery: {
+      aforaDelivery: {
         audioAsVoice: true,
         replyToCurrent: true,
         replyToId: "message-7",
@@ -303,7 +303,7 @@ describe("historical transcript directive migration", () => {
     expect(migratedReaction.message).toMatchObject({
       content: [{ type: "text", text: "Reacted  without a fact" }],
     });
-    expect(migratedReaction.message).not.toHaveProperty("openclawDelivery");
+    expect(migratedReaction.message).not.toHaveProperty("aforaDelivery");
 
     expect(readGeneration(databasePath, "tagged-session")).not.toBe("tagged-before");
     expect(readGeneration(databasePath, "reaction-session")).not.toBe("reaction-before");
@@ -336,7 +336,7 @@ describe("historical transcript directive migration", () => {
     expect(migratedArchive[0]).toMatchObject({
       message: {
         content: [{ type: "text", text: "Archived answer" }],
-        openclawDelivery: { replyToId: "archive-2" },
+        aforaDelivery: { replyToId: "archive-2" },
       },
     });
     expect(migratedArchiveContent).toContain(archivedCodeJson);
@@ -361,8 +361,8 @@ describe("historical transcript directive migration", () => {
 
   it("resumes after the committed transcript cursor", () => {
     const stateDir = makeTempDir(tempDirs, "transcript-directive-resume-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
-    const opened = openOpenClawAgentDatabase({ agentId: "main", env });
+    const env = { AFORA_STATE_DIR: stateDir };
+    const opened = openAforaAgentDatabase({ agentId: "main", env });
     const databasePath = opened.path;
     insertSession(opened.db, {
       events: [
@@ -402,7 +402,7 @@ describe("historical transcript directive migration", () => {
         1,
         1,
       );
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
 
     expect(migrateHistoricalTranscriptDirectives({ env }).warnings).toEqual([]);
     expect(readGeneration(databasePath, "resume-a")).toBe("already-bumped");
@@ -410,15 +410,15 @@ describe("historical transcript directive migration", () => {
     expect(JSON.parse(readEventJson(databasePath, "resume-b", 0))).toMatchObject({
       message: {
         content: [{ type: "text", text: "Pending" }],
-        openclawDelivery: { audioAsVoice: true },
+        aforaDelivery: { audioAsVoice: true },
       },
     });
   });
 
   it("completes an old-schema database without the optional archives table", () => {
     const stateDir = makeTempDir(tempDirs, "transcript-directive-old-schema-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
-    const opened = openOpenClawAgentDatabase({ agentId: "main", env });
+    const env = { AFORA_STATE_DIR: stateDir };
+    const opened = openAforaAgentDatabase({ agentId: "main", env });
     const databasePath = opened.path;
     insertSession(opened.db, {
       events: [
@@ -433,7 +433,7 @@ describe("historical transcript directive migration", () => {
       sessionId: "old-schema-session",
     });
     opened.db.exec("DROP TABLE session_transcript_archives");
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
 
     expect(migrateHistoricalTranscriptDirectives({ env })).toEqual({
       changes: [expect.stringContaining("1 active session(s), 0 archived transcript(s)")],
@@ -444,7 +444,7 @@ describe("historical transcript directive migration", () => {
     expect(JSON.parse(readEventJson(databasePath, "old-schema-session", 0))).toMatchObject({
       message: {
         content: [{ type: "text", text: "Pending" }],
-        openclawDelivery: { audioAsVoice: true },
+        aforaDelivery: { audioAsVoice: true },
       },
     });
     expect(migrateHistoricalTranscriptDirectives({ env })).toEqual({
@@ -455,8 +455,8 @@ describe("historical transcript directive migration", () => {
 
   it("completes a pre-stuck archives cursor when the optional table is absent", () => {
     const stateDir = makeTempDir(tempDirs, "transcript-directive-stuck-archives-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
-    const opened = openOpenClawAgentDatabase({ agentId: "main", env });
+    const env = { AFORA_STATE_DIR: stateDir };
+    const opened = openAforaAgentDatabase({ agentId: "main", env });
     const databasePath = opened.path;
     opened.db.exec("DROP TABLE session_transcript_archives");
     opened.db
@@ -473,7 +473,7 @@ describe("historical transcript directive migration", () => {
         1,
         1,
       );
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
 
     expect(migrateHistoricalTranscriptDirectives({ env })).toEqual({
       changes: [],

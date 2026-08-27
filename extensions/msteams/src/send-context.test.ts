@@ -1,6 +1,6 @@
 // Msteams tests cover send context plugin behavior.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { MSTeamsConfig, OpenClawConfig } from "../runtime-api.js";
+import type { MSTeamsConfig, AforaConfig } from "../runtime-api.js";
 import type { StoredConversationReference } from "./conversation-store.js";
 import { resolveMSTeamsSendContext } from "./send-context.js";
 
@@ -75,7 +75,7 @@ async function resolveMSTeamsProactiveReplyTarget(params: {
         ...params.cfg,
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
   const context = await resolveMSTeamsSendContext({
     cfg,
     to: `conversation:${params.conversationId}`,
@@ -117,7 +117,7 @@ describe("resolveMSTeamsSendContext", () => {
           tenantId: "tenant-id",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await expect(
       resolveMSTeamsSendContext({
@@ -150,7 +150,7 @@ describe("resolveMSTeamsSendContext", () => {
               replyStyle: "top-level",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         to: "conversation:19:channel@thread.tacv2;messageid=explicit-root",
       }),
     ).resolves.toMatchObject({
@@ -182,7 +182,7 @@ describe("resolveMSTeamsSendContext", () => {
               replyStyle: "top-level",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         to: "graph-team/19:channel@thread.tacv2;messageid=graph-root",
       }),
     ).resolves.toMatchObject({
@@ -211,7 +211,7 @@ describe("resolveMSTeamsSendContext", () => {
           tenantId: "tenant-id",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await expect(
       resolveMSTeamsSendContext({
@@ -244,7 +244,7 @@ describe("resolveMSTeamsSendContext", () => {
             sharePointSiteId: "site-id",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       to: "conversation:a:personal",
     });
 

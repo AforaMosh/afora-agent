@@ -1,6 +1,6 @@
 import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
-import { safeParseJson } from "@openclaw/normalization-core";
+import { safeParseJson } from "@afora/normalization-core";
 import type { Insertable } from "kysely";
 import {
   executeSqliteQuerySync,

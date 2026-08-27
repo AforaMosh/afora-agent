@@ -1,8 +1,8 @@
 // Zalouser tests cover monitor.group gating plugin behavior.
-import type { ChannelAccountSnapshot } from "openclaw/plugin-sdk/channel-contract";
-import { createChannelMessageReplyPipeline } from "openclaw/plugin-sdk/channel-outbound";
+import type { ChannelAccountSnapshot } from "afora-agent/plugin-sdk/channel-contract";
+import { createChannelMessageReplyPipeline } from "afora-agent/plugin-sdk/channel-outbound";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig, PluginRuntime } from "../runtime-api.js";
+import type { AforaConfig, PluginRuntime } from "../runtime-api.js";
 // Preserve module setup before modules that consume it.
 // oxfmt-ignore
 import {
@@ -48,7 +48,7 @@ function createAccount(): ResolvedZalouserAccount {
   };
 }
 
-function createConfig(): OpenClawConfig {
+function createConfig(): AforaConfig {
   return {
     channels: {
       zalouser: {
@@ -248,7 +248,7 @@ function installRuntime(params: {
       },
       groups: {
         resolveRequireMention: vi.fn((input) => {
-          const cfg = input.cfg as OpenClawConfig;
+          const cfg = input.cfg as AforaConfig;
           const groupCfg = cfg.channels?.zalouser?.groups ?? {};
           const typedGroupCfg = groupCfg as Record<string, { requireMention?: boolean }>;
           const groupEntry = input.groupId ? typedGroupCfg[input.groupId] : undefined;
@@ -310,7 +310,7 @@ async function processMessageThroughMonitor(params: {
   message?: ZaloInboundMessage;
   messages?: ZaloInboundMessage[];
   account: ResolvedZalouserAccount;
-  config: OpenClawConfig;
+  config: AforaConfig;
   runtime: ReturnType<typeof createZalouserRuntimeEnv>;
   historyState?: { historyLimit?: number };
   statusSink?: (patch: Omit<ChannelAccountSnapshot, "accountId">) => void;
@@ -557,7 +557,7 @@ describe("zalouser monitor group mention gating", () => {
     const { dispatchReplyWithBufferedBlockDispatcher } = installRuntime({
       commandAuthorized: false,
     });
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         zalouser: {
           enabled: true,

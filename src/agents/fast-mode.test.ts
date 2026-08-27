@@ -1,6 +1,6 @@
 // Verifies fast-mode precedence across session, agent, and model defaults.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { formatFastModeAutoLabel } from "../shared/fast-mode.js";
 import {
   formatFastModeAutoProgressText,
@@ -19,7 +19,7 @@ describe("resolveFastModeState", () => {
           defaults: { fastModeDefault: "auto" },
           list: [{ id: "main", fastModeDefault: false }],
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       provider: "openai",
       model: "gpt-4o",
       agentId: "main",
@@ -33,7 +33,7 @@ describe("resolveFastModeState", () => {
 
   it("keeps auto as the persisted mode and starts enabled", () => {
     const state = resolveFastModeState({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       provider: "openai",
       model: "gpt-5.5",
       sessionEntry: { fastMode: "auto" },
@@ -59,7 +59,7 @@ describe("resolveFastModeState", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
 
       const state = resolveFastModeState({
         cfg,
@@ -85,7 +85,7 @@ describe("resolveFastModeState", () => {
         },
         list: [{ id: "main", fastModeDefault: false }],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const state = resolveFastModeState({
       cfg,
@@ -107,7 +107,7 @@ describe("resolveFastModeState", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const state = resolveFastModeState({
       cfg,
@@ -148,7 +148,7 @@ describe("resolveFastModeState", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const state = resolveFastModeState({
       cfg,
@@ -174,7 +174,7 @@ describe("resolveFastModeState", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const state = resolveFastModeState({
       cfg,
@@ -196,7 +196,7 @@ describe("resolveFastModeState", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const state = resolveFastModeState({
       cfg,
@@ -219,7 +219,7 @@ describe("resolveFastModeState", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const state = resolveFastModeState({
       cfg,
@@ -242,7 +242,7 @@ describe("resolveFastModeState", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const state = resolveFastModeState({
       cfg,
@@ -256,7 +256,7 @@ describe("resolveFastModeState", () => {
 
   it("defaults to off when unset", () => {
     const state = resolveFastModeState({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       provider: "openai",
       model: "gpt-4o",
     });

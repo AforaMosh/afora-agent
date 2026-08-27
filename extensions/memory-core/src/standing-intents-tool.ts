@@ -1,5 +1,5 @@
-import { jsonResult } from "openclaw/plugin-sdk/memory-core-host-runtime-core";
-import type { AnyAgentTool } from "openclaw/plugin-sdk/plugin-entry";
+import { jsonResult } from "afora-agent/plugin-sdk/memory-core-host-runtime-core";
+import type { AnyAgentTool } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   cancelStandingIntent,
   createStandingIntent,

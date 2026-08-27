@@ -1,5 +1,5 @@
 // Verifies process-state persistence across fresh task registry module loads.
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, it, vi } from "vitest";
 
 describe("task registry process state", () => {

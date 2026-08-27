@@ -1,6 +1,6 @@
 // Msteams API module exposes the plugin public contract.
-import type { ChannelDirectoryAdapter } from "openclaw/plugin-sdk/channel-contract";
-import { listDirectoryEntriesFromSources } from "openclaw/plugin-sdk/directory-runtime";
+import type { ChannelDirectoryAdapter } from "afora-agent/plugin-sdk/channel-contract";
+import { listDirectoryEntriesFromSources } from "afora-agent/plugin-sdk/directory-runtime";
 import { normalizeMSTeamsMessagingTarget } from "./src/resolve-allowlist.js";
 import { resolveMSTeamsCredentials } from "./src/token.js";
 

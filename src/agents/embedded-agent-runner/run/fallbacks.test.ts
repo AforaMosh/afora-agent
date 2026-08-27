@@ -1,7 +1,7 @@
 // Fallback configuration tests pin how embedded runs detect model fallback
 // availability from explicit overrides versus normal agent config.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { hasEmbeddedRunConfiguredModelFallbacks } from "./fallbacks.js";
 
 describe("hasEmbeddedRunConfiguredModelFallbacks", () => {
@@ -16,8 +16,8 @@ describe("hasEmbeddedRunConfiguredModelFallbacks", () => {
 
   it("treats explicit empty modelFallbacksOverride as disabling fallbacks", () => {
     // An explicit empty override is a caller decision, not a request to fall
-    // back to defaults from the persisted OpenClaw config.
-    const cfg: OpenClawConfig = {
+    // back to defaults from the persisted Afora config.
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           model: {
@@ -35,7 +35,7 @@ describe("hasEmbeddedRunConfiguredModelFallbacks", () => {
   });
 
   it("falls back to normal agent/default model fallback config when no override is provided", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           model: {

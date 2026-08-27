@@ -55,8 +55,8 @@ describe("control UI session PR subscriptions", () => {
       pullRequests: [
         {
           number: 1,
-          owner: "openclaw",
-          repo: "openclaw",
+          owner: "afora",
+          repo: "afora",
           branch: "feature/demo",
           title: "Demo",
           url: "https://example.test/pr/1",

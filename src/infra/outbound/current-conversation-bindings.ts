@@ -4,18 +4,18 @@ import {
   asDateTimestampMs,
   isFutureDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { normalizeConversationText } from "../../acp/conversation-id.js";
 import { normalizeAnyChannelId } from "../../channels/registry.js";
 import { getActivePluginChannelRegistryFromState } from "../../plugins/runtime-channel-state.js";
 import { resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
 import { resolveGlobalSingleton } from "../../shared/global-singleton.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../../state/afora-state-db.js";
 import { INTERNAL_MESSAGE_CHANNEL } from "../../utils/message-channel-constants.js";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../kysely-sync.js";
 import { normalizeConversationRef } from "./session-binding-normalization.js";
@@ -31,7 +31,7 @@ const CURRENT_BINDINGS_ID_PREFIX = "generic:";
 const CURRENT_BINDING_CONVERSATION_KIND = "current";
 
 type CurrentConversationBindingDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "current_conversation_bindings"
 >;
 
@@ -41,7 +41,7 @@ type CurrentConversationBindingsState = {
 };
 
 const currentConversationBindingsState = resolveGlobalSingleton<CurrentConversationBindingsState>(
-  Symbol.for("openclaw.currentConversationBindings"),
+  Symbol.for("afora.currentConversationBindings"),
   () => ({ loaded: false, byConversationKey: new Map() }),
   (state) => {
     state.loaded = false;
@@ -95,7 +95,7 @@ function normalizePersistedBindingRecord(
 }
 
 function openBindingDatabase() {
-  return openOpenClawStateDatabase();
+  return openAforaStateDatabase();
 }
 
 function bindingRowsToRecords(rows: Array<{ record_json: string }>): SessionBindingRecord[] {
@@ -140,7 +140,7 @@ function writePersistedBindings(nextBindings: ReadonlyMap<string, SessionBinding
     .filter((record) => !isBindingExpired(record))
     .toSorted((a, b) => a.bindingId.localeCompare(b.bindingId));
   const updatedAt = Date.now();
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     const bindingDb = getNodeSqliteKysely<CurrentConversationBindingDatabase>(db);
     executeSqliteQuerySync(db, bindingDb.deleteFrom("current_conversation_bindings"));
     if (records.length === 0) {
@@ -458,7 +458,7 @@ export const testing = {
     currentConversationBindingsState.loaded = false;
     currentConversationBindingsState.byConversationKey.clear();
     if (params?.deletePersistedFile) {
-      runOpenClawStateWriteTransaction(
+      runAforaStateWriteTransaction(
         ({ db }) => {
           const bindingDb = getNodeSqliteKysely<CurrentConversationBindingDatabase>(db);
           executeSqliteQuerySync(db, bindingDb.deleteFrom("current_conversation_bindings"));

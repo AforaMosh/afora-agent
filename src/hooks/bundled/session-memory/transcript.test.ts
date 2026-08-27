@@ -225,7 +225,7 @@ describe("session-memory transcript extraction", () => {
         type: "message",
         message: {
           role: "assistant",
-          provider: "openclaw",
+          provider: "afora",
           model: "delivery-mirror",
           content: [{ type: "text", text: "Lights turned on" }],
         },
@@ -244,7 +244,7 @@ describe("session-memory transcript extraction", () => {
         type: "message",
         message: {
           role: "assistant",
-          provider: "openclaw",
+          provider: "afora",
           model: "claude",
           content: [
             { type: "thinking", text: "..." },
@@ -256,7 +256,7 @@ describe("session-memory transcript extraction", () => {
         type: "message",
         message: {
           role: "assistant",
-          provider: "openclaw",
+          provider: "afora",
           model: "delivery-mirror",
           content: [{ type: "text", text: "2+2 = 4" }],
         },
@@ -265,7 +265,7 @@ describe("session-memory transcript extraction", () => {
         type: "message",
         message: {
           role: "assistant",
-          provider: "openclaw",
+          provider: "afora",
           model: "gateway-injected",
           content: [{ type: "text", text: "standalone gateway reply" }],
         },
@@ -285,7 +285,7 @@ describe("session-memory transcript extraction", () => {
         type: "message",
         message: {
           role: "assistant",
-          provider: "openclaw",
+          provider: "afora",
           model: "delivery-mirror",
           content: [{ type: "text", text: "Your number is 123-4567" }],
         },
@@ -295,7 +295,7 @@ describe("session-memory transcript extraction", () => {
         type: "message",
         message: {
           role: "assistant",
-          provider: "openclaw",
+          provider: "afora",
           model: "delivery-mirror",
           content: [{ type: "text", text: "Your number is 123-4567" }],
         },
@@ -315,7 +315,7 @@ describe("session-memory transcript extraction", () => {
         type: "message",
         message: {
           role: "assistant",
-          provider: "openclaw",
+          provider: "afora",
           model: "delivery-mirror",
           content: [{ type: "text", text: "Done" }],
         },
@@ -325,7 +325,7 @@ describe("session-memory transcript extraction", () => {
         type: "message",
         message: {
           role: "assistant",
-          provider: "openclaw",
+          provider: "afora",
           model: "delivery-mirror",
           content: [{ type: "text", text: "Done" }],
         },

@@ -4,7 +4,7 @@
  * round-robin ordering semantics.
  */
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveAuthProfileOrder } from "./auth-profiles/order.js";
 import type { AuthProfileStore } from "./auth-profiles/types.js";
 
@@ -62,7 +62,7 @@ const ANTHROPIC_CFG = {
       "anthropic:work": { provider: "anthropic", mode: "api_key" },
     },
   },
-} satisfies OpenClawConfig;
+} satisfies AforaConfig;
 
 describe("resolveAuthProfileOrder", () => {
   const store = ANTHROPIC_STORE;

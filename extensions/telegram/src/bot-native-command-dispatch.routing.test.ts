@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createConfiguredAcpTopicBinding,
@@ -42,14 +42,14 @@ describe("Telegram native command dispatch routing", () => {
         handler: shadowHandler,
       },
     });
-    const cfg: OpenClawConfig = {};
+    const cfg: AforaConfig = {};
     const { handler } = registerAndResolveStatusHandler({ cfg });
     await handler(createTelegramPrivateCommandContext());
 
     expect(sessionMocks.recordSessionMetaFromInbound).toHaveBeenCalledTimes(1);
     expect(shadowHandler).not.toHaveBeenCalled();
     const turnPlan = dispatchChannelInboundTurnMock.mock.calls[0]?.[0];
-    expect(turnPlan?.replyOptions?.[Symbol.for("openclaw.pluginCommandDispatch") as never]).toEqual(
+    expect(turnPlan?.replyOptions?.[Symbol.for("afora.pluginCommandDispatch") as never]).toEqual(
       { kind: "non-plugin" },
     );
     const call = (
@@ -97,8 +97,8 @@ describe("Telegram native command dispatch routing", () => {
   });
 
   it("keeps one live config snapshot through native command execution", async () => {
-    const startupCfg: OpenClawConfig = { session: { store: "/tmp/startup-sessions.json" } };
-    const runtimeCfg: OpenClawConfig = { session: { store: "/tmp/runtime-sessions.json" } };
+    const startupCfg: AforaConfig = { session: { store: "/tmp/startup-sessions.json" } };
+    const runtimeCfg: AforaConfig = { session: { store: "/tmp/runtime-sessions.json" } };
     const { handler } = registerAndResolveStatusHandler({ cfg: startupCfg, runtimeCfg });
 
     await handler(createTelegramPrivateCommandContext());
@@ -125,7 +125,7 @@ describe("Telegram native command dispatch routing", () => {
             streaming: { block: { enabled: blockStreamingEnabled } },
           },
         },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       const { handler } = registerAndResolveStatusHandler({ cfg });
 
       await handler(createTelegramPrivateCommandContext());

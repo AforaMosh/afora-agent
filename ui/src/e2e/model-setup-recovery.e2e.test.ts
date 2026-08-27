@@ -11,7 +11,7 @@ const suite = createControlUiE2eSuite({
   unavailableMessage: (executablePath) => `Playwright Chromium is unavailable at ${executablePath}`,
 });
 
-const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
 
 suite.define(() => {
   it("shows a failed LM Studio connection with its detected endpoint", async () => {
@@ -28,13 +28,13 @@ suite.define(() => {
           featureMethods: [
             "chat.metadata",
             "chat.startup",
-            "openclaw.setup.detect",
-            "openclaw.setup.verify",
-            "openclaw.setup.prepare.start",
+            "afora.setup.detect",
+            "afora.setup.verify",
+            "afora.setup.prepare.start",
             "wizard.next",
           ],
           methodResponses: {
-            "openclaw.setup.detect": {
+            "afora.setup.detect": {
               candidates: [
                 {
                   kind: "provider-auto:lmstudio",
@@ -56,16 +56,16 @@ suite.define(() => {
                   actionLabel: "Connect server",
                 },
               ],
-              workspace: "/tmp/openclaw-e2e",
+              workspace: "/tmp/afora-e2e",
               configuredModel: modelRef,
               setupComplete: true,
             },
-            "openclaw.setup.verify": {
+            "afora.setup.verify": {
               ok: false,
               status: "unavailable",
               error: "connect ECONNREFUSED 127.0.0.1:1234",
             },
-            "openclaw.setup.prepare.start": {
+            "afora.setup.prepare.start": {
               sessionId: "lmstudio-recovery-session",
               done: false,
               status: "running",
@@ -111,7 +111,7 @@ suite.define(() => {
           });
         }
 
-        const verify = await gateway.waitForRequest("openclaw.setup.verify");
+        const verify = await gateway.waitForRequest("afora.setup.verify");
         expect(verify.params).toEqual({ agentId: "main" });
       },
     );

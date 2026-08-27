@@ -350,7 +350,7 @@ describe("createBlockReplyDeliveryHandler", () => {
     const blockReplyPipeline = {
       enqueue: vi.fn(),
     } as unknown as BlockReplyPipelineLike;
-    const absPath = path.join("/tmp/home", "openclaw", "image.png");
+    const absPath = path.join("/tmp/home", "afora", "image.png");
 
     const handler = createBlockReplyDeliveryHandler({
       onBlockReply: vi.fn(async () => {}),
@@ -387,7 +387,7 @@ describe("createBlockReplyDeliveryHandler", () => {
     const blockReplyPipeline = {
       enqueue: vi.fn(),
     } as unknown as BlockReplyPipelineLike;
-    const absPath = path.join("/tmp/home", "openclaw", "survived.png");
+    const absPath = path.join("/tmp/home", "afora", "survived.png");
 
     const handler = createBlockReplyDeliveryHandler({
       onBlockReply: vi.fn(async () => {}),

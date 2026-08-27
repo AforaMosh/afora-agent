@@ -23,8 +23,8 @@ function buildNodeInstallEnvironmentValueSources(): Record<
   GatewayServiceEnvironmentValueSource | undefined
 > {
   return {
-    OPENCLAW_GATEWAY_TOKEN: "file",
-    OPENCLAW_GATEWAY_PASSWORD: "file", // pragma: allowlist secret
+    AFORA_GATEWAY_TOKEN: "file",
+    AFORA_GATEWAY_PASSWORD: "file", // pragma: allowlist secret
     CF_ACCESS_CLIENT_ID: "file",
     CF_ACCESS_CLIENT_SECRET: "file", // pragma: allowlist secret
   };
@@ -84,6 +84,6 @@ export async function buildNodeInstallPlan(params: {
     workingDirectory,
     environment,
     environmentValueSources: buildNodeInstallEnvironmentValueSources(),
-    description: "OpenClaw Node Host",
+    description: "Afora Node Host",
   };
 }

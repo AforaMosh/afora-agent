@@ -3,7 +3,7 @@ import type {
   SessionApprovalEvent,
   SessionApprovalReplay,
 } from "../../packages/gateway-protocol/src/index.js";
-import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
+import type { AforaStateDatabaseOptions } from "../state/afora-state-db.js";
 import { resolveApprovalSourceStreamKey } from "./approval-session-audience.js";
 import { normalizeControlUiBasePath } from "./control-ui-shared.js";
 import type { OperatorApprovalLifecycleEvent } from "./exec-approval-manager.js";
@@ -32,7 +32,7 @@ export function createOperatorApprovalSessionEventRuntime(params: {
   sessionMessageSubscribers: Pick<SessionMessageSubscriberRegistry, "getApprovals">;
   broadcastToConnIds: GatewayBroadcastToConnIdsFn;
   controlUiBasePath?: string;
-  databaseOptions?: OpenClawStateDatabaseOptions;
+  databaseOptions?: AforaStateDatabaseOptions;
   now?: () => number;
   reconcileTerminal?: (record: OperatorApprovalRecord) => boolean;
 }): OperatorApprovalSessionEventRuntime {

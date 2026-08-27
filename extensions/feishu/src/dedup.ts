@@ -2,7 +2,7 @@
 // can redeliver one text message with a fresh message_id/event_id (#46778),
 // and multi-account groups receive one logical broadcast per bot account.
 // Queue tombstones cannot cover either twin; claims commit at turn adoption.
-import type { ChannelReplayClaimHandle } from "openclaw/plugin-sdk/persistent-dedupe";
+import type { ChannelReplayClaimHandle } from "afora-agent/plugin-sdk/persistent-dedupe";
 import { feishuDedupeState } from "./dedup-state.js";
 
 type FeishuDedupeLog = (...args: unknown[]) => void;

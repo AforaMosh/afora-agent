@@ -1,7 +1,7 @@
 import {
   createChannelPartialDeliveryError,
   isChannelPartialDeliveryError,
-} from "openclaw/plugin-sdk/channel-inbound";
+} from "afora-agent/plugin-sdk/channel-inbound";
 import { expect, it } from "vitest";
 import { expectWindowRetiredWithoutSummary } from "./bot-message-dispatch.progress-window.test-helpers.js";
 import {
@@ -776,7 +776,7 @@ describeTelegramDispatch("dispatchTelegramMessage progress-updates", () => {
         await dispatcherOptions.deliver(
           {
             text: "Fast mode enabled",
-            channelData: { openclawProgressKind: "fast-mode-auto" },
+            channelData: { aforaProgressKind: "fast-mode-auto" },
           },
           { kind: "tool" },
         );

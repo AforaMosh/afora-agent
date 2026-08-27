@@ -1,4 +1,4 @@
-import { optionalPositiveIntegerSchema } from "openclaw/plugin-sdk/channel-actions";
+import { optionalPositiveIntegerSchema } from "afora-agent/plugin-sdk/channel-actions";
 import { Type } from "typebox";
 import { resolveGoogleMeetConfig } from "./config.js";
 
@@ -59,7 +59,7 @@ export const GoogleMeetToolSchema = Type.Object({
     Type.String({
       enum: ["agent", "bidi", "transcribe"],
       description:
-        "Join mode. agent uses realtime transcription, the configured OpenClaw agent, and regular TTS. bidi uses the realtime voice model directly. transcribe joins observe-only.",
+        "Join mode. agent uses realtime transcription, the configured Afora agent, and regular TTS. bidi uses the realtime voice model directly. transcribe joins observe-only.",
     }),
   ),
   dialInNumber: Type.Optional(

@@ -10,9 +10,9 @@ import {
   HttpStatusCodeError,
   type TwitchApiCallFetchOptions,
 } from "@twurple/api-call";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { withTimeout } from "openclaw/plugin-sdk/text-utility-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { withTimeout } from "afora-agent/plugin-sdk/text-utility-runtime";
 import type {
   ChannelResolveKind,
   ChannelResolveResult,

@@ -11,7 +11,7 @@ import {
 } from "../sidebar-layout.ts";
 import "./chat-sidebar-region.runtime.ts";
 
-type Region = HTMLElementTagNameMap["openclaw-chat-sidebar-region"] & {
+type Region = HTMLElementTagNameMap["afora-chat-sidebar-region"] & {
   updateComplete: Promise<unknown>;
 };
 
@@ -20,7 +20,7 @@ const regions: Region[] = [];
 async function createRegion(layout: SidebarLayout = openSlot({ columns: [] }, "detail")) {
   const shell = document.createElement("div");
   shell.className = "sidebar-region";
-  const region = document.createElement("openclaw-chat-sidebar-region") as Region;
+  const region = document.createElement("afora-chat-sidebar-region") as Region;
   region.layout = layout;
   region.panelTemplates = {
     detail: html`<div data-panel="detail">Detail panel</div>`,
@@ -159,7 +159,7 @@ describe("chat sidebar region", () => {
       terminal: html`<div .handleToggleRequest=${handleToggleRequest}>Terminal panel</div>`,
     };
     await region.updateComplete;
-    const event = new CustomEvent("openclaw:terminal-toggle", {
+    const event = new CustomEvent("afora:terminal-toggle", {
       detail: { catalog: { catalogId: "codex", hostId: "gateway:local", threadId: "thread-1" } },
     });
 
@@ -250,7 +250,7 @@ describe("chat sidebar region", () => {
       region.layout = openSlot({ columns: [] }, slot);
       await region.updateComplete;
       const empty = root(region).querySelector(".side-panel-empty--type");
-      const state = empty?.querySelector("openclaw-panel-empty-state");
+      const state = empty?.querySelector("afora-panel-empty-state");
       await (state as HTMLElement & { updateComplete?: Promise<unknown> })?.updateComplete;
       expect(state?.querySelector("svg")).not.toBeNull();
       expect(state?.shadowRoot?.querySelector(".empty-state__title")?.textContent).toBe(label);

@@ -1,7 +1,7 @@
 // Session-stable source-reply mode for synthetic turns (heartbeat wakes,
 // system events, inter-session announcements) that reach the reply resolver
 // without dispatch's injected delivery-mode facts.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   resolveEffectiveToolPolicy,
   resolveGroupToolPolicy,
@@ -17,7 +17,7 @@ import { mergeAlsoAllowPolicy, resolveToolProfilePolicy } from "../../agents/too
 import { normalizeChatType } from "../../channels/chat-type.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { resolveGroupSessionKey } from "../../config/sessions/group.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   deliveryContextFromSession,
   sessionDeliveryChannel,
@@ -40,7 +40,7 @@ import { resolveSourceReplyDeliveryMode } from "./source-reply-delivery-mode.js"
  * binding on each transition (#121485).
  */
 export function resolveSessionStableReplyMode(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   ctx: FinalizedMsgContext;
   sessionEntry: SessionEntry;
   sessionAgentId: string;
@@ -104,7 +104,7 @@ function resolveStableChannelFact(value: string | undefined): string | undefined
  * session policy every turn kind must hash identically (#121485).
  */
 export function resolveStableMessageToolAvailability(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   ctx: FinalizedMsgContext;
   sessionEntry?: SessionEntry;
   sessionAgentId: string;

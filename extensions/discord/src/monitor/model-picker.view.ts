@@ -4,9 +4,9 @@ import { ButtonStyle } from "discord-api-types/v10";
 import type {
   ModelsProviderData,
   ModelsRuntimeChoice,
-} from "openclaw/plugin-sdk/models-provider-runtime";
-import { normalizeProviderId } from "openclaw/plugin-sdk/provider-model-shared";
-import { sliceUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/models-provider-runtime";
+import { normalizeProviderId } from "afora-agent/plugin-sdk/provider-model-shared";
+import { sliceUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import {
   Button,
   Container,
@@ -220,9 +220,9 @@ function getRuntimeChoices(params: {
   }
   return [
     {
-      id: "openclaw",
-      label: "OpenClaw Default",
-      description: "Use the built-in OpenClaw runtime.",
+      id: "afora",
+      label: "Afora Default",
+      description: "Use the built-in Afora runtime.",
     },
   ];
 }
@@ -243,7 +243,7 @@ function resolveSelectedRuntime(params: {
   if (current && allowed.has(current)) {
     return current;
   }
-  return choices[0]?.id ?? "openclaw";
+  return choices[0]?.id ?? "afora";
 }
 
 function resolveExplicitRuntimeState(params: {

@@ -1,4 +1,4 @@
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, it } from "vitest";
 
 describe("createRequireRecord", () => {

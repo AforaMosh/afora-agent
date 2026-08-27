@@ -23,7 +23,7 @@ vi.mock("../logging/diagnostic-runtime.js", () => ({
 
 function getCommandLaneRegistryForTest(): Map<string, unknown> {
   const state = (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.commandQueueState")
+    Symbol.for("afora.commandQueueState")
   ];
   const lanes = (state as { lanes?: unknown } | undefined)?.lanes;
   if (!(lanes instanceof Map)) {

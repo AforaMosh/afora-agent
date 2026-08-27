@@ -3,7 +3,7 @@ import {
   resolveProviderRequestHeaders,
   type ProviderRequestCapability,
   type ProviderRequestTransport,
-} from "openclaw/plugin-sdk/provider-http";
+} from "afora-agent/plugin-sdk/provider-http";
 import { DEFAULT_GOOGLE_API_BASE_URL } from "./provider-policy.js";
 
 export function resolveGoogleApiClientHeaders(params?: {

@@ -15,7 +15,7 @@ const suite = createControlUiE2eSuite({
   startServerBeforeBrowser: true,
 });
 
-const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
 const answer = "Keep this companion answer visible until the reset succeeds.";
 const initiatingSessionKey = "agent:main:companion-clear";
 const nextSessionKey = "agent:main:companion-next";
@@ -79,7 +79,7 @@ async function withCompanion(run: (surface: CompanionSurface) => Promise<void>):
         sessionKey: initiatingSessionKey,
       });
       await openChatSidePanelType(page, "Side chat");
-      const companion = page.locator("openclaw-chat-session-rail");
+      const companion = page.locator("afora-chat-session-rail");
       await companion.getByText(answer, { exact: true }).waitFor();
       // The embedded rail has no header of its own: its destructive clear is
       // contributed to the shared side-panel header by the active panel.
@@ -142,7 +142,7 @@ suite.define(() => {
         message: resetError,
       });
 
-      const visiblePane = page.locator("openclaw-chat-pane.chat-pane-cache__pane--visible");
+      const visiblePane = page.locator("afora-chat-pane.chat-pane-cache__pane--visible");
       expect(await visiblePane.getByRole("alert").filter({ hasText: resetError }).count()).toBe(0);
       if (artifactDir) {
         await page.screenshot({
@@ -152,12 +152,12 @@ suite.define(() => {
       }
 
       await navigateToControlUiSession(page, initiatingSessionKey);
-      const initiatingPane = page.locator("openclaw-chat-pane.chat-pane-cache__pane--visible");
+      const initiatingPane = page.locator("afora-chat-pane.chat-pane-cache__pane--visible");
       expect(await initiatingPane.getByRole("alert").filter({ hasText: resetError }).count()).toBe(
         0,
       );
       await initiatingPane
-        .locator("openclaw-chat-session-rail")
+        .locator("afora-chat-session-rail")
         .getByText(answer, { exact: true })
         .waitFor();
       if (artifactDir) {

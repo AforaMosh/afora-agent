@@ -3,9 +3,9 @@ import {
   createPluginSetupWizardStatus,
   createQueuedWizardPrompter,
   runSetupWizardFinalize,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import { DEFAULT_ACCOUNT_ID, type OpenClawConfig } from "openclaw/plugin-sdk/setup";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+import { DEFAULT_ACCOUNT_ID, type AforaConfig } from "afora-agent/plugin-sdk/setup";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { whatsappSetupWizard } from "./setup-surface.js";
 import {
@@ -24,7 +24,7 @@ import {
 } from "./setup-test-helpers.js";
 
 const hoisted = vi.hoisted(() => ({
-  detectWhatsAppLinked: vi.fn<(cfg: OpenClawConfig, accountId: string) => Promise<boolean>>(
+  detectWhatsAppLinked: vi.fn<(cfg: AforaConfig, accountId: string) => Promise<boolean>>(
     async () => false,
   ),
   hasWebCredsSync: vi.fn(() => false),
@@ -35,9 +35,9 @@ const hoisted = vi.hoisted(() => ({
     async () => "not-linked",
   ),
   resolveWhatsAppAuthDir: vi.fn<
-    (params: { cfg: OpenClawConfig; accountId: string }) => { authDir: string }
+    (params: { cfg: AforaConfig; accountId: string }) => { authDir: string }
   >(() => ({
-    authDir: "/tmp/openclaw-whatsapp-test",
+    authDir: "/tmp/afora-whatsapp-test",
   })),
 }));
 
@@ -62,9 +62,9 @@ vi.mock("./creds-files.js", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/setup", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/setup")>(
-    "openclaw/plugin-sdk/setup",
+vi.mock("afora-agent/plugin-sdk/setup", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/setup")>(
+    "afora-agent/plugin-sdk/setup",
   );
   return {
     ...actual,
@@ -127,12 +127,12 @@ function createSeparatePhoneHarness(params: { selectValues: string[]; textValues
 }
 
 function expectFinalizeResult(result: Awaited<ReturnType<typeof runFinalizeWithHarness>>): {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 } {
   if (!result || typeof result !== "object" || !("cfg" in result) || !result.cfg) {
     throw new Error("Expected WhatsApp finalize result with cfg");
   }
-  return result as { cfg: OpenClawConfig };
+  return result as { cfg: AforaConfig };
 }
 
 describe("whatsapp setup wizard", () => {
@@ -152,7 +152,7 @@ describe("whatsapp setup wizard", () => {
     hoisted.readWebAuthState.mockReset();
     hoisted.readWebAuthState.mockResolvedValue("not-linked");
     hoisted.resolveWhatsAppAuthDir.mockReset();
-    hoisted.resolveWhatsAppAuthDir.mockReturnValue({ authDir: "/tmp/openclaw-whatsapp-test" });
+    hoisted.resolveWhatsAppAuthDir.mockReturnValue({ authDir: "/tmp/afora-whatsapp-test" });
   });
 
   it("applies owner allowlist when forceAllowFrom is enabled", async () => {
@@ -179,7 +179,7 @@ describe("whatsapp setup wizard", () => {
       await runFinalizeWithHarness({
         harness,
         accountId: "work",
-        cfg: createWhatsAppWorkAccountConfig() as OpenClawConfig,
+        cfg: createWhatsAppWorkAccountConfig() as AforaConfig,
       }),
     );
 
@@ -199,7 +199,7 @@ describe("whatsapp setup wizard", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       accountOverrides: {
         whatsapp: "work",
       },
@@ -232,7 +232,7 @@ describe("whatsapp setup wizard", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       accountOverrides: {},
     });
 
@@ -257,7 +257,7 @@ describe("whatsapp setup wizard", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       accountOverrides: {
         whatsapp: "work",
       },
@@ -277,7 +277,7 @@ describe("whatsapp setup wizard", () => {
       await runFinalizeWithHarness({
         harness,
         accountId: "",
-        cfg: createWhatsAppWorkAccountConfig({ defaultAccount: "work" }) as OpenClawConfig,
+        cfg: createWhatsAppWorkAccountConfig({ defaultAccount: "work" }) as AforaConfig,
       }),
     );
 
@@ -307,7 +307,7 @@ describe("whatsapp setup wizard", () => {
     const result = expectFinalizeResult(
       await runFinalizeWithHarness({
         harness,
-        cfg: createWhatsAppRootAllowFromConfig() as OpenClawConfig,
+        cfg: createWhatsAppRootAllowFromConfig() as AforaConfig,
       }),
     );
 

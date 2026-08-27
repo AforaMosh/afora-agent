@@ -3,7 +3,7 @@
  */
 import type { ThinkLevel, ThinkingCatalogEntry } from "../../auto-reply/thinking.js";
 import type { ChatType } from "../../channels/chat-type.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ProviderRuntimeModel } from "../../plugins/provider-runtime-model.types.js";
 import { isDefaultAgentRuntimeId, normalizeOptionalAgentRuntimeId } from "../agent-runtime-id.js";
 import {
@@ -62,7 +62,7 @@ type EmbeddedCompactionRuntimeContextParams = Omit<
 
 /** Resolve the configured compaction override against the actual model/runtime candidate. */
 export function resolveEmbeddedCompactionThinkingLevel(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   provider: string;
   modelId: string;
   inheritedLevel?: ThinkLevel;
@@ -98,7 +98,7 @@ export function resolveEmbeddedCompactionThinkingLevel(params: {
  * caller-supplied provider/model and optionally applying runtime defaults.
  */
 export function resolveEmbeddedCompactionTarget(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   provider?: string | null;
   modelId?: string | null;
   authProfileId?: string | null;
@@ -133,9 +133,9 @@ export function resolveEmbeddedCompactionTarget(params: {
     // defaults choose new runs; they cannot move an existing transcript.
     const useNativeHarnessRuntime =
       selectedHarnessRuntime !== undefined &&
-      selectedHarnessRuntime !== "openclaw" &&
+      selectedHarnessRuntime !== "afora" &&
       !isDefaultAgentRuntimeId(selectedHarnessRuntime);
-    const harnessRuntime = useNativeHarnessRuntime ? selectedHarnessRuntime : "openclaw";
+    const harnessRuntime = useNativeHarnessRuntime ? selectedHarnessRuntime : "afora";
     const runtimeProvider = resolveSelectedOpenAIRuntimeProvider({
       provider: targetProvider,
       harnessRuntime: harnessRuntime ?? undefined,
@@ -210,7 +210,7 @@ function normalizeCompactionConfigKey(value: string): string {
 }
 
 function hasBareConfiguredModelForProvider(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: string;
   model: string;
 }): boolean {
@@ -273,7 +273,7 @@ export function resolveCompactionHarnessRuntime(params: {
 
 /** Resolves the shared policy, target, and harness ownership for either compaction entry point. */
 export function resolveCompactionContextTokenBudget(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   provider: string;
   modelId: string;
   model?: ProviderRuntimeModel;

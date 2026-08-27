@@ -21,7 +21,7 @@ describe("attachmentClassFromMime", () => {
 describe("classifyAttachmentBytes", () => {
   it("infers delimited text from otherwise untyped bytes", async () => {
     await expect(
-      classifyAttachmentBytes({ buffer: Buffer.from("name,value\nopenclaw,1"), name: "data.bin" }),
+      classifyAttachmentBytes({ buffer: Buffer.from("name,value\nafora,1"), name: "data.bin" }),
     ).resolves.toEqual({ mime: "text/csv", class: "text" });
   });
 

@@ -1,7 +1,7 @@
-import { createPluginRuntimeMock } from "openclaw/plugin-sdk/channel-test-helpers";
-import type { PluginRuntime } from "openclaw/plugin-sdk/core";
-import type { PluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
-import { buildAgentSessionKey, resolveAgentRoute } from "openclaw/plugin-sdk/routing";
+import { createPluginRuntimeMock } from "afora-agent/plugin-sdk/channel-test-helpers";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/core";
+import type { PluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
+import { buildAgentSessionKey, resolveAgentRoute } from "afora-agent/plugin-sdk/routing";
 import { describe, expect, it, vi } from "vitest";
 import { resolveClickClackInboundAccess } from "./access.js";
 import {
@@ -177,7 +177,7 @@ describe("ClickClack inbound mention gating", () => {
       agentId: "research",
       sessionId: "old-session-id",
       serverBaseUrl: "http://127.0.0.1:8080",
-      externalRef: "openclaw:test:research",
+      externalRef: "afora:test:research",
       externalUrl: "",
       workspaceRef: "wsp_1",
       workspaceId: "wsp_1",
@@ -552,7 +552,7 @@ describe("ClickClack inbound mention gating", () => {
         agentId: "research",
         sessionId: "session-id",
         serverBaseUrl: "http://127.0.0.1:8080",
-        externalRef: "openclaw:test:research-mentions",
+        externalRef: "afora:test:research-mentions",
         externalUrl: "",
         workspaceRef: "wsp_1",
         workspaceId: "wsp_1",

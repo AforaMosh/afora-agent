@@ -1,4 +1,4 @@
-import type { SystemChangeEntry } from "@openclaw/gateway-protocol";
+import type { SystemChangeEntry } from "@afora/gateway-protocol";
 import { html, nothing } from "lit";
 import { t } from "../../i18n/index.ts";
 import { formatRelativeTimestamp } from "../../lib/format.ts";

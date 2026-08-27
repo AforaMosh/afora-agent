@@ -32,7 +32,7 @@ it("invalidates chat metadata on config changes and same-client reconnects", () 
       refresh: vi.fn(async () => null),
     },
   } as unknown as ApplicationContext;
-  const shell = document.createElement("openclaw-app-shell") as unknown as ChatMetadataShell;
+  const shell = document.createElement("afora-app-shell") as unknown as ChatMetadataShell;
   shell.runtime = { context };
 
   shell.synchronizeGateway(connected);

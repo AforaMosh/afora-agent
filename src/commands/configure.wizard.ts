@@ -1,7 +1,7 @@
 // Main interactive configure/update wizard implementation.
 import fsPromises from "node:fs/promises";
 import nodePath from "node:path";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { note } from "../../packages/terminal-core/src/note.js";
 import { describeCodexNativeWebSearch } from "../agents/codex-native-web-search.shared.js";
 import { formatCliCommand } from "../cli/command-format.js";
@@ -9,7 +9,7 @@ import { formatPortRangeHint } from "../cli/error-format.js";
 import { parsePort } from "../cli/shared/parse-port.js";
 import { readConfigFileSnapshotForWrite, resolveGatewayPort } from "../config/config.js";
 import { logConfigUpdated } from "../config/logging.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveGatewayProbeAuthSafeWithSecretInputs } from "../gateway/probe-auth.js";
 import { formatWindowsGatewayFirewallGuidance } from "../infra/windows-gateway-firewall-diagnostics.js";
 import { commitConfigWithPendingPluginInstalls } from "../plugins/install-record-commit.js";
@@ -82,7 +82,7 @@ function loadSetupPluginConfigModule(): Promise<SetupPluginConfigModule> {
 }
 
 async function resolveGatewaySecretInputForWizard(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   value: unknown;
   path: string;
 }): Promise<string | undefined> {
@@ -99,7 +99,7 @@ async function resolveGatewaySecretInputForWizard(params: {
 }
 
 async function runGatewayHealthCheck(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   runtime: RuntimeEnv;
   port: number;
 }): Promise<GatewayHealthCheckOutcome> {
@@ -136,7 +136,7 @@ async function runGatewayHealthCheck(params: {
             ? ["Continuing with the other configured remote credential."]
             : [
                 "Health check skipped to avoid falling back to ambient credentials.",
-                `Fix the SecretRef, then run \`${formatCliCommand("openclaw health")}\` again.`,
+                `Fix the SecretRef, then run \`${formatCliCommand("afora health")}\` again.`,
               ]),
         ].join("\n"),
         "Gateway auth",
@@ -161,8 +161,8 @@ async function runGatewayHealthCheck(params: {
         path: "gateway.auth.password",
       }),
     ]);
-    token = normalizeOptionalString(process.env.OPENCLAW_GATEWAY_TOKEN) ?? configuredToken;
-    password = normalizeOptionalString(process.env.OPENCLAW_GATEWAY_PASSWORD) ?? configuredPassword;
+    token = normalizeOptionalString(process.env.AFORA_GATEWAY_TOKEN) ?? configuredToken;
+    password = normalizeOptionalString(process.env.AFORA_GATEWAY_PASSWORD) ?? configuredPassword;
   }
 
   try {
@@ -193,8 +193,8 @@ async function runGatewayHealthCheck(params: {
     note(
       [
         "Docs:",
-        "https://docs.openclaw.ai/gateway/health",
-        "https://docs.openclaw.ai/gateway/troubleshooting",
+        "https://docs.afora.ai/gateway/health",
+        "https://docs.afora.ai/gateway/troubleshooting",
       ].join("\n"),
       "Health check help",
     );
@@ -237,7 +237,7 @@ async function promptChannelMode(runtime: RuntimeEnv): Promise<ChannelsWizardMod
         {
           value: "remove",
           label: "Remove channel config",
-          hint: "Delete channel tokens/settings from openclaw.json",
+          hint: "Delete channel tokens/settings from afora.json",
         },
       ],
       initialValue: "configure",
@@ -248,11 +248,11 @@ async function promptChannelMode(runtime: RuntimeEnv): Promise<ChannelsWizardMod
 }
 
 async function promptWebToolsConfig(
-  nextConfig: OpenClawConfig,
+  nextConfig: AforaConfig,
   runtime: RuntimeEnv,
   prompter: ReturnType<typeof createClackPrompter>,
-): Promise<OpenClawConfig> {
-  type WebSearchConfig = NonNullable<NonNullable<OpenClawConfig["tools"]>["web"]>["search"];
+): Promise<AforaConfig> {
+  type WebSearchConfig = NonNullable<NonNullable<AforaConfig["tools"]>["web"]>["search"];
   const existingSearch = nextConfig.tools?.web?.search;
   const existingFetch = nextConfig.tools?.web?.fetch;
   const { isCodexNativeWebSearchRelevant } = await import("../agents/codex-native-web-search.js");
@@ -268,7 +268,7 @@ async function promptWebToolsConfig(
       "Web search lets your agent look things up online using the `web_search` tool.",
       "Codex-capable models can use native Codex web search.",
       "Other models use a separate web search provider, which you can configure here.",
-      "Docs: https://docs.openclaw.ai/tools/web",
+      "Docs: https://docs.afora.ai/tools/web",
     ].join("\n"),
     "Web search",
   );
@@ -297,7 +297,7 @@ async function promptWebToolsConfig(
         [
           "Codex-capable models can use native Codex web search instead of a separate provider.",
           "Other models need a separate web search provider.",
-          "If you do not choose one, OpenClaw can select a provider from available credentials; otherwise other models may not have web search.",
+          "If you do not choose one, Afora can select a provider from available credentials; otherwise other models may not have web search.",
           ...(describeCodexNativeWebSearch(nextConfig)
             ? [describeCodexNativeWebSearch(nextConfig)!]
             : []),
@@ -373,7 +373,7 @@ async function promptWebToolsConfig(
           [
             "No web search providers are currently available under this plugin policy.",
             "Enable plugins or remove deny rules, then rerun configure.",
-            "Docs: https://docs.openclaw.ai/tools/web",
+            "Docs: https://docs.afora.ai/tools/web",
           ].join("\n"),
           "Web search",
         );
@@ -443,7 +443,7 @@ export async function runConfigureWizard(
   runtime: RuntimeEnv = defaultRuntime,
 ) {
   try {
-    intro(opts.command === "update" ? "OpenClaw update wizard" : "OpenClaw configure");
+    intro(opts.command === "update" ? "Afora update wizard" : "Afora configure");
     const prompter = createClackPrompter();
 
     const prepared = await readConfigFileSnapshotForWrite();
@@ -458,7 +458,7 @@ export async function runConfigureWizard(
       ownedConfigPathForWrite: prepared.writeOptions.ownedConfigPathForWrite,
     };
     const currentBaseHash = snapshot.hash;
-    const baseConfig: OpenClawConfig = snapshot.valid
+    const baseConfig: AforaConfig = snapshot.valid
       ? (snapshot.sourceConfig ?? snapshot.config)
       : {};
 
@@ -470,14 +470,14 @@ export async function runConfigureWizard(
           [
             ...snapshot.issues.map((iss) => `- ${iss.path}: ${iss.message}`),
             "",
-            "Docs: https://docs.openclaw.ai/gateway/configuration",
+            "Docs: https://docs.afora.ai/gateway/configuration",
           ].join("\n"),
           "Config issues",
         );
       }
       if (!snapshot.valid) {
         outro(
-          `Config invalid. Run \`${formatCliCommand("openclaw doctor")}\` to repair it, then re-run configure.`,
+          `Config invalid. Run \`${formatCliCommand("afora doctor")}\` to repair it, then re-run configure.`,
         );
         runtime.exit(1);
         return;
@@ -508,9 +508,9 @@ export async function runConfigureWizard(
         ]);
         return probeGatewayReachable({
           url: localUrl,
-          token: normalizeOptionalString(process.env.OPENCLAW_GATEWAY_TOKEN) ?? baseLocalProbeToken,
+          token: normalizeOptionalString(process.env.AFORA_GATEWAY_TOKEN) ?? baseLocalProbeToken,
           password:
-            normalizeOptionalString(process.env.OPENCLAW_GATEWAY_PASSWORD) ??
+            normalizeOptionalString(process.env.AFORA_GATEWAY_PASSWORD) ??
             baseLocalProbePassword,
           timeoutMs: GATEWAY_HINT_PROBE_TIMEOUT_MS,
         });
@@ -832,7 +832,7 @@ export async function runConfigureWizard(
       const remoteUrl = normalizeOptionalString(nextConfig.gateway?.remote?.url);
       if (remoteUrl) {
         note(
-          ["Remote Gateway:", remoteUrl, "Docs: https://docs.openclaw.ai/gateway/remote"].join(
+          ["Remote Gateway:", remoteUrl, "Docs: https://docs.afora.ai/gateway/remote"].join(
             "\n",
           ),
           "Gateway",
@@ -858,21 +858,21 @@ export async function runConfigureWizard(
       tlsEnabled: nextConfig.gateway?.tls?.enabled === true,
     });
     const newPassword =
-      normalizeOptionalString(process.env.OPENCLAW_GATEWAY_PASSWORD) ??
+      normalizeOptionalString(process.env.AFORA_GATEWAY_PASSWORD) ??
       (await resolveGatewaySecretInputForWizard({
         cfg: nextConfig,
         value: nextConfig.gateway?.auth?.password,
         path: "gateway.auth.password",
       }));
     const oldPassword =
-      normalizeOptionalString(process.env.OPENCLAW_GATEWAY_PASSWORD) ??
+      normalizeOptionalString(process.env.AFORA_GATEWAY_PASSWORD) ??
       (await resolveGatewaySecretInputForWizard({
         cfg: baseConfig,
         value: baseConfig.gateway?.auth?.password,
         path: "gateway.auth.password",
       }));
     const token =
-      normalizeOptionalString(process.env.OPENCLAW_GATEWAY_TOKEN) ??
+      normalizeOptionalString(process.env.AFORA_GATEWAY_TOKEN) ??
       (await resolveGatewaySecretInputForWizard({
         cfg: nextConfig,
         value: nextConfig.gateway?.auth?.token,
@@ -902,7 +902,7 @@ export async function runConfigureWizard(
         `Gateway WS: ${displayLinks.wsUrl}`,
         gatewayStatusLine,
         ...windowsFirewallLines,
-        "Docs: https://docs.openclaw.ai/web/control-ui",
+        "Docs: https://docs.afora.ai/web/control-ui",
       ].join("\n"),
       "Control UI",
     );

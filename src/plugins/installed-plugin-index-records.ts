@@ -3,7 +3,7 @@ import {
   createPluginInstallRecordMap,
   setPluginInstallRecordMapEntry,
 } from "../config/plugin-install-record-map.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import {
   clearLoadInstalledPluginIndexInstallRecordsCache,
@@ -95,9 +95,9 @@ export function writePersistedInstalledPluginIndexInstallRecordsSync(
 
 /** Returns config with plugin install records attached at the canonical config path. */
 export function withPluginInstallRecords(
-  config: OpenClawConfig,
+  config: AforaConfig,
   records: Record<string, PluginInstallRecord>,
-): OpenClawConfig {
+): AforaConfig {
   return {
     ...config,
     plugins: {
@@ -109,9 +109,9 @@ export function withPluginInstallRecords(
 
 /** Returns config with legacy plugin install records removed. */
 export function withoutPluginInstallRecords(
-  config: OpenClawConfig,
+  config: AforaConfig,
   options: { preserveEmptyPlugins?: boolean } = {},
-): OpenClawConfig {
+): AforaConfig {
   if (!config.plugins?.installs) {
     return config;
   }

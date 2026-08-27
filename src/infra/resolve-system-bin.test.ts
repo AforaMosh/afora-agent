@@ -1,6 +1,6 @@
 // Covers trusted system binary resolution across platform install roots.
 import path from "node:path";
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 type ResolveSystemBin = typeof import("./resolve-system-bin.js").resolveSystemBin;
@@ -32,7 +32,7 @@ let freshResolveSystemBinId = 0;
 let executables: Set<string>;
 
 vi.mock("node:fs", async () => {
-  const { mockNodeBuiltinModule } = await import("openclaw/plugin-sdk/test-node-mocks");
+  const { mockNodeBuiltinModule } = await import("afora-agent/plugin-sdk/test-node-mocks");
   return mockNodeBuiltinModule(
     () => vi.importActual<typeof import("node:fs")>("node:fs"),
     {

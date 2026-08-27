@@ -1,5 +1,5 @@
 // Google Chat message-tool discovery stays read-only and account-isolated.
-import type { ChannelMessageActionAdapter } from "openclaw/plugin-sdk/channel-contract";
+import type { ChannelMessageActionAdapter } from "afora-agent/plugin-sdk/channel-contract";
 import { inspectGoogleChatAccount, listGoogleChatAccountIds } from "./accounts.js";
 
 export function describeGoogleChatMessageTool({

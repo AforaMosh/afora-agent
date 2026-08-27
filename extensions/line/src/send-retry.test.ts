@@ -1,7 +1,7 @@
 // Line tests cover push retry and retry-key deduplication behavior.
 import { HTTPFetchError } from "@line/bot-sdk";
-import { isChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import { isChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
@@ -18,7 +18,7 @@ const {
   logVerboseMock: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/plugin-config-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/plugin-config-runtime", () => ({
   requireRuntimeConfig: requireRuntimeConfigMock,
 }));
 
@@ -30,13 +30,13 @@ vi.mock("./channel-access-token.js", () => ({
   resolveLineChannelAccessToken: resolveLineChannelAccessTokenMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/channel-activity-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/channel-activity-runtime", () => ({
   recordChannelActivity: recordChannelActivityMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/runtime-env", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/runtime-env")>(
-    "openclaw/plugin-sdk/runtime-env",
+vi.mock("afora-agent/plugin-sdk/runtime-env", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/runtime-env")>(
+    "afora-agent/plugin-sdk/runtime-env",
   );
   return { ...actual, logVerbose: logVerboseMock };
 });
@@ -45,7 +45,7 @@ let sendModule: typeof import("./send.js");
 
 const LINE_TEST_CFG = {
   channels: { line: { accounts: { default: {} } } },
-} satisfies OpenClawConfig;
+} satisfies AforaConfig;
 const LINE_TARGET = "line:user:U0123456789abcdef0123456789abcdef";
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -74,11 +74,11 @@ describe("LINE push retries", () => {
   });
 
   afterAll(() => {
-    vi.doUnmock("openclaw/plugin-sdk/plugin-config-runtime");
+    vi.doUnmock("afora-agent/plugin-sdk/plugin-config-runtime");
     vi.doUnmock("./accounts.js");
     vi.doUnmock("./channel-access-token.js");
-    vi.doUnmock("openclaw/plugin-sdk/channel-activity-runtime");
-    vi.doUnmock("openclaw/plugin-sdk/runtime-env");
+    vi.doUnmock("afora-agent/plugin-sdk/channel-activity-runtime");
+    vi.doUnmock("afora-agent/plugin-sdk/runtime-env");
     vi.resetModules();
   });
 

@@ -8,7 +8,7 @@ import {
   type ChannelIngressQueueClaim,
   type ChannelIngressQueueCorruptClaim,
   type ChannelIngressQueueRecord,
-} from "openclaw/plugin-sdk/channel-outbound";
+} from "afora-agent/plugin-sdk/channel-outbound";
 import type { TelegramBotInfo } from "./bot-info.js";
 import { getTelegramSequentialKey } from "./sequential-key.js";
 import { openTelegramIngressQueue, resolveTelegramUpdateId } from "./telegram-ingress-spool.js";

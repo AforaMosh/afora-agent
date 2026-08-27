@@ -1,5 +1,5 @@
 // Policy doctor health-check factories for one policy scope.
-import type { HealthCheck } from "openclaw/plugin-sdk/health";
+import type { HealthCheck } from "afora-agent/plugin-sdk/health";
 import { repairPolicyAutomaticNarrower } from "../automatic-repairs.js";
 import { createPolicyScopedChecks } from "../check-factory.js";
 import { CHECK_IDS } from "../check-ids.js";
@@ -27,11 +27,11 @@ export function createPolicyDataAuthChecks(deps: PolicyDoctorCheckDeps): readonl
     ],
     [
       CHECK_IDS.policySecretsUnmanagedProvider,
-      "OpenClaw config SecretRefs use configured secret providers when policy requires managed providers.",
+      "Afora config SecretRefs use configured secret providers when policy requires managed providers.",
     ],
     [
       CHECK_IDS.policySecretsDeniedProviderSource,
-      "OpenClaw config secret providers and SecretRefs do not use sources denied by policy.",
+      "Afora config secret providers and SecretRefs do not use sources denied by policy.",
     ],
     [
       CHECK_IDS.policySecretsInsecureProvider,
@@ -39,11 +39,11 @@ export function createPolicyDataAuthChecks(deps: PolicyDoctorCheckDeps): readonl
     ],
     [
       CHECK_IDS.policyAuthProfileInvalidMetadata,
-      "OpenClaw config auth profiles declare required provider and mode metadata.",
+      "Afora config auth profiles declare required provider and mode metadata.",
     ],
     [
       CHECK_IDS.policyAuthProfileUnapprovedMode,
-      "OpenClaw config auth profile modes stay within the policy allowlist.",
+      "Afora config auth profile modes stay within the policy allowlist.",
     ],
   ]);
 }

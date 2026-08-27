@@ -2,39 +2,39 @@
 set -euo pipefail
 
 SCRIPT_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ROOT_DIR="${OPENCLAW_LIVE_DOCKER_REPO_ROOT:-$SCRIPT_ROOT_DIR}"
+ROOT_DIR="${AFORA_LIVE_DOCKER_REPO_ROOT:-$SCRIPT_ROOT_DIR}"
 ROOT_DIR="$(cd "$ROOT_DIR" && pwd)"
-TRUSTED_HARNESS_DIR="${OPENCLAW_LIVE_DOCKER_TRUSTED_HARNESS_DIR:-$SCRIPT_ROOT_DIR}"
+TRUSTED_HARNESS_DIR="${AFORA_LIVE_DOCKER_TRUSTED_HARNESS_DIR:-$SCRIPT_ROOT_DIR}"
 if [[ -z "$TRUSTED_HARNESS_DIR" || ! -d "$TRUSTED_HARNESS_DIR" ]]; then
   echo "ERROR: trusted live Docker harness directory not found: ${TRUSTED_HARNESS_DIR:-<empty>}." >&2
   exit 1
 fi
 TRUSTED_HARNESS_DIR="$(cd "$TRUSTED_HARNESS_DIR" && pwd)"
 source "$TRUSTED_HARNESS_DIR/scripts/lib/live-docker-auth.sh"
-IMAGE_NAME="${OPENCLAW_IMAGE:-openclaw:local}"
-LIVE_IMAGE_NAME="${OPENCLAW_LIVE_IMAGE:-${IMAGE_NAME}-live}"
-CONFIG_DIR="${OPENCLAW_CONFIG_DIR:-$HOME/.openclaw}"
-WORKSPACE_DIR="${OPENCLAW_WORKSPACE_DIR:-$HOME/.openclaw/workspace}"
-PROFILE_FILE="$(openclaw_live_default_profile_file)"
-ACP_AGENT_LIST_RAW="${OPENCLAW_LIVE_ACP_BIND_AGENTS:-${OPENCLAW_LIVE_ACP_BIND_AGENT:-claude,codex,gemini}}"
-ACP_CLAUDE_AUTH_MODE="${OPENCLAW_LIVE_ACP_BIND_CLAUDE_AUTH:-auto}"
-ACP_SETUP_TIMEOUT_SECONDS="$(openclaw_live_read_positive_int_env OPENCLAW_LIVE_ACP_BIND_SETUP_TIMEOUT_SECONDS 180)"
+IMAGE_NAME="${AFORA_IMAGE:-afora:local}"
+LIVE_IMAGE_NAME="${AFORA_LIVE_IMAGE:-${IMAGE_NAME}-live}"
+CONFIG_DIR="${AFORA_CONFIG_DIR:-$HOME/.afora}"
+WORKSPACE_DIR="${AFORA_WORKSPACE_DIR:-$HOME/.afora/workspace}"
+PROFILE_FILE="$(afora_live_default_profile_file)"
+ACP_AGENT_LIST_RAW="${AFORA_LIVE_ACP_BIND_AGENTS:-${AFORA_LIVE_ACP_BIND_AGENT:-claude,codex,gemini}}"
+ACP_CLAUDE_AUTH_MODE="${AFORA_LIVE_ACP_BIND_CLAUDE_AUTH:-auto}"
+ACP_SETUP_TIMEOUT_SECONDS="$(afora_live_read_positive_int_env AFORA_LIVE_ACP_BIND_SETUP_TIMEOUT_SECONDS 180)"
 DOCKER_TRUSTED_HARNESS_CONTAINER_DIR="/trusted-harness"
 DOCKER_TRUSTED_HARNESS_MOUNT=(-v "$TRUSTED_HARNESS_DIR":"$DOCKER_TRUSTED_HARNESS_CONTAINER_DIR":ro)
 
-openclaw_live_acp_bind_append_build_extension() {
+afora_live_acp_bind_append_build_extension() {
   local extension="${1:?extension required}"
-  local current="${OPENCLAW_DOCKER_BUILD_EXTENSIONS:-${OPENCLAW_EXTENSIONS:-}}"
+  local current="${AFORA_DOCKER_BUILD_EXTENSIONS:-${AFORA_EXTENSIONS:-}}"
   case " $current " in
     *" $extension "*)
       ;;
     *)
-      export OPENCLAW_DOCKER_BUILD_EXTENSIONS="${current:+$current }$extension"
+      export AFORA_DOCKER_BUILD_EXTENSIONS="${current:+$current }$extension"
       ;;
   esac
 }
 
-openclaw_live_acp_bind_resolve_auth_provider() {
+afora_live_acp_bind_resolve_auth_provider() {
   case "${1:-}" in
     claude) printf '%s\n' "claude-cli" ;;
     codex) printf '%s\n' "codex-cli" ;;
@@ -42,19 +42,19 @@ openclaw_live_acp_bind_resolve_auth_provider() {
     gemini) printf '%s\n' "google-gemini-cli" ;;
     opencode) printf '%s\n' "opencode" ;;
     *)
-      echo "Unsupported OPENCLAW_LIVE_ACP_BIND agent: ${1:-} (expected claude, codex, droid, gemini, or opencode)" >&2
+      echo "Unsupported AFORA_LIVE_ACP_BIND agent: ${1:-} (expected claude, codex, droid, gemini, or opencode)" >&2
       return 1
       ;;
   esac
 }
 
-openclaw_live_acp_bind_resolve_agent_command() {
+afora_live_acp_bind_resolve_agent_command() {
   case "${1:-}" in
-    claude) printf '%s' "${OPENCLAW_LIVE_ACP_BIND_AGENT_COMMAND_CLAUDE:-${OPENCLAW_LIVE_ACP_BIND_AGENT_COMMAND:-}}" ;;
-    codex) printf '%s' "${OPENCLAW_LIVE_ACP_BIND_AGENT_COMMAND_CODEX:-${OPENCLAW_LIVE_ACP_BIND_AGENT_COMMAND:-}}" ;;
-    droid) printf '%s' "${OPENCLAW_LIVE_ACP_BIND_AGENT_COMMAND_DROID:-${OPENCLAW_LIVE_ACP_BIND_AGENT_COMMAND:-}}" ;;
-    gemini) printf '%s' "${OPENCLAW_LIVE_ACP_BIND_AGENT_COMMAND_GEMINI:-${OPENCLAW_LIVE_ACP_BIND_AGENT_COMMAND:-}}" ;;
-    opencode) printf '%s' "${OPENCLAW_LIVE_ACP_BIND_AGENT_COMMAND_OPENCODE:-${OPENCLAW_LIVE_ACP_BIND_AGENT_COMMAND:-}}" ;;
+    claude) printf '%s' "${AFORA_LIVE_ACP_BIND_AGENT_COMMAND_CLAUDE:-${AFORA_LIVE_ACP_BIND_AGENT_COMMAND:-}}" ;;
+    codex) printf '%s' "${AFORA_LIVE_ACP_BIND_AGENT_COMMAND_CODEX:-${AFORA_LIVE_ACP_BIND_AGENT_COMMAND:-}}" ;;
+    droid) printf '%s' "${AFORA_LIVE_ACP_BIND_AGENT_COMMAND_DROID:-${AFORA_LIVE_ACP_BIND_AGENT_COMMAND:-}}" ;;
+    gemini) printf '%s' "${AFORA_LIVE_ACP_BIND_AGENT_COMMAND_GEMINI:-${AFORA_LIVE_ACP_BIND_AGENT_COMMAND:-}}" ;;
+    opencode) printf '%s' "${AFORA_LIVE_ACP_BIND_AGENT_COMMAND_OPENCODE:-${AFORA_LIVE_ACP_BIND_AGENT_COMMAND:-}}" ;;
     *) return 1 ;;
   esac
 }
@@ -63,15 +63,15 @@ case "$ACP_CLAUDE_AUTH_MODE" in
   auto | api-key | subscription)
     ;;
   *)
-    echo "ERROR: OPENCLAW_LIVE_ACP_BIND_CLAUDE_AUTH must be one of: auto, api-key, subscription." >&2
+    echo "ERROR: AFORA_LIVE_ACP_BIND_CLAUDE_AUTH must be one of: auto, api-key, subscription." >&2
     exit 1
     ;;
 esac
 
-openclaw_live_init_temp_dirs
-openclaw_live_init_cli_tools_dir
-openclaw_live_init_cache_home_dir
-openclaw_live_acp_bind_load_factory_api_key_from_profile() {
+afora_live_init_temp_dirs
+afora_live_init_cli_tools_dir
+afora_live_init_cache_home_dir
+afora_live_acp_bind_load_factory_api_key_from_profile() {
   [[ -z "${FACTORY_API_KEY:-}" ]] || return 0
   [[ -f "$PROFILE_FILE" && -r "$PROFILE_FILE" ]] || return 0
   [[ "$PROFILE_FILE" != "$HOME/.profile" ]] || return 0
@@ -103,19 +103,19 @@ export npm_config_cache="$NPM_CONFIG_CACHE"
 mkdir -p "$NPM_CONFIG_PREFIX" "$HOME/.local/bin" "$XDG_CACHE_HOME" "$COREPACK_HOME" "$NPM_CONFIG_CACHE"
 chmod 700 "$XDG_CACHE_HOME" "$COREPACK_HOME" "$NPM_CONFIG_CACHE" || true
 export PATH="$HOME/.local/bin:$NPM_CONFIG_PREFIX/bin:$PATH"
-trusted_scripts_dir="${OPENCLAW_LIVE_DOCKER_SCRIPTS_DIR:-/src/scripts}"
+trusted_scripts_dir="${AFORA_LIVE_DOCKER_SCRIPTS_DIR:-/src/scripts}"
 source "$trusted_scripts_dir/lib/live-docker-stage.sh"
-openclaw_live_stage_mounted_auth
+afora_live_stage_mounted_auth
 run_setup_command() {
-  openclaw_live_run_setup_command \
-    "${OPENCLAW_LIVE_ACP_BIND_SETUP_TIMEOUT_SECONDS:?missing live ACP bind setup timeout seconds}" \
+  afora_live_run_setup_command \
+    "${AFORA_LIVE_ACP_BIND_SETUP_TIMEOUT_SECONDS:?missing live ACP bind setup timeout seconds}" \
     "live ACP bind setup" \
     "$@"
 }
-agent="${OPENCLAW_LIVE_ACP_BIND_AGENT:-claude}"
+agent="${AFORA_LIVE_ACP_BIND_AGENT:-claude}"
 case "$agent" in
   claude)
-    claude_auth_mode="${OPENCLAW_LIVE_ACP_BIND_CLAUDE_AUTH:-auto}"
+    claude_auth_mode="${AFORA_LIVE_ACP_BIND_CLAUDE_AUTH:-auto}"
     if [ "$claude_auth_mode" = "subscription" ]; then
       unset ANTHROPIC_API_KEY
       unset ANTHROPIC_API_KEY_OLD
@@ -146,15 +146,15 @@ case "$agent" in
       cat > "$NPM_CONFIG_PREFIX/bin/claude" <<WRAP
 #!/usr/bin/env bash
 script_dir="\$(CDPATH= cd -- "\$(dirname -- "\$0")" && pwd)"
-if [ "\${OPENCLAW_LIVE_ACP_BIND_CLAUDE_AUTH:-auto}" = "subscription" ]; then
+if [ "\${AFORA_LIVE_ACP_BIND_CLAUDE_AUTH:-auto}" = "subscription" ]; then
   unset ANTHROPIC_API_KEY ANTHROPIC_API_KEY_OLD ANTHROPIC_API_TOKEN
   unset ANTHROPIC_AUTH_TOKEN ANTHROPIC_OAUTH_TOKEN
 else
-  if [ -n "\${OPENCLAW_LIVE_ACP_BIND_ANTHROPIC_API_KEY:-}" ]; then
-    export ANTHROPIC_API_KEY="\${OPENCLAW_LIVE_ACP_BIND_ANTHROPIC_API_KEY}"
+  if [ -n "\${AFORA_LIVE_ACP_BIND_ANTHROPIC_API_KEY:-}" ]; then
+    export ANTHROPIC_API_KEY="\${AFORA_LIVE_ACP_BIND_ANTHROPIC_API_KEY}"
   fi
-  if [ -n "\${OPENCLAW_LIVE_ACP_BIND_ANTHROPIC_API_KEY_OLD:-}" ]; then
-    export ANTHROPIC_API_KEY_OLD="\${OPENCLAW_LIVE_ACP_BIND_ANTHROPIC_API_KEY_OLD}"
+  if [ -n "\${AFORA_LIVE_ACP_BIND_ANTHROPIC_API_KEY_OLD:-}" ]; then
+    export ANTHROPIC_API_KEY_OLD="\${AFORA_LIVE_ACP_BIND_ANTHROPIC_API_KEY_OLD}"
   fi
 fi
 exec "\$script_dir/claude-real" "\$@"
@@ -219,54 +219,54 @@ NODE
       run_setup_command npm install -g opencode-ai
     fi
     export OPENCODE_CONFIG_CONTENT="$(
-      node -e 'process.stdout.write(JSON.stringify({model: process.env.OPENCLAW_LIVE_ACP_BIND_OPENCODE_MODEL || "opencode/kimi-k2.6"}))'
+      node -e 'process.stdout.write(JSON.stringify({model: process.env.AFORA_LIVE_ACP_BIND_OPENCODE_MODEL || "opencode/kimi-k2.6"}))'
     )"
     ;;
   *)
-    echo "Unsupported OPENCLAW_LIVE_ACP_BIND_AGENT: $agent" >&2
+    echo "Unsupported AFORA_LIVE_ACP_BIND_AGENT: $agent" >&2
     exit 1
     ;;
 esac
 tmp_dir="$(mktemp -d)"
-openclaw_live_stage_source_tree "$tmp_dir"
-openclaw_live_stage_node_modules "$tmp_dir"
-openclaw_live_link_runtime_tree "$tmp_dir"
-openclaw_live_stage_state_dir "$tmp_dir/.openclaw-state"
-openclaw_live_prepare_staged_config
+afora_live_stage_source_tree "$tmp_dir"
+afora_live_stage_node_modules "$tmp_dir"
+afora_live_link_runtime_tree "$tmp_dir"
+afora_live_stage_state_dir "$tmp_dir/.afora-state"
+afora_live_prepare_staged_config
 cd "$tmp_dir"
-export OPENCLAW_LIVE_ACP_BIND_AGENT_COMMAND="${OPENCLAW_LIVE_ACP_BIND_AGENT_COMMAND:-}"
-node --import tsx scripts/test-live.mts -- ${OPENCLAW_LIVE_ACP_BIND_TEST_FILES:-src/gateway/gateway-acp-bind.live.test.ts}
+export AFORA_LIVE_ACP_BIND_AGENT_COMMAND="${AFORA_LIVE_ACP_BIND_AGENT_COMMAND:-}"
+node --import tsx scripts/test-live.mts -- ${AFORA_LIVE_ACP_BIND_TEST_FILES:-src/gateway/gateway-acp-bind.live.test.ts}
 EOF
 
-openclaw_live_acp_bind_append_build_extension acpx
-OPENCLAW_LIVE_DOCKER_REPO_ROOT="$ROOT_DIR" "$TRUSTED_HARNESS_DIR/scripts/test-live-build-docker.sh"
+afora_live_acp_bind_append_build_extension acpx
+AFORA_LIVE_DOCKER_REPO_ROOT="$ROOT_DIR" "$TRUSTED_HARNESS_DIR/scripts/test-live-build-docker.sh"
 
 IFS=',' read -r -a ACP_AGENT_TOKENS <<<"$ACP_AGENT_LIST_RAW"
 ACP_AGENTS=()
 for token in "${ACP_AGENT_TOKENS[@]}"; do
-  agent="$(openclaw_live_trim "$token")"
+  agent="$(afora_live_trim "$token")"
   [[ -n "$agent" ]] || continue
-  openclaw_live_acp_bind_resolve_auth_provider "$agent" >/dev/null
+  afora_live_acp_bind_resolve_auth_provider "$agent" >/dev/null
   ACP_AGENTS+=("$agent")
 done
 
 if ((${#ACP_AGENTS[@]} == 0)); then
-  echo "No ACP bind agents selected. Use OPENCLAW_LIVE_ACP_BIND_AGENTS=claude,codex,droid,gemini,opencode." >&2
+  echo "No ACP bind agents selected. Use AFORA_LIVE_ACP_BIND_AGENTS=claude,codex,droid,gemini,opencode." >&2
   exit 1
 fi
 
 for ACP_AGENT in "${ACP_AGENTS[@]}"; do
-  AUTH_PROVIDER="$(openclaw_live_acp_bind_resolve_auth_provider "$ACP_AGENT")"
-  AGENT_COMMAND="$(openclaw_live_acp_bind_resolve_agent_command "$ACP_AGENT")"
+  AUTH_PROVIDER="$(afora_live_acp_bind_resolve_auth_provider "$ACP_AGENT")"
+  AGENT_COMMAND="$(afora_live_acp_bind_resolve_agent_command "$ACP_AGENT")"
 
-  openclaw_live_collect_auth_for_providers "$AUTH_PROVIDER"
+  afora_live_collect_auth_for_providers "$AUTH_PROVIDER"
   DOCKER_AUTH_PRESTAGED=0
-  openclaw_live_init_managed_home
-  openclaw_live_init_profile_mount
-  openclaw_live_finalize_auth_mounts
+  afora_live_init_managed_home
+  afora_live_init_profile_mount
+  afora_live_finalize_auth_mounts
 
   if [[ "$ACP_AGENT" == "droid" ]]; then
-    openclaw_live_acp_bind_load_factory_api_key_from_profile
+    afora_live_acp_bind_load_factory_api_key_from_profile
   fi
   if [[ "$ACP_AGENT" == "droid" && -z "${FACTORY_API_KEY:-}" ]]; then
     echo "==> Run ACP bind live test in Docker"
@@ -288,15 +288,15 @@ for ACP_AGENT in "${ACP_AGENTS[@]}"; do
 
   echo "==> Run ACP bind live test in Docker"
   echo "==> Agent: $ACP_AGENT"
-  echo "==> Test files: ${OPENCLAW_LIVE_ACP_BIND_TEST_FILES:-src/gateway/gateway-acp-bind.live.test.ts}"
+  echo "==> Test files: ${AFORA_LIVE_ACP_BIND_TEST_FILES:-src/gateway/gateway-acp-bind.live.test.ts}"
   echo "==> Profile file: $PROFILE_STATUS"
   echo "==> Auth dirs: ${AUTH_DIRS_CSV:-none}"
   echo "==> Auth files: ${AUTH_FILES_CSV:-none}"
   if [[ "$ACP_AGENT" == "claude" ]]; then
     echo "==> Claude auth mode: $CLAUDE_AUTH_MODE"
   fi
-  if openclaw_live_uses_managed_bind_dirs; then
-    openclaw_live_chown_bind_dirs_for_container_user \
+  if afora_live_uses_managed_bind_dirs; then
+    afora_live_chown_bind_dirs_for_container_user \
       "$LIVE_IMAGE_NAME" \
       "$DOCKER_USER" \
       "$CLI_TOOLS_DIR" \
@@ -304,20 +304,20 @@ for ACP_AGENT in "${ACP_AGENTS[@]}"; do
       "${DOCKER_HOME_DIR:-}"
   fi
   DOCKER_RUN_ARGS=()
-  openclaw_live_init_docker_run_args DOCKER_RUN_ARGS "${OPENCLAW_LIVE_ACP_BIND_DOCKER_RUN_TIMEOUT:-2700s}"
+  afora_live_init_docker_run_args DOCKER_RUN_ARGS "${AFORA_LIVE_ACP_BIND_DOCKER_RUN_TIMEOUT:-2700s}"
   DOCKER_AUTH_ENV=()
   if [[ "$ACP_AGENT" == "claude" && "$CLAUDE_AUTH_MODE" == "subscription" ]]; then
     DOCKER_AUTH_ENV+=(
       -e CLAUDE_CODE_OAUTH_TOKEN="${CLAUDE_CODE_OAUTH_TOKEN:-}"
-      -e OPENCLAW_LIVE_ACP_BIND_CLAUDE_AUTH="$CLAUDE_AUTH_MODE"
+      -e AFORA_LIVE_ACP_BIND_CLAUDE_AUTH="$CLAUDE_AUTH_MODE"
     )
   elif [[ "$ACP_AGENT" == "claude" ]]; then
     DOCKER_AUTH_ENV+=(
       -e ANTHROPIC_API_KEY
       -e ANTHROPIC_API_KEY_OLD
-      -e OPENCLAW_LIVE_ACP_BIND_ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}"
-      -e OPENCLAW_LIVE_ACP_BIND_ANTHROPIC_API_KEY_OLD="${ANTHROPIC_API_KEY_OLD:-}"
-      -e OPENCLAW_LIVE_ACP_BIND_CLAUDE_AUTH="$CLAUDE_AUTH_MODE"
+      -e AFORA_LIVE_ACP_BIND_ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}"
+      -e AFORA_LIVE_ACP_BIND_ANTHROPIC_API_KEY_OLD="${ANTHROPIC_API_KEY_OLD:-}"
+      -e AFORA_LIVE_ACP_BIND_CLAUDE_AUTH="$CLAUDE_AUTH_MODE"
     )
   fi
   DOCKER_RUN_ARGS+=(--rm -t \
@@ -335,40 +335,40 @@ for ACP_AGENT in "${ACP_AGENTS[@]}"; do
     -e OPENCODE_CONFIG_CONTENT \
     -e COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
     -e HOME=/home/node \
-    -e NODE_OPTIONS="$(openclaw_live_container_node_options)" \
-    -e OPENCLAW_SKIP_CHANNELS=1 \
-    -e OPENCLAW_VITEST_FS_MODULE_CACHE=0 \
-    -e OPENCLAW_DOCKER_AUTH_PRESTAGED="$DOCKER_AUTH_PRESTAGED" \
-    -e OPENCLAW_DOCKER_AUTH_DIRS_RESOLVED="$AUTH_DIRS_CSV" \
-    -e OPENCLAW_DOCKER_AUTH_FILES_RESOLVED="$AUTH_FILES_CSV" \
-    -e OPENCLAW_LIVE_DOCKER_SCRIPTS_DIR="${DOCKER_TRUSTED_HARNESS_CONTAINER_DIR}/scripts" \
-    -e OPENCLAW_LIVE_DOCKER_SOURCE_STAGE_MODE="${OPENCLAW_LIVE_DOCKER_SOURCE_STAGE_MODE:-copy}" \
-    -e OPENCLAW_LIVE_TEST=1 \
-    -e OPENCLAW_LIVE_ACP_BIND=1 \
-    -e OPENCLAW_LIVE_ACP_BIND_AGENT="$ACP_AGENT" \
-    -e OPENCLAW_LIVE_ACP_BIND_REQUIRE_CRON="${OPENCLAW_LIVE_ACP_BIND_REQUIRE_CRON:-}" \
-    -e OPENCLAW_LIVE_ACP_BIND_TEST_FILES="${OPENCLAW_LIVE_ACP_BIND_TEST_FILES:-}" \
-    -e OPENCLAW_LIVE_ACP_BIND_CODEX_MODEL="${OPENCLAW_LIVE_ACP_BIND_CODEX_MODEL:-}" \
-    -e OPENCLAW_LIVE_ACP_BIND_SETUP_TIMEOUT_SECONDS="$ACP_SETUP_TIMEOUT_SECONDS" \
-    -e OPENCLAW_LIVE_ACP_BIND_OPENCODE_MODEL="${OPENCLAW_LIVE_ACP_BIND_OPENCODE_MODEL:-opencode/kimi-k2.6}" \
-    -e OPENCLAW_LIVE_ACP_SPAWN_DEFAULTS="${OPENCLAW_LIVE_ACP_SPAWN_DEFAULTS:-}" \
-    -e OPENCLAW_LIVE_ACP_SPAWN_DEFAULTS_AGENT="${OPENCLAW_LIVE_ACP_SPAWN_DEFAULTS_AGENT:-}" \
-    -e OPENCLAW_LIVE_ACP_SPAWN_DEFAULTS_CONNECT_TIMEOUT_MS="${OPENCLAW_LIVE_ACP_SPAWN_DEFAULTS_CONNECT_TIMEOUT_MS:-}" \
-    -e OPENCLAW_LIVE_ACP_SPAWN_DEFAULTS_MODEL="${OPENCLAW_LIVE_ACP_SPAWN_DEFAULTS_MODEL:-}" \
-    -e OPENCLAW_LIVE_ACP_SPAWN_DEFAULTS_THINKING="${OPENCLAW_LIVE_ACP_SPAWN_DEFAULTS_THINKING:-}" \
-    -e OPENCLAW_LIVE_ACP_SPAWN_DEFAULTS_TIMEOUT_MS="${OPENCLAW_LIVE_ACP_SPAWN_DEFAULTS_TIMEOUT_MS:-}" \
-    -e OPENCLAW_LIVE_ACP_BIND_AGENT_COMMAND="$AGENT_COMMAND")
-  openclaw_live_append_array DOCKER_RUN_ARGS DOCKER_AUTH_ENV
-  openclaw_live_append_array DOCKER_RUN_ARGS DOCKER_HOME_MOUNT
-  openclaw_live_append_array DOCKER_RUN_ARGS DOCKER_TRUSTED_HARNESS_MOUNT
+    -e NODE_OPTIONS="$(afora_live_container_node_options)" \
+    -e AFORA_SKIP_CHANNELS=1 \
+    -e AFORA_VITEST_FS_MODULE_CACHE=0 \
+    -e AFORA_DOCKER_AUTH_PRESTAGED="$DOCKER_AUTH_PRESTAGED" \
+    -e AFORA_DOCKER_AUTH_DIRS_RESOLVED="$AUTH_DIRS_CSV" \
+    -e AFORA_DOCKER_AUTH_FILES_RESOLVED="$AUTH_FILES_CSV" \
+    -e AFORA_LIVE_DOCKER_SCRIPTS_DIR="${DOCKER_TRUSTED_HARNESS_CONTAINER_DIR}/scripts" \
+    -e AFORA_LIVE_DOCKER_SOURCE_STAGE_MODE="${AFORA_LIVE_DOCKER_SOURCE_STAGE_MODE:-copy}" \
+    -e AFORA_LIVE_TEST=1 \
+    -e AFORA_LIVE_ACP_BIND=1 \
+    -e AFORA_LIVE_ACP_BIND_AGENT="$ACP_AGENT" \
+    -e AFORA_LIVE_ACP_BIND_REQUIRE_CRON="${AFORA_LIVE_ACP_BIND_REQUIRE_CRON:-}" \
+    -e AFORA_LIVE_ACP_BIND_TEST_FILES="${AFORA_LIVE_ACP_BIND_TEST_FILES:-}" \
+    -e AFORA_LIVE_ACP_BIND_CODEX_MODEL="${AFORA_LIVE_ACP_BIND_CODEX_MODEL:-}" \
+    -e AFORA_LIVE_ACP_BIND_SETUP_TIMEOUT_SECONDS="$ACP_SETUP_TIMEOUT_SECONDS" \
+    -e AFORA_LIVE_ACP_BIND_OPENCODE_MODEL="${AFORA_LIVE_ACP_BIND_OPENCODE_MODEL:-opencode/kimi-k2.6}" \
+    -e AFORA_LIVE_ACP_SPAWN_DEFAULTS="${AFORA_LIVE_ACP_SPAWN_DEFAULTS:-}" \
+    -e AFORA_LIVE_ACP_SPAWN_DEFAULTS_AGENT="${AFORA_LIVE_ACP_SPAWN_DEFAULTS_AGENT:-}" \
+    -e AFORA_LIVE_ACP_SPAWN_DEFAULTS_CONNECT_TIMEOUT_MS="${AFORA_LIVE_ACP_SPAWN_DEFAULTS_CONNECT_TIMEOUT_MS:-}" \
+    -e AFORA_LIVE_ACP_SPAWN_DEFAULTS_MODEL="${AFORA_LIVE_ACP_SPAWN_DEFAULTS_MODEL:-}" \
+    -e AFORA_LIVE_ACP_SPAWN_DEFAULTS_THINKING="${AFORA_LIVE_ACP_SPAWN_DEFAULTS_THINKING:-}" \
+    -e AFORA_LIVE_ACP_SPAWN_DEFAULTS_TIMEOUT_MS="${AFORA_LIVE_ACP_SPAWN_DEFAULTS_TIMEOUT_MS:-}" \
+    -e AFORA_LIVE_ACP_BIND_AGENT_COMMAND="$AGENT_COMMAND")
+  afora_live_append_array DOCKER_RUN_ARGS DOCKER_AUTH_ENV
+  afora_live_append_array DOCKER_RUN_ARGS DOCKER_HOME_MOUNT
+  afora_live_append_array DOCKER_RUN_ARGS DOCKER_TRUSTED_HARNESS_MOUNT
   DOCKER_RUN_ARGS+=(\
     -v "$CACHE_HOME_DIR":/home/node/.cache \
     -v "$ROOT_DIR":/src:ro \
-    -v "$CONFIG_DIR":/home/node/.openclaw \
-    -v "$WORKSPACE_DIR":/home/node/.openclaw/workspace \
+    -v "$CONFIG_DIR":/home/node/.afora \
+    -v "$WORKSPACE_DIR":/home/node/.afora/workspace \
     -v "$CLI_TOOLS_DIR":/home/node/.npm-global)
-  openclaw_live_append_array DOCKER_RUN_ARGS EXTERNAL_AUTH_MOUNTS
-  openclaw_live_append_array DOCKER_RUN_ARGS PROFILE_MOUNT
+  afora_live_append_array DOCKER_RUN_ARGS EXTERNAL_AUTH_MOUNTS
+  afora_live_append_array DOCKER_RUN_ARGS PROFILE_MOUNT
   DOCKER_RUN_ARGS+=(\
     "$LIVE_IMAGE_NAME" \
     -lc "$LIVE_TEST_CMD")

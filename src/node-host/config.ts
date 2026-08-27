@@ -9,13 +9,13 @@ import {
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../infra/kysely-sync.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../state/openclaw-state-db-readonly.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../state/afora-state-db-readonly.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
 import {
   normalizeNodeHostCloudflareAccessConfig,
   type NodeHostCloudflareAccessConfig,
@@ -27,7 +27,7 @@ export type NodeHostGatewayConfig = {
   port?: number;
   tls?: boolean;
   tlsFingerprint?: string;
-  /** Gateway WebSocket context path (e.g. "/openclaw-gw"). */
+  /** Gateway WebSocket context path (e.g. "/afora-gw"). */
   contextPath?: string;
   /** Cloudflare Access service-token inputs bound to this exact Gateway origin. */
   cloudflareAccess?: NodeHostCloudflareAccessConfig;
@@ -46,12 +46,12 @@ export const NODE_HOST_CONFIG_KEY = "current";
 export const LEGACY_NODE_HOST_CONFIG_FILE = "node.json";
 export const LEGACY_NODE_HOST_CONFIG_CLAIM_SUFFIX = ".doctor-importing";
 
-type NodeHostConfigDatabase = Pick<OpenClawStateKyselyDatabase, "node_host_config">;
+type NodeHostConfigDatabase = Pick<AforaStateKyselyDatabase, "node_host_config">;
 type NodeHostConfigRow = Selectable<NodeHostConfigDatabase["node_host_config"]>;
 type NodeHostConfigRuntimeRow = Omit<NodeHostConfigRow, "token">;
 type NodeHostConfigInsert = Insertable<NodeHostConfigDatabase["node_host_config"]>;
 
-function databaseOptions(env: NodeJS.ProcessEnv): OpenClawStateDatabaseOptions {
+function databaseOptions(env: NodeJS.ProcessEnv): AforaStateDatabaseOptions {
   return { env };
 }
 
@@ -85,7 +85,7 @@ function assertNodeHostLegacyStateMigrated(env: NodeJS.ProcessEnv = process.env)
     return;
   }
   throw new Error(
-    `retired node-host state remains at ${sourcePath}; stop the node host and run \`openclaw doctor --fix\``,
+    `retired node-host state remains at ${sourcePath}; stop the node host and run \`afora doctor --fix\``,
   );
 }
 
@@ -203,7 +203,7 @@ function configToRow(params: {
 }
 
 function readNodeHostConfigRow(
-  database: Pick<ReturnType<typeof openOpenClawStateDatabase>, "db">,
+  database: Pick<ReturnType<typeof openAforaStateDatabase>, "db">,
 ): NodeHostConfigRuntimeRow | undefined {
   return executeSqliteQueryTakeFirstSync(
     database.db,
@@ -232,7 +232,7 @@ export async function loadNodeHostConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<NodeHostConfig | null> {
   assertNodeHostLegacyStateMigrated(env);
-  const database = openOpenClawStateDatabase(databaseOptions(env));
+  const database = openAforaStateDatabase(databaseOptions(env));
   const row = readNodeHostConfigRow(database);
   return row ? rowToNodeHostConfig(row) : null;
 }
@@ -243,7 +243,7 @@ export async function loadNodeHostConfigReadOnly(
 ): Promise<NodeHostConfig | null> {
   assertNodeHostLegacyStateMigrated(env);
   return (
-    withExistingOpenClawStateDatabaseReadOnly(({ db }) => {
+    withExistingAforaStateDatabaseReadOnly(({ db }) => {
       const row = readNodeHostConfigRow({ db });
       return row ? rowToNodeHostConfig(row) : null;
     }, databaseOptions(env)) ?? null
@@ -276,7 +276,7 @@ export async function configureNodeHost(params: {
     throw new Error("invalid node-host updatedAtMs: expected a non-negative integer");
   }
 
-  const config = runOpenClawStateWriteTransaction((database) => {
+  const config = runAforaStateWriteTransaction((database) => {
     const { db } = database;
     const existingRow = readNodeHostConfigRow(database);
     const existing = existingRow ? rowToNodeHostConfig(existingRow) : null;

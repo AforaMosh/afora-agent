@@ -2,10 +2,10 @@
 import {
   buildOpenAICompatibleLiveModelProviderConfig,
   clearLiveCatalogCacheForTests,
-} from "openclaw/plugin-sdk/provider-catalog-live-runtime";
+} from "afora-agent/plugin-sdk/provider-catalog-live-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { VENICE_BASE_URL, VENICE_MODEL_CATALOG, VENICE_MODEL_DISCOVERY_OPTIONS } from "./models.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 
 const ORIGINAL_NODE_ENV = process.env.NODE_ENV;
 const ORIGINAL_VITEST = process.env.VITEST;

@@ -1,6 +1,6 @@
 // Message-action input normalization infers channel/target context and rewrites
 // legacy target fields before dispatch validation.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type {
   ChannelMessageActionName,
   ChannelThreadingToolContext,

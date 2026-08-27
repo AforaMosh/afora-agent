@@ -10,12 +10,12 @@ import { fileURLToPath } from "node:url";
  */
 const FORBIDDEN_CHANGELOG_THANKS_HANDLES = [
   "codex",
-  "openclaw",
+  "afora",
   "steipete",
   "clawsweeper",
-  "openclaw-clawsweeper",
+  "afora-clawsweeper",
   "clawsweeper[bot]",
-  "openclaw-clawsweeper[bot]",
+  "afora-clawsweeper[bot]",
 ];
 /**
  * Handle prefixes that identify forbidden changelog thanks credits.
@@ -30,9 +30,9 @@ const FORBIDDEN_CHANGELOG_THANKS_HANDLE_SUFFIXES = ["[bot]"];
  */
 const CHANGELOG_THANKS_REQUIRE_HUMAN_CREDIT_HANDLES = new Set([
   "clawsweeper",
-  "openclaw-clawsweeper",
+  "afora-clawsweeper",
   "clawsweeper[bot]",
-  "openclaw-clawsweeper[bot]",
+  "afora-clawsweeper[bot]",
 ]);
 /**
  * Handle prefixes that require explicit human credit instead.

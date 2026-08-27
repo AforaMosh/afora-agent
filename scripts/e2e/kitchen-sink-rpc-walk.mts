@@ -12,8 +12,8 @@ import path from "node:path";
 import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { asRecord, isRecord } from "@openclaw/normalization-core/record-coerce";
-import { hasNonEmptyString } from "@openclaw/normalization-core/string-coerce";
+import { asRecord, isRecord } from "@afora/normalization-core/record-coerce";
+import { hasNonEmptyString } from "@afora/normalization-core/string-coerce";
 import {
   createBoundedResponseTooLargeError,
   readBoundedResponseText,
@@ -30,12 +30,12 @@ type JsonRecord = Record<string, unknown>;
 type ProcessEnv = Record<string, string | undefined>;
 type KitchenSinkEnv = {
   [key: string]: string | undefined;
-  OPENCLAW_CONFIG_PATH: string;
+  AFORA_CONFIG_PATH: string;
 };
 type CapturedOutput = { text: string; truncatedChars: number };
 type CommandChild = ChildProcess;
 type ProcessTreeTarget = Pick<CommandChild, "exitCode" | "kill" | "pid" | "signalCode">;
-type OpenClawRunner =
+type AforaRunner =
   | { baseArgs: string[]; command: string; label?: string; pnpm?: never }
   | { baseArgs: string[]; label?: string; pnpm: true; command?: never };
 type TaskkillRunner = (
@@ -92,7 +92,7 @@ type RpcCallOptions = {
   commandResourceOptions?: RunCommandOptions;
   env: KitchenSinkEnv;
   port: number;
-  runner: OpenClawRunner;
+  runner: AforaRunner;
 };
 type GatewayChild = {
   exitCode?: number | null;
@@ -119,8 +119,8 @@ type PosixProcessRow = {
 type MalformedProcessRow = { pidRaw: string; ppidRaw: string };
 
 const PLUGIN_SPEC =
-  process.env.OPENCLAW_KITCHEN_SINK_NPM_SPEC || "npm:@openclaw/kitchen-sink@latest";
-const PLUGIN_ID = process.env.OPENCLAW_KITCHEN_SINK_PLUGIN_ID || "openclaw-kitchen-sink-fixture";
+  process.env.AFORA_KITCHEN_SINK_NPM_SPEC || "npm:@afora/kitchen-sink@latest";
+const PLUGIN_ID = process.env.AFORA_KITCHEN_SINK_PLUGIN_ID || "afora-kitchen-sink-fixture";
 const CHANNEL_ID = "kitchen-sink-channel";
 const CHANNEL_ACCOUNT_ID = "local";
 const TOKEN = "kitchen-sink-rpc-token";
@@ -216,24 +216,24 @@ const commandSignalHandlers = new Map(
 function usage() {
   return `Usage: node --import tsx scripts/e2e/kitchen-sink-rpc-walk.mts
 
-Runs the external Kitchen Sink plugin RPC walk against a built OpenClaw entry.
+Runs the external Kitchen Sink plugin RPC walk against a built Afora entry.
 
 Environment:
-  OPENCLAW_ENTRY                         Built OpenClaw entrypoint. Defaults to dist/index.mjs or dist/index.js.
-  OPENCLAW_KITCHEN_SINK_NPM_SPEC         Plugin package spec. Default: npm:@openclaw/kitchen-sink@latest.
-  OPENCLAW_KITCHEN_SINK_PLUGIN_ID        Plugin id. Default: openclaw-kitchen-sink-fixture.
-  OPENCLAW_KITCHEN_SINK_PERSONALITY      Plugin fixture personality. Default: conformance.
-  OPENCLAW_KITCHEN_SINK_RPC_PORT         Gateway loopback port. Default: OS-selected free port.
-  OPENCLAW_KITCHEN_SINK_RPC_READY_MS     Gateway readiness timeout.
-  OPENCLAW_KITCHEN_SINK_RPC_COMMAND_MS   OpenClaw command timeout.
-  OPENCLAW_KITCHEN_SINK_RPC_INSTALL_MS   Plugin install timeout.
-  OPENCLAW_KITCHEN_SINK_RPC_CALL_MS      RPC call timeout.
-  OPENCLAW_KITCHEN_SINK_RPC_FETCH_MS     HTTP readiness probe timeout.
-  OPENCLAW_KITCHEN_SINK_RPC_FETCH_BODY_BYTES  HTTP readiness probe response ceiling.
-  OPENCLAW_KITCHEN_SINK_MAX_RSS_MIB      Gateway RSS ceiling.
-  OPENCLAW_KITCHEN_SINK_COMMAND_MAX_RSS_MIB  Install/CLI command RSS ceiling.
-  OPENCLAW_KITCHEN_SINK_OUTPUT_CAPTURE_CHARS  Per-command stdout/stderr capture ceiling.
-  OPENCLAW_KITCHEN_SINK_KEEP_TMP=1       Preserve the isolated temp home.
+  AFORA_ENTRY                         Built Afora entrypoint. Defaults to dist/index.mjs or dist/index.js.
+  AFORA_KITCHEN_SINK_NPM_SPEC         Plugin package spec. Default: npm:@afora/kitchen-sink@latest.
+  AFORA_KITCHEN_SINK_PLUGIN_ID        Plugin id. Default: afora-kitchen-sink-fixture.
+  AFORA_KITCHEN_SINK_PERSONALITY      Plugin fixture personality. Default: conformance.
+  AFORA_KITCHEN_SINK_RPC_PORT         Gateway loopback port. Default: OS-selected free port.
+  AFORA_KITCHEN_SINK_RPC_READY_MS     Gateway readiness timeout.
+  AFORA_KITCHEN_SINK_RPC_COMMAND_MS   Afora command timeout.
+  AFORA_KITCHEN_SINK_RPC_INSTALL_MS   Plugin install timeout.
+  AFORA_KITCHEN_SINK_RPC_CALL_MS      RPC call timeout.
+  AFORA_KITCHEN_SINK_RPC_FETCH_MS     HTTP readiness probe timeout.
+  AFORA_KITCHEN_SINK_RPC_FETCH_BODY_BYTES  HTTP readiness probe response ceiling.
+  AFORA_KITCHEN_SINK_MAX_RSS_MIB      Gateway RSS ceiling.
+  AFORA_KITCHEN_SINK_COMMAND_MAX_RSS_MIB  Install/CLI command RSS ceiling.
+  AFORA_KITCHEN_SINK_OUTPUT_CAPTURE_CHARS  Per-command stdout/stderr capture ceiling.
+  AFORA_KITCHEN_SINK_KEEP_TMP=1       Preserve the isolated temp home.
 `;
 }
 
@@ -278,51 +278,51 @@ export function readPositiveTimerMs(raw: string | undefined, fallback: number, l
 
 export function resolveKitchenSinkRpcConfig(env: ProcessEnv = process.env) {
   const commandTimeoutMs = readPositiveTimerMs(
-    env.OPENCLAW_KITCHEN_SINK_RPC_COMMAND_MS,
+    env.AFORA_KITCHEN_SINK_RPC_COMMAND_MS,
     DEFAULT_COMMAND_TIMEOUT_MS,
-    "OPENCLAW_KITCHEN_SINK_RPC_COMMAND_MS",
+    "AFORA_KITCHEN_SINK_RPC_COMMAND_MS",
   );
   return {
     commandMaxRssMiB: readPositiveInt(
-      env.OPENCLAW_KITCHEN_SINK_COMMAND_MAX_RSS_MIB,
+      env.AFORA_KITCHEN_SINK_COMMAND_MAX_RSS_MIB,
       DEFAULT_MAX_COMMAND_RSS_MIB,
-      "OPENCLAW_KITCHEN_SINK_COMMAND_MAX_RSS_MIB",
+      "AFORA_KITCHEN_SINK_COMMAND_MAX_RSS_MIB",
     ),
     commandTimeoutMs,
     fetchBodyMaxBytes: readPositiveInt(
-      env.OPENCLAW_KITCHEN_SINK_RPC_FETCH_BODY_BYTES,
+      env.AFORA_KITCHEN_SINK_RPC_FETCH_BODY_BYTES,
       DEFAULT_FETCH_BODY_MAX_BYTES,
-      "OPENCLAW_KITCHEN_SINK_RPC_FETCH_BODY_BYTES",
+      "AFORA_KITCHEN_SINK_RPC_FETCH_BODY_BYTES",
     ),
     fetchTimeoutMs: readPositiveTimerMs(
-      env.OPENCLAW_KITCHEN_SINK_RPC_FETCH_MS,
+      env.AFORA_KITCHEN_SINK_RPC_FETCH_MS,
       DEFAULT_FETCH_TIMEOUT_MS,
-      "OPENCLAW_KITCHEN_SINK_RPC_FETCH_MS",
+      "AFORA_KITCHEN_SINK_RPC_FETCH_MS",
     ),
     installTimeoutMs: readPositiveTimerMs(
-      env.OPENCLAW_KITCHEN_SINK_RPC_INSTALL_MS,
+      env.AFORA_KITCHEN_SINK_RPC_INSTALL_MS,
       Math.max(commandTimeoutMs, DEFAULT_INSTALL_TIMEOUT_MS),
-      "OPENCLAW_KITCHEN_SINK_RPC_INSTALL_MS",
+      "AFORA_KITCHEN_SINK_RPC_INSTALL_MS",
     ),
     maxRssMiB: readPositiveInt(
-      env.OPENCLAW_KITCHEN_SINK_MAX_RSS_MIB,
+      env.AFORA_KITCHEN_SINK_MAX_RSS_MIB,
       DEFAULT_MAX_RSS_MIB,
-      "OPENCLAW_KITCHEN_SINK_MAX_RSS_MIB",
+      "AFORA_KITCHEN_SINK_MAX_RSS_MIB",
     ),
     outputCaptureChars: readPositiveInt(
-      env.OPENCLAW_KITCHEN_SINK_OUTPUT_CAPTURE_CHARS,
+      env.AFORA_KITCHEN_SINK_OUTPUT_CAPTURE_CHARS,
       DEFAULT_OUTPUT_CAPTURE_CHARS,
-      "OPENCLAW_KITCHEN_SINK_OUTPUT_CAPTURE_CHARS",
+      "AFORA_KITCHEN_SINK_OUTPUT_CAPTURE_CHARS",
     ),
     readyTimeoutMs: readPositiveTimerMs(
-      env.OPENCLAW_KITCHEN_SINK_RPC_READY_MS,
+      env.AFORA_KITCHEN_SINK_RPC_READY_MS,
       DEFAULT_READY_TIMEOUT_MS,
-      "OPENCLAW_KITCHEN_SINK_RPC_READY_MS",
+      "AFORA_KITCHEN_SINK_RPC_READY_MS",
     ),
     rpcTimeoutMs: readPositiveTimerMs(
-      env.OPENCLAW_KITCHEN_SINK_RPC_CALL_MS,
+      env.AFORA_KITCHEN_SINK_RPC_CALL_MS,
       DEFAULT_RPC_TIMEOUT_MS,
-      "OPENCLAW_KITCHEN_SINK_RPC_CALL_MS",
+      "AFORA_KITCHEN_SINK_RPC_CALL_MS",
     ),
   };
 }
@@ -367,12 +367,12 @@ export async function resolveKitchenSinkRpcPort(
   env: ProcessEnv = process.env,
   options: { findAvailablePort?: () => Promise<number> } = {},
 ) {
-  const rawPort = (env.OPENCLAW_KITCHEN_SINK_RPC_PORT || "").trim();
+  const rawPort = (env.AFORA_KITCHEN_SINK_RPC_PORT || "").trim();
   if (rawPort) {
-    const port = readPositiveInt(rawPort, 0, "OPENCLAW_KITCHEN_SINK_RPC_PORT");
+    const port = readPositiveInt(rawPort, 0, "AFORA_KITCHEN_SINK_RPC_PORT");
     if (port > 65535) {
       throw new Error(
-        `OPENCLAW_KITCHEN_SINK_RPC_PORT must be a TCP port from 1 to 65535. Got: ${JSON.stringify(rawPort)}`,
+        `AFORA_KITCHEN_SINK_RPC_PORT must be a TCP port from 1 to 65535. Got: ${JSON.stringify(rawPort)}`,
       );
     }
     return port;
@@ -380,12 +380,12 @@ export async function resolveKitchenSinkRpcPort(
   return await (options.findAvailablePort ?? findAvailableLoopbackPort)();
 }
 
-function resolveOpenClawRunner(): OpenClawRunner {
-  if (process.env.OPENCLAW_ENTRY) {
+function resolveAforaRunner(): AforaRunner {
+  if (process.env.AFORA_ENTRY) {
     return {
       command: "node",
-      baseArgs: [process.env.OPENCLAW_ENTRY],
-      label: process.env.OPENCLAW_ENTRY,
+      baseArgs: [process.env.AFORA_ENTRY],
+      label: process.env.AFORA_ENTRY,
     };
   }
   for (const candidate of ["dist/index.mjs", "dist/index.js"]) {
@@ -394,13 +394,13 @@ function resolveOpenClawRunner(): OpenClawRunner {
       return { command: "node", baseArgs: [resolved], label: resolved };
     }
   }
-  return { pnpm: true, baseArgs: ["openclaw"], label: "pnpm openclaw" };
+  return { pnpm: true, baseArgs: ["afora"], label: "pnpm afora" };
 }
 
 export function makeEnv() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-kitchen-sink-rpc-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-kitchen-sink-rpc-"));
   const home = path.join(root, "home");
-  const stateDir = path.join(home, ".openclaw");
+  const stateDir = path.join(home, ".afora");
   fs.mkdirSync(stateDir, { recursive: true });
   return {
     root,
@@ -408,13 +408,13 @@ export function makeEnv() {
       ...process.env,
       HOME: home,
       USERPROFILE: home,
-      OPENCLAW_HOME: home,
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_CONFIG_PATH: path.join(stateDir, "openclaw.json"),
-      OPENCLAW_NO_ONBOARD: "1",
-      OPENCLAW_SKIP_PROVIDERS: "0",
-      OPENCLAW_KITCHEN_SINK_PERSONALITY:
-        process.env.OPENCLAW_KITCHEN_SINK_PERSONALITY || "conformance",
+      AFORA_HOME: home,
+      AFORA_STATE_DIR: stateDir,
+      AFORA_CONFIG_PATH: path.join(stateDir, "afora.json"),
+      AFORA_NO_ONBOARD: "1",
+      AFORA_SKIP_PROVIDERS: "0",
+      AFORA_KITCHEN_SINK_PERSONALITY:
+        process.env.AFORA_KITCHEN_SINK_PERSONALITY || "conformance",
     },
   };
 }
@@ -707,7 +707,7 @@ async function shutdownActiveCommands(signal: NodeJS.Signals) {
 }
 
 function resolveCommandParentSignalKillGraceMs(env: ProcessEnv) {
-  const raw = env.VITEST && env.OPENCLAW_TEST_KITCHEN_SINK_PARENT_SIGNAL_KILL_GRACE_MS;
+  const raw = env.VITEST && env.AFORA_TEST_KITCHEN_SINK_PARENT_SIGNAL_KILL_GRACE_MS;
   if (!raw) {
     return COMMAND_PARENT_SIGNAL_KILL_GRACE_MS;
   }
@@ -790,8 +790,8 @@ export function signalProcessGroup(
   });
 }
 
-async function runOpenClaw(
-  runner: OpenClawRunner,
+async function runAfora(
+  runner: AforaRunner,
   args: string[],
   env: ProcessEnv,
   options: Pick<
@@ -805,7 +805,7 @@ async function runOpenClaw(
   > = {},
 ) {
   const config = resolveKitchenSinkRpcConfig(env);
-  const command = await resolveOpenClawCommand(runner, args, env, {
+  const command = await resolveAforaCommand(runner, args, env, {
     stdio: ["ignore", "pipe", "pipe"],
   });
   return runCommand(command.command, command.args, {
@@ -821,8 +821,8 @@ async function runOpenClaw(
   });
 }
 
-async function resolveOpenClawCommand(
-  runner: OpenClawRunner,
+async function resolveAforaCommand(
+  runner: AforaRunner,
   args: string[],
   env: ProcessEnv,
   options: { stdio?: StdioOptions } = {},
@@ -1076,8 +1076,8 @@ async function rpcCall(method: string, params: unknown, options: RpcCallOptions)
   const module = await loadCallGatewayModule(options.runner);
   const payload = module
     ? await module.callGateway({
-        config: readJson(options.env.OPENCLAW_CONFIG_PATH),
-        configPath: options.env.OPENCLAW_CONFIG_PATH,
+        config: readJson(options.env.AFORA_CONFIG_PATH),
+        configPath: options.env.AFORA_CONFIG_PATH,
         url: `ws://127.0.0.1:${options.port}`,
         token: TOKEN,
         method,
@@ -1089,8 +1089,8 @@ async function rpcCall(method: string, params: unknown, options: RpcCallOptions)
   return unwrapRpcPayload(payload);
 }
 
-async function loadCallGatewayModule(runner: OpenClawRunner) {
-  if (!usesBuiltOpenClawEntry(runner)) {
+async function loadCallGatewayModule(runner: AforaRunner) {
+  if (!usesBuiltAforaEntry(runner)) {
     return null;
   }
   callGatewayModulePromise ??= importCallGatewayModule();
@@ -1113,7 +1113,7 @@ async function rpcCallViaCli(method: string, params: unknown, options: RpcCallOp
   const config = resolveKitchenSinkRpcConfig(options.env);
   let stdout;
   try {
-    ({ stdout } = await runOpenClaw(
+    ({ stdout } = await runAfora(
       options.runner,
       [
         "gateway",
@@ -1160,8 +1160,8 @@ export function findDistCallGatewayModuleFiles(cwd = process.cwd()) {
     : [];
 }
 
-export function usesBuiltOpenClawEntry(
-  runner: OpenClawRunner,
+export function usesBuiltAforaEntry(
+  runner: AforaRunner,
   cwd = process.cwd(),
   env: ProcessEnv = process.env,
 ) {
@@ -1169,7 +1169,7 @@ export function usesBuiltOpenClawEntry(
     return false;
   }
   const entry = runner.baseArgs[0];
-  if (env.OPENCLAW_ENTRY && entry === env.OPENCLAW_ENTRY) {
+  if (env.AFORA_ENTRY && entry === env.AFORA_ENTRY) {
     return true;
   }
   const relative = path.relative(path.resolve(cwd, "dist"), path.resolve(cwd, entry));
@@ -1337,7 +1337,7 @@ async function delayWithAbort(delayMs: number, signal?: AbortSignal) {
 }
 
 function configureKitchenSink(env: KitchenSinkEnv, port: number) {
-  const configPath = env.OPENCLAW_CONFIG_PATH;
+  const configPath = env.AFORA_CONFIG_PATH;
   const config = asRecord(fs.existsSync(configPath) ? readJson(configPath) : {});
   const gateway = asRecord(config.gateway);
   const plugins = asRecord(config.plugins);
@@ -1371,7 +1371,7 @@ function configureKitchenSink(env: KitchenSinkEnv, port: number) {
         enabled: true,
         config: {
           ...asRecord(pluginEntry.config),
-          personality: env.OPENCLAW_KITCHEN_SINK_PERSONALITY,
+          personality: env.AFORA_KITCHEN_SINK_PERSONALITY,
         },
         hooks: {
           ...asRecord(pluginEntry.hooks),
@@ -1405,13 +1405,13 @@ function configureKitchenSink(env: KitchenSinkEnv, port: number) {
 }
 
 async function startGateway(
-  runner: OpenClawRunner,
+  runner: AforaRunner,
   port: number,
   env: ProcessEnv,
   logPath: string,
 ) {
   const log = fs.openSync(logPath, "w");
-  const command = await resolveOpenClawCommand(
+  const command = await resolveAforaCommand(
     runner,
     ["gateway", "--port", String(port), "--bind", "loopback", "--allow-unconfigured"],
     env,
@@ -2216,7 +2216,7 @@ async function samplePosixProcessTree(
   const commandMatches = descendants.filter(matchesCommandNeedles);
   const rootCommandMatches = matchesCommandNeedles(rootRow) ? [rootRow] : [];
   const gatewayTitleMatches = descendants.filter((row) =>
-    row.command.toLowerCase().includes("openclaw-gateway"),
+    row.command.toLowerCase().includes("afora-gateway"),
   );
   const selected = selectPeakRssProcess(
     commandMatches.length > 0
@@ -2733,11 +2733,11 @@ function tailText(text: string) {
 
 async function main() {
   const config = resolveKitchenSinkRpcConfig();
-  let runner = resolveOpenClawRunner();
+  let runner = resolveAforaRunner();
   const port = await resolveKitchenSinkRpcPort();
   const { root, env } = makeEnv();
   const logPath = path.join(root, "gateway.log");
-  const keepTmp = process.env.OPENCLAW_KITCHEN_SINK_KEEP_TMP === "1";
+  const keepTmp = process.env.AFORA_KITCHEN_SINK_KEEP_TMP === "1";
   let failed = false;
   let child: GatewayChild | undefined;
 
@@ -2754,23 +2754,23 @@ async function main() {
   let sampleTimer: ReturnType<typeof setInterval> | undefined;
   try {
     console.log(`Kitchen Sink RPC walk using ${PLUGIN_SPEC} via ${runner.label}`);
-    await runOpenClaw(runner, ["plugins", "install", PLUGIN_SPEC, "--force"], env, {
+    await runAfora(runner, ["plugins", "install", PLUGIN_SPEC, "--force"], env, {
       ...commandResourceOptions,
       requireResourceSample: true,
       resourceLabel: "plugins install",
       timeoutMs: config.installTimeoutMs,
     });
-    runner = resolveOpenClawRunner();
+    runner = resolveAforaRunner();
     console.log(`Kitchen Sink RPC runtime runner: ${runner.label}`);
     configureKitchenSink(env, port);
-    await runOpenClaw(runner, ["plugins", "enable", PLUGIN_ID], env, {
+    await runAfora(runner, ["plugins", "enable", PLUGIN_ID], env, {
       ...commandResourceOptions,
       resourceLabel: "plugins enable",
       timeoutMs: 60000,
     });
     const inspect = parseJsonOutput(
       (
-        await runOpenClaw(runner, ["plugins", "inspect", PLUGIN_ID, "--runtime", "--json"], env, {
+        await runAfora(runner, ["plugins", "inspect", PLUGIN_ID, "--runtime", "--json"], env, {
           ...commandResourceOptions,
           resourceLabel: "plugins inspect",
         })
@@ -2918,7 +2918,7 @@ async function main() {
 
     const uiDescriptors = await retryRpcCall("plugins.uiDescriptors", {}, rpcOptions);
     assertKitchenSinkUiDescriptors(uiDescriptors, {
-      expectDescriptor: env.OPENCLAW_KITCHEN_SINK_PERSONALITY !== "conformance",
+      expectDescriptor: env.AFORA_KITCHEN_SINK_PERSONALITY !== "conformance",
     });
     const stability = await retryRpcCall("diagnostics.stability", {}, rpcOptions);
     assertDiagnosticStabilityClean(stability);

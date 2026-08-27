@@ -25,9 +25,9 @@ describe("diagnostic events boundary runtime", () => {
       cwd: repoRoot,
       encoding: "utf8",
     }).trim();
-    vi.stubEnv("OPENCLAW_QA_REF", checkoutSha);
-    vi.stubEnv("OPENCLAW_QA_PACKAGE_SOURCE_KIND", "source-checkout");
-    vi.stubEnv("OPENCLAW_QA_PACKAGE_SOURCE_SHA", checkoutSha);
+    vi.stubEnv("AFORA_QA_REF", checkoutSha);
+    vi.stubEnv("AFORA_QA_PACKAGE_SOURCE_KIND", "source-checkout");
+    vi.stubEnv("AFORA_QA_PACKAGE_SOURCE_SHA", checkoutSha);
 
     const { evidence, summary } = await runDiagnosticEventsBoundaryRuntime({
       artifactBase,

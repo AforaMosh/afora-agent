@@ -1,7 +1,7 @@
 // Covers `models auth order set/clear`: store writes and running-gateway refresh.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthProfileStore } from "../../agents/auth-profiles.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { RuntimeEnv } from "../../runtime.js";
 
 const mocks = vi.hoisted(() => ({
@@ -26,7 +26,7 @@ vi.mock("./shared.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./shared.js")>();
   return {
     ...actual,
-    resolveModelsTargetAgent: (_cfg: OpenClawConfig, rawAgentId?: string) => ({
+    resolveModelsTargetAgent: (_cfg: AforaConfig, rawAgentId?: string) => ({
       agentId: rawAgentId ?? "main",
       agentDir: `/tmp/agent-${rawAgentId ?? "main"}`,
     }),
@@ -66,7 +66,7 @@ function storeWith(profileIds: string[], order?: string[]): AuthProfileStore {
 describe("models auth order", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.loadModelsConfig.mockResolvedValue({} as OpenClawConfig);
+    mocks.loadModelsConfig.mockResolvedValue({} as AforaConfig);
     mocks.ensureAuthProfileStore.mockReturnValue(
       storeWith(["anthropic:a", "anthropic:b"], ["anthropic:a"]),
     );

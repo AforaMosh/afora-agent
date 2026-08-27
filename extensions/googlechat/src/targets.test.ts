@@ -1,7 +1,7 @@
 // Googlechat tests cover targets plugin behavior.
 import { createServer } from "node:http";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 import type { ResolvedGoogleChatAccount } from "./accounts.js";
 import { downloadGoogleChatMedia, sendGoogleChatMessage, updateGoogleChatMessage } from "./api.js";
 import {
@@ -36,7 +36,7 @@ const mocks = vi.hoisted(() => ({
   getGoogleChatAccessToken: vi.fn().mockResolvedValue("token"),
 }));
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => {
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => {
   return {
     buildHostnameAllowlistPolicyFromSuffixAllowlist:
       mocks.buildHostnameAllowlistPolicyFromSuffixAllowlist,
@@ -97,7 +97,7 @@ function expireGoogleChatCertCache(): void {
 }
 
 afterAll(() => {
-  vi.doUnmock("openclaw/plugin-sdk/ssrf-runtime");
+  vi.doUnmock("afora-agent/plugin-sdk/ssrf-runtime");
   vi.doUnmock("google-auth-library");
   vi.doUnmock("./auth.js");
   vi.resetModules();
@@ -280,7 +280,7 @@ describe("googlechat group policy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveGoogleChatGroupRequireMention({ cfg, groupId: "spaces/AAA" })).toBe(false);
     expect(resolveGoogleChatGroupRequireMention({ cfg, groupId: "spaces/BBB" })).toBe(true);

@@ -10,7 +10,7 @@ import { resolveGatewayHttpOrigin, resolveSandboxHostUrl } from "../sandbox-host
 
 // Keep in sync with the identical literal in chat widget-card.ts: a shared
 // module is not worth its startup-bundle cost for one string.
-const WIDGET_SIZE_MESSAGE_TYPE = "openclaw:widget-size";
+const WIDGET_SIZE_MESSAGE_TYPE = "afora:widget-size";
 const MAX_FRAME_REFRESH_ATTEMPTS = 3;
 const TICKET_REFRESH_LEAD_MS = 15_000;
 const TICKET_REFRESH_MIN_DELAY_MS = 1_000;
@@ -321,7 +321,7 @@ export class BoardWidgetFrameLifecycle {
   private verifyAuthorization(event: Event, widget: BoardWidget): void {
     const frame = event.currentTarget;
     const src = frame instanceof HTMLIFrameElement ? (frame.getAttribute("src") ?? "") : "";
-    if (!src.startsWith("/__openclaw__/board/")) {
+    if (!src.startsWith("/__afora__/board/")) {
       return;
     }
     const probeGeneration = this.frameProbeGeneration + 1;

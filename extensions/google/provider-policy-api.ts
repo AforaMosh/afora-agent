@@ -1,6 +1,6 @@
 // Google API module exposes the plugin public contract.
-import type { ProviderDefaultThinkingPolicyContext } from "openclaw/plugin-sdk/core";
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-types";
+import type { ProviderDefaultThinkingPolicyContext } from "afora-agent/plugin-sdk/core";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-model-types";
 import { normalizeGoogleProviderConfig, resolveGoogleThinkingProfile } from "./provider-policy.js";
 
 export function normalizeConfig(params: { provider: string; providerConfig: ModelProviderConfig }) {

@@ -1,10 +1,10 @@
 // Verifies cron retention schema parsing and defaults.
 import { describe, expect, it } from "vitest";
-import { OpenClawSchema } from "./zod-schema.js";
+import { AforaSchema } from "./zod-schema.js";
 
-describe("OpenClawSchema cron retention validation", () => {
+describe("AforaSchema cron retention validation", () => {
   it("accepts valid cron.sessionRetention values", () => {
-    const result = OpenClawSchema.safeParse({
+    const result = AforaSchema.safeParse({
       cron: {
         sessionRetention: "1h30m",
       },
@@ -14,7 +14,7 @@ describe("OpenClawSchema cron retention validation", () => {
 
   it("rejects invalid cron.sessionRetention", () => {
     expect(() =>
-      OpenClawSchema.parse({
+      AforaSchema.parse({
         cron: {
           sessionRetention: "abc",
         },
@@ -24,7 +24,7 @@ describe("OpenClawSchema cron retention validation", () => {
 
   it("rejects retired cron.runLog config", () => {
     expect(() =>
-      OpenClawSchema.parse({
+      AforaSchema.parse({
         cron: {
           runLog: { keepLines: 2000 },
         },

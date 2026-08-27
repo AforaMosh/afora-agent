@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { testing as cliBackendsTesting } from "./cli-backends.test-support.js";
 import {
   resolveManualCompactionCliTarget,
@@ -12,7 +12,7 @@ describe("resolvePersistedSessionRuntimeId", () => {
     expect(
       resolvePersistedSessionRuntimeId({
         agentHarnessId: "codex",
-        agentRuntimeOverride: "openclaw",
+        agentRuntimeOverride: "afora",
         modelSelectionLocked: true,
       }),
     ).toBe("codex");
@@ -22,10 +22,10 @@ describe("resolvePersistedSessionRuntimeId", () => {
     expect(
       resolvePersistedSessionRuntimeId({
         agentHarnessId: "codex",
-        agentRuntimeOverride: "openclaw",
+        agentRuntimeOverride: "afora",
         modelSelectionLocked: false,
       }),
-    ).toBe("openclaw");
+    ).toBe("afora");
   });
 
   it("filters default overrides before falling back to the persisted harness", () => {
@@ -120,7 +120,7 @@ describe("resolveManualCompactionCliTarget", () => {
     expect(
       resolveManualCompactionCliTarget({
         provider: "anthropic",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         entry: {
           cliSessionBindings: {
             "claude-cli": { sessionId: "native-claude-session" },
@@ -135,7 +135,7 @@ describe("resolveManualCompactionCliTarget", () => {
   });
 
   it("passes config when resolving an explicit setup-registered runtime binding", () => {
-    const cfg = { plugins: { entries: { anthropic: { enabled: true } } } } as OpenClawConfig;
+    const cfg = { plugins: { entries: { anthropic: { enabled: true } } } } as AforaConfig;
     cliBackendsTesting.setDepsForTest({
       resolveRuntimeCliBackends: () => [],
       resolvePluginSetupCliBackend: ({ backend, config }) =>

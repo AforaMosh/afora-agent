@@ -13,10 +13,10 @@ import type { QaSuiteRuntimeEnv } from "./suite-runtime-types.js";
 const fetchWithSsrFGuardMock = vi.hoisted(() => vi.fn());
 const writeGatewayRestartIntentSyncMock = vi.hoisted(() => vi.fn());
 
-vi.mock("openclaw/plugin-sdk/qa-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/qa-runtime", () => ({
   writeGatewayRestartIntentSync: writeGatewayRestartIntentSyncMock,
 }));
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ({
   fetchWithSsrFGuard: fetchWithSsrFGuardMock,
 }));
 
@@ -87,7 +87,7 @@ describe("qa suite gateway helpers", () => {
       return { ok: true };
     });
     const { env, waitReady } = createConfigMutationEnv(gatewayCall);
-    const runtimeEnv = { OPENCLAW_STATE_DIR: "/isolated/qa-gateway" };
+    const runtimeEnv = { AFORA_STATE_DIR: "/isolated/qa-gateway" };
     env.gateway.runtimeEnv = runtimeEnv;
     const restartAfterStateMutation = vi.fn();
     env.gateway.restartAfterStateMutation = restartAfterStateMutation;

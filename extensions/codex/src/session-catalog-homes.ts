@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { listAgentIds, resolveAgentDir } from "openclaw/plugin-sdk/agent-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import { listAgentIds, resolveAgentDir } from "afora-agent/plugin-sdk/agent-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   resolveCodexAppServerHomeDir,
   resolveCodexAppServerLocalHomeDir,
@@ -50,14 +50,14 @@ function existingCatalogHomeCandidates(value: string, label?: string): CatalogHo
 
 function catalogHomeId(codexHome: string): string {
   return createHash("sha256")
-    .update("openclaw:codex-session-catalog-home:v1\0")
+    .update("afora:codex-session-catalog-home:v1\0")
     .update(codexHome)
     .digest("hex");
 }
 
 /** Resolves every local Codex store the operator already owns, without path disclosure. */
 function resolveCodexCatalogHomes(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   pluginConfig: unknown;
   ownerAgentId: string;
   env: NodeJS.ProcessEnv;
@@ -150,14 +150,14 @@ type CodexCatalogHomeResolver = {
 
 /** Discovers Codex homes once per immutable Gateway config generation. */
 export function createCodexCatalogHomeResolver(params: {
-  config: OpenClawConfig;
-  getRuntimeConfig: () => OpenClawConfig | undefined;
+  config: AforaConfig;
+  getRuntimeConfig: () => AforaConfig | undefined;
   getPluginConfig: () => unknown;
   env?: NodeJS.ProcessEnv;
 }): CodexCatalogHomeResolver {
   const env = params.env ?? process.env;
-  const homesByConfig = new WeakMap<OpenClawConfig, Map<string, readonly CodexCatalogHome[]>>();
-  const buildSnapshot = (config: OpenClawConfig) => {
+  const homesByConfig = new WeakMap<AforaConfig, Map<string, readonly CodexCatalogHome[]>>();
+  const buildSnapshot = (config: AforaConfig) => {
     const pluginConfig = params.getPluginConfig();
     const homesByAgent = new Map(
       listAgentIds(config).map((agentId) => [

@@ -1,6 +1,6 @@
 import Foundation
 import Observation
-import OpenClawKit
+import AforaKit
 
 /// Keeps operator sessions for non-focused gateways live in the foreground.
 /// The focused gateway remains owned by `NodeAppModel`, including its capability-bearing
@@ -186,7 +186,7 @@ final class GatewayOperatorFleet {
                         BridgeInvokeResponse(
                             id: request.id,
                             ok: false,
-                            error: OpenClawNodeError(
+                            error: AforaNodeError(
                                 code: .invalidRequest,
                                 message: "INVALID_REQUEST: background operator sessions cannot invoke node commands"))
                     })
@@ -222,7 +222,7 @@ final class GatewayOperatorFleet {
         GatewayConnectOptions(
             role: "operator",
             scopes: ["operator.read", "operator.write", "operator.talk.secrets"],
-            caps: [OpenClawGatewayClientCapability.inlineWidgets],
+            caps: [AforaGatewayClientCapability.inlineWidgets],
             commands: [],
             permissions: [:],
             clientId: nodeOptions.clientId,

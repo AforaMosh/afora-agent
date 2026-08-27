@@ -6,7 +6,7 @@ import {
   getNodeSqliteKysely,
 } from "../../infra/kysely-sync.js";
 import { runSqliteDeferredTransactionSync } from "../../infra/sqlite-transaction.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
+import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.generated.js";
 import {
   isCanonicalSessionTranscriptEntry,
   parseSessionTranscriptTreeEntry,
@@ -17,14 +17,14 @@ import {
 } from "./transcript-visible-events.js";
 
 type TranscriptProjectionDatabase = Pick<
-  OpenClawAgentKyselyDatabase,
+  AforaAgentKyselyDatabase,
   "session_windows" | "session_transcript_index_state" | "transcript_events"
 > & {
-  session_transcript_active_events: OpenClawAgentKyselyDatabase["session_transcript_active_events"] & {
+  session_transcript_active_events: AforaAgentKyselyDatabase["session_transcript_active_events"] & {
     rowid: Generated<number>;
   };
   session_transcript_fts: Omit<
-    OpenClawAgentKyselyDatabase["session_transcript_fts"],
+    AforaAgentKyselyDatabase["session_transcript_fts"],
     "timestamp"
   > & {
     rowid: Generated<number>;

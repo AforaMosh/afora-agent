@@ -1,5 +1,5 @@
 import type { Direction } from "matrix-js-sdk/lib/models/event-timeline.js";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { fetchMatrixPollMessageSummary, resolveMatrixPollRootEventId } from "../poll-summary.js";
 import { isPollEventType, isPollStartType } from "../poll-types.js";
 import { editMessageMatrix, sendMessageMatrix } from "../send.js";
@@ -13,7 +13,7 @@ import {
   type MatrixRawEvent,
 } from "./types.js";
 
-const MATRIX_THREAD_RELATIONS_START_CURSOR_PREFIX = "openclaw.matrix.thread-relations-start:";
+const MATRIX_THREAD_RELATIONS_START_CURSOR_PREFIX = "afora.matrix.thread-relations-start:";
 
 function resolveMatrixReplacementTarget(event: MatrixRawEvent): string | undefined {
   const relation = event.content["m.relates_to"];

@@ -7,13 +7,13 @@ const fetchWithTimeoutMock = vi.hoisted(() => vi.fn());
 const resolveTelegramFetchMock = vi.hoisted(() => vi.fn(() => fetchWithTimeoutMock));
 const resolveTelegramApiBaseMock = vi.hoisted(() => vi.fn(() => "https://api.telegram.org"));
 
-vi.mock("openclaw/plugin-sdk/text-utility-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/text-utility-runtime", () => ({
   fetchWithTimeout: fetchWithTimeoutMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/string-coerce-runtime", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/string-coerce-runtime", async (importOriginal) => {
   const { normalizeOptionalString } =
-    await importOriginal<typeof import("openclaw/plugin-sdk/string-coerce-runtime")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/string-coerce-runtime")>();
   const isMockRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === "object" && value !== null;
   return {

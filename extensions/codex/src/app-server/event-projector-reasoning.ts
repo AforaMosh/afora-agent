@@ -1,6 +1,6 @@
-import type { EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams } from "openclaw/plugin-sdk/agent-harness-runtime";
-import type { AgentPlanStep, AgentPlanStepStatus } from "openclaw/plugin-sdk/channel-outbound";
-import { readStringField as readString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams } from "afora-agent/plugin-sdk/agent-harness-runtime";
+import type { AgentPlanStep, AgentPlanStepStatus } from "afora-agent/plugin-sdk/channel-outbound";
+import { readStringField as readString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   readNonNegativeInteger,
   readNullableString,
@@ -18,7 +18,7 @@ type ReasoningTextGroup = {
 };
 
 type AgentEvent = Parameters<NonNullable<EmbeddedRunAttemptParams["onAgentEvent"]>>[0];
-type PlanUpdateSource = "codex-app-server" | "openclaw";
+type PlanUpdateSource = "codex-app-server" | "afora";
 type NativePlanUpdate = { markdown?: string; steps: AgentPlanStep[] };
 
 export class CodexReasoningProjection {

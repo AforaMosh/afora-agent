@@ -1,5 +1,5 @@
 // Gateway RPC handlers for channel lifecycle, status, and account operations.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   ErrorCodes,
   errorShape,
@@ -21,7 +21,7 @@ import { resolveChannelAccountSnapshot } from "../../channels/plugins/status.js"
 import type { ChannelPlugin } from "../../channels/plugins/types.plugin.js";
 import type { ChannelAccountSnapshot } from "../../channels/plugins/types.public.js";
 import { readConfigFileSnapshot } from "../../config/config.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { getChannelActivity } from "../../infra/channel-activity.js";
 import { DEFAULT_ACCOUNT_ID } from "../../routing/session-key.js";
 import { defaultRuntime } from "../../runtime.js";
@@ -232,7 +232,7 @@ function resolveRuntimeAccountSnapshot(params: {
 
 function resolveChannelGatewayAccountId(params: {
   plugin: ChannelPlugin;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): string {
   // Runtime operations use the same account precedence as channel setup:
@@ -249,7 +249,7 @@ function resolveChannelGatewayAccountId(params: {
 async function logoutChannelAccount(params: {
   channelId: ChannelId;
   accountId?: string | null;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   context: GatewayRequestContext;
   plugin: ChannelPlugin;
 }): Promise<ChannelLogoutPayload> {
@@ -284,7 +284,7 @@ async function logoutChannelAccount(params: {
 async function startChannelAccount(params: {
   channelId: ChannelId;
   accountId?: string | null;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   context: GatewayRequestContext;
   plugin: ChannelPlugin;
 }): Promise<ChannelStartPayload> {
@@ -311,7 +311,7 @@ async function startChannelAccount(params: {
 async function stopChannelAccount(params: {
   channelId: ChannelId;
   accountId?: string | null;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   context: GatewayRequestContext;
   plugin: ChannelPlugin;
 }): Promise<ChannelStopPayload> {

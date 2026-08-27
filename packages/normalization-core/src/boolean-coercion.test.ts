@@ -1,5 +1,5 @@
 // Normalization Core tests cover boolean coerce behavior.
-import { parseBoolean } from "@openclaw/normalization-core/boolean-coercion";
+import { parseBoolean } from "@afora/normalization-core/boolean-coercion";
 import { describe, expect, it } from "vitest";
 
 describe("normalization-core/boolean-coercion", () => {

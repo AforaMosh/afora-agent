@@ -1,15 +1,15 @@
 // Whatsapp plugin module implements security fix behavior.
-import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/account-id";
-import type { ChannelDoctorConfigMutation } from "openclaw/plugin-sdk/channel-contract";
-import { readChannelAllowFromStore } from "openclaw/plugin-sdk/channel-pairing";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { normalizeUniqueStringEntries } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { DEFAULT_ACCOUNT_ID } from "afora-agent/plugin-sdk/account-id";
+import type { ChannelDoctorConfigMutation } from "afora-agent/plugin-sdk/channel-contract";
+import { readChannelAllowFromStore } from "afora-agent/plugin-sdk/channel-pairing";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { normalizeUniqueStringEntries } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 function applyGroupAllowFromFromStore(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   storeAllowFrom: string[];
   changes: string[];
-}): OpenClawConfig {
+}): AforaConfig {
   const next = structuredClone(params.cfg ?? {});
   const section = next.channels?.whatsapp as Record<string, unknown> | undefined;
   if (!section || typeof section !== "object" || params.storeAllowFrom.length === 0) {
@@ -50,7 +50,7 @@ function applyGroupAllowFromFromStore(params: {
 }
 
 export async function applyWhatsAppSecurityConfigFixes(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
 }): Promise<ChannelDoctorConfigMutation> {
   const fromStore = await readChannelAllowFromStore(

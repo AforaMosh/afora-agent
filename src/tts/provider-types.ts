@@ -1,6 +1,6 @@
 // TTS provider types describe speech provider config and synthesize APIs.
 import type { TalkProviderConfig } from "../config/types.gateway.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import type { ResolvedTtsPersona } from "../config/types.tts.js";
 
 /** Canonical speech provider identifier after provider registry normalization. */
@@ -45,7 +45,7 @@ export type TtsDirectiveParseResult = {
 
 /** Context for checking whether a provider has enough config to synthesize. */
 export type SpeechProviderConfiguredContext = {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   providerConfig: SpeechProviderConfig;
   timeoutMs: number;
 };
@@ -53,7 +53,7 @@ export type SpeechProviderConfiguredContext = {
 /** Request for buffered speech synthesis. */
 export type SpeechSynthesisRequest = {
   text: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   providerConfig: SpeechProviderConfig;
   target: SpeechSynthesisTarget;
   providerOverrides?: SpeechProviderOverrides;
@@ -82,7 +82,7 @@ export type SpeechSynthesisStreamResult = {
 /** Telephony synthesis request for provider output that needs a fixed sample rate. */
 export type SpeechTelephonySynthesisRequest = {
   text: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   providerConfig: SpeechProviderConfig;
   providerOverrides?: SpeechProviderOverrides;
   timeoutMs: number;
@@ -98,7 +98,7 @@ export type SpeechTelephonySynthesisResult = {
 /** Provider hook input for applying persona/config before synthesis. */
 export type SpeechProviderPrepareSynthesisContext = {
   text: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   providerConfig: SpeechProviderConfig;
   providerOverrides?: SpeechProviderOverrides;
   persona?: ResolvedTtsPersona;
@@ -127,7 +127,7 @@ export type SpeechVoiceOption = {
 
 /** Provider voice-listing request with optional direct auth/URL overrides. */
 export type SpeechListVoicesRequest = {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   providerConfig?: SpeechProviderConfig;
   apiKey?: string;
   baseUrl?: string;
@@ -135,9 +135,9 @@ export type SpeechListVoicesRequest = {
   timeoutMs?: number;
 };
 
-/** Provider hook input for resolving normalized config from raw OpenClaw config. */
+/** Provider hook input for resolving normalized config from raw Afora config. */
 export type SpeechProviderResolveConfigContext = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   rawConfig: Record<string, unknown>;
   timeoutMs: number;
 };
@@ -161,7 +161,7 @@ export type SpeechDirectiveTokenParseResult = {
 
 /** Provider hook input for resolving talk-command speech config. */
 export type SpeechProviderResolveTalkConfigContext = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   baseTtsConfig: Record<string, unknown>;
   talkProviderConfig: TalkProviderConfig;
   timeoutMs: number;

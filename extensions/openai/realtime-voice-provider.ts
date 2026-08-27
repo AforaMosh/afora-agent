@@ -1,15 +1,15 @@
-import { resolveAgentDir } from "openclaw/plugin-sdk/agent-runtime";
-import type { PluginLogger } from "openclaw/plugin-sdk/plugin-entry";
-import { resolveProviderRequestHeaders } from "openclaw/plugin-sdk/provider-http";
+import { resolveAgentDir } from "afora-agent/plugin-sdk/agent-runtime";
+import type { PluginLogger } from "afora-agent/plugin-sdk/plugin-entry";
+import { resolveProviderRequestHeaders } from "afora-agent/plugin-sdk/provider-http";
 import type {
   RealtimeVoiceBrowserSession,
   RealtimeVoiceBrowserSessionCreateRequest,
   RealtimeVoiceProviderCapabilities,
   RealtimeVoiceProviderConfig,
   RealtimeVoiceProviderPlugin,
-} from "openclaw/plugin-sdk/realtime-voice";
-import { REALTIME_VOICE_AUDIO_FORMAT_PCM16_24KHZ } from "openclaw/plugin-sdk/realtime-voice";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/realtime-voice";
+import { REALTIME_VOICE_AUDIO_FORMAT_PCM16_24KHZ } from "afora-agent/plugin-sdk/realtime-voice";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   createOpenAIRealtimeClientSecret,
   resolveOpenAIProviderConfigRecord,
@@ -118,7 +118,7 @@ type OpenAIInternalRealtimeVoiceProviderApi = {
   ) => Promise<void> | void;
 };
 
-const INTERNAL_REALTIME_VOICE_PROVIDER = Symbol.for("openclaw.internal.realtime-voice-provider.v1");
+const INTERNAL_REALTIME_VOICE_PROVIDER = Symbol.for("afora.internal.realtime-voice-provider.v1");
 
 function buildOpenAIRealtimeBrowserSessionConfig(
   req: OpenAIInternalRealtimeBrowserSessionCreateRequest,

@@ -1,7 +1,7 @@
 // Control UI E2E tests cover approval queue behavior through the Gateway WebSocket.
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import type { Page } from "playwright";
 import { afterEach, expect, it } from "vitest";
 import {
@@ -18,7 +18,7 @@ const suite = createControlUiE2eSuite({
 // Browser contexts preserve test isolation; keep one process warm for this file.
 let page: Page | undefined;
 const activeSessionKey = "agent:main:main";
-const captureUiProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+const captureUiProof = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 const proofDir = path.join(process.cwd(), ".artifacts", "control-ui-e2e", "approval-flow");
 
 function approval(id: string, command: string, createdAtMs: number, sessionKey = activeSessionKey) {
@@ -33,7 +33,7 @@ function approval(id: string, command: string, createdAtMs: number, sessionKey =
 const requireRecord = createRequireRecord("record", "expected-object-value");
 
 function approvalAttentionChip(currentPage: Page) {
-  return currentPage.locator("openclaw-sidebar-attention .sidebar-attention__open");
+  return currentPage.locator("afora-sidebar-attention .sidebar-attention__open");
 }
 
 suite.define(() => {
@@ -122,7 +122,7 @@ suite.define(() => {
     await currentPage
       .locator('.chat-inline-approval [data-approval-id="approval-inline"]')
       .waitFor();
-    expect(await currentPage.locator("openclaw-modal-dialog").count()).toBe(0);
+    expect(await currentPage.locator("afora-modal-dialog").count()).toBe(0);
 
     await gateway.emitGatewayEvent(
       "exec.approval.requested",
@@ -130,7 +130,7 @@ suite.define(() => {
     );
 
     await approvalAttentionChip(currentPage).waitFor();
-    expect(await currentPage.locator("openclaw-modal-dialog").count()).toBe(0);
+    expect(await currentPage.locator("afora-modal-dialog").count()).toBe(0);
     expect(await currentPage.getByText("echo other", { exact: true }).count()).toBe(0);
     if (captureUiProof) {
       await currentPage.screenshot({ path: path.join(proofDir, "01-passive-attention.png") });

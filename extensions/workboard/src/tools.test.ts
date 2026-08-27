@@ -1,8 +1,8 @@
 // Workboard tests cover tools plugin behavior.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { Value } from "typebox/value";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawPluginApi } from "../api.js";
+import type { AforaPluginApi } from "../api.js";
 import type { PersistedWorkboardCard, WorkboardKeyedStore } from "./persistence-types.js";
 import { WorkboardStore } from "./store.js";
 import { createWorkboardTools } from "./tools.js";
@@ -33,7 +33,7 @@ function readPayload(result: unknown): Record<string, unknown> {
 describe("workboard tools", () => {
   it("inherits the active tool filesystem boundary for workspace metadata", async () => {
     const store = new WorkboardStore(createMemoryStore());
-    const api = { runtime: {} } as unknown as OpenClawPluginApi;
+    const api = { runtime: {} } as unknown as AforaPluginApi;
     const restrictedContext = {
       agentId: "main",
       workspaceDir: "/workspace",
@@ -111,7 +111,7 @@ describe("workboard tools", () => {
 
   it("preserves read-only sandbox authority while allowing manual card movement", async () => {
     const store = new WorkboardStore(createMemoryStore());
-    const api = { runtime: {} } as unknown as OpenClawPluginApi;
+    const api = { runtime: {} } as unknown as AforaPluginApi;
     const context: NonNullable<Parameters<typeof guardWorkboardToolsForWorkspaceAccess>[1]> = {
       agentId: "main",
       sessionKey: "agent:main:subagent:readonly",
@@ -157,7 +157,7 @@ describe("workboard tools", () => {
           openKeyedStore: vi.fn(() => keyed),
         },
       },
-    } as unknown as OpenClawPluginApi;
+    } as unknown as AforaPluginApi;
     const workboardStore = new WorkboardStore(keyed);
     const tools = createWorkboardTools({
       api,
@@ -246,7 +246,7 @@ describe("workboard tools", () => {
           openKeyedStore: vi.fn(() => keyed),
         },
       },
-    } as unknown as OpenClawPluginApi;
+    } as unknown as AforaPluginApi;
     const store = new WorkboardStore(keyed);
     const mainTools = new Map(
       createWorkboardTools({
@@ -279,7 +279,7 @@ describe("workboard tools", () => {
           openKeyedStore: vi.fn(() => keyed),
         },
       },
-    } as unknown as OpenClawPluginApi;
+    } as unknown as AforaPluginApi;
     const store = new WorkboardStore(keyed);
     const mainTools = new Map(
       createWorkboardTools({
@@ -359,7 +359,7 @@ describe("workboard tools", () => {
           openKeyedStore: vi.fn(() => keyed),
         },
       },
-    } as unknown as OpenClawPluginApi;
+    } as unknown as AforaPluginApi;
     const store = new WorkboardStore(keyed);
     const tools = new Map(
       createWorkboardTools({
@@ -445,7 +445,7 @@ describe("workboard tools", () => {
           openKeyedStore: vi.fn(() => keyed),
         },
       },
-    } as unknown as OpenClawPluginApi;
+    } as unknown as AforaPluginApi;
     const store = new WorkboardStore(keyed);
     const tools = new Map(
       createWorkboardTools({
@@ -489,7 +489,7 @@ describe("workboard tools", () => {
           openKeyedStore: vi.fn(() => keyed),
         },
       },
-    } as unknown as OpenClawPluginApi;
+    } as unknown as AforaPluginApi;
     const store = new WorkboardStore(keyed);
     const tools = new Map(
       createWorkboardTools({
@@ -625,7 +625,7 @@ describe("workboard tools", () => {
 
   it("moves cards with agent claim scope", async () => {
     const store = new WorkboardStore(createMemoryStore());
-    const api = { runtime: {} } as unknown as OpenClawPluginApi;
+    const api = { runtime: {} } as unknown as AforaPluginApi;
     const tools = new Map(
       createWorkboardTools({ api, store, context: { agentId: "agent-b" } as never }).map((tool) => [
         tool.name,

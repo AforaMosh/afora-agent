@@ -9,7 +9,7 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("plugin extension import boundary inventory", () => {
   it("rejects retired core web-search ownership paths", () => {
-    const root = tempDirs.make("openclaw-retired-web-search-");
+    const root = tempDirs.make("afora-retired-web-search-");
     const relativeFile = "src/plugins/web-search-providers.mjs";
     const filePath = path.join(root, relativeFile);
     mkdirSync(path.dirname(filePath), { recursive: true });

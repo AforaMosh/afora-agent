@@ -7,7 +7,7 @@ export const CRABBOX_WARMUP_TIMEOUT_MS = 240_000;
 export const CRABBOX_LIFECYCLE_TIMEOUT_MS = 60_000;
 const CRABBOX_PROVISION_TIMEOUT_MS = 290_000;
 // Crabbox starts its 45-minute desktop/browser bootstrap clock after acquisition.
-// Preserve OpenClaw's existing five-minute acquisition envelope, then leave one
+// Preserve Afora's existing five-minute acquisition envelope, then leave one
 // lifecycle allowance for post-warmup inspection and cleanup.
 export const CRABBOX_DESKTOP_WARMUP_TIMEOUT_MS = 50 * 60_000;
 const CRABBOX_DESKTOP_PROVISION_TIMEOUT_MS =

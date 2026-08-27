@@ -1,5 +1,5 @@
-import OpenClawChatUI
-import OpenClawProtocol
+import AforaChatUI
+import AforaProtocol
 import SwiftUI
 
 struct RootSidebar: View {
@@ -39,8 +39,8 @@ struct RootSidebar: View {
             }
             self.footer
         }
-        .foregroundStyle(OpenClawSidebarPalette.text)
-        .background(OpenClawSidebarPalette.background)
+        .foregroundStyle(AforaSidebarPalette.text)
+        .background(AforaSidebarPalette.background)
         .sheet(isPresented: self.$showsPagesEditor) {
             RootSidebarPagesEditor(
                 destinations: RootTabs.pinnableSidebarPages.filter(self.isDestinationAvailable),
@@ -80,11 +80,11 @@ struct RootSidebar: View {
     private var brandHeader: some View {
         HStack(spacing: 4) {
             HStack(spacing: 8) {
-                OpenClawProMark(size: 26, shadowRadius: 2)
+                AforaProMark(size: 26, shadowRadius: 2)
                     .accessibilityHidden(true)
-                Text(String(localized: "OpenClaw"))
-                    .font(OpenClawType.headline)
-                    .foregroundStyle(OpenClawSidebarPalette.textStrong)
+                Text(String(localized: "Afora"))
+                    .font(AforaType.headline)
+                    .foregroundStyle(AforaSidebarPalette.textStrong)
                     .lineLimit(1)
             }
             .padding(.leading, 6)
@@ -114,7 +114,7 @@ struct RootSidebar: View {
             .accessibilityIdentifier("RootTabs.Sidebar.Destination.settings")
 
             if self.isDrawerLayout {
-                OpenClawSidebarControlButton(action: self.dismissAction)
+                AforaSidebarControlButton(action: self.dismissAction)
                     .allowsHitTesting(self.isDismissButtonEnabled)
                     .accessibilityHidden(!self.isDismissButtonEnabled)
             }
@@ -122,12 +122,12 @@ struct RootSidebar: View {
         .padding(.leading, 8)
         .padding(.trailing, 8)
         .padding(.vertical, 8)
-        .background(OpenClawSidebarPalette.background)
+        .background(AforaSidebarPalette.background)
         .overlay(alignment: .bottom) { self.separator }
     }
 
-    private var dismissAction: OpenClawSidebarHeaderAction {
-        OpenClawSidebarHeaderAction(
+    private var dismissAction: AforaSidebarHeaderAction {
+        AforaSidebarHeaderAction(
             systemName: "xmark",
             accessibilityLabel: .localized("Hide Sidebar"),
             accessibilityIdentifier: self.isDismissButtonEnabled
@@ -153,7 +153,7 @@ struct RootSidebar: View {
             }
             .padding(4)
             .background(.ultraThinMaterial, in: RoundedRectangle(
-                cornerRadius: OpenClawProMetric.cardRadius,
+                cornerRadius: AforaProMetric.cardRadius,
                 style: .continuous))
         }
     }
@@ -186,22 +186,22 @@ struct RootSidebar: View {
                     self.agentAvatarBadge(agent, size: 28)
                     if isSelected {
                         Circle()
-                            .fill(OpenClawBrand.ok)
+                            .fill(AforaBrand.ok)
                             .frame(width: 8, height: 8)
-                            .overlay(Circle().stroke(OpenClawSidebarPalette.background, lineWidth: 1.5))
+                            .overlay(Circle().stroke(AforaSidebarPalette.background, lineWidth: 1.5))
                     }
                 }
                 .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text(verbatim: Self.agentDisplayName(agent))
-                        .font(OpenClawType.subheadSemiBold)
-                        .foregroundStyle(OpenClawSidebarPalette.textStrong)
+                        .font(AforaType.subheadSemiBold)
+                        .foregroundStyle(AforaSidebarPalette.textStrong)
                         .lineLimit(1)
                     if let model = Self.agentModelLabel(agent) {
                         Text(verbatim: model)
-                            .font(OpenClawType.caption2Medium)
-                            .foregroundStyle(OpenClawSidebarPalette.muted)
+                            .font(AforaType.caption2Medium)
+                            .foregroundStyle(AforaSidebarPalette.muted)
                             .lineLimit(1)
                     }
                 }
@@ -213,8 +213,8 @@ struct RootSidebar: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .background(isSelected ? OpenClawSidebarPalette.selection : Color.clear, in: RoundedRectangle(
-            cornerRadius: OpenClawProMetric.controlRadius,
+        .background(isSelected ? AforaSidebarPalette.selection : Color.clear, in: RoundedRectangle(
+            cornerRadius: AforaProMetric.controlRadius,
             style: .continuous))
         .accessibilityValue(isSelected ? String(localized: "Selected") : "")
     }
@@ -227,7 +227,7 @@ struct RootSidebar: View {
                 } label: {
                     Label {
                         Text(verbatim: Self.agentDisplayName(agent))
-                            .font(OpenClawType.subheadSemiBold)
+                            .font(AforaType.subheadSemiBold)
                     } icon: {
                         self.agentMenuAvatarImage(agent)
                             .renderingMode(.original)
@@ -238,10 +238,10 @@ struct RootSidebar: View {
         } label: {
             HStack(spacing: 9) {
                 Image(systemName: "chevron.up.chevron.down")
-                    .font(OpenClawType.captionSemiBold)
+                    .font(AforaType.captionSemiBold)
                     .frame(width: 28)
                 Text(String(localized: "More Agents"))
-                    .font(OpenClawType.subheadSemiBold)
+                    .font(AforaType.subheadSemiBold)
                     .lineLimit(1)
                 Spacer(minLength: 4)
             }
@@ -250,7 +250,7 @@ struct RootSidebar: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .foregroundStyle(OpenClawSidebarPalette.muted)
+        .foregroundStyle(AforaSidebarPalette.muted)
     }
 
     /// Same key order the Agents roster uses for its model subtitles.
@@ -273,12 +273,12 @@ struct RootSidebar: View {
     {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(OpenClawType.subheadSemiBold)
+                .font(AforaType.subheadSemiBold)
                 .frame(width: 40, height: 44)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .foregroundStyle(OpenClawSidebarPalette.text)
+        .foregroundStyle(AforaSidebarPalette.text)
         .accessibilityLabel(label)
     }
 
@@ -302,15 +302,15 @@ struct RootSidebar: View {
     private func agentAvatarBadge(_ agent: AgentSummary, size: CGFloat) -> some View {
         ZStack {
             Circle()
-                .fill(OpenClawSidebarPalette.elevated)
+                .fill(AforaSidebarPalette.elevated)
             Text(verbatim: Self.agentBadge(name: Self.agentDisplayName(agent), identity: agent.identity))
-                .font(OpenClawType.caption2Bold)
-                .foregroundStyle(OpenClawSidebarPalette.textStrong)
+                .font(AforaType.caption2Bold)
+                .foregroundStyle(AforaSidebarPalette.textStrong)
                 .minimumScaleFactor(0.65)
                 .lineLimit(1)
         }
         .frame(width: size, height: size)
-        .overlay(Circle().strokeBorder(OpenClawSidebarPalette.hairline, lineWidth: 1))
+        .overlay(Circle().strokeBorder(AforaSidebarPalette.hairline, lineWidth: 1))
         .accessibilityHidden(true)
     }
 
@@ -327,19 +327,19 @@ struct RootSidebar: View {
     private var searchField: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .font(OpenClawType.captionSemiBold)
-                .foregroundStyle(OpenClawSidebarPalette.muted)
+                .font(AforaType.captionSemiBold)
+                .foregroundStyle(AforaSidebarPalette.muted)
                 .accessibilityHidden(true)
             ZStack(alignment: .leading) {
                 if self.searchText.isEmpty {
                     Text(String(localized: "Search sessions"))
-                        .font(OpenClawType.subhead)
-                        .foregroundStyle(OpenClawSidebarPalette.muted)
+                        .font(AforaType.subhead)
+                        .foregroundStyle(AforaSidebarPalette.muted)
                         .accessibilityHidden(true)
                 }
                 TextField("", text: self.$searchText)
-                    .font(OpenClawType.subhead)
-                    .foregroundStyle(OpenClawSidebarPalette.textStrong)
+                    .font(AforaType.subhead)
+                    .foregroundStyle(AforaSidebarPalette.textStrong)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .focused(self.$isSearchFocused)
@@ -350,8 +350,8 @@ struct RootSidebar: View {
                     self.searchText = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(OpenClawType.subhead)
-                        .foregroundStyle(OpenClawSidebarPalette.muted)
+                        .font(AforaType.subhead)
+                        .foregroundStyle(AforaSidebarPalette.muted)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(String(localized: "Clear session search"))
@@ -359,8 +359,8 @@ struct RootSidebar: View {
         }
         .frame(minHeight: 44)
         .padding(.horizontal, 12)
-        .background(OpenClawSidebarPalette.elevated, in: RoundedRectangle(
-            cornerRadius: OpenClawProMetric.controlRadius,
+        .background(AforaSidebarPalette.elevated, in: RoundedRectangle(
+            cornerRadius: AforaProMetric.controlRadius,
             style: .continuous))
         .padding(.horizontal, 10)
         .padding(.bottom, 4)
@@ -373,8 +373,8 @@ struct RootSidebar: View {
         VStack(alignment: .leading, spacing: 6) {
             if let sessionErrorText = self.model.sessionErrorText {
                 Text(verbatim: sessionErrorText)
-                    .font(OpenClawType.captionMedium)
-                    .foregroundStyle(OpenClawBrand.warn)
+                    .font(AforaType.captionMedium)
+                    .foregroundStyle(AforaBrand.warn)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 10)
             }
@@ -383,16 +383,16 @@ struct RootSidebar: View {
                 HStack(spacing: 9) {
                     ProgressView().controlSize(.small)
                     Text(String(localized: "Loading sessions"))
-                        .font(OpenClawType.captionMedium)
-                        .foregroundStyle(OpenClawSidebarPalette.muted)
+                        .font(AforaType.captionMedium)
+                        .foregroundStyle(AforaSidebarPalette.muted)
                 }
                 .frame(minHeight: 44)
                 .padding(.horizontal, 10)
             } else if sections.isEmpty {
                 self.sessionsHeader(String(localized: "Recent"))
                 Text(String(localized: "No recent sessions"))
-                    .font(OpenClawType.captionMedium)
-                    .foregroundStyle(OpenClawSidebarPalette.muted)
+                    .font(AforaType.captionMedium)
+                    .foregroundStyle(AforaSidebarPalette.muted)
                     .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                     .padding(.horizontal, 10)
             } else {
@@ -417,17 +417,17 @@ struct RootSidebar: View {
             } label: {
                 Label {
                     Text(String(localized: "All Sessions…"))
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                 } icon: {
                     Image(systemName: "rectangle.stack")
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                 }
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .padding(.horizontal, 10)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .foregroundStyle(OpenClawSidebarPalette.accent)
+            .foregroundStyle(AforaSidebarPalette.accent)
         }
     }
 
@@ -440,12 +440,12 @@ struct RootSidebar: View {
                     self.showsPagesEditor = true
                 } label: {
                     Image(systemName: "square.and.pencil")
-                        .font(OpenClawType.captionSemiBold)
+                        .font(AforaType.captionSemiBold)
                         .frame(width: 40, height: 32)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(OpenClawSidebarPalette.muted)
+                .foregroundStyle(AforaSidebarPalette.muted)
                 .accessibilityLabel(String(localized: "Edit Pages"))
             }
             self.homeRow
@@ -468,19 +468,19 @@ struct RootSidebar: View {
         } label: {
             HStack(spacing: 9) {
                 Image(systemName: "house")
-                    .font(OpenClawType.subheadSemiBold)
+                    .font(AforaType.subheadSemiBold)
                     .frame(width: 18)
                 Text(String(localized: "Home"))
-                    .font(OpenClawType.subheadSemiBold)
+                    .font(AforaType.subheadSemiBold)
                     .lineLimit(1)
                 Spacer(minLength: 4)
                 if mainSession?.hasActiveRun == true {
                     ProgressView()
                         .controlSize(.mini)
-                        .tint(OpenClawSidebarPalette.accent)
+                        .tint(AforaSidebarPalette.accent)
                 } else if mainSession?.unread == true {
                     Circle()
-                        .fill(OpenClawSidebarPalette.accent)
+                        .fill(AforaSidebarPalette.accent)
                         .frame(width: 7, height: 7)
                         .accessibilityHidden(true)
                 }
@@ -490,9 +490,9 @@ struct RootSidebar: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .foregroundStyle(isSelected ? OpenClawSidebarPalette.accent : OpenClawSidebarPalette.text)
-        .background(isSelected ? OpenClawSidebarPalette.selection : Color.clear, in: RoundedRectangle(
-            cornerRadius: OpenClawProMetric.controlRadius,
+        .foregroundStyle(isSelected ? AforaSidebarPalette.accent : AforaSidebarPalette.text)
+        .background(isSelected ? AforaSidebarPalette.selection : Color.clear, in: RoundedRectangle(
+            cornerRadius: AforaProMetric.controlRadius,
             style: .continuous))
         .accessibilityIdentifier("RootTabs.Sidebar.Destination.chat")
         .accessibilityValue(mainSession?.unread == true ? String(localized: "Unread") : "")
@@ -516,7 +516,7 @@ struct RootSidebar: View {
                                 .accessibilityHidden(true)
                         }
                         Text(verbatim: self.gatewayName)
-                            .font(OpenClawType.subheadSemiBold)
+                            .font(AforaType.subheadSemiBold)
                             .lineLimit(1)
                     }
                     .frame(minHeight: 44, alignment: .leading)
@@ -524,7 +524,7 @@ struct RootSidebar: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(OpenClawSidebarPalette.text)
+                .foregroundStyle(AforaSidebarPalette.text)
                 .accessibilityValue(self.gatewayStatusTitle)
 
                 Spacer(minLength: 4)
@@ -533,12 +533,12 @@ struct RootSidebar: View {
         .padding(.horizontal, 10)
         .padding(.bottom, 8)
         .fixedSize(horizontal: false, vertical: true)
-        .background(OpenClawSidebarPalette.background)
+        .background(AforaSidebarPalette.background)
     }
 
     /// Alias-aware main lookup: rosters may return namespaced keys
     /// ("agent:<id>:main"), so raw comparison would drop Home's badges.
-    private var mainSessionEntry: OpenClawChatSessionEntry? {
+    private var mainSessionEntry: AforaChatSessionEntry? {
         self.model.sessions.first { $0.key == self.resolvedMainSessionKey }
     }
 
@@ -571,9 +571,9 @@ struct RootSidebar: View {
         CommandSessionGrouping.categories(from: self.model.sessions, knownGroups: SessionGroupStore.load())
     }
 
-    private var sessionGroups: [OpenClawChatSessionGroup] {
+    private var sessionGroups: [AforaChatSessionGroup] {
         self.sessionCategories.enumerated().map { offset, name in
-            OpenClawChatSessionGroup(name: name, position: offset)
+            AforaChatSessionGroup(name: name, position: offset)
         }
     }
 
@@ -608,23 +608,23 @@ struct RootSidebar: View {
                     if node.badges.runningCount > 0 {
                         ProgressView()
                             .controlSize(.mini)
-                            .tint(OpenClawSidebarPalette.accent)
+                            .tint(AforaSidebarPalette.accent)
                     } else {
                         Image(systemName: "bubble.left")
-                            .font(OpenClawType.captionSemiBold)
+                            .font(AforaType.captionSemiBold)
                             .foregroundStyle(isSelected
-                                ? OpenClawSidebarPalette.accent
-                                : OpenClawSidebarPalette.muted)
+                                ? AforaSidebarPalette.accent
+                                : AforaSidebarPalette.muted)
                     }
                 }
                 .frame(width: 18)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(verbatim: CommandCenterTab.sessionTitle(session))
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                         .foregroundStyle(isSelected
-                            ? OpenClawSidebarPalette.accent
-                            : OpenClawSidebarPalette.textStrong)
+                            ? AforaSidebarPalette.accent
+                            : AforaSidebarPalette.textStrong)
                         .lineLimit(1)
                     // Web-parity subtitle: the work line (repo/branch) names the
                     // session; recency moves to the trailing metadata slot.
@@ -633,27 +633,27 @@ struct RootSidebar: View {
                         workSubtitle: ChatSessionSidebarModel.workSubtitle(for: session))
                     {
                         Text(verbatim: subtitle)
-                            .font(OpenClawType.caption2Medium)
-                            .foregroundStyle(OpenClawSidebarPalette.muted)
+                            .font(AforaType.caption2Medium)
+                            .foregroundStyle(AforaSidebarPalette.muted)
                             .lineLimit(1)
                     }
                 }
 
                 Spacer(minLength: 4)
                 Text(verbatim: CommandCenterTab.sessionDetail(session))
-                    .font(OpenClawType.caption2Medium)
-                    .foregroundStyle(OpenClawSidebarPalette.muted)
+                    .font(AforaType.caption2Medium)
+                    .foregroundStyle(AforaSidebarPalette.muted)
                     .lineLimit(1)
                 if session.unread == true {
                     Circle()
-                        .fill(OpenClawSidebarPalette.accent)
+                        .fill(AforaSidebarPalette.accent)
                         .frame(width: 7, height: 7)
                         .accessibilityHidden(true)
                 }
                 if session.pinned == true {
                     Image(systemName: "pin.fill")
-                        .font(OpenClawType.caption2Medium)
-                        .foregroundStyle(OpenClawSidebarPalette.accent)
+                        .font(AforaType.caption2Medium)
+                        .foregroundStyle(AforaSidebarPalette.accent)
                         .accessibilityHidden(true)
                 }
             }
@@ -662,8 +662,8 @@ struct RootSidebar: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .background(isSelected ? OpenClawSidebarPalette.selection : Color.clear, in: RoundedRectangle(
-            cornerRadius: OpenClawProMetric.controlRadius,
+        .background(isSelected ? AforaSidebarPalette.selection : Color.clear, in: RoundedRectangle(
+            cornerRadius: AforaProMetric.controlRadius,
             style: .continuous))
         .commandSessionActions(
             session: session,
@@ -695,20 +695,20 @@ struct RootSidebar: View {
             HStack(spacing: 0) {
                 Label {
                     Text(destination.sidebarTitle)
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                         .lineLimit(1)
                 } icon: {
                     Image(systemName: destination.systemImage)
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                 }
                 Spacer(minLength: 6)
                 if badgeCount > 0 {
                     Text(verbatim: badgeCount.formatted())
-                        .font(OpenClawType.caption2Bold)
+                        .font(AforaType.caption2Bold)
                         .foregroundStyle(Color.white)
                         .padding(.horizontal, 6)
                         .frame(minWidth: 18, minHeight: 18)
-                        .background(OpenClawSidebarPalette.accent, in: Capsule())
+                        .background(AforaSidebarPalette.accent, in: Capsule())
                         .accessibilityLabel(String(localized: "Attention"))
                 }
             }
@@ -717,9 +717,9 @@ struct RootSidebar: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .foregroundStyle(isSelected ? OpenClawSidebarPalette.accent : OpenClawSidebarPalette.text)
-        .background(isSelected ? OpenClawSidebarPalette.selection : Color.clear, in: RoundedRectangle(
-            cornerRadius: OpenClawProMetric.controlRadius,
+        .foregroundStyle(isSelected ? AforaSidebarPalette.accent : AforaSidebarPalette.text)
+        .background(isSelected ? AforaSidebarPalette.selection : Color.clear, in: RoundedRectangle(
+            cornerRadius: AforaProMetric.controlRadius,
             style: .continuous))
         .accessibilityIdentifier("RootTabs.Sidebar.Destination.\(destination.rawValue)")
     }
@@ -743,12 +743,12 @@ struct RootSidebar: View {
                 self.selectSidebarDestination(.chat)
             } label: {
                 Image(systemName: "plus.bubble")
-                    .font(OpenClawType.captionSemiBold)
+                    .font(AforaType.captionSemiBold)
                     .frame(width: 40, height: 32)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .foregroundStyle(OpenClawSidebarPalette.muted)
+            .foregroundStyle(AforaSidebarPalette.muted)
             .disabled(!self.appModel.isOperatorGatewayConnected)
             .accessibilityLabel(String(localized: "New Chat"))
         }
@@ -756,15 +756,15 @@ struct RootSidebar: View {
 
     private func sectionTitle(_ title: String) -> some View {
         Text(verbatim: title.uppercased())
-            .font(OpenClawType.caption2Bold)
-            .foregroundStyle(OpenClawSidebarPalette.muted)
+            .font(AforaType.caption2Bold)
+            .foregroundStyle(AforaSidebarPalette.muted)
             .tracking(0.5)
             .padding(.horizontal, 10)
     }
 
     private var separator: some View {
         Rectangle()
-            .fill(OpenClawSidebarPalette.hairline)
+            .fill(AforaSidebarPalette.hairline)
             .frame(height: 1 / self.displayScale)
     }
 
@@ -797,15 +797,15 @@ struct RootSidebar: View {
 
     private var gatewayStatusColor: Color {
         switch GatewayStatusBuilder.build(appModel: self.appModel) {
-        case .connected: OpenClawBrand.ok
-        case .connecting: OpenClawBrand.accent
-        case .error: OpenClawBrand.warn
-        case .disconnected: OpenClawSidebarPalette.muted
+        case .connected: AforaBrand.ok
+        case .connecting: AforaBrand.accent
+        case .error: AforaBrand.warn
+        case .disconnected: AforaSidebarPalette.muted
         }
     }
 
     private func patchSession(
-        _ session: OpenClawChatSessionEntry,
+        _ session: AforaChatSessionEntry,
         label: String?? = nil,
         category: String?? = nil,
         pinned: Bool? = nil,
@@ -832,7 +832,7 @@ struct RootSidebar: View {
         }
     }
 
-    private func deleteSession(_ session: OpenClawChatSessionEntry) {
+    private func deleteSession(_ session: AforaChatSessionEntry) {
         Task {
             do {
                 try await self.appModel.makeChatTransport().deleteSession(key: session.key)
@@ -846,7 +846,7 @@ struct RootSidebar: View {
         }
     }
 
-    private func forkSession(_ session: OpenClawChatSessionEntry) {
+    private func forkSession(_ session: AforaChatSessionEntry) {
         Task {
             do {
                 let key = try await self.appModel.makeChatTransport().forkSession(
@@ -891,7 +891,7 @@ struct RootSidebarPagesEditor: View {
                     }
                 } footer: {
                     Text("Pinned pages stay in the sidebar. Home is always shown.")
-                        .font(OpenClawType.caption)
+                        .font(AforaType.caption)
                 }
             }
             .navigationTitle(String(localized: "Pages"))
@@ -902,12 +902,12 @@ struct RootSidebarPagesEditor: View {
                         self.dismiss()
                     } label: {
                         Text(String(localized: "Done"))
-                            .font(OpenClawType.subheadSemiBold)
+                            .font(AforaType.subheadSemiBold)
                     }
                 }
             }
         }
-        .openClawSheetChrome()
+        .aforaSheetChrome()
     }
 
     private func pageRow(_ destination: RootTabs.SidebarDestination) -> some View {
@@ -918,7 +918,7 @@ struct RootSidebarPagesEditor: View {
             } label: {
                 Label {
                     Text(destination.sidebarTitle)
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                 } icon: {
                     Image(systemName: destination.systemImage)
                 }
@@ -931,8 +931,8 @@ struct RootSidebarPagesEditor: View {
                 self.onTogglePin(destination)
             } label: {
                 Image(systemName: isPinned ? "pin.fill" : "pin")
-                    .font(OpenClawType.subheadSemiBold)
-                    .foregroundStyle(isPinned ? OpenClawBrand.accent : Color.secondary)
+                    .font(AforaType.subheadSemiBold)
+                    .foregroundStyle(isPinned ? AforaBrand.accent : Color.secondary)
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }

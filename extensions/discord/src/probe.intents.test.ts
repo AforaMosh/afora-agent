@@ -1,5 +1,5 @@
 // Discord tests cover probe.intents plugin behavior.
-import { withFetchPreconnect } from "openclaw/plugin-sdk/test-env";
+import { withFetchPreconnect } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   fetchDiscordApplicationId,
@@ -334,7 +334,7 @@ describe("resolveDiscordPrivilegedIntentsFromFlags", () => {
         const url =
           typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
         if (url.endsWith("/users/@me")) {
-          return jsonResponse({ id: "bot-1", username: "openclaw" });
+          return jsonResponse({ id: "bot-1", username: "afora" });
         }
         return trackedStalledDiscordJsonResponse(init?.signal, () => {
           terminationCount += 1;
@@ -356,7 +356,7 @@ describe("resolveDiscordPrivilegedIntentsFromFlags", () => {
 
       await expect(outerStatusResult).resolves.toMatchObject({
         ok: true,
-        bot: { id: "bot-1", username: "openclaw" },
+        bot: { id: "bot-1", username: "afora" },
       });
       expect(terminationCount).toBe(1);
     } finally {

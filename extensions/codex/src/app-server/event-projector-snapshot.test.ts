@@ -1,8 +1,8 @@
 import type {
   AgentMessage,
   EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import type { AssistantMessage } from "openclaw/plugin-sdk/llm";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import type { AssistantMessage } from "afora-agent/plugin-sdk/llm";
 import { describe, expect, it } from "vitest";
 import { buildCodexMessagesSnapshot } from "./event-projector-snapshot.js";
 

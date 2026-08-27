@@ -1,6 +1,6 @@
 ---
 title: "Maturity scorecard"
-summary: "OpenClaw release readiness scores for product areas, integrations, and supported workflows."
+summary: "Afora release readiness scores for product areas, integrations, and supported workflows."
 ---
 
 # Maturity scorecard
@@ -14,7 +14,7 @@ summary: "OpenClaw release readiness scores for product areas, integrations, and
 
 ## What this page is for
 
-Use this page to answer one question: which OpenClaw surfaces are credible choices for a release, and what evidence supports that judgment? Coverage comes from deterministic QA evidence; quality and completeness are maintained as reviewed maturity scores.
+Use this page to answer one question: which Afora surfaces are credible choices for a release, and what evidence supports that judgment? Coverage comes from deterministic QA evidence; quality and completeness are maintained as reviewed maturity scores.
 
 ## At a glance
 
@@ -35,7 +35,7 @@ Use this page to answer one question: which OpenClaw surfaces are credible choic
   </div>
 </div>
 
-Coverage is deliberately evidence-led: an area does not become "ready" just because the implementation exists. It is not an input to the maturity score, but OpenClaw aims to keep end-to-end coverage above 90% for mature Stable-or-better features over time.
+Coverage is deliberately evidence-led: an area does not become "ready" just because the implementation exists. It is not an input to the maturity score, but Afora aims to keep end-to-end coverage above 90% for mature Stable-or-better features over time.
 
 ## Score bands
 
@@ -366,7 +366,7 @@ Surfaces are ordered by maturity level, completeness, and quality. LTS support i
         <div className="maturity-surface-support"><span className="maturity-lts maturity-lts-none">None</span></div>
       </div>
       <div className="maturity-surface-row">
-        <a className="maturity-surface-name" href="/maturity/taxonomy#openclaw-app-sdk"><span className="maturity-surface-title">OpenClaw App SDK</span><span className="maturity-surface-meta"><span className="maturity-level-pill maturity-level-alpha"><span className="maturity-level-code">M2</span><span>Alpha</span></span><span>6 areas</span></span></a>
+        <a className="maturity-surface-name" href="/maturity/taxonomy#afora-app-sdk"><span className="maturity-surface-title">Afora App SDK</span><span className="maturity-surface-meta"><span className="maturity-level-pill maturity-level-alpha"><span className="maturity-level-code">M2</span><span>Alpha</span></span><span>6 areas</span></span></a>
         <div className="maturity-surface-metric"><span className="maturity-surface-metric-label">Coverage</span><span className="maturity-score maturity-score-experimental"><span className="maturity-score-label"><span className="maturity-level-pill maturity-level-experimental">Experimental</span><span>0%</span></span><span className="maturity-meter" aria-hidden="true"><span style={{ width: "0%" }} /></span></span></div>
         <div className="maturity-surface-metric"><span className="maturity-surface-metric-label">Quality</span><span className="maturity-score maturity-score-alpha"><span className="maturity-score-label"><span className="maturity-level-pill maturity-level-alpha">Alpha</span><span>54%</span></span><span className="maturity-meter" aria-hidden="true"><span style={{ width: "54%" }} /></span></span></div>
         <div className="maturity-surface-metric"><span className="maturity-surface-metric-label">Completeness</span><span className="maturity-score maturity-score-alpha"><span className="maturity-score-label"><span className="maturity-level-pill maturity-level-alpha">Alpha</span><span>53%</span></span><span className="maturity-meter" aria-hidden="true"><span style={{ width: "53%" }} /></span></span></div>
@@ -511,7 +511,7 @@ Surfaces are ordered by maturity level, completeness, and quality. LTS support i
         <div className="maturity-surface-support"><span className="maturity-lts maturity-lts-none">None</span></div>
       </div>
       <div className="maturity-surface-row">
-        <a className="maturity-surface-name" href="/maturity/taxonomy#openclaw-app-sdk"><span className="maturity-surface-title">OpenClaw App SDK</span><span className="maturity-surface-meta"><span className="maturity-level-pill maturity-level-alpha"><span className="maturity-level-code">M2</span><span>Alpha</span></span><span>6 areas</span></span></a>
+        <a className="maturity-surface-name" href="/maturity/taxonomy#afora-app-sdk"><span className="maturity-surface-title">Afora App SDK</span><span className="maturity-surface-meta"><span className="maturity-level-pill maturity-level-alpha"><span className="maturity-level-code">M2</span><span>Alpha</span></span><span>6 areas</span></span></a>
         <div className="maturity-surface-metric"><span className="maturity-surface-metric-label">Coverage</span><span className="maturity-score maturity-score-experimental"><span className="maturity-score-label"><span className="maturity-level-pill maturity-level-experimental">Experimental</span><span>0%</span></span><span className="maturity-meter" aria-hidden="true"><span style={{ width: "0%" }} /></span></span></div>
         <div className="maturity-surface-metric"><span className="maturity-surface-metric-label">Quality</span><span className="maturity-score maturity-score-alpha"><span className="maturity-score-label"><span className="maturity-level-pill maturity-level-alpha">Alpha</span><span>54%</span></span><span className="maturity-meter" aria-hidden="true"><span style={{ width: "54%" }} /></span></span></div>
         <div className="maturity-surface-metric"><span className="maturity-surface-metric-label">Completeness</span><span className="maturity-score maturity-score-alpha"><span className="maturity-score-label"><span className="maturity-level-pill maturity-level-alpha">Alpha</span><span>53%</span></span><span className="maturity-meter" aria-hidden="true"><span style={{ width: "53%" }} /></span></span></div>
@@ -988,7 +988,7 @@ Open a surface to inspect the evidence state of each category. The list stays co
     </div>
   </Accordion>
 
-  <Accordion title="OpenClaw App SDK - 6 areas">
+  <Accordion title="Afora App SDK - 6 areas">
     <p className="maturity-readiness-summary">6 needs review</p>
     <div className="maturity-readiness-list">
       <div className="maturity-readiness-row maturity-readiness-row-header"><span>Area</span><span>Features / coverage IDs</span><span>Follow-up</span></div>

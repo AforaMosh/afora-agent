@@ -14,17 +14,17 @@ import { captureEnv, setTestEnvValue } from "../src/test-utils/env.js";
 
 const envKeys = [
   "HOME",
-  "OPENCLAW_STATE_DIR",
-  "OPENCLAW_CONFIG_PATH",
-  "OPENCLAW_GATEWAY_TOKEN",
-  "OPENCLAW_SKIP_CHANNELS",
-  "OPENCLAW_SKIP_GMAIL_WATCHER",
-  "OPENCLAW_SKIP_CRON",
-  "OPENCLAW_SKIP_CANVAS_HOST",
-  "OPENCLAW_SKIP_BROWSER_CONTROL_SERVER",
-  "OPENCLAW_SKIP_PROVIDERS",
-  "OPENCLAW_BUNDLED_PLUGINS_DIR",
-  "OPENCLAW_DISABLE_BUNDLED_PLUGINS",
+  "AFORA_STATE_DIR",
+  "AFORA_CONFIG_PATH",
+  "AFORA_GATEWAY_TOKEN",
+  "AFORA_SKIP_CHANNELS",
+  "AFORA_SKIP_GMAIL_WATCHER",
+  "AFORA_SKIP_CRON",
+  "AFORA_SKIP_CANVAS_HOST",
+  "AFORA_SKIP_BROWSER_CONTROL_SERVER",
+  "AFORA_SKIP_PROVIDERS",
+  "AFORA_BUNDLED_PLUGINS_DIR",
+  "AFORA_DISABLE_BUNDLED_PLUGINS",
 ] as const;
 
 describe("PR #119473 real gateway proof", () => {
@@ -47,10 +47,10 @@ describe("PR #119473 real gateway proof", () => {
       let second: Awaited<ReturnType<typeof startGatewayWithClient>> | undefined;
 
       try {
-        tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-pr119473-proof-"));
-        const stateDir = path.join(tempHome, ".openclaw");
+        tempHome = await fs.mkdtemp(path.join(os.tmpdir(), "afora-pr119473-proof-"));
+        const stateDir = path.join(tempHome, ".afora");
         const workspaceDir = path.join(tempHome, "workspace");
-        const configPath = path.join(stateDir, "openclaw.json");
+        const configPath = path.join(stateDir, "afora.json");
         const bundledPluginsDir = path.join(tempHome, "bundled-plugins");
         await Promise.all([
           fs.mkdir(workspaceDir, { recursive: true }),
@@ -59,17 +59,17 @@ describe("PR #119473 real gateway proof", () => {
         ]);
         for (const [key, value] of Object.entries({
           HOME: tempHome,
-          OPENCLAW_STATE_DIR: stateDir,
-          OPENCLAW_CONFIG_PATH: configPath,
-          OPENCLAW_GATEWAY_TOKEN: "pr119473-proof-token",
-          OPENCLAW_SKIP_CHANNELS: "1",
-          OPENCLAW_SKIP_GMAIL_WATCHER: "1",
-          OPENCLAW_SKIP_CRON: "1",
-          OPENCLAW_SKIP_CANVAS_HOST: "1",
-          OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-          OPENCLAW_SKIP_PROVIDERS: "1",
-          OPENCLAW_BUNDLED_PLUGINS_DIR: bundledPluginsDir,
-          OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
+          AFORA_STATE_DIR: stateDir,
+          AFORA_CONFIG_PATH: configPath,
+          AFORA_GATEWAY_TOKEN: "pr119473-proof-token",
+          AFORA_SKIP_CHANNELS: "1",
+          AFORA_SKIP_GMAIL_WATCHER: "1",
+          AFORA_SKIP_CRON: "1",
+          AFORA_SKIP_CANVAS_HOST: "1",
+          AFORA_SKIP_BROWSER_CONTROL_SERVER: "1",
+          AFORA_SKIP_PROVIDERS: "1",
+          AFORA_BUNDLED_PLUGINS_DIR: bundledPluginsDir,
+          AFORA_DISABLE_BUNDLED_PLUGINS: "1",
         })) {
           setTestEnvValue(key, value);
         }

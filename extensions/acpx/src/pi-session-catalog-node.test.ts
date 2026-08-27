@@ -1,4 +1,4 @@
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
 import { describe, expect, it, vi } from "vitest";
 import { registerPiSessionCatalog } from "./pi-session-catalog-plugin.js";
 import {
@@ -52,13 +52,13 @@ describe("Pi paired-node session catalog", () => {
         },
       },
       registerSessionCatalog: (
-        value: Parameters<OpenClawPluginApi["registerSessionCatalog"]>[0],
+        value: Parameters<AforaPluginApi["registerSessionCatalog"]>[0],
       ) => {
         provider = bindTestCatalogOwner(value);
       },
       registerNodeHostCommand: vi.fn(),
       registerNodeInvokePolicy: vi.fn(),
-    } as unknown as OpenClawPluginApi;
+    } as unknown as AforaPluginApi;
 
     registerPiSessionCatalog(api);
     const catalog = provider;

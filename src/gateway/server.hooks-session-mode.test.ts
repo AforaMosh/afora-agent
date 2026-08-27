@@ -64,9 +64,9 @@ function mockRunsOk(): void {
 }
 
 async function writeHookTransformModule(moduleName: string, source: string): Promise<void> {
-  const configPath = process.env.OPENCLAW_CONFIG_PATH;
+  const configPath = process.env.AFORA_CONFIG_PATH;
   if (!configPath) {
-    throw new Error("OPENCLAW_CONFIG_PATH is required");
+    throw new Error("AFORA_CONFIG_PATH is required");
   }
   const transformsDir = nodePath.join(nodePath.dirname(configPath), "hooks", "transforms");
   await fs.mkdir(transformsDir, { recursive: true });

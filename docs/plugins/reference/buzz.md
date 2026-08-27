@@ -1,5 +1,5 @@
 ---
-summary: "Connect OpenClaw agents to Buzz rooms."
+summary: "Connect Afora agents to Buzz rooms."
 read_when:
   - You are installing, configuring, or auditing the buzz plugin
 title: "Buzz plugin"
@@ -7,12 +7,12 @@ title: "Buzz plugin"
 
 # Buzz plugin
 
-Connect OpenClaw agents to Buzz rooms.
+Connect Afora agents to Buzz rooms.
 
 ## Distribution
 
-- Package: `@openclaw/buzz`
-- Install route: npm; ClawHub: `clawhub:@openclaw/buzz`
+- Package: `@afora/buzz`
+- Install route: npm; ClawHub: `clawhub:@afora/buzz`
 
 ## Surface
 

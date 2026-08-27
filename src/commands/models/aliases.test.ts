@@ -1,7 +1,7 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createModelVisibilityPolicy } from "../../agents/model-visibility-policy.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { stampConfigWriteMetadata } from "../../config/io.meta.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import {
@@ -37,7 +37,7 @@ function makeRuntime(): RuntimeEnv & { logs: string[] } {
   };
 }
 
-function snapshot(sourceConfig: OpenClawConfig) {
+function snapshot(sourceConfig: AforaConfig) {
   return {
     valid: true,
     hash: "snapshot-hash",
@@ -123,7 +123,7 @@ describe("modelsAliasesRemoveCommand", () => {
   });
 
   it("removes a user-added alias from the source config", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           models: {
@@ -131,7 +131,7 @@ describe("modelsAliasesRemoveCommand", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     mocks.readConfigFileSnapshot.mockResolvedValue(snapshot(cfg));
     mocks.replaceConfigFile.mockResolvedValue(undefined);
 
@@ -139,7 +139,7 @@ describe("modelsAliasesRemoveCommand", () => {
 
     expect(mocks.replaceConfigFile).toHaveBeenCalledOnce();
     const [replaceParams] = mocks.replaceConfigFile.mock.calls[0] ?? [];
-    const written = replaceParams?.nextConfig as OpenClawConfig;
+    const written = replaceParams?.nextConfig as AforaConfig;
     expect(written.agents?.defaults?.models?.["openai/gpt-5.4-mini"]?.alias).toBeUndefined();
   });
 
@@ -147,7 +147,7 @@ describe("modelsAliasesRemoveCommand", () => {
     // Source config: model entry exists but no user-set alias. applyModelDefaults
     // would materialize `gpt-mini -> openai/gpt-5.4-mini` into the resolved config,
     // so `list` shows it, but it is not stored in the source config.
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           models: {
@@ -155,7 +155,7 @@ describe("modelsAliasesRemoveCommand", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     mocks.readConfigFileSnapshot.mockResolvedValue(snapshot(cfg));
 
     await expect(modelsAliasesRemoveCommand("gpt-mini", makeRuntime())).rejects.toThrow(
@@ -170,7 +170,7 @@ describe("modelsAliasesRemoveCommand", () => {
     // the `gemini` built-in alias (see src/config/model-alias-defaults.test.ts:135-144), so
     // `list` shows `gemini`. `remove gemini` must compare against the normalized key and
     // return the actionable built-in error, not the misleading generic "Alias not found".
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           models: {
@@ -178,7 +178,7 @@ describe("modelsAliasesRemoveCommand", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     mocks.readConfigFileSnapshot.mockResolvedValue(snapshot(cfg));
 
     await expect(modelsAliasesRemoveCommand("gemini", makeRuntime())).rejects.toThrow(
@@ -192,7 +192,7 @@ describe("modelsAliasesRemoveCommand", () => {
     // honors the opt-out (see src/config/defaults.ts:337 and src/config/model-alias-defaults.test.ts:106),
     // so `list` does not show `gemini` and `remove gemini` should return the plain
     // not-found error rather than the "built-in alias" error.
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           models: {
@@ -200,7 +200,7 @@ describe("modelsAliasesRemoveCommand", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     mocks.readConfigFileSnapshot.mockResolvedValue(snapshot(cfg));
 
     await expect(modelsAliasesRemoveCommand("gemini", makeRuntime())).rejects.toThrow(
@@ -210,9 +210,9 @@ describe("modelsAliasesRemoveCommand", () => {
   });
 
   it("falls back to 'Alias not found' when the alias is neither user-added nor a materialized built-in", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: { defaults: { models: {} } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     mocks.readConfigFileSnapshot.mockResolvedValue(snapshot(cfg));
 
     await expect(modelsAliasesRemoveCommand("does-not-exist", makeRuntime())).rejects.toThrow(
@@ -229,7 +229,7 @@ describe("modelsAliasesRemoveCommand", () => {
     // User has explicitly set `gpt-mini` as the alias for a different target.
     // applyModelDefaults skips entries with an existing alias, so the user-set
     // alias is what `list` shows and `remove` should remove it normally.
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           models: {
@@ -237,7 +237,7 @@ describe("modelsAliasesRemoveCommand", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     mocks.readConfigFileSnapshot.mockResolvedValue(snapshot(cfg));
     mocks.replaceConfigFile.mockResolvedValue(undefined);
 
@@ -245,7 +245,7 @@ describe("modelsAliasesRemoveCommand", () => {
 
     expect(mocks.replaceConfigFile).toHaveBeenCalledOnce();
     const [replaceParams] = mocks.replaceConfigFile.mock.calls[0] ?? [];
-    const written = replaceParams?.nextConfig as OpenClawConfig;
+    const written = replaceParams?.nextConfig as AforaConfig;
     expect(written.agents?.defaults?.models?.["openai/gpt-5.4-nano"]?.alias).toBeUndefined();
   });
 });
@@ -258,7 +258,7 @@ describe("modelsAliasesAddCommand", () => {
   });
 
   it("does not make an unlisted model override invalid on a fresh config", async () => {
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
     mocks.loadModelsConfig.mockResolvedValue(cfg);
     mocks.readConfigFileSnapshot.mockResolvedValue(snapshot(cfg));
     mocks.replaceConfigFile.mockResolvedValue(undefined);
@@ -266,7 +266,7 @@ describe("modelsAliasesAddCommand", () => {
     await modelsAliasesAddCommand("zippy", "clawrouter/deepseek/deepseek-v4-flash", makeRuntime());
 
     const [replaceParams] = mocks.replaceConfigFile.mock.calls[0] ?? [];
-    const written = replaceParams?.nextConfig as OpenClawConfig;
+    const written = replaceParams?.nextConfig as AforaConfig;
     const persisted = stampConfigWriteMetadata(written, "2026-07-18T00:00:00.000Z", "test", cfg);
     const policy = createModelVisibilityPolicy({
       cfg: persisted,
@@ -289,7 +289,7 @@ describe("modelsAliasesListCommand <-> modelsAliasesRemoveCommand agreement", ()
 
   it("any alias remove succeeds OR returns an explanatory error — never a misleading 'not found' for a listed alias", async () => {
     // Resolved config (what `list` reads) has the materialized built-in.
-    const resolvedCfg: OpenClawConfig = {
+    const resolvedCfg: AforaConfig = {
       agents: {
         defaults: {
           models: {
@@ -298,9 +298,9 @@ describe("modelsAliasesListCommand <-> modelsAliasesRemoveCommand agreement", ()
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     // Source config (what `remove` mutates) only has the user-set alias.
-    const sourceCfg: OpenClawConfig = {
+    const sourceCfg: AforaConfig = {
       agents: {
         defaults: {
           models: {
@@ -309,7 +309,7 @@ describe("modelsAliasesListCommand <-> modelsAliasesRemoveCommand agreement", ()
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     mocks.loadModelsConfig.mockResolvedValue(resolvedCfg);
     mocks.readConfigFileSnapshot.mockResolvedValue({

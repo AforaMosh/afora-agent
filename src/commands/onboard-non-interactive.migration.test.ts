@@ -3,13 +3,13 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { summarizeMigrationItems } from "../plugin-sdk/migration.js";
 import type { MigrationApplyResult, MigrationPlan } from "../plugins/types.js";
 import type { RuntimeEnv } from "../runtime.js";
 
 const tempRoots = useAutoCleanupTempDirTracker(afterEach);
-const configStore = new Map<string, OpenClawConfig>();
+const configStore = new Map<string, AforaConfig>();
 const ensureWorkspaceAndSessions = vi.hoisted(() => vi.fn(async () => {}));
 const provider = vi.hoisted(() => ({
   id: "hermes",
@@ -21,11 +21,11 @@ const provider = vi.hoisted(() => ({
 let previousStateDir: string | undefined;
 
 function configPath(): string {
-  const stateDir = process.env.OPENCLAW_STATE_DIR;
+  const stateDir = process.env.AFORA_STATE_DIR;
   if (!stateDir) {
-    throw new Error("OPENCLAW_STATE_DIR is required");
+    throw new Error("AFORA_STATE_DIR is required");
   }
-  return path.join(stateDir, "openclaw.json");
+  return path.join(stateDir, "afora.json");
 }
 
 vi.mock("../config/io.js", () => ({
@@ -53,16 +53,16 @@ vi.mock("../config/io.js", () => ({
 
 vi.mock("../config/config.js", () => ({
   ConfigMutationConflictError: class ConfigMutationConflictError extends Error {},
-  replaceConfigFile: async ({ nextConfig }: { nextConfig: OpenClawConfig }) => {
+  replaceConfigFile: async ({ nextConfig }: { nextConfig: AforaConfig }) => {
     configStore.set(configPath(), structuredClone(nextConfig));
     return { nextConfig };
   },
-  resolveGatewayPort: (config: OpenClawConfig) => config.gateway?.port ?? 18789,
+  resolveGatewayPort: (config: AforaConfig) => config.gateway?.port ?? 18789,
 }));
 
 vi.mock("./onboard-helpers.js", () => ({
-  DEFAULT_WORKSPACE: "/tmp/openclaw-workspace",
-  applyWizardMetadata: (config: OpenClawConfig) => config,
+  DEFAULT_WORKSPACE: "/tmp/afora-workspace",
+  applyWizardMetadata: (config: AforaConfig) => config,
   ensureWorkspaceAndSessions,
 }));
 
@@ -87,7 +87,7 @@ function runtime(): RuntimeEnv {
 
 describe("non-interactive migration onboarding", () => {
   beforeEach(() => {
-    previousStateDir = process.env.OPENCLAW_STATE_DIR;
+    previousStateDir = process.env.AFORA_STATE_DIR;
     configStore.clear();
     ensureWorkspaceAndSessions.mockClear();
     provider.plan.mockReset();
@@ -96,19 +96,19 @@ describe("non-interactive migration onboarding", () => {
 
   afterEach(() => {
     if (previousStateDir === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.AFORA_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = previousStateDir;
+      process.env.AFORA_STATE_DIR = previousStateDir;
     }
   });
 
   it("stages, promotes, and acknowledges an explicit import", async () => {
-    const stateDir = tempRoots.make("openclaw-noninteractive-migration-");
+    const stateDir = tempRoots.make("afora-noninteractive-migration-");
     const source = path.join(stateDir, "hermes-home");
     const workspace = path.join(stateDir, "workspace");
     await fs.mkdir(source, { recursive: true });
     await fs.writeFile(path.join(source, "AGENTS.md"), "Imported agents.\n", "utf8");
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+    process.env.AFORA_STATE_DIR = stateDir;
 
     provider.plan.mockImplementation(async (ctx): Promise<MigrationPlan> => {
       const configuredWorkspace = ctx.config.agents?.defaults?.workspace;
@@ -171,8 +171,8 @@ describe("non-interactive migration onboarding", () => {
     expect(provider.apply).toHaveBeenCalledOnce();
     const [applyContext, stagedPlan] = provider.apply.mock.calls[0] ?? [];
     expect(applyContext?.source).toBe(source);
-    expect(applyContext?.reportDir).toContain(".openclaw-migration-state-");
-    expect(stagedPlan?.items[0]?.target).toContain(".openclaw-migration-workspace-");
+    expect(applyContext?.reportDir).toContain(".afora-migration-state-");
+    expect(stagedPlan?.items[0]?.target).toContain(".afora-migration-workspace-");
     expect(await fs.readFile(path.join(workspace, "AGENTS.md"), "utf8")).toBe("Imported agents.\n");
     expect(configStore.get(configPath())?.agents?.defaults?.workspace).toBe(workspace);
     const [reportDir] = await fs.readdir(path.join(stateDir, "migration", "hermes"));

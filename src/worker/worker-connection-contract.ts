@@ -1,5 +1,5 @@
-import { toStructuredErrorObject } from "@openclaw/normalization-core/error-coercion";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { toStructuredErrorObject } from "@afora/normalization-core/error-coercion";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import type { ClientOptions, WebSocket } from "ws";
 import type {
   WorkerConnectParams,

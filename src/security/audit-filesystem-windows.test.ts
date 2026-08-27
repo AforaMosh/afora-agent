@@ -1,7 +1,7 @@
 // Covers Windows filesystem security audit behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { collectSecurityAuditFindings } from "./audit.test-support.js";
 import { AsyncTempCaseFactory } from "./test-temp-cases.js";
@@ -37,7 +37,7 @@ function windowsOwnerQueryResult(command: string): { stdout: string; stderr: str
 }
 
 describe("security audit filesystem Windows findings", () => {
-  const tempCases = new AsyncTempCaseFactory("openclaw-security-audit-win-");
+  const tempCases = new AsyncTempCaseFactory("afora-security-audit-win-");
 
   beforeAll(async () => {
     await tempCases.setup();
@@ -53,7 +53,7 @@ describe("security audit filesystem Windows findings", () => {
         const tmp = await tempCases.makeTmpDir("win");
         const stateDir = path.join(tmp, "state");
         await fs.mkdir(stateDir, { recursive: true });
-        const configPath = path.join(stateDir, "openclaw.json");
+        const configPath = path.join(stateDir, "afora.json");
         await fs.writeFile(configPath, "{}\n", "utf-8");
         const findings = await collectSecurityAuditFindings(
           { agents: { list: [{ id: "main", default: true }] } },
@@ -90,7 +90,7 @@ describe("security audit filesystem Windows findings", () => {
         const tmp = await tempCases.makeTmpDir("win-open");
         const stateDir = path.join(tmp, "state");
         await fs.mkdir(stateDir, { recursive: true });
-        const configPath = path.join(stateDir, "openclaw.json");
+        const configPath = path.join(stateDir, "afora.json");
         await fs.writeFile(configPath, "{}\n", "utf-8");
         const findings = await collectSecurityAuditFindings(
           { agents: { list: [{ id: "main", default: true }] } },
@@ -131,7 +131,7 @@ describe("security audit filesystem Windows findings", () => {
         const tmp = await tempCases.makeTmpDir("win-anon-world");
         const stateDir = path.join(tmp, "state");
         await fs.mkdir(stateDir, { recursive: true });
-        const configPath = path.join(stateDir, "openclaw.json");
+        const configPath = path.join(stateDir, "afora.json");
         await fs.writeFile(configPath, "{}\n", "utf-8");
         const findings = await collectSecurityAuditFindings(
           { agents: { list: [{ id: "main", default: true }] } },

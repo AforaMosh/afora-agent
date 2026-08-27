@@ -1,5 +1,5 @@
 import { clearCurrentProviderAuthState } from "../agents/model-provider-auth.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isSecretRef } from "../config/types.secrets.js";
 import { isRecord } from "../utils.js";
 import type { ChannelKind } from "./config-reload-plan.js";
@@ -32,10 +32,10 @@ function projectCanonicalSecretRefsOntoRuntime(
 }
 
 export function restoreCanonicalSecretRefs(
-  runtimeConfig: OpenClawConfig,
-  sourceConfig: OpenClawConfig,
-): OpenClawConfig {
-  return projectCanonicalSecretRefsOntoRuntime(sourceConfig, runtimeConfig) as OpenClawConfig;
+  runtimeConfig: AforaConfig,
+  sourceConfig: AforaConfig,
+): AforaConfig {
+  return projectCanonicalSecretRefsOntoRuntime(sourceConfig, runtimeConfig) as AforaConfig;
 }
 
 export function resetPreparedModelRuntimeStateForHotReload(): void {

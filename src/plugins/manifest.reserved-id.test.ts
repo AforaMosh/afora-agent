@@ -13,16 +13,16 @@ afterEach(async () => {
 
 describe("reserved plugin ids", () => {
   it("rejects the core-owned node-mcp id", async () => {
-    const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-node-mcp-manifest-"));
+    const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-node-mcp-manifest-"));
     tempDirs.push(rootDir);
     await fs.writeFile(
-      path.join(rootDir, "openclaw.plugin.json"),
+      path.join(rootDir, "afora.plugin.json"),
       JSON.stringify({ id: "node-mcp", configSchema: { type: "object" } }),
     );
 
     expect(loadPluginManifest(rootDir, false)).toMatchObject({
       ok: false,
-      error: 'plugin manifest id "node-mcp" is reserved by OpenClaw core',
+      error: 'plugin manifest id "node-mcp" is reserved by Afora core',
     });
   });
 });

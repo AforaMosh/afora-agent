@@ -33,7 +33,7 @@ describe("runEmbeddedAttempt cwd/workspace split", () => {
     // Bootstrap still reads the agent workspace, while coding tools execute in
     // the task repo cwd when a subagent targets a separate checkout.
     const bootstrap = createContextEngineBootstrapAndAssemble();
-    const taskRepo = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-task-repo-"));
+    const taskRepo = await fs.mkdtemp(path.join(os.tmpdir(), "afora-task-repo-"));
     tempPaths.push(taskRepo);
 
     await createContextEngineAttemptRunner({
@@ -52,7 +52,7 @@ describe("runEmbeddedAttempt cwd/workspace split", () => {
     expect(bootstrapCall?.workspaceDir).not.toBe("/tmp/task-repo");
     expect(bootstrapCall?.agentId).toBe("main");
 
-    const toolsCall = hoisted.createOpenClawCodingToolsMock.mock.calls[0]?.[0] as
+    const toolsCall = hoisted.createAforaCodingToolsMock.mock.calls[0]?.[0] as
       | { cwd?: string; workspaceDir?: string; spawnWorkspaceDir?: string }
       | undefined;
     expect(toolsCall?.cwd).toBe(taskRepo);
@@ -71,7 +71,7 @@ describe("runEmbeddedAttempt cwd/workspace split", () => {
     ["workspace", "auto"],
     ["full", "full"],
   ] as const)("maps session permission mode %s to native exec mode %s", async (mode, execMode) => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-permission-mode-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-permission-mode-"));
     tempPaths.push(root);
 
     await createContextEngineAttemptRunner({
@@ -86,7 +86,7 @@ describe("runEmbeddedAttempt cwd/workspace split", () => {
       },
     });
 
-    const toolsCall = hoisted.createOpenClawCodingToolsMock.mock.calls.at(-1)?.[0] as
+    const toolsCall = hoisted.createAforaCodingToolsMock.mock.calls.at(-1)?.[0] as
       | {
           exec?: { mode?: string };
           sessionPermissionPolicy?: { root: string; mode: string };
@@ -109,7 +109,7 @@ describe("runEmbeddedAttempt cwd/workspace split", () => {
       },
     });
 
-    const toolsCall = hoisted.createOpenClawCodingToolsMock.mock.calls[0]?.[0] as
+    const toolsCall = hoisted.createAforaCodingToolsMock.mock.calls[0]?.[0] as
       | {
           currentChannelId?: string;
           currentMessagingTarget?: string;
@@ -135,7 +135,7 @@ describe("runEmbeddedAttempt cwd/workspace split", () => {
       },
     });
 
-    expect(hoisted.createOpenClawCodingToolsMock).not.toHaveBeenCalled();
+    expect(hoisted.createAforaCodingToolsMock).not.toHaveBeenCalled();
   });
 
   it("rejects cwd overrides for sandboxed runs instead of silently ignoring them", async () => {
@@ -144,7 +144,7 @@ describe("runEmbeddedAttempt cwd/workspace split", () => {
     hoisted.resolveSandboxContextMock.mockResolvedValueOnce({
       enabled: true,
       workspaceAccess: "ro",
-      workspaceDir: "/tmp/openclaw-sandbox-copy",
+      workspaceDir: "/tmp/afora-sandbox-copy",
     });
 
     await expect(
@@ -157,11 +157,11 @@ describe("runEmbeddedAttempt cwd/workspace split", () => {
         },
       }),
     ).rejects.toThrow("cwd override is not supported");
-    expect(hoisted.createOpenClawCodingToolsMock).not.toHaveBeenCalled();
+    expect(hoisted.createAforaCodingToolsMock).not.toHaveBeenCalled();
   });
 
   it("runs a managed worktree when sandbox workspace and cwd match", async () => {
-    const worktree = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-sandbox-worktree-"));
+    const worktree = await fs.mkdtemp(path.join(os.tmpdir(), "afora-sandbox-worktree-"));
     tempPaths.push(worktree);
     hoisted.resolveSandboxContextMock.mockResolvedValueOnce({
       enabled: true,
@@ -180,7 +180,7 @@ describe("runEmbeddedAttempt cwd/workspace split", () => {
       },
     });
 
-    expect(hoisted.createOpenClawCodingToolsMock).toHaveBeenCalledWith(
+    expect(hoisted.createAforaCodingToolsMock).toHaveBeenCalledWith(
       expect.objectContaining({ cwd: worktree, workspaceDir: worktree }),
     );
   });

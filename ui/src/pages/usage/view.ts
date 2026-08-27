@@ -527,21 +527,21 @@ export function renderUsage(props: UsageProps) {
                     switch (event.detail.item.value) {
                       case "sessions-csv":
                         downloadTextFile(
-                          `openclaw-usage-sessions-${exportStamp}.csv`,
+                          `afora-usage-sessions-${exportStamp}.csv`,
                           buildSessionsCsv(filteredSessions),
                           "text/csv",
                         );
                         break;
                       case "daily-csv":
                         downloadTextFile(
-                          `openclaw-usage-daily-${exportStamp}.csv`,
+                          `afora-usage-daily-${exportStamp}.csv`,
                           buildDailyCsv(filteredDaily),
                           "text/csv",
                         );
                         break;
                       case "json":
                         downloadTextFile(
-                          `openclaw-usage-${exportStamp}.json`,
+                          `afora-usage-${exportStamp}.json`,
                           JSON.stringify(
                             {
                               totals: displayTotals,
@@ -733,7 +733,7 @@ export function renderUsage(props: UsageProps) {
                         return html`
                           <span class="usage-query-chip">
                             ${label}
-                            <openclaw-tooltip .content=${t("usage.filters.remove")}>
+                            <afora-tooltip .content=${t("usage.filters.remove")}>
                               <button
                                 aria-label=${t("usage.filters.remove")}
                                 @click=${() =>
@@ -743,7 +743,7 @@ export function renderUsage(props: UsageProps) {
                               >
                                 ×
                               </button>
-                            </openclaw-tooltip>
+                            </afora-tooltip>
                           </span>
                         `;
                       })}

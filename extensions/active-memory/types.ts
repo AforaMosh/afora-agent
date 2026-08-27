@@ -1,5 +1,5 @@
-import type { OpenClawPluginToolContext } from "openclaw/plugin-sdk/plugin-entry";
-import type { SessionTranscriptTargetParams } from "openclaw/plugin-sdk/session-transcript-runtime";
+import type { AforaPluginToolContext } from "afora-agent/plugin-sdk/plugin-entry";
+import type { SessionTranscriptTargetParams } from "afora-agent/plugin-sdk/session-transcript-runtime";
 
 const DEFAULT_TIMEOUT_MS = 15_000;
 // CLI-runtime recalls dispatch through a fresh CLI process (spawn + MCP
@@ -314,7 +314,7 @@ type ActiveMemoryThinkingLevel =
   | "adaptive"
   | "max";
 type ActiveMemoryFastMode = boolean | "auto";
-type ConversationRecallContext = NonNullable<OpenClawPluginToolContext["conversationRecall"]>;
+type ConversationRecallContext = NonNullable<AforaPluginToolContext["conversationRecall"]>;
 type ActiveMemoryPromptStyle =
   | "balanced"
   | "strict"

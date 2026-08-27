@@ -1,4 +1,4 @@
-// Cross-boundary corpus for OpenClaw's supported Node release-label contract.
+// Cross-boundary corpus for Afora's supported Node release-label contract.
 export const NODE_RELEASE_VERSION_CASES = [
   "22.22.2",
   "22.22.3",

@@ -1,4 +1,4 @@
-import OpenClawKit
+import AforaKit
 import SwiftUI
 
 struct IPadSkillWorkshopScreen: View {
@@ -17,12 +17,12 @@ struct IPadSkillWorkshopScreen: View {
     @State private var errorText: String?
     @State private var noticeText: String?
     @State private var presentedProposalRoute: IPadSkillProposalSheetRoute?
-    let headerSidebarAction: OpenClawSidebarHeaderAction?
+    let headerSidebarAction: AforaSidebarHeaderAction?
     let usesNativeNavigationChrome: Bool
     let openSettings: () -> Void
 
     init(
-        headerSidebarAction: OpenClawSidebarHeaderAction? = nil,
+        headerSidebarAction: AforaSidebarHeaderAction? = nil,
         usesNativeNavigationChrome: Bool = false,
         openSettings: @escaping () -> Void = {})
     {
@@ -63,10 +63,10 @@ struct IPadSkillWorkshopScreen: View {
             NavigationStack {
                 ScrollView {
                     self.presentedProposalDetail(proposalID: route.proposalID)
-                        .padding(.horizontal, OpenClawProMetric.pagePadding)
-                        .padding(.vertical, OpenClawSpacing.space4)
+                        .padding(.horizontal, AforaProMetric.pagePadding)
+                        .padding(.vertical, AforaSpacing.space4)
                 }
-                .background(OpenClawProBackground())
+                .background(AforaProBackground())
                 .navigationTitle("Proposal")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -75,7 +75,7 @@ struct IPadSkillWorkshopScreen: View {
                             self.presentedProposalRoute = nil
                         } label: {
                             Text("Done")
-                                .font(OpenClawType.subheadSemiBold)
+                                .font(AforaType.subheadSemiBold)
                         }
                     }
                 }
@@ -89,12 +89,12 @@ struct IPadSkillWorkshopScreen: View {
                 icon: "clock",
                 title: "Pending",
                 value: "\(self.count("pending"))",
-                color: OpenClawBrand.warn),
+                color: AforaBrand.warn),
             ProMetric(
                 icon: "checkmark.circle",
                 title: "Applied",
                 value: "\(self.count("applied"))",
-                color: OpenClawBrand.ok),
+                color: AforaBrand.ok),
             ProMetric(
                 icon: "shield",
                 title: "Held",
@@ -104,29 +104,29 @@ struct IPadSkillWorkshopScreen: View {
     }
 
     private var filtersCard: some View {
-        ProCard(radius: OpenClawProMetric.cardRadius) {
+        ProCard(radius: AforaProMetric.cardRadius) {
             VStack(alignment: .leading, spacing: 12) {
                 self.agentScopeMenu
                 self.proposalSearchField
                 Picker(selection: self.$statusFilter) {
                     ForEach(Self.proposalStatusFilters, id: \.self) { filter in
                         Text(Self.proposalStatusFilterLabel(filter))
-                            .font(OpenClawType.captionSemiBold)
+                            .font(AforaType.captionSemiBold)
                             .tag(filter)
                     }
                 } label: {
                     Text("Status")
-                        .font(OpenClawType.captionSemiBold)
+                        .font(AforaType.captionSemiBold)
                 }
                 .pickerStyle(.segmented)
                 .controlSize(.small)
-                .tint(OpenClawBrand.accent)
+                .tint(AforaBrand.accent)
                 HStack(spacing: 8) {
                     Button {
                         Task { await self.loadProposals(force: true) }
                     } label: {
                         Label("Refresh", systemImage: "arrow.clockwise")
-                            .font(OpenClawType.captionSemiBold)
+                            .font(AforaType.captionSemiBold)
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
@@ -139,31 +139,31 @@ struct IPadSkillWorkshopScreen: View {
                 }
                 if let noticeText {
                     Text(noticeText)
-                        .font(OpenClawType.caption2)
-                        .foregroundStyle(OpenClawBrand.accent)
+                        .font(AforaType.caption2)
+                        .foregroundStyle(AforaBrand.accent)
                 }
                 if let errorText {
                     Text(errorText)
-                        .font(OpenClawType.caption2)
-                        .foregroundStyle(OpenClawBrand.warn)
+                        .font(AforaType.caption2)
+                        .foregroundStyle(AforaBrand.warn)
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, AforaProMetric.pagePadding)
     }
 
     private var compactFiltersCard: some View {
         let count = self.filteredProposals.count
         let countText = String(
             AttributedString(localized: "^[\(count) proposal](inflect: true)").characters)
-        return ProCard(radius: OpenClawProMetric.cardRadius) {
+        return ProCard(radius: AforaProMetric.cardRadius) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .firstTextBaseline, spacing: 10) {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(verbatim: countText)
-                            .font(OpenClawType.headline)
+                            .font(AforaType.headline)
                         Text(self.statusFilterLabel)
-                            .font(OpenClawType.caption)
+                            .font(AforaType.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 8)
@@ -176,16 +176,16 @@ struct IPadSkillWorkshopScreen: View {
                 Picker(selection: self.$statusFilter) {
                     ForEach(Self.proposalStatusFilters, id: \.self) { filter in
                         Text(Self.proposalStatusFilterLabel(filter))
-                            .font(OpenClawType.captionSemiBold)
+                            .font(AforaType.captionSemiBold)
                             .tag(filter)
                     }
                 } label: {
                     Text("Status")
-                        .font(OpenClawType.captionSemiBold)
+                        .font(AforaType.captionSemiBold)
                 }
                 .pickerStyle(.segmented)
                 .controlSize(.small)
-                .tint(OpenClawBrand.accent)
+                .tint(AforaBrand.accent)
 
                 self.proposalSearchField
 
@@ -194,7 +194,7 @@ struct IPadSkillWorkshopScreen: View {
                         Task { await self.loadProposals(force: true) }
                     } label: {
                         Label("Refresh", systemImage: "arrow.clockwise")
-                            .font(OpenClawType.captionSemiBold)
+                            .font(AforaType.captionSemiBold)
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
@@ -204,28 +204,28 @@ struct IPadSkillWorkshopScreen: View {
                 }
                 if let noticeText {
                     Text(noticeText)
-                        .font(OpenClawType.caption2)
-                        .foregroundStyle(OpenClawBrand.accent)
+                        .font(AforaType.caption2)
+                        .foregroundStyle(AforaBrand.accent)
                 }
                 if let errorText {
                     Text(errorText)
-                        .font(OpenClawType.caption2)
-                        .foregroundStyle(OpenClawBrand.warn)
+                        .font(AforaType.caption2)
+                        .foregroundStyle(AforaBrand.warn)
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, AforaProMetric.pagePadding)
     }
 
     private var proposalSearchField: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .font(OpenClawType.captionSemiBold)
+                .font(AforaType.captionSemiBold)
                 .foregroundStyle(.secondary)
             TextField("Search proposals", text: self.$query)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
-                .font(OpenClawType.subhead)
+                .font(AforaType.subhead)
             if !self.query.isEmpty {
                 Button {
                     self.query = ""
@@ -241,30 +241,30 @@ struct IPadSkillWorkshopScreen: View {
     private var agentScopeMenu: some View {
         HStack(spacing: 8) {
             Text("Agent")
-                .font(OpenClawType.captionSemiBold)
+                .font(AforaType.captionSemiBold)
                 .foregroundStyle(.secondary)
             Menu {
                 Button {
                     self.selectedAgentScopeID = ""
                 } label: {
                     Text("Default agent")
-                        .font(OpenClawType.subhead)
+                        .font(AforaType.subhead)
                 }
                 ForEach(self.agentScopeOptions, id: \.id) { option in
                     Button {
                         self.selectedAgentScopeID = option.id
                     } label: {
                         Text(option.title)
-                            .font(OpenClawType.subhead)
+                            .font(AforaType.subhead)
                     }
                 }
             } label: {
                 HStack(spacing: 6) {
                     Text(self.agentScopeLabel)
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                         .lineLimit(1)
                     Image(systemName: "chevron.up.chevron.down")
-                        .font(OpenClawType.caption2Bold)
+                        .font(AforaType.caption2Bold)
                 }
                 .frame(maxWidth: .infinity, alignment: .trailing)
             }
@@ -283,7 +283,7 @@ struct IPadSkillWorkshopScreen: View {
     private var proposalContent: some View {
         VStack(alignment: .leading, spacing: 12) {
             if self.filteredProposals.isEmpty {
-                ProCard(radius: OpenClawProMetric.cardRadius) {
+                ProCard(radius: AforaProMetric.cardRadius) {
                     ProStatusRow(
                         icon: self.canRead ? "hammer" : "wifi.slash",
                         title: self.canRead ? "No proposals" : "No proposals loaded",
@@ -295,13 +295,13 @@ struct IPadSkillWorkshopScreen: View {
                         actionTitle: nil,
                         action: nil)
                 }
-                .padding(.horizontal, OpenClawProMetric.pagePadding)
+                .padding(.horizontal, AforaProMetric.pagePadding)
             } else {
                 if self.isCompactWidth {
                     VStack(alignment: .leading, spacing: 12) {
                         self.proposalList
                     }
-                    .padding(.horizontal, OpenClawProMetric.pagePadding)
+                    .padding(.horizontal, AforaProMetric.pagePadding)
                 } else {
                     self.proposalBoard
                 }
@@ -341,13 +341,13 @@ struct IPadSkillWorkshopScreen: View {
                         .frame(width: 282)
                 }
             }
-            .padding(.horizontal, OpenClawProMetric.pagePadding)
+            .padding(.horizontal, AforaProMetric.pagePadding)
         }
         .scrollIndicators(.visible)
     }
 
     private var proposalList: some View {
-        ProCard(padding: 0, radius: OpenClawProMetric.cardRadius) {
+        ProCard(padding: 0, radius: AforaProMetric.cardRadius) {
             VStack(spacing: 0) {
                 ProPanelHeader(
                     title: "Queue",
@@ -378,21 +378,21 @@ struct IPadSkillWorkshopScreen: View {
                                 forceInspect: true)
                         } label: {
                             Text("Inspect")
-                                .font(OpenClawType.subhead)
+                                .font(AforaType.subhead)
                         }
                         if proposal.status == "pending" {
                             Button {
                                 Task { await self.run(.apply, proposal: proposal) }
                             } label: {
                                 Text("Apply")
-                                    .font(OpenClawType.subhead)
+                                    .font(AforaType.subhead)
                             }
                             .disabled(!self.canApplyProposalMutations || self.busyAction != nil)
                             Button(role: .destructive) {
                                 Task { await self.run(.reject, proposal: proposal) }
                             } label: {
                                 Text("Reject")
-                                    .font(OpenClawType.subhead)
+                                    .font(AforaType.subhead)
                             }
                             .disabled(!self.canApplyProposalMutations || self.busyAction != nil)
                         }
@@ -403,15 +403,15 @@ struct IPadSkillWorkshopScreen: View {
                                 Task { await self.run(.apply, proposal: proposal) }
                             } label: {
                                 Text("Apply")
-                                    .font(OpenClawType.subhead)
+                                    .font(AforaType.subhead)
                             }
-                            .tint(OpenClawBrand.ok)
+                            .tint(AforaBrand.ok)
                             .disabled(!self.canApplyProposalMutations || self.busyAction != nil)
                             Button(role: .destructive) {
                                 Task { await self.run(.reject, proposal: proposal) }
                             } label: {
                                 Text("Reject")
-                                    .font(OpenClawType.subhead)
+                                    .font(AforaType.subhead)
                             }
                             .disabled(!self.canApplyProposalMutations || self.busyAction != nil)
                         }
@@ -424,9 +424,9 @@ struct IPadSkillWorkshopScreen: View {
                                 forceInspect: true)
                         } label: {
                             Text("Inspect")
-                                .font(OpenClawType.subhead)
+                                .font(AforaType.subhead)
                         }
-                        .tint(OpenClawBrand.accent)
+                        .tint(AforaBrand.accent)
                     }
                 }
             }
@@ -438,7 +438,7 @@ struct IPadSkillWorkshopScreen: View {
         if let proposal = proposal(withID: proposalID) {
             self.proposalDetailCard(proposal)
         } else {
-            ProCard(radius: OpenClawProMetric.cardRadius) {
+            ProCard(radius: AforaProMetric.cardRadius) {
                 ProStatusRow(
                     icon: "hammer",
                     title: "Proposal unavailable",
@@ -452,15 +452,15 @@ struct IPadSkillWorkshopScreen: View {
     }
 
     private func proposalDetailCard(_ proposal: IPadSkillProposal) -> some View {
-        ProCard(radius: OpenClawProMetric.cardRadius) {
+        ProCard(radius: AforaProMetric.cardRadius) {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .top, spacing: 12) {
                     ProIconBadge(systemName: "hammer", color: proposal.statusColor)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(proposal.title)
-                            .font(OpenClawType.headline)
+                            .font(AforaType.headline)
                         Text(proposal.description)
-                            .font(OpenClawType.caption)
+                            .font(AforaType.caption)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -474,23 +474,23 @@ struct IPadSkillWorkshopScreen: View {
 
                 if let content = proposal.content, !content.isEmpty {
                     Text(content)
-                        .font(OpenClawType.monoSmall)
+                        .font(AforaType.monoSmall)
                         .foregroundStyle(.secondary)
                         .lineLimit(16)
                         .textSelection(.enabled)
                 } else {
                     Text("Select refresh to load the proposal body.")
-                        .font(OpenClawType.caption)
+                        .font(AforaType.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 if !proposal.supportFiles.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Support files")
-                            .font(OpenClawType.subheadSemiBold)
+                            .font(AforaType.subheadSemiBold)
                         ForEach(proposal.supportFiles, id: \.path) { file in
                             Text(file.path)
-                                .font(OpenClawType.monoCaption2)
+                                .font(AforaType.monoCaption2)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
                         }
@@ -524,7 +524,7 @@ struct IPadSkillWorkshopScreen: View {
             Task { await self.run(.apply, proposal: proposal) }
         } label: {
             Label("Apply", systemImage: "checkmark.circle")
-                .font(OpenClawType.captionSemiBold)
+                .font(AforaType.captionSemiBold)
                 .frame(maxWidth: self.isCompactWidth ? .infinity : nil)
         }
         .buttonStyle(.borderedProminent)
@@ -537,7 +537,7 @@ struct IPadSkillWorkshopScreen: View {
             Task { await self.run(.reject, proposal: proposal) }
         } label: {
             Label("Reject", systemImage: "xmark.circle")
-                .font(OpenClawType.captionSemiBold)
+                .font(AforaType.captionSemiBold)
                 .frame(maxWidth: self.isCompactWidth ? .infinity : nil)
         }
         .buttonStyle(.bordered)
@@ -550,7 +550,7 @@ struct IPadSkillWorkshopScreen: View {
             Task { await self.inspect(proposalID: proposal.id, force: true) }
         } label: {
             Label("Inspect", systemImage: "doc.text.magnifyingglass")
-                .font(OpenClawType.captionSemiBold)
+                .font(AforaType.captionSemiBold)
                 .frame(maxWidth: self.isCompactWidth ? .infinity : nil)
         }
         .buttonStyle(.bordered)
@@ -623,9 +623,9 @@ struct IPadSkillWorkshopScreen: View {
     private var adminScopeNotice: some View {
         HStack(spacing: 8) {
             Image(systemName: "lock.shield")
-                .foregroundStyle(OpenClawBrand.warn)
+                .foregroundStyle(AforaBrand.warn)
             Text("Admin scope required.")
-                .font(OpenClawType.captionSemiBold)
+                .font(AforaType.captionSemiBold)
                 .foregroundStyle(.secondary)
             Spacer(minLength: 8)
         }
@@ -931,7 +931,7 @@ struct IPadSkillProposalKanbanColumn: View {
     let reject: (IPadSkillProposal) -> Void
 
     var body: some View {
-        ProCard(padding: 0, radius: OpenClawProMetric.cardRadius) {
+        ProCard(padding: 0, radius: AforaProMetric.cardRadius) {
             VStack(spacing: 0) {
                 ProPanelHeader(
                     title: .localized(IPadSkillWorkshopScreen.proposalLaneLabel(self.status)),
@@ -1003,11 +1003,11 @@ private struct IPadSkillProposalKanbanCard: View {
                             color: self.proposal.statusColor)
                         VStack(alignment: .leading, spacing: 4) {
                             Text(self.proposal.title)
-                                .font(OpenClawType.subheadSemiBold)
-                                .foregroundStyle(self.isSelected ? OpenClawBrand.accent : .primary)
+                                .font(AforaType.subheadSemiBold)
+                                .foregroundStyle(self.isSelected ? AforaBrand.accent : .primary)
                                 .lineLimit(2)
                             Text(self.proposal.description)
-                                .font(OpenClawType.caption)
+                                .font(AforaType.caption)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(3)
                         }
@@ -1016,7 +1016,7 @@ private struct IPadSkillProposalKanbanCard: View {
                         ProValuePill(value: self.proposal.status, color: self.proposal.statusColor)
                         Spacer(minLength: 4)
                         Text(self.proposal.ageLabel)
-                            .font(OpenClawType.caption2SemiBold)
+                            .font(AforaType.caption2SemiBold)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -1028,7 +1028,7 @@ private struct IPadSkillProposalKanbanCard: View {
                 if self.proposal.status == "pending" {
                     Button(action: self.apply) {
                         Image(systemName: "checkmark.circle")
-                            .font(OpenClawType.captionSemiBold)
+                            .font(AforaType.captionSemiBold)
                     }
                     .accessibilityLabel("Apply Proposal")
                     .buttonStyle(.bordered)
@@ -1037,7 +1037,7 @@ private struct IPadSkillProposalKanbanCard: View {
 
                     Button(role: .destructive, action: self.reject) {
                         Image(systemName: "xmark.circle")
-                            .font(OpenClawType.captionSemiBold)
+                            .font(AforaType.captionSemiBold)
                     }
                     .accessibilityLabel("Reject Proposal")
                     .buttonStyle(.bordered)
@@ -1047,7 +1047,7 @@ private struct IPadSkillProposalKanbanCard: View {
 
                 Button(action: self.inspect) {
                     Image(systemName: "doc.text.magnifyingglass")
-                        .font(OpenClawType.captionSemiBold)
+                        .font(AforaType.captionSemiBold)
                 }
                 .accessibilityLabel("Inspect Proposal")
                 .buttonStyle(.bordered)
@@ -1055,25 +1055,25 @@ private struct IPadSkillProposalKanbanCard: View {
                 .disabled(self.isInspecting)
             }
         }
-        .padding(OpenClawSpacing.space3)
+        .padding(AforaSpacing.space3)
         .background(
-            self.isSelected ? OpenClawBrand.accent.opacity(0.08) : Color.clear,
-            in: RoundedRectangle(cornerRadius: OpenClawRadius.xs, style: .continuous))
+            self.isSelected ? AforaBrand.accent.opacity(0.08) : Color.clear,
+            in: RoundedRectangle(cornerRadius: AforaRadius.xs, style: .continuous))
         .contentShape(Rectangle())
         .contextMenu {
             Button(action: self.inspect) {
                 Text("Inspect")
-                    .font(OpenClawType.subhead)
+                    .font(AforaType.subhead)
             }
             if self.proposal.status == "pending" {
                 Button(action: self.apply) {
                     Text("Apply")
-                        .font(OpenClawType.subhead)
+                        .font(AforaType.subhead)
                 }
                 .disabled(!self.canApplyProposalMutations || self.isBusy)
                 Button(role: .destructive, action: self.reject) {
                     Text("Reject")
-                        .font(OpenClawType.subhead)
+                        .font(AforaType.subhead)
                 }
                 .disabled(!self.canApplyProposalMutations || self.isBusy)
             }
@@ -1091,24 +1091,24 @@ struct IPadSkillProposalRow: View {
             ProIconBadge(systemName: self.isBusy ? "hourglass" : "hammer", color: self.proposal.statusColor)
             VStack(alignment: .leading, spacing: 4) {
                 Text(self.proposal.title)
-                    .font(OpenClawType.subheadSemiBold)
-                    .foregroundStyle(self.isSelected ? OpenClawBrand.accent : .primary)
+                    .font(AforaType.subheadSemiBold)
+                    .foregroundStyle(self.isSelected ? AforaBrand.accent : .primary)
                     .lineLimit(1)
                 Text(self.proposal.description)
-                    .font(OpenClawType.caption)
+                    .font(AforaType.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
             Spacer(minLength: 8)
             Text(self.proposal.ageLabel)
-                .font(OpenClawType.caption2SemiBold)
+                .font(AforaType.caption2SemiBold)
                 .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .background(
-            self.isSelected ? OpenClawBrand.danger.opacity(0.08) : Color.clear,
-            in: RoundedRectangle(cornerRadius: OpenClawRadius.xs, style: .continuous))
+            self.isSelected ? AforaBrand.danger.opacity(0.08) : Color.clear,
+            in: RoundedRectangle(cornerRadius: AforaRadius.xs, style: .continuous))
     }
 }
 
@@ -1236,11 +1236,11 @@ struct IPadSkillProposal: Identifiable {
 
     var statusColor: Color {
         switch self.status {
-        case "pending": OpenClawBrand.warn
-        case "applied": OpenClawBrand.ok
+        case "pending": AforaBrand.warn
+        case "applied": AforaBrand.ok
         case "rejected": .secondary
-        case "quarantined", "stale": OpenClawBrand.warn
-        default: OpenClawBrand.accent
+        case "quarantined", "stale": AforaBrand.warn
+        default: AforaBrand.accent
         }
     }
 

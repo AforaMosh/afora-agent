@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { noteInstallPolicyHealth } from "./doctor-install-policy.js";
 
 const noteMock = vi.hoisted(() => vi.fn());
@@ -11,7 +11,7 @@ const noteMock = vi.hoisted(() => vi.fn());
 vi.mock("../../packages/terminal-core/src/note.js", () => ({ note: noteMock }));
 
 async function collectInstallPolicyHealthLines(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   options: { deep?: boolean; env?: NodeJS.ProcessEnv } = {},
 ): Promise<string[]> {
   noteMock.mockClear();
@@ -29,7 +29,7 @@ async function writePolicyScript(dir: string, response: string): Promise<string>
   return scriptPath;
 }
 
-function configWithPolicy(scriptPath: string): OpenClawConfig {
+function configWithPolicy(scriptPath: string): AforaConfig {
   return {
     security: {
       installPolicy: {
@@ -50,7 +50,7 @@ describe("collectInstallPolicyHealthLines", () => {
   });
 
   it("reports static availability without running the command by default", async () => {
-    const dir = tempDirs.make("openclaw-doctor-install-policy-");
+    const dir = tempDirs.make("afora-doctor-install-policy-");
     const scriptPath = await writePolicyScript(
       dir,
       JSON.stringify({ protocolVersion: 1, decision: "block", reason: "probe blocked" }),
@@ -64,7 +64,7 @@ describe("collectInstallPolicyHealthLines", () => {
   });
 
   it("runs the synthetic probe in deep mode", async () => {
-    const dir = tempDirs.make("openclaw-doctor-install-policy-");
+    const dir = tempDirs.make("afora-doctor-install-policy-");
     const scriptPath = await writePolicyScript(
       dir,
       JSON.stringify({ protocolVersion: 1, decision: "allow" }),
@@ -78,7 +78,7 @@ describe("collectInstallPolicyHealthLines", () => {
   });
 
   it("reports warnings as requiring acknowledgement", async () => {
-    const dir = tempDirs.make("openclaw-doctor-install-policy-");
+    const dir = tempDirs.make("afora-doctor-install-policy-");
     const scriptPath = await writePolicyScript(
       dir,
       JSON.stringify({ protocolVersion: 1, decision: "warn", reason: "review probe" }),
@@ -95,7 +95,7 @@ describe("collectInstallPolicyHealthLines", () => {
   it.each(["warn", "block"] as const)(
     "keeps policy-controlled %s reasons on one terminal line",
     async (decision) => {
-      const dir = tempDirs.make("openclaw-doctor-install-policy-");
+      const dir = tempDirs.make("afora-doctor-install-policy-");
       const scriptPath = await writePolicyScript(
         dir,
         JSON.stringify({
@@ -129,7 +129,7 @@ describe("collectInstallPolicyHealthLines", () => {
   });
 
   it("keeps static validation errors on one terminal line", async () => {
-    const dir = tempDirs.make("openclaw-doctor-install-policy-");
+    const dir = tempDirs.make("afora-doctor-install-policy-");
     const command = path.join(dir, "missing\n- ERROR: forged\u001b[31m");
 
     const lines = await collectInstallPolicyHealthLines(configWithPolicy(command));

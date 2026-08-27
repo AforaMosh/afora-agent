@@ -46,26 +46,26 @@ const rawSqliteAllowPathGroups = {
     "src/infra/sqlite-transaction.ts",
     "src/infra/sqlite-user-version.ts",
     "src/infra/sqlite-wal.ts",
-    "src/state/openclaw-agent-db-maintenance.ts",
-    "src/state/openclaw-agent-db-registry.ts",
-    "src/state/openclaw-agent-db-registry-listing.ts",
-    "src/state/openclaw-agent-db-schema-helpers.ts",
-    "src/state/openclaw-agent-db-schema.ts",
-    "src/state/openclaw-agent-db-session-nodes-migration.ts",
-    "src/state/openclaw-agent-db-session-migrations.ts",
-    "src/state/openclaw-agent-db-session-provenance.ts",
-    "src/state/openclaw-agent-db.ts",
-    "src/state/openclaw-state-db-audit-migration.ts",
-    "src/state/openclaw-state-db-delivery-queue-backfill.ts",
-    "src/state/openclaw-state-db-legacy-backfills.ts",
-    "src/state/openclaw-state-db-maintenance.ts",
-    "src/state/openclaw-state-db-operator-approval-migration.ts",
-    "src/state/openclaw-state-db-schema-additive.ts",
-    "src/state/openclaw-state-db-schema-helpers.ts",
-    "src/state/openclaw-state-db-schema-repair.ts",
-    "src/state/openclaw-state-db-startup-checkpoint.ts",
-    "src/state/openclaw-state-db.ts",
-    "src/state/openclaw-state-ownership-operations.ts",
+    "src/state/afora-agent-db-maintenance.ts",
+    "src/state/afora-agent-db-registry.ts",
+    "src/state/afora-agent-db-registry-listing.ts",
+    "src/state/afora-agent-db-schema-helpers.ts",
+    "src/state/afora-agent-db-schema.ts",
+    "src/state/afora-agent-db-session-nodes-migration.ts",
+    "src/state/afora-agent-db-session-migrations.ts",
+    "src/state/afora-agent-db-session-provenance.ts",
+    "src/state/afora-agent-db.ts",
+    "src/state/afora-state-db-audit-migration.ts",
+    "src/state/afora-state-db-delivery-queue-backfill.ts",
+    "src/state/afora-state-db-legacy-backfills.ts",
+    "src/state/afora-state-db-maintenance.ts",
+    "src/state/afora-state-db-operator-approval-migration.ts",
+    "src/state/afora-state-db-schema-additive.ts",
+    "src/state/afora-state-db-schema-helpers.ts",
+    "src/state/afora-state-db-schema-repair.ts",
+    "src/state/afora-state-db-startup-checkpoint.ts",
+    "src/state/afora-state-db.ts",
+    "src/state/afora-state-ownership-operations.ts",
     "src/transcripts/sqlite-schema.ts",
     "src/state/sqlite-schema-shape.test-support.ts",
   ],
@@ -79,19 +79,19 @@ const rawSqliteAllowPathGroups = {
   "agent auth profile read-only bootstrap": ["src/agents/auth-profiles/sqlite.ts"],
   "read-only shared state database access": [
     "src/claws/package-resume.ts",
-    "src/state/openclaw-agent-db-readonly.ts",
-    "src/state/openclaw-state-db-readonly.ts",
+    "src/state/afora-agent-db-readonly.ts",
+    "src/state/afora-state-db-readonly.ts",
   ],
   "cold-process read-only relay lookup avoids the shared state writer lifecycle": [
     "src/agents/harness/native-hook-relay-client-store.ts",
   ],
   "read-only schema preflight and integrity verification access": [
-    "src/state/openclaw-database-preflight.ts",
-    "src/state/openclaw-database-verify.worker.ts",
-    "src/state/openclaw-state-ownership.ts",
+    "src/state/afora-database-preflight.ts",
+    "src/state/afora-database-verify.worker.ts",
+    "src/state/afora-state-ownership.ts",
   ],
   "quarantine store must work when other databases are damaged": [
-    "src/state/openclaw-quarantine-store.ts",
+    "src/state/afora-quarantine-store.ts",
   ],
   "read-only SQLite status probes": [
     "src/commands/doctor-db-bloat.ts",
@@ -223,7 +223,7 @@ function collectImports(sourceFile: SourceFile) {
       source.endsWith("node-sqlite.js") ||
       source.endsWith("sqlite-transaction.js") ||
       source.endsWith("sqlite-wal.js") ||
-      source.endsWith("openclaw-state-db.js")
+      source.endsWith("afora-state-db.js")
     ) {
       hasSqliteContext = true;
     }

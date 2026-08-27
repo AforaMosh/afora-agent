@@ -1,4 +1,4 @@
-import type { AssistantMessage, Context, Model } from "openclaw/plugin-sdk/llm";
+import type { AssistantMessage, Context, Model } from "afora-agent/plugin-sdk/llm";
 import { describe, expect, it } from "vitest";
 import { MAX_OVERFLOW_COMPACTION_ATTEMPTS } from "../agent-compaction-constants.js";
 import {

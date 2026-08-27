@@ -3,7 +3,7 @@ import type {
   BoardCommandEvent,
   BoardOp,
   BoardSnapshot,
-} from "@openclaw/gateway-protocol";
+} from "@afora/gateway-protocol";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import { t } from "../../i18n/index.ts";
 import {

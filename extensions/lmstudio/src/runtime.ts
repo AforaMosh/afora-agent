@@ -5,10 +5,10 @@ import {
   isNonSecretApiKeyMarker,
   normalizeApiKeyConfig,
   normalizeOptionalSecretInput,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/provider-auth";
-import { resolveApiKeyForProvider } from "openclaw/plugin-sdk/provider-auth-runtime";
-import { resolveConfiguredSecretInputString } from "openclaw/plugin-sdk/secret-input-runtime";
+  type AforaConfig,
+} from "afora-agent/plugin-sdk/provider-auth";
+import { resolveApiKeyForProvider } from "afora-agent/plugin-sdk/provider-auth-runtime";
+import { resolveConfiguredSecretInputString } from "afora-agent/plugin-sdk/secret-input-runtime";
 import {
   LMSTUDIO_DEFAULT_API_KEY_ENV_VAR,
   LMSTUDIO_LOCAL_API_KEY_PLACEHOLDER,
@@ -73,7 +73,7 @@ function shouldSuppressResolvedRuntimeApiKeyForHeaderAuth(
 
 export async function resolveLmstudioConfiguredApiKeyForProvider(params: {
   providerId: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   path?: string;
   allowUnresolved?: boolean;
@@ -143,7 +143,7 @@ export async function resolveLmstudioConfiguredApiKeyForProvider(params: {
 }
 
 export async function resolveLmstudioConfiguredApiKey(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   path?: string;
   allowUnresolved?: boolean;
@@ -155,7 +155,7 @@ export async function resolveLmstudioConfiguredApiKey(params: {
 }
 
 export async function resolveLmstudioProviderHeaders(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   headers?: unknown;
   path?: string;
@@ -196,7 +196,7 @@ export async function resolveLmstudioProviderHeaders(params: {
  * Use this as the standard auth setup step before discovery or model load calls.
  */
 export async function resolveLmstudioRequestContext(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentDir?: string;
   env?: NodeJS.ProcessEnv;
   providerHeaders?: unknown;
@@ -223,7 +223,7 @@ export async function resolveLmstudioRequestContext(params: {
  * Resolves LM Studio runtime API key from config.
  */
 export async function resolveLmstudioRuntimeApiKey(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentDir?: string;
   env?: NodeJS.ProcessEnv;
   headers?: unknown;
@@ -257,7 +257,7 @@ export async function resolveLmstudioRuntimeApiKey(params: {
       [
         "LM Studio API key is required.",
         `Set models.providers.lmstudio.apiKey (for example "${envMarker}")`,
-        'or run "openclaw models auth lmstudio".',
+        'or run "afora models auth lmstudio".',
       ].join(" "),
     );
   };

@@ -27,7 +27,7 @@ type RemoteRefState = {
   sha: string;
 } | null;
 
-const REF_PREFIX = "refs/openclaw/mobile-releases";
+const REF_PREFIX = "refs/afora/mobile-releases";
 const VERSION_RE = /^20\d{2}\.(?:[1-9]\d?)\.(?:[1-9]\d*)$/u;
 const POSITIVE_INTEGER_RE = /^[1-9]\d*$/u;
 

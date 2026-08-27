@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { buildChannelAccountSnapshotFromAccount } from "./status.js";
 import type { ChannelPlugin } from "./types.plugin.js";
 
@@ -33,7 +33,7 @@ describe("buildChannelAccountSnapshotFromAccount", () => {
 
     const snapshot = await buildChannelAccountSnapshotFromAccount({
       plugin,
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       accountId: "default",
       account,
     });
@@ -61,7 +61,7 @@ describe("buildChannelAccountSnapshotFromAccount", () => {
     await expect(
       buildChannelAccountSnapshotFromAccount({
         plugin,
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         accountId: "default",
         account,
       }),
@@ -85,7 +85,7 @@ describe("buildChannelAccountSnapshotFromAccount", () => {
     await expect(
       buildChannelAccountSnapshotFromAccount({
         plugin,
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         accountId: "default",
         account,
       }),
@@ -110,7 +110,7 @@ describe("buildChannelAccountSnapshotFromAccount", () => {
     await expect(
       buildChannelAccountSnapshotFromAccount({
         plugin,
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         accountId: "default",
         account,
       }),

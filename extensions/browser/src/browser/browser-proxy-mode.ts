@@ -2,7 +2,7 @@
  * Chrome proxy-mode detection for browser navigation control.
  *
  * Keeps proxy environment variables and Chrome flags from accidentally changing
- * whether OpenClaw-owned browser traffic is direct or explicitly proxied.
+ * whether Afora-owned browser traffic is direct or explicitly proxied.
  */
 import type { ResolvedBrowserConfig, ResolvedBrowserProfile } from "./config.js";
 import type { BrowserNavigationProxyMode } from "./navigation-guard.js";
@@ -55,7 +55,7 @@ export function resolveBrowserNavigationProxyMode(params: {
   profile: Pick<ResolvedBrowserProfile, "attachOnly" | "cdpIsLoopback" | "driver">;
 }): BrowserNavigationProxyMode {
   if (
-    params.profile.driver === "openclaw" &&
+    params.profile.driver === "afora" &&
     params.profile.cdpIsLoopback &&
     !params.profile.attachOnly &&
     hasExplicitChromeProxyRoutingArg(params.resolved.extraArgs)

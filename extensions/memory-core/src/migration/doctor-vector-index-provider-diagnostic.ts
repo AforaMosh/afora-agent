@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { PluginDoctorStateMigration } from "openclaw/plugin-sdk/runtime-doctor-migrations";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { PluginDoctorStateMigration } from "afora-agent/plugin-sdk/runtime-doctor-migrations";
 
 const MEMORY_INDEX_META_KEY = "memory_index_meta_v1";
 
@@ -18,13 +18,13 @@ type VectorProviderFinding = ProviderFailure & {
 };
 
 export type InspectConfiguredProvider = (params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentId: string;
   env: NodeJS.ProcessEnv;
   agentDatabasePath: string;
 }) => Promise<ProviderFailure | null>;
 
-function listConfiguredAgentIds(config: OpenClawConfig): string[] {
+function listConfiguredAgentIds(config: AforaConfig): string[] {
   const ids = new Set(Object.keys(config.agents?.entries ?? {}));
   for (const entry of config.agents?.list ?? []) {
     if (entry.id.trim()) {
@@ -42,7 +42,7 @@ async function readExistingVectorModel(
     return null;
   }
   const { openNodeSqliteDatabase, prepareSqliteReadOnlyLocationSync } =
-    await import("openclaw/plugin-sdk/sqlite-runtime");
+    await import("afora-agent/plugin-sdk/sqlite-runtime");
   let prepared: ReturnType<typeof prepareSqliteReadOnlyLocationSync> | undefined;
   let db: ReturnType<typeof openNodeSqliteDatabase> | undefined;
   let failure: unknown;
@@ -87,7 +87,7 @@ async function readExistingVectorModel(
   return failure ? null : model;
 }
 
-function resolveConfigPrefix(config: OpenClawConfig, agentId: string): string {
+function resolveConfigPrefix(config: AforaConfig, agentId: string): string {
   if (config.agents?.entries?.[agentId]?.memory?.search) {
     return `agents.entries.${agentId}.memory.search`;
   }
@@ -97,7 +97,7 @@ function resolveConfigPrefix(config: OpenClawConfig, agentId: string): string {
   return "memory.search";
 }
 
-function hasConfiguredMemorySecretRef(config: OpenClawConfig, agentId: string): boolean {
+function hasConfiguredMemorySecretRef(config: AforaConfig, agentId: string): boolean {
   const agent =
     config.agents?.entries?.[agentId] ?? config.agents?.list?.find((entry) => entry.id === agentId);
   const apiKey = agent?.memory?.search?.remote?.apiKey ?? config.memory?.search?.remote?.apiKey;
@@ -106,7 +106,7 @@ function hasConfiguredMemorySecretRef(config: OpenClawConfig, agentId: string): 
 
 export async function collectVectorProviderFindings(
   params: {
-    config: OpenClawConfig;
+    config: AforaConfig;
     env: NodeJS.ProcessEnv;
     stateDir: string;
   },
@@ -125,7 +125,7 @@ export async function collectVectorProviderFindings(
       "agents",
       agentId,
       "agent",
-      "openclaw-agent.sqlite",
+      "afora-agent.sqlite",
     );
     const model = await readExistingVectorModel(
       agentDatabasePath,

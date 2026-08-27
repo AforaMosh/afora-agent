@@ -1,5 +1,5 @@
 // Discord plugin module implements message handler.preflight pluralkit behavior.
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
 import { isPreflightAborted, loadPluralKitRuntime } from "./message-handler.preflight-runtime.js";
 import type { DiscordMessageEvent } from "./message-handler.preflight.types.js";
 
@@ -8,7 +8,7 @@ export async function resolveDiscordPreflightPluralKitInfo(params: {
   webhookId: string | null;
   config?: NonNullable<
     NonNullable<
-      import("openclaw/plugin-sdk/config-contracts").OpenClawConfig["channels"]
+      import("afora-agent/plugin-sdk/config-contracts").AforaConfig["channels"]
     >["discord"]
   >["pluralkit"];
   abortSignal?: AbortSignal;

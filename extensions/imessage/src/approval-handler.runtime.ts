@@ -7,21 +7,21 @@ import {
   createChannelApprovalNativeRuntimeAdapter,
   type PendingApprovalView,
   resolvePreparedApprovalAccountId,
-} from "openclaw/plugin-sdk/approval-handler-runtime";
-import { buildChannelApprovalNativeTargetKey } from "openclaw/plugin-sdk/approval-native-runtime";
+} from "afora-agent/plugin-sdk/approval-handler-runtime";
+import { buildChannelApprovalNativeTargetKey } from "afora-agent/plugin-sdk/approval-native-runtime";
 import {
   buildApprovalNativeControlsPromptText,
   buildApprovalReactionPendingContent,
-} from "openclaw/plugin-sdk/approval-reaction-runtime";
-import type { ExecApprovalReplyDecision } from "openclaw/plugin-sdk/approval-reply-runtime";
+} from "afora-agent/plugin-sdk/approval-reaction-runtime";
+import type { ExecApprovalReplyDecision } from "afora-agent/plugin-sdk/approval-reply-runtime";
 import type {
   ExecApprovalRequest,
   PluginApprovalRequest,
-} from "openclaw/plugin-sdk/approval-runtime";
-import { createActionGate } from "openclaw/plugin-sdk/channel-actions";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { createLazyRuntimeNamedExport } from "openclaw/plugin-sdk/lazy-runtime";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/approval-runtime";
+import { createActionGate } from "afora-agent/plugin-sdk/channel-actions";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { createLazyRuntimeNamedExport } from "afora-agent/plugin-sdk/lazy-runtime";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/runtime-env";
 import { resolveIMessageAccount } from "./accounts.js";
 import { getIMessageApprovalApprovers } from "./approval-auth.js";
 import { iMessageApprovalControlBindings } from "./approval-control-binding-window.js";
@@ -117,7 +117,7 @@ function buildPendingPayload(params: {
 type IMessageApprovalTargetTransport = "imessage" | "sms" | "unknown";
 
 function classifyIMessageApprovalTargetTransport(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   target: PreparedIMessageApprovalTarget;
 }): IMessageApprovalTargetTransport {
   const account = resolveIMessageAccount({ cfg: params.cfg, accountId: params.target.accountId });
@@ -153,7 +153,7 @@ function classifyIMessageApprovalTargetTransport(params: {
  * cost of a cold cache is that the first approval after start uses tapbacks.
  */
 function canIMessageApprovalUsePoll(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   target: PreparedIMessageApprovalTarget;
   plannedTarget: { surface: string };
   allowedDecisions: readonly ExecApprovalReplyDecision[];
@@ -201,7 +201,7 @@ function canIMessageApprovalUsePoll(params: {
 }
 
 function resolveIMessageApprovalCliOptions(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   target: PreparedIMessageApprovalTarget;
 }): { cliPath: string; dbPath?: string; timeoutMs?: number } {
   const account = resolveIMessageAccount({ cfg: params.cfg, accountId: params.target.accountId });
@@ -215,7 +215,7 @@ function resolveIMessageApprovalCliOptions(params: {
 /**
  * Send the poll balloon after the approval details prompt. imsg normally echoes
  * every poll question as a separate caption after the balloon; suppress that
- * echo because OpenClaw already rendered the full context above the controls.
+ * echo because Afora already rendered the full context above the controls.
  *
  * Conversation-read authority: `chatGuid` is resolved from the approval's own
  * routing target (origin session or a configured approver), so this read is
@@ -223,7 +223,7 @@ function resolveIMessageApprovalCliOptions(params: {
  *
  */
 async function deliverIMessageApprovalPoll(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   target: PreparedIMessageApprovalTarget;
   approvalId: string;
   approvalKind: ChannelApprovalKind;
@@ -365,7 +365,7 @@ async function resolveIMessageApprovalChatGuid(params: {
  * original details message still carries every manual command.
  */
 async function recoverIMessageApprovalTextFallback(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   target: PreparedIMessageApprovalTarget;
   promptMessageId?: string;
   fallbackText: string;

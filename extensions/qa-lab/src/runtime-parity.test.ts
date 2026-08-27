@@ -2,12 +2,12 @@
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import path from "node:path";
-import { resolveStorePath, upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
-import { appendSessionTranscriptMessageByIdentity } from "openclaw/plugin-sdk/session-transcript-runtime";
+import { resolveStorePath, upsertSessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
+import { appendSessionTranscriptMessageByIdentity } from "afora-agent/plugin-sdk/session-transcript-runtime";
 import {
   appendSqliteTrajectoryRuntimeEvents,
   formatSqliteSessionFileMarker,
-} from "openclaw/plugin-sdk/sqlite-runtime-testing";
+} from "afora-agent/plugin-sdk/sqlite-runtime-testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { stableHash } from "./parity-shared.js";
 import {
@@ -40,8 +40,8 @@ async function seedRuntimeParityTranscript(params: {
   }>;
   updatedAt?: number;
 }) {
-  const tempRoot = params.tempRoot ?? (await tempDirs.makeTempDir("openclaw-qa-runtime-parity-"));
-  const env = { ...process.env, OPENCLAW_STATE_DIR: path.join(tempRoot, "state") };
+  const tempRoot = params.tempRoot ?? (await tempDirs.makeTempDir("afora-qa-runtime-parity-"));
+  const env = { ...process.env, AFORA_STATE_DIR: path.join(tempRoot, "state") };
   const storePath = resolveStorePath(undefined, { agentId: "qa", env });
   await upsertSessionEntry({
     agentId: "qa",
@@ -76,7 +76,7 @@ async function seedRuntimeParityTranscript(params: {
     appendSqliteTrajectoryRuntimeEvents(
       { agentId: "qa", env, sessionId: params.sessionId, storePath },
       params.trajectoryEvents.map((event, index) => ({
-        traceSchema: "openclaw-trajectory",
+        traceSchema: "afora-trajectory",
         schemaVersion: 1,
         traceId: params.sessionId,
         source: "runtime",
@@ -129,7 +129,7 @@ async function captureRuntimeParityWithMockRequests(params: {
   const address = server.address() as AddressInfo;
   try {
     return await captureRuntimeParityCell({
-      runtime: "openclaw",
+      runtime: "afora",
       gateway: { tempRoot },
       mockBaseUrl: `http://127.0.0.1:${address.port}`,
       scenarioResult: params.scenarioResult ?? { status: "pass" },
@@ -183,7 +183,7 @@ describe("runtime parity", () => {
     );
 
     const cell = await captureRuntimeParityCell({
-      runtime: "openclaw",
+      runtime: "afora",
       gateway: { tempRoot },
       mockBaseUrl: "http://127.0.0.1:43123",
       scenarioResult: { status: "pass" },
@@ -224,7 +224,7 @@ describe("runtime parity", () => {
     });
 
     const cell = await captureRuntimeParityCell({
-      runtime: "openclaw",
+      runtime: "afora",
       gateway: { tempRoot },
       scenarioResult: { status: "pass" },
       wallClockMs: 10,
@@ -246,7 +246,7 @@ describe("runtime parity", () => {
           data: {
             toolCallId: "search-1",
             name: "web_search",
-            arguments: { query: "OpenClaw runtime parity fixed query" },
+            arguments: { query: "Afora runtime parity fixed query" },
           },
         },
         {
@@ -258,7 +258,7 @@ describe("runtime parity", () => {
             isError: false,
             result: {
               status: "completed",
-              query: "OpenClaw runtime parity fixed query",
+              query: "Afora runtime parity fixed query",
             },
           },
         },
@@ -315,7 +315,7 @@ describe("runtime parity", () => {
           data: {
             toolCallId: "search-1",
             name: "web_search",
-            arguments: { query: "OpenClaw runtime parity fixed query" },
+            arguments: { query: "Afora runtime parity fixed query" },
           },
         },
         {
@@ -586,9 +586,9 @@ describe("runtime parity", () => {
 
   it("keeps a retry pass diagnostic from failing the captured cell", async () => {
     const cell = await captureRuntimeParityCell({
-      runtime: "openclaw",
+      runtime: "afora",
       gateway: {
-        tempRoot: `/tmp/openclaw-qa-runtime-parity-missing-${process.pid}`,
+        tempRoot: `/tmp/afora-qa-runtime-parity-missing-${process.pid}`,
       },
       scenarioResult: {
         status: "pass",
@@ -602,9 +602,9 @@ describe("runtime parity", () => {
 
   it("still classifies terminal scenario failure diagnostics", async () => {
     const cell = await captureRuntimeParityCell({
-      runtime: "openclaw",
+      runtime: "afora",
       gateway: {
-        tempRoot: `/tmp/openclaw-qa-runtime-parity-missing-${process.pid}`,
+        tempRoot: `/tmp/afora-qa-runtime-parity-missing-${process.pid}`,
       },
       scenarioResult: {
         status: "fail",
@@ -710,7 +710,7 @@ describe("runtime parity", () => {
             {
               tool: "web_search",
               argsHash: "same-args",
-              resultHash: runtime === "openclaw" ? "validation-error" : "provider-error",
+              resultHash: runtime === "afora" ? "validation-error" : "provider-error",
               errorClass: "tool-result-error",
             },
           ]),

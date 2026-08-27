@@ -1,21 +1,21 @@
 /**
  * Simple completion transport preparation.
  *
- * Registers provider-specific stream functions and rewrites models that need OpenClaw-managed transport semantics.
+ * Registers provider-specific stream functions and rewrites models that need Afora-managed transport semantics.
  */
-import type { Api, Model, StreamFn } from "@openclaw/llm-core";
+import type { Api, Model, StreamFn } from "@afora/llm-core";
 import type { ApiRegistry } from "../api-registry.js";
 import { getAiTransportHost, resolveAiTransportHeaderSentinels } from "../host.js";
 import {
   buildTransportAwareSimpleStreamFn,
-  createOpenClawTransportStreamFnForModel,
+  createAforaTransportStreamFnForModel,
   createTransportAwareStreamFnForModel,
   prepareTransportAwareSimpleModel,
   resolveTransportAwareSimpleApi,
 } from "./provider-transport-stream.js";
 
-const PROVIDER_SIMPLE_COMPLETION_API_PREFIX = "openclaw-provider-simple:";
-const PROVIDER_STREAM_API_PREFIX = "openclaw-provider-stream:";
+const PROVIDER_SIMPLE_COMPLETION_API_PREFIX = "afora-provider-simple:";
+const PROVIDER_STREAM_API_PREFIX = "afora-provider-stream:";
 const INVALID_CODEX_BASE_URL_MESSAGE =
   "OpenAI Codex Responses baseUrl must not include query parameters or fragments";
 
@@ -30,7 +30,7 @@ function projectModel(model: Model, patch: Partial<Model>): Model {
 
 function resolveAnthropicVertexSimpleApi(baseUrl?: string): Api {
   const suffix = baseUrl?.trim() ? encodeURIComponent(baseUrl.trim()) : "default";
-  return `openclaw-anthropic-vertex-simple:${suffix}`;
+  return `afora-anthropic-vertex-simple:${suffix}`;
 }
 
 export function normalizeCodexResponsesBaseUrlForOpenAISdk(baseUrl?: string): string {
@@ -138,12 +138,12 @@ function prepareCodexSimpleTransportModel<TApi extends Api>(
   }
 
   // Static Codex provider catalogs intentionally omit credentials; the simple
-  // completion path must use OpenClaw's transport so resolved request auth is applied.
+  // completion path must use Afora's transport so resolved request auth is applied.
   const transportModel = projectModel(model, {
     baseUrl: normalizeCodexResponsesBaseUrlForOpenAISdk(model.baseUrl),
   });
   const api = resolveTransportAwareSimpleApi(model.api);
-  const streamFn = createOpenClawTransportStreamFnForModel(transportModel, { cfg });
+  const streamFn = createAforaTransportStreamFnForModel(transportModel, { cfg });
   if (!api || !streamFn) {
     return undefined;
   }

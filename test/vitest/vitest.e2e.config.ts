@@ -5,7 +5,7 @@ import baseConfig from "./vitest.config.ts";
 import { resolveRepoRootPath } from "./vitest.shared.config.ts";
 
 function resolveE2EWorkerCount(env: Record<string, string | undefined>): number {
-  const requestedWorkers = Number.parseInt(env.OPENCLAW_E2E_WORKERS ?? "", 10);
+  const requestedWorkers = Number.parseInt(env.AFORA_E2E_WORKERS ?? "", 10);
   return Number.isFinite(requestedWorkers) && requestedWorkers > 0
     ? Math.min(16, requestedWorkers)
     : 1;
@@ -31,7 +31,7 @@ const exclude = [
 export function createE2EVitestConfig(env: Record<string, string | undefined> = process.env) {
   // Keep e2e runs deterministic by default; callers can still opt into parallelism.
   const e2eWorkers = resolveE2EWorkerCount(env);
-  const verboseE2E = env.OPENCLAW_E2E_VERBOSE === "1";
+  const verboseE2E = env.AFORA_E2E_VERBOSE === "1";
 
   return defineConfig({
     ...base,
@@ -43,7 +43,7 @@ export function createE2EVitestConfig(env: Record<string, string | undefined> = 
       globalSetup: [resolveRepoRootPath("test/vitest/vitest.e2e.global-setup.ts")],
       setupFiles: [
         ...new Set(
-          [...(baseTest.setupFiles ?? []), "test/setup-openclaw-runtime.ts"].map(
+          [...(baseTest.setupFiles ?? []), "test/setup-afora-runtime.ts"].map(
             resolveRepoRootPath,
           ),
         ),

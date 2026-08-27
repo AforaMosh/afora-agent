@@ -1,5 +1,5 @@
 // Control UI view renders agents panels overview screen content.
-import { normalizeCsvOrLooseStringList } from "@openclaw/normalization-core/string-normalization";
+import { normalizeCsvOrLooseStringList } from "@afora/normalization-core/string-normalization";
 import { html, nothing } from "lit";
 import type {
   AgentIdentityResult,
@@ -229,7 +229,7 @@ export function renderAgentOverview(params: {
         <dl class="settings-kv">
           <dt>${t("agents.context.workspace")}</dt>
           <dd>
-            <openclaw-tooltip .content=${t("agents.context.openFilesTab")}>
+            <afora-tooltip .content=${t("agents.context.openFilesTab")}>
               <button
                 type="button"
                 class="workspace-link mono"
@@ -238,7 +238,7 @@ export function renderAgentOverview(params: {
               >
                 ${workspace}
               </button>
-            </openclaw-tooltip>
+            </afora-tooltip>
           </dd>
           <dt>${t("agents.context.primaryModel")}</dt>
           <dd><code>${model}</code></dd>

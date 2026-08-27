@@ -2,9 +2,9 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawPluginApi } from "../api.js";
+import type { AforaPluginApi } from "../api.js";
 import type { VoiceCallConfig } from "./config.js";
 import { buildRealtimeVoiceInstructions } from "./realtime-agent-context.js";
 import { createVoiceCallBaseConfig } from "./test-fixtures.js";
@@ -16,7 +16,7 @@ afterEach(async () => {
 });
 
 async function createWorkspace(): Promise<string> {
-  const workspaceDir = await mkdtemp(path.join(tmpdir(), "openclaw-voice-context-"));
+  const workspaceDir = await mkdtemp(path.join(tmpdir(), "afora-voice-context-"));
   tempDirs.push(workspaceDir);
   return workspaceDir;
 }
@@ -45,7 +45,7 @@ function createConfig(overrides?: Partial<VoiceCallConfig["realtime"]>): VoiceCa
   return config;
 }
 
-function createAgentRuntime(workspaceDir: string): OpenClawPluginApi["runtime"]["agent"] {
+function createAgentRuntime(workspaceDir: string): AforaPluginApi["runtime"]["agent"] {
   return {
     resolveAgentIdentity: vi.fn(() => ({
       name: "Claw Voice",
@@ -55,7 +55,7 @@ function createAgentRuntime(workspaceDir: string): OpenClawPluginApi["runtime"][
       creature: "operator",
     })),
     resolveAgentWorkspaceDir: vi.fn(() => workspaceDir),
-  } as unknown as OpenClawPluginApi["runtime"]["agent"];
+  } as unknown as AforaPluginApi["runtime"]["agent"];
 }
 
 describe("buildRealtimeVoiceInstructions", () => {
@@ -65,7 +65,7 @@ describe("buildRealtimeVoiceInstructions", () => {
     await writeFile(path.join(workspaceDir, "IDENTITY.md"), "Name: Claw Voice\nVibe: snappy\n");
     await writeFile(path.join(workspaceDir, "SECRET.md"), "do not include\n");
 
-    const coreConfig = { agents: { list: [{ id: "voice" }] } } as OpenClawConfig;
+    const coreConfig = { agents: { list: [{ id: "voice" }] } } as AforaConfig;
 
     const instructions = await buildRealtimeVoiceInstructions({
       baseInstructions: "Base voice instructions.",
@@ -84,9 +84,9 @@ describe("buildRealtimeVoiceInstructions", () => {
       agentId: "voice",
     });
 
-    expect(instructions).toContain("OpenClaw agent voice context:");
+    expect(instructions).toContain("Afora agent voice context:");
     expect(instructions).toContain("Consult behavior:");
-    expect(instructions).toContain("Call openclaw_agent_consult before answering requests");
+    expect(instructions).toContain("Call afora_agent_consult before answering requests");
     expect(instructions).toContain("- Agent id: voice");
     expect(instructions).toContain("- Name: Claw Voice");
     expect(instructions).toContain("- Vibe: snappy");
@@ -98,7 +98,7 @@ describe("buildRealtimeVoiceInstructions", () => {
 
   it("truncates injected context without splitting UTF-16 surrogate pairs", async () => {
     const agentId = "abc🚀tail";
-    const expectedContext = "OpenClaw agent voice context:\n\n- Agent id: abc";
+    const expectedContext = "Afora agent voice context:\n\n- Agent id: abc";
     const config = createConfig({
       agentContext: {
         enabled: true,
@@ -113,7 +113,7 @@ describe("buildRealtimeVoiceInstructions", () => {
     const instructions = await buildRealtimeVoiceInstructions({
       baseInstructions: "Base voice instructions.",
       config,
-      coreConfig: { agents: { list: [{ id: agentId }] } } as OpenClawConfig,
+      coreConfig: { agents: { list: [{ id: agentId }] } } as AforaConfig,
       agentRuntime: createAgentRuntime("/unused"),
       agentId,
     });

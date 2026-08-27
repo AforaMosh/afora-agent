@@ -1,9 +1,9 @@
 /**
  * Cerebras provider plugin entrypoint.
  */
-import { defineSingleProviderPluginEntry } from "openclaw/plugin-sdk/provider-entry";
+import { defineSingleProviderPluginEntry } from "afora-agent/plugin-sdk/provider-entry";
 import { applyCerebrasConfig } from "./onboard.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 
 const PROVIDER_ID = "cerebras";
 

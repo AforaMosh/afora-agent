@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
 import { parseConfigJson5 } from "../config/io.js";
 import { resolveConfigPath, resolveStateDir } from "../config/paths.js";
 import { redactConfigObject } from "../config/redact-snapshot.js";
@@ -44,7 +44,7 @@ const DEFAULT_LOG_MAX_BYTES = 1_000_000;
 // Support export must remain usable when the config is corrupt or unexpectedly
 // large. This defensive ceiling is not the product's general config-file limit.
 const SUPPORT_EXPORT_CONFIG_MAX_BYTES = 8 * 1024 * 1024;
-const SUPPORT_EXPORT_PREFIX = "openclaw-diagnostics-";
+const SUPPORT_EXPORT_PREFIX = "afora-diagnostics-";
 const SUPPORT_EXPORT_SUFFIX = ".zip";
 type Awaitable<T> = T | Promise<T>;
 type SupportSnapshotReader = () => Awaitable<unknown>;
@@ -66,7 +66,7 @@ type DiagnosticSupportExportOptions = {
 type DiagnosticSupportExportManifest = {
   version: typeof DIAGNOSTIC_SUPPORT_EXPORT_VERSION;
   generatedAt: string;
-  openclawVersion: string;
+  aforaVersion: string;
   platform: NodeJS.Platform;
   arch: string;
   node: string;
@@ -210,7 +210,7 @@ function safeScalar(value: unknown): unknown {
 function resolveBonjourEnvOverride(
   env: NodeJS.ProcessEnv,
 ): NonNullable<ConfigShape["discovery"]>["bonjourEnvOverride"] {
-  const raw = env.OPENCLAW_DISABLE_BONJOUR?.trim();
+  const raw = env.AFORA_DISABLE_BONJOUR?.trim();
   if (!raw) {
     return "unset";
   }
@@ -412,7 +412,7 @@ function readStabilityBundle(
   stateDir: string,
 ): ReadDiagnosticStabilityBundleResult {
   if (target === false) {
-    return { status: "missing", dir: "$OPENCLAW_STATE_DIR/logs/stability" };
+    return { status: "missing", dir: "$AFORA_STATE_DIR/logs/stability" };
   }
   if (target === undefined || target === "latest") {
     return readLatestDiagnosticStabilityBundleSync({ stateDir });
@@ -595,14 +595,14 @@ function renderSummary(params: {
     return `${label} snapshot skipped`;
   };
   return [
-    "# OpenClaw Diagnostics Export",
+    "# Afora Diagnostics Export",
     "",
     "Attach this zip to the bug report. It is designed for maintainers to inspect without asking for raw logs first.",
     "",
     "## Generated",
     "",
     `Generated: ${params.generatedAt}`,
-    `OpenClaw: ${VERSION}`,
+    `Afora: ${VERSION}`,
     "",
     "## Contents",
     "",
@@ -619,7 +619,7 @@ function renderSummary(params: {
     "- `config/sanitized.json`: config values with credentials, private identifiers, and prompt text redacted",
     "- `status/gateway-status.json`: sanitized service/connectivity snapshot",
     "- `health/gateway-health.json`: sanitized Gateway health snapshot",
-    "- `logs/openclaw-sanitized.jsonl`: sanitized log summaries and metadata",
+    "- `logs/afora-sanitized.jsonl`: sanitized log summaries and metadata",
     "- `stability/latest.json`: newest payload-free stability bundle, when available",
     "",
     "## Privacy",
@@ -701,7 +701,7 @@ async function buildDiagnosticSupportExport(
   ]);
   const diagnostics = {
     generatedAt,
-    openclawVersion: VERSION,
+    aforaVersion: VERSION,
     process: {
       platform: process.platform,
       arch: process.arch,
@@ -728,7 +728,7 @@ async function buildDiagnosticSupportExport(
     jsonSupportBundleFile("config/shape.json", config.shape),
     jsonSupportBundleFile("config/sanitized.json", config.sanitized ?? null),
     jsonlSupportBundleFile(
-      "logs/openclaw-sanitized.jsonl",
+      "logs/afora-sanitized.jsonl",
       logTail.lines.map((line) => JSON.stringify(line)),
     ),
   ];
@@ -759,7 +759,7 @@ async function buildDiagnosticSupportExport(
   const manifest: DiagnosticSupportExportManifest = {
     version: DIAGNOSTIC_SUPPORT_EXPORT_VERSION,
     generatedAt,
-    openclawVersion: VERSION,
+    aforaVersion: VERSION,
     platform: process.platform,
     arch: process.arch,
     node: process.versions.node,

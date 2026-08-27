@@ -1,6 +1,6 @@
 /** Canonical memory-only migration planning and apply policy for embedded surfaces. */
 import { MAX_MEMORY_MIGRATION_ITEMS } from "../../../packages/gateway-protocol/src/index.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { bindMemoryMigrationPlanSources } from "../../plugin-sdk/memory-migration-source.js";
 import { summarizeMigrationItems } from "../../plugin-sdk/migration.js";
 import {
@@ -26,7 +26,7 @@ const silentRuntime: RuntimeEnv = {
   },
 };
 
-export function listMemoryMigrationProviders(config: OpenClawConfig): MigrationProviderPlugin[] {
+export function listMemoryMigrationProviders(config: AforaConfig): MigrationProviderPlugin[] {
   ensureStandaloneMigrationProviderRegistryLoaded({ cfg: config });
   return resolvePluginMigrationProviders({ cfg: config }).filter((provider) =>
     provider.supportedItemKinds?.includes(MEMORY_ITEM_KIND),
@@ -61,7 +61,7 @@ function shapeMemoryOnlyPlan(plan: MigrationPlan): MigrationPlan {
 
 export async function planProviderMemoryImport(params: {
   provider: MigrationProviderPlugin;
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentId: string;
   overwrite?: boolean;
   runtime?: RuntimeEnv;
@@ -97,7 +97,7 @@ export async function planProviderMemoryImport(params: {
 
 export async function applyProviderMemoryImport(params: {
   provider: MigrationProviderPlugin;
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentId: string;
   itemIds: string[];
   overwrite?: boolean;

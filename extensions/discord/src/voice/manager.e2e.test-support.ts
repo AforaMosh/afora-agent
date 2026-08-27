@@ -1,7 +1,7 @@
 import type {
   RealtimeVoiceBridgeEvent,
   RealtimeVoiceResponseOutcome,
-} from "openclaw/plugin-sdk/realtime-voice";
+} from "afora-agent/plugin-sdk/realtime-voice";
 import { vi } from "vitest";
 import { ChannelType } from "../internal/discord.js";
 import { createVoiceCaptureState } from "./capture-state.js";

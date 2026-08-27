@@ -64,7 +64,7 @@ export function showSecretRevealDialog(options: SecretRevealDialogOptions): Prom
     const paint = () => {
       render(
         html`
-          <openclaw-modal-dialog
+          <afora-modal-dialog
             label=${options.title}
             description=${options.message}
             @modal-cancel=${handleCancel}
@@ -100,7 +100,7 @@ export function showSecretRevealDialog(options: SecretRevealDialogOptions): Prom
                 </button>
               </div>
             </div>
-          </openclaw-modal-dialog>
+          </afora-modal-dialog>
         `,
         host,
       );

@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 
 type ConversationTurnReply = {
@@ -47,7 +47,7 @@ type ConversationTurnReplyClaim = {
 // Gateway RPC execution and inbound dispatch can live in different bundled chunks.
 // Keep one process-wide registry so either chunk observes the same pending turn.
 const pendingTurns = resolveGlobalSingleton(
-  Symbol.for("openclaw.pendingConversationTurns"),
+  Symbol.for("afora.pendingConversationTurns"),
   () => new Map<string, PendingConversationTurn>(),
   (turns) => {
     for (const pending of turns.values()) {

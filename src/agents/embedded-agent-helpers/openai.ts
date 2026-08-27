@@ -1,8 +1,8 @@
 /**
  * Normalizes OpenAI Responses reasoning/tool-call history for safe replay.
  */
-import { replaceCompactionReplayOwnerContent } from "@openclaw/ai/transports";
-import { parseDateFirstTimestampMs } from "@openclaw/normalization-core/number-coercion";
+import { replaceCompactionReplayOwnerContent } from "@afora/ai/transports";
+import { parseDateFirstTimestampMs } from "@afora/normalization-core/number-coercion";
 import { sha256HexPrefixCore } from "../../infra/crypto-digest.js";
 import type { AgentMessage } from "../runtime/index.js";
 
@@ -184,7 +184,7 @@ function createOpenAIResponsesToolCallIdResolver(): (id: string) => string {
  * `function_call.id`, and matching `function_call_output.call_id` values
  * that exceed its 64-char `call_*` / `fc_*` shape. pi-ai skips its own
  * normalizer for same-model replay, then splits persisted `call_id|fc_id`
- * pairs directly into the provider payload, so OpenClaw must normalize here.
+ * pairs directly into the provider payload, so Afora must normalize here.
  */
 export function normalizeOpenAIResponsesToolCallIds(messages: AgentMessage[]): AgentMessage[] {
   let changed = false;
@@ -413,7 +413,7 @@ function extractTextSignaturePhase(signature: string): "commentary" | "final_ans
  * OpenAI Responses API can reject transcripts that contain a standalone `reasoning` item id
  * without the required following item, or stale encrypted reasoning after a model route switch.
  *
- * OpenClaw persists provider-specific reasoning metadata in `thinkingSignature`; if that metadata
+ * Afora persists provider-specific reasoning metadata in `thinkingSignature`; if that metadata
  * is incomplete or no longer replay-safe, drop the block to keep history usable.
  */
 export function downgradeOpenAIReasoningBlocks(

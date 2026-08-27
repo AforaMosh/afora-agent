@@ -1,4 +1,4 @@
-import { KeyedAsyncQueue } from "openclaw/plugin-sdk/keyed-async-queue";
+import { KeyedAsyncQueue } from "afora-agent/plugin-sdk/keyed-async-queue";
 import {
   CODEX_APP_SERVER_UNSUBSCRIBE_TIMEOUT_MS,
   closeCodexStartupClientBestEffort,
@@ -44,7 +44,7 @@ export async function withExclusiveCodexAppServerThread<T>(params: {
   return await nativeThreadOwners.enqueue(`thread:${params.threadId}`, async () => {
     if (await params.bindingStore.hasOtherThreadOwner(params.threadId, params.identity)) {
       throw new Error(
-        `Codex thread ${params.threadId} is owned by another OpenClaw session or conversation.`,
+        `Codex thread ${params.threadId} is owned by another Afora session or conversation.`,
       );
     }
     return await params.run();

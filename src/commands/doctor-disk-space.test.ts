@@ -1,5 +1,5 @@
 // Doctor disk-space tests cover byte formatting, warning generation, and note rendering.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it, vi } from "vitest";
 import { collectDiskSpaceHealthFindings, formatBytes, noteDiskSpace } from "./doctor-disk-space.js";
 
@@ -172,8 +172,8 @@ describe("collectDiskSpaceHealthFindings", () => {
       expect.objectContaining({
         checkId: "core/doctor/disk-space",
         severity: "warning",
-        message: "Low disk space: 300 MB free on the partition containing /home/test/.openclaw.",
-        path: "/home/test/.openclaw",
+        message: "Low disk space: 300 MB free on the partition containing /home/test/.afora.",
+        path: "/home/test/.afora",
         target: "300 MB",
         requirement: "low-free-space",
         fixHint: expect.stringContaining("prevent future config/session write failures"),
@@ -191,8 +191,8 @@ describe("collectDiskSpaceHealthFindings", () => {
       expect.objectContaining({
         checkId: "core/doctor/disk-space",
         severity: "warning",
-        message: "CRITICAL: only 50 MB free on the partition containing /home/test/.openclaw.",
-        path: "/home/test/.openclaw",
+        message: "CRITICAL: only 50 MB free on the partition containing /home/test/.afora.",
+        path: "/home/test/.afora",
         target: "50 MB",
         requirement: "critical-free-space",
         fixHint: expect.stringContaining("avoid data loss"),

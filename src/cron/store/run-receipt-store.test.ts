@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../../state/afora-state-db.js";
 import { setupCronServiceSuite } from "../service.test-harness.js";
 import { saveCronStore } from "../store.js";
 import type { CronJob } from "../types.js";
@@ -42,7 +42,7 @@ function claim(storePath: string, job: CronJob, startedAtMs: number) {
     agentId: job.agentId!,
     startedAtMs,
   });
-  return runOpenClawStateWriteTransaction(({ db }) =>
+  return runAforaStateWriteTransaction(({ db }) =>
     claimCronRunReceiptInDatabase({
       database: db,
       prepared,
@@ -52,7 +52,7 @@ function claim(storePath: string, job: CronJob, startedAtMs: number) {
 }
 
 function receipts(storePath: string, jobId: string) {
-  return openOpenClawStateDatabase()
+  return openAforaStateDatabase()
     .db.prepare(
       `SELECT receipt_id AS receiptId, status, agent_id AS agentId,
               started_at_ms AS startedAtMs, error_text AS error
@@ -74,15 +74,15 @@ describe("cron run receipt store", () => {
     const { storePath } = await makeStorePath();
     const job = makeJob("lazy-lookup");
     await saveCronStore(storePath, { version: 1, jobs: [job] });
-    openOpenClawStateDatabase().db.exec("DROP TABLE cron_run_receipts");
+    openAforaStateDatabase().db.exec("DROP TABLE cron_run_receipts");
 
     expect(
-      runOpenClawStateWriteTransaction(({ db }) =>
+      runAforaStateWriteTransaction(({ db }) =>
         findActiveCronRunReceiptInDatabase({ database: db, storePath, jobId: job.id }),
       ),
     ).toBeUndefined();
     expect(
-      openOpenClawStateDatabase()
+      openAforaStateDatabase()
         .db.prepare(
           "SELECT name FROM sqlite_schema WHERE type = 'table' AND name = 'cron_run_receipts'",
         )
@@ -114,7 +114,7 @@ describe("cron run receipt store", () => {
     const job = makeJob("restart");
     await saveCronStore(storePath, { version: 1, jobs: [job] });
     const abandoned = claim(storePath, job, 200);
-    openOpenClawStateDatabase()
+    openAforaStateDatabase()
       .db.prepare("UPDATE cron_run_receipts SET owner_pid = ? WHERE receipt_id = ?")
       .run(2_147_483_647, abandoned.receiptId);
 

@@ -1,5 +1,5 @@
 // Verifies Claude CLI model diagnostics stay listener-gated and memory-bounded.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   onTrustedInternalDiagnosticEvent,

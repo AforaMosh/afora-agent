@@ -7,7 +7,7 @@ import {
   type ExecutionIdentityAdmissionFacts,
   type ExecutionIdentityAdmissionToken,
 } from "../audit/execution-identity-admission.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   claimAgentRunDelegatedAuthority,
   getAgentRunLifecycleGeneration,
@@ -159,7 +159,7 @@ export function createOperationalRunInstanceRef(runId: string): OperationalRunIn
 
 /** Prepares a system-owned run without selecting its eventual execution runtime early. */
 export function prepareSystemAgentRunAdmission(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   runId: string,
   agentId: string,
   boundary: string,
@@ -180,7 +180,7 @@ export function prepareSystemAgentRunAdmission(
  * authoritative runtime owner is selected immediately before execution.
  */
 export function prepareAgentRunAdmission(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   facts: Omit<ExecutionIdentityAdmissionFacts, "runtime">;
   operationalRunInstance: OperationalRunInstanceRef;
   recovery?: ExecutionIdentityRecoveryAdmission;
@@ -288,7 +288,7 @@ function consumeRecoveryAdmission(params: {
  * Queue loss remains audit loss only; the admitted execution keeps its exact token object.
  */
 function admitPreparedAgentRun(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   facts: ExecutionIdentityAdmissionFacts;
   operationalRunInstance: OperationalRunInstanceRef;
   runtimeInstanceId?: string;

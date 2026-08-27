@@ -5,15 +5,15 @@ import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Worker, type WorkerOptions } from "node:worker_threads";
-import { toStringifiedError } from "@openclaw/normalization-core/error-coercion";
+import { toStringifiedError } from "@afora/normalization-core/error-coercion";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import {
-  openOpenClawAgentDatabase,
-  resolveOpenClawAgentSqlitePath,
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-  type OpenClawAgentDatabaseOptions,
-} from "../../state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  resolveAforaAgentSqlitePath,
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabase,
+  type AforaAgentDatabaseOptions,
+} from "../../state/afora-agent-db.js";
 import type { SessionTranscriptReadScope } from "./session-accessor.sqlite-contract.js";
 import {
   resolveSqliteTranscriptReadScope,
@@ -54,7 +54,7 @@ export type SessionTranscriptReconcileResult = {
   reconciledSessions: number;
 };
 
-type SessionTranscriptReconcileParams = OpenClawAgentDatabaseOptions & {
+type SessionTranscriptReconcileParams = AforaAgentDatabaseOptions & {
   createWorker?: (filename: string | URL, options: WorkerOptions) => Worker;
   preferredSessionId?: string;
 };
@@ -64,8 +64,8 @@ type ActivePreparedProjection = {
   plan: PreparedSessionTranscriptProjectionMetadata;
 };
 
-function reconcileKey(params: OpenClawAgentDatabaseOptions): string {
-  return resolveOpenClawAgentSqlitePath(params);
+function reconcileKey(params: AforaAgentDatabaseOptions): string {
+  return resolveAforaAgentSqlitePath(params);
 }
 
 function resolveSessionTranscriptReconcileWorkerUrl(currentModuleUrl = import.meta.url): URL {
@@ -100,17 +100,17 @@ function continueProjectionWorker(worker: Worker, accepted: boolean): void {
 }
 
 async function runProjectionWrite<T>(
-  databaseOptions: OpenClawAgentDatabaseOptions,
+  databaseOptions: AforaAgentDatabaseOptions,
   operationLabel: string,
-  operation: (database: OpenClawAgentDatabase) => T,
+  operation: (database: AforaAgentDatabase) => T,
 ): Promise<T> {
   return await runExclusiveSqliteSessionWrite(databaseOptions, async () =>
-    runOpenClawAgentWriteTransaction(operation, databaseOptions, { operationLabel }),
+    runAforaAgentWriteTransaction(operation, databaseOptions, { operationLabel }),
   );
 }
 
 async function claimPreparedSessionTranscriptProjection(
-  databaseOptions: OpenClawAgentDatabaseOptions,
+  databaseOptions: AforaAgentDatabaseOptions,
   plan: PreparedSessionTranscriptProjectionMetadata,
 ): Promise<ActivePreparedProjection | undefined> {
   const claimId = nextProjectionClaimId();
@@ -156,7 +156,7 @@ function decodeFtsChunk(chunk: EncodedTranscriptFtsChunk) {
 }
 
 async function appendPreparedProjectionChunk(
-  databaseOptions: OpenClawAgentDatabaseOptions,
+  databaseOptions: AforaAgentDatabaseOptions,
   active: ActivePreparedProjection,
   rows:
     | {
@@ -187,7 +187,7 @@ async function appendPreparedProjectionChunk(
 }
 
 async function finalizePreparedProjection(
-  databaseOptions: OpenClawAgentDatabaseOptions,
+  databaseOptions: AforaAgentDatabaseOptions,
   active: ActivePreparedProjection,
 ): Promise<boolean> {
   return await runProjectionWrite(
@@ -206,8 +206,8 @@ async function finalizePreparedProjection(
 export async function reconcileSessionTranscriptIndexes(
   params: SessionTranscriptReconcileParams,
 ): Promise<SessionTranscriptReconcileResult> {
-  const databasePath = resolveOpenClawAgentSqlitePath(params);
-  const databaseOptions: OpenClawAgentDatabaseOptions = {
+  const databasePath = resolveAforaAgentSqlitePath(params);
+  const databaseOptions: AforaAgentDatabaseOptions = {
     agentId: params.agentId,
     ...(params.env ? { env: params.env } : {}),
     path: databasePath,
@@ -402,14 +402,14 @@ export function startSessionTranscriptIndexReconcile(
 }
 
 export function isSessionTranscriptIndexReconcileRunning(
-  params: OpenClawAgentDatabaseOptions,
+  params: AforaAgentDatabaseOptions,
 ): boolean {
   return runningReconciles.has(reconcileKey(params));
 }
 
 /** Test and maintenance wait hook for an already-scheduled reconcile. */
 export async function waitForSessionTranscriptIndexReconcile(
-  params: OpenClawAgentDatabaseOptions,
+  params: AforaAgentDatabaseOptions,
 ): Promise<void> {
   await runningReconciles.get(reconcileKey(params))?.promise;
 }
@@ -420,7 +420,7 @@ export async function waitForSessionTranscriptProjection(
 ): Promise<void> {
   const resolved = resolveSqliteTranscriptReadScope(scope);
   const databaseOptions = toDatabaseOptions(resolved);
-  const database = openOpenClawAgentDatabase(databaseOptions);
+  const database = openAforaAgentDatabase(databaseOptions);
   while (
     isSessionTranscriptIndexReconcileRunning(databaseOptions) &&
     sessionTranscriptIndexNeedsReconcile(database.db, resolved.sessionId)

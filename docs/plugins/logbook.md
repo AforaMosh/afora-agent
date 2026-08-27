@@ -13,7 +13,7 @@ timestamped observations, and builds timeline cards in the
 [Control UI](/web/control-ui). It can also generate daily standup notes and
 answer questions about a tracked day.
 
-OpenClaw-owned state stays on the Gateway under `<state-dir>/logbook/`, but
+Afora-owned state stays on the Gateway under `<state-dir>/logbook/`, but
 model processing is not necessarily local. Sampled screenshots go to the
 configured vision route; observations and timeline text go to the default
 agent model. Use local model routes for both stages if screen content and
@@ -28,11 +28,11 @@ You need:
 
 - A connected node that exposes `screen.snapshot` or `logbook.snapshot`. The
   macOS app node needs Screen Recording permission. A headless macOS node host
-  (`openclaw node host run`) gets the plugin-provided `logbook.snapshot`
+  (`afora node host run`) gets the plugin-provided `logbook.snapshot`
   command backed by the system `screencapture` tool.
 - The bundled Codex plugin enabled and authenticated. Codex currently provides
   the structured image-extraction contract Logbook requires. Sign in with
-  `openclaw models auth login --provider openai`; see
+  `afora models auth login --provider openai`; see
   [Codex harness](/plugins/codex-harness) for other auth paths.
 - A working default agent model. Logbook uses it to synthesize cards, standup
   notes, and day Q&A after the vision pass.
@@ -42,8 +42,8 @@ You need:
 Enable the Codex and Logbook plugins:
 
 ```bash
-openclaw plugins enable codex
-openclaw plugins enable logbook
+afora plugins enable codex
+afora plugins enable logbook
 ```
 
 Configure an explicit vision model for deterministic startup:
@@ -71,11 +71,11 @@ Gateway after changing plugin configuration, then inspect the registrations
 and open the dashboard:
 
 ```bash
-openclaw gateway restart
-openclaw plugins inspect logbook --runtime --json
-openclaw nodes status --connected
-openclaw nodes describe --node <idOrNameOrIp>
-openclaw dashboard
+afora gateway restart
+afora plugins inspect logbook --runtime --json
+afora nodes status --connected
+afora nodes describe --node <idOrNameOrIp>
+afora dashboard
 ```
 
 The node description must include `screen.snapshot` or `logbook.snapshot`.
@@ -239,7 +239,7 @@ the derived-text methods directly.
 
 Check all three gates:
 
-1. `openclaw plugins list --enabled` includes `logbook`.
+1. `afora plugins list --enabled` includes `logbook`.
 2. The Gateway restarted after the plugin or allowlist change.
 3. The Control UI connection has `operator.write`; read-only sessions do not
    receive the interactive tab descriptor.
@@ -250,9 +250,9 @@ recommended configuration.
 ### Capture reports an error
 
 ```bash
-openclaw nodes status --connected
-openclaw nodes describe --node <idOrNameOrIp>
-openclaw logs --follow
+afora nodes status --connected
+afora nodes describe --node <idOrNameOrIp>
+afora logs --follow
 ```
 
 - Confirm the node exposes `screen.snapshot` or `logbook.snapshot`.

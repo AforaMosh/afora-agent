@@ -8,7 +8,7 @@ scenario:
     primary:
       - channels.streaming-final-reply
   regressionRefs:
-    - openclaw/openclaw#120626
+    - AforaMosh/afora-agent#120626
   objective: Verify Telegram recovers provider failures in one logical message whether or not a streaming preview became visible.
   successCriteria:
     - A visible partial is retained and the terminal recovery edits the same Telegram message.
@@ -58,7 +58,7 @@ flow:
             conversation: { id: telegram-partial-failure-room, kind: group }
             senderId: qa-telegram-recovery-operator
             senderName: Telegram Recovery Operator
-            text: "@openclaw Telegram visible partial failure QA check"
+            text: "@afora Telegram visible partial failure QA check"
         - waitForOutbound:
             conversation: { id: telegram-partial-failure-room, kind: group }
             sinceIndex: { ref: visibleOutboundStart }
@@ -89,7 +89,7 @@ flow:
             conversation: { id: telegram-partial-failure-room, kind: group }
             senderId: qa-telegram-recovery-operator
             senderName: Telegram Recovery Operator
-            text: "@openclaw Telegram unsent failure QA check"
+            text: "@afora Telegram unsent failure QA check"
         - waitForOutbound:
             conversation: { id: telegram-partial-failure-room, kind: group }
             sinceIndex: { ref: unsentOutboundStart }

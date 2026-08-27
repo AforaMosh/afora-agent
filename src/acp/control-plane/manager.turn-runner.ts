@@ -1,6 +1,6 @@
 /** Runs ACP turns, failover, timeout cleanup, and detached-task progress mirroring. */
-import type { AcpRuntime, AcpRuntimeHandle } from "@openclaw/acp-core/runtime/types";
-import { expectDefined } from "@openclaw/normalization-core";
+import type { AcpRuntime, AcpRuntimeHandle } from "@afora/acp-core/runtime/types";
+import { expectDefined } from "@afora/normalization-core";
 import { logVerbose } from "../../globals.js";
 import {
   recordSessionHumanDirectMessage,

@@ -9,15 +9,15 @@ import type {
   PluginApprovalExpiredView,
   PluginApprovalPendingView,
   PluginApprovalResolvedView,
-} from "openclaw/plugin-sdk/approval-handler-runtime";
-import { createChannelApprovalNativeRuntimeAdapter } from "openclaw/plugin-sdk/approval-handler-runtime";
-import type { ExecApprovalActionDescriptor } from "openclaw/plugin-sdk/approval-reply-runtime";
+} from "afora-agent/plugin-sdk/approval-handler-runtime";
+import { createChannelApprovalNativeRuntimeAdapter } from "afora-agent/plugin-sdk/approval-handler-runtime";
+import type { ExecApprovalActionDescriptor } from "afora-agent/plugin-sdk/approval-reply-runtime";
 import type {
   DiscordExecApprovalConfig,
-  OpenClawConfig,
-} from "openclaw/plugin-sdk/config-contracts";
-import { logDebug, logError } from "openclaw/plugin-sdk/logging-core";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+  AforaConfig,
+} from "afora-agent/plugin-sdk/config-contracts";
+import { logDebug, logError } from "afora-agent/plugin-sdk/logging-core";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { buildExecApprovalCustomId } from "./approval-custom-id.js";
 import {
   DISCORD_APPROVAL_ALLOWED_MENTIONS,
@@ -78,7 +78,7 @@ function resolveHandlerContext(params: ChannelApprovalCapabilityHandlerContext):
 
 class ExecApprovalContainer extends DiscordUiContainer {
   constructor(params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId: string;
     title: string;
     description?: string;
@@ -245,7 +245,7 @@ function resolveCommandPreviews(
 
 function createExecApprovalRequestContainer(params: {
   view: ExecApprovalPendingView;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   actionRow?: Row<Button>;
 }): ExecApprovalContainer {
@@ -273,7 +273,7 @@ function createExecApprovalRequestContainer(params: {
 
 function createPluginApprovalRequestContainer(params: {
   view: PluginApprovalPendingView;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   actionRow?: Row<Button>;
 }): ExecApprovalContainer {
@@ -297,7 +297,7 @@ function createPluginApprovalRequestContainer(params: {
 
 function createExecResolvedContainer(params: {
   view: ExecApprovalResolvedView;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
 }): ExecApprovalContainer {
   const { commandPreview, commandSecondaryPreview } = resolveCommandPreviews(
@@ -336,7 +336,7 @@ function createExecResolvedContainer(params: {
 
 function createPluginResolvedContainer(params: {
   view: PluginApprovalResolvedView;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
 }): ExecApprovalContainer {
   const decisionLabel =
@@ -369,7 +369,7 @@ function createPluginResolvedContainer(params: {
 
 function createExecExpiredContainer(params: {
   view: ExecApprovalExpiredView;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
 }): ExecApprovalContainer {
   const { commandPreview, commandSecondaryPreview } = resolveCommandPreviews(
@@ -393,7 +393,7 @@ function createExecExpiredContainer(params: {
 
 function createPluginExpiredContainer(params: {
   view: PluginApprovalExpiredView;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
 }): ExecApprovalContainer {
   return new ExecApprovalContainer({
@@ -410,7 +410,7 @@ function createPluginExpiredContainer(params: {
 }
 
 async function updateMessage(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   token: string;
   channelId: string;
@@ -437,7 +437,7 @@ async function updateMessage(params: {
 }
 
 async function finalizeMessage(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   token: string;
   cleanupAfterResolve?: boolean;

@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
@@ -8,7 +8,7 @@ import {
 import { migrateLegacyJsonState } from "./state-migrations.runtime-state.js";
 import type { LegacyStateDetection, MigrationMessages } from "./state-migrations.types.js";
 
-type LegacyUpdateCheckImportDatabase = Pick<OpenClawStateKyselyDatabase, "update_check_state">;
+type LegacyUpdateCheckImportDatabase = Pick<AforaStateKyselyDatabase, "update_check_state">;
 
 const UPDATE_CHECK_STATE_KEY = "default";
 const UPDATE_CHECK_STATE_FIELDS = [

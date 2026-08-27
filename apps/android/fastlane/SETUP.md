@@ -1,4 +1,4 @@
-# fastlane setup (OpenClaw Android)
+# fastlane setup (Afora Android)
 
 Install:
 
@@ -6,7 +6,7 @@ Install:
 brew install fastlane
 ```
 
-Create a Google Play service account JSON key with Google Play Developer API access, then grant that service account access to the OpenClaw app in Play Console.
+Create a Google Play service account JSON key with Google Play Developer API access, then grant that service account access to the Afora app in Play Console.
 
 Recommended local auth:
 
@@ -17,7 +17,7 @@ GOOGLE_PLAY_JSON_KEY=/absolute/path/to/google-play-service-account.json
 Optional app targeting:
 
 ```bash
-GOOGLE_PLAY_PACKAGE_NAME=ai.openclaw.app
+GOOGLE_PLAY_PACKAGE_NAME=ai.afora.app
 ```
 
 Android release signing uses the same private `apps-signing` repository and `MATCH_PASSWORD` secret as iOS, but with Android-specific encrypted assets. Pull the shared upload key before release validation:
@@ -34,17 +34,17 @@ For the first setup or rotation, provide the Play upload keystore and a local si
 
 ```bash
 MATCH_PASSWORD=<signing repo password> \
-OPENCLAW_ANDROID_UPLOAD_KEYSTORE=<path-to-upload-keystore.jks> \
-OPENCLAW_ANDROID_SIGNING_PROPERTIES=<path-to-android-signing.properties> \
+AFORA_ANDROID_UPLOAD_KEYSTORE=<path-to-upload-keystore.jks> \
+AFORA_ANDROID_SIGNING_PROPERTIES=<path-to-android-signing.properties> \
 pnpm android:release:signing:sync:push
 ```
 
 The source signing properties file must contain:
 
 ```properties
-OPENCLAW_ANDROID_STORE_PASSWORD=<store-password>
-OPENCLAW_ANDROID_KEY_ALIAS=<upload-key-alias>
-OPENCLAW_ANDROID_KEY_PASSWORD=<key-password>
+AFORA_ANDROID_STORE_PASSWORD=<store-password>
+AFORA_ANDROID_KEY_ALIAS=<upload-key-alias>
+AFORA_ANDROID_KEY_PASSWORD=<key-password>
 ```
 
 Store the Google Play upload key, not the irreplaceable app signing key, when Play App Signing is enabled.
@@ -117,7 +117,7 @@ Release rules:
   to the matching `phoneScreenshots` and `wearScreenshots` metadata folders.
 - `pnpm android:release:archive` builds the signed phone Play AAB, Wear AAB, and third-party APK into `apps/android/build/release-artifacts/`.
 - `pnpm android:release:upload` commits the phone AAB, Wear AAB, metadata, and screenshots in one Google Play edit across the configured phone and `wear:` form-factor tracks. The default tracks are `internal` and `wear:internal`.
-- Stable GitHub Release APK publication is separate from Google Play: `OpenClaw Release Publish` dispatches `.github/workflows/android-release.yml`, whose protected `android-release` environment provides `MATCH_PASSWORD`; the repository GitHub App reads the encrypted signing repo.
+- Stable GitHub Release APK publication is separate from Google Play: `Afora Release Publish` dispatches `.github/workflows/android-release.yml`, whose protected `android-release` environment provides `MATCH_PASSWORD`; the repository GitHub App reads the encrypted signing repo.
 - Production promotion remains manual in Google Play Console.
 - If `pnpm android:release:upload` fails, agent-driven releases must stop and report the failing step. Do not fall back to `pnpm android:release:archive`, `pnpm android:release:metadata`, direct Fastlane lanes, Gradle release artifacts plus Google Play upload commands, or mobile release ref recording.
 

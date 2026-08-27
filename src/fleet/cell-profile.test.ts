@@ -24,13 +24,13 @@ import {
 } from "./cell-profile.js";
 
 const FLEET_BASE_PORT = 19_100;
-const FLEET_CONTAINER_STATE_DIR = "/home/node/.openclaw";
-const FLEET_CONTAINER_AUTH_SECRET_DIR = "/home/node/.config/openclaw";
-const TEST_ENVIRONMENT_FILE = "/tmp/openclaw-fleet-env/cell.env";
+const FLEET_CONTAINER_STATE_DIR = "/home/node/.afora";
+const FLEET_CONTAINER_AUTH_SECRET_DIR = "/home/node/.config/afora";
+const TEST_ENVIRONMENT_FILE = "/tmp/afora-fleet-env/cell.env";
 
 function makeProfile(overrides: Partial<CellContainerProfile> = {}): CellContainerProfile {
   const tenantId = overrides.tenantId ?? "acme";
-  const dataDir = overrides.dataDir ?? "/tmp/openclaw/fleet/cells/acme";
+  const dataDir = overrides.dataDir ?? "/tmp/afora/fleet/cells/acme";
   return {
     tenantId,
     containerName: overrides.containerName ?? cellContainerName(tenantId),
@@ -39,7 +39,7 @@ function makeProfile(overrides: Partial<CellContainerProfile> = {}): CellContain
     runtime: "docker",
     hostPort: FLEET_BASE_PORT,
     dataDir,
-    authSecretDir: overrides.authSecretDir ?? "/tmp/openclaw/fleet/auth-profile-secrets/acme",
+    authSecretDir: overrides.authSecretDir ?? "/tmp/afora/fleet/auth-profile-secrets/acme",
     ownerId: overrides.ownerId ?? cellOwnerId(dataDir),
     attemptId: overrides.attemptId ?? "11111111111111111111111111111111",
     memory: "2g",
@@ -81,13 +81,13 @@ describe("fleet tenant ids", () => {
   });
 
   it("derives stable container and data paths", () => {
-    expect(cellContainerName("acme-2")).toBe("openclaw-cell-acme-2");
-    expect(cellNetworkName("acme-2")).toBe("openclaw-cell-acme-2-net");
-    expect(cellDataDir("/srv/openclaw", "acme-2")).toBe(
-      path.join("/srv/openclaw", "fleet", "cells", "acme-2"),
+    expect(cellContainerName("acme-2")).toBe("afora-cell-acme-2");
+    expect(cellNetworkName("acme-2")).toBe("afora-cell-acme-2-net");
+    expect(cellDataDir("/srv/afora", "acme-2")).toBe(
+      path.join("/srv/afora", "fleet", "cells", "acme-2"),
     );
-    expect(cellAuthSecretDir("/srv/openclaw", "acme-2")).toBe(
-      path.join("/srv/openclaw", "fleet", "auth-profile-secrets", "acme-2"),
+    expect(cellAuthSecretDir("/srv/afora", "acme-2")).toBe(
+      path.join("/srv/afora", "fleet", "auth-profile-secrets", "acme-2"),
     );
   });
 });
@@ -112,8 +112,8 @@ describe("fleet port allocation", () => {
 
 describe("fleet image references", () => {
   it("normalizes valid references and rejects option-like values", () => {
-    expect(validateFleetImage(" ghcr.io/openclaw/openclaw:v1 ")).toBe(
-      "ghcr.io/openclaw/openclaw:v1",
+    expect(validateFleetImage(" ghcr.io/AforaMosh/afora-agent:v1 ")).toBe(
+      "ghcr.io/AforaMosh/afora-agent:v1",
     );
     expect(() => validateFleetImage("--help")).toThrow(/must not begin/iu);
     expect(() => validateFleetImage(" ")).toThrow(/must not be empty/iu);
@@ -139,9 +139,9 @@ describe("fleet disk limits", () => {
     const withoutDisk = buildCellRunArgs(makeProfile(), { environmentFile: TEST_ENVIRONMENT_FILE });
     expectOption(withDisk, "--storage-opt", "size=10g");
     expect(withDisk.indexOf("--storage-opt")).toBe(withDisk.indexOf("--cpus") + 2);
-    expect(withDisk).toContain("openclaw.fleet.disk-limit=10g");
+    expect(withDisk).toContain("afora.fleet.disk-limit=10g");
     expect(withoutDisk).not.toContain("--storage-opt");
-    expect(withoutDisk.join(" ")).not.toContain("openclaw.fleet.disk-limit");
+    expect(withoutDisk.join(" ")).not.toContain("afora.fleet.disk-limit");
   });
 });
 
@@ -166,11 +166,11 @@ describe("fleet cell environment", () => {
 
   it.each([
     "HOME",
-    "OPENCLAW_HOME",
-    "OPENCLAW_STATE_DIR",
-    "OPENCLAW_CONFIG_PATH",
-    "OPENCLAW_WORKSPACE_DIR",
-    "OPENCLAW_GATEWAY_TOKEN",
+    "AFORA_HOME",
+    "AFORA_STATE_DIR",
+    "AFORA_CONFIG_PATH",
+    "AFORA_WORKSPACE_DIR",
+    "AFORA_GATEWAY_TOKEN",
   ])("rejects reserved variable %s", (key) => {
     expect(() => parseEnvAssignments([`${key}=override`])).toThrow(/fleet-managed/i);
   });
@@ -178,11 +178,11 @@ describe("fleet cell environment", () => {
   it("pins the documented container paths and token", () => {
     expect(buildCellEnvironment("secret", { REGION: "west" })).toEqual({
       HOME: "/home/node",
-      OPENCLAW_HOME: "/home/node",
-      OPENCLAW_STATE_DIR: FLEET_CONTAINER_STATE_DIR,
-      OPENCLAW_CONFIG_PATH: `${FLEET_CONTAINER_STATE_DIR}/openclaw.json`,
-      OPENCLAW_WORKSPACE_DIR: `${FLEET_CONTAINER_STATE_DIR}/workspace`,
-      OPENCLAW_GATEWAY_TOKEN: "secret",
+      AFORA_HOME: "/home/node",
+      AFORA_STATE_DIR: FLEET_CONTAINER_STATE_DIR,
+      AFORA_CONFIG_PATH: `${FLEET_CONTAINER_STATE_DIR}/afora.json`,
+      AFORA_WORKSPACE_DIR: `${FLEET_CONTAINER_STATE_DIR}/workspace`,
+      AFORA_GATEWAY_TOKEN: "secret",
       REGION: "west",
     });
   });
@@ -201,7 +201,7 @@ describe("fleet container arguments", () => {
     const args = buildCellRunArgs(profile, { environmentFile: TEST_ENVIRONMENT_FILE });
 
     expect(args.slice(0, 2)).toEqual(["run", "-d"]);
-    expectOption(args, "--name", "openclaw-cell-acme");
+    expectOption(args, "--name", "afora-cell-acme");
     expectOption(args, "--label", `${FLEET_TENANT_LABEL}=acme`);
     expect(args).toContain(`${FLEET_OWNER_LABEL}=${cellOwnerId(profile.dataDir)}`);
     expect(args).toContain(`${FLEET_ATTEMPT_LABEL}=${profile.attemptId}`);
@@ -213,7 +213,7 @@ describe("fleet container arguments", () => {
     expectOption(args, "--memory", "2g");
     expectOption(args, "--cpus", "2");
     expectOption(args, "--restart", "unless-stopped");
-    expectOption(args, "--network", "openclaw-cell-acme-net");
+    expectOption(args, "--network", "afora-cell-acme-net");
     expectOption(args, "-p", `127.0.0.1:${FLEET_BASE_PORT}:${FLEET_GATEWAY_PORT}`);
     expect(args).toContain(`${profile.dataDir}:${FLEET_CONTAINER_STATE_DIR}`);
     expect(args).toContain(`${profile.authSecretDir}:${FLEET_CONTAINER_AUTH_SECRET_DIR}`);
@@ -292,7 +292,7 @@ describe("fleet container arguments", () => {
       expect(rendered).not.toContain("docker.sock");
       expect(args).not.toContain("--privileged");
       expect(args).not.toContain("--network=host");
-      expectOption(args, "--network", "openclaw-cell-acme-net");
+      expectOption(args, "--network", "afora-cell-acme-net");
       expect(args[args.indexOf("--network") + 1]).not.toBe("host");
       expect(rendered).not.toContain("--cap-add");
       expect(rendered).not.toContain("0.0.0.0");

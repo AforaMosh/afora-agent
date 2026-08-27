@@ -1,7 +1,7 @@
 import { Buffer } from "node:buffer";
 import { createHash } from "node:crypto";
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import type { ProviderWrapStreamFnContext } from "openclaw/plugin-sdk/plugin-entry";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import type { ProviderWrapStreamFnContext } from "afora-agent/plugin-sdk/plugin-entry";
 import { prepareClawRouterRequestModel } from "./provider-catalog.js";
 
 const ENV_API_KEY_MARKER = "CLAWROUTER_API_KEY";
@@ -118,7 +118,7 @@ function withClawRouterHeaders(
       next[name] = value;
     }
   }
-  setHeaderDefault(next, CLIENT_HEADER, "openclaw");
+  setHeaderDefault(next, CLIENT_HEADER, "afora");
   setHeaderDefault(next, AGENT_HEADER, sanitizeBoundedId(params.agentId, ATTRIBUTION_ID_POLICY));
   setHeaderDefault(
     next,

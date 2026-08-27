@@ -7,7 +7,7 @@ import { t } from "../i18n/index.ts";
 import { showToast } from "../lib/toast.ts";
 import { getSafeSessionStorage } from "../local-storage.ts";
 
-const UPDATE_SUCCESS_NOTICE_KEY = "openclaw:control-ui:update-succeeded:v1";
+const UPDATE_SUCCESS_NOTICE_KEY = "afora:control-ui:update-succeeded:v1";
 
 type UpdateInstallIdentity = { version: string | null; sha: string | null };
 

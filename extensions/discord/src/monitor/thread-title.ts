@@ -1,8 +1,8 @@
 // Discord plugin module implements thread title behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { generateConversationLabel } from "openclaw/plugin-sdk/reply-dispatch-runtime";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { generateConversationLabel } from "afora-agent/plugin-sdk/reply-dispatch-runtime";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 
 const DEFAULT_THREAD_TITLE_TIMEOUT_MS = 60_000;
 const MAX_THREAD_TITLE_SOURCE_CHARS = 600;
@@ -12,7 +12,7 @@ const DISCORD_THREAD_TITLE_SYSTEM_PROMPT =
   "Generate a concise Discord thread title (3-6 words) in sentence case: capitalize only the first word and words that are always capitalized. Return only the title. Use channel context when provided and avoid redundant channel-name words unless needed for clarity.";
 
 export async function generateThreadTitle(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   messageText: string;
   modelRef?: string;

@@ -1,11 +1,11 @@
 // Policy plugin data, secret, and auth evidence.
-import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
-import { coerceSecretRef } from "openclaw/plugin-sdk/secret-input";
+import { normalizeAgentId } from "afora-agent/plugin-sdk/routing";
+import { coerceSecretRef } from "afora-agent/plugin-sdk/secret-input";
 import {
   asBoolean as readBoolean,
   asNonArrayRecord,
   isRecord,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { ocPathSegment } from "./policy-state-helpers.js";
 import type {
   PolicyAuthProfileEvidence,
@@ -37,7 +37,7 @@ export function scanPolicyAuthProfiles(
         mode?: string;
       } = {
         id,
-        source: `oc://openclaw.config/auth/profiles/${ocPathSegment(id)}`,
+        source: `oc://afora.config/auth/profiles/${ocPathSegment(id)}`,
         validMetadata: isValidAuthProfileMetadata(value),
       };
       if (isRecord(value)) {
@@ -58,11 +58,11 @@ export function scanPolicyDataHandling(
   const entries: PolicyDataHandlingEvidence[] = [];
   // Redaction has no config surface: src/logging/redact.ts always redacts. This invariant
   // record is how dataHandling.sensitiveLogging.requireRedaction reports as satisfied in
-  // `openclaw policy check` evidence and the attestation, since no doctor check can fail.
+  // `afora policy check` evidence and the attestation, since no doctor check can fail.
   entries.push({
     id: "logging-redaction",
     kind: "sensitiveLoggingRedaction",
-    source: "oc://openclaw.invariant/logging/redaction",
+    source: "oc://afora.invariant/logging/redaction",
     scope: "global",
     value: true,
     explicit: true,
@@ -82,7 +82,7 @@ export function scanPolicyDataHandling(
   entries.push({
     id: "diagnostics-otel-content-capture",
     kind: "telemetryContentCapture",
-    source: "oc://openclaw.config/diagnostics/otel/captureContent",
+    source: "oc://afora.config/diagnostics/otel/captureContent",
     scope: "global",
     value: captureContent,
     explicit: otel.captureContent !== undefined,
@@ -94,7 +94,7 @@ export function scanPolicyDataHandling(
   entries.push({
     id: "session-maintenance-mode",
     kind: "sessionRetentionMode",
-    source: "oc://openclaw.config/session/maintenance/mode",
+    source: "oc://afora.config/session/maintenance/mode",
     scope: "global",
     value: retentionMode,
     explicit: maintenance.mode !== undefined,
@@ -147,8 +147,8 @@ function pushMemorySessionTranscriptIndexing(
       source:
         readBoolean(defaultsMemorySearch.rememberAcrossConversations) === undefined &&
         readBoolean(defaultExperimental.sessionMemory) !== undefined
-          ? "oc://openclaw.config/memory/search/experimental/sessionMemory"
-          : "oc://openclaw.config/memory/search/rememberAcrossConversations",
+          ? "oc://afora.config/memory/search/experimental/sessionMemory"
+          : "oc://afora.config/memory/search/rememberAcrossConversations",
       scope: "global",
       value: defaultSessionMemory,
       explicit: true,
@@ -205,9 +205,9 @@ function pushMemorySessionTranscriptIndexing(
       source: explicit
         ? readBoolean(memorySearch?.rememberAcrossConversations) === undefined &&
           readBoolean(experimental.sessionMemory) !== undefined
-          ? `oc://openclaw.config/agents/${container}/${pathSegment}/memory/search/experimental/sessionMemory`
-          : `oc://openclaw.config/agents/${container}/${pathSegment}/memory/search/rememberAcrossConversations`
-        : "oc://openclaw.config/memory/search/rememberAcrossConversations",
+          ? `oc://afora.config/agents/${container}/${pathSegment}/memory/search/experimental/sessionMemory`
+          : `oc://afora.config/agents/${container}/${pathSegment}/memory/search/rememberAcrossConversations`
+        : "oc://afora.config/memory/search/rememberAcrossConversations",
       scope: "agent",
       agentId: normalizeAgentId(agentId),
       value: agentSessionMemory,
@@ -288,7 +288,7 @@ function scanPolicySecretProviders(cfg: Record<string, unknown>): readonly Polic
     } = {
       id,
       kind: "provider",
-      source: `oc://openclaw.config/secrets/providers/${ocPathSegment(id)}`,
+      source: `oc://afora.config/secrets/providers/${ocPathSegment(id)}`,
     };
     if (isRecord(value) && typeof value.source === "string") {
       entry.providerSource = value.source;
@@ -343,7 +343,7 @@ function collectSecretInputs(
 }
 
 function configPathSource(path: readonly string[]): string {
-  return `oc://openclaw.config/${path.map(ocPathSegment).join("/")}`;
+  return `oc://afora.config/${path.map(ocPathSegment).join("/")}`;
 }
 
 function isSecretInputPath(path: readonly string[]): boolean {

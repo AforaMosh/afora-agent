@@ -11,10 +11,10 @@ import {
   resolveGatewayWindowsTaskName,
 } from "../daemon/constants.js";
 import { forceKillChildProcessTree } from "../process/child-process-tree.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import { resolveNodeSqliteLocation } from "./node-sqlite.js";
 import { SUPERVISOR_HINT_ENV_VARS, type RespawnSupervisor } from "./supervisor-markers.js";
-import { resolvePreferredOpenClawTmpDir } from "./tmp-openclaw-dir.js";
+import { resolvePreferredAforaTmpDir } from "./tmp-afora-dir.js";
 import type { UpdateChannel } from "./update-channels.js";
 import {
   CONTROL_PLANE_UPDATE_SENTINEL_META_ENV,
@@ -29,14 +29,14 @@ import type { UpdateRestartSentinelMeta } from "./update-restart-sentinel-payloa
 // bounded shutdown phase. Keep the helper alive through both phases. (#99666)
 const PARENT_EXIT_SHUTDOWN_RESERVE_MS = 30_000;
 const HANDOFF_READY_TIMEOUT_MS = 30_000;
-const HANDOFF_READY_MARKER = "OPENCLAW_UPDATE_HANDOFF_READY\n";
+const HANDOFF_READY_MARKER = "AFORA_UPDATE_HANDOFF_READY\n";
 const HANDOFF_BUSY_MARKER = "HANDOFF_BUSY ";
 const HANDOFF_STATE_DATABASE_BUSY_TIMEOUT_MS = 5_000;
 const SYSTEMD_RUN_CANDIDATE_PATHS = ["/usr/bin/systemd-run", "/bin/systemd-run"] as const;
 const SERVICE_IDENTITY_ENV_VARS = new Set<string>([
-  "OPENCLAW_LAUNCHD_LABEL",
-  "OPENCLAW_SYSTEMD_UNIT",
-  "OPENCLAW_WINDOWS_TASK_NAME",
+  "AFORA_LAUNCHD_LABEL",
+  "AFORA_SYSTEMD_UNIT",
+  "AFORA_WINDOWS_TASK_NAME",
 ] as const);
 type HandoffChild = ChildProcess & { stdout: NonNullable<ChildProcess["stdout"]> };
 type HandoffReadiness = { status: "ready" } | { status: "joined"; handoffId?: string };
@@ -333,11 +333,11 @@ function assertStateDatabaseWriteAllowed(database) {
     ) {
       throw new Error("shared-state ownership metadata is malformed");
     }
-    if ((process.env.OPENCLAW_SUPERVISOR_MODE || "").trim().toLowerCase() !== "external") {
+    if ((process.env.AFORA_SUPERVISOR_MODE || "").trim().toLowerCase() !== "external") {
       throw new Error(
         "shared state is externally supervised by " +
           value.managerId +
-          "; use that external supervisor with OPENCLAW_SUPERVISOR_MODE=external",
+          "; use that external supervisor with AFORA_SUPERVISOR_MODE=external",
       );
     }
   } finally {
@@ -1122,7 +1122,7 @@ function resolveUpdateCliArgv(params: {
   if (execPath && !isNodeLikeRuntime(execPath)) {
     return [execPath, ...updateArgs];
   }
-  return ["openclaw", ...updateArgs];
+  return ["afora", ...updateArgs];
 }
 
 export function formatManagedServiceUpdateCommand(params?: {
@@ -1130,7 +1130,7 @@ export function formatManagedServiceUpdateCommand(params?: {
   channel?: UpdateChannel;
   tag?: string;
 }): string {
-  const args = ["openclaw", "update", "--yes"];
+  const args = ["afora", "update", "--yes"];
   if (params?.channel) {
     args.push("--channel", params.channel);
   }
@@ -1153,17 +1153,17 @@ function resolveGatewayServiceRecovery(
   env: NodeJS.ProcessEnv,
 ): GatewayServiceRecovery | undefined {
   if (supervisor === "systemd") {
-    const override = env.OPENCLAW_SYSTEMD_UNIT?.trim();
+    const override = env.AFORA_SYSTEMD_UNIT?.trim();
     const unit = override
       ? override.endsWith(".service")
         ? override
         : `${override}.service`
-      : `${resolveGatewaySystemdServiceName(env.OPENCLAW_PROFILE)}.service`;
+      : `${resolveGatewaySystemdServiceName(env.AFORA_PROFILE)}.service`;
     return { kind: "systemd", unit };
   }
   if (supervisor === "launchd") {
     const label =
-      env.OPENCLAW_LAUNCHD_LABEL?.trim() || resolveGatewayLaunchAgentLabel(env.OPENCLAW_PROFILE);
+      env.AFORA_LAUNCHD_LABEL?.trim() || resolveGatewayLaunchAgentLabel(env.AFORA_PROFILE);
     const uid = typeof process.getuid === "function" ? process.getuid() : 501;
     const home = env.HOME?.trim() || os.homedir();
     return {
@@ -1175,7 +1175,7 @@ function resolveGatewayServiceRecovery(
   }
   if (supervisor === "schtasks") {
     const taskName =
-      env.OPENCLAW_WINDOWS_TASK_NAME?.trim() || resolveGatewayWindowsTaskName(env.OPENCLAW_PROFILE);
+      env.AFORA_WINDOWS_TASK_NAME?.trim() || resolveGatewayWindowsTaskName(env.AFORA_PROFILE);
     return { kind: "schtasks", taskName };
   }
   return undefined;
@@ -1211,7 +1211,7 @@ async function resolveManagedServiceHandoffCwd(root: string): Promise<string> {
 }
 
 function resolveManagedUpdateLeaseDatabasePath(): string {
-  return path.join(resolvePreferredOpenClawTmpDir(), "managed-update-handoffs.sqlite");
+  return path.join(resolvePreferredAforaTmpDir(), "managed-update-handoffs.sqlite");
 }
 
 async function resolveExecutableOnPath(
@@ -1253,7 +1253,7 @@ function buildSystemdHandoffUnitName(handoffId: string | undefined): string {
     sanitizeSystemdUnitFragment(handoffId) ||
     sanitizeSystemdUnitFragment(`${process.pid}-${Date.now()}`) ||
     "handoff";
-  return `openclaw-update-${suffix}.scope`;
+  return `afora-update-${suffix}.scope`;
 }
 
 async function waitForHandoffReady(child: HandoffChild): Promise<HandoffReadiness> {
@@ -1365,7 +1365,7 @@ async function resolveHandoffSpawn(params: {
   );
   if (!systemdRunPath) {
     throw new Error(
-      "systemd-run is required to start the managed update handoff outside openclaw-gateway.service",
+      "systemd-run is required to start the managed update handoff outside afora-gateway.service",
     );
   }
 
@@ -1412,7 +1412,7 @@ async function spawnManagedServiceUpdateHandoff(
     version: 1,
     meta: { ...params.meta, root: rootIdentity },
   };
-  const stateDatabasePath = resolveOpenClawStateSqlitePath(params.env ?? process.env);
+  const stateDatabasePath = resolveAforaStateSqlitePath(params.env ?? process.env);
   const helperParams = {
     parentPid: params.parentPid ?? process.pid,
     // An undefined drain timeout is the configured indefinite-wait contract.
@@ -1458,7 +1458,7 @@ async function spawnManagedServiceUpdateHandoff(
     const childEnv = {
       ...stripSupervisorHintEnv(params.env ?? process.env),
       [CONTROL_PLANE_UPDATE_SENTINEL_META_ENV]: metaPath,
-      OPENCLAW_UPDATE_RUN_HANDOFF: "1",
+      AFORA_UPDATE_RUN_HANDOFF: "1",
     };
     const env = params.devTarget ? applyDevUpdateTargetEnv(childEnv, params.devTarget) : childEnv;
     const spawnTarget = await resolveHandoffSpawn({
@@ -1520,7 +1520,7 @@ export async function startManagedServiceUpdateHandoff(
 
 export function buildManagedServiceHandoffUnavailableMessage(command: string): string {
   return [
-    "OpenClaw updates cannot safely run inside the live gateway process without a managed-service handoff.",
+    "Afora updates cannot safely run inside the live gateway process without a managed-service handoff.",
     `Run \`${command}\` from a shell outside the gateway service, or restart/update from the host UI.`,
   ].join("\n");
 }

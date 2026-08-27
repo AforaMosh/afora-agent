@@ -7,26 +7,26 @@ import {
 } from "../config/sessions/session-accessor.js";
 import * as activeTranscriptEvents from "../config/sessions/session-accessor.sqlite-active-events.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { defaultSessionCompanionContextReader } from "./session-companion-context.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   vi.unstubAllEnvs();
 });
 
 function createScope(prefix: string) {
   const stateDir = tempDirs.make(prefix);
-  vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+  vi.stubEnv("AFORA_STATE_DIR", stateDir);
   return {
     agentId: "main",
-    env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+    env: { ...process.env, AFORA_STATE_DIR: stateDir },
     sessionId: `${prefix}-session`,
     sessionKey: `agent:main:${prefix}`,
   };
@@ -66,7 +66,7 @@ describe("session companion context", () => {
     }));
     await persistSessionTranscriptTurn(scope, { messages, touchSessionEntry: true });
 
-    const database = openOpenClawAgentDatabase({ agentId: scope.agentId, env: scope.env });
+    const database = openAforaAgentDatabase({ agentId: scope.agentId, env: scope.env });
     database.db
       .prepare("UPDATE transcript_events SET event_json = '{' WHERE session_id = ? AND seq = 1")
       .run(scope.sessionId);
@@ -338,7 +338,7 @@ describe("session companion context", () => {
       ],
       touchSessionEntry: true,
     });
-    const database = openOpenClawAgentDatabase({ agentId: scope.agentId, env: scope.env });
+    const database = openAforaAgentDatabase({ agentId: scope.agentId, env: scope.env });
     database.db
       .prepare("UPDATE session_transcript_index_state SET needs_rebuild = 1 WHERE session_id = ?")
       .run(scope.sessionId);

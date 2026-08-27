@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolveStateDir } from "openclaw/plugin-sdk/state-paths";
+import { resolveStateDir } from "afora-agent/plugin-sdk/state-paths";
 import {
   assertOwnedPath,
   chromeProductRoots,
@@ -20,16 +20,16 @@ import {
 } from "./extension-install-layout.js";
 import { BROWSER_NATIVE_HOST_NAME } from "./extension-native-host.js";
 
-const OWNED_LAUNCHER_MARKER = "# OpenClaw native messaging bootstrap v1";
+const OWNED_LAUNCHER_MARKER = "# Afora native messaging bootstrap v1";
 const BROWSER_EXTENSION_INSTALL_WAIT_DEFAULT_MS = 30_000;
 const BROWSER_EXTENSION_INSTALL_WAIT_MIN_MS = 1_000;
 const BROWSER_EXTENSION_INSTALL_WAIT_MAX_MS = 120_000;
-const NATIVE_HOST_DESCRIPTION = "OpenClaw browser extension bootstrap";
+const NATIVE_HOST_DESCRIPTION = "Afora browser extension bootstrap";
 // Chrome authorizes native messaging by extension ID. This trust grant intentionally
 // includes user-loaded unpacked builds that preserve the Store ID; those builds must be trusted.
-// The ID is never proof that an arbitrary extension path is OpenClaw-owned.
+// The ID is never proof that an arbitrary extension path is Afora-owned.
 const FOUNDATION_CHROME_WEB_STORE_EXTENSION_ID = "kcdjddhmeafeomebliikmbpblkmkfoig";
-export const FOUNDATION_CHROME_WEB_STORE_URL = `https://chromewebstore.google.com/detail/openclaw/${FOUNDATION_CHROME_WEB_STORE_EXTENSION_ID}`;
+export const FOUNDATION_CHROME_WEB_STORE_URL = `https://chromewebstore.google.com/detail/afora/${FOUNDATION_CHROME_WEB_STORE_EXTENSION_ID}`;
 
 type NativeHostRegistrationStatus = {
   product: ChromeProduct;
@@ -63,8 +63,8 @@ function resolveInstallStateDir(deps: ExtensionInstallDeps): string {
 
 function resolveInstallConfigPath(deps: ExtensionInstallDeps): string | undefined {
   const env = deps.env ?? process.env;
-  const explicit = env.OPENCLAW_CONFIG_PATH?.trim();
-  return explicit ? resolveStateDir({ ...env, OPENCLAW_STATE_DIR: explicit }) : undefined;
+  const explicit = env.AFORA_CONFIG_PATH?.trim();
+  return explicit ? resolveStateDir({ ...env, AFORA_STATE_DIR: explicit }) : undefined;
 }
 
 function shellQuote(value: string): string {
@@ -156,7 +156,7 @@ function launcherMatchesOrigins(params: {
     ]),
   ].join(" ");
   const pattern = new RegExp(
-    `^#!/bin/sh\\n${escapeRegExp(OWNED_LAUNCHER_MARKER)}\\nexport OPENCLAW_STATE_DIR=${quotedValue}\\n(?:export OPENCLAW_CONFIG_PATH=${quotedValue}\\n)?exec ${command} "\\$@"\\n$`,
+    `^#!/bin/sh\\n${escapeRegExp(OWNED_LAUNCHER_MARKER)}\\nexport AFORA_STATE_DIR=${quotedValue}\\n(?:export AFORA_CONFIG_PATH=${quotedValue}\\n)?exec ${command} "\\$@"\\n$`,
     "u",
   );
   return pattern.test(params.content);
@@ -206,8 +206,8 @@ async function resolveLauncherInstall(params: {
     content: [
       "#!/bin/sh",
       OWNED_LAUNCHER_MARKER,
-      `export OPENCLAW_STATE_DIR=${shellQuote(resolveInstallStateDir(params.deps))}`,
-      ...(configPath ? [`export OPENCLAW_CONFIG_PATH=${shellQuote(configPath)}`] : []),
+      `export AFORA_STATE_DIR=${shellQuote(resolveInstallStateDir(params.deps))}`,
+      ...(configPath ? [`export AFORA_CONFIG_PATH=${shellQuote(configPath)}`] : []),
       `exec ${command.map(shellQuote).join(" ")} "$@"`,
       "",
     ].join("\n"),
@@ -438,7 +438,7 @@ export async function installChromeExtensionBootstrap(params: {
   }
   if (preRegisteredRoots > 0) {
     params.onProgress?.(
-      `Native bootstrap is ready. Add OpenClaw from the Chrome Web Store: ${FOUNDATION_CHROME_WEB_STORE_URL}. For development, load unpacked from ${installed}.`,
+      `Native bootstrap is ready. Add Afora from the Chrome Web Store: ${FOUNDATION_CHROME_WEB_STORE_URL}. For development, load unpacked from ${installed}.`,
     );
   } else {
     preRegistrationIssues.push(
@@ -466,7 +466,7 @@ export async function installChromeExtensionBootstrap(params: {
     now() < deadline
   ) {
     if (!announcedWait) {
-      params.onProgress?.("Waiting for Chrome to verify the OpenClaw extension…");
+      params.onProgress?.("Waiting for Chrome to verify the Afora extension…");
       announcedWait = true;
     }
     await sleep(Math.min(500, Math.max(1, deadline - now())));
@@ -545,7 +545,7 @@ export async function browserExtensionStatus(params: {
       missingRegistration,
     issues: [
       ...(installedCopy.present && !installedCopy.owned
-        ? [`Chrome extension copy is not OpenClaw-owned: ${installedPath}`]
+        ? [`Chrome extension copy is not Afora-owned: ${installedPath}`]
         : []),
       ...discovery.issues,
       ...registrations.flatMap((entry) =>
@@ -555,7 +555,7 @@ export async function browserExtensionStatus(params: {
   };
 }
 
-/** Remove only registrations and launchers that carry OpenClaw ownership. */
+/** Remove only registrations and launchers that carry Afora ownership. */
 export async function uninstallChromeExtensionNativeHosts(
   params: { deps?: ExtensionInstallDeps } = {},
 ): Promise<{ removed: string[]; refused: string[]; manualRequired: boolean }> {
@@ -678,7 +678,7 @@ export async function repairOwnedChromeExtensionNativeHosts(params: {
         pluginRoot: params.pluginRoot,
         deps,
       });
-      changes.push(`Repaired ${root.label} OpenClaw native messaging registration.`);
+      changes.push(`Repaired ${root.label} Afora native messaging registration.`);
     } catch (error) {
       warnings.push(`${root.label} native host repair failed: ${String(error)}`);
     }

@@ -1,5 +1,5 @@
 // Openrouter OAuth tests cover PKCE exchange and auth profile output.
-import type { ProviderAuthContext } from "openclaw/plugin-sdk/plugin-entry";
+import type { ProviderAuthContext } from "afora-agent/plugin-sdk/plugin-entry";
 import { describe, expect, it, vi } from "vitest";
 import { createOpenRouterOAuthAuthMethod } from "./oauth.js";
 

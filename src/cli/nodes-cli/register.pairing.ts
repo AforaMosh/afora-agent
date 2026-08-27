@@ -1,5 +1,5 @@
 // Node pairing commands: list, approve, reject, remove, and rename paired nodes.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { Command } from "commander";
 import { getTerminalTableWidth } from "../../../packages/terminal-core/src/table.js";
 import type { OperatorScope } from "../../gateway/method-scopes.js";
@@ -99,7 +99,7 @@ function buildUnknownNodePairRequestIdMessage(
       lines.push("No pending node pairing requests are currently visible.");
     }
   }
-  lines.push(`Run ${formatCliCommand("openclaw nodes pending")} to inspect current requests.`);
+  lines.push(`Run ${formatCliCommand("afora nodes pending")} to inspect current requests.`);
   const connectionReminder = formatConnectionFlagReminder(opts);
   if (connectionReminder) {
     lines.push(connectionReminder);
@@ -234,7 +234,7 @@ export function registerNodesPairingCommands(nodes: Command) {
           const name = normalizeOptionalString(opts.name) ?? "";
           if (!name) {
             defaultRuntime.error(
-              `--name must not be empty. Run ${formatCliCommand("openclaw nodes list")} to see paired nodes, then rerun with --name <displayName>.`,
+              `--name must not be empty. Run ${formatCliCommand("afora nodes list")} to see paired nodes, then rerun with --name <displayName>.`,
             );
             defaultRuntime.exit(1);
             return;

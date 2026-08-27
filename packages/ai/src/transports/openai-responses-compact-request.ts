@@ -1,4 +1,4 @@
-import type { Context, Model, StreamFn } from "@openclaw/llm-core";
+import type { Context, Model, StreamFn } from "@afora/llm-core";
 import type {
   OpenAIResponsesOptions,
   OpenAIResponsesReasoningReplayMetadata,

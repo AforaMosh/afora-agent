@@ -88,6 +88,6 @@ function resetSecretRedactionRegistryForTest(): void {
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
   (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.secretRedactionRegistryTestApi")
+    Symbol.for("afora.secretRedactionRegistryTestApi")
   ] = { resetSecretRedactionRegistryForTest };
 }

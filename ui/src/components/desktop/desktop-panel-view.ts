@@ -1,4 +1,4 @@
-import type { EnvironmentSummary, WorkerDesktopAppId } from "@openclaw/gateway-protocol";
+import type { EnvironmentSummary, WorkerDesktopAppId } from "@afora/gateway-protocol";
 import { html, nothing, type TemplateResult } from "lit";
 import { t } from "../../i18n/index.ts";
 import { icons } from "../icons.ts";

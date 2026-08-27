@@ -1,11 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { buildOpenClawToolFallbackText } from "./prompt-surface.js";
+import { buildAforaToolFallbackText } from "./prompt-surface.js";
 
-describe("buildOpenClawToolFallbackText", () => {
+describe("buildAforaToolFallbackText", () => {
   it("does not invent tool names when the structured list is unavailable", () => {
-    const text = buildOpenClawToolFallbackText({
-      surface: "openclaw_main",
+    const text = buildAforaToolFallbackText({
+      surface: "afora_main",
     });
 
     expect(text).toContain("Use only exposed tools");

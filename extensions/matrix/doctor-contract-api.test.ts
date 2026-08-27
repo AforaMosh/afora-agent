@@ -5,22 +5,22 @@ import fs from "node:fs";
 import fsPromises from "node:fs/promises";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   createPersistentDedupeImportEntry,
   type PersistentDedupeEntry,
-} from "openclaw/plugin-sdk/persistent-dedupe";
+} from "afora-agent/plugin-sdk/persistent-dedupe";
 import type {
   OpenKeyedStoreOptions,
   PluginStateKeyedStore,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateKeyedStoreForTests,
   getPluginStateCapacityForTests,
   importPluginStateEntriesForDoctorForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import type { PluginDoctorStateMigrationContext } from "openclaw/plugin-sdk/runtime-doctor-migrations";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import type { PluginDoctorStateMigrationContext } from "afora-agent/plugin-sdk/runtime-doctor-migrations";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { stateMigrations } from "./doctor-contract-api.js";
 import { SqliteBackedMatrixSyncStore } from "./src/matrix/client/file-sync-store.js";
@@ -56,7 +56,7 @@ import {
 import { installMatrixTestRuntime } from "./src/test-runtime.js";
 import { useAutoCleanupTempDirTracker } from "./test-support.js";
 
-const DOCTOR_IDB_DATABASE_PREFIX = "openclaw-matrix-doctor-test";
+const DOCTOR_IDB_DATABASE_PREFIX = "afora-matrix-doctor-test";
 
 function createContext(env?: NodeJS.ProcessEnv): PluginDoctorStateMigrationContext {
   return {
@@ -72,9 +72,9 @@ function createContext(env?: NodeJS.ProcessEnv): PluginDoctorStateMigrationConte
 }
 
 function createMigrationParams(stateDir: string) {
-  const env = { OPENCLAW_STATE_DIR: stateDir };
+  const env = { AFORA_STATE_DIR: stateDir };
   return {
-    config: {} as OpenClawConfig,
+    config: {} as AforaConfig,
     env,
     stateDir,
     oauthDir: path.join(stateDir, "oauth"),
@@ -105,7 +105,7 @@ describe("matrix doctor contract state migrations", () => {
   });
 
   it("imports account credentials into SQLite before archiving the JSON", async () => {
-    const stateDir = tempDirs.make("openclaw-matrix-doctor-");
+    const stateDir = tempDirs.make("afora-matrix-doctor-");
     const credentialsDir = path.join(stateDir, "credentials", "matrix");
     const filePath = path.join(credentialsDir, "credentials-ops.json");
     const credentials = {
@@ -144,7 +144,7 @@ describe("matrix doctor contract state migrations", () => {
   });
 
   it("archives legacy credentials without restoring an explicitly cleared account", async () => {
-    const stateDir = tempDirs.make("openclaw-matrix-doctor-");
+    const stateDir = tempDirs.make("afora-matrix-doctor-");
     const credentialsDir = path.join(stateDir, "credentials", "matrix");
     const filePath = path.join(credentialsDir, "credentials-ops.json");
     fs.mkdirSync(credentialsDir, { recursive: true });
@@ -182,7 +182,7 @@ describe("matrix doctor contract state migrations", () => {
   });
 
   it("migrates legacy sync cache JSON to SQLite plugin state", async () => {
-    const stateDir = tempDirs.make("openclaw-matrix-doctor-");
+    const stateDir = tempDirs.make("afora-matrix-doctor-");
     const storageRootDir = path.join(
       stateDir,
       "matrix",
@@ -275,7 +275,7 @@ describe("matrix doctor contract state migrations", () => {
   });
 
   it("migrates Matrix storage metadata JSON to SQLite plugin state", async () => {
-    const stateDir = tempDirs.make("openclaw-matrix-doctor-");
+    const stateDir = tempDirs.make("afora-matrix-doctor-");
     const storageRootDir = path.join(
       stateDir,
       "matrix",
@@ -322,7 +322,7 @@ describe("matrix doctor contract state migrations", () => {
   });
 
   it("does not archive the legacy flat sync cache into an unread SQLite root", async () => {
-    const stateDir = tempDirs.make("openclaw-matrix-doctor-");
+    const stateDir = tempDirs.make("afora-matrix-doctor-");
     const flatRoot = path.join(stateDir, "matrix");
     fs.mkdirSync(flatRoot, { recursive: true });
     fs.writeFileSync(
@@ -344,7 +344,7 @@ describe("matrix doctor contract state migrations", () => {
   });
 
   it("migrates Matrix recovery-key JSON to SQLite plugin state", async () => {
-    const stateDir = tempDirs.make("openclaw-matrix-doctor-");
+    const stateDir = tempDirs.make("afora-matrix-doctor-");
     const storageRootDir = path.join(
       stateDir,
       "matrix",
@@ -385,7 +385,7 @@ describe("matrix doctor contract state migrations", () => {
   });
 
   it("migrates legacy Matrix crypto state and restores the snapshot from SQLite", async () => {
-    const stateDir = tempDirs.make("openclaw-matrix-doctor-");
+    const stateDir = tempDirs.make("afora-matrix-doctor-");
     const storageRootDir = path.join(stateDir, "matrix");
     fs.mkdirSync(storageRootDir, { recursive: true });
     const snapshotPath = path.join(storageRootDir, MATRIX_IDB_SNAPSHOT_FILENAME);
@@ -459,7 +459,7 @@ describe("matrix doctor contract state migrations", () => {
   });
 
   it("archives an invalid legacy snapshot for recovery and unblocks runtime", async () => {
-    const stateDir = tempDirs.make("openclaw-matrix-doctor-");
+    const stateDir = tempDirs.make("afora-matrix-doctor-");
     const storageRootDir = path.join(stateDir, "matrix");
     const snapshotPath = path.join(storageRootDir, MATRIX_IDB_SNAPSHOT_FILENAME);
     fs.mkdirSync(storageRootDir, { recursive: true });
@@ -482,7 +482,7 @@ describe("matrix doctor contract state migrations", () => {
   });
 
   it("repairs invalid snapshots, archives equivalents, and preserves conflicts", async () => {
-    const stateDir = tempDirs.make("openclaw-matrix-doctor-");
+    const stateDir = tempDirs.make("afora-matrix-doctor-");
     const partialRoot = path.join(stateDir, "matrix", "accounts", "partial");
     const conflictRoot = path.join(stateDir, "matrix", "accounts", "conflict");
     const equivalentRoot = path.join(stateDir, "matrix", "accounts", "equivalent");
@@ -568,7 +568,7 @@ describe("matrix doctor contract state migrations", () => {
   });
 
   it("detects, imports, and retires schema-v1 inbound dedupe rows without upgrading the source", async () => {
-    const stateDir = tempDirs.make("openclaw-matrix-doctor-");
+    const stateDir = tempDirs.make("afora-matrix-doctor-");
     const sqliteRoot = path.join(
       stateDir,
       "matrix",
@@ -600,7 +600,7 @@ describe("matrix doctor contract state migrations", () => {
 
     // >=2026.6 shape in a historical schema-v1 database. It intentionally has
     // none of the current schema's migration/audit tables.
-    const legacyDatabasePath = path.join(sqliteRoot, "state", "openclaw.sqlite");
+    const legacyDatabasePath = path.join(sqliteRoot, "state", "afora.sqlite");
     fs.mkdirSync(path.dirname(legacyDatabasePath), { recursive: true });
     const legacyDb = new DatabaseSync(legacyDatabasePath);
     try {
@@ -704,7 +704,7 @@ describe("matrix doctor contract state migrations", () => {
     });
 
     // Pre-upgrade markers must keep deduping through the new runtime guard.
-    const dedupeEnv = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const dedupeEnv = { ...process.env, AFORA_STATE_DIR: stateDir };
     const opsDeduper = createMatrixInboundEventDeduper({
       auth: { accountId: "ops" },
       env: dedupeEnv,
@@ -766,7 +766,7 @@ describe("matrix doctor contract state migrations", () => {
   });
 
   it("records an empty legacy scan silently and then skips historical databases", async () => {
-    const stateDir = tempDirs.make("openclaw-matrix-doctor-");
+    const stateDir = tempDirs.make("afora-matrix-doctor-");
     const migration = migrationById("matrix-inbound-dedupe-to-claimable-dedupe");
     const params = createMigrationParams(stateDir);
 
@@ -787,7 +787,7 @@ describe("matrix doctor contract state migrations", () => {
       "matrix.example.org__bot",
       "token-a",
       "state",
-      "openclaw.sqlite",
+      "afora.sqlite",
     );
     fs.mkdirSync(path.dirname(lateDatabasePath), { recursive: true });
     fs.writeFileSync(lateDatabasePath, "the completed migration must not open this database");
@@ -799,7 +799,7 @@ describe("matrix doctor contract state migrations", () => {
   });
 
   it("withholds completion after a directory read failure and imports the source on retry", async () => {
-    const stateDir = tempDirs.make("openclaw-matrix-doctor-");
+    const stateDir = tempDirs.make("afora-matrix-doctor-");
     const blockedDir = path.join(stateDir, "matrix", "accounts", "home");
     const jsonRoot = path.join(blockedDir, "matrix.example.org__bot", "token-a");
     const jsonPath = path.join(jsonRoot, "inbound-dedupe.json");
@@ -849,14 +849,14 @@ describe("matrix doctor contract state migrations", () => {
     });
     const deduper = createMatrixInboundEventDeduper({
       auth: { accountId: "home" },
-      env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+      env: { ...process.env, AFORA_STATE_DIR: stateDir },
     });
     await expect(deduper.claim({ roomId, eventId })).resolves.toEqual({ kind: "duplicate" });
     await expect(migration.detectLegacyState(params)).resolves.toBeNull();
   });
 
   it("ignores an invalid legacy-scan completion receipt", async () => {
-    const stateDir = tempDirs.make("openclaw-matrix-doctor-");
+    const stateDir = tempDirs.make("afora-matrix-doctor-");
     const params = createMigrationParams(stateDir);
     const receiptStore = params.context.openPluginStateKeyedStore<{
       version: number;
@@ -880,7 +880,7 @@ describe("matrix doctor contract state migrations", () => {
   });
 
   it("archives malformed inbound dedupe JSON without importing it", async () => {
-    const stateDir = tempDirs.make("openclaw-matrix-doctor-");
+    const stateDir = tempDirs.make("afora-matrix-doctor-");
     const jsonRoot = path.join(
       stateDir,
       "matrix",
@@ -911,7 +911,7 @@ describe("matrix doctor contract state migrations", () => {
   });
 
   it("keeps inbound dedupe sources when retention-aware import is unavailable", async () => {
-    const stateDir = tempDirs.make("openclaw-matrix-doctor-");
+    const stateDir = tempDirs.make("afora-matrix-doctor-");
     const jsonRoot = path.join(
       stateDir,
       "matrix",
@@ -947,8 +947,8 @@ describe("matrix doctor contract state migrations", () => {
   });
 
   it("keeps newer runtime dedupe rows when legacy imports hit capacity", async () => {
-    const stateDir = tempDirs.make("openclaw-matrix-doctor-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = tempDirs.make("afora-matrix-doctor-");
+    const env = { AFORA_STATE_DIR: stateDir };
     const io = { context: createContext(env), env };
     const roomId = "!room:example.org";
     const now = Date.now();
@@ -995,8 +995,8 @@ describe("matrix doctor contract state migrations", () => {
   });
 
   it("preserves a legacy inbound dedupe marker's remaining TTL", async () => {
-    const stateDir = tempDirs.make("openclaw-matrix-doctor-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = tempDirs.make("afora-matrix-doctor-");
+    const env = { AFORA_STATE_DIR: stateDir };
     const io = { context: createContext(env), env };
     const now = 2_000_000_000_000;
     const remainingTtlMs = 1_000;

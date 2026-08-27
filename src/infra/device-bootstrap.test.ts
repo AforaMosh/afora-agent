@@ -11,12 +11,12 @@ import {
   NODE_PAIRING_SETUP_BOOTSTRAP_PROFILE,
   VOICE_NODE_PAIRING_SETUP_BOOTSTRAP_PROFILE,
 } from "../shared/device-bootstrap-profile.js";
-import { tableHasColumn } from "../state/openclaw-state-db-schema-helpers.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import { tableHasColumn } from "../state/afora-state-db-schema-helpers.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { createTrackedTempDirs } from "../test-utils/tracked-temp-dirs.js";
 import {
   clearDeviceBootstrapTokens,
@@ -40,7 +40,7 @@ import {
 import { executeSqliteQueryTakeFirstSync, getNodeSqliteKysely } from "./kysely-sync.js";
 
 const tempDirs = createTrackedTempDirs();
-const createTempDir = () => tempDirs.make("openclaw-device-bootstrap-test-");
+const createTempDir = () => tempDirs.make("afora-device-bootstrap-test-");
 
 async function verifyBootstrapToken(
   baseDir: string,
@@ -62,7 +62,7 @@ afterEach(async () => {
   vi.useRealTimers();
   resetLogger();
   setLoggerOverride(null);
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   await tempDirs.cleanup();
 });
 
@@ -120,26 +120,26 @@ describe("device bootstrap tokens", () => {
 
   it("adds setup correlation storage only on first setup issuance", async () => {
     const baseDir = await createTempDir();
-    const databaseOptions = { env: { ...process.env, OPENCLAW_STATE_DIR: baseDir } };
-    const initial = openOpenClawStateDatabase(databaseOptions);
+    const databaseOptions = { env: { ...process.env, AFORA_STATE_DIR: baseDir } };
+    const initial = openAforaStateDatabase(databaseOptions);
     initial.db.exec("ALTER TABLE device_bootstrap_tokens DROP COLUMN setup_id;");
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
 
     await issueDeviceBootstrapToken({ baseDir });
-    const afterGenericIssue = openOpenClawStateDatabase(databaseOptions);
+    const afterGenericIssue = openAforaStateDatabase(databaseOptions);
     expect(tableHasColumn(afterGenericIssue.db, "device_bootstrap_tokens", "setup_id")).toBe(false);
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
 
     const setup = await issueDevicePairSetupBootstrapToken({
       baseDir,
       profile: NODE_PAIRING_SETUP_BOOTSTRAP_PROFILE,
     });
-    const afterSetupIssue = openOpenClawStateDatabase(databaseOptions);
+    const afterSetupIssue = openAforaStateDatabase(databaseOptions);
     expect(tableHasColumn(afterSetupIssue.db, "device_bootstrap_tokens", "setup_id")).toBe(true);
     expect(loadDeviceBootstrapTokenRecords(baseDir)[setup.token]?.setupId).toBe(setup.setupId);
   });
 
-  // `openclaw qr --voice-node` issues through the same setup boundary. Correlation
+  // `afora qr --voice-node` issues through the same setup boundary. Correlation
   // must never gate issuance on a profile allowlist or that command stops working.
   it.each([
     ["voice node", VOICE_NODE_PAIRING_SETUP_BOOTSTRAP_PROFILE],
@@ -253,8 +253,8 @@ describe("device bootstrap tokens", () => {
       profile: NODE_PAIRING_SETUP_BOOTSTRAP_PROFILE,
     });
     await verifyBootstrapToken(baseDir, issued.token);
-    const { db } = openOpenClawStateDatabase({
-      env: { ...process.env, OPENCLAW_STATE_DIR: baseDir },
+    const { db } = openAforaStateDatabase({
+      env: { ...process.env, AFORA_STATE_DIR: baseDir },
     });
     db.exec("DROP TABLE IF EXISTS device_pair_setup_completions");
 
@@ -296,12 +296,12 @@ describe("device bootstrap tokens", () => {
       const found = await readDevicePairSetupCompletion({ baseDir, setupId: issued.setupId });
       expect(found === null).toBe(!expectFound);
       if (!expectFound) {
-        const { db } = openOpenClawStateDatabase({
-          env: { ...process.env, OPENCLAW_STATE_DIR: baseDir },
+        const { db } = openAforaStateDatabase({
+          env: { ...process.env, AFORA_STATE_DIR: baseDir },
         });
         const row = executeSqliteQueryTakeFirstSync(
           db,
-          getNodeSqliteKysely<OpenClawStateKyselyDatabase>(db)
+          getNodeSqliteKysely<AforaStateKyselyDatabase>(db)
             .selectFrom("device_pair_setup_completions")
             .select("setup_id")
             .where("setup_id", "=", issued.setupId),

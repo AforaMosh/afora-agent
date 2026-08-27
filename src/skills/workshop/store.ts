@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import path from "node:path";
 import { resolveStateDir } from "../../config/paths.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { removePathWithinRoot } from "../../infra/fs-safe-remove.js";
 import { root } from "../../infra/fs-safe.js";
 import {
@@ -9,7 +9,7 @@ import {
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../../infra/kysely-sync.js";
-import { runOpenClawStateWriteTransaction } from "../../state/openclaw-state-db.js";
+import { runAforaStateWriteTransaction } from "../../state/afora-state-db.js";
 import { normalizeSkillIndexName } from "../discovery/skill-index.js";
 import {
   assertInsideWorkspace,
@@ -72,7 +72,7 @@ type SkillProposalLookupScope = {
 };
 
 type SkillProposalReadOptions = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   reconcile?: boolean;
 };
 
@@ -253,7 +253,7 @@ export async function writeSkillProposal(params: {
   }
 
   try {
-    return runOpenClawStateWriteTransaction(
+    return runAforaStateWriteTransaction(
       ({ db }) => {
         const kysely = getNodeSqliteKysely<SkillWorkshopDatabase>(db);
         const existing = executeSqliteQueryTakeFirstSync(
@@ -342,7 +342,7 @@ export async function updateSkillProposalRecord(params: {
 }): Promise<SkillProposalEvent | undefined> {
   assertProposalId(params.record.id);
   ensureSkillWorkshopSchema(params.store);
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db }) => {
       const kysely = getNodeSqliteKysely<SkillWorkshopDatabase>(db);
       const current = executeSqliteQueryTakeFirstSync(
@@ -426,7 +426,7 @@ export async function readSkillProposalManifest(
 async function reconcileInterruptedApply(
   proposalId: string,
   options: SkillWorkshopStoreOptions,
-  config?: OpenClawConfig,
+  config?: AforaConfig,
 ): Promise<boolean> {
   const stored = readStoredProposal(proposalId, options);
   if (!stored || stored.record.status !== "pending") {
@@ -492,7 +492,7 @@ export function importLegacySkillProposal(params: {
 }): "imported" | "already-imported" {
   assertProposalId(params.record.id);
   ensureSkillWorkshopSchema(params.store);
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db }) => {
       const kysely = getNodeSqliteKysely<SkillWorkshopDatabase>(db);
       const current = executeSqliteQueryTakeFirstSync(

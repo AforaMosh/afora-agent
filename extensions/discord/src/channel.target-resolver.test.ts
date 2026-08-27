@@ -2,9 +2,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { discordPlugin } from "./channel.js";
 import * as directoryLive from "./directory-live.js";
-import type { OpenClawConfig } from "./runtime-api.js";
+import type { AforaConfig } from "./runtime-api.js";
 
-function createCfg(): OpenClawConfig {
+function createCfg(): AforaConfig {
   return {
     channels: {
       discord: {
@@ -12,7 +12,7 @@ function createCfg(): OpenClawConfig {
         token: "test-token-placeholder",
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function requireResolveTarget() {

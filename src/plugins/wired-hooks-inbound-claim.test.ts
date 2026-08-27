@@ -1,6 +1,6 @@
 // Covers wired hook inbound-claim dispatch behavior.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it, vi } from "vitest";
 import { createHookRunnerWithRegistry } from "./hooks.test-fixtures.js";
 

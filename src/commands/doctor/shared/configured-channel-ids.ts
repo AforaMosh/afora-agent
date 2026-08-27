@@ -1,12 +1,12 @@
 // Canonical configured-channel enumeration for doctor flows with intentionally distinct policies.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { isChannelConfigMetadataKey } from "../../../channels/config-metadata.js";
 import {
   hasMeaningfulChannelConfig,
   listExplicitlyDisabledChannelIdsForConfig,
   listPotentialConfiguredChannelPresenceSignals,
 } from "../../../channels/config-presence.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { isRecord } from "../../../utils.js";
 
 type ConfiguredChannelEntryPolicy = "raw" | "enabled" | "meaningful" | "enabled-or-meaningful";
@@ -41,7 +41,7 @@ export function listDoctorConfiguredChannelIds(
   options: DoctorConfiguredChannelIdOptions,
 ): string[] {
   const root = isRecord(config) ? config : {};
-  const cfg = root as OpenClawConfig;
+  const cfg = root as AforaConfig;
   if (options.skipWhenPluginsDisabled && isRecord(root.plugins) && root.plugins.enabled === false) {
     return [];
   }

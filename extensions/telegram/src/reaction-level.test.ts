@@ -1,5 +1,5 @@
 // Telegram tests cover reaction level plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { resolveTelegramReactionLevel } from "./reaction-level.js";
 
@@ -54,7 +54,7 @@ describe("resolveTelegramReactionLevel", () => {
   });
 
   it("defaults to minimal level when reactionLevel is not set", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: { telegram: {} },
     };
 
@@ -63,7 +63,7 @@ describe("resolveTelegramReactionLevel", () => {
   });
 
   it("returns off level with no reactions enabled", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: { telegram: { reactionLevel: "off" } },
     };
 
@@ -76,7 +76,7 @@ describe("resolveTelegramReactionLevel", () => {
   });
 
   it("returns ack level with only ackEnabled", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: { telegram: { reactionLevel: "ack" } },
     };
 
@@ -89,7 +89,7 @@ describe("resolveTelegramReactionLevel", () => {
   });
 
   it("returns minimal level with agent reactions enabled and minimal guidance", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: { telegram: { reactionLevel: "minimal" } },
     };
 
@@ -98,7 +98,7 @@ describe("resolveTelegramReactionLevel", () => {
   });
 
   it("returns extensive level with agent reactions enabled and extensive guidance", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: { telegram: { reactionLevel: "extensive" } },
     };
 
@@ -107,7 +107,7 @@ describe("resolveTelegramReactionLevel", () => {
   });
 
   it("resolves reaction level from a specific account", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         telegram: {
           reactionLevel: "ack",
@@ -123,7 +123,7 @@ describe("resolveTelegramReactionLevel", () => {
   });
 
   it("resolves omitted-account reaction level from the configured defaultAccount (#61012)", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         telegram: {
           botToken: "tok-default",
@@ -141,7 +141,7 @@ describe("resolveTelegramReactionLevel", () => {
   });
 
   it("falls back to global level when account has no reactionLevel", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       channels: {
         telegram: {
           reactionLevel: "minimal",
@@ -166,7 +166,7 @@ describe("resolveTelegramReactionLevel", () => {
           reactionLevel: "off",
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expect(() => resolveTelegramReactionLevel({ cfg })).not.toThrow();
     const result = resolveTelegramReactionLevel({ cfg });
@@ -190,7 +190,7 @@ describe("resolveTelegramReactionLevel", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     expect(() => resolveTelegramReactionLevel({ cfg, accountId: "ops" })).not.toThrow();
     const result = resolveTelegramReactionLevel({ cfg, accountId: "ops" });

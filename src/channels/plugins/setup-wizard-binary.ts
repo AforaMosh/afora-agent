@@ -3,7 +3,7 @@
  *
  * Builds status and text-input helpers for channel setup flows that need local binaries.
  */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { detectBinary as defaultDetectBinary } from "../../infra/detect-binary.js";
 import type {
   ChannelSetupWizard,
@@ -27,10 +27,10 @@ export function createDetectedBinaryStatus(params: {
   configuredScore: number;
   unconfiguredScore: number;
   resolveConfigured: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string;
   }) => boolean | Promise<boolean>;
-  resolveBinaryPath: (params: { cfg: OpenClawConfig; accountId?: string }) => string;
+  resolveBinaryPath: (params: { cfg: AforaConfig; accountId?: string }) => string;
   detectBinary?: (path: string) => Promise<boolean>;
 }): ChannelSetupWizardStatus {
   const detectBinary = params.detectBinary ?? defaultDetectBinary;
@@ -57,7 +57,7 @@ export function createDetectedBinaryStatus(params: {
       cfg,
       accountId,
     }: {
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       accountId?: string;
       configured: boolean;
     }): Promise<string | undefined> {
@@ -69,7 +69,7 @@ export function createDetectedBinaryStatus(params: {
       cfg,
       accountId,
     }: {
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       accountId?: string;
       configured: boolean;
     }): Promise<number | undefined> {

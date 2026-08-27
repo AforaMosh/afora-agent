@@ -22,7 +22,7 @@ describe("resolveMxcBinaryPath", () => {
 
   beforeEach(() => {
     existsSyncMock.mockReset();
-    homedirMock.mockReturnValue("/home/openclaw");
+    homedirMock.mockReturnValue("/home/afora");
     process.env.PATH = "";
   });
 
@@ -59,7 +59,7 @@ describe("resolveMxcBinaryPath", () => {
 
   test("ignores project, PATH, and home candidates during discovery", () => {
     const projectCandidate = path.join(process.cwd(), "bin", "wxc-exec.exe");
-    const homeCandidate = path.join("/home/openclaw", ".mxc", "wxc-exec.exe");
+    const homeCandidate = path.join("/home/afora", ".mxc", "wxc-exec.exe");
     const trustedDir = "/trusted-path";
     const pathCandidate = path.join(trustedDir, "wxc-exec.exe");
     process.env.PATH = trustedDir;

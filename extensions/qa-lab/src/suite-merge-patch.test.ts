@@ -59,7 +59,7 @@ describe("applyQaMergePatch", () => {
   it("deletes keys the patch nulls out", () => {
     expect(
       applyQaMergePatch(
-        { messages: { groupChat: { mentionPatterns: ["openclaw"], visibleReplies: "automatic" } } },
+        { messages: { groupChat: { mentionPatterns: ["afora"], visibleReplies: "automatic" } } },
         { messages: { groupChat: { mentionPatterns: null } } },
       ),
     ).toEqual({ messages: { groupChat: { visibleReplies: "automatic" } } });

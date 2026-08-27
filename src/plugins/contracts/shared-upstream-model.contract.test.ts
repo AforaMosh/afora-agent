@@ -1,12 +1,12 @@
 // Shared upstream model contract tests keep capability flags aligned across bundled catalogs.
 import fs from "node:fs";
 import path from "node:path";
-import { asOptionalRecord as readRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalRecord as readRecord } from "@afora/normalization-core/record-coerce";
 import { describe, expect, it } from "vitest";
 import { listGitTrackedFiles } from "../../test-utils/repo-files.js";
 
 const repoRoot = path.resolve(import.meta.dirname, "../../..");
-const MANIFEST_BASENAME = "openclaw.plugin.json";
+const MANIFEST_BASENAME = "afora.plugin.json";
 const CODE_MODE_TIER_LITERAL = /codeMode:\s*"(?:preferred|capable)"/;
 // Catalogs still built in plugin source instead of `modelCatalog` manifest rows,
 // so the manifest scan below cannot see their tiers. Moving them is not free:

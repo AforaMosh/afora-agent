@@ -43,7 +43,7 @@ describe("critical session observer notice", () => {
       visible: true,
     },
   ])("configured-global observer notice: $name", async (testCase) => {
-    const toastHost = document.createElement("openclaw-toast-host");
+    const toastHost = document.createElement("afora-toast-host");
     document.body.append(toastHost);
 
     showCriticalSessionObserverNotice({
@@ -94,7 +94,7 @@ describe("critical session observer notice", () => {
   it("notices critical health only for a non-selected session", async () => {
     const onOpen = vi.fn();
     const tracker = new CriticalObserverNoticeTracker();
-    const toastHost = document.createElement("openclaw-toast-host");
+    const toastHost = document.createElement("afora-toast-host");
     document.body.append(toastHost);
     const show = (sessionKey: string, health: string, revision: number) =>
       showCriticalSessionObserverNotice({

@@ -1,7 +1,7 @@
 /**
  * Lazy public SDK facade for active memory search manager lifecycle operations.
  */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { RegisteredMemorySearchManager } from "../plugins/memory-state.js";
 
 type ActiveMemorySearchPurpose = "default" | "status";
@@ -20,7 +20,7 @@ async function loadMemoryHostSearchRuntime(): Promise<MemoryHostSearchRuntimeMod
 
 /** Loads the active memory search manager for one agent and purpose. */
 export async function getActiveMemorySearchManager(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   purpose?: ActiveMemorySearchPurpose;
 }): Promise<ActiveMemorySearchManagerResult> {
@@ -29,14 +29,14 @@ export async function getActiveMemorySearchManager(params: {
 }
 
 /** Closes every active memory search manager for the provided config. */
-export async function closeActiveMemorySearchManagers(cfg?: OpenClawConfig): Promise<void> {
+export async function closeActiveMemorySearchManagers(cfg?: AforaConfig): Promise<void> {
   const runtime = await loadMemoryHostSearchRuntime();
   await runtime.closeActiveMemorySearchManagers(cfg);
 }
 
 /** Closes the active memory search manager for one agent. */
 export async function closeActiveMemorySearchManager(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
 }): Promise<void> {
   const runtime = await loadMemoryHostSearchRuntime();

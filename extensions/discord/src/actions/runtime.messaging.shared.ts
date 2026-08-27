@@ -1,8 +1,8 @@
 import { ChannelType } from "discord-api-types/v10";
-import { normalizeAccountId } from "openclaw/plugin-sdk/account-resolution";
-import type { ChannelMessageActionContext } from "openclaw/plugin-sdk/channel-contract";
+import { normalizeAccountId } from "afora-agent/plugin-sdk/account-resolution";
+import type { ChannelMessageActionContext } from "afora-agent/plugin-sdk/channel-contract";
 // Discord plugin module implements runtime.messaging.shared behavior.
-import { resolveOpenProviderRuntimeGroupPolicy } from "openclaw/plugin-sdk/runtime-group-policy";
+import { resolveOpenProviderRuntimeGroupPolicy } from "afora-agent/plugin-sdk/runtime-group-policy";
 import { mergeDiscordAccountConfig, resolveDefaultDiscordAccountId } from "../accounts.js";
 import { createDiscordRuntimeAccountContext } from "../client.js";
 import {
@@ -16,7 +16,7 @@ import {
   type ActionGate,
   readStringParam,
   type DiscordActionConfig,
-  type OpenClawConfig,
+  type AforaConfig,
   withNormalizedTimestamp,
 } from "../runtime-api.js";
 import type { DiscordReactOpts } from "../send.types.js";
@@ -43,7 +43,7 @@ export type DiscordMessagingActionContext = {
   action: string;
   params: Record<string, unknown>;
   isActionEnabled: ActionGate<DiscordActionConfig>;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   options?: DiscordMessagingActionOptions;
   accountId?: string;
   resolveChannelId: () => string;
@@ -55,7 +55,7 @@ export type DiscordMessagingActionContext = {
   }) => Promise<void>;
   filterGuildChannelList: <T>(params: { guildId: string; channels: T[] }) => Promise<T[]>;
   resolveReactionChannelId: () => Promise<string>;
-  withOpts: (extra?: Record<string, unknown>) => { cfg: OpenClawConfig; accountId?: string };
+  withOpts: (extra?: Record<string, unknown>) => { cfg: AforaConfig; accountId?: string };
   withReactionRuntimeOptions: <T extends Record<string, unknown> = Record<string, never>>(
     extra?: T,
   ) => DiscordReactOpts & T;
@@ -286,7 +286,7 @@ export function createDiscordMessagingActionContext(params: {
   action: string;
   input: Record<string, unknown>;
   isActionEnabled: ActionGate<DiscordActionConfig>;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   options?: DiscordMessagingActionOptions;
 }): DiscordMessagingActionContext {
   const accountId = readStringParam(params.input, "accountId");

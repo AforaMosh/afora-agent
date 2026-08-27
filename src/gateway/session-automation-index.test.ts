@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { CronJob } from "../cron/types.js";
 import {
   bumpSessionAutomationVersion,
@@ -9,7 +9,7 @@ import {
   unregisterSessionAutomationSource,
 } from "./session-automation-index.js";
 
-const cfg = {} as OpenClawConfig;
+const cfg = {} as AforaConfig;
 
 function job(partial: Partial<CronJob> & Pick<CronJob, "id">): CronJob {
   return { enabled: true, sessionTarget: "isolated", ...partial } as CronJob;

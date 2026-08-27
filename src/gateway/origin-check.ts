@@ -1,12 +1,12 @@
 // Browser Origin validator for gateway HTTP and websocket requests.
 import type { IncomingMessage } from "node:http";
 import net from "node:net";
-import { isPrivateOrLoopbackIpAddress } from "@openclaw/net-policy/ip";
+import { isPrivateOrLoopbackIpAddress } from "@afora/net-policy/ip";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
-} from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+} from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   isLocalDirectRequest,
   isLoopbackHost,
@@ -36,7 +36,7 @@ function headerValue(value: string | string[] | undefined): string | undefined {
 /** Gather the canonical Gateway browser-origin policy inputs for one HTTP request. */
 export function resolveBrowserOriginPolicy(params: {
   req: IncomingMessage;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): BrowserOriginPolicy {
   return {
     requestHost: headerValue(params.req.headers.host),
@@ -145,7 +145,7 @@ export function checkBrowserOrigin(params: {
 /** Return the request Origin only when the Gateway's canonical browser policy accepts it. */
 export function resolveAcceptedBrowserOrigin(params: {
   req: IncomingMessage;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): string | undefined {
   const policy = resolveBrowserOriginPolicy(params);
   const origin = policy.origin?.trim();

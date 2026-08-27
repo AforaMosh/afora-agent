@@ -3,7 +3,7 @@ import { extractDocumentContent } from "../../../../src/media/document-extractor
 import { extractPdfContent } from "../../../../src/media/pdf-extract.js";
 import { resolvePluginDocumentExtractors } from "../../../../src/plugins/document-extractors.runtime.js";
 
-const SENTINEL = "OPENCLAW_PDF_DISPATCH_SENTINEL";
+const SENTINEL = "AFORA_PDF_DISPATCH_SENTINEL";
 
 function createInlinePdf(text: string): Buffer {
   const escapedText = text.replace(/[\\()]/gu, "\\$&");
@@ -23,7 +23,7 @@ stream
 ${content}endstream`,
   ];
 
-  let pdf = "%PDF-1.4\n% OpenClaw QA fixture\n";
+  let pdf = "%PDF-1.4\n% Afora QA fixture\n";
   const offsets: number[] = [];
   for (const [index, object] of objects.entries()) {
     offsets.push(Buffer.byteLength(pdf));

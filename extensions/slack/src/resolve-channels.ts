@@ -1,7 +1,7 @@
 // Slack plugin module implements resolve channels behavior.
 import type { WebClient } from "@slack/web-api";
-import { resolveDirectoryAllowlistEntries } from "openclaw/plugin-sdk/directory-runtime";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { resolveDirectoryAllowlistEntries } from "afora-agent/plugin-sdk/directory-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { createSlackLookupClient } from "./client.js";
 import { collectSlackCursorPages } from "./cursor-pages.js";
 import { formatSlackTarget, parseSlackTarget } from "./target-parsing.js";

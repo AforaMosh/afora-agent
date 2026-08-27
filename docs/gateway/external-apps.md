@@ -3,13 +3,13 @@ summary: "Current integration path for external apps, scripts, dashboards, CI jo
 title: "Gateway integrations for external apps"
 sidebarTitle: "External apps"
 read_when:
-  - You are building an external app, script, dashboard, CI job, or IDE extension that talks to OpenClaw
+  - You are building an external app, script, dashboard, CI job, or IDE extension that talks to Afora
   - You are choosing between Gateway RPC and the Plugin SDK
   - You are integrating with Gateway agent runs, sessions, events, approvals, models, or tools
   - You are pairing a hosting controller with an external wake scheduler
 ---
 
-External apps talk to OpenClaw through the Gateway protocol: WebSocket
+External apps talk to Afora through the Gateway protocol: WebSocket
 transport plus RPC methods. Use it when a script, dashboard, CI job, IDE
 extension, or another process wants to start agent runs, stream events, wait
 for results, cancel work, or inspect Gateway resources.
@@ -17,36 +17,36 @@ for results, cancel work, or inspect Gateway resources.
 <Note>
   For npm packages, device pairing, reconnect recovery, history, subscriptions,
   and approvals, start with
-  [Building a Gateway client](https://docs.openclaw.ai/gateway/clients). If your
+  [Building a Gateway client](https://docs.afora.ai/gateway/clients). If your
   app supervises the Gateway as a child process, also read
-  [Embedding OpenClaw](https://docs.openclaw.ai/gateway/embedding). During the
+  [Embedding Afora](https://docs.afora.ai/gateway/embedding). During the
   initial package rollout, npm may return `E404` until the first package-bearing
-  OpenClaw release is published.
+  Afora release is published.
 </Note>
 
 <Note>
-  This page is for code outside the OpenClaw process. Plugin code that runs
-  inside OpenClaw should use documented `openclaw/plugin-sdk/*` subpaths instead.
+  This page is for code outside the Afora process. Plugin code that runs
+  inside Afora should use documented `afora/plugin-sdk/*` subpaths instead.
 </Note>
 
 ## What is available today
 
 | Surface                                                          | Status        | Use it for                                                                                    |
 | ---------------------------------------------------------------- | ------------- | --------------------------------------------------------------------------------------------- |
-| [Gateway client guide](https://docs.openclaw.ai/gateway/clients) | Release train | npm packages, auth, reconnect, history, events, approvals, and version policy.                |
-| [Embedding guide](https://docs.openclaw.ai/gateway/embedding)    | Release train | Child-process environment, readiness, lifecycle, recovery, RPC ownership, and packaging.      |
+| [Gateway client guide](https://docs.afora.ai/gateway/clients) | Release train | npm packages, auth, reconnect, history, events, approvals, and version policy.                |
+| [Embedding guide](https://docs.afora.ai/gateway/embedding)    | Release train | Child-process environment, readiness, lifecycle, recovery, RPC ownership, and packaging.      |
 | [Gateway protocol](/gateway/protocol)                            | Ready         | WebSocket transport, connect handshake, auth scopes, protocol versioning, and events.         |
 | [Gateway RPC reference](/reference/rpc)                          | Ready         | Current Gateway methods for agents, sessions, tasks, models, tools, artifacts, and approvals. |
-| [`openclaw agent`](/cli/agent)                                   | Ready         | One-shot script integration when shelling out to the CLI is enough.                           |
-| [`openclaw message`](/cli/message)                               | Ready         | Sending messages or channel actions from scripts.                                             |
+| [`afora agent`](/cli/agent)                                   | Ready         | One-shot script integration when shelling out to the CLI is enough.                           |
+| [`afora message`](/cli/message)                               | Ready         | Sending messages or channel actions from scripts.                                             |
 
 ## Recommended path
 
 1. Run or discover a Gateway.
 2. Connect over the [Gateway protocol](/gateway/protocol).
 3. Call documented RPC methods from [Gateway RPC reference](/reference/rpc).
-4. Pin the OpenClaw version you test against.
-5. Recheck the RPC reference when upgrading OpenClaw.
+4. Pin the Afora version you test against.
+5. Recheck the RPC reference when upgrading Afora.
 
 For agent runs, start with the `agent` RPC and pair it with `agent.wait` for a
 terminal result. For durable conversation state, use the `sessions.*` methods.
@@ -65,8 +65,8 @@ host-neutral suspension handshake:
    the process before `expiresAtMs`.
 5. After thaw, or if suspension is abandoned, call `gateway.suspend.resume`
    with that `suspensionId` over the existing or a newly authenticated
-   WebSocket. The CLI equivalents are `openclaw gateway suspend` and
-   `openclaw gateway resume <suspensionId>`.
+   WebSocket. The CLI equivalents are `afora gateway suspend` and
+   `afora gateway resume <suspensionId>`.
 
 A prepared Gateway accepts authenticated WebSocket connects, but fences every
 method except `gateway.suspend.*` and one exact predecessor-bound restart. That
@@ -114,7 +114,7 @@ after a successful resume returns `resumed: false`.
 A competing request ID or transient scheduler-resume failure returns retryable
 `UNAVAILABLE` with `retryAfterMs`. During scheduler recovery, prepare, status,
 and resume all return that error, the Gateway remains not-ready and
-fail-closed, and the host must not freeze or snapshot it. OpenClaw retries the
+fail-closed, and the host must not freeze or snapshot it. Afora retries the
 scheduler automatically and reopens admission only after recovery succeeds. A
 mismatched resume ID returns `INVALID_REQUEST`. Prepare shares the Gateway's
 control-plane write budget of three attempts per minute; honor the returned
@@ -122,7 +122,7 @@ retry delay. WebSocket clients are bucketed by device and IP. Admin HTTP
 controllers are bucketed by resolved client IP, so controllers behind one
 proxy can share a budget.
 
-Preparation is refuse-only: OpenClaw closes new root/session/command admission,
+Preparation is refuse-only: Afora closes new root/session/command admission,
 pauses automatic cron ticks, and inspects work synchronously. If anything is
 active, it resumes the scheduler and reopens admission before returning
 `busy`; it does not interrupt or drain that work. A ready lease lasts two
@@ -157,7 +157,7 @@ filesystem consistently; unregistered work cannot be proven idle by this first
 contract.
 
 <Tip>
-  For host wake scheduling, keep the OpenClaw-facing part in an in-process
+  For host wake scheduling, keep the Afora-facing part in an in-process
   plugin and project idempotent full snapshots to the external host adapter.
   The hosting controller should not import the Plugin SDK or reconstruct cron
   state from event deltas. See [Safe external cron
@@ -166,7 +166,7 @@ contract.
 
 ## App code vs plugin code
 
-Use Gateway RPC when code lives outside OpenClaw:
+Use Gateway RPC when code lives outside Afora:
 
 - Node scripts that start or observe agent runs
 - CI jobs that call a Gateway
@@ -175,7 +175,7 @@ Use Gateway RPC when code lives outside OpenClaw:
 - external bridges that do not need to become channel plugins
 - integration tests with fake or real Gateway transports
 
-Use the Plugin SDK when code runs inside OpenClaw:
+Use the Plugin SDK when code runs inside Afora:
 
 - provider plugins
 - channel plugins
@@ -183,13 +183,13 @@ Use the Plugin SDK when code runs inside OpenClaw:
 - agent harness plugins
 - trusted runtime helpers
 
-External apps should not import `openclaw/plugin-sdk/*`; those subpaths are for
-plugins loaded by OpenClaw.
+External apps should not import `afora/plugin-sdk/*`; those subpaths are for
+plugins loaded by Afora.
 
 ## Related
 
-- [Building a Gateway client](https://docs.openclaw.ai/gateway/clients)
-- [Embedding OpenClaw](https://docs.openclaw.ai/gateway/embedding)
+- [Building a Gateway client](https://docs.afora.ai/gateway/clients)
+- [Embedding Afora](https://docs.afora.ai/gateway/embedding)
 - [Gateway protocol](/gateway/protocol)
 - [Gateway RPC reference](/reference/rpc)
 - [CLI agent command](/cli/agent)

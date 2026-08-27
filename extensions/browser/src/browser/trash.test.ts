@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const browserUtilsMock = vi.hoisted(() => ({ configDir: "/tmp/openclaw-state" }));
+const browserUtilsMock = vi.hoisted(() => ({ configDir: "/tmp/afora-state" }));
 const realMkdirSync = fs.mkdirSync.bind(fs);
 const realMkdtempSync = fs.mkdtempSync.bind(fs);
 const realRmSync = fs.rmSync.bind(fs);
@@ -36,7 +36,7 @@ describe("browser trash", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();
-    testRoot = realRealpathSyncNative(realMkdtempSync(path.join(os.tmpdir(), "openclaw-browser-")));
+    testRoot = realRealpathSyncNative(realMkdtempSync(path.join(os.tmpdir(), "afora-browser-")));
     configDir = path.join(testRoot, "state");
     homeDir = path.join(testRoot, "home", "test");
     browserUtilsMock.configDir = configDir;
@@ -170,7 +170,7 @@ describe("browser trash", () => {
     const { movePathToTrash } = await import("./trash.js");
     const outsideDir = path.join(testRoot, "outside");
     realMkdirSync(outsideDir, { recursive: true });
-    const outsidePath = path.join(outsideDir, "openclaw-demo");
+    const outsidePath = path.join(outsideDir, "afora-demo");
     realWriteFileSync(outsidePath, "outside");
 
     await expect(movePathToTrash(outsidePath)).rejects.toThrow(

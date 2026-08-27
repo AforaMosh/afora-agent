@@ -174,11 +174,11 @@ function abortReasonAsError(signal: AbortSignal | undefined): Error {
 
 describe("Buzz bus lifecycle", () => {
   beforeEach(() => {
-    previousStateDir = process.env.OPENCLAW_STATE_DIR;
-    // openclaw-temp-dir: allow extension tests cannot import root test helpers.
-    stateDir = mkdtempSync(path.join(tmpdir(), "openclaw-buzz-dedupe-"));
+    previousStateDir = process.env.AFORA_STATE_DIR;
+    // afora-temp-dir: allow extension tests cannot import root test helpers.
+    stateDir = mkdtempSync(path.join(tmpdir(), "afora-buzz-dedupe-"));
     tempDirs.add(stateDir);
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+    process.env.AFORA_STATE_DIR = stateDir;
     vi.clearAllMocks();
     relayMocks.subscriptions.length = 0;
     relayMocks.profileEvents = [];
@@ -222,9 +222,9 @@ describe("Buzz bus lifecycle", () => {
   afterEach(() => {
     vi.useRealTimers();
     if (previousStateDir === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.AFORA_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = previousStateDir;
+      process.env.AFORA_STATE_DIR = previousStateDir;
     }
     for (const tempDir of tempDirs) {
       rmSync(tempDir, { recursive: true, force: true });
@@ -674,7 +674,7 @@ describe("Buzz bus lifecycle", () => {
     ];
 
     const bus = await startTestBus({
-      profileName: "OpenClaw",
+      profileName: "Afora",
     });
 
     await vi.waitFor(() =>
@@ -815,7 +815,7 @@ describe("Buzz bus lifecycle", () => {
       content: "@@ -1 +1 @@\n-old\n+new",
       tags: [
         ["h", CHANNEL_ID],
-        ["repo", "https://github.com/openclaw/openclaw"],
+        ["repo", "https://github.com/AforaMosh/afora-agent"],
         ["commit", "abcdef1"],
       ],
     });

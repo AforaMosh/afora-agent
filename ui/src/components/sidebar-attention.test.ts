@@ -278,7 +278,7 @@ describe("sidebar attention refresh ownership", () => {
       overlays,
       agentSelection,
     } as ApplicationContext);
-    const element = document.createElement("openclaw-sidebar-attention") as SidebarAttentionElement;
+    const element = document.createElement("afora-sidebar-attention") as SidebarAttentionElement;
     provider.append(element);
     document.body.append(provider);
     await waitForFast(() => expect(request).toHaveBeenCalledTimes(2));
@@ -391,7 +391,7 @@ describe("sidebar attention refresh ownership", () => {
       },
     } as unknown as ApplicationContext);
     vi.stubGlobal("localStorage", createTestStorageMock());
-    const element = document.createElement("openclaw-sidebar-attention") as SidebarAttentionElement;
+    const element = document.createElement("afora-sidebar-attention") as SidebarAttentionElement;
     provider.append(element);
     document.body.append(provider);
     await waitForFast(() => expect(request).toHaveBeenCalledTimes(2));
@@ -461,7 +461,7 @@ describe("sidebar attention refresh ownership", () => {
       overlays,
       agentSelection,
     } as ApplicationContext);
-    const element = document.createElement("openclaw-sidebar-attention") as SidebarAttentionElement;
+    const element = document.createElement("afora-sidebar-attention") as SidebarAttentionElement;
     provider.append(element);
     document.body.append(provider);
     await waitForFast(() => expect(element.textContent).toContain("1 automation(s) failed"));

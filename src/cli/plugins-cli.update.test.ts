@@ -2,7 +2,7 @@
 import path from "node:path";
 import { Command } from "commander";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import type { ClawHubTrustErrorCode } from "../infra/clawhub-install-trust.js";
 import { resolveRegistryUpdateChannel } from "../infra/update-channels.js";
 import { CLAWHUB_INSTALL_ERROR_CODE } from "../plugins/clawhub-error-codes.js";
@@ -35,7 +35,7 @@ import {
 } from "./plugins-cli-test-helpers.js";
 import { registerPluginsCli } from "./plugins-cli.js";
 
-const ORIGINAL_OPENCLAW_NIX_MODE = process.env.OPENCLAW_NIX_MODE;
+const ORIGINAL_AFORA_NIX_MODE = process.env.AFORA_NIX_MODE;
 const ORIGINAL_STDIN_TTY = Object.getOwnPropertyDescriptor(process.stdin, "isTTY");
 const ORIGINAL_STDOUT_TTY = Object.getOwnPropertyDescriptor(process.stdout, "isTTY");
 
@@ -67,7 +67,7 @@ function createTrackedPluginConfig(params: {
   pluginId: string;
   spec: string;
   resolvedName?: string;
-}): OpenClawConfig {
+}): AforaConfig {
   return {
     plugins: {
       installs: {
@@ -79,7 +79,7 @@ function createTrackedPluginConfig(params: {
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function expectRestartNoticeLogged() {
@@ -111,18 +111,18 @@ function expectSingleCallParams(mockFn: ReturnType<typeof vi.fn>) {
 }
 
 function primeUpdateConfigSnapshot(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   configPath?: string;
   hash?: string;
-  loadedConfig?: OpenClawConfig;
+  loadedConfig?: AforaConfig;
   parsed?: Record<string, unknown>;
-  runtimeConfig?: OpenClawConfig;
-  sourceConfig?: OpenClawConfig;
+  runtimeConfig?: AforaConfig;
+  sourceConfig?: AforaConfig;
   valid?: boolean;
   includeFileHashesForWrite?: Record<string, string>;
   includeFileTargetsForWrite?: Record<string, string>;
 }) {
-  const configPath = params.configPath ?? path.join(process.cwd(), "openclaw.json5");
+  const configPath = params.configPath ?? path.join(process.cwd(), "afora.json5");
   const parsed = params.parsed ?? (params.config as Record<string, unknown>);
   const sourceConfig = params.sourceConfig ?? params.config;
   const runtimeConfig = params.runtimeConfig ?? params.config;
@@ -155,10 +155,10 @@ function primeUpdateConfigSnapshot(params: {
   return prepared;
 }
 
-function primeBlockedUpdateConfig(section: "hooks" | "plugins", config: OpenClawConfig): void {
+function primeBlockedUpdateConfig(section: "hooks" | "plugins", config: AforaConfig): void {
   const externalPath = path.join(
     path.parse(process.cwd()).root,
-    "external-openclaw",
+    "external-afora",
     `${section}.json5`,
   );
   primeUpdateConfigSnapshot({
@@ -171,7 +171,7 @@ function primeBlockedUpdateConfig(section: "hooks" | "plugins", config: OpenClaw
 }
 
 function primePluginUpdate(
-  config: OpenClawConfig,
+  config: AforaConfig,
   outcomes: Awaited<ReturnType<typeof updateNpmInstalledPluginsMock>>["outcomes"] = [],
   changed = false,
   transactions?: PluginInstallTransaction[],
@@ -190,20 +190,20 @@ function primePluginUpdate(
   });
 }
 
-function primeBravePluginRecordUpdate(config: OpenClawConfig) {
+function primeBravePluginRecordUpdate(config: AforaConfig) {
   const previousRecords = {
     brave: {
       source: "npm",
-      spec: "@openclaw/brave-plugin@2026.6.11-beta.2",
+      spec: "@afora/brave-plugin@2026.6.11-beta.2",
       installPath: "/tmp/brave-beta",
-      resolvedName: "@openclaw/brave-plugin",
+      resolvedName: "@afora/brave-plugin",
       resolvedVersion: "2026.6.11-beta.2",
     },
   } as const;
   const nextRecords = {
     brave: {
       ...previousRecords.brave,
-      spec: "@openclaw/brave-plugin@2026.6.11",
+      spec: "@afora/brave-plugin@2026.6.11",
       installPath: "/tmp/brave-stable",
       resolvedVersion: "2026.6.11",
     },
@@ -216,7 +216,7 @@ function primeBravePluginRecordUpdate(config: OpenClawConfig) {
         ...config.plugins,
         installs: nextRecords,
       },
-    } as OpenClawConfig,
+    } as AforaConfig,
     [{ pluginId: "brave", status: "updated", message: "Updated brave." }],
     true,
   );
@@ -234,12 +234,12 @@ async function expectSkippedClawHubPluginUpdate(params: {
       installs: {
         demo: {
           source: "clawhub",
-          spec: params.spec ?? "clawhub:@openclaw/plugin-demo",
-          clawhubPackage: "@openclaw/plugin-demo",
+          spec: params.spec ?? "clawhub:@afora/plugin-demo",
+          clawhubPackage: "@afora/plugin-demo",
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
   pluginCliConfigMock.mockReturnValue(config);
   setInstalledPluginIndexInstallRecords(config.plugins?.installs ?? {});
   primePluginUpdate(config, [
@@ -265,10 +265,10 @@ describe("plugins cli update", () => {
 
   afterEach(() => {
     restoreTty();
-    if (ORIGINAL_OPENCLAW_NIX_MODE === undefined) {
-      delete process.env.OPENCLAW_NIX_MODE;
+    if (ORIGINAL_AFORA_NIX_MODE === undefined) {
+      delete process.env.AFORA_NIX_MODE;
     } else {
-      process.env.OPENCLAW_NIX_MODE = ORIGINAL_OPENCLAW_NIX_MODE;
+      process.env.AFORA_NIX_MODE = ORIGINAL_AFORA_NIX_MODE;
     }
   });
 
@@ -289,17 +289,17 @@ describe("plugins cli update", () => {
   });
 
   it("refuses plugin updates in Nix mode before package-manager work", async () => {
-    const previous = process.env.OPENCLAW_NIX_MODE;
-    process.env.OPENCLAW_NIX_MODE = "1";
+    const previous = process.env.AFORA_NIX_MODE;
+    process.env.AFORA_NIX_MODE = "1";
     try {
       await expect(runPluginsCommand(["plugins", "update", "--all"])).rejects.toThrow(
-        "OPENCLAW_NIX_MODE=1",
+        "AFORA_NIX_MODE=1",
       );
     } finally {
       if (previous === undefined) {
-        delete process.env.OPENCLAW_NIX_MODE;
+        delete process.env.AFORA_NIX_MODE;
       } else {
-        process.env.OPENCLAW_NIX_MODE = previous;
+        process.env.AFORA_NIX_MODE = previous;
       }
     }
 
@@ -309,7 +309,7 @@ describe("plugins cli update", () => {
   });
 
   it("previews plugin updates in Nix mode without acquiring a lease or writing state", async () => {
-    process.env.OPENCLAW_NIX_MODE = "1";
+    process.env.AFORA_NIX_MODE = "1";
     const config = createTrackedPluginConfig({
       pluginId: "alpha",
       spec: "@acme/alpha@1.0.0",
@@ -349,7 +349,7 @@ describe("plugins cli update", () => {
     { id: "constructor", args: [] },
     { id: "@acme/missing-plugin@beta", args: [] },
   ])("rejects untracked update target $id $args", async ({ id, args }) => {
-    const config = {} as OpenClawConfig;
+    const config = {} as AforaConfig;
     primeUpdateConfigSnapshot({ config });
     primePluginUpdate(config, [
       { pluginId: id, status: "skipped", message: `No install record for "${id}".` },
@@ -383,7 +383,7 @@ describe("plugins cli update", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     primeUpdateConfigSnapshot({ config });
     setInstalledPluginIndexInstallRecords(config.plugins?.installs ?? {});
 
@@ -403,7 +403,7 @@ describe("plugins cli update", () => {
     { label: "a stale child-keyed owner", args: ["pack/one"] },
     { label: "update all", args: ["--all"] },
   ])("rejects ambiguous package paths for $label", async ({ args }) => {
-    const sharedPath = "/tmp/openclaw-ambiguous-update-pack";
+    const sharedPath = "/tmp/afora-ambiguous-update-pack";
     const installRecords = {
       "pack/one": {
         source: "npm" as const,
@@ -416,7 +416,7 @@ describe("plugins cli update", () => {
         installPath: sharedPath,
       },
     };
-    const config = {} as OpenClawConfig;
+    const config = {} as AforaConfig;
     primeUpdateConfigSnapshot({ config });
     setInstalledPluginIndexInstallRecords(installRecords);
 
@@ -427,7 +427,7 @@ describe("plugins cli update", () => {
   });
 
   it("updates tracked hook packs through plugins update", async () => {
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
     const nextConfig = cfg;
 
     primeUpdateConfigSnapshot({ config: cfg });
@@ -479,18 +479,18 @@ describe("plugins cli update", () => {
           alpha: { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const snapshotConfig = {
       plugins: {
         entries: {
           alpha: { enabled: false },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const installRecords = {
       alpha: {
         source: "npm",
-        spec: "@openclaw/alpha@1.0.0",
+        spec: "@afora/alpha@1.0.0",
         installPath: "/tmp/alpha",
       },
     } as const;
@@ -509,18 +509,18 @@ describe("plugins cli update", () => {
       "new-hooks": {
         source: "npm",
         spec: "@acme/new-hooks@1.0.0",
-        installPath: "/home/test/.openclaw/hooks/new-hooks",
+        installPath: "/home/test/.afora/hooks/new-hooks",
       },
     });
     updateNpmInstalledPluginsMock.mockImplementation(
-      async (params: { config: OpenClawConfig }) => ({
+      async (params: { config: AforaConfig }) => ({
         config: params.config,
         changed: false,
         outcomes: [],
       }),
     );
     updateNpmInstalledHookPacksMock.mockImplementation(
-      async (params: { config: OpenClawConfig }) => ({
+      async (params: { config: AforaConfig }) => ({
         config: params.config,
         changed: false,
         outcomes: [],
@@ -551,11 +551,11 @@ describe("plugins cli update", () => {
           alpha: { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const persistedRecords = {
       alpha: {
         source: "npm",
-        spec: "@openclaw/alpha@1.0.0",
+        spec: "@afora/alpha@1.0.0",
         installPath: "/tmp/alpha",
       },
     } as const;
@@ -580,7 +580,7 @@ describe("plugins cli update", () => {
         ...cfg.plugins,
         installs: persistedRecords,
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     await runPluginsCommand(["plugins", "update", "alpha"]);
 
@@ -597,7 +597,7 @@ describe("plugins cli update", () => {
   it("rejects invalid config snapshots before updater side effects", async () => {
     const cfg = createTrackedPluginConfig({
       pluginId: "alpha",
-      spec: "@openclaw/alpha@1.0.0",
+      spec: "@afora/alpha@1.0.0",
     });
     primeUpdateConfigSnapshot({
       config: cfg,
@@ -616,37 +616,37 @@ describe("plugins cli update", () => {
   });
 
   it("allows index-only legacy id migration when an included plugins section has no references", async () => {
-    const cfg = { plugins: {} } as OpenClawConfig;
+    const cfg = { plugins: {} } as AforaConfig;
     const pluginRecords = createTrackedPluginConfig({
       pluginId: "voice-call",
-      spec: "@openclaw/voice-call@1.0.0",
+      spec: "@afora/voice-call@1.0.0",
     }).plugins?.installs;
     const nextConfig = {
       ...cfg,
       plugins: {
         ...cfg.plugins,
         installs: {
-          "@openclaw/voice-call": {
+          "@afora/voice-call": {
             source: "npm",
-            spec: "@openclaw/voice-call@1.1.0",
+            spec: "@afora/voice-call@1.1.0",
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     primeBlockedUpdateConfig("plugins", cfg);
     setInstalledPluginIndexInstallRecords(pluginRecords ?? {});
     primePluginUpdate(
       nextConfig,
       [
         {
-          pluginId: "@openclaw/voice-call",
+          pluginId: "@afora/voice-call",
           status: "updated",
-          message: "Updated @openclaw/voice-call.",
+          message: "Updated @afora/voice-call.",
         },
       ],
       true,
       undefined,
-      { "voice-call": "@openclaw/voice-call" },
+      { "voice-call": "@afora/voice-call" },
     );
 
     await runPluginsCommand(["plugins", "update", "--all"]);
@@ -664,7 +664,7 @@ describe("plugins cli update", () => {
       plugins: {
         load: { paths: ["/tmp/demo/index.js"] },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const pluginRecords = {
       [pluginId]: {
         source: "git",
@@ -678,7 +678,7 @@ describe("plugins cli update", () => {
         ...cfg.plugins,
         installs: pluginRecords,
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     primeBlockedUpdateConfig("plugins", cfg);
     setInstalledPluginIndexInstallRecords(pluginRecords);
     primePluginUpdate(
@@ -716,7 +716,7 @@ describe("plugins cli update", () => {
           brave: { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const sourceCfg = structuredClone(cfg);
     delete sourceCfg.gateway;
     primeUpdateConfigSnapshot({
@@ -743,25 +743,25 @@ describe("plugins cli update", () => {
   });
 
   it("commits a moved managed npm load path with its replacement record", async () => {
-    const previousInstallPath = "/tmp/openclaw/npm/projects/brave-v1/node_modules/brave";
-    const nextInstallPath = "/tmp/openclaw/npm/projects/brave-v2/node_modules/brave";
+    const previousInstallPath = "/tmp/afora/npm/projects/brave-v1/node_modules/brave";
+    const nextInstallPath = "/tmp/afora/npm/projects/brave-v2/node_modules/brave";
     const customPath = "/tmp/custom-plugin";
     const cfg = {
       plugins: {
         load: { paths: [previousInstallPath, customPath] },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const previousRecords = {
       brave: {
         source: "npm" as const,
-        spec: "@openclaw/brave-plugin@1.0.0",
+        spec: "@afora/brave-plugin@1.0.0",
         installPath: previousInstallPath,
       },
     };
     const nextRecords = {
       brave: {
         ...previousRecords.brave,
-        spec: "@openclaw/brave-plugin@2.0.0",
+        spec: "@afora/brave-plugin@2.0.0",
         installPath: nextInstallPath,
       },
     };
@@ -770,7 +770,7 @@ describe("plugins cli update", () => {
         load: { paths: [nextInstallPath, customPath] },
         installs: nextRecords,
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     primeUpdateConfigSnapshot({ config: cfg });
     setInstalledPluginIndexInstallRecords(previousRecords);
     primePluginUpdate(
@@ -820,14 +820,14 @@ describe("plugins cli update", () => {
           brave: { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const changedCfg = {
       ...cfg,
       gateway: {
         ...cfg.gateway,
         port: 18890,
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const initialSnapshot = primeUpdateConfigSnapshot({ config: cfg });
     const changedSnapshot = {
       ...initialSnapshot,
@@ -861,7 +861,7 @@ describe("plugins cli update", () => {
         recordInstalledPluginIndexInstallOwner(
           {
             pluginId: "brave",
-            manifestPath: "/tmp/brave-beta/openclaw.plugin.json",
+            manifestPath: "/tmp/brave-beta/afora.plugin.json",
             manifestHash: "brave-v1",
             source: "/tmp/brave-beta/index.js",
             rootDir: "/tmp/brave-beta",
@@ -900,7 +900,7 @@ describe("plugins cli update", () => {
   it("rolls back persisted install records when included config changes during a records-only update", async () => {
     const includePath = "/tmp/plugins.json5";
     const includeTarget = "/tmp/plugins.json5";
-    const cfg = { plugins: {} } as OpenClawConfig;
+    const cfg = { plugins: {} } as AforaConfig;
     const initialSnapshot = primeUpdateConfigSnapshot({
       config: cfg,
       parsed: {
@@ -927,7 +927,7 @@ describe("plugins cli update", () => {
     readConfigFileSnapshotForWriteMock
       .mockResolvedValueOnce(initialSnapshot)
       .mockResolvedValueOnce(changedSnapshot);
-    const pluginId = "@openclaw/brave-plugin";
+    const pluginId = "@afora/brave-plugin";
     const previousRecords = {
       [pluginId]: {
         source: "npm" as const,
@@ -984,7 +984,7 @@ describe("plugins cli update", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const initialSnapshot = primeUpdateConfigSnapshot({ config: cfg });
     const invalidSnapshot = {
       ...initialSnapshot,
@@ -1034,12 +1034,12 @@ describe("plugins cli update", () => {
           "voice-call": { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     primeBlockedUpdateConfig("plugins", cfg);
     setInstalledPluginIndexInstallRecords({
       "voice-call": {
         source: "npm",
-        spec: "@openclaw/voice-call",
+        spec: "@afora/voice-call",
         installPath: "/tmp/voice-call",
       },
     });
@@ -1063,14 +1063,14 @@ describe("plugins cli update", () => {
           "fish-audio": { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     primeBlockedUpdateConfig("plugins", cfg);
     setInstalledPluginIndexInstallRecords({
       "fish-audio": {
         source: "npm",
-        spec: "@openclaw/fish-audio-speech@2026.7.2-beta.7",
-        resolvedName: "@openclaw/fish-audio-speech",
-        resolvedSpec: "@openclaw/fish-audio-speech@2026.7.2-beta.7",
+        spec: "@afora/fish-audio-speech@2026.7.2-beta.7",
+        resolvedName: "@afora/fish-audio-speech",
+        resolvedSpec: "@afora/fish-audio-speech@2026.7.2-beta.7",
         installPath: "/tmp/fish-audio",
       },
     });
@@ -1088,12 +1088,12 @@ describe("plugins cli update", () => {
   });
 
   it("blocks managed npm load-path reconciliation before updater side effects", async () => {
-    const installPath = "/tmp/openclaw/npm/projects/demo-v1/node_modules/demo";
+    const installPath = "/tmp/afora/npm/projects/demo-v1/node_modules/demo";
     const cfg = {
       plugins: {
         load: { paths: [installPath] },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     primeBlockedUpdateConfig("plugins", cfg);
     setInstalledPluginIndexInstallRecords({
       demo: {
@@ -1116,8 +1116,8 @@ describe("plugins cli update", () => {
       label: "ClawHub",
       record: {
         source: "clawhub",
-        spec: "clawhub:@openclaw/voice-call",
-        clawhubPackage: "@openclaw/voice-call",
+        spec: "clawhub:@afora/voice-call",
+        clawhubPackage: "@afora/voice-call",
         installPath: "/tmp/voice-call",
       },
     },
@@ -1125,7 +1125,7 @@ describe("plugins cli update", () => {
       label: "git",
       record: {
         source: "git",
-        spec: "https://github.com/openclaw/voice-call.git",
+        spec: "https://github.com/afora/voice-call.git",
         installPath: "/tmp/voice-call",
       },
     },
@@ -1147,7 +1147,7 @@ describe("plugins cli update", () => {
             "voice-call": { enabled: true },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       primeBlockedUpdateConfig("plugins", cfg);
       setInstalledPluginIndexInstallRecords({
         "voice-call": record,
@@ -1168,14 +1168,14 @@ describe("plugins cli update", () => {
   it("blocks possible legacy id migration when an included plugins section is unresolved", async () => {
     const externalPath = path.join(
       path.parse(process.cwd()).root,
-      "external-openclaw",
+      "external-afora",
       "plugins.json5",
     );
-    const cfg = { plugins: {} } as OpenClawConfig;
+    const cfg = { plugins: {} } as AforaConfig;
     primeUpdateConfigSnapshot({
       config: cfg,
       parsed: { plugins: { $include: externalPath } },
-      sourceConfig: { plugins: { $include: externalPath } } as unknown as OpenClawConfig,
+      sourceConfig: { plugins: { $include: externalPath } } as unknown as AforaConfig,
       includeFileTargetsForWrite: {
         [externalPath]: externalPath,
       },
@@ -1183,7 +1183,7 @@ describe("plugins cli update", () => {
     setInstalledPluginIndexInstallRecords({
       "voice-call": {
         source: "npm",
-        spec: "@openclaw/voice-call",
+        spec: "@afora/voice-call",
         installPath: "/tmp/voice-call",
       },
     });
@@ -1205,12 +1205,12 @@ describe("plugins cli update", () => {
         installs: {
           legacy: {
             source: "npm",
-            spec: "@openclaw/legacy@1.0.0",
+            spec: "@afora/legacy@1.0.0",
             installPath: "/tmp/legacy",
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     primeBlockedUpdateConfig("plugins", cfg);
     setHookInstallRecords({
       "demo-hooks": {
@@ -1243,7 +1243,7 @@ describe("plugins cli update", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     primeBlockedUpdateConfig("plugins", cfg);
     setInstalledPluginIndexInstallRecords(cfg.plugins?.installs ?? {});
     primePluginUpdate(cfg, [
@@ -1264,7 +1264,7 @@ describe("plugins cli update", () => {
           demo: { enabled: true },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     primeBlockedUpdateConfig("plugins", cfg);
     setInstalledPluginIndexInstallRecords({
       demo: {
@@ -1294,7 +1294,7 @@ describe("plugins cli update", () => {
       plugins: {
         installs: {},
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     await expect(runPluginsCommand(["plugins", "update"])).rejects.toThrow("__exit__:1");
 
@@ -1307,7 +1307,7 @@ describe("plugins cli update", () => {
       plugins: {
         installs: {},
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     await runPluginsCommand(["plugins", "update", "--all"]);
 
@@ -1318,8 +1318,8 @@ describe("plugins cli update", () => {
 
   it("passes dangerous force unsafe install to plugin updates", async () => {
     const config = createTrackedPluginConfig({
-      pluginId: "openclaw-codex-app-server",
-      spec: "openclaw-codex-app-server@beta",
+      pluginId: "afora-codex-app-server",
+      spec: "afora-codex-app-server@beta",
     });
     pluginCliConfigMock.mockReturnValue(config);
     setInstalledPluginIndexInstallRecords(config.plugins?.installs ?? {});
@@ -1328,13 +1328,13 @@ describe("plugins cli update", () => {
     await runPluginsCommand([
       "plugins",
       "update",
-      "openclaw-codex-app-server",
+      "afora-codex-app-server",
       "--dangerously-force-unsafe-install",
     ]);
 
     const updateParams = expectSingleCallParams(updateNpmInstalledPluginsMock);
     expect(updateParams.config).toEqual(config);
-    expect(updateParams.pluginIds).toEqual(["openclaw-codex-app-server"]);
+    expect(updateParams.pluginIds).toEqual(["afora-codex-app-server"]);
     expect(updateParams.dangerouslyForceUnsafeInstall).toBe(true);
     expect(
       pluginsCliRuntimeLogs.filter((message) =>
@@ -1349,12 +1349,12 @@ describe("plugins cli update", () => {
     {
       updateChannel: "beta" as const,
       registryLine: "beta",
-      spec: "@openclaw/codex@2026.6.8-beta.1",
+      spec: "@afora/codex@2026.6.8-beta.1",
     },
     {
       updateChannel: "stable" as const,
       registryLine: "latest",
-      spec: "@openclaw/codex@2026.5.28",
+      spec: "@afora/codex@2026.5.28",
     },
   ])(
     "passes the $updateChannel channel to probe $registryLine for targeted exact pins",
@@ -1362,7 +1362,7 @@ describe("plugins cli update", () => {
       const config = createTrackedPluginConfig({
         pluginId: "codex",
         spec,
-        resolvedName: "@openclaw/codex",
+        resolvedName: "@afora/codex",
       });
       config.update = { channel: updateChannel };
       pluginCliConfigMock.mockReturnValue(config);
@@ -1384,8 +1384,8 @@ describe("plugins cli update", () => {
   it("passes the inferred core channel to a targeted update without enabling catalog sync", async () => {
     const config = createTrackedPluginConfig({
       pluginId: "codex",
-      spec: "@openclaw/codex",
-      resolvedName: "@openclaw/codex",
+      spec: "@afora/codex",
+      resolvedName: "@afora/codex",
     });
     pluginCliConfigMock.mockReturnValue(config);
     setInstalledPluginIndexInstallRecords(config.plugins?.installs ?? {});
@@ -1404,8 +1404,8 @@ describe("plugins cli update", () => {
   it("syncs official catalog specs with beta channel context for update --all", async () => {
     const config = createTrackedPluginConfig({
       pluginId: "codex",
-      spec: "@openclaw/codex@2026.6.8-beta.1",
-      resolvedName: "@openclaw/codex",
+      spec: "@afora/codex@2026.6.8-beta.1",
+      resolvedName: "@afora/codex",
     });
     config.update = { channel: "beta" };
     pluginCliConfigMock.mockReturnValue(config);
@@ -1424,8 +1424,8 @@ describe("plugins cli update", () => {
   it("infers the official catalog channel from the installed core for update --all", async () => {
     const config = createTrackedPluginConfig({
       pluginId: "codex",
-      spec: "@openclaw/codex",
-      resolvedName: "@openclaw/codex",
+      spec: "@afora/codex",
+      resolvedName: "@afora/codex",
     });
     pluginCliConfigMock.mockReturnValue(config);
     setInstalledPluginIndexInstallRecords(config.plugins?.installs ?? {});
@@ -1442,8 +1442,8 @@ describe("plugins cli update", () => {
   it("passes extended-stable channel and installed core version to update --all", async () => {
     const config = createTrackedPluginConfig({
       pluginId: "codex",
-      spec: "@openclaw/codex",
-      resolvedName: "@openclaw/codex",
+      spec: "@afora/codex",
+      resolvedName: "@afora/codex",
     });
     config.update = { channel: "extended-stable" };
     pluginCliConfigMock.mockReturnValue(config);
@@ -1463,8 +1463,8 @@ describe("plugins cli update", () => {
 
   it("passes ClawHub risk acknowledgement to plugin updates", async () => {
     const config = createTrackedPluginConfig({
-      pluginId: "openclaw-codex-app-server",
-      spec: "openclaw-codex-app-server@beta",
+      pluginId: "afora-codex-app-server",
+      spec: "afora-codex-app-server@beta",
     });
     pluginCliConfigMock.mockReturnValue(config);
     setInstalledPluginIndexInstallRecords(config.plugins?.installs ?? {});
@@ -1473,14 +1473,14 @@ describe("plugins cli update", () => {
     await runPluginsCommand([
       "plugins",
       "update",
-      "openclaw-codex-app-server",
+      "afora-codex-app-server",
       "--acknowledge-clawhub-risk",
     ]);
 
     expect(updateNpmInstalledPluginsMock).toHaveBeenCalledWith(
       expect.objectContaining({
         config,
-        pluginIds: ["openclaw-codex-app-server"],
+        pluginIds: ["afora-codex-app-server"],
         acknowledgeClawHubRisk: true,
       }),
     );
@@ -1489,14 +1489,14 @@ describe("plugins cli update", () => {
   it("does not pass an interactive ClawHub risk prompt to dry-run plugin updates", async () => {
     setTty(true);
     const config = createTrackedPluginConfig({
-      pluginId: "openclaw-codex-app-server",
-      spec: "clawhub:openclaw-codex-app-server",
+      pluginId: "afora-codex-app-server",
+      spec: "clawhub:afora-codex-app-server",
     });
     pluginCliConfigMock.mockReturnValue(config);
     setInstalledPluginIndexInstallRecords(config.plugins?.installs ?? {});
     primePluginUpdate(config);
 
-    await runPluginsCommand(["plugins", "update", "openclaw-codex-app-server", "--dry-run"]);
+    await runPluginsCommand(["plugins", "update", "afora-codex-app-server", "--dry-run"]);
 
     const updateParams = expectSingleCallParams(updateNpmInstalledPluginsMock);
     expect(updateParams.dryRun).toBe(true);
@@ -1508,14 +1508,14 @@ describe("plugins cli update", () => {
   it("passes an install-policy warning prompt to interactive plugin updates", async () => {
     setTty(true);
     const config = createTrackedPluginConfig({
-      pluginId: "openclaw-codex-app-server",
-      spec: "openclaw-codex-app-server",
+      pluginId: "afora-codex-app-server",
+      spec: "afora-codex-app-server",
     });
     pluginCliConfigMock.mockReturnValue(config);
     setInstalledPluginIndexInstallRecords(config.plugins?.installs ?? {});
     updateNpmInstalledPluginsMock.mockResolvedValue({ config, changed: false, outcomes: [] });
 
-    await runPluginsCommand(["plugins", "update", "openclaw-codex-app-server"]);
+    await runPluginsCommand(["plugins", "update", "afora-codex-app-server"]);
 
     const updateParams = expectSingleCallParams(updateNpmInstalledPluginsMock);
     expect(updateParams.onInstallPolicyWarning).toEqual(expect.any(Function));
@@ -1524,8 +1524,8 @@ describe("plugins cli update", () => {
   it("passes noninteractive install-policy acknowledgement to plugin updates", async () => {
     setTty(false);
     const config = createTrackedPluginConfig({
-      pluginId: "openclaw-codex-app-server",
-      spec: "openclaw-codex-app-server",
+      pluginId: "afora-codex-app-server",
+      spec: "afora-codex-app-server",
     });
     pluginCliConfigMock.mockReturnValue(config);
     setInstalledPluginIndexInstallRecords(config.plugins?.installs ?? {});
@@ -1534,7 +1534,7 @@ describe("plugins cli update", () => {
     await runPluginsCommand([
       "plugins",
       "update",
-      "openclaw-codex-app-server",
+      "afora-codex-app-server",
       "--acknowledge-install-policy-warning",
     ]);
 
@@ -1545,8 +1545,8 @@ describe("plugins cli update", () => {
   it("shares invocation-wide install-policy acknowledgement across bulk plugin and hook updates", async () => {
     setTty(false);
     const config = createTrackedPluginConfig({
-      pluginId: "openclaw-codex-app-server",
-      spec: "openclaw-codex-app-server",
+      pluginId: "afora-codex-app-server",
+      spec: "afora-codex-app-server",
     });
     pluginCliConfigMock.mockReturnValue(config);
     setInstalledPluginIndexInstallRecords(config.plugins?.installs ?? {});
@@ -1578,7 +1578,7 @@ describe("plugins cli update", () => {
     expect(hookAcknowledgement).toBe(pluginAcknowledgement);
     await expect(
       pluginAcknowledgement({
-        targetName: "openclaw-codex-app-server",
+        targetName: "afora-codex-app-server",
         targetType: "plugin",
         requestMode: "update",
       }),
@@ -1598,31 +1598,31 @@ describe("plugins cli update", () => {
         installs: {
           alpha: {
             source: "npm",
-            spec: "@openclaw/alpha@1.0.0",
+            spec: "@afora/alpha@1.0.0",
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const nextConfig = {
       plugins: {
         installs: {
           alpha: {
             source: "npm",
-            spec: "@openclaw/alpha@1.1.0",
+            spec: "@afora/alpha@1.1.0",
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const runtimeConfig = {
       ...cfg,
       messages: {
         ackReactionScope: "group-mentions",
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const nextRuntimeConfig = {
       ...nextConfig,
       messages: runtimeConfig.messages,
-    } as OpenClawConfig;
+    } as AforaConfig;
     primeUpdateConfigSnapshot({
       config: cfg,
       runtimeConfig,
@@ -1683,29 +1683,29 @@ describe("plugins cli update", () => {
         installs: {
           alpha: {
             source: "npm",
-            spec: "@openclaw/alpha@1.0.0",
+            spec: "@afora/alpha@1.0.0",
           },
           beta: {
             source: "npm",
-            spec: "@openclaw/beta@1.0.0",
+            spec: "@afora/beta@1.0.0",
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const nextConfig = {
       plugins: {
         installs: {
           alpha: {
             source: "npm",
-            spec: "@openclaw/alpha@1.1.0",
+            spec: "@afora/alpha@1.1.0",
           },
           beta: {
             source: "npm",
-            spec: "@openclaw/beta@1.0.0",
+            spec: "@afora/beta@1.0.0",
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     pluginCliConfigMock.mockReturnValue(cfg);
     setInstalledPluginIndexInstallRecords(cfg.plugins?.installs ?? {});
     primePluginUpdate(
@@ -1736,7 +1736,7 @@ describe("plugins cli update", () => {
   it("exits non-zero when a ClawHub update is skipped for missing risk acknowledgement", async () => {
     await expectSkippedClawHubPluginUpdate({
       code: CLAWHUB_INSTALL_ERROR_CODE.CLAWHUB_RISK_ACKNOWLEDGEMENT_REQUIRED,
-      spec: "clawhub:@openclaw/plugin-demo@1.0.0",
+      spec: "clawhub:@afora/plugin-demo@1.0.0",
       message:
         "Skipped demo ClawHub update: Update cancelled; rerun with --acknowledge-clawhub-risk to continue after reviewing the warning. Existing installed plugin left unchanged.",
       expectedLog: "--acknowledge-clawhub-risk",
@@ -1756,13 +1756,13 @@ describe("plugins cli update", () => {
     await expectSkippedClawHubPluginUpdate({
       code: "clawhub_security_unavailable",
       message:
-        'Skipped demo ClawHub update: ClawHub security data for "@openclaw/plugin-demo@1.1.0" is unavailable, so OpenClaw left the existing installed plugin unchanged. Try again later or choose a different version.',
+        'Skipped demo ClawHub update: ClawHub security data for "@afora/plugin-demo@1.1.0" is unavailable, so Afora left the existing installed plugin unchanged. Try again later or choose a different version.',
       expectedLog: "security data",
     });
   });
 
   it("exits non-zero when a hook pack update reports an error", async () => {
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
     pluginCliConfigMock.mockReturnValue(cfg);
     setHookInstallRecords({
       "demo-hooks": {

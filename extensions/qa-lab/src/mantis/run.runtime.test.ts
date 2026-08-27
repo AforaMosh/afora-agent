@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QA_EVIDENCE_FILENAME, buildQaSuiteEvidenceSummary } from "../evidence-summary.js";
 import { runMantisBeforeAfter } from "./run.runtime.js";
@@ -30,7 +30,7 @@ describe("mantis before/after runtime", () => {
     const commands: { args: readonly string[]; command: string; cwd?: string }[] = [];
     const runner = vi.fn(async (command: string, args: readonly string[]) => {
       commands.push({ command, args });
-      if (command !== "pnpm" || !args.includes("openclaw")) {
+      if (command !== "pnpm" || !args.includes("afora")) {
         return;
       }
       const repoRootArg = requireArgAfter(args, "--repo-root");
@@ -111,7 +111,7 @@ describe("mantis before/after runtime", () => {
     expect(commands[1]?.command).toBe("pnpm");
     expect(commands[1]?.args[0]).toBe("--dir");
     expect(commands[1]?.args[1]).toContain("baseline");
-    expect(commands[1]?.args.slice(2, 4)).toEqual(["openclaw", "qa"]);
+    expect(commands[1]?.args.slice(2, 4)).toEqual(["afora", "qa"]);
     expect(commands[2]?.command).toBe("git");
     expect(commands[2]?.args).toEqual([
       "worktree",
@@ -124,7 +124,7 @@ describe("mantis before/after runtime", () => {
     expect(commands[3]?.command).toBe("pnpm");
     expect(commands[3]?.args[0]).toBe("--dir");
     expect(commands[3]?.args[1]).toContain("candidate");
-    expect(commands[3]?.args.slice(2, 4)).toEqual(["openclaw", "qa"]);
+    expect(commands[3]?.args.slice(2, 4)).toEqual(["afora", "qa"]);
 
     const comparison = JSON.parse(await fs.readFile(result.comparisonPath, "utf8")) as {
       baseline: { reproduced: boolean; status: string };
@@ -152,7 +152,7 @@ describe("mantis before/after runtime", () => {
 
   it("supports the Discord thread filePath attachment Mantis scenario", async () => {
     const runner = vi.fn(async (command: string, args: readonly string[]) => {
-      if (command !== "pnpm" || !args.includes("openclaw")) {
+      if (command !== "pnpm" || !args.includes("afora")) {
         return;
       }
       const repoRootArg = requireArgAfter(args, "--repo-root");

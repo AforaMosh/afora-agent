@@ -1,6 +1,6 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { normalizeArrayBackedTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { normalizeArrayBackedTrimmedStringList } from "@afora/normalization-core/string-normalization";
 import type { RuntimeTargetIssue } from "../../../../packages/gateway-protocol/src/schema/environments.ts";
 
 export type DraftBranches = {
@@ -81,8 +81,8 @@ function readRuntimeTargetIssues(value: unknown): RuntimeTargetIssue[] | undefin
     }
     return raw.code === "update-required" &&
       raw.action === "update-and-reconnect" &&
-      raw.updateCommand === "openclaw update" &&
-      raw.headlessReconnectCommand === "openclaw node restart"
+      raw.updateCommand === "afora update" &&
+      raw.headlessReconnectCommand === "afora node restart"
       ? [raw as RuntimeTargetIssue]
       : [];
   });

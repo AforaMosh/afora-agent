@@ -1,4 +1,4 @@
-import { readVisibleSessionTranscriptMessageEntries } from "openclaw/plugin-sdk/session-transcript-runtime";
+import { readVisibleSessionTranscriptMessageEntries } from "afora-agent/plugin-sdk/session-transcript-runtime";
 import type { CodexSessionCatalogControl } from "../session-catalog-types.js";
 import type { CodexThreadItem, CodexTurn } from "./protocol.js";
 
@@ -147,7 +147,7 @@ function resolveCodexUpstreamForkBoundaryFromTurns(params: {
       if (display.hasUnverifiableInput) {
         return failure(
           "drift-mismatch",
-          "A message before the fork point contains images or attachments that cannot be verified across OpenClaw and Codex. Fork from a text-only span instead.",
+          "A message before the fork point contains images or attachments that cannot be verified across Afora and Codex. Fork from a text-only span instead.",
         );
       }
       if (!display.visible) {
@@ -163,7 +163,7 @@ function resolveCodexUpstreamForkBoundaryFromTurns(params: {
       if (localText === undefined) {
         return failure(
           "drift-mismatch",
-          "A message before the fork point contains images or attachments that cannot be verified across OpenClaw and Codex. Fork from a text-only span instead.",
+          "A message before the fork point contains images or attachments that cannot be verified across Afora and Codex. Fork from a text-only span instead.",
         );
       }
       if (display.text !== localText) {
@@ -259,7 +259,7 @@ export async function resolveCodexUpstreamForkBoundary(params: {
     if (thread.historyMode === "paginated") {
       return failure(
         "upstream-unavailable",
-        "This Codex thread uses paginated history, which cannot be forked from OpenClaw yet.",
+        "This Codex thread uses paginated history, which cannot be forked from Afora yet.",
       );
     }
     const entries = await readVisibleSessionTranscriptMessageEntries({

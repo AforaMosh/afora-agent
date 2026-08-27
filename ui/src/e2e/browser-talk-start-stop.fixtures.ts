@@ -84,7 +84,7 @@ export async function installTalkBrowserFixtures(page: Page) {
       configurable: true,
       value: MockAudioContext,
     });
-    Object.defineProperty(window, "openclawTalkE2eState", {
+    Object.defineProperty(window, "aforaTalkE2eState", {
       configurable: true,
       value: state,
     });

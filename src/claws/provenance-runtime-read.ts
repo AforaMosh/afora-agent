@@ -1,13 +1,13 @@
 import type { DatabaseSync } from "node:sqlite";
 import {
-  assertOpenClawStateDatabaseOwner,
+  assertAforaStateDatabaseOwner,
   resolveDatabasePath,
-} from "../state/openclaw-state-db-maintenance.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../state/openclaw-state-db-readonly.js";
+} from "../state/afora-state-db-maintenance.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../state/afora-state-db-readonly.js";
 import {
-  registerOpenClawStateDatabaseLifecycleListener,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
+  registerAforaStateDatabaseLifecycleListener,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
 import { parseClawInstallRecordSchemaVersion } from "./provenance-schema-version.js";
 
 type ClawInstallSchemaVersionRead =
@@ -96,7 +96,7 @@ function isOwnershipUnknown(snapshot: ClawInstallSchemaVersionSnapshot | undefin
   );
 }
 
-registerOpenClawStateDatabaseLifecycleListener((event) => {
+registerAforaStateDatabaseLifecycleListener((event) => {
   const previous = snapshotsByPath.get(event.kind === "opened" ? event.database.path : event.path);
   if (event.kind === "opened") {
     const snapshot = readSchemaVersions(event.database.db);
@@ -120,7 +120,7 @@ registerOpenClawStateDatabaseLifecycleListener((event) => {
   } else {
     snapshotsByPath.set(event.path, {
       kind: "state-error",
-      error: new Error("OpenClaw state database closed before consent provenance verification."),
+      error: new Error("Afora state database closed before consent provenance verification."),
       knownAgentIds: knownAgentIds(previous),
       ownershipUnknown: isOwnershipUnknown(previous),
     });
@@ -128,24 +128,24 @@ registerOpenClawStateDatabaseLifecycleListener((event) => {
   notifySnapshotListeners();
 });
 
-function resolveSnapshotPath(options: OpenClawStateDatabaseOptions): string {
+function resolveSnapshotPath(options: AforaStateDatabaseOptions): string {
   return options.database?.path ?? resolveDatabasePath(options);
 }
 
 export function readCachedClawInstallSchemaVersions(
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): ClawInstallSchemaVersionSnapshot {
   return snapshotsByPath.get(resolveSnapshotPath(options)) ?? { kind: "uninitialized" };
 }
 
 export function initializeCachedClawInstallSchemaVersions(
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): void {
   const path = resolveSnapshotPath(options);
   const previous = snapshotsByPath.get(path);
   try {
-    const snapshot = withExistingOpenClawStateDatabaseReadOnly(({ db, path: pathname }) => {
-      assertOpenClawStateDatabaseOwner(db, { pathname });
+    const snapshot = withExistingAforaStateDatabaseReadOnly(({ db, path: pathname }) => {
+      assertAforaStateDatabaseOwner(db, { pathname });
       return readSchemaVersions(db);
     }, options);
     if (snapshot) {
@@ -158,7 +158,7 @@ export function initializeCachedClawInstallSchemaVersions(
           ? {
               kind: "state-error",
               error: new Error(
-                "OpenClaw state database disappeared after Claw ownership was observed.",
+                "Afora state database disappeared after Claw ownership was observed.",
               ),
               knownAgentIds: previousAgentIds,
               ownershipUnknown: true,
@@ -186,7 +186,7 @@ export function cacheClawInstallSchemaVersion(
   agentId: string,
   schemaVersion: ReturnType<typeof parseClawInstallRecordSchemaVersion>,
   agentConfigDigest: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): void {
   const snapshot = snapshotsByPath.get(resolveSnapshotPath(options));
   if (snapshot?.kind !== "ready") {
@@ -198,7 +198,7 @@ export function cacheClawInstallSchemaVersion(
 
 export function deleteCachedClawInstallSchemaVersion(
   agentId: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): void {
   const snapshot = snapshotsByPath.get(resolveSnapshotPath(options));
   if (snapshot?.kind !== "ready" || !snapshot.schemaVersions.delete(agentId)) {

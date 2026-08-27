@@ -106,7 +106,7 @@ export async function runGatewaySuspend(
       deps.runtime.log(
         `${colorize(rich, theme.muted, "Expires:")} ${new Date(latest.expiresAtMs).toISOString()} (${latest.expiresAtMs} ms)`,
       );
-      deps.runtime.log(`Resume with: openclaw gateway resume ${latest.suspensionId}`);
+      deps.runtime.log(`Resume with: afora gateway resume ${latest.suspensionId}`);
       return;
     }
 

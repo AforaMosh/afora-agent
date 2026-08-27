@@ -1,7 +1,7 @@
 import Foundation
 import SwabbleKit
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 private actor VoiceWakeCommandBarrier {
     private var entered = false
@@ -54,7 +54,7 @@ private actor VoiceWakeCommandBarrier {
 
     @Test @MainActor func `handle recognition callback dispatches command`() async throws {
         let manager = VoiceWakeManager()
-        manager.triggerWords = ["openclaw"]
+        manager.triggerWords = ["afora"]
         manager.isEnabled = true
 
         actor CaptureBox {
@@ -68,11 +68,11 @@ private actor VoiceWakeCommandBarrier {
             await capture.set(cmd)
         }
 
-        let transcript = "openclaw hello"
-        let triggerRange = try #require(transcript.range(of: "openclaw"))
+        let transcript = "afora hello"
+        let triggerRange = try #require(transcript.range(of: "afora"))
         let helloRange = try #require(transcript.range(of: "hello"))
         let segments = [
-            WakeWordSegment(text: "openclaw", start: 0.0, duration: 0.2, range: triggerRange),
+            WakeWordSegment(text: "afora", start: 0.0, duration: 0.2, range: triggerRange),
             WakeWordSegment(text: "hello", start: 0.8, duration: 0.2, range: helloRange),
         ]
 
@@ -94,7 +94,7 @@ private actor VoiceWakeCommandBarrier {
             }
         }
         let capture = CaptureBox()
-        manager.triggerWords = ["openclaw"]
+        manager.triggerWords = ["afora"]
         manager.isEnabled = true
         manager.isListening = true
         manager.configure { command in
@@ -103,13 +103,13 @@ private actor VoiceWakeCommandBarrier {
             await capture.set(command)
         }
 
-        let transcript = "openclaw hello"
-        let triggerRange = try #require(transcript.range(of: "openclaw"))
+        let transcript = "afora hello"
+        let triggerRange = try #require(transcript.range(of: "afora"))
         let commandRange = try #require(transcript.range(of: "hello"))
         manager._test_handleRecognitionCallback(
             transcript: transcript,
             segments: [
-                WakeWordSegment(text: "openclaw", start: 0, duration: 0.2, range: triggerRange),
+                WakeWordSegment(text: "afora", start: 0, duration: 0.2, range: triggerRange),
                 WakeWordSegment(text: "hello", start: 0.8, duration: 0.2, range: commandRange),
             ],
             errorText: nil)

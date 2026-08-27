@@ -8,10 +8,10 @@ describe("warnIfJSON5CommentsWillBeStripped", () => {
   ])("warns for %s comments", (_kind, raw) => {
     const warn = vi.fn();
 
-    warnIfJSON5CommentsWillBeStripped({ raw, filePath: "/tmp/openclaw.json", warn });
+    warnIfJSON5CommentsWillBeStripped({ raw, filePath: "/tmp/afora.json", warn });
 
     expect(warn).toHaveBeenCalledWith(
-      "Config write will strip JSON5 comments from /tmp/openclaw.json.",
+      "Config write will strip JSON5 comments from /tmp/afora.json.",
     );
   });
 
@@ -20,7 +20,7 @@ describe("warnIfJSON5CommentsWillBeStripped", () => {
 
     warnIfJSON5CommentsWillBeStripped({
       raw: `{ url: "https://example.com/a", note: 'literal /* note */ and // text', escaped: "say \\"//\\"" }`,
-      filePath: "/tmp/openclaw.json",
+      filePath: "/tmp/afora.json",
       warn,
     });
 
@@ -32,7 +32,7 @@ describe("warnIfJSON5CommentsWillBeStripped", () => {
 
     warnIfJSON5CommentsWillBeStripped({
       raw: "{ // comment\n value: 1 }",
-      filePath: "/tmp/openclaw.json",
+      filePath: "/tmp/afora.json",
       warn,
       skipOutputLogs: true,
     });

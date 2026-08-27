@@ -1,7 +1,7 @@
 // Terminal Core module implements note behavior.
 import { AsyncLocalStorage } from "node:async_hooks";
 import { note as clackNote } from "@clack/prompts";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { splitGraphemes, visibleWidth } from "./ansi.js";
 import { stylePromptTitle } from "./prompt-style.js";
 
@@ -222,7 +222,7 @@ function createNoteOutput(columns: number): NodeJS.WriteStream {
 export function note(message: unknown, title?: string) {
   if (
     suppressNotesStorage.getStore() === true ||
-    isSuppressedByEnv(process.env.OPENCLAW_SUPPRESS_NOTES)
+    isSuppressedByEnv(process.env.AFORA_SUPPRESS_NOTES)
   ) {
     return;
   }

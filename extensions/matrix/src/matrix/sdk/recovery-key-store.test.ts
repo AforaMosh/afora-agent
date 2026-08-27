@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { encodeRecoveryKey } from "matrix-js-sdk/lib/crypto-api/recovery-key.js";
-import { resetPluginStateStoreForTests } from "openclaw/plugin-sdk/plugin-state-test-runtime";
+import { resetPluginStateStoreForTests } from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getMatrixRuntime } from "../../runtime.js";
 import { installMatrixTestRuntime } from "../../test-runtime.js";
@@ -226,7 +226,7 @@ describe("MatrixRecoveryKeyStore", () => {
     callbacks.cacheSecretStorageKey?.(
       "KEY123",
       {
-        name: "openclaw",
+        name: "afora",
       },
       new Uint8Array([9, 8, 7]),
     );
@@ -241,7 +241,7 @@ describe("MatrixRecoveryKeyStore", () => {
     const store = new MatrixRecoveryKeyStore();
     const callbacks = store.buildCryptoCallbacks();
 
-    callbacks.cacheSecretStorageKey?.("KEY123", { name: "openclaw" }, new Uint8Array([9, 8, 7]));
+    callbacks.cacheSecretStorageKey?.("KEY123", { name: "afora" }, new Uint8Array([9, 8, 7]));
 
     expect(store.getSecretStorageKeyCandidate("KEY123")).toBeNull();
   });

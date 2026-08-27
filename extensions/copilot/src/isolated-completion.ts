@@ -1,7 +1,7 @@
 // Copilot plugin module implements fresh, zero-tool inference.
 import { resolve } from "node:path";
 import type { SessionConfig, SessionEvent } from "@github/copilot-sdk";
-import type { AgentHarness } from "openclaw/plugin-sdk/agent-harness-runtime";
+import type { AgentHarness } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import { tokenFingerprint } from "./auth-bridge.js";
 import { createCopilotByokProxy } from "./byok-proxy.js";
 import { resolveCopilotProvider } from "./provider-bridge.js";

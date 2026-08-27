@@ -1,10 +1,10 @@
 // Feishu tests cover doctor contract plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import { FeishuConfigSchema } from "./config-schema.js";
 import { legacyConfigRules, normalizeCompatibilityConfig } from "./doctor-contract.js";
 
-function feishuConfig(entry: Record<string, unknown>): OpenClawConfig {
+function feishuConfig(entry: Record<string, unknown>): AforaConfig {
   return { channels: { feishu: entry } } as never;
 }
 

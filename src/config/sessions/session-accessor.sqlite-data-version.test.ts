@@ -6,11 +6,11 @@ import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js"
 import { clearNodeSqliteKyselyCacheForDatabase } from "../../infra/kysely-sync.js";
 import { configureSqliteConnectionPragmas } from "../../infra/sqlite-wal.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-} from "../../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+} from "../../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import {
   appendTranscriptMessage,
   listSessionEntriesCore,
@@ -81,8 +81,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 function readDataVersion(database: DatabaseSync): number {
@@ -97,7 +97,7 @@ function readTotalChanges(database: DatabaseSync): number {
 
 describe("SQLite entry cache validity counters", () => {
   it("separately tracks same-connection and other-connection commits", () => {
-    const databasePath = path.join(tempDirs.make("openclaw-data-version-"), "probe.sqlite");
+    const databasePath = path.join(tempDirs.make("afora-data-version-"), "probe.sqlite");
     const first = new DatabaseSync(databasePath);
     const firstMaintenance = configureSqliteConnectionPragmas(first, {
       checkpointIntervalMs: 0,
@@ -143,10 +143,10 @@ describe("SQLite entry cache validity counters", () => {
 });
 
 function createSessionScope(label: string) {
-  const stateDir = tempDirs.make(`openclaw-entry-cache-${label}-`);
+  const stateDir = tempDirs.make(`afora-entry-cache-${label}-`);
   return {
     agentId: "main",
-    env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+    env: { ...process.env, AFORA_STATE_DIR: stateDir },
     sessionKey: `agent:main:${label}`,
   };
 }
@@ -224,7 +224,7 @@ describe("SQLite session entry cache", () => {
       sessionId: "connection-identity",
       updatedAt: 1,
     });
-    const primary = openOpenClawAgentDatabase(scope);
+    const primary = openAforaAgentDatabase(scope);
     const first = listSessionEntriesCore({ ...scope, clone: false });
     const alternate = new DatabaseSync(primary.path, { readOnly: true });
 
@@ -308,7 +308,7 @@ describe("SQLite session entry cache", () => {
     if (!before) {
       throw new Error("missing seeded external-write entry");
     }
-    const database = openOpenClawAgentDatabase(scope);
+    const database = openAforaAgentDatabase(scope);
     const external = new DatabaseSync(database.path);
     const maintenance = configureSqliteConnectionPragmas(external, {
       checkpointIntervalMs: 0,
@@ -356,7 +356,7 @@ describe("SQLite session entry cache", () => {
       throw new Error("missing seeded external-same-ms entry");
     }
 
-    const database = openOpenClawAgentDatabase(scope);
+    const database = openAforaAgentDatabase(scope);
     const external = new DatabaseSync(database.path);
     const maintenance = configureSqliteConnectionPragmas(external, {
       checkpointIntervalMs: 0,
@@ -399,7 +399,7 @@ describe("SQLite session entry cache", () => {
     });
     listSessionEntriesCore(scope);
 
-    const database = openOpenClawAgentDatabase(scope);
+    const database = openAforaAgentDatabase(scope);
     const localEntry = {
       label: "local-after",
       sessionId: "external-race-local",
@@ -457,7 +457,7 @@ describe("SQLite session entry cache", () => {
     const before = listSessionEntriesCore({ ...scope, clone: false, projection: "list" });
     const keptProjection = before.find((row) => row.sessionKey === scope.sessionKey)?.entry;
 
-    const database = openOpenClawAgentDatabase(scope);
+    const database = openAforaAgentDatabase(scope);
     const insertedKey = "agent:main:same-connection-inserted";
     const insertedEntry = {
       label: "projection-probe-inserted",
@@ -508,7 +508,7 @@ describe("SQLite session entry cache", () => {
     }
     listSessionEntriesCore({ ...scope, clone: false, projection: "list" });
 
-    const database = openOpenClawAgentDatabase(scope);
+    const database = openAforaAgentDatabase(scope);
     for (const index of [3, 19]) {
       const sessionKey = `agent:main:changed-key-scaling-${index}`;
       const entry = {
@@ -607,7 +607,7 @@ describe("SQLite session entry cache", () => {
     });
     listSessionEntriesCore(scope);
 
-    const database = openOpenClawAgentDatabase(scope);
+    const database = openAforaAgentDatabase(scope);
     const rawEntry = { label: "raw-after", sessionId: "raw", updatedAt: Date.now() };
     database.db
       .prepare("UPDATE session_nodes SET entry_json = ?, updated_at = ? WHERE session_key = ?")
@@ -630,12 +630,12 @@ describe("SQLite session entry cache", () => {
   it("invalidates cached keys when transcript creation inserts a placeholder node", async () => {
     const scope = createSessionScope("placeholder-key");
     await upsertSessionEntryCore(scope, { sessionId: "entry", updatedAt: 1 });
-    const database = openOpenClawAgentDatabase(scope);
+    const database = openAforaAgentDatabase(scope);
     const before = readSessionEntryCache(database, { cache: true });
     expect(before.keys).toEqual([scope.sessionKey]);
 
     const placeholderKey = "agent:main:placeholder-only";
-    runOpenClawAgentWriteTransaction((transactionDatabase) => {
+    runAforaAgentWriteTransaction((transactionDatabase) => {
       ensureTranscriptSessionRoot(
         transactionDatabase,
         {
@@ -659,7 +659,7 @@ describe("SQLite session entry cache", () => {
     await upsertSessionEntryCore(scope, { sessionId, updatedAt: 1 });
 
     expect(() =>
-      runOpenClawAgentWriteTransaction((database) => {
+      runAforaAgentWriteTransaction((database) => {
         ensureTranscriptSessionRoot(
           database,
           {
@@ -673,7 +673,7 @@ describe("SQLite session entry cache", () => {
       }, scope),
     ).toThrow("resolve the transcript target again before retrying");
 
-    const database = openOpenClawAgentDatabase(scope);
+    const database = openAforaAgentDatabase(scope);
     expect(
       database.db
         .prepare("SELECT session_key, entry_valid FROM session_nodes ORDER BY session_key")
@@ -696,7 +696,7 @@ describe("SQLite session entry cache", () => {
     }
 
     expect(() =>
-      runOpenClawAgentWriteTransaction((database) => {
+      runAforaAgentWriteTransaction((database) => {
         const updated = { ...borrowedBefore, label: "uncommitted", updatedAt: 2 };
         database.db
           .prepare("UPDATE session_nodes SET entry_json = ?, updated_at = ? WHERE session_key = ?")
@@ -735,7 +735,7 @@ describe("SQLite session entry cache", () => {
     await upsertSessionEntryCore(scope, { label: "cached", sessionId: "latest", updatedAt: 1 });
     expect(listSessionEntriesCore(scope)[0]?.entry.label).toBe("cached");
 
-    const database = openOpenClawAgentDatabase(scope);
+    const database = openAforaAgentDatabase(scope);
     const updated = { label: "latest", sessionId: "latest", updatedAt: 2 };
     database.db
       .prepare("UPDATE session_nodes SET entry_json = ?, updated_at = ? WHERE session_key = ?")

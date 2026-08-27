@@ -3,16 +3,16 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../state/afora-state-db.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../test-utils/afora-test-state.js";
 import type { GatewayActiveWorkInspectors } from "./gateway-active-work.js";
 import {
   executeSqliteQuerySync,
@@ -47,8 +47,8 @@ const {
   >(async () => ({
     status: "started" as const,
     pid: 12345,
-    command: "openclaw update --yes --channel beta --timeout 2700",
-    logPath: "/tmp/openclaw-handoff.log",
+    command: "afora update --yes --channel beta --timeout 2700",
+    logPath: "/tmp/afora-handoff.log",
   })),
   versionMock: { value: "1.0.0" },
 }));
@@ -64,11 +64,11 @@ vi.mock("../model-catalog/remote-refresh.js", async () => {
   return { ...actual, refreshRemoteModelCatalog: refreshRemoteModelCatalogMock };
 });
 
-vi.mock("./openclaw-root.js", async () => {
-  const actual = await vi.importActual<typeof import("./openclaw-root.js")>("./openclaw-root.js");
+vi.mock("./afora-root.js", async () => {
+  const actual = await vi.importActual<typeof import("./afora-root.js")>("./afora-root.js");
   return {
     ...actual,
-    resolveOpenClawPackageRoot: vi.fn(),
+    resolveAforaPackageRoot: vi.fn(),
   };
 });
 
@@ -129,7 +129,7 @@ vi.mock("./update-managed-service-handoff.js", () => ({
 
 const UPDATE_CHECK_STATE_KEY = "default";
 
-type UpdateCheckStateDatabase = Pick<OpenClawStateKyselyDatabase, "update_check_state">;
+type UpdateCheckStateDatabase = Pick<AforaStateKyselyDatabase, "update_check_state">;
 type PersistedUpdateCheckState = {
   lastCheckedAt?: string;
   lastNotifiedVersion?: string;
@@ -152,9 +152,9 @@ function presentString(value: string | null): string | undefined {
 
 describe("update-startup", () => {
   let tempDir: string;
-  let testState: OpenClawTestState;
+  let testState: AforaTestState;
 
-  let resolveOpenClawPackageRoot: (typeof import("./openclaw-root.js"))["resolveOpenClawPackageRoot"];
+  let resolveAforaPackageRoot: (typeof import("./afora-root.js"))["resolveAforaPackageRoot"];
   let checkUpdateStatus: (typeof import("./update-check.js"))["checkUpdateStatus"];
   let resolveNpmChannelTag: (typeof import("./update-check.js"))["resolveNpmChannelTag"];
   let runCommandWithTimeout: (typeof import("../process/exec.js"))["runCommandWithTimeout"];
@@ -175,7 +175,7 @@ describe("update-startup", () => {
   }
 
   function readPersistedUpdateCheckState(): PersistedUpdateCheckState | null {
-    const { db } = openOpenClawStateDatabase();
+    const { db } = openAforaStateDatabase();
     const stateDb = getNodeSqliteKysely<UpdateCheckStateDatabase>(db);
     const row = executeSqliteQueryTakeFirstSync(
       db,
@@ -205,7 +205,7 @@ describe("update-startup", () => {
   }
 
   function writePersistedUpdateCheckState(state: PersistedUpdateCheckState): void {
-    runOpenClawStateWriteTransaction(({ db }) => {
+    runAforaStateWriteTransaction(({ db }) => {
       const stateDb = getNodeSqliteKysely<UpdateCheckStateDatabase>(db);
       executeSqliteQuerySync(
         db,
@@ -238,18 +238,18 @@ describe("update-startup", () => {
     versionMock.value = "1.0.0";
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-17T10:00:00Z"));
-    testState = await createOpenClawTestState({
+    testState = await createAforaTestState({
       layout: "state-only",
-      prefix: "openclaw-update-check-suite-",
+      prefix: "afora-update-check-suite-",
       env: {
-        OPENCLAW_NO_AUTO_UPDATE: undefined,
-        OPENCLAW_SUPERVISOR_MODE: undefined,
-        OPENCLAW_SERVICE_KIND: undefined,
-        OPENCLAW_SERVICE_MARKER: undefined,
-        OPENCLAW_GATEWAY_SERVICE_PID: undefined,
-        OPENCLAW_LAUNCHD_LABEL: undefined,
-        OPENCLAW_SYSTEMD_UNIT: undefined,
-        OPENCLAW_WINDOWS_TASK_NAME: undefined,
+        AFORA_NO_AUTO_UPDATE: undefined,
+        AFORA_SUPERVISOR_MODE: undefined,
+        AFORA_SERVICE_KIND: undefined,
+        AFORA_SERVICE_MARKER: undefined,
+        AFORA_GATEWAY_SERVICE_PID: undefined,
+        AFORA_LAUNCHD_LABEL: undefined,
+        AFORA_SYSTEMD_UNIT: undefined,
+        AFORA_WINDOWS_TASK_NAME: undefined,
         INVOCATION_ID: undefined,
         NODE_ENV: "test",
         VITEST: undefined,
@@ -259,7 +259,7 @@ describe("update-startup", () => {
 
     // Perf: load mocked modules once (after timers/env are set up).
     if (!loaded) {
-      ({ resolveOpenClawPackageRoot } = await import("./openclaw-root.js"));
+      ({ resolveAforaPackageRoot } = await import("./afora-root.js"));
       ({ checkUpdateStatus, resolveNpmChannelTag } = await import("./update-check.js"));
       ({ runCommandWithTimeout } = await import("../process/exec.js"));
       ({
@@ -272,7 +272,7 @@ describe("update-startup", () => {
       } = await import("./update-startup.js"));
       loaded = true;
     }
-    vi.mocked(resolveOpenClawPackageRoot).mockClear();
+    vi.mocked(resolveAforaPackageRoot).mockClear();
     vi.mocked(checkUpdateStatus).mockClear();
     vi.mocked(resolveNpmChannelTag).mockClear();
     vi.mocked(runCommandWithTimeout).mockReset();
@@ -294,15 +294,15 @@ describe("update-startup", () => {
     startManagedServiceUpdateHandoffMock.mockResolvedValue({
       status: "started",
       pid: 12345,
-      command: "openclaw update --yes --channel beta --timeout 2700",
-      logPath: "/tmp/openclaw-handoff.log",
+      command: "afora update --yes --channel beta --timeout 2700",
+      logPath: "/tmp/afora-handoff.log",
     });
     resetUpdateAvailableStateForTest();
   });
 
   afterEach(async () => {
     vi.useRealTimers();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await testState.cleanup();
     resetUpdateAvailableStateForTest();
   });
@@ -316,7 +316,7 @@ describe("update-startup", () => {
   });
 
   it("retries install identity initialization after a failed probe", async () => {
-    vi.mocked(resolveOpenClawPackageRoot).mockResolvedValue("/opt/openclaw");
+    vi.mocked(resolveAforaPackageRoot).mockResolvedValue("/opt/afora");
     vi.mocked(checkUpdateStatus).mockRejectedValueOnce(new Error("probe failed"));
 
     await expect(getUpdateEffectiveChannel()).rejects.toThrow("probe failed");
@@ -328,7 +328,7 @@ describe("update-startup", () => {
 
   it("coalesces configless Git identity before the schedule cache is ready", async () => {
     let releaseStatus: ((status: UpdateCheckResult) => void) | undefined;
-    vi.mocked(resolveOpenClawPackageRoot).mockResolvedValue("/opt/openclaw");
+    vi.mocked(resolveAforaPackageRoot).mockResolvedValue("/opt/afora");
     vi.mocked(checkUpdateStatus).mockImplementationOnce(
       () =>
         new Promise<UpdateCheckResult>((resolve) => {
@@ -341,11 +341,11 @@ describe("update-startup", () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(checkUpdateStatus).toHaveBeenCalledTimes(1);
     releaseStatus?.({
-      root: "/opt/openclaw",
+      root: "/opt/afora",
       installKind: "git",
       packageManager: "pnpm",
       git: {
-        root: "/opt/openclaw",
+        root: "/opt/afora",
         sha: "current-sha",
         tag: null,
         branch: "main",
@@ -370,8 +370,8 @@ describe("update-startup", () => {
     mockNpmChannelTag(tag, version);
   }
 
-  function mockPackageInstallStatus(root = "/opt/openclaw") {
-    vi.mocked(resolveOpenClawPackageRoot).mockResolvedValue(root);
+  function mockPackageInstallStatus(root = "/opt/afora") {
+    vi.mocked(resolveAforaPackageRoot).mockResolvedValue(root);
     vi.mocked(checkUpdateStatus).mockResolvedValue({
       root,
       installKind: "package",
@@ -398,13 +398,13 @@ describe("update-startup", () => {
     fetchOk?: boolean;
   }) {
     const upstream = params?.upstream === undefined ? "origin/main" : params.upstream;
-    vi.mocked(resolveOpenClawPackageRoot).mockResolvedValue("/opt/openclaw");
+    vi.mocked(resolveAforaPackageRoot).mockResolvedValue("/opt/afora");
     vi.mocked(checkUpdateStatus).mockResolvedValue({
-      root: "/opt/openclaw",
+      root: "/opt/afora",
       installKind: "git",
       packageManager: "pnpm",
       git: {
-        root: "/opt/openclaw",
+        root: "/opt/afora",
         sha: params?.currentSha ?? "current-sha",
         tag: null,
         branch: params?.branch === undefined ? "main" : params.branch,
@@ -598,7 +598,7 @@ describe("update-startup", () => {
     const { log, parsed } = await runUpdateCheckAndReadState(channel);
 
     expect(log.info).toHaveBeenCalledWith(
-      `update available (latest): v2.0.0 (current v1.0.0). Run: ${formatCliCommand("openclaw update")}`,
+      `update available (latest): v2.0.0 (current v1.0.0). Run: ${formatCliCommand("afora update")}`,
     );
     expect(parsed?.lastNotifiedVersion).toBe("2.0.0");
     expect(parsed?.lastAvailableVersion).toBe("2.0.0");
@@ -913,7 +913,7 @@ describe("update-startup", () => {
     });
     expect(log.info).toHaveBeenCalledTimes(1);
     expect(log.info).toHaveBeenCalledWith(
-      `update available (extended-stable): v2.0.0 (current v1.0.0). Run: ${formatCliCommand("openclaw update")}`,
+      `update available (extended-stable): v2.0.0 (current v1.0.0). Run: ${formatCliCommand("afora update")}`,
     );
     expect(onUpdateAvailableChange).toHaveBeenCalledTimes(1);
     expect(onUpdateAvailableChange).toHaveBeenCalledWith({
@@ -940,7 +940,7 @@ describe("update-startup", () => {
 
   it("does no extended-stable hint or auto work when checkOnStart is false", async () => {
     await seedExtendedStableAvailability();
-    vi.mocked(resolveOpenClawPackageRoot).mockClear();
+    vi.mocked(resolveAforaPackageRoot).mockClear();
     vi.mocked(checkUpdateStatus).mockClear();
     vi.mocked(resolveNpmChannelTag).mockClear();
     const onUpdateAvailableChange = vi.fn();
@@ -952,7 +952,7 @@ describe("update-startup", () => {
       runAutoUpdate,
     });
 
-    expect(resolveOpenClawPackageRoot).not.toHaveBeenCalled();
+    expect(resolveAforaPackageRoot).not.toHaveBeenCalled();
     expect(checkUpdateStatus).not.toHaveBeenCalled();
     expect(resolveNpmChannelTag).not.toHaveBeenCalled();
     expect(runAutoUpdate).not.toHaveBeenCalled();
@@ -1053,12 +1053,12 @@ describe("update-startup", () => {
     await seedExtendedStableAvailability();
     seedStableAutoRolloutState();
     resetUpdateAvailableStateForTest();
-    vi.mocked(resolveOpenClawPackageRoot).mockClear();
+    vi.mocked(resolveAforaPackageRoot).mockClear();
     vi.mocked(checkUpdateStatus).mockClear();
     vi.mocked(resolveNpmChannelTag).mockClear();
-    vi.mocked(resolveOpenClawPackageRoot).mockResolvedValue("/opt/openclaw");
+    vi.mocked(resolveAforaPackageRoot).mockResolvedValue("/opt/afora");
     vi.mocked(checkUpdateStatus).mockResolvedValue({
-      root: "/opt/openclaw",
+      root: "/opt/afora",
       installKind: "git",
       packageManager: "unknown",
     } satisfies UpdateCheckResult);
@@ -1116,7 +1116,7 @@ describe("update-startup", () => {
 
     await runExtendedStableUpdateCheck({ isNixMode: true, runAutoUpdate });
 
-    expect(resolveOpenClawPackageRoot).not.toHaveBeenCalled();
+    expect(resolveAforaPackageRoot).not.toHaveBeenCalled();
     expect(checkUpdateStatus).not.toHaveBeenCalled();
     expect(resolveNpmChannelTag).not.toHaveBeenCalled();
     expect(runAutoUpdate).not.toHaveBeenCalled();
@@ -1157,7 +1157,7 @@ describe("update-startup", () => {
     });
 
     expect(checkUpdateStatus).toHaveBeenCalledWith({
-      root: "/opt/openclaw",
+      root: "/opt/afora",
       timeoutMs: 2500,
       fetchGit: true,
       includeRegistry: false,
@@ -1184,7 +1184,7 @@ describe("update-startup", () => {
       [
         "git",
         "-C",
-        "/opt/openclaw",
+        "/opt/afora",
         "log",
         "--format=%h%x09%s",
         "--max-count=5",
@@ -1214,7 +1214,7 @@ describe("update-startup", () => {
       channel: "dev",
       timeoutMs: 45 * 60 * 1000,
       restartDrainTimeoutMs: 300_000,
-      root: "/opt/openclaw",
+      root: "/opt/afora",
       devTarget: {
         mode: "tracked",
         upstreamRef: "origin/main",
@@ -1226,7 +1226,7 @@ describe("update-startup", () => {
   it("pins direct dev campaign updates to the announced commit", async () => {
     mockDevGitStatus({ upstreamSha: "frozen-upstream-sha" });
     const originalArgv = process.argv.slice();
-    process.argv = [process.execPath, "/opt/openclaw/dist/entry.js"];
+    process.argv = [process.execPath, "/opt/afora/dist/entry.js"];
     try {
       await runGatewayUpdateCheck({
         cfg: { update: { channel: "dev", auto: { enabled: true } } },
@@ -1313,7 +1313,7 @@ describe("update-startup", () => {
       reason: "managed-service-handoff-failed",
     },
   ] as const)("continues automatic dev campaigns from a $name receipt", async (testCase) => {
-    runOpenClawStateWriteTransaction(({ db }) => {
+    runAforaStateWriteTransaction(({ db }) => {
       writeUpdateInstallReceiptRowSync(db, {
         kind: "update",
         status: testCase.status,
@@ -1321,7 +1321,7 @@ describe("update-startup", () => {
         stats: {
           mode: "git",
           ...(testCase.reason ? { reason: testCase.reason } : {}),
-          root: "/opt/openclaw",
+          root: "/opt/afora",
           after: {
             sha: "current-sha",
             version: "1.0.0",
@@ -1343,7 +1343,7 @@ describe("update-startup", () => {
     });
 
     expect(checkUpdateStatus).toHaveBeenCalledWith({
-      root: "/opt/openclaw",
+      root: "/opt/afora",
       timeoutMs: 2500,
       fetchGit: true,
       includeRegistry: false,
@@ -1410,14 +1410,14 @@ describe("update-startup", () => {
   it("reports commit and verified installation times for the current checkout", async () => {
     const installedAtMs = Date.now() - 60 * 60 * 1000;
     const commitAtMs = installedAtMs - 24 * 60 * 60 * 1000;
-    runOpenClawStateWriteTransaction(({ db }) => {
+    runAforaStateWriteTransaction(({ db }) => {
       writeUpdateInstallReceiptRowSync(db, {
         kind: "update",
         status: "ok",
         ts: installedAtMs,
         stats: {
           mode: "git",
-          root: "/opt/openclaw",
+          root: "/opt/afora",
           after: { sha: "current-sha", version: "1.0.0", upstreamRef: "origin/main" },
         },
       });
@@ -1441,14 +1441,14 @@ describe("update-startup", () => {
 
   it("does not inherit install time from a same-SHA receipt for another checkout", async () => {
     const installedAtMs = Date.now() - 60 * 60 * 1000;
-    runOpenClawStateWriteTransaction(({ db }) => {
+    runAforaStateWriteTransaction(({ db }) => {
       writeUpdateInstallReceiptRowSync(db, {
         kind: "update",
         status: "ok",
         ts: installedAtMs,
         stats: {
           mode: "git",
-          root: "/opt/other-openclaw",
+          root: "/opt/other-afora",
           after: { sha: "current-sha", version: "1.0.0" },
         },
       });
@@ -1726,7 +1726,7 @@ describe("update-startup", () => {
       channel: "stable",
       timeoutMs: 45 * 60 * 1000,
       restartDrainTimeoutMs: 300_000,
-      root: "/opt/openclaw",
+      root: "/opt/afora",
       packageTargetVersion: "2.0.0",
     });
   });
@@ -1744,7 +1744,7 @@ describe("update-startup", () => {
       channel: "beta",
       timeoutMs: 45 * 60 * 1000,
       restartDrainTimeoutMs: 300_000,
-      root: "/opt/openclaw",
+      root: "/opt/afora",
       packageTargetVersion: "2.0.0-beta.1",
     });
   });
@@ -1761,9 +1761,9 @@ describe("update-startup", () => {
     expect(runAutoUpdate).toHaveBeenCalledTimes(1);
   });
 
-  it("honors OPENCLAW_NO_AUTO_UPDATE for configured auto-updates", async () => {
+  it("honors AFORA_NO_AUTO_UPDATE for configured auto-updates", async () => {
     mockPackageUpdateStatus("beta", "2.0.0-beta.1");
-    process.env.OPENCLAW_NO_AUTO_UPDATE = "1";
+    process.env.AFORA_NO_AUTO_UPDATE = "1";
     const log = { info: vi.fn() };
     const runAutoUpdate = createAutoUpdateSuccessMock();
 
@@ -1777,10 +1777,10 @@ describe("update-startup", () => {
 
     expect(runAutoUpdate).not.toHaveBeenCalled();
     const disabledLogCall = log.info.mock.calls.find(
-      ([message]) => message === "auto-update disabled by OPENCLAW_NO_AUTO_UPDATE",
+      ([message]) => message === "auto-update disabled by AFORA_NO_AUTO_UPDATE",
     );
     expect(disabledLogCall).toEqual([
-      "auto-update disabled by OPENCLAW_NO_AUTO_UPDATE",
+      "auto-update disabled by AFORA_NO_AUTO_UPDATE",
       {
         version: "2.0.0-beta.1",
         tag: "beta",
@@ -1790,7 +1790,7 @@ describe("update-startup", () => {
 
   it("delegates configured auto-updates to an external supervisor", async () => {
     mockPackageUpdateStatus("beta", "2.0.0-beta.1");
-    process.env.OPENCLAW_SUPERVISOR_MODE = "external";
+    process.env.AFORA_SUPERVISOR_MODE = "external";
     const log = { info: vi.fn() };
     const runAutoUpdate = createAutoUpdateSuccessMock();
 
@@ -1823,7 +1823,7 @@ describe("update-startup", () => {
     });
 
     const originalArgv = process.argv.slice();
-    process.argv = [process.execPath, "/opt/openclaw/dist/entry.js"];
+    process.argv = [process.execPath, "/opt/afora/dist/entry.js"];
     try {
       await runAutoUpdateCheckWithDefaults({
         cfg: createBetaAutoUpdateConfig(),
@@ -1836,12 +1836,12 @@ describe("update-startup", () => {
     expect(startManagedServiceUpdateHandoffMock).not.toHaveBeenCalled();
     expect(scheduleGatewaySigusr1RestartMock).not.toHaveBeenCalled();
     expect(detectRespawnSupervisorMock).toHaveBeenCalledWith(process.env, process.platform, {
-      includeLinuxOpenClawGatewayServiceMarker: true,
+      includeLinuxAforaGatewayServiceMarker: true,
     });
     const [argv, options] = requireFirstRunCommandCall();
     expect(argv).toEqual([
       process.execPath,
-      "/opt/openclaw/dist/entry.js",
+      "/opt/afora/dist/entry.js",
       "update",
       "--yes",
       "--channel",
@@ -1869,8 +1869,8 @@ describe("update-startup", () => {
     startManagedServiceUpdateHandoffMock.mockResolvedValueOnce({
       status: "started",
       pid: 12345,
-      command: "openclaw update --yes --channel beta --tag 2.0.0-beta.1 --timeout 2700",
-      logPath: "/tmp/openclaw-handoff.log",
+      command: "afora update --yes --channel beta --tag 2.0.0-beta.1 --timeout 2700",
+      logPath: "/tmp/afora-handoff.log",
     });
     const log = { info: vi.fn() };
 
@@ -1929,8 +1929,8 @@ describe("update-startup", () => {
       version: "2.0.0-beta.1",
       tag: "beta",
       forced: false,
-      command: "openclaw update --yes --channel beta --tag 2.0.0-beta.1 --timeout 2700",
-      logPath: "/tmp/openclaw-handoff.log",
+      command: "afora update --yes --channel beta --tag 2.0.0-beta.1 --timeout 2700",
+      logPath: "/tmp/afora-handoff.log",
     });
     expect(getUpdateSchedule()?.campaign?.state).toBe("applying");
   });
@@ -1978,8 +1978,8 @@ describe("update-startup", () => {
     startManagedServiceUpdateHandoffMock.mockResolvedValueOnce({
       status: "joined",
       pid: 12345,
-      command: "openclaw update --yes --channel beta --timeout 2700",
-      logPath: "/tmp/openclaw-handoff.log",
+      command: "afora update --yes --channel beta --timeout 2700",
+      logPath: "/tmp/afora-handoff.log",
       handoffId: "handoff-existing",
     });
 
@@ -2001,11 +2001,11 @@ describe("update-startup", () => {
 
     expect(runCommandWithTimeout).not.toHaveBeenCalled();
     expect(detectRespawnSupervisorMock).toHaveBeenCalledWith(process.env, process.platform, {
-      includeLinuxOpenClawGatewayServiceMarker: true,
+      includeLinuxAforaGatewayServiceMarker: true,
     });
     expect(startManagedServiceUpdateHandoffMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        root: "/opt/openclaw",
+        root: "/opt/afora",
         timeoutMs: 45 * 60 * 1000,
         channel: "beta",
         tag: "2.0.0-beta.1",
@@ -2067,7 +2067,7 @@ describe("update-startup", () => {
 
     await vi.advanceTimersByTimeAsync(48 * 60 * 60 * 1000);
 
-    expect(resolveOpenClawPackageRoot).not.toHaveBeenCalled();
+    expect(resolveAforaPackageRoot).not.toHaveBeenCalled();
     expect(checkUpdateStatus).not.toHaveBeenCalled();
     expect(resolveNpmChannelTag).not.toHaveBeenCalled();
     stop();

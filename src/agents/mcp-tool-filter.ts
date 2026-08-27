@@ -1,5 +1,5 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { filterStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { filterStringEntries } from "@afora/normalization-core/string-normalization";
 import type { McpServerToolFilterConfig } from "../config/types.mcp.js";
 
 /** Match the documented MCP tool-filter glob syntax: exact text plus `*`. */

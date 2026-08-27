@@ -1,21 +1,21 @@
 // Dreams tab host. Agent selection is owned by the parent Memory page.
 import { html, nothing } from "lit";
 import { property } from "lit/decorators.js";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import "../agents/memory/memory-panel.ts";
 
-class MemoryDreamingSettings extends OpenClawLightDomElement {
+class MemoryDreamingSettings extends AforaLightDomElement {
   @property() agentId: string | null = null;
 
   override render() {
     return html`
       ${this.agentId
-        ? html`<openclaw-agent-memory-panel .agentId=${this.agentId}></openclaw-agent-memory-panel>`
+        ? html`<afora-agent-memory-panel .agentId=${this.agentId}></afora-agent-memory-panel>`
         : nothing}
     `;
   }
 }
 
-if (!customElements.get("openclaw-memory-dreaming")) {
-  customElements.define("openclaw-memory-dreaming", MemoryDreamingSettings);
+if (!customElements.get("afora-memory-dreaming")) {
+  customElements.define("afora-memory-dreaming", MemoryDreamingSettings);
 }

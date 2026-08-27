@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import type { AgentRunResultView } from "../agents/agent-run-result.js";
 import { listAgentEntries, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { loadAuthProfileStoreForRuntime } from "../agents/auth-profiles/store.js";
@@ -15,7 +15,7 @@ import {
 import { resolveProviderIdForAuth } from "../agents/provider-auth-aliases.js";
 import { buildAgentRuntimeAuthPlan } from "../agents/runtime-plan/auth.js";
 import { GEMINI_CLI_DEFAULT_MODEL_REF } from "../commands/onboard-inference.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { ProviderAuthResult } from "../plugins/types.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import {
@@ -31,10 +31,10 @@ export type SetupInferenceTestPlan = {
   model: string;
   modelRef: string;
   /** Authored/staged config used for route, auth, and persistence decisions. */
-  config: OpenClawConfig;
-  /** Execution-only projection that admits the reserved OpenClaw agent. */
-  executionConfig?: OpenClawConfig;
-  /** Execution identity used by the real OpenClaw turn. */
+  config: AforaConfig;
+  /** Execution-only projection that admits the reserved Afora agent. */
+  executionConfig?: AforaConfig;
+  /** Execution identity used by the real Afora turn. */
   agentId?: string;
   /** Default-agent owner whose model/runtime config is being selected. */
   routeAgentId?: string;
@@ -46,14 +46,14 @@ export type SetupInferenceTestPlan = {
   persistModelRef?: string;
   manualAuth?: {
     profiles: ProviderAuthResult["profiles"];
-    runtimeConfigBase: OpenClawConfig;
-    sourceConfigBase: OpenClawConfig;
+    runtimeConfigBase: AforaConfig;
+    sourceConfigBase: AforaConfig;
     configPatch: unknown;
     pluginId?: string;
   };
 };
 
-export function configureCodexCliPreparedAuth(cfg: OpenClawConfig): OpenClawConfig {
+export function configureCodexCliPreparedAuth(cfg: AforaConfig): AforaConfig {
   const entry = cfg.plugins?.entries?.codex;
   const pluginConfig = entry?.config ?? {};
   const appServer =
@@ -190,7 +190,7 @@ export function parseRef(modelRef: string): { provider: string; model: string } 
 }
 
 export function projectSetupTargetModelMetadata(
-  config: OpenClawConfig,
+  config: AforaConfig,
   modelRef: string,
   agentId?: string,
 ): unknown {
@@ -236,7 +236,7 @@ export function resolveSetupAgentRuntimeId(
     kind === "provider-auth" ||
     parseProviderAutoSetupChoiceId(kind) !== undefined
   ) {
-    return "openclaw";
+    return "afora";
   }
   return undefined;
 }
@@ -269,8 +269,8 @@ export function mapFailoverReasonToSetupStatus(
 }
 
 export function prepareManualAuthForActivation(params: {
-  baseConfig: OpenClawConfig;
-  preparedConfig: OpenClawConfig;
+  baseConfig: AforaConfig;
+  preparedConfig: AforaConfig;
   profiles: ProviderAuthResult["profiles"];
   selectedProfileId: string;
   modelRef: string;
@@ -278,7 +278,7 @@ export function prepareManualAuthForActivation(params: {
   pluginId?: string;
   agentId?: string;
 }): {
-  config: OpenClawConfig;
+  config: AforaConfig;
   profiles: ProviderAuthResult["profiles"];
   selectedProfileId: string;
 } {
@@ -304,8 +304,8 @@ export function prepareManualAuthForActivation(params: {
 }
 
 function copySelectedModelMetadata(params: {
-  target: OpenClawConfig;
-  prepared: OpenClawConfig;
+  target: AforaConfig;
+  prepared: AforaConfig;
   modelRef: string;
   agentId?: string;
 }): void {
@@ -355,7 +355,7 @@ function copySelectedModelMetadata(params: {
 }
 
 function findSelectedProviderConfigKey(
-  config: OpenClawConfig,
+  config: AforaConfig,
   providerId: string,
 ): string | undefined {
   const providers = config.models?.providers;
@@ -373,19 +373,19 @@ function findSelectedProviderConfigKey(
 
 /**
  * Provider auth hooks are untrusted setup input. Carry only the selected
- * inference route's config into the probe; OpenClaw owns every other setup
+ * inference route's config into the probe; Afora owns every other setup
  * surface after intelligence exists.
  */
 export function projectManualInferenceConfig(params: {
-  baseConfig: OpenClawConfig;
-  preparedConfig: OpenClawConfig;
+  baseConfig: AforaConfig;
+  preparedConfig: AforaConfig;
   selectedProfile?: ProviderAuthResult["profiles"][number];
   selectedProfileId?: string;
   modelRef: string;
   providerId: string;
   pluginId?: string;
   agentId?: string;
-}): OpenClawConfig {
+}): AforaConfig {
   const config = structuredClone(params.baseConfig);
   if (params.selectedProfile && params.selectedProfileId) {
     const metadata = params.preparedConfig.auth?.profiles?.[params.selectedProfile.profileId] ?? {
@@ -438,7 +438,7 @@ export function projectManualInferenceConfig(params: {
 }
 
 export function canonicalizeSetupModelRef(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   raw: string;
   defaultProvider: string;
 }): string {

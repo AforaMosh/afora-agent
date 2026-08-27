@@ -1,10 +1,10 @@
 // Whatsapp plugin module implements targets runtime behavior.
 import fs from "node:fs";
 import path from "node:path";
-import { normalizeE164 } from "openclaw/plugin-sdk/account-resolution";
-import type { MarkdownTableMode } from "openclaw/plugin-sdk/config-contracts";
-import { chunkMarkdownTextWithMode, type ChunkMode } from "openclaw/plugin-sdk/reply-chunking";
-import { logVerbose, shouldLogVerbose } from "openclaw/plugin-sdk/runtime-env";
+import { normalizeE164 } from "afora-agent/plugin-sdk/account-resolution";
+import type { MarkdownTableMode } from "afora-agent/plugin-sdk/config-contracts";
+import { chunkMarkdownTextWithMode, type ChunkMode } from "afora-agent/plugin-sdk/reply-chunking";
+import { logVerbose, shouldLogVerbose } from "afora-agent/plugin-sdk/runtime-env";
 import {
   FormatCapabilityProfile,
   type MarkdownIR,
@@ -12,8 +12,8 @@ import {
   renderMarkdownIRChunksWithinLimit,
   renderMarkdownWithMarkers,
   sliceMarkdownIR,
-} from "openclaw/plugin-sdk/text-chunking";
-import { CONFIG_DIR, resolveUserPath } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/text-chunking";
+import { CONFIG_DIR, resolveUserPath } from "afora-agent/plugin-sdk/text-utility-runtime";
 
 const WHATSAPP_FORMAT_CAPABILITIES = FormatCapabilityProfile.define({
   mechanism: "markdown",

@@ -22,7 +22,7 @@ type SqliteSessionSchemaBaselineWriteResult = {
   hashPath: string;
 };
 
-const DEFAULT_SCHEMA_INPUT = "src/state/openclaw-agent-schema.sql";
+const DEFAULT_SCHEMA_INPUT = "src/state/afora-agent-schema.sql";
 const DEFAULT_SQL_OUTPUT = ".artifacts/sqlite-session-transcript-schema-baseline.sql";
 const DEFAULT_HASH_OUTPUT = "docs/.generated/sqlite-session-transcript-schema-baseline.sha256";
 

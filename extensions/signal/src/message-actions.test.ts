@@ -1,5 +1,5 @@
 // Signal tests cover message actions plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const sendReactionsModule = await import("./send-reactions.js");
@@ -11,7 +11,7 @@ const removeReactionSignalMock = vi
   .mockResolvedValue({ ok: true });
 const { signalMessageActions } = await import("./message-actions.js");
 
-function createSignalAccountOverrideCfg(): OpenClawConfig {
+function createSignalAccountOverrideCfg(): AforaConfig {
   return {
     channels: {
       signal: {
@@ -22,7 +22,7 @@ function createSignalAccountOverrideCfg(): OpenClawConfig {
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 describe("signalMessageActions", () => {
@@ -33,14 +33,14 @@ describe("signalMessageActions", () => {
 
   it("lists actions based on configured accounts and reaction gates", () => {
     expect(
-      signalMessageActions.describeMessageTool?.({ cfg: {} as OpenClawConfig })?.actions ?? [],
+      signalMessageActions.describeMessageTool?.({ cfg: {} as AforaConfig })?.actions ?? [],
     ).toStrictEqual([]);
 
     expect(
       signalMessageActions.describeMessageTool?.({
         cfg: {
           channels: { signal: { account: "+15550001111", actions: { reactions: false } } },
-        } as OpenClawConfig,
+        } as AforaConfig,
       })?.actions,
     ).toEqual(["send"]);
 
@@ -73,7 +73,7 @@ describe("signalMessageActions", () => {
       ctx: {
         channel: "signal",
         action: "send",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         params: { replyTo: "1700000000001" },
       },
       to: "+15550001111",
@@ -90,7 +90,7 @@ describe("signalMessageActions", () => {
       ctx: {
         channel: "signal",
         action: "send",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         params: { replyTo: "1700000000001" },
         toolContext: { currentMessageId: "1700000000001", replyToMode: "first" },
       },
@@ -109,7 +109,7 @@ describe("signalMessageActions", () => {
         ctx: {
           channel: "signal",
           action: "send",
-          cfg: {} as OpenClawConfig,
+          cfg: {} as AforaConfig,
           params: { replyTo: "1700000000001" },
           toolContext: { currentMessageId: "1700000000001", replyToMode },
         },
@@ -126,7 +126,7 @@ describe("signalMessageActions", () => {
   it("blocks reactions when the action gate is disabled", async () => {
     const cfg = {
       channels: { signal: { account: "+15550001111", actions: { reactions: false } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await expect(
       signalMessageActions.handleAction?.({
@@ -152,7 +152,7 @@ describe("signalMessageActions", () => {
       },
       {
         name: "normalizes uuid recipients",
-        cfg: { channels: { signal: { account: "+15550001111" } } } as OpenClawConfig,
+        cfg: { channels: { signal: { account: "+15550001111" } } } as AforaConfig,
         params: {
           to: "uuid:123e4567-e89b-12d3-a456-426614174000",
           messageId: "123",
@@ -165,7 +165,7 @@ describe("signalMessageActions", () => {
       },
       {
         name: "passes groupId and targetAuthor for group reactions",
-        cfg: { channels: { signal: { account: "+15550001111" } } } as OpenClawConfig,
+        cfg: { channels: { signal: { account: "+15550001111" } } } as AforaConfig,
         params: {
           to: "signal:group:group-id",
           targetAuthor: "uuid:123e4567-e89b-12d3-a456-426614174000",
@@ -183,7 +183,7 @@ describe("signalMessageActions", () => {
       },
       {
         name: "falls back to toolContext.currentMessageId when messageId is omitted",
-        cfg: { channels: { signal: { account: "+15550001111" } } } as OpenClawConfig,
+        cfg: { channels: { signal: { account: "+15550001111" } } } as AforaConfig,
         params: { to: "+15559999999", emoji: "🔥" },
         expectedRecipient: "+15559999999",
         expectedTimestamp: 1737630212345,
@@ -228,7 +228,7 @@ describe("signalMessageActions", () => {
   it("binds provider reactions to the canonical target", async () => {
     const cfg = {
       channels: { signal: { account: "+15550001111" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await signalMessageActions.handleAction?.({
       channel: "signal",
@@ -296,7 +296,7 @@ describe("signalMessageActions", () => {
         channel: "signal",
         action: "react",
         params: { to: "+15559999999", messageId: "123", emoji: "✅" },
-        cfg: cfg as OpenClawConfig,
+        cfg: cfg as AforaConfig,
         accountId,
       }),
     ).rejects.toThrow(error);
@@ -308,7 +308,7 @@ describe("signalMessageActions", () => {
   it("rejects invalid reaction inputs before dispatch", async () => {
     const cfg = {
       channels: { signal: { account: "+15550001111" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await expect(
       signalMessageActions.handleAction?.({

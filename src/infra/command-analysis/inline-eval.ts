@@ -1,6 +1,6 @@
 // Interpreter inline-eval detection recognizes flags and positional program
 // forms that execute command text without reading a script file.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { normalizeExecutableToken } from "../exec-wrapper-resolution.js";
 
 export type InterpreterInlineEvalHit = {

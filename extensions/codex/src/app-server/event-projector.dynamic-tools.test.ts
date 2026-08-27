@@ -18,7 +18,7 @@ import {
 registerCodexEventProjectorTestLifecycle();
 
 describe("CodexAppServerEventProjector dynamic tool projection", () => {
-  it("records dynamic OpenClaw tool calls in mirrored transcript snapshots", async () => {
+  it("records dynamic Afora tool calls in mirrored transcript snapshots", async () => {
     const projector = await createProjector(undefined, {
       resolveDynamicToolResultContentSource: (toolName) =>
         toolName === "browser" ? "network" : undefined,
@@ -60,7 +60,7 @@ describe("CodexAppServerEventProjector dynamic tool projection", () => {
     expect(toolResultMessage.toolCallId).toBe("call-browser-1");
     expect(toolResultMessage.toolName).toBe("browser");
     expect(toolResultMessage.isError).toBe(false);
-    expect(toolResultMessage["__openclaw"]).toMatchObject({ resultContentSource: "network" });
+    expect(toolResultMessage["__afora"]).toMatchObject({ resultContentSource: "network" });
     const toolResultContent = requireRecord(
       requireArray(toolResultMessage.content, "tool result content")[0],
       "tool result content item",
@@ -72,7 +72,7 @@ describe("CodexAppServerEventProjector dynamic tool projection", () => {
     expect(toolResultContent.toolCallId).toBe("call-browser-1");
     expect(toolResultContent.content).toBe("opened");
     expect(
-      requireRecord(result.messagesSnapshot[3], "final assistant")["__openclaw"],
+      requireRecord(result.messagesSnapshot[3], "final assistant")["__afora"],
     ).toMatchObject({
       turnTainted: true,
     });
@@ -172,10 +172,10 @@ describe("CodexAppServerEventProjector dynamic tool projection", () => {
     expect(toolResult).toMatchObject({
       role: "toolResult",
       toolName: "web_search",
-      __openclaw: { resultContentSource: "network" },
+      __afora: { resultContentSource: "network" },
     });
     expect(
-      requireRecord(result.messagesSnapshot[3], "final assistant")["__openclaw"],
+      requireRecord(result.messagesSnapshot[3], "final assistant")["__afora"],
     ).toMatchObject({
       turnTainted: true,
     });
@@ -322,11 +322,11 @@ describe("CodexAppServerEventProjector dynamic tool projection", () => {
         arguments: { action: "send", text: "hello" },
         executionStarted: false,
         outcome: "failure",
-        failure: { error: "Unknown OpenClaw tool: message" },
+        failure: { error: "Unknown Afora tool: message" },
       }),
       success: false,
       terminalType: "error",
-      contentItems: [{ type: "inputText", text: "Unknown OpenClaw tool: message" }],
+      contentItems: [{ type: "inputText", text: "Unknown Afora tool: message" }],
     });
 
     const result = projector.buildResult(buildEmptyToolTelemetry());

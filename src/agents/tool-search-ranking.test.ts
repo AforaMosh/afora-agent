@@ -11,7 +11,7 @@ import type { ToolSearchCatalogEntry } from "./tool-search-types.js";
 function entry(partial: Partial<ToolSearchCatalogEntry>): ToolSearchCatalogEntry {
   return {
     id: partial.name ?? "id",
-    source: "openclaw",
+    source: "afora",
     name: "tool",
     description: "",
     tool: {} as never,

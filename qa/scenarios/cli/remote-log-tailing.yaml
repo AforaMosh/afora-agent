@@ -7,7 +7,7 @@ scenario:
     primary:
       - cli.remote-log-tailing
       - observability.gateway-rpc-logs-tail
-      - observability.openclaw-logs
+      - observability.afora-logs
   objective: Verify authenticated remote log tailing through the real Gateway and packaged CLI.
   successCriteria:
     - The Gateway logs.tail RPC honors line, byte, and cursor bounds.

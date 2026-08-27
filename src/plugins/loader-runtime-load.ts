@@ -62,19 +62,19 @@ function createDeferredGatewayNodesRuntime(runtime: PluginRuntime): PluginRuntim
   };
 }
 
-export function loadOpenClawPlugins(options: PluginLoadOptions = {}): PluginRegistry {
-  return loadOpenClawPluginsInternal(options);
+export function loadAforaPlugins(options: PluginLoadOptions = {}): PluginRegistry {
+  return loadAforaPluginsInternal(options);
 }
 
 /** Internal entry for host-owned snapshots that need a narrow registration runtime. */
-export function loadOpenClawPluginsWithInternalOverrides(
+export function loadAforaPluginsWithInternalOverrides(
   options: PluginLoadOptions & { cache: false },
   overrides: InternalPluginLoadOverrides,
 ): PluginRegistry {
-  return loadOpenClawPluginsInternal(options, overrides);
+  return loadAforaPluginsInternal(options, overrides);
 }
 
-function loadOpenClawPluginsInternal(
+function loadAforaPluginsInternal(
   options: PluginLoadOptions,
   overrides?: InternalPluginLoadOverrides,
 ): PluginRegistry {
@@ -278,7 +278,7 @@ function loadOpenClawPluginsInternal(
         logger.warn(
           `[plugins] ${failedPlugins.length} plugin(s) failed to initialize (${formatPluginFailureSummary(
             failedPlugins,
-          )}). Run 'openclaw plugins inspect <id> --runtime --json' for runtime diagnostics, 'openclaw plugins list' for registry state, and restart the Gateway after plugin code or load-path changes.`,
+          )}). Run 'afora plugins inspect <id> --runtime --json' for runtime diagnostics, 'afora plugins list' for registry state, and restart the Gateway after plugin code or load-path changes.`,
         );
       }
     }

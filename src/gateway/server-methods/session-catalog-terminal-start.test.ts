@@ -133,7 +133,7 @@ describe("sessions.catalog.startTerminal", () => {
   });
 
   it("rechecks local cwd after the provider plan resolves", async () => {
-    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-catalog-start-"));
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "afora-catalog-start-"));
     let releasePlan!: () => void;
     const planGate = new Promise<void>((resolve) => {
       releasePlan = resolve;
@@ -227,16 +227,16 @@ describe("sessions.catalog.startTerminal", () => {
     });
     activeProvider = provider({ startTerminalSession: startTerminalSession as never });
     const home = os.userInfo().homedir;
-    const stateDir = path.join(home, ".openclaw-dev");
+    const stateDir = path.join(home, ".afora-dev");
 
     const respond = await withEnvAsync(
       {
         HOME: home,
         USERPROFILE: home,
-        OPENCLAW_HOME: undefined,
-        OPENCLAW_PROFILE: "dev",
-        OPENCLAW_STATE_DIR: stateDir,
-        OPENCLAW_CONFIG_PATH: path.join(stateDir, "openclaw.json"),
+        AFORA_HOME: undefined,
+        AFORA_PROFILE: "dev",
+        AFORA_STATE_DIR: stateDir,
+        AFORA_CONFIG_PATH: path.join(stateDir, "afora.json"),
       },
       async () =>
         await call(

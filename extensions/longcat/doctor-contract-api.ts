@@ -1,8 +1,8 @@
 // LongCat doctor contract repairs the historical stock model price persisted
 // by onboarding. Match the complete stock row so operator-customized models
 // and prices are never rewritten when the vendor catalog changes.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { asObjectRecord } from "openclaw/plugin-sdk/runtime-doctor-migrations";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { asObjectRecord } from "afora-agent/plugin-sdk/runtime-doctor-migrations";
 
 const MODELS_PATH = ["models", "providers", "longcat", "models"];
 const LEGACY_CACHE_WRITE_PRICE = 0.75;
@@ -60,13 +60,13 @@ export const legacyConfigRules = [
   {
     path: MODELS_PATH,
     message:
-      'models.providers.longcat.models contains the historical stock LongCat-2.0 cache-write price; run "openclaw doctor --fix" to update it without changing customized rows.',
+      'models.providers.longcat.models contains the historical stock LongCat-2.0 cache-write price; run "afora doctor --fix" to update it without changing customized rows.',
     match: hasLegacyStockLongCatModel,
   },
 ];
 
-export function normalizeCompatibilityConfig({ cfg }: { cfg: OpenClawConfig }): {
-  config: OpenClawConfig;
+export function normalizeCompatibilityConfig({ cfg }: { cfg: AforaConfig }): {
+  config: AforaConfig;
   changes: string[];
 } {
   const models = cfg.models;

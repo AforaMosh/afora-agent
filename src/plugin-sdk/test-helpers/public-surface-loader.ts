@@ -30,7 +30,7 @@ function resolveSourceArtifactPath(packageDir: string, artifactBasename: string)
 
 function resolveExtensionDirByManifestId(pluginId: string): string {
   const pluginDir = path.resolve(repoRoot, "extensions", pluginId);
-  const manifest = readJson(path.join(pluginDir, "openclaw.plugin.json")) as
+  const manifest = readJson(path.join(pluginDir, "afora.plugin.json")) as
     | { id?: unknown }
     | undefined;
   if (manifest?.id === pluginId) {

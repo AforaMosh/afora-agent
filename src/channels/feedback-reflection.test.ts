@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { recordChannelFeedbackEvent, runChannelFeedbackReflection } from "./feedback-reflection.js";
 import {
   configureChannelAdmissionEvidenceCollection,
@@ -26,7 +26,7 @@ vi.mock("../config/sessions/session-accessor.js", () => ({
 }));
 vi.mock("./turn/lifecycle.js", () => ({ dispatchRoutedChannelTurn }));
 
-const cfg = {} as OpenClawConfig;
+const cfg = {} as AforaConfig;
 
 describe("channel feedback reflection", () => {
   beforeEach(() => vi.clearAllMocks());

@@ -3,8 +3,8 @@ import {
   normalizeTranscriptForMatch,
   runRealtimeSttLiveTest,
   synthesizeElevenLabsLiveSpeech,
-} from "openclaw/plugin-sdk/provider-test-contracts";
-import { isLiveTestEnabled } from "openclaw/plugin-sdk/test-live";
+} from "afora-agent/plugin-sdk/provider-test-contracts";
+import { isLiveTestEnabled } from "afora-agent/plugin-sdk/test-live";
 import { describe, expect, it } from "vitest";
 import { mistralMediaUnderstandingProvider } from "./media-understanding-provider.js";
 import { buildMistralRealtimeTranscriptionProvider } from "./realtime-transcription-provider.js";
@@ -16,7 +16,7 @@ const describeLive = LIVE && MISTRAL_KEY && ELEVENLABS_KEY ? describe : describe
 
 describeLive("mistral plugin live", () => {
   it("transcribes synthesized speech through the media provider", async () => {
-    const phrase = "Testing OpenClaw Mistral speech to text integration OK.";
+    const phrase = "Testing Afora Mistral speech to text integration OK.";
     const audio = await synthesizeElevenLabsLiveSpeech({
       text: phrase,
       apiKey: ELEVENLABS_KEY,
@@ -33,13 +33,13 @@ describeLive("mistral plugin live", () => {
     });
 
     const normalized = normalizeTranscriptForMatch(transcript?.text ?? "");
-    expect(normalized).toContain("openclaw");
+    expect(normalized).toContain("afora");
     expect(normalized).toContain("mistral");
   }, 90_000);
 
   it("streams realtime STT through the registered transcription provider", async () => {
     const provider = buildMistralRealtimeTranscriptionProvider();
-    const phrase = "Testing OpenClaw Mistral realtime transcription integration OK.";
+    const phrase = "Testing Afora Mistral realtime transcription integration OK.";
     const speech = await synthesizeElevenLabsLiveSpeech({
       text: phrase,
       apiKey: ELEVENLABS_KEY,

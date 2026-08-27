@@ -1,17 +1,17 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/memory-core-host-engine-foundation";
 import {
   buildSessionEntry,
   parseUsageCountedSessionIdFromFileName,
   sessionPathForFile,
   statSessionEntrySync,
   type SessionTranscriptCorpusEntry,
-} from "openclaw/plugin-sdk/memory-core-host-engine-sessions";
-import type { MemorySearchResult } from "openclaw/plugin-sdk/memory-core-host-runtime-files";
-import { formatMemoryDreamingDay } from "openclaw/plugin-sdk/memory-core-host-status";
-import { appendRegularFile } from "openclaw/plugin-sdk/security-runtime";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-sessions";
+import type { MemorySearchResult } from "afora-agent/plugin-sdk/memory-core-host-runtime-files";
+import { formatMemoryDreamingDay } from "afora-agent/plugin-sdk/memory-core-host-status";
+import { appendRegularFile } from "afora-agent/plugin-sdk/security-runtime";
 import {
   normalizeSessionIngestionState,
   SESSION_INGESTION_MAX_TRACKED_MESSAGES_PER_SESSION,

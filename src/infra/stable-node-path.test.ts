@@ -11,7 +11,7 @@ describe("resolveStableNodePath", () => {
   });
 
   it("prefers the Homebrew opt symlink for default and versioned formulas", async () => {
-    await withTestDir({ prefix: "openclaw-stable-node-" }, async (prefix) => {
+    await withTestDir({ prefix: "afora-stable-node-" }, async (prefix) => {
       const defaultNode = path.join(prefix, "Cellar", "node", "25.9.0", "bin", "node");
       const versionedNode = path.join(prefix, "Cellar", "node@22", "22.22.3", "bin", "node");
       const optDefault = path.join(prefix, "opt", "node", "bin", "node");
@@ -28,7 +28,7 @@ describe("resolveStableNodePath", () => {
   });
 
   it("falls back to the bin symlink for the default formula, otherwise original path", async () => {
-    await withTestDir({ prefix: "openclaw-stable-node-" }, async (prefix) => {
+    await withTestDir({ prefix: "afora-stable-node-" }, async (prefix) => {
       const defaultNode = path.join(prefix, "Cellar", "node", "25.9.0", "bin", "node");
       const versionedNode = path.join(prefix, "Cellar", "node@22", "22.22.3", "bin", "node");
       const binNode = path.join(prefix, "bin", "node");

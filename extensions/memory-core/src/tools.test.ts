@@ -1,6 +1,6 @@
-import type { MemorySearchRuntimeDebug } from "openclaw/plugin-sdk/memory-core-host-runtime-files";
+import type { MemorySearchRuntimeDebug } from "afora-agent/plugin-sdk/memory-core-host-runtime-files";
 // Memory Core tests cover tools plugin behavior.
-import { clearMemoryPluginState } from "openclaw/plugin-sdk/memory-host-core";
+import { clearMemoryPluginState } from "afora-agent/plugin-sdk/memory-host-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getMemoryCloseMockCalls,
@@ -23,7 +23,7 @@ import {
   MemorySearchSchema,
 } from "./tools.shared.js";
 import {
-  asOpenClawConfig,
+  asAforaConfig,
   createMemorySearchToolOrThrow,
   expectUnavailableMemorySearchDetails,
 } from "./tools.test-helpers.js";
@@ -43,9 +43,9 @@ const sessionStore = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("openclaw/plugin-sdk/session-transcript-hit", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/session-transcript-hit", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("openclaw/plugin-sdk/session-transcript-hit")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/session-transcript-hit")>();
   return {
     ...actual,
     loadCombinedSessionStoreForGateway: vi.fn(() => ({
@@ -222,7 +222,7 @@ describe("memory_search unavailable payloads", () => {
   it("passes the host local-service hook to tool memory managers", async () => {
     const acquireLocalService = vi.fn(async () => undefined);
     const tool = createMemorySearchTool({
-      config: asOpenClawConfig({
+      config: asAforaConfig({
         agents: { list: [{ id: "main", default: true }] },
       }),
       acquireLocalService,
@@ -264,9 +264,9 @@ describe("memory_search unavailable payloads", () => {
     expectUnavailableMemorySearchDetails(result.details, {
       error,
       warning:
-        "Memory search is unavailable because this OpenClaw Node runtime does not provide SQLite support.",
+        "Memory search is unavailable because this Afora Node runtime does not provide SQLite support.",
       action:
-        "Run OpenClaw with a Node runtime that includes node:sqlite, then retry memory_search.",
+        "Run Afora with a Node runtime that includes node:sqlite, then retry memory_search.",
     });
   });
 
@@ -556,7 +556,7 @@ describe("memory_search unavailable payloads", () => {
       results: [],
       stale: true,
       warning: "Memory index is dirty. Search results may be incomplete.",
-      action: "Run: openclaw memory status --index --agent main",
+      action: "Run: afora memory status --index --agent main",
     });
     expect(getMemorySyncMockCalls()).toBe(0);
   });
@@ -629,7 +629,7 @@ describe("memory_search unavailable payloads", () => {
       warning:
         "Tell the user: memory search is paused because the memory index was built with a different embedding provider/model/settings.",
       action:
-        "Tell the user to run: openclaw memory status --index or openclaw memory index --force.",
+        "Tell the user to run: afora memory status --index or afora memory index --force.",
     });
     expect(searchCalls).toBe(1);
     expect(getMemorySyncMockCalls()).toBe(0);
@@ -716,7 +716,7 @@ describe("memory_search corpus labels", () => {
 
   it("uses explicit plugin context agent over synthetic active-memory session keys", async () => {
     const tool = createMemorySearchToolOrThrow({
-      config: asOpenClawConfig({
+      config: asAforaConfig({
         agents: {
           list: [
             { id: "main", default: true, memory: { search: { enabled: false } } },
@@ -734,7 +734,7 @@ describe("memory_search corpus labels", () => {
   });
 
   it("re-resolves config when executing a previously created tool", async () => {
-    const startupConfig = asOpenClawConfig({
+    const startupConfig = asAforaConfig({
       agents: {
         defaults: {},
         list: [{ id: "main", default: true }],
@@ -746,7 +746,7 @@ describe("memory_search corpus labels", () => {
         },
       },
     });
-    const patchedConfig = asOpenClawConfig({
+    const patchedConfig = asAforaConfig({
       agents: {
         defaults: {},
         list: [{ id: "main", default: true }],

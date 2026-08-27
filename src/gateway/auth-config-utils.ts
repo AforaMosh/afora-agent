@@ -1,7 +1,7 @@
 // Gateway auth config utilities materialize token/password SecretRefs only for
 // the auth mode that can actually consume them.
 import type { GatewayAuthConfig } from "../config/types.gateway.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { hasConfiguredSecretInput, resolveSecretInputRef } from "../config/types.secrets.js";
 import { resolveRequiredConfiguredSecretRefInputString } from "./resolve-configured-secret-input-string.js";
 import {
@@ -16,7 +16,7 @@ type GatewayAuthSecretInputPath = Extract<
 >;
 
 type GatewayAuthSecretRefResolutionParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   mode?: GatewayAuthConfig["mode"];
   hasPasswordOverride: boolean;
@@ -27,7 +27,7 @@ type GatewayAuthSecretRefResolutionParams = {
 
 /** Check whether a local Gateway auth input is configured directly or through defaults. */
 export function hasConfiguredGatewayAuthSecretInput(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   path: GatewayAuthSecretInputPath,
 ): boolean {
   return hasConfiguredSecretInput(readGatewaySecretInputValue(cfg, path), cfg.secrets?.defaults);
@@ -93,7 +93,7 @@ function shouldResolveGatewayPasswordSecretRef(
 }
 
 function hasActiveExecGatewayAuthSecretRef(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   path: GatewayAuthSecretInputPath;
   shouldResolve: boolean;
 }): boolean {
@@ -126,7 +126,7 @@ export function canMaterializeGatewayAuthSecretRefsWithoutExec(
 }
 
 async function resolveGatewayAuthSecretRefValue(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   path: GatewayAuthSecretInputPath;
   shouldResolve: boolean;
@@ -171,11 +171,11 @@ export async function resolveGatewayPasswordSecretRefValue(
 }
 
 async function resolveGatewayAuthSecretRef(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   path: GatewayAuthSecretInputPath;
   shouldResolve: boolean;
-}): Promise<OpenClawConfig> {
+}): Promise<AforaConfig> {
   const value = await resolveGatewayAuthSecretRefValue(params);
   if (!value) {
     return params.cfg;
@@ -194,14 +194,14 @@ async function resolveGatewayAuthSecretRef(params: {
 }
 
 async function resolveGatewayPasswordSecretRef(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   mode?: GatewayAuthConfig["mode"];
   hasPasswordOverride: boolean;
   hasTokenOverride: boolean;
   hasPasswordFallback: boolean;
   hasTokenFallback: boolean;
-}): Promise<OpenClawConfig> {
+}): Promise<AforaConfig> {
   return resolveGatewayAuthSecretRef({
     cfg: params.cfg,
     env: params.env,
@@ -213,7 +213,7 @@ async function resolveGatewayPasswordSecretRef(params: {
 /** Materialize active local Gateway auth secret refs on a cloned config. */
 export async function materializeGatewayAuthSecretRefs(
   params: GatewayAuthSecretRefResolutionParams,
-): Promise<OpenClawConfig> {
+): Promise<AforaConfig> {
   const cfgWithToken = await resolveGatewayAuthSecretRef({
     cfg: params.cfg,
     env: params.env,

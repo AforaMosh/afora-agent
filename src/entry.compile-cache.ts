@@ -15,7 +15,7 @@ import {
   type RespawnChildRuntime,
 } from "./process/respawn-child-runner.js";
 
-const COMPILE_CACHE_DISABLED_RESPAWNED_ENV = "OPENCLAW_COMPILE_CACHE_DISABLED_RESPAWNED";
+const COMPILE_CACHE_DISABLED_RESPAWNED_ENV = "AFORA_COMPILE_CACHE_DISABLED_RESPAWNED";
 
 export function resolveEntryInstallRoot(entryFile: string): string {
   const entryDir = path.dirname(entryFile);
@@ -38,7 +38,7 @@ function isNodeCompileCacheRequested(env: NodeJS.ProcessEnv | undefined): boolea
   return env?.NODE_COMPILE_CACHE !== undefined && !isNodeCompileCacheDisabled(env);
 }
 
-function shouldEnableOpenClawCompileCache(params: {
+function shouldEnableAforaCompileCache(params: {
   env?: NodeJS.ProcessEnv;
   installRoot: string;
 }): boolean {
@@ -70,7 +70,7 @@ function readPackageVersion(packageJsonPath: string): string {
   return "unknown";
 }
 
-function resolveOpenClawCompileCacheDirectory(params: {
+function resolveAforaCompileCacheDirectory(params: {
   env?: NodeJS.ProcessEnv;
   installRoot: string;
 }): string {
@@ -90,24 +90,24 @@ function resolveOpenClawCompileCacheDirectory(params: {
       : path.join(os.tmpdir(), "node-compile-cache");
   return path.join(
     baseDirectory,
-    "openclaw",
+    "afora",
     version,
     sanitizeCompileCachePathSegment(installMarker),
   );
 }
 
-type OpenClawCompileCacheRespawnPlan = {
+type AforaCompileCacheRespawnPlan = {
   command: string;
   args: string[];
   env: NodeJS.ProcessEnv;
   detachForProcessTree: boolean;
 };
 
-type OpenClawCompileCacheRespawnRuntime = RespawnChildRuntime & {
+type AforaCompileCacheRespawnRuntime = RespawnChildRuntime & {
   writeError: (message: string) => void;
 };
 
-function buildOpenClawCompileCacheRespawnPlan(params: {
+function buildAforaCompileCacheRespawnPlan(params: {
   currentFile: string;
   env?: NodeJS.ProcessEnv;
   execArgv?: string[];
@@ -116,7 +116,7 @@ function buildOpenClawCompileCacheRespawnPlan(params: {
   argv?: string[];
   compileCacheDir?: string;
   platform?: NodeJS.Platform;
-}): OpenClawCompileCacheRespawnPlan | undefined {
+}): AforaCompileCacheRespawnPlan | undefined {
   const env = params.env ?? process.env;
   const argv = params.argv ?? process.argv;
   const platform = params.platform ?? process.platform;
@@ -146,12 +146,12 @@ function buildOpenClawCompileCacheRespawnPlan(params: {
   };
 }
 
-export async function respawnWithoutOpenClawCompileCacheIfNeeded(params: {
+export async function respawnWithoutAforaCompileCacheIfNeeded(params: {
   currentFile: string;
   installRoot: string;
   prepareWriteError?: () => Promise<(message: string) => void>;
 }): Promise<boolean> {
-  const plan = buildOpenClawCompileCacheRespawnPlan({
+  const plan = buildAforaCompileCacheRespawnPlan({
     currentFile: params.currentFile,
     installRoot: params.installRoot,
     compileCacheDir: getCompileCacheDir?.(),
@@ -160,7 +160,7 @@ export async function respawnWithoutOpenClawCompileCacheIfNeeded(params: {
     return false;
   }
   const writeError = await params.prepareWriteError?.();
-  runOpenClawCompileCacheRespawnPlan(
+  runAforaCompileCacheRespawnPlan(
     plan,
     writeError
       ? {
@@ -174,9 +174,9 @@ export async function respawnWithoutOpenClawCompileCacheIfNeeded(params: {
   return true;
 }
 
-function runOpenClawCompileCacheRespawnPlan(
-  plan: OpenClawCompileCacheRespawnPlan,
-  runtime: OpenClawCompileCacheRespawnRuntime = {
+function runAforaCompileCacheRespawnPlan(
+  plan: AforaCompileCacheRespawnPlan,
+  runtime: AforaCompileCacheRespawnRuntime = {
     spawn,
     attachChildProcessBridge,
     exit: process.exit.bind(process) as (code?: number) => never,
@@ -191,7 +191,7 @@ function runOpenClawCompileCacheRespawnPlan(
     runtime,
     onError: (error) => {
       runtime.writeError(
-        `[openclaw] Failed to respawn CLI without compile cache: ${
+        `[afora] Failed to respawn CLI without compile cache: ${
           error instanceof Error ? (error.stack ?? error.message) : String(error)
         }\n`,
       );
@@ -199,26 +199,26 @@ function runOpenClawCompileCacheRespawnPlan(
   });
 }
 
-export function enableOpenClawCompileCache(params: {
+export function enableAforaCompileCache(params: {
   env?: NodeJS.ProcessEnv;
   installRoot: string;
 }): void {
-  if (!shouldEnableOpenClawCompileCache(params)) {
+  if (!shouldEnableAforaCompileCache(params)) {
     return;
   }
   try {
-    enableCompileCache(resolveOpenClawCompileCacheDirectory(params));
+    enableCompileCache(resolveAforaCompileCacheDirectory(params));
   } catch {
     // Best-effort only; never block startup.
   }
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.entryCompileCacheTestApi")] = {
-    buildOpenClawCompileCacheRespawnPlan,
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.entryCompileCacheTestApi")] = {
+    buildAforaCompileCacheRespawnPlan,
     isSourceCheckoutInstallRoot,
-    resolveOpenClawCompileCacheDirectory,
-    runOpenClawCompileCacheRespawnPlan,
-    shouldEnableOpenClawCompileCache,
+    resolveAforaCompileCacheDirectory,
+    runAforaCompileCacheRespawnPlan,
+    shouldEnableAforaCompileCache,
   };
 }

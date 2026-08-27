@@ -1,5 +1,5 @@
 // @vitest-environment node
-import type { EventFrame } from "@openclaw/gateway-protocol";
+import type { EventFrame } from "@afora/gateway-protocol";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GatewayBoardProvider } from "./gateway-provider.ts";
 import type { BoardProvider } from "./provider.ts";

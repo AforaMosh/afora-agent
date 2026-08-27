@@ -1,7 +1,7 @@
 // Checks install policy constraints for package and plugin operations.
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { OpenClawConfig, SecurityConfig } from "../config/types.openclaw.js";
+import type { AforaConfig, SecurityConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { normalizePositiveInt, normalizePositiveTimerMs } from "../secrets/shared.js";
@@ -66,7 +66,7 @@ export type InstallPolicySource = {
     | "npm"
     | "upload"
     | "workspace";
-  authority: "openclaw" | "official" | "third-party" | "unknown" | "user";
+  authority: "afora" | "official" | "third-party" | "unknown" | "user";
   mutable: boolean;
   network: boolean;
 };
@@ -349,7 +349,7 @@ function isTargetEnabled(params: {
 }
 
 function resolvePolicy(
-  config: OpenClawConfig | undefined,
+  config: AforaConfig | undefined,
   targetType: InstallPolicyTarget,
 ):
   | { kind: "disabled" }
@@ -381,7 +381,7 @@ function resolveConfiguredTargets(
 }
 
 export async function validateInstallPolicyStatic(
-  config: OpenClawConfig | undefined,
+  config: AforaConfig | undefined,
 ): Promise<InstallPolicyStaticValidation> {
   const policy = config?.security?.installPolicy;
   if (!policy || policy.enabled !== true) {
@@ -432,7 +432,7 @@ export async function validateInstallPolicyStatic(
 }
 
 export async function runInstallPolicy(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   logger?: {
     debug?: (message: string) => void;
@@ -457,7 +457,7 @@ export async function runInstallPolicy(params: {
       const { getRuntimeConfig } = await import("../config/io.js");
       config = getRuntimeConfig({ skipPluginValidation: true });
     } catch (err) {
-      return failClosed(`could not load OpenClaw config (${formatErrorMessage(err)})`);
+      return failClosed(`could not load Afora config (${formatErrorMessage(err)})`);
     }
   }
 
@@ -471,7 +471,7 @@ export async function runInstallPolicy(params: {
 
   const input = JSON.stringify({
     protocolVersion: 1,
-    openclawVersion: resolveRuntimeServiceVersion(params.env ?? process.env),
+    aforaVersion: resolveRuntimeServiceVersion(params.env ?? process.env),
     ...params.request,
   });
   if (Buffer.byteLength(input, "utf8") > DEFAULT_MAX_REQUEST_BYTES) {
@@ -576,7 +576,7 @@ function formatDecisionContext(request: InstallPolicyRequest): string {
 }
 
 export async function probeInstallPolicy(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
   logger?: {
     debug?: (message: string) => void;

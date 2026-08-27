@@ -4,7 +4,7 @@ import path from "node:path";
 import { note } from "../../packages/terminal-core/src/note.js";
 import { resolveAgentWorkspaceDir, tryResolveDefaultAgentId } from "../agents/agent-scope.js";
 import { DEFAULT_AGENTS_FILENAME } from "../agents/workspace.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { readRegularFile } from "../infra/regular-file.js";
 import {
@@ -29,8 +29,8 @@ export const MEMORY_SYSTEM_PROMPT = [
   "Paste this into your agent:",
   "",
   "Install the memory system by applying:",
-  "https://github.com/openclaw/openclaw/commit/9ffea23f31ca1df5183b25668f8f814bee0fb34e",
-  "https://github.com/openclaw/openclaw/commit/7d1fee70e76f2f634f1b41fca927ee663914183a",
+  "https://github.com/AforaMosh/afora-agent/commit/9ffea23f31ca1df5183b25668f8f814bee0fb34e",
+  "https://github.com/AforaMosh/afora-agent/commit/7d1fee70e76f2f634f1b41fca927ee663914183a",
 ].join("\n");
 
 /** Returns true when the workspace appears to lack canonical memory guidance. */
@@ -149,9 +149,9 @@ export function formatRootMemoryFilesWarning(detection: RootMemoryFilesDetection
       "Split root durable memory files detected:",
       `- canonical: ${shortenHomePath(detection.canonicalPath)} (${formatBytes(detection.canonicalBytes)})`,
       `- legacy: ${shortenHomePath(detection.legacyPath)} (${formatBytes(detection.legacyBytes)})`,
-      `OpenClaw uses ${CANONICAL_ROOT_MEMORY_FILENAME} as the canonical durable memory file.`,
+      `Afora uses ${CANONICAL_ROOT_MEMORY_FILENAME} as the canonical durable memory file.`,
       `Dreaming writes durable promotions to ${CANONICAL_ROOT_MEMORY_FILENAME}, so older facts in ${LEGACY_ROOT_MEMORY_FILENAME} can be shadowed.`,
-      `Run "openclaw doctor --fix" to merge the legacy file into ${CANONICAL_ROOT_MEMORY_FILENAME} with a backup.`,
+      `Run "afora doctor --fix" to merge the legacy file into ${CANONICAL_ROOT_MEMORY_FILENAME} with a backup.`,
     ].join("\n");
   }
   return null;
@@ -199,7 +199,7 @@ function buildMergedLegacyRootMemorySection(params: {
     "",
     `## Imported From Legacy Root ${LEGACY_ROOT_MEMORY_FILENAME}`,
     "",
-    `<!-- openclaw-root-memory-merge source=${LEGACY_ROOT_MEMORY_FILENAME} archived=${params.archivedLegacyPath} -->`,
+    `<!-- afora-root-memory-merge source=${LEGACY_ROOT_MEMORY_FILENAME} archived=${params.archivedLegacyPath} -->`,
     `This content came from legacy root \`${LEGACY_ROOT_MEMORY_FILENAME}\`, which was shadowed by \`${CANONICAL_ROOT_MEMORY_FILENAME}\`.`,
     "",
     params.legacyText.trim(),
@@ -322,7 +322,7 @@ type WorkspaceMemoryDoctorScope = {
 
 /** Emits workspace root-memory health warnings. */
 export async function noteWorkspaceMemoryHealth(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   scope?: WorkspaceMemoryDoctorScope,
 ): Promise<void> {
   try {
@@ -351,7 +351,7 @@ export async function noteWorkspaceMemoryHealth(
 
 /** Prompts to merge legacy root memory into canonical memory when both files exist. */
 export async function maybeRepairWorkspaceMemoryHealth(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   prompter: DoctorPrompter;
   scope?: WorkspaceMemoryDoctorScope;
 }): Promise<void> {

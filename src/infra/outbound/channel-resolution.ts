@@ -1,10 +1,10 @@
 // Channel resolution exposes read-only outbound runtime facades and performs
 // optional bootstrap for deliverable channels that are not loaded yet.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import type { ChannelMessageAdapterShape } from "../../channels/message/types.js";
 import { getChannelPlugin, getLoadedChannelPlugin } from "../../channels/plugins/index.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.plugin.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { PluginRegistry } from "../../plugins/registry-types.js";
 import { getActivePluginRegistry } from "../../plugins/runtime.js";
 import { getPluginRuntimeGatewayRequestScope } from "../../plugins/runtime/gateway-request-scope.js";
@@ -30,7 +30,7 @@ function getOutboundRuntimeRegistry(): PluginRegistry | null {
 
 function normalizeOutboundChannelForResolution(params: {
   channel: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentId?: string;
   allowBootstrap?: boolean;
 }): {
@@ -194,7 +194,7 @@ function resolveActivatedOutboundPluginFromRuntimeRegistry(
 /** Resolves a deliverable outbound channel plugin, optionally bootstrapping it. */
 export function resolveOutboundChannelPlugin(params: {
   channel: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentId?: string;
   allowBootstrap?: boolean;
 }): ChannelPlugin | undefined {
@@ -249,7 +249,7 @@ export function resolveOutboundChannelPlugin(params: {
 /** Resolves the message adapter for a deliverable outbound channel. */
 export function resolveOutboundChannelMessageAdapter(params: {
   channel: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentId?: string;
   allowBootstrap?: boolean;
 }): ChannelMessageAdapterShape | undefined {

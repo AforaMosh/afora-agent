@@ -1,9 +1,9 @@
 // Firecrawl provider module implements model/runtime integration.
-import { readPositiveIntegerParam } from "openclaw/plugin-sdk/param-readers";
+import { readPositiveIntegerParam } from "afora-agent/plugin-sdk/param-readers";
 import {
   enablePluginInConfig,
   type WebFetchProviderPlugin,
-} from "openclaw/plugin-sdk/provider-web-fetch-contract";
+} from "afora-agent/plugin-sdk/provider-web-fetch-contract";
 import { FIRECRAWL_WEB_FETCH_PROVIDER_SHARED } from "./firecrawl-fetch-provider-shared.js";
 
 type FirecrawlClientModule = typeof import("./firecrawl-client.js");

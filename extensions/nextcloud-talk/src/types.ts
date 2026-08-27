@@ -2,7 +2,7 @@
 import type {
   ChannelDeliveryStreamingConfig,
   MessageReceipt,
-} from "openclaw/plugin-sdk/channel-outbound";
+} from "afora-agent/plugin-sdk/channel-outbound";
 import type { DmConfig, DmPolicy, GroupPolicy, SecretInput } from "../runtime-api.js";
 
 export type NextcloudTalkRoomConfig = {

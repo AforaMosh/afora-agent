@@ -2,7 +2,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { appendRegularFile } from "openclaw/plugin-sdk/security-runtime";
+import { appendRegularFile } from "afora-agent/plugin-sdk/security-runtime";
 import { walkMemoryWikiDirectory } from "./bounded-walk.js";
 
 type MemoryWikiLogEntry = {
@@ -35,7 +35,7 @@ export async function appendMemoryWikiLog(
   vaultRoot: string,
   entry: MemoryWikiLogEntry,
 ): Promise<void> {
-  const logPath = path.join(vaultRoot, ".openclaw-wiki", "log.jsonl");
+  const logPath = path.join(vaultRoot, ".afora-wiki", "log.jsonl");
   await fs.mkdir(path.dirname(logPath), { recursive: true });
   await appendRegularFile({
     filePath: logPath,
@@ -49,7 +49,7 @@ export async function loadMemoryWikiVaultIdentity(
 ): Promise<MemoryWikiVaultIdentity> {
   let raw: string;
   try {
-    raw = await fs.readFile(path.join(vaultRoot, ".openclaw-wiki", "log.jsonl"), "utf8");
+    raw = await fs.readFile(path.join(vaultRoot, ".afora-wiki", "log.jsonl"), "utf8");
   } catch (error) {
     if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       return {

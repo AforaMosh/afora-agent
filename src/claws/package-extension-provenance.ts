@@ -1,6 +1,6 @@
 import type { ClawAppliedExtension, ClawPackage } from "./types.js";
 
-export const CLAW_PACKAGE_REF_SCHEMA_VERSION = "openclaw.clawPackageRef.v1" as const;
+export const CLAW_PACKAGE_REF_SCHEMA_VERSION = "afora.clawPackageRef.v1" as const;
 export type ClawPackageRefStatus = "pending" | "complete" | "failed" | "rolled_back";
 export type ClawPackageRelationship = "managed" | "referenced";
 export type ClawPackageOrigin = "claw-introduced" | "pre-existing";
@@ -63,7 +63,7 @@ function parsePackageRefExtension(row: PackageRefRow): ClawAppliedExtension | un
       `Claw package reference ${row.package_kind}:${row.package_ref} has incomplete extension provenance.`,
     );
   }
-  const formats = new Set(["openclaw", "claude", "codex", "cursor"]);
+  const formats = new Set(["afora", "claude", "codex", "cursor"]);
   if (!formats.has(row.extension_format!) || !formats.has(row.extension_detected_format!)) {
     throw new Error(
       `Claw package reference ${row.package_kind}:${row.package_ref} has unsupported extension format provenance.`,

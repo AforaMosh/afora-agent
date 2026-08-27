@@ -1,9 +1,9 @@
-import type { FastMode } from "@openclaw/normalization-core/string-coerce";
+import type { FastMode } from "@afora/normalization-core/string-coerce";
 /** Shared command handler context and result contracts. */
 import type { BlockReplyChunking } from "../../agents/embedded-agent-block-chunker.js";
 import type { ChannelId } from "../../channels/plugins/types.public.js";
 import type { SessionEntry, SessionScope } from "../../config/sessions.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { PluginCommandContext } from "../../plugins/types.js";
 import type { SkillCommandSpec } from "../../skills/types.js";
 import type { MsgContext } from "../templating.js";
@@ -45,7 +45,7 @@ export type CommandContext = {
 export type HandleCommandsParams = {
   ctx: MsgContext;
   rootCtx?: MsgContext;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   command: CommandContext;
   agentId?: string;
   agentDir?: string;

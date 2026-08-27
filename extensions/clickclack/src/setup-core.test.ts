@@ -1,8 +1,8 @@
 // ClickClack tests cover non-interactive setup validation and config writes.
-import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/account-id";
-import type { ChannelSetupInput } from "openclaw/plugin-sdk/channel-setup";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { createNonExitingRuntimeEnv } from "openclaw/plugin-sdk/plugin-test-runtime";
+import { DEFAULT_ACCOUNT_ID } from "afora-agent/plugin-sdk/account-id";
+import type { ChannelSetupInput } from "afora-agent/plugin-sdk/channel-setup";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { createNonExitingRuntimeEnv } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const claimClickClackSetupCode = vi.hoisted(() => vi.fn());
@@ -35,7 +35,7 @@ function makeClaimError(status: number, detail: string): Error {
 }
 
 function validate(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   accountId?: string;
   input: ClickClackSetupInput;
 }) {
@@ -46,7 +46,7 @@ function validate(params: {
   });
 }
 
-async function prepare(input: ClickClackSetupInput, cfg: OpenClawConfig = {}) {
+async function prepare(input: ClickClackSetupInput, cfg: AforaConfig = {}) {
   return await clickClackSetupContract.prepareAccountConfigInput?.({
     cfg,
     accountId: DEFAULT_ACCOUNT_ID,
@@ -72,7 +72,7 @@ describe("ClickClack setup adapter", () => {
   it("claims a full setup URL and prepares the token, workspace, and defaults", async () => {
     claimClickClackSetupCode.mockResolvedValue({
       token: "test-token",
-      bot: { id: "usr_bot", handle: "openclaw", display_name: "OpenClaw" },
+      bot: { id: "usr_bot", handle: "afora", display_name: "Afora" },
       workspace: {
         id: "wsp_1",
         route_id: "clickclack",
@@ -111,7 +111,7 @@ describe("ClickClack setup adapter", () => {
       contract_version: 1,
       api_base_url: "https://api.clickclack.example/services/clickclack",
       token: "test-token",
-      bot: { id: "usr_bot", handle: "openclaw", display_name: "OpenClaw" },
+      bot: { id: "usr_bot", handle: "afora", display_name: "Afora" },
       workspace: {
         id: "wsp_1",
         route_id: "clickclack",
@@ -142,7 +142,7 @@ describe("ClickClack setup adapter", () => {
   it("claims a bare setup code with an explicit HTTPS base URL", async () => {
     claimClickClackSetupCode.mockResolvedValue({
       token: "test-token",
-      bot: { id: "usr_bot", handle: "openclaw", display_name: "OpenClaw" },
+      bot: { id: "usr_bot", handle: "afora", display_name: "Afora" },
       workspace: {
         id: "wsp_1",
         route_id: "clickclack",
@@ -171,7 +171,7 @@ describe("ClickClack setup adapter", () => {
   it("claims setup codes through an existing private API base", async () => {
     claimClickClackSetupCode.mockResolvedValue({
       token: "test-token",
-      bot: { id: "usr_bot", handle: "openclaw", display_name: "OpenClaw" },
+      bot: { id: "usr_bot", handle: "afora", display_name: "Afora" },
       workspace: {
         id: "wsp_1",
         route_id: "clickclack",
@@ -184,7 +184,7 @@ describe("ClickClack setup adapter", () => {
     await prepare(
       {
         code: "ABCD-EFGH-JKMN",
-        baseUrl: "https://clack.openclaw.ai",
+        baseUrl: "https://clack.afora.ai",
       },
       {
         channels: {
@@ -192,7 +192,7 @@ describe("ClickClack setup adapter", () => {
             apiBaseUrl: "http://127.0.0.1:8484",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     );
 
     expect(claimClickClackSetupCode).toHaveBeenCalledWith({
@@ -206,7 +206,7 @@ describe("ClickClack setup adapter", () => {
       contract_version: 1,
       api_base_url: "https://api.clickclack.example/services/clickclack",
       token: "test-token",
-      bot: { id: "usr_bot", handle: "openclaw", display_name: "OpenClaw" },
+      bot: { id: "usr_bot", handle: "afora", display_name: "Afora" },
       workspace: {
         id: "wsp_1",
         route_id: "clickclack",
@@ -225,7 +225,7 @@ describe("ClickClack setup adapter", () => {
             apiBaseUrl: "http://127.0.0.1:8484",
           },
         },
-      } as OpenClawConfig),
+      } as AforaConfig),
     ).resolves.toMatchObject({
       baseUrl: "https://api.clickclack.example/services/clickclack",
     });
@@ -239,7 +239,7 @@ describe("ClickClack setup adapter", () => {
   it("accepts setup-code URLs for local HTTP installations", async () => {
     claimClickClackSetupCode.mockResolvedValue({
       token: "test-token",
-      bot: { id: "usr_bot", handle: "openclaw", display_name: "OpenClaw" },
+      bot: { id: "usr_bot", handle: "afora", display_name: "Afora" },
       workspace: {
         id: "wsp_1",
         route_id: "clickclack",
@@ -394,7 +394,7 @@ describe("ClickClack setup adapter", () => {
               workspace: "default",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         input: { useEnv: true },
       }),
     ).toBeNull();
@@ -407,7 +407,7 @@ describe("ClickClack setup adapter", () => {
               workspace: "default",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         input: { useEnv: true },
       }),
     ).toBe("ClickClack base URL must be a valid http(s) URL.");
@@ -451,7 +451,7 @@ describe("ClickClack setup adapter", () => {
 
     expect(
       clickClackSetupContract.applyAccountConfig({
-        cfg: { channels: { clickclack: { name: "Legacy" } } } as OpenClawConfig,
+        cfg: { channels: { clickclack: { name: "Legacy" } } } as AforaConfig,
         accountId: "Work Team",
         input: {
           name: "Work",
@@ -509,7 +509,7 @@ describe("ClickClack setup adapter", () => {
           workspace: "default",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const withToken = clickClackSetupContract.applyAccountConfig({
       cfg: {
@@ -519,7 +519,7 @@ describe("ClickClack setup adapter", () => {
             tokenFile: "/run/secrets/old-token",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       accountId: DEFAULT_ACCOUNT_ID,
       input: {
         token: "ccb_new",
@@ -538,7 +538,7 @@ describe("ClickClack setup adapter", () => {
             token: "ccb_old",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       accountId: DEFAULT_ACCOUNT_ID,
       input: {
         tokenFile: "/run/secrets/new-token",
@@ -561,7 +561,7 @@ describe("ClickClack setup adapter", () => {
             tokenFile: "/run/secrets/old-token",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       accountId: DEFAULT_ACCOUNT_ID,
       input: { useEnv: true },
     });
@@ -581,7 +581,7 @@ describe("ClickClack setup adapter", () => {
             tokenFile: "/run/secrets/default-token",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       accountId: "work",
       input: {
         token: "ccb_work",
@@ -604,7 +604,7 @@ describe("ClickClack setup adapter", () => {
           tokenFile: "/run/secrets/clickclack",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       applyClickClackCredentialConfig({
@@ -626,7 +626,7 @@ describe("ClickClack setup adapter", () => {
           workspace: "default",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const runtime = createNonExitingRuntimeEnv();
 
     await clickClackSetupContract.afterAccountConfigWritten?.({

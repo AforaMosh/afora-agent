@@ -1,9 +1,9 @@
 /** Builds API-key provider auth methods that write profiles and config updates. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { normalizeUniqueStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { normalizeUniqueStringEntries } from "@afora/normalization-core/string-normalization";
 import { upsertAuthProfileWithLockOrThrow } from "../agents/auth-profiles/profiles.js";
 import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { SecretInput } from "../config/types.secrets.js";
 import { createLazyRuntimeSurface } from "../shared/lazy-runtime.js";
 import { normalizeOptionalSecretInput } from "../utils/normalize-secret-input.js";
@@ -36,10 +36,10 @@ type ProviderApiKeyAuthMethodOptions = {
   metadata?: Record<string, string>;
   noteMessage?: string;
   noteTitle?: string;
-  applyConfig?: (cfg: OpenClawConfig) => OpenClawConfig;
+  applyConfig?: (cfg: AforaConfig) => AforaConfig;
   resolveDefaultModel?: (params: {
     apiKey: string;
-    config: OpenClawConfig;
+    config: AforaConfig;
     signal?: AbortSignal;
   }) => Promise<string | undefined>;
 };
@@ -71,7 +71,7 @@ function resolveProfileIds(params: {
 
 async function resolveDefaultModel(
   params: ProviderApiKeyAuthMethodOptions,
-  context: { apiKey: string; config: OpenClawConfig; signal?: AbortSignal },
+  context: { apiKey: string; config: AforaConfig; signal?: AbortSignal },
 ): Promise<string | undefined> {
   if (!params.resolveDefaultModel) {
     return params.defaultModel;
@@ -92,7 +92,7 @@ async function applyApiKeyConfig(params: {
   profileIds: string[];
   defaultModel?: string;
   preserveExistingPrimary?: boolean;
-  applyConfig?: (cfg: OpenClawConfig) => OpenClawConfig;
+  applyConfig?: (cfg: AforaConfig) => AforaConfig;
 }) {
   const { applyAuthProfileConfig, applyPrimaryModel } = await loadProviderApiKeyAuthRuntime();
   let next = params.ctx.config;

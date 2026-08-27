@@ -1,4 +1,4 @@
-import { asOptionalRecord, isRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalRecord, isRecord } from "@afora/normalization-core/record-coerce";
 import type { QueueMode } from "../../../../packages/gateway-protocol/src/schema/logs-chat.js";
 import type { SessionsListResult } from "../../api/types.ts";
 import { setLastActiveSessionKey } from "../../app/settings.ts";
@@ -171,7 +171,7 @@ function findQueuedSendMessageIndex(
     if (userRoleOnly && record.role !== "user") {
       return false;
     }
-    const markerIdempotencyKey = asOptionalRecord(record["__openclaw"])?.idempotencyKey;
+    const markerIdempotencyKey = asOptionalRecord(record["__afora"])?.idempotencyKey;
     const idempotencyKey = markerIdempotencyKey ?? record.idempotencyKey;
     return idempotencyKey === item.sendRunId || idempotencyKey === `${item.sendRunId}:user`;
   });
@@ -222,7 +222,7 @@ export function preserveQueuedUserTurn(state: SteerLifecycleHost, item: ChatQueu
     role: "user",
     content,
     timestamp: item.createdAt,
-    __openclaw: { idempotencyKey: `${runId}:user` },
+    __afora: { idempotencyKey: `${runId}:user` },
   };
   if (visibleSessionMatches(state, sessionKey, item.agentId)) {
     if (!chatMessagesContainQueuedSend(state.chatMessages, item, true)) {

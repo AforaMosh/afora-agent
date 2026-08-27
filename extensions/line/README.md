@@ -1,11 +1,11 @@
-# OpenClaw LINE
+# Afora LINE
 
-Official OpenClaw channel plugin for LINE Bot API chats.
+Official Afora channel plugin for LINE Bot API chats.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/line
+afora plugins install @afora/line
 ```
 
-Configure LINE channel credentials in OpenClaw, then connect the bot to the chats where agents should receive and send messages.
+Configure LINE channel credentials in Afora, then connect the bot to the chats where agents should receive and send messages.

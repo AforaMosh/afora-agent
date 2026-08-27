@@ -17,12 +17,12 @@ export type {
   CodexPluginDestructiveApprovalMode,
   CodexPluginMarketplaceName,
   CodexSupervisionEndpoint,
-  OpenClawExecPolicyForCodexAppServer,
+  AforaExecPolicyForCodexAppServer,
   ResolvedCodexComputerUseConfig,
   ResolvedCodexPluginPolicy,
   ResolvedCodexPluginsPolicy,
 } from "./config-contracts.js";
-export { resolveOpenClawExecPolicyForCodexAppServer } from "./config-exec-policy.js";
+export { resolveAforaExecPolicyForCodexAppServer } from "./config-exec-policy.js";
 export {
   isCodexRemoteExecPlacementSandbox,
   isCodexSandboxExecServerEnabled,

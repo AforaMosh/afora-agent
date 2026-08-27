@@ -1,6 +1,6 @@
 // Matrix tests cover channelirectory plugin behavior.
-import { createRuntimeEnv } from "openclaw/plugin-sdk/plugin-test-runtime";
-import { withEnv } from "openclaw/plugin-sdk/test-env";
+import { createRuntimeEnv } from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { withEnv } from "afora-agent/plugin-sdk/test-env";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { RuntimeEnv } from "../runtime-api.js";
 import { matrixPlugin } from "./channel.js";

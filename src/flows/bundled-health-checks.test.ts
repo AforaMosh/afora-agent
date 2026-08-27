@@ -213,10 +213,10 @@ describe("registerBundledHealthChecks", () => {
   });
 
   it("scopes plugin state only while the selected provider setup is inspected", async () => {
-    const sourceEnv = { ...process.env, OPENCLAW_STATE_DIR: "/operator/state" };
+    const sourceEnv = { ...process.env, AFORA_STATE_DIR: "/operator/state" };
     const pluginMetadataEnv = {
       ...sourceEnv,
-      OPENCLAW_STATE_DIR: "/private/read-only-state",
+      AFORA_STATE_DIR: "/private/read-only-state",
     };
     let snapshotRuns = 0;
     const runWithPluginStateSnapshot = async <T>(
@@ -312,14 +312,14 @@ describe("registerBundledHealthChecks", () => {
     });
   });
 
-  it("does not load managed Codex health for OpenClaw routes or disabled Codex", () => {
+  it("does not load managed Codex health for Afora routes or disabled Codex", () => {
     for (const cfg of [
       {
         agents: {
           defaults: {
             model: { primary: "openai/gpt-5.6-sol" },
             models: {
-              "openai/gpt-5.6-sol": { agentRuntime: { id: "openclaw" } },
+              "openai/gpt-5.6-sol": { agentRuntime: { id: "afora" } },
             },
           },
         },

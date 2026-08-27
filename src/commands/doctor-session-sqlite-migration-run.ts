@@ -2,8 +2,8 @@
 import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { z } from "zod";
 import { resolveStateDir } from "../config/paths.js";
 import { readFileDescriptorBoundedSync } from "../infra/boundary-file-read.js";
@@ -50,7 +50,7 @@ type SessionSqliteMigrationManifest = {
     markdownPath: string;
   };
   manifestVersion: 1 | 2;
-  openClawVersion: string;
+  aforaVersion: string;
   restore?: {
     attemptedAt: string;
     consumedArchives?: string[];
@@ -139,7 +139,7 @@ const MigrationManifestSchema = z
       })
       .optional(),
     manifestVersion: z.union([z.literal(1), z.literal(2)]),
-    openClawVersion: z.string().min(1),
+    aforaVersion: z.string().min(1),
     restore: z
       .object({
         attemptedAt: z.string().min(1),
@@ -176,7 +176,7 @@ export function createSessionSqliteMigrationRun(
   const manifestPath = path.join(resolveSessionSqliteMigrationRunsDir(env), `${runId}.json`);
   const manifest: SessionSqliteMigrationManifest = {
     manifestVersion: 2,
-    openClawVersion: VERSION,
+    aforaVersion: VERSION,
     runId,
     startedAt: new Date().toISOString(),
     targets: targets.map((target) => ({
@@ -746,7 +746,7 @@ export function writeSessionSqliteMigrationFailureReports(
     generatedAt: new Date().toISOString(),
     manifestPath: sanitizeFailureReportText(shortenFailureReportPath(manifestPath)),
     reason: params.reason,
-    recoveryCommand: "openclaw doctor --session-sqlite recover --github-issue",
+    recoveryCommand: "afora doctor --session-sqlite recover --github-issue",
     restoreStatus: manifest?.restore?.status ?? "not_attempted",
     runId: manifest?.runId ?? path.basename(manifestPath, ".json"),
     targets:
@@ -791,7 +791,7 @@ export function createSessionSqliteMigrationFailureIssue(
     generatedAt: new Date().toISOString(),
     manifestPath: sanitizeFailureReportText(shortenFailureReportPath(manifestPath)),
     reason: "session SQLite migration failed",
-    recoveryCommand: "openclaw doctor --session-sqlite recover --github-issue",
+    recoveryCommand: "afora doctor --session-sqlite recover --github-issue",
     restoreStatus: manifest.restore?.status ?? "not_attempted",
     runId: manifest.runId,
     targets: targets.map((target) => ({
@@ -809,7 +809,7 @@ export function createSessionSqliteMigrationFailureIssue(
     version: VERSION,
   });
   const body = [
-    "OpenClaw doctor generated this sanitized report from a local session SQLite migration recovery.",
+    "Afora doctor generated this sanitized report from a local session SQLite migration recovery.",
     "",
     reportBody,
   ].join("\n");
@@ -1266,7 +1266,7 @@ function createPrefilledGithubIssueUrl(title: string, body: string): string {
     body: urlBody,
     title,
   });
-  return `https://github.com/openclaw/openclaw/issues/new?${params.toString()}`;
+  return `https://github.com/AforaMosh/afora-agent/issues/new?${params.toString()}`;
 }
 
 function pruneCompletedSessionSqliteMigrationRuns(env: NodeJS.ProcessEnv): void {
@@ -1314,7 +1314,7 @@ function renderFailureMarkdown(payload: {
     "",
     `- Run: ${payload.runId}`,
     `- Generated: ${payload.generatedAt}`,
-    `- OpenClaw version: ${payload.version}`,
+    `- Afora version: ${payload.version}`,
     `- Reason: ${sanitizeFailureReportText(payload.reason)}`,
     `- Restore status: ${payload.restoreStatus}`,
     `- Recovery command: \`${payload.recoveryCommand}\``,

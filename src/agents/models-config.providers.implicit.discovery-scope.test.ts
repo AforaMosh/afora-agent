@@ -166,7 +166,7 @@ describe("resolveImplicitProviders startup discovery scope", () => {
 
   it("passes startup provider scopes as plugin owner filters", async () => {
     await resolveImplicitProviders({
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       config: {},
       env: {} as NodeJS.ProcessEnv,
       explicitProviders: {},
@@ -197,7 +197,7 @@ describe("resolveImplicitProviders startup discovery scope", () => {
     const outcomes: Array<{ provider: string; status: string }> = [];
 
     await resolveImplicitProviders({
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       config: {},
       env: {} as NodeJS.ProcessEnv,
       explicitProviders: {},
@@ -211,7 +211,7 @@ describe("resolveImplicitProviders startup discovery scope", () => {
 
   it("can keep startup discovery on provider discovery entries only", async () => {
     await resolveImplicitProviders({
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       config: {},
       env: {} as NodeJS.ProcessEnv,
       explicitProviders: {},
@@ -227,7 +227,7 @@ describe("resolveImplicitProviders startup discovery scope", () => {
 
   it("does not fall through to live catalogs when entries-only providers lack static rows", async () => {
     await resolveImplicitProviders({
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       config: {},
       env: {} as NodeJS.ProcessEnv,
       explicitProviders: {},
@@ -244,7 +244,7 @@ describe("resolveImplicitProviders startup discovery scope", () => {
     ]);
 
     await resolveImplicitProviders({
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       config: {},
       env: {} as NodeJS.ProcessEnv,
       explicitProviders: {},
@@ -259,7 +259,7 @@ describe("resolveImplicitProviders startup discovery scope", () => {
     const openai = { ...createStaticOnlyProvider("openai"), pluginId: "openai" };
     const anthropic = { ...createStaticOnlyProvider("anthropic"), pluginId: "anthropic" };
     const providers = await resolveImplicitProviders({
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       config: {},
       env: {} as NodeJS.ProcessEnv,
       explicitProviders: {},
@@ -324,7 +324,7 @@ describe("resolveImplicitProviders startup discovery scope", () => {
     });
 
     const providers = await resolveImplicitProviders({
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       config: {},
       env: {} as NodeJS.ProcessEnv,
       explicitProviders: {},
@@ -354,7 +354,7 @@ describe("resolveImplicitProviders startup discovery scope", () => {
     ]);
 
     await resolveImplicitProviders({
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       config: {},
       env: {} as NodeJS.ProcessEnv,
       explicitProviders: {},
@@ -366,7 +366,7 @@ describe("resolveImplicitProviders startup discovery scope", () => {
   });
 
   it("fills missing static catalog apiKey from Google Vertex ADC auth evidence", async () => {
-    const tempDir = await mkdtemp(path.join(os.tmpdir(), "openclaw-google-vertex-adc-"));
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), "afora-google-vertex-adc-"));
     const credentialsPath = path.join(tempDir, "application_default_credentials.json");
     await writeFile(credentialsPath, JSON.stringify({ type: "authorized_user" }));
     mocks.resolveRuntimePluginDiscoveryProviders.mockResolvedValue([
@@ -384,16 +384,16 @@ describe("resolveImplicitProviders startup discovery scope", () => {
 
     const providers = await withEnvAsync(
       {
-        OPENCLAW_BUNDLED_PLUGINS_DIR: BUNDLED_PLUGINS_DIR,
-        OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
+        AFORA_BUNDLED_PLUGINS_DIR: BUNDLED_PLUGINS_DIR,
+        AFORA_DISABLE_BUNDLED_PLUGINS: undefined,
       },
       async () =>
         await resolveImplicitProviders({
-          agentDir: "/tmp/openclaw-agent",
+          agentDir: "/tmp/afora-agent",
           config: {},
           env: {
-            OPENCLAW_BUNDLED_PLUGINS_DIR: BUNDLED_PLUGINS_DIR,
-            OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
+            AFORA_BUNDLED_PLUGINS_DIR: BUNDLED_PLUGINS_DIR,
+            AFORA_DISABLE_BUNDLED_PLUGINS: undefined,
             GOOGLE_APPLICATION_CREDENTIALS: credentialsPath,
             GOOGLE_CLOUD_PROJECT: "vertex-project",
             GOOGLE_CLOUD_LOCATION: "global",
@@ -422,7 +422,7 @@ describe("resolveImplicitProviders startup discovery scope", () => {
     });
 
     const providers = await resolveImplicitProviders({
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       config: {},
       env: {} as NodeJS.ProcessEnv,
       explicitProviders: {},
@@ -451,7 +451,7 @@ describe("resolveImplicitProviders startup discovery scope", () => {
     });
 
     const providers = await resolveImplicitProviders({
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       config: {
         agents: {
           defaults: {
@@ -491,7 +491,7 @@ describe("resolveImplicitProviders startup discovery scope", () => {
     });
 
     const providers = await resolveImplicitProviders({
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       config: {
         agents: {
           defaults: {

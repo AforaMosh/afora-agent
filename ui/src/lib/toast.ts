@@ -1,7 +1,7 @@
 import { html, nothing, type TemplateResult } from "lit";
 import { state } from "lit/decorators.js";
 import { t } from "../i18n/index.ts";
-import { OpenClawLightDomContentsElement } from "../lit/openclaw-element.ts";
+import { AforaLightDomContentsElement } from "../lit/afora-element.ts";
 import { formatUiExternalText } from "./format-error.ts";
 
 type ToastDismissReason = "action" | "dismiss" | "disconnected" | "replaced" | "timeout";
@@ -19,7 +19,7 @@ export type ToastOptions = {
 const DEFAULT_TOAST_DURATION_MS = 6_000;
 
 function activeModalToastLayer() {
-  return [...(document.openClawModalToastLayers ?? [])].findLast(
+  return [...(document.aforaModalToastLayers ?? [])].findLast(
     (candidate) => candidate.isConnected,
   );
 }
@@ -29,7 +29,7 @@ function activeModalToastLayer() {
 // dropping it, so no caller's message disappears because it arrived too early.
 let queuedToast: ToastOptions | null = null;
 
-class OpenClawToastHost extends OpenClawLightDomContentsElement {
+class AforaToastHost extends AforaLightDomContentsElement {
   @state() private toast: ToastOptions | null = null;
   private dismissTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
 
@@ -44,7 +44,7 @@ class OpenClawToastHost extends OpenClawLightDomContentsElement {
 
   override disconnectedCallback() {
     const target = activeModalToastLayer() ?? document.querySelector(".shell");
-    if (!this.isConnected && this.parentElement?.localName === "openclaw-modal-dialog" && target) {
+    if (!this.isConnected && this.parentElement?.localName === "afora-modal-dialog" && target) {
       target.append(this);
     } else {
       this.dismiss("disconnected");
@@ -121,7 +121,7 @@ export function showToast(options: ToastOptions): boolean {
   if (typeof document === "undefined") {
     return false;
   }
-  const host = document.querySelector<OpenClawToastHost>("openclaw-toast-host");
+  const host = document.querySelector<AforaToastHost>("afora-toast-host");
   if (!host) {
     queuedToast = options;
     return false;
@@ -145,12 +145,12 @@ export function showToast(options: ToastOptions): boolean {
 }
 
 // Guarded so DOM-free (node) consumers of send-failure surfacing can load this module.
-if (typeof customElements !== "undefined" && !customElements.get("openclaw-toast-host")) {
-  customElements.define("openclaw-toast-host", OpenClawToastHost);
+if (typeof customElements !== "undefined" && !customElements.get("afora-toast-host")) {
+  customElements.define("afora-toast-host", AforaToastHost);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "openclaw-toast-host": OpenClawToastHost;
+    "afora-toast-host": AforaToastHost;
   }
 }

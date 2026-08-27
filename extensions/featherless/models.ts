@@ -1,10 +1,10 @@
 // Featherless model catalog helpers derive their values from the plugin manifest.
-import { buildManifestModelProviderConfig } from "openclaw/plugin-sdk/provider-catalog-shared";
+import { buildManifestModelProviderConfig } from "afora-agent/plugin-sdk/provider-catalog-shared";
 import type {
   ModelCompatConfig,
   ModelDefinitionConfig,
-} from "openclaw/plugin-sdk/provider-model-shared";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+} from "afora-agent/plugin-sdk/provider-model-shared";
+import manifest from "./afora.plugin.json" with { type: "json" };
 
 const FEATHERLESS_MANIFEST_PROVIDER = buildManifestModelProviderConfig({
   providerId: "featherless",

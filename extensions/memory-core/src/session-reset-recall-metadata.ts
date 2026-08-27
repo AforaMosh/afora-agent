@@ -3,7 +3,7 @@ export type SessionResetRecallCutoff =
   | { state: "invalid" }
   | { cutoffLine: number; state: "valid" };
 
-const RESET_RECALL_CUTOFF = Symbol.for("openclaw.memory.sessionResetRecallCutoff");
+const RESET_RECALL_CUTOFF = Symbol.for("afora.memory.sessionResetRecallCutoff");
 
 export function readSessionResetRecallCutoffMetadata(value: unknown): SessionResetRecallCutoff {
   if (!value || typeof value !== "object") {

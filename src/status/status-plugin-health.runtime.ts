@@ -2,7 +2,7 @@ import { listPersistedRuntimeToolSchemaQuarantines } from "../agents/tool-schema
 import { resolveReadOnlyChannelPluginsForConfig } from "../channels/plugins/read-only.js";
 // Runtime plugin health collection is isolated from pure status formatting so
 // ordinary status tests do not eagerly load plugin registry internals.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { listContextEngineQuarantines } from "../context-engine/registry.js";
 import {
   getActiveRuntimePluginRegistry,
@@ -72,7 +72,7 @@ function normalizeCompatibilityNotice(
 }
 
 function collectChannelPluginFailures(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   diagnostics?: readonly PluginDiagnosticRecord[];
   workspaceDir?: string;
 }): ChannelPluginFailureRecord[] {
@@ -177,7 +177,7 @@ export function collectRuntimePluginHealthSnapshot(): StatusPluginHealthSnapshot
 }
 
 export async function collectInstalledPluginHealthSnapshot(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
 }): Promise<StatusPluginHealthSnapshot> {
   const { buildPluginCompatibilityNotices, buildPluginSnapshotReport } =
@@ -237,7 +237,7 @@ export async function collectInstalledPluginHealthSnapshot(params: {
 // the compact path never pulls the startup-plan module. Observer-only: any resolution failure
 // degrades to no set rather than breaking /status.
 async function resolveUnregisteredMemoryEmbeddingProviders(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   registry: ReturnType<typeof getActiveRuntimePluginRegistry>;
 }): Promise<Array<{ configuredId: string; source: "provider" | "fallback" }> | undefined> {
   if (!params.config || !params.registry) {
@@ -263,7 +263,7 @@ async function resolveUnregisteredMemoryEmbeddingProviders(params: {
 // resolution failure (or absent config) degrades to no should-run set rather than breaking
 // /status.
 async function resolveShouldRunPluginIds(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
 }): Promise<string[] | undefined> {
   if (!params.config) {

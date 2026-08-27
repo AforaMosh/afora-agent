@@ -2,7 +2,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { KeyedAsyncQueue } from "openclaw/plugin-sdk/keyed-async-queue";
+import { KeyedAsyncQueue } from "afora-agent/plugin-sdk/keyed-async-queue";
 
 type ActiveVaultMutation = { active: boolean };
 

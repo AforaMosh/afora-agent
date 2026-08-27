@@ -1,7 +1,7 @@
 // Command queue tests cover bounded command execution and queue ordering.
 import { AsyncLocalStorage } from "node:async_hooks";
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDeferred } from "../../test/helpers/promise.js";
 import { resetCommandQueueStateForTest } from "./command-queue.test-support.js";
@@ -971,7 +971,7 @@ describe("command queue", () => {
     // the `activeTaskWaiters` field.  The schema migration in getQueueState()
     // must patch the missing field so resetAllLanes() and
     // notifyActiveTaskWaiters() do not throw.
-    const key = Symbol.for("openclaw.commandQueueState");
+    const key = Symbol.for("afora.commandQueueState");
     const globalStore = globalThis as Record<PropertyKey, unknown>;
     const original = globalStore[key];
 
@@ -1002,7 +1002,7 @@ describe("command queue", () => {
   });
 
   it("migrates legacy queued entries missing priority and wait diagnostics", async () => {
-    const key = Symbol.for("openclaw.commandQueueState");
+    const key = Symbol.for("afora.commandQueueState");
     const globalStore = globalThis as Record<PropertyKey, unknown>;
     const original = globalStore[key];
     let queuedAhead: number | null = null;

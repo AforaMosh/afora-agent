@@ -1,16 +1,16 @@
-import { createAccountListHelpers } from "openclaw/plugin-sdk/account-helpers";
+import { createAccountListHelpers } from "afora-agent/plugin-sdk/account-helpers";
 // Line plugin module implements accounts behavior.
 import {
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId as normalizeSharedAccountId,
   normalizeOptionalAccountId,
-} from "openclaw/plugin-sdk/account-id";
+} from "afora-agent/plugin-sdk/account-id";
 import {
   resolveAccountEntry,
   resolveListedDefaultAccountId,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/account-resolution";
-import { tryReadSecretFileSync } from "openclaw/plugin-sdk/secret-file-runtime";
+  type AforaConfig,
+} from "afora-agent/plugin-sdk/account-resolution";
+import { tryReadSecretFileSync } from "afora-agent/plugin-sdk/secret-file-runtime";
 import type {
   LineAccountConfig,
   LineConfig,
@@ -78,7 +78,7 @@ function resolveLineCredential(params: {
 }
 
 export function resolveLineAccount(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string;
 }): ResolvedLineAccount {
   const cfg = params.cfg;
@@ -138,7 +138,7 @@ export function resolveLineAccount(params: {
   };
 }
 
-export function listLineAccountIds(cfg: OpenClawConfig): string[] {
+export function listLineAccountIds(cfg: AforaConfig): string[] {
   const lineConfig = cfg.channels?.line as LineConfig | undefined;
   const accounts = lineConfig?.accounts;
   const ids = new Set<string>();
@@ -160,7 +160,7 @@ export function listLineAccountIds(cfg: OpenClawConfig): string[] {
   return Array.from(ids);
 }
 
-export function resolveDefaultLineAccountId(cfg: OpenClawConfig): string {
+export function resolveDefaultLineAccountId(cfg: AforaConfig): string {
   return resolveListedDefaultAccountId({
     accountIds: listLineAccountIds(cfg),
     configuredDefaultAccountId: normalizeOptionalAccountId(

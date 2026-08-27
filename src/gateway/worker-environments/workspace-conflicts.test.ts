@@ -6,7 +6,7 @@ describe("workspace conflict reporting", () => {
     expect(
       formatWorkspaceConflictSummary(
         Array.from({ length: 8 }, (_, index) => `very-long-${index}.txt`),
-        "refs/openclaw/worker-results/claim-1",
+        "refs/afora/worker-results/claim-1",
         30,
       ),
     ).toContain("(+22 more)");

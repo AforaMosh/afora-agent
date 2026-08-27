@@ -1,6 +1,6 @@
 import { isPluginRegistryLoadInFlight } from "./loader-cache.js";
 import { resolvePluginLoadCacheContext } from "./loader-load-context.js";
-import { loadOpenClawPlugins } from "./loader-runtime-load.js";
+import { loadAforaPlugins } from "./loader-runtime-load.js";
 import type { PluginLoadOptions } from "./loader-types.js";
 import type { PluginRegistry } from "./registry.js";
 import { getActivePluginRegistry, getActivePluginRegistryKey } from "./runtime.js";
@@ -27,13 +27,13 @@ export function resolveRuntimePluginRegistry(
     return activeRegistry;
   }
   // Runtime helpers must not recurse while this exact snapshot is registering.
-  // Direct loadOpenClawPlugins callers still surface the hard error.
+  // Direct loadAforaPlugins callers still surface the hard error.
   if (isPluginRegistryLoadInFlight(options)) {
     return undefined;
   }
   // Runtime consumers own handles. Process-root installation is reserved for
   // loadAndActivateRootPluginRegistry at the composition boundary.
-  return loadOpenClawPlugins({ ...options, activate: false });
+  return loadAforaPlugins({ ...options, activate: false });
 }
 
 export function getRuntimePluginRegistryForLoadOptions(

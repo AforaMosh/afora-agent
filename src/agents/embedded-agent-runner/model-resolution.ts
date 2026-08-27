@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { AuthProfileCredential } from "../auth-profiles/types.js";
 import {
   prepareModelRuntimeSnapshot,
@@ -14,7 +14,7 @@ export async function resolveTieredModel(params: {
   fallbackProvider?: string;
   modelId: string;
   agentDir: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir: string;
   authProfileId?: string;
   authProfileMode?: AuthProfileCredential["type"] | "aws-sdk";

@@ -1,8 +1,8 @@
 // Browser tests cover client fetch.loopback auth plugin behavior.
-import { MAX_TIMER_TIMEOUT_MS } from "openclaw/plugin-sdk/number-runtime";
+import { MAX_TIMER_TIMEOUT_MS } from "afora-agent/plugin-sdk/number-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "../test-support/browser-security.mock.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import type { BrowserControlAuth } from "./control-auth.js";
 import type { BrowserDispatchResponse } from "./routes/dispatcher.js";
 
@@ -10,9 +10,9 @@ type BridgeAuth = NonNullable<
   ReturnType<typeof import("./bridge-auth-registry.js").getBridgeAuthForPort>
 >;
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/ssrf-runtime")>(
-    "openclaw/plugin-sdk/ssrf-runtime",
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/ssrf-runtime")>(
+    "afora-agent/plugin-sdk/ssrf-runtime",
   );
   return {
     ...actual,
@@ -36,7 +36,7 @@ function okDispatchResponse(): BrowserDispatchResponse {
 }
 
 const mocks = vi.hoisted(() => ({
-  loadConfig: vi.fn<() => OpenClawConfig>(() => ({
+  loadConfig: vi.fn<() => AforaConfig>(() => ({
     gateway: {
       auth: {
         token: "loopback-token",
@@ -136,7 +136,7 @@ describe("fetchBrowserJson loopback auth", () => {
     ]) {
       vi.stubEnv(key, "");
     }
-    vi.stubEnv("OPENCLAW_GATEWAY_TOKEN", "loopback-token");
+    vi.stubEnv("AFORA_GATEWAY_TOKEN", "loopback-token");
     mocks.loadConfig.mockClear();
     mocks.loadConfig.mockReturnValue({
       gateway: {
@@ -232,11 +232,11 @@ describe("fetchBrowserJson loopback auth", () => {
     await expectThrownBrowserFetchError(() => fetchBrowserJson<{ ok: boolean }>("/tabs"), {
       contains: [
         "Chrome CDP handshake timeout",
-        "Restart the OpenClaw gateway",
+        "Restart the Afora gateway",
         "Retry the browser tool once",
         "If the same error persists",
       ],
-      omits: ["Can't reach the OpenClaw browser control service", "Do NOT retry the browser tool"],
+      omits: ["Can't reach the Afora browser control service", "Do NOT retry the browser tool"],
     });
   });
 
@@ -244,7 +244,7 @@ describe("fetchBrowserJson loopback auth", () => {
     mocks.dispatch.mockRejectedValueOnce(new DOMException("operation aborted", "AbortError"));
 
     await expectThrownBrowserFetchError(() => fetchBrowserJson<{ ok: boolean }>("/tabs"), {
-      contains: ["operation aborted", "Restart the OpenClaw gateway"],
+      contains: ["operation aborted", "Restart the Afora gateway"],
       omits: ["Do NOT retry the browser tool"],
     });
   });
@@ -270,12 +270,12 @@ describe("fetchBrowserJson loopback auth", () => {
       {
         contains: [
           "Chrome CDP handshake timeout",
-          "browser profile is external to OpenClaw",
-          "Restarting the OpenClaw gateway will not launch it",
+          "browser profile is external to Afora",
+          "Restarting the Afora gateway will not launch it",
           "Retry the browser tool once",
           "If the same error persists",
         ],
-        omits: ["Restart the OpenClaw gateway", "Do NOT retry the browser tool"],
+        omits: ["Restart the Afora gateway", "Do NOT retry the browser tool"],
       },
     );
   });
@@ -298,10 +298,10 @@ describe("fetchBrowserJson loopback auth", () => {
     await expectThrownBrowserFetchError(() => fetchBrowserJson<{ ok: boolean }>("/tabs"), {
       contains: [
         "operation aborted",
-        "browser profile is external to OpenClaw",
-        "Restarting the OpenClaw gateway will not launch it",
+        "browser profile is external to Afora",
+        "Restarting the Afora gateway will not launch it",
       ],
-      omits: ["Restart the OpenClaw gateway", "Do NOT retry the browser tool"],
+      omits: ["Restart the Afora gateway", "Do NOT retry the browser tool"],
     });
   });
 
@@ -324,12 +324,12 @@ describe("fetchBrowserJson loopback auth", () => {
       {
         contains: [
           "timed out",
-          "browser profile is external to OpenClaw",
-          "Restarting the OpenClaw gateway will not launch it",
+          "browser profile is external to Afora",
+          "Restarting the Afora gateway will not launch it",
           "Retry the browser tool once",
           "If the same error persists",
         ],
-        omits: ["Restart the OpenClaw gateway", "Do NOT retry the browser tool"],
+        omits: ["Restart the Afora gateway", "Do NOT retry the browser tool"],
       },
     );
   });
@@ -337,9 +337,9 @@ describe("fetchBrowserJson loopback auth", () => {
   it("keeps restart-gateway guidance for managed local dispatcher timeouts", async () => {
     mocks.loadConfig.mockReturnValue({
       browser: {
-        defaultProfile: "openclaw",
+        defaultProfile: "afora",
         profiles: {
-          openclaw: {
+          afora: {
             cdpPort: 18800,
             color: "#FF4500",
           },
@@ -349,15 +349,15 @@ describe("fetchBrowserJson loopback auth", () => {
     mocks.dispatch.mockRejectedValueOnce(new Error("Chrome CDP handshake timeout"));
 
     await expectThrownBrowserFetchError(
-      () => fetchBrowserJson<{ ok: boolean }>("/tabs?profile=openclaw"),
+      () => fetchBrowserJson<{ ok: boolean }>("/tabs?profile=afora"),
       {
         contains: [
           "Chrome CDP handshake timeout",
-          "Restart the OpenClaw gateway",
+          "Restart the Afora gateway",
           "Retry the browser tool once",
           "If the same error persists",
         ],
-        omits: ["browser profile is external to OpenClaw", "Do NOT retry the browser tool"],
+        omits: ["browser profile is external to Afora", "Do NOT retry the browser tool"],
       },
     );
   });
@@ -373,11 +373,11 @@ describe("fetchBrowserJson loopback auth", () => {
       {
         contains: [
           "Chrome CDP handshake timeout",
-          "Restart the OpenClaw gateway",
+          "Restart the Afora gateway",
           "Retry the browser tool once",
           "If the same error persists",
         ],
-        omits: ["browser profile is external to OpenClaw", "Do NOT retry the browser tool"],
+        omits: ["browser profile is external to Afora", "Do NOT retry the browser tool"],
       },
     );
   });
@@ -385,9 +385,9 @@ describe("fetchBrowserJson loopback auth", () => {
   it("keeps restart-gateway guidance for unknown dispatcher profiles", async () => {
     mocks.loadConfig.mockReturnValue({
       browser: {
-        defaultProfile: "openclaw",
+        defaultProfile: "afora",
         profiles: {
-          openclaw: {
+          afora: {
             cdpPort: 18800,
             color: "#FF4500",
           },
@@ -401,11 +401,11 @@ describe("fetchBrowserJson loopback auth", () => {
       {
         contains: [
           "Chrome CDP handshake timeout",
-          "Restart the OpenClaw gateway",
+          "Restart the Afora gateway",
           "Retry the browser tool once",
           "If the same error persists",
         ],
-        omits: ["browser profile is external to OpenClaw", "Do NOT retry the browser tool"],
+        omits: ["browser profile is external to Afora", "Do NOT retry the browser tool"],
       },
     );
   });
@@ -428,12 +428,12 @@ describe("fetchBrowserJson loopback auth", () => {
     await expectThrownBrowserFetchError(() => fetchBrowserJson<{ ok: boolean }>("/tabs"), {
       contains: [
         "Chrome CDP handshake timeout",
-        "browser profile is external to OpenClaw",
-        "Restarting the OpenClaw gateway will not launch it",
+        "browser profile is external to Afora",
+        "Restarting the Afora gateway will not launch it",
         "Retry the browser tool once",
         "If the same error persists",
       ],
-      omits: ["Restart the OpenClaw gateway", "Do NOT retry the browser tool"],
+      omits: ["Restart the Afora gateway", "Do NOT retry the browser tool"],
     });
   });
 
@@ -458,10 +458,10 @@ describe("fetchBrowserJson loopback auth", () => {
       {
         contains: [
           "Chrome CDP connection refused",
-          "browser profile is external to OpenClaw",
+          "browser profile is external to Afora",
           "Do NOT retry the browser tool",
         ],
-        omits: ["Restart the OpenClaw gateway"],
+        omits: ["Restart the Afora gateway"],
       },
     );
   });
@@ -471,7 +471,7 @@ describe("fetchBrowserJson loopback auth", () => {
 
     await expectThrownBrowserFetchError(() => fetchBrowserJson<{ ok: boolean }>("/tabs"), {
       contains: ["Chrome CDP connection refused", "Do NOT retry the browser tool"],
-      omits: ["Can't reach the OpenClaw browser control service"],
+      omits: ["Can't reach the Afora browser control service"],
     });
   });
 
@@ -527,7 +527,7 @@ describe("fetchBrowserJson loopback auth", () => {
         error: "display required",
         reason: "no_display_for_headed_profile",
         details: {
-          profile: "openclaw",
+          profile: "afora",
           requestedHeadless: false,
           headlessSource: "request",
           displayPresent: false,
@@ -544,7 +544,7 @@ describe("fetchBrowserJson loopback auth", () => {
       message: "display required",
       reason: "no_display_for_headed_profile",
       details: {
-        profile: "openclaw",
+        profile: "afora",
         requestedHeadless: false,
         headlessSource: "request",
         displayPresent: false,
@@ -748,7 +748,7 @@ describe("fetchBrowserJson loopback auth", () => {
       () => fetchBrowserJson<{ ok: boolean }>("http://example.com/"),
       {
         contains: [
-          "Can't reach the OpenClaw browser control service",
+          "Can't reach the Afora browser control service",
           "Retry the browser tool once",
           "If the same error persists",
         ],

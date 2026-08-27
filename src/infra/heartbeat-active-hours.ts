@@ -1,7 +1,7 @@
 // Evaluates heartbeat active-hours windows.
 import { resolveUserTimezone } from "../agents/date-time.js";
 import type { AgentDefaultsConfig } from "../config/types.agent-defaults.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 // Heartbeat active-hours helpers interpret user/local/IANA timezones and treat
 // invalid config as permissive so bad schedules do not disable heartbeats.
@@ -10,7 +10,7 @@ type HeartbeatConfig = AgentDefaultsConfig["heartbeat"];
 const ACTIVE_HOURS_TIME_PATTERN = /^(?:([01]\d|2[0-3]):([0-5]\d)|24:00)$/;
 
 /** Resolve the timezone used to evaluate heartbeat active hours. */
-export function resolveActiveHoursTimezone(cfg: OpenClawConfig, raw?: string): string {
+export function resolveActiveHoursTimezone(cfg: AforaConfig, raw?: string): string {
   const trimmed = raw?.trim();
   if (!trimmed || trimmed === "user") {
     return resolveUserTimezone(cfg.agents?.defaults?.userTimezone);
@@ -68,7 +68,7 @@ function resolveMinutesInTimeZone(nowMs: number, formatter: Intl.DateTimeFormat)
 
 /** Prepare one active-hours predicate for repeated schedule probes. */
 export function createActiveHoursPredicate(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   heartbeat?: HeartbeatConfig,
 ): (nowMs: number) => boolean {
   const active = heartbeat?.activeHours;
@@ -114,7 +114,7 @@ export function createActiveHoursPredicate(
 
 /** Return true when the current time is inside the configured heartbeat window. */
 export function isWithinActiveHours(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   heartbeat?: HeartbeatConfig,
   nowMs?: number,
 ): boolean {

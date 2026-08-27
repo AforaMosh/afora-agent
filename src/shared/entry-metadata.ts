@@ -1,5 +1,5 @@
 // Entry metadata helpers resolve display names, emojis, and homepage links.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 
 /** Resolves entry emoji/homepage with metadata taking precedence over frontmatter aliases. */
 export function resolveEmojiAndHomepage(params: {

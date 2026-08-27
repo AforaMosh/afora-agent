@@ -13,7 +13,7 @@ const guardScriptPath = fileURLToPath(
 type GuardFixture = Record<string, string>;
 
 async function runFixture(files: GuardFixture) {
-  return await withTempDir("openclaw-wrapper-shadowing-", async (repoRoot) => {
+  return await withTempDir("afora-wrapper-shadowing-", async (repoRoot) => {
     await Promise.all(
       Object.entries(files).map(async ([repoPath, content]) => {
         const filePath = path.join(repoRoot, repoPath);

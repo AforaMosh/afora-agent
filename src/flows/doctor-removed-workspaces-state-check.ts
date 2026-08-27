@@ -3,7 +3,7 @@ import { lstat, realpath, rm } from "node:fs/promises";
 import path from "node:path";
 import { listAgentEntries } from "../agents/agent-scope-config.js";
 import { resolveStateDir } from "../config/paths.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isPathInside } from "../infra/path-guards.js";
 import { resolveUserPath } from "../utils.js";
 import type { HealthCheck, HealthRepairEffect } from "./health-checks.js";
@@ -57,7 +57,7 @@ async function canonicalPath(target: string): Promise<string> {
 }
 
 async function configuredAgentWorkspaceCollisions(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   target: string,
 ): Promise<string[]> {
   const configured: Array<{ label: string; workspace: string | undefined }> = [
@@ -134,7 +134,7 @@ export const removedWorkspacesStateCheck: HealthCheck = {
         severity: "warning",
         message: `Retired Workspaces plugin state remains at ${target}.`,
         path: target,
-        fixHint: "Run `openclaw doctor --fix` to remove the stale plugin state.",
+        fixHint: "Run `afora doctor --fix` to remove the stale plugin state.",
       },
     ];
   },

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import {
   isFutureDateTimestampMs,
   resolveExpiresAtMsFromDurationSeconds,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import { runBridgeRequest } from "./code-mode-bridge.js";
 import { CODE_MODE_EXEC_TOOL_NAME, CODE_MODE_WAIT_TOOL_NAME } from "./code-mode-control-tools.js";
 import type { CodeModeNamespaceRuntime } from "./code-mode-namespaces.js";

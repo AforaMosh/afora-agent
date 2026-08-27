@@ -4,7 +4,7 @@ import {
   listDirectoryGroupEntriesFromMapKeysAndAllowFrom,
   listDirectoryUserEntriesFromAllowFrom,
   listDirectoryUserEntriesFromAllowFromAndMapKeys,
-} from "openclaw/plugin-sdk/directory-runtime";
+} from "afora-agent/plugin-sdk/directory-runtime";
 import type { ClawdbotConfig } from "../runtime-api.js";
 import { resolveFeishuAccount } from "./accounts.js";
 import { isFeishuGroupReadAllowed } from "./read-policy.js";

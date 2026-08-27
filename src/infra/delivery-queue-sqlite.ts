@@ -1,9 +1,9 @@
 // Stores durable delivery queue entries in SQLite.
-import { safeParseJsonRecord } from "@openclaw/normalization-core";
+import { safeParseJsonRecord } from "@afora/normalization-core";
 import {
-  openOpenClawStateDatabase,
-  type OpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  type AforaStateDatabase,
+} from "../state/afora-state-db.js";
 import {
   bindDeliveryQueueEntry,
   deliveryQueueRowColumns,
@@ -46,8 +46,8 @@ type TerminalizePendingDeliveryQueueEntryResult =
   | { status: "not_pending" };
 
 function openStateDatabase(stateDir?: string) {
-  return openOpenClawStateDatabase({
-    env: stateDir ? { ...process.env, OPENCLAW_STATE_DIR: stateDir } : process.env,
+  return openAforaStateDatabase({
+    env: stateDir ? { ...process.env, AFORA_STATE_DIR: stateDir } : process.env,
   });
 }
 
@@ -61,7 +61,7 @@ function enoent(queueName: string, id: string): Error & { code: string } {
 
 function upsertDeliveryQueueEntryInDatabase(
   params: UpsertDeliveryQueueEntryParams,
-  database: OpenClawStateDatabase,
+  database: AforaStateDatabase,
 ): boolean {
   return upsertBoundDeliveryQueueEntryInDatabase(bindDeliveryQueueEntry(params), database);
 }
@@ -110,7 +110,7 @@ export function expireStagingAndLoadDeliveryQueueEntries(params: {
       };
     },
     {
-      databaseLabel: "openclaw-state",
+      databaseLabel: "afora-state",
       operationLabel: "expire delivery queue staging entries",
     },
   );
@@ -187,7 +187,7 @@ export function getDeliveryQueueEntryStatuses(
       return new Map(rows.flatMap((row) => (row.status ? [[row.queue_name, row.status]] : [])));
     },
     {
-      databaseLabel: "openclaw-state",
+      databaseLabel: "afora-state",
       operationLabel: "read delivery queue status",
     },
   );
@@ -332,7 +332,7 @@ export function reserveDeliveryQueueEntryAttempt(params: {
       return { status: "reserved", attemptCount: reservedAttemptCount };
     },
     {
-      databaseLabel: "openclaw-state",
+      databaseLabel: "afora-state",
       operationLabel: `reserve ${params.queueName} delivery attempt`,
     },
   );
@@ -370,7 +370,7 @@ export function pruneExpiredDeliveryQueueTombstones(stateDir?: string): void {
   runSqliteImmediateTransactionSync(
     database.db,
     () => pruneDeliveryQueueTombstoneAges(database.db, Date.now()),
-    { databaseLabel: "openclaw-state", operationLabel: "expire delivery queue tombstones" },
+    { databaseLabel: "afora-state", operationLabel: "expire delivery queue tombstones" },
   );
 }
 

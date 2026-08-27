@@ -4,7 +4,7 @@
  * sweep cannot delete a row that another generation now owns.
  */
 import { randomUUID } from "node:crypto";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { clearDurableTabAliases } from "./session-tab-ephemeral-aliases.js";
 import { activeDurableStorageKeys } from "./session-tab-process-state.js";
 import {

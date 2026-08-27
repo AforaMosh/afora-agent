@@ -1,9 +1,9 @@
-import { parseDateStringTimestampMs } from "@openclaw/normalization-core/number-coercion";
+import { parseDateStringTimestampMs } from "@afora/normalization-core/number-coercion";
 import type {
   SessionCatalogTranscriptItem,
   SessionsCatalogReadResult,
 } from "../../packages/gateway-protocol/src/schema/sessions-catalog.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { AgentMessage } from "../plugin-sdk/agent-core.js";
 import { withSessionTranscriptWriteLock } from "../plugin-sdk/session-transcript-runtime.js";
 
@@ -23,13 +23,13 @@ function importedSessionCatalogMessage(params: {
   }
   const text = importedText || "[Unsupported catalog transcript item]";
   if (params.item.type === "userMessage") {
-    // Imported native rows are not OpenClaw-authored; mirrorOrigin excludes them
+    // Imported native rows are not Afora-authored; mirrorOrigin excludes them
     // from self-echo provenance so a repeated external prompt stays observable.
     return {
       role: "user",
       content: text,
       timestamp,
-      __openclaw: { mirrorOrigin: `${params.catalogId}-catalog-import` },
+      __afora: { mirrorOrigin: `${params.catalogId}-catalog-import` },
     } as AgentMessage;
   }
   const prefix =
@@ -162,7 +162,7 @@ export async function importSessionCatalogHistory(params: {
   sessionKey: string;
   agentId: string;
   cwd?: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
 }): Promise<void> {
   const items = await readBoundedSessionCatalogHistory({ read: params.read });
   const fallbackTimestamp = Date.now();

@@ -3,7 +3,7 @@
  * Shared by agent/session tool inventory resolvers and UI/API callers that
  * present enabled tools grouped by source.
  */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { ProviderRuntimeModel } from "../plugins/provider-runtime-model.types.js";
 
 /** Source bucket for an effective agent tool inventory entry. */
@@ -51,7 +51,7 @@ export type EffectiveToolInventoryResult = {
 
 /** Inputs for resolving the effective tool inventory in a session/runtime context. */
 export type ResolveEffectiveToolInventoryParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId?: string;
   sessionKey?: string;
   workspaceDir?: string;

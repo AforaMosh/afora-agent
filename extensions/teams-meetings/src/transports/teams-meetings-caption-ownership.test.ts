@@ -29,16 +29,16 @@ describe("Microsoft Teams meeting caption ownership", () => {
         sessionId: "old-session",
       },
     });
-    const current = window["__openclawTeamsCaptions"] as Record<string, unknown>;
+    const current = window["__aforaTeamsCaptions"] as Record<string, unknown>;
 
     expect(disconnects).toBe(1);
     expect(old).toMatchObject({ finalized: true, lines: [{ text: "Old live caption" }] });
     expect(current).not.toBe(old);
     expect(current.sessionId).toBe("session-1");
-    expect(window["__openclawTeamsCaptionArchive"]).toMatchObject({
+    expect(window["__aforaTeamsCaptionArchive"]).toMatchObject({
       "old-session": old,
     });
-    delete window["__openclawTeamsCaptions"];
+    delete window["__aforaTeamsCaptions"];
 
     const readOldTranscript = runInNewContext(
       `(${teamsMeetingTranscriptScript(URL, "old-session", false)})`,
@@ -83,7 +83,7 @@ describe("Microsoft Teams meeting caption ownership", () => {
       identity: "teams-work:19:meeting_test@thread.v2",
       lines: [{ text: "Meeting A caption" }],
     });
-    delete window["__openclawTeamsCaptions"];
+    delete window["__aforaTeamsCaptions"];
     const readOldTranscript = runInNewContext(
       `(${teamsMeetingTranscriptScript(URL, "session-a", false)})`,
       {

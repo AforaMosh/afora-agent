@@ -1,6 +1,6 @@
 // Tool-result char estimator tests cover malformed transcript blocks and cached
 // character estimates used by context pressure guards.
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
 import { describe, expect, it } from "vitest";
 import {
   createMessageCharEstimateCache,
@@ -10,7 +10,7 @@ import {
 
 /**
  * Regression tests for malformed tool result content blocks.
- * See https://github.com/openclaw/openclaw/issues/34979
+ * See https://github.com/AforaMosh/afora-agent/issues/34979
  *
  * A plugin tool handler returning undefined produces {type: "text"} (no text
  * property) in the session JSONL. Without guards, this crashes the char

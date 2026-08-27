@@ -8,9 +8,9 @@ import {
 } from "../config/sessions/session-accessor.sqlite-read.js";
 import { updateSqliteTranscriptEventJsonInTransaction } from "../config/sessions/session-accessor.sqlite-transcript-store.js";
 import { resolveAllAgentSessionStoreTargetsSync } from "../config/sessions/targets.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
-import { runOpenClawAgentWriteTransaction } from "../state/openclaw-agent-db.js";
+import { runAforaAgentWriteTransaction } from "../state/afora-agent-db.js";
 import {
   readOnlySqliteTranscriptSessionIds,
   readOnlySqliteTranscriptSnapshot,
@@ -24,7 +24,7 @@ const NOTE_TITLE = "Session transcript labels";
 const LEGACY_LEADING_TIMESTAMP_PREFIX_RE = /^\[[A-Za-z]{3} \d{4}-\d{2}-\d{2} \d{2}:\d{2}[^\]]*\] */;
 
 // Rewrites legacy inbound-context labels to the current canonical form: plain label + the provenance
-// marker suffix (`Sender: ⟦openclaw:ctx⟧`). Runtime strippers and the memory-lancedb recognizers key
+// marker suffix (`Sender: ⟦afora:ctx⟧`). Runtime strippers and the memory-lancedb recognizers key
 // on that marker, never on label text, so every rule targeting an inbound-context header must append
 // it — a plain-label rewrite would leave behind blocks the strippers no longer see.
 //
@@ -180,7 +180,7 @@ function formatCount(count: number, singular: string): string {
 
 /** Reports or repairs legacy inbound-context labels in canonical SQLite transcripts. */
 export async function noteSessionTranscriptLabelHealth(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
   shouldRepair: boolean;
 }): Promise<void> {
@@ -249,7 +249,7 @@ export async function noteSessionTranscriptLabelHealth(params: {
         // REPAIR PHASE (if --fix): process immediately, don't buffer.
         if (params.shouldRepair) {
           try {
-            runOpenClawAgentWriteTransaction(
+            runAforaAgentWriteTransaction(
               (writeDatabase) => {
                 // Use rows-only guard (tolerant of malformed JSON in sibling rows).
                 const currentRows = readTranscriptEventRows(writeDatabase, sessionId);
@@ -291,7 +291,7 @@ export async function noteSessionTranscriptLabelHealth(params: {
     note(
       [
         `- Found ${formatCount(foundSessions, "session")} with legacy inbound-context labels.`,
-        '- Run "openclaw doctor --fix" to rewrite them.',
+        '- Run "afora doctor --fix" to rewrite them.',
       ].join("\n"),
       NOTE_TITLE,
     );

@@ -1,5 +1,5 @@
 import { isLoopbackHost } from "../gateway/net.js";
-import { type BrowserConfig, type OpenClawConfig, resolveGatewayPort } from "../sdk-config.js";
+import { type BrowserConfig, type AforaConfig, resolveGatewayPort } from "../sdk-config.js";
 import { resolveBrowserConfig } from "./config.js";
 import { ensureExtensionRelayToken } from "./extension-relay/relay-auth.js";
 
@@ -12,7 +12,7 @@ type BrowserExtensionPairing = {
   topology: "local" | "browser-node" | "direct-remote";
 };
 
-type PairingConfig = OpenClawConfig & { browser?: BrowserConfig };
+type PairingConfig = AforaConfig & { browser?: BrowserConfig };
 
 function firstExtensionRelayPort(cfg: PairingConfig): number {
   const resolved = resolveBrowserConfig(cfg.browser, cfg);

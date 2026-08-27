@@ -1,6 +1,6 @@
 // Configured local-origin bypass logic decides when managed proxy routing may
 // skip proxying a known loopback provider origin.
-import { isLoopbackIpAddress } from "@openclaw/net-policy/ip";
+import { isLoopbackIpAddress } from "@afora/net-policy/ip";
 import { getActiveManagedProxyLoopbackMode } from "./proxy/active-proxy-state.js";
 import { SsrFBlockedError } from "./ssrf.js";
 

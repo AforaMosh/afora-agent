@@ -1,4 +1,4 @@
-import type { MediaPlaceholderTextFact } from "openclaw/plugin-sdk/channel-inbound";
+import type { MediaPlaceholderTextFact } from "afora-agent/plugin-sdk/channel-inbound";
 // Imessage plugin module implements echo cache behavior.
 import { stripLeadingEchoTextCorruptionMarkers } from "./echo-text-corruption.js";
 import { hasPersistedIMessageEcho, resolveIMessageEchoMediaKey } from "./persisted-echo-cache.js";

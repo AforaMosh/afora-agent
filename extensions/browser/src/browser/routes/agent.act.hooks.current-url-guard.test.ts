@@ -38,7 +38,7 @@ const { registerBrowserAgentActHookRoutes } = await import("./agent.act.hooks.js
 
 function createProfileContext(options?: {
   attachOnly?: boolean;
-  driver?: "openclaw" | "extension";
+  driver?: "afora" | "extension";
   tabUrl?: string;
 }) {
   return {
@@ -46,7 +46,7 @@ function createProfileContext(options?: {
       attachOnly: options?.attachOnly ?? false,
       cdpIsLoopback: true,
       cdpUrl: "http://127.0.0.1:9222",
-      driver: options?.driver ?? ("openclaw" as const),
+      driver: options?.driver ?? ("afora" as const),
       name: "default",
     },
     ensureTabAvailable: vi.fn(async () => ({

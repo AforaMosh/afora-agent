@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  loadOpenClawPlugins: vi.fn<typeof import("../loader.js").loadOpenClawPlugins>(),
+  loadAforaPlugins: vi.fn<typeof import("../loader.js").loadAforaPlugins>(),
   resolveConfiguredChannelPluginIds:
     vi.fn<typeof import("../channel-plugin-ids.js").resolveConfiguredChannelPluginIds>(),
   resolveChannelPluginIds:
@@ -41,8 +41,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../loader.js", () => ({
-  loadOpenClawPlugins: (...args: Parameters<typeof mocks.loadOpenClawPlugins>) =>
-    mocks.loadOpenClawPlugins(...args),
+  loadAforaPlugins: (...args: Parameters<typeof mocks.loadAforaPlugins>) =>
+    mocks.loadAforaPlugins(...args),
 }));
 
 vi.mock("../channel-plugin-ids.js", () => ({
@@ -124,7 +124,7 @@ function useMemoryProviderOwner(params: {
 }
 
 function requireLoadOptions(): Record<string, unknown> {
-  const options = mocks.loadOpenClawPlugins.mock.calls[0]?.[0];
+  const options = mocks.loadAforaPlugins.mock.calls[0]?.[0];
   if (!options) {
     throw new Error("expected plugin load options");
   }

@@ -6,7 +6,7 @@ type BashToolTestApi = {
 
 function getTestApi(): BashToolTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.bashToolTestApi")
+    Symbol.for("afora.bashToolTestApi")
   ] as BashToolTestApi;
 }
 

@@ -1,7 +1,7 @@
 // Tests ACP dispatch delivery routing and visible reply handoff.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { createAcpDispatchDeliveryCoordinator } from "./dispatch-acp-delivery.js";
 import { createReplyDispatcher } from "./reply-dispatcher.js";
 import type { ReplyDispatcher } from "./reply-dispatcher.types.js";
@@ -132,7 +132,7 @@ async function raceWithTimeoutResult<T>(
   }
 }
 
-function createVisibleChatAcpCoordinator(cfg: OpenClawConfig) {
+function createVisibleChatAcpCoordinator(cfg: AforaConfig) {
   return createAcpDispatchDeliveryCoordinator({
     cfg,
     ctx: buildTestCtx({
@@ -149,7 +149,7 @@ function createVisibleChatAcpCoordinator(cfg: OpenClawConfig) {
 }
 
 async function expectVisibleChatBlockRoutesToAccount(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   accountId: string | undefined,
 ): Promise<void> {
   const coordinator = createVisibleChatAcpCoordinator(cfg);
@@ -1007,7 +1007,7 @@ describe("createAcpDispatchDeliveryCoordinator", () => {
   });
 
   it("routes ACP replies when cfg.channels is missing", async () => {
-    await expectVisibleChatBlockRoutesToAccount({} as OpenClawConfig, "default");
+    await expectVisibleChatBlockRoutesToAccount({} as AforaConfig, "default");
   });
 
   it("treats routed plugin-owned block text as visible", async () => {

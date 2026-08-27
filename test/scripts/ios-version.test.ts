@@ -22,10 +22,10 @@ describe("resolveIosVersion", () => {
     const script = fs.readFileSync("scripts/ios-write-version-xcconfig.sh", "utf8");
 
     expect(script).toContain('source "${ROOT_DIR}/scripts/lib/build-metadata.sh"');
-    expect(script).toContain("OPENCLAW_GIT_COMMIT = ${RESOLVED_GIT_COMMIT}");
-    expect(script).toContain("OPENCLAW_BUILD_TIMESTAMP = ${RESOLVED_BUILD_TIMESTAMP}");
-    expect(script).toContain('openclaw_resolve_git_commit "${ROOT_DIR}"');
-    expect(script).toContain("openclaw_resolve_build_timestamp");
+    expect(script).toContain("AFORA_GIT_COMMIT = ${RESOLVED_GIT_COMMIT}");
+    expect(script).toContain("AFORA_BUILD_TIMESTAMP = ${RESOLVED_BUILD_TIMESTAMP}");
+    expect(script).toContain('afora_resolve_git_commit "${ROOT_DIR}"');
+    expect(script).toContain("afora_resolve_build_timestamp");
   });
 
   it("rejects missing CLI option values before reading version files", () => {
@@ -57,7 +57,7 @@ describe("resolveIosVersion", () => {
   it("prints selected fields from the CLI", () => {
     const rootDir = writeIosFixture({
       packageVersion: "2026.4.6",
-      changelog: "# OpenClaw iOS Changelog\n\n## 2026.4.6\n\nStable notes.\n",
+      changelog: "# Afora iOS Changelog\n\n## 2026.4.6\n\nStable notes.\n",
     });
     const result = spawnSync(
       process.execPath,
@@ -84,7 +84,7 @@ describe("resolveIosVersion", () => {
   it("prints explicit gateway version fields from the CLI", () => {
     const rootDir = writeIosFixture({
       packageVersion: "2026.4.6",
-      changelog: "# OpenClaw iOS Changelog\n\n## 2026.4.7\n\nStable notes.\n",
+      changelog: "# Afora iOS Changelog\n\n## 2026.4.7\n\nStable notes.\n",
     });
     const result = spawnSync(
       process.execPath,
@@ -113,7 +113,7 @@ describe("resolveIosVersion", () => {
   it("prints an encoded App Store version for an explicit gateway revision", () => {
     const rootDir = writeIosFixture({
       packageVersion: "2026.7.2",
-      changelog: "# OpenClaw iOS Changelog\n\n## 2026.7.21\n\nRevision notes.\n",
+      changelog: "# Afora iOS Changelog\n\n## 2026.7.21\n\nRevision notes.\n",
     });
     const result = spawnSync(
       process.execPath,
@@ -141,7 +141,7 @@ describe("resolveIosVersion", () => {
   it("prints derived release notes from the CLI", () => {
     const rootDir = writeIosFixture({
       packageVersion: "2026.4.6",
-      changelog: "# OpenClaw iOS Changelog\n\n## 2026.4.7\n\nGenerated notes.\n",
+      changelog: "# Afora iOS Changelog\n\n## 2026.4.7\n\nGenerated notes.\n",
     });
     const result = spawnSync(
       process.execPath,
@@ -196,7 +196,7 @@ describe("resolveIosVersion", () => {
   it("derives Apple marketing fields from the root package release version", () => {
     const rootDir = writeIosFixture({
       packageVersion: "2026.4.6",
-      changelog: "# OpenClaw iOS Changelog\n\n## 2026.4.6\n\nStable notes.\n",
+      changelog: "# Afora iOS Changelog\n\n## 2026.4.6\n\nStable notes.\n",
     });
 
     expect(resolveIosVersion(rootDir)).toEqual({
@@ -230,7 +230,7 @@ describe("resolveIosVersion", () => {
   it("rejects semver-only package versions", () => {
     const rootDir = writeIosFixture({
       packageVersion: "1.2.3",
-      changelog: "# OpenClaw iOS Changelog\n\n## Unreleased\n\nNotes.\n",
+      changelog: "# Afora iOS Changelog\n\n## Unreleased\n\nNotes.\n",
     });
 
     expect(() => resolveIosVersion(rootDir)).toThrow("Expected YYYY.M.PATCH");
@@ -239,7 +239,7 @@ describe("resolveIosVersion", () => {
   it("rejects prerelease suffixes in explicit gateway versions", () => {
     const rootDir = writeIosFixture({
       packageVersion: "2026.4.6",
-      changelog: "# OpenClaw iOS Changelog\n\n## Unreleased\n\nNotes.\n",
+      changelog: "# Afora iOS Changelog\n\n## Unreleased\n\nNotes.\n",
     });
 
     expect(() => resolveIosVersion(rootDir, { releaseVersion: "2026.4.6-beta.1" })).toThrow(
@@ -286,7 +286,7 @@ describe("gateway version normalization", () => {
   it("reads and normalizes the root package version for iOS releases", () => {
     const rootDir = writeIosFixture({
       packageVersion: "2026.4.7-beta.5",
-      changelog: "# OpenClaw iOS Changelog\n\n## Unreleased\n\nNotes.\n",
+      changelog: "# Afora iOS Changelog\n\n## Unreleased\n\nNotes.\n",
     });
 
     expect(resolveGatewayVersionForIosRelease(rootDir)).toEqual({
@@ -300,7 +300,7 @@ describe("release note extraction", () => {
   it("requires exact App Store version notes and adds the gateway association", () => {
     const rootDir = writeIosFixture({
       packageVersion: "2026.7.2",
-      changelog: `# OpenClaw iOS Changelog
+      changelog: `# Afora iOS Changelog
 
 ## Unreleased
 
@@ -325,7 +325,7 @@ Draft notes.
   it("does not fall back to gateway or Unreleased notes for App Store revisions", () => {
     const rootDir = writeIosFixture({
       packageVersion: "2026.7.2",
-      changelog: "# OpenClaw iOS Changelog\n\n## Unreleased\n\nDraft notes.\n",
+      changelog: "# Afora iOS Changelog\n\n## Unreleased\n\nDraft notes.\n",
     });
     const version = resolveIosVersion(rootDir, {
       appStoreRevision: 1,
@@ -341,7 +341,7 @@ Draft notes.
   it("extracts exact pinned version sections first", () => {
     const rootDir = writeIosFixture({
       packageVersion: "2026.4.6",
-      changelog: `# OpenClaw iOS Changelog
+      changelog: `# Afora iOS Changelog
 
 ## Unreleased
 
@@ -361,7 +361,7 @@ Draft notes.
   it("falls back to Unreleased when the release section does not exist yet", () => {
     const rootDir = writeIosFixture({
       packageVersion: "2026.4.6",
-      changelog: `# OpenClaw iOS Changelog
+      changelog: `# Afora iOS Changelog
 
 ## Unreleased
 
@@ -380,7 +380,7 @@ Draft notes.
   it("extracts markdown bodies without the version heading", () => {
     expect(
       extractChangelogSection(
-        `# OpenClaw iOS Changelog\n\n## 2026.4.6 - 2026-04-06\n\nLine one.\n\n## 2026.4.5\n`,
+        `# Afora iOS Changelog\n\n## 2026.4.6 - 2026-04-06\n\nLine one.\n\n## 2026.4.5\n`,
         "2026.4.6",
       ),
     ).toBe("Line one.");

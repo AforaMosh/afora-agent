@@ -2,7 +2,7 @@
 // client picks from skills.search must reach the outbound ClawHub request unchanged. Only the
 // HTTP layer is faked here; search, the Gateway handlers, and the detail client are real.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const installSkillFromClawHubMock = vi.fn();
@@ -144,7 +144,7 @@ describe("ClawHub publisher identity across skills.search, skills.detail, and sk
     // Install keeps the external source, so a bare-slug read here would let an operator review
     // one skill and install another. ClawHub has no source-qualified read endpoint yet.
     const { ok, error } = await callSkillsHandler("skills.detail", {
-      slug: `skills-sh:openclaw/skills/${SLUG}`,
+      slug: `skills-sh:afora/skills/${SLUG}`,
     });
 
     expect(ok).toBe(false);

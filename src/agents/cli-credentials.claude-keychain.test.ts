@@ -13,7 +13,7 @@ function readNonInteractiveClaudeCredential(platform: NodeJS.Platform) {
   let unreadable = false;
   const credential = readClaudeCliCredentialsCached({
     platform,
-    homeDir: tempDirs.make("openclaw-claude-non-interactive-"),
+    homeDir: tempDirs.make("afora-claude-non-interactive-"),
     execSync: execSyncMock,
     allowKeychainPrompt: false,
     tryKeychainWithoutPrompt: true,

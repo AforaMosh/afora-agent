@@ -1,4 +1,4 @@
-import { consumeRootOptionToken } from "openclaw/plugin-sdk/cli-argv";
+import { consumeRootOptionToken } from "afora-agent/plugin-sdk/cli-argv";
 
 const BROWSER_BOOLEAN_OPTIONS = new Set(["--json", "--expect-final"]);
 const BROWSER_VALUE_OPTIONS = new Set([

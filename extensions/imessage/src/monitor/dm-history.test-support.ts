@@ -1,6 +1,6 @@
 // Imessage test support covers dm history plugin behavior.
-import { resolveEnvelopeFormatOptions } from "openclaw/plugin-sdk/channel-inbound";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import { resolveEnvelopeFormatOptions } from "afora-agent/plugin-sdk/channel-inbound";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it, vi } from "vitest";
 import type { IMessageRpcClient } from "../client.js";
 import { resolveIMessageDmHistoryContext, resolveIMessageDmHistoryLimit } from "./dm-history.js";
@@ -76,7 +76,7 @@ describe("resolveIMessageDmHistoryContext", () => {
       },
       senderNormalized: "+15555550123",
       limit: 2,
-      envelopeOptions: resolveEnvelopeFormatOptions({} as OpenClawConfig),
+      envelopeOptions: resolveEnvelopeFormatOptions({} as AforaConfig),
     });
 
     expect(request).toHaveBeenCalledWith(

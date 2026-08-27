@@ -1,5 +1,5 @@
 // Chat UI chips for pull requests detected on the session's working branch.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { html, nothing } from "lit";
 import type {
   ControlUiSessionBranch,
@@ -10,7 +10,7 @@ import "../../../components/tooltip.ts";
 import { t } from "../../../i18n/index.ts";
 import { getSafeLocalStorage } from "../../../local-storage.ts";
 
-const DISMISSED_STORAGE_KEY = "openclaw.chat.dismissedPullRequests";
+const DISMISSED_STORAGE_KEY = "afora.chat.dismissedPullRequests";
 // Bounds localStorage growth: dismissals for the oldest sessions fall off
 // once this many sessions have dismissed chips.
 const DISMISSED_SESSION_LIMIT = 20;
@@ -218,11 +218,11 @@ function renderDiffStats(
 
 function renderRateLimitWarning() {
   return html`
-    <openclaw-tooltip content=${t("chat.pullRequests.rateLimited")}>
+    <afora-tooltip content=${t("chat.pullRequests.rateLimited")}>
       <span class="chat-pr__warning" role="img" aria-label=${t("chat.pullRequests.rateLimited")}>
         ${icons.alertTriangle}
       </span>
-    </openclaw-tooltip>
+    </afora-tooltip>
   `;
 }
 

@@ -1,5 +1,5 @@
 // Cron store migration tests cover doctor migration of persisted cron stores.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import { resolveAgentHarnessPolicy } from "../../../agents/harness/policy.js";
 import { legacyCodexProviderIdentityKey } from "../shared/codex-route-model-ref.js";
@@ -292,7 +292,7 @@ describe("normalizeStoredCronJobs", () => {
             main: {
               default: true,
               models: {
-                "openai/gpt-5.6-sol": { agentRuntime: { id: "openclaw" } },
+                "openai/gpt-5.6-sol": { agentRuntime: { id: "afora" } },
               },
             },
           },
@@ -335,7 +335,7 @@ describe("normalizeStoredCronJobs", () => {
               id: "primary",
               default: true,
               models: {
-                "openai/gpt-5.6-sol": { agentRuntime: { id: "openclaw" } },
+                "openai/gpt-5.6-sol": { agentRuntime: { id: "afora" } },
               },
             },
           ],
@@ -352,7 +352,7 @@ describe("normalizeStoredCronJobs", () => {
     });
 
     expect(rewritePlan.warnings.join("\n")).toContain(
-      'Retained agents.list.primary.models.openai/gpt-5.6-sol.agentRuntime.id="openclaw"',
+      'Retained agents.list.primary.models.openai/gpt-5.6-sol.agentRuntime.id="afora"',
     );
     const job = expectDefined(jobs[0], "job test invariant");
     expect((job.payload as Record<string, unknown>).model).toBe("codex/gpt-5.6-sol");
@@ -386,7 +386,7 @@ describe("normalizeStoredCronJobs", () => {
               id: "primary",
               default: true,
               models: {
-                "openai/gpt-5.6-sol": { agentRuntime: { id: "openclaw" } },
+                "openai/gpt-5.6-sol": { agentRuntime: { id: "afora" } },
               },
             },
           ],
@@ -530,7 +530,7 @@ describe("normalizeStoredCronJobs", () => {
 
   it("converts legacy agent command prompts into command cron payloads", () => {
     const command =
-      "cd /home/openclaw/.razor/quant && ./scripts/system/run_position_control.sh --write-card --silent-token NO_REPLY";
+      "cd /home/afora/.razor/quant && ./scripts/system/run_position_control.sh --write-card --silent-token NO_REPLY";
     const { job, result } = normalizeOneJob(
       makeLegacyJob({
         id: "quant-position-card",
@@ -543,7 +543,7 @@ describe("normalizeStoredCronJobs", () => {
             "",
             "Command to run:",
             `- command: ${command}`,
-            "- workdir: /home/openclaw/.razor/quant",
+            "- workdir: /home/afora/.razor/quant",
             "- background: false",
             "- timeout: 840",
             "",
@@ -573,7 +573,7 @@ describe("normalizeStoredCronJobs", () => {
     expect(payload).toEqual({
       kind: "command",
       argv: ["sh", "-lc", command],
-      cwd: "/home/openclaw/.razor/quant",
+      cwd: "/home/afora/.razor/quant",
       timeoutSeconds: 900,
     });
   });
@@ -590,7 +590,7 @@ describe("normalizeStoredCronJobs", () => {
           message: [
             "Command to run:",
             `- command: ${command}`,
-            "- workdir: /home/openclaw/.razor/clawd",
+            "- workdir: /home/afora/.razor/clawd",
           ].join("\n"),
           toolsAllow: ["read", "message"],
         },

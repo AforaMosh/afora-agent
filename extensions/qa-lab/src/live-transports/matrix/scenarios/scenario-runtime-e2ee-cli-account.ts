@@ -1,5 +1,5 @@
 // Qa Matrix plugin module implements account setup CLI E2EE scenarios.
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { createMatrixQaClient } from "../substrate/client.js";
 import { startMatrixQaFaultProxy } from "../substrate/fault-proxy.js";
 import {
@@ -29,7 +29,7 @@ export async function runMatrixQaE2eeCliAccountAddEnableE2eeScenario(
   const accountId = "cli-add-e2ee";
   const account = await registerMatrixQaCliE2eeAccount({
     context,
-    deviceName: "OpenClaw Matrix QA CLI Account Add Owner",
+    deviceName: "Afora Matrix QA CLI Account Add Owner",
     scenarioId: "matrix-e2ee-cli-account-add-enable-e2ee",
   });
   const cli = await createMatrixQaCliE2eeSetupRuntime({
@@ -52,7 +52,7 @@ export async function runMatrixQaE2eeCliAccountAddEnableE2eeScenario(
       "--password",
       account.password,
       "--device-name",
-      "OpenClaw Matrix QA CLI Account Add E2EE",
+      "Afora Matrix QA CLI Account Add E2EE",
       "--allow-private-network",
       "--enable-e2ee",
       "--json",
@@ -130,14 +130,14 @@ export async function runMatrixQaE2eeCliEncryptionSetupScenario(
   const accountId = "cli-encryption-setup";
   const account = await registerMatrixQaCliE2eeAccount({
     context,
-    deviceName: "OpenClaw Matrix QA CLI Encryption Setup Owner",
+    deviceName: "Afora Matrix QA CLI Encryption Setup Owner",
     scenarioId: "matrix-e2ee-cli-encryption-setup",
   });
   const loginClient = createMatrixQaClient({
     baseUrl: context.baseUrl,
   });
   const cliDevice = await loginClient.loginWithPassword({
-    deviceName: "OpenClaw Matrix QA CLI Encryption Setup Device",
+    deviceName: "Afora Matrix QA CLI Encryption Setup Device",
     password: account.password,
     userId: account.userId,
   });
@@ -232,14 +232,14 @@ export async function runMatrixQaE2eeCliEncryptionSetupIdempotentScenario(
   const accountId = "cli-encryption-idempotent";
   const account = await registerMatrixQaCliE2eeAccount({
     context,
-    deviceName: "OpenClaw Matrix QA CLI Encryption Idempotent Owner",
+    deviceName: "Afora Matrix QA CLI Encryption Idempotent Owner",
     scenarioId: "matrix-e2ee-cli-encryption-setup-idempotent",
   });
   const loginClient = createMatrixQaClient({
     baseUrl: context.baseUrl,
   });
   const cliDevice = await loginClient.loginWithPassword({
-    deviceName: "OpenClaw Matrix QA CLI Encryption Idempotent Device",
+    deviceName: "Afora Matrix QA CLI Encryption Idempotent Device",
     password: account.password,
     userId: account.userId,
   });
@@ -333,14 +333,14 @@ export async function runMatrixQaE2eeCliEncryptionSetupBootstrapFailureScenario(
   const accountId = "cli-encryption-failure";
   const account = await registerMatrixQaCliE2eeAccount({
     context,
-    deviceName: "OpenClaw Matrix QA CLI Encryption Failure Owner",
+    deviceName: "Afora Matrix QA CLI Encryption Failure Owner",
     scenarioId: "matrix-e2ee-cli-encryption-setup-bootstrap-failure",
   });
   const loginClient = createMatrixQaClient({
     baseUrl: context.baseUrl,
   });
   const cliDevice = await loginClient.loginWithPassword({
-    deviceName: "OpenClaw Matrix QA CLI Encryption Failure Device",
+    deviceName: "Afora Matrix QA CLI Encryption Failure Device",
     password: account.password,
     userId: account.userId,
   });

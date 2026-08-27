@@ -3,7 +3,7 @@
  *
  * Combines plugin inspection hooks, read-only fallbacks, and configured credential status.
  */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   hasConfiguredUnavailableCredentialStatus,
   hasResolvedCredentialValue,
@@ -25,7 +25,7 @@ type AccountInspectionFields = {
  */
 export async function inspectChannelAccount(params: {
   plugin: ChannelPlugin;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
 }): Promise<unknown> {
   return (
@@ -43,8 +43,8 @@ export async function inspectChannelAccount(params: {
  */
 export async function resolveInspectedChannelAccount(params: {
   plugin: ChannelPlugin;
-  cfg: OpenClawConfig;
-  sourceConfig: OpenClawConfig;
+  cfg: AforaConfig;
+  sourceConfig: AforaConfig;
   accountId: string;
 }): Promise<{
   account: unknown;

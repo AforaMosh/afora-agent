@@ -1,8 +1,8 @@
 import { css, html, nothing, type TemplateResult } from "lit";
 import { property } from "lit/decorators.js";
-import { OpenClawLitElement } from "../lit/openclaw-element.ts";
+import { AforaLitElement } from "../lit/afora-element.ts";
 
-class OpenClawPanelEmptyState extends OpenClawLitElement {
+class AforaPanelEmptyState extends AforaLitElement {
   @property() heading = "";
   @property() description = "";
 
@@ -78,8 +78,8 @@ class OpenClawPanelEmptyState extends OpenClawLitElement {
   `;
 }
 
-if (!customElements.get("openclaw-panel-empty-state")) {
-  customElements.define("openclaw-panel-empty-state", OpenClawPanelEmptyState);
+if (!customElements.get("afora-panel-empty-state")) {
+  customElements.define("afora-panel-empty-state", AforaPanelEmptyState);
 }
 
 export function renderPanelEmptyState(params: {
@@ -88,18 +88,18 @@ export function renderPanelEmptyState(params: {
   description: string;
   action?: TemplateResult | typeof nothing;
 }) {
-  return html`<openclaw-panel-empty-state
+  return html`<afora-panel-empty-state
     .heading=${params.heading}
     .description=${params.description}
   >
     ${params.icon}${params.action != null && params.action !== nothing
       ? html`<span slot="action">${params.action}</span>`
       : nothing}
-  </openclaw-panel-empty-state>`;
+  </afora-panel-empty-state>`;
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "openclaw-panel-empty-state": OpenClawPanelEmptyState;
+    "afora-panel-empty-state": AforaPanelEmptyState;
   }
 }

@@ -14,7 +14,7 @@ vi.mock("../config/sessions/session-accessor.js", () => ({ updateSessionEntry })
 vi.mock("./session-transcript-title-reader.js", () => ({ readSessionTitleFieldsFromTranscript }));
 
 import type { SessionEntry } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { ChatAttachment } from "./chat-attachments.js";
 import {
   buildDashboardSessionTitleSource,
@@ -23,7 +23,7 @@ import {
 
 const cfg = {
   agents: { defaults: { model: { primary: "openai/gpt-5.5" } } },
-} as OpenClawConfig;
+} as AforaConfig;
 const baseEntry: SessionEntry = {
   sessionId: "session-1",
   updatedAt: 1,
@@ -36,7 +36,7 @@ function titleParams(entry: SessionEntry | undefined = baseEntry) {
     entry,
     sessionId: "session-1",
     sessionKey: "agent:main:dashboard:chat-1",
-    storePath: "/tmp/openclaw/sessions.json",
+    storePath: "/tmp/afora/sessions.json",
     userMessage: "Help me plan the release",
   };
 }
@@ -87,7 +87,7 @@ describe("maybeGenerateDashboardSessionTitle", () => {
       {
         agentId: "main",
         sessionKey: "agent:main:dashboard:chat-1",
-        storePath: "/tmp/openclaw/sessions.json",
+        storePath: "/tmp/afora/sessions.json",
       },
       expect.any(Function),
       { requireWriteSuccess: true },
@@ -127,7 +127,7 @@ describe("maybeGenerateDashboardSessionTitle", () => {
     const entry = {
       ...baseEntry,
       agentHarnessId: "codex",
-      agentRuntimeOverride: "openclaw",
+      agentRuntimeOverride: "afora",
       modelSelectionLocked: true,
     };
     mockSessionUpdate(entry);
@@ -163,7 +163,7 @@ describe("maybeGenerateDashboardSessionTitle", () => {
           utilityModel: "openai/gpt-5.6-luna",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     resolveUtilityModelRefForAgent.mockReturnValue("openai/gpt-5.6-luna");
 
     await expect(

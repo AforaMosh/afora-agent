@@ -1,6 +1,6 @@
 // HTTP endpoint adapter for invoking gateway tools from OpenAI-compatible clients.
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { normalizeMessageChannel } from "../utils/message-channel.js";
 import type { AuthRateLimiter } from "./auth-rate-limit.js";
 import type { ResolvedGatewayAuth } from "./auth.js";
@@ -85,11 +85,11 @@ export async function handleToolsInvokeHttpRequest(
 
     // Resolve message channel/account hints (optional headers) for policy inheritance.
     const messageChannel = normalizeMessageChannel(
-      getHeader(req, "x-openclaw-message-channel") ?? "",
+      getHeader(req, "x-afora-message-channel") ?? "",
     );
-    const accountId = normalizeOptionalString(getHeader(req, "x-openclaw-account-id"));
-    const agentTo = normalizeOptionalString(getHeader(req, "x-openclaw-message-to"));
-    const agentThreadId = normalizeOptionalString(getHeader(req, "x-openclaw-thread-id"));
+    const accountId = normalizeOptionalString(getHeader(req, "x-afora-account-id"));
+    const agentTo = normalizeOptionalString(getHeader(req, "x-afora-message-to"));
+    const agentThreadId = normalizeOptionalString(getHeader(req, "x-afora-thread-id"));
     const senderIsOwner = resolveOpenAiCompatibleHttpSenderIsOwner(req, requestAuth);
     const outcome = await invokeGatewayTool({
       cfg,

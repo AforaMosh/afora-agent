@@ -42,7 +42,7 @@ function shouldCopyBundledPluginMetadata(
   if (!NON_PACKAGED_BUNDLED_PLUGIN_DIRS.has(id)) {
     return true;
   }
-  return env.OPENCLAW_BUILD_PRIVATE_QA === "1";
+  return env.AFORA_BUILD_PRIVATE_QA === "1";
 }
 
 function rewritePackageExtensions(entries: unknown): string[] | undefined {
@@ -100,7 +100,7 @@ function isManifestlessBundledRuntimeSupportPackage(params: {
     isRecord(params.packageJson) && typeof params.packageJson.name === "string"
       ? params.packageJson.name
       : "";
-  if (packageName !== `@openclaw/${params.dirName}`) {
+  if (packageName !== `@afora/${params.dirName}`) {
     return false;
   }
   return params.topLevelPublicSurfaceEntries.length > 0;
@@ -282,7 +282,7 @@ export function copyBundledPluginMetadata(params: CopyMetadataParams = {}): void
     }
 
     const pluginDir = path.join(extensionsRoot, dirent.name);
-    const manifestPath = path.join(pluginDir, "openclaw.plugin.json");
+    const manifestPath = path.join(pluginDir, "afora.plugin.json");
     const distPluginDir = path.join(distExtensionsRoot, dirent.name);
     const packageJsonPath = path.join(pluginDir, "package.json");
     const parsedPackageJson: unknown = fs.existsSync(packageJsonPath)
@@ -291,9 +291,9 @@ export function copyBundledPluginMetadata(params: CopyMetadataParams = {}): void
     const packageJson = isRecord(parsedPackageJson) ? parsedPackageJson : undefined;
     const topLevelPublicSurfaceEntries = collectTopLevelPublicSurfaceEntries(pluginDir);
     const hasExternalLocalDist =
-      isRecord(packageJson?.openclaw) &&
-      isRecord(packageJson.openclaw.build) &&
-      packageJson.openclaw.build.bundledDist === false &&
+      isRecord(packageJson?.afora) &&
+      isRecord(packageJson.afora.build) &&
+      packageJson.afora.build.bundledDist === false &&
       fs.existsSync(distPluginDir);
     if (
       !hasExternalLocalDist &&
@@ -317,7 +317,7 @@ export function copyBundledPluginMetadata(params: CopyMetadataParams = {}): void
 
     sourcePluginDirs.add(dirent.name);
 
-    const distManifestPath = path.join(distPluginDir, "openclaw.plugin.json");
+    const distManifestPath = path.join(distPluginDir, "afora.plugin.json");
     const distPackageJsonPath = path.join(distPluginDir, "package.json");
     if (!fs.existsSync(manifestPath) && !isManifestlessSupportPackage) {
       removePathIfExists(distPluginDir);
@@ -354,12 +354,12 @@ export function copyBundledPluginMetadata(params: CopyMetadataParams = {}): void
       removeFileIfExists(distPackageJsonPath);
       continue;
     }
-    if (packageJson && isRecord(packageJson.openclaw) && "extensions" in packageJson.openclaw) {
-      packageJson.openclaw = {
-        ...packageJson.openclaw,
-        extensions: rewritePackageExtensions(packageJson.openclaw.extensions),
-        ...(typeof packageJson.openclaw.setupEntry === "string"
-          ? { setupEntry: rewritePackageEntry(packageJson.openclaw.setupEntry) }
+    if (packageJson && isRecord(packageJson.afora) && "extensions" in packageJson.afora) {
+      packageJson.afora = {
+        ...packageJson.afora,
+        extensions: rewritePackageExtensions(packageJson.afora.extensions),
+        ...(typeof packageJson.afora.setupEntry === "string"
+          ? { setupEntry: rewritePackageEntry(packageJson.afora.setupEntry) }
           : {}),
       };
     }

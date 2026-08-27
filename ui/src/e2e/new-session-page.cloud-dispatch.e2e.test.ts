@@ -311,7 +311,7 @@ suite.define(() => {
       await neutralRow.click();
       await expect.poll(() => page.url()).toContain("neutral-e2e");
       await page.evaluate((pathname) => {
-        const app = document.querySelector("openclaw-app") as HTMLElement & {
+        const app = document.querySelector("afora-app") as HTMLElement & {
           runtime?: {
             context: {
               navigate: (routeId: string, options: { pathname: string }) => void;
@@ -371,7 +371,7 @@ suite.define(() => {
             kind: "direct",
             label: "Cloud session",
             updatedAt: Date.now(),
-            worktree: { id: "worktree-1", branch: "openclaw/cloud-e2e", repoRoot: WORKSPACE },
+            worktree: { id: "worktree-1", branch: "afora-agent/cloud-e2e", repoRoot: WORKSPACE },
             placement: { state: "active" },
           },
           {
@@ -410,7 +410,7 @@ suite.define(() => {
       await sessionRow.hover();
       await sessionRow.getByRole("button", { name: "Open session menu" }).click();
       const stopWorker = page
-        .locator("openclaw-session-menu")
+        .locator("afora-session-menu")
         .getByRole("menuitem", { name: "Stop cloud worker…" });
       await stopWorker.waitFor();
       await captureUiProof(page, "02-active-cloud-worker-stop.png");

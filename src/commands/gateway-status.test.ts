@@ -1,6 +1,6 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 // Gateway status command tests cover probe targets, JSON/text output, SSH tunnels, and warnings.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GatewayProbeResult } from "../gateway/probe.js";
 import type { GatewayBonjourBeacon } from "../infra/bonjour-discovery.js";
@@ -475,13 +475,13 @@ describe("gateway-status command", () => {
     {
       source: "environment token",
       auth: { mode: "token" },
-      env: { OPENCLAW_GATEWAY_TOKEN: "ambient-local-token" },
+      env: { AFORA_GATEWAY_TOKEN: "ambient-local-token" },
       options: {},
     },
     {
       source: "environment password",
       auth: { mode: "password" },
-      env: { OPENCLAW_GATEWAY_PASSWORD: "ambient-local-password" },
+      env: { AFORA_GATEWAY_PASSWORD: "ambient-local-password" },
       options: {},
     },
     {
@@ -509,8 +509,8 @@ describe("gateway-status command", () => {
 
       await withEnvAsync(
         {
-          OPENCLAW_GATEWAY_TOKEN: undefined,
-          OPENCLAW_GATEWAY_PASSWORD: undefined,
+          AFORA_GATEWAY_TOKEN: undefined,
+          AFORA_GATEWAY_PASSWORD: undefined,
           ...env,
         },
         async () => {
@@ -567,8 +567,8 @@ describe("gateway-status command", () => {
 
       await withEnvAsync(
         {
-          OPENCLAW_GATEWAY_TOKEN: "ambient-local-token",
-          OPENCLAW_GATEWAY_PASSWORD: "ambient-local-password",
+          AFORA_GATEWAY_TOKEN: "ambient-local-token",
+          AFORA_GATEWAY_PASSWORD: "ambient-local-password",
         },
         async () => {
           const { runtime } = createRuntimeCapture();
@@ -621,7 +621,7 @@ describe("gateway-status command", () => {
       warnings?: Array<{ code?: string; message?: string }>;
     };
     const warning = parsed.warnings?.find((entry) => entry.code === "no_gateway_reachable");
-    expect(warning?.message).toContain("openclaw gateway status --deep --require-rpc");
+    expect(warning?.message).toContain("afora gateway status --deep --require-rpc");
     expect(warning?.message).toContain("ss -ltnp");
   });
 
@@ -722,7 +722,7 @@ describe("gateway-status command", () => {
   it("suppresses unresolved SecretRef auth warnings when probe is reachable", async () => {
     const { runtime, runtimeLogs, runtimeErrors } = createRuntimeCapture();
     await withEnvAsync(
-      { MISSING_GATEWAY_TOKEN: undefined, OPENCLAW_GATEWAY_TOKEN: undefined },
+      { MISSING_GATEWAY_TOKEN: undefined, AFORA_GATEWAY_TOKEN: undefined },
       async () => {
         mockLocalTokenEnvRefConfig();
 
@@ -741,7 +741,7 @@ describe("gateway-status command", () => {
     const defaultProbeGateway = probeGateway.getMockImplementation();
     try {
       await withEnvAsync(
-        { MISSING_GATEWAY_TOKEN: undefined, OPENCLAW_GATEWAY_TOKEN: undefined },
+        { MISSING_GATEWAY_TOKEN: undefined, AFORA_GATEWAY_TOKEN: undefined },
         async () => {
           readBestEffortConfig.mockReset();
           probeGateway.mockReset();
@@ -788,11 +788,11 @@ describe("gateway-status command", () => {
     expect(unresolvedWarning.message).not.toContain("missing or empty");
   });
 
-  it("does not resolve local token SecretRef when OPENCLAW_GATEWAY_TOKEN is set", async () => {
+  it("does not resolve local token SecretRef when AFORA_GATEWAY_TOKEN is set", async () => {
     const { runtime, runtimeLogs, runtimeErrors } = createRuntimeCapture();
     await withEnvAsync(
       {
-        OPENCLAW_GATEWAY_TOKEN: "env-token",
+        AFORA_GATEWAY_TOKEN: "env-token",
         MISSING_GATEWAY_TOKEN: undefined,
       },
       async () => {
@@ -820,7 +820,7 @@ describe("gateway-status command", () => {
     const { runtime, runtimeLogs, runtimeErrors } = createRuntimeCapture();
     await withEnvAsync(
       {
-        OPENCLAW_GATEWAY_TOKEN: "env-token",
+        AFORA_GATEWAY_TOKEN: "env-token",
         MISSING_GATEWAY_PASSWORD: undefined,
       },
       async () => {
@@ -861,7 +861,7 @@ describe("gateway-status command", () => {
     await withEnvAsync(
       {
         CUSTOM_GATEWAY_TOKEN: "resolved-gateway-token",
-        OPENCLAW_GATEWAY_TOKEN: undefined,
+        AFORA_GATEWAY_TOKEN: undefined,
       },
       async () => {
         readBestEffortConfig.mockResolvedValueOnce({
@@ -936,7 +936,7 @@ describe("gateway-status command", () => {
         config: {
           ...createSecretRefGatewayConfig({ gatewayMode: "remote" }),
           discovery: {
-            wideArea: { domain: "openclaw.internal" },
+            wideArea: { domain: "afora.internal" },
           },
         },
         issues: [],
@@ -1120,8 +1120,8 @@ describe("gateway-status command", () => {
 
     await withEnvAsync(
       {
-        OPENCLAW_GATEWAY_PORT: "19001",
-        OPENCLAW_GATEWAY_URL: "wss://env-gateway.example/ws",
+        AFORA_GATEWAY_PORT: "19001",
+        AFORA_GATEWAY_URL: "wss://env-gateway.example/ws",
       },
       async () => {
         await runGatewayStatus(runtime, { timeout: "15000", json: true, port: "19080" });

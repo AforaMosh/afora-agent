@@ -1,5 +1,5 @@
-import { createApiRegistry, createLlmRuntime } from "@openclaw/ai";
-import type { AssistantMessage, Model } from "@openclaw/llm-core";
+import { createApiRegistry, createLlmRuntime } from "@afora/ai";
+import type { AssistantMessage, Model } from "@afora/llm-core";
 import { describe, expect, it, vi } from "vitest";
 import { bindModelLlmRuntime } from "./model-runtime-binding.js";
 import { streamSimple } from "./stream.js";

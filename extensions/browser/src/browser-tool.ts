@@ -4,7 +4,7 @@
  * Builds the model-facing browser tool, chooses sandbox/host/node routing, and
  * maps high-level actions onto browser control client calls.
  */
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { createBrowserNodeProxyRequest } from "./browser-node-proxy.js";
 import { resolveBrowserNodeTarget } from "./browser-node-routing.js";
 import { applyBrowserTabToolBinding, parseBrowserTabToolBinding } from "./browser-tool-binding.js";
@@ -273,7 +273,7 @@ function resolveBrowserBaseUrl(params: {
   }
   if (!resolved.enabled) {
     throw new Error(
-      "Browser control is disabled. Set browser.enabled=true in ~/.openclaw/openclaw.json.",
+      "Browser control is disabled. Set browser.enabled=true in ~/.AforaMosh/afora-agent.json.",
     );
   }
   return undefined;

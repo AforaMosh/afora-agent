@@ -50,7 +50,7 @@ function writeChannelCapabilityPlugin(id: string): TempPlugin {
     };`,
   });
   fs.writeFileSync(
-    path.join(plugin.dir, "openclaw.plugin.json"),
+    path.join(plugin.dir, "afora.plugin.json"),
     JSON.stringify(
       {
         id,

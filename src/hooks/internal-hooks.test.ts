@@ -21,7 +21,7 @@ import {
   type MessageSentHookContext,
 } from "./internal-hooks.js";
 
-const INTERNAL_HOOK_HANDLERS_KEY = Symbol.for("openclaw.internalHookHandlers");
+const INTERNAL_HOOK_HANDLERS_KEY = Symbol.for("afora.internalHookHandlers");
 
 describe("hooks", () => {
   beforeEach(() => {

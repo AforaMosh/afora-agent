@@ -19,26 +19,26 @@ describe("native route memory", () => {
   });
 
   it("drops corrupt and invalid entries", () => {
-    storage.setItem("openclaw.native.lastRoute", "{");
+    storage.setItem("afora.native.lastRoute", "{");
     expect(considerRouteRestore("chat", "/chat", "", storage, true)).toBeNull();
-    expect(storage.getItem("openclaw.native.lastRoute")).toBeNull();
+    expect(storage.getItem("afora.native.lastRoute")).toBeNull();
 
     storage.setItem(
-      "openclaw.native.lastRoute",
+      "afora.native.lastRoute",
       JSON.stringify({ routeId: "retired", pathname: "/retired", search: "" }),
     );
     expect(considerRouteRestore("chat", "/chat", "", storage, true)).toBeNull();
-    expect(storage.getItem("openclaw.native.lastRoute")).toBeNull();
+    expect(storage.getItem("afora.native.lastRoute")).toBeNull();
   });
 
   it("does nothing outside the native host", () => {
     storage.setItem(
-      "openclaw.native.lastRoute",
+      "afora.native.lastRoute",
       JSON.stringify({ routeId: "usage", pathname: "/usage", search: "" }),
     );
     persistRoute("chat", "/chat/main", "", storage, false);
     expect(considerRouteRestore("chat", "/chat", "", storage, false)).toBeNull();
-    expect(JSON.parse(storage.getItem("openclaw.native.lastRoute") ?? "{}")).toEqual({
+    expect(JSON.parse(storage.getItem("afora.native.lastRoute") ?? "{}")).toEqual({
       routeId: "usage",
       pathname: "/usage",
       search: "",

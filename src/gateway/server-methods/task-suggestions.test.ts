@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { upsertSessionEntryCore } from "../../config/sessions/session-accessor.js";
 import { clearAgentRunContext, registerAgentRunContext } from "../../infra/agent-run-registry.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
-import { withOpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+import { closeAforaAgentDatabasesForTest } from "../../state/afora-agent-db.js";
+import { withAforaTestState } from "../../test-utils/afora-test-state.js";
 import {
   abandonTaskSuggestionAcceptance,
   beginTaskSuggestionAcceptance,
@@ -57,7 +57,7 @@ beforeEach(async () => {
 afterEach(async () => {
   await dismissPendingTaskSuggestions();
   vi.restoreAllMocks();
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
 });
 
 describe("task suggestion gateway methods", () => {
@@ -472,7 +472,7 @@ describe("task suggestion gateway methods", () => {
   });
 
   it("sends an idle session acceptance as a new turn and replays its source key", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       await upsertSessionEntryCore(
         { agentId: "main", sessionKey: SOURCE_SESSION_KEY },
         { sessionId: "source-session", updatedAt: 1 },
@@ -505,7 +505,7 @@ describe("task suggestion gateway methods", () => {
   });
 
   it("steers a session acceptance into its one exact active run", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       await upsertSessionEntryCore(
         { agentId: "main", sessionKey: SOURCE_SESSION_KEY },
         { sessionId: "source-session", updatedAt: 1 },
@@ -537,7 +537,7 @@ describe("task suggestion gateway methods", () => {
     { label: "multiple run IDs", runIds: ["run-one", "run-two"], projected: false },
     { label: "no exact run ID", runIds: [], projected: true },
   ])("rejects an active session with $label and restores the suggestion", async (testCase) => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       await upsertSessionEntryCore(
         { agentId: "main", sessionKey: SOURCE_SESSION_KEY },
         { sessionId: "source-session", updatedAt: 1 },
@@ -596,7 +596,7 @@ describe("task suggestion gateway methods", () => {
   });
 
   it("rejects a missing source session and restores the suggestion", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const taskId = await createSourceSuggestion();
       const deleteSession = vi.spyOn(sessionDeleteHandlers, "sessions.delete");
 
@@ -617,7 +617,7 @@ describe("task suggestion gateway methods", () => {
   });
 
   it("restores a session-mode suggestion after delivery failure without deleting its source", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       await upsertSessionEntryCore(
         { agentId: "main", sessionKey: SOURCE_SESSION_KEY },
         { sessionId: "source-session", updatedAt: 1 },
@@ -758,7 +758,7 @@ describe("task suggestion gateway methods", () => {
                 worktreePreserved: {
                   id: "preserved-worktree",
                   path: "/preserved-worktree",
-                  branch: "openclaw/preserved-worktree",
+                  branch: "afora-agent/preserved-worktree",
                 },
               }
             : {}),

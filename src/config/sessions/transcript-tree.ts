@@ -1,6 +1,6 @@
 // Transcript tree helpers keep append-only leaf controls consistent across readers.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { readNonBlankString as readNonEmptyString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { readNonBlankString as readNonEmptyString } from "@afora/normalization-core/string-coerce";
 
 type TranscriptRecord = Record<string, unknown>;
 

@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
-import { asNonArrayRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNonArrayRecord } from "@afora/normalization-core/record-coerce";
 import { describe, expect, it } from "vitest";
 import { renderCatFacePngBase64 } from "../../test/helpers/live-image-probe.js";
 import { getAcpRuntimeBackend } from "../acp/runtime/registry.js";
@@ -25,18 +25,18 @@ import {
   assertLiveImageProbeReply,
   buildLiveCronProbeMessage,
   createLiveCronProbeSpec,
-  runOpenClawCliJson,
+  runAforaCliJson,
   shouldRunLiveImageProbe,
 } from "./live-agent-probes.js";
 import { restoreLiveEnv, snapshotLiveEnv, type LiveEnvSnapshot } from "./live-env-test-helpers.js";
 import { startGatewayServer } from "./server.js";
 
 const LIVE = isLiveTestEnabled();
-const ACP_BIND_LIVE = isTruthyEnvValue(process.env.OPENCLAW_LIVE_ACP_BIND);
+const ACP_BIND_LIVE = isTruthyEnvValue(process.env.AFORA_LIVE_ACP_BIND);
 const describeLive = LIVE && ACP_BIND_LIVE ? describe : describe.skip;
 
 const CONNECT_TIMEOUT_MS = resolveLiveTimeoutMs(
-  process.env.OPENCLAW_LIVE_ACP_BIND_REQUEST_TIMEOUT_MS,
+  process.env.AFORA_LIVE_ACP_BIND_REQUEST_TIMEOUT_MS,
   90_000,
 );
 const LIVE_TIMEOUT_MS = 240_000;
@@ -178,7 +178,7 @@ function logLiveStep(message: string): void {
 }
 
 function shouldRequireCronMcpProbe(): boolean {
-  return isTruthyEnvValue(process.env.OPENCLAW_LIVE_ACP_BIND_REQUIRE_CRON);
+  return isTruthyEnvValue(process.env.AFORA_LIVE_ACP_BIND_REQUIRE_CRON);
 }
 
 function normalizeOpenAiModelRef(value: string): string {
@@ -191,8 +191,8 @@ function normalizeOpenAiModelRef(value: string): string {
 
 function resolveLiveParentModel(): string {
   return normalizeOpenAiModelRef(
-    process.env.OPENCLAW_LIVE_ACP_BIND_PARENT_MODEL?.trim() ||
-      process.env.OPENCLAW_LIVE_ACP_BIND_CODEX_MODEL?.trim() ||
+    process.env.AFORA_LIVE_ACP_BIND_PARENT_MODEL?.trim() ||
+      process.env.AFORA_LIVE_ACP_BIND_CODEX_MODEL?.trim() ||
       DEFAULT_LIVE_PARENT_MODEL,
   );
 }
@@ -200,7 +200,7 @@ function resolveLiveParentModel(): string {
 async function prepareCodexHomeForLiveBindTest(tempRoot: string): Promise<void> {
   const home = process.env.HOME?.trim();
   const sourceCodexHome = process.env.CODEX_HOME?.trim() || (home ? path.join(home, ".codex") : "");
-  const model = process.env.OPENCLAW_LIVE_ACP_BIND_CODEX_MODEL?.trim() || DEFAULT_LIVE_CODEX_MODEL;
+  const model = process.env.AFORA_LIVE_ACP_BIND_CODEX_MODEL?.trim() || DEFAULT_LIVE_CODEX_MODEL;
   const codexHome = path.join(tempRoot, "codex-home");
   await fs.mkdir(codexHome, { recursive: true });
   const targetAuthPath = path.join(codexHome, "auth.json");
@@ -629,12 +629,12 @@ describeLive("gateway live (ACP bind)", () => {
     "binds a synthetic Slack DM conversation to a live ACP session and reroutes the next turn",
     async () => {
       const previousEnv = snapshotAcpBindLiveEnv();
-      const liveAgent = normalizeAcpAgent(process.env.OPENCLAW_LIVE_ACP_BIND_AGENT);
+      const liveAgent = normalizeAcpAgent(process.env.AFORA_LIVE_ACP_BIND_AGENT);
       const agentCommandOverride =
-        process.env.OPENCLAW_LIVE_ACP_BIND_AGENT_COMMAND?.trim() || undefined;
-      const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-live-acp-bind-"));
+        process.env.AFORA_LIVE_ACP_BIND_AGENT_COMMAND?.trim() || undefined;
+      const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-live-acp-bind-"));
       const tempStateDir = path.join(tempRoot, "state");
-      const tempConfigPath = path.join(tempRoot, "openclaw.json");
+      const tempConfigPath = path.join(tempRoot, "afora.json");
       const port = await getFreeGatewayPort();
       const token = `test-${randomUUID()}`;
       const parentModel = resolveLiveParentModel();
@@ -649,13 +649,13 @@ describeLive("gateway live (ACP bind)", () => {
       let client: GatewayClient | undefined;
 
       clearRuntimeConfigSnapshot();
-      setTestEnvValue("OPENCLAW_STATE_DIR", tempStateDir);
-      process.env.OPENCLAW_SKIP_CHANNELS = "1";
-      process.env.OPENCLAW_SKIP_GMAIL_WATCHER = "1";
-      process.env.OPENCLAW_SKIP_CRON = "0";
-      process.env.OPENCLAW_SKIP_CANVAS_HOST = "1";
-      process.env.OPENCLAW_GATEWAY_TOKEN = token;
-      process.env.OPENCLAW_GATEWAY_PORT = String(port);
+      setTestEnvValue("AFORA_STATE_DIR", tempStateDir);
+      process.env.AFORA_SKIP_CHANNELS = "1";
+      process.env.AFORA_SKIP_GMAIL_WATCHER = "1";
+      process.env.AFORA_SKIP_CRON = "0";
+      process.env.AFORA_SKIP_CANVAS_HOST = "1";
+      process.env.AFORA_GATEWAY_TOKEN = token;
+      process.env.AFORA_GATEWAY_PORT = String(port);
       if (liveAgent === "codex" && !agentCommandOverride) {
         await prepareCodexHomeForLiveBindTest(tempRoot);
       }
@@ -716,7 +716,7 @@ describeLive("gateway live (ACP bind)", () => {
                 probeAgent: liveAgent,
                 permissionMode: "approve-all",
                 nonInteractivePermissions: "deny",
-                openClawToolsMcpBridge: true,
+                aforaToolsMcpBridge: true,
                 ...(agentCommandOverride
                   ? {
                       agents: {
@@ -737,7 +737,7 @@ describeLive("gateway live (ACP bind)", () => {
         },
       };
       await fs.writeFile(tempConfigPath, `${JSON.stringify(nextCfg, null, 2)}\n`);
-      setTestEnvValue("OPENCLAW_CONFIG_PATH", tempConfigPath);
+      setTestEnvValue("AFORA_CONFIG_PATH", tempConfigPath);
       logLiveStep(`using parent live model ${parentModel}`);
       clearConfigCache();
       clearRuntimeConfigSnapshot();
@@ -928,7 +928,7 @@ describeLive("gateway live (ACP bind)", () => {
         if (
           shouldRunLiveImageProbe({
             agent: liveAgent,
-            override: process.env.OPENCLAW_LIVE_ACP_BIND_IMAGE_PROBE,
+            override: process.env.AFORA_LIVE_ACP_BIND_IMAGE_PROBE,
           })
         ) {
           const markerAssistantCount = assistantTexts.length;
@@ -1106,7 +1106,7 @@ describeLive("gateway live (ACP bind)", () => {
           }
           throw new Error(`acp cron cli verify did not create job ${lastCronProbeName}`);
         }
-        await runOpenClawCliJson(
+        await runAforaCliJson(
           ["cron", "rm", cronJobId, "--json", "--url", `ws://127.0.0.1:${port}`, "--token", token],
           process.env,
         );

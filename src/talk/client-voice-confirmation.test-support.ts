@@ -6,7 +6,7 @@ type ClientVoiceConfirmationTestApi = {
 
 function getTestApi(): ClientVoiceConfirmationTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.clientVoiceConfirmationTestApi")
+    Symbol.for("afora.clientVoiceConfirmationTestApi")
   ] as ClientVoiceConfirmationTestApi;
 }
 

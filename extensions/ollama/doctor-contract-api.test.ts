@@ -1,10 +1,10 @@
 // Ollama tests cover doctor contract config compatibility.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import { legacyConfigRules, normalizeCompatibilityConfig } from "./doctor-contract-api.js";
 
 type ModelDefinition = NonNullable<
-  NonNullable<OpenClawConfig["models"]>["providers"]
+  NonNullable<AforaConfig["models"]>["providers"]
 >[string]["models"][number];
 
 const cloudModel: ModelDefinition = {
@@ -22,11 +22,11 @@ const cloudModel: ModelDefinition = {
   maxTokens: 8192,
 };
 
-function readOllamaCloudProvider(config: OpenClawConfig): Record<string, unknown> | undefined {
+function readOllamaCloudProvider(config: AforaConfig): Record<string, unknown> | undefined {
   return config.models?.providers?.["ollama-cloud"] as Record<string, unknown> | undefined;
 }
 
-function legacyLocalConfig(): OpenClawConfig {
+function legacyLocalConfig(): AforaConfig {
   return {
     models: {
       providers: {
@@ -45,7 +45,7 @@ function legacyLocalConfig(): OpenClawConfig {
       },
     },
     agents: { defaults: { model: { primary: "ollama/kimi-k2.5:cloud" } } },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 describe("ollama doctor contract", () => {
@@ -126,7 +126,7 @@ describe("ollama doctor contract", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = normalizeCompatibilityConfig({ cfg: config });
 
@@ -153,7 +153,7 @@ describe("ollama doctor contract", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = normalizeCompatibilityConfig({ cfg: config });
 
@@ -185,7 +185,7 @@ describe("ollama doctor contract", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = normalizeCompatibilityConfig({ cfg: config });
 
@@ -217,7 +217,7 @@ describe("ollama doctor contract", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = normalizeCompatibilityConfig({ cfg: config });
 
@@ -248,7 +248,7 @@ describe("ollama doctor contract", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = normalizeCompatibilityConfig({ cfg: config });
 

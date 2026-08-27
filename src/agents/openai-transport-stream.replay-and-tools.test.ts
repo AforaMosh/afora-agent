@@ -1,6 +1,6 @@
-import { SYSTEM_PROMPT_CACHE_BOUNDARY } from "@openclaw/ai/internal/shared";
+import { SYSTEM_PROMPT_CACHE_BOUNDARY } from "@afora/ai/internal/shared";
 import OpenAI from "openai";
-import type { Model } from "openclaw/plugin-sdk/llm";
+import type { Model } from "afora-agent/plugin-sdk/llm";
 import { describe, expect, it, vi } from "vitest";
 import { buildOpenAICompletionsParams } from "./openai-transport-stream.js";
 import {
@@ -47,7 +47,7 @@ function replayContext(spec: ReplayContextSpec) {
           : JSON.stringify(spec.thinking.signature),
       ...(spec.thinking.replayMetadata === undefined
         ? {}
-        : { openclawReasoningReplay: spec.thinking.replayMetadata }),
+        : { aforaReasoningReplay: spec.thinking.replayMetadata }),
     });
   }
   if (spec.text) {
@@ -328,7 +328,7 @@ describe("openai transport stream", () => {
       summary: [],
     });
     expect(reasoningItem?.id).toBeUndefined();
-    expect(reasoningItem).not.toHaveProperty("__openclaw_replay");
+    expect(reasoningItem).not.toHaveProperty("__afora_replay");
     const assistantMessage = params.input?.find(
       (item) => item.type === "message" && item.role === "assistant",
     );
@@ -501,7 +501,7 @@ describe("openai transport stream", () => {
             type: "reasoning",
             id: "rs_prior",
             encrypted_content: "ciphertext",
-            __openclaw_replay: testing.buildOpenAIResponsesReasoningReplayMetadata(model, {
+            __afora_replay: testing.buildOpenAIResponsesReasoningReplayMetadata(model, {
               authProfileId: "openai:oauth",
               sessionId: "session-123",
             }),
@@ -525,7 +525,7 @@ describe("openai transport stream", () => {
       summary: [],
     });
     expect(reasoningItem?.id).toBeUndefined();
-    expect(reasoningItem).not.toHaveProperty("__openclaw_replay");
+    expect(reasoningItem).not.toHaveProperty("__afora_replay");
   });
 
   it("retries mixed replay without reasoning first and preserves compaction on success", async () => {

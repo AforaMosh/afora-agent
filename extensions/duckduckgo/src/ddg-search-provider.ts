@@ -1,7 +1,7 @@
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 // Duckduckgo provider module implements model/runtime integration.
-import { readPositiveIntegerParam, readStringParam } from "openclaw/plugin-sdk/param-readers";
-import type { WebSearchProviderPlugin } from "openclaw/plugin-sdk/provider-web-search-contract";
+import { readPositiveIntegerParam, readStringParam } from "afora-agent/plugin-sdk/param-readers";
+import type { WebSearchProviderPlugin } from "afora-agent/plugin-sdk/provider-web-search-contract";
 import { createDuckDuckGoWebSearchProviderBase } from "./ddg-search-provider.shared.js";
 
 const loadDuckDuckGoClientModule = createLazyRuntimeModule(() => import("./ddg-client.js"));

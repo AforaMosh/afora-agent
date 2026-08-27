@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { coerceErrorMessage, stableStringify } from "@openclaw/normalization-core";
-import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
+import { coerceErrorMessage, stableStringify } from "@afora/normalization-core";
+import type { AforaStateDatabaseOptions } from "../state/afora-state-db.js";
 import {
   CLAW_CRON_REF_SCHEMA_VERSION,
   clawCronGatewayJobMatchesRef,
@@ -57,7 +57,7 @@ function targetRef(params: {
 export async function applyClawCronUpdate(
   updatePlan: ClawUpdatePlan,
   targetManifest: ClawManifest,
-  options: OpenClawStateDatabaseOptions & {
+  options: AforaStateDatabaseOptions & {
     cronGateway?: ClawCronGateway;
     nowMs?: number;
     readRefs?: typeof readClawCronRefs;

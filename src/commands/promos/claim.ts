@@ -6,7 +6,7 @@ import { promptYesNo } from "../../cli/prompt.js";
 import { readConfigFileSnapshot, replaceConfigFile } from "../../config/config.js";
 import { formatConfigIssueLines } from "../../config/issue-format.js";
 import type { AgentModelEntryConfig } from "../../config/types.agent-defaults.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { ClawHubRequestError } from "../../infra/clawhub-client.js";
 import { fetchClawHubPromotion, type ClawHubPromotion } from "../../infra/clawhub-promotions.js";
 import { markPromotionSlugsNotified, recordPromotionClaim } from "../../infra/promotions-feed.js";
@@ -57,7 +57,7 @@ async function fetchLivePromotion(slug: string): Promise<ClawHubPromotion> {
   } catch (error) {
     if (error instanceof ClawHubRequestError && error.status === 404) {
       throw new Error(
-        `Promotion "${slug}" was not found or is not live. See ${formatCliCommand("openclaw promos list")}.`,
+        `Promotion "${slug}" was not found or is not live. See ${formatCliCommand("afora promos list")}.`,
         { cause: error },
       );
     }
@@ -104,7 +104,7 @@ function requireUnchangedClaimContract(
     return;
   }
   throw new Error(
-    `Promotion "${initial.slug}" changed while the claim was in progress; no promotional models were added. Any provider credentials you just configured were kept. Run ${formatCliCommand("openclaw promos list")} and retry.`,
+    `Promotion "${initial.slug}" changed while the claim was in progress; no promotional models were added. Any provider credentials you just configured were kept. Run ${formatCliCommand("afora promos list")} and retry.`,
   );
 }
 
@@ -119,7 +119,7 @@ type ResolvedAuthChoice = {
   packageNames: string[];
 };
 
-function resolveManifestPluginPackageNames(pluginId: string, cfg: OpenClawConfig): string[] {
+function resolveManifestPluginPackageNames(pluginId: string, cfg: AforaConfig): string[] {
   const snapshot = loadManifestMetadataSnapshot({ config: cfg });
   return [
     ...new Set(
@@ -146,7 +146,7 @@ function resolveCatalogPluginPackageNames(entry: ProviderInstallCatalogEntry): s
 function resolveAuthChoice(
   promotion: ClawHubPromotion,
   provider: string,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): ResolvedAuthChoice | undefined {
   const authChoiceId = promotion.authChoiceId?.trim();
   if (!authChoiceId) {
@@ -165,7 +165,7 @@ function resolveAuthChoice(
   const entry = manifestEntry ?? catalogEntry;
   if (!entry) {
     throw new Error(
-      `Promotion "${promotion.slug}" requires auth choice "${authChoiceId}", which this OpenClaw version does not know. Update OpenClaw and retry.`,
+      `Promotion "${promotion.slug}" requires auth choice "${authChoiceId}", which this Afora version does not know. Update Afora and retry.`,
     );
   }
   if (entry.providerId !== provider) {
@@ -202,7 +202,7 @@ function requirePromotionPlugins(
     ? `auth choice "${authChoice.entry.choiceId}"`
     : "a missing auth choice";
   throw new Error(
-    `Promotion "${promotion.slug}" requires plugin package "${unsupported[0]}", but ${authChoiceLabel} does not provide it in this OpenClaw version. Update OpenClaw and retry.`,
+    `Promotion "${promotion.slug}" requires plugin package "${unsupported[0]}", but ${authChoiceLabel} does not provide it in this Afora version. Update Afora and retry.`,
   );
 }
 
@@ -242,7 +242,7 @@ async function ensureProviderAuth(params: {
   }
   if (!catalogEntry) {
     throw new Error(
-      `No credentials configured for provider "${provider}". Add one with ${formatCliCommand("openclaw models auth add")} and retry.`,
+      `No credentials configured for provider "${provider}". Add one with ${formatCliCommand("afora models auth add")} and retry.`,
     );
   }
   if (promotion.signupUrl) {
@@ -255,7 +255,7 @@ async function ensureProviderAuth(params: {
   }
   const applied = await applyAuthChoiceLoadedPluginProvider({
     authChoice: catalogEntry.choiceId,
-    config: structuredClone(snapshot.sourceConfig ?? snapshot.config) as OpenClawConfig,
+    config: structuredClone(snapshot.sourceConfig ?? snapshot.config) as AforaConfig,
     prompter: createClackPrompter(),
     runtime,
     setDefaultModel: false,
@@ -363,7 +363,7 @@ export async function promosClaimCommand(
       }
       registered.push(key);
     }
-    let next: OpenClawConfig = {
+    let next: AforaConfig = {
       ...base,
       agents: {
         ...base.agents,
@@ -428,11 +428,11 @@ export async function promosClaimCommand(
   if (makeDefault && suggested) {
     runtime.log(`  Default model set to ${sanitizeTerminalText(suggested.modelRef)}.`);
     runtime.log(
-      `  Revert anytime with ${formatCliCommand("openclaw models set <previous-model>")}.`,
+      `  Revert anytime with ${formatCliCommand("afora models set <previous-model>")}.`,
     );
   } else if (suggested) {
     runtime.log(
-      `  Try it: ${formatCliCommand(`openclaw models set ${suggested.modelRef}`)} (promotion ends ${new Date(promotion.endsAt).toLocaleDateString()}).`,
+      `  Try it: ${formatCliCommand(`afora models set ${suggested.modelRef}`)} (promotion ends ${new Date(promotion.endsAt).toLocaleDateString()}).`,
     );
   }
 }

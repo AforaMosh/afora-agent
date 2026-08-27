@@ -11,7 +11,7 @@ import {
 } from "./lib/android-version.ts";
 import { parseReleaseVersion } from "./lib/release-version.mjs";
 
-const MACOS_INFO_PLIST = "apps/macos/Sources/OpenClaw/Resources/Info.plist";
+const MACOS_INFO_PLIST = "apps/macos/Sources/Afora/Resources/Info.plist";
 const ANDROID_CHANGELOG_FILE = "apps/android/CHANGELOG.md";
 const ANDROID_RELEASE_NOTES_FILE = "apps/android/fastlane/metadata/android/en-US/release_notes.txt";
 const ANDROID_VERSION_FILE = "apps/android/version.json";

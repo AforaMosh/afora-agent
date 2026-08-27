@@ -86,7 +86,7 @@ describe("chat media resource lifecycle", () => {
     const message = {
       content: [
         {
-          type: "openclaw_pairing_qr",
+          type: "afora_pairing_qr",
           image_url: "data:image/png;base64,cXJwbmc=",
           expiresAtMs: Date.now() + 1_000,
         },
@@ -110,7 +110,7 @@ describe("chat media resource lifecycle", () => {
       {
         content: [
           {
-            type: "openclaw_pairing_qr",
+            type: "afora_pairing_qr",
             image_url: "data:image/png;base64,cXJwbmc=",
             expiresAtMs: Date.now() + 1_000,
           },
@@ -437,7 +437,7 @@ describe("chat media resource lifecycle", () => {
   });
 
   it("shares assistant attachment completion and ticket refresh across split panes", async () => {
-    const source = `/tmp/openclaw/${crypto.randomUUID()}.png`;
+    const source = `/tmp/afora/${crypto.randomUUID()}.png`;
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -463,8 +463,8 @@ describe("chat media resource lifecycle", () => {
     const rerenderFirst = observeSubscriber(() => {
       const availability = resolveAssistantAttachmentAvailability(
         source,
-        ["/tmp/openclaw"],
-        "/openclaw",
+        ["/tmp/afora"],
+        "/afora",
         "split-pane-token",
         rerenderFirst,
       );
@@ -473,8 +473,8 @@ describe("chat media resource lifecycle", () => {
     const rerenderSecond = observeSubscriber(() => {
       const availability = resolveAssistantAttachmentAvailability(
         source,
-        ["/tmp/openclaw"],
-        "/openclaw",
+        ["/tmp/afora"],
+        "/afora",
         "split-pane-token",
         rerenderSecond,
       );
@@ -497,7 +497,7 @@ describe("chat media resource lifecycle", () => {
   });
 
   it("stops polling after a definitive ticket refresh rejection and one unavailable retry", async () => {
-    const source = `/tmp/openclaw/${crypto.randomUUID()}.mp3`;
+    const source = `/tmp/afora/${crypto.randomUUID()}.mp3`;
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -518,8 +518,8 @@ describe("chat media resource lifecycle", () => {
     const rerender = observeSubscriber(() => {
       latest = resolveAssistantAttachmentAvailability(
         source,
-        ["/tmp/openclaw"],
-        "/openclaw",
+        ["/tmp/afora"],
+        "/afora",
         "definitive-rejection-token",
         rerender,
       );
@@ -539,7 +539,7 @@ describe("chat media resource lifecycle", () => {
   });
 
   it("bounds transient ticket refresh failures before using the unavailable retry", async () => {
-    const source = `/tmp/openclaw/${crypto.randomUUID()}.mp3`;
+    const source = `/tmp/afora/${crypto.randomUUID()}.mp3`;
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -563,8 +563,8 @@ describe("chat media resource lifecycle", () => {
     const rerender = observeSubscriber(() => {
       latest = resolveAssistantAttachmentAvailability(
         source,
-        ["/tmp/openclaw"],
-        "/openclaw",
+        ["/tmp/afora"],
+        "/afora",
         "transient-refresh-token",
         rerender,
       );
@@ -588,7 +588,7 @@ describe("chat media resource lifecycle", () => {
   });
 
   it("transitions an expired ticket to unavailable instead of retrying it", async () => {
-    const source = `/tmp/openclaw/${crypto.randomUUID()}.mp3`;
+    const source = `/tmp/afora/${crypto.randomUUID()}.mp3`;
     const expiredAt = new Date(Date.now() + 31_000);
     const fetchMock = vi
       .fn()
@@ -610,8 +610,8 @@ describe("chat media resource lifecycle", () => {
     const rerender = observeSubscriber(() => {
       latest = resolveAssistantAttachmentAvailability(
         source,
-        ["/tmp/openclaw"],
-        "/openclaw",
+        ["/tmp/afora"],
+        "/afora",
         "expired-refresh-token",
         rerender,
       );
@@ -626,7 +626,7 @@ describe("chat media resource lifecycle", () => {
   });
 
   it("shares the one bounded assistant attachment retry across split panes", async () => {
-    const source = `/tmp/openclaw/${crypto.randomUUID()}.png`;
+    const source = `/tmp/afora/${crypto.randomUUID()}.png`;
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -648,8 +648,8 @@ describe("chat media resource lifecycle", () => {
     const rerenderFirst = observeSubscriber(() => {
       const availability = resolveAssistantAttachmentAvailability(
         source,
-        ["/tmp/openclaw"],
-        "/openclaw",
+        ["/tmp/afora"],
+        "/afora",
         "split-pane-token",
         rerenderFirst,
       );
@@ -658,8 +658,8 @@ describe("chat media resource lifecycle", () => {
     const rerenderSecond = observeSubscriber(() => {
       const availability = resolveAssistantAttachmentAvailability(
         source,
-        ["/tmp/openclaw"],
-        "/openclaw",
+        ["/tmp/afora"],
+        "/afora",
         "split-pane-token",
         rerenderSecond,
       );
@@ -823,7 +823,7 @@ describe("chat media resource lifecycle", () => {
       expect(requestUrl).toBe(ticketedUrl.replace(/\/full(?=\?)/u, "/thumbnail"));
       const headers = new Headers(init.headers);
       expect(headers.get("Authorization")).toBeNull();
-      expect(headers.get("x-openclaw-requester-session-key")).toBeNull();
+      expect(headers.get("x-afora-requester-session-key")).toBeNull();
     }
     expect(
       container.querySelector<HTMLImageElement>(".chat-message-image")?.getAttribute("src"),

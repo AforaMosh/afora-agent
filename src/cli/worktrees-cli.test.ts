@@ -19,7 +19,7 @@ describe("worktrees cli", () => {
       snapshotsPruned: 0,
     });
     vi.spyOn(defaultRuntime, "log").mockImplementation(() => undefined);
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
     registerWorktreesCli(program);
 
     await program.parseAsync(["worktrees", "gc"], { from: "user" });

@@ -1,10 +1,10 @@
 import Foundation
-import OpenClawKit
+import AforaKit
 import SwiftUI
 
 struct AgentProDreamingDestination: View {
     @Environment(NodeAppModel.self) private var appModel
-    let headerSidebarAction: OpenClawSidebarHeaderAction?
+    let headerSidebarAction: AforaSidebarHeaderAction?
     let overview: AgentOverviewSnapshot?
     let gatewayConnected: Bool
     let overviewLoading: Bool
@@ -18,7 +18,7 @@ struct AgentProDreamingDestination: View {
 
     var body: some View {
         ZStack {
-            OpenClawProBackground()
+            AforaProBackground()
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     self.header
@@ -49,12 +49,12 @@ struct AgentProDreamingDestination: View {
                     self.dreamingPhasesCard
                 }
                 .padding(.vertical, 18)
-                .font(OpenClawType.body)
+                .font(AforaType.body)
             }
             .refreshable {
                 await self.refresh()
             }
-            .safeAreaPadding(.bottom, OpenClawProMetric.bottomScrollInset)
+            .safeAreaPadding(.bottom, AforaProMetric.bottomScrollInset)
         }
         .navigationTitle("Dreaming")
         .navigationBarTitleDisplayMode(.inline)
@@ -63,17 +63,17 @@ struct AgentProDreamingDestination: View {
     @ViewBuilder
     private var header: some View {
         if let headerSidebarAction {
-            OpenClawAdaptiveHeaderRow(
+            AforaAdaptiveHeaderRow(
                 title: "Dreaming",
                 subtitle: .localized(self.dreamingDetail),
-                titleFont: OpenClawType.title3SemiBold,
-                subtitleFont: OpenClawType.subheadMedium)
+                titleFont: AforaType.title3SemiBold,
+                subtitleFont: AforaType.subheadMedium)
             {
-                OpenClawSidebarHeaderLeadingSlot(action: headerSidebarAction)
+                AforaSidebarHeaderLeadingSlot(action: headerSidebarAction)
             } accessory: {
                 EmptyView()
             }
-            .padding(.horizontal, OpenClawProMetric.pagePadding)
+            .padding(.horizontal, AforaProMetric.pagePadding)
         }
     }
 
@@ -123,16 +123,16 @@ struct AgentProDreamingDestination: View {
                 ProIconBadge(systemName: icon, color: color)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(OpenClawType.headline)
+                        .font(AforaType.headline)
                     Text(detail)
-                        .font(OpenClawType.caption)
+                        .font(AforaType.caption)
                         .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 8)
                 ProValuePill(value: value, color: color)
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, AforaProMetric.pagePadding)
     }
 
     private var dreamingTotalsCard: some View {
@@ -140,7 +140,7 @@ struct AgentProDreamingDestination: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Text("Memory State")
-                        .font(OpenClawType.headline)
+                        .font(AforaType.headline)
                     Spacer()
                     ProValuePill(value: self.dreamingValue, color: self.dreamingColor)
                 }
@@ -157,12 +157,12 @@ struct AgentProDreamingDestination: View {
                 }
                 if let storeError = self.normalized(self.overview?.dreaming?.storeError) {
                     Text(storeError)
-                        .font(OpenClawType.caption2)
-                        .foregroundStyle(OpenClawBrand.warn)
+                        .font(AforaType.caption2)
+                        .foregroundStyle(AforaBrand.warn)
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, AforaProMetric.pagePadding)
     }
 
     private var dreamingActionsCard: some View {
@@ -171,9 +171,9 @@ struct AgentProDreamingDestination: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Maintenance")
-                            .font(OpenClawType.headline)
+                            .font(AforaType.headline)
                         Text("Refresh reads live state. Maintenance actions update the gateway diary/artifacts.")
-                            .font(OpenClawType.caption)
+                            .font(AforaType.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
                     }
@@ -196,7 +196,7 @@ struct AgentProDreamingDestination: View {
                         } label: {
                             Label {
                                 Text(action.title)
-                                    .font(OpenClawType.captionSemiBold)
+                                    .font(AforaType.captionSemiBold)
                             } icon: {
                                 Image(systemName: self.dreamActionBusy == action ? "hourglass" : action.icon)
                             }
@@ -209,13 +209,13 @@ struct AgentProDreamingDestination: View {
 
                 if let dreamActionStatusText {
                     Text(dreamActionStatusText)
-                        .font(OpenClawType.caption2)
+                        .font(AforaType.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(3)
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, AforaProMetric.pagePadding)
     }
 
     private var dreamDiaryCard: some View {
@@ -228,13 +228,13 @@ struct AgentProDreamingDestination: View {
                         let selectedDay = self.selectedDreamDiaryDay(from: days)
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
-                                ProIconBadge(systemName: "book.pages", color: OpenClawBrand.accent)
+                                ProIconBadge(systemName: "book.pages", color: AforaBrand.accent)
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(diary.path)
-                                        .font(OpenClawType.subheadSemiBold)
+                                        .font(AforaType.subheadSemiBold)
                                         .lineLimit(1)
                                     Text(self.dreamDiaryUpdatedLabel(diary))
-                                        .font(OpenClawType.caption)
+                                        .font(AforaType.caption)
                                         .foregroundStyle(.secondary)
                                 }
                                 Spacer(minLength: 8)
@@ -274,7 +274,7 @@ struct AgentProDreamingDestination: View {
                         .padding(14)
                 }
             }
-            .padding(.horizontal, OpenClawProMetric.pagePadding)
+            .padding(.horizontal, AforaProMetric.pagePadding)
         }
     }
 
@@ -287,19 +287,19 @@ struct AgentProDreamingDestination: View {
                     Label(
                         day.title,
                         systemImage: day.id == selectedDay?.id ? "checkmark.circle.fill" : "calendar")
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                 }
-                .font(OpenClawType.subheadSemiBold)
+                .font(AforaType.subheadSemiBold)
             }
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "calendar")
                 Text(selectedDay?.title ?? "Day")
-                    .font(OpenClawType.captionSemiBold)
+                    .font(AforaType.captionSemiBold)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
             }
-            .font(OpenClawType.captionSemiBold)
+            .font(AforaType.captionSemiBold)
             .foregroundStyle(.primary)
             .padding(.horizontal, 10)
             .frame(height: 34)
@@ -315,15 +315,15 @@ struct AgentProDreamingDestination: View {
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
                 Text(day.title)
-                    .font(OpenClawType.subheadSemiBold)
+                    .font(AforaType.subheadSemiBold)
                     .lineLimit(1)
                 Spacer(minLength: 8)
                 Text(verbatim: entryCountText)
-                    .font(OpenClawType.caption2SemiBold)
-                    .foregroundStyle(OpenClawBrand.accent)
+                    .font(AforaType.caption2SemiBold)
+                    .foregroundStyle(AforaBrand.accent)
             }
             Text(day.body)
-                .font(OpenClawType.monoSmall)
+                .font(AforaType.monoSmall)
                 .foregroundStyle(.primary)
                 .lineLimit(120)
                 .textSelection(.enabled)
@@ -332,7 +332,7 @@ struct AgentProDreamingDestination: View {
         .padding(10)
         .background(
             Color.primary.opacity(0.045),
-            in: RoundedRectangle(cornerRadius: OpenClawRadius.sm, style: .continuous))
+            in: RoundedRectangle(cornerRadius: AforaRadius.sm, style: .continuous))
     }
 
     private func selectedDreamDiaryDay(from days: [DreamDiaryDay]) -> DreamDiaryDay? {
@@ -345,10 +345,10 @@ struct AgentProDreamingDestination: View {
     }
 
     private func dreamingEntriesList(
-        title: OpenClawTextValue,
+        title: AforaTextValue,
         entries: [DreamingEntryLite],
-        emptyTitle: OpenClawTextValue,
-        emptyDetail: OpenClawTextValue) -> some View
+        emptyTitle: AforaTextValue,
+        emptyDetail: AforaTextValue) -> some View
     {
         VStack(alignment: .leading, spacing: 8) {
             ProSectionHeader(title: title)
@@ -370,31 +370,31 @@ struct AgentProDreamingDestination: View {
                     }
                 }
             }
-            .padding(.horizontal, OpenClawProMetric.pagePadding)
+            .padding(.horizontal, AforaProMetric.pagePadding)
         }
     }
 
     private func dreamingEntryRow(_ entry: DreamingEntryLite) -> some View {
         HStack(alignment: .top, spacing: 12) {
-            ProIconBadge(systemName: "text.page", color: OpenClawBrand.accent)
+            ProIconBadge(systemName: "text.page", color: AforaBrand.accent)
             VStack(alignment: .leading, spacing: 4) {
                 Text(self.dreamingEntryTitle(entry))
-                    .font(OpenClawType.subheadSemiBold)
+                    .font(AforaType.subheadSemiBold)
                     .lineLimit(1)
                 Text(entry.snippet)
-                    .font(OpenClawType.caption)
+                    .font(AforaType.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(4)
                     .textSelection(.enabled)
                 Text(self.dreamingEntryDetail(entry))
-                    .font(OpenClawType.caption2)
+                    .font(AforaType.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
             Spacer(minLength: 8)
             Text(verbatim: entry.totalSignalCount.formatted())
-                .font(OpenClawType.caption2SemiBold)
-                .foregroundStyle(OpenClawBrand.accent)
+                .font(AforaType.caption2SemiBold)
+                .foregroundStyle(AforaBrand.accent)
                 .lineLimit(1)
         }
         .padding(.vertical, 10)
@@ -425,7 +425,7 @@ struct AgentProDreamingDestination: View {
                     }
                 }
             }
-            .padding(.horizontal, OpenClawProMetric.pagePadding)
+            .padding(.horizontal, AforaProMetric.pagePadding)
         }
     }
 
@@ -442,25 +442,25 @@ struct AgentProDreamingDestination: View {
         HStack(alignment: .top, spacing: 12) {
             ProIconBadge(
                 systemName: phase.status.enabled == false ? "pause.circle" : "moon.stars",
-                color: phase.status.enabled == false ? .secondary : OpenClawBrand.accent)
+                color: phase.status.enabled == false ? .secondary : AforaBrand.accent)
             VStack(alignment: .leading, spacing: 4) {
                 Text(phase.title)
-                    .font(OpenClawType.subheadSemiBold)
+                    .font(AforaType.subheadSemiBold)
                 Text(self.dreamingPhaseDetail(phase.status))
-                    .font(OpenClawType.caption)
+                    .font(AforaType.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
                 if let cron = self.normalized(phase.status.cron) {
                     Text(cron)
-                        .font(OpenClawType.caption2)
+                        .font(AforaType.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
             }
             Spacer(minLength: 8)
             Text(self.dreamingPhaseState(phase.status))
-                .font(OpenClawType.caption2SemiBold)
-                .foregroundStyle(phase.status.managedCronPresent == true ? OpenClawBrand.accent : .secondary)
+                .font(AforaType.caption2SemiBold)
+                .foregroundStyle(phase.status.managedCronPresent == true ? AforaBrand.accent : .secondary)
                 .lineLimit(1)
         }
         .padding(.vertical, 10)
@@ -469,16 +469,16 @@ struct AgentProDreamingDestination: View {
 
     private func emptyDetailRow(
         icon: String,
-        title: OpenClawTextValue,
-        detail: OpenClawTextValue) -> some View
+        title: AforaTextValue,
+        detail: AforaTextValue) -> some View
     {
         HStack(spacing: 12) {
             ProIconBadge(systemName: icon, color: .secondary)
             VStack(alignment: .leading, spacing: 3) {
                 title.text
-                    .font(OpenClawType.subheadSemiBold)
+                    .font(AforaType.subheadSemiBold)
                 detail.text
-                    .font(OpenClawType.caption)
+                    .font(AforaType.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
@@ -486,13 +486,13 @@ struct AgentProDreamingDestination: View {
         }
     }
 
-    private func detailMetric(label: OpenClawTextValue, value: String) -> some View {
+    private func detailMetric(label: AforaTextValue, value: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             label.text
-                .font(OpenClawType.caption2Medium)
+                .font(AforaType.caption2Medium)
                 .foregroundStyle(.secondary)
             Text(verbatim: value)
-                .font(OpenClawType.subheadSemiBold)
+                .font(AforaType.subheadSemiBold)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
@@ -500,7 +500,7 @@ struct AgentProDreamingDestination: View {
         .padding(10)
         .background(
             Color.primary.opacity(0.055),
-            in: RoundedRectangle(cornerRadius: OpenClawRadius.sm, style: .continuous))
+            in: RoundedRectangle(cornerRadius: AforaRadius.sm, style: .continuous))
     }
 
     private func dreamingEntryTitle(_ entry: DreamingEntryLite) -> String {
@@ -651,8 +651,8 @@ struct AgentProDreamingDestination: View {
     }
 
     private static func dreamDiaryInnerContent(_ content: String) -> String {
-        let start = "<!-- openclaw:dreaming:diary:start -->"
-        let end = "<!-- openclaw:dreaming:diary:end -->"
+        let start = "<!-- afora:dreaming:diary:start -->"
+        let end = "<!-- afora:dreaming:diary:end -->"
         guard let startRange = content.range(of: start),
               let endRange = content.range(of: end, range: startRange.upperBound..<content.endIndex)
         else {

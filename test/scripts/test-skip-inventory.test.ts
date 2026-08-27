@@ -20,7 +20,7 @@ function writeRepoFile(repoRoot: string, relativePath: string, value: string): v
 }
 
 function makeSkipInventoryFixture(): string {
-  const repoRoot = createTempDir("openclaw-test-skip-inventory-");
+  const repoRoot = createTempDir("afora-test-skip-inventory-");
   writeRepoFile(
     repoRoot,
     "src/runtime.ts",
@@ -64,7 +64,7 @@ const posixIt = process.platform === "win32" ? it.skip : it;
     repoRoot,
     "extensions/provider/live.test.ts",
     `
-const LIVE = process.env.OPENCLAW_LIVE_TEST === "1";
+const LIVE = process.env.AFORA_LIVE_TEST === "1";
 const describeLive = LIVE ? describe : describe.skip;
 describeLive("provider live", () => {});
 `,
@@ -212,7 +212,7 @@ describe("collectTestSkipInventoryReport", () => {
 
     const rendered = renderTestSkipInventoryReport(report, { limit: 4 });
 
-    expect(rendered).toContain("OpenClaw test skip inventory");
+    expect(rendered).toContain("Afora test skip inventory");
     expect(rendered).toContain("Findings: 14 in 4 file(s)");
     expect(rendered).toContain("platform-gate: 6");
     expect(rendered).toContain("- src/example.test.ts (11)");
@@ -285,7 +285,7 @@ describe("collectTestSkipInventoryReport", () => {
         "--limit",
         "1e3",
         "--repo-root",
-        createTempDir("openclaw-skip-limit-"),
+        createTempDir("afora-skip-limit-"),
       ]),
     ).toThrow("--limit expects a non-negative integer");
   });

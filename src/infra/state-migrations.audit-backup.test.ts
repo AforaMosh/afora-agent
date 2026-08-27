@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { resetPluginStateStoreForTests } from "../plugin-state/plugin-state-store.js";
 import { withTestDir } from "../test-helpers/temp-dir.js";
@@ -20,7 +20,7 @@ function configAuditRecord(value: string) {
     ts: "2026-07-01T00:00:00.000Z",
     source: "config-io",
     event: "config.write",
-    argv: ["openclaw", "config", "set", "token", value],
+    argv: ["afora", "config", "set", "token", value],
     execArgv: [],
   };
 }
@@ -57,7 +57,7 @@ describe("legacy audit raw backup snapshots", () => {
   });
 
   it("recognizes only supported audit migration paths", () => {
-    const stateDir = "/opt/openclaw/state";
+    const stateDir = "/opt/afora/state";
     expect(
       isLegacyAuditMigrationBackupPath(
         `${stateDir}/logs/config-audit.jsonl.migrated.10.raw.doctor-scrub-restore`,
@@ -85,7 +85,7 @@ describe("legacy audit raw backup snapshots", () => {
   });
 
   it("propagates audit-directory inspection failures", async () => {
-    await withTestDir({ prefix: "openclaw-audit-backup-inspection-" }, async (stateDir) => {
+    await withTestDir({ prefix: "afora-audit-backup-inspection-" }, async (stateDir) => {
       await fs.writeFile(path.join(stateDir, "logs"), "not a directory");
 
       await expect(hasLegacyAuditBackupSources(stateDir)).rejects.toMatchObject({
@@ -95,7 +95,7 @@ describe("legacy audit raw backup snapshots", () => {
   });
 
   it("captures an active legacy source before the later SQLite snapshot", async () => {
-    await withTestDir({ prefix: "openclaw-audit-backup-active-" }, async (rootDir) => {
+    await withTestDir({ prefix: "afora-audit-backup-active-" }, async (rootDir) => {
       const stateDir = path.join(rootDir, "state");
       const tempDir = path.join(rootDir, "backup-temp");
       const sourcePath = path.join(stateDir, "logs", "config-audit.jsonl");
@@ -110,13 +110,13 @@ describe("legacy audit raw backup snapshots", () => {
       expect(snapshotAsset.archiveSourcePath).toBe(sourcePath);
       expect(snapshot).not.toContain("active-value-7f3c");
       expect(JSON.parse(snapshot.trim())).toMatchObject({
-        argv: ["openclaw", "config", "set", "token", "***"],
+        argv: ["afora", "config", "set", "token", "***"],
       });
     });
   });
 
   it("captures a stable active prefix while an old writer keeps appending", async () => {
-    await withTestDir({ prefix: "openclaw-audit-backup-appending-" }, async (rootDir) => {
+    await withTestDir({ prefix: "afora-audit-backup-appending-" }, async (rootDir) => {
       const stateDir = path.join(rootDir, "state");
       const tempDir = path.join(rootDir, "backup-temp");
       const sourcePath = path.join(stateDir, "logs", "config-audit.jsonl");
@@ -153,7 +153,7 @@ describe("legacy audit raw backup snapshots", () => {
   });
 
   it("captures an unimported append without archiving its secret", async () => {
-    await withTestDir({ prefix: "openclaw-audit-backup-" }, async (rootDir) => {
+    await withTestDir({ prefix: "afora-audit-backup-" }, async (rootDir) => {
       const stateDir = path.join(rootDir, "state");
       const tempDir = path.join(rootDir, "backup-temp");
       const rawPath = path.join(stateDir, "logs", "config-audit.jsonl.migrated.raw");
@@ -169,13 +169,13 @@ describe("legacy audit raw backup snapshots", () => {
       const snapshot = await fs.readFile(snapshotAsset.sourcePath, "utf8");
       expect(snapshot).not.toContain("late-value-7f3c");
       expect(JSON.parse(snapshot.trim())).toMatchObject({
-        argv: ["openclaw", "config", "set", "token", "***"],
+        argv: ["afora", "config", "set", "token", "***"],
       });
     });
   });
 
   it("reconstructs a scrub-in-progress source and sanitizes its later append", async () => {
-    await withTestDir({ prefix: "openclaw-audit-backup-recovery-" }, async (rootDir) => {
+    await withTestDir({ prefix: "afora-audit-backup-recovery-" }, async (rootDir) => {
       const stateDir = path.join(rootDir, "state");
       const tempDir = path.join(rootDir, "backup-temp");
       const rawPath = path.join(stateDir, "logs", "config-audit.jsonl.migrated.raw");
@@ -205,14 +205,14 @@ describe("legacy audit raw backup snapshots", () => {
           .split("\n")
           .map((line) => JSON.parse(line)),
       ).toMatchObject([
-        { argv: ["openclaw", "config", "set", "token", "***"] },
-        { argv: ["openclaw", "config", "set", "token", "***"] },
+        { argv: ["afora", "config", "set", "token", "***"] },
+        { argv: ["afora", "config", "set", "token", "***"] },
       ]);
     });
   });
 
   it("ignores a stale restore journal after the raw archive is replaced", async () => {
-    await withTestDir({ prefix: "openclaw-audit-backup-stale-journal-" }, async (rootDir) => {
+    await withTestDir({ prefix: "afora-audit-backup-stale-journal-" }, async (rootDir) => {
       const stateDir = path.join(rootDir, "state");
       const tempDir = path.join(rootDir, "backup-temp");
       const rawPath = path.join(stateDir, "logs", "config-audit.jsonl.migrated.raw");
@@ -235,7 +235,7 @@ describe("legacy audit raw backup snapshots", () => {
 
       expect(snapshot).toMatchObject({
         event: "config.delete",
-        argv: ["openclaw", "config", "set", "token", "***"],
+        argv: ["afora", "config", "set", "token", "***"],
       });
     });
   });

@@ -14,7 +14,7 @@ function runAgentsDeleteAssert(root: string, outputPath: string, env: Record<str
     encoding: "utf8",
     env: {
       ...process.env,
-      OPENCLAW_STATE_DIR: path.join(root, "state"),
+      AFORA_STATE_DIR: path.join(root, "state"),
       SHARED_WORKSPACE: path.join(root, "workspace"),
       ...env,
     },
@@ -27,7 +27,7 @@ function runAgentsDeleteConfig(root: string) {
   mkdirSync(stateDir, { recursive: true });
   const result = spawnSync(process.execPath, [FIXTURE_SCRIPT, "agents-delete-config"], {
     encoding: "utf8",
-    env: { ...process.env, OPENCLAW_STATE_DIR: stateDir, SHARED_WORKSPACE: workspace },
+    env: { ...process.env, AFORA_STATE_DIR: stateDir, SHARED_WORKSPACE: workspace },
   });
   return { result, stateDir, workspace };
 }
@@ -37,18 +37,18 @@ function runOpenWebUiWorkspace(workspaceDir: string) {
     encoding: "utf8",
     env: {
       ...process.env,
-      OPENCLAW_WORKSPACE_DIR: workspaceDir,
+      AFORA_WORKSPACE_DIR: workspaceDir,
     },
   });
 }
 
 describe("workspace fixture assertions", () => {
   it("writes explicit owners for the shared-workspace agents", () => {
-    const root = tempDirs.make("openclaw-fixture-workspace-");
+    const root = tempDirs.make("afora-fixture-workspace-");
     const { result, stateDir, workspace } = runAgentsDeleteConfig(root);
 
     expect(result.status).toBe(0);
-    expect(JSON.parse(readFileSync(path.join(stateDir, "openclaw.json"), "utf8")).agents).toEqual({
+    expect(JSON.parse(readFileSync(path.join(stateDir, "afora.json"), "utf8")).agents).toEqual({
       ownership: "explicit",
       defaults: { heartbeat: { agentId: "main" } },
       entries: { main: { workspace }, ops: { workspace } },
@@ -56,10 +56,10 @@ describe("workspace fixture assertions", () => {
   });
 
   it("prepares Open WebUI without retired workspace setup state", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-fixture-workspace-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-fixture-workspace-"));
     const workspaceDir = path.join(root, "workspace");
-    const nestedStatePath = path.join(workspaceDir, ".openclaw", "workspace-state.json");
-    const rootStatePath = path.join(workspaceDir, "openclaw-workspace-state.json");
+    const nestedStatePath = path.join(workspaceDir, ".afora", "workspace-state.json");
+    const rootStatePath = path.join(workspaceDir, "afora-workspace-state.json");
     try {
       mkdirSync(path.dirname(nestedStatePath), { recursive: true });
       writeFileSync(nestedStatePath, "{}\n");
@@ -78,7 +78,7 @@ describe("workspace fixture assertions", () => {
   });
 
   it("rejects oversized agents delete output before parsing it", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-fixture-workspace-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-fixture-workspace-"));
     const outputPath = path.join(root, "agents-delete.json");
     try {
       mkdirSync(root, { recursive: true });
@@ -89,7 +89,7 @@ describe("workspace fixture assertions", () => {
       );
 
       const result = runAgentsDeleteAssert(root, outputPath, {
-        OPENCLAW_FIXTURE_AGENTS_DELETE_OUTPUT_MAX_BYTES: "1024",
+        AFORA_FIXTURE_AGENTS_DELETE_OUTPUT_MAX_BYTES: "1024",
       });
 
       expect(result.status).not.toBe(0);
@@ -102,7 +102,7 @@ describe("workspace fixture assertions", () => {
   });
 
   it("bounds invalid agents delete JSON diagnostics", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-fixture-workspace-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-fixture-workspace-"));
     const outputPath = path.join(root, "agents-delete.json");
     try {
       mkdirSync(root, { recursive: true });
@@ -113,7 +113,7 @@ describe("workspace fixture assertions", () => {
       );
 
       const result = runAgentsDeleteAssert(root, outputPath, {
-        OPENCLAW_FIXTURE_AGENTS_DELETE_OUTPUT_MAX_BYTES: "131072",
+        AFORA_FIXTURE_AGENTS_DELETE_OUTPUT_MAX_BYTES: "131072",
       });
 
       expect(result.status).not.toBe(0);
@@ -128,7 +128,7 @@ describe("workspace fixture assertions", () => {
   it.each([undefined, "local"])(
     "rejects agents delete output without gateway transport (%s)",
     (transport) => {
-      const root = tempDirs.make("openclaw-fixture-workspace-");
+      const root = tempDirs.make("afora-fixture-workspace-");
       const stateDir = path.join(root, "state");
       const workspace = path.join(root, "workspace");
       const outputPath = path.join(root, "agents-delete.json");
@@ -136,7 +136,7 @@ describe("workspace fixture assertions", () => {
         mkdirSync(stateDir, { recursive: true });
         mkdirSync(workspace, { recursive: true });
         writeFileSync(
-          path.join(stateDir, "openclaw.json"),
+          path.join(stateDir, "afora.json"),
           `${JSON.stringify({ agents: { entries: { main: { workspace } } } })}\n`,
         );
         writeFileSync(

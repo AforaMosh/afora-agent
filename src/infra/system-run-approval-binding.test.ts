@@ -335,7 +335,7 @@ describe("missingSystemRunApprovalBinding", () => {
 
 describe("mutable file operand binding", () => {
   it("binds every script in a compound command and detects drift", async () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-system-run-binding-"));
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "afora-system-run-binding-"));
     const first = path.join(cwd, "first.sh");
     const second = path.join(cwd, "second.py");
     try {
@@ -362,7 +362,7 @@ describe("mutable file operand binding", () => {
   });
 
   it("binds direct script executables", async () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-system-run-direct-"));
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "afora-system-run-direct-"));
     const script = path.join(cwd, "direct.sh");
     try {
       fs.writeFileSync(script, "#!/bin/sh\necho approved\n", { mode: 0o755 });
@@ -390,7 +390,7 @@ describe("mutable file operand binding", () => {
     { name: "accepts unchanged bytes", mutate: false },
     { name: "denies changed bytes", mutate: true },
   ])("revalidates transparent-wrapper executables: $name", async ({ mutate }) => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-system-run-wrapper-"));
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "afora-system-run-wrapper-"));
     const script = path.join(cwd, "wrapped.sh");
     try {
       fs.writeFileSync(script, "#!/bin/sh\necho approved\n", { mode: 0o755 });
@@ -418,7 +418,7 @@ describe("mutable file operand binding", () => {
   });
 
   it("binds mutable native executables", async () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-system-run-native-"));
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "afora-system-run-native-"));
     const executable = path.join(cwd, "native-tool");
     try {
       fs.copyFileSync(process.execPath, executable);
@@ -444,7 +444,7 @@ describe("mutable file operand binding", () => {
   });
 
   it("fails closed for shell startup file operands", async () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-system-run-startup-"));
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "afora-system-run-startup-"));
     try {
       fs.writeFileSync(path.join(cwd, "init.sh"), "echo init\n");
       fs.writeFileSync(path.join(cwd, "job.sh"), "echo job\n");
@@ -499,7 +499,7 @@ describe("mutable file operand binding", () => {
   });
 
   it("fails closed for shell source built-ins", async () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-system-run-source-"));
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "afora-system-run-source-"));
     try {
       fs.writeFileSync(path.join(cwd, "loaded.sh"), "echo loaded\n");
       await expect(
@@ -584,7 +584,7 @@ describe("mutable file operand binding", () => {
   });
 
   it("fails closed for runtime code-loading and cwd options", async () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-system-run-bun-"));
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "afora-system-run-bun-"));
     try {
       fs.writeFileSync(path.join(cwd, "loader.ts"), "export {};\n");
       fs.writeFileSync(path.join(cwd, "app.ts"), "console.log('app');\n");
@@ -657,7 +657,7 @@ describe("mutable file operand binding", () => {
   });
 
   it("binds mutable scripts resolved through PATH", async () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-system-run-path-script-"));
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "afora-system-run-path-script-"));
     const binDir = path.join(cwd, "bin");
     try {
       fs.mkdirSync(binDir);
@@ -688,7 +688,7 @@ describe("mutable file operand binding", () => {
   });
 
   it("binds both a PATH-resolved interpreter shim and its script operand", async () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-system-run-path-python-"));
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "afora-system-run-path-python-"));
     const binDir = path.join(cwd, "bin");
     const payload = path.join(cwd, "payload.py");
     try {
@@ -719,7 +719,7 @@ describe("mutable file operand binding", () => {
   });
 
   it("binds both an explicit interpreter shim and its script operand", async () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-system-run-explicit-python-"));
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "afora-system-run-explicit-python-"));
     const shim = path.join(cwd, "python");
     try {
       fs.writeFileSync(shim, '#!/bin/sh\nexec python3 "$@"\n', { mode: 0o755 });
@@ -745,7 +745,7 @@ describe("mutable file operand binding", () => {
   });
 
   it("fails closed when an earlier shell segment changes cwd", async () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-system-run-cd-"));
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "afora-system-run-cd-"));
     try {
       fs.mkdirSync(path.join(cwd, "sub"));
       fs.writeFileSync(path.join(cwd, "sub", "script.sh"), "echo sub\n");
@@ -773,7 +773,7 @@ describe("mutable file operand binding", () => {
   });
 
   it("fails closed when a script operand does not exist", async () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-system-run-missing-"));
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "afora-system-run-missing-"));
     try {
       await expect(
         prepareSystemRunMutableFileBinding({
@@ -808,7 +808,7 @@ describe("mutable file operand binding", () => {
   });
 
   it("does not let inline eval bypass a mutable loader operand", async () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-system-run-loader-"));
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "afora-system-run-loader-"));
     try {
       fs.writeFileSync(path.join(cwd, "loader.js"), "module.exports = {};\n");
       fs.writeFileSync(path.join(cwd, "payload.sh"), "echo payload\n", { mode: 0o755 });
@@ -841,7 +841,7 @@ describe("mutable file operand binding", () => {
   it.runIf(process.platform !== "win32" && process.getuid?.() !== 0)(
     "fails closed when a script operand is unreadable",
     async () => {
-      const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-system-run-unreadable-"));
+      const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "afora-system-run-unreadable-"));
       const script = path.join(cwd, "unreadable.sh");
       try {
         fs.writeFileSync(script, "#!/bin/sh\necho hidden\n", { mode: 0o000 });

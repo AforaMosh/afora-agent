@@ -64,7 +64,7 @@ export function withMockedWindowsPlatform<T>(run: () => T | Promise<T>): T | Pro
 
 const WINDOWS_ACL_ENV_KEYS = new Set([
   "fs_safe_native_mode",
-  "openclaw_fs_safe_native_mode",
+  "afora_fs_safe_native_mode",
   "systemroot",
   "windir",
 ]);
@@ -86,12 +86,12 @@ function clearWindowsAclEnv(env: NodeJS.ProcessEnv): void {
 function forceFsSafeNativeFallback(env: NodeJS.ProcessEnv): void {
   for (const key of Object.keys(env)) {
     const normalized = key.toLowerCase();
-    if (normalized === "fs_safe_native_mode" || normalized === "openclaw_fs_safe_native_mode") {
+    if (normalized === "fs_safe_native_mode" || normalized === "afora_fs_safe_native_mode") {
       delete env[key];
     }
   }
   env.FS_SAFE_NATIVE_MODE = "off";
-  env.OPENCLAW_FS_SAFE_NATIVE_MODE = "off";
+  env.AFORA_FS_SAFE_NATIVE_MODE = "off";
 }
 
 function forceWindowsAclVerificationUnavailable(

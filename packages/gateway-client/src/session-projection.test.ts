@@ -30,7 +30,7 @@ function createMessage(
   return {
     role,
     content: [{ type: "text", text }],
-    ...(metadata ? { __openclaw: metadata } : {}),
+    ...(metadata ? { __afora: metadata } : {}),
   };
 }
 
@@ -136,13 +136,13 @@ describe("readSessionMessageIdentity", () => {
 
 describe("readSessionMessageSequence", () => {
   it("preserves the durable sequence of role-less history and status markers", () => {
-    expect(readSessionMessageSequence({ __openclaw: { seq: 7 } })).toBe(7);
+    expect(readSessionMessageSequence({ __afora: { seq: 7 } })).toBe(7);
   });
 
   it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 1])(
     "rejects unsafe role-less marker sequence %s",
     (sequence) => {
-      expect(readSessionMessageSequence({ __openclaw: { seq: sequence } })).toBeNull();
+      expect(readSessionMessageSequence({ __afora: { seq: sequence } })).toBeNull();
     },
   );
 });
@@ -517,11 +517,11 @@ describe("session transcript projection", () => {
   });
 
   it("reconciles an attachment-only optimistic turn solely by its actual send key", () => {
-    const pending = { role: "user", content: "", __openclaw: { idempotencyKey: "image-run:user" } };
+    const pending = { role: "user", content: "", __afora: { idempotencyKey: "image-run:user" } };
     const persisted = {
       role: "user",
       content: "",
-      __openclaw: {
+      __afora: {
         id: "image-user",
         seq: 1,
         idempotencyKey: "image-run:user",

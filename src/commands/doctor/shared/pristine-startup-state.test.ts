@@ -13,10 +13,10 @@ const roots: string[] = [];
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 function createFixture(config: Record<string, unknown>, stateEntries: string[] = []) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-pristine-startup-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-pristine-startup-"));
   roots.push(root);
   const stateDir = path.join(root, "state");
-  const configPath = path.join(root, "openclaw.json");
+  const configPath = path.join(root, "afora.json");
   fs.writeFileSync(configPath, `${JSON.stringify(config)}\n`);
   fs.mkdirSync(stateDir, { recursive: true });
   for (const entry of stateEntries) {
@@ -24,8 +24,8 @@ function createFixture(config: Record<string, unknown>, stateEntries: string[] =
   }
   return {
     HOME: root,
-    OPENCLAW_CONFIG_PATH: configPath,
-    OPENCLAW_STATE_DIR: stateDir,
+    AFORA_CONFIG_PATH: configPath,
+    AFORA_STATE_DIR: stateDir,
   };
 }
 
@@ -38,7 +38,7 @@ function addBundledPlugin(
   const pluginDir = path.join(bundledPluginsDir, pluginId);
   fs.mkdirSync(pluginDir, { recursive: true });
   fs.writeFileSync(
-    path.join(pluginDir, "openclaw.plugin.json"),
+    path.join(pluginDir, "afora.plugin.json"),
     `${JSON.stringify({ id: pluginId })}\n`,
   );
   if (options.doctorContract) {
@@ -47,8 +47,8 @@ function addBundledPlugin(
   return {
     ...env,
     VITEST: "true",
-    OPENCLAW_BUNDLED_PLUGINS_DIR: bundledPluginsDir,
-    OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
+    AFORA_BUNDLED_PLUGINS_DIR: bundledPluginsDir,
+    AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
   };
 }
 
@@ -65,7 +65,7 @@ function addConfiguredPlugin(
   const pluginDir = path.join(pluginsDir, pluginId);
   fs.mkdirSync(pluginDir, { recursive: true });
   fs.writeFileSync(
-    path.join(pluginDir, "openclaw.plugin.json"),
+    path.join(pluginDir, "afora.plugin.json"),
     `${JSON.stringify({ id: pluginId, configSchema: { type: "object" } })}\n`,
   );
   fs.writeFileSync(
@@ -78,7 +78,7 @@ function addConfiguredPlugin(
       `${JSON.stringify({
         name: `fixture-${pluginId}`,
         version: "1.0.0",
-        openclaw: {
+        afora: {
           extensions: ["./index.cjs"],
           install: { minHostVersion: options.minHostVersion },
         },
@@ -89,7 +89,7 @@ function addConfiguredPlugin(
     fs.writeFileSync(path.join(pluginDir, "doctor-contract-api.js"), "export {};\n");
   }
 
-  const config = JSON.parse(fs.readFileSync(env.OPENCLAW_CONFIG_PATH, "utf8")) as {
+  const config = JSON.parse(fs.readFileSync(env.AFORA_CONFIG_PATH, "utf8")) as {
     plugins?: Record<string, unknown>;
   };
   config.plugins = {
@@ -97,7 +97,7 @@ function addConfiguredPlugin(
     allow: [pluginId],
     load: { paths: [pluginsDir, ...(options.additionalLoadPaths ?? [])] },
   };
-  fs.writeFileSync(env.OPENCLAW_CONFIG_PATH, `${JSON.stringify(config)}\n`);
+  fs.writeFileSync(env.AFORA_CONFIG_PATH, `${JSON.stringify(config)}\n`);
   return env;
 }
 
@@ -109,15 +109,15 @@ afterEach(() => {
 
 describe("pristine startup state", () => {
   it("accepts a missing explicitly selected profile root", () => {
-    const root = tempDirs.make("openclaw-pristine-profile-");
-    const stateDir = path.join(root, ".openclaw-typo");
+    const root = tempDirs.make("afora-pristine-profile-");
+    const stateDir = path.join(root, ".afora-typo");
     fs.mkdirSync(path.join(root, ".clawdbot"));
 
     expect(
       planPristineStartupStateMigrations({
         HOME: root,
-        OPENCLAW_CONFIG_PATH: path.join(stateDir, "openclaw.json"),
-        OPENCLAW_STATE_DIR: stateDir,
+        AFORA_CONFIG_PATH: path.join(stateDir, "afora.json"),
+        AFORA_STATE_DIR: stateDir,
       }),
     ).toEqual({
       skipAllStateMigrations: true,
@@ -154,7 +154,7 @@ describe("pristine startup state", () => {
         agents: {
           defaults: {
             model: { primary: "openai/gpt-5.6" },
-            models: { "openai/gpt-5.6": { agentRuntime: { id: "openclaw" } } },
+            models: { "openai/gpt-5.6": { agentRuntime: { id: "afora" } } },
             workspace: "/tmp/workspace",
           },
           list: [{ id: "main", workspace: "/tmp/workspace" }],
@@ -176,7 +176,7 @@ describe("pristine startup state", () => {
           entries: {
             "session-memory": {
               enabled: true,
-              env: { OPENCLAW_HOOK_TEST: "enabled" },
+              env: { AFORA_HOOK_TEST: "enabled" },
               customOption: "value",
             },
           },

@@ -2,11 +2,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolveDefaultAgentId } from "openclaw/plugin-sdk/agent-scope-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
-import type { PluginDoctorStateMigration } from "openclaw/plugin-sdk/runtime-doctor-migrations";
-import { asOptionalRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { resolveDefaultAgentId } from "afora-agent/plugin-sdk/agent-scope-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { normalizeAgentId } from "afora-agent/plugin-sdk/routing";
+import type { PluginDoctorStateMigration } from "afora-agent/plugin-sdk/runtime-doctor-migrations";
+import { asOptionalRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   hasAgentScopeColumn,
   memoryAgentPredicate,
@@ -21,7 +21,7 @@ type LanceDbTable = Awaited<ReturnType<LanceDbConnection["openTable"]>>;
 
 const LEGACY_ENVELOPE_DELETE_BATCH_SIZE = 500;
 
-function resolveLegacyMemoryOwner(config: OpenClawConfig): {
+function resolveLegacyMemoryOwner(config: AforaConfig): {
   agentId: string;
   label: "default" | "system";
 } {
@@ -102,14 +102,14 @@ function resolveHome(env: NodeJS.ProcessEnv): string {
 }
 
 function resolveConfiguredDbPath(
-  config: OpenClawConfig,
+  config: AforaConfig,
   env: NodeJS.ProcessEnv,
   pluginRoot: string,
 ): string {
   const pluginConfig = asOptionalRecord(config.plugins?.entries?.["memory-lancedb"]?.config);
   const configured = typeof pluginConfig?.dbPath === "string" ? pluginConfig.dbPath.trim() : "";
   if (!configured) {
-    return path.join(resolveHome(env), ".openclaw", "memory", "lancedb");
+    return path.join(resolveHome(env), ".afora", "memory", "lancedb");
   }
   if (configured.includes("://")) {
     return configured;
@@ -122,7 +122,7 @@ function resolveConfiguredDbPath(
 }
 
 function resolveStorageOptions(
-  config: OpenClawConfig,
+  config: AforaConfig,
   env: NodeJS.ProcessEnv,
 ): Record<string, string> | undefined {
   const pluginConfig = asOptionalRecord(config.plugins?.entries?.["memory-lancedb"]?.config);
@@ -150,7 +150,7 @@ function resolveStorageOptions(
 }
 
 async function openMemoryTable(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
   pluginRoot: string;
 }): Promise<{

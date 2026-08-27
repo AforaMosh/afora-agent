@@ -15,7 +15,7 @@ type TestApi = {
 
 function getTestApi(): TestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.doctorWhatsappResponsivenessTestApi")
+    Symbol.for("afora.doctorWhatsappResponsivenessTestApi")
   ] as TestApi;
 }
 

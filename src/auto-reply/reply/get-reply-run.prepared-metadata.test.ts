@@ -36,7 +36,7 @@ describe("runPreparedReply prepared metadata", () => {
 
   it("keeps the dynamic workspace metadata generation active through reply admission and execution", async () => {
     const config = {};
-    const workspaceDir = "/tmp/openclaw-reply-workspace";
+    const workspaceDir = "/tmp/afora-reply-workspace";
     const metadataSnapshot = {
       index: { plugins: [] },
       pluginIds: undefined,
@@ -72,8 +72,8 @@ describe("runPreparedReply prepared metadata", () => {
     const run = bindPreparedReplyDispatchRuntime(
       {
         agentId: "main",
-        agentDir: "/tmp/openclaw-reply-agent",
-        workspaceDir: "/tmp/openclaw-configured-workspace",
+        agentDir: "/tmp/afora-reply-agent",
+        workspaceDir: "/tmp/afora-configured-workspace",
         config,
       } as never,
       async () => await runPreparedReply({} as never),
@@ -83,7 +83,7 @@ describe("runPreparedReply prepared metadata", () => {
     expect(mocks.acquireRuntime).toHaveBeenCalledWith({
       config,
       agentId: "main",
-      agentDir: "/tmp/openclaw-reply-agent",
+      agentDir: "/tmp/afora-reply-agent",
       workspaceDir,
     });
     expect(admissionSnapshot).toBe(metadataSnapshot);

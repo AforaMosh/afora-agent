@@ -326,7 +326,7 @@ describe("agent concurrency benchmark", () => {
       { cwd: process.cwd(), encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } },
     );
     expect(help.status).toBe(0);
-    expect(help.stdout).toContain("OpenClaw agent concurrency benchmark");
+    expect(help.stdout).toContain("Afora agent concurrency benchmark");
     expect(help.stdout).toContain("--sweep-rows <list>");
     expect(help.stderr).toBe("");
 

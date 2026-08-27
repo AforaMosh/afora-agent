@@ -1,16 +1,16 @@
 // Discord plugin module implements component runtime behavior.
-import { createPluginRuntimeMock } from "openclaw/plugin-sdk/channel-test-helpers";
+import { createPluginRuntimeMock } from "afora-agent/plugin-sdk/channel-test-helpers";
 import {
   parsePluginBindingApprovalCustomId,
   resolvePinnedMainDmOwnerFromAllowlist,
-} from "openclaw/plugin-sdk/conversation-runtime";
-import { isSingleUseReplyToMode } from "openclaw/plugin-sdk/reply-reference";
+} from "afora-agent/plugin-sdk/conversation-runtime";
+import { isSingleUseReplyToMode } from "afora-agent/plugin-sdk/reply-reference";
 import { vi, type Mock } from "vitest";
 
 type UnknownMock = Mock<(...args: unknown[]) => unknown>;
 type AsyncUnknownMock = Mock<(...args: unknown[]) => Promise<unknown>>;
 type DispatchReplyWithBufferedBlockDispatcherFn =
-  typeof import("openclaw/plugin-sdk/reply-dispatch-runtime").dispatchReplyWithBufferedBlockDispatcher;
+  typeof import("afora-agent/plugin-sdk/reply-dispatch-runtime").dispatchReplyWithBufferedBlockDispatcher;
 type DispatchReplyMock = Mock<DispatchReplyWithBufferedBlockDispatcherFn>;
 
 type DiscordComponentRuntimeMocks = {
@@ -55,9 +55,9 @@ const resolvePluginConversationBindingApprovalMock: AsyncUnknownMock =
 const buildPluginBindingResolvedTextMock: UnknownMock =
   runtimeMocks.buildPluginBindingResolvedTextMock;
 
-vi.mock("openclaw/plugin-sdk/channel-inbound", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/channel-inbound")>(
-    "openclaw/plugin-sdk/channel-inbound",
+vi.mock("afora-agent/plugin-sdk/channel-inbound", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/channel-inbound")>(
+    "afora-agent/plugin-sdk/channel-inbound",
   );
   type RunParams = Parameters<typeof actual.runChannelInboundEvent>[0];
   return {
@@ -194,13 +194,13 @@ export function resetDiscordComponentRuntimeMocks() {
   readSessionUpdatedAtMock.mockClear().mockReturnValue(undefined);
   upsertPairingRequestMock.mockClear().mockResolvedValue({ code: "PAIRCODE", created: true });
   recordInboundSessionMock.mockClear().mockResolvedValue(undefined);
-  resolveStorePathMock.mockClear().mockReturnValue("/tmp/openclaw-sessions-test.json");
+  resolveStorePathMock.mockClear().mockReturnValue("/tmp/afora-sessions-test.json");
   resolvePluginConversationBindingApprovalMock.mockReset().mockResolvedValue({
     status: "approved",
     binding: {
       bindingId: "binding-1",
-      pluginId: "openclaw-codex-app-server",
-      pluginName: "OpenClaw App Server",
+      pluginId: "afora-codex-app-server",
+      pluginName: "Afora App Server",
       pluginRoot: "/plugins/codex",
       channel: "discord",
       accountId: "default",
@@ -209,8 +209,8 @@ export function resetDiscordComponentRuntimeMocks() {
     },
     request: {
       id: "approval-1",
-      pluginId: "openclaw-codex-app-server",
-      pluginName: "OpenClaw App Server",
+      pluginId: "afora-codex-app-server",
+      pluginName: "Afora App Server",
       pluginRoot: "/plugins/codex",
       requestedAt: Date.now(),
       conversation: {

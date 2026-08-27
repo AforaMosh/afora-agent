@@ -38,7 +38,7 @@ function offerPromptPort(frame: HTMLIFrameElement): MessagePort {
   const channel = new MessageChannel();
   window.dispatchEvent(
     new MessageEvent("message", {
-      data: { type: "openclaw:widget-prompt-offer" },
+      data: { type: "afora:widget-prompt-offer" },
       origin: "null",
       source: frame.contentWindow,
       ports: [channel.port2],
@@ -48,7 +48,7 @@ function offerPromptPort(frame: HTMLIFrameElement): MessagePort {
 }
 
 function postPrompt(port: MessagePort, prompt: unknown) {
-  port.postMessage({ type: "openclaw:widget-prompt", prompt });
+  port.postMessage({ type: "afora:widget-prompt", prompt });
 }
 
 async function flushPorts() {
@@ -82,7 +82,7 @@ function restoreActiveElement() {
 describe("widget prompts", () => {
   it("adopts the bridge's prompt port offer and enforces the prompt contract", async () => {
     const { container, frame } = renderWidgetPreviewFrame(
-      "/__openclaw__/canvas/documents/cv_prompt/index.html",
+      "/__afora__/canvas/documents/cv_prompt/index.html",
     );
     // The bridge posts its offer at parse time, before the frame's load event.
     const port = offerPromptPort(frame);
@@ -91,7 +91,7 @@ describe("widget prompts", () => {
     port.start();
     frame.dispatchEvent(new Event("load"));
     await flushPorts();
-    expect(hostMessages).toContainEqual({ type: "openclaw:widget-prompt-host-ready" });
+    expect(hostMessages).toContainEqual({ type: "afora:widget-prompt-host-ready" });
     emulateInteractableFrame(frame);
     const received = collectPromptEvents(container);
     try {
@@ -135,7 +135,7 @@ describe("widget prompts", () => {
 
   it("adopts a prompt offer that arrives after the frame's load event", async () => {
     const { container, frame } = renderWidgetPreviewFrame(
-      "/__openclaw__/canvas/documents/cv_late_offer/index.html",
+      "/__afora__/canvas/documents/cv_late_offer/index.html",
     );
     // Posted-message and load tasks have no guaranteed ordering; here load wins.
     frame.dispatchEvent(new Event("load"));

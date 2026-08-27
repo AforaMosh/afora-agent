@@ -1,5 +1,5 @@
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
+import type { AforaConfig } from "../config/types.afora.js";
 import { asBoolean } from "../utils/boolean.js";
 import {
   normalizeSupportedRealtimeVoiceActivationName,
@@ -30,7 +30,7 @@ export function resolveRealtimeVoiceSessionPolicy(params: {
   configuredConsultPolicy: "auto" | "always" | undefined;
   requireWakeName: boolean | undefined;
   configuredWakeNames: string[] | undefined;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
 }): RealtimeVoiceSessionPolicy {
   const toolPolicy = resolveRealtimeVoiceAgentConsultToolPolicy(
@@ -103,7 +103,7 @@ function resolveRealtimeVoiceWakeNamePolicy(params: {
 
 function resolveRealtimeVoiceWakeNames(params: {
   configuredWakeNames: string[] | undefined;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
 }): string[] {
   if (params.configuredWakeNames !== undefined) {
@@ -116,7 +116,7 @@ function resolveRealtimeVoiceWakeNames(params: {
   const configuredAgentNames = [agent?.name, agent?.identity?.name]
     .map((name) => normalizeSupportedRealtimeVoiceActivationName(name))
     .filter((name): name is string => Boolean(name));
-  const productWakeNames = [normalizeSupportedRealtimeVoiceActivationName("OpenClaw")].filter(
+  const productWakeNames = [normalizeSupportedRealtimeVoiceActivationName("Afora")].filter(
     (name): name is string => Boolean(name),
   );
   const defaults =

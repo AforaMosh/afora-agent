@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { html, nothing } from "lit";
 import type { GatewaySessionRow } from "../../api/types.ts";
 import { isDesktopPanelAvailable } from "../../app/app-shell-chrome.ts";
@@ -204,7 +204,7 @@ export abstract class ChatPaneHeader extends ChatPaneDiscussion {
         this.setChatSidePanelOpen(!sidePanelOpen);
       }
     };
-    const sidePanelAction = html`<openclaw-tooltip
+    const sidePanelAction = html`<afora-tooltip
       .content=${t(sidePanelOpen ? "chat.sidePanel.minimize" : "chat.sidePanel.label")}
     >
       <button
@@ -216,9 +216,9 @@ export abstract class ChatPaneHeader extends ChatPaneDiscussion {
       >
         ${sidePanelOpen ? icons.panelRightClose : icons.panelRightOpen}
       </button>
-    </openclaw-tooltip>`;
+    </afora-tooltip>`;
     const browserPanelAction = sessionWorkspace.onToggleBrowser
-      ? html`<openclaw-tooltip .content=${t("browser.toggle")}>
+      ? html`<afora-tooltip .content=${t("browser.toggle")}>
           <button
             class="btn btn--ghost btn--icon chat-icon-btn chat-browser-panel-toggle"
             type="button"
@@ -227,7 +227,7 @@ export abstract class ChatPaneHeader extends ChatPaneDiscussion {
           >
             ${icons.globe}
           </button>
-        </openclaw-tooltip>`
+        </afora-tooltip>`
       : nothing;
     const backgroundTasksAction = catalog ? nothing : renderBackgroundTasksToggle(backgroundTasks);
     const sessionRailMode = this.selectedSessionRailMode(this.state?.sessionKey ?? "");
@@ -393,7 +393,7 @@ export abstract class ChatPaneHeader extends ChatPaneDiscussion {
       presence:
         !catalog &&
         hasSessionPresenceViewers(this.presencePayload, selfId, instanceId, key, renderedOwnerId)
-          ? html`<openclaw-viewer-facepile
+          ? html`<afora-viewer-facepile
               class="chat-pane__presence"
               .presencePayload=${this.presencePayload}
               .selfUserId=${selfId}
@@ -402,7 +402,7 @@ export abstract class ChatPaneHeader extends ChatPaneDiscussion {
               .excludeUserId=${renderedOwnerId}
               .maxVisible=${4}
               variant="session"
-            ></openclaw-viewer-facepile>`
+            ></afora-viewer-facepile>`
           : nothing,
       faceControl: renderBoardViewSwitch({
         hasBoard: board.hasBoard,
@@ -461,7 +461,7 @@ export abstract class ChatPaneHeader extends ChatPaneDiscussion {
         : nothing,
       sessionMenuAction:
         row && this.state
-          ? html`<openclaw-chat-header-session-menu
+          ? html`<afora-chat-header-session-menu
               .sessionLabel=${normalizeOptionalString(row.label) ??
               normalizeOptionalString(this.paneTitle) ??
               row.key}
@@ -487,7 +487,7 @@ export abstract class ChatPaneHeader extends ChatPaneDiscussion {
               }}
               .onSettingsChange=${this.state.applySettings}
               .onAction=${(action: HeaderMenuAction) => this.handleHeaderSessionAction(action, row)}
-            ></openclaw-chat-header-session-menu>`
+            ></afora-chat-header-session-menu>`
           : nothing,
       placementMoving: placement.moving,
       placementMoveDisabledReason: placement.moveDisabledReason,

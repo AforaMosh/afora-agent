@@ -26,7 +26,7 @@ const pendingRelayEnsures = new WeakMap<ProfileRuntimeState, PendingRelayEnsure>
 
 /** Human guidance for a relay without a paired/connected extension. */
 export const EXTENSION_PAIRING_HINT =
-  "Run `openclaw browser extension install`, load the printed unpacked directory once, and wait for automatic setup.";
+  "Run `afora browser extension install`, load the printed unpacked directory once, and wait for automatic setup.";
 
 function relays(state: BrowserServerState): Map<string, ExtensionRelayHandle> {
   if (!state.extensionRelays) {

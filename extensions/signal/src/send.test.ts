@@ -1,6 +1,6 @@
 // Signal tests cover send plugin behavior.
 import http from "node:http";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const signalRpcRequestMock = vi.hoisted(() => vi.fn());
@@ -15,9 +15,9 @@ vi.mock("./client-adapter.js", () => ({
   signalRpcRequest: (...args: unknown[]) => signalRpcRequestMock(...args),
 }));
 
-vi.mock("openclaw/plugin-sdk/media-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/media-runtime")>(
-    "openclaw/plugin-sdk/media-runtime",
+vi.mock("afora-agent/plugin-sdk/media-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/media-runtime")>(
+    "afora-agent/plugin-sdk/media-runtime",
   );
   return {
     ...actual,
@@ -43,7 +43,7 @@ const SIGNAL_TEST_CFG = {
       },
     },
   },
-} satisfies OpenClawConfig;
+} satisfies AforaConfig;
 
 describe("sendMessageSignal receipts", () => {
   beforeEach(() => {
@@ -655,7 +655,7 @@ describe("Signal quoted-message provider replay safety", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     vi.doUnmock("./client-adapter.js");
     vi.resetModules();
@@ -787,7 +787,7 @@ describe("Signal native JSON-RPC recipient delivery", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     signalRpcRequestMock.mockClear();
     vi.doUnmock("./client-adapter.js");

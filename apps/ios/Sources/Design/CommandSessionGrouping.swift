@@ -1,5 +1,5 @@
 import Foundation
-import OpenClawChatUI
+import AforaChatUI
 
 struct CommandSessionSection: Identifiable {
     enum ID: Hashable {
@@ -10,13 +10,13 @@ struct CommandSessionSection: Identifiable {
 
     let id: ID
     let title: String
-    let entries: [OpenClawChatSessionEntry]
+    let entries: [AforaChatSessionEntry]
     let showsHeader: Bool
 }
 
 enum CommandSessionGrouping {
     static func sections(
-        from entries: [OpenClawChatSessionEntry],
+        from entries: [AforaChatSessionEntry],
         knownGroups: [String] = []) -> [CommandSessionSection]
     {
         let pinned = self.sortedByActivity(entries.filter { $0.pinned == true })
@@ -57,7 +57,7 @@ enum CommandSessionGrouping {
         return sections
     }
 
-    static func previewOrder(_ entries: [OpenClawChatSessionEntry]) -> [OpenClawChatSessionEntry] {
+    static func previewOrder(_ entries: [AforaChatSessionEntry]) -> [AforaChatSessionEntry] {
         entries.sorted { lhs, rhs in
             if (lhs.pinned == true) != (rhs.pinned == true) {
                 return lhs.pinned == true
@@ -72,9 +72,9 @@ enum CommandSessionGrouping {
     /// session falls outside the cap it leads the list (pre-existing Command
     /// Center contract), otherwise natural pinned/activity order wins.
     static func previewSelection(
-        _ entries: [OpenClawChatSessionEntry],
+        _ entries: [AforaChatSessionEntry],
         currentKey: String,
-        limit: Int = 3) -> [OpenClawChatSessionEntry]
+        limit: Int = 3) -> [AforaChatSessionEntry]
     {
         let ordered = self.previewOrder(entries)
         let capped = Array(ordered.prefix(limit))
@@ -86,7 +86,7 @@ enum CommandSessionGrouping {
     }
 
     static func categories(
-        from entries: [OpenClawChatSessionEntry],
+        from entries: [AforaChatSessionEntry],
         knownGroups: [String] = []) -> [String]
     {
         Set(entries.compactMap { self.normalizedCategory($0.category) })
@@ -99,7 +99,7 @@ enum CommandSessionGrouping {
     /// renamed group instead of the stale one.
     static func members(
         of group: String,
-        in lists: [[OpenClawChatSessionEntry]]) -> [OpenClawChatSessionEntry]
+        in lists: [[AforaChatSessionEntry]]) -> [AforaChatSessionEntry]
     {
         guard let target = self.normalizedCategory(group) else { return [] }
         var seen = Set<String>()
@@ -108,12 +108,12 @@ enum CommandSessionGrouping {
         }
     }
 
-    static func activityTimestamp(_ entry: OpenClawChatSessionEntry) -> Double {
+    static func activityTimestamp(_ entry: AforaChatSessionEntry) -> Double {
         entry.lastActivityAt ?? entry.updatedAt ?? 0
     }
 
     private static func sortedByActivity(
-        _ entries: [OpenClawChatSessionEntry]) -> [OpenClawChatSessionEntry]
+        _ entries: [AforaChatSessionEntry]) -> [AforaChatSessionEntry]
     {
         entries.sorted { lhs, rhs in
             let left = self.activityTimestamp(lhs)

@@ -6,7 +6,7 @@ import type { WorkerEnvironmentService } from "./service.js";
 describe("remote-exec placement sandbox", () => {
   it("binds the exact managed worktree and placement generation into the runtime", async () => {
     const environmentId = "worker:environment-1";
-    const remoteWorkspaceDir = "/srv/openclaw/workspaces/session-1";
+    const remoteWorkspaceDir = "/srv/afora/workspaces/session-1";
     const placement = {
       state: "active",
       executionMode: "remote-exec",

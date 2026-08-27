@@ -4,7 +4,7 @@
  * family fallbacks.
  */
 import type { ThinkLevel } from "../auto-reply/thinking.shared.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { ModelCatalogEntry } from "./model-catalog.types.js";
 import { buildConfiguredModelCatalog } from "./model-selection-shared.js";
 import {
@@ -14,7 +14,7 @@ import {
 
 /** Resolves configured thinking without consulting model capability metadata. */
 export function resolveConfiguredThinkingDefault(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: string;
   model: string;
 }): ThinkLevel | undefined {
@@ -23,7 +23,7 @@ export function resolveConfiguredThinkingDefault(params: {
 
 /** Resolves the default thinking level for a provider/model pair. */
 export function resolveThinkingDefault(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: string;
   model: string;
   catalog?: ModelCatalogEntry[];
@@ -34,7 +34,7 @@ export function resolveThinkingDefault(params: {
 
 /** Resolves thinking default after loading runtime catalog only when needed. */
 export async function resolveThinkingDefaultWithRuntimeCatalog(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: string;
   model: string;
   loadRuntimeCatalog: () => Promise<ModelCatalogEntry[]>;

@@ -1,6 +1,6 @@
-// Bridges OpenClaw-managed proxy TLS trust into Undici EnvHttpProxyAgent and
+// Bridges Afora-managed proxy TLS trust into Undici EnvHttpProxyAgent and
 // explicit ProxyAgent options without changing unrelated operator proxies.
-import { isRecord as isProxyTlsRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord as isProxyTlsRecord } from "@afora/normalization-core/record-coerce";
 import type { EnvHttpProxyAgent } from "undici";
 import { resolveEnvHttpProxyAgentOptions } from "../proxy-env.js";
 import { resolveActiveManagedProxyTlsOptions } from "./active-managed-proxy-tls.js";

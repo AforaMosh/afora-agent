@@ -1,9 +1,9 @@
 // Normalizes channel capability metadata from config and plugin manifests.
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 import { normalizeAnyChannelId } from "../channels/registry.js";
 import { resolveAccountEntry } from "../routing/account-lookup.js";
 import { normalizeAccountId } from "../routing/session-key.js";
-import type { OpenClawConfig } from "./config.js";
+import type { AforaConfig } from "./config.js";
 import type { SlackCapabilitiesConfig } from "./types.slack.js";
 import type { TelegramCapabilitiesConfig } from "./types.telegram.js";
 
@@ -24,7 +24,7 @@ function normalizeCapabilities(capabilities: CapabilitiesConfig | undefined): st
 
 /** Resolves normalized string capabilities for a channel/account config pair. */
 export function resolveChannelCapabilities(params: {
-  cfg?: Partial<OpenClawConfig>;
+  cfg?: Partial<AforaConfig>;
   channel?: string | null;
   accountId?: string | null;
 }): string[] | undefined {

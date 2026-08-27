@@ -1,5 +1,5 @@
 // Nextcloud Talk tests cover group policy plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import {
   resolveNextcloudTalkGroupRequireMention,
@@ -20,7 +20,7 @@ describe("nextcloud-talk group policy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const params = { cfg, groupId: "Team Room" };
 
     expect(resolveNextcloudTalkGroupRequireMention(params)).toBe(true);
@@ -39,7 +39,7 @@ describe("nextcloud-talk group policy", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const params = { cfg, groupId: "team-room" };
 
     expect(resolveNextcloudTalkGroupRequireMention(params)).toBe(false);

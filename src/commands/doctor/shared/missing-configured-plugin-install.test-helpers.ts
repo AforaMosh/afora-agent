@@ -17,7 +17,7 @@ export function officialPluginEntry(params: {
     },
     ...(params.manifest
       ? {
-          openclaw: {
+          afora: {
             plugin: { id: params.id, label },
             ...params.manifest,
           },
@@ -103,7 +103,7 @@ export function successfulInstall(params: {
   return {
     ok: true as const,
     pluginId: params.pluginId,
-    targetDir: params.targetDir ?? `/tmp/openclaw-plugins/${params.pluginId}`,
+    targetDir: params.targetDir ?? `/tmp/afora-plugins/${params.pluginId}`,
     version,
     npmResolution: {
       name: params.npmSpec,

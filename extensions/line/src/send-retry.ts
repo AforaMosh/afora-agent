@@ -1,10 +1,10 @@
 // Line plugin module implements push retry policy behavior.
 import { HTTPFetchError } from "@line/bot-sdk";
-import { collectErrorGraphCandidates, extractErrorCode } from "openclaw/plugin-sdk/error-runtime";
+import { collectErrorGraphCandidates, extractErrorCode } from "afora-agent/plugin-sdk/error-runtime";
 import {
   classifyTransientNetworkErrorCode,
   createChannelApiRetryRunner,
-} from "openclaw/plugin-sdk/retry-runtime";
+} from "afora-agent/plugin-sdk/retry-runtime";
 
 function isRetryableLinePushError(error: unknown): boolean {
   const candidates = collectErrorGraphCandidates(error, (candidate) => [

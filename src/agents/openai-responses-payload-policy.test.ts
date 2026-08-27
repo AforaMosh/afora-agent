@@ -1,12 +1,12 @@
 import {
   applyOpenAIResponsesPayloadPolicy,
   resolveOpenAIResponsesPayloadPolicy,
-} from "@openclaw/ai/transports";
+} from "@afora/ai/transports";
 /**
  * Regression coverage for OpenAI Responses payload policy.
  * Verifies store, prompt-cache, compaction, service-tier, and reasoning mutations.
  */
-import type { Model } from "openclaw/plugin-sdk/llm";
+import type { Model } from "afora-agent/plugin-sdk/llm";
 import { describe, expect, it } from "vitest";
 
 describe("openai responses payload policy", () => {
@@ -236,7 +236,7 @@ describe("openai responses payload policy", () => {
   it("emits store false for aliased native OpenAI Codex responses disable mode", () => {
     const policy = resolveOpenAIResponsesPayloadPolicy(
       {
-        api: "openclaw-openai-chatgpt-responses-transport",
+        api: "afora-openai-chatgpt-responses-transport",
         provider: "openai",
         baseUrl: "https://chatgpt.com/backend-api/codex",
       },
@@ -257,7 +257,7 @@ describe("openai responses payload policy", () => {
       payload,
       resolveOpenAIResponsesPayloadPolicy(
         {
-          api: "openclaw-azure-openai-responses-transport",
+          api: "afora-azure-openai-responses-transport",
           provider: "azure-openai-responses",
           baseUrl: "https://example.openai.azure.com/openai/v1",
           contextWindow: 200_000,

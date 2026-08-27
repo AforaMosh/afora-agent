@@ -3,13 +3,13 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import * as channelInbound from "openclaw/plugin-sdk/channel-inbound";
-import { createTestInboundDebounceFlush } from "openclaw/plugin-sdk/channel-test-helpers";
-import { recordInboundSession } from "openclaw/plugin-sdk/conversation-runtime";
-import type { dispatchReplyWithBufferedBlockDispatcher } from "openclaw/plugin-sdk/reply-runtime";
-import { getSessionEntry, resolveStorePath } from "openclaw/plugin-sdk/session-store-runtime";
-import { createOpenClawTestState, type OpenClawTestState } from "openclaw/plugin-sdk/test-state";
-import type { waitForTransportReady } from "openclaw/plugin-sdk/transport-ready-runtime";
+import * as channelInbound from "afora-agent/plugin-sdk/channel-inbound";
+import { createTestInboundDebounceFlush } from "afora-agent/plugin-sdk/channel-test-helpers";
+import { recordInboundSession } from "afora-agent/plugin-sdk/conversation-runtime";
+import type { dispatchReplyWithBufferedBlockDispatcher } from "afora-agent/plugin-sdk/reply-runtime";
+import { getSessionEntry, resolveStorePath } from "afora-agent/plugin-sdk/session-store-runtime";
+import { createAforaTestState, type AforaTestState } from "afora-agent/plugin-sdk/test-state";
+import type { waitForTransportReady } from "afora-agent/plugin-sdk/transport-ready-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { createIMessageRpcClient } from "./client.js";
 import { monitorIMessageProvider } from "./monitor.js";
@@ -199,12 +199,12 @@ const createChannelInboundDebouncerMock = vi.hoisted(() =>
   ),
 );
 
-vi.mock("openclaw/plugin-sdk/transport-ready-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/transport-ready-runtime", () => ({
   waitForTransportReady: waitForTransportReadyMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/conversation-runtime")>();
+vi.mock("afora-agent/plugin-sdk/conversation-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/conversation-runtime")>();
   return {
     ...actual,
     readChannelAllowFromStore: readChannelAllowFromStoreMock,
@@ -212,8 +212,8 @@ vi.mock("openclaw/plugin-sdk/conversation-runtime", async (importOriginal) => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/channel-inbound")>();
+vi.mock("afora-agent/plugin-sdk/channel-inbound", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/channel-inbound")>();
   return {
     ...actual,
     createChannelInboundDebouncer: createChannelInboundDebouncerMock,
@@ -258,7 +258,7 @@ async function runChannelInboundEventForLastRouteTest(params: RunChannelInboundE
 
 describe("iMessage monitor last-route updates", () => {
   const tempDirs: string[] = [];
-  const openClawStates: OpenClawTestState[] = [];
+  const aforaStates: AforaTestState[] = [];
 
   beforeEach(() => {
     vi.spyOn(channelInbound, "runChannelInboundEvent").mockImplementation(
@@ -277,7 +277,7 @@ describe("iMessage monitor last-route updates", () => {
   afterEach(async () => {
     vi.restoreAllMocks();
     vi.useRealTimers();
-    await Promise.all(openClawStates.splice(0).map((state) => state.cleanup()));
+    await Promise.all(aforaStates.splice(0).map((state) => state.cleanup()));
     vi.unstubAllEnvs();
     for (const dir of tempDirs.splice(0)) {
       fs.rmSync(dir, { recursive: true, force: true });
@@ -523,7 +523,7 @@ describe("iMessage monitor last-route updates", () => {
       expect(onToolResult).toBeTypeOf("function");
       await onToolResult?.({
         text: "💨Fast: auto-off(75s>=60s)",
-        channelData: { openclawProgressKind: "fast-mode-auto" },
+        channelData: { aforaProgressKind: "fast-mode-auto" },
       });
       typingController.markRunComplete();
       typingController.markDispatchIdle();
@@ -569,7 +569,7 @@ describe("iMessage monitor last-route updates", () => {
       expect(onToolResult).toBeTypeOf("function");
       await onToolResult?.({
         text: "💨Fast: auto-off(75s>=60s)",
-        channelData: { openclawProgressKind: "fast-mode-auto" },
+        channelData: { aforaProgressKind: "fast-mode-auto" },
       });
       return EMPTY_DISPATCH_RESULT;
     });
@@ -818,7 +818,7 @@ describe("iMessage monitor last-route updates", () => {
   );
 
   it("keeps per-channel-peer direct-message last-route writes on the isolated session", async () => {
-    const stateDir = createTestStateDir("openclaw-imsg-last-route-");
+    const stateDir = createTestStateDir("afora-imsg-last-route-");
     const configuredStore = path.join(stateDir, "sessions.json");
     const storePath = resolveStorePath(configuredStore, { agentId: "main" });
     const sessionKey = "agent:main:imessage:direct:+15550001111";
@@ -880,7 +880,7 @@ describe("iMessage monitor last-route updates", () => {
       ],
       monitor: {
         imessage: {
-          dbPath: path.join(os.tmpdir(), `openclaw-missing-chat-${Date.now()}.db`),
+          dbPath: path.join(os.tmpdir(), `afora-missing-chat-${Date.now()}.db`),
         },
       },
     });
@@ -892,7 +892,7 @@ describe("iMessage monitor last-route updates", () => {
   });
 
   it("passes the startup rowid watermark as since_rowid when chat.db is readable", async () => {
-    const dbPath = createRecoveryChatDb("openclaw-imsg-startup-rowid-", undefined, "watermark");
+    const dbPath = createRecoveryChatDb("afora-imsg-startup-rowid-", undefined, "watermark");
     const client = await runMessageCase({ monitor: { imessage: { dbPath } } });
 
     expectWatchSubscription(client, 5000);
@@ -916,7 +916,7 @@ describe("iMessage monitor last-route updates", () => {
   });
 
   it("routes legacy catchup through durable ingress and rejects a live GUID overlap", async () => {
-    const dbPath = createRecoveryChatDb("openclaw-imsg-catchup-window-");
+    const dbPath = createRecoveryChatDb("afora-imsg-catchup-window-");
     const createdAt = new Date().toISOString();
     const historyMessage = createInboundMessage({
       id: 4995,
@@ -948,7 +948,7 @@ describe("iMessage monitor last-route updates", () => {
   });
 
   it("recovers downtime messages: replays from the cursor and delivers replay rows older than the live fence", async () => {
-    const dbPath = createRecoveryChatDb("openclaw-imsg-recovery-", 4990);
+    const dbPath = createRecoveryChatDb("afora-imsg-recovery-", 4990);
     const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
 
     const client = await runMessageCase({
@@ -976,7 +976,7 @@ describe("iMessage monitor last-route updates", () => {
   });
 
   it("does not treat startup-boundary rows as recovery replay without a prior cursor", async () => {
-    const dbPath = createRecoveryChatDb("openclaw-imsg-first-run-boundary-");
+    const dbPath = createRecoveryChatDb("afora-imsg-first-run-boundary-");
     const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
 
     const client = await runMessageCase({
@@ -995,7 +995,7 @@ describe("iMessage monitor last-route updates", () => {
   });
 
   it("records a suppressed live row so a later replay of the same row is deduped, not delivered", async () => {
-    const dbPath = createRecoveryChatDb("openclaw-imsg-suppress-record-");
+    const dbPath = createRecoveryChatDb("afora-imsg-suppress-record-");
     const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
 
     await runMessageCase({
@@ -1021,7 +1021,7 @@ describe("iMessage monitor last-route updates", () => {
 
   it("advances the recovery cursor after durable enqueue before dispatch", async () => {
     debouncerControl.holdEntries = true;
-    const dbPath = createRecoveryChatDb("openclaw-imsg-recovery-failed-", 4990);
+    const dbPath = createRecoveryChatDb("afora-imsg-recovery-failed-", 4990);
     const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
 
     const client = await runMessageCase({
@@ -1045,7 +1045,7 @@ describe("iMessage monitor last-route updates", () => {
 
   it("keeps the durable recovery cursor independent of later dispatch order", async () => {
     debouncerControl.holdEntries = true;
-    const dbPath = createRecoveryChatDb("openclaw-imsg-recovery-ordered-", 4990);
+    const dbPath = createRecoveryChatDb("afora-imsg-recovery-ordered-", 4990);
     const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
 
     await runMessageCase({
@@ -1069,14 +1069,14 @@ describe("iMessage monitor last-route updates", () => {
   const replacedDatabaseCases = [
     {
       name: "tails a chat.db replaced at the same path instead of suppressing every row below the stale cursor",
-      prefix: "openclaw-imsg-db-replaced-",
+      prefix: "afora-imsg-db-replaced-",
       seededRowid: 5,
       liveRowid: 6,
       expectedSinceRowid: 5,
     },
     {
       name: "tails a chat.db rebuilt empty at the same path instead of suppressing its first rows",
-      prefix: "openclaw-imsg-db-rebuilt-",
+      prefix: "afora-imsg-db-rebuilt-",
       seededRowid: null,
       liveRowid: 1,
       expectedSinceRowid: -1,
@@ -1146,7 +1146,7 @@ describe("iMessage monitor last-route updates", () => {
   }
 
   it("does not self-fence past the first row inserted while an empty rebuilt chat.db starts", async () => {
-    const stateDir = createTestStateDir("openclaw-imsg-db-rebuilt-startup-race-");
+    const stateDir = createTestStateDir("afora-imsg-db-rebuilt-startup-race-");
     const dbPath = path.join(stateDir, "chat.db");
     advanceIMessageRecoveryCursor(
       "default",
@@ -1204,10 +1204,10 @@ describe("iMessage monitor last-route updates", () => {
   });
 
   it("repairs anchorless group watch payloads before routing or cursor updates", async () => {
-    openClawStates.push(
-      await createOpenClawTestState({
+    aforaStates.push(
+      await createAforaTestState({
         layout: "state-only",
-        prefix: "openclaw-imsg-anchor-repair-",
+        prefix: "afora-imsg-anchor-repair-",
       }),
     );
 
@@ -1242,7 +1242,7 @@ describe("iMessage monitor last-route updates", () => {
         chat_id: 0,
         sender: "+15550001111",
         is_from_me: false,
-        text: "@openclaw check this https://example.com",
+        text: "@afora check this https://example.com",
         is_group: false,
         chat_guid: "",
         chat_identifier: "",
@@ -1254,7 +1254,7 @@ describe("iMessage monitor last-route updates", () => {
 
     await runIMessageMonitor({
       imessage: { groupPolicy: "open", groups: { "*": { requireMention: true } } },
-      messages: { groupChat: { mentionPatterns: ["@openclaw"] } },
+      messages: { groupChat: { mentionPatterns: ["@afora"] } },
       allowlist: false,
     });
 

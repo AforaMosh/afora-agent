@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { prepareSystemAgentRunAdmission } from "../agents/admitted-run-context.js";
 import {
   type AgentRunResultView,
@@ -18,7 +18,7 @@ import { describeFailoverError } from "../agents/failover-error.js";
 import { splitTrailingAuthProfile } from "../agents/model-ref-profile.js";
 import { SessionManager } from "../agents/sessions/index.js";
 import { applyMergePatch } from "../config/merge-patch.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { enablePluginInConfig } from "../plugins/enable.js";
@@ -48,9 +48,9 @@ export async function cleanupSetupInferenceTempDir(params: {
 }): Promise<void> {
   try {
     const disposeDatabase =
-      params.deps.disposeOpenClawAgentDatabaseByPath ??
-      (await import("../state/openclaw-agent-db.js")).disposeOpenClawAgentDatabaseByPath;
-    disposeDatabase(path.join(params.tempDir, "agent", "openclaw-agent.sqlite"));
+      params.deps.disposeAforaAgentDatabaseByPath ??
+      (await import("../state/afora-agent-db.js")).disposeAforaAgentDatabaseByPath;
+    disposeDatabase(path.join(params.tempDir, "agent", "afora-agent.sqlite"));
   } catch {
     // Windows cannot remove an open SQLite file. Keep cleanup nonfatal, but
     // always try the directory removal so callers do not retain probe secrets.
@@ -107,7 +107,7 @@ export async function retainUnownedCodexInstall(params: {
     const marked = await markRetained({
       packageDir: params.record.installPath,
       pluginId: "codex",
-      reason: "openclaw-inference-activation-not-committed",
+      reason: "afora-inference-activation-not-committed",
     });
     if (!marked) {
       setupInferenceLog.warn("Could not retain the uncommitted Codex runtime package generation.");
@@ -175,11 +175,11 @@ export async function reloadCodexRegistryAfterActivation(params: {
   const runtimeConfig =
     snapshot.exists && snapshot.valid
       ? (snapshot.runtimeConfig ?? snapshot.config)
-      : ({} satisfies OpenClawConfig);
+      : ({} satisfies AforaConfig);
   const sourceConfig =
     snapshot.exists && snapshot.valid
       ? (snapshot.sourceConfig ?? snapshot.config)
-      : ({} satisfies OpenClawConfig);
+      : ({} satisfies AforaConfig);
   try {
     const refreshPluginRegistry =
       params.deps.refreshPluginRegistryAfterConfigMutation ??
@@ -238,11 +238,11 @@ function mergePatchConflicts(base: unknown, current: unknown, patch: unknown): b
 }
 
 export function applyManualAuthConfig(
-  config: OpenClawConfig,
+  config: AforaConfig,
   manualAuth: NonNullable<SetupInferenceTestPlan["manualAuth"]>,
   configKind: "runtime" | "source",
   enablePlugin: typeof enablePluginInConfig = enablePluginInConfig,
-): OpenClawConfig {
+): AforaConfig {
   let enabledConfig = config;
   if (manualAuth.pluginId) {
     const enableResult = enablePlugin(config, manualAuth.pluginId);
@@ -260,7 +260,7 @@ export function applyManualAuthConfig(
       "Provider configuration changed during the live inference test, so the verified credential was not saved. Review the current provider settings and retry.",
     );
   }
-  return applyMergePatch(enabledConfig, manualAuth.configPatch) as OpenClawConfig;
+  return applyMergePatch(enabledConfig, manualAuth.configPatch) as AforaConfig;
 }
 
 export type ManualAuthPersistenceReceipt = {
@@ -298,7 +298,7 @@ function modelSelectionReferencesProfile(value: unknown, profileIds: ReadonlySet
 }
 
 export function configReferencesManualAuthProfiles(
-  config: OpenClawConfig,
+  config: AforaConfig,
   receipt: ManualAuthPersistenceReceipt,
 ): boolean {
   const profileIds = new Set(receipt.profiles.map((profile) => profile.profileId));
@@ -486,7 +486,7 @@ export async function runSetupInferenceTest(params: {
   const sessionId = runId;
   const sessionFile = `in-memory:${sessionId}`;
   const sessionManager = SessionManager.inMemory(tempDir);
-  const effectiveAgentId = plan.routeAgentId ?? plan.agentId ?? "openclaw";
+  const effectiveAgentId = plan.routeAgentId ?? plan.agentId ?? "afora";
   const sessionKey = `agent:${effectiveAgentId}:setup-inference:incognito-${runId}`;
   const timeoutMs = deps.timeoutMs ?? SETUP_INFERENCE_TEST_TIMEOUT_MS;
   const started = Date.now();
@@ -545,8 +545,8 @@ export async function runSetupInferenceTest(params: {
         ...(plan.authProfileId ? { authProfileId: plan.authProfileId } : {}),
         timeoutMs,
         runId,
-        messageChannel: "openclaw",
-        messageProvider: "openclaw",
+        messageChannel: "afora",
+        messageProvider: "afora",
         executionMode: "side-question",
         disableTools: true,
         cleanupCliLiveSessionOnRunEnd: true,
@@ -597,8 +597,8 @@ export async function runSetupInferenceTest(params: {
           : {}),
         disableTools: true,
         modelRun: true,
-        messageChannel: "openclaw",
-        messageProvider: "openclaw",
+        messageChannel: "afora",
+        messageProvider: "afora",
         onSuccessfulAuthBinding: (binding) => {
           successfulAuth = binding;
         },
@@ -627,7 +627,7 @@ export async function runSetupInferenceTest(params: {
     if (requireExecutionOwner && !successfulAuth) {
       return failed(
         "unknown",
-        "Inference succeeded, but its runtime did not report an owner that OpenClaw can safely reuse.",
+        "Inference succeeded, but its runtime did not report an owner that Afora can safely reuse.",
       );
     }
     return {

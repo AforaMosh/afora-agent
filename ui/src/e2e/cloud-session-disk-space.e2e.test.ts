@@ -11,9 +11,9 @@ import {
 import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts";
 
 const sessionKey = "agent:main:disk-monitor";
-const captureUiProof = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+const captureUiProof = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 const artifactDir = path.resolve(
-  process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim() || ".artifacts/control-ui-e2e/cloud-disk",
+  process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim() || ".artifacts/control-ui-e2e/cloud-disk",
 );
 const viewport = { height: 900, width: 1280 };
 const gibibyte = 1024 ** 3;

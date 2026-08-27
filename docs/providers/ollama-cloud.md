@@ -1,5 +1,5 @@
 ---
-summary: "Use Ollama Cloud directly with OpenClaw"
+summary: "Use Ollama Cloud directly with Afora"
 read_when:
   - You want to use hosted Ollama models without a local Ollama server
   - You need the ollama-cloud provider id, key, or endpoint
@@ -11,7 +11,7 @@ directly at `https://ollama.com` over Ollama's native `/api/chat` API, with no
 local Ollama server and no local Ollama app signed into cloud mode. Use model
 refs like `ollama-cloud/kimi-k2.6`.
 
-OpenClaw registers `ollama-cloud` as its own provider id so cloud-only
+Afora registers `ollama-cloud` as its own provider id so cloud-only
 credentials, live catalog discovery, and model selection do not get mixed with
 a local `ollama` host. For local Ollama, hybrid cloud-plus-local routing,
 embeddings, and custom host details, see [Ollama](/providers/ollama).
@@ -21,7 +21,7 @@ embeddings, and custom host details, see [Ollama](/providers/ollama).
 Follow [Ollama's API key instructions](https://docs.ollama.com/api/authentication#api-keys), then run:
 
 ```bash
-openclaw onboard --auth-choice ollama-cloud
+afora onboard --auth-choice ollama-cloud
 ```
 
 Or set:
@@ -33,7 +33,7 @@ export OLLAMA_API_KEY="<your-ollama-cloud-api-key>" # pragma: allowlist secret
 Non-interactive onboarding accepts the key directly:
 
 ```bash
-openclaw onboard --auth-choice ollama-cloud --ollama-cloud-api-key "<key>"
+afora onboard --auth-choice ollama-cloud --ollama-cloud-api-key "<key>"
 ```
 
 Onboarding sets the default model to `ollama-cloud/minimax-m2.7`.
@@ -49,7 +49,7 @@ Onboarding sets the default model to `ollama-cloud/minimax-m2.7`.
 ## When to choose Ollama Cloud
 
 - You want hosted Ollama models without running `ollama serve` locally.
-- You want the same native Ollama chat API shape OpenClaw uses for local
+- You want the same native Ollama chat API shape Afora uses for local
   Ollama, but pointed at `https://ollama.com`.
 - You want a simple cloud path for models that are already in Ollama's hosted
   catalog.
@@ -63,16 +63,16 @@ semantics or provider-specific OpenAI-style features.
 ## Models
 
 The provider requires an API key; without one it stays inactive. With a key,
-OpenClaw discovers Ollama Cloud models live from the hosted catalog:
+Afora discovers Ollama Cloud models live from the hosted catalog:
 
 ```bash
-openclaw models list --provider ollama-cloud
-openclaw models set ollama-cloud/kimi-k2.6
+afora models list --provider ollama-cloud
+afora models set ollama-cloud/kimi-k2.6
 ```
 
 Hosted ids in the live catalog include `deepseek-v4-flash`, `glm-5.2`,
 `gpt-oss:20b`, `kimi-k2.6`, and `minimax-m2.7`. When live discovery returns
-nothing, OpenClaw falls back to the bundled rows `minimax-m2.7`, `glm-5.1`,
+nothing, Afora falls back to the bundled rows `minimax-m2.7`, `glm-5.1`,
 and `glm-5.2`. The retiring `kimi-k2.5` model is hidden from model pickers but
 remains selectable by exact reference until Ollama retires it on July 31, 2026.
 
@@ -88,24 +88,24 @@ endpoint and choose a model from your current catalog:
 ```bash
 export OLLAMA_API_KEY="<your-ollama-cloud-api-key>" # pragma: allowlist secret
 
-OPENCLAW_LIVE_TEST=1 \
-OPENCLAW_LIVE_OLLAMA=1 \
-OPENCLAW_LIVE_OLLAMA_BASE_URL=https://ollama.com \
-OPENCLAW_LIVE_OLLAMA_MODEL=kimi-k2.6 \
+AFORA_LIVE_TEST=1 \
+AFORA_LIVE_OLLAMA=1 \
+AFORA_LIVE_OLLAMA_BASE_URL=https://ollama.com \
+AFORA_LIVE_OLLAMA_MODEL=kimi-k2.6 \
 pnpm test:live -- extensions/ollama/ollama.live.test.ts
 ```
 
 The cloud smoke runs text, native stream, and web search; set
-`OPENCLAW_LIVE_OLLAMA_WEB_SEARCH=0` to skip web search. It skips embeddings by
+`AFORA_LIVE_OLLAMA_WEB_SEARCH=0` to skip web search. It skips embeddings by
 default for `https://ollama.com` because Ollama Cloud API keys may not
-authorize `/api/embed`; force them with `OPENCLAW_LIVE_OLLAMA_EMBEDDINGS=1`.
+authorize `/api/embed`; force them with `AFORA_LIVE_OLLAMA_EMBEDDINGS=1`.
 
 ## Troubleshooting
 
 - `Ollama Cloud requires an API key` / `Set OLLAMA_API_KEY` errors: provide a
   real cloud API key. The local `ollama-local` marker is only for local or
   private Ollama hosts.
-- Unknown model errors: run `openclaw models list --provider ollama-cloud` and
+- Unknown model errors: run `afora models list --provider ollama-cloud` and
   copy the hosted model id exactly.
 - Tool-call or raw JSON issues on custom Ollama hosts: check whether you are
   accidentally using an OpenAI-compatible `/v1` URL. Ollama routes should use

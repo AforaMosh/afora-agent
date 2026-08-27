@@ -3,9 +3,9 @@ import { spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-coercion";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { theme } from "../../../packages/terminal-core/src/theme.js";
 import { doctorCommand } from "../../commands/doctor.js";
 import {
@@ -17,7 +17,7 @@ import {
   serializePluginInstallRecordMap,
   setPluginInstallRecordMapEntry,
 } from "../../config/plugin-install-record-map.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { PluginInstallRecord } from "../../config/types.plugins.js";
 import { resolveGatewayInstallEntrypoint } from "../../daemon/gateway-entrypoint.js";
 import { hasErrnoCode } from "../../infra/errors.js";
@@ -55,8 +55,8 @@ import { restorePersistedInstalledPluginIndexIfCurrent } from "../../plugins/ins
 import { withPluginLifecycleLease } from "../../plugins/plugin-lifecycle-lease.js";
 import { runExec } from "../../process/exec.js";
 import { defaultRuntime } from "../../runtime.js";
-import { resolveOpenClawStateSqlitePath } from "../../state/openclaw-state-db.paths.js";
-import { assertOpenClawStateWriteAllowedAtPath } from "../../state/openclaw-state-ownership.js";
+import { resolveAforaStateSqlitePath } from "../../state/afora-state-db.paths.js";
+import { assertAforaStateWriteAllowedAtPath } from "../../state/afora-state-ownership.js";
 import { VERSION } from "../../version.js";
 import { printResult } from "./progress.js";
 import {
@@ -93,11 +93,11 @@ import {
 
 const DEFAULT_UPDATE_STEP_TIMEOUT_MS = 30 * 60_000;
 export { POST_CORE_UPDATE_ENV };
-export const POST_CORE_UPDATE_CHANNEL_ENV = "OPENCLAW_UPDATE_POST_CORE_CHANNEL";
-export const POST_CORE_UPDATE_RESULT_PATH_ENV = "OPENCLAW_UPDATE_POST_CORE_RESULT_PATH";
+export const POST_CORE_UPDATE_CHANNEL_ENV = "AFORA_UPDATE_POST_CORE_CHANNEL";
+export const POST_CORE_UPDATE_RESULT_PATH_ENV = "AFORA_UPDATE_POST_CORE_RESULT_PATH";
 export const POST_CORE_UPDATE_INSTALL_RECORDS_PATH_ENV =
-  "OPENCLAW_UPDATE_POST_CORE_INSTALL_RECORDS_PATH";
-export const POST_CORE_UPDATE_STARTED_AT_ENV = "OPENCLAW_UPDATE_POST_CORE_STARTED_AT_MS";
+  "AFORA_UPDATE_POST_CORE_INSTALL_RECORDS_PATH";
+export const POST_CORE_UPDATE_STARTED_AT_ENV = "AFORA_UPDATE_POST_CORE_STARTED_AT_MS";
 const POST_CORE_UPDATE_RESULT_POLL_MS = 100;
 
 export async function reportPreMutationUpdateFailure(params: {
@@ -163,8 +163,8 @@ export async function updateFinalizeCommand(opts: UpdateFinalizeOptions): Promis
   }
 
   assertConfigWriteAllowedInCurrentMode();
-  await assertOpenClawStateWriteAllowedAtPath({
-    databasePath: resolveOpenClawStateSqlitePath(process.env),
+  await assertAforaStateWriteAllowedAtPath({
+    databasePath: resolveAforaStateSqlitePath(process.env),
   });
 
   const root = await resolveUpdateRoot();
@@ -178,7 +178,7 @@ export async function updateFinalizeCommand(opts: UpdateFinalizeOptions): Promis
       ? {
           sourceConfig: configSnapshot.sourceConfig,
           authoredConfig: isRecord(configSnapshot.parsed)
-            ? (configSnapshot.parsed as OpenClawConfig)
+            ? (configSnapshot.parsed as AforaConfig)
             : configSnapshot.sourceConfig,
         }
       : undefined);
@@ -344,7 +344,7 @@ export async function readPostCorePluginInstallRecordsFile(
       return undefined;
     }
     throw new Error(
-      `Unable to read plugin install records file: ${filePath}. Run openclaw doctor to inspect and repair plugin installation state.`,
+      `Unable to read plugin install records file: ${filePath}. Run afora doctor to inspect and repair plugin installation state.`,
       { cause: err },
     );
   }
@@ -353,7 +353,7 @@ export async function readPostCorePluginInstallRecordsFile(
     parsed = JSON.parse(raw);
   } catch (err) {
     throw new Error(
-      `Malformed JSON in plugin install records file: ${filePath}. Run openclaw doctor to inspect and repair plugin installation state.`,
+      `Malformed JSON in plugin install records file: ${filePath}. Run afora doctor to inspect and repair plugin installation state.`,
       { cause: err },
     );
   }
@@ -361,7 +361,7 @@ export async function readPostCorePluginInstallRecordsFile(
     return normalizePluginInstallRecordMap(parsed);
   } catch (err) {
     throw new Error(
-      `Invalid plugin install records in handoff file: ${filePath}. Run openclaw doctor to inspect and repair plugin installation state.`,
+      `Invalid plugin install records in handoff file: ${filePath}. Run afora doctor to inspect and repair plugin installation state.`,
       { cause: err },
     );
   }
@@ -530,7 +530,7 @@ export async function continuePostCoreUpdateInFreshProcess(params: {
   if (params.opts.timeout) {
     argv.push("--timeout", params.opts.timeout);
   }
-  const resultDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-update-post-core-"));
+  const resultDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-update-post-core-"));
   const resultPath = path.join(resultDir, "plugins.json");
   const installRecordsPath = path.join(resultDir, "plugin-install-records.json");
   const sourceConfigPath = path.join(resultDir, "source-config.json");
@@ -582,7 +582,7 @@ export async function continuePostCoreUpdateInFreshProcess(params: {
       stdio: childStdio,
       env: {
         ...handoffEnv,
-        OPENCLAW_UPDATE_IN_PROGRESS: "1",
+        AFORA_UPDATE_IN_PROGRESS: "1",
         [POST_CORE_UPDATE_ENV]: "1",
         [POST_CORE_UPDATE_CHANNEL_ENV]: params.channel,
         [POST_CORE_UPDATE_RESULT_PATH_ENV]: resultPath,

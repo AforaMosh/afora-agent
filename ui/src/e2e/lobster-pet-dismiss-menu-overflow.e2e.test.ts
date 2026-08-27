@@ -40,21 +40,21 @@ async function loadControlUiPage(currentPage: Page) {
   await currentPage.clock.install({ time: new Date("2026-07-09T12:00:00") });
   await installMockGateway(currentPage);
   await currentPage.goto(suite.server.baseUrl);
-  await currentPage.waitForFunction(() => Boolean(customElements.get("openclaw-lobster-pet")));
+  await currentPage.waitForFunction(() => Boolean(customElements.get("afora-lobster-pet")));
   const loadedAt = await currentPage.evaluate(() => Date.now());
   await currentPage.clock.pauseAt(loadedAt + 1_000);
 }
 
 /** Mounts the pet inside the real sidebar footer ledge so production CSS
- *  (`openclaw-lobster-pet { height: 52px; overflow: hidden }`) applies. */
+ *  (`afora-lobster-pet { height: 52px; overflow: hidden }`) applies. */
 async function mountPetInRealFooter(currentPage: Page, seed: number) {
   await currentPage.evaluate(async (petSeed) => {
     const footer = document.querySelector(".sidebar-shell__footer");
     if (!footer) {
       throw new Error("sidebar footer ledge not found");
     }
-    footer.querySelector("openclaw-lobster-pet")?.remove();
-    const pet = document.createElement("openclaw-lobster-pet") as BrowserLobsterPet;
+    footer.querySelector("afora-lobster-pet")?.remove();
+    const pet = document.createElement("afora-lobster-pet") as BrowserLobsterPet;
     pet.seed = petSeed;
     pet.mode = "offline";
     pet.runOutcome = "ok";
@@ -80,7 +80,7 @@ async function measureDismissMenu(currentPage: Page) {
     }
     const menuStyle = getComputedStyle(menu);
     const menuRect = menu.getBoundingClientRect();
-    const host = document.querySelector<HTMLElement>("openclaw-lobster-pet");
+    const host = document.querySelector<HTMLElement>("afora-lobster-pet");
     const hostStyle = host ? getComputedStyle(host) : null;
     const firstItem = dropdown.querySelector("wa-dropdown-item");
     const firstItemLabel = firstItem?.shadowRoot?.querySelector<HTMLElement>("#label") ?? null;
@@ -121,7 +121,7 @@ async function measureDismissMenu(currentPage: Page) {
       menuBottom: menuRect.bottom,
       popupIsTopLayer: popupBox ? popupBox.matches(":popover-open") : null,
       menuSurfaceIsTopLayer:
-        document.querySelector("openclaw-menu-surface")?.matches(":popover-open") ?? null,
+        document.querySelector("afora-menu-surface")?.matches(":popover-open") ?? null,
       hostHeight: hostStyle?.height ?? null,
       hostOverflow: hostStyle?.overflow ?? null,
       itemHeights: [...dropdown.querySelectorAll("wa-dropdown-item")].map(

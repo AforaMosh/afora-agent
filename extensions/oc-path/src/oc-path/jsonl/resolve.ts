@@ -12,7 +12,7 @@
  * unique to JSONL — they're how forensics / replay refers to a
  * specific entry without committing to a content key.
  *
- * @module @openclaw/oc-path/jsonl/resolve
+ * @module @afora/oc-path/jsonl/resolve
  */
 
 import type { JsoncEntry, JsoncValue } from "../jsonc/ast.js";

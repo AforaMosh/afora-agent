@@ -1,14 +1,14 @@
 import {
   createLazyRuntimeModule,
   createLazyRuntimeSurface,
-} from "openclaw/plugin-sdk/lazy-runtime";
-import { resolveNodeHostExecutable } from "openclaw/plugin-sdk/node-host";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/lazy-runtime";
+import { resolveNodeHostExecutable } from "afora-agent/plugin-sdk/node-host";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   createSessionCatalogNodeHostBindings,
   type SessionCatalogProvider,
-} from "openclaw/plugin-sdk/session-catalog";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/session-catalog";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   PI_SESSIONS_CAPABILITY,
   PI_SESSIONS_LIST_COMMAND,
@@ -82,7 +82,7 @@ function createPiSessionNodeHostBindings() {
   });
 }
 
-export function registerPiSessionCatalog(api: OpenClawPluginApi): void {
+export function registerPiSessionCatalog(api: AforaPluginApi): void {
   if (!isPiSessionCatalogEnabled(api.pluginConfig)) {
     return;
   }

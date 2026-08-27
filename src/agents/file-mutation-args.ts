@@ -2,8 +2,8 @@ import path from "node:path";
 import {
   asOptionalObjectRecord,
   readStringField,
-} from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { extractApplyPatchTargetPaths } from "./apply-patch-paths.js";
 import type { FileMutationToolName } from "./tool-mutation-names.js";
 

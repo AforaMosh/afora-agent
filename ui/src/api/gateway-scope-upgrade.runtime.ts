@@ -1,5 +1,5 @@
-import type { GatewayProtocolRequestOptions } from "@openclaw/gateway-client/browser";
-import { GatewayScopeUpgrade } from "@openclaw/gateway-client/scope-upgrade";
+import type { GatewayProtocolRequestOptions } from "@afora/gateway-client/browser";
+import { GatewayScopeUpgrade } from "@afora/gateway-client/scope-upgrade";
 import {
   clearDeviceAuthToken,
   loadDeviceAuthToken,

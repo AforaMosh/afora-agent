@@ -1,11 +1,11 @@
 import fs from "node:fs/promises";
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
-import { withTimeout } from "openclaw/plugin-sdk/security-runtime";
-import type { SessionCatalogProvider } from "openclaw/plugin-sdk/session-catalog";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
+import { withTimeout } from "afora-agent/plugin-sdk/security-runtime";
+import type { SessionCatalogProvider } from "afora-agent/plugin-sdk/session-catalog";
 import {
   isRecord,
   normalizeBoundedOptionalString as readBoundedString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { CLAUDE_LOCAL_SESSION_HOST_ID } from "./session-catalog-adoption.js";
 import { listClaudeSessions } from "./session-catalog-discovery.js";
 import { createNodeListFailedError, resolveNodeLabel } from "./session-catalog-node-helpers.js";

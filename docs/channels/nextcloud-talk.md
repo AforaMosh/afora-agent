@@ -5,12 +5,12 @@ read_when:
 title: "Nextcloud Talk"
 ---
 
-Nextcloud Talk is a downloadable channel plugin (`@openclaw/nextcloud-talk`) that connects OpenClaw to a self-hosted Nextcloud instance through a Talk webhook bot. Direct messages, rooms, reactions, and markdown messages are supported; media goes out as URLs.
+Nextcloud Talk is a downloadable channel plugin (`@afora/nextcloud-talk`) that connects Afora to a self-hosted Nextcloud instance through a Talk webhook bot. Direct messages, rooms, reactions, and markdown messages are supported; media goes out as URLs.
 
 ## Install
 
 ```bash
-openclaw plugins install @openclaw/nextcloud-talk
+afora plugins install @afora/nextcloud-talk
 ```
 
 Use the bare package spec to follow the current official release tag. Pin an exact version only when you need a reproducible install.
@@ -18,7 +18,7 @@ Use the bare package spec to follow the current official release tag. Pin an exa
 From a local checkout (dev workflows):
 
 ```bash
-openclaw plugins install ./path/to/local/nextcloud-talk-plugin
+afora plugins install ./path/to/local/nextcloud-talk-plugin
 ```
 
 Restart the gateway after installing. Details: [Plugins](/tools/plugin)
@@ -29,20 +29,20 @@ Restart the gateway after installing. Details: [Plugins](/tools/plugin)
 2. On your Nextcloud server, create a bot:
 
    ```bash
-   ./occ talk:bot:install "OpenClaw" "<shared-secret>" "<webhook-url>" --feature webhook --feature response --feature reaction
+   ./occ talk:bot:install "Afora" "<shared-secret>" "<webhook-url>" --feature webhook --feature response --feature reaction
    ```
 
    Keep `--feature response`: without it, outbound replies fail with 401. Repair an existing bot with `./occ talk:bot:state --feature webhook --feature response --feature reaction <botId> 1`.
 
 3. Enable the bot in the target room settings.
-4. Configure OpenClaw:
+4. Configure Afora:
    - Config: `channels.nextcloud-talk.baseUrl` + `channels.nextcloud-talk.botSecret`
    - Or env: `NEXTCLOUD_TALK_BOT_SECRET` (default account only)
 
    CLI setup (`--url`/`--token` are aliases for the explicit fields; `nc-talk` and `nc` work as channel aliases):
 
    ```bash
-   openclaw channels add --channel nextcloud-talk \
+   afora channels add --channel nextcloud-talk \
      --url https://cloud.example.com \
      --token "<shared-secret>"
    ```
@@ -50,7 +50,7 @@ Restart the gateway after installing. Details: [Plugins](/tools/plugin)
    Equivalent explicit fields:
 
    ```bash
-   openclaw channels add --channel nextcloud-talk \
+   afora channels add --channel nextcloud-talk \
      --base-url https://cloud.example.com \
      --secret "<shared-secret>"
    ```
@@ -58,7 +58,7 @@ Restart the gateway after installing. Details: [Plugins](/tools/plugin)
    File-backed secret:
 
    ```bash
-   openclaw channels add --channel nextcloud-talk \
+   afora channels add --channel nextcloud-talk \
      --base-url https://cloud.example.com \
      --secret-file /path/to/nextcloud-talk-secret
    ```
@@ -84,18 +84,18 @@ Minimal config:
 
 - Bots cannot initiate DMs. The user must message the bot first.
 - The webhook URL must be reachable from the Nextcloud server; set `webhookPublicUrl` when the gateway sits behind a proxy. Webhook requests are HMAC-SHA256 signed with the bot secret; invalid signatures are rejected and rate limited.
-- HTTP 200 is returned only after the raw event is durably stored; storage failures return HTTP 500. The durable `200` carries `x-openclaw-delivery-accepted: durable` (signature, validation, and storage-error responses omit it), so reverse proxies can require the marker to distinguish OpenClaw acceptance from a generic `200`.
+- HTTP 200 is returned only after the raw event is durably stored; storage failures return HTTP 500. The durable `200` carries `x-afora-delivery-accepted: durable` (signature, validation, and storage-error responses omit it), so reverse proxies can require the marker to distinguish Afora acceptance from a generic `200`.
 - Media uploads are not supported by the bot API; outbound media is appended as an `Attachment: <url>` line.
 - The webhook payload does not distinguish DMs from rooms; set `apiUser` + `apiPassword` to enable room-type lookups (cached about 5 minutes). Without them, every conversation is treated as a room.
 - Outbound requests go through the SSRF guard. For a Nextcloud host on a trusted private/internal network, opt in with `channels.nextcloud-talk.network.dangerouslyAllowPrivateNetwork: true`.
-- With `apiUser`/`apiPassword` and `webhookPublicUrl` set, `openclaw channels status` probes the bot and warns when the `response` feature is missing.
+- With `apiUser`/`apiPassword` and `webhookPublicUrl` set, `afora channels status` probes the bot and warns when the `response` feature is missing.
 
 ## Access control (DMs)
 
 - Default: `channels.nextcloud-talk.dmPolicy = "pairing"`. Unknown senders get a pairing code.
 - Approve via:
-  - `openclaw pairing list nextcloud-talk`
-  - `openclaw pairing approve nextcloud-talk <CODE>`
+  - `afora pairing list nextcloud-talk`
+  - `afora pairing approve nextcloud-talk <CODE>`
 - Public DMs: `channels.nextcloud-talk.dmPolicy="open"` plus `channels.nextcloud-talk.allowFrom=["*"]`.
 - `allowFrom` matches Nextcloud user IDs only (lowercased); display names are ignored.
 

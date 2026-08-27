@@ -2,42 +2,42 @@
 import {
   adaptScopedAccountAccessor,
   createScopedDmSecurityResolver,
-} from "openclaw/plugin-sdk/channel-config-helpers";
+} from "afora-agent/plugin-sdk/channel-config-helpers";
 import type {
   ChannelDoctorAdapter,
   ChannelThreadingToolContext,
-} from "openclaw/plugin-sdk/channel-contract";
-import { createChatChannelPlugin, type ChannelPlugin } from "openclaw/plugin-sdk/channel-core";
-import { createRuntimeOutboundDelegates } from "openclaw/plugin-sdk/channel-outbound";
+} from "afora-agent/plugin-sdk/channel-contract";
+import { createChatChannelPlugin, type ChannelPlugin } from "afora-agent/plugin-sdk/channel-core";
+import { createRuntimeOutboundDelegates } from "afora-agent/plugin-sdk/channel-outbound";
 import {
   createAllowlistProviderOpenWarningCollector,
   createConditionalWarningCollector,
-} from "openclaw/plugin-sdk/channel-policy";
-import type { ChannelOutboundAdapter } from "openclaw/plugin-sdk/channel-send-result";
-import { createScopedAccountReplyToModeResolver } from "openclaw/plugin-sdk/conversation-runtime";
+} from "afora-agent/plugin-sdk/channel-policy";
+import type { ChannelOutboundAdapter } from "afora-agent/plugin-sdk/channel-send-result";
+import { createScopedAccountReplyToModeResolver } from "afora-agent/plugin-sdk/conversation-runtime";
 import {
   createChannelDirectoryAdapter,
   createResolvedDirectoryEntriesLister,
   createRuntimeDirectoryLiveAdapter,
-} from "openclaw/plugin-sdk/directory-runtime";
+} from "afora-agent/plugin-sdk/directory-runtime";
 import {
   createLazyRuntimeNamedExport,
   createLazyRuntimeModule,
-} from "openclaw/plugin-sdk/lazy-runtime";
+} from "afora-agent/plugin-sdk/lazy-runtime";
 import {
   buildProbeChannelStatusSummary,
   collectStatusIssuesFromLastError,
   createComputedAccountStatusAdapter,
   createDefaultChannelRuntimeState,
-} from "openclaw/plugin-sdk/status-helpers";
+} from "afora-agent/plugin-sdk/status-helpers";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   chunkTextForOutbound,
   sanitizeAssistantVisibleText,
-} from "openclaw/plugin-sdk/text-chunking";
+} from "afora-agent/plugin-sdk/text-chunking";
 import { matrixMessageActions } from "./actions.js";
 import { matrixApprovalCapability } from "./approval-native.js";
 import { createMatrixPairingText, createMatrixProbeAccount } from "./channel-account-paths.js";

@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { withTempHome, writeStateDirDotEnv } from "../config/test-helpers.js";
 import { shouldRequireGatewayTokenForInstall } from "../gateway/auth-install-policy.js";
 import { withSecureTestNodeCommand } from "../secrets/test-node-command.test-support.js";
@@ -16,7 +16,7 @@ const envVar = (...parts: string[]) => parts.join("_");
 function createExecGatewayTokenConfig(
   markerPath: string,
   command = process.execPath,
-): OpenClawConfig {
+): AforaConfig {
   return {
     gateway: {
       auth: {
@@ -44,7 +44,7 @@ function createExecGatewayTokenConfig(
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 describe("resolveGatewayAuthTokenForService", () => {
@@ -56,7 +56,7 @@ describe("resolveGatewayAuthTokenForService", () => {
             token: "config-token",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       {} as NodeJS.ProcessEnv,
     );
 
@@ -80,7 +80,7 @@ describe("resolveGatewayAuthTokenForService", () => {
             default: { source: "env" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       {
         CUSTOM_GATEWAY_TOKEN: "resolved-token",
       } as NodeJS.ProcessEnv,
@@ -102,7 +102,7 @@ describe("resolveGatewayAuthTokenForService", () => {
             default: { source: "env" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       {
         CUSTOM_GATEWAY_TOKEN: "resolved-token",
       } as NodeJS.ProcessEnv,
@@ -112,7 +112,7 @@ describe("resolveGatewayAuthTokenForService", () => {
   });
 
   it("skips exec SecretRefs by default for service token checks", async () => {
-    const tmp = await fs.mkdtemp(join(tmpdir(), "openclaw-service-token-exec-ref-"));
+    const tmp = await fs.mkdtemp(join(tmpdir(), "afora-service-token-exec-ref-"));
     const markerPath = join(tmp, "exec-ran");
     try {
       const resolved = await resolveGatewayAuthTokenForService(
@@ -128,7 +128,7 @@ describe("resolveGatewayAuthTokenForService", () => {
   });
 
   it("executes exec SecretRefs for service token checks when explicitly allowed", async () => {
-    const tmp = await fs.mkdtemp(join(tmpdir(), "openclaw-service-token-exec-ref-"));
+    const tmp = await fs.mkdtemp(join(tmpdir(), "afora-service-token-exec-ref-"));
     const markerPath = join(tmp, "exec-ran");
     try {
       await withSecureTestNodeCommand(async (command) => {
@@ -146,7 +146,7 @@ describe("resolveGatewayAuthTokenForService", () => {
     }
   });
 
-  it("falls back to OPENCLAW_GATEWAY_TOKEN when SecretRef is unresolved", async () => {
+  it("falls back to AFORA_GATEWAY_TOKEN when SecretRef is unresolved", async () => {
     const resolved = await resolveGatewayAuthTokenForService(
       {
         gateway: {
@@ -163,16 +163,16 @@ describe("resolveGatewayAuthTokenForService", () => {
             default: { source: "env" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       {
-        OPENCLAW_GATEWAY_TOKEN: "env-fallback-token",
+        AFORA_GATEWAY_TOKEN: "env-fallback-token",
       } as NodeJS.ProcessEnv,
     );
 
     expect(resolved).toEqual({ token: "env-fallback-token" });
   });
 
-  it("falls back to OPENCLAW_GATEWAY_TOKEN when SecretRef resolves to empty", async () => {
+  it("falls back to AFORA_GATEWAY_TOKEN when SecretRef resolves to empty", async () => {
     const resolved = await resolveGatewayAuthTokenForService(
       {
         gateway: {
@@ -189,10 +189,10 @@ describe("resolveGatewayAuthTokenForService", () => {
             default: { source: "env" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       {
         CUSTOM_GATEWAY_TOKEN: "   ",
-        OPENCLAW_GATEWAY_TOKEN: "env-fallback-token",
+        AFORA_GATEWAY_TOKEN: "env-fallback-token",
       } as NodeJS.ProcessEnv,
     );
 
@@ -216,7 +216,7 @@ describe("resolveGatewayAuthTokenForService", () => {
             default: { source: "env" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       {} as NodeJS.ProcessEnv,
     );
 
@@ -236,7 +236,7 @@ describe("shouldRequireGatewayTokenForInstall", () => {
             mode: "token",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       {} as NodeJS.ProcessEnv,
     );
     expect(required).toBe(true);
@@ -250,7 +250,7 @@ describe("shouldRequireGatewayTokenForInstall", () => {
             mode: "password",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       {} as NodeJS.ProcessEnv,
     );
     expect(required).toBe(false);
@@ -258,7 +258,7 @@ describe("shouldRequireGatewayTokenForInstall", () => {
 
   it("requires token in inferred mode when password env exists only in shell", async () => {
     await withEnvAsync(
-      { [envVar("OPENCLAW", "GATEWAY", "PASSWORD")]: "password-from-env" },
+      { [envVar("AFORA", "GATEWAY", "PASSWORD")]: "password-from-env" },
       async () => {
         // pragma: allowlist secret
         const required = shouldRequireGatewayTokenForInstall(
@@ -266,7 +266,7 @@ describe("shouldRequireGatewayTokenForInstall", () => {
             gateway: {
               auth: {},
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
           process.env,
         );
         expect(required).toBe(true);
@@ -291,7 +291,7 @@ describe("shouldRequireGatewayTokenForInstall", () => {
             default: { source: "env" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       {} as NodeJS.ProcessEnv,
     );
     expect(required).toBe(false);
@@ -305,10 +305,10 @@ describe("shouldRequireGatewayTokenForInstall", () => {
         },
         env: {
           vars: {
-            OPENCLAW_GATEWAY_PASSWORD: "configured-password", // pragma: allowlist secret
+            AFORA_GATEWAY_PASSWORD: "configured-password", // pragma: allowlist secret
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       {} as NodeJS.ProcessEnv,
     );
     expect(required).toBe(false);
@@ -316,7 +316,7 @@ describe("shouldRequireGatewayTokenForInstall", () => {
 
   it("does not require token in inferred mode when password env exists in state-dir .env", async () => {
     await withTempHome(async (_home) => {
-      await writeStateDirDotEnv("OPENCLAW_GATEWAY_PASSWORD=dotenv-password\n", {
+      await writeStateDirDotEnv("AFORA_GATEWAY_PASSWORD=dotenv-password\n", {
         env: process.env,
       });
 
@@ -325,7 +325,7 @@ describe("shouldRequireGatewayTokenForInstall", () => {
           gateway: {
             auth: {},
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         process.env,
       );
       expect(required).toBe(false);
@@ -338,7 +338,7 @@ describe("shouldRequireGatewayTokenForInstall", () => {
         gateway: {
           auth: {},
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       {} as NodeJS.ProcessEnv,
     );
     expect(required).toBe(true);
@@ -351,7 +351,7 @@ describe("shouldRequireGatewayTokenForInstall", () => {
           auth: { mode: "none" },
           tailscale: { mode: "serve" },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: {} as NodeJS.ProcessEnv,
     });
 

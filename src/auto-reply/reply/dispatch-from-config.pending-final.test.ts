@@ -21,7 +21,7 @@ describe("pending final delivery restart proof", () => {
   const sessionKey = "agent:main:discord:direct:123";
 
   beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-pending-final-"));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-pending-final-"));
     storePath = path.join(tmpDir, "sessions.json");
   });
 

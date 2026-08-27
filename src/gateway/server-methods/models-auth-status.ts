@@ -3,8 +3,8 @@
 import {
   findNormalizedProviderValue,
   normalizeProviderId,
-} from "@openclaw/model-catalog-core/provider-id";
-import { asDateTimestampMs } from "@openclaw/normalization-core/number-coercion";
+} from "@afora/model-catalog-core/provider-id";
+import { asDateTimestampMs } from "@afora/normalization-core/number-coercion";
 import { ErrorCodes, errorShape } from "../../../packages/gateway-protocol/src/index.js";
 import {
   type AuthHealthSummary,
@@ -45,7 +45,7 @@ import {
   type ProviderAuthAliasLookupParams,
   resolveProviderIdForAuth,
 } from "../../agents/provider-auth-aliases.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { coerceSecretRef, hasConfiguredSecretInput } from "../../config/types.secrets.js";
 import { providerUsageLabel, resolveUsageProviderId } from "../../infra/provider-usage.shared.js";
 import type { UsageProviderId } from "../../infra/provider-usage.types.js";
@@ -90,7 +90,7 @@ type PreparedAuthMetadataLookupParams = ProviderAuthAliasLookupParams & {
 };
 
 function buildProviderCapabilities(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   workspaceDir: string;
   metadataSnapshot: NonNullable<
     Awaited<ReturnType<typeof readPreparedCatalog>>
@@ -99,7 +99,7 @@ function buildProviderCapabilities(params: {
   return resolveModelProviderCapabilities(params).capabilities;
 }
 
-function resolveAuthRefreshScope(cfg: OpenClawConfig): {
+function resolveAuthRefreshScope(cfg: AforaConfig): {
   providerIds: string[];
   profileIds?: string[];
 } {
@@ -349,7 +349,7 @@ function resolveEnvVarName(source: string): string | undefined {
 }
 
 function resolveProviderApiKeys(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   store: AuthProfileStore,
   authAliasLookupParams: PreparedAuthMetadataLookupParams,
 ): Map<string, ModelAuthStatusProvider["apiKey"]> {
@@ -425,7 +425,7 @@ function resolveProviderApiKeys(
 }
 
 function resolveConfigBoundProfileIds(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   store: AuthProfileStore,
   authAliasLookupParams?: ProviderAuthAliasLookupParams,
 ): Set<string> {
@@ -445,7 +445,7 @@ function resolveConfigBoundProfileIds(
 }
 
 function resolveConfiguredProviders(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   apiKeys: ReadonlyMap<string, ModelAuthStatusProvider["apiKey"]>,
 ): {
   providers: string[];

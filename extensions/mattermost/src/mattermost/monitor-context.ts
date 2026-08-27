@@ -1,9 +1,9 @@
 // Mattermost plugin module owns monitor routing and delivery context helpers.
-import { resolveChannelStreamingPreviewToolProgress } from "openclaw/plugin-sdk/channel-outbound";
+import { resolveChannelStreamingPreviewToolProgress } from "afora-agent/plugin-sdk/channel-outbound";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { ResolvedMattermostAccount } from "./accounts.js";
 import { resolveThreadSessionKeys } from "./monitor-helpers.js";
 import type { MattermostEventPayload } from "./monitor-websocket.js";

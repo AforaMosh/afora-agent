@@ -1,6 +1,6 @@
 // Msteams tests cover graph group management plugin behavior.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 import {
   addParticipantMSTeams,
   removeParticipantMSTeams,
@@ -58,7 +58,7 @@ describe("addParticipantMSTeams", () => {
     mockState.mutateGraphJson.mockResolvedValue({});
 
     const result = await addParticipantMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
       userId: "user-aad-id-1",
     });
@@ -80,7 +80,7 @@ describe("addParticipantMSTeams", () => {
     mockState.mutateGraphJson.mockResolvedValue({});
 
     const result = await addParticipantMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
       userId: "user-aad-id-2",
       role: "owner",
@@ -103,7 +103,7 @@ describe("addParticipantMSTeams", () => {
     mockState.mutateGraphJson.mockResolvedValue({});
 
     await addParticipantMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
       userId: "user-aad-id-2",
       role: " OWNER ",
@@ -124,7 +124,7 @@ describe("addParticipantMSTeams", () => {
   it("rejects unknown roles", async () => {
     await expect(
       addParticipantMSTeams({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         to: CHAT_ID,
         userId: "user-aad-id-2",
         role: "admin",
@@ -138,7 +138,7 @@ describe("addParticipantMSTeams", () => {
     mockState.mutateGraphJson.mockResolvedValue({});
 
     await addParticipantMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
       userId: "abc-def-123",
     });
@@ -153,7 +153,7 @@ describe("addParticipantMSTeams", () => {
     mockState.mutateGraphJson.mockResolvedValue({});
 
     await addParticipantMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
       userId: "o'hara@example.com",
     });
@@ -168,7 +168,7 @@ describe("addParticipantMSTeams", () => {
     mockState.mutateGraphJson.mockResolvedValue({});
 
     const result = await addParticipantMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHANNEL_TO,
       userId: "user-aad-id-3",
     });
@@ -190,7 +190,7 @@ describe("addParticipantMSTeams", () => {
     mockState.mutateGraphJson.mockResolvedValue({});
 
     await addParticipantMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHANNEL_TO,
       userId: "user-aad-id-4",
       role: "owner",
@@ -225,7 +225,7 @@ describe("removeParticipantMSTeams", () => {
     mockState.deleteGraphRequest.mockResolvedValue(undefined);
 
     const result = await removeParticipantMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
       userId: "user-aad-id-2",
     });
@@ -251,7 +251,7 @@ describe("removeParticipantMSTeams", () => {
 
     await expect(
       removeParticipantMSTeams({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         to: CHAT_ID,
         userId: "user-not-in-list",
       }),
@@ -265,7 +265,7 @@ describe("removeParticipantMSTeams", () => {
     mockState.deleteGraphRequest.mockResolvedValue(undefined);
 
     const result = await removeParticipantMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHANNEL_TO,
       userId: "user-aad-id-5",
     });
@@ -294,7 +294,7 @@ describe("removeParticipantMSTeams", () => {
     mockState.deleteGraphRequest.mockResolvedValue(undefined);
 
     const result = await removeParticipantMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
       userId: "user-aad-id-9",
     });
@@ -325,7 +325,7 @@ describe("renameGroupMSTeams", () => {
     mockState.mutateGraphJson.mockResolvedValue(undefined);
 
     const result = await renameGroupMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
       name: "New Chat Name",
     });
@@ -343,7 +343,7 @@ describe("renameGroupMSTeams", () => {
     mockState.mutateGraphJson.mockResolvedValue(undefined);
 
     const result = await renameGroupMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHANNEL_TO,
       name: "New Channel Name",
     });

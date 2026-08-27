@@ -68,7 +68,7 @@ function readPrivateLocalOnlySubpaths(): Set<string> {
 }
 
 function parsePluginSdkSubpath(specifier: string): string | null {
-  return specifier.match(/^@?openclaw\/plugin-sdk\/(.+)$/u)?.[1] ?? null;
+  return specifier.match(/^@?afora\/plugin-sdk\/(.+)$/u)?.[1] ?? null;
 }
 
 function isGeneratedBuildArtifact(filePath: string): boolean {
@@ -185,12 +185,12 @@ async function collectViolations(): Promise<PluginSdkViolation[]> {
 async function main(): Promise<void> {
   const violations = await collectViolations();
   if (violations.length === 0) {
-    console.log("OK: all referenced openclaw/plugin-sdk/<subpath> imports are exported.");
+    console.log("OK: all referenced afora/plugin-sdk/<subpath> imports are exported.");
     return;
   }
 
   console.error(
-    "Rule: every referenced openclaw/plugin-sdk/<subpath> must be public or use its required private boundary.",
+    "Rule: every referenced afora/plugin-sdk/<subpath> must be public or use its required private boundary.",
   );
   for (const violation of violations) {
     console.error(

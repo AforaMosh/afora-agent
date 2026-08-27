@@ -1,11 +1,11 @@
 // Openrouter tests cover openrouter plugin behavior.
 import OpenAI from "openai";
-import { AuthStorage, ModelRegistry } from "openclaw/plugin-sdk/agent-sessions";
-import { streamSimple } from "openclaw/plugin-sdk/llm";
+import { AuthStorage, ModelRegistry } from "afora-agent/plugin-sdk/agent-sessions";
+import { streamSimple } from "afora-agent/plugin-sdk/llm";
 import {
   registerProviderPlugin,
   requireRegisteredProvider,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { describe, expect, it } from "vitest";
 import plugin from "./index.js";
 import { normalizeOpenRouterApiModelId } from "./models.js";
@@ -14,19 +14,19 @@ const OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models";
 const OPENROUTER_MISTRAL_PROVIDER_PREFIX = "mistralai/";
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY ?? "";
 const LIVE_MODEL_REF =
-  process.env.OPENCLAW_LIVE_OPENROUTER_PLUGIN_MODEL?.trim() ||
+  process.env.AFORA_LIVE_OPENROUTER_PLUGIN_MODEL?.trim() ||
   "openrouter/anthropic/claude-sonnet-4.6";
 const LIVE_MODEL_ID = LIVE_MODEL_REF.startsWith("openrouter/")
   ? LIVE_MODEL_REF
   : `openrouter/${LIVE_MODEL_REF}`;
 const LIVE_CACHE_MODEL_ID =
-  process.env.OPENCLAW_LIVE_OPENROUTER_CACHE_MODEL?.trim() || "deepseek/deepseek-v3.2";
-const liveEnabled = OPENROUTER_API_KEY.trim().length > 0 && process.env.OPENCLAW_LIVE_TEST === "1";
-const liveCatalogEnabled = process.env.OPENCLAW_LIVE_TEST === "1";
+  process.env.AFORA_LIVE_OPENROUTER_CACHE_MODEL?.trim() || "deepseek/deepseek-v3.2";
+const liveEnabled = OPENROUTER_API_KEY.trim().length > 0 && process.env.AFORA_LIVE_TEST === "1";
+const liveCatalogEnabled = process.env.AFORA_LIVE_TEST === "1";
 const describeLive = liveEnabled ? describe : describe.skip;
 const describeCatalogLive = liveCatalogEnabled ? describe : describe.skip;
 const describeCacheLive =
-  liveEnabled && process.env.OPENCLAW_LIVE_CACHE_TEST === "1" ? describe : describe.skip;
+  liveEnabled && process.env.AFORA_LIVE_CACHE_TEST === "1" ? describe : describe.skip;
 const ModelRegistryCtor = ModelRegistry as unknown as {
   new (authStorage: AuthStorage, modelsJsonPath?: string): ModelRegistry;
 };

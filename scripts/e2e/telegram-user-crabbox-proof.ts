@@ -1,5 +1,5 @@
 #!/usr/bin/env -S node --import tsx
-// Telegram User Crabbox Proof script supports OpenClaw repository automation.
+// Telegram User Crabbox Proof script supports Afora repository automation.
 
 import {
   type ChildProcess,
@@ -12,8 +12,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { clampTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
-import { sliceUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { clampTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
+import { sliceUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { parseStrictBooleanArg } from "../lib/arg-utils.mts";
 import { coerceErrorMessage, toStringifiedError } from "../lib/error-format.mts";
 import { sleep } from "../lib/sleep.mjs";
@@ -193,10 +193,10 @@ export const COMMAND_TIMEOUT_MS = 30 * 60 * 1000;
 const COMMAND_TIMEOUT_KILL_GRACE_MS = 5_000;
 const COMMAND_PROCESS_TREE_EXIT_POLL_MS = 25;
 export const REMOTE_SETUP_COMMAND_TIMEOUT_MS = 90 * 60 * 1000;
-const REMOTE_ROOT = "/tmp/openclaw-telegram-user-crabbox";
+const REMOTE_ROOT = "/tmp/afora-telegram-user-crabbox";
 const CREDENTIAL_SCRIPT = fileURLToPath(new URL("./telegram-user-credential.ts", import.meta.url));
 export function readTelegramUserProofLogTailBytes(env: NodeJS.ProcessEnv = process.env): number {
-  return readPositiveIntEnv("OPENCLAW_TELEGRAM_USER_PROOF_LOG_TAIL_BYTES", 256 * 1024, env);
+  return readPositiveIntEnv("AFORA_TELEGRAM_USER_PROOF_LOG_TAIL_BYTES", 256 * 1024, env);
 }
 
 const LOG_READY_TAIL_BYTES = readTelegramUserProofLogTailBytes();
@@ -217,7 +217,7 @@ const TELEGRAM_PROOF_CROP = {
 function usageText() {
   return [
     "Usage:",
-    "  node --import tsx scripts/e2e/telegram-user-crabbox-proof.ts [probe] [--text /status] [--expect OpenClaw]",
+    "  node --import tsx scripts/e2e/telegram-user-crabbox-proof.ts [probe] [--text /status] [--expect Afora]",
     "  node --import tsx scripts/e2e/telegram-user-crabbox-proof.ts start [--tdlib-url <url>]",
     "  node --import tsx scripts/e2e/telegram-user-crabbox-proof.ts send --session <session.json> --text <text>",
     "  node --import tsx scripts/e2e/telegram-user-crabbox-proof.ts inspect --session <session.json>",
@@ -250,10 +250,10 @@ function usageText() {
     "  --pr <number>                 Pull request number for publish.",
     "  --record-fps <fps>             Desktop recording frames per second. Default: 24.",
     "  --record-seconds <seconds>    Desktop video duration. Default: 35.",
-    "  --repo <owner/name>           GitHub repo for publish. Default: openclaw/openclaw.",
+    "  --repo <owner/name>           GitHub repo for publish. Default: AforaMosh/afora-agent.",
     "  --session <path>              Session file from start. Default: <output-dir>/session.json.",
     "  --summary <text>              Artifact publish summary.",
-    "  --sut-container               Isolate the local OpenClaw SUT in Docker.",
+    "  --sut-container               Isolate the local Afora SUT in Docker.",
     "  --sut-lane <lane>             Attested prepared lane: baseline or candidate.",
     "  --sut-repo-root <path>        Prepared SUT checkout mounted by the isolation wrapper.",
     "  --full-artifacts              Publish all session artifacts. Default publishes only the motion GIF.",
@@ -357,25 +357,25 @@ export function parseArgs(argvInput: string[]): Options {
   const opts: Options = {
     crabboxClass: "standard",
     command,
-    crabboxBin: trimToValue(process.env.OPENCLAW_TELEGRAM_USER_CRABBOX_BIN) ?? "crabbox",
-    credentialRole: resolveTelegramUserProofCredentialRole(process.env.OPENCLAW_QA_CREDENTIAL_ROLE),
+    crabboxBin: trimToValue(process.env.AFORA_TELEGRAM_USER_CRABBOX_BIN) ?? "crabbox",
+    credentialRole: resolveTelegramUserProofCredentialRole(process.env.AFORA_QA_CREDENTIAL_ROLE),
     desktopChatTitle:
-      trimToValue(process.env.OPENCLAW_TELEGRAM_USER_DESKTOP_CHAT_TITLE) ?? "OpenClaw Testing",
+      trimToValue(process.env.AFORA_TELEGRAM_USER_DESKTOP_CHAT_TITLE) ?? "Afora Testing",
     dryRun: false,
-    expect: ["OpenClaw"],
+    expect: ["Afora"],
     gatewayPort: 19_879,
     idleTimeout: "60m",
     keepBox: false,
     mcpAppFixture: false,
-    mockResponseText: "OPENCLAW_E2E_OK",
+    mockResponseText: "AFORA_E2E_OK",
     mockPort: 19_882,
     outputDir: path.join(DEFAULT_OUTPUT_ROOT, createTelegramProofRunId()),
     previewCropWidth: TELEGRAM_PROOF_CROP.cropWidth,
     previewFps: 24,
     previewWidth: 1920,
-    provider: process.env.OPENCLAW_TELEGRAM_USER_CRABBOX_PROVIDER?.trim() || "aws",
+    provider: process.env.AFORA_TELEGRAM_USER_CRABBOX_PROVIDER?.trim() || "aws",
     publishFullArtifacts: false,
-    publishRepo: "openclaw/openclaw",
+    publishRepo: "AforaMosh/afora-agent",
     recordFps: 24,
     recordSeconds: 35,
     remoteCommand: [],
@@ -385,7 +385,7 @@ export function parseArgs(argvInput: string[]): Options {
     timeoutMs: 90_000,
     ttl: "120m",
     userDriverScript:
-      trimToValue(process.env.OPENCLAW_TELEGRAM_USER_DRIVER_SCRIPT) ?? DEFAULT_USER_DRIVER,
+      trimToValue(process.env.AFORA_TELEGRAM_USER_DRIVER_SCRIPT) ?? DEFAULT_USER_DRIVER,
     nodeBin: trimToValue(process.env.MANTIS_NODE_BIN) ?? process.execPath,
     pnpmBin: trimToValue(process.env.MANTIS_PNPM_BIN),
   };
@@ -589,7 +589,7 @@ function repoRoot() {
     !fs.existsSync(path.join(cwd, "package.json")) ||
     !fs.existsSync(path.join(cwd, "scripts/e2e/mock-openai-server.mjs"))
   ) {
-    throw new Error("Run from the OpenClaw repo root.");
+    throw new Error("Run from the Afora repo root.");
   }
   return cwd;
 }
@@ -634,8 +634,8 @@ function childProcessBaseEnv() {
     "LANG",
     "LC_ALL",
     "NODE_OPTIONS",
-    "OPENCLAW_BUILD_PRIVATE_QA",
-    "OPENCLAW_ENABLE_PRIVATE_QA_CLI",
+    "AFORA_BUILD_PRIVATE_QA",
+    "AFORA_ENABLE_PRIVATE_QA_CLI",
     "PATH",
     "PNPM_HOME",
     "SHELL",
@@ -682,10 +682,10 @@ function gatewayEnv(params: {
 }) {
   return {
     ...childProcessBaseEnv(),
-    OPENAI_API_KEY: "sk-openclaw-e2e-mock",
-    OPENCLAW_CONFIG_PATH: params.configPath,
-    ...(params.gatewayPassword ? { OPENCLAW_GATEWAY_PASSWORD: params.gatewayPassword } : {}),
-    OPENCLAW_STATE_DIR: params.stateDir,
+    OPENAI_API_KEY: "sk-afora-e2e-mock",
+    AFORA_CONFIG_PATH: params.configPath,
+    ...(params.gatewayPassword ? { AFORA_GATEWAY_PASSWORD: params.gatewayPassword } : {}),
+    AFORA_STATE_DIR: params.stateDir,
     ...(params.tailscaleProxyDir
       ? { PATH: `${params.tailscaleProxyDir}${path.delimiter}${process.env.PATH ?? ""}` }
       : {}),
@@ -693,7 +693,7 @@ function gatewayEnv(params: {
   };
 }
 
-export function createOpenClawGatewaySpawnSpec(params: {
+export function createAforaGatewaySpawnSpec(params: {
   env: NodeJS.ProcessEnv;
   gatewayPort: number;
   repoRoot: string;
@@ -705,7 +705,7 @@ export function createOpenClawGatewaySpawnSpec(params: {
 }): GatewaySpawnSpec {
   if (params.pnpmExecPath) {
     return {
-      args: ["openclaw", "gateway", "--port", String(params.gatewayPort)],
+      args: ["afora", "gateway", "--port", String(params.gatewayPort)],
       command: params.pnpmExecPath,
       options: { cwd: params.repoRoot, env: params.env, shell: false },
     };
@@ -717,7 +717,7 @@ export function createOpenClawGatewaySpawnSpec(params: {
     nodeExecPath: params.nodeExecPath,
     npmExecPath: params.npmExecPath,
     platform: params.platform,
-    pnpmArgs: ["openclaw", "gateway", "--port", String(params.gatewayPort)],
+    pnpmArgs: ["afora", "gateway", "--port", String(params.gatewayPort)],
   });
   return {
     args: spec.args,
@@ -731,7 +731,7 @@ export function createOpenClawGatewaySpawnSpec(params: {
   };
 }
 
-export function createOpenClawCliSpawnSpec(params: {
+export function createAforaCliSpawnSpec(params: {
   args: string[];
   env: NodeJS.ProcessEnv;
   repoRoot: string;
@@ -742,7 +742,7 @@ export function createOpenClawCliSpawnSpec(params: {
 }): GatewaySpawnSpec {
   if (params.pnpmExecPath) {
     return {
-      args: ["openclaw", ...params.args],
+      args: ["afora", ...params.args],
       command: params.pnpmExecPath,
       options: { cwd: params.repoRoot, env: params.env, shell: false },
     };
@@ -753,7 +753,7 @@ export function createOpenClawCliSpawnSpec(params: {
     nodeExecPath: params.nodeExecPath,
     npmExecPath: params.npmExecPath,
     platform: params.platform,
-    pnpmArgs: ["openclaw", ...params.args],
+    pnpmArgs: ["afora", ...params.args],
   });
   return {
     args: spec.args,
@@ -1382,12 +1382,12 @@ export function writeSutConfig(params: {
   repoRoot?: string;
   testerId: string;
 }) {
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-tg-crabbox-sut-"));
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-tg-crabbox-sut-"));
   const stateDir = path.join(tempRoot, "state");
   const workspace = path.join(tempRoot, "workspace");
   fs.mkdirSync(stateDir, { recursive: true });
   fs.mkdirSync(workspace, { recursive: true });
-  const configPath = path.join(tempRoot, "openclaw.json");
+  const configPath = path.join(tempRoot, "afora.json");
   const config = {
     agents: {
       defaults: {
@@ -1442,7 +1442,7 @@ export function writeSutConfig(params: {
           auth: {
             mode: "password",
             password: {
-              id: "OPENCLAW_GATEWAY_PASSWORD",
+              id: "AFORA_GATEWAY_PASSWORD",
               provider: "default",
               source: "env",
             },
@@ -1500,7 +1500,7 @@ export function writeSutConfig(params: {
 }
 
 type StartLocalSutDeps = {
-  createGatewaySpawnSpec?: typeof createOpenClawGatewaySpawnSpec;
+  createGatewaySpawnSpec?: typeof createAforaGatewaySpawnSpec;
   drainUpdates?: typeof drainSutUpdates;
   spawnLoggedCommand?: typeof spawnLogged;
   waitForOutputReady?: typeof waitForOutput;
@@ -1529,7 +1529,7 @@ export async function startLocalSut(
   const writeConfig = deps.writeConfig ?? writeSutConfig;
   const spawnLoggedCommand = deps.spawnLoggedCommand ?? spawnLogged;
   const waitForOutputReady = deps.waitForOutputReady ?? waitForOutput;
-  const createGatewaySpawnSpec = deps.createGatewaySpawnSpec ?? createOpenClawGatewaySpawnSpec;
+  const createGatewaySpawnSpec = deps.createGatewaySpawnSpec ?? createAforaGatewaySpawnSpec;
   let gateway: ReturnType<typeof spawnLogged> | undefined;
   let mock: ReturnType<typeof spawnLogged> | undefined;
   try {
@@ -1647,7 +1647,7 @@ export function createContainerizedSutSpawnSpec(params: {
   fs.writeFileSync(
     inputPath,
     `${JSON.stringify({
-      gatewayPassword: params.gatewayEnv.OPENCLAW_GATEWAY_PASSWORD,
+      gatewayPassword: params.gatewayEnv.AFORA_GATEWAY_PASSWORD,
       mockResponseChunkDelayMs: params.mockResponseChunkDelayMs,
       mockResponseText: params.mockResponseText,
       telegramBotToken: params.gatewayEnv.TELEGRAM_BOT_TOKEN,
@@ -1657,7 +1657,7 @@ export function createContainerizedSutSpawnSpec(params: {
   return {
     args: [
       "-n",
-      "/usr/local/sbin/openclaw-mantis-sut-container",
+      "/usr/local/sbin/afora-mantis-sut-container",
       "run",
       params.containerName,
       params.sutLane,
@@ -1735,7 +1735,7 @@ export function runSutContainerAction(
   }
   const result = run(
     "sudo",
-    ["-n", "/usr/local/sbin/openclaw-mantis-sut-container", action, containerName, runtimeRoot],
+    ["-n", "/usr/local/sbin/afora-mantis-sut-container", action, containerName, runtimeRoot],
     {
       encoding: "utf8",
       env: childProcessBaseEnv(),
@@ -1847,7 +1847,7 @@ async function startLocalSutDaemon(params: {
         throw new Error("Container-isolated fork SUT does not support the MCP App Funnel fixture.");
       }
       const codexProxyPort = requireCodexProxyPort();
-      containerName = `openclaw-telegram-sut-${randomUUID()}`;
+      containerName = `afora-telegram-sut-${randomUUID()}`;
       const gatewayEnvVars = gatewayEnv({
         ...config,
         gatewayPassword,
@@ -1924,7 +1924,7 @@ async function startLocalSutDaemon(params: {
         ? path.dirname(params.funnelBridge.proxyPath)
         : undefined,
     });
-    const gatewaySpec = createOpenClawGatewaySpawnSpec({
+    const gatewaySpec = createAforaGatewaySpawnSpec({
       env: gatewayEnvVars,
       gatewayPort: params.gatewayPort,
       pnpmExecPath: params.pnpmBin,
@@ -2410,14 +2410,14 @@ set -euo pipefail
 root=${REMOTE_ROOT}
 tdlib_sha256=${tdlibSha256}
 tdlib_url=${tdlibUrl}
-setup_step_timeout_kill_after="\${OPENCLAW_TELEGRAM_USER_SETUP_KILL_AFTER_SECONDS:-30}s"
-apt_timeout="\${OPENCLAW_TELEGRAM_USER_APT_TIMEOUT_SECONDS:-900}s"
-download_timeout="\${OPENCLAW_TELEGRAM_USER_DOWNLOAD_TIMEOUT_SECONDS:-600}"
-download_connect_timeout="\${OPENCLAW_TELEGRAM_USER_DOWNLOAD_CONNECT_TIMEOUT_SECONDS:-15}"
-download_retries="\${OPENCLAW_TELEGRAM_USER_DOWNLOAD_RETRIES:-3}"
-download_retry_delay="\${OPENCLAW_TELEGRAM_USER_DOWNLOAD_RETRY_DELAY_SECONDS:-5}"
-tdlib_clone_timeout="\${OPENCLAW_TELEGRAM_USER_TDLIB_CLONE_TIMEOUT_SECONDS:-600}s"
-tdlib_build_timeout="\${OPENCLAW_TELEGRAM_USER_TDLIB_BUILD_TIMEOUT_SECONDS:-1800}s"
+setup_step_timeout_kill_after="\${AFORA_TELEGRAM_USER_SETUP_KILL_AFTER_SECONDS:-30}s"
+apt_timeout="\${AFORA_TELEGRAM_USER_APT_TIMEOUT_SECONDS:-900}s"
+download_timeout="\${AFORA_TELEGRAM_USER_DOWNLOAD_TIMEOUT_SECONDS:-600}"
+download_connect_timeout="\${AFORA_TELEGRAM_USER_DOWNLOAD_CONNECT_TIMEOUT_SECONDS:-15}"
+download_retries="\${AFORA_TELEGRAM_USER_DOWNLOAD_RETRIES:-3}"
+download_retry_delay="\${AFORA_TELEGRAM_USER_DOWNLOAD_RETRY_DELAY_SECONDS:-5}"
+tdlib_clone_timeout="\${AFORA_TELEGRAM_USER_TDLIB_CLONE_TIMEOUT_SECONDS:-600}s"
+tdlib_build_timeout="\${AFORA_TELEGRAM_USER_TDLIB_BUILD_TIMEOUT_SECONDS:-1800}s"
 run_setup_step() {
   local label="$1"
   local timeout_value="$2"
@@ -2440,7 +2440,7 @@ download_file() {
 mkdir -p "$root"
 tar -xzf "$root/state.tgz" -C "$root"
 run_setup_step "apt-get update" "$apt_timeout" sudo apt-get update -y
-run_setup_step "apt-get install" "$apt_timeout" sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y curl git cmake g++ make zlib1g-dev libssl-dev python3 ffmpeg scrot xz-utils tar wmctrl xdotool x11-utils zbar-tools libopengl0 libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-xfixes0 libxcb-xinerama0 libxkbcommon-x11-0 >/tmp/openclaw-telegram-apt.log
+run_setup_step "apt-get install" "$apt_timeout" sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y curl git cmake g++ make zlib1g-dev libssl-dev python3 ffmpeg scrot xz-utils tar wmctrl xdotool x11-utils zbar-tools libopengl0 libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-xfixes0 libxcb-xinerama0 libxkbcommon-x11-0 >/tmp/afora-telegram-apt.log
 if ! command -v python3 >/dev/null 2>&1; then
   echo "python3 is required" >&2
   exit 127
@@ -2985,10 +2985,10 @@ async function startSession(root: string, opts: Options, outputDir: string) {
   const convexEnvFile = expandHome(opts.envFile ?? DEFAULT_CONVEX_ENV_FILE);
   const roleSecret =
     opts.credentialRole === "ci"
-      ? process.env.OPENCLAW_QA_CONVEX_SECRET_CI
-      : process.env.OPENCLAW_QA_CONVEX_SECRET_MAINTAINER;
+      ? process.env.AFORA_QA_CONVEX_SECRET_CI
+      : process.env.AFORA_QA_CONVEX_SECRET_MAINTAINER;
   const hasConvexEnv =
-    trimToValue(process.env.OPENCLAW_QA_CONVEX_SITE_URL) && trimToValue(roleSecret);
+    trimToValue(process.env.AFORA_QA_CONVEX_SITE_URL) && trimToValue(roleSecret);
   if (!hasConvexEnv && !fs.existsSync(convexEnvFile)) {
     throw new Error(`Missing Convex env file: ${opts.envFile ?? DEFAULT_CONVEX_ENV_FILE}`);
   }
@@ -3094,12 +3094,12 @@ async function startSession(root: string, opts: Options, outputDir: string) {
       },
       webvnc: `${opts.crabboxBin} webvnc --provider ${opts.provider} --target ${opts.target} --id ${leaseId} --open`,
       commands: {
-        send: `openclaw-telegram-user-crabbox-proof send --session ${path.relative(root, pathname)} --text '/status'`,
-        inspect: `openclaw-telegram-user-crabbox-proof inspect --session ${path.relative(root, pathname)}`,
-        restart: `openclaw-telegram-user-crabbox-proof restart --session ${path.relative(root, pathname)}`,
-        view: `openclaw-telegram-user-crabbox-proof view --session ${path.relative(root, pathname)} --message-id <message-id>`,
-        run: `openclaw-telegram-user-crabbox-proof run --session ${path.relative(root, pathname)} -- bash -lc 'source ${REMOTE_ROOT}/env.sh && python3 ${REMOTE_ROOT}/user-driver.py transcript --limit 20 --json'`,
-        finish: `openclaw-telegram-user-crabbox-proof finish --session ${path.relative(root, pathname)} --preview-crop telegram-window`,
+        send: `afora-telegram-user-crabbox-proof send --session ${path.relative(root, pathname)} --text '/status'`,
+        inspect: `afora-telegram-user-crabbox-proof inspect --session ${path.relative(root, pathname)}`,
+        restart: `afora-telegram-user-crabbox-proof restart --session ${path.relative(root, pathname)}`,
+        view: `afora-telegram-user-crabbox-proof view --session ${path.relative(root, pathname)} --message-id <message-id>`,
+        run: `afora-telegram-user-crabbox-proof run --session ${path.relative(root, pathname)} -- bash -lc 'source ${REMOTE_ROOT}/env.sh && python3 ${REMOTE_ROOT}/user-driver.py transcript --limit 20 --json'`,
+        finish: `afora-telegram-user-crabbox-proof finish --session ${path.relative(root, pathname)} --preview-crop telegram-window`,
       },
     };
   } catch (error) {
@@ -3228,7 +3228,7 @@ async function statusSession(root: string, opts: Options, outputDir: string) {
 }
 
 function sessionSutConfigPath(session: SessionFile) {
-  return session.localSut.configPath ?? path.join(session.localSut.tempRoot, "openclaw.json");
+  return session.localSut.configPath ?? path.join(session.localSut.tempRoot, "afora.json");
 }
 
 async function runSessionAuditCli(
@@ -3237,12 +3237,12 @@ async function runSessionAuditCli(
   session: SessionFile,
   args: string[],
 ) {
-  const spec = createOpenClawCliSpawnSpec({
+  const spec = createAforaCliSpawnSpec({
     args,
     env: {
       ...childProcessBaseEnv(),
-      OPENCLAW_CONFIG_PATH: sessionSutConfigPath(session),
-      OPENCLAW_STATE_DIR: session.localSut.stateDir,
+      AFORA_CONFIG_PATH: sessionSutConfigPath(session),
+      AFORA_STATE_DIR: session.localSut.stateDir,
     },
     repoRoot: root,
     nodeExecPath: opts.nodeBin,
@@ -3752,7 +3752,7 @@ async function publishSessionArtifacts(root: string, opts: Options, outputDir: s
           ? "Telegram real-user Crabbox session artifacts"
           : "Telegram real-user Crabbox session motion GIF"),
       "--template",
-      "openclaw",
+      "afora",
       ...(opts.dryRun ? ["--dry-run"] : []),
     ],
     cwd: root,
@@ -3817,7 +3817,7 @@ async function main() {
     return;
   }
 
-  const localRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-telegram-crabbox-"));
+  const localRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-telegram-crabbox-"));
   const summary: JsonObject = {
     artifacts: {},
     crabbox: { provider: opts.provider, target: opts.target },
@@ -3835,10 +3835,10 @@ async function main() {
     const convexEnvFile = expandHome(opts.envFile ?? DEFAULT_CONVEX_ENV_FILE);
     const roleSecret =
       opts.credentialRole === "ci"
-        ? process.env.OPENCLAW_QA_CONVEX_SECRET_CI
-        : process.env.OPENCLAW_QA_CONVEX_SECRET_MAINTAINER;
+        ? process.env.AFORA_QA_CONVEX_SECRET_CI
+        : process.env.AFORA_QA_CONVEX_SECRET_MAINTAINER;
     const hasConvexEnv =
-      trimToValue(process.env.OPENCLAW_QA_CONVEX_SITE_URL) && trimToValue(roleSecret);
+      trimToValue(process.env.AFORA_QA_CONVEX_SITE_URL) && trimToValue(roleSecret);
     if (!hasConvexEnv && !fs.existsSync(convexEnvFile)) {
       throw new Error(`Missing Convex env file: ${opts.envFile ?? DEFAULT_CONVEX_ENV_FILE}`);
     }

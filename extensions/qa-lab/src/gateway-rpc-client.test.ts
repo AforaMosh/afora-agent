@@ -49,7 +49,7 @@ const gatewayRpcMock = vi.hoisted(() => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/gateway-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/gateway-runtime", () => ({
   GatewayClient: gatewayRpcMock.GatewayClient,
   startGatewayClientWhenEventLoopReady: gatewayRpcMock.startGatewayClientWhenEventLoopReady,
 }));
@@ -258,12 +258,12 @@ describe("startQaGatewayRpcClient", () => {
     const client = await startQaGatewayRpcClient({
       wsUrl: "ws://127.0.0.1:18789",
       token: "qa-token",
-      logs: () => "OPENCLAW_GATEWAY_TOKEN=secret-token",
+      logs: () => "AFORA_GATEWAY_TOKEN=secret-token",
     });
 
     await expect(client.request("health")).rejects.toMatchObject({
       cause: expect.objectContaining({ message: "gateway rejected request" }),
-      message: "gateway rejected request\nGateway logs:\nOPENCLAW_GATEWAY_TOKEN=<redacted>",
+      message: "gateway rejected request\nGateway logs:\nAFORA_GATEWAY_TOKEN=<redacted>",
     });
   });
 

@@ -98,7 +98,7 @@ function createFakeSupervisor() {
 }
 
 async function createFixture() {
-  const root = tempDirs.make("openclaw-managed-linux-test-");
+  const root = tempDirs.make("afora-managed-linux-test-");
   const x11SocketDir = path.join(root, "x11");
   await fs.mkdir(x11SocketDir);
   const fake = createFakeSupervisor();

@@ -1,13 +1,13 @@
 // Discord plugin module owns inbound ack and status-reaction lifecycle.
-import { resolveAckReaction } from "openclaw/plugin-sdk/agent-runtime";
+import { resolveAckReaction } from "afora-agent/plugin-sdk/agent-runtime";
 import {
   createStatusReactionController,
   DEFAULT_TIMING,
   logAckFailure,
   shouldAckReaction as shouldAckReactionGate,
   type StatusReactionController,
-} from "openclaw/plugin-sdk/channel-feedback";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/channel-feedback";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
 import { createDiscordRestClient } from "../client.js";
 import { resolveDiscordTargetChannelId } from "../send.shared.js";
 import { resolveDiscordChannelId } from "../targets.js";

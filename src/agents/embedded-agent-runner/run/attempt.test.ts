@@ -5,10 +5,10 @@ import { streamSimple } from "../../../llm/stream.js";
 vi.mock("../context-engine-capabilities.js", () => ({
   resolveContextEngineCapabilities: async () => ({ llm: undefined }),
 }));
-import type { LlmRuntime } from "@openclaw/ai";
-import { defaultLlmRuntime } from "@openclaw/ai/internal/runtime";
-import { SYSTEM_PROMPT_CACHE_BOUNDARY } from "@openclaw/ai/internal/shared";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { LlmRuntime } from "@afora/ai";
+import { defaultLlmRuntime } from "@afora/ai/internal/runtime";
+import { SYSTEM_PROMPT_CACHE_BOUNDARY } from "@afora/ai/internal/shared";
+import type { AforaConfig } from "../../../config/config.js";
 import { addSession } from "../../bash-process-registry.js";
 import { createProcessSessionFixture } from "../../bash-process-registry.test-helpers.js";
 import { resetProcessRegistryForTests } from "../../bash-process-registry.test-support.js";
@@ -239,7 +239,7 @@ describe("composeSystemPromptWithHookContext", () => {
 
   it("keeps bootstrap truncation notices in the system prompt instead of the user prompt", () => {
     const baseSystemPrompt = buildAgentSystemPrompt({
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
       contextFiles: [{ path: "AGENTS.md", content: "Follow AGENTS guidance." }],
       toolNames: ["read"],
       bootstrapTruncationNotice:
@@ -625,7 +625,7 @@ describe("resolveEmbeddedAgentStreamFn", () => {
 
 describe("resolveAttemptFsWorkspaceOnly", () => {
   it("uses global tools.fs.workspaceOnly when agent has no override", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         fs: { workspaceOnly: true },
       },
@@ -640,7 +640,7 @@ describe("resolveAttemptFsWorkspaceOnly", () => {
   });
 
   it("prefers agent-specific tools.fs.workspaceOnly override", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         fs: { workspaceOnly: true },
       },
@@ -2227,7 +2227,7 @@ describe("wrapStreamFnSanitizeMalformedToolCalls", () => {
     expect(repairedToolResult.content).toEqual([
       {
         type: "text",
-        text: "[openclaw] missing tool result in session history; inserted synthetic error result for transcript repair.",
+        text: "[afora] missing tool result in session history; inserted synthetic error result for transcript repair.",
       },
     ]);
     expect(repairedToolResult.isError).toBe(true);
@@ -3344,7 +3344,7 @@ describe("buildAfterTurnRuntimeContext", () => {
       const legacy = buildAfterTurnRuntimeContext({
         attempt: {
           sessionId: "session-123",
-          config: {} as OpenClawConfig,
+          config: {} as AforaConfig,
           skillsSnapshot: undefined,
           provider: "openai",
           modelId: "gpt-5.4",
@@ -3400,7 +3400,7 @@ describe("buildAfterTurnRuntimeContext", () => {
         authProfileId: "openai:p1",
         authProfileIdSource: "user",
         runtimePlan: { auth: runtimeAuthPlan } as never,
-        config: {} as OpenClawConfig,
+        config: {} as AforaConfig,
         skillsSnapshot: undefined,
         provider: "openai",
         modelId: "gpt-5.4",
@@ -3426,11 +3426,11 @@ describe("buildAfterTurnRuntimeContext", () => {
         sessionKey: "agent:main:session:locked",
         config: {
           agents: { defaults: { compaction: { model: "anthropic/claude-opus-4-6" } } },
-        } as OpenClawConfig,
+        } as AforaConfig,
         skillsSnapshot: undefined,
         provider: "openai",
         modelId: "gpt-5.5",
-        agentHarnessId: "openclaw",
+        agentHarnessId: "afora",
         modelSelectionLocked: true,
         thinkLevel: "off",
       },
@@ -3457,7 +3457,7 @@ describe("buildAfterTurnRuntimeContext", () => {
         sessionId: "ignored-session-id",
         sessionKey: "agent:main:fallback",
         sessionTarget,
-        config: {} as OpenClawConfig,
+        config: {} as AforaConfig,
         skillsSnapshot: undefined,
         provider: "openai",
         modelId: "gpt-5.4",
@@ -3493,7 +3493,7 @@ describe("buildAfterTurnRuntimeContext", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         skillsSnapshot: undefined,
         provider: "openai",
         modelId: "gpt-5.4",
@@ -3531,7 +3531,7 @@ describe("buildAfterTurnRuntimeContext", () => {
         messageProvider: "slack",
         agentAccountId: "acct-1",
         authProfileId: "openai:p1",
-        config: { plugins: { slots: { contextEngine: "lossless-claw" } } } as OpenClawConfig,
+        config: { plugins: { slots: { contextEngine: "lossless-claw" } } } as AforaConfig,
         skillsSnapshot: undefined,
         provider: "openai",
         modelId: "gpt-5.4",
@@ -3580,7 +3580,7 @@ describe("buildAfterTurnRuntimeContext", () => {
         messageProvider: "slack",
         agentAccountId: "acct-1",
         authProfileId: "openai:p1",
-        config: { plugins: { slots: { contextEngine: "lossless-claw" } } } as OpenClawConfig,
+        config: { plugins: { slots: { contextEngine: "lossless-claw" } } } as AforaConfig,
         skillsSnapshot: undefined,
         provider: "openai",
         modelId: "gpt-5.4",
@@ -3611,7 +3611,7 @@ describe("buildAfterTurnRuntimeContext", () => {
         currentThreadTs: "thread-9",
         currentMessageId: "msg-42",
         authProfileId: "openai:p1",
-        config: {} as OpenClawConfig,
+        config: {} as AforaConfig,
         skillsSnapshot: undefined,
         senderId: "user-123",
         provider: "openai",

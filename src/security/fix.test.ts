@@ -2,10 +2,10 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { ChannelPlugin } from "../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { fixSecurityFootguns } from "./fix.js";
 
 const isWindows = process.platform === "win32";
@@ -30,17 +30,17 @@ describe("security fix", () => {
 
   const createFixEnv = (stateDir: string, configPath: string) => ({
     ...process.env,
-    OPENCLAW_STATE_DIR: stateDir,
-    OPENCLAW_CONFIG_PATH: configPath,
+    AFORA_STATE_DIR: stateDir,
+    AFORA_CONFIG_PATH: configPath,
   });
 
   const runConfigFixScenario = async (params: {
     prefix: string;
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     channelPlugins?: ChannelPlugin[];
   }) => {
     const stateDir = await createStateDir(params.prefix);
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     await fs.writeFile(configPath, `${JSON.stringify(params.cfg, null, 2)}\n`, "utf-8");
     const res = await fixSecurityFootguns({
       env: createFixEnv(stateDir, configPath),
@@ -48,7 +48,7 @@ describe("security fix", () => {
       configPath,
       channelPlugins: params.channelPlugins,
     });
-    const cfg = JSON.parse(await fs.readFile(configPath, "utf-8")) as OpenClawConfig;
+    const cfg = JSON.parse(await fs.readFile(configPath, "utf-8")) as AforaConfig;
     return { res, cfg };
   };
 
@@ -158,7 +158,7 @@ describe("security fix", () => {
         channels: {
           whatsapp: params.whatsapp,
         },
-      } satisfies OpenClawConfig,
+      } satisfies AforaConfig,
       channelPlugins: [createWhatsAppConfigFixTestPlugin(params.allowFromStore)],
     });
     return {
@@ -168,7 +168,7 @@ describe("security fix", () => {
   };
 
   beforeAll(async () => {
-    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-security-fix-suite-"));
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-security-fix-suite-"));
   });
 
   afterAll(async () => {
@@ -186,7 +186,7 @@ describe("security fix", () => {
         signal: { groupPolicy: "open" },
         imessage: { groupPolicy: "open" },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const fixed = await runConfigFixScenario({
       prefix: "group-policy",
       cfg,
@@ -258,7 +258,7 @@ describe("security fix", () => {
     const stateDir = await createStateDir("invalid-config");
     await fs.chmod(stateDir, 0o755);
 
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     await fs.writeFile(configPath, "{ this is not json }\n", "utf-8");
     await fs.chmod(configPath, 0o644);
 
@@ -279,7 +279,7 @@ describe("security fix", () => {
     await fs.writeFile(includePath, "{}\n", "utf-8");
     await fs.chmod(includePath, 0o644);
 
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     await fs.writeFile(configPath, `{ "$include": "./includes/extra.json5" }\n`, "utf-8");
     await fs.chmod(configPath, 0o644);
 
@@ -290,7 +290,7 @@ describe("security fix", () => {
     await fs.chmod(credentialPath, 0o644);
 
     const agentDir = path.join(stateDir, "agents", "main", "agent");
-    const authDatabasePath = path.join(agentDir, "openclaw-agent.sqlite");
+    const authDatabasePath = path.join(agentDir, "afora-agent.sqlite");
     const authProfilesPath = path.join(agentDir, "auth-profiles.json");
 
     const sessionsDir = path.join(stateDir, "agents", "main", "sessions");
@@ -329,7 +329,7 @@ describe("security fix", () => {
 
   it("tightens the live legacy main auth store for a named default roster", async () => {
     const stateDir = await createStateDir("named-default-legacy-auth");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     await fs.writeFile(
       configPath,
       JSON.stringify({ agents: { entries: { ops: { default: true } } } }),
@@ -357,7 +357,7 @@ describe("security fix", () => {
     "tightens only includes accepted by the config include resolver",
     async () => {
       const stateDir = await createStateDir("include-boundary");
-      const configPath = path.join(stateDir, "openclaw.json");
+      const configPath = path.join(stateDir, "afora.json");
       const safeIncludePath = path.join(stateDir, "safe.json5");
       const escapedIncludePath = path.join(fixtureRoot, "escaped.json5");
       await fs.writeFile(safeIncludePath, "{}\n", "utf-8");
@@ -386,7 +386,7 @@ describe("security fix", () => {
     "keeps explicitly allowed include roots in the permission target set",
     async () => {
       const stateDir = await createStateDir("include-allowed-root");
-      const configPath = path.join(stateDir, "openclaw.json");
+      const configPath = path.join(stateDir, "afora.json");
       const sharedDir = path.join(fixtureRoot, "shared-includes");
       const sharedIncludePath = path.join(sharedDir, "shared.json5");
       await fs.mkdir(sharedDir, { recursive: true });
@@ -402,7 +402,7 @@ describe("security fix", () => {
       const result = await fixSecurityFootguns({
         env: {
           ...createFixEnv(stateDir, configPath),
-          OPENCLAW_INCLUDE_ROOTS: sharedDir,
+          AFORA_INCLUDE_ROOTS: sharedDir,
         },
         stateDir,
         configPath,

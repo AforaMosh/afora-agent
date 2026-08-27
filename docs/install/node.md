@@ -1,13 +1,13 @@
 ---
-summary: "Install and configure Node.js for OpenClaw - version requirements, install options, and PATH troubleshooting"
+summary: "Install and configure Node.js for Afora - version requirements, install options, and PATH troubleshooting"
 title: "Node.js"
 read_when:
-  - "You need to install Node.js before installing OpenClaw"
-  - "You installed OpenClaw but `openclaw` is command not found"
+  - "You need to install Node.js before installing Afora"
+  - "You installed Afora but `afora` is command not found"
   - "npm install -g fails with permissions or PATH issues"
 ---
 
-OpenClaw requires **Node 22.22.3+, Node 24.15+, or Node 25.9+** (which includes Node 26). **Node 26 is the default and recommended runtime** — it starts the Gateway noticeably faster and uses less memory than Node 24, and the installer script provisions it when Node is missing. CI and release workflows still pin Node 24; Node 22 remains supported via its LTS line. Node 23 is unsupported. The [installer script](/install#alternative-install-methods) detects and installs Node automatically — use this page when you want to set up Node yourself (versions, PATH, global installs).
+Afora requires **Node 22.22.3+, Node 24.15+, or Node 25.9+** (which includes Node 26). **Node 26 is the default and recommended runtime** — it starts the Gateway noticeably faster and uses less memory than Node 24, and the installer script provisions it when Node is missing. CI and release workflows still pin Node 24; Node 22 remains supported via its LTS line. Node 23 is unsupported. The [installer script](/install#alternative-install-methods) detects and installs Node automatically — use this page when you want to set up Node yourself (versions, PATH, global installs).
 
 ## Check your version
 
@@ -80,13 +80,13 @@ fnm use 26
 ```
 
   <Warning>
-  Initialize your version manager in your shell startup file (`~/.zshrc` or `~/.bashrc`). If you skip this, `openclaw` may not be found in new terminal sessions because PATH won't include Node's bin directory.
+  Initialize your version manager in your shell startup file (`~/.zshrc` or `~/.bashrc`). If you skip this, `afora` may not be found in new terminal sessions because PATH won't include Node's bin directory.
   </Warning>
 </Accordion>
 
 ## Troubleshooting
 
-### `openclaw: command not found`
+### `afora: command not found`
 
 This almost always means npm's global bin directory isn't on your PATH.
 
@@ -138,5 +138,5 @@ Add the `export PATH=...` line to your `~/.bashrc` or `~/.zshrc` to make it perm
 ## Related
 
 - [Install Overview](/install) - all installation methods
-- [Updating](/install/updating) - keeping OpenClaw up to date
+- [Updating](/install/updating) - keeping Afora up to date
 - [Getting Started](/start/getting-started) - first steps after install

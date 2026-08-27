@@ -1,5 +1,5 @@
-import { asNullableRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { asNullableRecord as asRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import {
   isToolCallContentType,
   isToolResultContentType,
@@ -21,7 +21,7 @@ export function isKeyedAssistantStreamFallbackMessage(message: unknown): boolean
   if (normalizeLowercaseStringOrEmpty(record?.role) !== "assistant") {
     return false;
   }
-  const fallback = asRecord(record?.openclawStreamFallback);
+  const fallback = asRecord(record?.aforaStreamFallback);
   return typeof fallback?.itemId === "string" && fallback.itemId.trim().length > 0;
 }
 
@@ -79,7 +79,7 @@ export function groupMessages(items: ChatItem[]): Array<ChatItem | MessageGroup>
     const timestamp = normalized.timestamp || Date.now();
     const shouldSplitBySender = role === "user" || role === "assistant";
     const startsProjectedTurn =
-      asRecord(asRecord(item.message)?.["__openclaw"])?.turnBoundary === true;
+      asRecord(asRecord(item.message)?.["__afora"])?.turnBoundary === true;
     const splitsAssistantCommentary =
       role === "assistant" &&
       currentGroup?.role === "assistant" &&

@@ -387,7 +387,7 @@ export function createNodeWorkerTunnelManager(options: NodeWorkerTunnelManagerOp
       let uploadedResult: Awaited<ReturnType<typeof exec>>;
       try {
         uploadedResult = await exec({
-          argv: ["openclaw-internal-workspace-transfer"],
+          argv: ["afora-internal-workspace-transfer"],
           transfer: {
             direction: "upload",
             token: uploadToken,
@@ -440,7 +440,7 @@ export function createNodeWorkerTunnelManager(options: NodeWorkerTunnelManagerOp
           });
           try {
             const published = await exec({
-              argv: ["openclaw-internal-workspace-transfer"],
+              argv: ["afora-internal-workspace-transfer"],
               transfer: { direction: "download", token, manifestRef: accepted.manifestRef },
               timeoutMs: 10 * 60_000,
               transportRetry: "never",
@@ -568,7 +568,7 @@ export function createNodeWorkerTunnelManager(options: NodeWorkerTunnelManagerOp
               return origin.result;
             }
             const transferred = await exec({
-              argv: ["openclaw-internal-workspace-transfer"],
+              argv: ["afora-internal-workspace-transfer"],
               transfer: {
                 direction: "download",
                 token: prepared.token,

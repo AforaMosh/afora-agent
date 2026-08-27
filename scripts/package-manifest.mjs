@@ -66,7 +66,7 @@ export async function preparePackageManifest(cwd = process.cwd()) {
   } catch (error) {
     if (error?.code === "EEXIST") {
       throw new Error(
-        `Another package preparation owns ${PACKAGE_JSON_PATH}; wait for it to finish or run \`node scripts/openclaw-postpack.mjs\` after an interrupted pack.`,
+        `Another package preparation owns ${PACKAGE_JSON_PATH}; wait for it to finish or run \`node scripts/afora-postpack.mjs\` after an interrupted pack.`,
         { cause: error },
       );
     }

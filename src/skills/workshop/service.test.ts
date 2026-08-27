@@ -3,11 +3,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  closeOpenClawStateDatabaseByPath,
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../../state/openclaw-state-db.paths.js";
+  closeAforaStateDatabaseByPath,
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../../state/afora-state-db.paths.js";
 import { createTrackedTempDirs } from "../../test-utils/tracked-temp-dirs.js";
 import { buildWorkspaceSkillStatus } from "../discovery/status.js";
 import {
@@ -45,21 +45,21 @@ let testEnv: NodeJS.ProcessEnv;
 let stateDir = "";
 
 beforeAll(async () => {
-  stateDir = await stateDirs.make("openclaw-skill-workshop-state-");
+  stateDir = await stateDirs.make("afora-skill-workshop-state-");
   testEnv = {
     ...process.env,
-    OPENCLAW_STATE_DIR: stateDir,
-    OPENCLAW_CONFIG_PATH: path.join(stateDir, "openclaw.json"),
-    OPENCLAW_AGENT_DIR: undefined,
+    AFORA_STATE_DIR: stateDir,
+    AFORA_CONFIG_PATH: path.join(stateDir, "afora.json"),
+    AFORA_AGENT_DIR: undefined,
   };
   await listSkillProposals({ env: testEnv });
 });
 
 beforeEach(async () => {
-  vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
-  vi.stubEnv("OPENCLAW_CONFIG_PATH", path.join(stateDir, "openclaw.json"));
-  vi.stubEnv("OPENCLAW_AGENT_DIR", undefined);
-  const database = openOpenClawStateDatabase({ env: testEnv });
+  vi.stubEnv("AFORA_STATE_DIR", stateDir);
+  vi.stubEnv("AFORA_CONFIG_PATH", path.join(stateDir, "afora.json"));
+  vi.stubEnv("AFORA_AGENT_DIR", undefined);
+  const database = openAforaStateDatabase({ env: testEnv });
   database.db.exec(`
     DELETE FROM skill_workshop_proposal_events;
     DELETE FROM skill_workshop_proposal_origin_runs;
@@ -75,13 +75,13 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
-  closeOpenClawStateDatabaseByPath(resolveOpenClawStateSqlitePath(testEnv));
+  closeAforaStateDatabaseByPath(resolveAforaStateSqlitePath(testEnv));
   vi.unstubAllEnvs();
   await stateDirs.cleanup();
 });
 
 async function makeWorkspace(): Promise<string> {
-  return await tempDirs.make("openclaw-skill-workshop-");
+  return await tempDirs.make("afora-skill-workshop-");
 }
 
 function createSkillProposalRollback(params: {
@@ -200,7 +200,7 @@ describe("skill workshop proposals", () => {
     const status = buildWorkspaceSkillStatus(workspaceDir);
     expect(status.skills.find((skill) => skill.name === "weather-helper")).toMatchObject({
       name: "weather-helper",
-      source: "openclaw-workspace",
+      source: "afora-workspace",
       filePath: applied.targetSkillFile,
     });
     expect((await inspectSkillProposal(proposal.record.id))?.record.status).toBe("applied");
@@ -234,7 +234,7 @@ describe("skill workshop proposals", () => {
     "applies updates through opted-in trusted workspace skills symlink targets",
     async () => {
       const workspaceDir = await makeWorkspace();
-      const targetSkillsDir = await tempDirs.make("openclaw-skill-workshop-target-skills-");
+      const targetSkillsDir = await tempDirs.make("afora-skill-workshop-target-skills-");
       await fs.symlink(targetSkillsDir, path.join(workspaceDir, "skills"), "dir");
       const skillDir = path.join(targetSkillsDir, "shared-skill");
       await writeSkill({
@@ -281,7 +281,7 @@ describe("skill workshop proposals", () => {
     "blocks trusted workspace skills symlink writes until workshop writes are enabled",
     async () => {
       const workspaceDir = await makeWorkspace();
-      const targetSkillsDir = await tempDirs.make("openclaw-skill-workshop-readonly-skills-");
+      const targetSkillsDir = await tempDirs.make("afora-skill-workshop-readonly-skills-");
       await fs.symlink(targetSkillsDir, path.join(workspaceDir, "skills"), "dir");
       const config = { skills: { load: { allowSymlinkTargets: [targetSkillsDir] } } };
       const proposal = await proposeCreateSkill({
@@ -314,8 +314,8 @@ describe("skill workshop proposals", () => {
     "validates support file targets against trusted symlink write roots",
     async () => {
       const workspaceDir = await makeWorkspace();
-      const targetSkillsDir = await tempDirs.make("openclaw-skill-workshop-support-trusted-");
-      const untrustedSkillsDir = await tempDirs.make("openclaw-skill-workshop-support-untrusted-");
+      const targetSkillsDir = await tempDirs.make("afora-skill-workshop-support-trusted-");
+      const untrustedSkillsDir = await tempDirs.make("afora-skill-workshop-support-untrusted-");
       await fs.symlink(targetSkillsDir, path.join(workspaceDir, "skills"), "dir");
       await fs.symlink(untrustedSkillsDir, path.join(workspaceDir, "other-skills"), "dir");
       const config = {
@@ -364,7 +364,7 @@ describe("skill workshop proposals", () => {
     "blocks untrusted workspace skills symlink targets before support files are written",
     async () => {
       const workspaceDir = await makeWorkspace();
-      const targetSkillsDir = await tempDirs.make("openclaw-skill-workshop-untrusted-skills-");
+      const targetSkillsDir = await tempDirs.make("afora-skill-workshop-untrusted-skills-");
       await fs.symlink(targetSkillsDir, path.join(workspaceDir, "skills"), "dir");
       const proposal = await proposeCreateSkill({
         workspaceDir,
@@ -400,7 +400,7 @@ describe("skill workshop proposals", () => {
       name: "Frontmatter Skill",
       description: "Preserve metadata",
       content:
-        "---\nuser-invocable: false\nmetadata:\n  openclaw:\n    requires:\n      env:\n        - API_TOKEN\n---\n\n# Frontmatter Skill\n",
+        "---\nuser-invocable: false\nmetadata:\n  afora:\n    requires:\n      env:\n        - API_TOKEN\n---\n\n# Frontmatter Skill\n",
     });
 
     await expect(
@@ -411,7 +411,7 @@ describe("skill workshop proposals", () => {
       "utf8",
     );
     expect(createdSkill).toContain("user-invocable: false");
-    expect(createdSkill).toContain("metadata:\n  openclaw:");
+    expect(createdSkill).toContain("metadata:\n  afora:");
     expect(createdSkill).not.toContain("status: proposal");
     expect(createdSkill).not.toContain("version: ");
     expect(createdSkill).not.toContain("date: ");
@@ -1020,7 +1020,7 @@ describe("skill workshop proposals", () => {
       "utf8",
     );
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const manifest = await listSkillProposals({ workspaceDir });
     expect(manifest.proposals).toEqual(
       expect.arrayContaining([
@@ -1055,7 +1055,7 @@ describe("skill workshop proposals", () => {
     await fs.mkdir(path.dirname(supportFile), { recursive: true });
     await fs.writeFile(supportFile, "Partial support.\n", "utf8");
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     let releaseLock: (() => void) | undefined;
     let markAcquired: (() => void) | undefined;
     const acquired = new Promise<void>((resolve) => {
@@ -1097,7 +1097,7 @@ describe("skill workshop proposals", () => {
     "recovers a partial create through the apply config",
     async () => {
       const workspaceDir = await makeWorkspace();
-      const targetSkillsDir = await tempDirs.make("openclaw-workshop-recovery-symlink-");
+      const targetSkillsDir = await tempDirs.make("afora-workshop-recovery-symlink-");
       await fs.symlink(targetSkillsDir, path.join(workspaceDir, "skills"), "dir");
       const config = {
         skills: {
@@ -1131,7 +1131,7 @@ describe("skill workshop proposals", () => {
       await fs.mkdir(path.dirname(targetSupportFile), { recursive: true });
       await fs.writeFile(targetSupportFile, "Symlink support.\n", "utf8");
 
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       await expect(listSkillProposals({ workspaceDir })).resolves.toMatchObject({
         proposals: [expect.objectContaining({ id: proposal.record.id, status: "pending" })],
       });
@@ -1148,7 +1148,7 @@ describe("skill workshop proposals", () => {
     "uses the proposal environment for symlink recovery",
     async () => {
       const workspaceDir = await makeWorkspace();
-      const targetSkillsDir = await tempDirs.make("openclaw-workshop-recovery-env-symlink-");
+      const targetSkillsDir = await tempDirs.make("afora-workshop-recovery-env-symlink-");
       await fs.symlink(targetSkillsDir, path.join(workspaceDir, "skills"), "dir");
       const config = {
         skills: {
@@ -1156,10 +1156,10 @@ describe("skill workshop proposals", () => {
           workshop: { allowSymlinkTargetWrites: true },
         },
       };
-      const configDir = await tempDirs.make("openclaw-workshop-recovery-env-config-");
-      const configPath = path.join(configDir, "openclaw.json");
+      const configDir = await tempDirs.make("afora-workshop-recovery-env-config-");
+      const configPath = path.join(configDir, "afora.json");
       await fs.writeFile(configPath, JSON.stringify(config), "utf8");
-      const env = { ...testEnv, OPENCLAW_CONFIG_PATH: configPath };
+      const env = { ...testEnv, AFORA_CONFIG_PATH: configPath };
       const proposal = await proposeCreateSkill({
         workspaceDir,
         config,
@@ -1188,7 +1188,7 @@ describe("skill workshop proposals", () => {
       await fs.mkdir(path.dirname(targetSupportFile), { recursive: true });
       await fs.writeFile(targetSupportFile, "Profile support.\n", "utf8");
 
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       await expect(listSkillProposals({ workspaceDir, env })).resolves.toMatchObject({
         proposals: [expect.objectContaining({ id: proposal.record.id, status: "pending" })],
       });
@@ -1229,7 +1229,7 @@ describe("skill workshop proposals", () => {
       "utf8",
     );
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await expect(listSkillProposals({ workspaceDir })).resolves.toMatchObject({
       proposals: [expect.objectContaining({ id: proposal.record.id, status: "pending" })],
     });
@@ -1254,7 +1254,7 @@ describe("skill workshop proposals", () => {
     await fs.mkdir(proposal.record.target.skillDir, { recursive: true });
     await fs.writeFile(proposal.record.target.skillFile, "# External change\n", "utf8");
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await expect(listSkillProposals({ workspaceDir })).resolves.toMatchObject({
       proposals: [expect.objectContaining({ id: proposal.record.id, status: "pending" })],
     });
@@ -1305,7 +1305,7 @@ describe("skill workshop proposals", () => {
     await fs.writeFile(path.join(skillDir, "references", "proof.md"), "New support.\n", "utf8");
     await fs.writeFile(skillFile, stripProposalFrontmatterForSkill(proposal.content), "utf8");
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await expect(listSkillProposals({ workspaceDir })).resolves.toMatchObject({
       proposals: [expect.objectContaining({ id: proposal.record.id, status: "applied" })],
     });
@@ -1350,7 +1350,7 @@ describe("skill workshop proposals", () => {
     });
     await fs.writeFile(skillFile, stripProposalFrontmatterForSkill(proposal.content), "utf8");
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await expect(listSkillProposals({ workspaceDir })).resolves.toMatchObject({
       proposals: [expect.objectContaining({ id: proposal.record.id, status: "pending" })],
     });
@@ -1389,7 +1389,7 @@ describe("skill workshop proposals", () => {
       "utf8",
     );
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await expect(
       inspectSkillProposal(proposal.record.id, { agentId: "other", workspaceDir }),
     ).resolves.toBeNull();

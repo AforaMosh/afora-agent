@@ -8,7 +8,7 @@ import {
   pageOperatorApprovalReceiptsForRun,
   summarizeOperatorApprovalReceiptsForRun,
 } from "../gateway/operator-approval-store.js";
-import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
+import type { AforaStateDatabaseOptions } from "../state/afora-state-db.js";
 import { parsePositiveAuditCursor } from "./audit-cursor.js";
 import {
   pageExecutionDecisionFactsForContext,
@@ -19,7 +19,7 @@ import {
   summarizeMessageDeliveryReceiptsForRun,
 } from "./message-delivery-receipts.js";
 
-type ExecutionDecisionReadOptions = OpenClawStateDatabaseOptions & { now?: number };
+type ExecutionDecisionReadOptions = AforaStateDatabaseOptions & { now?: number };
 
 const MAX_AGGREGATE_MISSING_EVIDENCE = 16;
 const MISSING_EVIDENCE_TRUNCATED = "decision.missing_evidence_truncated";

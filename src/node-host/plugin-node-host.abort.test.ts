@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { GatewayClient } from "../gateway/client.js";
 import { createEmptyPluginRegistry } from "../plugins/registry-empty.js";
 import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "../plugins/runtime.js";
-import type { OpenClawPluginNodeHostCommandContext } from "../plugins/types.node-host.js";
+import type { AforaPluginNodeHostCommandContext } from "../plugins/types.node-host.js";
 import { handleInvoke } from "./invoke.js";
 
 afterEach(() => {
@@ -18,7 +18,7 @@ describe("non-duplex node-host plugin cancellation", () => {
       async (
         _paramsJSON?: string | null,
         _io?: unknown,
-        context?: OpenClawPluginNodeHostCommandContext,
+        context?: AforaPluginNodeHostCommandContext,
       ) => {
         await new Promise<void>((_resolve, reject) => {
           context?.signal?.addEventListener(

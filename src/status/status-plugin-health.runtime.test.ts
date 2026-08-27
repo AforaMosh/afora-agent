@@ -60,7 +60,7 @@ function seedPersistedToolQuarantineForTest(record: {
 
 describe("runtime plugin health snapshot", () => {
   it("includes persisted context-engine quarantines", async () => {
-    await withStateDirEnv("openclaw-status-plugin-health-", async () => {
+    await withStateDirEnv("afora-status-plugin-health-", async () => {
       resetContextEngineRuntimeQuarantineForTests();
       recordPersistedContextEngineQuarantine({
         engineId: "lossless-claw",
@@ -83,7 +83,7 @@ describe("runtime plugin health snapshot", () => {
   });
 
   it("includes persisted runtime tool-schema quarantines", async () => {
-    await withStateDirEnv("openclaw-status-tool-quarantine-", async () => {
+    await withStateDirEnv("afora-status-tool-quarantine-", async () => {
       const registry = createEmptyPluginRegistry();
       registry.plugins.push({
         id: "bad-tools",
@@ -110,7 +110,7 @@ describe("runtime plugin health snapshot", () => {
   });
 
   it("includes core-owned runtime tool quarantines from this process", async () => {
-    await withStateDirEnv("openclaw-status-tool-quarantine-core-", async () => {
+    await withStateDirEnv("afora-status-tool-quarantine-core-", async () => {
       setActivePluginRegistry(createEmptyPluginRegistry(), "empty", "default", "/tmp/ws");
       recordPersistedRuntimeToolSchemaQuarantine({
         toolName: "core_bad_tool",
@@ -129,7 +129,7 @@ describe("runtime plugin health snapshot", () => {
   });
 
   it("drops runtime tool quarantines from dead or unverifiable recorder processes", async () => {
-    await withStateDirEnv("openclaw-status-tool-quarantine-liveness-", async () => {
+    await withStateDirEnv("afora-status-tool-quarantine-liveness-", async () => {
       setActivePluginRegistry(createEmptyPluginRegistry(), "empty", "default", "/tmp/ws");
       // Dead sibling: no current start time exists, so the record fails closed.
       seedPersistedToolQuarantineForTest({
@@ -157,7 +157,7 @@ describe("runtime plugin health snapshot", () => {
   });
 
   it("drops runtime tool quarantines from a previous incarnation of this PID", async () => {
-    await withStateDirEnv("openclaw-status-tool-quarantine-pid-reuse-", async () => {
+    await withStateDirEnv("afora-status-tool-quarantine-pid-reuse-", async () => {
       setActivePluginRegistry(createEmptyPluginRegistry(), "empty", "default", "/tmp/ws");
       seedPersistedToolQuarantineForTest({
         toolName: "reused_pid_tool",
@@ -171,7 +171,7 @@ describe("runtime plugin health snapshot", () => {
   });
 
   it("suppresses persisted plugin-owned runtime tool quarantines after the owner plugin is gone", async () => {
-    await withStateDirEnv("openclaw-status-tool-quarantine-owner-", async () => {
+    await withStateDirEnv("afora-status-tool-quarantine-owner-", async () => {
       recordPersistedRuntimeToolSchemaQuarantine({
         toolName: "bad_tool",
         owner: "plugin:bad-tools",

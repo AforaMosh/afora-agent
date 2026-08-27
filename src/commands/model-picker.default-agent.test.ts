@@ -1,6 +1,6 @@
 // Model picker tests read the configured target agent without rewriting global defaults.
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { WizardPrompter } from "../wizard/prompts.js";
 
 vi.mock("./model-picker.runtime.js", () => ({
@@ -21,7 +21,7 @@ describe("promptDefaultModel default-agent ownership", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const select = vi.fn(async (params: { options: Array<{ value: string; label: string }> }) => {
       const keep = params.options[0];
       expect(keep?.label).toContain("anthropic/ops-model");

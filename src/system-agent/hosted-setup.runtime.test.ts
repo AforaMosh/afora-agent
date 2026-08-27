@@ -9,7 +9,7 @@ import {
   createAmbientVerifiedBinding,
   SystemAgentChatEngine,
   advanceGatewayWizardToToken,
-  type OpenClawConfig,
+  type AforaConfig,
   type WizardPrompter,
 } from "./chat-engine.test-support.js";
 
@@ -60,11 +60,11 @@ describe("SystemAgentChatEngine runtime", () => {
   });
 
   it("hosts the real skills setup flow and guards installs plus the final config write", async () => {
-    const baseConfig: OpenClawConfig = {
+    const baseConfig: AforaConfig = {
       agents: { defaults: { workspace: "/tmp/skills-workspace" } },
     };
     const beforeEffects: Array<() => Promise<void>> = [];
-    const appendAuditEntry = vi.fn(async () => "state/openclaw.sqlite");
+    const appendAuditEntry = vi.fn(async () => "state/afora.sqlite");
     mocks.readSetupConfigFileSnapshot.mockResolvedValue({
       exists: true,
       valid: true,
@@ -74,7 +74,7 @@ describe("SystemAgentChatEngine runtime", () => {
     });
     mocks.setupSkills.mockImplementation(
       async (
-        config: OpenClawConfig,
+        config: AforaConfig,
         workspaceDir: string,
         _runtime: unknown,
         prompter: WizardPrompter,
@@ -88,7 +88,7 @@ describe("SystemAgentChatEngine runtime", () => {
         return { ...config, skills: { install: { nodeManager: "npm" } } };
       },
     );
-    mocks.writeWizardConfigFile.mockImplementation(async (config: OpenClawConfig) => config);
+    mocks.writeWizardConfigFile.mockImplementation(async (config: AforaConfig) => config);
     const engine = new SystemAgentChatEngine({
       surface: "gateway",
       runAgentTurn: async () => null,
@@ -114,8 +114,8 @@ describe("SystemAgentChatEngine runtime", () => {
   });
 
   it("hosts search setup as question cards and keeps gateway credentials out of model history", async () => {
-    const baseConfig: OpenClawConfig = {};
-    const appendAuditEntry = vi.fn(async () => "state/openclaw.sqlite");
+    const baseConfig: AforaConfig = {};
+    const appendAuditEntry = vi.fn(async () => "state/afora.sqlite");
     const beforePersistentEffects: Array<() => Promise<void>> = [];
     mocks.readSetupConfigFileSnapshot.mockResolvedValue({
       exists: true,
@@ -126,7 +126,7 @@ describe("SystemAgentChatEngine runtime", () => {
     });
     mocks.runSearchSetupFlow.mockImplementation(
       async (
-        config: OpenClawConfig,
+        config: AforaConfig,
         _runtime: unknown,
         prompter: WizardPrompter,
         options: {
@@ -152,11 +152,11 @@ describe("SystemAgentChatEngine runtime", () => {
           config: {
             ...config,
             tools: { web: { search: { enabled: true, provider } } },
-          } as OpenClawConfig,
+          } as AforaConfig,
         };
       },
     );
-    mocks.writeWizardConfigFile.mockImplementation(async (config: OpenClawConfig) => config);
+    mocks.writeWizardConfigFile.mockImplementation(async (config: AforaConfig) => config);
     const engine = new SystemAgentChatEngine({
       surface: "gateway",
       runAgentTurn: async () => null,
@@ -189,13 +189,13 @@ describe("SystemAgentChatEngine runtime", () => {
   });
 
   it("hosts full Gateway setup with a lockout warning, audited config write, and no restart", async () => {
-    const baseConfig: OpenClawConfig = {
+    const baseConfig: AforaConfig = {
       ...structuredClone(sharedVerifiedInferenceConfig),
       gateway: { mode: "local" },
     };
-    const appendAuditEntry = vi.fn(async () => "state/openclaw.sqlite");
-    vi.stubEnv("OPENCLAW_GATEWAY_TOKEN", "");
-    vi.stubEnv("OPENCLAW_GATEWAY_PASSWORD", "");
+    const appendAuditEntry = vi.fn(async () => "state/afora.sqlite");
+    vi.stubEnv("AFORA_GATEWAY_TOKEN", "");
+    vi.stubEnv("AFORA_GATEWAY_PASSWORD", "");
     mocks.readSetupConfigFileSnapshot.mockResolvedValue({
       exists: true,
       valid: true,
@@ -203,7 +203,7 @@ describe("SystemAgentChatEngine runtime", () => {
       config: baseConfig,
       sourceConfig: baseConfig,
     });
-    mocks.writeWizardConfigFile.mockImplementation(async (config: OpenClawConfig) => config);
+    mocks.writeWizardConfigFile.mockImplementation(async (config: AforaConfig) => config);
     const engine = new SystemAgentChatEngine({
       surface: "gateway",
       runAgentTurn: async () => null,
@@ -258,13 +258,13 @@ describe("SystemAgentChatEngine runtime", () => {
 
   it("rechecks inference authority immediately before a hosted Gateway write", async () => {
     useTempStateDir();
-    const baseConfig: OpenClawConfig = {
+    const baseConfig: AforaConfig = {
       ...structuredClone(sharedVerifiedInferenceConfig),
       gateway: { mode: "local" },
     };
     const currentConfig = structuredClone(baseConfig);
-    vi.stubEnv("OPENCLAW_GATEWAY_TOKEN", "");
-    vi.stubEnv("OPENCLAW_GATEWAY_PASSWORD", "");
+    vi.stubEnv("AFORA_GATEWAY_TOKEN", "");
+    vi.stubEnv("AFORA_GATEWAY_PASSWORD", "");
     mocks.readSetupConfigFileSnapshot.mockResolvedValue({
       exists: true,
       valid: true,
@@ -272,8 +272,8 @@ describe("SystemAgentChatEngine runtime", () => {
       config: baseConfig,
       sourceConfig: baseConfig,
     });
-    mocks.writeWizardConfigFile.mockImplementation(async (config: OpenClawConfig) => config);
-    const changedConfig: OpenClawConfig = {
+    mocks.writeWizardConfigFile.mockImplementation(async (config: AforaConfig) => config);
+    const changedConfig: AforaConfig = {
       agents: { defaults: { model: "anthropic/claude-opus-4-8" } },
       models: {
         providers: {
@@ -316,7 +316,7 @@ describe("SystemAgentChatEngine runtime", () => {
   });
 
   it("keeps remote Gateway mode guidance-only", async () => {
-    const baseConfig: OpenClawConfig = { gateway: { mode: "remote" } };
+    const baseConfig: AforaConfig = { gateway: { mode: "remote" } };
     mocks.readSetupConfigFileSnapshot.mockResolvedValue({
       exists: true,
       valid: true,
@@ -334,8 +334,8 @@ describe("SystemAgentChatEngine runtime", () => {
     const reply = await engine.handle("configure gateway");
 
     expect(reply.text).toContain("manages only a local Gateway");
-    expect(reply.text).toContain("`openclaw onboard` for fresh setup");
-    expect(reply.text).toContain("`openclaw configure` for the mode question");
+    expect(reply.text).toContain("`afora onboard` for fresh setup");
+    expect(reply.text).toContain("`afora configure` for the mode question");
     expect(reply.text).not.toContain("Gateway port");
     expect(mocks.writeWizardConfigFile).not.toHaveBeenCalled();
   });
@@ -354,7 +354,7 @@ describe("SystemAgentChatEngine runtime", () => {
     const stopped = await engine.handle("configure gateway");
     expect(stopped.text).toContain("Sensitive input is not accepted");
     expect(stopped.text).toContain("open gateway wizard");
-    expect(stopped.text).toContain("openclaw configure --section gateway");
+    expect(stopped.text).toContain("afora configure --section gateway");
     expect(stopped.sensitive).toBeUndefined();
 
     const handoff = await engine.handle("open gateway wizard");
@@ -363,8 +363,8 @@ describe("SystemAgentChatEngine runtime", () => {
   });
 
   it("reports a failed hosted search-provider install without writing or auditing", async () => {
-    const baseConfig: OpenClawConfig = {};
-    const appendAuditEntry = vi.fn(async () => "state/openclaw.sqlite");
+    const baseConfig: AforaConfig = {};
+    const appendAuditEntry = vi.fn(async () => "state/afora.sqlite");
     mocks.readSetupConfigFileSnapshot.mockResolvedValue({
       exists: true,
       valid: true,
@@ -421,7 +421,7 @@ describe("SystemAgentChatEngine runtime", () => {
     mocks.readSetupConfigFileSnapshot.mockResolvedValue({
       exists: true,
       valid: false,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       hash: "invalid-hash",
       config: {},
       sourceConfig: {},
@@ -435,8 +435,8 @@ describe("SystemAgentChatEngine runtime", () => {
 
     const reply = await engine.handle("connect telegram");
 
-    expect(reply.text).toContain("machine running OpenClaw");
-    expect(reply.text).toContain("openclaw doctor --fix");
+    expect(reply.text).toContain("machine running Afora");
+    expect(reply.text).toContain("afora doctor --fix");
     expect(reply.text).toContain("remaining validation errors");
     expect(reply.text).not.toContain("repairs it");
   });
@@ -462,7 +462,7 @@ describe("SystemAgentChatEngine runtime", () => {
 
   it("rejects a hosted channel commit after a concurrent inference-route change", async () => {
     useTempStateDir();
-    const baseConfig: OpenClawConfig = {
+    const baseConfig: AforaConfig = {
       agents: { defaults: { model: { primary: "openai/gpt-5.5" } } },
       auth: {
         profiles: { "openai:main": { provider: "openai", mode: "api_key" } },
@@ -473,14 +473,14 @@ describe("SystemAgentChatEngine runtime", () => {
     mocks.readSetupConfigFileSnapshot.mockImplementation(async () => ({
       exists: true,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       hash: currentHash,
       config: structuredClone(currentConfig),
       sourceConfig: structuredClone(currentConfig),
       issues: [],
     }));
     mocks.setupChannels.mockImplementation(
-      async (config: OpenClawConfig, _runtime: unknown, prompter: WizardPrompter) => {
+      async (config: AforaConfig, _runtime: unknown, prompter: WizardPrompter) => {
         const token = await prompter.text({ message: "Bot token" });
         return {
           ...config,
@@ -492,7 +492,7 @@ describe("SystemAgentChatEngine runtime", () => {
       },
     );
     mocks.writeWizardConfigFile.mockImplementation(
-      async (nextConfig: OpenClawConfig, opts: { baseHash?: string }) => {
+      async (nextConfig: AforaConfig, opts: { baseHash?: string }) => {
         if (opts.baseHash !== currentHash) {
           throw new Error("configuration changed during channel setup");
         }
@@ -511,7 +511,7 @@ describe("SystemAgentChatEngine runtime", () => {
     const tokenStep = await engine.handle("connect telegram");
     expect(tokenStep.text).toContain("Bot token");
 
-    const concurrentConfig: OpenClawConfig = {
+    const concurrentConfig: AforaConfig = {
       agents: { defaults: { model: { primary: "anthropic/claude-opus-4-8" } } },
       auth: {
         profiles: { "anthropic:main": { provider: "anthropic", mode: "api_key" } },
@@ -537,7 +537,7 @@ describe("SystemAgentChatEngine runtime", () => {
 
   it("rechecks inference authority immediately before a hosted channel write", async () => {
     useTempStateDir();
-    const baseConfig: OpenClawConfig = {
+    const baseConfig: AforaConfig = {
       agents: { defaults: { model: { primary: "openai/gpt-5.5" } } },
       auth: { profiles: { "openai:main": { provider: "openai", mode: "api_key" } } },
       models: {
@@ -551,7 +551,7 @@ describe("SystemAgentChatEngine runtime", () => {
         },
       },
     };
-    const changedConfig: OpenClawConfig = {
+    const changedConfig: AforaConfig = {
       agents: { defaults: { model: { primary: "anthropic/claude-opus-4-8" } } },
     };
     const verifiedInference = await createAmbientVerifiedBinding(baseConfig);
@@ -559,14 +559,14 @@ describe("SystemAgentChatEngine runtime", () => {
     mocks.readSetupConfigFileSnapshot.mockResolvedValue({
       exists: true,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       hash: "base-hash",
       config: structuredClone(baseConfig),
       sourceConfig: structuredClone(baseConfig),
       issues: [],
     });
     mocks.setupChannels.mockImplementation(
-      async (config: OpenClawConfig, _runtime: unknown, prompter: WizardPrompter) => {
+      async (config: AforaConfig, _runtime: unknown, prompter: WizardPrompter) => {
         const token = await prompter.text({ message: "Bot token" });
         currentConfig = structuredClone(changedConfig);
         return {
@@ -575,7 +575,7 @@ describe("SystemAgentChatEngine runtime", () => {
         };
       },
     );
-    mocks.writeWizardConfigFile.mockImplementation(async (config: OpenClawConfig) => config);
+    mocks.writeWizardConfigFile.mockImplementation(async (config: AforaConfig) => config);
     const engine = new SystemAgentChatEngine({
       surface: "gateway",
       verifiedInference,
@@ -598,7 +598,7 @@ describe("SystemAgentChatEngine runtime", () => {
 
   it("rechecks inference authority before hosted channel post-write hooks", async () => {
     useTempStateDir();
-    const baseConfig: OpenClawConfig = {
+    const baseConfig: AforaConfig = {
       agents: { defaults: { model: { primary: "openai/gpt-5.5" } } },
       auth: { profiles: { "openai:main": { provider: "openai", mode: "api_key" } } },
       models: {
@@ -612,7 +612,7 @@ describe("SystemAgentChatEngine runtime", () => {
         },
       },
     };
-    const changedConfig: OpenClawConfig = {
+    const changedConfig: AforaConfig = {
       agents: { defaults: { model: { primary: "anthropic/claude-opus-4-8" } } },
     };
     const verifiedInference = await createAmbientVerifiedBinding(baseConfig);
@@ -621,7 +621,7 @@ describe("SystemAgentChatEngine runtime", () => {
     mocks.readSetupConfigFileSnapshot.mockResolvedValue({
       exists: true,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       hash: "base-hash",
       config: structuredClone(baseConfig),
       sourceConfig: structuredClone(baseConfig),
@@ -629,7 +629,7 @@ describe("SystemAgentChatEngine runtime", () => {
     });
     mocks.setupChannels.mockImplementation(
       async (
-        config: OpenClawConfig,
+        config: AforaConfig,
         _runtime: unknown,
         prompter: WizardPrompter,
         options: { onPostWriteHook?: (hook: unknown) => void },
@@ -642,7 +642,7 @@ describe("SystemAgentChatEngine runtime", () => {
         };
       },
     );
-    mocks.writeWizardConfigFile.mockImplementation(async (config: OpenClawConfig) => {
+    mocks.writeWizardConfigFile.mockImplementation(async (config: AforaConfig) => {
       currentConfig = structuredClone(changedConfig);
       return config;
     });
@@ -684,7 +684,7 @@ describe("hosted channel post-write hooks", () => {
     });
     mocks.setupChannels.mockImplementation(
       async (
-        _config: OpenClawConfig,
+        _config: AforaConfig,
         _runtime: unknown,
         _prompter: WizardPrompter,
         options: { onPostWriteHook?: (value: typeof hook) => void },

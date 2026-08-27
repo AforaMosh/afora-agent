@@ -1,5 +1,5 @@
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
-import type { OpenClawStateDatabase } from "../state/openclaw-state-db.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
+import type { AforaStateDatabase } from "../state/afora-state-db.js";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
@@ -7,7 +7,7 @@ import {
 } from "./kysely-sync.js";
 
 type ApnsRegistrationDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "apns_registrations" | "apns_registration_tombstones"
 >;
 
@@ -31,7 +31,7 @@ export function nextApnsRegistrationVersion(
 
 /** Tombstones and deletes one APNs owner inside the caller's shared-state transaction. */
 export function clearApnsRegistrationFromDatabase(
-  db: OpenClawStateDatabase["db"],
+  db: AforaStateDatabase["db"],
   nodeId: string,
 ): boolean {
   const normalizedNodeId = nodeId.trim();

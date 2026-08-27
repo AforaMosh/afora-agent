@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { resolveGlobalSingleton } from "../../shared/global-singleton.js";
 import {
   normalizeDeliveryContext,
@@ -17,7 +17,7 @@ type PluginSubagentRequesterScope = {
 };
 
 const PLUGIN_SUBAGENT_REQUESTER_SCOPE_KEY: unique symbol = Symbol.for(
-  "openclaw.pluginSubagentRequesterScope",
+  "afora.pluginSubagentRequesterScope",
 );
 
 const pluginSubagentRequesterScope = resolveGlobalSingleton<

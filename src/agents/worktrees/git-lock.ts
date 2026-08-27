@@ -3,7 +3,7 @@ import { isPidDefinitelyDead } from "../../shared/pid-alive.js";
 import { commandError, runGit, listGitWorktrees } from "./git.js";
 import type { ManagedWorktreeRecord } from "./types.js";
 
-const OPENCLAW_LOCK_PATTERN = /^openclaw pid=(\d+)$/;
+const AFORA_LOCK_PATTERN = /^afora pid=(\d+)$/;
 
 type LockState =
   | { kind: "none" }
@@ -18,12 +18,12 @@ export async function lockState(record: ManagedWorktreeRecord): Promise<LockStat
   if (!entry || entry.lockedReason === undefined) {
     return { kind: "none" };
   }
-  const match = OPENCLAW_LOCK_PATTERN.exec(entry.lockedReason);
+  const match = AFORA_LOCK_PATTERN.exec(entry.lockedReason);
   if (!match) {
     return { kind: "foreign", reason: entry.lockedReason };
   }
   const pid = Number(match[1]);
-  // A cross-user (EPERM) OpenClaw lock is treated as live so a run's checkout is
+  // A cross-user (EPERM) Afora lock is treated as live so a run's checkout is
   // never removed under it; only an ESRCH/zombie owner counts as dead.
   return isPidDefinitelyDead(pid) ? { kind: "dead", pid } : { kind: "live", pid };
 }
@@ -37,7 +37,7 @@ async function runLock(record: ManagedWorktreeRecord) {
     "worktree",
     "lock",
     "--reason",
-    `openclaw pid=${process.pid}`,
+    `afora pid=${process.pid}`,
     record.path,
   ]);
 }
@@ -51,7 +51,7 @@ export async function lockWorktreeForProcess(record: ManagedWorktreeRecord): Pro
   if (heldByThisProcess(state)) {
     return;
   }
-  // A lock naming a dead OpenClaw pid is restart residue: the owner died (crash or
+  // A lock naming a dead Afora pid is restart residue: the owner died (crash or
   // update restart) without unlocking, so git refuses every later lock forever and
   // the run would otherwise proceed unprotected. remove()/release() already treat a
   // dead owner as reclaimable, so reclaim it here instead of failing the acquire.
@@ -59,7 +59,7 @@ export async function lockWorktreeForProcess(record: ManagedWorktreeRecord): Pro
   // callers already take, so two processes reclaiming the identical stale lock at
   // once can both believe they won. Closing it needs one reclaim guard shared by all
   // four paths -- this acquire plus service.ts release(), remove(), and
-  // isProtectedFromAutoRemoval() (openclaw#114129); today's behavior instead loses
+  // isProtectedFromAutoRemoval() (afora#114129); today's behavior instead loses
   // the lock every time.
   if (state.kind !== "dead") {
     throw commandError("git worktree lock", result);

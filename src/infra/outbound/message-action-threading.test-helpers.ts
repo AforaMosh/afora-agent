@@ -1,10 +1,10 @@
 // Shared threading test helpers build small tool contexts and auto-thread
 // resolvers without importing delivery runtime.
 import { vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
 type AutoThreadResolver = (params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   to: string;
   toolContext?: Record<string, unknown>;
@@ -12,7 +12,7 @@ type AutoThreadResolver = (params: {
 }) => string | undefined;
 
 type OutboundThreadContext = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   to: string;
   accountId?: string | null;
   toolContext?: Record<string, unknown>;
@@ -131,7 +131,7 @@ export function createOutboundThreadingMock() {
         resolveAutoThreadId,
       }: {
         actionParams: Record<string, unknown>;
-        cfg: OpenClawConfig;
+        cfg: AforaConfig;
         to: string;
         accountId?: string | null;
         toolContext?: Record<string, unknown>;

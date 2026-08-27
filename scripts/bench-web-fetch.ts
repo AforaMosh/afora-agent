@@ -4,7 +4,7 @@ import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { extractBasicHtmlContent } from "../src/agents/tools/web-fetch-utils.js";
 import { createWebFetchTool } from "../src/agents/tools/web-fetch.js";
-import type { OpenClawConfig } from "../src/config/types.openclaw.js";
+import type { AforaConfig } from "../src/config/types.afora.js";
 import type { LookupFn } from "../src/infra/net/ssrf.js";
 import { extractReadableContent } from "../src/web-fetch/content-extractors.runtime.js";
 import { stripLeadingPackageManagerSeparator } from "./lib/arg-utils.mts";
@@ -110,12 +110,12 @@ const SHELL_HTML = `<!doctype html>
   </body>
 </html>`;
 
-const TEXT_BODY = "OpenClaw web_fetch direct text benchmark body.".repeat(160);
+const TEXT_BODY = "Afora web_fetch direct text benchmark body.".repeat(160);
 const MARKDOWN_BODY = "# Web Fetch Benchmark\n\n" + "- markdown list item\n".repeat(220);
 const OFFLINE_PROVIDER_ENV_VARS = ["FIRECRAWL_API_KEY"] as const;
 
 const lookupFn = (async () => [{ address: "93.184.216.34", family: 4 }]) as unknown as LookupFn;
-const toolConfig: OpenClawConfig = {
+const toolConfig: AforaConfig = {
   tools: {
     web: {
       fetch: {
@@ -222,7 +222,7 @@ function parseOptions(args = process.argv.slice(2)): Options {
 }
 
 function printUsage(): void {
-  process.stdout.write(`OpenClaw web_fetch benchmark
+  process.stdout.write(`Afora web_fetch benchmark
 
 Usage:
   pnpm perf:web-fetch -- [options]

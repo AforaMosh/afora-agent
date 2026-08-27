@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PluginOrigin } from "./plugin-origin.types.js";
 import { createEmptyPluginRegistry } from "./registry.js";
-import type { OpenClawPluginService, OpenClawPluginServiceContext } from "./types.js";
+import type { AforaPluginService, AforaPluginServiceContext } from "./types.js";
 
 const mockedLogger = vi.hoisted(() => ({
   info: vi.fn<(msg: string) => void>(),
@@ -34,13 +34,13 @@ import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "./runti
 import { startPluginServices, type PluginServicesHandle } from "./services.js";
 
 type TrustedExporterInternalDiagnostics = NonNullable<
-  OpenClawPluginServiceContext["internalDiagnostics"]
+  AforaPluginServiceContext["internalDiagnostics"]
 > & {
   reportExporterHealth?: (update: DiagnosticExporterHealthUpdate) => void;
 };
 
 function createRegistry(
-  services: OpenClawPluginService[],
+  services: AforaPluginService[],
   pluginId = "plugin:test",
   origin: PluginOrigin = "workspace",
   trustedOfficialInstall = false,
@@ -62,7 +62,7 @@ function createServiceConfig() {
 }
 
 function expectServiceContext(
-  ctx: OpenClawPluginServiceContext,
+  ctx: AforaPluginServiceContext,
   config: Parameters<typeof startPluginServices>[0]["config"],
 ) {
   expect(ctx.config).toBe(config);
@@ -71,14 +71,14 @@ function expectServiceContext(
   expectServiceLogger(ctx);
 }
 
-function expectServiceLogger(ctx: OpenClawPluginServiceContext) {
+function expectServiceLogger(ctx: AforaPluginServiceContext) {
   expect(typeof ctx.logger.info).toBe("function");
   expect(typeof ctx.logger.warn).toBe("function");
   expect(typeof ctx.logger.error).toBe("function");
 }
 
 function expectServiceContexts(
-  contexts: OpenClawPluginServiceContext[],
+  contexts: AforaPluginServiceContext[],
   config: Parameters<typeof startPluginServices>[0]["config"],
 ) {
   expect(contexts).not.toHaveLength(0);
@@ -90,7 +90,7 @@ function expectServiceContexts(
 function expectServiceLifecycleState(params: {
   starts: string[];
   stops: string[];
-  contexts: OpenClawPluginServiceContext[];
+  contexts: AforaPluginServiceContext[];
   config: Parameters<typeof startPluginServices>[0]["config"];
 }) {
   expect(params.starts).toEqual(["a", "b", "c"]);
@@ -108,7 +108,7 @@ function requireLoggerErrorMessage(index = 0): string {
 }
 
 async function startTrackingServices(params: {
-  services: OpenClawPluginService[];
+  services: AforaPluginService[];
   config?: Parameters<typeof startPluginServices>[0]["config"];
   workspaceDir?: string;
   startupTrace?: Parameters<typeof startPluginServices>[0]["startupTrace"];
@@ -126,12 +126,12 @@ function createTrackingService(
   params: {
     starts?: string[];
     stops?: string[];
-    contexts?: OpenClawPluginServiceContext[];
+    contexts?: AforaPluginServiceContext[];
     failOnStart?: boolean;
     failOnStop?: boolean;
     stopSpy?: () => void;
   } = {},
-): OpenClawPluginService {
+): AforaPluginService {
   return {
     id,
     start: (ctx) => {
@@ -167,7 +167,7 @@ describe("startPluginServices", () => {
   it("starts services and stops them in reverse order", async () => {
     const starts: string[] = [];
     const stops: string[] = [];
-    const contexts: OpenClawPluginServiceContext[] = [];
+    const contexts: AforaPluginServiceContext[] = [];
 
     const config = createServiceConfig();
     const handle = await startTrackingServices({
@@ -301,7 +301,7 @@ describe("startPluginServices", () => {
     const acquired = new Set<string>();
     const received = vi.fn();
     const siblingStart = vi.fn();
-    const rollback = vi.fn((ctx: OpenClawPluginServiceContext) => {
+    const rollback = vi.fn((ctx: AforaPluginServiceContext) => {
       acquired.delete("failed-service");
       ctx.gatewayEvents?.emit("rolled-back", {}, { scope: "operator.read" });
     });
@@ -389,7 +389,7 @@ describe("startPluginServices", () => {
   });
 
   it("omits gateway events entirely when no broadcaster exists", async () => {
-    let context: OpenClawPluginServiceContext | undefined;
+    let context: AforaPluginServiceContext | undefined;
     const handle = await startPluginServices({
       registry: createRegistry([
         {
@@ -410,7 +410,7 @@ describe("startPluginServices", () => {
 
   it("subscribes services to sessions.changed and revokes them on stop", async () => {
     const received = vi.fn();
-    let context: OpenClawPluginServiceContext | undefined;
+    let context: AforaPluginServiceContext | undefined;
     const handle = await startPluginServices({
       registry: createRegistry([
         {
@@ -507,7 +507,7 @@ describe("startPluginServices", () => {
   });
 
   it("rejects unsafe event names, scopes, and payloads", async () => {
-    let context: OpenClawPluginServiceContext | undefined;
+    let context: AforaPluginServiceContext | undefined;
     const broadcastPluginEvent = vi.fn();
     await startPluginServices({
       registry: createRegistry([
@@ -538,7 +538,7 @@ describe("startPluginServices", () => {
   });
 
   it("revokes gateway event emitters after failed start and stop", async () => {
-    const contexts: OpenClawPluginServiceContext[] = [];
+    const contexts: AforaPluginServiceContext[] = [];
     const broadcastPluginEvent = vi.fn();
     const handle = await startPluginServices({
       registry: createRegistry([
@@ -804,7 +804,7 @@ describe("startPluginServices", () => {
   });
 
   it("passes a scoped startup trace through service context for owned subspans", async () => {
-    const contexts: OpenClawPluginServiceContext[] = [];
+    const contexts: AforaPluginServiceContext[] = [];
     const measured: string[] = [];
     const details: Array<{
       name: string;
@@ -881,7 +881,7 @@ describe("startPluginServices", () => {
   });
 
   it("grants internal diagnostics only to trusted diagnostics exporter services", async () => {
-    const contexts: OpenClawPluginServiceContext[] = [];
+    const contexts: AforaPluginServiceContext[] = [];
     const diagnosticsService = createTrackingService("diagnostics-otel", { contexts });
     await startPluginServices({
       registry: createRegistry([diagnosticsService], "diagnostics-otel", "bundled"),
@@ -896,7 +896,7 @@ describe("startPluginServices", () => {
         ?.reportExporterHealth,
     ).toBeTypeOf("function");
 
-    const prometheusContexts: OpenClawPluginServiceContext[] = [];
+    const prometheusContexts: AforaPluginServiceContext[] = [];
     const prometheusService = createTrackingService("diagnostics-prometheus", {
       contexts: prometheusContexts,
     });
@@ -915,7 +915,7 @@ describe("startPluginServices", () => {
         ?.reportExporterHealth,
     ).toBeTypeOf("function");
 
-    const officialDiagnosticsOtelContexts: OpenClawPluginServiceContext[] = [];
+    const officialDiagnosticsOtelContexts: AforaPluginServiceContext[] = [];
     const officialDiagnosticsOtelService = createTrackingService("diagnostics-otel", {
       contexts: officialDiagnosticsOtelContexts,
     });
@@ -942,7 +942,7 @@ describe("startPluginServices", () => {
       )?.reportExporterHealth,
     ).toBeTypeOf("function");
 
-    const officialInstallContexts: OpenClawPluginServiceContext[] = [];
+    const officialInstallContexts: AforaPluginServiceContext[] = [];
     const officialInstallService = createTrackingService("diagnostics-prometheus", {
       contexts: officialInstallContexts,
     });
@@ -964,7 +964,7 @@ describe("startPluginServices", () => {
       )?.reportExporterHealth,
     ).toBeTypeOf("function");
 
-    const untrustedContexts: OpenClawPluginServiceContext[] = [];
+    const untrustedContexts: AforaPluginServiceContext[] = [];
     const untrustedService = createTrackingService("diagnostics-otel", {
       contexts: untrustedContexts,
     });
@@ -975,7 +975,7 @@ describe("startPluginServices", () => {
 
     expect(untrustedContexts[0]?.internalDiagnostics).toBeUndefined();
 
-    const spoofedContexts: OpenClawPluginServiceContext[] = [];
+    const spoofedContexts: AforaPluginServiceContext[] = [];
     const spoofedService = createTrackingService("diagnostics-prometheus", {
       contexts: spoofedContexts,
     });
@@ -1015,7 +1015,7 @@ describe("startPluginServices", () => {
     }> = [];
     const createDiagnosticsService = (id: "diagnostics-otel" | "diagnostics-prometheus") => ({
       id,
-      start(ctx: OpenClawPluginServiceContext) {
+      start(ctx: AforaPluginServiceContext) {
         ctx.internalDiagnostics?.onEvent((event, _metadata, privateData) => {
           if (event.type === "model.usage") {
             observed.push({

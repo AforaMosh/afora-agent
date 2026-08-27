@@ -3,8 +3,8 @@ import {
   computeBackoff,
   sleepWithAbort,
   type BackoffPolicy,
-} from "openclaw/plugin-sdk/runtime-env";
-import { asSafeIntegerInRange } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/runtime-env";
+import { asSafeIntegerInRange } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 const OFFSET_PERSIST_RETRY_POLICY: BackoffPolicy = {
   initialMs: 250,

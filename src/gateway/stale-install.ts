@@ -5,15 +5,15 @@ import {
   type ErrorShape,
 } from "../../packages/gateway-protocol/src/index.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import { resolveOpenClawPackageRootSync } from "../infra/openclaw-root.js";
+import { resolveAforaPackageRootSync } from "../infra/afora-root.js";
 import { hasNodeErrorCode, isPathInside } from "../infra/path-guards.js";
 
 export const GATEWAY_STALE_INSTALL_CLOSE_REASON =
-  "gateway install changed; run: openclaw gateway restart";
+  "gateway install changed; run: afora gateway restart";
 
 // The install root is process-stable; capture it before an upgrade can replace
 // package metadata, then consult it only after a dynamic import has failed.
-const gatewayInstallRoot = resolveOpenClawPackageRootSync({ moduleUrl: import.meta.url });
+const gatewayInstallRoot = resolveAforaPackageRootSync({ moduleUrl: import.meta.url });
 
 type GatewayStaleInstall = {
   error: ErrorShape;
@@ -41,11 +41,11 @@ export function classifyGatewayStaleInstall(error: unknown): GatewayStaleInstall
   if (!isPathInside(gatewayInstallRoot, missingPath)) {
     return null;
   }
-  const restartCommand = formatCliCommand("openclaw gateway restart");
+  const restartCommand = formatCliCommand("afora gateway restart");
   return {
     error: errorShape(
       ErrorCodes.UNAVAILABLE,
-      `The running Gateway can no longer load part of its OpenClaw installation. The installation may have changed while the Gateway was running. Restart it with: ${restartCommand}`,
+      `The running Gateway can no longer load part of its Afora installation. The installation may have changed while the Gateway was running. Restart it with: ${restartCommand}`,
       { details: { code: "STALE_INSTALL", restartCommand }, retryable: false },
     ),
     restartCommand,

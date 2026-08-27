@@ -1,18 +1,18 @@
 import { createHash } from "node:crypto";
-import { resolveSessionAgentIds } from "openclaw/plugin-sdk/agent-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
-import { resolveConfiguredSecretInputString } from "openclaw/plugin-sdk/secret-input-runtime";
+import { resolveSessionAgentIds } from "afora-agent/plugin-sdk/agent-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
+import { resolveConfiguredSecretInputString } from "afora-agent/plugin-sdk/secret-input-runtime";
 import type {
   SessionCatalogHost,
   SessionCatalogTranscriptItem,
-} from "openclaw/plugin-sdk/session-catalog";
+} from "afora-agent/plugin-sdk/session-catalog";
 import {
   listActiveSessionCatalogs,
   type ActiveSessionCatalog,
-} from "openclaw/plugin-sdk/session-catalog-runtime";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/session-catalog-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { BEAM_MAX_BODY_BYTES, BEAM_MAX_ITEM_CHARS, BEAM_MAX_ITEMS } from "./types.js";
 
 const MIRROR_CONFIG_PATH = "plugins.entries.beam.config.mirror";
@@ -363,7 +363,7 @@ export function createBeamMirrorRunner(params: {
       }
       let agentId: string;
       try {
-        agentId = resolveSessionAgentIds({ config: config as OpenClawConfig }).defaultAgentId;
+        agentId = resolveSessionAgentIds({ config: config as AforaConfig }).defaultAgentId;
       } catch (error) {
         warnThrottled(`beam mirror disabled: ${String(error)}`);
         return;
@@ -372,7 +372,7 @@ export function createBeamMirrorRunner(params: {
       if (mirror.token !== undefined) {
         const resolved = await resolveConfiguredSecretInputString({
           // The resolver only reads; the plugin runtime exposes a DeepReadonly view.
-          config: config as OpenClawConfig,
+          config: config as AforaConfig,
           env,
           value: mirror.token,
           path: MIRROR_TOKEN_PATH,

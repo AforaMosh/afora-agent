@@ -5,9 +5,9 @@ title: "Channel message API"
 
 This page moved to [Channel outbound API](/plugins/sdk-channel-outbound).
 
-`openclaw/plugin-sdk/channel-message` remains a deprecated compatibility
+`afora/plugin-sdk/channel-message` remains a deprecated compatibility
 subpath for older plugins. New channel plugins should use
-`openclaw/plugin-sdk/channel-outbound` for message lifecycle, receipt,
+`afora/plugin-sdk/channel-outbound` for message lifecycle, receipt,
 durable send, and live preview helpers instead of adding new helpers to the
 deprecated subpath.
 

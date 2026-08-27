@@ -44,7 +44,7 @@ export { publishTaskRecordAfterAtomicStore } from "./task-registry-mutation.js";
 export { ensureTaskRegistryReady, reloadTaskRegistryFromStore } from "./task-registry-state.js";
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.taskRegistryTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.taskRegistryTestApi")] = {
     maybeDeliverTaskStateChangeUpdate,
     resetTaskRegistryControlRuntimeForTests,
     resetTaskRegistryDeliveryRuntimeForTests,

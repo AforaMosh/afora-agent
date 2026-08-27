@@ -20,7 +20,7 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("fail-closed Windows ACL probe", () => {
   it("budgets for cold PowerShell startup and sanitizes the spawn failure", async () => {
-    const tempDir = tempDirs.make("openclaw-snapshot-windows-acl-probe-");
+    const tempDir = tempDirs.make("afora-snapshot-windows-acl-probe-");
     vi.spyOn(process, "platform", "get").mockReturnValue("win32");
     const encodedPayload = Buffer.from("private PowerShell script bytes").toString("base64");
     const command = `powershell.exe -EncodedCommand ${encodedPayload}`;

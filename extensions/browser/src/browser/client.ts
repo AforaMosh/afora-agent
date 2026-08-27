@@ -7,7 +7,7 @@
 import {
   clampPositiveTimerTimeoutMs,
   resolveTimerTimeoutMs,
-} from "openclaw/plugin-sdk/number-runtime";
+} from "afora-agent/plugin-sdk/number-runtime";
 import { buildProfileQuery, withBaseUrl } from "./client-actions-url.js";
 import { fetchBrowserJson } from "./client-fetch.js";
 import type {
@@ -92,7 +92,7 @@ export type ProfileStatus = {
   cdpPort: number | null;
   cdpUrl: string | null;
   color: string;
-  driver: "openclaw" | "existing-session" | "extension";
+  driver: "afora" | "existing-session" | "extension";
   running: boolean;
   tabCount: number;
   isDefault: boolean;
@@ -305,7 +305,7 @@ export async function browserCreateProfile(
     color?: string;
     cdpUrl?: string;
     userDataDir?: string;
-    driver?: "openclaw" | "existing-session";
+    driver?: "afora" | "existing-session";
   },
 ): Promise<BrowserCreateProfileResult> {
   return await fetchBrowserJson<BrowserCreateProfileResult>(
@@ -399,7 +399,7 @@ export async function browserCloseTab(
   return await sendTabTargetRequest({ baseUrl, path, method: "DELETE", opts });
 }
 
-/** Close a canonical raw target id selected by OpenClaw's internal tab bookkeeping. */
+/** Close a canonical raw target id selected by Afora's internal tab bookkeeping. */
 export async function browserCloseTabByRawTargetId(
   baseUrl: string | undefined,
   targetId: string,

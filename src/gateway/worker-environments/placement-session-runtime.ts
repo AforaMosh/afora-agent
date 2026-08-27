@@ -1,18 +1,18 @@
 import {
   isDefaultAgentRuntimeId,
-  OPENCLAW_AGENT_RUNTIME_ID,
+  AFORA_AGENT_RUNTIME_ID,
 } from "../../agents/agent-runtime-id.js";
 import { getRegisteredAgentHarness } from "../../agents/harness/registry.js";
 import { resolveSessionModelRef } from "../../agents/session-model-ref.js";
 import { resolvePersistedSessionRuntimeId } from "../../agents/session-runtime-compat.js";
 import { resolveEffectiveAgentRuntime } from "../../agents/thinking-runtime.js";
 import type { SessionEntry } from "../../config/sessions.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { GatewayAgentRuntime } from "../../shared/session-types.js";
 import type { WorkerPlacementExecutionMode } from "./placement-record.js";
 
 export function resolveWorkerPlacementSessionRuntime(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   entry: SessionEntry;
   agentId: string;
   sessionKey: string;
@@ -35,7 +35,7 @@ export function resolveWorkerPlacementExecutionMode(
   runtime: string,
 ): WorkerPlacementExecutionMode | undefined {
   const runtimeId = runtime.trim();
-  if (runtimeId === OPENCLAW_AGENT_RUNTIME_ID) {
+  if (runtimeId === AFORA_AGENT_RUNTIME_ID) {
     return "worker-turn";
   }
   const harness = getRegisteredAgentHarness(runtimeId)?.harness as

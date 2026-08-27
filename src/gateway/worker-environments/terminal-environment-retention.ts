@@ -1,6 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../../infra/kysely-sync.js";
-import type { DB as StateDatabase } from "../../state/openclaw-state-db.generated.js";
+import type { DB as StateDatabase } from "../../state/afora-state-db.generated.js";
 
 const TERMINAL_ENVIRONMENT_RETENTION_MS = 7 * 24 * 60 * 60 * 1_000;
 const TERMINAL_ENVIRONMENT_PRUNE_LIMIT = 256;

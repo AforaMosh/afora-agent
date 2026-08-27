@@ -1,19 +1,19 @@
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
-// Memory Core plugin entrypoint registers its OpenClaw integration.
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
+// Memory Core plugin entrypoint registers its Afora integration.
 import {
   jsonResult,
   resolveMemorySearchConfig,
   resolveSessionAgentIds,
   type MemoryPluginRuntime,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/memory-core-host-runtime-core";
-import { resolveMemoryBackendConfig } from "openclaw/plugin-sdk/memory-core-host-runtime-files";
+  type AforaConfig,
+} from "afora-agent/plugin-sdk/memory-core-host-runtime-core";
+import { resolveMemoryBackendConfig } from "afora-agent/plugin-sdk/memory-core-host-runtime-files";
 import {
   definePluginEntry,
   type AnyAgentTool,
-  type OpenClawPluginToolContext,
-} from "openclaw/plugin-sdk/plugin-entry";
-import type { OpenKeyedStoreOptions } from "openclaw/plugin-sdk/plugin-state-runtime";
+  type AforaPluginToolContext,
+} from "afora-agent/plugin-sdk/plugin-entry";
+import type { OpenKeyedStoreOptions } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import type { TSchema } from "typebox";
 import { configureMemoryCoreDreamingState } from "./src/dreaming-state.js";
 import { registerShortTermPromotionDreaming } from "./src/dreaming.js";
@@ -27,13 +27,13 @@ type MemoryToolsModule = typeof import("./src/tools.js");
 type StandingIntentToolModule = typeof import("./src/standing-intents-tool.js");
 
 type MemoryToolOptions = {
-  config?: OpenClawConfig;
-  getConfig?: () => OpenClawConfig | undefined;
+  config?: AforaConfig;
+  getConfig?: () => AforaConfig | undefined;
   agentId?: string;
   agentSessionKey?: string;
   sandboxed?: boolean;
   oneShotCliRun?: boolean;
-  conversationRecall?: OpenClawPluginToolContext["conversationRecall"];
+  conversationRecall?: AforaPluginToolContext["conversationRecall"];
   activeProjectKeys?: readonly string[];
   acquireLocalService?: MemoryCoreAcquireLocalService;
 };
@@ -50,7 +50,7 @@ const loadRuntimeProviderModule = createLazyRuntimeModule(
   () => import("./src/runtime-provider.js"),
 );
 
-function getToolConfig(options: MemoryToolOptions): OpenClawConfig | undefined {
+function getToolConfig(options: MemoryToolOptions): AforaConfig | undefined {
   return options.getConfig?.() ?? options.config;
 }
 
@@ -153,7 +153,7 @@ function createLazyMemoryGetTool(options: MemoryToolOptions): AnyAgentTool | nul
 }
 
 function createLazyStandingIntentTool(
-  ctx: OpenClawPluginToolContext,
+  ctx: AforaPluginToolContext,
   reportUnavailable: (reason: string) => void,
 ): AnyAgentTool | null {
   if (ctx.senderIsOwner !== true) {
@@ -227,7 +227,7 @@ function createLazyStandingIntentTool(
 }
 
 function resolveMemoryToolOptions(
-  ctx: OpenClawPluginToolContext,
+  ctx: AforaPluginToolContext,
   host: MemoryCoreRuntimeHost,
 ): MemoryToolOptions {
   const getConfig = () => ctx.getRuntimeConfig?.() ?? ctx.runtimeConfig ?? ctx.config;
@@ -274,7 +274,7 @@ function createLazyMemoryRuntime(host: MemoryCoreRuntimeHost): MemoryPluginRunti
 
 export default definePluginEntry({
   id: "memory-core",
-  name: "OpenClaw Memory",
+  name: "Afora Memory",
   description: "File-backed memory search tools and CLI",
   kind: "memory",
   register(api) {
@@ -324,7 +324,7 @@ export default definePluginEntry({
         if (!module.isEligibleStandingIntentTurn(ctx)) {
           return undefined;
         }
-        const config = (api.runtime.config?.current?.() ?? api.config) as OpenClawConfig;
+        const config = (api.runtime.config?.current?.() ?? api.config) as AforaConfig;
         const { sessionAgentId: agentId } = resolveSessionAgentIds({
           sessionKey: ctx.sessionKey,
           config,
@@ -360,7 +360,7 @@ export default definePluginEntry({
         }
         try {
           const module = await loadStandingIntentsModule();
-          const config = (api.runtime.config?.current?.() ?? api.config) as OpenClawConfig;
+          const config = (api.runtime.config?.current?.() ?? api.config) as AforaConfig;
           const { sessionAgentId: agentId } = resolveSessionAgentIds({
             sessionKey: ctx.sessionKey,
             config,

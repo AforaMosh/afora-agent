@@ -19,11 +19,11 @@ function runFixture(
     encoding: "utf8",
     env: {
       ...process.env,
-      OPENCLAW_CONFIG_BATCH_PATH: path.join(root, "batch.json"),
-      OPENCLAW_CONFIG_PATH: path.join(root, "openclaw.json"),
-      OPENCLAW_GATEWAY_TOKEN: "test-token",
-      OPENCLAW_OPENWEBUI_MODEL: "openai/gpt-5.4-mini",
-      OPENCLAW_STATE_DIR: root,
+      AFORA_CONFIG_BATCH_PATH: path.join(root, "batch.json"),
+      AFORA_CONFIG_PATH: path.join(root, "afora.json"),
+      AFORA_GATEWAY_TOKEN: "test-token",
+      AFORA_OPENWEBUI_MODEL: "openai/gpt-5.4-mini",
+      AFORA_STATE_DIR: root,
       ...env,
     },
   });
@@ -31,7 +31,7 @@ function runFixture(
 
 describe("scripts/e2e/lib/fixture.mjs config commands", () => {
   it("rejects loose gateway port env values instead of parsing prefixes", () => {
-    const root = tempRoots.make("openclaw-fixture-config-");
+    const root = tempRoots.make("afora-fixture-config-");
     try {
       const result = runFixture(root, "config-reload", [], { PORT: "18789tcp" });
 
@@ -43,7 +43,7 @@ describe("scripts/e2e/lib/fixture.mjs config commands", () => {
   });
 
   it("rejects out-of-range gateway port env values", () => {
-    const root = tempRoots.make("openclaw-fixture-config-");
+    const root = tempRoots.make("afora-fixture-config-");
     try {
       const result = runFixture(root, "config-reload", [], { PORT: "65536" });
 
@@ -55,12 +55,12 @@ describe("scripts/e2e/lib/fixture.mjs config commands", () => {
   });
 
   it("writes strict positive browser CDP ports into generated config", () => {
-    const root = tempRoots.make("openclaw-fixture-config-");
+    const root = tempRoots.make("afora-fixture-config-");
     try {
       const result = runFixture(root, "browser-cdp", [], { CDP_PORT: "19223", PORT: "19000" });
 
       expect(result.status).toBe(0);
-      const config = JSON.parse(readFileSync(path.join(root, "openclaw.json"), "utf8"));
+      const config = JSON.parse(readFileSync(path.join(root, "afora.json"), "utf8"));
       expect(config.gateway.port).toBe(19000);
       expect(config.browser.noSandbox).toBe(true);
       expect(config.browser.extraArgs).toEqual([
@@ -74,7 +74,7 @@ describe("scripts/e2e/lib/fixture.mjs config commands", () => {
   });
 
   it("rejects loose browser CDP port env values", () => {
-    const root = tempRoots.make("openclaw-fixture-config-");
+    const root = tempRoots.make("afora-fixture-config-");
     try {
       const result = runFixture(root, "browser-cdp", [], { CDP_PORT: "19222http" });
 
@@ -86,7 +86,7 @@ describe("scripts/e2e/lib/fixture.mjs config commands", () => {
   });
 
   it("rejects out-of-range browser CDP port env values", () => {
-    const root = tempRoots.make("openclaw-fixture-config-");
+    const root = tempRoots.make("afora-fixture-config-");
     try {
       const result = runFixture(root, "browser-cdp", [], { CDP_PORT: "65536" });
 
@@ -98,24 +98,24 @@ describe("scripts/e2e/lib/fixture.mjs config commands", () => {
   });
 
   it("rejects loose Open WebUI provider timeout values", () => {
-    const root = tempRoots.make("openclaw-fixture-config-");
+    const root = tempRoots.make("afora-fixture-config-");
     try {
       const result = runFixture(root, "openwebui-config", ["test-key"], {
-        OPENCLAW_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS: "300s",
+        AFORA_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS: "300s",
       });
 
       expect(result.status).not.toBe(0);
-      expect(result.stderr).toContain("invalid OPENCLAW_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS: 300s");
+      expect(result.stderr).toContain("invalid AFORA_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS: 300s");
     } finally {
       tempRoots.cleanup();
     }
   });
 
   it("writes strict positive Open WebUI provider timeouts into generated config", () => {
-    const root = tempRoots.make("openclaw-fixture-config-");
+    const root = tempRoots.make("afora-fixture-config-");
     try {
       const result = runFixture(root, "openwebui-config", ["test-key"], {
-        OPENCLAW_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS: "300",
+        AFORA_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS: "300",
       });
 
       expect(result.status).toBe(0);
@@ -131,12 +131,12 @@ describe("scripts/e2e/lib/fixture.mjs config commands", () => {
   });
 
   it("writes OpenAI web-search minimal config for the package scenario", () => {
-    const root = tempRoots.make("openclaw-fixture-config-");
+    const root = tempRoots.make("afora-fixture-config-");
     try {
       const result = runFixture(root, "openai-web-search-minimal-config");
 
       expect(result.status).toBe(0);
-      const config = JSON.parse(readFileSync(path.join(root, "openclaw.json"), "utf8"));
+      const config = JSON.parse(readFileSync(path.join(root, "afora.json"), "utf8"));
       expect(config.agents.defaults.model.primary).toBe("openai/gpt-5");
       expect(config.models.providers.openai).toMatchObject({
         api: "openai-responses",

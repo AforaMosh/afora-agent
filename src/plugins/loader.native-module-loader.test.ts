@@ -1,16 +1,16 @@
 /** Verifies plugin loader behavior for native module loading and resolver hooks. */
 import fs from "node:fs";
 import path from "node:path";
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createTempDirTracker } from "../../test/helpers/temp-dir.js";
 
 const tempDirs = createTempDirTracker();
 
 function writeBundledPluginFixture(id: string) {
-  const pluginRoot = tempDirs.make("openclaw-plugin-loader-");
+  const pluginRoot = tempDirs.make("afora-plugin-loader-");
   fs.writeFileSync(
-    path.join(pluginRoot, "openclaw.plugin.json"),
+    path.join(pluginRoot, "afora.plugin.json"),
     JSON.stringify(
       {
         id,
@@ -34,14 +34,14 @@ function writeBundledPluginFixture(id: string) {
 }
 
 function writePackagedPluginFixture(id: string) {
-  const pluginRoot = tempDirs.make("openclaw-plugin-loader-");
+  const pluginRoot = tempDirs.make("afora-plugin-loader-");
   fs.writeFileSync(
     path.join(pluginRoot, "package.json"),
     JSON.stringify(
       {
         name: id,
         type: "commonjs",
-        openclaw: {
+        afora: {
           extensions: ["./index.cjs"],
         },
       },
@@ -51,7 +51,7 @@ function writePackagedPluginFixture(id: string) {
     "utf-8",
   );
   fs.writeFileSync(
-    path.join(pluginRoot, "openclaw.plugin.json"),
+    path.join(pluginRoot, "afora.plugin.json"),
     JSON.stringify(
       {
         id,
@@ -75,16 +75,16 @@ function writePackagedPluginFixture(id: string) {
 }
 
 function writePreSplitSdkBridgeConsumerFixture() {
-  const pluginRoot = tempDirs.make("openclaw-plugin-loader-");
+  const pluginRoot = tempDirs.make("afora-plugin-loader-");
   fs.mkdirSync(path.join(pluginRoot, "dist"));
   fs.writeFileSync(
     path.join(pluginRoot, "package.json"),
     JSON.stringify(
       {
-        name: "@openclaw/sdk-bridge-consumer",
+        name: "@afora/sdk-bridge-consumer",
         version: "2026.7.2-beta.7",
         type: "module",
-        openclaw: {
+        afora: {
           extensions: ["./dist/index.js"],
           runtimeExtensions: ["./dist/index.js"],
         },
@@ -95,7 +95,7 @@ function writePreSplitSdkBridgeConsumerFixture() {
     "utf-8",
   );
   fs.writeFileSync(
-    path.join(pluginRoot, "openclaw.plugin.json"),
+    path.join(pluginRoot, "afora.plugin.json"),
     JSON.stringify(
       {
         id: "sdk-bridge-consumer",
@@ -119,14 +119,14 @@ function writePreSplitSdkBridgeConsumerFixture() {
   fs.writeFileSync(
     path.join(pluginRoot, "dist", "index.js"),
     [
-      'import { archiveLegacyStateSource, detectOpenClawStateDatabaseSchemaMigrations, repairOpenClawStateDatabaseSchema, detectPluginInstallPathIssue, formatPluginInstallPathIssue, removePluginFromConfig, createPluginStateSyncKeyedStore } from "openclaw/plugin-sdk/runtime-doctor";',
-      'import { shouldAckReactionForWhatsApp } from "openclaw/plugin-sdk/channel-feedback";',
-      'import { resolveChannelProgressDraftRender } from "openclaw/plugin-sdk/channel-outbound";',
+      'import { archiveLegacyStateSource, detectAforaStateDatabaseSchemaMigrations, repairAforaStateDatabaseSchema, detectPluginInstallPathIssue, formatPluginInstallPathIssue, removePluginFromConfig, createPluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/runtime-doctor";',
+      'import { shouldAckReactionForWhatsApp } from "afora-agent/plugin-sdk/channel-feedback";',
+      'import { resolveChannelProgressDraftRender } from "afora-agent/plugin-sdk/channel-outbound";',
       'export default { id: "sdk-bridge-consumer", register() {',
       "  const bridged = [",
       "    archiveLegacyStateSource,",
-      "    detectOpenClawStateDatabaseSchemaMigrations,",
-      "    repairOpenClawStateDatabaseSchema,",
+      "    detectAforaStateDatabaseSchemaMigrations,",
+      "    repairAforaStateDatabaseSchema,",
       "    detectPluginInstallPathIssue,",
       "    formatPluginInstallPathIssue,",
       "    removePluginFromConfig,",
@@ -145,7 +145,7 @@ function writePreSplitSdkBridgeConsumerFixture() {
 afterEach(() => {
   vi.resetModules();
   vi.doUnmock("./plugin-module-loader-cache.js");
-  delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+  delete process.env.AFORA_BUNDLED_PLUGINS_DIR;
   tempDirs.cleanup();
 });
 
@@ -176,15 +176,15 @@ describe("createPluginModuleLoader", () => {
   it("loads bundled JavaScript without creating a module loader", async () => {
     const sourceLoaderCalls = mockSourceLoaderCalls();
 
-    const { loadOpenClawPlugins } = await importFreshModule<typeof import("./loader.js")>(
+    const { loadAforaPlugins } = await importFreshModule<typeof import("./loader.js")>(
       import.meta.url,
       "./loader.js?scope=native-module-loader",
     );
 
     const pluginRoot = writeBundledPluginFixture("demo");
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = pluginRoot;
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = pluginRoot;
 
-    loadOpenClawPlugins({
+    loadAforaPlugins({
       cache: false,
       installRecords: {},
       workspaceDir: pluginRoot,
@@ -206,15 +206,15 @@ describe("createPluginModuleLoader", () => {
   it("loads packaged JavaScript without creating a module loader", async () => {
     const sourceLoaderCalls = mockSourceLoaderCalls();
 
-    const { loadOpenClawPlugins } = await importFreshModule<typeof import("./loader.js")>(
+    const { loadAforaPlugins } = await importFreshModule<typeof import("./loader.js")>(
       import.meta.url,
       "./loader.js?scope=packaged-native-module-loader",
     );
 
     const pluginRoot = writePackagedPluginFixture("npm-demo");
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = tempDirs.make("openclaw-plugin-loader-");
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = tempDirs.make("afora-plugin-loader-");
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadAforaPlugins({
       cache: false,
       installRecords: {},
       onlyPluginIds: ["npm-demo"],
@@ -239,14 +239,14 @@ describe("createPluginModuleLoader", () => {
   });
 
   it("loads published pre-split SDK bridge imports (doctor repair, WhatsApp ack, Slack render)", async () => {
-    const { loadOpenClawPlugins } = await importFreshModule<typeof import("./loader.js")>(
+    const { loadAforaPlugins } = await importFreshModule<typeof import("./loader.js")>(
       import.meta.url,
       "./loader.js?scope=sdk-bridge-upgrade-compat",
     );
     const pluginRoot = writePreSplitSdkBridgeConsumerFixture();
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = tempDirs.make("openclaw-plugin-loader-");
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = tempDirs.make("afora-plugin-loader-");
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadAforaPlugins({
       cache: false,
       onlyPluginIds: ["sdk-bridge-consumer"],
       config: {

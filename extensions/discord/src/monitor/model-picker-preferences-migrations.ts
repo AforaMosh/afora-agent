@@ -1,9 +1,9 @@
 // Discord plugin module implements model picker preferences migrations behavior.
 import fs from "node:fs";
 import path from "node:path";
-import type { ChannelLegacyStateMigrationPlan } from "openclaw/plugin-sdk/channel-contract";
-import type { BundledChannelLegacyStateMigrationDetector } from "openclaw/plugin-sdk/channel-entry-contract";
-import { MAX_DATE_TIMESTAMP_MS, timestampMsToIsoString } from "openclaw/plugin-sdk/number-runtime";
+import type { ChannelLegacyStateMigrationPlan } from "afora-agent/plugin-sdk/channel-contract";
+import type { BundledChannelLegacyStateMigrationDetector } from "afora-agent/plugin-sdk/channel-entry-contract";
+import { MAX_DATE_TIMESTAMP_MS, timestampMsToIsoString } from "afora-agent/plugin-sdk/number-runtime";
 import {
   DISCORD_COMMAND_DEPLOY_HASH_MAX_ENTRIES,
   DISCORD_COMMAND_DEPLOY_HASH_NAMESPACE,

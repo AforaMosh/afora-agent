@@ -2,7 +2,7 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { MatrixClient } from "./sdk.js";
 
 const MATRIX_PROFILE_AVATAR_MAX_BYTES = 10 * 1024 * 1024;

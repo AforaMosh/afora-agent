@@ -132,7 +132,7 @@ export function registerPreActionHooks(program: Command, programVersion: string)
     setVerbose(verbose);
     const cliLogLevel = getCliLogLevel(actionCommand);
     if (cliLogLevel) {
-      process.env.OPENCLAW_LOG_LEVEL = cliLogLevel;
+      process.env.AFORA_LOG_LEVEL = cliLogLevel;
     }
     if (!verbose) {
       process.env.NODE_NO_WARNINGS ??= "1";

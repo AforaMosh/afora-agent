@@ -1,17 +1,17 @@
 import fs from "node:fs/promises";
 import { afterEach, describe, expect, it } from "vitest";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../test-utils/afora-test-state.js";
 import { configureNodeHost } from "./config.js";
 import { resolveLocalNodeId } from "./local-id.js";
 
-const states: OpenClawTestState[] = [];
+const states: AforaTestState[] = [];
 
 afterEach(async () => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   while (states.length > 0) {
     await states.pop()?.cleanup();
   }
@@ -19,7 +19,7 @@ afterEach(async () => {
 
 describe("resolveLocalNodeId", () => {
   it("reads and process-caches the canonical same-install node id", async () => {
-    const state = await createOpenClawTestState({
+    const state = await createAforaTestState({
       label: "local-node-id",
       layout: "state-only",
     });
@@ -45,7 +45,7 @@ describe("resolveLocalNodeId", () => {
   });
 
   it("retries after a failed canonical config read", async () => {
-    const state = await createOpenClawTestState({
+    const state = await createAforaTestState({
       label: "local-node-id-retry",
       layout: "state-only",
     });
@@ -53,7 +53,7 @@ describe("resolveLocalNodeId", () => {
     const legacyPath = state.statePath("node.json");
     await fs.writeFile(legacyPath, "{}\n", "utf8");
 
-    await expect(resolveLocalNodeId(state.env)).rejects.toThrow("openclaw doctor --fix");
+    await expect(resolveLocalNodeId(state.env)).rejects.toThrow("afora doctor --fix");
 
     await fs.rm(legacyPath);
     await configureNodeHost({

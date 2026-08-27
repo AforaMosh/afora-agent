@@ -5,12 +5,12 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import os from "node:os";
 import path from "node:path";
 import type { webhook } from "@line/bot-sdk";
-import type { ChannelIngressQueue } from "openclaw/plugin-sdk/channel-outbound";
+import type { ChannelIngressQueue } from "afora-agent/plugin-sdk/channel-outbound";
 import {
-  closeOpenClawStateDatabaseForTest,
+  closeAforaStateDatabaseForTest,
   createChannelIngressQueueForTests as createChannelIngressQueue,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createLineNodeWebhookHandler } from "./webhook-node.js";
 import {
@@ -60,7 +60,7 @@ function payloadFor(event: webhook.Event): SpoolPayload {
 async function withQueue<T>(
   fn: (queue: ChannelIngressQueue<SpoolPayload>) => Promise<T>,
 ): Promise<T> {
-  const createdDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-line-spool-"));
+  const createdDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-line-spool-"));
   const stateDir = await fs.realpath(createdDir);
   const queue = createChannelIngressQueue<SpoolPayload>({
     channelId: "line",
@@ -70,7 +70,7 @@ async function withQueue<T>(
   try {
     return await fn(queue);
   } finally {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(stateDir, { recursive: true, force: true });
   }
 }
@@ -130,7 +130,7 @@ async function invokeSignedWebhook(params: {
 
 describe("LINE webhook spool", () => {
   afterEach(() => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
   });
 
   it("does not acknowledge when durable enqueue fails", async () => {

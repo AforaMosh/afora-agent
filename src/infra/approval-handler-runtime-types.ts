@@ -1,5 +1,5 @@
 // Defines channel-native approval handler runtime types.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { ChannelApprovalNativePlannedTarget } from "./approval-native-delivery.js";
 import type { PreparedChannelNativeApprovalTarget } from "./approval-native-runtime-types.js";
 import type { ApprovalRequestInput, ChannelApprovalKind } from "./approval-types.js";
@@ -20,7 +20,7 @@ export type ApprovalResolved = ExecApprovalResolved | PluginApprovalResolved;
 
 /** Shared context passed to channel-native approval hooks. */
 export type ChannelApprovalCapabilityHandlerContext = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   gatewayUrl?: string;
   context?: unknown;

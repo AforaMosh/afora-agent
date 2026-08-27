@@ -62,11 +62,11 @@ function findApprovalRunId(
   gateway: Awaited<ReturnType<typeof startQaGatewayChild>>,
   approvalId: string,
 ): string {
-  const stateDir = gateway.runtimeEnv.OPENCLAW_STATE_DIR;
+  const stateDir = gateway.runtimeEnv.AFORA_STATE_DIR;
   if (!stateDir) {
     throw new Error("QA Gateway did not expose its isolated state directory");
   }
-  const database = new DatabaseSync(path.join(stateDir, "state", "openclaw.sqlite"), {
+  const database = new DatabaseSync(path.join(stateDir, "state", "afora.sqlite"), {
     readOnly: true,
   });
   try {
@@ -97,11 +97,11 @@ function findApprovalRunId(
 function assertNoGenericApprovalDuplicate(
   gateway: Awaited<ReturnType<typeof startQaGatewayChild>>,
 ): void {
-  const stateDir = gateway.runtimeEnv.OPENCLAW_STATE_DIR;
+  const stateDir = gateway.runtimeEnv.AFORA_STATE_DIR;
   if (!stateDir) {
     throw new Error("QA Gateway did not expose its isolated state directory");
   }
-  const database = new DatabaseSync(path.join(stateDir, "state", "openclaw.sqlite"), {
+  const database = new DatabaseSync(path.join(stateDir, "state", "afora.sqlite"), {
     readOnly: true,
   });
   try {
@@ -125,11 +125,11 @@ function readApprovalToolCallRef(
   gateway: Awaited<ReturnType<typeof startQaGatewayChild>>,
   approvalId: string,
 ): string {
-  const stateDir = gateway.runtimeEnv.OPENCLAW_STATE_DIR;
+  const stateDir = gateway.runtimeEnv.AFORA_STATE_DIR;
   if (!stateDir) {
     throw new Error("QA Gateway did not expose its isolated state directory");
   }
-  const database = new DatabaseSync(path.join(stateDir, "state", "openclaw.sqlite"), {
+  const database = new DatabaseSync(path.join(stateDir, "state", "afora.sqlite"), {
     readOnly: true,
   });
   try {

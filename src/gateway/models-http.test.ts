@@ -7,7 +7,7 @@ import { testState } from "./test-helpers.runtime-state.js";
 
 installGatewayTestHooks({ scope: "suite" });
 
-const READ_SCOPE_HEADER = { "x-openclaw-scopes": "operator.read" };
+const READ_SCOPE_HEADER = { "x-afora-scopes": "operator.read" };
 
 let startGatewayServer: typeof import("./server.js").startGatewayServer;
 let enabledServer: Awaited<ReturnType<typeof startOpenAiCompatGatewayServer>>;
@@ -72,10 +72,10 @@ describe("OpenAI-compatible models HTTP API (e2e)", () => {
     expect(json.object).toBe("list");
     expect(Array.isArray(json.data)).toBe(true);
     expect((json.data?.length ?? 0) > 0).toBe(true);
-    expect(json.data?.map((entry) => entry.id)).toContain("openclaw");
-    expect(json.data?.map((entry) => entry.id)).toContain("openclaw/default");
+    expect(json.data?.map((entry) => entry.id)).toContain("afora");
+    expect(json.data?.map((entry) => entry.id)).toContain("afora-agent/default");
     expect(
-      json.data?.every((entry) => typeof entry.id === "string" && entry.id?.startsWith("openclaw")),
+      json.data?.every((entry) => typeof entry.id === "string" && entry.id?.startsWith("afora")),
     ).toBe(true);
   });
 
@@ -84,7 +84,7 @@ describe("OpenAI-compatible models HTTP API (e2e)", () => {
     expect(res.status).toBe(200);
     const json = (await res.json()) as { object?: string; data?: Array<{ id?: string }> };
     expect(json.object).toBe("list");
-    expect(json.data?.map((entry) => entry.id)).toContain("openclaw/default");
+    expect(json.data?.map((entry) => entry.id)).toContain("afora-agent/default");
   });
 
   it("serves /v1/models/{id}", async () => {
@@ -97,11 +97,11 @@ describe("OpenAI-compatible models HTTP API (e2e)", () => {
   });
 
   it("rejects agent-specific model ids outside the configured roster", async () => {
-    const res = await getModels("/v1/models/openclaw%2Fnonexistent");
+    const res = await getModels("/v1/models/afora%2Fnonexistent");
     expect(res.status).toBe(404);
     await expect(res.json()).resolves.toEqual({
       error: {
-        message: "Model 'openclaw/nonexistent' not found.",
+        message: "Model 'afora-agent/nonexistent' not found.",
         type: "invalid_request_error",
       },
     });
@@ -116,30 +116,30 @@ describe("OpenAI-compatible models HTTP API (e2e)", () => {
       const list = await getModels("/v1/models");
       expect(list.status).toBe(200);
       const listJson = (await list.json()) as { data?: Array<{ id?: string }> };
-      expect(listJson.data?.map((entry) => entry.id)).toContain("openclaw/default");
+      expect(listJson.data?.map((entry) => entry.id)).toContain("afora-agent/default");
 
-      const detail = await getModels("/v1/models/openclaw%2Fdefault");
+      const detail = await getModels("/v1/models/afora%2Fdefault");
       expect(detail.status).toBe(200);
-      await expect(detail.json()).resolves.toMatchObject({ id: "openclaw/default" });
+      await expect(detail.json()).resolves.toMatchObject({ id: "afora-agent/default" });
     } finally {
       testState.agentsConfig = undefined;
     }
   });
 
   it("rejects operator scopes that lack read access", async () => {
-    const res = await getModels("/v1/models", { "x-openclaw-scopes": "operator.approvals" });
+    const res = await getModels("/v1/models", { "x-afora-scopes": "operator.approvals" });
     await expectMissingReadScope(res);
   });
 
   it("rejects requests with no declared operator scopes", async () => {
-    const res = await getModels("/v1/models", { "x-openclaw-scopes": "" });
+    const res = await getModels("/v1/models", { "x-afora-scopes": "" });
     await expectMissingReadScope(res);
   });
 
   it("rejects /v1/models/{id} without read access", async () => {
     const firstId = await expectFirstModelId();
     const res = await getModels(`/v1/models/${encodeURIComponent(firstId)}`, {
-      "x-openclaw-scopes": "operator.approvals",
+      "x-afora-scopes": "operator.approvals",
     });
     await expectMissingReadScope(res);
   });
@@ -174,13 +174,13 @@ describe("OpenAI-compatible models HTTP API (e2e)", () => {
       const res = await fetch(`http://127.0.0.1:${port}/v1/models`, {
         headers: {
           authorization: "Bearer secret",
-          "x-openclaw-scopes": "operator.approvals",
+          "x-afora-scopes": "operator.approvals",
         },
       });
       expect(res.status).toBe(200);
       const json = (await res.json()) as { object?: string; data?: Array<{ id?: string }> };
       expect(json.object).toBe("list");
-      expect(json.data?.map((entry) => entry.id)).toContain("openclaw/default");
+      expect(json.data?.map((entry) => entry.id)).toContain("afora-agent/default");
     } finally {
       await server.close({ reason: "models token auth compat test done" });
     }

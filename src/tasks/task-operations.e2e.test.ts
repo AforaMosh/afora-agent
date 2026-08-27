@@ -16,8 +16,8 @@ import { resetConfigRuntimeState } from "../config/config.js";
 import { setHeartbeatWakeHandler } from "../infra/heartbeat-wake.js";
 import { peekSystemEvents, resetSystemEventsForTest } from "../infra/system-events.js";
 import type { RuntimeEnv } from "../runtime.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import { createRunningTaskRunCore, recordTaskRunProgressByRunIdCore } from "./task-executor.js";
 import { createTaskRecord, getTaskById, reloadTaskRegistryFromStore } from "./task-registry.js";
 import {
@@ -84,7 +84,7 @@ function resetTaskOperationsRuntime(): void {
   resetTaskFlowRegistryForTests({ persist: false });
   resetSystemEventsForTest();
   resetConfigRuntimeState();
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
 }
 
 describe("task operations product boundary", () => {
@@ -94,11 +94,11 @@ describe("task operations product boundary", () => {
   });
 
   it("runs persisted task operations through CLI, chat, notification, audit, and maintenance", async () => {
-    await withOpenClawTestState(
+    await withAforaTestState(
       {
         layout: "state-only",
         scenario: "minimal",
-        prefix: "openclaw-task-operations-e2e-",
+        prefix: "afora-task-operations-e2e-",
       },
       async () => {
         resetTaskOperationsRuntime();

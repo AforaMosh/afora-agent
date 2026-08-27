@@ -1,5 +1,5 @@
 // Implements guided and non-interactive disable/delete for channel accounts.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   applyPreparedChannelAccountRemoval,
   type ChannelAccountMutationPlugin,
@@ -12,7 +12,7 @@ import {
   formatUnknownChannelMessage,
   formatUnsupportedChannelActionMessage,
 } from "../../cli/error-format.js";
-import { replaceConfigFile, type OpenClawConfig } from "../../config/config.js";
+import { replaceConfigFile, type AforaConfig } from "../../config/config.js";
 import { callGateway } from "../../gateway/call.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { commitConfigWithPendingPluginInstalls } from "../../plugins/install-record-commit.js";
@@ -31,7 +31,7 @@ export type ChannelsRemoveOptions = {
 };
 
 function listAccountIds(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   channel: ChatChannel,
   pluginInput?: ChannelAccountMutationPlugin,
 ): string[] {
@@ -44,7 +44,7 @@ function listAccountIds(
 }
 
 async function stopGatewayRuntimeBeforeRemove(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: ChatChannel;
   accountId: string;
   shouldStopRuntime: boolean;
@@ -83,7 +83,7 @@ export async function channelsRemoveCommand(
     return;
   }
   const baseHash = configSnapshot.hash;
-  let cfg = (configSnapshot.sourceConfig ?? configSnapshot.config) as OpenClawConfig;
+  let cfg = (configSnapshot.sourceConfig ?? configSnapshot.config) as AforaConfig;
 
   const useWizard = shouldUseWizard(params);
   const prompter = useWizard ? createClackPrompter() : null;
@@ -133,7 +133,7 @@ export async function channelsRemoveCommand(
   } else {
     if (!rawChannel) {
       runtime.error(
-        `Missing channel. Use ${formatCliCommand("openclaw channels remove --channel <name>")} or run ${formatCliCommand("openclaw channels status")} to inspect configured channels.`,
+        `Missing channel. Use ${formatCliCommand("afora channels remove --channel <name>")} or run ${formatCliCommand("afora channels status")} to inspect configured channels.`,
       );
       runtime.exit(1);
       return;
@@ -178,7 +178,7 @@ export async function channelsRemoveCommand(
   if (!plugin) {
     if (resolvedPluginState?.catalogEntry) {
       runtime.error(
-        `Channel plugin "${resolvedPluginState.catalogEntry.id}" is not installed. Run ${formatCliCommand(`openclaw channels add --channel ${resolvedPluginState.catalogEntry.id}`)} first.`,
+        `Channel plugin "${resolvedPluginState.catalogEntry.id}" is not installed. Run ${formatCliCommand(`afora channels add --channel ${resolvedPluginState.catalogEntry.id}`)} first.`,
       );
       runtime.exit(1);
       return;
@@ -210,8 +210,8 @@ export async function channelsRemoveCommand(
   if (!removal.ok) {
     runtime.error(
       removal.error.action === "delete"
-        ? `${formatUnsupportedChannelActionMessage({ channel, action: "delete" })} Use ${formatCliCommand("openclaw channels remove --channel " + channel)} to disable it without deleting config.`
-        : `${formatUnsupportedChannelActionMessage({ channel, action: "disable" })} Use ${formatCliCommand("openclaw channels remove --channel " + channel + " --delete")} only if you want to remove config.`,
+        ? `${formatUnsupportedChannelActionMessage({ channel, action: "delete" })} Use ${formatCliCommand("afora channels remove --channel " + channel)} to disable it without deleting config.`
+        : `${formatUnsupportedChannelActionMessage({ channel, action: "disable" })} Use ${formatCliCommand("afora channels remove --channel " + channel + " --delete")} only if you want to remove config.`,
     );
     runtime.exit(1);
     return;

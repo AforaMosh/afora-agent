@@ -698,7 +698,7 @@ describe("skill experience review scheduler", () => {
     });
     const clearTimer = vi.fn();
     const runReview = vi.fn().mockRejectedValue(
-      Object.assign(new Error("Auth migration required; run openclaw doctor --fix."), {
+      Object.assign(new Error("Auth migration required; run afora doctor --fix."), {
         code: "AUTH_PROFILE_MIGRATION_REQUIRED" as const,
       }),
     );

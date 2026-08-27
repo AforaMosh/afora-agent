@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import path from "node:path";
 import { promisify } from "node:util";
-import { GatewayClient } from "openclaw/plugin-sdk/gateway-runtime";
+import { GatewayClient } from "afora-agent/plugin-sdk/gateway-runtime";
 import { expect, vi } from "vitest";
 import { startQaGatewayChild } from "../../../../extensions/qa-lab/api.js";
 import {
@@ -71,8 +71,8 @@ export async function createPublishedWireWorkspace(root: string): Promise<Publis
   await fs.mkdir(source, { recursive: true });
   await execFileAsync("git", ["init", "--bare", bare]);
   await git(source, "init", "-b", "main");
-  await git(source, "config", "user.name", "OpenClaw QA");
-  await git(source, "config", "user.email", "openclaw-qa@example.invalid");
+  await git(source, "config", "user.name", "Afora QA");
+  await git(source, "config", "user.email", "afora-qa@example.invalid");
   await fs.mkdir(path.join(source, "nested"));
   await fs.writeFile(path.join(source, "launch-wire.txt"), "local-install launch wire\n");
   await fs.writeFile(path.join(source, "nested", "tracked.txt"), "nested tracked input\n");
@@ -302,7 +302,7 @@ export async function createPairedNodeWorkerHost(
     ...process.env,
     HOME: path.join(options.root, `${label}-home`),
     NODE_DISABLE_COMPILE_CACHE: undefined,
-    OPENCLAW_STATE_DIR: nodeStateDir,
+    AFORA_STATE_DIR: nodeStateDir,
   };
   await fs.mkdir(nodeEnv.HOME, { recursive: true });
   const workspace = new NodeWorkerWorkspaceRuntime({ root: nodeHostRoot, env: nodeEnv });

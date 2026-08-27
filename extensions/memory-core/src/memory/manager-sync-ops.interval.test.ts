@@ -1,11 +1,11 @@
 // Memory Core tests cover manager sync ops.interval plugin behavior.
 import type { DatabaseSync } from "node:sqlite";
 import type {
-  OpenClawConfig,
+  AforaConfig,
   ResolvedMemorySearchConfig,
-} from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
-import type { MemorySource } from "openclaw/plugin-sdk/memory-core-host-engine-storage";
-import { MAX_TIMER_TIMEOUT_MS } from "openclaw/plugin-sdk/number-runtime";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-foundation";
+import type { MemorySource } from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
+import { MAX_TIMER_TIMEOUT_MS } from "afora-agent/plugin-sdk/number-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryManagerSyncOps } from "./manager-sync-ops.js";
 
@@ -19,9 +19,9 @@ type MemoryIndexEntry = {
 };
 
 class IntervalSyncHarness extends MemoryManagerSyncOps {
-  protected readonly cfg = {} as OpenClawConfig;
+  protected readonly cfg = {} as AforaConfig;
   protected readonly agentId = "main";
-  protected readonly workspaceDir = "/tmp/openclaw-memory-interval-test";
+  protected readonly workspaceDir = "/tmp/afora-memory-interval-test";
   protected readonly settings: ResolvedMemorySearchConfig;
   protected readonly batch = {
     enabled: false,

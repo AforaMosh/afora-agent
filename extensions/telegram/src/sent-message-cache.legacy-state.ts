@@ -5,8 +5,8 @@
 // legacy-state import, so it stays a leaf.
 import { createHash } from "node:crypto";
 import fs from "node:fs";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { resolveStorePath } from "openclaw/plugin-sdk/session-store-paths";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { resolveStorePath } from "afora-agent/plugin-sdk/session-store-paths";
 import { resolveTelegramAccountOwnerAgentId } from "./account-owner.js";
 
 export const TTL_MS = 24 * 60 * 60 * 1000;
@@ -21,7 +21,7 @@ export type PersistedSentMessage = {
 };
 
 export type SentMessageConfig = Pick<
-  OpenClawConfig,
+  AforaConfig,
   "agents" | "bindings" | "channels" | "session"
 >;
 
@@ -33,7 +33,7 @@ function resolveSentMessageAgentId(
     owner?.agentId?.trim() ||
     (cfg
       ? resolveTelegramAccountOwnerAgentId({
-          cfg: cfg as OpenClawConfig,
+          cfg: cfg as AforaConfig,
           accountId: owner?.accountId,
         })
       : "main")

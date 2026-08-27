@@ -4,7 +4,7 @@ import path from "node:path";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { withEnv } from "../test-utils/env.js";
 import { createHookRunner } from "./hooks.js";
-import { loadOpenClawPlugins } from "./loader.js";
+import { loadAforaPlugins } from "./loader.js";
 import {
   EMPTY_PLUGIN_SCHEMA,
   makePluginLoaderTempDir,
@@ -81,15 +81,15 @@ function createSetupFailureFixture(params: {
 }) {
   const pluginDir = makePluginLoaderTempDir();
   writeFixtureJson(pluginDir, "package.json", {
-    name: `@openclaw/${params.id}`,
-    openclaw: {
+    name: `@afora/${params.id}`,
+    afora: {
       extensions: ["./index.cjs"],
       setupEntry: "./setup-entry.cjs",
     },
   });
   writeFixtureJson(
     pluginDir,
-    "openclaw.plugin.json",
+    "afora.plugin.json",
     pluginManifest(params.id, [params.channelId ?? params.id]),
   );
   writeFixtureText(
@@ -107,7 +107,7 @@ const THROWING_SETUP_ENTRY_SOURCE = `module.exports = {
 };`;
 
 function loadSetupPlugins(params: { paths: string[]; ids: string[]; enabled?: boolean }) {
-  return loadOpenClawPlugins({
+  return loadAforaPlugins({
     cache: false,
     channelPluginLoadIntent: "setup",
     config: {
@@ -157,12 +157,12 @@ function loadBuiltArtifactScenario(scenario: BuiltArtifactScenario) {
       ? path.join(repoRoot, "extensions", scenario.id)
       : makePluginLoaderTempDir();
   const packageManifest = scenario.packageEntry
-    ? { openclaw: { extensions: [scenario.packageEntry] } }
+    ? { afora: { extensions: [scenario.packageEntry] } }
     : undefined;
   if (scenario.packageBeforeManifest && packageManifest) {
     writeFixtureJson(pluginDir, "package.json", packageManifest);
   }
-  writeFixtureJson(pluginDir, "openclaw.plugin.json", pluginManifest(scenario.id));
+  writeFixtureJson(pluginDir, "afora.plugin.json", pluginManifest(scenario.id));
   if (!scenario.packageBeforeManifest && packageManifest) {
     writeFixtureJson(pluginDir, "package.json", packageManifest);
   }
@@ -174,7 +174,7 @@ function loadBuiltArtifactScenario(scenario: BuiltArtifactScenario) {
   writeFixtureText(artifactDir, scenario.artifactEntry, scenario.artifactBody);
 
   const load = () =>
-    loadOpenClawPlugins({
+    loadAforaPlugins({
       cache: false,
       preferBuiltPluginArtifacts: true,
       ...(scenario.origin === "bundled" ? { onlyPluginIds: [scenario.id] } : {}),
@@ -190,9 +190,9 @@ function loadBuiltArtifactScenario(scenario: BuiltArtifactScenario) {
     scenario.origin === "bundled"
       ? withEnv(
           {
-            OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(repoRoot, "extensions"),
-            OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
-            OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
+            AFORA_BUNDLED_PLUGINS_DIR: path.join(repoRoot, "extensions"),
+            AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
+            AFORA_DISABLE_BUNDLED_PLUGINS: undefined,
           },
           load,
         )
@@ -213,9 +213,9 @@ function loadSourceExternalArtifactScenario(params: {
   mkdirSafe(path.join(repoRoot, ".git"));
   mkdirSafe(path.join(repoRoot, "src"));
   writeFixtureText(repoRoot, "pnpm-workspace.yaml", "packages: []\n");
-  writeFixtureJson(sourceDir, "openclaw.plugin.json", pluginManifest(id));
+  writeFixtureJson(sourceDir, "afora.plugin.json", pluginManifest(id));
   writeFixtureJson(sourceDir, "package.json", {
-    openclaw: {
+    afora: {
       extensions: ["./index.ts"],
       build: { bundledDist: false },
     },
@@ -225,11 +225,11 @@ function loadSourceExternalArtifactScenario(params: {
   if (params.rootBuildBody) {
     mkdirSafe(rootBuildDir);
     fs.copyFileSync(
-      path.join(sourceDir, "openclaw.plugin.json"),
-      path.join(rootBuildDir, "openclaw.plugin.json"),
+      path.join(sourceDir, "afora.plugin.json"),
+      path.join(rootBuildDir, "afora.plugin.json"),
     );
     writeFixtureJson(rootBuildDir, "package.json", {
-      openclaw: { extensions: ["./index.js"] },
+      afora: { extensions: ["./index.js"] },
     });
     writeFixtureText(rootBuildDir, "index.js", params.rootBuildBody);
   }
@@ -249,15 +249,15 @@ function loadSourceExternalArtifactScenario(params: {
   };
   const registry = withEnv(
     {
-      OPENCLAW_BUNDLED_PLUGINS_DIR: params.rootBuildBody
+      AFORA_BUNDLED_PLUGINS_DIR: params.rootBuildBody
         ? path.join(repoRoot, "dist", "extensions")
         : path.join(repoRoot, "extensions"),
-      OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
+      AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
+      AFORA_DISABLE_BUNDLED_PLUGINS: undefined,
     },
     () => {
       const manifestRegistry = loadPluginManifestRegistryCore({ config });
-      return loadOpenClawPlugins({
+      return loadAforaPlugins({
         cache: false,
         preferBuiltPluginArtifacts: true,
         onlyPluginIds: [id],
@@ -269,7 +269,7 @@ function loadSourceExternalArtifactScenario(params: {
   return registry.plugins.find((entry) => entry.id === id)?.status;
 }
 
-describe("loadOpenClawPlugins", () => {
+describe("loadAforaPlugins", () => {
   it("setup-loads a trusted global channel plugin when the caller scopes to it", () => {
     useNoBundledPlugins();
     const marker = path.join(makePluginLoaderTempDir(), "trusted-global-channel-imported.txt");
@@ -289,19 +289,19 @@ ${channelPluginSource({
       );
       writeFixtureJson(
         globalDir,
-        "openclaw.plugin.json",
+        "afora.plugin.json",
         pluginManifest("trusted-global-channel", ["trusted-global-channel"]),
       );
       writeFixtureJson(globalDir, "package.json", {
-        name: "@openclaw/trusted-global-channel",
+        name: "@afora/trusted-global-channel",
         version: "0.0.0-test",
         main: "./index.cjs",
-        openclaw: {
+        afora: {
           extensions: ["./index.cjs"],
         },
       });
 
-      const scopedSetupRegistry = loadOpenClawPlugins({
+      const scopedSetupRegistry = loadAforaPlugins({
         cache: false,
         config: {
           plugins: {
@@ -343,7 +343,7 @@ ${channelPluginSource({
 })}`,
     });
     fs.writeFileSync(
-      path.join(plugin.dir, "openclaw.plugin.json"),
+      path.join(plugin.dir, "afora.plugin.json"),
       JSON.stringify(
         {
           id: "auto-enabled-load-path-channel",
@@ -356,7 +356,7 @@ ${channelPluginSource({
       "utf-8",
     );
 
-    const scopedSetupRegistry = loadOpenClawPlugins({
+    const scopedSetupRegistry = loadAforaPlugins({
       cache: false,
       config: {
         channels: {
@@ -387,7 +387,7 @@ ${channelPluginSource({
       fixture: {
         id: "setup-entry-test",
         label: "Setup Entry Test",
-        packageName: "@openclaw/setup-entry-test",
+        packageName: "@afora/setup-entry-test",
         fullBlurb: "full entry should not run in setup-only mode",
         setupBlurb: "setup entry",
         configured: false,
@@ -408,7 +408,7 @@ ${channelPluginSource({
       fixture: {
         id: "setup-only-bundled-contract-test",
         label: "Setup Only Bundled Contract Test",
-        packageName: "@openclaw/setup-only-bundled-contract-test",
+        packageName: "@afora/setup-only-bundled-contract-test",
         fullBlurb: "full entry should not run in setup-only mode",
         setupBlurb: "setup-only bundled contract",
         configured: false,
@@ -430,7 +430,7 @@ ${channelPluginSource({
       fixture: {
         id: "setup-runtime-test",
         label: "Setup Runtime Test",
-        packageName: "@openclaw/setup-runtime-test",
+        packageName: "@afora/setup-runtime-test",
         fullBlurb: "full entry should not run while unconfigured",
         setupBlurb: "setup runtime",
         configured: false,
@@ -445,7 +445,7 @@ ${channelPluginSource({
       fixture: {
         id: "setup-runtime-bundled-contract-test",
         label: "Setup Runtime Bundled Contract Test",
-        packageName: "@openclaw/setup-runtime-bundled-contract-test",
+        packageName: "@afora/setup-runtime-bundled-contract-test",
         fullBlurb: "full entry should not run while unconfigured",
         setupBlurb: "setup runtime bundled contract",
         configured: false,
@@ -461,7 +461,7 @@ ${channelPluginSource({
       fixture: {
         id: "setup-runtime-bundled-contract-secrets-test",
         label: "Setup Runtime Bundled Contract Secrets Test",
-        packageName: "@openclaw/setup-runtime-bundled-contract-secrets-test",
+        packageName: "@afora/setup-runtime-bundled-contract-secrets-test",
         fullBlurb: "full entry should not run while unconfigured",
         setupBlurb: "setup runtime bundled contract secrets",
         configured: false,
@@ -479,7 +479,7 @@ ${channelPluginSource({
       fixture: {
         id: "setup-runtime-bundled-contract-runtime-test",
         label: "Setup Runtime Bundled Contract Runtime Test",
-        packageName: "@openclaw/setup-runtime-bundled-contract-runtime-test",
+        packageName: "@afora/setup-runtime-bundled-contract-runtime-test",
         fullBlurb: "full entry should not run while unconfigured",
         setupBlurb: "setup runtime bundled contract runtime",
         configured: false,
@@ -500,7 +500,7 @@ ${channelPluginSource({
       fixture: {
         id: "setup-runtime-bundled-runtime-merge-test",
         label: "Setup Runtime Bundled Runtime Merge Test",
-        packageName: "@openclaw/setup-runtime-bundled-runtime-merge-test",
+        packageName: "@afora/setup-runtime-bundled-runtime-merge-test",
         fullBlurb: "full runtime plugin",
         setupBlurb: "setup runtime override",
         configured: false,
@@ -522,7 +522,7 @@ ${channelPluginSource({
       fixture: {
         id: "setup-runtime-default-full-test",
         label: "Setup Runtime Default Full Test",
-        packageName: "@openclaw/setup-runtime-default-full-test",
+        packageName: "@afora/setup-runtime-default-full-test",
         fullBlurb: "ordinary full runtime",
         setupBlurb: "setup runtime should not load by default",
         configured: false,
@@ -545,7 +545,7 @@ ${channelPluginSource({
       expectBundledFullRuntimeLoaded,
     }: SetupEntryScenario) => {
       const built = createSetupEntryChannelPluginFixture(fixture);
-      const registry = loadOpenClawPlugins({
+      const registry = loadAforaPlugins({
         cache: false,
         ...(loadOptions?.setupIntent ? { channelPluginLoadIntent: "setup" as const } : {}),
         config: {
@@ -593,7 +593,7 @@ ${channelPluginSource({
     const built = createSetupEntryChannelPluginFixture({
       id: "setup-runtime-order-test",
       label: "Setup Runtime Order Test",
-      packageName: "@openclaw/setup-runtime-order-test",
+      packageName: "@afora/setup-runtime-order-test",
       fullBlurb: "full runtime plugin",
       setupBlurb: "setup runtime override",
       configured: false,
@@ -618,7 +618,7 @@ ${channelPluginSource({
     const built = createSetupEntryChannelPluginFixture({
       id: "setup-runtime-error-test",
       label: "Setup Runtime Error Test",
-      packageName: "@openclaw/setup-runtime-error-test",
+      packageName: "@afora/setup-runtime-error-test",
       fullBlurb: "full runtime plugin",
       setupBlurb: "setup runtime override",
       configured: false,
@@ -651,7 +651,7 @@ ${channelPluginSource({
     const built = createSetupEntryChannelPluginFixture({
       id: "setup-runtime-route-error-test",
       label: "Setup Runtime Route Error Test",
-      packageName: "@openclaw/setup-runtime-route-error-test",
+      packageName: "@afora/setup-runtime-route-error-test",
       fullBlurb: "full runtime plugin",
       setupBlurb: "setup runtime route",
       configured: false,
@@ -688,7 +688,7 @@ ${channelPluginSource({
     const built = createSetupEntryChannelPluginFixture({
       id: "setup-runtime-late-route-test",
       label: "Setup Runtime Late Route Test",
-      packageName: "@openclaw/setup-runtime-late-route-test",
+      packageName: "@afora/setup-runtime-late-route-test",
       fullBlurb: "full runtime plugin",
       setupBlurb: "setup runtime route",
       configured: false,
@@ -718,7 +718,7 @@ ${channelPluginSource({
       id: "setup-runtime-mismatch-test",
       bundledFullEntryId: "wrong-runtime-id",
       label: "Setup Runtime Mismatch Test",
-      packageName: "@openclaw/setup-runtime-mismatch-test",
+      packageName: "@afora/setup-runtime-mismatch-test",
       fullBlurb: "full runtime plugin",
       setupBlurb: "setup runtime override",
       configured: false,
@@ -748,7 +748,7 @@ ${channelPluginSource({
       id: "setup-export-mismatch-test",
       bundledSetupEntryId: "wrong-setup-id",
       label: "Setup Export Mismatch Test",
-      packageName: "@openclaw/setup-export-mismatch-test",
+      packageName: "@afora/setup-export-mismatch-test",
       fullBlurb: "full runtime plugin",
       setupBlurb: "setup runtime override",
       configured: false,
@@ -1012,11 +1012,11 @@ ${channelPluginSource({
     const pluginDir = makePluginLoaderTempDir();
     const outsideDistDir = makePluginLoaderTempDir();
     writeFixtureJson(pluginDir, "package.json", {
-      openclaw: { extensions: ["./src/index.mts"] },
+      afora: { extensions: ["./src/index.mts"] },
     });
     writeFixtureJson(
       pluginDir,
-      "openclaw.plugin.json",
+      "afora.plugin.json",
       pluginManifest("workspace-artifact-symlink-test"),
     );
     writeFixtureText(
@@ -1035,7 +1035,7 @@ ${channelPluginSource({
       return;
     }
 
-    const registry = loadOpenClawPlugins({
+    const registry = loadAforaPlugins({
       cache: false,
       preferBuiltPluginArtifacts: true,
       config: {
@@ -1225,12 +1225,12 @@ ${channelPluginSource({
       filename: `${pluginId}.cjs`,
       body: `module.exports = { id: ${JSON.stringify(pluginId)}, register(api) {
     api.registerAgentToolResultMiddleware(() => new Promise(() => {}), {
-      runtimes: ["openclaw"],
+      runtimes: ["afora"],
     });
   } };`,
     });
     updatePluginManifest(plugin, {
-      contracts: { agentToolResultMiddleware: ["openclaw"] },
+      contracts: { agentToolResultMiddleware: ["afora"] },
     });
 
     const registry = loadRegistryFromSinglePlugin({
@@ -1258,7 +1258,7 @@ ${channelPluginSource({
           args: {},
           result: { content: [{ type: "text", text: "raw" }], details: {} },
         },
-        { runtime: "openclaw" },
+        { runtime: "afora" },
       );
       const outcome = Promise.resolve(middlewareRun).then(
         () => ({ status: "resolved" as const }),
@@ -1285,12 +1285,12 @@ ${channelPluginSource({
       filename: "tool-result-middleware-no-timeout.cjs",
       body: `module.exports = { id: "tool-result-middleware-no-timeout", register(api) {
     api.registerAgentToolResultMiddleware(() => new Promise(() => {}), {
-      runtimes: ["openclaw"],
+      runtimes: ["afora"],
     });
   } };`,
     });
     updatePluginManifest(plugin, {
-      contracts: { agentToolResultMiddleware: ["openclaw"] },
+      contracts: { agentToolResultMiddleware: ["afora"] },
     });
     const registry = loadRegistryFromSinglePlugin({
       plugin,
@@ -1312,7 +1312,7 @@ ${channelPluginSource({
             args: {},
             result: { content: [{ type: "text", text: "raw" }], details: {} },
           },
-          { runtime: "openclaw" },
+          { runtime: "afora" },
         ),
       ).finally(() => {
         settled = true;

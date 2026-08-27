@@ -1,7 +1,7 @@
 // Minimal Gateway websocket test helpers.
 // Provides small fake-server frames plus an isolated real-Gateway boundary harness.
 import path from "node:path";
-import { rawDataToString } from "@openclaw/gateway-client/websocket-data";
+import { rawDataToString } from "@afora/gateway-client/websocket-data";
 import { WebSocket, type WebSocketServer } from "ws";
 import { PROTOCOL_VERSION } from "../../packages/gateway-protocol/src/index.js";
 import { toAgentRequestSessionKey } from "../routing/session-key.js";
@@ -89,19 +89,19 @@ export async function startMinimalRealGateway(
     import("../infra/device-identity.js"),
     import("../shared/device-bootstrap-profile.js"),
     import("../config/sessions/session-accessor.sqlite-entry.js"),
-    import("../test-utils/openclaw-test-state.js"),
+    import("../test-utils/afora-test-state.js"),
   ]);
   const token = "minimal-real-gateway-token";
-  const state = await testState.createOpenClawTestState({
+  const state = await testState.createAforaTestState({
     env: {
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-      OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-      OPENCLAW_SKIP_CANVAS_HOST: "1",
-      OPENCLAW_SKIP_CHANNELS: "1",
-      OPENCLAW_SKIP_CRON: "1",
-      OPENCLAW_SKIP_GMAIL_WATCHER: "1",
-      OPENCLAW_SKIP_PROVIDERS: "1",
-      OPENCLAW_TEST_MINIMAL_GATEWAY: "1",
+      AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+      AFORA_SKIP_BROWSER_CONTROL_SERVER: "1",
+      AFORA_SKIP_CANVAS_HOST: "1",
+      AFORA_SKIP_CHANNELS: "1",
+      AFORA_SKIP_CRON: "1",
+      AFORA_SKIP_GMAIL_WATCHER: "1",
+      AFORA_SKIP_PROVIDERS: "1",
+      AFORA_TEST_MINIMAL_GATEWAY: "1",
     },
   });
   const sessionListRequests: Record<string, unknown>[] = [];
@@ -145,7 +145,7 @@ export async function startMinimalRealGateway(
         {
           agentId: session.agentId,
           sessionKey: toAgentRequestSessionKey(session.key)!,
-          storePath: path.join(state.agentDir(session.agentId), "openclaw-agent.sqlite"),
+          storePath: path.join(state.agentDir(session.agentId), "afora-agent.sqlite"),
         },
         { sessionId: session.key, updatedAt: Date.now(), visibility: session.visibility },
       );

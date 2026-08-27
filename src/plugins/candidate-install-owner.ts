@@ -1,5 +1,5 @@
-const PLUGIN_CANDIDATE_INSTALL_OWNER = Symbol.for("openclaw.pluginCandidateInstallOwner");
-const PLUGIN_INSTALL_OWNER_LOOKUP = Symbol.for("openclaw.pluginInstallOwnerLookup");
+const PLUGIN_CANDIDATE_INSTALL_OWNER = Symbol.for("afora.pluginCandidateInstallOwner");
+const PLUGIN_INSTALL_OWNER_LOOKUP = Symbol.for("afora.pluginInstallOwnerLookup");
 
 type PluginCandidateInstallOwner = { installOwner?: string; ambiguous?: true };
 

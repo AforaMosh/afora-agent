@@ -1,6 +1,6 @@
 // Googlechat tests cover monitor webhook plugin behavior.
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { FixedWindowRateLimiter } from "openclaw/plugin-sdk/webhook-ingress";
+import type { FixedWindowRateLimiter } from "afora-agent/plugin-sdk/webhook-ingress";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { WebhookTarget } from "./monitor-types.js";
 import type { GoogleChatEvent } from "./types.js";
@@ -12,12 +12,12 @@ const withResolvedWebhookRequestPipeline = vi.hoisted(() => vi.fn());
 const verifyGoogleChatRequest = vi.hoisted(() => vi.fn());
 const ingressReceive = vi.hoisted(() => vi.fn());
 
-vi.mock("openclaw/plugin-sdk/webhook-request-guards", () => ({
+vi.mock("afora-agent/plugin-sdk/webhook-request-guards", () => ({
   readJsonWebhookBodyOrReject,
   runDetachedWebhookWork,
 }));
 
-vi.mock("openclaw/plugin-sdk/webhook-targets", () => ({
+vi.mock("afora-agent/plugin-sdk/webhook-targets", () => ({
   canonicalizeWebhookRouteKey: (raw: string) =>
     raw
       .replace(/\/{2,}/g, "/")
@@ -131,8 +131,8 @@ describe("googlechat monitor webhook", () => {
   });
 
   afterAll(() => {
-    vi.doUnmock("openclaw/plugin-sdk/webhook-request-guards");
-    vi.doUnmock("openclaw/plugin-sdk/webhook-targets");
+    vi.doUnmock("afora-agent/plugin-sdk/webhook-request-guards");
+    vi.doUnmock("afora-agent/plugin-sdk/webhook-targets");
     vi.doUnmock("./auth.js");
     vi.resetModules();
   });
@@ -310,7 +310,7 @@ describe("googlechat monitor webhook", () => {
     expect(processEvent).not.toHaveBeenCalled();
     expect(runDetachedWebhookWork).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(200);
-    expect(res.headers["x-openclaw-delivery-accepted"]).toBe("durable");
+    expect(res.headers["x-afora-delivery-accepted"]).toBe("durable");
     expect(res.headers["Content-Type"]).toBe("application/json");
     expect(res.body).toBe("{}");
   });
@@ -334,7 +334,7 @@ describe("googlechat monitor webhook", () => {
         commonEventObject: {
           hostApp: "CHAT",
           parameters: {
-            openclaw_action: "approval",
+            afora_action: "approval",
             token: "token-1",
           },
         },
@@ -375,13 +375,13 @@ describe("googlechat monitor webhook", () => {
         eventTime: "2026-03-22T00:00:00.000Z",
         action: {
           parameters: [
-            { key: "openclaw_action", value: "approval" },
+            { key: "afora_action", value: "approval" },
             { key: "token", value: "token-1" },
           ],
         },
         commonEventObject: {
           parameters: {
-            openclaw_action: "approval",
+            afora_action: "approval",
             token: "token-1",
           },
         },
@@ -389,7 +389,7 @@ describe("googlechat monitor webhook", () => {
       target,
     );
     expect(res.statusCode).toBe(200);
-    expect(res.headers["x-openclaw-delivery-accepted"]).toBeUndefined();
+    expect(res.headers["x-afora-delivery-accepted"]).toBeUndefined();
     expect(res.headers["Content-Type"]).toBe("application/json");
     expect(res.body).toBe("{}");
   });
@@ -433,11 +433,11 @@ describe("googlechat monitor webhook", () => {
 
     await vi.waitFor(() => expect(ingressReceive).toHaveBeenCalledWith(raw));
     expect(res.statusCode).toBe(0);
-    expect(res.headers["x-openclaw-delivery-accepted"]).toBeUndefined();
+    expect(res.headers["x-afora-delivery-accepted"]).toBeUndefined();
     releaseAdmission({ kind: "durable" });
     await expect(handling).resolves.toBe(true);
     expect(res.statusCode).toBe(200);
-    expect(res.headers["x-openclaw-delivery-accepted"]).toBe("durable");
+    expect(res.headers["x-afora-delivery-accepted"]).toBe("durable");
   });
 
   it("returns 503 instead of acknowledging when durable admission fails", async () => {
@@ -464,7 +464,7 @@ describe("googlechat monitor webhook", () => {
     const { processEvent, res } = await runWebhookHandler({ authorization: "Bearer valid" });
 
     expect(res.statusCode).toBe(503);
-    expect(res.headers["x-openclaw-delivery-accepted"]).toBeUndefined();
+    expect(res.headers["x-afora-delivery-accepted"]).toBeUndefined();
     expect(res.body).toBe("failed to persist event");
     expect(processEvent).not.toHaveBeenCalled();
   });

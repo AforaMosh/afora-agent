@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../../state/afora-state-db.js";
 import { STALE_WORKER_BUILD_REASON } from "./admission.js";
 import * as support from "./service.test-support.js";
 import { createWorkerEnvironmentStore } from "./store.js";
@@ -251,9 +251,9 @@ describe("worker environment service", () => {
     support.testState.stateDb.db
       .prepare("UPDATE worker_environments SET shared_host = NULL WHERE environment_id = ?")
       .run("worker-legacy-shared");
-    closeOpenClawStateDatabaseForTest();
-    support.testState.stateDb = openOpenClawStateDatabase({
-      env: { OPENCLAW_STATE_DIR: support.testState.root },
+    closeAforaStateDatabaseForTest();
+    support.testState.stateDb = openAforaStateDatabase({
+      env: { AFORA_STATE_DIR: support.testState.root },
     });
     support.testState.store = createWorkerEnvironmentStore({
       database: support.testState.stateDb,

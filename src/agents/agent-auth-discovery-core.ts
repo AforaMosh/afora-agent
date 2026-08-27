@@ -1,5 +1,5 @@
 /** Env/config-backed credential discovery shared by agent auth discovery modes. */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { AgentCredentialMap } from "./agent-auth-credentials.js";
 import {
   listProviderEnvAuthLookupKeys,
@@ -9,7 +9,7 @@ import { resolveEnvApiKey } from "./model-auth-env.js";
 
 /** Options for discovering env-backed credentials during agent auth discovery. */
 export type AgentDiscoveryAuthLookupOptions = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
 };

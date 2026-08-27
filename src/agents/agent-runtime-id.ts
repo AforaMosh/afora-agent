@@ -1,21 +1,21 @@
 /** Agent runtime id normalization and retired runtime-selection compatibility helpers. */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { resolveAgentConfig } from "./agent-scope-config.js";
 
-export type EmbeddedAgentRuntime = "openclaw" | "auto" | (string & {});
+export type EmbeddedAgentRuntime = "afora" | "auto" | (string & {});
 
-export const OPENCLAW_AGENT_RUNTIME_ID = "openclaw";
+export const AFORA_AGENT_RUNTIME_ID = "afora";
 export const AUTO_AGENT_RUNTIME_ID = "auto";
 
 /** Normalizes configured runtime aliases to the current embedded-agent runtime id vocabulary. */
 export function normalizeEmbeddedAgentRuntime(raw: string | undefined): EmbeddedAgentRuntime {
   const value = raw?.trim();
   if (!value) {
-    return OPENCLAW_AGENT_RUNTIME_ID;
+    return AFORA_AGENT_RUNTIME_ID;
   }
-  if (value === "openclaw" || value === "pi") {
-    return OPENCLAW_AGENT_RUNTIME_ID;
+  if (value === "afora" || value === "pi") {
+    return AFORA_AGENT_RUNTIME_ID;
   }
   if (value === "auto") {
     return AUTO_AGENT_RUNTIME_ID;
@@ -37,7 +37,7 @@ export function normalizeOptionalAgentRuntimeId(raw: unknown): EmbeddedAgentRunt
 
 /** Resolves the deprecated explicit whole-agent runtime override, when present. */
 export function resolveAgentScopedRuntimeOverride(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
 }): EmbeddedAgentRuntime | undefined {
   const agentId = params.agentId ? normalizeAgentId(params.agentId) : undefined;

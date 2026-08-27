@@ -1,5 +1,5 @@
 // Deepinfra API module exposes the plugin public contract.
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-types";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-model-types";
 
 /**
  * Passthrough normalization for DeepInfra provider config.

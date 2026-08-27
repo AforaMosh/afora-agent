@@ -1,6 +1,6 @@
 // Line plugin module implements signature behavior.
 import crypto from "node:crypto";
-import { safeEqualSecret } from "openclaw/plugin-sdk/security-runtime";
+import { safeEqualSecret } from "afora-agent/plugin-sdk/security-runtime";
 
 export function validateLineSignature(
   body: string,

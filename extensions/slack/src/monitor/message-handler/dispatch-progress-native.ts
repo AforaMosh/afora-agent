@@ -1,5 +1,5 @@
 import type { AnyChunk } from "@slack/types";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
 import { appendSlackStream, startSlackStream } from "../../streaming.js";
 import { resolveSlackStreamRecipientTeamId } from "./dispatch-helpers.js";
 import type { SlackDispatchSetup } from "./dispatch-setup.js";

@@ -2,12 +2,12 @@
  * Converts user-facing sandbox tool policy config into the normalized runtime
  * allow/deny policy object used by tool filtering.
  */
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import type { SandboxToolPolicy } from "./sandbox/types.js";
 
 /** Provenance marker for wildcard allowlists created from `alsoAllow`. */
 export const IMPLICIT_ALLOW_ALL_FROM_ALSO_ALLOW = Symbol.for(
-  "openclaw.toolPolicy.implicitAllowAllFromAlsoAllow",
+  "afora.toolPolicy.implicitAllowAllFromAlsoAllow",
 );
 
 type SandboxToolPolicyConfig = {

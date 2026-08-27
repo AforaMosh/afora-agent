@@ -1,7 +1,7 @@
 // Setup migration promotion owns durable journals, rollback, and path validation.
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { readDurableJsonFile, writeJsonAtomic } from "../infra/json-files.js";
 import { isNotFoundPathError, isPathInside } from "../infra/path-guards.js";
 import type { MigrationApplyResult, MigrationPlan } from "../plugins/types.js";
@@ -268,7 +268,7 @@ async function hasPublishedPromotionComponent(components: PromotionComponent[]):
 export async function recoverSetupMigrationPromotion(params: {
   stateDir: string;
   providerId: string;
-  readConfigFile: () => Promise<OpenClawConfig>;
+  readConfigFile: () => Promise<AforaConfig>;
 }): Promise<SetupMigrationPromotionResume | undefined> {
   const found = await readLatestPromotionJournal(params);
   if (!found) {
@@ -283,7 +283,7 @@ export async function recoverSetupMigrationPromotion(params: {
   }
   if (journal.status === "indeterminate") {
     throw new Error(
-      `An onboarding migration promotion is indeterminate. Review ${found.path} and run openclaw doctor before retrying.`,
+      `An onboarding migration promotion is indeterminate. Review ${found.path} and run afora doctor before retrying.`,
     );
   }
   const currentConfigHash = hashSetupMigrationConfig(await params.readConfigFile());
@@ -300,7 +300,7 @@ export async function recoverSetupMigrationPromotion(params: {
     journal.status = "indeterminate";
     await writePromotionJournal(found.path, journal);
     throw new Error(
-      `A committed onboarding migration no longer matches its promoted target. Review ${found.path} and run openclaw doctor before retrying.`,
+      `A committed onboarding migration no longer matches its promoted target. Review ${found.path} and run afora doctor before retrying.`,
     );
   }
   if (currentConfigHash === journal.configHashTarget && allFinal) {
@@ -313,7 +313,7 @@ export async function recoverSetupMigrationPromotion(params: {
       journal.status = "indeterminate";
       await writePromotionJournal(found.path, journal);
       throw new Error(
-        `An interrupted onboarding migration published local data before config commit. Review ${found.path} and run openclaw doctor before retrying.`,
+        `An interrupted onboarding migration published local data before config commit. Review ${found.path} and run afora doctor before retrying.`,
       );
     }
     if (await rollbackComponents(journal.components)) {
@@ -328,7 +328,7 @@ export async function recoverSetupMigrationPromotion(params: {
   journal.status = "indeterminate";
   await writePromotionJournal(found.path, journal);
   throw new Error(
-    `Could not reconcile an interrupted onboarding migration. Review ${found.path} and run openclaw doctor before retrying.`,
+    `Could not reconcile an interrupted onboarding migration. Review ${found.path} and run afora doctor before retrying.`,
   );
 }
 
@@ -347,7 +347,7 @@ async function listMissingPromotionParents(target: string): Promise<string[]> {
 }
 
 async function reserveEmptyTargetBackupPath(target: string): Promise<string> {
-  const reserved = await fs.mkdtemp(path.join(path.dirname(target), ".openclaw-migration-empty-"));
+  const reserved = await fs.mkdtemp(path.join(path.dirname(target), ".afora-migration-empty-"));
   await fs.rmdir(reserved);
   return reserved;
 }
@@ -385,7 +385,7 @@ export async function moveRecordedEmptyTarget(component: PromotionComponent): Pr
 }
 
 async function usesCaseInsensitivePaths(directory: string): Promise<boolean> {
-  const probe = await fs.mkdtemp(path.join(directory, ".openclaw-case-probe-"));
+  const probe = await fs.mkdtemp(path.join(directory, ".afora-case-probe-"));
   try {
     const alias = path.join(path.dirname(probe), path.basename(probe).toUpperCase());
     if (alias === probe) {
@@ -404,7 +404,7 @@ async function usesCaseInsensitivePaths(directory: string): Promise<boolean> {
 }
 
 async function usesNormalizationInsensitivePaths(directory: string): Promise<boolean> {
-  const probe = await fs.mkdtemp(path.join(directory, ".openclaw-normalization-é-"));
+  const probe = await fs.mkdtemp(path.join(directory, ".afora-normalization-é-"));
   try {
     const alias = path.join(path.dirname(probe), path.basename(probe).normalize("NFD"));
     if (alias === probe) {

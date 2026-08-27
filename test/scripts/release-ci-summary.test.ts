@@ -4,7 +4,7 @@ import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it, vi } from "vitest";
 import {
   artifactDownloadArgs,
@@ -75,7 +75,7 @@ describe("GitHub API commands", () => {
         artifact: fixture.artifact,
         artifactList: { artifacts: [fixture.artifact] },
         child: fixture.childRun,
-        jobLog: `TARGET_SHA: ${targetSha}\nDispatched: https://github.com/openclaw/openclaw/actions/runs/${childRunId}`,
+        jobLog: `TARGET_SHA: ${targetSha}\nDispatched: https://github.com/AforaMosh/afora-agent/actions/runs/${childRunId}`,
         jobs: { jobs: [fixture.parentJob] },
         lineage: { merge_base_commit: { sha: workflowSha }, status: "ahead" },
         parent: fixture.parentRun,
@@ -94,13 +94,13 @@ const endpoint = args[1] ?? "";
 let output;
 if (args[0] === "run" && args[1] === "view") output = fixtures.parentView;
 else if (endpoint === "rate_limit") output = fixtures.rate;
-else if (endpoint === "repos/openclaw/openclaw/actions/runs/${runId}") output = fixtures.parent;
-else if (endpoint.startsWith("repos/openclaw/openclaw/actions/runs/${runId}/artifacts?")) output = fixtures.artifactList;
-else if (endpoint === "repos/openclaw/openclaw/actions/artifacts/${artifactId}") output = fixtures.artifact;
-else if (endpoint.startsWith("repos/openclaw/openclaw/actions/runs/${runId}/jobs?")) output = fixtures.jobs;
-else if (endpoint === "repos/openclaw/openclaw/actions/runs/${childRunId}") output = fixtures.child;
-else if (endpoint === "repos/openclaw/openclaw/actions/jobs/${fixture.parentJob.id}/logs") output = fixtures.jobLog;
-else if (endpoint === "repos/openclaw/openclaw/compare/${workflowSha}...${verifierSha}?per_page=1&page=2") output = fixtures.lineage;
+else if (endpoint === "repos/AforaMosh/afora-agent/actions/runs/${runId}") output = fixtures.parent;
+else if (endpoint.startsWith("repos/AforaMosh/afora-agent/actions/runs/${runId}/artifacts?")) output = fixtures.artifactList;
+else if (endpoint === "repos/AforaMosh/afora-agent/actions/artifacts/${artifactId}") output = fixtures.artifact;
+else if (endpoint.startsWith("repos/AforaMosh/afora-agent/actions/runs/${runId}/jobs?")) output = fixtures.jobs;
+else if (endpoint === "repos/AforaMosh/afora-agent/actions/runs/${childRunId}") output = fixtures.child;
+else if (endpoint === "repos/AforaMosh/afora-agent/actions/jobs/${fixture.parentJob.id}/logs") output = fixtures.jobLog;
+else if (endpoint === "repos/AforaMosh/afora-agent/compare/${workflowSha}...${verifierSha}?per_page=1&page=2") output = fixtures.lineage;
 else { console.error("unexpected cached gh request: " + args.join(" ")); process.exit(43); }
 process.stdout.write(typeof output === "string" ? output : JSON.stringify(output));
 `,
@@ -111,7 +111,7 @@ process.stdout.write(typeof output === "string" ? output : JSON.stringify(output
 import { appendFileSync, readFileSync } from "node:fs";
 const args = process.argv.slice(2);
 appendFileSync(process.env.PLAIN_LOG, JSON.stringify(args) + "\\n");
-if (args[0] !== "api" || args[1] !== "repos/openclaw/openclaw/actions/artifacts/${artifactId}/zip") {
+if (args[0] !== "api" || args[1] !== "repos/AforaMosh/afora-agent/actions/artifacts/${artifactId}/zip") {
   console.error("plain gh used for evidence read: " + args.join(" "));
   process.exit(42);
 }
@@ -126,7 +126,7 @@ process.stdout.write(readFileSync(process.env.ARCHIVE));
         ...process.env,
         ARCHIVE: archivePath,
         FIXTURES: fixturesPath,
-        OPENCLAW_GH_BIN: plainGh,
+        AFORA_GH_BIN: plainGh,
         PATH: `${root}:${process.env.PATH ?? ""}`,
         PLAIN_LOG: plainLog,
         SHIM_LOG: shimLog,
@@ -137,7 +137,7 @@ process.stdout.write(readFileSync(process.env.ARCHIVE));
           "--input-type=module",
           "--eval",
           `import { createReleaseEvidenceClient } from ${JSON.stringify(pathToFileURL(resolve(SCRIPT)).href)};
-           process.stdout.write(JSON.stringify(createReleaseEvidenceClient("openclaw/openclaw").compareCommitLineage("${workflowSha}", "${verifierSha}")));`,
+           process.stdout.write(JSON.stringify(createReleaseEvidenceClient("AforaMosh/afora-agent").compareCommitLineage("${workflowSha}", "${verifierSha}")));`,
         ],
         { encoding: "utf8", env },
       );
@@ -152,25 +152,25 @@ process.stdout.write(readFileSync(process.env.ARCHIVE));
       expect(result.stderr).toBe("");
       expect(result.status).toBe(0);
       expect(result.stdout).toContain(
-        `child: ${childRunId} OpenClaw Release Checks completed/success`,
+        `child: ${childRunId} Afora Release Checks completed/success`,
       );
       const shimCalls = readFileSync(shimLog, "utf8");
       const plainCalls = readFileSync(plainLog, "utf8");
       expect(shimCalls).toContain('"run","view"');
-      expect(shimCalls).toContain(`"repos/openclaw/openclaw/actions/runs/${runId}"`);
+      expect(shimCalls).toContain(`"repos/AforaMosh/afora-agent/actions/runs/${runId}"`);
       expect(shimCalls).toContain(
-        `"repos/openclaw/openclaw/compare/${workflowSha}...${verifierSha}?per_page=1&page=2"`,
+        `"repos/AforaMosh/afora-agent/compare/${workflowSha}...${verifierSha}?per_page=1&page=2"`,
       );
       expect(shimCalls).toContain(
         JSON.stringify([
           "api",
-          `repos/openclaw/openclaw/actions/jobs/${fixture.parentJob.id}/logs`,
+          `repos/AforaMosh/afora-agent/actions/jobs/${fixture.parentJob.id}/logs`,
           "--allow-escape-sequences",
         ]),
       );
       expect(shimCalls).not.toContain(`/actions/artifacts/${artifactId}/zip`);
       expect(plainCalls.trim()).toBe(
-        JSON.stringify(["api", `repos/openclaw/openclaw/actions/artifacts/${artifactId}/zip`]),
+        JSON.stringify(["api", `repos/AforaMosh/afora-agent/actions/artifacts/${artifactId}/zip`]),
       );
     } finally {
       rmSync(root, { force: true, recursive: true });
@@ -286,12 +286,12 @@ describe("runReleaseCiGh", () => {
     const execFileSyncImpl = vi.fn(() => "result");
 
     expect(
-      runReleaseCiGh(["api", "repos/openclaw/openclaw/actions/runs/1"], { execFileSyncImpl }),
+      runReleaseCiGh(["api", "repos/AforaMosh/afora-agent/actions/runs/1"], { execFileSyncImpl }),
     ).toBe("result");
     expect(execFileSyncImpl).toHaveBeenCalledOnce();
     expect(execFileSyncImpl).toHaveBeenCalledWith(
       expect.any(String),
-      ["api", "repos/openclaw/openclaw/actions/runs/1"],
+      ["api", "repos/AforaMosh/afora-agent/actions/runs/1"],
       expect.objectContaining({
         encoding: "utf8",
         killSignal: "SIGKILL",
@@ -536,10 +536,10 @@ function trustedMainPackageFixture({
     event: "workflow_dispatch",
     head_branch: workflowRef,
     head_sha: workflowSha,
-    html_url: `https://github.com/openclaw/openclaw/actions/runs/${runId}`,
+    html_url: `https://github.com/AforaMosh/afora-agent/actions/runs/${runId}`,
     id: Number(runId),
     path: parentPath,
-    repository: { full_name: "openclaw/openclaw" },
+    repository: { full_name: "AforaMosh/afora-agent" },
     run_attempt: 1,
     status: "completed",
   };
@@ -575,10 +575,10 @@ function trustedMainPackageFixture({
     event: "workflow_dispatch",
     head_branch: workflowRef,
     head_sha: workflowSha,
-    html_url: `https://github.com/openclaw/openclaw/actions/runs/${childRunId}`,
+    html_url: `https://github.com/AforaMosh/afora-agent/actions/runs/${childRunId}`,
     id: Number(childRunId),
-    path: ".github/workflows/openclaw-release-checks.yml",
-    repository: { full_name: "openclaw/openclaw" },
+    path: ".github/workflows/afora-release-checks.yml",
+    repository: { full_name: "AforaMosh/afora-agent" },
     run_attempt: 1,
     status: "completed",
     triggering_actor: { login: "github-actions[bot]" },
@@ -609,7 +609,7 @@ function trustedMainPackageFixture({
       expect(jobId).toBe(parentJob.id);
       return [
         `TARGET_SHA: ${targetSha}`,
-        `Dispatched openclaw-release-checks.yml: ${childRun.html_url}`,
+        `Dispatched afora-release-checks.yml: ${childRun.html_url}`,
       ].join("\n");
     },
     getParentJobs(requestedRunId: string) {
@@ -686,8 +686,8 @@ if (args[0] === "run" && args[1] === "view") {
     writeFileSync(process.env.RELEASE_CI_WATCH_INDEX, String(index + 1));
   } else output = ${JSON.stringify(parentView)};
 } else if (endpoint === "rate_limit") output = { resources: { core: { limit: 5000, remaining: 4999, reset: 2_000_000_000 } } };
-else if (endpoint === "repos/openclaw/openclaw/actions/runs/${runId}") output = ${JSON.stringify(parent)};
-else if (endpoint.startsWith("repos/openclaw/openclaw/actions/runs/${runId}/artifacts?")) output = { artifacts: [] };
+else if (endpoint === "repos/AforaMosh/afora-agent/actions/runs/${runId}") output = ${JSON.stringify(parent)};
+else if (endpoint.startsWith("repos/AforaMosh/afora-agent/actions/runs/${runId}/artifacts?")) output = { artifacts: [] };
 else { console.error("unexpected gh call: " + args.join(" ")); process.exit(43); }
 process.stdout.write(JSON.stringify(output));
 `,
@@ -939,7 +939,7 @@ describe("release CI summary child correlation", () => {
     expect(
       validateReleaseRunEvidence(
         {
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           runId: legacyV2.runId,
           verifierSourceContent: readFileSync(SCRIPT),
           verifierSourceSha: "c".repeat(40),
@@ -956,7 +956,7 @@ describe("release CI summary child correlation", () => {
     expect(() =>
       validateReleaseRunEvidence(
         {
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           runId: legacyV3.runId,
           verifierSourceContent: readFileSync(SCRIPT),
           verifierSourceSha: "c".repeat(40),
@@ -974,7 +974,7 @@ describe("release CI summary child correlation", () => {
     const verifierSourceSha = "c".repeat(40);
     const evidence = validateReleaseRunEvidence(
       {
-        repository: "openclaw/openclaw",
+        repository: "AforaMosh/afora-agent",
         runId: fixture.runId,
         verifierSourceContent: readFileSync(SCRIPT),
         verifierSourceSha,
@@ -986,10 +986,10 @@ describe("release CI summary child correlation", () => {
       directRoot: true,
       evidenceReuse: null,
       releaseProfile: "full",
-      repository: "openclaw/openclaw",
+      repository: "AforaMosh/afora-agent",
       rerunGroup: "package",
       runReleaseSoak: true,
-      schema: "openclaw.release-validation-evidence/v3",
+      schema: "afora.release-validation-evidence/v3",
       producerOnTrustedMainLineage: true,
       trustedWorkflowFullRef: "refs/heads/main",
       trustedWorkflowRef: "main",
@@ -1045,7 +1045,7 @@ describe("release CI summary child correlation", () => {
     expect(
       validateReleaseRunEvidence(
         {
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           runId: fixture.runId,
           verifierSourceContent: readFileSync(SCRIPT),
           verifierSourceSha: "c".repeat(40),
@@ -1066,7 +1066,7 @@ describe("release CI summary child correlation", () => {
     });
     const evidence = validateReleaseRunEvidence(
       {
-        repository: "openclaw/openclaw",
+        repository: "AforaMosh/afora-agent",
         runId: fixture.runId,
         verifierSourceContent: readFileSync(SCRIPT),
         verifierSourceSha: "c".repeat(40),
@@ -1092,7 +1092,7 @@ describe("release CI summary child correlation", () => {
     });
     const evidence = validateReleaseRunEvidence(
       {
-        repository: "openclaw/openclaw",
+        repository: "AforaMosh/afora-agent",
         runId: fixture.runId,
         trustedWorkflowRef: workflowRef,
         verifierSourceContent: readFileSync(SCRIPT),
@@ -1117,7 +1117,7 @@ describe("release CI summary child correlation", () => {
     expect(() =>
       validateReleaseRunEvidence(
         {
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           runId: fixture.runId,
           verifierSourceContent: readFileSync(SCRIPT),
           verifierSourceSha: "c".repeat(40),
@@ -1136,7 +1136,7 @@ describe("release CI summary child correlation", () => {
     expect(() =>
       validateReleaseRunEvidence(
         {
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           runId: fixture.runId,
           verifierSourceContent: readFileSync(SCRIPT),
           verifierSourceSha: "c".repeat(40),
@@ -1155,7 +1155,7 @@ describe("release CI summary child correlation", () => {
     expect(() =>
       validateReleaseRunEvidence(
         {
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           runId: fixture.runId,
           trustedWorkflowRef: "main",
           verifierSourceContent: readFileSync(SCRIPT),
@@ -1181,7 +1181,7 @@ describe("release CI summary child correlation", () => {
     expect(
       validateReleaseRunEvidence(
         {
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           runId: fixture.runId,
           verifierSourceContent: readFileSync(SCRIPT),
           verifierSourceSha: "c".repeat(40),
@@ -1208,7 +1208,7 @@ describe("release CI summary child correlation", () => {
       expect(
         validateReleaseRunEvidence(
           {
-            repository: "openclaw/openclaw",
+            repository: "AforaMosh/afora-agent",
             runId: fixture.runId,
             verifierSourceContent: readFileSync(SCRIPT),
             verifierSourceSha: "c".repeat(40),
@@ -1268,7 +1268,7 @@ describe("release CI summary child correlation", () => {
     expect(() =>
       validateReleaseRunEvidence(
         {
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           runId: fixture.runId,
           verifierSourceContent: readFileSync(SCRIPT),
           verifierSourceSha: "c".repeat(40),
@@ -1283,7 +1283,7 @@ describe("release CI summary child correlation", () => {
     expect(() =>
       validateReleaseRunEvidence(
         {
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           runId: fixture.runId,
           verifierSourceContent: "different verifier bytes",
           verifierSourceSha: "c".repeat(40),
@@ -1294,7 +1294,7 @@ describe("release CI summary child correlation", () => {
     expect(() =>
       validateReleaseRunEvidence(
         {
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           runId: fixture.runId,
           verifierSourceSha: "f".repeat(40),
         },
@@ -1384,7 +1384,7 @@ describe("release CI summary child correlation", () => {
     expect(() =>
       validateParentRunBinding(
         parentView,
-        { ...parentRest, path: ".github/workflows/openclaw-release-checks.yml" },
+        { ...parentRest, path: ".github/workflows/afora-release-checks.yml" },
         "29090000000",
       ),
     ).toThrow("full release parent run binding mismatch");
@@ -1404,14 +1404,14 @@ describe("release CI summary child correlation", () => {
       },
       {
         displayTitle:
-          "OpenClaw Release Checks full-release-validation-29090000000-3-release-checks",
+          "Afora Release Checks full-release-validation-29090000000-3-release-checks",
         headBranch: "release/2026.7.1",
         manifestKey: "releaseChecks",
-        name: "OpenClaw Release Checks",
+        name: "Afora Release Checks",
         parentJobName: "Run release/live/Docker/QA validation",
         suffix: "-release-checks",
         trustedRef: "parent",
-        workflow: "openclaw-release-checks.yml",
+        workflow: "afora-release-checks.yml",
       },
       {
         displayTitle: "Plugin Prerelease full-release-validation-29090000000-3-plugin-prerelease",
@@ -1434,20 +1434,20 @@ describe("release CI summary child correlation", () => {
         workflow: "npm-telegram-beta-e2e.yml",
       },
       {
-        displayTitle: "OpenClaw Performance full-release-validation-29090000000-3",
+        displayTitle: "Afora Performance full-release-validation-29090000000-3",
         headBranch: "release/2026.7.1",
         manifestKey: "productPerformance",
-        name: "OpenClaw Performance",
+        name: "Afora Performance",
         parentJobName: "Run product performance evidence",
         suffix: "",
         trustedRef: "parent",
-        workflow: "openclaw-performance.yml",
+        workflow: "afora-performance.yml",
       },
     ]);
   });
 
   it("ignores same-SHA and nearby-name runs without the exact parent dispatch binding", () => {
-    const expected = "OpenClaw Performance full-release-validation-29090000000-3";
+    const expected = "Afora Performance full-release-validation-29090000000-3";
     const exact = {
       display_title: expected,
       event: "workflow_dispatch",
@@ -1459,7 +1459,7 @@ describe("release CI summary child correlation", () => {
       selectExactChildRun(
         [
           {
-            display_title: "OpenClaw Performance",
+            display_title: "Afora Performance",
             event: "workflow_dispatch",
             head_branch: "main",
             head_sha: exact.head_sha,
@@ -1504,7 +1504,7 @@ describe("release CI summary child correlation", () => {
   });
 
   it("returns one exact child after a full bounded pagination scan", () => {
-    const expected = "OpenClaw Performance full-release-validation-29090000000-3";
+    const expected = "Afora Performance full-release-validation-29090000000-3";
     const exact = {
       display_title: expected,
       event: "workflow_dispatch",
@@ -1556,7 +1556,7 @@ describe("release CI summary child correlation", () => {
   it("requires the npm Telegram child for all-validation with an effective package spec", () => {
     const raw = rawManifest({});
     raw.childRuns.npmTelegram = "505";
-    raw.validationInputs.npmTelegramPackageSpec = "openclaw@beta";
+    raw.validationInputs.npmTelegramPackageSpec = "afora@beta";
     raw.validationInputs.skipPackageTelegramE2e = "true";
     const manifest = validateParentManifest(raw, {
       runAttempt: 2,
@@ -1936,7 +1936,7 @@ describe("release CI summary child correlation", () => {
     ];
     const parentLog = [
       `TARGET_SHA: ${parentManifest.targetSha}`,
-      "Dispatched ci.yml: https://github.com/openclaw/openclaw/actions/runs/101",
+      "Dispatched ci.yml: https://github.com/AforaMosh/afora-agent/actions/runs/101",
     ].join("\n");
     const run = {
       actor: { login: "github-actions[bot]" },
@@ -1987,10 +1987,10 @@ describe("release CI summary child correlation", () => {
         {
           originAttempt: 1,
           runId: 28717802171,
-          title: "OpenClaw Performance full-release-validation-28717729503-1",
+          title: "Afora Performance full-release-validation-28717729503-1",
         },
       ],
-      ["releaseChecks", { originAttempt: 1, runId: 28717802397, title: "OpenClaw Release Checks" }],
+      ["releaseChecks", { originAttempt: 1, runId: 28717802397, title: "Afora Release Checks" }],
     ]);
     const fingerprint = {
       completed_at: "2026-07-04T20:29:21Z",
@@ -2047,7 +2047,7 @@ describe("release CI summary child correlation", () => {
       const parentLog = [
         `TARGET_SHA: ${parentManifest.targetSha}`,
         ...(child.manifestKey === "productPerformance" ? ["-f publish_reports=false"] : []),
-        `Dispatched ${child.workflow}: https://github.com/openclaw/openclaw/actions/runs/${runId}`,
+        `Dispatched ${child.workflow}: https://github.com/AforaMosh/afora-agent/actions/runs/${runId}`,
       ].join("\n");
       expect(resolveManifestChildOriginAttempt(run, child, parentManifest, parentJobs)).toBe(
         originAttempt,
@@ -2090,7 +2090,7 @@ describe("release CI summary child correlation", () => {
     ];
     const ciLog = [
       `TARGET_SHA: ${parentManifest.targetSha}`,
-      "Dispatched ci.yml: https://github.com/openclaw/openclaw/actions/runs/101",
+      "Dispatched ci.yml: https://github.com/AforaMosh/afora-agent/actions/runs/101",
     ].join("\n");
     expect(() =>
       validateManifestChildRun(wrongParent, ci, "101", parentManifest, ciJobs, ciLog),

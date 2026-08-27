@@ -30,7 +30,7 @@ export {
 };
 
 const MANIFEST_FILENAME = "plugin-publication-manifest.json";
-const MANIFEST_SCHEMA = "openclaw.plugin-publication-artifact/v1";
+const MANIFEST_SCHEMA = "afora.plugin-publication-artifact/v1";
 const TAR_BLOCK_BYTES = 512;
 const TAR_END_MARKER_BYTES = TAR_BLOCK_BYTES * 2;
 const TAR_USTAR_MAGIC = Buffer.from("ustar\0", "ascii");
@@ -77,7 +77,7 @@ const ROUTES = new Set([
 ]);
 const NPM_TAGS = new Set(["latest", "alpha", "beta", "extended-stable"]);
 const CLAWHUB_TAGS = new Set(["latest", "alpha", "beta"]);
-const META_PACKAGE = "@openclaw/meta-provider";
+const META_PACKAGE = "@afora/meta-provider";
 const META_PACKAGE_DIR = "extensions/meta";
 
 function sha256(bytes) {
@@ -592,10 +592,10 @@ export function inspectPackageTarballBytes(inputBytes, options = {}) {
         );
       }
       packageManifestBytes = Buffer.from(content);
-    } else if (safePath === "package/openclaw.plugin.json") {
+    } else if (safePath === "package/afora.plugin.json") {
       if (content.length === 0 || content.length > MAX_PLUGIN_MANIFEST_BYTES) {
         throw new Error(
-          `Packed openclaw.plugin.json size is outside the allowed range: ${content.length}.`,
+          `Packed afora.plugin.json size is outside the allowed range: ${content.length}.`,
         );
       }
       pluginManifestBytes = Buffer.from(content);
@@ -609,11 +609,11 @@ export function inspectPackageTarballBytes(inputBytes, options = {}) {
     throw new Error("Plugin tarball must contain exactly one package/package.json.");
   }
   if (!pluginManifestBytes) {
-    throw new Error("Plugin tarball must contain exactly one package/openclaw.plugin.json.");
+    throw new Error("Plugin tarball must contain exactly one package/afora.plugin.json.");
   }
   inventory.sort((left, right) => compareCodeUnits(left.path, right.path));
   const packageManifest = parsePackedJson(packageManifestBytes, "Packed package.json");
-  const pluginManifest = parsePackedJson(pluginManifestBytes, "Packed openclaw.plugin.json");
+  const pluginManifest = parsePackedJson(pluginManifestBytes, "Packed afora.plugin.json");
   return {
     inventory,
     packageManifest,
@@ -637,7 +637,7 @@ export function validatePluginPackageManifest(params, packageManifest) {
       `${params.packageName}: packed package.json must not override the approved publication tag.`,
     );
   }
-  const release = packageManifest.openclaw?.release;
+  const release = packageManifest.afora?.release;
   const referencesMetaIdentity =
     params.packageName === META_PACKAGE || params.packageDir === META_PACKAGE_DIR;
   if (

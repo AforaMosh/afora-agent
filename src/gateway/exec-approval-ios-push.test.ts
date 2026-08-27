@@ -23,7 +23,7 @@ function apnsRegistration(nodeId = "ios-device-1") {
     nodeId,
     transport: "direct",
     token: "apns-token",
-    topic: "ai.openclaw.ios.test",
+    topic: "ai.afora.ios.test",
     environment: "sandbox",
     updatedAtMs: 1,
   };
@@ -36,7 +36,7 @@ function relayApnsRegistration(nodeId = "ios-device-1") {
     relayHandle: `relay-${nodeId}`,
     sendGrant: `grant-${nodeId}`,
     installationId: `installation-${nodeId}`,
-    topic: "ai.openclaw.ios.test",
+    topic: "ai.afora.ios.test",
     environment: "sandbox",
     distribution: "official",
     relayOrigin: "https://relay.example.test",
@@ -49,7 +49,7 @@ function successfulApnsPushResult() {
     ok: true,
     status: 200,
     environment: "sandbox",
-    topic: "ai.openclaw.ios.test",
+    topic: "ai.afora.ios.test",
     tokenSuffix: "token",
     transport: "direct",
   };
@@ -85,7 +85,7 @@ function pluginApprovalRequest(id: string): PluginApprovalRequest {
     request: {
       title: "Install plugin update",
       description: "Allow the plugin to update its managed package.",
-      detail: '{"package":"@openclaw/example","token":"review-only"}',
+      detail: '{"package":"@afora/example","token":"review-only"}',
       severity: "warning",
       toolName: "plugins.update",
     },
@@ -299,7 +299,7 @@ describe("createExecApprovalIosPushDelivery", () => {
       status: 410,
       reason: "Unregistered",
       environment: "sandbox",
-      topic: "ai.openclaw.ios.test",
+      topic: "ai.afora.ios.test",
       tokenSuffix: "token",
       transport: "direct",
     });

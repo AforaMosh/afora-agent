@@ -61,7 +61,7 @@ describe("zai model definitions", () => {
     });
   });
 
-  it("uses current OpenClaw metadata for the new GLM-5.1 model", () => {
+  it("uses current Afora metadata for the new GLM-5.1 model", () => {
     expectZaiModelFields({
       id: "glm-5.1",
       reasoning: true,

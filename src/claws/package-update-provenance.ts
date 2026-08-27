@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import {
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
 import type { PersistedClawPackageRef } from "./provenance.js";
 
 export function digestClawPackageRef(ref: PersistedClawPackageRef): string {
@@ -30,13 +30,13 @@ export function digestClawPackageRef(ref: PersistedClawPackageRef): string {
 export function replaceClawPackageRefExpected(
   expected: PersistedClawPackageRef | undefined,
   replacement: PersistedClawPackageRef | undefined,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): void {
   const identity = expected ?? replacement;
   if (!identity) {
     throw new Error("Package reference replacement requires an identity.");
   }
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     if (expected) {
       const result = db /* sqlite-allow-raw: Claw package provenance compare-and-swap delete. */
         .prepare(

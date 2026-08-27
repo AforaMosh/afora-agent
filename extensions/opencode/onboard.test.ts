@@ -1,5 +1,5 @@
 // Opencode tests cover onboard plugin behavior.
-import { expectProviderOnboardAllowlistAlias } from "openclaw/plugin-sdk/provider-test-contracts";
+import { expectProviderOnboardAllowlistAlias } from "afora-agent/plugin-sdk/provider-test-contracts";
 import { describe, it } from "vitest";
 import { applyOpencodeZenProviderConfig } from "./onboard.js";
 

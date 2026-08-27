@@ -2,10 +2,10 @@ import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { replaceSessionEntrySync } from "../config/sessions/session-accessor.entry.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import type { BoardStore } from "./board-store.js";
 import { createTestBoardStore } from "./board-store.test-support.js";
 import { SqliteBoardStore } from "./sqlite-board-store.js";
@@ -13,7 +13,7 @@ import { SqliteBoardStore } from "./sqlite-board-store.js";
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 function seedSession(env: NodeJS.ProcessEnv, sessionKey: string): void {
-  const database = openOpenClawAgentDatabase({ agentId: "main", env });
+  const database = openAforaAgentDatabase({ agentId: "main", env });
   replaceSessionEntrySync(
     { agentId: "main", sessionKey, storePath: database.path },
     { sessionId: `session-${sessionKey.replaceAll(":", "-")}`, updatedAt: Date.now() },
@@ -33,8 +33,8 @@ function generatedIdentity(key: string, fallbackName: string) {
 }
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 describe("generated BoardStore identity", () => {
@@ -160,7 +160,7 @@ describe("generated BoardStore identity", () => {
 });
 
 it("preserves a beta.5-format unmarked explicit row and reuses the generated fallback", () => {
-  const env = { OPENCLAW_STATE_DIR: tempDirs.make("openclaw-board-beta5-identity-") };
+  const env = { AFORA_STATE_DIR: tempDirs.make("afora-board-beta5-identity-") };
   const sessionKey = "agent:main:beta5-identity";
   seedSession(env, sessionKey);
   const options = {
@@ -189,15 +189,15 @@ it("preserves a beta.5-format unmarked explicit row and reuses the generated fal
     legacy.widgets.find((widget) => widget.name === "cafe-menu")?.instanceId,
   );
   store.applyOps(sessionKey, [{ kind: "widget_resize", name: "cafe-menu", sizeW: 8, sizeH: 6 }]);
-  const seededDatabase = openOpenClawAgentDatabase({ agentId: "main", env });
+  const seededDatabase = openAforaAgentDatabase({ agentId: "main", env });
   seededDatabase.db
     .prepare(
       "UPDATE board_widgets SET manifest = json_remove(manifest, '$.nameIdentity') WHERE session_key = ? AND name = ?",
     )
     .run(sessionKey, "cafe-menu");
 
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
 
   const reopened = new SqliteBoardStore(options);
   const generated = reopened.putWidget({
@@ -218,8 +218,8 @@ it("preserves a beta.5-format unmarked explicit row and reuses the generated fal
   });
   expect(reopened.readWidgetHtml(sessionKey, "cafe-menu")?.html).toContain("approved");
 
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
 
   const durable = new SqliteBoardStore(options);
   const reused = durable.putWidget({
@@ -234,7 +234,7 @@ it("preserves a beta.5-format unmarked explicit row and reuses the generated fal
     revision: 2,
   });
   expect(durable.readWidgetHtml(sessionKey, "cafe-menu")?.html).toContain("approved");
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
 
   expect(
     new SqliteBoardStore(options)
@@ -248,7 +248,7 @@ it("preserves a beta.5-format unmarked explicit row and reuses the generated fal
     sizeH: 6,
     position: 1,
   });
-  const database = openOpenClawAgentDatabase({ agentId: "main", env });
+  const database = openAforaAgentDatabase({ agentId: "main", env });
   const row = database.db
     .prepare("SELECT manifest FROM board_widgets WHERE session_key = ? AND name = ?")
     .get(sessionKey, "cafe-menu-eeeeeeee") as { manifest: string };
@@ -258,7 +258,7 @@ it("preserves a beta.5-format unmarked explicit row and reuses the generated fal
 });
 
 it("does not infer generated ownership from a canonical unmarked title match", () => {
-  const env = { OPENCLAW_STATE_DIR: tempDirs.make("openclaw-board-canonical-legacy-") };
+  const env = { AFORA_STATE_DIR: tempDirs.make("afora-board-canonical-legacy-") };
   const sessionKey = "agent:main:canonical-legacy";
   seedSession(env, sessionKey);
   const options = {
@@ -272,13 +272,13 @@ it("does not infer generated ownership from a canonical unmarked title match", (
     title: "が",
     content: { kind: "html", html: "<p>legacy</p>" },
   });
-  const database = openOpenClawAgentDatabase({ agentId: "main", env });
+  const database = openAforaAgentDatabase({ agentId: "main", env });
   database.db
     .prepare(
       "UPDATE board_widgets SET manifest = json_remove(manifest, '$.nameIdentity') WHERE session_key = ? AND name = ?",
     )
     .run(sessionKey, "widget-e3b21956");
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
 
   const reopened = new SqliteBoardStore(options);
   const generated = reopened.putWidget({
@@ -294,7 +294,7 @@ it("does not infer generated ownership from a canonical unmarked title match", (
 });
 
 it("preserves unmarked rows whose absent or capped titles are ambiguous", () => {
-  const env = { OPENCLAW_STATE_DIR: tempDirs.make("openclaw-board-ambiguous-legacy-") };
+  const env = { AFORA_STATE_DIR: tempDirs.make("afora-board-ambiguous-legacy-") };
   const sessionKey = "agent:main:ambiguous-legacy";
   seedSession(env, sessionKey);
   const options = {
@@ -314,13 +314,13 @@ it("preserves unmarked rows whose absent or capped titles are ambiguous", () => 
     title: cappedTitle,
     content: { kind: "html", html: "<p>legacy long</p>" },
   });
-  const database = openOpenClawAgentDatabase({ agentId: "main", env });
+  const database = openAforaAgentDatabase({ agentId: "main", env });
   database.db
     .prepare(
       "UPDATE board_widgets SET manifest = json_remove(manifest, '$.nameIdentity') WHERE session_key = ?",
     )
     .run(sessionKey);
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
 
   const reopened = new SqliteBoardStore(options);
   const untitled = reopened.putWidget({
@@ -344,7 +344,7 @@ it("preserves unmarked rows whose absent or capped titles are ambiguous", () => 
 });
 
 it("persists explicit ownership across restart", () => {
-  const env = { OPENCLAW_STATE_DIR: tempDirs.make("openclaw-board-explicit-owner-") };
+  const env = { AFORA_STATE_DIR: tempDirs.make("afora-board-explicit-owner-") };
   const sessionKey = "agent:main:explicit-owner";
   seedSession(env, sessionKey);
   const options = {
@@ -357,7 +357,7 @@ it("persists explicit ownership across restart", () => {
     title: "Status",
     content: { kind: "html", html: "<p>manual</p>" },
   });
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
 
   const reopened = new SqliteBoardStore(options);
   const generated = reopened.putWidget({

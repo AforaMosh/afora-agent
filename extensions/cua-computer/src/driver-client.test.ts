@@ -8,14 +8,14 @@ const mocks = vi.hoisted(() => ({
   createTrustedSession: vi.fn(),
   endSession: vi.fn(async () => ({})),
   escalateSession: vi.fn(async () => ({
-    session: "openclaw-test",
+    session: "afora-test",
     captureScope: "desktop",
     effectiveScope: "desktop",
     desktopUnlocked: true,
   })),
   getDesktopState: vi.fn(async () => ({})),
   getSessionState: vi.fn(async () => ({
-    session: "openclaw-test",
+    session: "afora-test",
     captureScope: "desktop",
     effectiveScope: "desktop",
     desktopUnlocked: true,
@@ -99,7 +99,7 @@ describe("CUA Driver direct session", () => {
     for (const [, options] of mocks.createTrustedSession.mock.calls) {
       expect(options).toEqual(
         expect.objectContaining({
-          publicSession: expect.stringMatching(/^openclaw-(window|desktop)-/),
+          publicSession: expect.stringMatching(/^afora-(window|desktop)-/),
           mode: "unrestricted",
           ttlSeconds: authorization.maxSessionTtlSeconds,
           idleTtlSeconds: authorization.maxIdleTtlSeconds,
@@ -118,7 +118,7 @@ describe("CUA Driver direct session", () => {
 
     await Promise.all([driver.getDesktopState(), driver.getDesktopState()]);
     const sessionOptions = mocks.createTrustedSession.mock.calls.find(([, options]) =>
-      options.publicSession.startsWith("openclaw-desktop-"),
+      options.publicSession.startsWith("afora-desktop-"),
     )?.[1];
 
     expect(mocks.startSession).toHaveBeenCalledOnce();
@@ -144,10 +144,10 @@ describe("CUA Driver direct session", () => {
     await driver.escalateScope(EscalationReason.Other);
     await driver.callTool("list_windows", {});
     const windowOptions = mocks.createTrustedSession.mock.calls.find(([, options]) =>
-      options.publicSession.startsWith("openclaw-window-"),
+      options.publicSession.startsWith("afora-window-"),
     )?.[1];
     const desktopOptions = mocks.createTrustedSession.mock.calls.find(([, options]) =>
-      options.publicSession.startsWith("openclaw-desktop-"),
+      options.publicSession.startsWith("afora-desktop-"),
     )?.[1];
     expect(mocks.startSession).toHaveBeenCalledWith(
       { session: windowOptions.publicSession, captureScope: "window" },

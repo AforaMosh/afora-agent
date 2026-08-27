@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { redactToolPayloadText } from "../logging/redact.js";
 
 const MAX_PRESERVED_ACTION_LINES = 12;

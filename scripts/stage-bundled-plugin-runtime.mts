@@ -181,7 +181,7 @@ function buildRuntimePluginSdkPackageExports(
   );
 }
 
-function ensureOpenClawExtensionAlias(params: { distExtensionsRoot: string; repoRoot: string }) {
+function ensureAforaExtensionAlias(params: { distExtensionsRoot: string; repoRoot: string }) {
   const pluginSdkDir = path.join(params.repoRoot, "dist", "plugin-sdk");
   if (!fs.existsSync(pluginSdkDir)) {
     return;
@@ -191,11 +191,11 @@ function ensureOpenClawExtensionAlias(params: { distExtensionsRoot: string; repo
     repoRoot: params.repoRoot,
     pluginSdkDir,
   });
-  const aliasDir = path.join(params.distExtensionsRoot, "node_modules", "openclaw");
+  const aliasDir = path.join(params.distExtensionsRoot, "node_modules", "afora");
   const pluginSdkAliasPath = path.join(aliasDir, "plugin-sdk");
   fs.mkdirSync(aliasDir, { recursive: true });
   writeJsonFile(path.join(aliasDir, "package.json"), {
-    name: "openclaw",
+    name: "afora",
     type: "module",
     exports: buildRuntimePluginSdkPackageExports(publicDistFileNames),
   });
@@ -235,7 +235,7 @@ function shouldCopyRuntimeFile(relativePath: string) {
   return (
     isBundledSkillRuntimePath(relativePath) ||
     isPathOrNestedPath(relativePath, "package.json") ||
-    isPathOrNestedPath(relativePath, "openclaw.plugin.json") ||
+    isPathOrNestedPath(relativePath, "afora.plugin.json") ||
     isPathOrNestedPath(relativePath, ".codex-plugin/plugin.json") ||
     isPathOrNestedPath(relativePath, ".claude-plugin/plugin.json") ||
     isPathOrNestedPath(relativePath, ".cursor-plugin/plugin.json") ||
@@ -347,7 +347,7 @@ export function stageBundledPluginRuntime(params: { cwd?: string; repoRoot?: str
 
   removePathIfExists(runtimeRoot);
   fs.mkdirSync(runtimeExtensionsRoot, { recursive: true });
-  ensureOpenClawExtensionAlias({ repoRoot, distExtensionsRoot });
+  ensureAforaExtensionAlias({ repoRoot, distExtensionsRoot });
 
   for (const dirent of fs.readdirSync(distExtensionsRoot, { withFileTypes: true })) {
     if (!dirent.isDirectory() || dirent.name === "node_modules") {

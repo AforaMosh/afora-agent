@@ -13,7 +13,7 @@ suite.define(() => {
     const page = await context.newPage();
     const previewText = "A pasted note\nwith a second line for the preview.";
     const requestedUrls: string[] = [];
-    await page.route("**/__openclaw__/pasted-text.txt", async (route) => {
+    await page.route("**/__afora__/pasted-text.txt", async (route) => {
       requestedUrls.push(route.request().url());
       await route.fulfill({ body: previewText, contentType: "text/plain" });
     });
@@ -31,7 +31,7 @@ suite.define(() => {
                 label: "pasted-text-1723000000000.txt",
                 mimeType: "text/plain",
                 sizeBytes: 48,
-                url: "/__openclaw__/pasted-text.txt",
+                url: "/__afora__/pasted-text.txt",
               },
             },
           ],
@@ -52,7 +52,7 @@ suite.define(() => {
       ).toBe(previewText);
       const download = card.locator(".chat-assistant-attachment-card__download");
       expect(await download.getAttribute("download")).toBe("pasted-text-1723000000000.txt");
-      expect(await download.getAttribute("href")).toBe("/__openclaw__/pasted-text.txt");
+      expect(await download.getAttribute("href")).toBe("/__afora__/pasted-text.txt");
       expect(requestedUrls).toHaveLength(1);
     } finally {
       await suite.closeBrowserContext(context);

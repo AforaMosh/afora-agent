@@ -33,8 +33,8 @@ import type {
   QaBusWaitForInput,
 } from "./runtime-api.js";
 
-const DEFAULT_BOT_ID = "openclaw";
-const DEFAULT_BOT_NAME = "OpenClaw QA";
+const DEFAULT_BOT_ID = "afora";
+const DEFAULT_BOT_NAME = "Afora QA";
 
 function normalizeInboundConversation(conversation: QaBusConversation): QaBusConversation {
   const rawKind = (conversation as { kind?: unknown }).kind;

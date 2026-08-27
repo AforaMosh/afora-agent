@@ -1,9 +1,9 @@
 /* @vitest-environment jsdom */
 
-import { reduceSessionProjection } from "@openclaw/gateway-client/browser";
-import { expectDefined } from "@openclaw/normalization-core";
+import { reduceSessionProjection } from "@afora/gateway-client/browser";
+import { expectDefined } from "@afora/normalization-core";
 import { render } from "lit";
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDeferred } from "../../../../test/helpers/promise.js";
 import { GatewayRequestError } from "../../api/gateway.ts";
@@ -793,7 +793,7 @@ describe("refreshChatAvatar", () => {
     },
     {
       name: "prefers the paired device token for avatar metadata and local avatar URLs",
-      basePath: "/openclaw/",
+      basePath: "/afora/",
       objectUrl: "blob:device-avatar",
       expectedToken: "device-token",
       overrides: {
@@ -804,7 +804,7 @@ describe("refreshChatAvatar", () => {
     },
     {
       name: "fetches local avatars through Authorization headers instead of tokenized URLs",
-      basePath: "/openclaw/",
+      basePath: "/afora/",
       objectUrl: "blob:session-avatar",
       expectedToken: "session-token",
       overrides: { settings: { token: "session-token" } },
@@ -855,10 +855,10 @@ describe("refreshChatAvatar", () => {
       .mockResolvedValue(createJsonResponse({}, { ok: false }));
     vi.stubGlobal("fetch", fetchMock);
 
-    const host = makeChatHost({ basePath: "/openclaw/", sessionKey: "agent:ops:main" });
+    const host = makeChatHost({ basePath: "/afora/", sessionKey: "agent:ops:main" });
     await refreshChatAvatar(host);
 
-    expect(fetchUrl(fetchMock, 0)).toBe("/openclaw/avatar/ops?meta=1");
+    expect(fetchUrl(fetchMock, 0)).toBe("/afora/avatar/ops?meta=1");
     expect(fetchInit(fetchMock, 0).method).toBe("GET");
     expect(host.chatAvatarUrl).toBeNull();
   });
@@ -1551,7 +1551,7 @@ describe("handleSendChat", () => {
       const persistedPeer = {
         role: "user",
         content: [{ type: "text", text: "same visible message" }],
-        __openclaw: { id: "peer-user", seq: 1, idempotencyKey: "peer-run:user" },
+        __afora: { id: "peer-user", seq: 1, idempotencyKey: "peer-run:user" },
       };
       let rejectedRunId = "";
       const host = makeChatHost({
@@ -1568,7 +1568,7 @@ describe("handleSendChat", () => {
                 message: {
                   role: "user",
                   content: [{ type: "text", text: "same visible message" }],
-                  __openclaw: { idempotencyKey: `${rejectedRunId}:user` },
+                  __afora: { idempotencyKey: `${rejectedRunId}:user` },
                 },
                 scope,
               },
@@ -1965,7 +1965,7 @@ describe("handleSendChat", () => {
     );
     const patch = patchChatSessionSettings(host, "agent:main", { model: "next" });
     history.resolve({
-      messages: [{ role: "user", __openclaw: { idempotencyKey: "older-picker-run:user" } }],
+      messages: [{ role: "user", __afora: { idempotencyKey: "older-picker-run:user" } }],
       sessionInfo: row("agent:main", { hasActiveRun: false, status: "done" }),
     });
 
@@ -3786,7 +3786,7 @@ describe("handleSendChat", () => {
       "steer-behind-outbox-source",
     );
     olderHistory.resolve({
-      messages: [{ role: "user", __openclaw: { idempotencyKey: "older-reconciliation-run:user" } }],
+      messages: [{ role: "user", __afora: { idempotencyKey: "older-reconciliation-run:user" } }],
       sessionInfo: row("agent:main", { hasActiveRun: true, status: "running" }),
     });
     await waitForFast(() => expect(historyRequests).toBe(2));
@@ -5019,7 +5019,7 @@ describe("handleSendChat", () => {
     ).toEqual(["user", "assistant"]);
     expect(
       inactiveCached.filter((message) => {
-        const marker = requireRecord(message, "cached terminal transcript")["__openclaw"];
+        const marker = requireRecord(message, "cached terminal transcript")["__afora"];
         return (
           marker &&
           typeof marker === "object" &&
@@ -6992,7 +6992,7 @@ describe("handleSendChat", () => {
               messages: [
                 {
                   role: "user",
-                  __openclaw: { idempotencyKey: "ambiguous-run:user" },
+                  __afora: { idempotencyKey: "ambiguous-run:user" },
                 },
               ],
               sessionInfo: row("agent:main", { hasActiveRun: false, status: "done" }),
@@ -7034,7 +7034,7 @@ describe("handleSendChat", () => {
                 : [
                     {
                       role: "user",
-                      __openclaw: { idempotencyKey: "late-history-proof:user" },
+                      __afora: { idempotencyKey: "late-history-proof:user" },
                     },
                   ],
             sessionInfo: row("agent:main", { hasActiveRun: false, status: "done" }),
@@ -7134,7 +7134,7 @@ describe("handleSendChat", () => {
             messages: [
               {
                 role: "user",
-                __openclaw: { idempotencyKey: "delivered-removal-failure:user" },
+                __afora: { idempotencyKey: "delivered-removal-failure:user" },
               },
             ],
             sessionInfo: row("agent:main", { hasActiveRun: false, status: "done" }),
@@ -8128,7 +8128,7 @@ describe("handleSendChat", () => {
     expect(host.chatMessages).toEqual([
       expect.objectContaining({
         role: "user",
-        __openclaw: { idempotencyKey: "completed-steer-run:user" },
+        __afora: { idempotencyKey: "completed-steer-run:user" },
       }),
     ]);
     expect(JSON.stringify(host.chatMessages[0])).toContain(original.text);
@@ -8153,7 +8153,7 @@ describe("handleSendChat", () => {
     const historyUser = {
       role: "user",
       content: [{ type: "text", text: "history-owned steer" }],
-      __openclaw: { idempotencyKey: "history-steer:user", seq: 1 },
+      __afora: { idempotencyKey: "history-steer:user", seq: 1 },
     };
     const host = makeChatHost({
       client: clientWithRequest(
@@ -8191,7 +8191,7 @@ describe("handleSendChat", () => {
                 role: "user",
                 content: [{ type: "text", text: "cross-run steer" }],
                 idempotencyKey: "cross-run-steer",
-                __openclaw: { seq: 1 },
+                __afora: { seq: 1 },
               },
             ],
           },
@@ -8234,7 +8234,7 @@ describe("handleSendChat", () => {
               {
                 role: "user",
                 content: [{ type: "text", text: inflight.text }],
-                __openclaw: { idempotencyKey: "inflight-steer:user", seq: 1 },
+                __afora: { idempotencyKey: "inflight-steer:user", seq: 1 },
               },
             ],
           },
@@ -8452,7 +8452,7 @@ describe("handleSendChat", () => {
     expect(host.chatMessages).toHaveLength(2);
     expect(host.chatMessages[0]).toMatchObject({
       role: "user",
-      __openclaw: { idempotencyKey: "steer-send-run:user" },
+      __afora: { idempotencyKey: "steer-send-run:user" },
     });
     expect(JSON.stringify(host.chatMessages[0])).toContain("keep this visible");
   });
@@ -8462,7 +8462,7 @@ describe("handleSendChat", () => {
       role: "assistant",
       content: [{ type: "text", text: "assistant reply for the same run" }],
       timestamp: 1,
-      __openclaw: { idempotencyKey: "steer-send-run" },
+      __afora: { idempotencyKey: "steer-send-run" },
     };
     const host = makeChatHost({
       chatRunId: "active-run",
@@ -8501,7 +8501,7 @@ describe("handleSendChat", () => {
     );
     expect(userTurn).toMatchObject({
       role: "user",
-      __openclaw: { idempotencyKey: "steer-send-run:user" },
+      __afora: { idempotencyKey: "steer-send-run:user" },
     });
     expect(JSON.stringify(userTurn)).toContain("user turn must still appear");
   });
@@ -8563,7 +8563,7 @@ describe("handleSendChat", () => {
           source: { type: "url", url: dataUrl },
         },
       ],
-      __openclaw: { idempotencyKey: "steer-att-run:user" },
+      __afora: { idempotencyKey: "steer-att-run:user" },
     });
     expect(JSON.stringify(host.chatMessages[0])).not.toContain("Attached image");
   });
@@ -8612,7 +8612,7 @@ describe("handleSendChat", () => {
     expect(listStoredChatOutboxes(host)).toEqual([]);
     expect(host.chatQueue).toEqual([]);
     const idempotencyKeys = host.chatMessages.map((message) => {
-      const marker = (message as { __openclaw?: { idempotencyKey?: string } })["__openclaw"];
+      const marker = (message as { __afora?: { idempotencyKey?: string } })["__afora"];
       return marker?.idempotencyKey;
     });
     expect(idempotencyKeys.slice(0, 2)).toEqual(["active-run:user", "steer-send-run:user"]);
@@ -9251,7 +9251,7 @@ describe("handleSendChat", () => {
     expect(host.chatMessages).toEqual([
       expect.objectContaining({
         role: "user",
-        __openclaw: { idempotencyKey: `${steerRequestRunId}:user` },
+        __afora: { idempotencyKey: `${steerRequestRunId}:user` },
       }),
     ]);
     const renderedText = buildChatItems({
@@ -9303,7 +9303,7 @@ describe("handleSendChat", () => {
   });
 
   it("surfaces an unconfirmed steer failure globally when the pane is no longer visible", async () => {
-    const toastHost = document.createElement("openclaw-toast-host");
+    const toastHost = document.createElement("afora-toast-host");
     document.body.append(toastHost);
     const original = { id: "queued-1", text: "tighten the plan", createdAt: 1 };
     const host = makeChatHost({
@@ -9406,7 +9406,7 @@ describe("handleSendChat", () => {
           },
         ],
         timestamp: expect.any(Number),
-        __openclaw: { idempotencyKey: expect.stringMatching(/:user$/) },
+        __afora: { idempotencyKey: expect.stringMatching(/:user$/) },
       },
     ]);
   });
@@ -9447,7 +9447,7 @@ describe("handleSendChat", () => {
   });
 
   it("surfaces a terminal send failure through the global toast when the pane is not visible", async () => {
-    const toastHost = document.createElement("openclaw-toast-host");
+    const toastHost = document.createElement("afora-toast-host");
     document.body.append(toastHost);
     const host = makeChatHost({
       requestHandlers: {
@@ -9599,7 +9599,7 @@ describe("handleSendChat", () => {
   });
 
   it("surfaces a failed local command globally after a route switch", async () => {
-    const toastHost = document.createElement("openclaw-toast-host");
+    const toastHost = document.createElement("afora-toast-host");
     document.body.append(toastHost);
     const item = createQueuedLocalCommand("route-switched-command", "/think", {
       sessionKey: "agent:main:first",
@@ -9631,7 +9631,7 @@ describe("handleSendChat", () => {
   });
 
   it("names the failed agent's global session in the toast, not another agent's row", async () => {
-    const toastHost = document.createElement("openclaw-toast-host");
+    const toastHost = document.createElement("afora-toast-host");
     document.body.append(toastHost);
     const host = makeChatHost({
       requestHandlers: {
@@ -9701,7 +9701,7 @@ describe("handleAbortChat", () => {
 
   it("aborts the exact selected session when no browser run id exists", async () => {
     const request = vi.fn(async () => ({ abortedRunId: null, status: "aborted" }));
-    const sessionKey = "agent:main:openclaw-weixin:direct:wechat-user";
+    const sessionKey = "agent:main:afora-weixin:direct:wechat-user";
     const host = makeChatHost({
       client: clientWithRequest(request),
       chatRunId: null,

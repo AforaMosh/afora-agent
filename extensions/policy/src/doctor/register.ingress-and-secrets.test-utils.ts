@@ -1,5 +1,5 @@
 // Imported by register.test.ts to keep its mocked suite in one Vitest module graph.
-import { runDoctorLintChecks, type OpenClawConfig } from "openclaw/plugin-sdk/health";
+import { runDoctorLintChecks, type AforaConfig } from "afora-agent/plugin-sdk/health";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { collectPolicyEvidence } from "../policy-state.js";
 import { registerPolicyDoctorChecks } from "./register.js";
@@ -29,7 +29,7 @@ const INGRESS_POLICY = {
   },
 };
 
-async function runPolicyScenario(cfg: OpenClawConfig, policy: object, mode: PolicyScenarioMode) {
+async function runPolicyScenario(cfg: AforaConfig, policy: object, mode: PolicyScenarioMode) {
   const configPath = await writePolicyFixture(policy);
   const checkContext = ctx(configPath, cfg);
   if (mode === "doctor") {
@@ -53,15 +53,15 @@ async function runIngressPolicyScenario(channels: Record<string, unknown>) {
   };
 }
 
-function configWithPolicy(overrides: object): OpenClawConfig {
-  return { ...cfgWithPolicy(), ...overrides } as unknown as OpenClawConfig;
+function configWithPolicy(overrides: object): AforaConfig {
+  return { ...cfgWithPolicy(), ...overrides } as unknown as AforaConfig;
 }
 
-function configWithAgents(agents: object): OpenClawConfig {
+function configWithAgents(agents: object): AforaConfig {
   return configWithPolicy({ agents });
 }
 
-function configWithSandbox(sandbox: object): OpenClawConfig {
+function configWithSandbox(sandbox: object): AforaConfig {
   return configWithAgents({ defaults: { sandbox } });
 }
 
@@ -156,7 +156,7 @@ describe("registerPolicyDoctorChecks", () => {
         expect.objectContaining({
           checkId: "policy/ingress-group-mention-required",
           ocPath:
-            "oc://openclaw.config/channels/telegram/groups/ops/topics/incidents/requireMention",
+            "oc://afora.config/channels/telegram/groups/ops/topics/incidents/requireMention",
         }),
       ]),
     );
@@ -201,7 +201,7 @@ describe("registerPolicyDoctorChecks", () => {
       expect.arrayContaining([
         expect.objectContaining({
           kind: "channelRequireMention",
-          source: 'oc://openclaw.config/channels/telegram/groups/"*"/requireMention',
+          source: 'oc://afora.config/channels/telegram/groups/"*"/requireMention',
           value: true,
         }),
       ]),
@@ -275,7 +275,7 @@ describe("registerPolicyDoctorChecks", () => {
       expect.arrayContaining([
         expect.objectContaining({
           checkId: "policy/ingress-group-mention-required",
-          ocPath: "oc://openclaw.config/channels/feishu/requireMention",
+          ocPath: "oc://afora.config/channels/feishu/requireMention",
         }),
       ]),
     );
@@ -291,7 +291,7 @@ describe("registerPolicyDoctorChecks", () => {
     ["qqbot", { appId: "qqbot-app", clientSecret: "qqbot-secret" }],
     ["synology-chat", { token: "synology-token" }],
     ["tlon", { ship: "zod" }],
-    ["twitch", { username: "openclaw" }],
+    ["twitch", { username: "afora" }],
   ])("evaluates %s implicit default account posture with named accounts", async (channel, root) => {
     const { result } = await runIngressPolicyScenario({
       [channel]: {
@@ -313,7 +313,7 @@ describe("registerPolicyDoctorChecks", () => {
       expect.arrayContaining([
         expect.objectContaining({
           checkId: "policy/ingress-dm-policy-unapproved",
-          ocPath: `oc://openclaw.config/channels/${channel}/dmPolicy`,
+          ocPath: `oc://afora.config/channels/${channel}/dmPolicy`,
         }),
       ]),
     );
@@ -392,7 +392,7 @@ describe("registerPolicyDoctorChecks", () => {
       expect.arrayContaining([
         expect.objectContaining({
           checkId: "policy/ingress-dm-policy-unapproved",
-          ocPath: "oc://openclaw.config/channels/discord/dmPolicy",
+          ocPath: "oc://afora.config/channels/discord/dmPolicy",
         }),
       ]),
     );
@@ -433,14 +433,14 @@ describe("registerPolicyDoctorChecks", () => {
           accountId: "work",
           groupId: "ops",
           kind: "channelRequireMention",
-          source: "oc://openclaw.config/channels/telegram/groups/ops/requireMention",
+          source: "oc://afora.config/channels/telegram/groups/ops/requireMention",
           value: false,
         }),
         expect.objectContaining({
           accountId: "personal",
           groupId: "ops",
           kind: "channelRequireMention",
-          source: "oc://openclaw.config/channels/telegram/groups/ops/requireMention",
+          source: "oc://afora.config/channels/telegram/groups/ops/requireMention",
           value: false,
         }),
       ]),
@@ -449,12 +449,12 @@ describe("registerPolicyDoctorChecks", () => {
       expect.arrayContaining([
         expect.objectContaining({
           checkId: "policy/ingress-group-mention-required",
-          ocPath: "oc://openclaw.config/channels/telegram/groups/ops/requireMention",
+          ocPath: "oc://afora.config/channels/telegram/groups/ops/requireMention",
           message: expect.stringContaining("account 'work'"),
         }),
         expect.objectContaining({
           checkId: "policy/ingress-group-mention-required",
-          ocPath: "oc://openclaw.config/channels/telegram/groups/ops/requireMention",
+          ocPath: "oc://afora.config/channels/telegram/groups/ops/requireMention",
           message: expect.stringContaining("account 'personal'"),
         }),
       ]),
@@ -518,7 +518,7 @@ describe("registerPolicyDoctorChecks", () => {
           accountId: "work",
           groupId: "ops",
           kind: "channelRequireMention",
-          source: "oc://openclaw.config/channels/telegram/groups/ops/requireMention",
+          source: "oc://afora.config/channels/telegram/groups/ops/requireMention",
           value: false,
         }),
       ]),
@@ -555,14 +555,14 @@ describe("registerPolicyDoctorChecks", () => {
           accountId: "work",
           groupId: "ops",
           kind: "channelRequireMention",
-          source: "oc://openclaw.config/channels/slack/groups/ops/requireMention",
+          source: "oc://afora.config/channels/slack/groups/ops/requireMention",
           value: false,
         }),
         expect.objectContaining({
           accountId: "personal",
           groupId: "ops",
           kind: "channelRequireMention",
-          source: "oc://openclaw.config/channels/slack/groups/ops/requireMention",
+          source: "oc://afora.config/channels/slack/groups/ops/requireMention",
           value: false,
         }),
       ]),
@@ -591,7 +591,7 @@ describe("registerPolicyDoctorChecks", () => {
       expect.arrayContaining([
         expect.objectContaining({
           checkId: "policy/ingress-dm-policy-unapproved",
-          ocPath: "oc://openclaw.config/channels/telegram/dmPolicy",
+          ocPath: "oc://afora.config/channels/telegram/dmPolicy",
         }),
       ]),
     );
@@ -616,7 +616,7 @@ describe("registerPolicyDoctorChecks", () => {
         expect.objectContaining({
           id: "slack-work-dm-policy",
           kind: "channelDmPolicy",
-          source: "oc://openclaw.config/channels/slack/dmPolicy",
+          source: "oc://afora.config/channels/slack/dmPolicy",
           value: "allowlist",
         }),
       ]),
@@ -652,13 +652,13 @@ describe("registerPolicyDoctorChecks", () => {
       expect.objectContaining({
         checkId: "policy/network-private-access-enabled",
         severity: "error",
-        ocPath: "oc://openclaw.config/browser/ssrfPolicy/dangerouslyAllowPrivateNetwork",
+        ocPath: "oc://afora.config/browser/ssrfPolicy/dangerouslyAllowPrivateNetwork",
         requirement: "oc://policy.jsonc/network/privateNetwork/allow",
       }),
       expect.objectContaining({
         checkId: "policy/network-private-access-enabled",
         severity: "error",
-        ocPath: "oc://openclaw.config/tools/web/fetch/ssrfPolicy/allowIpv6UniqueLocalRange",
+        ocPath: "oc://afora.config/tools/web/fetch/ssrfPolicy/allowIpv6UniqueLocalRange",
         requirement: "oc://policy.jsonc/network/privateNetwork/allow",
       }),
     ]);
@@ -690,13 +690,13 @@ describe("registerPolicyDoctorChecks", () => {
         expect.objectContaining({
           checkId: "policy/secrets-unmanaged-provider",
           severity: "error",
-          ocPath: "oc://openclaw.config/models/providers/anthropic/apiKey",
+          ocPath: "oc://afora.config/models/providers/anthropic/apiKey",
           requirement: "oc://policy.jsonc/secrets/requireManagedProviders",
         }),
         expect.objectContaining({
           checkId: "policy/secrets-denied-provider-source",
           severity: "error",
-          ocPath: "oc://openclaw.config/secrets/providers/command",
+          ocPath: "oc://afora.config/secrets/providers/command",
           requirement: "oc://policy.jsonc/secrets/denySources",
         }),
       ]),
@@ -779,7 +779,7 @@ describe("registerPolicyDoctorChecks", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const policy = managedSecretsPolicy(["exec"]);
 
     const result = await runPolicyScenario(cfg, policy, "global-doctor");
@@ -792,21 +792,21 @@ describe("registerPolicyDoctorChecks", () => {
           provenance: "secretRef",
           refSource: "exec",
           refProvider: "rogue",
-          source: "oc://openclaw.config/models/providers/openai/request/auth/token",
+          source: "oc://afora.config/models/providers/openai/request/auth/token",
         }),
         expect.objectContaining({
           kind: "input",
           provenance: "secretRef",
           refSource: "exec",
           refProvider: "rogue",
-          source: "oc://openclaw.config/models/providers/openai/request/tls/passphrase",
+          source: "oc://afora.config/models/providers/openai/request/tls/passphrase",
         }),
         expect.objectContaining({
           kind: "input",
           provenance: "secretRef",
           refSource: "exec",
           refProvider: "rogue",
-          source: 'oc://openclaw.config/models/providers/"z.ai"/headers/Authorization',
+          source: 'oc://afora.config/models/providers/"z.ai"/headers/Authorization',
         }),
         expect.objectContaining({
           kind: "input",
@@ -814,35 +814,35 @@ describe("registerPolicyDoctorChecks", () => {
           refSource: "exec",
           refProvider: "rogue",
           source:
-            "oc://openclaw.config/plugins/entries/acpx/config/mcpServers/github/env/GITHUB_TOKEN",
+            "oc://afora.config/plugins/entries/acpx/config/mcpServers/github/env/GITHUB_TOKEN",
         }),
         expect.objectContaining({
           kind: "input",
           provenance: "secretRef",
           refSource: "exec",
           refProvider: "rogue",
-          source: "oc://openclaw.config/tools/media/models/#0/request/auth/token",
+          source: "oc://afora.config/tools/media/models/#0/request/auth/token",
         }),
         expect.objectContaining({
           kind: "input",
           provenance: "secretRef",
           refSource: "exec",
           refProvider: "rogue",
-          source: "oc://openclaw.config/tools/media/models/#0/request/tls/key",
+          source: "oc://afora.config/tools/media/models/#0/request/tls/key",
         }),
         expect.objectContaining({
           kind: "input",
           provenance: "secretRef",
           refSource: "exec",
           refProvider: "rogue",
-          source: "oc://openclaw.config/tools/media/audio/request/auth/token",
+          source: "oc://afora.config/tools/media/audio/request/auth/token",
         }),
         expect.objectContaining({
           kind: "input",
           provenance: "secretRef",
           refSource: "exec",
           refProvider: "rogue",
-          source: "oc://openclaw.config/tools/media/models/#1/request/auth/token",
+          source: "oc://afora.config/tools/media/models/#1/request/auth/token",
         }),
       ]),
     );
@@ -850,44 +850,44 @@ describe("registerPolicyDoctorChecks", () => {
       expect.arrayContaining([
         expect.objectContaining({
           checkId: "policy/secrets-unmanaged-provider",
-          ocPath: "oc://openclaw.config/models/providers/openai/request/auth/token",
+          ocPath: "oc://afora.config/models/providers/openai/request/auth/token",
         }),
         expect.objectContaining({
           checkId: "policy/secrets-denied-provider-source",
-          ocPath: "oc://openclaw.config/models/providers/openai/request/auth/token",
+          ocPath: "oc://afora.config/models/providers/openai/request/auth/token",
         }),
         expect.objectContaining({
           checkId: "policy/secrets-unmanaged-provider",
-          ocPath: "oc://openclaw.config/models/providers/openai/request/tls/passphrase",
+          ocPath: "oc://afora.config/models/providers/openai/request/tls/passphrase",
         }),
         expect.objectContaining({
           checkId: "policy/secrets-denied-provider-source",
-          ocPath: "oc://openclaw.config/models/providers/openai/request/tls/passphrase",
+          ocPath: "oc://afora.config/models/providers/openai/request/tls/passphrase",
         }),
         expect.objectContaining({
           checkId: "policy/secrets-unmanaged-provider",
-          ocPath: 'oc://openclaw.config/models/providers/"z.ai"/headers/Authorization',
+          ocPath: 'oc://afora.config/models/providers/"z.ai"/headers/Authorization',
         }),
         expect.objectContaining({
           checkId: "policy/secrets-denied-provider-source",
           ocPath:
-            "oc://openclaw.config/plugins/entries/acpx/config/mcpServers/github/env/GITHUB_TOKEN",
+            "oc://afora.config/plugins/entries/acpx/config/mcpServers/github/env/GITHUB_TOKEN",
         }),
         expect.objectContaining({
           checkId: "policy/secrets-unmanaged-provider",
-          ocPath: "oc://openclaw.config/tools/media/models/#0/request/auth/token",
+          ocPath: "oc://afora.config/tools/media/models/#0/request/auth/token",
         }),
         expect.objectContaining({
           checkId: "policy/secrets-denied-provider-source",
-          ocPath: "oc://openclaw.config/tools/media/audio/request/auth/token",
+          ocPath: "oc://afora.config/tools/media/audio/request/auth/token",
         }),
         expect.objectContaining({
           checkId: "policy/secrets-unmanaged-provider",
-          ocPath: "oc://openclaw.config/tools/media/models/#1/request/auth/token",
+          ocPath: "oc://afora.config/tools/media/models/#1/request/auth/token",
         }),
         expect.objectContaining({
           checkId: "policy/secrets-unmanaged-provider",
-          ocPath: "oc://openclaw.config/tools/media/models/#0/request/tls/key",
+          ocPath: "oc://afora.config/tools/media/models/#0/request/tls/key",
         }),
       ]),
     );
@@ -921,7 +921,7 @@ describe("registerPolicyDoctorChecks", () => {
           provenance: "secretRef",
           refSource: "env",
           refProvider: "vault",
-          source: "oc://openclaw.config/models/providers/openai/apiKey",
+          source: "oc://afora.config/models/providers/openai/apiKey",
         }),
       ]),
     );
@@ -951,7 +951,7 @@ describe("registerPolicyDoctorChecks", () => {
       expect.objectContaining({
         checkId: "policy/secrets-unmanaged-provider",
         severity: "error",
-        ocPath: "oc://openclaw.config/models/providers/openai/apiKey",
+        ocPath: "oc://afora.config/models/providers/openai/apiKey",
         requirement: "oc://policy.jsonc/secrets/requireManagedProviders",
       }),
     ]);
@@ -995,11 +995,11 @@ describe("registerPolicyDoctorChecks", () => {
       expect.arrayContaining([
         expect.objectContaining({
           checkId: "policy/secrets-unmanaged-provider",
-          ocPath: "oc://openclaw.config/channels/feishu/encryptKey",
+          ocPath: "oc://afora.config/channels/feishu/encryptKey",
         }),
         expect.objectContaining({
           checkId: "policy/secrets-denied-provider-source",
-          ocPath: "oc://openclaw.config/channels/feishu/encryptKey",
+          ocPath: "oc://afora.config/channels/feishu/encryptKey",
         }),
       ]),
     );
@@ -1039,7 +1039,7 @@ describe("registerPolicyDoctorChecks", () => {
           value: "rw",
           sandboxMode: "all",
           sandboxEnabled: true,
-          source: "oc://openclaw.config/agents/defaults/sandbox/workspaceAccess",
+          source: "oc://afora.config/agents/defaults/sandbox/workspaceAccess",
         }),
         expect.objectContaining({
           id: "reviewer-tool-apply_patch",
@@ -1054,13 +1054,13 @@ describe("registerPolicyDoctorChecks", () => {
         expect.objectContaining({
           checkId: "policy/agents-workspace-access-denied",
           severity: "error",
-          ocPath: "oc://openclaw.config/agents/defaults/sandbox/workspaceAccess",
+          ocPath: "oc://afora.config/agents/defaults/sandbox/workspaceAccess",
           requirement: "oc://policy.jsonc/agents/workspace/allowedAccess",
         }),
         expect.objectContaining({
           checkId: "policy/agents-tool-not-denied",
           severity: "error",
-          ocPath: "oc://openclaw.config/tools/deny",
+          ocPath: "oc://afora.config/tools/deny",
           requirement: "oc://policy.jsonc/agents/workspace/denyTools",
         }),
       ]),
@@ -1069,7 +1069,7 @@ describe("registerPolicyDoctorChecks", () => {
       expect.arrayContaining([
         expect.objectContaining({
           checkId: "policy/agents-tool-not-denied",
-          ocPath: "oc://openclaw.config/agents/list/#0/tools/deny",
+          ocPath: "oc://afora.config/agents/list/#0/tools/deny",
         }),
       ]),
     );
@@ -1106,12 +1106,12 @@ describe("registerPolicyDoctorChecks", () => {
         expect.objectContaining({
           id: "agents-defaults-tool-exec",
           denied: true,
-          source: "oc://openclaw.config/tools/sandbox/tools/deny",
+          source: "oc://afora.config/tools/sandbox/tools/deny",
         }),
         expect.objectContaining({
           id: "locked-tool-apply_patch",
           denied: true,
-          source: "oc://openclaw.config/agents/list/#0/tools/sandbox/tools/deny",
+          source: "oc://afora.config/agents/list/#0/tools/sandbox/tools/deny",
         }),
       ]),
     );
@@ -1162,7 +1162,7 @@ describe("registerPolicyDoctorChecks", () => {
       expect.objectContaining({
         checkId: "policy/agents-tool-not-denied",
         message: "agent 'locked' does not deny required tool 'exec'.",
-        ocPath: "oc://openclaw.config/agents/list/#0/tools/deny",
+        ocPath: "oc://afora.config/agents/list/#0/tools/deny",
         requirement: "oc://policy.jsonc/agents/workspace/denyTools",
       }),
     ]);
@@ -1215,13 +1215,13 @@ describe("registerPolicyDoctorChecks", () => {
         expect.objectContaining({
           checkId: "policy/agents-workspace-access-denied",
           message: "agents.defaults sandbox mode 'non-main' is not allowed by policy.",
-          ocPath: "oc://openclaw.config/agents/defaults/sandbox/mode",
+          ocPath: "oc://afora.config/agents/defaults/sandbox/mode",
           requirement: "oc://policy.jsonc/agents/workspace/allowedAccess",
         }),
         expect.objectContaining({
           checkId: "policy/agents-tool-not-denied",
           message: "agents.defaults does not deny required tool 'exec'.",
-          ocPath: "oc://openclaw.config/tools/deny",
+          ocPath: "oc://afora.config/tools/deny",
           requirement: "oc://policy.jsonc/agents/workspace/denyTools",
         }),
       ]),
@@ -1250,7 +1250,7 @@ describe("registerPolicyDoctorChecks", () => {
       expect.objectContaining({
         checkId: "policy/agents-workspace-access-denied",
         message: "agents.defaults sandbox mode 'off' is not allowed by policy.",
-        ocPath: "oc://openclaw.config/agents/defaults/sandbox/mode",
+        ocPath: "oc://afora.config/agents/defaults/sandbox/mode",
         requirement: "oc://policy.jsonc/agents/workspace/allowedAccess",
       }),
     ]);
@@ -1283,12 +1283,12 @@ describe("registerPolicyDoctorChecks", () => {
       expect.arrayContaining([
         expect.objectContaining({
           checkId: "policy/agents-workspace-access-denied",
-          ocPath: "oc://openclaw.config/agents/list/#0/sandbox/workspaceAccess",
+          ocPath: "oc://afora.config/agents/list/#0/sandbox/workspaceAccess",
           requirement: "oc://policy.jsonc/agents/workspace/allowedAccess",
         }),
         expect.objectContaining({
           checkId: "policy/agents-workspace-access-denied",
-          ocPath: "oc://openclaw.config/agents/list/#0/sandbox/workspaceAccess",
+          ocPath: "oc://afora.config/agents/list/#0/sandbox/workspaceAccess",
           requirement: "oc://policy.jsonc/scopes/sebby/agents/workspace/allowedAccess",
         }),
       ]),
@@ -1296,7 +1296,7 @@ describe("registerPolicyDoctorChecks", () => {
     expect(result.findings).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          ocPath: "oc://openclaw.config/agents/list/#1/sandbox/workspaceAccess",
+          ocPath: "oc://afora.config/agents/list/#1/sandbox/workspaceAccess",
         }),
       ]),
     );
@@ -1320,11 +1320,11 @@ describe("registerPolicyDoctorChecks", () => {
     expect(result.findings).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          ocPath: "oc://openclaw.config/agents/list/#0/sandbox/workspaceAccess",
+          ocPath: "oc://afora.config/agents/list/#0/sandbox/workspaceAccess",
           requirement: "oc://policy.jsonc/scopes/workspace-lockdown/agents/workspace/allowedAccess",
         }),
         expect.objectContaining({
-          ocPath: "oc://openclaw.config/agents/list/#1/sandbox/workspaceAccess",
+          ocPath: "oc://afora.config/agents/list/#1/sandbox/workspaceAccess",
           requirement: "oc://policy.jsonc/scopes/workspace-lockdown/agents/workspace/allowedAccess",
         }),
       ]),
@@ -1420,12 +1420,12 @@ describe("registerPolicyDoctorChecks", () => {
       expect.arrayContaining([
         expect.objectContaining({
           checkId: "policy/agents-workspace-access-denied",
-          ocPath: "oc://openclaw.config/agents/list/#0/sandbox/workspaceAccess",
+          ocPath: "oc://afora.config/agents/list/#0/sandbox/workspaceAccess",
           requirement: "oc://policy.jsonc/scopes/sebby/agents/workspace/allowedAccess",
         }),
         expect.objectContaining({
           checkId: "policy/tools-exec-host-unapproved",
-          ocPath: "oc://openclaw.config/agents/list/#0/tools/exec/host",
+          ocPath: "oc://afora.config/agents/list/#0/tools/exec/host",
           requirement: "oc://policy.jsonc/scopes/sebby/tools/exec/allowHosts",
         }),
       ]),
@@ -1460,12 +1460,12 @@ describe("registerPolicyDoctorChecks", () => {
       expect.arrayContaining([
         expect.objectContaining({
           checkId: "policy/agents-workspace-access-denied",
-          ocPath: "oc://openclaw.config/agents/defaults/sandbox/workspaceAccess",
+          ocPath: "oc://afora.config/agents/defaults/sandbox/workspaceAccess",
           requirement: "oc://policy.jsonc/scopes/main/agents/workspace/allowedAccess",
         }),
         expect.objectContaining({
           checkId: "policy/tools-exec-host-unapproved",
-          ocPath: "oc://openclaw.config/tools/exec/host",
+          ocPath: "oc://afora.config/tools/exec/host",
           requirement: "oc://policy.jsonc/scopes/main/tools/exec/allowHosts",
         }),
       ]),
@@ -1500,12 +1500,12 @@ describe("registerPolicyDoctorChecks", () => {
       expect.arrayContaining([
         expect.objectContaining({
           checkId: "policy/agents-workspace-access-denied",
-          ocPath: "oc://openclaw.config/agents/defaults/sandbox/workspaceAccess",
+          ocPath: "oc://afora.config/agents/defaults/sandbox/workspaceAccess",
           requirement: "oc://policy.jsonc/scopes/release-lockdown/agents/workspace/allowedAccess",
         }),
         expect.objectContaining({
           checkId: "policy/tools-exec-host-unapproved",
-          ocPath: "oc://openclaw.config/tools/exec/host",
+          ocPath: "oc://afora.config/tools/exec/host",
           requirement: "oc://policy.jsonc/scopes/release-lockdown/tools/exec/allowHosts",
         }),
       ]),
@@ -1513,7 +1513,7 @@ describe("registerPolicyDoctorChecks", () => {
     expect(result.findings).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          ocPath: "oc://openclaw.config/agents/list/#0/sandbox/workspaceAccess",
+          ocPath: "oc://afora.config/agents/list/#0/sandbox/workspaceAccess",
         }),
       ]),
     );
@@ -1568,22 +1568,22 @@ describe("registerPolicyDoctorChecks", () => {
       expect.arrayContaining([
         expect.objectContaining({
           checkId: "policy/sandbox-mode-unapproved",
-          ocPath: "oc://openclaw.config/agents/defaults/sandbox/mode",
+          ocPath: "oc://afora.config/agents/defaults/sandbox/mode",
           requirement: "oc://policy.jsonc/sandbox/requireMode",
         }),
         expect.objectContaining({
           checkId: "policy/sandbox-container-runtime-socket-mount",
-          ocPath: "oc://openclaw.config/agents/defaults/sandbox/docker/binds/#0",
+          ocPath: "oc://afora.config/agents/defaults/sandbox/docker/binds/#0",
           requirement: "oc://policy.jsonc/sandbox/containers/denyContainerRuntimeSocketMounts",
         }),
         expect.objectContaining({
           checkId: "policy/sandbox-container-runtime-socket-mount",
-          ocPath: "oc://openclaw.config/agents/defaults/sandbox/docker/binds/#2",
+          ocPath: "oc://afora.config/agents/defaults/sandbox/docker/binds/#2",
           requirement: "oc://policy.jsonc/sandbox/containers/denyContainerRuntimeSocketMounts",
         }),
         expect.objectContaining({
           checkId: "policy/sandbox-container-runtime-socket-mount",
-          ocPath: "oc://openclaw.config/agents/defaults/sandbox/docker/binds/#3",
+          ocPath: "oc://afora.config/agents/defaults/sandbox/docker/binds/#3",
           requirement: "oc://policy.jsonc/sandbox/containers/denyContainerRuntimeSocketMounts",
         }),
       ]),
@@ -1654,12 +1654,12 @@ describe("registerPolicyDoctorChecks", () => {
         expect.objectContaining({
           kind: "containerMount",
           bindSurface: "browser",
-          source: "oc://openclaw.config/agents/defaults/sandbox/browser/binds/#0",
+          source: "oc://afora.config/agents/defaults/sandbox/browser/binds/#0",
         }),
         expect.objectContaining({
           kind: "containerNetwork",
           value: "host",
-          source: "oc://openclaw.config/agents/defaults/sandbox/browser/network",
+          source: "oc://afora.config/agents/defaults/sandbox/browser/network",
         }),
       ]),
     );
@@ -1667,15 +1667,15 @@ describe("registerPolicyDoctorChecks", () => {
       expect.arrayContaining([
         expect.objectContaining({
           checkId: "policy/sandbox-container-host-network-denied",
-          ocPath: "oc://openclaw.config/agents/defaults/sandbox/browser/network",
+          ocPath: "oc://afora.config/agents/defaults/sandbox/browser/network",
         }),
         expect.objectContaining({
           checkId: "policy/sandbox-container-mount-mode-required",
-          ocPath: "oc://openclaw.config/agents/defaults/sandbox/browser/binds/#0",
+          ocPath: "oc://afora.config/agents/defaults/sandbox/browser/binds/#0",
         }),
         expect.objectContaining({
           checkId: "policy/sandbox-container-runtime-socket-mount",
-          ocPath: "oc://openclaw.config/agents/defaults/sandbox/browser/binds/#0",
+          ocPath: "oc://afora.config/agents/defaults/sandbox/browser/binds/#0",
         }),
       ]),
     );

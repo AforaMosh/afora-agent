@@ -1,14 +1,14 @@
 // Signal plugin module implements shared behavior.
-import { describeAccountSnapshot } from "openclaw/plugin-sdk/account-helpers";
+import { describeAccountSnapshot } from "afora-agent/plugin-sdk/account-helpers";
 import {
   adaptScopedAccountAccessor,
   createScopedChannelConfigAdapter,
-} from "openclaw/plugin-sdk/channel-config-helpers";
-import { createRestrictSendersChannelSecurity } from "openclaw/plugin-sdk/channel-policy";
-import { createChannelPluginBase, getChatChannelMeta } from "openclaw/plugin-sdk/core";
-import type { ChannelPlugin } from "openclaw/plugin-sdk/core";
-import { normalizeStringifiedEntries } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { normalizeE164 } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/channel-config-helpers";
+import { createRestrictSendersChannelSecurity } from "afora-agent/plugin-sdk/channel-policy";
+import { createChannelPluginBase, getChatChannelMeta } from "afora-agent/plugin-sdk/core";
+import type { ChannelPlugin } from "afora-agent/plugin-sdk/core";
+import { normalizeStringifiedEntries } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { normalizeE164 } from "afora-agent/plugin-sdk/text-utility-runtime";
 import {
   listSignalAccountIds,
   resolveDefaultSignalAccountId,

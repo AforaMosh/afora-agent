@@ -13,7 +13,7 @@ import {
 } from "../../../../extensions/qa-lab/api.js";
 import { createQaScriptEvidenceWriter } from "./script-evidence.js";
 
-const ALLOW_ENV = "OPENCLAW_QA_ALLOW_SYSTEMD_RECOVERY";
+const ALLOW_ENV = "AFORA_QA_ALLOW_SYSTEMD_RECOVERY";
 const SCENARIO_ID = "doctor-gateway-startup-recovery";
 const SOURCE_PATH = "test/e2e/qa-lab/runtime/doctor-gateway-startup-recovery.ts";
 const commandTimeoutMs = 120_000;
@@ -118,30 +118,30 @@ function commandEnv(
     ? process.geteuid()
     : undefined,
 ): NodeJS.ProcessEnv {
-  const stateDir = path.join(accountHome, `.openclaw-${profile}`);
+  const stateDir = path.join(accountHome, `.afora-${profile}`);
   const env: NodeJS.ProcessEnv = {
     ...baseEnv,
     HOME: accountHome,
-    OPENCLAW_CONFIG_PATH: path.join(stateDir, "openclaw.json"),
-    OPENCLAW_PROFILE: profile,
-    OPENCLAW_STATE_DIR: stateDir,
-    OPENCLAW_SKIP_CHANNELS: "1",
-    OPENCLAW_SKIP_PROVIDERS: "1",
-    OPENCLAW_SKIP_GMAIL_WATCHER: "1",
-    OPENCLAW_SKIP_CRON: "1",
-    OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-    OPENCLAW_SKIP_CANVAS_HOST: "1",
-    OPENCLAW_TEST_MINIMAL_GATEWAY: "1",
+    AFORA_CONFIG_PATH: path.join(stateDir, "afora.json"),
+    AFORA_PROFILE: profile,
+    AFORA_STATE_DIR: stateDir,
+    AFORA_SKIP_CHANNELS: "1",
+    AFORA_SKIP_PROVIDERS: "1",
+    AFORA_SKIP_GMAIL_WATCHER: "1",
+    AFORA_SKIP_CRON: "1",
+    AFORA_SKIP_BROWSER_CONTROL_SERVER: "1",
+    AFORA_SKIP_CANVAS_HOST: "1",
+    AFORA_TEST_MINIMAL_GATEWAY: "1",
   };
   for (const key of [
-    "OPENCLAW_HOME",
-    "OPENCLAW_SYSTEMD_UNIT",
-    "OPENCLAW_GATEWAY_PORT",
-    "OPENCLAW_GATEWAY_URL",
-    "OPENCLAW_GATEWAY_TOKEN",
-    "OPENCLAW_GATEWAY_PASSWORD",
-    "OPENCLAW_SERVICE_REPAIR_POLICY",
-    "OPENCLAW_SUPERVISOR_MODE",
+    "AFORA_HOME",
+    "AFORA_SYSTEMD_UNIT",
+    "AFORA_GATEWAY_PORT",
+    "AFORA_GATEWAY_URL",
+    "AFORA_GATEWAY_TOKEN",
+    "AFORA_GATEWAY_PASSWORD",
+    "AFORA_SERVICE_REPAIR_POLICY",
+    "AFORA_SUPERVISOR_MODE",
     "DBUS_SESSION_BUS_ADDRESS",
     "SUDO_COMMAND",
     "SUDO_GID",
@@ -229,17 +229,17 @@ async function runCommand(
   });
 }
 
-async function runOpenClaw(
+async function runAfora(
   options: ProducerOptions,
   profile: string,
   args: string[],
   env = commandEnv(profile),
 ): Promise<CommandResult> {
-  const invocation = resolveOpenClawInvocation(options, profile, args);
+  const invocation = resolveAforaInvocation(options, profile, args);
   return await runCommand(options.repoRoot, invocation.command, invocation.args, env);
 }
 
-function resolveOpenClawInvocation(
+function resolveAforaInvocation(
   options: ProducerOptions,
   profile: string,
   args: string[],
@@ -247,7 +247,7 @@ function resolveOpenClawInvocation(
   // QA Suite builds once before this producer starts. Keep every client command on that
   // immutable dist tree so a rebuild cannot remove chunks beneath the installed gateway.
   return {
-    args: [path.join(options.repoRoot, "openclaw.mjs"), "--profile", profile, ...args],
+    args: [path.join(options.repoRoot, "afora.mjs"), "--profile", profile, ...args],
     command: process.execPath,
   };
 }
@@ -434,8 +434,8 @@ async function waitForGatewayHealthy(
 }> {
   const deadline = Date.now() + 60_000;
   const statusArgs = ["gateway", "status", "--deep", "--require-rpc", "--json"];
-  let status = await runOpenClaw(options, profile, statusArgs, env);
-  let health = await runOpenClaw(options, profile, ["gateway", "health", "--json"], env);
+  let status = await runAfora(options, profile, statusArgs, env);
+  let health = await runAfora(options, profile, ["gateway", "health", "--json"], env);
   while (Date.now() < deadline) {
     try {
       const statusJson = JSON.parse(status.stdout) as GatewayStatusJson;
@@ -455,8 +455,8 @@ async function waitForGatewayHealthy(
     await new Promise<void>((resolve) => {
       setTimeout(resolve, 500);
     });
-    status = await runOpenClaw(options, profile, statusArgs, env);
-    health = await runOpenClaw(options, profile, ["gateway", "health", "--json"], env);
+    status = await runAfora(options, profile, statusArgs, env);
+    health = await runAfora(options, profile, ["gateway", "health", "--json"], env);
   }
   throw new Error(
     `gateway did not become healthy\nstatus=${outputOf(status)}\nhealth=${outputOf(health)}`,
@@ -487,9 +487,9 @@ async function runSystemdRecovery(
   const profile = `qa-doctor-${randomUUID().slice(0, 8)}`;
   const home = os.userInfo().homedir;
   const env = commandEnv(profile, process.env, home);
-  const stateDir = path.join(home, `.openclaw-${profile}`);
-  const configPath = path.join(stateDir, "openclaw.json");
-  const unit = `openclaw-gateway-${profile}.service`;
+  const stateDir = path.join(home, `.afora-${profile}`);
+  const configPath = path.join(stateDir, "afora.json");
+  const unit = `afora-gateway-${profile}.service`;
   const unitPath = path.join(home, ".config", "systemd", "user", unit);
   const dropInDir = `${unitPath}.d`;
   const dropInPath = path.join(dropInDir, "qa-start-limit.conf");
@@ -524,7 +524,7 @@ async function runSystemdRecovery(
       { mode: 0o600 },
     );
 
-    const install = await runOpenClaw(
+    const install = await runAfora(
       options,
       profile,
       ["gateway", "install", "--force", "--json"],
@@ -540,11 +540,11 @@ async function runSystemdRecovery(
     assert.equal(installed, true, `service unit not installed: ${unit}`);
     await waitForGatewayHealthy(options, profile, env);
 
-    const stop = await runOpenClaw(options, profile, ["gateway", "stop", "--force", "--json"], env);
+    const stop = await runAfora(options, profile, ["gateway", "stop", "--force", "--json"], env);
     appendLog(outputOf(stop));
     assertCommandSucceeded(stop, "gateway stop");
     foreignListener = await listen(port);
-    const portDoctor = await runOpenClaw(
+    const portDoctor = await runAfora(
       options,
       profile,
       ["doctor", "--non-interactive", "--no-workspace-suggestions"],
@@ -592,7 +592,7 @@ async function runSystemdRecovery(
       true,
     );
 
-    const failedDoctor = await runOpenClaw(
+    const failedDoctor = await runAfora(
       options,
       profile,
       ["doctor", "--non-interactive", "--no-workspace-suggestions"],
@@ -613,7 +613,7 @@ async function runSystemdRecovery(
       "systemctl daemon-reload after override removal",
     );
 
-    const restart = await runOpenClaw(options, profile, [...gatewayRecoveryArgs], env);
+    const restart = await runAfora(options, profile, [...gatewayRecoveryArgs], env);
     appendLog(outputOf(restart));
     assertCommandSucceeded(restart, "gateway restart");
     const restartJson = JSON.parse(restart.stdout) as {
@@ -658,7 +658,7 @@ async function runSystemdRecovery(
     },
     async () => {
       if (installed) {
-        const uninstall = await runOpenClaw(
+        const uninstall = await runAfora(
           options,
           profile,
           ["gateway", "uninstall", "--json"],
@@ -831,7 +831,7 @@ export const testing = {
   commandEnv,
   gatewayRecoveryArgs,
   main,
-  resolveOpenClawInvocation,
+  resolveAforaInvocation,
   runProducer,
   writeRecoveryArtifacts,
 };

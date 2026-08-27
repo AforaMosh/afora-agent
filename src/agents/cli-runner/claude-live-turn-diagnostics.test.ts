@@ -269,13 +269,13 @@ describe("Claude live turn progress and diagnostic correlation", () => {
               {
                 type: "mcp_tool_use",
                 id: "tool-live-identical-a",
-                name: "mcp__openclaw__message",
+                name: "mcp__afora__message",
                 input: { action: "react", emoji: "same" },
               },
               {
                 type: "mcp_tool_use",
                 id: "tool-live-identical-b",
-                name: "mcp__openclaw__message",
+                name: "mcp__afora__message",
                 input: { action: "react", emoji: "same" },
               },
             ],

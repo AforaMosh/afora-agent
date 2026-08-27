@@ -97,7 +97,7 @@ describe("mattermost monitor resources", () => {
 
     const resources = createMattermostMonitorResources({
       accountId: "default",
-      callbackUrl: "https://openclaw.test/callback",
+      callbackUrl: "https://afora.test/callback",
       client: {
         apiBaseUrl: "https://chat.example.com/api/v4",
         baseUrl: "https://chat.example.com",
@@ -140,7 +140,7 @@ describe("mattermost monitor resources", () => {
 
     const resources = createMattermostMonitorResources({
       accountId: "default",
-      callbackUrl: "https://openclaw.test/callback",
+      callbackUrl: "https://afora.test/callback",
       client: {
         apiBaseUrl: "https://chat.example.com/api/v4",
         baseUrl: "https://chat.example.com",
@@ -224,7 +224,7 @@ describe("mattermost monitor resources", () => {
     const saveRemoteMedia = vi.fn();
     const resources = createMattermostMonitorResources({
       accountId: "default",
-      callbackUrl: "https://openclaw.test/callback",
+      callbackUrl: "https://afora.test/callback",
       client: {
         apiBaseUrl: "https://chat.example.com/api/v4",
         baseUrl: "https://chat.example.com",
@@ -259,7 +259,7 @@ describe("mattermost monitor resources", () => {
 
   it("times out inbound media downloads when response headers never arrive", async () => {
     const { createServer } = await import("node:http");
-    const { saveRemoteMedia } = await import("openclaw/plugin-sdk/media-runtime");
+    const { saveRemoteMedia } = await import("afora-agent/plugin-sdk/media-runtime");
     const server = createServer((_req, _res) => {
       // Accept the connection but never write status/headers.
     });
@@ -287,7 +287,7 @@ describe("mattermost monitor resources", () => {
 
       const resources = createMattermostMonitorResources({
         accountId: "default",
-        callbackUrl: "https://openclaw.test/callback",
+        callbackUrl: "https://afora.test/callback",
         client: {
           apiBaseUrl: `http://127.0.0.1:${address.port}/api/v4`,
           baseUrl: `http://127.0.0.1:${address.port}`,
@@ -322,7 +322,7 @@ describe("mattermost monitor resources", () => {
 
     const resources = createMattermostMonitorResources({
       accountId: "default",
-      callbackUrl: "https://openclaw.test/callback",
+      callbackUrl: "https://afora.test/callback",
       client: {} as never,
       logger: {},
       mediaMaxBytes: 1024,
@@ -369,7 +369,7 @@ describe("mattermost monitor resources", () => {
       fetchResource.mockImplementation(async (_client, id: string) => ({ id }));
       const resources = createMattermostMonitorResources({
         accountId: "default",
-        callbackUrl: "https://openclaw.test/callback",
+        callbackUrl: "https://afora.test/callback",
         client: {} as never,
         logger: {},
         mediaMaxBytes: 1024,
@@ -401,7 +401,7 @@ describe("mattermost monitor resources", () => {
     fetchResource.mockImplementation(async (_client, id: string) => ({ id }));
     const resources = createMattermostMonitorResources({
       accountId: "default",
-      callbackUrl: "https://openclaw.test/callback",
+      callbackUrl: "https://afora.test/callback",
       client: {} as never,
       logger: {},
       mediaMaxBytes: 1024,
@@ -427,7 +427,7 @@ describe("mattermost monitor resources", () => {
 
     const resources = createMattermostMonitorResources({
       accountId: "default",
-      callbackUrl: "https://openclaw.test/callback",
+      callbackUrl: "https://afora.test/callback",
       client: {} as never,
       logger: {},
       mediaMaxBytes: 1024,
@@ -463,7 +463,7 @@ describe("mattermost monitor resources", () => {
 
     const resources = createMattermostMonitorResources({
       accountId: "default",
-      callbackUrl: "https://openclaw.test/callback",
+      callbackUrl: "https://afora.test/callback",
       client: {} as never,
       logger: {},
       mediaMaxBytes: 1024,
@@ -488,7 +488,7 @@ describe("mattermost monitor resources", () => {
 
     const resources = createMattermostMonitorResources({
       accountId: "default",
-      callbackUrl: "https://openclaw.test/callback",
+      callbackUrl: "https://afora.test/callback",
       client,
       logger: {},
       mediaMaxBytes: 1024,

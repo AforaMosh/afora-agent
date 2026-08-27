@@ -27,7 +27,7 @@ beforeEach(() => {
 
 describe("resolveCanonicalInstallTarget", () => {
   it("creates the base dir and returns early for invalid install ids", async () => {
-    await withTestDir({ prefix: "openclaw-install-target-" }, async (root) => {
+    await withTestDir({ prefix: "afora-install-target-" }, async (root) => {
       const baseDir = path.join(root, "plugins");
       resolveSafeInstallDirMock.mockReturnValueOnce({
         ok: false,
@@ -50,7 +50,7 @@ describe("resolveCanonicalInstallTarget", () => {
   });
 
   it("returns canonical boundary errors for Error and non-Error throws", async () => {
-    await withTestDir({ prefix: "openclaw-install-target-" }, async (baseDir) => {
+    await withTestDir({ prefix: "afora-install-target-" }, async (baseDir) => {
       const targetDir = path.join(baseDir, "demo");
       resolveSafeInstallDirMock.mockReturnValue({
         ok: true,
@@ -80,7 +80,7 @@ describe("resolveCanonicalInstallTarget", () => {
   });
 
   it("returns the resolved target path on success", async () => {
-    await withTestDir({ prefix: "openclaw-install-target-" }, async (baseDir) => {
+    await withTestDir({ prefix: "afora-install-target-" }, async (baseDir) => {
       const targetDir = path.join(baseDir, "demo");
       resolveSafeInstallDirMock.mockReturnValueOnce({
         ok: true,

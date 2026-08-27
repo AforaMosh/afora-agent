@@ -1,12 +1,12 @@
-// OpenClaw rescue messages expose approved setup-helper commands over message channels.
+// Afora rescue messages expose approved setup-helper commands over message channels.
 import { createHash } from "node:crypto";
 import {
   asDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "@openclaw/normalization-core/number-coercion";
-import { hasNonEmptyString as isNonEmptyString } from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/number-coercion";
+import { hasNonEmptyString as isNonEmptyString } from "@afora/normalization-core/string-coerce";
 import type { CommandContext } from "../auto-reply/reply/commands-types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createCorePluginStateSyncKeyedStore } from "../plugin-state/plugin-state-store.js";
 import type { RuntimeEnv } from "../runtime.js";
 import {
@@ -21,9 +21,9 @@ import { classifySystemAgentApprovalText } from "./operator-approval.js";
 import { resolveSystemAgentRescuePolicy } from "./rescue-policy.js";
 
 /**
- * Message-channel rescue command handling for OpenClaw.
+ * Message-channel rescue command handling for Afora.
  *
- * Rescue mode accepts `/openclaw` commands from approved message contexts,
+ * Rescue mode accepts `/afora` commands from approved message contexts,
  * stores pending persistent operations for explicit confirmation, and captures
  * command output without exposing local TUI or plugin-install flows remotely.
  */
@@ -32,9 +32,9 @@ type RescuePendingOperation = {
   operation: SystemAgentOperation;
 };
 
-/** Input required to process one possible `/openclaw` rescue message. */
+/** Input required to process one possible `/afora` rescue message. */
 type SystemAgentRescueMessageInput = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   command: CommandContext;
   commandBody: string;
   agentId?: string;
@@ -43,7 +43,7 @@ type SystemAgentRescueMessageInput = {
   deps?: SystemAgentCommandDeps;
 };
 
-const SYSTEM_AGENT_COMMAND = "/openclaw";
+const SYSTEM_AGENT_COMMAND = "/afora";
 const RESCUE_PENDING_NAMESPACE = "rescue-pending";
 const RESCUE_PENDING_MAX_ENTRIES = 1_024;
 
@@ -57,14 +57,14 @@ function createCaptureRuntime(): { runtime: RuntimeEnv; read: () => string } {
       log: push,
       error: push,
       exit: (code) => {
-        throw new Error(`OpenClaw operation exited with code ${code}`);
+        throw new Error(`Afora operation exited with code ${code}`);
       },
     },
     read: () => lines.join("\n").trim(),
   };
 }
 
-/** Extract the command body after `/openclaw`, or null when the message is not for rescue. */
+/** Extract the command body after `/afora`, or null when the message is not for rescue. */
 export function extractSystemAgentRescueMessage(commandBody: string): string | null {
   const normalized = commandBody.trim();
   const lower = normalized.toLowerCase();
@@ -214,39 +214,39 @@ function buildAuditDetails(input: SystemAgentRescueMessageInput): Record<string,
 function formatPersistentPlan(operation: SystemAgentOperation): string {
   return formatSystemAgentPersistentPlan(operation).replace(
     "Say yes to apply.",
-    "Reply /openclaw yes to apply.",
+    "Reply /afora yes to apply.",
   );
 }
 
 function formatUnsupportedRemoteOperation(operation: SystemAgentOperation): string | null {
   if (operation.kind === "open-tui") {
     return [
-      "OpenClaw rescue cannot open the local TUI from a message channel.",
-      "Use local `openclaw` for agent handoff, or ask for status, doctor, config, gateway, agents, or models.",
+      "Afora rescue cannot open the local TUI from a message channel.",
+      "Use local `afora` for agent handoff, or ask for status, doctor, config, gateway, agents, or models.",
     ].join(" ");
   }
   if (operation.kind === "channel-setup") {
     return [
-      "OpenClaw rescue cannot host the interactive channel setup from a message channel.",
-      "Run `openclaw setup` locally and say `connect " + operation.channel + "` instead.",
+      "Afora rescue cannot host the interactive channel setup from a message channel.",
+      "Run `afora setup` locally and say `connect " + operation.channel + "` instead.",
     ].join(" ");
   }
   if (operation.kind === "model-setup") {
     return [
-      "OpenClaw rescue cannot host model-provider credential setup from a message channel.",
-      "Run `openclaw onboard` locally; it live-tests the candidate route before saving it.",
+      "Afora rescue cannot host model-provider credential setup from a message channel.",
+      "Run `afora onboard` locally; it live-tests the candidate route before saving it.",
     ].join(" ");
   }
   if (operation.kind === "doctor-fix") {
     return [
-      "OpenClaw rescue cannot run doctor repairs from a message channel because they can change the inference route powering this session.",
-      "On the machine running OpenClaw, with OpenClaw stopped, run `openclaw doctor --fix`.",
+      "Afora rescue cannot run doctor repairs from a message channel because they can change the inference route powering this session.",
+      "On the machine running Afora, with Afora stopped, run `afora doctor --fix`.",
     ].join(" ");
   }
   if (operation.kind === "plugin-install") {
     return [
-      "OpenClaw rescue cannot install plugins from a message channel by default because plugin install downloads executable code.",
-      "Use local `openclaw setup` or `openclaw plugins install` instead.",
+      "Afora rescue cannot install plugins from a message channel by default because plugin install downloads executable code.",
+      "Use local `afora setup` or `afora plugins install` instead.",
     ].join(" ");
   }
   return null;
@@ -280,7 +280,7 @@ export async function runSystemAgentRescueMessage(
     // capability, and a failed execution cannot leave a replayable write.
     const operation = parsePendingOperation(pendingStore.consume(pendingKey));
     if (!operation) {
-      return "No pending OpenClaw rescue change is waiting for approval.";
+      return "No pending Afora rescue change is waiting for approval.";
     }
     const unsupported = formatUnsupportedRemoteOperation(operation);
     if (unsupported) {
@@ -292,14 +292,14 @@ export async function runSystemAgentRescueMessage(
       auditDetails: buildAuditDetails(input),
       deps: input.deps,
     });
-    return capture.read() || "OpenClaw rescue change applied.";
+    return capture.read() || "Afora rescue change applied.";
   }
 
   if (approvalIntent === "decline") {
     const pending = parsePendingOperation(pendingStore.consume(pendingKey));
     return pending
-      ? "Dropped the pending OpenClaw rescue change."
-      : "No pending OpenClaw rescue change is waiting for approval.";
+      ? "Dropped the pending Afora rescue change."
+      : "No pending Afora rescue change is waiting for approval.";
   }
 
   // Any fresh command revokes the previous capability for this exact route.
@@ -321,7 +321,7 @@ export async function runSystemAgentRescueMessage(
         ? undefined
         : resolveExpiresAtMsFromDurationMs(policy.pendingTtlMinutes * 60_000, { nowMs });
     if (nowMs === undefined || expiresAtMs === undefined) {
-      return "OpenClaw rescue could not create a pending approval because the expiry clock is invalid.";
+      return "Afora rescue could not create a pending approval because the expiry clock is invalid.";
     }
     const ttlMs = expiresAtMs - nowMs;
     pendingStore.register(
@@ -341,5 +341,5 @@ export async function runSystemAgentRescueMessage(
     auditDetails: buildAuditDetails(input),
     deps: input.deps,
   });
-  return capture.read() || "OpenClaw listened, clicked a claw, and found nothing to change.";
+  return capture.read() || "Afora listened, clicked a claw, and found nothing to change.";
 }

@@ -2,13 +2,13 @@ import fs from "node:fs";
 import {
   validateJsonSchemaValue,
   type JsonSchemaObject,
-} from "openclaw/plugin-sdk/json-schema-runtime";
+} from "afora-agent/plugin-sdk/json-schema-runtime";
 import type {
-  OpenClawPluginApi,
-  OpenClawPluginNodeHostCommand,
-  OpenClawPluginNodeInvokePolicy,
-  OpenClawPluginNodeInvokePolicyContext,
-} from "openclaw/plugin-sdk/plugin-entry";
+  AforaPluginApi,
+  AforaPluginNodeHostCommand,
+  AforaPluginNodeInvokePolicy,
+  AforaPluginNodeInvokePolicyContext,
+} from "afora-agent/plugin-sdk/plugin-entry";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const artifactMocks = vi.hoisted(() => ({
@@ -23,7 +23,7 @@ import plugin from "./index.js";
 
 function validateManifestConfig(value: unknown) {
   const manifest = JSON.parse(
-    fs.readFileSync(new URL("./openclaw.plugin.json", import.meta.url), "utf8"),
+    fs.readFileSync(new URL("./afora.plugin.json", import.meta.url), "utf8"),
   ) as { configSchema: JsonSchemaObject };
   return validateJsonSchemaValue({
     cacheKey: "cua-computer.manifest.config.test",
@@ -39,7 +39,7 @@ describe("cua-computer plugin registration", () => {
 
   it("defaults on only for the app-gated macOS provider path", () => {
     const manifest = JSON.parse(
-      fs.readFileSync(new URL("./openclaw.plugin.json", import.meta.url), "utf8"),
+      fs.readFileSync(new URL("./afora.plugin.json", import.meta.url), "utf8"),
     ) as { enabledByDefault?: boolean; enabledByDefaultOnPlatforms?: string[] };
 
     expect(manifest.enabledByDefault).toBe(false);
@@ -47,21 +47,21 @@ describe("cua-computer plugin registration", () => {
   });
 
   it("registers the screen and dangerous computer node-host commands", () => {
-    const commands: OpenClawPluginNodeHostCommand[] = [];
-    const policies: OpenClawPluginNodeInvokePolicy[] = [];
+    const commands: AforaPluginNodeHostCommand[] = [];
+    const policies: AforaPluginNodeInvokePolicy[] = [];
     const registerTool = vi.fn();
     const registerCli = vi.fn();
     const registerNodeCliFeature = vi.fn();
     const registerService = vi.fn();
     plugin.register({
       pluginConfig: {},
-      registerNodeHostCommand: (command: OpenClawPluginNodeHostCommand) => commands.push(command),
-      registerNodeInvokePolicy: (policy: OpenClawPluginNodeInvokePolicy) => policies.push(policy),
+      registerNodeHostCommand: (command: AforaPluginNodeHostCommand) => commands.push(command),
+      registerNodeInvokePolicy: (policy: AforaPluginNodeInvokePolicy) => policies.push(policy),
       registerTool,
       registerCli,
       registerNodeCliFeature,
       registerService,
-    } as unknown as OpenClawPluginApi);
+    } as unknown as AforaPluginApi);
 
     expect(commands.map(({ command, cap, dangerous }) => ({ command, cap, dangerous }))).toEqual([
       { command: "screen.snapshot", cap: "screen", dangerous: false },
@@ -87,12 +87,12 @@ describe("cua-computer plugin registration", () => {
     expect(validateManifestConfig({ unexpected: true }).ok).toBe(false);
     expect(plugin.configSchema).not.toHaveProperty("uiHints");
 
-    const commands: OpenClawPluginNodeHostCommand[] = [];
+    const commands: AforaPluginNodeHostCommand[] = [];
     plugin.register({
       pluginConfig: config,
-      registerNodeHostCommand: (command: OpenClawPluginNodeHostCommand) => commands.push(command),
+      registerNodeHostCommand: (command: AforaPluginNodeHostCommand) => commands.push(command),
       registerNodeInvokePolicy: () => {},
-    } as unknown as OpenClawPluginApi);
+    } as unknown as AforaPluginApi);
 
     expect(commands.map(({ command, cap, dangerous }) => ({ command, cap, dangerous }))).toEqual([
       { command: "screen.snapshot", cap: "screen", dangerous: false },
@@ -106,8 +106,8 @@ describe("cua-computer plugin registration", () => {
       ok: false,
       code: "COMPUTER_DRIVER_PACKAGE_MISSING",
       diagnostic:
-        "COMPUTER_DRIVER_PACKAGE_MISSING: native package absent. Fix: reinstall OpenClaw.",
-      fixHint: "Reinstall OpenClaw.",
+        "COMPUTER_DRIVER_PACKAGE_MISSING: native package absent. Fix: reinstall Afora.",
+      fixHint: "Reinstall Afora.",
     });
 
     plugin.register({
@@ -115,20 +115,20 @@ describe("cua-computer plugin registration", () => {
       logger: { error },
       registerNodeHostCommand: () => {},
       registerNodeInvokePolicy: () => {},
-    } as unknown as OpenClawPluginApi);
+    } as unknown as AforaPluginApi);
 
     expect(error).toHaveBeenCalledWith(
-      "COMPUTER_DRIVER_PACKAGE_MISSING: native package absent. Fix: reinstall OpenClaw.",
+      "COMPUTER_DRIVER_PACKAGE_MISSING: native package absent. Fix: reinstall Afora.",
     );
   });
 
   it("forwards an explicitly armed computer action and preserves node refusals", async () => {
-    const policies: OpenClawPluginNodeInvokePolicy[] = [];
+    const policies: AforaPluginNodeInvokePolicy[] = [];
     plugin.register({
       pluginConfig: {},
       registerNodeHostCommand: () => {},
-      registerNodeInvokePolicy: (policy: OpenClawPluginNodeInvokePolicy) => policies.push(policy),
-    } as unknown as OpenClawPluginApi);
+      registerNodeInvokePolicy: (policy: AforaPluginNodeInvokePolicy) => policies.push(policy),
+    } as unknown as AforaPluginApi);
     const refusal = {
       ok: false as const,
       code: "INVALID_REQUEST",
@@ -140,7 +140,7 @@ describe("cua-computer plugin registration", () => {
       policies[0]!.handle({
         invokeNode,
         risk: { level: "ordinary", family: "input" },
-      } as unknown as OpenClawPluginNodeInvokePolicyContext),
+      } as unknown as AforaPluginNodeInvokePolicyContext),
     ).resolves.toEqual(refusal);
     expect(invokeNode).toHaveBeenCalledOnce();
   });

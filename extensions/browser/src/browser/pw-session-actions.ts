@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { Browser, Page, Response } from "playwright-core";
 import type { SsrFPolicy } from "../infra/net/ssrf.js";
 import {
@@ -475,7 +475,7 @@ export async function createPageViaPlaywright(
         throw err;
       }
     }
-    // OpenClaw owns this newly-created tab: if the post-navigation safety
+    // Afora owns this newly-created tab: if the post-navigation safety
     // check trips, close the tab we just spawned.
     try {
       await assertPageNavigationCompletedSafely({

@@ -1,6 +1,6 @@
 // Zalouser helper module supports setup test helpers behavior.
-import { createScopedDmSecurityResolver } from "openclaw/plugin-sdk/channel-config-helpers";
-import type { OpenClawConfig } from "../runtime-api.js";
+import { createScopedDmSecurityResolver } from "afora-agent/plugin-sdk/channel-config-helpers";
+import type { AforaConfig } from "../runtime-api.js";
 import {
   listZalouserAccountIds,
   resolveDefaultZalouserAccountId,
@@ -24,7 +24,7 @@ export const zalouserSetupPlugin = {
   config: {
     listAccountIds: (cfg: unknown) => listZalouserAccountIds(cfg as never),
     defaultAccountId: (cfg: unknown) => resolveDefaultZalouserAccountId(cfg as never),
-    resolveAccount: (cfg: OpenClawConfig, accountId?: string | null) =>
+    resolveAccount: (cfg: AforaConfig, accountId?: string | null) =>
       resolveZalouserAccountSync({ cfg, accountId }),
   },
   security: {

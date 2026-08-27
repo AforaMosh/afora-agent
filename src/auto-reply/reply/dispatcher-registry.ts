@@ -11,7 +11,7 @@ type TrackedDispatcher = {
 };
 
 const activeDispatchers = resolveGlobalSet<TrackedDispatcher>(
-  Symbol.for("openclaw.activeReplyDispatchers"),
+  Symbol.for("afora.activeReplyDispatchers"),
   "close-only",
 );
 let nextId = 0;

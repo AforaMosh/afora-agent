@@ -13,15 +13,15 @@ import {
   closeAuthProfileReadPool,
   resolveAuthProfileDatabaseOwnerId,
 } from "../agents/auth-profiles/sqlite.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../state/openclaw-agent-db.generated.js";
+import type { DB as AforaAgentKyselyDatabase } from "../state/afora-agent-db.generated.js";
 import {
-  closeOpenClawAgentDatabaseByPath,
-  runOpenClawAgentWriteTransaction,
-} from "../state/openclaw-agent-db.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../state/openclaw-state-db-readonly.js";
-import { tableExists as sqliteTableExists } from "../state/openclaw-state-db-schema-helpers.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
-import { runOpenClawStateWriteTransaction } from "../state/openclaw-state-db.js";
+  closeAforaAgentDatabaseByPath,
+  runAforaAgentWriteTransaction,
+} from "../state/afora-agent-db.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../state/afora-state-db-readonly.js";
+import { tableExists as sqliteTableExists } from "../state/afora-state-db-schema-helpers.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
+import { runAforaStateWriteTransaction } from "../state/afora-state-db.js";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
@@ -38,11 +38,11 @@ const SOURCE_STORE_KEY = "primary";
 const TARGET_STORE_KEY = "shared";
 
 type SourceAuthDatabase = Pick<
-  OpenClawAgentKyselyDatabase,
+  AforaAgentKyselyDatabase,
   "auth_profile_store" | "auth_profile_state"
 >;
 type SharedAuthMigrationDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   | "auth_profile_stores"
   | "auth_profile_state"
   | "config_machine_state"
@@ -57,7 +57,7 @@ type MigrationStage = "copied" | "ownership-flipped" | "completed";
 
 class SharedAuthStoreSourceInspectionError extends Error {
   readonly code = "SHARED_AUTH_STORE_SOURCE_UNREADABLE" as const;
-  readonly action = "openclaw doctor --fix" as const;
+  readonly action = "afora doctor --fix" as const;
   readonly sourcePath: string;
 
   constructor(sourcePath: string, operation: string, cause: unknown) {
@@ -158,7 +158,7 @@ function readSourceSnapshot(params: { env: NodeJS.ProcessEnv; sourcePath: string
     return { rows: { store: null, state: null }, size: null };
   }
   try {
-    const rows = runOpenClawAgentWriteTransaction(
+    const rows = runAforaAgentWriteTransaction(
       ({ db }) => readSourceRowsFromDatabase(db),
       {
         agentId: resolveAuthProfileDatabaseOwnerId(path.dirname(params.sourcePath)),
@@ -168,7 +168,7 @@ function readSourceSnapshot(params: { env: NodeJS.ProcessEnv; sourcePath: string
       { operationLabel: "state-migration.shared-auth-source-read" },
     );
     closeAuthProfileReadPool({ kind: "database", databasePath: params.sourcePath });
-    closeOpenClawAgentDatabaseByPath(params.sourcePath);
+    closeAforaAgentDatabaseByPath(params.sourcePath);
     return { rows, size: fs.statSync(params.sourcePath).size };
   } catch (error) {
     throw new SharedAuthStoreSourceInspectionError(params.sourcePath, "read", error);
@@ -373,7 +373,7 @@ function copyRowsToState(params: {
   sourceRows: AuthRows;
   now: number;
 }): AuthRows {
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db: database, path: targetDatabasePath }) => {
       const db = getNodeSqliteKysely<SharedAuthMigrationDatabase>(database);
       const target = readTargetRows(database);
@@ -437,7 +437,7 @@ function flipOwnership(params: {
   now: number;
 }): boolean {
   const flipped = resolveSharedAuthStoreOwnership(params.env).location !== "state-db";
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db: database }) => {
       assertRowsMatch(params.rows, readTargetRows(database), "ownership");
       const db = getNodeSqliteKysely<SharedAuthMigrationDatabase>(database);
@@ -471,7 +471,7 @@ function cleanupSourceRows(params: { env: NodeJS.ProcessEnv; sourcePath: string 
     return false;
   }
   try {
-    const removed = runOpenClawAgentWriteTransaction(
+    const removed = runAforaAgentWriteTransaction(
       ({ db: database }) => {
         const db = getNodeSqliteKysely<SourceAuthDatabase>(database);
         const before = readSourceRowsFromDatabase(database);
@@ -497,7 +497,7 @@ function cleanupSourceRows(params: { env: NodeJS.ProcessEnv; sourcePath: string 
       { operationLabel: "state-migration.shared-auth-cleanup" },
     );
     closeAuthProfileReadPool({ kind: "database", databasePath: params.sourcePath });
-    closeOpenClawAgentDatabaseByPath(params.sourcePath);
+    closeAforaAgentDatabaseByPath(params.sourcePath);
     return removed;
   } catch (error) {
     throw new SharedAuthStoreSourceInspectionError(params.sourcePath, "clean", error);
@@ -511,7 +511,7 @@ function finalizeMigration(params: {
   rows: AuthRows;
   now: number;
 }): void {
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db: database }) => {
       assertRowsMatch(params.rows, readTargetRows(database), "cleanup");
       recordMigrationLedger({ ...params, database, stage: "completed" });
@@ -523,7 +523,7 @@ function finalizeMigration(params: {
 
 function hasPendingCleanup(env: NodeJS.ProcessEnv, sourcePath: string): boolean {
   return (
-    withExistingOpenClawStateDatabaseReadOnly(
+    withExistingAforaStateDatabaseReadOnly(
       ({ db: database }) => {
         const db = getNodeSqliteKysely<SharedAuthMigrationDatabase>(database);
         const row = executeSqliteQueryTakeFirstSync(
@@ -548,8 +548,8 @@ export function detectSharedAuthStoreMigration(params: {
   stateDir: string;
   doctorOnlyStateMigrations?: boolean;
 }): SharedAuthStoreMigrationDetection {
-  const env = { ...process.env, OPENCLAW_STATE_DIR: params.stateDir };
-  const sourcePath = path.join(resolveSharedMainAuthAgentDir(env), "openclaw-agent.sqlite");
+  const env = { ...process.env, AFORA_STATE_DIR: params.stateDir };
+  const sourcePath = path.join(resolveSharedMainAuthAgentDir(env), "afora-agent.sqlite");
   if (params.doctorOnlyStateMigrations !== true) {
     return { sourcePath, hasLegacy: false };
   }

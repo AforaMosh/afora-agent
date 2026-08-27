@@ -1,5 +1,5 @@
 /** Detects inbound media and audio facts in channel message context. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { isMeaningfulMediaFact, normalizeMediaFacts } from "../../media/media-facts.js";
 import type { RuntimeMsgContext as MsgContext } from "../templating.js";
 

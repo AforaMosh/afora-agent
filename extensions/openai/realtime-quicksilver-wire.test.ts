@@ -26,7 +26,7 @@ afterEach(() => {
 
 describe("GPT-Live call creation", () => {
   it("uses one multipart /v1/live wire shape for OAuth and API-key auth", async () => {
-    vi.stubEnv("OPENCLAW_VERSION", "2026.7.2-test");
+    vi.stubEnv("AFORA_VERSION", "2026.7.2-test");
     const requests: Array<{ url: string; init?: RequestInit }> = [];
     const fetchImpl = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       const resolvedUrl = typeof url === "string" ? url : url instanceof URL ? url.href : url.url;
@@ -58,9 +58,9 @@ describe("GPT-Live call creation", () => {
     expect(requests[0]?.init?.headers).toEqual({
       Authorization: "Bearer oauth-token",
       "OpenAI-Alpha": "quicksilver=v2",
-      "User-Agent": "openclaw/2026.7.2-test",
+      "User-Agent": "afora-agent/2026.7.2-test",
       "chatgpt-account-id": "acct-1",
-      originator: "openclaw",
+      originator: "afora",
       "session-id": "oauth-session",
       "thread-id": "oauth-thread",
       version: "2026.7.2-test",
@@ -103,7 +103,7 @@ describe("GPT-Live call creation", () => {
   it.each(["gpt-realtime-2.1", "gpt-realtime-2.1-mini", "gpt-realtime-2"])(
     "uses raw SDP with the model query and no quicksilver alpha header for %s OAuth",
     async (model) => {
-      vi.stubEnv("OPENCLAW_VERSION", "2026.7.2-test");
+      vi.stubEnv("AFORA_VERSION", "2026.7.2-test");
       let capturedHeaders: HeadersInit | undefined;
       const fetchImpl = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
         capturedHeaders = init?.headers;
@@ -130,9 +130,9 @@ describe("GPT-Live call creation", () => {
           body: "v=ga-offer\r\n",
           headers: {
             Authorization: "Bearer oauth-token",
-            "User-Agent": "openclaw/2026.7.2-test",
+            "User-Agent": "afora-agent/2026.7.2-test",
             "chatgpt-account-id": "acct-1",
-            originator: "openclaw",
+            originator: "afora",
             "session-id": "ga-oauth-session",
             "thread-id": "ga-oauth-thread",
             version: "2026.7.2-test",

@@ -1,7 +1,7 @@
 // Telegram plugin module recovers dispatch routing and group-history context.
-import { parseStrictPositiveInteger } from "openclaw/plugin-sdk/number-runtime";
-import { createChannelHistoryWindow } from "openclaw/plugin-sdk/reply-history";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
+import { parseStrictPositiveInteger } from "afora-agent/plugin-sdk/number-runtime";
+import { createChannelHistoryWindow } from "afora-agent/plugin-sdk/reply-history";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
 import { withTelegramApiErrorLogging } from "./api-logging.js";
 import type { TelegramMessageContext } from "./bot-message-context.js";
 import {

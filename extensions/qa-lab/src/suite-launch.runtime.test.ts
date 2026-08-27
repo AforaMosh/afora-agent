@@ -48,8 +48,8 @@ vi.mock("./test-file-scenario-docker-batch.js", async (importOriginal) => ({
   prepareDockerE2eEnvironment,
 }));
 
-vi.mock("openclaw/plugin-sdk/security-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/security-runtime")>();
+vi.mock("afora-agent/plugin-sdk/security-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/security-runtime")>();
   replaceFileAtomicMock.mockImplementation(actual.replaceFileAtomic);
   return { ...actual, replaceFileAtomic: replaceFileAtomicMock };
 });
@@ -66,7 +66,7 @@ async function makeTempRepo(prefix: string) {
 
 async function writeEvidence(pathLocal: string, writeFile = true) {
   const evidence = {
-    kind: "openclaw.qa.evidence-summary",
+    kind: "afora.qa.evidence-summary",
     schemaVersion: 2,
     generatedAt: "2026-06-14T00:00:00.000Z",
     evidenceMode: "full",
@@ -148,8 +148,8 @@ async function expectArtifactPublicationFailurePreservesPrior(params: {
     await fs.chmod(finalPath, 0o640);
   }
   const actualSecurityRuntime = await vi.importActual<
-    typeof import("openclaw/plugin-sdk/security-runtime")
-  >("openclaw/plugin-sdk/security-runtime");
+    typeof import("afora-agent/plugin-sdk/security-runtime")
+  >("afora-agent/plugin-sdk/security-runtime");
   const publicationOrder: string[] = [];
   const failSelectedArtifact = async (options: Parameters<typeof replaceFileAtomicMock>[0]) => {
     publicationOrder.push(path.basename(options.filePath));
@@ -378,7 +378,7 @@ describe("qa suite runtime launcher", () => {
       repoRoot,
       outputDir: ".artifacts/qa-e2e/flow-only-isolated",
       concurrency: 1,
-      runtimePair: ["openclaw", "codex"],
+      runtimePair: ["afora", "codex"],
       scenarioIds: ["channel-chat-baseline", "matrix-allowlist-hot-reload"],
     });
 
@@ -390,7 +390,7 @@ describe("qa suite runtime launcher", () => {
       expect.objectContaining({
         outputDir: path.join(outputDir, "flow", "isolated-1"),
         concurrency: 1,
-        runtimePair: ["openclaw", "codex"],
+        runtimePair: ["afora", "codex"],
         scenarioIds: ["channel-chat-baseline"],
       }),
     );
@@ -399,7 +399,7 @@ describe("qa suite runtime launcher", () => {
       expect.objectContaining({
         outputDir: path.join(outputDir, "flow", "isolated-2"),
         concurrency: 1,
-        runtimePair: ["openclaw", "codex"],
+        runtimePair: ["afora", "codex"],
         scenarioIds: ["matrix-allowlist-hot-reload"],
       }),
     );
@@ -956,7 +956,7 @@ describe("qa suite runtime launcher", () => {
       const result = await defaultFlowImplementation(params);
       const scenarioIds: readonly string[] = params?.scenarioIds ?? [];
       result.evidence = {
-        kind: "openclaw.qa.evidence-summary",
+        kind: "afora.qa.evidence-summary",
         schemaVersion: 2,
         generatedAt: "2026-06-14T00:00:00.000Z",
         evidenceMode: "full",
@@ -1063,7 +1063,7 @@ describe("qa suite runtime launcher", () => {
       outputDir: ".artifacts/qa-e2e/crabline-runtime-pair",
       providerMode: "mock-openai",
       channelDriver: "crabline",
-      runtimePair: ["openclaw", "codex"],
+      runtimePair: ["afora", "codex"],
       scenarioIds: ["telegram-help-command", "matrix-restart-resume"],
     });
 
@@ -1071,7 +1071,7 @@ describe("qa suite runtime launcher", () => {
     for (const call of runQaFlowSuite.mock.calls) {
       expect(call[0]).toEqual(
         expect.objectContaining({
-          runtimePair: ["openclaw", "codex"],
+          runtimePair: ["afora", "codex"],
         }),
       );
     }
@@ -1087,7 +1087,7 @@ describe("qa suite runtime launcher", () => {
         "utf8",
       ),
     ) as { run?: { runtimePair?: unknown } };
-    expect(summary.run?.runtimePair).toEqual(["openclaw", "codex"]);
+    expect(summary.run?.runtimePair).toEqual(["afora", "codex"]);
     await expect(
       fs.access(
         path.join(
@@ -2125,7 +2125,7 @@ describe("qa suite runtime launcher", () => {
     const serial = createDeferred();
     const parallel = createDeferred();
     const started: string[] = [];
-    const preparedEnv = Object.freeze({ OPENCLAW_CURRENT_PACKAGE_TGZ: "/tmp/candidate.tgz" });
+    const preparedEnv = Object.freeze({ AFORA_CURRENT_PACKAGE_TGZ: "/tmp/candidate.tgz" });
     const scriptEnvs: unknown[] = [];
     const parallelScriptIds: string[] = [];
     let activeParallelScripts = 0;
@@ -2226,7 +2226,7 @@ describe("qa suite runtime launcher", () => {
 
   it("reuses the prepared Docker env object when a script partition retries", async () => {
     const repoRoot = await makeTempRepo("qa-suite-docker-prep-retry-");
-    const preparedEnv = Object.freeze({ OPENCLAW_CURRENT_PACKAGE_TGZ: "/tmp/candidate.tgz" });
+    const preparedEnv = Object.freeze({ AFORA_CURRENT_PACKAGE_TGZ: "/tmp/candidate.tgz" });
     const defaultImplementation = runQaTestFileScenarios.getMockImplementation();
     if (!defaultImplementation) {
       throw new Error("expected default QA test-file mock implementation");
@@ -2340,7 +2340,7 @@ describe("qa suite runtime launcher", () => {
       throw new Error("expected default QA test-file mock implementation");
     }
     const first = createDeferred();
-    const preparedEnv = Object.freeze({ OPENCLAW_CURRENT_PACKAGE_TGZ: "/tmp/candidate.tgz" });
+    const preparedEnv = Object.freeze({ AFORA_CURRENT_PACKAGE_TGZ: "/tmp/candidate.tgz" });
     const started: string[] = [];
     let active = 0;
     let maxActive = 0;
@@ -2920,7 +2920,7 @@ describe("qa suite runtime launcher", () => {
   });
 
   it("preserves configured isolated worker start stagger overrides", async () => {
-    vi.stubEnv("OPENCLAW_QA_SUITE_WORKER_START_STAGGER_MS", "2500");
+    vi.stubEnv("AFORA_QA_SUITE_WORKER_START_STAGGER_MS", "2500");
     const repoRoot = await makeTempRepo("qa-suite-stagger-env-");
     await runQaSuite({
       repoRoot,
@@ -2953,7 +2953,7 @@ describe("qa suite runtime launcher", () => {
     await expect(
       runQaSuite({
         repoRoot: process.cwd(),
-        runtimePair: ["openclaw", "codex"],
+        runtimePair: ["afora", "codex"],
         scenarioIds: ["control-ui-chat-flow-playwright"],
       }),
     ).rejects.toThrow("--runtime-pair requires execution.kind: flow scenarios");

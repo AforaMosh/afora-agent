@@ -11,7 +11,7 @@ import { mutateConfigFileWithRetry } from "../../config/config.js";
 import { resolveSessionTranscriptsDirForAgent } from "../../config/sessions.js";
 import type { AgentConfig } from "../../config/types.agents.js";
 import type { IdentityConfig } from "../../config/types.base.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
 type AgentDeleteMutationResult = {
   workspaceDir: string;
@@ -24,7 +24,7 @@ type AgentDeleteMutationResult = {
 export class AgentConfigPreconditionError extends Error {}
 
 /** Checks the current config snapshot for a concrete agent entry. */
-export function isConfiguredAgent(cfg: OpenClawConfig, agentId: string): boolean {
+export function isConfiguredAgent(cfg: AforaConfig, agentId: string): boolean {
   return findAgentEntryIndex(listAgentEntries(cfg), agentId) >= 0;
 }
 
@@ -58,12 +58,12 @@ export async function updateAgentConfigEntry(params: {
 export async function deleteAgentConfigEntry(params: {
   agentId: string;
   validate?: (agent: AgentConfig) => void;
-  validateConfig?: (config: OpenClawConfig) => void;
+  validateConfig?: (config: AforaConfig) => void;
   allowMissing?: boolean;
   allowConfigSizeDrop?: boolean;
   fallbackWorkspace?: string;
 }): Promise<{
-  nextConfig: OpenClawConfig;
+  nextConfig: AforaConfig;
   result: AgentDeleteMutationResult | undefined;
 }> {
   const committed = await mutateConfigFileWithRetry<AgentDeleteMutationResult | undefined>({

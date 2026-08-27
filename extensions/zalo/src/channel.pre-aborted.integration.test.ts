@@ -4,11 +4,11 @@ import {
   createEmptyPluginRegistry,
   createStartAccountContext,
   setActivePluginRegistry,
-} from "openclaw/plugin-sdk/channel-test-helpers";
+} from "afora-agent/plugin-sdk/channel-test-helpers";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resolveZaloAccount } from "./accounts.js";
 import { zaloPlugin } from "./channel.js";
-import { setZaloRuntime, type OpenClawConfig, type PluginRuntime } from "./runtime-api.js";
+import { setZaloRuntime, type AforaConfig, type PluginRuntime } from "./runtime-api.js";
 
 const originalZaloApiUrl = process.env.ZALO_API_URL;
 
@@ -92,7 +92,7 @@ describe("configured Zalo gateway with a pre-aborted lifecycle", () => {
       },
     },
   ] as const)("performs only the account probe in $mode mode", async ({ channel }) => {
-    const cfg = { channels: { zalo: channel } } as OpenClawConfig;
+    const cfg = { channels: { zalo: channel } } as AforaConfig;
     const account = resolveZaloAccount({ cfg });
     const abort = new AbortController();
     abort.abort();

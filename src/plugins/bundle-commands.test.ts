@@ -46,7 +46,7 @@ afterEach(() => {
 });
 
 function resolveBundlePluginRoot(homeDir: string, pluginId: string) {
-  return path.join(homeDir, ".openclaw", "extensions", pluginId);
+  return path.join(homeDir, ".afora", "extensions", pluginId);
 }
 
 async function writeClaudeBundleCommandFixture(params: {
@@ -95,14 +95,14 @@ function expectEnabledClaudeBundleCommands(
 
 describe("loadEnabledClaudeBundleCommands", () => {
   it("loads enabled Claude bundle markdown commands and honors invocation policy", async () => {
-    const homeDir = tempDirs.make("openclaw-bundle-commands-home-");
-    const workspaceDir = tempDirs.make("openclaw-bundle-commands-workspace-");
+    const homeDir = tempDirs.make("afora-bundle-commands-home-");
+    const workspaceDir = tempDirs.make("afora-bundle-commands-workspace-");
     await withEnvAsync(
       {
         HOME: homeDir,
         USERPROFILE: homeDir,
-        OPENCLAW_HOME: undefined,
-        OPENCLAW_STATE_DIR: undefined,
+        AFORA_HOME: undefined,
+        AFORA_STATE_DIR: undefined,
       },
       async () => {
         await writeClaudeBundleCommandFixture({
@@ -226,8 +226,8 @@ describe("loadEnabledClaudeBundleCommands", () => {
   });
 
   it("warns and skips oversized bundle commands without dropping siblings", async () => {
-    const homeDir = tempDirs.make("openclaw-bundle-commands-oversized-");
-    const workspaceDir = tempDirs.make("openclaw-bundle-commands-oversized-ws-");
+    const homeDir = tempDirs.make("afora-bundle-commands-oversized-");
+    const workspaceDir = tempDirs.make("afora-bundle-commands-oversized-ws-");
 
     await writeClaudeBundleCommandFixture({
       homeDir,

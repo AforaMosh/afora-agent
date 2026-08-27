@@ -6,17 +6,17 @@ import {
   createPluginStateSyncKeyedStoreForTests,
   createPluginStateKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import { createPluginRuntimeMock } from "openclaw/plugin-sdk/plugin-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import { createPluginRuntimeMock } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import type {
   OpenKeyedStoreOptions,
   PluginDoctorStateMigrationContext,
-} from "openclaw/plugin-sdk/runtime-doctor-migrations";
+} from "afora-agent/plugin-sdk/runtime-doctor-migrations";
 import {
   listSessionEntries,
   normalizeSessionDeliveryState,
   upsertSessionEntry,
-} from "openclaw/plugin-sdk/session-store-runtime";
+} from "afora-agent/plugin-sdk/session-store-runtime";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { stateMigrations } from "./doctor-contract-api.js";
 import { setZalouserRuntime } from "./src/runtime.js";
@@ -55,9 +55,9 @@ describe("zalouser doctor state migration", () => {
 
   beforeEach(async () => {
     resetPluginStateStoreForTests();
-    stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-zalouser-doctor-"));
+    stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-zalouser-doctor-"));
     storePath = path.join(stateDir, "sessions.json");
-    env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    env = { ...process.env, AFORA_STATE_DIR: stateDir };
   });
 
   afterEach(async () => {
@@ -163,7 +163,7 @@ describe("zalouser doctor state migration", () => {
     ).resolves.toBeNull();
     for (const agentId of ["main", "worker-1"]) {
       await expect(
-        fs.access(path.join(stateDir, "agents", agentId, "agent", "openclaw-agent.sqlite")),
+        fs.access(path.join(stateDir, "agents", agentId, "agent", "afora-agent.sqlite")),
       ).rejects.toThrow();
     }
   });

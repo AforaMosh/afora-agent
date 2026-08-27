@@ -1,7 +1,7 @@
 /**
  * Removes short-window duplicate user turns from compaction summaries.
  */
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 
 const DEFAULT_DUPLICATE_USER_MESSAGE_WINDOW_MS = 60_000;
 const MIN_DUPLICATE_USER_MESSAGE_CHARS = 24;
@@ -10,7 +10,7 @@ type MessageLike = {
   role?: unknown;
   content?: unknown;
   timestamp?: unknown;
-  __openclaw?: unknown;
+  __afora?: unknown;
 };
 
 type DuplicateUserMessageOptions = {
@@ -49,7 +49,7 @@ function duplicateSignature(message: unknown): { key: string; timestamp: number 
   }
   // Persisted sender identity keeps distinct participants separate while senderless legacy
   // turns retain the old retry behavior. A JSON tuple avoids sender/text delimiter collisions.
-  const metadata = message["__openclaw"];
+  const metadata = message["__afora"];
   const senderId =
     isRecord(metadata) && typeof metadata.senderId === "string" ? metadata.senderId : "";
   return {

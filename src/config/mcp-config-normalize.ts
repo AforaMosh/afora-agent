@@ -1,28 +1,28 @@
 // Normalizes MCP config records into canonical runtime shape.
-import { normalizeLowercaseStringOrEmpty as normalizeMcpString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty as normalizeMcpString } from "@afora/normalization-core/string-coerce";
 import { isRecord } from "../utils.js";
 
 type ConfigMcpServers = Record<string, Record<string, unknown>>;
-type OpenClawMcpHttpTransport = "sse" | "streamable-http";
+type AforaMcpHttpTransport = "sse" | "streamable-http";
 
-const CLI_MCP_TYPE_TO_OPENCLAW_TRANSPORT: Record<string, OpenClawMcpHttpTransport | "stdio"> = {
+const CLI_MCP_TYPE_TO_AFORA_TRANSPORT: Record<string, AforaMcpHttpTransport | "stdio"> = {
   http: "streamable-http",
   "streamable-http": "streamable-http",
   sse: "sse",
   stdio: "stdio",
 };
 
-/** Maps CLI-native MCP type aliases to OpenClaw HTTP transport names. */
-export function resolveOpenClawMcpTransportAlias(
+/** Maps CLI-native MCP type aliases to Afora HTTP transport names. */
+export function resolveAforaMcpTransportAlias(
   value: unknown,
-): OpenClawMcpHttpTransport | undefined {
-  const mapped = CLI_MCP_TYPE_TO_OPENCLAW_TRANSPORT[normalizeMcpString(value)];
+): AforaMcpHttpTransport | undefined {
+  const mapped = CLI_MCP_TYPE_TO_AFORA_TRANSPORT[normalizeMcpString(value)];
   return mapped === "sse" || mapped === "streamable-http" ? mapped : undefined;
 }
 
-/** Checks whether a raw MCP `type` value is a legacy CLI alias OpenClaw can rewrite. */
+/** Checks whether a raw MCP `type` value is a legacy CLI alias Afora can rewrite. */
 export function isKnownCliMcpTypeAlias(value: unknown): boolean {
-  return Object.hasOwn(CLI_MCP_TYPE_TO_OPENCLAW_TRANSPORT, normalizeMcpString(value));
+  return Object.hasOwn(CLI_MCP_TYPE_TO_AFORA_TRANSPORT, normalizeMcpString(value));
 }
 
 /**
@@ -35,8 +35,8 @@ export function canonicalizeConfiguredMcpServer(
   server: Record<string, unknown>,
 ): Record<string, unknown> {
   const next = { ...server };
-  const transportAlias = resolveOpenClawMcpTransportAlias(next.type);
-  // `transport` is OpenClaw's canonical field; legacy `type` only fills a gap.
+  const transportAlias = resolveAforaMcpTransportAlias(next.type);
+  // `transport` is Afora's canonical field; legacy `type` only fills a gap.
   if (typeof next.transport !== "string" && transportAlias) {
     next.transport = transportAlias;
   }

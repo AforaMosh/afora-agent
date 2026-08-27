@@ -13,12 +13,12 @@ import {
   loadSqliteVecExtension,
   MEMORY_INDEX_CHUNK_RECALL_METADATA_TABLE,
   MEMORY_INDEX_PATHS_FTS_TABLE,
-} from "openclaw/plugin-sdk/memory-core-host-engine-storage";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
 import {
-  ensureOpenClawAgentDatabaseSchema,
+  ensureAforaAgentDatabaseSchema,
   openNodeSqliteDatabase,
   runSqliteImmediateTransactionSync,
-} from "openclaw/plugin-sdk/sqlite-runtime";
+} from "afora-agent/plugin-sdk/sqlite-runtime";
 import {
   tryAcquireMemoryReindexLock,
   type MemoryReindexLockHandle,
@@ -350,7 +350,7 @@ export function openMemoryDatabaseAtPath(
       databasePath: dbPath,
     });
     if (agentId) {
-      ensureOpenClawAgentDatabaseSchema(db, { agentId, path: dbPath, register: true });
+      ensureAforaAgentDatabaseSchema(db, { agentId, path: dbPath, register: true });
     }
     return db;
   } catch (err) {

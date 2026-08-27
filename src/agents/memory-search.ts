@@ -1,12 +1,12 @@
 /**
  * Resolves memory-search source, sync, and ranking configuration.
  */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import {
   MAX_TIMER_TIMEOUT_MS,
   resolvePositiveTimerTimeoutMs,
-} from "@openclaw/normalization-core/number-coercion";
-import type { OpenClawConfig, MemorySearchConfig } from "../config/config.js";
+} from "@afora/normalization-core/number-coercion";
+import type { AforaConfig, MemorySearchConfig } from "../config/config.js";
 import type { SecretInput } from "../config/types.secrets.js";
 import {
   normalizeConfiguredMemoryExtraPaths,
@@ -21,7 +21,7 @@ import {
 import { getMemoryEmbeddingProvider } from "../plugins/memory-embedding-provider-runtime.js";
 import { assertSecretOwnerAvailable } from "../secrets/runtime-degraded-state.js";
 import { runtimeMemorySecretOwnerId } from "../secrets/runtime-memory-secret-owner.js";
-import { resolveOpenClawAgentSqlitePath } from "../state/openclaw-agent-db.paths.js";
+import { resolveAforaAgentSqlitePath } from "../state/afora-agent-db.paths.js";
 import { clampInt, clampNumber } from "../utils.js";
 import { resolveAgentConfig } from "./agent-scope.js";
 
@@ -187,7 +187,7 @@ function normalizeSources(
 
 function getConfiguredMemoryEmbeddingProvider(
   providerId: string,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): ConfiguredMemoryEmbeddingProvider | undefined {
   // `none` is the built-in FTS-only sentinel, never a plugin capability.
   // Avoid cold plugin discovery when semantic memory is intentionally disabled.
@@ -198,7 +198,7 @@ function getConfiguredMemoryEmbeddingProvider(
 }
 
 function mergeConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   defaults: MemorySearchConfig | undefined,
   overrides: MemorySearchConfig | undefined,
   agentId: string,
@@ -289,7 +289,7 @@ function mergeConfig(
   };
   const store = {
     driver: "sqlite" as const,
-    databasePath: resolveOpenClawAgentSqlitePath({ agentId, env: process.env }),
+    databasePath: resolveAforaAgentSqlitePath({ agentId, env: process.env }),
     fts,
     vector,
   };
@@ -419,7 +419,7 @@ function resolveSyncConfig(
 }
 
 export function resolveMemorySearchConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
 ): ResolvedMemorySearchConfig | null {
   const defaults = cfg.memory?.search;
@@ -455,7 +455,7 @@ export function resolveMemorySearchConfig(
 }
 
 export function resolveMemorySearchSyncConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
 ): ResolvedMemorySearchSyncConfig | null {
   const defaults = cfg.memory?.search;

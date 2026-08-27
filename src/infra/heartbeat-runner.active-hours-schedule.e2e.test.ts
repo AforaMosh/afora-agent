@@ -3,9 +3,9 @@
 // `source: "interval"` and assert the runner's `nextDueMs` seek defers
 // quiet-hours pokes and admits in-window ones.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { startHeartbeatRunner } from "./heartbeat-runner.js";
 import { computeNextHeartbeatPhaseDueMs, resolveHeartbeatPhaseMs } from "./heartbeat-schedule.js";
 import { requestHeartbeat } from "./heartbeat-wake.js";
@@ -35,7 +35,7 @@ describe("heartbeat scheduler: activeHours-aware scheduling (#75487)", () => {
     every?: string;
     activeHours?: { start: string; end: string; timezone?: string };
     userTimezone?: string;
-  }): OpenClawConfig {
+  }): AforaConfig {
     return {
       agents: {
         defaults: {

@@ -63,7 +63,7 @@ export function collectBundledPluginPackageDependencySpecs(bundledPluginsDir: st
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
     // External official plugins own isolated npm projects, so their dependency
     // specs do not need to match packages bundled into the root distribution.
-    if (packageJson.openclaw?.build?.bundledDist === false) {
+    if (packageJson.afora?.build?.bundledDist === false) {
       continue;
     }
     const pluginId = path.basename(path.dirname(packageJsonPath));

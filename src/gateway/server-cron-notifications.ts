@@ -3,12 +3,12 @@
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { resolveUserTimezone } from "../agents/date-time.js";
 import type { ReplyPayload } from "../auto-reply/reply-payload.js";
 import type { CliDeps } from "../cli/deps.types.js";
 import type { CronFailureDestinationConfig } from "../config/types.cron.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { redactCronCommandSummaryForExternalDelivery } from "../cron/command-output-summary.js";
 import {
   resolveCronDeliveryPlan,
@@ -38,7 +38,7 @@ type CronLogger = {
 
 type CronAgentResolver = (requested?: string | null) => {
   agentId: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 };
 
 type CronFailureAlertParams = {
@@ -168,7 +168,7 @@ function buildCronFailureWebhookPayload(params: { evt: CronEvent; job: CronJob }
 function appendCronRunStarted(
   message: string,
   runAtMs: number | undefined,
-  config: OpenClawConfig,
+  config: AforaConfig,
 ): string {
   if (typeof runAtMs !== "number" || !Number.isFinite(runAtMs)) {
     return message;

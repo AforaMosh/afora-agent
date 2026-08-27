@@ -1,10 +1,10 @@
 // Featherless tests cover provider registration, catalog, and dynamic model behavior.
-import type { ProviderRuntimeModel } from "openclaw/plugin-sdk/plugin-entry";
+import type { ProviderRuntimeModel } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   registerSingleProviderPlugin,
   resolveProviderPluginChoice,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
-import { resolveAgentModelPrimaryValue } from "openclaw/plugin-sdk/provider-onboard";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { resolveAgentModelPrimaryValue } from "afora-agent/plugin-sdk/provider-onboard";
 import { describe, expect, it } from "vitest";
 import { createProviderDynamicModelContext } from "../test-support/provider-model-test-helpers.js";
 import featherlessPlugin from "./index.js";

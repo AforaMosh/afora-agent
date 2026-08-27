@@ -248,7 +248,7 @@ describe("exec approvals safe bins", () => {
     },
     {
       name: "blocks POSIX parameter expansion in safe-bin value tokens",
-      argv: ["head", "-c${IFS}16${IFS}${OPENCLAW_CONFIG_PATH}"],
+      argv: ["head", "-c${IFS}16${IFS}${AFORA_CONFIG_PATH}"],
       resolvedPath: "/usr/bin/head",
       expected: false,
       safeBins: ["head"],
@@ -542,24 +542,24 @@ describe("exec approvals safe bins", () => {
       resolution: {
         kind: "executable",
         rawExecutable: "echo",
-        resolvedPath: "/opt/openclaw-test/bin/echo",
+        resolvedPath: "/opt/afora-test/bin/echo",
         executableName: "echo",
       },
       safeBins: normalizeSafeBins(["echo"]),
       safeBinProfiles,
-      trustedSafeBinDirs: new Set(["/opt/openclaw-test/bin"]),
+      trustedSafeBinDirs: new Set(["/opt/afora-test/bin"]),
     });
     const deny = isSafeBinUsage({
       argv: ["echo", "hello", "world"],
       resolution: {
         kind: "executable",
         rawExecutable: "echo",
-        resolvedPath: "/opt/openclaw-test/bin/echo",
+        resolvedPath: "/opt/afora-test/bin/echo",
         executableName: "echo",
       },
       safeBins: normalizeSafeBins(["echo"]),
       safeBinProfiles,
-      trustedSafeBinDirs: new Set(["/opt/openclaw-test/bin"]),
+      trustedSafeBinDirs: new Set(["/opt/afora-test/bin"]),
     });
     expect(allow).toBe(true);
     expect(deny).toBe(false);

@@ -1,12 +1,12 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import type {
   ProviderCatalogContext,
   ProviderCatalogResult,
   ProviderPrepareDynamicModelContext,
   ProviderResolveDynamicModelContext,
   ProviderRuntimeModel,
-} from "openclaw/plugin-sdk/plugin-entry";
-import { getCachedLiveCatalogValue } from "openclaw/plugin-sdk/provider-catalog-shared";
+} from "afora-agent/plugin-sdk/plugin-entry";
+import { getCachedLiveCatalogValue } from "afora-agent/plugin-sdk/provider-catalog-shared";
 import { resolveFirstGithubToken } from "./auth.js";
 import { resolveGithubCopilotDomain } from "./domain.js";
 import {
@@ -18,7 +18,7 @@ import {
 
 type GithubCopilotCatalogContext = {
   agentDir?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env: NodeJS.ProcessEnv;
   profileId?: string;
   authProfileMode?: ProviderPrepareDynamicModelContext["authProfileMode"];
@@ -41,7 +41,7 @@ async function loadGithubCopilotRuntime() {
 }
 
 export function createGithubCopilotDynamicModelHooks(params: {
-  discoveryEnabled(config?: OpenClawConfig): boolean;
+  discoveryEnabled(config?: AforaConfig): boolean;
 }) {
   const preparedDynamicModels = new WeakMap<
     object,
@@ -146,7 +146,7 @@ export function createGithubCopilotDynamicModelHooks(params: {
     prepareDynamicModel,
     resolveDynamicModel,
     runCatalog,
-    preferRuntimeResolvedModel: ({ config }: { config?: OpenClawConfig }) =>
+    preferRuntimeResolvedModel: ({ config }: { config?: AforaConfig }) =>
       params.discoveryEnabled(config),
   };
 }

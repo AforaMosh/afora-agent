@@ -1,6 +1,6 @@
 // Verifies memory-search config resolution across providers, sync, and batching.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { resolveRememberAcrossConversations } from "../memory-host-sdk/host/config-utils.js";
 import {
   clearEmbeddingProviders,
@@ -18,10 +18,10 @@ import {
   setActiveDegradedSecretOwners,
 } from "../secrets/runtime-degraded-state.js";
 import { runtimeMemorySecretOwnerId } from "../secrets/runtime-memory-secret-owner.js";
-import { resolveOpenClawAgentSqlitePath } from "../state/openclaw-agent-db.paths.js";
+import { resolveAforaAgentSqlitePath } from "../state/afora-agent-db.paths.js";
 import { resolveMemorySearchConfig, resolveMemorySearchSyncConfig } from "./memory-search.js";
 
-const asConfig = (cfg: OpenClawConfig): OpenClawConfig => ({
+const asConfig = (cfg: AforaConfig): AforaConfig => ({
   ...cfg,
   // Provider registries are supplied explicitly below; plugin loading belongs
   // to its integration tests and would turn these pure config cases into cold scans.
@@ -99,7 +99,7 @@ describe("memory search config", () => {
     restoreRegisteredEmbeddingProviders(registeredEmbeddingProvidersSnapshot);
   });
 
-  function configWithDefaultProvider(provider: string): OpenClawConfig {
+  function configWithDefaultProvider(provider: string): AforaConfig {
     return asConfig({
       memory: {
         search: {
@@ -280,7 +280,7 @@ describe("memory search config", () => {
       expected: true,
     },
   ])("resolves remember-across-conversations for $name", ({ cfg, expected }) => {
-    expect(resolveRememberAcrossConversations(asConfig(cfg as OpenClawConfig), "main")).toBe(
+    expect(resolveRememberAcrossConversations(asConfig(cfg as AforaConfig), "main")).toBe(
       expected,
     );
   });
@@ -385,7 +385,7 @@ describe("memory search config", () => {
     expect(resolved?.provider).toBe("openai");
     expect(resolved?.model).toBe("text-embedding-3-small");
     expect(resolved?.fallback).toBe("none");
-    expect(resolved?.store.databasePath).toBe(resolveOpenClawAgentSqlitePath({ agentId: "main" }));
+    expect(resolved?.store.databasePath).toBe(resolveAforaAgentSqlitePath({ agentId: "main" }));
   });
 
   it("normalizes legacy auto provider config to openai", () => {

@@ -30,7 +30,7 @@ export async function writeWhatsAppQaWorkspaceFixture(
     fileName: string;
   },
 ) {
-  const fixtureDir = path.join(context.gatewayWorkspaceDir, ".openclaw", "qa-whatsapp-media");
+  const fixtureDir = path.join(context.gatewayWorkspaceDir, ".afora", "qa-whatsapp-media");
   await fs.mkdir(fixtureDir, { recursive: true });
   const filePath = path.join(fixtureDir, params.fileName);
   await fs.writeFile(filePath, params.buffer);

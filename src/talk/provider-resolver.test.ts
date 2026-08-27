@@ -6,7 +6,7 @@ import {
   resolveRealtimeVoiceProviderCapabilities,
 } from "./provider-resolver.js";
 
-const INTERNAL_REALTIME_VOICE_PROVIDER = Symbol.for("openclaw.internal.realtime-voice-provider.v1");
+const INTERNAL_REALTIME_VOICE_PROVIDER = Symbol.for("afora.internal.realtime-voice-provider.v1");
 
 function attachInternalRealtimeVoiceProviderApi(
   provider: RealtimeVoiceProviderPlugin,

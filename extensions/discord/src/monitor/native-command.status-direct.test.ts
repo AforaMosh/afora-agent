@@ -1,7 +1,7 @@
 // Discord tests cover native command.status direct plugin behavior.
 import { ChannelType } from "discord-api-types/v10";
-import type { dispatchChannelInboundTurn } from "openclaw/plugin-sdk/channel-inbound";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { dispatchChannelInboundTurn } from "afora-agent/plugin-sdk/channel-inbound";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { nativeCommandRuntime } from "./native-command.runtime.js";
 import { createMockCommandInteraction as createInteraction } from "./native-command.test-helpers.js";
@@ -13,9 +13,9 @@ const runtimeModuleMocks = vi.hoisted(() => ({
   resolveDirectStatusReplyForSession: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/reply-dispatch-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/reply-dispatch-runtime")>(
-    "openclaw/plugin-sdk/reply-dispatch-runtime",
+vi.mock("afora-agent/plugin-sdk/reply-dispatch-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/reply-dispatch-runtime")>(
+    "afora-agent/plugin-sdk/reply-dispatch-runtime",
   );
   return {
     ...actual,
@@ -24,12 +24,12 @@ vi.mock("openclaw/plugin-sdk/reply-dispatch-runtime", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/command-status-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/command-status-runtime", () => ({
   resolveDirectStatusReplyForSession: (...args: unknown[]) =>
     runtimeModuleMocks.resolveDirectStatusReplyForSession(...args),
 }));
 
-vi.mock("openclaw/plugin-sdk/web-media", () => ({
+vi.mock("afora-agent/plugin-sdk/web-media", () => ({
   loadWebMedia: (...args: unknown[]) => runtimeModuleMocks.loadWebMedia(...args),
 }));
 
@@ -55,7 +55,7 @@ const dispatchChannelInboundTurnForTest: typeof dispatchChannelInboundTurn = asy
 
 let createDiscordNativeCommand: typeof import("./native-command.js").createDiscordNativeCommand;
 
-function createConfig(params?: { requireMention?: boolean }): OpenClawConfig {
+function createConfig(params?: { requireMention?: boolean }): AforaConfig {
   return {
     commands: {
       allowFrom: { discord: ["user:owner"] },
@@ -79,10 +79,10 @@ function createConfig(params?: { requireMention?: boolean }): OpenClawConfig {
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
-async function createStatusCommand(cfg: OpenClawConfig, pluginExecute?: ReturnType<typeof vi.fn>) {
+async function createStatusCommand(cfg: AforaConfig, pluginExecute?: ReturnType<typeof vi.fn>) {
   return createDiscordNativeCommand({
     command: {
       name: "status",
@@ -152,7 +152,7 @@ function firstMockArg(mock: MockWithCalls, label: string) {
 }
 
 function firstStatusCall(): {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   channel: string;
   isGroup: boolean;
@@ -163,7 +163,7 @@ function firstStatusCall(): {
     "resolveDirectStatusReplyForSession",
   );
   return call as {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     sessionKey: string;
     channel: string;
     isGroup: boolean;

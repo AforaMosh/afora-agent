@@ -17,7 +17,7 @@ const suite = createChatFlowE2eSuite();
 
 suite.define(() => {
   it("reveals an active stream footer after a mobile tap", async () => {
-    const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+    const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
     const context = await suite.newBrowserContext({
       hasTouch: true,
       isMobile: true,
@@ -88,7 +88,7 @@ suite.define(() => {
   });
 
   it("keeps streamed audio and video metadata pinned without overriding manual scroll", async () => {
-    const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+    const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
     const context = await suite.newBrowserContext({
       locale: "en-US",
       serviceWorkers: "block",
@@ -158,7 +158,7 @@ suite.define(() => {
             const layoutOwner =
               mediaKind === "video"
                 ? element.closest<HTMLElement>(".chat-assistant-video-frame")
-                : element.closest<HTMLElement>("openclaw-chat-audio-player");
+                : element.closest<HTMLElement>("afora-chat-audio-player");
             if (!layoutOwner) {
               throw new Error(`expected assistant ${mediaKind} layout owner`);
             }
@@ -415,7 +415,7 @@ suite.define(() => {
           .waitFor({ timeout: 10_000 });
 
         const gatewayErrorText =
-          "⚠️ Model login expired on the gateway for openai. Send `/login codex` from a private chat or Web UI session to pair a new Codex login, or re-auth with `openclaw models auth login --provider openai` in a terminal, then try again.";
+          "⚠️ Model login expired on the gateway for openai. Send `/login codex` from a private chat or Web UI session to pair a new Codex login, or re-auth with `afora models auth login --provider openai` in a terminal, then try again.";
         const errorText = gatewayErrorText.replace(/^⚠️\s*/u, "");
         await gateway.emitGatewayEvent("chat", {
           errorMessage: gatewayErrorText,
@@ -504,7 +504,7 @@ suite.define(() => {
       }
       const pendingLayout = await pendingRow.evaluate((row) => {
         const rect = row.getBoundingClientRect();
-        Reflect.set(window, "__openclawPendingWorkingRow", row);
+        Reflect.set(window, "__aforaPendingWorkingRow", row);
         return {
           height: rect.height,
           key: row.getAttribute("data-virtual-row-key"),
@@ -519,10 +519,10 @@ suite.define(() => {
           sameRow: boolean;
           top: number | null;
         }> = [];
-        Reflect.set(window, "__openclawWorkingRowSamples", samples);
+        Reflect.set(window, "__aforaWorkingRowSamples", samples);
         let remaining = 20;
         const sample = () => {
-          const originalRow = Reflect.get(window, "__openclawPendingWorkingRow");
+          const originalRow = Reflect.get(window, "__aforaPendingWorkingRow");
           const currentRow = document
             .querySelector(".chat-reading-indicator")
             ?.closest<HTMLElement>(".chat-virtual-row");
@@ -556,7 +556,7 @@ suite.define(() => {
             }>
           >((resolve) => {
             const read = () => {
-              const current = Reflect.get(window, "__openclawWorkingRowSamples");
+              const current = Reflect.get(window, "__aforaWorkingRowSamples");
               if (Array.isArray(current) && current.length >= 20) {
                 resolve(current);
                 return;
@@ -785,7 +785,7 @@ suite.define(() => {
       });
       await gateway.setHistoryMessages([
         {
-          __openclaw: { idempotencyKey: `${runId}:user` },
+          __afora: { idempotencyKey: `${runId}:user` },
           content: [{ text: prompt, type: "text" }],
           role: "user",
           timestamp: Date.now(),

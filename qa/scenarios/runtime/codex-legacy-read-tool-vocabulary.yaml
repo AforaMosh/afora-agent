@@ -9,11 +9,11 @@ scenario:
       - openai.tool-context-codex-native-workspace-read
     secondary:
       - openai.payload-compatibility-prompt-compatibility
-  objective: Verify Codex-mode agents can satisfy legacy "Read tool" wording through the native Codex workspace-read capability instead of stopping because duplicate OpenClaw dynamic read is intentionally filtered.
+  objective: Verify Codex-mode agents can satisfy legacy "Read tool" wording through the native Codex workspace-read capability instead of stopping because duplicate Afora dynamic read is intentionally filtered.
   successCriteria:
     - Agent reads the seeded workspace file and replies with the exact marker line.
     - Agent does not claim that the Read tool is unavailable.
-    - Any failure is classified as a native prompt-compatibility/product behavior gap, not as missing OpenClaw dynamic read exposure.
+    - Any failure is classified as a native prompt-compatibility/product behavior gap, not as missing Afora dynamic read exposure.
   docsRefs:
     - docs/plugins/codex-harness.md
     - docs/tools/tool-search.md

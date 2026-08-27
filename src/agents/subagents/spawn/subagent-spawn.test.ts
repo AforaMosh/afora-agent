@@ -1,10 +1,10 @@
 import os from "node:os";
 // Subagent spawn tests cover target policy, session patching, runtime model
 // persistence, registry registration, and lifecycle event emission.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
-import { resolveIncognitoOpenClawAgentSqlitePath } from "../../../state/openclaw-agent-db.paths.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
+import { resolveIncognitoAforaAgentSqlitePath } from "../../../state/afora-agent-db.paths.js";
 import { installAcceptedSubagentGatewayMock } from "../../test-helpers/subagent-gateway.js";
 import { testing as swarmSchedulerTesting } from "../swarm/swarm-scheduler.test-support.js";
 import {
@@ -367,7 +367,7 @@ describe("spawnSubagentDirect seam flow", () => {
     expect(result.childSessionKey).toMatch(/^agent:main:subagent:incognito-/u);
     expect(sessionPatches).toContainEqual(expect.objectContaining({ incognito: true }));
     expect(sessionStorePaths).toContain(
-      resolveIncognitoOpenClawAgentSqlitePath({ agentId: "main" }),
+      resolveIncognitoAforaAgentSqlitePath({ agentId: "main" }),
     );
   });
 
@@ -535,7 +535,7 @@ describe("spawnSubagentDirect seam flow", () => {
   });
 
   it("holds the collector slot until an accepted run is confirmed stopped", async () => {
-    vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+    vi.stubEnv("AFORA_TEST_FAST", "1");
     hoisted.configOverride = createConfigOverride({
       tools: { swarm: { enabled: true, maxConcurrent: 1 } },
     });
@@ -934,7 +934,7 @@ describe("spawnSubagentDirect seam flow", () => {
       options: {
         agentSessionKey: controllerSessionKey,
         completionOwnerKey: "agent:main:main",
-        config: hoisted.configOverride as OpenClawConfig,
+        config: hoisted.configOverride as AforaConfig,
         callGateway: visibleGateway,
         countActiveRuns: hoisted.countActiveRunsForSessionMock,
       },

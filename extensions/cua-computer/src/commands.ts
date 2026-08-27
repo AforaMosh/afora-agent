@@ -6,9 +6,9 @@ import {
   parseScreenSnapshotParamsJSON,
   type ComputerActParams,
   type ComputerUseProvider,
-} from "openclaw/plugin-sdk/computer-use";
-import { canonicalizeBase64 } from "openclaw/plugin-sdk/media-runtime";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/computer-use";
+import { canonicalizeBase64 } from "afora-agent/plugin-sdk/media-runtime";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
 import { createRastermill } from "rastermill";
 import { z } from "zod";
 import { normalizeModifiers, parseKeyChord, scalePoint } from "./actions.js";
@@ -41,7 +41,7 @@ const CUA_WIRE_ACTION_NAMES = COMPUTER_USE_V2_ACTION_NAMES.slice(1, 14);
 // capture, not the delivered frame. 8K (7680x4320 = ~33.2M) is a valid primary
 // display; budget above it so full-resolution snapshots reach the downscaler.
 const MAX_IMAGE_PIXELS = 40_000_000;
-const CUA_DRIVER_ENDPOINT_ENV = "OPENCLAW_CUA_DRIVER_ENDPOINT";
+const CUA_DRIVER_ENDPOINT_ENV = "AFORA_CUA_DRIVER_ENDPOINT";
 
 const CuaDriverEndpointSchema = z.strictObject({
   v: z.literal(1),
@@ -228,7 +228,7 @@ function createImageProcessor(env: NodeJS.ProcessEnv): ImageProcessor {
   return createRastermill({
     execution: "auto",
     limits: { inputPixels: MAX_IMAGE_PIXELS, outputPixels: MAX_IMAGE_PIXELS },
-    temp: { rootDir: resolvePreferredOpenClawTmpDir(), prefix: "openclaw-cua-computer-" },
+    temp: { rootDir: resolvePreferredAforaTmpDir(), prefix: "afora-cua-computer-" },
     commandResolver: (command) => resolveImageCommand(command, env),
   });
 }

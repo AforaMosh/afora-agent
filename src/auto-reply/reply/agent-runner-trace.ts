@@ -1,6 +1,6 @@
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { expectDefined } from "@afora/normalization-core";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { FailoverReason } from "../../agents/failover/signal.js";
 import { deriveContextPromptTokens } from "../../agents/usage.js";
 import type { SessionEntry } from "../../config/sessions.js";

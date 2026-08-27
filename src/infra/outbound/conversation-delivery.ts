@@ -13,7 +13,7 @@ import {
 } from "../../config/sessions/conversation-delivery-store.js";
 import type { ConversationRecord } from "../../config/sessions/conversation-registry.js";
 import { resolveSessionStorePathCore } from "../../config/sessions/paths.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { MessageActionResult } from "./message-action-contracts.js";
 import { runMessageAction } from "./message-action-runner.js";
 
@@ -38,7 +38,7 @@ export const defaultConversationDeliveryDeps: ConversationDeliveryDeps = {
 type ConversationDeliveryContext = {
   agentId: string;
   sourceSessionKey?: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   senderIsOwner?: boolean;
 };
 

@@ -7,7 +7,7 @@
  * tell how a node fulfills computer.act; macOS nodes are the first fulfiller.
  */
 import crypto from "node:crypto";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import type { ComputerUseV2ActionName } from "../../plugins/computer-use-contract.js";
 import { sleep } from "../../utils/sleep.js";
@@ -44,7 +44,7 @@ export type { ComputerContextEpoch } from "./computer-tool-shared.js";
 export { invalidateComputerFrameIfMissing } from "./computer-tool-result.js";
 
 export function createComputerTool(options?: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   modelHasVision?: boolean;
   /** Stable run scope used to deduplicate a replayed model tool call on the node. */
   idempotencyScope?: string;

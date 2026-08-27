@@ -12,7 +12,7 @@ type EmbeddedRunAuthPlanTestApi = {
 
 function getTestApi(): EmbeddedRunAuthPlanTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.embeddedRunAuthPlanTestApi")
+    Symbol.for("afora.embeddedRunAuthPlanTestApi")
   ] as EmbeddedRunAuthPlanTestApi;
 }
 

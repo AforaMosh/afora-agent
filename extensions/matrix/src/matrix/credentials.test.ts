@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { resetPluginStateStoreForTests } from "openclaw/plugin-sdk/plugin-state-test-runtime";
+import { resetPluginStateStoreForTests } from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hasAnyMatrixAuth } from "../../auth-presence.js";
 import { installMatrixTestRuntime } from "../test-runtime.js";
@@ -33,7 +33,7 @@ describe("matrix credentials storage", () => {
 
   beforeEach(() => {
     resetPluginStateStoreForTests();
-    stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-matrix-creds-"));
+    stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-matrix-creds-"));
     installMatrixTestRuntime({ stateDir });
   });
 
@@ -62,7 +62,7 @@ describe("matrix credentials storage", () => {
       deviceId: "DEVICE123",
     });
     expect(loadMatrixCredentials({}, "default")).toBeNull();
-    expect(fs.existsSync(path.join(stateDir, "state", "openclaw.sqlite"))).toBe(true);
+    expect(fs.existsSync(path.join(stateDir, "state", "afora.sqlite"))).toBe(true);
     expect(fs.existsSync(path.join(stateDir, "credentials", "matrix"))).toBe(false);
   });
 
@@ -215,7 +215,7 @@ describe("matrix credentials storage", () => {
   });
 
   it("reports persisted auth from SQLite for package-state probes", async () => {
-    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const env = { AFORA_STATE_DIR: stateDir };
     expect(hasAnyMatrixAuth({ cfg: {}, env })).toBe(false);
 
     await saveMatrixCredentials(

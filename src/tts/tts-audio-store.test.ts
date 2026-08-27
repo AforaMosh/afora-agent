@@ -9,7 +9,7 @@ import { persistTtsAudioToMediaStore } from "./tts-audio-store.js";
 
 describe("TTS audio media store", () => {
   it("saves allowlisted speech output and prunes it through media maintenance", async () => {
-    const tempHome = await createTempHomeEnv("openclaw-tts-media-store-");
+    const tempHome = await createTempHomeEnv("afora-tts-media-store-");
     try {
       const audioBuffer = Buffer.from("OggS test voice");
       const audioPath = await persistTtsAudioToMediaStore({
@@ -20,13 +20,13 @@ describe("TTS audio media store", () => {
       });
 
       expect(path.dirname(audioPath)).toBe(
-        path.join(tempHome.home, ".openclaw", "media", "tool-speech-synthesis"),
+        path.join(tempHome.home, ".afora", "media", "tool-speech-synthesis"),
       );
       expect(path.basename(audioPath)).toMatch(/^voice---[a-f0-9-]+\.ogg$/);
       await expect(fs.readFile(audioPath)).resolves.toEqual(audioBuffer);
 
       const localRoots = getAgentScopedMediaLocalRoots({});
-      expect(localRoots).toContain(path.join(tempHome.home, ".openclaw", "media"));
+      expect(localRoots).toContain(path.join(tempHome.home, ".afora", "media"));
 
       const expired = Date.now() - 10_000;
       await fs.utimes(audioPath, expired / 1000, expired / 1000);

@@ -2,7 +2,7 @@
 import { select } from "@clack/prompts";
 import { styleSelectParams } from "./prompt-select-styled-params.js";
 
-// Clack select wrapper that applies OpenClaw prompt styling.
+// Clack select wrapper that applies Afora prompt styling.
 
 /** Run a clack select prompt with styled message and hints. */
 export function selectStyled<T>(params: Parameters<typeof select<T>>[0]) {

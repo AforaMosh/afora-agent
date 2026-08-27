@@ -3,7 +3,7 @@ import {
   GATEWAY_CLIENT_MODES,
   GATEWAY_CLIENT_NAMES,
 } from "../../packages/gateway-protocol/src/client-info.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { callGateway, isImplicitLocalGatewayTarget } from "../gateway/call.js";
 import type { GatewayRpcOpts } from "./gateway-rpc.types.js";
 import { parseTimeoutMsWithFallback } from "./parse-timeout.js";
@@ -29,7 +29,7 @@ type CallGatewayFromCliRuntimeExtra = {
 };
 
 type GatewayCliTransportRpcOpts = Omit<GatewayRpcOpts, "timeout"> & {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   timeout?: string | null;
   localPortOverride?: number;
 };

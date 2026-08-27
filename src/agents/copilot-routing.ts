@@ -2,7 +2,7 @@
  * Decides when a GitHub Copilot model selection should install the Copilot
  * runtime plugin instead of using the built-in provider path.
  */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveModelRuntimePolicy } from "./model-runtime-policy.js";
 import { parseModelRefProvider } from "./openai-routing.js";
 
@@ -27,7 +27,7 @@ function parseModelRefId(model: string | undefined): string | undefined {
 
 /**
  * Returns true when the selected model should trigger the external
- * `@openclaw/copilot` runtime plugin install.
+ * `@afora/copilot` runtime plugin install.
  *
  * Gating contract (review #2, P1):
  *   - Model ref must use the `github-copilot/*` provider prefix.
@@ -42,7 +42,7 @@ function parseModelRefId(model: string | undefined): string | undefined {
  */
 export function modelSelectionShouldEnsureCopilotRuntimePlugin(params: {
   model?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): boolean {
   if (parseModelRefProvider(params.model) !== GITHUB_COPILOT_PROVIDER_ID) {
     return false;

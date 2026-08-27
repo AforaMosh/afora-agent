@@ -11,7 +11,7 @@ import { flattenTranslations } from "../../scripts/lib/control-ui-i18n-sync-plan
 import { registerActivityEnglish } from "../src/i18n/locales/en-activity.ts";
 import { en } from "../src/i18n/locales/en.ts";
 
-const localeModulePrefix = "virtual:openclaw-control-ui-locale/";
+const localeModulePrefix = "virtual:afora-control-ui-locale/";
 const resolvedLocaleModulePrefix = `\0${localeModulePrefix}`;
 // Vitest rewrites new URL(relative, import.meta.url) to browser self.location.
 const i18nAssetsDir = path.resolve(

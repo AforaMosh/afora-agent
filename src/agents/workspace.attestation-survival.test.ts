@@ -4,11 +4,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../test-utils/afora-test-state.js";
 import { resetLegacyWorkspaceStateCheckForTest } from "./workspace-legacy-state.test-support.js";
 import {
   readWorkspaceStateSnapshot,
@@ -22,25 +22,25 @@ import {
 } from "./workspace.js";
 
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
-let testState: OpenClawTestState | undefined;
+let testState: AforaTestState | undefined;
 
 beforeEach(async () => {
   resetLegacyWorkspaceStateCheckForTest();
-  testState = await createOpenClawTestState({
+  testState = await createAforaTestState({
     layout: "state-only",
-    prefix: "openclaw-workspace-attestation-survival-",
+    prefix: "afora-workspace-attestation-survival-",
   });
 });
 
 afterEach(async () => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   resetLegacyWorkspaceStateCheckForTest();
   await testState?.cleanup();
   testState = undefined;
 });
 
 async function makeWorkspace(): Promise<string> {
-  return fs.realpath(tempDirs.make("openclaw-workspace-attestation-survival-"));
+  return fs.realpath(tempDirs.make("afora-workspace-attestation-survival-"));
 }
 
 async function expectWorkspaceVanished(action: Promise<unknown>): Promise<void> {

@@ -1,11 +1,11 @@
 // Media utility adapters for node CLI commands and temporary media outputs.
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
-import { extnameFromAnyPath } from "@openclaw/media-core/file-name";
-import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
-export { asFiniteNumber as asNumber } from "@openclaw/normalization-core/number-coercion";
-export { asRecord } from "@openclaw/normalization-core/record-coerce";
-export { readStringValue } from "@openclaw/normalization-core/string-coerce";
+import { extnameFromAnyPath } from "@afora/media-core/file-name";
+import { resolvePreferredAforaTmpDir } from "../infra/tmp-afora-dir.js";
+export { asFiniteNumber as asNumber } from "@afora/normalization-core/number-coercion";
+export { asRecord } from "@afora/normalization-core/record-coerce";
+export { readStringValue } from "@afora/normalization-core/string-coerce";
 export { asBoolean } from "../utils/boolean.js";
 
 function normalizeMediaExtension(value: string): string | undefined {
@@ -47,7 +47,7 @@ export function resolveTempPathParts(opts: { ext: string; tmpDir?: string; id?: 
   id: string;
 } {
   // Restrict extensions before writing temp media paths derived from CLI/user input.
-  const tmpDir = opts.tmpDir ?? resolvePreferredOpenClawTmpDir();
+  const tmpDir = opts.tmpDir ?? resolvePreferredAforaTmpDir();
   const rawExt = opts.ext.startsWith(".") ? opts.ext : `.${opts.ext}`;
   if (!/^\.[A-Za-z0-9][A-Za-z0-9_-]{0,15}$/u.test(rawExt)) {
     throw new Error("invalid media format");

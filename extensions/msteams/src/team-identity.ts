@@ -1,5 +1,5 @@
 // Msteams plugin module implements canonical team identity resolution.
-import { pruneMapToMaxSize } from "openclaw/plugin-sdk/collection-runtime";
+import { pruneMapToMaxSize } from "afora-agent/plugin-sdk/collection-runtime";
 import { type MSTeamsRequestDeadline, withMSTeamsRequestDeadline } from "./request-timeout.js";
 
 // Team AAD group IDs are stable metadata; a bounded process cache avoids a

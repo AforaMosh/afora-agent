@@ -47,7 +47,7 @@ afterEach(() => {
 describe("sidebar session status preference", () => {
   it("defaults unknown stored values to active", () => {
     expect(loadStoredSidebarSessionStatusFilter()).toBe("active");
-    localStorage.setItem("openclaw:sidebar:sessions:status-filter", "unexpected");
+    localStorage.setItem("afora:sidebar:sessions:status-filter", "unexpected");
     expect(loadStoredSidebarSessionStatusFilter()).toBe("active");
   });
 
@@ -62,7 +62,7 @@ describe("sidebar session status preference", () => {
 describe("sidebar session sort preference", () => {
   it("defaults absent and unknown stored values to created", () => {
     expect(loadStoredSidebarSessionSortMode()).toBe("created");
-    localStorage.setItem("openclaw:sidebar:sessions:sort-mode", "unexpected");
+    localStorage.setItem("afora:sidebar:sessions:sort-mode", "unexpected");
     expect(loadStoredSidebarSessionSortMode()).toBe("created");
   });
 
@@ -92,7 +92,7 @@ describe("hidden session catalog preference", () => {
   it.each(["not-json", JSON.stringify({ catalog: "codex" })])(
     "treats malformed storage as empty: %s",
     (stored) => {
-      localStorage.setItem("openclaw:sidebar:sessions:hidden-catalogs", stored);
+      localStorage.setItem("afora:sidebar:sessions:hidden-catalogs", stored);
       expect(loadStoredHiddenSessionCatalogIds().size).toBe(0);
     },
   );

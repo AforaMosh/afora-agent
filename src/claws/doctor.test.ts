@@ -4,10 +4,10 @@ import { DatabaseSync } from "node:sqlite";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import type { McpServerConfig } from "../config/types.mcp.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
-import { OPENCLAW_STATE_SCHEMA_VERSION } from "../state/openclaw-state-db-contract.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+import type { AforaConfig } from "../config/types.afora.js";
+import { AFORA_STATE_SCHEMA_VERSION } from "../state/afora-state-db-contract.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import { applyClawAddPlan } from "./add.js";
 import { installClawCronJobs } from "./cron.js";
 import { collectClawStateHealthFindings } from "./doctor.js";
@@ -17,17 +17,17 @@ import { persistClawPackageRef } from "./provenance.js";
 import { parseClawManifest } from "./schema.js";
 import type { ClawSourceIdentity } from "./types.js";
 
-afterEach(() => closeOpenClawStateDatabaseForTest());
+afterEach(() => closeAforaStateDatabaseForTest());
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
-function snapshotMcpServers(config: OpenClawConfig): Record<string, Record<string, unknown>> {
+function snapshotMcpServers(config: AforaConfig): Record<string, Record<string, unknown>> {
   return structuredClone(config.mcp?.servers ?? {}) as Record<string, Record<string, unknown>>;
 }
 
 async function fixture(
   params: { withFile?: boolean; withMcp?: boolean; withCron?: boolean; cron?: string } = {},
 ) {
-  const root = tempDirs.make("openclaw-claw-doctor-");
+  const root = tempDirs.make("afora-claw-doctor-");
   if (params.withFile) {
     await writeFile(join(root, "SOUL.md"), "managed\n", "utf8");
   }
@@ -63,7 +63,7 @@ async function fixture(
     name: "@acme/worker",
     version: "1.0.0",
     packageRoot: root,
-    manifestPath: join(root, "openclaw.claw.json"),
+    manifestPath: join(root, "afora.claw.json"),
     integrityKind: "artifact",
     integrity: "sha256:manifest",
     byteLength: 100,
@@ -74,8 +74,8 @@ async function fixture(
     context: { workspace: join(root, "workspace-worker") },
   });
   const env = {
-    OPENCLAW_STATE_DIR: join(root, "state"),
-    OPENCLAW_EXPERIMENTAL_CLAWS: "1",
+    AFORA_STATE_DIR: join(root, "state"),
+    AFORA_EXPERIMENTAL_CLAWS: "1",
   };
   return { root, plan, env };
 }
@@ -84,7 +84,7 @@ async function installFixture(
   params: { withFile?: boolean; withMcp?: boolean; withCron?: boolean; cron?: string } = {},
 ) {
   const current = await fixture(params);
-  let config: OpenClawConfig = {};
+  let config: AforaConfig = {};
   await applyClawAddPlan(current.plan, {
     consentPlanIntegrity: current.plan.planIntegrity,
     env: current.env,
@@ -108,7 +108,7 @@ async function installFixture(
 describe("collectClawStateHealthFindings", () => {
   it("does not create state when the database is absent", async () => {
     const current = await fixture();
-    const databasePath = resolveOpenClawStateSqlitePath(current.env);
+    const databasePath = resolveAforaStateSqlitePath(current.env);
 
     await expect(collectClawStateHealthFindings({ env: current.env, cfg: {} })).resolves.toEqual(
       [],
@@ -118,7 +118,7 @@ describe("collectClawStateHealthFindings", () => {
 
   it("treats a pre-Claws state database as empty without modifying it", async () => {
     const current = await fixture();
-    const databasePath = resolveOpenClawStateSqlitePath(current.env);
+    const databasePath = resolveAforaStateSqlitePath(current.env);
     await mkdir(dirname(databasePath), { recursive: true });
     const database = new DatabaseSync(databasePath);
     database.exec(
@@ -145,7 +145,7 @@ describe("collectClawStateHealthFindings", () => {
     "reports orphaned ownership in %s without a root install table",
     async (table) => {
       const current = await fixture();
-      const databasePath = resolveOpenClawStateSqlitePath(current.env);
+      const databasePath = resolveAforaStateSqlitePath(current.env);
       await mkdir(dirname(databasePath), { recursive: true });
       const database = new DatabaseSync(databasePath);
       database.exec(`
@@ -175,7 +175,7 @@ describe("collectClawStateHealthFindings", () => {
 
   it("reports an unreadable state database as a structured finding", async () => {
     const current = await fixture();
-    const databasePath = resolveOpenClawStateSqlitePath(current.env);
+    const databasePath = resolveAforaStateSqlitePath(current.env);
     await mkdir(dirname(databasePath), { recursive: true });
     await writeFile(databasePath, "not sqlite", "utf8");
 
@@ -194,10 +194,10 @@ describe("collectClawStateHealthFindings", () => {
 
   it("reports a newer state schema instead of interpreting it", async () => {
     const current = await fixture();
-    const databasePath = resolveOpenClawStateSqlitePath(current.env);
+    const databasePath = resolveAforaStateSqlitePath(current.env);
     await mkdir(dirname(databasePath), { recursive: true });
     const database = new DatabaseSync(databasePath);
-    const newerSchemaVersion = OPENCLAW_STATE_SCHEMA_VERSION + 1;
+    const newerSchemaVersion = AFORA_STATE_SCHEMA_VERSION + 1;
     database.exec(`PRAGMA user_version = ${newerSchemaVersion}`);
     database.close();
 
@@ -219,8 +219,8 @@ describe("collectClawStateHealthFindings", () => {
 
   it("does not change existing database bytes, metadata, schema, or journal mode", async () => {
     const current = await installFixture({ withMcp: true, withCron: true });
-    closeOpenClawStateDatabaseForTest();
-    const databasePath = resolveOpenClawStateSqlitePath(current.env);
+    closeAforaStateDatabaseForTest();
+    const databasePath = resolveAforaStateSqlitePath(current.env);
     const beforeBytes = await readFile(databasePath);
     const beforeStat = await stat(databasePath);
     const beforeDb = new DatabaseSync(databasePath, { readOnly: true });
@@ -254,7 +254,7 @@ describe("collectClawStateHealthFindings", () => {
     const current = await fixture();
     await expect(
       collectClawStateHealthFindings({
-        env: { ...current.env, OPENCLAW_EXPERIMENTAL_CLAWS: "" },
+        env: { ...current.env, AFORA_EXPERIMENTAL_CLAWS: "" },
         cfg: {},
       }),
     ).resolves.toEqual([]);
@@ -317,7 +317,7 @@ describe("collectClawStateHealthFindings", () => {
     const current = await installFixture({ withMcp: true });
     const listMcpServers = vi.fn(async () => ({
       ok: false as const,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       error: "MCP config unavailable",
     }));
 
@@ -429,7 +429,7 @@ describe("collectClawStateHealthFindings", () => {
 
   it("reports partial installs and unresolved cron ownership", async () => {
     const current = await fixture({ withCron: true });
-    let config: OpenClawConfig = {};
+    let config: AforaConfig = {};
     await applyClawAddPlan(current.plan, {
       consentPlanIntegrity: current.plan.planIntegrity,
       env: current.env,

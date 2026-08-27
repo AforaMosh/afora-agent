@@ -1,4 +1,4 @@
-import type { WebSearchProviderPlugin } from "openclaw/plugin-sdk/provider-web-search-contract";
+import type { WebSearchProviderPlugin } from "afora-agent/plugin-sdk/provider-web-search-contract";
 import { createCodexWebSearchProviderBase } from "./src/web-search-provider.shared.js";
 
 export function createCodexWebSearchProvider(): WebSearchProviderPlugin {

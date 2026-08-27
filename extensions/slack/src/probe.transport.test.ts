@@ -14,8 +14,8 @@ const TEST_ENV_KEYS = [
   "all_proxy",
   "NO_PROXY",
   "no_proxy",
-  "OPENCLAW_PROXY_ACTIVE",
-  "OPENCLAW_PROXY_CA_FILE",
+  "AFORA_PROXY_ACTIVE",
+  "AFORA_PROXY_CA_FILE",
 ] as const;
 
 const originalEnv = Object.fromEntries(

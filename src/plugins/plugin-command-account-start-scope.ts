@@ -7,7 +7,7 @@ type PluginCommandAccountStartScope = Readonly<{
 }>;
 
 const PLUGIN_COMMAND_ACCOUNT_START_SCOPE_KEY: unique symbol = Symbol.for(
-  "openclaw.pluginCommandAccountStartScope",
+  "afora.pluginCommandAccountStartScope",
 );
 
 const pluginCommandAccountStartScope = resolveGlobalSingleton<

@@ -1,5 +1,5 @@
 // Bounded one-shot iMessage CLI execution shared by action and send surfaces.
-import { runCommandWithTimeout } from "openclaw/plugin-sdk/process-runtime";
+import { runCommandWithTimeout } from "afora-agent/plugin-sdk/process-runtime";
 import { expandIMessageUserPath } from "./cli-path.js";
 
 const IMESSAGE_CLI_STDOUT_MAX_BYTES = 8 * 1024 * 1024;

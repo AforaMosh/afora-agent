@@ -1,4 +1,4 @@
-import { asOptionalObjectRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalObjectRecord } from "@afora/normalization-core/record-coerce";
 import { Type } from "typebox";
 import {
   ProgressCardStepSchema,
@@ -32,7 +32,7 @@ export function createProgressCardTool(options: ProgressCardToolOptions = {}): A
     name: "progress_card",
     label: "Progress Card",
     description:
-      'Maintain this session\'s progress card: the single durable status surface shown next to the session in OpenClaw\'s UIs, for someone who is not reading the transcript. Each call replaces the whole card. Two optional parts: `plan` — an ordered step list (pending | in_progress | completed, at most one in_progress) rendered as a checklist with progress counts; and `markdown` — a compact narrative (what happened, what is blocked, what comes next), plus optional <progress value="3" max="7"></progress> bars and small tables; other raw HTML is stripped. Use plan for multi-step work; keep statuses current. Use markdown when a glanceable note says more than steps; do not duplicate the step list inside it. Call with both parts empty to clear. Update when the picture meaningfully changes — a step completes, a blocker appears, results land — not every message. Max 8 KB markdown, 50 steps.',
+      'Maintain this session\'s progress card: the single durable status surface shown next to the session in Afora\'s UIs, for someone who is not reading the transcript. Each call replaces the whole card. Two optional parts: `plan` — an ordered step list (pending | in_progress | completed, at most one in_progress) rendered as a checklist with progress counts; and `markdown` — a compact narrative (what happened, what is blocked, what comes next), plus optional <progress value="3" max="7"></progress> bars and small tables; other raw HTML is stripped. Use plan for multi-step work; keep statuses current. Use markdown when a glanceable note says more than steps; do not duplicate the step list inside it. Call with both parts empty to clear. Update when the picture meaningfully changes — a step completes, a blocker appears, results land — not every message. Max 8 KB markdown, 50 steps.',
     parameters: ProgressCardToolSchema,
     execute: async (_toolCallId, rawArgs) => {
       const sessionKey = options.agentSessionKey?.trim();

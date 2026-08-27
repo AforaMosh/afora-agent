@@ -1,5 +1,5 @@
 // QA Lab Matrix tool-progress diagnostics preserve actionable failure evidence.
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import type { MatrixQaObservedEvent } from "../substrate/events.js";
 import { isMatrixQaMessageLikeKind } from "./scenario-runtime-shared.js";
 

@@ -34,8 +34,8 @@ afterEach(() => {
 });
 
 function createDualPublishPluginRepo() {
-  const repoDir = makeTempRepoRoot(tempDirs, "openclaw-plugin-pretag-pack-");
-  writeJsonFile(join(repoDir, "package.json"), { name: "openclaw-test-root", type: "module" });
+  const repoDir = makeTempRepoRoot(tempDirs, "afora-plugin-pretag-pack-");
+  writeJsonFile(join(repoDir, "package.json"), { name: "afora-test-root", type: "module" });
   writePublishablePluginFixture(repoDir, {
     version: "2026.4.10",
     publishTo: "both",
@@ -54,7 +54,7 @@ describe("scripts/plugin-release-pretag-pack-check.ts", () => {
     expect(collectPluginReleasePretagPackTargets(repoDir)).toEqual([
       {
         packageDir: "extensions/demo-plugin",
-        packageName: "@openclaw/demo-plugin",
+        packageName: "@afora/demo-plugin",
         packClawHub: true,
         packNpm: true,
       },
@@ -86,7 +86,7 @@ describe("scripts/plugin-release-pretag-pack-check.ts", () => {
     ]);
     expect(callOptions(1)).toMatchObject({
       cwd: repoDir,
-      env: { OPENCLAW_PLUGIN_NPM_RUNTIME_BUILD: "0" },
+      env: { AFORA_PLUGIN_NPM_RUNTIME_BUILD: "0" },
       stdio: ["inherit", "ignore", "inherit"],
     });
 
@@ -96,9 +96,9 @@ describe("scripts/plugin-release-pretag-pack-check.ts", () => {
     ]);
     expect(callOptions(2)).toMatchObject({
       cwd: repoDir,
-      env: { OPENCLAW_PLUGIN_NPM_RUNTIME_BUILD: "0" },
+      env: { AFORA_PLUGIN_NPM_RUNTIME_BUILD: "0" },
       stdio: ["inherit", "ignore", "inherit"],
     });
-    expect(callOptions(2).env?.OPENCLAW_CLAWHUB_PACK_OUTPUT_DIR).toContain("clawhub-0");
+    expect(callOptions(2).env?.AFORA_CLAWHUB_PACK_OUTPUT_DIR).toContain("clawhub-0");
   });
 });

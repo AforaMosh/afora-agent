@@ -1,14 +1,14 @@
-// Device Pair plugin entrypoint registers its OpenClaw integration.
+// Device Pair plugin entrypoint registers its Afora integration.
 import { rm } from "node:fs/promises";
 import { isIP } from "node:net";
 import os from "node:os";
 import path from "node:path";
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
-import { definePluginEntry, type OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
+import { definePluginEntry, type AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { buildDevicePairPairingQrChannelData } from "./pairing-qr-channel-data.js";
 type NotifyModule = typeof import("./notify.js");
 
@@ -203,7 +203,7 @@ function isLoopbackHost(host: string): boolean {
 }
 
 function resolveScheme(
-  cfg: OpenClawPluginApi["config"],
+  cfg: AforaPluginApi["config"],
   opts?: { forceSecure?: boolean },
 ): "ws" | "wss" {
   if (opts?.forceSecure) {
@@ -357,12 +357,12 @@ async function resolveTailnetHost(): Promise<string | null> {
   );
 }
 
-function resolveAuthLabel(cfg: OpenClawPluginApi["config"]): ResolveAuthLabelResult {
+function resolveAuthLabel(cfg: AforaPluginApi["config"]): ResolveAuthLabelResult {
   const mode = cfg.gateway?.auth?.mode;
   const token =
-    pickFirstDefined([process.env.OPENCLAW_GATEWAY_TOKEN, cfg.gateway?.auth?.token]) ?? undefined;
+    pickFirstDefined([process.env.AFORA_GATEWAY_TOKEN, cfg.gateway?.auth?.token]) ?? undefined;
   const password =
-    pickFirstDefined([process.env.OPENCLAW_GATEWAY_PASSWORD, cfg.gateway?.auth?.password]) ??
+    pickFirstDefined([process.env.AFORA_GATEWAY_PASSWORD, cfg.gateway?.auth?.password]) ??
     undefined;
 
   if (mode === "token" || mode === "password") {
@@ -401,7 +401,7 @@ function resolveRequiredAuthLabel(
     : { error: "Gateway auth is set to password, but no password is configured." };
 }
 
-async function resolveGatewayUrl(api: OpenClawPluginApi): Promise<ResolveUrlResult> {
+async function resolveGatewayUrl(api: AforaPluginApi): Promise<ResolveUrlResult> {
   const { resolveAdvertisedLanHost, resolveGatewayBindUrl, resolveGatewayPort } =
     await loadDevicePairApiModule();
   const cfg = api.config;
@@ -456,7 +456,7 @@ async function resolveGatewayUrl(api: OpenClawPluginApi): Promise<ResolveUrlResu
   };
 }
 
-async function resolveMobilePairingGatewayUrl(api: OpenClawPluginApi): Promise<ResolveUrlResult> {
+async function resolveMobilePairingGatewayUrl(api: AforaPluginApi): Promise<ResolveUrlResult> {
   const result = await resolveGatewayUrl(api);
   if (!result.url) {
     return result;
@@ -668,7 +668,7 @@ async function issueSetupPayload(params: {
 }
 
 async function sendQrPngToSupportedChannel(params: {
-  api: OpenClawPluginApi;
+  api: AforaPluginApi;
   ctx: QrCommandContext;
   sender: QrChannelSender;
   target: string;
@@ -699,8 +699,8 @@ async function sendQrPngToSupportedChannel(params: {
 export default definePluginEntry({
   id: "device-pair",
   name: "Device Pair",
-  description: "QR/bootstrap pairing helpers for OpenClaw devices",
-  register(api: OpenClawPluginApi) {
+  description: "QR/bootstrap pairing helpers for Afora devices",
+  register(api: AforaPluginApi) {
     let notifierService: ReturnType<NotifyModule["createPairingNotifierService"]> | undefined;
     api.registerService({
       id: "device-pair-notifier",
@@ -852,11 +852,11 @@ export default definePluginEntry({
           if (target && qrChannelSender) {
             let qrFilePath: string | undefined;
             try {
-              const { resolvePreferredOpenClawTmpDir, writeQrPngTempFile } =
+              const { resolvePreferredAforaTmpDir, writeQrPngTempFile } =
                 await loadDevicePairApiModule();
               qrFilePath = (
                 await writeQrPngTempFile(setupCode, {
-                  tmpRoot: resolvePreferredOpenClawTmpDir(),
+                  tmpRoot: resolvePreferredAforaTmpDir(),
                   dirPrefix: "device-pair-qr-",
                   fileName: "pair-qr.png",
                 })
@@ -866,7 +866,7 @@ export default definePluginEntry({
                 ctx,
                 sender: qrChannelSender,
                 target,
-                caption: ["Scan this QR code with the OpenClaw iOS app:", "", ...infoLines].join(
+                caption: ["Scan this QR code with the Afora iOS app:", "", ...infoLines].join(
                   "\n",
                 ),
                 qrFilePath,
@@ -924,7 +924,7 @@ export default definePluginEntry({
             }
             return {
               text: [
-                "Scan this QR code with the OpenClaw iOS app:",
+                "Scan this QR code with the Afora iOS app:",
                 "",
                 formatQrInfoMarkdown({
                   payload,

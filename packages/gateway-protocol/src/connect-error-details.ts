@@ -494,17 +494,17 @@ export function readConnectPairingRequiredMessage(
 }
 
 const PAIRING_APPROVAL_REMEDIATION =
-  "Run `openclaw devices approve --latest` to preview the pending request, then rerun the printed " +
-  "`openclaw devices approve <requestId>` command and reconnect (pass the same --url and " +
+  "Run `afora devices approve --latest` to preview the pending request, then rerun the printed " +
+  "`afora devices approve <requestId>` command and reconnect (pass the same --url and " +
   "--token/--password flags if you connected with explicit credentials).";
 const DEVICE_TOKEN_REMEDIATION =
-  "Rotate the paired-device token with `openclaw devices rotate --device <deviceId> --role operator`, then reconnect.";
+  "Rotate the paired-device token with `afora devices rotate --device <deviceId> --role operator`, then reconnect.";
 const SHARED_TOKEN_REMEDIATION =
   "Verify `gateway.remote.token` matches `gateway.auth.token`. If a paired-device token is stale, " +
-  "rotate it with `openclaw devices rotate --device <deviceId> --role operator`, then reconnect.";
+  "rotate it with `afora devices rotate --device <deviceId> --role operator`, then reconnect.";
 const SCOPE_MISMATCH_REMEDIATION =
-  "Review approved scopes with `openclaw devices list`; if an upgrade is pending, preview it with " +
-  "`openclaw devices approve --latest`, approve the printed request, then reconnect.";
+  "Review approved scopes with `afora devices list`; if an upgrade is pending, preview it with " +
+  "`afora devices approve --latest`, approve the printed request, then reconnect.";
 const RATE_LIMITED_REMEDIATION =
   "Wait for the temporary authentication lockout to expire, then retry.";
 const GATEWAY_CLOSED_MESSAGE_PATTERN = /\bgateway closed \(\d+\):/i;

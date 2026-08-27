@@ -1,5 +1,5 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import type { ConfigValidationIssue, OpenClawConfig } from "./types.openclaw.js";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import type { ConfigValidationIssue, AforaConfig } from "./types.afora.js";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -127,8 +127,8 @@ function migrateProviderContextBudgets(
 
 /** Removes retired context-budget keys before strict config validation. */
 export function migrateLegacyContextBudgetConfig(
-  raw: OpenClawConfig,
-): ContextBudgetConfigMigration<OpenClawConfig>;
+  raw: AforaConfig,
+): ContextBudgetConfigMigration<AforaConfig>;
 export function migrateLegacyContextBudgetConfig(raw: unknown): ContextBudgetConfigMigration;
 export function migrateLegacyContextBudgetConfig(raw: unknown): ContextBudgetConfigMigration {
   if (!isRecord(raw) || !hasLegacyContextBudgetConfig(raw)) {

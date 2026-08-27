@@ -1,19 +1,19 @@
-# OpenClaw Kimi Coding Provider
+# Afora Kimi Coding Provider
 
-Official OpenClaw provider plugin for Kimi Coding.
+Official Afora provider plugin for Kimi Coding.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/kimi-provider
-openclaw gateway restart
+afora plugins install @afora/kimi-provider
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/providers/moonshot> for setup and configuration.
+See <https://docs.afora.ai/providers/moonshot> for setup and configuration.
 
 ## Catalog notes
 
-Model rows live in `openclaw.plugin.json` under `modelCatalog.providers.kimi`.
+Model rows live in `afora.plugin.json` under `modelCatalog.providers.kimi`.
 
 - `k3` serves up to 1M context, tier-gated server-side; `k3-256k` is the cheaper
   256K variant of the same weights. Both point at `moonshot/kimi-k3` through

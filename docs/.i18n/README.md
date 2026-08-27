@@ -1,25 +1,25 @@
-# OpenClaw docs i18n assets
+# Afora docs i18n assets
 
 This folder stores translation config for the source docs repo.
 
 Generated locale trees and live translation memory now live in the publish repo:
 
-- repo: `openclaw/docs`
-- local checkout: `~/Projects/openclaw-docs`
+- repo: `afora/docs`
+- local checkout: `~/Projects/afora-docs`
 
 ## Source of truth
 
-- English docs are authored in `openclaw/openclaw`.
+- English docs are authored in `AforaMosh/afora-agent`.
 - The source docs tree lives under `docs/`.
 - The source repo no longer keeps committed generated locale trees such as `docs/zh-CN/**`, `docs/zh-TW/**`, `docs/ja-JP/**`, `docs/es/**`, `docs/pt-BR/**`, `docs/ko/**`, `docs/de/**`, `docs/fr/**`, `docs/hi/**`, `docs/ar/**`, `docs/it/**`, `docs/vi/**`, `docs/nl/**`, `docs/fa/**`, `docs/ru/**`, `docs/tr/**`, `docs/uk/**`, `docs/id/**`, `docs/pl/**`, or `docs/th/**`.
 
 ## End-to-end flow
 
-1. Edit English docs in `openclaw/openclaw`.
+1. Edit English docs in `AforaMosh/afora-agent`.
 2. Push to `main`.
-3. `openclaw/openclaw/.github/workflows/docs-sync-publish.yml` mirrors the docs tree into `openclaw/docs`.
+3. `AforaMosh/afora-agent/.github/workflows/docs-sync-publish.yml` mirrors the docs tree into `afora/docs`.
 4. The sync script rewrites the publish `docs/docs.json` so the generated locale picker blocks exist there even though they are no longer committed in the source repo.
-5. `openclaw/docs/.github/workflows/translate-all.yml` waits for `main` to settle, translates only stale or missing locale pages, and uploads per-locale artifacts.
+5. `afora/docs/.github/workflows/translate-all.yml` waits for `main` to settle, translates only stale or missing locale pages, and uploads per-locale artifacts.
 6. The publish repo finalizer applies successful locale artifacts and pushes one aggregate `chore(i18n): refresh translations` commit.
 7. A weekly `full` run reconciles every locale/page path so flaky model failures are retried without making hot docs commits wait.
 
@@ -33,9 +33,9 @@ Generated locale trees and live translation memory now live in the publish repo:
 ## Locale visibility
 
 - Control UI supports `en`, `zh-CN`, `zh-TW`, `pt-BR`, `de`, `es`, `ja-JP`, `ko`, `fr`, `hi`, `ar`, `it`, `vi`, `nl`, `fa`, `ru`, `tr`, `uk`, `id`, `pl`, and `th`.
-- Docs translation workflows generate the same non-English locale set in `openclaw/docs`.
+- Docs translation workflows generate the same non-English locale set in `afora/docs`.
 - The Mintlify docs language picker can expose only the locales accepted by Mintlify `navigation.languages`; Russian (`ru`) and Hindi (`hi`) are now included in the publish configuration.
-- Do not treat locale visibility in generated `docs/docs.json` as proof that translation artifacts exist. Verify each generated locale folder and its translation memory in `openclaw/docs`.
+- Do not treat locale visibility in generated `docs/docs.json` as proof that translation artifacts exist. Verify each generated locale folder and its translation memory in `afora/docs`.
 
 ## Files in this folder
 
@@ -75,7 +75,7 @@ Fields:
 
 ## Operational notes
 
-- Sync metadata is written to `.openclaw-sync/source.json` in the publish repo.
-- Source repo secret: `OPENCLAW_DOCS_SYNC_TOKEN`
-- Publish repo secret: `OPENCLAW_DOCS_I18N_OPENAI_API_KEY`
-- If locale output looks stale, check the `Translate All` workflow in `openclaw/docs` first.
+- Sync metadata is written to `.afora-sync/source.json` in the publish repo.
+- Source repo secret: `AFORA_DOCS_SYNC_TOKEN`
+- Publish repo secret: `AFORA_DOCS_I18N_OPENAI_API_KEY`
+- If locale output looks stale, check the `Translate All` workflow in `afora/docs` first.

@@ -265,7 +265,7 @@ export {
   resolveExpiresAtMsFromDurationOrEpoch,
   resolveExpiresAtMsFromDurationSeconds,
   resolveExpiresAtMsFromEpochSeconds,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 export * from "../infra/outbound/send-deps.js";
 export * from "../infra/retry.js";
 export * from "../infra/retry-policy.js";
@@ -298,7 +298,7 @@ export {
   type SystemEvent,
 } from "../infra/system-events.js";
 export * from "../infra/system-message.ts";
-export * from "../infra/tmp-openclaw-dir.js";
+export * from "../infra/tmp-afora-dir.js";
 export * from "../infra/transport-ready.js";
 export * from "../infra/wsl.ts";
 export * from "../utils/fetch-timeout.js";

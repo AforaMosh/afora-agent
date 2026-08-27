@@ -9,7 +9,7 @@ type CodexNativeConfigFenceOptions = {
   abortMessage?: string;
 };
 
-const CODEX_NATIVE_CONFIG_FENCE_STATE = Symbol.for("openclaw.codexNativeConfigFenceState");
+const CODEX_NATIVE_CONFIG_FENCE_STATE = Symbol.for("afora.codexNativeConfigFenceState");
 
 function getFenceState(): CodexNativeConfigFenceState {
   const globalState = globalThis as typeof globalThis & {

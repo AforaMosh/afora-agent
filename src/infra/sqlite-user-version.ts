@@ -1,7 +1,7 @@
-import { OPENCLAW_DATABASE_SCHEMA_DOCS_URL } from "../state/openclaw-state-db-contract.js";
+import { AFORA_DATABASE_SCHEMA_DOCS_URL } from "../state/afora-state-db-contract.js";
 import { VERSION } from "../version.js";
 import { resolveCommitHash } from "./git-commit.js";
-import { resolveOpenClawPackageRootSync } from "./openclaw-root.js";
+import { resolveAforaPackageRootSync } from "./afora-root.js";
 
 type SqliteUserVersionReader = {
   prepare: (sql: string) => { get: () => unknown };
@@ -18,11 +18,11 @@ export function readSqliteUserVersion(db: SqliteUserVersionReader): number {
  * string spans many commits, and a linked source checkout reports its git HEAD
  * even when the built output actually executing is older.
  */
-export function describeRunningOpenClawBuild(): string {
+export function describeRunningAforaBuild(): string {
   const moduleUrl = import.meta.url;
   const commit = resolveCommitHash({ moduleUrl });
-  const root = resolveOpenClawPackageRootSync({ moduleUrl });
-  const identity = commit ? `OpenClaw ${VERSION} (${commit})` : `OpenClaw ${VERSION}`;
+  const root = resolveAforaPackageRootSync({ moduleUrl });
+  const identity = commit ? `Afora ${VERSION} (${commit})` : `Afora ${VERSION}`;
   return root ? `${identity} installed at ${root}` : identity;
 }
 
@@ -34,10 +34,10 @@ export function createNewerSqliteSchemaVersionError(
 ): Error {
   const error = new Error(
     `${databaseLabel} ${pathname} uses newer schema version ${schemaVersion}; this build supports ${supportedVersion}. ` +
-      `Refused by ${describeRunningOpenClawBuild()}. ` +
+      `Refused by ${describeRunningAforaBuild()}. ` +
       "Identify installs by that path: one version string spans many builds, and a linked source checkout reports its git HEAD even when its built output is older. " +
-      `Run a build that supports schema ${schemaVersion} or newer against this state directory — rebuild or update the install above — or point this build at a different OPENCLAW_STATE_DIR. ` +
-      `See ${OPENCLAW_DATABASE_SCHEMA_DOCS_URL}.`,
+      `Run a build that supports schema ${schemaVersion} or newer against this state directory — rebuild or update the install above — or point this build at a different AFORA_STATE_DIR. ` +
+      `See ${AFORA_DATABASE_SCHEMA_DOCS_URL}.`,
   );
   error.name = "SqliteSchemaVersionError";
   return error;

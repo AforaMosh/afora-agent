@@ -1,5 +1,5 @@
 // Fireworks plugin module implements thinking policy behavior.
-import type { ProviderThinkingProfile } from "openclaw/plugin-sdk/plugin-entry";
+import type { ProviderThinkingProfile } from "afora-agent/plugin-sdk/plugin-entry";
 import { isFireworksKimiModelId } from "./model-id.js";
 
 const FIREWORKS_KIMI_THINKING_PROFILE = {

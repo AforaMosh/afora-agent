@@ -1,5 +1,5 @@
 ---
-summary: "Native iMessage support via imsg (JSON-RPC over stdio), with private API actions for replies, tapbacks, effects, polls, attachments, and group management. Preferred for new OpenClaw iMessage setups when host requirements fit."
+summary: "Native iMessage support via imsg (JSON-RPC over stdio), with private API actions for replies, tapbacks, effects, polls, attachments, and group management. Preferred for new Afora iMessage setups when host requirements fit."
 read_when:
   - Setting up iMessage support
   - Debugging iMessage send/receive
@@ -7,25 +7,25 @@ title: "iMessage"
 ---
 
 <Note>
-For the usual OpenClaw iMessage deployment, run the Gateway and `imsg` on the same signed-in macOS Messages host. If your Gateway runs elsewhere, point `channels.imessage.cliPath` at a transparent SSH wrapper that runs `imsg` on the Mac.
+For the usual Afora iMessage deployment, run the Gateway and `imsg` on the same signed-in macOS Messages host. If your Gateway runs elsewhere, point `channels.imessage.cliPath` at a transparent SSH wrapper that runs `imsg` on the Mac.
 
 **Inbound recovery is automatic.** After a bridge or gateway restart, iMessage replays the messages missed while it was down and suppresses the stale "backlog bomb" Apple can flush after a Push recovery, deduping so nothing is dispatched twice. There is no config to enable — see [Inbound recovery after a bridge or gateway restart](#inbound-recovery-after-a-bridge-or-gateway-restart).
 </Note>
 
 <Warning>
-BlueBubbles support was removed. Migrate `channels.bluebubbles` configs to `channels.imessage`; OpenClaw supports iMessage through `imsg` only. Start with [BlueBubbles removal and the imsg iMessage path](/announcements/bluebubbles-imessage) for the short announcement, or [Coming from BlueBubbles](/channels/imessage-from-bluebubbles) for the full migration table.
+BlueBubbles support was removed. Migrate `channels.bluebubbles` configs to `channels.imessage`; Afora supports iMessage through `imsg` only. Start with [BlueBubbles removal and the imsg iMessage path](/announcements/bluebubbles-imessage) for the short announcement, or [Coming from BlueBubbles](/channels/imessage-from-bluebubbles) for the full migration table.
 </Warning>
 
 Status: native external CLI integration. The Gateway spawns `imsg rpc` and speaks JSON-RPC over stdio — no separate daemon or port. Private API mode is strongly encouraged for a complete iMessage channel; replies, tapbacks, effects, polls, attachment replies, and group actions require `imsg launch` and a successful private API probe.
 
-For the common local setup, OpenClaw setup can offer a user-confirmed Homebrew install or update for `imsg` on the signed-in Messages Mac. Manual setup and SSH-wrapper topologies remain operator-managed: install or update `imsg` in the same user context that will run the Gateway or wrapper.
+For the common local setup, Afora setup can offer a user-confirmed Homebrew install or update for `imsg` on the signed-in Messages Mac. Manual setup and SSH-wrapper topologies remain operator-managed: install or update `imsg` in the same user context that will run the Gateway or wrapper.
 
 ## Install the plugin
 
 Install the official iMessage plugin on the Gateway host, then restart the Gateway:
 
 ```bash
-openclaw plugins install @openclaw/imessage
+afora plugins install @afora/imessage
 ```
 
 <CardGroup cols={3}>
@@ -55,14 +55,14 @@ brew install steipete/tap/imsg
 brew update && brew upgrade imsg
 imsg rpc --help
 imsg launch
-openclaw channels status --probe
+afora channels status --probe
 ```
 
         When the local setup wizard detects a missing default `imsg` command, it can prompt to install `steipete/tap/imsg` through Homebrew. If it detects a Homebrew-managed `imsg`, it can prompt to reinstall or update it. Custom `cliPath` wrappers are not modified.
 
       </Step>
 
-      <Step title="Configure OpenClaw">
+      <Step title="Configure Afora">
 
 ```json5
 {
@@ -81,7 +81,7 @@ openclaw channels status --probe
       <Step title="Start gateway">
 
 ```bash
-openclaw gateway
+afora gateway
 ```
 
       </Step>
@@ -89,8 +89,8 @@ openclaw gateway
       <Step title="Approve first DM pairing (default dmPolicy)">
 
 ```bash
-openclaw pairing list imessage
-openclaw pairing approve imessage <CODE>
+afora pairing list imessage
+afora pairing approve imessage <CODE>
 ```
 
         Pairing requests expire after 1 hour.
@@ -119,7 +119,7 @@ exec ssh -T messages-mac imsg "$@"
   channels: {
     imessage: {
       enabled: true,
-      cliPath: "/home/openclaw/.openclaw/scripts/imsg-ssh",
+      cliPath: "/home/afora/.afora/scripts/imsg-ssh",
       remoteHost: "user@messages-mac", // Mac that runs Messages.app and imsg
       // This path is interpreted on the Messages Mac, not on the Gateway host.
       dbPath: "/Users/user/Library/Messages/chat.db",
@@ -133,15 +133,15 @@ exec ssh -T messages-mac imsg "$@"
 }
 ```
 
-    `remoteHost` identifies the Messages Mac. OpenClaw uses it for both inbound attachment fetches and outbound attachment staging. For outbound files, OpenClaw creates an owner-only temporary path on that Mac, copies the file over the existing strict SSH/SCP transport, passes only the remote path to `imsg`, and attempts removal after success, failure, or timeout. A failed cleanup SSH call emits a warning and can leave the owner-only temporary directory behind.
+    `remoteHost` identifies the Messages Mac. Afora uses it for both inbound attachment fetches and outbound attachment staging. For outbound files, Afora creates an owner-only temporary path on that Mac, copies the file over the existing strict SSH/SCP transport, passes only the remote path to `imsg`, and attempts removal after success, failure, or timeout. A failed cleanup SSH call emits a warning and can leave the owner-only temporary directory behind.
 
-    An explicit `remoteHost` is recommended and wins when set. For compatibility, OpenClaw auto-detects the existing transparent `exec ssh ... imsg "$@"` wrapper shape once per process and reuses that host across monitoring, probes, sends, and private actions. Auto-detection covers only the simple documented transparent wrapper; option-rich wrappers such as ProxyJump/ProxyCommand must configure `remoteHost`.
+    An explicit `remoteHost` is recommended and wins when set. For compatibility, Afora auto-detects the existing transparent `exec ssh ... imsg "$@"` wrapper shape once per process and reuses that host across monitoring, probes, sends, and private actions. Auto-detection covers only the simple documented transparent wrapper; option-rich wrappers such as ProxyJump/ProxyCommand must configure `remoteHost`.
     `remoteHost` must be `host` or `user@host` (no spaces or SSH options); unsafe values are ignored.
-    OpenClaw uses strict host-key checking for SSH/SCP, so the Messages Mac host key must already exist in `~/.ssh/known_hosts` on the Gateway host.
+    Afora uses strict host-key checking for SSH/SCP, so the Messages Mac host key must already exist in `~/.ssh/known_hosts` on the Gateway host.
     Attachment paths are validated against allowed roots (`attachmentRoots` / `remoteAttachmentRoots`).
 
 <Warning>
-Any `cliPath` wrapper or SSH proxy you put in front of `imsg` MUST behave like a transparent stdio pipe for long-lived JSON-RPC. OpenClaw exchanges small newline-framed JSON-RPC messages over the wrapper's stdin/stdout for the lifetime of the channel:
+Any `cliPath` wrapper or SSH proxy you put in front of `imsg` MUST behave like a transparent stdio pipe for long-lived JSON-RPC. Afora exchanges small newline-framed JSON-RPC messages over the wrapper's stdin/stdout for the lifetime of the channel:
 
 - Forward each stdin chunk/line **as soon as bytes are available** — don't wait for EOF.
 - Forward each stdout chunk/line promptly in the reverse direction.
@@ -149,7 +149,7 @@ Any `cliPath` wrapper or SSH proxy you put in front of `imsg` MUST behave like a
 - Avoid fixed-size blocking reads (`read(4096)`, `cat | buffer`, default shell `read`) that can starve small frames.
 - Keep stderr separate from the JSON-RPC stdout stream.
 
-A wrapper that buffers stdin until a large block fills will produce symptoms that look like an iMessage outage — `imsg rpc timeout (chats.list)` or repeated channel restarts — even though `imsg rpc` itself is healthy. `ssh -T host imsg "$@"` (above) is safe because it forwards OpenClaw's `cliPath` arguments such as `rpc` and `--db`. Pipelines like `ssh host imsg | grep -v '^DEBUG'` are NOT — line-buffered tools can still hold frames; use `stdbuf -oL -eL` on every stage if you must filter.
+A wrapper that buffers stdin until a large block fills will produce symptoms that look like an iMessage outage — `imsg rpc timeout (chats.list)` or repeated channel restarts — even though `imsg rpc` itself is healthy. `ssh -T host imsg "$@"` (above) is safe because it forwards Afora's `cliPath` arguments such as `rpc` and `--db`. Pipelines like `ssh host imsg | grep -v '^DEBUG'` are NOT — line-buffered tools can still hold frames; use `stdbuf -oL -eL` on every stage if you must filter.
 </Warning>
 
   </Tab>
@@ -158,7 +158,7 @@ A wrapper that buffers stdin until a large block fills will produce symptoms tha
 ## Requirements and permissions (macOS)
 
 - Messages must be signed in on the Mac running `imsg`.
-- Full Disk Access is required for the process context running OpenClaw/`imsg` (Messages DB access).
+- Full Disk Access is required for the process context running Afora/`imsg` (Messages DB access).
 - Automation permission is required to send messages through Messages.app.
 - For advanced actions (react / edit / unsend / threaded reply / effects / polls / group ops), System Integrity Protection must be disabled — see [Enabling the imsg private API](#enabling-the-imsg-private-api). Basic text and media send/receive work without it.
 
@@ -198,7 +198,7 @@ Use one of the supported `imsg` process contexts instead:
 
 ## Enabling the imsg private API
 
-`imsg` ships in two operational modes. For OpenClaw, Private API mode is the recommended setup because it gives the channel the native iMessage actions users expect. Basic mode remains useful for low-risk installs, initial verification, or hosts where SIP cannot be disabled.
+`imsg` ships in two operational modes. For Afora, Private API mode is the recommended setup because it gives the channel the native iMessage actions users expect. Basic mode remains useful for low-risk installs, initial verification, or hosts where SIP cannot be disabled.
 
 - **Basic mode** (default, no SIP changes needed): outbound text and media via `send`, inbound watch/history, chat list. This is what you get out of the box from a fresh `brew install steipete/tap/imsg` plus the standard macOS permissions above.
 - **Private API mode**: `imsg` injects a helper dylib into `Messages.app` to call internal `IMCore` functions. This unlocks `react`, `edit`, `unsend`, `reply` (threaded), `sendWithEffect`, `poll` and `poll-vote` (native Messages polls), `renameGroup`, `setGroupIcon`, `addParticipant`, `removeParticipant`, `leaveGroup`, plus typing indicators and read receipts.
@@ -207,12 +207,12 @@ The recommended action surface on this page requires Private API mode. The `imsg
 
 > Advanced features such as `read`, `typing`, `launch`, bridge-backed rich send, message mutation, and chat management are opt-in. They require SIP to be disabled and a helper dylib to be injected into `Messages.app`. `imsg launch` refuses to inject when SIP is enabled.
 
-The helper-injection technique uses `imsg`'s own dylib to reach Messages private APIs. There is no third-party server or BlueBubbles runtime in the OpenClaw iMessage path.
+The helper-injection technique uses `imsg`'s own dylib to reach Messages private APIs. There is no third-party server or BlueBubbles runtime in the Afora iMessage path.
 
 <Warning>
 **Disabling SIP is a real security tradeoff.** SIP is one of macOS's core protections against running modified system code; turning it off system-wide opens up additional attack surface and side effects. Notably, **disabling SIP on Apple Silicon Macs also disables the ability to install and run iOS apps on your Mac**.
 
-Treat this as a deliberate operational choice, especially on a primary personal Mac. For production-quality OpenClaw iMessage, prefer a dedicated Mac or bot macOS user where you are comfortable enabling the bridge. If your threat model cannot tolerate SIP being off anywhere, the iMessage plugin is limited to basic mode — text and media send/receive only, no reactions / edit / unsend / effects / group ops.
+Treat this as a deliberate operational choice, especially on a primary personal Mac. For production-quality Afora iMessage, prefer a dedicated Mac or bot macOS user where you are comfortable enabling the bridge. If your threat model cannot tolerate SIP being off anywhere, the iMessage plugin is limited to basic mode — text and media send/receive only, no reactions / edit / unsend / effects / group ops.
 </Warning>
 
 ### Setup
@@ -253,22 +253,22 @@ Treat this as a deliberate operational choice, especially on a primary personal 
 
    `imsg launch` refuses to inject when SIP is still enabled, so this also doubles as a confirmation that step 2 took.
 
-4. **Verify the bridge from OpenClaw:**
+4. **Verify the bridge from Afora:**
 
    ```bash
-   openclaw channels status --probe
+   afora channels status --probe
    ```
 
-   The iMessage entry should report `works`, and `imsg status --json | jq '{rpc_methods, selectors}'` should show the capabilities exposed by your macOS build. Poll creation requires `selectors.pollPayloadMessage`; voting requires both `selectors.pollVoteMessage` and the `poll.vote` RPC method. The OpenClaw plugin advertises only actions supported by the cached probe, while an empty cache stays optimistic and probes on first dispatch.
+   The iMessage entry should report `works`, and `imsg status --json | jq '{rpc_methods, selectors}'` should show the capabilities exposed by your macOS build. Poll creation requires `selectors.pollPayloadMessage`; voting requires both `selectors.pollVoteMessage` and the `poll.vote` RPC method. The Afora plugin advertises only actions supported by the cached probe, while an empty cache stays optimistic and probes on first dispatch.
 
-If `openclaw channels status --probe` reports the channel as `works` but specific actions throw "iMessage `<action>` requires the imsg private API bridge" at dispatch time, run `imsg launch` again — the helper can fall out (Messages.app restart, OS update, etc.) and the cached `available: true` status will keep advertising actions until the next probe refreshes.
+If `afora channels status --probe` reports the channel as `works` but specific actions throw "iMessage `<action>` requires the imsg private API bridge" at dispatch time, run `imsg launch` again — the helper can fall out (Messages.app restart, OS update, etc.) and the cached `available: true` status will keep advertising actions until the next probe refreshes.
 
 ### When SIP stays enabled
 
 If disabling SIP is not acceptable for your threat model:
 
 - `imsg` falls back to basic mode — text + media + receive only.
-- The OpenClaw plugin still advertises text/media send and inbound monitoring; it hides `react`, `edit`, `unsend`, `reply`, `sendWithEffect`, and group ops from the action surface (per the per-method capability gate).
+- The Afora plugin still advertises text/media send and inbound monitoring; it hides `react`, `edit`, `unsend`, `reply`, `sendWithEffect`, and group ops from the action surface (per the per-method capability gate).
 - You can run a separate non-Apple-Silicon Mac (or a dedicated bot Mac) with SIP off for the iMessage workload, while keeping SIP enabled on your primary devices. See [Dedicated bot macOS user (separate iMessage identity)](#deployment-patterns) below.
 
 ## Access control and routing
@@ -381,7 +381,7 @@ If disabling SIP is not acceptable for your threat model:
     Group-ish thread behavior:
 
     Some multi-participant iMessage threads can arrive with `is_group=false`.
-    If that `chat_id` is explicitly configured under `channels.imessage.groups`, OpenClaw treats it as group traffic (group gating + group session isolation).
+    If that `chat_id` is explicitly configured under `channels.imessage.groups`, Afora treats it as group traffic (group gating + group session isolation).
 
   </Tab>
 </Tabs>
@@ -449,7 +449,7 @@ See [ACP Agents](/tools/acp-agents) for shared ACP binding behavior.
     1. Create/sign in a dedicated macOS user.
     2. Sign into Messages with the bot Apple ID in that user.
     3. Install `imsg` in that user.
-    4. Create an SSH wrapper so OpenClaw can run `imsg` in that user context.
+    4. Create an SSH wrapper so Afora can run `imsg` in that user context.
     5. Point `channels.imessage.accounts.<id>.cliPath` and `.dbPath` to that user profile.
 
     First run may require GUI approvals (Automation + Full Disk Access) in that bot user session.
@@ -471,7 +471,7 @@ See [ACP Agents](/tools/acp-agents) for shared ACP binding behavior.
       channels: {
         imessage: {
           enabled: true,
-          cliPath: "/home/openclaw/.openclaw/scripts/imsg-ssh",
+          cliPath: "/home/afora/.afora/scripts/imsg-ssh",
           remoteHost: "bot@mac-mini.tailnet-1234.ts.net",
           includeAttachments: true,
           dbPath: "/Users/bot/Library/Messages/chat.db",
@@ -555,7 +555,7 @@ See [ACP Agents](/tools/acp-agents) for shared ACP binding behavior.
 
 ## Private API actions
 
-When `imsg launch` is running and `openclaw channels status --probe` reports `privateApi.available: true`, the message tool can use iMessage-native actions in addition to normal text sends.
+When `imsg launch` is running and `afora channels status --probe` reports `privateApi.available: true`, the message tool can use iMessage-native actions in addition to normal text sends.
 
 All actions are enabled by default; use `channels.imessage.actions` to turn individual actions off:
 
@@ -604,7 +604,7 @@ All actions are enabled by default; use `channels.imessage.actions` to turn indi
   </Accordion>
 
   <Accordion title="Capability detection">
-    OpenClaw hides private API actions only when the cached probe status says the bridge is unavailable. If the status is unknown, actions remain visible and dispatch probes lazily so the first action can succeed after `imsg launch` without a separate manual status refresh.
+    Afora hides private API actions only when the cached probe status says the bridge is unavailable. If the status is unknown, actions remain visible and dispatch probes lazily so the first action can succeed after `imsg launch` without a separate manual status refresh.
 
   </Accordion>
 
@@ -621,12 +621,12 @@ All actions are enabled by default; use `channels.imessage.actions` to turn indi
     }
     ```
 
-    Older `imsg` builds that pre-date the per-method capability list gate off typing/read silently; OpenClaw logs a one-time warning per restart so the missing receipt is attributable.
+    Older `imsg` builds that pre-date the per-method capability list gate off typing/read silently; Afora logs a one-time warning per restart so the missing receipt is attributable.
 
   </Accordion>
 
   <Accordion title="Inbound tapbacks">
-    OpenClaw subscribes to iMessage tapbacks and routes accepted reactions as system events instead of normal message text, so a user tapback does not trigger an ordinary reply loop.
+    Afora subscribes to iMessage tapbacks and routes accepted reactions as system events instead of normal message text, so a user tapback does not trigger an ordinary reply loop.
 
     Notification mode is controlled by `channels.imessage.reactionNotifications`:
 
@@ -660,7 +660,7 @@ All actions are enabled by default; use `channels.imessage.actions` to turn indi
   </Accordion>
 
   <Accordion title="Question reactions (1️⃣ / 2️⃣ / 3️⃣ / 4️⃣)">
-    For an `ask_user` prompt with one non-secret, single-select question and one to four options, OpenClaw adds numbered emoji choices. React to the delivered prompt with the matching number to answer it. The reaction must carry the stable GUID of the bot-authored message; OpenClaw then maps the number to the canonical option through the Gateway. Stale or duplicate taps are ignored.
+    For an `ask_user` prompt with one non-secret, single-select question and one to four options, Afora adds numbered emoji choices. React to the delivered prompt with the matching number to answer it. The reaction must carry the stable GUID of the bot-authored message; Afora then maps the number to the canonical option through the Gateway. Stale or duplicate taps are ignored.
 
     Multi-question, multi-select, and free-text prompts remain text-reply-only. Question reactions follow normal iMessage DM/group admission rules. They are recognized even when general `reactionNotifications` is `"off"`, without turning unrelated reactions into agent events.
 
@@ -687,9 +687,9 @@ Disable:
 
 ## Coalescing split-send DMs (command + URL in one composition)
 
-Apple can store a command and its URL preview as separate physical `chat.db` rows. `imsg` 0.13.1 and newer coalesces those rows before watch, history, or search returns the message, so OpenClaw receives one logical inbound message without adding channel-specific DM latency.
+Apple can store a command and its URL preview as separate physical `chat.db` rows. `imsg` 0.13.1 and newer coalesces those rows before watch, history, or search returns the message, so Afora receives one logical inbound message without adding channel-specific DM latency.
 
-No iMessage coalescing setting is needed. The retired `channels.imessage.coalesceSameSenderDms` key is removed by `openclaw doctor --fix`. Generic `messages.inbound` debounce remains available when you intentionally want to batch rapid text messages across a channel.
+No iMessage coalescing setting is needed. The retired `channels.imessage.coalesceSameSenderDms` key is removed by `afora doctor --fix`. Generic `messages.inbound` debounce remains available when you intentionally want to batch rapid text messages across a channel.
 
 If command-plus-URL sends arrive as separate agent turns, update `imsg` on the Messages Mac:
 
@@ -701,7 +701,7 @@ brew update && brew upgrade imsg
 
 iMessage recovers messages missed while the gateway was down, and at the same time suppresses the stale "backlog bomb" Apple can flush after a Push recovery. The default behavior is always on, built on durable ingress plus an age fence.
 
-- **Durable replay protection.** Before advancing the recovery cursor, OpenClaw journals each raw row in the shared SQLite ingress queue with its Apple GUID as the event ID. A completed row leaves a tombstone for about 4 hours, capped at 10,000 entries, so a replay with the same GUID is dropped even after a restart. A pending row stays recoverable until dispatch adopts it.
+- **Durable replay protection.** Before advancing the recovery cursor, Afora journals each raw row in the shared SQLite ingress queue with its Apple GUID as the event ID. A completed row leaves a tombstone for about 4 hours, capped at 10,000 entries, so a replay with the same GUID is dropped even after a restart. A pending row stays recoverable until dispatch adopts it.
 - **Downtime recovery.** On startup the monitor remembers the last durably admitted `chat.db` rowid (a persisted per-account cursor) and passes it to `imsg watch.subscribe` as `since_rowid`, so imsg replays rows that were not yet journaled and then tails live. Rows journaled before a crash resume from SQLite. Replay is bounded to the most recent 500 rows and to messages up to ~2 hours old, and GUID tombstones drop anything already handled.
 - **Stale-backlog age fence.** Rows above the startup boundary are genuinely live; one whose send date is more than ~15 minutes older than its arrival is the Push-flush backlog and is suppressed. Replayed rows (at or below the boundary) use the wider recovery window instead, so a recently-missed message is delivered while ancient history is not.
 
@@ -717,7 +717,7 @@ imessage: suppressed stale inbound backlog account=<id> sent=<iso> recovery=<boo
 
 ### Migration
 
-`channels.imessage.catchup.*` is deprecated — downtime recovery is automatic and needs no config for new setups. Existing configs with `catchup.enabled: true` remain honored as a compatibility profile for the recovery replay window. Disabled catchup blocks (`enabled: false` or no `enabled: true`) are retired; `openclaw doctor --fix` removes those.
+`channels.imessage.catchup.*` is deprecated — downtime recovery is automatic and needs no config for new setups. Existing configs with `catchup.enabled: true` remain honored as a compatibility profile for the recovery replay window. Disabled catchup blocks (`enabled: false` or no `enabled: true`) are retired; `afora doctor --fix` removes those.
 
 ## Troubleshooting
 
@@ -728,7 +728,7 @@ imessage: suppressed stale inbound backlog account=<id> sent=<iso> recovery=<boo
     ```bash
     imsg rpc --help
     imsg status --json
-    openclaw channels status --probe
+    afora channels status --probe
     ```
 
     If the probe reports RPC unsupported, update `imsg`. If private API actions are unavailable, run `imsg launch` in the logged-in macOS user session and probe again. If the Gateway is not running on macOS, use the Remote Mac over SSH setup above instead of the default local `imsg` path.
@@ -736,7 +736,7 @@ imessage: suppressed stale inbound backlog account=<id> sent=<iso> recovery=<boo
   </Accordion>
 
   <Accordion title="Messages send but inbound iMessages do not arrive">
-    First prove whether the message reached the local Mac. If `chat.db` does not change, OpenClaw cannot receive the message even when `imsg status --json` reports a healthy bridge.
+    First prove whether the message reached the local Mac. If `chat.db` does not change, Afora cannot receive the message even when `imsg status --json` reports a healthy bridge.
 
 ```bash
 imsg chats --limit 10 --json
@@ -745,7 +745,7 @@ sqlite3 ~/Library/Messages/chat.db \
   "select datetime(max(date)/1000000000 + 978307200, 'unixepoch', 'localtime'), max(ROWID) from message;"
 ```
 
-    If phone-sent messages create no new rows, repair the macOS Messages and Apple Push layer before changing OpenClaw config. A one-shot service refresh is often enough:
+    If phone-sent messages create no new rows, repair the macOS Messages and Apple Push layer before changing Afora config. A one-shot service refresh is often enough:
 
 ```bash
 launchctl kickstart -k system/com.apple.apsd
@@ -753,10 +753,10 @@ launchctl kickstart -k gui/$(id -u)/com.apple.CommCenter
 launchctl kickstart -k gui/$(id -u)/com.apple.identityservicesd
 launchctl kickstart -k gui/$(id -u)/com.apple.imagent
 imsg launch
-openclaw gateway restart
+afora gateway restart
 ```
 
-    Send a fresh iMessage from the phone and confirm a new `chat.db` row or `imsg watch` event before debugging OpenClaw sessions. Do not run this as a periodic bridge-relaunch loop; repeated `imsg launch` plus gateway restarts during active work can interrupt deliveries and strand in-flight channel runs.
+    Send a fresh iMessage from the phone and confirm a new `chat.db` row or `imsg watch` event before debugging Afora sessions. Do not run this as a periodic bridge-relaunch loop; repeated `imsg launch` plus gateway restarts during active work can interrupt deliveries and strand in-flight channel runs.
 
   </Accordion>
 
@@ -771,7 +771,7 @@ exec ssh -T messages-mac imsg "$@"
     Then run:
 
 ```bash
-openclaw channels status --probe --channel imessage
+afora channels status --probe --channel imessage
 ```
 
   </Accordion>
@@ -781,7 +781,7 @@ openclaw channels status --probe --channel imessage
 
     - `channels.imessage.dmPolicy`
     - `channels.imessage.allowFrom`
-    - pairing approvals (`openclaw pairing list imessage`)
+    - pairing approvals (`afora pairing list imessage`)
 
   </Accordion>
 
@@ -814,7 +814,7 @@ openclaw channels status --probe --channel imessage
     imsg send <handle> "test"
     ```
 
-    Confirm Full Disk Access + Automation are granted for the process context that runs OpenClaw/`imsg`.
+    Confirm Full Disk Access + Automation are granted for the process context that runs Afora/`imsg`.
 
   </Accordion>
 </AccordionGroup>

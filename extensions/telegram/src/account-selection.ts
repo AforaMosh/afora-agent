@@ -3,16 +3,16 @@ import {
   createAccountListHelpers,
   hasConfiguredAccountValue,
   resolveListedDefaultAccountId,
-} from "openclaw/plugin-sdk/account-core";
+} from "afora-agent/plugin-sdk/account-core";
 import {
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
   normalizeOptionalAccountId,
-} from "openclaw/plugin-sdk/account-id";
-import { listAgentIds, resolveDefaultAgentId } from "openclaw/plugin-sdk/agent-scope-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/account-id";
+import { listAgentIds, resolveDefaultAgentId } from "afora-agent/plugin-sdk/agent-scope-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { normalizeAgentId } from "afora-agent/plugin-sdk/routing";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 function resolveBindingAccount(params: {
   binding: unknown;
@@ -38,7 +38,7 @@ function resolveBindingAccount(params: {
   };
 }
 
-function listBoundAccountIds(cfg: OpenClawConfig, channelId: string): string[] {
+function listBoundAccountIds(cfg: AforaConfig, channelId: string): string[] {
   const ids = new Set<string>();
   for (const binding of cfg.bindings ?? []) {
     const resolved = resolveBindingAccount({ binding, channelId });
@@ -49,7 +49,7 @@ function listBoundAccountIds(cfg: OpenClawConfig, channelId: string): string[] {
   return [...ids].toSorted((left, right) => left.localeCompare(right));
 }
 
-function resolveDefaultAgentBoundAccountId(cfg: OpenClawConfig, channelId: string): string | null {
+function resolveDefaultAgentBoundAccountId(cfg: AforaConfig, channelId: string): string | null {
   if (cfg.agents?.ownership === "explicit" && listAgentIds(cfg).length !== 1) {
     return null;
   }
@@ -63,7 +63,7 @@ function resolveDefaultAgentBoundAccountId(cfg: OpenClawConfig, channelId: strin
   return null;
 }
 
-function hasImplicitDefaultTelegramAccount(cfg: OpenClawConfig): boolean {
+function hasImplicitDefaultTelegramAccount(cfg: AforaConfig): boolean {
   const telegram = cfg.channels?.telegram;
   if (!telegram) {
     return false;
@@ -83,7 +83,7 @@ const { listAccountIds: listTelegramAccountIds } = createAccountListHelpers("tel
 
 export { listTelegramAccountIds };
 
-export function resolveDefaultTelegramAccountSelection(cfg: OpenClawConfig): {
+export function resolveDefaultTelegramAccountSelection(cfg: AforaConfig): {
   accountId: string;
   accountIds: string[];
   shouldWarnMissingDefault: boolean;
@@ -117,6 +117,6 @@ export function resolveDefaultTelegramAccountSelection(cfg: OpenClawConfig): {
   };
 }
 
-export function resolveDefaultTelegramAccountId(cfg: OpenClawConfig): string {
+export function resolveDefaultTelegramAccountId(cfg: AforaConfig): string {
   return resolveDefaultTelegramAccountSelection(cfg).accountId;
 }

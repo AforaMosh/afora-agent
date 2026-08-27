@@ -1,7 +1,7 @@
 import { resolveGlobalSingleton } from "./global-singleton.js";
 
 const { runListeners, runLastActivityMs } = resolveGlobalSingleton(
-  Symbol.for("openclaw.toolActivityHeartbeat"),
+  Symbol.for("afora.toolActivityHeartbeat"),
   () => ({
     runListeners: new Map<string, Set<() => void>>(),
     runLastActivityMs: new Map<string, number>(),

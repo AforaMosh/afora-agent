@@ -4,12 +4,12 @@
  */
 import crypto from "node:crypto";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   asObjectRecord,
   defineLegacyJsonStateMigration,
   type PluginDoctorStateMigration,
-} from "openclaw/plugin-sdk/runtime-doctor-migrations";
+} from "afora-agent/plugin-sdk/runtime-doctor-migrations";
 
 type ActiveMemoryToggleEntry = {
   sessionKey: string;
@@ -27,13 +27,13 @@ export const legacyConfigRules = [
   {
     path: RETIRED_QMD_CONFIG_PATH,
     message:
-      'plugins.entries.active-memory.config.qmd is retired because the QMD memory backend was removed. Run "openclaw doctor --fix".',
+      'plugins.entries.active-memory.config.qmd is retired because the QMD memory backend was removed. Run "afora doctor --fix".',
   },
 ];
 
 /** Removes the retired plugin-owned QMD override. */
-export function normalizeCompatibilityConfig({ cfg }: { cfg: OpenClawConfig }): {
-  config: OpenClawConfig;
+export function normalizeCompatibilityConfig({ cfg }: { cfg: AforaConfig }): {
+  config: AforaConfig;
   changes: string[];
 } {
   const entry = asObjectRecord(cfg.plugins?.entries?.["active-memory"]);
@@ -89,7 +89,7 @@ function parseLegacyToggleEntries(parsed: unknown): ActiveMemoryToggleEntry[] | 
   return entries;
 }
 
-/** State migrations exposed to OpenClaw doctor for Active Memory. */
+/** State migrations exposed to Afora doctor for Active Memory. */
 export const stateMigrations: PluginDoctorStateMigration[] = [
   defineLegacyJsonStateMigration<ActiveMemoryToggleEntry[]>({
     id: "active-memory-session-toggles-json-to-plugin-state",

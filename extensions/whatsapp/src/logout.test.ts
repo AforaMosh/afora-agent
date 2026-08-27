@@ -19,17 +19,17 @@ describe("web logout", () => {
   let logoutWeb: typeof import("./auth-store.js").logoutWeb;
 
   beforeAll(async () => {
-    fixtureRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), "openclaw-test-web-logout-"));
-    previousOAuthDir = process.env.OPENCLAW_OAUTH_DIR;
-    process.env.OPENCLAW_OAUTH_DIR = path.join(fixtureRoot, "oauth");
+    fixtureRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), "afora-test-web-logout-"));
+    previousOAuthDir = process.env.AFORA_OAUTH_DIR;
+    process.env.AFORA_OAUTH_DIR = path.join(fixtureRoot, "oauth");
     ({ logoutWeb } = await import("./auth-store.js"));
   });
 
   afterAll(async () => {
     if (previousOAuthDir === undefined) {
-      delete process.env.OPENCLAW_OAUTH_DIR;
+      delete process.env.AFORA_OAUTH_DIR;
     } else {
-      process.env.OPENCLAW_OAUTH_DIR = previousOAuthDir;
+      process.env.AFORA_OAUTH_DIR = previousOAuthDir;
     }
     await fsPromises.rm(fixtureRoot, { recursive: true, force: true });
   });
@@ -111,7 +111,7 @@ describe("web logout", () => {
     expect(fs.existsSync(path.join(credsDir, "session-abc.json"))).toBe(false);
   });
 
-  it("does not delete custom auth directories outside the OpenClaw auth root", async () => {
+  it("does not delete custom auth directories outside the Afora auth root", async () => {
     const authDir = await makeExternalCaseDir();
     await fsPromises.mkdir(path.join(authDir, "nested"));
     await fsPromises.writeFile(path.join(authDir, "creds.json"), "{}", "utf-8");
@@ -128,7 +128,7 @@ describe("web logout", () => {
     expect(fs.existsSync(path.join(authDir, "nested", "session-abc.json"))).toBe(true);
   });
 
-  it("does not delete through symlinked auth dirs inside the OpenClaw auth root", async () => {
+  it("does not delete through symlinked auth dirs inside the Afora auth root", async () => {
     const externalDir = await makeExternalCaseDir();
     const authDir = path.join(fixtureRoot, "oauth", "whatsapp", `case-${caseId++}`);
     await fsPromises.mkdir(path.dirname(authDir), { recursive: true });
@@ -143,7 +143,7 @@ describe("web logout", () => {
     expect(fs.existsSync(path.join(externalDir, "notes.txt"))).toBe(true);
   });
 
-  it("does not delete through intermediate symlinks inside the OpenClaw auth root", async () => {
+  it("does not delete through intermediate symlinks inside the Afora auth root", async () => {
     const externalRoot = path.join(fixtureRoot, "external", `case-${caseId++}`);
     const externalAuthDir = path.join(externalRoot, "default");
     const linkedParent = path.join(fixtureRoot, "oauth", "whatsapp", `linked-${caseId++}`);

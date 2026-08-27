@@ -100,7 +100,7 @@ afterEach(() => {
 
 describe("runSqliteDeferredTransactionSync", () => {
   it("keeps multiple reads on one snapshot while another connection commits", () => {
-    const tempDir = tempDirs.make("openclaw-sqlite-read-snapshot-");
+    const tempDir = tempDirs.make("afora-sqlite-read-snapshot-");
     const databasePath = path.join(tempDir, "snapshot.sqlite");
     const { DatabaseSync } = requireNodeSqlite();
     const reader = new DatabaseSync(databasePath);
@@ -368,7 +368,7 @@ describe("runSqliteImmediateTransactionSync", () => {
 
   it("waits for a separate writer and exposes the synchronous event-loop cost", async () => {
     const holdMs = 200;
-    const tempDir = tempDirs.make("openclaw-sqlite-contention-");
+    const tempDir = tempDirs.make("afora-sqlite-contention-");
     const databasePath = path.join(tempDir, "contention.sqlite");
     const { DatabaseSync } = requireNodeSqlite();
     const db = new DatabaseSync(databasePath);
@@ -403,7 +403,7 @@ describe("runSqliteImmediateTransactionSync", () => {
   });
 
   it("fails a real separate-writer wait after the single SQLite busy timeout", async () => {
-    const tempDir = tempDirs.make("openclaw-sqlite-timeout-");
+    const tempDir = tempDirs.make("afora-sqlite-timeout-");
     const databasePath = path.join(tempDir, "contention.sqlite");
     const { DatabaseSync } = requireNodeSqlite();
     const db = new DatabaseSync(databasePath);

@@ -12,7 +12,7 @@ import {
 const suite = createControlUiE2eSuite({
   name: "Control UI critical observer notice mocked Gateway E2E",
   unavailableMessage: (executablePath) =>
-    `Playwright Chromium is not installed at ${executablePath}. Run \`pnpm --dir ui exec playwright install chromium\`, or set OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
+    `Playwright Chromium is not installed at ${executablePath}. Run \`pnpm --dir ui exec playwright install chromium\`, or set AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
 });
 
 const artifactDir = path.resolve(
@@ -65,7 +65,7 @@ function observerDigest(params: {
 }
 
 async function waitForToastUpdate(page: Page): Promise<void> {
-  await page.locator("openclaw-toast-host").evaluate(async (element) => {
+  await page.locator("afora-toast-host").evaluate(async (element) => {
     await (element as HTMLElement & { updateComplete: Promise<unknown> }).updateComplete;
   });
 }
@@ -77,21 +77,21 @@ async function emitObserverAndReadToast(
 ): Promise<{ actionable: boolean | null; message: string; visible: boolean }> {
   // Toasts auto-dismiss after 6000ms. Keep emit, read, and any action in one browser
   // step, including the shell's lazy runtime load and the toast host's Lit update.
-  return await page.locator("openclaw-toast-host").evaluate(
+  return await page.locator("afora-toast-host").evaluate(
     async (element, params) => {
       const host = element as HTMLElement & { updateComplete: Promise<unknown> };
-      const app = document.querySelector("openclaw-app-shell") as
+      const app = document.querySelector("afora-app-shell") as
         | (HTMLElement & {
             criticalNoticeRuntime?: Promise<unknown> | null;
           })
         | null;
       const gateway = (
         window as Window & {
-          openclawControlUiE2eGateway?: {
+          aforaControlUiE2eGateway?: {
             emit: (event: string, payload?: unknown) => void;
           };
         }
-      ).openclawControlUiE2eGateway;
+      ).aforaControlUiE2eGateway;
       if (!app || !gateway) {
         throw new Error("Critical observer notice owner is unavailable");
       }
@@ -181,7 +181,7 @@ suite.define(() => {
         await page.evaluate(() => {
           const owner = document.createElement("div");
           owner.id = "toast-shadow-owner";
-          const modal = document.createElement("openclaw-modal-dialog");
+          const modal = document.createElement("afora-modal-dialog");
           modal.label = "Shadow modal";
           const content = document.createElement("button");
           content.textContent = "Modal action";
@@ -189,7 +189,7 @@ suite.define(() => {
           owner.attachShadow({ mode: "open" }).append(modal);
           document.body.append(owner);
         });
-        const modal = page.locator("#toast-shadow-owner").locator("openclaw-modal-dialog");
+        const modal = page.locator("#toast-shadow-owner").locator("afora-modal-dialog");
         await page.getByRole("dialog", { name: "Shadow modal" }).waitFor({ state: "visible" });
 
         const headline = "Shadow-root session needs attention";
@@ -205,7 +205,7 @@ suite.define(() => {
         expect(result.visible).toBe(true);
         expect(result.message).toContain(headline);
 
-        const host = modal.locator(":scope > openclaw-toast-host");
+        const host = modal.locator(":scope > afora-toast-host");
         await expect.poll(() => host.count()).toBe(1);
         await modal.evaluate((element) => {
           const nestedOverlay = document.createElement("div");
@@ -219,7 +219,7 @@ suite.define(() => {
         await host.locator(".app-toast__action").click({ trial: true });
 
         await modal.evaluate((element) => (element as HTMLElement & { hide: () => void }).hide());
-        const appToast = page.locator(".shell > openclaw-toast-host .app-toast");
+        const appToast = page.locator(".shell > afora-toast-host .app-toast");
         await expect.poll(() => appToast.textContent()).toContain(headline);
         await appToast.getByRole("button", { name: "Dismiss" }).click();
       },

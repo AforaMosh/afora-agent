@@ -6,17 +6,17 @@ import type { SlackAppHomeOpenedEvent } from "../types.js";
 
 function buildSlackHomeView(slashCommandName?: string): HomeView {
   const startSessionText = slashCommandName
-    ? `Send a DM, mention OpenClaw in a channel, or use \`/${slashCommandName}\` to start a session.`
-    : "Send a DM or mention OpenClaw in a channel to start a session.";
+    ? `Send a DM, mention Afora in a channel, or use \`/${slashCommandName}\` to start a session.`
+    : "Send a DM or mention Afora in a channel to start a session.";
   return {
     type: "home",
-    callback_id: "openclaw:home",
+    callback_id: "afora:home",
     blocks: [
       {
         type: "header",
         text: {
           type: "plain_text",
-          text: "OpenClaw",
+          text: "Afora",
         },
       },
       {

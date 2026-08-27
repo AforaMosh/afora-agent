@@ -88,8 +88,8 @@ describe("tool mutation helpers", () => {
     ["exec", "sed -n '1,220p' src/agents/tool-mutation.ts"],
     ["bash", "cat package.json"],
     ["exec", "rg -n tool-mutation src/agents"],
-    ["exec", "gh search prs --repo openclaw/openclaw tool-mutation --json number,title,state"],
-    ["bash", "gh pr view 123 --repo openclaw/openclaw --json title,state"],
+    ["exec", "gh search prs --repo AforaMosh/afora-agent tool-mutation --json number,title,state"],
+    ["bash", "gh pr view 123 --repo AforaMosh/afora-agent --json title,state"],
   ])("treats read-only shell command as non-mutating: %s %s", (toolName, command) => {
     expect(isMutatingToolCall(toolName, { command })).toBe(false);
     expect(buildToolMutationState(toolName, { command }).mutatingAction).toBe(false);
@@ -143,7 +143,7 @@ describe("tool mutation helpers", () => {
     ["exec", "gh search prs bug --web=true"],
     ["exec", "gh search prs bug -w"],
     ["exec", "gh search prs bug -w=true"],
-    ["exec", "gh api --method POST repos/openclaw/openclaw/issues"],
+    ["exec", "gh api --method POST repos/AforaMosh/afora-agent/issues"],
   ])("keeps ambiguous or mutating shell command mutating: %s %s", (toolName, command) => {
     expect(isMutatingToolCall(toolName, { command })).toBe(true);
     expect(buildToolMutationState(toolName, { command }, command).mutatingAction).toBe(true);

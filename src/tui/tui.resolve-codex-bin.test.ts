@@ -53,7 +53,7 @@ describe("resolveCodexCliBin", () => {
   });
 
   it("selects the Windows npm command shim from a Unicode PATH entry", async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-tui-codex-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-tui-codex-"));
     tempDirs.push(tempDir);
     const binDir = path.join(tempDir, "Codex Å tools");
     fs.mkdirSync(binDir);
@@ -80,7 +80,7 @@ describe("resolveCodexCliBin", () => {
   });
 
   it("keeps native Windows executables and reports a missing Codex CLI", async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-tui-codex-native-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-tui-codex-native-"));
     tempDirs.push(tempDir);
     const executablePath = path.join(tempDir, "codex.exe");
     fs.copyFileSync(process.execPath, executablePath);
@@ -95,7 +95,7 @@ describe("resolveCodexCliBin", () => {
   });
 
   it("falls back to a bare-only native Windows Codex executable", async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-tui-codex-bare-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-tui-codex-bare-"));
     tempDirs.push(tempDir);
     const executablePath = path.join(tempDir, "codex");
     fs.copyFileSync(process.execPath, executablePath);

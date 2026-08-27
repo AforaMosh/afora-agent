@@ -3,17 +3,17 @@
  *
  * Combines account-scoped channel media limits with agent default limits.
  */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { normalizeAccountId } from "../../routing/session-key.js";
 
 const MB = 1024 * 1024;
 
 /** Resolves channel media limit bytes from account-specific config or agent defaults. */
 export function resolveChannelMediaMaxBytes(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   // Channel-specific config lives under different keys; keep this helper generic
   // so shared plugin helpers don't need channel-id branching.
-  resolveChannelLimitMb: (params: { cfg: OpenClawConfig; accountId: string }) => number | undefined;
+  resolveChannelLimitMb: (params: { cfg: AforaConfig; accountId: string }) => number | undefined;
   accountId?: string | null;
 }): number | undefined {
   const accountId = normalizeAccountId(params.accountId);

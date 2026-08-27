@@ -3,9 +3,9 @@ import { EventEmitter } from "node:events";
 import { createServer, type Server as HttpServer } from "node:http";
 import http2 from "node:http2";
 import net from "node:net";
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 // Tests APNS push signing and request construction.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createDeferred } from "../../test/helpers/promise.js";
 import { startProxy, stopProxy, type ProxyHandle } from "./net/proxy/proxy-lifecycle.js";
@@ -99,7 +99,7 @@ function createDirectApnsSendFixture(params: {
       nodeId: params.nodeId,
       transport: "direct" as const,
       token: "ABCD1234ABCD1234ABCD1234ABCD1234",
-      topic: "ai.openclaw.ios",
+      topic: "ai.afora.ios",
       environment: params.environment,
       updatedAtMs: 1,
     },
@@ -134,14 +134,14 @@ function createRelayApnsSendFixture(params: {
       relayHandle: params.relayHandle ?? "relay-handle-12345678",
       sendGrant: "send-grant-123",
       installationId: "install-123",
-      topic: "ai.openclaw.ios",
+      topic: "ai.afora.ios",
       environment,
       distribution: "official" as const,
       updatedAtMs: 1,
       tokenDebugSuffix: params.tokenDebugSuffix,
     },
     relayConfig: {
-      baseUrl: "https://relay.openclaw.test",
+      baseUrl: "https://relay.afora.test",
       timeoutMs: 2_500,
     },
     gatewayIdentity: {
@@ -351,12 +351,12 @@ describe("push APNs send semantics", () => {
       alert: { title: "Wake", body: "Ping" },
       sound: "default",
     });
-    const openclawPayload = requireRecord(payload.openclaw, "openclaw payload");
-    expectRecordFields(openclawPayload, {
+    const aforaPayload = requireRecord(payload.afora, "afora payload");
+    expectRecordFields(aforaPayload, {
       kind: "push.test",
       nodeId: "ios-node-alert",
     });
-    expect(typeof openclawPayload.ts).toBe("number");
+    expect(typeof aforaPayload.ts).toBe("number");
     expect(result.ok).toBe(true);
     expect(result.status).toBe(200);
     expect(result.transport).toBe("direct");
@@ -401,7 +401,7 @@ describe("push APNs send semantics", () => {
       const request = apnsServer.requests[0];
       expect(request?.headers[":method"]).toBe("POST");
       expect(request?.headers[":path"]).toBe("/3/device/abcd1234abcd1234abcd1234abcd1234");
-      expect(request?.headers["apns-topic"]).toBe("ai.openclaw.ios");
+      expect(request?.headers["apns-topic"]).toBe("ai.afora.ios");
       expect(request?.headers["apns-push-type"]).toBe("alert");
       expect(request?.body).toContain('"nodeId":"ios-node-proxied-alert"');
     } finally {
@@ -493,13 +493,13 @@ describe("push APNs send semantics", () => {
     expect(payload.aps).toEqual({
       "content-available": 1,
     });
-    const openclawPayload = requireRecord(payload.openclaw, "openclaw payload");
-    expectRecordFields(openclawPayload, {
+    const aforaPayload = requireRecord(payload.afora, "afora payload");
+    expectRecordFields(aforaPayload, {
       kind: "node.wake",
       reason: "node.invoke",
       nodeId: "ios-node-wake",
     });
-    expect(typeof openclawPayload.ts).toBe("number");
+    expect(typeof aforaPayload.ts).toBe("number");
     const aps = requireRecord(payload.aps, "APNs aps payload");
     expect(aps.alert).toBeUndefined();
     expect(aps.sound).toBeUndefined();
@@ -623,20 +623,20 @@ describe("push APNs send semantics", () => {
     expect(payload.aps).toEqual({
       alert: {
         title: "Exec approval required",
-        body: "Open OpenClaw to review this request.",
+        body: "Open Afora to review this request.",
       },
       sound: "default",
-      category: "openclaw.exec-approval",
+      category: "afora.exec-approval",
       "content-available": 1,
     });
-    const openclawPayload = requireRecord(payload.openclaw, "openclaw payload");
-    expectRecordFields(openclawPayload, {
+    const aforaPayload = requireRecord(payload.afora, "afora payload");
+    expectRecordFields(aforaPayload, {
       kind: "exec.approval.requested",
       approvalId: "approval-123",
       gatewayDeviceId: "gateway-device-123",
     });
-    expect(typeof openclawPayload.ts).toBe("number");
-    expectNoProperties(openclawPayload, [
+    expect(typeof aforaPayload.ts).toBe("number");
+    expectNoProperties(aforaPayload, [
       "host",
       "nodeId",
       "agentId",
@@ -675,13 +675,13 @@ describe("push APNs send semantics", () => {
     expect(payload.aps).toEqual({
       "content-available": 1,
     });
-    const openclawPayload = requireRecord(payload.openclaw, "openclaw payload");
-    expectRecordFields(openclawPayload, {
+    const aforaPayload = requireRecord(payload.afora, "afora payload");
+    expectRecordFields(aforaPayload, {
       kind: "exec.approval.resolved",
       approvalId: "approval-123",
       gatewayDeviceId: "gateway-device-123",
     });
-    expect(typeof openclawPayload.ts).toBe("number");
+    expect(typeof aforaPayload.ts).toBe("number");
     expect(result.ok).toBe(true);
     expect(result.transport).toBe("direct");
   });
@@ -716,17 +716,17 @@ describe("push APNs send semantics", () => {
         body: `${"x".repeat(255)}…`,
       },
       sound: "default",
-      category: "openclaw.plugin-approval",
+      category: "afora.plugin-approval",
       "content-available": 1,
     });
-    const openclawPayload = requireRecord(payload.openclaw, "openclaw payload");
-    expectRecordFields(openclawPayload, {
+    const aforaPayload = requireRecord(payload.afora, "afora payload");
+    expectRecordFields(aforaPayload, {
       kind: "plugin.approval.requested",
       approvalId: "plugin:approval-123",
       gatewayDeviceId: "gateway-device-123",
     });
-    expect(typeof openclawPayload.ts).toBe("number");
-    expectNoProperties(openclawPayload, [
+    expect(typeof aforaPayload.ts).toBe("number");
+    expectNoProperties(aforaPayload, [
       "title",
       "description",
       "toolName",
@@ -775,13 +775,13 @@ describe("push APNs send semantics", () => {
 
     const payload = requirePayload(requireSendRequest(send));
     expect(payload.aps).toEqual({ "content-available": 1 });
-    const openclawPayload = requireRecord(payload.openclaw, "openclaw payload");
-    expectRecordFields(openclawPayload, {
+    const aforaPayload = requireRecord(payload.afora, "afora payload");
+    expectRecordFields(aforaPayload, {
       kind: "plugin.approval.resolved",
       approvalId: "plugin:approval-123",
       gatewayDeviceId: "gateway-device-123",
     });
-    expect(typeof openclawPayload.ts).toBe("number");
+    expect(typeof aforaPayload.ts).toBe("number");
   });
 
   it("parses direct send failures and clamps sub-second timeouts", async () => {
@@ -884,7 +884,7 @@ describe("push APNs send semantics", () => {
     });
 
     const payload = requirePayload(requireSendRequest(send));
-    expectRecordFields(requireRecord(payload.openclaw, "openclaw payload"), {
+    expectRecordFields(requireRecord(payload.afora, "afora payload"), {
       kind: "node.wake",
       reason: "node.invoke",
       nodeId: "ios-node-wake-default-reason",
@@ -973,13 +973,13 @@ describe("push APNs send semantics", () => {
     });
     const payload = requirePayload(sent);
     expect(payload.aps).toEqual({ "content-available": 1 });
-    const openclawPayload = requireRecord(payload.openclaw, "openclaw payload");
-    expectRecordFields(openclawPayload, {
+    const aforaPayload = requireRecord(payload.afora, "afora payload");
+    expectRecordFields(aforaPayload, {
       kind: "node.wake",
       reason: "queue.retry",
       nodeId: "ios-node-relay-wake",
     });
-    expect(typeof openclawPayload.ts).toBe("number");
+    expect(typeof aforaPayload.ts).toBe("number");
     expectRecordFields(requireRecord(result, "APNs result"), {
       ok: false,
       status: 429,
@@ -1015,20 +1015,20 @@ describe("push APNs send semantics", () => {
     expect(payload.aps).toEqual({
       alert: {
         title: "Exec approval required",
-        body: "Open OpenClaw to review this request.",
+        body: "Open Afora to review this request.",
       },
       sound: "default",
-      category: "openclaw.exec-approval",
+      category: "afora.exec-approval",
       "content-available": 1,
     });
-    const openclawPayload = requireRecord(payload.openclaw, "openclaw payload");
-    expectRecordFields(openclawPayload, {
+    const aforaPayload = requireRecord(payload.afora, "afora payload");
+    expectRecordFields(aforaPayload, {
       kind: "exec.approval.requested",
       approvalId: "approval-relay-1",
       gatewayDeviceId: "gateway-device-relay",
     });
-    expect(typeof openclawPayload.ts).toBe("number");
-    expectNoProperties(openclawPayload, [
+    expect(typeof aforaPayload.ts).toBe("number");
+    expectNoProperties(aforaPayload, [
       "commandText",
       "host",
       "nodeId",

@@ -1,4 +1,4 @@
-import { readCodexCliCredentialsCached } from "openclaw/plugin-sdk/provider-auth";
+import { readCodexCliCredentialsCached } from "afora-agent/plugin-sdk/provider-auth";
 import { describe, expect, it } from "vitest";
 import { resolveCodexAuthIdentity } from "./openai-chatgpt-auth-identity.js";
 import type { OpenAIQuicksilverPendingAudio } from "./realtime-quicksilver-audio-buffer.js";
@@ -12,7 +12,7 @@ import type { OpenAIQuicksilverAuth } from "./realtime-quicksilver-wire.js";
 import { buildOpenAISpeechProvider } from "./speech-provider.js";
 
 const LIVE_ENABLED =
-  process.env.OPENCLAW_LIVE_TEST === "1" && process.env.OPENCLAW_LIVE_GPT_LIVE === "1";
+  process.env.AFORA_LIVE_TEST === "1" && process.env.AFORA_LIVE_GPT_LIVE === "1";
 const describeLive = LIVE_ENABLED ? describe : describe.skip;
 const LIVE_TIMEOUT_MS = 60_000;
 const MAX_PENDING_AUDIO_BYTES = 240_000;
@@ -88,7 +88,7 @@ describeLive("OpenAI GPT-Live gateway WebRTC peer", () => {
         model: "gpt-live-1-codex",
         voice: "marin",
         instructions:
-          "This is a live transport check. Immediately say: OpenClaw gateway relay test OK.",
+          "This is a live transport check. Immediately say: Afora gateway relay test OK.",
         audioFormat: { encoding: "pcm16", sampleRateHz: 24_000, channels: 1 },
         onAudio: (audio) => {
           if (audio.length > 0) {

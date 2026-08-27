@@ -3,7 +3,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import type { PreparedReplyDispatchRuntime } from "../../agents/prepared-model-runtime.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { SessionWorkStartInvalidatedError } from "../../config/sessions/lifecycle.js";
 import { loadSessionEntry, replaceSessionEntry } from "../../config/sessions/session-accessor.js";
 import { createSessionDiffBaselineCaptureClaim } from "../../config/sessions/session-diff-baseline-capture.js";
@@ -45,7 +45,7 @@ async function loadGetReplyRuntimeForTest() {
 
 async function prepareBaselineClaimSession(sessionId: string) {
   const sessionKey = `agent:main:telegram:${sessionId}`;
-  const storePath = path.join(tempDirs.make("openclaw-get-reply-baseline-"), "sessions.json");
+  const storePath = path.join(tempDirs.make("afora-get-reply-baseline-"), "sessions.json");
   const entry: InternalSessionEntry = {
     createdVia: "operator",
     sessionId,
@@ -110,7 +110,7 @@ function createPreparedDispatchRuntime(
 describe("getReplyFromConfig configOverride", () => {
   beforeEach(async () => {
     await loadGetReplyRuntimeForTest();
-    vi.stubEnv("OPENCLAW_ALLOW_SLOW_REPLY_TESTS", "1");
+    vi.stubEnv("AFORA_ALLOW_SLOW_REPLY_TESTS", "1");
     mocks.resolveReplyDirectives.mockReset();
     mocks.initSessionState.mockReset();
     mocks.captureSessionDiffBaseline.mockReset();
@@ -120,7 +120,7 @@ describe("getReplyFromConfig configOverride", () => {
     vi.mocked(loadConfigMock).mockReturnValue({});
     mocks.resolveReplyDirectives.mockResolvedValue({ kind: "reply", reply: { text: "ok" } });
     const sessionKey = "agent:main:telegram:123";
-    const storePath = path.join(tempDirs.make("openclaw-get-reply-session-"), "sessions.json");
+    const storePath = path.join(tempDirs.make("afora-get-reply-session-"), "sessions.json");
     const entry: InternalSessionEntry = {
       sessionId: "session-1",
       updatedAt: Date.now(),
@@ -160,7 +160,7 @@ describe("getReplyFromConfig configOverride", () => {
           userTimezone: "UTC",
         },
       },
-    } satisfies OpenClawConfig);
+    } satisfies AforaConfig);
 
     await getReplyFromConfig(buildGetReplyCtx(), undefined, {
       agents: {
@@ -168,7 +168,7 @@ describe("getReplyFromConfig configOverride", () => {
           userTimezone: "America/New_York",
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expectResolvedTelegramTimezone(mocks.resolveReplyDirectives);
   });
@@ -238,7 +238,7 @@ describe("getReplyFromConfig configOverride", () => {
             userTimezone: "America/New_York",
           },
         },
-      } satisfies OpenClawConfig),
+      } satisfies AforaConfig),
     );
 
     expect(loadConfigMock).not.toHaveBeenCalled();
@@ -287,7 +287,7 @@ describe("getReplyFromConfig configOverride", () => {
     const cfg = Object.freeze({
       agents: { defaults: { userTimezone: "America/New_York" } },
       channels: { telegram: { botToken: "resolved-telegram-token" } },
-    } satisfies OpenClawConfig);
+    } satisfies AforaConfig);
     const ownKeys = Reflect.ownKeys(cfg);
     vi.mocked(loadConfigMock).mockImplementation(() => {
       throw new Error("getRuntimeConfig should not be called for complete runtime config");

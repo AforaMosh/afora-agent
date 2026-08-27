@@ -4,7 +4,7 @@ description: "List, add, edit, complete, or delete Apple Reminders and reminder 
 homepage: https://github.com/steipete/remindctl
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "emoji": "⏰",
         "os": ["darwin"],
@@ -40,11 +40,11 @@ Use when:
 
 Do not use when:
 
-- Scheduling OpenClaw tasks or alerts -> use `cron` tool with systemEvent instead
+- Scheduling Afora tasks or alerts -> use `cron` tool with systemEvent instead
 - Calendar events or appointments -> use Apple Calendar
 - Project/work task management -> use Notion, GitHub Issues, or task queue
 - One-time notifications -> use `cron` tool for timed alerts
-- User says "remind me" but means an OpenClaw alert -> clarify first
+- User says "remind me" but means an Afora alert -> clarify first
 
 ## Setup
 
@@ -112,7 +112,7 @@ Accepted by `--due` and date filters:
 
 User: "Remind me to check on the deploy in 2 hours"
 
-**Ask:** "Do you want this in Apple Reminders (syncs to your phone) or as an OpenClaw alert (I'll message you here)?"
+**Ask:** "Do you want this in Apple Reminders (syncs to your phone) or as an Afora alert (I'll message you here)?"
 
 - Apple Reminders -> use this skill
-- OpenClaw alert -> use `cron` tool with systemEvent
+- Afora alert -> use `cron` tool with systemEvent

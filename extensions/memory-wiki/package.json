@@ -1,8 +1,8 @@
 {
-  "name": "@openclaw/memory-wiki",
+  "name": "@afora/memory-wiki",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw persistent wiki plugin",
+  "description": "Afora persistent wiki plugin",
   "type": "module",
   "dependencies": {
     "mdast-util-from-markdown": "2.0.3",
@@ -12,19 +12,19 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@openclaw/memory-core": "workspace:*",
-    "@openclaw/plugin-sdk": "workspace:*",
-    "openclaw": "workspace:*"
+    "@afora/memory-core": "workspace:*",
+    "@afora/plugin-sdk": "workspace:*",
+    "afora-agent": "workspace:*"
   },
   "peerDependencies": {
-    "openclaw": ">=2026.8.1"
+    "afora-agent": ">=2026.8.1"
   },
   "peerDependenciesMeta": {
-    "openclaw": {
+    "afora": {
       "optional": true
     }
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

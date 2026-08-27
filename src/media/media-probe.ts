@@ -1,10 +1,10 @@
 import fs from "node:fs/promises";
-import type { MediaKind } from "@openclaw/media-core/constants";
+import type { MediaKind } from "@afora/media-core/constants";
 import {
   asPositiveSafeInteger as parsePositiveInteger,
   asSafeIntegerInRange,
-} from "@openclaw/normalization-core/number-coercion";
-import { asOptionalRecord as readRecord } from "@openclaw/normalization-core/record-coerce";
+} from "@afora/normalization-core/number-coercion";
+import { asOptionalRecord as readRecord } from "@afora/normalization-core/record-coerce";
 import { runFfprobe } from "./ffmpeg-exec.js";
 
 export type MediaProbeKind = Extract<MediaKind, "audio" | "video">;

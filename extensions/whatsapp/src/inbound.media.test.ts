@@ -84,9 +84,9 @@ let currentMockSocket:
     }
   | undefined;
 
-vi.mock("openclaw/plugin-sdk/logging-core", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/logging-core")>(
-    "openclaw/plugin-sdk/logging-core",
+vi.mock("afora-agent/plugin-sdk/logging-core", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/logging-core")>(
+    "afora-agent/plugin-sdk/logging-core",
   );
   function observeConsoleWarnings(
     logger: ReturnType<typeof actual.createSubsystemLogger>,
@@ -111,10 +111,10 @@ vi.mock("openclaw/plugin-sdk/logging-core", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/runtime-config-snapshot", async () => {
+vi.mock("afora-agent/plugin-sdk/runtime-config-snapshot", async () => {
   const actual = await vi.importActual<
-    typeof import("openclaw/plugin-sdk/runtime-config-snapshot")
-  >("openclaw/plugin-sdk/runtime-config-snapshot");
+    typeof import("afora-agent/plugin-sdk/runtime-config-snapshot")
+  >("afora-agent/plugin-sdk/runtime-config-snapshot");
   return {
     ...actual,
     getRuntimeConfig: vi.fn().mockReturnValue({
@@ -131,9 +131,9 @@ vi.mock("openclaw/plugin-sdk/runtime-config-snapshot", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/conversation-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/conversation-runtime")>(
-    "openclaw/plugin-sdk/conversation-runtime",
+vi.mock("afora-agent/plugin-sdk/conversation-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/conversation-runtime")>(
+    "afora-agent/plugin-sdk/conversation-runtime",
   );
   return {
     ...actual,
@@ -146,9 +146,9 @@ vi.mock("openclaw/plugin-sdk/conversation-runtime", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/channel-pairing", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/channel-pairing")>(
-    "openclaw/plugin-sdk/channel-pairing",
+vi.mock("afora-agent/plugin-sdk/channel-pairing", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/channel-pairing")>(
+    "afora-agent/plugin-sdk/channel-pairing",
   );
   return {
     ...actual,
@@ -158,9 +158,9 @@ vi.mock("openclaw/plugin-sdk/channel-pairing", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/media-store", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/media-store")>(
-    "openclaw/plugin-sdk/media-store",
+vi.mock("afora-agent/plugin-sdk/media-store", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/media-store")>(
+    "afora-agent/plugin-sdk/media-store",
   );
   return {
     ...actual,
@@ -173,11 +173,11 @@ vi.mock("openclaw/plugin-sdk/media-store", async () => {
 
 vi.mock("./runtime.js", async () => {
   const { createChannelIngressQueueForTests: createChannelIngressQueue } = await Promise.resolve(
-    vi.importActual<typeof import("openclaw/plugin-sdk/plugin-state-test-runtime")>(
-      "openclaw/plugin-sdk/plugin-state-test-runtime",
+    vi.importActual<typeof import("afora-agent/plugin-sdk/plugin-state-test-runtime")>(
+      "afora-agent/plugin-sdk/plugin-state-test-runtime",
     ),
   );
-  const stateDir = `/tmp/openclaw-whatsapp-inbound-media-${Date.now()}-${Math.random()}`;
+  const stateDir = `/tmp/afora-whatsapp-inbound-media-${Date.now()}-${Math.random()}`;
   return {
     getOptionalWhatsAppRuntime: () => undefined,
     getWhatsAppRuntime: () => ({
@@ -193,7 +193,7 @@ vi.mock("./runtime.js", async () => {
   };
 });
 
-const HOME = path.join(os.tmpdir(), `openclaw-inbound-media-${crypto.randomUUID()}`);
+const HOME = path.join(os.tmpdir(), `afora-inbound-media-${crypto.randomUUID()}`);
 const ORIGINAL_HOME = process.env.HOME;
 process.env.HOME = HOME;
 
@@ -254,10 +254,10 @@ vi.mock("./session.js", async () => {
 let monitorWebInbox: typeof import("./inbound.js").monitorWebInbox;
 let resetWebInboundDedupe: typeof import("./inbound.js").resetWebInboundDedupe;
 let createWaSocket: typeof import("./session.js").createWaSocket;
-let resetLogger: typeof import("openclaw/plugin-sdk/runtime-env").resetLogger;
-let setLoggerOverride: typeof import("openclaw/plugin-sdk/runtime-env").setLoggerOverride;
+let resetLogger: typeof import("afora-agent/plugin-sdk/runtime-env").resetLogger;
+let setLoggerOverride: typeof import("afora-agent/plugin-sdk/runtime-env").setLoggerOverride;
 
-const LOG_PATH = path.join(os.tmpdir(), `openclaw-inbound-media-${crypto.randomUUID()}.log`);
+const LOG_PATH = path.join(os.tmpdir(), `afora-inbound-media-${crypto.randomUUID()}.log`);
 const DIRECT_SYNTHETIC_BEARER = "synthetic-direct-bearer-never-real";
 const QUOTED_SYNTHETIC_API_KEY = "synthetic-quoted-api-key-never-real";
 const DEPLOYMENT_REDACTION_SENTINEL = "deployment-secret-never-real";
@@ -342,13 +342,13 @@ describe("web inbound media saves with extension", () => {
 
   beforeAll(async () => {
     await fs.rm(HOME, { recursive: true, force: true });
-    const configDir = path.join(HOME, ".openclaw");
+    const configDir = path.join(HOME, ".afora");
     await fs.mkdir(configDir, { recursive: true });
     await fs.writeFile(
-      path.join(configDir, "openclaw.json"),
+      path.join(configDir, "afora.json"),
       JSON.stringify({ logging: { redactPatterns: ["deployment-secret-[a-z-]+"] } }),
     );
-    ({ resetLogger, setLoggerOverride } = await import("openclaw/plugin-sdk/runtime-env"));
+    ({ resetLogger, setLoggerOverride } = await import("afora-agent/plugin-sdk/runtime-env"));
     setLoggerOverride({ level: "trace", consoleLevel: "info", file: LOG_PATH });
     ({ monitorWebInbox, resetWebInboundDedupe } = await import("./inbound.js"));
     ({ createWaSocket } = await import("./session.js"));

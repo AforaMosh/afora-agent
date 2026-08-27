@@ -1,17 +1,17 @@
 // Channel inbound root helpers resolve media roots for channel-delivered files.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import type { MsgContext } from "../auto-reply/templating.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { registerPluginMetadataProcessMemoLifecycleClear } from "../plugins/plugin-metadata-lifecycle.js";
 import { loadBundledPluginPublicArtifactModuleSync } from "../plugins/public-surface-loader.js";
 
 type ChannelMediaContractApi = {
   resolveInboundAttachmentRoots?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string;
   }) => readonly string[] | undefined;
   resolveRemoteInboundAttachmentRoots?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     accountId?: string;
   }) => readonly string[] | undefined;
 };
@@ -71,7 +71,7 @@ function findChannelMediaContractApi(
 
 /** Resolves local inbound attachment roots from the channel named in a message context. */
 export function resolveChannelInboundAttachmentRoots(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   ctx: MsgContext;
 }): readonly string[] | undefined {
   return resolveChannelInboundAttachmentRootsForChannel({
@@ -83,7 +83,7 @@ export function resolveChannelInboundAttachmentRoots(params: {
 
 /** Resolves local inbound attachment roots for callers that already know the channel id. */
 export function resolveChannelInboundAttachmentRootsForChannel(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channelId?: string | null;
   accountId?: string | null;
 }): readonly string[] | undefined {
@@ -102,7 +102,7 @@ export function resolveChannelInboundAttachmentRootsForChannel(params: {
 
 /** Resolves remote staging roots for inbound channel attachments without loading full channel code. */
 export function resolveChannelRemoteInboundAttachmentRoots(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   ctx: MsgContext;
 }): readonly string[] | undefined {
   const contractApi = findChannelMediaContractApi(

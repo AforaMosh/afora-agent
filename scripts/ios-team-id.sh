@@ -10,7 +10,7 @@ Prints an Apple Developer Team ID for iOS signing.
 
 Default behavior:
 - return IOS_DEVELOPMENT_TEAM when set
-- prefer the canonical OpenClaw iOS team when available in Xcode
+- prefer the canonical Afora iOS team when available in Xcode
 - otherwise fall back to a local Xcode team for local development builds
 
 Options:
@@ -43,7 +43,7 @@ canonical_team="${canonical_team//$'\r'/}"
 if [[ -n "${IOS_DEVELOPMENT_TEAM:-}" ]]; then
   explicit_team="${IOS_DEVELOPMENT_TEAM//$'\r'/}"
   if [[ "$require_canonical" == "1" && "$explicit_team" != "$canonical_team" ]]; then
-    echo "Resolved iOS Team ID '${explicit_team}' is not the canonical OpenClaw iOS team '${canonical_team}'." >&2
+    echo "Resolved iOS Team ID '${explicit_team}' is not the canonical Afora iOS team '${canonical_team}'." >&2
     exit 1
   fi
   printf '%s\n' "$explicit_team"
@@ -207,7 +207,7 @@ fi
 
 if [[ ${#team_ids[@]} -eq 0 ]]; then
   if [[ "$require_canonical" == "1" ]]; then
-    echo "Canonical OpenClaw iOS Team ID '${canonical_team}' is not available in Xcode on this machine." >&2
+    echo "Canonical Afora iOS Team ID '${canonical_team}' is not available in Xcode on this machine." >&2
     echo "Sign into the Apple Developer account that owns the canonical team, or set IOS_DEVELOPMENT_TEAM=${canonical_team}." >&2
     exit 1
   fi
@@ -241,7 +241,7 @@ for i in "${!team_ids[@]}"; do
 done
 
 if [[ "$require_canonical" == "1" ]]; then
-  echo "Canonical OpenClaw iOS Team ID '${canonical_team}' is not available in Xcode on this machine." >&2
+  echo "Canonical Afora iOS Team ID '${canonical_team}' is not available in Xcode on this machine." >&2
   echo "Sign into the Apple Developer account that owns the canonical team, or set IOS_DEVELOPMENT_TEAM=${canonical_team}." >&2
   exit 1
 fi

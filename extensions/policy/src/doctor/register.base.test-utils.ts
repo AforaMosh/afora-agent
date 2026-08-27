@@ -4,9 +4,9 @@ import { join } from "node:path";
 import {
   listHealthChecks,
   type HealthCheck,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/health";
-import { clearHealthChecksForTest } from "openclaw/plugin-sdk/plugin-test-runtime";
+  type AforaConfig,
+} from "afora-agent/plugin-sdk/health";
+import { clearHealthChecksForTest } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   collectPolicyEvidence,
@@ -273,7 +273,7 @@ describe("registerPolicyDoctorChecks", () => {
   });
 
   it("reports a missing policy file when the Policy plugin is enabled", async () => {
-    const configPath = join(workspaceDir, "openclaw.jsonc");
+    const configPath = join(workspaceDir, "afora.jsonc");
     await fs.writeFile(configPath, "{}", "utf-8");
 
     const result = await runPolicyChecks(ctx(configPath, cfgWithPolicy()));
@@ -288,7 +288,7 @@ describe("registerPolicyDoctorChecks", () => {
   });
 
   it("does not report a missing policy file when policy is disabled", async () => {
-    const configPath = join(workspaceDir, "openclaw.jsonc");
+    const configPath = join(workspaceDir, "afora.jsonc");
     await fs.writeFile(configPath, "{}", "utf-8");
 
     const result = await runPolicyChecks(ctx(configPath, cfgWithPolicy({ enabled: false })));
@@ -322,7 +322,7 @@ describe("registerPolicyDoctorChecks", () => {
   });
 
   it("reports malformed channel deny rules against a configured policy path", async () => {
-    const configPath = join(workspaceDir, "openclaw.jsonc");
+    const configPath = join(workspaceDir, "afora.jsonc");
     await fs.writeFile(configPath, "{}", "utf-8");
     await fs.writeFile(
       join(workspaceDir, "workspace.policy.jsonc"),
@@ -883,7 +883,7 @@ describe("registerPolicyDoctorChecks", () => {
     const cfg = {
       ...cfgWithPolicy({ expectedHash: "sha256:not-the-policy", workspaceRepairs: true }),
       channels: { telegram: { enabled: true } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const configPath = await writePolicyFixture({
       channels: {
         denyRules: [{ id: "no-telegram", when: { provider: "telegram" } }],
@@ -943,7 +943,7 @@ describe("registerPolicyDoctorChecks", () => {
     const cfg = {
       ...cfgWithPolicy({ expectedAttestationHash: "sha256:not-current", workspaceRepairs: true }),
       channels: { telegram: { enabled: true } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const configPath = await writePolicyFixture({
       channels: {
         denyRules: [{ id: "no-telegram", when: { provider: "telegram" } }],
@@ -1068,7 +1068,7 @@ describe("registerPolicyDoctorChecks", () => {
           changed: { provider: "github", mode: "oauth" },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture(policy);
 
     const result = await runPolicyChecks(ctx(configPath, cfg));
@@ -1125,7 +1125,7 @@ describe("registerPolicyDoctorChecks", () => {
           },
         ],
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture(policy);
 
     const result = await runPolicyChecks(ctx(configPath, cfg));
@@ -1137,13 +1137,13 @@ describe("registerPolicyDoctorChecks", () => {
           id: "tools-alsoAllow",
           kind: "alsoAllow",
           entries: ["exec"],
-          source: "oc://openclaw.config/tools/alsoAllow",
+          source: "oc://afora.config/tools/alsoAllow",
         }),
         expect.objectContaining({
           id: "reviewer-alsoAllow",
           kind: "alsoAllow",
           entries: ["write"],
-          source: "oc://openclaw.config/agents/list/#0/tools/alsoAllow",
+          source: "oc://afora.config/agents/list/#0/tools/alsoAllow",
         }),
       ]),
     );
@@ -1160,7 +1160,7 @@ describe("registerPolicyDoctorChecks", () => {
     const cfg = {
       ...cfgWithPolicy(),
       channels: { telegram: { enabled: true } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const configPath = await writePolicyFixture(
       {
         channels: {
@@ -1183,9 +1183,9 @@ describe("registerPolicyDoctorChecks", () => {
       expect.objectContaining({
         checkId: "policy/channels-denied-provider",
         severity: "error",
-        path: "openclaw config",
-        ocPath: "oc://openclaw.config/channels/telegram",
-        target: "oc://openclaw.config/channels/telegram",
+        path: "afora config",
+        ocPath: "oc://afora.config/channels/telegram",
+        target: "oc://afora.config/channels/telegram",
         requirement: "oc://policy.jsonc/channels/denyRules/#0",
         fixHint: "Telegram is not approved for this workspace.",
       }),
@@ -1200,7 +1200,7 @@ describe("registerPolicyDoctorChecks", () => {
     const cfg = {
       ...cfgWithPolicy({ workspaceRepairs: true }),
       channels: { telegram: { enabled: true } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const configPath = await writePolicyFixture(
       {
         channels: {
@@ -1222,7 +1222,7 @@ describe("registerPolicyDoctorChecks", () => {
     const cfg = {
       ...cfgWithPolicy({ workspaceRepairs: false }),
       channels: { telegram: { enabled: true } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const configPath = await writePolicyFixture(
       {
         channels: {
@@ -1246,7 +1246,7 @@ describe("registerPolicyDoctorChecks", () => {
     const cfg = {
       ...cfgWithPolicy(),
       channels: { telegram: { enabled: true } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const configPath = await writePolicyFixture(
       {
         workspaceRepairs: true,
@@ -1271,7 +1271,7 @@ describe("registerPolicyDoctorChecks", () => {
     const cfg = {
       ...cfgWithPolicy({ workspaceRepairs: true }),
       tools: { elevated: { enabled: true } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const configPath = await writePolicyFixture({ tools: { elevated: { allow: false } } });
 
     const result = await runPolicyRepairCheck("policy/tools-elevated-enabled", {
@@ -1289,7 +1289,7 @@ describe("registerPolicyDoctorChecks", () => {
     const cfg = {
       ...cfgWithPolicy(),
       tools: { elevated: { enabled: true } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const configPath = await writePolicyFixture({ tools: { elevated: { allow: false } } });
 
     const result = await runPolicyRepairCheck(
@@ -1317,7 +1317,7 @@ describe("registerPolicyDoctorChecks", () => {
           },
         ],
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture({
       scopes: {
         reviewer: {
@@ -1348,7 +1348,7 @@ describe("registerPolicyDoctorChecks", () => {
       agents: {
         list: [{ id: "reviewer" }],
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture({
       scopes: {
         reviewer: {
@@ -1384,7 +1384,7 @@ describe("registerPolicyDoctorChecks", () => {
         },
       },
       diagnostics: { otel: { enabled: true, captureContent: true } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture({
       tools: { elevated: { allow: false } },
       gateway: {
@@ -1456,7 +1456,7 @@ describe("registerPolicyDoctorChecks", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture({
       gateway: {
         http: {
@@ -1494,7 +1494,7 @@ describe("registerPolicyDoctorChecks", () => {
     const cfg = {
       ...cfgWithPolicy({ workspaceRepairs: true }),
       gateway: { bind: "lan" },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture({
       gateway: { exposure: { allowNonLoopbackBind: false } },
     });
@@ -1528,7 +1528,7 @@ describe("registerPolicyDoctorChecks", () => {
     const cfg = {
       ...cfgWithPolicy({ workspaceRepairs: true }),
       gateway: { bind: "custom", customBindHost: "10.0.0.4" },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture({
       gateway: { exposure: { allowNonLoopbackBind: false } },
     });
@@ -1540,7 +1540,7 @@ describe("registerPolicyDoctorChecks", () => {
 
     expect(result.findings).toEqual([
       expect.objectContaining({
-        ocPath: "oc://openclaw.config/gateway/customBindHost",
+        ocPath: "oc://afora.config/gateway/customBindHost",
       }),
     ]);
     expect(result.status).toBe("skipped");
@@ -1569,7 +1569,7 @@ describe("registerPolicyDoctorChecks", () => {
     const cfg = {
       ...cfgWithPolicy({ workspaceRepairs: true }),
       gateway: { nodes: { commands: { deny: ["mcp.help"] } } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture({
       gateway: { nodes: { denyCommands: ["mcp.help", "system.run"] } },
     });
@@ -1615,7 +1615,7 @@ describe("registerPolicyDoctorChecks", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture({
       ingress: {
         channels: {
@@ -1665,7 +1665,7 @@ describe("registerPolicyDoctorChecks", () => {
           requireMention: false,
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture({
       ingress: {
         channels: {
@@ -1682,7 +1682,7 @@ describe("registerPolicyDoctorChecks", () => {
     expect(result.status).toBe("repaired");
     expect(result.findings).toEqual([
       expect.objectContaining({
-        ocPath: 'oc://openclaw.config/channels/"team/sebby"/requireMention',
+        ocPath: 'oc://afora.config/channels/"team/sebby"/requireMention',
       }),
     ]);
     expect(result.changes).toEqual([
@@ -1700,7 +1700,7 @@ describe("registerPolicyDoctorChecks", () => {
         defaults: { groupPolicy: "open" },
         telegram: {},
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture({
       scopes: {
         telegram: {
@@ -1730,7 +1730,7 @@ describe("registerPolicyDoctorChecks", () => {
     expect(result.remainingFindings).toEqual([
       expect.objectContaining({
         checkId: "policy/ingress-open-groups-denied",
-        ocPath: "oc://openclaw.config/channels/defaults/groupPolicy",
+        ocPath: "oc://afora.config/channels/defaults/groupPolicy",
         requirement: "oc://policy.jsonc/scopes/telegram/ingress/channels/denyOpenGroups",
       }),
     ]);
@@ -1740,7 +1740,7 @@ describe("registerPolicyDoctorChecks", () => {
     const cfg = {
       ...cfgWithPolicy(),
       channels: { telegram: { groupPolicy: "open" } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture({
       ingress: {
         channels: {
@@ -1767,7 +1767,7 @@ describe("registerPolicyDoctorChecks", () => {
     const cfg = {
       ...cfgWithPolicy({ workspaceRepairs: true }),
       tools: { deny: ["read"] },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture({ tools: { denyTools: ["exec", "write"] } });
 
     const result = await runPolicyRepairCheck("policy/tools-required-deny-missing", {
@@ -1780,12 +1780,12 @@ describe("registerPolicyDoctorChecks", () => {
         expect.objectContaining({
           checkId: "policy/tools-required-deny-missing",
           message: "global tools config does not deny required tool 'exec'.",
-          ocPath: "oc://openclaw.config/tools/deny",
+          ocPath: "oc://afora.config/tools/deny",
         }),
         expect.objectContaining({
           checkId: "policy/tools-required-deny-missing",
           message: "global tools config does not deny required tool 'write'.",
-          ocPath: "oc://openclaw.config/tools/deny",
+          ocPath: "oc://afora.config/tools/deny",
         }),
       ]),
     );

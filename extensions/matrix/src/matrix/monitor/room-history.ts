@@ -16,7 +16,7 @@
  * history and thread history must not share watermarks or pending context.
  */
 
-import type { HistoryEntry } from "openclaw/plugin-sdk/reply-history";
+import type { HistoryEntry } from "afora-agent/plugin-sdk/reply-history";
 
 /** Maximum entries retained per room (hard cap to bound memory). */
 const DEFAULT_MAX_QUEUE_SIZE = 200;

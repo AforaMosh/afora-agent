@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { requestDiscord } from "@openclaw/discord/api.js";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { requestDiscord } from "@afora/discord/api.js";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import {
   discordQaScenarioSupport,
   type DiscordQaScenarioImplementation,

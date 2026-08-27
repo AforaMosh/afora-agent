@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ExecApprovalRequestPayload } from "../infra/exec-approvals.js";
-import { closeOpenClawStateDatabase } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabase } from "../state/afora-state-db.js";
 import { ExecApprovalManager } from "./exec-approval-manager.js";
 
 type TimeoutCallback = Parameters<typeof setTimeout>[0];
@@ -18,7 +18,7 @@ describe("ExecApprovalManager timeout expiry publication", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    closeOpenClawStateDatabase();
+    closeAforaStateDatabase();
     for (const dir of tempDirs.splice(0)) {
       fs.rmSync(dir, { recursive: true, force: true });
     }
@@ -48,7 +48,7 @@ describe("ExecApprovalManager timeout expiry publication", () => {
     const timers = installTimerMocks();
     vi.spyOn(Date, "now").mockReturnValue(1_000);
     const expirations: Array<{ recordId: string; status: string; requestCommand?: string }> = [];
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-approval-expired-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-approval-expired-"));
     tempDirs.push(dir);
     const manager = new ExecApprovalManager<ExecApprovalRequestPayload>({
       approvalKind: "exec",

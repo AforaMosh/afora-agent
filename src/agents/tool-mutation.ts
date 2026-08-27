@@ -3,12 +3,12 @@
  *
  * Identifies mutating tool calls and file targets so retry/recovery logic can reason about side effects.
  */
-import { stableStringify } from "@openclaw/normalization-core";
-import { asOptionalObjectRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
+import { stableStringify } from "@afora/normalization-core";
+import { asOptionalObjectRecord as asRecord } from "@afora/normalization-core/record-coerce";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { sha256Hex } from "../infra/crypto-digest.js";
 import { isLikelyMutatingToolName } from "./tool-mutation-names.js";
 import { isAutomationsToolName } from "./tools/automations-tool-name.js";

@@ -1,10 +1,10 @@
 // Msteams plugin module implements graph members behavior.
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 import { resolveConversationPath, resolveGraphConversationId } from "./graph-messages.js";
 import { fetchGraphJson, resolveGraphToken } from "./graph.js";
 
 type GetMemberInfoMSTeamsParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   to: string;
   userId: string;
   currentRequesterId?: string | null;

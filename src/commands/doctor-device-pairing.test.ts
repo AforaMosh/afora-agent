@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 // Doctor device pairing tests cover device-pairing checks, repair prompts, and diagnostics.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { storeDeviceAuthToken } from "../infra/device-auth-store.js";
 import {
@@ -64,11 +64,11 @@ describe("noteDevicePairingHealth", () => {
       initial: Awaited<ReturnType<typeof requestDevicePairing>>;
     }) => Promise<void>,
   ): Promise<void> {
-    await withTempDir("openclaw-doctor-device-pairing-", async (stateDir) => {
+    await withTempDir("afora-doctor-device-pairing-", async (stateDir) => {
       await withEnvAsync(
         {
-          OPENCLAW_STATE_DIR: stateDir,
-          OPENCLAW_TEST_FAST: "1",
+          AFORA_STATE_DIR: stateDir,
+          AFORA_TEST_FAST: "1",
         },
         async () => {
           const identity = loadOrCreateDeviceIdentity();
@@ -106,11 +106,11 @@ describe("noteDevicePairingHealth", () => {
   });
 
   it("does not create shared state while collecting local pairing findings", async () => {
-    await withTempDir("openclaw-doctor-device-pairing-readonly-", async (stateDir) => {
+    await withTempDir("afora-doctor-device-pairing-readonly-", async (stateDir) => {
       await withEnvAsync(
         {
-          OPENCLAW_STATE_DIR: stateDir,
-          OPENCLAW_TEST_FAST: "1",
+          AFORA_STATE_DIR: stateDir,
+          AFORA_TEST_FAST: "1",
         },
         async () => {
           await expect(
@@ -120,7 +120,7 @@ describe("noteDevicePairingHealth", () => {
             }),
           ).resolves.toEqual([]);
           await expect(
-            fs.stat(path.join(stateDir, "state", "openclaw.sqlite")),
+            fs.stat(path.join(stateDir, "state", "afora.sqlite")),
           ).rejects.toMatchObject({ code: "ENOENT" });
         },
       );
@@ -149,7 +149,7 @@ describe("noteDevicePairingHealth", () => {
       expect(requireNoteTitle()).toBe("Device pairing");
       expect(message).toContain("Pending scope upgrade");
       expect(message).toContain("operator.admin");
-      expect(message).toContain("openclaw devices approve");
+      expect(message).toContain("afora devices approve");
       expect(callGatewayMock).not.toHaveBeenCalled();
 
       const findings = await collectDevicePairingHealthFindings({
@@ -163,7 +163,7 @@ describe("noteDevicePairingHealth", () => {
           target: identity.deviceId + ":" + pending.request.requestId,
           requirement: "scope-upgrade",
           message: expect.stringContaining("Pending scope upgrade"),
-          fixHint: expect.stringContaining("openclaw devices approve"),
+          fixHint: expect.stringContaining("afora devices approve"),
         }),
       ]);
       expect(callGatewayMock).not.toHaveBeenCalled();
@@ -171,11 +171,11 @@ describe("noteDevicePairingHealth", () => {
   });
 
   it("warns when a legacy pairing store file has not been imported into SQLite", async () => {
-    await withTempDir("openclaw-doctor-device-pairing-", async (stateDir) => {
+    await withTempDir("afora-doctor-device-pairing-", async (stateDir) => {
       await withEnvAsync(
         {
-          OPENCLAW_STATE_DIR: stateDir,
-          OPENCLAW_TEST_FAST: "1",
+          AFORA_STATE_DIR: stateDir,
+          AFORA_TEST_FAST: "1",
         },
         async () => {
           const pairedPath = path.join(stateDir, "devices", "paired.json");
@@ -237,7 +237,7 @@ describe("noteDevicePairingHealth", () => {
       expect(noteMock).toHaveBeenCalledTimes(1);
       const message = requireNoteMessage();
       expect(message).toContain("stale device-token pattern");
-      expect(message).toContain("openclaw devices rotate");
+      expect(message).toContain("afora devices rotate");
     });
   });
 
@@ -369,9 +369,9 @@ describe("noteDevicePairingHealth", () => {
     });
 
     const message = requireNoteMessage();
-    expect(message).toContain("openclaw devices remove 'device; echo pwn'");
+    expect(message).toContain("afora devices remove 'device; echo pwn'");
     expect(message).toContain(
-      "openclaw devices rotate --device 'device; echo pwn' --role 'operator; touch /tmp/pwn'",
+      "afora devices rotate --device 'device; echo pwn' --role 'operator; touch /tmp/pwn'",
     );
   });
 

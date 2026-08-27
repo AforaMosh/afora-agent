@@ -45,7 +45,7 @@ describe("gateway hook runner methods", () => {
   const gatewayCtx = {
     port: 18789,
     config: {} as never,
-    workspaceDir: "/tmp/openclaw-workspace",
+    workspaceDir: "/tmp/afora-workspace",
     getCron: () => undefined,
   };
   const cronReconciledCtx: PluginHookCronReconciledContext = {

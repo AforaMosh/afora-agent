@@ -1,5 +1,5 @@
 // Gradium tests cover tts plugin behavior.
-import { installPinnedHostnameTestHooks } from "openclaw/plugin-sdk/test-media-understanding";
+import { installPinnedHostnameTestHooks } from "afora-agent/plugin-sdk/test-media-understanding";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { gradiumTTS } from "./tts.js";
 

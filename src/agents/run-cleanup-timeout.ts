@@ -6,15 +6,15 @@
 import {
   parseStrictPositiveInteger,
   resolveOptionalIntegerOption,
-} from "@openclaw/normalization-core/number-coercion";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+} from "@afora/normalization-core/number-coercion";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { formatErrorMessage } from "../infra/errors.js";
 
 // Cleanup steps must not block run completion forever. This module bounds each
 // cleanup step and logs enough context to debug late failures.
 const AGENT_CLEANUP_STEP_TIMEOUT_MS = 10_000;
-const AGENT_CLEANUP_STEP_TIMEOUT_ENV = "OPENCLAW_AGENT_CLEANUP_TIMEOUT_MS";
-const TRAJECTORY_FLUSH_TIMEOUT_ENV = "OPENCLAW_TRAJECTORY_FLUSH_TIMEOUT_MS";
+const AGENT_CLEANUP_STEP_TIMEOUT_ENV = "AFORA_AGENT_CLEANUP_TIMEOUT_MS";
+const TRAJECTORY_FLUSH_TIMEOUT_ENV = "AFORA_TRAJECTORY_FLUSH_TIMEOUT_MS";
 const CLEANUP_TIMEOUT_DETAILS_MAX_CHARS = 512;
 
 const CLEANUP_TIMEOUT_DETAILS_TRUNCATED_SUFFIX = "...[truncated]";
@@ -64,7 +64,7 @@ function resolveAgentCleanupStepTimeoutMs(params: {
   }
 
   const env = params.env ?? process.env;
-  if (params.step === "openclaw-trajectory-flush") {
+  if (params.step === "afora-trajectory-flush") {
     const trajectoryTimeoutMs = parseTimeoutEnvValue(env[TRAJECTORY_FLUSH_TIMEOUT_ENV]);
     if (trajectoryTimeoutMs !== undefined) {
       return trajectoryTimeoutMs;

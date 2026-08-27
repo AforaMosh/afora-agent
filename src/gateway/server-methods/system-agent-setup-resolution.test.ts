@@ -1,7 +1,7 @@
-// OpenClaw setup resolution tests cover terminal provider guidance.
-import { expectDefined } from "@openclaw/normalization-core";
+// Afora setup resolution tests cover terminal provider guidance.
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resetCommandQueueStateForTest } from "../../process/command-queue.test-support.js";
 import { whenAdmittedWizardSessionSettled } from "./setup-admission.js";
 import { systemAgentHandlers } from "./system-agent.js";
@@ -23,7 +23,7 @@ vi.mock("../../wizard/setup.shared.js", () => ({
   writeWizardConfigFile: setupSharedMocks.writeWizardConfigFile,
 }));
 
-const config: OpenClawConfig = {
+const config: AforaConfig = {
   models: { providers: { ollama: { baseUrl: "http://127.0.0.1:11434", models: [] } } },
 };
 
@@ -39,12 +39,12 @@ function makeContext() {
   };
 }
 
-describe("openclaw.setup provider resolution", () => {
+describe("afora.setup provider resolution", () => {
   beforeEach(() => {
     setupSharedMocks.readSetupConfigFileSnapshot.mockResolvedValue({
       exists: true,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       hash: "setup-resolution-config",
       sourceConfig: config,
       config,
@@ -64,8 +64,8 @@ describe("openclaw.setup provider resolution", () => {
     providerAuthChoiceMocks.applyAuthChoiceLoadedPluginProvider.mockResolvedValueOnce(result);
     const { wizardSessions, context } = makeContext();
     const handler = expectDefined(
-      systemAgentHandlers["openclaw.setup.prepare.start"],
-      "openclaw.setup.prepare.start handler",
+      systemAgentHandlers["afora.setup.prepare.start"],
+      "afora.setup.prepare.start handler",
     );
 
     await handler({
@@ -82,7 +82,7 @@ describe("openclaw.setup provider resolution", () => {
       done: true,
       status: "error",
       error:
-        'Error: Provider setup resolution failed for "ollama". Run `openclaw doctor --fix`, restart the Gateway, and try again.',
+        'Error: Provider setup resolution failed for "ollama". Run `afora doctor --fix`, restart the Gateway, and try again.',
     });
     await whenAdmittedWizardSessionSettled(session);
     expect(setupSharedMocks.writeWizardConfigFile).not.toHaveBeenCalled();

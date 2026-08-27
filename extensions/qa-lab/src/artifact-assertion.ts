@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import { QaSuiteArtifactError } from "./errors.js";
 
 export async function assertQaSuiteArtifactWritten(

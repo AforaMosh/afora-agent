@@ -1,4 +1,4 @@
-import { withOpenClawStateLease } from "../../state/openclaw-state-lease.js";
+import { withAforaStateLease } from "../../state/afora-state-lease.js";
 import { canonicalSkillCollectionWorkspace } from "./collection-paths.js";
 import { hashSkillProposalContent } from "./proposal-hash.js";
 import {
@@ -18,7 +18,7 @@ export async function withSkillCollectionLock<T>(
   options: SkillWorkshopStoreOptions = {},
 ): Promise<T> {
   ensureSkillWorkshopSchema(options);
-  return await withOpenClawStateLease(
+  return await withAforaStateLease(
     {
       scope: "skill-collection",
       key: hashSkillProposalContent(canonicalSkillCollectionWorkspace(workspaceDir)),
@@ -38,7 +38,7 @@ export async function withSkillProposalTargetLock<T>(
   options: SkillWorkshopStoreOptions = {},
 ): Promise<T> {
   ensureSkillWorkshopSchema(options);
-  return await withOpenClawStateLease(
+  return await withAforaStateLease(
     {
       scope: "skill-workshop-target",
       key: hashSkillProposalContent(record.target.skillFile),

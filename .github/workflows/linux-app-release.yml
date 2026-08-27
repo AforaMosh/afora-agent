@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing OpenClaw release tag to receive Linux companion bundles, for example v2026.7.1
+        description: Existing Afora release tag to receive Linux companion bundles, for example v2026.7.1
         required: true
         type: string
       desktop-test-bundles:
@@ -147,10 +147,10 @@ jobs:
             exit 1
           fi
           mkdir -p dist/linux-app/release dist/linux-app/signatures
-          cp "${debs[0]}" "dist/linux-app/release/OpenClaw-${version}-amd64.deb"
-          cp "${appimages[0]}" "dist/linux-app/release/OpenClaw-${version}-amd64.AppImage"
+          cp "${debs[0]}" "dist/linux-app/release/Afora-${version}-amd64.deb"
+          cp "${appimages[0]}" "dist/linux-app/release/Afora-${version}-amd64.AppImage"
           cp "${appimages[0]}.sig" \
-            "dist/linux-app/signatures/OpenClaw-${version}-amd64.AppImage.sig"
+            "dist/linux-app/signatures/Afora-${version}-amd64.AppImage.sig"
 
       - name: Upload Linux bundles
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -218,11 +218,11 @@ jobs:
             exit 1
           fi
           mkdir -p dist/macos-app/release dist/macos-app/signatures
-          cp "${dmgs[0]}" "dist/macos-app/release/OpenClaw-${version}-darwin-aarch64.dmg"
+          cp "${dmgs[0]}" "dist/macos-app/release/Afora-${version}-darwin-aarch64.dmg"
           cp "${archives[0]}" \
-            "dist/macos-app/release/OpenClaw-${version}-darwin-aarch64.app.tar.gz"
+            "dist/macos-app/release/Afora-${version}-darwin-aarch64.app.tar.gz"
           cp "${archives[0]}.sig" \
-            "dist/macos-app/signatures/OpenClaw-${version}-darwin-aarch64.app.tar.gz.sig"
+            "dist/macos-app/signatures/Afora-${version}-darwin-aarch64.app.tar.gz.sig"
 
       - name: Upload macOS test bundles
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -285,8 +285,8 @@ jobs:
             throw "Windows bundle version '$($installer.VersionInfo.ProductVersion)' does not match release version '$version'"
           }
           New-Item -ItemType Directory -Force -Path "dist/windows-app/release", "dist/windows-app/signatures" | Out-Null
-          Copy-Item -LiteralPath $installer.FullName -Destination "dist/windows-app/release/OpenClaw-$version-windows-x86_64.exe"
-          Copy-Item -LiteralPath $signature -Destination "dist/windows-app/signatures/OpenClaw-$version-windows-x86_64.exe.sig"
+          Copy-Item -LiteralPath $installer.FullName -Destination "dist/windows-app/release/Afora-$version-windows-x86_64.exe"
+          Copy-Item -LiteralPath $signature -Destination "dist/windows-app/signatures/Afora-$version-windows-x86_64.exe.sig"
 
       - name: Upload Windows test bundle
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -355,7 +355,7 @@ jobs:
           (cd dist/release && sha256sum ./* > SHA256SUMS.linux-app.txt)
           cat dist/release/SHA256SUMS.linux-app.txt
 
-          linux_signature=$(cat "dist/input/linux/signatures/OpenClaw-${version}-amd64.AppImage.sig")
+          linux_signature=$(cat "dist/input/linux/signatures/Afora-${version}-amd64.AppImage.sig")
           url_base="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}"
           pub_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           # Capture the full body (no early-closing pipe under pipefail), then
@@ -369,22 +369,22 @@ jobs:
             --arg notes "${notes}" \
             --arg pub_date "${pub_date}" \
             --arg linux_signature "${linux_signature}" \
-            --arg linux_url "${url_base}/OpenClaw-${version}-amd64.AppImage" \
+            --arg linux_url "${url_base}/Afora-${version}-amd64.AppImage" \
             '{version: $version, notes: ($notes | .[0:2000]), pub_date: $pub_date, platforms: {"linux-x86_64": {signature: $linux_signature, url: $linux_url}}}' \
             > dist/release/latest.json
           cat dist/release/latest.json
 
           if [[ "${DESKTOP_TEST_BUNDLES}" == "true" ]]; then
-            macos_signature=$(cat "dist/input/macos/signatures/OpenClaw-${version}-darwin-aarch64.app.tar.gz.sig")
-            windows_signature=$(cat "dist/input/windows/signatures/OpenClaw-${version}-windows-x86_64.exe.sig")
+            macos_signature=$(cat "dist/input/macos/signatures/Afora-${version}-darwin-aarch64.app.tar.gz.sig")
+            windows_signature=$(cat "dist/input/windows/signatures/Afora-${version}-windows-x86_64.exe.sig")
             jq -n \
               --arg version "${version}" \
               --arg notes "${notes}" \
               --arg pub_date "${pub_date}" \
               --arg macos_signature "${macos_signature}" \
-              --arg macos_url "${url_base}/OpenClaw-${version}-darwin-aarch64.app.tar.gz" \
+              --arg macos_url "${url_base}/Afora-${version}-darwin-aarch64.app.tar.gz" \
               --arg windows_signature "${windows_signature}" \
-              --arg windows_url "${url_base}/OpenClaw-${version}-windows-x86_64.exe" \
+              --arg windows_url "${url_base}/Afora-${version}-windows-x86_64.exe" \
               '{version: $version, notes: ($notes | .[0:2000]), pub_date: $pub_date, platforms: {"darwin-aarch64": {signature: $macos_signature, url: $macos_url}, "windows-x86_64": {signature: $windows_signature, url: $windows_url}}}' \
               > dist/release/latest-desktop-test.json
             cat dist/release/latest-desktop-test.json
@@ -436,7 +436,7 @@ jobs:
               --repo "${GITHUB_REPOSITORY}" \
               --target "${TAG_SHA}" \
               --prerelease \
-              --title "OpenClaw desktop test update channel" \
+              --title "Afora desktop test update channel" \
               --notes "Opt-in updater manifest for unsigned macOS and Windows Tauri test builds."
           fi
           gh release upload "${DESKTOP_TEST_CHANNEL_TAG}" \

@@ -1,6 +1,6 @@
 // Runtime plan build tests cover the assembled agent runtime policy object:
 // auth, transport, tools, prompt, delivery, transcript, and observability.
-import { createParameterFreeTool } from "openclaw/plugin-sdk/agent-runtime-test-contracts";
+import { createParameterFreeTool } from "afora-agent/plugin-sdk/agent-runtime-test-contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { resetConfigRuntimeState, setRuntimeConfigSnapshot } from "../../config/config.js";
 import {
@@ -108,7 +108,7 @@ describe("AgentRuntimePlan", () => {
       modelId: "gpt-5.4",
       modelApi: "openai-responses",
       config: {},
-      workspaceDir: "/tmp/openclaw-runtime-plan",
+      workspaceDir: "/tmp/afora-runtime-plan",
       model: gpt54Model,
     });
 
@@ -134,7 +134,7 @@ describe("AgentRuntimePlan", () => {
       authProfileProvider: "openai",
       sessionAuthProfileId: "openai:work",
       config: {},
-      workspaceDir: "/tmp/openclaw-runtime-plan",
+      workspaceDir: "/tmp/afora-runtime-plan",
       model: {
         ...gpt54Model,
         baseUrl: "https://api.openai.com/v1",
@@ -192,13 +192,13 @@ describe("AgentRuntimePlan", () => {
     expect(plan.observability.harnessId).toBe("codex");
   });
 
-  it("keeps OpenClaw-owned tool-schema normalization reachable from the plan", () => {
+  it("keeps Afora-owned tool-schema normalization reachable from the plan", () => {
     const plan = buildAgentRuntimePlan({
       provider: "openai",
       modelId: "gpt-5.4",
       modelApi: "openai-responses",
       config: {},
-      workspaceDir: "/tmp/openclaw-runtime-plan",
+      workspaceDir: "/tmp/afora-runtime-plan",
       model: {
         ...gpt54Model,
         baseUrl: "https://api.openai.com/v1",
@@ -223,7 +223,7 @@ describe("AgentRuntimePlan", () => {
       authProfileMode: "api_key",
       sessionAuthProfileId: "openai:work",
       config: {},
-      workspaceDir: "/tmp/openclaw-runtime-plan",
+      workspaceDir: "/tmp/afora-runtime-plan",
     });
 
     expect(plan.auth.providerForAuth).toBe("openai");
@@ -244,7 +244,7 @@ describe("AgentRuntimePlan", () => {
       sessionAuthProfileId: "openai:work",
       sessionAuthProfileCandidateIds: ["openai:work", "openai:backup"],
       config: {},
-      workspaceDir: "/tmp/openclaw-runtime-plan",
+      workspaceDir: "/tmp/afora-runtime-plan",
     });
 
     expect(plan.auth.forwardedAuthProfileId).toBe("openai:work");
@@ -262,23 +262,23 @@ describe("AgentRuntimePlan", () => {
       authProfileMode: "oauth",
       sessionAuthProfileId: "openai:work",
       config: {},
-      workspaceDir: "/tmp/openclaw-runtime-plan",
+      workspaceDir: "/tmp/afora-runtime-plan",
     });
 
     expect(plan.auth.forwardedAuthProfileId).toBe("openai:work");
   });
 
-  it("forwards OpenAI Codex profiles for explicit OpenAI OpenClaw runs", () => {
+  it("forwards OpenAI Codex profiles for explicit OpenAI Afora runs", () => {
     const plan = buildAgentRuntimePlan({
       provider: "openai",
       modelId: "gpt-5.4",
       modelApi: "openai-responses",
-      harnessId: "openclaw",
-      harnessRuntime: "openclaw",
+      harnessId: "afora",
+      harnessRuntime: "afora",
       authProfileProvider: "openai",
       sessionAuthProfileId: "openai:work",
       config: {},
-      workspaceDir: "/tmp/openclaw-runtime-plan",
+      workspaceDir: "/tmp/afora-runtime-plan",
     });
 
     expect(plan.auth.providerForAuth).toBe("openai");
@@ -308,7 +308,7 @@ describe("AgentRuntimePlan", () => {
       provider: "openai",
       modelId: "gpt-5.4",
       config: {},
-      workspaceDir: "/tmp/openclaw-runtime-plan",
+      workspaceDir: "/tmp/afora-runtime-plan",
       providerRuntimeHandle,
     });
 
@@ -342,7 +342,7 @@ describe("AgentRuntimePlan", () => {
       modelId: "gpt-5.4",
       prepared: true,
       config: { plugins: { allow: ["openai"] } },
-      workspaceDir: "/tmp/openclaw-runtime-plan",
+      workspaceDir: "/tmp/afora-runtime-plan",
       env: process.env,
       plugin: {} as never,
     };
@@ -351,7 +351,7 @@ describe("AgentRuntimePlan", () => {
       provider: "openai",
       modelId: "gpt-5.4",
       config: {},
-      workspaceDir: "/tmp/openclaw-runtime-plan",
+      workspaceDir: "/tmp/afora-runtime-plan",
       providerRuntimeHandle: suppliedHandle,
     });
 
@@ -377,7 +377,7 @@ describe("AgentRuntimePlan", () => {
       provider: "openai",
       modelId: "gpt-5.4",
       prepared: true,
-      workspaceDir: "/tmp/openclaw-runtime-plan",
+      workspaceDir: "/tmp/afora-runtime-plan",
       env: process.env,
       plugin: {} as never,
     };
@@ -386,7 +386,7 @@ describe("AgentRuntimePlan", () => {
       provider: "openai",
       modelId: "gpt-5.4",
       config: {},
-      workspaceDir: "/tmp/openclaw-runtime-plan",
+      workspaceDir: "/tmp/afora-runtime-plan",
       providerRuntimeHandle: suppliedHandle,
     });
 

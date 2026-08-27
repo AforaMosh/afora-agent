@@ -7,7 +7,7 @@ import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { setTimeout as sleep } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { WebSocket, type ClientOptions, type RawData } from "ws";
 import {
   QA_EVIDENCE_FILENAME,
@@ -233,7 +233,7 @@ async function createFakeTailscaleBinary(): Promise<{
   binaryDir: string;
   cleanup: () => Promise<void>;
 }> {
-  const binaryDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-i1-tailscale-"));
+  const binaryDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-i1-tailscale-"));
   try {
     const binaryPath = path.join(binaryDir, "tailscale");
     await fs.writeFile(
@@ -410,11 +410,11 @@ function assertGatewayIdentityProjection(
 }
 
 function findLocalRunId(gateway: Awaited<ReturnType<typeof startQaGatewayChild>>) {
-  const stateDir = gateway.runtimeEnv.OPENCLAW_STATE_DIR;
+  const stateDir = gateway.runtimeEnv.AFORA_STATE_DIR;
   if (!stateDir) {
     throw new Error("QA Gateway did not expose its isolated state directory");
   }
-  const database = new DatabaseSync(path.join(stateDir, "state", "openclaw.sqlite"), {
+  const database = new DatabaseSync(path.join(stateDir, "state", "afora.sqlite"), {
     readOnly: true,
   });
   try {
@@ -441,11 +441,11 @@ function findLocalRunId(gateway: Awaited<ReturnType<typeof startQaGatewayChild>>
 }
 
 function inspectExecutionIdentityStorage(gateway: Awaited<ReturnType<typeof startQaGatewayChild>>) {
-  const stateDir = gateway.runtimeEnv.OPENCLAW_STATE_DIR;
+  const stateDir = gateway.runtimeEnv.AFORA_STATE_DIR;
   if (!stateDir) {
     throw new Error("QA Gateway did not expose its isolated state directory");
   }
-  const database = new DatabaseSync(path.join(stateDir, "state", "openclaw.sqlite"), {
+  const database = new DatabaseSync(path.join(stateDir, "state", "afora.sqlite"), {
     readOnly: true,
   });
   try {
@@ -468,13 +468,13 @@ function inspectPersistedSessionCreator(
   gateway: Awaited<ReturnType<typeof startQaGatewayChild>>,
   sessionKey: string,
 ) {
-  const stateDir = gateway.runtimeEnv.OPENCLAW_STATE_DIR;
+  const stateDir = gateway.runtimeEnv.AFORA_STATE_DIR;
   const agentId = sessionKey.split(":")[1];
   if (!stateDir || !agentId) {
     throw new Error("QA Gateway did not expose the session creator database owner");
   }
   const database = new DatabaseSync(
-    path.join(stateDir, "agents", agentId, "agent", "openclaw-agent.sqlite"),
+    path.join(stateDir, "agents", agentId, "agent", "afora-agent.sqlite"),
     { readOnly: true },
   );
   try {
@@ -525,11 +525,11 @@ function findRunExecutions(
   gateway: Awaited<ReturnType<typeof startQaGatewayChild>>,
   runId: string,
 ) {
-  const stateDir = gateway.runtimeEnv.OPENCLAW_STATE_DIR;
+  const stateDir = gateway.runtimeEnv.AFORA_STATE_DIR;
   if (!stateDir) {
     throw new Error("QA Gateway did not expose its isolated state directory");
   }
-  const database = new DatabaseSync(path.join(stateDir, "state", "openclaw.sqlite"), {
+  const database = new DatabaseSync(path.join(stateDir, "state", "afora.sqlite"), {
     readOnly: true,
   });
   try {

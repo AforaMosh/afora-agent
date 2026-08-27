@@ -1,6 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import type { Locator, Page } from "playwright";
 import { expect } from "vitest";
 import {
@@ -15,8 +15,8 @@ import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts"
 
 export { controlUiSessionPath, controlUiSessionUrl, installMockGateway, waitForConfirmModal };
 
-export const collapsedSessionSectionsStorageKey = "openclaw:sidebar:sessions:collapsed-sections";
-export const captureUiProofEnabled = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+export const collapsedSessionSectionsStorageKey = "afora:sidebar:sessions:collapsed-sections";
+export const captureUiProofEnabled = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 export const uiProofArtifactDir = path.join(
   process.cwd(),
   ".artifacts",
@@ -28,7 +28,7 @@ export function createSessionManagementE2eSuite() {
   return createControlUiE2eSuite({
     name: "Control UI session management mocked Gateway E2E",
     unavailableMessage: (executablePath) =>
-      `Playwright Chromium is not installed or cannot start at ${executablePath}. Run \`pnpm --dir ui exec playwright install --with-deps chromium\`, or set OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
+      `Playwright Chromium is not installed or cannot start at ${executablePath}. Run \`pnpm --dir ui exec playwright install --with-deps chromium\`, or set AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
   });
 }
 
@@ -183,7 +183,7 @@ export async function openSessionMenuSubmenu(page: Page, name: string): Promise<
   expect(index).toBeGreaterThanOrEqual(0);
   await expect
     .poll(() =>
-      page.locator("openclaw-session-menu > wa-dropdown > wa-dropdown-item:focus").count(),
+      page.locator("afora-session-menu > wa-dropdown > wa-dropdown-item:focus").count(),
     )
     .toBe(1);
   await page.keyboard.press("Home");
@@ -199,7 +199,7 @@ export async function openSessionMenuSubmenu(page: Page, name: string): Promise<
 
 /** Fills the owned input dialog and submits it the way Enter does. */
 export async function submitInputDialog(page: Page, value: string): Promise<void> {
-  const field = page.locator("openclaw-modal-dialog input");
+  const field = page.locator("afora-modal-dialog input");
   await field.waitFor({ state: "visible" });
   await field.fill(value);
   await field.press("Enter");

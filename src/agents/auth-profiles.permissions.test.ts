@@ -32,22 +32,22 @@ const {
 } = await import("./auth-profiles/store.js");
 const { clearRuntimeAuthProfileStoreSnapshots, replaceRuntimeAuthProfileStoreSnapshots } =
   await import("./auth-profiles/runtime-snapshots.js");
-const { closeOpenClawAgentDatabasesForTest } = await import("../state/openclaw-agent-db.js");
-const { closeOpenClawStateDatabaseForTest } = await import("../state/openclaw-state-db.js");
+const { closeAforaAgentDatabasesForTest } = await import("../state/afora-agent-db.js");
+const { closeAforaStateDatabaseForTest } = await import("../state/afora-state-db.js");
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("auth-profile database permission repair", () => {
   afterEach(() => {
     chmodFailHook.error = undefined;
     clearRuntimeAuthProfileStoreSnapshots();
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     vi.unstubAllEnvs();
   });
 
   it("keeps captured auth rows when pre-commit permission repair fails", () => {
-    const stateDir = tempDirs.make("openclaw-auth-chmod-");
-    vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+    const stateDir = tempDirs.make("afora-auth-chmod-");
+    vi.stubEnv("AFORA_STATE_DIR", stateDir);
     const agentDir = join(stateDir, "agents", "main", "agent");
     const initial: AuthProfileStore = {
       version: 1,
@@ -93,8 +93,8 @@ describe("auth-profile database permission repair", () => {
   });
 
   it("does not publish a caller-owned save before permission repair commits", () => {
-    const stateDir = tempDirs.make("openclaw-auth-overload-chmod-");
-    vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+    const stateDir = tempDirs.make("afora-auth-overload-chmod-");
+    vi.stubEnv("AFORA_STATE_DIR", stateDir);
     const agentDir = join(stateDir, "agents", "main", "agent");
     const initial: AuthProfileStore = {
       version: 1,

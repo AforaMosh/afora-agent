@@ -36,7 +36,7 @@ describe("createPreauthConnectionBudget", () => {
   });
 
   it("accepts strict plus-signed env limits", () => {
-    withEnv({ OPENCLAW_MAX_PREAUTH_CONNECTIONS_PER_IP: "+02" }, () => {
+    withEnv({ AFORA_MAX_PREAUTH_CONNECTIONS_PER_IP: "+02" }, () => {
       const budget = createPreauthConnectionBudget();
 
       expect(budget.acquire("127.0.0.1")).toBe(true);
@@ -46,7 +46,7 @@ describe("createPreauthConnectionBudget", () => {
   });
 
   it("ignores non-decimal env limits", () => {
-    withEnv({ OPENCLAW_MAX_PREAUTH_CONNECTIONS_PER_IP: "0x2" }, () => {
+    withEnv({ AFORA_MAX_PREAUTH_CONNECTIONS_PER_IP: "0x2" }, () => {
       const budget = createPreauthConnectionBudget();
 
       for (let i = 0; i < 32; i += 1) {

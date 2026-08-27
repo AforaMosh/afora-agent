@@ -1,6 +1,6 @@
 // Discord provider module implements model/runtime integration.
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { summarizeStringEntries } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { summarizeStringEntries } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { formatThreadBindingDurationLabel } from "./thread-bindings.messages.js";
 
 function formatThreadBindingDurationForConfigLabel(durationMs: number): string {

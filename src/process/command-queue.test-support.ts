@@ -15,7 +15,7 @@ type CommandQueueStateShape = {
 /** Hard-reset the process-global command queue between isolated tests. */
 export function resetCommandQueueStateForTest(): void {
   resetGatewayWorkAdmission();
-  const key = Symbol.for("openclaw.commandQueueState");
+  const key = Symbol.for("afora.commandQueueState");
   const state = (globalThis as Record<PropertyKey, unknown>)[key] as
     | CommandQueueStateShape
     | undefined;

@@ -6,11 +6,11 @@ import {
 } from "../../infra/kysely-sync.js";
 import { runSqliteDeferredTransactionSync } from "../../infra/sqlite-transaction.js";
 import { extractAssistantPhaseText } from "../../shared/chat-message-content.js";
-import { isTranscriptOnlyOpenClawAssistantModel } from "../../shared/transcript-only-openclaw-assistant.js";
+import { isTranscriptOnlyAforaAssistantModel } from "../../shared/transcript-only-afora-assistant.js";
 import {
-  openOpenClawAgentDatabase,
-  type OpenClawAgentDatabase,
-} from "../../state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  type AforaAgentDatabase,
+} from "../../state/afora-agent-db.js";
 import type {
   LatestTranscriptAssistantMessage,
   LatestTranscriptAssistantText,
@@ -48,7 +48,7 @@ export async function loadTranscriptEvents(
 /** Loads raw transcript events synchronously from the additive SQLite transcript store. */
 export function loadTranscriptEventsSync(scope: SessionTranscriptReadScope): TranscriptEvent[] {
   const resolved = resolveSqliteTranscriptReadScope(scope);
-  const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+  const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
   return runSqliteDeferredTransactionSync(
     database.db,
     () => {
@@ -68,7 +68,7 @@ export function inspectTranscriptEventsSync(scope: SessionTranscriptReadScope): 
   snapshot: SessionStateDeleteSnapshot;
 } {
   const resolved = resolveSqliteTranscriptReadScope(scope);
-  const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+  const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
   return runSqliteDeferredTransactionSync(
     database.db,
     () => ({
@@ -85,7 +85,7 @@ export function inspectTranscriptEventsSync(scope: SessionTranscriptReadScope): 
 /** Loads only the first transcript row for header metadata hot paths. */
 export function loadTranscriptHeaderSync(scope: SessionTranscriptReadScope): unknown {
   const resolved = resolveSqliteTranscriptReadScope(scope);
-  const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+  const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
   const db = getSessionKysely(database.db);
   const row = executeSqliteQueryTakeFirstSync(
     database.db,
@@ -109,7 +109,7 @@ export function loadTranscriptTailEventsSync(
     return [];
   }
   const resolved = resolveSqliteTranscriptReadScope(scope);
-  const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+  const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
   const db = getSessionKysely(database.db);
   return executeSqliteQuerySync(
     database.db,
@@ -131,7 +131,7 @@ export function loadTranscriptEventRowsAfterSeqSync(
   throughSeq?: number,
 ): SessionTranscriptEventRow[] {
   const resolved = resolveSqliteTranscriptReadScope(scope);
-  const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+  const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
   const db = getSessionKysely(database.db);
   let query = db
     .selectFrom("transcript_events")
@@ -153,7 +153,7 @@ export function readTranscriptEventAtSeqSync(
   seq: number,
 ): SessionTranscriptEventRow | undefined {
   const resolved = resolveSqliteTranscriptReadScope(scope);
-  const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+  const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
   const db = getSessionKysely(database.db);
   const row = executeSqliteQueryTakeFirstSync(
     database.db,
@@ -172,7 +172,7 @@ export function readTranscriptEventAtSeqSync(
 }
 
 export function loadTranscriptEventsFromDatabase(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionId: string,
   beforeEventSeq?: number,
 ): TranscriptEvent[] {
@@ -190,7 +190,7 @@ export function loadTranscriptEventsFromDatabase(
 }
 
 export function readTranscriptSnapshot(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionId: string,
 ): { events: TranscriptEvent[]; rows: SqliteTranscriptSnapshotRow[] } {
   const rows = readTranscriptEventRows(database, sessionId);
@@ -202,7 +202,7 @@ export function readTranscriptSnapshot(
 
 /** Reads transcript rows without decoding payloads for snapshot comparison. */
 export function readTranscriptEventRows(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionId: string,
 ): SqliteTranscriptSnapshotRow[] {
   const db = getSessionKysely(database.db);
@@ -222,7 +222,7 @@ export function readTranscriptEventRows(
 
 /** Reads exact transcript storage rows for guarded doctor rewrites. */
 export function readTranscriptStorageRows(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionId: string,
 ): SqliteTranscriptStorageRow[] {
   const db = getSessionKysely(database.db);
@@ -249,7 +249,7 @@ function sqliteTranscriptJsonlByteSize() {
 /** Reads transcript freshness and byte size without materializing event rows. */
 export function readTranscriptStatsSync(scope: SessionTranscriptReadScope): SessionTranscriptStats {
   const resolved = resolveSqliteTranscriptReadScope(scope);
-  const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+  const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
   const db = getSessionKysely(database.db);
   const row = executeSqliteQueryTakeFirstSync(
     database.db,
@@ -283,7 +283,7 @@ export function readTranscriptStatsSync(scope: SessionTranscriptReadScope): Sess
 }
 
 export function readTranscriptEventJsonSetInTransaction(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionId: string,
 ): Set<string> {
   const db = getSessionKysely(database.db);
@@ -297,10 +297,10 @@ export function readTranscriptEventJsonSetInTransaction(
 /** Reads the latest visible assistant text from SQLite transcript rows in reverse order. */
 export function loadLatestAssistantText(
   scope: SessionTranscriptReadScope,
-  options: { includeTranscriptOnlyOpenClawAssistant?: boolean } = {},
+  options: { includeTranscriptOnlyAforaAssistant?: boolean } = {},
 ): LatestTranscriptAssistantText | undefined {
   const resolved = resolveSqliteTranscriptReadScope(scope);
-  const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+  const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
   return runSqliteDeferredTransactionSync(
     database.db,
     () => {
@@ -360,7 +360,7 @@ function parseLatestAssistantText(
 
 function parseLatestAssistantMessageEvent(
   raw: string,
-  options: { includeTranscriptOnlyOpenClawAssistant?: boolean } = {},
+  options: { includeTranscriptOnlyAforaAssistant?: boolean } = {},
 ): LatestTranscriptAssistantMessage | undefined {
   let parsed: {
     id?: unknown;
@@ -376,8 +376,8 @@ function parseLatestAssistantMessageEvent(
     return undefined;
   }
   if (
-    !options.includeTranscriptOnlyOpenClawAssistant &&
-    isTranscriptOnlyOpenClawAssistantModel(message.provider, message.model)
+    !options.includeTranscriptOnlyAforaAssistant &&
+    isTranscriptOnlyAforaAssistantModel(message.provider, message.model)
   ) {
     return undefined;
   }
@@ -393,12 +393,12 @@ export async function findTranscriptEvent(
   match: (event: TranscriptEvent) => boolean,
 ): Promise<{ event: TranscriptEvent } | undefined> {
   const resolved = resolveSqliteTranscriptReadScope(scope);
-  const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+  const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
   return findTranscriptEventInDatabase(database, resolved.sessionId, match);
 }
 
 export function findTranscriptEventInDatabase(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionId: string,
   match: (event: TranscriptEvent) => boolean,
 ): { event: TranscriptEvent } | undefined {

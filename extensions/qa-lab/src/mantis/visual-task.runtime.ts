@@ -1,8 +1,8 @@
 // Qa Lab plugin module implements visual task behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { pathExists, writeExternalFileWithinRoot } from "openclaw/plugin-sdk/security-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { pathExists, writeExternalFileWithinRoot } from "afora-agent/plugin-sdk/security-runtime";
 import { ensureRepoBoundDirectory, resolveRepoRelativeOutputDir } from "../cli-paths.js";
 import { toQaError } from "../errors.js";
 import { isTruthyOptIn, trimToValue } from "../mantis-options.runtime.js";
@@ -135,13 +135,13 @@ const DEFAULT_IDLE_TIMEOUT = "60m";
 const DEFAULT_TTL = "120m";
 const DEFAULT_SETTLE_MS = 8000;
 const DEFAULT_VISION_TIMEOUT_MS = 120000;
-const CRABBOX_BIN_ENV = "OPENCLAW_MANTIS_CRABBOX_BIN";
-const CRABBOX_PROVIDER_ENV = "OPENCLAW_MANTIS_CRABBOX_PROVIDER";
-const CRABBOX_CLASS_ENV = "OPENCLAW_MANTIS_CRABBOX_CLASS";
-const CRABBOX_LEASE_ID_ENV = "OPENCLAW_MANTIS_CRABBOX_LEASE_ID";
-const CRABBOX_KEEP_ENV = "OPENCLAW_MANTIS_KEEP_VM";
-const CRABBOX_IDLE_TIMEOUT_ENV = "OPENCLAW_MANTIS_CRABBOX_IDLE_TIMEOUT";
-const CRABBOX_TTL_ENV = "OPENCLAW_MANTIS_CRABBOX_TTL";
+const CRABBOX_BIN_ENV = "AFORA_MANTIS_CRABBOX_BIN";
+const CRABBOX_PROVIDER_ENV = "AFORA_MANTIS_CRABBOX_PROVIDER";
+const CRABBOX_CLASS_ENV = "AFORA_MANTIS_CRABBOX_CLASS";
+const CRABBOX_LEASE_ID_ENV = "AFORA_MANTIS_CRABBOX_LEASE_ID";
+const CRABBOX_KEEP_ENV = "AFORA_MANTIS_KEEP_VM";
+const CRABBOX_IDLE_TIMEOUT_ENV = "AFORA_MANTIS_CRABBOX_IDLE_TIMEOUT";
+const CRABBOX_TTL_ENV = "AFORA_MANTIS_CRABBOX_TTL";
 
 function defaultOutputDir(repoRoot: string, startedAt: Date) {
   const stamp = startedAt.toISOString().replace(/[:.]/gu, "-");
@@ -251,7 +251,7 @@ function buildVisualDriverArgs(params: {
   const args = [
     "--dir",
     params.repoRoot,
-    "openclaw",
+    "afora",
     "qa",
     "mantis",
     "visual-driver",
@@ -389,7 +389,7 @@ function evaluateVisualExpectation(text: string | undefined, expectText: string 
 function browserLaunchScript() {
   return [
     'browser="${BROWSER:-${CHROME_BIN:-google-chrome}}"',
-    'profile="${TMPDIR:-/tmp}/openclaw-mantis-visual-chrome-profile"',
+    'profile="${TMPDIR:-/tmp}/afora-mantis-visual-chrome-profile"',
     'mkdir -p "$profile"',
     'exec "$browser" --user-data-dir="$profile" --no-first-run --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --window-size=1280,900 --window-position=0,0 "$0"',
   ].join("; ");
@@ -536,7 +536,7 @@ export async function runMantisVisualDriver(
     let visionText: string | undefined;
     if (visionMode === "image-describe") {
       const imageArgs = [
-        "openclaw",
+        "afora",
         "infer",
         "image",
         "describe",

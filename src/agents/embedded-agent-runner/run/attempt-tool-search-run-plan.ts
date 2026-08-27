@@ -46,7 +46,7 @@ function collectExplicitlyAllowedClientToolNames(params: {
     );
 }
 
-function collectOpenClawCapabilityToolNames(
+function collectAforaCapabilityToolNames(
   tools: CollectAllowedToolNamesParams["tools"],
 ): Set<string> {
   return collectAllowedToolNames({
@@ -78,7 +78,7 @@ export function buildToolSearchRunPlan(params: {
     tools: params.uncompactedTools,
     clientTools: params.clientTools,
   });
-  const capabilityToolNames = collectOpenClawCapabilityToolNames(
+  const capabilityToolNames = collectAforaCapabilityToolNames(
     params.deferredToolsCallable ? params.uncompactedTools : params.visibleTools,
   );
   if (params.controlsEnabled) {

@@ -90,7 +90,7 @@ suite.define(() => {
         .toBe(true);
       await page.keyboard.press("Escape");
 
-      const agentPicker = page.locator(".new-session-page__select--agent openclaw-agent-select");
+      const agentPicker = page.locator(".new-session-page__select--agent afora-agent-select");
       await agentPicker.locator(".agent-select__trigger").click();
       await agentPicker
         .locator("wa-dropdown-item[data-agent-option]")
@@ -182,8 +182,8 @@ suite.define(() => {
         const originalSetItem = sessionStorage.setItem.bind(sessionStorage);
         Storage.prototype.setItem = function (key: string, value: string) {
           if (
-            key.startsWith("openclaw.new-session.cloud-recovery.v2:") ||
-            key.startsWith("openclaw.control-ui-e2e.")
+            key.startsWith("afora.new-session.cloud-recovery.v2:") ||
+            key.startsWith("afora.control-ui-e2e.")
           ) {
             originalSetItem(key, value);
             return;
@@ -223,7 +223,7 @@ suite.define(() => {
       await expect
         .poll(() =>
           page.evaluate(() => {
-            const app = document.querySelector("openclaw-app") as HTMLElement & {
+            const app = document.querySelector("afora-app") as HTMLElement & {
               runtime?: { context: { gateway: { snapshot: { phase: string } } } };
             };
             return app.runtime?.context.gateway.snapshot.phase;
@@ -289,7 +289,7 @@ suite.define(() => {
       await page.goto(`${suite.server.baseUrl}new`);
       await gateway.waitForRequest("environments.list");
       const recoveryIdentity = await page.evaluate(async () => {
-        const app = document.querySelector("openclaw-app") as HTMLElement & {
+        const app = document.querySelector("afora-app") as HTMLElement & {
           runtime?: {
             context: {
               gateway: {
@@ -317,7 +317,7 @@ suite.define(() => {
       await expect
         .poll(() =>
           page.evaluate(() => {
-            const app = document.querySelector("openclaw-app") as HTMLElement & {
+            const app = document.querySelector("afora-app") as HTMLElement & {
               runtime?: { context: { gateway: { snapshot: { phase: string } } } };
             };
             return app.runtime?.context.gateway.snapshot.phase === "connected";
@@ -326,7 +326,7 @@ suite.define(() => {
         .toBe(false);
       await page.evaluate(({ gatewayUrl, legacyScope }) => {
         sessionStorage.setItem(
-          `openclaw.new-session.cloud-recovery.v1:${gatewayUrl}:${legacyScope}`,
+          `afora.new-session.cloud-recovery.v1:${gatewayUrl}:${legacyScope}`,
           JSON.stringify({
             sessionKey: "agent:cloud:offline-recovery",
             messageId: "message-offline-recovery",
@@ -351,7 +351,7 @@ suite.define(() => {
         await page.evaluate(
           ({ gatewayUrl, legacyScope }) =>
             sessionStorage.getItem(
-              `openclaw.new-session.cloud-recovery.v1:${gatewayUrl}:${legacyScope}`,
+              `afora.new-session.cloud-recovery.v1:${gatewayUrl}:${legacyScope}`,
             ),
           recoveryIdentity,
         ),

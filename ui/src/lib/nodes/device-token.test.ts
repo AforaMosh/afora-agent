@@ -33,7 +33,7 @@ function createState(request: (method: string, params?: unknown) => Promise<unkn
 
 function storeIdentity() {
   localStorage.setItem(
-    "openclaw-device-identity-v1",
+    "afora-device-identity-v1",
     JSON.stringify({
       version: 1,
       deviceId: "00",
@@ -70,7 +70,7 @@ const rotationResult = {
 function storedTokenKey(): string {
   const key = Array.from({ length: localStorage.length }, (_, index) =>
     localStorage.key(index),
-  ).find((candidate) => candidate?.startsWith("openclaw.device.auth.v1:"));
+  ).find((candidate) => candidate?.startsWith("afora.device.auth.v1:"));
   if (!key) {
     throw new Error("missing device-auth test storage key");
   }

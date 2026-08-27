@@ -5,13 +5,13 @@ export const CODE_MODE_CONTROLLER_SOURCE = String.raw`
 (() => {
   const output = [];
   const pending = new Map();
-  const catalog = Array.isArray(globalThis.__openclawCatalog) ? globalThis.__openclawCatalog : [];
-  const apiFiles = Array.isArray(globalThis.__openclawApiFiles) ? globalThis.__openclawApiFiles : [];
-  const namespaceDescriptors = Array.isArray(globalThis.__openclawNamespaces) ? globalThis.__openclawNamespaces : [];
-  const hostRequest = globalThis.__openclawHostRequest;
-  const hostCancelRequest = globalThis.__openclawHostCancelRequest;
-  delete globalThis.__openclawHostRequest;
-  delete globalThis.__openclawHostCancelRequest;
+  const catalog = Array.isArray(globalThis.__aforaCatalog) ? globalThis.__aforaCatalog : [];
+  const apiFiles = Array.isArray(globalThis.__aforaApiFiles) ? globalThis.__aforaApiFiles : [];
+  const namespaceDescriptors = Array.isArray(globalThis.__aforaNamespaces) ? globalThis.__aforaNamespaces : [];
+  const hostRequest = globalThis.__aforaHostRequest;
+  const hostCancelRequest = globalThis.__aforaHostCancelRequest;
+  delete globalThis.__aforaHostRequest;
+  delete globalThis.__aforaHostCancelRequest;
   const bridgeSequences = new Map();
   const timers = new Map();
   let nextTimerId = 0;
@@ -165,7 +165,7 @@ export const CODE_MODE_CONTROLLER_SOURCE = String.raw`
     read: (name) => request("skillsRead", [name]),
   });
 
-  if (globalThis.__openclawSwarmEnabled === true) {
+  if (globalThis.__aforaSwarmEnabled === true) {
     Object.defineProperties(globalThis, {
       agents: {
         value: Object.freeze({ run: runAgent }),
@@ -269,8 +269,8 @@ export const CODE_MODE_CONTROLLER_SOURCE = String.raw`
     text: { value: (value) => output.push({ type: "text", text: asText(value) }), enumerable: true },
     json: { value: (value) => output.push({ type: "json", value: safe(value) }), enumerable: true },
     yield_control: { value: (reason) => request("yield", [reason]), enumerable: true },
-    __openclawSettleBridge: { value: settle },
-    __openclawTakeOutput: { value: () => output.splice(0) },
+    __aforaSettleBridge: { value: settle },
+    __aforaTakeOutput: { value: () => output.splice(0) },
   });
 })();
 `;

@@ -5,7 +5,7 @@ read_when: "You hit 'sandbox jail' or see a tool/elevated refusal and want the e
 status: active
 ---
 
-OpenClaw has three related but different controls:
+Afora has three related but different controls:
 
 1. **Sandbox** (`agents.defaults.sandbox.*` / `agents.entries.*.sandbox.*`) decides **where tools run** (sandbox backend vs host).
 2. **Tool policy** (`tools.*`, `tools.sandbox.tools.*`, `agents.entries.*.tools.*`) decides **which tools are available/allowed**.
@@ -13,13 +13,13 @@ OpenClaw has three related but different controls:
 
 ## Quick debug
 
-Use the inspector to see what OpenClaw is _actually_ doing:
+Use the inspector to see what Afora is _actually_ doing:
 
 ```bash
-openclaw sandbox explain
-openclaw sandbox explain --session agent:main:main
-openclaw sandbox explain --agent work
-openclaw sandbox explain --json
+afora sandbox explain
+afora sandbox explain --session agent:main:main
+afora sandbox explain --agent work
+afora sandbox explain --json
 ```
 
 It prints:
@@ -46,7 +46,7 @@ See [Sandboxing](/gateway/sandboxing) for the full matrix (scope, workspace moun
 - `docker.binds` _pierces_ the sandbox filesystem: whatever you mount is visible inside the container with the mode you set (`:ro` or `:rw`).
 - Default is read-write if you omit the mode; prefer `:ro` for source/secrets.
 - `scope: "shared"` ignores per-agent binds (only global binds apply).
-- OpenClaw validates bind sources twice: first on the normalized source path, then again after resolving through the deepest existing ancestor. Symlink-parent escapes do not bypass blocked-path or allowed-root checks.
+- Afora validates bind sources twice: first on the normalized source path, then again after resolving through the deepest existing ancestor. Symlink-parent escapes do not bypass blocked-path or allowed-root checks.
 - Non-existent leaf paths are still checked safely. If `/workspace/alias-out/new-file` resolves through a symlinked parent to a blocked path or outside the configured allowed roots, the bind is rejected.
 - Binding `/var/run/docker.sock` effectively hands host control to the sandbox; only do this intentionally.
 - Workspace access (`workspaceAccess`) is independent of bind modes.
@@ -71,7 +71,7 @@ Rules of thumb:
 - Tool policy filters tool availability by name; it does not inspect side effects inside `exec`. If `exec` is allowed, denying `write`, `edit`, or `apply_patch` does not make shell commands read-only.
 - `/exec` only changes session defaults for authorized senders; it does not grant tool access.
 - Provider tool keys accept either `provider` (e.g. `anthropic`) or `provider/model` (e.g. `openai/gpt-5.4`).
-- Gateway logs include `agents/tool-policy` audit entries when a tool policy step removes tools or a sandbox tool policy blocks a call. Use `openclaw logs` to see the rule label, config key, and affected tool names.
+- Gateway logs include `agents/tool-policy` audit entries when a tool policy step removes tools or a sandbox tool policy blocks a call. Use `afora logs` to see the rule label, config key, and affected tool names.
 
 ### Tool groups (shorthands)
 
@@ -104,14 +104,14 @@ Available groups:
 | `group:nodes`      | `nodes`, `computer`                                                                                                                                                                                                                                      |
 | `group:agents`     | `agents_list`, `get_goal`, `create_goal`, `update_goal`, `progress_card`, `ask_user`, `skill_workshop`                                                                                                                                                   |
 | `group:media`      | `image`, `image_generate`, `music_generate`, `video_generate`, `tts`                                                                                                                                                                                     |
-| `group:openclaw`   | most built-in OpenClaw tools (excludes the `read`/`write`/`edit`/`apply_patch`/`exec`/`process` fs and runtime primitives, `canvas`, and provider plugins)                                                                                               |
+| `group:afora`   | most built-in Afora tools (excludes the `read`/`write`/`edit`/`apply_patch`/`exec`/`process` fs and runtime primitives, `canvas`, and provider plugins)                                                                                               |
 | `group:plugins`    | all loaded plugin-owned tools, including configured MCP servers exposed through `bundle-mcp`                                                                                                                                                             |
 
 For read-only agents, deny `group:runtime` as well as mutating filesystem tools unless sandbox filesystem policy or a separate host boundary enforces the read-only constraint.
 
 For sandboxed MCP servers, the sandbox tool policy is a second allow gate. If `mcp.servers` is configured but sandboxed turns only show built-in tools, add `bundle-mcp`, `group:plugins`, or a server-prefixed MCP tool name/glob such as `outlook__send_mail` or `outlook__*` to `tools.sandbox.tools.alsoAllow`, then restart/reload the gateway and recapture the tool list. Server globs use the provider-safe MCP server prefix: non-`[A-Za-z0-9_-]` characters become `-`, names that do not start with a letter get an `mcp-` prefix, and long or duplicate prefixes may be truncated or suffixed.
 
-`openclaw doctor` currently checks this shape for OpenClaw-managed servers in `mcp.servers`. MCP servers loaded from bundled plugin manifests or Claude `.mcp.json` use the same sandbox gate, but this diagnostic does not enumerate those sources yet; use the same allowlist entries if their tools disappear in sandboxed turns.
+`afora doctor` currently checks this shape for Afora-managed servers in `mcp.servers`. MCP servers loaded from bundled plugin manifests or Claude `.mcp.json` use the same sandbox gate, but this diagnostic does not enumerate those sources yet; use the same allowlist entries if their tools disappear in sandboxed turns.
 
 ## Elevated: exec-only "run on host"
 
@@ -141,7 +141,7 @@ Fix-it keys (pick one):
 - Allow the tool inside sandbox:
   - remove it from `tools.sandbox.tools.deny` (or per-agent `agents.entries.*.tools.sandbox.tools.deny`)
   - or add it to `tools.sandbox.tools.allow` (or per-agent allow)
-- Check `openclaw logs` for the `agents/tool-policy` entry. It records the sandbox mode and whether the allow or deny rule blocked the tool.
+- Check `afora logs` for the `agents/tool-policy` entry. It records the sandbox mode and whether the allow or deny rule blocked the tool.
 
 ### "I thought this was main, why is it sandboxed?"
 

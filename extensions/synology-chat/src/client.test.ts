@@ -2,7 +2,7 @@
 import { EventEmitter } from "node:events";
 import type { ClientRequest, IncomingMessage, RequestOptions } from "node:http";
 import { PassThrough } from "node:stream";
-import { coerceErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { coerceErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "vitest";
 import type { SynologyHostedMediaUrl } from "./outbound-media.js";
 
@@ -23,7 +23,7 @@ vi.mock("node:http", async () => {
   return { ...actual, default: httpModule, request: httpRequest, get: httpGet };
 });
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ({
   formatErrorMessage: coerceErrorMessage,
 }));
 
@@ -143,7 +143,7 @@ const tlsVerificationDefaultCases: Array<{ name: string; invoke: () => Promise<u
     invoke: () =>
       sendHostedFileUrl(
         "https://nas.example.com/incoming",
-        hostedUrl("https://gateway.example.com/webhook?__openclaw_synology_media_token_a=t"),
+        hostedUrl("https://gateway.example.com/webhook?__afora_synology_media_token_a=t"),
       ),
   },
 ];
@@ -308,7 +308,7 @@ describe("sendHostedFileUrl", () => {
     const result = await settleTimers(
       sendHostedFileUrl(
         "https://nas.example.com/incoming",
-        hostedUrl("https://gateway.example.com/webhook?__openclaw_synology_media_token_a=t"),
+        hostedUrl("https://gateway.example.com/webhook?__afora_synology_media_token_a=t"),
       ),
     );
     expect(result).toEqual({ status: "accepted" });
@@ -319,7 +319,7 @@ describe("sendHostedFileUrl", () => {
     const result = await settleTimers(
       sendHostedFileUrl(
         "https://nas.example.com/incoming",
-        hostedUrl("https://gateway.example.com/webhook?__openclaw_synology_media_token_a=t"),
+        hostedUrl("https://gateway.example.com/webhook?__afora_synology_media_token_a=t"),
       ),
     );
     expect(result).toEqual({ status: "indeterminate" });
@@ -330,7 +330,7 @@ describe("sendHostedFileUrl", () => {
     const result = await settleTimers(
       sendHostedFileUrl(
         "https://nas.example.com/incoming",
-        hostedUrl("https://gateway.example.com/webhook?__openclaw_synology_media_token_a=t"),
+        hostedUrl("https://gateway.example.com/webhook?__afora_synology_media_token_a=t"),
       ),
     );
     expect(result).toEqual({ status: "rejected" });
@@ -342,7 +342,7 @@ describe("sendHostedFileUrl", () => {
     const result = await settleTimers(
       sendHostedFileUrl(
         "https://nas.example.com/incoming",
-        hostedUrl("https://gateway.example.com/webhook?__openclaw_synology_media_token_a=t"),
+        hostedUrl("https://gateway.example.com/webhook?__afora_synology_media_token_a=t"),
       ),
     );
 
@@ -360,7 +360,7 @@ describe("sendHostedFileUrl", () => {
     const result = await settleTimers(
       sendHostedFileUrl(
         "https://nas.example.com/incoming",
-        hostedUrl("https://gateway.example.com/webhook?__openclaw_synology_media_token_a=t"),
+        hostedUrl("https://gateway.example.com/webhook?__afora_synology_media_token_a=t"),
       ),
     );
 
@@ -373,7 +373,7 @@ describe("sendHostedFileUrl", () => {
     const result = await settleTimers(
       sendHostedFileUrl(
         "https://nas.example.com/incoming",
-        hostedUrl("https://gateway.example.com/webhook?__openclaw_synology_media_token_a=t"),
+        hostedUrl("https://gateway.example.com/webhook?__afora_synology_media_token_a=t"),
       ),
     );
 
@@ -388,7 +388,7 @@ describe("sendHostedFileUrl", () => {
     const result = await settleTimers(
       sendHostedFileUrl(
         "https://nas.example.com/incoming",
-        hostedUrl("https://gateway.example.com/webhook?__openclaw_synology_media_token_a=t"),
+        hostedUrl("https://gateway.example.com/webhook?__afora_synology_media_token_a=t"),
       ),
     );
 
@@ -399,7 +399,7 @@ describe("sendHostedFileUrl", () => {
     const result = await settleTimers(
       sendHostedFileUrl(
         "not-a-url",
-        hostedUrl("https://gateway.example.com/webhook?__openclaw_synology_media_token_a=t"),
+        hostedUrl("https://gateway.example.com/webhook?__afora_synology_media_token_a=t"),
       ),
     );
 
@@ -414,7 +414,7 @@ describe("sendHostedFileUrl", () => {
 
     const promise = sendHostedFileUrl(
       "https://nas.example.com/incoming",
-      hostedUrl("https://gateway.example.com/webhook?__openclaw_synology_media_token_a=t"),
+      hostedUrl("https://gateway.example.com/webhook?__afora_synology_media_token_a=t"),
     );
     await Promise.resolve();
     expect(vi.mocked(https.request)).not.toHaveBeenCalled();

@@ -14,7 +14,7 @@ import {
   waitForActiveTasks,
 } from "../../process/command-queue.js";
 import { CommandLane } from "../../process/lanes.js";
-import { openOpenClawStateDatabase } from "../../state/openclaw-state-db.js";
+import { openAforaStateDatabase } from "../../state/afora-state-db.js";
 import * as cronStoreModule from "../store.js";
 import { loadCronStore, saveCronStore } from "../store.js";
 import { cronStoreKey } from "../store/key.js";
@@ -196,7 +196,7 @@ describe("cron service run admission", () => {
       runIsolatedAgentJob,
     });
     inspectActiveCronRunReceipt({ storePath: store.storePath, jobId: failingJob.id });
-    const database = openOpenClawStateDatabase().db;
+    const database = openAforaStateDatabase().db;
     database.exec(`
       CREATE TEMP TRIGGER reject_scheduled_sibling_activation
       BEFORE UPDATE OF started_at_ms ON cron_run_receipts
@@ -297,7 +297,7 @@ describe("cron service run admission", () => {
     expect(state.store?.jobs.find((job) => job.id === waitingJob.id)?.state.lastRunStatus).toBe(
       undefined,
     );
-    const receipt = openOpenClawStateDatabase()
+    const receipt = openAforaStateDatabase()
       .db.prepare(
         "SELECT status FROM cron_run_receipts WHERE store_key = ? AND job_id = ? ORDER BY started_at_ms DESC LIMIT 1",
       )
@@ -603,7 +603,7 @@ describe("cron service run admission", () => {
           return;
         }
         edited = true;
-        openOpenClawStateDatabase()
+        openAforaStateDatabase()
           .db.prepare(
             "UPDATE cron_jobs SET name = ?, updated_at = updated_at + 1 WHERE store_key = ? AND job_id = ?",
           )
@@ -1080,7 +1080,7 @@ describe("cron service run admission", () => {
     expect(
       state.store?.jobs.find((job) => job.id === scheduledJob.id)?.state.runningAtMs,
     ).toBeUndefined();
-    const receipt = openOpenClawStateDatabase()
+    const receipt = openAforaStateDatabase()
       .db.prepare(
         "SELECT status FROM cron_run_receipts WHERE store_key = ? AND job_id = ? ORDER BY started_at_ms DESC LIMIT 1",
       )

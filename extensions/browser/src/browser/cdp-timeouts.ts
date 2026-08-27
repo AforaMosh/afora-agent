@@ -8,7 +8,7 @@ import {
   addTimerTimeoutGraceMs,
   clampTimerTimeoutMs,
   resolveTimerTimeoutMs,
-} from "openclaw/plugin-sdk/number-runtime";
+} from "afora-agent/plugin-sdk/number-runtime";
 import { DEFAULT_BROWSER_LOCAL_LAUNCH_TIMEOUT_MS } from "./constants.js";
 
 export const CDP_HTTP_REQUEST_TIMEOUT_MS = 1500;

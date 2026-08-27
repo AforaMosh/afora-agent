@@ -2,11 +2,11 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
   normalizeOptionalString,
   normalizeOptionalStringifiedId,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { coerceFiniteScheduleNumber } from "../../../cron/schedule-number.js";
 import { normalizeCronStaggerMs } from "../../../cron/stagger.js";
 import type {
@@ -215,7 +215,7 @@ async function copyLegacyCronFileAcrossDevices(
     ) {
       throw new Error("legacy cron source changed during archival; refusing to remove it");
     }
-    // Current OpenClaw runtime never writes legacy JSON. POSIX has no conditional
+    // Current Afora runtime never writes legacy JSON. POSIX has no conditional
     // unlink, so hashes close observed external edits before migration-owned removal.
     await fs.unlink(filePath);
     sourceRemoved = true;

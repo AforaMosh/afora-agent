@@ -14,7 +14,7 @@ const DOCKER_ALL_SCHEDULER_PATH = "scripts/test-docker-all.mts";
 const DOCKER_E2E_PACKAGE_HELPER_PATH = "scripts/lib/docker-e2e-package.sh";
 const DOCKER_E2E_IMAGE_HELPER_PATH = "scripts/lib/docker-e2e-image.sh";
 const DOCKER_E2E_SCENARIOS_PATH = "scripts/lib/docker-e2e-scenarios.mts";
-const OPENCLAW_E2E_INSTANCE_HELPER_PATH = "scripts/lib/openclaw-e2e-instance.sh";
+const AFORA_E2E_INSTANCE_HELPER_PATH = "scripts/lib/afora-e2e-instance.sh";
 const COMPOSE_SETUP_E2E_PATH = "scripts/e2e/compose-setup.sh";
 const CLI_INSTALLER_DISTRIBUTION_E2E_PATH = "scripts/e2e/cli-installer-distribution-docker.sh";
 const DOCKER_PACKAGE_INSTALL_E2E_PATH = "scripts/e2e/docker-package-install.sh";
@@ -299,12 +299,12 @@ describe("docker build helper", () => {
   it("allows deployments to build an immutable sandbox image tag", () => {
     const script = readFileSync("scripts/sandbox-setup.sh", "utf8");
     expect(script).toContain(
-      'IMAGE_NAME="${OPENCLAW_SANDBOX_IMAGE:-openclaw-sandbox:bookworm-slim}"',
+      'IMAGE_NAME="${AFORA_SANDBOX_IMAGE:-afora-sandbox:bookworm-slim}"',
     );
   });
 
   it("treats Docker registry auth 5xx failures as transient build failures", () => {
-    const workDir = tempDirs.make("openclaw-docker-build-transient-");
+    const workDir = tempDirs.make("afora-docker-build-transient-");
     const logPath = join(workDir, "docker-build.log");
     writeFileSync(
       logPath,
@@ -324,7 +324,7 @@ docker_build_transient_failure "$LOG_PATH"
   });
 
   it("detects Docker builder memory exhaustion failures", () => {
-    const workDir = tempDirs.make("openclaw-docker-build-memory-");
+    const workDir = tempDirs.make("afora-docker-build-memory-");
     const logPath = join(workDir, "docker-build.log");
     writeFileSync(
       logPath,
@@ -343,7 +343,7 @@ docker_build_resource_exhausted_failure "$LOG_PATH"
   });
 
   it("detects compiler processes killed by the OOM killer", () => {
-    const workDir = tempDirs.make("openclaw-docker-build-killed-compiler-");
+    const workDir = tempDirs.make("afora-docker-build-killed-compiler-");
     const logPath = join(workDir, "docker-build.log");
     writeFileSync(logPath, "c++: fatal error: Killed signal terminated program cc1plus\n");
 
@@ -357,7 +357,7 @@ docker_build_resource_exhausted_failure "$LOG_PATH"
   });
 
   it("retries Corepack connect timeouts without misreading Dockerfile comments as OOM", () => {
-    const workDir = tempDirs.make("openclaw-docker-build-connect-timeout-");
+    const workDir = tempDirs.make("afora-docker-build-connect-timeout-");
     const logPath = join(workDir, "docker-build.log");
     writeFileSync(
       logPath,
@@ -395,7 +395,7 @@ fi
 
     expect(cleanupSmoke).toContain('source "$ROOT_DIR/scripts/lib/docker-e2e-container.sh"');
     expect(cleanupSmoke).toContain(
-      'DOCKER_COMMAND_TIMEOUT="${DOCKER_COMMAND_TIMEOUT:-${OPENCLAW_CLEANUP_SMOKE_DOCKER_TIMEOUT:-600s}}"',
+      'DOCKER_COMMAND_TIMEOUT="${DOCKER_COMMAND_TIMEOUT:-${AFORA_CLEANUP_SMOKE_DOCKER_TIMEOUT:-600s}}"',
     );
     expect(cleanupSmoke).toContain(
       'docker_e2e_docker_run_cmd run --rm --platform "$PLATFORM" -t "$IMAGE_NAME"',
@@ -404,7 +404,7 @@ fi
 
     expect(installE2eSmoke).toContain('source "$ROOT_DIR/scripts/lib/docker-e2e-container.sh"');
     expect(installE2eSmoke).toContain(
-      'DOCKER_COMMAND_TIMEOUT="${DOCKER_COMMAND_TIMEOUT:-${OPENCLAW_INSTALL_E2E_DOCKER_TIMEOUT:-2700s}}"',
+      'DOCKER_COMMAND_TIMEOUT="${DOCKER_COMMAND_TIMEOUT:-${AFORA_INSTALL_E2E_DOCKER_TIMEOUT:-2700s}}"',
     );
     expect(installE2eSmoke).toContain("docker_e2e_docker_run_cmd run --rm \\");
     expect(installE2eSmoke).not.toContain("docker run --rm \\");
@@ -422,7 +422,7 @@ fi
     expect(runner).toContain('-v "$SCENARIO_ROOT:$SCENARIO_ROOT"');
     expect(runner).toContain("scripts/docker/sandbox/Dockerfile.browser");
     expect(runner).toContain("remove_prefixed_containers");
-    expect(scenario).toContain('from "openclaw/plugin-sdk/agent-harness-runtime"');
+    expect(scenario).toContain('from "afora-agent/plugin-sdk/agent-harness-runtime"');
     expect(scenario).toContain("Promise.all([");
     expect(scenario).toContain('"sandbox", "list", "--browser", "--json"');
     expect(scenario).toContain('"sandbox", "recreate", "--browser", "--session"');
@@ -437,18 +437,18 @@ fi
     expect(cleanupRun).toContain('*" --max-old-space-size="*');
     expect(cleanupRun).toContain('*" --max_old_space_size="*');
     expect(cleanupRun.indexOf("ensure_cleanup_smoke_node_options")).toBeLessThan(
-      cleanupRun.indexOf("pnpm build >/tmp/openclaw-cleanup-build.log"),
+      cleanupRun.indexOf("pnpm build >/tmp/afora-cleanup-build.log"),
     );
   });
 
   it("rejects invalid cleanup-smoke log byte limits", () => {
-    const workDir = tempDirs.make("openclaw-cleanup-smoke-log-invalid-");
+    const workDir = tempDirs.make("afora-cleanup-smoke-log-invalid-");
     const logPath = join(workDir, "cleanup.log");
     writeFileSync(logPath, "cleanup output\n");
     const script = `
 set -euo pipefail
 LOG_PATH=${shellQuote(logPath)}
-export OPENCLAW_CLEANUP_SMOKE_LOG_PRINT_BYTES=64kb
+export AFORA_CLEANUP_SMOKE_LOG_PRINT_BYTES=64kb
 
 ${cleanupSmokeLogTailHelpers()}
 
@@ -458,18 +458,18 @@ print_log_tail "$LOG_PATH"
     const result = spawnSync("bash", ["-lc", script], { encoding: "utf8" });
 
     expect(result.status).toBe(2);
-    expect(result.stderr).toContain("invalid OPENCLAW_CLEANUP_SMOKE_LOG_PRINT_BYTES: 64kb");
+    expect(result.stderr).toContain("invalid AFORA_CLEANUP_SMOKE_LOG_PRINT_BYTES: 64kb");
     expect(result.stdout).toBe("");
   });
 
   it("normalizes zero-padded cleanup-smoke log byte limits", () => {
-    const workDir = tempDirs.make("openclaw-cleanup-smoke-log-tail-");
+    const workDir = tempDirs.make("afora-cleanup-smoke-log-tail-");
     const logPath = join(workDir, "cleanup.log");
     writeFileSync(logPath, "old-cleanup-output-recent\n");
     const script = `
 set -euo pipefail
 LOG_PATH=${shellQuote(logPath)}
-export OPENCLAW_CLEANUP_SMOKE_LOG_PRINT_BYTES=0008
+export AFORA_CLEANUP_SMOKE_LOG_PRINT_BYTES=0008
 
 ${cleanupSmokeLogTailHelpers()}
 
@@ -499,8 +499,8 @@ print_log_tail "$LOG_PATH"
     for (const scriptPath of [CODEX_MEDIA_PATH_SCENARIO_PATH, OPENAI_CHAT_TOOLS_SCENARIO_PATH]) {
       const script = readFileSync(scriptPath, "utf8");
 
-      expect(script, scriptPath).toContain("source scripts/lib/openclaw-e2e-instance.sh");
-      expect(script, scriptPath).toContain('openclaw_e2e_print_log "$CLIENT_LOG"');
+      expect(script, scriptPath).toContain("source scripts/lib/afora-e2e-instance.sh");
+      expect(script, scriptPath).toContain('afora_e2e_print_log "$CLIENT_LOG"');
       expect(script, scriptPath).not.toContain('cat "$CLIENT_LOG"');
     }
   });
@@ -510,7 +510,7 @@ print_log_tail "$LOG_PATH"
     expect(runCleanupDefaultPlatform({ GITHUB_ACTIONS: "true" }, "x86_64")).toBe("linux/amd64");
     expect(runCleanupDefaultPlatform({}, "arm64")).toBe("linux/arm64");
     expect(
-      runCleanupDefaultPlatform({ OPENCLAW_CLEANUP_SMOKE_PLATFORM: "linux/s390x" }, "x86_64"),
+      runCleanupDefaultPlatform({ AFORA_CLEANUP_SMOKE_PLATFORM: "linux/s390x" }, "x86_64"),
     ).toBe("linux/s390x");
   });
 
@@ -522,8 +522,8 @@ print_log_tail "$LOG_PATH"
 
     expectTextToIncludeAll(helper, [
       "docker_build_on_missing_enabled()",
-      "OPENCLAW_DOCKER_BUILD_ON_MISSING",
-      "OPENCLAW_TESTBOX",
+      "AFORA_DOCKER_BUILD_ON_MISSING",
+      "AFORA_TESTBOX",
     ]);
 
     expect(e2eImageHelper).toContain("docker_build_on_missing_enabled");
@@ -532,10 +532,10 @@ print_log_tail "$LOG_PATH"
     expect(e2eImageHelper).toContain('docker_e2e_docker_cmd pull "$image_name"');
     expect(liveBuild).toContain('source "$SCRIPT_ROOT_DIR/scripts/lib/docker-e2e-container.sh"');
     expect(liveBuild).toContain(
-      'DOCKER_COMMAND_TIMEOUT="${DOCKER_COMMAND_TIMEOUT:-${OPENCLAW_LIVE_DOCKER_PULL_TIMEOUT:-600s}}"',
+      'DOCKER_COMMAND_TIMEOUT="${DOCKER_COMMAND_TIMEOUT:-${AFORA_LIVE_DOCKER_PULL_TIMEOUT:-600s}}"',
     );
     expect(liveBuild).toContain(
-      'LIVE_IMAGE_PULL_ATTEMPTS="${OPENCLAW_LIVE_DOCKER_PULL_ATTEMPTS:-3}"',
+      'LIVE_IMAGE_PULL_ATTEMPTS="${AFORA_LIVE_DOCKER_PULL_ATTEMPTS:-3}"',
     );
     expect(liveBuild).toContain('docker_e2e_docker_cmd image inspect "$LIVE_IMAGE_NAME"');
     expect(liveBuild).toContain('docker_e2e_docker_cmd pull "$LIVE_IMAGE_NAME"');
@@ -549,12 +549,12 @@ print_log_tail "$LOG_PATH"
       'timeout "$DOCKER_PULL_TIMEOUT" docker pull "$OPENWEBUI_IMAGE"',
     );
     expect(liveCliBackend).toContain(
-      'OPENCLAW_LIVE_DOCKER_REPO_ROOT="$ROOT_DIR" "$TRUSTED_HARNESS_DIR/scripts/test-live-build-docker.sh"',
+      'AFORA_LIVE_DOCKER_REPO_ROOT="$ROOT_DIR" "$TRUSTED_HARNESS_DIR/scripts/test-live-build-docker.sh"',
     );
     expect(liveCliBackend).toContain("codex-cli is no longer a bundled CLI backend");
     expect(liveCliBackend).not.toContain("==> Direct Codex CLI probe ok");
     expect(liveCliBackend).not.toContain(
-      'echo "==> Reuse live-test image: $LIVE_IMAGE_NAME (OPENCLAW_SKIP_DOCKER_BUILD=1)"',
+      'echo "==> Reuse live-test image: $LIVE_IMAGE_NAME (AFORA_SKIP_DOCKER_BUILD=1)"',
     );
   });
 
@@ -573,17 +573,17 @@ print_log_tail "$LOG_PATH"
     const sourceResult = resolveEntrypoint(process.cwd());
     expect(sourceResult.status, sourceResult.stderr).toBe(0);
     expect(sourceResult.stdout.trim()).toBe(
-      join(process.cwd(), "scripts/lib/openclaw-test-state.mts"),
+      join(process.cwd(), "scripts/lib/afora-test-state.mts"),
     );
 
-    const compiledRoot = tempDirs.make("openclaw-compiled-test-state-");
+    const compiledRoot = tempDirs.make("afora-compiled-test-state-");
     const missingResult = resolveEntrypoint(compiledRoot);
     expect(missingResult.status).toBe(1);
-    expect(missingResult.stderr).toContain("OpenClaw test-state entrypoint not found");
+    expect(missingResult.stderr).toContain("Afora test-state entrypoint not found");
 
     const compiledDir = join(compiledRoot, "scripts/lib");
     mkdirSync(compiledDir, { recursive: true });
-    const compiledEntrypoint = join(compiledDir, "openclaw-test-state.mjs");
+    const compiledEntrypoint = join(compiledDir, "afora-test-state.mjs");
     writeFileSync(compiledEntrypoint, "", "utf8");
     const compiledResult = resolveEntrypoint(compiledRoot);
     expect(compiledResult.status, compiledResult.stderr).toBe(0);
@@ -591,15 +591,15 @@ print_log_tail "$LOG_PATH"
   });
 
   it("runs current TypeScript and frozen JavaScript Docker harness entrypoints", () => {
-    const fixtureRoot = tempDirs.make("openclaw-docker-script-entrypoint-");
+    const fixtureRoot = tempDirs.make("afora-docker-script-entrypoint-");
     const scriptStem = join(fixtureRoot, "fixture");
     const runFixture = (value: string) =>
       spawnSync(
         "bash",
         [
           "-c",
-          `source "${OPENCLAW_E2E_INSTANCE_HELPER_PATH}"; openclaw_e2e_run_script_entrypoint "$1" "$2"`,
-          "openclaw-docker-script-entrypoint",
+          `source "${AFORA_E2E_INSTANCE_HELPER_PATH}"; afora_e2e_run_script_entrypoint "$1" "$2"`,
+          "afora-docker-script-entrypoint",
           scriptStem,
           value,
         ],
@@ -645,10 +645,10 @@ print_log_tail "$LOG_PATH"
     const releaseUpgradeScenario = readFileSync(RELEASE_UPGRADE_USER_JOURNEY_SCENARIO_PATH, "utf8");
     expect(gatewayRunner).toContain("node scripts/e2e/lib/gateway-network/client.mts");
     expect(kitchenSinkRunner).toContain(
-      "openclaw_e2e_run_script_entrypoint scripts/e2e/kitchen-sink-rpc-walk",
+      "afora_e2e_run_script_entrypoint scripts/e2e/kitchen-sink-rpc-walk",
     );
     expect(releaseUpgradeScenario).toContain(
-      "openclaw_e2e_run_script_entrypoint \\\n      scripts/lib/release-upgrade-baseline",
+      "afora_e2e_run_script_entrypoint \\\n      scripts/lib/release-upgrade-baseline",
     );
     expect(gatewayRunner).not.toContain("node --import tsx");
     expect(imageHelper).not.toContain('node --import tsx "$entrypoint"');
@@ -673,14 +673,14 @@ print_log_tail "$LOG_PATH"
     const runProbe = (value: string) => {
       const script = [
         "source scripts/lib/docker-e2e-image.sh",
-        "docker_e2e_read_nonnegative_decimal_env OPENCLAW_SAMPLE_RESOURCE_LIMIT 2048",
+        "docker_e2e_read_nonnegative_decimal_env AFORA_SAMPLE_RESOURCE_LIMIT 2048",
       ].join("\n");
       return spawnSync("bash", ["-c", script], {
         cwd: process.cwd(),
         encoding: "utf8",
         env: {
           ...process.env,
-          OPENCLAW_SAMPLE_RESOURCE_LIMIT: value,
+          AFORA_SAMPLE_RESOURCE_LIMIT: value,
         },
       });
     };
@@ -690,11 +690,11 @@ print_log_tail "$LOG_PATH"
     const overprecise = runProbe("12.1234567");
     const decimal = runProbe("12.5");
     expect(invalid.status).toBe(2);
-    expect(invalid.stderr).toContain("invalid OPENCLAW_SAMPLE_RESOURCE_LIMIT: 12mb");
+    expect(invalid.stderr).toContain("invalid AFORA_SAMPLE_RESOURCE_LIMIT: 12mb");
     expect(overlarge.status).toBe(2);
-    expect(overlarge.stderr).toContain("invalid OPENCLAW_SAMPLE_RESOURCE_LIMIT: 9999999999");
+    expect(overlarge.stderr).toContain("invalid AFORA_SAMPLE_RESOURCE_LIMIT: 9999999999");
     expect(overprecise.status).toBe(2);
-    expect(overprecise.stderr).toContain("invalid OPENCLAW_SAMPLE_RESOURCE_LIMIT: 12.1234567");
+    expect(overprecise.stderr).toContain("invalid AFORA_SAMPLE_RESOURCE_LIMIT: 12.1234567");
     expect(decimal.status).toBe(0);
     expect(decimal.stdout.trimEnd()).toBe("12.5");
   });
@@ -702,7 +702,7 @@ print_log_tail "$LOG_PATH"
   it("keeps Testbox image-build fallback before isolating live MCP code-mode runtime flags", () => {
     const script = readFileSync(MCP_CODE_MODE_GATEWAY_LIVE_DOCKER_E2E_PATH, "utf8");
     const buildIndex = script.indexOf('docker_e2e_build_or_reuse "$IMAGE_NAME"');
-    const unsetIndex = script.indexOf("unset OPENCLAW_TESTBOX");
+    const unsetIndex = script.indexOf("unset AFORA_TESTBOX");
 
     expect(buildIndex).toBeGreaterThanOrEqual(0);
     expect(unsetIndex).toBeGreaterThan(buildIndex);
@@ -710,7 +710,7 @@ print_log_tail "$LOG_PATH"
   });
 
   it("wraps centralized Docker builds with the timeout helper", () => {
-    const workDir = tempDirs.make("openclaw-docker-build-timeout-");
+    const workDir = tempDirs.make("afora-docker-build-timeout-");
     writeExecutables(join(workDir, "bin"), {
       timeout: `#!/bin/bash
 set -euo pipefail
@@ -728,7 +728,7 @@ printf "%s\\n" "$*" >>"$TMPDIR/docker-seen"
 
     const script = repoShell(workDir)`
 export PATH="$TMPDIR/bin:$PATH"
-export OPENCLAW_DOCKER_BUILD_TIMEOUT=17s
+export AFORA_DOCKER_BUILD_TIMEOUT=17s
 
 source "$ROOT_DIR/scripts/lib/docker-build.sh"
 
@@ -742,7 +742,7 @@ grep -q '^build -t demo-image .$' "$TMPDIR/docker-seen"
   });
 
   it("prints heartbeat progress for long successful centralized Docker builds", () => {
-    const workDir = tempDirs.make("openclaw-docker-build-heartbeat-");
+    const workDir = tempDirs.make("afora-docker-build-heartbeat-");
     writeExecutables(join(workDir, "bin"), {
       timeout: `#!/bin/bash
 set -euo pipefail
@@ -760,7 +760,7 @@ printf "captured docker build log\\n"
 
     const script = repoShell(workDir)`
 export PATH="$TMPDIR/bin:$PATH"
-export OPENCLAW_DOCKER_BUILD_HEARTBEAT_SECONDS=1
+export AFORA_DOCKER_BUILD_HEARTBEAT_SECONDS=1
 
 source "$ROOT_DIR/scripts/lib/docker-build.sh"
 
@@ -775,7 +775,7 @@ output="$(docker_build_maybe_print_heartbeat e2e-build 1 1 "$TMPDIR/build.log")"
   });
 
   it("stops the tracked build command without retrying when interrupted", async () => {
-    const workDir = tempDirs.make("openclaw-docker-build-signal-");
+    const workDir = tempDirs.make("afora-docker-build-signal-");
     writeExecutables(join(workDir, "bin"), {
       docker: `#!/bin/bash
 set -euo pipefail
@@ -803,7 +803,7 @@ ROOT_DIR=${shellQuote(process.cwd())}
 TMPDIR=${shellQuote(workDir)}
 export ROOT_DIR TMPDIR
 export PATH="$TMPDIR/bin:$PATH"
-export OPENCLAW_DOCKER_BUILD_RETRIES=3
+export AFORA_DOCKER_BUILD_RETRIES=3
 source "$ROOT_DIR/scripts/lib/docker-build.sh"
 docker_build_run e2e-build -t demo-image .
 `,
@@ -868,7 +868,7 @@ docker_build_run e2e-build -t demo-image .
   });
 
   it("does not delay fast successful centralized Docker builds until the next heartbeat", () => {
-    const workDir = tempDirs.make("openclaw-docker-build-fast-heartbeat-");
+    const workDir = tempDirs.make("afora-docker-build-fast-heartbeat-");
     writeExecutables(join(workDir, "bin"), {
       timeout: `#!/bin/bash
 set -euo pipefail
@@ -885,7 +885,7 @@ printf "quick docker build log\\n"
 
     const script = repoShell(workDir)`
 export PATH="$TMPDIR/bin:$PATH"
-export OPENCLAW_DOCKER_BUILD_HEARTBEAT_SECONDS=30
+export AFORA_DOCKER_BUILD_HEARTBEAT_SECONDS=30
 
 source "$ROOT_DIR/scripts/lib/docker-build.sh"
 
@@ -902,7 +902,7 @@ output="$(docker_build_run e2e-build -t demo-image .)"
   it("normalizes zero-padded centralized Docker build heartbeat intervals", () => {
     const script = repoRootShell`
 export ROOT_DIR
-export OPENCLAW_DOCKER_BUILD_HEARTBEAT_SECONDS=08
+export AFORA_DOCKER_BUILD_HEARTBEAT_SECONDS=08
 
 source "$ROOT_DIR/scripts/lib/docker-build.sh"
 
@@ -915,7 +915,7 @@ source "$ROOT_DIR/scripts/lib/docker-build.sh"
   it("normalizes zero-padded centralized Docker build retry counts", () => {
     const script = repoRootShell`
 export ROOT_DIR
-export OPENCLAW_DOCKER_BUILD_RETRIES=08
+export AFORA_DOCKER_BUILD_RETRIES=08
 
 source "$ROOT_DIR/scripts/lib/docker-build.sh"
 
@@ -928,20 +928,20 @@ source "$ROOT_DIR/scripts/lib/docker-build.sh"
   it.each([
     [
       "retry count",
-      "OPENCLAW_DOCKER_BUILD_RETRIES",
+      "AFORA_DOCKER_BUILD_RETRIES",
       "2x",
-      "invalid OPENCLAW_DOCKER_BUILD_RETRIES: 2x",
+      "invalid AFORA_DOCKER_BUILD_RETRIES: 2x",
     ],
     [
       "heartbeat interval",
-      "OPENCLAW_DOCKER_BUILD_HEARTBEAT_SECONDS",
+      "AFORA_DOCKER_BUILD_HEARTBEAT_SECONDS",
       "soon",
-      "invalid OPENCLAW_DOCKER_BUILD_HEARTBEAT_SECONDS: soon",
+      "invalid AFORA_DOCKER_BUILD_HEARTBEAT_SECONDS: soon",
     ],
   ])(
     "rejects invalid centralized Docker build %s before invoking docker",
     (_label, envName, value, expectedError) => {
-      const workDir = tempDirs.make("openclaw-docker-build-config-");
+      const workDir = tempDirs.make("afora-docker-build-config-");
       const markerPath = join(workDir, "docker-invoked");
 
       writeExecutables(join(workDir, "bin"), {
@@ -976,11 +976,11 @@ docker_build_run e2e-build -t demo-image .
   );
 
   it("fails centralized Docker builds fast when timeout is unavailable", () => {
-    const workDir = tempDirs.make("openclaw-docker-build-timeout-required-");
+    const workDir = tempDirs.make("afora-docker-build-timeout-required-");
     mkdirSync(join(workDir, "bin"));
     const script = repoShell(workDir)`
 export PATH="$TMPDIR/bin"
-export OPENCLAW_DOCKER_BUILD_TIMEOUT=19s
+export AFORA_DOCKER_BUILD_TIMEOUT=19s
 
 dirname() {
   /usr/bin/dirname "$@"
@@ -1024,7 +1024,7 @@ stdout="$(<"$TMPDIR/stdout")"
   });
 
   it("keeps setup-style Docker builds compatible when timeout is unavailable", () => {
-    const workDir = tempDirs.make("openclaw-docker-build-timeout-optional-");
+    const workDir = tempDirs.make("afora-docker-build-timeout-optional-");
     writeExecutables(join(workDir, "bin"), {
       env: `#!/bin/sh
 while [ "$#" -gt 0 ]; do
@@ -1046,7 +1046,7 @@ printf "%s\\n" "$*" >"$TMPDIR/docker-seen"
 
     const script = repoShell(workDir)`
 export PATH="$TMPDIR/bin"
-export OPENCLAW_DOCKER_BUILD_TIMEOUT=23s
+export AFORA_DOCKER_BUILD_TIMEOUT=23s
 
 dirname() {
   /usr/bin/dirname "$@"
@@ -1078,10 +1078,10 @@ docker_build_exec -t setup-image .
   it.each([
     {
       title: "keeps reused Docker image probes behind the timeout-aware helper",
-      tempPrefix: "openclaw-docker-image-reuse-timeout-",
+      tempPrefix: "afora-docker-image-reuse-timeout-",
       scriptSource: (workDir: string) => repoShell(workDir)`
 export DOCKER_COMMAND_TIMEOUT=3s
-export OPENCLAW_SKIP_DOCKER_BUILD=1
+export AFORA_SKIP_DOCKER_BUILD=1
 
 mkdir -p "$TMPDIR/bin"
 cat >"$TMPDIR/bin/timeout" <<'SH'
@@ -1110,7 +1110,7 @@ docker() {
     "image inspect")
       return 1
       ;;
-    "pull openclaw-reuse-image")
+    "pull afora-reuse-image")
       return 0
       ;;
     *)
@@ -1123,24 +1123,24 @@ export -f docker
 source "$ROOT_DIR/scripts/lib/docker-e2e-image.sh"
 
 docker_e2e_build_or_reuse \\
-  openclaw-reuse-image \\
+  afora-reuse-image \\
   reuse-timeout-proof \\
   "$ROOT_DIR/scripts/e2e/Dockerfile" \\
   "$ROOT_DIR" \\
   functional
 
 test "$(grep -c '^--kill-after=30s 3s|' "$TMPDIR/timeout-seen")" = "2"
-grep -q '^image inspect openclaw-reuse-image$' "$TMPDIR/docker-seen"
-grep -q '^pull openclaw-reuse-image$' "$TMPDIR/docker-seen"
+grep -q '^image inspect afora-reuse-image$' "$TMPDIR/docker-seen"
+grep -q '^pull afora-reuse-image$' "$TMPDIR/docker-seen"
 `,
     },
     {
       title: "explains how to opt out when Docker rejects default resource limits",
-      tempPrefix: "openclaw-docker-resource-diagnostic-",
+      tempPrefix: "afora-docker-resource-diagnostic-",
       scriptSource: (workDir: string) => repoShell(workDir)`
-export OPENCLAW_DOCKER_E2E_AVAILABLE_CPUS=8
-unset OPENCLAW_DOCKER_E2E_DISABLE_RESOURCE_LIMITS
-unset OPENCLAW_DOCKER_E2E_MEMORY OPENCLAW_DOCKER_E2E_CPUS OPENCLAW_DOCKER_E2E_PIDS_LIMIT
+export AFORA_DOCKER_E2E_AVAILABLE_CPUS=8
+unset AFORA_DOCKER_E2E_DISABLE_RESOURCE_LIMITS
+unset AFORA_DOCKER_E2E_MEMORY AFORA_DOCKER_E2E_CPUS AFORA_DOCKER_E2E_PIDS_LIMIT
 
 docker() {
   printf "%s\\n" "$*" >>"$TMPDIR/docker-seen"
@@ -1178,7 +1178,7 @@ stderr="$(<"$TMPDIR/stderr")"
 [[ "$stderr" = before\\ Docker* ]]
 [[ "$stderr" = *"NanoCPUs can not be set"* ]]
 [[ "$stderr" = *"Docker E2E resource limits are incompatible with this Docker runtime"* ]]
-[[ "$stderr" = *"OPENCLAW_DOCKER_E2E_DISABLE_RESOURCE_LIMITS=1"* ]]
+[[ "$stderr" = *"AFORA_DOCKER_E2E_DISABLE_RESOURCE_LIMITS=1"* ]]
 [[ "$(grep -c '^run ' "$TMPDIR/docker-seen")" = "1" ]]
 [[ "$(<"$TMPDIR/tail-seen")" = "-c 65536" ]]
 [[ "$(<"$TMPDIR/mktemp-seen")" = -d* ]]
@@ -1187,11 +1187,11 @@ stderr="$(<"$TMPDIR/stderr")"
     },
     {
       title: "does not suggest resource opt-out for other Docker failures",
-      tempPrefix: "openclaw-docker-resource-unrelated-",
+      tempPrefix: "afora-docker-resource-unrelated-",
       scriptSource: (workDir: string) => repoShell(workDir)`
-export OPENCLAW_DOCKER_E2E_AVAILABLE_CPUS=8
-unset OPENCLAW_DOCKER_E2E_DISABLE_RESOURCE_LIMITS
-unset OPENCLAW_DOCKER_E2E_MEMORY OPENCLAW_DOCKER_E2E_CPUS OPENCLAW_DOCKER_E2E_PIDS_LIMIT
+export AFORA_DOCKER_E2E_AVAILABLE_CPUS=8
+unset AFORA_DOCKER_E2E_DISABLE_RESOURCE_LIMITS
+unset AFORA_DOCKER_E2E_MEMORY AFORA_DOCKER_E2E_CPUS AFORA_DOCKER_E2E_PIDS_LIMIT
 
 docker() {
   printf "%s\\n" "$*" >>"$TMPDIR/docker-seen"
@@ -1213,13 +1213,13 @@ set -e
 stderr="$(<"$TMPDIR/stderr")"
 [[ "$status" = "125" ]]
 [[ "$stderr" = *"No such image: cgroup-helper"* ]]
-[[ "$stderr" != *"OPENCLAW_DOCKER_E2E_DISABLE_RESOURCE_LIMITS"* ]]
+[[ "$stderr" != *"AFORA_DOCKER_E2E_DISABLE_RESOURCE_LIMITS"* ]]
 [[ "$(grep -c '^run ' "$TMPDIR/docker-seen")" = "1" ]]
 `,
     },
     {
       title: "rejects invalid Docker run pids limits before invoking docker",
-      tempPrefix: "openclaw-docker-resource-pids-",
+      tempPrefix: "afora-docker-resource-pids-",
       scriptSource: (workDir: string) => repoShell(workDir)`
 
 docker() {
@@ -1230,18 +1230,18 @@ export -f docker
 source "$ROOT_DIR/scripts/lib/docker-e2e-container.sh"
 
 set +e
-OPENCLAW_DOCKER_E2E_PIDS_LIMIT=many docker_e2e_docker_cmd run demo 2>"$TMPDIR/stderr"
+AFORA_DOCKER_E2E_PIDS_LIMIT=many docker_e2e_docker_cmd run demo 2>"$TMPDIR/stderr"
 status="$?"
 set -e
 
 [[ "$status" = "2" ]]
-[[ "$(<"$TMPDIR/stderr")" = *"invalid OPENCLAW_DOCKER_E2E_PIDS_LIMIT: many"* ]]
+[[ "$(<"$TMPDIR/stderr")" = *"invalid AFORA_DOCKER_E2E_PIDS_LIMIT: many"* ]]
 [[ ! -e "$TMPDIR/docker-seen" ]]
 `,
     },
     {
       title: "rejects invalid package-backed Docker run pids limits before invoking docker",
-      tempPrefix: "openclaw-docker-package-pids-",
+      tempPrefix: "afora-docker-package-pids-",
       scriptSource: (workDir: string) => repoShell(workDir)`
 
 dirname() {
@@ -1256,22 +1256,22 @@ export -f docker
 source "$ROOT_DIR/scripts/lib/docker-e2e-package.sh"
 
 set +e
-OPENCLAW_DOCKER_E2E_PIDS_LIMIT=many docker_e2e_docker_run_cmd run demo 2>"$TMPDIR/stderr"
+AFORA_DOCKER_E2E_PIDS_LIMIT=many docker_e2e_docker_run_cmd run demo 2>"$TMPDIR/stderr"
 status="$?"
 set -e
 
 [[ "$status" = "2" ]]
-[[ "$(<"$TMPDIR/stderr")" = *"invalid OPENCLAW_DOCKER_E2E_PIDS_LIMIT: many"* ]]
+[[ "$(<"$TMPDIR/stderr")" = *"invalid AFORA_DOCKER_E2E_PIDS_LIMIT: many"* ]]
 [[ ! -e "$TMPDIR/docker-seen" ]]
 `,
     },
     {
       title: "diagnoses rejected resource limits through the canonical package helper",
-      tempPrefix: "openclaw-docker-package-diagnostic-",
+      tempPrefix: "afora-docker-package-diagnostic-",
       scriptSource: (workDir: string) => repoShell(workDir)`
-export OPENCLAW_DOCKER_E2E_AVAILABLE_CPUS=8
-unset OPENCLAW_DOCKER_E2E_DISABLE_RESOURCE_LIMITS
-unset OPENCLAW_DOCKER_E2E_MEMORY OPENCLAW_DOCKER_E2E_CPUS OPENCLAW_DOCKER_E2E_PIDS_LIMIT
+export AFORA_DOCKER_E2E_AVAILABLE_CPUS=8
+unset AFORA_DOCKER_E2E_DISABLE_RESOURCE_LIMITS
+unset AFORA_DOCKER_E2E_MEMORY AFORA_DOCKER_E2E_CPUS AFORA_DOCKER_E2E_PIDS_LIMIT
 
 timeout() {
   if [[ "$1" = "--kill-after=1s" ]]; then
@@ -1298,19 +1298,19 @@ stderr="$(<"$TMPDIR/stderr")"
 [[ "$status" = "125" ]]
 [[ "$stderr" = *"controller pids is not available"* ]]
 [[ "$stderr" = *"Docker E2E resource limits are incompatible with this Docker runtime"* ]]
-[[ "$stderr" = *"OPENCLAW_DOCKER_E2E_DISABLE_RESOURCE_LIMITS=1"* ]]
+[[ "$stderr" = *"AFORA_DOCKER_E2E_DISABLE_RESOURCE_LIMITS=1"* ]]
 [[ "$(grep -c '^run ' "$TMPDIR/docker-seen")" = "1" ]]
 `,
     },
     {
       title: "removes functional Docker build package inputs after the build",
-      tempPrefix: "openclaw-docker-build-cleanup-",
+      tempPrefix: "afora-docker-build-cleanup-",
       scriptSource: (workDir: string) => repoShell(workDir)`
 
 node() {
   local script="$1"
   shift
-  if [[ "$script" != "$ROOT_DIR/scripts/package-openclaw-for-docker.mjs" ]]; then
+  if [[ "$script" != "$ROOT_DIR/scripts/package-afora-for-docker.mjs" ]]; then
     command node "$script" "$@"
     return
   fi
@@ -1346,19 +1346,19 @@ docker_build_run() {
   local arg
   for arg in "$@"; do
     case "$arg" in
-      openclaw_package=*)
-        build_context="\${arg#openclaw_package=}"
+      afora_package=*)
+        build_context="\${arg#afora_package=}"
         ;;
     esac
   done
 
   test -n "$build_context"
-  test -f "$build_context/openclaw-current.tgz"
+  test -f "$build_context/afora-current.tgz"
   printf "%s\\n" "$build_context" >"$TMPDIR/build-context-seen"
 }
 
 docker_e2e_build_or_reuse \\
-  openclaw-test-image \\
+  afora-test-image \\
   cleanup-proof \\
   "$ROOT_DIR/scripts/e2e/Dockerfile" \\
   "$ROOT_DIR" \\
@@ -1366,8 +1366,8 @@ docker_e2e_build_or_reuse \\
 
 test -f "$TMPDIR/build-context-seen"
 leftovers="$(find "$TMPDIR" -maxdepth 1 \\( \\
-  -name 'openclaw-docker-e2e-pack.*' \\
-  -o -name 'openclaw-docker-e2e-package-context.*' \\
+  -name 'afora-docker-e2e-pack.*' \\
+  -o -name 'afora-docker-e2e-package-context.*' \\
 \\) -print)"
 if [[ -n "$leftovers" ]]; then
   printf 'leftover functional build inputs:\\n%s\\n' "$leftovers" >&2
@@ -1377,14 +1377,14 @@ fi
     },
     {
       title: "keeps caller-provided functional Docker build packages",
-      tempPrefix: "openclaw-docker-build-external-package-",
+      tempPrefix: "afora-docker-build-external-package-",
       scriptSource: (workDir: string) => repoShell(workDir)`
 
 external_dir="$TMPDIR/external-package"
 mkdir -p "$external_dir"
-printf fixture >"$external_dir/openclaw-current.tgz"
-OPENCLAW_CURRENT_PACKAGE_TGZ="$external_dir/openclaw-current.tgz"
-export OPENCLAW_CURRENT_PACKAGE_TGZ
+printf fixture >"$external_dir/afora-current.tgz"
+AFORA_CURRENT_PACKAGE_TGZ="$external_dir/afora-current.tgz"
+export AFORA_CURRENT_PACKAGE_TGZ
 
 source "$ROOT_DIR/scripts/lib/docker-e2e-image.sh"
 
@@ -1393,27 +1393,27 @@ docker_build_run() {
   local arg
   for arg in "$@"; do
     case "$arg" in
-      openclaw_package=*)
-        build_context="\${arg#openclaw_package=}"
+      afora_package=*)
+        build_context="\${arg#afora_package=}"
         ;;
     esac
   done
 
   test -n "$build_context"
-  test -f "$build_context/openclaw-current.tgz"
+  test -f "$build_context/afora-current.tgz"
   printf "%s\\n" "$build_context" >"$TMPDIR/build-context-seen"
 }
 
 docker_e2e_build_or_reuse \\
-  openclaw-test-image \\
+  afora-test-image \\
   external-package-proof \\
   "$ROOT_DIR/scripts/e2e/Dockerfile" \\
   "$ROOT_DIR" \\
   functional
 
 test -f "$TMPDIR/build-context-seen"
-test -f "$OPENCLAW_CURRENT_PACKAGE_TGZ"
-leftovers="$(find "$TMPDIR" -maxdepth 1 -name 'openclaw-docker-e2e-package-context.*' -print)"
+test -f "$AFORA_CURRENT_PACKAGE_TGZ"
+leftovers="$(find "$TMPDIR" -maxdepth 1 -name 'afora-docker-e2e-package-context.*' -print)"
 if [[ -n "$leftovers" ]]; then
   printf 'leftover functional build context:\\n%s\\n' "$leftovers" >&2
   exit 1
@@ -1422,7 +1422,7 @@ fi
     },
     {
       title: "cleans generated package mounts after harness Docker runs",
-      tempPrefix: "openclaw-docker-package-mount-cleanup-",
+      tempPrefix: "afora-docker-package-mount-cleanup-",
       scriptSource: (workDir: string) => repoShell(workDir)`
 export DOCKER_COMMAND_TIMEOUT=3s
 
@@ -1453,7 +1453,7 @@ export PATH="$TMPDIR/bin:$PATH"
 node() {
   local script="$1"
   shift
-  if [[ "$script" != "$ROOT_DIR/scripts/package-openclaw-for-docker.mjs" ]]; then
+  if [[ "$script" != "$ROOT_DIR/scripts/package-afora-for-docker.mjs" ]]; then
     command node "$script" "$@"
     return
   fi
@@ -1537,43 +1537,43 @@ test "$(cat "$TMPDIR/docker-timeout-seen")" = "--kill-after=30s 3s"
 grep -qx "container-7" "$TMPDIR/docker-rm-seen"
 test -f "$TMPDIR/package-mount-seen"
 test ! -e "$pack_dir"
-test -z "$(find "$TMPDIR" -maxdepth 1 -name 'openclaw-docker-e2e-container.*' -print)"
+test -z "$(find "$TMPDIR" -maxdepth 1 -name 'afora-docker-e2e-container.*' -print)"
 
 external_dir="$TMPDIR/external-package"
 mkdir -p "$external_dir"
-printf fixture >"$external_dir/openclaw-current.tgz"
-docker_e2e_package_mount_args "$external_dir/openclaw-current.tgz"
+printf fixture >"$external_dir/afora-current.tgz"
+docker_e2e_package_mount_args "$external_dir/afora-current.tgz"
 unset DOCKER_COMMAND_TIMEOUT
 rm -f "$TMPDIR/docker-timeout-seen"
 docker_e2e_run_with_harness image-name bash -lc true
 test "$(cat "$TMPDIR/docker-timeout-seen")" = "--kill-after=30s 3600s"
 grep -qx "container-" "$TMPDIR/docker-rm-seen"
-test -f "$external_dir/openclaw-current.tgz"
+test -f "$external_dir/afora-current.tgz"
 `,
     },
     {
       title: "propagates shared E2E command timeouts into package-backed containers",
-      tempPrefix: "openclaw-docker-package-timeout-env-",
+      tempPrefix: "afora-docker-package-timeout-env-",
       scriptSource: (workDir: string) => repoShell(workDir)`
 source "$ROOT_DIR/scripts/lib/docker-e2e-package.sh"
 
-package="$TMPDIR/openclaw-current.tgz"
+package="$TMPDIR/afora-current.tgz"
 printf fixture >"$package"
-export OPENCLAW_E2E_NPM_INSTALL_TIMEOUT=42s
-export OPENCLAW_E2E_COMMAND_TIMEOUT=23s
+export AFORA_E2E_NPM_INSTALL_TIMEOUT=42s
+export AFORA_E2E_COMMAND_TIMEOUT=23s
 docker_e2e_package_mount_args "$package"
 printf "%s\\n" "\${DOCKER_E2E_PACKAGE_ARGS[@]}" >"$TMPDIR/package-args"
 
 grep -qx -- "-e" "$TMPDIR/package-args"
-grep -qx -- "OPENCLAW_CURRENT_PACKAGE_TGZ=/tmp/openclaw-current.tgz" "$TMPDIR/package-args"
-grep -qx -- "OPENCLAW_E2E_NPM_INSTALL_TIMEOUT=42s" "$TMPDIR/package-args"
-grep -qx -- "OPENCLAW_E2E_COMMAND_TIMEOUT=23s" "$TMPDIR/package-args"
+grep -qx -- "AFORA_CURRENT_PACKAGE_TGZ=/tmp/afora-current.tgz" "$TMPDIR/package-args"
+grep -qx -- "AFORA_E2E_NPM_INSTALL_TIMEOUT=42s" "$TMPDIR/package-args"
+grep -qx -- "AFORA_E2E_COMMAND_TIMEOUT=23s" "$TMPDIR/package-args"
 `,
     },
     {
       title:
         "keeps both harness run wrappers available when the package helper is sourced directly",
-      tempPrefix: "openclaw-docker-package-helper-guard-",
+      tempPrefix: "afora-docker-package-helper-guard-",
       scriptSource: (workDir: string) => repoShell(workDir)`
 
 mkdir -p "$TMPDIR/bin"
@@ -1609,7 +1609,7 @@ docker_e2e_run_detached_with_harness image-name
     },
     {
       title: "forwards harness stdin to backgrounded Docker runs",
-      tempPrefix: "openclaw-docker-harness-stdin-",
+      tempPrefix: "afora-docker-harness-stdin-",
       scriptSource: (workDir: string) => repoShell(workDir)`
 
 mkdir -p "$TMPDIR/bin"
@@ -1667,9 +1667,9 @@ grep -Fxq 'printf "heredoc reached docker\\n"' "$TMPDIR/docker-stdin-seen"
     },
     {
       title: "bounds printed Docker E2E logs to the configured tail",
-      tempPrefix: "openclaw-docker-e2e-log-print-tail-",
+      tempPrefix: "afora-docker-e2e-log-print-tail-",
       scriptSource: (workDir: string) => repoShell(workDir)`
-export OPENCLAW_DOCKER_E2E_LOG_PRINT_BYTES=64
+export AFORA_DOCKER_E2E_LOG_PRINT_BYTES=64
 
 source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
 
@@ -1681,7 +1681,7 @@ output="$(run_logged_print_heartbeat plugins-run 30 bash -c 'printf "DO_NOT_PRIN
     },
     {
       title: "prints heartbeat progress for long successful Docker E2E log captures",
-      tempPrefix: "openclaw-docker-e2e-log-heartbeat-",
+      tempPrefix: "afora-docker-e2e-log-heartbeat-",
       scriptSource: (workDir: string) => repoShell(workDir)`
 
 source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
@@ -1695,9 +1695,9 @@ output="$(docker_e2e_maybe_print_log_heartbeat plugins-run 1 1 "$TMPDIR/run.log"
     },
     {
       title: "cleans the heartbeat command when the wrapper is terminated",
-      tempPrefix: "openclaw-docker-e2e-log-term-cleanup-",
+      tempPrefix: "afora-docker-e2e-log-term-cleanup-",
       scriptSource: (workDir: string) => repoShell(workDir)`
-export OPENCLAW_DOCKER_E2E_HEARTBEAT_TERM_GRACE_SECONDS=1
+export AFORA_DOCKER_E2E_HEARTBEAT_TERM_GRACE_SECONDS=1
 
 source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
 
@@ -1732,7 +1732,7 @@ exit 1
     },
     {
       title: "cleans harness containers when heartbeat-wrapped Docker runs are terminated",
-      tempPrefix: "openclaw-docker-e2e-harness-term-cleanup-",
+      tempPrefix: "afora-docker-e2e-harness-term-cleanup-",
       scriptSource: (workDir: string) => repoShell(workDir)`
 
 mkdir -p "$TMPDIR/bin"
@@ -1805,12 +1805,12 @@ for _ in $(seq 1 50); do
   /bin/sleep 0.01
 done
 grep -qx "container-term" "$TMPDIR/docker-rm-seen"
-test -z "$(find "$TMPDIR" -maxdepth 1 -name 'openclaw-docker-e2e-container.*' -print)"
+test -z "$(find "$TMPDIR" -maxdepth 1 -name 'afora-docker-e2e-container.*' -print)"
 `,
     },
     {
       title: "normalizes zero-padded Docker E2E stats heartbeat intervals",
-      tempPrefix: "openclaw-docker-e2e-stats-zero-heartbeat-",
+      tempPrefix: "afora-docker-e2e-stats-zero-heartbeat-",
       scriptSource: (workDir: string) => repoShell(workDir)`
 
 source "$ROOT_DIR/scripts/lib/docker-e2e-image.sh"
@@ -1860,7 +1860,7 @@ heartbeat_elapsed="\${BASH_REMATCH[1]}"
   });
 
   it("derives the browser CDP image from the shared functional image", () => {
-    const workDir = tempDirs.make("openclaw-browser-cdp-shared-image-");
+    const workDir = tempDirs.make("afora-browser-cdp-shared-image-");
     writeExecutables(join(workDir, "bin"), {
       docker: `#!/usr/bin/env bash
 printf "%s\\n" "$*" >>"$TMPDIR/docker-seen"
@@ -1910,15 +1910,15 @@ exec "$@"
 TMPDIR=${shellQuote(workDir)}
 export ROOT_DIR TMPDIR
 export PATH="$TMPDIR/bin:$PATH"
-export OPENCLAW_SKIP_DOCKER_BUILD=1
-export OPENCLAW_DOCKER_E2E_IMAGE=shared-functional
-export OPENCLAW_DOCKER_ALL_LANE_NAME=browser-cdp-snapshot
+export AFORA_SKIP_DOCKER_BUILD=1
+export AFORA_DOCKER_E2E_IMAGE=shared-functional
+export AFORA_DOCKER_ALL_LANE_NAME=browser-cdp-snapshot
 
 bash "$ROOT_DIR/scripts/e2e/browser-cdp-snapshot-docker.sh"
 
 grep -q '^image inspect shared-functional$' "$TMPDIR/docker-seen"
-grep -Fq 'build -t openclaw-browser-cdp-snapshot-e2e:browser-cdp-snapshot' "$TMPDIR/docker-seen"
-grep -Fq ' openclaw-browser-cdp-snapshot-e2e:browser-cdp-snapshot ' "$TMPDIR/docker-seen"
+grep -Fq 'build -t afora-browser-cdp-snapshot-e2e:browser-cdp-snapshot' "$TMPDIR/docker-seen"
+grep -Fq ' afora-browser-cdp-snapshot-e2e:browser-cdp-snapshot ' "$TMPDIR/docker-seen"
 if grep -Fq ' shared-functional ' "$TMPDIR/docker-seen"; then
   echo "browser CDP lane reused the shared image without Chromium" >&2
   exit 1
@@ -1933,21 +1933,21 @@ fi
       encoding: "utf8",
       env: {
         ...process.env,
-        OPENCLAW_BROWSER_CDP_SNAPSHOT_MAX_BYTES: "64kb",
-        OPENCLAW_SKIP_DOCKER_BUILD: "1",
+        AFORA_BROWSER_CDP_SNAPSHOT_MAX_BYTES: "64kb",
+        AFORA_SKIP_DOCKER_BUILD: "1",
       },
     });
 
     expect(result.status).toBe(2);
-    expect(result.stderr).toContain("invalid OPENCLAW_BROWSER_CDP_SNAPSHOT_MAX_BYTES: 64kb");
+    expect(result.stderr).toContain("invalid AFORA_BROWSER_CDP_SNAPSHOT_MAX_BYTES: 64kb");
   });
 
   it("forwards browser CDP snapshot byte limits into the Docker runner", () => {
     const runner = readFileSync(BROWSER_CDP_SNAPSHOT_DOCKER_E2E_PATH, "utf8");
     expect(runner).toContain(
-      "docker_e2e_read_positive_int_env OPENCLAW_BROWSER_CDP_SNAPSHOT_MAX_BYTES 524288",
+      "docker_e2e_read_positive_int_env AFORA_BROWSER_CDP_SNAPSHOT_MAX_BYTES 524288",
     );
-    expect(runner).toContain('-e "OPENCLAW_BROWSER_CDP_SNAPSHOT_MAX_BYTES=$SNAPSHOT_MAX_BYTES"');
+    expect(runner).toContain('-e "AFORA_BROWSER_CDP_SNAPSHOT_MAX_BYTES=$SNAPSHOT_MAX_BYTES"');
   });
 
   it("uses Playwright Chromium for the browser CDP snapshot image", () => {
@@ -1959,7 +1959,7 @@ fi
 
   it("opens the browser CDP fixture before snapshotting", () => {
     const runner = readFileSync(BROWSER_CDP_SNAPSHOT_DOCKER_E2E_PATH, "utf8");
-    const quarantineIndex = runner.indexOf("mkdir -p /tmp/openclaw-browser-cdp");
+    const quarantineIndex = runner.indexOf("mkdir -p /tmp/afora-browser-cdp");
     const configIndex = runner.indexOf("node scripts/e2e/lib/fixture.mjs browser-cdp");
     const openIndex = runner.indexOf(
       'browser \\"\\${base_args[@]}\\" --browser-profile docker-cdp open',
@@ -1983,7 +1983,7 @@ fi
   });
 
   it("fails Docker commands fast when timeout is unavailable", () => {
-    const workDir = tempDirs.make("openclaw-docker-timeout-required-");
+    const workDir = tempDirs.make("afora-docker-timeout-required-");
     mkdirSync(join(workDir, "bin"));
     const script = repoShell(workDir)`
 export PATH="$TMPDIR/bin"
@@ -2011,7 +2011,7 @@ stderr="$(<"$TMPDIR/stderr")"
   });
 
   it("uses a Node watchdog for Docker commands when timeout is unavailable", () => {
-    const workDir = tempDirs.make("openclaw-docker-node-timeout-");
+    const workDir = tempDirs.make("afora-docker-node-timeout-");
     writeExecutables(join(workDir, "bin"), {
       node: `#!/bin/bash\nexec ${shellQuote(process.execPath)} "$@"\n`,
       docker: `#!/bin/bash\ninput="$(/bin/cat)"\nprintf "%s|%s\\n" "$*" "$input" >"$TMPDIR/docker-seen"\nexit 13\n`,
@@ -2020,8 +2020,8 @@ stderr="$(<"$TMPDIR/stderr")"
     const script = repoShell(workDir)`
 export PATH="$TMPDIR/bin"
 export DOCKER_COMMAND_TIMEOUT=7s
-unset OPENCLAW_DOCKER_E2E_DISABLE_RESOURCE_LIMITS
-unset OPENCLAW_DOCKER_E2E_MEMORY OPENCLAW_DOCKER_E2E_CPUS OPENCLAW_DOCKER_E2E_PIDS_LIMIT
+unset AFORA_DOCKER_E2E_DISABLE_RESOURCE_LIMITS
+unset AFORA_DOCKER_E2E_MEMORY AFORA_DOCKER_E2E_CPUS AFORA_DOCKER_E2E_PIDS_LIMIT
 
 source "$ROOT_DIR/scripts/lib/docker-e2e-container.sh"
 
@@ -2040,7 +2040,7 @@ stderr="$(<"$TMPDIR/stderr")"
   });
 
   it("adds default Docker run resource limits without overriding explicit limits", () => {
-    const workDir = tempDirs.make("openclaw-docker-resource-limits-");
+    const workDir = tempDirs.make("afora-docker-resource-limits-");
     writeExecutables(join(workDir, "bin"), {
       timeout: `#!/bin/bash
 set -euo pipefail
@@ -2054,9 +2054,9 @@ shift 2
 
     const script = repoShell(workDir)`
 export PATH="$TMPDIR/bin:$PATH"
-unset OPENCLAW_DOCKER_E2E_DISABLE_RESOURCE_LIMITS
-unset OPENCLAW_DOCKER_E2E_MEMORY OPENCLAW_DOCKER_E2E_CPUS OPENCLAW_DOCKER_E2E_PIDS_LIMIT
-export OPENCLAW_DOCKER_E2E_AVAILABLE_CPUS=32
+unset AFORA_DOCKER_E2E_DISABLE_RESOURCE_LIMITS
+unset AFORA_DOCKER_E2E_MEMORY AFORA_DOCKER_E2E_CPUS AFORA_DOCKER_E2E_PIDS_LIMIT
+export AFORA_DOCKER_E2E_AVAILABLE_CPUS=32
 
 docker() {
   printf "%s\\n" "$*" >>"$TMPDIR/docker-seen"
@@ -2066,10 +2066,10 @@ export -f docker
 source "$ROOT_DIR/scripts/lib/docker-e2e-container.sh"
 
 docker_e2e_docker_cmd run demo
-OPENCLAW_DOCKER_E2E_MEMORY=12g OPENCLAW_DOCKER_E2E_CPUS=4 OPENCLAW_DOCKER_E2E_PIDS_LIMIT=512 docker_e2e_docker_cmd run demo
-OPENCLAW_DOCKER_E2E_AVAILABLE_CPUS=8 OPENCLAW_DOCKER_E2E_MEMORY=12g OPENCLAW_DOCKER_E2E_CPUS=16 OPENCLAW_DOCKER_E2E_PIDS_LIMIT=512 docker_e2e_docker_cmd run demo
+AFORA_DOCKER_E2E_MEMORY=12g AFORA_DOCKER_E2E_CPUS=4 AFORA_DOCKER_E2E_PIDS_LIMIT=512 docker_e2e_docker_cmd run demo
+AFORA_DOCKER_E2E_AVAILABLE_CPUS=8 AFORA_DOCKER_E2E_MEMORY=12g AFORA_DOCKER_E2E_CPUS=16 AFORA_DOCKER_E2E_PIDS_LIMIT=512 docker_e2e_docker_cmd run demo
 docker_e2e_docker_cmd run --memory 2g --cpus 3 --pids-limit 99 demo
-OPENCLAW_DOCKER_E2E_DISABLE_RESOURCE_LIMITS=1 docker_e2e_docker_cmd run demo
+AFORA_DOCKER_E2E_DISABLE_RESOURCE_LIMITS=1 docker_e2e_docker_cmd run demo
 
 [[ "$(sed -n '1p' "$TMPDIR/docker-seen")" = "run --memory 8g --cpus 16 --pids-limit 2048 demo" ]]
 [[ "$(sed -n '2p' "$TMPDIR/docker-seen")" = "run --memory 12g --cpus 4 --pids-limit 512 demo" ]]
@@ -2082,14 +2082,14 @@ OPENCLAW_DOCKER_E2E_DISABLE_RESOURCE_LIMITS=1 docker_e2e_docker_cmd run demo
   });
 
   it("runs Docker when resource diagnostic capture is unavailable", () => {
-    const workDir = tempDirs.make("openclaw-docker-resource-no-temp-");
+    const workDir = tempDirs.make("afora-docker-resource-no-temp-");
     const missingTmpDir = join(workDir, "missing");
     const script = repoRootShell`
 TMPDIR=${shellQuote(missingTmpDir)}
 export ROOT_DIR TMPDIR
-export OPENCLAW_DOCKER_E2E_AVAILABLE_CPUS=8
-unset OPENCLAW_DOCKER_E2E_DISABLE_RESOURCE_LIMITS
-unset OPENCLAW_DOCKER_E2E_MEMORY OPENCLAW_DOCKER_E2E_CPUS OPENCLAW_DOCKER_E2E_PIDS_LIMIT
+export AFORA_DOCKER_E2E_AVAILABLE_CPUS=8
+unset AFORA_DOCKER_E2E_DISABLE_RESOURCE_LIMITS
+unset AFORA_DOCKER_E2E_MEMORY AFORA_DOCKER_E2E_CPUS AFORA_DOCKER_E2E_PIDS_LIMIT
 
 docker() {
   printf "%s\\n" "$*" >>${shellQuote(join(workDir, "docker-seen"))}
@@ -2119,7 +2119,7 @@ set -e
     ["HUP", "129"],
   ] as const) {
     it(`escalates Docker watchdog children that ignore parent SIG${shellSignal}`, () => {
-      const workDir = tempDirs.make("openclaw-docker-node-signal-");
+      const workDir = tempDirs.make("afora-docker-node-signal-");
       writeExecutables(join(workDir, "bin"), {
         node: `#!/bin/bash\nexec ${shellQuote(process.execPath)} "$@"\n`,
         docker: `#!/bin/bash
@@ -2135,7 +2135,7 @@ TMPDIR=${shellQuote(workDir)}
 export ROOT_DIR TMPDIR
 export PATH="$TMPDIR/bin"
 export DOCKER_COMMAND_TIMEOUT=30s
-export OPENCLAW_DOCKER_TIMEOUT_KILL_GRACE_MS=100
+export AFORA_DOCKER_TIMEOUT_KILL_GRACE_MS=100
 
 source "$ROOT_DIR/scripts/lib/docker-e2e-container.sh"
 
@@ -2167,7 +2167,7 @@ exit 1
   }
 
   it("uses plain timeout when kill-after is unsupported", () => {
-    const workDir = tempDirs.make("openclaw-docker-plain-timeout-");
+    const workDir = tempDirs.make("afora-docker-plain-timeout-");
     writeExecutables(join(workDir, "bin"), {
       timeout: `#!/bin/bash
 set -euo pipefail
@@ -2201,7 +2201,7 @@ grep -q '^image inspect demo$' "$TMPDIR/docker-seen"
   });
 
   it("uses gtimeout when timeout is unavailable", () => {
-    const workDir = tempDirs.make("openclaw-docker-gtimeout-");
+    const workDir = tempDirs.make("afora-docker-gtimeout-");
     writeExecutables(join(workDir, "bin"), {
       gtimeout: `#!/bin/bash
 set -euo pipefail
@@ -2216,10 +2216,10 @@ shift 2
 
     const script = repoShell(workDir)`
 export PATH="$TMPDIR/bin"
-export OPENCLAW_DOCKER_E2E_RUN_TIMEOUT=13s
-export OPENCLAW_DOCKER_E2E_AVAILABLE_CPUS=8
-unset OPENCLAW_DOCKER_E2E_DISABLE_RESOURCE_LIMITS
-unset OPENCLAW_DOCKER_E2E_MEMORY OPENCLAW_DOCKER_E2E_CPUS OPENCLAW_DOCKER_E2E_PIDS_LIMIT
+export AFORA_DOCKER_E2E_RUN_TIMEOUT=13s
+export AFORA_DOCKER_E2E_AVAILABLE_CPUS=8
+unset AFORA_DOCKER_E2E_DISABLE_RESOURCE_LIMITS
+unset AFORA_DOCKER_E2E_MEMORY AFORA_DOCKER_E2E_CPUS AFORA_DOCKER_E2E_PIDS_LIMIT
 
 docker() {
   printf "%s\\n" "$*" >>"$TMPDIR/docker-seen"
@@ -2238,11 +2238,11 @@ docker_e2e_docker_run_cmd run demo
   });
 
   it("keeps package-backed Docker runs bounded when the package helper is sourced directly", () => {
-    const workDir = tempDirs.make("openclaw-docker-package-timeout-required-");
+    const workDir = tempDirs.make("afora-docker-package-timeout-required-");
     mkdirSync(join(workDir, "bin"));
     const script = repoShell(workDir)`
 export PATH="$TMPDIR/bin"
-export OPENCLAW_DOCKER_E2E_RUN_TIMEOUT=11s
+export AFORA_DOCKER_E2E_RUN_TIMEOUT=11s
 
 dirname() {
   /usr/bin/dirname "$@"
@@ -2270,7 +2270,7 @@ stderr="$(<"$TMPDIR/stderr")"
   });
 
   it("uses gtimeout for package-backed Docker runs sourced through the package helper", () => {
-    const workDir = tempDirs.make("openclaw-docker-package-gtimeout-");
+    const workDir = tempDirs.make("afora-docker-package-gtimeout-");
     writeExecutables(join(workDir, "bin"), {
       gtimeout: `#!/bin/bash
 set -euo pipefail
@@ -2285,10 +2285,10 @@ shift 2
 
     const script = repoShell(workDir)`
 export PATH="$TMPDIR/bin"
-export OPENCLAW_DOCKER_E2E_RUN_TIMEOUT=15s
-export OPENCLAW_DOCKER_E2E_AVAILABLE_CPUS=8
-unset OPENCLAW_DOCKER_E2E_DISABLE_RESOURCE_LIMITS
-unset OPENCLAW_DOCKER_E2E_MEMORY OPENCLAW_DOCKER_E2E_CPUS OPENCLAW_DOCKER_E2E_PIDS_LIMIT
+export AFORA_DOCKER_E2E_RUN_TIMEOUT=15s
+export AFORA_DOCKER_E2E_AVAILABLE_CPUS=8
+unset AFORA_DOCKER_E2E_DISABLE_RESOURCE_LIMITS
+unset AFORA_DOCKER_E2E_MEMORY AFORA_DOCKER_E2E_CPUS AFORA_DOCKER_E2E_PIDS_LIMIT
 
 dirname() {
   /usr/bin/dirname "$@"
@@ -2315,19 +2315,19 @@ docker_e2e_docker_run_cmd run demo
     expectTextToIncludeAll(runner, [
       "append_positive_int_env()",
       "append_positive_number_env()",
-      "append_positive_int_env OPENCLAW_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS",
-      "append_positive_int_env OPENCLAW_PLUGIN_LIFECYCLE_TIMEOUT_KILL_GRACE_MS",
-      "append_positive_int_env OPENCLAW_PLUGIN_LIFECYCLE_METRIC_POLL_MS",
-      "append_positive_int_env OPENCLAW_PLUGIN_LIFECYCLE_MAX_RSS_KB",
-      "append_positive_int_env OPENCLAW_PLUGIN_LIFECYCLE_MAX_WALL_MS",
-      "append_positive_number_env OPENCLAW_PLUGIN_LIFECYCLE_MAX_CPU_CORE_RATIO",
+      "append_positive_int_env AFORA_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS",
+      "append_positive_int_env AFORA_PLUGIN_LIFECYCLE_TIMEOUT_KILL_GRACE_MS",
+      "append_positive_int_env AFORA_PLUGIN_LIFECYCLE_METRIC_POLL_MS",
+      "append_positive_int_env AFORA_PLUGIN_LIFECYCLE_MAX_RSS_KB",
+      "append_positive_int_env AFORA_PLUGIN_LIFECYCLE_MAX_WALL_MS",
+      "append_positive_number_env AFORA_PLUGIN_LIFECYCLE_MAX_CPU_CORE_RATIO",
       'docker_e2e_run_with_harness \\\n  "${DOCKER_ENV_ARGS[@]}"',
     ]);
   });
 
   it.each([
-    ["phase timeout", "OPENCLAW_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS", "150ms"],
-    ["CPU ratio", "OPENCLAW_PLUGIN_LIFECYCLE_MAX_CPU_CORE_RATIO", "0"],
+    ["phase timeout", "AFORA_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS", "150ms"],
+    ["CPU ratio", "AFORA_PLUGIN_LIFECYCLE_MAX_CPU_CORE_RATIO", "0"],
   ])(
     "rejects invalid plugin lifecycle Docker %s overrides before package setup",
     (_label, envName, value) => {
@@ -2335,14 +2335,14 @@ docker_e2e_docker_run_cmd run demo
         encoding: "utf8",
         env: {
           ...process.env,
-          OPENCLAW_CURRENT_PACKAGE_TGZ: "/tmp/openclaw-missing-package.tgz",
+          AFORA_CURRENT_PACKAGE_TGZ: "/tmp/afora-missing-package.tgz",
           [envName]: value,
         },
       });
 
       expect(result.status).toBe(2);
       expect(result.stderr).toContain(`invalid ${envName}: ${value}`);
-      expect(result.stderr).not.toContain("OpenClaw package tarball does not exist");
+      expect(result.stderr).not.toContain("Afora package tarball does not exist");
     },
   );
 
@@ -2355,26 +2355,26 @@ docker_e2e_docker_run_cmd run demo
     const pluginCorrupt = readFileSync(PLUGIN_UPDATE_CORRUPT_SCENARIO_PATH, "utf8");
 
     expect(multiNode).toContain(
-      'openclaw_e2e_install_package "$ARTIFACTS/install-a.log" "OpenClaw package under node-A prefix" "$NPM_PREFIX_A"',
+      'afora_e2e_install_package "$ARTIFACTS/install-a.log" "Afora package under node-A prefix" "$NPM_PREFIX_A"',
     );
     expectTextToIncludeAll(updateChannel, [
-      'openclaw_e2e_maybe_timeout "${OPENCLAW_E2E_NPM_INSTALL_TIMEOUT:-600s}" npm install --omit=optional --no-fund --no-audit',
-      'openclaw_e2e_maybe_timeout "${OPENCLAW_E2E_NPM_INSTALL_TIMEOUT:-600s}" npm install -g --prefix /tmp/npm-prefix --omit=optional "$pkg_tgz_path"',
-      "openclaw_e2e_print_log /tmp/openclaw-git-install.log",
-      'openclaw_e2e_print_log "$package_install_log"',
+      'afora_e2e_maybe_timeout "${AFORA_E2E_NPM_INSTALL_TIMEOUT:-600s}" npm install --omit=optional --no-fund --no-audit',
+      'afora_e2e_maybe_timeout "${AFORA_E2E_NPM_INSTALL_TIMEOUT:-600s}" npm install -g --prefix /tmp/npm-prefix --omit=optional "$pkg_tgz_path"',
+      "afora_e2e_print_log /tmp/afora-git-install.log",
+      'afora_e2e_print_log "$package_install_log"',
     ]);
 
-    expect(updateChannel).not.toContain("cat /tmp/openclaw-git-install.log");
+    expect(updateChannel).not.toContain("cat /tmp/afora-git-install.log");
     expect(updateChannel).not.toContain('cat "$package_install_log"');
     expect(doctorSwitch).toContain(
-      'openclaw_e2e_maybe_timeout "${OPENCLAW_E2E_NPM_INSTALL_TIMEOUT:-600s}" npm install --omit=optional --no-fund --no-audit',
+      'afora_e2e_maybe_timeout "${AFORA_E2E_NPM_INSTALL_TIMEOUT:-600s}" npm install --omit=optional --no-fund --no-audit',
     );
     expect(doctorSwitch).toContain(
-      'openclaw_e2e_maybe_timeout "${OPENCLAW_E2E_NPM_INSTALL_TIMEOUT:-600s}" npm install -g --prefix /tmp/npm-prefix --omit=optional "$package_tgz"',
+      'afora_e2e_maybe_timeout "${AFORA_E2E_NPM_INSTALL_TIMEOUT:-600s}" npm install -g --prefix /tmp/npm-prefix --omit=optional "$package_tgz"',
     );
     for (const script of [releaseUpgrade, upgradeSurvivor, pluginCorrupt]) {
       expect(script).toContain(
-        'openclaw_e2e_maybe_timeout "${OPENCLAW_E2E_NPM_INSTALL_TIMEOUT:-600s}" npm install -g',
+        'afora_e2e_maybe_timeout "${AFORA_E2E_NPM_INSTALL_TIMEOUT:-600s}" npm install -g',
       );
     }
   });
@@ -2385,19 +2385,19 @@ docker_e2e_docker_run_cmd run demo
 
     for (const script of [runner, publishedRunner]) {
       expectTextToIncludeAll(script, [
-        "openclaw-upgrade-survivor-runtime",
-        "OPENCLAW_UPGRADE_SURVIVOR_TMPDIR",
-        "OPENCLAW_UPGRADE_SURVIVOR_TEST_STATE_TMPDIR",
-        'export npm_config_cache="${OPENCLAW_UPGRADE_SURVIVOR_NPM_CACHE:-$OPENCLAW_UPGRADE_SURVIVOR_RUNTIME_ROOT/npm-cache}"',
+        "afora-upgrade-survivor-runtime",
+        "AFORA_UPGRADE_SURVIVOR_TMPDIR",
+        "AFORA_UPGRADE_SURVIVOR_TEST_STATE_TMPDIR",
+        'export npm_config_cache="${AFORA_UPGRADE_SURVIVOR_NPM_CACHE:-$AFORA_UPGRADE_SURVIVOR_RUNTIME_ROOT/npm-cache}"',
         'export NPM_CONFIG_CACHE="$npm_config_cache"',
         'chmod 700 "$npm_config_cache" || true',
       ]);
 
       expect(script).not.toContain('export TMPDIR="$ARTIFACT_ROOT/tmp"');
-      expect(script).not.toContain('export TMPDIR="$OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_ROOT/tmp"');
+      expect(script).not.toContain('export TMPDIR="$AFORA_UPGRADE_SURVIVOR_ARTIFACT_ROOT/tmp"');
       expect(script).not.toContain('export npm_config_cache="$ARTIFACT_ROOT/npm-cache"');
       expect(script).not.toContain(
-        'export npm_config_cache="$OPENCLAW_UPGRADE_SURVIVOR_ARTIFACT_ROOT/npm-cache"',
+        'export npm_config_cache="$AFORA_UPGRADE_SURVIVOR_ARTIFACT_ROOT/npm-cache"',
       );
     }
   });
@@ -2407,15 +2407,15 @@ docker_e2e_docker_run_cmd run demo
     const publishedRunner = readFileSync(UPGRADE_SURVIVOR_RUN_SCRIPT, "utf8");
 
     for (const script of [runner, publishedRunner]) {
-      expect(script).toContain("OPENCLAW_NPM_REGISTRY_UPSTREAM=https://registry.npmjs.org");
+      expect(script).toContain("AFORA_NPM_REGISTRY_UPSTREAM=https://registry.npmjs.org");
       expect(script).toContain("node scripts/e2e/lib/plugins/npm-registry-server.mjs");
       expect(script).toContain(
         "read -r plugin_package_name plugin_package_version plugin_package_tarball",
       );
       expect(script).not.toContain("read -r package_name package_version package_tarball");
     }
-    expect(runner).toContain('OPENCLAW_NPM_REGISTRY_DIST_TAGS="beta=$package_version"');
-    expect(publishedRunner).toContain('OPENCLAW_NPM_REGISTRY_DIST_TAGS="beta=$candidate_version"');
+    expect(runner).toContain('AFORA_NPM_REGISTRY_DIST_TAGS="beta=$package_version"');
+    expect(publishedRunner).toContain('AFORA_NPM_REGISTRY_DIST_TAGS="beta=$candidate_version"');
   });
 
   it("starts the upgrade survivor plugin registry before updates with scenario-owned config", () => {
@@ -2459,36 +2459,36 @@ docker_e2e_docker_run_cmd run demo
       publishedRunner.indexOf("phase assert-prepublish-requests node"),
     );
     expect(publishedRunner).toContain('if [ "$candidate_version" = "2026.6.35" ]; then');
-    expect(publishedRunner).toContain('prepublish_package="@openclaw/whatsapp"');
+    expect(publishedRunner).toContain('prepublish_package="@afora/whatsapp"');
     expect(publishedRunner).toContain('if [ "$SCENARIO" = "configured-plugin-installs" ]; then');
-    expect(publishedRunner).toContain('prepublish_package="@openclaw/matrix"');
+    expect(publishedRunner).toContain('prepublish_package="@afora/matrix"');
     expect(publishedRunner).toContain(
-      'assert-prepublish-requests "$OPENCLAW_CLAWHUB_URL" "$prepublish_package" "$candidate_version"',
+      'assert-prepublish-requests "$AFORA_CLAWHUB_URL" "$prepublish_package" "$candidate_version"',
     );
     expect(publishedRunner).toContain(
-      'local tarball="$fixture_root/openclaw-brave-plugin-${candidate_version}.tgz"',
+      'local tarball="$fixture_root/afora-brave-plugin-${candidate_version}.tgz"',
     );
     expect(publishedRunner).toContain('FIXTURE_PACKAGE_VERSION="$candidate_version"');
     expect(publishedRunner).toContain("version,");
     expect(publishedRunner).toContain(
-      'registry_args+=("@openclaw/brave-plugin" "$candidate_version" "$tarball")',
+      'registry_args+=("@afora/brave-plugin" "$candidate_version" "$tarball")',
     );
     expect(publishedRunner).toContain('"$clawhub_security_mode"');
     expect(publishedRunner.indexOf("phase assert-prepublish-requests node")).toBeLessThan(
       publishedRunner.indexOf("phase doctor run_doctor"),
     );
-    expect(runner.indexOf('openclaw "${update_args[@]}"')).toBeLessThan(
+    expect(runner.indexOf('afora "${update_args[@]}"')).toBeLessThan(
       runner.indexOf(
-        'assert-prepublish-requests "$OPENCLAW_CLAWHUB_URL" "@openclaw/whatsapp" "$package_version"',
+        'assert-prepublish-requests "$AFORA_CLAWHUB_URL" "@afora/whatsapp" "$package_version"',
       ),
     );
     expect(
       runner.indexOf(
-        'assert-prepublish-requests "$OPENCLAW_CLAWHUB_URL" "@openclaw/whatsapp" "$package_version"',
+        'assert-prepublish-requests "$AFORA_CLAWHUB_URL" "@afora/whatsapp" "$package_version"',
       ),
-    ).toBeLessThan(runner.indexOf("openclaw doctor --fix --non-interactive"));
+    ).toBeLessThan(runner.indexOf("afora doctor --fix --non-interactive"));
     expect(runner).toContain(
-      'if [ "${OPENCLAW_UPGRADE_SURVIVOR_SCENARIO:-base}" = "feishu-channel" ]; then',
+      'if [ "${AFORA_UPGRADE_SURVIVOR_SCENARIO:-base}" = "feishu-channel" ]; then',
     );
     expect(publishedRunner).toContain('if [ "$SCENARIO" = "feishu-channel" ]; then');
     expect(publishedRunner).toContain(
@@ -2503,9 +2503,9 @@ docker_e2e_docker_run_cmd run demo
       expectTextToIncludeAll(script, [
         "prepublish-artifacts",
         "prepublish-plugin-registry.json",
-        "unset OPENCLAW_CLAWHUB_URL CLAWHUB_URL",
-        'export OPENCLAW_CLAWHUB_URL="http://127.0.0.1:$(cat "$port_file")"',
-        'openclaw_e2e_stop_process "${clawhub_fixture_pid:-}"',
+        "unset AFORA_CLAWHUB_URL CLAWHUB_URL",
+        'export AFORA_CLAWHUB_URL="http://127.0.0.1:$(cat "$port_file")"',
+        'afora_e2e_stop_process "${clawhub_fixture_pid:-}"',
         "assert-prepublish-requests",
       ]);
       expect(script).not.toContain("CLAWHUB_EXPECTED_VERSION");
@@ -2517,7 +2517,7 @@ docker_e2e_docker_run_cmd run demo
         emptyRegistryGuardIndex,
       );
       const registryServerIndex = script.indexOf(
-        "OPENCLAW_NPM_REGISTRY_UPSTREAM=https://registry.npmjs.org",
+        "AFORA_NPM_REGISTRY_UPSTREAM=https://registry.npmjs.org",
       );
       expect(emptyRegistryGuardIndex).toBeGreaterThanOrEqual(0);
       expect(fixtureDirectoryIndex).toBeGreaterThanOrEqual(0);
@@ -2534,8 +2534,8 @@ docker_e2e_docker_run_cmd run demo
       "restore_prepublish_authored_config",
       "restore-prepublish-auth-config",
       "cmp -s",
-      "'^(GATEWAY_AUTH_TOKEN_REF|OPENCLAW_CLAWHUB_URL)='",
-      "OPENCLAW_CLAWHUB_URL=%s",
+      "'^(GATEWAY_AUTH_TOKEN_REF|AFORA_CLAWHUB_URL)='",
+      "AFORA_CLAWHUB_URL=%s",
     ]);
     expect(publishedRunner.indexOf("park_prepublish_authored_config")).toBeLessThan(
       publishedRunner.lastIndexOf("assert_prepublish_fixture_idle"),
@@ -2558,12 +2558,12 @@ docker_e2e_docker_run_cmd run demo
     );
     expect(
       runner.match(
-        /-v "\$HARNESS_ROOT_DIR\/scripts\/e2e\/lib\/clawhub-fixture-server\.cjs:\/tmp\/openclaw-clawhub-fixture-server\.cjs:ro"/gu,
+        /-v "\$HARNESS_ROOT_DIR\/scripts\/e2e\/lib\/clawhub-fixture-server\.cjs:\/tmp\/afora-clawhub-fixture-server\.cjs:ro"/gu,
       ),
     ).toHaveLength(2);
     expect(
       runner.match(
-        /-e OPENCLAW_UPGRADE_SURVIVOR_CLAWHUB_FIXTURE_SERVER=\/tmp\/openclaw-clawhub-fixture-server\.cjs/gu,
+        /-e AFORA_UPGRADE_SURVIVOR_CLAWHUB_FIXTURE_SERVER=\/tmp\/afora-clawhub-fixture-server\.cjs/gu,
       ),
     ).toHaveLength(2);
   });
@@ -2596,7 +2596,7 @@ docker_e2e_docker_run_cmd run demo
     }
   });
 
-  it("wraps package-backed scenario OpenClaw CLI calls with the shared timeout helper", () => {
+  it("wraps package-backed scenario Afora CLI calls with the shared timeout helper", () => {
     const paths = [
       CODEX_ON_DEMAND_DOCKER_E2E_PATH,
       CODEX_MEDIA_PATH_SCENARIO_PATH,
@@ -2614,10 +2614,10 @@ docker_e2e_docker_run_cmd run demo
     for (const path of paths) {
       const script = readFileSync(path, "utf8");
 
-      expect(script, path).toContain("openclaw_e2e_enable_openclaw_cli_timeout");
+      expect(script, path).toContain("afora_e2e_enable_afora_cli_timeout");
     }
     expect(readFileSync(RELEASE_UPGRADE_USER_JOURNEY_SCENARIO_PATH, "utf8")).toContain(
-      'openclaw_e2e_run_command node "$baseline_entry" onboard',
+      'afora_e2e_run_command node "$baseline_entry" onboard',
     );
   });
 
@@ -2627,7 +2627,7 @@ docker_e2e_docker_run_cmd run demo
     expect(script).toContain("{ exec 3>&-; } 2>/dev/null || true");
     expect(script).toContain("--suppress-gateway-token-output");
     expect(script).not.toContain("exec 3>&- 2>/dev/null || true");
-    expect(script).not.toContain('"$HOME/.openclaw/agents/main/agent/auth-profiles.json"');
+    expect(script).not.toContain('"$HOME/.afora/agents/main/agent/auth-profiles.json"');
   });
 
   it("keeps real-TTY onboarding drivers aligned with the first-agent prompt", () => {
@@ -2654,7 +2654,7 @@ docker_e2e_docker_run_cmd run demo
       {
         path: RELEASE_TYPED_ONBOARDING_SCENARIO_PATH,
         scratch:
-          'scenario_tmp="$(mktemp -d "${TMPDIR:-/tmp}/openclaw-release-typed-onboarding.XXXXXX")"',
+          'scenario_tmp="$(mktemp -d "${TMPDIR:-/tmp}/afora-release-typed-onboarding.XXXXXX")"',
         logDir: 'LOG_DIR="$scenario_tmp/logs"',
         requestLog: 'MOCK_REQUEST_LOG="$scenario_tmp/openai-requests.jsonl"',
         expectedPaths: [
@@ -2665,18 +2665,18 @@ docker_e2e_docker_run_cmd run demo
           'input_fifo_dir="$(mktemp -d "$scenario_tmp/input.XXXXXX")"',
         ],
         removed: [
-          "/tmp/openclaw-release-typed-onboarding-openai.jsonl",
-          "/tmp/openclaw-release-typed-onboarding-install.log",
-          "/tmp/openclaw-release-typed-onboarding.log",
-          "/tmp/openclaw-release-typed-onboarding-openai.log",
-          "/tmp/openclaw-release-typed-onboarding-agent.log",
-          'mktemp -d "/tmp/openclaw-release-typed-onboarding.XXXXXX"',
+          "/tmp/afora-release-typed-onboarding-openai.jsonl",
+          "/tmp/afora-release-typed-onboarding-install.log",
+          "/tmp/afora-release-typed-onboarding.log",
+          "/tmp/afora-release-typed-onboarding-openai.log",
+          "/tmp/afora-release-typed-onboarding-agent.log",
+          'mktemp -d "/tmp/afora-release-typed-onboarding.XXXXXX"',
         ],
       },
       {
         path: RELEASE_USER_JOURNEY_SCENARIO_PATH,
         scratch:
-          'scenario_tmp="$(mktemp -d "${TMPDIR:-/tmp}/openclaw-release-user-journey.XXXXXX")"',
+          'scenario_tmp="$(mktemp -d "${TMPDIR:-/tmp}/afora-release-user-journey.XXXXXX")"',
         logDir: 'LOG_DIR="$scenario_tmp/logs"',
         requestLog: 'MOCK_REQUEST_LOG="$scenario_tmp/openai-requests.jsonl"',
         extraState: 'CLICKCLACK_STATE="$scenario_tmp/clickclack.json"',
@@ -2691,21 +2691,21 @@ docker_e2e_docker_run_cmd run demo
           'plugin_b_dir="$(mktemp -d "$scenario_tmp/plugin-b.XXXXXX")"',
         ],
         removed: [
-          "/tmp/openclaw-release-user-journey-openai.jsonl",
-          "/tmp/openclaw-release-user-journey-clickclack.json",
-          "/tmp/openclaw-release-user-journey-install.log",
-          "/tmp/openclaw-release-user-journey-onboard.log",
-          "/tmp/openclaw-release-user-journey-agent.log",
-          "/tmp/openclaw-release-user-journey-plugin-a-install-path.txt",
-          "/tmp/openclaw-release-user-journey-plugin-a-source-path.txt",
-          'mktemp -d "/tmp/openclaw-release-journey-plugin-a.XXXXXX"',
-          'mktemp -d "/tmp/openclaw-release-journey-plugin-b.XXXXXX"',
+          "/tmp/afora-release-user-journey-openai.jsonl",
+          "/tmp/afora-release-user-journey-clickclack.json",
+          "/tmp/afora-release-user-journey-install.log",
+          "/tmp/afora-release-user-journey-onboard.log",
+          "/tmp/afora-release-user-journey-agent.log",
+          "/tmp/afora-release-user-journey-plugin-a-install-path.txt",
+          "/tmp/afora-release-user-journey-plugin-a-source-path.txt",
+          'mktemp -d "/tmp/afora-release-journey-plugin-a.XXXXXX"',
+          'mktemp -d "/tmp/afora-release-journey-plugin-b.XXXXXX"',
         ],
       },
       {
         path: RELEASE_UPGRADE_USER_JOURNEY_SCENARIO_PATH,
         scratch:
-          'scenario_tmp="$(mktemp -d "${TMPDIR:-/tmp}/openclaw-release-upgrade-user-journey.XXXXXX")"',
+          'scenario_tmp="$(mktemp -d "${TMPDIR:-/tmp}/afora-release-upgrade-user-journey.XXXXXX")"',
         logDir: 'LOG_DIR="$scenario_tmp/logs"',
         requestLog: 'MOCK_REQUEST_LOG="$scenario_tmp/openai-requests.jsonl"',
         extraState: 'CLICKCLACK_STATE="$scenario_tmp/clickclack.json"',
@@ -2720,21 +2720,21 @@ docker_e2e_docker_run_cmd run demo
           'plugins install "$plugin_dir" --force',
         ],
         removed: [
-          "/tmp/openclaw-release-upgrade-user-journey-openai.jsonl",
-          "/tmp/openclaw-release-upgrade-user-journey-clickclack.json",
-          "/tmp/openclaw-release-upgrade-baseline-install.log",
-          "/tmp/openclaw-release-upgrade-candidate-install.log",
-          "/tmp/openclaw-release-upgrade-onboard.log",
-          "/tmp/openclaw-release-upgrade-agent.log",
-          'mktemp -d "/tmp/openclaw-release-upgrade-plugin.XXXXXX"',
+          "/tmp/afora-release-upgrade-user-journey-openai.jsonl",
+          "/tmp/afora-release-upgrade-user-journey-clickclack.json",
+          "/tmp/afora-release-upgrade-baseline-install.log",
+          "/tmp/afora-release-upgrade-candidate-install.log",
+          "/tmp/afora-release-upgrade-onboard.log",
+          "/tmp/afora-release-upgrade-agent.log",
+          'mktemp -d "/tmp/afora-release-upgrade-plugin.XXXXXX"',
         ],
       },
       {
         path: NPM_ONBOARD_CHANNEL_AGENT_DOCKER_E2E_PATH,
         scratch:
-          'scenario_tmp="$(mktemp -d "${TMPDIR:-/tmp}/openclaw-npm-onboard-channel-agent.XXXXXX")"',
+          'scenario_tmp="$(mktemp -d "${TMPDIR:-/tmp}/afora-npm-onboard-channel-agent.XXXXXX")"',
         requestLog: 'MOCK_REQUEST_LOG="$scenario_tmp/mock-openai-requests.jsonl"',
-        removed: ["/tmp/openclaw-mock-openai-requests.jsonl"],
+        removed: ["/tmp/afora-mock-openai-requests.jsonl"],
       },
     ];
 
@@ -2764,7 +2764,7 @@ docker_e2e_docker_run_cmd run demo
       for (const stalePath of removed) {
         expect(script, path).not.toContain(stalePath);
       }
-      expect(script, path).not.toMatch(/\/tmp\/openclaw-release-[\w-]+\.(?:log|json|err|txt)/u);
+      expect(script, path).not.toMatch(/\/tmp\/afora-release-[\w-]+\.(?:log|json|err|txt)/u);
     }
   });
 
@@ -2774,14 +2774,14 @@ docker_e2e_docker_run_cmd run demo
 
     expect(multiNode).toContain('timeout --kill-after=30s "$DOCKER_RUN_TIMEOUT" bash -lc');
     expect(upgradeSurvivor).toContain(
-      'ROOT_DIR="$(cd "${OPENCLAW_DOCKER_E2E_REPO_ROOT:-$HARNESS_ROOT_DIR}" && pwd)"',
+      'ROOT_DIR="$(cd "${AFORA_DOCKER_E2E_REPO_ROOT:-$HARNESS_ROOT_DIR}" && pwd)"',
     );
     expect(upgradeSurvivor).toContain('DOCKER_E2E_HARNESS_ROOT_DIR="$HARNESS_ROOT_DIR"');
     expect(upgradeSurvivor).toContain(
-      '-v "$HARNESS_ROOT_DIR/scripts/e2e/lib/upgrade-survivor/run.sh:/tmp/openclaw-upgrade-survivor-run.sh:ro"',
+      '-v "$HARNESS_ROOT_DIR/scripts/e2e/lib/upgrade-survivor/run.sh:/tmp/afora-upgrade-survivor-run.sh:ro"',
     );
     expect(upgradeSurvivor).toContain(
-      'timeout --kill-after=30s "$DOCKER_RUN_TIMEOUT" bash /tmp/openclaw-upgrade-survivor-run.sh',
+      'timeout --kill-after=30s "$DOCKER_RUN_TIMEOUT" bash /tmp/afora-upgrade-survivor-run.sh',
     );
     expect(upgradeSurvivor).toContain('timeout --kill-after=30s "$DOCKER_RUN_TIMEOUT" bash -lc');
     for (const script of [multiNode, upgradeSurvivor]) {
@@ -2792,20 +2792,20 @@ docker_e2e_docker_run_cmd run demo
   it("keeps multi-node update Docker artifacts isolated by default", () => {
     const multiNode = readFileSync(MULTI_NODE_UPDATE_DOCKER_E2E_PATH, "utf8");
     expect(multiNode).toContain(
-      'RUN_ID="${OPENCLAW_MULTI_NODE_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)-$$}"',
+      'RUN_ID="${AFORA_MULTI_NODE_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)-$$}"',
     );
     expect(multiNode).toContain(
-      'ARTIFACT_DIR="${OPENCLAW_MULTI_NODE_ARTIFACT_DIR:-$ROOT_DIR/.artifacts/multi-node-update/$RUN_ID}"',
+      'ARTIFACT_DIR="${AFORA_MULTI_NODE_ARTIFACT_DIR:-$ROOT_DIR/.artifacts/multi-node-update/$RUN_ID}"',
     );
     expect(multiNode).toContain('-v "$ARTIFACT_DIR:/tmp/artifacts"');
     expect(multiNode).not.toContain(
-      'ARTIFACT_DIR="${OPENCLAW_MULTI_NODE_ARTIFACT_DIR:-$ROOT_DIR/.artifacts/multi-node-update}"',
+      'ARTIFACT_DIR="${AFORA_MULTI_NODE_ARTIFACT_DIR:-$ROOT_DIR/.artifacts/multi-node-update}"',
     );
   });
 
   it("reuses the shared bare image for multi-node update targeted runs", () => {
-    const workDir = tempDirs.make("openclaw-multi-node-shared-image-");
-    writeFileSync(join(workDir, "openclaw-current.tgz"), "fake package");
+    const workDir = tempDirs.make("afora-multi-node-shared-image-");
+    writeFileSync(join(workDir, "afora-current.tgz"), "fake package");
     writeExecutables(join(workDir, "bin"), {
       docker: `#!/usr/bin/env bash
 printf "%s\\n" "$*" >>"$TMPDIR/docker-seen"
@@ -2839,16 +2839,16 @@ exec "$@"
 TMPDIR=${shellQuote(workDir)}
 export ROOT_DIR TMPDIR
 export PATH="$TMPDIR/bin:$PATH"
-export OPENCLAW_SKIP_DOCKER_BUILD=1
-export OPENCLAW_DOCKER_E2E_IMAGE=shared-bare
-export OPENCLAW_CURRENT_PACKAGE_TGZ="$TMPDIR/openclaw-current.tgz"
-export OPENCLAW_MULTI_NODE_ARTIFACT_DIR="$TMPDIR/artifacts"
+export AFORA_SKIP_DOCKER_BUILD=1
+export AFORA_DOCKER_E2E_IMAGE=shared-bare
+export AFORA_CURRENT_PACKAGE_TGZ="$TMPDIR/afora-current.tgz"
+export AFORA_MULTI_NODE_ARTIFACT_DIR="$TMPDIR/artifacts"
 
 bash "$ROOT_DIR/scripts/e2e/multi-node-update-docker.sh"
 
 grep -q '^image inspect shared-bare$' "$TMPDIR/docker-seen"
 grep -Fq ' shared-bare ' "$TMPDIR/docker-seen"
-if grep -Fq 'openclaw-multi-node-update-e2e' "$TMPDIR/docker-seen"; then
+if grep -Fq 'afora-multi-node-update-e2e' "$TMPDIR/docker-seen"; then
   echo "multi-node update lane ignored the shared targeted image" >&2
   exit 1
 fi
@@ -2857,89 +2857,89 @@ fi
     execFileSync("bash", ["-lc", script], { encoding: "utf8" });
   });
 
-  it("bounds upgrade survivor foreground OpenClaw CLI calls", () => {
+  it("bounds upgrade survivor foreground Afora CLI calls", () => {
     const runner = readFileSync(UPGRADE_SURVIVOR_DOCKER_E2E_PATH, "utf8");
     const publishedRunner = readFileSync(UPGRADE_SURVIVOR_RUN_SCRIPT, "utf8");
     const updateRestartAuth = readFileSync(UPGRADE_SURVIVOR_UPDATE_RESTART_AUTH_PATH, "utf8");
 
     expectTextToIncludeAll(runner, [
-      'source "$HARNESS_ROOT_DIR/scripts/lib/openclaw-e2e-instance.sh"',
-      'START_BUDGET_SECONDS="$(openclaw_e2e_read_positive_int_env OPENCLAW_UPGRADE_SURVIVOR_START_BUDGET_SECONDS 90)"',
-      'STATUS_BUDGET_SECONDS="$(openclaw_e2e_read_positive_int_env OPENCLAW_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS 30)"',
-      '-e OPENCLAW_UPGRADE_SURVIVOR_START_BUDGET_SECONDS="$START_BUDGET_SECONDS"',
-      '-e OPENCLAW_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS="$STATUS_BUDGET_SECONDS"',
-      'START_BUDGET="$(openclaw_e2e_read_positive_int_env OPENCLAW_UPGRADE_SURVIVOR_START_BUDGET_SECONDS 90)"',
-      'STATUS_BUDGET="$(openclaw_e2e_read_positive_int_env OPENCLAW_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS 30)"',
-      'COMMAND_TIMEOUT="${OPENCLAW_UPGRADE_SURVIVOR_COMMAND_TIMEOUT:-900s}"',
-      '-e OPENCLAW_UPGRADE_SURVIVOR_COMMAND_TIMEOUT="$COMMAND_TIMEOUT"',
-      'command_timeout="${OPENCLAW_UPGRADE_SURVIVOR_COMMAND_TIMEOUT:-900s}"',
-      'openclaw_e2e_maybe_timeout "$command_timeout" env -u OPENCLAW_GATEWAY_TOKEN',
-      'openclaw_e2e_maybe_timeout "$command_timeout" openclaw doctor --fix --non-interactive',
-      'openclaw_e2e_maybe_timeout "$command_timeout" openclaw config validate',
-      'openclaw_e2e_maybe_timeout "$command_timeout" openclaw gateway status',
-      'openclaw gateway --port "$PORT" --bind loopback --allow-unconfigured',
-      'PROBE_TIMEOUT_MS="$(openclaw_e2e_read_nonnegative_int_env OPENCLAW_UPGRADE_SURVIVOR_PROBE_TIMEOUT_MS 60000)"',
-      "openclaw_e2e_read_positive_int_env OPENCLAW_UPGRADE_SURVIVOR_PROBE_ATTEMPT_TIMEOUT_MS 5000",
-      "openclaw_e2e_read_positive_int_env OPENCLAW_UPGRADE_SURVIVOR_PROBE_MAX_BODY_BYTES 1048576",
-      '-e OPENCLAW_UPGRADE_SURVIVOR_PROBE_TIMEOUT_MS="$PROBE_TIMEOUT_MS"',
-      '-e OPENCLAW_UPGRADE_SURVIVOR_PROBE_ATTEMPT_TIMEOUT_MS="$PROBE_ATTEMPT_TIMEOUT_MS"',
-      '-e OPENCLAW_UPGRADE_SURVIVOR_PROBE_MAX_BODY_BYTES="$PROBE_MAX_BODY_BYTES"',
+      'source "$HARNESS_ROOT_DIR/scripts/lib/afora-e2e-instance.sh"',
+      'START_BUDGET_SECONDS="$(afora_e2e_read_positive_int_env AFORA_UPGRADE_SURVIVOR_START_BUDGET_SECONDS 90)"',
+      'STATUS_BUDGET_SECONDS="$(afora_e2e_read_positive_int_env AFORA_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS 30)"',
+      '-e AFORA_UPGRADE_SURVIVOR_START_BUDGET_SECONDS="$START_BUDGET_SECONDS"',
+      '-e AFORA_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS="$STATUS_BUDGET_SECONDS"',
+      'START_BUDGET="$(afora_e2e_read_positive_int_env AFORA_UPGRADE_SURVIVOR_START_BUDGET_SECONDS 90)"',
+      'STATUS_BUDGET="$(afora_e2e_read_positive_int_env AFORA_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS 30)"',
+      'COMMAND_TIMEOUT="${AFORA_UPGRADE_SURVIVOR_COMMAND_TIMEOUT:-900s}"',
+      '-e AFORA_UPGRADE_SURVIVOR_COMMAND_TIMEOUT="$COMMAND_TIMEOUT"',
+      'command_timeout="${AFORA_UPGRADE_SURVIVOR_COMMAND_TIMEOUT:-900s}"',
+      'afora_e2e_maybe_timeout "$command_timeout" env -u AFORA_GATEWAY_TOKEN',
+      'afora_e2e_maybe_timeout "$command_timeout" afora doctor --fix --non-interactive',
+      'afora_e2e_maybe_timeout "$command_timeout" afora config validate',
+      'afora_e2e_maybe_timeout "$command_timeout" afora gateway status',
+      'afora gateway --port "$PORT" --bind loopback --allow-unconfigured',
+      'PROBE_TIMEOUT_MS="$(afora_e2e_read_nonnegative_int_env AFORA_UPGRADE_SURVIVOR_PROBE_TIMEOUT_MS 60000)"',
+      "afora_e2e_read_positive_int_env AFORA_UPGRADE_SURVIVOR_PROBE_ATTEMPT_TIMEOUT_MS 5000",
+      "afora_e2e_read_positive_int_env AFORA_UPGRADE_SURVIVOR_PROBE_MAX_BODY_BYTES 1048576",
+      '-e AFORA_UPGRADE_SURVIVOR_PROBE_TIMEOUT_MS="$PROBE_TIMEOUT_MS"',
+      '-e AFORA_UPGRADE_SURVIVOR_PROBE_ATTEMPT_TIMEOUT_MS="$PROBE_ATTEMPT_TIMEOUT_MS"',
+      '-e AFORA_UPGRADE_SURVIVOR_PROBE_MAX_BODY_BYTES="$PROBE_MAX_BODY_BYTES"',
       "readyz_probe_args=(",
-      'readyz_probe_args+=(--allow-failing "$OPENCLAW_UPGRADE_SURVIVOR_READYZ_ALLOW_FAILING")',
+      'readyz_probe_args+=(--allow-failing "$AFORA_UPGRADE_SURVIVOR_READYZ_ALLOW_FAILING")',
       "readyz_probe_args+=(--allow-degraded-ready)",
       'node scripts/e2e/lib/upgrade-survivor/probe-gateway.mjs "${readyz_probe_args[@]}"',
-      "OPENCLAW_UPGRADE_SURVIVOR_READYZ_ALLOW_FAILING",
-      "OPENCLAW_UPGRADE_SURVIVOR_READYZ_ALLOW_DEGRADED",
+      "AFORA_UPGRADE_SURVIVOR_READYZ_ALLOW_FAILING",
+      "AFORA_UPGRADE_SURVIVOR_READYZ_ALLOW_DEGRADED",
     ]);
 
     expect(publishedRunner).toContain(
-      'COMMAND_TIMEOUT="${OPENCLAW_UPGRADE_SURVIVOR_COMMAND_TIMEOUT:-900s}"',
+      'COMMAND_TIMEOUT="${AFORA_UPGRADE_SURVIVOR_COMMAND_TIMEOUT:-900s}"',
     );
     expect(publishedRunner).toContain(
-      'budget="$(openclaw_e2e_read_positive_int_env OPENCLAW_UPGRADE_SURVIVOR_START_BUDGET_SECONDS 90)"',
+      'budget="$(afora_e2e_read_positive_int_env AFORA_UPGRADE_SURVIVOR_START_BUDGET_SECONDS 90)"',
     );
     expect(publishedRunner).toContain(
-      'budget="$(openclaw_e2e_read_positive_int_env OPENCLAW_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS 30)"',
+      'budget="$(afora_e2e_read_positive_int_env AFORA_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS 30)"',
     );
     expect(publishedRunner).toContain(
-      'openclaw_e2e_maybe_timeout "$COMMAND_TIMEOUT" env -u OPENCLAW_GATEWAY_TOKEN',
+      'afora_e2e_maybe_timeout "$COMMAND_TIMEOUT" env -u AFORA_GATEWAY_TOKEN',
     );
     expect(publishedRunner).toContain(
-      'openclaw_e2e_maybe_timeout "$COMMAND_TIMEOUT" openclaw --version',
+      'afora_e2e_maybe_timeout "$COMMAND_TIMEOUT" afora --version',
     );
     expect(publishedRunner).toContain(
-      'openclaw_e2e_maybe_timeout "$COMMAND_TIMEOUT" openclaw config validate >"$BASELINE_CONFIG_VALIDATE_LOG"',
+      'afora_e2e_maybe_timeout "$COMMAND_TIMEOUT" afora config validate >"$BASELINE_CONFIG_VALIDATE_LOG"',
     );
     expect(publishedRunner).toContain(
-      'openclaw_e2e_maybe_timeout "$COMMAND_TIMEOUT" "${update_env[@]}" openclaw',
+      'afora_e2e_maybe_timeout "$COMMAND_TIMEOUT" "${update_env[@]}" afora',
     );
     expect(publishedRunner).toContain(
-      'openclaw_e2e_maybe_timeout "$COMMAND_TIMEOUT" "${root_cli_env[@]}" openclaw',
+      'afora_e2e_maybe_timeout "$COMMAND_TIMEOUT" "${root_cli_env[@]}" afora',
     );
     expect(publishedRunner).toContain(
-      'openclaw_e2e_maybe_timeout "$COMMAND_TIMEOUT" openclaw doctor --fix --non-interactive',
+      'afora_e2e_maybe_timeout "$COMMAND_TIMEOUT" afora doctor --fix --non-interactive',
     );
     expect(publishedRunner).toContain(
-      'openclaw_e2e_maybe_timeout "$COMMAND_TIMEOUT" openclaw config validate',
+      'afora_e2e_maybe_timeout "$COMMAND_TIMEOUT" afora config validate',
     );
     expect(publishedRunner).toContain(
-      'openclaw_e2e_maybe_timeout "$COMMAND_TIMEOUT" openclaw gateway status',
+      'afora_e2e_maybe_timeout "$COMMAND_TIMEOUT" afora gateway status',
     );
-    expect(publishedRunner).toContain('openclaw gateway --port "$port" --bind loopback');
+    expect(publishedRunner).toContain('afora gateway --port "$port" --bind loopback');
     expect(publishedRunner).toContain("start_gateway legacy-ready-log-ok");
     expect(publishedRunner).toContain(
-      'openclaw_e2e_wait_gateway_ready "$gateway_pid" "$GATEWAY_LOG" 360 "$port" "${1:-strict}"',
+      'afora_e2e_wait_gateway_ready "$gateway_pid" "$GATEWAY_LOG" 360 "$port" "${1:-strict}"',
     );
 
     expect(updateRestartAuth).toContain(
-      'command_timeout="${OPENCLAW_UPGRADE_SURVIVOR_COMMAND_TIMEOUT:-900s}"',
+      'command_timeout="${AFORA_UPGRADE_SURVIVOR_COMMAND_TIMEOUT:-900s}"',
     );
     expect(updateRestartAuth).toContain(
-      'openclaw_e2e_maybe_timeout "$command_timeout" env -u OPENCLAW_GATEWAY_TOKEN',
+      'afora_e2e_maybe_timeout "$command_timeout" env -u AFORA_GATEWAY_TOKEN',
     );
-    expect(updateRestartAuth).toContain('openclaw gateway --port "$port" --bind loopback');
+    expect(updateRestartAuth).toContain('afora gateway --port "$port" --bind loopback');
     expect(updateRestartAuth).toContain(
-      'openclaw_e2e_wait_gateway_ready "$gateway_pid" "$log_file" 360 "$port"',
+      'afora_e2e_wait_gateway_ready "$gateway_pid" "$log_file" 360 "$port"',
     );
   });
 
@@ -2971,10 +2971,10 @@ fi
       expectTextToIncludeAll(script, [
         'supervisor_script="${pid_file}.supervisor.mjs"',
         'process_state="$(awk \'{ print $3 }\' "/proc/$pid/stat" 2>/dev/null || true)"',
-        'OPENCLAW_SYSTEMCTL_SHIM_EXEC_START="$exec_start"',
+        'AFORA_SYSTEMCTL_SHIM_EXEC_START="$exec_start"',
         'nohup node "$supervisor_script"',
-        'if (key.startsWith("OPENCLAW_UPDATE_")) {',
-        "delete childEnv.OPENCLAW_COMPATIBILITY_HOST_VERSION;",
+        'if (key.startsWith("AFORA_UPDATE_")) {',
+        "delete childEnv.AFORA_COMPATIBILITY_HOST_VERSION;",
         'process.on("SIGTERM", stop);',
         "const stopTimeoutMs = 30_000;",
         "process.kill(-pid, signal);",
@@ -2992,12 +2992,12 @@ fi
       ]);
     }
     for (const script of [runner, publishedRunner]) {
-      expect(script).toContain("systemctl --user stop openclaw-gateway.service");
+      expect(script).toContain("systemctl --user stop afora-gateway.service");
     }
   });
 
   it("stops supervised gateway restarts after the systemd burst limit", async () => {
-    const workDir = tempDirs.make("openclaw-update-restart-supervisor-");
+    const workDir = tempDirs.make("afora-update-restart-supervisor-");
     const scripts = [
       readFileSync(UPGRADE_SURVIVOR_RUN_SCRIPT, "utf8"),
       readFileSync(UPGRADE_SURVIVOR_UPDATE_RESTART_AUTH_PATH, "utf8"),
@@ -3018,8 +3018,8 @@ fi
         env: {
           ...process.env,
           COUNT_FILE: countPath,
-          OPENCLAW_SYSTEMCTL_SHIM_DAEMON_LOG: logPath,
-          OPENCLAW_SYSTEMCTL_SHIM_EXEC_START: command,
+          AFORA_SYSTEMCTL_SHIM_DAEMON_LOG: logPath,
+          AFORA_SYSTEMCTL_SHIM_EXEC_START: command,
         },
         stdio: "ignore",
       });
@@ -3034,7 +3034,7 @@ fi
   });
 
   it("allows a supervised gateway to drain within the systemd stop timeout", async () => {
-    const workDir = tempDirs.make("openclaw-update-restart-graceful-stop-");
+    const workDir = tempDirs.make("afora-update-restart-graceful-stop-");
     const scripts = [
       readFileSync(UPGRADE_SURVIVOR_RUN_SCRIPT, "utf8"),
       readFileSync(UPGRADE_SURVIVOR_UPDATE_RESTART_AUTH_PATH, "utf8"),
@@ -3055,8 +3055,8 @@ fi
       const supervisor = spawn(process.execPath, [supervisorPath], {
         env: {
           ...process.env,
-          OPENCLAW_SYSTEMCTL_SHIM_DAEMON_LOG: logPath,
-          OPENCLAW_SYSTEMCTL_SHIM_EXEC_START: command,
+          AFORA_SYSTEMCTL_SHIM_DAEMON_LOG: logPath,
+          AFORA_SYSTEMCTL_SHIM_EXEC_START: command,
           STATE_FILE: statePath,
         },
         stdio: "ignore",
@@ -3080,12 +3080,12 @@ fi
   });
 
   it("preserves the ClawHub fixture URL across a supervised gateway restart", async () => {
-    const workDir = tempDirs.make("openclaw-update-restart-clawhub-env-");
+    const workDir = tempDirs.make("afora-update-restart-clawhub-env-");
     const gatewayPath = join(workDir, "gateway.mjs");
     writeFileSync(
       gatewayPath,
       `import fs from "node:fs";
-fs.appendFileSync(process.env.URLS_FILE, process.env.OPENCLAW_CLAWHUB_URL + "\\n");
+fs.appendFileSync(process.env.URLS_FILE, process.env.AFORA_CLAWHUB_URL + "\\n");
 const starts = fs.readFileSync(process.env.URLS_FILE, "utf8").trim().split("\\n").length;
 process.exit(starts === 1 ? 1 : 78);
 `,
@@ -3108,9 +3108,9 @@ process.exit(starts === 1 ? 1 : 78);
       const supervisor = spawn(process.execPath, [supervisorPath], {
         env: {
           ...process.env,
-          OPENCLAW_CLAWHUB_URL: "http://127.0.0.1:43123",
-          OPENCLAW_SYSTEMCTL_SHIM_DAEMON_LOG: logPath,
-          OPENCLAW_SYSTEMCTL_SHIM_EXEC_START: `${shellQuote(process.execPath)} ${shellQuote(gatewayPath)}`,
+          AFORA_CLAWHUB_URL: "http://127.0.0.1:43123",
+          AFORA_SYSTEMCTL_SHIM_DAEMON_LOG: logPath,
+          AFORA_SYSTEMCTL_SHIM_EXEC_START: `${shellQuote(process.execPath)} ${shellQuote(gatewayPath)}`,
           URLS_FILE: urlsPath,
         },
         stdio: "ignore",
@@ -3133,7 +3133,7 @@ process.exit(starts === 1 ? 1 : 78);
   it.skipIf(process.platform === "win32")(
     "terminates supervised gateway descendants at the systemd stop timeout",
     async () => {
-      const workDir = tempDirs.make("openclaw-update-restart-process-group-");
+      const workDir = tempDirs.make("afora-update-restart-process-group-");
       const descendantPath = writeTermIgnoringDescendant(workDir);
       const gatewayPath = join(workDir, "gateway.mjs");
       writeFileSync(
@@ -3176,8 +3176,8 @@ setInterval(() => {}, 1_000);
             ...process.env,
             DESCENDANT_PID_FILE: descendantPidPath,
             DESCENDANT_SCRIPT: descendantPath,
-            OPENCLAW_SYSTEMCTL_SHIM_DAEMON_LOG: logPath,
-            OPENCLAW_SYSTEMCTL_SHIM_EXEC_START: `${shellQuote(process.execPath)} ${shellQuote(gatewayPath)}`,
+            AFORA_SYSTEMCTL_SHIM_DAEMON_LOG: logPath,
+            AFORA_SYSTEMCTL_SHIM_EXEC_START: `${shellQuote(process.execPath)} ${shellQuote(gatewayPath)}`,
             STATE_FILE: statePath,
           },
           stdio: "ignore",
@@ -3217,7 +3217,7 @@ setInterval(() => {}, 1_000);
   it.skipIf(process.platform === "win32")(
     "drains the previous gateway process group before restarting",
     async () => {
-      const workDir = tempDirs.make("openclaw-update-restart-process-group-restart-");
+      const workDir = tempDirs.make("afora-update-restart-process-group-restart-");
       const descendantPath = writeTermIgnoringDescendant(workDir);
       const gatewayPath = join(workDir, "restart-gateway.mjs");
       writeFileSync(
@@ -3269,8 +3269,8 @@ if (starts === 1) {
             ...process.env,
             DESCENDANT_PID_FILE: descendantPidPath,
             DESCENDANT_SCRIPT: descendantPath,
-            OPENCLAW_SYSTEMCTL_SHIM_DAEMON_LOG: logPath,
-            OPENCLAW_SYSTEMCTL_SHIM_EXEC_START: `${shellQuote(process.execPath)} ${shellQuote(gatewayPath)}`,
+            AFORA_SYSTEMCTL_SHIM_DAEMON_LOG: logPath,
+            AFORA_SYSTEMCTL_SHIM_EXEC_START: `${shellQuote(process.execPath)} ${shellQuote(gatewayPath)}`,
             REPLACEMENT_FILE: replacementPath,
             STARTS_FILE: startsPath,
           },
@@ -3299,17 +3299,17 @@ if (starts === 1) {
   );
 
   it.each([
-    ["start budget", "OPENCLAW_UPGRADE_SURVIVOR_START_BUDGET_SECONDS", "90s"],
-    ["status budget", "OPENCLAW_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS", "30s"],
-    ["probe timeout", "OPENCLAW_UPGRADE_SURVIVOR_PROBE_TIMEOUT_MS", "soon"],
-    ["probe attempt timeout", "OPENCLAW_UPGRADE_SURVIVOR_PROBE_ATTEMPT_TIMEOUT_MS", "0"],
-    ["probe body cap", "OPENCLAW_UPGRADE_SURVIVOR_PROBE_MAX_BODY_BYTES", "64bytes"],
+    ["start budget", "AFORA_UPGRADE_SURVIVOR_START_BUDGET_SECONDS", "90s"],
+    ["status budget", "AFORA_UPGRADE_SURVIVOR_STATUS_BUDGET_SECONDS", "30s"],
+    ["probe timeout", "AFORA_UPGRADE_SURVIVOR_PROBE_TIMEOUT_MS", "soon"],
+    ["probe attempt timeout", "AFORA_UPGRADE_SURVIVOR_PROBE_ATTEMPT_TIMEOUT_MS", "0"],
+    ["probe body cap", "AFORA_UPGRADE_SURVIVOR_PROBE_MAX_BODY_BYTES", "64bytes"],
   ])("rejects invalid upgrade survivor Docker %s before Docker setup", (_label, envName, value) => {
     const result = spawnSync("bash", [UPGRADE_SURVIVOR_DOCKER_E2E_PATH], {
       encoding: "utf8",
       env: {
         ...process.env,
-        OPENCLAW_UPGRADE_SURVIVOR_E2E_SKIP_BUILD: "1",
+        AFORA_UPGRADE_SURVIVOR_E2E_SKIP_BUILD: "1",
         [envName]: value,
       },
     });
@@ -3326,65 +3326,65 @@ if (starts === 1) {
     expectTextToIncludeInOrder(runner, [
       "update_status=$?",
       'if [ "$update_status" -ne 0 ]; then',
-      'echo "openclaw update failed" >&2',
-      "openclaw config validate --json >/tmp/openclaw-upgrade-survivor-post-update-validate.json",
+      'echo "afora update failed" >&2',
+      "afora config validate --json >/tmp/afora-upgrade-survivor-post-update-validate.json",
       'echo "post-update config validation probe status=$validate_status" >&2',
-      "openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-post-update-validate.err >&2 || true",
-      "openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-post-update-validate.json >&2 || true",
-      "openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-update.err >&2 || true",
-      "openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-update.json >&2 || true",
+      "afora_e2e_print_log /tmp/afora-upgrade-survivor-post-update-validate.err >&2 || true",
+      "afora_e2e_print_log /tmp/afora-upgrade-survivor-post-update-validate.json >&2 || true",
+      "afora_e2e_print_log /tmp/afora-upgrade-survivor-update.err >&2 || true",
+      "afora_e2e_print_log /tmp/afora-upgrade-survivor-update.json >&2 || true",
       'exit "$update_status"',
     ]);
     expectTextToIncludeInOrder(publishedRunner, [
       "local update_status=0",
-      'openclaw "${update_args[@]}" >"$UPDATE_JSON" 2>"$UPDATE_ERR" || update_status=$?',
+      'afora "${update_args[@]}" >"$UPDATE_JSON" 2>"$UPDATE_ERR" || update_status=$?',
       'if [ "$update_status" -ne 0 ]; then',
-      'echo "openclaw update failed" >&2',
-      'openclaw config validate --json >"$POST_UPDATE_VALIDATE_JSON"',
+      'echo "afora update failed" >&2',
+      'afora config validate --json >"$POST_UPDATE_VALIDATE_JSON"',
       'echo "post-update config validation probe status=$validate_status" >&2',
-      'openclaw_e2e_print_log "$POST_UPDATE_VALIDATE_ERR" >&2 || true',
-      'openclaw_e2e_print_log "$POST_UPDATE_VALIDATE_JSON" >&2 || true',
-      'openclaw_e2e_print_log "$UPDATE_ERR" >&2 || true',
-      'openclaw_e2e_print_log "$UPDATE_JSON" >&2 || true',
+      'afora_e2e_print_log "$POST_UPDATE_VALIDATE_ERR" >&2 || true',
+      'afora_e2e_print_log "$POST_UPDATE_VALIDATE_JSON" >&2 || true',
+      'afora_e2e_print_log "$UPDATE_ERR" >&2 || true',
+      'afora_e2e_print_log "$UPDATE_JSON" >&2 || true',
       'return "$update_status"',
     ]);
 
     expectTextToIncludeAll(runner, [
-      "openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-update.err",
-      "openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-update.json",
-      "openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-post-update-validate.err",
-      "openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-post-update-validate.json",
-      "openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-doctor.log",
-      "openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-status.err",
-      "openclaw_e2e_print_log /tmp/openclaw-upgrade-survivor-status.json",
-      'openclaw_e2e_print_log "$GATEWAY_LOG"',
-      'openclaw_e2e_print_log "$SYSTEMCTL_SHIM_DAEMON_LOG"',
-      'openclaw_e2e_print_log "$log_file"',
+      "afora_e2e_print_log /tmp/afora-upgrade-survivor-update.err",
+      "afora_e2e_print_log /tmp/afora-upgrade-survivor-update.json",
+      "afora_e2e_print_log /tmp/afora-upgrade-survivor-post-update-validate.err",
+      "afora_e2e_print_log /tmp/afora-upgrade-survivor-post-update-validate.json",
+      "afora_e2e_print_log /tmp/afora-upgrade-survivor-doctor.log",
+      "afora_e2e_print_log /tmp/afora-upgrade-survivor-status.err",
+      "afora_e2e_print_log /tmp/afora-upgrade-survivor-status.json",
+      'afora_e2e_print_log "$GATEWAY_LOG"',
+      'afora_e2e_print_log "$SYSTEMCTL_SHIM_DAEMON_LOG"',
+      'afora_e2e_print_log "$log_file"',
     ]);
 
-    expect(runner).not.toContain("cat /tmp/openclaw-upgrade-survivor-update.err");
-    expect(runner).not.toContain("cat /tmp/openclaw-upgrade-survivor-update.json");
-    expect(runner).not.toContain("cat /tmp/openclaw-upgrade-survivor-post-update-validate.err");
-    expect(runner).not.toContain("cat /tmp/openclaw-upgrade-survivor-post-update-validate.json");
-    expect(runner).not.toContain("cat /tmp/openclaw-upgrade-survivor-doctor.log");
-    expect(runner).not.toContain("cat /tmp/openclaw-upgrade-survivor-status.err");
-    expect(runner).not.toContain("cat /tmp/openclaw-upgrade-survivor-status.json");
+    expect(runner).not.toContain("cat /tmp/afora-upgrade-survivor-update.err");
+    expect(runner).not.toContain("cat /tmp/afora-upgrade-survivor-update.json");
+    expect(runner).not.toContain("cat /tmp/afora-upgrade-survivor-post-update-validate.err");
+    expect(runner).not.toContain("cat /tmp/afora-upgrade-survivor-post-update-validate.json");
+    expect(runner).not.toContain("cat /tmp/afora-upgrade-survivor-doctor.log");
+    expect(runner).not.toContain("cat /tmp/afora-upgrade-survivor-status.err");
+    expect(runner).not.toContain("cat /tmp/afora-upgrade-survivor-status.json");
     expect(runner).not.toContain('cat "$GATEWAY_LOG"');
     expect(runner).not.toContain('cat "$SYSTEMCTL_SHIM_DAEMON_LOG"');
     expect(runner).not.toContain('cat "$log_file"');
-    expect(runner).not.toContain('openclaw_e2e_print_log "$SYSTEMCTL_SHIM_LOG"');
+    expect(runner).not.toContain('afora_e2e_print_log "$SYSTEMCTL_SHIM_LOG"');
 
-    expect(publishedRunner).toContain('openclaw_e2e_print_log "$BASELINE_INSTALL_LOG"');
-    expect(publishedRunner).toContain('openclaw_e2e_print_log "$BASELINE_CONFIG_VALIDATE_LOG"');
-    expect(publishedRunner).toContain('openclaw_e2e_print_log "$BASELINE_SERVICE_INSTALL_ERR"');
-    expect(publishedRunner).toContain('openclaw_e2e_print_log "$BASELINE_SERVICE_INSTALL_JSON"');
-    expect(publishedRunner).toContain('openclaw_e2e_print_log "$UPDATE_ERR"');
-    expect(publishedRunner).toContain('openclaw_e2e_print_log "$UPDATE_JSON"');
-    expect(publishedRunner).toContain('openclaw_e2e_print_log "$DOCTOR_LOG"');
-    expect(publishedRunner).toContain('openclaw_e2e_print_log "$GATEWAY_LOG"');
-    expect(publishedRunner).toContain('openclaw_e2e_print_log "$STATUS_ERR"');
-    expect(publishedRunner).toContain('openclaw_e2e_print_log "$STATUS_JSON"');
-    expect(publishedRunner).toContain('openclaw_e2e_print_log "$log_file"');
+    expect(publishedRunner).toContain('afora_e2e_print_log "$BASELINE_INSTALL_LOG"');
+    expect(publishedRunner).toContain('afora_e2e_print_log "$BASELINE_CONFIG_VALIDATE_LOG"');
+    expect(publishedRunner).toContain('afora_e2e_print_log "$BASELINE_SERVICE_INSTALL_ERR"');
+    expect(publishedRunner).toContain('afora_e2e_print_log "$BASELINE_SERVICE_INSTALL_JSON"');
+    expect(publishedRunner).toContain('afora_e2e_print_log "$UPDATE_ERR"');
+    expect(publishedRunner).toContain('afora_e2e_print_log "$UPDATE_JSON"');
+    expect(publishedRunner).toContain('afora_e2e_print_log "$DOCTOR_LOG"');
+    expect(publishedRunner).toContain('afora_e2e_print_log "$GATEWAY_LOG"');
+    expect(publishedRunner).toContain('afora_e2e_print_log "$STATUS_ERR"');
+    expect(publishedRunner).toContain('afora_e2e_print_log "$STATUS_JSON"');
+    expect(publishedRunner).toContain('afora_e2e_print_log "$log_file"');
     expect(publishedRunner).not.toContain('cat "$BASELINE_INSTALL_LOG"');
     expect(publishedRunner).not.toContain('cat "$BASELINE_CONFIG_VALIDATE_LOG"');
     expect(publishedRunner).not.toContain('cat "$BASELINE_SERVICE_INSTALL_ERR"');
@@ -3396,12 +3396,12 @@ if (starts === 1) {
     expect(publishedRunner).not.toContain('cat "$STATUS_ERR"');
     expect(publishedRunner).not.toContain('cat "$STATUS_JSON"');
     expect(publishedRunner).not.toContain('cat "$log_file"');
-    expect(publishedRunner).not.toContain('openclaw_e2e_print_log "$SYSTEMCTL_SHIM_LOG"');
-    expect(publishedRunner).not.toContain('openclaw_e2e_print_log "$SYSTEMCTL_SHIM_DAEMON_LOG"');
+    expect(publishedRunner).not.toContain('afora_e2e_print_log "$SYSTEMCTL_SHIM_LOG"');
+    expect(publishedRunner).not.toContain('afora_e2e_print_log "$SYSTEMCTL_SHIM_DAEMON_LOG"');
   });
 
   it("preserves caller-owned file descriptors around harness runs", () => {
-    const workDir = tempDirs.make("openclaw-docker-harness-fd-");
+    const workDir = tempDirs.make("afora-docker-harness-fd-");
     const script = String.raw`
 set -euo pipefail
 ROOT_DIR=${shellQuote(process.cwd())}
@@ -3476,25 +3476,25 @@ grep -Fxq preserved "$TMPDIR/caller-fd"
     const runner = readFileSync(CODEX_NPM_PLUGIN_LIVE_DOCKER_E2E_PATH, "utf8");
     const assertions = readFileSync("scripts/e2e/lib/codex-npm-plugin-live/assertions.mjs", "utf8");
     expectTextToIncludeAll(runner, [
-      "docker_e2e_print_log /tmp/openclaw-codex-plugin-pack.log",
+      "docker_e2e_print_log /tmp/afora-codex-plugin-pack.log",
       "scripts/e2e/lib/plugins/npm-registry-server.mjs",
       'CODEX_PLUGIN_SPEC="npm:${CODEX_PLUGIN_REGISTRY_PACKAGE}@${CODEX_PLUGIN_REGISTRY_VERSION}"',
       'export NPM_CONFIG_REGISTRY="http://127.0.0.1:$(cat "$registry_port_file")"',
       "trap cleanup_scenario EXIT",
-      'openclaw_e2e_stop_process "${registry_pid:-}"',
+      'afora_e2e_stop_process "${registry_pid:-}"',
       'if [ "$status" -ne 0 ] && [ "$debug_logs_dumped" -eq 0 ]; then',
       "assert-agent-error",
       "assert-followthrough",
       "followthrough-turn.mjs",
-      "docker_e2e_read_positive_int_env OPENCLAW_CODEX_NPM_PLUGIN_AGENT_TIMEOUT_SECONDS 420",
-      'docker_e2e_read_positive_int_env OPENCLAW_CODEX_NPM_PLUGIN_AGENT_TIMEOUT_SECONDS "$AGENT_TURN_TIMEOUT_SECONDS"',
-      '-e "OPENCLAW_CODEX_NPM_PLUGIN_AGENT_TIMEOUT_SECONDS=$AGENT_TURN_TIMEOUT_SECONDS"',
-      '-e "OPENCLAW_E2E_COMMAND_TIMEOUT=$COMMAND_TIMEOUT"',
+      "docker_e2e_read_positive_int_env AFORA_CODEX_NPM_PLUGIN_AGENT_TIMEOUT_SECONDS 420",
+      'docker_e2e_read_positive_int_env AFORA_CODEX_NPM_PLUGIN_AGENT_TIMEOUT_SECONDS "$AGENT_TURN_TIMEOUT_SECONDS"',
+      '-e "AFORA_CODEX_NPM_PLUGIN_AGENT_TIMEOUT_SECONDS=$AGENT_TURN_TIMEOUT_SECONDS"',
+      '-e "AFORA_E2E_COMMAND_TIMEOUT=$COMMAND_TIMEOUT"',
       '--timeout "$AGENT_TURN_TIMEOUT_SECONDS"',
     ]);
-    expect(runner).not.toContain("cat /tmp/openclaw-codex-plugin-pack.log");
+    expect(runner).not.toContain("cat /tmp/afora-codex-plugin-pack.log");
     expect(runner).not.toContain('CODEX_PLUGIN_SPEC="npm-pack:$container_path"');
-    expect(runner).not.toContain("trap 'openclaw_e2e_stop_process \"${registry_pid:-}\"' EXIT");
+    expect(runner).not.toContain("trap 'afora_e2e_stop_process \"${registry_pid:-}\"' EXIT");
     expect(runner).not.toContain("final=false");
     expect(runner).not.toContain("--timeout 420");
     expectTextToIncludeAll(assertions, [
@@ -3509,12 +3509,12 @@ grep -Fxq preserved "$TMPDIR/caller-fd"
     expectTextToIncludeAll(scenario, [
       'if ! kill -0 "$gateway_pid" 2>/dev/null',
       'echo "gateway exited before listening" >&2',
-      'openclaw_e2e_print_log "$GATEWAY_LOG" >&2',
+      'afora_e2e_print_log "$GATEWAY_LOG" >&2',
     ]);
   });
 
   it("writes the packaged Codex follow-through result independently of stdout logs", () => {
-    const workDir = tempDirs.make("openclaw-codex-followthrough-");
+    const workDir = tempDirs.make("afora-codex-followthrough-");
     const packageRoot = join(workDir, "package");
     const runtimeDir = join(packageRoot, "dist", "plugin-sdk");
     const outputPath = join(workDir, "result.json");
@@ -3570,31 +3570,31 @@ grep -Fxq preserved "$TMPDIR/caller-fd"
     [
       "Codex npm plugin live",
       CODEX_NPM_PLUGIN_LIVE_DOCKER_E2E_PATH,
-      "OPENCLAW_CODEX_NPM_PLUGIN_ASSERT_MAX_TEXT_FILE_BYTES",
+      "AFORA_CODEX_NPM_PLUGIN_ASSERT_MAX_TEXT_FILE_BYTES",
       "64kb",
     ],
     [
       "Codex npm plugin live agent timeout",
       CODEX_NPM_PLUGIN_LIVE_DOCKER_E2E_PATH,
-      "OPENCLAW_CODEX_NPM_PLUGIN_AGENT_TIMEOUT_SECONDS",
+      "AFORA_CODEX_NPM_PLUGIN_AGENT_TIMEOUT_SECONDS",
       "420s",
     ],
     [
       "npm onboard channel-agent",
       NPM_ONBOARD_CHANNEL_AGENT_DOCKER_E2E_PATH,
-      "OPENCLAW_NPM_ONBOARD_JSON_ARTIFACT_MAX_BYTES",
+      "AFORA_NPM_ONBOARD_JSON_ARTIFACT_MAX_BYTES",
       "64kb",
     ],
     [
       "plugins",
       PLUGINS_DOCKER_E2E_PATH,
-      "OPENCLAW_PLUGINS_E2E_CLAWHUB_PREFLIGHT_TIMEOUT_MS",
+      "AFORA_PLUGINS_E2E_CLAWHUB_PREFLIGHT_TIMEOUT_MS",
       "soon",
     ],
     [
       "release user journey",
       RELEASE_USER_JOURNEY_DOCKER_E2E_PATH,
-      "OPENCLAW_RELEASE_USER_JOURNEY_HTTP_BODY_MAX_BYTES",
+      "AFORA_RELEASE_USER_JOURNEY_HTTP_BODY_MAX_BYTES",
       "64kb",
     ],
   ])(
@@ -3604,7 +3604,7 @@ grep -Fxq preserved "$TMPDIR/caller-fd"
         encoding: "utf8",
         env: {
           ...process.env,
-          OPENCLAW_SKIP_DOCKER_BUILD: "1",
+          AFORA_SKIP_DOCKER_BUILD: "1",
           [envName]: value,
         },
       });
@@ -3620,33 +3620,33 @@ grep -Fxq preserved "$TMPDIR/caller-fd"
       [
         CODEX_NPM_PLUGIN_LIVE_DOCKER_E2E_PATH,
         [
-          ["OPENCLAW_CODEX_NPM_PLUGIN_ASSERT_MAX_TEXT_FILE_BYTES", "1048576"],
-          ["OPENCLAW_CODEX_NPM_PLUGIN_ASSERT_MAX_ERROR_TAIL_BYTES", "65536"],
-          ["OPENCLAW_CODEX_NPM_PLUGIN_ASSERT_MAX_TRANSCRIPT_FILES", "64"],
-          ["OPENCLAW_CODEX_NPM_PLUGIN_ASSERT_MAX_TRANSCRIPT_WALK_ENTRIES", "4096"],
-          ["OPENCLAW_CODEX_NPM_PLUGIN_ASSERT_MAX_TRANSCRIPT_SCAN_BYTES", "2097152"],
-          ["OPENCLAW_CODEX_NPM_PLUGIN_AGENT_TIMEOUT_SECONDS", "420"],
+          ["AFORA_CODEX_NPM_PLUGIN_ASSERT_MAX_TEXT_FILE_BYTES", "1048576"],
+          ["AFORA_CODEX_NPM_PLUGIN_ASSERT_MAX_ERROR_TAIL_BYTES", "65536"],
+          ["AFORA_CODEX_NPM_PLUGIN_ASSERT_MAX_TRANSCRIPT_FILES", "64"],
+          ["AFORA_CODEX_NPM_PLUGIN_ASSERT_MAX_TRANSCRIPT_WALK_ENTRIES", "4096"],
+          ["AFORA_CODEX_NPM_PLUGIN_ASSERT_MAX_TRANSCRIPT_SCAN_BYTES", "2097152"],
+          ["AFORA_CODEX_NPM_PLUGIN_AGENT_TIMEOUT_SECONDS", "420"],
         ],
       ],
       [
         NPM_ONBOARD_CHANNEL_AGENT_DOCKER_E2E_PATH,
         [
-          ["OPENCLAW_NPM_ONBOARD_JSON_ARTIFACT_MAX_BYTES", "1048576"],
-          ["OPENCLAW_NPM_ONBOARD_STATUS_TEXT_MAX_BYTES", "1048576"],
+          ["AFORA_NPM_ONBOARD_JSON_ARTIFACT_MAX_BYTES", "1048576"],
+          ["AFORA_NPM_ONBOARD_STATUS_TEXT_MAX_BYTES", "1048576"],
         ],
       ],
       [
         PLUGINS_DOCKER_E2E_PATH,
         [
-          ["OPENCLAW_PLUGINS_E2E_CLAWHUB_PREFLIGHT_BODY_MAX_BYTES", "1048576"],
-          ["OPENCLAW_PLUGINS_E2E_CLAWHUB_PREFLIGHT_TIMEOUT_MS", "30000"],
+          ["AFORA_PLUGINS_E2E_CLAWHUB_PREFLIGHT_BODY_MAX_BYTES", "1048576"],
+          ["AFORA_PLUGINS_E2E_CLAWHUB_PREFLIGHT_TIMEOUT_MS", "30000"],
         ],
       ],
       [
         RELEASE_USER_JOURNEY_DOCKER_E2E_PATH,
         [
-          ["OPENCLAW_RELEASE_USER_JOURNEY_HTTP_TIMEOUT_MS", "5000"],
-          ["OPENCLAW_RELEASE_USER_JOURNEY_HTTP_BODY_MAX_BYTES", "1048576"],
+          ["AFORA_RELEASE_USER_JOURNEY_HTTP_TIMEOUT_MS", "5000"],
+          ["AFORA_RELEASE_USER_JOURNEY_HTTP_BODY_MAX_BYTES", "1048576"],
         ],
       ],
     ] as const;
@@ -3665,7 +3665,7 @@ grep -Fxq preserved "$TMPDIR/caller-fd"
   it("gives Codex on-demand package installs enough time to reach Codex assertions", () => {
     const runner = readFileSync(CODEX_ON_DEMAND_DOCKER_E2E_PATH, "utf8");
     expect(runner).toContain(
-      'export OPENCLAW_E2E_NPM_INSTALL_TIMEOUT="${OPENCLAW_E2E_NPM_INSTALL_TIMEOUT:-1200s}"',
+      'export AFORA_E2E_NPM_INSTALL_TIMEOUT="${AFORA_E2E_NPM_INSTALL_TIMEOUT:-1200s}"',
     );
   });
 
@@ -3689,26 +3689,26 @@ grep -Fxq preserved "$TMPDIR/caller-fd"
   it("threads the live plugin tool output cap into the Docker harness", () => {
     const runner = readFileSync(LIVE_PLUGIN_TOOL_DOCKER_E2E_PATH, "utf8");
     expectTextToIncludeAll(runner, [
-      'source "$ROOT_DIR/scripts/lib/openclaw-e2e-instance.sh"',
-      'AGENT_TURN_TIMEOUT_SECONDS="$(openclaw_e2e_read_positive_int_env OPENCLAW_LIVE_PLUGIN_TOOL_TIMEOUT_SECONDS 300)"',
-      'AGENT_TURN_TIMEOUT_SECONDS="$(openclaw_e2e_read_positive_int_env OPENCLAW_LIVE_PLUGIN_TOOL_TIMEOUT_SECONDS "$AGENT_TURN_TIMEOUT_SECONDS")"',
-      'COMMAND_TIMEOUT="${OPENCLAW_E2E_COMMAND_TIMEOUT:-$((10#$AGENT_TURN_TIMEOUT_SECONDS + 60))s}"',
-      'AGENT_OUTPUT_MAX_BYTES="$(openclaw_e2e_read_positive_int_env OPENCLAW_LIVE_PLUGIN_TOOL_AGENT_OUTPUT_MAX_BYTES 1048576)"',
-      'AGENT_OUTPUT_DUMP_BYTES="$(openclaw_e2e_read_nonnegative_int_env OPENCLAW_LIVE_PLUGIN_TOOL_AGENT_OUTPUT_DUMP_BYTES 16384)"',
-      'SESSION_SCAN_MAX_ENTRIES="$(openclaw_e2e_read_positive_int_env OPENCLAW_LIVE_PLUGIN_TOOL_SESSION_SCAN_MAX_ENTRIES 50000)"',
-      '-e "OPENCLAW_LIVE_PLUGIN_TOOL_AGENT_OUTPUT_DUMP_BYTES=$AGENT_OUTPUT_DUMP_BYTES"',
-      '-e "OPENCLAW_LIVE_PLUGIN_TOOL_AGENT_OUTPUT_MAX_BYTES=$AGENT_OUTPUT_MAX_BYTES"',
-      '-e "OPENCLAW_LIVE_PLUGIN_TOOL_SESSION_SCAN_MAX_ENTRIES=$SESSION_SCAN_MAX_ENTRIES"',
-      '-e "OPENCLAW_E2E_COMMAND_TIMEOUT=$COMMAND_TIMEOUT"',
-      "OPENCLAW_LIVE_PLUGIN_TOOL_AGENT_OUTPUT_DUMP_BYTES",
-      'tail -c "$agent_output_dump_bytes" /tmp/openclaw-agent.json',
+      'source "$ROOT_DIR/scripts/lib/afora-e2e-instance.sh"',
+      'AGENT_TURN_TIMEOUT_SECONDS="$(afora_e2e_read_positive_int_env AFORA_LIVE_PLUGIN_TOOL_TIMEOUT_SECONDS 300)"',
+      'AGENT_TURN_TIMEOUT_SECONDS="$(afora_e2e_read_positive_int_env AFORA_LIVE_PLUGIN_TOOL_TIMEOUT_SECONDS "$AGENT_TURN_TIMEOUT_SECONDS")"',
+      'COMMAND_TIMEOUT="${AFORA_E2E_COMMAND_TIMEOUT:-$((10#$AGENT_TURN_TIMEOUT_SECONDS + 60))s}"',
+      'AGENT_OUTPUT_MAX_BYTES="$(afora_e2e_read_positive_int_env AFORA_LIVE_PLUGIN_TOOL_AGENT_OUTPUT_MAX_BYTES 1048576)"',
+      'AGENT_OUTPUT_DUMP_BYTES="$(afora_e2e_read_nonnegative_int_env AFORA_LIVE_PLUGIN_TOOL_AGENT_OUTPUT_DUMP_BYTES 16384)"',
+      'SESSION_SCAN_MAX_ENTRIES="$(afora_e2e_read_positive_int_env AFORA_LIVE_PLUGIN_TOOL_SESSION_SCAN_MAX_ENTRIES 50000)"',
+      '-e "AFORA_LIVE_PLUGIN_TOOL_AGENT_OUTPUT_DUMP_BYTES=$AGENT_OUTPUT_DUMP_BYTES"',
+      '-e "AFORA_LIVE_PLUGIN_TOOL_AGENT_OUTPUT_MAX_BYTES=$AGENT_OUTPUT_MAX_BYTES"',
+      '-e "AFORA_LIVE_PLUGIN_TOOL_SESSION_SCAN_MAX_ENTRIES=$SESSION_SCAN_MAX_ENTRIES"',
+      '-e "AFORA_E2E_COMMAND_TIMEOUT=$COMMAND_TIMEOUT"',
+      "AFORA_LIVE_PLUGIN_TOOL_AGENT_OUTPUT_DUMP_BYTES",
+      'tail -c "$agent_output_dump_bytes" /tmp/afora-agent.json',
     ]);
     const earlyTimeoutEnvIndex = runner.indexOf(
-      "openclaw_e2e_read_positive_int_env OPENCLAW_LIVE_PLUGIN_TOOL_TIMEOUT_SECONDS 300",
+      "afora_e2e_read_positive_int_env AFORA_LIVE_PLUGIN_TOOL_TIMEOUT_SECONDS 300",
     );
     const profileSourceIndex = runner.indexOf('source "$PROFILE_FILE"');
     const finalTimeoutEnvIndex = runner.lastIndexOf(
-      "openclaw_e2e_read_positive_int_env OPENCLAW_LIVE_PLUGIN_TOOL_TIMEOUT_SECONDS",
+      "afora_e2e_read_positive_int_env AFORA_LIVE_PLUGIN_TOOL_TIMEOUT_SECONDS",
     );
     const dockerBuildIndex = runner.indexOf("docker_e2e_build_or_reuse");
     expect(earlyTimeoutEnvIndex).toBeGreaterThanOrEqual(0);
@@ -3718,19 +3718,19 @@ grep -Fxq preserved "$TMPDIR/caller-fd"
     expect(finalTimeoutEnvIndex).toBeGreaterThan(profileSourceIndex);
 
     expect(runner).not.toContain(
-      'AGENT_OUTPUT_MAX_BYTES="${OPENCLAW_LIVE_PLUGIN_TOOL_AGENT_OUTPUT_MAX_BYTES:-1048576}"',
+      'AGENT_OUTPUT_MAX_BYTES="${AFORA_LIVE_PLUGIN_TOOL_AGENT_OUTPUT_MAX_BYTES:-1048576}"',
     );
 
-    const dumpLogsStart = runner.indexOf("openclaw_e2e_dump_logs \\");
+    const dumpLogsStart = runner.indexOf("afora_e2e_dump_logs \\");
     const dumpLogsEnd = runner.indexOf("\n}", dumpLogsStart);
-    expect(runner.slice(dumpLogsStart, dumpLogsEnd)).not.toContain("/tmp/openclaw-agent.json");
+    expect(runner.slice(dumpLogsStart, dumpLogsEnd)).not.toContain("/tmp/afora-agent.json");
   });
 
   it.each([
-    ["timeout", "OPENCLAW_LIVE_PLUGIN_TOOL_TIMEOUT_SECONDS", "1e3"],
-    ["output cap", "OPENCLAW_LIVE_PLUGIN_TOOL_AGENT_OUTPUT_MAX_BYTES", "64kb"],
-    ["output dump cap", "OPENCLAW_LIVE_PLUGIN_TOOL_AGENT_OUTPUT_DUMP_BYTES", "64kb"],
-    ["session scan cap", "OPENCLAW_LIVE_PLUGIN_TOOL_SESSION_SCAN_MAX_ENTRIES", "0"],
+    ["timeout", "AFORA_LIVE_PLUGIN_TOOL_TIMEOUT_SECONDS", "1e3"],
+    ["output cap", "AFORA_LIVE_PLUGIN_TOOL_AGENT_OUTPUT_MAX_BYTES", "64kb"],
+    ["output dump cap", "AFORA_LIVE_PLUGIN_TOOL_AGENT_OUTPUT_DUMP_BYTES", "64kb"],
+    ["session scan cap", "AFORA_LIVE_PLUGIN_TOOL_SESSION_SCAN_MAX_ENTRIES", "0"],
   ])(
     "rejects invalid live plugin tool Docker %s values before Docker setup",
     (_label, envName, value) => {
@@ -3738,8 +3738,8 @@ grep -Fxq preserved "$TMPDIR/caller-fd"
         encoding: "utf8",
         env: {
           ...process.env,
-          OPENCLAW_LIVE_PLUGIN_TOOL_HOST_BUILD: "0",
-          OPENCLAW_SKIP_DOCKER_BUILD: "1",
+          AFORA_LIVE_PLUGIN_TOOL_HOST_BUILD: "0",
+          AFORA_SKIP_DOCKER_BUILD: "1",
           [envName]: value,
         },
       });
@@ -3754,10 +3754,10 @@ grep -Fxq preserved "$TMPDIR/caller-fd"
     const runner = readFileSync(LIVE_PLUGIN_TOOL_DOCKER_E2E_PATH, "utf8");
     expectTextToIncludeAll(runner, [
       'npm pack --pack-destination "$fixture_dir" --silent',
-      "/tmp/openclaw-live-plugin-tool-pack.log",
+      "/tmp/afora-live-plugin-tool-pack.log",
       "find \"$fixture_dir\" -maxdepth 1 -type f -name '*.tgz' | sort",
       "Expected one packed fixture plugin tarball",
-      "openclaw_e2e_dump_logs /tmp/openclaw-live-plugin-tool-pack.log",
+      "afora_e2e_dump_logs /tmp/afora-live-plugin-tool-pack.log",
       'plugin_tgz="${plugin_tgzs[0]}"',
     ]);
 
@@ -3790,10 +3790,10 @@ grep -Fxq preserved "$TMPDIR/caller-fd"
   });
 
   it.each([
-    ["printed log bytes", "OPENCLAW_DOCKER_E2E_LOG_PRINT_BYTES", "64kb"],
-    ["heartbeat termination grace", "OPENCLAW_DOCKER_E2E_HEARTBEAT_TERM_GRACE_SECONDS", "soon"],
+    ["printed log bytes", "AFORA_DOCKER_E2E_LOG_PRINT_BYTES", "64kb"],
+    ["heartbeat termination grace", "AFORA_DOCKER_E2E_HEARTBEAT_TERM_GRACE_SECONDS", "soon"],
   ])("rejects invalid Docker E2E %s before setup", (_label, envName, value) => {
-    const workDir = tempDirs.make("openclaw-docker-e2e-log-invalid-");
+    const workDir = tempDirs.make("afora-docker-e2e-log-invalid-");
     const script = repoShell(workDir)`
 export ${envName}=${shellQuote(value)}
 
@@ -3810,9 +3810,9 @@ run_logged_print_heartbeat plugins-run 30 bash -c 'printf "should not print\\\\n
   });
 
   it("rejects invalid Docker E2E log heartbeat env before harness setup", () => {
-    const workDir = tempDirs.make("openclaw-docker-e2e-log-heartbeat-invalid-");
+    const workDir = tempDirs.make("afora-docker-e2e-log-heartbeat-invalid-");
     const script = repoShell(workDir)`
-export OPENCLAW_DOCKER_E2E_LOG_HEARTBEAT_SECONDS=1e3
+export AFORA_DOCKER_E2E_LOG_HEARTBEAT_SECONDS=1e3
 
 source "$ROOT_DIR/scripts/lib/docker-e2e-package.sh"
 
@@ -3826,12 +3826,12 @@ docker_e2e_run_logged_print_with_harness plugins-run image-name
     const result = spawnSync("bash", ["-lc", script], { encoding: "utf8" });
 
     expect(result.status).toBe(2);
-    expect(result.stderr).toContain("invalid OPENCLAW_DOCKER_E2E_LOG_HEARTBEAT_SECONDS: 1e3");
+    expect(result.stderr).toContain("invalid AFORA_DOCKER_E2E_LOG_HEARTBEAT_SECONDS: 1e3");
     expect(result.stdout).toBe("");
   });
 
   it("preserves heredoc stdin through Docker E2E heartbeat logging", () => {
-    const workDir = tempDirs.make("openclaw-docker-e2e-log-stdin-");
+    const workDir = tempDirs.make("afora-docker-e2e-log-stdin-");
     const script = repoShell(workDir)`
 
 source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
@@ -3847,7 +3847,7 @@ SH
   });
 
   it("preserves failing heredoc output and status through Docker E2E heartbeat logging", () => {
-    const workDir = tempDirs.make("openclaw-docker-e2e-log-failing-stdin-");
+    const workDir = tempDirs.make("afora-docker-e2e-log-failing-stdin-");
     const script = repoShell(workDir)`
 
 source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
@@ -3866,7 +3866,7 @@ SH
   });
 
   it("does not delay fast successful Docker E2E log captures until the next heartbeat", () => {
-    const workDir = tempDirs.make("openclaw-docker-e2e-log-fast-heartbeat-");
+    const workDir = tempDirs.make("afora-docker-e2e-log-fast-heartbeat-");
     const script = repoShell(workDir)`
 
 source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
@@ -3914,14 +3914,14 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
   it("keeps onboarding Docker E2E resource-guarded", () => {
     const runner = readFileSync(ONBOARD_DOCKER_E2E_PATH, "utf8");
     expectTextToIncludeAll(runner, [
-      "OPENCLAW_ONBOARD_MAX_MEMORY_MIB",
-      "OPENCLAW_ONBOARD_MAX_CPU_PERCENT",
-      'COMMAND_TIMEOUT="${OPENCLAW_ONBOARD_COMMAND_TIMEOUT:-${OPENCLAW_E2E_COMMAND_TIMEOUT:-300s}}"',
-      'GATEWAY_WAIT_ATTEMPTS="$(openclaw_e2e_read_positive_int_env OPENCLAW_ONBOARD_GATEWAY_WAIT_ATTEMPTS 20)"',
-      'GATEWAY_WAIT_INTERVAL_S="$(docker_e2e_read_nonnegative_decimal_env OPENCLAW_ONBOARD_GATEWAY_WAIT_INTERVAL_S 1)"',
-      '-e "OPENCLAW_E2E_COMMAND_TIMEOUT=$COMMAND_TIMEOUT"',
-      '-e "OPENCLAW_ONBOARD_GATEWAY_WAIT_ATTEMPTS=$GATEWAY_WAIT_ATTEMPTS"',
-      '-e "OPENCLAW_ONBOARD_GATEWAY_WAIT_INTERVAL_S=$GATEWAY_WAIT_INTERVAL_S"',
+      "AFORA_ONBOARD_MAX_MEMORY_MIB",
+      "AFORA_ONBOARD_MAX_CPU_PERCENT",
+      'COMMAND_TIMEOUT="${AFORA_ONBOARD_COMMAND_TIMEOUT:-${AFORA_E2E_COMMAND_TIMEOUT:-300s}}"',
+      'GATEWAY_WAIT_ATTEMPTS="$(afora_e2e_read_positive_int_env AFORA_ONBOARD_GATEWAY_WAIT_ATTEMPTS 20)"',
+      'GATEWAY_WAIT_INTERVAL_S="$(docker_e2e_read_nonnegative_decimal_env AFORA_ONBOARD_GATEWAY_WAIT_INTERVAL_S 1)"',
+      '-e "AFORA_E2E_COMMAND_TIMEOUT=$COMMAND_TIMEOUT"',
+      '-e "AFORA_ONBOARD_GATEWAY_WAIT_ATTEMPTS=$GATEWAY_WAIT_ATTEMPTS"',
+      '-e "AFORA_ONBOARD_GATEWAY_WAIT_INTERVAL_S=$GATEWAY_WAIT_INTERVAL_S"',
       '--name "$CONTAINER_NAME"',
       "docker_e2e_sample_stats_until_exit \\",
       '"$STATS_LOG" \\',
@@ -3946,7 +3946,7 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
       expect(runner, path).toContain(
         'DOCKER_COMMAND_TIMEOUT="$DOCKER_RUN_TIMEOUT" docker_e2e_docker_run_cmd run --name "$CONTAINER_NAME"',
       );
-      expect(runner, path).toContain('DOCKER_RUN_TIMEOUT="${OPENCLAW_');
+      expect(runner, path).toContain('DOCKER_RUN_TIMEOUT="${AFORA_');
       expect(runner, path).toContain("docker_e2e_sample_stats_until_exit \\");
       expect(runner, path).toContain('"$STATS_LOG" \\');
       expect(runner, path).toContain('"$RUN_LOG" \\');
@@ -3985,19 +3985,19 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     expect(pluginBinding).toContain("const scanBytes = 65536");
     expect(pluginBinding).toContain("fs.statSync(logPath)");
     expect(pluginBinding).toContain("fs.readSync(fd, buffer, 0, length, stat.size - length)");
-    expect(pluginBinding).not.toContain("process.env.OPENCLAW_DOCKER_E2E_LOG_PRINT_BYTES");
+    expect(pluginBinding).not.toContain("process.env.AFORA_DOCKER_E2E_LOG_PRINT_BYTES");
     expect(pluginBinding).not.toContain('readFileSync(logPath, "utf8")');
   });
 
   it("keeps Open WebUI Docker E2E resource-guarded", () => {
     const runner = readFileSync(OPENWEBUI_DOCKER_E2E_PATH, "utf8");
     expectTextToIncludeAll(runner, [
-      'validate_positive_int OPENCLAW_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS "$PROVIDER_TIMEOUT_SECONDS"',
-      'validate_positive_int OPENCLAW_OPENWEBUI_FETCH_TIMEOUT_MS "$PROBE_FETCH_TIMEOUT_MS"',
-      "docker_e2e_read_tcp_port_env OPENCLAW_OPENWEBUI_GATEWAY_PORT 18789",
-      "docker_e2e_read_tcp_port_env OPENCLAW_OPENWEBUI_PORT 8080",
-      "OPENCLAW_OPENWEBUI_MAX_MEMORY_MIB",
-      "OPENCLAW_OPENWEBUI_MAX_CPU_PERCENT",
+      'validate_positive_int AFORA_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS "$PROVIDER_TIMEOUT_SECONDS"',
+      'validate_positive_int AFORA_OPENWEBUI_FETCH_TIMEOUT_MS "$PROBE_FETCH_TIMEOUT_MS"',
+      "docker_e2e_read_tcp_port_env AFORA_OPENWEBUI_GATEWAY_PORT 18789",
+      "docker_e2e_read_tcp_port_env AFORA_OPENWEBUI_PORT 8080",
+      "AFORA_OPENWEBUI_MAX_MEMORY_MIB",
+      "AFORA_OPENWEBUI_MAX_CPU_PERCENT",
       'STATS_LOG="$(mktemp',
       'PROBE_LOG="$(mktemp',
       'STATS_STOP_FILE="$(mktemp',
@@ -4005,7 +4005,7 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
       "start_openwebui_stats_sampler()",
       "start_openwebui_stats_sampler\n",
       'node "$entry" doctor --fix --yes --force',
-      `openclaw_e2e_exec_gateway "$entry" '"$PORT"' lan`,
+      `afora_e2e_exec_gateway "$entry" '"$PORT"' lan`,
       'for container_name in "$GW_NAME" "$OW_NAME"; do',
       '"$GW_NAME" \\',
       '"$OW_NAME" \\',
@@ -4026,8 +4026,8 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
   });
 
   it.each([
-    ["gateway", "OPENCLAW_OPENWEBUI_GATEWAY_PORT", "1e3"],
-    ["webui", "OPENCLAW_OPENWEBUI_PORT", "65536"],
+    ["gateway", "AFORA_OPENWEBUI_GATEWAY_PORT", "1e3"],
+    ["webui", "AFORA_OPENWEBUI_PORT", "65536"],
   ])("rejects invalid Open WebUI Docker %s ports before Docker setup", (_label, envName, value) => {
     const result = spawnSync("bash", [OPENWEBUI_DOCKER_E2E_PATH], {
       encoding: "utf8",
@@ -4043,8 +4043,8 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
   });
 
   it.each([
-    ["provider", "OPENCLAW_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS", "300s"],
-    ["fetch", "OPENCLAW_OPENWEBUI_FETCH_TIMEOUT_MS", "8000ms"],
+    ["provider", "AFORA_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS", "300s"],
+    ["fetch", "AFORA_OPENWEBUI_FETCH_TIMEOUT_MS", "8000ms"],
   ])(
     "rejects invalid Open WebUI Docker %s timeouts before Docker setup",
     (_label, envName, value) => {
@@ -4068,10 +4068,10 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
       env: {
         ...process.env,
         OPENAI_API_KEY: "",
-        OPENCLAW_OPENWEBUI_FETCH_TIMEOUT_MS: "09000",
-        OPENCLAW_OPENWEBUI_GATEWAY_PORT: "018789",
-        OPENCLAW_OPENWEBUI_PORT: "08080",
-        OPENCLAW_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS: "08",
+        AFORA_OPENWEBUI_FETCH_TIMEOUT_MS: "09000",
+        AFORA_OPENWEBUI_GATEWAY_PORT: "018789",
+        AFORA_OPENWEBUI_PORT: "08080",
+        AFORA_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS: "08",
       },
     });
 
@@ -4081,12 +4081,12 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
   });
 
   it.each([
-    [MCP_CODE_MODE_GATEWAY_DOCKER_E2E_PATH, "OPENCLAW_MCP_CODE_MODE_GATEWAY_PORT", "1e3"],
-    [MCP_CODE_MODE_GATEWAY_DOCKER_E2E_PATH, "OPENCLAW_MCP_CODE_MODE_MOCK_PORT", "65536"],
-    [MCP_CODE_MODE_GATEWAY_LIVE_DOCKER_E2E_PATH, "OPENCLAW_MCP_CODE_MODE_LIVE_GATEWAY_PORT", "0"],
-    [CODEX_MEDIA_PATH_DOCKER_E2E_PATH, "OPENCLAW_CODEX_MEDIA_PATH_PORT", "18790tcp"],
-    [OPENAI_CHAT_TOOLS_DOCKER_E2E_PATH, "OPENCLAW_OPENAI_CHAT_TOOLS_PORT", "0"],
-    [OPENAI_WEB_SEARCH_MINIMAL_E2E_PATH, "OPENCLAW_OPENAI_WEB_SEARCH_MINIMAL_PORT", "18789tcp"],
+    [MCP_CODE_MODE_GATEWAY_DOCKER_E2E_PATH, "AFORA_MCP_CODE_MODE_GATEWAY_PORT", "1e3"],
+    [MCP_CODE_MODE_GATEWAY_DOCKER_E2E_PATH, "AFORA_MCP_CODE_MODE_MOCK_PORT", "65536"],
+    [MCP_CODE_MODE_GATEWAY_LIVE_DOCKER_E2E_PATH, "AFORA_MCP_CODE_MODE_LIVE_GATEWAY_PORT", "0"],
+    [CODEX_MEDIA_PATH_DOCKER_E2E_PATH, "AFORA_CODEX_MEDIA_PATH_PORT", "18790tcp"],
+    [OPENAI_CHAT_TOOLS_DOCKER_E2E_PATH, "AFORA_OPENAI_CHAT_TOOLS_PORT", "0"],
+    [OPENAI_WEB_SEARCH_MINIMAL_E2E_PATH, "AFORA_OPENAI_WEB_SEARCH_MINIMAL_PORT", "18789tcp"],
   ])("rejects invalid Docker E2E ports before setup", (scriptPath, envName, value) => {
     const result = spawnSync("bash", [scriptPath], {
       encoding: "utf8",
@@ -4102,15 +4102,15 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
   });
 
   it.each([
-    ["timeout", "OPENCLAW_CODEX_MEDIA_PATH_TIMEOUT_SECONDS", "180s"],
-    ["log tail cap", "OPENCLAW_CODEX_MEDIA_PATH_LOG_TAIL_MAX_BYTES", "64kb"],
+    ["timeout", "AFORA_CODEX_MEDIA_PATH_TIMEOUT_SECONDS", "180s"],
+    ["log tail cap", "AFORA_CODEX_MEDIA_PATH_LOG_TAIL_MAX_BYTES", "64kb"],
   ])("rejects invalid Codex media path Docker %s before Docker setup", (_label, envName, value) => {
     const result = spawnSync("bash", [CODEX_MEDIA_PATH_DOCKER_E2E_PATH], {
       encoding: "utf8",
       env: {
         ...process.env,
         [envName]: value,
-        OPENCLAW_SKIP_DOCKER_BUILD: "1",
+        AFORA_SKIP_DOCKER_BUILD: "1",
       },
     });
 
@@ -4122,24 +4122,24 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
   it("forwards Codex media path client limits into Docker", () => {
     const runner = readFileSync(CODEX_MEDIA_PATH_DOCKER_E2E_PATH, "utf8");
     expect(runner).toContain(
-      'LOG_TAIL_MAX_BYTES="$(docker_e2e_read_positive_int_env OPENCLAW_CODEX_MEDIA_PATH_LOG_TAIL_MAX_BYTES 2097152)"',
+      'LOG_TAIL_MAX_BYTES="$(docker_e2e_read_positive_int_env AFORA_CODEX_MEDIA_PATH_LOG_TAIL_MAX_BYTES 2097152)"',
     );
     expect(runner).toContain(
-      '-e "OPENCLAW_CODEX_MEDIA_PATH_LOG_TAIL_MAX_BYTES=$LOG_TAIL_MAX_BYTES"',
+      '-e "AFORA_CODEX_MEDIA_PATH_LOG_TAIL_MAX_BYTES=$LOG_TAIL_MAX_BYTES"',
     );
   });
 
   it.each([
-    [MCP_CODE_MODE_GATEWAY_DOCKER_E2E_PATH, "OPENCLAW_MCP_CODE_MODE_CLIENT_TIMEOUT_MS", "1e3"],
+    [MCP_CODE_MODE_GATEWAY_DOCKER_E2E_PATH, "AFORA_MCP_CODE_MODE_CLIENT_TIMEOUT_MS", "1e3"],
     [
       MCP_CODE_MODE_GATEWAY_DOCKER_E2E_PATH,
-      "OPENCLAW_MCP_CODE_MODE_CLIENT_BODY_MAX_BYTES",
+      "AFORA_MCP_CODE_MODE_CLIENT_BODY_MAX_BYTES",
       "64bytes",
     ],
-    [MCP_CODE_MODE_GATEWAY_LIVE_DOCKER_E2E_PATH, "OPENCLAW_MCP_CODE_MODE_CLIENT_TIMEOUT_MS", "1e3"],
+    [MCP_CODE_MODE_GATEWAY_LIVE_DOCKER_E2E_PATH, "AFORA_MCP_CODE_MODE_CLIENT_TIMEOUT_MS", "1e3"],
     [
       MCP_CODE_MODE_GATEWAY_LIVE_DOCKER_E2E_PATH,
-      "OPENCLAW_MCP_CODE_MODE_CLIENT_BODY_MAX_BYTES",
+      "AFORA_MCP_CODE_MODE_CLIENT_BODY_MAX_BYTES",
       "64bytes",
     ],
   ])("rejects invalid MCP code-mode client env before setup", (scriptPath, envName, value) => {
@@ -4148,7 +4148,7 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
       env: {
         ...process.env,
         [envName]: value,
-        OPENCLAW_SKIP_DOCKER_BUILD: "1",
+        AFORA_SKIP_DOCKER_BUILD: "1",
       },
     });
 
@@ -4164,17 +4164,17 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
       const runner = readFileSync(scriptPath, "utf8");
 
       expectTextToIncludeAll(runner, [
-        'CLIENT_TIMEOUT_MS="$(docker_e2e_read_positive_int_env OPENCLAW_MCP_CODE_MODE_CLIENT_TIMEOUT_MS 300000)"',
-        'CLIENT_BODY_MAX_BYTES="$(docker_e2e_read_positive_int_env OPENCLAW_MCP_CODE_MODE_CLIENT_BODY_MAX_BYTES 1048576)"',
-        '-e "OPENCLAW_MCP_CODE_MODE_CLIENT_TIMEOUT_MS=$CLIENT_TIMEOUT_MS"',
-        '-e "OPENCLAW_MCP_CODE_MODE_CLIENT_BODY_MAX_BYTES=$CLIENT_BODY_MAX_BYTES"',
+        'CLIENT_TIMEOUT_MS="$(docker_e2e_read_positive_int_env AFORA_MCP_CODE_MODE_CLIENT_TIMEOUT_MS 300000)"',
+        'CLIENT_BODY_MAX_BYTES="$(docker_e2e_read_positive_int_env AFORA_MCP_CODE_MODE_CLIENT_BODY_MAX_BYTES 1048576)"',
+        '-e "AFORA_MCP_CODE_MODE_CLIENT_TIMEOUT_MS=$CLIENT_TIMEOUT_MS"',
+        '-e "AFORA_MCP_CODE_MODE_CLIENT_BODY_MAX_BYTES=$CLIENT_BODY_MAX_BYTES"',
       ]);
     },
   );
 
   it.each([
-    ["timeout", "OPENCLAW_OPENAI_CHAT_TOOLS_TIMEOUT_SECONDS", "180s"],
-    ["body cap", "OPENCLAW_OPENAI_CHAT_TOOLS_MAX_BODY_BYTES", "64kb"],
+    ["timeout", "AFORA_OPENAI_CHAT_TOOLS_TIMEOUT_SECONDS", "180s"],
+    ["body cap", "AFORA_OPENAI_CHAT_TOOLS_MAX_BODY_BYTES", "64kb"],
   ])("rejects invalid OpenAI chat tools Docker %s before auth setup", (_label, envName, value) => {
     const result = spawnSync("bash", [OPENAI_CHAT_TOOLS_DOCKER_E2E_PATH], {
       encoding: "utf8",
@@ -4195,12 +4195,12 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     const client = readFileSync("scripts/e2e/lib/openai-chat-tools/client.mjs", "utf8");
     const writer = readFileSync("scripts/e2e/lib/openai-chat-tools/write-config.mjs", "utf8");
     const consumed = new Set(
-      [...`${client}\n${writer}`.matchAll(/["`](OPENCLAW_OPENAI_CHAT_TOOLS_[A-Z0-9_]+)["`]/gu)]
+      [...`${client}\n${writer}`.matchAll(/["`](AFORA_OPENAI_CHAT_TOOLS_[A-Z0-9_]+)["`]/gu)]
         .map((match) => match[1])
         .filter((envName): envName is string => envName !== undefined),
     );
     const forwarded = new Set(
-      [...runner.matchAll(/-e\s+"(OPENCLAW_OPENAI_CHAT_TOOLS_[A-Z0-9_]+)=/gu)]
+      [...runner.matchAll(/-e\s+"(AFORA_OPENAI_CHAT_TOOLS_[A-Z0-9_]+)=/gu)]
         .map((match) => match[1])
         .filter((envName): envName is string => envName !== undefined),
     );
@@ -4215,12 +4215,12 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     const runner = readFileSync(KITCHEN_SINK_RPC_DOCKER_E2E_PATH, "utf8");
     const walk = readFileSync("scripts/e2e/kitchen-sink-rpc-walk.mts", "utf8");
     const consumed = new Set(
-      [...walk.matchAll(/\b(?:env|process\.env)\.(OPENCLAW_KITCHEN_SINK_[A-Z0-9_]+)/gu)]
+      [...walk.matchAll(/\b(?:env|process\.env)\.(AFORA_KITCHEN_SINK_[A-Z0-9_]+)/gu)]
         .map((match) => match[1])
         .filter((envName): envName is string => envName !== undefined),
     );
     const forwarded = new Set(
-      [...runner.matchAll(/\b(OPENCLAW_KITCHEN_SINK_[A-Z0-9_]+)\b/gu)]
+      [...runner.matchAll(/\b(AFORA_KITCHEN_SINK_[A-Z0-9_]+)\b/gu)]
         .map((match) => match[1])
         .filter((envName): envName is string => envName !== undefined),
     );
@@ -4234,7 +4234,7 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
   it("keeps the kitchen-sink RPC Docker watchdog above the internal walk budgets", () => {
     const runner = readFileSync(KITCHEN_SINK_RPC_DOCKER_E2E_PATH, "utf8");
     expect(runner).toContain(
-      'DOCKER_RUN_TIMEOUT="${OPENCLAW_KITCHEN_SINK_RPC_DOCKER_RUN_TIMEOUT:-1500s}"',
+      'DOCKER_RUN_TIMEOUT="${AFORA_KITCHEN_SINK_RPC_DOCKER_RUN_TIMEOUT:-1500s}"',
     );
   });
 
@@ -4243,28 +4243,28 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     const sweep = readFileSync("scripts/e2e/lib/kitchen-sink-plugin/sweep.sh", "utf8");
 
     expectTextToIncludeAll(runner, [
-      'KITCHEN_SINK_CLI_TIMEOUT="${OPENCLAW_KITCHEN_SINK_PLUGIN_CLI_TIMEOUT:-${KITCHEN_SINK_CLI_TIMEOUT:-180s}}"',
-      "docker_e2e_read_positive_int_env OPENCLAW_DOCKER_E2E_LOG_PRINT_BYTES 65536",
-      "docker_e2e_read_positive_int_env OPENCLAW_CLAWHUB_FIXTURE_WAIT_ATTEMPTS 600",
-      '-e "OPENCLAW_CLAWHUB_FIXTURE_WAIT_ATTEMPTS=$CLAW_HUB_FIXTURE_WAIT_ATTEMPTS"',
-      '-e "OPENCLAW_DOCKER_E2E_LOG_PRINT_BYTES=$OPENCLAW_DOCKER_E2E_LOG_PRINT_BYTES"',
+      'KITCHEN_SINK_CLI_TIMEOUT="${AFORA_KITCHEN_SINK_PLUGIN_CLI_TIMEOUT:-${KITCHEN_SINK_CLI_TIMEOUT:-180s}}"',
+      "docker_e2e_read_positive_int_env AFORA_DOCKER_E2E_LOG_PRINT_BYTES 65536",
+      "docker_e2e_read_positive_int_env AFORA_CLAWHUB_FIXTURE_WAIT_ATTEMPTS 600",
+      '-e "AFORA_CLAWHUB_FIXTURE_WAIT_ATTEMPTS=$CLAW_HUB_FIXTURE_WAIT_ATTEMPTS"',
+      '-e "AFORA_DOCKER_E2E_LOG_PRINT_BYTES=$AFORA_DOCKER_E2E_LOG_PRINT_BYTES"',
       '-e "KITCHEN_SINK_CLI_TIMEOUT=$KITCHEN_SINK_CLI_TIMEOUT"',
     ]);
 
     expectTextToIncludeAll(sweep, [
       'KITCHEN_SINK_CLI_TIMEOUT="${KITCHEN_SINK_CLI_TIMEOUT:-180s}"',
-      "run_kitchen_sink_openclaw_logged()",
-      "run_kitchen_sink_openclaw_capture()",
-      'openclaw_e2e_maybe_timeout "$KITCHEN_SINK_CLI_TIMEOUT" node "$OPENCLAW_ENTRY" "$@" >"$log_file" 2>&1',
+      "run_kitchen_sink_afora_logged()",
+      "run_kitchen_sink_afora_capture()",
+      'afora_e2e_maybe_timeout "$KITCHEN_SINK_CLI_TIMEOUT" node "$AFORA_ENTRY" "$@" >"$log_file" 2>&1',
       'local log_file="${KITCHEN_SINK_TMP_DIR}/${safe_label}.log"',
     ]);
 
     for (const line of sweep.split("\n")) {
-      if (!line.includes('node "$OPENCLAW_ENTRY" plugins')) {
+      if (!line.includes('node "$AFORA_ENTRY" plugins')) {
         continue;
       }
 
-      expect(line).toContain("openclaw_e2e_maybe_timeout");
+      expect(line).toContain("afora_e2e_maybe_timeout");
     }
   });
 
@@ -4289,7 +4289,7 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     expect(packageRunner).not.toMatch(/(^|\n)\s*docker rm -f/u);
     expect(packageRunner).toContain("docker_e2e_docker_cmd rm -f");
     expect(packageRunner).toContain(
-      'DOCKER_RUN_TIMEOUT="${OPENCLAW_DOCKER_PACKAGE_INSTALL_RUN_TIMEOUT:-120s}"',
+      'DOCKER_RUN_TIMEOUT="${AFORA_DOCKER_PACKAGE_INSTALL_RUN_TIMEOUT:-120s}"',
     );
     expect(packageRunner).toContain(
       'DOCKER_COMMAND_TIMEOUT="$DOCKER_RUN_TIMEOUT" docker_e2e_docker_run_cmd run -d',
@@ -4308,12 +4308,12 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     const updateRunner = readFileSync(UPDATE_CHANNEL_SWITCH_DOCKER_E2E_PATH, "utf8");
 
     expectTextToIncludeAll(packageRunner, [
-      "npm install -g --prefix /tmp/openclaw-proof",
-      "pnpm add --global --allow-build=openclaw",
+      "npm install -g --prefix /tmp/afora-proof",
+      "pnpm add --global --allow-build=afora",
       "bun@1.3.14",
-      'test "$(command -v openclaw)" = "/tmp/openclaw-proof/bin/openclaw"',
-      'test "$(command -v openclaw)" = "$PNPM_HOME/openclaw"',
-      "OPENCLAW_BUN_GLOBAL_SMOKE_PROOF_PATH",
+      'test "$(command -v afora)" = "/tmp/afora-proof/bin/afora"',
+      'test "$(command -v afora)" = "$PNPM_HOME/afora"',
+      "AFORA_BUN_GLOBAL_SMOKE_PROOF_PATH",
       'BUN_HARNESS_DIR="$(mktemp -d',
       "chmod -R a+rX",
       '-v "$BUN_HARNESS_DIR:/repo:ro"',
@@ -4324,23 +4324,23 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     expect(packageRunner).not.toContain('-v "$ROOT_DIR:/repo:ro"');
     expectTextToIncludeAll(installerRunner, [
       "bash /tmp/install.sh",
-      "--version file:/tmp/openclaw-current.tgz",
+      "--version file:/tmp/afora-current.tgz",
       'source "$HOME/.bashrc"',
       "hash -r",
-      "bash /tmp/openclaw-source/scripts/install-cli.sh",
+      "bash /tmp/afora-source/scripts/install-cli.sh",
       "--install-method git",
-      "--prefix /tmp/openclaw-prefix",
+      "--prefix /tmp/afora-prefix",
       "--node-version 24.15.0",
       "apt-get install -y --no-install-recommends curl",
       "command -v curl >/dev/null",
       'chmod 0555 "$SOURCE_PROOF_SCRIPT"',
-      'SOURCE_MEMORY="${OPENCLAW_CLI_INSTALLER_SOURCE_MEMORY:-16g}"',
+      'SOURCE_MEMORY="${AFORA_CLI_INSTALLER_SOURCE_MEMORY:-16g}"',
       '--memory "$SOURCE_MEMORY"',
       "runuser -u appuser",
       'test -r "$0"',
       'test -x "$0"',
-      'grep -Fq "/tmp/openclaw-source/dist/entry.js" "$prefix_cli"',
-      "openclaw update status --json",
+      'grep -Fq "/tmp/afora-source/dist/entry.js" "$prefix_cli"',
+      "afora update status --json",
       "expected git install kind",
     ]);
     expect(installerRunner.match(/--memory "\$SOURCE_MEMORY"/gu)).toHaveLength(1);
@@ -4348,18 +4348,18 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
       installerRunner.indexOf('echo "==> install-cli.sh dedicated-prefix source-checkout proof"'),
     );
     expectTextToIncludeAll(updateRunner, [
-      "openclaw update --channel beta",
-      'OPENCLAW_NPM_REGISTRY_DIST_TAGS="latest=0.0.0,beta=$package_version"',
-      "OPENCLAW_NPM_REGISTRY_UPSTREAM=https://registry.npmjs.org",
+      "afora update --channel beta",
+      'AFORA_NPM_REGISTRY_DIST_TAGS="latest=0.0.0,beta=$package_version"',
+      "AFORA_NPM_REGISTRY_UPSTREAM=https://registry.npmjs.org",
       "assert-update beta",
       "assert-config-channel beta",
       "assert-installed-version",
       "assert-status-kind package",
-      "openclaw update --channel dev",
-      "openclaw update --channel stable",
+      "afora update --channel dev",
+      "afora update --channel stable",
     ]);
-    expect(updateRunner).toContain("openclaw update --channel beta --yes --json --no-restart");
-    expect(updateRunner).not.toContain("openclaw update --channel beta --tag");
+    expect(updateRunner).toContain("afora update --channel beta --yes --json --no-restart");
+    expect(updateRunner).not.toContain("afora update --channel beta --tag");
   });
 
   it("routes the gateway network client through the timeout-aware run helper", () => {
@@ -4387,15 +4387,15 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
       'docker_e2e_docker_cmd stop "$GW_NAME"',
       'docker_e2e_docker_cmd start "$GW_NAME"',
       'if [[ "$restarted_container_id" != "$container_id" ]]',
-      "openclaw_e2e_probe_http http://127.0.0.1:$PORT/readyz ok 400",
+      "afora_e2e_probe_http http://127.0.0.1:$PORT/readyz ok 400",
       'run_logged_print "gateway-network-suspension-$stage"',
       '"phase":"container-restart","durationMs":%d',
     ]);
   });
 
   it.each([
-    ["connect", "OPENCLAW_GATEWAY_NETWORK_CLIENT_CONNECT_TIMEOUT_MS", "100ms"],
-    ["ready", "OPENCLAW_GATEWAY_NETWORK_CONNECT_READY_TIMEOUT_MS", "1e3"],
+    ["connect", "AFORA_GATEWAY_NETWORK_CLIENT_CONNECT_TIMEOUT_MS", "100ms"],
+    ["ready", "AFORA_GATEWAY_NETWORK_CONNECT_READY_TIMEOUT_MS", "1e3"],
   ])(
     "rejects invalid gateway network client %s timeout before Docker setup",
     (_label, envName, value) => {
@@ -4404,7 +4404,7 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
         env: {
           ...process.env,
           [envName]: value,
-          OPENCLAW_SKIP_DOCKER_BUILD: "1",
+          AFORA_SKIP_DOCKER_BUILD: "1",
         },
       });
 
@@ -4417,18 +4417,18 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
   it("forwards gateway network client timeout env into the Docker client", () => {
     const runner = readFileSync(GATEWAY_NETWORK_DOCKER_E2E_PATH, "utf8");
     expectTextToIncludeAll(runner, [
-      "docker_e2e_read_positive_int_env OPENCLAW_GATEWAY_NETWORK_CLIENT_CONNECT_TIMEOUT_MS 80000",
-      "docker_e2e_read_positive_int_env OPENCLAW_GATEWAY_NETWORK_CONNECT_READY_TIMEOUT_MS 80000",
-      '-e "OPENCLAW_GATEWAY_NETWORK_CLIENT_CONNECT_TIMEOUT_MS=$CLIENT_CONNECT_TIMEOUT_MS"',
-      '-e "OPENCLAW_GATEWAY_NETWORK_CONNECT_READY_TIMEOUT_MS=$CONNECT_READY_TIMEOUT_MS"',
+      "docker_e2e_read_positive_int_env AFORA_GATEWAY_NETWORK_CLIENT_CONNECT_TIMEOUT_MS 80000",
+      "docker_e2e_read_positive_int_env AFORA_GATEWAY_NETWORK_CONNECT_READY_TIMEOUT_MS 80000",
+      '-e "AFORA_GATEWAY_NETWORK_CLIENT_CONNECT_TIMEOUT_MS=$CLIENT_CONNECT_TIMEOUT_MS"',
+      '-e "AFORA_GATEWAY_NETWORK_CONNECT_READY_TIMEOUT_MS=$CONNECT_READY_TIMEOUT_MS"',
       '"${CLIENT_LIMIT_ENV_ARGS[@]}"',
     ]);
   });
 
   it("requires TCP readiness for the gateway network runner", () => {
     const runner = readFileSync(GATEWAY_NETWORK_DOCKER_E2E_PATH, "utf8");
-    expect(runner).toContain("openclaw_e2e_probe_tcp 127.0.0.1 $PORT");
-    expect(runner).not.toMatch(/openclaw_e2e_probe_tcp[^\n]*\|\|[^\n]*gateway-net-e2e\.log/u);
+    expect(runner).toContain("afora_e2e_probe_tcp 127.0.0.1 $PORT");
+    expect(runner).not.toMatch(/afora_e2e_probe_tcp[^\n]*\|\|[^\n]*gateway-net-e2e\.log/u);
   });
 
   it("copies root lifecycle inputs before cleanup-smoke installs dependencies", () => {
@@ -4471,11 +4471,11 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     expect(scheduler).toContain("path.dirname(process.execPath)");
     expect(scheduler).toContain("env.PATH = [...new Set(pathEntries)].join(path.delimiter)");
     expect(scheduler).toContain(
-      "const pnpmCommand = env.OPENCLAW_DOCKER_ALL_PNPM_COMMAND?.trim();",
+      "const pnpmCommand = env.AFORA_DOCKER_ALL_PNPM_COMMAND?.trim();",
     );
     expect(scheduler).toContain("lane.command.replace(/(^|\\s)pnpm(?=\\s)/g");
     expect(scheduler).toContain(
-      'env.push(["OPENCLAW_DOCKER_ALL_PNPM_COMMAND", baseEnv.OPENCLAW_DOCKER_ALL_PNPM_COMMAND]);',
+      'env.push(["AFORA_DOCKER_ALL_PNPM_COMMAND", baseEnv.AFORA_DOCKER_ALL_PNPM_COMMAND]);',
     );
   });
 
@@ -4484,19 +4484,19 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     const openWebUiRunner = readFileSync(OPENWEBUI_DOCKER_E2E_PATH, "utf8");
 
     expect(scenarios).toContain(
-      '"OPENCLAW_INSTALL_TAG=beta OPENCLAW_E2E_MODELS=openai OPENCLAW_INSTALL_E2E_IMAGE=openclaw-install-e2e-openai:local OPENCLAW_INSTALL_E2E_AGENT_TOOL_SMOKE=0 OPENCLAW_INSTALL_E2E_OPENAI_MODEL=openai/gpt-5.4-mini OPENCLAW_INSTALL_E2E_AGENT_TURN_TIMEOUT_SECONDS=120 OPENCLAW_INSTALL_E2E_OPENAI_PROVIDER_TIMEOUT_SECONDS=120"',
+      '"AFORA_INSTALL_TAG=beta AFORA_E2E_MODELS=openai AFORA_INSTALL_E2E_IMAGE=afora-install-e2e-openai:local AFORA_INSTALL_E2E_AGENT_TOOL_SMOKE=0 AFORA_INSTALL_E2E_OPENAI_MODEL=openai/gpt-5.4-mini AFORA_INSTALL_E2E_AGENT_TURN_TIMEOUT_SECONDS=120 AFORA_INSTALL_E2E_OPENAI_PROVIDER_TIMEOUT_SECONDS=120"',
     );
     expect(scenarios).toContain(
-      '"OPENCLAW_INSTALL_TAG=beta OPENCLAW_E2E_MODELS=anthropic OPENCLAW_INSTALL_E2E_IMAGE=openclaw-install-e2e-anthropic:local"',
+      '"AFORA_INSTALL_TAG=beta AFORA_E2E_MODELS=anthropic AFORA_INSTALL_E2E_IMAGE=afora-install-e2e-anthropic:local"',
     );
     expect(scenarios).toContain('"test-install-sh-e2e-docker.sh"');
     expect(scenarios).not.toContain("pnpm test:install:e2e");
     expect(scenarios).toContain(
-      '"OPENCLAW_OPENWEBUI_MODEL=openai/gpt-5.4-mini OPENCLAW_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS=300 OPENCLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:openwebui"',
+      '"AFORA_OPENWEBUI_MODEL=openai/gpt-5.4-mini AFORA_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS=300 AFORA_SKIP_DOCKER_BUILD=1 pnpm test:docker:openwebui"',
     );
     expect(scenarios).not.toContain("OPENWEBUI_SMOKE_MODE=models");
     expect(openWebUiRunner).toContain(
-      'SMOKE_MODE="${OPENWEBUI_SMOKE_MODE:-${OPENCLAW_OPENWEBUI_SMOKE_MODE:-chat}}"',
+      'SMOKE_MODE="${OPENWEBUI_SMOKE_MODE:-${AFORA_OPENWEBUI_SMOKE_MODE:-chat}}"',
     );
     expect(openWebUiRunner).toContain('-e "OPENWEBUI_SMOKE_MODE=$SMOKE_MODE"');
   });
@@ -4506,8 +4506,8 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     const wrapper = readFileSync("scripts/test-install-sh-e2e-docker.sh", "utf8");
 
     expectTextToIncludeAll(runner, [
-      'AGENT_TURNS_PARALLEL="$(read_boolean_env OPENCLAW_INSTALL_E2E_AGENT_TURNS_PARALLEL 1)"',
-      'AGENT_TOOL_SMOKE="$(read_boolean_env OPENCLAW_INSTALL_E2E_AGENT_TOOL_SMOKE 1)"',
+      'AGENT_TURNS_PARALLEL="$(read_boolean_env AFORA_INSTALL_E2E_AGENT_TURNS_PARALLEL 1)"',
+      'AGENT_TOOL_SMOKE="$(read_boolean_env AFORA_INSTALL_E2E_AGENT_TOOL_SMOKE 1)"',
       "time_phase",
       "phase_mark_start",
       "run_agent_turn_bg",
@@ -4516,24 +4516,24 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
       "SKIP: Anthropic billing drift during installer agent tool smoke",
       'run_agent_turn_bg "image write"',
       'run_agent_turn_logged_or_skip_profile "read proof copy"',
-      "OPENCLAW_INSTALL_E2E_OPENAI_MODEL",
-      "OPENCLAW_INSTALL_E2E_OPENAI_PROVIDER_TIMEOUT_SECONDS",
-      'AGENT_TURN_TIMEOUT_SECONDS="$(read_positive_int_env OPENCLAW_INSTALL_E2E_AGENT_TURN_TIMEOUT_SECONDS 300)"',
+      "AFORA_INSTALL_E2E_OPENAI_MODEL",
+      "AFORA_INSTALL_E2E_OPENAI_PROVIDER_TIMEOUT_SECONDS",
+      'AGENT_TURN_TIMEOUT_SECONDS="$(read_positive_int_env AFORA_INSTALL_E2E_AGENT_TURN_TIMEOUT_SECONDS 300)"',
     ]);
 
     expect(runner).not.toContain('run_agent_turn_bg "read proof"');
 
     expectTextToIncludeAll(wrapper, [
-      "OPENCLAW_INSTALL_E2E_AGENT_TURNS_PARALLEL",
-      "OPENCLAW_INSTALL_E2E_AGENT_TOOL_SMOKE",
-      "OPENCLAW_INSTALL_E2E_OPENAI_MODEL",
-      "OPENCLAW_INSTALL_E2E_OPENAI_PROVIDER_TIMEOUT_SECONDS",
-      "docker_e2e_read_positive_int_env OPENCLAW_INSTALL_E2E_AGENT_TURN_TIMEOUT_SECONDS 300",
-      'docker_e2e_read_positive_int_env OPENCLAW_INSTALL_E2E_OPENAI_PROVIDER_TIMEOUT_SECONDS "$AGENT_TURN_TIMEOUT_SECONDS"',
-      '-e OPENCLAW_INSTALL_E2E_AGENT_TURN_TIMEOUT_SECONDS="$AGENT_TURN_TIMEOUT_SECONDS"',
-      "OPENCLAW_INSTALL_E2E_PROFILE_FILE",
-      "OPENCLAW_PROFILE_FILE",
-      "OPENCLAW_TESTBOX_PROFILE_FILE",
+      "AFORA_INSTALL_E2E_AGENT_TURNS_PARALLEL",
+      "AFORA_INSTALL_E2E_AGENT_TOOL_SMOKE",
+      "AFORA_INSTALL_E2E_OPENAI_MODEL",
+      "AFORA_INSTALL_E2E_OPENAI_PROVIDER_TIMEOUT_SECONDS",
+      "docker_e2e_read_positive_int_env AFORA_INSTALL_E2E_AGENT_TURN_TIMEOUT_SECONDS 300",
+      'docker_e2e_read_positive_int_env AFORA_INSTALL_E2E_OPENAI_PROVIDER_TIMEOUT_SECONDS "$AGENT_TURN_TIMEOUT_SECONDS"',
+      '-e AFORA_INSTALL_E2E_AGENT_TURN_TIMEOUT_SECONDS="$AGENT_TURN_TIMEOUT_SECONDS"',
+      "AFORA_INSTALL_E2E_PROFILE_FILE",
+      "AFORA_PROFILE_FILE",
+      "AFORA_TESTBOX_PROFILE_FILE",
       "read_profile_env_value",
       'source "$PROFILE_FILE"',
       'export "$key"',
@@ -4548,7 +4548,7 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     expect(scenarios).toContain('"plugins-offline"');
     expect(scenarios).toContain("`bundled-plugin-install-uninstall-${index}`");
     expect(scenarios).toContain("pnpm test:docker:bundled-plugin-install-uninstall");
-    expect(scenarios).toContain("OPENCLAW_PLUGINS_E2E_CLAWHUB=0");
+    expect(scenarios).toContain("AFORA_PLUGINS_E2E_CLAWHUB=0");
   });
 
   it("allows plugin update smoke to tolerate config metadata migrations", () => {
@@ -4578,7 +4578,7 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
       'printf "ActiveState=active\\nSubState=running',
       'status.service?.runtime?.status !== "running"',
       "FAIL: gateway service was not running before update",
-      "OPENCLAW_NO_RESPAWN=1",
+      "AFORA_NO_RESPAWN=1",
       "is-enabled)",
       "/healthz",
       "FAIL: gateway install failed before update",
@@ -4597,7 +4597,7 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     expect(start).toBeGreaterThanOrEqual(0);
     expect(end).toBeGreaterThan(start);
     const probe = runner.slice(start + startMarker.length, end);
-    const workDir = tempDirs.make("openclaw-multi-node-health-timeout-");
+    const workDir = tempDirs.make("afora-multi-node-health-timeout-");
     const preloadPath = join(workDir, "stalling-fetch.mjs");
 
     writeFileSync(
@@ -4671,7 +4671,7 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     expectTextToIncludeAll(doctorScenario, [
       "cp scripts/e2e/lib/doctor-install-switch/shims/systemctl",
       "cp scripts/e2e/lib/doctor-install-switch/shims/loginctl",
-      "OPENCLAW_UPDATE_PARENT_ALLOWS_GATEWAY_SERVICE_REPAIR=1",
+      "AFORA_UPDATE_PARENT_ALLOWS_GATEWAY_SERVICE_REPAIR=1",
       "scripts/e2e/lib/package-compat.mjs",
     ]);
 
@@ -4689,7 +4689,7 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
 
     expect(pluginsSweep).toContain("scripts/e2e/lib/package-compat.mjs");
     expect(pluginUpdateProbe).toContain("../package-compat.mjs");
-    expect(scripts.join("\n")).toContain("OPENCLAW_PACKAGE_ACCEPTANCE_LEGACY_COMPAT");
+    expect(scripts.join("\n")).toContain("AFORA_PACKAGE_ACCEPTANCE_LEGACY_COMPAT");
     expect(scripts.join("\n")).toContain(
       "Package $package_version must support gateway install --wrapper.",
     );
@@ -4700,11 +4700,11 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
   });
 
   it("keeps the doctor switch systemctl shim system scope empty", () => {
-    const home = tempDirs.make("openclaw-doctor-systemctl-shim-");
+    const home = tempDirs.make("afora-doctor-systemctl-shim-");
     const env = { ...process.env, HOME: home };
     const loadState = spawnSync(
       DOCTOR_SWITCH_SYSTEMCTL_SHIM_PATH,
-      ["show", "--property=LoadState", "--value", "openclaw-gateway.service"],
+      ["show", "--property=LoadState", "--value", "afora-gateway.service"],
       { encoding: "utf8", env },
     );
     const unitPath = spawnSync(
@@ -4724,29 +4724,29 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     const scenario = readFileSync(DOCTOR_SWITCH_SCENARIO_PATH, "utf8");
 
     expectTextToIncludeAll(runner, [
-      'NPM_INSTALL_TIMEOUT="${OPENCLAW_E2E_NPM_INSTALL_TIMEOUT:-600s}"',
-      'COMMAND_TIMEOUT="${OPENCLAW_DOCKER_DOCTOR_SWITCH_COMMAND_TIMEOUT:-900s}"',
-      '-e "OPENCLAW_E2E_NPM_INSTALL_TIMEOUT=$NPM_INSTALL_TIMEOUT"',
-      '-e "OPENCLAW_DOCKER_DOCTOR_SWITCH_COMMAND_TIMEOUT=$COMMAND_TIMEOUT"',
+      'NPM_INSTALL_TIMEOUT="${AFORA_E2E_NPM_INSTALL_TIMEOUT:-600s}"',
+      'COMMAND_TIMEOUT="${AFORA_DOCKER_DOCTOR_SWITCH_COMMAND_TIMEOUT:-900s}"',
+      '-e "AFORA_E2E_NPM_INSTALL_TIMEOUT=$NPM_INSTALL_TIMEOUT"',
+      '-e "AFORA_DOCKER_DOCTOR_SWITCH_COMMAND_TIMEOUT=$COMMAND_TIMEOUT"',
     ]);
 
     expectTextToIncludeAll(scenario, [
-      'command_timeout="${OPENCLAW_DOCKER_DOCTOR_SWITCH_COMMAND_TIMEOUT:-900s}"',
+      'command_timeout="${AFORA_DOCKER_DOCTOR_SWITCH_COMMAND_TIMEOUT:-900s}"',
       "use_default_service_identity() {",
       "local account_home",
       'account_home="$(node -p \'require("node:os").userInfo().homedir\')"',
       'export HOME="$account_home"',
       'export USERPROFILE="$account_home"',
-      "unset OPENCLAW_HOME OPENCLAW_STATE_DIR OPENCLAW_CONFIG_PATH",
-      'openclaw_test_state_create "switch-${name}" empty\n  use_default_service_identity',
-      'openclaw_e2e_maybe_timeout "$command_timeout" bash -c "$install_cmd"',
-      'openclaw_e2e_maybe_timeout "$command_timeout" bash -c "$doctor_cmd"',
-      'openclaw_e2e_maybe_timeout "$command_timeout" "$npm_bin" gateway install --wrapper "$wrapper" --force',
-      'openclaw_e2e_maybe_timeout "$command_timeout" node "$git_cli" doctor --repair --force --yes',
+      "unset AFORA_HOME AFORA_STATE_DIR AFORA_CONFIG_PATH",
+      'afora_test_state_create "switch-${name}" empty\n  use_default_service_identity',
+      'afora_e2e_maybe_timeout "$command_timeout" bash -c "$install_cmd"',
+      'afora_e2e_maybe_timeout "$command_timeout" bash -c "$doctor_cmd"',
+      'afora_e2e_maybe_timeout "$command_timeout" "$npm_bin" gateway install --wrapper "$wrapper" --force',
+      'afora_e2e_maybe_timeout "$command_timeout" node "$git_cli" doctor --repair --force --yes',
     ]);
 
     expect(
-      scenario.match(/unset OPENCLAW_HOME OPENCLAW_STATE_DIR OPENCLAW_CONFIG_PATH/gu),
+      scenario.match(/unset AFORA_HOME AFORA_STATE_DIR AFORA_CONFIG_PATH/gu),
     ).toHaveLength(1);
     expect(scenario.match(/export USERPROFILE="\$account_home"/gu)).toHaveLength(1);
     expect(scenario.match(/^ {2}use_default_service_identity$/gmu)).toHaveLength(3);
@@ -4761,28 +4761,28 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
       'if [ -z "$account_home" ]; then',
       'export HOME="$account_home"',
       'export USERPROFILE="$account_home"',
-      "unset OPENCLAW_HOME",
-      'export OPENCLAW_STATE_DIR="$account_home/.openclaw"',
-      'export OPENCLAW_CONFIG_PATH="$OPENCLAW_STATE_DIR/openclaw.json"',
+      "unset AFORA_HOME",
+      'export AFORA_STATE_DIR="$account_home/.afora"',
+      'export AFORA_CONFIG_PATH="$AFORA_STATE_DIR/afora.json"',
     ]);
 
-    expect(runner.indexOf("unset OPENCLAW_HOME")).toBeLessThan(
-      runner.indexOf('export OPENCLAW_STATE_DIR="$account_home/.openclaw"'),
+    expect(runner.indexOf("unset AFORA_HOME")).toBeLessThan(
+      runner.indexOf('export AFORA_STATE_DIR="$account_home/.afora"'),
     );
     expect(
-      runner.indexOf('export OPENCLAW_CONFIG_PATH="$OPENCLAW_STATE_DIR/openclaw.json"'),
+      runner.indexOf('export AFORA_CONFIG_PATH="$AFORA_STATE_DIR/afora.json"'),
     ).toBeLessThan(runner.indexOf("node scripts/e2e/lib/upgrade-survivor/assertions.mjs seed"));
   });
 
   it("bounds doctor install switch command log diagnostics", () => {
     const scenario = readFileSync(DOCTOR_SWITCH_SCENARIO_PATH, "utf8");
     expectTextToIncludeAll(scenario, [
-      'openclaw_e2e_print_log "$npm_log"',
-      'openclaw_e2e_print_log "$install_log"',
-      'openclaw_e2e_print_log "$doctor_log"',
-      'openclaw_e2e_print_log "$reinstall_log"',
-      'openclaw_e2e_print_log "$env_repair_log"',
-      'openclaw_e2e_print_log "$clear_log"',
+      'afora_e2e_print_log "$npm_log"',
+      'afora_e2e_print_log "$install_log"',
+      'afora_e2e_print_log "$doctor_log"',
+      'afora_e2e_print_log "$reinstall_log"',
+      'afora_e2e_print_log "$env_repair_log"',
+      'afora_e2e_print_log "$clear_log"',
     ]);
 
     expect(scenario).not.toContain('cat "$npm_log"');
@@ -4794,11 +4794,11 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
   });
 
   it("prepares pnpm workspace package fixtures without package dependencies", () => {
-    const root = tempDirs.make("openclaw-update-channel-fixture-");
+    const root = tempDirs.make("afora-update-channel-fixture-");
     mkdirSync(join(root, "patches"));
     writeFileSync(
       join(root, "package.json"),
-      `${JSON.stringify({ name: "openclaw", version: "2026.5.6", scripts: {} }, null, 2)}\n`,
+      `${JSON.stringify({ name: "afora", version: "2026.5.6", scripts: {} }, null, 2)}\n`,
       "utf8",
     );
     writeFileSync(
@@ -4840,28 +4840,28 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     const probe = readFileSync(BUNDLED_PLUGIN_INSTALL_UNINSTALL_PROBE_PATH, "utf8");
     const runtimeSmoke = readFileSync(BUNDLED_PLUGIN_INSTALL_UNINSTALL_RUNTIME_SMOKE_PATH, "utf8");
     const forwardedRuntimeEnv = [
-      "OPENCLAW_BUNDLED_PLUGIN_LIST_TIMEOUT_MS",
-      "OPENCLAW_BUNDLED_PLUGIN_LIST_MAX_BUFFER_BYTES",
-      "OPENCLAW_BUNDLED_PLUGIN_RUNTIME_OUTPUT_CHARS",
-      "OPENCLAW_BUNDLED_PLUGIN_RUNTIME_LOG_SCAN_BYTES",
-      "OPENCLAW_BUNDLED_PLUGIN_RUNTIME_GATEWAY_LOG_BYTES",
-      "OPENCLAW_BUNDLED_PLUGIN_RUNTIME_READY_MS",
-      "OPENCLAW_BUNDLED_PLUGIN_RUNTIME_RPC_MS",
-      "OPENCLAW_BUNDLED_PLUGIN_RUNTIME_RPC_READY_MS",
-      "OPENCLAW_BUNDLED_PLUGIN_RUNTIME_COMMAND_MS",
-      "OPENCLAW_BUNDLED_PLUGIN_RUNTIME_HTTP_MS",
-      "OPENCLAW_BUNDLED_PLUGIN_RUNTIME_TEARDOWN_GRACE_MS",
-      "OPENCLAW_BUNDLED_PLUGIN_RUNTIME_TEARDOWN_KILL_GRACE_MS",
-      "OPENCLAW_BUNDLED_PLUGIN_RUNTIME_WATCHDOG_MS",
+      "AFORA_BUNDLED_PLUGIN_LIST_TIMEOUT_MS",
+      "AFORA_BUNDLED_PLUGIN_LIST_MAX_BUFFER_BYTES",
+      "AFORA_BUNDLED_PLUGIN_RUNTIME_OUTPUT_CHARS",
+      "AFORA_BUNDLED_PLUGIN_RUNTIME_LOG_SCAN_BYTES",
+      "AFORA_BUNDLED_PLUGIN_RUNTIME_GATEWAY_LOG_BYTES",
+      "AFORA_BUNDLED_PLUGIN_RUNTIME_READY_MS",
+      "AFORA_BUNDLED_PLUGIN_RUNTIME_RPC_MS",
+      "AFORA_BUNDLED_PLUGIN_RUNTIME_RPC_READY_MS",
+      "AFORA_BUNDLED_PLUGIN_RUNTIME_COMMAND_MS",
+      "AFORA_BUNDLED_PLUGIN_RUNTIME_HTTP_MS",
+      "AFORA_BUNDLED_PLUGIN_RUNTIME_TEARDOWN_GRACE_MS",
+      "AFORA_BUNDLED_PLUGIN_RUNTIME_TEARDOWN_KILL_GRACE_MS",
+      "AFORA_BUNDLED_PLUGIN_RUNTIME_WATCHDOG_MS",
     ] as const;
 
     expectTextToIncludeAll(runner, [
-      "OPENCLAW_BUNDLED_PLUGIN_SWEEP_TOTAL",
-      "OPENCLAW_BUNDLED_PLUGIN_SWEEP_INDEX",
-      "OPENCLAW_BUNDLED_PLUGIN_SWEEP_COMMAND_TIMEOUT",
-      "OPENCLAW_PLUGIN_LIFECYCLE_TRACE",
-      "docker_e2e_read_tcp_port_env OPENCLAW_BUNDLED_PLUGIN_RUNTIME_PORT_BASE 19000",
-      '-e "OPENCLAW_BUNDLED_PLUGIN_RUNTIME_PORT_BASE=$RUNTIME_PORT_BASE"',
+      "AFORA_BUNDLED_PLUGIN_SWEEP_TOTAL",
+      "AFORA_BUNDLED_PLUGIN_SWEEP_INDEX",
+      "AFORA_BUNDLED_PLUGIN_SWEEP_COMMAND_TIMEOUT",
+      "AFORA_PLUGIN_LIFECYCLE_TRACE",
+      "docker_e2e_read_tcp_port_env AFORA_BUNDLED_PLUGIN_RUNTIME_PORT_BASE 19000",
+      '-e "AFORA_BUNDLED_PLUGIN_RUNTIME_PORT_BASE=$RUNTIME_PORT_BASE"',
       "scripts/e2e/lib/bundled-plugin-install-uninstall/sweep.sh",
       'tee "$RUN_LOG"',
     ]);
@@ -4872,19 +4872,19 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     }
 
     for (const [envName, fallback] of [
-      ["OPENCLAW_BUNDLED_PLUGIN_LIST_TIMEOUT_MS", "30000"],
-      ["OPENCLAW_BUNDLED_PLUGIN_LIST_MAX_BUFFER_BYTES", "4194304"],
-      ["OPENCLAW_BUNDLED_PLUGIN_RUNTIME_OUTPUT_CHARS", "1048576"],
-      ["OPENCLAW_BUNDLED_PLUGIN_RUNTIME_LOG_SCAN_BYTES", "262144"],
-      ["OPENCLAW_BUNDLED_PLUGIN_RUNTIME_GATEWAY_LOG_BYTES", "16777216"],
-      ["OPENCLAW_BUNDLED_PLUGIN_RUNTIME_READY_MS", "900000"],
-      ["OPENCLAW_BUNDLED_PLUGIN_RUNTIME_RPC_MS", "60000"],
-      ["OPENCLAW_BUNDLED_PLUGIN_RUNTIME_RPC_READY_MS", "210000"],
-      ["OPENCLAW_BUNDLED_PLUGIN_RUNTIME_WATCHDOG_MS", "1000"],
-      ["OPENCLAW_BUNDLED_PLUGIN_RUNTIME_COMMAND_MS", "120000"],
-      ["OPENCLAW_BUNDLED_PLUGIN_RUNTIME_HTTP_MS", "5000"],
-      ["OPENCLAW_BUNDLED_PLUGIN_RUNTIME_TEARDOWN_GRACE_MS", "10000"],
-      ["OPENCLAW_BUNDLED_PLUGIN_RUNTIME_TEARDOWN_KILL_GRACE_MS", "1000"],
+      ["AFORA_BUNDLED_PLUGIN_LIST_TIMEOUT_MS", "30000"],
+      ["AFORA_BUNDLED_PLUGIN_LIST_MAX_BUFFER_BYTES", "4194304"],
+      ["AFORA_BUNDLED_PLUGIN_RUNTIME_OUTPUT_CHARS", "1048576"],
+      ["AFORA_BUNDLED_PLUGIN_RUNTIME_LOG_SCAN_BYTES", "262144"],
+      ["AFORA_BUNDLED_PLUGIN_RUNTIME_GATEWAY_LOG_BYTES", "16777216"],
+      ["AFORA_BUNDLED_PLUGIN_RUNTIME_READY_MS", "900000"],
+      ["AFORA_BUNDLED_PLUGIN_RUNTIME_RPC_MS", "60000"],
+      ["AFORA_BUNDLED_PLUGIN_RUNTIME_RPC_READY_MS", "210000"],
+      ["AFORA_BUNDLED_PLUGIN_RUNTIME_WATCHDOG_MS", "1000"],
+      ["AFORA_BUNDLED_PLUGIN_RUNTIME_COMMAND_MS", "120000"],
+      ["AFORA_BUNDLED_PLUGIN_RUNTIME_HTTP_MS", "5000"],
+      ["AFORA_BUNDLED_PLUGIN_RUNTIME_TEARDOWN_GRACE_MS", "10000"],
+      ["AFORA_BUNDLED_PLUGIN_RUNTIME_TEARDOWN_KILL_GRACE_MS", "1000"],
     ] as const) {
       expect(runner, `${envName} host validation`).toContain(
         `docker_e2e_read_positive_int_env ${envName} ${fallback}`,
@@ -4893,14 +4893,14 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     }
 
     expect(runner).not.toContain('cat "$RUN_LOG"');
-    expect(probe).toContain('"openclaw.plugin.json"');
+    expect(probe).toContain('"afora.plugin.json"');
     expect(runtimeSmoke).toContain(
-      'readPositiveIntEnv("OPENCLAW_BUNDLED_PLUGIN_RUNTIME_READY_MS", 900000)',
+      'readPositiveIntEnv("AFORA_BUNDLED_PLUGIN_RUNTIME_READY_MS", 900000)',
     );
     expectTextToIncludeAll(sweep, [
       "read -r plugin_id plugin_dir requires_config",
-      'node "$OPENCLAW_ENTRY" plugins install "$plugin_id"',
-      'node "$OPENCLAW_ENTRY" plugins uninstall "$plugin_id" --force',
+      'node "$AFORA_ENTRY" plugins install "$plugin_id"',
+      'node "$AFORA_ENTRY" plugins uninstall "$plugin_id" --force',
       "now_ms()",
       "lifecycle_trace_enabled()",
       "if lifecycle_trace_enabled; then",
@@ -4913,11 +4913,11 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
   });
 
   it.each([
-    ["list timeout", "OPENCLAW_BUNDLED_PLUGIN_LIST_TIMEOUT_MS", "100ms"],
-    ["runtime port base", "OPENCLAW_BUNDLED_PLUGIN_RUNTIME_PORT_BASE", "99999"],
-    ["runtime log scan", "OPENCLAW_BUNDLED_PLUGIN_RUNTIME_LOG_SCAN_BYTES", "64bytes"],
-    ["runtime command timeout", "OPENCLAW_BUNDLED_PLUGIN_RUNTIME_COMMAND_MS", "soon"],
-    ["runtime teardown grace", "OPENCLAW_BUNDLED_PLUGIN_RUNTIME_TEARDOWN_GRACE_MS", "0"],
+    ["list timeout", "AFORA_BUNDLED_PLUGIN_LIST_TIMEOUT_MS", "100ms"],
+    ["runtime port base", "AFORA_BUNDLED_PLUGIN_RUNTIME_PORT_BASE", "99999"],
+    ["runtime log scan", "AFORA_BUNDLED_PLUGIN_RUNTIME_LOG_SCAN_BYTES", "64bytes"],
+    ["runtime command timeout", "AFORA_BUNDLED_PLUGIN_RUNTIME_COMMAND_MS", "soon"],
+    ["runtime teardown grace", "AFORA_BUNDLED_PLUGIN_RUNTIME_TEARDOWN_GRACE_MS", "0"],
   ])(
     "rejects invalid bundled plugin Docker %s values before Docker setup",
     (_label, envName, value) => {
@@ -4925,7 +4925,7 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
         encoding: "utf8",
         env: {
           ...process.env,
-          OPENCLAW_SKIP_DOCKER_BUILD: "1",
+          AFORA_SKIP_DOCKER_BUILD: "1",
           [envName]: value,
         },
       });
@@ -4938,11 +4938,11 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
 
   it("passes installer tag env to bash, not curl", () => {
     const runner = readFileSync(INSTALL_E2E_RUNNER_PATH, "utf8");
-    expect(runner).toContain('OPENCLAW_BETA=1 bash "$installer"');
-    expect(runner).toContain('OPENCLAW_VERSION="$INSTALL_TAG" bash "$installer"');
-    expect(runner).not.toContain('OPENCLAW_BETA=1 curl -fsSL "$INSTALL_URL" | bash');
+    expect(runner).toContain('AFORA_BETA=1 bash "$installer"');
+    expect(runner).toContain('AFORA_VERSION="$INSTALL_TAG" bash "$installer"');
+    expect(runner).not.toContain('AFORA_BETA=1 curl -fsSL "$INSTALL_URL" | bash');
     expect(runner).not.toContain(
-      'OPENCLAW_VERSION="$INSTALL_TAG" curl -fsSL "$INSTALL_URL" | bash',
+      'AFORA_VERSION="$INSTALL_TAG" curl -fsSL "$INSTALL_URL" | bash',
     );
   });
 
@@ -4973,10 +4973,10 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     expect(start).toBeGreaterThanOrEqual(0);
     expect(end).toBeGreaterThan(start);
     expectTextToIncludeAll(helper, [
-      "OPENCLAW_INSTALL_E2E_SESSION_SCAN_BYTES",
-      "OPENCLAW_INSTALL_E2E_SESSION_LINE_BYTES",
-      "OPENCLAW_INSTALL_E2E_SESSION_SCAN_DEPTH",
-      "OPENCLAW_INSTALL_E2E_SESSION_SCAN_NODES",
+      "AFORA_INSTALL_E2E_SESSION_SCAN_BYTES",
+      "AFORA_INSTALL_E2E_SESSION_LINE_BYTES",
+      "AFORA_INSTALL_E2E_SESSION_SCAN_DEPTH",
+      "AFORA_INSTALL_E2E_SESSION_SCAN_NODES",
       "fs.createReadStream",
       "Buffer.concat",
       "skippedOversizedLines",
@@ -4996,10 +4996,10 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     expectTextToIncludeAll(helper, [
       'jsonl="$(session_jsonl_path "$profile" "$session_id")"',
       'if [[ ! -f "$jsonl" ]]',
-      'openclaw --profile "$profile" sessions export-trajectory',
+      'afora --profile "$profile" sessions export-trajectory',
       '--session-key "agent:main:explicit:${session_id}"',
       '--workspace "$export_workspace"',
-      'jsonl="$export_workspace/.openclaw/trajectory-exports/scan/events.jsonl"',
+      'jsonl="$export_workspace/.afora/trajectory-exports/scan/events.jsonl"',
       'rm -rf "$export_workspace"',
     ]);
   });
@@ -5010,20 +5010,20 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     const client = readFileSync(OPENAI_WEB_SEARCH_MINIMAL_CLIENT_PATH, "utf8");
 
     expectTextToIncludeAll(runner, [
-      'PORT="$(docker_e2e_read_tcp_port_env OPENCLAW_OPENAI_WEB_SEARCH_MINIMAL_PORT 18789)"',
+      'PORT="$(docker_e2e_read_tcp_port_env AFORA_OPENAI_WEB_SEARCH_MINIMAL_PORT 18789)"',
       'MOCK_PORT="443"',
       '-e "PORT=$PORT"',
       '-e "MOCK_PORT=$MOCK_PORT"',
       "scripts/e2e/lib/openai-web-search-minimal/scenario.sh",
     ]);
 
-    expect(runner).not.toContain("OPENCLAW_OPENAI_WEB_SEARCH_MINIMAL_MOCK_PORT");
+    expect(runner).not.toContain("AFORA_OPENAI_WEB_SEARCH_MINIMAL_MOCK_PORT");
 
     expectTextToIncludeAll(scenario, [
       'export NODE_EXTRA_CA_CERTS="$TLS_CA_CERT"',
       'MOCK_TLS_CERT="$TLS_SERVER_CERT"',
       'MOCK_TLS_KEY="$TLS_SERVER_KEY"',
-      'openclaw_e2e_wait_mock_openai "$MOCK_PORT" 80 400 "https://api.openai.com:$MOCK_PORT"',
+      'afora_e2e_wait_mock_openai "$MOCK_PORT" 80 400 "https://api.openai.com:$MOCK_PORT"',
       "scripts/e2e/lib/openai-web-search-minimal/client.mjs",
     ]);
 
@@ -5040,11 +5040,11 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
   it("cleans OpenAI web search smoke processes through the E2E helpers", () => {
     const scenario = readFileSync(OPENAI_WEB_SEARCH_MINIMAL_SCENARIO_PATH, "utf8");
     expectTextToIncludeAll(scenario, [
-      'openclaw_e2e_terminate_gateways "${gateway_pid:-}"',
-      'openclaw_e2e_stop_process "${mock_pid:-}"',
-      'gateway_pid="$(openclaw_e2e_start_gateway "$entry" "$PORT" "$GATEWAY_LOG")"',
-      'openclaw_e2e_wait_mock_openai "$MOCK_PORT" 80 400 "https://api.openai.com:$MOCK_PORT"',
-      'openclaw_e2e_wait_gateway_ready "$gateway_pid" "$GATEWAY_LOG" 360 "$PORT"',
+      'afora_e2e_terminate_gateways "${gateway_pid:-}"',
+      'afora_e2e_stop_process "${mock_pid:-}"',
+      'gateway_pid="$(afora_e2e_start_gateway "$entry" "$PORT" "$GATEWAY_LOG")"',
+      'afora_e2e_wait_mock_openai "$MOCK_PORT" 80 400 "https://api.openai.com:$MOCK_PORT"',
+      'afora_e2e_wait_gateway_ready "$gateway_pid" "$GATEWAY_LOG" 360 "$PORT"',
     ]);
 
     expect(scenario).not.toContain("fetch('http://127.0.0.1:${MOCK_PORT}/health')");
@@ -5056,39 +5056,39 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
   it("runs agents delete shared workspace smoke through one managed gateway", () => {
     const runner = readFileSync(AGENTS_DELETE_SHARED_WORKSPACE_DOCKER_E2E_PATH, "utf8");
     expectTextToIncludeAll(runner, [
-      'entry="$(openclaw_e2e_resolve_entrypoint)"',
-      'gateway_pid="$(openclaw_e2e_start_gateway "$entry" 18789 "$gateway_log")"',
-      'openclaw_e2e_wait_gateway_ready "$gateway_pid" "$gateway_log" 300 18789',
+      'entry="$(afora_e2e_resolve_entrypoint)"',
+      'gateway_pid="$(afora_e2e_start_gateway "$entry" 18789 "$gateway_log")"',
+      'afora_e2e_wait_gateway_ready "$gateway_pid" "$gateway_log" 300 18789',
       'node "$entry" agents delete ops --force --json > "$output_file"',
-      'openclaw_e2e_terminate_gateways "${gateway_pid:-}"',
-      'openclaw_e2e_print_log "$gateway_log" >&2',
+      'afora_e2e_terminate_gateways "${gateway_pid:-}"',
+      'afora_e2e_print_log "$gateway_log" >&2',
       "trap cleanup EXIT",
       "trap dump_logs_on_error ERR",
     ]);
 
-    expect(runner.match(/openclaw_e2e_start_gateway/gu)).toHaveLength(1);
-    expect(runner.match(/openclaw_e2e_wait_gateway_ready/gu)).toHaveLength(1);
-    expect(runner).not.toContain("run_openclaw()");
+    expect(runner.match(/afora_e2e_start_gateway/gu)).toHaveLength(1);
+    expect(runner.match(/afora_e2e_wait_gateway_ready/gu)).toHaveLength(1);
+    expect(runner).not.toContain("run_afora()");
     expect(runner).not.toContain("for _ in");
   });
 
   it("keeps OpenAI web search smoke logs isolated per run", () => {
     const scenario = readFileSync(OPENAI_WEB_SEARCH_MINIMAL_SCENARIO_PATH, "utf8");
     expectTextToIncludeAll(scenario, [
-      'scenario_tmp="$(mktemp -d "${TMPDIR:-/tmp}/openclaw-openai-web-search-minimal.XXXXXX")"',
+      'scenario_tmp="$(mktemp -d "${TMPDIR:-/tmp}/afora-openai-web-search-minimal.XXXXXX")"',
       'MOCK_REQUEST_LOG="$scenario_tmp/requests.jsonl"',
       'GATEWAY_LOG="$scenario_tmp/gateway.log"',
       'MOCK_LOG="$scenario_tmp/mock.log"',
       'CLIENT_SUCCESS_LOG="$scenario_tmp/client-success.log"',
       'CLIENT_REJECT_LOG="$scenario_tmp/client-reject.log"',
-      'openclaw_e2e_print_log "$file"',
+      'afora_e2e_print_log "$file"',
       'rm -rf "$scenario_tmp"',
     ]);
 
     expect(scenario).not.toContain("sed -n '1,260p'");
-    expect(scenario).not.toContain("/tmp/openclaw-openai-web-search-minimal-requests.jsonl");
-    expect(scenario).not.toContain("/tmp/openclaw-openai-web-search-minimal-client-success.log");
-    expect(scenario).not.toContain("/tmp/openclaw-openai-web-search-minimal-client-reject.log");
+    expect(scenario).not.toContain("/tmp/afora-openai-web-search-minimal-requests.jsonl");
+    expect(scenario).not.toContain("/tmp/afora-openai-web-search-minimal-client-success.log");
+    expect(scenario).not.toContain("/tmp/afora-openai-web-search-minimal-client-reject.log");
   });
 
   it("keeps ClawHub plugin Docker smoke hermetic by default", () => {
@@ -5098,20 +5098,20 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
 
     expectTextToIncludeAll(runner, [
       "scripts/e2e/lib/plugins/sweep.sh",
-      "OPENCLAW_PLUGINS_E2E_LIVE_CLAWHUB",
-      "OPENCLAW_PLUGINS_E2E_LIVE_NPM_REGISTRY",
+      "AFORA_PLUGINS_E2E_LIVE_CLAWHUB",
+      "AFORA_PLUGINS_E2E_LIVE_NPM_REGISTRY",
     ]);
 
     expect(sweep).toContain("scripts/e2e/lib/plugins/clawhub.sh");
     expectTextToIncludeAll(clawhub, [
       "start_clawhub_fixture_server()",
-      'OPENCLAW_CLAWHUB_URL="http://127.0.0.1:',
-      "OPENCLAW_PLUGINS_E2E_LIVE_CLAWHUB",
-      "OPENCLAW_PLUGINS_E2E_LIVE_NPM_REGISTRY",
+      'AFORA_CLAWHUB_URL="http://127.0.0.1:',
+      "AFORA_PLUGINS_E2E_LIVE_CLAWHUB",
+      "AFORA_PLUGINS_E2E_LIVE_NPM_REGISTRY",
       "live ClawHub can rate-limit CI",
-      '[[ -n "${OPENCLAW_CLAWHUB_URL:-}" || -n "${CLAWHUB_URL:-}" ]]',
+      '[[ -n "${AFORA_CLAWHUB_URL:-}" || -n "${CLAWHUB_URL:-}" ]]',
       "Ignoring ambient ClawHub URL for fixture-mode plugin E2E",
-      "unset OPENCLAW_CLAWHUB_URL CLAWHUB_URL",
+      "unset AFORA_CLAWHUB_URL CLAWHUB_URL",
     ]);
   });
 
@@ -5121,7 +5121,7 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
 
     expectTextToIncludeAll(runner, [
       "--reporter=verbose -t",
-      'DOCKER_RUN_TIMEOUT="${OPENCLAW_PLUGIN_BINDING_COMMAND_ESCAPE_DOCKER_RUN_TIMEOUT:-900s}"',
+      'DOCKER_RUN_TIMEOUT="${AFORA_PLUGIN_BINDING_COMMAND_ESCAPE_DOCKER_RUN_TIMEOUT:-900s}"',
       'DOCKER_COMMAND_TIMEOUT="$DOCKER_RUN_TIMEOUT" docker_e2e_docker_run_cmd run --rm',
       'docker_e2e_docker_cmd rm -f "$CONTAINER_NAME"',
       "lets authorized gateway-style plugin commands escape plugin-owned bindings",
@@ -5136,9 +5136,9 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
       "keeps unauthorized plugin-owned binding slash text routed to the bound plugin",
     );
 
-    expect(dockerfile).toContain("OPENCLAW_DISABLE_BUNDLED_PLUGIN_POSTINSTALL=1");
+    expect(dockerfile).toContain("AFORA_DISABLE_BUNDLED_PLUGIN_POSTINSTALL=1");
     expect(dockerfile).toContain(
-      "pnpm install --frozen-lockfile --ignore-scripts --filter openclaw",
+      "pnpm install --frozen-lockfile --ignore-scripts --filter afora",
     );
   });
 
@@ -5158,12 +5158,12 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     const npmRegistry = readFileSync(PLUGINS_DOCKER_NPM_REGISTRY_PATH, "utf8");
 
     expectTextToIncludeAll(sweep, [
-      'OPENCLAW_PLUGINS_CLI_TIMEOUT="${OPENCLAW_PLUGINS_CLI_TIMEOUT:-180s}"',
-      "run_plugins_openclaw_capture()",
-      'openclaw_e2e_maybe_timeout "$OPENCLAW_PLUGINS_CLI_TIMEOUT" node "$OPENCLAW_ENTRY" "$@" >"$output_file"',
+      'AFORA_PLUGINS_CLI_TIMEOUT="${AFORA_PLUGINS_CLI_TIMEOUT:-180s}"',
+      "run_plugins_afora_capture()",
+      'afora_e2e_maybe_timeout "$AFORA_PLUGINS_CLI_TIMEOUT" node "$AFORA_ENTRY" "$@" >"$output_file"',
       "plugins_lifecycle_trace_enabled()",
       "print_plugins_stderr_log()",
-      'openclaw_e2e_maybe_timeout "$OPENCLAW_PLUGINS_CLI_TIMEOUT" node "$OPENCLAW_ENTRY" "$@" >"$output_file" 2>"$error_file"',
+      'afora_e2e_maybe_timeout "$AFORA_PLUGINS_CLI_TIMEOUT" node "$AFORA_ENTRY" "$@" >"$output_file" 2>"$error_file"',
       "Plugin sweep command timed out after %s: %s",
       "Plugin sweep command failed with status %s: %s",
       "Plugin sweep capture timed out after %s: %s",
@@ -5171,15 +5171,15 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
       'plugins install "$dir_plugin" --force',
       "plugins update demo-plugin-dir",
       "start_npm_fixture_registry",
-      'plugins install "npm:@openclaw/demo-plugin-npm@0.0.1" --force',
+      'plugins install "npm:@afora/demo-plugin-npm@0.0.1" --force',
       "plugins update demo-plugin-npm",
       'plugins install "git:$git_update_repo_url@main" --force',
       "plugins update demo-plugin-git-update",
     ]);
-    expect(runner).toContain('PLUGINS_CLI_TIMEOUT="${OPENCLAW_PLUGINS_CLI_TIMEOUT:-180s}"');
-    expect(runner).toContain('-e "OPENCLAW_PLUGINS_CLI_TIMEOUT=$PLUGINS_CLI_TIMEOUT"');
-    expect(runner).toContain("OPENCLAW_PLUGIN_LIFECYCLE_TRACE");
-    expect(sweep).not.toContain('run_logged install-npm node "$OPENCLAW_ENTRY"');
+    expect(runner).toContain('PLUGINS_CLI_TIMEOUT="${AFORA_PLUGINS_CLI_TIMEOUT:-180s}"');
+    expect(runner).toContain('-e "AFORA_PLUGINS_CLI_TIMEOUT=$PLUGINS_CLI_TIMEOUT"');
+    expect(runner).toContain("AFORA_PLUGIN_LIFECYCLE_TRACE");
+    expect(sweep).not.toContain('run_logged install-npm node "$AFORA_ENTRY"');
     for (const [path, script] of [
       [PLUGINS_DOCKER_SWEEP_PATH, sweep],
       [PLUGINS_DOCKER_MARKETPLACE_PATH, marketplace],
@@ -5187,8 +5187,8 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     ] as const) {
       const unboundedPluginCliLines = script
         .split("\n")
-        .filter((line) => line.includes('node "$OPENCLAW_ENTRY" plugins'))
-        .filter((line) => !line.includes("openclaw_e2e_maybe_timeout"));
+        .filter((line) => line.includes('node "$AFORA_ENTRY" plugins'))
+        .filter((line) => !line.includes("afora_e2e_maybe_timeout"));
 
       expect(unboundedPluginCliLines, path).toEqual([]);
     }
@@ -5204,7 +5204,7 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     ]);
 
     expectTextToIncludeAll(npmRegistry, [
-      "OPENCLAW_NPM_REGISTRY_DIST_TAGS",
+      "AFORA_NPM_REGISTRY_DIST_TAGS",
       "Object.fromEntries(distTagOverrides)",
       "existing.latestVersion = version",
       "packageArgs.length % 3",
@@ -5213,9 +5213,9 @@ source "$ROOT_DIR/scripts/lib/docker-e2e-logs.sh"
     expectTextToIncludeAll(clawhub, [
       'plugins install "$CLAWHUB_PLUGIN_SPEC"',
       'plugins update "$CLAWHUB_PLUGIN_ID"',
-      "run_plugins_openclaw_logged install-clawhub",
-      'openclaw_e2e_maybe_timeout "$OPENCLAW_PLUGINS_CLI_TIMEOUT"',
-      "clawhub:@openclaw/kitchen-sink",
+      "run_plugins_afora_logged install-clawhub",
+      'afora_e2e_maybe_timeout "$AFORA_PLUGINS_CLI_TIMEOUT"',
+      "clawhub:@afora/kitchen-sink",
     ]);
   });
 });

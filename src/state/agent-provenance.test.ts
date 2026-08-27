@@ -1,15 +1,15 @@
 import { expect, it } from "vitest";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import {
   deleteAgentProvenanceForAgent,
   listAgentProvenance,
   readAgentProvenance,
   recordAgentProvenance,
 } from "./agent-provenance.js";
-import { openOpenClawStateDatabase } from "./openclaw-state-db.js";
+import { openAforaStateDatabase } from "./afora-state-db.js";
 
 it("records, replaces, lists, and deletes agent creation provenance", async () => {
-  await withOpenClawTestState(
+  await withAforaTestState(
     { layout: "state-only", scenario: "empty", label: "agent-provenance" },
     async (state) => {
       recordAgentProvenance("Worker", { createdVia: "operator" }, { env: state.env, nowMs: 10 });
@@ -34,7 +34,7 @@ it("records, replaces, lists, and deletes agent creation provenance", async () =
         },
       ]);
 
-      const database = openOpenClawStateDatabase({ env: state.env });
+      const database = openAforaStateDatabase({ env: state.env });
       deleteAgentProvenanceForAgent(database.db, "worker");
       expect(readAgentProvenance("worker", { env: state.env })).toBeUndefined();
     },

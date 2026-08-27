@@ -3,14 +3,14 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanupTempDirs, makeTempDir } from "../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-  resolveOpenClawAgentSqlitePath,
-} from "../state/openclaw-agent-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+  resolveAforaAgentSqlitePath,
+} from "../state/afora-agent-db.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { withEnv } from "../test-utils/env.js";
 import {
   deleteSessionCostUsageRollupsExcept,
@@ -22,7 +22,7 @@ import {
 const tempDirs: string[] = [];
 
 function countRegisteredAgentDatabases(): number {
-  const row = openOpenClawStateDatabase()
+  const row = openAforaStateDatabase()
     .db.prepare("SELECT count(*) AS count FROM agent_databases")
     .get() as {
     count: number;
@@ -31,35 +31,35 @@ function countRegisteredAgentDatabases(): number {
 }
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   cleanupTempDirs(tempDirs);
 });
 
 describe("session cost usage SQLite cache", () => {
   it("returns empty values without creating a missing agent database", () => {
-    const stateDir = makeTempDir(tempDirs, "openclaw-usage-cache-missing-");
+    const stateDir = makeTempDir(tempDirs, "afora-usage-cache-missing-");
 
-    withEnv({ OPENCLAW_STATE_DIR: stateDir }, () => {
-      const databasePath = resolveOpenClawAgentSqlitePath({ agentId: "worker-1" });
+    withEnv({ AFORA_STATE_DIR: stateDir }, () => {
+      const databasePath = resolveAforaAgentSqlitePath({ agentId: "worker-1" });
 
       expect(readSessionCostUsageRollupRows("worker-1", databasePath)).toEqual([]);
       expect(isSessionCostUsageRefreshRunning("worker-1", databasePath)).toBe(false);
       expect(fs.existsSync(databasePath)).toBe(false);
-      expect(fs.existsSync(path.join(stateDir, "state", "openclaw.sqlite"))).toBe(false);
+      expect(fs.existsSync(path.join(stateDir, "state", "afora.sqlite"))).toBe(false);
     });
   });
 
   it("does not register readonly cache reads while writes still register", () => {
-    const stateDir = makeTempDir(tempDirs, "openclaw-usage-cache-registry-");
+    const stateDir = makeTempDir(tempDirs, "afora-usage-cache-registry-");
 
-    withEnv({ OPENCLAW_STATE_DIR: stateDir }, () => {
+    withEnv({ AFORA_STATE_DIR: stateDir }, () => {
       const agentId = "worker-1";
-      const database = openOpenClawAgentDatabase({ agentId });
+      const database = openAforaAgentDatabase({ agentId });
       const databasePath = database.path;
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
 
-      const stateDatabase = openOpenClawStateDatabase();
+      const stateDatabase = openAforaStateDatabase();
       stateDatabase.db.prepare("DELETE FROM agent_databases").run();
       expect(countRegisteredAgentDatabases()).toBe(0);
 
@@ -85,9 +85,9 @@ describe("session cost usage SQLite cache", () => {
     { label: "changed totals", refreshedValue: '{"totalTokens":2}' },
     { label: "unchanged totals at a newer revision", refreshedValue: '{"totalTokens":1}' },
   ])("preserves a refreshed usage rollup with $label during pruning", ({ refreshedValue }) => {
-    const stateDir = makeTempDir(tempDirs, "openclaw-usage-cache-prune-race-");
+    const stateDir = makeTempDir(tempDirs, "afora-usage-cache-prune-race-");
 
-    withEnv({ OPENCLAW_STATE_DIR: stateDir }, () => {
+    withEnv({ AFORA_STATE_DIR: stateDir }, () => {
       const agentId = "worker-1";
       const rollupId = "session.jsonl";
       const staleValue = '{"totalTokens":1}';
@@ -129,9 +129,9 @@ describe("session cost usage SQLite cache", () => {
   });
 
   it("reads only v2 rollups and prunes retired usage cache rows by scope", () => {
-    const stateDir = makeTempDir(tempDirs, "openclaw-usage-cache-retired-");
+    const stateDir = makeTempDir(tempDirs, "afora-usage-cache-retired-");
 
-    withEnv({ OPENCLAW_STATE_DIR: stateDir }, () => {
+    withEnv({ AFORA_STATE_DIR: stateDir }, () => {
       const agentId = "worker-1";
       expect(
         writeSessionCostUsageRollup({
@@ -142,7 +142,7 @@ describe("session cost usage SQLite cache", () => {
           updatedAt: 2,
         }),
       ).toBe(true);
-      const database = openOpenClawAgentDatabase({ agentId });
+      const database = openAforaAgentDatabase({ agentId });
       const insert = database.db.prepare(
         "INSERT INTO cache_entries (scope, key, value_json, blob, expires_at, updated_at) VALUES (?, ?, ?, NULL, NULL, ?)",
       );

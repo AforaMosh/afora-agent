@@ -5,12 +5,12 @@ import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  OPENCLAW_STATE_SCHEMA_VERSION,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  AFORA_STATE_SCHEMA_VERSION,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
@@ -25,23 +25,23 @@ import {
 import type { GatewayRestartHandoff } from "./restart-handoff.js";
 
 const tempDirs: string[] = [];
-type GatewayRestartHandoffDatabase = Pick<OpenClawStateKyselyDatabase, "gateway_restart_handoff">;
+type GatewayRestartHandoffDatabase = Pick<AforaStateKyselyDatabase, "gateway_restart_handoff">;
 
 function createHandoffEnv(): NodeJS.ProcessEnv {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-restart-handoff-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-restart-handoff-"));
   tempDirs.push(dir);
   return {
     ...process.env,
-    OPENCLAW_STATE_DIR: dir,
+    AFORA_STATE_DIR: dir,
   };
 }
 
 function legacyHandoffPath(env: NodeJS.ProcessEnv): string {
-  return path.join(env.OPENCLAW_STATE_DIR ?? "", "gateway-supervisor-restart-handoff.json");
+  return path.join(env.AFORA_STATE_DIR ?? "", "gateway-supervisor-restart-handoff.json");
 }
 
 function readHandoffRow(env: NodeJS.ProcessEnv) {
-  const { db } = openOpenClawStateDatabase({ env });
+  const { db } = openAforaStateDatabase({ env });
   const stateDb = getNodeSqliteKysely<GatewayRestartHandoffDatabase>(db);
   return executeSqliteQueryTakeFirstSync(
     db,
@@ -84,7 +84,7 @@ function insertHandoffRow(
     restartTraceLastAt?: number | null;
   },
 ) {
-  const { db } = openOpenClawStateDatabase({ env });
+  const { db } = openAforaStateDatabase({ env });
   const stateDb = getNodeSqliteKysely<GatewayRestartHandoffDatabase>(db);
   const now = Date.now();
   executeSqliteQuerySync(
@@ -128,13 +128,13 @@ function spawnHandoffConsumer(params: {
   const moduleUrl = new URL("./restart-handoff.ts", import.meta.url).href;
   const script = `
     import fs from "node:fs";
-    while (!fs.existsSync(process.env.OPENCLAW_HANDOFF_TEST_START_FILE)) {
+    while (!fs.existsSync(process.env.AFORA_HANDOFF_TEST_START_FILE)) {
       await new Promise((resolve) => setTimeout(resolve, 5));
     }
-    const mod = await import(process.env.OPENCLAW_HANDOFF_TEST_MODULE_URL);
+    const mod = await import(process.env.AFORA_HANDOFF_TEST_MODULE_URL);
     const result = mod.consumeGatewayRestartHandoffSync({
-      expectedPid: Number(process.env.OPENCLAW_HANDOFF_TEST_EXPECTED_PID),
-      now: Number(process.env.OPENCLAW_HANDOFF_TEST_NOW),
+      expectedPid: Number(process.env.AFORA_HANDOFF_TEST_EXPECTED_PID),
+      now: Number(process.env.AFORA_HANDOFF_TEST_NOW),
       env: process.env,
     });
     process.stdout.write(JSON.stringify(result));
@@ -148,10 +148,10 @@ function spawnHandoffConsumer(params: {
         cwd: process.cwd(),
         env: {
           ...params.env,
-          OPENCLAW_HANDOFF_TEST_EXPECTED_PID: String(params.expectedPid),
-          OPENCLAW_HANDOFF_TEST_MODULE_URL: moduleUrl,
-          OPENCLAW_HANDOFF_TEST_NOW: String(params.now),
-          OPENCLAW_HANDOFF_TEST_START_FILE: params.startFile,
+          AFORA_HANDOFF_TEST_EXPECTED_PID: String(params.expectedPid),
+          AFORA_HANDOFF_TEST_MODULE_URL: moduleUrl,
+          AFORA_HANDOFF_TEST_NOW: String(params.now),
+          AFORA_HANDOFF_TEST_START_FILE: params.startFile,
         },
         stdio: ["ignore", "pipe", "pipe"],
       },
@@ -203,7 +203,7 @@ function spawnHandoffConsumer(params: {
 
 describe("gateway restart handoff", () => {
   afterEach(() => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     for (const dir of tempDirs.splice(0)) {
       fs.rmSync(dir, { force: true, recursive: true });
     }
@@ -211,7 +211,7 @@ describe("gateway restart handoff", () => {
 
   it("does not create shared state when no restart handoff database exists", () => {
     const env = createHandoffEnv();
-    const databasePath = path.join(env.OPENCLAW_STATE_DIR ?? "", "state", "openclaw.sqlite");
+    const databasePath = path.join(env.AFORA_STATE_DIR ?? "", "state", "afora.sqlite");
 
     expect(readGatewayRestartHandoffSync(env)).toBeNull();
     expect(fs.existsSync(databasePath)).toBe(false);
@@ -226,9 +226,9 @@ describe("gateway restart handoff", () => {
       supervisorMode: "external",
       createdAt: 1_000,
     });
-    closeOpenClawStateDatabaseForTest();
-    const databasePath = path.join(env.OPENCLAW_STATE_DIR ?? "", "state", "openclaw.sqlite");
-    const olderVersion = OPENCLAW_STATE_SCHEMA_VERSION - 1;
+    closeAforaStateDatabaseForTest();
+    const databasePath = path.join(env.AFORA_STATE_DIR ?? "", "state", "afora.sqlite");
+    const olderVersion = AFORA_STATE_SCHEMA_VERSION - 1;
     const writable = new DatabaseSync(databasePath);
     writable.exec(`
       PRAGMA user_version = ${olderVersion};
@@ -347,7 +347,7 @@ describe("gateway restart handoff", () => {
       startedAt: 10_000,
       lastAt: 10_250,
     });
-    const { db } = openOpenClawStateDatabase({ env });
+    const { db } = openAforaStateDatabase({ env });
     expect(
       db
         .prepare(
@@ -593,8 +593,8 @@ describe("gateway restart handoff", () => {
       supervisorMode: "external",
       createdAt: 1_000,
     });
-    closeOpenClawStateDatabaseForTest();
-    const startFile = path.join(env.OPENCLAW_STATE_DIR ?? "", "start-consumers");
+    closeAforaStateDatabaseForTest();
+    const startFile = path.join(env.AFORA_STATE_DIR ?? "", "start-consumers");
 
     const first = spawnHandoffConsumer({
       env,
@@ -629,7 +629,7 @@ describe("gateway restart handoff", () => {
       createdAt: 1_000,
       ttlMs: 1_000,
     });
-    const { db } = openOpenClawStateDatabase({ env });
+    const { db } = openAforaStateDatabase({ env });
     const originalExec = db.exec.bind(db);
     let transactionBegan = false;
     const execSpy = vi.spyOn(db, "exec").mockImplementation((sql) => {

@@ -6,32 +6,32 @@ import { resolveSessionStorePathCore } from "../../config/sessions/paths.js";
 import { upsertSessionEntryCore } from "../../config/sessions/session-accessor.js";
 import { resolveSqliteTargetFromSessionStorePath } from "../../config/sessions/session-sqlite-target.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  resolveOpenClawAgentSqlitePath,
-} from "../../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  resolveAforaAgentSqlitePath,
+} from "../../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { buildHealthSessionSummary } from "./collector.js";
 
 describe("health session store paths", () => {
   const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
   afterEach(() => {
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
   });
 
   it("reports the SQLite database that supplied the session count", async () => {
-    const stateDir = tempDirs.make("openclaw-health-session-store-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = tempDirs.make("afora-health-session-store-");
+    const env = { AFORA_STATE_DIR: stateDir };
     const agentId = "main";
     const storePath = resolveSessionStorePathCore(undefined, { agentId, env });
-    const databasePath = resolveOpenClawAgentSqlitePath({ agentId, env });
+    const databasePath = resolveAforaAgentSqlitePath({ agentId, env });
 
     await upsertSessionEntryCore(
       { agentId, env, sessionKey: `agent:${agentId}:main`, storePath },
       { sessionId: "session-1", updatedAt: 10 },
     );
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
 
     const summary = await buildHealthSessionSummary(storePath, agentId);
 
@@ -41,8 +41,8 @@ describe("health session store paths", () => {
   });
 
   it("preserves configured store templates and reports empty agent targets", async () => {
-    const stateDir = tempDirs.make("openclaw-health-session-template-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
+    const stateDir = tempDirs.make("afora-health-session-template-");
+    const env = { AFORA_STATE_DIR: stateDir };
     const storeTemplate = path.join(stateDir, "stores", "{agentId}", "sessions.json");
     const populatedAgentId = "helper";
     const populatedStorePath = resolveSessionStorePathCore(storeTemplate, {
@@ -66,7 +66,7 @@ describe("health session store paths", () => {
       },
       { sessionId: "session-1", updatedAt: 10 },
     );
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
 
     const populated = await buildHealthSessionSummary(populatedStorePath, populatedAgentId);
     const emptyAgentId = "third";

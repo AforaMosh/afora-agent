@@ -1,10 +1,10 @@
 import type {
   UnifiedModelCatalogEntry,
   UnifiedModelCatalogKind,
-} from "@openclaw/model-catalog-core/model-catalog-types";
+} from "@afora/model-catalog-core/model-catalog-types";
 import type { ModelCatalogEntry } from "../agents/model-catalog.types.js";
 import type { ModelProviderConfig } from "../config/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { ProviderCatalogOutcome } from "./provider-catalog-outcome.js";
 
 export type { ProviderCatalogOutcome } from "./provider-catalog-outcome.js";
@@ -12,7 +12,7 @@ export type { ProviderCatalogOutcome } from "./provider-catalog-outcome.js";
 export type ProviderCatalogOrder = "simple" | "profile" | "paired" | "late";
 
 export type ProviderCatalogContext = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentDir?: string;
   workspaceDir?: string;
   env: NodeJS.ProcessEnv;
@@ -83,7 +83,7 @@ export type UnifiedModelCatalogProviderPlugin = {
  * hooks are no longer called by model resolution.
  */
 export type ProviderBuiltInModelSuppressionContext = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentDir?: string;
   workspaceDir?: string;
   env: NodeJS.ProcessEnv;
@@ -111,13 +111,13 @@ export type ProviderModernModelPolicyContext = {
 /**
  * Final catalog augmentation hook.
  *
- * Runs after OpenClaw loads the discovered model catalog and merges configured
+ * Runs after Afora loads the discovered model catalog and merges configured
  * opt-in providers. Use this for forward-compat rows or vendor-owned synthetic
  * entries that should appear in `models list` and model pickers even when the
  * upstream registry has not caught up yet.
  */
 export type ProviderAugmentModelCatalogContext = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentDir?: string;
   workspaceDir?: string;
   env: NodeJS.ProcessEnv;

@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
 import { parseAgentSessionKey } from "../../sessions/session-key-utils.js";
 import { resolveSessionAgentId } from "../agent-scope.js";
@@ -6,7 +6,7 @@ import type { CronToolCallerScope, CronToolOptions } from "./cron-tool.types.js"
 
 export function resolveCronToolCallerScope(
   opts: CronToolOptions | undefined,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): CronToolCallerScope | undefined {
   const sessionKey = opts?.agentSessionKey?.trim();
   if (!sessionKey) {

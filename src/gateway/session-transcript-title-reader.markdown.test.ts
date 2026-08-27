@@ -2,8 +2,8 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { persistSessionTranscriptTurn } from "../config/sessions/session-accessor.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { captureEnv, setTestEnvValue } from "../test-utils/env.js";
 import {
   readSessionTitleFieldsFromTranscript,
@@ -17,14 +17,14 @@ describe("session transcript Markdown title previews", () => {
   let envSnapshot: ReturnType<typeof captureEnv>;
 
   beforeEach(() => {
-    envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
-    stateDir = tempDirs.make("openclaw-transcript-title-markdown-");
-    setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+    envSnapshot = captureEnv(["AFORA_STATE_DIR"]);
+    stateDir = tempDirs.make("afora-transcript-title-markdown-");
+    setTestEnvValue("AFORA_STATE_DIR", stateDir);
   });
 
   afterEach(() => {
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     envSnapshot.restore();
   });
 
@@ -53,7 +53,7 @@ describe("session transcript Markdown title previews", () => {
         {
           role: "assistant",
           content:
-            "# Done\n\nLanded [PR #124879](https://github.com/openclaw/openclaw/pull/124879) with **green** CI. Use foo_bar_baz from ~/.openclaw.",
+            "# Done\n\nLanded [PR #124879](https://github.com/AforaMosh/afora-agent/pull/124879) with **green** CI. Use foo_bar_baz from ~/.afora.",
         },
       ]);
       const fields =
@@ -64,7 +64,7 @@ describe("session transcript Markdown title previews", () => {
       expect(fields).toEqual({
         firstUserMessage: "Keep **title Markdown** unchanged",
         lastMessagePreview:
-          "Done Landed PR #124879 with green CI. Use foo_bar_baz from ~/.openclaw.",
+          "Done Landed PR #124879 with green CI. Use foo_bar_baz from ~/.afora.",
       });
     },
   );

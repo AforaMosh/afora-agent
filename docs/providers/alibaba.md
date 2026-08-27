@@ -1,8 +1,8 @@
 ---
-summary: "Alibaba Model Studio Wan video generation in OpenClaw"
+summary: "Alibaba Model Studio Wan video generation in Afora"
 title: "Alibaba Model Studio"
 read_when:
-  - You want to use Alibaba Wan video generation in OpenClaw
+  - You want to use Alibaba Wan video generation in Afora
   - You need Model Studio or DashScope API key setup for video generation
 ---
 
@@ -25,13 +25,13 @@ The bundled `alibaba` plugin registers a video-generation provider for Wan model
     Store the key against the `alibaba` provider through onboarding:
 
     ```bash
-    openclaw onboard --auth-choice alibaba-model-studio-api-key
+    afora onboard --auth-choice alibaba-model-studio-api-key
     ```
 
     Or pass the key directly:
 
     ```bash
-    openclaw onboard --alibaba-model-studio-api-key <your-key>
+    afora onboard --alibaba-model-studio-api-key <your-key>
     ```
 
     Or export one of the accepted env vars before starting the Gateway:
@@ -60,10 +60,10 @@ The bundled `alibaba` plugin registers a video-generation provider for Wan model
   </Step>
   <Step title="Verify the provider is configured">
     ```bash
-    openclaw models list --provider alibaba
+    afora models list --provider alibaba
     ```
 
-    The list includes all five bundled Wan models. If `MODELSTUDIO_API_KEY` cannot be resolved, `openclaw models status --json` reports the missing credential under `auth.unusableProfiles`.
+    The list includes all five bundled Wan models. If `MODELSTUDIO_API_KEY` cannot be resolved, `afora models status --json` reports the missing credential under `auth.unusableProfiles`.
 
   </Step>
 </Steps>
@@ -128,13 +128,13 @@ A request that omits `durationSeconds` gets DashScope's accepted default of **5 
   </Accordion>
 
   <Accordion title="Auth env priority">
-    OpenClaw resolves the Alibaba API key from environment variables in this order, taking the first non-empty value:
+    Afora resolves the Alibaba API key from environment variables in this order, taking the first non-empty value:
 
     1. `MODELSTUDIO_API_KEY`
     2. `DASHSCOPE_API_KEY`
     3. `QWEN_API_KEY`
 
-    Configured `auth.profiles` entries (set via `openclaw models auth login`) override env-var resolution. See [Auth profiles in the models FAQ](/help/faq-models#auth-profiles-what-they-are-and-how-to-manage-them) for profile rotation, cooldown, and override mechanics.
+    Configured `auth.profiles` entries (set via `afora models auth login`) override env-var resolution. See [Auth profiles in the models FAQ](/help/faq-models#auth-profiles-what-they-are-and-how-to-manage-them) for profile rotation, cooldown, and override mechanics.
 
   </Accordion>
 

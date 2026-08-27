@@ -1,4 +1,4 @@
-import { normalizeOptionalTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+import { normalizeOptionalTrimmedStringList } from "@afora/normalization-core/string-normalization";
 // Migration command registration: list, plan, and apply migration providers.
 import type { Command } from "commander";
 import { theme } from "../../../packages/terminal-core/src/theme.js";
@@ -125,7 +125,7 @@ export function registerMigrateCommand(program: Command) {
         collectMigrationItem,
       )
       .option("--backup-output <path>", "Pre-migration backup archive path or directory")
-      .option("--no-backup", "Skip the pre-migration OpenClaw backup")
+      .option("--no-backup", "Skip the pre-migration Afora backup")
       .option("--force", "Allow dangerous options such as --no-backup", false)
       .option("--json", "Output JSON", false),
   )
@@ -133,15 +133,15 @@ export function registerMigrateCommand(program: Command) {
       "after",
       () =>
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
-          ["openclaw migrate list", "Show available migration providers."],
-          ["openclaw migrate hermes", "Preview Hermes migration, then prompt before applying."],
-          ["openclaw migrate hermes --dry-run", "Preview Hermes migration only."],
+          ["afora migrate list", "Show available migration providers."],
+          ["afora migrate hermes", "Preview Hermes migration, then prompt before applying."],
+          ["afora migrate hermes --dry-run", "Preview Hermes migration only."],
           [
-            "openclaw migrate apply hermes --yes",
+            "afora migrate apply hermes --yes",
             "Apply Hermes migration non-interactively after writing a verified backup.",
           ],
           [
-            "openclaw migrate hermes --no-auth-credentials",
+            "afora migrate hermes --no-auth-credentials",
             "Preview and apply Hermes migration while skipping auth credential import.",
           ],
         ])}`,
@@ -182,7 +182,7 @@ export function registerMigrateCommand(program: Command) {
   addMigrationOptions(
     migrate
       .command("plan <provider>")
-      .description("Preview a migration without changing OpenClaw state"),
+      .description("Preview a migration without changing Afora state"),
   ).action(async (provider, opts, command) => {
     await runCommandWithRuntime(defaultRuntime, async () => {
       await migratePlanCommand(defaultRuntime, {
@@ -206,7 +206,7 @@ export function registerMigrateCommand(program: Command) {
   )
     .option("--yes", "Apply without prompting", false)
     .option("--backup-output <path>", "Pre-migration backup archive path or directory")
-    .option("--no-backup", "Skip the pre-migration OpenClaw backup")
+    .option("--no-backup", "Skip the pre-migration Afora backup")
     .option("--force", "Allow dangerous options such as --no-backup", false)
     .action(async (provider, opts, command) => {
       await runCommandWithRuntime(defaultRuntime, async () => {

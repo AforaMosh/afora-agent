@@ -1,5 +1,5 @@
 // Live checks for Anthropic replay transcript sanitization and tool-call history.
-import type { Message, Model } from "openclaw/plugin-sdk/llm";
+import type { Message, Model } from "afora-agent/plugin-sdk/llm";
 import { describe, expect, it, vi } from "vitest";
 import { wrapStreamFnSanitizeMalformedToolCalls } from "./embedded-agent-runner/run/attempt-tool-call-replay-sanitization.js";
 import { extractEmbeddedAssistantText } from "./embedded-agent-utils.js";
@@ -42,7 +42,7 @@ function buildLiveAnthropicModel(): {
     throw new Error("missing ANTHROPIC_API_KEY");
   }
   const modelId =
-    (process.env.OPENCLAW_LIVE_ANTHROPIC_CACHE_MODEL || "claude-sonnet-4-6")
+    (process.env.AFORA_LIVE_ANTHROPIC_CACHE_MODEL || "claude-sonnet-4-6")
       .split(/[/:]/)
       .findLast(Boolean) || "claude-sonnet-4-6";
   return {

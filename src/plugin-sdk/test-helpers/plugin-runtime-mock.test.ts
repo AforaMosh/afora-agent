@@ -1,7 +1,7 @@
 /**
  * Tests plugin runtime mock helpers stay aligned with channel runtime contracts.
  */
-import { createPluginRuntimeMock } from "openclaw/plugin-sdk/plugin-test-runtime";
+import { createPluginRuntimeMock } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { describe, expect, it, vi } from "vitest";
 
 describe("createPluginRuntimeMock", () => {
@@ -99,7 +99,7 @@ describe("createPluginRuntimeMock", () => {
     const runtime = createPluginRuntimeMock({
       channel: {
         session: {
-          resolveStorePath: () => "/tmp/openclaw-test",
+          resolveStorePath: () => "/tmp/afora-test",
           recordInboundSession,
         },
         reply: { dispatchReplyWithBufferedBlockDispatcher },
@@ -139,7 +139,7 @@ describe("createPluginRuntimeMock", () => {
     );
     expect(recordInboundSession).toHaveBeenCalledWith(
       expect.objectContaining({
-        storePath: "/tmp/openclaw-test",
+        storePath: "/tmp/afora-test",
         sessionKey: "agent:main:test:direct:u1",
       }),
     );

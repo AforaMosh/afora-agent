@@ -2,7 +2,7 @@
 // module multiple times, so Symbol.for keeps write locks and ready-cache shared.
 import { KeyedAsyncQueue } from "../plugin-sdk/keyed-async-queue.js";
 
-const MODELS_JSON_STATE_KEY = Symbol.for("openclaw.modelsJsonState");
+const MODELS_JSON_STATE_KEY = Symbol.for("afora.modelsJsonState");
 
 export type ModelsJsonReadyResult = {
   agentDir: string;

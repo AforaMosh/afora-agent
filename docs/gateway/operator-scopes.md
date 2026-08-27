@@ -67,12 +67,12 @@ rejects scope names outside the closed set above.
 
 Connection authority is resolved in this order:
 
-1. For trusted-proxy Control UI connections, `x-openclaw-scopes` first caps
+1. For trusted-proxy Control UI connections, `x-afora-scopes` first caps
    device enrollment or upgrade requests. Device authorization then establishes
    the persistent scopes; a device-less session contributes no self-declared
    scopes.
-2. OpenClaw unions a matching server-side identity grant with those scopes.
-3. OpenClaw applies `x-openclaw-scopes` to the final union as the session cap.
+2. Afora unions a matching server-side identity grant with those scopes.
+3. Afora applies `x-afora-scopes` to the final union as the session cap.
    An absent header means no cap; a present-but-empty header yields no scopes.
 
 The result is used for both `hello.auth.scopes` and Gateway method
@@ -165,7 +165,7 @@ stores it before reconnecting. Canceling the wait or disconnecting before
 approval falls back to the ordinary pairing repair flow on the next connection.
 
 The explicit exception is the administrator-capable Control UI owner profile
-issued directly on the Gateway host by `openclaw dashboard` or graphical
+issued directly on the Gateway host by `afora dashboard` or graphical
 onboarding. Its short-lived, single-use bootstrap can approve the exact closed
 scope set for a fresh browser or upgrade an existing limited credential only
 when it binds to that same signed browser keypair. Generic Control UI and

@@ -1,10 +1,10 @@
 // Covers talk schema parsing and validation behavior.
 import { describe, expect, it } from "vitest";
-import { OpenClawSchema } from "./zod-schema.js";
+import { AforaSchema } from "./zod-schema.js";
 
-describe("OpenClawSchema talk validation", () => {
+describe("AforaSchema talk validation", () => {
   it("accepts a positive integer talk.silenceTimeoutMs", () => {
-    const result = OpenClawSchema.safeParse({
+    const result = AforaSchema.safeParse({
       talk: {
         consultThinkingLevel: "low",
         consultFastMode: true,
@@ -17,7 +17,7 @@ describe("OpenClawSchema talk validation", () => {
 
   it("rejects invalid talk.consultThinkingLevel", () => {
     expect(() =>
-      OpenClawSchema.parse({
+      AforaSchema.parse({
         talk: {
           consultThinkingLevel: "turbo",
         },
@@ -27,7 +27,7 @@ describe("OpenClawSchema talk validation", () => {
 
   it("accepts additional realtime Talk instructions", () => {
     expect(() =>
-      OpenClawSchema.parse({
+      AforaSchema.parse({
         talk: {
           realtime: {
             provider: "openai",
@@ -48,7 +48,7 @@ describe("OpenClawSchema talk validation", () => {
 
   it("accepts realtime Talk voice detection and reasoning defaults", () => {
     expect(() =>
-      OpenClawSchema.parse({
+      AforaSchema.parse({
         talk: {
           realtime: {
             vadThreshold: 0.45,
@@ -70,12 +70,12 @@ describe("OpenClawSchema talk validation", () => {
     ["fractional prefix padding", { prefixPaddingMs: 1.5 }],
     ["empty reasoning effort", { reasoningEffort: "" }],
   ])("rejects invalid realtime Talk %s", (_label, realtime) => {
-    expect(() => OpenClawSchema.parse({ talk: { realtime } })).toThrow();
+    expect(() => AforaSchema.parse({ talk: { realtime } })).toThrow();
   });
 
   it("rejects invalid realtime Talk consult routing", () => {
     expect(() =>
-      OpenClawSchema.parse({
+      AforaSchema.parse({
         talk: {
           realtime: {
             consultRouting: "always",
@@ -91,7 +91,7 @@ describe("OpenClawSchema talk validation", () => {
     ["float", 1500.5],
   ])("rejects %s talk.silenceTimeoutMs", (_label, value) => {
     expect(() =>
-      OpenClawSchema.parse({
+      AforaSchema.parse({
         talk: {
           silenceTimeoutMs: value,
         },
@@ -101,7 +101,7 @@ describe("OpenClawSchema talk validation", () => {
 
   it("rejects talk.provider when it does not match talk.providers", () => {
     expect(() =>
-      OpenClawSchema.parse({
+      AforaSchema.parse({
         talk: {
           provider: "acme",
           providers: {
@@ -119,16 +119,16 @@ describe("OpenClawSchema talk validation", () => {
     (provider) => {
       const providers = { elevenlabs: { voiceId: "voice-123" } };
 
-      expect(OpenClawSchema.safeParse({ talk: { provider, providers } }).success).toBe(false);
+      expect(AforaSchema.safeParse({ talk: { provider, providers } }).success).toBe(false);
       expect(
-        OpenClawSchema.safeParse({ talk: { realtime: { provider, providers } } }).success,
+        AforaSchema.safeParse({ talk: { realtime: { provider, providers } } }).success,
       ).toBe(false);
     },
   );
 
   it("rejects multi-provider talk config without talk.provider", () => {
     expect(() =>
-      OpenClawSchema.parse({
+      AforaSchema.parse({
         talk: {
           providers: {
             acme: {

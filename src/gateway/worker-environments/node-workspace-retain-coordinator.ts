@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { NODE_WORKER_WORKSPACE_RETAIN_COMMAND } from "../../infra/node-commands.js";
 import {
   NODE_WORKER_BUNDLE_RETENTION_VERSION,
@@ -252,7 +252,7 @@ export function createNodeWorkspaceRetainCoordinator(
             bundleHash: currentStatusTarget.bundleHash,
             status:
               bundleStatus.status === "installed"
-                ? { status: "installed", version: currentStatusTarget.openclawVersion }
+                ? { status: "installed", version: currentStatusTarget.aforaVersion }
                 : { status: "missing" },
           });
         } else if (input.bundleStatusHash) {

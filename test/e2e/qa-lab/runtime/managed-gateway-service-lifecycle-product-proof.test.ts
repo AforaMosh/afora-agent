@@ -25,7 +25,7 @@ afterEach(async () => {
 
 describe("managed gateway service lifecycle evidence producer", () => {
   it("records failed evidence and exits nonzero when a child phase is signaled", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-service-lifecycle-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-service-lifecycle-"));
     const artifactBase = path.join(root, "artifacts");
     tempRoots.push(root);
     vi.mocked(spawnSync).mockReturnValue({

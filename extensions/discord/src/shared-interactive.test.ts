@@ -1,9 +1,9 @@
 // Discord tests cover shared interactive plugin behavior.
-import { buildApprovalResolutionRef } from "openclaw/plugin-sdk/approval-reference-runtime";
+import { buildApprovalResolutionRef } from "afora-agent/plugin-sdk/approval-reference-runtime";
 import type {
   MessagePresentation,
   MessagePresentationAction,
-} from "openclaw/plugin-sdk/interactive-runtime";
+} from "afora-agent/plugin-sdk/interactive-runtime";
 import { describe, expect, it } from "vitest";
 import { parseExecApprovalData } from "./approval-custom-id.js";
 import { buildDiscordActivityCustomId } from "./component-custom-id.js";
@@ -113,7 +113,7 @@ describe("buildDiscordInteractiveComponents", () => {
                     type,
                     url:
                       type === "web-app"
-                        ? "https://node.tailnet.ts.net/__openclaw__/mcp-app#opaque-ticket"
+                        ? "https://node.tailnet.ts.net/__afora__/mcp-app#opaque-ticket"
                         : "https://example.com/review",
                   } as MessagePresentationAction,
                 },
@@ -131,7 +131,7 @@ describe("buildDiscordInteractiveComponents", () => {
                 style: "link",
                 url:
                   type === "web-app"
-                    ? "https://node.tailnet.ts.net/__openclaw__/mcp-app#opaque-ticket"
+                    ? "https://node.tailnet.ts.net/__afora__/mcp-app#opaque-ticket"
                     : "https://example.com/review",
               },
             ],

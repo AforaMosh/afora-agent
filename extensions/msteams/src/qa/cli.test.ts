@@ -1,13 +1,13 @@
 import { Command } from "commander";
-import type { LiveTransportQaSuiteCommandOptions } from "openclaw/plugin-sdk/qa-runner-runtime";
+import type { LiveTransportQaSuiteCommandOptions } from "afora-agent/plugin-sdk/qa-runner-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const runLiveTransportQaSuiteCommand = vi.hoisted(() =>
   vi.fn<(params: LiveTransportQaSuiteCommandOptions) => Promise<void>>(async () => {}),
 );
 
-vi.mock("openclaw/plugin-sdk/qa-runner-runtime", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/qa-runner-runtime")>()),
+vi.mock("afora-agent/plugin-sdk/qa-runner-runtime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/qa-runner-runtime")>()),
   runLiveTransportQaSuiteCommand,
 }));
 
@@ -24,7 +24,7 @@ describe("Microsoft Teams QA CLI", () => {
 
     await qa.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "msteams",
       "--provider-mode",
       "mock-openai",
@@ -53,7 +53,7 @@ describe("Microsoft Teams QA CLI", () => {
     const qa = new Command();
     msteamsQaCliRegistration.register(qa);
 
-    await qa.parseAsync(["node", "openclaw", "msteams", "--scenario", "channel-canary"]);
+    await qa.parseAsync(["node", "afora", "msteams", "--scenario", "channel-canary"]);
 
     const params = runLiveTransportQaSuiteCommand.mock.calls[0]?.[0];
     expect(

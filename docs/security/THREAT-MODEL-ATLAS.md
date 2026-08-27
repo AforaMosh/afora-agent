@@ -1,5 +1,5 @@
 ---
-summary: "OpenClaw threat model mapped to the MITRE ATLAS framework"
+summary: "Afora threat model mapped to the MITRE ATLAS framework"
 title: "Threat model (MITRE ATLAS)"
 read_when:
   - Reviewing security posture or threat scenarios
@@ -8,7 +8,7 @@ read_when:
 
 **Version:** 1.0-draft | **Framework:** [MITRE ATLAS](https://atlas.mitre.org/) (Adversarial Threat Landscape for AI Systems) + data flow diagrams
 
-This threat model documents adversarial threats to the OpenClaw AI agent platform and ClawHub skill marketplace. It is a living document maintained by the OpenClaw community. See [Contributing to the threat model](/security/CONTRIBUTING-THREAT-MODEL) for how to report new threats, propose attack chains, or suggest mitigations.
+This threat model documents adversarial threats to the Afora AI agent platform and ClawHub skill marketplace. It is a living document maintained by the Afora community. See [Contributing to the threat model](/security/CONTRIBUTING-THREAT-MODEL) for how to report new threats, propose attack chains, or suggest mitigations.
 
 **Key ATLAS resources:** [ATLAS website](https://atlas.mitre.org/) | [ATLAS data and contribution guide](https://github.com/mitre-atlas/atlas-data)
 
@@ -18,14 +18,14 @@ This threat model documents adversarial threats to the OpenClaw AI agent platfor
 
 | Component              | Included | Notes                                            |
 | ---------------------- | -------- | ------------------------------------------------ |
-| OpenClaw agent runtime | Yes      | Core agent execution, tool calls, sessions       |
+| Afora agent runtime | Yes      | Core agent execution, tool calls, sessions       |
 | Gateway                | Yes      | Authentication, routing, channel integration     |
 | Channel integrations   | Yes      | WhatsApp, Telegram, Discord, Signal, Slack, etc. |
 | ClawHub marketplace    | Yes      | Skill publishing, moderation, distribution       |
 | MCP servers            | Yes      | External tool providers                          |
 | User devices           | Partial  | Mobile apps, desktop clients                     |
 
-Out-of-scope reports and false-positive patterns (public internet exposure, prompt-injection-only chains without a boundary bypass, mutually untrusted operators sharing one gateway host, and others) are enumerated in [`SECURITY.md`](https://github.com/openclaw/openclaw/blob/main/SECURITY.md); that file is the current source of truth for vulnerability-report scope, not this page.
+Out-of-scope reports and false-positive patterns (public internet exposure, prompt-injection-only chains without a boundary bypass, mutually untrusted operators sharing one gateway host, and others) are enumerated in [`SECURITY.md`](https://github.com/AforaMosh/afora-agent/blob/main/SECURITY.md); that file is the current source of truth for vulnerability-report scope, not this page.
 
 ## 2. System architecture
 
@@ -118,7 +118,7 @@ Out-of-scope reports and false-positive patterns (public internet exposure, prom
 | Attribute               | Value                                                                |
 | ----------------------- | -------------------------------------------------------------------- |
 | **ATLAS ID**            | AML.T0006 - Active Scanning                                          |
-| **Description**         | Attacker scans for exposed OpenClaw gateway endpoints                |
+| **Description**         | Attacker scans for exposed Afora gateway endpoints                |
 | **Attack vector**       | Network scanning, Shodan queries, DNS enumeration                    |
 | **Affected components** | Gateway, exposed API endpoints                                       |
 | **Current mitigations** | Tailscale auth option, bind to loopback by default                   |
@@ -514,7 +514,7 @@ T-EXEC-002 → T-EXFIL-001 → External exfiltration
 
 ### 7.1 ATLAS technique mapping
 
-| ATLAS ID      | Technique name                 | OpenClaw threats                                                 |
+| ATLAS ID      | Technique name                 | Afora threats                                                 |
 | ------------- | ------------------------------ | ---------------------------------------------------------------- |
 | AML.T0006     | Active Scanning                | T-RECON-001, T-RECON-002                                         |
 | AML.T0009     | Collection                     | T-EXFIL-001, T-EXFIL-002, T-EXFIL-003                            |
@@ -542,16 +542,16 @@ T-EXEC-002 → T-EXFIL-001 → External exfiltration
 | Term                 | Definition                                                |
 | -------------------- | --------------------------------------------------------- |
 | **ATLAS**            | MITRE's Adversarial Threat Landscape for AI Systems       |
-| **ClawHub**          | OpenClaw's skill marketplace                              |
-| **Gateway**          | OpenClaw's message routing and authentication layer       |
+| **ClawHub**          | Afora's skill marketplace                              |
+| **Gateway**          | Afora's message routing and authentication layer       |
 | **MCP**              | Model Context Protocol - tool provider interface          |
 | **Prompt injection** | Attack where malicious instructions are embedded in input |
-| **Skill**            | Downloadable extension for OpenClaw agents                |
+| **Skill**            | Downloadable extension for Afora agents                |
 | **SSRF**             | Server-Side Request Forgery                               |
 
 ---
 
-_This threat model is a living document. Report security issues to `security@openclaw.ai` or see the [Trust page](https://trust.openclaw.ai)._
+_This threat model is a living document. Report security issues to `security@afora.ai` or see the [Trust page](https://trust.afora.ai)._
 
 ## Related
 

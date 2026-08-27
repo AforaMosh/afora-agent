@@ -3,8 +3,8 @@
  * Mutation and persistence live in usage.ts; this module owns reusable state
  * predicates used by rotation and failure handling.
  */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { asDateTimestampMs } from "@openclaw/normalization-core/number-coercion";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import { asDateTimestampMs } from "@afora/normalization-core/number-coercion";
 import type { AuthProfileFailureReason, AuthProfileStore, ProfileUsageStats } from "./types.js";
 
 /** Returns true for providers whose auth-profile cooldowns are provider-managed. */

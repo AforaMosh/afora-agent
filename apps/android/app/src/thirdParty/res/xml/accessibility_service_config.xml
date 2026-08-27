@@ -7,5 +7,5 @@
     android:canRetrieveWindowContent="true"
     android:description="@string/accessibility_service_description"
     android:notificationTimeout="0"
-    android:settingsActivity="ai.openclaw.app.accessibility.AccessibilityDevActivity"
+    android:settingsActivity="ai.afora.app.accessibility.AccessibilityDevActivity"
     android:summary="@string/accessibility_service_summary" />

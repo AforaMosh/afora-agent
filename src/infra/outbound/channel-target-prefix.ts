@@ -1,6 +1,6 @@
 // Target prefix helpers separate provider-owned prefixes from generic target
 // kind prefixes and validate selected-channel mismatches.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { getActivePluginChannelRegistryFromState } from "../../plugins/runtime-channel-state.js";
 import { normalizeMessageChannel } from "../../utils/message-channel-core.js";
 

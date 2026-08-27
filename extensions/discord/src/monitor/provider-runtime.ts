@@ -1,12 +1,12 @@
 import {
   listNativeCommandSpecsForConfig,
   listSkillCommandsForAgents,
-} from "openclaw/plugin-sdk/command-auth-native";
+} from "afora-agent/plugin-sdk/command-auth-native";
 import {
   resolveNativeCommandsEnabled,
   resolveNativeSkillsEnabled,
-} from "openclaw/plugin-sdk/native-command-config-runtime";
-import { isVerbose, shouldLogVerbose } from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/native-command-config-runtime";
+import { isVerbose, shouldLogVerbose } from "afora-agent/plugin-sdk/runtime-env";
 import { resolveDiscordAccount } from "../accounts.js";
 import { Client } from "../internal/discord.js";
 import { probeDiscordApplicationId } from "../probe.js";

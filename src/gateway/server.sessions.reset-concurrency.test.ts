@@ -8,7 +8,7 @@ import { createSessionDiffBaselineCaptureClaim } from "../config/sessions/sessio
 import type { InternalSessionEntry, SessionDiffBaseline } from "../config/sessions/types.js";
 import { ensureSessionDiffBaseline } from "../sessions/session-diff-baseline.js";
 import { createDeferredCore } from "../shared/deferred.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { writeSessionStore } from "./test-helpers.js";
 import {
   sessionLifecycleHookMocks,
@@ -32,7 +32,7 @@ vi.mock("../sessions/session-diff.js", async (importOriginal) => ({
 }));
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 test("sessions.reset preserves a concurrent same-id lifecycle replacement", async () => {

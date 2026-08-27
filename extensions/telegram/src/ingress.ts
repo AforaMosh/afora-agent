@@ -3,8 +3,8 @@ import {
   createChannelIngressResolver,
   defineStableChannelIngressIdentity,
   type ChannelIngressEventInput,
-} from "openclaw/plugin-sdk/channel-ingress-runtime";
-import type { DmPolicy, OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+} from "afora-agent/plugin-sdk/channel-ingress-runtime";
+import type { DmPolicy, AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { normalizeAllowFrom, type NormalizedAllowFrom } from "./bot-access.js";
 
 const TELEGRAM_CHANNEL_ID = "telegram";
@@ -24,7 +24,7 @@ export function createTelegramIngressSubject(senderId: string) {
 
 export function createTelegramIngressResolver(params: {
   accountId?: string;
-  cfg?: Pick<OpenClawConfig, "accessGroups" | "commands">;
+  cfg?: Pick<AforaConfig, "accessGroups" | "commands">;
 }) {
   return createChannelIngressResolver({
     channelId: TELEGRAM_CHANNEL_ID,
@@ -54,7 +54,7 @@ function telegramConversation(params: {
 
 export async function resolveTelegramCommandIngressAuthorization(params: {
   accountId: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   dmPolicy: DmPolicy;
   isGroup: boolean;
   chatId: string | number;

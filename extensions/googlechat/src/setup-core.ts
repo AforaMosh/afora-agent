@@ -1,10 +1,10 @@
-import { defineChannelSetupContract } from "openclaw/plugin-sdk/channel-setup";
+import { defineChannelSetupContract } from "afora-agent/plugin-sdk/channel-setup";
 // Googlechat plugin module implements setup core behavior.
-import type { ChannelSetupInput } from "openclaw/plugin-sdk/channel-setup";
+import type { ChannelSetupInput } from "afora-agent/plugin-sdk/channel-setup";
 import {
   createPatchedAccountSetupAdapter,
   createSetupInputPresenceValidator,
-} from "openclaw/plugin-sdk/setup-runtime";
+} from "afora-agent/plugin-sdk/setup-runtime";
 
 const channel = "googlechat" as const;
 

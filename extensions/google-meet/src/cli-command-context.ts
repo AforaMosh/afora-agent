@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import type { callGatewayFromCli } from "openclaw/plugin-sdk/gateway-runtime";
+import type { callGatewayFromCli } from "afora-agent/plugin-sdk/gateway-runtime";
 import type { CreateOptions, MeetArtifactOptions, ResolveSpaceOptions } from "./cli-shared.js";
 import type { GoogleMeetConfig } from "./config.js";
 import type { GoogleMeetRuntime } from "./runtime.js";

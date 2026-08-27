@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { asOptionalRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalRecord as asRecord } from "@afora/normalization-core/record-coerce";
 import { formatErrorMessage } from "../infra/errors.js";
 import { logWarn } from "../logger.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
@@ -16,7 +16,7 @@ const MCP_APP_VIEW_TTL_MS = 10 * 60_000;
 const MCP_APP_VIEW_MAX_ENTRIES = 32;
 const MCP_APP_VIEW_MAX_BYTES = 6 * 1024 * 1024;
 const MCP_APP_VIEW_STORE_MAX_BYTES = 64 * 1024 * 1024;
-const MCP_APP_VIEW_STORE_KEY = Symbol.for("openclaw.mcpAppViewStore");
+const MCP_APP_VIEW_STORE_KEY = Symbol.for("afora.mcpAppViewStore");
 
 type McpAppPermissions = Partial<
   Record<"camera" | "clipboardWrite" | "geolocation" | "microphone", Record<string, never>>
@@ -429,6 +429,6 @@ const testing = {
 };
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.mcpUiResourceTestApi")] =
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.mcpUiResourceTestApi")] =
     testing;
 }

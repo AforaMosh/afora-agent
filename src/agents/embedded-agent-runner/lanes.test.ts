@@ -14,7 +14,7 @@ describe("resolveGlobalLane", () => {
   it("maps cron lane to cron-nested lane to prevent deadlocks", () => {
     // When cron jobs trigger nested agent runs, the outer execution holds the
     // cron lane slot. Inner work must use a separate lane to avoid deadlock.
-    // See: https://github.com/openclaw/openclaw/issues/44805
+    // See: https://github.com/AforaMosh/afora-agent/issues/44805
     for (const lane of ["cron", "  cron  "]) {
       expect(resolveGlobalLane(lane)).toBe(CommandLane.CronNested);
     }

@@ -1,6 +1,6 @@
-import OpenClawKit
+import AforaKit
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 struct OnboardingConnectPhaseTests {
     @Test func `previous error remains visible while reconnecting`() {

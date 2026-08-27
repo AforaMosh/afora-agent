@@ -13,7 +13,7 @@ installIosFixtureCleanup();
 function input(overrides: Partial<IosReleasePlanInput> = {}): IosReleasePlanInput {
   const rootDir = writeIosFixture({
     packageVersion: "2026.7.2",
-    changelog: "# OpenClaw iOS Changelog\n\n## Unreleased\n\nRetry notes.\n",
+    changelog: "# Afora iOS Changelog\n\n## Unreleased\n\nRetry notes.\n",
   });
   return {
     appStoreVersions: [],
@@ -271,7 +271,7 @@ describe("resolveIosReleasePlan", () => {
     const rootDir = writeIosFixture({
       packageVersion: "2026.7.2",
       changelog:
-        "# OpenClaw iOS Changelog\n\n## Unreleased\n\nRetry notes.\n\n## 2026.7.21\n\nOriginal notes.\n",
+        "# Afora iOS Changelog\n\n## Unreleased\n\nRetry notes.\n\n## 2026.7.21\n\nOriginal notes.\n",
     });
     const plan = resolveIosReleasePlan({
       appStoreVersions: [
@@ -289,7 +289,7 @@ describe("resolveIosReleasePlan", () => {
 describe("cutIosReleaseChangelog", () => {
   it("cuts Unreleased notes into a new exact App Store version section", () => {
     const current =
-      "# OpenClaw iOS Changelog\n\n## Unreleased\n\nNew notes.\n\n## 2026.7.2\n\nOld notes.\n";
+      "# Afora iOS Changelog\n\n## Unreleased\n\nNew notes.\n\n## 2026.7.2\n\nOld notes.\n";
     const updated = cutIosReleaseChangelog(current, "2026.7.21");
 
     expect(updated).toContain("## Unreleased\n\n## 2026.7.21\n\nNew notes.");
@@ -299,7 +299,7 @@ describe("cutIosReleaseChangelog", () => {
 
   it("merges retry notes into the existing release section", () => {
     const current =
-      "# OpenClaw iOS Changelog\n\n## Unreleased\n\nRetry fix.\n\n## 2026.7.21\n\nOriginal notes.\n";
+      "# Afora iOS Changelog\n\n## Unreleased\n\nRetry fix.\n\n## 2026.7.21\n\nOriginal notes.\n";
     const updated = cutIosReleaseChangelog(current, "2026.7.21");
 
     expect(updated).toContain("## 2026.7.21\n\nRetry fix.\n\nOriginal notes.");
@@ -307,7 +307,7 @@ describe("cutIosReleaseChangelog", () => {
 
   it("preserves an existing release heading suffix", () => {
     const current =
-      "# OpenClaw iOS Changelog\n\n## Unreleased\n\nRetry fix.\n\n## 2026.7.21 - 2026-07-23\n\nOriginal notes.\n";
+      "# Afora iOS Changelog\n\n## Unreleased\n\nRetry fix.\n\n## 2026.7.21 - 2026-07-23\n\nOriginal notes.\n";
     const updated = cutIosReleaseChangelog(current, "2026.7.21");
 
     expect(updated).toContain("## 2026.7.21 - 2026-07-23\n\nRetry fix.\n\nOriginal notes.");

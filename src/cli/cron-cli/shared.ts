@@ -2,9 +2,9 @@
 import {
   resolveExpiresAtMsFromDurationMs,
   timestampMsToIsoString,
-} from "@openclaw/normalization-core/number-coercion";
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/number-coercion";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { readCronJobNotFoundError } from "../../../packages/gateway-protocol/src/index.js";
 import { truncateToVisibleWidth, visibleWidth } from "../../../packages/terminal-core/src/ansi.js";
 import { sanitizeTerminalText } from "../../../packages/terminal-core/src/safe-text.js";
@@ -218,7 +218,7 @@ export const formatCronLookupMiss = (jobId: string) =>
   formatLookupMiss({
     noun: "Automation",
     value: sanitizeTerminalText(jobId),
-    listCommand: "openclaw cron list",
+    listCommand: "afora cron list",
     valueLabel: "automation id",
   });
 

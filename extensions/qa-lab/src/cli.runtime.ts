@@ -3,12 +3,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import {
   isCrablineServerChannel,
-  OPENCLAW_CRABLINE_DEFAULT_CHANNEL,
-  resolveOpenClawCrablineChannelDriverSelection,
+  AFORA_CRABLINE_DEFAULT_CHANNEL,
+  resolveAforaCrablineChannelDriverSelection,
 } from "@openclaw/crabline";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { parseStrictPositiveInteger } from "openclaw/plugin-sdk/number-runtime";
-import { parseBooleanValue, uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { parseStrictPositiveInteger } from "afora-agent/plugin-sdk/number-runtime";
+import { parseBooleanValue, uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   buildQaAgenticParityComparison,
   buildQaRuntimeParityReport,
@@ -119,7 +119,7 @@ import {
   type QaToolCoverageSuiteSummary,
 } from "./tool-coverage-report.js";
 
-const QA_CREDENTIAL_PAYLOAD_MAX_BYTES_ENV = "OPENCLAW_QA_CREDENTIAL_PAYLOAD_MAX_BYTES";
+const QA_CREDENTIAL_PAYLOAD_MAX_BYTES_ENV = "AFORA_QA_CREDENTIAL_PAYLOAD_MAX_BYTES";
 const DEFAULT_QA_CREDENTIAL_PAYLOAD_MAX_BYTES = 64 * 1024 * 1024;
 type InterruptibleServer = {
   baseUrl: string;
@@ -261,8 +261,8 @@ function normalizeQaOptionalModelRef(input: string | undefined) {
 }
 
 function normalizeQaRuntimeId(value: string): RuntimeId | undefined {
-  if (value === "openclaw" || value === "pi") {
-    return "openclaw";
+  if (value === "afora" || value === "pi") {
+    return "afora";
   }
   if (value === "codex") {
     return "codex";
@@ -276,11 +276,11 @@ function parseQaRuntimePair(value: string | undefined): [RuntimeId, RuntimeId] |
   }
   const runtimeNames = value.split(",");
   if (runtimeNames.length !== 2) {
-    throw new Error('--runtime-pair must use exactly two runtimes, e.g. "openclaw,codex".');
+    throw new Error('--runtime-pair must use exactly two runtimes, e.g. "afora,codex".');
   }
   const [left, right] = runtimeNames.map((part) => normalizeQaRuntimeId(part.trim().toLowerCase()));
   if (!left || !right) {
-    throw new Error('--runtime-pair only supports "openclaw" and "codex".');
+    throw new Error('--runtime-pair only supports "afora" and "codex".');
   }
   if (left === right) {
     throw new Error("--runtime-pair must compare two different runtimes.");
@@ -664,7 +664,7 @@ export async function runQaProfileCommand(opts: QaProfileCommandOptions) {
     primaryModel,
     channelDriver: profileReport.channelDriver,
     defaultChannel:
-      profileReport.channelDriver === "crabline" ? OPENCLAW_CRABLINE_DEFAULT_CHANNEL : undefined,
+      profileReport.channelDriver === "crabline" ? AFORA_CRABLINE_DEFAULT_CHANNEL : undefined,
     supportsChannel:
       profileReport.channelDriver === "crabline" ? isCrablineServerChannel : undefined,
     resolveModuleFlowSupport:
@@ -818,15 +818,15 @@ function formatQaRunProfileFilterList(
 }
 
 async function withTemporaryQaProfileEnv<T>(profile: string, run: () => Promise<T>): Promise<T> {
-  const previousProfile = process.env.OPENCLAW_QA_PROFILE;
-  process.env.OPENCLAW_QA_PROFILE = profile;
+  const previousProfile = process.env.AFORA_QA_PROFILE;
+  process.env.AFORA_QA_PROFILE = profile;
   try {
     return await run();
   } finally {
     if (previousProfile === undefined) {
-      delete process.env.OPENCLAW_QA_PROFILE;
+      delete process.env.AFORA_QA_PROFILE;
     } else {
-      process.env.OPENCLAW_QA_PROFILE = previousProfile;
+      process.env.AFORA_QA_PROFILE = previousProfile;
     }
   }
 }
@@ -875,7 +875,7 @@ export async function runQaSuiteCommand(opts: QaSuiteCommandOptions) {
     channel: opts.channel,
     channelDriver,
     claudeCliAuthMode,
-    defaultChannel: channelDriver === "crabline" ? OPENCLAW_CRABLINE_DEFAULT_CHANNEL : undefined,
+    defaultChannel: channelDriver === "crabline" ? AFORA_CRABLINE_DEFAULT_CHANNEL : undefined,
     primaryModel: primaryModel ?? defaultQaModelForMode(providerMode),
     providerMode,
     scenarioIds: explicitScenarioIds,
@@ -929,14 +929,14 @@ export async function runQaSuiteCommand(opts: QaSuiteCommandOptions) {
   const channelDriverChannels =
     channelDriver === "crabline"
       ? resolveQaSuiteScenarioChannels({
-          defaultChannel: OPENCLAW_CRABLINE_DEFAULT_CHANNEL,
+          defaultChannel: AFORA_CRABLINE_DEFAULT_CHANNEL,
           explicitChannel: opts.channel,
           scenarios: channelDriverScenarios,
         })
       : [];
   if (runner === "multipass" && channelDriverChannels.length > 1) {
     resolveQaSuiteScenarioChannel({
-      defaultChannel: OPENCLAW_CRABLINE_DEFAULT_CHANNEL,
+      defaultChannel: AFORA_CRABLINE_DEFAULT_CHANNEL,
       explicitChannel: opts.channel,
       scenarios: channelDriverScenarios,
     });
@@ -944,7 +944,7 @@ export async function runQaSuiteCommand(opts: QaSuiteCommandOptions) {
   const [singleChannelDriverChannel] = channelDriverChannels;
   const channelDriverSelection =
     channelDriver === "crabline" && channelDriverChannels.length === 1 && singleChannelDriverChannel
-      ? resolveOpenClawCrablineChannelDriverSelection({
+      ? resolveAforaCrablineChannelDriverSelection({
           channel: singleChannelDriverChannel,
         })
       : undefined;
@@ -1338,9 +1338,9 @@ export async function runQaJsonlReplayCommand(opts: {
   providerMode?: QaProviderModeInput;
 }) {
   const repoRoot = path.resolve(opts.repoRoot ?? process.cwd());
-  const runtimePair = parseQaRuntimePair(opts.runtimePair) ?? ["openclaw", "codex"];
-  if (runtimePair[0] !== "openclaw" || runtimePair[1] !== "codex") {
-    throw new Error('--runtime-pair for jsonl-replay must be "openclaw,codex".');
+  const runtimePair = parseQaRuntimePair(opts.runtimePair) ?? ["afora", "codex"];
+  if (runtimePair[0] !== "afora" || runtimePair[1] !== "codex") {
+    throw new Error('--runtime-pair for jsonl-replay must be "afora,codex".');
   }
   const providerMode = normalizeQaProviderMode(opts.providerMode ?? "mock-openai");
   if (providerMode !== "mock-openai") {
@@ -1641,7 +1641,7 @@ export async function runQaLabUiCommand(opts: {
     advertiseHost: opts.advertiseHost,
     advertisePort: Number.isFinite(opts.advertisePort) ? opts.advertisePort : undefined,
     controlUiUrl: opts.controlUiUrl,
-    controlUiProxyToken: process.env.OPENCLAW_QA_CONTROL_UI_PROXY_TOKEN,
+    controlUiProxyToken: process.env.AFORA_QA_CONTROL_UI_PROXY_TOKEN,
     controlUiProxyTarget: opts.controlUiProxyTarget,
     uiDistDir: opts.uiDistDir,
     autoKickoffTarget: opts.autoKickoffTarget,

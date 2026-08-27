@@ -191,7 +191,7 @@ describe("runEmbeddedAgent fast auto progress", () => {
     expect(summaries).toContain("💨Fast: auto-off(31s>=30s)");
     expect(globalSummaries).toContain("💨Fast: auto-off(31s>=30s)");
     expect(toolResults.some((payload) => payload.text === "💨Fast: auto-off(31s>=30s)")).toBe(true);
-    expect(toolResults.at(-1)?.channelData?.openclawProgressKind).toBe("fast-mode-auto");
+    expect(toolResults.at(-1)?.channelData?.aforaProgressKind).toBe("fast-mode-auto");
 
     completeAttempt?.();
     await resultPromise;

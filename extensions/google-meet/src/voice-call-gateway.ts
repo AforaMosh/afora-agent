@@ -1,7 +1,7 @@
 import {
   GatewayClient,
   startGatewayClientWhenEventLoopReady,
-} from "openclaw/plugin-sdk/gateway-runtime";
+} from "afora-agent/plugin-sdk/gateway-runtime";
 // Google Meet keeps its labels/config; core owns the voicecall.* delegation contract.
 import {
   createMeetingVoiceCallGateway,
@@ -14,8 +14,8 @@ import {
   type MeetingVoiceCallGateway,
   type MeetingVoiceCallGatewayClient,
   type MeetingVoiceCallSurface,
-} from "openclaw/plugin-sdk/meeting-runtime";
-import type { PluginRuntime, RuntimeLogger } from "openclaw/plugin-sdk/plugin-runtime";
+} from "afora-agent/plugin-sdk/meeting-runtime";
+import type { PluginRuntime, RuntimeLogger } from "afora-agent/plugin-sdk/plugin-runtime";
 import type { GoogleMeetConfig } from "./config.js";
 
 export type VoiceCallGateway = MeetingVoiceCallGateway;

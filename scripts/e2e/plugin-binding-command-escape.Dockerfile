@@ -6,9 +6,9 @@ RUN apt-get update \
 
 RUN corepack enable
 
-WORKDIR /workspace/openclaw
+WORKDIR /workspace/afora
 COPY . .
 
-RUN OPENCLAW_DISABLE_BUNDLED_PLUGIN_POSTINSTALL=1 pnpm install --frozen-lockfile --ignore-scripts --filter openclaw
+RUN AFORA_DISABLE_BUNDLED_PLUGIN_POSTINSTALL=1 pnpm install --frozen-lockfile --ignore-scripts --filter afora
 
 CMD ["bash"]

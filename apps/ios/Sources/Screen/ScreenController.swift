@@ -1,5 +1,5 @@
 import Observation
-import OpenClawKit
+import AforaKit
 import UIKit
 import WebKit
 
@@ -12,7 +12,7 @@ final class ScreenController {
     var errorText: String?
     var isCanvasPresented: Bool = false
 
-    /// Callback invoked when an openclaw:// deep link is tapped in the canvas
+    /// Callback invoked when an afora:// deep link is tapped in the canvas
     var onDeepLink: ((URL) -> Void)?
 
     /// Callback invoked when the user clicks an A2UI action (e.g. button) inside the canvas web UI.
@@ -140,7 +140,7 @@ final class ScreenController {
         let js = """
         (() => {
           try {
-            const api = globalThis.__openclaw;
+            const api = globalThis.__afora;
             if (!api || typeof api.renderHome !== 'function') return;
             api.renderHome(\(payload));
           } catch (_) {}
@@ -157,7 +157,7 @@ final class ScreenController {
                 let res = try await self.eval(javaScript: """
                 (() => {
                   try {
-                    const host = globalThis.openclawA2UI;
+                    const host = globalThis.aforaA2UI;
                     return !!host && typeof host.applyMessages === 'function';
                   } catch (_) { return false; }
                 })()
@@ -183,7 +183,7 @@ final class ScreenController {
 
     func snapshotBase64(
         maxWidth: CGFloat? = nil,
-        format: OpenClawCanvasSnapshotFormat,
+        format: AforaCanvasSnapshotFormat,
         quality: Double? = nil) async throws -> String
     {
         let image = try await self.snapshotImage(maxWidth: maxWidth)
@@ -249,7 +249,7 @@ final class ScreenController {
         subdirectory: String)
         -> URL?
     {
-        let bundle = OpenClawKitResources.bundle
+        let bundle = AforaKitResources.bundle
         return bundle.url(forResource: name, withExtension: ext, subdirectory: subdirectory)
             ?? bundle.url(forResource: name, withExtension: ext)
     }

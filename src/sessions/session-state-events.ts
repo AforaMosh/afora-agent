@@ -1,6 +1,6 @@
 /** Best-effort durable signal log for session state changes. */
 import type { DatabaseSync } from "node:sqlite";
-import { safeParseJsonRecord } from "@openclaw/normalization-core/json-coercion";
+import { safeParseJsonRecord } from "@afora/normalization-core/json-coercion";
 import type { Insertable, Selectable } from "kysely";
 import { loadSessionEntryReadOnly } from "../config/sessions/session-accessor.js";
 import type { SessionEntry } from "../config/sessions/types.js";
@@ -13,12 +13,12 @@ import {
 import { normalizeSqliteNumber } from "../infra/sqlite-number.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { buildAgentMainSessionKey, resolveAgentIdFromSessionKey } from "../routing/session-key.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
 import {
   SESSION_WATCH_PROVENANCE_AMBIENT_GROUP,
   SESSION_WATCH_PROVENANCE_EXPLICIT,
@@ -66,12 +66,12 @@ type SessionStateEventRecord = {
 };
 
 type SessionStateDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "session_state_events" | "session_state_heads" | "session_watch_cursors"
 >;
-type SessionStateEventsTable = OpenClawStateKyselyDatabase["session_state_events"];
+type SessionStateEventsTable = AforaStateKyselyDatabase["session_state_events"];
 type SessionStateEventRow = Selectable<SessionStateEventsTable>;
-type SessionWatchCursorRow = Selectable<OpenClawStateKyselyDatabase["session_watch_cursors"]>;
+type SessionWatchCursorRow = Selectable<AforaStateKyselyDatabase["session_watch_cursors"]>;
 
 const SESSION_STATE_RETENTION_MS = 30 * 24 * 60 * 60_000;
 const SESSION_STATE_MAX_ROWS = 50_000;
@@ -251,7 +251,7 @@ function clampSessionStateOccurredAt(value: number | undefined, now: number): nu
 
 export function recordSessionStateEvent(
   input: SessionStateEventInput,
-  options: OpenClawStateDatabaseOptions & { now?: number } = {},
+  options: AforaStateDatabaseOptions & { now?: number } = {},
 ): SessionStateEventRecord | undefined {
   const now = options.now ?? Date.now();
   const occurredAt = clampSessionStateOccurredAt(input.occurredAt, now);
@@ -262,7 +262,7 @@ export function recordSessionStateEvent(
     queueOnly: boolean;
   }> = [];
   try {
-    const event = runOpenClawStateWriteTransaction(({ db }) => {
+    const event = runAforaStateWriteTransaction(({ db }) => {
       const insert = executeSqliteQuerySync(
         db,
         getSessionStateKysely(db)
@@ -377,10 +377,10 @@ export function recordSessionStateEvent(
 export function getSessionStateVersion(
   sessionKey: string,
   agentId: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): number {
   try {
-    const { db } = openOpenClawStateDatabase(options);
+    const { db } = openAforaStateDatabase(options);
     const row = executeSqliteQueryTakeFirstSync(
       db,
       getSessionStateKysely(db)
@@ -400,7 +400,7 @@ export function getSessionStateVersion(
 /** Batch durable signal-log heads for session-list enrichment, keyed agent → session key. */
 export function getSessionStateVersions(
   refs: ReadonlyArray<{ sessionKey: string; agentId: string }>,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): Record<string, Record<string, number>> {
   const keys = [...new Set(refs.map((ref) => ref.sessionKey).filter(Boolean))];
   if (keys.length === 0) {
@@ -408,7 +408,7 @@ export function getSessionStateVersions(
   }
   const byAgent: Record<string, Record<string, number>> = {};
   try {
-    const { db } = openOpenClawStateDatabase(options);
+    const { db } = openAforaStateDatabase(options);
     // Chunk IN() binds: sessions_list accepts arbitrary limits and SQLite caps
     // host parameters per statement.
     for (let offset = 0; offset < keys.length; offset += 500) {
@@ -437,7 +437,7 @@ export function listSessionStateEventsSince(
   agentId: string,
   afterSequence: number,
   limit = 200,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): {
   events: SessionStateEventRecord[];
   truncated: boolean;
@@ -446,7 +446,7 @@ export function listSessionStateEventsSince(
 } {
   try {
     const boundedLimit = Math.max(1, Math.min(200, Math.floor(limit)));
-    const { db } = openOpenClawStateDatabase(options);
+    const { db } = openAforaStateDatabase(options);
     const kysely = getSessionStateKysely(db);
     const rows = executeSqliteQuerySync(
       db,
@@ -499,7 +499,7 @@ export function listSessionStateEventsSince(
 export function acknowledgeSessionStateNotices(
   watcherSessionKey: string,
   targetSessionKeys: readonly string[],
-  options: OpenClawStateDatabaseOptions & { now?: number } = {},
+  options: AforaStateDatabaseOptions & { now?: number } = {},
 ): void {
   const now = options.now ?? Date.now();
   const followups: Array<{
@@ -509,7 +509,7 @@ export function acknowledgeSessionStateNotices(
     queueOnly: boolean;
   }> = [];
   try {
-    runOpenClawStateWriteTransaction(({ db }) => {
+    runAforaStateWriteTransaction(({ db }) => {
       for (const targetSessionKey of new Set(targetSessionKeys)) {
         const row = readCursor(db, watcherSessionKey, targetSessionKey);
         if (!row) {
@@ -551,10 +551,10 @@ export function acknowledgeSessionStateNotices(
 /** Reset parent-side assumptions while retaining target history across session incarnations. */
 export function handleSessionStateSessionReset(
   sessionKey: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): void {
   try {
-    runOpenClawStateWriteTransaction(({ db }) => {
+    runAforaStateWriteTransaction(({ db }) => {
       executeSqliteQuerySync(
         db,
         getSessionStateKysely(db)
@@ -571,11 +571,11 @@ export function handleSessionStateSessionReset(
 export function handleSessionStateSessionDeleted(
   sessionKey: string,
   agentId: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): void {
   deleteSessionUpstreamLink(sessionKey, agentId, options);
   try {
-    runOpenClawStateWriteTransaction(({ db }) => {
+    runAforaStateWriteTransaction(({ db }) => {
       const kysely = getSessionStateKysely(db);
       executeSqliteQuerySync(
         db,
@@ -618,11 +618,11 @@ function sessionExists(sessionKey: string, env?: NodeJS.ProcessEnv): boolean {
 
 /** Re-materialize pending notices after the in-memory queue is lost on restart. */
 export function sweepSessionStateWatchNotices(
-  options: OpenClawStateDatabaseOptions & { now?: number } = {},
+  options: AforaStateDatabaseOptions & { now?: number } = {},
 ): void {
   const now = options.now ?? Date.now();
   try {
-    const { db } = openOpenClawStateDatabase(options);
+    const { db } = openAforaStateDatabase(options);
     const pendingRows = executeSqliteQuerySync(
       db,
       getSessionStateKysely(db)
@@ -630,7 +630,7 @@ export function sweepSessionStateWatchNotices(
         .selectAll()
         .whereRef("material_sequence", ">", "last_seen_sequence"),
     ).rows.filter((row) => sessionExists(row.watcher_session_key, options.env));
-    runOpenClawStateWriteTransaction(({ db: writeDb }) => {
+    runAforaStateWriteTransaction(({ db: writeDb }) => {
       for (const row of pendingRows) {
         executeSqliteQuerySync(
           writeDb,
@@ -658,11 +658,11 @@ export function sweepSessionStateWatchNotices(
 
 /** Enforce bounded retained history without regressing durable per-session heads. */
 function pruneSessionStateEvents(
-  options: OpenClawStateDatabaseOptions & { now?: number } = {},
+  options: AforaStateDatabaseOptions & { now?: number } = {},
 ): void {
   const now = options.now ?? Date.now();
   try {
-    runOpenClawStateWriteTransaction(({ db }) => {
+    runAforaStateWriteTransaction(({ db }) => {
       const kysely = getSessionStateKysely(db);
       // Stamp per-session pruned watermarks BEFORE deleting: historyGap can only be
       // answered from what pruning actually removed for that session, never inferred
@@ -802,10 +802,10 @@ export function recordSessionCreated(params: {
 /** True when any seeded or explicitly registered watcher cursor targets this session. */
 function hasSessionStateWatchers(
   targetSessionKey: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): boolean {
   try {
-    const { db } = openOpenClawStateDatabase(options);
+    const { db } = openAforaStateDatabase(options);
     const row = executeSqliteQueryTakeFirstSync(
       db,
       getSessionStateKysely(db)
@@ -825,10 +825,10 @@ function hasSessionStateWatchers(
 /** List durable ambient-group targets owned by one watcher; failures grant nothing. */
 export function listAmbientGroupWatchTargets(
   watcherSessionKey: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): Set<string> {
   try {
-    const { db } = openOpenClawStateDatabase(options);
+    const { db } = openAforaStateDatabase(options);
     const rows = executeSqliteQuerySync(
       db,
       getSessionStateKysely(db)
@@ -847,7 +847,7 @@ export function listAmbientGroupWatchTargets(
 /** Register an explicit watcher (e.g. a sessions_send coordinator) for a target session. */
 export function registerSessionStateWatch(
   params: { watcherSessionKey: string; targetSessionKey: string; targetAgentId?: string },
-  options: OpenClawStateDatabaseOptions & { now?: number } = {},
+  options: AforaStateDatabaseOptions & { now?: number } = {},
 ): boolean {
   if (
     params.watcherSessionKey === params.targetSessionKey ||
@@ -858,7 +858,7 @@ export function registerSessionStateWatch(
   const now = options.now ?? Date.now();
   try {
     let registered = false;
-    runOpenClawStateWriteTransaction(({ db }) => {
+    runAforaStateWriteTransaction(({ db }) => {
       // Re-watching must not clobber pending-notice cursor state.
       const existing = readCursor(db, params.watcherSessionKey, params.targetSessionKey);
       if (existing) {
@@ -910,7 +910,7 @@ export function registerMainSessionGroupWatch(
     dmScope: DmScope;
     mainKey?: string;
   },
-  options: OpenClawStateDatabaseOptions & { now?: number } = {},
+  options: AforaStateDatabaseOptions & { now?: number } = {},
 ): boolean {
   if (classifySessionKind(params.sessionKey, params.entry) !== "group") {
     return false;
@@ -924,12 +924,12 @@ export function registerMainSessionGroupWatch(
   }
   const now = options.now ?? Date.now();
   try {
-    const { db: readDb } = openOpenClawStateDatabase(options);
+    const { db: readDb } = openAforaStateDatabase(options);
     if (params.dmScope !== "main") {
       if (!isAmbientGroupWatchCursor(readCursor(readDb, watcherSessionKey, params.sessionKey))) {
         return false;
       }
-      runOpenClawStateWriteTransaction(({ db }) => {
+      runAforaStateWriteTransaction(({ db }) => {
         // Recheck provenance in the write transaction: an explicit registration
         // may have promoted this pair after the read-only preflight.
         if (!isAmbientGroupWatchCursor(readCursor(db, watcherSessionKey, params.sessionKey))) {
@@ -952,7 +952,7 @@ export function registerMainSessionGroupWatch(
       return true;
     }
     let registered = false;
-    runOpenClawStateWriteTransaction(({ db }) => {
+    runAforaStateWriteTransaction(({ db }) => {
       const existing = readCursor(db, watcherSessionKey, params.sessionKey);
       if (existing) {
         // An explicit watch already owns this pair. Do not downgrade it when
@@ -998,7 +998,7 @@ export function recordSessionHumanDirectMessage(
     payload?: Record<string, unknown>;
     occurredAt?: number;
   },
-  options: OpenClawStateDatabaseOptions & { now?: number } = {},
+  options: AforaStateDatabaseOptions & { now?: number } = {},
 ): SessionStateEventRecord | undefined {
   const watcherSessionKey = params.entry?.spawnedBy ?? params.entry?.parentSessionKey;
   if (params.actor.actorType !== "human") {

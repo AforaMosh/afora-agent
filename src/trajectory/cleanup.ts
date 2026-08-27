@@ -1,7 +1,7 @@
 // Trajectory cleanup helpers remove old trajectory files by retention policy.
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { parseSqliteSessionFileMarker } from "../config/sessions/legacy-sqlite-marker.js";
 import { resolveSessionFilePathCore } from "../config/sessions/paths.js";
 import { readFileWindowFullySync } from "../infra/file-read.js";
@@ -64,7 +64,7 @@ function readTrajectoryPointerFile(
       return null;
     }
     if (
-      parsed.traceSchema !== "openclaw-trajectory-pointer" ||
+      parsed.traceSchema !== "afora-trajectory-pointer" ||
       parsed.schemaVersion !== 1 ||
       parsed.sessionId !== sessionId ||
       typeof parsed.runtimeFile !== "string" ||
@@ -119,7 +119,7 @@ function runtimeFileStartsWithSessionEvent(filePath: string, sessionId: string):
     const parsed: unknown = JSON.parse(firstLine);
     return (
       isRecord(parsed) &&
-      parsed.traceSchema === "openclaw-trajectory" &&
+      parsed.traceSchema === "afora-trajectory" &&
       parsed.schemaVersion === 1 &&
       parsed.source === "runtime" &&
       parsed.sessionId === sessionId

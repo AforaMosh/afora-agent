@@ -1,13 +1,13 @@
-import { listAgentIds, resolveAgentConfig } from "openclaw/plugin-sdk/agent-scope-runtime";
+import { listAgentIds, resolveAgentConfig } from "afora-agent/plugin-sdk/agent-scope-runtime";
 /**
  * Anthropic config defaulting helpers. They seed default Anthropic/Claude CLI
  * model refs and cache-retention params based on configured auth mode.
  */
-import type { OpenClawConfig } from "openclaw/plugin-sdk/plugin-entry";
+import type { AforaConfig } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   isRecord,
   normalizeLowercaseStringOrEmpty,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   resolveClaudeCliAnthropicModelRefs,
   resolveKnownAnthropicModelRef,
@@ -29,7 +29,7 @@ function normalizeProviderId(provider: string): string {
 }
 
 function resolveAnthropicDefaultAuthMode(
-  config: OpenClawConfig,
+  config: AforaConfig,
   env: NodeJS.ProcessEnv,
 ): "api_key" | "oauth" | null {
   const profiles = config.auth?.profiles ?? {};
@@ -134,7 +134,7 @@ function isAnthropicCacheRetentionTarget(
   );
 }
 
-function usesClaudeCliModelSelection(config: OpenClawConfig): boolean {
+function usesClaudeCliModelSelection(config: AforaConfig): boolean {
   const primary = resolveModelPrimaryValue(
     config.agents?.defaults?.model as
       | string
@@ -158,7 +158,7 @@ function usesClaudeCliModelSelection(config: OpenClawConfig): boolean {
   });
 }
 
-function usesSelectedClaudeCliAuthProfile(config: OpenClawConfig): boolean {
+function usesSelectedClaudeCliAuthProfile(config: AforaConfig): boolean {
   const profiles = config.auth?.profiles ?? {};
   const orderedProfileIds = [
     ...(config.auth?.order?.anthropic ?? []),
@@ -209,7 +209,7 @@ function modelEntryWithClaudeCliRuntime(entry: unknown): Record<string, unknown>
   return base;
 }
 
-function collectClaudeCliRuntimeRefsFromConfig(config: OpenClawConfig): string[] {
+function collectClaudeCliRuntimeRefsFromConfig(config: AforaConfig): string[] {
   type ClaudeCliModelSelection = string | { primary?: string; fallbacks?: string[] } | undefined;
   const selections: Array<{
     model: ClaudeCliModelSelection;
@@ -267,11 +267,11 @@ export function normalizeAnthropicProviderConfigForProvider<
   return normalizeAnthropicProviderConfig(params.providerConfig);
 }
 
-/** Apply Anthropic and Claude CLI defaults to an OpenClaw config object. */
+/** Apply Anthropic and Claude CLI defaults to an Afora config object. */
 export function applyAnthropicConfigDefaults(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
-}): OpenClawConfig {
+}): AforaConfig {
   const defaults = params.config.agents?.defaults;
   if (!defaults) {
     return params.config;

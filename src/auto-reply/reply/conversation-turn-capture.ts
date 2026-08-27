@@ -1,5 +1,5 @@
-import { asDateTimestampMs } from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { asDateTimestampMs } from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { runAgentHarnessBeforeMessageWriteHook } from "../../agents/harness/hook-helpers.js";
 import { redactTranscriptMessage } from "../../agents/transcript-redact.js";
 import {
@@ -13,7 +13,7 @@ import {
   appendTranscriptEventSync,
   loadSessionEntryReadOnly,
 } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { logVerbose } from "../../globals.js";
 import { buildConversationRef } from "../../routing/conversation-ref.js";
 import { resolveAgentIdFromSessionKey } from "../../routing/session-key.js";
@@ -26,7 +26,7 @@ import {
 import type { FinalizedRuntimeMsgContext } from "../templating.js";
 
 const EPOCH_MILLISECONDS_THRESHOLD = 1_000_000_000_000;
-const CONVERSATION_TURN_REPLY_CUSTOM_TYPE = "openclaw.conversation-turn-reply";
+const CONVERSATION_TURN_REPLY_CUSTOM_TYPE = "afora.conversation-turn-reply";
 
 function readPersistedReplyText(message: unknown): string | undefined {
   const content = (message as { content?: unknown } | undefined)?.content;
@@ -60,7 +60,7 @@ function normalizeTimestamp(value: unknown): number | undefined {
 }
 
 async function capturePendingConversationTurnReplyUnsafe(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   ctx: FinalizedRuntimeMsgContext;
 }): Promise<boolean> {
   // Only channel owners can attest ingress admission. Raw/plugin-constructed
@@ -253,7 +253,7 @@ async function capturePendingConversationTurnReplyUnsafe(params: {
 
 /** Consumes a correlated channel reply before it can start a second local agent turn. */
 export async function capturePendingConversationTurnReply(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   ctx: FinalizedRuntimeMsgContext;
 }): Promise<boolean> {
   try {

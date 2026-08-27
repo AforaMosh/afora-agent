@@ -5,9 +5,9 @@ import { isNativeWebChromeHost } from "./native-web-chrome.ts";
 const MOBILE_NAV_MAX_WIDTH = 1100;
 const NATIVE_WEB_CHROME_MOBILE_NAV_MAX_WIDTH = 600;
 const NATIVE_SHELL_CLASSES = [
-  "openclaw-native-macos",
-  "openclaw-native-nav",
-  "openclaw-native-web-chrome",
+  "afora-native-macos",
+  "afora-native-nav",
+  "afora-native-web-chrome",
 ] as const;
 
 export function mobileNavLayoutMediaQuery(): string {

@@ -5,7 +5,7 @@ import { compileFunction } from "node:vm";
 import { REMOTE_WORKSPACE_ACCEPTED_RSYNC_RECEIVER_JS } from "../gateway/worker-environments/workspace-accepted-remote-script.js";
 import { REMOTE_WORKSPACE_RSYNC_RECEIVER_JS } from "../gateway/worker-environments/workspace-mutation-remote-script.js";
 
-const FIXED_DESTINATION = "openclaw-rsync-destination";
+const FIXED_DESTINATION = "afora-rsync-destination";
 const [mode, encodedContext, nonce, ...receiverArgs] = process.argv.slice(2);
 if (
   !/^(?:workspace-root|git-pack|accepted-next)$/u.test(mode ?? "") ||
@@ -31,11 +31,11 @@ const receiverNonce = nonce!;
 
 const receiverTarget =
   receiverMode === "git-pack"
-    ? path.posix.join(workspace, ".openclaw-base.pack")
+    ? path.posix.join(workspace, ".afora-base.pack")
     : receiverMode === "accepted-next"
       ? path.posix.join(
           path.posix.dirname(workspace),
-          `.openclaw-accepted-${createHash("sha256").update(workspace).digest("hex")}-${receiverNonce}`,
+          `.afora-accepted-${createHash("sha256").update(workspace).digest("hex")}-${receiverNonce}`,
           "next",
         )
       : workspace;

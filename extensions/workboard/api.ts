@@ -1,6 +1,6 @@
 // Workboard API module exposes the plugin public contract.
 export {
   definePluginEntry,
-  type OpenClawPluginApi,
-  type OpenClawPluginService,
-} from "openclaw/plugin-sdk/plugin-entry";
+  type AforaPluginApi,
+  type AforaPluginService,
+} from "afora-agent/plugin-sdk/plugin-entry";

@@ -1,4 +1,4 @@
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import type { ExecutionIdentityAdmissionFacts } from "../audit/execution-identity-admission.js";
 import { redactSensitiveText } from "../logging/redact.js";
 import type { GatewayAuthResult } from "./auth.js";

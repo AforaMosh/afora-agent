@@ -5,10 +5,10 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, test, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { resolveGatewayLockDir } from "../config/paths.js";
 import { acquireGatewayLock, GatewayLockError } from "../infra/gateway-lock.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -41,7 +41,7 @@ async function attemptGatewayLockInChild(env: NodeJS.ProcessEnv): Promise<string
   delete childEnv.VITEST_WORKER_ID;
   const child = spawn(
     process.execPath,
-    ["--import", "tsx", "--input-type=module", "--eval", script, "openclaw", "gateway"],
+    ["--import", "tsx", "--input-type=module", "--eval", script, "afora", "gateway"],
     { cwd: path.resolve("."), env: childEnv, stdio: ["ignore", "ignore", "pipe", "ipc"] },
   );
   const stderr: Buffer[] = [];
@@ -84,8 +84,8 @@ import {
 describe("buildCleanupPlan", () => {
   test("resolves inside-state flags and workspace dirs", () => {
     const tmpRoot = path.join(path.parse(process.cwd()).root, "tmp");
-    const defaultWorkspace = path.join(tmpRoot, "openclaw-workspace-default");
-    const opsWorkspace = path.join(tmpRoot, "openclaw-workspace-ops");
+    const defaultWorkspace = path.join(tmpRoot, "afora-workspace-default");
+    const opsWorkspace = path.join(tmpRoot, "afora-workspace-ops");
     const cfg = {
       agents: {
         defaults: { workspace: defaultWorkspace },
@@ -93,10 +93,10 @@ describe("buildCleanupPlan", () => {
       },
     };
     const plan = buildCleanupPlan({
-      cfg: cfg as unknown as OpenClawConfig,
-      stateDir: path.join(tmpRoot, "openclaw-state"),
-      configPath: path.join(tmpRoot, "openclaw-state", "openclaw.json"),
-      oauthDir: path.join(tmpRoot, "openclaw-oauth"),
+      cfg: cfg as unknown as AforaConfig,
+      stateDir: path.join(tmpRoot, "afora-state"),
+      configPath: path.join(tmpRoot, "afora-state", "afora.json"),
+      oauthDir: path.join(tmpRoot, "afora-oauth"),
     });
 
     expect(plan.configInsideState).toBe(true);
@@ -107,9 +107,9 @@ describe("buildCleanupPlan", () => {
   });
 
   test("includes implicit per-agent workspaces under the state dir", () => {
-    const tmpRoot = path.join(path.parse(process.cwd()).root, "tmp", "openclaw-cleanup-plan");
+    const tmpRoot = path.join(path.parse(process.cwd()).root, "tmp", "afora-cleanup-plan");
     const home = path.join(tmpRoot, "home");
-    const stateDir = path.join(home, ".openclaw");
+    const stateDir = path.join(home, ".afora");
     const cfg = {
       agents: {
         list: [{ id: "main" }, { id: "work" }],
@@ -119,14 +119,14 @@ describe("buildCleanupPlan", () => {
     return withEnvAsync(
       {
         HOME: home,
-        OPENCLAW_STATE_DIR: stateDir,
-        OPENCLAW_WORKSPACE_DIR: undefined,
+        AFORA_STATE_DIR: stateDir,
+        AFORA_WORKSPACE_DIR: undefined,
       },
       async () => {
         const plan = buildCleanupPlan({
-          cfg: cfg as unknown as OpenClawConfig,
+          cfg: cfg as unknown as AforaConfig,
           stateDir,
-          configPath: path.join(stateDir, "openclaw.json"),
+          configPath: path.join(stateDir, "afora.json"),
           oauthDir: path.join(stateDir, "credentials"),
         });
 
@@ -155,11 +155,11 @@ describe("cleanup path removals", () => {
 
   it("removes state and only linked paths outside state", async () => {
     const runtime = createRuntimeMock();
-    const tmpRoot = path.join(path.parse(process.cwd()).root, "tmp", "openclaw-cleanup");
+    const tmpRoot = path.join(path.parse(process.cwd()).root, "tmp", "afora-cleanup");
     const stateRemoved = await removeStateAndLinkedPaths(
       {
         stateDir: path.join(tmpRoot, "state"),
-        configPath: path.join(tmpRoot, "state", "openclaw.json"),
+        configPath: path.join(tmpRoot, "state", "afora.json"),
         oauthDir: path.join(tmpRoot, "oauth"),
         configInsideState: true,
         oauthInsideState: false,
@@ -169,17 +169,17 @@ describe("cleanup path removals", () => {
     );
 
     expect(runtime.log.mock.calls.map(([line]) => line.replaceAll("\\", "/"))).toEqual([
-      "[dry-run] remove /tmp/openclaw-cleanup/state",
-      "[dry-run] remove /tmp/openclaw-cleanup/oauth",
+      "[dry-run] remove /tmp/afora-cleanup/state",
+      "[dry-run] remove /tmp/afora-cleanup/oauth",
     ]);
     expect(stateRemoved).toBe(true);
   });
 
   it("keeps the canonical state lock visible until state removal completes", async () => {
     const runtime = createRuntimeMock();
-    const tmpRoot = await fs.realpath(tempDirs.make("openclaw-cleanup-lock-visible-"));
+    const tmpRoot = await fs.realpath(tempDirs.make("afora-cleanup-lock-visible-"));
     const stateDir = path.join(tmpRoot, "state");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const markerPath = path.join(stateDir, "keep.txt");
     await fs.mkdir(stateDir);
     await fs.writeFile(configPath, "{}");
@@ -202,8 +202,8 @@ describe("cleanup path removals", () => {
     });
     const env = {
       ...process.env,
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_STATE_DIR: stateDir,
     };
 
     try {
@@ -239,9 +239,9 @@ describe("cleanup path removals", () => {
 
   it("retains external Gateway ownership through linked-path cleanup", async () => {
     const runtime = createRuntimeMock();
-    const tmpRoot = await fs.realpath(tempDirs.make("openclaw-cleanup-finalization-lock-"));
+    const tmpRoot = await fs.realpath(tempDirs.make("afora-cleanup-finalization-lock-"));
     const stateDir = path.join(tmpRoot, "state");
-    const configPath = path.join(tmpRoot, "openclaw.json");
+    const configPath = path.join(tmpRoot, "afora.json");
     const markerPath = path.join(stateDir, "marker.txt");
     await fs.mkdir(stateDir);
     await fs.writeFile(markerPath, "remove me");
@@ -264,8 +264,8 @@ describe("cleanup path removals", () => {
     });
     const env = {
       ...process.env,
-      OPENCLAW_CONFIG_PATH: configPath,
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_CONFIG_PATH: configPath,
+      AFORA_STATE_DIR: stateDir,
     };
 
     try {
@@ -297,9 +297,9 @@ describe("cleanup path removals", () => {
 
   it("fails without removing state recreated during cleanup finalization", async () => {
     const runtime = createRuntimeMock();
-    const tmpRoot = await fs.realpath(tempDirs.make("openclaw-cleanup-recreated-state-"));
+    const tmpRoot = await fs.realpath(tempDirs.make("afora-cleanup-recreated-state-"));
     const stateDir = path.join(tmpRoot, "state");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const lockDir = resolveGatewayLockDir(stateDir);
     const recreatedPath = path.join(lockDir, "new-owner.txt");
     await fs.mkdir(stateDir);
@@ -336,10 +336,10 @@ describe("cleanup path removals", () => {
     "cleans a state directory reached through a symbolic-link alias",
     async () => {
       const runtime = createRuntimeMock();
-      const tmpRoot = await fs.realpath(tempDirs.make("openclaw-cleanup-alias-"));
+      const tmpRoot = await fs.realpath(tempDirs.make("afora-cleanup-alias-"));
       const stateDir = path.join(tmpRoot, "state");
       const stateAlias = path.join(tmpRoot, "state-alias");
-      const configPath = path.join(tmpRoot, "openclaw.json");
+      const configPath = path.join(tmpRoot, "afora.json");
       await fs.mkdir(stateDir);
       await fs.writeFile(path.join(stateDir, "marker.txt"), "remove me");
       await fs.writeFile(configPath, "{}");
@@ -368,9 +368,9 @@ describe("cleanup path removals", () => {
 
   it("preserves linked paths when guarded state removal fails", async () => {
     const runtime = createRuntimeMock();
-    const tmpRoot = await fs.realpath(tempDirs.make("openclaw-cleanup-state-failure-"));
+    const tmpRoot = await fs.realpath(tempDirs.make("afora-cleanup-state-failure-"));
     const stateDir = path.join(tmpRoot, "state");
-    const configPath = path.join(tmpRoot, "openclaw.json");
+    const configPath = path.join(tmpRoot, "afora.json");
     const oauthDir = path.join(tmpRoot, "credentials");
     const oauthPath = path.join(oauthDir, "token.json");
     const markerPath = path.join(stateDir, "marker.txt");
@@ -399,7 +399,7 @@ describe("cleanup path removals", () => {
           },
           runtime,
         ),
-      ).rejects.toThrow(/Failed to remove non-preserved OpenClaw state/);
+      ).rejects.toThrow(/Failed to remove non-preserved Afora state/);
 
       await expect(fs.readFile(configPath, "utf8")).resolves.toBe("{}\n");
       await expect(fs.readFile(oauthPath, "utf8")).resolves.toBe("keep me");
@@ -410,9 +410,9 @@ describe("cleanup path removals", () => {
 
   it("rejects a preserved workspace overlapping the active lock before cleanup", async () => {
     const runtime = createRuntimeMock();
-    const tmpRoot = await fs.realpath(tempDirs.make("openclaw-cleanup-lock-overlap-"));
+    const tmpRoot = await fs.realpath(tempDirs.make("afora-cleanup-lock-overlap-"));
     const stateDir = path.join(tmpRoot, "state");
-    const configPath = path.join(tmpRoot, "openclaw.json");
+    const configPath = path.join(tmpRoot, "afora.json");
     const workspaceDir = path.join(resolveGatewayLockDir(stateDir), "workspace");
     const workspaceFile = path.join(workspaceDir, "project.txt");
     await fs.mkdir(workspaceDir, { recursive: true });
@@ -440,12 +440,12 @@ describe("cleanup path removals", () => {
   it("preserves nested workspace paths during state-only removal", async () => {
     const runtime = createRuntimeMock();
     const tmpRoot = await fs.realpath(
-      await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-cleanup-")),
+      await fs.mkdtemp(path.join(os.tmpdir(), "afora-cleanup-")),
     );
-    const stateDir = path.join(tmpRoot, ".openclaw");
+    const stateDir = path.join(tmpRoot, ".afora");
     const workspaceDir = path.join(stateDir, "tmp", "workspace");
     const workspaceFile = path.join(workspaceDir, "project.txt");
-    const configPath = path.join(stateDir, "openclaw.json");
+    const configPath = path.join(stateDir, "afora.json");
     const cacheFile = path.join(stateDir, "cache.json");
 
     try {
@@ -476,20 +476,20 @@ describe("cleanup path removals", () => {
 
   it("removes every workspace directory", async () => {
     const runtime = createRuntimeMock();
-    const workspaces = ["/tmp/openclaw-workspace-1", "/tmp/openclaw-workspace-2"];
+    const workspaces = ["/tmp/afora-workspace-1", "/tmp/afora-workspace-2"];
 
     await removeWorkspaceDirs(workspaces, runtime, { dryRun: true });
 
     const logs = runtime.log.mock.calls.map(([line]) => line);
     expect(logs).toEqual([
-      "[dry-run] remove /tmp/openclaw-workspace-1",
-      "[dry-run] remove /tmp/openclaw-workspace-2",
+      "[dry-run] remove /tmp/afora-workspace-1",
+      "[dry-run] remove /tmp/afora-workspace-2",
     ]);
   });
 
   it("deletes workspace state only after workspace removal succeeds", async () => {
     const runtime = createRuntimeMock();
-    const tmpRoot = tempDirs.make("openclaw-cleanup-workspace-");
+    const tmpRoot = tempDirs.make("afora-cleanup-workspace-");
     const workspaceDir = path.join(tmpRoot, "workspace");
 
     try {
@@ -506,14 +506,14 @@ describe("cleanup path removals", () => {
 
   it("cleans workspace state when the workspace directory is already missing", async () => {
     const runtime = createRuntimeMock();
-    const tmpRoot = tempDirs.make("openclaw-cleanup-missing-workspace-");
+    const tmpRoot = tempDirs.make("afora-cleanup-missing-workspace-");
     const workspaceDir = path.join(tmpRoot, "workspace");
     const siblingMarker = `${workspaceDir}.attested`;
 
     try {
       await fs.writeFile(
         siblingMarker,
-        "openclaw-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n",
+        "afora-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n",
       );
 
       await removeWorkspaceDirs([workspaceDir], runtime, { removeStateRows: true });
@@ -527,7 +527,7 @@ describe("cleanup path removals", () => {
 
   it("removes a retired sibling marker after workspace removal without opening SQLite", async () => {
     const runtime = createRuntimeMock();
-    const tmpRoot = tempDirs.make("openclaw-cleanup-legacy-");
+    const tmpRoot = tempDirs.make("afora-cleanup-legacy-");
     const workspaceDir = path.join(tmpRoot, "workspace");
     const siblingMarker = `${workspaceDir}.attested`;
 
@@ -535,7 +535,7 @@ describe("cleanup path removals", () => {
       await fs.mkdir(workspaceDir, { recursive: true });
       await fs.writeFile(
         siblingMarker,
-        "openclaw-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n",
+        "afora-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n",
       );
 
       await removeWorkspaceDirs([workspaceDir], runtime);
@@ -551,7 +551,7 @@ describe("cleanup path removals", () => {
   it("does not delete workspace state during dry-run", async () => {
     const runtime = createRuntimeMock();
 
-    await removeWorkspaceDirs(["/tmp/openclaw-workspace"], runtime, {
+    await removeWorkspaceDirs(["/tmp/afora-workspace"], runtime, {
       dryRun: true,
       removeStateRows: true,
     });
@@ -561,7 +561,7 @@ describe("cleanup path removals", () => {
 
   it("previews retired sibling-marker cleanup during workspace dry-run", async () => {
     const runtime = createRuntimeMock();
-    const tmpRoot = tempDirs.make("openclaw-cleanup-dry-run-legacy-");
+    const tmpRoot = tempDirs.make("afora-cleanup-dry-run-legacy-");
     const workspaceDir = path.join(tmpRoot, "workspace");
     const siblingMarker = `${workspaceDir}.attested`;
 
@@ -569,7 +569,7 @@ describe("cleanup path removals", () => {
       await fs.mkdir(workspaceDir, { recursive: true });
       await fs.writeFile(
         siblingMarker,
-        "openclaw-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n",
+        "afora-workspace-attestation:v1\n2026-07-15T11:00:00.000Z\n",
       );
 
       await removeWorkspaceDirs([workspaceDir], runtime, { dryRun: true });
@@ -586,7 +586,7 @@ describe("cleanup path removals", () => {
     const rmSpy = vi.spyOn(fs, "rm").mockRejectedValueOnce(new Error("permission denied"));
 
     try {
-      await removeWorkspaceDirs(["/tmp/openclaw-workspace"], runtime, {
+      await removeWorkspaceDirs(["/tmp/afora-workspace"], runtime, {
         removeStateRows: true,
       });
     } finally {
@@ -627,7 +627,7 @@ describe("cleanup path removals", () => {
 
   it("refuses to remove a directory containing the current working directory", async () => {
     const runtime = createRuntimeMock();
-    const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-cleanup-cwd-"));
+    const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-cleanup-cwd-"));
     const nestedCwd = path.join(tmpRoot, "nested");
     const cwdSpy = vi.spyOn(process, "cwd");
 
@@ -653,12 +653,12 @@ describe("cleanup path removals", () => {
 
 describe("listAgentSessionDirs", () => {
   it("treats a missing agents root as empty but propagates inspection failures", async () => {
-    await expect(listAgentSessionDirs("/tmp/openclaw-missing-state")).resolves.toEqual([]);
+    await expect(listAgentSessionDirs("/tmp/afora-missing-state")).resolves.toEqual([]);
 
     const error = Object.assign(new Error("permission denied"), { code: "EACCES" });
     const readdir = vi.spyOn(fs, "readdir").mockRejectedValueOnce(error);
     try {
-      await expect(listAgentSessionDirs("/tmp/openclaw-unreadable-state")).rejects.toBe(error);
+      await expect(listAgentSessionDirs("/tmp/afora-unreadable-state")).rejects.toBe(error);
     } finally {
       readdir.mockRestore();
     }

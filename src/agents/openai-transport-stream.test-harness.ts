@@ -1,6 +1,6 @@
 // Verifies OpenAI-compatible streaming payloads, failures, and transport wrapping.
-import type { MutableAssistantOutput } from "@openclaw/ai/transports";
-import type { Api, Model } from "openclaw/plugin-sdk/llm";
+import type { MutableAssistantOutput } from "@afora/ai/transports";
+import type { Api, Model } from "afora-agent/plugin-sdk/llm";
 import { expect } from "vitest";
 import { testing } from "./openai-transport-stream.test-support.js";
 

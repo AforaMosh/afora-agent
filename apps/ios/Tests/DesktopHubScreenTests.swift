@@ -1,7 +1,7 @@
 import Foundation
 import Testing
-@testable import OpenClaw
-@testable import OpenClawKit
+@testable import Afora
+@testable import AforaKit
 
 @MainActor
 struct DesktopHubScreenTests {
@@ -30,13 +30,13 @@ struct DesktopHubScreenTests {
 
     @Test func `standalone desktop URL uses document mode without credentials`() throws {
         let config = try Self.makeConfig(
-            url: #require(URL(string: "wss://gateway.example.com:8443/openclaw")),
+            url: #require(URL(string: "wss://gateway.example.com:8443/afora")),
             token: "secret-token",
             password: "secret-password")
 
         let url = DesktopHubScreen.desktopURL(config: config, source: nil, session: nil)
 
-        #expect(url?.absoluteString == "https://gateway.example.com:8443/openclaw/?view=desktop")
+        #expect(url?.absoluteString == "https://gateway.example.com:8443/afora/?view=desktop")
         #expect(url?.absoluteString.contains("secret-token") == false)
         #expect(url?.absoluteString.contains("secret-password") == false)
     }
@@ -86,7 +86,7 @@ struct DesktopHubScreenTests {
         #expect(url?.absoluteString == "https://gateway.example.com/?view=desktop&source=gateway")
         #expect(url?.absoluteString.contains("secret-token") == false)
         #expect(url?.absoluteString.contains("secret-password") == false)
-        #expect(script?.contains("__OPENCLAW_NATIVE_CONTROL_AUTH__") == true)
+        #expect(script?.contains("__AFORA_NATIVE_CONTROL_AUTH__") == true)
         #expect(script?.contains("\"token\":\"secret-token\"") == true)
         #expect(script?.contains("\"password\":\"secret-password\"") == true)
     }

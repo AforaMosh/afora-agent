@@ -161,18 +161,18 @@ export async function registerChannelsCli(
       "after",
       () =>
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
-          ["openclaw channels list", "List configured channels."],
-          ["openclaw channels list --all", "Show configured, bundled, and installable channels."],
-          ["openclaw channels add", "Open guided channel setup."],
-          ["openclaw channels status --probe", "Run channel status checks and probes."],
+          ["afora channels list", "List configured channels."],
+          ["afora channels list --all", "Show configured, bundled, and installable channels."],
+          ["afora channels add", "Open guided channel setup."],
+          ["afora channels status --probe", "Run channel status checks and probes."],
           [
-            "openclaw channels add --channel telegram --token <token>",
+            "afora channels add --channel telegram --token <token>",
             "Add or update a channel account non-interactively.",
           ],
-          ["openclaw channels login --channel whatsapp", "Link a WhatsApp Web account."],
+          ["afora channels login --channel whatsapp", "Link a WhatsApp Web account."],
         ])}\n\n${theme.muted("Docs:")} ${formatDocsLink(
           "/cli/channels",
-          "docs.openclaw.ai/cli/channels",
+          "docs.afora.ai/cli/channels",
         )}\n`,
     );
 
@@ -311,12 +311,12 @@ export async function registerChannelsCli(
       "after",
       () =>
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
-          ["openclaw channels add", "Open guided setup for available chat channels."],
+          ["afora channels add", "Open guided setup for available chat channels."],
           [
-            "openclaw channels add --channel telegram --token <token>",
+            "afora channels add --channel telegram --token <token>",
             "Add or update Telegram non-interactively.",
           ],
-          ["openclaw channels list --all", "Find channel ids before using --channel."],
+          ["afora channels list --all", "Find channel ids before using --channel."],
         ])}\n`,
     )
     .option("--channel <name>", `Channel (${channelNames})`)

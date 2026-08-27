@@ -14,7 +14,7 @@ describe("addIgnoreRules", () => {
   let tempDir: string;
 
   beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-ignore-rules-"));
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-ignore-rules-"));
   });
 
   afterEach(() => {
@@ -211,7 +211,7 @@ describe("addIgnoreRules", () => {
   });
 
   it("follows a symlinked .gitignore to a regular file", () => {
-    const realDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-ignore-rules-real-"));
+    const realDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-ignore-rules-real-"));
     try {
       fs.writeFileSync(path.join(realDir, "real.gitignore"), "node_modules/\n", "utf-8");
       fs.symlinkSync(path.join(realDir, "real.gitignore"), path.join(tempDir, ".gitignore"));
@@ -225,7 +225,7 @@ describe("addIgnoreRules", () => {
   });
 
   it("follows a chain of symlinks to the final regular .gitignore", () => {
-    const realDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-ignore-rules-real-"));
+    const realDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-ignore-rules-real-"));
     try {
       fs.writeFileSync(path.join(realDir, "real.gitignore"), "node_modules/\n", "utf-8");
       const linkA = path.join(realDir, "link-a");

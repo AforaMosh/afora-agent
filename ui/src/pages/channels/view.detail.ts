@@ -1,6 +1,6 @@
 // Channel detail overlay: full status + advanced schema config form for one
 // channel, reusing the per-channel settings-language renderers.
-import { asNullableRecord, readStringField } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord, readStringField } from "@afora/normalization-core/record-coerce";
 import { html, nothing, type TemplateResult } from "lit";
 import type { NostrProfile } from "../../api/types.ts";
 import { renderChannelIcon } from "../../components/channel-icon.ts";
@@ -219,7 +219,7 @@ export function renderChannelDetail(params: {
 }): TemplateResult {
   const body = renderChannelBody(params.channelId, params.props, params.data);
   return html`
-    <openclaw-modal-dialog label=${params.label} @modal-cancel=${() => params.onClose()}>
+    <afora-modal-dialog label=${params.label} @modal-cancel=${() => params.onClose()}>
       <div class="channels-detail">
         <div class="channels-detail__header">
           ${renderChannelIcon(params.channelId, params.label, "cover")}
@@ -252,6 +252,6 @@ export function renderChannelDetail(params: {
           ${renderChannelPairingDetail(params.channelId, params.props)} ${body}
         </div>
       </div>
-    </openclaw-modal-dialog>
+    </afora-modal-dialog>
   `;
 }

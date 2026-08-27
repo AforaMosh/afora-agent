@@ -1,7 +1,7 @@
 import AVFoundation
 import Foundation
-import OpenClawKit
-import OpenClawProtocol
+import AforaKit
+import AforaProtocol
 import OSLog
 
 struct TalkGatewaySpeechAudio: Equatable {
@@ -128,7 +128,7 @@ extension TalkBufferedAudioPlaying {
     func setLevelHandler(_: (@MainActor (Double?) -> Void)?) {}
 }
 
-/// Playback lives in OpenClawKit's TalkBufferedAudioPlayer, shared with the
+/// Playback lives in AforaKit's TalkBufferedAudioPlayer, shared with the
 /// macOS talk runtime; this file keeps only the iOS test seam conformance.
 extension TalkBufferedAudioPlayer: TalkBufferedAudioPlaying {}
 

@@ -87,7 +87,7 @@ export function createEmbeddedRunProgressController(params: {
     try {
       await params.attempt.onToolResult?.({
         text: summary,
-        channelData: { openclawProgressKind: FAST_MODE_AUTO_PROGRESS_KIND },
+        channelData: { aforaProgressKind: FAST_MODE_AUTO_PROGRESS_KIND },
       });
     } catch (error) {
       log.debug(`embedded run fast mode auto progress failed: ${formatErrorMessage(error)}`);

@@ -4,7 +4,7 @@ import { unsupportedSecretRefSurfacePolicy } from "./unsupported-surface-policy.
 
 type CredentialMatrixEntry = {
   id: string;
-  configFile: "openclaw.json" | "auth-profiles.json";
+  configFile: "afora.json" | "auth-profiles.json";
   path: string;
   refPath?: string;
   when?: { type: "api_key" | "token" };
@@ -17,7 +17,7 @@ export type SecretRefCredentialMatrixDocument = {
   version: 1;
   matrixId: "strictly-user-supplied-credentials";
   pathSyntax: 'Dot path with "*" for map keys and "[]" for arrays.';
-  scope: "Credentials that are strictly user-supplied and not minted/rotated by OpenClaw runtime.";
+  scope: "Credentials that are strictly user-supplied and not minted/rotated by Afora runtime.";
   excludedMutableOrRuntimeManaged: string[];
   entries: CredentialMatrixEntry[];
 };
@@ -58,7 +58,7 @@ export function buildSecretRefCredentialMatrix(): SecretRefCredentialMatrixDocum
     matrixId: "strictly-user-supplied-credentials",
     pathSyntax: 'Dot path with "*" for map keys and "[]" for arrays.',
     scope:
-      "Credentials that are strictly user-supplied and not minted/rotated by OpenClaw runtime.",
+      "Credentials that are strictly user-supplied and not minted/rotated by Afora runtime.",
     excludedMutableOrRuntimeManaged: unsupportedSecretRefSurfacePolicy.listPatterns(),
     entries,
   };

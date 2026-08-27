@@ -9,7 +9,7 @@ import { createConfigIO } from "./io.factory.js";
 import { isInvalidConfigError } from "./io.invalid-config.js";
 
 function withTempHome<T>(run: (home: string) => Promise<T>): Promise<T> {
-  return withTempDir("openclaw-config-scalar-root-", run);
+  return withTempDir("afora-config-scalar-root-", run);
 }
 
 describe("config load with a scalar root", () => {
@@ -19,7 +19,7 @@ describe("config load with a scalar root", () => {
     { name: "string", raw: '"oops"\n' },
   ])("rejects a $name root as INVALID_CONFIG instead of loading defaults", async ({ raw }) => {
     await withTempHome(async (home) => {
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
+      const configPath = path.join(home, ".afora", "afora.json");
       await fs.mkdir(path.dirname(configPath), { recursive: true });
       await fs.writeFile(configPath, raw, "utf-8");
       const logger = { error: vi.fn(), warn: vi.fn() };

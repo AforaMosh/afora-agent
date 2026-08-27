@@ -1,6 +1,6 @@
 // Msteams tests cover personal-chat media identifier routing.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../runtime-api.js";
+import type { AforaConfig } from "../../runtime-api.js";
 import type { resolveMSTeamsInboundMedia } from "./inbound-media.js";
 import "./message-handler-mock-support.test-support.js";
 
@@ -21,7 +21,7 @@ import { buildChannelActivity, createMessageHandlerDeps } from "./message-handle
 
 const cfg = {
   channels: { msteams: { dmPolicy: "open", allowFrom: ["*"] } },
-} as OpenClawConfig;
+} as AforaConfig;
 
 function buildPersonalAttachmentActivity() {
   return buildChannelActivity({

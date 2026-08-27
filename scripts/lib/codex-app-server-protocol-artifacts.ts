@@ -54,7 +54,7 @@ async function stageGeneratedArtifactDirectory(
 }
 
 function normalizeGeneratedTypeScript(text: string): string {
-  // Codex emits TS-oriented relative imports; OpenClaw consumes the staged tree as NodeNext.
+  // Codex emits TS-oriented relative imports; Afora consumes the staged tree as NodeNext.
   return text
     .replace(/(from\s+["'])(\.{1,2}\/[^"']+?)(\.js)?(["'])/g, "$1$2.js$4")
     .replace('export * as v2 from "./v2.js";', 'export * as v2 from "./v2/index.js";')

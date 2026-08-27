@@ -10,8 +10,8 @@ import {
   replaceSessionEntry,
 } from "../../config/sessions/session-accessor.js";
 import { onSessionTranscriptUpdate } from "../../sessions/transcript-events.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaAgentDatabasesForTest } from "../../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { appendInjectedAssistantMessageToTranscript } from "./chat-transcript-inject.js";
 
 type SqliteTranscriptFixture = {
@@ -38,8 +38,8 @@ async function createSqliteTranscriptFixture(params: {
 }
 
 async function cleanupFixture(fixture: { dir: string }) {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   fs.rmSync(fixture.dir, { recursive: true, force: true });
 }
 
@@ -85,7 +85,7 @@ async function readLastTranscriptRecord(
 describe("gateway chat.inject transcript writes", () => {
   it("appends a agent session entry that includes parentId", async () => {
     const fixture = await createSqliteTranscriptFixture({
-      prefix: "openclaw-chat-inject-",
+      prefix: "afora-chat-inject-",
       sessionId: "sess-1",
     });
 
@@ -106,7 +106,7 @@ describe("gateway chat.inject transcript writes", () => {
 
   it("preserves parent links after an oversized transcript row", async () => {
     const fixture = await createSqliteTranscriptFixture({
-      prefix: "openclaw-chat-inject-large-",
+      prefix: "afora-chat-inject-large-",
       sessionId: "sess-1",
     });
 
@@ -141,7 +141,7 @@ describe("gateway chat.inject transcript writes", () => {
 
   it("emits a redacted injected message through its persisted transcript owner", async () => {
     const fixture = await createSqliteTranscriptFixture({
-      prefix: "openclaw-chat-inject-redact-",
+      prefix: "afora-chat-inject-redact-",
       sessionId: "sess-redact",
     });
     const fakeApiKey = "sk-proj-FAKEKEYFORTESTINGONLY1234567890";

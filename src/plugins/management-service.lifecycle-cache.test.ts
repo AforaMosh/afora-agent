@@ -61,16 +61,16 @@ describe("plugin management catalog lifecycle", () => {
         source: "hosted",
         entries: [
           {
-            id: "@openclaw/diffs",
+            id: "@afora/diffs",
             title: "Diffs",
             state: "available",
             featured: true,
-            publisher: { id: "openclaw", trust: "official" },
+            publisher: { id: "afora", trust: "official" },
             install: {
               candidates: [
                 {
                   sourceRef: "public-clawhub",
-                  package: "@openclaw/diffs",
+                  package: "@afora/diffs",
                   version: "2026.6.11",
                   integrity: `sha256:${"a".repeat(64)}`,
                 },

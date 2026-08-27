@@ -88,7 +88,7 @@ jobs:
             Please add updates or it will be closed.
           close-issue-message: |
             Closing due to inactivity.
-            If this is still an issue, please retry on the latest OpenClaw release and share updated details.
+            If this is still an issue, please retry on the latest Afora release and share updated details.
             If you are absolutely sure it still happens on the latest release, open a new issue with fresh steps to reproduce.
           close-issue-reason: not_planned
           close-pr-message: |
@@ -116,7 +116,7 @@ jobs:
             Please add updates or it will be closed.
           close-issue-message: |
             Closing due to inactivity.
-            If this is still an issue, please retry on the latest OpenClaw release and share updated details.
+            If this is still an issue, please retry on the latest Afora release and share updated details.
             If you are absolutely sure it still happens on the latest release, open a new issue with fresh steps to reproduce.
           close-issue-reason: not_planned
       - name: Mark stale assigned pull requests (primary)
@@ -192,7 +192,7 @@ jobs:
             Please add updates or it will be closed.
           close-issue-message: |
             Closing due to inactivity.
-            If this is still an issue, please retry on the latest OpenClaw release and share updated details.
+            If this is still an issue, please retry on the latest Afora release and share updated details.
             If you are absolutely sure it still happens on the latest release, open a new issue with fresh steps to reproduce.
           close-issue-reason: not_planned
           close-pr-message: |
@@ -219,7 +219,7 @@ jobs:
             Please add updates or it will be closed.
           close-issue-message: |
             Closing due to inactivity.
-            If this is still an issue, please retry on the latest OpenClaw release and share updated details.
+            If this is still an issue, please retry on the latest Afora release and share updated details.
             If you are absolutely sure it still happens on the latest release, open a new issue with fresh steps to reproduce.
           close-issue-reason: not_planned
       - name: Mark stale assigned pull requests (fallback)
@@ -507,7 +507,7 @@ jobs:
 
             const issueCloseMessage = [
               "Closing due to inactivity.",
-              "If this is still an issue, please retry on the latest OpenClaw release and share updated details.",
+              "If this is still an issue, please retry on the latest Afora release and share updated details.",
               "If you are absolutely sure it still happens on the latest release, open a new issue with fresh steps to reproduce.",
             ].join("\n");
             const prCloseMessage = [
@@ -696,8 +696,8 @@ jobs:
           script: |
             const auditWindowMs = 48 * 60 * 60 * 1000;
             const cutoffMs = Date.now() - auditWindowMs;
-            // Immutable GitHub bot account ids for openclaw-barnacle[bot] and
-            // barnacle-openclaw[bot]. Logins are display-only and spoofable.
+            // Immutable GitHub bot account ids for afora-barnacle[bot] and
+            // barnacle-afora[bot]. Logins are display-only and spoofable.
             const barnacleActorIds = new Set([257215752, 264559031]);
             const { owner, repo } = context.repo;
             const violations = [];

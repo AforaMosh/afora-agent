@@ -1,5 +1,5 @@
 ---
-summary: "Adds the iMessage channel surface for sending and receiving OpenClaw messages."
+summary: "Adds the iMessage channel surface for sending and receiving Afora messages."
 read_when:
   - You are installing, configuring, or auditing the imessage plugin
 title: "iMessage plugin"
@@ -7,12 +7,12 @@ title: "iMessage plugin"
 
 # iMessage plugin
 
-Adds the iMessage channel surface for sending and receiving OpenClaw messages.
+Adds the iMessage channel surface for sending and receiving Afora messages.
 
 ## Distribution
 
-- Package: `@openclaw/imessage`
-- Install route: npm; ClawHub: `clawhub:@openclaw/imessage`
+- Package: `@afora/imessage`
+- Install route: npm; ClawHub: `clawhub:@afora/imessage`
 
 ## Surface
 

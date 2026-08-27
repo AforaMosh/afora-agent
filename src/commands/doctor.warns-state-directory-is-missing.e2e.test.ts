@@ -141,9 +141,9 @@ describe("doctor command", () => {
   it("reports when the state directory was missing at doctor start", async () => {
     mockDoctorConfigSnapshot();
 
-    const missingDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-missing-state-"));
+    const missingDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-missing-state-"));
     fs.rmSync(missingDir, { recursive: true, force: true });
-    await withEnvAsync({ OPENCLAW_STATE_DIR: missingDir }, async () => {
+    await withEnvAsync({ AFORA_STATE_DIR: missingDir }, async () => {
       await doctorCommand(createDoctorRuntime(), {
         nonInteractive: true,
         workspaceSuggestions: false,
@@ -329,15 +329,15 @@ describe("doctor command", () => {
     expect(hasCodexOAuthWarning()).toBe(false);
   });
 
-  it("skips gateway auth warning when OPENCLAW_GATEWAY_TOKEN is set", async () => {
+  it("skips gateway auth warning when AFORA_GATEWAY_TOKEN is set", async () => {
     mockDoctorConfigSnapshot({
       config: {
         gateway: { mode: "local" },
       },
     });
 
-    const prevToken = process.env.OPENCLAW_GATEWAY_TOKEN;
-    process.env.OPENCLAW_GATEWAY_TOKEN = "env-token-1234567890";
+    const prevToken = process.env.AFORA_GATEWAY_TOKEN;
+    process.env.AFORA_GATEWAY_TOKEN = "env-token-1234567890";
     try {
       await doctorCommand(createDoctorRuntime(), {
         nonInteractive: true,
@@ -345,9 +345,9 @@ describe("doctor command", () => {
       });
     } finally {
       if (prevToken === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_TOKEN;
+        delete process.env.AFORA_GATEWAY_TOKEN;
       } else {
-        process.env.OPENCLAW_GATEWAY_TOKEN = prevToken;
+        process.env.AFORA_GATEWAY_TOKEN = prevToken;
       }
     }
 
@@ -377,8 +377,8 @@ describe("doctor command", () => {
 
     const gatewayAuthNote = requireTerminalNote({ title: "Gateway auth" });
     expect(String(gatewayAuthNote[0])).toContain("gateway.auth.mode is unset");
-    expect(String(gatewayAuthNote[0])).toContain("openclaw config set gateway.auth.mode token");
-    expect(String(gatewayAuthNote[0])).toContain("openclaw config set gateway.auth.mode password");
+    expect(String(gatewayAuthNote[0])).toContain("afora config set gateway.auth.mode token");
+    expect(String(gatewayAuthNote[0])).toContain("afora config set gateway.auth.mode password");
   });
 
   it("keeps doctor read-only when gateway token is SecretRef-managed but unresolved", async () => {
@@ -391,7 +391,7 @@ describe("doctor command", () => {
             token: {
               source: "env",
               provider: "default",
-              id: "OPENCLAW_GATEWAY_TOKEN",
+              id: "AFORA_GATEWAY_TOKEN",
             },
           },
         },
@@ -403,8 +403,8 @@ describe("doctor command", () => {
       },
     });
 
-    const previousToken = process.env.OPENCLAW_GATEWAY_TOKEN;
-    delete process.env.OPENCLAW_GATEWAY_TOKEN;
+    const previousToken = process.env.AFORA_GATEWAY_TOKEN;
+    delete process.env.AFORA_GATEWAY_TOKEN;
     try {
       await doctorCommand(createDoctorRuntime(), {
         nonInteractive: true,
@@ -412,9 +412,9 @@ describe("doctor command", () => {
       });
     } finally {
       if (previousToken === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_TOKEN;
+        delete process.env.AFORA_GATEWAY_TOKEN;
       } else {
-        process.env.OPENCLAW_GATEWAY_TOKEN = previousToken;
+        process.env.AFORA_GATEWAY_TOKEN = previousToken;
       }
     }
 
@@ -427,7 +427,7 @@ describe("doctor command", () => {
     );
   });
 
-  it("does not let OPENCLAW_GATEWAY_TOKEN hide an unresolved SecretRef-managed token", async () => {
+  it("does not let AFORA_GATEWAY_TOKEN hide an unresolved SecretRef-managed token", async () => {
     mockDoctorConfigSnapshot({
       config: {
         gateway: {
@@ -437,7 +437,7 @@ describe("doctor command", () => {
             token: {
               source: "env",
               provider: "default",
-              id: "OPENCLAW_MISSING_GATEWAY_REF_TOKEN",
+              id: "AFORA_MISSING_GATEWAY_REF_TOKEN",
             },
           },
         },
@@ -449,10 +449,10 @@ describe("doctor command", () => {
       },
     });
 
-    const previousFallbackToken = process.env.OPENCLAW_GATEWAY_TOKEN;
-    const previousRefToken = process.env.OPENCLAW_MISSING_GATEWAY_REF_TOKEN;
-    process.env.OPENCLAW_GATEWAY_TOKEN = "fallback-token-1234567890";
-    delete process.env.OPENCLAW_MISSING_GATEWAY_REF_TOKEN;
+    const previousFallbackToken = process.env.AFORA_GATEWAY_TOKEN;
+    const previousRefToken = process.env.AFORA_MISSING_GATEWAY_REF_TOKEN;
+    process.env.AFORA_GATEWAY_TOKEN = "fallback-token-1234567890";
+    delete process.env.AFORA_MISSING_GATEWAY_REF_TOKEN;
     try {
       await doctorCommand(createDoctorRuntime(), {
         nonInteractive: true,
@@ -460,14 +460,14 @@ describe("doctor command", () => {
       });
     } finally {
       if (previousFallbackToken === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_TOKEN;
+        delete process.env.AFORA_GATEWAY_TOKEN;
       } else {
-        process.env.OPENCLAW_GATEWAY_TOKEN = previousFallbackToken;
+        process.env.AFORA_GATEWAY_TOKEN = previousFallbackToken;
       }
       if (previousRefToken === undefined) {
-        delete process.env.OPENCLAW_MISSING_GATEWAY_REF_TOKEN;
+        delete process.env.AFORA_MISSING_GATEWAY_REF_TOKEN;
       } else {
-        process.env.OPENCLAW_MISSING_GATEWAY_REF_TOKEN = previousRefToken;
+        process.env.AFORA_MISSING_GATEWAY_REF_TOKEN = previousRefToken;
       }
     }
 
@@ -580,8 +580,8 @@ describe("doctor command", () => {
       },
     });
 
-    const previousPassword = process.env.OPENCLAW_GATEWAY_PASSWORD;
-    process.env.OPENCLAW_GATEWAY_PASSWORD = "fallback-password";
+    const previousPassword = process.env.AFORA_GATEWAY_PASSWORD;
+    process.env.AFORA_GATEWAY_PASSWORD = "fallback-password";
     try {
       callGateway.mockClear();
       await doctorCommand(createDoctorRuntime(), {
@@ -590,9 +590,9 @@ describe("doctor command", () => {
       });
     } finally {
       if (previousPassword === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_PASSWORD;
+        delete process.env.AFORA_GATEWAY_PASSWORD;
       } else {
-        process.env.OPENCLAW_GATEWAY_PASSWORD = previousPassword;
+        process.env.AFORA_GATEWAY_PASSWORD = previousPassword;
       }
     }
 
@@ -629,8 +629,8 @@ describe("doctor command", () => {
       },
     });
 
-    const previousToken = process.env.OPENCLAW_GATEWAY_TOKEN;
-    process.env.OPENCLAW_GATEWAY_TOKEN = "fallback-token";
+    const previousToken = process.env.AFORA_GATEWAY_TOKEN;
+    process.env.AFORA_GATEWAY_TOKEN = "fallback-token";
     try {
       callGateway.mockClear();
       await doctorCommand(createDoctorRuntime(), {
@@ -639,9 +639,9 @@ describe("doctor command", () => {
       });
     } finally {
       if (previousToken === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_TOKEN;
+        delete process.env.AFORA_GATEWAY_TOKEN;
       } else {
-        process.env.OPENCLAW_GATEWAY_TOKEN = previousToken;
+        process.env.AFORA_GATEWAY_TOKEN = previousToken;
       }
     }
 
@@ -721,8 +721,8 @@ describe("doctor command", () => {
       },
     });
 
-    const previousToken = process.env.OPENCLAW_GATEWAY_TOKEN;
-    process.env.OPENCLAW_GATEWAY_TOKEN = "fallback-token";
+    const previousToken = process.env.AFORA_GATEWAY_TOKEN;
+    process.env.AFORA_GATEWAY_TOKEN = "fallback-token";
     try {
       callGateway.mockClear();
       await doctorCommand(createDoctorRuntime(), {
@@ -731,9 +731,9 @@ describe("doctor command", () => {
       });
     } finally {
       if (previousToken === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_TOKEN;
+        delete process.env.AFORA_GATEWAY_TOKEN;
       } else {
-        process.env.OPENCLAW_GATEWAY_TOKEN = previousToken;
+        process.env.AFORA_GATEWAY_TOKEN = previousToken;
       }
     }
 
@@ -853,8 +853,8 @@ describe("doctor command", () => {
       },
     });
 
-    const previousToken = process.env.OPENCLAW_GATEWAY_TOKEN;
-    process.env.OPENCLAW_GATEWAY_TOKEN = "fallback-token";
+    const previousToken = process.env.AFORA_GATEWAY_TOKEN;
+    process.env.AFORA_GATEWAY_TOKEN = "fallback-token";
     try {
       await doctorCommand(createDoctorRuntime(), {
         nonInteractive: true,
@@ -862,9 +862,9 @@ describe("doctor command", () => {
       });
     } finally {
       if (previousToken === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_TOKEN;
+        delete process.env.AFORA_GATEWAY_TOKEN;
       } else {
-        process.env.OPENCLAW_GATEWAY_TOKEN = previousToken;
+        process.env.AFORA_GATEWAY_TOKEN = previousToken;
       }
     }
 
@@ -904,8 +904,8 @@ describe("doctor command", () => {
       },
     });
 
-    const previousPassword = process.env.OPENCLAW_GATEWAY_PASSWORD;
-    process.env.OPENCLAW_GATEWAY_PASSWORD = "fallback-password";
+    const previousPassword = process.env.AFORA_GATEWAY_PASSWORD;
+    process.env.AFORA_GATEWAY_PASSWORD = "fallback-password";
     try {
       callGateway.mockClear();
       await doctorCommand(createDoctorRuntime(), {
@@ -914,9 +914,9 @@ describe("doctor command", () => {
       });
     } finally {
       if (previousPassword === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_PASSWORD;
+        delete process.env.AFORA_GATEWAY_PASSWORD;
       } else {
-        process.env.OPENCLAW_GATEWAY_PASSWORD = previousPassword;
+        process.env.AFORA_GATEWAY_PASSWORD = previousPassword;
       }
     }
 
@@ -956,8 +956,8 @@ describe("doctor command", () => {
       },
     });
 
-    const previousToken = process.env.OPENCLAW_GATEWAY_TOKEN;
-    process.env.OPENCLAW_GATEWAY_TOKEN = "fallback-token";
+    const previousToken = process.env.AFORA_GATEWAY_TOKEN;
+    process.env.AFORA_GATEWAY_TOKEN = "fallback-token";
     try {
       await doctorCommand(createDoctorRuntime(), {
         nonInteractive: true,
@@ -965,9 +965,9 @@ describe("doctor command", () => {
       });
     } finally {
       if (previousToken === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_TOKEN;
+        delete process.env.AFORA_GATEWAY_TOKEN;
       } else {
-        process.env.OPENCLAW_GATEWAY_TOKEN = previousToken;
+        process.env.AFORA_GATEWAY_TOKEN = previousToken;
       }
     }
 
@@ -1010,8 +1010,8 @@ describe("doctor command", () => {
       },
     });
 
-    const previousPassword = process.env.OPENCLAW_GATEWAY_PASSWORD;
-    process.env.OPENCLAW_GATEWAY_PASSWORD = "fallback-password";
+    const previousPassword = process.env.AFORA_GATEWAY_PASSWORD;
+    process.env.AFORA_GATEWAY_PASSWORD = "fallback-password";
     try {
       await doctorCommand(createDoctorRuntime(), {
         nonInteractive: true,
@@ -1019,9 +1019,9 @@ describe("doctor command", () => {
       });
     } finally {
       if (previousPassword === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_PASSWORD;
+        delete process.env.AFORA_GATEWAY_PASSWORD;
       } else {
-        process.env.OPENCLAW_GATEWAY_PASSWORD = previousPassword;
+        process.env.AFORA_GATEWAY_PASSWORD = previousPassword;
       }
     }
 
@@ -1091,7 +1091,7 @@ describe("doctor command", () => {
             token: {
               source: "env",
               provider: "default",
-              id: "OPENCLAW_GATEWAY_TOKEN",
+              id: "AFORA_GATEWAY_TOKEN",
             },
           },
         },
@@ -1103,8 +1103,8 @@ describe("doctor command", () => {
       },
     });
 
-    const previousToken = process.env.OPENCLAW_GATEWAY_TOKEN;
-    process.env.OPENCLAW_GATEWAY_TOKEN = "resolved-token-1234567890";
+    const previousToken = process.env.AFORA_GATEWAY_TOKEN;
+    process.env.AFORA_GATEWAY_TOKEN = "resolved-token-1234567890";
     try {
       await doctorCommand(createDoctorRuntime(), {
         nonInteractive: true,
@@ -1112,9 +1112,9 @@ describe("doctor command", () => {
       });
     } finally {
       if (previousToken === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_TOKEN;
+        delete process.env.AFORA_GATEWAY_TOKEN;
       } else {
-        process.env.OPENCLAW_GATEWAY_TOKEN = previousToken;
+        process.env.AFORA_GATEWAY_TOKEN = previousToken;
       }
     }
 

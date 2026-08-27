@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { withEnv } from "../test-utils/env.js";
-import { clearPluginRegistryLoadCache, loadOpenClawPlugins } from "./loader.js";
+import { clearPluginRegistryLoadCache, loadAforaPlugins } from "./loader.js";
 import { resetPluginLoaderTestStateForTest } from "./loader.test-fixtures.js";
 import {
   clearPluginRuntimeArtifactResolutionMemo,
@@ -19,7 +19,7 @@ function createBundledPluginFixture(): {
   builtSource: string;
 } {
   const packageRoot = fs.realpathSync(
-    fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-runtime-artifact-")),
+    fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-runtime-artifact-")),
   );
   tempDirs.push(packageRoot);
   const rootDir = path.join(packageRoot, "extensions", "fixture");
@@ -30,7 +30,7 @@ function createBundledPluginFixture(): {
   fs.writeFileSync(source, "export default { register() {} };\n");
   fs.writeFileSync(builtSource, 'module.exports = { id: "fixture", register() {} };\n');
   fs.writeFileSync(
-    path.join(rootDir, "openclaw.plugin.json"),
+    path.join(rootDir, "afora.plugin.json"),
     JSON.stringify({
       id: "fixture",
       configSchema: { type: "object", additionalProperties: false, properties: {} },
@@ -245,18 +245,18 @@ describe("resolvePluginRuntimeArtifact", () => {
 
     const [first, second] = withEnv(
       {
-        OPENCLAW_BUNDLED_PLUGINS_DIR: path.dirname(fixture.rootDir),
-        OPENCLAW_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
-        OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
+        AFORA_BUNDLED_PLUGINS_DIR: path.dirname(fixture.rootDir),
+        AFORA_TEST_TRUST_BUNDLED_PLUGINS_DIR: "1",
+        AFORA_DISABLE_BUNDLED_PLUGINS: undefined,
       },
       () => {
-        const sourceRegistry = loadOpenClawPlugins({
+        const sourceRegistry = loadAforaPlugins({
           cache: false,
           config,
           onlyPluginIds: ["fixture"],
           preferBuiltPluginArtifacts: false,
         });
-        const builtPreferredRegistry = loadOpenClawPlugins({
+        const builtPreferredRegistry = loadAforaPlugins({
           cache: false,
           config,
           onlyPluginIds: ["fixture"],
@@ -277,7 +277,7 @@ describe("resolvePluginRuntimeArtifact", () => {
 
   it("leaves dist-only installs unchanged because both preferences resolve the built entry", () => {
     const packageRoot = fs.realpathSync(
-      fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-runtime-dist-only-")),
+      fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-runtime-dist-only-")),
     );
     tempDirs.push(packageRoot);
     const rootDir = path.join(packageRoot, "dist", "extensions", "fixture");

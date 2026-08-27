@@ -16,7 +16,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { useAutoCleanupTempDirTracker } from "../helpers/temp-dir.js";
 
-const LIVE_E2E_WORKFLOW = ".github/workflows/openclaw-live-and-e2e-checks-reusable.yml";
+const LIVE_E2E_WORKFLOW = ".github/workflows/afora-live-and-e2e-checks-reusable.yml";
 const EXACT_TARGET_REF = "1".repeat(40);
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
@@ -91,12 +91,12 @@ describe("Docker E2E helper CLIs", () => {
   });
 
   it("emits prerelease plugin registry planning outputs", () => {
-    const root = tempDirs.make("openclaw-docker-e2e-helper-plan-");
+    const root = tempDirs.make("afora-docker-e2e-helper-plan-");
     const file = path.join(root, "plan.json");
     writeFileSync(
       file,
       `${JSON.stringify({
-        requiredPrepublishPluginPackages: ["@openclaw/discord", "@openclaw/feishu"],
+        requiredPrepublishPluginPackages: ["@afora/discord", "@afora/feishu"],
         needs: { prepublishPluginRegistry: true },
       })}\n`,
     );
@@ -106,18 +106,18 @@ describe("Docker E2E helper CLIs", () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("needs_prepublish_plugin_registry=1");
     expect(result.stdout).toContain(
-      'required_prepublish_plugin_packages=["@openclaw/discord","@openclaw/feishu"]',
+      'required_prepublish_plugin_packages=["@afora/discord","@afora/feishu"]',
     );
   });
 
   it("rejects oversized scheduler helper JSON artifacts without a Node stack trace", () => {
-    const root = mkdtempSync(`${tmpdir()}/openclaw-docker-e2e-helper-`);
+    const root = mkdtempSync(`${tmpdir()}/afora-docker-e2e-helper-`);
     try {
       const file = path.join(root, "summary.json");
       writeFileSync(file, `${JSON.stringify({ filler: "x".repeat(128) })}\n`, "utf8");
 
       const result = runHelper("scripts/docker-e2e.mjs", "failed-reruns", file, {
-        OPENCLAW_DOCKER_E2E_JSON_ARTIFACT_MAX_BYTES: "64",
+        AFORA_DOCKER_E2E_JSON_ARTIFACT_MAX_BYTES: "64",
       });
 
       expect(result.status).toBe(1);
@@ -165,13 +165,13 @@ describe("Docker E2E helper CLIs", () => {
   });
 
   it("rejects oversized timing JSON artifacts without a Node stack trace", () => {
-    const root = mkdtempSync(`${tmpdir()}/openclaw-docker-e2e-timings-`);
+    const root = mkdtempSync(`${tmpdir()}/afora-docker-e2e-timings-`);
     try {
       const file = path.join(root, "summary.json");
       writeFileSync(file, `${JSON.stringify({ filler: "x".repeat(128) })}\n`, "utf8");
 
       const result = runHelper("scripts/docker-e2e-timings.mts", file, {
-        OPENCLAW_DOCKER_E2E_JSON_ARTIFACT_MAX_BYTES: "64",
+        AFORA_DOCKER_E2E_JSON_ARTIFACT_MAX_BYTES: "64",
       });
 
       expect(result.status).toBe(1);
@@ -208,13 +208,13 @@ describe("Docker E2E helper CLIs", () => {
   });
 
   it("rejects oversized rerun JSON artifacts without a Node stack trace", () => {
-    const root = mkdtempSync(`${tmpdir()}/openclaw-docker-e2e-rerun-`);
+    const root = mkdtempSync(`${tmpdir()}/afora-docker-e2e-rerun-`);
     try {
       const file = path.join(root, "summary.json");
       writeFileSync(file, `${JSON.stringify({ filler: "x".repeat(128) })}\n`, "utf8");
 
       const result = runHelper("scripts/docker-e2e-rerun.mts", file, "--ref", EXACT_TARGET_REF, {
-        OPENCLAW_DOCKER_E2E_JSON_ARTIFACT_MAX_BYTES: "64",
+        AFORA_DOCKER_E2E_JSON_ARTIFACT_MAX_BYTES: "64",
       });
 
       expect(result.status).toBe(1);
@@ -230,7 +230,7 @@ describe("Docker E2E helper CLIs", () => {
   it.each(["summary.json", "failures.json"])(
     "prints local cleanup reruns without synthesizing Docker lane reruns from %s",
     (fileName) => {
-      const root = mkdtempSync(`${tmpdir()}/openclaw-docker-e2e-rerun-`);
+      const root = mkdtempSync(`${tmpdir()}/afora-docker-e2e-rerun-`);
       try {
         const cleanupFailure = {
           lane: "cleanup-smoke",
@@ -276,7 +276,7 @@ describe("Docker E2E helper CLIs", () => {
   );
 
   it("ignores artifact-provided GitHub rerun commands", () => {
-    const root = mkdtempSync(`${tmpdir()}/openclaw-docker-e2e-rerun-command-`);
+    const root = mkdtempSync(`${tmpdir()}/afora-docker-e2e-rerun-command-`);
     try {
       const file = path.join(root, "failures.json");
       writeFileSync(
@@ -315,7 +315,7 @@ describe("Docker E2E helper CLIs", () => {
   ] as const)(
     "uses the exact artifact target from %s instead of the workflow head",
     (name, refData) => {
-      const root = mkdtempSync(`${tmpdir()}/openclaw-docker-e2e-rerun-ref-`);
+      const root = mkdtempSync(`${tmpdir()}/afora-docker-e2e-rerun-ref-`);
       try {
         const targetRef = "a".repeat(40);
         const workflowHead = "b".repeat(40);
@@ -351,7 +351,7 @@ describe("Docker E2E helper CLIs", () => {
   );
 
   it("lets an explicit target ref override artifact refs", () => {
-    const root = mkdtempSync(`${tmpdir()}/openclaw-docker-e2e-rerun-ref-override-`);
+    const root = mkdtempSync(`${tmpdir()}/afora-docker-e2e-rerun-ref-override-`);
     try {
       const artifactRef = "a".repeat(40);
       const explicitRef = "c".repeat(40);
@@ -359,7 +359,7 @@ describe("Docker E2E helper CLIs", () => {
       writeFileSync(
         file,
         `${JSON.stringify({
-          images: { bare: "ghcr.io/openclaw/openclaw-bare:artifact-a" },
+          images: { bare: "ghcr.io/AforaMosh/afora-agent-bare:artifact-a" },
           lanes: [{ name: "gateway-network", status: 1 }],
           ref: artifactRef,
           status: "failed",
@@ -381,7 +381,7 @@ describe("Docker E2E helper CLIs", () => {
   });
 
   it("requires an artifact target ref when no explicit ref is supplied", () => {
-    const root = mkdtempSync(`${tmpdir()}/openclaw-docker-e2e-rerun-ref-missing-`);
+    const root = mkdtempSync(`${tmpdir()}/afora-docker-e2e-rerun-ref-missing-`);
     try {
       const file = path.join(root, "failures.json");
       writeFileSync(
@@ -406,7 +406,7 @@ describe("Docker E2E helper CLIs", () => {
   });
 
   it("rejects a non-exact artifact target for a targetable rerun", () => {
-    const root = mkdtempSync(`${tmpdir()}/openclaw-docker-e2e-rerun-ref-artifact-invalid-`);
+    const root = mkdtempSync(`${tmpdir()}/afora-docker-e2e-rerun-ref-artifact-invalid-`);
     try {
       const file = path.join(root, "failures.json");
       writeFileSync(
@@ -433,7 +433,7 @@ describe("Docker E2E helper CLIs", () => {
   it.each(["abc123", "A".repeat(40), "main"])(
     "rejects a non-exact explicit target ref: %s",
     (explicitRef) => {
-      const root = mkdtempSync(`${tmpdir()}/openclaw-docker-e2e-rerun-ref-invalid-`);
+      const root = mkdtempSync(`${tmpdir()}/afora-docker-e2e-rerun-ref-invalid-`);
       try {
         const file = path.join(root, "failures.json");
         writeFileSync(
@@ -457,7 +457,7 @@ describe("Docker E2E helper CLIs", () => {
   );
 
   it("preserves declared rerun inputs but ignores package and workflow refs", () => {
-    const root = mkdtempSync(`${tmpdir()}/openclaw-docker-e2e-rerun-inputs-`);
+    const root = mkdtempSync(`${tmpdir()}/afora-docker-e2e-rerun-inputs-`);
     try {
       const file = path.join(root, "failures.json");
       writeFileSync(
@@ -467,8 +467,8 @@ describe("Docker E2E helper CLIs", () => {
             lanes: [
               {
                 ghWorkflowCommand:
-                  "gh workflow run 'openclaw-live-and-e2e-checks-reusable.yml' --ref 'full-release-validation-temp-deleted' -f package_artifact_run_id='12345' -f package_artifact_name='docker-e2e-package' -f docker_e2e_bare_image='ghcr.io/openclaw/openclaw-bare:test' -f published_upgrade_survivor_baselines='openclaw@2026.5.3' -f published_upgrade_survivor_scenarios='plugin-dependency-cleanup' -f allow_unreleased_changelog=true -f unsafe_input='do-not-copy'",
-                name: "published-upgrade-survivor-openclaw-2026-5-3",
+                  "gh workflow run 'afora-live-and-e2e-checks-reusable.yml' --ref 'full-release-validation-temp-deleted' -f package_artifact_run_id='12345' -f package_artifact_name='docker-e2e-package' -f docker_e2e_bare_image='ghcr.io/AforaMosh/afora-agent-bare:test' -f published_upgrade_survivor_baselines='afora@2026.5.3' -f published_upgrade_survivor_scenarios='plugin-dependency-cleanup' -f allow_unreleased_changelog=true -f unsafe_input='do-not-copy'",
+                name: "published-upgrade-survivor-afora-2026-5-3",
                 status: 1,
               },
             ],
@@ -490,10 +490,10 @@ describe("Docker E2E helper CLIs", () => {
       expect(combinedCommand).not.toContain("package_artifact_run_id=");
       expect(combinedCommand).not.toContain("package_artifact_name=");
       expect(combinedCommand).toContain(
-        "docker_e2e_bare_image='ghcr.io/openclaw/openclaw-bare:test'",
+        "docker_e2e_bare_image='ghcr.io/AforaMosh/afora-agent-bare:test'",
       );
       expect(combinedCommand).toContain("shared_image_policy=existing-only");
-      expect(combinedCommand).toContain("published_upgrade_survivor_baselines='openclaw@2026.5.3'");
+      expect(combinedCommand).toContain("published_upgrade_survivor_baselines='afora@2026.5.3'");
       expect(combinedCommand).toContain(
         "published_upgrade_survivor_scenarios='plugin-dependency-cleanup'",
       );
@@ -502,10 +502,10 @@ describe("Docker E2E helper CLIs", () => {
       expect(result.stdout).not.toContain("package_artifact_run_id=");
       expect(result.stdout).not.toContain("package_artifact_name=");
       expect(result.stdout).toContain(
-        "docker_e2e_bare_image='ghcr.io/openclaw/openclaw-bare:test'",
+        "docker_e2e_bare_image='ghcr.io/AforaMosh/afora-agent-bare:test'",
       );
       expect(result.stdout).toContain("shared_image_policy=existing-only");
-      expect(result.stdout).toContain("published_upgrade_survivor_baselines='openclaw@2026.5.3'");
+      expect(result.stdout).toContain("published_upgrade_survivor_baselines='afora@2026.5.3'");
       expect(result.stdout).toContain(
         "published_upgrade_survivor_scenarios='plugin-dependency-cleanup'",
       );
@@ -522,7 +522,7 @@ describe("Docker E2E helper CLIs", () => {
   });
 
   it("rejects non-boolean unreleased changelog intent from summary artifacts", () => {
-    const root = tempDirs.make("openclaw-docker-e2e-rerun-inputs-");
+    const root = tempDirs.make("afora-docker-e2e-rerun-inputs-");
     const file = path.join(root, "summary.json");
     writeFileSync(
       file,
@@ -542,7 +542,7 @@ describe("Docker E2E helper CLIs", () => {
   });
 
   it("groups combined reruns by recovered workflow inputs", () => {
-    const root = mkdtempSync(`${tmpdir()}/openclaw-docker-e2e-rerun-groups-`);
+    const root = mkdtempSync(`${tmpdir()}/afora-docker-e2e-rerun-groups-`);
     try {
       const file = path.join(root, "failures.json");
       writeFileSync(
@@ -552,14 +552,14 @@ describe("Docker E2E helper CLIs", () => {
             lanes: [
               {
                 ghWorkflowCommand:
-                  "gh workflow run 'openclaw-live-and-e2e-checks-reusable.yml' --ref 'release/2026.6' -f published_upgrade_survivor_baselines='openclaw@2026.5.3' -f allow_unreleased_changelog=1",
-                name: "published-upgrade-survivor-openclaw-2026-5-3",
+                  "gh workflow run 'afora-live-and-e2e-checks-reusable.yml' --ref 'release/2026.6' -f published_upgrade_survivor_baselines='afora@2026.5.3' -f allow_unreleased_changelog=1",
+                name: "published-upgrade-survivor-afora-2026-5-3",
                 status: 1,
               },
               {
                 ghWorkflowCommand:
-                  "gh workflow run 'openclaw-live-and-e2e-checks-reusable.yml' --ref 'release/2026.6' -f published_upgrade_survivor_baselines='openclaw@2026.5.2'",
-                name: "published-upgrade-survivor-openclaw-2026-5-2",
+                  "gh workflow run 'afora-live-and-e2e-checks-reusable.yml' --ref 'release/2026.6' -f published_upgrade_survivor_baselines='afora@2026.5.2'",
+                name: "published-upgrade-survivor-afora-2026-5-2",
                 status: 1,
               },
             ],
@@ -577,19 +577,19 @@ describe("Docker E2E helper CLIs", () => {
       expect(result.stderr).toBe("");
       expect(result.stdout).toContain("Combined GitHub reruns:");
       expect(result.stdout).toContain(
-        "- published-upgrade-survivor-openclaw-2026-5-3: gh workflow run",
+        "- published-upgrade-survivor-afora-2026-5-3: gh workflow run",
       );
       expect(result.stdout).toContain(
-        "- published-upgrade-survivor-openclaw-2026-5-2: gh workflow run",
+        "- published-upgrade-survivor-afora-2026-5-2: gh workflow run",
       );
       expect(result.stdout).toContain(
-        "docker_lanes='published-upgrade-survivor-openclaw-2026-5-3'",
+        "docker_lanes='published-upgrade-survivor-afora-2026-5-3'",
       );
       expect(result.stdout).toContain(
-        "docker_lanes='published-upgrade-survivor-openclaw-2026-5-2'",
+        "docker_lanes='published-upgrade-survivor-afora-2026-5-2'",
       );
       expect(result.stdout).not.toContain(
-        "docker_lanes='published-upgrade-survivor-openclaw-2026-5-3 published-upgrade-survivor-openclaw-2026-5-2'",
+        "docker_lanes='published-upgrade-survivor-afora-2026-5-3 published-upgrade-survivor-afora-2026-5-2'",
       );
       expect(result.stdout).not.toContain("allow_unreleased_changelog");
     } finally {
@@ -598,7 +598,7 @@ describe("Docker E2E helper CLIs", () => {
   });
 
   it("merges duplicate lane entries before printing reruns", () => {
-    const root = mkdtempSync(`${tmpdir()}/openclaw-docker-e2e-rerun-merge-`);
+    const root = mkdtempSync(`${tmpdir()}/afora-docker-e2e-rerun-merge-`);
     try {
       const file = path.join(root, "failures.json");
       writeFileSync(
@@ -607,13 +607,13 @@ describe("Docker E2E helper CLIs", () => {
           {
             lanes: [
               {
-                name: "published-upgrade-survivor-openclaw-2026-5-3",
+                name: "published-upgrade-survivor-afora-2026-5-3",
                 status: 1,
               },
               {
                 ghWorkflowCommand:
-                  "gh workflow run 'openclaw-live-and-e2e-checks-reusable.yml' --ref 'release/2026.6' -f published_upgrade_survivor_baselines='openclaw@2026.5.3'",
-                name: "published-upgrade-survivor-openclaw-2026-5-3",
+                  "gh workflow run 'afora-live-and-e2e-checks-reusable.yml' --ref 'release/2026.6' -f published_upgrade_survivor_baselines='afora@2026.5.3'",
+                name: "published-upgrade-survivor-afora-2026-5-3",
                 status: 1,
               },
             ],
@@ -631,14 +631,14 @@ describe("Docker E2E helper CLIs", () => {
       expect(result.stderr).toBe("");
       const combinedCommand = result.stdout.match(/Combined GitHub rerun:\n([^\n]+)/u)?.[1] ?? "";
       expect(combinedCommand).not.toContain("--ref 'release/2026.6'");
-      expect(combinedCommand).toContain("published_upgrade_survivor_baselines='openclaw@2026.5.3'");
+      expect(combinedCommand).toContain("published_upgrade_survivor_baselines='afora@2026.5.3'");
     } finally {
       rmSync(root, { force: true, recursive: true });
     }
   });
 
   it("downloads GitHub run artifacts into distinct default directories", () => {
-    const root = mkdtempSync(`${tmpdir()}/openclaw-docker-e2e-rerun-gh-`);
+    const root = mkdtempSync(`${tmpdir()}/afora-docker-e2e-rerun-gh-`);
     const generatedDirs: string[] = [];
     try {
       const binDir = path.join(root, "bin");
@@ -658,8 +658,8 @@ describe("Docker E2E helper CLIs", () => {
           "    headBranch: 'main',",
           "    headSha: 'abc123',",
           "    status: 'completed',",
-          "    url: 'https://github.com/openclaw/openclaw/actions/runs/12345',",
-          "    workflowName: 'OpenClaw Live and E2E Checks',",
+          "    url: 'https://github.com/AforaMosh/afora-agent/actions/runs/12345',",
+          "    workflowName: 'Afora Live and E2E Checks',",
           "  }));",
           "  process.exit(0);",
           "}",
@@ -692,14 +692,14 @@ describe("Docker E2E helper CLIs", () => {
         "scripts/docker-e2e-rerun.mts",
         "12345",
         "--repo",
-        "openclaw/openclaw",
+        "AforaMosh/afora-agent",
         env,
       );
       const second = runHelper(
         "scripts/docker-e2e-rerun.mts",
         "12345",
         "--repo",
-        "openclaw/openclaw",
+        "AforaMosh/afora-agent",
         env,
       );
 
@@ -709,8 +709,8 @@ describe("Docker E2E helper CLIs", () => {
       const secondDir = downloadedDir(second.stdout);
       generatedDirs.push(firstDir, secondDir);
       expect(firstDir).not.toBe(secondDir);
-      expect(path.basename(firstDir)).toMatch(/^openclaw-docker-e2e-rerun-12345-/u);
-      expect(path.basename(secondDir)).toMatch(/^openclaw-docker-e2e-rerun-12345-/u);
+      expect(path.basename(firstDir)).toMatch(/^afora-docker-e2e-rerun-12345-/u);
+      expect(path.basename(secondDir)).toMatch(/^afora-docker-e2e-rerun-12345-/u);
       const firstArtifactDir = readdirSync(firstDir, { withFileTypes: true }).find((entry) =>
         entry.isDirectory(),
       );
@@ -739,7 +739,7 @@ describe("Docker E2E helper CLIs", () => {
   });
 
   it("isolates files with the same name across downloaded artifacts", () => {
-    const root = mkdtempSync(`${tmpdir()}/openclaw-docker-e2e-rerun-collisions-`);
+    const root = mkdtempSync(`${tmpdir()}/afora-docker-e2e-rerun-collisions-`);
     try {
       const binDir = path.join(root, "bin");
       const outputDir = path.join(root, "artifacts");
@@ -792,7 +792,7 @@ describe("Docker E2E helper CLIs", () => {
         "scripts/docker-e2e-rerun.mts",
         "12345",
         "--repo",
-        "openclaw/openclaw",
+        "AforaMosh/afora-agent",
         "--dir",
         outputDir,
         { PATH: `${binDir}${path.delimiter}${process.env.PATH ?? ""}` },
@@ -814,7 +814,7 @@ describe("Docker E2E helper CLIs", () => {
   });
 
   it("fails closed when downloaded artifacts contain mixed target refs", () => {
-    const root = mkdtempSync(`${tmpdir()}/openclaw-docker-e2e-rerun-mixed-refs-`);
+    const root = mkdtempSync(`${tmpdir()}/afora-docker-e2e-rerun-mixed-refs-`);
     try {
       const binDir = path.join(root, "bin");
       const outputDir = path.join(root, "artifacts");
@@ -862,7 +862,7 @@ describe("Docker E2E helper CLIs", () => {
         "scripts/docker-e2e-rerun.mts",
         "12345",
         "--repo",
-        "openclaw/openclaw",
+        "AforaMosh/afora-agent",
         "--dir",
         outputDir,
         { PATH: `${binDir}${path.delimiter}${process.env.PATH ?? ""}` },
@@ -879,7 +879,7 @@ describe("Docker E2E helper CLIs", () => {
         "scripts/docker-e2e-rerun.mts",
         "12345",
         "--repo",
-        "openclaw/openclaw",
+        "AforaMosh/afora-agent",
         "--dir",
         outputDir,
         "--ref",

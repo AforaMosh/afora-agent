@@ -1,4 +1,4 @@
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import { createLinuxNodeCommands } from "./src/commands.js";
 import { createLinuxNodePluginConfigSchema, resolveLinuxNodePluginConfig } from "./src/config.js";
 

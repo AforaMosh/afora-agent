@@ -21,7 +21,7 @@ import {
   clearRuntimeConfigSnapshot,
   setRuntimeConfigSnapshot,
 } from "../config/runtime-snapshot.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   consumeGatewaySigusr1RestartIntent,
   isGatewaySigusr1RestartExternallyAllowed,
@@ -183,7 +183,7 @@ function startManagedGatewayConfigReloader(params: ManagedReloaderTestParams) {
     minimalTestGateway: false,
     initialCompareConfig: params.initialConfig,
     initialInternalWriteHash: null,
-    watchPath: "/tmp/openclaw.json",
+    watchPath: "/tmp/afora.json",
     promoteSnapshot: vi.fn(async () => true) as never,
     deps: {} as never,
     broadcast: vi.fn(),
@@ -197,7 +197,7 @@ function startManagedGatewayConfigReloader(params: ManagedReloaderTestParams) {
     logCron: { error: vi.fn() },
     logReload: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
     channelManager: {} as never,
-    activateRuntimeSecrets: vi.fn(async (config: OpenClawConfig) =>
+    activateRuntimeSecrets: vi.fn(async (config: AforaConfig) =>
       makePreparedSecretsSnapshot(config),
     ) as never,
     resolveSharedGatewaySessionGenerationForConfig: () => undefined,
@@ -219,7 +219,7 @@ function startManagedGatewayConfigReloader(params: ManagedReloaderTestParams) {
 }
 
 type GmailWatcherRestartParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   log: {
     info: (msg: string) => void;
     warn: (msg: string) => void;
@@ -249,11 +249,11 @@ const hoisted = vi.hoisted(() => ({
   activeEmbeddedRunSessionIds: [] as string[],
   activeEmbeddedRunSessionKeys: [] as string[],
   markRestartAbortedMainSessions: vi.fn(async (_params: unknown) => ({ marked: 1, skipped: 0 })),
-  runtimeConfig: { value: { session: { store: "/tmp/active-sessions.json" } } as OpenClawConfig },
-  assertOpenClawDatabasesReadyForRestart: vi.fn(() => {}),
+  runtimeConfig: { value: { session: { store: "/tmp/active-sessions.json" } } as AforaConfig },
+  assertAforaDatabasesReadyForRestart: vi.fn(() => {}),
   resetSkillSnapshotConfigFingerprintCache: vi.fn(),
   reloadEvents: [] as string[],
-  loadModelCatalog: vi.fn(async (_params: { config: OpenClawConfig }) => []),
+  loadModelCatalog: vi.fn(async (_params: { config: AforaConfig }) => []),
   resetModelCatalogCache: vi.fn(() => {}),
   markPreparedModelRuntimeSnapshotsStale: vi.fn(
     (
@@ -265,11 +265,11 @@ const hoisted = vi.hoisted(() => ({
     (_gateId: symbol | undefined, _error: unknown) => {},
   ),
   refreshPreparedModelRuntimeSnapshots: vi.fn(
-    async (_cfg: OpenClawConfig, _options?: { catalogMode?: "live" | "static" }) => {},
+    async (_cfg: AforaConfig, _options?: { catalogMode?: "live" | "static" }) => {},
   ),
-  refreshContextWindowCache: vi.fn(async (_cfg: OpenClawConfig) => {}),
+  refreshContextWindowCache: vi.fn(async (_cfg: AforaConfig) => {}),
   clearCurrentProviderAuthState: vi.fn(() => {}),
-  warmCurrentProviderAuthStateOffMainThread: vi.fn(async (_cfg: OpenClawConfig) => {}),
+  warmCurrentProviderAuthStateOffMainThread: vi.fn(async (_cfg: AforaConfig) => {}),
   disposeAllSessionMcpRuntimes: vi.fn(async () => {}),
   buildGatewayCronService: vi.fn((_params?: { env?: NodeJS.ProcessEnv }) => ({
     cron: { start: vi.fn(async () => {}), stop: vi.fn() },
@@ -340,8 +340,8 @@ vi.mock("../config/config.js", async () => {
   };
 });
 
-vi.mock("../state/openclaw-database-preflight.js", () => ({
-  assertOpenClawDatabasesReadyForRestart: hoisted.assertOpenClawDatabasesReadyForRestart,
+vi.mock("../state/afora-database-preflight.js", () => ({
+  assertAforaDatabasesReadyForRestart: hoisted.assertAforaDatabasesReadyForRestart,
 }));
 
 vi.mock("../skills/runtime/snapshot-config-fingerprint.js", async (importOriginal) => ({
@@ -350,7 +350,7 @@ vi.mock("../skills/runtime/snapshot-config-fingerprint.js", async (importOrigina
 }));
 
 vi.mock("../agents/model-catalog.js", () => ({
-  loadModelCatalog: (params: { config: OpenClawConfig }) => {
+  loadModelCatalog: (params: { config: AforaConfig }) => {
     hoisted.reloadEvents.push("load-model-catalog");
     return hoisted.loadModelCatalog(params);
   },
@@ -371,7 +371,7 @@ vi.mock("../agents/prepared-model-runtime.js", () => ({
   rejectPendingPreparedModelRuntimeReplacement: (gateId: symbol | undefined, error: unknown) =>
     hoisted.rejectPendingPreparedModelRuntimeReplacement(gateId, error),
   refreshPreparedModelRuntimeSnapshots: (
-    cfg: OpenClawConfig,
+    cfg: AforaConfig,
     options?: { catalogMode?: "live" | "static" },
   ) => {
     hoisted.reloadEvents.push("refresh-prepared-model-runtime");
@@ -380,7 +380,7 @@ vi.mock("../agents/prepared-model-runtime.js", () => ({
 }));
 
 vi.mock("../agents/context.js", () => ({
-  refreshContextWindowCache: async (cfg: OpenClawConfig) => {
+  refreshContextWindowCache: async (cfg: AforaConfig) => {
     hoisted.reloadEvents.push("refresh-context-window");
     await hoisted.refreshContextWindowCache(cfg);
   },
@@ -392,7 +392,7 @@ vi.mock("../agents/model-provider-auth.js", () => ({
     hoisted.clearCurrentProviderAuthState();
   },
   warmCurrentProviderAuthStateOffMainThread: async (
-    cfg: OpenClawConfig,
+    cfg: AforaConfig,
     options?: { isCancelled?: () => boolean },
   ) => {
     hoisted.reloadEvents.push("warm-provider-auth");
@@ -432,7 +432,7 @@ function createRecordedChannelHandlers(events: string[]) {
 }
 
 function makePreparedSecretsSnapshot(
-  config: OpenClawConfig,
+  config: AforaConfig,
   overrides: Partial<PreparedSecretsRuntimeSnapshot> = {},
 ): PreparedSecretsRuntimeSnapshot {
   return {
@@ -468,20 +468,20 @@ function makePluginReloadResult(
 }
 
 function enableChannelReloadsForTest() {
-  const previousSkipChannels = process.env.OPENCLAW_SKIP_CHANNELS;
-  const previousSkipProviders = process.env.OPENCLAW_SKIP_PROVIDERS;
-  delete process.env.OPENCLAW_SKIP_CHANNELS;
-  delete process.env.OPENCLAW_SKIP_PROVIDERS;
+  const previousSkipChannels = process.env.AFORA_SKIP_CHANNELS;
+  const previousSkipProviders = process.env.AFORA_SKIP_PROVIDERS;
+  delete process.env.AFORA_SKIP_CHANNELS;
+  delete process.env.AFORA_SKIP_PROVIDERS;
   return () => {
     if (previousSkipChannels === undefined) {
-      delete process.env.OPENCLAW_SKIP_CHANNELS;
+      delete process.env.AFORA_SKIP_CHANNELS;
     } else {
-      process.env.OPENCLAW_SKIP_CHANNELS = previousSkipChannels;
+      process.env.AFORA_SKIP_CHANNELS = previousSkipChannels;
     }
     if (previousSkipProviders === undefined) {
-      delete process.env.OPENCLAW_SKIP_PROVIDERS;
+      delete process.env.AFORA_SKIP_PROVIDERS;
     } else {
-      process.env.OPENCLAW_SKIP_PROVIDERS = previousSkipProviders;
+      process.env.AFORA_SKIP_PROVIDERS = previousSkipProviders;
     }
   };
 }
@@ -539,9 +539,9 @@ function createPluginReloadPlan(): GatewayReloadPlan {
   });
 }
 
-function createValidConfigSnapshot(config: OpenClawConfig, hash: string) {
+function createValidConfigSnapshot(config: AforaConfig, hash: string) {
   return {
-    path: "/tmp/openclaw.json",
+    path: "/tmp/afora.json",
     exists: true,
     raw: "{}",
     parsed: {},
@@ -558,7 +558,7 @@ function createValidConfigSnapshot(config: OpenClawConfig, hash: string) {
 }
 
 function createConfigWriteNotification(
-  config: OpenClawConfig,
+  config: AforaConfig,
   persistedHash: string,
   revision: number,
   fingerprint: string,
@@ -566,7 +566,7 @@ function createConfigWriteNotification(
   overrides: Partial<ConfigWriteNotification> = {},
 ): ConfigWriteNotification {
   return {
-    configPath: "/tmp/openclaw.json",
+    configPath: "/tmp/afora.json",
     sourceConfig: config,
     runtimeConfig: config,
     persistedHash,
@@ -675,7 +675,7 @@ function createManagedRestartSequenceHarness(
       reload: {},
       terminal: { enabled: true },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
   setRuntimeConfigSnapshot(initialConfig, initialConfig);
   activateSecretsRuntimeSnapshot(makePreparedSecretsSnapshot(initialConfig));
   const deferredConfig = {
@@ -692,7 +692,7 @@ function createManagedRestartSequenceHarness(
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
   const invalidConfig = {
     gateway: {
       ...deferredConfig.gateway,
@@ -706,7 +706,7 @@ function createManagedRestartSequenceHarness(
       },
       terminal: { enabled: false },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
   const missingHotSecret = {
     source: "env" as const,
     provider: "default",
@@ -723,7 +723,7 @@ function createManagedRestartSequenceHarness(
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
   const invalidNoopConfig = {
     ...deferredConfig,
     plugins: {
@@ -733,13 +733,13 @@ function createManagedRestartSequenceHarness(
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
   const replacementConfig = {
     gateway: {
       ...deferredConfig.gateway,
       bind: "lan",
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
   const terminalPolicy = createTerminalLaunchPolicy(initialConfig);
   const writeListenerRef = createConfigWriteListenerRef();
   let snapshotConfig = initialConfig;
@@ -768,7 +768,7 @@ function createManagedRestartSequenceHarness(
       recordReloadError = undefined;
     }),
   };
-  const activateRuntimeSecrets = vi.fn(async (config: OpenClawConfig, _params: unknown) => {
+  const activateRuntimeSecrets = vi.fn(async (config: AforaConfig, _params: unknown) => {
     const secretInputs = [
       config.gateway?.auth?.token,
       config.models?.providers?.test?.apiKey,
@@ -822,10 +822,10 @@ function createManagedRestartSequenceHarness(
     requestRecoveryRestart,
   });
   const writeConfig = (
-    config: OpenClawConfig,
+    config: AforaConfig,
     hash: string,
     revision: number,
-    runtimeConfig: OpenClawConfig = config,
+    runtimeConfig: AforaConfig = config,
   ) => {
     const listener = writeListenerRef.current;
     if (!listener) {
@@ -842,7 +842,7 @@ function createManagedRestartSequenceHarness(
 
   return {
     activateRuntimeSecrets,
-    assertRestartReady: hoisted.assertOpenClawDatabasesReadyForRestart,
+    assertRestartReady: hoisted.assertAforaDatabasesReadyForRestart,
     deferredConfig,
     initialConfig,
     invalidConfig,
@@ -880,7 +880,7 @@ async function withGatewayRestartSignal(
 }
 
 // Other gateway test helpers (test-helpers.mocks.ts, test-helpers.server.ts)
-// set OPENCLAW_SKIP_CHANNELS / OPENCLAW_SKIP_PROVIDERS at module load. When a
+// set AFORA_SKIP_CHANNELS / AFORA_SKIP_PROVIDERS at module load. When a
 // shared vitest worker imports those helpers before this file runs, the leaked
 // env routes reloads into the skip branch and channel restarts never fire.
 const testGatewayRestartListener = () => {};
@@ -892,8 +892,8 @@ beforeEach(() => {
   process.on("SIGUSR1", testGatewayRestartListener);
   resetGatewayWorkAdmission();
   resetProcessRegistryForTests();
-  delete process.env.OPENCLAW_SKIP_CHANNELS;
-  delete process.env.OPENCLAW_SKIP_PROVIDERS;
+  delete process.env.AFORA_SKIP_CHANNELS;
+  delete process.env.AFORA_SKIP_PROVIDERS;
   hoisted.resetSkillSnapshotConfigFingerprintCache.mockClear();
 });
 
@@ -913,7 +913,7 @@ afterEach(() => {
   hoisted.activeEmbeddedRunSessionKeys.length = 0;
   hoisted.markRestartAbortedMainSessions.mockClear();
   hoisted.runtimeConfig.value = { session: { store: "/tmp/active-sessions.json" } };
-  hoisted.assertOpenClawDatabasesReadyForRestart.mockClear();
+  hoisted.assertAforaDatabasesReadyForRestart.mockClear();
   hoisted.reloadEvents.length = 0;
   hoisted.markPreparedModelRuntimeSnapshotsStale.mockClear();
   hoisted.rejectPendingPreparedModelRuntimeReplacement.mockClear();
@@ -938,7 +938,7 @@ async function runManagedOwnershipScenario(params: {
   const initialConfig = {
     gateway: { reload: { mode: "off" as const } },
     hooks: { enabled: true, token: "test-token", path: "/old" },
-  } satisfies OpenClawConfig;
+  } satisfies AforaConfig;
   const configA = {
     gateway: {
       reload: {
@@ -950,9 +950,9 @@ async function runManagedOwnershipScenario(params: {
       token: "test-token",
       path: params.kind === "noop" ? "/old" : "/a",
     },
-  } satisfies OpenClawConfig;
+  } satisfies AforaConfig;
   const configB = structuredClone(initialConfig);
-  const snapshot = (config: OpenClawConfig) => makePreparedSecretsSnapshot(config);
+  const snapshot = (config: AforaConfig) => makePreparedSecretsSnapshot(config);
   const writeListenerRef = createConfigWriteListenerRef();
   let resolveAccepted: (() => void) | undefined;
   const accepted = new Promise<void>((resolve) => {
@@ -964,7 +964,7 @@ async function runManagedOwnershipScenario(params: {
   const reconcileTerminalSessions = vi.fn();
   const requestRecoveryRestart = vi.fn(() => ({ status: "emitted" as const }));
   let queuedB = false;
-  const activateRuntimeSecrets = vi.fn(async (config: OpenClawConfig) => {
+  const activateRuntimeSecrets = vi.fn(async (config: AforaConfig) => {
     if (params.queueRevert && !queuedB) {
       queuedB = true;
       writeListenerRef.current?.(
@@ -1172,7 +1172,7 @@ describe("gateway hot reload model state", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     await applyHotReload(buildGatewayReloadPlan([changedPath]), nextConfig);
 
@@ -1230,7 +1230,7 @@ describe("gateway hot reload model state", () => {
         order.push("hook");
       },
     }));
-    const nextConfig = { cron: { enabled: true } } as OpenClawConfig;
+    const nextConfig = { cron: { enabled: true } } as AforaConfig;
 
     await withGatewayRestartSignal(async () => {
       await applyHotReload(createCronRestartPlan(), nextConfig);
@@ -1275,7 +1275,7 @@ describe("gateway hot reload model state", () => {
     };
     hoisted.buildGatewayCronService.mockReturnValueOnce(rebuiltCronState);
     const { applyHotReload, cronReconciliation } = createReloadHandlersForTest();
-    const nextConfig = { cron: { enabled: false } } as OpenClawConfig;
+    const nextConfig = { cron: { enabled: false } } as AforaConfig;
 
     await withGatewayRestartSignal(async () => {
       await applyHotReload(createCronRestartPlan(), nextConfig);
@@ -1313,7 +1313,7 @@ describe("gateway hot reload model state", () => {
   it("applies an in-place heartbeat update without a recovery restart owner", async () => {
     const { applyHotReload, heartbeatRunner, reconcileHeartbeatJobs, setState } =
       createReloadHandlersForTest(undefined, undefined, undefined, vi.fn(), false);
-    const nextConfig = { agents: { defaults: { heartbeat: { every: "1h" } } } } as OpenClawConfig;
+    const nextConfig = { agents: { defaults: { heartbeat: { every: "1h" } } } } as AforaConfig;
 
     await expect(
       applyHotReload(createHotTailPlan({ restartHeartbeat: true }), nextConfig),
@@ -1348,7 +1348,7 @@ describe("gateway hot reload model state", () => {
       await expect(
         applyHotReload(
           createHotTailPlan({ restartHeartbeat: true }),
-          { agents: { defaults: { maxConcurrent: 1 } } } as OpenClawConfig,
+          { agents: { defaults: { maxConcurrent: 1 } } } as AforaConfig,
           { publish, isCurrent: () => true },
         ),
       ).rejects.toThrow("heartbeat update failed");
@@ -1490,7 +1490,7 @@ describe("gateway hot reload model state", () => {
       logReload,
     });
 
-    const nextConfig = { plugins: { enabled: true } } as OpenClawConfig;
+    const nextConfig = { plugins: { enabled: true } } as AforaConfig;
     await applyHotReload(createPluginReloadPlan(), nextConfig);
 
     const firstResetIndex = hoisted.reloadEvents.indexOf("clear-provider-auth");
@@ -1526,7 +1526,7 @@ describe("gateway hot reload model state", () => {
       undefined,
       vi.fn(),
     );
-    const nextConfig = { mcp: { servers: {} } } as OpenClawConfig;
+    const nextConfig = { mcp: { servers: {} } } as AforaConfig;
 
     await applyHotReload(
       createHotTailPlan({
@@ -1549,7 +1549,7 @@ describe("gateway hot reload model state", () => {
     const { applyHotReload } = createReloadHandlersForTest();
     const nextConfig = {
       agents: { defaults: { heartbeat: { target: "telegram" } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await applyHotReload(
       createHotTailPlan({
@@ -1567,7 +1567,7 @@ describe("gateway hot reload model state", () => {
     const { applyHotReload } = createReloadHandlersForTest();
     const nextConfig = {
       agents: { defaults: { heartbeat: { target: "telegram" } } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const readProfiles = vi.fn(() => ({
       "openai:fixture": {
         type: "api_key" as const,
@@ -1631,7 +1631,7 @@ describe("gateway hot reload model state", () => {
     const { applyHotReload } = createReloadHandlersForTest();
     const nextConfig = {
       models: { providers: { openai: { api: "openai" } } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     await applyHotReload(
       createHotTailPlan({
@@ -1659,7 +1659,7 @@ describe("gateway hot reload model state", () => {
     "agents.entries.main.runtime.id",
   ])("runs provider-auth rewarm for previously missed auth owner %s", async (changedPath) => {
     const { applyHotReload } = createReloadHandlersForTest();
-    const nextConfig = {} satisfies OpenClawConfig;
+    const nextConfig = {} satisfies AforaConfig;
 
     await applyHotReload(
       createHotTailPlan({
@@ -1681,7 +1681,7 @@ describe("gateway hot reload model state", () => {
     );
     const nextConfig = {
       agents: { defaults: { workspace: "/tmp/next-workspace" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await applyHotReload(
       createHotTailPlan({
@@ -1710,7 +1710,7 @@ describe("gateway hot reload model state", () => {
           changedPaths: ["agents.defaults.workspace"],
           hotReasons: ["agents.defaults.workspace"],
         }),
-        { agents: { defaults: { workspace: "/tmp/next-workspace" } } } as OpenClawConfig,
+        { agents: { defaults: { workspace: "/tmp/next-workspace" } } } as AforaConfig,
       ),
     ).rejects.toThrow(
       "config reload requires a managed gateway restart owner for irreversible hot reload",
@@ -1735,8 +1735,8 @@ describe("gateway hot reload model state", () => {
     },
   ])("refreshes context metadata when a workspace change $label", async (testCase) => {
     const { applyHotReload } = createReloadHandlersForTest();
-    const previousConfig = testCase.previousConfig as OpenClawConfig;
-    const nextConfig = testCase.nextConfig as OpenClawConfig;
+    const previousConfig = testCase.previousConfig as AforaConfig;
+    const nextConfig = testCase.nextConfig as AforaConfig;
     const changedPaths = diffConfigPaths(previousConfig, nextConfig);
     expect(changedPaths).toEqual([testCase.expectedPath]);
 
@@ -1751,7 +1751,7 @@ describe("gateway hot reload superseded tail recovery", () => {
     vi.useFakeTimers();
     const requestRecoveryRestart = vi.fn(() => ({ status: "emitted" as const }));
     const prepareRuntimeConfig = vi.fn(
-      async (): Promise<OpenClawConfig> => ({ logging: { level: "debug" } }),
+      async (): Promise<AforaConfig> => ({ logging: { level: "debug" } }),
     );
     const handlers = createReloadHandlersForTest(
       undefined,
@@ -1802,8 +1802,8 @@ describe("gateway hot reload superseded tail recovery", () => {
       undefined,
       requestRecoveryRestart,
     );
-    const configA = { logging: { level: "info" as const } } satisfies OpenClawConfig;
-    const configC = { logging: { level: "debug" as const } } satisfies OpenClawConfig;
+    const configA = { logging: { level: "info" as const } } satisfies AforaConfig;
+    const configC = { logging: { level: "debug" as const } } satisfies AforaConfig;
     const prepareA = vi.fn(async () => configA);
     const prepareC = vi.fn(async () => configC);
     handlers.recordAcceptedRestartTarget({
@@ -1881,8 +1881,8 @@ describe("gateway hot reload superseded tail recovery", () => {
             },
           },
         },
-      } satisfies OpenClawConfig;
-      let pendingConfig: OpenClawConfig | null = null;
+      } satisfies AforaConfig;
+      let pendingConfig: AforaConfig | null = null;
       const isCurrent = () => pendingConfig === null;
       const requestRecoveryRestart = vi.fn(() => ({ status: "emitted" as const }));
       const startChannel = vi.fn(async () => {});
@@ -1940,7 +1940,7 @@ describe("gateway hot reload superseded tail recovery", () => {
       );
       const configA = {
         agents: { defaults: { workspace: "/tmp/a" } },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const reloadA = handlers.applyHotReload(plan, configA, {
         isCurrent,
         publish: async (commit) => await commit(),
@@ -1957,7 +1957,7 @@ describe("gateway hot reload superseded tail recovery", () => {
       );
       expect(hoisted.warmCurrentProviderAuthStateOffMainThread).not.toHaveBeenCalled();
 
-      const configC = { logging: { level: "debug" as const } } satisfies OpenClawConfig;
+      const configC = { logging: { level: "debug" as const } } satisfies AforaConfig;
       pendingConfig = configC;
       await handlers.applyHotReload(createHotTailPlan(), configC, {
         isCurrent: () => pendingConfig === configC,
@@ -2066,7 +2066,7 @@ describe("gateway hot reload commit policy", () => {
       requestRecoveryRestart: vi.fn(() => ({ status: "emitted" as const })),
     });
 
-    await applyHotReload(createHotTailPlan({ restartHealthMonitor: true }), {} as OpenClawConfig);
+    await applyHotReload(createHotTailPlan({ restartHealthMonitor: true }), {} as AforaConfig);
 
     expect(events).toEqual(["setState", "stop", "waitForIdle", "create", "setState"]);
     expect(state.channelHealthMonitor).toBe(nextMonitor);
@@ -2091,7 +2091,7 @@ describe("gateway hot reload commit policy", () => {
   });
 
   it("preserves the active hook transform cache when hook preparation rejects the config", async () => {
-    const configDir = autoCleanupTempDirs.make("openclaw-rejected-hook-reload-");
+    const configDir = autoCleanupTempDirs.make("afora-rejected-hook-reload-");
     const transformsRoot = path.join(configDir, "hooks", "transforms");
     fs.mkdirSync(transformsRoot, { recursive: true });
     const transformPath = path.join(transformsRoot, "reloadable.mjs");
@@ -2280,11 +2280,11 @@ describe("gateway restart deferral preflight", () => {
       );
     const configA = {
       hooks: { enabled: true, token: "test-token", path: "/a" },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const configB = {
       ...configA,
       logging: { level: "debug" },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const forcedRestartPlan = {
       changedPaths: ["hooks.path"],
       restartGateway: true,
@@ -2389,15 +2389,15 @@ describe("gateway restart deferral preflight", () => {
     const configA = {
       channels: { discord: { token: "discord-token-a" } },
       logging: { level: "info" },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const configC = {
       ...configA,
       logging: { level: "debug" },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const configB = {
       ...configA,
       gateway: { port: 19_001 },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const plan = createHotTailPlan({
       changedPaths: ["channels.discord.token", "logging.level"],
       hotReasons: ["channels.discord.token"],
@@ -2484,11 +2484,11 @@ describe("gateway restart deferral preflight", () => {
     );
     const configA = {
       channels: { discord: { token: "discord-token-a" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const configB = {
       ...configA,
       gateway: { port: 19_001 },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const recoveryPlan = {
       ...createHotTailPlan(),
       changedPaths: ["channels.discord.token"],
@@ -2972,7 +2972,7 @@ describe("gateway channel hot reload handlers", () => {
   async function withDiscordAccountResolver(
     listAccountIds: () => string[],
     run: () => Promise<void>,
-    resolveAccount: (cfg: OpenClawConfig, accountId?: string | null) => unknown = () => ({}),
+    resolveAccount: (cfg: AforaConfig, accountId?: string | null) => unknown = () => ({}),
   ) {
     const registry = createTestRegistry([
       {
@@ -3406,7 +3406,7 @@ describe("gateway Gmail hot reload handlers", () => {
     });
   }
 
-  function createGmailConfig(account: string): OpenClawConfig {
+  function createGmailConfig(account: string): AforaConfig {
     return {
       gateway: { reload: {} },
       hooks: { enabled: true, token: "test-token", gmail: { account } },
@@ -3482,20 +3482,20 @@ describe("gateway Gmail hot reload handlers", () => {
   it("retries managed no-op reloads without publishing superseded secret failures", async () => {
     vi.useFakeTimers();
     const writeListenerRef = createConfigWriteListenerRef();
-    const initialConfig: OpenClawConfig = {
+    const initialConfig: AforaConfig = {
       gateway: { reload: {} },
       messages: { visibleReplies: "automatic" },
     };
-    const nextConfig: OpenClawConfig = {
+    const nextConfig: AforaConfig = {
       gateway: { reload: {} },
       messages: { visibleReplies: "message_tool" },
     };
-    const snapshot = (config: OpenClawConfig) => makePreparedSecretsSnapshot(config);
+    const snapshot = (config: AforaConfig) => makePreparedSecretsSnapshot(config);
     const failurePublicationEligibility: boolean[] = [];
     let preparationAttempt = 0;
     const activateRuntimeSecrets = vi.fn(
       async (
-        config: OpenClawConfig,
+        config: AforaConfig,
         activation: { canPublishFailureAsDegraded?: () => boolean },
       ) => {
         const attempt = preparationAttempt++;
@@ -3565,7 +3565,7 @@ describe("gateway Gmail hot reload handlers", () => {
 
   it("refreshes owner refs when only the resolved source snapshot changes", async () => {
     vi.useFakeTimers();
-    const authAgentDir = "/tmp/openclaw-source-only-auth-owner";
+    const authAgentDir = "/tmp/afora-source-only-auth-owner";
     const authProfileId = "openai:source-only";
     const authOwnerId = resolveAuthProfileSecretOwnerId({
       agentDir: authAgentDir,
@@ -3575,11 +3575,11 @@ describe("gateway Gmail hot reload handlers", () => {
     const secondRef = { source: "env" as const, provider: "default", id: "TTS_SECOND" };
     const thirdRef = { source: "env" as const, provider: "default", id: "TTS_THIRD" };
     const fourthRef = { source: "env" as const, provider: "default", id: "TTS_FOURTH" };
-    const sourceConfig = (ref: typeof firstRef): OpenClawConfig => ({
+    const sourceConfig = (ref: typeof firstRef): AforaConfig => ({
       gateway: { reload: {} },
       tts: { providers: { elevenlabs: { apiKey: ref } } },
     });
-    const runtimeConfig: OpenClawConfig = {
+    const runtimeConfig: AforaConfig = {
       gateway: { reload: {} },
       tts: { providers: { elevenlabs: { apiKey: String(42) } } },
     };
@@ -3645,7 +3645,7 @@ describe("gateway Gmail hot reload handlers", () => {
       }),
     );
     const writeListenerRef = createConfigWriteListenerRef();
-    const activateRuntimeSecrets = vi.fn(async (config: OpenClawConfig, _params: unknown) =>
+    const activateRuntimeSecrets = vi.fn(async (config: AforaConfig, _params: unknown) =>
       makePreparedSecretsSnapshot(config, {
         config: runtimeConfig,
         authStores: [
@@ -3682,7 +3682,7 @@ describe("gateway Gmail hot reload handlers", () => {
     const reloader = startManagedGatewayConfigReloader({
       initialConfig: runtimeConfig,
       readSnapshot: vi.fn(async () => ({
-        path: "/tmp/openclaw.json",
+        path: "/tmp/afora.json",
         exists: true,
         raw: "{}",
         parsed: nextSourceConfig,
@@ -3789,7 +3789,7 @@ describe("gateway Gmail hot reload handlers", () => {
         }),
       ).toBe("stale");
 
-      activateRuntimeSecrets.mockImplementationOnce(async (config: OpenClawConfig) =>
+      activateRuntimeSecrets.mockImplementationOnce(async (config: AforaConfig) =>
         makePreparedSecretsSnapshot(config, {
           config: { ...runtimeConfig, logging: { level: "debug" } },
           secretOwners: [
@@ -3836,7 +3836,7 @@ describe("gateway Gmail hot reload handlers", () => {
       const preparationGate = new Promise<void>((resolve) => {
         releasePreparation = resolve;
       });
-      activateRuntimeSecrets.mockImplementationOnce(async (config: OpenClawConfig) => {
+      activateRuntimeSecrets.mockImplementationOnce(async (config: AforaConfig) => {
         markPreparationStarted?.();
         await preparationGate;
         return makePreparedSecretsSnapshot(config, {
@@ -3896,7 +3896,7 @@ describe("gateway Gmail hot reload handlers", () => {
 
   it("rejects ownerless irreversible plans but applies safe hot plans", async () => {
     vi.useFakeTimers();
-    const initialConfig: OpenClawConfig = {
+    const initialConfig: AforaConfig = {
       gateway: {
         port: 18789,
         reload: {},
@@ -3910,7 +3910,7 @@ describe("gateway Gmail hot reload handlers", () => {
       logging: { level: "info" },
     };
     const terminalPolicy = createTerminalLaunchPolicy(initialConfig);
-    const prepareTerminalConfig = vi.fn((plan: GatewayReloadPlan, nextConfig: OpenClawConfig) => {
+    const prepareTerminalConfig = vi.fn((plan: GatewayReloadPlan, nextConfig: AforaConfig) => {
       terminalPolicy.prepareConfig(nextConfig, { restartPending: plan.restartGateway });
     });
     const reconcileTerminalSessions = vi.fn();
@@ -3920,7 +3920,7 @@ describe("gateway Gmail hot reload handlers", () => {
     const writeListenerRef = createConfigWriteListenerRef();
     let snapshotConfig = initialConfig;
     let snapshotHash = "initial";
-    const activateRuntimeSecrets = vi.fn(async (config: OpenClawConfig) =>
+    const activateRuntimeSecrets = vi.fn(async (config: AforaConfig) =>
       makePreparedSecretsSnapshot(config),
     );
     const reloader = startManagedGatewayConfigReloader({
@@ -3940,7 +3940,7 @@ describe("gateway Gmail hot reload handlers", () => {
       restartRecoveryAvailable: false,
     });
     let revision = 0;
-    const writeConfig = (config: OpenClawConfig, hash: string) => {
+    const writeConfig = (config: AforaConfig, hash: string) => {
       const listener = writeListenerRef.current;
       if (!listener) {
         throw new Error("Expected config write listener to be registered");
@@ -3981,7 +3981,7 @@ describe("gateway Gmail hot reload handlers", () => {
           },
           surface: "irreversible hot reload",
         },
-      ] satisfies Array<{ label: string; config: OpenClawConfig; surface: string }>;
+      ] satisfies Array<{ label: string; config: AforaConfig; surface: string }>;
 
       for (const testCase of rejectedConfigs) {
         writeConfig(testCase.config, `${testCase.label}-unsupported`);
@@ -4001,7 +4001,7 @@ describe("gateway Gmail hot reload handlers", () => {
         logReload.error.mockClear();
       }
 
-      const safeConfig: OpenClawConfig = {
+      const safeConfig: AforaConfig = {
         ...initialConfig,
         logging: { level: "debug" },
       };
@@ -4028,14 +4028,14 @@ describe("gateway Gmail hot reload handlers", () => {
         reload: {},
         terminal: { enabled: true },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const rejectedConfig = {
       gateway: {
         port: 18790,
         reload: {},
         terminal: { enabled: false },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const terminalPolicy = createTerminalLaunchPolicy(initialConfig);
     const expectedReloadError = "config reload failed: Error: restart secrets preflight failed";
     let recordReloadFailure: (() => void) | undefined;
@@ -4061,7 +4061,7 @@ describe("gateway Gmail hot reload handlers", () => {
         recordRestartRetired?.();
       }
     };
-    const activateRuntimeSecrets = vi.fn(async (config: OpenClawConfig) => {
+    const activateRuntimeSecrets = vi.fn(async (config: AforaConfig) => {
       if (config.gateway?.port === rejectedConfig.gateway?.port) {
         throw new Error("restart secrets preflight failed");
       }
@@ -4191,7 +4191,7 @@ describe("gateway Gmail hot reload handlers", () => {
       const acceptedWithLogging = {
         ...harness.deferredConfig,
         logging: { level: "debug" },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const revertPromotion = harness.nextPromotion();
       harness.writeConfig(acceptedWithLogging, "accepted-a-plus-logging", 3);
       await vi.advanceTimersByTimeAsync(0);
@@ -4235,7 +4235,7 @@ describe("gateway Gmail hot reload handlers", () => {
     const preflightBlocked = new Promise<void>((resolve) => {
       releasePreflight = resolve;
     });
-    harness.activateRuntimeSecrets.mockImplementationOnce(async (config: OpenClawConfig) => {
+    harness.activateRuntimeSecrets.mockImplementationOnce(async (config: AforaConfig) => {
       markPreflightStarted?.();
       await preflightBlocked;
       return makePreparedSecretsSnapshot(config);
@@ -4298,7 +4298,7 @@ describe("gateway Gmail hot reload handlers", () => {
         const acceptedConfig = {
           ...harness.deferredConfig,
           logging: { level: "debug" },
-        } as OpenClawConfig;
+        } as AforaConfig;
         const acceptedPromotion = harness.nextPromotion();
         harness.writeConfig(acceptedConfig, `accepted-after-${_kind}`, 3);
         await vi.advanceTimersByTimeAsync(0);
@@ -4323,7 +4323,7 @@ describe("gateway Gmail hot reload handlers", () => {
         ...harness.deferredConfig.gateway,
         auth: { mode: "token" as const, token: "resolved-restart-token" },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     harness.setSecretUnavailable("RESTART_A_TOKEN");
 
     try {
@@ -4530,11 +4530,11 @@ describe("gateway Gmail hot reload handlers", () => {
     const initialConfig = {
       gateway: { reload: {} },
       hooks: { enabled: true, token: "test-token", path: "/old" },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const nextConfig = {
       gateway: { reload: {} },
       hooks: { enabled: true, token: "test-token", path: "/next" },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const initialSnapshot = makePreparedSecretsSnapshot(initialConfig);
     const refreshedSnapshot: PreparedSecretsRuntimeSnapshot = {
       ...initialSnapshot,
@@ -4564,7 +4564,7 @@ describe("gateway Gmail hot reload handlers", () => {
     );
     let preparationCount = 0;
     const activateRuntimeSecrets = Object.assign(
-      vi.fn(async (config: OpenClawConfig) => {
+      vi.fn(async (config: AforaConfig) => {
         preparationCount += 1;
         if (preparationCount === 1) {
           expect(
@@ -4696,7 +4696,7 @@ describe("gateway Gmail hot reload handlers", () => {
     vi.useFakeTimers();
     const writeListenerRef = createConfigWriteListenerRef();
     const initialConfig = createGmailConfig("old@example.com");
-    const nextConfig: OpenClawConfig = {
+    const nextConfig: AforaConfig = {
       ...createGmailConfig("next@example.com"),
       models: { providers: {} },
     };
@@ -4750,7 +4750,7 @@ describe("gateway Gmail hot reload handlers", () => {
       initialConfig,
       readSnapshot: vi.fn(async () => createValidConfigSnapshot(nextConfig, "hash-next")) as never,
       subscribeToWrites: captureConfigWriteListener(writeListenerRef),
-      activateRuntimeSecrets: vi.fn(async (config: OpenClawConfig) => {
+      activateRuntimeSecrets: vi.fn(async (config: AforaConfig) => {
         secretsEntered?.();
         await releaseSecretsPromise;
         return makePreparedSecretsSnapshot(config, { webTools: {} as never });
@@ -4786,11 +4786,11 @@ describe("gateway Gmail hot reload handlers", () => {
 
 describe("gateway plugin hot reload handlers", () => {
   it("restarts channels when the candidate env removes an active skip flag", async () => {
-    const envKey = "OPENCLAW_SKIP_CHANNELS";
+    const envKey = "AFORA_SKIP_CHANNELS";
     const previousValue = process.env[envKey];
     process.env[envKey] = "1";
     const targetEnv: NodeJS.ProcessEnv = { [envKey]: "1" };
-    const previousConfig = { env: { vars: { [envKey]: "1" } } } satisfies OpenClawConfig;
+    const previousConfig = { env: { vars: { [envKey]: "1" } } } satisfies AforaConfig;
     const runtimeEnv = prepareConfigRuntimeEnv({
       previousConfig,
       nextConfig: {},
@@ -4842,11 +4842,11 @@ describe("gateway plugin hot reload handlers", () => {
   });
 
   it("skips channel work when the candidate env adds a skip flag", async () => {
-    const envKey = "OPENCLAW_SKIP_PROVIDERS";
+    const envKey = "AFORA_SKIP_PROVIDERS";
     const previousValue = process.env[envKey];
     delete process.env[envKey];
     const targetEnv: NodeJS.ProcessEnv = {};
-    const nextConfig = { env: { vars: { [envKey]: "1" } } } satisfies OpenClawConfig;
+    const nextConfig = { env: { vars: { [envKey]: "1" } } } satisfies AforaConfig;
     const runtimeEnv = prepareConfigRuntimeEnv({
       previousConfig: {},
       nextConfig,
@@ -4897,30 +4897,30 @@ describe("gateway plugin hot reload handlers", () => {
     expect(stopChannel).not.toHaveBeenCalled();
     expect(startChannel).not.toHaveBeenCalled();
     expect(logChannels.info).toHaveBeenCalledWith(
-      "skipping channel reload (OPENCLAW_SKIP_CHANNELS=1 or OPENCLAW_SKIP_PROVIDERS=1)",
+      "skipping channel reload (AFORA_SKIP_CHANNELS=1 or AFORA_SKIP_PROVIDERS=1)",
     );
   });
 
   it("publishes candidate env before cron, plugin, and channel replacements start", async () => {
     vi.useFakeTimers();
-    const envKey = "OPENCLAW_TEST_HOT_RELOAD_SERVICE_ENV";
+    const envKey = "AFORA_TEST_HOT_RELOAD_SERVICE_ENV";
     const targetEnv: NodeJS.ProcessEnv = { [envKey]: "old" };
     const initialConfig = {
       gateway: { reload: {} },
       cron: { enabled: false },
       plugins: { enabled: false },
       env: { vars: { [envKey]: "old" } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const nextConfig = {
       ...initialConfig,
       cron: { enabled: true },
       plugins: { enabled: true },
       env: { vars: { [envKey]: "candidate" } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const compareConfig = {
       ...nextConfig,
       env: initialConfig.env,
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const runtimeEnv = prepareConfigRuntimeEnv({
       previousConfig: initialConfig,
       nextConfig,
@@ -5585,8 +5585,8 @@ describe("deferred channel reload abort generation", () => {
   afterEach(() => {
     hoisted.activeTaskCount.value = 0;
     vi.useRealTimers();
-    delete process.env.OPENCLAW_SKIP_CHANNELS;
-    delete process.env.OPENCLAW_SKIP_PROVIDERS;
+    delete process.env.AFORA_SKIP_CHANNELS;
+    delete process.env.AFORA_SKIP_PROVIDERS;
   });
 
   const createTestHandlers = (
@@ -5761,11 +5761,11 @@ describe("deferred channel reload abort generation", () => {
     const initialConfig = {
       gateway: { reload: {} },
       channels: { whatsapp: { enabled: true, selfChatMode: false } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const nextConfig = {
       gateway: { reload: {} },
       channels: { whatsapp: { enabled: true, selfChatMode: true } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const whatsappPlugin = {
       ...createChannelTestPluginBase({ id: "whatsapp" }),
       reload: {
@@ -5881,7 +5881,7 @@ describe("deferred channel reload abort generation", () => {
     let reloadWasCancelled = false;
     const reloadPlugins = vi.fn(
       async (params: {
-        nextConfig: OpenClawConfig;
+        nextConfig: AforaConfig;
         beforeReplace: (channels: ReadonlySet<ChannelKind>) => Promise<void>;
         isAborted?: () => boolean;
       }): Promise<GatewayPluginReloadResult> => {

@@ -1,11 +1,11 @@
 // Discord plugin module implements native command behavior.
 import { ApplicationCommandOptionType } from "discord-api-types/v10";
-import { loadPreparedModelCatalog, resolveAgentDir } from "openclaw/plugin-sdk/agent-runtime";
-import { resolveNativeCommandSessionTargets } from "openclaw/plugin-sdk/command-auth-native";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { buildPairingReply } from "openclaw/plugin-sdk/conversation-runtime";
-import { isDangerousNameMatchingEnabled } from "openclaw/plugin-sdk/dangerous-name-runtime";
-import { getAgentScopedMediaLocalRoots } from "openclaw/plugin-sdk/media-runtime";
+import { loadPreparedModelCatalog, resolveAgentDir } from "afora-agent/plugin-sdk/agent-runtime";
+import { resolveNativeCommandSessionTargets } from "afora-agent/plugin-sdk/command-auth-native";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { buildPairingReply } from "afora-agent/plugin-sdk/conversation-runtime";
+import { isDangerousNameMatchingEnabled } from "afora-agent/plugin-sdk/dangerous-name-runtime";
+import { getAgentScopedMediaLocalRoots } from "afora-agent/plugin-sdk/media-runtime";
 import {
   buildCommandTextFromArgs,
   findCommandByNativeName,
@@ -14,15 +14,15 @@ import {
   serializeCommandArgs,
   type ChatCommandDefinition,
   type NativeCommandSpec,
-} from "openclaw/plugin-sdk/native-command-registry";
+} from "afora-agent/plugin-sdk/native-command-registry";
 import type {
   PluginCommandCatalogDecision,
   PluginCommandNativeCandidate,
-} from "openclaw/plugin-sdk/plugin-command-runtime";
-import { resolveChunkMode, resolveTextChunkLimit } from "openclaw/plugin-sdk/reply-chunking";
-import { getRuntimeConfigSnapshot } from "openclaw/plugin-sdk/runtime-config-snapshot";
-import { createSubsystemLogger, logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { resolveOpenProviderRuntimeGroupPolicy } from "openclaw/plugin-sdk/runtime-group-policy";
+} from "afora-agent/plugin-sdk/plugin-command-runtime";
+import { resolveChunkMode, resolveTextChunkLimit } from "afora-agent/plugin-sdk/reply-chunking";
+import { getRuntimeConfigSnapshot } from "afora-agent/plugin-sdk/runtime-config-snapshot";
+import { createSubsystemLogger, logVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { resolveOpenProviderRuntimeGroupPolicy } from "afora-agent/plugin-sdk/runtime-group-policy";
 import {
   resolveDiscordAccountAllowFrom,
   resolveDiscordAccountDmPolicy,
@@ -95,7 +95,7 @@ const NON_PLUGIN_COMMAND_DISPATCH = Object.freeze({ kind: "non-plugin" as const 
 
 export function createDiscordNativeCommand(params: {
   command: NativeCommandSpec | PluginCommandNativeCandidate;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   discordConfig: DiscordConfig;
   accountId: string;
   sessionPrefix: string;
@@ -214,7 +214,7 @@ async function dispatchDiscordCommandInteraction(params: {
   prompt: string;
   command: ChatCommandDefinition;
   commandArgs?: DiscordCommandArgs;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   discordConfig: DiscordConfig;
   accountId: string;
   sessionPrefix: string;

@@ -9,7 +9,7 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("loadPromptTemplates", () => {
   it("keeps fallback descriptions on a UTF-16 boundary", async () => {
-    const root = tempDirs.make("openclaw-prompt-templates-");
+    const root = tempDirs.make("afora-prompt-templates-");
     const promptsDir = join(root, "prompts");
     await mkdir(promptsDir, { recursive: true });
     await writeFile(join(promptsDir, "emoji.md"), `${"a".repeat(59)}🚀tail\n`, "utf-8");
@@ -26,7 +26,7 @@ describe("loadPromptTemplates", () => {
   });
 
   it("preserves dash-prefixed Markdown as prompt content", async () => {
-    const root = tempDirs.make("openclaw-prompt-templates-");
+    const root = tempDirs.make("afora-prompt-templates-");
     const promptsDir = join(root, "prompts");
     await mkdir(promptsDir, { recursive: true });
     const content = "----\nname: bogus\ndescription: must remain Markdown\n---\n# Body\n";

@@ -4,12 +4,12 @@ import path from "node:path";
 import type {
   OpenKeyedStoreOptions,
   PluginStateSyncKeyedStore,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-runtime";
 import {
   createPluginStateSyncKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
-import { createPluginRuntimeMock } from "openclaw/plugin-sdk/plugin-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
+import { createPluginRuntimeMock } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   base64url,
@@ -48,7 +48,7 @@ function createRuntime(stateDir: string) {
   runtime.state.openSyncKeyedStore = <T>(options: OpenKeyedStoreOptions) =>
     createPluginStateSyncKeyedStoreForTests<T>("reef", {
       ...options,
-      env: { OPENCLAW_STATE_DIR: stateDir },
+      env: { AFORA_STATE_DIR: stateDir },
     });
   return runtime;
 }
@@ -65,7 +65,7 @@ describe("Reef SQLite state", () => {
 
   beforeEach(() => {
     resetPluginStateStoreForTests();
-    stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-reef-state-"));
+    stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-reef-state-"));
   });
 
   afterEach(() => {
@@ -234,7 +234,7 @@ describe("Reef SQLite state", () => {
     expect(loadReefSetupSession(createRuntime(stateDir))?.session).toBe("setup-secret");
     clearReefSetupSession(runtime);
     expect(loadReefSetupSession(runtime)).toBeUndefined();
-    expect(fs.existsSync(path.join(stateDir, "state", "openclaw.sqlite"))).toBe(true);
+    expect(fs.existsSync(path.join(stateDir, "state", "afora.sqlite"))).toBe(true);
     expect(fs.existsSync(path.join(stateDir, "data", "reef"))).toBe(false);
   });
 
@@ -439,7 +439,7 @@ describe("Reef SQLite state", () => {
       maxEntries: 3_000,
       overflowPolicy: "reject-new",
       defaultTtlMs: REEF_REPLAY_TTL_MS,
-      env: { OPENCLAW_STATE_DIR: stateDir },
+      env: { AFORA_STATE_DIR: stateDir },
     });
     expect(JSON.stringify(raw.entries())).not.toContain(body.text);
   });
@@ -460,7 +460,7 @@ describe("Reef SQLite state", () => {
       maxEntries: 3_000,
       overflowPolicy: "reject-new",
       defaultTtlMs: REEF_REPLAY_TTL_MS,
-      env: { OPENCLAW_STATE_DIR: stateDir },
+      env: { AFORA_STATE_DIR: stateDir },
     });
     const key = reefReplayStoreKey("alice", receiptId);
     raw.register(key, {

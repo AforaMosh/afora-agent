@@ -1,7 +1,7 @@
 // Nested subagent registry e2e tests cover requester/controller relationships
 // across orchestrator and leaf child sessions.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import "./subagent-registry.mocks.shared.js";
 import { countPendingDescendantRuns, countActiveDescendantRuns } from "./subagent-registry-read.js";

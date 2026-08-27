@@ -1,6 +1,6 @@
 // Memory Core plugin module implements manager source state behavior.
 import type { SQLInputValue } from "node:sqlite";
-import type { MemorySource } from "openclaw/plugin-sdk/memory-core-host-engine-storage";
+import type { MemorySource } from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
 
 export type MemorySourceFileStateRow = {
   path: string;

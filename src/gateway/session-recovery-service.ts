@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   ErrorCodes,
   errorShape,
@@ -11,7 +11,7 @@ import { inspectMainRestartRecoveryRolloverEligibility } from "../agents/main-se
 import { recoverSessionEntryFromRestartTombstone } from "../config/sessions/session-accessor.js";
 import type { SessionCreatedActor } from "../config/sessions/session-entry-provenance.js";
 import type { InternalSessionEntry } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   isSessionWorkAdmissionActive,
   runExclusiveSessionLifecycleMutation,
@@ -55,7 +55,7 @@ export async function recoverGatewaySession(params: {
   actor?: SessionCreatedActor;
   agentId?: string;
   authorizedPluginId?: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   commitGuard?: () => void;
   key: string;
   launchContinuation: (params: {

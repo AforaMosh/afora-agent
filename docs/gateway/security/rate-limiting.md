@@ -60,7 +60,7 @@ While locked out, connection attempts fail with:
 Attempts from other resolved IPs (including direct loopback) are unaffected
 during a lockout.
 
-Tune it under `gateway.auth.rateLimit` in `openclaw.json`:
+Tune it under `gateway.auth.rateLimit` in `afora.json`:
 
 ```json
 {
@@ -94,7 +94,7 @@ stays the client IP. This is not configurable.
 ### Unconfigured same-host reverse proxies
 
 When a request arrives from a loopback socket with forwarding headers but the
-proxy is not configured in `gateway.trustedProxies`, OpenClaw cannot safely
+proxy is not configured in `gateway.trustedProxies`, Afora cannot safely
 attribute the request to the claimed forwarded IP. Gateway-authenticated routes
 reject the request before credentials or fallback auth are checked. HTTP
 requests receive `403` with error type `proxy_attribution_required`; WebSocket
@@ -104,7 +104,7 @@ signature or credential policy, but they ignore forwarded client claims and use
 the non-exempt socket source for pre-auth limits.
 
 Configure the proxy address narrowly in `gateway.trustedProxies` and have the
-proxy overwrite or safely rebuild forwarding headers. OpenClaw then restores
+proxy overwrite or safely rebuild forwarding headers. Afora then restores
 validated per-client attribution and rate-limit buckets. See [Trusted Proxy
 Auth](/gateway/trusted-proxy-auth) and the [Gateway security
 guide](/gateway/security#reverse-proxy-configuration).
@@ -115,17 +115,17 @@ hardening does not classify that transport as a proxy. Do not use a same-host
 TCP forwarder as a remote-access security boundary; use managed Tailscale, SSH,
 or an HTTP reverse proxy configured as described above.
 
-OpenClaw-managed Tailscale Serve and Funnel use a separate private loopback
+Afora-managed Tailscale Serve and Funnel use a separate private loopback
 listener. Reaching that listener establishes the managed ingress path, and
 Tailscale's rewritten source address selects a normal non-exempt, resettable
 per-client bucket. Serve tokenless identity auth additionally requires a
 matching WhoIs result; Funnel requires its marker and password authentication.
 
 An externally preserved Funnel route that still targets the ordinary Gateway
-listener cannot establish this request provenance. OpenClaw leaves that route
+listener cannot establish this request provenance. Afora leaves that route
 unchanged and logs migration guidance. Plugin-authenticated webhook routes
 remain available under the rule above; Gateway-authenticated routes reject the
-unattributable ingress. Use `gateway.tailscale.mode: "funnel"` so OpenClaw can
+unattributable ingress. Use `gateway.tailscale.mode: "funnel"` so Afora can
 point the full Gateway route at its dedicated ingress.
 
 ### Webhooks

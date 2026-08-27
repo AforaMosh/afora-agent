@@ -4,7 +4,7 @@
 import { vi } from "vitest";
 import type { ChannelGatewayContext } from "../../channels/plugins/types.adapters.js";
 import type { ChannelAccountSnapshot } from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import { createRuntimeEnv } from "../../test-utils/plugin-runtime-env.js";
 
@@ -12,7 +12,7 @@ import { createRuntimeEnv } from "../../test-utils/plugin-runtime-env.js";
 export function createStartAccountContext<TAccount extends { accountId: string }>(params: {
   account: TAccount;
   abortSignal?: AbortSignal;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   runtime?: RuntimeEnv;
   statusPatchSink?: (next: ChannelAccountSnapshot) => void;
 }): ChannelGatewayContext<TAccount> {
@@ -25,7 +25,7 @@ export function createStartAccountContext<TAccount extends { accountId: string }
   return {
     accountId: params.account.accountId,
     account: params.account,
-    cfg: params.cfg ?? ({} as OpenClawConfig),
+    cfg: params.cfg ?? ({} as AforaConfig),
     runtime: params.runtime ?? createRuntimeEnv(),
     abortSignal: params.abortSignal ?? new AbortController().signal,
     log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },

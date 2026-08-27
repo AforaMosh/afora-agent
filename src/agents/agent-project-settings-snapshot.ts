@@ -1,7 +1,7 @@
 /** Builds embedded-agent settings snapshots from global, bundle, and project settings. */
 import path from "node:path";
 import { applyMergePatch } from "../config/merge-patch.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { readRootJsonObjectSync } from "../infra/json-files.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import type { BundleMcpServerConfig } from "../plugins/bundle-mcp.js";
@@ -47,14 +47,14 @@ function sanitizeProjectSettings(settings: AgentSettingsSnapshot): AgentSettings
   return sanitizeAgentSettingsSnapshot(settings);
 }
 
-function canReuseUnscopedCurrentPluginMetadataSnapshot(config: OpenClawConfig): boolean {
+function canReuseUnscopedCurrentPluginMetadataSnapshot(config: AforaConfig): boolean {
   // Unscoped snapshots are only reusable when config does not introduce
   // workspace-local plugin load paths that would change the registry contents.
   return normalizePluginsConfigWithResolver(config.plugins).loadPaths.length === 0;
 }
 
 function resolveUnscopedCurrentPluginMetadataSnapshot(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env: NodeJS.ProcessEnv;
   workspaceDir?: string;
 }): PluginMetadataSnapshot | undefined {
@@ -99,7 +99,7 @@ function loadBundleSettingsFile(params: {
  */
 export function loadEnabledBundleAgentSettingsSnapshot(params: {
   cwd: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   pluginMetadataSnapshot?: PluginMetadataSnapshot;
 }): AgentSettingsSnapshot {
@@ -190,7 +190,7 @@ export function loadEnabledBundleAgentSettingsSnapshot(params: {
 
 /** Resolves the configured project-settings trust policy for embedded agents. */
 export function resolveEmbeddedAgentProjectSettingsPolicy(
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): EmbeddedAgentProjectSettingsPolicy {
   const raw = cfg?.agents?.defaults?.embeddedAgent?.projectSettingsPolicy;
   if (raw === "trusted" || raw === "sanitize" || raw === "ignore") {

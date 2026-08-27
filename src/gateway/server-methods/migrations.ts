@@ -1,6 +1,6 @@
 // Gateway handlers expose reviewed, memory-only migration plans to trusted operators.
 import crypto from "node:crypto";
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import {
   ErrorCodes,
   errorShape,
@@ -17,7 +17,7 @@ import {
   listMemoryMigrationProviders,
   planProviderMemoryImport,
 } from "../../commands/migrate/memory-import.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { formatErrorMessage as errorMessage } from "../../infra/errors.js";
 import { summarizeMigrationItems } from "../../plugin-sdk/migration.js";
 import type { MigrationItem, MigrationPlan, MigrationProviderPlugin } from "../../plugins/types.js";
@@ -118,7 +118,7 @@ function fingerprintMemoryPlan(params: {
 
 function targetAgentOrRespond(
   rawAgentId: string,
-  config: OpenClawConfig,
+  config: AforaConfig,
   respond: RespondFn,
 ): string | undefined {
   if (!isValidAgentId(rawAgentId)) {
@@ -135,7 +135,7 @@ function targetAgentOrRespond(
 
 async function planMemoryProvider(params: {
   provider: MigrationProviderPlugin;
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentId: string;
   overwrite?: boolean;
 }): Promise<MemoryMigrationProviderPlan> {

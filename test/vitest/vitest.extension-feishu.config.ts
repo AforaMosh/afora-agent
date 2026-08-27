@@ -6,7 +6,7 @@ export function createExtensionFeishuVitestConfig(
   env: Record<string, string | undefined> = process.env,
 ) {
   return createExtensionVitestConfig("feishu", feishuExtensionTestRoots, env, {
-    includeOpenClawRuntimeSetup: false,
+    includeAforaRuntimeSetup: false,
   });
 }
 

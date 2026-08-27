@@ -3,11 +3,11 @@ import { mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { applyClawAddPlan } from "./add.js";
 import { buildClawAddPlan } from "./lifecycle.js";
 import { parseClawManifest } from "./schema.js";
@@ -17,7 +17,7 @@ import { ClawWorkspaceWriteError, createClawWorkspaceFiles } from "./workspace.j
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 async function writeSource(root: string, path: string, content: string): Promise<void> {
@@ -31,7 +31,7 @@ async function makePlan(params?: {
   createWorkspace?: boolean;
   mutateAfterPlan?: (plan: ClawAddPlan, root: string) => Promise<void>;
 }) {
-  const root = tempDirs.make("openclaw-claw-workspace-");
+  const root = tempDirs.make("afora-claw-workspace-");
   const workspace = join(root, "workspace-agent");
   await writeSource(root, "content/AGENTS.md", "# Agent\n");
   await writeSource(root, "content/policy.md", "Policy\n");
@@ -51,7 +51,7 @@ async function makePlan(params?: {
     name: "@acme/workspace-agent",
     version: "1.0.0",
     packageRoot: root,
-    manifestPath: join(root, "openclaw.claw.json"),
+    manifestPath: join(root, "afora.claw.json"),
     integrityKind: "development-snapshot",
     integrity: "sha256:manifest",
     byteLength: 0,
@@ -70,7 +70,7 @@ async function makePlan(params?: {
 }
 
 function stateEnv(root: string) {
-  return { OPENCLAW_STATE_DIR: join(root, "state") };
+  return { AFORA_STATE_DIR: join(root, "state") };
 }
 
 type WorkspaceFileRow = {
@@ -86,7 +86,7 @@ type WorkspaceFileRow = {
 };
 
 function readWorkspaceFileRows(agentId: string, root: string) {
-  const rows = openOpenClawStateDatabase({ env: stateEnv(root) })
+  const rows = openAforaStateDatabase({ env: stateEnv(root) })
     .db.prepare(
       `SELECT schema_version, agent_id, workspace, target_path, source_path,
               content_digest, status, created_at_ms, updated_at_ms
@@ -96,7 +96,7 @@ function readWorkspaceFileRows(agentId: string, root: string) {
     )
     .all(agentId) as WorkspaceFileRow[];
   return rows.map((row) => ({
-    schemaVersion: "openclaw.clawWorkspaceFileRecord.v1" as const,
+    schemaVersion: "afora.clawWorkspaceFileRecord.v1" as const,
     agentId: row.agent_id,
     workspace: row.workspace,
     path: row.target_path,
@@ -109,7 +109,7 @@ function readWorkspaceFileRows(agentId: string, root: string) {
 }
 
 function readInstallStatus(agentId: string, root: string): string | undefined {
-  const row = openOpenClawStateDatabase({ env: stateEnv(root) })
+  const row = openAforaStateDatabase({ env: stateEnv(root) })
     .db.prepare(`SELECT status FROM claw_installs WHERE agent_id = ?`)
     .get(agentId) as { status: string } | undefined;
   return row?.status;
@@ -117,7 +117,7 @@ function readInstallStatus(agentId: string, root: string): string | undefined {
 
 describe("createClawWorkspaceFiles", () => {
   it("materializes the CLAW.md body as managed SOUL.md content", async () => {
-    const root = tempDirs.make("openclaw-claw-body-workspace-");
+    const root = tempDirs.make("afora-claw-body-workspace-");
     const workspace = join(root, "workspace-agent");
     const body = Buffer.from("# Portable soul\n\nBe concise.\n");
     const manifest = parseClawManifest({ schemaVersion: 1, agent: { id: "workspace-agent" } });
@@ -160,7 +160,7 @@ describe("createClawWorkspaceFiles", () => {
   it.runIf(process.platform !== "win32")(
     "materializes the CLAW.md body through a symlinked package root",
     async () => {
-      const root = tempDirs.make("openclaw-claw-linked-package-");
+      const root = tempDirs.make("afora-claw-linked-package-");
       const realPackageRoot = join(root, "real-package");
       const linkedPackageRoot = join(root, "linked-package");
       const workspace = join(root, "workspace-agent");
@@ -213,7 +213,7 @@ describe("createClawWorkspaceFiles", () => {
     );
     expect(records).toEqual([
       expect.objectContaining({
-        schemaVersion: "openclaw.clawWorkspaceFileRecord.v1",
+        schemaVersion: "afora.clawWorkspaceFileRecord.v1",
         agentId: "workspace-agent",
         path: "AGENTS.md",
         sourcePath: "content/AGENTS.md",
@@ -259,7 +259,7 @@ describe("createClawWorkspaceFiles", () => {
   it.runIf(process.platform !== "win32")(
     "rejects a source replaced by a symlink after planning",
     async () => {
-      const outside = tempDirs.make("openclaw-claw-outside-");
+      const outside = tempDirs.make("afora-claw-outside-");
       await writeFile(join(outside, "outside.md"), "outside\n", "utf8");
       const { root, workspace, plan } = await makePlan({
         mutateAfterPlan: async (_plan, packageRoot) => {
@@ -345,7 +345,7 @@ describe("createClawWorkspaceFiles", () => {
     if (!action?.digest) {
       throw new Error("expected AGENTS.md workspace action");
     }
-    openOpenClawStateDatabase({ env: stateEnv(root) })
+    openAforaStateDatabase({ env: stateEnv(root) })
       .db.prepare(
         `INSERT INTO claw_workspace_files (
            schema_version, agent_id, workspace, target_path, source_path,
@@ -353,7 +353,7 @@ describe("createClawWorkspaceFiles", () => {
          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
-        "openclaw.clawWorkspaceFileRecord.v1",
+        "afora.clawWorkspaceFileRecord.v1",
         plan.agent.finalId,
         plan.agent.workspace,
         "AGENTS.md",
@@ -407,7 +407,7 @@ describe("createClawWorkspaceFiles", () => {
 describe("workspace files in the consented add lifecycle", () => {
   it("marks the root install complete after every declared file is created", async () => {
     const { root, plan } = await makePlan({ createWorkspace: false });
-    let config: OpenClawConfig = {};
+    let config: AforaConfig = {};
 
     const result = await applyClawAddPlan(plan, {
       consentPlanIntegrity: plan.planIntegrity,
@@ -437,7 +437,7 @@ describe("workspace files in the consented add lifecycle", () => {
         await writeFile(join(packageRoot, "content", "policy.md"), "changed\n", "utf8");
       },
     });
-    let config: OpenClawConfig = {};
+    let config: AforaConfig = {};
 
     const result = await applyClawAddPlan(plan, {
       consentPlanIntegrity: plan.planIntegrity,

@@ -1,6 +1,6 @@
 // GitHub Copilot source-token validation and account endpoint resolution.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { readProviderJsonResponse } from "openclaw/plugin-sdk/provider-http";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { readProviderJsonResponse } from "afora-agent/plugin-sdk/provider-http";
 import { PUBLIC_GITHUB_COPILOT_DOMAIN, resolveGithubCopilotDomain } from "./domain.js";
 import { CopilotRuntimeAuthError } from "./runtime-auth-error.js";
 
@@ -70,7 +70,7 @@ export async function resolveCopilotRuntimeAuth(params: {
   env?: NodeJS.ProcessEnv;
   fetchImpl?: typeof fetch;
   githubDomain?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): Promise<{
   apiKey: string;
   source: string;

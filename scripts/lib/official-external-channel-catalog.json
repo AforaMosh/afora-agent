@@ -1,16 +1,16 @@
 {
   "entries": [
     {
-      "name": "@openclaw/buzz",
+      "name": "@afora/buzz",
       "version": "2026.8.1",
-      "description": "Connect OpenClaw agents to Buzz rooms",
+      "description": "Connect Afora agents to Buzz rooms",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "channelConfigs": {
           "buzz": {
             "label": "Buzz",
-            "description": "Connect OpenClaw agents to Buzz team rooms.",
+            "description": "Connect Afora agents to Buzz team rooms.",
             "schema": {
               "$schema": "http://json-schema.org/draft-07/schema#",
               "type": "object",
@@ -270,7 +270,7 @@
           "selectionLabel": "Buzz",
           "docsPath": "/channels/buzz",
           "docsLabel": "buzz",
-          "blurb": "Connect OpenClaw agents to Buzz team rooms.",
+          "blurb": "Connect Afora agents to Buzz team rooms.",
           "markdownCapable": true,
           "order": 56,
           "setup": {
@@ -307,20 +307,20 @@
           }
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/buzz",
-          "npmSpec": "@openclaw/buzz",
+          "clawhubSpec": "clawhub:@afora/buzz",
+          "npmSpec": "@afora/buzz",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.7.2"
         }
       }
     },
     {
-      "name": "@openclaw/clickclack",
+      "name": "@afora/clickclack",
       "version": "2026.8.1",
-      "description": "OpenClaw ClickClack channel plugin",
+      "description": "Afora ClickClack channel plugin",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "contracts": {
           "tools": [
             "discussion"
@@ -636,8 +636,8 @@
           }
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/clickclack",
-          "npmSpec": "@openclaw/clickclack",
+          "clawhubSpec": "clawhub:@afora/clickclack",
+          "npmSpec": "@afora/clickclack",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.9",
           "allowInvalidConfigRecovery": true
@@ -645,12 +645,12 @@
       }
     },
     {
-      "name": "@openclaw/discord",
+      "name": "@afora/discord",
       "version": "2026.8.1",
-      "description": "OpenClaw Discord channel plugin for channels, DMs, commands, and app events.",
+      "description": "Afora Discord channel plugin for channels, DMs, commands, and app events.",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "contracts": {
           "tools": [
             "show_widget",
@@ -717,7 +717,7 @@
           }
         },
         "install": {
-          "npmSpec": "@openclaw/discord",
+          "npmSpec": "@afora/discord",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.5.26",
           "allowInvalidConfigRecovery": true
@@ -725,12 +725,12 @@
       }
     },
     {
-      "name": "@openclaw/feishu",
+      "name": "@afora/feishu",
       "version": "2026.8.1",
-      "description": "OpenClaw Feishu/Lark channel plugin for chats and workplace tools (community maintained by @m1heng).",
+      "description": "Afora Feishu/Lark channel plugin for chats and workplace tools (community maintained by @m1heng).",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "contracts": {
           "tools": [
             "feishu_app_scopes",
@@ -776,19 +776,19 @@
           }
         },
         "install": {
-          "npmSpec": "@openclaw/feishu",
+          "npmSpec": "@afora/feishu",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.5.29"
         }
       }
     },
     {
-      "name": "@openclaw/googlechat",
+      "name": "@afora/googlechat",
       "version": "2026.8.1",
-      "description": "OpenClaw Google Chat channel plugin for spaces and direct messages.",
+      "description": "Afora Google Chat channel plugin for spaces and direct messages.",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "channel": {
           "id": "googlechat",
           "configuredState": {
@@ -894,19 +894,19 @@
           }
         },
         "install": {
-          "npmSpec": "@openclaw/googlechat",
+          "npmSpec": "@afora/googlechat",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.4.10"
         }
       }
     },
     {
-      "name": "@openclaw/imessage",
+      "name": "@afora/imessage",
       "version": "2026.8.1",
-      "description": "OpenClaw iMessage channel plugin using imsg on a signed-in Mac",
+      "description": "Afora iMessage channel plugin using imsg on a signed-in Mac",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "channel": {
           "id": "imessage",
           "approvalFlags": [
@@ -965,8 +965,8 @@
           }
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/imessage",
-          "npmSpec": "@openclaw/imessage",
+          "clawhubSpec": "clawhub:@afora/imessage",
+          "npmSpec": "@afora/imessage",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.7.2",
           "allowInvalidConfigRecovery": true
@@ -974,12 +974,12 @@
       }
     },
     {
-      "name": "@openclaw/irc",
+      "name": "@afora/irc",
       "version": "2026.8.1",
-      "description": "OpenClaw IRC channel plugin",
+      "description": "Afora IRC channel plugin",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "channel": {
           "id": "irc",
           "configuredState": {
@@ -1083,8 +1083,8 @@
           }
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/irc",
-          "npmSpec": "@openclaw/irc",
+          "clawhubSpec": "clawhub:@afora/irc",
+          "npmSpec": "@afora/irc",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.9",
           "allowInvalidConfigRecovery": true
@@ -1092,12 +1092,12 @@
       }
     },
     {
-      "name": "@openclaw/line",
+      "name": "@afora/line",
       "version": "2026.8.1",
-      "description": "OpenClaw LINE channel plugin for LINE Bot API chats.",
+      "description": "Afora LINE channel plugin for LINE Bot API chats.",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "channel": {
           "id": "line",
           "configuredState": {
@@ -1180,19 +1180,19 @@
           }
         },
         "install": {
-          "npmSpec": "@openclaw/line",
+          "npmSpec": "@afora/line",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.4.10"
         }
       }
     },
     {
-      "name": "@openclaw/matrix",
+      "name": "@afora/matrix",
       "version": "2026.8.1",
-      "description": "OpenClaw Matrix channel plugin for rooms and direct messages.",
+      "description": "Afora Matrix channel plugin for rooms and direct messages.",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "channel": {
           "id": "matrix",
           "configuredState": {
@@ -1320,8 +1320,8 @@
           }
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/matrix",
-          "npmSpec": "@openclaw/matrix",
+          "clawhubSpec": "clawhub:@afora/matrix",
+          "npmSpec": "@afora/matrix",
           "defaultChoice": "clawhub",
           "minHostVersion": ">=2026.4.10",
           "allowInvalidConfigRecovery": true
@@ -1329,12 +1329,12 @@
       }
     },
     {
-      "name": "@openclaw/mattermost",
+      "name": "@afora/mattermost",
       "version": "2026.8.1",
-      "description": "OpenClaw Mattermost channel plugin",
+      "description": "Afora Mattermost channel plugin",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "channel": {
           "id": "mattermost",
           "configuredState": {
@@ -1395,8 +1395,8 @@
           }
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/mattermost",
-          "npmSpec": "@openclaw/mattermost",
+          "clawhubSpec": "clawhub:@afora/mattermost",
+          "npmSpec": "@afora/mattermost",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.9",
           "allowInvalidConfigRecovery": true
@@ -1404,12 +1404,12 @@
       }
     },
     {
-      "name": "@openclaw/msteams",
+      "name": "@afora/msteams",
       "version": "2026.8.1",
-      "description": "OpenClaw Microsoft Teams channel plugin for bot conversations.",
+      "description": "Afora Microsoft Teams channel plugin for bot conversations.",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "channel": {
           "id": "msteams",
           "configuredState": {
@@ -1441,19 +1441,19 @@
           }
         },
         "install": {
-          "npmSpec": "@openclaw/msteams",
+          "npmSpec": "@afora/msteams",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.4.10"
         }
       }
     },
     {
-      "name": "@openclaw/nextcloud-talk",
+      "name": "@afora/nextcloud-talk",
       "version": "2026.8.1",
-      "description": "OpenClaw Nextcloud Talk channel plugin for conversations.",
+      "description": "Afora Nextcloud Talk channel plugin for conversations.",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "channel": {
           "id": "nextcloud-talk",
           "configuredState": {
@@ -1553,19 +1553,19 @@
           }
         },
         "install": {
-          "npmSpec": "@openclaw/nextcloud-talk",
+          "npmSpec": "@afora/nextcloud-talk",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.4.10"
         }
       }
     },
     {
-      "name": "@openclaw/nostr",
+      "name": "@afora/nostr",
       "version": "2026.8.1",
-      "description": "OpenClaw Nostr channel plugin for NIP-04 encrypted direct messages.",
+      "description": "Afora Nostr channel plugin for NIP-04 encrypted direct messages.",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "channel": {
           "id": "nostr",
           "configuredState": {
@@ -1616,24 +1616,24 @@
           }
         },
         "install": {
-          "npmSpec": "@openclaw/nostr",
+          "npmSpec": "@afora/nostr",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.4.10"
         }
       }
     },
     {
-      "name": "@tencent-weixin/openclaw-weixin",
-      "description": "OpenClaw Weixin channel plugin by the Tencent Weixin team.",
+      "name": "@tencent-weixin/afora-weixin",
+      "description": "Afora Weixin channel plugin by the Tencent Weixin team.",
       "source": "external",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "plugin": {
-          "id": "openclaw-weixin",
+          "id": "afora-weixin",
           "label": "Weixin"
         },
         "channel": {
-          "id": "openclaw-weixin",
+          "id": "afora-weixin",
           "label": "Weixin",
           "selectionLabel": "Weixin（微信）",
           "detailLabel": "Weixin",
@@ -1648,7 +1648,7 @@
           "order": 75
         },
         "channelConfigs": {
-          "openclaw-weixin": {
+          "afora-weixin": {
             "label": "Weixin",
             "description": "Personal WeChat conversation channel.",
             "schema": {
@@ -1658,7 +1658,7 @@
           }
         },
         "install": {
-          "npmSpec": "@tencent-weixin/openclaw-weixin@2.4.6",
+          "npmSpec": "@tencent-weixin/afora-weixin@2.4.6",
           "defaultChoice": "npm",
           "expectedIntegrity": "sha512-qw9k3PLTiMWGNjjsknHgcTManH1w4j+Ji1ArWIaYLKCq3aFRsVwcqnPi127bvOoVMJGW4dbyJ8NECEMgoO+iRw==",
           "minHostVersion": ">=2026.5.12"
@@ -1666,17 +1666,17 @@
       }
     },
     {
-      "name": "@zalo-platforms/openclaw-zaloclawbot",
-      "description": "OpenClaw Zalo ClawBot channel plugin by the Zalo Platforms team.",
+      "name": "@zalo-platforms/afora-zaloclawbot",
+      "description": "Afora Zalo ClawBot channel plugin by the Zalo Platforms team.",
       "source": "external",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "plugin": {
-          "id": "openclaw-zaloclawbot",
+          "id": "afora-zaloclawbot",
           "label": "Zalo ClawBot"
         },
         "channel": {
-          "id": "openclaw-zaloclawbot",
+          "id": "afora-zaloclawbot",
           "label": "Zalo ClawBot",
           "selectionLabel": "Zalo ClawBot (QR)",
           "detailLabel": "Zalo ClawBot",
@@ -1690,7 +1690,7 @@
           "order": 82
         },
         "channelConfigs": {
-          "openclaw-zaloclawbot": {
+          "afora-zaloclawbot": {
             "label": "Zalo ClawBot",
             "description": "Personal Zalo assistant — QR-onboarded, owner-bound.",
             "schema": {
@@ -1700,7 +1700,7 @@
           }
         },
         "install": {
-          "npmSpec": "@zalo-platforms/openclaw-zaloclawbot@0.1.4",
+          "npmSpec": "@zalo-platforms/afora-zaloclawbot@0.1.4",
           "defaultChoice": "npm",
           "expectedIntegrity": "sha512-5IxZriHJYACLLGqkCPPsTP9tas62kXEOFqTFAFMdunAM3SPhIJwVFRp0WvoP/m7L2PX85weD0g8LOtxM93VDYg==",
           "minHostVersion": ">=2026.4.10"
@@ -1708,13 +1708,13 @@
       }
     },
     {
-      "name": "@tencent-connect/openclaw-qqbot",
-      "description": "OpenClaw QQ Bot channel plugin by the Tencent Connect team.",
+      "name": "@tencent-connect/afora-qqbot",
+      "description": "Afora QQ Bot channel plugin by the Tencent Connect team.",
       "source": "external",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "plugin": {
-          "id": "openclaw-qqbot",
+          "id": "afora-qqbot",
           "label": "QQ Bot"
         },
         "contracts": {
@@ -1776,7 +1776,7 @@
                       {
                         "anyOf": [
                           {
-                            "const": "openclaw:approval-disabled"
+                            "const": "afora:approval-disabled"
                           },
                           {
                             "type": "string",
@@ -1810,7 +1810,7 @@
                             {
                               "anyOf": [
                                 {
-                                  "const": "openclaw:approval-disabled"
+                                  "const": "afora:approval-disabled"
                                 },
                                 {
                                   "type": "string",
@@ -1856,19 +1856,19 @@
           }
         },
         "install": {
-          "npmSpec": "@tencent-connect/openclaw-qqbot@2.0.1",
+          "npmSpec": "@tencent-connect/afora-qqbot@2.0.1",
           "defaultChoice": "npm",
           "expectedIntegrity": "sha512-2010PaCummeQaxerLtaGfQ/5HChiXaW/KpTERid7V/1zyTs46S2ACi0hgZQ1SB7tH0t1InWr8tzVBJV/pLss3Q=="
         }
       }
     },
     {
-      "name": "@openclaw/raft",
+      "name": "@afora/raft",
       "version": "2026.8.1",
-      "description": "OpenClaw Raft channel plugin for Raft CLI wake bridges.",
+      "description": "Afora Raft channel plugin for Raft CLI wake bridges.",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "channelConfigs": {
           "raft": {
             "label": "Raft",
@@ -1942,19 +1942,19 @@
           }
         },
         "install": {
-          "npmSpec": "@openclaw/raft",
+          "npmSpec": "@afora/raft",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.8"
         }
       }
     },
     {
-      "name": "@openclaw/signal",
+      "name": "@afora/signal",
       "version": "2026.8.1",
-      "description": "OpenClaw Signal channel plugin",
+      "description": "Afora Signal channel plugin",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "channel": {
           "id": "signal",
           "approvalFlags": [
@@ -2026,8 +2026,8 @@
           }
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/signal",
-          "npmSpec": "@openclaw/signal",
+          "clawhubSpec": "clawhub:@afora/signal",
+          "npmSpec": "@afora/signal",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.9",
           "allowInvalidConfigRecovery": true
@@ -2035,12 +2035,12 @@
       }
     },
     {
-      "name": "@openclaw/slack",
+      "name": "@afora/slack",
       "version": "2026.8.1",
-      "description": "OpenClaw Slack channel plugin for channels, DMs, commands, and app events.",
+      "description": "Afora Slack channel plugin for channels, DMs, commands, and app events.",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "channelConfigs": {
           "slack": {
             "label": "Slack",
@@ -2160,7 +2160,7 @@
           }
         },
         "install": {
-          "npmSpec": "@openclaw/slack",
+          "npmSpec": "@afora/slack",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.5.28",
           "allowInvalidConfigRecovery": true
@@ -2168,12 +2168,12 @@
       }
     },
     {
-      "name": "@openclaw/sms",
+      "name": "@afora/sms",
       "version": "2026.8.1",
-      "description": "OpenClaw SMS/MMS channel plugin for Twilio messages.",
+      "description": "Afora SMS/MMS channel plugin for Twilio messages.",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "channel": {
           "id": "sms",
           "configuredState": {
@@ -2284,8 +2284,8 @@
           }
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/sms",
-          "npmSpec": "@openclaw/sms",
+          "clawhubSpec": "clawhub:@afora/sms",
+          "npmSpec": "@afora/sms",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.6.9",
           "allowInvalidConfigRecovery": true
@@ -2293,12 +2293,12 @@
       }
     },
     {
-      "name": "@openclaw/synology-chat",
+      "name": "@afora/synology-chat",
       "version": "2026.8.1",
-      "description": "Synology Chat channel plugin for OpenClaw channels and direct messages.",
+      "description": "Synology Chat channel plugin for Afora channels and direct messages.",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "channel": {
           "id": "synology-chat",
           "configuredState": {
@@ -2309,7 +2309,7 @@
                 "SYNOLOGY_NAS_HOST",
                 "SYNOLOGY_ALLOWED_USER_IDS",
                 "SYNOLOGY_RATE_LIMIT",
-                "OPENCLAW_BOT_NAME"
+                "AFORA_BOT_NAME"
               ]
             }
           },
@@ -2317,7 +2317,7 @@
           "selectionLabel": "Synology Chat (Webhook)",
           "docsPath": "/channels/synology-chat",
           "docsLabel": "synology-chat",
-          "blurb": "Connect your Synology NAS Chat to OpenClaw with full agent capabilities.",
+          "blurb": "Connect your Synology NAS Chat to Afora with full agent capabilities.",
           "order": 90,
           "setup": {
             "fields": [
@@ -2371,19 +2371,19 @@
           }
         },
         "install": {
-          "npmSpec": "@openclaw/synology-chat",
+          "npmSpec": "@afora/synology-chat",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.4.10"
         }
       }
     },
     {
-      "name": "@openclaw/tlon",
+      "name": "@afora/tlon",
       "version": "2026.8.1",
-      "description": "OpenClaw Tlon/Urbit channel plugin for chat workflows.",
+      "description": "Afora Tlon/Urbit channel plugin for chat workflows.",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "channel": {
           "id": "tlon",
           "label": "Tlon",
@@ -2465,25 +2465,25 @@
           }
         },
         "install": {
-          "npmSpec": "@openclaw/tlon",
+          "npmSpec": "@afora/tlon",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.4.10"
         }
       }
     },
     {
-      "name": "@openclaw/twitch",
+      "name": "@afora/twitch",
       "version": "2026.8.1",
-      "description": "OpenClaw Twitch channel plugin for chat and moderation workflows.",
+      "description": "Afora Twitch channel plugin for chat and moderation workflows.",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "channel": {
           "id": "twitch",
           "configuredState": {
             "env": {
               "anyOf": [
-                "OPENCLAW_TWITCH_ACCESS_TOKEN"
+                "AFORA_TWITCH_ACCESS_TOKEN"
               ]
             }
           },
@@ -2499,20 +2499,20 @@
           }
         },
         "install": {
-          "npmSpec": "@openclaw/twitch",
+          "npmSpec": "@afora/twitch",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.4.10"
         }
       }
     },
     {
-      "name": "@wecom/wecom-openclaw-plugin",
-      "description": "OpenClaw WeCom channel plugin by the Tencent WeCom team.",
+      "name": "@wecom/wecom-afora-plugin",
+      "description": "Afora WeCom channel plugin by the Tencent WeCom team.",
       "source": "external",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "plugin": {
-          "id": "wecom-openclaw-plugin",
+          "id": "wecom-afora-plugin",
           "label": "WeCom"
         },
         "contracts": {
@@ -2546,19 +2546,19 @@
           }
         },
         "install": {
-          "npmSpec": "@wecom/wecom-openclaw-plugin@2026.5.7",
+          "npmSpec": "@wecom/wecom-afora-plugin@2026.5.7",
           "defaultChoice": "npm",
           "expectedIntegrity": "sha512-TCkP9as00WfEhgFWG8YL/rcmaWGIshAki2HQh83nTRccGfVBCoGjrEboTTqq3yDmK9koWTV11zi8u8A4dNtvug=="
         }
       }
     },
     {
-      "name": "@openclaw/whatsapp",
+      "name": "@afora/whatsapp",
       "version": "2026.8.1",
-      "description": "OpenClaw WhatsApp channel plugin for WhatsApp Web chats.",
+      "description": "Afora WhatsApp channel plugin for WhatsApp Web chats.",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "contracts": {
           "tools": [
             "whatsapp_call"
@@ -2594,21 +2594,21 @@
           }
         },
         "install": {
-          "clawhubSpec": "clawhub:@openclaw/whatsapp",
-          "npmSpec": "@openclaw/whatsapp",
+          "clawhubSpec": "clawhub:@afora/whatsapp",
+          "npmSpec": "@afora/whatsapp",
           "defaultChoice": "clawhub",
           "minHostVersion": ">=2026.4.25"
         }
       }
     },
     {
-      "name": "openclaw-plugin-yuanbao",
-      "description": "OpenClaw Yuanbao channel plugin by the Tencent Yuanbao team.",
+      "name": "afora-plugin-yuanbao",
+      "description": "Afora Yuanbao channel plugin by the Tencent Yuanbao team.",
       "source": "external",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "plugin": {
-          "id": "openclaw-plugin-yuanbao",
+          "id": "afora-plugin-yuanbao",
           "label": "Yuanbao"
         },
         "contracts": {
@@ -2645,19 +2645,19 @@
           }
         },
         "install": {
-          "npmSpec": "openclaw-plugin-yuanbao@2.15.0",
+          "npmSpec": "afora-plugin-yuanbao@2.15.0",
           "defaultChoice": "npm",
           "expectedIntegrity": "sha512-3GD+mf3EjTSUTOAREjTHAyp/deXdpgqB+q+xE0b19Qtat4ADhUV1mHDwFkVCRqTCBY5ATFKtKcipoDejqFj/+w=="
         }
       }
     },
     {
-      "name": "@openclaw/zalo",
+      "name": "@afora/zalo",
       "version": "2026.8.1",
-      "description": "OpenClaw Zalo channel plugin for bot and webhook chats.",
+      "description": "Afora Zalo channel plugin for bot and webhook chats.",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "channel": {
           "id": "zalo",
           "configuredState": {
@@ -2713,19 +2713,19 @@
           }
         },
         "install": {
-          "npmSpec": "@openclaw/zalo",
+          "npmSpec": "@afora/zalo",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.4.10"
         }
       }
     },
     {
-      "name": "@openclaw/zalouser",
+      "name": "@afora/zalouser",
       "version": "2026.8.1",
-      "description": "OpenClaw Zalo Personal Account plugin via native zca-js integration.",
+      "description": "Afora Zalo Personal Account plugin via native zca-js integration.",
       "source": "official",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "contracts": {
           "tools": [
             "zalouser"
@@ -2762,7 +2762,7 @@
           }
         },
         "install": {
-          "npmSpec": "@openclaw/zalouser",
+          "npmSpec": "@afora/zalouser",
           "defaultChoice": "npm",
           "minHostVersion": ">=2026.4.10"
         }

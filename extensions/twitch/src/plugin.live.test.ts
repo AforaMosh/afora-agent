@@ -19,7 +19,7 @@
 
 import { StaticAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
-import { runPassiveAccountLifecycle } from "openclaw/plugin-sdk/channel-outbound";
+import { runPassiveAccountLifecycle } from "afora-agent/plugin-sdk/channel-outbound";
 import { describe, expect, it } from "vitest";
 
 const LIVE = process.env.TWITCH_LIVE_TEST === "1";

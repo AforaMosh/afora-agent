@@ -1,5 +1,5 @@
 // Reconciles adapter progress results with hook-bearing final delivery results.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { hasDeliveryResultIdentity } from "./deliver-payload.js";
 import type { OutboundDeliveryResult } from "./deliver-types.js";
 

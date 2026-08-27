@@ -24,11 +24,11 @@ export function formatGatewayAuthFailureMessage(params: {
   const isControlUi = isOperatorUiClient(client);
   const isWebchat = isWebchatClient(client);
   if (client?.mode === "node" && reason?.startsWith("trusted_proxy_missing_header_")) {
-    return "gateway rejected this node: trusted-proxy identity-header authentication is required and no usable machine credential was accepted; run `openclaw doctor` on the Gateway";
+    return "gateway rejected this node: trusted-proxy identity-header authentication is required and no usable machine credential was accepted; run `afora doctor` on the Gateway";
   }
   const uiHint = "open the dashboard URL and paste the token in Control UI settings";
   const missingUiTokenHint =
-    "paste in Control UI settings or openclaw doctor --generate-gateway-token; restart";
+    "paste in Control UI settings or afora doctor --generate-gateway-token; restart";
   const tokenHint = isCli
     ? "set gateway.remote.token to match gateway.auth.token"
     : isControlUi || isWebchat

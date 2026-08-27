@@ -7,7 +7,7 @@ import { importFileModule, resolveFunctionModuleExport } from "./module-loader.j
 
 describe("hooks module loader helpers", () => {
   it("imports file modules and bypasses the module cache when requested", async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hook-module-loader-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hook-module-loader-"));
     const modulePath = path.join(root, "hook handler.mjs");
     try {
       fs.writeFileSync(modulePath, 'export const value = "first";\n');

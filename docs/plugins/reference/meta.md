@@ -1,5 +1,5 @@
 ---
-summary: "Adds Meta model provider support to OpenClaw."
+summary: "Adds Meta model provider support to Afora."
 read_when:
   - You are installing, configuring, or auditing the meta plugin
 title: "Meta plugin"
@@ -7,12 +7,12 @@ title: "Meta plugin"
 
 # Meta plugin
 
-Adds Meta model provider support to OpenClaw.
+Adds Meta model provider support to Afora.
 
 ## Distribution
 
-- Package: `@openclaw/meta-provider`
-- Install route: npm; ClawHub: `clawhub:@openclaw/meta-provider`
+- Package: `@afora/meta-provider`
+- Install route: npm; ClawHub: `clawhub:@afora/meta-provider`
 
 ## Surface
 

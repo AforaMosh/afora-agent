@@ -1,7 +1,7 @@
 // Covers structured heartbeat delivery, text-only dedupe, and recovery ownership.
 import { describe, expect, it, vi } from "vitest";
 import { setReplyPayloadMetadata } from "../auto-reply/reply-payload.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { patchSessionEntryCore } from "../config/sessions/session-accessor.js";
 import type { SessionEntry } from "../config/sessions/types.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
@@ -19,7 +19,7 @@ installHeartbeatRunnerTestRuntime();
 describe("runHeartbeatOnce structured heartbeat delivery", () => {
   const TELEGRAM_GROUP = "-1001234567890";
 
-  function createConfig(tmpDir: string, storePath: string): OpenClawConfig {
+  function createConfig(tmpDir: string, storePath: string): AforaConfig {
     return {
       agents: {
         defaults: {
@@ -36,12 +36,12 @@ describe("runHeartbeatOnce structured heartbeat delivery", () => {
         },
       },
       session: { store: storePath },
-    } as OpenClawConfig;
+    } as AforaConfig;
   }
 
   function seedTelegramSession(
     storePath: string,
-    cfg: OpenClawConfig,
+    cfg: AforaConfig,
     entry: Partial<Parameters<typeof seedMainSessionStore>[2]> = {},
   ) {
     return seedMainSessionStore(storePath, cfg, {
@@ -53,7 +53,7 @@ describe("runHeartbeatOnce structured heartbeat delivery", () => {
   }
 
   function runHeartbeat(
-    cfg: OpenClawConfig,
+    cfg: AforaConfig,
     replySpy: HeartbeatDeps["getReplyFromConfig"],
     sendTelegram: ReturnType<typeof vi.fn>,
   ) {

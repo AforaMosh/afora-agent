@@ -115,7 +115,7 @@ function sanitizeSystemdUnitBackupContent(params: {
   if (params.fileManagedKeys.size === 0) {
     return params.content;
   }
-  // Backups should not retain file-managed secrets that OpenClaw moved into the
+  // Backups should not retain file-managed secrets that Afora moved into the
   // generated EnvironmentFile during this rewrite.
   const sanitizedLines: string[] = [];
   for (const rawLine of params.content.split("\n")) {
@@ -317,7 +317,7 @@ async function restoreSystemdFileSnapshot(
     return;
   }
   await fs.mkdir(path.dirname(filePath), { recursive: true });
-  const rollbackPath = `${filePath}.openclaw-${randomUUID()}.rollback`;
+  const rollbackPath = `${filePath}.afora-${randomUUID()}.rollback`;
   try {
     await fs.writeFile(rollbackPath, snapshot.contents, {
       flag: "wx",
@@ -335,7 +335,7 @@ async function publishSystemdUnit(params: {
   contents: string;
 }): Promise<void> {
   const previous = await readSystemdFileSnapshot(params.unitPath);
-  const temporaryPath = `${params.unitPath}.openclaw-${randomUUID()}.tmp`;
+  const temporaryPath = `${params.unitPath}.afora-${randomUUID()}.tmp`;
   await fs.writeFile(temporaryPath, params.contents, {
     encoding: "utf8",
     flag: "wx",
@@ -374,12 +374,12 @@ async function writeSystemdGatewayEnvironmentFile(params: {
   /** Keys owned by the previously installed service. Preserve the prior ownership record so
    *  deleting a managed dotenv key cannot reclassify its stale file value as operator-owned. */
   priorManagedKeys?: Iterable<string>;
-  /** OpenClaw-managed keys that must not be preserved from an old env file; stale file values
+  /** Afora-managed keys that must not be preserved from an old env file; stale file values
    *  would override fresh inline Environment= entries because EnvironmentFile takes precedence. */
   inlineManagedKeys?: ReadonlySet<string>;
   /** File-managed keys that should be written from current environment values or removed when absent. */
   fileManagedKeys?: ReadonlySet<string>;
-  /** State-dir .env keys OpenClaw previously managed but is now skipping (unresolved shell
+  /** State-dir .env keys Afora previously managed but is now skipping (unresolved shell
    *  references). A prior re-stage may have written a stale literal value for them; drop it so
    *  the regenerated env file no longer carries the obsolete reference. */
   skippedManagedKeys?: Iterable<string>;
@@ -402,7 +402,7 @@ async function writeSystemdGatewayEnvironmentFile(params: {
   // Read existing env files first so we can preserve operator-added secrets
   // (e.g. provider API keys) across upgrades and re-stages. Node units used
   // to share gateway.systemd.env, so migrate those entries into node.systemd.env.
-  // OpenClaw-managed keys (identified by inlineManagedKeys) are excluded: a stale
+  // Afora-managed keys (identified by inlineManagedKeys) are excluded: a stale
   // file copy would override the fresh inline Environment= value because systemd's
   // EnvironmentFile takes precedence over inline Environment= directives.
   const existing: Record<string, string> = {};
@@ -478,7 +478,7 @@ async function removeNodeSystemdManagedEnvironmentKeys(env: GatewayServiceEnv): 
   } catch {
     return;
   }
-  const managedKeys = new Set(["OPENCLAW_GATEWAY_TOKEN", "OPENCLAW_GATEWAY_PASSWORD"]);
+  const managedKeys = new Set(["AFORA_GATEWAY_TOKEN", "AFORA_GATEWAY_PASSWORD"]);
   const remaining = Object.fromEntries(
     Object.entries(existingFile.environment).filter(([key, value]) => {
       const normalized = normalizeServiceEnvKey(key);

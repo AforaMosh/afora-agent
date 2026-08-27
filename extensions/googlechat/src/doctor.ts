@@ -3,7 +3,7 @@ import {
   buildMutableAllowEntryDetector,
   collectStandardAllowlistLists,
   createDangerousNameMatchingMutableAllowlistWarningCollector,
-} from "openclaw/plugin-sdk/channel-policy";
+} from "afora-agent/plugin-sdk/channel-policy";
 
 const isGoogleChatMutableAllowEntry = buildMutableAllowEntryDetector({
   prefixes: ["googlechat:", "google-chat:", "gchat:", "users/"],

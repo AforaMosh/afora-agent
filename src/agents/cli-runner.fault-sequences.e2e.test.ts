@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { onAgentEvent } from "../infra/agent-events.js";
 import type { RunExit } from "../process/supervisor/types.js";
 import { createTestAdmittedRunContext } from "./admitted-run-context.test-support.js";
@@ -82,7 +82,7 @@ type OuterRunOptions = {
 const PRIMARY_MODEL = "sonnet-4.6";
 const FALLBACK_MODEL = "sonnet-4.5";
 const RESEED_PROMPT = [
-  "Continue this conversation using the OpenClaw transcript below as prior session history.",
+  "Continue this conversation using the Afora transcript below as prior session history.",
   "",
   "<conversation_history>",
   "User: earlier context",
@@ -106,7 +106,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  const rawRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-cli-fault-sequences-"));
+  const rawRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-cli-fault-sequences-"));
   scenarioRoot = await fs.realpath(rawRoot);
   supervisorSpawnMock.mockReset();
   testMocks.nativeRunBudgetAttempt.mockReset();
@@ -128,7 +128,7 @@ afterEach(async () => {
   await fs.rm(scenarioRoot, { recursive: true, force: true });
 });
 
-function fallbackConfig(fallbacks: string[] = []): OpenClawConfig {
+function fallbackConfig(fallbacks: string[] = []): AforaConfig {
   return {
     agents: {
       defaults: {
@@ -180,7 +180,7 @@ function applyBoundaryParams(
 ): PreparedCliRunContext {
   context.params = {
     ...context.params,
-    sessionId: "openclaw-session",
+    sessionId: "afora-session",
     sessionKey: params.sessionKey ?? "agent:main:cli-fault-e2e",
     sessionFile: path.join(scenarioRoot, "session.jsonl"),
     workspaceDir: scenarioRoot,
@@ -209,7 +209,7 @@ function buildProcessContext(params: CliBoundaryParams): PreparedCliRunContext {
 function buildReusableProcessContext(params: CliBoundaryParams): PreparedCliRunContext {
   const context = buildProcessContext(params);
   context.reusableCliSession = { mode: "reuse", sessionId: "source-cli-session" };
-  context.openClawHistoryPrompt = RESEED_PROMPT;
+  context.aforaHistoryPrompt = RESEED_PROMPT;
   context.preparedBackend.backend = {
     ...context.preparedBackend.backend,
     resumeArgs: ["-p", "--resume", "{sessionId}", "--output-format", "stream-json"],
@@ -241,7 +241,7 @@ function buildReusableLiveContext(params: CliBoundaryParams): PreparedCliRunCont
     params,
   );
   context.reusableCliSession = { mode: "reuse", sessionId: "source-cli-session" };
-  context.openClawHistoryPrompt = RESEED_PROMPT;
+  context.aforaHistoryPrompt = RESEED_PROMPT;
   context.params.cliSessionBinding = {
     sessionId: "source-cli-session",
     resumeCheckpointId: "assistant-before-stall",
@@ -261,7 +261,7 @@ async function runOuter(options: OuterRunOptions = {}) {
     provider: "claude-cli",
     model: PRIMARY_MODEL,
     runId: "run-cli-fault-e2e",
-    sessionId: "openclaw-session",
+    sessionId: "afora-session",
     sessionKey: "agent:main:cli-fault-e2e",
     skipAuthProfileRuntime: true,
     fallbacksOverride: options.fallbacks,
@@ -272,7 +272,7 @@ async function runOuter(options: OuterRunOptions = {}) {
         ? options.runCandidate(provider, model)
         : testMocks.runCliAgent({
             admittedRunContext: createTestAdmittedRunContext("run-cli-fault-e2e"),
-            sessionId: "openclaw-session",
+            sessionId: "afora-session",
             sessionKey: "agent:main:cli-fault-e2e",
             sessionFile: path.join(scenarioRoot, "session.jsonl"),
             workspaceDir: scenarioRoot,
@@ -342,7 +342,7 @@ describe("CLI runner fault sequences", () => {
       runCandidate: async (provider, model) =>
         runEmbeddedAgent({
           admittedRunContext: createTestAdmittedRunContext("run-cli-bridge-e2e"),
-          sessionId: "openclaw-session",
+          sessionId: "afora-session",
           sessionKey: "agent:main:cli-bridge-e2e",
           workspaceDir: scenarioRoot,
           agentDir: path.join(scenarioRoot, "agent"),
@@ -433,7 +433,7 @@ describe("CLI runner fault sequences", () => {
             {
               type: "mcp_tool_use",
               id: "effect-1",
-              name: "mcp__openclaw__memory_search",
+              name: "mcp__afora__memory_search",
               input: { query: "wings" },
             },
             {
@@ -466,7 +466,7 @@ describe("CLI runner fault sequences", () => {
     expect(isFailoverError(error)).toBe(true);
     expect(error).toMatchObject({ code: "cli_max_turns" });
     expect(toolEvents.filter((event) => event.phase === "result")).toEqual([
-      expect.objectContaining({ name: "mcp__openclaw__memory_search" }),
+      expect.objectContaining({ name: "mcp__afora__memory_search" }),
     ]);
     expect(supervisorSpawnMock).toHaveBeenCalledTimes(1);
     expectCounts({
@@ -516,7 +516,7 @@ describe("CLI runner fault sequences", () => {
             {
               type: "mcp_tool_use",
               id: "active-effect",
-              name: "mcp__openclaw__memory_search",
+              name: "mcp__afora__memory_search",
               input: { query: "wings" },
             },
           ],

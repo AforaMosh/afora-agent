@@ -5,15 +5,15 @@
 
 import * as http from "node:http";
 import * as https from "node:https";
-import { collectErrorGraphCandidates, extractErrorCode } from "openclaw/plugin-sdk/error-runtime";
-import { safeParseJsonWithSchema, safeParseWithSchema } from "openclaw/plugin-sdk/extension-shared";
-import { parseStrictNonNegativeInteger } from "openclaw/plugin-sdk/number-runtime";
-import { readByteStreamWithLimit } from "openclaw/plugin-sdk/response-limit-runtime";
-import { classifyTransientNetworkErrorCode } from "openclaw/plugin-sdk/retry-runtime";
-import { sleep } from "openclaw/plugin-sdk/runtime-env";
-import { formatErrorMessage } from "openclaw/plugin-sdk/ssrf-runtime";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { chunkTextForOutbound } from "openclaw/plugin-sdk/text-chunking";
+import { collectErrorGraphCandidates, extractErrorCode } from "afora-agent/plugin-sdk/error-runtime";
+import { safeParseJsonWithSchema, safeParseWithSchema } from "afora-agent/plugin-sdk/extension-shared";
+import { parseStrictNonNegativeInteger } from "afora-agent/plugin-sdk/number-runtime";
+import { readByteStreamWithLimit } from "afora-agent/plugin-sdk/response-limit-runtime";
+import { classifyTransientNetworkErrorCode } from "afora-agent/plugin-sdk/retry-runtime";
+import { sleep } from "afora-agent/plugin-sdk/runtime-env";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/ssrf-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { chunkTextForOutbound } from "afora-agent/plugin-sdk/text-chunking";
 import { z } from "zod";
 import type { SynologyHostedMediaUrl } from "./outbound-media.js";
 
@@ -173,7 +173,7 @@ export async function sendMessage(
 }
 
 /**
- * Send an OpenClaw-hosted immutable file URL to Synology Chat.
+ * Send an Afora-hosted immutable file URL to Synology Chat.
  */
 export async function sendHostedFileUrl(
   incomingUrl: string,

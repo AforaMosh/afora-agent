@@ -95,9 +95,9 @@ for (const params of packageManifestContractTests) {
 describe("plugin package authoring metadata", () => {
   it("exposes the declared discovery and release entrypoints", () => {
     const manifest: PackageManifest = {
-      name: "@openclaw/example",
+      name: "@afora/example",
       version: "1.2.3",
-      openclaw: {
+      afora: {
         extensions: ["./src/index.ts"],
         runtimeExtensions: ["./dist/index.js"],
         setupEntry: "./src/setup.ts",
@@ -111,13 +111,13 @@ describe("plugin package authoring metadata", () => {
           minGatewayVersion: "2026.8.1",
         },
         install: {
-          npmSpec: "@openclaw/example",
+          npmSpec: "@afora/example",
           minHostVersion: "2026.8.1",
         },
       },
     };
 
-    expect(getPackageManifestMetadata(manifest)).toEqual(manifest.openclaw);
+    expect(getPackageManifestMetadata(manifest)).toEqual(manifest.afora);
     expect(resolvePackageExtensionEntries(manifest)).toEqual({
       status: "ok",
       entries: ["./src/index.ts"],
@@ -126,19 +126,19 @@ describe("plugin package authoring metadata", () => {
 
   it.each([
     {
-      name: "non-object openclaw metadata",
-      manifest: { openclaw: "invalid" } as unknown as PackageManifest,
-      error: "package.json openclaw must be an object",
+      name: "non-object afora metadata",
+      manifest: { afora: "invalid" } as unknown as PackageManifest,
+      error: "package.json afora must be an object",
     },
     {
       name: "non-array extension metadata",
-      manifest: { openclaw: { extensions: "./index.js" } } as unknown as PackageManifest,
-      error: "package.json openclaw.extensions must be an array",
+      manifest: { afora: { extensions: "./index.js" } } as unknown as PackageManifest,
+      error: "package.json afora.extensions must be an array",
     },
     {
       name: "blank extension metadata",
-      manifest: { openclaw: { extensions: [" "] } } as PackageManifest,
-      error: "package.json openclaw.extensions[0] must be a non-empty string",
+      manifest: { afora: { extensions: [" "] } } as PackageManifest,
+      error: "package.json afora.extensions[0] must be a non-empty string",
     },
   ])("fails fast on $name", ({ manifest, error }) => {
     expect(resolvePackageExtensionEntries(manifest)).toEqual({
@@ -153,7 +153,7 @@ describe("plugin package authoring metadata", () => {
       packageDir: process.cwd(),
       extensions: ["./src/one.ts", "./src/two.ts"],
       manifest: {
-        openclaw: {
+        afora: {
           extensions: ["./src/one.ts", "./src/two.ts"],
           runtimeExtensions: ["./dist/one.js"],
         },
@@ -163,7 +163,7 @@ describe("plugin package authoring metadata", () => {
     expect(result).toEqual({
       ok: false,
       error:
-        "package.json openclaw.runtimeExtensions length (1) must match openclaw.extensions length (2)",
+        "package.json afora.runtimeExtensions length (1) must match afora.extensions length (2)",
     });
   });
 
@@ -172,7 +172,7 @@ describe("plugin package authoring metadata", () => {
       packageDir: process.cwd(),
       extensions: [],
       manifest: {
-        openclaw: {
+        afora: {
           extensions: [],
           runtimeSetupEntry: "./dist/setup.js",
         },
@@ -181,7 +181,7 @@ describe("plugin package authoring metadata", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: "package.json openclaw.runtimeSetupEntry requires openclaw.setupEntry",
+      error: "package.json afora.runtimeSetupEntry requires afora.setupEntry",
     });
   });
 });

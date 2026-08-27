@@ -3,7 +3,7 @@ import type { PluginManifestRegistry } from "../plugins/manifest-registry.js";
 import { resolvePluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.js";
 import type { PluginMetadataSnapshotPluginIdScope } from "../plugins/plugin-metadata-snapshot.types.js";
 import { normalizePluginPolicyId } from "../plugins/plugin-policy-id.js";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import type { AforaConfig } from "./types.afora.js";
 
 function mergeRegistries(registries: readonly PluginManifestRegistry[]): PluginManifestRegistry {
   const grouped = new Map<
@@ -37,7 +37,7 @@ function mergeRegistries(registries: readonly PluginManifestRegistry[]): PluginM
 }
 
 export function resolveConfigWidePluginManifestRegistry(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
   stateDir?: string;
   allowCurrent?: boolean;

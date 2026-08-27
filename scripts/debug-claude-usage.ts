@@ -1,4 +1,4 @@
-// Debug Claude Usage script supports OpenClaw repository automation.
+// Debug Claude Usage script supports Afora repository automation.
 import { execFileSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -112,14 +112,14 @@ function printUsage(): void {
   console.log(`Usage: node --import tsx scripts/debug-claude-usage.ts [options]
 
 Options:
-  --agent <id>          OpenClaw agent id to inspect (default: main)
+  --agent <id>          Afora agent id to inspect (default: main)
   --session-key <key>   Claude web session key override
   --reveal              Print token/session values instead of masked identifiers
   --help, -h            Show this help message`);
 }
 
 const loadAuthProfiles = (agentId: string) => {
-  const stateRoot = process.env.OPENCLAW_STATE_DIR?.trim() || path.join(os.homedir(), ".openclaw");
+  const stateRoot = process.env.AFORA_STATE_DIR?.trim() || path.join(os.homedir(), ".afora");
   const authPath = path.join(stateRoot, "agents", agentId, "agent", "auth-profiles.json");
   if (!fs.existsSync(authPath)) {
     throw new Error(`Missing: ${authPath}`);
@@ -152,10 +152,10 @@ const pickAnthropicTokens = (store: {
   return found;
 };
 
-const resolveFetchTimeoutMs = (raw = process.env.OPENCLAW_DEBUG_CLAUDE_USAGE_FETCH_TIMEOUT_MS) => {
+const resolveFetchTimeoutMs = (raw = process.env.AFORA_DEBUG_CLAUDE_USAGE_FETCH_TIMEOUT_MS) => {
   return parseStrictIntegerOption({
     fallback: DEFAULT_FETCH_TIMEOUT_MS,
-    label: "OPENCLAW_DEBUG_CLAUDE_USAGE_FETCH_TIMEOUT_MS",
+    label: "AFORA_DEBUG_CLAUDE_USAGE_FETCH_TIMEOUT_MS",
     min: 1,
     raw,
   });
@@ -220,7 +220,7 @@ const fetchAnthropicOAuthUsage = async (token: string, options: FetchOptions = {
         Accept: "application/json",
         "anthropic-version": "2023-06-01",
         "anthropic-beta": "oauth-2025-04-20",
-        "User-Agent": "openclaw-debug",
+        "User-Agent": "afora-debug",
       },
     },
     options,

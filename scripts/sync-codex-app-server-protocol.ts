@@ -1,4 +1,4 @@
-// Sync Codex App Server Protocol script supports OpenClaw repository automation.
+// Sync Codex App Server Protocol script supports Afora repository automation.
 import fs from "node:fs/promises";
 import path from "node:path";
 import {

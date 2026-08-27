@@ -61,7 +61,7 @@ function renderChatGoalActionButton(options: {
   onClick: () => void;
 }): TemplateResult {
   return html`
-    <openclaw-tooltip content=${options.label}>
+    <afora-tooltip content=${options.label}>
       <button
         class="agent-chat__goal-action ${options.className}"
         type="button"
@@ -70,7 +70,7 @@ function renderChatGoalActionButton(options: {
       >
         ${options.icon}
       </button>
-    </openclaw-tooltip>
+    </afora-tooltip>
   `;
 }
 

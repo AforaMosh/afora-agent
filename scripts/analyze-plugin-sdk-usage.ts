@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Analyze Plugin Sdk Usage script supports OpenClaw repository automation.
+// Analyze Plugin Sdk Usage script supports Afora repository automation.
 import { main } from "./ts-topology.ts";
 
 const forwardedArgs = process.argv.slice(2);

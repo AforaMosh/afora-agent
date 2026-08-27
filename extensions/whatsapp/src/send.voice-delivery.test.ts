@@ -3,10 +3,10 @@ import type { WAMessage } from "baileys";
 import {
   createChannelPartialDeliveryError,
   isChannelPartialDeliveryError,
-} from "openclaw/plugin-sdk/channel-inbound";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { PlatformMessageNotDispatchedError } from "openclaw/plugin-sdk/error-runtime";
-import { MEDIA_FFMPEG_MAX_AUDIO_DURATION_SECS } from "openclaw/plugin-sdk/media-runtime";
+} from "afora-agent/plugin-sdk/channel-inbound";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { PlatformMessageNotDispatchedError } from "afora-agent/plugin-sdk/error-runtime";
+import { MEDIA_FFMPEG_MAX_AUDIO_DURATION_SECS } from "afora-agent/plugin-sdk/media-runtime";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createWebSendApi } from "./inbound/send-api.js";
 import { createAcceptedWhatsAppSendResult } from "./inbound/send-result.test-helper.js";
@@ -20,12 +20,12 @@ const hoisted = vi.hoisted(() => ({
 const recordChannelActivity = vi.hoisted(() => vi.fn());
 const loadWebMediaMock = vi.fn();
 let sendMessageWhatsApp: typeof import("./send.js").sendMessageWhatsApp;
-const WHATSAPP_TEST_CFG: OpenClawConfig = { channels: { whatsapp: {} } };
+const WHATSAPP_TEST_CFG: AforaConfig = { channels: { whatsapp: {} } };
 
-vi.mock("openclaw/plugin-sdk/channel-activity-runtime", async () => {
+vi.mock("afora-agent/plugin-sdk/channel-activity-runtime", async () => {
   const actual = await vi.importActual<
-    typeof import("openclaw/plugin-sdk/channel-activity-runtime")
-  >("openclaw/plugin-sdk/channel-activity-runtime");
+    typeof import("afora-agent/plugin-sdk/channel-activity-runtime")
+  >("afora-agent/plugin-sdk/channel-activity-runtime");
   return {
     ...actual,
     recordChannelActivity: (...args: unknown[]) => recordChannelActivity(...args),
@@ -45,9 +45,9 @@ vi.mock("./connection-controller-runtime-context.js", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/outbound-media", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/outbound-media")>(
-    "openclaw/plugin-sdk/outbound-media",
+vi.mock("afora-agent/plugin-sdk/outbound-media", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/outbound-media")>(
+    "afora-agent/plugin-sdk/outbound-media",
   );
   return {
     ...actual,
@@ -55,9 +55,9 @@ vi.mock("openclaw/plugin-sdk/outbound-media", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/media-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/media-runtime")>(
-    "openclaw/plugin-sdk/media-runtime",
+vi.mock("afora-agent/plugin-sdk/media-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/media-runtime")>(
+    "afora-agent/plugin-sdk/media-runtime",
   );
   return {
     ...actual,

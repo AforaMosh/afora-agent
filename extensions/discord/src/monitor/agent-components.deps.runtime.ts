@@ -1,3 +1,3 @@
 // Discord plugin module implements agent componentseps behavior.
-export { enqueueRoutedSystemEvent } from "openclaw/plugin-sdk/system-event-runtime";
-export { readSessionUpdatedAt, resolveStorePath } from "openclaw/plugin-sdk/session-store-runtime";
+export { enqueueRoutedSystemEvent } from "afora-agent/plugin-sdk/system-event-runtime";
+export { readSessionUpdatedAt, resolveStorePath } from "afora-agent/plugin-sdk/session-store-runtime";

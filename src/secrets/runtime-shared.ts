@@ -1,5 +1,5 @@
 /** Shared secrets runtime resolver context, assignments, and warning helpers. */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { coerceSecretRef, type SecretRef } from "../config/types.secrets.js";
 import type { PluginManifestRegistry } from "../plugins/manifest-registry.js";
 import { secretRefKey } from "./ref-contract.js";
@@ -82,7 +82,7 @@ export type SecretAssignmentOwner = Pick<
 };
 
 export type ResolverContext = {
-  sourceConfig: OpenClawConfig;
+  sourceConfig: AforaConfig;
   env: NodeJS.ProcessEnv;
   cache: SecretRefResolveCache;
   manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
@@ -91,13 +91,13 @@ export type ResolverContext = {
   assignments: SecretAssignment[];
 };
 
-export type SecretDefaults = NonNullable<OpenClawConfig["secrets"]>["defaults"];
+export type SecretDefaults = NonNullable<AforaConfig["secrets"]>["defaults"];
 
 /**
  * Creates the mutable collection context used while preparing a secrets runtime snapshot.
  */
 export function createResolverContext(params: {
-  sourceConfig: OpenClawConfig;
+  sourceConfig: AforaConfig;
   env: NodeJS.ProcessEnv;
   manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
 }): ResolverContext {

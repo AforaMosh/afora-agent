@@ -4,7 +4,7 @@
 // and therefore value-loads the tool-display/logging graph. Doctor contract
 // closures read streaming config during config-compat migration, and doctor
 // enumeration cold-loads those closures for every declaring plugin.
-import { asNullableRecord as asObjectRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord as asObjectRecord } from "@afora/normalization-core/record-coerce";
 import type { ChannelStreamingConfig } from "../config/types.base.js";
 import { asBoolean } from "../utils/boolean.js";
 

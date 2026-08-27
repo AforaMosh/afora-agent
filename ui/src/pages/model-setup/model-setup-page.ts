@@ -16,7 +16,7 @@ import { renderSettingsWorkspace } from "../../components/settings-workspace.ts"
 import { t } from "../../i18n/index.ts";
 import { formatUiError } from "../../lib/format-error.ts";
 import { isGatewayMethodAdvertised } from "../../lib/gateway-methods.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import type { ModelSetupDetectionConnection } from "./detect-cache.ts";
 import { ModelSetupIconLoader } from "./model-setup-icon-loader.ts";
@@ -41,7 +41,7 @@ import { renderModelSetup, resolveSetupBrandIcon } from "./view.ts";
 import { ModelSetupWizardRunner } from "./wizard-runner.ts";
 import type { ModelSetupWizardCompletion, ModelSetupWizardStartMethod } from "./wizard-runner.ts";
 
-const MODEL_SETUP_DOCS_URL = "https://docs.openclaw.ai/concepts/model-providers";
+const MODEL_SETUP_DOCS_URL = "https://docs.afora.ai/concepts/model-providers";
 
 type Candidate = SystemAgentSetupDetectResult["candidates"][number];
 type AuthOption = NonNullable<SystemAgentSetupDetectResult["authOptions"]>[number];
@@ -76,7 +76,7 @@ async function captureModelResult<T>(
   }
 }
 
-export class ModelSetupPage extends OpenClawLightDomElement {
+export class ModelSetupPage extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context!: ApplicationContext;
 
@@ -187,7 +187,7 @@ export class ModelSetupPage extends OpenClawLightDomElement {
             throw new Error("Connection changed before model activation started.");
           }
           return mutationClient.request<SystemAgentSetupActivateResult>(
-            "openclaw.setup.activate",
+            "afora.setup.activate",
             params,
             {
               timeoutMs: activationTimeoutForKind(params.kind),
@@ -350,7 +350,7 @@ export class ModelSetupPage extends OpenClawLightDomElement {
       client &&
       snapshot.phase === "connected" &&
       hasOperatorAdminAccess(snapshot.hello?.auth ?? null) &&
-      isGatewayMethodAdvertised(snapshot, "openclaw.setup.detect") === true,
+      isGatewayMethodAdvertised(snapshot, "afora.setup.detect") === true,
     );
   }
 
@@ -400,7 +400,7 @@ export class ModelSetupPage extends OpenClawLightDomElement {
     const snapshot = this.context.gateway.snapshot;
     return (
       this.canUseSetup(client) &&
-      isGatewayMethodAdvertised(snapshot, "openclaw.setup.verify") === true
+      isGatewayMethodAdvertised(snapshot, "afora.setup.verify") === true
     );
   }
 
@@ -477,7 +477,7 @@ export class ModelSetupPage extends OpenClawLightDomElement {
     preparedModelRef?: string,
   ): Promise<void> {
     const prepareOption =
-      startMethod === "openclaw.setup.prepare.start" ? this.pendingPrepareOption : null;
+      startMethod === "afora.setup.prepare.start" ? this.pendingPrepareOption : null;
     this.pendingPrepareOption = null;
     if (prepareOption && preparedModelRef) {
       const kind = providerAutoSetupKind(prepareOption.id);
@@ -494,11 +494,11 @@ export class ModelSetupPage extends OpenClawLightDomElement {
       this.wizard.fail(t("modelSetup.errors.requestFailed"));
       return;
     }
-    if (startMethod === "openclaw.setup.auth.start" && !result.setupComplete) {
+    if (startMethod === "afora.setup.auth.start" && !result.setupComplete) {
       this.wizard.fail(t("modelSetup.wizard.notComplete"));
       return;
     }
-    if (startMethod === "openclaw.setup.auth.start") {
+    if (startMethod === "afora.setup.auth.start") {
       this.activationState = {
         phase: "success",
         modelRef: result.configuredModel ?? t("modelSetup.success.configuredModel"),
@@ -618,11 +618,11 @@ export class ModelSetupPage extends OpenClawLightDomElement {
     const canAdmin = hasOperatorAdminAccess(snapshot.hello?.auth ?? null);
     const gatewayTooOld =
       snapshot.phase === "connected" &&
-      isGatewayMethodAdvertised(snapshot, "openclaw.setup.detect") !== true;
+      isGatewayMethodAdvertised(snapshot, "afora.setup.detect") !== true;
     const canVerify =
       canAdmin &&
       !gatewayTooOld &&
-      isGatewayMethodAdvertised(snapshot, "openclaw.setup.verify") === true;
+      isGatewayMethodAdvertised(snapshot, "afora.setup.verify") === true;
     const body = renderModelSetup({
       page: this.pageState,
       activation: this.activationState,
@@ -635,7 +635,7 @@ export class ModelSetupPage extends OpenClawLightDomElement {
       canPrepare:
         canAdmin &&
         !gatewayTooOld &&
-        isGatewayMethodAdvertised(snapshot, "openclaw.setup.prepare.start") === true,
+        isGatewayMethodAdvertised(snapshot, "afora.setup.prepare.start") === true,
       gatewayTooOld,
       refreshWarning: this.setupRefreshWarning,
       actionsDisabled: this.actionsDisabled(),
@@ -657,7 +657,7 @@ export class ModelSetupPage extends OpenClawLightDomElement {
         this.pendingPrepareOption = option;
         this.wizardMode = "prepare";
         void this.runWizardMutation(() =>
-          this.wizard.start(option.id, "openclaw.setup.prepare.start"),
+          this.wizard.start(option.id, "afora.setup.prepare.start"),
         );
       },
       onManualProviderChange: (providerId) => this.selectManualProvider(providerId),
@@ -701,6 +701,6 @@ export class ModelSetupPage extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-model-setup-page")) {
-  customElements.define("openclaw-model-setup-page", ModelSetupPage);
+if (!customElements.get("afora-model-setup-page")) {
+  customElements.define("afora-model-setup-page", ModelSetupPage);
 }

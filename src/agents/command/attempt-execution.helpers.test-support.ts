@@ -15,7 +15,7 @@ type AttemptExecutionHelpersTestApi = {
 
 function getTestApi(): AttemptExecutionHelpersTestApi {
   const api = (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.attemptExecutionHelpersTestApi")
+    Symbol.for("afora.attemptExecutionHelpersTestApi")
   ];
   if (!api) {
     throw new Error("attempt execution helpers test API is unavailable");

@@ -1,6 +1,6 @@
 import { readFileSync, statSync } from "node:fs";
 import { win32 } from "node:path";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import { z } from "zod";
 import {
   DEFAULT_SANDBOX_BASELINE,

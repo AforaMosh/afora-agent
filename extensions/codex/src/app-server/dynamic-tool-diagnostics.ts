@@ -1,7 +1,7 @@
 /**
  * Trusted diagnostics emitted around Codex dynamic tool execution lifecycle.
  */
-import { emitTrustedDiagnosticEvent } from "openclaw/plugin-sdk/diagnostic-runtime";
+import { emitTrustedDiagnosticEvent } from "afora-agent/plugin-sdk/diagnostic-runtime";
 import type { CodexDynamicToolCallParams, CodexDynamicToolCallResponse } from "./protocol.js";
 
 type DynamicToolDiagnosticContext = {

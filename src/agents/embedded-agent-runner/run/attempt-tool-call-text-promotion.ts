@@ -1,6 +1,6 @@
 /** Promotes safe standalone text tool calls into structured stream events. */
 import { randomUUID } from "node:crypto";
-import { stripCompactionReplayCheckpointInPlace } from "@openclaw/ai/transports";
+import { stripCompactionReplayCheckpointInPlace } from "@afora/ai/transports";
 import {
   createPromotedPlainTextToolCallEvents,
   normalizePlainTextToolCallStreamEvents,

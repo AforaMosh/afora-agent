@@ -1,20 +1,20 @@
 // Telegram tests cover exec approvals plugin behavior.
 import path from "node:path";
 import type {
-  OpenClawConfig,
+  AforaConfig,
   TelegramAccountConfig,
   TelegramExecApprovalConfig,
-} from "openclaw/plugin-sdk/config-contracts";
+} from "afora-agent/plugin-sdk/config-contracts";
 import {
   normalizeSessionDeliveryState,
   upsertSessionEntry,
-} from "openclaw/plugin-sdk/session-store-runtime";
-import { closeOpenClawAgentDatabasesForTest } from "openclaw/plugin-sdk/sqlite-runtime-testing";
+} from "afora-agent/plugin-sdk/session-store-runtime";
+import { closeAforaAgentDatabasesForTest } from "afora-agent/plugin-sdk/sqlite-runtime-testing";
 import {
-  resolvePreferredOpenClawTmpDir,
+  resolvePreferredAforaTmpDir,
   tempWorkspaceSync,
   type TempWorkspaceSync,
-} from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/temp-path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   getTelegramExecApprovalApprovers,
@@ -34,16 +34,16 @@ type TelegramExecApprovalRequest = Parameters<
 >[0]["request"];
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
   for (const workspace of tempWorkspaces.splice(0)) {
     workspace.cleanup();
   }
 });
 
 function buildConfig(
-  execApprovals?: NonNullable<NonNullable<OpenClawConfig["channels"]>["telegram"]>["execApprovals"],
-  channelOverrides?: Partial<NonNullable<NonNullable<OpenClawConfig["channels"]>["telegram"]>>,
-): OpenClawConfig {
+  execApprovals?: NonNullable<NonNullable<AforaConfig["channels"]>["telegram"]>["execApprovals"],
+  channelOverrides?: Partial<NonNullable<NonNullable<AforaConfig["channels"]>["telegram"]>>,
+): AforaConfig {
   return {
     channels: {
       telegram: {
@@ -52,7 +52,7 @@ function buildConfig(
         execApprovals,
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function telegramAccount(
@@ -73,7 +73,7 @@ function buildMultiAccountTelegramConfig(params: {
   opsExecApprovals?: TelegramExecApprovalConfig;
   defaultOverrides?: Partial<TelegramAccountConfig>;
   opsOverrides?: Partial<TelegramAccountConfig>;
-}): OpenClawConfig {
+}): AforaConfig {
   return {
     ...(params.sessionStorePath ? { session: { store: params.sessionStorePath } } : {}),
     channels: {
@@ -92,7 +92,7 @@ function buildMultiAccountTelegramConfig(params: {
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function makeChannelApprovalRequest(params: {
@@ -161,7 +161,7 @@ describe("telegram exec approvals", () => {
       commands: {
         ownerAllowFrom: ["telegram:12345", "tg:67890", "discord:ignored", "-100999"],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(getTelegramExecApprovalApprovers({ cfg })).toEqual(["12345", "67890"]);
     expect(isTelegramExecApprovalClientEnabled({ cfg })).toBe(true);
@@ -224,8 +224,8 @@ describe("telegram exec approvals", () => {
 
   it("scopes non-telegram turn sources to the stored telegram account", async () => {
     const workspace = tempWorkspaceSync({
-      rootDir: resolvePreferredOpenClawTmpDir(),
-      prefix: "openclaw-telegram-exec-approvals-",
+      rootDir: resolvePreferredAforaTmpDir(),
+      prefix: "afora-telegram-exec-approvals-",
     });
     tempWorkspaces.push(workspace);
     const tmpDir = workspace.dir;
@@ -327,7 +327,7 @@ describe("telegram exec approvals", () => {
           targets: [{ channel: "telegram", to: "123", accountId: "ops" }],
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const request: TelegramExecApprovalRequest = {
       id: "req-target-account",
       request: {
@@ -377,7 +377,7 @@ describe("telegram exec approvals", () => {
           ],
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const request: TelegramExecApprovalRequest = {
       id: "req-mixed-target-account",
       request: {
@@ -450,11 +450,11 @@ describe("telegram exec approvals", () => {
   describe("isTelegramExecApprovalTargetRecipient", () => {
     function buildTargetConfig(
       targets: Array<{ channel: string; to: string; accountId?: string }>,
-    ): OpenClawConfig {
+    ): AforaConfig {
       return {
         channels: { telegram: { botToken: "tok" } },
         approvals: { exec: { enabled: true, mode: "targets", targets } },
-      } as OpenClawConfig;
+      } as AforaConfig;
     }
 
     it("accepts sender who is a DM target", () => {
@@ -531,7 +531,7 @@ describe("telegram exec approvals", () => {
             targets: [{ channel: "telegram", to: "12345" }],
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       expect(isTelegramExecApprovalTargetRecipient({ cfg, senderId: "12345" })).toBe(false);
     });
 
@@ -569,7 +569,7 @@ describe("telegram exec approvals", () => {
             targets: [{ channel: "telegram", to: "12345" }],
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       expect(isTelegramExecApprovalAuthorizedSender({ cfg, senderId: "12345" })).toBe(true);
     });
   });

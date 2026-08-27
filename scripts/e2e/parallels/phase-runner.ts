@@ -1,8 +1,8 @@
-// Phase Runner script supports OpenClaw repository automation.
+// Phase Runner script supports Afora repository automation.
 import { appendFileSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
-import { clampTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
+import { clampTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
 import { tailText } from "../lib/text-file-utils.mjs";
 import { say, warn } from "./host-command.ts";
 

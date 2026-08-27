@@ -1,9 +1,9 @@
 import http from "node:http";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/ssrf-runtime")>(
-    "openclaw/plugin-sdk/ssrf-runtime",
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/ssrf-runtime")>(
+    "afora-agent/plugin-sdk/ssrf-runtime",
   );
   return {
     ...actual,

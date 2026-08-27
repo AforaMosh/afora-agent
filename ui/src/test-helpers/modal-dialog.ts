@@ -1,7 +1,7 @@
 import type WaDialog from "@awesome.me/webawesome/dist/components/dialog/dialog.js";
 // Control UI test helper supports modal dialog setup.
 import { expect, vi } from "vitest";
-import type { OpenClawModalDialog } from "../components/modal-dialog.ts";
+import type { AforaModalDialog } from "../components/modal-dialog.ts";
 
 type DialogMethodName = "showModal" | "close";
 type DialogDescriptorSnapshot = Record<DialogMethodName, PropertyDescriptor | undefined>;
@@ -51,7 +51,7 @@ export function installDialogPolyfill(): () => void {
 export function waitForConfirmDialogActions(): Promise<HTMLElement> {
   return vi.waitFor(() => {
     const actions = document.body.querySelector<HTMLElement>(
-      "openclaw-modal-dialog .exec-approval-actions",
+      "afora-modal-dialog .exec-approval-actions",
     );
     if (!actions) {
       throw new Error("Expected an open confirm dialog");
@@ -72,7 +72,7 @@ export function answerConfirmDialog(actions: HTMLElement, choice: "confirm" | "c
 
 /** Let each dialog owner release its module state before a test removes the DOM. */
 export function cancelOpenModalDialogs() {
-  for (const dialog of document.body.querySelectorAll("openclaw-modal-dialog")) {
+  for (const dialog of document.body.querySelectorAll("afora-modal-dialog")) {
     dialog.dispatchEvent(new CustomEvent("modal-cancel"));
   }
 }
@@ -80,8 +80,8 @@ export function cancelOpenModalDialogs() {
 /** Await a dialog whose owner loads it behind a lazy import, then read it. */
 export async function waitForRenderedModalDialog(container: HTMLElement) {
   await vi.waitFor(() => {
-    if (!container.querySelector("openclaw-modal-dialog")) {
-      throw new Error("Expected openclaw-modal-dialog");
+    if (!container.querySelector("afora-modal-dialog")) {
+      throw new Error("Expected afora-modal-dialog");
     }
   });
   return getRenderedModalDialog(container);
@@ -89,7 +89,7 @@ export async function waitForRenderedModalDialog(container: HTMLElement) {
 
 export async function waitForInputDialog(): Promise<HTMLInputElement> {
   for (let attempt = 0; attempt < 50; attempt += 1) {
-    const input = document.body.querySelector("openclaw-modal-dialog input");
+    const input = document.body.querySelector("afora-modal-dialog input");
     if (input instanceof HTMLInputElement) {
       return input;
     }
@@ -107,10 +107,10 @@ export async function submitInputDialog(value: string): Promise<void> {
 }
 
 export async function getRenderedModalDialog(container: HTMLElement) {
-  const modal = container.querySelector<OpenClawModalDialog>("openclaw-modal-dialog");
+  const modal = container.querySelector<AforaModalDialog>("afora-modal-dialog");
   expect(modal).toBeInstanceOf(HTMLElement);
   if (!modal) {
-    throw new Error("Expected openclaw-modal-dialog");
+    throw new Error("Expected afora-modal-dialog");
   }
   await modal.updateComplete;
   await nextFrame();

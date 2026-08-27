@@ -225,7 +225,7 @@ function collectWorkspaceTextFileSources(): WorkspaceTextFile[] {
 
 function collectSummaryWorkspaceTextFileSources(): WorkspaceTextFile[] {
   const pluginSdkFiles = collectWorkspaceTextFilesMatchingGit(
-    String.raw`openclaw/plugin-sdk/[a-z0-9][a-z0-9-]*`,
+    String.raw`afora/plugin-sdk/[a-z0-9][a-z0-9-]*`,
   );
   if (!pluginSdkFiles) {
     return collectWorkspaceTextFileSources();
@@ -302,10 +302,10 @@ function extractCompatTokensFromValues(values: readonly (string | undefined)[]):
         tokens.add(token);
       }
     }
-    for (const match of value.matchAll(/\bopenclaw\/[a-z0-9/-]+\b/g)) {
+    for (const match of value.matchAll(/\bafora\/[a-z0-9/-]+\b/g)) {
       tokens.add(match[0]);
     }
-    for (const match of value.matchAll(/\bOPENCLAW_[A-Z0-9_]+\b/g)) {
+    for (const match of value.matchAll(/\bAFORA_[A-Z0-9_]+\b/g)) {
       tokens.add(match[0]);
     }
     for (const match of value.matchAll(/\b[a-z][a-zA-Z0-9_]*(?:\.[a-zA-Z0-9_]+)+\b/g)) {

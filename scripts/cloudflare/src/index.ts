@@ -1,4 +1,4 @@
-export { OpenClawContainer } from "./container.js";
+export { AforaContainer } from "./container.js";
 
 interface ContainerStub {
   fetch(request: Request): Promise<Response>;
@@ -9,7 +9,7 @@ interface ContainerNamespace {
 }
 
 interface WorkerEnv {
-  OPENCLAW_CONTAINER: ContainerNamespace;
+  AFORA_CONTAINER: ContainerNamespace;
 }
 
 interface WorkerHandler {
@@ -18,11 +18,11 @@ interface WorkerHandler {
 
 // One stable name gives the installation one globally unique Durable Object.
 // That object is the outer single-writer fence for the Litestream replica.
-const INSTALLATION_INSTANCE = "openclaw-installation";
+const INSTALLATION_INSTANCE = "afora-installation";
 
 const worker: WorkerHandler = {
   async fetch(request, env) {
-    return env.OPENCLAW_CONTAINER.getByName(INSTALLATION_INSTANCE).fetch(request);
+    return env.AFORA_CONTAINER.getByName(INSTALLATION_INSTANCE).fetch(request);
   },
 };
 

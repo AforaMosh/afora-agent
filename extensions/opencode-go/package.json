@@ -1,22 +1,22 @@
 {
-  "name": "@openclaw/opencode-go-provider",
+  "name": "@afora/opencode-go-provider",
   "version": "2026.8.1",
-  "description": "OpenClaw OpenCode Go provider plugin",
+  "description": "Afora OpenCode Go provider plugin",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   },
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
     "install": {
-      "clawhubSpec": "clawhub:@openclaw/opencode-go-provider",
-      "npmSpec": "@openclaw/opencode-go-provider",
+      "clawhubSpec": "clawhub:@afora/opencode-go-provider",
+      "npmSpec": "@afora/opencode-go-provider",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.7.2"
     },
@@ -24,7 +24,7 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1",
+      "aforaVersion": "2026.8.1",
       "bundledDist": true
     },
     "release": {

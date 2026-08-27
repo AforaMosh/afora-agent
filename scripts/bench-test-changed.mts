@@ -170,7 +170,7 @@ export function resolveBenchRssResult({
 function runBenchCommand(params: BenchCommandParams) {
   const env = { ...process.env };
   if (typeof params.maxWorkers === "number") {
-    env.OPENCLAW_VITEST_MAX_WORKERS = String(params.maxWorkers);
+    env.AFORA_VITEST_MAX_WORKERS = String(params.maxWorkers);
   }
   const startedAt = process.hrtime.bigint();
   const commandArgs = params.rss ? ["-l", ...params.command] : params.command;

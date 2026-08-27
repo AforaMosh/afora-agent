@@ -2,7 +2,7 @@
  * Worker entrypoint for warming provider auth state off the main thread.
  */
 import { parentPort, workerData } from "node:worker_threads";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { replaceRuntimeAuthProfileStoreSnapshots, type AuthProfileStore } from "./auth-profiles.js";
 import type { RuntimeProviderAuthLookup } from "./model-auth.js";
 import { buildCurrentProviderAuthStateSnapshot } from "./model-provider-auth.js";
@@ -17,7 +17,7 @@ type ProviderAuthWarmRuntimeAuthStore = {
 };
 
 type ProviderAuthWarmWorkerInput = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   runtimeAuthStores?: ProviderAuthWarmRuntimeAuthStore[];
   runtimeAuthLookups?: Array<{
     agentId: string;

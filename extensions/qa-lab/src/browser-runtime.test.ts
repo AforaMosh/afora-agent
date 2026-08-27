@@ -1,5 +1,5 @@
 // Qa Lab tests cover browser runtime plugin behavior.
-import { MAX_TIMER_TIMEOUT_MS } from "openclaw/plugin-sdk/number-runtime";
+import { MAX_TIMER_TIMEOUT_MS } from "afora-agent/plugin-sdk/number-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   callQaBrowserRequest,
@@ -60,7 +60,7 @@ describe("browser-runtime", () => {
 
     await qaBrowserOpenTab(env, {
       url: "http://127.0.0.1:43124/control-ui/chat?session=test",
-      profile: "openclaw",
+      profile: "afora",
     });
 
     expect(env.gateway.call).toHaveBeenCalledWith(
@@ -69,7 +69,7 @@ describe("browser-runtime", () => {
         method: "POST",
         path: "/tabs/open",
         query: {
-          profile: "openclaw",
+          profile: "afora",
         },
         body: {
           url: "http://127.0.0.1:43124/control-ui/chat?session=test",
@@ -113,7 +113,7 @@ describe("browser-runtime", () => {
     const env = createEnv();
 
     await qaBrowserAct(env, {
-      profile: "openclaw",
+      profile: "afora",
       request: {
         kind: "type",
         ref: "12",
@@ -129,7 +129,7 @@ describe("browser-runtime", () => {
         method: "POST",
         path: "/act",
         query: {
-          profile: "openclaw",
+          profile: "afora",
         },
         body: {
           kind: "type",

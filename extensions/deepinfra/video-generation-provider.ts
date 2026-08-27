@@ -1,8 +1,8 @@
 // Deepinfra provider module implements model/runtime integration.
-import { extensionForMime } from "openclaw/plugin-sdk/media-mime";
-import { canonicalizeBase64 } from "openclaw/plugin-sdk/media-runtime";
-import { isProviderApiKeyConfigured } from "openclaw/plugin-sdk/provider-auth";
-import { resolveApiKeyForProvider } from "openclaw/plugin-sdk/provider-auth-runtime";
+import { extensionForMime } from "afora-agent/plugin-sdk/media-mime";
+import { canonicalizeBase64 } from "afora-agent/plugin-sdk/media-runtime";
+import { isProviderApiKeyConfigured } from "afora-agent/plugin-sdk/provider-auth";
+import { resolveApiKeyForProvider } from "afora-agent/plugin-sdk/provider-auth-runtime";
 import {
   assertOkOrThrowHttpError,
   createProviderOperationDeadline,
@@ -11,16 +11,16 @@ import {
   readProviderJsonResponse,
   resolveProviderHttpRequestConfig,
   resolveProviderOperationTimeoutMs,
-} from "openclaw/plugin-sdk/provider-http";
+} from "afora-agent/plugin-sdk/provider-http";
 import {
   asSafeIntegerInRange,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type {
   GeneratedVideoAsset,
   VideoGenerationProvider,
   VideoGenerationRequest,
-} from "openclaw/plugin-sdk/video-generation";
+} from "afora-agent/plugin-sdk/video-generation";
 import {
   DEEPINFRA_BASE_URL,
   DEEPINFRA_VIDEO_ASPECT_RATIOS,
@@ -153,7 +153,7 @@ function resolveDeepInfraVideoBaseUrl(req: VideoGenerationRequest): string {
     | (Record<string, unknown> & { baseUrl?: unknown })
     | undefined;
   // Canonical `baseUrl` only; legacy `nativeBaseUrl`/`/v1/inference` values are
-  // migrated by `openclaw doctor --fix` (doctor-contract-api.ts), never remapped here.
+  // migrated by `afora doctor --fix` (doctor-contract-api.ts), never remapped here.
   const baseUrl = normalizeDeepInfraBaseUrl(providerConfig?.baseUrl, DEEPINFRA_BASE_URL);
   // The native /v1/inference video route is retired; appending the OpenAI
   // videos path to it would target a URL no host serves, so fail closed before
@@ -161,7 +161,7 @@ function resolveDeepInfraVideoBaseUrl(req: VideoGenerationRequest): string {
   // carry credentials).
   if (baseUrl.includes("/v1/inference")) {
     throw new Error(
-      'DeepInfra video generation requires an OpenAI-compatible endpoint, but models.providers.deepinfra.baseUrl targets the retired native /v1/inference surface. Run "openclaw doctor --fix" (api.deepinfra.com migrates automatically; custom hosts must set baseUrl to an OpenAI-compatible videos endpoint).',
+      'DeepInfra video generation requires an OpenAI-compatible endpoint, but models.providers.deepinfra.baseUrl targets the retired native /v1/inference surface. Run "afora doctor --fix" (api.deepinfra.com migrates automatically; custom hosts must set baseUrl to an OpenAI-compatible videos endpoint).',
     );
   }
   return baseUrl;

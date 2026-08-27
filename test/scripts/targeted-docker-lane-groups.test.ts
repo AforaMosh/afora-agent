@@ -25,7 +25,7 @@ describe("scripts/plan-targeted-docker-lane-groups", () => {
         lanes:
           "doctor-switch update-channel-switch published-upgrade-survivor plugins-offline plugin-update",
         upgradeSurvivorBaselines:
-          "openclaw@2026.5.3-1 openclaw@2026.5.3 openclaw@2026.5.2 openclaw@2026.4.23",
+          "afora@2026.5.3-1 afora@2026.5.3 afora@2026.5.2 afora@2026.4.23",
       }),
     ).toEqual([
       {
@@ -35,22 +35,22 @@ describe("scripts/plan-targeted-docker-lane-groups", () => {
       {
         docker_lanes: "published-upgrade-survivor",
         label: "published-upgrade-survivor-2026.5.3-1",
-        published_upgrade_survivor_baselines: "openclaw@2026.5.3-1",
+        published_upgrade_survivor_baselines: "afora@2026.5.3-1",
       },
       {
         docker_lanes: "published-upgrade-survivor",
         label: "published-upgrade-survivor-2026.5.3",
-        published_upgrade_survivor_baselines: "openclaw@2026.5.3",
+        published_upgrade_survivor_baselines: "afora@2026.5.3",
       },
       {
         docker_lanes: "published-upgrade-survivor",
         label: "published-upgrade-survivor-2026.5.2",
-        published_upgrade_survivor_baselines: "openclaw@2026.5.2",
+        published_upgrade_survivor_baselines: "afora@2026.5.2",
       },
       {
         docker_lanes: "published-upgrade-survivor",
         label: "published-upgrade-survivor-2026.4.23",
-        published_upgrade_survivor_baselines: "openclaw@2026.4.23",
+        published_upgrade_survivor_baselines: "afora@2026.4.23",
       },
       { docker_lanes: "plugins-offline plugin-update", label: "plugins-offline--plugin-update" },
     ]);
@@ -60,7 +60,7 @@ describe("scripts/plan-targeted-docker-lane-groups", () => {
     expect(
       planTargetedDockerLaneGroups({
         lanes: "published-upgrade-survivor",
-        upgradeSurvivorBaselines: "openclaw@2026.5.2",
+        upgradeSurvivorBaselines: "afora@2026.5.2",
       }),
     ).toEqual([
       { docker_lanes: "published-upgrade-survivor", label: "published-upgrade-survivor" },

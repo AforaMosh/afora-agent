@@ -2,7 +2,7 @@
 // Writes wrapper scripts for doctor install-switch E2E scenarios.
 import fs from "node:fs";
 
-const [wrapperPath, npmBin, logPath = `${process.env.HOME}/openclaw-wrapper-argv.log`] =
+const [wrapperPath, npmBin, logPath = `${process.env.HOME}/afora-wrapper-argv.log`] =
   process.argv.slice(2);
 
 if (!wrapperPath || !npmBin || !logPath || logPath.startsWith("undefined/")) {

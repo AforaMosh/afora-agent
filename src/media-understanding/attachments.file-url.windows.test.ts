@@ -8,7 +8,7 @@ import { normalizeAttachmentPath } from "./attachments.normalize.js";
 
 describe.runIf(process.platform === "win32")("media attachment Windows file URLs", () => {
   it("reads a single-slash uppercase file URL through the attachment cache", async () => {
-    await withTestDir({ prefix: "openclaw-media-file-url-" }, async (base) => {
+    await withTestDir({ prefix: "afora-media-file-url-" }, async (base) => {
       const filePath = path.join(base, "café photo.png");
       const contents = Buffer.from("media-understanding-file-url");
       await fs.writeFile(filePath, contents);

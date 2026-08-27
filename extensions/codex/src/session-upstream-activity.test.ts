@@ -1,5 +1,5 @@
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
-import type { SessionUpstreamProbe } from "openclaw/plugin-sdk/session-catalog";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
+import type { SessionUpstreamProbe } from "afora-agent/plugin-sdk/session-catalog";
 import { describe, expect, it, vi } from "vitest";
 import { CodexAppServerRpcError } from "./app-server/client.js";
 import type { CodexTurn } from "./app-server/protocol.js";
@@ -70,7 +70,7 @@ function createActivityChecker(params: {
         },
       },
     },
-  } as unknown as OpenClawPluginApi;
+  } as unknown as AforaPluginApi;
   const bindingStore = {
     read: vi.fn(async () => params.binding),
   } as unknown as CodexAppServerBindingStore;
@@ -299,7 +299,7 @@ describe("Codex upstream activity", () => {
     ]);
   });
 
-  it("filters OpenClaw-authored user items by normalized transcript text", async () => {
+  it("filters Afora-authored user items by normalized transcript text", async () => {
     await expect(
       checkTurns({
         probe: probe({
@@ -330,7 +330,7 @@ describe("Codex upstream activity", () => {
     ]);
   });
 
-  it("filters a batched OpenClaw steer by its component transcript texts", async () => {
+  it("filters a batched Afora steer by its component transcript texts", async () => {
     await expect(
       checkTurns({
         probe: probe({

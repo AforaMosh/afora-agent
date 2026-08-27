@@ -1,6 +1,6 @@
 // Authorizes chat approval commands against channel approval policy.
 import { getChannelPlugin, resolveChannelApprovalCapability } from "../channels/plugins/index.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isImplicitSameChatApprovalAuthorization } from "../plugin-sdk/approval-auth-helpers.js";
 import { normalizeMessageChannel } from "../utils/message-channel.js";
 import type { ChannelApprovalKind } from "./approval-types.js";
@@ -13,7 +13,7 @@ type ApprovalCommandAuthorization = {
 
 /** Resolves whether a chat `/approve` command is authorized by channel-specific approval policy. */
 export function resolveApprovalCommandAuthorization(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel?: string | null;
   accountId?: string | null;
   senderId?: string | null;

@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { MigrationPlan, MigrationProviderPlugin } from "../../plugins/types.js";
 import { planProviderMemoryImport } from "./memory-import.js";
 
@@ -62,7 +62,7 @@ function stubProvider(plan: MigrationPlan): MigrationProviderPlugin {
   };
 }
 
-const config = {} as OpenClawConfig;
+const config = {} as AforaConfig;
 
 describe("planProviderMemoryImport memory-only shaping", () => {
   it("rejects a plan with duplicate memory item ids", async () => {

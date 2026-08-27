@@ -1,4 +1,4 @@
-import { kindFromMime } from "@openclaw/media-core/mime";
+import { kindFromMime } from "@afora/media-core/mime";
 
 export function buildAssistantMediaContentDisposition(filename: string, mime?: string): string {
   // Keep the RFC 6266 fallback ASCII; filename* carries the exact UTF-8 name.

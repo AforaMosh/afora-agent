@@ -1,4 +1,4 @@
-import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-coercion";
+import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
 /**
  * Session listing command.
  *
@@ -8,7 +8,7 @@ import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { isRich, theme } from "../../packages/terminal-core/src/theme.js";
 import { readAcpSessionMetaBatch } from "../acp/runtime/session-meta.js";
 import { resolveModelAgentRuntimeMetadata } from "../agents/agent-runtime-metadata.js";
@@ -24,7 +24,7 @@ import { resolveFreshSessionTotalTokens, resolveSessionTotalTokens } from "../co
 import { listSessionEntriesReadOnly } from "../config/sessions/session-accessor.js";
 import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/session-sqlite-target.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveStoredSessionKeyForAgentStore } from "../gateway/session-store-key.js";
 import { info } from "../globals.js";
 import { parseAgentSessionKey } from "../routing/session-key.js";
@@ -156,7 +156,7 @@ const colorByPct = (label: string, pct: number | null, rich: boolean) => {
   return theme.muted(label);
 };
 
-// Matches `openclaw status` semantics: show the recorded total whenever one
+// Matches `afora status` semantics: show the recorded total whenever one
 // exists, and withhold only the percentage when freshness provenance is missing.
 const formatTokensCell = (
   total: number | undefined,
@@ -201,14 +201,14 @@ const formatKindCell = (kind: SessionRow["kind"], rich: boolean) => {
 };
 
 function resolveSessionRuntimeLabel(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   entry: SessionEntry;
   agentRuntime: ReturnType<typeof resolveModelAgentRuntimeMetadata>;
   modelProvider: string;
   classifyCliProvider: CliProviderClassifier;
 }): string {
   const id = normalizeOptionalLowercaseString(params.agentRuntime.id);
-  const resolvedHarness = id && id !== "openclaw" && id !== "auto" ? id : undefined;
+  const resolvedHarness = id && id !== "afora" && id !== "auto" ? id : undefined;
   return resolveAgentRuntimeLabel({
     config: params.cfg,
     sessionEntry: params.entry,
@@ -258,7 +258,7 @@ function stripChannelRecipientPrefix(
 
 function resolveDisplayRuntimePolicySessionKey(params: {
   agentId: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   key: string;
   entry: SessionEntry;
 }): string | undefined {

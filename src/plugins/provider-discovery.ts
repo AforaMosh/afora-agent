@@ -1,7 +1,7 @@
 /** Control-plane provider discovery helpers that keep runtime imports lazy until catalog hooks run. */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import type { ModelProviderConfig } from "../config/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createLazyImportLoader } from "../shared/lazy-promise.js";
 import type { PluginMetadataRegistryView } from "./plugin-metadata-snapshot.types.js";
 import {
@@ -50,7 +50,7 @@ export type PreparedProviderStaticCatalog = Readonly<{
 
 /** Options for resolving plugin providers that can contribute model catalog entries. */
 type ResolveRuntimePluginDiscoveryProvidersParams = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   onlyPluginIds?: string[];
@@ -146,7 +146,7 @@ export function normalizePluginDiscoveryResult(params: {
 
 export async function runProviderCatalog(params: {
   provider: ProviderPlugin;
-  config: OpenClawConfig;
+  config: AforaConfig;
   agentDir?: string;
   workspaceDir?: string;
   env: NodeJS.ProcessEnv;

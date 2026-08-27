@@ -67,8 +67,8 @@ function readSidebarNativeGateway(): SidebarNativeGateway | null {
     return null;
   }
   const snapshot = (
-    window as Window & { __OPENCLAW_NATIVE_GATEWAYS__?: SidebarNativeGatewaysSnapshot }
-  )["__OPENCLAW_NATIVE_GATEWAYS__"];
+    window as Window & { __AFORA_NATIVE_GATEWAYS__?: SidebarNativeGatewaysSnapshot }
+  )["__AFORA_NATIVE_GATEWAYS__"];
   if (!snapshot || !Array.isArray(snapshot.gateways) || snapshot.gateways.length < 2) {
     return null;
   }
@@ -110,7 +110,7 @@ export function renderAppSidebarBrand(host: AppSidebarRenderHost) {
   // keeps its separate offline-tolerant ⌘N mirror.
   return html`
     <div class="sidebar-brand">
-      <openclaw-sidebar-agent-card
+      <afora-sidebar-agent-card
         .agentName=${cardName}
         .avatarUrl=${cardAgent
           ? resolveAgentAvatarUrl(cardAgent, cardIdentity)
@@ -133,9 +133,9 @@ export function renderAppSidebarBrand(host: AppSidebarRenderHost) {
           const trigger = card.querySelector<HTMLElement>(".sidebar-agent-card__main") ?? card;
           host.sidebarMenus.toggleAgentMenu(trigger);
         }}
-      ></openclaw-sidebar-agent-card>
+      ></afora-sidebar-agent-card>
       <div class="sidebar-brand__actions">
-        <openclaw-tooltip
+        <afora-tooltip
           .content=${newSessionAccess.allowed
             ? t("chat.runControls.newSession")
             : newSessionAccess.reason}
@@ -149,7 +149,7 @@ export function renderAppSidebarBrand(host: AppSidebarRenderHost) {
           >
             ${icons.plus}
           </button>
-        </openclaw-tooltip>
+        </afora-tooltip>
       </div>
     </div>
   `;
@@ -201,18 +201,18 @@ export function renderAppSidebarHomeRow(host: AppSidebarRenderHost) {
       }}
     >
       ${attentionLabel
-        ? html`<openclaw-tooltip .content=${attentionLabel}>${homeGlyph}</openclaw-tooltip>`
+        ? html`<afora-tooltip .content=${attentionLabel}>${homeGlyph}</afora-tooltip>`
         : homeGlyph}
       <span class="nav-item__text">${t("nav.home")}</span>
       ${sessionHasBoard(mainKey)
-        ? html`<openclaw-tooltip .content=${t("sessionsView.dashboardAvailable")}>
+        ? html`<afora-tooltip .content=${t("sessionsView.dashboardAvailable")}>
             <span
               class="sidebar-board-glyph"
               role="img"
               aria-label=${t("sessionsView.dashboardAvailable")}
               >${icons.layoutDashboard}</span
             >
-          </openclaw-tooltip>`
+          </afora-tooltip>`
         : nothing}
       ${running || outboxAttentionCount > 0 || hasComposerDraft
         ? html`<span class="nav-item__state sidebar-home-session-states">
@@ -273,7 +273,7 @@ export function renderAppSidebarFooterBar(host: AppSidebarRenderHost) {
       : buildSubtitle;
   return html`
     <div class="sidebar-footer-bar">
-      <openclaw-tooltip .content=${selfLabel}>
+      <afora-tooltip .content=${selfLabel}>
         <button
           type="button"
           class="sidebar-identity-card"
@@ -285,7 +285,7 @@ export function renderAppSidebarFooterBar(host: AppSidebarRenderHost) {
           @click=${(event: MouseEvent) =>
             host.sidebarMenus.toggleIdentityMenu(event.currentTarget as HTMLElement)}
         >
-          <openclaw-viewer-avatar .user=${avatarUser} variant="footer"></openclaw-viewer-avatar>
+          <afora-viewer-avatar .user=${avatarUser} variant="footer"></afora-viewer-avatar>
           <span class="sidebar-identity-card__text">
             <span class="sidebar-identity-card__name">${selfLabel}</span>
             ${host.offline
@@ -318,7 +318,7 @@ export function renderAppSidebarFooterBar(host: AppSidebarRenderHost) {
             >${icons.chevronDown}</span
           >
         </button>
-      </openclaw-tooltip>
+      </afora-tooltip>
       <span class="sidebar-identity-card__status" role="status" aria-live="polite"
         >${host.offline ? t("connection.reconnecting") : ""}</span
       >
@@ -414,8 +414,8 @@ function renderWorkboardBoard(
 }
 
 export function renderAppSidebarAttention(host: AppSidebarRenderHost) {
-  return html`<openclaw-sidebar-attention
+  return html`<afora-sidebar-attention
     .onNavigate=${(routeId: NavigationRouteId) => host.onNavigate?.(routeId)}
     .onOpenApprovals=${() => host.onOpenApprovals?.()}
-  ></openclaw-sidebar-attention>`;
+  ></afora-sidebar-attention>`;
 }

@@ -3,14 +3,14 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   createColdPluginFixture,
   isColdPluginRuntimeLoaded,
 } from "../plugins/test-helpers/cold-plugin-fixtures.js";
 
 const testState = vi.hoisted(() => ({
-  config: {} as OpenClawConfig,
+  config: {} as AforaConfig,
   loadedModules: new Set<string>(),
   logs: [] as string[],
 }));
@@ -50,7 +50,7 @@ vi.mock("../plugins/loader-module-runtime.js", () => {
 
 import { tryRouteCli } from "./route.js";
 
-const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugins-list-route-"));
+const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugins-list-route-"));
 
 afterAll(() => {
   fs.rmSync(tempRoot, { recursive: true, force: true });
@@ -72,10 +72,10 @@ it("renders the default list from metadata without loading plugin modules", asyn
   });
   const bundledRoot = path.join(tempRoot, "bundled");
   fs.mkdirSync(bundledRoot, { recursive: true });
-  vi.stubEnv("OPENCLAW_BUNDLED_PLUGINS_DIR", bundledRoot);
-  vi.stubEnv("OPENCLAW_DISABLE_BUNDLED_PLUGINS", "1");
-  vi.stubEnv("OPENCLAW_HOME", path.join(tempRoot, "home"));
-  vi.stubEnv("OPENCLAW_STATE_DIR", path.join(tempRoot, "state"));
+  vi.stubEnv("AFORA_BUNDLED_PLUGINS_DIR", bundledRoot);
+  vi.stubEnv("AFORA_DISABLE_BUNDLED_PLUGINS", "1");
+  vi.stubEnv("AFORA_HOME", path.join(tempRoot, "home"));
+  vi.stubEnv("AFORA_STATE_DIR", path.join(tempRoot, "state"));
   testState.config = {
     plugins: {
       load: { paths: [pluginRoot] },
@@ -83,7 +83,7 @@ it("renders the default list from metadata without loading plugin modules", asyn
     },
   };
 
-  await expect(tryRouteCli(["node", "openclaw", "plugins", "list"])).resolves.toBe(true);
+  await expect(tryRouteCli(["node", "afora", "plugins", "list"])).resolves.toBe(true);
 
   const output = testState.logs.join("\n");
   expect(output).toContain("Route Demo");

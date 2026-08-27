@@ -8,10 +8,10 @@ import { createBackupArchive } from "../infra/backup-create.js";
 import { requireNodeSqlite } from "../infra/node-sqlite.js";
 import type { RuntimeEnv } from "../runtime.js";
 import {
-  closeOpenClawStateDatabase,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+  closeAforaStateDatabase,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import { backupRestoreCommand } from "./backup-restore.js";
 import { buildBackupArchivePath } from "./backup-shared.js";
 
@@ -95,7 +95,7 @@ async function writeArchive(params: {
       assets: [
         {
           kind: "config",
-          sourcePath: "/tmp/openclaw.json",
+          sourcePath: "/tmp/afora.json",
           archivePath: params.payloadPath,
         },
       ],
@@ -115,10 +115,10 @@ async function writeArchive(params: {
 
 describe("backupRestoreCommand", () => {
   it("round-trips a backup into a fresh target with matching inventory and readable databases", async () => {
-    await withOpenClawTestState(
+    await withAforaTestState(
       {
         layout: "state-only",
-        prefix: "openclaw-backup-restore-roundtrip-",
+        prefix: "afora-backup-restore-roundtrip-",
         scenario: "minimal",
       },
       async (state) => {
@@ -138,7 +138,7 @@ describe("backupRestoreCommand", () => {
             "dir",
           );
         }
-        openOpenClawStateDatabase({ env: state.env });
+        openAforaStateDatabase({ env: state.env });
 
         try {
           const backup = await createBackupArchive({
@@ -164,7 +164,7 @@ describe("backupRestoreCommand", () => {
           expect(restored.warnings.join("\n")).toMatch(/WhatsApp/iu);
           expect(restored.warnings.join("\n")).toMatch(/pending approvals/iu);
           expect(restored.warnings.join("\n")).toMatch(/plugins install <spec> --force/iu);
-          expect(restored.warnings.join("\n")).toMatch(/openclaw skills list/iu);
+          expect(restored.warnings.join("\n")).toMatch(/afora skills list/iu);
           expect(runtime.log).toHaveBeenCalledOnce();
           expect(JSON.parse(String(vi.mocked(runtime.log).mock.calls[0]?.[0]))).toEqual(restored);
           if (process.platform !== "win32") {
@@ -183,7 +183,7 @@ describe("backupRestoreCommand", () => {
             await listArchiveLeafEntries(backup.archivePath),
           );
           const databaseEntry = (await listArchiveLeafEntries(backup.archivePath)).find((entry) =>
-            entry.endsWith("/state/openclaw.sqlite"),
+            entry.endsWith("/state/afora.sqlite"),
           );
           expect(databaseEntry).toBeDefined();
           const sqlite = requireNodeSqlite();
@@ -198,25 +198,25 @@ describe("backupRestoreCommand", () => {
             database.close();
           }
         } finally {
-          closeOpenClawStateDatabase();
+          closeAforaStateDatabase();
         }
       },
     );
   });
 
   it("accepts an empty directory and refuses a non-empty target", async () => {
-    await withOpenClawTestState(
+    await withAforaTestState(
       {
         layout: "state-only",
-        prefix: "openclaw-backup-restore-target-",
+        prefix: "afora-backup-restore-target-",
         scenario: "minimal",
       },
       async (state) => {
         const archivePath = state.path("backup.tar.gz");
         const emptyTarget = state.path("empty-target");
         const nonEmptyTarget = state.path("non-empty-target");
-        const archiveRoot = "2026-08-12T00-00-00.000Z-openclaw-backup";
-        const payloadPath = buildBackupArchivePath(archiveRoot, "/tmp/openclaw.json");
+        const archiveRoot = "2026-08-12T00-00-00.000Z-afora-backup";
+        const payloadPath = buildBackupArchivePath(archiveRoot, "/tmp/afora.json");
         await writeArchive({ archivePath, archiveRoot, payloadPath });
         await fs.mkdir(emptyTarget);
         await fs.mkdir(nonEmptyTarget);
@@ -236,17 +236,17 @@ describe("backupRestoreCommand", () => {
   });
 
   it("verifies a corrupt archive before touching an empty target", async () => {
-    await withOpenClawTestState(
+    await withAforaTestState(
       {
         layout: "state-only",
-        prefix: "openclaw-backup-restore-corrupt-",
+        prefix: "afora-backup-restore-corrupt-",
         scenario: "minimal",
       },
       async (state) => {
         const archivePath = state.path("corrupt.tar.gz");
         const targetPath = state.path("restore-target");
-        const archiveRoot = "2026-08-12T00-00-00.000Z-openclaw-backup";
-        const payloadPath = buildBackupArchivePath(archiveRoot, "/tmp/openclaw.json");
+        const archiveRoot = "2026-08-12T00-00-00.000Z-afora-backup";
+        const payloadPath = buildBackupArchivePath(archiveRoot, "/tmp/afora.json");
         await writeArchive({
           archivePath,
           archiveRoot,
@@ -277,17 +277,17 @@ describe("backupRestoreCommand", () => {
   ])(
     "rejects $label symlink targets before touching the restore target",
     async ({ linkpath, error }) => {
-      await withOpenClawTestState(
+      await withAforaTestState(
         {
           layout: "state-only",
-          prefix: "openclaw-backup-restore-absolute-symlink-",
+          prefix: "afora-backup-restore-absolute-symlink-",
           scenario: "minimal",
         },
         async (state) => {
           const archivePath = state.path("absolute-symlink.tar.gz");
           const targetPath = state.path("restore-target");
-          const archiveRoot = "2026-08-12T00-00-00.000Z-openclaw-backup";
-          const payloadPath = buildBackupArchivePath(archiveRoot, "/tmp/openclaw.json");
+          const archiveRoot = "2026-08-12T00-00-00.000Z-afora-backup";
+          const payloadPath = buildBackupArchivePath(archiveRoot, "/tmp/afora.json");
           await writeArchive({
             archivePath,
             archiveRoot,
@@ -315,17 +315,17 @@ describe("backupRestoreCommand", () => {
   );
 
   it("cleans an incomplete fresh target when extraction fails", async () => {
-    await withOpenClawTestState(
+    await withAforaTestState(
       {
         layout: "state-only",
-        prefix: "openclaw-backup-restore-cleanup-",
+        prefix: "afora-backup-restore-cleanup-",
         scenario: "minimal",
       },
       async (state) => {
         const archivePath = state.path("unextractable.tar.gz");
         const targetPath = state.path("restore-target");
-        const archiveRoot = "2026-08-12T00-00-00.000Z-openclaw-backup";
-        const assetPath = buildBackupArchivePath(archiveRoot, "/tmp/openclaw.json");
+        const archiveRoot = "2026-08-12T00-00-00.000Z-afora-backup";
+        const assetPath = buildBackupArchivePath(archiveRoot, "/tmp/afora.json");
         const directoryPath = `${archiveRoot}/payload/invalid-hardlink-target`;
         await writeArchive({
           archivePath,
@@ -354,17 +354,17 @@ describe("backupRestoreCommand", () => {
   });
 
   it("preserves the extraction error when cleanup also fails", async () => {
-    await withOpenClawTestState(
+    await withAforaTestState(
       {
         layout: "state-only",
-        prefix: "openclaw-backup-restore-double-failure-",
+        prefix: "afora-backup-restore-double-failure-",
         scenario: "minimal",
       },
       async (state) => {
         const archivePath = state.path("unextractable.tar.gz");
         const targetPath = state.path("restore-target");
-        const archiveRoot = "2026-08-12T00-00-00.000Z-openclaw-backup";
-        const assetPath = buildBackupArchivePath(archiveRoot, "/tmp/openclaw.json");
+        const archiveRoot = "2026-08-12T00-00-00.000Z-afora-backup";
+        const assetPath = buildBackupArchivePath(archiveRoot, "/tmp/afora.json");
         const directoryPath = `${archiveRoot}/payload/invalid-hardlink-target`;
         await writeArchive({
           archivePath,

@@ -29,11 +29,11 @@ describe("resolveLocalVitestMaxWorkers", () => {
     ).toBe(6);
   });
 
-  it("lets OPENCLAW_VITEST_MAX_WORKERS override the inferred cap", () => {
+  it("lets AFORA_VITEST_MAX_WORKERS override the inferred cap", () => {
     expect(
       resolveLocalVitestMaxWorkers(
         {
-          OPENCLAW_VITEST_MAX_WORKERS: "2",
+          AFORA_VITEST_MAX_WORKERS: "2",
         },
         {
           cpuCount: 10,
@@ -45,11 +45,11 @@ describe("resolveLocalVitestMaxWorkers", () => {
     ).toBe(2);
   });
 
-  it("respects the legacy OPENCLAW_TEST_WORKERS override too", () => {
+  it("respects the legacy AFORA_TEST_WORKERS override too", () => {
     expect(
       resolveLocalVitestMaxWorkers(
         {
-          OPENCLAW_TEST_WORKERS: "3",
+          AFORA_TEST_WORKERS: "3",
         },
         {
           cpuCount: 16,
@@ -159,7 +159,7 @@ describe("resolveLocalVitestScheduling", () => {
     expect(
       resolveLocalVitestScheduling(
         {
-          OPENCLAW_VITEST_DISABLE_SYSTEM_THROTTLE: "1",
+          AFORA_VITEST_DISABLE_SYSTEM_THROTTLE: "1",
         },
         {
           cpuCount: 16,
@@ -224,7 +224,7 @@ describe("base vitest config", () => {
   it("classifies Crabbox shared dependencies as external dependencies", () => {
     expect(baseConfig.test?.deps?.moduleDirectories).toEqual([
       "/node_modules/",
-      "/openclaw-pnpm-node-modules/",
+      "/afora-pnpm-node-modules/",
     ]);
 
     const externalPatterns = baseConfig.test?.server?.deps?.external ?? [];
@@ -232,14 +232,14 @@ describe("base vitest config", () => {
       externalPatterns.some(
         (pattern) =>
           pattern instanceof RegExp &&
-          pattern.test("/tmp/openclaw-pnpm-node-modules/some-dep/dist/index.mjs"),
+          pattern.test("/tmp/afora-pnpm-node-modules/some-dep/dist/index.mjs"),
       ),
     ).toBe(true);
     expect(
       externalPatterns.some(
         (pattern) =>
           pattern instanceof RegExp &&
-          pattern.test("/tmp/openclaw-pnpm-node-modules/vite/dist/client/env.mjs"),
+          pattern.test("/tmp/afora-pnpm-node-modules/vite/dist/client/env.mjs"),
       ),
     ).toBe(false);
   });
@@ -279,7 +279,7 @@ describe("test scripts", () => {
     expect(pkg.scripts?.["test"]).toBe("node --import tsx scripts/test-projects.mts");
     expect(pkg.scripts?.["test:force"]).toBe("node --import tsx scripts/test-force.ts");
     expect(pkg.scripts?.["test:gateway"]).toBe(
-      "node --import tsx scripts/run-with-env.mts OPENCLAW_GATEWAY_PROJECT_SHARDS=1 -- node scripts/run-vitest.mjs run --config test/vitest/vitest.gateway.config.ts",
+      "node --import tsx scripts/run-with-env.mts AFORA_GATEWAY_PROJECT_SHARDS=1 -- node scripts/run-vitest.mjs run --config test/vitest/vitest.gateway.config.ts",
     );
     expect(pkg.scripts?.["test:single"]).toBeUndefined();
   });

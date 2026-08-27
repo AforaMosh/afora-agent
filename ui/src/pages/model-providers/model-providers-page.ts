@@ -1,6 +1,6 @@
 import { consume } from "@lit/context";
 import { initialState, Task, TaskStatus } from "@lit/task";
-import { asNullableRecord as asConfigRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord as asConfigRecord } from "@afora/normalization-core/record-coerce";
 import { html, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
@@ -16,7 +16,7 @@ import { normalizeAgentLabel } from "../../lib/agents/display.ts";
 import { createGatewayConnectionLifecycle } from "../../lib/gateway-connection-lifecycle.ts";
 import { isGatewayMethodAdvertised } from "../../lib/gateway-methods.ts";
 import { normalizeAgentId } from "../../lib/sessions/session-key.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import {
   modelProviderErrorMessage,
@@ -46,7 +46,7 @@ import {
 } from "./mutations.ts";
 import { renderModelProviders, type ModelProviderRowMessage } from "./view.ts";
 
-const MODEL_PROVIDERS_DOCS_URL = "https://docs.openclaw.ai/concepts/model-providers";
+const MODEL_PROVIDERS_DOCS_URL = "https://docs.afora.ai/concepts/model-providers";
 
 export type ModelProvidersRouteData = {
   data: ModelProvidersData;
@@ -95,7 +95,7 @@ function mergeProbeResults(cardId: string, results: ModelsProbeResult[]): Models
   };
 }
 
-export class ModelProvidersPage extends OpenClawLightDomElement {
+export class ModelProvidersPage extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context!: ApplicationContext;
 
@@ -739,6 +739,6 @@ export class ModelProvidersPage extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-model-providers-page")) {
-  customElements.define("openclaw-model-providers-page", ModelProvidersPage);
+if (!customElements.get("afora-model-providers-page")) {
+  customElements.define("afora-model-providers-page", ModelProvidersPage);
 }

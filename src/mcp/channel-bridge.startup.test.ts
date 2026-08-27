@@ -77,16 +77,16 @@ vi.mock("../../packages/gateway-protocol/src/client-info.js", () => ({
   GATEWAY_CLIENT_NAMES: { CLI: "cli" },
 }));
 
-const { OpenClawChannelBridge } = await import("./channel-bridge.js");
+const { AforaChannelBridge } = await import("./channel-bridge.js");
 
-describe("OpenClawChannelBridge startup", () => {
+describe("AforaChannelBridge startup", () => {
   beforeEach(() => {
     mockState.clientOptions = null;
     mockState.autoHello = true;
   });
 
   it("passes the resolved TLS fingerprint to the Gateway client", async () => {
-    const bridge = new OpenClawChannelBridge({} as never, {
+    const bridge = new AforaChannelBridge({} as never, {
       claudeChannelMode: "off",
       verbose: false,
     });
@@ -99,7 +99,7 @@ describe("OpenClawChannelBridge startup", () => {
 
   it("waits through retryable Gateway startup until hello succeeds", async () => {
     mockState.autoHello = false;
-    const bridge = new OpenClawChannelBridge({} as never, {
+    const bridge = new AforaChannelBridge({} as never, {
       claudeChannelMode: "off",
       verbose: false,
     });

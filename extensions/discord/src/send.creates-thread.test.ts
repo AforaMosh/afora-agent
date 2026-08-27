@@ -1,11 +1,11 @@
 import { ChannelType, Routes } from "discord-api-types/v10";
 // Discord tests cover send.creates thread plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { registerSendAssetsAndRetriesTests } from "./send.assets-and-retries.test-support.js";
 import { makeDiscordRest, requestBody, requestPath } from "./send.test-harness.js";
 
-vi.mock("openclaw/plugin-sdk/web-media", async () => {
+vi.mock("afora-agent/plugin-sdk/web-media", async () => {
   const { discordWebMediaMockFactory } = await import("./send.test-harness.js");
   return discordWebMediaMockFactory();
 });
@@ -130,7 +130,7 @@ afterEach(() => {
 });
 
 afterAll(() => {
-  vi.doUnmock("openclaw/plugin-sdk/web-media");
+  vi.doUnmock("afora-agent/plugin-sdk/web-media");
 });
 
 registerSendAssetsAndRetriesTests({

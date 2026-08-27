@@ -1,4 +1,4 @@
-import { normalizeJsonSchemaForTypeBox } from "@openclaw/normalization-core/json-schema";
+import { normalizeJsonSchemaForTypeBox } from "@afora/normalization-core/json-schema";
 // Compiles plugin manifest schemas for validation without runtime loading.
 import { Compile, type Validator as TypeBoxValidator } from "typebox/compile";
 import { Format } from "typebox/format";

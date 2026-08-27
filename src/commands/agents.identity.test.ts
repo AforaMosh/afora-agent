@@ -37,7 +37,7 @@ type ConfigWritePayload = {
 };
 
 async function createIdentityWorkspace(subdir = "work") {
-  const root = await makeTempWorkspace("openclaw-identity-");
+  const root = await makeTempWorkspace("afora-identity-");
   const workspace = path.join(root, subdir);
   await fs.mkdir(workspace, { recursive: true });
   return { root, workspace };
@@ -79,10 +79,10 @@ describe("agents set-identity command", () => {
   it("sets identity from workspace IDENTITY.md", async () => {
     const { root, workspace } = await createIdentityWorkspace();
     await writeIdentityFile(workspace, [
-      "- Name: OpenClaw",
+      "- Name: Afora",
       "- Creature: helpful sloth",
       "- Emoji: :)",
-      "- Avatar: avatars/openclaw.png",
+      "- Avatar: avatars/afora.png",
       "",
     ]);
 
@@ -102,10 +102,10 @@ describe("agents set-identity command", () => {
 
     expect(configMocks.writeConfigFile).toHaveBeenCalledTimes(1);
     expect(getWrittenMainIdentity()).toEqual({
-      name: "OpenClaw",
+      name: "Afora",
       theme: "helpful sloth",
       emoji: ":)",
-      avatar: "avatars/openclaw.png",
+      avatar: "avatars/afora.png",
     });
   });
 
@@ -153,10 +153,10 @@ describe("agents set-identity command", () => {
   it("overrides identity file values with explicit flags", async () => {
     const { workspace } = await createIdentityWorkspace();
     await writeIdentityFile(workspace, [
-      "- Name: OpenClaw",
+      "- Name: Afora",
       "- Theme: space lobster",
       "- Emoji: :)",
-      "- Avatar: avatars/openclaw.png",
+      "- Avatar: avatars/afora.png",
       "",
     ]);
 
@@ -272,14 +272,14 @@ describe("agents set-identity command", () => {
       await agentsSetIdentityCommand({ agent, name: "Ghost" }, runtime);
 
       expect(runtime.error).toHaveBeenCalledWith(
-        `Agent "${agent}" not found. Create it with \`openclaw agents add\`.`,
+        `Agent "${agent}" not found. Create it with \`afora agents add\`.`,
       );
       expect(runtime.exit).toHaveBeenCalledWith(1);
       expect(configMocks.writeConfigFile).not.toHaveBeenCalled();
     },
   );
 
-  it.each(["main", "openclaw", "crestodian"])(
+  it.each(["main", "afora", "crestodian"])(
     "does not create absent reserved agent %s",
     async (agentId) => {
       configMocks.readConfigFileSnapshot.mockResolvedValue({
@@ -290,7 +290,7 @@ describe("agents set-identity command", () => {
       await agentsSetIdentityCommand({ agent: agentId, name: "Hijack" }, runtime);
 
       expect(runtime.error).toHaveBeenCalledWith(
-        `Agent "${agentId}" not found. Create it with \`openclaw agents add\`.`,
+        `Agent "${agentId}" not found. Create it with \`afora agents add\`.`,
       );
       expect(runtime.exit).toHaveBeenCalledWith(1);
       expect(configMocks.writeConfigFile).not.toHaveBeenCalled();

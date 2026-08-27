@@ -1,9 +1,9 @@
 // update.run campaign tests cover failure release and concurrent campaign ownership.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { UpdateScheduleState } from "../../../packages/gateway-protocol/src/index.js";
 import { createDeferred } from "../../../test/helpers/promise.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { RespawnSupervisor } from "../../infra/supervisor-markers.js";
 import type { UpdateCampaignController } from "../../infra/update-campaign.js";
 import type { UpdateRunResult } from "../../infra/update-runner.js";
@@ -43,8 +43,8 @@ const startManagedServiceUpdateHandoffMock = vi.fn<
 >(async () => ({
   status: "started" as const,
   pid: 12345,
-  command: "openclaw update --yes --timeout 1800",
-  logPath: "/tmp/openclaw-update-run-handoff/handoff.log",
+  command: "afora update --yes --timeout 1800",
+  logPath: "/tmp/afora-update-run-handoff/handoff.log",
   handoffId: "handoff-1",
 }));
 const scheduleGatewaySigusr1RestartMock = vi.fn(() => ({ scheduled: true }));
@@ -71,8 +71,8 @@ vi.mock("../../infra/gateway-supervision.js", () => ({
   isGatewayExternallySupervised: () => false,
 }));
 
-vi.mock("../../infra/openclaw-root.js", () => ({
-  resolveOpenClawPackageRoot: async () => "/tmp/openclaw",
+vi.mock("../../infra/afora-root.js", () => ({
+  resolveAforaPackageRoot: async () => "/tmp/afora",
 }));
 
 vi.mock("../../infra/package-json.js", () => ({
@@ -115,7 +115,7 @@ vi.mock("../../infra/update-channels.js", async () => {
 
 vi.mock("../../infra/update-managed-service-handoff.js", () => ({
   buildManagedServiceHandoffUnavailableMessage: () => "handoff unavailable",
-  formatManagedServiceUpdateCommand: () => "openclaw update --yes",
+  formatManagedServiceUpdateCommand: () => "afora update --yes",
   startManagedServiceUpdateHandoff: startManagedServiceUpdateHandoffMock,
 }));
 
@@ -183,8 +183,8 @@ beforeEach(() => {
   resolveUpdateInstallSurfaceMock.mockResolvedValue({
     kind: "git",
     mode: "git",
-    root: "/tmp/openclaw",
-    packageRoot: "/tmp/openclaw",
+    root: "/tmp/afora",
+    packageRoot: "/tmp/afora",
   });
   detectRespawnSupervisorMock.mockReset();
   detectRespawnSupervisorMock.mockReturnValue(null);
@@ -238,7 +238,7 @@ async function invokeUpdateRun(): Promise<void> {
       connect: { client: { id: "control-ui" }, device: { id: "device-1" } },
     },
     context: {
-      getRuntimeConfig: () => ({ update: {} }) as OpenClawConfig,
+      getRuntimeConfig: () => ({ update: {} }) as AforaConfig,
       logGateway: { info: logGatewayInfoMock },
     },
   } as never);
@@ -250,8 +250,8 @@ describe("update.run campaign ownership", () => {
     resolveUpdateInstallSurfaceMock.mockResolvedValueOnce({
       kind: "package-root",
       mode: "unknown",
-      root: "/tmp/openclaw",
-      packageRoot: "/tmp/openclaw",
+      root: "/tmp/afora",
+      packageRoot: "/tmp/afora",
     });
 
     await invokeUpdateRun();
@@ -271,11 +271,11 @@ describe("update.run campaign ownership", () => {
     resolveUpdateInstallSurfaceMock.mockResolvedValueOnce({
       kind: "global",
       mode: "npm",
-      root: "/tmp/openclaw",
-      packageRoot: "/tmp/openclaw",
+      root: "/tmp/afora",
+      packageRoot: "/tmp/afora",
     });
 
-    await withEnvAsync({ OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.gateway" }, invokeUpdateRun);
+    await withEnvAsync({ AFORA_LAUNCHD_LABEL: "ai.afora.gateway" }, invokeUpdateRun);
 
     expect(startManagedServiceUpdateHandoffMock).toHaveBeenCalledWith(
       expect.objectContaining({ channel: "beta", tag: "2.0.0" }),
@@ -288,11 +288,11 @@ describe("update.run campaign ownership", () => {
     resolveUpdateInstallSurfaceMock.mockResolvedValueOnce({
       kind: "global",
       mode: "npm",
-      root: "/tmp/openclaw",
-      packageRoot: "/tmp/openclaw",
+      root: "/tmp/afora",
+      packageRoot: "/tmp/afora",
     });
 
-    await withEnvAsync({ OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.gateway" }, invokeUpdateRun);
+    await withEnvAsync({ AFORA_LAUNCHD_LABEL: "ai.afora.gateway" }, invokeUpdateRun);
 
     expect(startManagedServiceUpdateHandoffMock).toHaveBeenCalledWith(
       expect.objectContaining({ channel: "extended-stable" }),
@@ -305,8 +305,8 @@ describe("update.run campaign ownership", () => {
     resolveUpdateInstallSurfaceMock.mockResolvedValueOnce({
       kind: "package-root",
       mode: "unknown",
-      root: "/tmp/openclaw",
-      packageRoot: "/tmp/openclaw",
+      root: "/tmp/afora",
+      packageRoot: "/tmp/afora",
     });
 
     await invokeUpdateRun();
@@ -338,7 +338,7 @@ describe("update.run campaign ownership", () => {
     setDevCampaignSchedule();
     detectRespawnSupervisorMock.mockReturnValueOnce("launchd");
 
-    await withEnvAsync({ OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.gateway" }, invokeUpdateRun);
+    await withEnvAsync({ AFORA_LAUNCHD_LABEL: "ai.afora.gateway" }, invokeUpdateRun);
 
     expect(startManagedServiceUpdateHandoffMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -367,7 +367,7 @@ describe("update.run campaign ownership", () => {
     adoptCampaignMock.mockReturnValueOnce(undefined);
     detectRespawnSupervisorMock.mockReturnValueOnce("launchd");
 
-    await withEnvAsync({ OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.gateway" }, invokeUpdateRun);
+    await withEnvAsync({ AFORA_LAUNCHD_LABEL: "ai.afora.gateway" }, invokeUpdateRun);
 
     expect(startManagedServiceUpdateHandoffMock).toHaveBeenCalledWith(
       expect.not.objectContaining({ env: expect.anything() }),
@@ -437,11 +437,11 @@ describe("update.run campaign ownership", () => {
     resolveUpdateInstallSurfaceMock.mockResolvedValueOnce({
       kind: "global",
       mode: "npm",
-      root: "/tmp/openclaw",
-      packageRoot: "/tmp/openclaw",
+      root: "/tmp/afora",
+      packageRoot: "/tmp/afora",
     });
 
-    await withEnvAsync({ OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.gateway" }, invokeUpdateRun);
+    await withEnvAsync({ AFORA_LAUNCHD_LABEL: "ai.afora.gateway" }, invokeUpdateRun);
 
     expect(startManagedServiceUpdateHandoffMock).toHaveBeenCalledOnce();
     expect(clearCampaignMock).not.toHaveBeenCalled();

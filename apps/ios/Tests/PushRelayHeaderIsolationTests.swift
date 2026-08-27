@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 /// Gateway custom headers are proxy credentials scoped to one gateway. They ride only the
 /// gateway WebSocket upgrade; the push relay is a different trust domain and must never
@@ -66,7 +66,7 @@ struct PushRelayHeaderIsolationTests {
             session: URLSession(configuration: configuration))
         let input = PushRelayRegistrationInput(
             installationId: "test-install",
-            bundleId: "ai.openclaw.tests",
+            bundleId: "ai.afora.tests",
             appVersion: "1.0",
             environment: .sandbox,
             relayProfile: .deviceSandbox,

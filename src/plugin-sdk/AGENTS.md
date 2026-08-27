@@ -80,7 +80,7 @@ can affect bundled plugins and third-party plugins.
   bundled plugin import topology, run `pnpm build`.
 - If the change can alter bundled channel startup cost, also run the isolated
   entrypoint profiler for the affected plugin:
-  `OPENCLAW_LOCAL_CHECK=0 node --import tsx scripts/profile-extension-memory.mts --extension <id> --skip-combined --concurrency 1`
+  `AFORA_LOCAL_CHECK=0 node --import tsx scripts/profile-extension-memory.mts --extension <id> --skip-combined --concurrency 1`
 
 ## Expanding The Boundary
 

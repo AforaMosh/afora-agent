@@ -5,10 +5,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { requireNodeSqlite } from "../../infra/node-sqlite.js";
 import { isSecretValueRegisteredForRedaction } from "../../logging/secret-redaction-registry.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-  OPENCLAW_STATE_SCHEMA_VERSION,
-} from "../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+  AFORA_STATE_SCHEMA_VERSION,
+} from "../../state/afora-state-db.js";
 import {
   deleteSecretStoreEntry,
   listSecretStoreEntries,
@@ -23,14 +23,14 @@ const roots: string[] = [];
 const team = { kind: "team" } as const;
 
 function createDatabaseOptions() {
-  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-secret-store-")));
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "afora-secret-store-")));
   roots.push(root);
   return { path: path.join(root, "state.sqlite") };
 }
 
 afterEach(() => {
   vi.useRealTimers();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   for (const root of roots.splice(0)) {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -119,7 +119,7 @@ describe("secret store", () => {
       updatedBy: null,
       database,
     });
-    const state = openOpenClawStateDatabase(database);
+    const state = openAforaStateDatabase(database);
     expect(() =>
       state.db
         .prepare(
@@ -199,12 +199,12 @@ describe("secret store", () => {
 
   it("treats a missing lazy table as empty and preserves the current schema version", () => {
     const database = createDatabaseOptions();
-    openOpenClawStateDatabase(database);
-    closeOpenClawStateDatabaseForTest();
+    openAforaStateDatabase(database);
+    closeAforaStateDatabaseForTest();
     const { DatabaseSync } = requireNodeSqlite();
     const before = new DatabaseSync(database.path);
     expect(before.prepare("PRAGMA user_version").get()).toEqual({
-      user_version: OPENCLAW_STATE_SCHEMA_VERSION,
+      user_version: AFORA_STATE_SCHEMA_VERSION,
     });
     before.exec("DROP TABLE secret_store_entries;");
     before.close();
@@ -230,10 +230,10 @@ describe("secret store", () => {
       updatedBy: null,
       database,
     });
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const after = new DatabaseSync(database.path, { readOnly: true });
     expect(after.prepare("PRAGMA user_version").get()).toEqual({
-      user_version: OPENCLAW_STATE_SCHEMA_VERSION,
+      user_version: AFORA_STATE_SCHEMA_VERSION,
     });
     expect(
       after

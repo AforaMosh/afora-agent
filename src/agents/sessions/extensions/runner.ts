@@ -3,7 +3,7 @@
  */
 
 import type { KeyId } from "@earendil-works/pi-tui";
-import { coerceErrorMessage } from "@openclaw/normalization-core/error-coercion";
+import { coerceErrorMessage } from "@afora/normalization-core/error-coercion";
 import type { ImageContent, Model } from "../../../llm/types.js";
 import { interactiveAgentTheme as theme, type Theme } from "../../modes/interactive/theme/theme.js";
 import type { AgentMessage } from "../../runtime/index.js";

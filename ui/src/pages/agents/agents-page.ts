@@ -1,5 +1,5 @@
 import { consume } from "@lit/context";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 import { html, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
@@ -50,7 +50,7 @@ import {
 } from "../../lib/gateway-methods.ts";
 import { parseAgentSessionKey } from "../../lib/sessions/session-key.ts";
 import { GatewayPageController } from "../../lit/gateway-page-controller.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import { loadAgentFileContent, saveAgentFile } from "./files.ts";
 import {
@@ -71,14 +71,14 @@ import type { AgentsRouteData } from "./route.ts";
 import { clearAgentSkillFilter, loadAgentSkills } from "./skills.ts";
 import { renderAgents } from "./view.ts";
 
-const AGENTS_DOCS_URL = "https://docs.openclaw.ai/concepts/multi-agent";
+const AGENTS_DOCS_URL = "https://docs.afora.ai/concepts/multi-agent";
 
 type AgentsRequestSources = Partial<
   Pick<ApplicationContext, "agents" | "agentIdentity" | "sessions">
 >;
 
 class AgentsPage
-  extends OpenClawLightDomElement
+  extends AforaLightDomElement
   implements Omit<AgentsState, "agentsLoading" | "agentsError">
 {
   @consume({ context: applicationContext, subscribe: true })
@@ -885,7 +885,7 @@ class AgentsPage
     const selectedAgentId = this.resolveSelectedAgentId();
     const config = currentConfigObject(configState);
     const access = {
-      canCreateAgent: this.canCall("openclaw.chat", "operator.admin"),
+      canCreateAgent: this.canCall("afora.chat", "operator.admin"),
       canPatchConfig: this.canCall("config.patch", "operator.admin"),
       canUpdateConfig: this.canCall("config.set", "operator.admin"),
       canUpdateIdentity: this.canCall("agents.update", "operator.admin"),
@@ -981,7 +981,7 @@ class AgentsPage
           onSelectAgent: (agentId) =>
             navigateToAgent(this.context, agentId, selectedAgentId, this.agentsPanel),
           onCreateAgent: () => {
-            if (this.canCall("openclaw.chat", "operator.admin")) {
+            if (this.canCall("afora.chat", "operator.admin")) {
               this.context.navigate("custodian", { search: "?intent=new-agent" });
             }
           },
@@ -1129,7 +1129,7 @@ class AgentsPage
   }
 }
 
-if (!customElements.get("openclaw-agents-page")) {
-  customElements.define("openclaw-agents-page", AgentsPage);
+if (!customElements.get("afora-agents-page")) {
+  customElements.define("afora-agents-page", AgentsPage);
 }
 /* oxlint-disable max-lines -- TODO: split this grandfathered oversized file. */

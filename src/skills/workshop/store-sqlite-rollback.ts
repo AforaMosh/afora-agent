@@ -4,7 +4,7 @@ import {
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../../infra/kysely-sync.js";
-import { runOpenClawStateWriteTransaction } from "../../state/openclaw-state-db.js";
+import { runAforaStateWriteTransaction } from "../../state/afora-state-db.js";
 import { assertProposalId, parseSkillProposalRollback } from "./store-record.js";
 import { parseJson } from "./store-sqlite-record.js";
 import {
@@ -52,7 +52,7 @@ export async function writeSkillProposalRollback(params: {
 }): Promise<void> {
   assertProposalId(params.proposalId);
   ensureSkillWorkshopSchema(params.store);
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => {
       const kysely = getNodeSqliteKysely<SkillWorkshopDatabase>(db);
       const proposal = executeSqliteQueryTakeFirstSync(
@@ -143,7 +143,7 @@ export async function clearSkillProposalRollback(params: {
 }): Promise<boolean> {
   assertProposalId(params.proposalId);
   ensureSkillWorkshopSchema(params.store);
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db }) => {
       const kysely = getNodeSqliteKysely<SkillWorkshopDatabase>(db);
       const proposal = executeSqliteQueryTakeFirstSync(

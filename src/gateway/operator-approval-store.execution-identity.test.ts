@@ -2,10 +2,10 @@ import fs from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
 import {
   consumeOperatorApprovalAllowOnce,
   getOperatorApprovalDetailed,
@@ -16,9 +16,9 @@ import {
 type NewOperatorApproval = Parameters<typeof insertOperatorApproval>[0]["approval"];
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
-function databaseOptions(): OpenClawStateDatabaseOptions {
-  const stateDir = fs.realpathSync(tempDirs.make("openclaw-approval-id-"));
-  return { env: { ...process.env, OPENCLAW_STATE_DIR: stateDir } };
+function databaseOptions(): AforaStateDatabaseOptions {
+  const stateDir = fs.realpathSync(tempDirs.make("afora-approval-id-"));
+  return { env: { ...process.env, AFORA_STATE_DIR: stateDir } };
 }
 
 function approval(
@@ -65,7 +65,7 @@ const token = (runId = "run-1"): NonNullable<NewOperatorApproval["executionIdent
 });
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 describe("operator approval execution identity", () => {
@@ -75,7 +75,7 @@ describe("operator approval execution identity", () => {
       insertOperatorApproval({ approval: approval("unbound"), databaseOptions: unbound }),
     ).toMatchObject({ outcome: "inserted" });
     expect(
-      openOpenClawStateDatabase(unbound)
+      openAforaStateDatabase(unbound)
         .db.prepare(
           "SELECT name FROM sqlite_schema WHERE type = 'table' AND name = 'operator_approval_execution_identities'",
         )
@@ -83,7 +83,7 @@ describe("operator approval execution identity", () => {
     ).toBeUndefined();
 
     const bound = databaseOptions();
-    const userVersionBefore = openOpenClawStateDatabase(bound)
+    const userVersionBefore = openAforaStateDatabase(bound)
       .db.prepare("PRAGMA user_version")
       .get();
     const record = approval("bound", token());
@@ -91,7 +91,7 @@ describe("operator approval execution identity", () => {
       outcome: "inserted",
     });
     expect(
-      openOpenClawStateDatabase(bound)
+      openAforaStateDatabase(bound)
         .db.prepare(
           "SELECT approval_id, source_context_id, source_execution_id FROM operator_approval_execution_identities",
         )
@@ -104,7 +104,7 @@ describe("operator approval execution identity", () => {
     expect(insertOperatorApproval({ approval: record, databaseOptions: bound })).toMatchObject({
       outcome: "existing",
     });
-    expect(openOpenClawStateDatabase(bound).db.prepare("PRAGMA user_version").get()).toEqual(
+    expect(openAforaStateDatabase(bound).db.prepare("PRAGMA user_version").get()).toEqual(
       userVersionBefore,
     );
   });
@@ -130,7 +130,7 @@ describe("operator approval execution identity", () => {
       }),
     ).toMatchObject({ outcome: "inserted" });
     expect(
-      openOpenClawStateDatabase(mismatch)
+      openAforaStateDatabase(mismatch)
         .db.prepare(
           "SELECT name FROM sqlite_schema WHERE type = 'table' AND name = 'operator_approval_execution_identities'",
         )
@@ -140,7 +140,7 @@ describe("operator approval execution identity", () => {
 
   it("rolls back the parent when the child insert is forced to fail", () => {
     const options = databaseOptions();
-    const db = openOpenClawStateDatabase(options).db;
+    const db = openAforaStateDatabase(options).db;
     db.exec(`
       CREATE TABLE operator_approval_execution_identities (
         approval_id TEXT PRIMARY KEY REFERENCES operator_approvals(approval_id) ON DELETE CASCADE,
@@ -170,9 +170,9 @@ describe("operator approval execution identity", () => {
     expect(
       insertOperatorApproval({ approval: approval("durable", token()), databaseOptions: options }),
     ).toMatchObject({ outcome: "inserted" });
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
 
-    const db = openOpenClawStateDatabase(options).db;
+    const db = openAforaStateDatabase(options).db;
     expect(
       db
         .prepare(
@@ -197,7 +197,7 @@ describe("operator approval execution identity", () => {
         insertOperatorApproval({ approval: approval(id, token()), databaseOptions: options }),
       ).toMatchObject({ outcome: "inserted" });
     }
-    const db = openOpenClawStateDatabase(options).db;
+    const db = openAforaStateDatabase(options).db;
     db.prepare("DELETE FROM operator_approval_execution_identities WHERE approval_id = ?").run(
       "missing-child",
     );

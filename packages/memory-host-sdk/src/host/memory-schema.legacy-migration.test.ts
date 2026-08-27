@@ -52,8 +52,8 @@ describe("memory index same-file legacy migration", () => {
   });
 
   it("recovers a partially migrated WAL index idempotently when legacy rows diverge", () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-memory-diverged-"));
-    const dbPath = path.join(rootDir, "openclaw-agent.sqlite");
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-memory-diverged-"));
+    const dbPath = path.join(rootDir, "afora-agent.sqlite");
     const db = new DatabaseSync(dbPath);
     try {
       expect(db.prepare("PRAGMA journal_mode = WAL").get()).toEqual({ journal_mode: "wal" });

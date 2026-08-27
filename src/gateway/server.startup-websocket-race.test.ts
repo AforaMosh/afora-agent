@@ -79,8 +79,8 @@ describe("gateway startup websocket readiness", () => {
   });
 
   it("accepts an immediate websocket connection once startup resolves", async () => {
-    const previousMinimal = process.env.OPENCLAW_TEST_MINIMAL_GATEWAY;
-    process.env.OPENCLAW_TEST_MINIMAL_GATEWAY = "0";
+    const previousMinimal = process.env.AFORA_TEST_MINIMAL_GATEWAY;
+    process.env.AFORA_TEST_MINIMAL_GATEWAY = "0";
     let server: GatewayServerForTest | undefined;
     let client: WebSocket | undefined;
     try {
@@ -98,9 +98,9 @@ describe("gateway startup websocket readiness", () => {
         await server.close();
       }
       if (previousMinimal === undefined) {
-        delete process.env.OPENCLAW_TEST_MINIMAL_GATEWAY;
+        delete process.env.AFORA_TEST_MINIMAL_GATEWAY;
       } else {
-        process.env.OPENCLAW_TEST_MINIMAL_GATEWAY = previousMinimal;
+        process.env.AFORA_TEST_MINIMAL_GATEWAY = previousMinimal;
       }
     }
   });
@@ -110,8 +110,8 @@ describe("gateway startup websocket readiness", () => {
       skip("127.0.0.2 is not bindable on this host");
       return;
     }
-    const previousMinimal = process.env.OPENCLAW_TEST_MINIMAL_GATEWAY;
-    process.env.OPENCLAW_TEST_MINIMAL_GATEWAY = "0";
+    const previousMinimal = process.env.AFORA_TEST_MINIMAL_GATEWAY;
+    process.env.AFORA_TEST_MINIMAL_GATEWAY = "0";
     let server: GatewayServerForTest | undefined;
     const clients: WebSocket[] = [];
     try {
@@ -131,9 +131,9 @@ describe("gateway startup websocket readiness", () => {
         await server.close();
       }
       if (previousMinimal === undefined) {
-        delete process.env.OPENCLAW_TEST_MINIMAL_GATEWAY;
+        delete process.env.AFORA_TEST_MINIMAL_GATEWAY;
       } else {
-        process.env.OPENCLAW_TEST_MINIMAL_GATEWAY = previousMinimal;
+        process.env.AFORA_TEST_MINIMAL_GATEWAY = previousMinimal;
       }
     }
   });

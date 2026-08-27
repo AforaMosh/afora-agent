@@ -17,7 +17,7 @@ const suite = createControlUiE2eSuite({
 // Mirrors the module-private default usage TTL asserted by this flow.
 const USAGE_PAYLOAD_TTL_MS = 5 * 60_000;
 
-const proofDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+const proofDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
 
 const totals = {
   input: 100,
@@ -166,7 +166,7 @@ suite.define(() => {
     try {
       const response = await page.goto(`${suite.server.baseUrl}chat`);
       expect(response?.status()).toBe(200);
-      const sidebar = page.locator("openclaw-app-sidebar");
+      const sidebar = page.locator("afora-app-sidebar");
       await sidebar.locator(".sidebar-identity-card").click();
       await sidebar
         .locator('wa-dropdown.sidebar-identity-menu wa-dropdown-item[value="command:usage"]')
@@ -218,7 +218,7 @@ suite.define(() => {
       await gateway.deferNext("sessions.usage");
       await gateway.deferNext("usage.cost");
       await page
-        .locator("openclaw-usage-page")
+        .locator("afora-usage-page")
         .getByRole("button", { name: "Refresh", exact: true })
         .click();
       await waitForRequestCount(gateway, "sessions.usage", 3);

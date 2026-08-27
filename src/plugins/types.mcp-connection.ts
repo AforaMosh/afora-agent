@@ -25,7 +25,7 @@ export type McpServerConnectionResolved = {
  * Plugin-owned connection resolver for a statically declared MCP server.
  * Server name/tool surface stay static; only the transport is requester-bound.
  */
-export type OpenClawPluginMcpServerConnectionResolver = {
+export type AforaPluginMcpServerConnectionResolver = {
   /** Server name matching `mcp.servers` / bundle MCP declaration. */
   serverName: string;
   resolve: (
@@ -37,7 +37,7 @@ export type OpenClawPluginMcpServerConnectionResolver = {
 export type PluginMcpServerConnectionResolverRegistration = {
   pluginId: string;
   pluginName?: string;
-  resolver: OpenClawPluginMcpServerConnectionResolver;
+  resolver: AforaPluginMcpServerConnectionResolver;
   source: string;
   rootDir?: string;
 };

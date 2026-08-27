@@ -1,8 +1,8 @@
 /** Converts auth-profile credentials into agent runtime credential maps. */
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { asDateTimestampMs } from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import { asDateTimestampMs } from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import { coerceSecretRef } from "../config/types.secrets.js";
 import type { PreparedAgentCredentialModes } from "./agent-auth-credential-modes.js";
 import { resolveAuthProfileOrder } from "./auth-profiles/order.js";
@@ -26,10 +26,10 @@ export type AgentCredentialMap = Record<string, AgentCredential>;
 
 type ResolveAgentCredentialMapOptions = {
   includeSecretRefPlaceholders?: boolean;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 };
 
-const AGENT_SECRET_REF_CONFIGURED_MARKER = "openclaw-secret-ref-configured";
+const AGENT_SECRET_REF_CONFIGURED_MARKER = "afora-secret-ref-configured";
 
 /** Records only credential modes whose secret material is usable by a prepared runtime owner. */
 export function resolveUsableAgentCredentialModes(

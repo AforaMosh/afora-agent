@@ -1,5 +1,5 @@
-import type { UiCommand } from "@openclaw/gateway-protocol";
-import { expectDefined } from "@openclaw/normalization-core";
+import type { UiCommand } from "@afora/gateway-protocol";
+import { expectDefined } from "@afora/normalization-core";
 import {
   normalizeSplitLayoutWeights,
   splitLayoutNumericSuffix,

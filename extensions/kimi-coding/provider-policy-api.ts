@@ -2,7 +2,7 @@
 import type {
   ProviderDefaultThinkingPolicyContext,
   ProviderThinkingProfile,
-} from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/plugin-entry";
 
 export const KIMI_K3_MODEL_IDS = ["k3", "k3-256k"] as const;
 const KIMI_K3_LEGACY_MODEL_IDS = ["k3[1m]"] as const;

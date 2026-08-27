@@ -1,14 +1,14 @@
 // Canvas doctor contract migrates documents from configured host roots into core storage.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolvePluginConfigObject } from "openclaw/plugin-sdk/plugin-config-runtime";
-import type { PluginDoctorStateMigration } from "openclaw/plugin-sdk/runtime-doctor-migrations";
-import { pathExists } from "openclaw/plugin-sdk/security-runtime";
+import { resolvePluginConfigObject } from "afora-agent/plugin-sdk/plugin-config-runtime";
+import type { PluginDoctorStateMigration } from "afora-agent/plugin-sdk/runtime-doctor-migrations";
+import { pathExists } from "afora-agent/plugin-sdk/security-runtime";
 import {
   asOptionalRecord as readRecord,
   readStringValue as readString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
-import { resolveUserPath } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { resolveUserPath } from "afora-agent/plugin-sdk/text-utility-runtime";
 
 type StateMigrationParams = Parameters<PluginDoctorStateMigration["detectLegacyState"]>[0];
 

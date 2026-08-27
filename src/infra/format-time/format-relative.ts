@@ -7,7 +7,7 @@
  * - `formatTimeAgo(durationMs)` — format a duration as "5m ago" / "5m" (for known elapsed time)
  * - `formatRelativeTimestamp(epochMs)` — format an epoch timestamp relative to now (handles future)
  */
-import { bucketRelativeTimeMs } from "@openclaw/normalization-core";
+import { bucketRelativeTimeMs } from "@afora/normalization-core";
 
 type FormatTimeAgoOptions = {
   /** Append "ago" suffix. Default: true. When false, returns bare unit: "5m", "2h" */

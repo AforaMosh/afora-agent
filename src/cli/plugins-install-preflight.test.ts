@@ -141,7 +141,7 @@ describe("plugin install mutation-free preflight", () => {
     },
     {
       label: "npm-pack pin",
-      args: ["npm-pack:/tmp/openclaw-plugin-preflight-test.tgz", "--pin"],
+      args: ["npm-pack:/tmp/afora-plugin-preflight-test.tgz", "--pin"],
       error: "--pin is only supported with npm registry installs.",
     },
     {
@@ -171,7 +171,7 @@ describe("plugin install mutation-free preflight", () => {
     },
     {
       label: "missing local path",
-      args: ["./openclaw-missing-plugin-preflight-test.tgz"],
+      args: ["./afora-missing-plugin-preflight-test.tgz"],
       error: "Plugin path not found:",
     },
   ])("rejects $label before the lifecycle lease", async ({ args, error }) => {

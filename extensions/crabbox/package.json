@@ -1,13 +1,13 @@
 {
-  "name": "@openclaw/crabbox-provider",
+  "name": "@afora/crabbox-provider",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw cloud worker provider backed by the Crabbox CLI",
+  "description": "Afora cloud worker provider backed by the Crabbox CLI",
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

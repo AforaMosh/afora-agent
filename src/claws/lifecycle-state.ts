@@ -1,14 +1,14 @@
 import { createHash } from "node:crypto";
-import { coerceErrorMessage, stableStringify } from "@openclaw/normalization-core";
+import { coerceErrorMessage, stableStringify } from "@afora/normalization-core";
 import { unsetConfiguredMcpServer } from "../agents/mcp-config-mutation.js";
 import { getRuntimeConfig } from "../config/config.js";
 import { listConfiguredMcpServers } from "../config/mcp-config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
-  closeOpenClawAgentDatabaseByPath,
-  resolveOpenClawAgentSqlitePath,
-} from "../state/openclaw-agent-db.js";
-import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
+  closeAforaAgentDatabaseByPath,
+  resolveAforaAgentSqlitePath,
+} from "../state/afora-agent-db.js";
+import type { AforaStateDatabaseOptions } from "../state/afora-state-db.js";
 import {
   clawCronGatewayJobMatchesRef,
   deleteClawCronRef,
@@ -62,7 +62,7 @@ export { ClawRemoveError } from "./lifecycle-delete-support.js";
 export { CLAW_REMOVE_PLAN_SCHEMA_VERSION } from "./lifecycle-remove-contract.js";
 export { readClawStatus, type ClawStatusRecord } from "./lifecycle-status.js";
 
-export const CLAW_REMOVE_RESULT_SCHEMA_VERSION = "openclaw.clawRemoveResult.v1" as const;
+export const CLAW_REMOVE_RESULT_SCHEMA_VERSION = "afora.clawRemoveResult.v1" as const;
 type ClawRemoveResult = {
   schemaVersion: typeof CLAW_REMOVE_RESULT_SCHEMA_VERSION;
   stability: typeof CLAW_OUTPUT_STABILITY;
@@ -81,8 +81,8 @@ type ClawRemoveResult = {
 
 export async function buildClawRemovePlan(
   target: string,
-  options: OpenClawStateDatabaseOptions & {
-    config?: OpenClawConfig;
+  options: AforaStateDatabaseOptions & {
+    config?: AforaConfig;
     sourceMcpServers?: Record<string, Record<string, unknown>>;
     listMcpServers?: typeof listConfiguredMcpServers;
     packageDeps?: PackageRemovalDeps;
@@ -415,11 +415,11 @@ export async function buildClawRemovePlan(
   };
 }
 
-type PurgeSessions = (config: OpenClawConfig, agentId: string) => Promise<void>;
+type PurgeSessions = (config: AforaConfig, agentId: string) => Promise<void>;
 export async function applyClawRemovePlan(
   plan: ClawRemovePlan,
-  options: OpenClawStateDatabaseOptions & {
-    config?: OpenClawConfig;
+  options: AforaStateDatabaseOptions & {
+    config?: AforaConfig;
     sourceMcpServers?: Record<string, Record<string, unknown>>;
     listMcpServers?: typeof listConfiguredMcpServers;
     commitConfig?: ConfigCommit;
@@ -612,7 +612,7 @@ export async function applyClawRemovePlan(
       (await import("../config/sessions/cleanup-service.js")).purgeAgentSessionStoreEntries;
     await purgeSessions(configBeforeDelete, agentId);
   }
-  closeOpenClawAgentDatabaseByPath(resolveOpenClawAgentSqlitePath({ agentId, env: options.env }));
+  closeAforaAgentDatabaseByPath(resolveAforaAgentSqlitePath({ agentId, env: options.env }));
   const packages = await applyClawPackageRemovals(
     packageDecisions.toSorted(
       (left, right) =>

@@ -2,7 +2,7 @@
 import { spawn, type SpawnOptions } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import { ensureRepoBoundDirectory, resolveRepoRelativeOutputDir } from "../cli-paths.js";
 import { QA_EVIDENCE_FILENAME, validateQaEvidenceSummaryJson } from "../evidence-summary.js";
 import { trimToValue } from "../mantis-options.runtime.js";
@@ -478,7 +478,7 @@ async function runLane(params: {
     args: [
       "--dir",
       worktreeDir,
-      "openclaw",
+      "afora",
       "qa",
       "discord",
       "--repo-root",

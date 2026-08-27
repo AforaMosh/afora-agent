@@ -1,7 +1,7 @@
-import { normalizeAgentId } from "@openclaw/normalization-core/agent-id";
+import { normalizeAgentId } from "@afora/normalization-core/agent-id";
 import { listAgentIds } from "../../agents/agent-scope-config.js";
 import { classifySessionKeyShape } from "../../routing/session-key.js";
-import type { OpenClawConfig } from "../types.openclaw.js";
+import type { AforaConfig } from "../types.afora.js";
 import {
   isPerAgentSessionStoreConfig,
   isSameFixedSessionStoreConfig,
@@ -14,7 +14,7 @@ export type PersistedSessionStoreOwner =
 
 /** Preserves a retired fixed-store owner as an explicit unavailable state. */
 export function resolvePersistedSessionStoreOwner(
-  config: OpenClawConfig,
+  config: AforaConfig,
 ): PersistedSessionStoreOwner {
   if (isPerAgentSessionStoreConfig(config.session?.store)) {
     return { kind: "none" };
@@ -33,7 +33,7 @@ export function resolvePersistedSessionStoreOwner(
 
 /** Applies fixed-store ownership only to keys without an agent-qualified namespace. */
 export function resolvePersistedSessionStoreOwnerForKey(
-  config: OpenClawConfig,
+  config: AforaConfig,
   sessionKey: string | undefined,
 ): PersistedSessionStoreOwner {
   return classifySessionKeyShape(sessionKey) === "legacy_or_alias"
@@ -43,7 +43,7 @@ export function resolvePersistedSessionStoreOwnerForKey(
 
 /** Applies fixed-store ownership only when the concrete write target is that configured store. */
 export function resolvePersistedSessionStoreOwnerForTarget(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   sessionKey: string | undefined;
   storePath?: string;
   env?: NodeJS.ProcessEnv;

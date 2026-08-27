@@ -13,7 +13,7 @@ export function createUnitFastVitestConfig(
   options: { argv?: string[]; runner?: string } = {},
 ) {
   const sharedTest = sharedVitestConfig.test ?? {};
-  const includeFromEnv = loadPatternListFromEnv("OPENCLAW_VITEST_INCLUDE_FILE", env);
+  const includeFromEnv = loadPatternListFromEnv("AFORA_VITEST_INCLUDE_FILE", env);
   const timerTestFiles = new Set(getUnitFastTimerTestFiles());
   const isolatedTestFiles = new Set(getUnitFastIsolatedTestFiles());
   const unitFastTestFiles = getUnitFastTestFiles().filter(

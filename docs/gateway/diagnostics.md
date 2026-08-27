@@ -7,7 +7,7 @@ read_when:
   - Reviewing what diagnostics data is recorded or redacted
 ---
 
-OpenClaw can build a local diagnostics `.zip` for bug reports: sanitized Gateway
+Afora can build a local diagnostics `.zip` for bug reports: sanitized Gateway
 status, health, logs, config shape, and recent payload-free stability events.
 
 Treat diagnostics bundles like secrets until reviewed. Payloads and credentials
@@ -17,19 +17,19 @@ host-level runtime state.
 ## Quick start
 
 ```bash
-openclaw gateway diagnostics export
+afora gateway diagnostics export
 ```
 
 Prints the written zip path. Choose an output path:
 
 ```bash
-openclaw gateway diagnostics export --output openclaw-diagnostics.zip
+afora gateway diagnostics export --output afora-diagnostics.zip
 ```
 
 For automation:
 
 ```bash
-openclaw gateway diagnostics export --json
+afora gateway diagnostics export --json
 ```
 
 ## Chat command
@@ -38,24 +38,24 @@ Owners can run `/diagnostics [note]` in any conversation to request a local
 Gateway export as one copy-pasteable support report:
 
 1. Send `/diagnostics`, optionally with a short note (`/diagnostics bad tool choice`).
-2. OpenClaw sends a preamble and asks for one explicit exec approval, which runs
-   `openclaw gateway diagnostics export --json`. Do not approve diagnostics via
+2. Afora sends a preamble and asks for one explicit exec approval, which runs
+   `afora gateway diagnostics export --json`. Do not approve diagnostics via
    an allow-all rule.
-3. After approval, OpenClaw replies with the local bundle path, manifest
+3. After approval, Afora replies with the local bundle path, manifest
    summary, privacy notes, and relevant session ids.
 
-In group chats, an owner can still run `/diagnostics`, but OpenClaw sends the
+In group chats, an owner can still run `/diagnostics`, but Afora sends the
 export result, approval prompts, and Codex session/thread breakdown to the
 owner privately. The group only sees a short notice that diagnostics were sent
 privately. If no private owner route exists, the command fails closed and asks
 the owner to run it from a DM.
 
 When the active session uses the native OpenAI Codex harness, the same exec
-approval also covers an OpenAI feedback upload for the Codex threads OpenClaw
+approval also covers an OpenAI feedback upload for the Codex threads Afora
 knows about. That upload is separate from the local Gateway zip and only
 happens for Codex harness sessions. The approval prompt states that approving
 also sends Codex feedback, without listing Codex session or thread ids. After
-approval, the reply lists channels, OpenClaw session ids, Codex thread ids, and
+approval, the reply lists channels, Afora session ids, Codex thread ids, and
 local resume commands for the threads that were sent to OpenAI. Denying or
 ignoring the approval skips the export, the Codex feedback upload, and the
 Codex id list.
@@ -118,38 +118,38 @@ embedded run active.
 Inspect the live recorder:
 
 ```bash
-openclaw gateway stability
-openclaw gateway stability --type payload.large
-openclaw gateway stability --json
+afora gateway stability
+afora gateway stability --type payload.large
+afora gateway stability --json
 ```
 
 Inspect the newest persisted bundle after a fatal exit, shutdown timeout, or
 restart startup failure:
 
 ```bash
-openclaw gateway stability --bundle latest
+afora gateway stability --bundle latest
 ```
 
 Create a diagnostics zip from the newest persisted bundle:
 
 ```bash
-openclaw gateway stability --bundle latest --export
+afora gateway stability --bundle latest --export
 ```
 
-Persisted bundles live under `~/.openclaw/logs/stability/` when events exist.
+Persisted bundles live under `~/.afora/logs/stability/` when events exist.
 
 ## Useful options
 
 ```bash
-openclaw gateway diagnostics export \
-  --output openclaw-diagnostics.zip \
+afora gateway diagnostics export \
+  --output afora-diagnostics.zip \
   --log-lines 5000 \
   --log-bytes 1000000
 ```
 
 | Flag                    | Default                                                                       | Description                                        |
 | ----------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------- |
-| `--output <path>`       | `$OPENCLAW_STATE_DIR/logs/support/openclaw-diagnostics-<timestamp>-<pid>.zip` | Write to a specific zip path (or directory).       |
+| `--output <path>`       | `$AFORA_STATE_DIR/logs/support/afora-diagnostics-<timestamp>-<pid>.zip` | Write to a specific zip path (or directory).       |
 | `--log-lines <count>`   | `5000`                                                                        | Maximum sanitized log lines to include.            |
 | `--log-bytes <bytes>`   | `1000000`                                                                     | Maximum log bytes to inspect.                      |
 | `--url <url>`           | -                                                                             | Gateway WebSocket URL for status/health snapshots. |

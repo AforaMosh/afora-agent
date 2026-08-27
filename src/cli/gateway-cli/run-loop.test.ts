@@ -5,8 +5,8 @@ import type { GatewayBonjourBeacon } from "../../infra/bonjour-discovery.js";
 import { resolveGlobalMap } from "../../shared/global-singleton.js";
 import {
   GATEWAY_AGENT_MEDIA_MIGRATION_REQUIRED_REASON,
-  OpenClawAgentDatabaseMediaMigrationRequiredError,
-} from "../../state/openclaw-agent-db-migration-required.js";
+  AforaAgentDatabaseMediaMigrationRequiredError,
+} from "../../state/afora-agent-db-migration-required.js";
 import { pickBeaconHost, pickGatewayPort } from "./discover.js";
 
 const acquireGatewayLock = vi.fn(async (_opts?: { port?: number }) => ({
@@ -108,7 +108,7 @@ const respawnGatewayProcessForUpdate = vi.fn<
     child?: { kill: () => void };
     handoffSpawned?: Promise<boolean>;
   }
->(() => ({ mode: "disabled", detail: "OPENCLAW_NO_RESPAWN" }));
+>(() => ({ mode: "disabled", detail: "AFORA_NO_RESPAWN" }));
 const markUpdateRestartSentinelFailure = vi.fn<(reason: string) => Promise<null>>(
   async (_reason: string) => null,
 );
@@ -579,8 +579,8 @@ describe("runGatewayLoop", () => {
 
   it("records a typed reason for media-migration startup failures", async () => {
     await withIsolatedSignals(async () => {
-      const failure = new OpenClawAgentDatabaseMediaMigrationRequiredError(
-        "/tmp/openclaw-agent.sqlite",
+      const failure = new AforaAgentDatabaseMediaMigrationRequiredError(
+        "/tmp/afora-agent.sqlite",
         14,
       );
       const { runtime } = createRuntimeWithExitSignal();
@@ -1164,7 +1164,7 @@ describe("runGatewayLoop", () => {
     peekGatewaySigusr1RestartReason.mockReturnValue(undefined);
     respawnGatewayProcessForUpdate.mockReturnValue({
       mode: "disabled",
-      detail: "OPENCLAW_NO_RESPAWN",
+      detail: "AFORA_NO_RESPAWN",
     });
     markUpdateRestartSentinelFailure.mockClear();
 
@@ -1330,7 +1330,7 @@ describe("runGatewayLoop", () => {
     peekGatewaySigusr1RestartReason.mockReturnValue(undefined);
     respawnGatewayProcessForUpdate.mockReturnValue({
       mode: "disabled",
-      detail: "OPENCLAW_NO_RESPAWN",
+      detail: "AFORA_NO_RESPAWN",
     });
 
     await withIsolatedSignals(async ({ captureSignal }) => {
@@ -1364,7 +1364,7 @@ describe("runGatewayLoop", () => {
     peekGatewaySigusr1RestartReason.mockReturnValue(undefined);
     respawnGatewayProcessForUpdate.mockReturnValue({
       mode: "disabled",
-      detail: "OPENCLAW_NO_RESPAWN",
+      detail: "AFORA_NO_RESPAWN",
     });
 
     await withIsolatedSignals(async ({ captureSignal }) => {
@@ -1561,7 +1561,7 @@ describe("runGatewayLoop", () => {
     peekGatewaySigusr1RestartReason.mockReturnValue(undefined);
     respawnGatewayProcessForUpdate.mockReturnValue({
       mode: "disabled",
-      detail: "OPENCLAW_NO_RESPAWN",
+      detail: "AFORA_NO_RESPAWN",
     });
 
     await withIsolatedSignals(async ({ captureSignal }) => {
@@ -1629,7 +1629,7 @@ describe("runGatewayLoop", () => {
     peekGatewaySigusr1RestartReason.mockReturnValue(undefined);
     respawnGatewayProcessForUpdate.mockReturnValue({
       mode: "disabled",
-      detail: "OPENCLAW_NO_RESPAWN",
+      detail: "AFORA_NO_RESPAWN",
     });
 
     await withIsolatedSignals(async ({ captureSignal }) => {
@@ -1706,7 +1706,7 @@ describe("runGatewayLoop", () => {
     peekGatewaySigusr1RestartReason.mockReturnValue(undefined);
     respawnGatewayProcessForUpdate.mockReturnValue({
       mode: "disabled",
-      detail: "OPENCLAW_NO_RESPAWN",
+      detail: "AFORA_NO_RESPAWN",
     });
 
     try {
@@ -1794,7 +1794,7 @@ describe("runGatewayLoop", () => {
     peekGatewaySigusr1RestartReason.mockReturnValue(undefined);
     respawnGatewayProcessForUpdate.mockReturnValue({
       mode: "disabled",
-      detail: "OPENCLAW_NO_RESPAWN",
+      detail: "AFORA_NO_RESPAWN",
     });
 
     await withIsolatedSignals(async ({ captureSignal }) => {
@@ -1871,7 +1871,7 @@ describe("runGatewayLoop", () => {
       expect(gatewayLog.warn).toHaveBeenNthCalledWith(
         2,
         "An unauthorized SIGUSR1 restart signal was received and ignored. " +
-          "If a pending gateway restart needs to be applied, run `openclaw gateway restart` " +
+          "If a pending gateway restart needs to be applied, run `afora gateway restart` " +
           "or restart the gateway through your service manager.",
       );
     });
@@ -1959,8 +1959,8 @@ describe("runGatewayLoop", () => {
   it("releases the lock before exiting on spawned restart", async () => {
     vi.clearAllMocks();
     peekGatewaySigusr1RestartReason.mockReturnValue(undefined);
-    const originalTraceEnv = process.env.OPENCLAW_GATEWAY_RESTART_TRACE;
-    process.env.OPENCLAW_GATEWAY_RESTART_TRACE = "1";
+    const originalTraceEnv = process.env.AFORA_GATEWAY_RESTART_TRACE;
+    process.env.AFORA_GATEWAY_RESTART_TRACE = "1";
 
     try {
       await withIsolatedSignals(async ({ captureSignal }) => {
@@ -1989,15 +1989,15 @@ describe("runGatewayLoop", () => {
         expect(runtime.exit).toHaveBeenCalledWith(0);
         expect(exitCallOrder).toEqual(["lockRelease", "exit"]);
         const [respawnOpts] = restartGatewayProcessWithFreshPid.mock.calls[0] ?? [];
-        expect(respawnOpts?.env?.OPENCLAW_GATEWAY_RESTART_TRACE_STARTED_AT_MS).toMatch(/^\d/u);
-        expect(respawnOpts?.env?.OPENCLAW_GATEWAY_RESTART_TRACE_LAST_AT_MS).toMatch(/^\d/u);
+        expect(respawnOpts?.env?.AFORA_GATEWAY_RESTART_TRACE_STARTED_AT_MS).toMatch(/^\d/u);
+        expect(respawnOpts?.env?.AFORA_GATEWAY_RESTART_TRACE_LAST_AT_MS).toMatch(/^\d/u);
         expect(writeGatewayRestartHandoffSync).not.toHaveBeenCalled();
       });
     } finally {
       if (originalTraceEnv === undefined) {
-        delete process.env.OPENCLAW_GATEWAY_RESTART_TRACE;
+        delete process.env.AFORA_GATEWAY_RESTART_TRACE;
       } else {
-        process.env.OPENCLAW_GATEWAY_RESTART_TRACE = originalTraceEnv;
+        process.env.AFORA_GATEWAY_RESTART_TRACE = originalTraceEnv;
       }
     }
   });
@@ -2007,7 +2007,7 @@ describe("runGatewayLoop", () => {
     peekGatewaySigusr1RestartReason.mockReturnValue(undefined);
     try {
       setPlatform("darwin");
-      process.env.OPENCLAW_LAUNCHD_LABEL = "ai.openclaw.gateway";
+      process.env.AFORA_LAUNCHD_LABEL = "ai.afora.gateway";
       restartGatewayProcessWithFreshPid.mockReturnValueOnce({
         mode: "supervised",
         handoffSpawned: Promise.resolve(true),
@@ -2033,7 +2033,7 @@ describe("runGatewayLoop", () => {
       });
     } finally {
       vi.useRealTimers();
-      delete process.env.OPENCLAW_LAUNCHD_LABEL;
+      delete process.env.AFORA_LAUNCHD_LABEL;
       if (originalPlatformDescriptor) {
         Object.defineProperty(process, "platform", originalPlatformDescriptor);
       }
@@ -2045,7 +2045,7 @@ describe("runGatewayLoop", () => {
     peekGatewaySigusr1RestartReason.mockReturnValue(undefined);
     try {
       setPlatform("darwin");
-      process.env.OPENCLAW_LAUNCHD_LABEL = "ai.openclaw.gateway";
+      process.env.AFORA_LAUNCHD_LABEL = "ai.afora.gateway";
       restartGatewayProcessWithFreshPid.mockReturnValueOnce({
         mode: "supervised",
         handoffSpawned: Promise.resolve(false),
@@ -2072,7 +2072,7 @@ describe("runGatewayLoop", () => {
       });
     } finally {
       vi.useRealTimers();
-      delete process.env.OPENCLAW_LAUNCHD_LABEL;
+      delete process.env.AFORA_LAUNCHD_LABEL;
       if (originalPlatformDescriptor) {
         Object.defineProperty(process, "platform", originalPlatformDescriptor);
       }
@@ -2084,7 +2084,7 @@ describe("runGatewayLoop", () => {
     consumeGatewayRestartIntentPayloadSync.mockReturnValueOnce({ reason: "gateway.restart" });
     try {
       setPlatform("darwin");
-      process.env.OPENCLAW_LAUNCHD_LABEL = "ai.openclaw.gateway";
+      process.env.AFORA_LAUNCHD_LABEL = "ai.afora.gateway";
       restartGatewayProcessWithFreshPid.mockReturnValueOnce({
         mode: "supervised",
         handoffSpawned: Promise.resolve(true),
@@ -2107,7 +2107,7 @@ describe("runGatewayLoop", () => {
       });
     } finally {
       vi.useRealTimers();
-      delete process.env.OPENCLAW_LAUNCHD_LABEL;
+      delete process.env.AFORA_LAUNCHD_LABEL;
       if (originalPlatformDescriptor) {
         Object.defineProperty(process, "platform", originalPlatformDescriptor);
       }
@@ -2117,8 +2117,8 @@ describe("runGatewayLoop", () => {
   it("records external ownership even when native supervisor markers are inherited", async () => {
     vi.clearAllMocks();
     peekGatewaySigusr1RestartReason.mockReturnValue(undefined);
-    process.env.OPENCLAW_SUPERVISOR_MODE = "external";
-    process.env.OPENCLAW_LAUNCHD_LABEL = "ai.openclaw.gateway";
+    process.env.AFORA_SUPERVISOR_MODE = "external";
+    process.env.AFORA_LAUNCHD_LABEL = "ai.afora.gateway";
     restartGatewayProcessWithFreshPid.mockReturnValueOnce({
       mode: "supervised",
     });
@@ -2138,15 +2138,15 @@ describe("runGatewayLoop", () => {
         });
       });
     } finally {
-      delete process.env.OPENCLAW_SUPERVISOR_MODE;
-      delete process.env.OPENCLAW_LAUNCHD_LABEL;
+      delete process.env.AFORA_SUPERVISOR_MODE;
+      delete process.env.AFORA_LAUNCHD_LABEL;
     }
   });
 
   it("falls back in-process when an external restart handoff cannot be persisted", async () => {
     vi.clearAllMocks();
     peekGatewaySigusr1RestartReason.mockReturnValue(undefined);
-    process.env.OPENCLAW_SUPERVISOR_MODE = "external";
+    process.env.AFORA_SUPERVISOR_MODE = "external";
     restartGatewayProcessWithFreshPid.mockReturnValueOnce({
       mode: "supervised",
     });
@@ -2174,7 +2174,7 @@ describe("runGatewayLoop", () => {
         await expect(exited).resolves.toBe(0);
       });
     } finally {
-      delete process.env.OPENCLAW_SUPERVISOR_MODE;
+      delete process.env.AFORA_SUPERVISOR_MODE;
     }
   });
 
@@ -2322,7 +2322,7 @@ describe("runGatewayLoop", () => {
     });
     try {
       setPlatform("darwin");
-      process.env.OPENCLAW_LAUNCHD_LABEL = "ai.openclaw.gateway";
+      process.env.AFORA_LAUNCHD_LABEL = "ai.afora.gateway";
       await withIsolatedSignals(async ({ captureSignal }) => {
         const { start, runtime, exited } = await createSignaledLoopHarness();
         const sigusr1 = captureSignal("SIGUSR1");
@@ -2343,7 +2343,7 @@ describe("runGatewayLoop", () => {
       });
     } finally {
       vi.useRealTimers();
-      delete process.env.OPENCLAW_LAUNCHD_LABEL;
+      delete process.env.AFORA_LAUNCHD_LABEL;
       if (originalPlatformDescriptor) {
         Object.defineProperty(process, "platform", originalPlatformDescriptor);
       }
@@ -2353,7 +2353,7 @@ describe("runGatewayLoop", () => {
   it("keeps running when an external update restart handoff cannot be persisted", async () => {
     vi.clearAllMocks();
     peekGatewaySigusr1RestartReason.mockReturnValue("update.run");
-    process.env.OPENCLAW_SUPERVISOR_MODE = "external";
+    process.env.AFORA_SUPERVISOR_MODE = "external";
     respawnGatewayProcessForUpdate.mockReturnValueOnce({
       mode: "supervised",
     });
@@ -2380,7 +2380,7 @@ describe("runGatewayLoop", () => {
         await expect(exited).resolves.toBe(0);
       });
     } finally {
-      delete process.env.OPENCLAW_SUPERVISOR_MODE;
+      delete process.env.AFORA_SUPERVISOR_MODE;
     }
   });
 

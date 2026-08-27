@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawPluginNodeInvokePolicyContext } from "../plugins/plugin-registration.types.js";
+import type { AforaPluginNodeInvokePolicyContext } from "../plugins/plugin-registration.types.js";
 import { createMeetingBrowserNodeInvokePolicy } from "./node-invoke-policy.js";
 
 function createPolicy(
@@ -41,7 +41,7 @@ function createContext(params: Record<string, unknown>) {
       invokeNode,
       nodeId: "node-1",
       params,
-    } as OpenClawPluginNodeInvokePolicyContext,
+    } as AforaPluginNodeInvokePolicyContext,
   };
 }
 

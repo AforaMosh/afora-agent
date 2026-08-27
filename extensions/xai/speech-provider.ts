@@ -1,13 +1,13 @@
 // Xai provider module implements model/runtime integration.
-import { resolveGeneratedMediaMaxBytes } from "openclaw/plugin-sdk/media-generation-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/provider-auth";
-import { resolveApiKeyForProvider } from "openclaw/plugin-sdk/provider-auth-runtime";
+import { resolveGeneratedMediaMaxBytes } from "afora-agent/plugin-sdk/media-generation-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/provider-auth";
+import { resolveApiKeyForProvider } from "afora-agent/plugin-sdk/provider-auth-runtime";
 import type {
   SpeechProviderPlugin,
   SpeechSynthesisRequest,
   SpeechSynthesisTarget,
-} from "openclaw/plugin-sdk/speech";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/speech";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   createXaiSpeechProviderMetadata,
   readXaiSpeechOverrides,
@@ -92,7 +92,7 @@ export function buildXaiSpeechProvider(): SpeechProviderPlugin {
 // 3. xAI OAuth auth profile (cfg-scoped)
 async function resolveOptionalXaiAudioApiKey(
   configApiKey: string | undefined,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): Promise<string | undefined> {
   const direct = resolveDirectXaiAudioApiKey(configApiKey);
   if (direct) {
@@ -107,13 +107,13 @@ async function resolveOptionalXaiAudioApiKey(
 
 async function resolveXaiAudioApiKey(
   configApiKey: string | undefined,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): Promise<string> {
   const apiKey = await resolveOptionalXaiAudioApiKey(configApiKey, cfg);
   if (apiKey) {
     return apiKey;
   }
   throw new Error(
-    "xAI credentials missing for TTS. Sign in with `openclaw onboard --auth-choice xai-oauth`, or run `openclaw onboard --auth-choice xai-api-key`, or set XAI_API_KEY.",
+    "xAI credentials missing for TTS. Sign in with `afora onboard --auth-choice xai-oauth`, or run `afora onboard --auth-choice xai-api-key`, or set XAI_API_KEY.",
   );
 }

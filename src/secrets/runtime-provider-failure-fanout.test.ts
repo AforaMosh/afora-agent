@@ -30,7 +30,7 @@ describe("provider-scoped SecretRef failure fan-out", () => {
     if (process.platform === "win32") {
       return;
     }
-    const root = tempDirs.make("openclaw-web-secret-provider-failure-");
+    const root = tempDirs.make("afora-web-secret-provider-failure-");
     const commandPath = path.join(root, "provider.sh");
     await fs.writeFile(commandPath, "#!/bin/sh\nexit 1\n", {
       encoding: "utf8",
@@ -72,7 +72,7 @@ describe("provider-scoped SecretRef failure fan-out", () => {
     if (process.platform === "win32") {
       return;
     }
-    const root = tempDirs.make("openclaw-owner-secret-provider-failure-");
+    const root = tempDirs.make("afora-owner-secret-provider-failure-");
     const callLogPath = path.join(root, "calls.log");
     const commandPath = path.join(root, "provider.sh");
     await fs.writeFile(
@@ -132,7 +132,7 @@ describe("provider-scoped SecretRef failure fan-out", () => {
     if (process.platform === "win32") {
       return;
     }
-    const root = tempDirs.make("openclaw-owner-multi-provider-failure-");
+    const root = tempDirs.make("afora-owner-multi-provider-failure-");
     const command = async (name: string) => {
       const commandPath = path.join(root, `${name}.sh`);
       await fs.writeFile(commandPath, "#!/bin/sh\nexit 1\n", {
@@ -186,7 +186,7 @@ describe("provider-scoped SecretRef failure fan-out", () => {
     if (process.platform === "win32") {
       return;
     }
-    const root = tempDirs.make("openclaw-owner-mixed-provider-failure-");
+    const root = tempDirs.make("afora-owner-mixed-provider-failure-");
     const providerCommand = path.join(root, "provider.sh");
     const refCommand = path.join(root, "ref.sh");
     await fs.writeFile(providerCommand, "#!/bin/sh\nexit 1\n", {

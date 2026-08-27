@@ -3,8 +3,8 @@
  * Normalizes core and plugin tool groups, expands plugin entries, and extracts
  * explicit operator allow/deny lists.
  */
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { sanitizeServerName, TOOL_NAME_SEPARATOR } from "./agent-bundle-mcp-names.js";
 import { IMPLICIT_ALLOW_ALL_FROM_ALSO_ALLOW } from "./sandbox-tool-policy.js";
 import {
@@ -51,7 +51,7 @@ export type DeclaredToolAllowlistContext = {
 };
 
 /** Synthetic allowlist entry that means "use default plugin tools". */
-export const DEFAULT_PLUGIN_TOOLS_ALLOWLIST_ENTRY = "__openclaw_default_plugin_tools__";
+export const DEFAULT_PLUGIN_TOOLS_ALLOWLIST_ENTRY = "__afora_default_plugin_tools__";
 
 const SHIPPED_PLUGIN_POLICY_FAMILY_CORE_TOOLS = new Map<string, readonly string[]>([
   // `canvas` is a shipped operator policy family. Keep promoted `show_widget`

@@ -5,7 +5,7 @@ import {
   mapBatchEmbeddingsByIndex,
   sanitizeEmbeddingCacheHeaders,
   type MemoryEmbeddingProviderAdapter,
-} from "openclaw/plugin-sdk/memory-core-host-engine-embeddings";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-embeddings";
 import { runGeminiEmbeddingBatches } from "./embedding-batch.js";
 import {
   buildGeminiEmbeddingRequest,
@@ -45,9 +45,9 @@ export const geminiMemoryEmbeddingProviderAdapter: MemoryEmbeddingProviderAdapte
           baseUrl: client.baseUrl,
           model: client.model,
           outputDimensionality: client.outputDimensionality,
-          // x-goog-api-client is generated partner attribution (openclaw/<version>).
+          // x-goog-api-client is generated partner attribution (afora/<version>).
           // Keep it on outbound requests, but exclude it from durable memory identity so
-          // OpenClaw version bumps do not pause otherwise-compatible Gemini indexes.
+          // Afora version bumps do not pause otherwise-compatible Gemini indexes.
           headers: sanitizeEmbeddingCacheHeaders(client.headers, [
             "authorization",
             "x-goog-api-key",

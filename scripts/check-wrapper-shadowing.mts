@@ -56,10 +56,10 @@ function resolveSourceModulePath(
   specifier: string,
   modulesByPath: ReadonlyMap<string, ModuleExports>,
 ) {
-  const pluginSdkPrefix = specifier.startsWith("openclaw/plugin-sdk/")
-    ? "openclaw/plugin-sdk/"
-    : specifier.startsWith("@openclaw/plugin-sdk/")
-      ? "@openclaw/plugin-sdk/"
+  const pluginSdkPrefix = specifier.startsWith("afora-agent/plugin-sdk/")
+    ? "afora-agent/plugin-sdk/"
+    : specifier.startsWith("@afora/plugin-sdk/")
+      ? "@afora/plugin-sdk/"
       : null;
   if (!pluginSdkPrefix) {
     return resolveExportModulePath(sourcePath, specifier, modulesByPath);

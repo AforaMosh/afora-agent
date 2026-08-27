@@ -2,15 +2,15 @@
  * Codex-backed media understanding provider for bounded image description and
  * structured extraction turns.
  */
-import { validateJsonSchemaValue } from "openclaw/plugin-sdk/json-schema-runtime";
+import { validateJsonSchemaValue } from "afora-agent/plugin-sdk/json-schema-runtime";
 import type {
   ImagesDescriptionRequest,
   ImagesDescriptionResult,
   MediaUnderstandingProvider,
   StructuredExtractionRequest,
   StructuredExtractionResult,
-} from "openclaw/plugin-sdk/media-understanding";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/media-understanding";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   runBoundedCodexAppServerTurn,
   type CodexBoundedTurnOptions,
@@ -85,7 +85,7 @@ async function describeCodexImages(
     options,
     taskLabel: "image understanding",
     developerInstructions:
-      "You are OpenClaw's bounded image-understanding worker. Describe only the provided image content. Do not call tools, edit files, or ask follow-up questions.",
+      "You are Afora's bounded image-understanding worker. Describe only the provided image content. Do not call tools, edit files, or ask follow-up questions.",
     input: [
       { type: "text", text: buildCodexImagePrompt(req), text_elements: [] },
       ...req.images.map((image) => ({
@@ -131,7 +131,7 @@ async function extractCodexStructured(
     options,
     taskLabel: "structured extraction",
     developerInstructions:
-      "You are OpenClaw's bounded structured-extraction worker. Return only the requested extraction. Do not call tools, edit files, ask follow-up questions, or include secrets.",
+      "You are Afora's bounded structured-extraction worker. Return only the requested extraction. Do not call tools, edit files, ask follow-up questions, or include secrets.",
     input: buildCodexStructuredInput(req),
     requiredModalities: requiredStructuredModalities(),
     isolation: "configured-transport",

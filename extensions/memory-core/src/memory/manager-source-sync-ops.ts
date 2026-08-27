@@ -1,16 +1,16 @@
 // Memory Core plugin module owns memory and session source indexing.
-import { createSubsystemLogger } from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/memory-core-host-engine-foundation";
 import {
   buildSessionEntry,
   sessionPathForSessionIdentity,
   type SessionTranscriptCorpusEntry,
-} from "openclaw/plugin-sdk/memory-core-host-engine-sessions";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-sessions";
 import {
   buildFileEntry,
   listMemoryFiles,
   MEMORY_INDEX_FTS_TABLE,
   runWithConcurrency,
-} from "openclaw/plugin-sdk/memory-core-host-engine-storage";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
 import { MemoryManagerSessionSyncOps } from "./manager-session-sync-ops.js";
 import { resolveMemorySessionSyncPlan } from "./manager-session-sync-state.js";
 import {

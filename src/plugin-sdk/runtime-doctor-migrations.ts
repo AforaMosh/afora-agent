@@ -9,7 +9,7 @@
 import fs from "node:fs/promises";
 import { asObjectRecord } from "../config/channel-compat-normalization.js";
 import type { CompatMutationResult } from "../config/channel-compat-normalization.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { OpenKeyedStoreOptions } from "../plugin-state/plugin-state-store.js";
 import type { PluginDoctorStateMigration } from "../plugins/doctor-contract-module.js";
 import { archiveLegacyStateSource } from "../plugins/doctor-state-migration-fs.js";
@@ -74,7 +74,7 @@ type KeyMoveChangeContext = {
 
 /** Collects a channel's root config and object-shaped account overrides in config order. */
 export function collectChannelAccountScopes(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channelId: string;
 }): Array<{
   prefix: string;

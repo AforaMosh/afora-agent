@@ -29,7 +29,7 @@ suite.define(() => {
         methodResponses: {
           "chat.startup": {
             agentsList: {
-              agents: [{ id: "main", name: "OpenClaw" }],
+              agents: [{ id: "main", name: "Afora" }],
               defaultId: "main",
               mainKey: "main",
               scope: "agent",
@@ -171,7 +171,7 @@ suite.define(() => {
       await expect.poll(() => composer.locator("textarea").isDisabled()).toBe(true);
       expect(await gateway.getRequests("chat.send")).toHaveLength(0);
 
-      const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+      const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
       if (artifactDir) {
         await composer.screenshot({
           animations: "disabled",
@@ -273,7 +273,7 @@ suite.define(() => {
       expect(await gateway.getRequests("chat.metadata")).toHaveLength(0);
 
       const activeComposer = () =>
-        page.locator('openclaw-chat-pane[aria-hidden="false"] .agent-chat__input');
+        page.locator('afora-chat-pane[aria-hidden="false"] .agent-chat__input');
       await expect
         .poll(() =>
           activeComposer().locator('[data-chat-model-option="openai/work-model"]').count(),

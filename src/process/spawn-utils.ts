@@ -1,7 +1,7 @@
 // Spawn utilities configure child processes and normalize spawned process handles.
 import type { ChildProcess, SpawnOptions } from "node:child_process";
 import { spawn } from "node:child_process";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { toErrorObject } from "../infra/errors.js";
 
 type SpawnFallback = {

@@ -1,6 +1,6 @@
 // Devices page owns these pure view helpers.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { html, type TemplateResult } from "lit";
 import {
   GATEWAY_CLIENT_IDS,

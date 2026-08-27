@@ -1,5 +1,5 @@
 // Doctor warning builder for allowlist policies that would block every sender.
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { getDoctorChannelCapabilities } from "../channel-capabilities.js";
 import type { DoctorAccountRecord, DoctorAllowFromList } from "../types.js";
 import { hasAllowFromEntries } from "./allowlist.js";
@@ -8,7 +8,7 @@ import { shouldSkipChannelDoctorDefaultEmptyGroupAllowlistWarning } from "./chan
 type CollectEmptyAllowlistPolicyWarningsParams = {
   account: DoctorAccountRecord;
   channelName?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   doctorFixCommand: string;
   parent?: DoctorAccountRecord;
   prefix: string;

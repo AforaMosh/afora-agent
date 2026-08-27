@@ -2,9 +2,9 @@
 import {
   resolveNonNegativeIntegerOption,
   resolveOptionalIntegerOption,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import type { InboundDebounceByProvider } from "../config/types.messages.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { toErrorObject } from "../infra/errors.js";
 
 const resolveMs = (value: unknown): number | undefined =>
@@ -22,7 +22,7 @@ const resolveChannelOverride = (params: {
 
 /** Resolve effective inbound debounce milliseconds from explicit, channel, and global config. */
 export function resolveInboundDebounceMs(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   overrideMs?: number;
 }): number {

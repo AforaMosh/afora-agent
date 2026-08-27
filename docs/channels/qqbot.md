@@ -1,13 +1,13 @@
 ---
 summary: "QQ Bot setup, config, and usage"
 read_when:
-  - You want to connect OpenClaw to QQ
+  - You want to connect Afora to QQ
   - You need QQ Bot credential setup
   - You want QQ Bot group or private chat support
 title: QQ bot
 ---
 
-QQ Bot connects to OpenClaw via the official QQ Bot API (WebSocket gateway).
+QQ Bot connects to Afora via the official QQ Bot API (WebSocket gateway).
 C2C private chat and group `@`-mentions are the primary chat types, with rich
 media (images, voice, video, files). Guild channel messages are supported for
 text and remote-URL images only; voice, video, file uploads, and local/Base64
@@ -19,7 +19,7 @@ Status: official downloadable plugin.
 ## Install
 
 ```bash
-openclaw plugins install @tencent-connect/openclaw-qqbot
+afora plugins install @tencent-connect/afora-qqbot
 ```
 
 ## Setup
@@ -36,26 +36,26 @@ AppSecret is not stored in plaintext. If you leave the page without saving it, y
 4. Add the channel:
 
 ```bash
-openclaw channels add --channel qqbot --token "AppID:AppSecret"
+afora channels add --channel qqbot --token "AppID:AppSecret"
 ```
 
 5. Restart the Gateway.
 
 ## Inbound durability
 
-For QQ gateway turn events, OpenClaw persists the raw event before advancing the saved gateway resume sequence. Pending or retryable turns survive a Gateway restart, remain serialized per conversation, and use the provider event ID to suppress duplicate queue entries while the active or retained completion record exists.
+For QQ gateway turn events, Afora persists the raw event before advancing the saved gateway resume sequence. Pending or retryable turns survive a Gateway restart, remain serialized per conversation, and use the provider event ID to suppress duplicate queue entries while the active or retained completion record exists.
 
-If durable admission fails, OpenClaw terminates the current gateway socket without advancing the sequence. The reconnect/resume path can then request the uncommitted event again. Delivery is still at least once across the queue-to-agent boundary, so a crash during handoff can replay a turn.
+If durable admission fails, Afora terminates the current gateway socket without advancing the sequence. The reconnect/resume path can then request the uncommitted event again. Delivery is still at least once across the queue-to-agent boundary, so a crash during handoff can replay a turn.
 
 Interactive setup:
 
 ```bash
-openclaw channels add
+afora channels add
 ```
 
 The wizard also offers QR-code binding as an alternative to typing AppID/AppSecret
 manually: scan the code with the phone app tied to the target QQ Bot to complete
-binding. OpenClaw persists the returned credentials under the account's config
+binding. Afora persists the returned credentials under the account's config
 scope.
 
 ## Configure
@@ -95,10 +95,10 @@ File-backed AppSecret:
 
 Notes:
 
-- `openclaw channels add --channel qqbot --token-file ...` sets the AppSecret
+- `afora channels add --channel qqbot --token-file ...` sets the AppSecret
   only; `appId` must already be set in config or `QQBOT_APP_ID`.
 - `clientSecret` accepts a plaintext string or a file path (`clientSecretFile`).
-- Known limitation: the external `@tencent-connect/openclaw-qqbot` package does
+- Known limitation: the external `@tencent-connect/afora-qqbot` package does
   not support structured SecretRef objects for `clientSecret`. If your config
   uses one, move the secret to the `QQBOT_CLIENT_SECRET` environment variable
   (or `clientSecretFile`) before upgrading.
@@ -122,7 +122,7 @@ Notes:
 - `streaming.nativeTransport: true` streams C2C (DM) replies through QQ's
   official `stream_messages` API; group/channel targets are unaffected.
 - Legacy `streaming: true|false` scalars and the `streaming.c2cStreamApi` key
-  migrate to this shape via `openclaw doctor --fix`.
+  migrate to this shape via `afora doctor --fix`.
 - `/bot-streaming on|off` toggles the same config from a DM.
 
 ### Access policy
@@ -144,7 +144,7 @@ Notes:
 
 ### Multi-account setup
 
-Run multiple QQ bots under a single OpenClaw instance:
+Run multiple QQ bots under a single Afora instance:
 
 ```json5
 {
@@ -172,7 +172,7 @@ diagnostics stay separable when you run several bots under one Gateway.
 Add a second bot via CLI:
 
 ```bash
-openclaw channels add --channel qqbot --account bot2 --token "222222222:secret-of-bot-2"
+afora channels add --channel qqbot --account bot2 --token "222222222:secret-of-bot-2"
 ```
 
 ### Group chats
@@ -229,7 +229,7 @@ entry overrides those defaults for one group. Group settings:
 | `safety` | `/help`, `/btw`, `/stop` stay visible in the group; sensitive commands (`/config`, `/tools`, `/bash`, etc.) must be run in private chat.      |
 | `strict` | Only group-session controls needed for strict operation are allowed. `/stop` still works so an authorized sender can interrupt an active run. |
 
-Old QQBot `toolPolicy` entries are retired. Run `openclaw doctor --fix` to migrate them to `tools`.
+Old QQBot `toolPolicy` entries are retired. Run `afora doctor --fix` to migrate them to `tools`.
 
 Activation modes are `mention` and `always`. `requireMention: true` maps to
 `mention`; `requireMention: false` maps to `always`. A session-level activation
@@ -316,7 +316,7 @@ Built-in commands intercepted before the AI queue:
 | `/bot-ping`          | —         | any          | Latency test                                                                   |
 | `/bot-help`          | —         | any          | List all commands                                                              |
 | `/bot-me`            | —         | private only | Show the sender's QQ user ID (openid) for `allowFrom` / `groupAllowFrom` setup |
-| `/bot-version`       | —         | private only | Show the OpenClaw framework version and plugin version                         |
+| `/bot-version`       | —         | private only | Show the Afora framework version and plugin version                         |
 | `/bot-upgrade`       | —         | private only | Show the QQBot upgrade guide link                                              |
 | `/bot-approve`       | allowlist | private only | Manage command-execution approval config (on / off / always / reset / status)  |
 | `/bot-logs`          | allowlist | private only | Export recent gateway logs as a file                                           |
@@ -345,14 +345,14 @@ default.
 ## Media and storage
 
 - Inbound, outbound, and gateway-bridge media share one payload root under
-  `~/.openclaw/media/qqbot` (honoring `OPENCLAW_HOME` when set), so uploads,
+  `~/.afora/media/qqbot` (honoring `AFORA_HOME` when set), so uploads,
   downloads, and transcode caches stay under one guarded directory.
 - Rich media delivery for C2C and group targets goes through one `sendMedia`
   path. Local files and in-memory buffers of 5&nbsp;MiB or more use QQ's
   chunked upload endpoints; smaller payloads and remote-URL/Base64 sources use
   the one-shot upload API.
 - If a hot upgrade interrupts the Gateway before it finishes writing
-  `openclaw.json`, the plugin restores the last-known `appId` / `clientSecret`
+  `afora.json`, the plugin restores the last-known `appId` / `clientSecret`
   for that account from an internal snapshot on the next start (never
   overwriting an intentional config change), so re-scanning the QR code is not
   required.

@@ -1,4 +1,4 @@
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 // Dedicated sidebar for the full-page settings takeover (see app-host.ts).
 import { html, nothing } from "lit";
 import type { UpdateAvailable, UpdateScheduleState } from "../api/types.ts";
@@ -312,7 +312,7 @@ export function renderSettingsSidebar(props: SettingsSidebarProps) {
               `,
             )}
       </nav>
-      <openclaw-sidebar-update-card
+      <afora-sidebar-update-card
         .updateAvailable=${props.updateAvailable}
         .updateSchedule=${props.updateSchedule ?? null}
         .heldUpdateCampaignId=${props.heldUpdateCampaignId ?? null}
@@ -325,7 +325,7 @@ export function renderSettingsSidebar(props: SettingsSidebarProps) {
         .refreshRequired=${props.refreshRequired}
         .onRefresh=${props.onRefresh}
         .onHoldUpdate=${props.onHoldUpdate ?? (async () => false)}
-      ></openclaw-sidebar-update-card>
+      ></afora-sidebar-update-card>
       <footer class="settings-sidebar__footer">
         ${props.offline
           ? renderOfflineSidebarStatus({
@@ -334,15 +334,15 @@ export function renderSettingsSidebar(props: SettingsSidebarProps) {
               title: props.lastError ? redactLoginFailureError(props.lastError) : reconnecting,
               onRetry: props.onRetryConnect,
             })
-          : html`<openclaw-settings-save-indicator
+          : html`<afora-settings-save-indicator
               .props=${props.saveIndicator}
-            ></openclaw-settings-save-indicator>`}
-        <openclaw-sidebar-build-chip
+            ></afora-settings-save-indicator>`}
+        <afora-sidebar-build-chip
           .basePath=${props.basePath}
           .gatewayVersion=${props.gatewayVersion || null}
           .variant=${"settings"}
           .onNavigate=${() => props.onNavigate("about")}
-        ></openclaw-sidebar-build-chip>
+        ></afora-sidebar-build-chip>
       </footer>
     </aside>
   `;

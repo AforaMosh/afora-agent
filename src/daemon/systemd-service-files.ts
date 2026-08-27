@@ -1,7 +1,7 @@
 /** Linux systemd unit paths and environment-file parsing. */
 import fs from "node:fs/promises";
 import path from "node:path";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 import { isUnresolvedShellReference } from "../config/state-dir-dotenv.js";
 import { splitArgsPreservingQuotes } from "./arg-split.js";
 import { resolveGatewaySystemdServiceName } from "./constants.js";
@@ -23,11 +23,11 @@ export function resolveSystemdUnitPathForName(env: GatewayServiceEnv, name: stri
 }
 
 export function resolveSystemdServiceName(env: GatewayServiceEnv): string {
-  const override = env.OPENCLAW_SYSTEMD_UNIT?.trim();
+  const override = env.AFORA_SYSTEMD_UNIT?.trim();
   if (override) {
     return override.endsWith(".service") ? override.slice(0, -".service".length) : override;
   }
-  return resolveGatewaySystemdServiceName(env.OPENCLAW_PROFILE);
+  return resolveGatewaySystemdServiceName(env.AFORA_PROFILE);
 }
 
 export function resolveSystemdUnitPath(env: GatewayServiceEnv): string {
@@ -124,7 +124,7 @@ export function resolveSystemdEnvironmentFilePath(params: {
   stateDir: string;
   environment?: GatewayServiceEnv;
 }): string {
-  const serviceKind = params.environment?.OPENCLAW_SERVICE_KIND?.trim();
+  const serviceKind = params.environment?.AFORA_SERVICE_KIND?.trim();
   const filename =
     serviceKind === "node" ? SYSTEMD_NODE_DOTENV_FILENAME : SYSTEMD_GATEWAY_DOTENV_FILENAME;
   return path.join(params.stateDir, filename);
@@ -134,7 +134,7 @@ export function resolveLegacyNodeSystemdEnvironmentFilePath(params: {
   stateDir: string;
   environment?: GatewayServiceEnv;
 }): string | null {
-  if (params.environment?.OPENCLAW_SERVICE_KIND?.trim() !== "node") {
+  if (params.environment?.AFORA_SERVICE_KIND?.trim() !== "node") {
     return null;
   }
   const legacyPath = path.join(params.stateDir, SYSTEMD_GATEWAY_DOTENV_FILENAME);
@@ -143,7 +143,7 @@ export function resolveLegacyNodeSystemdEnvironmentFilePath(params: {
 }
 
 export function isNodeSystemdEnvironment(env: GatewayServiceEnv): boolean {
-  return env.OPENCLAW_SERVICE_KIND?.trim() === "node";
+  return env.AFORA_SERVICE_KIND?.trim() === "node";
 }
 
 function expandSystemdSpecifier(input: string, env: GatewayServiceEnv): string {

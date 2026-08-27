@@ -4,7 +4,7 @@ description: "OpenAI Audio Transcriptions API via curl; gpt-4o-transcribe, mini,
 homepage: https://platform.openai.com/docs/guides/speech-to-text
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "emoji": "🌐",
         "requires": { "bins": ["curl", "node"], "env": ["OPENAI_API_KEY"] },
@@ -58,7 +58,7 @@ Notes:
 
 ## API key
 
-Set `OPENAI_API_KEY`, or configure it in the active OpenClaw config file (`$OPENCLAW_CONFIG_PATH`, default `~/.openclaw/openclaw.json`). Optionally set `OPENAI_BASE_URL`:
+Set `OPENAI_API_KEY`, or configure it in the active Afora config file (`$AFORA_CONFIG_PATH`, default `~/.AforaMosh/afora-agent.json`). Optionally set `OPENAI_BASE_URL`:
 
 ```json5
 {

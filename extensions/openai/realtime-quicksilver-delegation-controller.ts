@@ -1,7 +1,7 @@
-import { formatErrorMessage, toErrorObject } from "openclaw/plugin-sdk/error-runtime";
-import type { PluginLogger } from "openclaw/plugin-sdk/plugin-entry";
-import type { RealtimeVoiceAgentConsultRunner } from "openclaw/plugin-sdk/realtime-voice";
-import { rawDataToString } from "openclaw/plugin-sdk/webhook-ingress";
+import { formatErrorMessage, toErrorObject } from "afora-agent/plugin-sdk/error-runtime";
+import type { PluginLogger } from "afora-agent/plugin-sdk/plugin-entry";
+import type { RealtimeVoiceAgentConsultRunner } from "afora-agent/plugin-sdk/realtime-voice";
+import { rawDataToString } from "afora-agent/plugin-sdk/webhook-ingress";
 import type { RawData } from "ws";
 import {
   buildOpenAIQuicksilverDelegationPrompt,

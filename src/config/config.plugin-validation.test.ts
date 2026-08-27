@@ -43,7 +43,7 @@ async function writePluginFixture(params: {
     manifest.channels = params.channels;
   }
   await fs.writeFile(
-    path.join(params.dir, "openclaw.plugin.json"),
+    path.join(params.dir, "afora.plugin.json"),
     JSON.stringify(manifest, null, 2),
     "utf-8",
   );
@@ -134,10 +134,10 @@ describe("config plugin validation", () => {
   const suiteEnv = () =>
     ({
       HOME: suiteHome,
-      OPENCLAW_HOME: undefined,
-      OPENCLAW_STATE_DIR: path.join(suiteHome, ".openclaw"),
-      OPENCLAW_BUNDLED_PLUGINS_DIR: undefined,
-      OPENCLAW_VERSION: undefined,
+      AFORA_HOME: undefined,
+      AFORA_STATE_DIR: path.join(suiteHome, ".afora"),
+      AFORA_BUNDLED_PLUGINS_DIR: undefined,
+      AFORA_VERSION: undefined,
       VITEST: "true",
     }) satisfies NodeJS.ProcessEnv;
 
@@ -180,7 +180,7 @@ describe("config plugin validation", () => {
 
   const validateRemovedPluginConfig = (removedId: string) =>
     validateInSuite({
-      agents: { list: [{ id: "openclaw" }] },
+      agents: { list: [{ id: "afora" }] },
       plugins: {
         enabled: false,
         entries: { [removedId]: { enabled: true } },
@@ -191,7 +191,7 @@ describe("config plugin validation", () => {
     });
 
   beforeAll(async () => {
-    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-config-plugin-validation-"));
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-config-plugin-validation-"));
     await chmodSafeDir(fixtureRoot);
     suiteHome = path.join(fixtureRoot, "home");
     await mkdirSafe(suiteHome);
@@ -262,7 +262,7 @@ describe("config plugin validation", () => {
       process.cwd(),
       "extensions",
       "voice-call",
-      "openclaw.plugin.json",
+      "afora.plugin.json",
     );
     const voiceCallManifest = JSON.parse(await fs.readFile(voiceCallManifestPath, "utf-8")) as {
       configSchema?: Record<string, unknown>;
@@ -284,7 +284,7 @@ describe("config plugin validation", () => {
   it("reports missing plugin refs across entries and allowlist surfaces", () => {
     const missingPath = path.join(suiteHome, "missing-plugin-dir");
     const res = validateInSuite({
-      agents: { list: [{ id: "openclaw" }] },
+      agents: { list: [{ id: "afora" }] },
       plugins: {
         enabled: true,
         load: { paths: [missingPath] },
@@ -338,7 +338,7 @@ describe("config plugin validation", () => {
 
   it("warns instead of failing for stale plugins.deny entries", () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "openclaw" }] },
+      agents: { list: [{ id: "afora" }] },
       plugins: {
         deny: ["missing-deny"],
       },
@@ -361,7 +361,7 @@ describe("config plugin validation", () => {
     ) =>
       validateConfigObjectWithPlugins(
         {
-          agents: { list: [{ id: "openclaw" }] },
+          agents: { list: [{ id: "afora" }] },
           ...raw,
         },
         {
@@ -417,7 +417,7 @@ describe("config plugin validation", () => {
         name: "agent wildcard PI runtime policy",
         config: {
           agents: {
-            list: [{ id: "openclaw" }],
+            list: [{ id: "afora" }],
             defaults: {
               models: {
                 "openai/*": { agentRuntime: { id: "pi" } },
@@ -440,7 +440,7 @@ describe("config plugin validation", () => {
       expectNoMissingCodexPluginWarning(res.warnings);
     });
 
-    it("still warns when only one provider model route is pinned to OpenClaw", () => {
+    it("still warns when only one provider model route is pinned to Afora", () => {
       const res = validateWithMissingCodexPlugin({
         models: {
           providers: {
@@ -455,7 +455,7 @@ describe("config plugin validation", () => {
                   cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
                   contextWindow: 128000,
                   maxTokens: 8192,
-                  agentRuntime: { id: "openclaw" },
+                  agentRuntime: { id: "afora" },
                 },
               ],
             },
@@ -535,7 +535,7 @@ describe("config plugin validation", () => {
           },
         },
         agents: {
-          list: [{ id: "openclaw" }],
+          list: [{ id: "afora" }],
           defaults: {
             models: {
               [modelPattern]: { agentRuntime: { id: runtime } },
@@ -555,7 +555,7 @@ describe("config plugin validation", () => {
           defaults: {
             model: { primary: "openai/gpt-5.6", fallbacks: [] },
           },
-          list: [{ id: "openclaw" }],
+          list: [{ id: "afora" }],
         },
         plugins: { entries: { codex: {} } },
       });
@@ -570,7 +570,7 @@ describe("config plugin validation", () => {
           defaults: {
             model: { primary: "openai/gpt-5.3-codex-spark", fallbacks: [] },
           },
-          list: [{ id: "openclaw" }],
+          list: [{ id: "afora" }],
         },
         plugins: { entries: { codex: {} } },
       });
@@ -610,7 +610,7 @@ describe("config plugin validation", () => {
             model: { primary: "openai/gpt-5.6", fallbacks: [] },
           },
           list: [
-            { id: "openclaw" },
+            { id: "afora" },
             {
               id: "worker",
               model: {
@@ -635,7 +635,7 @@ describe("config plugin validation", () => {
             model: { primary: "openai/gpt-5.6", fallbacks: [] },
             subagents: { model: "openai/gpt-5.3-codex-spark" },
           },
-          list: [{ id: "openclaw" }],
+          list: [{ id: "afora" }],
         },
       },
       {
@@ -647,7 +647,7 @@ describe("config plugin validation", () => {
             subagents: { model: "openai/gpt-5.6" },
           },
           list: [
-            { id: "openclaw" },
+            { id: "afora" },
             {
               id: "worker",
               subagents: { model: "openai/gpt-5.3-codex-spark" },
@@ -674,7 +674,7 @@ describe("config plugin validation", () => {
           },
           list: [
             {
-              id: "openclaw",
+              id: "afora",
               subagents: { model: "anthropic/claude-sonnet-4-6" },
             },
           ],
@@ -693,7 +693,7 @@ describe("config plugin validation", () => {
             model: { primary: "anthropic/claude-sonnet-4-6", fallbacks: [] },
             heartbeat: { model: "openai/gpt-5.3-codex-spark" },
           },
-          list: [{ id: "openclaw" }],
+          list: [{ id: "afora" }],
         },
         plugins: { entries: { codex: {} } },
       });
@@ -718,7 +718,7 @@ describe("config plugin validation", () => {
             model: { primary: "anthropic/claude-sonnet-4-6", fallbacks: [] },
             ...auxiliary,
           },
-          list: [{ id: "openclaw" }],
+          list: [{ id: "afora" }],
         },
         plugins: { entries: { codex: {} } },
       });
@@ -733,7 +733,7 @@ describe("config plugin validation", () => {
           defaults: {
             model: { primary: "anthropic/claude-sonnet-4-6", fallbacks: [] },
           },
-          list: [{ id: "openclaw" }],
+          list: [{ id: "afora" }],
         },
         channels: {
           modelByChannel: {
@@ -774,7 +774,7 @@ describe("config plugin validation", () => {
               "openai/gpt-5.3-codex-spark": { alias: "spark" },
             },
           },
-          list: [{ id: "openclaw" }],
+          list: [{ id: "afora" }],
         },
         plugins: { entries: { codex: {} } },
       });
@@ -803,7 +803,7 @@ describe("config plugin validation", () => {
           },
           list: [
             {
-              id: "openclaw",
+              id: "afora",
               models: {
                 "openai/gpt-5.6": { agentRuntime: { id: "pi" } },
               },
@@ -821,7 +821,7 @@ describe("config plugin validation", () => {
       const res = validateWithMissingCodexPlugin({
         agents: {
           entries: {
-            openclaw: {
+            afora: {
               default: true,
               model: { primary: "anthropic/claude-sonnet-4-6", fallbacks: [] },
               subagents: { model: "anthropic/claude-sonnet-4-6" },
@@ -911,7 +911,7 @@ describe("config plugin validation", () => {
           },
           list: [
             {
-              id: "openclaw",
+              id: "afora",
               models: {
                 "openai/gpt-5.6": { agentRuntime: { id: "pi" } },
               },
@@ -951,7 +951,7 @@ describe("config plugin validation", () => {
           },
         },
         agents: {
-          list: [{ id: "openclaw" }],
+          list: [{ id: "afora" }],
           defaults: {
             models: {
               "openai/*": { agentRuntime: { id: wildcardRuntime } },
@@ -1021,7 +1021,7 @@ describe("config plugin validation", () => {
           },
         },
         agents: {
-          list: [{ id: "openclaw" }],
+          list: [{ id: "afora" }],
           defaults: {
             models: {
               "openai/*": { agentRuntime: { id: "pi" } },
@@ -1114,7 +1114,7 @@ describe("config plugin validation", () => {
         expect.objectContaining({
           path: "plugins.allow",
           message:
-            "plugin not installed: codex — install the official external plugin with: openclaw plugins install @openclaw/codex",
+            "plugin not installed: codex — install the official external plugin with: afora plugins install @afora/codex",
         }),
       );
     });
@@ -1131,7 +1131,7 @@ describe("config plugin validation", () => {
           },
         },
         agents: {
-          list: [{ id: "openclaw" }],
+          list: [{ id: "afora" }],
           defaults: {
             models: {
               "openai/*": { agentRuntime: { id: "default" } },
@@ -1148,7 +1148,7 @@ describe("config plugin validation", () => {
     it("still warns when only one agent model route is pinned to PI", () => {
       const res = validateWithMissingCodexPlugin({
         agents: {
-          list: [{ id: "openclaw" }],
+          list: [{ id: "afora" }],
           defaults: {
             models: {
               "openai/gpt-5.5": { agentRuntime: { id: "pi" } },
@@ -1213,7 +1213,7 @@ describe("config plugin validation", () => {
   it("deduplicates catalog install hints for missing configured official external plugins", () => {
     const res = validateConfigObjectWithPlugins(
       {
-        agents: { list: [{ id: "openclaw" }] },
+        agents: { list: [{ id: "afora" }] },
         plugins: {
           entries: { brave: { enabled: true } },
           allow: ["brave"],
@@ -1232,7 +1232,7 @@ describe("config plugin validation", () => {
 
     expect(res.ok).toBe(true);
     const message =
-      "plugin not installed: brave — install the official external plugin with: openclaw plugins install @openclaw/brave-plugin";
+      "plugin not installed: brave — install the official external plugin with: afora plugins install @afora/brave-plugin";
     expectPathMessage(res.warnings, "plugins.entries.brave", message);
     expect((res.warnings ?? []).filter((warning) => warning.message === message)).toHaveLength(1);
     expect(
@@ -1247,7 +1247,7 @@ describe("config plugin validation", () => {
   it("warns instead of failing when an official external memory slot plugin is not installed", () => {
     const res = validateConfigObjectWithPlugins(
       {
-        agents: { list: [{ id: "openclaw" }] },
+        agents: { list: [{ id: "afora" }] },
         plugins: {
           slots: { memory: "memory-lancedb" },
           entries: { "memory-lancedb": { enabled: true } },
@@ -1266,9 +1266,9 @@ describe("config plugin validation", () => {
 
     expect(res.ok).toBe(true);
     const slotMessage =
-      "plugin not installed: memory-lancedb — gateway will run without persistent memory until installed; install the official external plugin with: openclaw plugins install @openclaw/memory-lancedb";
+      "plugin not installed: memory-lancedb — gateway will run without persistent memory until installed; install the official external plugin with: afora plugins install @afora/memory-lancedb";
     const entryMessage =
-      "plugin not installed: memory-lancedb — install the official external plugin with: openclaw plugins install @openclaw/memory-lancedb";
+      "plugin not installed: memory-lancedb — install the official external plugin with: afora plugins install @afora/memory-lancedb";
     expectPathMessage(res.warnings, "plugins.slots.memory", slotMessage);
     expectPathMessage(res.warnings, "plugins.entries.memory-lancedb", entryMessage);
   });
@@ -1276,7 +1276,7 @@ describe("config plugin validation", () => {
   it("keeps no-persistent-memory wording scoped to the selected missing memory slot", () => {
     const res = validateConfigObjectWithPlugins(
       {
-        agents: { list: [{ id: "openclaw" }] },
+        agents: { list: [{ id: "afora" }] },
         plugins: {
           slots: { memory: "none" },
           entries: { "memory-lancedb": { enabled: true } },
@@ -1296,7 +1296,7 @@ describe("config plugin validation", () => {
 
     expect(res.ok).toBe(true);
     const message =
-      "plugin not installed: memory-lancedb — install the official external plugin with: openclaw plugins install @openclaw/memory-lancedb";
+      "plugin not installed: memory-lancedb — install the official external plugin with: afora plugins install @afora/memory-lancedb";
     expectPathMessage(res.warnings, "plugins.entries.memory-lancedb", message);
     expect((res.warnings ?? []).filter((warning) => warning.message === message)).toHaveLength(1);
     expect(
@@ -1309,7 +1309,7 @@ describe("config plugin validation", () => {
   it("deduplicates yuanbao missing-plugin warnings across entries and allow", () => {
     const res = validateConfigObjectWithPlugins(
       {
-        agents: { list: [{ id: "openclaw" }] },
+        agents: { list: [{ id: "afora" }] },
         plugins: {
           entries: { yuanbao: { enabled: true } },
           allow: ["yuanbao"],
@@ -1328,7 +1328,7 @@ describe("config plugin validation", () => {
 
     expect(res.ok).toBe(true);
     const message =
-      "plugin not installed: yuanbao — install the official external plugin with: openclaw plugins install openclaw-plugin-yuanbao@2.15.0";
+      "plugin not installed: yuanbao — install the official external plugin with: afora plugins install afora-plugin-yuanbao@2.15.0";
     expectPathMessage(res.warnings, "plugins.entries.yuanbao", message);
     expect((res.warnings ?? []).filter((warning) => warning.message === message)).toHaveLength(1);
   });
@@ -1336,7 +1336,7 @@ describe("config plugin validation", () => {
   it("keeps official external non-memory plugins fatal in the memory slot", () => {
     const res = validateConfigObjectWithPlugins(
       {
-        agents: { list: [{ id: "openclaw" }] },
+        agents: { list: [{ id: "afora" }] },
         plugins: {
           slots: { memory: "brave" },
           entries: { brave: { enabled: true } },
@@ -1361,14 +1361,14 @@ describe("config plugin validation", () => {
     expectPathMessage(
       res.warnings,
       "plugins.entries.brave",
-      "plugin not installed: brave — install the official external plugin with: openclaw plugins install @openclaw/brave-plugin",
+      "plugin not installed: brave — install the official external plugin with: afora plugins install @afora/brave-plugin",
     );
   });
 
   it("keeps blocked official external memory slot plugins fatal", () => {
     const res = validateConfigObjectWithPlugins(
       {
-        agents: { list: [{ id: "openclaw" }] },
+        agents: { list: [{ id: "afora" }] },
         plugins: {
           slots: { memory: "memory-lancedb" },
           entries: { "memory-lancedb": { enabled: true } },
@@ -1418,7 +1418,7 @@ describe("config plugin validation", () => {
       await fs.chmod(blockedPluginDir, 0o777);
       try {
         const res = validateInSuite({
-          agents: { list: [{ id: "openclaw" }] },
+          agents: { list: [{ id: "afora" }] },
           plugins: {
             enabled: true,
             load: { paths: [blockedPluginDir] },
@@ -1457,7 +1457,7 @@ describe("config plugin validation", () => {
   it("maps legacy blocked diagnostics without plugin ids to configured load paths", () => {
     const res = validateConfigObjectWithPlugins(
       {
-        agents: { list: [{ id: "openclaw" }] },
+        agents: { list: [{ id: "afora" }] },
         plugins: {
           enabled: true,
           load: { paths: [blockedPluginDir] },
@@ -1504,7 +1504,7 @@ describe("config plugin validation", () => {
   it("warns for broken discovered plugins that are not referenced by config", () => {
     const res = validateConfigObjectWithPlugins(
       {
-        agents: { list: [{ id: "openclaw" }] },
+        agents: { list: [{ id: "afora" }] },
         plugins: {
           allow: ["telegram"],
         },
@@ -1518,7 +1518,7 @@ describe("config plugin validation", () => {
               {
                 level: "error",
                 pluginId: "broken-local",
-                source: path.join(suiteHome, "extensions", "broken-local", "openclaw.plugin.json"),
+                source: path.join(suiteHome, "extensions", "broken-local", "afora.plugin.json"),
                 message: "plugin manifest entry does not exist: dist/index.js",
               },
             ],
@@ -1542,7 +1542,7 @@ describe("config plugin validation", () => {
   it("keeps broken discovered plugins fatal when config references them", () => {
     const res = validateConfigObjectWithPlugins(
       {
-        agents: { list: [{ id: "openclaw" }] },
+        agents: { list: [{ id: "afora" }] },
         plugins: {
           entries: {
             "broken-local": { enabled: true },
@@ -1558,7 +1558,7 @@ describe("config plugin validation", () => {
               {
                 level: "error",
                 pluginId: "broken-local",
-                source: path.join(suiteHome, "extensions", "broken-local", "openclaw.plugin.json"),
+                source: path.join(suiteHome, "extensions", "broken-local", "afora.plugin.json"),
                 message: "plugin manifest entry does not exist: dist/index.js",
               },
             ],
@@ -1582,7 +1582,7 @@ describe("config plugin validation", () => {
     const aliasDir = path.join(suiteHome, "alias-dir");
     const res = validateConfigObjectWithPlugins(
       {
-        agents: { list: [{ id: "openclaw" }] },
+        agents: { list: [{ id: "afora" }] },
         plugins: {
           enabled: true,
           load: { paths: [aliasDir] },
@@ -1638,7 +1638,7 @@ describe("config plugin validation", () => {
 
   it("warns instead of failing for stale channel config backed by missing plugin refs", () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "openclaw" }] },
+      agents: { list: [{ id: "afora" }] },
       channels: {
         "missing-chat": { token: "stale" },
       },
@@ -1655,7 +1655,7 @@ describe("config plugin validation", () => {
     expect(res.warnings).toContainEqual({
       path: "channels.missing-chat",
       message:
-        "unknown channel id: missing-chat (stale channel plugin config ignored; run openclaw doctor --fix to remove stale config, or install the plugin)",
+        "unknown channel id: missing-chat (stale channel plugin config ignored; run afora doctor --fix to remove stale config, or install the plugin)",
     });
     expect(res.warnings).toContainEqual({
       path: "plugins.allow",
@@ -1671,7 +1671,7 @@ describe("config plugin validation", () => {
 
   it("keeps unknown channel typos fatal when there is no stale plugin evidence", () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "openclaw" }] },
+      agents: { list: [{ id: "afora" }] },
       channels: {
         telegarm: { botToken: "typo" },
       },
@@ -1696,7 +1696,7 @@ describe("config plugin validation", () => {
   it("warns when plugins.allow contains a channel id without a plugin manifest (#76872)", () => {
     const res = validateConfigObjectWithPlugins(
       {
-        agents: { list: [{ id: "openclaw" }] },
+        agents: { list: [{ id: "afora" }] },
         channels: {
           discord: { token: "xxx" },
         },
@@ -1720,13 +1720,13 @@ describe("config plugin validation", () => {
       {
         path: "plugins.allow",
         message:
-          "plugin not installed: discord — install the official external plugin with: openclaw plugins install @openclaw/discord",
+          "plugin not installed: discord — install the official external plugin with: afora plugins install @afora/discord",
       },
     ]);
   });
 
   it("uses persisted installed-plugin records as stale channel evidence", async () => {
-    const stateDir = path.join(suiteHome, ".openclaw");
+    const stateDir = path.join(suiteHome, ".afora");
     clearLoadInstalledPluginIndexInstallRecordsCache();
     await writePersistedInstalledPluginIndex(
       {
@@ -1751,7 +1751,7 @@ describe("config plugin validation", () => {
     clearLoadInstalledPluginIndexInstallRecordsCache();
     try {
       const res = validateInSuite({
-        agents: { list: [{ id: "openclaw" }] },
+        agents: { list: [{ id: "afora" }] },
         channels: {
           "missing-sms": { token: "stale" },
         },
@@ -1764,7 +1764,7 @@ describe("config plugin validation", () => {
       expect(res.warnings).toContainEqual({
         path: "channels.missing-sms",
         message:
-          "unknown channel id: missing-sms (stale channel plugin config ignored; run openclaw doctor --fix to remove stale config, or install the plugin)",
+          "unknown channel id: missing-sms (stale channel plugin config ignored; run afora doctor --fix to remove stale config, or install the plugin)",
       });
     } finally {
       await writePersistedInstalledPluginIndex(
@@ -1787,7 +1787,7 @@ describe("config plugin validation", () => {
 
   it("warns with actionable guidance when a runtime command name is used in plugins.allow", () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "openclaw" }] },
+      agents: { list: [{ id: "afora" }] },
       plugins: {
         allow: ["dreaming"],
         entries: {
@@ -1817,7 +1817,7 @@ describe("config plugin validation", () => {
   it("does not fail validation for the implicit default memory slot when plugins config is explicit", () => {
     const res = validateConfigObjectWithPlugins(
       {
-        agents: { list: [{ id: "openclaw" }] },
+        agents: { list: [{ id: "afora" }] },
         plugins: {
           entries: { acpx: { enabled: true } },
         },
@@ -1825,7 +1825,7 @@ describe("config plugin validation", () => {
       {
         env: {
           ...suiteEnv(),
-          OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(suiteHome, "missing-bundled-plugins"),
+          AFORA_BUNDLED_PLUGINS_DIR: path.join(suiteHome, "missing-bundled-plugins"),
         },
       },
     );
@@ -1849,7 +1849,7 @@ describe("config plugin validation", () => {
     const res = validateRemovedPluginConfig(removedId);
     expect(res.ok).toBe(true);
     const message =
-      "plugin removed: skill-workshop (stale plugin config ignored; Skill Workshop is built into OpenClaw skills now. Use skills.workshop settings and openclaw skills workshop commands, then remove this plugins config entry)";
+      "plugin removed: skill-workshop (stale plugin config ignored; Skill Workshop is built into Afora skills now. Use skills.workshop settings and afora skills workshop commands, then remove this plugins config entry)";
     expectPathMessage(res.warnings, `plugins.entries.${removedId}`, message);
     expectPathMessage(res.warnings, "plugins.allow", message);
     expectPathMessage(res.warnings, "plugins.deny", message);
@@ -1884,12 +1884,12 @@ describe("config plugin validation", () => {
   });
 
   it("ignores standalone helper scripts in auto-discovered global extensions", async () => {
-    const helperPath = path.join(suiteHome, ".openclaw", "extensions", "my-helper.mjs");
+    const helperPath = path.join(suiteHome, ".afora", "extensions", "my-helper.mjs");
     await mkdirSafe(path.dirname(helperPath));
     await fs.writeFile(helperPath, "export default {};\n", "utf-8");
     try {
       const res = validateInSuite({
-        agents: { list: [{ id: "openclaw" }] },
+        agents: { list: [{ id: "afora" }] },
         plugins: { enabled: true },
       });
 
@@ -1904,7 +1904,7 @@ describe("config plugin validation", () => {
     const pluginId = "legacy-root-channel";
     const channelId = "legacy-root";
     await writePluginFixture({
-      dir: path.join(workspaceDir, ".openclaw", "extensions", pluginId),
+      dir: path.join(workspaceDir, ".afora", "extensions", pluginId),
       id: pluginId,
       channels: [channelId],
       schema: { type: "object" },
@@ -1943,7 +1943,7 @@ describe("config plugin validation", () => {
 
   it("surfaces plugin config diagnostics", () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "openclaw" }] },
+      agents: { list: [{ id: "afora" }] },
       plugins: {
         enabled: true,
         load: { paths: [badPluginDir] },
@@ -1963,7 +1963,7 @@ describe("config plugin validation", () => {
 
   it("accepts dynamic Codex marketplaces and surfaces unsafe identifiers as diagnostics", () => {
     const config = {
-      agents: { list: [{ id: "openclaw" }] },
+      agents: { list: [{ id: "afora" }] },
       plugins: {
         entries: {
           codex: {
@@ -1987,7 +1987,7 @@ describe("config plugin validation", () => {
     const options = {
       env: {
         ...suiteEnv(),
-        OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(process.cwd(), "extensions"),
+        AFORA_BUNDLED_PLUGINS_DIR: path.join(process.cwd(), "extensions"),
       },
     };
 
@@ -2010,7 +2010,7 @@ describe("config plugin validation", () => {
   it("accepts ask destructive policy without dropping adjacent Codex plugin config", () => {
     const res = validateConfigObjectWithPlugins(
       {
-        agents: { list: [{ id: "openclaw" }] },
+        agents: { list: [{ id: "afora" }] },
         plugins: {
           entries: {
             codex: {
@@ -2037,7 +2037,7 @@ describe("config plugin validation", () => {
       {
         env: {
           ...suiteEnv(),
-          OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(process.cwd(), "extensions"),
+          AFORA_BUNDLED_PLUGINS_DIR: path.join(process.cwd(), "extensions"),
         },
       },
     );
@@ -2074,7 +2074,7 @@ describe("config plugin validation", () => {
   ])("rejects old always destructive policy in the $name", ({ codexPlugins, expectedPath }) => {
     const res = validateConfigObjectWithPlugins(
       {
-        agents: { list: [{ id: "openclaw" }] },
+        agents: { list: [{ id: "afora" }] },
         plugins: {
           entries: {
             codex: {
@@ -2087,7 +2087,7 @@ describe("config plugin validation", () => {
       {
         env: {
           ...suiteEnv(),
-          OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(process.cwd(), "extensions"),
+          AFORA_BUNDLED_PLUGINS_DIR: path.join(process.cwd(), "extensions"),
         },
       },
     );
@@ -2100,7 +2100,7 @@ describe("config plugin validation", () => {
 
   it("does not require native config schemas for enabled bundle plugins", () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "openclaw" }] },
+      agents: { list: [{ id: "afora" }] },
       plugins: {
         enabled: true,
         load: { paths: [bundlePluginDir] },
@@ -2113,7 +2113,7 @@ describe("config plugin validation", () => {
 
   it("accepts enabled manifestless Claude bundles without a native schema", () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "openclaw" }] },
+      agents: { list: [{ id: "afora" }] },
       plugins: {
         enabled: true,
         load: { paths: [manifestlessClaudeBundleDir] },
@@ -2126,7 +2126,7 @@ describe("config plugin validation", () => {
 
   it("surfaces allowed enum values for plugin config diagnostics", () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "openclaw" }] },
+      agents: { list: [{ id: "afora" }] },
       plugins: {
         enabled: true,
         load: { paths: [enumPluginDir] },
@@ -2146,7 +2146,7 @@ describe("config plugin validation", () => {
 
   it("accepts voice-call webhookSecurity and streaming guard config fields", () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "openclaw" }] },
+      agents: { list: [{ id: "afora" }] },
       plugins: {
         enabled: true,
         load: { paths: [voiceCallSchemaPluginDir] },
@@ -2177,7 +2177,7 @@ describe("config plugin validation", () => {
 
   it("accepts voice-call OpenAI TTS speakerVoice, speed, instructions, and baseUrl fields", () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "openclaw" }] },
+      agents: { list: [{ id: "afora" }] },
       plugins: {
         enabled: true,
         load: { paths: [voiceCallSchemaPluginDir] },
@@ -2204,7 +2204,7 @@ describe("config plugin validation", () => {
 
   it("accepts voice-call SecretRef credentials declared by the plugin schema", () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "openclaw" }] },
+      agents: { list: [{ id: "afora" }] },
       plugins: {
         enabled: true,
         load: { paths: [voiceCallSchemaPluginDir] },
@@ -2236,7 +2236,7 @@ describe("config plugin validation", () => {
 
   it("rejects out-of-range voice-call OpenAI TTS speed values", () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "openclaw" }] },
+      agents: { list: [{ id: "afora" }] },
       plugins: {
         enabled: true,
         load: { paths: [voiceCallSchemaPluginDir] },
@@ -2269,7 +2269,7 @@ describe("config plugin validation", () => {
 
   it("rejects out-of-range voice-call ElevenLabs voice settings", () => {
     const res = validateInSuite({
-      agents: { list: [{ id: "openclaw" }] },
+      agents: { list: [{ id: "afora" }] },
       plugins: {
         enabled: true,
         load: { paths: [voiceCallSchemaPluginDir] },
@@ -2306,7 +2306,7 @@ describe("config plugin validation", () => {
     const res = validateInSuite({
       agents: {
         defaults: { heartbeat: { target: "owner", directPolicy: "block" } },
-        list: [{ id: "openclaw", heartbeat: { directPolicy: "allow" } }],
+        list: [{ id: "afora", heartbeat: { directPolicy: "allow" } }],
       },
       channels: {
         modelByChannel: {
@@ -2322,7 +2322,7 @@ describe("config plugin validation", () => {
 
   it("accepts plugin heartbeat targets", () => {
     const res = validateInSuite({
-      agents: { defaults: { heartbeat: { target: "chat" } }, list: [{ id: "openclaw" }] },
+      agents: { defaults: { heartbeat: { target: "chat" } }, list: [{ id: "afora" }] },
       plugins: { enabled: false, load: { paths: [chatPluginDir] } },
     });
     expect(res.ok).toBe(true);
@@ -2339,7 +2339,7 @@ describe("config plugin validation", () => {
     const res = validateInSuite({
       agents: {
         defaults: { heartbeat: { target: "not-a-channel" } },
-        list: [{ id: "openclaw" }],
+        list: [{ id: "afora" }],
       },
     });
     expect(res.ok).toBe(false);
@@ -2359,7 +2359,7 @@ describe("config plugin validation", () => {
     const res = validateInSuite({
       agents: {
         defaults: { heartbeat: { directPolicy: "maybe" } },
-        list: [{ id: "openclaw" }],
+        list: [{ id: "afora" }],
       },
     });
     expect(res.ok).toBe(false);

@@ -1,5 +1,5 @@
 ---
-summary: "How Barnacle and ClawSweeper feedback helps move OpenClaw pull requests through review."
+summary: "How Barnacle and ClawSweeper feedback helps move Afora pull requests through review."
 read_when:
   - Following up after Barnacle or ClawSweeper feedback
   - Asking ClawSweeper for review
@@ -8,7 +8,7 @@ title: "Pull request review flow"
 sidebarTitle: "PR review flow"
 ---
 
-This page explains the review flow after you open or update an OpenClaw pull
+This page explains the review flow after you open or update an Afora pull
 request: what Barnacle and ClawSweeper do, how to improve the PR from their
 feedback, and what to check when automation stays quiet.
 
@@ -38,7 +38,7 @@ not need to add labels themselves.
 
 ## ClawSweeper
 
-ClawSweeper is the AI-assisted review and maintenance bot for OpenClaw
+ClawSweeper is the AI-assisted review and maintenance bot for Afora
 repositories. It can review PRs, evaluate proof, leave durable review comments,
 and help maintainers with guarded repair or automerge flows.
 
@@ -111,7 +111,7 @@ unless they are part of the actual docs, tests, or product change.
 Redacting sensitive data is the contributor's responsibility. Remove secrets,
 tokens, private URLs, user data, and unrelated logs before posting proof.
 
-OpenClaw also uses separate stale automation. Unassigned issues and PRs can be
+Afora also uses separate stale automation. Unassigned issues and PRs can be
 marked stale after 14 days of inactivity, then closed after 7 more idle days.
 Assigned PRs are marked stale 27 days after opening, regardless of later
 updates, then closed after 7 stale days without activity. If an assigned PR is
@@ -153,10 +153,10 @@ the last bot comment.
 
 Projects that want similar review automation can study or fork ClawSweeper:
 
-- [openclaw/clawsweeper](https://github.com/openclaw/clawsweeper)
+- [afora/clawsweeper](https://github.com/afora/clawsweeper)
 - [ClawSweeper docs](https://clawsweeper.bot/)
 
 ## Related
 
-- [Contributing](https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md)
+- [Contributing](https://github.com/AforaMosh/afora-agent/blob/main/CONTRIBUTING.md)
 - [CI pipeline](/ci)

@@ -1,10 +1,10 @@
 /**
- * Projects OpenClaw context-engine assemblies into Codex prompt text while
+ * Projects Afora context-engine assemblies into Codex prompt text while
  * preserving safety boundaries and redacting tool payloads.
  */
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-harness-runtime";
-import { redactSensitiveFieldValue, redactToolPayloadText } from "openclaw/plugin-sdk/logging-core";
-import { sliceUtf16Safe, truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { redactSensitiveFieldValue, redactToolPayloadText } from "afora-agent/plugin-sdk/logging-core";
+import { sliceUtf16Safe, truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 
 type CodexContextProjection = {
   developerInstructionAddition?: string;
@@ -19,7 +19,7 @@ export type CodexProjectedContextRange = {
   end: number;
 };
 
-const CONTEXT_HEADER = "OpenClaw assembled context for this turn:";
+const CONTEXT_HEADER = "Afora assembled context for this turn:";
 const CONTEXT_OPEN = "<conversation_context>";
 const CONTEXT_CLOSE = "</conversation_context>";
 const REQUEST_HEADER = "Current user request:";
@@ -49,7 +49,7 @@ export function neutralizeCodexExplicitMentionSigils(text: string): string {
     .replace(/\[@(?=[A-Za-z0-9_:-]+\]\()/gu, "[＠");
 }
 
-/** Projects assembled OpenClaw context-engine messages into Codex prompt inputs. */
+/** Projects assembled Afora context-engine messages into Codex prompt inputs. */
 export function projectContextEngineAssemblyForCodex(params: {
   assembledMessages: AgentMessage[];
   originalHistoryMessages: AgentMessage[];

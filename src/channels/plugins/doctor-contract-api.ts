@@ -4,14 +4,14 @@
  * Loads public doctor hooks for channel-owned legacy config rules and compatibility repairs.
  */
 import type { LegacyConfigRule } from "../../config/legacy.shared.js";
-import type { OpenClawConfig } from "../../config/types.js";
+import type { AforaConfig } from "../../config/types.js";
 import { loadBundledPluginPublicArtifactModuleSync } from "../../plugins/public-surface-loader.js";
 
 /**
  * Config returned after a bundled channel normalizes legacy compatibility state.
  */
 type BundledChannelDoctorCompatibilityMutation = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   changes: string[];
 };
 
@@ -24,7 +24,7 @@ type BundledChannelDoctorCompatibilityMutation = {
 type BundledChannelDoctorContractApi = {
   legacyConfigRules?: readonly LegacyConfigRule[];
   normalizeCompatibilityConfig?: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
   }) => BundledChannelDoctorCompatibilityMutation;
 };
 

@@ -1,14 +1,14 @@
 ---
 summary: "Raft External Agent support through the Raft CLI wake bridge"
 read_when:
-  - You want to connect OpenClaw to a Raft workspace
+  - You want to connect Afora to a Raft workspace
   - You are configuring a Raft External Agent
   - You are debugging Raft wake delivery
 title: "Raft"
 sidebarTitle: "Raft"
 ---
 
-Raft connects an OpenClaw agent to a Raft External Agent through the local
+Raft connects an Afora agent to a Raft External Agent through the local
 Raft CLI. Raft sends authenticated wake hints to the Gateway; the agent then
 uses the Raft CLI to check and send messages. Direct chat only (no groups).
 
@@ -17,8 +17,8 @@ uses the Raft CLI to check and send messages. Direct chat only (no groups).
 Raft is an official external plugin. Install it on the Gateway host:
 
 ```bash
-openclaw plugins install @openclaw/raft
-openclaw gateway restart
+afora plugins install @afora/raft
+afora gateway restart
 ```
 
 Details: [Plugins](/tools/plugin)
@@ -26,7 +26,7 @@ Details: [Plugins](/tools/plugin)
 ## Prerequisites
 
 - A Raft workspace with an External Agent.
-- The Raft CLI installed on the same host as the OpenClaw Gateway, on the
+- The Raft CLI installed on the same host as the Afora Gateway, on the
   service's `PATH`.
 - A Raft CLI profile that is already signed in and associated with that
   External Agent.
@@ -43,7 +43,7 @@ Set the profile in config:
   channels: {
     raft: {
       enabled: true,
-      profile: "openclaw",
+      profile: "afora",
     },
   },
 }
@@ -53,7 +53,7 @@ For the default account, you can instead set `RAFT_PROFILE` in the Gateway
 environment:
 
 ```bash
-RAFT_PROFILE=openclaw
+RAFT_PROFILE=afora
 ```
 
 Use a named account when one Gateway connects to more than one Raft External Agent:
@@ -78,7 +78,7 @@ Use a named account when one Gateway connects to more than one Raft External Age
 Interactive setup records the same profile:
 
 ```bash
-openclaw channels add --channel raft
+afora channels add --channel raft
 ```
 
 ## How it works
@@ -96,28 +96,28 @@ When the Gateway starts, the plugin:
    including across Gateway restarts.
 6. Returns a stable runtime session for the current bridge and an empty
    activity-drain batch for the Raft CLI protocol.
-7. Starts one serialized OpenClaw agent turn per accepted wake.
+7. Starts one serialized Afora agent turn per accepted wake.
 
-The bridge owns Raft delivery retries and reconnects. The OpenClaw turn
+The bridge owns Raft delivery retries and reconnects. The Afora turn
 receives only a wake notice, not a copied Raft message body. It uses the CLI
 to read pending messages and to send its response:
 
 ```bash
-raft --profile openclaw message check
-raft --profile openclaw message send
+raft --profile afora message check
+raft --profile afora message send
 ```
 
 <Note>
-Raft is not a push-message transport. OpenClaw does not automatically send the model's final text back through the bridge, so the agent must use the Raft CLI after processing a wake.
+Raft is not a push-message transport. Afora does not automatically send the model's final text back through the bridge, so the agent must use the Raft CLI after processing a wake.
 </Note>
 
 ## Verify
 
-Check that OpenClaw can find the CLI and has a configured profile:
+Check that Afora can find the CLI and has a configured profile:
 
 ```bash
-openclaw channels status --probe
-openclaw plugins inspect raft --runtime --json
+afora channels status --probe
+afora plugins inspect raft --runtime --json
 ```
 
 Then send a message to the Raft External Agent. The Gateway log should show

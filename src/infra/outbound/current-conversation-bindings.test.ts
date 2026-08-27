@@ -5,12 +5,12 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../../state/afora-state-db.generated.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../../state/afora-state-db.js";
 import { createTestRegistry } from "../../test-utils/channel-plugins.js";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../kysely-sync.js";
 import {
@@ -25,7 +25,7 @@ import {
 import type { SessionBindingRecord } from "./session-binding.types.js";
 
 type CurrentConversationBindingDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "current_conversation_bindings"
 >;
 
@@ -64,7 +64,7 @@ function buildConversationKey(ref: SessionBindingRecord["conversation"]): string
 }
 
 function seedPersistedBinding(record: SessionBindingRecord): void {
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     const bindingDb = getNodeSqliteKysely<CurrentConversationBindingDatabase>(db);
     executeSqliteQuerySync(
       db,
@@ -132,7 +132,7 @@ function setMinimalCurrentConversationRegistry(): void {
 }
 
 async function withReadOnlyStateDatabase<T>(run: () => T | Promise<T>): Promise<T> {
-  const { db } = openOpenClawStateDatabase();
+  const { db } = openAforaStateDatabase();
   db.exec("PRAGMA query_only = ON");
   try {
     return await run();
@@ -175,9 +175,9 @@ describe("generic current-conversation bindings", () => {
   let testStateDir = "";
 
   beforeEach(async () => {
-    previousStateDir = process.env.OPENCLAW_STATE_DIR;
-    testStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-current-bindings-"));
-    process.env.OPENCLAW_STATE_DIR = testStateDir;
+    previousStateDir = process.env.AFORA_STATE_DIR;
+    testStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-current-bindings-"));
+    process.env.AFORA_STATE_DIR = testStateDir;
     setMinimalCurrentConversationRegistry();
     testing.resetCurrentConversationBindingsForTests({
       deletePersistedFile: true,
@@ -189,11 +189,11 @@ describe("generic current-conversation bindings", () => {
     testing.resetCurrentConversationBindingsForTests({
       deletePersistedFile: true,
     });
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     if (previousStateDir == null) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.AFORA_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = previousStateDir;
+      process.env.AFORA_STATE_DIR = previousStateDir;
     }
     await fs.rm(testStateDir, { recursive: true, force: true });
   });
@@ -555,7 +555,7 @@ describe("generic current-conversation bindings", () => {
         "agent:codex:acp:session-a",
       );
       testing.resetCurrentConversationBindingsForTests();
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       expect(resolveWorkspaceConversation("user:U1")?.targetSessionKey).toBe(
         "agent:codex:acp:session-a",
       );

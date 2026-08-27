@@ -59,8 +59,8 @@ vi.mock("../harness/runtime-plugin.js", () => ({
 
 vi.mock("../harness/selection.js", () => ({
   selectAgentHarness: vi.fn(() => ({
-    id: "openclaw",
-    label: "OpenClaw",
+    id: "afora",
+    label: "Afora",
     supports: () => ({ supported: true }),
     runAttempt: vi.fn(),
   })),
@@ -110,7 +110,7 @@ vi.mock("./compaction-runtime-preparation.js", () => ({
       plan: { selectedAuthMode: "api-key" },
       attempts: [{ kind: "direct", plan: { selectedAuthMode: "api-key" } }],
     },
-    selectedPreparedHarness: { id: "openclaw" },
+    selectedPreparedHarness: { id: "afora" },
     providerUsesProfileScopedModelMetadata: false,
   })),
 }));
@@ -165,7 +165,7 @@ describe("embedded model resolution consistency", () => {
     const preparedModelRuntime = {
       agentDir: "/tmp/agents/main/agent",
       config,
-      workspaceDir: "/tmp/openclaw-model-resolution",
+      workspaceDir: "/tmp/afora-model-resolution",
       pluginRegistry: {},
       configuredRuntimeModels: [],
       inlineProviderModels: [],

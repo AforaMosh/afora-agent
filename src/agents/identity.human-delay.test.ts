@@ -1,18 +1,18 @@
 // Covers human-delay identity config inheritance.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { resolveHumanDelayConfig } from "./identity.js";
 
 describe("resolveHumanDelayConfig", () => {
   it("returns undefined when no humanDelay config is set", () => {
-    const cfg: OpenClawConfig = {};
+    const cfg: AforaConfig = {};
     expect(resolveHumanDelayConfig(cfg, "main")).toBeUndefined();
   });
 
   it("merges defaults with per-agent overrides", () => {
     // Partial agent overrides should preserve unspecified timing bounds from
     // defaults while replacing the fields the agent owns.
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           humanDelay: { mode: "natural", minMs: 800, maxMs: 1800 },

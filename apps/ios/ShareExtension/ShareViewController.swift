@@ -1,5 +1,5 @@
 import Foundation
-import OpenClawKit
+import AforaKit
 import os
 import UIKit
 import UniformTypeIdentifiers
@@ -26,7 +26,7 @@ final class ShareViewController: UIViewController {
         var attachmentError: ShareImageProcessor.ProcessError?
     }
 
-    private let logger = Logger(subsystem: "ai.openclawfoundation.app", category: "ShareExtension")
+    private let logger = Logger(subsystem: "ai.aforafoundation.app", category: "ShareExtension")
     private let composeView = ShareComposeView()
     private var didPrepareDraft = false
     private var isSending = false
@@ -129,17 +129,17 @@ final class ShareViewController: UIViewController {
     private func sendMessageToGateway(_ message: String, attachments: [ShareAttachment]) async throws {
         guard let config = ShareGatewayRelaySettings.loadConfigDiscardingUnscopedDeviceAuth() else {
             throw NSError(
-                domain: "OpenClawShare",
+                domain: "AforaShare",
                 code: 10,
                 userInfo: [
                     NSLocalizedDescriptionKey: NSLocalizedString(
-                        "OpenClaw is not connected to a gateway yet.",
+                        "Afora is not connected to a gateway yet.",
                         comment: "Share extension missing gateway error"),
                 ])
         }
         guard let url = URL(string: config.gatewayURLString) else {
             throw NSError(
-                domain: "OpenClawShare",
+                domain: "AforaShare",
                 code: 11,
                 userInfo: [
                     NSLocalizedDescriptionKey: NSLocalizedString(
@@ -161,7 +161,7 @@ final class ShareViewController: UIViewController {
                 permissions: [:],
                 clientId: clientId,
                 clientMode: "node",
-                clientDisplayName: "OpenClaw Share",
+                clientDisplayName: "Afora Share",
                 deviceIdentityProfile: .shareExtension,
                 includeDeviceIdentity: true,
                 allowStoredDeviceAuth: config.gatewayStableID != nil,
@@ -174,7 +174,7 @@ final class ShareViewController: UIViewController {
                 credentials: GatewayNodeSessionCredentials(
                     token: config.token,
                     password: config.password),
-                connectOptions: makeOptions("openclaw-ios"),
+                connectOptions: makeOptions("afora-ios"),
                 sessionBox: nil,
                 onConnected: {},
                 onDisconnected: { _ in },
@@ -182,7 +182,7 @@ final class ShareViewController: UIViewController {
                     BridgeInvokeResponse(
                         id: req.id,
                         ok: false,
-                        error: OpenClawNodeError(
+                        error: AforaNodeError(
                             code: .invalidRequest,
                             message: "share extension does not support node invoke"))
                 })
@@ -202,7 +202,7 @@ final class ShareViewController: UIViewController {
                     BridgeInvokeResponse(
                         id: req.id,
                         ok: false,
-                        error: OpenClawNodeError(
+                        error: AforaNodeError(
                             code: .invalidRequest,
                             message: "share extension does not support node invoke"))
                 })
@@ -241,7 +241,7 @@ final class ShareViewController: UIViewController {
         let data = try JSONEncoder().encode(params)
         guard let json = String(data: data, encoding: .utf8) else {
             throw NSError(
-                domain: "OpenClawShare",
+                domain: "AforaShare",
                 code: 12,
                 userInfo: [NSLocalizedDescriptionKey: "Failed to encode chat payload."])
         }
@@ -252,7 +252,7 @@ final class ShareViewController: UIViewController {
         let eventData = try JSONEncoder().encode(NodeEventParams(event: "agent.request", payloadJSON: json))
         guard let nodeEventParams = String(data: eventData, encoding: .utf8) else {
             throw NSError(
-                domain: "OpenClawShare",
+                domain: "AforaShare",
                 code: 13,
                 userInfo: [NSLocalizedDescriptionKey: "Failed to encode node event payload."])
         }

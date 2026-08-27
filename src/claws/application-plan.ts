@@ -1,20 +1,20 @@
 import { createHash } from "node:crypto";
-import { stableStringify } from "@openclaw/normalization-core";
+import { stableStringify } from "@afora/normalization-core";
 import type {
   ClawAddCapabilityChange,
   ClawAddPlanAction,
   ClawDiagnostic,
   ClawExtensionPlan,
   ClawLocalPrerequisite,
-  ClawOpenClawExtension,
-  ClawOpenClawProfile,
+  ClawAforaExtension,
+  ClawAforaProfile,
   ClawPackage,
   ClawPackagePreflight,
   ClawPackagePreflightResult,
 } from "./types.js";
 
 export function clawProfileExtensionPackages(
-  profile: ClawOpenClawProfile | undefined,
+  profile: ClawAforaProfile | undefined,
 ): ClawPackage[] {
   return (profile?.extensions ?? []).map((extension) => ({
     kind: "plugin",
@@ -30,7 +30,7 @@ function blocker(code: string, path: string, message: string): ClawDiagnostic {
 
 export function findClawExtensionPackageCollisions(params: {
   packages: ClawPackage[];
-  extensions: ClawOpenClawExtension[];
+  extensions: ClawAforaExtension[];
 }): Array<{ index: number; diagnostic: ClawDiagnostic }> {
   const declaredPackageIds = new Set(params.packages.map((pkg) => `${pkg.kind}:${pkg.ref}`));
   const collisions: Array<{ index: number; diagnostic: ClawDiagnostic }> = [];
@@ -42,7 +42,7 @@ export function findClawExtensionPackageCollisions(params: {
         index,
         diagnostic: blocker(
           "extension_package_collision",
-          `$.profiles.openclaw.extensions[${index}]`,
+          `$.profiles.afora.extensions[${index}]`,
           `Extension package ${JSON.stringify(packageId)} is already declared by the portable manifest or another profile extension.`,
         ),
       });
@@ -55,7 +55,7 @@ export function findClawExtensionPackageCollisions(params: {
 }
 
 function extensionCapabilityChange(params: {
-  extension: ClawOpenClawExtension;
+  extension: ClawAforaExtension;
   preflight: ClawPackagePreflightResult;
 }): ClawAddCapabilityChange {
   const effect = {
@@ -75,12 +75,12 @@ function extensionCapabilityChange(params: {
   const change = {
     kind: "package" as const,
     id: `extension:${params.extension.id}`,
-    path: `openclaw.extensions.${params.extension.id}`,
+    path: `afora.extensions.${params.extension.id}`,
     action: params.preflight.action === "reuse" ? ("reuse" as const) : ("install" as const),
     reason:
       params.preflight.action === "reuse"
-        ? "The OpenClaw profile requires access to an existing native extension."
-        : "The OpenClaw profile requires installation of native extension content or executable code.",
+        ? "The Afora profile requires access to an existing native extension."
+        : "The Afora profile requires installation of native extension content or executable code.",
     effect,
   };
   return {
@@ -92,7 +92,7 @@ function extensionCapabilityChange(params: {
 }
 
 export async function planClawExtensions(params: {
-  extensions: ClawOpenClawExtension[];
+  extensions: ClawAforaExtension[];
   workspace: string;
   packagePreflight?: ClawPackagePreflight;
 }): Promise<{
@@ -137,7 +137,7 @@ export async function planClawExtensions(params: {
       preflight.ok && !completeProvenance
         ? blocker(
             "extension_provenance_incomplete",
-            `$.profiles.openclaw.extensions[${index}]`,
+            `$.profiles.afora.extensions[${index}]`,
             `Extension ${JSON.stringify(extension.id)} did not resolve complete canonical identity and adapter provenance.`,
           )
         : undefined;
@@ -145,14 +145,14 @@ export async function planClawExtensions(params: {
       preflight.ok && completeProvenance && preflight.detectedFormat !== extension.format
         ? blocker(
             "extension_format_mismatch",
-            `$.profiles.openclaw.extensions[${index}].format`,
+            `$.profiles.afora.extensions[${index}].format`,
             `Extension ${JSON.stringify(extension.id)} declares format ${JSON.stringify(extension.format)}, but the canonical plugin detector found ${JSON.stringify(preflight.detectedFormat ?? "unknown")}.`,
           )
         : undefined;
     const diagnostic = !preflight.ok
       ? blocker(
           preflight.code ?? "extension_preflight_failed",
-          `$.profiles.openclaw.extensions[${index}]`,
+          `$.profiles.afora.extensions[${index}]`,
           preflight.message ?? "Extension preflight failed.",
         )
       : (incompleteProvenance ?? formatMismatch);

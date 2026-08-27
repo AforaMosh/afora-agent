@@ -2,7 +2,7 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolveOptionalIntegerOption } from "@openclaw/normalization-core/number-coercion";
+import { resolveOptionalIntegerOption } from "@afora/normalization-core/number-coercion";
 import { sha256File, sha256Hex } from "../infra/crypto-digest.js";
 import { ensureAbsoluteDirectory } from "../infra/fs-safe.js";
 import {
@@ -11,12 +11,12 @@ import {
   iterateSqliteQuerySync,
 } from "../infra/kysely-sync.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabase,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
-import { withOpenClawStateLease } from "../state/openclaw-state-lease.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabase,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
+import { withAforaStateLease } from "../state/afora-state-lease.js";
 import type { TranscriptSessionDescriptor, TranscriptUtterance } from "./provider-types.js";
 import { ensureMeetingTranscriptsSchema } from "./sqlite-schema.js";
 import {
@@ -56,19 +56,19 @@ export { safeTranscriptPathSegment, transcriptSessionExportKey, transcriptSessio
 export class TranscriptsStore {
   constructor(
     private readonly exportRootDir: string,
-    private readonly databaseOptions: OpenClawStateDatabaseOptions = {},
+    private readonly databaseOptions: AforaStateDatabaseOptions = {},
   ) {}
 
   private database() {
     ensureMeetingTranscriptsSchema(this.databaseOptions);
-    return openOpenClawStateDatabase(this.databaseOptions);
+    return openAforaStateDatabase(this.databaseOptions);
   }
 
   private transaction(
     operationLabel: string,
-    operation: (database: OpenClawStateDatabase) => void,
+    operation: (database: AforaStateDatabase) => void,
   ): void {
-    runOpenClawStateWriteTransaction(operation, this.databaseOptions, { operationLabel });
+    runAforaStateWriteTransaction(operation, this.databaseOptions, { operationLabel });
   }
 
   sessionDir(session: TranscriptSessionDescriptor): string {
@@ -90,7 +90,7 @@ export class TranscriptsStore {
     };
   }
 
-  private readSummaryKeys(database: OpenClawStateDatabase): Set<string> {
+  private readSummaryKeys(database: AforaStateDatabase): Set<string> {
     const rows = executeSqliteQuerySync(
       database.db,
       meetingTranscriptDb(database.db)
@@ -100,7 +100,7 @@ export class TranscriptsStore {
     return new Set(rows.map((row) => `${row.session_id}\0${row.session_started_at}`));
   }
 
-  private hasSummary(database: OpenClawStateDatabase, row: MeetingTranscriptSessionRow): boolean {
+  private hasSummary(database: AforaStateDatabase, row: MeetingTranscriptSessionRow): boolean {
     return Boolean(
       executeSqliteQueryTakeFirstSync(
         database.db,
@@ -275,7 +275,7 @@ export class TranscriptsStore {
       const stat = await fs.lstat(filePath);
       if (stat.isSymbolicLink() || !stat.isFile()) {
         throw new Error(
-          `legacy transcript artifacts require migration before writing ${sessionDir}; run openclaw doctor --fix`,
+          `legacy transcript artifacts require migration before writing ${sessionDir}; run afora doctor --fix`,
         );
       }
       const actualHash = await sha256File(filePath);
@@ -288,7 +288,7 @@ export class TranscriptsStore {
       expectedHashes ??= await this.expectedExportHashes(session);
       if (expectedHashes[canonicalName] !== actualHash) {
         throw new Error(
-          `legacy transcript artifacts require migration before writing ${sessionDir}; run openclaw doctor --fix`,
+          `legacy transcript artifacts require migration before writing ${sessionDir}; run afora doctor --fix`,
         );
       }
       repairedHashes[canonicalName] = actualHash;
@@ -527,7 +527,7 @@ export class TranscriptsStore {
         typeof sessionOrSelector === "string" ? sessionOrSelector : sessionOrSelector.sessionId;
       throw new Error(`transcripts session not found: ${selector}`);
     }
-    return await withOpenClawStateLease(
+    return await withAforaStateLease(
       {
         scope: "meeting-transcript.export",
         key: transcriptSessionExportKey(session),

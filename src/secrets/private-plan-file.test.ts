@@ -36,5 +36,5 @@ it("resolves trusted PowerShell and passes private plan content through stdin", 
   };
   expect(Buffer.from(payload.content, "base64").toString("utf8")).toBe(content);
   expect(payload.finalPath).toContain("plan.json");
-  expect(path.win32.basename(payload.stagingPath)).toMatch(/^\.openclaw-plan-[^.]+\.tmp$/u);
+  expect(path.win32.basename(payload.stagingPath)).toMatch(/^\.afora-plan-[^.]+\.tmp$/u);
 });

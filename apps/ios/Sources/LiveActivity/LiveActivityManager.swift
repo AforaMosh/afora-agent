@@ -10,16 +10,16 @@ final class LiveActivityManager {
     static let shared = LiveActivityManager()
 
     private struct PendingActivityUpdate {
-        var state: OpenClawActivityAttributes.ContentState
+        var state: AforaActivityAttributes.ContentState
         var staleDate: Date?
     }
 
     private struct StatusPresentation {
-        let status: OpenClawActivityAttributes.ContentState.Status
+        let status: AforaActivityAttributes.ContentState.Status
         let verbatimDetail: String?
     }
 
-    private let logger = Logger(subsystem: "ai.openclawfoundation.app", category: "LiveActivity")
+    private let logger = Logger(subsystem: "ai.aforafoundation.app", category: "LiveActivity")
     private let connectingStaleSeconds: TimeInterval = 120
     private let transientStaleSeconds: TimeInterval = 300
     private let hydrationStaleSeconds: TimeInterval = 300
@@ -28,8 +28,8 @@ final class LiveActivityManager {
     private let toolStaleRefreshDelay = Duration.seconds(240)
 
     private var arbiter = LiveActivityPresentationArbiter()
-    private var currentActivity: Activity<OpenClawActivityAttributes>?
-    private var currentState: OpenClawActivityAttributes.ContentState?
+    private var currentActivity: Activity<AforaActivityAttributes>?
+    private var currentState: AforaActivityAttributes.ContentState?
     private var currentStaleDate: Date?
     private var pendingActivityUpdate: PendingActivityUpdate?
     private var activityUpdateTask: Task<Void, Never>?
@@ -59,7 +59,7 @@ final class LiveActivityManager {
             existing: self.arbiter.connection,
             agentName: agentName,
             sessionKey: sessionKey)
-        let state = OpenClawActivityAttributes.ContentState(
+        let state = AforaActivityAttributes.ContentState(
             status: presentation.status,
             verbatimDetail: presentation.verbatimDetail,
             startedAt: startedAt)
@@ -77,7 +77,7 @@ final class LiveActivityManager {
             existing: self.arbiter.attention,
             agentName: agentName,
             sessionKey: sessionKey)
-        let state = OpenClawActivityAttributes.ContentState(
+        let state = AforaActivityAttributes.ContentState(
             status: presentation.status,
             verbatimDetail: presentation.verbatimDetail,
             startedAt: startedAt)
@@ -92,7 +92,7 @@ final class LiveActivityManager {
     func showTool(id: String, name: String, agentName: String, agentBadge: String, sessionKey: String) {
         let toolName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !id.isEmpty, !toolName.isEmpty else { return }
-        let state = OpenClawActivityAttributes.ContentState(
+        let state = AforaActivityAttributes.ContentState(
             status: .toolRunning,
             verbatimDetail: nil,
             startedAt: .now,
@@ -146,7 +146,7 @@ final class LiveActivityManager {
         if hasMeasuredAudio, let sample = LiveActivityVoiceSampleBuffer.quantize(audioLevel) {
             self.voiceSampleBuffer.append(sample)
         }
-        let state = OpenClawActivityAttributes.ContentState(
+        let state = AforaActivityAttributes.ContentState(
             status: status,
             verbatimDetail: detail,
             startedAt: startedAt,
@@ -222,7 +222,7 @@ final class LiveActivityManager {
     }
 
     private func request(
-        state: OpenClawActivityAttributes.ContentState,
+        state: AforaActivityAttributes.ContentState,
         staleAfter seconds: TimeInterval?,
         agentName: String,
         sessionKey: String) -> LiveActivityPresentationRequest
@@ -360,7 +360,7 @@ final class LiveActivityManager {
 
         do {
             let activity = try Activity.request(
-                attributes: OpenClawActivityAttributes(
+                attributes: AforaActivityAttributes(
                     agentName: request.agentName,
                     sessionKey: request.sessionKey),
                 content: ActivityContent(state: request.state, staleDate: request.staleDate),
@@ -378,8 +378,8 @@ final class LiveActivityManager {
     /// Keeps at most one ActivityKit update in flight and one replaceable next
     /// value. Slow or throttled ActivityKit writes cannot build an obsolete queue.
     private func enqueueLatestUpdate(
-        activity: Activity<OpenClawActivityAttributes>,
-        state: OpenClawActivityAttributes.ContentState,
+        activity: Activity<AforaActivityAttributes>,
+        state: AforaActivityAttributes.ContentState,
         staleDate: Date?)
     {
         guard state != self.currentState || staleDate != self.currentStaleDate else { return }
@@ -390,7 +390,7 @@ final class LiveActivityManager {
         self.startUpdateWorker(activity: activity, generation: self.activityGeneration)
     }
 
-    private func startUpdateWorker(activity: Activity<OpenClawActivityAttributes>, generation: UInt64) {
+    private func startUpdateWorker(activity: Activity<AforaActivityAttributes>, generation: UInt64) {
         self.activityUpdateTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self,
@@ -423,7 +423,7 @@ final class LiveActivityManager {
         self.currentState = nil
         self.currentStaleDate = nil
         self.logger.info("ending live activity reason=\(reason, privacy: .public)")
-        let finalState = OpenClawActivityAttributes.ContentState(
+        let finalState = AforaActivityAttributes.ContentState(
             status: .disconnected,
             verbatimDetail: nil,
             startedAt: startedAt)
@@ -435,7 +435,7 @@ final class LiveActivityManager {
     }
 
     private func hydrateCurrentAndPruneDuplicates() {
-        let active = Activity<OpenClawActivityAttributes>.activities
+        let active = Activity<AforaActivityAttributes>.activities
         guard !active.isEmpty else { return }
 
         let now = Date()
@@ -495,7 +495,7 @@ final class LiveActivityManager {
     /// alive. Their original start time can therefore be old without making a
     /// heartbeat-refreshed presentation obsolete after process relaunch.
     nonisolated static func shouldHydrate(
-        status: OpenClawActivityAttributes.ContentState.Status,
+        status: AforaActivityAttributes.ContentState.Status,
         startedAt: Date,
         staleDate: Date?,
         now: Date,
@@ -520,7 +520,7 @@ final class LiveActivityManager {
     /// A live voice producer owns the waveform buffer. Phase changes preserve
     /// its recent envelope; only a newly adopted producer starts a new trace.
     nonisolated static func shouldResetVoiceSamples(
-        previousStatus: OpenClawActivityAttributes.ContentState.Status?) -> Bool
+        previousStatus: AforaActivityAttributes.ContentState.Status?) -> Bool
     {
         previousStatus == nil
     }
@@ -545,12 +545,12 @@ final class LiveActivityManager {
         return existing?.state.startedAt ?? now
     }
 
-    private func end(activity: Activity<OpenClawActivityAttributes>) {
+    private func end(activity: Activity<AforaActivityAttributes>) {
         let startedAt = activity.content.state.startedAt
         Task {
             await activity.end(
                 ActivityContent(
-                    state: OpenClawActivityAttributes.ContentState(
+                    state: AforaActivityAttributes.ContentState(
                         status: .disconnected,
                         verbatimDetail: nil,
                         startedAt: startedAt),
@@ -588,7 +588,7 @@ final class LiveActivityManager {
 
     private static func voiceDetail(
         _ value: String,
-        status: OpenClawActivityAttributes.ContentState.Status) -> String?
+        status: AforaActivityAttributes.ContentState.Status) -> String?
     {
         let knownLabels: [String] = switch status {
         case .voiceListening:

@@ -36,21 +36,21 @@ export async function writeTemporaryBundleMcpJson(
   };
 }
 
-export function withOpenClawMcpCaptureHeader(
+export function withAforaMcpCaptureHeader(
   config: Record<string, unknown>,
   captureKey: string,
   missingServerError?: string,
 ): Record<string, unknown> {
   const mcpServers = isRecord(config.mcpServers) ? config.mcpServers : {};
-  const openclaw = isRecord(mcpServers.openclaw) ? mcpServers.openclaw : undefined;
-  if (!openclaw && missingServerError) {
+  const afora = isRecord(mcpServers.afora) ? mcpServers.afora : undefined;
+  if (!afora && missingServerError) {
     throw new Error(missingServerError);
   }
   return applyMergePatch(config, {
     mcpServers: {
-      openclaw: {
+      afora: {
         headers: {
-          "x-openclaw-cli-capture-key": captureKey,
+          "x-afora-cli-capture-key": captureKey,
         },
       },
     },

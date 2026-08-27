@@ -1,4 +1,4 @@
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { html, nothing } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { renderCopyAsMarkdownButton } from "../../../components/copy-button.ts";
@@ -109,10 +109,10 @@ export function resolveMessageActionDetails(params: {
   const { message, messageId: renderMessageId, canFetchFullMessage, onReply, senderLabel } = params;
   const record = message as Record<string, unknown>;
   const transcriptMeta =
-    record["__openclaw"] &&
-    typeof record["__openclaw"] === "object" &&
-    !Array.isArray(record["__openclaw"])
-      ? (record["__openclaw"] as Record<string, unknown>)
+    record["__afora"] &&
+    typeof record["__afora"] === "object" &&
+    !Array.isArray(record["__afora"])
+      ? (record["__afora"] as Record<string, unknown>)
       : null;
   const messageId =
     typeof transcriptMeta?.id === "string"
@@ -127,7 +127,7 @@ export function resolveMessageActionDetails(params: {
   const shouldFetchFullMessage = Boolean(
     canFetchFullMessage &&
     messageId &&
-    !record.openclawMessageToolMirror &&
+    !record.aforaMessageToolMirror &&
     (transcriptMeta?.truncated === true ||
       (role === "assistant" && previewMarkdown.includes("\n...(truncated)..."))),
   );
@@ -179,7 +179,7 @@ export function renderReplyButton(
   onReply: (target: MessageReplyTarget) => void,
 ) {
   return html`
-    <openclaw-tooltip .content=${t("chat.messages.reply")}>
+    <afora-tooltip .content=${t("chat.messages.reply")}>
       <button
         class="chat-reply-btn"
         type="button"
@@ -188,7 +188,7 @@ export function renderReplyButton(
       >
         ${icons.messageSquare}
       </button>
-    </openclaw-tooltip>
+    </afora-tooltip>
   `;
 }
 

@@ -14,7 +14,7 @@ export type ReplyOperationRunState = {
 
 // Carries this invocation's admission decision through reply option spreads so
 // heartbeat cleanup never infers it from whichever operation is active later.
-export const REPLY_OPERATION_RUN_STATE = Symbol("openclaw.replyOperationRunState");
+export const REPLY_OPERATION_RUN_STATE = Symbol("afora.replyOperationRunState");
 
 export type ReplyOptionsWithOperationRunState = {
   [REPLY_OPERATION_RUN_STATE]?: ReplyOperationRunState;

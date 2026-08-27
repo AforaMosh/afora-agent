@@ -1,7 +1,7 @@
-/** Pure repair rules for OpenClaw-generated plugin model catalogs. */
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+/** Pure repair rules for Afora-generated plugin model catalogs. */
+import { isRecord } from "@afora/normalization-core/record-coerce";
 
-export const PLUGIN_MODEL_CATALOG_GENERATED_BY = "openclaw-plugin-model-catalog-v1";
+export const PLUGIN_MODEL_CATALOG_GENERATED_BY = "afora-plugin-model-catalog-v1";
 
 type PluginModelCatalogRepair = {
   contents: string;

@@ -2,7 +2,7 @@
  * Correlates Codex app-server notifications with the active thread/turn so
  * projectors can ignore global or stale events without losing diagnostics.
  */
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { isJsonObject, type JsonObject, type JsonValue } from "./protocol.js";
 
 /** Returns true when a notification payload belongs to the exact active thread and turn. */

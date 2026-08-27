@@ -1,7 +1,7 @@
 /** Module-level session MCP runtime manager entry APIs. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { SessionToolOverrides } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginManifestRegistry } from "../plugins/manifest-registry.js";
 import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 import { createSessionMcpRuntimeManager } from "./agent-bundle-mcp-manager.js";
@@ -28,7 +28,7 @@ export async function getOrCreateSessionMcpRuntime(params: {
   sessionKey?: string;
   workspaceDir: string;
   agentDir?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
   requesterSenderId?: string | null;
   agentAccountId?: string | null;
@@ -47,7 +47,7 @@ export async function getOrCreateRequesterScopedMcpRuntime(params: {
   sessionKey?: string;
   workspaceDir: string;
   agentDir?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
   requesterSenderId?: string | null;
   agentAccountId?: string | null;

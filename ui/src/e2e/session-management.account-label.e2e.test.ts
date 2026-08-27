@@ -89,7 +89,7 @@ suite.define(() => {
       await row.getByRole("button", { name: "Open session menu" }).click();
       await page.getByRole("menuitem", { name: "Rename…" }).click();
       const field = page
-        .locator('openclaw-modal-dialog[label="Rename session"]')
+        .locator('afora-modal-dialog[label="Rename session"]')
         .getByRole("textbox", { name: "Rename session" });
       await field.waitFor({ state: "visible" });
       // This row has no stored label, so the field starts empty. Submitting the

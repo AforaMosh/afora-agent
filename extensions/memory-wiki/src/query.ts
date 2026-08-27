@@ -1,17 +1,17 @@
 // Memory Wiki plugin module implements query behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { filterMemorySearchHitsBySessionVisibility } from "@openclaw/memory-core/api.js";
-import type { MemorySearchResult } from "openclaw/plugin-sdk/memory-core-host-runtime-files";
-import { resolveDefaultAgentId, resolveSessionAgentId } from "openclaw/plugin-sdk/memory-host-core";
-import { getActiveMemorySearchManager } from "openclaw/plugin-sdk/memory-host-search";
-import type { OpenClawPluginToolContext } from "openclaw/plugin-sdk/plugin-entry";
+import { filterMemorySearchHitsBySessionVisibility } from "@afora/memory-core/api.js";
+import type { MemorySearchResult } from "afora-agent/plugin-sdk/memory-core-host-runtime-files";
+import { resolveDefaultAgentId, resolveSessionAgentId } from "afora-agent/plugin-sdk/memory-host-core";
+import { getActiveMemorySearchManager } from "afora-agent/plugin-sdk/memory-host-search";
+import type { AforaPluginToolContext } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   normalizeLowercaseStringOrEmpty,
   uniqueStrings,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import pMap, { pMapSkip } from "p-map";
-import type { OpenClawConfig } from "../api.js";
+import type { AforaConfig } from "../api.js";
 import { walkMemoryWikiDirectory } from "./bounded-walk.js";
 import { assessClaimFreshness, isClaimContestedStatus } from "./claim-health.js";
 import {
@@ -31,7 +31,7 @@ import { initializeMemoryWikiVault } from "./vault.js";
 const QUERY_DIRS = ["entities", "concepts", "sources", "syntheses", "reports"] as const;
 const QUERY_PAGE_READ_CONCURRENCY = 16;
 const RELATED_BLOCK_PATTERN =
-  /<!-- openclaw:wiki:related:start -->[\s\S]*?<!-- openclaw:wiki:related:end -->/g;
+  /<!-- afora:wiki:related:start -->[\s\S]*?<!-- afora:wiki:related:end -->/g;
 const MARKDOWN_FRONTMATTER_PATTERN = /^\s*---\r?\n[\s\S]*?\r?\n---\r?\n?/;
 const ROUTE_QUESTION_STOP_WORDS = new Set([
   "a",
@@ -163,7 +163,7 @@ type QuerySearchOverrides = {
   searchCorpus?: WikiSearchCorpus;
 };
 
-type ConversationRecallContext = NonNullable<OpenClawPluginToolContext["conversationRecall"]>;
+type ConversationRecallContext = NonNullable<AforaPluginToolContext["conversationRecall"]>;
 
 function sortWikiSearchResults(results: WikiSearchResult[]): WikiSearchResult[] {
   return results.toSorted((left, right) => {
@@ -920,7 +920,7 @@ function isBridgeCompiledPage(page: QueryableWikiPage): boolean {
 }
 
 function createWikiPageVisibilityFilter(params: {
-  appConfig?: OpenClawConfig;
+  appConfig?: AforaConfig;
   agentId?: string;
   agentSessionKey?: string;
   sandboxed?: boolean;
@@ -953,7 +953,7 @@ function shouldUseSharedMemory(config: ResolvedMemoryWikiConfig): boolean {
 
 function assertSessionVisibilityAppConfig(params: {
   config: ResolvedMemoryWikiConfig;
-  appConfig?: OpenClawConfig;
+  appConfig?: AforaConfig;
   agentId?: string;
   agentSessionKey?: string;
   sandboxed?: boolean;
@@ -982,13 +982,13 @@ function shouldSearchWiki(config: ResolvedMemoryWikiConfig): boolean {
 
 function shouldSearchSharedMemory(
   config: ResolvedMemoryWikiConfig,
-  appConfig?: OpenClawConfig,
+  appConfig?: AforaConfig,
 ): boolean {
   return shouldUseSharedMemory(config) && appConfig !== undefined;
 }
 
 function resolveActiveMemoryAgentId(params: {
-  appConfig?: OpenClawConfig;
+  appConfig?: AforaConfig;
   agentId?: string;
   agentSessionKey?: string;
 }): string | null {
@@ -1008,7 +1008,7 @@ function resolveActiveMemoryAgentId(params: {
 }
 
 async function resolveActiveMemoryManager(params: {
-  appConfig?: OpenClawConfig;
+  appConfig?: AforaConfig;
   agentId?: string;
   agentSessionKey?: string;
 }) {
@@ -1255,7 +1255,7 @@ export function resolveQueryableWikiPageByLookup(
 
 export async function searchMemoryWiki(input: {
   config: ResolvedMemoryWikiConfig;
-  appConfig?: OpenClawConfig;
+  appConfig?: AforaConfig;
   agentId?: string;
   agentSessionKey?: string;
   sandboxed?: boolean;
@@ -1343,7 +1343,7 @@ export async function searchMemoryWiki(input: {
 
 export async function getMemoryWikiPage(input: {
   config: ResolvedMemoryWikiConfig;
-  appConfig?: OpenClawConfig;
+  appConfig?: AforaConfig;
   agentId?: string;
   agentSessionKey?: string;
   sandboxed?: boolean;

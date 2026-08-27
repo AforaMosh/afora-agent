@@ -3,7 +3,7 @@
  * Provides provider-compatible profile lookup and stable de-duplication used by
  * ordering, repair, and profile mutation paths.
  */
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { resolveProviderIdForAuth } from "../provider-auth-aliases.js";
 import type { AuthProfileStore } from "./types.js";
 

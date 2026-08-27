@@ -4,7 +4,7 @@ import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../agents/defaults.js";
 import {
   resetConfigRuntimeState,
   setRuntimeConfigSnapshot,
-  type OpenClawConfig,
+  type AforaConfig,
 } from "../../config/config.js";
 import { onAgentEvent } from "../../infra/agent-events.js";
 import { requestHeartbeat, setHeartbeatWakeHandler } from "../../infra/heartbeat-wake.js";
@@ -217,7 +217,7 @@ describe("plugin runtime command execution", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig);
+    } as unknown as AforaConfig);
 
     const runtime = createPluginRuntime();
     const policy = runtime.agent.resolveThinkingPolicy({
@@ -233,7 +233,7 @@ describe("plugin runtime command execution", () => {
     const getSessionEntry = vi
       .spyOn(runtime.agent.session, "getSessionEntry")
       .mockReturnValue({ sessionId: "session", updatedAt: 1, execHost: "gateway" });
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       agents: {
         defaults: { sandbox: { mode: "all", scope: "session", workspaceAccess: "rw" } },
         list: [{ id: "main", default: true }],
@@ -258,7 +258,7 @@ describe("plugin runtime command execution", () => {
     const runtime = createPluginRuntime();
     vi.spyOn(runtime.agent.session, "getSessionEntry").mockReturnValue(undefined);
     sandboxContextMocks.resolveSandboxContext.mockResolvedValue({ backendId: "docker" });
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       agents: {
         defaults: { sandbox: { mode: "all", scope: "session", workspaceAccess: "rw" } },
         list: [{ id: "main", default: true, workspace: "/workspace" }],
@@ -421,7 +421,7 @@ describe("plugin runtime command execution", () => {
       api: "openai-responses",
       baseUrl: "https://workspace-cloud.example/v1",
     };
-    const cfg = { plugins: { allow: ["workspace-cloud"] } } as OpenClawConfig;
+    const cfg = { plugins: { allow: ["workspace-cloud"] } } as AforaConfig;
     runtimeModelAuthMocks.getApiKeyForModel.mockResolvedValue({
       apiKey: "model-key",
       source: "workspace cloud credentials",

@@ -12,11 +12,11 @@ import {
   resolveAuthProfileDatabasePath,
   writePersistedAuthProfileStoreRaw,
 } from "../agents/auth-profiles/sqlite.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { runSecretsAudit } from "./audit.js";
 import { writeSecretStoreEntry } from "./store/secret-store.js";
 
@@ -159,9 +159,9 @@ async function expectPathMissing(filePath: string): Promise<void> {
 }
 
 async function createAuditFixture(): Promise<AuditFixture> {
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-secrets-audit-"));
-  const stateDir = path.join(rootDir, ".openclaw");
-  const configPath = path.join(stateDir, "openclaw.json");
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-secrets-audit-"));
+  const stateDir = path.join(rootDir, ".afora");
+  const configPath = path.join(stateDir, "afora.json");
   const agentDir = path.join(stateDir, "agents", "main", "agent");
   const authStorePath = resolveAuthProfileDatabasePath(agentDir);
   const authJsonPath = path.join(agentDir, "auth.json");
@@ -181,8 +181,8 @@ async function createAuditFixture(): Promise<AuditFixture> {
     modelsPath,
     envPath,
     env: {
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_CONFIG_PATH: configPath,
+      AFORA_STATE_DIR: stateDir,
+      AFORA_CONFIG_PATH: configPath,
       OPENAI_API_KEY: "env-openai-key", // pragma: allowlist secret
       PATH: resolveRuntimePathEnv(),
     },
@@ -276,8 +276,8 @@ describe("secrets audit", () => {
 
   afterEach(async () => {
     vi.unstubAllEnvs();
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(fixture.rootDir, { recursive: true, force: true });
   });
 
@@ -653,7 +653,7 @@ describe("secrets audit", () => {
     const report = await runSecretsAudit({
       env: {
         ...fixture.env,
-        OPENCLAW_AGENT_DIR: externalAgentDir,
+        AFORA_AGENT_DIR: externalAgentDir,
       },
     });
     expect(
@@ -713,7 +713,7 @@ describe("secrets audit", () => {
   it("reads a relocated shared store from the explicitly routed state root", async () => {
     const ambientStateDir = path.join(fixture.rootDir, "ambient-state");
     const ambientAgentDir = path.join(ambientStateDir, "agents", "main", "agent");
-    vi.stubEnv("OPENCLAW_STATE_DIR", ambientStateDir);
+    vi.stubEnv("AFORA_STATE_DIR", ambientStateDir);
     writePersistedAuthProfileStoreRaw(
       {
         version: 1,
@@ -727,7 +727,7 @@ describe("secrets audit", () => {
       },
       ambientAgentDir,
     );
-    const stateDatabase = openOpenClawStateDatabase({ env: fixture.env }).db;
+    const stateDatabase = openAforaStateDatabase({ env: fixture.env }).db;
     stateDatabase
       .prepare(
         `INSERT INTO config_machine_state (state_key, value_json, updated_at_ms)
@@ -767,7 +767,7 @@ describe("secrets audit", () => {
     expect(report.filesScanned).not.toContain(resolveAuthProfileDatabasePath(ambientAgentDir));
   });
 
-  it("exempts direct routing headers but audits request headers in openclaw config", async () => {
+  it("exempts direct routing headers but audits request headers in afora config", async () => {
     await writeJsonFile(fixture.configPath, {
       models: {
         providers: {
@@ -810,7 +810,7 @@ describe("secrets audit", () => {
     ).toBe(true);
   });
 
-  it("exempts only known openclaw.json model provider apiKey markers", async () => {
+  it("exempts only known afora.json model provider apiKey markers", async () => {
     for (const { apiKey, isPlaintext } of [
       { apiKey: "lmstudio-local", isPlaintext: false },
       { apiKey: "ollama-local", isPlaintext: false },
@@ -843,15 +843,15 @@ describe("secrets audit", () => {
   });
 
   it("scans .env in legacy .clawdbot state directory via automatic fallback", async () => {
-    // Do NOT set OPENCLAW_STATE_DIR or OPENCLAW_CONFIG_PATH — rely on
+    // Do NOT set AFORA_STATE_DIR or AFORA_CONFIG_PATH — rely on
     // resolveStateDir's automatic legacy-directory fallback. A controlled
-    // HOME that contains only .clawdbot (no .openclaw) exercises the exact
+    // HOME that contains only .clawdbot (no .afora) exercises the exact
     // path the old resolveConfigDir call could not reach: resolveConfigDir
-    // always returns $HOME/.openclaw, so it would miss the .env inside
+    // always returns $HOME/.afora, so it would miss the .env inside
     // .clawdbot.  resolveStateDir finds .clawdbot via its legacy-dir scan.
-    const homeDir = tempDirs.make("openclaw-secrets-audit-legacy-");
+    const homeDir = tempDirs.make("afora-secrets-audit-legacy-");
     const legacyStateDir = path.join(homeDir, ".clawdbot");
-    const configPath = path.join(legacyStateDir, "openclaw.json");
+    const configPath = path.join(legacyStateDir, "afora.json");
     const envPath = path.join(legacyStateDir, ".env");
     const agentDir = path.join(legacyStateDir, "agents", "main", "agent");
 
@@ -891,7 +891,7 @@ describe("secrets audit", () => {
         true,
       );
     } finally {
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
       await fs.rm(homeDir, { recursive: true, force: true });
     }
   });
@@ -899,12 +899,12 @@ describe("secrets audit", () => {
   it("scans config and state .env files when the config path is external", async () => {
     await seedAuditFixture(fixture);
     const configDir = path.join(fixture.rootDir, "config");
-    const configPath = path.join(configDir, "openclaw.json");
+    const configPath = path.join(configDir, "afora.json");
     const configEnvPath = path.join(configDir, ".env");
     await fs.mkdir(configDir, { recursive: true });
     await fs.copyFile(fixture.configPath, configPath);
     await fs.copyFile(fixture.envPath, configEnvPath);
-    fixture.env.OPENCLAW_CONFIG_PATH = configPath;
+    fixture.env.AFORA_CONFIG_PATH = configPath;
 
     const report = await runSecretsAudit({ env: fixture.env });
 

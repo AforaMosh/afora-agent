@@ -1,6 +1,6 @@
 // Verifies CPU-derived and configured agent runtime limits.
 import os from "node:os";
-import { importFreshModule } from "openclaw/plugin-sdk/test-fixtures";
+import { importFreshModule } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 async function importFreshAgentLimits(scope: string): Promise<typeof import("./agent-limits.js")> {

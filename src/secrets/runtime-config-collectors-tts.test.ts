@@ -1,6 +1,6 @@
 /** Tests for TTS SecretRef assignment ownership. */
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { collectTtsApiKeyAssignments } from "./runtime-config-collectors-tts.js";
 import { createResolverContext } from "./runtime-shared.js";
 
@@ -12,7 +12,7 @@ const TTS_KEY_REF = {
 
 function createContext() {
   return createResolverContext({
-    sourceConfig: {} as OpenClawConfig,
+    sourceConfig: {} as AforaConfig,
     env: {},
   });
 }

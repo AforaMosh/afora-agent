@@ -146,7 +146,7 @@ export async function writeSupportBundleZip(params: {
   const published = await writeExternalFileWithinRoot({
     rootDir: path.dirname(outputPath),
     path: path.basename(outputPath),
-    fallbackFileName: "openclaw-support.zip",
+    fallbackFileName: "afora-support.zip",
     write: async (tempPath) => {
       await fsp.writeFile(tempPath, buffer, { mode: 0o600 });
     },

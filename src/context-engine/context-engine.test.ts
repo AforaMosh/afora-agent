@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createContextEngineLogicalTurnLease,
@@ -11,7 +11,7 @@ import {
 import { upsertSessionEntryCore } from "../config/sessions/session-accessor.js";
 import { SessionTranscriptReadFenceError } from "../config/sessions/session-transcript-read-fence.js";
 import type { MemoryCitationsMode } from "../config/types.memory.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   clearMemoryPluginState,
   registerMemoryPromptPreparation,
@@ -24,7 +24,7 @@ import {
   withPluginRegistrationContext,
 } from "../plugins/runtime.js";
 import type { UserTurnTranscriptAdmissionReceipt } from "../sessions/user-turn-transcript.types.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
 // ---------------------------------------------------------------------------
 // We dynamically import the registry so we can get a fresh module per test
 // group when needed.  For most groups we use the shared singleton directly.
@@ -105,7 +105,7 @@ function requireCompactRuntimeParams(callIndex: number): Record<string, unknown>
 // ---------------------------------------------------------------------------
 
 /** Build a config object with a contextEngine slot for testing. */
-function configWithSlot(engineId: string): OpenClawConfig {
+function configWithSlot(engineId: string): AforaConfig {
   return { plugins: { slots: { contextEngine: engineId } } };
 }
 
@@ -284,7 +284,7 @@ describe("Engine contract tests", () => {
       agentId: "main",
       sessionId: "s2",
       sessionKey: "agent:main:s2",
-      storePath: "/tmp/openclaw-agent.sqlite",
+      storePath: "/tmp/afora-agent.sqlite",
     };
     const result = await delegateCompactionToRuntime({
       sessionId: "s2",
@@ -323,7 +323,7 @@ describe("Engine contract tests", () => {
 
   it("delegateCompactionToRuntime returns successor sessionTarget without sessionFile", async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "context-successor-target-"));
-    const storePath = path.join(root, "openclaw-agent.sqlite");
+    const storePath = path.join(root, "afora-agent.sqlite");
     try {
       compactEmbeddedAgentSessionOnDemandMock.mockResolvedValueOnce({
         ok: true,
@@ -360,7 +360,7 @@ describe("Engine contract tests", () => {
       });
       expect(result.result).not.toHaveProperty("sessionFile");
     } finally {
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
@@ -407,7 +407,7 @@ describe("Engine contract tests", () => {
         storePath,
       });
     } finally {
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
@@ -423,7 +423,7 @@ describe("Engine contract tests", () => {
           agentId: "worker",
           sessionId: "s-agent-conflict",
           sessionKey: "agent:main:s-agent-conflict",
-          storePath: "/tmp/openclaw-agent.sqlite",
+          storePath: "/tmp/afora-agent.sqlite",
         },
         tokenBudget: 4096,
       }),
@@ -462,7 +462,7 @@ describe("Engine contract tests", () => {
       result: {
         tokensBefore: 100,
         sessionId: "top-level-successor",
-        sessionFile: "sqlite:main:marker-successor:/tmp/openclaw-agent.sqlite",
+        sessionFile: "sqlite:main:marker-successor:/tmp/afora-agent.sqlite",
       },
     });
 
@@ -1805,7 +1805,7 @@ describe("Invalid engine fallback", () => {
   });
 
   it("accepts resolved engines whose info.id differs from the registered slot id (#66601)", async () => {
-    // Regression for openclaw/openclaw#66601: third-party plugins like
+    // Regression for AforaMosh/afora-agent#66601: third-party plugins like
     // lossless-claw register under an external slot id ("lossless-claw") but
     // the ContextEngine they return uses the plugin's own internal id
     // (e.g. "lcm"). That id is metadata, not the lookup key.

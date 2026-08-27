@@ -25,7 +25,7 @@ scenario:
   successCriteria:
     - The mock provider plans one read before returning HTTP 503 on the post-tool request.
     - The channel receives the existing sanitized temporary-provider-error reply exactly once.
-    - OpenClaw does not replay the tool-backed turn after the HTTP 503.
+    - Afora does not replay the tool-backed turn after the HTTP 503.
     - Raw provider diagnostics are not delivered to the channel.
   docsRefs:
     - docs/channels/qa-channel.md
@@ -41,7 +41,7 @@ scenario:
       requiredProviderMode: mock-openai
       conversationId: qa-provider-http-503
       promptSnippet: Provider HTTP 503 after tool QA check
-      prompt: "@openclaw Provider HTTP 503 after tool QA check: read QA_KICKOFF_TASK.md, then reply."
+      prompt: "@afora Provider HTTP 503 after tool QA check: read QA_KICKOFF_TASK.md, then reply."
       expectedReply: "⚠️ The model provider returned a temporary internal error before replying. Try again in a moment, or switch to another model if it keeps happening."
 
 flow:

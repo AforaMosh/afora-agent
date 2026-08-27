@@ -10,7 +10,7 @@ async function withPackageManagerRoot<T>(
   files: Array<{ path: string; content: string }>,
   run: (root: string) => Promise<T>,
 ): Promise<T> {
-  return await withTestDir({ prefix: "openclaw-detect-pm-" }, async (root) => {
+  return await withTestDir({ prefix: "afora-detect-pm-" }, async (root) => {
     for (const file of files) {
       const target = path.join(root, file.path);
       await fs.mkdir(path.dirname(target), { recursive: true });
@@ -20,14 +20,14 @@ async function withPackageManagerRoot<T>(
   });
 }
 
-async function writePublishedOpenClawRoot(
+async function writePublishedAforaRoot(
   root: string,
   options: { shrinkwrap: boolean },
 ): Promise<void> {
   await fs.mkdir(root, { recursive: true });
   await fs.writeFile(
     path.join(root, "package.json"),
-    JSON.stringify({ name: "openclaw", packageManager: "pnpm@11.2.2" }),
+    JSON.stringify({ name: "afora", packageManager: "pnpm@11.2.2" }),
     "utf8",
   );
   if (options.shrinkwrap) {
@@ -110,7 +110,7 @@ describe("detectPackageManager", () => {
   )(
     "detects $manager ownership for $packageFormat packages in $layout layouts",
     async ({ manager, layout, shrinkwrap }) => {
-      await withTestDir({ prefix: `openclaw-detect-pm-${manager}-` }, async (base) => {
+      await withTestDir({ prefix: `afora-detect-pm-${manager}-` }, async (base) => {
         const bunInstall = path.join(base, "custom-bun-home");
         const nodeModulesRoot =
           manager === "bun"
@@ -118,9 +118,9 @@ describe("detectPackageManager", () => {
             : path.join(base, `${manager}-global`, "node_modules");
         const packageRoot =
           layout === "virtual"
-            ? path.join(nodeModulesRoot, ".pnpm", "openclaw@2026.5.27", "node_modules", "openclaw")
-            : path.join(nodeModulesRoot, "openclaw");
-        await writePublishedOpenClawRoot(packageRoot, { shrinkwrap });
+            ? path.join(nodeModulesRoot, ".pnpm", "openclaw@2026.5.27", "node_modules", "afora")
+            : path.join(nodeModulesRoot, "afora");
+        await writePublishedAforaRoot(packageRoot, { shrinkwrap });
         if (manager === "pnpm") {
           await fs.writeFile(
             path.join(nodeModulesRoot, ".modules.yaml"),
@@ -137,10 +137,10 @@ describe("detectPackageManager", () => {
   );
 
   it("keeps pnpm 11 ownership through markerless global virtual-store symlinks", async () => {
-    await withTestDir({ prefix: "openclaw-detect-pm-pnpm-global-store-" }, async (base) => {
+    await withTestDir({ prefix: "afora-detect-pm-pnpm-global-store-" }, async (base) => {
       const globalRoot = path.join(base, "pnpm-home", "global", "v11");
-      const installRoot = path.join(globalRoot, "install-openclaw");
-      const linkedPackageRoot = path.join(installRoot, "node_modules", "openclaw");
+      const installRoot = path.join(globalRoot, "install-afora");
+      const linkedPackageRoot = path.join(installRoot, "node_modules", "afora");
       const storePackageRoot = path.join(
         base,
         "pnpm-home",
@@ -148,23 +148,23 @@ describe("detectPackageManager", () => {
         "v11",
         "links",
         "@",
-        "openclaw",
+        "afora",
         "2026.7.2",
         "graph-hash",
         "node_modules",
-        "openclaw",
+        "afora",
       );
-      await writePublishedOpenClawRoot(storePackageRoot, { shrinkwrap: false });
+      await writePublishedAforaRoot(storePackageRoot, { shrinkwrap: false });
       await fs.mkdir(path.dirname(linkedPackageRoot), { recursive: true });
       await fs.writeFile(
         path.join(installRoot, "package.json"),
-        JSON.stringify({ private: true, dependencies: { openclaw: "2026.7.2" } }),
+        JSON.stringify({ private: true, dependencies: { afora: "2026.7.2" } }),
         "utf8",
       );
       await fs.writeFile(path.join(installRoot, "pnpm-lock.yaml"), "lockfileVersion: '9.0'\n");
       const symlinkType = process.platform === "win32" ? "junction" : "dir";
       await fs.symlink(storePackageRoot, linkedPackageRoot, symlinkType);
-      await fs.symlink(installRoot, path.join(globalRoot, "hash-openclaw"), symlinkType);
+      await fs.symlink(installRoot, path.join(globalRoot, "hash-afora"), symlinkType);
 
       await expect(detectPackageManager(linkedPackageRoot)).resolves.toBe("pnpm");
       await expect(detectPackageManager(await fs.realpath(linkedPackageRoot))).resolves.toBe(

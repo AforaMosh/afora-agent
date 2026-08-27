@@ -1,12 +1,12 @@
 import path from "node:path";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { tryResolveLegacyCompatibilityAgentId } from "../config/legacy.default-agent-owner.js";
 import { resolveStateDir } from "../config/paths.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { resolveAgentDir } from "./agent-scope-config.js";
 
-export function resolveLegacyInheritedAuthAgentId(config: OpenClawConfig): string {
+export function resolveLegacyInheritedAuthAgentId(config: AforaConfig): string {
   return (
     normalizeOptionalString(config.agents?.defaults?.authInheritance?.agentId) ??
     tryResolveLegacyCompatibilityAgentId(config) ??
@@ -15,16 +15,16 @@ export function resolveLegacyInheritedAuthAgentId(config: OpenClawConfig): strin
 }
 
 export function resolveLegacyInheritedAuthDir(
-  config: OpenClawConfig,
+  config: AforaConfig,
   env: NodeJS.ProcessEnv = process.env,
 ): string {
   return resolveAgentDir(config, resolveLegacyInheritedAuthAgentId(config), env);
 }
 
 export function pinLegacyInheritedAuthOwnerForRosterTransition(
-  sourceConfig: OpenClawConfig,
-  targetConfig: OpenClawConfig,
-): OpenClawConfig {
+  sourceConfig: AforaConfig,
+  targetConfig: AforaConfig,
+): AforaConfig {
   const sourceOwner = resolveLegacyInheritedAuthAgentId(sourceConfig);
   if (sourceOwner === resolveLegacyInheritedAuthAgentId(targetConfig)) {
     return targetConfig;
@@ -45,8 +45,8 @@ export function pinLegacyInheritedAuthOwnerForRosterTransition(
 }
 
 export function assertSafeLegacyInheritedAuthDirTransition(
-  sourceConfig: OpenClawConfig,
-  targetConfig: OpenClawConfig,
+  sourceConfig: AforaConfig,
+  targetConfig: AforaConfig,
   env: NodeJS.ProcessEnv = process.env,
 ): void {
   const sourceOwner = resolveLegacyInheritedAuthAgentId(sourceConfig);

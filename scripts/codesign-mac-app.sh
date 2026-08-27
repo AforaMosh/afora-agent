@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_BUNDLE="dist/OpenClaw.app"
+APP_BUNDLE="dist/Afora.app"
 IDENTITY="${SIGN_IDENTITY:-}"
-SIGNING_VARIANT="${OPENCLAW_MAC_SIGNING_VARIANT:-standard}"
-ELEVATION_IDENTITY="Developer ID Application: OpenClaw Foundation (FWJYW4S8P8)"
+SIGNING_VARIANT="${AFORA_MAC_SIGNING_VARIANT:-standard}"
+ELEVATION_IDENTITY="Developer ID Application: Afora Foundation (FWJYW4S8P8)"
 ELEVATION_TEAM_ID="FWJYW4S8P8"
 TIMESTAMP_MODE="${CODESIGN_TIMESTAMP:-auto}"
 CODESIGN_TIMESTAMP_RETRY_ATTEMPTS="${CODESIGN_TIMESTAMP_RETRY_ATTEMPTS:-8}"
@@ -25,7 +25,7 @@ Usage: scripts/codesign-mac-app.sh [app-bundle]
 
 Env:
   SIGN_IDENTITY="Apple Development: Your Name (TEAMID)"
-  OPENCLAW_MAC_SIGNING_VARIANT=standard|elevation-host
+  AFORA_MAC_SIGNING_VARIANT=standard|elevation-host
   ALLOW_ADHOC_SIGNING=1
   CODESIGN_TIMESTAMP=auto|on|off
   CODESIGN_TIMESTAMP_RETRY_ATTEMPTS=8
@@ -39,7 +39,7 @@ fi
 case "$SIGNING_VARIANT" in
   standard|elevation-host) ;;
   *)
-    echo "ERROR: Unknown OPENCLAW_MAC_SIGNING_VARIANT value: $SIGNING_VARIANT (use standard|elevation-host)" >&2
+    echo "ERROR: Unknown AFORA_MAC_SIGNING_VARIANT value: $SIGNING_VARIANT (use standard|elevation-host)" >&2
     exit 1
     ;;
 esac
@@ -184,7 +184,7 @@ if [[ ! "$CODESIGN_TIMESTAMP_RETRY_DELAY_SECONDS" =~ ^[0-9]+$ ]]; then
   exit 1
 fi
 
-ENT_TMP_DIR=$(mktemp -d -t openclaw-entitlements.XXXXXX)
+ENT_TMP_DIR=$(mktemp -d -t afora-entitlements.XXXXXX)
 trap cleanup EXIT
 ENT_TMP_APP="$ENT_TMP_DIR/app.plist"
 CODESIGN_OUTPUT="$ENT_TMP_DIR/codesign-output"
@@ -368,7 +368,7 @@ verify_elevation_signature() {
 }
 
 # Sign bundled helper binaries before signing the app bundle.
-MLX_TTS_HELPER="$APP_BUNDLE/Contents/MacOS/openclaw-mlx-tts"
+MLX_TTS_HELPER="$APP_BUNDLE/Contents/MacOS/afora-mlx-tts"
 if [ -f "$MLX_TTS_HELPER" ]; then
   echo "Signing MLX TTS helper"; sign_plain_item "$MLX_TTS_HELPER"
 fi
@@ -379,8 +379,8 @@ if [ -f "$CUA_DRIVER" ]; then
 fi
 
 # Sign main binary
-if [ -f "$APP_BUNDLE/Contents/MacOS/OpenClaw" ]; then
-  echo "Signing main binary"; sign_item "$APP_BUNDLE/Contents/MacOS/OpenClaw" "$APP_ENTITLEMENTS"
+if [ -f "$APP_BUNDLE/Contents/MacOS/Afora" ]; then
+  echo "Signing main binary"; sign_item "$APP_BUNDLE/Contents/MacOS/Afora" "$APP_ENTITLEMENTS"
 fi
 
 # Sign Sparkle deeply if present

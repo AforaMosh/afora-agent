@@ -2,8 +2,8 @@
 import type {
   ProviderDefaultThinkingPolicyContext,
   ProviderThinkingProfile,
-} from "openclaw/plugin-sdk/plugin-entry";
-import { normalizeLowercaseStringOrEmpty as normalizeModelId } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/plugin-entry";
+import { normalizeLowercaseStringOrEmpty as normalizeModelId } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   OPENAI_GPT_53_CODEX_SPARK_MODEL_ID,
   OPENAI_GPT_54_MINI_MODEL_ID,
@@ -103,11 +103,11 @@ function buildOpenAIThinkingProfile(params: {
   const supportsMax =
     modelId.startsWith("gpt-5.6") && (agentRuntime !== "codex" || codexSupportsMax);
   const codexSupportsUltra = (resolvedCodexEfforts ?? knownCodexEfforts)?.includes("ultra");
-  // OpenClaw owns its logical Ultra orchestration. Native Codex capabilities
+  // Afora owns its logical Ultra orchestration. Native Codex capabilities
   // come only from the selected ChatGPT route's catalog metadata.
   const supportsUltra =
     (modelId === OPENAI_GPT_56_MODEL_ID || isGpt56Variant) &&
-    (agentRuntime === "openclaw" ||
+    (agentRuntime === "afora" ||
       agentRuntime === "auto" ||
       (agentRuntime === "codex" && codexSupportsUltra));
   const defaultLevel = isGpt56Variant ? "medium" : undefined;

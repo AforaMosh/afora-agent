@@ -12,13 +12,13 @@ describe("resolveBranchLanding", () => {
   let root: string;
 
   const git = (...args: string[]) =>
-    execFileAsync("git", ["-c", "user.email=test@openclaw.ai", "-c", "user.name=Test", ...args], {
+    execFileAsync("git", ["-c", "user.email=test@afora.ai", "-c", "user.name=Test", ...args], {
       cwd: root,
     });
   const sha = async (ref: string) => (await git("rev-parse", ref)).stdout.trim();
 
   beforeEach(async () => {
-    root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-prs-landing-")));
+    root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), "afora-prs-landing-")));
     await git("init", "--initial-branch=main", ".");
     await fs.writeFile(path.join(root, "a.txt"), "one\n");
     await git("add", "a.txt");

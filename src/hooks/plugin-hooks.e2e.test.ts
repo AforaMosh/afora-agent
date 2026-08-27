@@ -12,14 +12,14 @@ import {
 } from "../plugins/hook-runner-global.js";
 import {
   cleanupPluginLoaderFixturesForTest,
-  loadOpenClawPlugins,
+  loadAforaPlugins,
   resetPluginLoaderTestStateForTest,
   useNoBundledPlugins,
   writePlugin,
 } from "../plugins/loader.test-fixtures.js";
 
 const pluginId = "qa-plugin-hook-contracts";
-const recordedEventsKey = Symbol.for("openclaw.qa.plugin-hook-contracts.events");
+const recordedEventsKey = Symbol.for("afora.qa.plugin-hook-contracts.events");
 const registeredHookNames = [
   "before_tool_call",
   "message_received",
@@ -54,7 +54,7 @@ function loadFixturePlugin() {
   const plugin = writePlugin({
     id: pluginId,
     body: `
-const eventsKey = Symbol.for("openclaw.qa.plugin-hook-contracts.events");
+const eventsKey = Symbol.for("afora.qa.plugin-hook-contracts.events");
 function record(hookName, event, context) {
   const events = globalThis[eventsKey] ?? (globalThis[eventsKey] = []);
   events.push({ hookName, event, context });
@@ -97,7 +97,7 @@ module.exports = {
 };
 `,
   });
-  const registry = loadOpenClawPlugins({
+  const registry = loadAforaPlugins({
     cache: false,
     config: {
       plugins: {
@@ -191,7 +191,7 @@ describe("plugin hook lifecycle contracts", () => {
       {
         port: 18789,
         config: {},
-        workspaceDir: "/tmp/openclaw-qa-workspace",
+        workspaceDir: "/tmp/afora-qa-workspace",
         getCron: () => undefined,
       },
     );

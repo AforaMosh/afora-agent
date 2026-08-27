@@ -8,7 +8,7 @@ import { matchesApprovalRequestFilters } from "../infra/approval-request-filters
 import { getExecApprovalReplyMetadata } from "../infra/exec-approval-reply.js";
 import type { ExecApprovalRequest } from "../infra/exec-approvals.js";
 import type { PluginApprovalRequest } from "../infra/plugin-approvals.js";
-import type { OpenClawConfig } from "./config-runtime.js";
+import type { AforaConfig } from "./config-runtime.js";
 import type { ReplyPayload } from "./reply-payload.js";
 import { normalizeAccountId } from "./routing.js";
 
@@ -29,12 +29,12 @@ type ChannelApprovalConfig = {
 
 type ApprovalProfileParams = {
   /** Full config used to resolve account-scoped approval settings. */
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   /** Optional channel account id for account-scoped approval settings. */
   accountId?: string | null;
 };
 
-function isApprovalTargetsMode(cfg: OpenClawConfig): boolean {
+function isApprovalTargetsMode(cfg: AforaConfig): boolean {
   const execApprovals = cfg.approvals?.exec;
   if (!execApprovals?.enabled) {
     return false;
@@ -63,7 +63,7 @@ export function isChannelExecApprovalClientEnabledFromConfig(params: {
  */
 export function isChannelExecApprovalTargetRecipient(params: {
   /** Full config containing global exec approval target routing. */
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   /** Sender id or handle to compare with configured forward targets. */
   senderId?: string | null;
   /** Optional channel account id for account-scoped target matching. */

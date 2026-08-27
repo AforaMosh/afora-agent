@@ -1,6 +1,6 @@
 // Resolves package entrypoints for installed and bundled plugins.
 import path from "node:path";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 
 /** True when a package entrypoint needs built JavaScript candidates. */
 export function isTypeScriptPackageEntry(entryPath: string): boolean {

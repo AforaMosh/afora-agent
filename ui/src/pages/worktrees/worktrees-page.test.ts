@@ -140,7 +140,7 @@ describe("WorktreesPage lifecycle", () => {
       agents: { state: { agentsList: { mainKey: "main" } } },
       agentSelection: { state: { selectedId: "main" } },
     } as unknown as ApplicationContext;
-    const page = document.createElement("openclaw-worktrees-page") as WorktreesPageTestElement;
+    const page = document.createElement("afora-worktrees-page") as WorktreesPageTestElement;
     page.context = context;
     document.body.append(page);
     await waitForFast(() => expect(page.records.length).toBe(1));
@@ -148,7 +148,7 @@ describe("WorktreesPage lifecycle", () => {
 
     const docsLink = page.querySelector<HTMLAnchorElement>(".page-subtitle a");
     expect(docsLink?.textContent?.trim()).toBe("Learn more");
-    expect(docsLink?.href).toBe("https://docs.openclaw.ai/concepts/managed-worktrees");
+    expect(docsLink?.href).toBe("https://docs.afora.ai/concepts/managed-worktrees");
 
     const link = [...page.querySelectorAll("a")].find((anchor) =>
       anchor.getAttribute("href")?.includes("12345678"),
@@ -167,7 +167,7 @@ describe("WorktreesPage lifecycle", () => {
     const removedRecord = {
       ...record,
       removedAt: 2,
-      snapshotRef: "refs/openclaw/worktree-snapshots/test",
+      snapshotRef: "refs/afora/worktree-snapshots/test",
     };
     const pendingList = deferred<{ worktrees: WorktreeRecord[] }>();
     let listRequests = 0;
@@ -183,7 +183,7 @@ describe("WorktreesPage lifecycle", () => {
       }
       return Promise.resolve({ removed: true });
     });
-    const page = document.createElement("openclaw-worktrees-page") as WorktreesPageTestElement;
+    const page = document.createElement("afora-worktrees-page") as WorktreesPageTestElement;
     page.context = contextWithGateway(
       gatewayWithClient({ request } as unknown as GatewayBrowserClient),
     );
@@ -213,7 +213,7 @@ describe("WorktreesPage lifecycle", () => {
   });
 
   it("clears stale records when a null-client gateway source is replaced", async () => {
-    const page = document.createElement("openclaw-worktrees-page") as WorktreesPageTestElement;
+    const page = document.createElement("afora-worktrees-page") as WorktreesPageTestElement;
     page.records = [
       {
         id: "stale",
@@ -249,7 +249,7 @@ describe("WorktreesPage lifecycle", () => {
         }),
     );
     const secondRequest = vi.fn(async () => ({ worktrees: [] }));
-    const page = document.createElement("openclaw-worktrees-page") as WorktreesPageTestElement;
+    const page = document.createElement("afora-worktrees-page") as WorktreesPageTestElement;
     page.context = contextWithGateway(
       gatewayWithClient({ request: firstRequest } as unknown as GatewayBrowserClient),
     );
@@ -281,7 +281,7 @@ describe("WorktreesPage lifecycle", () => {
       return Promise.resolve({ worktrees: [] });
     });
     const secondRequest = vi.fn(async () => ({ worktrees: [] }));
-    const page = document.createElement("openclaw-worktrees-page") as WorktreesPageTestElement;
+    const page = document.createElement("afora-worktrees-page") as WorktreesPageTestElement;
     page.context = contextWithGateway(
       gatewayWithClient({ request: firstRequest } as unknown as GatewayBrowserClient),
     );
@@ -322,7 +322,7 @@ describe("WorktreesPage lifecycle", () => {
     vi.mocked(showConfirmDialog).mockReturnValueOnce(confirmation.promise);
     const firstRequest = vi.fn(async () => ({ worktrees: [] }));
     const secondRequest = vi.fn(async () => ({ worktrees: [] }));
-    const page = document.createElement("openclaw-worktrees-page") as WorktreesPageTestElement;
+    const page = document.createElement("afora-worktrees-page") as WorktreesPageTestElement;
     page.context = contextWithGateway(
       gatewayWithClient({ request: firstRequest } as unknown as GatewayBrowserClient),
     );
@@ -352,7 +352,7 @@ describe("WorktreesPage lifecycle", () => {
       }
       return Promise.resolve({ worktrees: [] });
     });
-    const page = document.createElement("openclaw-worktrees-page") as WorktreesPageTestElement;
+    const page = document.createElement("afora-worktrees-page") as WorktreesPageTestElement;
     page.context = contextWithGateway(
       gatewayWithClient({ request } as unknown as GatewayBrowserClient),
     );
@@ -386,7 +386,7 @@ describe("WorktreesPage lifecycle", () => {
     });
     const client = { request } as unknown as GatewayBrowserClient;
     const source = mutableGateway(client);
-    const page = document.createElement("openclaw-worktrees-page") as WorktreesPageTestElement;
+    const page = document.createElement("afora-worktrees-page") as WorktreesPageTestElement;
     page.context = contextWithGateway(source.gateway);
     document.body.append(page);
     await waitForFast(() =>
@@ -423,7 +423,7 @@ describe("WorktreesPage lifecycle", () => {
       }
       return Promise.resolve({});
     });
-    const page = document.createElement("openclaw-worktrees-page") as WorktreesPageTestElement;
+    const page = document.createElement("afora-worktrees-page") as WorktreesPageTestElement;
     page.context = contextWithGateway(
       gatewayWithClient({ request } as unknown as GatewayBrowserClient),
     );
@@ -453,7 +453,7 @@ describe("WorktreesPage lifecycle", () => {
       }
       return Promise.resolve({});
     });
-    const page = document.createElement("openclaw-worktrees-page") as WorktreesPageTestElement;
+    const page = document.createElement("afora-worktrees-page") as WorktreesPageTestElement;
     page.context = contextWithGateway(
       gatewayWithClient({ request } as unknown as GatewayBrowserClient),
     );
@@ -482,7 +482,7 @@ describe("WorktreesPage lifecycle", () => {
       }
       return Promise.resolve({});
     });
-    const page = document.createElement("openclaw-worktrees-page") as WorktreesPageTestElement;
+    const page = document.createElement("afora-worktrees-page") as WorktreesPageTestElement;
     page.context = contextWithGateway(
       gatewayWithClient({ request } as unknown as GatewayBrowserClient),
     );
@@ -504,7 +504,7 @@ describe("WorktreesPage lifecycle", () => {
     });
     const client = { request } as unknown as GatewayBrowserClient;
     const source = mutableGateway(client);
-    const page = document.createElement("openclaw-worktrees-page") as WorktreesPageTestElement;
+    const page = document.createElement("afora-worktrees-page") as WorktreesPageTestElement;
     page.context = contextWithGateway(source.gateway);
     page.createRepoRoot = "/tmp/repo";
     document.body.append(page);
@@ -544,7 +544,7 @@ describe("WorktreesPage lifecycle", () => {
     });
     const client = { request } as unknown as GatewayBrowserClient;
     const source = mutableGateway(client);
-    const page = document.createElement("openclaw-worktrees-page") as WorktreesPageTestElement;
+    const page = document.createElement("afora-worktrees-page") as WorktreesPageTestElement;
     page.context = contextWithGateway(source.gateway);
     document.body.append(page);
     await waitForFast(() => expect(listRequests).toBe(1));
@@ -570,7 +570,7 @@ describe("WorktreesPage lifecycle", () => {
       }
       return Promise.resolve({ worktrees: [] });
     });
-    const page = document.createElement("openclaw-worktrees-page") as WorktreesPageTestElement;
+    const page = document.createElement("afora-worktrees-page") as WorktreesPageTestElement;
     page.context = contextWithGateway(
       gatewayWithClient({ request } as unknown as GatewayBrowserClient),
     );
@@ -639,7 +639,7 @@ describe("WorktreesPage lifecycle", () => {
       }
       return Promise.resolve({ worktrees: [] });
     });
-    const page = document.createElement("openclaw-worktrees-page") as WorktreesPageTestElement;
+    const page = document.createElement("afora-worktrees-page") as WorktreesPageTestElement;
     page.context = contextWithGateway(
       gatewayWithClient({ request } as unknown as GatewayBrowserClient),
     );
@@ -671,7 +671,7 @@ describe("WorktreesPage lifecycle", () => {
       }
       return Promise.resolve({ worktrees: [] });
     });
-    const page = document.createElement("openclaw-worktrees-page") as WorktreesPageTestElement;
+    const page = document.createElement("afora-worktrees-page") as WorktreesPageTestElement;
     page.context = contextWithGateway(
       gatewayWithClient({ request } as unknown as GatewayBrowserClient),
     );

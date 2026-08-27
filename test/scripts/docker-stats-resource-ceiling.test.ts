@@ -10,7 +10,7 @@ const MAX_STATS_SAMPLE_LINE_BYTES = 1024 * 1024;
 const tempRoots: string[] = [];
 
 function writeStats(contents: string): string {
-  const root = mkdtempSync(join(tmpdir(), "openclaw-docker-stats-"));
+  const root = mkdtempSync(join(tmpdir(), "afora-docker-stats-"));
   tempRoots.push(root);
   const file = join(root, "stats.jsonl");
   writeFileSync(file, contents);

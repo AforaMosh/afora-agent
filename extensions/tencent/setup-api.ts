@@ -1,5 +1,5 @@
 // Tencent setup entrypoint exposes lightweight config repair hooks.
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import { migrateTencentTokenHubModelDefaults } from "./config-compat.js";
 
 export default definePluginEntry({

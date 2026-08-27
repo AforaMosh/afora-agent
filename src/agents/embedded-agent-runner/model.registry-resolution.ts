@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ModelRegistry as CoreModelRegistry } from "../../llm/model-registry.js";
 import type { Model } from "../../llm/types.js";
 import type { PluginMetadataSnapshotOwnerMaps } from "../../plugins/plugin-metadata-snapshot.types.js";
@@ -53,7 +53,7 @@ export function resolveExplicitModelWithRegistry(params: {
   provider: string;
   modelId: string;
   modelRegistry: CoreModelRegistry;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentDir?: string;
   manifestAlias: ManifestModelCatalogProviderAliasMetadata;
   workspaceDir?: string;
@@ -205,7 +205,7 @@ export function resolveExplicitModelWithRegistry(params: {
 export function resolveDynamicModelAuthProfile(params: {
   provider: string;
   modelId: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentDir?: string;
   authProfileId?: string;
   authProfileMode?: AuthProfileCredential["type"] | "aws-sdk";
@@ -263,7 +263,7 @@ function resolvePluginDynamicModelWithRegistry(params: {
   provider: string;
   modelId: string;
   modelRegistry: CoreModelRegistry;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentDir?: string;
   agentRuntimeId?: string;
   manifestAlias: ManifestModelCatalogProviderAliasMetadata;
@@ -368,7 +368,7 @@ function shouldDropRuntimePreferredExplicitMiss(params: {
 export function shouldCompareProviderRuntimeResolvedModel(params: {
   provider: string;
   modelId: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentDir?: string;
   workspaceDir?: string;
   runtimeHooks: ProviderRuntimeHooks;
@@ -392,7 +392,7 @@ export function shouldCompareProviderRuntimeResolvedModel(params: {
 export function normalizeProviderModelRef(params: {
   provider: string;
   modelId: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   workspaceDir?: string;
 }): {
   provider: string;
@@ -419,7 +419,7 @@ type ResolveModelWithRegistryParams = {
   provider: string;
   modelId: string;
   modelRegistry: CoreModelRegistry;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentDir?: string;
   agentRuntimeId?: string;
   workspaceDir?: string;

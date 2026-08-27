@@ -5,7 +5,7 @@ import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import { bundledPluginFile, bundledPluginRoot } from "openclaw/plugin-sdk/test-fixtures";
+import { bundledPluginFile, bundledPluginRoot } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import {
   detectChangedExtensionIds,
@@ -322,7 +322,7 @@ describe("scripts/test-extension.mts", () => {
 
   it("can fail safe to all extensions when the base revision is unavailable", () => {
     const extensionIds = listChangedExtensionIds({
-      base: "refs/heads/openclaw-test-missing-base",
+      base: "refs/heads/afora-test-missing-base",
       unavailableBaseBehavior: "all",
     });
 
@@ -580,7 +580,7 @@ describe("scripts/test-extension.mts", () => {
       });
     });
     const runPromise = runExtensionBatchPlan(createConcurrentExtensionBatchPlan(), {
-      env: { OPENCLAW_EXTENSION_BATCH_PARALLEL: "2" },
+      env: { AFORA_EXTENSION_BATCH_PARALLEL: "2" },
       runGroup: runGroup as NonNullable<
         NonNullable<Parameters<typeof runExtensionBatchPlan>[1]>["runGroup"]
       >,
@@ -605,8 +605,8 @@ describe("scripts/test-extension.mts", () => {
       args: ["--reporter=dot"],
       config: "heavy",
       env: {
-        OPENCLAW_EXTENSION_BATCH_PARALLEL: "2",
-        OPENCLAW_VITEST_FS_MODULE_CACHE_PATH: path.join(
+        AFORA_EXTENSION_BATCH_PARALLEL: "2",
+        AFORA_VITEST_FS_MODULE_CACHE_PATH: path.join(
           process.cwd(),
           "node_modules",
           ".experimental-vitest-cache",
@@ -633,7 +633,7 @@ describe("scripts/test-extension.mts", () => {
       });
     });
     const runPromise = runExtensionBatchPlan(createConcurrentExtensionBatchPlan(), {
-      env: { OPENCLAW_EXTENSION_BATCH_PARALLEL: "2" },
+      env: { AFORA_EXTENSION_BATCH_PARALLEL: "2" },
       runGroup: runGroup as NonNullable<
         NonNullable<Parameters<typeof runExtensionBatchPlan>[1]>["runGroup"]
       >,
@@ -653,16 +653,16 @@ describe("scripts/test-extension.mts", () => {
   });
 
   it("keeps extension batch parallelism bounded by group count", () => {
-    expect(resolveExtensionBatchParallelism(3, { OPENCLAW_EXTENSION_BATCH_PARALLEL: "2" })).toBe(2);
-    expect(resolveExtensionBatchParallelism(1, { OPENCLAW_EXTENSION_BATCH_PARALLEL: "4" })).toBe(1);
+    expect(resolveExtensionBatchParallelism(3, { AFORA_EXTENSION_BATCH_PARALLEL: "2" })).toBe(2);
+    expect(resolveExtensionBatchParallelism(1, { AFORA_EXTENSION_BATCH_PARALLEL: "4" })).toBe(1);
     expect(resolveExtensionBatchParallelism(3, {})).toBe(1);
   });
 
   it("rejects malformed extension batch parallelism", () => {
     for (const value of ["nope", "2x", "0"]) {
       expect(() =>
-        resolveExtensionBatchParallelism(3, { OPENCLAW_EXTENSION_BATCH_PARALLEL: value }),
-      ).toThrow("OPENCLAW_EXTENSION_BATCH_PARALLEL must be a positive integer");
+        resolveExtensionBatchParallelism(3, { AFORA_EXTENSION_BATCH_PARALLEL: value }),
+      ).toThrow("AFORA_EXTENSION_BATCH_PARALLEL must be a positive integer");
     }
   });
 
@@ -731,7 +731,7 @@ describe("scripts/test-extension.mts", () => {
   });
 
   posixIt("relativizes single-extension Vitest paths from extension cwd", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-test-extension-args-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-test-extension-args-"));
     const fakePnpmPath = path.join(root, "pnpm");
     const argsPath = path.join(root, "args.json");
     const extensionCwd = path.join(process.cwd(), "extensions", "codex");
@@ -752,7 +752,7 @@ describe("scripts/test-extension.mts", () => {
           encoding: "utf8",
           env: {
             ...process.env,
-            OPENCLAW_FAKE_PNPM_ARGS_PATH: argsPath,
+            AFORA_FAKE_PNPM_ARGS_PATH: argsPath,
             npm_execpath: fakePnpmPath,
           },
         },
@@ -776,7 +776,7 @@ describe("scripts/test-extension.mts", () => {
   });
 
   posixIt("runs every single-extension Matrix chunk after an earlier chunk fails", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-test-extension-chunks-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-test-extension-chunks-"));
     const fakePnpmPath = path.join(root, "pnpm");
     const countPath = path.join(root, "count");
     const expectedProcessCount = expectedMatrixTestProcessCount();
@@ -788,8 +788,8 @@ describe("scripts/test-extension.mts", () => {
         encoding: "utf8",
         env: {
           ...process.env,
-          OPENCLAW_FAKE_PNPM_CALL_COUNT_PATH: countPath,
-          OPENCLAW_FAKE_PNPM_EXIT_CODES: ["1", ...Array(expectedProcessCount - 1).fill("0")].join(
+          AFORA_FAKE_PNPM_CALL_COUNT_PATH: countPath,
+          AFORA_FAKE_PNPM_EXIT_CODES: ["1", ...Array(expectedProcessCount - 1).fill("0")].join(
             ",",
           ),
           npm_execpath: fakePnpmPath,
@@ -806,7 +806,7 @@ describe("scripts/test-extension.mts", () => {
   posixIt(
     "preserves wrapper termination when the pnpm child exits cleanly after SIGTERM",
     async () => {
-      const root = mkdtempSync(path.join(tmpdir(), "openclaw-test-extension-signal-"));
+      const root = mkdtempSync(path.join(tmpdir(), "afora-test-extension-signal-"));
       const fakePnpmPath = path.join(root, "pnpm");
       const childPidPath = path.join(root, "child.pid");
       const descendantPidPath = path.join(root, "descendant.pid");
@@ -817,9 +817,9 @@ describe("scripts/test-extension.mts", () => {
         cwd: process.cwd(),
         env: {
           ...process.env,
-          OPENCLAW_FAKE_PNPM_DESCENDANT_PID_PATH: descendantPidPath,
-          OPENCLAW_FAKE_PNPM_PID_PATH: childPidPath,
-          OPENCLAW_FAKE_PNPM_SIGNALED_PATH: signaledPath,
+          AFORA_FAKE_PNPM_DESCENDANT_PID_PATH: descendantPidPath,
+          AFORA_FAKE_PNPM_PID_PATH: childPidPath,
+          AFORA_FAKE_PNPM_SIGNALED_PATH: signaledPath,
           npm_execpath: fakePnpmPath,
         },
         stdio: "ignore",
@@ -1033,30 +1033,30 @@ function writeFakePnpm(filePath: string): void {
       "#!/usr/bin/env node",
       'const { spawn } = require("node:child_process");',
       'const fs = require("node:fs");',
-      "if (process.env.OPENCLAW_FAKE_PNPM_EXIT_CODES) {",
-      "  const countPath = process.env.OPENCLAW_FAKE_PNPM_CALL_COUNT_PATH;",
+      "if (process.env.AFORA_FAKE_PNPM_EXIT_CODES) {",
+      "  const countPath = process.env.AFORA_FAKE_PNPM_CALL_COUNT_PATH;",
       "  const count = fs.existsSync(countPath) ? Number(fs.readFileSync(countPath, 'utf8')) : 0;",
-      "  const exitCodes = process.env.OPENCLAW_FAKE_PNPM_EXIT_CODES.split(',').map(Number);",
+      "  const exitCodes = process.env.AFORA_FAKE_PNPM_EXIT_CODES.split(',').map(Number);",
       "  fs.writeFileSync(countPath, String(count + 1));",
       "  process.exit(exitCodes[count] || 0);",
       "}",
-      "if (process.env.OPENCLAW_FAKE_PNPM_ARGS_PATH) {",
-      "  fs.writeFileSync(process.env.OPENCLAW_FAKE_PNPM_ARGS_PATH, JSON.stringify(process.argv.slice(2)));",
+      "if (process.env.AFORA_FAKE_PNPM_ARGS_PATH) {",
+      "  fs.writeFileSync(process.env.AFORA_FAKE_PNPM_ARGS_PATH, JSON.stringify(process.argv.slice(2)));",
       "  process.exit(0);",
       "}",
       'process.on("SIGTERM", () => {',
-      '  fs.writeFileSync(process.env.OPENCLAW_FAKE_PNPM_SIGNALED_PATH, "SIGTERM");',
+      '  fs.writeFileSync(process.env.AFORA_FAKE_PNPM_SIGNALED_PATH, "SIGTERM");',
       "  process.exit(0);",
       "});",
-      "if (process.env.OPENCLAW_FAKE_PNPM_DESCENDANT_PID_PATH) {",
+      "if (process.env.AFORA_FAKE_PNPM_DESCENDANT_PID_PATH) {",
       "  const child = spawn(process.execPath, [",
       '    "-e",',
       "    \"process.on('SIGTERM', () => {}); setInterval(() => {}, 1000);\",",
       "  ], { stdio: 'ignore' });",
-      "  fs.writeFileSync(process.env.OPENCLAW_FAKE_PNPM_DESCENDANT_PID_PATH, String(child.pid));",
+      "  fs.writeFileSync(process.env.AFORA_FAKE_PNPM_DESCENDANT_PID_PATH, String(child.pid));",
       "}",
       "// Publishing the PID marks the fixture ready for SIGTERM delivery.",
-      "fs.writeFileSync(process.env.OPENCLAW_FAKE_PNPM_PID_PATH, String(process.pid));",
+      "fs.writeFileSync(process.env.AFORA_FAKE_PNPM_PID_PATH, String(process.pid));",
       "setInterval(() => {}, 1000);",
       "",
     ].join("\n"),

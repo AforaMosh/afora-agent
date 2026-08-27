@@ -2,8 +2,8 @@ import Foundation
 import SwiftUI
 import Testing
 import WebKit
-@testable import OpenClaw
-@testable import OpenClawKit
+@testable import Afora
+@testable import AforaKit
 
 @MainActor
 struct TerminalHubScreenTests {
@@ -37,12 +37,12 @@ struct TerminalHubScreenTests {
 
     @Test func `terminal URL flips scheme and preserves the Control UI base path`() throws {
         let config = try Self.makeConfig(
-            url: #require(URL(string: "wss://gateway.example.com:8443/openclaw")),
+            url: #require(URL(string: "wss://gateway.example.com:8443/afora")),
             token: "secret-token")
 
         let url = TerminalHubScreen.terminalURL(config: config)
 
-        #expect(url?.absoluteString == "https://gateway.example.com:8443/openclaw/?view=terminal")
+        #expect(url?.absoluteString == "https://gateway.example.com:8443/afora/?view=terminal")
         // Credentials must never ride in the page URL; they travel via the
         // document-start auth user script instead.
         #expect(url?.absoluteString.contains("secret-token") == false)
@@ -64,7 +64,7 @@ struct TerminalHubScreenTests {
 
         let script = TerminalHubScreen.terminalAuthUserScript(config: config)
 
-        #expect(script?.contains("__OPENCLAW_NATIVE_CONTROL_AUTH__") == true)
+        #expect(script?.contains("__AFORA_NATIVE_CONTROL_AUTH__") == true)
         // JSONSerialization escapes forward slashes, hence the `\/` literals.
         #expect(script?.contains("\"https:\\/\\/gateway.example.com:8443\"") == true)
         #expect(script?.contains("\"token\":\"secret-token\"") == true)

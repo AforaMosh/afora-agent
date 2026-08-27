@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { runWithGatewayIndependentRootWorkContinuation } from "../../process/gateway-work-admission.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
 import { beginSessionWorkAdmission } from "../../sessions/session-lifecycle-admission.js";
@@ -33,13 +33,13 @@ export function resolveWebchatPromptCacheKey(params: {
     )
     .digest("hex")
     .slice(0, 32);
-  return `openclaw-webchat-${digest}`;
+  return `afora-webchat-${digest}`;
 }
 
 export function scheduleChatDashboardSessionTitle(params: {
   admittedSessionId: string;
   agentId: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   context: GatewayRequestContext;
   request: Pick<NormalizedChatSendRequest, "normalizedAttachments" | "rawMessage">;
   sessionKey: string;

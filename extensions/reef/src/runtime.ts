@@ -1,5 +1,5 @@
-import type { PluginRuntime } from "openclaw/plugin-sdk/core";
-import { createPluginRuntimeStore } from "openclaw/plugin-sdk/runtime-store";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/core";
+import { createPluginRuntimeStore } from "afora-agent/plugin-sdk/runtime-store";
 import type { ReefMessageFlow } from "./flow.js";
 import type { ReefFriendManager } from "./friends.js";
 import type { ReviewApprovalStore } from "./state.js";

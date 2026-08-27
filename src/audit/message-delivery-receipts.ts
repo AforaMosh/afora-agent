@@ -3,7 +3,7 @@ import type {
   DecisionReceiptV1,
   ExecutionIdentityContextV1,
 } from "../../packages/gateway-protocol/src/index.js";
-import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
+import type { AforaStateDatabaseOptions } from "../state/afora-state-db.js";
 import type { OutboundMessageAuditEventRecord } from "./audit-event-types.js";
 import {
   countOutboundMessageAuditEventsForRun,
@@ -11,7 +11,7 @@ import {
   type OutboundMessageAuditEventCursor,
 } from "./message-delivery-audit-store.js";
 
-type MessageDeliveryReadOptions = OpenClawStateDatabaseOptions & { now?: number };
+type MessageDeliveryReadOptions = AforaStateDatabaseOptions & { now?: number };
 
 function messageOutcome(
   event: OutboundMessageAuditEventRecord,

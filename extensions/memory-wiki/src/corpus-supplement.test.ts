@@ -1,7 +1,7 @@
 // Memory Wiki tests cover corpus supplement agent routing.
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../api.js";
+import type { AforaConfig } from "../api.js";
 import {
   resolveMemoryWikiAgentConfig,
   resolveMemoryWikiConfig,
@@ -22,7 +22,7 @@ vi.mock("./query.js", async (importOriginal) => ({
 describe("memory-wiki corpus supplement", () => {
   const appConfig = {
     agents: { list: [{ id: "support", default: true }, { id: "marketing" }] },
-  } as OpenClawConfig;
+  } as AforaConfig;
   const config = resolveMemoryWikiConfig({
     vault: { scope: "agent", path: "/tmp/memory-wiki-agents" },
   });

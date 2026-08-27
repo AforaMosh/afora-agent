@@ -1,10 +1,10 @@
 // Skill runtime config helpers read the active runtime config snapshot for skill loading.
 import { getRuntimeConfigSnapshot } from "../../config/runtime-snapshot.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { coerceSecretRef } from "../../config/types.secrets.js";
 
 // Raw skill secret refs must not be replaced by redacted runtime snapshots.
-function hasConfiguredSkillApiKeyRef(config?: OpenClawConfig): boolean {
+function hasConfiguredSkillApiKeyRef(config?: AforaConfig): boolean {
   const entries = config?.skills?.entries;
   if (!entries || typeof entries !== "object") {
     return false;
@@ -21,7 +21,7 @@ function hasConfiguredSkillApiKeyRef(config?: OpenClawConfig): boolean {
 }
 
 /** Chooses the runtime config snapshot unless it would hide skill secret refs. */
-export function resolveSkillRuntimeConfig(config?: OpenClawConfig): OpenClawConfig | undefined {
+export function resolveSkillRuntimeConfig(config?: AforaConfig): AforaConfig | undefined {
   const runtimeConfig = getRuntimeConfigSnapshot();
   if (!runtimeConfig) {
     return config;

@@ -103,7 +103,7 @@ export function renderSidebarRegion(params: {
   primary: TemplateResult;
 }): TemplateResult {
   const panelOpen = params.layout.open === true;
-  if (panelOpen && !customElements.get("openclaw-chat-sidebar-region")) {
+  if (panelOpen && !customElements.get("afora-chat-sidebar-region")) {
     sidebarRegionLoad ??= import("./components/chat-sidebar-region.runtime.ts").then(
       () => true,
       () => {
@@ -124,7 +124,7 @@ export function renderSidebarRegion(params: {
       ? "sidebar-region--expanded"
       : ""} ${panelOpen && sidebarDock(params.layout) === "bottom" ? "sidebar-region--bottom" : ""}"
   >
-    <openclaw-chat-sidebar-region
+    <afora-chat-sidebar-region
       .layout=${params.layout}
       .panelDefinitions=${params.panelDefinitions ?? sidebarPanelDefinitions()}
       .panelTemplates=${params.panelTemplates}
@@ -133,7 +133,7 @@ export function renderSidebarRegion(params: {
       .callbacks=${params.callbacks}
       .narrow=${params.narrow}
       .availableWidth=${params.availableWidth}
-    ></openclaw-chat-sidebar-region>
+    ></afora-chat-sidebar-region>
     <div class="sidebar-region__primary">${params.primary}</div>
     <div class="sidebar-region__right-runtime"></div>
   </div>`;

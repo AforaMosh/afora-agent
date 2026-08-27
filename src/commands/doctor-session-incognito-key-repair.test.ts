@@ -3,36 +3,36 @@ import { afterEach, describe, expect, it } from "vitest";
 import { createTempDirTracker } from "../../test/helpers/temp-dir.js";
 import { listSessionEntriesCore } from "../config/sessions/session-accessor.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-  resolveOpenClawAgentSqlitePath,
-} from "../state/openclaw-agent-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+  resolveAforaAgentSqlitePath,
+} from "../state/afora-agent-db.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { repairReservedIncognitoSessionKeys } from "./doctor-session-incognito-key-repair.js";
 
 const tempDirs = createTempDirTracker();
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   tempDirs.cleanup();
 });
 
 describe("doctor reserved incognito session key repair", () => {
   it("renames durable collisions and every key-bearing linkage idempotently", () => {
-    const stateDir = fs.realpathSync(tempDirs.make("openclaw-doctor-incognito-key-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
-    const sqlitePath = resolveOpenClawAgentSqlitePath({ agentId: "main", env });
-    const database = openOpenClawAgentDatabase({ agentId: "main", env, path: sqlitePath });
-    const secondaryPath = resolveOpenClawAgentSqlitePath({ agentId: "work", env });
-    const secondaryDatabase = openOpenClawAgentDatabase({
+    const stateDir = fs.realpathSync(tempDirs.make("afora-doctor-incognito-key-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
+    const sqlitePath = resolveAforaAgentSqlitePath({ agentId: "main", env });
+    const database = openAforaAgentDatabase({ agentId: "main", env, path: sqlitePath });
+    const secondaryPath = resolveAforaAgentSqlitePath({ agentId: "work", env });
+    const secondaryDatabase = openAforaAgentDatabase({
       agentId: "work",
       env,
       path: secondaryPath,
     });
-    const stateDatabase = openOpenClawStateDatabase({ env });
+    const stateDatabase = openAforaStateDatabase({ env });
     const oldKey = "agent:main:dashboard:incognito-collision";
     const baseLegacyKey = "agent:main:dashboard:legacy-incognito-collision";
     const newKey = `${baseLegacyKey}-1`;
@@ -236,7 +236,7 @@ describe("doctor reserved incognito session key repair", () => {
           .prepare("SELECT entry_valid FROM session_nodes WHERE session_key = ?")
           .get("agent:work:dashboard:regular"),
       ).toEqual({ entry_valid: 1 });
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
       expect(listSessionEntriesCore({ agentId: "main", env })).toMatchObject([
         { sessionKey: newKey, entry: { sessionId: "session-old", updatedAt: 1 } },
       ]);
@@ -252,20 +252,20 @@ describe("doctor reserved incognito session key repair", () => {
       });
       expect(
         stateDatabase.db
-          .prepare("SELECT scope FROM state_leases WHERE owner = 'openclaw-doctor'")
+          .prepare("SELECT scope FROM state_leases WHERE owner = 'afora-doctor'")
           .get(),
       ).toBeUndefined();
     } finally {
-      closeOpenClawAgentDatabasesForTest();
+      closeAforaAgentDatabasesForTest();
     }
   });
 
   it("resumes an interrupted cross-database repair from its durable journal", () => {
-    const stateDir = fs.realpathSync(tempDirs.make("openclaw-doctor-incognito-resume-"));
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
-    const sqlitePath = resolveOpenClawAgentSqlitePath({ agentId: "main", env });
-    const database = openOpenClawAgentDatabase({ agentId: "main", env, path: sqlitePath });
-    const stateDatabase = openOpenClawStateDatabase({ env });
+    const stateDir = fs.realpathSync(tempDirs.make("afora-doctor-incognito-resume-"));
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
+    const sqlitePath = resolveAforaAgentSqlitePath({ agentId: "main", env });
+    const database = openAforaAgentDatabase({ agentId: "main", env, path: sqlitePath });
+    const stateDatabase = openAforaStateDatabase({ env });
     const oldKey = "agent:main:dashboard:incognito-interrupted";
     const newCollisionKey = "agent:main:dashboard:incognito-new";
     const resumedKey = "agent:main:dashboard:legacy-incognito-interrupted-resumed";
@@ -291,7 +291,7 @@ describe("doctor reserved incognito session key repair", () => {
       .run(newCollisionKey);
     stateDatabase.db
       .prepare(
-        "INSERT INTO state_leases (scope, lease_key, owner, payload_json, created_at, updated_at) VALUES ('doctor-session-key-migration', 'reserved-incognito-v1', 'openclaw-doctor', ?, 1, 1)",
+        "INSERT INTO state_leases (scope, lease_key, owner, payload_json, created_at, updated_at) VALUES ('doctor-session-key-migration', 'reserved-incognito-v1', 'afora-doctor', ?, 1, 1)",
       )
       .run(
         JSON.stringify({
@@ -321,7 +321,7 @@ describe("doctor reserved incognito session key repair", () => {
     ).toEqual([resumedKey, "agent:main:dashboard:legacy-incognito-new"].toSorted());
     expect(
       stateDatabase.db
-        .prepare("SELECT scope FROM state_leases WHERE owner = 'openclaw-doctor'")
+        .prepare("SELECT scope FROM state_leases WHERE owner = 'afora-doctor'")
         .get(),
     ).toBeUndefined();
   });

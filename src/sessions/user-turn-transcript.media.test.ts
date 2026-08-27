@@ -12,7 +12,7 @@ describe("buildPersistedUserTurnMediaInputsFromFields", () => {
   it("builds media inputs from canonical persisted facts", () => {
     expect(
       buildPersistedUserTurnMediaInputsFromFields({
-        __openclaw: {
+        __afora: {
           media: [
             { path: "/tmp/a.png", contentType: "image/png" },
             { url: "https://example.test/b.jpg", contentType: "image/jpeg" },
@@ -26,10 +26,10 @@ describe("buildPersistedUserTurnMediaInputsFromFields", () => {
   });
 
   it("resolves relative canonical paths against each fact workspace", () => {
-    const workspaceDir = "/tmp/openclaw-user-turn-workspace";
+    const workspaceDir = "/tmp/afora-user-turn-workspace";
     expect(
       buildPersistedUserTurnMediaInputsFromFields({
-        __openclaw: {
+        __afora: {
           media: [{ path: "media/inbound/a.png", contentType: "image/png", workspaceDir }],
         },
       } as never),
@@ -57,14 +57,14 @@ describe("buildLateMediaAttachedProjection canonical persistence", () => {
     },
     {
       name: "facts-only",
-      message: { __openclaw: { media: [{ path: "/media/fact.png" }] } },
+      message: { __afora: { media: [{ path: "/media/fact.png" }] } },
       expectedPath: "/media/fact.png",
     },
     {
       name: "both-equal",
       message: {
         MediaPath: "/media/equal.png",
-        __openclaw: { media: [{ path: "/media/equal.png" }] },
+        __afora: { media: [{ path: "/media/equal.png" }] },
       },
       expectedPath: "/media/equal.png",
     },
@@ -72,33 +72,33 @@ describe("buildLateMediaAttachedProjection canonical persistence", () => {
       name: "both-conflict",
       message: {
         MediaPath: "/media/legacy-conflict.png",
-        __openclaw: { media: [{ path: "/media/canonical.png" }] },
+        __afora: { media: [{ path: "/media/canonical.png" }] },
       },
       expectedPath: "/media/canonical.png",
     },
     {
       name: "sparse",
-      message: { __openclaw: { media: [{}, { path: "/media/sparse.png" }] } },
+      message: { __afora: { media: [{}, { path: "/media/sparse.png" }] } },
       expectedPath: "/media/sparse.png",
       expectedIndex: 1,
     },
     {
       name: "type-only",
-      message: { __openclaw: { media: [{ contentType: "image/png" }] } },
+      message: { __afora: { media: [{ contentType: "image/png" }] } },
       expectedPath: undefined,
     },
     {
       name: "media-only",
-      message: { content: "", __openclaw: { media: [{ path: "/media/media-only.png" }] } },
+      message: { content: "", __afora: { media: [{ path: "/media/media-only.png" }] } },
       expectedPath: "/media/media-only.png",
     },
   ])("reconstructs $name rows from canonical facts first", (testCase) => {
-    const metadata = (testCase.message as { __openclaw?: Record<string, unknown> })["__openclaw"];
+    const metadata = (testCase.message as { __afora?: Record<string, unknown> })["__afora"];
     const projection = buildLateMediaAttachedProjection({
       role: "user",
       content: "",
       ...testCase.message,
-      __openclaw: { ...metadata, lateMedia: true },
+      __afora: { ...metadata, lateMedia: true },
     } as never);
     const expectedIndex = "expectedIndex" in testCase ? (testCase.expectedIndex ?? 0) : 0;
 
@@ -201,14 +201,14 @@ describe("buildPersistedUserTurnMessage media projection", () => {
     },
     {
       name: "explicit MIME",
-      media: [{ path: "/tmp/blob.bin", contentType: "application/x-openclaw" }],
+      media: [{ path: "/tmp/blob.bin", contentType: "application/x-afora" }],
       expectedLegacy: {
         MediaPath: "/tmp/blob.bin",
         MediaPaths: ["/tmp/blob.bin"],
-        MediaType: "application/x-openclaw",
-        MediaTypes: ["application/x-openclaw"],
+        MediaType: "application/x-afora",
+        MediaTypes: ["application/x-afora"],
       },
-      expectedMedia: [{ path: "/tmp/blob.bin", contentType: "application/x-openclaw" }],
+      expectedMedia: [{ path: "/tmp/blob.bin", contentType: "application/x-afora" }],
     },
     {
       name: "bare kind",
@@ -343,7 +343,7 @@ describe("buildPersistedUserTurnMessage media projection", () => {
     expect(message).not.toHaveProperty("MediaType");
     expect(message).not.toHaveProperty("MediaTypes");
     expect(
-      (message as unknown as { __openclaw?: { media?: unknown } })["__openclaw"]?.media,
+      (message as unknown as { __afora?: { media?: unknown } })["__afora"]?.media,
     ).toEqual(expectedMedia);
   });
 
@@ -351,7 +351,7 @@ describe("buildPersistedUserTurnMessage media projection", () => {
     const message = {
       MediaPath: "/legacy.png",
       MediaType: "image/png",
-      __openclaw: {
+      __afora: {
         media: [
           {
             path: "/canonical.ogg",

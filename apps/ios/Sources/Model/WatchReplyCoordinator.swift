@@ -1,7 +1,7 @@
 import CryptoKit
 import Foundation
-import OpenClawChatUI
-import OpenClawKit
+import AforaChatUI
+import AforaKit
 
 /// Three recovery sources represent the same gateway-owned approval readback.
 /// Preserve their source so cached cards, migration rows, and held Watch actions
@@ -26,20 +26,20 @@ enum WatchChatPresentation {
         var messageToolMirror: [String: String]?
 
         enum CodingKeys: String, CodingKey {
-            case metadata = "__openclaw"
-            case messageToolMirror = "openclawMessageToolMirror"
+            case metadata = "__afora"
+            case messageToolMirror = "aforaMessageToolMirror"
         }
     }
 
     private struct MessageEntry {
-        var message: OpenClawChatMessage
+        var message: AforaChatMessage
         var text: String
         var serverID: String?
         var isMessageToolMirror: Bool
     }
 
     nonisolated static func replyText(
-        from rawMessages: [OpenClawKit.AnyCodable],
+        from rawMessages: [AforaKit.AnyCodable],
         runID: String,
         submittedText: String,
         submittedAtMs: Int64) -> String?
@@ -68,7 +68,7 @@ enum WatchChatPresentation {
     }
 
     nonisolated static func makeItems(
-        from rawMessages: [OpenClawKit.AnyCodable]) -> [OpenClawWatchChatItem]
+        from rawMessages: [AforaKit.AnyCodable]) -> [AforaWatchChatItem]
     {
         var occurrences: [String: Int] = [:]
         let identified = rawMessages.compactMap(Self.decodeMessage).map { entry in
@@ -78,7 +78,7 @@ enum WatchChatPresentation {
             return (entry, "\(baseID)-\(occurrences[baseID]!)")
         }
         return identified.suffix(Self.previewItemLimit).map { entry, stableID in
-            OpenClawWatchChatItem(
+            AforaWatchChatItem(
                 id: stableID,
                 role: entry.message.role,
                 text: Self.truncatedText(entry.text),
@@ -94,9 +94,9 @@ enum WatchChatPresentation {
         return stopReason != "tooluse" && stopReason != "tool_use" && stopReason != "tool_calls"
     }
 
-    private nonisolated static func decodeMessage(_ raw: OpenClawKit.AnyCodable) -> MessageEntry? {
+    private nonisolated static func decodeMessage(_ raw: AforaKit.AnyCodable) -> MessageEntry? {
         guard let data = try? JSONEncoder().encode(raw),
-              let message = try? JSONDecoder().decode(OpenClawChatMessage.self, from: data)
+              let message = try? JSONDecoder().decode(AforaChatMessage.self, from: data)
         else { return nil }
         let text = ChatMessageVisibleText.visibleText(in: message)
             .trimmingCharacters(in: .whitespacesAndNewlines)

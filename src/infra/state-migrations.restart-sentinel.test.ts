@@ -4,11 +4,11 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { acquireGatewayLock } from "./gateway-lock.js";
 import {
   executeSqliteQuerySync,
@@ -27,21 +27,21 @@ import {
 } from "./state-migrations.restart-sentinel.js";
 
 type MigrationDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "gateway_restart_sentinel" | "migration_sources"
 >;
 
 describe("legacy restart sentinel migration", () => {
   const tempDirs = useAutoCleanupTempDirTracker((cleanup) => {
     afterEach(() => {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       cleanup();
     });
   });
 
   function useStateDir(): { env: NodeJS.ProcessEnv; stateDir: string } {
-    const stateDir = tempDirs.make("openclaw-restart-sentinel-migration-");
-    return { env: { ...process.env, OPENCLAW_STATE_DIR: stateDir }, stateDir };
+    const stateDir = tempDirs.make("afora-restart-sentinel-migration-");
+    return { env: { ...process.env, AFORA_STATE_DIR: stateDir }, stateDir };
   }
 
   function payload(ts = 123): RestartSentinelPayload {
@@ -92,7 +92,7 @@ describe("legacy restart sentinel migration", () => {
   }
 
   function database(env: NodeJS.ProcessEnv) {
-    return openOpenClawStateDatabase({ env }).db;
+    return openAforaStateDatabase({ env }).db;
   }
 
   function receipt(env: NodeJS.ProcessEnv) {
@@ -340,7 +340,7 @@ describe("legacy restart sentinel migration", () => {
   it("rejects symlinks, hardlinks, and oversized sources without deleting them", async () => {
     const cases = ["symlink", "hardlink", "oversized"] as const;
     for (const sourceKind of cases) {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       const { env, stateDir } = useStateDir();
       const sourcePath = path.join(stateDir, "restart-sentinel.json");
       if (sourceKind === "oversized") {

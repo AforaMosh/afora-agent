@@ -192,7 +192,7 @@ const COMPUTER_USE_MARKETPLACE_NAME_PRIORITY = [
   "local",
 ];
 const COMPUTER_USE_LIVE_TEST_RETRY_COUNT = 1;
-const COMPUTER_USE_LIVE_TEST_THREAD_NAME = "OpenClaw Computer Use readiness probe";
+const COMPUTER_USE_LIVE_TEST_THREAD_NAME = "Afora Computer Use readiness probe";
 
 /** Reads Computer Use readiness without installing or mutating app-server state. */
 export async function readCodexComputerUseStatus(

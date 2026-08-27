@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
-import { coerceErrorMessage } from "@openclaw/normalization-core/error-coercion";
+import { coerceErrorMessage } from "@afora/normalization-core/error-coercion";
 import { findOverlappingWorkspaceAgentIds } from "../agents/agent-delete-safety.js";
 import { listAgentEntries, resolveAgentDir } from "../agents/agent-scope.js";
 import { MAX_WORKSPACE_BOOTSTRAP_FILE_BYTES } from "../agents/workspace-bootstrap-read.js";
@@ -22,15 +22,15 @@ import {
 import { pruneAgentConfig } from "../commands/agents.config.js";
 import { moveToTrash } from "../commands/onboard-helpers.js";
 import { resolveSessionTranscriptsDirForAgent } from "../config/sessions.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { root as fsSafeRoot, FsSafeError } from "../infra/fs-safe.js";
 import type { RuntimeEnv } from "../runtime.js";
-import { unregisterOpenClawAgentDatabases } from "../state/openclaw-agent-db-registry.js";
+import { unregisterAforaAgentDatabases } from "../state/afora-agent-db-registry.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
 import { deleteCachedClawInstallSchemaVersion } from "./provenance-runtime-read.js";
 import type { PersistedClawInstall } from "./provenance.js";
 import type { PersistedClawWorkspaceFile } from "./workspace.js";
@@ -80,9 +80,9 @@ function rowToWorkspaceFile(row: WorkspaceFileRow): PersistedClawWorkspaceFile {
 }
 
 export function readAllClawWorkspaceFiles(
-  options: OpenClawStateDatabaseOptions,
+  options: AforaStateDatabaseOptions,
 ): PersistedClawWorkspaceFile[] {
-  const database = openOpenClawStateDatabase(options);
+  const database = openAforaStateDatabase(options);
   if (!clawStateTableExists(database.db, "claw_workspace_files")) {
     return [];
   }
@@ -105,7 +105,7 @@ export function synthesizeOrphanInstall(params: {
 }): PersistedClawInstall {
   const updatedAtMs = params.updatedAtMs ?? 0;
   return {
-    schemaVersion: "openclaw.clawInstallRecord.v1" as PersistedClawInstall["schemaVersion"],
+    schemaVersion: "afora.clawInstallRecord.v1" as PersistedClawInstall["schemaVersion"],
     claw: {
       kind: "development",
       name: params.clawName ?? `orphan:${params.agentId}`,
@@ -128,7 +128,7 @@ export function synthesizeOrphanInstall(params: {
   };
 }
 
-export function deletionEffects(config: OpenClawConfig, agentId: string, fallbackWorkspace = "") {
+export function deletionEffects(config: AforaConfig, agentId: string, fallbackWorkspace = "") {
   const agent = listAgentEntries(config).find((candidate) => candidate.id === agentId);
   const pruned = pruneAgentConfig(config, agentId);
   const workspace = agent?.workspace ?? fallbackWorkspace;
@@ -158,9 +158,9 @@ type AttachedCronJob = {
 /** Inventories cron jobs that would retain a reference to a removed agent. */
 export function readAttachedCronJobs(
   agentId: string,
-  options: OpenClawStateDatabaseOptions,
+  options: AforaStateDatabaseOptions,
 ): AttachedCronJob[] {
-  const database = openOpenClawStateDatabase(options);
+  const database = openAforaStateDatabase(options);
   if (!clawStateTableExists(database.db, "cron_jobs")) {
     return [];
   }
@@ -244,7 +244,7 @@ export async function workspaceContainsUntrackedEntries(
 /** Applies canonical post-config filesystem cleanup and reports every failed effect. */
 export async function cleanupClawAgentFilesystem(params: {
   agentId: string;
-  nextConfig: OpenClawConfig;
+  nextConfig: AforaConfig;
   targets: ClawCleanupTargets;
   runtime: RuntimeEnv;
   trashPath?: ClawTrashPath;
@@ -363,7 +363,7 @@ export async function inspectClawWorkspaceFile(
 
 export async function inspectClawBootstrap(
   install: PersistedClawInstall,
-  options: OpenClawStateDatabaseOptions,
+  options: AforaStateDatabaseOptions,
 ): Promise<ClawBootstrapStatus> {
   const nativeState = await resolveWorkspaceBootstrapStatus(install.workspace, options);
   const setupState = readWorkspaceStateSnapshot(install.workspace, options).setup;
@@ -437,7 +437,7 @@ export async function removeClawWorkspaceFile(
     if (!(await workspace.exists(record.path))) {
       return { path: record.path, action: "missing" };
     }
-    const stagedPath = `${record.path}.openclaw-claw-remove-${randomUUID()}`;
+    const stagedPath = `${record.path}.afora-claw-remove-${randomUUID()}`;
     await workspace.move(record.path, stagedPath, { overwrite: false });
     const content = await workspace.readBytes(stagedPath, { maxBytes });
     const digest = `sha256:${createHash("sha256").update(content).digest("hex")}`;
@@ -460,13 +460,13 @@ export function releaseClawRemoveRows(
   agentId: string,
   files: RemovedWorkspaceFile[],
   complete: boolean,
-  options: OpenClawStateDatabaseOptions,
+  options: AforaStateDatabaseOptions,
 ): void {
   if (complete) {
     // Keep the install record as the retry owner until database discovery is released.
-    unregisterOpenClawAgentDatabases({ agentId, env: options.env });
+    unregisterAforaAgentDatabases({ agentId, env: options.env });
   }
-  runOpenClawStateWriteTransaction(({ db }) => {
+  runAforaStateWriteTransaction(({ db }) => {
     if (clawStateTableExists(db, "claw_workspace_files")) {
       for (const file of files.filter((candidate) => candidate.action !== "error")) {
         db /* sqlite-allow-raw: remove one owned Claw workspace-file row. */

@@ -21,9 +21,9 @@ export function resetAcpManagerTaskStateForTests(): void {
 export async function withAcpManagerTaskStateDir(
   run: (root: string) => Promise<void>,
 ): Promise<void> {
-  await withTestDir({ prefix: "openclaw-acp-manager-task-" }, async (root) => {
-    const envSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
-    setTestEnvValue("OPENCLAW_STATE_DIR", root);
+  await withTestDir({ prefix: "afora-acp-manager-task-" }, async (root) => {
+    const envSnapshot = captureEnv(["AFORA_STATE_DIR"]);
+    setTestEnvValue("AFORA_STATE_DIR", root);
     resetAcpManagerTaskStateForTests();
     installInMemoryTaskRegistryRuntime();
     configureTaskFlowRegistryRuntime({

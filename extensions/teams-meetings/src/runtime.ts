@@ -1,4 +1,4 @@
-import { MeetingPlatformAdapter } from "openclaw/plugin-sdk/meeting-runtime";
+import { MeetingPlatformAdapter } from "afora-agent/plugin-sdk/meeting-runtime";
 import type { TeamsMeetingsConfig, TeamsMeetingsMode, TeamsMeetingsTransport } from "./config.js";
 import { testTeamsMeetingListening, testTeamsMeetingSpeech } from "./runtime-probes.js";
 import { getTeamsMeetingsSetupStatus } from "./runtime-setup.js";
@@ -62,7 +62,7 @@ export const TeamsMeetingsRuntime = MeetingPlatformAdapter.createRuntimeFacade<
       speech: {
         audioBridgeUnavailable: "Realtime speech requires an active Chrome audio bridge.",
         browserUnverified: "Microsoft Teams browser state has not been verified yet.",
-        microphoneMuted: "Turn on the OpenClaw Teams microphone before asking OpenClaw to speak.",
+        microphoneMuted: "Turn on the Afora Teams microphone before asking Afora to speak.",
         microphoneMutedReason: "teams-microphone-muted",
         notInCall: "Microsoft Teams has not reported that the browser guest is in the call.",
         notInCallReason: "not-in-call",

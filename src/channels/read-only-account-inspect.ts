@@ -1,5 +1,5 @@
 // Read-only channel account inspection facade for setup and status diagnostics.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { getBundledChannelAccountInspector } from "./plugins/bundled.js";
 import { getLoadedChannelPlugin } from "./plugins/registry.js";
 import type { ChannelId } from "./plugins/types.public.js";
@@ -11,7 +11,7 @@ export type ReadOnlyInspectedAccount = Record<string, unknown>;
 /** Inspects channel account config without loading mutable runtime surfaces. */
 export async function inspectReadOnlyChannelAccount(params: {
   channelId: ChannelId;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): Promise<ReadOnlyInspectedAccount | null> {
   const inspectAccount =

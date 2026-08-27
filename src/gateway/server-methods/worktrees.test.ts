@@ -2,28 +2,28 @@ import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import { WorktreeSnapshotError } from "../../agents/worktrees/service.js";
 import type { ManagedWorktreeRecord } from "../../agents/worktrees/types.js";
 import { registerProjectRegistry, removeProjectRegistry } from "../../projects/project-registry.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { createWorktreesHandlers } from "./worktrees.js";
 
 const execFileAsync = promisify(execFile);
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 async function initializeRepository(root: string, name: string): Promise<string> {
   const repo = path.join(root, name);
   await fs.mkdir(repo, { recursive: true });
   await execFileAsync("git", ["init", "-b", "main", repo]);
-  await execFileAsync("git", ["-C", repo, "config", "user.name", "OpenClaw Tests"]);
-  await execFileAsync("git", ["-C", repo, "config", "user.email", "tests@openclaw.invalid"]);
+  await execFileAsync("git", ["-C", repo, "config", "user.name", "Afora Tests"]);
+  await execFileAsync("git", ["-C", repo, "config", "user.email", "tests@afora.invalid"]);
   await fs.writeFile(path.join(repo, "README.md"), `${name}\n`);
   await execFileAsync("git", ["-C", repo, "add", "README.md"]);
   await execFileAsync("git", ["-C", repo, "commit", "-m", "initial"]);
@@ -36,7 +36,7 @@ const record: ManagedWorktreeRecord = {
   repoFingerprint: "0123456789abcdef",
   repoRoot: "/repo",
   path: "/state/worktrees/0123456789abcdef/task-one",
-  branch: "openclaw/task-one",
+  branch: "afora-agent/task-one",
   baseRef: "HEAD",
   ownerKind: "manual",
   createdAt: 1,
@@ -157,7 +157,7 @@ describe("worktrees gateway methods", () => {
   it("allows write-scoped branch listing for a subdirectory inside an agent workspace", async () => {
     const os = await import("node:os");
     const workspace = await fs.mkdtemp(
-      path.join(await fs.realpath(os.tmpdir()), "openclaw-branches-scope-"),
+      path.join(await fs.realpath(os.tmpdir()), "afora-branches-scope-"),
     );
     const repoRoot = path.join(workspace, "packages", "app");
     await fs.mkdir(repoRoot, { recursive: true });
@@ -187,7 +187,7 @@ describe("worktrees gateway methods", () => {
   });
 
   it("allows a write-scoped registered project root but still rejects other outside paths", async () => {
-    const root = tempDirs.make("openclaw-branches-project-");
+    const root = tempDirs.make("afora-branches-project-");
     const repoRoot = await initializeRepository(root, "registered");
     const alias = path.join(root, "registered-link");
     const outside = path.join(root, "outside");

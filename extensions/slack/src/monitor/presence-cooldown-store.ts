@@ -1,5 +1,5 @@
 // Slack plugin module persists presence-greeting cooldowns across gateway restarts.
-import type { PluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { PluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import { getSlackRuntime } from "../runtime.js";
 import { SLACK_PRESENCE_GREETING_COOLDOWN_MS } from "./presence-monitor.js";
 

@@ -3,7 +3,7 @@ import type { ChildProcess } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const childProcessMocks = vi.hoisted(() => ({
@@ -24,7 +24,7 @@ vi.mock("node:child_process", async (importOriginal) => {
   };
 });
 
-import { startMatrixQaOpenClawCli } from "./scenario-runtime-cli.js";
+import { startMatrixQaAforaCli } from "./scenario-runtime-cli.js";
 
 async function createCliRoot(): Promise<{
   grandchildPidPath: string;
@@ -32,7 +32,7 @@ async function createCliRoot(): Promise<{
   root: string;
 }> {
   const root = await mkdtemp(
-    path.join(resolvePreferredOpenClawTmpDir(), "matrix-qa-cli-stream-error-"),
+    path.join(resolvePreferredAforaTmpDir(), "matrix-qa-cli-stream-error-"),
   );
   const grandchildPidPath = path.join(root, "grandchild.pid");
   const grandchildReadyPath = path.join(root, "grandchild.ready");
@@ -125,10 +125,10 @@ describe("Matrix QA CLI runtime stream errors", () => {
       const { grandchildPidPath, grandchildReadyPath, root } = await createCliRoot();
       let child: ChildProcess | undefined;
       let grandchildPid: number | undefined;
-      let session: ReturnType<typeof startMatrixQaOpenClawCli> | undefined;
+      let session: ReturnType<typeof startMatrixQaAforaCli> | undefined;
       let childClosed = false;
       try {
-        session = startMatrixQaOpenClawCli({
+        session = startMatrixQaAforaCli({
           args: ["matrix", "verify", "self"],
           cwd: root,
           env: process.env,

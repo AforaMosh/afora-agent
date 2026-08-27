@@ -1,9 +1,9 @@
 // Msteams tests cover sent message cache plugin behavior.
-import { resolveGlobalDedupeCache } from "openclaw/plugin-sdk/dedupe-runtime";
+import { resolveGlobalDedupeCache } from "afora-agent/plugin-sdk/dedupe-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const TTL_MS = 24 * 60 * 60 * 1000;
-const sentMessageMemory = resolveGlobalDedupeCache(Symbol.for("openclaw.msteamsSentMessages"), {
+const sentMessageMemory = resolveGlobalDedupeCache(Symbol.for("afora.msteamsSentMessages"), {
   ttlMs: TTL_MS,
   maxSize: 20_000,
 });

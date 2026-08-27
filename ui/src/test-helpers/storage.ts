@@ -34,7 +34,7 @@ export function installSafeLocalStorageForTesting(windowTarget?: Window): Storag
       typeof candidate.removeItem === "function"
     ) {
       try {
-        const probeKey = "__openclaw_local_storage_probe__";
+        const probeKey = "__afora_local_storage_probe__";
         const previousValue = candidate.getItem(probeKey);
         candidate.setItem(probeKey, "1");
         const works = candidate.getItem(probeKey) === "1";

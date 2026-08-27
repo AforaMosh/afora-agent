@@ -206,7 +206,7 @@ export async function createBlockModeContext(
   return await createAutomaticDraftContext({
     cfg: {
       messages: { ackReaction: "👀" },
-      session: { store: "/tmp/openclaw-discord-process-test-sessions.json" },
+      session: { store: "/tmp/afora-discord-process-test-sessions.json" },
       channels: {
         discord: {
           streaming: {

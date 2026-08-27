@@ -1,5 +1,5 @@
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   isThinkingLevelSupported,
   resolveSupportedThinkingLevel,
@@ -8,7 +8,7 @@ import {
 } from "../auto-reply/thinking.js";
 /** Resolves the concrete harness runtime that owns the next agent turn. */
 import type { SessionEntry } from "../config/sessions.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveAgentHarnessPolicy } from "./harness/policy.js";
 import { resolveAutoAgentHarnessId } from "./harness/support.js";
 import { resolveSessionRuntimeOverrideForProvider } from "./session-runtime-compat.js";
@@ -41,12 +41,12 @@ export function normalizeThinkingCatalogProviders<T extends ThinkingCatalogEntry
 
 /** Convert residual auto policy into the built-in fallback when no registry selection is needed. */
 export function concretizeAgentRuntime(runtime: string): string {
-  return runtime === "auto" ? "openclaw" : runtime;
+  return runtime === "auto" ? "afora" : runtime;
 }
 
 /** Resolves an explicit session override before configured model/provider policy. */
 export function resolveEffectiveAgentRuntime(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: string;
   modelId: string;
   modelApi?: string | null;
@@ -79,7 +79,7 @@ export function resolveEffectiveAgentRuntime(params: {
         provider: params.provider,
         modelId: params.modelId,
         config: params.cfg,
-      }) ?? "openclaw"
+      }) ?? "afora"
     );
   }
   return concretizeAgentRuntime(runtime);
@@ -87,7 +87,7 @@ export function resolveEffectiveAgentRuntime(params: {
 
 /** Revalidates a turn-local thinking level after fallback selects its actual model/runtime. */
 export function resolveCandidateThinkingLevel(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   provider: string;
   modelId: string;
   level?: ThinkLevel;

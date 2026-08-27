@@ -1,13 +1,13 @@
-# IRC OpenClaw channel
+# IRC Afora channel
 
-Official OpenClaw channel plugin for IRC.
+Official Afora channel plugin for IRC.
 
 ## Install
 
 ```sh
-openclaw plugins install @openclaw/irc
+afora plugins install @afora/irc
 ```
 
 ## Docs
 
-See `docs/channels/irc.md` in the OpenClaw repository, or the published docs at `https://docs.openclaw.ai/channels/irc`.
+See `docs/channels/irc.md` in the Afora repository, or the published docs at `https://docs.afora.ai/channels/irc`.

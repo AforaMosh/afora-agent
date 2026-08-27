@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { resolveMSTeamsPrivateQaRuntime } from "./private-runtime.js";
 
 const completeEnv = {
-  OPENCLAW_BUILD_PRIVATE_QA: "1",
+  AFORA_BUILD_PRIVATE_QA: "1",
 };
 const completeBootstrap = {
   connectorUrl: "http://127.0.0.1:43123/",
@@ -24,11 +24,11 @@ describe("Microsoft Teams private QA runtime", () => {
       resolveMSTeamsPrivateQaRuntime(
         {
           ...completeEnv,
-          OPENCLAW_BUILD_PRIVATE_QA: undefined,
+          AFORA_BUILD_PRIVATE_QA: undefined,
         },
         completeBootstrap,
       ),
-    ).toThrow("requires OPENCLAW_BUILD_PRIVATE_QA=1");
+    ).toThrow("requires AFORA_BUILD_PRIVATE_QA=1");
   });
 
   it.each(["connectorUrl", "nonce", "botToken"] as const)(

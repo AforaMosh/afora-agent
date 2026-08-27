@@ -27,7 +27,7 @@ const models = [
 ];
 
 const proofDir =
-  process.env.OPENCLAW_CAPTURE_UI_PROOF === "1"
+  process.env.AFORA_CAPTURE_UI_PROOF === "1"
     ? path.join(process.cwd(), ".artifacts", "control-ui-e2e", "model-alias-display")
     : null;
 

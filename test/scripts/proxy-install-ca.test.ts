@@ -18,14 +18,14 @@ function runProxyInstallCa(args: string[], certDir: string) {
     encoding: "utf8",
     env: {
       ...process.env,
-      OPENCLAW_DEBUG_PROXY_CERT_DIR: certDir,
+      AFORA_DEBUG_PROXY_CERT_DIR: certDir,
     },
   });
 }
 
 describe("scripts/proxy-install-ca.mts", () => {
   it("rejects unknown arguments before creating the debug proxy CA", () => {
-    const root = makeTempDir(tempDirs, "openclaw-proxy-install-ca-");
+    const root = makeTempDir(tempDirs, "afora-proxy-install-ca-");
     const certDir = join(root, "certs");
     const result = runProxyInstallCa(["--print-onli"], certDir);
 
@@ -39,7 +39,7 @@ describe("scripts/proxy-install-ca.mts", () => {
   });
 
   it("prints usage without creating the debug proxy CA", () => {
-    const root = makeTempDir(tempDirs, "openclaw-proxy-install-ca-");
+    const root = makeTempDir(tempDirs, "afora-proxy-install-ca-");
     const certDir = join(root, "certs");
     const result = runProxyInstallCa(["--help"], certDir);
 

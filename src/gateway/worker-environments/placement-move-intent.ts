@@ -9,12 +9,12 @@ import {
   getNodeSqliteKysely,
 } from "../../infra/kysely-sync.js";
 import { generateSecureToken } from "../../infra/secure-random.js";
-import { tableExists } from "../../state/openclaw-state-db-schema-helpers.js";
+import { tableExists } from "../../state/afora-state-db-schema-helpers.js";
 import type {
   DB as StateDatabase,
   WorkerSessionPlacementMoves,
-} from "../../state/openclaw-state-db.generated.js";
-import { OPENCLAW_STATE_SCHEMA_SQL } from "../../state/openclaw-state-schema.js";
+} from "../../state/afora-state-db.generated.js";
+import { AFORA_STATE_SCHEMA_SQL } from "../../state/afora-state-schema.js";
 import { drainWorkerSessionPlacement } from "./placement-drain.js";
 import { normalizeEpoch, required, type WorkerSessionPlacementRecord } from "./placement-record.js";
 import { getRequired, query, transitionValues } from "./placement-row-codec.js";
@@ -52,12 +52,12 @@ export type WorkerPlacementMoveIntent = {
 const moveQuery = (db: DatabaseSync) => getNodeSqliteKysely<MoveDatabase>(db);
 
 function moveSchemaSql(): string {
-  const start = OPENCLAW_STATE_SCHEMA_SQL.indexOf(MOVE_SCHEMA_START);
-  const endMarkerStart = OPENCLAW_STATE_SCHEMA_SQL.indexOf(MOVE_SCHEMA_END, start);
+  const start = AFORA_STATE_SCHEMA_SQL.indexOf(MOVE_SCHEMA_START);
+  const endMarkerStart = AFORA_STATE_SCHEMA_SQL.indexOf(MOVE_SCHEMA_END, start);
   if (start < 0 || endMarkerStart < start) {
     throw new Error("Worker placement move schema marker is missing");
   }
-  return OPENCLAW_STATE_SCHEMA_SQL.slice(start, endMarkerStart + MOVE_SCHEMA_END.length);
+  return AFORA_STATE_SCHEMA_SQL.slice(start, endMarkerStart + MOVE_SCHEMA_END.length);
 }
 
 function ensureWorkerPlacementMoveSchema(db: DatabaseSync): void {

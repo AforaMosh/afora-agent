@@ -1,21 +1,21 @@
 import { existsSync } from "node:fs";
 import {
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "./openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "./openclaw-state-db.paths.js";
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "./afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "./afora-state-db.paths.js";
 
 /** Records an explicit non-Claw claim through the canonical MCP owner. */
 export function markClawMcpServerIndependentlyOwned(
   name: string,
-  options: OpenClawStateDatabaseOptions & { nowMs?: number } = {},
+  options: AforaStateDatabaseOptions & { nowMs?: number } = {},
 ): number {
-  const databasePath = options.path ?? resolveOpenClawStateSqlitePath(options.env ?? process.env);
+  const databasePath = options.path ?? resolveAforaStateSqlitePath(options.env ?? process.env);
   if (!existsSync(databasePath)) {
     return 0;
   }
   try {
-    return runOpenClawStateWriteTransaction(({ db }) => {
+    return runAforaStateWriteTransaction(({ db }) => {
       const result =
         db /* sqlite-allow-raw: record a current non-Claw MCP owner after direct config. */
           .prepare(

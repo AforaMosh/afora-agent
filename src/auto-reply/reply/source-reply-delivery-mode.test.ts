@@ -1,25 +1,25 @@
 // Tests source reply delivery visibility across message tool and visible reply modes.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { CommandTurnContext } from "../command-turn-context.js";
 import {
   resolveSourceReplyDeliveryMode,
   resolveSourceReplyVisibilityPolicy,
 } from "./source-reply-delivery-mode.js";
 
-const emptyConfig = {} as OpenClawConfig;
+const emptyConfig = {} as AforaConfig;
 const automaticGroupReplyConfig = {
   messages: {
     groupChat: {
       visibleReplies: "automatic",
     },
   },
-} as const satisfies OpenClawConfig;
+} as const satisfies AforaConfig;
 const globalToolOnlyReplyConfig = {
   messages: {
     visibleReplies: "message_tool",
   },
-} as const satisfies OpenClawConfig;
+} as const satisfies AforaConfig;
 
 function expectPolicyFields(
   policy: ReturnType<typeof resolveSourceReplyVisibilityPolicy>,

@@ -11,8 +11,8 @@ export function makeRuntimeParitySummary(): QaRuntimeParitySuiteSummary {
           scenarioId: "approval-turn-tool-followthrough",
           drift: "none",
           cells: {
-            openclaw: {
-              runtime: "openclaw",
+            afora: {
+              runtime: "afora",
               status: "pass",
               transcriptBytes: '{"role":"assistant"}\n',
               toolCalls: [{ tool: "read_file", argsHash: "a", resultHash: "r" }],
@@ -43,8 +43,8 @@ export function makeRuntimeParitySummary(): QaRuntimeParitySuiteSummary {
           drift: "tool-call-shape",
           driftDetails: "tool call 1 differs",
           cells: {
-            openclaw: {
-              runtime: "openclaw",
+            afora: {
+              runtime: "afora",
               status: "pass",
               transcriptBytes: '{"role":"assistant"}\n',
               toolCalls: [{ tool: "read_file", argsHash: "a", resultHash: "r" }],
@@ -75,7 +75,7 @@ export function makeRuntimeParitySummary(): QaRuntimeParitySuiteSummary {
     run: {
       providerMode: "mock-openai",
       primaryModel: "openai/gpt-5.6-luna",
-      runtimePair: ["openclaw", "codex"],
+      runtimePair: ["afora", "codex"],
     },
   };
 }

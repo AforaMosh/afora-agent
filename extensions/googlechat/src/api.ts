@@ -1,14 +1,14 @@
 // Googlechat API module exposes the plugin public contract.
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { redactToolPayloadText } from "openclaw/plugin-sdk/logging-core";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { redactToolPayloadText } from "afora-agent/plugin-sdk/logging-core";
 import {
   MediaFetchError,
   parseMediaContentLength,
   readResponseTextSnippet,
-} from "openclaw/plugin-sdk/media-runtime";
-import { readProviderJsonResponse } from "openclaw/plugin-sdk/provider-http";
-import { readResponseWithLimit } from "openclaw/plugin-sdk/response-limit-runtime";
-import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/media-runtime";
+import { readProviderJsonResponse } from "afora-agent/plugin-sdk/provider-http";
+import { readResponseWithLimit } from "afora-agent/plugin-sdk/response-limit-runtime";
+import { fetchWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime";
 import type { ResolvedGoogleChatAccount } from "./accounts.js";
 import { shouldSuppressGoogleChatManualExecApprovalFollowupText } from "./approval-card-actions.js";
 import { getGoogleChatAccessToken } from "./auth.js";

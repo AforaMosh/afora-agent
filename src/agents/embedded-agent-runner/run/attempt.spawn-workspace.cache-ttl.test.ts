@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { appendAttemptCacheTtlIfNeeded } from "./attempt-thread-helpers.js";
 
-const ATTEMPT_CACHE_TTL_CUSTOM_TYPE = "openclaw.cache-ttl";
+const ATTEMPT_CACHE_TTL_CUSTOM_TYPE = "afora.cache-ttl";
 
 describe("runEmbeddedAttempt cache-ttl tracking after compaction", () => {
   it("skips cache-ttl append when compaction completed during the attempt", () => {

@@ -1,8 +1,8 @@
 /**
  * Retry and error policy for subagent announcement delivery.
  */
-import { clampTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import { clampTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { isFastTestRuntimeEnv } from "../../../infra/env.js";
 import { isOutboundDeliveryError } from "../../../infra/outbound/deliver-types.js";
 import { defaultRuntime } from "../../../runtime.js";
@@ -29,7 +29,7 @@ export function sourceOwnerChangedResult(): SubagentAnnounceDeliveryResult {
   };
 }
 
-export function resolveSubagentAnnounceTimeoutMs(cfg: OpenClawConfig): number {
+export function resolveSubagentAnnounceTimeoutMs(cfg: AforaConfig): number {
   const configured = cfg.agents?.defaults?.subagents?.announceTimeoutMs;
   return clampTimerTimeoutMs(configured) ?? DEFAULT_SUBAGENT_ANNOUNCE_TIMEOUT_MS;
 }

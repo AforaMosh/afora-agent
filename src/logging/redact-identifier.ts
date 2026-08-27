@@ -1,5 +1,5 @@
 // Identifier redaction helpers replace sensitive identifiers with stable hashes.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { sha256HexPrefixCore } from "../infra/crypto-digest.js";
 
 /** Returns a stable sha256 hex prefix for non-secret identifier correlation. */

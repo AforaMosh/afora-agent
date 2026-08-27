@@ -81,7 +81,7 @@ const SOURCE_ROOTS: Record<NativeI18nSurface, string[]> = {
   apple: [
     path.join(ROOT, "apps", "ios"),
     path.join(ROOT, "apps", "macos", "Sources"),
-    path.join(ROOT, "apps", "shared", "OpenClawKit", "Sources"),
+    path.join(ROOT, "apps", "shared", "AforaKit", "Sources"),
   ],
 };
 
@@ -202,7 +202,7 @@ const ANDROID_NATIVE_I18N_EXCLUDED_FILES = new Set([
     "thirdParty",
     "java",
     "ai",
-    "openclaw",
+    "afora",
     "app",
     "accessibility",
     "AccessibilityActionExecutor.kt",
@@ -216,7 +216,7 @@ const ANDROID_NATIVE_I18N_EXCLUDED_FILES = new Set([
     "thirdParty",
     "java",
     "ai",
-    "openclaw",
+    "afora",
     "app",
     "accessibility",
     "AccessibilitySnapshotter.kt",
@@ -225,10 +225,10 @@ const ANDROID_NATIVE_I18N_EXCLUDED_FILES = new Set([
 const BUILD_SETTING_RE = /\$\([A-Za-z0-9_.-]+\)/gu;
 const NATIVE_I18N_LOCALE_SET = new Set<string>(NATIVE_I18N_LOCALES);
 const ANDROID_LANGUAGE_PICKER_PATH =
-  "apps/android/app/src/main/java/ai/openclaw/app/AppLanguage.kt";
+  "apps/android/app/src/main/java/ai/afora/app/AppLanguage.kt";
 const ANDROID_LANGUAGE_PICKER_SOURCES = new Set([
   "Follow Android · $systemLanguageTag",
-  "OpenClaw translations · $languageTag",
+  "Afora translations · $languageTag",
 ]);
 
 function isAsciiLowercaseLetter(character: string): boolean {

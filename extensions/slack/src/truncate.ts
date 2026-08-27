@@ -1,5 +1,5 @@
 // Slack plugin module implements truncate behavior.
-import { sliceUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { sliceUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 
 export function truncateSlackText(value: string, max: number): string {
   const trimmed = value.trim();

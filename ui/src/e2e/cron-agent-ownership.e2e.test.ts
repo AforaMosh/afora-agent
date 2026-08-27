@@ -1,5 +1,5 @@
 // Control UI browser proof covers explicit automation ownership across widened page scope.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { expect, it } from "vitest";
 import { installMockGateway, type MockGatewayRequest } from "../test-helpers/control-ui-e2e.ts";
 import { createControlUiE2eSuite } from "./control-ui-e2e-suite.test-support.ts";
@@ -77,7 +77,7 @@ suite.define(() => {
 
         await page.goto(`${suite.server.baseUrl}cron`);
         await gateway.waitForRequest("agents.list");
-        const pageScope = page.locator(".agent-scope-control openclaw-agent-select");
+        const pageScope = page.locator(".agent-scope-control afora-agent-select");
         await pageScope.locator(".agent-select__trigger").click();
         await pageScope
           .locator("wa-dropdown-item[data-agent-option]")

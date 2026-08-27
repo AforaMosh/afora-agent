@@ -38,7 +38,7 @@ describe("registerNodesCli plugin registration", () => {
   it("skips plugin CLI/runtime registration for built-in nodes subcommands", async () => {
     for (const subcommand of ["status", "list", "describe", "invoke", "pending", "camera"]) {
       registerPluginCliCommandsFromValidatedConfig.mockClear();
-      await registerWithArgv(["node", "openclaw", "nodes", subcommand, "--json"]);
+      await registerWithArgv(["node", "afora", "nodes", subcommand, "--json"]);
       expect(registerPluginCliCommandsFromValidatedConfig).not.toHaveBeenCalled();
     }
   });
@@ -52,7 +52,7 @@ describe("registerNodesCli plugin registration", () => {
 
     const program = await registerWithArgv([
       "node",
-      "openclaw",
+      "afora",
       "nodes",
       "canvas",
       "snapshot",
@@ -70,7 +70,7 @@ describe("registerNodesCli plugin registration", () => {
   });
 
   it("surfaces plugin subcommands for bare `nodes` listing", async () => {
-    const program = await registerWithArgv(["node", "openclaw", "nodes"]);
+    const program = await registerWithArgv(["node", "afora", "nodes"]);
     expect(registerPluginCliCommandsFromValidatedConfig).toHaveBeenCalledWith(
       program,
       undefined,
@@ -80,7 +80,7 @@ describe("registerNodesCli plugin registration", () => {
   });
 
   it("documents the supported system.which parameter shape", async () => {
-    const program = await registerWithArgv(["node", "openclaw", "nodes", "--help"]);
+    const program = await registerWithArgv(["node", "afora", "nodes", "--help"]);
     const nodesCommand = program.commands.find((command) => command.name() === "nodes");
     const output: string[] = [];
 
@@ -102,7 +102,7 @@ describe("registerNodesCli plugin registration", () => {
       return {};
     });
 
-    await registerWithArgv(["node", "openclaw", "nodes", "canvas", "--", "--json"]);
+    await registerWithArgv(["node", "afora", "nodes", "canvas", "--", "--json"]);
 
     expect(forceStderrDuringRegistration).toBe(false);
     expect(loggingState.forceConsoleToStderr).toBe(false);

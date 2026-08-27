@@ -2,10 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { CHAT_ROUTE_READY_EVENT, navigateWithRouteTransition } from "./route-transition.ts";
 
 function testDocumentWithOutlet(animate = vi.fn()) {
-  const outlet = document.createElement("openclaw-router-outlet") as HTMLElement & {
+  const outlet = document.createElement("afora-router-outlet") as HTMLElement & {
     updateComplete: Promise<void>;
   };
-  // Own data property: the real OpenClawRouterOutlet may already be registered by a
+  // Own data property: the real AforaRouterOutlet may already be registered by a
   // sibling test in this worker, and Lit's updateComplete is a getter-only accessor.
   Object.defineProperty(outlet, "updateComplete", {
     value: Promise.resolve(),

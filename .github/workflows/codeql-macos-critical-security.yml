@@ -42,7 +42,7 @@ jobs:
           config-file: ./.github/codeql/codeql-macos-critical-security.yml
 
       - name: Build macOS for CodeQL
-        run: swift build --package-path apps/macos --product OpenClaw
+        run: swift build --package-path apps/macos --product Afora
 
       - name: Analyze
         id: analyze

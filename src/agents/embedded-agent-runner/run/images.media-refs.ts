@@ -23,14 +23,14 @@ export type MediaImageRef = MediaFileRef & {
   workspaceDir?: string;
 };
 
-export function isOpenClawCliImageCachePath(filePath: string): boolean {
+export function isAforaCliImageCachePath(filePath: string): boolean {
   const parts = filePath.replaceAll("\\", "/").split("/");
   return parts.some((part, index) => {
-    if (part === ".openclaw-cli-images") {
+    if (part === ".afora-cli-images") {
       return true;
     }
     const parent = parts[index - 1] ?? "";
-    return part === "openclaw-cli-images" && /^openclaw(?:-\d+)?$/.test(parent);
+    return part === "afora-cli-images" && /^afora(?:-\d+)?$/.test(parent);
   });
 }
 
@@ -85,7 +85,7 @@ function mediaFactToImageRef(fact: MediaFact, factIndex: number): MediaImageRef 
   }
   const localRef = resolveMediaFactLocalRef(fact);
   const hydrate = fact.hydrationSuppressed !== true;
-  if (!localRef || isOpenClawCliImageCachePath(localRef.resolved)) {
+  if (!localRef || isAforaCliImageCachePath(localRef.resolved)) {
     return {
       aliases: [fact.path, fact.url].filter((value): value is string => Boolean(value)),
       detect: false,

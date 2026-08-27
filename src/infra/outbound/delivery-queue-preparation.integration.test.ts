@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { withStableDeliveryPreparation } from "./delivery-queue-preparation.js";
 
 const CHILD_SCRIPT = fileURLToPath(
@@ -16,14 +16,14 @@ describe("stable delivery preparation cross-process ownership", () => {
   let child: ChildProcess | null = null;
 
   beforeEach(async () => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     stateDir = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), "stable-preparation-")));
   });
 
   afterEach(async () => {
     child?.kill("SIGKILL");
     child = null;
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(stateDir, { recursive: true, force: true });
   });
 
@@ -31,7 +31,7 @@ describe("stable delivery preparation cross-process ownership", () => {
     const id = "cross-process-stable-intent";
     child = spawn(process.execPath, ["--import", "tsx", CHILD_SCRIPT, stateDir, id], {
       stdio: ["ignore", "pipe", "pipe"],
-      env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+      env: { ...process.env, AFORA_STATE_DIR: stateDir },
     });
     await new Promise<void>((resolve, reject) => {
       let stdout = "";

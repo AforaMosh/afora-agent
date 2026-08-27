@@ -4,7 +4,7 @@ import path from "node:path";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 import {
-  isSupportedOpenClawNodeVersion,
+  isSupportedAforaNodeVersion,
   PROCESS_NODE_VERSION_CHECK,
 } from "../../../node-version.mjs";
 import { NODE_RELEASE_VERSION_CASES } from "../../../test/helpers/node-version-cases.js";
@@ -22,15 +22,15 @@ const BUNDLE_HASH = "a".repeat(64);
 const TARBALL_SHA256 = "b".repeat(64);
 const VERSION = "2026.7.11";
 const NPM_INTEGRITY = `sha512-${Buffer.alloc(64).toString("base64")}`;
-const OUTPUT_TAG = "OPENCLAW_WORKER_BOOTSTRAP_V1";
+const OUTPUT_TAG = "AFORA_WORKER_BOOTSTRAP_V1";
 const OPERATION_ID = "provision-operation-1";
 const OPERATION_TOKEN = createHash("sha256").update(OPERATION_ID).digest("hex");
-const UPLOAD_FILENAME = `openclaw-upload-${BUNDLE_HASH}.tgz.${OPERATION_TOKEN}`;
-const REMOTE_TARBALL = `/home/worker/.openclaw-worker/.incoming/${UPLOAD_FILENAME}`;
+const UPLOAD_FILENAME = `afora-upload-${BUNDLE_HASH}.tgz.${OPERATION_TOKEN}`;
+const REMOTE_TARBALL = `/home/worker/.afora-worker/.incoming/${UPLOAD_FILENAME}`;
 const HOST_KEY = ["ssh-ed25519", "AAAA"].join(" ");
 const RECEIPT_JSON = JSON.stringify({
   bundleHash: BUNDLE_HASH,
-  openclawVersion: VERSION,
+  aforaVersion: VERSION,
   protocolFeatures: ["admission-v1"],
 });
 
@@ -45,7 +45,7 @@ const SSH: WorkerSshEndpoint = {
 const BUNDLE: WorkerInstallationArtifact = {
   install: "bundle",
   bundleHash: BUNDLE_HASH,
-  openclawVersion: VERSION,
+  aforaVersion: VERSION,
   protocolFeatures: ["admission-v1"],
   tarballBytes: 1,
   tarballSha256: TARBALL_SHA256,
@@ -130,15 +130,15 @@ describe("bootstrapWorker", () => {
       ),
     ).resolves.toEqual({
       bundleHash: BUNDLE_HASH,
-      openclawVersion: VERSION,
+      aforaVersion: VERSION,
       protocolFeatures: ["admission-v1"],
     });
 
     expect(runner.calls).toHaveLength(1);
     expect(runner.calls[0]?.argv[0]).toBe("ssh");
     expect(runner.calls[0]?.argv).toContain("StrictHostKeyChecking=yes");
-    expect(runner.calls[0]?.options.input).toContain("actual.openclawVersion");
-    expect(runner.calls[0]?.options.input).toContain("openclaw-worker-bundle-v1");
+    expect(runner.calls[0]?.options.input).toContain("actual.aforaVersion");
+    expect(runner.calls[0]?.options.input).toContain("afora-worker-bundle-v1");
     expect(runner.calls[0]?.options.input).not.toContain("$root/current");
     expect(knownHosts).toBe(`[worker.example.com]:2222 ${HOST_KEY}\n`);
   });
@@ -179,7 +179,7 @@ describe("bootstrapWorker", () => {
       ),
     ).resolves.toEqual({
       bundleHash: BUNDLE_HASH,
-      openclawVersion: VERSION,
+      aforaVersion: VERSION,
       protocolFeatures: ["admission-v1"],
     });
 
@@ -270,11 +270,11 @@ describe("bootstrapWorker", () => {
 
   it.each([
     `/home/worker/other/.incoming/${UPLOAD_FILENAME}`,
-    `/home/worker/.openclaw-worker/other/${UPLOAD_FILENAME}`,
-    `/home/worker/.openclaw-worker/.incoming/../.incoming/${UPLOAD_FILENAME}`,
-    `/home/worker/./.openclaw-worker/.incoming/${UPLOAD_FILENAME}`,
-    `/home//worker/.openclaw-worker/.incoming/${UPLOAD_FILENAME}`,
-    `/home/worker/.openclaw-worker/.incoming/${UPLOAD_FILENAME}.other`,
+    `/home/worker/.afora-worker/other/${UPLOAD_FILENAME}`,
+    `/home/worker/.afora-worker/.incoming/../.incoming/${UPLOAD_FILENAME}`,
+    `/home/worker/./.afora-worker/.incoming/${UPLOAD_FILENAME}`,
+    `/home//worker/.afora-worker/.incoming/${UPLOAD_FILENAME}`,
+    `/home/worker/.afora-worker/.incoming/${UPLOAD_FILENAME}.other`,
   ])("rejects a noncanonical or non-owned upload path: %s", async (remotePath) => {
     const runner = fakeRunner([result({ stdout: tagged("install", remotePath) }), result()]);
 
@@ -361,7 +361,7 @@ describe("bootstrapWorker", () => {
     const runner = fakeRunner([
       result({
         code: 42,
-        stderr: "OPENCLAW_WORKER_NODE_MISSING\n",
+        stderr: "AFORA_WORKER_NODE_MISSING\n",
       }),
       result(),
     ]);
@@ -379,7 +379,7 @@ describe("bootstrapWorker", () => {
     const runner = fakeRunner([
       result({
         code: 45,
-        stderr: "OPENCLAW_WORKER_NODE_UNSUPPORTED: v24.14.1\n",
+        stderr: "AFORA_WORKER_NODE_UNSUPPORTED: v24.14.1\n",
       }),
       result(),
     ]);
@@ -403,7 +403,7 @@ describe("bootstrapWorker", () => {
       const actual = runInNewContext(PROCESS_NODE_VERSION_CHECK, {
         process: { versions: { node: version } },
       });
-      expect(actual, version).toBe(isSupportedOpenClawNodeVersion(version));
+      expect(actual, version).toBe(isSupportedAforaNodeVersion(version));
     }
   });
 
@@ -411,14 +411,14 @@ describe("bootstrapWorker", () => {
     const artifact: WorkerInstallationArtifact = {
       install: "npm",
       bundleHash: BUNDLE_HASH,
-      openclawVersion: VERSION,
+      aforaVersion: VERSION,
       protocolFeatures: [],
       packageIntegrity: NPM_INTEGRITY,
-      packageSpec: `openclaw@${VERSION}`,
+      packageSpec: `afora@${VERSION}`,
     };
     const npmReceipt = JSON.stringify({
       bundleHash: BUNDLE_HASH,
-      openclawVersion: VERSION,
+      aforaVersion: VERSION,
       protocolFeatures: [],
     });
     const npmRunner = fakeRunner([
@@ -441,7 +441,7 @@ describe("bootstrapWorker", () => {
       "package/dist/worker/workspace-rsync-receiver.mjs",
     );
     expect(npmRunner.calls[1]?.options.input).not.toContain("node_modules");
-    expect(npmRunner.calls[1]?.argv.at(-1)).toContain(`openclaw@${VERSION}`);
+    expect(npmRunner.calls[1]?.argv.at(-1)).toContain(`afora@${VERSION}`);
   });
 
   it("rejects a non-exact npm package before opening SSH", async () => {
@@ -449,15 +449,15 @@ describe("bootstrapWorker", () => {
     const artifact: WorkerInstallationArtifact = {
       install: "npm",
       bundleHash: BUNDLE_HASH,
-      openclawVersion: VERSION,
+      aforaVersion: VERSION,
       protocolFeatures: [],
       packageIntegrity: NPM_INTEGRITY,
-      packageSpec: "openclaw@latest",
+      packageSpec: "afora-agent@latest",
     };
 
     await expect(
       bootstrapWorker({ ssh: SSH, artifact }, { resolveIdentity, runCommand: runner.runCommand }),
-    ).rejects.toThrow(`exact package openclaw@${VERSION}`);
+    ).rejects.toThrow(`exact package afora@${VERSION}`);
     expect(runner.calls).toHaveLength(0);
   });
 
@@ -466,10 +466,10 @@ describe("bootstrapWorker", () => {
     const artifact: WorkerInstallationArtifact = {
       install: "npm",
       bundleHash: BUNDLE_HASH,
-      openclawVersion: "latest",
+      aforaVersion: "latest",
       protocolFeatures: [],
       packageIntegrity: NPM_INTEGRITY,
-      packageSpec: "openclaw@latest",
+      packageSpec: "afora-agent@latest",
     };
 
     await expect(
@@ -523,7 +523,7 @@ describe("bootstrapWorker", () => {
   it("rejects a stale remote receipt instead of synthesizing the expected fields", async () => {
     const staleReceipt = JSON.stringify({
       bundleHash: BUNDLE_HASH,
-      openclawVersion: "2026.7.10",
+      aforaVersion: "2026.7.10",
       protocolFeatures: ["admission-v1"],
     });
     const runner = fakeRunner([result({ stdout: tagged("current", staleReceipt) }), result()]);
@@ -623,13 +623,13 @@ describe("bootstrapWorker", () => {
   it.skipIf(process.platform === "win32")(
     "reuses and finally cleans the operation upload across ambiguous candidate attempts",
     async () => {
-      await withTestDir({ prefix: "openclaw-worker-bootstrap-script-" }, async (root) => {
+      await withTestDir({ prefix: "afora-worker-bootstrap-script-" }, async (root) => {
         const packageRoot = path.join(root, "package");
         const remoteHome = path.join(root, "remote-home");
         await fs.mkdir(path.join(packageRoot, "dist", "worker"), { recursive: true });
         await fs.writeFile(
           path.join(packageRoot, "package.json"),
-          `${JSON.stringify({ name: "openclaw", version: VERSION, files: ["dist/"] })}\n`,
+          `${JSON.stringify({ name: "afora", version: VERSION, files: ["dist/"] })}\n`,
         );
         await fs.writeFile(path.join(packageRoot, "dist/worker/worker.mjs"), "export {};\n", {
           mode: 0o755,
@@ -642,7 +642,7 @@ describe("bootstrapWorker", () => {
         const artifact = await createWorkerBundleProducer({
           packageRoot,
           cacheDir: path.join(root, "cache"),
-          openclawVersion: VERSION,
+          aforaVersion: VERSION,
           protocolFeatures: ["admission-v1"],
         }).prepare();
         const fakeBin = path.join(root, "fake-bin");
@@ -650,17 +650,17 @@ describe("bootstrapWorker", () => {
         await fs.writeFile(path.join(fakeBin, "tar"), "#!/bin/sh\nexit 255\n", { mode: 0o755 });
         const receiptJson = JSON.stringify({
           bundleHash: artifact.bundleHash,
-          openclawVersion: VERSION,
+          aforaVersion: VERSION,
           protocolFeatures: ["admission-v1"],
         });
         const staleStaging = path.join(
           remoteHome,
-          ".openclaw-worker",
+          ".afora-worker",
           `.staging-${artifact.bundleHash}-99999`,
         );
         await fs.mkdir(staleStaging, { recursive: true });
         await fs.writeFile(path.join(staleStaging, "partial"), "abandoned install");
-        const staleLock = path.join(remoteHome, ".openclaw-worker", ".locks", artifact.bundleHash);
+        const staleLock = path.join(remoteHome, ".afora-worker", ".locks", artifact.bundleHash);
         await fs.mkdir(path.dirname(staleLock), { recursive: true });
         // A reused live PID must not keep a crashed install locked forever.
         await fs.symlink(`${process.pid}:1`, staleLock);
@@ -752,7 +752,7 @@ describe("bootstrapWorker", () => {
 
         const tamperedDependency = path.join(
           remoteHome,
-          ".openclaw-worker",
+          ".afora-worker",
           artifact.bundleHash,
           "node_modules",
           "tampered.js",
@@ -767,7 +767,7 @@ describe("bootstrapWorker", () => {
         const operationUpload = preflightPaths[0]!;
         const staleUpload = path.join(
           path.dirname(operationUpload),
-          `openclaw-upload-${"c".repeat(64)}.tgz.${"d".repeat(64)}`,
+          `afora-upload-${"c".repeat(64)}.tgz.${"d".repeat(64)}`,
         );
         await fs.writeFile(operationUpload, "ambiguous prior upload");
         await fs.writeFile(staleUpload, "stale upload");
@@ -783,7 +783,7 @@ describe("bootstrapWorker", () => {
         expect(preflightPaths).toHaveLength(5);
         expect(new Set(preflightPaths).size).toBe(1);
         expect(path.basename(preflightPaths[0]!)).toBe(
-          `openclaw-upload-${artifact.bundleHash}.tgz.${OPERATION_TOKEN}`,
+          `afora-upload-${artifact.bundleHash}.tgz.${OPERATION_TOKEN}`,
         );
         expect(installAttempts).toBe(3);
         expect(uploadSurvivedAmbiguousInstall).toBe(true);
@@ -796,7 +796,7 @@ describe("bootstrapWorker", () => {
           fs.readFile(
             path.join(
               remoteHome,
-              ".openclaw-worker",
+              ".afora-worker",
               artifact.bundleHash,
               "bootstrap-receipt.json",
             ),
@@ -810,10 +810,10 @@ describe("bootstrapWorker", () => {
   it.skipIf(process.platform === "win32")(
     "fails closed instead of following a poisoned incoming directory",
     async () => {
-      await withTestDir({ prefix: "openclaw-worker-bootstrap-path-" }, async (root) => {
+      await withTestDir({ prefix: "afora-worker-bootstrap-path-" }, async (root) => {
         const remoteHome = path.join(root, "remote-home");
         const unrelated = path.join(root, "unrelated");
-        const bootstrapRoot = path.join(remoteHome, ".openclaw-worker");
+        const bootstrapRoot = path.join(remoteHome, ".afora-worker");
         await fs.mkdir(bootstrapRoot, { recursive: true });
         await fs.mkdir(unrelated);
         await fs.writeFile(path.join(unrelated, "sentinel"), "keep");
@@ -841,7 +841,7 @@ describe("bootstrapWorker", () => {
   it.skipIf(process.platform === "win32")(
     "does not follow a poisoned bootstrap root during terminal cleanup",
     async () => {
-      await withTestDir({ prefix: "openclaw-worker-bootstrap-cleanup-root-" }, async (root) => {
+      await withTestDir({ prefix: "afora-worker-bootstrap-cleanup-root-" }, async (root) => {
         const remoteHome = path.join(root, "remote-home");
         const unrelated = path.join(root, "unrelated");
         const incoming = path.join(unrelated, ".incoming");
@@ -849,7 +849,7 @@ describe("bootstrapWorker", () => {
         await fs.mkdir(remoteHome);
         await fs.mkdir(incoming, { recursive: true });
         await fs.writeFile(upload, "keep");
-        await fs.symlink(unrelated, path.join(remoteHome, ".openclaw-worker"));
+        await fs.symlink(unrelated, path.join(remoteHome, ".afora-worker"));
 
         const runCommand: WorkerBootstrapCommandRunner = async (_argv, options) => {
           const isPreflight =
@@ -874,13 +874,13 @@ describe("bootstrapWorker", () => {
   it.skipIf(process.platform === "win32")(
     "verifies npm installs from the dedicated worker artifact",
     async () => {
-      await withTestDir({ prefix: "openclaw-worker-bootstrap-npm-artifact-" }, async (root) => {
+      await withTestDir({ prefix: "afora-worker-bootstrap-npm-artifact-" }, async (root) => {
         const packageRoot = path.join(root, "package");
         const remoteHome = path.join(root, "remote-home");
         await fs.mkdir(path.join(packageRoot, "dist", "worker"), { recursive: true });
         await fs.writeFile(
           path.join(packageRoot, "package.json"),
-          `${JSON.stringify({ name: "openclaw", version: VERSION, files: ["dist/"] })}\n`,
+          `${JSON.stringify({ name: "afora", version: VERSION, files: ["dist/"] })}\n`,
         );
         await fs.writeFile(path.join(packageRoot, "dist/worker/worker.mjs"), "export {};\n", {
           mode: 0o755,
@@ -893,22 +893,22 @@ describe("bootstrapWorker", () => {
         const bundle = await createWorkerBundleProducer({
           packageRoot,
           cacheDir: path.join(root, "cache"),
-          openclawVersion: VERSION,
+          aforaVersion: VERSION,
         }).prepare();
         const artifact: WorkerInstallationArtifact = {
           install: "npm",
           bundleHash: bundle.bundleHash,
-          openclawVersion: VERSION,
+          aforaVersion: VERSION,
           protocolFeatures: [],
           packageIntegrity: NPM_INTEGRITY,
-          packageSpec: `openclaw@${VERSION}`,
+          packageSpec: `afora@${VERSION}`,
         };
         const receiptJson = JSON.stringify({
           bundleHash: bundle.bundleHash,
-          openclawVersion: VERSION,
+          aforaVersion: VERSION,
           protocolFeatures: [],
         });
-        const installRoot = path.join(remoteHome, ".openclaw-worker", bundle.bundleHash);
+        const installRoot = path.join(remoteHome, ".afora-worker", bundle.bundleHash);
         await fs.mkdir(installRoot, { recursive: true });
         await fs.copyFile(
           path.join(packageRoot, "dist", "worker", "worker.mjs"),

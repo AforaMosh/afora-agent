@@ -303,7 +303,7 @@ describe("cron listPage sort guards", () => {
       }),
     ];
     const state = createMockCronStateForJobs({ jobs });
-    const storeDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-cron-list-page-"));
+    const storeDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-cron-list-page-"));
     try {
       state.deps.storePath = path.join(storeDir, "jobs.json");
 

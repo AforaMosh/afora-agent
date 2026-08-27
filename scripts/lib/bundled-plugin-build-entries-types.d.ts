@@ -1,4 +1,4 @@
-// Bundled Plugin Build Entries Types.D script supports OpenClaw repository automation.
+// Bundled Plugin Build Entries Types.D script supports Afora repository automation.
 export type BundledPluginBuildEntry = {
   id: string;
   hasPackageJson: boolean;

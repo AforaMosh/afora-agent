@@ -81,7 +81,7 @@ export async function resolveWorkspacePluginRootPresence(
     return input.workspacePluginRootPresent;
   }
   return await fsp
-    .stat(path.join(input.workspaceDir, ".openclaw", "extensions"))
+    .stat(path.join(input.workspaceDir, ".afora", "extensions"))
     .then(() => true)
     .catch((error: unknown) => {
       const code = (error as NodeJS.ErrnoException).code;

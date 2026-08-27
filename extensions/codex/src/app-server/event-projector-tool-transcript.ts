@@ -4,9 +4,9 @@ import {
   runAgentHarnessAfterToolCallHook,
   type AgentMessage,
   type EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import type { Usage } from "openclaw/plugin-sdk/llm";
-import { asDateTimestampMs } from "openclaw/plugin-sdk/number-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import type { Usage } from "afora-agent/plugin-sdk/llm";
+import { asDateTimestampMs } from "afora-agent/plugin-sdk/number-runtime";
 import {
   isMutatingNativeToolItem,
   isNonSuccessItemStatus,
@@ -57,7 +57,7 @@ const ZERO_USAGE: Usage = {
 };
 
 const MISSING_TOOL_RESULT_ERROR =
-  "OpenClaw recorded a native Codex tool.call without a matching tool.result before the turn completed.";
+  "Afora recorded a native Codex tool.call without a matching tool.result before the turn completed.";
 const NATIVE_PATCH_REJECTION_RE =
   /^\s*patch rejected:\s*writing outside of the project;\s*rejected by user approval settings\s*$/iu;
 const CODE_MODE_NATIVE_PATCH_SOURCE_RE =
@@ -621,7 +621,7 @@ export class CodexToolTranscriptProjection {
       ],
       ...(params.details !== undefined ? { details: params.details } : {}),
       ...(params.resultContentSource
-        ? { __openclaw: { resultContentSource: params.resultContentSource } }
+        ? { __afora: { resultContentSource: params.resultContentSource } }
         : {}),
       timestamp: this.nextTranscriptTimestamp(),
     } as unknown as Extract<AgentMessage, { role: "toolResult" }>;

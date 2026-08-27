@@ -86,7 +86,7 @@ describe("executeAgentTurn: CLI session routing", () => {
       },
     ];
     const imageOrder = ["inline" as const];
-    const media = [{ path: "/openclaw-test-missing/current.png", contentType: "image/png" }];
+    const media = [{ path: "/afora-test-missing/current.png", contentType: "image/png" }];
     const mediaImageLayout = {
       slots: [{ kind: "inline" as const, factIndex: 0 }],
       suppressedFactIndexes: [],
@@ -535,7 +535,7 @@ describe("executeAgentTurn: CLI session routing", () => {
       payloads: [{ text: "handled" }],
       meta: {
         agentMeta: {
-          sessionId: "openclaw-session",
+          sessionId: "afora-session",
           provider: "codex-cli",
           model: "gpt-5.4",
         },
@@ -639,7 +639,7 @@ describe("executeAgentTurn: CLI session routing", () => {
     followupRun.run.provider = "claude-cli";
     followupRun.run.model = "claude-opus-4-8";
     const sessionEntry = {
-      sessionId: "openclaw-session",
+      sessionId: "afora-session",
       updatedAt: 1,
       cliSessionBindings: {
         "claude-cli": { sessionId: "stale-cli-session", forkNextResume: true },
@@ -681,7 +681,7 @@ describe("executeAgentTurn: CLI session routing", () => {
     followupRun.run.provider = "claude-cli";
     followupRun.run.model = "claude-opus-4-8";
     const sessionEntry = {
-      sessionId: "openclaw-session",
+      sessionId: "afora-session",
       updatedAt: 1,
       cliSessionBindings: { "claude-cli": { sessionId: "media-session" } },
       cliSessionIds: { "claude-cli": "media-session" },
@@ -740,7 +740,7 @@ describe("executeAgentTurn: CLI session routing", () => {
     followupRun.run.provider = "claude-cli";
     followupRun.run.model = "claude-opus-4-8";
     const sessionEntry = {
-      sessionId: "openclaw-session",
+      sessionId: "afora-session",
       updatedAt: 1,
       cliSessionBindings: { "claude-cli": { sessionId: "queued-stale-session" } },
       cliSessionIds: { "claude-cli": "queued-stale-session" },
@@ -793,7 +793,7 @@ describe("executeAgentTurn: CLI session routing", () => {
     followupRun.run.skillsSnapshot = { prompt: "", skills: [], version: 0 };
     followupRun.run.timeoutMs = 10_000;
     const sessionEntry = {
-      sessionId: "openclaw-session",
+      sessionId: "afora-session",
       updatedAt: 1,
       cliSessionBindings: { "claude-cli": { sessionId: "stale-cli-session" } },
       cliSessionIds: { "claude-cli": "stale-cli-session" },

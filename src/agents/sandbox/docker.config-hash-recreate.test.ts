@@ -107,7 +107,7 @@ async function spawnDockerProcess(commandAndArgs: string[]) {
   } else if (
     args[0] === "inspect" &&
     args[1] === "-f" &&
-    args[2]?.includes('index .Config.Labels "openclaw.configHash"')
+    args[2]?.includes('index .Config.Labels "afora.configHash"')
   ) {
     if (!spawnState.containerExists) {
       code = 1;
@@ -135,8 +135,8 @@ async function spawnDockerProcess(commandAndArgs: string[]) {
       spawnState.inspectRunning = false;
       spawnState.labelHash =
         args
-          .find((arg) => arg.startsWith("openclaw.configHash="))
-          ?.slice("openclaw.configHash=".length) ?? "";
+          .find((arg) => arg.startsWith("afora.configHash="))
+          ?.slice("afora.configHash=".length) ?? "";
     }
   } else if (args[0] === "start") {
     spawnState.inspectRunning = true;
@@ -190,10 +190,10 @@ function createSandboxConfig(
     backend: "docker",
     scope: "shared",
     workspaceAccess,
-    workspaceRoot: "~/.openclaw/sandboxes",
+    workspaceRoot: "~/.afora/sandboxes",
     dockerTmpfsSource: "default",
     docker: {
-      image: "openclaw-sandbox:test",
+      image: "afora-sandbox:test",
       containerPrefix: "oc-test-",
       workdir: "/workspace",
       readOnlyRoot: true,
@@ -208,15 +208,15 @@ function createSandboxConfig(
     },
     ssh: {
       command: "ssh",
-      workspaceRoot: "/tmp/openclaw-sandboxes",
+      workspaceRoot: "/tmp/afora-sandboxes",
       strictHostKeyChecking: true,
       updateHostKeys: true,
     },
     browser: {
       enabled: false,
-      image: "openclaw-browser:test",
+      image: "afora-browser:test",
       containerPrefix: "oc-browser-",
-      network: "openclaw-sandbox-browser",
+      network: "afora-sandbox-browser",
       cdpPort: 9222,
       vncPort: 5900,
       noVncPort: 6080,
@@ -275,7 +275,7 @@ describe("ensureSandboxContainer config-hash recreation", () => {
   });
 
   it("serializes concurrent provisioning for one container", async () => {
-    const workspaceDir = tempDirs.make("openclaw-docker-mounts-");
+    const workspaceDir = tempDirs.make("afora-docker-mounts-");
     const cfg = createSandboxConfig([], [`${workspaceDir}:/workspace:rw`]);
     spawnState.containerExists = false;
     spawnState.inspectRunning = false;
@@ -300,7 +300,7 @@ describe("ensureSandboxContainer config-hash recreation", () => {
   });
 
   it("uses the canonical non-shared scope for Docker names, labels, and registry identity", async () => {
-    const workspaceDir = tempDirs.make("openclaw-docker-mounts-");
+    const workspaceDir = tempDirs.make("afora-docker-mounts-");
     const cfg = createSandboxConfig([], [`${workspaceDir}:/workspace:rw`]);
     cfg.scope = "agent";
     spawnState.containerExists = false;
@@ -316,7 +316,7 @@ describe("ensureSandboxContainer config-hash recreation", () => {
 
     const containerName = createCall.args[createCall.args.indexOf("--name") + 1];
     expect(containerName).toMatch(/^oc-test-workspace-[a-f0-9]{32}$/);
-    expect(createCall.args).toContain(`openclaw.sessionKey=${scopeKey}`);
+    expect(createCall.args).toContain(`afora.sessionKey=${scopeKey}`);
     expect(registryMocks.updateRegistry.mock.calls.at(-1)?.[0]).toMatchObject({
       containerName,
       sessionKey: scopeKey,
@@ -326,7 +326,7 @@ describe("ensureSandboxContainer config-hash recreation", () => {
   it("recreates shared container when array-order change alters hash", async () => {
     // Docker flag order is part of the runtime contract, so order-sensitive
     // config changes must invalidate a shared container.
-    const workspaceDir = tempDirs.make("openclaw-docker-mounts-");
+    const workspaceDir = tempDirs.make("afora-docker-mounts-");
     const oldCfg = createSandboxConfig(["1.1.1.1", "8.8.8.8"], [`${workspaceDir}:/workspace:rw`]);
     const newCfg = createSandboxConfig(["8.8.8.8", "1.1.1.1"], [`${workspaceDir}:/workspace:rw`]);
 
@@ -379,14 +379,14 @@ describe("ensureSandboxContainer config-hash recreation", () => {
     if (!createCall) {
       throw new Error("expected recreated docker create call");
     }
-    expect(createCall.args).toContain(`openclaw.configHash=${newHash}`);
+    expect(createCall.args).toContain(`afora.configHash=${newHash}`);
     const registryUpdate = registryMocks.updateRegistry.mock.calls.at(-1)?.[0];
     expect(registryUpdate?.containerName).toBe("oc-test-shared");
     expect(registryUpdate?.configHash).toBe(newHash);
   });
 
   it("recreates a cold container when the shared Docker create-args epoch changes", async () => {
-    const workspaceDir = tempDirs.make("openclaw-docker-mounts-");
+    const workspaceDir = tempDirs.make("afora-docker-mounts-");
     // Keep the create-args epoch as the only hash delta in this scenario.
     const cfg = createSandboxConfig([], [`${workspaceDir}:/workspace:rw`], "rw", {});
     const hashInput = {
@@ -421,13 +421,13 @@ describe("ensureSandboxContainer config-hash recreation", () => {
     expect(spawnState.calls.some((call) => call.args[0] === "rm")).toBe(true);
     expect(createCall.args.filter((arg) => arg === "--init")).toHaveLength(1);
     expect(createCall.args).toContain(
-      `openclaw.createArgsEpoch=${SANDBOX_DOCKER_CREATE_ARGS_EPOCH}`,
+      `afora.createArgsEpoch=${SANDBOX_DOCKER_CREATE_ARGS_EPOCH}`,
     );
-    expect(createCall.args).toContain(`openclaw.configHash=${newHash}`);
+    expect(createCall.args).toContain(`afora.configHash=${newHash}`);
   });
 
   it("keeps a hot pre-init container running and emits the recreate hint", async () => {
-    const workspaceDir = tempDirs.make("openclaw-docker-mounts-");
+    const workspaceDir = tempDirs.make("afora-docker-mounts-");
     const cfg = createSandboxConfig([], [`${workspaceDir}:/workspace:rw`], "rw", {});
     const oldHash = computeSandboxConfigHash({
       docker: cfg.docker,
@@ -459,13 +459,13 @@ describe("ensureSandboxContainer config-hash recreation", () => {
     expect(spawnState.calls.some((call) => call.args[0] === "rm")).toBe(false);
     expect(spawnState.calls.some((call) => call.args[0] === "create")).toBe(false);
     expect(runtimeMocks.log).toHaveBeenCalledWith(
-      expect.stringContaining("Recreate to apply: openclaw sandbox recreate --all"),
+      expect.stringContaining("Recreate to apply: afora sandbox recreate --all"),
     );
     expect(registryMocks.updateRegistry.mock.calls.at(-1)?.[0]?.configHash).toBe(oldHash);
   });
 
   it("rejects a hot stale container when current config is required", async () => {
-    const workspaceDir = tempDirs.make("openclaw-docker-mounts-");
+    const workspaceDir = tempDirs.make("afora-docker-mounts-");
     const cfg = createSandboxConfig([], [`${workspaceDir}:/workspace:rw`], "rw", {});
     spawnState.labelHash = "stale-hash";
     registryMocks.readRegistryEntry.mockResolvedValue({
@@ -492,7 +492,7 @@ describe("ensureSandboxContainer config-hash recreation", () => {
   });
 
   it("recreates shared container when previously filtered explicit env becomes allowed", async () => {
-    const workspaceDir = tempDirs.make("openclaw-docker-mounts-");
+    const workspaceDir = tempDirs.make("afora-docker-mounts-");
     const cfg = createSandboxConfig(["1.1.1.1"], undefined, "rw", {
       LANG: "C.UTF-8",
       GEMINI_API_KEY: "dummy-gemini",
@@ -531,7 +531,7 @@ describe("ensureSandboxContainer config-hash recreation", () => {
     });
 
     const createCall = await ensureSandboxCreateCallForTest({ cfg, workspaceDir });
-    expect(createCall.args).toContain(`openclaw.configHash=${newHash}`);
+    expect(createCall.args).toContain(`afora.configHash=${newHash}`);
     expect(collectDockerFlagValues(createCall.args, "--env")).toEqual(
       expect.arrayContaining(["LANG=C.UTF-8", "GEMINI_API_KEY=dummy-gemini"]),
     );
@@ -541,8 +541,8 @@ describe("ensureSandboxContainer config-hash recreation", () => {
   });
 
   it("applies custom binds after workspace mounts so overlapping binds can override", async () => {
-    const workspaceDir = tempDirs.make("openclaw-docker-mounts-");
-    const customRoot = tempDirs.make("openclaw-docker-mounts-");
+    const workspaceDir = tempDirs.make("afora-docker-mounts-");
+    const customRoot = tempDirs.make("afora-docker-mounts-");
     const customUserFile = path.join(customRoot, "USER.md");
     const cfg = createSandboxConfig(["1.1.1.1"], [`${customUserFile}:/workspace/USER.md:ro`]);
     cfg.docker.dangerouslyAllowExternalBindSources = true;
@@ -568,7 +568,7 @@ describe("ensureSandboxContainer config-hash recreation", () => {
     });
 
     const createCall = await ensureSandboxCreateCallForTest({ cfg, workspaceDir });
-    expect(createCall.args).toContain(`openclaw.configHash=${expectedHash}`);
+    expect(createCall.args).toContain(`afora.configHash=${expectedHash}`);
 
     const bindArgs = collectDockerFlagValues(createCall.args, "-v");
     const workspaceMountIdx = bindArgs.indexOf(`${workspaceDir}:/workspace:z`);
@@ -582,8 +582,8 @@ describe("ensureSandboxContainer config-hash recreation", () => {
     async (backend) => {
       // The protected overlay remains authoritative for both engines, avoiding
       // duplicate mount rejection without making checked-in skills writable.
-      const workspaceDir = tempDirs.make("openclaw-docker-mounts-");
-      const customRoot = tempDirs.make("openclaw-docker-mounts-");
+      const workspaceDir = tempDirs.make("afora-docker-mounts-");
+      const customRoot = tempDirs.make("afora-docker-mounts-");
       fs.mkdirSync(path.join(workspaceDir, "skills", "demo"), { recursive: true });
       const customMount = `${customRoot}:/workspace/skills:rw`;
       const cfg = createSandboxConfig([], [customMount]);
@@ -635,7 +635,7 @@ describe("ensureSandboxContainer config-hash recreation", () => {
 
     const createCall = await ensureSandboxCreateCallForTest({ cfg, workspaceDir });
     expect(createCall.args).toContain(
-      `openclaw.mountFormatVersion=${SANDBOX_MOUNT_FORMAT_VERSION}`,
+      `afora.mountFormatVersion=${SANDBOX_MOUNT_FORMAT_VERSION}`,
     );
   });
 
@@ -987,7 +987,7 @@ describe("ensureSandboxContainer config-hash recreation", () => {
   });
 
   it("invalidates a Podman container when the same tmpfs list becomes explicit", async () => {
-    const workspaceDir = tempDirs.make("openclaw-docker-mounts-");
+    const workspaceDir = tempDirs.make("afora-docker-mounts-");
     const cfg = createSandboxConfig([], [`${workspaceDir}:/workspace:rw`]);
     const genericHash = computeSandboxConfigHash({
       docker: cfg.docker,
@@ -1045,7 +1045,7 @@ describe("ensureSandboxContainer config-hash recreation", () => {
 
   it("allows Podman Machine workspaces under the default home share", async () => {
     const cfg = createSandboxConfig([]);
-    const workspaceDir = path.join(os.homedir(), "openclaw-podman-workspace");
+    const workspaceDir = path.join(os.homedir(), "afora-podman-workspace");
     cfg.docker.binds = [`${workspaceDir}:/workspace:rw`];
     usePodmanMachine();
     spawnState.inspectRunning = false;

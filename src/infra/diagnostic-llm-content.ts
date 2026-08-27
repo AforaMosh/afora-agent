@@ -1,4 +1,4 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 
 /** Per-field policy for diagnostic traces that may include model-visible content. */
 export type DiagnosticModelContentCapturePolicy = {

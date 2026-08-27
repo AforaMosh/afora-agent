@@ -8,7 +8,7 @@ import {
   installDialogPolyfill,
   nextFrame,
 } from "../test-helpers/modal-dialog.ts";
-import { OpenClawModalDialog } from "./modal-dialog.ts";
+import { AforaModalDialog } from "./modal-dialog.ts";
 
 let container: HTMLDivElement;
 let restoreDialogPolyfill: () => void;
@@ -16,7 +16,7 @@ let restoreDialogPolyfill: () => void;
 async function renderModal() {
   render(
     html`
-      <openclaw-modal-dialog
+      <afora-modal-dialog
         label="Confirm action"
         description="Review the operation before continuing."
       >
@@ -26,14 +26,14 @@ async function renderModal() {
           <button id="first-action">First</button>
           <button id="last-action">Last</button>
         </section>
-      </openclaw-modal-dialog>
+      </afora-modal-dialog>
     `,
     container,
   );
   return await getRenderedModalDialog(container);
 }
 
-describe("openclaw-modal-dialog", () => {
+describe("afora-modal-dialog", () => {
   beforeEach(() => {
     restoreDialogPolyfill = installDialogPolyfill();
     container = document.createElement("div");
@@ -70,9 +70,9 @@ describe("openclaw-modal-dialog", () => {
 
   it("focuses slotted autofocus content", async () => {
     render(
-      html`<openclaw-modal-dialog label="Edit">
+      html`<afora-modal-dialog label="Edit">
         <textarea id="autofocus-target" autofocus></textarea>
-      </openclaw-modal-dialog>`,
+      </afora-modal-dialog>`,
       container,
     );
     await getRenderedModalDialog(container);
@@ -82,10 +82,10 @@ describe("openclaw-modal-dialog", () => {
 
   it("keeps focus on a field the user selected when the show animation settles", async () => {
     render(
-      html`<openclaw-modal-dialog label="Edit">
+      html`<afora-modal-dialog label="Edit">
         <input id="autofocus-target" autofocus />
         <textarea id="notes-field"></textarea>
-      </openclaw-modal-dialog>`,
+      </afora-modal-dialog>`,
       container,
     );
     const { webAwesomeDialog } = await getRenderedModalDialog(container);
@@ -109,7 +109,7 @@ describe("openclaw-modal-dialog", () => {
   it("hands an active toast back to the app layer when it closes", async () => {
     const shell = document.createElement("div");
     shell.className = "shell";
-    const appHost = document.createElement("openclaw-toast-host");
+    const appHost = document.createElement("afora-toast-host");
     shell.append(appHost);
     document.body.append(shell);
     try {
@@ -131,7 +131,7 @@ describe("openclaw-modal-dialog", () => {
   });
 
   it("keeps the navigation drawer sidebar in a full-height, shrinkable flex column", () => {
-    const styles = OpenClawModalDialog.styles.cssText;
+    const styles = AforaModalDialog.styles.cssText;
 
     expect(styles).toMatch(
       /:host\(\.nav-drawer\)\s+wa-dialog::part\(body\)\s*\{[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*min-height:\s*0;/u,

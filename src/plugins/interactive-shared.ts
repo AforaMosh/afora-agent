@@ -1,5 +1,5 @@
 // Shares interactive plugin metadata normalization across registries.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 
 export function toPluginInteractiveRegistryKey(channel: string, namespace: string): string {
   return `${normalizeOptionalLowercaseString(channel) ?? ""}:${namespace.trim()}`;

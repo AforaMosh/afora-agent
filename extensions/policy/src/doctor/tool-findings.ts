@@ -1,5 +1,5 @@
-import type { HealthFinding } from "openclaw/plugin-sdk/health";
-import { isRecord, uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { HealthFinding } from "afora-agent/plugin-sdk/health";
+import { isRecord, uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { PolicyEvidence, PolicyToolPostureEvidence } from "../policy-state.js";
 import { expandPolicyToolRequirement, toolListCoversTool } from "../tool-policy-conformance.js";
 import { toolPosturePolicyShapeFinding } from "./agent-tool-shapes.js";
@@ -340,7 +340,7 @@ function toolPostureFinding(
     severity: "error",
     message: params.message,
     source: "policy",
-    path: "openclaw config",
+    path: "afora config",
     ocPath: entry.source,
     target: entry.source,
     requirement: params.requirement,

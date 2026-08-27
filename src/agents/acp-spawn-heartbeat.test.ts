@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isHeartbeatEnabledForSessionAgent } from "./subagents/spawn/acp-spawn-heartbeat.js";
 import { resolveAcpSpawnRequesterState } from "./subagents/spawn/acp-spawn-requester.js";
 
@@ -15,7 +15,7 @@ describe("isHeartbeatEnabledForSessionAgent", () => {
           research: { heartbeat: { every: "5m" } },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(isHeartbeatEnabledForSessionAgent({ cfg, sessionKey: "global" })).toBe(true);
   });
@@ -31,7 +31,7 @@ describe("isHeartbeatEnabledForSessionAgent", () => {
         },
         entries: { ops: {}, research: {} },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(isHeartbeatEnabledForSessionAgent({ cfg, sessionKey: "global" })).toBe(true);
   });
@@ -45,7 +45,7 @@ describe("isHeartbeatEnabledForSessionAgent", () => {
           research: { heartbeat: { every: "5m" } },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(
       isHeartbeatEnabledForSessionAgent({

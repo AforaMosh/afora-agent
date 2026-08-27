@@ -219,7 +219,7 @@ const hoisted = vi.hoisted(() => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/channel-runtime-context", () => ({
+vi.mock("afora-agent/plugin-sdk/channel-runtime-context", () => ({
   registerChannelRuntimeContext: hoisted.registerChannelRuntimeContext,
 }));
 
@@ -364,7 +364,7 @@ vi.mock("../config-update.js", () => ({
 
 vi.mock("../device-health.js", () => ({
   summarizeMatrixDeviceHealth: vi.fn(() => ({
-    staleOpenClawDevices: [],
+    staleAforaDevices: [],
   })),
 }));
 

@@ -1,6 +1,6 @@
 // Sms tests cover gateway plugin behavior.
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { registerPluginHttpRoute as registerPluginHttpRouteType } from "openclaw/plugin-sdk/webhook-ingress";
+import type { registerPluginHttpRoute as registerPluginHttpRouteType } from "afora-agent/plugin-sdk/webhook-ingress";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { collectSmsStartupWarnings, startSmsGatewayAccount } from "./gateway.js";
 import type { SmsChannelRuntime } from "./inbound.js";
@@ -44,13 +44,13 @@ const { registeredRoutes, routeUnregisters, registerPluginHttpRoute, waitUntilAb
   },
 );
 
-vi.mock("openclaw/plugin-sdk/channel-outbound", () => ({ waitUntilAbort }));
+vi.mock("afora-agent/plugin-sdk/channel-outbound", () => ({ waitUntilAbort }));
 
 vi.mock("./ingress-spool.js", () => ({ createSmsIngressSpool }));
 vi.mock("./media.js", () => ({ tryHandleHostedSmsMediaRequest }));
 vi.mock("./webhook.js", () => ({ createSmsWebhookHandler }));
 
-vi.mock("openclaw/plugin-sdk/webhook-ingress", () => ({
+vi.mock("afora-agent/plugin-sdk/webhook-ingress", () => ({
   createFixedWindowRateLimiter: () => ({
     clear: vi.fn(),
     isRateLimited: vi.fn(() => false),
@@ -313,7 +313,7 @@ describe("startSmsGatewayAccount", () => {
     tryHandleHostedSmsMediaRequest.mockResolvedValueOnce(true);
     const tokenizedPost = {
       method: "POST",
-      url: `/webhooks/sms?__openclaw_mms_token_${"a".repeat(24)}=secret`,
+      url: `/webhooks/sms?__afora_mms_token_${"a".repeat(24)}=secret`,
     } as IncomingMessage;
     await route.handler(tokenizedPost, {} as ServerResponse);
     expect(smsWebhookHandler).toHaveBeenCalledTimes(1);
@@ -464,7 +464,7 @@ describe("collectSmsStartupWarnings", () => {
         publicWebhookUrl: "https://sms_gateway.example.com/webhooks/sms",
       }),
     ).toContain(
-      "- SMS: publicWebhookUrl must be a properly encoded absolute HTTP(S) URL with a valid hostname, no embedded credentials, and remain within OpenClaw's 4,000-character callback safety limit; OpenClaw will omit the per-message delivery callback until fixed.",
+      "- SMS: publicWebhookUrl must be a properly encoded absolute HTTP(S) URL with a valid hostname, no embedded credentials, and remain within Afora's 4,000-character callback safety limit; Afora will omit the per-message delivery callback until fixed.",
     );
   });
 });

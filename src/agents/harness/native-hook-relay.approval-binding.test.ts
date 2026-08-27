@@ -91,7 +91,7 @@ describe("native hook relay approval id binding", () => {
   });
 
   it("denies when a script operand changes during the permission approval", async () => {
-    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-native-hook-drift-"));
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "afora-native-hook-drift-"));
     const script = path.join(cwd, "script.sh");
     try {
       await fs.writeFile(script, "#!/bin/sh\necho approved\n");
@@ -132,7 +132,7 @@ describe("native hook relay approval id binding", () => {
   });
 
   it("allows an unchanged script operand after permission approval", async () => {
-    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-native-hook-stable-"));
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "afora-native-hook-stable-"));
     try {
       await fs.writeFile(path.join(cwd, "script.sh"), "#!/bin/sh\necho approved\n");
       mockGatewayApproval({ id: "approval-1", decision: "allow-once" });
@@ -160,7 +160,7 @@ describe("native hook relay approval id binding", () => {
   });
 
   it("does not reuse allow-always after bound script bytes change", async () => {
-    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-native-hook-always-"));
+    const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "afora-native-hook-always-"));
     const script = path.join(cwd, "script.sh");
     try {
       await fs.writeFile(script, "#!/bin/sh\necho approved\n");

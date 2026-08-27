@@ -1,6 +1,6 @@
 // Discord ask_user component dispatch and ephemeral feedback.
 import { ButtonStyle } from "discord-api-types/v10";
-import { questionGatewayRuntime } from "openclaw/plugin-sdk/question-gateway-runtime";
+import { questionGatewayRuntime } from "afora-agent/plugin-sdk/question-gateway-runtime";
 import { Button, type ButtonInteraction, type ComponentData } from "../internal/discord.js";
 import { parseDiscordQuestionData } from "../question-custom-id.js";
 import {

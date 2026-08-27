@@ -11,7 +11,7 @@ const suite = createControlUiE2eSuite({
   unavailableMessage: (executablePath) => `Playwright Chromium is unavailable at ${executablePath}`,
 });
 
-const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
 const prepareOptions = [
   {
     id: "lmstudio",
@@ -38,7 +38,7 @@ suite.define(() => {
           candidates: [],
           manualProviders: [],
           prepareOptions,
-          workspace: "/tmp/openclaw-e2e",
+          workspace: "/tmp/afora-e2e",
           setupComplete: false,
         };
         const modelRef = "lmstudio/qwen3-8b-instruct";
@@ -46,19 +46,19 @@ suite.define(() => {
           featureMethods: [
             "chat.metadata",
             "chat.startup",
-            "openclaw.setup.detect",
-            "openclaw.setup.activate",
-            "openclaw.setup.prepare.start",
+            "afora.setup.detect",
+            "afora.setup.activate",
+            "afora.setup.prepare.start",
             "wizard.next",
           ],
           methodResponses: {
-            "openclaw.setup.detect": initialDetection,
-            "openclaw.setup.prepare.start": {
+            "afora.setup.detect": initialDetection,
+            "afora.setup.prepare.start": {
               sessionId: "lmstudio-prepare-session",
               done: false,
               status: "running",
             },
-            "openclaw.setup.activate": {
+            "afora.setup.activate": {
               ok: true,
               modelRef,
               latencyMs: 416,
@@ -134,7 +134,7 @@ suite.define(() => {
         }
 
         await lmStudioRow.getByRole("button", { name: "Connect server" }).click();
-        const start = await gateway.waitForRequest("openclaw.setup.prepare.start");
+        const start = await gateway.waitForRequest("afora.setup.prepare.start");
         expect(start.params).toMatchObject({ authChoice: "lmstudio" });
         await expect
           .poll(() => page.getByLabel("LM Studio base URL").inputValue())
@@ -156,7 +156,7 @@ suite.define(() => {
 
         await page.getByRole("button", { name: "Continue" }).click();
         await page.getByText("Retry this LM Studio connection now?").waitFor();
-        await gateway.setMethodResponse("openclaw.setup.detect", {
+        await gateway.setMethodResponse("afora.setup.detect", {
           ...initialDetection,
           candidates: [
             {
@@ -182,7 +182,7 @@ suite.define(() => {
           .poll(() => page.locator('.model-setup-success [data-provider-icon="lmstudio"]').count())
           .toBe(1);
 
-        const activate = await gateway.waitForRequest("openclaw.setup.activate");
+        const activate = await gateway.waitForRequest("afora.setup.activate");
         expect(activate.params).toEqual({
           kind: "provider-auto:lmstudio",
           agentId: "main",
@@ -203,7 +203,7 @@ suite.define(() => {
           });
         }
 
-        await gateway.setMethodResponse("openclaw.setup.detect", {
+        await gateway.setMethodResponse("afora.setup.detect", {
           ...initialDetection,
           candidates: [],
           configuredModel: modelRef,

@@ -2,7 +2,7 @@
 import {
   sanitizeEmbeddingCacheHeaders,
   type MemoryEmbeddingProvider,
-} from "openclaw/plugin-sdk/memory-core-host-engine-embeddings";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-embeddings";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -64,11 +64,11 @@ describe("Gemini memory embedding adapter", () => {
     };
     const older = await createAdapterWithHeaders({
       ...sharedHeaders,
-      "x-goog-api-client": "openclaw/2026.6.11",
+      "x-goog-api-client": "afora-agent/2026.6.11",
     });
     const newer = await createAdapterWithHeaders({
       ...sharedHeaders,
-      "x-goog-api-client": "openclaw/2026.7.1-beta.5",
+      "x-goog-api-client": "afora-agent/2026.7.1-beta.5",
     });
 
     expect(older.runtime?.cacheKeyData).toEqual(newer.runtime?.cacheKeyData);
@@ -85,11 +85,11 @@ describe("Gemini memory embedding adapter", () => {
 
   it("still invalidates identity when a semantic custom header changes", async () => {
     const first = await createAdapterWithHeaders({
-      "x-goog-api-client": "openclaw/2026.7.1-beta.5",
+      "x-goog-api-client": "afora-agent/2026.7.1-beta.5",
       "x-custom-endpoint": "https://example.invalid/a",
     });
     const second = await createAdapterWithHeaders({
-      "x-goog-api-client": "openclaw/2026.7.1-beta.5",
+      "x-goog-api-client": "afora-agent/2026.7.1-beta.5",
       "x-custom-endpoint": "https://example.invalid/b",
     });
 

@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { OpenClawCrablineChannelDriverSelection } from "@openclaw/crabline";
-import { replaceFileAtomic } from "openclaw/plugin-sdk/security-runtime";
+import type { AforaCrablineChannelDriverSelection } from "@openclaw/crabline";
+import { replaceFileAtomic } from "afora-agent/plugin-sdk/security-runtime";
 import { assertQaSuiteArtifactWritten } from "./artifact-assertion.js";
 import {
   hasQaCrablineArtifactPath,
@@ -23,7 +23,7 @@ import type { QaSuiteScenarioResult } from "./suite-types.js";
 
 type QaCrablineRuntime = typeof import("@openclaw/crabline");
 type QaCrablineChannelDriverSmokeResult = Awaited<
-  ReturnType<QaCrablineRuntime["runOpenClawCrablineChannelDriverSmoke"]>
+  ReturnType<QaCrablineRuntime["runAforaCrablineChannelDriverSmoke"]>
 >;
 
 /** Atomically replaces each file in order; summary-last is a completion signal, not a set transaction. */
@@ -151,13 +151,13 @@ export async function writeQaSuiteArtifacts(params: {
   concurrency: number;
   channel?: string | null;
   channelDriver?: QaTransportDriver | null;
-  channelDriverSelection?: OpenClawCrablineChannelDriverSelection | null;
+  channelDriverSelection?: AforaCrablineChannelDriverSelection | null;
   isolatedWorkers?: boolean;
   scenarioIds?: readonly string[];
   runtimePair?: [RuntimeId, RuntimeId];
   writeEvidenceFile?: boolean;
   runCrablineChannelDriverSmoke?: (
-    params: Parameters<QaCrablineRuntime["runOpenClawCrablineChannelDriverSmoke"]>[0],
+    params: Parameters<QaCrablineRuntime["runAforaCrablineChannelDriverSmoke"]>[0],
   ) => Promise<QaCrablineChannelDriverSmokeResult>;
 }) {
   const reportPath = path.join(params.outputDir, "qa-suite-report.md");
@@ -173,7 +173,7 @@ export async function writeQaSuiteArtifacts(params: {
   if (crablineChannelDriverSelection) {
     const runCrablineChannelDriverSmoke =
       params.runCrablineChannelDriverSmoke ??
-      crablineRuntime?.runOpenClawCrablineChannelDriverSmoke;
+      crablineRuntime?.runAforaCrablineChannelDriverSmoke;
     if (!runCrablineChannelDriverSmoke) {
       throw new Error("Crabline runtime did not provide its channel-driver smoke helper.");
     }
@@ -194,7 +194,7 @@ export async function writeQaSuiteArtifacts(params: {
         }
       : crablineChannelDriverSelection;
   const report = renderQaMarkdownReport({
-    title: "OpenClaw QA Scenario Suite",
+    title: "Afora QA Scenario Suite",
     startedAt: params.startedAt,
     finishedAt: params.finishedAt,
     checks: [],
@@ -207,7 +207,7 @@ export async function writeQaSuiteArtifacts(params: {
     notes: createQaSuiteReportNotes({
       ...params,
       channelDriverSelection: effectiveChannelDriverSelection,
-      createCrablineChannelReportNotes: crablineRuntime?.createOpenClawCrablineChannelReportNotes,
+      createCrablineChannelReportNotes: crablineRuntime?.createAforaCrablineChannelReportNotes,
     }),
   });
   const evidence =
@@ -252,7 +252,7 @@ export async function writeQaSuiteArtifacts(params: {
       `${JSON.stringify(
         {
           version: 1,
-          source: "openclaw/crabline",
+          source: "afora-agent/crabline",
           channelDriver: crablineChannelDriverSelection.channelDriver,
           selectedChannel: crablineChannelDriverSelection.channel,
           manifestPath: crablineChannelDriverSmoke.manifestPath,
@@ -274,7 +274,7 @@ export async function writeQaSuiteArtifacts(params: {
       `${JSON.stringify(
         {
           version: 1,
-          source: "openclaw/crabline",
+          source: "afora-agent/crabline",
           channelDriver: crablineChannelDriverSelection.channelDriver,
           selectedChannel: crablineChannelDriverSelection.channel,
           manifestPath: crablineChannelDriverSmoke.manifestPath,

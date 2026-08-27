@@ -161,7 +161,7 @@ describe("scripts/ci-run-timings.mjs", () => {
     for (const message of [
       "gh: API secondary rate limit exceeded (HTTP 403)",
       "gh: HTTP 429: too many requests",
-      "Command failed: gh api repos/openclaw/openclaw/actions/runs/1/jobs\nHTTP 502",
+      "Command failed: gh api repos/AforaMosh/afora-agent/actions/runs/1/jobs\nHTTP 502",
       "read ECONNRESET",
     ]) {
       expect(isRetryableGhJsonErrorMessage(message)).toBe(true);
@@ -369,7 +369,7 @@ describe("scripts/ci-run-timings.mjs", () => {
   });
 
   it("balances trend samples, keeps reruns attempt-specific, and counts API retries", () => {
-    const fixtureDir = mkdtempSync(path.join(tmpdir(), "openclaw-ci-timings-"));
+    const fixtureDir = mkdtempSync(path.join(tmpdir(), "afora-ci-timings-"));
     const fakeGhPath = path.join(fixtureDir, "gh");
     const reportPath = path.join(fixtureDir, "reports", "trend.json");
     const retryMarkerPath = path.join(fixtureDir, "retried");
@@ -402,7 +402,7 @@ if (endpoint.includes("actions/workflows/ci.yml/runs?")) {
   console.log(JSON.stringify({ total_count: 4, jobs: [
     { id: 1, name: "preflight", status: "completed", conclusion: "success", created_at: at(10), started_at: at(20), completed_at: at(60), labels: ["blacksmith-4vcpu-ubuntu-2404"], runner_name: "blacksmith-test", runner_group_name: "blacksmith" },
     { id: 2, name: "checks-node-compact-large-1", status: "completed", conclusion: "success", created_at: at(60), started_at: at(65), completed_at: at(500), labels: ["blacksmith-8vcpu-ubuntu-2404"], runner_name: "blacksmith-test", runner_group_name: "blacksmith" },
-    { id: 3, name: "openclaw/ci-gate", status: "completed", conclusion: "success", created_at: at(500), started_at: at(501), completed_at: at(510), labels: ["ubuntu-24.04"], runner_name: "GitHub Actions", runner_group_name: "GitHub Actions" },
+    { id: 3, name: "afora-agent/ci-gate", status: "completed", conclusion: "success", created_at: at(500), started_at: at(501), completed_at: at(510), labels: ["ubuntu-24.04"], runner_name: "GitHub Actions", runner_group_name: "GitHub Actions" },
     { id: 4, name: "matrix.synthetic", status: "completed", conclusion: "success", created_at: at(510), started_at: at(511), completed_at: at(520), labels: ["ubuntu-24.04"], runner_name: "GitHub Actions", runner_group_name: "GitHub Actions" }
   ] }));
 } else if (endpoint.includes("actions/runs/103/attempts/2/jobs?")) {
@@ -442,7 +442,7 @@ if (endpoint.includes("actions/workflows/ci.yml/runs?")) {
             ...process.env,
             FIXTURE_NOW_MS: String(fixtureNowMs),
             FIXTURE_RETRY_MARKER: retryMarkerPath,
-            OPENCLAW_GH_BIN: fakeGhPath,
+            AFORA_GH_BIN: fakeGhPath,
           },
         },
       );

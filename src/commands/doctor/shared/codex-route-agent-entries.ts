@@ -1,5 +1,5 @@
-import { asOptionalRecord as asMutableRecord } from "@openclaw/normalization-core/record-coerce";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import { asOptionalRecord as asMutableRecord } from "@afora/normalization-core/record-coerce";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { normalizeAgentId } from "../../../routing/session-key.js";
 import type { MutableRecord } from "./codex-route-types.js";
 
@@ -11,7 +11,7 @@ type MutableCodexRouteAgentEntry = {
 
 /** Lists mutable canonical agent entries, with legacy list fallback for raw Doctor input. */
 export function listMutableCodexRouteAgentEntries(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): MutableCodexRouteAgentEntry[] {
   const entries = asMutableRecord(cfg.agents?.entries);
   if (entries) {

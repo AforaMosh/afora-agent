@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import { isConfiguredBuzzChannel } from "./target.js";
 import { resolveBuzzAccount } from "./types.js";
@@ -28,7 +28,7 @@ describe("Buzz gateway channel admission", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveBuzzAccount({ cfg }).config.groups).toEqual({
       [CHANNEL_ID]: { requireMention: false },
@@ -44,7 +44,7 @@ describe("Buzz gateway channel admission", () => {
           groups: { [CHANNEL_ID]: {} },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveBuzzAccount({ cfg }).config.groupPolicy).toBe("allowlist");
   });

@@ -1,4 +1,4 @@
-import { withEnvAsync } from "openclaw/plugin-sdk/test-env";
+import { withEnvAsync } from "afora-agent/plugin-sdk/test-env";
 import { describe, expect, it } from "vitest";
 import { relayTestKey } from "../../chrome-extension/relay-key.test-support.js";
 import { buildBrowserExtensionPairing } from "./extension-pairing.js";
@@ -8,7 +8,7 @@ const ensureToken = async () => RELAY_KEY;
 
 describe("buildBrowserExtensionPairing", () => {
   it("preserves the standalone host relay for local manual pairing compatibility", async () => {
-    await withEnvAsync({ OPENCLAW_GATEWAY_PORT: undefined }, async () => {
+    await withEnvAsync({ AFORA_GATEWAY_PORT: undefined }, async () => {
       await expect(
         buildBrowserExtensionPairing({
           cfg: {
@@ -28,7 +28,7 @@ describe("buildBrowserExtensionPairing", () => {
   });
 
   it("routes local native bootstrap through the Gateway while retaining relay metadata", async () => {
-    await withEnvAsync({ OPENCLAW_GATEWAY_PORT: undefined }, async () => {
+    await withEnvAsync({ AFORA_GATEWAY_PORT: undefined }, async () => {
       await expect(
         buildBrowserExtensionPairing({
           cfg: {

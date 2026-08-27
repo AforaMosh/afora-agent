@@ -1,5 +1,5 @@
 ---
-summary: "OpenClaw Twitch channel plugin for chat and moderation workflows."
+summary: "Afora Twitch channel plugin for chat and moderation workflows."
 read_when:
   - You are installing, configuring, or auditing the twitch plugin
 title: "Twitch plugin"
@@ -7,11 +7,11 @@ title: "Twitch plugin"
 
 # Twitch plugin
 
-OpenClaw Twitch channel plugin for chat and moderation workflows.
+Afora Twitch channel plugin for chat and moderation workflows.
 
 ## Distribution
 
-- Package: `@openclaw/twitch`
+- Package: `@afora/twitch`
 - Install route: npm; ClawHub
 
 ## Surface

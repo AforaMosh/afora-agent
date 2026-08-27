@@ -5,8 +5,8 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { replaceSessionEntry } from "../config/sessions/session-accessor.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import { openOpenClawStateDatabase } from "../state/openclaw-state-db.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { openAforaStateDatabase } from "../state/afora-state-db.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import { sandboxExplainCommand } from "./sandbox-explain.js";
 
 const SANDBOX_EXPLAIN_TEST_TIMEOUT_MS = process.platform === "win32" ? 45_000 : 30_000;
@@ -29,8 +29,8 @@ describe("sandbox explain command", () => {
         ownership: "explicit",
         defaults: { sandbox: { mode: "off" } },
         list: [
-          { id: "ops", workspace: "/tmp/openclaw-ops-workspace" },
-          { id: "research", workspace: "/tmp/openclaw-research-workspace" },
+          { id: "ops", workspace: "/tmp/afora-ops-workspace" },
+          { id: "research", workspace: "/tmp/afora-research-workspace" },
         ],
       },
     };
@@ -45,17 +45,17 @@ describe("sandbox explain command", () => {
     const parsed = JSON.parse(logs.join(""));
     expect(parsed.agentId).toBe("research");
     expect(parsed.sandbox.effectiveHostWorkspaceRoot).toBe(
-      path.resolve("/tmp/openclaw-research-workspace"),
+      path.resolve("/tmp/afora-research-workspace"),
     );
   });
 
   it("reads a missing session without creating or registering an agent database", async () => {
-    await withOpenClawTestState({ label: "sandbox-explain-readonly" }, async (state) => {
+    await withAforaTestState({ label: "sandbox-explain-readonly" }, async (state) => {
       const agentDatabasePath = state.statePath(
         "agents",
         "readonly",
         "agent",
-        "openclaw-agent.sqlite",
+        "afora-agent.sqlite",
       );
       mockCfg = {
         agents: {
@@ -64,7 +64,7 @@ describe("sandbox explain command", () => {
         },
         session: { store: agentDatabasePath },
       };
-      const stateDatabase = openOpenClawStateDatabase({ env: state.env });
+      const stateDatabase = openAforaStateDatabase({ env: state.env });
 
       await sandboxExplainCommand({ json: true, agent: "readonly" }, {
         log: () => {},
@@ -88,7 +88,7 @@ describe("sandbox explain command", () => {
         sandbox: { tools: { deny: ["browser"] } },
         elevated: { enabled: true, allowFrom: { quietchat: ["*"] } },
       },
-      session: { store: "/tmp/openclaw-test-sessions-{agentId}.json" },
+      session: { store: "/tmp/afora-test-sessions-{agentId}.json" },
     };
 
     const logs: string[] = [];
@@ -100,7 +100,7 @@ describe("sandbox explain command", () => {
 
     const out = logs.join("");
     const parsed = JSON.parse(out);
-    expect(parsed).toHaveProperty("docsUrl", "https://docs.openclaw.ai/sandbox");
+    expect(parsed).toHaveProperty("docsUrl", "https://docs.afora.ai/sandbox");
     expect(parsed).toHaveProperty("sandbox.mode", "all");
     expect(parsed).toHaveProperty("sandbox.tools.sources.allow.source");
     expect(parsed.fixIt).toEqual([
@@ -142,7 +142,7 @@ describe("sandbox explain command", () => {
           },
         },
       },
-      session: { store: "/tmp/openclaw-test-sessions-{agentId}.json" },
+      session: { store: "/tmp/afora-test-sessions-{agentId}.json" },
     };
 
     const logs: string[] = [];
@@ -172,12 +172,12 @@ describe("sandbox explain command", () => {
               backend,
               scope: "agent",
               workspaceAccess: "rw",
-              workspaceRoot: "/tmp/openclaw-sandboxes",
+              workspaceRoot: "/tmp/afora-sandboxes",
             },
           },
-          list: [{ id: "builder", workspace: "/tmp/openclaw-agent-workspace" }],
+          list: [{ id: "builder", workspace: "/tmp/afora-agent-workspace" }],
         },
-        session: { store: "/tmp/openclaw-test-sessions-{agentId}.json" },
+        session: { store: "/tmp/afora-test-sessions-{agentId}.json" },
       };
 
       const logs: string[] = [];
@@ -188,9 +188,9 @@ describe("sandbox explain command", () => {
       } as unknown as Parameters<typeof sandboxExplainCommand>[1]);
 
       const parsed = JSON.parse(logs.join(""));
-      const agentWorkspace = path.resolve("/tmp/openclaw-agent-workspace");
+      const agentWorkspace = path.resolve("/tmp/afora-agent-workspace");
       expect(parsed.sandbox.backend).toBe(backend);
-      expect(parsed.sandbox.workspaceRoot).toBe("/tmp/openclaw-sandboxes");
+      expect(parsed.sandbox.workspaceRoot).toBe("/tmp/afora-sandboxes");
       expect(parsed.sandbox.effectiveHostWorkspaceRoot).toBe(agentWorkspace);
       expect(parsed.sandbox.runtimeWorkdir).toBe("/workspace");
       expect(parsed.sandbox.workspaceSource).toBe("agent");
@@ -209,17 +209,17 @@ describe("sandbox explain command", () => {
     mockCfg = {
       agents: {
         defaults: {
-          workspace: "/tmp/openclaw-agent-workspaces",
+          workspace: "/tmp/afora-agent-workspaces",
           sandbox: {
             mode: "all",
             scope: "agent",
             workspaceAccess: "rw",
-            workspaceRoot: "/tmp/openclaw-sandboxes",
+            workspaceRoot: "/tmp/afora-sandboxes",
           },
         },
         list: [{ id: "main", default: true }, { id: "builder" }],
       },
-      session: { store: "/tmp/openclaw-test-sessions-{agentId}.json" },
+      session: { store: "/tmp/afora-test-sessions-{agentId}.json" },
     };
 
     const logs: string[] = [];
@@ -231,10 +231,10 @@ describe("sandbox explain command", () => {
 
     const parsed = JSON.parse(logs.join(""));
     expect(parsed.sandbox.effectiveHostWorkspaceRoot).toBe(
-      path.resolve("/tmp/openclaw-agent-workspaces/builder"),
+      path.resolve("/tmp/afora-agent-workspaces/builder"),
     );
     expect(parsed.sandbox.workspaceMounts[0]).toMatchObject({
-      hostRoot: path.resolve("/tmp/openclaw-agent-workspaces/builder"),
+      hostRoot: path.resolve("/tmp/afora-agent-workspaces/builder"),
       source: "workspace",
       writable: true,
     });
@@ -248,12 +248,12 @@ describe("sandbox explain command", () => {
             mode: "all",
             scope: "agent",
             workspaceAccess: "none",
-            workspaceRoot: "/tmp/openclaw-sandboxes",
+            workspaceRoot: "/tmp/afora-sandboxes",
           },
         },
-        list: [{ id: "builder", workspace: "/tmp/openclaw-agent-workspace" }],
+        list: [{ id: "builder", workspace: "/tmp/afora-agent-workspace" }],
       },
-      session: { store: "/tmp/openclaw-test-sessions-{agentId}.json" },
+      session: { store: "/tmp/afora-test-sessions-{agentId}.json" },
     };
 
     const logs: string[] = [];
@@ -265,7 +265,7 @@ describe("sandbox explain command", () => {
 
     const parsed = JSON.parse(logs.join(""));
     expect(path.dirname(parsed.sandbox.effectiveHostWorkspaceRoot)).toBe(
-      path.resolve("/tmp/openclaw-sandboxes"),
+      path.resolve("/tmp/afora-sandboxes"),
     );
     expect(path.basename(parsed.sandbox.effectiveHostWorkspaceRoot)).toMatch(
       /^workspace-[a-f0-9]{32}$/,
@@ -284,12 +284,12 @@ describe("sandbox explain command", () => {
             mode: "off",
             scope: "agent",
             workspaceAccess: "none",
-            workspaceRoot: "/tmp/openclaw-sandboxes",
+            workspaceRoot: "/tmp/afora-sandboxes",
           },
         },
-        list: [{ id: "builder", workspace: "/tmp/openclaw-agent-workspace" }],
+        list: [{ id: "builder", workspace: "/tmp/afora-agent-workspace" }],
       },
-      session: { store: "/tmp/openclaw-test-sessions-{agentId}.json" },
+      session: { store: "/tmp/afora-test-sessions-{agentId}.json" },
     };
 
     const logs: string[] = [];
@@ -301,28 +301,28 @@ describe("sandbox explain command", () => {
 
     const parsed = JSON.parse(logs.join(""));
     expect(parsed.sandbox.effectiveHostWorkspaceRoot).toBe(
-      path.resolve("/tmp/openclaw-agent-workspace"),
+      path.resolve("/tmp/afora-agent-workspace"),
     );
-    expect(parsed.sandbox.runtimeWorkdir).toBe(path.resolve("/tmp/openclaw-agent-workspace"));
+    expect(parsed.sandbox.runtimeWorkdir).toBe(path.resolve("/tmp/afora-agent-workspace"));
     expect(parsed.sandbox.workspaceSource).toBe("direct");
     expect(parsed.sandbox.workspaceMounts).toEqual([]);
   });
 
   it("uses persisted spawned-session workspace and cwd overrides", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-sandbox-explain-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-sandbox-explain-"));
     const storePath = path.join(tempDir, "sessions.json");
     const sessionKey = "agent:builder:subagent:child";
     await replaceSessionEntry({ storePath, sessionKey }, {
       sessionId: "child-session",
       updatedAt: Date.now(),
       spawnedBy: "agent:builder:main",
-      spawnedWorkspaceDir: "/tmp/openclaw-child-workspace",
-      spawnedCwd: "/tmp/openclaw-child-workspace/task",
+      spawnedWorkspaceDir: "/tmp/afora-child-workspace",
+      spawnedCwd: "/tmp/afora-child-workspace/task",
     } as SessionEntry);
     mockCfg = {
       agents: {
         defaults: { sandbox: { mode: "off" } },
-        list: [{ id: "builder", workspace: "/tmp/openclaw-agent-workspace" }],
+        list: [{ id: "builder", workspace: "/tmp/afora-agent-workspace" }],
       },
       session: { store: storePath },
     };
@@ -337,9 +337,9 @@ describe("sandbox explain command", () => {
 
       const parsed = JSON.parse(logs.join(""));
       expect(parsed.sandbox.effectiveHostWorkspaceRoot).toBe(
-        path.resolve("/tmp/openclaw-child-workspace"),
+        path.resolve("/tmp/afora-child-workspace"),
       );
-      expect(parsed.sandbox.runtimeWorkdir).toBe("/tmp/openclaw-child-workspace/task");
+      expect(parsed.sandbox.runtimeWorkdir).toBe("/tmp/afora-child-workspace/task");
       expect(parsed.sandbox.workspaceSource).toBe("direct");
     } finally {
       await fs.rm(tempDir, { recursive: true, force: true });
@@ -347,21 +347,21 @@ describe("sandbox explain command", () => {
   });
 
   it("mounts a persisted spawned workspace for sandboxed sessions", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-sandbox-explain-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-sandbox-explain-"));
     const storePath = path.join(tempDir, "sessions.json");
     const sessionKey = "agent:builder:subagent:child";
     await replaceSessionEntry({ storePath, sessionKey }, {
       sessionId: "child-session",
       updatedAt: Date.now(),
       spawnedBy: "agent:builder:main",
-      spawnedWorkspaceDir: "/tmp/openclaw-child-workspace",
+      spawnedWorkspaceDir: "/tmp/afora-child-workspace",
     } as SessionEntry);
     mockCfg = {
       agents: {
         defaults: {
           sandbox: { mode: "all", scope: "agent", workspaceAccess: "rw" },
         },
-        list: [{ id: "builder", workspace: "/tmp/openclaw-agent-workspace" }],
+        list: [{ id: "builder", workspace: "/tmp/afora-agent-workspace" }],
       },
       session: { store: storePath },
     };
@@ -376,11 +376,11 @@ describe("sandbox explain command", () => {
 
       const parsed = JSON.parse(logs.join(""));
       expect(parsed.sandbox.effectiveHostWorkspaceRoot).toBe(
-        path.resolve("/tmp/openclaw-child-workspace"),
+        path.resolve("/tmp/afora-child-workspace"),
       );
       expect(parsed.sandbox.runtimeWorkdir).toBe("/workspace");
       expect(parsed.sandbox.workspaceMounts[0]).toMatchObject({
-        hostRoot: path.resolve("/tmp/openclaw-child-workspace"),
+        hostRoot: path.resolve("/tmp/afora-child-workspace"),
         containerRoot: "/workspace",
         writable: true,
       });
@@ -397,14 +397,14 @@ describe("sandbox explain command", () => {
             mode: "non-main",
             scope: "agent",
             workspaceAccess: "none",
-            workspaceRoot: "/tmp/openclaw-sandboxes",
+            workspaceRoot: "/tmp/afora-sandboxes",
           },
         },
-        list: [{ id: "main", workspace: "/tmp/openclaw-main-workspace" }],
+        list: [{ id: "main", workspace: "/tmp/afora-main-workspace" }],
       },
       session: {
         scope: "global",
-        store: "/tmp/openclaw-test-sessions-{agentId}.json",
+        store: "/tmp/afora-test-sessions-{agentId}.json",
       },
     };
 
@@ -418,7 +418,7 @@ describe("sandbox explain command", () => {
     const parsed = JSON.parse(logs.join(""));
     expect(parsed.sandbox.sessionIsSandboxed).toBe(false);
     expect(parsed.sandbox.effectiveHostWorkspaceRoot).toBe(
-      path.resolve("/tmp/openclaw-main-workspace"),
+      path.resolve("/tmp/afora-main-workspace"),
     );
     expect(parsed.sandbox.workspaceSource).toBe("direct");
     expect(parsed.sandbox.workspaceMounts).toEqual([]);
@@ -434,7 +434,7 @@ describe("sandbox explain command", () => {
           {
             id: "ops",
             default: true,
-            workspace: "/tmp/openclaw-ops-workspace",
+            workspace: "/tmp/afora-ops-workspace",
           },
         ],
       },
@@ -452,7 +452,7 @@ describe("sandbox explain command", () => {
     expect(parsed.agentId).toBe("ops");
     expect(parsed.sandbox.sessionIsSandboxed).toBe(false);
     expect(parsed.sandbox.effectiveHostWorkspaceRoot).toBe(
-      path.resolve("/tmp/openclaw-ops-workspace"),
+      path.resolve("/tmp/afora-ops-workspace"),
     );
   });
 

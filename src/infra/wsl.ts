@@ -1,7 +1,7 @@
 // Detects Windows Subsystem for Linux environments.
 import { readFileSync } from "node:fs";
 import fs from "node:fs/promises";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 
 let wslCached: boolean | null = null;
 

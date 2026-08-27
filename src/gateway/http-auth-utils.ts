@@ -4,9 +4,9 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { getRuntimeConfig } from "../config/io.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { AuthRateLimiter } from "./auth-rate-limit.js";
 import {
   authorizeHttpGatewayConnect,
@@ -81,7 +81,7 @@ type GatewayHttpRequestAuthParams = {
 };
 
 type GatewayHttpRequestAuthCheckParams = Omit<GatewayHttpRequestAuthParams, "res"> & {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 };
 
 type GatewayHttpConnectAuthorizer = (
@@ -232,7 +232,7 @@ export async function checkGatewayHttpRequestAuth(params: {
   trustedProxies?: string[];
   allowRealIpFallback?: boolean;
   rateLimiter?: AuthRateLimiter;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): Promise<GatewayHttpRequestAuthCheckResult> {
   return await checkGatewayHttpRequestAuthWith(params, authorizeHttpGatewayConnect);
 }
@@ -285,7 +285,7 @@ export async function authorizeScopedGatewayHttpRequestOrReply(params: {
     requestAuth: AuthorizedGatewayHttpRequest,
   ) => string[];
 }): Promise<{
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   requestAuth: AuthorizedGatewayHttpRequest;
   operatorScopes: string[];
 } | null> {
@@ -351,7 +351,7 @@ export function resolveTrustedHttpOperatorScopes(
     return [];
   }
 
-  const headerValue = getHeader(req, "x-openclaw-scopes");
+  const headerValue = getHeader(req, "x-afora-scopes");
   if (headerValue === undefined) {
     // No scope header present - trusted clients without an explicit header
     // get the default operator scopes (matching pre-#57783 behavior).
@@ -415,7 +415,7 @@ export function authorizeOpenAiCompatibleHttpModelOverride(
   req: IncomingMessage,
   requestAuth: AuthorizedGatewayHttpRequest,
 ): { allowed: true } | { allowed: false; missingScope: typeof ADMIN_SCOPE } {
-  const requestedModelOverride = normalizeOptionalString(getHeader(req, "x-openclaw-model"));
+  const requestedModelOverride = normalizeOptionalString(getHeader(req, "x-afora-model"));
   if (!requestedModelOverride || resolveOpenAiCompatibleHttpSenderIsOwner(req, requestAuth)) {
     return { allowed: true };
   }

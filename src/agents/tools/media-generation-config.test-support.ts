@@ -1,16 +1,16 @@
 // Test-only bridge that feeds legacy fixture values through the canonical mediaModels owner.
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
 type MediaCapability = "image" | "music" | "video";
 type LegacyMediaModelKey = "imageGenerationModel" | "musicGenerationModel" | "videoGenerationModel";
 
 export function canonicalizeMediaGenerationTestConfig(
-  config: OpenClawConfig,
+  config: AforaConfig,
   capability: MediaCapability,
   legacyKey: LegacyMediaModelKey,
-): OpenClawConfig {
+): AforaConfig {
   const defaults = config.agents?.defaults as
-    | (NonNullable<OpenClawConfig["agents"]>["defaults"] & Record<string, unknown>)
+    | (NonNullable<AforaConfig["agents"]>["defaults"] & Record<string, unknown>)
     | undefined;
   const legacyValue = defaults?.[legacyKey];
   if (legacyValue === undefined || defaults?.mediaModels?.[capability] !== undefined) {

@@ -80,8 +80,8 @@ type NpmBinShimBackup = {
 };
 
 const NPM_PACK_QUIET_FLAGS = ["--json", "--loglevel=error"] as const;
-const PACKAGE_INSTALL_GUARD_PATH = path.join("dist", "openclaw-install-guard");
-const PACKAGE_LIFECYCLE_PENDING_PATH = ".openclaw-lifecycle-pending";
+const PACKAGE_INSTALL_GUARD_PATH = path.join("dist", "afora-install-guard");
+const PACKAGE_LIFECYCLE_PENDING_PATH = ".afora-lifecycle-pending";
 const PACKAGE_PREINSTALL_SCRIPT_PATH = path.join(
   "scripts",
   "preinstall-package-manager-warning.mjs",
@@ -205,7 +205,7 @@ async function validatePnpmIsolatedUpdate(params: {
         durationMs: 0,
         exitCode: 1,
         stdoutTail: null,
-        stderrTail: `OpenClaw shares a pnpm ${owner.layoutVersion} global install group with ${siblingPackages.join(", ")}. Automatic update stopped before mutation; update the group manually to preserve its sibling packages.`,
+        stderrTail: `Afora shares a pnpm ${owner.layoutVersion} global install group with ${siblingPackages.join(", ")}. Automatic update stopped before mutation; update the group manually to preserve its sibling packages.`,
       },
     };
   }
@@ -228,7 +228,7 @@ async function validatePnpmIsolatedUpdate(params: {
         durationMs: 0,
         exitCode: 1,
         stdoutTail: null,
-        stderrTail: `Expected exactly one active pnpm ${owner.layoutVersion} OpenClaw install owned by the invoking project; found ${activePackageRoots.length} active installs and ${ownerMatchCount} owner matches. Automatic update stopped before mutation.`,
+        stderrTail: `Expected exactly one active pnpm ${owner.layoutVersion} Afora install owned by the invoking project; found ${activePackageRoots.length} active installs and ${ownerMatchCount} owner matches. Automatic update stopped before mutation.`,
       },
     };
   }
@@ -257,7 +257,7 @@ async function validatePnpmIsolatedUpdate(params: {
         durationMs: 0,
         exitCode: 1,
         stdoutTail: rootProbe.result.stdout || null,
-        stderrTail: `The active pnpm command owns ${reportedGlobalRoot || "an unknown global root"}, not the invoking OpenClaw install at ${expectedGlobalRoot ?? "an unknown root"}. Automatic update stopped before mutation.`,
+        stderrTail: `The active pnpm command owns ${reportedGlobalRoot || "an unknown global root"}, not the invoking Afora install at ${expectedGlobalRoot ?? "an unknown root"}. Automatic update stopped before mutation.`,
       },
     };
   }
@@ -300,7 +300,7 @@ async function validatePnpmIsolatedUpdate(params: {
         durationMs: 0,
         exitCode: 1,
         stdoutTail: versionProbe.result.stdout || null,
-        stderrTail: `OpenClaw belongs to pnpm isolated layout v${owner.layoutVersion}, but the update command reports pnpm ${reportedVersion || "unknown"}. Use pnpm ${owner.layoutVersion} for this install or update it manually.`,
+        stderrTail: `Afora belongs to pnpm isolated layout v${owner.layoutVersion}, but the update command reports pnpm ${reportedVersion || "unknown"}. Use pnpm ${owner.layoutVersion} for this install or update it manually.`,
       },
     };
   }
@@ -524,7 +524,7 @@ async function createStagedNpmInstall(
     return null;
   }
   await fs.mkdir(targetLayout.globalRoot, { recursive: true });
-  const prefix = await fs.mkdtemp(path.join(targetLayout.globalRoot, ".openclaw-update-stage-"));
+  const prefix = await fs.mkdtemp(path.join(targetLayout.globalRoot, ".afora-update-stage-"));
   const layout = resolveNpmGlobalPrefixLayoutFromPrefix(prefix);
   const command = installTarget.manager === "npm" ? installTarget.command : "npm";
   return {
@@ -577,7 +577,7 @@ async function prepareNpmGitSourceInstallSpec(params: {
     };
   }
 
-  const packDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-update-pack-"));
+  const packDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-update-pack-"));
   const packStep = await params.runStep({
     name: "global update pack",
     argv: [
@@ -704,7 +704,7 @@ async function replaceNpmBinShims(params: {
     return;
   }
 
-  const names = new Set([params.packageName, "openclaw"]);
+  const names = new Set([params.packageName, "afora"]);
   const shimEntries = entries.filter((entry) => {
     const parsed = path.parse(entry);
     return names.has(entry) || names.has(parsed.name);
@@ -715,7 +715,7 @@ async function replaceNpmBinShims(params: {
 
   const backup: NpmBinShimBackup = {
     backupDir: await fs.mkdtemp(
-      path.join(params.targetLayout.globalRoot, ".openclaw-shim-backup-"),
+      path.join(params.targetLayout.globalRoot, ".afora-shim-backup-"),
     ),
     targetBinDir: params.targetLayout.binDir,
     entries: [],
@@ -779,7 +779,7 @@ async function swapStagedNpmInstall(params: {
     };
   }
 
-  const backupRoot = path.join(targetLayout.globalRoot, `.openclaw-${process.pid}-${Date.now()}`);
+  const backupRoot = path.join(targetLayout.globalRoot, `.afora-${process.pid}-${Date.now()}`);
   let movedExisting = false;
   let movedStaged = false;
   let removedBackup = true;

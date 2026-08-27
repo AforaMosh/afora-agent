@@ -1,5 +1,5 @@
 // Bootstrap extra files hook injects configured extra files into startup context.
-import { normalizeTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+import { normalizeTrimmedStringList } from "@afora/normalization-core/string-normalization";
 import { loadExtraBootstrapFilesWithDiagnostics } from "../../../agents/workspace.js";
 import { createSubsystemLogger } from "../../../logging/subsystem.js";
 import { resolveHookConfig } from "../../config.js";

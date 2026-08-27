@@ -41,7 +41,7 @@ describe("formatCliBannerLine", () => {
       mode: "off",
     });
 
-    expect(line).toBe("🦞 OpenClaw 2026.3.7 (abc1234)");
+    expect(line).toBe("🦞 Afora 2026.3.7 (abc1234)");
   });
 
   it("uses the default tagline when explicitly requested", () => {
@@ -54,7 +54,7 @@ describe("formatCliBannerLine", () => {
       mode: "default",
     });
 
-    expect(line).toBe("🦞 OpenClaw 2026.3.7 (abc1234) — All your chats, one OpenClaw.");
+    expect(line).toBe("🦞 Afora 2026.3.7 (abc1234) — All your chats, one Afora.");
   });
 
   it("drops decorative emoji for generic Linux terminals", () => {
@@ -67,7 +67,7 @@ describe("formatCliBannerLine", () => {
       mode: "off",
     });
 
-    expect(line).toBe("OpenClaw 2026.3.7 (abc1234)");
+    expect(line).toBe("Afora 2026.3.7 (abc1234)");
   });
 });
 
@@ -78,7 +78,7 @@ describe("emitCliBanner", () => {
     const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
     emitCliBanner("2026.3.7", {
-      argv: ["node", "openclaw"],
+      argv: ["node", "afora"],
       commit: "abc1234",
       isTty: false,
       mode: "off",
@@ -95,7 +95,7 @@ describe("emitCliBanner", () => {
     const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
     emitCliBanner("2026.3.7", {
-      argv: ["node", "openclaw"],
+      argv: ["node", "afora"],
       commit: "abc1234",
       env: { LANG: "en_US.UTF-8" },
       isTty: true,
@@ -104,7 +104,7 @@ describe("emitCliBanner", () => {
       richTty: false,
     });
 
-    expect(writeSpy).toHaveBeenCalledWith("\n🦞 OpenClaw 2026.3.7 (abc1234)\n\n");
+    expect(writeSpy).toHaveBeenCalledWith("\n🦞 Afora 2026.3.7 (abc1234)\n\n");
     expect(hasEmittedCliBanner()).toBe(true);
   });
 
@@ -114,7 +114,7 @@ describe("emitCliBanner", () => {
     const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
     emitCliBanner("2026.3.7", {
-      argv: ["node", "openclaw"],
+      argv: ["node", "afora"],
       commit: "abc1234",
       env: { LANG: "en_US.UTF-8" },
       isTty: true,
@@ -137,7 +137,7 @@ describe("emitCliBanner", () => {
     const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
     emitCliBanner("2026.3.7", {
-      argv: ["node", "openclaw"],
+      argv: ["node", "afora"],
       commit: "abc1234",
       env: { LANG: "en_US.UTF-8" },
       isTty: true,
@@ -156,7 +156,7 @@ describe("emitCliBanner", () => {
     setStdoutIsTty(true);
     const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
     const options = {
-      argv: ["node", "openclaw"],
+      argv: ["node", "afora"],
       commit: "abc1234",
       env: { LANG: "en_US.UTF-8" },
       isTty: true,

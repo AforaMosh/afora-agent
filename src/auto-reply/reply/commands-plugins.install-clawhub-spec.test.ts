@@ -43,7 +43,7 @@ vi.mock("../../plugins/install-persistence.js", async (importOriginal) => ({
   persistPluginInstall: persistPluginInstallMock,
 }));
 
-const workspaceHarness = createCommandWorkspaceHarness("openclaw-command-plugins-clawhub-");
+const workspaceHarness = createCommandWorkspaceHarness("afora-command-plugins-clawhub-");
 
 describe("chat plugin install explicit ClawHub selectors", () => {
   afterEach(async () => {
@@ -59,7 +59,7 @@ describe("chat plugin install explicit ClawHub selectors", () => {
   it.each(["clawhub:", "clawhub:demo@", "clawhub:@scope/pkg@", "CLAWHUB:"])(
     "rejects malformed source %s before installer side effects",
     async (raw) => {
-      await withTempHome("openclaw-command-plugins-home-", async () => {
+      await withTempHome("afora-command-plugins-home-", async () => {
         const workspaceDir = await workspaceHarness.createWorkspace();
         const params = buildPluginsCommandParams({
           commandBodyNormalized: `/plugins install ${raw} --force`,

@@ -37,12 +37,12 @@ describe("worker connection endpoint", () => {
   it("resolves Unix sockets through the existing ws+unix carrier", () => {
     const endpoint = parseWorkerConnectionEndpoint({
       kind: "unix",
-      socketPath: "/tmp/openclaw-worker/gateway.sock",
+      socketPath: "/tmp/afora-worker/gateway.sock",
     });
     expect(endpoint).toBeDefined();
 
     expect(resolveWorkerConnectionTarget(endpoint!)).toMatchObject({
-      url: "ws+unix:///tmp/openclaw-worker/gateway.sock:/",
+      url: "ws+unix:///tmp/afora-worker/gateway.sock:/",
       options: {},
     });
   });
@@ -51,7 +51,7 @@ describe("worker connection endpoint", () => {
     const fingerprint = "ab".repeat(32);
     const endpoint = parseWorkerConnectionEndpoint({
       kind: "websocket",
-      url: "wss://gateway.example/tenant/__openclaw__/worker",
+      url: "wss://gateway.example/tenant/__afora__/worker",
       tlsFingerprint: fingerprint,
     });
     expect(endpoint).toBeDefined();
@@ -95,7 +95,7 @@ describe("worker connection endpoint", () => {
       const nodeHostOptions = getClientSocketOptions();
       const workerEndpoint = parseWorkerConnectionEndpoint({
         kind: "websocket",
-        url: "wss://gateway.example.com/__openclaw__/worker",
+        url: "wss://gateway.example.com/__afora__/worker",
         tlsFingerprint,
       });
       expect(workerEndpoint).toMatchObject({ tlsFingerprint: fingerprint });
@@ -119,7 +119,7 @@ describe("worker connection endpoint", () => {
     const nodeHostOptions = getClientSocketOptions();
     const worker = resolveWorkerConnectionTarget({
       kind: "websocket",
-      url: "wss://gateway.example.com/__openclaw__/worker",
+      url: "wss://gateway.example.com/__afora__/worker",
       tlsFingerprint: wrongPin,
     });
 
@@ -140,7 +140,7 @@ describe("worker connection endpoint", () => {
     const clientSecret = ["cf", "worker", "secret"].join("-");
     const endpoint = parseWorkerConnectionEndpoint({
       kind: "websocket",
-      url: "wss://gateway.example/__openclaw__/worker",
+      url: "wss://gateway.example/__afora__/worker",
       cloudflareAccess: { clientId, clientSecret },
     });
 
@@ -154,18 +154,18 @@ describe("worker connection endpoint", () => {
   it("rejects public plaintext while retaining the private-network break-glass", () => {
     const endpoint = {
       kind: "websocket" as const,
-      url: "ws://gateway.example/__openclaw__/worker",
+      url: "ws://gateway.example/__afora__/worker",
     };
     expect(() => resolveWorkerConnectionTarget(endpoint, {})).toThrow("SECURITY ERROR");
     expect(() =>
-      resolveWorkerConnectionTarget(endpoint, { OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: "1" }),
+      resolveWorkerConnectionTarget(endpoint, { AFORA_ALLOW_INSECURE_PRIVATE_WS: "1" }),
     ).not.toThrow();
   });
 
   it("rejects Access credentials on plaintext worker endpoints", () => {
     const endpoint = {
       kind: "websocket" as const,
-      url: "ws://127.0.0.1/__openclaw__/worker",
+      url: "ws://127.0.0.1/__afora__/worker",
       cloudflareAccess: {
         clientId: "cf-worker-plaintext-id",
         clientSecret: "cf-worker-plaintext-secret",

@@ -59,7 +59,7 @@ function splitUtf8ChildScript(params: {
   ].join("\n");
 }
 
-describe("OpenClaw Codex sandbox exec-server HTTP", () => {
+describe("Afora Codex sandbox exec-server HTTP", () => {
   it("routes HTTP requests through the sandbox backend", async () => {
     const runShellCommand = vi.fn(async () => ({
       stdout: Buffer.from(

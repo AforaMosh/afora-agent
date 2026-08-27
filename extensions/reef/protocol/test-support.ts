@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/file-access-runtime";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/file-access-runtime";
 
 export function useReefTempDirs(registerCleanup: (cleanup: () => void) => unknown): {
   make(prefix: string): string;
@@ -14,7 +14,7 @@ export function useReefTempDirs(registerCleanup: (cleanup: () => void) => unknow
   });
   return {
     make(prefix: string): string {
-      const directory = fs.mkdtempSync(path.join(resolvePreferredOpenClawTmpDir(), prefix));
+      const directory = fs.mkdtempSync(path.join(resolvePreferredAforaTmpDir(), prefix));
       directories.add(directory);
       return directory;
     },

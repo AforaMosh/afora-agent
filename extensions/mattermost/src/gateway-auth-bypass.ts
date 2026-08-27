@@ -2,7 +2,7 @@
 import {
   asOptionalRecord,
   normalizeOptionalString as readTrimmedString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 const DEFAULT_SLASH_CALLBACK_PATH = "/api/channels/mattermost/command";
 

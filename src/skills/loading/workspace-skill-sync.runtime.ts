@@ -1,10 +1,10 @@
 // Sandbox workspace skill synchronization is deferred behind the sandbox runtime boundary.
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { resolveSandboxPath } from "../../agents/sandbox-paths.js";
 import { canonicalizePath } from "../../agents/utils/paths.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { tryReadJson, writeJson } from "../../infra/json-files.js";
 import { pruneMapToMaxSize } from "../../infra/map-size.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
@@ -38,7 +38,7 @@ function resolveUniqueSyncedSkillDirName(base: string, used: Set<string>): strin
   }
 }
 
-const SYNCED_SKILLS_MANIFEST_NAME = ".openclaw-sync.json";
+const SYNCED_SKILLS_MANIFEST_NAME = ".afora-sync.json";
 
 type SyncedSkillsManifest = {
   entryKeys: string[];
@@ -111,7 +111,7 @@ async function ensureSyncedSkillsDirectory(targetSkillsDir: string): Promise<voi
 export async function syncWorkspaceSkills(params: {
   sourceWorkspaceDir: string;
   targetWorkspaceDir: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   skillFilter?: string[];
   agentId?: string;
   eligibility?: SkillEligibilityContext;

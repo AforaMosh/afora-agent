@@ -9,7 +9,7 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("readCommandSource", () => {
   it("follows re-export shims and runtime boundaries", async () => {
-    const rootDir = tempDirs.make("openclaw-command-source-");
+    const rootDir = tempDirs.make("afora-command-source-");
     const cliDir = path.join(rootDir, "src", "cli");
     fs.mkdirSync(cliDir, { recursive: true });
     fs.writeFileSync(path.join(cliDir, "index.ts"), 'export * from "./command.js";\n');
@@ -35,7 +35,7 @@ describe("readCommandSource", () => {
   });
 
   it("dedupes repeated runtime imports", async () => {
-    const rootDir = tempDirs.make("openclaw-command-source-");
+    const rootDir = tempDirs.make("afora-command-source-");
     const cliDir = path.join(rootDir, "src", "cli");
     fs.mkdirSync(cliDir, { recursive: true });
     fs.writeFileSync(

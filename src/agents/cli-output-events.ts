@@ -1,5 +1,5 @@
-import { asPositiveFiniteNumber } from "@openclaw/normalization-core/number-coercion";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { asPositiveFiniteNumber } from "@afora/normalization-core/number-coercion";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
   createReasoningTagTextPartitioner,
   scanReasoningTags,

@@ -60,7 +60,7 @@ describe("resolveOutboundAttachmentFromUrl", () => {
       contentType: "text/html",
     });
 
-    await resolveOutboundAttachmentFromUrl("/tmp/openclaw/report.html", 1024);
+    await resolveOutboundAttachmentFromUrl("/tmp/afora/report.html", 1024);
 
     expect(markTrustedGeneratedHtmlPath).toHaveBeenCalledWith(
       "/tmp/media/outbound/report---uuid.html",
@@ -80,7 +80,7 @@ describe("resolveOutboundAttachmentFromUrl", () => {
     markTrustedGeneratedHtmlPath.mockRejectedValueOnce(new Error("marker write failed"));
 
     await expect(
-      resolveOutboundAttachmentFromUrl("/tmp/openclaw/report.html", 1024),
+      resolveOutboundAttachmentFromUrl("/tmp/afora/report.html", 1024),
     ).rejects.toThrow("marker write failed");
     expect(rm).toHaveBeenCalledWith(stagedPath, { force: true });
   });

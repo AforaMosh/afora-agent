@@ -2,8 +2,8 @@
 // request-scope injection, diagnostics, and handler dispatch integration.
 import os from "node:os";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   getGlobalPluginRegistry,
@@ -21,7 +21,7 @@ import type { PluginRuntime } from "../plugins/runtime/types.js";
 import { withEnv } from "../test-utils/env.js";
 import type { GatewayRequestContext, GatewayRequestOptions } from "./server-methods/types.js";
 
-const loadOpenClawPlugins = vi.hoisted(() => vi.fn());
+const loadAforaPlugins = vi.hoisted(() => vi.fn());
 const loadPluginLookUpTable = vi.hoisted(() =>
   vi.fn(() => ({
     startup: {
@@ -50,8 +50,8 @@ const handleGatewayRequest = vi.hoisted(() =>
 );
 
 vi.mock("../plugins/loader.js", () => ({
-  loadAndActivateRootPluginRegistry: loadOpenClawPlugins,
-  loadOpenClawPlugins,
+  loadAndActivateRootPluginRegistry: loadAforaPlugins,
+  loadAforaPlugins,
 }));
 
 vi.mock("../plugins/runtime/load-context.js", () => ({
@@ -268,7 +268,7 @@ function readRecordField(record: Record<string, unknown>, key: string, label: st
 
 function getLastPluginLoadOptions(): Record<string, unknown> {
   return requireRecord(
-    getLastMockFirstArg(loadOpenClawPlugins, "plugin load"),
+    getLastMockFirstArg(loadAforaPlugins, "plugin load"),
     "plugin load options",
   );
 }
@@ -316,7 +316,7 @@ function getLastPluginLoadLogger(): {
   error: (message: string) => void;
   debug?: (message: string) => void;
 } {
-  const call = getLastMockFirstArg(loadOpenClawPlugins, "plugin load") as
+  const call = getLastMockFirstArg(loadAforaPlugins, "plugin load") as
     | {
         logger?: {
           info: (message: string) => void;
@@ -347,7 +347,7 @@ async function createSubagentRuntime(
   _serverPlugins: ServerPluginsModule,
   cfg: Record<string, unknown> = {},
 ): Promise<PluginRuntime["subagent"]> {
-  loadOpenClawPlugins.mockReturnValue(createRegistry([]));
+  loadAforaPlugins.mockReturnValue(createRegistry([]));
   loadGatewayStartupPluginsForTest({
     cfg,
   });
@@ -429,7 +429,7 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  loadOpenClawPlugins.mockReset();
+  loadAforaPlugins.mockReset();
   loadPluginLookUpTable.mockReset().mockReturnValue({
     startup: {
       pluginIds: ["discord", "telegram"],
@@ -482,7 +482,7 @@ describe("loadGatewayPlugins", () => {
         message: "failed to load plugin: boom",
       },
     ];
-    loadOpenClawPlugins.mockReturnValue(createRegistry(diagnostics));
+    loadAforaPlugins.mockReturnValue(createRegistry(diagnostics));
     const log = loadGatewayStartupPluginsForTest();
 
     expect(log.error).toHaveBeenCalledWith(
@@ -504,7 +504,7 @@ describe("loadGatewayPlugins", () => {
       message: "configured plugin payload verification failed (missing-package-json): missing",
     };
     const registry = createRegistry([diagnostic, distinctDiagnostic]);
-    loadOpenClawPlugins.mockReturnValue(registry);
+    loadAforaPlugins.mockReturnValue(registry);
     setActiveDegradedPlugins([
       {
         pluginId: "broken-payload",
@@ -527,7 +527,7 @@ describe("loadGatewayPlugins", () => {
   });
 
   test("loads only gateway startup plugin ids", () => {
-    loadOpenClawPlugins.mockReturnValue(createRegistry([]));
+    loadAforaPlugins.mockReturnValue(createRegistry([]));
     loadGatewayPluginsForTest();
 
     expect(applyPluginAutoEnable).toHaveBeenCalledWith({
@@ -545,17 +545,17 @@ describe("loadGatewayPlugins", () => {
   });
 
   test("injects the process HOME-isolation fact into registry construction", () => {
-    loadOpenClawPlugins.mockReturnValue(createRegistry([]));
+    loadAforaPlugins.mockReturnValue(createRegistry([]));
     const home = os.userInfo().homedir;
-    const defaultStateDir = path.join(home, ".openclaw");
+    const defaultStateDir = path.join(home, ".afora");
     withEnv(
       {
         HOME: home,
         USERPROFILE: home,
-        OPENCLAW_HOME: undefined,
-        OPENCLAW_PROFILE: undefined,
-        OPENCLAW_STATE_DIR: defaultStateDir,
-        OPENCLAW_CONFIG_PATH: path.join(defaultStateDir, "openclaw.json"),
+        AFORA_HOME: undefined,
+        AFORA_PROFILE: undefined,
+        AFORA_STATE_DIR: defaultStateDir,
+        AFORA_CONFIG_PATH: path.join(defaultStateDir, "afora.json"),
       },
       () => loadGatewayPluginsForTest(),
     );
@@ -565,10 +565,10 @@ describe("loadGatewayPlugins", () => {
       {
         HOME: home,
         USERPROFILE: home,
-        OPENCLAW_HOME: undefined,
-        OPENCLAW_PROFILE: "dev",
-        OPENCLAW_STATE_DIR: path.join(home, ".openclaw-dev"),
-        OPENCLAW_CONFIG_PATH: path.join(home, ".openclaw-dev", "openclaw.json"),
+        AFORA_HOME: undefined,
+        AFORA_PROFILE: "dev",
+        AFORA_STATE_DIR: path.join(home, ".afora-dev"),
+        AFORA_CONFIG_PATH: path.join(home, ".afora-dev", "afora.json"),
       },
       () => loadGatewayPluginsForTest(),
     );
@@ -577,7 +577,7 @@ describe("loadGatewayPlugins", () => {
   });
 
   test("routes plugin registration logs through the plugin logger", () => {
-    loadOpenClawPlugins.mockReturnValue(createRegistry([]));
+    loadAforaPlugins.mockReturnValue(createRegistry([]));
     const log = loadGatewayPluginsForTest();
 
     const logger = getLastPluginLoadLogger();
@@ -591,7 +591,7 @@ describe("loadGatewayPlugins", () => {
   });
 
   test("can suppress provisional plugin info logs while preserving warnings", () => {
-    loadOpenClawPlugins.mockReturnValue(createRegistry([]));
+    loadAforaPlugins.mockReturnValue(createRegistry([]));
     loadGatewayPluginsForTest({
       suppressPluginInfoLogs: true,
     });
@@ -605,7 +605,7 @@ describe("loadGatewayPlugins", () => {
   });
 
   test("reuses the provided startup plugin scope without recomputing it", () => {
-    loadOpenClawPlugins.mockReturnValue(createRegistry([]));
+    loadAforaPlugins.mockReturnValue(createRegistry([]));
 
     loadGatewayPluginsForTest({
       pluginIds: ["browser"],
@@ -616,12 +616,12 @@ describe("loadGatewayPlugins", () => {
   });
 
   test("reuses a provided lookup table for startup scope and auto-enable manifests", () => {
-    loadOpenClawPlugins.mockReturnValue(createRegistry([]));
+    loadAforaPlugins.mockReturnValue(createRegistry([]));
     const manifestRegistry = { plugins: [], diagnostics: [] };
     const installRecords = {
       telegram: {
         source: "npm" as const,
-        spec: "@openclaw/telegram@1.0.0",
+        spec: "@afora/telegram@1.0.0",
         installPath: "/tmp/plugins/telegram",
       },
     };
@@ -658,7 +658,7 @@ describe("loadGatewayPlugins", () => {
         slack: ["slack configured"],
       },
     });
-    loadOpenClawPlugins.mockReturnValue(createRegistry([]));
+    loadAforaPlugins.mockReturnValue(createRegistry([]));
 
     loadGatewayStartupPluginsForTest({
       cfg: resolvedConfig,
@@ -685,7 +685,7 @@ describe("loadGatewayPlugins", () => {
       changes: [],
       autoEnabledReasons: { "qa-lab": ["static-ssh worker provider selected"] },
     });
-    loadOpenClawPlugins.mockReturnValue(createRegistry([]));
+    loadAforaPlugins.mockReturnValue(createRegistry([]));
 
     loadGatewayStartupPluginsForTest({
       pluginIds: ["qa-lab"],
@@ -702,7 +702,7 @@ describe("loadGatewayPlugins", () => {
               hooks: [],
               rootDir: "/tmp/qa-lab",
               source: "/tmp/qa-lab/index.js",
-              manifestPath: "/tmp/qa-lab/openclaw.plugin.json",
+              manifestPath: "/tmp/qa-lab/afora.plugin.json",
               contracts: { workerProviders: ["static-ssh"] },
             },
           ],
@@ -777,7 +777,7 @@ describe("loadGatewayPlugins", () => {
         telegram: ["telegram configured"],
       },
     });
-    loadOpenClawPlugins.mockReturnValue(createRegistry([]));
+    loadAforaPlugins.mockReturnValue(createRegistry([]));
 
     loadGatewayStartupPluginsForTest({
       cfg: runtimeConfig,
@@ -827,7 +827,7 @@ describe("loadGatewayPlugins", () => {
       baseMethods: ["sessions.get"],
     });
 
-    expect(loadOpenClawPlugins).not.toHaveBeenCalled();
+    expect(loadAforaPlugins).not.toHaveBeenCalled();
     expect(result.pluginRegistry.plugins).toStrictEqual([]);
     expect(result.gatewayMethods).toEqual(["sessions.get"]);
   });
@@ -877,7 +877,7 @@ describe("loadGatewayPlugins", () => {
         slack: ["slack configured"],
       },
     });
-    loadOpenClawPlugins.mockReturnValue(createRegistry([]));
+    loadAforaPlugins.mockReturnValue(createRegistry([]));
 
     loadGatewayPluginsForTest();
 
@@ -904,7 +904,7 @@ describe("loadGatewayPlugins", () => {
         slack: ["slack configured"],
       },
     });
-    loadOpenClawPlugins.mockReturnValue(createRegistry([]));
+    loadAforaPlugins.mockReturnValue(createRegistry([]));
 
     loadGatewayPluginsForTest({
       cfg: resolvedConfig,
@@ -1170,7 +1170,7 @@ describe("loadGatewayPlugins", () => {
   });
 
   test("filters connected plugin nodes locally without sending unsupported node.list params", async () => {
-    loadOpenClawPlugins.mockReturnValue(createRegistry([]));
+    loadAforaPlugins.mockReturnValue(createRegistry([]));
     loadGatewayStartupPluginsForTest();
     serverPluginsModule.setFallbackGatewayContext(createTestContext("nodes-list-filter"));
     handleGatewayRequest.mockImplementationOnce(async (opts: HandleGatewayRequestOptions) => {
@@ -1192,7 +1192,7 @@ describe("loadGatewayPlugins", () => {
 
   test("projects effective node-command policy into the plugin node runtime", async () => {
     const command = "agent.cli.claude.run.v1";
-    loadOpenClawPlugins.mockReturnValue(createRegistry([]));
+    loadAforaPlugins.mockReturnValue(createRegistry([]));
     loadGatewayStartupPluginsForTest();
     serverPluginsModule.setFallbackGatewayContext({
       getRuntimeConfig: () => ({ gateway: { nodes: { commands: { deny: [command] } } } }),
@@ -1219,7 +1219,7 @@ describe("loadGatewayPlugins", () => {
   });
 
   test("lets trusted official plugin runtime request admin scope for browser proxy", async () => {
-    loadOpenClawPlugins.mockReturnValue(addLoadedPlugin(createRegistry([]), { id: "google-meet" }));
+    loadAforaPlugins.mockReturnValue(addLoadedPlugin(createRegistry([]), { id: "google-meet" }));
     loadGatewayStartupPluginsForTest();
     serverPluginsModule.setFallbackGatewayContext(createTestContext("nodes-invoke-browser-proxy"));
 
@@ -1245,7 +1245,7 @@ describe("loadGatewayPlugins", () => {
   });
 
   test("honors trusted plugin node scopes inside a narrower Gateway request", async () => {
-    loadOpenClawPlugins.mockReturnValue(addLoadedPlugin(createRegistry([]), { id: "opencode" }));
+    loadAforaPlugins.mockReturnValue(addLoadedPlugin(createRegistry([]), { id: "opencode" }));
     loadGatewayStartupPluginsForTest();
     const scope = {
       context: createTestContext("nodes-invoke-read-caller"),
@@ -1273,7 +1273,7 @@ describe("loadGatewayPlugins", () => {
   });
 
   test("dispatches gateway methods with the trusted plugin identity", async () => {
-    loadOpenClawPlugins.mockReturnValue(addLoadedPlugin(createRegistry([]), { id: "google-meet" }));
+    loadAforaPlugins.mockReturnValue(addLoadedPlugin(createRegistry([]), { id: "google-meet" }));
     loadGatewayStartupPluginsForTest();
     serverPluginsModule.setFallbackGatewayContext(createTestContext("plugin-gateway-request"));
     const runtime = runtimeModule.createPluginRuntime();
@@ -1289,7 +1289,7 @@ describe("loadGatewayPlugins", () => {
   });
 
   test("lets trusted official plugins request explicit Gateway scopes", async () => {
-    loadOpenClawPlugins.mockReturnValue(addLoadedPlugin(createRegistry([]), { id: "google-meet" }));
+    loadAforaPlugins.mockReturnValue(addLoadedPlugin(createRegistry([]), { id: "google-meet" }));
     loadGatewayStartupPluginsForTest();
     serverPluginsModule.setFallbackGatewayContext(createTestContext("plugin-gateway-admin"));
     const runtime = runtimeModule.createPluginRuntime();
@@ -1317,7 +1317,7 @@ describe("loadGatewayPlugins", () => {
   });
 
   test("does not inherit admin scope for trusted plugin gateway requests", async () => {
-    loadOpenClawPlugins.mockReturnValue(addLoadedPlugin(createRegistry([]), { id: "google-meet" }));
+    loadAforaPlugins.mockReturnValue(addLoadedPlugin(createRegistry([]), { id: "google-meet" }));
     loadGatewayStartupPluginsForTest();
     const scope = {
       context: createTestContext("plugin-gateway-request-admin-caller"),
@@ -1343,7 +1343,7 @@ describe("loadGatewayPlugins", () => {
   });
 
   test("preserves structured errors from trusted plugin gateway requests", async () => {
-    loadOpenClawPlugins.mockReturnValue(addLoadedPlugin(createRegistry([]), { id: "google-meet" }));
+    loadAforaPlugins.mockReturnValue(addLoadedPlugin(createRegistry([]), { id: "google-meet" }));
     loadGatewayStartupPluginsForTest();
     serverPluginsModule.setFallbackGatewayContext(createTestContext("plugin-gateway-error"));
     handleGatewayRequest.mockImplementationOnce(async (opts: HandleGatewayRequestOptions) => {
@@ -1368,7 +1368,7 @@ describe("loadGatewayPlugins", () => {
   });
 
   test("rejects gateway dispatch from arbitrary plugins", async () => {
-    loadOpenClawPlugins.mockReturnValue(
+    loadAforaPlugins.mockReturnValue(
       addLoadedPlugin(createRegistry([]), { id: "third-party", origin: "global" }),
     );
     loadGatewayStartupPluginsForTest();
@@ -1390,7 +1390,7 @@ describe("loadGatewayPlugins", () => {
   });
 
   test("does not let arbitrary plugin nodes runtime mint admin scope for browser proxy", async () => {
-    loadOpenClawPlugins.mockReturnValue(
+    loadAforaPlugins.mockReturnValue(
       addLoadedPlugin(createRegistry([]), { id: "third-party", origin: "global" }),
     );
     loadGatewayStartupPluginsForTest();
@@ -1773,7 +1773,7 @@ describe("loadGatewayPlugins", () => {
         }),
       ),
     ).rejects.toThrow(
-      'plugin "voice-call" is not trusted for fallback provider/model override requests. See https://docs.openclaw.ai/plugins/sdk-runtime#api-runtime-subagent and search for: plugins.entries.<id>.subagent.allowModelOverride',
+      'plugin "voice-call" is not trusted for fallback provider/model override requests. See https://docs.afora.ai/plugins/sdk-runtime#api-runtime-subagent and search for: plugins.entries.<id>.subagent.allowModelOverride',
     );
   });
 
@@ -1998,7 +1998,7 @@ describe("loadGatewayPlugins", () => {
   });
 
   test("can select setup-runtime channel plugins for setup flows", () => {
-    loadOpenClawPlugins.mockReturnValue(createRegistry([]));
+    loadAforaPlugins.mockReturnValue(createRegistry([]));
     loadGatewayPluginsForTest({
       channelPluginLoadIntent: "setup",
     });
@@ -2007,7 +2007,7 @@ describe("loadGatewayPlugins", () => {
   });
 
   test("primes configured bindings during gateway startup", () => {
-    loadOpenClawPlugins.mockReturnValue(createRegistry([]));
+    loadAforaPlugins.mockReturnValue(createRegistry([]));
     const cfg = {};
     const autoEnabledConfig = { channels: { slack: { enabled: true } }, autoEnabled: true };
     applyPluginAutoEnable.mockReturnValue({

@@ -33,7 +33,7 @@ describe("session transcript runtime SDK", () => {
   let storePath: string;
 
   beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-sdk-transcript-"));
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-sdk-transcript-"));
     storePath = path.join(tempDir, "sessions.json");
   });
 
@@ -727,7 +727,7 @@ describe("session transcript runtime SDK", () => {
         agentId: "main",
         sessionId: "publish-session",
         sessionKey: "agent:main:main",
-        storePath: path.join(tempDir, "openclaw-agent.sqlite"),
+        storePath: path.join(tempDir, "afora-agent.sqlite"),
       },
     });
     expect(internalUpdates).toEqual([
@@ -740,7 +740,7 @@ describe("session transcript runtime SDK", () => {
           agentId: "main",
           sessionId: "publish-session",
           sessionKey: "agent:main:main",
-          storePath: path.join(tempDir, "openclaw-agent.sqlite"),
+          storePath: path.join(tempDir, "afora-agent.sqlite"),
         },
       },
     ]);
@@ -867,7 +867,7 @@ describe("session transcript runtime SDK", () => {
         agentId: "main",
         sessionId: "queued-publish-session",
         sessionKey: "agent:main:main",
-        storePath: path.join(tempDir, "openclaw-agent.sqlite"),
+        storePath: path.join(tempDir, "afora-agent.sqlite"),
       },
     });
     await expect(readSessionTranscriptEvents(scope)).resolves.toEqual([

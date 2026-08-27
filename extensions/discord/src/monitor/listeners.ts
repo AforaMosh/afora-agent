@@ -1,10 +1,10 @@
 // Discord plugin module implements listeners behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { requestHeartbeat } from "openclaw/plugin-sdk/heartbeat-runtime";
-import type { PluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
-import { resolveAgentRoute } from "openclaw/plugin-sdk/routing";
-import { danger } from "openclaw/plugin-sdk/runtime-env";
-import { enqueueRoutedSystemEvent } from "openclaw/plugin-sdk/system-event-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { requestHeartbeat } from "afora-agent/plugin-sdk/heartbeat-runtime";
+import type { PluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
+import { resolveAgentRoute } from "afora-agent/plugin-sdk/routing";
+import { danger } from "afora-agent/plugin-sdk/runtime-env";
+import { enqueueRoutedSystemEvent } from "afora-agent/plugin-sdk/system-event-runtime";
 import {
   type Client,
   type DiscordMessageDispatchData,
@@ -38,7 +38,7 @@ import { getThreadBindingManager } from "./thread-bindings.manager.js";
 import { closeDiscordThreadSessions } from "./thread-session-close.js";
 export { DiscordReactionListener, DiscordReactionRemoveListener } from "./listeners.reactions.js";
 
-type Logger = ReturnType<typeof import("openclaw/plugin-sdk/runtime-env").createSubsystemLogger>;
+type Logger = ReturnType<typeof import("afora-agent/plugin-sdk/runtime-env").createSubsystemLogger>;
 
 type DiscordRawMessageEvent = Parameters<MessageCreateListener["handle"]>[0];
 export type DiscordMessageEvent = DiscordMessageDispatchData;
@@ -116,7 +116,7 @@ export class DiscordPresenceListener extends PresenceUpdateListener {
 
   constructor(
     private readonly params: {
-      cfg: OpenClawConfig;
+      cfg: AforaConfig;
       logger?: Logger;
       accountId: string;
       botUserId?: string;
@@ -474,7 +474,7 @@ type ThreadUpdateEvent = Parameters<ThreadUpdateListener["handle"]>[0];
 
 export class DiscordThreadUpdateListener extends ThreadUpdateListener {
   constructor(
-    private cfg: OpenClawConfig,
+    private cfg: AforaConfig,
     private logger?: Logger,
   ) {
     super();
@@ -517,7 +517,7 @@ type ThreadDeleteEvent = Parameters<ThreadDeleteListener["handle"]>[0];
 
 export class DiscordThreadDeleteListener extends ThreadDeleteListener {
   constructor(
-    private cfg: OpenClawConfig,
+    private cfg: AforaConfig,
     private accountId: string,
     private logger?: Logger,
   ) {

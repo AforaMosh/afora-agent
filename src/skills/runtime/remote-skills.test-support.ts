@@ -6,7 +6,7 @@ type RemoteNodeSkillsTestApi = {
 
 function getTestApi(): RemoteNodeSkillsTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.remoteNodeSkillsTestApi")
+    Symbol.for("afora.remoteNodeSkillsTestApi")
   ] as RemoteNodeSkillsTestApi;
 }
 

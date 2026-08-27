@@ -1,8 +1,8 @@
 // Gateway session reset/delete service.
 // Rotates transcripts and coordinates lifecycle cleanup across runtimes/hooks.
 import { randomUUID } from "node:crypto";
-import { cleanupSessionResources } from "@openclaw/ai/internal/runtime";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { cleanupSessionResources } from "@afora/ai/internal/runtime";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { ErrorCodes, errorShape } from "../../packages/gateway-protocol/src/index.js";
 import { getAcpSessionManager } from "../acp/control-plane/manager.js";
 import { tryPrepareFreshManagerRuntimeSession } from "../acp/control-plane/manager.runtime-resume-state.js";
@@ -54,7 +54,7 @@ import {
   type SessionCreatedVia,
 } from "../config/sessions/session-entry-provenance.js";
 import type { SessionAcpMeta } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { logVerbose } from "../globals.js";
 import { createInternalHookEvent, triggerInternalHook } from "../hooks/internal-hooks.js";
 import {
@@ -121,7 +121,7 @@ import {
   retireSessionWorkerPlacementBeforeMutation,
 } from "./worker-environments/session-placement-lifecycle.js";
 
-function resolveLifecycleAgentId(cfg: OpenClawConfig, agentId?: string): string {
+function resolveLifecycleAgentId(cfg: AforaConfig, agentId?: string): string {
   return normalizeAgentId(
     agentId ?? tryResolveLegacyCompatibilityAgentId(cfg) ?? resolveDefaultAgentId(cfg),
   );
@@ -134,7 +134,7 @@ type McpRunEndWatcherState = {
 };
 
 const mcpRunEndWatcherState = resolveGlobalSingleton<McpRunEndWatcherState>(
-  Symbol.for("openclaw.mcpRunEndWatchers"),
+  Symbol.for("afora.mcpRunEndWatchers"),
   () => ({ cancellations: new Map(), retirements: new Set(), watchers: new Map() }),
   async (state) => {
     for (const cancel of state.cancellations.values()) {
@@ -173,7 +173,7 @@ export function archiveSessionTranscriptsForSessionDetailed(params: {
 }
 
 export function emitGatewaySessionEndPluginHook(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   sessionId?: string;
   storePath: string;
@@ -254,7 +254,7 @@ export function emitGatewaySessionEndPluginHook(params: {
 }
 
 export function emitGatewaySessionStartPluginHook(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   sessionId?: string;
   resumedFrom?: string;
@@ -332,7 +332,7 @@ export async function emitSessionUnboundLifecycleEvent(params: {
 }
 
 async function ensureSessionRuntimeCleanup(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   key: string;
   target: ReturnType<typeof resolveGatewaySessionStoreTarget>;
   sessionId?: string;
@@ -507,7 +507,7 @@ async function runAcpCleanupStep(params: {
 }
 
 async function closeAcpRuntimeForSession(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   agentId?: string;
   fallbackSessionKeys?: Array<string | undefined>;
@@ -657,7 +657,7 @@ function buildPendingAcpMeta(base: SessionAcpMeta, now: number): SessionAcpMeta 
 }
 
 async function ensureFreshAcpResetState(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   agentId?: string;
   reason: "session-reset" | "session-delete";
@@ -722,7 +722,7 @@ async function ensureFreshAcpResetState(params: {
 }
 
 async function closeChildAcpRuntimesForParent(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   parentKey: string;
   reason: "session-reset" | "session-delete";
   assertCurrent?: () => void;
@@ -786,7 +786,7 @@ async function closeChildAcpRuntimesForParent(params: {
 }
 
 export async function cleanupSessionBeforeMutation(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   key: string;
   target: ReturnType<typeof resolveGatewaySessionStoreTarget>;
   entry: SessionEntry | undefined;
@@ -860,7 +860,7 @@ export async function cleanupSessionBeforeMutation(params: {
 }
 
 export async function emitGatewayBeforeResetPluginHook(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   key: string;
   messages?: unknown[];
   target: ReturnType<typeof resolveGatewaySessionStoreTarget>;

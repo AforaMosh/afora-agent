@@ -1,6 +1,6 @@
-import { estimateBase64DecodedBytes } from "@openclaw/media-core/base64";
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
-import { asOptionalRecord as readRecord } from "@openclaw/normalization-core/record-coerce";
+import { estimateBase64DecodedBytes } from "@afora/media-core/base64";
+import { asFiniteNumber } from "@afora/normalization-core/number-coercion";
+import { asOptionalRecord as readRecord } from "@afora/normalization-core/record-coerce";
 import { parseInboundMediaUri, buildInboundMediaUriFromPath } from "../media/media-reference.js";
 import {
   parseAssistantTextSignature,
@@ -42,7 +42,7 @@ function projectChatHistoryMediaReference(value: unknown): string | undefined {
     return undefined;
   }
   const reference = value.trim();
-  if (/^\/(?:api\/chat\/media\/outgoing|media|__openclaw__)\//u.test(reference)) {
+  if (/^\/(?:api\/chat\/media\/outgoing|media|__afora__)\//u.test(reference)) {
     return reference.split(/[?#]/u, 1)[0];
   }
   try {
@@ -193,8 +193,8 @@ export function sanitizeChatHistoryContentBlock(
     delete entry.thinkingSignature;
     changed = true;
   }
-  if ("openclawReasoningReplay" in entry) {
-    delete entry.openclawReasoningReplay;
+  if ("aforaReasoningReplay" in entry) {
+    delete entry.aforaReasoningReplay;
     changed = true;
   }
   const mediaChanged = projectChatHistoryMediaBlock(entry);
@@ -345,7 +345,7 @@ function projectWorkspaceConflictDetails(
       (entryPath): entryPath is string => typeof entryPath === "string" && entryPath.length > 0,
     ) ||
     typeof details.stagedResultRef !== "string" ||
-    !/^refs\/openclaw\/worker-results\/[A-Za-z0-9-]+$/u.test(details.stagedResultRef) ||
+    !/^refs\/afora\/worker-results\/[A-Za-z0-9-]+$/u.test(details.stagedResultRef) ||
     (details.totalCount !== undefined &&
       (!Number.isSafeInteger(details.totalCount) ||
         (details.totalCount as number) < details.paths.length))
@@ -376,11 +376,11 @@ export function sanitizeChatHistoryMessage(
     delete entry.providerReplay;
     changed = true;
   }
-  const openClawMeta = readRecord(entry["__openclaw"]);
-  if (openClawMeta && ("upstreamUserText" in openClawMeta || "media" in openClawMeta)) {
+  const aforaMeta = readRecord(entry["__afora"]);
+  if (aforaMeta && ("upstreamUserText" in aforaMeta || "media" in aforaMeta)) {
     // Codex retains the decorated upstream prompt for transcript reconstruction.
     // It is not display data and can otherwise evict the visible row from history.
-    const projectedMeta = { ...openClawMeta };
+    const projectedMeta = { ...aforaMeta };
     delete projectedMeta.upstreamUserText;
     if ("media" in projectedMeta) {
       projectedMeta.media = projectChatHistoryMediaFacts(projectedMeta.media);
@@ -389,9 +389,9 @@ export function sanitizeChatHistoryMessage(
       }
     }
     if (Object.keys(projectedMeta).length > 0) {
-      entry["__openclaw"] = projectedMeta;
+      entry["__afora"] = projectedMeta;
     } else {
-      delete entry["__openclaw"];
+      delete entry["__afora"];
     }
     changed = true;
   }

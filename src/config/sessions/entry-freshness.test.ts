@@ -1,8 +1,8 @@
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { cleanupTempDirs, makeTempDir } from "../../../test/helpers/temp-dir.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+import { closeAforaAgentDatabasesForTest } from "../../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { resolveSessionEntryResetFreshness } from "./entry-freshness.js";
 import { appendTranscriptEvent, upsertSessionEntryCore } from "./session-accessor.js";
 
@@ -15,13 +15,13 @@ describe("resolveSessionEntryResetFreshness", () => {
 
   beforeEach(() => {
     tempDirs = [];
-    tempDir = makeTempDir(tempDirs, "openclaw-session-entry-freshness-");
+    tempDir = makeTempDir(tempDirs, "afora-session-entry-freshness-");
     storePath = path.join(tempDir, "sessions.json");
   });
 
   afterEach(() => {
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     cleanupTempDirs(tempDirs);
   });
 

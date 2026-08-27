@@ -202,7 +202,7 @@ describe("execution auth binding fingerprints", () => {
     const fingerprint = (env: NodeJS.ProcessEnv) =>
       fingerprintAwsSdkRuntimeOwner({
         provider: "amazon-bedrock",
-        backendId: "openclaw",
+        backendId: "afora",
         auth,
         env,
       });
@@ -239,7 +239,7 @@ describe("execution auth binding fingerprints", () => {
     const fingerprint = (env: NodeJS.ProcessEnv) =>
       fingerprintAwsSdkRuntimeOwner({
         provider: "amazon-bedrock",
-        backendId: "openclaw",
+        backendId: "afora",
         auth,
         env,
       });

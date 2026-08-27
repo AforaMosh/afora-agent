@@ -204,12 +204,12 @@ merge_verify() {
       # green at the prepared head and GitHub's mergeable state still blocks
       # true conflicts. The hard fail serialized every landing behind a full
       # CI cycle per merged sibling, which collapses under multi-session
-      # traffic. Set OPENCLAW_PR_STRICT_DRIFT=1 to restore the hard gate.
-      if [ "${OPENCLAW_PR_STRICT_DRIFT:-}" = "1" ]; then
+      # traffic. Set AFORA_PR_STRICT_DRIFT=1 to restore the hard gate.
+      if [ "${AFORA_PR_STRICT_DRIFT:-}" = "1" ]; then
         echo "Merge verify failed: mainline drift is relevant to this PR; run scripts/pr prepare-sync-head $pr before merge."
         exit 1
       fi
-      echo "Merge verify: WARNING — mainline drift is relevant to this PR; proceeding (OPENCLAW_PR_STRICT_DRIFT=1 restores the hard gate)."
+      echo "Merge verify: WARNING — mainline drift is relevant to this PR; proceeding (AFORA_PR_STRICT_DRIFT=1 restores the hard gate)."
     else
       echo "Merge verify: continuing without prep-head sync because behind-main drift is unrelated."
     fi
@@ -279,7 +279,7 @@ merge_run() {
     return 0
   }
 
-  local merge_method="${OPENCLAW_PR_MERGE_METHOD:-squash}"
+  local merge_method="${AFORA_PR_MERGE_METHOD:-squash}"
   local merge_flag
   local merge_label
   case "$merge_method" in
@@ -296,13 +296,13 @@ merge_run() {
       merge_label="rebase"
       ;;
     *)
-      echo "Invalid OPENCLAW_PR_MERGE_METHOD: $merge_method (expected squash, merge, or rebase)."
+      echo "Invalid AFORA_PR_MERGE_METHOD: $merge_method (expected squash, merge, or rebase)."
       exit 2
       ;;
   esac
 
   if [ "$auto_merge_requested" = "true" ] && [ "$merge_method" != "squash" ]; then
-    echo "Auto-merge requires squash; unset OPENCLAW_PR_MERGE_METHOD or set it to squash."
+    echo "Auto-merge requires squash; unset AFORA_PR_MERGE_METHOD or set it to squash."
     exit 2
   fi
 

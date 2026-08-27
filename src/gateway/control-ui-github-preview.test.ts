@@ -42,8 +42,8 @@ function previewPayload(overrides: Record<string, unknown> = {}): Record<string,
     state: "closed",
     title: "fix(agents): derive conversation scope from trusted group facts",
     updated_at: "2026-07-04T09:53:55Z",
-    base: { repo: { url: "https://api.github.com/repos/openclaw/openclaw" } },
-    repository_url: "https://api.github.com/repos/openclaw/openclaw",
+    base: { repo: { url: "https://api.github.com/repos/AforaMosh/afora-agent" } },
+    repository_url: "https://api.github.com/repos/AforaMosh/afora-agent",
     user: {
       avatar_url: "https://avatars.githubusercontent.com/u/58493?v=4",
       login: "steipete",
@@ -57,10 +57,10 @@ describe("parseControlUiGitHubPreviewTarget", () => {
     const target = parseControlUiGitHubPreviewTarget({
       kind: "pull",
       number: 99816,
-      owner: "openclaw",
-      repo: "openclaw",
+      owner: "afora",
+      repo: "afora",
     });
-    expect(target).toEqual({ kind: "pull", number: 99816, owner: "openclaw", repo: "openclaw" });
+    expect(target).toEqual({ kind: "pull", number: 99816, owner: "afora", repo: "afora" });
     expect(
       parseControlUiGitHubPreviewTarget({
         kind: "issue",
@@ -82,10 +82,10 @@ describe("parseControlUiGitHubPreviewTarget", () => {
         parseControlUiGitHubPreviewTarget({
           kind: "issue",
           number: 1,
-          owner: "openclaw",
+          owner: "afora",
           repo,
         }),
-      ).toEqual({ kind: "issue", number: 1, owner: "openclaw", repo });
+      ).toEqual({ kind: "issue", number: 1, owner: "afora", repo });
     }
   });
 
@@ -94,15 +94,15 @@ describe("parseControlUiGitHubPreviewTarget", () => {
       parseControlUiGitHubPreviewTarget({
         kind: "issue",
         number: 1,
-        owner: "openclaw/evil",
-        repo: "openclaw",
+        owner: "afora-agent/evil",
+        repo: "afora",
       }),
     ).toBeNull();
     expect(
       parseControlUiGitHubPreviewTarget({
         kind: "issue",
         number: 0,
-        owner: "openclaw",
+        owner: "afora",
         repo: "..",
       }),
     ).toBeNull();
@@ -111,7 +111,7 @@ describe("parseControlUiGitHubPreviewTarget", () => {
         parseControlUiGitHubPreviewTarget({
           kind: "issue",
           number: 1,
-          owner: "openclaw",
+          owner: "afora",
           repo,
         }),
       ).toBeNull();
@@ -142,7 +142,7 @@ describe("loadControlUiGitHubPreview", () => {
           headers: { "Content-Type": "image/png" },
         }),
       );
-    const target = { kind: "pull" as const, number: 99816, owner: "openclaw", repo: "openclaw" };
+    const target = { kind: "pull" as const, number: 99816, owner: "afora", repo: "afora" };
 
     const first = await loadControlUiGitHubPreview(target, fetchMock);
     const second = await loadControlUiGitHubPreview(target, fetchMock);
@@ -156,13 +156,13 @@ describe("loadControlUiGitHubPreview", () => {
       login: "steipete",
       mergedAt: "2026-07-04T09:53:52Z",
       number: 99816,
-      owner: "openclaw",
-      repo: "openclaw",
+      owner: "afora",
+      repo: "afora",
     });
     expect(second).toEqual(first);
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[0]?.[0]).toBe(
-      "https://api.github.com/repos/openclaw/openclaw/pulls/99816",
+      "https://api.github.com/repos/AforaMosh/afora-agent/pulls/99816",
     );
     const avatarRequest = fetchMock.mock.calls[1]?.[0];
     expect(avatarRequest).toBeInstanceOf(URL);
@@ -192,7 +192,7 @@ describe("loadControlUiGitHubPreview", () => {
     const target = {
       kind: "issue" as const,
       number: 70013,
-      owner: "openclaw",
+      owner: "afora",
       repo: "credential-scope",
     };
     vi.stubEnv("GH_TOKEN", "preview-token-a");
@@ -220,7 +220,7 @@ describe("loadControlUiGitHubPreview", () => {
     const target = {
       kind: "issue" as const,
       number: 70014,
-      owner: "openclaw",
+      owner: "afora",
       repo: "configured-degraded",
     };
 
@@ -270,7 +270,7 @@ describe("loadControlUiGitHubPreview", () => {
     );
 
     const preview = await loadControlUiGitHubPreview(
-      { kind: "issue", number, owner: "openclaw", repo },
+      { kind: "issue", number, owner: "afora", repo },
       fetchMock,
     );
 
@@ -288,7 +288,7 @@ describe("loadControlUiGitHubPreview", () => {
       .mockResolvedValueOnce(avatarResponse);
 
     const preview = await loadControlUiGitHubPreview(
-      { kind: "pull", number: 70009, owner: "openclaw", repo: "bad-avatar" },
+      { kind: "pull", number: 70009, owner: "afora", repo: "bad-avatar" },
       fetchMock,
     );
 
@@ -304,22 +304,22 @@ describe("loadControlUiGitHubPreview", () => {
       .mockResolvedValueOnce(
         githubJson(
           previewPayload({
-            repository_url: "https://api.github.com/repos/openclaw/public",
+            repository_url: "https://api.github.com/repos/afora/public",
             user: { login: "octocat" },
           }),
         ),
       )
       .mockResolvedValueOnce(githubJson({ private: false }));
-    const target = { kind: "issue" as const, number: 70003, owner: "openclaw", repo: "public" };
+    const target = { kind: "issue" as const, number: 70003, owner: "afora", repo: "public" };
 
     await loadControlUiGitHubPreview(target, fetchMock);
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
-    expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.github.com/repos/openclaw/public");
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.github.com/repos/afora/public");
     expect(fetchMock.mock.calls[1]?.[0]).toBe(
-      "https://api.github.com/repos/openclaw/public/issues/70003",
+      "https://api.github.com/repos/afora/public/issues/70003",
     );
-    expect(fetchMock.mock.calls[2]?.[0]).toBe("https://api.github.com/repos/openclaw/public");
+    expect(fetchMock.mock.calls[2]?.[0]).toBe("https://api.github.com/repos/afora/public");
     for (const call of fetchMock.mock.calls) {
       expect(call[1]?.headers).toHaveProperty("Authorization", "Bearer github-test-token");
     }
@@ -339,7 +339,7 @@ describe("loadControlUiGitHubPreview", () => {
       );
 
     const preview = await loadControlUiGitHubPreview(
-      { kind: "pull", number: 70012, owner: "openclaw", repo: "openclaw" },
+      { kind: "pull", number: 70012, owner: "afora", repo: "afora" },
       fetchMock,
     );
 
@@ -360,14 +360,14 @@ describe("loadControlUiGitHubPreview", () => {
       .mockResolvedValueOnce(
         new Response(null, {
           status: 301,
-          headers: { Location: "/repos/openclaw/renamed/issues/70007" },
+          headers: { Location: "/repos/afora/renamed/issues/70007" },
         }),
       )
       .mockResolvedValueOnce(githubJson({ private: false }))
       .mockResolvedValueOnce(
         githubJson(
           previewPayload({
-            repository_url: "https://api.github.com/repos/openclaw/renamed",
+            repository_url: "https://api.github.com/repos/afora/renamed",
             user: { login: "octocat" },
           }),
         ),
@@ -375,17 +375,17 @@ describe("loadControlUiGitHubPreview", () => {
       .mockResolvedValueOnce(githubJson({ private: false }));
 
     const preview = await loadControlUiGitHubPreview(
-      { kind: "issue", number: 70007, owner: "openclaw", repo: "old-name" },
+      { kind: "issue", number: 70007, owner: "afora", repo: "old-name" },
       fetchMock,
     );
 
     expect(preview.login).toBe("octocat");
     expect(fetchMock).toHaveBeenCalledTimes(5);
     expect(requestUrl(fetchMock.mock.calls[3]?.[0])).toBe(
-      "https://api.github.com/repos/openclaw/renamed/issues/70007",
+      "https://api.github.com/repos/afora/renamed/issues/70007",
     );
     expect(requestUrl(fetchMock.mock.calls[4]?.[0])).toBe(
-      "https://api.github.com/repos/openclaw/renamed",
+      "https://api.github.com/repos/afora/renamed",
     );
     for (const call of fetchMock.mock.calls) {
       expect(new URL(requestUrl(call[0])).origin).toBe("https://api.github.com");
@@ -399,7 +399,7 @@ describe("loadControlUiGitHubPreview", () => {
     vi.stubEnv("GH_TOKEN", "github-test-token");
     const redirectResponse = new Response("discard me", {
       status: 301,
-      headers: { Location: "https://example.com/repos/openclaw/private" },
+      headers: { Location: "https://example.com/repos/afora/private" },
     });
     const fetchMock = vi
       .fn<typeof fetch>()
@@ -408,7 +408,7 @@ describe("loadControlUiGitHubPreview", () => {
 
     await expect(
       loadControlUiGitHubPreview(
-        { kind: "pull", number: 70008, owner: "openclaw", repo: "unsafe-redirect" },
+        { kind: "pull", number: 70008, owner: "afora", repo: "unsafe-redirect" },
         fetchMock,
       ),
     ).rejects.toMatchObject({ statusCode: 502 } satisfies Partial<ControlUiGitHubError>);
@@ -429,14 +429,14 @@ describe("loadControlUiGitHubPreview", () => {
       ["missing", 70011],
     ] as const) {
       await expect(
-        loadControlUiGitHubPreview({ kind: "issue", number, owner: "openclaw", repo }, fetchMock),
+        loadControlUiGitHubPreview({ kind: "issue", number, owner: "afora", repo }, fetchMock),
       ).rejects.toMatchObject({ statusCode: 404 } satisfies Partial<ControlUiGitHubError>);
     }
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls.map((call) => requestUrl(call[0]))).toEqual([
-      "https://api.github.com/repos/openclaw/private",
-      "https://api.github.com/repos/openclaw/missing",
+      "https://api.github.com/repos/afora/private",
+      "https://api.github.com/repos/afora/missing",
     ]);
   });
 
@@ -448,14 +448,14 @@ describe("loadControlUiGitHubPreview", () => {
       .mockResolvedValueOnce(
         new Response(null, {
           status: 301,
-          headers: { Location: "/repos/openclaw/private/issues/70004" },
+          headers: { Location: "/repos/afora/private/issues/70004" },
         }),
       )
       .mockResolvedValueOnce(githubJson({ private: true }));
 
     await expect(
       loadControlUiGitHubPreview(
-        { kind: "issue", number: 70004, owner: "openclaw", repo: "public-source" },
+        { kind: "issue", number: 70004, owner: "afora", repo: "public-source" },
         fetchMock,
       ),
     ).rejects.toMatchObject({ statusCode: 404 } satisfies Partial<ControlUiGitHubError>);
@@ -478,7 +478,7 @@ describe("loadControlUiGitHubPreview", () => {
       .mockResolvedValueOnce(
         githubJson(
           previewPayload({
-            repository_url: "https://api.github.com/repos/openclaw/visibility-change",
+            repository_url: "https://api.github.com/repos/afora/visibility-change",
             user: { login: "octocat" },
           }),
         ),
@@ -487,12 +487,12 @@ describe("loadControlUiGitHubPreview", () => {
       .mockResolvedValueOnce(githubJson({ private: true }));
 
     await loadControlUiGitHubPreview(
-      { kind: "issue", number: 70005, owner: "openclaw", repo: "visibility-change" },
+      { kind: "issue", number: 70005, owner: "afora", repo: "visibility-change" },
       fetchMock,
     );
     await expect(
       loadControlUiGitHubPreview(
-        { kind: "issue", number: 70006, owner: "openclaw", repo: "visibility-change" },
+        { kind: "issue", number: 70006, owner: "afora", repo: "visibility-change" },
         fetchMock,
       ),
     ).rejects.toMatchObject({ statusCode: 404 } satisfies Partial<ControlUiGitHubError>);
@@ -505,7 +505,7 @@ describe("loadControlUiGitHubPreview", () => {
 
     await expect(
       loadControlUiGitHubPreview(
-        { kind: "issue", number: 70002, owner: "openclaw", repo: "missing-preview" },
+        { kind: "issue", number: 70002, owner: "afora", repo: "missing-preview" },
         fetchMock,
       ),
     ).rejects.toMatchObject({ statusCode: 404 } satisfies Partial<ControlUiGitHubError>);

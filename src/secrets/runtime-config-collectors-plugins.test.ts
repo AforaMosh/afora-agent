@@ -1,6 +1,6 @@
 /** Tests plugin-specific runtime config secret collectors. */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import type { PluginManifestRegistry } from "../plugins/manifest-registry.js";
 import type { PluginOrigin } from "../plugins/types.js";
 import { collectPluginConfigAssignments } from "./runtime-config-collectors-plugins.js";
@@ -23,15 +23,15 @@ vi.mock("../plugins/bundled-plugin-metadata.js", () => ({
   listBundledPluginMetadata: () => [],
 }));
 
-function asConfig(value: unknown): OpenClawConfig {
+function asConfig(value: unknown): AforaConfig {
   return {
     agents: { list: [{ id: "main", default: true }] },
-    ...(value as OpenClawConfig),
+    ...(value as AforaConfig),
   };
 }
 
 function makeContext(
-  sourceConfig: OpenClawConfig,
+  sourceConfig: AforaConfig,
   manifestRegistry?: Pick<PluginManifestRegistry, "plugins">,
 ): ResolverContext {
   return createResolverContext({
@@ -64,7 +64,7 @@ function createPluginConfig(
   config: Record<string, unknown>,
   entry: Record<string, unknown> = { enabled: true },
   plugins: Record<string, unknown> = {},
-): OpenClawConfig {
+): AforaConfig {
   return asConfig({
     plugins: {
       ...plugins,
@@ -76,7 +76,7 @@ function createPluginConfig(
 function createAcpxMcpSecretConfig(params: {
   plugins?: Record<string, unknown>;
   entry?: Record<string, unknown>;
-}): OpenClawConfig {
+}): AforaConfig {
   return createPluginConfig(
     "acpx",
     {
@@ -90,7 +90,7 @@ function createAcpxMcpSecretConfig(params: {
 }
 
 function collectAssignments(
-  config: OpenClawConfig,
+  config: AforaConfig,
   origins: Array<[string, PluginOrigin]>,
 ): ResolverContext {
   const context = makeContext(config);
@@ -103,11 +103,11 @@ function collectAssignments(
   return context;
 }
 
-function collectAcpxConfigAssignments(config: OpenClawConfig): ResolverContext {
+function collectAcpxConfigAssignments(config: AforaConfig): ResolverContext {
   return collectAssignments(config, [["acpx", "bundled"]]);
 }
 
-function expectInactiveAcpxConfig(config: OpenClawConfig): void {
+function expectInactiveAcpxConfig(config: AforaConfig): void {
   const context = collectAcpxConfigAssignments(config);
   expect(context.assignments).toHaveLength(0);
   expect(context.warnings.map((warning) => warning.code)).toContain(
@@ -180,7 +180,7 @@ describe("collectPluginConfigAssignments", () => {
       ],
       diagnostics: [],
     });
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       agents: {
         ownership: "explicit",
         entries: {

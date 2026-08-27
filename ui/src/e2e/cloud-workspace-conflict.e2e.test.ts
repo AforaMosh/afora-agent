@@ -14,14 +14,14 @@ import {
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
-const proofDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+const proofDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
 const sessionKey = "agent:main:conflict-proof";
 
 const conflict = {
   paths: ["src/local.ts", "ui/src/app.ts"],
-  stagedResultRef: "refs/openclaw/worker-results/claim-proof",
+  stagedResultRef: "refs/afora/worker-results/claim-proof",
   totalCount: 2,
 };
 

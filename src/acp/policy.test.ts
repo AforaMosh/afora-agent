@@ -1,6 +1,6 @@
 /** Tests ACP policy gates for enablement, dispatch, and allowed agents. */
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import {
   isAcpEnabledByPolicy,
   resolveAcpAgentPolicyError,
@@ -11,7 +11,7 @@ import {
 
 describe("acp policy", () => {
   it("treats ACP + ACP dispatch as enabled by default", () => {
-    const cfg = {} satisfies OpenClawConfig;
+    const cfg = {} satisfies AforaConfig;
     expect(isAcpEnabledByPolicy(cfg)).toBe(true);
     expect(resolveAcpDispatchPolicyMessage(cfg)).toBeNull();
     expect(resolveAcpDispatchPolicyError(cfg)).toBeNull();
@@ -22,7 +22,7 @@ describe("acp policy", () => {
       acp: {
         enabled: false,
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     expect(isAcpEnabledByPolicy(cfg)).toBe(false);
     expect(resolveAcpDispatchPolicyMessage(cfg)).toBe(
       "ACP is disabled by policy (`acp.enabled=false`).",
@@ -38,7 +38,7 @@ describe("acp policy", () => {
           enabled: false,
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     expect(resolveAcpDispatchPolicyMessage(cfg)).toBe(
       "ACP dispatch is disabled by policy (`acp.dispatch.enabled=false`).",
     );
@@ -52,7 +52,7 @@ describe("acp policy", () => {
           enabled: false,
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     expect(resolveAcpDispatchPolicyError(cfg)?.code).toBe("ACP_DISPATCH_DISABLED");
     expect(resolveAcpExplicitTurnPolicyError(cfg)).toBeNull();
   });
@@ -65,7 +65,7 @@ describe("acp policy", () => {
           enabled: false,
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     expect(resolveAcpExplicitTurnPolicyError(cfg)?.message).toBe(
       "ACP is disabled by policy (`acp.enabled=false`).",
     );
@@ -76,7 +76,7 @@ describe("acp policy", () => {
       acp: {
         allowedAgents: ["Codex", "claude-code", "kimi"],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     expect(resolveAcpAgentPolicyError(cfg, "codex")).toBeNull();
     expect(resolveAcpAgentPolicyError(cfg, "claude-code")).toBeNull();
     expect(resolveAcpAgentPolicyError(cfg, "KIMI")).toBeNull();

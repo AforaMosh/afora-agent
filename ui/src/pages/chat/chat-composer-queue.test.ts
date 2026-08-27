@@ -306,7 +306,7 @@ describe("chat composer queue reordering", () => {
     ]);
 
     const dataTransfer = {
-      types: ["application/x-openclaw-queued-message"],
+      types: ["application/x-afora-queued-message"],
       getData: () => "c",
       setData: vi.fn(),
       dropEffect: "none",
@@ -328,7 +328,7 @@ describe("chat composer queue reordering", () => {
     });
     const rows = [...container.querySelectorAll(".chat-queue__item")];
     const dataTransfer = {
-      types: ["application/x-openclaw-queued-message"],
+      types: ["application/x-afora-queued-message"],
       getData: () => "c",
       setData: vi.fn(),
       dropEffect: "none",

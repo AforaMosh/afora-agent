@@ -1,4 +1,4 @@
-const PLUGIN_MANIFEST_INSTALL_OWNER = Symbol.for("openclaw.pluginManifestInstallOwner");
+const PLUGIN_MANIFEST_INSTALL_OWNER = Symbol.for("afora.pluginManifestInstallOwner");
 
 type PluginManifestInstallOwner = { installOwner?: string; ambiguous?: true };
 

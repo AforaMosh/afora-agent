@@ -29,7 +29,7 @@ describePosix("gmail-watcher process-tree shutdown (integration)", () => {
   let stopWatcher: (() => Promise<void>) | undefined;
 
   beforeAll(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), "openclaw-gog-integration-"));
+    tmpDir = mkdtempSync(join(tmpdir(), "afora-gog-integration-"));
 
     // fake gog: handles `watch start` (exits 0) and `watch serve`
     // (spawns a credential-helper that ignores SIGTERM)

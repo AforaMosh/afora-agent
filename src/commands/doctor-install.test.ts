@@ -22,7 +22,7 @@ describe("noteSourceInstallIssues", () => {
   });
 
   it("does not treat a packaged workspace config as a source checkout", async () => {
-    await withTestDir({ prefix: "openclaw-doctor-install-" }, async (root) => {
+    await withTestDir({ prefix: "afora-doctor-install-" }, async (root) => {
       await fs.mkdir(path.join(root, "node_modules"), { recursive: true });
       await writeFile(root, "pnpm-workspace.yaml", "packages:\n  - .\n");
 
@@ -33,7 +33,7 @@ describe("noteSourceInstallIssues", () => {
   });
 
   it("warns source checkouts when node_modules was not installed by pnpm", async () => {
-    await withTestDir({ prefix: "openclaw-doctor-install-" }, async (root) => {
+    await withTestDir({ prefix: "afora-doctor-install-" }, async (root) => {
       await fs.mkdir(path.join(root, "node_modules"), { recursive: true });
       await writeFile(root, "pnpm-workspace.yaml", "packages:\n  - .\n");
       await writeFile(root, "src/entry.ts", "export {};\n");

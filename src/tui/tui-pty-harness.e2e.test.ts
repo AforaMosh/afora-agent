@@ -49,20 +49,20 @@ describe.sequential("TUI PTY harness", () => {
       startTuiFixture(),
       startTuiFixture({
         env: {
-          OPENCLAW_TUI_PTY_MODEL: "gpt-5.6-sol@openai:setup-64cddea3-938c-431e-be3b-aa47090577c7",
-          OPENCLAW_TUI_PTY_THINKING_LEVEL: "high",
+          AFORA_TUI_PTY_MODEL: "gpt-5.6-sol@openai:setup-64cddea3-938c-431e-be3b-aa47090577c7",
+          AFORA_TUI_PTY_THINKING_LEVEL: "high",
         },
       }),
       startTuiFixture({
         env: {
-          OPENCLAW_TUI_PTY_MODEL: "fixture-provider/fixture-model",
-          OPENCLAW_TUI_PTY_THINKING_LEVEL: "medium",
-          OPENCLAW_TUI_PTY_LAUNCH_THINKING: "high",
-          OPENCLAW_TUI_PTY_INITIAL_MESSAGE: "thinking override proof",
+          AFORA_TUI_PTY_MODEL: "fixture-provider/fixture-model",
+          AFORA_TUI_PTY_THINKING_LEVEL: "medium",
+          AFORA_TUI_PTY_LAUNCH_THINKING: "high",
+          AFORA_TUI_PTY_INITIAL_MESSAGE: "thinking override proof",
         },
       }),
       startTuiFixture({
-        env: { OPENCLAW_TUI_PTY_STARTUP_DELAY_MS: "400" },
+        env: { AFORA_TUI_PTY_STARTUP_DELAY_MS: "400" },
       }),
     ]);
     const [mainBoot, compactBoot, thinkingOverrideBoot, slowBoot] = boots;
@@ -116,8 +116,8 @@ describe.sequential("TUI PTY harness", () => {
     async () => {
       const modeFixture = await startTuiFixture({
         env: {
-          OPENCLAW_TUI_PTY_DELIVER: "1",
-          OPENCLAW_TUI_PTY_MODEL: "fixture-model",
+          AFORA_TUI_PTY_DELIVER: "1",
+          AFORA_TUI_PTY_MODEL: "fixture-model",
         },
       });
       try {
@@ -242,7 +242,7 @@ describe.sequential("TUI PTY harness", () => {
     "recovers session subscription after $failures startup failures",
     async ({ failures }) => {
       const subscriptionFixture = await startTuiFixture({
-        env: { OPENCLAW_TUI_PTY_SUBSCRIBE_FAILURES: String(failures) },
+        env: { AFORA_TUI_PTY_SUBSCRIBE_FAILURES: String(failures) },
       });
       try {
         await subscriptionFixture.run.waitForOutput("local ready | idle", STARTUP_TIMEOUT_MS);
@@ -270,7 +270,7 @@ describe.sequential("TUI PTY harness", () => {
     "never reports ready after exhausting session subscription recovery",
     async () => {
       const subscriptionFixture = await startTuiFixture({
-        env: { OPENCLAW_TUI_PTY_SUBSCRIBE_FAILURES: "5" },
+        env: { AFORA_TUI_PTY_SUBSCRIBE_FAILURES: "5" },
       });
       try {
         await subscriptionFixture.run.waitForOutput(
@@ -329,7 +329,7 @@ describe.sequential("TUI PTY harness", () => {
     "renders each live assistant reply once without replaying stale history",
     async () => {
       const liveFixture = await startTuiFixture({
-        env: { OPENCLAW_TUI_PTY_COLS: "220", OPENCLAW_TUI_PTY_ROWS: "50" },
+        env: { AFORA_TUI_PTY_COLS: "220", AFORA_TUI_PTY_ROWS: "50" },
       });
       try {
         await liveFixture.run.waitForOutput("local ready", STARTUP_TIMEOUT_MS);
@@ -431,7 +431,7 @@ describe.sequential("TUI PTY harness", () => {
     "cancels a buffered submit before Ctrl+D shutdown",
     async () => {
       const bufferedFixture = await startTuiFixture({
-        env: { OPENCLAW_TUI_PTY_SUBMIT_BURST_WINDOW_MS: "500" },
+        env: { AFORA_TUI_PTY_SUBMIT_BURST_WINDOW_MS: "500" },
       });
       try {
         const message = "buffered shutdown proof";
@@ -502,8 +502,8 @@ describe.sequential("TUI PTY harness", () => {
     async (cols, rows) => {
       const compactFixture = await startTuiFixture({
         env: {
-          OPENCLAW_TUI_PTY_COLS: String(cols),
-          OPENCLAW_TUI_PTY_ROWS: String(rows),
+          AFORA_TUI_PTY_COLS: String(cols),
+          AFORA_TUI_PTY_ROWS: String(rows),
         },
       });
 
@@ -522,9 +522,9 @@ describe.sequential("TUI PTY harness", () => {
     async () => {
       const compactPickerFixture = await startTuiFixture({
         env: {
-          OPENCLAW_TUI_PTY_COLS: "20",
-          OPENCLAW_TUI_PTY_ROWS: "18",
-          OPENCLAW_TUI_PTY_PICKER_FIXTURE: "1",
+          AFORA_TUI_PTY_COLS: "20",
+          AFORA_TUI_PTY_ROWS: "18",
+          AFORA_TUI_PTY_PICKER_FIXTURE: "1",
         },
       });
 

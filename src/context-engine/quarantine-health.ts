@@ -1,6 +1,6 @@
 // Persists context-engine runtime quarantines so health surfaces can see
 // failures recorded in sibling runtime processes.
-import { hasNonEmptyString } from "@openclaw/normalization-core/string-coerce";
+import { hasNonEmptyString } from "@afora/normalization-core/string-coerce";
 import {
   createRuntimeHealthRecordEnvelope,
   createRuntimeHealthStore,

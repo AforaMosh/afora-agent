@@ -3,11 +3,11 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveGatewayHealthProbeToken } from "./onboard-non-interactive/local.test-support.js";
 
 async function withTempDir<T>(run: (dir: string) => Promise<T>): Promise<T> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gateway-health-auth-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-gateway-health-auth-"));
   try {
     return await run(dir);
   } finally {
@@ -21,19 +21,19 @@ async function writeSecureFile(filePath: string, content: string): Promise<void>
 }
 
 describe("resolveGatewayHealthProbeToken", () => {
-  const originalGatewayToken = process.env.OPENCLAW_GATEWAY_TOKEN;
-  const originalGatewayPassword = process.env.OPENCLAW_GATEWAY_PASSWORD;
+  const originalGatewayToken = process.env.AFORA_GATEWAY_TOKEN;
+  const originalGatewayPassword = process.env.AFORA_GATEWAY_PASSWORD;
 
   afterEach(() => {
     if (originalGatewayToken === undefined) {
-      delete process.env.OPENCLAW_GATEWAY_TOKEN;
+      delete process.env.AFORA_GATEWAY_TOKEN;
     } else {
-      process.env.OPENCLAW_GATEWAY_TOKEN = originalGatewayToken;
+      process.env.AFORA_GATEWAY_TOKEN = originalGatewayToken;
     }
     if (originalGatewayPassword === undefined) {
-      delete process.env.OPENCLAW_GATEWAY_PASSWORD;
+      delete process.env.AFORA_GATEWAY_PASSWORD;
     } else {
-      process.env.OPENCLAW_GATEWAY_PASSWORD = originalGatewayPassword;
+      process.env.AFORA_GATEWAY_PASSWORD = originalGatewayPassword;
     }
   });
 
@@ -41,7 +41,7 @@ describe("resolveGatewayHealthProbeToken", () => {
     await withTempDir(async (dir) => {
       const tokenPath = path.join(dir, "gateway-token.txt");
       await writeSecureFile(tokenPath, "file-secret-token\n");
-      process.env.OPENCLAW_GATEWAY_TOKEN = "stale-env-token";
+      process.env.AFORA_GATEWAY_TOKEN = "stale-env-token";
 
       const resolved = await resolveGatewayHealthProbeToken({
         gateway: {
@@ -63,15 +63,15 @@ describe("resolveGatewayHealthProbeToken", () => {
             },
           },
         },
-      } as OpenClawConfig);
+      } as AforaConfig);
 
       expect(resolved).toEqual({ token: "file-secret-token" });
     });
   });
 
-  it("does not fall back to stale OPENCLAW_GATEWAY_TOKEN when a SecretRef is unresolved", async () => {
+  it("does not fall back to stale AFORA_GATEWAY_TOKEN when a SecretRef is unresolved", async () => {
     await withTempDir(async (dir) => {
-      process.env.OPENCLAW_GATEWAY_TOKEN = "stale-env-token";
+      process.env.AFORA_GATEWAY_TOKEN = "stale-env-token";
 
       const resolved = await resolveGatewayHealthProbeToken({
         gateway: {
@@ -93,7 +93,7 @@ describe("resolveGatewayHealthProbeToken", () => {
             },
           },
         },
-      } as OpenClawConfig);
+      } as AforaConfig);
 
       expect(resolved.token).toBeUndefined();
       expect(resolved.unresolvedRefReason).toBe(
@@ -103,8 +103,8 @@ describe("resolveGatewayHealthProbeToken", () => {
   });
 
   it("resolves password auth for the local onboarding health probe", async () => {
-    process.env.OPENCLAW_GATEWAY_TOKEN = "stale-env-token";
-    process.env.OPENCLAW_GATEWAY_PASSWORD = "resolved-password"; // pragma: allowlist secret
+    process.env.AFORA_GATEWAY_TOKEN = "stale-env-token";
+    process.env.AFORA_GATEWAY_PASSWORD = "resolved-password"; // pragma: allowlist secret
 
     const resolved = await resolveGatewayHealthProbeToken({
       gateway: {
@@ -113,21 +113,21 @@ describe("resolveGatewayHealthProbeToken", () => {
           password: {
             source: "env",
             provider: "default",
-            id: "OPENCLAW_GATEWAY_PASSWORD",
+            id: "AFORA_GATEWAY_PASSWORD",
           },
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(resolved).toEqual({ password: "resolved-password" });
   });
 
   it("resolves environment-only password auth for the local onboarding health probe", async () => {
-    process.env.OPENCLAW_GATEWAY_PASSWORD = "environment-password"; // pragma: allowlist secret
+    process.env.AFORA_GATEWAY_PASSWORD = "environment-password"; // pragma: allowlist secret
 
     const resolved = await resolveGatewayHealthProbeToken({
       gateway: { auth: { mode: "password" } },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     expect(resolved).toEqual({ password: "environment-password" });
   });

@@ -376,9 +376,9 @@ export function renderProjectChip(params: {
                   `
                 : nothing}
               ${browseNeedsAdmin
-                ? html`<openclaw-tooltip .content=${t("newSession.browseRequiresAdmin")}>
+                ? html`<afora-tooltip .content=${t("newSession.browseRequiresAdmin")}>
                     ${browseButton}
-                  </openclaw-tooltip>`
+                  </afora-tooltip>`
                 : browseButton}
             </div>
           `}

@@ -112,19 +112,19 @@ describe("disambiguate", () => {
 
   it("uses parent folders, then full paths, for recent basename collisions", () => {
     const items: Array<{ folder: string; label: string; execNode?: string }> = [
-      { folder: "/a/openclaw", label: "openclaw" },
-      { folder: "/b/openclaw", label: "openclaw" },
-      { folder: "/one/shared/openclaw", label: "openclaw · Mac Studio" },
-      { folder: "/two/shared/openclaw", label: "openclaw · Mac Studio" },
+      { folder: "/a/afora", label: "afora" },
+      { folder: "/b/afora", label: "afora" },
+      { folder: "/one/shared/afora", label: "afora · Mac Studio" },
+      { folder: "/two/shared/afora", label: "afora · Mac Studio" },
       {
-        folder: "/same/openclaw",
+        folder: "/same/afora",
         execNode: "11111111aaaaaaaa",
-        label: "openclaw · Duplicate Mac",
+        label: "afora · Duplicate Mac",
       },
       {
-        folder: "/same/openclaw",
+        folder: "/same/afora",
         execNode: "22222222bbbbbbbb",
-        label: "openclaw · Duplicate Mac",
+        label: "afora · Duplicate Mac",
       },
     ];
     expect(
@@ -138,10 +138,10 @@ describe("disambiguate", () => {
     ).toEqual([
       "a",
       "b",
-      "/one/shared/openclaw",
-      "/two/shared/openclaw",
-      "/same/openclaw · 11111111",
-      "/same/openclaw · 22222222",
+      "/one/shared/afora",
+      "/two/shared/afora",
+      "/same/afora · 11111111",
+      "/same/afora · 22222222",
     ]);
   });
 });

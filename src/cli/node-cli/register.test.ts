@@ -149,7 +149,7 @@ describe("registerNodeCli", () => {
 
   it("derives the node endpoint, TLS pin, and bootstrap credential from --pair", async () => {
     const setupCode = encodePairingSetupCode({
-      url: "wss://gateway.example:8443/openclaw-gw",
+      url: "wss://gateway.example:8443/afora-gw",
       bootstrapToken: "bootstrap-123",
       tlsFingerprint: `sha256:${PAIR_TLS_FINGERPRINT.toUpperCase()}`,
     });
@@ -162,14 +162,14 @@ describe("registerNodeCli", () => {
       expect.objectContaining({
         gatewayHost: "gateway.example",
         gatewayPort: 8443,
-        gatewayContextPath: "/openclaw-gw",
+        gatewayContextPath: "/afora-gw",
         gatewayTls: true,
         gatewayTlsFingerprint: PAIR_TLS_FINGERPRINT,
         gatewayCandidates: [
           {
             host: "gateway.example",
             port: 8443,
-            contextPath: "/openclaw-gw",
+            contextPath: "/afora-gw",
             tls: true,
             tlsFingerprint: PAIR_TLS_FINGERPRINT,
           },

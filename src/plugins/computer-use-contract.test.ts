@@ -10,7 +10,7 @@ import {
   registerComputerUseProvider,
   type ComputerUseProvider,
 } from "./computer-use-contract.js";
-import type { OpenClawPluginNodeHostCommand } from "./types.js";
+import type { AforaPluginNodeHostCommand } from "./types.js";
 
 describe("Computer Use wire contract", () => {
   it("owns the shared provider ref-lifecycle error code", () => {
@@ -154,7 +154,7 @@ describe("Computer Use wire contract", () => {
   });
 
   it("accepts the portable recording family without native path or helper inputs", () => {
-    const resourceHandle = "openclaw:computer-resource:v1:123e4567-e89b-42d3-a456-426614174000";
+    const resourceHandle = "afora:computer-resource:v1:123e4567-e89b-42d3-a456-426614174000";
     for (const input of [
       { action: "get_recording_state" },
       { action: "start_recording", recordVideo: true },
@@ -279,7 +279,7 @@ describe("Computer Use wire contract", () => {
 describe("Computer Use provider registration", () => {
   it("registers one command pair and dispatches both through one execution", async () => {
     const executionId = "123e4567-e89b-42d3-a456-426614174000";
-    const commands: OpenClawPluginNodeHostCommand[] = [];
+    const commands: AforaPluginNodeHostCommand[] = [];
     const snapshot = vi.fn(async () => "snapshot");
     const act = vi.fn(async () => "act");
     const close = vi.fn(async () => {});
@@ -331,7 +331,7 @@ describe("Computer Use provider registration", () => {
   it("refuses a second mutating execution and closes only the exact host execution", async () => {
     const firstId = "123e4567-e89b-42d3-a456-426614174000";
     const secondId = "223e4567-e89b-42d3-a456-426614174000";
-    const commands: OpenClawPluginNodeHostCommand[] = [];
+    const commands: AforaPluginNodeHostCommand[] = [];
     const closes: string[] = [];
     const openExecution = vi.fn(async () => ({
       snapshot: vi.fn(async () => "snapshot"),

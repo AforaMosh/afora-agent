@@ -4,7 +4,7 @@ description: "Oracle CLI second-model review/debug/refactor/design with selected
 homepage: https://askoracle.dev
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "emoji": "🧿",
         "requires": { "bins": ["oracle"] },

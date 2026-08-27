@@ -1,11 +1,11 @@
-# OpenClaw Synology Chat
+# Afora Synology Chat
 
-Official OpenClaw channel plugin for Synology Chat conversations and direct messages.
+Official Afora channel plugin for Synology Chat conversations and direct messages.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/synology-chat
+afora plugins install @afora/synology-chat
 ```
 
-Configure Synology Chat credentials and allowed conversations in OpenClaw, then use the plugin to route messages between Synology Chat and OpenClaw agents.
+Configure Synology Chat credentials and allowed conversations in Afora, then use the plugin to route messages between Synology Chat and Afora agents.

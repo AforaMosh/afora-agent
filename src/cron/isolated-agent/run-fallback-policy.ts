@@ -2,7 +2,7 @@
 import { resolveModelCandidateChain } from "../../agents/model-fallback-candidates.js";
 import type { ModelCandidate } from "../../agents/model-fallback.types.js";
 import { resolveAgentModelFallbackValues } from "../../config/model-input.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { CronJob } from "../types.js";
 import {
   resolveEffectiveModelFallbacks,
@@ -11,7 +11,7 @@ import {
 
 /** Resolves cron model fallbacks, giving explicit payload fallbacks precedence over subagent/default policy. */
 export function resolveCronFallbacksOverride(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   job: CronJob;
   agentId: string;
   useSubagentFallbacks?: boolean;
@@ -51,7 +51,7 @@ export function resolveCronFallbacksOverride(params: {
 
 /** Builds the ordered model candidates used by cron preflight checks. */
 export function resolveCronPreflightCandidates(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   job: CronJob;
   agentId: string;
   provider: string;

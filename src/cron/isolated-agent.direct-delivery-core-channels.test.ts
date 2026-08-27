@@ -4,7 +4,7 @@ import {
   clearRuntimeConfigSnapshot,
   setRuntimeConfigSnapshot,
 } from "../config/runtime-snapshot.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveCronAgentConfig } from "./isolated-agent/run-config.js";
 
 describe("resolveCronAgentConfig", () => {
@@ -23,14 +23,14 @@ describe("resolveCronAgentConfig", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const runtimeCfg = {
       channels: {
         discord: {
           accounts: { default: { token: "resolved-discord-token" } },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     setRuntimeConfigSnapshot(runtimeCfg, sourceCfg);
 
     const { agentDefaults, cfgWithAgentDefaults, runtimeConfig } = resolveCronAgentConfig({

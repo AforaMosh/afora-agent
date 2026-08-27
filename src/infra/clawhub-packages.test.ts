@@ -43,7 +43,7 @@ describe("clawhub packages", () => {
     let requestedUrl = "";
     await expect(
       fetchClawHubPackageArtifact({
-        name: "@openclaw/diagnostics-otel",
+        name: "@afora/diagnostics-otel",
         version: "2026.3.22",
         fetchImpl: async (input) => {
           requestedUrl = input instanceof Request ? input.url : String(input);
@@ -52,7 +52,7 @@ describe("clawhub packages", () => {
               artifact: {
                 source: "clawhub",
                 artifactKind: "npm-pack",
-                packageName: "@openclaw/diagnostics-otel",
+                packageName: "@afora/diagnostics-otel",
                 version: "2026.3.22",
                 downloadUrl: "https://clawhub.ai/api/v1/clawpacks/abc",
                 npmIntegrity: "sha512-demo",
@@ -67,7 +67,7 @@ describe("clawhub packages", () => {
       artifact: {
         source: "clawhub",
         artifactKind: "npm-pack",
-        packageName: "@openclaw/diagnostics-otel",
+        packageName: "@afora/diagnostics-otel",
         version: "2026.3.22",
         downloadUrl: "https://clawhub.ai/api/v1/clawpacks/abc",
         npmIntegrity: "sha512-demo",
@@ -75,7 +75,7 @@ describe("clawhub packages", () => {
       },
     });
     expect(new URL(requestedUrl).pathname).toBe(
-      "/api/v1/packages/%40openclaw%2Fdiagnostics-otel/versions/2026.3.22/artifact",
+      "/api/v1/packages/%40afora%2Fdiagnostics-otel/versions/2026.3.22/artifact",
     );
   });
 
@@ -83,14 +83,14 @@ describe("clawhub packages", () => {
     let requestedUrl = "";
     await expect(
       fetchClawHubPackageSecurity({
-        name: "@openclaw/diagnostics-otel",
+        name: "@afora/diagnostics-otel",
         version: "2026.3.22",
         fetchImpl: async (input) => {
           requestedUrl = input instanceof Request ? input.url : String(input);
           return new Response(
             JSON.stringify({
               package: {
-                name: "@openclaw/diagnostics-otel",
+                name: "@afora/diagnostics-otel",
                 displayName: "Diagnostics",
                 family: "code-plugin",
               },
@@ -113,7 +113,7 @@ describe("clawhub packages", () => {
       }),
     ).resolves.toEqual({
       package: {
-        name: "@openclaw/diagnostics-otel",
+        name: "@afora/diagnostics-otel",
         displayName: "Diagnostics",
         family: "code-plugin",
       },
@@ -131,14 +131,14 @@ describe("clawhub packages", () => {
       },
     });
     expect(new URL(requestedUrl).pathname).toBe(
-      "/api/v1/packages/%40openclaw%2Fdiagnostics-otel/versions/2026.3.22/security",
+      "/api/v1/packages/%40afora%2Fdiagnostics-otel/versions/2026.3.22/security",
     );
   });
 
   it("rejects malformed package security reports", async () => {
     await expect(
       fetchClawHubPackageSecurity({
-        name: "@openclaw/diagnostics-otel",
+        name: "@afora/diagnostics-otel",
         version: "2026.3.22",
         fetchImpl: async () =>
           new Response(

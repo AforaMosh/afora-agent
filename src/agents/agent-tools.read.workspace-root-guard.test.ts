@@ -5,7 +5,7 @@
  */
 import path from "node:path";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { createOpenClawReadTool } from "./agent-tools.read.js";
+import { createAforaReadTool } from "./agent-tools.read.js";
 import type { AnyAgentTool } from "./agent-tools.types.js";
 
 type AssertSandboxPath = typeof import("./sandbox-paths.js").assertSandboxPath;
@@ -190,7 +190,7 @@ describe("wrapToolWorkspaceRootGuardWithOptions", () => {
     await expect(
       wrapped.execute("tc-outside-temp", { path: "/tmp/repo_meta.jsonl" }),
     ).rejects.toThrow(
-      /Path escapes sandbox root .* Use a relative path under `.openclaw\/tmp\/` inside the workspace/,
+      /Path escapes sandbox root .* Use a relative path under `.afora\/tmp\/` inside the workspace/,
     );
     expect(execute).not.toHaveBeenCalled();
   });
@@ -297,7 +297,7 @@ describe("wrapToolWorkspaceRootGuardWithOptions", () => {
   });
 });
 
-describe("createOpenClawReadTool malformed XML arg-value suffix handling", () => {
+describe("createAforaReadTool malformed XML arg-value suffix handling", () => {
   it("strips the suffix from read paths before invoking the base tool", async () => {
     const execute = vi.fn(async () => ({ content: [{ type: "text" as const, text: "ok" }] }));
     const base = {
@@ -307,7 +307,7 @@ describe("createOpenClawReadTool malformed XML arg-value suffix handling", () =>
       parameters: {},
       execute,
     } as unknown as AnyAgentTool;
-    const tool = createOpenClawReadTool(base);
+    const tool = createAforaReadTool(base);
 
     await tool.execute("read-1", { path: "notes.txt</arg_value>>" });
 
@@ -330,7 +330,7 @@ describe("createOpenClawReadTool malformed XML arg-value suffix handling", () =>
       parameters: {},
       execute,
     } as unknown as AnyAgentTool;
-    const tool = createOpenClawReadTool(base);
+    const tool = createAforaReadTool(base);
 
     await tool.execute("read-1", { path: "reports/final.docodex" });
 
@@ -353,7 +353,7 @@ describe("createOpenClawReadTool malformed XML arg-value suffix handling", () =>
       parameters: {},
       execute,
     } as unknown as AnyAgentTool;
-    const tool = createOpenClawReadTool(base);
+    const tool = createAforaReadTool(base);
 
     await expect(tool.execute("read-1", { path: "</arg_value>>" })).rejects.toThrow(
       /Missing required parameter: path/,

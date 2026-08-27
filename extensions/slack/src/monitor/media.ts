@@ -1,13 +1,13 @@
 // Slack plugin module implements media behavior.
 import fs from "node:fs/promises";
 import type { WebClient as SlackWebClient } from "@slack/web-api";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import { normalizeHostname } from "openclaw/plugin-sdk/host-runtime";
-import { resolveRequestUrl } from "openclaw/plugin-sdk/request-url";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import { normalizeHostname } from "afora-agent/plugin-sdk/host-runtime";
+import { resolveRequestUrl } from "afora-agent/plugin-sdk/request-url";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import pMap, { pMapSkip } from "p-map";
 import { formatSlackFileReference } from "../file-reference.js";
 import type { SlackAttachment, SlackFile } from "../types.js";

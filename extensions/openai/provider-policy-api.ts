@@ -1,6 +1,6 @@
 // Openai API module exposes the plugin public contract.
-import type { ProviderDefaultThinkingPolicyContext } from "openclaw/plugin-sdk/core";
-import type { ProviderNormalizeResolvedModelContext } from "openclaw/plugin-sdk/plugin-entry";
+import type { ProviderDefaultThinkingPolicyContext } from "afora-agent/plugin-sdk/core";
+import type { ProviderNormalizeResolvedModelContext } from "afora-agent/plugin-sdk/plugin-entry";
 import type {
   ModelApi,
   ModelProviderConfig,
@@ -10,8 +10,8 @@ import type {
   ProviderNormalizeModelCatalogIdContext,
   ProviderResponseModelEquivalenceContext,
   ProviderResolveModelRoutesContext,
-} from "openclaw/plugin-sdk/provider-model-types";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/provider-model-types";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   classifyOpenAIBaseUrl,
   isOpenAICodexBaseUrl,
@@ -32,9 +32,9 @@ const OPENAI_RESPONSES_API = "openai-responses";
 const OPENAI_COMPLETIONS_API = "openai-completions";
 const OPENAI_CHATGPT_RESPONSES_API = "openai-chatgpt-responses";
 const OPENAI_PROVIDER_ID = "openai";
-const OPENAI_AGENT_RUNTIME_ID = "openclaw";
+const OPENAI_AGENT_RUNTIME_ID = "afora";
 const CODEX_AGENT_RUNTIME_ID = "codex";
-const OPENCLAW_RUNTIME_COMPATIBLE_IDS = [OPENAI_AGENT_RUNTIME_ID] as const;
+const AFORA_RUNTIME_COMPATIBLE_IDS = [OPENAI_AGENT_RUNTIME_ID] as const;
 const CODEX_RUNTIME_COMPATIBLE_IDS = [OPENAI_AGENT_RUNTIME_ID, CODEX_AGENT_RUNTIME_ID] as const;
 
 type OpenAIResolveSingleModelRouteContext = Omit<
@@ -180,7 +180,7 @@ function withRuntimePolicy(
     runtimePolicy: {
       compatibleIds: codexCanReproduceRoute(candidate, sourceBaseUrl)
         ? CODEX_RUNTIME_COMPATIBLE_IDS
-        : OPENCLAW_RUNTIME_COMPATIBLE_IDS,
+        : AFORA_RUNTIME_COMPATIBLE_IDS,
     },
   };
 }
@@ -354,7 +354,7 @@ function resolveSingleObservedModelRoute(
   const sourceBaseUrl = effectiveBaseUrl;
   // An authored Completions adapter is a concrete transport contract, not an
   // alias for Responses. Codex does not execute that adapter, so preserve it
-  // and let the OpenClaw runtime own the request.
+  // and let the Afora runtime own the request.
   const platformApi =
     configuredRoute && effectiveApi === OPENAI_COMPLETIONS_API
       ? OPENAI_COMPLETIONS_API
@@ -594,7 +594,7 @@ export function resolveModelRoutes(
     kind: "routes",
     routes: routes as [ProviderModelRouteCandidate, ...ProviderModelRouteCandidate[]],
     defaultRuntimeId: resolutions.some(
-      (resolution) => resolution.kind === "routes" && resolution.defaultRuntimeId === "openclaw",
+      (resolution) => resolution.kind === "routes" && resolution.defaultRuntimeId === "afora",
     )
       ? OPENAI_AGENT_RUNTIME_ID
       : defaultRuntimeIdForRoute(firstRoute),

@@ -17,7 +17,7 @@ const COMMAND_TIMEOUT_MS = 180_000;
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 const compatibility = {
-  "@openclaw/ai/provider-types": {
+  "@afora/ai/provider-types": {
     values: ["PROVIDER_CONTEXT_HANDOFF", "resolveProviderContext"],
     types: [
       "MediaContent",
@@ -32,7 +32,7 @@ const compatibility = {
       "VideoContent",
     ],
   },
-  "@openclaw/ai/providers": {
+  "@afora/ai/providers": {
     values: [
       "BUILT_IN_API_PROVIDER_SOURCE_ID",
       "registerBuiltInApiProviders",
@@ -42,7 +42,7 @@ const compatibility = {
     ],
     types: [],
   },
-  "@openclaw/ai/internal/anthropic": {
+  "@afora/ai/internal/anthropic": {
     values: [
       "streamAnthropic",
       "streamSimpleAnthropic",
@@ -96,7 +96,7 @@ const compatibility = {
       "AnthropicIterationUsageResult",
     ],
   },
-  "@openclaw/ai/internal/openai": {
+  "@afora/ai/internal/openai": {
     values: [
       "streamOpenAICompletions",
       "streamSimpleOpenAICompletions",
@@ -269,7 +269,7 @@ function compatibilityTypeSource(): string {
     .join("\n");
 }
 
-describe("@openclaw/ai packed package", () => {
+describe("@afora/ai packed package", () => {
   it("installs externally and preserves every published compatibility export", async () => {
     const repoRoot = process.cwd();
     const packageRoot = path.join(repoRoot, "packages", "ai");
@@ -283,7 +283,7 @@ describe("@openclaw/ai packed package", () => {
     if (!nodeTypesVersion) {
       throw new Error("root package is missing the @types/node version used by package checks");
     }
-    const tempDir = tempDirs.make("openclaw-ai-consumer-");
+    const tempDir = tempDirs.make("afora-ai-consumer-");
 
     // The E2E global setup owns the exact-head build. Rebuilding this shared
     // package here can delete modules beneath concurrently running Gateways.

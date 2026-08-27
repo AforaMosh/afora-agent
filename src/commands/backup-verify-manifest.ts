@@ -1,5 +1,5 @@
 import path from "node:path";
-import { readStringValue } from "@openclaw/normalization-core/string-coerce";
+import { readStringValue } from "@afora/normalization-core/string-coerce";
 import {
   isArchivePathWithin,
   normalizeArchivePath,

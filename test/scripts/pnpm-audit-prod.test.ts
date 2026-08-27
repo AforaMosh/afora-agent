@@ -2,7 +2,7 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { toErrorObject as toLintErrorObject } from "@openclaw/normalization-core/error-coercion";
+import { toErrorObject as toLintErrorObject } from "@afora/normalization-core/error-coercion";
 import { describe, expect, it } from "vitest";
 import {
   collectProdResolvedPackagesFromLockfile,
@@ -422,7 +422,7 @@ snapshots:
   });
 
   it("returns a failing exit code when bulk advisories include high severity findings", async () => {
-    const tempDir = await mkdtemp(path.join(tmpdir(), "openclaw-audit-prod-"));
+    const tempDir = await mkdtemp(path.join(tmpdir(), "afora-audit-prod-"));
     await writeFile(
       path.join(tempDir, "pnpm-lock.yaml"),
       `lockfileVersion: '9.0'

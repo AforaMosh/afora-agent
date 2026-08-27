@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { vi } from "vitest";
 import type { SessionEntry } from "../../config/sessions/types.js";
 import type { WorkerSessionPlacementRecord } from "../worker-environments/placement-store.js";
@@ -92,7 +92,7 @@ export function makeSessionTarget(entry?: DispatchSessionEntry) {
     : undefined;
   return {
     agentId: "main",
-    storePath: "/tmp/openclaw-agent.sqlite",
+    storePath: "/tmp/afora-agent.sqlite",
     canonicalKey: dispatchTestSessionKey,
     storeKeys: [dispatchTestSessionKey],
     store: pinnedEntry ? { [dispatchTestSessionKey]: pinnedEntry } : {},

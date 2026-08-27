@@ -5,9 +5,9 @@
  * redaction/headers, and request/response correlation over WebSocket.
  */
 import { createHash } from "node:crypto";
-import { parseBrowserHttpUrl, redactCdpUrl } from "openclaw/plugin-sdk/browser-config";
-import { readProviderJsonResponse } from "openclaw/plugin-sdk/provider-http";
-import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
+import { parseBrowserHttpUrl, redactCdpUrl } from "afora-agent/plugin-sdk/browser-config";
+import { readProviderJsonResponse } from "afora-agent/plugin-sdk/provider-http";
+import { fetchWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { isLoopbackHost } from "../gateway/net.js";
 import {
   SsrFBlockedError,
@@ -489,7 +489,7 @@ export async function fetchCdpChecked(
     const res = await withManagedProxyForCdpUrl(fetchUrl, () =>
       withNoProxyForCdpUrl(fetchUrl, async () => {
         const parsedUrl = new URL(fetchUrl);
-        // Loopback CDP is an OpenClaw control plane, not page navigation. Allow
+        // Loopback CDP is an Afora control plane, not page navigation. Allow
         // its exact host while preserving the caller's policy for remote hosts.
         const policy = isLoopbackHost(parsedUrl.hostname)
           ? withExactHostnamePolicy(ssrfPolicy, parsedUrl.hostname)

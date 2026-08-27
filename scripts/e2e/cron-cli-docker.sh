@@ -5,11 +5,11 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$ROOT_DIR/scripts/lib/docker-e2e-image.sh"
 
-IMAGE_NAME="$(docker_e2e_resolve_image "openclaw-cron-cli-e2e" OPENCLAW_IMAGE)"
+IMAGE_NAME="$(docker_e2e_resolve_image "afora-cron-cli-e2e" AFORA_IMAGE)"
 PORT="18789"
 TOKEN="cron-cli-e2e-$(date +%s)-$$"
-CONTAINER_NAME="openclaw-cron-cli-e2e-$$"
-CLIENT_LOG="$(mktemp -t openclaw-cron-cli-log.XXXXXX)"
+CONTAINER_NAME="afora-cron-cli-e2e-$$"
+CLIENT_LOG="$(mktemp -t afora-cron-cli-log.XXXXXX)"
 
 cleanup() {
   docker_e2e_docker_cmd rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
@@ -18,40 +18,40 @@ cleanup() {
 trap cleanup EXIT
 
 docker_e2e_build_or_reuse "$IMAGE_NAME" cron-cli
-OPENCLAW_TEST_STATE_SCRIPT_B64="$(docker_e2e_test_state_shell_b64 cron-cli empty)"
+AFORA_TEST_STATE_SCRIPT_B64="$(docker_e2e_test_state_shell_b64 cron-cli empty)"
 
 echo "Running in-container Gateway + cron CLI smoke..."
 set +e
 docker_e2e_run_with_harness \
   --name "$CONTAINER_NAME" \
-  -e "OPENCLAW_GATEWAY_TOKEN=$TOKEN" \
-  -e "OPENCLAW_SKIP_CHANNELS=1" \
-  -e "OPENCLAW_SKIP_GMAIL_WATCHER=1" \
-  -e "OPENCLAW_SKIP_CANVAS_HOST=1" \
-  -e "OPENCLAW_SKIP_ACPX_RUNTIME=1" \
-  -e "OPENCLAW_SKIP_ACPX_RUNTIME_PROBE=1" \
-  -e "OPENCLAW_TEST_STATE_SCRIPT_B64=$OPENCLAW_TEST_STATE_SCRIPT_B64" \
+  -e "AFORA_GATEWAY_TOKEN=$TOKEN" \
+  -e "AFORA_SKIP_CHANNELS=1" \
+  -e "AFORA_SKIP_GMAIL_WATCHER=1" \
+  -e "AFORA_SKIP_CANVAS_HOST=1" \
+  -e "AFORA_SKIP_ACPX_RUNTIME=1" \
+  -e "AFORA_SKIP_ACPX_RUNTIME_PROBE=1" \
+  -e "AFORA_TEST_STATE_SCRIPT_B64=$AFORA_TEST_STATE_SCRIPT_B64" \
   -e "GW_TOKEN=$TOKEN" \
-  -e "OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1" \
+  -e "AFORA_ALLOW_INSECURE_PRIVATE_WS=1" \
   -i \
   "$IMAGE_NAME" \
   bash -s >"$CLIENT_LOG" 2>&1 <<'INNER'
 set -euo pipefail
 
-source scripts/lib/openclaw-e2e-instance.sh
-openclaw_e2e_eval_test_state_from_b64 "${OPENCLAW_TEST_STATE_SCRIPT_B64:?missing OPENCLAW_TEST_STATE_SCRIPT_B64}"
+source scripts/lib/afora-e2e-instance.sh
+afora_e2e_eval_test_state_from_b64 "${AFORA_TEST_STATE_SCRIPT_B64:?missing AFORA_TEST_STATE_SCRIPT_B64}"
 
-entry="$(openclaw_e2e_resolve_entrypoint)"
+entry="$(afora_e2e_resolve_entrypoint)"
 gateway_pid=
 
 cleanup_inner() {
-  openclaw_e2e_stop_process "${gateway_pid:-}"
+  afora_e2e_stop_process "${gateway_pid:-}"
 }
 
 dump_logs_on_error() {
   status=$?
   if [ "$status" -ne 0 ]; then
-    openclaw_e2e_dump_logs \
+    afora_e2e_dump_logs \
       /tmp/cron-cli-gateway.log \
       /tmp/cron-cli-status.json \
       /tmp/cron-cli-add.json \
@@ -319,9 +319,9 @@ read_json_field() {
 
 node --input-type=module -e '
   const fs = await import("node:fs/promises");
-  const configPath = process.env.OPENCLAW_CONFIG_PATH;
+  const configPath = process.env.AFORA_CONFIG_PATH;
   if (!configPath) {
-    throw new Error("OPENCLAW_CONFIG_PATH is required");
+    throw new Error("AFORA_CONFIG_PATH is required");
   }
   const raw = await fs.readFile(configPath, "utf8").catch(() => "{}");
   const config = JSON.parse(raw || "{}");
@@ -330,21 +330,21 @@ node --input-type=module -e '
   await fs.writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
 '
 
-gateway_pid="$(openclaw_e2e_start_gateway "$entry" 18789 /tmp/cron-cli-gateway.log)"
-openclaw_e2e_wait_gateway_ready "$gateway_pid" /tmp/cron-cli-gateway.log 300 18789
+gateway_pid="$(afora_e2e_start_gateway "$entry" 18789 /tmp/cron-cli-gateway.log)"
+afora_e2e_wait_gateway_ready "$gateway_pid" /tmp/cron-cli-gateway.log 300 18789
 
 run_operator_authority_matrix create
-openclaw_e2e_stop_process "$gateway_pid"
+afora_e2e_stop_process "$gateway_pid"
 gateway_pid=
-gateway_pid="$(openclaw_e2e_start_gateway "$entry" 18789 /tmp/cron-cli-gateway.log)"
-openclaw_e2e_wait_gateway_ready "$gateway_pid" /tmp/cron-cli-gateway.log 300 18789
+gateway_pid="$(afora_e2e_start_gateway "$entry" 18789 /tmp/cron-cli-gateway.log)"
+afora_e2e_wait_gateway_ready "$gateway_pid" /tmp/cron-cli-gateway.log 300 18789
 run_operator_authority_matrix verify
 
 cron_cli status --json > /tmp/cron-cli-status.json
 cron_add_args=(
   "cli cron smoke"
   --cron "*/5 * * * *"
-  --command "printf openclaw-cli-cron-ok"
+  --command "printf afora-cli-cron-ok"
   --no-deliver
   --timeout-seconds 15
   --json
@@ -510,7 +510,7 @@ node --input-type=module -e '
   const fs = await import("node:fs/promises");
   const value = JSON.parse(await fs.readFile("/tmp/cron-cli-runs.json", "utf8"));
   const matching = Array.isArray(value.entries)
-    ? value.entries.find((entry) => entry.status === "ok" && entry.summary === "openclaw-cli-cron-ok")
+    ? value.entries.find((entry) => entry.status === "ok" && entry.summary === "afora-cli-cron-ok")
     : undefined;
   if (!matching) {
     throw new Error("cron runs missing successful command summary");

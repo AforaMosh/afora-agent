@@ -309,7 +309,7 @@ describe("session dispatch protocol schemas", () => {
         ...workerOwnedFields,
         workspaceResultConflict: {
           paths: ["src/local.ts"],
-          stagedResultRef: "refs/openclaw/worker-results/claim-1",
+          stagedResultRef: "refs/afora/worker-results/claim-1",
         },
       }),
     ).toBe(true);
@@ -319,7 +319,7 @@ describe("session dispatch protocol schemas", () => {
         ...basePlacement,
         workspaceResultConflict: {
           paths: [],
-          stagedResultRef: "refs/openclaw/worker-results/claim-1",
+          stagedResultRef: "refs/afora/worker-results/claim-1",
         },
       }),
     ).toBe(false);

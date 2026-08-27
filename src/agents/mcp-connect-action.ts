@@ -1,4 +1,4 @@
-import { asOptionalRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalRecord as asRecord } from "@afora/normalization-core/record-coerce";
 
 export type McpConnectAction = {
   serverName: string;

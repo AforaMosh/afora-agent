@@ -120,7 +120,7 @@ async function capturePrivateProviderSpans(emit: (tracer: Tracer) => void) {
     resource: resourceFromAttributes({}),
     spanProcessors: [new SimpleSpanProcessor(exporter)],
   });
-  emit(provider.getTracer("openclaw-private-provider-parity"));
+  emit(provider.getTracer("afora-private-provider-parity"));
   await provider.forceFlush();
   const spans = [...exporter.getFinishedSpans()];
   await provider.shutdown();
@@ -135,7 +135,7 @@ async function captureNodeSdkSpans(emit: (tracer: Tracer) => void) {
     spanProcessor: new SimpleSpanProcessor(exporter),
   });
   sdk.start();
-  emit(trace.getTracer("openclaw-node-sdk-parity"));
+  emit(trace.getTracer("afora-node-sdk-parity"));
   await new Promise<void>((resolve) => {
     setImmediate(resolve);
   });

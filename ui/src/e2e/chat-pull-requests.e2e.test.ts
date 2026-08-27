@@ -13,7 +13,7 @@ import {
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
 
 let server: ControlUiE2eServer;
@@ -100,33 +100,33 @@ describeControlUiE2e("session pull request chips", () => {
           pullRequests: [
             {
               number: 103469,
-              owner: "openclaw",
-              repo: "openclaw",
+              owner: "afora",
+              repo: "afora",
               branch: "claude/browser-tabs-tighter-header",
               title: "fix(macos): tighten the link-browser tab header",
-              url: "https://github.com/openclaw/openclaw/pull/103469",
+              url: "https://github.com/AforaMosh/afora-agent/pull/103469",
               state: "open",
               additions: 4,
               deletions: 3,
               checks: { state: "passing", passed: 65, failed: 0, skipped: 31, running: 0 },
-              checksUrl: "https://github.com/openclaw/openclaw/pull/103469/checks",
+              checksUrl: "https://github.com/AforaMosh/afora-agent/pull/103469/checks",
             },
             {
               number: 103438,
-              owner: "openclaw",
-              repo: "openclaw",
+              owner: "afora",
+              repo: "afora",
               branch: "claude/browser-tabs-web-ui-756a64",
               title: "feat(ui): link browser tabs into the web UI",
-              url: "https://github.com/openclaw/openclaw/pull/103438",
+              url: "https://github.com/AforaMosh/afora-agent/pull/103438",
               state: "merged",
             },
             {
               number: 103200,
-              owner: "openclaw",
-              repo: "openclaw",
+              owner: "afora",
+              repo: "afora",
               branch: "claude/browser-tabs-web-ui-756a64",
               title: "feat(ui): earlier landing on the same branch",
-              url: "https://github.com/openclaw/openclaw/pull/103200",
+              url: "https://github.com/AforaMosh/afora-agent/pull/103200",
               state: "merged",
             },
           ],
@@ -166,7 +166,7 @@ describeControlUiE2e("session pull request chips", () => {
       .toContain("31");
     await expect
       .poll(() => menu.locator("a").getAttribute("href"))
-      .toBe("https://github.com/openclaw/openclaw/pull/103469/checks");
+      .toBe("https://github.com/AforaMosh/afora-agent/pull/103469/checks");
     // Clicking outside light-dismisses the popover.
     await page.locator(".chat-prs").click({ position: { x: 4, y: 4 } });
     await expect.poll(() => openChip.locator(".chat-pr__checks[open]").count()).toBe(0);
@@ -216,13 +216,13 @@ describeControlUiE2e("session pull request chips", () => {
         [watchedKey]: {
           pullRequests: [],
           branch: {
-            owner: "openclaw",
-            repo: "openclaw",
+            owner: "afora",
+            repo: "afora",
             branch: "claude/cloud-workers-live-events",
             additions: 2819,
             deletions: 205,
             createUrl:
-              "https://github.com/openclaw/openclaw/pull/new/claude/cloud-workers-live-events",
+              "https://github.com/AforaMosh/afora-agent/pull/new/claude/cloud-workers-live-events",
           },
           rateLimited: true,
           status: "rate-limited",
@@ -232,7 +232,7 @@ describeControlUiE2e("session pull request chips", () => {
 
     const row = page.locator('.chat-pr[data-state="branch"]');
     await expect.poll(() => row.count()).toBe(1);
-    await expect.poll(() => row.locator(".chat-pr__repo").textContent()).toBe("openclaw");
+    await expect.poll(() => row.locator(".chat-pr__repo").textContent()).toBe("afora");
     await expect
       .poll(() => row.locator(".chat-pr__branch").textContent())
       .toBe("claude/cloud-workers-live-events");
@@ -245,7 +245,7 @@ describeControlUiE2e("session pull request chips", () => {
     await expect.poll(() => create.textContent()).toContain("Create PR");
     await expect
       .poll(() => create.getAttribute("href"))
-      .toBe("https://github.com/openclaw/openclaw/pull/new/claude/cloud-workers-live-events");
+      .toBe("https://github.com/AforaMosh/afora-agent/pull/new/claude/cloud-workers-live-events");
     // No dismiss control: the row reflects the checkout itself.
     await expect.poll(() => row.locator(".chat-pr__dismiss").count()).toBe(0);
 

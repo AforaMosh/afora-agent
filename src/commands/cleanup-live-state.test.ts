@@ -7,9 +7,9 @@ import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createNonExitingRuntime } from "../runtime.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../test-utils/afora-test-state.js";
 
 const gatewayService = vi.hoisted(() => ({
   notLoadedText: "is not installed",
@@ -32,7 +32,7 @@ const { resetCommand } = await import("./reset.js");
 const { uninstallCommand } = await import("./uninstall.js");
 
 const liveOwners = new Set<ChildProcess>();
-const testStates = new Set<OpenClawTestState>();
+const testStates = new Set<AforaTestState>();
 
 async function stopLiveStateOwner(child: ChildProcess): Promise<void> {
   liveOwners.delete(child);
@@ -66,7 +66,7 @@ afterEach(async () => {
   }
 });
 
-async function startLiveStateOwner(state: OpenClawTestState): Promise<ChildProcess> {
+async function startLiveStateOwner(state: AforaTestState): Promise<ChildProcess> {
   const lockModuleUrl = pathToFileURL(path.resolve("src/infra/gateway-lock.ts")).href;
   const script = `
     import path from "node:path";
@@ -74,7 +74,7 @@ async function startLiveStateOwner(state: OpenClawTestState): Promise<ChildProce
     const { acquireGatewayLock } = await import(${JSON.stringify(lockModuleUrl)});
     const lock = await acquireGatewayLock({ allowInTests: true, env: process.env, port: 18789 });
     if (!lock) throw new Error("live owner did not acquire the Gateway lock");
-    const databasePath = path.join(process.env.OPENCLAW_STATE_DIR, "state", "openclaw.sqlite");
+    const databasePath = path.join(process.env.AFORA_STATE_DIR, "state", "afora.sqlite");
     const database = new DatabaseSync(databasePath);
     database.exec("PRAGMA journal_mode = WAL; CREATE TABLE live_owner (value TEXT); INSERT INTO live_owner VALUES ('held');");
     process.send?.("ready");
@@ -93,7 +93,7 @@ async function startLiveStateOwner(state: OpenClawTestState): Promise<ChildProce
   delete env.VITEST_WORKER_ID;
   const child = spawn(
     process.execPath,
-    ["--import", "tsx", "--input-type=module", "--eval", script, "openclaw", "gateway"],
+    ["--import", "tsx", "--input-type=module", "--eval", script, "afora", "gateway"],
     { cwd: path.resolve("."), env, stdio: ["ignore", "ignore", "pipe", "ipc"] },
   );
   liveOwners.add(child);
@@ -147,8 +147,8 @@ describe("destructive cleanup with a live unmanaged state owner", () => {
   ])(
     "refuses $command until the SQLite owner exits",
     async ({ nixMode, preservesWorkspace, run, serviceChecks }) => {
-      const state = await createOpenClawTestState({
-        prefix: "openclaw-cleanup-live-state-",
+      const state = await createAforaTestState({
+        prefix: "afora-cleanup-live-state-",
         layout: "split",
         scenario: "minimal",
         applyEnv: true,
@@ -163,7 +163,7 @@ describe("destructive cleanup with a live unmanaged state owner", () => {
       await fs.mkdir(path.dirname(workspacePath), { recursive: true });
       await fs.writeFile(workspacePath, Buffer.from([0, 1, 2, 3, 255]));
 
-      const databasePath = state.statePath("state", "openclaw.sqlite");
+      const databasePath = state.statePath("state", "afora.sqlite");
       await fs.mkdir(path.dirname(databasePath), { recursive: true });
       const owner = await startLiveStateOwner(state);
       const livePaths = [databasePath, `${databasePath}-wal`, `${databasePath}-shm`];
@@ -200,8 +200,8 @@ describe("destructive cleanup with a live unmanaged state owner", () => {
   );
 
   it("preserves state when workspace configuration is invalid", async () => {
-    const state = await createOpenClawTestState({
-      prefix: "openclaw-cleanup-invalid-config-",
+    const state = await createAforaTestState({
+      prefix: "afora-cleanup-invalid-config-",
       layout: "split",
       scenario: "minimal",
       applyEnv: true,

@@ -1,5 +1,5 @@
 /** Resolves agent runtime metadata from model/provider policy and ACP session overlays. */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { applyAcpRuntimeOverlay, type AgentRuntimeMetadata } from "./acp-runtime-overlay.js";
 import { isDefaultAgentRuntimeId } from "./agent-runtime-id.js";
 import { resolveAgentHarnessPolicy } from "./harness/policy.js";
@@ -8,7 +8,7 @@ import { resolvePersistedSessionRuntimeId } from "./session-runtime-compat.js";
 
 /** Resolves the runtime id/source that should be reported for a model-backed agent session. */
 export function resolveModelAgentRuntimeMetadata(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   provider?: string;
   model?: string;

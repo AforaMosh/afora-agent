@@ -19,7 +19,7 @@ jobs:
     name: Comment on PR
     runs-on: ubuntu-24.04
     if: >
-      github.repository == 'openclaw/openclaw' &&
+      github.repository == 'AforaMosh/afora-agent' &&
       github.event.workflow_run.event == 'pull_request' &&
       (github.event.workflow_run.name == 'iOS Periphery Dead Code' ||
       github.event.workflow_run.name == 'macOS Periphery Dead Code')
@@ -36,7 +36,7 @@ jobs:
               "iOS Periphery Dead Code": {
                 artifactPrefix: "ios-periphery-dead-code",
                 heading: "### iOS Periphery",
-                marker: "<!-- openclaw-ios-periphery-dead-code -->",
+                marker: "<!-- afora-ios-periphery-dead-code -->",
                 repoPathPrefix: "apps/ios/",
                 scanJobName: "Scan iOS dead code",
                 scopeJobName: "Detect iOS scan scope",
@@ -45,7 +45,7 @@ jobs:
               "macOS Periphery Dead Code": {
                 artifactPrefix: "macos-periphery-dead-code",
                 heading: "### macOS Periphery",
-                marker: "<!-- openclaw-macos-periphery-dead-code -->",
+                marker: "<!-- afora-macos-periphery-dead-code -->",
                 repoPathPrefix: "apps/macos/",
                 scanJobName: "Scan macOS dead code",
                 scopeJobName: "Detect macOS scan scope",

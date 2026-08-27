@@ -125,7 +125,7 @@ describe("handleMessageEnd", () => {
       name: "ignores transcript-only mirrored assistant messages",
       message: {
         role: "assistant",
-        provider: "openclaw",
+        provider: "afora",
         model: "delivery-mirror",
         content: [{ type: "text", text: "Done." }],
       },

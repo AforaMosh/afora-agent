@@ -4,9 +4,9 @@ import {
   formatInboundMediaUnavailableText,
   formatLocationText,
   type MediaPlaceholderTextFact,
-} from "openclaw/plugin-sdk/channel-inbound";
-import { createSubsystemLogger, redactToolPayloadText } from "openclaw/plugin-sdk/logging-core";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/channel-inbound";
+import { createSubsystemLogger, redactToolPayloadText } from "afora-agent/plugin-sdk/logging-core";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { getStatusCode } from "../session-errors.js";
 import {
   describeReplyContext,

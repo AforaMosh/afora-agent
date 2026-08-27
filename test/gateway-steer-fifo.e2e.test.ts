@@ -4,15 +4,15 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GATEWAY_CLIENT_CAPS } from "../packages/gateway-protocol/src/client-info.js";
-import type { OpenClawConfig } from "../src/config/types.openclaw.js";
+import type { AforaConfig } from "../src/config/types.afora.js";
 import { GatewayClient, type GatewayClientOptions } from "../src/gateway/client.js";
 import { buildMockOpenAiResponsesProvider } from "../src/gateway/test-openai-responses-model.js";
 import { GatewayChatClient } from "../src/tui/gateway-chat.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../src/utils/message-channel.js";
 import {
-  createOpenClawTestInstance,
-  type OpenClawTestInstance,
-} from "./helpers/openclaw-test-instance.js";
+  createAforaTestInstance,
+  type AforaTestInstance,
+} from "./helpers/afora-test-instance.js";
 import { createDeferred } from "./helpers/promise.js";
 
 type FirstResponseKind = "final" | "sequential-tools" | "tool";
@@ -31,7 +31,7 @@ type AgentEvent = {
 type GatewayFixture = {
   client: GatewayChatClient;
   diagnosticsClient: GatewayClient;
-  instance: OpenClawTestInstance;
+  instance: AforaTestInstance;
   modelServer: MockModelServer;
   events: AgentEvent[];
   chatErrors: Array<{ errorMessage?: string; runId?: string; state: "error" }>;
@@ -52,7 +52,7 @@ const WAIT_OPTS = { timeout: 30_000, interval: 20 } as const;
 const STEERING_PLUGIN_ID = "gateway-steering-tools";
 const STEERING_GATE_TOOL = "steering_gate";
 const STEERING_TAIL_TOOL = "steering_tail";
-const instances: OpenClawTestInstance[] = [];
+const instances: AforaTestInstance[] = [];
 const clients: GatewayChatClient[] = [];
 const diagnosticsClients: GatewayClient[] = [];
 const cleanupDirs: string[] = [];
@@ -337,7 +337,7 @@ async function writeSteeringToolsPlugin(
   await mkdir(pluginDir, { recursive: true });
   await Promise.all([
     writeFile(
-      path.join(pluginDir, "openclaw.plugin.json"),
+      path.join(pluginDir, "afora.plugin.json"),
       `${JSON.stringify({
         id: STEERING_PLUGIN_ID,
         name: "Gateway Steering Tools",
@@ -416,7 +416,7 @@ function createConfig(params: {
   fixtureDir: string;
   modelServer: MockModelServer;
   steeringTools?: SteeringToolsFixture;
-}): OpenClawConfig {
+}): AforaConfig {
   const provider = buildMockOpenAiResponsesProvider(
     `${params.modelServer.baseUrl}/v1`,
     "steer-fifo",
@@ -438,7 +438,7 @@ function createConfig(params: {
         model: { primary: provider.modelRef },
         models: {
           [provider.modelRef]: {
-            agentRuntime: { id: "openclaw" },
+            agentRuntime: { id: "afora" },
             params: { transport: "sse", openaiWsWarmup: false },
           },
         },
@@ -468,7 +468,7 @@ function createConfig(params: {
   };
 }
 
-async function connectDiagnosticsClient(instance: OpenClawTestInstance): Promise<GatewayClient> {
+async function connectDiagnosticsClient(instance: AforaTestInstance): Promise<GatewayClient> {
   let resolveHello!: () => void;
   let rejectHello!: (error: Error) => void;
   const hello = new Promise<void>((resolve, reject) => {
@@ -509,21 +509,21 @@ async function createGatewayFixture(
   name: string,
   options: { withSteeringTools?: boolean; steeringGateMode?: SteeringGateMode } = {},
 ): Promise<GatewayFixture> {
-  const fixtureDir = await mkdtemp(path.join(tmpdir(), `openclaw-${name}-`));
+  const fixtureDir = await mkdtemp(path.join(tmpdir(), `afora-${name}-`));
   cleanupDirs.push(fixtureDir);
   const steeringTools = options.withSteeringTools
     ? await writeSteeringToolsPlugin(fixtureDir, options.steeringGateMode ?? "preflight")
     : undefined;
   const modelServer = await startMockModelServer();
   modelServers.push(modelServer);
-  const instance = await createOpenClawTestInstance({
+  const instance = await createAforaTestInstance({
     name,
     gatewayToken: "steer-fifo-token",
     config: createConfig({ fixtureDir, modelServer, steeringTools }),
     env: {
-      OPENCLAW_LOG_LEVEL: "debug",
-      OPENCLAW_SKIP_PROVIDERS: undefined,
-      OPENCLAW_TEST_MINIMAL_GATEWAY: undefined,
+      AFORA_LOG_LEVEL: "debug",
+      AFORA_SKIP_PROVIDERS: undefined,
+      AFORA_TEST_MINIMAL_GATEWAY: undefined,
     },
   });
   instances.push(instance);
@@ -586,7 +586,7 @@ async function sendChat(params: {
   });
 }
 
-function redactedFixtureLogs(instance: OpenClawTestInstance): string {
+function redactedFixtureLogs(instance: AforaTestInstance): string {
   return instance
     .logs()
     .replaceAll("steer-fifo-token", "[REDACTED]")

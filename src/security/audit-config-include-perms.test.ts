@@ -3,14 +3,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { ConfigFileSnapshot } from "../config/types.openclaw.js";
+import type { ConfigFileSnapshot } from "../config/types.afora.js";
 import { collectIncludeFilePermFindings } from "./audit-extra.async.js";
 
 describe("security audit config include permissions", () => {
   const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
   it("flags group/world-readable config include files", async () => {
-    const tmp = tempDirs.make("openclaw-include-perms-");
+    const tmp = tempDirs.make("afora-include-perms-");
     const stateDir = path.join(tmp, "state");
     fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
 
@@ -19,7 +19,7 @@ describe("security audit config include permissions", () => {
     fs.chmodSync(includePath, 0o644);
 
     const configSnapshot: ConfigFileSnapshot = {
-      path: path.join(stateDir, "openclaw.json"),
+      path: path.join(stateDir, "afora.json"),
       exists: true,
       raw: `{ "$include": ${JSON.stringify(includePath)} }\n`,
       parsed: { $include: includePath },
@@ -50,7 +50,7 @@ describe("security audit config include permissions", () => {
   it.runIf(process.platform !== "win32")(
     "audits include files under explicitly allowed roots",
     async () => {
-      const tmp = tempDirs.make("openclaw-include-perms-allowed-");
+      const tmp = tempDirs.make("afora-include-perms-allowed-");
       const configDir = path.join(tmp, "config");
       const sharedDir = path.join(tmp, "shared");
       const sharedIncludePath = path.join(sharedDir, "shared.json5");
@@ -60,7 +60,7 @@ describe("security audit config include permissions", () => {
       fs.chmodSync(sharedIncludePath, 0o644);
 
       const configSnapshot: ConfigFileSnapshot = {
-        path: path.join(configDir, "openclaw.json"),
+        path: path.join(configDir, "afora.json"),
         exists: true,
         raw: `{ "$include": ${JSON.stringify(sharedIncludePath)} }\n`,
         parsed: { $include: sharedIncludePath },
@@ -76,7 +76,7 @@ describe("security audit config include permissions", () => {
 
       const findings = await collectIncludeFilePermFindings({
         configSnapshot,
-        env: { OPENCLAW_INCLUDE_ROOTS: sharedDir },
+        env: { AFORA_INCLUDE_ROOTS: sharedDir },
         platform: "linux",
       });
 

@@ -1,4 +1,4 @@
-import type { AssistantMessage, Model, ProviderReplayState } from "@openclaw/llm-core";
+import type { AssistantMessage, Model, ProviderReplayState } from "@afora/llm-core";
 import { describe, expect, it } from "vitest";
 import { buildOpenAIResponsesReasoningReplayMetadata } from "./openai-responses-compaction-replay.js";
 import { convertResponsesMessages } from "./openai-responses-replay-internal.js";

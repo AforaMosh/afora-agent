@@ -51,8 +51,8 @@ function homePath(...parts) {
   return path.join(os.homedir(), ...parts);
 }
 
-function openClawSessionRoots() {
-  const stateDir = process.env.OPENCLAW_STATE_DIR || homePath(".openclaw");
+function aforaSessionRoots() {
+  const stateDir = process.env.AFORA_STATE_DIR || homePath(".afora");
   const agentsDir = path.join(stateDir, "agents");
   if (!fs.existsSync(agentsDir)) return [];
   try {
@@ -79,7 +79,7 @@ function defaultRoots() {
     homePath(".codex", "sessions"),
     homePath(".claude", "projects"),
     homePath(".pi", "agent", "sessions"),
-    ...openClawSessionRoots(),
+    ...aforaSessionRoots(),
   ];
 }
 
@@ -135,10 +135,10 @@ function detectAgent(file, rows) {
   if (file.includes(`${path.sep}.claude${path.sep}`)) return "claude";
   if (file.includes(`${path.sep}.pi${path.sep}`)) return "pi";
   if (
-    file.includes(`${path.sep}.openclaw${path.sep}`) ||
+    file.includes(`${path.sep}.afora${path.sep}`) ||
     (file.includes(`${path.sep}agents${path.sep}`) && file.includes(`${path.sep}sessions${path.sep}`))
   ) {
-    return "openclaw";
+    return "afora";
   }
   if (rows.some((row) => row?.type === "session_meta" || row?.type === "response_item")) return "codex";
   if (rows.some((row) => row?.sessionId && row?.userType)) return "claude";

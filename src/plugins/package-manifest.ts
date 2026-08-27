@@ -4,7 +4,7 @@ import { MANIFEST_KEY } from "../compat/legacy-names.js";
 import { isRecord } from "../utils.js";
 import type { PluginManifestChannelCommandDefaults } from "./manifest-types.js";
 
-/** package.json OpenClaw metadata used for plugin setup and catalog discovery. */
+/** package.json Afora metadata used for plugin setup and catalog discovery. */
 type PluginPackageChannelApprovalFlag = "native";
 
 export type PluginPackageChannel = {
@@ -81,41 +81,41 @@ export type PluginPackageInstall = {
   requiredPlatformPackages?: string[];
 };
 
-type OpenClawPackageSetupFeatures = {
+type AforaPackageSetupFeatures = {
   configPromotion?: boolean;
   /**
-   * @deprecated Declare doctorContract.stateMigrations in openclaw.plugin.json instead.
+   * @deprecated Declare doctorContract.stateMigrations in afora.plugin.json instead.
    * Removal plan: remove the setup-entry adapter after the 2027.1 external-plugin migration window.
    */
   legacyStateMigrations?: boolean;
   legacySessionSurfaces?: boolean;
 };
 
-type OpenClawPackageCompat = {
+type AforaPackageCompat = {
   pluginApi?: string;
   minGatewayVersion?: string;
 };
 
-export type OpenClawPackageBuild = {
+export type AforaPackageBuild = {
   bundledDist?: boolean;
-  openclawVersion?: string;
+  aforaVersion?: string;
   pluginSdkVersion?: string;
 };
 
-export type OpenClawPackageManifest = {
+export type AforaPackageManifest = {
   extensions?: string[];
   runtimeExtensions?: string[];
   setupEntry?: string;
   runtimeSetupEntry?: string;
-  setupFeatures?: OpenClawPackageSetupFeatures;
+  setupFeatures?: AforaPackageSetupFeatures;
   plugin?: {
     id?: string;
     label?: string;
   };
   channel?: PluginPackageChannel;
-  compat?: OpenClawPackageCompat;
+  compat?: AforaPackageCompat;
   install?: PluginPackageInstall;
-  build?: OpenClawPackageBuild;
+  build?: AforaPackageBuild;
 };
 
 export const DEFAULT_PLUGIN_ENTRY_CANDIDATES = [
@@ -139,11 +139,11 @@ export type PackageManifest = {
   description?: string;
   dependencies?: Record<string, string>;
   optionalDependencies?: Record<string, string>;
-} & Partial<Record<ManifestKey, OpenClawPackageManifest>>;
+} & Partial<Record<ManifestKey, AforaPackageManifest>>;
 
 export function getPackageManifestMetadata(
   manifest: PackageManifest | undefined,
-): OpenClawPackageManifest | undefined {
+): AforaPackageManifest | undefined {
   if (!manifest) {
     return undefined;
   }
@@ -153,18 +153,18 @@ export function getPackageManifestMetadata(
 export function resolvePackageExtensionEntries(
   manifest: PackageManifest | undefined,
 ): PackageExtensionResolution {
-  const rawOpenClaw = manifest?.[MANIFEST_KEY] as unknown;
-  if (rawOpenClaw === undefined || rawOpenClaw === null) {
+  const rawAfora = manifest?.[MANIFEST_KEY] as unknown;
+  if (rawAfora === undefined || rawAfora === null) {
     return { status: "missing", entries: [] };
   }
-  if (!isRecord(rawOpenClaw)) {
+  if (!isRecord(rawAfora)) {
     return {
       status: "invalid",
       entries: [],
-      error: "package.json openclaw must be an object",
+      error: "package.json afora must be an object",
     };
   }
-  const raw = rawOpenClaw.extensions;
+  const raw = rawAfora.extensions;
   if (raw === undefined || raw === null) {
     return { status: "missing", entries: [] };
   }
@@ -172,7 +172,7 @@ export function resolvePackageExtensionEntries(
     return {
       status: "invalid",
       entries: [],
-      error: "package.json openclaw.extensions must be an array",
+      error: "package.json afora.extensions must be an array",
     };
   }
   const entries: string[] = [];
@@ -182,7 +182,7 @@ export function resolvePackageExtensionEntries(
       return {
         status: "invalid",
         entries: [],
-        error: `package.json openclaw.extensions[${index}] must be a non-empty string`,
+        error: `package.json afora.extensions[${index}] must be a non-empty string`,
       };
     }
     entries.push(normalized);

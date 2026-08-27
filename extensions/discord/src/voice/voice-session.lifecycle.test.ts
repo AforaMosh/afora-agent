@@ -378,7 +378,7 @@ defineDiscordVoiceTests(
 
       await manager.join({ guildId: "g1", channelId: "1001" });
 
-      expect(getVoiceConnectionMock).toHaveBeenCalledWith("g1", "openclaw:default");
+      expect(getVoiceConnectionMock).toHaveBeenCalledWith("g1", "afora:default");
       expect(staleConnection.destroy).toHaveBeenCalledTimes(1);
       expectConnectedStatus(manager, "1001");
     });
@@ -390,15 +390,15 @@ defineDiscordVoiceTests(
       await firstManager.join({ guildId: "g1", channelId: "1001" });
       await secondManager.join({ guildId: "g1", channelId: "1002" });
 
-      expect(getVoiceConnectionMock).toHaveBeenNthCalledWith(1, "g1", "openclaw:first");
-      expect(getVoiceConnectionMock).toHaveBeenNthCalledWith(2, "g1", "openclaw:second");
+      expect(getVoiceConnectionMock).toHaveBeenNthCalledWith(1, "g1", "afora:first");
+      expect(getVoiceConnectionMock).toHaveBeenNthCalledWith(2, "g1", "afora:second");
       expect(joinVoiceChannelMock).toHaveBeenNthCalledWith(
         1,
-        expect.objectContaining({ group: "openclaw:first" }),
+        expect.objectContaining({ group: "afora:first" }),
       );
       expect(joinVoiceChannelMock).toHaveBeenNthCalledWith(
         2,
-        expect.objectContaining({ group: "openclaw:second" }),
+        expect.objectContaining({ group: "afora:second" }),
       );
     });
 

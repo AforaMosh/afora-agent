@@ -177,7 +177,7 @@ allowBuilds:
   protobufjs: true
   sharp: true
   tree-sitter-bash: false
-  openclaw: true
+  "afora-agent": true
   "@openclaw/proxyline": true
   clawpdf: true
   "@openclaw/crabline": true

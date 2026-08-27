@@ -14,16 +14,16 @@ const tempDirs = useAutoCleanupTempDirTracker((cleanup) => {
 });
 
 async function createLockFixture() {
-  const root = tempDirs.make("openclaw-doctor-sqlite-lock-");
+  const root = tempDirs.make("afora-doctor-sqlite-lock-");
   const stateDir = path.join(root, "state");
-  const configPath = path.join(stateDir, "openclaw.json");
+  const configPath = path.join(stateDir, "afora.json");
   const lockDir = path.join(root, "locks");
   await fs.mkdir(stateDir, { recursive: true });
   await fs.writeFile(configPath, "{}\n", "utf8");
   const env = {
     ...process.env,
-    OPENCLAW_CONFIG_PATH: configPath,
-    OPENCLAW_STATE_DIR: stateDir,
+    AFORA_CONFIG_PATH: configPath,
+    AFORA_STATE_DIR: stateDir,
     VITEST: "1",
   };
   return {
@@ -33,7 +33,7 @@ async function createLockFixture() {
       lockDir,
       platform: "darwin" as const,
       pollIntervalMs: 2,
-      readProcessCmdline: () => ["openclaw-gateway"],
+      readProcessCmdline: () => ["afora-gateway"],
       timeoutMs: 15,
     },
   };
@@ -119,7 +119,7 @@ describe("doctor SQLite maintenance lock", () => {
         platform: "darwin",
         port: 18789,
         pollIntervalMs: 2,
-        readProcessCmdline: () => ["openclaw", "doctor", "--session-sqlite", "compact"],
+        readProcessCmdline: () => ["afora", "doctor", "--session-sqlite", "compact"],
         timeoutMs: 15,
       }),
     ).rejects.toBeInstanceOf(GatewayLockError);
@@ -176,7 +176,7 @@ describe("doctor SQLite maintenance lock", () => {
     const run = vi.fn();
     const gatewayLock = await acquireGatewayLock({
       allowInTests: true,
-      env: { ...fixture.env, OPENCLAW_ALLOW_MULTI_GATEWAY: "1" },
+      env: { ...fixture.env, AFORA_ALLOW_MULTI_GATEWAY: "1" },
       lockDir: fixture.lockDir,
       platform: "darwin",
       port: 18789,
@@ -209,7 +209,7 @@ describe("doctor SQLite maintenance lock", () => {
     await expect(
       withDoctorSqliteMaintenanceLock(
         {
-          env: { ...fixture.env, OPENCLAW_ALLOW_MULTI_GATEWAY: "1" },
+          env: { ...fixture.env, AFORA_ALLOW_MULTI_GATEWAY: "1" },
           operation: "state SQLite compaction",
           run: () => "done",
         },
@@ -221,7 +221,7 @@ describe("doctor SQLite maintenance lock", () => {
   it("refuses explicit destructive targets outside the locked state directory", async () => {
     const fixture = await createLockFixture();
     const externalPath = path.join(
-      tempDirs.make("openclaw-external-session-store-"),
+      tempDirs.make("afora-external-session-store-"),
       "sessions.json",
     );
     const run = vi.fn();
@@ -236,7 +236,7 @@ describe("doctor SQLite maintenance lock", () => {
         },
         { lockOptions: fixture.lockOptions },
       ),
-    ).rejects.toThrow(/outside the active OpenClaw state directory/);
+    ).rejects.toThrow(/outside the active Afora state directory/);
     expect(run).not.toHaveBeenCalled();
 
     const gatewayLock = await acquireGatewayLock({
@@ -258,10 +258,10 @@ describe("doctor SQLite maintenance lock", () => {
       return;
     }
     const fixture = await createLockFixture();
-    const sessionsDir = path.join(fixture.env.OPENCLAW_STATE_DIR, "agents", "main", "sessions");
+    const sessionsDir = path.join(fixture.env.AFORA_STATE_DIR, "agents", "main", "sessions");
     const storePath = path.join(sessionsDir, "sessions.json");
     const outsideTarget = path.join(
-      tempDirs.make("openclaw-dangling-session-target-"),
+      tempDirs.make("afora-dangling-session-target-"),
       "missing.json",
     );
     await fs.mkdir(sessionsDir, { recursive: true });
@@ -278,7 +278,7 @@ describe("doctor SQLite maintenance lock", () => {
         },
         { lockOptions: fixture.lockOptions },
       ),
-    ).rejects.toThrow(/outside the active OpenClaw state directory/);
+    ).rejects.toThrow(/outside the active Afora state directory/);
     expect(run).not.toHaveBeenCalled();
   });
 
@@ -288,10 +288,10 @@ describe("doctor SQLite maintenance lock", () => {
     }
     const fixture = await createLockFixture();
     const externalAlias = path.join(
-      path.dirname(fixture.env.OPENCLAW_STATE_DIR),
+      path.dirname(fixture.env.AFORA_STATE_DIR),
       "external-state-alias",
     );
-    await fs.symlink(fixture.env.OPENCLAW_STATE_DIR, externalAlias, "dir");
+    await fs.symlink(fixture.env.AFORA_STATE_DIR, externalAlias, "dir");
     const storePath = path.join(externalAlias, "agents", "main", "sessions", "sessions.json");
     const run = vi.fn();
 
@@ -305,15 +305,15 @@ describe("doctor SQLite maintenance lock", () => {
         },
         { lockOptions: fixture.lockOptions },
       ),
-    ).rejects.toThrow(/outside the active OpenClaw state directory/);
+    ).rejects.toThrow(/outside the active Afora state directory/);
     expect(run).not.toHaveBeenCalled();
   });
 
   it("refuses in-state hard links that can alias storage outside ownership", async () => {
     const fixture = await createLockFixture();
-    const sessionsDir = path.join(fixture.env.OPENCLAW_STATE_DIR, "agents", "main", "sessions");
+    const sessionsDir = path.join(fixture.env.AFORA_STATE_DIR, "agents", "main", "sessions");
     const storePath = path.join(sessionsDir, "sessions.json");
-    const externalDir = path.join(path.dirname(fixture.env.OPENCLAW_STATE_DIR), "external-state");
+    const externalDir = path.join(path.dirname(fixture.env.AFORA_STATE_DIR), "external-state");
     const externalPath = path.join(externalDir, "sessions.json");
     await fs.mkdir(sessionsDir, { recursive: true });
     await fs.mkdir(externalDir, { recursive: true });
@@ -340,9 +340,9 @@ describe("doctor SQLite maintenance lock", () => {
     "refuses in-state symbolic links before destructive maintenance",
     async () => {
       const fixture = await createLockFixture();
-      const sessionsDir = path.join(fixture.env.OPENCLAW_STATE_DIR, "agents", "main", "agent");
+      const sessionsDir = path.join(fixture.env.AFORA_STATE_DIR, "agents", "main", "agent");
       const targetPath = path.join(sessionsDir, "sidecar-target");
-      const sidecarPath = path.join(sessionsDir, "openclaw-agent.sqlite-wal");
+      const sidecarPath = path.join(sessionsDir, "afora-agent.sqlite-wal");
       await fs.mkdir(sessionsDir, { recursive: true });
       await fs.writeFile(targetPath, "owned target\n", "utf8");
       await fs.symlink(targetPath, sidecarPath);
@@ -368,15 +368,15 @@ describe("doctor SQLite maintenance lock", () => {
     "refuses symbolic links in owned path ancestors",
     async () => {
       const fixture = await createLockFixture();
-      const agentsDir = path.join(fixture.env.OPENCLAW_STATE_DIR, "agents");
-      const realAgentDir = path.join(fixture.env.OPENCLAW_STATE_DIR, "real-main");
+      const agentsDir = path.join(fixture.env.AFORA_STATE_DIR, "agents");
+      const realAgentDir = path.join(fixture.env.AFORA_STATE_DIR, "real-main");
       const aliasedAgentDir = path.join(agentsDir, "main");
-      const databasePath = path.join(aliasedAgentDir, "agent", "openclaw-agent.sqlite");
+      const databasePath = path.join(aliasedAgentDir, "agent", "afora-agent.sqlite");
       await fs.mkdir(path.dirname(path.join(realAgentDir, "agent", "placeholder")), {
         recursive: true,
       });
       await fs.mkdir(agentsDir, { recursive: true });
-      await fs.writeFile(path.join(realAgentDir, "agent", "openclaw-agent.sqlite"), "owned\n");
+      await fs.writeFile(path.join(realAgentDir, "agent", "afora-agent.sqlite"), "owned\n");
       await fs.symlink(realAgentDir, aliasedAgentDir, "dir");
       const run = vi.fn();
 
@@ -393,7 +393,7 @@ describe("doctor SQLite maintenance lock", () => {
       ).rejects.toThrow(/symbolic-link path component/);
       expect(run).not.toHaveBeenCalled();
       await expect(
-        fs.readFile(path.join(realAgentDir, "agent", "openclaw-agent.sqlite"), "utf8"),
+        fs.readFile(path.join(realAgentDir, "agent", "afora-agent.sqlite"), "utf8"),
       ).resolves.toBe("owned\n");
     },
   );
@@ -401,7 +401,7 @@ describe("doctor SQLite maintenance lock", () => {
   it("allows explicit destructive targets owned by the locked state directory", async () => {
     const fixture = await createLockFixture();
     const storePath = path.join(
-      fixture.env.OPENCLAW_STATE_DIR,
+      fixture.env.AFORA_STATE_DIR,
       "agents",
       "main",
       "sessions",

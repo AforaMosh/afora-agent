@@ -1,6 +1,6 @@
 // Zalouser plugin module implements security audit behavior.
-import { buildMutableAllowEntryDetector } from "openclaw/plugin-sdk/channel-policy";
-import { isDangerousNameMatchingEnabled } from "openclaw/plugin-sdk/dangerous-name-runtime";
+import { buildMutableAllowEntryDetector } from "afora-agent/plugin-sdk/channel-policy";
+import { isDangerousNameMatchingEnabled } from "afora-agent/plugin-sdk/dangerous-name-runtime";
 import type { ResolvedZalouserAccount } from "./accounts.js";
 
 export const isZalouserMutableGroupEntry = buildMutableAllowEntryDetector({

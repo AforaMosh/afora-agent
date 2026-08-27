@@ -1,5 +1,5 @@
 // Discord plugin module implements status behavior.
-import { channelReadyPatch } from "openclaw/plugin-sdk/gateway-runtime";
+import { channelReadyPatch } from "afora-agent/plugin-sdk/gateway-runtime";
 
 type DiscordMonitorStatusPatch = {
   connected?: boolean;

@@ -6,9 +6,9 @@
 import {
   findNormalizedProviderKey,
   normalizeProviderId,
-} from "@openclaw/model-catalog-core/provider-id";
+} from "@afora/model-catalog-core/provider-id";
 import type { AuthProfileConfig } from "../../config/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveAuthProfileMetadata } from "./identity.js";
 import { dedupeProfileIds, listProfilesForProvider } from "./profile-list.js";
 import type { AuthProfileIdRepairResult, AuthProfileStore } from "./types.js";
@@ -33,7 +33,7 @@ function isEmailLike(value: string): boolean {
 
 /** Suggests a modern OAuth profile id for a legacy provider:default profile. */
 export function suggestOAuthProfileIdForLegacyDefault(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   store: AuthProfileStore;
   provider: string;
   legacyProfileId: string;
@@ -95,7 +95,7 @@ export function suggestOAuthProfileIdForLegacyDefault(params: {
 
 /** Migrates config auth profile references away from a legacy OAuth default id. */
 export function repairOAuthProfileIdMismatch(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   store: AuthProfileStore;
   provider: string;
   legacyProfileId?: string;
@@ -169,7 +169,7 @@ export function repairOAuthProfileIdMismatch(params: {
     return { ...order, [resolvedKey]: deduped };
   })();
 
-  const nextCfg: OpenClawConfig = {
+  const nextCfg: AforaConfig = {
     ...params.cfg,
     auth: {
       ...params.cfg.auth,

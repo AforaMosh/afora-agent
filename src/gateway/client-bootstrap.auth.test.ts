@@ -1,10 +1,10 @@
 // Unmocked auth-policy coverage for the shared Gateway client bootstrap owner.
 import { describe, expect, it } from "vitest";
 import type { GatewayRemoteConfig } from "../config/types.gateway.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveGatewayClientBootstrap } from "./client-bootstrap.js";
 
-function remoteGatewayConfig(remote?: GatewayRemoteConfig): OpenClawConfig {
+function remoteGatewayConfig(remote?: GatewayRemoteConfig): AforaConfig {
   return {
     gateway: {
       mode: "remote",
@@ -17,7 +17,7 @@ function remoteGatewayConfig(remote?: GatewayRemoteConfig): OpenClawConfig {
 }
 
 async function expectInteractiveAuth(
-  params: { config: OpenClawConfig; env?: NodeJS.ProcessEnv },
+  params: { config: AforaConfig; env?: NodeJS.ProcessEnv },
   expectedAuth: { token?: string; password?: string },
 ): Promise<void> {
   const result = await resolveGatewayClientBootstrap({
@@ -30,7 +30,7 @@ async function expectInteractiveAuth(
 }
 
 describe("resolveGatewayClientBootstrap interactive auth policy", () => {
-  it("keeps configured local password ahead of OPENCLAW_GATEWAY_PASSWORD", async () => {
+  it("keeps configured local password ahead of AFORA_GATEWAY_PASSWORD", async () => {
     await expectInteractiveAuth(
       {
         config: {
@@ -39,7 +39,7 @@ describe("resolveGatewayClientBootstrap interactive auth policy", () => {
             auth: { mode: "password", password: "local-config-auth-value" }, // pragma: allowlist secret
           },
         },
-        env: { OPENCLAW_GATEWAY_PASSWORD: "shell-password-value" }, // pragma: allowlist secret
+        env: { AFORA_GATEWAY_PASSWORD: "shell-password-value" }, // pragma: allowlist secret
       },
       {
         token: undefined,
@@ -48,11 +48,11 @@ describe("resolveGatewayClientBootstrap interactive auth policy", () => {
     );
   });
 
-  it("falls back to OPENCLAW_GATEWAY_PASSWORD without configured local password", async () => {
+  it("falls back to AFORA_GATEWAY_PASSWORD without configured local password", async () => {
     await expectInteractiveAuth(
       {
         config: { gateway: { mode: "local", auth: { mode: "password" } } },
-        env: { OPENCLAW_GATEWAY_PASSWORD: "shell-password-value" }, // pragma: allowlist secret
+        env: { AFORA_GATEWAY_PASSWORD: "shell-password-value" }, // pragma: allowlist secret
       },
       {
         token: undefined,
@@ -61,33 +61,33 @@ describe("resolveGatewayClientBootstrap interactive auth policy", () => {
     );
   });
 
-  it("uses OPENCLAW_GATEWAY_TOKEN as remote interactive fallback", async () => {
+  it("uses AFORA_GATEWAY_TOKEN as remote interactive fallback", async () => {
     await expectInteractiveAuth(
       {
         config: remoteGatewayConfig(),
-        env: { OPENCLAW_GATEWAY_TOKEN: "shell-token-value" },
+        env: { AFORA_GATEWAY_TOKEN: "shell-token-value" },
       },
       { token: "shell-token-value", password: undefined },
     );
   });
 
-  it("keeps configured remote token ahead of OPENCLAW_GATEWAY_TOKEN", async () => {
+  it("keeps configured remote token ahead of AFORA_GATEWAY_TOKEN", async () => {
     await expectInteractiveAuth(
       {
         config: remoteGatewayConfig({ token: "remote-config-auth-value" }),
-        env: { OPENCLAW_GATEWAY_TOKEN: "shell-token-value" },
+        env: { AFORA_GATEWAY_TOKEN: "shell-token-value" },
       },
       { token: "remote-config-auth-value", password: undefined },
     );
   });
 
-  it("falls back to OPENCLAW_GATEWAY_TOKEN when the remote token ref is unresolved", async () => {
+  it("falls back to AFORA_GATEWAY_TOKEN when the remote token ref is unresolved", async () => {
     await expectInteractiveAuth(
       {
         config: remoteGatewayConfig({
           token: { source: "env", provider: "default", id: "ABSENT_BOOTSTRAP_REMOTE_TOKEN" },
         }),
-        env: { OPENCLAW_GATEWAY_TOKEN: "shell-token-value" },
+        env: { AFORA_GATEWAY_TOKEN: "shell-token-value" },
       },
       { token: "shell-token-value", password: undefined },
     );
@@ -100,7 +100,7 @@ describe("resolveGatewayClientBootstrap interactive auth policy", () => {
           gateway: { mode: "local", auth: { token: "configured-auth-value" } },
         },
         gatewayUrl: "wss://override.example/rpc",
-        env: { OPENCLAW_GATEWAY_TOKEN: "shell-token-value" },
+        env: { AFORA_GATEWAY_TOKEN: "shell-token-value" },
         authPolicy: "interactive",
         overrideAuthErrorHint: "Fix: pass explicit auth.",
       }),
@@ -113,8 +113,8 @@ describe("resolveGatewayClientBootstrap interactive auth policy", () => {
         gateway: { mode: "local", auth: { token: "configured-auth-value" } },
       },
       env: {
-        OPENCLAW_GATEWAY_URL: "wss://override.example/rpc",
-        OPENCLAW_GATEWAY_TOKEN: "shell-token-value",
+        AFORA_GATEWAY_URL: "wss://override.example/rpc",
+        AFORA_GATEWAY_TOKEN: "shell-token-value",
       },
       authPolicy: "interactive",
       overrideAuthErrorHint: "Fix: pass explicit auth.",
@@ -130,7 +130,7 @@ describe("resolveGatewayClientBootstrap interactive auth policy", () => {
       },
       gatewayUrl: "wss://override.example/rpc",
       explicitAuth: { token: "caller-auth-value" },
-      env: { OPENCLAW_GATEWAY_TOKEN: "shell-token-value" },
+      env: { AFORA_GATEWAY_TOKEN: "shell-token-value" },
       authPolicy: "interactive",
       overrideAuthErrorHint: "Fix: pass explicit auth.",
     });

@@ -4,12 +4,12 @@
  */
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { dispatchGatewayMethod } from "openclaw/plugin-sdk/gateway-method-runtime";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { dispatchGatewayMethod } from "afora-agent/plugin-sdk/gateway-method-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   readJsonBodyWithLimit,
   WEBHOOK_BODY_READ_DEFAULTS,
-} from "openclaw/plugin-sdk/webhook-request-guards";
+} from "afora-agent/plugin-sdk/webhook-request-guards";
 import { isAdminHttpRpcAllowedMethod, listAdminHttpRpcAllowedMethods } from "./methods.js";
 
 const ErrorCodes = {

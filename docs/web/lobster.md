@@ -10,7 +10,7 @@ sidebarTitle: "The Lobster"
 
 If you use the [Control UI](/web/control-ui) long enough, at some point a small lobster will wander into the bottom of your sidebar, look around, and make itself at home for a few minutes.
 
-This is normal. This is OpenClaw.
+This is normal. This is Afora.
 
 ## What you are looking at
 
@@ -66,7 +66,7 @@ Collected observations from people who spend too much time watching their sideba
 - At least one recorded visitor was not a lobster. It maintains that it is.
 - People who have used the same browser for a long time report their lobster arrives sooner, stays longer, and waves at them. People who shoo a lot describe a certain distance.
 - After a Gateway upgrade, pay attention to what the first visitor is carrying.
-- The lobster in the sidebar has a cousin in the terminal. It shows up in the `openclaw` banner on days of its own choosing, and no one has successfully predicted which.
+- The lobster in the sidebar has a cousin in the terminal. It shows up in the `afora` banner on days of its own choosing, and no one has successfully predicted which.
 - On the days the cousin appears, sidebar lobsters have been seen dressed nautically. The two refuse to explain the connection.
 - During very long runs, the lobster stops playing and settles in to wait with you. Solidarity.
 - When something crosses the ledge, the resident stops what it is doing and watches. You would too.
@@ -77,4 +77,4 @@ Collected observations from people who spend too much time watching their sideba
 
 ## Privacy
 
-Everything on this page happens locally in your browser: the randomness, the schedule, the Lobsterdex. No lobster data leaves your machine. OpenClaw does not know which lobsters you have met, and frankly it is jealous.
+Everything on this page happens locally in your browser: the randomness, the schedule, the Lobsterdex. No lobster data leaves your machine. Afora does not know which lobsters you have met, and frankly it is jealous.

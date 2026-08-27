@@ -52,10 +52,10 @@ describe("resolveRepoRoot", () => {
   });
 
   it("resolves an unpacked workspace without git metadata", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "openclaw-repo-root-"));
+    const root = mkdtempSync(path.join(tmpdir(), "afora-repo-root-"));
     try {
       mkdirSync(path.join(root, "scripts", "nested"), { recursive: true });
-      writeFileSync(path.join(root, "package.json"), '{"name":"openclaw"}\n');
+      writeFileSync(path.join(root, "package.json"), '{"name":"afora"}\n');
       writeFileSync(path.join(root, "pnpm-workspace.yaml"), "packages: []\n");
 
       expect(

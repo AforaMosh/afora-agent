@@ -4,7 +4,7 @@ import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import { isSupportedOpenClawNodeVersion } from "../../node-version.mjs";
+import { isSupportedAforaNodeVersion } from "../../node-version.mjs";
 import { NODE_RELEASE_VERSION_CASES } from "../helpers/node-version-cases.js";
 import { createScriptTestHarness } from "./test-helpers.js";
 
@@ -78,10 +78,10 @@ function createDeferredPathSuccessFixture(source: string): string {
     "function Write-Banner { }",
     "function Ensure-ExecutionPolicy { return $true }",
     "function Check-Node { return $true }",
-    "function Check-ExistingOpenClaw { return $false }",
+    "function Check-ExistingAfora { return $false }",
     "function Add-ToPath { param([string]$Path) }",
-    "function Install-OpenClaw { return $true }",
-    "function Ensure-OpenClawOnPath { return $false }",
+    "function Install-Afora { return $true }",
+    "function Ensure-AforaOnPath { return $false }",
     "$NoOnboard = $true",
     "",
     ...entrypointLines,
@@ -146,14 +146,14 @@ describe("install.ps1 failure handling", () => {
     const entrypointLines = extractEntrypointLines(source);
     const cases = [
       {
-        name: "openclaw-native-command-exit",
+        name: "afora-native-command-exit",
         source: [
           scriptWithoutEntryPoint,
           "",
-          "function Get-OpenClawCommandPath { return (Get-Process -Id $PID).Path }",
+          "function Get-AforaCommandPath { return (Get-Process -Id $PID).Path }",
           "$caught = $false",
           "try {",
-          "  Invoke-OpenClawCommand -NoLogo -NoProfile -Command 'exit 17'",
+          "  Invoke-AforaCommand -NoLogo -NoProfile -Command 'exit 17'",
           "} catch {",
           "  if ($_.Exception.Message -notmatch 'failed with exit code 17') { throw }",
           "  $caught = $true",
@@ -167,7 +167,7 @@ describe("install.ps1 failure handling", () => {
         source: [
           scriptWithoutEntryPoint,
           "",
-          "function Invoke-OpenClawCommand { throw 'doctor failed' }",
+          "function Invoke-AforaCommand { throw 'doctor failed' }",
           "$output = @(Run-Doctor *>&1 | ForEach-Object { $_.ToString() })",
           '$text = $output -join "`n"',
           "if ($text -match 'Migration complete') { throw 'doctor failure reported success' }",
@@ -183,7 +183,7 @@ describe("install.ps1 failure handling", () => {
           "$cases = @{",
           ...NODE_RELEASE_VERSION_CASES.map(
             (version) =>
-              `  ${toPowerShellSingleQuotedLiteral(version)} = $${isSupportedOpenClawNodeVersion(version)}`,
+              `  ${toPowerShellSingleQuotedLiteral(version)} = $${isSupportedAforaNodeVersion(version)}`,
           ),
           "}",
           "foreach ($entry in $cases.GetEnumerator()) {",
@@ -200,7 +200,7 @@ describe("install.ps1 failure handling", () => {
           "",
           "$originalTemp = $env:TEMP",
           "$originalTmp = $env:TMP",
-          '$sandbox = Join-Path ([System.IO.Path]::GetTempPath()) ("openclaw-install-temp-test-" + [guid]::NewGuid().ToString("N"))',
+          '$sandbox = Join-Path ([System.IO.Path]::GetTempPath()) ("afora-install-temp-test-" + [guid]::NewGuid().ToString("N"))',
           '$longTemp = Join-Path $sandbox "Long Temp"',
           "try {",
           "  New-Item -ItemType Directory -Force -Path $longTemp | Out-Null",
@@ -242,7 +242,7 @@ describe("install.ps1 failure handling", () => {
         source: [
           scriptWithoutEntryPoint,
           "",
-          '$sandbox = Join-Path ([System.IO.Path]::GetTempPath()) ("openclaw-portable-git-test-" + [guid]::NewGuid().ToString("N"))',
+          '$sandbox = Join-Path ([System.IO.Path]::GetTempPath()) ("afora-portable-git-test-" + [guid]::NewGuid().ToString("N"))',
           '$portableRoot = Join-Path $sandbox "portable-git"',
           "try {",
           "  New-Item -ItemType Directory -Force -Path $sandbox | Out-Null",
@@ -262,7 +262,7 @@ describe("install.ps1 failure handling", () => {
           "  Install-PortableGit",
           "  if (-not (Test-Path -LiteralPath (Join-Path $portableRoot 'cmd/git.exe'))) { throw 'missing cmd/git.exe' }",
           "  if (-not (Test-Path -LiteralPath (Join-Path $portableRoot 'etc/gitconfig'))) { throw 'missing etc/gitconfig' }",
-          "  if (@(Get-ChildItem -LiteralPath $sandbox -Filter 'openclaw-portable-git-*').Count -ne 0) { throw 'temporary Git files remain' }",
+          "  if (@(Get-ChildItem -LiteralPath $sandbox -Filter 'afora-portable-git-*').Count -ne 0) { throw 'temporary Git files remain' }",
           "} finally {",
           "  if (Test-Path -LiteralPath $sandbox) { Remove-Item -LiteralPath $sandbox -Recurse -Force }",
           "}",
@@ -499,7 +499,7 @@ describe("install.ps1 failure handling", () => {
           "try {",
           ...entrypointLines.map((line) => `  ${line}`),
           "} catch {",
-          "  if ($_.Exception.Message -ne 'OpenClaw installation failed with exit code 1.') { throw }",
+          "  if ($_.Exception.Message -ne 'Afora installation failed with exit code 1.') { throw }",
           "  $caught = $true",
           "}",
           "if (-not $caught) { throw 'Install failure did not reach the caller' }",
@@ -518,15 +518,15 @@ describe("install.ps1 failure handling", () => {
           "function Write-Banner { }",
           "function Ensure-ExecutionPolicy { return $true }",
           "function Check-Node { return $true }",
-          "function Check-ExistingOpenClaw { return $false }",
+          "function Check-ExistingAfora { return $false }",
           "function Get-NpmCommandPath { return $null }",
-          "function Install-OpenClawFromGit {",
+          "function Install-AforaFromGit {",
           "  Write-Output 'pnpm stdout before failure'",
           "  return $false",
           "}",
-          "function Ensure-OpenClawOnPath { throw 'should not continue after failed git install' }",
+          "function Ensure-AforaOnPath { throw 'should not continue after failed git install' }",
           "$InstallMethod = 'git'",
-          "$GitDir = 'C:\\\\openclaw-test'",
+          "$GitDir = 'C:\\\\afora-test'",
           "$NoOnboard = $true",
           "$null = Main",
           'if ($script:InstallExitCode -ne 1) { throw "InstallExitCode=$script:InstallExitCode" }',
@@ -541,12 +541,12 @@ describe("install.ps1 failure handling", () => {
           "function Write-Banner { }",
           "function Ensure-ExecutionPolicy { return $true }",
           "function Check-Node { return $true }",
-          "function Check-ExistingOpenClaw { return $false }",
+          "function Check-ExistingAfora { return $false }",
           "function Add-ToPath { param([string]$Path) }",
-          "function Install-OpenClaw { Write-Output 'npm stdout'; return $true }",
-          "function Ensure-OpenClawOnPath { return $true }",
+          "function Install-Afora { Write-Output 'npm stdout'; return $true }",
+          "function Ensure-AforaOnPath { return $true }",
           "function Refresh-GatewayServiceIfLoaded { }",
-          "function Invoke-OpenClawCommand { return 'OpenClaw test-version' }",
+          "function Invoke-AforaCommand { return 'Afora test-version' }",
           "$NoOnboard = $true",
           "$result = Main",
           "if ($result -is [array]) { throw 'Main returned an array' }",
@@ -562,15 +562,15 @@ describe("install.ps1 failure handling", () => {
           "function Write-Banner { }",
           "function Ensure-ExecutionPolicy { return $true }",
           "function Check-Node { return $true }",
-          "function Check-ExistingOpenClaw { return $false }",
+          "function Check-ExistingAfora { return $false }",
           "function Add-ToPath { param([string]$Path) }",
-          "function Install-OpenClaw {",
+          "function Install-Afora {",
           "  Write-Output 'native chatter'",
           "  return $true",
           "}",
-          "function Ensure-OpenClawOnPath { return $true }",
+          "function Ensure-AforaOnPath { return $true }",
           "function Refresh-GatewayServiceIfLoaded { }",
-          "function Invoke-OpenClawCommand { return 'OpenClaw test-version' }",
+          "function Invoke-AforaCommand { return 'Afora test-version' }",
           "$NoOnboard = $true",
           ...entrypointLines,
           "",
@@ -581,7 +581,7 @@ describe("install.ps1 failure handling", () => {
         source: [
           scriptWithoutEntryPoint,
           "",
-          '$sandbox = Join-Path ([System.IO.Path]::GetTempPath()) ("openclaw-transactional-clone-" + [guid]::NewGuid().ToString("N"))',
+          '$sandbox = Join-Path ([System.IO.Path]::GetTempPath()) ("afora-transactional-clone-" + [guid]::NewGuid().ToString("N"))',
           "New-Item -ItemType Directory -Path $sandbox | Out-Null",
           "$script:CloneMode = 'success'",
           "$script:ConcurrentRepo = $null",
@@ -605,12 +605,12 @@ describe("install.ps1 failure handling", () => {
           "}",
           "try {",
           "  $successRepo = Join-Path $sandbox 'success'",
-          "  New-TransactionalGitCheckout -RepoUrl 'https://example.invalid/openclaw.git' -RepoDir $successRepo",
+          "  New-TransactionalGitCheckout -RepoUrl 'https://example.invalid/afora.git' -RepoDir $successRepo",
           "  if (-not (Test-Path -LiteralPath (Join-Path $successRepo 'checkout.marker'))) { throw 'complete checkout was not published' }",
           "",
           "  $emptyRepo = Join-Path $sandbox 'empty'",
           "  New-Item -ItemType Directory -Path $emptyRepo | Out-Null",
-          "  New-TransactionalGitCheckout -RepoUrl 'https://example.invalid/openclaw.git' -RepoDir $emptyRepo",
+          "  New-TransactionalGitCheckout -RepoUrl 'https://example.invalid/afora.git' -RepoDir $emptyRepo",
           "  if (-not (Test-Path -LiteralPath (Join-Path $emptyRepo 'checkout.marker'))) { throw 'empty destination was not populated' }",
           "",
           "  $aliasTarget = Join-Path $sandbox 'alias-target'",
@@ -621,25 +621,25 @@ describe("install.ps1 failure handling", () => {
           "  $linkType = if ($IsWindows -or $env:OS -eq 'Windows_NT') { 'Junction' } else { 'SymbolicLink' }",
           "  New-Item -ItemType $linkType -Path $script:AliasPath -Target $aliasTarget | Out-Null",
           "  $script:CloneMode = 'retarget-alias'",
-          "  New-TransactionalGitCheckout -RepoUrl 'https://example.invalid/openclaw.git' -RepoDir $script:AliasPath",
+          "  New-TransactionalGitCheckout -RepoUrl 'https://example.invalid/afora.git' -RepoDir $script:AliasPath",
           "  if (-not (Test-Path -LiteralPath (Join-Path $aliasTarget 'checkout.marker'))) { throw 'original alias target was not populated' }",
           "  if (@(Get-ChildItem -LiteralPath $script:AliasReplacement -Force).Count -ne 0) { throw 'replacement alias target was modified' }",
           "",
           "  $script:CloneMode = 'failure'",
           "  $failedRepo = Join-Path $sandbox 'failure'",
           "  $cloneFailed = $false",
-          "  try { New-TransactionalGitCheckout -RepoUrl 'https://example.invalid/openclaw.git' -RepoDir $failedRepo } catch { $cloneFailed = $true }",
+          "  try { New-TransactionalGitCheckout -RepoUrl 'https://example.invalid/afora.git' -RepoDir $failedRepo } catch { $cloneFailed = $true }",
           "  if (-not $cloneFailed) { throw 'failed clone was accepted' }",
           "  if (Test-Path -LiteralPath $failedRepo) { throw 'failed clone published its destination' }",
           "",
           "  $script:CloneMode = 'concurrent'",
           "  $script:ConcurrentRepo = Join-Path $sandbox 'concurrent'",
           "  $publicationFailed = $false",
-          "  try { New-TransactionalGitCheckout -RepoUrl 'https://example.invalid/openclaw.git' -RepoDir $script:ConcurrentRepo } catch { $publicationFailed = $true }",
+          "  try { New-TransactionalGitCheckout -RepoUrl 'https://example.invalid/afora.git' -RepoDir $script:ConcurrentRepo } catch { $publicationFailed = $true }",
           "  if (-not $publicationFailed) { throw 'concurrent destination was replaced' }",
           "  if ((Get-Content -LiteralPath (Join-Path $script:ConcurrentRepo 'user.marker') -Raw).Trim() -ne 'keep') { throw 'concurrent destination changed' }",
           "  if (Test-Path -LiteralPath (Join-Path $script:ConcurrentRepo 'checkout.marker')) { throw 'clone leaked into concurrent destination' }",
-          "  if (@(Get-ChildItem -LiteralPath $sandbox -Filter '.openclaw-clone-*' -Force).Count -ne 0) { throw 'staging directories remain' }",
+          "  if (@(Get-ChildItem -LiteralPath $sandbox -Filter '.afora-clone-*' -Force).Count -ne 0) { throw 'staging directories remain' }",
           "} finally {",
           "  Remove-Item -LiteralPath $sandbox -Recurse -Force -ErrorAction SilentlyContinue",
           "}",
@@ -647,7 +647,7 @@ describe("install.ps1 failure handling", () => {
         ].join("\n"),
       },
     ];
-    const tempDir = harness.createTempDir("openclaw-install-ps1-batch-");
+    const tempDir = harness.createTempDir("afora-install-ps1-batch-");
     const fixtures = cases.map((testCase, index) => {
       const scriptPath = join(tempDir, `case-${index}.ps1`);
       writeFileSync(scriptPath, testCase.source);
@@ -699,8 +699,8 @@ describe("install.ps1 failure handling", () => {
 
     for (const args of cases) {
       const result = runInstallerFile(args, {
-        OPENCLAW_DRY_RUN: "1",
-        OPENCLAW_NO_ONBOARD: "1",
+        AFORA_DRY_RUN: "1",
+        AFORA_NO_ONBOARD: "1",
       });
       expect(result.status, args.join(" ")).not.toBe(0);
       expect(`${result.stdout}\n${result.stderr}`).not.toContain("[OK] Windows detected");
@@ -709,8 +709,8 @@ describe("install.ps1 failure handling", () => {
 
   runIfPowerShell("validates environment options before starting the installer", () => {
     const result = runInstallerFile(["-NoOnboard"], {
-      OPENCLAW_DRY_RUN: "1",
-      OPENCLAW_INSTALL_METHOD: "bogus",
+      AFORA_DRY_RUN: "1",
+      AFORA_INSTALL_METHOD: "bogus",
     });
 
     expect(result.status).not.toBe(0);
@@ -764,7 +764,7 @@ describe("install.ps1 failure handling", () => {
     const completeInstallBody = extractFunctionBody(source, "Complete-Install");
     expect(completeInstallBody).toMatch(/\$PSCommandPath/);
     expect(completeInstallBody).toMatch(/\bexit \$script:InstallExitCode\b/);
-    expect(completeInstallBody).toMatch(/\bthrow "OpenClaw installation failed with exit code/);
+    expect(completeInstallBody).toMatch(/\bthrow "Afora installation failed with exit code/);
     expect(completeInstallBody).toContain("$script:InstallExitCode -eq 0");
     expect(source).toContain("$null = Main");
     expect(source).toMatch(/\$null = Main\s+Complete-Install\s*$/);
@@ -825,7 +825,7 @@ describe("install.ps1 failure handling", () => {
   });
 
   it("runs npm install through the resolved command with quiet CI defaults", () => {
-    const npmInstallBody = extractFunctionBody(source, "Install-OpenClaw");
+    const npmInstallBody = extractFunctionBody(source, "Install-Afora");
     expect(npmInstallBody).toContain("$npmOutput = Invoke-NpmCommand -Arguments");
     expect(npmInstallBody).toContain("$npmDebugLogRoots = @(Get-NpmDebugLogRootCandidates)");
     expect(npmInstallBody).toContain('$npmInstallArguments = @("install", "-g")');
@@ -852,8 +852,8 @@ describe("install.ps1 failure handling", () => {
 
   it("does not force npm or pnpm lifecycle scripts through cmd.exe", () => {
     const ensurePnpmBody = extractFunctionBody(source, "Ensure-Pnpm");
-    const npmInstallBody = extractFunctionBody(source, "Install-OpenClaw");
-    const gitInstallBody = extractFunctionBody(source, "Install-OpenClawFromGit");
+    const npmInstallBody = extractFunctionBody(source, "Install-Afora");
+    const gitInstallBody = extractFunctionBody(source, "Install-AforaFromGit");
 
     expect(ensurePnpmBody).not.toContain("NPM_CONFIG_SCRIPT_SHELL");
     expect(npmInstallBody).not.toContain("NPM_CONFIG_SCRIPT_SHELL");
@@ -862,7 +862,7 @@ describe("install.ps1 failure handling", () => {
 
   it("rejects a git checkout without a commit before updating it", () => {
     const guardBody = extractFunctionBody(source, "Assert-GitCheckoutHasCommit");
-    const gitInstallBody = extractFunctionBody(source, "Install-OpenClawFromGit");
+    const gitInstallBody = extractFunctionBody(source, "Install-AforaFromGit");
 
     expect(guardBody).toContain('"--git-dir=$gitDir"');
     expect(guardBody).toContain('"--work-tree=$RepoDir"');
@@ -881,7 +881,7 @@ describe("install.ps1 failure handling", () => {
     const commandSafeBody = extractFunctionBody(source, "Invoke-CommandFromWindowsSafeDirectory");
     const npmCommandBody = extractFunctionBody(source, "Invoke-NpmCommand");
     const corepackCommandBody = extractFunctionBody(source, "Invoke-CorepackCommand");
-    const openClawPathBody = extractFunctionBody(source, "Ensure-OpenClawOnPath");
+    const aforaPathBody = extractFunctionBody(source, "Ensure-AforaOnPath");
     const ensurePnpmBody = extractFunctionBody(source, "Ensure-Pnpm");
     const mainBody = extractFunctionBody(source, "Main");
 
@@ -891,12 +891,12 @@ describe("install.ps1 failure handling", () => {
     expect(commandSafeBody).toContain("Pop-Location");
     expect(npmCommandBody).toContain("Invoke-CommandFromWindowsSafeDirectory");
     expect(corepackCommandBody).toContain("Invoke-CommandFromWindowsSafeDirectory");
-    expect(openClawPathBody).toContain('Invoke-NpmCommand -Arguments @("config", "get", "prefix")');
+    expect(aforaPathBody).toContain('Invoke-NpmCommand -Arguments @("config", "get", "prefix")');
     expect(ensurePnpmBody).toContain(
       'Invoke-CorepackCommand -Arguments @("prepare", $pnpmSpec, "--activate")',
     );
     expect(ensurePnpmBody).toContain('Invoke-NpmCommand -Arguments @("install", "-g", $pnpmSpec)');
-    expect(mainBody).toContain('Invoke-NpmCommand -Arguments @("uninstall", "-g", "openclaw")');
+    expect(mainBody).toContain('Invoke-NpmCommand -Arguments @("uninstall", "-g", "afora")');
     expect(mainBody).toContain(
       'Invoke-NpmCommand -Arguments @("list", "-g", "--depth", "0", "--json")',
     );
@@ -926,13 +926,13 @@ describe("install.ps1 failure handling", () => {
     expect(source).not.toContain("Get-InstallerTempDirectory");
   });
 
-  it("rejects OpenClaw GitHub source targets for npm installs", () => {
-    const npmInstallBody = extractFunctionBody(source, "Install-OpenClaw");
-    const sourceTargetBody = extractFunctionBody(source, "Test-OpenClawSourcePackageInstallSpec");
+  it("rejects Afora GitHub source targets for npm installs", () => {
+    const npmInstallBody = extractFunctionBody(source, "Install-Afora");
+    const sourceTargetBody = extractFunctionBody(source, "Test-AforaSourcePackageInstallSpec");
     expect(sourceTargetBody).toContain('$normalizedTag -eq "main"');
-    expect(sourceTargetBody).toContain("^github:openclaw/openclaw");
-    expect(npmInstallBody).toContain("Test-OpenClawSourcePackageInstallSpec -RequestedTag $Tag");
-    expect(npmInstallBody).toContain("npm installs do not support OpenClaw GitHub source targets");
+    expect(sourceTargetBody).toContain("^github:AforaMosh/afora-agent");
+    expect(npmInstallBody).toContain("Test-AforaSourcePackageInstallSpec -RequestedTag $Tag");
+    expect(npmInstallBody).toContain("npm installs do not support Afora GitHub source targets");
     expect(npmInstallBody).toContain("-InstallMethod git -Tag main");
   });
 
@@ -943,7 +943,7 @@ describe("install.ps1 failure handling", () => {
   });
 
   it("preserves the min-release-age probe status before raw npmrc detection", () => {
-    const npmInstallBody = extractFunctionBody(source, "Install-OpenClaw");
+    const npmInstallBody = extractFunctionBody(source, "Install-Afora");
     const probeStatusCapture = npmInstallBody.indexOf("$minReleaseAgeStatus = $LASTEXITCODE");
     const rawKeyProbe = npmInstallBody.indexOf("Test-NpmConfigRawKey -Key");
     expect(probeStatusCapture).toBeGreaterThan(-1);
@@ -961,7 +961,7 @@ describe("install.ps1 failure handling", () => {
   });
 
   it("preserves caller-relative local tarball install specs before safe-cwd npm calls", () => {
-    const resolveSpecBody = extractFunctionBody(source, "Resolve-NpmOpenClawInstallSpec");
+    const resolveSpecBody = extractFunctionBody(source, "Resolve-NpmAforaInstallSpec");
     const localSpecBody = extractFunctionBody(source, "Resolve-LocalNpmPackageInstallSpec");
     const localPathBody = extractFunctionBody(source, "Resolve-LocalNpmPackagePath");
 
@@ -983,7 +983,7 @@ describe("install.ps1 failure handling", () => {
     const portableNodeRootBody = extractFunctionBody(source, "Get-PortableNodeRoot");
     const portableNodePathBody = extractFunctionBody(source, "Ensure-PortableNodeOnUserPath");
     const userPathBody = extractFunctionBody(source, "Add-ToUserPath");
-    const depsRootBody = extractFunctionBody(source, "Get-OpenClawDepsRoot");
+    const depsRootBody = extractFunctionBody(source, "Get-AforaDepsRoot");
     const resolveNodeBody = extractFunctionBody(source, "Resolve-PortableNodeDownload");
     const expandNodeBody = extractFunctionBody(source, "Expand-PortableNodeArchive");
     const timeoutParametersBody = extractFunctionBody(source, "Get-WebRequestTimeoutParameters");
@@ -991,7 +991,7 @@ describe("install.ps1 failure handling", () => {
     expect(installNodeBody).toContain("Install-PortableNode");
     expect(installNodeBody).toContain("Portable Node.js bootstrap failed");
     expect(installNodeBody).toContain("Error: Could not install Node.js automatically.");
-    expect(depsRootBody).toContain("OpenClaw\\deps");
+    expect(depsRootBody).toContain("Afora\\deps");
     expect(portableNodeRootBody).toContain("portable-node");
     expect(portableNodeBody).toContain("Ensure-PortableNodeOnUserPath");
     expect(portableNodeBody).toContain(
@@ -1039,7 +1039,7 @@ describe("install.ps1 failure handling", () => {
     const usePortableGitBody = extractFunctionBody(source, "Use-PortableGitIfPresent");
     const ensureGitBody = extractFunctionBody(source, "Ensure-Git");
 
-    expect(portableGitRootBody).toContain("Get-OpenClawDepsRoot");
+    expect(portableGitRootBody).toContain("Get-AforaDepsRoot");
     expect(portableGitPathEntriesBody).toContain("mingw64\\bin");
     expect(portableGitPathEntriesBody).toContain("usr\\bin");
     expect(portableGitPathEntriesBody).toContain("Split-Path -Parent $gitExe");
@@ -1065,7 +1065,7 @@ describe("install.ps1 failure handling", () => {
     expect(portableGitDownloadBody).toContain("'^MinGit-.*-arm64\\.zip$'");
     expect(portableGitDownloadBody).toContain("'^MinGit-.*-64-bit\\.zip$'");
     expect(portableGitBody).toContain(
-      '$tempName = "openclaw-portable-git-" + [guid]::NewGuid().ToString("N")',
+      '$tempName = "afora-portable-git-" + [guid]::NewGuid().ToString("N")',
     );
     expect(portableGitBody).toContain(
       'Join-Path $script:InstallerTempDirectory ($tempName + ".zip")',
@@ -1089,7 +1089,7 @@ describe("install.ps1 failure handling", () => {
     const pnpmVersionMatchBody = extractFunctionBody(source, "Test-PnpmCommandMatchesVersion");
     const ensurePnpmBody = extractFunctionBody(source, "Ensure-Pnpm");
     const transactionalCloneBody = extractFunctionBody(source, "New-TransactionalGitCheckout");
-    const gitInstallBody = extractFunctionBody(source, "Install-OpenClawFromGit");
+    const gitInstallBody = extractFunctionBody(source, "Install-AforaFromGit");
     const nodeOptionsBody = extractFunctionBody(source, "Resolve-NodeOptionsWithMinOldSpace");
     const mainBody = extractFunctionBody(source, "Main");
 
@@ -1122,9 +1122,9 @@ describe("install.ps1 failure handling", () => {
     expect(gitInstallBody.indexOf("git -C $RepoDir pull --rebase")).toBeLessThan(
       gitInstallBody.indexOf("Ensure-Pnpm -RepoDir $RepoDir"),
     );
-    expect(mainBody).toContain("$gitInstallResults = @(Install-OpenClawFromGit");
+    expect(mainBody).toContain("$gitInstallResults = @(Install-AforaFromGit");
     expect(mainBody).toContain("Test-BooleanSuccessResult -Results $gitInstallResults");
-    expect(mainBody).toContain("$npmInstallResults = @(Install-OpenClaw)");
+    expect(mainBody).toContain("$npmInstallResults = @(Install-Afora)");
     expect(mainBody).toContain("Test-BooleanSuccessResult -Results $npmInstallResults");
     expect(gitInstallBody).toContain("Push-Location -LiteralPath $RepoDir");
     expect(gitInstallBody).toContain("$sourceInstallArgs = @(");
@@ -1173,21 +1173,21 @@ describe("install.ps1 failure handling", () => {
     expect(gitInstallBody).toContain('Write-Host "[!] pnpm build failed for the Git checkout"');
     expect(gitInstallBody).toContain('$entryPath = Join-Path $RepoDir "dist\\\\entry.js"');
     expect(gitInstallBody).toContain("Test-Path $entryPath");
-    expect(gitInstallBody).toContain('Write-Host "[!] OpenClaw build did not produce $entryPath"');
+    expect(gitInstallBody).toContain('Write-Host "[!] Afora build did not produce $entryPath"');
     expect(gitInstallBody).toContain('node ""$entryPath"" %*');
     expect(gitInstallBody).not.toContain("& $pnpmCommand -C $RepoDir install");
     expect(gitInstallBody).not.toContain('node ""$RepoDir\\\\dist\\\\entry.js"" %*');
   });
 
   it("cleans legacy git submodules only from the selected git checkout", () => {
-    const gitInstallBody = extractFunctionBody(source, "Install-OpenClawFromGit");
+    const gitInstallBody = extractFunctionBody(source, "Install-AforaFromGit");
     const mainBody = extractFunctionBody(source, "Main");
     expect(gitInstallBody).toContain("Remove-LegacySubmodule -RepoDir $RepoDir");
     expect(mainBody).not.toContain("Remove-LegacySubmodule");
   });
 
   it("launches interactive onboarding outside Main's captured output", () => {
-    const interactiveCommandBody = extractFunctionBody(source, "Invoke-InteractiveOpenClawCommand");
+    const interactiveCommandBody = extractFunctionBody(source, "Invoke-InteractiveAforaCommand");
     const mainBody = extractFunctionBody(source, "Main");
     expect(interactiveCommandBody).toContain("Start-Process");
     expect(interactiveCommandBody).toContain("-NoNewWindow");
@@ -1196,13 +1196,13 @@ describe("install.ps1 failure handling", () => {
     expect(interactiveCommandBody).toContain("$process.ExitCode -ne 0");
     expect(interactiveCommandBody).toContain("failed with exit code");
     expect(mainBody).toContain('Write-Host "Starting setup..." -ForegroundColor Cyan');
-    expect(mainBody).toContain("Invoke-InteractiveOpenClawCommand onboard");
+    expect(mainBody).toContain("Invoke-InteractiveAforaCommand onboard");
   });
 
   runConcurrentIfPowerShell(
     "fails install when interactive onboarding exits non-zero",
     async () => {
-      const tempDir = mkdtempSync(join(tmpdir(), "openclaw-install-ps1-"));
+      const tempDir = mkdtempSync(join(tmpdir(), "afora-install-ps1-"));
       const scriptPath = join(tempDir, "install.ps1");
       try {
         const scriptWithoutEntryPoint = source.replace(ENTRYPOINT_RE, "");
@@ -1214,12 +1214,12 @@ describe("install.ps1 failure handling", () => {
             "function Write-Banner { }",
             "function Ensure-ExecutionPolicy { return $true }",
             "function Check-Node { return $true }",
-            "function Check-ExistingOpenClaw { return $false }",
+            "function Check-ExistingAfora { return $false }",
             "function Get-NpmCommandPath { return 'npm.cmd' }",
-            "function Install-OpenClaw { return $true }",
-            "function Ensure-OpenClawOnPath { return $true }",
+            "function Install-Afora { return $true }",
+            "function Ensure-AforaOnPath { return $true }",
             "function Add-ToUserPath { param([string]$Path) }",
-            "function Get-OpenClawCommandPath { return 'cmd.exe' }",
+            "function Get-AforaCommandPath { return 'cmd.exe' }",
             "function Start-Process {",
             "  param([string]$FilePath, [string[]]$ArgumentList, [switch]$NoNewWindow, [switch]$Wait, [switch]$PassThru)",
             "  [pscustomobject]@{ ExitCode = 17 }",
@@ -1244,7 +1244,7 @@ describe("install.ps1 failure handling", () => {
 
         expect(result.status).toBe(1);
         expect(`${result.stdout}\n${result.stderr}`).toContain(
-          "openclaw onboard failed with exit code 17",
+          "afora onboard failed with exit code 17",
         );
       } finally {
         rmSync(tempDir, { force: true, recursive: true });
@@ -1253,7 +1253,7 @@ describe("install.ps1 failure handling", () => {
   );
 
   runConcurrentIfPowerShell("exits non-zero when run as a script file", async () => {
-    const tempDir = mkdtempSync(join(tmpdir(), "openclaw-install-ps1-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "afora-install-ps1-"));
     const scriptPath = join(tempDir, "install.ps1");
     try {
       writeFileSync(scriptPath, createFailingNodeFixture(source));
@@ -1277,7 +1277,7 @@ describe("install.ps1 failure handling", () => {
   runConcurrentIfPowerShell(
     "exits zero after install succeeds with deferred PATH discovery",
     async () => {
-      const tempDir = mkdtempSync(join(tmpdir(), "openclaw-install-ps1-"));
+      const tempDir = mkdtempSync(join(tmpdir(), "afora-install-ps1-"));
       const scriptPath = join(tempDir, "install.ps1");
       try {
         writeFileSync(scriptPath, createDeferredPathSuccessFixture(source));

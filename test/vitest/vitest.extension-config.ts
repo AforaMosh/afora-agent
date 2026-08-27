@@ -5,7 +5,7 @@ import { createScopedVitestConfig } from "./vitest.scoped-config.ts";
 
 type ExtensionVitestConfigOptions = {
   fileParallelism?: boolean;
-  includeOpenClawRuntimeSetup?: boolean;
+  includeAforaRuntimeSetup?: boolean;
   isolate?: boolean;
 };
 
@@ -16,7 +16,7 @@ export function createExtensionVitestConfig(
   options: ExtensionVitestConfigOptions = {},
 ): ViteUserConfig {
   return createScopedVitestConfig(
-    loadPatternListFromEnv("OPENCLAW_VITEST_INCLUDE_FILE", env) ??
+    loadPatternListFromEnv("AFORA_VITEST_INCLUDE_FILE", env) ??
       testRoots.map((root) => `${root}/**/*.test.ts`),
     {
       dir: "extensions",

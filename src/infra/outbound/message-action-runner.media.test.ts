@@ -5,9 +5,9 @@ import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { jsonResult } from "../../agents/tools/common.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { createChannelTestPluginBase } from "../../test-utils/channel-plugins.js";
-import { withOpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../../test-utils/afora-test-state.js";
 import {
   messageActionRunnerMocks as channelResolutionMocks,
   resetMessageActionMediaMocks,
@@ -24,10 +24,10 @@ const workspaceConfig = {
       appToken: "xapp-test",
     },
   },
-} as OpenClawConfig;
+} as AforaConfig;
 
-async function withTempOpenClawStateDir<T>(test: (stateDir: string) => Promise<T>): Promise<T> {
-  return await withOpenClawTestState(
+async function withTempAforaStateDir<T>(test: (stateDir: string) => Promise<T>): Promise<T> {
+  return await withAforaTestState(
     { layout: "state-only", prefix: "msg-runner-state-" },
     (state) => test(state.stateDir),
   );
@@ -102,7 +102,7 @@ describe("runMessageAction media behavior", () => {
 
     await expect(
       runMessageAction({
-        cfg: { channels: { textonly: { enabled: true } } } as OpenClawConfig,
+        cfg: { channels: { textonly: { enabled: true } } } as AforaConfig,
         action: "upload-file",
         params: {
           channel: "textonly",
@@ -119,7 +119,7 @@ describe("runMessageAction media behavior", () => {
   it("does not stage buffer-only send attachments before target validation passes", async () => {
     setTestPlugin(workspacePlugin, "workspace");
 
-    await withTempOpenClawStateDir(async (stateDir) => {
+    await withTempAforaStateDir(async (stateDir) => {
       await expect(
         runMessageAction({
           cfg: workspaceConfig,

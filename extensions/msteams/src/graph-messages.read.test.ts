@@ -1,6 +1,6 @@
 // Msteams tests cover graph messages.read plugin behavior.
 import { beforeAll, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 import {
   CHANNEL_TO,
   CHAT_ID,
@@ -35,7 +35,7 @@ describe("getMessageMSTeams", () => {
     });
 
     await getMessageMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: "user:aad-id",
       messageId: "msg-1",
     });
@@ -51,7 +51,7 @@ describe("getMessageMSTeams", () => {
 
     await expect(
       getMessageMSTeams({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         to: "user:unknown-user",
         messageId: "msg-1",
       }),
@@ -66,7 +66,7 @@ describe("getMessageMSTeams", () => {
 
     await expect(
       getMessageMSTeams({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         to: "user:some-user",
         messageId: "msg-1",
       }),
@@ -82,7 +82,7 @@ describe("getMessageMSTeams", () => {
     });
 
     await getMessageMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: `conversation:${CHAT_ID}`,
       messageId: "msg-1",
     });
@@ -102,7 +102,7 @@ describe("getMessageMSTeams", () => {
     });
 
     const result = await getMessageMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
       messageId: "msg-1",
     });
@@ -128,7 +128,7 @@ describe("getMessageMSTeams", () => {
     });
 
     const result = await getMessageMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHANNEL_TO,
       messageId: "msg-2",
     });
@@ -162,7 +162,7 @@ describe("listPinsMSTeams", () => {
     });
 
     const result = await listPinsMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
     });
 
@@ -180,7 +180,7 @@ describe("listPinsMSTeams", () => {
     mockState.fetchGraphJson.mockResolvedValue({ value: [] });
 
     const result = await listPinsMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
     });
 
@@ -198,7 +198,7 @@ describe("listPinsMSTeams", () => {
     });
 
     const result = await listPinsMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
     });
 
@@ -229,7 +229,7 @@ describe("listPinsMSTeams", () => {
     }
 
     const result = await listPinsMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
     });
 
@@ -240,7 +240,7 @@ describe("listPinsMSTeams", () => {
   it("throws for channel list-pins (not supported on Graph v1.0)", async () => {
     await expect(
       listPinsMSTeams({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         to: CHANNEL_TO,
       }),
     ).rejects.toThrow("not supported for channels");
@@ -260,7 +260,7 @@ describe("listReactionsMSTeams", () => {
     });
 
     const result = await listReactionsMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
       messageId: "msg-1",
     });
@@ -293,7 +293,7 @@ describe("listReactionsMSTeams", () => {
     });
 
     const result = await listReactionsMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
       messageId: "msg-1",
     });
@@ -315,7 +315,7 @@ describe("listReactionsMSTeams", () => {
     });
 
     const result = await listReactionsMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHAT_ID,
       messageId: "msg-1",
     });
@@ -346,7 +346,7 @@ describe("listReactionsMSTeams", () => {
     });
 
     const result = await listReactionsMSTeams({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: CHANNEL_TO,
       messageId: "msg-2",
     });

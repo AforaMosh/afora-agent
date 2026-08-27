@@ -2,7 +2,7 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolvePreferredOpenClawTmpDir, withTempWorkspace } from "openclaw/plugin-sdk/temp-path";
+import { resolvePreferredAforaTmpDir, withTempWorkspace } from "afora-agent/plugin-sdk/temp-path";
 import { describe, expect, it, vi } from "vitest";
 import {
   compareNormalizedPaths,
@@ -85,7 +85,7 @@ describe("scripts/bundle-a2ui.mjs", () => {
     "matches the tracked-input hash when Git discovery fails",
     async () => {
       await withTempWorkspace(
-        { rootDir: resolvePreferredOpenClawTmpDir(), prefix: "openclaw-a2ui-git-fallback-" },
+        { rootDir: resolvePreferredAforaTmpDir(), prefix: "afora-a2ui-git-fallback-" },
         async ({ dir }) => {
           const fakeBinDir = path.join(dir, "bin");
           const fakeGitPath = path.join(fakeBinDir, "git");
@@ -94,8 +94,8 @@ describe("scripts/bundle-a2ui.mjs", () => {
           const scriptPath = path.resolve("extensions/canvas/scripts/bundle-a2ui.mjs");
           const baseEnv = {
             ...process.env,
-            OPENCLAW_A2UI_BUNDLE_HASH_FILE: hashFile,
-            OPENCLAW_A2UI_BUNDLE_OUT: outputFile,
+            AFORA_A2UI_BUNDLE_HASH_FILE: hashFile,
+            AFORA_A2UI_BUNDLE_OUT: outputFile,
           };
           await fs.mkdir(fakeBinDir, { recursive: true });
           await fs.writeFile(fakeGitPath, `#!${process.execPath}\nprocess.exit(1);\n`, "utf8");

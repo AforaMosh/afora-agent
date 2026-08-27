@@ -41,7 +41,7 @@ export function renderChatDetailSlot(params: {
     });
   }
   resetTaskDetail(host);
-  return html`<openclaw-chat-detail-panel
+  return html`<afora-chat-detail-panel
     class="chat-sidebar"
     .content=${content}
     .basePath=${params.chat.basePath ?? ""}
@@ -60,5 +60,5 @@ export function renderChatDetailSlot(params: {
       host.handleOpenImage(item, host.beginImageOpen())}
     .embedded=${true}
     @chat-detail-panel-close=${() => host.handleCloseSidebar()}
-  ></openclaw-chat-detail-panel>`;
+  ></afora-chat-detail-panel>`;
 }

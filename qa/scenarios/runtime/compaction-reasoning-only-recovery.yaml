@@ -8,7 +8,7 @@ scenario:
       - session-memory.compaction-reasoning-only-recovery
   objective: Verify a reasoning-only overflow-compaction summary is rejected, retried by the compaction owner, and persisted only after a non-empty summary is returned.
   successCriteria:
-    - The OpenClaw compaction owner issues exactly two ordered summary requests.
+    - The Afora compaction owner issues exactly two ordered summary requests.
     - The first summary response is the typed reasoning-only fault and the second returns a durable non-empty summary.
     - Every provider request stays on one model with explicit default-mode compaction; no model fallback or safeguard retry owns recovery.
     - Exactly one compaction and one final visible answer are persisted without generic incomplete-turn recovery.
@@ -40,8 +40,8 @@ flow:
     - name: retries a reasoning-only compaction summary at the compaction owner
       actions:
         - assert:
-            expr: "env.providerMode === 'mock-openai' && env.runtimeId === 'openclaw' && Boolean(env.mock)"
-            message: compaction output recovery requires the mock-openai OpenClaw runtime
+            expr: "env.providerMode === 'mock-openai' && env.runtimeId === 'afora' && Boolean(env.mock)"
+            message: compaction output recovery requires the mock-openai Afora runtime
         - call: waitForGatewayHealthy
           args:
             - ref: env

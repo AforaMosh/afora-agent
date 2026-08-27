@@ -9,7 +9,7 @@ import { renderCmdRestartLogSetup } from "../daemon/restart-logs.js";
 import { resolveTaskScriptPath } from "../daemon/schtasks.js";
 import { formatErrorMessage } from "./errors.js";
 import type { RestartAttempt } from "./restart.types.js";
-import { resolvePreferredOpenClawTmpDir } from "./tmp-openclaw-dir.js";
+import { resolvePreferredAforaTmpDir } from "./tmp-afora-dir.js";
 import { getWindowsCmdExePath } from "./windows-install-roots.js";
 import { encodeWindowsLauncherScript } from "./windows-launcher-encoding.js";
 
@@ -21,11 +21,11 @@ function quotePowerShellSingleQuotedLiteral(value: string): string {
 }
 
 function resolveWindowsTaskName(env: NodeJS.ProcessEnv): string {
-  const override = env.OPENCLAW_WINDOWS_TASK_NAME?.trim();
+  const override = env.AFORA_WINDOWS_TASK_NAME?.trim();
   if (override) {
     return override;
   }
-  return resolveGatewayWindowsTaskName(env.OPENCLAW_PROFILE);
+  return resolveGatewayWindowsTaskName(env.AFORA_PROFILE);
 }
 
 function buildScheduledTaskRestartScript(params: {
@@ -46,7 +46,7 @@ function buildScheduledTaskRestartScript(params: {
     "@echo off",
     "setlocal",
     ...setupLines,
-    `>> ${quotedLogPath} 2>&1 echo [%DATE% %TIME%] openclaw restart attempt source=windows-task-handoff target=${quotedTaskName}`,
+    `>> ${quotedLogPath} 2>&1 echo [%DATE% %TIME%] afora restart attempt source=windows-task-handoff target=${quotedTaskName}`,
     `schtasks /Query /TN ${quotedTaskName} >> ${quotedLogPath} 2>&1`,
     "if errorlevel 1 goto fallback",
     "set /a attempts=0",
@@ -61,7 +61,7 @@ function buildScheduledTaskRestartScript(params: {
     `if %attempts% GEQ ${TASK_RESTART_RETRY_LIMIT} goto fallback`,
     "goto retry",
     ":fallback",
-    `>> ${quotedLogPath} 2>&1 echo [%DATE% %TIME%] openclaw restart fallback source=windows-task-handoff`,
+    `>> ${quotedLogPath} 2>&1 echo [%DATE% %TIME%] afora restart fallback source=windows-task-handoff`,
   ];
   if (taskScriptPath) {
     const quotedScript = quoteCmdScriptArg(taskScriptPath);
@@ -74,7 +74,7 @@ function buildScheduledTaskRestartScript(params: {
   }
   lines.push(
     ":cleanup",
-    `>> ${quotedLogPath} 2>&1 echo [%DATE% %TIME%] openclaw restart finished source=windows-task-handoff`,
+    `>> ${quotedLogPath} 2>&1 echo [%DATE% %TIME%] afora restart finished source=windows-task-handoff`,
     'del "%~f0" >nul 2>&1',
   );
   return lines.join("\r\n");
@@ -84,8 +84,8 @@ export function relaunchGatewayScheduledTask(env: NodeJS.ProcessEnv = process.en
   const taskName = resolveWindowsTaskName(env);
   const taskScriptPath = resolveTaskScriptPath(env);
   const scriptPath = path.join(
-    resolvePreferredOpenClawTmpDir(),
-    `openclaw-schtasks-restart-${randomUUID()}.cmd`,
+    resolvePreferredAforaTmpDir(),
+    `afora-schtasks-restart-${randomUUID()}.cmd`,
   );
   const quotedScriptPath = quoteCmdScriptArg(scriptPath);
   const restartLog = renderCmdRestartLogSetup({ ...process.env, ...env });

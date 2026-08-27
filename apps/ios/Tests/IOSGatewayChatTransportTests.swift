@@ -1,15 +1,15 @@
 import Foundation
-import OpenClawKit
-import OpenClawProtocol
+import AforaKit
+import AforaProtocol
 import Testing
-@testable import OpenClaw
-@testable import OpenClawChatUI
+@testable import Afora
+@testable import AforaChatUI
 
 struct IOSGatewayChatTransportTests {
     private actor RequestRecorder {
-        private var requests: [OpenClawChatGatewayRequest] = []
+        private var requests: [AforaChatGatewayRequest] = []
 
-        func record(_ request: OpenClawChatGatewayRequest) -> Data {
+        func record(_ request: AforaChatGatewayRequest) -> Data {
             self.requests.append(request)
             if request.method == "sessions.create" {
                 return Data(#"{"key":"forked"}"#.utf8)
@@ -17,12 +17,12 @@ struct IOSGatewayChatTransportTests {
             return Data(#"{"entry":{}}"#.utf8)
         }
 
-        func record(_ request: OpenClawChatGatewayRequest, response: Data) -> Data {
+        func record(_ request: AforaChatGatewayRequest, response: Data) -> Data {
             self.requests.append(request)
             return response
         }
 
-        func all() -> [OpenClawChatGatewayRequest] {
+        func all() -> [AforaChatGatewayRequest] {
             self.requests
         }
     }
@@ -50,23 +50,23 @@ struct IOSGatewayChatTransportTests {
     }
 
     @Test func `live routing guard permits an identity still loading`() {
-        #expect(OpenClawChatSessionRoutingContract.expectedValue(
+        #expect(AforaChatSessionRoutingContract.expectedValue(
             nil,
             serverSupportsGuard: true) == nil)
-        #expect(OpenClawChatSessionRoutingContract.expectedValue(
+        #expect(AforaChatSessionRoutingContract.expectedValue(
             " per-sender|main|reviewer ",
             serverSupportsGuard: true) == "per-sender|main|reviewer")
-        #expect(OpenClawChatSessionRoutingContract.expectedValue(
+        #expect(AforaChatSessionRoutingContract.expectedValue(
             "per-sender|main|reviewer",
             serverSupportsGuard: false) == nil)
     }
 
     @Test func `routing contract round trips a delimited legacy main key`() throws {
-        let contract = try #require(OpenClawChatSessionRoutingContract.make(
+        let contract = try #require(AforaChatSessionRoutingContract.make(
             scope: "per-sender",
             mainKey: "team|primary",
             defaultAgentID: "main"))
-        let components = try #require(OpenClawChatSessionRoutingContract.parse(contract))
+        let components = try #require(AforaChatSessionRoutingContract.parse(contract))
         #expect(components.scope == "per-sender")
         #expect(components.mainKey == "team|primary")
         #expect(components.defaultAgentID == "main")
@@ -223,11 +223,11 @@ struct IOSGatewayChatTransportTests {
         _ = try await transport.patchSessionSettings(
             sessionKey: "global",
             agentID: nil,
-            patch: OpenClawChatSessionSettingsPatch(verboseLevel: .some("full")))
+            patch: AforaChatSessionSettingsPatch(verboseLevel: .some("full")))
         _ = try await transport.patchSessionSettings(
             sessionKey: "global",
             agentID: nil,
-            patch: OpenClawChatSessionSettingsPatch(verboseLevel: .some(nil)))
+            patch: AforaChatSessionSettingsPatch(verboseLevel: .some(nil)))
 
         let requests = await recorder.all()
         #expect(requests.count == 2)
@@ -252,11 +252,11 @@ struct IOSGatewayChatTransportTests {
         _ = try await transport.patchSessionSettings(
             sessionKey: "global",
             agentID: nil,
-            patch: OpenClawChatSessionSettingsPatch(fastMode: .some(.on)))
+            patch: AforaChatSessionSettingsPatch(fastMode: .some(.on)))
         _ = try await transport.patchSessionSettings(
             sessionKey: "global",
             agentID: nil,
-            patch: OpenClawChatSessionSettingsPatch(fastMode: .some(nil)))
+            patch: AforaChatSessionSettingsPatch(fastMode: .some(nil)))
 
         let requests = await recorder.all()
         #expect(requests.count == 2)
@@ -327,7 +327,7 @@ struct IOSGatewayChatTransportTests {
                 idempotencyKey: "guarded-idempotency",
                 attachments: [])
             Issue.record("Expected guarded sendMessage to fail before dispatch")
-        } catch is OpenClawChatTransportSendError {
+        } catch is AforaChatTransportSendError {
             // Expected: a missing route never reached chat.send.
         } catch {
             Issue.record("Expected a typed pre-dispatch failure, got \(error)")
@@ -372,7 +372,7 @@ struct IOSGatewayChatTransportTests {
             payload: payload,
             seq: 1,
             stateversion: nil)
-        let mapped = OpenClawChatGatewayPayloadCodec.event(from: frame)
+        let mapped = AforaChatGatewayPayloadCodec.event(from: frame)
 
         switch mapped {
         case let .sessionMessage(message):
@@ -392,7 +392,7 @@ struct IOSGatewayChatTransportTests {
         let original = Self.canonicalAssistantMessage(timestamp: 1234.5)
         let replay = Self.canonicalAssistantMessage(timestamp: 5678.5)
 
-        let messages = OpenClawChatViewModel.dedupeMessages([original, replay])
+        let messages = AforaChatViewModel.dedupeMessages([original, replay])
 
         #expect(messages.count == 1)
         #expect(messages.first?.transcriptMessageID == "canonical-assistant-1")
@@ -404,7 +404,7 @@ struct IOSGatewayChatTransportTests {
             timestamp: 1234.5,
             transcriptMessageID: "canonical-assistant-2")
 
-        let messages = OpenClawChatViewModel.dedupeMessages([first, second])
+        let messages = AforaChatViewModel.dedupeMessages([first, second])
 
         #expect(messages.count == 2)
         #expect(messages.map(\.transcriptMessageID) == ["canonical-assistant-1", "canonical-assistant-2"])
@@ -414,7 +414,7 @@ struct IOSGatewayChatTransportTests {
         let original = Self.canonicalAssistantMessage(timestamp: 1234.5)
         let replay = Self.canonicalAssistantMessage(timestamp: 5678.5)
 
-        let messages = OpenClawChatViewModel.reconcileMessageIDs(
+        let messages = AforaChatViewModel.reconcileMessageIDs(
             previous: [original],
             incoming: [replay])
 
@@ -425,13 +425,13 @@ struct IOSGatewayChatTransportTests {
     }
 
     @Test @MainActor func `canonical adoption keeps the durable transcript identity`() {
-        let existing = OpenClawChatMessage(
+        let existing = AforaChatMessage(
             role: "assistant",
             content: [Self.assistantText],
             timestamp: 1234.5)
         let incoming = Self.canonicalAssistantMessage(timestamp: 5678.5)
 
-        let adopted = OpenClawChatViewModel.adoptingCanonicalMessage(incoming, over: existing)
+        let adopted = AforaChatViewModel.adoptingCanonicalMessage(incoming, over: existing)
 
         #expect(adopted.id == existing.id)
         #expect(adopted.timestamp == incoming.timestamp)
@@ -439,19 +439,19 @@ struct IOSGatewayChatTransportTests {
     }
 
     @Test @MainActor func `user idempotency still reconciles an optimistic canonical echo`() {
-        let original = OpenClawChatMessage(
+        let original = AforaChatMessage(
             role: "user",
             content: [Self.assistantText],
             timestamp: 1234.5,
             idempotencyKey: "run-1:user")
-        let echo = OpenClawChatMessage(
+        let echo = AforaChatMessage(
             role: "user",
             content: [Self.assistantText],
             timestamp: 5678.5,
             transcriptMessageID: "canonical-user-1",
             idempotencyKey: "run-1:user")
 
-        let messages = OpenClawChatViewModel.reconcileMessageIDs(
+        let messages = AforaChatViewModel.reconcileMessageIDs(
             previous: [original],
             incoming: [echo])
 
@@ -460,8 +460,8 @@ struct IOSGatewayChatTransportTests {
         #expect(messages.first?.transcriptMessageID == "canonical-user-1")
     }
 
-    private static var assistantText: OpenClawChatMessageContent {
-        OpenClawChatMessageContent(
+    private static var assistantText: AforaChatMessageContent {
+        AforaChatMessageContent(
             type: "text",
             text: "agent reply",
             mimeType: nil,
@@ -471,9 +471,9 @@ struct IOSGatewayChatTransportTests {
 
     private static func canonicalAssistantMessage(
         timestamp: Double,
-        transcriptMessageID: String = "canonical-assistant-1") -> OpenClawChatMessage
+        transcriptMessageID: String = "canonical-assistant-1") -> AforaChatMessage
     {
-        OpenClawChatMessage(
+        AforaChatMessage(
             role: "assistant",
             content: [self.assistantText],
             timestamp: timestamp,
@@ -493,7 +493,7 @@ struct IOSGatewayChatTransportTests {
             seq: 1,
             stateversion: nil)
 
-        let mapped = OpenClawChatGatewayPayloadCodec.event(from: frame)
+        let mapped = AforaChatGatewayPayloadCodec.event(from: frame)
         guard case let .sessionsChanged(change) = mapped else {
             Issue.record("expected .sessionsChanged, got \(String(describing: mapped))")
             return
@@ -511,7 +511,7 @@ struct IOSGatewayChatTransportTests {
             "state": AnyCodable("final"),
         ])
         let frame = EventFrame(type: "event", event: "chat", payload: payload, seq: 1, stateversion: nil)
-        let mapped = OpenClawChatGatewayPayloadCodec.event(from: frame)
+        let mapped = AforaChatGatewayPayloadCodec.event(from: frame)
 
         switch mapped {
         case let .chat(chat):
@@ -530,7 +530,7 @@ struct IOSGatewayChatTransportTests {
             payload: AnyCodable(["a": AnyCodable(1)]),
             seq: 1,
             stateversion: nil)
-        let mapped = OpenClawChatGatewayPayloadCodec.event(from: frame)
+        let mapped = AforaChatGatewayPayloadCodec.event(from: frame)
         #expect(mapped == nil)
     }
 }
@@ -546,9 +546,9 @@ struct LocalFixtureChatTransportTests {
             idempotencyKey: "fixture-run",
             attachments: [])
         let history = try await transport.requestHistory(sessionKey: "main")
-        let decoded = try #require(history.messages).compactMap { payload -> OpenClawChatMessage? in
+        let decoded = try #require(history.messages).compactMap { payload -> AforaChatMessage? in
             guard let data = try? JSONEncoder().encode(payload) else { return nil }
-            return try? JSONDecoder().decode(OpenClawChatMessage.self, from: data)
+            return try? JSONDecoder().decode(AforaChatMessage.self, from: data)
         }
 
         #expect(decoded.last(where: { $0.role == "user" })?.idempotencyKey == "fixture-run:user")

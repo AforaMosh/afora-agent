@@ -1,7 +1,7 @@
 /**
  * Tests channel contract testing helpers exported by the plugin SDK.
  */
-import { expectChannelTurnDispatchResultContract } from "openclaw/plugin-sdk/channel-contract-testing";
+import { expectChannelTurnDispatchResultContract } from "afora-agent/plugin-sdk/channel-contract-testing";
 import { describe, it } from "vitest";
 
 describe("channel contract testing helpers", () => {

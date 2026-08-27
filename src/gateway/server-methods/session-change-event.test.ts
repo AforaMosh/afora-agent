@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { retainLegacyDefaultAgentId } from "../../config/legacy.default-agent-owner.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ChatAbortControllerEntry } from "../chat-abort.js";
 import type { GatewayRequestContext } from "./types.js";
 
@@ -44,7 +44,7 @@ const { emitSessionsChanged, flushPendingSessionsChangedEvents, readSessionsMuta
 
 function createContext(
   receivers = new Set(["conn-1"]),
-  config: OpenClawConfig = {},
+  config: AforaConfig = {},
   chatAbortControllers: GatewayRequestContext["chatAbortControllers"] = new Map(),
 ) {
   return {
@@ -170,7 +170,7 @@ describe("sessions.changed coalescing", () => {
         defaults: { sessionStore: { agentId: "ops" } },
         entries: { ops: {}, research: {} },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const context = createContext(
       new Set(["conn-1"]),
       config,

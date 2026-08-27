@@ -1,4 +1,4 @@
-import { resolveGlobalSingleton } from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
+import { resolveGlobalSingleton } from "afora-agent/plugin-sdk/memory-core-host-engine-foundation";
 
 // Memory Core receives local-service acquisition from the host before provider creation.
 export type MemoryCoreAcquireLocalService = (
@@ -11,7 +11,7 @@ export type MemoryCoreAcquireLocalService = (
 ) => Promise<{ release: () => void } | undefined>;
 
 const MEMORY_LOCAL_SERVICE_HOST_IDENTITIES_KEY = Symbol.for(
-  "openclaw.memoryLocalServiceHostIdentities",
+  "afora.memoryLocalServiceHostIdentities",
 );
 
 // Manager caches survive module reloads, so hook identities must survive too.

@@ -1,10 +1,10 @@
 /**
  * Meta onboarding config helpers.
  */
-import { readManifestProviderDefaultModelRef } from "openclaw/plugin-sdk/provider-catalog-shared";
-import { createModelCatalogPresetAppliers } from "openclaw/plugin-sdk/provider-onboard";
+import { readManifestProviderDefaultModelRef } from "afora-agent/plugin-sdk/provider-catalog-shared";
+import { createModelCatalogPresetAppliers } from "afora-agent/plugin-sdk/provider-onboard";
 import { buildMetaCatalogModels, META_BASE_URL } from "./models.js";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import manifest from "./afora.plugin.json" with { type: "json" };
 
 /** Default Meta model reference used after onboarding. */
 export const META_DEFAULT_MODEL_REF = readManifestProviderDefaultModelRef(manifest, "meta")!;

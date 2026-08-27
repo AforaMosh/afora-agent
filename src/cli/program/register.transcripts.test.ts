@@ -5,23 +5,23 @@ import { Command } from "commander";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../../infra/kysely-sync.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../../state/afora-state-db.generated.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../../state/afora-state-db.js";
 import { manualTranscriptSourceProvider } from "../../transcripts/manual-source.js";
 import type { TranscriptSessionDescriptor } from "../../transcripts/provider-types.js";
 import { TranscriptsStore } from "../../transcripts/store.js";
 import { summarizeTranscripts } from "../../transcripts/summary.js";
 import { registerTranscriptsCli } from "./register.transcripts.js";
 
-const originalStateDir = process.env.OPENCLAW_STATE_DIR;
+const originalStateDir = process.env.AFORA_STATE_DIR;
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 function storeFor(stateDir: string): TranscriptsStore {
   return new TranscriptsStore(path.join(stateDir, "transcripts"), {
-    env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+    env: { ...process.env, AFORA_STATE_DIR: stateDir },
   });
 }
 
@@ -56,7 +56,7 @@ async function runTranscriptsCli(args: string[]): Promise<string> {
   }) as typeof process.stdout.write);
   try {
     const program = new Command();
-    program.name("openclaw");
+    program.name("afora");
     registerTranscriptsCli(program);
     await program.parseAsync(["transcripts", ...args], { from: "user" });
     return output;
@@ -69,16 +69,16 @@ describe("transcripts CLI", () => {
   let stateDir = "";
 
   beforeEach(async () => {
-    stateDir = tempDirs.make("openclaw-transcripts-cli-");
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+    stateDir = tempDirs.make("afora-transcripts-cli-");
+    process.env.AFORA_STATE_DIR = stateDir;
   });
 
   afterEach(() => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     if (originalStateDir === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.AFORA_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = originalStateDir;
+      process.env.AFORA_STATE_DIR = originalStateDir;
     }
   });
 
@@ -137,11 +137,11 @@ describe("transcripts CLI", () => {
 
   it("sanitizes stored summary control bytes at the show boundary", async () => {
     await writeSession(stateDir, "legacy-summary");
-    const database = openOpenClawStateDatabase({
-      env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+    const database = openAforaStateDatabase({
+      env: { ...process.env, AFORA_STATE_DIR: stateDir },
     });
     const db = getNodeSqliteKysely<
-      Pick<OpenClawStateKyselyDatabase, "meeting_transcript_summaries">
+      Pick<AforaStateKyselyDatabase, "meeting_transcript_summaries">
     >(database.db);
     executeSqliteQuerySync(
       database.db,

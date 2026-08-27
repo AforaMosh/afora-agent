@@ -1,7 +1,7 @@
 /**
  * Reads configured embedded-run model fallback availability.
  */
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { hasConfiguredModelFallbacks } from "../../agent-scope.js";
 
 /**
@@ -10,7 +10,7 @@ import { hasConfiguredModelFallbacks } from "../../agent-scope.js";
  * either a fallback lane or a no-fallback lane independent of agent defaults.
  */
 export function hasEmbeddedRunConfiguredModelFallbacks(params: {
-  cfg: OpenClawConfig | undefined;
+  cfg: AforaConfig | undefined;
   agentId?: string | null;
   sessionKey?: string | null;
   modelFallbacksOverride?: string[];

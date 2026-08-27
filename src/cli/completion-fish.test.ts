@@ -9,55 +9,55 @@ import {
 describe("completion-fish helpers", () => {
   it("builds a subcommand completion line", () => {
     const line = buildFishSubcommandCompletionLine({
-      rootCmd: "openclaw",
+      rootCmd: "afora",
       condition: "__fish_use_subcommand",
       name: "plugins",
       description: "Manage Bob's plugins",
     });
     expect(line).toBe(
-      `complete -c openclaw -n "__fish_use_subcommand" -a "plugins" -d 'Manage Bob'\\''s plugins'\n`,
+      `complete -c afora -n "__fish_use_subcommand" -a "plugins" -d 'Manage Bob'\\''s plugins'\n`,
     );
   });
 
   it("builds option line with short and long flags", () => {
     const line = buildFishOptionCompletionLine({
-      rootCmd: "openclaw",
+      rootCmd: "afora",
       condition: "__fish_use_subcommand",
       flags: ["-s", "--shell"],
       description: "Shell target",
     });
     expect(line).toBe(
-      `complete -c openclaw -n "__fish_use_subcommand" -s s -l shell -d 'Shell target'\n`,
+      `complete -c afora -n "__fish_use_subcommand" -s s -l shell -d 'Shell target'\n`,
     );
   });
 
   it("builds option line with long-only flags", () => {
     const line = buildFishOptionCompletionLine({
-      rootCmd: "openclaw",
+      rootCmd: "afora",
       condition: "__fish_seen_subcommand_from completion",
       flags: ["--write-state"],
       description: "Write cache",
     });
     expect(line).toBe(
-      `complete -c openclaw -n "__fish_seen_subcommand_from completion" -l write-state -d 'Write cache'\n`,
+      `complete -c afora -n "__fish_seen_subcommand_from completion" -l write-state -d 'Write cache'\n`,
     );
   });
 
   it("builds option line with two long aliases", () => {
     const line = buildFishOptionCompletionLine({
-      rootCmd: "openclaw",
+      rootCmd: "afora",
       condition: "__fish_use_subcommand",
       flags: ["--ws", "--workspace"],
       description: "Workspace",
     });
     expect(line).toBe(
-      `complete -c openclaw -n "__fish_use_subcommand" -l ws -l workspace -d 'Workspace'\n`,
+      `complete -c afora -n "__fish_use_subcommand" -l ws -l workspace -d 'Workspace'\n`,
     );
   });
 
   it("preserves required Commander option values and constrained choices", () => {
     const line = buildFishOptionCompletionLine({
-      rootCmd: "openclaw",
+      rootCmd: "afora",
       condition: "__fish_seen_subcommand_from completion",
       flags: ["-s", "--shell"],
       description: "Shell target",
@@ -69,13 +69,13 @@ describe("completion-fish helpers", () => {
       .map((choice) => `'${choice}'`)
       .join(" ");
     expect(line).toBe(
-      `complete -c openclaw -n "__fish_seen_subcommand_from completion" -s s -l shell -r -f -a "${quotedChoices}" -d 'Shell target'\n`,
+      `complete -c afora -n "__fish_seen_subcommand_from completion" -s s -l shell -r -f -a "${quotedChoices}" -d 'Shell target'\n`,
     );
   });
 
   it("preserves optional Commander option values without requiring an argument", () => {
     const line = buildFishOptionCompletionLine({
-      rootCmd: "openclaw",
+      rootCmd: "afora",
       condition: "__fish_use_subcommand",
       flags: ["--color"],
       description: "Color output",
@@ -85,13 +85,13 @@ describe("completion-fish helpers", () => {
     expect(line).toContain(` -l color -f -a "'always' 'never'" `);
     expect(line).not.toContain(" -r ");
     expect(line).toContain(
-      `complete -c openclaw -n "__fish_use_subcommand; and contains -- (commandline -opc)[-1] --color" -f -a "'always' 'never'" -d 'Color output'`,
+      `complete -c afora -n "__fish_use_subcommand; and contains -- (commandline -opc)[-1] --color" -f -a "'always' 'never'" -d 'Color output'`,
     );
   });
 
   it("preserves whitespace within each Commander choice", () => {
     const line = buildFishOptionCompletionLine({
-      rootCmd: "openclaw",
+      rootCmd: "afora",
       condition: "__fish_use_subcommand",
       flags: ["--theme"],
       description: "Theme",
@@ -106,7 +106,7 @@ describe("completion-fish helpers", () => {
     "preserves apostrophes and backslashes through both Fish quoting layers",
     () => {
       const line = buildFishOptionCompletionLine({
-        rootCmd: "openclaw",
+        rootCmd: "afora",
         condition: "true",
         flags: ["--theme"],
         description: "Theme",
@@ -133,9 +133,9 @@ describe("completion-fish helpers", () => {
   it.skipIf(process.platform === "win32")(
     "keeps command-shaped Commander choices inert during completion expression parsing",
     () => {
-      const marker = "OPENCLAW_FISH_CHOICE_MUST_NOT_EXECUTE";
+      const marker = "AFORA_FISH_CHOICE_MUST_NOT_EXECUTE";
       const line = buildFishOptionCompletionLine({
-        rootCmd: "openclaw",
+        rootCmd: "afora",
         condition: "true",
         flags: ["--channel"],
         description: "Channel",

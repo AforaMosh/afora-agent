@@ -2,7 +2,7 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { extractErrorCode } from "openclaw/plugin-sdk/error-runtime";
+import { extractErrorCode } from "afora-agent/plugin-sdk/error-runtime";
 import {
   clearMemoryCoreWorkspaceNamespace,
   DREAMING_SESSION_INGESTION_FILES_NAMESPACE,
@@ -45,7 +45,7 @@ export type RepairDreamingArtifactsResult = {
 const DREAMS_FILENAMES = ["DREAMS.md", "dreams.md"] as const;
 const SESSION_CORPUS_RELATIVE_DIR = path.join("memory", ".dreams", "session-corpus");
 const SESSION_INGESTION_RELATIVE_PATH = path.join("memory", ".dreams", "session-ingestion.json");
-const REPAIR_ARCHIVE_RELATIVE_DIR = path.join(".openclaw-repair", "dreaming");
+const REPAIR_ARCHIVE_RELATIVE_DIR = path.join(".afora-repair", "dreaming");
 const DREAMING_NARRATIVE_RUN_PREFIX = "dreaming-narrative-";
 const DREAMING_NARRATIVE_PROMPT_PREFIX = "Write a dream diary entry from these memory fragments";
 

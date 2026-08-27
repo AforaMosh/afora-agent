@@ -1,5 +1,5 @@
 // Google Chat tests cover account-isolated message-tool discovery.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { inspectGoogleChatAccount, resolveGoogleChatAccount } from "./accounts.js";
 import { describeGoogleChatMessageTool } from "./message-tool-api.js";
@@ -7,10 +7,10 @@ import { describeGoogleChatMessageTool } from "./message-tool-api.js";
 const unresolvedRef = {
   source: "env",
   provider: "default",
-  id: "OPENCLAW_TEST_MISSING_GOOGLE_CHAT_SERVICE_ACCOUNT",
+  id: "AFORA_TEST_MISSING_GOOGLE_CHAT_SERVICE_ACCOUNT",
 } as const;
 
-function buildTwoAccountConfig(): OpenClawConfig {
+function buildTwoAccountConfig(): AforaConfig {
   return {
     channels: {
       googlechat: {
@@ -23,7 +23,7 @@ function buildTwoAccountConfig(): OpenClawConfig {
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 describe("Google Chat message-tool SecretRef inspection", () => {
@@ -47,7 +47,7 @@ describe("Google Chat message-tool SecretRef inspection", () => {
       '{"client_email":"fallback@example.iam.gserviceaccount.com","private_key":"fallback"}',
     );
     const account = inspectGoogleChatAccount({
-      cfg: { channels: { googlechat: { serviceAccount: unresolvedRef } } } as OpenClawConfig,
+      cfg: { channels: { googlechat: { serviceAccount: unresolvedRef } } } as AforaConfig,
     });
     expect(account).toMatchObject({
       credentialSource: "none",

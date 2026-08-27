@@ -3,7 +3,7 @@ import { once } from "node:events";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../runtime-api.js";
+import type { AforaConfig } from "../../runtime-api.js";
 // Preserve module setup before modules that consume it.
 // oxfmt-ignore
 import { getRuntimeApiMockState } from "./message-handler-mock-support.test-support.js";
@@ -34,7 +34,7 @@ vi.mock("../team-identity.js", () => ({
   resolveTeamGroupId: vi.fn(async () => "group-1"),
 }));
 
-function createDeps(cfg: OpenClawConfig) {
+function createDeps(cfg: AforaConfig) {
   return createMessageHandlerDeps(cfg, {
     readAllowFromStore: vi.fn(async () => ["attacker-aad"]),
     upsertPairingRequest: vi.fn(async () => null),
@@ -172,7 +172,7 @@ describe("msteams group conversation allowlist authorization", () => {
           requireMention: false,
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     await createMSTeamsMessageHandler(deps)(
       createMessageActivity({
@@ -204,7 +204,7 @@ describe("msteams group conversation allowlist authorization", () => {
           requireMention: false,
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
 
     await createMSTeamsMessageHandler(deps)(
       createMessageActivity({
@@ -266,7 +266,7 @@ describe("msteams group conversation allowlist authorization", () => {
             dangerouslyAllowNameMatching: testCase.dangerouslyAllowNameMatching ?? false,
           },
         },
-      } as OpenClawConfig);
+      } as AforaConfig);
 
       await createMSTeamsMessageHandler(deps)(
         createMessageActivity({
@@ -339,7 +339,7 @@ describe("msteams group conversation allowlist authorization", () => {
             dangerouslyAllowNameMatching: testCase.dangerouslyAllowNameMatching ?? false,
           },
         },
-      } as OpenClawConfig);
+      } as AforaConfig);
       const activity = createMessageActivity({
         id: "loopback-conversation-allowlist-message",
         text: "hello over Bot Framework HTTP",

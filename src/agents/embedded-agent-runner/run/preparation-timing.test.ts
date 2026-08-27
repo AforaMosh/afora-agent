@@ -10,11 +10,11 @@ import {
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 async function createTimelineEnv() {
-  const dir = tempDirs.make("openclaw-agent-preparation-");
+  const dir = tempDirs.make("afora-agent-preparation-");
   return {
     env: {
-      OPENCLAW_DIAGNOSTICS: "timeline",
-      OPENCLAW_DIAGNOSTICS_TIMELINE_PATH: join(dir, "timeline.jsonl"),
+      AFORA_DIAGNOSTICS: "timeline",
+      AFORA_DIAGNOSTICS_TIMELINE_PATH: join(dir, "timeline.jsonl"),
     } as NodeJS.ProcessEnv,
     path: join(dir, "timeline.jsonl"),
   };

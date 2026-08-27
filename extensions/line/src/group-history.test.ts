@@ -1,5 +1,5 @@
 // Line tests cover group history plugin behavior.
-import type { HistoryEntry } from "openclaw/plugin-sdk/reply-history";
+import type { HistoryEntry } from "afora-agent/plugin-sdk/reply-history";
 import { describe, expect, it } from "vitest";
 import { reserveLineGroupHistory } from "./group-history.js";
 

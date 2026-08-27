@@ -2,9 +2,9 @@ import crypto from "node:crypto";
 import {
   isModelSelectionLocked,
   MODEL_SELECTION_LOCKED_MESSAGE,
-} from "openclaw/plugin-sdk/model-session-runtime";
-import type { PluginCommandContext, PluginCommandResult } from "openclaw/plugin-sdk/plugin-entry";
-import { getSessionEntry, resolveStorePath } from "openclaw/plugin-sdk/session-store-runtime";
+} from "afora-agent/plugin-sdk/model-session-runtime";
+import type { PluginCommandContext, PluginCommandResult } from "afora-agent/plugin-sdk/plugin-entry";
+import { getSessionEntry, resolveStorePath } from "afora-agent/plugin-sdk/session-store-runtime";
 import { resolveCodexAppServerAuthProfileIdForAgent } from "./app-server/auth-bridge.js";
 import { consumeCodexAppServerLiveThread } from "./app-server/client-runtime.js";
 import type { CodexAppServerClient } from "./app-server/client.js";
@@ -320,7 +320,7 @@ export async function resumeThread(
     return MODEL_SELECTION_LOCKED_MESSAGE;
   }
   if (!ctx.sessionId) {
-    return "Cannot attach a Codex thread because this command did not include an OpenClaw session id.";
+    return "Cannot attach a Codex thread because this command did not include an Afora session id.";
   }
   const scope = resolveCodexConversationControlScope(ctx);
   const identity = sessionBindingIdentity({
@@ -444,7 +444,7 @@ export async function resumeThread(
         if (!committedResponse) {
           await commitResumedThread(response);
         }
-        return `Attached this OpenClaw session to Codex thread ${formatCodexDisplayText(
+        return `Attached this Afora session to Codex thread ${formatCodexDisplayText(
           normalizedThreadId,
         )}.`;
       }),

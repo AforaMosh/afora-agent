@@ -1,17 +1,17 @@
 {
-  "name": "@openclaw/onepassword",
+  "name": "@afora/onepassword",
   "version": "2026.8.1",
   "private": true,
-  "description": "1Password SecretRef resolver and audited agent secrets broker for OpenClaw",
+  "description": "1Password SecretRef resolver and audited agent secrets broker for Afora",
   "type": "module",
   "dependencies": {
     "@openclaw/fs-safe": "0.5.5",
     "execa": "10.0.0"
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],

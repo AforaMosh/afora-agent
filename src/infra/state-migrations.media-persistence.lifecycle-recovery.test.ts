@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import { GATEWAY_AGENT_MEDIA_MIGRATION_REQUIRED_REASON } from "../state/openclaw-agent-db-migration-required.js";
+import { GATEWAY_AGENT_MEDIA_MIGRATION_REQUIRED_REASON } from "../state/afora-agent-db-migration-required.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import {
   completeGatewayBootLifecycle,
   inspectGatewayCrashLoopBreaker,
@@ -17,16 +17,16 @@ import { migrateLegacyMediaPersistence } from "./state-migrations.media-persiste
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 describe("media persistence gateway lifecycle recovery", () => {
   it("repairs repeated typed startup failures after a successful v14 migration", () => {
     const stateDir = tempDirs.make("media-persistence-startup-recovery-");
-    const env = { OPENCLAW_STATE_DIR: stateDir };
-    const databasePath = openOpenClawAgentDatabase({ agentId: "main", env }).path;
-    closeOpenClawAgentDatabasesForTest();
+    const env = { AFORA_STATE_DIR: stateDir };
+    const databasePath = openAforaAgentDatabase({ agentId: "main", env }).path;
+    closeAforaAgentDatabasesForTest();
 
     const { DatabaseSync } = requireNodeSqlite();
     const database = new DatabaseSync(databasePath);

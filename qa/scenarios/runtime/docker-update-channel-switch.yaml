@@ -15,7 +15,7 @@ scenario:
     - The package install updates to a package-derived git dev fixture.
     - The git install updates back to the package tarball.
     - The beta, dev, and stable selections persist in canonical config.
-    - "`openclaw update status --json` reports the expected package, git, and package status after each switch."
+    - "`afora update status --json` reports the expected package, git, and package status after each switch."
   docsRefs:
     - docs/cli/update.md
     - docs/install/updating.md

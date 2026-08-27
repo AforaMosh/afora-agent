@@ -1,6 +1,6 @@
 // Covers outbound message send/poll orchestration, target resolution, durable
 // capability checks, gateway fallback, dry runs, and payload planning.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChannelPlugin } from "../../channels/plugins/types.public.js";
 
@@ -31,7 +31,7 @@ vi.mock("../../agents/agent-scope.js", () => ({
     const match = sessionKey?.match(/^agent:([^:]+)/i);
     return match?.[1] ?? "main";
   },
-  resolveAgentWorkspaceDir: () => "/tmp/openclaw-test-workspace",
+  resolveAgentWorkspaceDir: () => "/tmp/afora-test-workspace",
 }));
 
 vi.mock("../../config/plugin-auto-enable.js", () => ({
@@ -270,7 +270,7 @@ describe("sendMessage", () => {
       channel: "forum",
       to: "123456",
       content: "voice note",
-      mediaUrl: "file:///tmp/openclaw-voice.ogg",
+      mediaUrl: "file:///tmp/afora-voice.ogg",
       asVoice: true,
     });
 
@@ -278,7 +278,7 @@ describe("sendMessage", () => {
       (expectDeliveryCallFields({}).payloads as unknown[] | undefined)?.[0],
       {
         text: "voice note",
-        mediaUrl: "file:///tmp/openclaw-voice.ogg",
+        mediaUrl: "file:///tmp/afora-voice.ogg",
         audioAsVoice: true,
       },
       "voice payload",

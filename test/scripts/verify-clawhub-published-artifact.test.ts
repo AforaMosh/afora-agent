@@ -49,7 +49,7 @@ function identity(artifact: Uint8Array) {
 }
 
 function writeManifest(mode: "publish" | "configure-only", artifact: Uint8Array, runAttempt = "1") {
-  const root = mkdtempSync(join(tmpdir(), "openclaw-clawhub-readback-"));
+  const root = mkdtempSync(join(tmpdir(), "afora-clawhub-readback-"));
   tempDirs.push(root);
   const path = join(root, "manifest.json");
   const artifactIdentity = identity(artifact);
@@ -57,7 +57,7 @@ function writeManifest(mode: "publish" | "configure-only", artifact: Uint8Array,
     path,
     JSON.stringify({
       schemaVersion: 1,
-      repository: "openclaw/openclaw",
+      repository: "AforaMosh/afora-agent",
       targetSha: "a".repeat(40),
       workflowSha: "b".repeat(40),
       runId: "123",
@@ -66,16 +66,16 @@ function writeManifest(mode: "publish" | "configure-only", artifact: Uint8Array,
       clawhubToolchainIntegrity,
       clawhubToolchainSha256,
       clawhubToolchainVersion,
-      requestedPlugins: ["@openclaw/meta"],
+      requestedPlugins: ["@afora/meta"],
       entries: [
         {
-          packageName: "@openclaw/meta",
+          packageName: "@afora/meta",
           version: "2026.7.1-beta.3",
           packageDir: "extensions/meta",
           publishTag: "beta",
           bootstrapMode: mode,
           requiresManualOverride: mode === "configure-only",
-          artifactPath: "packages/meta/openclaw-meta-2026.7.1-beta.3.tgz",
+          artifactPath: "packages/meta/afora-meta-2026.7.1-beta.3.tgz",
           sha256: artifactIdentity.sha256,
           size: artifactIdentity.size,
         },
@@ -86,11 +86,11 @@ function writeManifest(mode: "publish" | "configure-only", artifact: Uint8Array,
 }
 
 function writeExpectedArtifact(artifact: Uint8Array) {
-  const root = mkdtempSync(join(tmpdir(), "openclaw-clawhub-oidc-readback-"));
+  const root = mkdtempSync(join(tmpdir(), "afora-clawhub-oidc-readback-"));
   tempDirs.push(root);
   const artifactDir = join(root, "artifact");
   mkdirSync(artifactDir);
-  writeFileSync(join(artifactDir, "openclaw-meta-2026.7.1-beta.3.tgz"), artifact);
+  writeFileSync(join(artifactDir, "afora-meta-2026.7.1-beta.3.tgz"), artifact);
   return artifactDir;
 }
 
@@ -111,7 +111,7 @@ function metadataResponse(artifact: Uint8Array, body?: BodyInit) {
   return new Response(
     body ??
       JSON.stringify({
-        package: { name: "@openclaw/meta" },
+        package: { name: "@afora/meta" },
         version: "2026.7.1-beta.3",
         artifact: {
           kind: "npm-pack",
@@ -132,7 +132,7 @@ function registryFetch(artifact: Uint8Array) {
       return Response.json({
         trustedPublisher: {
           provider: "github-actions",
-          repository: "openclaw/openclaw",
+          repository: "AforaMosh/afora-agent",
           workflowFilename: "plugin-clawhub-release.yml",
           environment: null,
         },
@@ -165,7 +165,7 @@ describe("ClawHub published artifact verification", () => {
     const fetchImpl = registryFetch(artifact);
     const evidence = await verifyPublishedClawHubPackage({
       expectedArtifactDir: writeExpectedArtifact(artifact),
-      packageName: "@openclaw/meta",
+      packageName: "@afora/meta",
       packageVersion: "2026.7.1-beta.3",
       publishTag: "beta",
       registry: "https://clawhub.example",
@@ -177,7 +177,7 @@ describe("ClawHub published artifact verification", () => {
       verificationMode: "oidc-postpublish",
       expectedArtifact: identity(artifact),
       package: {
-        packageName: "@openclaw/meta",
+        packageName: "@afora/meta",
         registrySha256: identity(artifact).sha256,
         registrySize: artifact.byteLength,
       },
@@ -198,7 +198,7 @@ describe("ClawHub published artifact verification", () => {
         Response.json({
           trustedPublisher: {
             provider: "other",
-            repository: "openclaw/openclaw",
+            repository: "AforaMosh/afora-agent",
             workflowFilename: "plugin-clawhub-release.yml",
             environment: null,
           },
@@ -208,7 +208,7 @@ describe("ClawHub published artifact verification", () => {
     await expect(
       verifyPublishedClawHubPackage({
         expectedArtifactDir: writeExpectedArtifact(artifact),
-        packageName: "@openclaw/meta",
+        packageName: "@afora/meta",
         packageVersion: "2026.7.1-beta.3",
         publishTag: "beta",
         registry: "https://clawhub.example",
@@ -226,14 +226,14 @@ describe("ClawHub published artifact verification", () => {
     await expect(
       verifyPublishedClawHubPackage({
         expectedArtifactDir: ambiguous,
-        packageName: "@openclaw/meta",
+        packageName: "@afora/meta",
         packageVersion: "2026.7.1-beta.3",
         publishTag: "beta",
         retryOptions: { fetchImpl, attempts: 1, delayMs: 1 },
       }),
     ).rejects.toThrow("exactly one root .tgz regular file");
 
-    const root = mkdtempSync(join(tmpdir(), "openclaw-clawhub-oidc-symlink-"));
+    const root = mkdtempSync(join(tmpdir(), "afora-clawhub-oidc-symlink-"));
     tempDirs.push(root);
     const artifactDir = join(root, "artifact");
     const target = join(root, "target.tgz");
@@ -243,7 +243,7 @@ describe("ClawHub published artifact verification", () => {
     await expect(
       verifyPublishedClawHubPackage({
         expectedArtifactDir: artifactDir,
-        packageName: "@openclaw/meta",
+        packageName: "@afora/meta",
         packageVersion: "2026.7.1-beta.3",
         publishTag: "beta",
         retryOptions: { fetchImpl, attempts: 1, delayMs: 1 },
@@ -269,18 +269,18 @@ describe("ClawHub published artifact verification", () => {
       clawhubToolchainIntegrity,
       clawhubToolchainSha256,
       clawhubToolchainVersion,
-      requestedPlugins: ["@openclaw/meta"],
+      requestedPlugins: ["@afora/meta"],
       verificationMode: "postpublish",
       packages: [
         {
-          packageName: "@openclaw/meta",
+          packageName: "@afora/meta",
           registrySha256: identity(artifact).sha256,
           registrySize: artifact.byteLength,
           npmIntegrity: identity(artifact).npmIntegrity,
           npmShasum: identity(artifact).npmShasum,
           artifactMetadata: {
             kind: "npm-pack",
-            packageName: "@openclaw/meta",
+            packageName: "@afora/meta",
             version: "2026.7.1-beta.3",
           },
         },
@@ -327,7 +327,7 @@ describe("ClawHub published artifact verification", () => {
         retryOptions: { fetchImpl, attempts: 1, delayMs: 1 },
       }),
     ).rejects.toThrow(
-      "@openclaw/meta@2026.7.1-beta.3 ClawHub artifact did not stabilize after 1 attempts; last failure @openclaw/meta ClawHub tag beta mismatch",
+      "@afora/meta@2026.7.1-beta.3 ClawHub artifact did not stabilize after 1 attempts; last failure @afora/meta ClawHub tag beta mismatch",
     );
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(fetchImpl.mock.calls.some(([url]) => String(url).includes("/artifact"))).toBe(false);
@@ -354,7 +354,7 @@ describe("ClawHub published artifact verification", () => {
         return Response.json({
           trustedPublisher: {
             provider: "github-actions",
-            repository: "openclaw/openclaw",
+            repository: "AforaMosh/afora-agent",
             workflowFilename: "plugin-clawhub-release.yml",
             environment: null,
           },

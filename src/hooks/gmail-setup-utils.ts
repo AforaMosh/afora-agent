@@ -1,7 +1,7 @@
 // Gmail setup utilities write helper files and normalize Gmail setup settings.
 import fs from "node:fs";
 import path from "node:path";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { formatErrorMessage } from "../infra/errors.js";
 import { resolveExecutable } from "../infra/executable-path.js";
 import { runCommandWithTimeout, type SpawnResult } from "../process/exec.js";

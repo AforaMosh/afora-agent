@@ -1,18 +1,18 @@
 // Shared iOS signing defaults for local development + CI.
 #include "../build/Version.xcconfig"
 
-OPENCLAW_IOS_DEFAULT_TEAM = FWJYW4S8P8
-OPENCLAW_IOS_SELECTED_TEAM = $(OPENCLAW_IOS_DEFAULT_TEAM)
-OPENCLAW_DEVELOPMENT_TEAM = $(OPENCLAW_IOS_SELECTED_TEAM)
-OPENCLAW_CODE_SIGN_STYLE = Automatic
-OPENCLAW_CODE_SIGN_IDENTITY = Apple Development
-OPENCLAW_CODE_SIGN_ENTITLEMENTS = Sources/OpenClaw.entitlements
-OPENCLAW_APP_BUNDLE_ID = ai.openclawfoundation.app
-OPENCLAW_APP_GROUP_ID = group.ai.openclawfoundation.app.shared
-OPENCLAW_WATCH_APP_BUNDLE_ID = ai.openclawfoundation.app.watchkitapp
-OPENCLAW_ACTIVITY_WIDGET_BUNDLE_ID = ai.openclawfoundation.app.activitywidget
-OPENCLAW_ACTIVITY_WIDGET_PROFILE =
-OPENCLAW_WATCH_APP_PROFILE =
+AFORA_IOS_DEFAULT_TEAM = FWJYW4S8P8
+AFORA_IOS_SELECTED_TEAM = $(AFORA_IOS_DEFAULT_TEAM)
+AFORA_DEVELOPMENT_TEAM = $(AFORA_IOS_SELECTED_TEAM)
+AFORA_CODE_SIGN_STYLE = Automatic
+AFORA_CODE_SIGN_IDENTITY = Apple Development
+AFORA_CODE_SIGN_ENTITLEMENTS = Sources/Afora.entitlements
+AFORA_APP_BUNDLE_ID = ai.aforafoundation.app
+AFORA_APP_GROUP_ID = group.ai.aforafoundation.app.shared
+AFORA_WATCH_APP_BUNDLE_ID = ai.aforafoundation.app.watchkitapp
+AFORA_ACTIVITY_WIDGET_BUNDLE_ID = ai.aforafoundation.app.activitywidget
+AFORA_ACTIVITY_WIDGET_PROFILE =
+AFORA_WATCH_APP_PROFILE =
 
 // Local contributors can override this by running scripts/ios-configure-signing.sh.
 // Keep include after defaults: xcconfig is evaluated top-to-bottom.
@@ -20,14 +20,14 @@ OPENCLAW_WATCH_APP_PROFILE =
 #include? "../LocalSigning.xcconfig"
 
 // Debug products install alongside release products and keep their app-group data separate.
-OPENCLAW_DEBUG_APP_BUNDLE_ID = $(OPENCLAW_APP_BUNDLE_ID).debug
-OPENCLAW_DEBUG_ACTIVITY_WIDGET_BUNDLE_ID = $(OPENCLAW_DEBUG_APP_BUNDLE_ID).activitywidget
-OPENCLAW_DEBUG_WATCH_APP_BUNDLE_ID = $(OPENCLAW_DEBUG_APP_BUNDLE_ID).watchkitapp
-OPENCLAW_DEBUG_APP_GROUP_ID = $(OPENCLAW_APP_GROUP_ID).debug
+AFORA_DEBUG_APP_BUNDLE_ID = $(AFORA_APP_BUNDLE_ID).debug
+AFORA_DEBUG_ACTIVITY_WIDGET_BUNDLE_ID = $(AFORA_DEBUG_APP_BUNDLE_ID).activitywidget
+AFORA_DEBUG_WATCH_APP_BUNDLE_ID = $(AFORA_DEBUG_APP_BUNDLE_ID).watchkitapp
+AFORA_DEBUG_APP_GROUP_ID = $(AFORA_APP_GROUP_ID).debug
 
-CODE_SIGN_STYLE = $(OPENCLAW_CODE_SIGN_STYLE)
-CODE_SIGN_IDENTITY = $(OPENCLAW_CODE_SIGN_IDENTITY)
-DEVELOPMENT_TEAM = $(OPENCLAW_DEVELOPMENT_TEAM)
+CODE_SIGN_STYLE = $(AFORA_CODE_SIGN_STYLE)
+CODE_SIGN_IDENTITY = $(AFORA_CODE_SIGN_IDENTITY)
+DEVELOPMENT_TEAM = $(AFORA_DEVELOPMENT_TEAM)
 
 // Let Xcode manage provisioning for the selected local team unless a local override pins one.
 PROVISIONING_PROFILE_SPECIFIER =

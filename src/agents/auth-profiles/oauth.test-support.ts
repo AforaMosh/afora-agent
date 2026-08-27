@@ -7,7 +7,7 @@ type OAuthTestApi = {
 
 function getTestApi(): OAuthTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.oauthTestApi")
+    Symbol.for("afora.oauthTestApi")
   ] as OAuthTestApi;
 }
 

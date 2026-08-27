@@ -1,8 +1,8 @@
-import { readStringField as readString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { readStringField as readString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 /**
  * Predicates and readers for Codex app-server notification envelopes.
  */
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import {
   isJsonObject,
   type CodexServerNotification,
@@ -196,16 +196,16 @@ export function readNotificationItemId(notification: CodexServerNotification): s
   );
 }
 
-/** Detects completion for an OpenClaw dynamic tool result still awaited by Codex. */
-export function isPendingOpenClawDynamicToolCompletionNotification(
+/** Detects completion for an Afora dynamic tool result still awaited by Codex. */
+export function isPendingAforaDynamicToolCompletionNotification(
   notification: CodexServerNotification,
-  pendingOpenClawDynamicToolCompletionIds: ReadonlySet<string>,
+  pendingAforaDynamicToolCompletionIds: ReadonlySet<string>,
 ): boolean {
   if (notification.method !== "item/completed" || !isJsonObject(notification.params)) {
     return false;
   }
   const itemId = readNotificationItemId(notification);
-  if (!itemId || !pendingOpenClawDynamicToolCompletionIds.has(itemId)) {
+  if (!itemId || !pendingAforaDynamicToolCompletionIds.has(itemId)) {
     return false;
   }
   const item = isJsonObject(notification.params.item) ? notification.params.item : undefined;

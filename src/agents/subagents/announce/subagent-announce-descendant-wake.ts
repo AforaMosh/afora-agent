@@ -1,6 +1,6 @@
 // Descendant-settle wake replaces an ended nested orchestrator run while
 // preserving lifecycle ownership.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { getAgentEventLifecycleGeneration } from "../../../infra/agent-events.js";
 import { INTERNAL_MESSAGE_CHANNEL } from "../../../utils/message-channel.js";
 import { buildAnnounceIdempotencyKey } from "../../announce-idempotency.js";

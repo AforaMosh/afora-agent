@@ -84,12 +84,12 @@ Disable the feature entirely with **Settings → General → Quick Chat**; the s
 - Auto-open for testing:
 
   ```bash
-  dist/OpenClaw.app/Contents/MacOS/OpenClaw --chat
+  dist/Afora.app/Contents/MacOS/Afora --chat
   ```
 
   (`--webchat` is accepted as a legacy alias.)
 
-- Logs: `./scripts/clawlog.sh` (subsystem `ai.openclaw`, category `WebChatSwiftUI`).
+- Logs: `./scripts/clawlog.sh` (subsystem `ai.afora`, category `WebChatSwiftUI`).
 
 ## How it is wired
 
@@ -99,7 +99,7 @@ Disable the feature entirely with **Settings → General → Quick Chat**; the s
 - Session groups: `sessions.groups.list`, `sessions.groups.put`, `sessions.groups.rename`, and `sessions.groups.delete` own the path-free group catalog. Write-scoped `sessions.groups.defaults` and `sessions.groups.update` own optional New Session folder/worktree defaults. Membership is the session `category` updated through `sessions.patch` or assigned during `sessions.create`.
 - Unread state: after a session activates and its live history loads successfully, the app clears that session's unread marker. Failed history loads do not clear it; a transient patch failure retries on the next activation.
 - Onboarding uses a dedicated session to keep first-run setup separate.
-- Offline cache: the app keeps a small read-only cache of recent chat sessions and transcripts per gateway (`~/Library/Application Support/OpenClaw/chat-cache.sqlite`): cold opens paint the last known transcript immediately and refresh once the Gateway responds, and recent chats stay browsable while disconnected (sending stays disabled until the connection is back).
+- Offline cache: the app keeps a small read-only cache of recent chat sessions and transcripts per gateway (`~/Library/Application Support/Afora/chat-cache.sqlite`): cold opens paint the last known transcript immediately and refresh once the Gateway responds, and recent chats stay browsable while disconnected (sending stays disabled until the connection is back).
 
 ## Security surface
 

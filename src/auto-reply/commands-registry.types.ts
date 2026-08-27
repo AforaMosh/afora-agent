@@ -1,5 +1,5 @@
 /** Type contracts for text/native chat command definitions and command detection. */
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import type { CommandArgValues } from "./commands-args.types.js";
 import type { ThinkingCatalogEntry } from "./thinking.shared.js";
 
@@ -30,7 +30,7 @@ type CommandArgType = "string" | "number" | "boolean";
 
 /** Context passed to dynamic command argument choice providers. */
 export type CommandArgChoiceContext = {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   provider?: string;
   model?: string;
   agentRuntime?: string;
@@ -106,7 +106,7 @@ export type CommandDetection = {
 
 /** Inputs for deciding whether text slash commands should run on a surface. */
 export type ShouldHandleTextCommandsParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   surface: string;
   commandSource?: "text" | "native";
 };

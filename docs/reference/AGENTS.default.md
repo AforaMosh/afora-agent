@@ -1,39 +1,39 @@
 ---
-summary: "Default OpenClaw agent instructions and skills roster for the personal assistant setup"
+summary: "Default Afora agent instructions and skills roster for the personal assistant setup"
 title: "Default AGENTS.md"
 read_when:
-  - Starting a new OpenClaw agent session
+  - Starting a new Afora agent session
   - Enabling or auditing default skills
 ---
 
 ## First run (recommended)
 
-OpenClaw agents use a workspace directory. Default: `~/.openclaw/workspace` (configurable via `agents.defaults.workspace`, supports `~`).
+Afora agents use a workspace directory. Default: `~/.afora/workspace` (configurable via `agents.defaults.workspace`, supports `~`).
 
 1. Create the workspace:
 
 ```bash
-mkdir -p ~/.openclaw/workspace
+mkdir -p ~/.afora/workspace
 ```
 
 2. Copy the default workspace templates into it:
 
 ```bash
-cp docs/reference/templates/AGENTS.md ~/.openclaw/workspace/AGENTS.md
-cp docs/reference/templates/SOUL.md ~/.openclaw/workspace/SOUL.md
+cp docs/reference/templates/AGENTS.md ~/.afora/workspace/AGENTS.md
+cp docs/reference/templates/SOUL.md ~/.afora/workspace/SOUL.md
 ```
 
 3. Optional: use this file's personal-assistant skill roster instead of the generic template:
 
 ```bash
-cp docs/reference/AGENTS.default.md ~/.openclaw/workspace/AGENTS.md
+cp docs/reference/AGENTS.default.md ~/.afora/workspace/AGENTS.md
 ```
 
 4. Optional: point at a different workspace:
 
 ```json5
 {
-  agents: { defaults: { workspace: "~/.openclaw/workspace" } },
+  agents: { defaults: { workspace: "~/.afora/workspace" } },
 }
 ```
 
@@ -46,7 +46,7 @@ cp docs/reference/AGENTS.default.md ~/.openclaw/workspace/AGENTS.md
 
 ## Existing solutions preflight
 
-Before proposing or building a custom system, feature, workflow, tool, integration, or automation, check for open-source projects, maintained libraries, existing OpenClaw plugins, or free platforms that already solve it well enough. Prefer those when adequate. Build custom only when existing options are unsuitable, too expensive, unmaintained, unsafe, non-compliant, or the user explicitly asks for custom. Avoid paid-service recommendations unless the user explicitly approves spend. Keep this lightweight, a preflight gate, not a research assignment.
+Before proposing or building a custom system, feature, workflow, tool, integration, or automation, check for open-source projects, maintained libraries, existing Afora plugins, or free platforms that already solve it well enough. Prefer those when adequate. Build custom only when existing options are unsuitable, too expensive, unmaintained, unsafe, non-compliant, or the user explicitly asks for custom. Avoid paid-service recommendations unless the user explicitly approves spend. Keep this lightweight, a preflight gate, not a research assignment.
 
 ## Session start (required)
 
@@ -87,17 +87,17 @@ Before proposing or building a custom system, feature, workflow, tool, integrati
 Treat this workspace as the assistant's memory: make it a git repo (ideally private) so `AGENTS.md` and memory files are backed up.
 
 ```bash
-cd ~/.openclaw/workspace
+cd ~/.afora/workspace
 git init
 git add AGENTS.md
 git commit -m "Add workspace"
 # Optional: add a private remote + push
 ```
 
-## What OpenClaw does
+## What Afora does
 
 - Runs a messaging-channel gateway (WhatsApp, Telegram, Discord, Signal, iMessage, Slack, and more) plus an embedded agent, so the assistant can read/write chats, fetch context, and run skills via the host machine.
-- The macOS app manages permissions (screen recording, notifications, microphone) and exposes the `openclaw` CLI via its bundled binary.
+- The macOS app manages permissions (screen recording, notifications, microphone) and exposes the `afora` CLI via its bundled binary.
 - Direct chats collapse into the agent's `main` session by default; groups and channels/rooms get their own session keys. See [Channel routing](/channels/channel-routing) for the exact key formats. Heartbeats keep background tasks alive.
 
 ## Core skills (enable in Settings → Skills)
@@ -124,11 +124,11 @@ Example roster for a personal-assistant workspace; swap in whichever skills fit 
 
 ## Usage notes
 
-- Prefer the `openclaw` CLI for scripting; the desktop app handles permissions.
+- Prefer the `afora` CLI for scripting; the desktop app handles permissions.
 - Run installs from the Skills tab; the install button is hidden once a required binary is already present.
 - Keep heartbeats enabled so the assistant can schedule reminders, monitor inboxes, and trigger camera captures.
 - Canvas UI runs full-screen with native overlays. Avoid placing critical controls at the top-left/top-right/bottom edges; add explicit layout gutters instead of relying on safe-area insets.
-- For browser-driven verification, use the `openclaw browser` CLI (bundled `browser` plugin) with the OpenClaw-managed Chrome/Brave/Edge/Chromium profile.
+- For browser-driven verification, use the `afora browser` CLI (bundled `browser` plugin) with the Afora-managed Chrome/Brave/Edge/Chromium profile.
 - Manage: `status`, `doctor [--deep]`, `start [--headless]`, `stop`, `tabs`, `tab [new|select|close]`, `open <url>`, `focus <id>`, `close <id>`.
 - Inspect: `screenshot [--full-page|--ref|--labels]`, `snapshot [--format ai|aria|--interactive|--efficient]`, `console`, `errors`, `requests`, `pdf`, `responsebody`.
 - Act: `navigate`, `click <ref>`, `type <ref> <text>`, `press`, `hover`, `drag`, `select`, `upload`, `download`, `fill`, `dialog`, `wait`, `evaluate --fn <js>`, `highlight`. Actions need a `ref` from `snapshot` (CSS selectors are not accepted for actions); use `evaluate` when you need `document.querySelector`-style targeting.

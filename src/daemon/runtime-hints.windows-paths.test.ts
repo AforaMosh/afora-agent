@@ -2,17 +2,17 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
 
 const resolveGatewayLogPathsMock = vi.fn(() => ({
-  logDir: "C:\\tmp\\openclaw-state\\logs",
-  stdoutPath: "C:\\tmp\\openclaw-state\\logs\\gateway.log",
-  stderrPath: "C:\\tmp\\openclaw-state\\logs\\gateway.err.log",
+  logDir: "C:\\tmp\\afora-state\\logs",
+  stdoutPath: "C:\\tmp\\afora-state\\logs\\gateway.log",
+  stderrPath: "C:\\tmp\\afora-state\\logs\\gateway.err.log",
 }));
 const resolveGatewaySupervisorLogPathsMock = vi.fn(() => ({
-  logDir: "C:\\Users\\test\\Library\\Logs\\openclaw",
-  stdoutPath: "C:\\Users\\test\\Library\\Logs\\openclaw\\gateway.log",
-  stderrPath: "C:\\Users\\test\\Library\\Logs\\openclaw\\gateway.err.log",
+  logDir: "C:\\Users\\test\\Library\\Logs\\afora",
+  stdoutPath: "C:\\Users\\test\\Library\\Logs\\afora\\gateway.log",
+  stderrPath: "C:\\Users\\test\\Library\\Logs\\afora\\gateway.err.log",
 }));
 const resolveGatewayRestartLogPathMock = vi.fn(
-  () => "C:\\tmp\\openclaw-state\\logs\\gateway-restart.log",
+  () => "C:\\tmp\\afora-state\\logs\\gateway-restart.log",
 );
 
 vi.mock("./restart-logs.js", () => ({
@@ -32,13 +32,13 @@ describe("buildPlatformRuntimeLogHints", () => {
     expect(
       buildPlatformRuntimeLogHints({
         platform: "darwin",
-        systemdServiceName: "openclaw-gateway",
-        windowsTaskName: "OpenClaw Gateway",
+        systemdServiceName: "afora-gateway",
+        windowsTaskName: "Afora Gateway",
       }),
     ).toEqual([
-      "Launchd stdout (if installed): /Users/test/Library/Logs/openclaw/gateway.log",
+      "Launchd stdout (if installed): /Users/test/Library/Logs/afora/gateway.log",
       "Launchd stderr (if installed): suppressed",
-      "Restart attempts: /tmp/openclaw-state/logs/gateway-restart.log",
+      "Restart attempts: /tmp/afora-state/logs/gateway-restart.log",
     ]);
   });
 });

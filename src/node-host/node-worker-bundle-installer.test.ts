@@ -18,7 +18,7 @@ describe("node worker bundle installer", () => {
   let server: http.Server | undefined;
 
   beforeEach(async () => {
-    root = await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()), "openclaw-node-bundle-"));
+    root = await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()), "afora-node-bundle-"));
   });
 
   afterEach(async () => {
@@ -57,12 +57,12 @@ describe("node worker bundle installer", () => {
     const archiveEntries = ["worker.mjs"];
     if (options.packageShell) {
       await fs.mkdir(path.join(source, "dist"));
-      await fs.writeFile(path.join(source, "openclaw.mjs"), "#!/usr/bin/env node\n", {
+      await fs.writeFile(path.join(source, "afora.mjs"), "#!/usr/bin/env node\n", {
         mode: 0o700,
       });
-      await fs.writeFile(path.join(source, "package.json"), '{"name":"openclaw"}\n');
+      await fs.writeFile(path.join(source, "package.json"), '{"name":"afora-agent"}\n');
       await fs.writeFile(path.join(source, "dist", "worker.js"), "export {};\n");
-      archiveEntries.push("dist/worker.js", "openclaw.mjs", "package.json");
+      archiveEntries.push("dist/worker.js", "afora.mjs", "package.json");
     }
     const manifest = await readWorkerBundleDirectoryManifest({
       root: source,
@@ -79,7 +79,7 @@ describe("node worker bundle installer", () => {
       input: {
         gatewayNamespace: "gateway-test",
         ...(options.bundlePrewarm ? { bundlePrewarm: options.bundlePrewarm } : {}),
-        build: { bundleHash, openclawVersion: "2026.8.1", protocolFeatures: [] },
+        build: { bundleHash, aforaVersion: "2026.8.1", protocolFeatures: [] },
         archive: {
           token: "A".repeat(43),
           sha256: createHash("sha256").update(archive).digest("hex"),

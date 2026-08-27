@@ -1,7 +1,7 @@
 // Doctor-only repair for agent model refs whose provider is no longer available.
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
   listAgentEntries,
   resolveAgentDir,
@@ -11,7 +11,7 @@ import {
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from "../../../agents/defaults.js";
 import { normalizeProviderId } from "../../../agents/model-selection.js";
 import type { AgentModelConfig } from "../../../config/types.agents-shared.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { resolvePluginMetadataSnapshot } from "../../../plugins/plugin-metadata-snapshot.js";
 import type { PluginMetadataSnapshot } from "../../../plugins/plugin-metadata-snapshot.types.js";
 import { resolveProviderInstallCatalogEntries } from "../../../plugins/provider-install-catalog.js";
@@ -19,7 +19,7 @@ import { listMutableCodexRouteAgentEntries } from "./codex-route-agent-entries.j
 import { collectConfiguredProviderSelectionIds } from "./configured-provider-selection-ids.js";
 
 type StaleAgentModelRefRepair = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   changes: string[];
   warnings: string[];
 };
@@ -46,7 +46,7 @@ function providerFromModelRef(ref: string): string | undefined {
 }
 
 function collectPluginProviderIds(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   options: RepairOptions,
 ): { providerIds?: Set<string>; warnings: string[] } {
   let providerIds: Set<string>;
@@ -107,7 +107,7 @@ function collectPluginProviderIds(
 }
 
 function collectPersistedProviderIds(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   env: NodeJS.ProcessEnv;
   injected?: ReadonlyMap<string, ReadonlySet<string>>;
@@ -223,7 +223,7 @@ function filterFallbacks(params: {
   }
 }
 
-function firstExplicitModelRef(cfg: OpenClawConfig): string | undefined {
+function firstExplicitModelRef(cfg: AforaConfig): string | undefined {
   if (!isRecord(cfg.models?.providers)) {
     return undefined;
   }
@@ -250,7 +250,7 @@ function modelPrimaryRef(model: unknown): string | undefined {
 }
 
 export function repairStaleAgentModelRefs(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   options: RepairOptions = {},
 ): StaleAgentModelRefRepair {
   const replaceMode = cfg.models?.mode === "replace";

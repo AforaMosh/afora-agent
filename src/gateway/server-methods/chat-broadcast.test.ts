@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { broadcastChatError, broadcastChatFinal } from "./chat-broadcast.js";
 import type { GatewayRequestContext } from "./types.js";
 
@@ -151,7 +151,7 @@ describe("global chat broadcast ownership", () => {
             defaults: { sessionStore: { agentId: "ops" } },
             entries: { ops: {}, research: {} },
           },
-        }) satisfies OpenClawConfig,
+        }) satisfies AforaConfig,
       nodeSendToSession,
     };
 

@@ -2,16 +2,16 @@ import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import path from "node:path";
-import { withTempHome as withBaseTempHome } from "openclaw/plugin-sdk/test-env";
+import { withTempHome as withBaseTempHome } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { McpServerConfig } from "../config/types.mcp.js";
 import { handleMcpOAuthCallback } from "../gateway/mcp-oauth-callback.js";
 import { createRequest, createResponse } from "../gateway/server-http.test-harness.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
-import { resolveOpenClawStateSqlitePath } from "../state/openclaw-state-db.paths.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
+import { resolveAforaStateSqlitePath } from "../state/afora-state-db.paths.js";
 import { getFreePort } from "../test-utils/ports.js";
 import {
   operatorMcpOAuthIdentity,
@@ -193,17 +193,17 @@ async function withTempHome<T>(
   options: Parameters<typeof withBaseTempHome>[1],
 ): Promise<T> {
   return withBaseTempHome(async (home) => {
-    const previousStateDir = process.env.OPENCLAW_STATE_DIR;
-    process.env.OPENCLAW_STATE_DIR = path.join(home, ".openclaw");
-    closeOpenClawStateDatabaseForTest();
+    const previousStateDir = process.env.AFORA_STATE_DIR;
+    process.env.AFORA_STATE_DIR = path.join(home, ".afora");
+    closeAforaStateDatabaseForTest();
     try {
       return await run(home);
     } finally {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       if (previousStateDir === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.AFORA_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = previousStateDir;
+        process.env.AFORA_STATE_DIR = previousStateDir;
       }
     }
   }, options);
@@ -212,10 +212,10 @@ async function withTempHome<T>(
 describe("MCP OAuth provider", () => {
   beforeEach(() => {
     authMock.mockReset();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
   });
 
-  afterEach(() => closeOpenClawStateDatabaseForTest());
+  afterEach(() => closeAforaStateDatabaseForTest());
 
   it("reuses a valid stored session without persisting an authorization redirect", async () => {
     await withTempHome(
@@ -238,9 +238,9 @@ describe("MCP OAuth provider", () => {
         expect(readMcpOAuthStore(REMOTE_IDENTITY.storeKey)).toEqual(before);
       },
       {
-        prefix: "openclaw-mcp-oauth-existing-session-",
+        prefix: "afora-mcp-oauth-existing-session-",
         skipSessionCleanup: true,
-        env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
       },
     );
   });
@@ -267,7 +267,7 @@ describe("MCP OAuth provider", () => {
             scope: "docs.write",
           }),
         ).rejects.toThrow(
-          'MCP server "Remote Docs" requires additional OAuth authorization. Run openclaw mcp login Remote Docs.',
+          'MCP server "Remote Docs" requires additional OAuth authorization. Run afora mcp login Remote Docs.',
         );
         expect(authMock).not.toHaveBeenCalled();
         expect(provider.tokens()).toMatchObject({
@@ -344,9 +344,9 @@ describe("MCP OAuth provider", () => {
         expect(readMcpOAuthStore(storeKey).pendingAuthorizationChallenge).toBeUndefined();
       },
       {
-        prefix: "openclaw-mcp-oauth-insufficient-scope-",
+        prefix: "afora-mcp-oauth-insufficient-scope-",
         skipSessionCleanup: true,
-        env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
       },
     );
   });
@@ -390,9 +390,9 @@ describe("MCP OAuth provider", () => {
         expect(provider.tokens()).toMatchObject({ access_token: "newer-token" });
       },
       {
-        prefix: "openclaw-mcp-oauth-terminal-rejection-",
+        prefix: "afora-mcp-oauth-terminal-rejection-",
         skipSessionCleanup: true,
-        env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
       },
     );
   });
@@ -445,9 +445,9 @@ describe("MCP OAuth provider", () => {
         });
       },
       {
-        prefix: "openclaw-mcp-oauth-rejected-token-challenge-",
+        prefix: "afora-mcp-oauth-rejected-token-challenge-",
         skipSessionCleanup: true,
-        env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
       },
     );
   });
@@ -491,9 +491,9 @@ describe("MCP OAuth provider", () => {
         expect(readMcpOAuthStore(storeKey).pendingAuthorizationChallenge).toBeUndefined();
       },
       {
-        prefix: "openclaw-mcp-oauth-doctor-challenge-",
+        prefix: "afora-mcp-oauth-doctor-challenge-",
         skipSessionCleanup: true,
-        env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
       },
     );
   });
@@ -543,11 +543,11 @@ describe("MCP OAuth provider", () => {
         expect(authMock).toHaveBeenCalledOnce();
       },
       {
-        prefix: "openclaw-mcp-oauth-legacy-token-",
+        prefix: "afora-mcp-oauth-legacy-token-",
         skipSessionCleanup: true,
         env: {
-          OPENCLAW_CONFIG_PATH: undefined,
-          OPENCLAW_STATE_DIR: undefined,
+          AFORA_CONFIG_PATH: undefined,
+          AFORA_STATE_DIR: undefined,
         },
       },
     );
@@ -560,15 +560,15 @@ describe("MCP OAuth provider", () => {
           resolveMcpOAuthAccessToken({
             identity: REMOTE_IDENTITY,
           }),
-        ).rejects.toThrow("Run openclaw mcp login Remote Docs.");
+        ).rejects.toThrow("Run afora mcp login Remote Docs.");
         expect(authMock).not.toHaveBeenCalled();
       },
       {
-        prefix: "openclaw-mcp-oauth-missing-token-",
+        prefix: "afora-mcp-oauth-missing-token-",
         skipSessionCleanup: true,
         env: {
-          OPENCLAW_CONFIG_PATH: undefined,
-          OPENCLAW_STATE_DIR: undefined,
+          AFORA_CONFIG_PATH: undefined,
+          AFORA_STATE_DIR: undefined,
         },
       },
     );
@@ -583,16 +583,16 @@ describe("MCP OAuth provider", () => {
             authorizationChallenge: true,
             scope: "docs.read",
           }),
-        ).rejects.toThrow("Run openclaw mcp login Remote Docs.");
+        ).rejects.toThrow("Run afora mcp login Remote Docs.");
         expect(readMcpOAuthStore(REMOTE_IDENTITY.storeKey)).toMatchObject({
           credentialState: "uninitialized",
           pendingAuthorizationChallenge: { scope: "docs.read" },
         });
       },
       {
-        prefix: "openclaw-mcp-oauth-challenge-provenance-",
+        prefix: "afora-mcp-oauth-challenge-provenance-",
         skipSessionCleanup: true,
-        env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
       },
     );
   });
@@ -616,7 +616,7 @@ describe("MCP OAuth provider", () => {
             resourceMetadataUrl,
             scope: "docs.read",
           }),
-        ).rejects.toThrow("Run openclaw mcp login Remote Docs.");
+        ).rejects.toThrow("Run afora mcp login Remote Docs.");
         expect(authMock).not.toHaveBeenCalled();
         expect(readMcpOAuthStore(REMOTE_IDENTITY.storeKey)).toMatchObject({
           codeVerifier: "existing-verifier",
@@ -636,9 +636,9 @@ describe("MCP OAuth provider", () => {
         });
       },
       {
-        prefix: "openclaw-mcp-oauth-challenge-bootstrap-",
+        prefix: "afora-mcp-oauth-challenge-bootstrap-",
         skipSessionCleanup: true,
-        env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
       },
     );
   });
@@ -656,25 +656,25 @@ describe("MCP OAuth provider", () => {
           token_type: "Bearer",
         });
 
-        const databasePath = resolveOpenClawStateSqlitePath();
-        const rows = openOpenClawStateDatabase()
+        const databasePath = resolveAforaStateSqlitePath();
+        const rows = openAforaStateDatabase()
           .db.prepare("SELECT store_key, format_version FROM mcp_oauth_stores")
           .all();
         expect(rows).toEqual([
           { store_key: expect.stringMatching(/^Remote-Docs-[a-f0-9]{16}$/), format_version: 1 },
         ]);
-        await expect(fs.readdir(`${home}/.openclaw/mcp-oauth`)).rejects.toMatchObject({
+        await expect(fs.readdir(`${home}/.afora/mcp-oauth`)).rejects.toMatchObject({
           code: "ENOENT",
         });
         const stat = await fs.stat(databasePath);
         expect(stat.mode & 0o777).toBe(0o600);
       },
       {
-        prefix: "openclaw-mcp-oauth-",
+        prefix: "afora-mcp-oauth-",
         skipSessionCleanup: true,
         env: {
-          OPENCLAW_CONFIG_PATH: undefined,
-          OPENCLAW_STATE_DIR: undefined,
+          AFORA_CONFIG_PATH: undefined,
+          AFORA_STATE_DIR: undefined,
         },
       },
     );
@@ -686,14 +686,14 @@ describe("MCP OAuth provider", () => {
         await expect(readMcpOAuthCredentialsStatus(REMOTE_IDENTITY)).resolves.toEqual({
           state: "unauthenticated",
         });
-        await expect(fs.stat(resolveOpenClawStateSqlitePath())).rejects.toMatchObject({
+        await expect(fs.stat(resolveAforaStateSqlitePath())).rejects.toMatchObject({
           code: "ENOENT",
         });
       },
       {
-        prefix: "openclaw-mcp-oauth-status-",
+        prefix: "afora-mcp-oauth-status-",
         skipSessionCleanup: true,
-        env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
       },
     );
   });
@@ -723,9 +723,9 @@ describe("MCP OAuth provider", () => {
         expect(store.credentialState).toBe("cleared");
       },
       {
-        prefix: "openclaw-mcp-oauth-atomic-fields-",
+        prefix: "afora-mcp-oauth-atomic-fields-",
         skipSessionCleanup: true,
-        env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
       },
     );
   });
@@ -738,16 +738,16 @@ describe("MCP OAuth provider", () => {
         });
         await provider.saveTokens({ access_token: "access", token_type: "Bearer" });
         const storeKey = REMOTE_IDENTITY.storeKey;
-        openOpenClawStateDatabase()
+        openAforaStateDatabase()
           .db.prepare("UPDATE mcp_oauth_stores SET store_json = ? WHERE store_key = ?")
           .run("{", storeKey);
 
         expect(() => provider.tokens()).toThrow("store_json is not valid JSON");
       },
       {
-        prefix: "openclaw-mcp-oauth-corrupt-row-",
+        prefix: "afora-mcp-oauth-corrupt-row-",
         skipSessionCleanup: true,
-        env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
       },
     );
   });
@@ -760,16 +760,16 @@ describe("MCP OAuth provider", () => {
         });
         await provider.saveTokens({ access_token: "access", token_type: "Bearer" });
         const storeKey = REMOTE_IDENTITY.storeKey;
-        openOpenClawStateDatabase()
+        openAforaStateDatabase()
           .db.prepare("UPDATE mcp_oauth_stores SET store_json = ? WHERE store_key = ?")
           .run(JSON.stringify({ tokenExpiresAt: 10_000 }), storeKey);
 
         expect(() => provider.tokens()).toThrow("tokenExpiresAt requires tokens");
       },
       {
-        prefix: "openclaw-mcp-oauth-orphan-expiry-",
+        prefix: "afora-mcp-oauth-orphan-expiry-",
         skipSessionCleanup: true,
-        env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
       },
     );
   });
@@ -785,7 +785,7 @@ describe("MCP OAuth provider", () => {
         await saveAccessToken(bob, "bob-token");
         await saveAccessToken(other, "other-token");
 
-        closeOpenClawStateDatabaseForTest();
+        closeAforaStateDatabaseForTest();
         await expect(resolveMcpOAuthAccessToken({ identity: alice })).resolves.toBe("alice-token");
         await expect(resolveMcpOAuthAccessToken({ identity: bob })).resolves.toBe("bob-token");
         expect(alice.storeKey).not.toBe(bob.storeKey);
@@ -800,9 +800,9 @@ describe("MCP OAuth provider", () => {
         await expect(resolveMcpOAuthAccessToken({ identity: other })).resolves.toBe("other-token");
       },
       {
-        prefix: "openclaw-mcp-oauth-requesters-",
+        prefix: "afora-mcp-oauth-requesters-",
         skipSessionCleanup: true,
-        env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
       },
     );
   });
@@ -859,9 +859,9 @@ describe("MCP OAuth provider", () => {
         });
       },
       {
-        prefix: "openclaw-mcp-oauth-localhost-persist-",
+        prefix: "afora-mcp-oauth-localhost-persist-",
         skipSessionCleanup: true,
-        env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
       },
     );
   });
@@ -886,9 +886,9 @@ describe("MCP OAuth provider", () => {
         expect(authMock).toHaveBeenCalledOnce();
       },
       {
-        prefix: "openclaw-mcp-oauth-code-mismatch-",
+        prefix: "afora-mcp-oauth-code-mismatch-",
         skipSessionCleanup: true,
-        env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
       },
     );
   });
@@ -908,11 +908,11 @@ describe("MCP OAuth provider", () => {
         expect(readMcpOAuthStore(CALENDLY_IDENTITY.storeKey)).toEqual({});
       },
       {
-        prefix: "openclaw-mcp-oauth-localhost-failure-",
+        prefix: "afora-mcp-oauth-localhost-failure-",
         skipSessionCleanup: true,
         env: {
-          OPENCLAW_CONFIG_PATH: undefined,
-          OPENCLAW_STATE_DIR: undefined,
+          AFORA_CONFIG_PATH: undefined,
+          AFORA_STATE_DIR: undefined,
         },
       },
     );
@@ -925,20 +925,20 @@ describe("MCP OAuth provider", () => {
           identity: REMOTE_IDENTITY,
         });
 
-        expect(() => provider.state?.()).toThrow("Run openclaw mcp login Remote Docs.");
+        expect(() => provider.state?.()).toThrow("Run afora mcp login Remote Docs.");
         expect(() => provider.saveCodeVerifier?.("verifier")).toThrow(
-          "Run openclaw mcp login Remote Docs.",
+          "Run afora mcp login Remote Docs.",
         );
         await expect(
           provider.redirectToAuthorization?.(new URL("https://auth.example.com/authorize")),
-        ).rejects.toThrow("Run openclaw mcp login Remote Docs.");
+        ).rejects.toThrow("Run afora mcp login Remote Docs.");
       },
       {
-        prefix: "openclaw-mcp-oauth-noninteractive-",
+        prefix: "afora-mcp-oauth-noninteractive-",
         skipSessionCleanup: true,
         env: {
-          OPENCLAW_CONFIG_PATH: undefined,
-          OPENCLAW_STATE_DIR: undefined,
+          AFORA_CONFIG_PATH: undefined,
+          AFORA_STATE_DIR: undefined,
         },
       },
     );
@@ -958,11 +958,11 @@ describe("MCP OAuth provider", () => {
         expect(readMcpOAuthStore(REMOTE_IDENTITY.storeKey).credentialState).toBe("cleared");
       },
       {
-        prefix: "openclaw-mcp-oauth-clear-",
+        prefix: "afora-mcp-oauth-clear-",
         skipSessionCleanup: true,
         env: {
-          OPENCLAW_CONFIG_PATH: undefined,
-          OPENCLAW_STATE_DIR: undefined,
+          AFORA_CONFIG_PATH: undefined,
+          AFORA_STATE_DIR: undefined,
         },
       },
     );
@@ -1000,7 +1000,7 @@ describe("MCP OAuth provider", () => {
             lastAuthorizationUrl: first.authorizationUrl,
             redirectUrl: first.redirectUrl,
           });
-          closeOpenClawStateDatabaseForTest();
+          closeAforaStateDatabaseForTest();
           const callbacks = await Promise.all(
             [0, 1].map(() =>
               runGatewayOAuthCallback({
@@ -1059,9 +1059,9 @@ describe("MCP OAuth provider", () => {
         }
       },
       {
-        prefix: "openclaw-mcp-oauth-session-",
+        prefix: "afora-mcp-oauth-session-",
         skipSessionCleanup: true,
-        env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+        env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
       },
     );
   });

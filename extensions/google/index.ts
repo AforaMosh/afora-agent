@@ -1,19 +1,19 @@
-// Google plugin entrypoint registers its OpenClaw integration.
-import type { ImageGenerationProvider } from "openclaw/plugin-sdk/image-generation";
-import type { MediaUnderstandingProvider } from "openclaw/plugin-sdk/media-understanding";
-import { adaptMemoryEmbeddingProviderAdapter } from "openclaw/plugin-sdk/memory-core-host-engine-embeddings";
-import type { MusicGenerationProvider } from "openclaw/plugin-sdk/music-generation";
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+// Google plugin entrypoint registers its Afora integration.
+import type { ImageGenerationProvider } from "afora-agent/plugin-sdk/image-generation";
+import type { MediaUnderstandingProvider } from "afora-agent/plugin-sdk/media-understanding";
+import { adaptMemoryEmbeddingProviderAdapter } from "afora-agent/plugin-sdk/memory-core-host-engine-embeddings";
+import type { MusicGenerationProvider } from "afora-agent/plugin-sdk/music-generation";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import type {
   RealtimeVoiceBridge,
   RealtimeVoiceBridgeCreateRequest,
   RealtimeVoiceProviderConfig,
   RealtimeVoiceProviderPlugin,
-} from "openclaw/plugin-sdk/realtime-voice";
-import { createRealtimeVoiceAudioQueue } from "openclaw/plugin-sdk/realtime-voice-audio-queue";
-import { normalizeResolvedSecretInputString } from "openclaw/plugin-sdk/secret-input";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
-import type { VideoGenerationProvider } from "openclaw/plugin-sdk/video-generation";
+} from "afora-agent/plugin-sdk/realtime-voice";
+import { createRealtimeVoiceAudioQueue } from "afora-agent/plugin-sdk/realtime-voice-audio-queue";
+import { normalizeResolvedSecretInputString } from "afora-agent/plugin-sdk/secret-input";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import type { VideoGenerationProvider } from "afora-agent/plugin-sdk/video-generation";
 import { buildGoogleGeminiCliBackend } from "./cli-backend.js";
 import { registerGoogleGeminiCliProvider } from "./gemini-cli-provider.js";
 import {

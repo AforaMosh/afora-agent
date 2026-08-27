@@ -122,14 +122,14 @@ describe("resolveSessionKeyFromResolveParams", () => {
 
   it("rejects legacy keys with doctor repair guidance", async () => {
     hoisted.resolveGatewaySessionStoreTargetWithStoreMock.mockImplementationOnce(() => {
-      throw Object.assign(new Error("stop the Gateway and run openclaw doctor --fix"), {
+      throw Object.assign(new Error("stop the Gateway and run afora doctor --fix"), {
         code: "SESSION_CANONICAL_KEY_MIGRATION_REQUIRED",
       });
     });
 
     await expect(
       resolveSessionKeyFromResolveParams({ cfg: {}, p: { key: canonicalKey } }),
-    ).rejects.toThrow("openclaw doctor --fix");
+    ).rejects.toThrow("afora doctor --fix");
   });
 
   it("does not let allowMissing mask a deleted-agent error", async () => {

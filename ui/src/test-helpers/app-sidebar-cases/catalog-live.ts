@@ -245,7 +245,7 @@ describe("AppSidebar session catalog pagination", () => {
     const pullRequestBadge = local?.querySelector(".session-row-badge--pull-request");
     expect(pullRequestBadge?.hasAttribute("title")).toBe(false);
     expect(
-      (pullRequestBadge?.closest("openclaw-tooltip") as (HTMLElement & { content?: string }) | null)
+      (pullRequestBadge?.closest("afora-tooltip") as (HTMLElement & { content?: string }) | null)
         ?.content,
     ).toBe("#111751, #111772 · Merged");
     expect(local?.textContent).not.toContain("Remote review");
@@ -255,7 +255,7 @@ describe("AppSidebar session catalog pagination", () => {
     expect(section?.textContent).not.toContain("Offline Node");
   });
 
-  it("shows a catalog-owned OpenClaw session only in its catalog section", async () => {
+  it("shows a catalog-owned Afora session only in its catalog section", async () => {
     const gateway = createGateway({} as GatewayBrowserClient);
     const backingSessionKey = "agent:main:claude-bound";
     const { sidebar } = await mountSidebar(
@@ -330,14 +330,14 @@ describe("AppSidebar session catalog pagination", () => {
     const pullRequestBadge = linkedRow?.querySelector(".session-row-badge--pull-request");
     expect(pullRequestBadge?.hasAttribute("title")).toBe(false);
     expect(
-      (pullRequestBadge?.closest("openclaw-tooltip") as (HTMLElement & { content?: string }) | null)
+      (pullRequestBadge?.closest("afora-tooltip") as (HTMLElement & { content?: string }) | null)
         ?.content,
     ).toBe("#107302 · Draft");
     expect(linkedRow?.querySelector('[data-sidebar-session-pin="true"]')).not.toBeNull();
     expect(linkedRow?.querySelector('[data-session-menu="true"]')).not.toBeNull();
     linkedRow?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
     await sidebar.updateComplete;
-    const linkedMenu = sidebar.querySelector<TestSessionMenu>("openclaw-session-menu");
+    const linkedMenu = sidebar.querySelector<TestSessionMenu>("afora-session-menu");
     await linkedMenu?.updateComplete;
     expect(linkedMenu?.querySelector('[data-shortcut="a"]')).not.toBeNull();
     expect(linkedMenu?.querySelector('[data-shortcut="d"]')).not.toBeNull();

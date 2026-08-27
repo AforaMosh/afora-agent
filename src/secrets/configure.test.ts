@@ -37,7 +37,7 @@ vi.mock("./apply.js", () => ({
 const { runSecretsConfigureInteractive } = await import("./configure.js");
 
 function makeTempDir(): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-secrets-configure-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-secrets-configure-"));
   fs.chmodSync(dir, 0o700);
   tempDirs.push(dir);
   return dir;

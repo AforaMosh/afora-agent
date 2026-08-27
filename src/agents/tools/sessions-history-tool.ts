@@ -3,11 +3,11 @@
  *
  * Reads bounded, redacted session transcript history after session visibility filtering.
  */
-import { asPositiveSafeInteger } from "@openclaw/normalization-core/number-coercion";
+import { asPositiveSafeInteger } from "@afora/normalization-core/number-coercion";
 import { Type } from "typebox";
 import { getRuntimeConfig } from "../../config/config.js";
 import { resolvePersistedSessionStoreOwnerForKey } from "../../config/sessions/session-store-owner.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { capArrayByJsonBytes } from "../../gateway/session-transcript-readers.js";
 import { jsonUtf8Bytes } from "../../infra/json-utf8-bytes.js";
 import { redactToolPayloadText } from "../../logging/redact.js";
@@ -225,7 +225,7 @@ function readHistoryMessageSeq(message: unknown): number | undefined {
   if (!message || typeof message !== "object" || Array.isArray(message)) {
     return undefined;
   }
-  const meta = (message as Record<string, unknown>)["__openclaw"];
+  const meta = (message as Record<string, unknown>)["__afora"];
   if (!meta || typeof meta !== "object" || Array.isArray(meta)) {
     return undefined;
   }
@@ -237,7 +237,7 @@ function readHistoryMessageId(message: unknown): string | undefined {
   if (!message || typeof message !== "object" || Array.isArray(message)) {
     return undefined;
   }
-  const meta = (message as Record<string, unknown>)["__openclaw"];
+  const meta = (message as Record<string, unknown>)["__afora"];
   if (!meta || typeof meta !== "object" || Array.isArray(meta)) {
     return undefined;
   }
@@ -299,7 +299,7 @@ function buildSessionsHistoryOmittedPlaceholder(source: unknown): Record<string,
     content: "[sessions_history omitted: message too large]",
     ...(seq !== undefined || id !== undefined
       ? {
-          __openclaw: {
+          __afora: {
             ...(seq !== undefined ? { seq } : {}),
             ...(id !== undefined ? { id } : {}),
           },
@@ -367,7 +367,7 @@ export function createSessionsHistoryTool(opts?: {
   agentSessionKey?: string;
   requesterAgentIdOverride?: string;
   sandboxed?: boolean;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   callGateway?: GatewayCaller;
   sessionLinkBase?: string;
 }): AnyAgentTool {

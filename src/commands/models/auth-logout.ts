@@ -8,7 +8,7 @@ import {
 import { resolveProviderEntryApiKeyProfileReference } from "../../agents/model-auth-provider-config.js";
 import { formatCliCommand } from "../../cli/command-format.js";
 import { logConfigUpdated } from "../../config/logging.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   configReferencesAuthProfile,
   removeAuthProfileConfig,
@@ -23,7 +23,7 @@ import { resolveModelsTargetAgent, updateConfig } from "./shared.js";
 // profile would leave that config key pointing at nothing and silently degrade
 // the provider to an unresolvable literal key, so refuse instead.
 function findProviderEntryBoundToProfile(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   store: AuthProfileStore;
   profileId: string;
 }): string | undefined {
@@ -51,7 +51,7 @@ export async function modelsAuthLogoutCommand(
   const profileId = opts.profileId?.trim();
   if (!profileId) {
     throw new Error(
-      `Missing profile id. Run ${formatCliCommand("openclaw models auth list")} to see saved profile ids.`,
+      `Missing profile id. Run ${formatCliCommand("afora models auth list")} to see saved profile ids.`,
     );
   }
 
@@ -63,14 +63,14 @@ export async function modelsAuthLogoutCommand(
   const credential = store.profiles[profileId];
   if (!credential) {
     throw new Error(
-      `Auth profile "${profileId}" not found for agent "${agentId}". Run ${formatCliCommand(`openclaw models auth list --agent ${agentId}`)} to see saved profile ids.`,
+      `Auth profile "${profileId}" not found for agent "${agentId}". Run ${formatCliCommand(`afora models auth list --agent ${agentId}`)} to see saved profile ids.`,
     );
   }
 
   const boundProvider = findProviderEntryBoundToProfile({ cfg, store, profileId });
   if (boundProvider) {
     throw new Error(
-      `Auth profile "${profileId}" is referenced by models.providers.${boundProvider}.apiKey. Change that config value first, then rerun ${formatCliCommand(`openclaw models auth logout ${profileId}`)}.`,
+      `Auth profile "${profileId}" is referenced by models.providers.${boundProvider}.apiKey. Change that config value first, then rerun ${formatCliCommand(`afora models auth logout ${profileId}`)}.`,
     );
   }
 
@@ -116,7 +116,7 @@ export async function modelsAuthLogoutCommand(
   );
   if (remaining.length === 0) {
     runtime.log(
-      `No auth profiles remain for ${credential.provider}. Run ${formatCliCommand(`openclaw models auth login --provider ${credential.provider}`)} to sign in again.`,
+      `No auth profiles remain for ${credential.provider}. Run ${formatCliCommand(`afora models auth login --provider ${credential.provider}`)} to sign in again.`,
     );
   }
 }

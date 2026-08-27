@@ -4,14 +4,14 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { retainLegacyDefaultAgentId } from "../config/legacy.default-agent-owner.js";
 import { withStateDirEnv } from "../test-helpers/state-dir-env.js";
 import { listGatewayAgentsBasic } from "./agent-list.js";
 
 describe("listGatewayAgentsBasic", () => {
   it("projects sole, retained-legacy, and explicit fleet ownership honestly", async () => {
-    await withStateDirEnv("openclaw-agent-list-", async () => {
+    await withStateDirEnv("afora-agent-list-", async () => {
       expect(listGatewayAgentsBasic({ agents: { entries: { ops: {} } } })).toMatchObject({
         defaultId: "ops",
         ownership: "sole",
@@ -41,9 +41,9 @@ describe("listGatewayAgentsBasic", () => {
   });
 
   it("retains disk system agents without treating regular disk dirs as roster members", async () => {
-    await withStateDirEnv("openclaw-agent-list-", async ({ stateDir }) => {
+    await withStateDirEnv("afora-agent-list-", async ({ stateDir }) => {
       await Promise.all(
-        ["openclaw", "crestodian", "research"].map((id) =>
+        ["afora", "crestodian", "research"].map((id) =>
           fs.mkdir(path.join(stateDir, "agents", id), { recursive: true }),
         ),
       );
@@ -55,13 +55,13 @@ describe("listGatewayAgentsBasic", () => {
       expect(result.agents).toEqual([
         { id: "main", kind: "agent", name: undefined },
         { id: "crestodian", kind: "system", name: undefined },
-        { id: "openclaw", kind: "system", name: undefined },
+        { id: "afora", kind: "system", name: undefined },
       ]);
     });
   });
 
   it("does not add owner entries without a roster membership source", async () => {
-    await withStateDirEnv("openclaw-agent-list-", async () => {
+    await withStateDirEnv("afora-agent-list-", async () => {
       expect(
         listGatewayAgentsBasic({
           agents: { entries: { main: { default: true } } },
@@ -71,28 +71,28 @@ describe("listGatewayAgentsBasic", () => {
   });
 
   it("lets configured ownership override disk system metadata", async () => {
-    await withStateDirEnv("openclaw-agent-list-", async ({ stateDir }) => {
-      await fs.mkdir(path.join(stateDir, "agents", "openclaw"), { recursive: true });
-      const cfg: OpenClawConfig = {
+    await withStateDirEnv("afora-agent-list-", async ({ stateDir }) => {
+      await fs.mkdir(path.join(stateDir, "agents", "afora"), { recursive: true });
+      const cfg: AforaConfig = {
         agents: {
           list: [
             { id: "main", default: true },
-            { id: "openclaw", name: "OpenClaw" },
+            { id: "afora", name: "Afora" },
           ],
         },
       };
 
       expect(listGatewayAgentsBasic(cfg).agents).toEqual([
         { id: "main", kind: "agent", name: undefined },
-        { id: "openclaw", kind: "agent", name: "OpenClaw" },
+        { id: "afora", kind: "agent", name: "Afora" },
       ]);
     });
   });
 
   it("retains disk-backed system agents beside an explicit roster", async () => {
-    await withStateDirEnv("openclaw-agent-list-", async ({ stateDir }) => {
+    await withStateDirEnv("afora-agent-list-", async ({ stateDir }) => {
       await Promise.all(
-        ["openclaw", "research"].map((id) =>
+        ["afora", "research"].map((id) =>
           fs.mkdir(path.join(stateDir, "agents", id), { recursive: true }),
         ),
       );
@@ -103,13 +103,13 @@ describe("listGatewayAgentsBasic", () => {
         }).agents,
       ).toEqual([
         { id: "main", kind: "agent", name: undefined },
-        { id: "openclaw", kind: "system", name: undefined },
+        { id: "afora", kind: "system", name: undefined },
       ]);
     });
   });
 
   it("falls back to identity.name when the configured agent name is missing", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       session: { mainKey: "main" },
       agents: {
         list: [{ id: "main", default: true, identity: { name: "小金" } }],
@@ -122,7 +122,7 @@ describe("listGatewayAgentsBasic", () => {
   });
 
   it("prefers the explicit configured name over identity.name", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       session: { mainKey: "main" },
       agents: {
         list: [
@@ -142,7 +142,7 @@ describe("listGatewayAgentsBasic", () => {
   });
 
   it("leaves the name unset when neither agents.list[].name nor identity.name is present", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       session: { mainKey: "main" },
       agents: {
         list: [{ id: "main", default: true, identity: {} }],

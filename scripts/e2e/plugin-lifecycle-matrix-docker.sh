@@ -6,8 +6,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$ROOT_DIR/scripts/lib/docker-e2e-image.sh"
 source "$ROOT_DIR/scripts/lib/docker-e2e-package.sh"
 
-IMAGE_NAME="$(docker_e2e_resolve_image "openclaw-plugin-lifecycle-matrix-e2e" OPENCLAW_PLUGIN_LIFECYCLE_MATRIX_E2E_IMAGE)"
-SKIP_BUILD="${OPENCLAW_PLUGIN_LIFECYCLE_MATRIX_E2E_SKIP_BUILD:-0}"
+IMAGE_NAME="$(docker_e2e_resolve_image "afora-plugin-lifecycle-matrix-e2e" AFORA_PLUGIN_LIFECYCLE_MATRIX_E2E_IMAGE)"
+SKIP_BUILD="${AFORA_PLUGIN_LIFECYCLE_MATRIX_E2E_SKIP_BUILD:-0}"
 cleanup() {
   docker_e2e_cleanup_package_tgz "${PACKAGE_TGZ:-}"
 }
@@ -15,8 +15,8 @@ trap cleanup EXIT
 
 DOCKER_ENV_ARGS=(
   -e COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-  -e OPENCLAW_SKIP_CHANNELS=1
-  -e OPENCLAW_SKIP_PROVIDERS=1
+  -e AFORA_SKIP_CHANNELS=1
+  -e AFORA_SKIP_PROVIDERS=1
 )
 
 append_positive_int_env() {
@@ -42,14 +42,14 @@ append_positive_number_env() {
   DOCKER_ENV_ARGS+=(-e "$name=$value")
 }
 
-append_positive_int_env OPENCLAW_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS
-append_positive_int_env OPENCLAW_PLUGIN_LIFECYCLE_TIMEOUT_KILL_GRACE_MS
-append_positive_int_env OPENCLAW_PLUGIN_LIFECYCLE_METRIC_POLL_MS
-append_positive_int_env OPENCLAW_PLUGIN_LIFECYCLE_MAX_RSS_KB
-append_positive_int_env OPENCLAW_PLUGIN_LIFECYCLE_MAX_WALL_MS
-append_positive_number_env OPENCLAW_PLUGIN_LIFECYCLE_MAX_CPU_CORE_RATIO
+append_positive_int_env AFORA_PLUGIN_LIFECYCLE_PHASE_TIMEOUT_MS
+append_positive_int_env AFORA_PLUGIN_LIFECYCLE_TIMEOUT_KILL_GRACE_MS
+append_positive_int_env AFORA_PLUGIN_LIFECYCLE_METRIC_POLL_MS
+append_positive_int_env AFORA_PLUGIN_LIFECYCLE_MAX_RSS_KB
+append_positive_int_env AFORA_PLUGIN_LIFECYCLE_MAX_WALL_MS
+append_positive_number_env AFORA_PLUGIN_LIFECYCLE_MAX_CPU_CORE_RATIO
 
-PACKAGE_TGZ="$(docker_e2e_prepare_package_tgz plugin-lifecycle-matrix "${OPENCLAW_CURRENT_PACKAGE_TGZ:-}")"
+PACKAGE_TGZ="$(docker_e2e_prepare_package_tgz plugin-lifecycle-matrix "${AFORA_CURRENT_PACKAGE_TGZ:-}")"
 docker_e2e_package_mount_args "$PACKAGE_TGZ"
 
 docker_e2e_build_or_reuse "$IMAGE_NAME" plugin-lifecycle-matrix "$ROOT_DIR/scripts/e2e/Dockerfile" "$ROOT_DIR" "bare" "$SKIP_BUILD"

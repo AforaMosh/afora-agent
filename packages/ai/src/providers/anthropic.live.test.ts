@@ -4,7 +4,7 @@ import { isContextOverflow } from "../utils/overflow.js";
 import { streamAnthropic, streamSimpleAnthropic } from "./anthropic.js";
 
 const apiKey = process.env.ANTHROPIC_API_KEY?.trim() ?? "";
-const live = process.env.OPENCLAW_LIVE_TEST === "1" && apiKey.length > 0;
+const live = process.env.AFORA_LIVE_TEST === "1" && apiKey.length > 0;
 const describeLive = live ? describe : describe.skip;
 const timeoutMs = 120_000;
 

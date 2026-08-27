@@ -1,5 +1,5 @@
 // Discord plugin module implements gateway identify limiter behavior.
-import { parseFiniteNumber } from "openclaw/plugin-sdk/number-runtime";
+import { parseFiniteNumber } from "afora-agent/plugin-sdk/number-runtime";
 
 const IDENTIFY_WINDOW_MS = 5_000;
 

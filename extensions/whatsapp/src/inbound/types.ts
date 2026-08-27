@@ -4,8 +4,8 @@ import type {
   ChannelInboundMediaInput,
   MediaPlaceholderTextFact,
   NormalizedLocation,
-} from "openclaw/plugin-sdk/channel-inbound";
-import type { PollInput } from "openclaw/plugin-sdk/poll-runtime";
+} from "afora-agent/plugin-sdk/channel-inbound";
+import type { PollInput } from "afora-agent/plugin-sdk/poll-runtime";
 import type { WhatsAppIdentity, WhatsAppReplyContext, WhatsAppSelfIdentity } from "../identity.js";
 import type { WhatsAppQuotedMessageKey } from "../quoted-message.js";
 import type { WhatsAppInboundAdmission } from "./admission.js";

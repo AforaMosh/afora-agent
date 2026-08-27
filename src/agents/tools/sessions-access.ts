@@ -1,11 +1,11 @@
 /**
  * Session visibility and access helpers for session tools.
  *
- * Adds OpenClaw session-key alias normalization and sandbox requester scoping over SDK visibility contracts.
+ * Adds Afora session-key alias normalization and sandbox requester scoping over SDK visibility contracts.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { resolveCanonicalMainSessionKey } from "../../config/sessions/main-session-key.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   logSessionOwnershipLookupFailure,
   lookupFailedDenialMessage,
@@ -112,7 +112,7 @@ export async function resolveSessionToolAccess(params: {
 
 /** Resolves the requester context used to filter sandboxed session-tool access. */
 export function resolveSandboxedSessionToolContext(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentSessionKey?: string;
   requesterAgentId?: string;
   sandboxed?: boolean;

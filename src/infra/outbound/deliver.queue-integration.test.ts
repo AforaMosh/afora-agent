@@ -1,10 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TrustedMessageAuditEvent } from "../../audit/message-audit-events.js";
 import { onTrustedMessageAuditEventForTest as onTrustedMessageAuditEvent } from "../../audit/message-audit-events.test-support.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { createEmptyPluginRegistry } from "../../plugins/registry.js";
 import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../../test-utils/channel-plugins.js";
@@ -40,10 +40,10 @@ function createPartialSendFailure() {
 }
 
 async function deliverPartialMatrixBatch(sendMatrix: ReturnType<typeof vi.fn>, tmpDir: string) {
-  process.env.OPENCLAW_STATE_DIR = tmpDir;
+  process.env.AFORA_STATE_DIR = tmpDir;
   await expect(
     deliverOutboundPayloads({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       channel: "matrix",
       to: "!room:example",
       payloads: [{ text: "first" }, { text: "second" }],
@@ -103,7 +103,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
     const deliver = vi.fn<DeliverFn>(async () => []);
     await drainMatrixReconnect({ deliver, stateDir: tmpDir });
     await recoverPendingDeliveries({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       deliver,
       log: createRecoveryLog(),
       stateDir: tmpDir,
@@ -142,7 +142,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
 
     await drainMatrixReconnect({ deliver, stateDir: tmpDir });
     await recoverPendingDeliveries({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       deliver,
       log: createRecoveryLog(),
       stateDir: tmpDir,
@@ -158,7 +158,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   });
 
   it("claims pristine reusable permanent Matrix intents before recovery provider I/O", async () => {
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     const deliveryIntentId = "permanent-matrix-pristine-fenced-recovery";
     await enqueueDeliveryOnce(
       {
@@ -195,13 +195,13 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   });
 
   it("retains permanent receipts when stable delivery is intentionally suppressed", async () => {
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     const sendMatrix = vi.fn();
     const liveIntentId = "permanent-matrix-suppressed-live";
 
     await expect(
       deliverOutboundPayloads({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         channel: "matrix",
         to: "!room:example",
         payloads: [{ text: "" }],
@@ -236,7 +236,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   });
 
   it("fences recovered stable intents at the real Matrix provider boundary", async () => {
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     const deliveryIntentId = "cron-direct-delivery:v1:fenced-matrix-recovery";
     await enqueueDeliveryOnce(
       {
@@ -280,7 +280,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   ])(
     "never completes %s recovered Matrix sends without a platform identity",
     async (_retention, deliveryIntentId, completionRetention, requiresProducerClaim) => {
-      process.env.OPENCLAW_STATE_DIR = tmpDir;
+      process.env.AFORA_STATE_DIR = tmpDir;
       await enqueueDeliveryOnce(
         {
           channel: "matrix",
@@ -319,7 +319,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   );
 
   it("never completes recovered Matrix batches when any platform send lacks an identity", async () => {
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     const deliveryIntentId = "cron-direct-delivery:v1:recovered-matrix-partial-no-identity";
     await enqueueDeliveryOnce(
       {
@@ -360,7 +360,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   });
 
   it("replays the immutable queue-owned payload instead of regenerated producer input", async () => {
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     const deliveryIntentId = "cron-direct-delivery:v1:immutable-queue-custody";
     await enqueueDeliveryOnce(
       {
@@ -377,7 +377,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
 
     await expect(
       deliverOutboundPayloads({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         channel: "matrix",
         to: "!room:example",
         payloads: [{ text: "regenerated replay must never reach the recipient" }],
@@ -397,7 +397,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   });
 
   it("reuses durable Matrix media after regenerated producer files disappear", async () => {
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     const deliveryIntentId = "cron-direct-delivery:v1:immutable-staged-matrix-media";
     const originalSource = path.join(tmpDir, "original-stable-media.ogg");
     const originalBytes = "original durable Matrix attachment";
@@ -451,7 +451,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
 
     await expect(
       deliverOutboundPayloads({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         channel: "matrix",
         to: "!room:example",
         payloads: [
@@ -482,11 +482,11 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   });
 
   it("retains a completed stable delivery receipt across producer replays", async () => {
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     const sendMatrix = vi.fn().mockResolvedValue({ messageId: "stable-message" });
     const deliveryIntentId = "cron-direct-delivery:v1:stable-completion";
     const params = {
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       channel: "matrix" as const,
       to: "!room:example",
       payloads: [{ text: "send once" }],
@@ -510,11 +510,11 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   });
 
   it("retains a completed stable receipt after fully successful best-effort delivery", async () => {
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     const sendMatrix = vi.fn().mockResolvedValue({ messageId: "stable-best-effort-message" });
     const deliveryIntentId = "cron-direct-delivery:v1:best-effort-stable-completion";
     const params = {
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       channel: "matrix" as const,
       to: "!room:example",
       payloads: [{ text: "best-effort send once" }],
@@ -539,7 +539,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   });
 
   it("holds one live claim while concurrent producers reuse a stable pending intent", async () => {
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     let resolveSend!: (value: { messageId: string }) => void;
     let notifySendStarted!: () => void;
     const sendStarted = new Promise<void>((resolve) => {
@@ -554,7 +554,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
     );
     const deliveryIntentId = "cron-direct-delivery:v1:concurrent-stable-completion";
     const params = {
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       channel: "matrix" as const,
       to: "!room:example",
       payloads: [{ text: "send exactly once" }],
@@ -584,7 +584,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   });
 
   it("never acknowledges or replays a partially sent best-effort stable intent", async () => {
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     const sendMatrix = vi
       .fn()
       .mockResolvedValueOnce({ messageId: "best-effort-first-message" })
@@ -592,7 +592,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
     const onError = vi.fn();
     const deliveryIntentId = "cron-direct-delivery:v1:best-effort-partial-send";
     const params = {
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       channel: "matrix" as const,
       to: "!room:example",
       payloads: [{ text: "sent first" }, { text: "failed second" }],
@@ -623,11 +623,11 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   });
 
   it("never acknowledges a platform send that returns no message identity", async () => {
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     const sendMatrix = vi.fn().mockResolvedValue({});
     const deliveryIntentId = "cron-direct-delivery:v1:no-platform-identity";
     const params = {
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       channel: "matrix" as const,
       to: "!room:example",
       payloads: [{ text: "provider returned no message identity" }],
@@ -653,14 +653,14 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   });
 
   it("never completes live Matrix batches when any platform send lacks an identity", async () => {
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     const sendMatrix = vi
       .fn()
       .mockResolvedValueOnce({ messageId: "confirmed-live-message" })
       .mockResolvedValueOnce({});
     const deliveryIntentId = "cron-direct-delivery:v1:live-matrix-partial-no-identity";
     const params = {
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       channel: "matrix" as const,
       to: "!room:example",
       payloads: [{ text: "confirmed recipient message" }, { text: "ambiguous message" }],
@@ -696,7 +696,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   it.each(["abort", "permanent rejection"] as const)(
     "never creates a successful stable receipt after platform %s",
     async (failureKind) => {
-      process.env.OPENCLAW_STATE_DIR = tmpDir;
+      process.env.AFORA_STATE_DIR = tmpDir;
       const cause =
         failureKind === "abort"
           ? Object.assign(new Error("stable delivery aborted"), { name: "AbortError" })
@@ -709,7 +709,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
 
       await expect(
         deliverOutboundPayloads({
-          cfg: {} as OpenClawConfig,
+          cfg: {} as AforaConfig,
           channel: "matrix",
           to: "!room:example",
           payloads: [{ text: "never falsely report this recipient delivery" }],
@@ -729,13 +729,13 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   );
 
   it("preserves queue custody when a provider timeout looks like an abort", async () => {
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     const timeout = new DOMException("Matrix request timed out", "AbortError");
     const sendMatrix = vi.fn().mockRejectedValue(timeout);
 
     await expect(
       deliverOutboundPayloads({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         channel: "matrix",
         to: "!room:example",
         payloads: [{ text: "preserve this delivery until reconciliation" }],
@@ -752,13 +752,13 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   });
 
   it("removes an unsent queue intent when the caller cancels after publication", async () => {
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     const controller = new AbortController();
     const sendMatrix = vi.fn();
 
     await expect(
       deliverOutboundPayloads({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         channel: "matrix",
         to: "!room:example",
         payloads: [{ text: "cancel before provider dispatch" }],
@@ -777,7 +777,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   it.each(["abort", "permanent rejection"] as const)(
     "preserves an already-sent Matrix payload when a later payload ends in %s",
     async (failureKind) => {
-      process.env.OPENCLAW_STATE_DIR = tmpDir;
+      process.env.AFORA_STATE_DIR = tmpDir;
       const cause =
         failureKind === "abort"
           ? Object.assign(new Error("later stable delivery aborted"), { name: "AbortError" })
@@ -791,7 +791,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
         .mockRejectedValueOnce(cause);
       const deliveryIntentId = `cron-direct-delivery:v1:partial-${failureKind.replaceAll(" ", "-")}-no-replay`;
       const params = {
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         channel: "matrix" as const,
         to: "!room:example",
         payloads: [{ text: "already visible" }, { text: "later terminal failure" }],
@@ -821,7 +821,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   );
 
   it("retries a stable delivery intent only after a proven pre-dispatch failure", async () => {
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     const notDispatchedError = new PlatformMessageNotDispatchedError(
       "provider disconnected before dispatch",
       { cause: new Error("connect ECONNREFUSED") },
@@ -832,7 +832,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
       .mockResolvedValueOnce({ messageId: "recovered-stable-message" });
     const deliveryIntentId = "cron-direct-delivery:v1:safe-retry";
     const params = {
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       channel: "matrix" as const,
       to: "!room:example",
       payloads: [{ text: "safe retry" }],
@@ -861,11 +861,11 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   });
 
   it("never replays a stable intent after an ambiguous platform send", async () => {
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     const sendMatrix = vi.fn().mockRejectedValue(new Error("provider result was lost"));
     const deliveryIntentId = "cron-direct-delivery:v1:unknown-platform-outcome";
     const params = {
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       channel: "matrix" as const,
       to: "!room:example",
       payloads: [{ text: "ambiguous send" }],
@@ -939,12 +939,12 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   it("does not retain a pre-send suppression across an ambiguous crash boundary", async () => {
     const auditEvents: TrustedMessageAuditEvent[] = [];
     const unsubscribe = onTrustedMessageAuditEvent((event) => auditEvents.push(event));
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     const sendMatrix = vi.fn().mockRejectedValueOnce(new Error("ambiguous provider failure"));
 
     await expect(
       deliverOutboundPayloads({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         channel: "matrix",
         to: "!room:example",
         payloads: [{ text: "NO_REPLY" }, { text: "visible" }],
@@ -973,12 +973,12 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   });
 
   it("retains retryable send-attempt state when an adapter fails before returning a result", async () => {
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     const sendMatrix = vi.fn().mockRejectedValueOnce(new Error("first payload send failed"));
 
     await expect(
       deliverOutboundPayloads({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         channel: "matrix",
         to: "!room:example",
         payloads: [{ text: "first" }],
@@ -998,7 +998,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   });
 
   it("replays an entry after a proven pre-connect failure clears send evidence", async () => {
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     const connectError = Object.assign(new Error("connect ECONNREFUSED"), {
       code: "ECONNREFUSED",
       syscall: "connect",
@@ -1007,7 +1007,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
 
     await expect(
       deliverOutboundPayloads({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         channel: "matrix",
         to: "!room:example",
         payloads: [{ text: "first" }],
@@ -1052,7 +1052,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
   });
 
   it("replays an entry after the provider proves no platform message was dispatched", async () => {
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     const notDispatchedError = new PlatformMessageNotDispatchedError(
       "upload timed out before completion dispatch",
       { cause: new Error("request timed out") },
@@ -1061,7 +1061,7 @@ describe("deliverOutboundPayloads queue integration: mid-batch failure with send
 
     await expect(
       deliverOutboundPayloads({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         channel: "matrix",
         to: "!room:example",
         payloads: [{ text: "first" }],

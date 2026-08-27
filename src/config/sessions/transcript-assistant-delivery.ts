@@ -1,11 +1,11 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import type { AssistantDeliveryTtsFacts } from "../../llm/types.js";
 import { extractTtsDirectiveFacts } from "../../tts/directive-facts.js";
 import { parseInlineDirectives } from "../../utils/directive-tags.js";
 
 type AssistantDirectiveMessage = {
   content?: unknown;
-  openclawDelivery?: unknown;
+  aforaDelivery?: unknown;
   role?: unknown;
 };
 
@@ -32,7 +32,7 @@ function mergeTtsFacts(
 /** Strips final-answer directives in place so live state and persisted bytes stay identical. */
 // TRANSITIONAL(marker-retirement): once the visibleReplies default flips and the
 // model stops emitting inline markers, this projection parses nothing and the
-// whole applier (plus its parser imports) can be deleted; openclawDelivery facts
+// whole applier (plus its parser imports) can be deleted; aforaDelivery facts
 // then come exclusively from structured message-tool sends.
 export function applyAssistantDeliveryDirectives<T extends AssistantDirectiveMessage>(
   message: T,
@@ -60,7 +60,7 @@ export function applyAssistantDeliveryDirectives<T extends AssistantDirectiveMes
     });
   }
   if (facts) {
-    Object.assign(message, { openclawDelivery: facts });
+    Object.assign(message, { aforaDelivery: facts });
   }
   return message;
 }

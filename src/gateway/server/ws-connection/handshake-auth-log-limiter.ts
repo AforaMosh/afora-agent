@@ -1,5 +1,5 @@
 // Rate limiter for noisy websocket handshake auth logs.
-import { resolveIntegerOption } from "@openclaw/normalization-core/number-coercion";
+import { resolveIntegerOption } from "@afora/normalization-core/number-coercion";
 import { pruneMapToMaxSize } from "../../../infra/map-size.js";
 
 /** Decision returned for a handshake auth log attempt. */

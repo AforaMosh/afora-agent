@@ -2,7 +2,7 @@
 // fact (e.g. content_filter) instead of collapsing it into a generic message;
 // the generic string is classified as a transient timeout by failover and
 // triggers pointless model rotation.
-import type { Model } from "@openclaw/llm-core";
+import type { Model } from "@afora/llm-core";
 import { describe, expect, it, vi } from "vitest";
 
 type SdkResponse = { data: AsyncIterable<unknown>; response: Response };

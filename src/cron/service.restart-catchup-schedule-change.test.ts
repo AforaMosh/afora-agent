@@ -4,7 +4,7 @@ import { CronService } from "./service.js";
 import { setupCronServiceSuite, writeCronStoreSnapshot } from "./service.test-harness.js";
 
 const { logger: noopLogger, makeStorePath } = setupCronServiceSuite({
-  prefix: "openclaw-cron-",
+  prefix: "afora-cron-",
   baseTimeIso: "2026-07-28T07:18:00.000Z",
 });
 

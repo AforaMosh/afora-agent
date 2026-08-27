@@ -1,10 +1,10 @@
 // Verifies embedded runtime outcome classifications drive model fallback correctly.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import {
   createContractRunResult,
   OUTCOME_FALLBACK_RUNTIME_CONTRACT,
-} from "openclaw/plugin-sdk/agent-runtime-test-contracts";
+} from "afora-agent/plugin-sdk/agent-runtime-test-contracts";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import {
   classifyEmbeddedAgentRunResultForModelFallback,

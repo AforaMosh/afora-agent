@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveIncognitoOpenClawAgentSqlitePath } from "../state/openclaw-agent-db.js";
+import { resolveIncognitoAforaAgentSqlitePath } from "../state/afora-agent-db.js";
 import { appendIncognitoSystemPrompt } from "./incognito-system-prompt.js";
 
 describe("incognito system prompt", () => {
@@ -8,7 +8,7 @@ describe("incognito system prompt", () => {
       appendIncognitoSystemPrompt({
         agentId: "main",
         extraSystemPrompt: "Existing context.",
-        storePath: resolveIncognitoOpenClawAgentSqlitePath({ agentId: "main" }),
+        storePath: resolveIncognitoAforaAgentSqlitePath({ agentId: "main" }),
       }),
     ).toBe(
       "Existing context.\n\nThis chat is incognito; do not store its conversation content in memory files or long-term notes.",

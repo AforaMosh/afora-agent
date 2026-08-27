@@ -4,7 +4,7 @@ import {
   type ReplyPayload,
 } from "../auto-reply/reply-payload.js";
 import { getChannelPlugin } from "../channels/plugins/registry.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { isVerbose, logVerbose } from "../globals.js";
 import { resolveSendableOutboundReplyParts } from "../infra/outbound/reply-payload-parts.js";
 import { hasReplyPayloadContent } from "../interactive/payload.js";
@@ -44,7 +44,7 @@ export function setLastTtsAttempt(entry: TtsStatusEntry | undefined): void {
 
 export async function listSpeechVoices(params: {
   provider: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   config?: ResolvedTtsConfig;
   apiKey?: string;
   baseUrl?: string;
@@ -97,7 +97,7 @@ function applyExplicitSpeechVisibleFallback(payload: ReplyPayload): ReplyPayload
 export async function maybeApplyTtsToPayloadCore(
   params: {
     payload: ReplyPayload;
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     channel?: string;
     kind?: "tool" | "block" | "final";
     inboundAudio?: boolean;

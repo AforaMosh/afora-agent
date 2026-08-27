@@ -18,7 +18,7 @@ function createModelSuppressionRegistry(): PluginManifestRegistry {
         hooks: [],
         rootDir: "/tmp/plugins/openai",
         source: "test",
-        manifestPath: "/tmp/plugins/openai/openclaw.plugin.json",
+        manifestPath: "/tmp/plugins/openai/afora.plugin.json",
         modelCatalog: {
           suppressions: [
             {
@@ -48,7 +48,7 @@ function createModelNormalizationRegistry(): PluginManifestRegistry {
         origin: "config",
         rootDir: "/tmp/custom-provider-plugin",
         source: "test",
-        manifestPath: "/tmp/custom-provider-plugin/openclaw.plugin.json",
+        manifestPath: "/tmp/custom-provider-plugin/afora.plugin.json",
         modelIdNormalization: {
           providers: {
             myproxy: {

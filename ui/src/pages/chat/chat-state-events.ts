@@ -1,12 +1,12 @@
 import {
   readSessionMessageIdentity,
   readSessionMessageSequence,
-} from "@openclaw/gateway-client/browser";
+} from "@afora/gateway-client/browser";
 import {
   asNonArrayRecord,
   asNullableRecord,
   isRecord,
-} from "@openclaw/normalization-core/record-coerce";
+} from "@afora/normalization-core/record-coerce";
 import type { SessionObserverDigest } from "../../../../packages/gateway-protocol/src/schema/sessions.js";
 import type { GatewayEventFrame } from "../../api/gateway.ts";
 import { fireFirstReplyConfetti } from "../../components/confetti.ts";
@@ -111,11 +111,11 @@ function applyLiveSessionMessage(
     return;
   }
   const sourceRecord = sourceMessage as Record<string, unknown>;
-  const marker = sourceRecord["__openclaw"];
+  const marker = sourceRecord["__afora"];
   const sourceMetadata = asNonArrayRecord(marker);
   const message = {
     ...sourceRecord,
-    __openclaw: {
+    __afora: {
       ...sourceMetadata,
       ...(incoming.id ? { id: incoming.id } : {}),
       ...(incoming.idempotencyKey ? { idempotencyKey: incoming.idempotencyKey } : {}),

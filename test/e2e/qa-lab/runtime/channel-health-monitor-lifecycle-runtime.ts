@@ -64,8 +64,8 @@ function policyReason(value: Record<string, unknown>, policy: ChannelHealthPolic
 async function captureMonitorLogs(
   run: () => Promise<Omit<MonitorProof, "restartLog" | "hourlyCapLogged">>,
 ) {
-  // openclaw-temp-dir: standalone producer removes this log root in its finally block
-  const logDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-health-monitor-proof-"));
+  // afora-temp-dir: standalone producer removes this log root in its finally block
+  const logDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-health-monitor-proof-"));
   const capture = createDiagnosticLogRecordCapture();
   setLoggerOverride({
     level: "info",

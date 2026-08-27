@@ -1,7 +1,7 @@
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { resetConfigRuntimeState, setRuntimeConfigSnapshot } from "../../config/config.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { withStateDirEnv } from "../../test-helpers/state-dir-env.js";
 import { resolveRequestedSessionAgentId } from "../session-request-agent.js";
 import { healthHandlers } from "./health.js";
@@ -10,7 +10,7 @@ afterEach(() => {
   resetConfigRuntimeState();
 });
 
-async function callStatus(config: OpenClawConfig) {
+async function callStatus(config: AforaConfig) {
   setRuntimeConfigSnapshot(config, config);
   const respond = vi.fn();
   await healthHandlers.status!({
@@ -26,7 +26,7 @@ async function callStatus(config: OpenClawConfig) {
 
 describe("Gateway status owner routing", () => {
   it("uses the configured system owner without making public main aliases implicit", async () => {
-    await withStateDirEnv("openclaw-gateway-status-owner-", async ({ stateDir }) => {
+    await withStateDirEnv("afora-gateway-status-owner-", async ({ stateDir }) => {
       const config = {
         agents: {
           ownership: "explicit",
@@ -34,7 +34,7 @@ describe("Gateway status owner routing", () => {
           entries: { main: {}, molty: {} },
         },
         session: { store: path.join(stateDir, "agents", "{agentId}", "sessions.json") },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
 
       const respond = await callStatus(config);
 
@@ -50,7 +50,7 @@ describe("Gateway status owner routing", () => {
   });
 
   it("keeps single-agent status unchanged", async () => {
-    await withStateDirEnv("openclaw-gateway-status-single-", async ({ stateDir }) => {
+    await withStateDirEnv("afora-gateway-status-single-", async ({ stateDir }) => {
       const respond = await callStatus({
         agents: { entries: { main: {} } },
         session: { store: path.join(stateDir, "sessions.json") },

@@ -3,18 +3,18 @@
 # Run via cron or systemd timer to get proactive notifications
 # before Claude Code auth expires.
 #
-# Suggested cron: */30 * * * * /path/to/openclaw/scripts/auth-monitor.sh
+# Suggested cron: */30 * * * * /path/to/afora/scripts/auth-monitor.sh
 #
 # Environment variables:
-#   NOTIFY_PHONE - Phone number to send OpenClaw notification (e.g., +1234567890)
-#   NOTIFY_NTFY  - ntfy.sh topic for push notifications (e.g., openclaw-alerts)
+#   NOTIFY_PHONE - Phone number to send Afora notification (e.g., +1234567890)
+#   NOTIFY_NTFY  - ntfy.sh topic for push notifications (e.g., afora-alerts)
 #   WARN_HOURS   - Hours before expiry to warn (default: 2)
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_CREDS="$HOME/.claude/.credentials.json"
-STATE_FILE="$HOME/.openclaw/auth-monitor-state"
+STATE_FILE="$HOME/.afora/auth-monitor-state"
 
 # Configuration
 WARN_HOURS="${WARN_HOURS:-2}"
@@ -42,12 +42,12 @@ send_notification() {
         return
     fi
 
-    # Send via OpenClaw if phone configured and auth still valid
+    # Send via Afora if phone configured and auth still valid
     if [ -n "$NOTIFY_PHONE" ]; then
-        # Check if we can still use openclaw
+        # Check if we can still use afora
         if "$SCRIPT_DIR/claude-auth-status.sh" simple 2>/dev/null | grep -q "OK\|EXPIRING"; then
-            echo "Sending via OpenClaw to $NOTIFY_PHONE..."
-            if openclaw send --to "$NOTIFY_PHONE" --message "$message" 2>/dev/null; then
+            echo "Sending via Afora to $NOTIFY_PHONE..."
+            if afora send --to "$NOTIFY_PHONE" --message "$message" 2>/dev/null; then
                 notification_sent=1
             fi
         fi
@@ -57,7 +57,7 @@ send_notification() {
     if [ -n "$NOTIFY_NTFY" ]; then
         echo "Sending via ntfy.sh to $NOTIFY_NTFY..."
         if curl -fsS --connect-timeout 5 --max-time 15 -o /dev/null \
-            -H "Title: OpenClaw Auth Alert" \
+            -H "Title: Afora Auth Alert" \
             -H "Priority: $priority" \
             -H "Tags: warning,key" \
             -d "$message" \
@@ -86,7 +86,7 @@ HOURS_LEFT=$((DIFF_MS / 3600000))
 MINS_LEFT=$(((DIFF_MS % 3600000) / 60000))
 
 if [ "$DIFF_MS" -lt 0 ]; then
-    send_notification "Claude Code auth EXPIRED! OpenClaw is down. Run on the OpenClaw host: ${SCRIPT_DIR}/mobile-reauth.sh" "urgent"
+    send_notification "Claude Code auth EXPIRED! Afora is down. Run on the Afora host: ${SCRIPT_DIR}/mobile-reauth.sh" "urgent"
     exit 1
 elif [ "$HOURS_LEFT" -lt "$WARN_HOURS" ]; then
     send_notification "Claude Code auth expires in ${HOURS_LEFT}h ${MINS_LEFT}m. Consider re-auth soon." "high"

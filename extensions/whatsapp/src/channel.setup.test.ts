@@ -1,12 +1,12 @@
 // Whatsapp tests cover channel.setup plugin behavior.
-import { createQueuedWizardPrompter } from "openclaw/plugin-sdk/plugin-test-runtime";
-import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/routing";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+import { createQueuedWizardPrompter } from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { DEFAULT_ACCOUNT_ID } from "afora-agent/plugin-sdk/routing";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { WHATSAPP_AUTH_UNSTABLE_CODE } from "./auth-store.js";
 import { whatsappSetupPlugin } from "./channel.setup.js";
 import { checkWhatsAppHeartbeatReady } from "./heartbeat.js";
-import type { OpenClawConfig } from "./runtime-api.js";
+import type { AforaConfig } from "./runtime-api.js";
 import { finalizeWhatsAppSetup } from "./setup-finalize.js";
 import {
   createWhatsAppAllowlistModeInput,
@@ -35,7 +35,7 @@ const hoisted = vi.hoisted(() => ({
     }),
   ),
   resolveWhatsAppAuthDir: vi.fn(() => ({
-    authDir: "/tmp/openclaw-whatsapp-test",
+    authDir: "/tmp/afora-whatsapp-test",
   })),
 }));
 
@@ -54,9 +54,9 @@ vi.mock("./login.js", () => ({
   loginWeb: hoisted.loginWeb,
 }));
 
-vi.mock("openclaw/plugin-sdk/setup", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/setup")>(
-    "openclaw/plugin-sdk/setup",
+vi.mock("afora-agent/plugin-sdk/setup", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/setup")>(
+    "afora-agent/plugin-sdk/setup",
   );
   return {
     ...actual,
@@ -73,12 +73,12 @@ vi.mock("openclaw/plugin-sdk/setup", async () => {
       return [...normalized];
     },
     splitSetupEntries: splitSetupEntriesForMock,
-    setSetupChannelEnabled: (cfg: OpenClawConfig, channel: string, enabled: boolean) => ({
+    setSetupChannelEnabled: (cfg: AforaConfig, channel: string, enabled: boolean) => ({
       ...cfg,
       channels: {
         ...cfg.channels,
         [channel]: {
-          ...(cfg.channels?.[channel as keyof NonNullable<OpenClawConfig["channels"]>] as object),
+          ...(cfg.channels?.[channel as keyof NonNullable<AforaConfig["channels"]>] as object),
           enabled,
         },
       },
@@ -125,12 +125,12 @@ describe("WhatsApp setup promotion contract", () => {
 
 async function runConfigureWithHarness(params: {
   harness: ReturnType<typeof createQueuedWizardPrompter>;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   runtime?: RuntimeEnv;
   forceAllowFrom?: boolean;
 }) {
   const result = await finalizeWhatsAppSetup({
-    cfg: params.cfg ?? ({} as OpenClawConfig),
+    cfg: params.cfg ?? ({} as AforaConfig),
     accountId: DEFAULT_ACCOUNT_ID,
     forceAllowFrom: params.forceAllowFrom ?? false,
     prompter: params.harness.prompter,
@@ -175,7 +175,7 @@ describe("whatsapp setup wizard", () => {
       exists: false,
     });
     hoisted.resolveWhatsAppAuthDir.mockReset();
-    hoisted.resolveWhatsAppAuthDir.mockReturnValue({ authDir: "/tmp/openclaw-whatsapp-test" });
+    hoisted.resolveWhatsAppAuthDir.mockReturnValue({ authDir: "/tmp/afora-whatsapp-test" });
   });
 
   it("applies owner allowlist when forceAllowFrom is enabled", async () => {
@@ -217,7 +217,7 @@ describe("whatsapp setup wizard", () => {
     });
 
     const result = await finalizeWhatsAppSetup({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       accountId: DEFAULT_ACCOUNT_ID,
       forceAllowFrom: false,
       prompter: harness.prompter,
@@ -288,7 +288,7 @@ describe("whatsapp setup wizard", () => {
 
     const result = await runConfigureWithHarness({
       harness,
-      cfg: createWhatsAppRootAllowFromConfig() as OpenClawConfig,
+      cfg: createWhatsAppRootAllowFromConfig() as AforaConfig,
     });
 
     expectWhatsAppOpenPolicySetup(result.cfg, harness);
@@ -309,7 +309,7 @@ describe("whatsapp setup wizard", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       accountId: "work",
       account: {
         accountId: "work",
@@ -347,7 +347,7 @@ describe("whatsapp setup wizard", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       accountId: "work",
       account: {
         accountId: "work",
@@ -388,7 +388,7 @@ describe("whatsapp setup wizard", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(result.cfg.channels?.whatsapp?.dmPolicy).toBeUndefined();
@@ -419,7 +419,7 @@ describe("whatsapp setup wizard", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(result.cfg.channels?.whatsapp?.accounts?.Default?.authDir).toBe("/tmp/default-auth");
@@ -483,7 +483,7 @@ describe("whatsapp setup wizard", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       deps: {
         readWebAuthExistsForDecision: async () => ({
           outcome: "stable" as const,
@@ -498,7 +498,7 @@ describe("whatsapp setup wizard", () => {
 
   it("heartbeat readiness honors the channel disable flag", async () => {
     const result = await checkWhatsAppHeartbeatReady({
-      cfg: { channels: { whatsapp: { enabled: false } } } as OpenClawConfig,
+      cfg: { channels: { whatsapp: { enabled: false } } } as AforaConfig,
       deps: {
         readWebAuthExistsForDecision: async () => ({
           outcome: "stable" as const,
@@ -523,7 +523,7 @@ describe("whatsapp setup wizard", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       deps: {
         readWebAuthExistsForDecision: async () => ({ outcome: "unstable" as const }),
         hasActiveWebListener: () => true,

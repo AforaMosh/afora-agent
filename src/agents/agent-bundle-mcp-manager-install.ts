@@ -1,6 +1,6 @@
 import type { SessionToolOverrides } from "../config/sessions/types.js";
 /** Session MCP runtime manager install path: static get-or-create + requester resolve/install. */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { BundleMcpServerConfig } from "../plugins/bundle-mcp.js";
 import type { PluginManifestRegistry } from "../plugins/manifest-registry.js";
 import type { SessionMcpRuntimeManagerLifecycle } from "./agent-bundle-mcp-manager-lifecycle.js";
@@ -25,7 +25,7 @@ type RuntimeEntryParams = {
   sessionKey?: string;
   workspaceDir: string;
   agentDir?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
   idleTtlMs: number;
   includeServerNames?: ReadonlySet<string>;
@@ -47,7 +47,7 @@ type SessionMcpRuntimeManagerInstall = {
     sessionKey?: string;
     workspaceDir: string;
     agentDir?: string;
-    cfg?: OpenClawConfig;
+    cfg?: AforaConfig;
     manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
     idleTtlMs: number;
     oauthRequesterNameSet: ReadonlySet<string>;
@@ -200,7 +200,7 @@ export function createSessionMcpRuntimeManagerInstall(
     sessionKey?: string;
     workspaceDir: string;
     agentDir?: string;
-    cfg?: OpenClawConfig;
+    cfg?: AforaConfig;
     manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
     idleTtlMs: number;
     safeServerNamesByServer: ReadonlyMap<string, string>;
@@ -293,7 +293,7 @@ export function createSessionMcpRuntimeManagerInstall(
     sessionKey?: string;
     workspaceDir: string;
     agentDir?: string;
-    cfg?: OpenClawConfig;
+    cfg?: AforaConfig;
     manifestRegistry?: Pick<PluginManifestRegistry, "plugins">;
     idleTtlMs: number;
     oauthRequesterNameSet: ReadonlySet<string>;

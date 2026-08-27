@@ -1,16 +1,16 @@
-import type { AgentMessage } from "@openclaw/agent-core";
-import { replaceCompactionReplayOwnerContent } from "@openclaw/ai/transports";
+import type { AgentMessage } from "@afora/agent-core";
+import { replaceCompactionReplayOwnerContent } from "@afora/ai/transports";
 /**
  * Transcript repair helpers for tool-call replay.
  *
  * Normalizes raw tool-call blocks and synthesizes missing tool results without rewriting trusted local payloads.
  */
-import { safeParseJsonRecord } from "@openclaw/normalization-core";
+import { safeParseJsonRecord } from "@afora/normalization-core";
 import {
   hasNonEmptyString as hasNonEmptyStringField,
   normalizeLowercaseStringOrEmpty,
   readStringValue,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   classifyToolUseResultPairing,
   makeMissingToolResult as makePairingMissingToolResult,

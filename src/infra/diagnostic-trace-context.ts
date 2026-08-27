@@ -1,7 +1,7 @@
 // Creates and propagates lightweight W3C diagnostic trace contexts.
 import { AsyncLocalStorage } from "node:async_hooks";
 import { randomBytes } from "node:crypto";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 
 const TRACEPARENT_VERSION = "00";
 const DEFAULT_TRACE_FLAGS = "01";
@@ -10,7 +10,7 @@ const TRACE_ID_RE = /^[0-9a-f]{32}$/;
 const SPAN_ID_RE = /^[0-9a-f]{16}$/;
 const TRACE_FLAGS_RE = /^[0-9a-f]{2}$/;
 const TRACEPARENT_VERSION_RE = /^[0-9a-f]{2}$/;
-const DIAGNOSTIC_TRACE_SCOPE_STATE_KEY = Symbol.for("openclaw.diagnosticTraceScope.state.v1");
+const DIAGNOSTIC_TRACE_SCOPE_STATE_KEY = Symbol.for("afora.diagnosticTraceScope.state.v1");
 
 export type DiagnosticTraceContext = {
   /** W3C trace id, 32 lowercase hex chars. */

@@ -6,8 +6,8 @@ import {
   resolveMeetingBrowserNode,
   resolveMeetingBrowserNodeInfo,
   type MeetingBrowserCandidateTab,
-} from "openclaw/plugin-sdk/meeting-runtime";
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
+} from "afora-agent/plugin-sdk/meeting-runtime";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
 import { GOOGLE_MEET_BROWSER_NODE_ADAPTER } from "./google-meet-platform-constants.js";
 
 export type BrowserTab = MeetingBrowserCandidateTab;

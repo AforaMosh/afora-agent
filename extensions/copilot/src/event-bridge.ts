@@ -3,9 +3,9 @@ import type { MessageOptions, SessionEvent, SessionEventType } from "@github/cop
 import type {
   AgentHarnessAttemptResult,
   AgentMessage,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { toErrorObject } from "openclaw/plugin-sdk/error-runtime";
-import { readNonEmptyStringPreservingWhitespace as readNonEmptyString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { toErrorObject } from "afora-agent/plugin-sdk/error-runtime";
+import { readNonEmptyStringPreservingWhitespace as readNonEmptyString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   buildAssistantMessage,
   hasOwnKeys,
@@ -181,7 +181,7 @@ export function attachEventBridge(
     const source = readNonEmptyString(event.data.source);
     const transformedContent =
       typeof event.data.transformedContent === "string" ? event.data.transformedContent : undefined;
-    const openClawMeta = projectSdkUserMetadata(event.data.attachments, source);
+    const aforaMeta = projectSdkUserMetadata(event.data.attachments, source);
     const idempotencyKey = `copilot-sdk:${options.getSdkSessionId() ?? "unknown"}:${event.id}`;
     // `source` is open-ended provenance, not a visibility enum. Hide the one
     // documented injected source; unknown sources stay visible without guessing.
@@ -200,7 +200,7 @@ export function attachEventBridge(
         timestamp: resolveEventTimestamp(event.timestamp, projection.now),
         idempotencyKey,
         ...(hidden ? { display: false } : {}),
-        ...(openClawMeta ? { __openclaw: openClawMeta } : {}),
+        ...(aforaMeta ? { __afora: aforaMeta } : {}),
       } as Extract<AgentMessage, { role: "user" }>,
     });
   });
@@ -388,7 +388,7 @@ export function attachEventBridge(
           ...(hasOwnKeys(details) ? { details } : {}),
           isError: !event.data.success,
           timestamp: resolveEventTimestamp(event.timestamp, projection.now),
-          ...(resultContentSource ? { __openclaw: { resultContentSource } } : {}),
+          ...(resultContentSource ? { __afora: { resultContentSource } } : {}),
         },
       });
     }

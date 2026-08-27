@@ -2,7 +2,7 @@ import { expect } from "vitest";
 import { resolveSystemAgentTargetAgentId } from "../agents/agent-scope-config.js";
 import { resolveCliBackendConfig } from "../agents/cli-backends.js";
 import { testing as cliBackendsTesting } from "../agents/cli-backends.test-support.js";
-// OpenClaw test helpers build runtime environments for rescue tests.
+// Afora test helpers build runtime environments for rescue tests.
 import {
   fingerprintAuthProfileOwnerShape,
   fingerprintOpaqueRuntimeOwner,
@@ -11,7 +11,7 @@ import {
 } from "../agents/execution-auth-binding.js";
 import { resolveCliRuntimeExecutionProvider } from "../agents/model-runtime-aliases.js";
 import { resolveSimpleCompletionSelectionForAgent } from "../agents/simple-completion-runtime.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { installTemporaryCurrentPluginMetadataSnapshot } from "../plugins/current-plugin-metadata-snapshot.js";
 import { resolveInstalledPluginIndexPolicyHash } from "../plugins/installed-plugin-index-policy.js";
 import { resolvePluginControlPlaneFingerprint } from "../plugins/plugin-control-plane-context.js";
@@ -35,7 +35,7 @@ export type SystemAgentPluginMetadataTestSnapshot = {
     params: Parameters<typeof resolvePluginMetadataSnapshot>[0],
   ) => ReturnType<typeof resolvePluginMetadataSnapshot>;
   bindForConfig: (
-    config: OpenClawConfig,
+    config: AforaConfig,
     workspaceDir?: string,
   ) => ReturnType<typeof resolvePluginMetadataSnapshot>;
   /** Rebind after a test redirects to another empty state root with the same plugin inventory. */
@@ -74,7 +74,7 @@ export function installSystemAgentClaudeCliBackendTestFixture(): () => void {
 
 /** Install the process-stable plugin metadata snapshot that the real Gateway owns. */
 export function installSystemAgentPluginMetadataTestSnapshot(
-  config: OpenClawConfig = {},
+  config: AforaConfig = {},
 ): SystemAgentPluginMetadataTestSnapshot {
   const prepared = resolvePluginMetadataSnapshot({ config, env: process.env });
   let releaseCurrentSnapshot: () => boolean = () => false;
@@ -150,7 +150,7 @@ export function expectSystemAgentAuditRecord(
 
 /** Build exact, revalidatable proof for a test config without reading host credentials. */
 export async function createSystemAgentVerifiedInferenceTestFixture(
-  config: OpenClawConfig,
+  config: AforaConfig,
 ): Promise<SystemAgentVerifiedInferenceTestFixture> {
   const routeAgentId = resolveSystemAgentTargetAgentId(config);
   const selection = resolveSimpleCompletionSelectionForAgent({
@@ -222,10 +222,10 @@ export async function createSystemAgentVerifiedInferenceTestFixture(
         pluginId,
         origin: "global",
         rootDir: `/plugins/${pluginId}`,
-        manifestPath: `/plugins/${pluginId}/openclaw.plugin.json`,
+        manifestPath: `/plugins/${pluginId}/afora.plugin.json`,
         manifestHash: `${pluginId}-manifest-v1`,
         source: `/plugins/${pluginId}/index.js`,
-        packageName: `@openclaw/${pluginId}`,
+        packageName: `@afora/${pluginId}`,
         packageVersion: "1.0.0",
         installRecordHash: `${pluginId}-install-v1`,
         packageJson: {
@@ -243,9 +243,9 @@ export async function createSystemAgentVerifiedInferenceTestFixture(
     const authProfileOwnerFingerprint = profileId
       ? fingerprintAuthProfileOwnerShape({ profileId, credential })
       : undefined;
-    const resolveRuntimeOwnerFingerprint = (currentConfig: OpenClawConfig) => {
+    const resolveRuntimeOwnerFingerprint = (currentConfig: AforaConfig) => {
       const backend = resolveCliBackendConfig(configuredRoute.provider, currentConfig, {
-        agentId: "openclaw",
+        agentId: "afora",
       });
       if (!backend || backend.id !== runtimeArtifactId) {
         return undefined;
@@ -296,10 +296,10 @@ export async function createSystemAgentVerifiedInferenceTestFixture(
 
   const agentHarnessId =
     configuredRoute.agentHarnessRuntimeOverride === "auto"
-      ? "openclaw"
+      ? "afora"
       : (configuredRoute.agentHarnessRuntimeOverride ?? "codex");
   const authFingerprint =
-    profileId && agentHarnessId !== "openclaw"
+    profileId && agentHarnessId !== "afora"
       ? fingerprintResolvedAuthProfileCredential({ profileId, credential, resolvedAuth })
       : fingerprintResolvedProviderAuth(resolvedAuth);
   if (!authFingerprint) {
@@ -316,7 +316,7 @@ export async function createSystemAgentVerifiedInferenceTestFixture(
       modelId: configuredRoute.model,
       modelApi:
         configuredRoute.provider === "anthropic" ? "anthropic-messages" : "openai-responses",
-      ...(agentHarnessId === "openclaw"
+      ...(agentHarnessId === "afora"
         ? {}
         : {
             runtimeOwnerKind: "plugin-harness" as const,

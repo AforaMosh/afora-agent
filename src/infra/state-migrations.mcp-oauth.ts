@@ -4,8 +4,8 @@ import path from "node:path";
 import { root, type Root } from "@openclaw/fs-safe";
 import { mcpOAuthStoreKeyFromLegacyFileName } from "../agents/mcp-oauth-identity.js";
 import { parseMcpOAuthStoreJson } from "../agents/mcp-oauth-store.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
-import { runOpenClawStateWriteTransaction } from "../state/openclaw-state-db.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
+import { runAforaStateWriteTransaction } from "../state/afora-state-db.js";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
@@ -39,7 +39,7 @@ const MIGRATION_KIND = "legacy-mcp-oauth-json";
 const MAX_LEGACY_STORE_BYTES = 4 * 1024 * 1024;
 const utf8Decoder = new TextDecoder("utf-8", { fatal: true });
 
-type McpOAuthMigrationDatabase = Pick<OpenClawStateKyselyDatabase, "mcp_oauth_stores">;
+type McpOAuthMigrationDatabase = Pick<AforaStateKyselyDatabase, "mcp_oauth_stores">;
 
 type LegacySourceSnapshot = LegacyMigrationSourceSnapshot & { store: Record<string, unknown> };
 
@@ -146,7 +146,7 @@ function importAndRecordReceipt(params: {
   const storeKey = storeKeyForSource(params.sourcePath);
   const runId = `${sourceKey}:${params.snapshot.sha256.slice(0, 16)}`;
   const now = Date.now();
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     ({ db }) => {
       const stateDb = getNodeSqliteKysely<McpOAuthMigrationDatabase>(db);
       const existingReceipt = readLegacyMigrationReceiptFromDatabase(db, sourceKey);
@@ -423,7 +423,7 @@ async function migrateWithExclusiveStateOwnership(params: {
     } catch (error) {
       const staleGuidance =
         (error as { code?: unknown }).code === "file_lock_stale"
-          ? " Verify no older OpenClaw process is running, remove the retired .lock sidecar, and rerun Doctor."
+          ? " Verify no older Afora process is running, remove the retired .lock sidecar, and rerun Doctor."
           : "";
       warnings.push(
         `Failed locking legacy MCP OAuth store ${path.basename(sourcePath)}: ${String(error)}.${staleGuidance}`,

@@ -1,6 +1,6 @@
 // Configured hook helpers combine config and install records into active hooks.
 import type { HookConfig, HookInstallRecord } from "../config/types.hooks.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { readConfigMachineState } from "../state/config-machine-state.js";
 
 function hasEnabledFlag(entry: HookConfig | undefined): boolean {
@@ -23,7 +23,7 @@ function readConfiguredInstalls(): Record<string, HookInstallRecord> | undefined
 }
 
 /** Return whether config can load any internal hooks. */
-export function hasConfiguredInternalHooks(config: OpenClawConfig): boolean {
+export function hasConfiguredInternalHooks(config: AforaConfig): boolean {
   const internal = config.hooks?.internal;
   const installs = readConfiguredInstalls();
   if (!internal) {
@@ -48,7 +48,7 @@ export function hasConfiguredInternalHooks(config: OpenClawConfig): boolean {
 }
 
 /** Resolve explicitly configured internal hook names; null means all/discovered hooks may load. */
-export function resolveConfiguredInternalHookNames(config: OpenClawConfig): Set<string> | null {
+export function resolveConfiguredInternalHookNames(config: AforaConfig): Set<string> | null {
   const internal = config.hooks?.internal;
   const installs = readConfiguredInstalls();
   if (internal?.enabled === false) {

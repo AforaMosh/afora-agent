@@ -1,16 +1,16 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { PluginRuntime } from "openclaw/plugin-sdk/core";
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
+import { expectDefined } from "@afora/normalization-core";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/core";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
 import {
   buildPluginApi,
   registerSingleProviderPlugin,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
-import { withEnvAsync } from "openclaw/plugin-sdk/test-env";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { withEnvAsync } from "afora-agent/plugin-sdk/test-env";
 // Amazon Bedrock tests cover index plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { supportsBedrockPromptCaching } from "./bedrock-options.js";
 import amazonBedrockPlugin from "./index.js";
@@ -133,7 +133,7 @@ async function registerWithConfig(
     name: "Amazon Bedrock Provider",
     source: "test",
     registrationMode: "full",
-    config: {} as OpenClawConfig,
+    config: {} as AforaConfig,
     pluginConfig,
     runtime: {} as PluginRuntime,
     logger: noopLogger,
@@ -193,7 +193,7 @@ async function callWrappedStream(
   provider: RegisteredProviderPlugin,
   modelId: string,
   modelDescriptor: never,
-  config?: OpenClawConfig,
+  config?: AforaConfig,
   extraParams?: Record<string, unknown>,
   payload: Record<string, unknown> = {},
 ): Promise<Record<string, unknown>> {
@@ -223,7 +223,7 @@ async function callWrappedStream(
   return result;
 }
 
-function runtimePluginConfig(config?: Record<string, unknown>): OpenClawConfig {
+function runtimePluginConfig(config?: Record<string, unknown>): AforaConfig {
   return {
     plugins: {
       entries: config
@@ -234,7 +234,7 @@ function runtimePluginConfig(config?: Record<string, unknown>): OpenClawConfig {
           }
         : {},
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function buildBedrockCachePayload(
@@ -761,7 +761,7 @@ describe("amazon-bedrock provider plugin", () => {
   describe("guardrail config schema", () => {
     it("defines discovery and guardrail objects with the expected shape", () => {
       const pluginJson = JSON.parse(
-        readFileSync(resolve(import.meta.dirname, "openclaw.plugin.json"), "utf-8"),
+        readFileSync(resolve(import.meta.dirname, "afora.plugin.json"), "utf-8"),
       );
       const discovery = pluginJson.configSchema?.properties?.discovery;
       const guardrail = pluginJson.configSchema?.properties?.guardrail;

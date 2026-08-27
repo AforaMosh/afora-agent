@@ -1,13 +1,13 @@
 ---
-summary: "How OpenClaw remembers things across sessions"
+summary: "How Afora remembers things across sessions"
 title: "Memory overview"
 read_when:
   - You want to understand how memory works
   - You want to know what memory files to write
 ---
 
-OpenClaw remembers things by writing plain Markdown files in your agent's
-workspace (default `~/.openclaw/workspace`). The model only remembers what gets
+Afora remembers things by writing plain Markdown files in your agent's
+workspace (default `~/.afora/workspace`). The model only remembers what gets
 saved to disk; there is no hidden state.
 
 ## How it works
@@ -54,11 +54,11 @@ instructions still encourage the agent to record durable facts as it works,
 while dreaming handles background consolidation. The default heartbeat prompt
 performs no memory maintenance on its own.
 
-If `MEMORY.md` grows past the bootstrap file budget, OpenClaw keeps the file on
+If `MEMORY.md` grows past the bootstrap file budget, Afora keeps the file on
 disk intact but truncates the copy injected into context. Treat that as a
 signal to move detailed material into `memory/*.md`, keep only a durable
 summary in `MEMORY.md`, or raise the bootstrap limits if you want to spend more
-prompt budget. Use `/context list`, `/context detail`, or `openclaw doctor` to
+prompt budget. Use `/context list`, `/context detail`, or `afora doctor` to
 see raw vs. injected sizes and truncation status.
 
 ## Import from coding assistants
@@ -67,9 +67,9 @@ The Control UI can import existing local memory from Codex, Claude Code, and
 Hermes.
 Open **Settings** → **Import Memory**, choose the destination agent, review the
 detected files, and confirm the import. For the existing default agent, you can
-instead open **Settings → Ask OpenClaw** and say `import memory`; this narrower
+instead open **Settings → Ask Afora** and say `import memory`; this narrower
 chat wizard requires completed onboarding, copies only new detected memory, and
-reports per-source failures or possible partial copies. OpenClaw copies only
+reports per-source failures or possible partial copies. Afora copies only
 Markdown memory:
 
 - Codex: the consolidated `MEMORY.md` and `memory_summary.md` files under
@@ -117,7 +117,7 @@ A useful action-sensitive memory makes clear:
 - who is the source or owner, if that affects trust or authority.
 
 Memory can preserve approval context, but it does not enforce policy. Use
-OpenClaw approval settings, sandboxing, and scheduled tasks for hard
+Afora approval settings, sandboxing, and scheduled tasks for hard
 operational controls.
 
 Example:
@@ -164,7 +164,7 @@ terms like IDs and code symbols). This works out of the box with an API key
 for any supported provider.
 
 <Info>
-OpenClaw uses OpenAI embeddings by default. Set
+Afora uses OpenAI embeddings by default. Set
 `memory.search.provider` explicitly to use Gemini, Voyage,
 Mistral, Bedrock, DeepInfra, local GGUF, Ollama, LM Studio, GitHub Copilot, or
 a generic OpenAI-compatible endpoint.
@@ -215,7 +215,7 @@ dashboards, bridge mode, and Obsidian-friendly workflows.
 ## Automatic memory flush
 
 Before [compaction](/concepts/compaction) summarizes your conversation,
-OpenClaw runs a silent turn that reminds the agent to save important context
+Afora runs a silent turn that reminds the agent to save important context
 to memory files. This is on by default; set
 `agents.defaults.compaction.memoryFlush.enabled: false` to turn it off.
 
@@ -284,7 +284,7 @@ Grounded backfill is useful for replaying older notes and inspecting what the
 system considers durable, without manually editing `MEMORY.md`.
 
 ```bash
-openclaw memory rem-backfill --path ./memory --stage-short-term
+afora memory rem-backfill --path ./memory --stage-short-term
 ```
 
 The `--stage-short-term` flag stages grounded durable candidates into the same
@@ -299,16 +299,16 @@ To undo a replay without touching ordinary diary entries or normal recall
 state:
 
 ```bash
-openclaw memory rem-backfill --rollback
-openclaw memory rem-backfill --rollback-short-term
+afora memory rem-backfill --rollback
+afora memory rem-backfill --rollback-short-term
 ```
 
 ## CLI
 
 ```bash
-openclaw memory status          # Check index status and provider
-openclaw memory search "query"  # Search from the command line
-openclaw memory index --force   # Rebuild the index
+afora memory status          # Check index status and provider
+afora memory search "query"  # Search from the command line
+afora memory index --force   # Rebuild the index
 ```
 
 ## Further reading

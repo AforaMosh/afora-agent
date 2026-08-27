@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { resolveGatewayServiceDescription } from "./constants.js";
 import { formatLine, writeFormattedLines } from "./output.js";
 import {
@@ -50,9 +50,9 @@ import type {
 } from "./service-types.js";
 
 const CALLER_OWNED_SERVICE_IDENTITY_KEYS = [
-  "OPENCLAW_LAUNCHD_LABEL",
-  "OPENCLAW_SYSTEMD_UNIT",
-  "OPENCLAW_WINDOWS_TASK_NAME",
+  "AFORA_LAUNCHD_LABEL",
+  "AFORA_SYSTEMD_UNIT",
+  "AFORA_WINDOWS_TASK_NAME",
 ] as const;
 
 function resolveScheduledTaskRenderEnv(
@@ -87,13 +87,13 @@ function resolveScheduledTaskScriptEnvironment(
 }
 
 const SCHEDULED_TASK_ACTIVATION_KEYS = [
-  "OPENCLAW_WINDOWS_TASK_HIDDEN_LAUNCHER",
-  "OPENCLAW_TASK_SCRIPT_NAME",
-  "OPENCLAW_TASK_SCRIPT",
-  "OPENCLAW_SERVICE_KIND",
-  "OPENCLAW_GATEWAY_PORT",
-  "OPENCLAW_STATE_DIR",
-  "OPENCLAW_PROFILE",
+  "AFORA_WINDOWS_TASK_HIDDEN_LAUNCHER",
+  "AFORA_TASK_SCRIPT_NAME",
+  "AFORA_TASK_SCRIPT",
+  "AFORA_SERVICE_KIND",
+  "AFORA_GATEWAY_PORT",
+  "AFORA_STATE_DIR",
+  "AFORA_PROFILE",
 ] as const;
 
 function resolveScheduledTaskActivationEnv(
@@ -188,7 +188,7 @@ async function updateExistingScheduledTask(params: {
   // Best effort: failure keeps the prior settings rather than losing the task.
   const upgradeXmlPath = await writeTaskXmlTempFile(
     buildScheduledTaskXml({
-      taskDescription: params.description ?? "OpenClaw Gateway",
+      taskDescription: params.description ?? "Afora Gateway",
       taskUser: resolveTaskUser(params.env),
       launchPath: params.taskLaunchPath,
     }),
@@ -221,7 +221,7 @@ async function activateScheduledTask(params: {
   taskLaunchPath: string;
   description?: string;
 }): Promise<ScheduledTaskActivation | "startup-fallback"> {
-  const taskDescription = params.description ?? "OpenClaw Gateway";
+  const taskDescription = params.description ?? "Afora Gateway";
   const taskName = resolveTaskName(params.env);
   const quotedLaunchPath = quoteSchtasksArg(params.taskLaunchPath);
   const existingActivation = await updateExistingScheduledTask({

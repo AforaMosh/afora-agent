@@ -1,5 +1,5 @@
 // Hooks CLI tests cover hook command registration and output behavior.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { Command } from "commander";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { HookStatusReport } from "../hooks/hooks-status.js";
@@ -29,14 +29,14 @@ const report: HookStatusReport = {
     {
       name: "session-memory",
       description: "Save session context to memory",
-      source: "openclaw-bundled",
+      source: "afora-bundled",
       pluginId: undefined,
       filePath: "/tmp/hooks/session-memory/HOOK.md",
       baseDir: "/tmp/hooks/session-memory",
       handlerPath: "/tmp/hooks/session-memory/handler.js",
       hookKey: "session-memory",
       emoji: "💾",
-      homepage: "https://docs.openclaw.ai/automation/hooks#session-memory",
+      homepage: "https://docs.afora.ai/automation/hooks#session-memory",
       events: ["command:new"],
       unknownEvents: [],
       always: false,
@@ -63,7 +63,7 @@ function createPluginManagedHookReport(): HookStatusReport {
       {
         name: "plugin-hook",
         description: "Hook from plugin",
-        source: "openclaw-plugin",
+        source: "afora-plugin",
         pluginId: "voice-call",
         filePath: "/tmp/hooks/plugin-hook/HOOK.md",
         baseDir: "/tmp/hooks/plugin-hook",

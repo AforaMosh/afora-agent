@@ -106,7 +106,7 @@ describe("Buzz QA relay driver", () => {
     });
 
     const sent = await driver.sendMessage({
-      text: "@openclaw hello",
+      text: "@afora hello",
       mentionSut: true,
       threadId: "root-event",
       replyToId: "parent-event",
@@ -117,7 +117,7 @@ describe("Buzz QA relay driver", () => {
       expect.objectContaining({
         id: sent.eventId,
         kind: 9,
-        content: "@openclaw hello",
+        content: "@afora hello",
         tags: [
           ["h", credentials.roomId],
           ["e", "root-event", "", "root"],

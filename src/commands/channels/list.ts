@@ -1,4 +1,4 @@
-// Implements `openclaw channels list` across runtime accounts, local config, and catalog-only entries.
+// Implements `afora channels list` across runtime accounts, local config, and catalog-only entries.
 import { formatDocsLink } from "../../../packages/terminal-core/src/links.js";
 import { theme } from "../../../packages/terminal-core/src/theme.js";
 import type { ChannelPluginCatalogEntry } from "../../channels/plugins/catalog.js";
@@ -277,7 +277,7 @@ export async function channelsListCommand(
   //      disabled` so operators can tell the plugin is ready to configure.
   // Without --all, keep this limited to configured channels whose official
   // external plugin owner is missing, otherwise `channels list` can claim
-  // there are no configured channels even though openclaw.json has one.
+  // there are no configured channels even though afora.json has one.
   const catalogOnlyLines = catalogEntries
     .filter((entry) => !renderedChannelIds.has(entry.id))
     .map((entry) => {
@@ -344,7 +344,7 @@ export async function channelsListCommand(
       theme.muted(
         showAll
           ? "- no chat channels found"
-          : "- no configured chat channels (run `openclaw channels list --all` to see installable channels)",
+          : "- no configured chat channels (run `afora channels list --all` to see installable channels)",
       ),
     );
   } else {
@@ -374,7 +374,7 @@ export async function channelsListCommand(
   runtime.log("");
   runtime.log(
     theme.muted(
-      "Model provider usage moved out of `channels list` — see `openclaw status` or `openclaw models list`.",
+      "Model provider usage moved out of `channels list` — see `afora status` or `afora models list`.",
     ),
   );
   runtime.log(`Docs: ${formatDocsLink("/gateway/configuration", "gateway/configuration")}`);

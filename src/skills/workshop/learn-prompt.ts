@@ -8,7 +8,7 @@ export const DEFAULT_LEARN_REQUEST =
 export function buildLearnPrompt(request: string): string {
   const normalizedRequest = request.trim() || DEFAULT_LEARN_REQUEST;
   return [
-    "Improve the OpenClaw skill collection from the learning request below.",
+    "Improve the Afora skill collection from the learning request below.",
     "",
     `Learning request (JSON string): ${JSON.stringify(normalizedRequest)}`,
     "",
@@ -26,7 +26,7 @@ export function buildLearnPrompt(request: string): string {
     SKILL_AUTHORING_STANDARDS_PROMPT,
     "- The `name` must use only lowercase letters, digits, and hyphens and must match the intended skill directory name.",
     "- Put the one-sentence `description` in double quotes.",
-    "- Include optional `metadata.openclaw` fields such as `emoji` or `requires.bins` only when the gathered sources prove they are true and useful.",
+    "- Include optional `metadata.afora` fields such as `emoji` or `requires.bins` only when the gathered sources prove they are true and useful.",
     "- For a substantial source-backed procedure, about 100-200 lines is usually enough; never pad a narrow skill to reach that range.",
     "- Use relative references for proposal support files.",
     "",

@@ -1,8 +1,8 @@
-// OpenClaw SDK helper module supports normalize behavior.
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
-import { asRecord } from "@openclaw/normalization-core/record-coerce";
-import { readNonEmptyStringPreservingWhitespace as readNonEmptyString } from "@openclaw/normalization-core/string-coerce";
-import type { GatewayEvent, JsonObject, OpenClawEvent, OpenClawEventType } from "./types.js";
+// Afora SDK helper module supports normalize behavior.
+import { asFiniteNumber } from "@afora/normalization-core/number-coercion";
+import { asRecord } from "@afora/normalization-core/record-coerce";
+import { readNonEmptyStringPreservingWhitespace as readNonEmptyString } from "@afora/normalization-core/string-coerce";
+import type { GatewayEvent, JsonObject, AforaEvent, AforaEventType } from "./types.js";
 
 function readLowerString(value: unknown): string | undefined {
   return readNonEmptyString(value)?.toLowerCase();
@@ -38,7 +38,7 @@ function isLifecycleCancellation(data: JsonObject): boolean {
   );
 }
 
-function normalizeLifecycleEndEventType(data: JsonObject): OpenClawEventType {
+function normalizeLifecycleEndEventType(data: JsonObject): AforaEventType {
   const status = readLowerString(data.status);
   const stopReason = readLowerString(data.stopReason);
   const statusAlreadyTimeoutAttributed =
@@ -64,7 +64,7 @@ function normalizeLifecycleEndEventType(data: JsonObject): OpenClawEventType {
   return "run.completed";
 }
 
-function normalizeAgentEventType(payload: JsonObject): OpenClawEventType {
+function normalizeAgentEventType(payload: JsonObject): AforaEventType {
   const stream = readNonEmptyString(payload.stream);
   const data = asRecord(payload.data);
   const phase = readNonEmptyString(data.phase);
@@ -125,7 +125,7 @@ function normalizeAgentEventType(payload: JsonObject): OpenClawEventType {
   return "raw";
 }
 
-function normalizeNamedEventType(event: GatewayEvent): OpenClawEventType {
+function normalizeNamedEventType(event: GatewayEvent): AforaEventType {
   const payload = asRecord(event.payload);
   switch (event.event) {
     case "agent":
@@ -159,7 +159,7 @@ function normalizeNamedEventType(event: GatewayEvent): OpenClawEventType {
 }
 
 /** Normalize a raw Gateway event into the public SDK event shape. */
-export function normalizeGatewayEvent(event: GatewayEvent): OpenClawEvent {
+export function normalizeGatewayEvent(event: GatewayEvent): AforaEvent {
   const payload = asRecord(event.payload);
   const runId = readNonEmptyString(payload.runId);
   const sessionId = readNonEmptyString(payload.sessionId);

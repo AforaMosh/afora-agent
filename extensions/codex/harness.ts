@@ -5,17 +5,17 @@ import type {
   AgentHarnessV2,
   AgentHarnessNativeCompaction,
   ContextEngineHostCapability,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
-import { completeWithPreparedSimpleCompletionModel } from "openclaw/plugin-sdk/simple-completion-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
+import { completeWithPreparedSimpleCompletionModel } from "afora-agent/plugin-sdk/simple-completion-runtime";
 import type { CodexAppServerBindingStore } from "./src/app-server/session-binding.js";
 import type { CodexSessionCatalogControlFactory } from "./src/session-catalog-types.js";
 
 // `codex` is legacy input only until Part 2 doctor migration rewrites stored refs.
 // New runtime identity uses the `openai` provider.
 const DEFAULT_CODEX_HARNESS_PROVIDER_IDS = new Set(["codex", "openai"]);
-const SHARED_CODEX_APP_SERVER_CLIENT_DISPOSER = Symbol.for("openclaw.codexAppServerClientDisposer");
+const SHARED_CODEX_APP_SERVER_CLIENT_DISPOSER = Symbol.for("afora.codexAppServerClientDisposer");
 // Audited against @openai/codex 0.147.0 (rust-v0.147.0). These exact denies
 // either have no Codex-native equivalent or are enforced by the harness. Keep
 // the list positive and conservative: an omitted tool isolates the native surface.
@@ -57,7 +57,7 @@ type CodexAppServerAgentHarnessOptions = {
   providerIds?: Iterable<string>;
   pluginConfig?: unknown;
   resolvePluginConfig?: () => unknown;
-  resolveConfig?: () => OpenClawConfig | undefined;
+  resolveConfig?: () => AforaConfig | undefined;
   runtime?: PluginRuntime;
   bindingStore: CodexAppServerBindingStore;
   sessionCatalogControlFactory?: CodexSessionCatalogControlFactory;
@@ -186,7 +186,7 @@ export function createCodexAppServerAgentHarness(
         return {
           supported: false,
           reason: "Codex cannot reproduce authored request transport overrides",
-          fallbackRuntime: "openclaw",
+          fallbackRuntime: "afora",
         };
       }
       const preparedAuth = ctx.modelProvider?.preparedAuth;

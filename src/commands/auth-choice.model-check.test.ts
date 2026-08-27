@@ -1,7 +1,7 @@
 // Auth-choice model check tests cover warnings for mismatched model and auth config.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthProfileStore } from "../agents/auth-profiles.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   resolveDefaultModelAuthStatus,
   warnIfModelConfigLooksOff,
@@ -65,7 +65,7 @@ describe("warnIfModelConfigLooksOff", () => {
           model: "openai/gpt-5.5",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await warnIfModelConfigLooksOff(config, prompter, { env: {}, validateCatalog: false });
 
@@ -80,7 +80,7 @@ describe("warnIfModelConfigLooksOff", () => {
       }),
     );
     expect(note).toHaveBeenCalledWith(
-      'No auth configured for provider "openai". The agent may fail until credentials are added. Run `openclaw models auth login --provider openai`, `openclaw configure`, or set an API key env var.',
+      'No auth configured for provider "openai". The agent may fail until credentials are added. Run `afora models auth login --provider openai`, `afora configure`, or set an API key env var.',
       "Model check",
     );
   });
@@ -88,7 +88,7 @@ describe("warnIfModelConfigLooksOff", () => {
   it("reports missing auth for generic providers without credential evidence", () => {
     const config = {
       agents: { defaults: { model: "anthropic/claude-sonnet-4-6" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveDefaultModelAuthStatus(config, { env: {} })).toMatchObject({
       provider: "anthropic",
@@ -100,7 +100,7 @@ describe("warnIfModelConfigLooksOff", () => {
   it("accepts pending auth profiles collected by the current setup transaction", async () => {
     const config = {
       agents: { defaults: { model: "anthropic/claude-sonnet-4-6" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const pendingAuthProfiles = [
       {
         profileId: "anthropic:default",
@@ -129,7 +129,7 @@ describe("warnIfModelConfigLooksOff", () => {
   it("does not use pending auth profiles from a different provider", async () => {
     const config = {
       agents: { defaults: { model: "anthropic/claude-sonnet-4-6" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const note = vi.fn(async () => {});
 
     await warnIfModelConfigLooksOff(config, makePrompter({ note }), {
@@ -148,7 +148,7 @@ describe("warnIfModelConfigLooksOff", () => {
     });
 
     expect(note).toHaveBeenCalledWith(
-      'No auth configured for provider "anthropic". The agent may fail until credentials are added. Run `openclaw models auth login --provider anthropic`, `openclaw configure`, or set an API key env var.',
+      'No auth configured for provider "anthropic". The agent may fail until credentials are added. Run `afora models auth login --provider anthropic`, `afora configure`, or set an API key env var.',
       "Model check",
     );
   });
@@ -177,7 +177,7 @@ describe("warnIfModelConfigLooksOff", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await warnIfModelConfigLooksOff(config, prompter, { validateCatalog: false });
 
@@ -216,12 +216,12 @@ describe("warnIfModelConfigLooksOff", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await warnIfModelConfigLooksOff(config, prompter, { validateCatalog: false });
 
     expect(note).toHaveBeenCalledWith(
-      'No auth configured for provider "openai". The agent may fail until credentials are added. Run `openclaw models auth login --provider openai`, `openclaw configure`, or set an API key env var.',
+      'No auth configured for provider "openai". The agent may fail until credentials are added. Run `afora models auth login --provider openai`, `afora configure`, or set an API key env var.',
       "Model check",
     );
   });
@@ -235,7 +235,7 @@ describe("warnIfModelConfigLooksOff", () => {
           model: "openai/gpt-5.5",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await warnIfModelConfigLooksOff(config, prompter);
 
@@ -253,24 +253,24 @@ describe("warnIfModelConfigLooksOff", () => {
         list: [
           {
             id: "worker",
-            workspace: "/tmp/openclaw-worker-workspace",
+            workspace: "/tmp/afora-worker-workspace",
             model: "openai/gpt-5.5",
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await warnIfModelConfigLooksOff(config, prompter, {
       agentId: "worker",
-      agentDir: "/tmp/openclaw-worker-agent",
+      agentDir: "/tmp/afora-worker-agent",
     });
 
     expect(loadModelCatalog).toHaveBeenCalledWith(
       expect.objectContaining({
         config,
         agentId: "worker",
-        agentDir: "/tmp/openclaw-worker-agent",
-        workspaceDir: "/tmp/openclaw-worker-workspace",
+        agentDir: "/tmp/afora-worker-agent",
+        workspaceDir: "/tmp/afora-worker-workspace",
       }),
       { force: true, provenance: "explicit" },
     );
@@ -279,7 +279,7 @@ describe("warnIfModelConfigLooksOff", () => {
   it("accepts subscription auth but not key sources for gpt-5.3-codex-spark", async () => {
     const config = {
       agents: { defaults: { model: "openai/gpt-5.3-codex-spark" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     expect(
       resolveDefaultModelAuthStatus(config, { env: { OPENAI_API_KEY: "api-key" } }),
     ).toMatchObject({
@@ -294,7 +294,7 @@ describe("warnIfModelConfigLooksOff", () => {
       env: { OPENAI_API_KEY: "api-key" },
     });
     const warning = note.mock.calls.flatMap(([message]) => message).join("\n");
-    expect(warning).toContain("openclaw models auth login --provider openai");
+    expect(warning).toContain("afora models auth login --provider openai");
     expect(warning).not.toContain("set an API key env var");
 
     const store = {
@@ -338,7 +338,7 @@ describe("warnIfModelConfigLooksOff", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveDefaultModelAuthStatus(config)).toMatchObject({
       status: "incompatible",
@@ -383,7 +383,7 @@ describe("warnIfModelConfigLooksOff", () => {
     ]);
     const config = {
       agents: { defaults: { model: "openai/gpt-5.4-nano" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await warnIfModelConfigLooksOff(config, prompter);
 
@@ -403,7 +403,7 @@ describe("warnIfModelConfigLooksOff", () => {
     ]);
     const config = {
       agents: { defaults: { model: "openai/gpt-5.4-codex" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await warnIfModelConfigLooksOff(config, makePrompter({ note }), {
       env: { OPENAI_API_KEY: "api-key" },
@@ -445,7 +445,7 @@ describe("warnIfModelConfigLooksOff", () => {
     const note = vi.fn(async () => {});
     const config = {
       agents: { defaults: { model: "openai/gpt-5.4-nano" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await warnIfModelConfigLooksOff(config, makePrompter({ note }));
 
@@ -457,7 +457,7 @@ describe("warnIfModelConfigLooksOff", () => {
     const prompter = makePrompter({ note });
     const config = {
       agents: { defaults: { model: "openai/gpt-5.4-nano" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveDefaultModelAuthStatus(config)).toMatchObject({
       status: "indeterminate",
@@ -475,7 +475,7 @@ describe("warnIfModelConfigLooksOff", () => {
     openAIRouteMocks.override = () => null;
     const config = {
       agents: { defaults: { model: "openai/gpt-5.5" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(resolveDefaultModelAuthStatus(config)).toMatchObject({
       status: "indeterminate",

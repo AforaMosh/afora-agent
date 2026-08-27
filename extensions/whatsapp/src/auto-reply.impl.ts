@@ -1,6 +1,6 @@
 // Whatsapp plugin module implements auto reply.impl behavior.
-export { HEARTBEAT_PROMPT, stripHeartbeatToken } from "openclaw/plugin-sdk/reply-runtime";
-export { HEARTBEAT_TOKEN, SILENT_REPLY_TOKEN } from "openclaw/plugin-sdk/reply-runtime";
+export { HEARTBEAT_PROMPT, stripHeartbeatToken } from "afora-agent/plugin-sdk/reply-runtime";
+export { HEARTBEAT_TOKEN, SILENT_REPLY_TOKEN } from "afora-agent/plugin-sdk/reply-runtime";
 
 export { DEFAULT_WEB_MEDIA_BYTES } from "./auto-reply/constants.js";
 export { monitorWebChannel } from "./auto-reply/monitor.js";

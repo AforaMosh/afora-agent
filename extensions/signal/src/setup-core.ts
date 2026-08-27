@@ -1,8 +1,8 @@
 // Signal plugin module implements setup core behavior.
-import { normalizeAccountId, resolveAccountEntry } from "openclaw/plugin-sdk/account-resolution";
-import { parseAllowFromEntries } from "openclaw/plugin-sdk/allow-from";
-import { createChannelDmPolicy } from "openclaw/plugin-sdk/channel-dm-policy";
-import { defineChannelSetupContract } from "openclaw/plugin-sdk/channel-setup";
+import { normalizeAccountId, resolveAccountEntry } from "afora-agent/plugin-sdk/account-resolution";
+import { parseAllowFromEntries } from "afora-agent/plugin-sdk/allow-from";
+import { createChannelDmPolicy } from "afora-agent/plugin-sdk/channel-dm-policy";
+import { defineChannelSetupContract } from "afora-agent/plugin-sdk/channel-setup";
 import {
   createCliPathTextInput,
   createDelegatedSetupWizardProxy,
@@ -16,16 +16,16 @@ import {
   type ChannelSetupAdapter,
   type ChannelSetupWizard,
   type ChannelSetupWizardTextInput,
-  type OpenClawConfig,
+  type AforaConfig,
   createSetupTranslator,
   type WizardPrompter,
-} from "openclaw/plugin-sdk/setup-runtime";
-import { formatCliCommand, formatDocsLink } from "openclaw/plugin-sdk/setup-tools";
+} from "afora-agent/plugin-sdk/setup-runtime";
+import { formatCliCommand, formatDocsLink } from "afora-agent/plugin-sdk/setup-tools";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
-import { normalizeE164 } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { normalizeE164 } from "afora-agent/plugin-sdk/text-utility-runtime";
 import type { SignalTransportConfig } from "./account-types.js";
 import { resolveDefaultSignalAccountId, resolveSignalAccount } from "./accounts.js";
 import {
@@ -157,7 +157,7 @@ export function buildSignalSetupPatch(input: SignalSetupInput) {
 }
 
 async function prepareSignalSetupInput(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   input: SignalSetupInput;
 }): Promise<SignalSetupInput> {
@@ -203,7 +203,7 @@ function managedTransportOverridesFromSetupInput(
 }
 
 function resolveSignalSetupAccount(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string;
 }): string | undefined {
   const accountId = normalizeAccountId(
@@ -215,10 +215,10 @@ function resolveSignalSetupAccount(params: {
 }
 
 async function promptSignalAllowFrom(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   prompter: WizardPrompter;
   accountId?: string;
-}): Promise<OpenClawConfig> {
+}): Promise<AforaConfig> {
   return promptParsedAllowFromForAccount({
     cfg: params.cfg,
     accountId: params.accountId,
@@ -259,7 +259,7 @@ export const signalDmPolicy = createChannelDmPolicy({
 });
 
 function resolveSignalCliPath(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   credentialValues: Record<string, unknown>;
 }) {
@@ -304,7 +304,7 @@ export const signalCompletionNote = {
   lines: [
     t("wizard.signal.nextLinkDevice"),
     t("wizard.signal.nextScanQr"),
-    `Then run: ${formatCliCommand("openclaw gateway call channels.status --params '{\"probe\":true}'")}`,
+    `Then run: ${formatCliCommand("afora gateway call channels.status --params '{\"probe\":true}'")}`,
     `Docs: ${formatDocsLink("/signal", "signal")}`,
   ],
 };
@@ -358,7 +358,7 @@ const signalSetupAdapterBase = createPatchedAccountSetupAdapter<SignalSetupInput
   buildPatch: (input) => buildSignalSetupPatch(input),
 });
 
-function restorePromotedSignalDefaultAccount(cfg: OpenClawConfig): OpenClawConfig {
+function restorePromotedSignalDefaultAccount(cfg: AforaConfig): AforaConfig {
   const signal = cfg.channels?.signal;
   const promoted = signal?.accounts?.[DEFAULT_ACCOUNT_ID];
   if (!signal?.transport || signal.account || !promoted?.account) {
@@ -460,6 +460,6 @@ export function createSignalSetupWizardProxy(loadWizard: () => Promise<ChannelSe
     ],
     completionNote: signalCompletionNote,
     dmPolicy: signalDmPolicy,
-    disable: (cfg: OpenClawConfig) => setSetupChannelEnabled(cfg, channel, false),
+    disable: (cfg: AforaConfig) => setSetupChannelEnabled(cfg, channel, false),
   });
 }

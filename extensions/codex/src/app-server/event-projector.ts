@@ -6,8 +6,8 @@ import {
   runAgentHarnessBeforeCompactionHook,
   type BeforeToolCallFailureDisposition,
   type EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { readStringField as readString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { readStringField as readString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { AttemptFailureSource, EmbeddedRunAttemptResult } from "./attempt-terminal.js";
 import { CodexAssistantProjection } from "./event-projector-assistant.js";
 import { CodexProjectionDiagnostics } from "./event-projector-diagnostics.js";
@@ -351,13 +351,13 @@ export class CodexAppServerEventProjector {
     this.toolTranscriptProjection.recordDynamicToolCall(params);
   }
 
-  /** Projects a successful OpenClaw progress_card call through the native plan stream. */
+  /** Projects a successful Afora progress_card call through the native plan stream. */
   async recordDynamicProgressCardUpdate(params: unknown): Promise<void> {
     if (isJsonObject(params)) {
       const projected: JsonObject = {
         plan: Array.isArray(params.plan) ? params.plan : [],
       };
-      await this.reasoningProjection.handleTurnPlanUpdated(projected, "openclaw");
+      await this.reasoningProjection.handleTurnPlanUpdated(projected, "afora");
     }
   }
 

@@ -2,10 +2,10 @@
 import {
   buildChannelGroupsScopeTree,
   resolveScopeRequireMention,
-} from "openclaw/plugin-sdk/channel-policy";
-import { resolveExactLineGroupConfigKey, type OpenClawConfig } from "./channel-api.js";
+} from "afora-agent/plugin-sdk/channel-policy";
+import { resolveExactLineGroupConfigKey, type AforaConfig } from "./channel-api.js";
 
-type LineGroupContext = { cfg: OpenClawConfig; accountId?: string | null; groupId?: string | null };
+type LineGroupContext = { cfg: AforaConfig; accountId?: string | null; groupId?: string | null };
 
 export function resolveLineGroupRequireMention(params: LineGroupContext): boolean {
   const tree = buildChannelGroupsScopeTree(params.cfg, "line", params.accountId);

@@ -1,10 +1,10 @@
 import Observation
-import OpenClawChatUI
+import AforaChatUI
 import SwiftUI
 
 @MainActor
 struct ChatModelControlsMenuItems: View {
-    @Bindable var viewModel: OpenClawChatViewModel
+    @Bindable var viewModel: AforaChatViewModel
 
     var body: some View {
         if self.viewModel.showsModelPicker {
@@ -26,8 +26,8 @@ struct ChatModelControlsMenuItems: View {
             set: { self.viewModel.selectModel($0) }))
         {
             Text(self.viewModel.defaultModelLabel)
-                .font(OpenClawType.body)
-                .tag(OpenClawChatViewModel.defaultModelSelectionID)
+                .font(AforaType.body)
+                .tag(AforaChatViewModel.defaultModelSelectionID)
             if !sections.pinned.isEmpty {
                 Section("Pinned") {
                     self.modelOptions(sections.pinned)
@@ -44,10 +44,10 @@ struct ChatModelControlsMenuItems: View {
                 } header: {
                     HStack(spacing: 4) {
                         Text(provider.displayName)
-                            .font(OpenClawType.body)
+                            .font(AforaType.body)
                         if provider.isDefaultProvider {
                             Text("Default")
-                                .font(OpenClawType.caption)
+                                .font(AforaType.caption)
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -55,7 +55,7 @@ struct ChatModelControlsMenuItems: View {
             }
         } label: {
             Text("Model")
-                .font(OpenClawType.body)
+                .font(AforaType.body)
         }
         .disabled(self.viewModel.isUpdatingSessionSettings)
     }
@@ -66,16 +66,16 @@ struct ChatModelControlsMenuItems: View {
             set: { self.viewModel.selectThinkingLevel($0) }))
         {
             Text("Default (inherited)")
-                .font(OpenClawType.body)
-                .tag(OpenClawChatViewModel.inheritedThinkingSelectionID)
+                .font(AforaType.body)
+                .tag(AforaChatViewModel.inheritedThinkingSelectionID)
             ForEach(self.viewModel.thinkingLevelOptions) { option in
                 Text(verbatim: option.label)
-                    .font(OpenClawType.body)
+                    .font(AforaType.body)
                     .tag(option.id)
             }
         } label: {
             Text("Thinking")
-                .font(OpenClawType.body)
+                .font(AforaType.body)
         }
         .disabled(self.viewModel.isUpdatingSessionSettings)
     }
@@ -86,18 +86,18 @@ struct ChatModelControlsMenuItems: View {
             set: { self.viewModel.selectFastMode($0) }))
         {
             Text("Default (inherited)")
-                .font(OpenClawType.body)
-                .tag(OpenClawChatViewModel.inheritedThinkingSelectionID)
+                .font(AforaType.body)
+                .tag(AforaChatViewModel.inheritedThinkingSelectionID)
             Text("On")
-                .font(OpenClawType.body)
+                .font(AforaType.body)
                 .tag("on")
             Text("Off")
-                .font(OpenClawType.body)
+                .font(AforaType.body)
                 .tag("off")
         } label: {
             Label {
                 Text("Fast")
-                    .font(OpenClawType.body)
+                    .font(AforaType.body)
             } icon: {
                 Image(systemName: "bolt.fill")
             }
@@ -111,32 +111,32 @@ struct ChatModelControlsMenuItems: View {
             set: { self.viewModel.selectVerboseLevel($0) }))
         {
             Text("Default (inherited)")
-                .font(OpenClawType.body)
-                .tag(OpenClawChatViewModel.inheritedThinkingSelectionID)
+                .font(AforaType.body)
+                .tag(AforaChatViewModel.inheritedThinkingSelectionID)
             Text("Off")
-                .font(OpenClawType.body)
+                .font(AforaType.body)
                 .tag("off")
             Text("On")
-                .font(OpenClawType.body)
+                .font(AforaType.body)
                 .tag("on")
             Text("Full")
-                .font(OpenClawType.body)
+                .font(AforaType.body)
                 .tag("full")
         } label: {
             Text("Verbosity")
-                .font(OpenClawType.body)
+                .font(AforaType.body)
         }
         .disabled(self.viewModel.isUpdatingSessionSettings)
     }
 
-    private func modelOptions(_ models: [OpenClawChatModelChoice]) -> some View {
+    private func modelOptions(_ models: [AforaChatModelChoice]) -> some View {
         ForEach(models) { model in
             HStack(spacing: 4) {
                 Text(model.displayLabel)
-                    .font(OpenClawType.body)
+                    .font(AforaType.body)
                 if self.viewModel.isDefaultModel(model) {
                     Text("Default")
-                        .font(OpenClawType.caption)
+                        .font(AforaType.caption)
                         .foregroundStyle(.secondary)
                 }
             }

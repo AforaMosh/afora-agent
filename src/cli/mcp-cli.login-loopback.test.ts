@@ -30,7 +30,7 @@ const mocks = vi.hoisted(() => {
 });
 
 vi.mock("../runtime.js", () => ({ defaultRuntime: mocks.runtime }));
-vi.mock("../mcp/channel-server.js", () => ({ serveOpenClawChannelMcp: vi.fn() }));
+vi.mock("../mcp/channel-server.js", () => ({ serveAforaChannelMcp: vi.fn() }));
 vi.mock("../agents/mcp-oauth.js", () => ({
   clearMcpOAuthCredentials: vi.fn(),
   clearMcpOAuthRequesters: vi.fn(),
@@ -53,7 +53,7 @@ const tempDirs: string[] = [];
 let program: Command;
 
 async function createWorkspace(): Promise<string> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-cli-mcp-loopback-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-cli-mcp-loopback-"));
   tempDirs.push(dir);
   return dir;
 }
@@ -114,7 +114,7 @@ describe("mcp login loopback callback", () => {
   });
 
   it("binds the final redirect before printing it and exchanges the captured code", async () => {
-    await withTempHome("openclaw-cli-mcp-loopback-home-", async () => {
+    await withTempHome("afora-cli-mcp-loopback-home-", async () => {
       await configureServer();
       const port = await getFreePort();
       const redirectUrl = `http://127.0.0.1:${port}/oauth/callback`;
@@ -146,7 +146,7 @@ describe("mcp login loopback callback", () => {
   });
 
   it("reports an existing session without starting the loopback", async () => {
-    await withTempHome("openclaw-cli-mcp-loopback-home-", async () => {
+    await withTempHome("afora-cli-mcp-loopback-home-", async () => {
       await configureServer();
       mocks.startMcpOAuthAuthorization.mockResolvedValue({ status: "authorized" });
 
@@ -161,7 +161,7 @@ describe("mcp login loopback callback", () => {
   });
 
   it("falls back immediately to the printed manual command when binding fails", async () => {
-    await withTempHome("openclaw-cli-mcp-loopback-home-", async () => {
+    await withTempHome("afora-cli-mcp-loopback-home-", async () => {
       await configureServer();
       const blocker = createServer();
       await new Promise<void>((resolve) => {

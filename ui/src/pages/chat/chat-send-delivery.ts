@@ -380,7 +380,7 @@ async function sendQueuedChatMessage(
                 attachments.length ? attachments : undefined,
               ),
               timestamp: startedAt,
-              __openclaw: { idempotencyKey: `${runId}:user` },
+              __afora: { idempotencyKey: `${runId}:user` },
             },
           },
           { scope: projectionScope },

@@ -70,7 +70,7 @@ describe("legacy core audit log migration", () => {
         expect((await fs.stat(`${configPath}.migrated.raw`)).mode & 0o777).toBe(0o600);
       }
       expect(JSON.parse(archivedConfig.trim())).toMatchObject({
-        argv: ["openclaw", "config", "set", "token", "***"],
+        argv: ["afora", "config", "set", "token", "***"],
       });
       expect(audit.systemOperations()).toEqual(["config.set", "gateway.restart"]);
       await expect(fs.access(configPath)).rejects.toThrow();
@@ -81,7 +81,7 @@ describe("legacy core audit log migration", () => {
       const laterConfigRecord = {
         ...unredactedConfigRecord,
         ts: "2026-07-04T00:00:00.000Z",
-        argv: ["openclaw", "config", "set", "token", "later-redaction-marker"],
+        argv: ["afora", "config", "set", "token", "later-redaction-marker"],
       };
       await fs.appendFile(`${configPath}.migrated.raw`, `${JSON.stringify(laterConfigRecord)}\n`);
       const rawRecovery = audit.detect();
@@ -543,14 +543,14 @@ describe("legacy core audit log migration", () => {
           ts: new Date(Date.UTC(2026, 6, 1, 0, 0, index)).toISOString(),
           source: "config-io",
           event: "config.write",
-          argv: ["openclaw", "config", "set", `key-${index}`, "value"],
+          argv: ["afora", "config", "set", `key-${index}`, "value"],
           execArgv: [],
         }),
       );
       await audit.write(source, `${records.join("\n")}\n`);
       const retainedRecord = configAuditRecord("value", {
         ts: "2026-07-02T00:00:00.000Z",
-        argv: ["openclaw", "config", "set", "later", "value"],
+        argv: ["afora", "config", "set", "later", "value"],
       });
 
       let settled = false;
@@ -596,7 +596,7 @@ describe("legacy core audit log migration", () => {
     "rejects audit sources beneath symlinked state parents",
     async () => {
       const externalAuditDir = await fs.mkdtemp(
-        path.join(os.tmpdir(), "openclaw-audit-migration-external-"),
+        path.join(os.tmpdir(), "afora-audit-migration-external-"),
       );
       try {
         await withAuditMigrationFixture(async (audit) => {

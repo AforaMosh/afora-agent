@@ -8,7 +8,7 @@ title: "Webhooks plugin"
 
 The Webhooks plugin adds authenticated HTTP routes so a trusted external
 system (Zapier, n8n, a CI job, an internal service) can create and drive
-managed OpenClaw TaskFlows over HTTP, without writing a custom plugin.
+managed Afora TaskFlows over HTTP, without writing a custom plugin.
 
 The plugin runs inside the Gateway process. For a remote Gateway, install and
 configure it on that host, then restart the Gateway. It ships with no routes
@@ -32,7 +32,7 @@ Set config under `plugins.entries.webhooks.config`:
               secret: {
                 source: "env",
                 provider: "default",
-                id: "OPENCLAW_WEBHOOK_SECRET",
+                id: "AFORA_WEBHOOK_SECRET",
               },
               controllerId: "webhooks/zapier",
               description: "Zapier TaskFlow bridge",
@@ -88,7 +88,7 @@ later ones.
 ## Request format
 
 Send `POST` requests with `Content-Type: application/json` and either
-`Authorization: Bearer <secret>` or `x-openclaw-webhook-secret: <secret>`:
+`Authorization: Bearer <secret>` or `x-afora-webhook-secret: <secret>`:
 
 ```bash
 curl -X POST https://gateway.example.com/plugins/webhooks/zapier \

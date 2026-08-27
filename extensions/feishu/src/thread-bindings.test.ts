@@ -1,12 +1,12 @@
 // Feishu tests cover thread bindings plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { getSessionBindingService } from "openclaw/plugin-sdk/conversation-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { getSessionBindingService } from "afora-agent/plugin-sdk/conversation-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createFeishuThreadBindingManager as createFeishuThreadBindingManagerImpl } from "./thread-bindings.js";
 
 const baseCfg = {
   session: { mainKey: "main", scope: "per-sender" },
-} satisfies OpenClawConfig;
+} satisfies AforaConfig;
 
 type FeishuThreadBindingManager = ReturnType<typeof createFeishuThreadBindingManagerImpl>;
 let trackedManager: FeishuThreadBindingManager | null = null;
@@ -147,7 +147,7 @@ describe("Feishu thread bindings", () => {
         scope: "per-sender",
         threadBindings: { idleHours: 2, maxAgeHours: 1 },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     createFeishuThreadBindingManager({ cfg, accountId: "default" });
     const service = getSessionBindingService();
     const conversation = {

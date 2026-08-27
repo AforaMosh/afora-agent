@@ -1,6 +1,6 @@
 // Whatsapp tests cover socket timing plugin behavior.
 import type { AnyMessageContent, WAMessage } from "baileys";
-import { MAX_TIMER_TIMEOUT_MS } from "openclaw/plugin-sdk/number-runtime";
+import { MAX_TIMER_TIMEOUT_MS } from "afora-agent/plugin-sdk/number-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_WHATSAPP_SOCKET_TIMING,
@@ -12,7 +12,7 @@ import {
 } from "./socket-timing.js";
 
 describe("resolveWhatsAppSocketTiming", () => {
-  it("uses OpenClaw's explicit WhatsApp Web socket defaults", () => {
+  it("uses Afora's explicit WhatsApp Web socket defaults", () => {
     expect(resolveWhatsAppSocketTiming()).toEqual(DEFAULT_WHATSAPP_SOCKET_TIMING);
   });
 

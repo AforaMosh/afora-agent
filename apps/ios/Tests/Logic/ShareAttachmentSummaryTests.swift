@@ -24,7 +24,7 @@ struct ShareAttachmentSummaryTests {
             unknownCount: 1)
 
         #expect(summary.omissionMessage ==
-            "OpenClaw Share cannot send 1 video, 2 files, 1 unsupported item yet. Remove omitted items and share again.")
+            "Afora Share cannot send 1 video, 2 files, 1 unsupported item yet. Remove omitted items and share again.")
     }
 
     @Test func `counts an unclassified provider only when no content was loaded`() {

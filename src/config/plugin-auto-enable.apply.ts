@@ -13,7 +13,7 @@ import type {
   PluginAutoEnableResult,
 } from "./plugin-auto-enable.types.js";
 import { hashRuntimeConfigValue } from "./runtime-snapshot.js";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import type { AforaConfig } from "./types.afora.js";
 
 type PluginAutoEnableCacheEntry = {
   configFingerprint: string;
@@ -90,7 +90,7 @@ function stableFingerprintValue(value: unknown): string {
 }
 
 /** Fingerprints config snapshots used by plugin auto-enable detection. */
-export function fingerprintPluginAutoEnableConfig(config: OpenClawConfig): string {
+export function fingerprintPluginAutoEnableConfig(config: AforaConfig): string {
   const cached = configFingerprintMemo.get(config);
   if (cached !== undefined) {
     return cached;
@@ -106,7 +106,7 @@ export function fingerprintPluginAutoEnableEnv(env: NodeJS.ProcessEnv): string {
 }
 
 function createPluginAutoEnableCacheEntry(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   discovery: PluginDiscoveryResult;
   env: NodeJS.ProcessEnv;
   manifestRegistry: PluginManifestRegistry;
@@ -125,7 +125,7 @@ function createPluginAutoEnableCacheEntry(params: {
 
 function isPluginAutoEnableCacheEntryFresh(params: {
   entry: PluginAutoEnableCacheEntry;
-  config: OpenClawConfig;
+  config: AforaConfig;
   discovery: PluginDiscoveryResult;
   env: NodeJS.ProcessEnv;
   manifestRegistry: PluginManifestRegistry;
@@ -142,7 +142,7 @@ function isPluginAutoEnableCacheEntryFresh(params: {
 
 /** Applies already detected plugin auto-enable candidates to config. */
 export function materializePluginAutoEnableCandidates(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   candidates: readonly PluginAutoEnableCandidate[];
   env?: NodeJS.ProcessEnv;
   manifestRegistry?: PluginManifestRegistry;
@@ -172,7 +172,7 @@ export function materializePluginAutoEnableCandidates(params: {
 }
 
 export function applyPluginAutoEnable(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   manifestRegistry?: PluginManifestRegistry;
   discovery?: PluginDiscoveryResult;

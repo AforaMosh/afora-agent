@@ -9,7 +9,7 @@ scenario:
       - containers.docker-backed-agent-sandbox-support
   objective: Verify the package-installed Docker image can materialize bundled MCP tools for an agent run and apply tool policy inside the container-hosted runtime.
   successCriteria:
-    - The functional Docker E2E image starts with an empty OpenClaw test state.
+    - The functional Docker E2E image starts with an empty Afora test state.
     - The mounted QA Lab harness imports packaged `dist` modules from the installed app, not source modules.
     - Bundled MCP tools materialize for a Docker-hosted agent session and respect effective tool policy.
     - The probe MCP server returns the expected tool result through the container runtime.

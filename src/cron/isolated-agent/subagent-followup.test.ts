@@ -4,7 +4,7 @@ import type { SubagentRunRecord } from "../../agents/subagents/registry/subagent
 
 // vi.hoisted runs before module imports, ensuring FAST_TEST_MODE is picked up.
 vi.hoisted(() => {
-  vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+  vi.stubEnv("AFORA_TEST_FAST", "1");
 });
 
 import { expectsSubagentFollowup, isLikelyInterimCronMessage } from "./subagent-followup-hints.js";

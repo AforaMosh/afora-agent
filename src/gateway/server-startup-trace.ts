@@ -1,5 +1,5 @@
 import { monitorEventLoopDelay, performance } from "node:perf_hooks";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   emitDiagnosticsTimelineEvent,
   isDiagnosticsTimelineEnabled,
@@ -28,8 +28,8 @@ export async function measureStartup<T>(
 }
 
 export function createGatewayStartupTrace(log: GatewayLogger) {
-  const logEnabled = isTruthyEnvValue(process.env.OPENCLAW_GATEWAY_STARTUP_TRACE);
-  let timelineConfig: OpenClawConfig | undefined;
+  const logEnabled = isTruthyEnvValue(process.env.AFORA_GATEWAY_STARTUP_TRACE);
+  let timelineConfig: AforaConfig | undefined;
   let eventLoopDelay: ReturnType<typeof monitorEventLoopDelay> | undefined;
   const timelineOptions = () => ({
     ...(timelineConfig ? { config: timelineConfig } : {}),
@@ -37,7 +37,7 @@ export function createGatewayStartupTrace(log: GatewayLogger) {
   });
   const eventLoopTimelineEnabled = () =>
     isDiagnosticsTimelineEnabled(timelineOptions()) &&
-    isTruthyEnvValue(process.env.OPENCLAW_DIAGNOSTICS_EVENT_LOOP);
+    isTruthyEnvValue(process.env.AFORA_DIAGNOSTICS_EVENT_LOOP);
   const ensureEventLoopDelay = () => {
     if (eventLoopDelay || (!logEnabled && !eventLoopTimelineEnabled())) {
       return;
@@ -122,7 +122,7 @@ export function createGatewayStartupTrace(log: GatewayLogger) {
     }
   };
   return {
-    setConfig(config: OpenClawConfig) {
+    setConfig(config: AforaConfig) {
       timelineConfig = config;
       ensureEventLoopDelay();
     },

@@ -1,9 +1,9 @@
 // Inworld plugin module implements tts behavior.
-import { canonicalizeBase64, MAX_AUDIO_BYTES } from "openclaw/plugin-sdk/media-runtime";
-import { readResponseWithLimit } from "openclaw/plugin-sdk/response-limit-runtime";
-import type { SpeechVoiceOption } from "openclaw/plugin-sdk/speech-core";
-import { fetchWithSsrFGuard, type SsrFPolicy } from "openclaw/plugin-sdk/ssrf-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { canonicalizeBase64, MAX_AUDIO_BYTES } from "afora-agent/plugin-sdk/media-runtime";
+import { readResponseWithLimit } from "afora-agent/plugin-sdk/response-limit-runtime";
+import type { SpeechVoiceOption } from "afora-agent/plugin-sdk/speech-core";
+import { fetchWithSsrFGuard, type SsrFPolicy } from "afora-agent/plugin-sdk/ssrf-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 
 const DEFAULT_INWORLD_BASE_URL = "https://api.inworld.ai";
 export const DEFAULT_INWORLD_VOICE_ID = "Sarah";

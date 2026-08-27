@@ -162,7 +162,7 @@ suite.define(() => {
   });
 
   it("keeps edit, remove, and reorder outcomes exact through reconnect", async () => {
-    const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+    const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
     const context = await suite.newBrowserContext({
       locale: "en-US",
       ...(artifactDir

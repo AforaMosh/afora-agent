@@ -57,7 +57,7 @@ jobs:
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           prompt-file: .github/codex/prompts/dated-todo-sweep.md
-          model: ${{ vars.OPENCLAW_CI_OPENAI_MODEL_BARE }}
+          model: ${{ vars.AFORA_CI_OPENAI_MODEL_BARE }}
           effort: medium
           sandbox: workspace-write
           safety-strategy: drop-sudo

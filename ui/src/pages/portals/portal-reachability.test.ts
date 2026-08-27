@@ -65,7 +65,7 @@ describe("probePortalReachable", () => {
       }),
     );
 
-    await expect(probePortalReachable("http://127.0.0.1:42065/?openclaw_portal=abc")).resolves.toBe(
+    await expect(probePortalReachable("http://127.0.0.1:42065/?afora_portal=abc")).resolves.toBe(
       "blocked",
     );
   });
@@ -83,7 +83,7 @@ describe("probePortalReachable", () => {
       }),
     );
 
-    await expect(probePortalReachable("http://127.0.0.1:42065/?openclaw_portal=abc")).resolves.toBe(
+    await expect(probePortalReachable("http://127.0.0.1:42065/?afora_portal=abc")).resolves.toBe(
       "unreachable",
     );
   });

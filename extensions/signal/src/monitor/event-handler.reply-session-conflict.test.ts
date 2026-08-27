@@ -2,12 +2,12 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { DEFAULT_INGRESS_RETRY_MAX_ATTEMPTS } from "openclaw/plugin-sdk/channel-outbound";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import { DEFAULT_INGRESS_RETRY_MAX_ATTEMPTS } from "afora-agent/plugin-sdk/channel-outbound";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
-  closeOpenClawStateDatabaseForTest,
+  closeAforaStateDatabaseForTest,
   createChannelIngressQueueForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { startSignalIngressMonitor } from "../signal-ingress.js";
 import type { SignalEventHandlerDeps } from "./event-handler.types.js";
@@ -66,9 +66,9 @@ vi.mock("../send-reactions.js", () => ({
   removeReactionSignal: removeReactionSignalMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/reply-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/reply-runtime")>(
-    "openclaw/plugin-sdk/reply-runtime",
+vi.mock("afora-agent/plugin-sdk/reply-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/reply-runtime")>(
+    "afora-agent/plugin-sdk/reply-runtime",
   );
   return {
     ...actual,
@@ -78,9 +78,9 @@ vi.mock("openclaw/plugin-sdk/reply-runtime", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/channel-inbound", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/channel-inbound")>(
-    "openclaw/plugin-sdk/channel-inbound",
+vi.mock("afora-agent/plugin-sdk/channel-inbound", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/channel-inbound")>(
+    "afora-agent/plugin-sdk/channel-inbound",
   );
   type RunParams = Parameters<typeof actual.runChannelInboundEvent>[0];
   return {
@@ -107,7 +107,7 @@ vi.mock("openclaw/plugin-sdk/channel-inbound", async () => {
         channel: resolved.channel,
         accountId: resolved.accountId,
         routeSessionKey: resolved.route.sessionKey,
-        storePath: "/tmp/openclaw/signal-sessions.json",
+        storePath: "/tmp/afora/signal-sessions.json",
         ctxPayload: resolved.ctxPayload,
         recordInboundSession: recordInboundSessionMock,
         afterRecord: resolved.afterRecord,
@@ -123,9 +123,9 @@ vi.mock("openclaw/plugin-sdk/channel-inbound", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/conversation-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/conversation-runtime")>(
-    "openclaw/plugin-sdk/conversation-runtime",
+vi.mock("afora-agent/plugin-sdk/conversation-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/conversation-runtime")>(
+    "afora-agent/plugin-sdk/conversation-runtime",
   );
   return {
     ...actual,
@@ -339,7 +339,7 @@ describe("signal reply session init conflict retry", () => {
     vi.useFakeTimers();
     const now = Date.UTC(2026, 0, 2);
     vi.setSystemTime(now);
-    const created = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-signal-abandon-"));
+    const created = await fs.mkdtemp(path.join(os.tmpdir(), "afora-signal-abandon-"));
     const stateDir = await fs.realpath(created);
     type Queue = NonNullable<Parameters<typeof startSignalIngressMonitor>[0]["queue"]>;
     type Payload = Parameters<Queue["enqueue"]>[1];
@@ -450,7 +450,7 @@ describe("signal reply session init conflict retry", () => {
       expect(blockedRestart.tracked.tasks).toHaveLength(0);
       await blockedRestart.monitor.stop();
     } finally {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       await fs.rm(stateDir, { recursive: true, force: true });
       vi.useRealTimers();
     }
@@ -490,7 +490,7 @@ describe("signal reply session init conflict retry", () => {
       createBaseSignalEventHandlerDeps({
         cfg: {
           messages: { inbound: { debounceMs: 10 } },
-        } as OpenClawConfig,
+        } as AforaConfig,
       }),
     );
 

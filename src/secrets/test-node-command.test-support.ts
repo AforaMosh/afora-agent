@@ -12,7 +12,7 @@ export async function withSecureTestNodeCommand<T>(
   if (process.platform === "win32") {
     return await run(process.execPath);
   }
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-test-node-"));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-test-node-"));
   const command = path.join(rootDir, "node");
   try {
     await fs.chmod(rootDir, 0o700);

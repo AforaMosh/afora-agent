@@ -1117,10 +1117,10 @@ async function buildResponsesPayload(
     if (!hasCompletedToolOutput && targetTool && hasDeclaredTool(body, "tool_search_code")) {
       return buildToolCallEventsWithArgs("tool_search_code", {
         code: [
-          `const hits = await openclaw.tools.search(${JSON.stringify(targetTool)}, { limit: 1 });`,
+          `const hits = await afora.tools.search(${JSON.stringify(targetTool)}, { limit: 1 });`,
           "const match = hits.find((tool) => tool.name === " + JSON.stringify(targetTool) + ");",
           "if (!match) throw new Error('target tool not found');",
-          `return await openclaw.tools.call(match.id, ${JSON.stringify(plannedArgs)});`,
+          `return await afora.tools.call(match.id, ${JSON.stringify(plannedArgs)});`,
         ].join("\n"),
       });
     }
@@ -1291,9 +1291,9 @@ async function buildResponsesPayload(
     }
     return buildAssistantEvents(
       [
-        "<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>",
+        "<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>",
         QA_SUBAGENT_TERMINAL_METADATA_SENTINEL,
-        "<<<END_OPENCLAW_INTERNAL_CONTEXT>>>",
+        "<<<END_AFORA_INTERNAL_CONTEXT>>>",
       ].join("\n"),
     );
   }
@@ -1301,9 +1301,9 @@ async function buildResponsesPayload(
     return buildAssistantEvents(
       [
         QA_SUBAGENT_TERMINAL_MARKERS.fallback,
-        "<<<BEGIN_OPENCLAW_INTERNAL_CONTEXT>>>",
+        "<<<BEGIN_AFORA_INTERNAL_CONTEXT>>>",
         QA_SUBAGENT_TERMINAL_METADATA_SENTINEL,
-        "<<<END_OPENCLAW_INTERNAL_CONTEXT>>>",
+        "<<<END_AFORA_INTERNAL_CONTEXT>>>",
       ].join("\n"),
     );
   }
@@ -2414,12 +2414,12 @@ async function buildResponsesPayload(
     if (
       !taskEvidenceText ||
       (!taskEvidenceText.includes("# Personal task ledger") &&
-        !taskEvidenceText.includes("Task: prepare a local OpenClaw PR readiness note."))
+        !taskEvidenceText.includes("Task: prepare a local Afora PR readiness note."))
     ) {
       return buildToolCallEventsWithArgs("read", { path: "PERSONAL_TASK_LEDGER.md" });
     }
     if (
-      taskEvidenceText.includes("Task: prepare a local OpenClaw PR readiness note.") &&
+      taskEvidenceText.includes("Task: prepare a local Afora PR readiness note.") &&
       taskEvidenceText.includes("Done: local evidence captured in personal-task-status.txt.")
     ) {
       return buildToolCallEventsWithArgs("write", {

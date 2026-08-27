@@ -1,5 +1,5 @@
 // Slack plugin module implements reconnect policy behavior.
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { formatSlackError } from "../errors.js";
 
 const SLACK_AUTH_ERROR_RE =
@@ -82,7 +82,7 @@ export function formatSlackSocketModeSharedConnectionWarning(activeConnections: 
   return [
     `slack socket mode reports ${activeConnections} active connections for this Slack app`,
     "Slack may deliver each event to any one connection",
-    "ensure every OpenClaw gateway sharing this app has equivalent routing and authorization, or use a separate Slack app per gateway, one relay ingress, or HTTP Request URLs behind a load balancer",
+    "ensure every Afora gateway sharing this app has equivalent routing and authorization, or use a separate Slack app per gateway, one relay ingress, or HTTP Request URLs behind a load balancer",
     `See ${SLACK_SOCKET_SHARED_CONNECTION_DOCS_URL}`,
   ].join("; ");
 }
@@ -153,7 +153,7 @@ export function waitForSlackSocketDisconnect(
 
 /**
  * Detect permanent Slack account and credential failures.
- * Transient request and HTTP failures stay in OpenClaw's reconnect loop.
+ * Transient request and HTTP failures stay in Afora's reconnect loop.
  */
 export function isNonRecoverableSlackAuthError(error: unknown): boolean {
   return SLACK_AUTH_ERROR_RE.test(formatUnknownError(error, ""));

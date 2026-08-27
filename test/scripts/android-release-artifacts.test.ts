@@ -19,7 +19,7 @@ function run(args: string[], env: NodeJS.ProcessEnv = {}) {
   delete processEnv.GIT_COMMIT;
   delete processEnv.GIT_SHA;
   delete processEnv.GITHUB_SHA;
-  delete processEnv.OPENCLAW_BUILD_TIMESTAMP;
+  delete processEnv.AFORA_BUILD_TIMESTAMP;
   return spawnSync(process.execPath, ["--import", "tsx", SCRIPT, ...args], {
     cwd: process.cwd(),
     encoding: "utf8",
@@ -28,7 +28,7 @@ function run(args: string[], env: NodeJS.ProcessEnv = {}) {
 }
 
 function fakeApkSigner(certificateSha256: string, signerCount = 1) {
-  const tempRoot = tempRoots.make("openclaw-apksigner-");
+  const tempRoot = tempRoots.make("afora-apksigner-");
   const buildToolsDir = path.join(tempRoot, "build-tools", "36.0.0");
   fs.mkdirSync(buildToolsDir, { recursive: true });
   const apkSignerPath = path.join(buildToolsDir, "apksigner");
@@ -41,7 +41,7 @@ function fakeApkSigner(certificateSha256: string, signerCount = 1) {
     `#!/bin/sh\nprintf '%s\\n' ${signerLines.map((line) => `'${line}'`).join(" ")}\n`,
   );
   fs.chmodSync(apkSignerPath, 0o755);
-  const apkPath = path.join(tempRoot, "OpenClaw-Android.apk");
+  const apkPath = path.join(tempRoot, "Afora-Android.apk");
   fs.writeFileSync(apkPath, "fake apk bytes");
   return { apkPath, sdkRoot: tempRoot };
 }
@@ -53,7 +53,7 @@ describe("Android release artifacts", () => {
         GIT_COMMIT: "A".repeat(40),
         GIT_SHA: "d".repeat(40),
         GITHUB_SHA: "b".repeat(40),
-        OPENCLAW_BUILD_TIMESTAMP: "2026-07-10T01:02:03Z",
+        AFORA_BUILD_TIMESTAMP: "2026-07-10T01:02:03Z",
       },
       now: () => new Date("2026-07-11T00:00:00Z"),
       readGitCommit: () => "c".repeat(40),
@@ -113,7 +113,7 @@ describe("Android release artifacts", () => {
       resolveAndroidBuildMetadata({
         env: {
           GIT_COMMIT: "a".repeat(40),
-          OPENCLAW_BUILD_TIMESTAMP: "2026-07-10T01:02:03+01:00",
+          AFORA_BUILD_TIMESTAMP: "2026-07-10T01:02:03+01:00",
         },
       }),
     ).toThrow("ISO-8601 UTC timestamp");
@@ -126,8 +126,8 @@ describe("Android release artifacts", () => {
         timestamp: "2026-07-10T01:02:03.000Z",
       }),
     ).toEqual([
-      `-PopenclawBuildCommit=${"a".repeat(40)}`,
-      "-PopenclawBuildTimestamp=2026-07-10T01:02:03.000Z",
+      `-PaforaBuildCommit=${"a".repeat(40)}`,
+      "-PaforaBuildTimestamp=2026-07-10T01:02:03.000Z",
     ]);
   });
 

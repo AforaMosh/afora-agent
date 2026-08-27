@@ -11,7 +11,7 @@ const sendCardFeishuMock = vi.hoisted(() =>
 );
 const getMessageFeishuMock = vi.hoisted(() => vi.fn());
 
-const originalStateDir = process.env.OPENCLAW_STATE_DIR;
+const originalStateDir = process.env.AFORA_STATE_DIR;
 
 vi.mock("./bot.js", () => {
   return {
@@ -77,15 +77,15 @@ describe("Feishu bot menu handler", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.OPENCLAW_STATE_DIR = `/tmp/openclaw-feishu-bot-menu-test-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    process.env.AFORA_STATE_DIR = `/tmp/afora-feishu-bot-menu-test-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   });
 
   afterEach(() => {
     if (originalStateDir === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.AFORA_STATE_DIR;
       return;
     }
-    process.env.OPENCLAW_STATE_DIR = originalStateDir;
+    process.env.AFORA_STATE_DIR = originalStateDir;
   });
 
   it("opens the quick-action launcher card at the webhook/event layer", async () => {

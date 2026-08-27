@@ -6,13 +6,13 @@ read_when:
 title: "Worker"
 ---
 
-# `openclaw worker`
+# `afora worker`
 
-`openclaw worker` is the restricted runtime entry point for a cloud worker
+`afora worker` is the restricted runtime entry point for a cloud worker
 orchestrator to launch inside a prepared worker environment. It is not a
 general-purpose command for manual worker registration.
 
-The gateway installs the matching OpenClaw bundle and opens the host-key-pinned
+The gateway installs the matching Afora bundle and opens the host-key-pinned
 reverse SSH tunnel. The worker launcher starts this command with a prepared
 assignment. The command connects through the tunnel-forwarded local socket and
 admits as the dedicated `worker` role.

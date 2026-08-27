@@ -1,6 +1,6 @@
 // Covers provider catalog entries derived from plugin metadata.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import type { ModelProviderConfig } from "../config/types.models.js";
 import {
   buildPairedProviderApiKeyCatalog,
@@ -19,7 +19,7 @@ function createProviderConfig(overrides: Partial<ModelProviderConfig> = {}): Mod
 }
 
 function createCatalogContext(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   apiKeys?: Record<string, string | undefined>;
 }): ProviderCatalogContext {
   return {

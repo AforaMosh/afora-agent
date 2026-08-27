@@ -1,7 +1,7 @@
 /**
  * Canvas setup entrypoint that exposes config migrations.
  */
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import { migrateLegacyCanvasHostConfig } from "./src/config-migration.js";
 
 export default definePluginEntry({

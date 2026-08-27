@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MsgContext } from "../../../../src/auto-reply/templating.js";
-import type { OpenClawConfig } from "../../../../src/config/types.js";
+import type { AforaConfig } from "../../../../src/config/types.js";
 import { applyMediaUnderstanding } from "../../../../src/media-understanding/apply.js";
 import { MIN_AUDIO_FILE_BYTES } from "../../../../src/media-understanding/defaults.constants.js";
 import type { MediaUnderstandingProvider } from "../../../../src/media-understanding/types.js";
@@ -22,9 +22,9 @@ async function writeAudioFixture(dir: string, name: string, fill: number): Promi
 
 function createSelectionConfig(
   attachments: NonNullable<
-    NonNullable<NonNullable<OpenClawConfig["tools"]>["media"]>["audio"]
+    NonNullable<NonNullable<AforaConfig["tools"]>["media"]>["audio"]
   >["attachments"],
-): OpenClawConfig {
+): AforaConfig {
   return {
     models: {
       providers: {
@@ -90,7 +90,7 @@ async function writePortableTranscriber(dir: string): Promise<{
 
 describe("QA media audio selection product proof", () => {
   it("applies mixed-attachment preference, mode, caps, and transcript ordering", async () => {
-    const dir = tempDirs.make("openclaw-qa-media-audio-selection-");
+    const dir = tempDirs.make("afora-qa-media-audio-selection-");
     const firstAudio = await writeAudioFixture(dir, "first.ogg", 0x11);
     const secondAudio = await writeAudioFixture(dir, "second.ogg", 0x22);
     const thirdAudio = await writeAudioFixture(dir, "third.ogg", 0x33);
@@ -149,7 +149,7 @@ describe("QA media audio selection product proof", () => {
   });
 
   it("falls through from a failed provider to an actual temporary CLI executable", async () => {
-    const dir = tempDirs.make("openclaw-qa-media-audio-fallback-");
+    const dir = tempDirs.make("afora-qa-media-audio-fallback-");
     const audioPath = await writeAudioFixture(dir, "fallback.wav", 0x55);
     const executable = await writePortableTranscriber(dir);
     let providerAttempts = 0;
@@ -157,7 +157,7 @@ describe("QA media audio selection product proof", () => {
       Body: "",
       media: [{ path: audioPath, contentType: "audio/wav" }],
     };
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       models: {
         providers: {
           "qa-stt": {

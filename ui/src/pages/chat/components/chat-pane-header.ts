@@ -288,11 +288,11 @@ function renderProjectCrumb(
 
 function renderWorkspaceChipIcon(icon: ChatPaneHeaderProps["workspaceIcon"]) {
   return icon
-    ? html`<openclaw-workspace-icon
+    ? html`<afora-workspace-icon
         .routeUrl=${icon.routeUrl}
         .authTokens=${icon.authTokens}
         .authReady=${icon.authReady}
-      ></openclaw-workspace-icon>`
+      ></afora-workspace-icon>`
     : icons.folder;
 }
 
@@ -417,7 +417,7 @@ export function renderChatPaneHeader(props: ChatPaneHeaderProps) {
   return html`
     <div class="chat-pane__header" @mousedown=${beginNativeWindowDrag}>
       ${props.mergedChrome
-        ? html`<openclaw-tooltip .content=${drawerLabel}>
+        ? html`<afora-tooltip .content=${drawerLabel}>
             <button
               class="btn btn--ghost btn--icon chat-icon-btn chat-pane__nav-toggle"
               type="button"
@@ -433,7 +433,7 @@ export function renderChatPaneHeader(props: ChatPaneHeaderProps) {
             >
               ${icons.menu}
             </button>
-          </openclaw-tooltip>`
+          </afora-tooltip>`
         : nothing}
       ${props.session?.incognito
         ? html`<span
@@ -454,7 +454,7 @@ export function renderChatPaneHeader(props: ChatPaneHeaderProps) {
         props.ownerViewing,
       )}
       ${props.showOwnerChip && props.session?.participants?.length
-        ? html`<openclaw-viewer-facepile
+        ? html`<afora-viewer-facepile
             class="chat-pane__participants"
             .staticUsers=${props.session.participants.map((participant) => ({
               id: participant.id ?? "",
@@ -464,13 +464,13 @@ export function renderChatPaneHeader(props: ChatPaneHeaderProps) {
             }))}
             .maxVisible=${4}
             variant="session"
-          ></openclaw-viewer-facepile>`
+          ></afora-viewer-facepile>`
         : nothing}
       ${renderChatPanePlacement(props)} ${props.presence ?? nothing} ${props.faceControl ?? nothing}
       ${props.sharingControl ?? nothing}
       ${!props.catalog && props.branches.length > 1
         ? html`
-            <openclaw-tooltip
+            <afora-tooltip
               .content=${props.branchSwitchDisabledReason ?? t("chat.sessionHeader.branches")}
             >
               <wa-dropdown
@@ -533,7 +533,7 @@ export function renderChatPaneHeader(props: ChatPaneHeaderProps) {
                   `;
                 })}
               </wa-dropdown>
-            </openclaw-tooltip>
+            </afora-tooltip>
           `
         : nothing}
       ${renderGatewayPicker(props)}
@@ -544,7 +544,7 @@ export function renderChatPaneHeader(props: ChatPaneHeaderProps) {
           : html`${props.diffAction} ${props.backgroundTasksAction} ${props.workspaceAction}
             ${props.sessionRailAction}`}
         ${props.onOpenSplitView
-          ? html`<openclaw-tooltip .content=${t("chat.splitView.open")}>
+          ? html`<afora-tooltip .content=${t("chat.splitView.open")}>
               <button
                 class="btn btn--ghost btn--icon chat-icon-btn chat-open-split-view"
                 type="button"
@@ -553,10 +553,10 @@ export function renderChatPaneHeader(props: ChatPaneHeaderProps) {
               >
                 ${icons.columns2}
               </button>
-            </openclaw-tooltip>`
+            </afora-tooltip>`
           : nothing}
         ${!props.narrow && props.onSplitDown
-          ? html`<openclaw-tooltip .content=${t("chat.splitView.splitDown")}>
+          ? html`<afora-tooltip .content=${t("chat.splitView.splitDown")}>
               <button
                 class="btn btn--ghost btn--icon chat-icon-btn chat-pane__split-down"
                 type="button"
@@ -565,10 +565,10 @@ export function renderChatPaneHeader(props: ChatPaneHeaderProps) {
               >
                 ${icons.panelBottomOpen}
               </button>
-            </openclaw-tooltip>`
+            </afora-tooltip>`
           : nothing}
         ${!props.narrow && props.onSplitRight
-          ? html`<openclaw-tooltip .content=${t("chat.splitView.splitRight")}>
+          ? html`<afora-tooltip .content=${t("chat.splitView.splitRight")}>
               <button
                 class="btn btn--ghost btn--icon chat-icon-btn chat-pane__split-right"
                 type="button"
@@ -577,10 +577,10 @@ export function renderChatPaneHeader(props: ChatPaneHeaderProps) {
               >
                 ${icons.panelRightOpen}
               </button>
-            </openclaw-tooltip>`
+            </afora-tooltip>`
           : nothing}
         ${props.onClosePane
-          ? html`<openclaw-tooltip .content=${t("chat.splitView.closePane")}>
+          ? html`<afora-tooltip .content=${t("chat.splitView.closePane")}>
               <button
                 class="btn btn--ghost btn--icon chat-icon-btn chat-pane__close-pane"
                 type="button"
@@ -589,10 +589,10 @@ export function renderChatPaneHeader(props: ChatPaneHeaderProps) {
               >
                 ${icons.x}
               </button>
-            </openclaw-tooltip>`
+            </afora-tooltip>`
           : nothing}
         ${props.mergedChrome
-          ? html`<openclaw-tooltip .content=${t("chat.openCommandPalette")}>
+          ? html`<afora-tooltip .content=${t("chat.openCommandPalette")}>
               <button
                 class="btn btn--ghost btn--icon chat-icon-btn chat-pane__palette-open"
                 type="button"
@@ -601,7 +601,7 @@ export function renderChatPaneHeader(props: ChatPaneHeaderProps) {
               >
                 ${icons.search}
               </button>
-            </openclaw-tooltip>`
+            </afora-tooltip>`
           : nothing}
         ${props.sessionMenuAction}
       </div>

@@ -1,21 +1,21 @@
 import { collectConfigRuntimeEnvVars } from "./env-vars.js";
-import type { OpenClawConfig } from "./types.js";
+import type { AforaConfig } from "./types.js";
 
 export const GATEWAY_CONFIG_SELECTION_ENV_KEYS: ReadonlySet<string> = new Set([
   "ANDROID_DATA",
   "HOME",
   "HOMEDRIVE",
   "HOMEPATH",
-  "OPENCLAW_AGENT_DIR",
-  "OPENCLAW_CONFIG_PATH",
-  "OPENCLAW_HOME",
-  "OPENCLAW_INCLUDE_ROOTS",
-  "OPENCLAW_NIX_MODE",
-  "OPENCLAW_OAUTH_DIR",
-  "OPENCLAW_PACKAGE_DIR",
-  "OPENCLAW_PROFILE",
-  "OPENCLAW_STATE_DIR",
-  "OPENCLAW_WORKSPACE_DIR",
+  "AFORA_AGENT_DIR",
+  "AFORA_CONFIG_PATH",
+  "AFORA_HOME",
+  "AFORA_INCLUDE_ROOTS",
+  "AFORA_NIX_MODE",
+  "AFORA_OAUTH_DIR",
+  "AFORA_PACKAGE_DIR",
+  "AFORA_PROFILE",
+  "AFORA_STATE_DIR",
+  "AFORA_WORKSPACE_DIR",
   "PI_CODING_AGENT_DIR",
   "PREFIX",
   "USERPROFILE",
@@ -23,10 +23,10 @@ export const GATEWAY_CONFIG_SELECTION_ENV_KEYS: ReadonlySet<string> = new Set([
 
 /** Rejects config.env changes that would retarget a running Gateway process. */
 export function assertGatewayConfigEnvSelectionUnchanged(
-  previousConfig: OpenClawConfig,
-  nextConfig: OpenClawConfig,
+  previousConfig: AforaConfig,
+  nextConfig: AforaConfig,
 ): void {
-  const normalize = (config: OpenClawConfig) =>
+  const normalize = (config: AforaConfig) =>
     new Map(
       Object.entries(collectConfigRuntimeEnvVars(config)).map(([key, value]) => [
         key.toUpperCase(),

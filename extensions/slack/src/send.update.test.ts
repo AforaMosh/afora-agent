@@ -1,6 +1,6 @@
 // Slack tests cover updateMessageSlack chat.update edit-limit behavior.
 import type { Block, KnownBlock, WebClient } from "@slack/web-api";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { registerSlackInstallationState } from "./installation-identity-state.js";
 import { SLACK_EDIT_TEXT_MAX_BYTES } from "./limits.js";
@@ -39,7 +39,7 @@ function createUpdateClient() {
 // chat.update rejects text above 4,000 UTF-8 bytes with msg_too_long (see limits.ts).
 const SLACK_TEST_CFG = {
   channels: { slack: { botToken: "xoxb-test" } },
-} as unknown as OpenClawConfig;
+} as unknown as AforaConfig;
 const statusBlocks: (Block | KnownBlock)[] = [
   { type: "section", text: { type: "mrkdwn", text: "status" } },
 ];

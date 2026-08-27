@@ -1,6 +1,6 @@
 // Inspects local gateway processes for status and diagnostics.
 import fsSync from "node:fs";
-import { uniqueValues } from "@openclaw/normalization-core/string-normalization";
+import { uniqueValues } from "@afora/normalization-core/string-normalization";
 import { isGatewayArgv, parseProcCmdline } from "./gateway-process-argv.js";
 import { findGatewayPidsOnPortSync as findUnixGatewayPidsOnPortSync } from "./restart-stale-pids.js";
 import { spawnPsSync } from "./spawn-ps.js";
@@ -10,7 +10,7 @@ import {
 } from "./windows-port-pids.js";
 
 // Gateway process helpers verify argv before signaling or reporting listener
-// PIDs so stale port owners cannot be mistaken for OpenClaw.
+// PIDs so stale port owners cannot be mistaken for Afora.
 const GATEWAY_PS_PROBE_TIMEOUT_MS = 1_000;
 
 /** Read command argv for a PID using the current platform's process APIs. */

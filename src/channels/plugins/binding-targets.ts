@@ -3,7 +3,7 @@
  *
  * Ensures or resets stateful binding targets through registered target drivers.
  */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ConfiguredBindingResolution } from "./binding-types.js";
 import {
   ensureStatefulTargetBuiltinsRegistered,
@@ -19,7 +19,7 @@ import {
  * Ensures the stateful target driver for a configured binding is ready to receive traffic.
  */
 export async function ensureConfiguredBindingTargetReady(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   bindingResolution: ConfiguredBindingResolution | null;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!params.bindingResolution) {
@@ -49,7 +49,7 @@ export async function ensureConfiguredBindingTargetReady(params: {
  * Resets a stateful configured binding target in place when its driver supports reset.
  */
 export async function resetConfiguredBindingTargetInPlace(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   reason: "new" | "reset";
   commandSource?: string;

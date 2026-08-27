@@ -225,7 +225,7 @@ describe("dead config keys", () => {
           providers: {
             legacy: {
               source: "file",
-              path: "/tmp/openclaw-secret",
+              path: "/tmp/afora-secret",
               allowInsecurePath: true,
             },
           },

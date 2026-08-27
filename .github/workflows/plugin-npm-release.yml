@@ -44,7 +44,7 @@ on:
         required: false
         type: string
       release_publish_run_id:
-        description: Approved OpenClaw Release Publish workflow run id
+        description: Approved Afora Release Publish workflow run id
         required: false
         type: string
       preflight_only:
@@ -363,12 +363,12 @@ jobs:
 
       - name: Preview publish command
         env:
-          OPENCLAW_PLUGIN_NPM_PUBLISH_TAG: ${{ inputs.npm_dist_tag == 'extended-stable' && inputs.npm_dist_tag || '' }}
+          AFORA_PLUGIN_NPM_PUBLISH_TAG: ${{ inputs.npm_dist_tag == 'extended-stable' && inputs.npm_dist_tag || '' }}
         run: bash .release-tooling/scripts/plugin-npm-publish.sh --repo-root "$GITHUB_WORKSPACE" --dry-run "${{ matrix.plugin.packageDir }}"
 
       - name: Preview npm pack contents
         env:
-          OPENCLAW_PLUGIN_NPM_PUBLISH_TAG: ${{ inputs.npm_dist_tag == 'extended-stable' && inputs.npm_dist_tag || '' }}
+          AFORA_PLUGIN_NPM_PUBLISH_TAG: ${{ inputs.npm_dist_tag == 'extended-stable' && inputs.npm_dist_tag || '' }}
         run: bash .release-tooling/scripts/plugin-npm-publish.sh --repo-root "$GITHUB_WORKSPACE" --pack-dry-run "${{ matrix.plugin.packageDir }}"
 
       - name: Prepare immutable npm preflight artifact
@@ -389,7 +389,7 @@ jobs:
           WORKFLOW_SHA: ${{ github.workflow_sha }}
           RUN_ID: ${{ github.run_id }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
-          OPENCLAW_PLUGIN_NPM_PUBLISH_TAG: ${{ inputs.npm_dist_tag == 'extended-stable' && inputs.npm_dist_tag || '' }}
+          AFORA_PLUGIN_NPM_PUBLISH_TAG: ${{ inputs.npm_dist_tag == 'extended-stable' && inputs.npm_dist_tag || '' }}
         run: |
           set -euo pipefail
           artifact_dir="${RUNNER_TEMP}/${ARTIFACT_NAME}"
@@ -398,8 +398,8 @@ jobs:
           pack_output="${RUNNER_TEMP}/${EXTENSION_ID}-npm-pack-output.txt"
           pack_json="${artifact_dir}/npm-pack.json"
 
-          OPENCLAW_PLUGIN_NPM_RUNTIME_BUILD=0 \
-            OPENCLAW_PLUGIN_NPM_PACK_OUTPUT_DIR="${artifact_dir}" \
+          AFORA_PLUGIN_NPM_RUNTIME_BUILD=0 \
+            AFORA_PLUGIN_NPM_PACK_OUTPUT_DIR="${artifact_dir}" \
             bash .release-tooling/scripts/plugin-npm-publish.sh \
               --repo-root "$GITHUB_WORKSPACE" \
               --pack "${PACKAGE_DIR}" > "${pack_output}"
@@ -460,7 +460,7 @@ jobs:
           packed_package_json="${RUNNER_TEMP}/${EXTENSION_ID}-packed-package.json"
           packed_plugin_json="${RUNNER_TEMP}/${EXTENSION_ID}-packed-plugin.json"
           tar -xOf "${tarball_path}" package/package.json > "${packed_package_json}"
-          tar -xOf "${tarball_path}" package/openclaw.plugin.json > "${packed_plugin_json}"
+          tar -xOf "${tarball_path}" package/afora.plugin.json > "${packed_plugin_json}"
           source_package_json="${PACKAGE_DIR}/package.json"
           [[ -f "${source_package_json}" ]] || {
             echo "Source package.json is missing: ${source_package_json}." >&2
@@ -509,10 +509,10 @@ jobs:
           ) {
             fail(`Packed package version mismatch: expected ${process.env.PACKAGE_VERSION}.`);
           }
-          if (packageJson.openclaw?.install?.npmSpec !== process.env.INSTALL_NPM_SPEC) {
+          if (packageJson.afora?.install?.npmSpec !== process.env.INSTALL_NPM_SPEC) {
             fail(`Packed npm install route mismatch: expected ${process.env.INSTALL_NPM_SPEC}.`);
           }
-          if (repositoryUrl !== "https://github.com/openclaw/openclaw") {
+          if (repositoryUrl !== "https://github.com/AforaMosh/afora-agent") {
             fail(`Packed repository route mismatch: ${JSON.stringify(repositoryUrl)}.`);
           }
           if (typeof pluginManifest.id !== "string" || pluginManifest.id.length === 0) {
@@ -524,7 +524,7 @@ jobs:
 
           const manifest = {
             schemaVersion: 1,
-            kind: "openclaw-plugin-npm-preflight",
+            kind: "afora-plugin-npm-preflight",
             mode: "preflight-only",
             repository: process.env.REPOSITORY,
             workflow: {
@@ -724,7 +724,7 @@ jobs:
 
           const expectedManifest = {
             schemaVersion: 1,
-            kind: "openclaw-plugin-npm-preflight",
+            kind: "afora-plugin-npm-preflight",
             mode: "preflight-only",
             repository: process.env.REPOSITORY,
             workflow: {
@@ -794,7 +794,7 @@ jobs:
             .digest("hex");
           const packageJson = JSON.parse(packedPackageJson.toString("utf8"));
           const pluginManifest = JSON.parse(
-            execFileSync("tar", ["-xOf", tarballPath, "package/openclaw.plugin.json"], {
+            execFileSync("tar", ["-xOf", tarballPath, "package/afora.plugin.json"], {
               encoding: "utf8",
             }),
           );
@@ -809,10 +809,10 @@ jobs:
             packageJson.version !== process.env.PACKAGE_VERSION ||
             manifest.package.name !== process.env.PACKAGE_NAME ||
             manifest.package.version !== process.env.PACKAGE_VERSION ||
-            packageJson.openclaw?.install?.npmSpec !== process.env.INSTALL_NPM_SPEC ||
+            packageJson.afora?.install?.npmSpec !== process.env.INSTALL_NPM_SPEC ||
             manifest.package.installNpmSpec !== process.env.INSTALL_NPM_SPEC ||
             manifest.package.publishTag !== process.env.PUBLISH_TAG ||
-            repositoryUrl !== "https://github.com/openclaw/openclaw" ||
+            repositoryUrl !== "https://github.com/AforaMosh/afora-agent" ||
             typeof pluginManifest.id !== "string" ||
             pluginManifest.id.length === 0 ||
             manifest.package.pluginId !== pluginManifest.id ||
@@ -980,7 +980,7 @@ jobs:
             --publication-reason "Stable npm registry preflight selected ${PUBLISH_ROUTE}." \
             --publish-tag "$PUBLISH_TAG" \
             --publisher-policy-id plugin-npm-release-workflow \
-            --publisher-policy-schema openclaw.plugin-npm-publisher-policy/v1 \
+            --publisher-policy-schema afora.plugin-npm-publisher-policy/v1 \
             --publisher-policy-sha256 "$policy_sha256" \
             --route "$PUBLISH_ROUTE" \
             --source-package-json-sha256 "$SOURCE_PACKAGE_JSON_SHA256" \
@@ -1237,7 +1237,7 @@ jobs:
             --publication-reason "Stable npm registry preflight selected ${publish_route}." \
             --publish-tag "$PUBLISH_TAG" \
             --publisher-policy-id plugin-npm-release-workflow \
-            --publisher-policy-schema openclaw.plugin-npm-publisher-policy/v1 \
+            --publisher-policy-schema afora.plugin-npm-publisher-policy/v1 \
             --publisher-policy-sha256 "$policy_sha256" \
             --repository "$GITHUB_REPOSITORY" \
             --route "$publish_route" \
@@ -1307,8 +1307,8 @@ jobs:
       - name: Publish with trusted publisher
         if: steps.publication_evidence.outputs.publish_route == 'npm-oidc' && steps.npm_package_version.outputs.already_published != 'true'
         env:
-          OPENCLAW_NPM_PUBLISH_AUTH_MODE: trusted-publisher
-          OPENCLAW_PLUGIN_NPM_PUBLISH_TAG: ${{ inputs.npm_dist_tag == 'extended-stable' && inputs.npm_dist_tag || '' }}
+          AFORA_NPM_PUBLISH_AUTH_MODE: trusted-publisher
+          AFORA_PLUGIN_NPM_PUBLISH_TAG: ${{ inputs.npm_dist_tag == 'extended-stable' && inputs.npm_dist_tag || '' }}
         run: bash scripts/plugin-npm-publish.sh --repo-root .publication-target --publish "${{ matrix.plugin.packageDir }}"
 
       - name: Verify OIDC published runtime

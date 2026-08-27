@@ -210,7 +210,7 @@ function resetReaperThrottle(): void {
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.cronSessionReaperTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.cronSessionReaperTestApi")] = {
     resetReaperThrottle,
   };
 }

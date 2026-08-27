@@ -100,7 +100,7 @@ const MARKDOWN_PARSE_LIMIT = 40_000;
 // up to 50k characters enter this 500-entry LRU, keeping memory bounded.
 const MARKDOWN_CACHE_LIMIT = 500;
 const MARKDOWN_CACHE_MAX_CHARS = 50_000;
-const DOCS_ORIGIN = "https://docs.openclaw.ai";
+const DOCS_ORIGIN = "https://docs.afora.ai";
 const DOCS_ROOT_SEGMENTS = new Set([
   "agent-runtime-architecture",
   "announcements",
@@ -123,7 +123,7 @@ const DOCS_ROOT_SEGMENTS = new Set([
   "maturity-scorecard",
   "network",
   "nodes",
-  "openclaw-agent-runtime",
+  "afora-agent-runtime",
   "perplexity",
   "plan",
   "platforms",
@@ -301,8 +301,8 @@ const DOCS_SHORTLINK_PATHS = new Set([
   "/zai",
 ]);
 const APP_RESOURCE_ROOT_SEGMENTS = new Set([
-  "__openclaw",
-  "__openclaw__",
+  "__afora",
+  "__afora__",
   "_next",
   "api",
   "apple-touch-icon.png",
@@ -389,7 +389,7 @@ function segmentsStartWith(segments: string[], prefix: string[]): boolean {
 }
 
 function isControlUiResourcePath(segments: string[]): boolean {
-  if (segments.includes("__openclaw__") || segments.includes("__openclaw")) {
+  if (segments.includes("__afora__") || segments.includes("__afora")) {
     return true;
   }
   const segment = segments[0];

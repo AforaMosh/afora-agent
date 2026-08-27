@@ -1,11 +1,11 @@
-// OpenClaw SDK module implements transport behavior.
-import { GatewayClient } from "@openclaw/gateway-client";
+// Afora SDK module implements transport behavior.
+import { GatewayClient } from "@afora/gateway-client";
 import { EventHub } from "./event-hub.js";
 import type {
-  ConnectableOpenClawTransport,
+  ConnectableAforaTransport,
   GatewayEvent,
   GatewayRequestOptions,
-  OpenClawTransport,
+  AforaTransport,
 } from "./types.js";
 
 // Gateway transport adapter that converts the lower-level GatewayClient into the
@@ -69,8 +69,8 @@ function toGatewayEvent(event: unknown): GatewayEvent {
   };
 }
 
-/** Connectable SDK transport backed by @openclaw/gateway-client. */
-export class GatewayClientTransport implements ConnectableOpenClawTransport {
+/** Connectable SDK transport backed by @afora/gateway-client. */
+export class GatewayClientTransport implements ConnectableAforaTransport {
   private readonly eventsHub = new EventHub<GatewayEvent>({
     replayLimit: RAW_EVENT_REPLAY_LIMIT,
   });
@@ -174,7 +174,7 @@ export class GatewayClientTransport implements ConnectableOpenClawTransport {
 
 /** Narrow an SDK transport to one that supports explicit connect. */
 export function isConnectableTransport(
-  transport: OpenClawTransport,
-): transport is ConnectableOpenClawTransport {
+  transport: AforaTransport,
+): transport is ConnectableAforaTransport {
   return typeof (transport as { connect?: unknown }).connect === "function";
 }

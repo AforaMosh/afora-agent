@@ -27,18 +27,18 @@ const moduleLoaders: PluginModuleLoaderCache = new Map();
 const loadedFacadeModules = new Map<string, unknown>();
 const loadedFacadePluginIds = new Set<string>();
 let facadeLoaderSourceTransformFactory: PluginModuleLoaderFactory | undefined;
-let cachedOpenClawPackageRoot: string | undefined;
+let cachedAforaPackageRoot: string | undefined;
 
-function getOpenClawPackageRoot() {
-  if (cachedOpenClawPackageRoot) {
-    return cachedOpenClawPackageRoot;
+function getAforaPackageRoot() {
+  if (cachedAforaPackageRoot) {
+    return cachedAforaPackageRoot;
   }
-  cachedOpenClawPackageRoot =
+  cachedAforaPackageRoot =
     resolveLoaderPackageRoot({
       modulePath: fileURLToPath(import.meta.url),
       moduleUrl: import.meta.url,
     }) ?? fileURLToPath(new URL("../..", import.meta.url));
-  return cachedOpenClawPackageRoot;
+  return cachedAforaPackageRoot;
 }
 
 function resolveFacadeModuleLocation(params: {
@@ -50,7 +50,7 @@ function resolveFacadeModuleLocation(params: {
   return resolveBundledFacadeModuleLocation({
     ...params,
     currentModulePath: CURRENT_MODULE_PATH,
-    packageRoot: getOpenClawPackageRoot(),
+    packageRoot: getAforaPackageRoot(),
     bundledPluginsDir,
   });
 }
@@ -151,8 +151,8 @@ function resolveFacadeBoundaryOpenParams(boundaryRoot: string): {
   boundaryLabel: string;
   rejectHardlinks: boolean;
 } {
-  if (isPathAtOrInside(boundaryRoot, getOpenClawPackageRoot())) {
-    return { boundaryLabel: "OpenClaw package root", rejectHardlinks: false };
+  if (isPathAtOrInside(boundaryRoot, getAforaPackageRoot())) {
+    return { boundaryLabel: "Afora package root", rejectHardlinks: false };
   }
   const bundledDir = resolveBundledPluginsDir();
   if (bundledDir && isPathAtOrInside(boundaryRoot, bundledDir)) {
@@ -288,7 +288,7 @@ export function resetFacadeLoaderStateForTest(): void {
   loadedFacadePluginIds.clear();
   moduleLoaders.clear();
   facadeLoaderSourceTransformFactory = undefined;
-  cachedOpenClawPackageRoot = undefined;
+  cachedAforaPackageRoot = undefined;
 }
 
 /** Override source transform loader creation for facade-loader tests. */

@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { openOpenClawStateDatabase } from "../../state/openclaw-state-db.js";
+import { openAforaStateDatabase } from "../../state/afora-state-db.js";
 import type { CronJob } from "../types.js";
 import {
   loadedCronStoreFromRows,
@@ -45,7 +45,7 @@ describe("cron trigger SQLite codec", () => {
     } satisfies CronJob;
 
     const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cron-trigger-codec-"));
-    const handle = openOpenClawStateDatabase({ path: path.join(fixtureRoot, "state.sqlite") });
+    const handle = openAforaStateDatabase({ path: path.join(fixtureRoot, "state.sqlite") });
     try {
       replaceCronRows(handle.db, "test", { version: 1, jobs: [{ ...job, state: {} }] });
       updateCronRuntimeRows(handle.db, "test", { version: 1, jobs: [job] });

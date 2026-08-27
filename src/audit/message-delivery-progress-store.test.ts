@@ -3,12 +3,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import { OPENCLAW_STATE_SCHEMA_VERSION } from "../state/openclaw-state-db-contract.js";
-import { tableExists } from "../state/openclaw-state-db-schema-helpers.js";
+import { AFORA_STATE_SCHEMA_VERSION } from "../state/afora-state-db-contract.js";
+import { tableExists } from "../state/afora-state-db-schema-helpers.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { recordAuditEvent } from "./audit-event-store.js";
 import type { OutboundMessageProgressInput } from "./audit-event-types.js";
 import {
@@ -44,7 +44,7 @@ function ensurePinnedReaderCommit(repositoryRoot: string): void {
 }
 
 function databaseOptions() {
-  return { env: { OPENCLAW_STATE_DIR: tempDirs.make("message-progress-") } };
+  return { env: { AFORA_STATE_DIR: tempDirs.make("message-progress-") } };
 }
 
 function progressInput(
@@ -111,15 +111,15 @@ function terminalInput(
 }
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 describe("outbound message progress companion", () => {
   it("upgrades the predecessor progress table before a run-only insert", () => {
     const database = databaseOptions();
-    const { db } = openOpenClawStateDatabase(database);
+    const { db } = openAforaStateDatabase(database);
     const schema = fs
-      .readFileSync(new URL("../state/openclaw-state-schema.sql", import.meta.url), "utf8")
+      .readFileSync(new URL("../state/afora-state-schema.sql", import.meta.url), "utf8")
       .replace("  context_id TEXT,\n  execution_id TEXT,\n", "");
     const start = schema.indexOf("CREATE TABLE IF NOT EXISTS outbound_message_progress (");
     const end = schema.indexOf(") STRICT;", start);
@@ -138,8 +138,8 @@ describe("outbound message progress companion", () => {
 
   it("stays absent through startup, reads, and terminal-only writes at schema v9", () => {
     const database = databaseOptions();
-    const opened = openOpenClawStateDatabase(database);
-    expect(OPENCLAW_STATE_SCHEMA_VERSION).toBe(9);
+    const opened = openAforaStateDatabase(database);
+    expect(AFORA_STATE_SCHEMA_VERSION).toBe(9);
     expect(tableExists(opened.db, "outbound_message_progress")).toBe(false);
     expect(tableExists(opened.db, "outbound_message_execution_bindings")).toBe(false);
 
@@ -162,13 +162,13 @@ describe("outbound message progress companion", () => {
     const database = databaseOptions();
     const queued = progressInput("message.outbound.queued");
     const first = recordOutboundMessageProgress(queued, database);
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const recoveredReplay = recordOutboundMessageProgress(queued, database);
     recordOutboundMessageProgress(progressInput("message.outbound.platform-started"), database);
 
     expect(first).toMatchObject({ action: "message.outbound.queued", outcome: "queued" });
     expect(recoveredReplay).toBeUndefined();
-    const { db } = openOpenClawStateDatabase(database);
+    const { db } = openAforaStateDatabase(database);
     expect(tableExists(db, "outbound_message_progress")).toBe(true);
     expect(
       (
@@ -219,7 +219,7 @@ describe("outbound message progress companion", () => {
     });
     expect(first.events).toHaveLength(1);
     expect(first.nextCursor).toBeDefined();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
 
     const second = pageOutboundMessageAuditEventsForRun({
       runId: "run-progress",
@@ -254,11 +254,11 @@ describe("outbound message progress companion", () => {
       }),
       database,
     );
-    openOpenClawStateDatabase(database);
+    openAforaStateDatabase(database);
     expect(
-      tableExists(openOpenClawStateDatabase(database).db, "outbound_message_execution_bindings"),
+      tableExists(openAforaStateDatabase(database).db, "outbound_message_execution_bindings"),
     ).toBe(true);
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
 
     const repositoryRoot = process.cwd();
     ensurePinnedReaderCommit(repositoryRoot);
@@ -283,14 +283,14 @@ describe("outbound message progress companion", () => {
           "--input-type=module",
           "--eval",
           `
-            const stateDir = process.env.OPENCLAW_C04_PINNED_READER_STATE_DIR;
+            const stateDir = process.env.AFORA_C04_PINNED_READER_STATE_DIR;
             const { listAuditEvents } = await import("./src/audit/audit-event-store.ts");
             const {
-              closeOpenClawStateDatabaseForTest,
-              openOpenClawStateDatabase,
-            } = await import("./src/state/openclaw-state-db.ts");
-            const database = { env: { ...process.env, OPENCLAW_STATE_DIR: stateDir } };
-            const opened = openOpenClawStateDatabase(database);
+              closeAforaStateDatabaseForTest,
+              openAforaStateDatabase,
+            } = await import("./src/state/afora-state-db.ts");
+            const database = { env: { ...process.env, AFORA_STATE_DIR: stateDir } };
+            const opened = openAforaStateDatabase(database);
             const schemaVersion = opened.db.prepare("PRAGMA user_version").get().user_version;
             const quickCheck = opened.db.prepare("PRAGMA quick_check").get().quick_check;
             const events = listAuditEvents({
@@ -298,7 +298,7 @@ describe("outbound message progress companion", () => {
               limit: 10,
               database,
             }).events;
-            closeOpenClawStateDatabaseForTest();
+            closeAforaStateDatabaseForTest();
             console.log("C04_PINNED_READER_RESULT=" + JSON.stringify({
               schemaVersion,
               quickCheck,
@@ -311,7 +311,7 @@ describe("outbound message progress companion", () => {
           cwd: pinnedCheckout,
           env: {
             ...process.env,
-            OPENCLAW_C04_PINNED_READER_STATE_DIR: database.env.OPENCLAW_STATE_DIR,
+            AFORA_C04_PINNED_READER_STATE_DIR: database.env.AFORA_STATE_DIR,
           },
           encoding: "utf8",
           stdio: ["ignore", "pipe", "pipe"],
@@ -334,7 +334,7 @@ describe("outbound message progress companion", () => {
       });
     }
 
-    expect(openOpenClawStateDatabase(database).db.prepare("PRAGMA quick_check").get()).toEqual({
+    expect(openAforaStateDatabase(database).db.prepare("PRAGMA quick_check").get()).toEqual({
       quick_check: "ok",
     });
     expect(
@@ -354,7 +354,7 @@ describe("outbound message progress companion", () => {
       progressInput("message.outbound.queued", { occurredAt }),
       database,
     );
-    const { db } = openOpenClawStateDatabase(database);
+    const { db } = openAforaStateDatabase(database);
     db.prepare("DELETE FROM outbound_message_progress").run();
     const insert = db.prepare(`
       INSERT INTO outbound_message_progress (
@@ -432,7 +432,7 @@ describe("outbound message progress companion", () => {
       occurredAt,
       rowId: progress?.sequence ?? 0,
     };
-    openOpenClawStateDatabase(database).db.prepare("DELETE FROM outbound_message_progress").run();
+    openAforaStateDatabase(database).db.prepare("DELETE FROM outbound_message_progress").run();
 
     expect(() =>
       pageOutboundMessageAuditEventsForRun({
@@ -463,7 +463,7 @@ describe("outbound message progress companion", () => {
     recordAuditEvent(terminalInput({ occurredAt: Date.now() }), database);
 
     pruneExpiredOutboundMessageProgress({ database, now: Date.now() });
-    const { db } = openOpenClawStateDatabase(database);
+    const { db } = openAforaStateDatabase(database);
     expect(
       (
         db.prepare("SELECT COUNT(*) AS count FROM outbound_message_progress").get() as {

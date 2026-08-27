@@ -388,7 +388,7 @@ suite.define(() => {
 
         await page.goto(`${suite.server.baseUrl}usage`);
         await page.locator(".daily-chart-compact").waitFor({ state: "visible", timeout: 10_000 });
-        const agentScope = page.locator(".agent-scope-control openclaw-agent-select");
+        const agentScope = page.locator(".agent-scope-control afora-agent-select");
         await agentScope.locator(".agent-select__trigger").click();
         await agentScope
           .locator("wa-dropdown-item[data-agent-option]")
@@ -470,7 +470,7 @@ suite.define(() => {
         await expect.poll(() => topProviders.textContent()).toContain("No provider data");
         await expect.poll(() => topProviders.textContent()).not.toContain("openai");
 
-        if (process.env.OPENCLAW_CAPTURE_UI_PROOF === "1") {
+        if (process.env.AFORA_CAPTURE_UI_PROOF === "1") {
           const artifactDir = path.join(
             process.cwd(),
             ".artifacts",

@@ -6,9 +6,9 @@ import { connectGatewayClient } from "../../src/gateway/test-helpers.e2e.js";
 import { loadOrCreateDeviceIdentity } from "../../src/infra/device-identity.js";
 import { sleep } from "../../src/utils.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../../src/utils/message-channel.js";
-import { createOpenClawTestInstance, type OpenClawTestInstance } from "./openclaw-test-instance.js";
+import { createAforaTestInstance, type AforaTestInstance } from "./afora-test-instance.js";
 
-export type GatewayInstance = OpenClawTestInstance;
+export type GatewayInstance = AforaTestInstance;
 
 const GATEWAY_CONNECT_STATUS_TIMEOUT_MS = 10_000;
 const GATEWAY_NODE_STATUS_TIMEOUT_MS = 15_000;
@@ -22,7 +22,7 @@ type PostJsonOptions = {
 };
 
 export async function spawnGatewayInstance(name: string): Promise<GatewayInstance> {
-  const inst = await createOpenClawTestInstance({ name });
+  const inst = await createAforaTestInstance({ name });
   try {
     await inst.startGateway();
     return inst;

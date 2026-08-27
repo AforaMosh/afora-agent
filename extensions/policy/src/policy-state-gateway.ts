@@ -1,5 +1,5 @@
 // Policy plugin gateway exposure evidence.
-import { asNonArrayRecord, isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { asNonArrayRecord, isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { ocPathSegment } from "./policy-state-helpers.js";
 import type { PolicyGatewayExposureEvidence } from "./policy-state-types.js";
 
@@ -17,7 +17,7 @@ export function scanPolicyGatewayExposure(
   entries.push({
     id: bind === undefined ? "gateway-bind-default" : "gateway-bind",
     kind: "bind",
-    source: "oc://openclaw.config/gateway/bind",
+    source: "oc://afora.config/gateway/bind",
     value: bind ?? (tailscaleForcesLoopback ? "loopback" : "runtime-default"),
     nonLoopback:
       bind === undefined
@@ -31,7 +31,7 @@ export function scanPolicyGatewayExposure(
     entries.push({
       id: "gateway-custom-bind-host",
       kind: "bind",
-      source: "oc://openclaw.config/gateway/customBindHost",
+      source: "oc://afora.config/gateway/customBindHost",
       value: customBindHost,
       nonLoopback: isRuntimeNonLoopbackCustomBindHost(customBindHost),
     });
@@ -41,14 +41,14 @@ export function scanPolicyGatewayExposure(
   entries.push({
     id: "gateway-auth-mode",
     kind: "auth",
-    source: "oc://openclaw.config/gateway/auth/mode",
+    source: "oc://afora.config/gateway/auth/mode",
     value: typeof auth.mode === "string" ? auth.mode : "token",
     explicit: typeof auth.mode === "string",
   });
   entries.push({
     id: "gateway-auth-rate-limit",
     kind: "authRateLimit",
-    source: "oc://openclaw.config/gateway/auth/rateLimit",
+    source: "oc://afora.config/gateway/auth/rateLimit",
     value: isRecord(auth.rateLimit),
     explicit: isRecord(auth.rateLimit),
   });
@@ -59,35 +59,35 @@ export function scanPolicyGatewayExposure(
     "gateway-control-ui-enabled",
     "controlUi",
     controlUi.enabled,
-    "oc://openclaw.config/gateway/controlUi/enabled",
+    "oc://afora.config/gateway/controlUi/enabled",
   );
   pushGatewayBooleanEvidence(
     entries,
     "gateway-control-ui-insecure-auth",
     "controlUi",
     false,
-    "oc://openclaw.invariant/gateway/controlUi/deviceIdentity",
+    "oc://afora.invariant/gateway/controlUi/deviceIdentity",
   );
   pushGatewayBooleanEvidence(
     entries,
     "gateway-control-ui-device-auth-disabled",
     "controlUi",
     false,
-    "oc://openclaw.invariant/gateway/controlUi/deviceIdentity",
+    "oc://afora.invariant/gateway/controlUi/deviceIdentity",
   );
   pushGatewayBooleanEvidence(
     entries,
     "gateway-control-ui-host-origin-fallback",
     "controlUi",
     controlUi.dangerouslyAllowHostHeaderOriginFallback,
-    "oc://openclaw.config/gateway/controlUi/dangerouslyAllowHostHeaderOriginFallback",
+    "oc://afora.config/gateway/controlUi/dangerouslyAllowHostHeaderOriginFallback",
   );
 
   if (typeof tailscale.mode === "string") {
     entries.push({
       id: "gateway-tailscale-mode",
       kind: "tailscale",
-      source: "oc://openclaw.config/gateway/tailscale/mode",
+      source: "oc://afora.config/gateway/tailscale/mode",
       value: tailscale.mode,
     });
   }
@@ -95,7 +95,7 @@ export function scanPolicyGatewayExposure(
     entries.push({
       id: "gateway-tailscale-preserve-funnel",
       kind: "tailscale",
-      source: "oc://openclaw.config/gateway/tailscale/preserveFunnel",
+      source: "oc://afora.config/gateway/tailscale/preserveFunnel",
       value: "funnel",
     });
   }
@@ -105,14 +105,14 @@ export function scanPolicyGatewayExposure(
     entries.push({
       id: "gateway-mode-remote",
       kind: "remote",
-      source: "oc://openclaw.config/gateway/mode",
+      source: "oc://afora.config/gateway/mode",
       value: "remote",
     });
     if (typeof remote.url === "string" && remote.url.trim() !== "") {
       entries.push({
         id: "gateway-remote-url",
         kind: "remote",
-        source: "oc://openclaw.config/gateway/remote/url",
+        source: "oc://afora.config/gateway/remote/url",
         value: true,
       });
     }
@@ -149,7 +149,7 @@ function pushGatewayHttpEndpointEvidence(
   if (!isRecord(config)) {
     return;
   }
-  const source = `oc://openclaw.config/gateway/http/endpoints/${endpoint}`;
+  const source = `oc://afora.config/gateway/http/endpoints/${endpoint}`;
   const enabled = config.enabled === true;
   if (enabled) {
     entries.push({
@@ -222,7 +222,7 @@ function pushGatewayNodeCommandEvidence(
       entries.push({
         id: `gateway-node-deny-command-${normalized}`,
         kind: "nodeDenyCommand",
-        source: `oc://openclaw.config/gateway/nodes/commands/deny/#${index}`,
+        source: `oc://afora.config/gateway/nodes/commands/deny/#${index}`,
         value: normalized,
         command: normalized,
       });
@@ -243,7 +243,7 @@ function pushGatewayNodeCommandEvidence(
     entries.push({
       id: `gateway-node-command-${normalized}`,
       kind: "nodeCommand",
-      source: `oc://openclaw.config/gateway/nodes/commands/allow/#${index}`,
+      source: `oc://afora.config/gateway/nodes/commands/allow/#${index}`,
       value: normalized,
       command: normalized,
     });

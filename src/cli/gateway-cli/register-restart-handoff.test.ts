@@ -65,7 +65,7 @@ describe("gateway restart-handoff commands", () => {
 
     expect(mocks.defaultRuntime.writeJson).toHaveBeenCalledWith({
       ok: true,
-      protocol: "openclaw.gateway.restart-handoff",
+      protocol: "afora.gateway.restart-handoff",
       protocolVersion: 1,
       operations: ["consume"],
     });
@@ -87,7 +87,7 @@ describe("gateway restart-handoff commands", () => {
     });
     expect(mocks.defaultRuntime.writeJson).toHaveBeenCalledWith({
       ok: true,
-      protocol: "openclaw.gateway.restart-handoff",
+      protocol: "afora.gateway.restart-handoff",
       protocolVersion: 1,
       status: "none",
       reason: "missing",
@@ -152,7 +152,7 @@ describe("gateway restart-handoff commands", () => {
     expect(mocks.consumeGatewayRestartHandoffSync).not.toHaveBeenCalled();
     expect(mocks.defaultRuntime.writeJson).toHaveBeenCalledWith({
       ok: false,
-      protocol: "openclaw.gateway.restart-handoff",
+      protocol: "afora.gateway.restart-handoff",
       protocolVersion: 1,
       status: "error",
       reason: "invalid-expected-pid",
@@ -175,7 +175,7 @@ describe("gateway restart-handoff commands", () => {
     );
     expect(mocks.defaultRuntime.writeJson).toHaveBeenCalledWith({
       ok: false,
-      protocol: "openclaw.gateway.restart-handoff",
+      protocol: "afora.gateway.restart-handoff",
       protocolVersion: 1,
       status: "error",
       reason: "store-unavailable",

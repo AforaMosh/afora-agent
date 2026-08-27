@@ -1,6 +1,6 @@
 import CoreLocation
 import Foundation
-import OpenClawKit
+import AforaKit
 import UIKit
 
 @MainActor
@@ -49,7 +49,7 @@ final class LocationService: NSObject, CLLocationManagerDelegate, ConcurrentLoca
         self.cachedAuthorizationSnapshot
     }
 
-    func ensureAuthorization(mode: OpenClawLocationMode) async -> CLAuthorizationStatus {
+    func ensureAuthorization(mode: AforaLocationMode) async -> CLAuthorizationStatus {
         guard CLLocationManager.locationServicesEnabled() else { return .denied }
 
         let status = self.authorizationStatus()
@@ -74,8 +74,8 @@ final class LocationService: NSObject, CLLocationManagerDelegate, ConcurrentLoca
     }
 
     func currentLocation(
-        params: OpenClawLocationGetParams,
-        desiredAccuracy: OpenClawLocationAccuracy,
+        params: AforaLocationGetParams,
+        desiredAccuracy: AforaLocationAccuracy,
         maxAgeMs: Int?,
         timeoutMs: Int?) async throws -> CLLocation
     {

@@ -162,7 +162,7 @@ function agentHarnessRunOutcome(
 }
 
 function shouldEmitAgentRunDiagnostics(harness: AgentHarness): boolean {
-  return harness.id !== "openclaw";
+  return harness.id !== "afora";
 }
 
 function diagnosticChannel(params: AgentHarnessAttemptParams): string | undefined {
@@ -326,7 +326,7 @@ export async function runAgentHarnessLifecycleAttempt(
     phase = "prepare";
     assertAgentHarnessContextEngineSupport(harness, params);
     if (shouldEmitAgentRunDiagnostics(harness) && activeHarnessTrace) {
-      // Non-OpenClaw harnesses get a child run trace so provider/harness spans
+      // Non-Afora harnesses get a child run trace so provider/harness spans
       // stay linked without reusing the parent harness trace id.
       agentRunTrace = freezeDiagnosticTraceContext(
         createChildDiagnosticTraceContext(activeHarnessTrace),

@@ -1,5 +1,5 @@
 /**
- * Top-level `openclaw onboard` command entrypoint.
+ * Top-level `afora onboard` command entrypoint.
  *
  * It validates global setup flags, performs optional reset handling, and then
  * routes to interactive or non-interactive onboarding.
@@ -8,7 +8,7 @@ import { formatCliCommand } from "../cli/command-format.js";
 import { formatInvalidPortOption } from "../cli/error-format.js";
 import { readConfigFileSnapshot, resolveGatewayPort } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isValidEnvSecretRefId } from "../config/types.secrets.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { assertSupportedRuntime } from "../infra/runtime-guard.js";
@@ -68,7 +68,7 @@ function validatePreflightOptions(opts: OnboardOptions, runtime: RuntimeEnv): bo
   if (opts.mode !== undefined && opts.mode !== "local" && opts.mode !== "remote") {
     return rejectOption(
       runtime,
-      `Invalid --mode "${String(opts.mode)}". Use "local" or "remote", or run ${formatCliCommand("openclaw onboard")} for interactive setup.`,
+      `Invalid --mode "${String(opts.mode)}". Use "local" or "remote", or run ${formatCliCommand("afora onboard")} for interactive setup.`,
     );
   }
   const remoteOnlyFlags = [
@@ -122,7 +122,7 @@ function validatePreflightOptions(opts: OnboardOptions, runtime: RuntimeEnv): bo
     if (!isValidEnvSecretRefId(gatewayTokenRefEnv)) {
       return rejectOption(
         runtime,
-        "Invalid --gateway-token-ref-env. Use an environment variable name like OPENCLAW_GATEWAY_TOKEN.",
+        "Invalid --gateway-token-ref-env. Use an environment variable name like AFORA_GATEWAY_TOKEN.",
       );
     }
     if (opts.gatewayToken !== undefined) {
@@ -134,14 +134,14 @@ function validatePreflightOptions(opts: OnboardOptions, runtime: RuntimeEnv): bo
     if (!process.env[gatewayTokenRefEnv]?.trim()) {
       return rejectOption(
         runtime,
-        `Environment variable "${gatewayTokenRefEnv}" is missing or empty. Export it first, then rerun ${formatCliCommand("openclaw onboard")}.`,
+        `Environment variable "${gatewayTokenRefEnv}" is missing or empty. Export it first, then rerun ${formatCliCommand("afora onboard")}.`,
       );
     }
   }
   if (opts.nonInteractive && opts.mode === "remote" && !opts.remoteUrl?.trim()) {
     return rejectOption(
       runtime,
-      `Missing --remote-url for remote mode. Example: ${formatCliCommand("openclaw onboard --non-interactive --mode remote --remote-url ws://127.0.0.1:3000")}.`,
+      `Missing --remote-url for remote mode. Example: ${formatCliCommand("afora onboard --non-interactive --mode remote --remote-url ws://127.0.0.1:3000")}.`,
     );
   }
   if (opts.nonInteractive && opts.mode === "remote" && opts.remoteUrl?.trim()) {
@@ -157,7 +157,7 @@ function validatePreflightOptions(opts: OnboardOptions, runtime: RuntimeEnv): bo
   ) {
     return rejectOption(
       runtime,
-      `--import-from is required for non-interactive migration import. Run ${formatCliCommand("openclaw migrate list")} to choose a provider.`,
+      `--import-from is required for non-interactive migration import. Run ${formatCliCommand("afora migrate list")} to choose a provider.`,
     );
   }
   return true;
@@ -166,7 +166,7 @@ function validatePreflightOptions(opts: OnboardOptions, runtime: RuntimeEnv): bo
 async function validateResetAuthChoice(params: {
   opts: OnboardOptions;
   runtime: RuntimeEnv;
-  baseConfig: OpenClawConfig;
+  baseConfig: AforaConfig;
   workspaceDir: string;
   resetScope: ResetScope;
 }): Promise<boolean> {
@@ -205,7 +205,7 @@ async function validateResetAuthChoice(params: {
   if (!availableChoices.has(authChoice)) {
     return rejectOption(
       params.runtime,
-      `Auth choice "${authChoice}" was not matched to a provider setup flow. Run ${formatCliCommand("openclaw onboard")} to choose interactively.`,
+      `Auth choice "${authChoice}" was not matched to a provider setup flow. Run ${formatCliCommand("afora onboard")} to choose interactively.`,
     );
   }
   const providerAuthChoices: Array<ProviderAuthChoiceMetadata & { providerAliases?: string[] }> = [
@@ -392,7 +392,7 @@ function validateResetMigrationImport(params: {
 function validateResetNonInteractiveGateway(params: {
   opts: OnboardOptions;
   runtime: RuntimeEnv;
-  baseConfig: OpenClawConfig;
+  baseConfig: AforaConfig;
 }): boolean {
   if (!params.opts.nonInteractive || (params.opts.mode ?? "local") === "remote") {
     return true;
@@ -415,7 +415,7 @@ function validateResetNonInteractiveGateway(params: {
  * them with Boolean(). False-valued explicit choices preserve undefined when
  * omitted, so daemon, Tailscale-reset, and custom-model input overrides are
  * special-cased. `--modern` never reaches this dispatch; the command layer
- * routes it through the inference-gated OpenClaw.
+ * routes it through the inference-gated Afora.
  */
 const GUIDED_SAFE_ONBOARD_KEYS = new Set([
   "workspace",
@@ -510,7 +510,7 @@ export async function setupWizardCommand(
     normalizedOpts.secretInputMode !== "ref" // pragma: allowlist secret
   ) {
     runtime.error(
-      `Invalid --secret-input-mode. Use "plaintext" or "ref", or run ${formatCliCommand("openclaw onboard")} for the interactive setup.`,
+      `Invalid --secret-input-mode. Use "plaintext" or "ref", or run ${formatCliCommand("afora onboard")} for the interactive setup.`,
     );
     runtime.exit(1);
     return;
@@ -518,14 +518,14 @@ export async function setupWizardCommand(
 
   if (normalizedOpts.resetScope && !VALID_RESET_SCOPES.has(normalizedOpts.resetScope)) {
     runtime.error(
-      `Invalid --reset-scope. Use "config", "config+creds+sessions", or "full". Run ${formatCliCommand("openclaw onboard --reset --reset-scope config")} for a config-only reset.`,
+      `Invalid --reset-scope. Use "config", "config+creds+sessions", or "full". Run ${formatCliCommand("afora onboard --reset --reset-scope config")} for a config-only reset.`,
     );
     runtime.exit(1);
     return;
   }
   if (normalizedOpts.resetScope && !normalizedOpts.reset) {
     runtime.error(
-      `--reset-scope requires --reset. Re-run with ${formatCliCommand(`openclaw onboard --reset --reset-scope ${normalizedOpts.resetScope}`)}.`,
+      `--reset-scope requires --reset. Re-run with ${formatCliCommand(`afora onboard --reset --reset-scope ${normalizedOpts.resetScope}`)}.`,
     );
     runtime.exit(1);
     return;
@@ -537,8 +537,8 @@ export async function setupWizardCommand(
     runtime.error(
       [
         "Non-interactive setup requires explicit risk acknowledgement.",
-        "Read: https://docs.openclaw.ai/security",
-        `Re-run with: ${formatCliCommand("openclaw onboard --non-interactive --accept-risk ...")}`,
+        "Read: https://docs.afora.ai/security",
+        `Re-run with: ${formatCliCommand("afora onboard --non-interactive --accept-risk ...")}`,
       ].join("\n"),
     );
     runtime.exit(1);
@@ -556,10 +556,10 @@ export async function setupWizardCommand(
   if (process.platform === "win32") {
     runtime.log(
       [
-        "Windows detected - OpenClaw runs great on WSL2!",
+        "Windows detected - Afora runs great on WSL2!",
         "Native Windows might be trickier.",
         "Quick setup: wsl --install (one command, one reboot)",
-        "Guide: https://docs.openclaw.ai/windows",
+        "Guide: https://docs.afora.ai/windows",
       ].join("\n"),
     );
   }
@@ -577,7 +577,7 @@ export async function setupWizardCommand(
       const resetScope: ResetScope = normalizedOpts.resetScope ?? "config+creds+sessions";
       // Every reset scope removes the config file. Validate setup against the
       // empty config and requested/default workspace that dispatch will see.
-      const setupBaseConfig: OpenClawConfig = {};
+      const setupBaseConfig: AforaConfig = {};
       const setupWorkspaceDir = resolveUserPath(normalizedOpts.workspace ?? DEFAULT_WORKSPACE);
       const configuredWorkspace: unknown =
         normalizedOpts.workspace ?? baseConfig.agents?.defaults?.workspace;

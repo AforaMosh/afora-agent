@@ -2,7 +2,7 @@
 import type { BaseProbeResult } from "../channels/plugins/types.public.js";
 import { withTimeout } from "../utils/with-timeout.js";
 
-export { estimateStringChars } from "@openclaw/normalization-core/cjk-chars";
+export { estimateStringChars } from "@afora/normalization-core/cjk-chars";
 
 export {
   estimateToolResultTextChars,

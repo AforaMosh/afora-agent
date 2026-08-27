@@ -1,8 +1,8 @@
 // File Transfer plugin module implements file write tool behavior.
 import crypto from "node:crypto";
-import type { AnyAgentTool } from "openclaw/plugin-sdk/agent-harness-runtime";
-import { readMediaBuffer } from "openclaw/plugin-sdk/media-store";
-import { asBoolean, asNonArrayRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import type { AnyAgentTool } from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { readMediaBuffer } from "afora-agent/plugin-sdk/media-store";
+import { asBoolean, asNonArrayRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { appendFileTransferAudit } from "../shared/audit.js";
 import { inspectStrictBase64 } from "../shared/base64.js";
 import { humanSize } from "../shared/params.js";

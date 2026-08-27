@@ -1,16 +1,16 @@
-import { describeAccountSnapshot } from "openclaw/plugin-sdk/account-helpers";
+import { describeAccountSnapshot } from "afora-agent/plugin-sdk/account-helpers";
 import {
   buildChannelOutboundSessionRoute,
   buildThreadAwareOutboundSessionRoute,
   createChatChannelPlugin,
-} from "openclaw/plugin-sdk/channel-core";
-import { createChannelMessageAdapterFromOutbound } from "openclaw/plugin-sdk/channel-outbound";
-import { createChannelDirectoryAdapter } from "openclaw/plugin-sdk/directory-runtime";
-import { parseThreadSessionSuffix } from "openclaw/plugin-sdk/routing";
+} from "afora-agent/plugin-sdk/channel-core";
+import { createChannelMessageAdapterFromOutbound } from "afora-agent/plugin-sdk/channel-outbound";
+import { createChannelDirectoryAdapter } from "afora-agent/plugin-sdk/directory-runtime";
+import { parseThreadSessionSuffix } from "afora-agent/plugin-sdk/routing";
 import {
   createComputedAccountStatusAdapter,
   createDefaultChannelRuntimeState,
-} from "openclaw/plugin-sdk/status-helpers";
+} from "afora-agent/plugin-sdk/status-helpers";
 import { BuzzConfigSchema } from "./config-schema.js";
 import {
   listBuzzDirectoryGroupsFromConfig,
@@ -61,7 +61,7 @@ export const buzzPlugin = createChatChannelPlugin<ResolvedBuzzAccount, BuzzProbe
       selectionLabel: "Buzz",
       docsPath: "/channels/buzz",
       docsLabel: "buzz",
-      blurb: "Connect OpenClaw agents to Buzz team rooms.",
+      blurb: "Connect Afora agents to Buzz team rooms.",
       markdownCapable: true,
       order: 56,
     },

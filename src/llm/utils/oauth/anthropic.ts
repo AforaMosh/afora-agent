@@ -46,7 +46,7 @@ const REDIRECT_URI = `http://localhost:${CALLBACK_PORT}${CALLBACK_PATH}`;
 const CALLBACK_TIMEOUT_MS = 5 * 60 * 1000;
 
 function resolveCallbackHost(env: NodeJS.ProcessEnv = process.env): string {
-  const host = env.OPENCLAW_OAUTH_CALLBACK_HOST?.trim() || DEFAULT_CALLBACK_HOST;
+  const host = env.AFORA_OAUTH_CALLBACK_HOST?.trim() || DEFAULT_CALLBACK_HOST;
   if (!LOOPBACK_CALLBACK_HOSTS.has(host)) {
     throw new Error("Anthropic OAuth callback host must be localhost, 127.0.0.1, or ::1");
   }
@@ -143,7 +143,7 @@ async function startCallbackServer(expectedState: string): Promise<CallbackServe
     bindHostname: resolveCallbackHost(),
     renderSuccess: () => ({
       body: oauthSuccessHtml(
-        "Authorization received; return to the terminal while OpenClaw finishes.",
+        "Authorization received; return to the terminal while Afora finishes.",
       ),
       contentType: "text/html; charset=utf-8",
     }),

@@ -2,10 +2,10 @@
 import { describe, expect, it } from "vitest";
 import { buildModelAliasIndex } from "../../agents/model-selection.js";
 import { createModelVisibilityPolicy } from "../../agents/model-visibility-policy.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveModelDirectiveSelection } from "./model-selection-directive.js";
 
-function resolveDirective(params: { cfg: OpenClawConfig; raw: string; agentId?: string }) {
+function resolveDirective(params: { cfg: AforaConfig; raw: string; agentId?: string }) {
   const defaultProvider = "openai";
   const defaultModel = "safe";
   const policy = createModelVisibilityPolicy({
@@ -58,7 +58,7 @@ describe("resolveModelDirectiveSelection", () => {
       name: "defaults",
       cfg: {
         agents: { defaults: { models: { "openai/safe": {} } } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       agentId: undefined,
       repairPath: "agents.defaults.modelPolicy.allow",
       legacyPath: "agents.defaults.models",

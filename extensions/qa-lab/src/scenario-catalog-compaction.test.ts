@@ -16,7 +16,7 @@ describe("qa compaction scenario catalog", () => {
       faultMode: "reasoning-only-output-once",
       summaryMarker: "QA-COMPACTION-REASONING-RECOVERED-SUMMARY",
     },
-  ])("keeps $id on the OpenClaw compaction owner", ({ id, coverage, faultMode, summaryMarker }) => {
+  ])("keeps $id on the Afora compaction owner", ({ id, coverage, faultMode, summaryMarker }) => {
     const scenario = requireFlowScenario(readQaScenarioById(id));
     const flow = JSON.stringify(scenario.execution.flow);
     const serializedScenario = JSON.stringify(scenario);
@@ -27,7 +27,7 @@ describe("qa compaction scenario catalog", () => {
     expect(scenario.gatewayConfigPatch).toMatchObject({
       agents: { defaults: { compaction: { mode: "default" } } },
     });
-    expect(flow).toContain("env.runtimeId === 'openclaw'");
+    expect(flow).toContain("env.runtimeId === 'afora'");
     expect(flow).toContain("initialRequests[0].errorCode === 'context_length_exceeded'");
     expect(flow).toContain("initialRequests.length === 2");
     expect(flow).toContain("compactionSummaryRequests.length === 2");
@@ -52,7 +52,7 @@ describe("qa compaction scenario catalog", () => {
     expect(serializedScenario).not.toContain("codex");
   });
 
-  it("assigns compaction retry and pruning to OpenClaw with an early Codex gap", () => {
+  it("assigns compaction retry and pruning to Afora with an early Codex gap", () => {
     const scenario = requireFlowScenario(readQaScenarioById("compaction-retry-mutating-tool"));
     const flow = JSON.stringify(scenario.execution.flow);
     const serializedScenario = JSON.stringify(scenario);
@@ -116,13 +116,13 @@ describe("qa compaction scenario catalog", () => {
     ]);
     expect(scenario.coverage?.secondary ?? []).toEqual([]);
     expect(scenario.successCriteria).toContain(
-      "One coded over-threshold provider overflow produces one persisted OpenClaw overflow compaction and one compacted retry retaining durable current context.",
+      "One coded over-threshold provider overflow produces one persisted Afora overflow compaction and one compacted retry retaining durable current context.",
     );
     expect(scenario.successCriteria).toContain(
-      "OpenClaw performs exactly one successful write, then one terminal continuation after zero-or-more causally linked waits, and returns the exact file content and final marker.",
+      "Afora performs exactly one successful write, then one terminal continuation after zero-or-more causally linked waits, and returns the exact file content and final marker.",
     );
     expect(scenario.successCriteria).toContain(
-      "OpenClaw proves session-memory.pruning by retaining a nonempty contiguous suffix ending at block 15 while pruning marker block 10.",
+      "Afora proves session-memory.pruning by retaining a nonempty contiguous suffix ending at block 15 while pruning marker block 10.",
     );
     expect(scenario.successCriteria).toContain(
       "The Codex runtime-pair cell reports a known harness gap before gateway, session, or provider work and makes no compaction coverage claim.",
@@ -151,7 +151,7 @@ describe("qa compaction scenario catalog", () => {
       | Record<string, unknown>
       | undefined;
     expect(runtimeGuard?.assert).toMatchObject({
-      expr: expect.stringContaining("env.runtimeId === 'openclaw'"),
+      expr: expect.stringContaining("env.runtimeId === 'afora'"),
     });
 
     const knownGapIndex = flow.indexOf(knownGap);
@@ -279,7 +279,7 @@ describe("qa compaction scenario catalog", () => {
     expect(stableCellIdAssertIndex).toBeGreaterThan(distinctCallIdsAssertIndex);
     expect(terminalEvidenceAssertIndex).toBeGreaterThan(stableCellIdAssertIndex);
     expect(outboundWaitIndex).toBeGreaterThan(terminalEvidenceAssertIndex);
-    expect(flow).not.toContain("config.expectedOpenClawToolResult");
+    expect(flow).not.toContain("config.expectedAforaToolResult");
     expect(flow).not.toContain("String(request.toolOutput ?? '').includes(`---");
     expect(flow).not.toContain("String(request.toolOutput ?? '').includes(`+++");
     expect(compactionSummaryRequestsExpr).toContain("request.requestKind === 'compaction-summary'");

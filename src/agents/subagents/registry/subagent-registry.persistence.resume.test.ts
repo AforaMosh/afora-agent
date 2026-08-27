@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import "./subagent-registry.mocks.shared.js";
-import { closeOpenClawStateDatabaseForTest as closeSeedStateDatabase } from "../../../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest as closeSeedStateDatabase } from "../../../state/afora-state-db.js";
 import { withEnvAsync } from "../../../test-utils/env.js";
 import { cleanupSessionStateForTest } from "../../../test-utils/session-state-cleanup.js";
 import {
@@ -26,7 +26,7 @@ vi.mock("../announce/subagent-announce.js", () => ({
 let mod: typeof import("./subagent-registry.test-helpers.js");
 let callGatewayModule: typeof import("../../../gateway/call.js");
 let agentEventsModule: typeof import("../../../infra/agent-events.js");
-let registryStateDbModule: typeof import("../../../state/openclaw-state-db.js");
+let registryStateDbModule: typeof import("../../../state/afora-state-db.js");
 
 describe("subagent registry persistence resume", () => {
   let tempStateDir: string | null = null;
@@ -36,7 +36,7 @@ describe("subagent registry persistence resume", () => {
     mod = await import("./subagent-registry.test-helpers.js");
     callGatewayModule = await import("../../../gateway/call.js");
     agentEventsModule = await import("../../../infra/agent-events.js");
-    registryStateDbModule = await import("../../../state/openclaw-state-db.js");
+    registryStateDbModule = await import("../../../state/afora-state-db.js");
   });
 
   beforeEach(() => {
@@ -60,7 +60,7 @@ describe("subagent registry persistence resume", () => {
 
   afterEach(async () => {
     closeSeedStateDatabase();
-    registryStateDbModule.closeOpenClawStateDatabaseForTest();
+    registryStateDbModule.closeAforaStateDatabaseForTest();
     mod.testing.setDepsForTest();
     mod.resetSubagentRegistryForTests({ persist: false });
     await cleanupSessionStateForTest();
@@ -71,9 +71,9 @@ describe("subagent registry persistence resume", () => {
   });
 
   it("resumes a persisted run from canonical SQLite state", async () => {
-    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-subagent-"));
+    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-subagent-"));
     const stateDir = tempStateDir;
-    await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+    await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
       const run: SubagentRunRecord = {
         runId: "run-1",
         childSessionKey: "agent:main:subagent:test",
@@ -122,9 +122,9 @@ describe("subagent registry persistence resume", () => {
   });
 
   it("retries pending child delivery before a recovered requester-turn wake", async () => {
-    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-subagent-"));
+    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-subagent-"));
     const stateDir = tempStateDir;
-    await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+    await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
       const run: SubagentRunRecord = {
         runId: "run-pending-delivery",
         requesterTurnRunId: "run-requester",
@@ -181,9 +181,9 @@ describe("subagent registry persistence resume", () => {
   });
 
   it("keeps dismissed terminal delivery dormant and TTL-eligible after restore", async () => {
-    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-subagent-"));
+    tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-subagent-"));
     const stateDir = tempStateDir;
-    await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+    await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
       const now = Date.now();
       const run: SubagentRunRecord = {
         runId: "run-dismissed-delivery",
@@ -223,7 +223,7 @@ describe("subagent registry persistence resume", () => {
   it.each([false, true])(
     "settles a restored steered requester turn (yielded: %s)",
     async (requesterYielded) => {
-      tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-subagent-"));
+      tempStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-subagent-"));
       const stateDir = tempStateDir;
       const wakeRequester = vi.fn(async () => false);
       mod.testing.setDepsForTest({
@@ -233,7 +233,7 @@ describe("subagent registry persistence resume", () => {
         }),
       });
 
-      await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+      await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
         const endedAt = Date.now();
         const run: SubagentRunRecord = {
           runId: "run-steered",

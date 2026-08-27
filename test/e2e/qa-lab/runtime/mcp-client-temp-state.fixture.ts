@@ -26,7 +26,7 @@ export function createMcpClientTempState(params: {
   gatewayToken: string;
   tempRoot?: string;
 }): McpClientTempState {
-  const root = mkdtempSync(path.join(params.tempRoot ?? tmpdir(), "openclaw-mcp-client-"));
+  const root = mkdtempSync(path.join(params.tempRoot ?? tmpdir(), "afora-mcp-client-"));
   const stateDir = path.join(root, "state");
   const tokenFile = path.join(root, "gateway.token");
   mkdirSync(stateDir, { recursive: true });

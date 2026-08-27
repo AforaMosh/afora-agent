@@ -1,4 +1,4 @@
-// Guest Transports script supports OpenClaw repository automation.
+// Guest Transports script supports Afora repository automation.
 import { randomUUID } from "node:crypto";
 import { sleep } from "../../lib/sleep.mjs";
 import { run } from "./host-command.ts";
@@ -36,7 +36,7 @@ interface PosixBackgroundShellOptions {
 }
 
 function guestScriptName(extension: string): string {
-  return `openclaw-parallels-${randomUUID()}.${extension}`;
+  return `afora-parallels-${randomUUID()}.${extension}`;
 }
 
 function posixSingleQuote(value: string): string {
@@ -121,7 +121,7 @@ export async function runPosixBackgroundShell(options: PosixBackgroundShellOptio
   const runCommand = options.runCommand ?? run;
   const safeLabel = options.label.replaceAll(/[^A-Za-z0-9_-]/g, "-");
   const nonce = `${safeLabel}-${randomUUID()}`;
-  const runDir = `/tmp/openclaw-parallels/${nonce}`;
+  const runDir = `/tmp/afora-parallels/${nonce}`;
   const scriptPath = `${runDir}/run.sh`;
   const runnerPath = `${runDir}/runner.sh`;
   const launcherPath = `${runDir}/launcher.mjs`;
@@ -321,11 +321,11 @@ export async function runWindowsBackgroundPowerShell(
   const runCommand = options.runCommand ?? run;
   const safeLabel = options.label.replaceAll(/[^A-Za-z0-9_-]/g, "-");
   const nonce = `${safeLabel}-${randomUUID()}`;
-  const guestRunDir = `openclaw-parallels\\${nonce}`;
+  const guestRunDir = `afora-parallels\\${nonce}`;
   const windowsDonePath = `%WINDIR%\\Temp\\${guestRunDir}\\done`;
   const windowsLogPath = `%WINDIR%\\Temp\\${guestRunDir}\\run.log`;
-  const backgroundExitPrefix = `__OPENCLAW_BACKGROUND_EXIT__:${nonce}:`;
-  const backgroundDoneMarker = `__OPENCLAW_BACKGROUND_DONE__:${nonce}`;
+  const backgroundExitPrefix = `__AFORA_BACKGROUND_EXIT__:${nonce}:`;
+  const backgroundDoneMarker = `__AFORA_BACKGROUND_DONE__:${nonce}`;
   // PhaseRunner cannot cancel an in-flight callback. Keep cleanup inside the
   // helper budget so a timed-out lane cannot overlap the next snapshot restore.
   const deadline =
@@ -342,26 +342,26 @@ export async function runWindowsBackgroundPowerShell(
       );
     }
   };
-  const pathsScript = `$runDir = Join-Path (Join-Path $env:WINDIR 'Temp\\openclaw-parallels') ${psSingleQuote(nonce)}
+  const pathsScript = `$runDir = Join-Path (Join-Path $env:WINDIR 'Temp\\afora-parallels') ${psSingleQuote(nonce)}
 $scriptPath = Join-Path $runDir 'run.ps1'
 $logPath = Join-Path $runDir 'run.log'
 $donePath = Join-Path $runDir 'done'
 $exitPath = Join-Path $runDir 'exit'
 $pidPath = Join-Path $runDir 'pid'
-function Write-OpenClawUtf8File([string]$Path, [string]$Value) {
+function Write-AforaUtf8File([string]$Path, [string]$Value) {
   [System.IO.File]::WriteAllText($Path, $Value, [System.Text.UTF8Encoding]::new($false))
 }`;
   const payload = `$ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $false
 ${pathsScript}
-Write-OpenClawUtf8File $pidPath ([string]$PID)
-$script:OpenClawBackgroundLogBytes = 0
-function Add-OpenClawBackgroundLog {
+Write-AforaUtf8File $pidPath ([string]$PID)
+$script:AforaBackgroundLogBytes = 0
+function Add-AforaBackgroundLog {
   param([Parameter(ValueFromPipeline=$true)]$InputObject)
   process {
     $text = $InputObject | Out-String
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($text)
-    $remaining = [int64]${WINDOWS_BACKGROUND_LOG_MAX_BYTES} - $script:OpenClawBackgroundLogBytes
+    $remaining = [int64]${WINDOWS_BACKGROUND_LOG_MAX_BYTES} - $script:AforaBackgroundLogBytes
     if ($remaining -le 0) {
       return
     }
@@ -374,11 +374,11 @@ function Add-OpenClawBackgroundLog {
     try {
       if ($count -gt 0) {
         $stream.Write($bytes, 0, $count)
-        $script:OpenClawBackgroundLogBytes += $count
+        $script:AforaBackgroundLogBytes += $count
       }
       if ($needsBoundaryNewline) {
         $stream.WriteByte(10)
-        $script:OpenClawBackgroundLogBytes++
+        $script:AforaBackgroundLogBytes++
       }
     } finally {
       $stream.Dispose()
@@ -388,13 +388,13 @@ function Add-OpenClawBackgroundLog {
 try {
   & {
 ${options.script}
-  } *>&1 | Add-OpenClawBackgroundLog
-  Write-OpenClawUtf8File $exitPath '0'
+  } *>&1 | Add-AforaBackgroundLog
+  Write-AforaUtf8File $exitPath '0'
 } catch {
-  $_ | Add-OpenClawBackgroundLog
-  Write-OpenClawUtf8File $exitPath '1'
+  $_ | Add-AforaBackgroundLog
+  Write-AforaUtf8File $exitPath '1'
 } finally {
-  Write-OpenClawUtf8File $donePath 'done'
+  Write-AforaUtf8File $donePath 'done'
 }`;
   const writeArgs = [
     "exec",
@@ -643,16 +643,16 @@ function cleanupWindowsBackground(
   },
 ): void {
   const stopProcessTree = options.stopProcessTree
-    ? `function Stop-OpenClawBackgroundProcessTree([int]$ProcessId) {
+    ? `function Stop-AforaBackgroundProcessTree([int]$ProcessId) {
   Get-CimInstance Win32_Process -Filter "ParentProcessId=$ProcessId" -ErrorAction SilentlyContinue | ForEach-Object {
-    Stop-OpenClawBackgroundProcessTree ([int]$_.ProcessId)
+    Stop-AforaBackgroundProcessTree ([int]$_.ProcessId)
   }
   Stop-Process -Id $ProcessId -Force -ErrorAction SilentlyContinue
 }
 if (Test-Path $pidPath) {
   $backgroundPid = (Get-Content -Path $pidPath -Raw).Trim()
   if ($backgroundPid) {
-    Stop-OpenClawBackgroundProcessTree ([int]$backgroundPid)
+    Stop-AforaBackgroundProcessTree ([int]$backgroundPid)
   }
 }
 `
@@ -729,7 +729,7 @@ export class LinuxGuest {
   }
 
   private transportArgs(args: string[]): string[] {
-    return ["exec", this.vmName, "/usr/bin/env", "HOME=/root", "OPENCLAW_ALLOW_ROOT=1", ...args];
+    return ["exec", this.vmName, "/usr/bin/env", "HOME=/root", "AFORA_ALLOW_ROOT=1", ...args];
   }
 
   bash(script: string): string {

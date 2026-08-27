@@ -296,7 +296,7 @@ function createAcpSessionStoreEntry(params: {
   } as const;
   return {
     cfg: {} as never,
-    storePath: "/tmp/openclaw-test-sessions.json",
+    storePath: "/tmp/afora-test-sessions.json",
     sessionKey: params.sessionKey,
     storeSessionKey: params.sessionKey,
     entry: {
@@ -470,8 +470,8 @@ async function withTaskRegistryTempDir<T>(
   run: (root: string) => Promise<T>,
   options?: { durableStore?: boolean },
 ): Promise<T> {
-  return await withTestDir({ prefix: "openclaw-task-registry-" }, async (root) => {
-    return await withEnvAsync({ OPENCLAW_STATE_DIR: root }, async () => {
+  return await withTestDir({ prefix: "afora-task-registry-" }, async (root) => {
+    return await withEnvAsync({ AFORA_STATE_DIR: root }, async () => {
       resetTaskRegistryForTests({ persist: false });
       resetTaskFlowRegistryForTests({ persist: false });
       if (options?.durableStore !== true) {
@@ -1068,7 +1068,7 @@ describe("task-registry", () => {
 
   it("clears terminal errors when explicitly updated without an error", async () => {
     await withTaskRegistryTempDir(async (root) => {
-      process.env.OPENCLAW_STATE_DIR = root;
+      process.env.AFORA_STATE_DIR = root;
       resetTaskRegistryForTests();
 
       const task = createTaskFixture("cron", {
@@ -2026,7 +2026,7 @@ describe("task-registry", () => {
     },
   ])("delivers delegated ACP completion directly to a $name thread origin", async (origin) => {
     await withTaskRegistryTempDir(async (root) => {
-      process.env.OPENCLAW_STATE_DIR = root;
+      process.env.AFORA_STATE_DIR = root;
       resetTaskRegistryForTests();
       const runId = `run-${origin.channel}-thread-terminal`;
       hoisted.sendMessageMock.mockResolvedValue({
@@ -2085,7 +2085,7 @@ describe("task-registry", () => {
 
   it("keeps delegated ACP completion queued when the transport does not declare thread delivery", async () => {
     await withTaskRegistryTempDir(async (root) => {
-      process.env.OPENCLAW_STATE_DIR = root;
+      process.env.AFORA_STATE_DIR = root;
       resetTaskRegistryForTests();
       const runId = "run-guildchat-thread-terminal";
       // guildchat is deliverable but declares no thread capability, so a thread-shaped
@@ -2136,7 +2136,7 @@ describe("task-registry", () => {
 
   it("keeps delegated ACP completion queued when the requester origin has no thread", async () => {
     await withTaskRegistryTempDir(async (root) => {
-      process.env.OPENCLAW_STATE_DIR = root;
+      process.env.AFORA_STATE_DIR = root;
       resetTaskRegistryForTests();
       const runId = "run-root-discord-terminal";
       const requesterOrigin = {
@@ -3100,14 +3100,14 @@ describe("task-registry", () => {
     });
   });
 
-  it("uses normal reconcile grace for OpenClaw-owned subagent tasks", async () => {
+  it("uses normal reconcile grace for Afora-owned subagent tasks", async () => {
     await withTaskRegistryTempDir(async () => {
       resetTaskRegistryForTests();
       const now = Date.now();
       const task = createTaskFixture("subagent", {
         childSessionKey: "agent:main:subagent:missing",
-        runId: "openclaw-subagent:missing",
-        task: "OpenClaw-owned child",
+        runId: "afora-subagent:missing",
+        task: "Afora-owned child",
         notifyPolicy: "silent",
         lastEventAt: now - 10 * 60_000,
       });
@@ -5129,7 +5129,7 @@ describe("task-registry", () => {
 
   it.each([
     {
-      name: "cancels harness-owned tasks without routing through OpenClaw subagent sessions",
+      name: "cancels harness-owned tasks without routing through Afora subagent sessions",
       taskKind: "external-harness",
       sourceId: "harness:child",
       task: "Harness-owned child",
@@ -5138,8 +5138,8 @@ describe("task-registry", () => {
     {
       name: "does not cancel childless subagent tasks without a harness task kind",
       taskKind: undefined,
-      sourceId: "openclaw-subagent:child",
-      task: "Childless OpenClaw row",
+      sourceId: "afora-subagent:child",
+      task: "Childless Afora row",
       cancellable: false,
     },
   ])("$name", async ({ taskKind, sourceId, task: taskName, cancellable }) => {

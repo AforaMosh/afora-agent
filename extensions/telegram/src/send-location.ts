@@ -2,7 +2,7 @@ import {
   formatLocationText,
   normalizeOutboundLocation,
   type OutboundLocation,
-} from "openclaw/plugin-sdk/channel-inbound";
+} from "afora-agent/plugin-sdk/channel-inbound";
 import { buildInlineKeyboard } from "./inline-keyboard.js";
 import {
   logTelegramOutboundSendOk,

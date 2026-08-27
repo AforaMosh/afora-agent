@@ -1,4 +1,4 @@
-import { cleanupSessionResources } from "@openclaw/ai/internal/runtime";
+import { cleanupSessionResources } from "@afora/ai/internal/runtime";
 import type { AssistantMessage, Model } from "../../llm/types.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import type {

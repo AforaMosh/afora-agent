@@ -2,7 +2,7 @@
  * Contract API for Anthropic provider metadata. It builds a provider descriptor
  * without runtime registration side effects.
  */
-import type { ProviderPlugin } from "openclaw/plugin-sdk/provider-model-shared";
+import type { ProviderPlugin } from "afora-agent/plugin-sdk/provider-model-shared";
 
 const noopAuth = async () => ({ profiles: [] });
 

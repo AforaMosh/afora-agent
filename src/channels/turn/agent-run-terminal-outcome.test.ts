@@ -14,7 +14,7 @@ describe("agent run terminal outcome carrier", () => {
     expect(recordAgentRunTerminalOutcome(result, "failed")).toBe(result);
     expect(readAgentRunTerminalOutcome(result)).toBe("failed");
     expect(
-      Object.getOwnPropertyDescriptor(result, Symbol.for("openclaw.agentRunTerminalOutcome")),
+      Object.getOwnPropertyDescriptor(result, Symbol.for("afora.agentRunTerminalOutcome")),
     ).toMatchObject({ enumerable: true, value: "failed" });
     expect(readAgentRunTerminalOutcome({ ...result })).toBe("failed");
     expect(JSON.stringify(result)).toBe(
@@ -30,7 +30,7 @@ describe("agent run terminal outcome carrier", () => {
     ["plain custom dispatch result", { agentRunTerminalOutcome: "failed" }],
     [
       "invalid private carrier value",
-      { [Symbol.for("openclaw.agentRunTerminalOutcome")]: "cancelled" },
+      { [Symbol.for("afora.agentRunTerminalOutcome")]: "cancelled" },
     ],
   ])("rejects %s", (_label, value) => {
     expect(readAgentRunTerminalOutcome(value)).toBeUndefined();

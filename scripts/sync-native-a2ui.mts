@@ -26,8 +26,8 @@ export async function checkLinuxCanvasA2uiReferences({
 }: Pick<ReturnType<typeof getNativeA2uiResourcePaths>, "linuxConsumerFile">) {
   const source = await fs.readFile(linuxConsumerFile, "utf8");
   const expectedReferences = [
-    'include_bytes!(env!("OPENCLAW_CANVAS_A2UI_INDEX_HTML"))',
-    'include_bytes!(env!("OPENCLAW_CANVAS_A2UI_BUNDLE_JS"))',
+    'include_bytes!(env!("AFORA_CANVAS_A2UI_INDEX_HTML"))',
+    'include_bytes!(env!("AFORA_CANVAS_A2UI_BUNDLE_JS"))',
   ];
   const missing = expectedReferences.filter((reference) => !source.includes(reference));
   if (missing.length > 0) {
@@ -72,7 +72,7 @@ export async function checkNativeA2uiBuildReferences({
     !iosProject.includes(stagingCommand) ||
     !iosProject.includes("pwd -P") ||
     !iosProject.includes("--output") ||
-    !iosProject.includes("$BUILT_PRODUCTS_DIR/OpenClawKit_OpenClawKit.bundle") ||
+    !iosProject.includes("$BUILT_PRODUCTS_DIR/AforaKit_AforaKit.bundle") ||
     !iosProject.includes("$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH") ||
     !iosProject.includes('cp -R "$resource_product/CanvasA2UI"')
   ) {
@@ -224,15 +224,15 @@ async function withFreshBundleCheckSource(
   sourceDir: string,
   run: (freshSourceDir: string) => Promise<void>,
 ) {
-  const tempDir = await fs.mkdtemp(path.join(tmpdir(), "openclaw-a2ui-native-check-"));
+  const tempDir = await fs.mkdtemp(path.join(tmpdir(), "afora-a2ui-native-check-"));
   try {
     const checkSourceDir = path.join(tempDir, "a2ui");
     await fs.mkdir(checkSourceDir, { recursive: true });
     await fs.copyFile(path.join(sourceDir, "index.html"), path.join(checkSourceDir, "index.html"));
     bundleA2ui(rootDir, {
       ...process.env,
-      OPENCLAW_A2UI_BUNDLE_OUT: path.join(checkSourceDir, "a2ui.bundle.js"),
-      OPENCLAW_A2UI_BUNDLE_HASH_FILE: path.join(tempDir, ".bundle.hash"),
+      AFORA_A2UI_BUNDLE_OUT: path.join(checkSourceDir, "a2ui.bundle.js"),
+      AFORA_A2UI_BUNDLE_HASH_FILE: path.join(tempDir, ".bundle.hash"),
     });
     await run(checkSourceDir);
   } finally {

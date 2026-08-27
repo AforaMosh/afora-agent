@@ -4,18 +4,18 @@ import {
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../../infra/kysely-sync.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../../state/openclaw-agent-db.generated.js";
+import type { DB as AforaAgentKyselyDatabase } from "../../state/afora-agent-db.generated.js";
 import {
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-  type OpenClawAgentDatabase,
-  type OpenClawAgentDatabaseOptions,
-} from "../../state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+  type AforaAgentDatabase,
+  type AforaAgentDatabaseOptions,
+} from "../../state/afora-agent-db.js";
 import { SessionWorkStartInvalidatedError } from "./lifecycle.js";
 import type { SessionAccessScope } from "./session-accessor.sqlite-contract.js";
 import { resolveSqliteScope, toDatabaseOptions } from "./session-accessor.sqlite-scope.js";
 
-type SuggestionDatabase = Pick<OpenClawAgentKyselyDatabase, "session_suggestions">;
+type SuggestionDatabase = Pick<AforaAgentKyselyDatabase, "session_suggestions">;
 
 type StoredSessionSuggestionState = "pending" | "accepted" | "dismissed";
 type StoredSessionSuggestionResolution = "send" | "queue" | "edit" | "dismiss";
@@ -34,11 +34,11 @@ const MAX_PENDING_SESSION_SUGGESTIONS_PER_SESSION = 100;
 const MAX_RETAINED_RESOLVED_SESSION_SUGGESTIONS = 200;
 export const SESSION_SUGGESTION_DISPATCH_CLAIM_TTL_MS = 30_000;
 
-function resolveDatabaseOptions(scope: SessionAccessScope): OpenClawAgentDatabaseOptions {
+function resolveDatabaseOptions(scope: SessionAccessScope): AforaAgentDatabaseOptions {
   return toDatabaseOptions(resolveSqliteScope(scope));
 }
 
-function suggestionDb(database: OpenClawAgentDatabase) {
+function suggestionDb(database: AforaAgentDatabase) {
   return getNodeSqliteKysely<SuggestionDatabase>(database.db);
 }
 
@@ -61,7 +61,7 @@ function toSuggestion(row: {
 }
 
 function assertSessionInstance(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionKey: string,
   expectedSessionId: string | undefined,
 ): void {
@@ -94,7 +94,7 @@ function assertSessionInstance(
 }
 
 function pruneResolvedSessionSuggestions(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   sessionKey: string,
 ): void {
   const db = suggestionDb(database);
@@ -148,7 +148,7 @@ export function addSessionSuggestion(
     createdAt: params.createdAt ?? Date.now(),
     state: "pending",
   };
-  runOpenClawAgentWriteTransaction((database) => {
+  runAforaAgentWriteTransaction((database) => {
     assertSessionInstance(database, sessionKey, params.expectedSessionId);
     const db = suggestionDb(database);
     pruneResolvedSessionSuggestions(database, sessionKey);
@@ -193,7 +193,7 @@ export function listSessionSuggestions(
   params: { authorId?: string; pendingOnly?: boolean } = {},
 ): StoredSessionSuggestion[] {
   const options = resolveDatabaseOptions(scope);
-  const database = openOpenClawAgentDatabase(options);
+  const database = openAforaAgentDatabase(options);
   const sessionKey = resolveSqliteScope(scope).sessionKey;
   let query = suggestionDb(database)
     .selectFrom("session_suggestions")
@@ -228,7 +228,7 @@ export function claimSessionSuggestionDispatch(
 ): SessionSuggestionDispatchClaim | null {
   const options = resolveDatabaseOptions(scope);
   const sessionKey = resolveSqliteScope(scope).sessionKey;
-  return runOpenClawAgentWriteTransaction((database) => {
+  return runAforaAgentWriteTransaction((database) => {
     assertSessionInstance(database, sessionKey, params.expectedSessionId);
     const db = suggestionDb(database);
     const row = executeSqliteQueryTakeFirstSync(
@@ -292,7 +292,7 @@ export function releaseSessionSuggestionDispatch(
 ): boolean {
   const options = resolveDatabaseOptions(scope);
   const sessionKey = resolveSqliteScope(scope).sessionKey;
-  return runOpenClawAgentWriteTransaction((database) => {
+  return runAforaAgentWriteTransaction((database) => {
     assertSessionInstance(database, sessionKey, params.expectedSessionId);
     const result = executeSqliteQuerySync(
       database.db,
@@ -319,7 +319,7 @@ export function finalizeSessionSuggestionClaim(
 ): StoredSessionSuggestion | null {
   const options = resolveDatabaseOptions(scope);
   const sessionKey = resolveSqliteScope(scope).sessionKey;
-  return runOpenClawAgentWriteTransaction((database) => {
+  return runAforaAgentWriteTransaction((database) => {
     assertSessionInstance(database, sessionKey, params.expectedSessionId);
     const db = suggestionDb(database);
     const row = executeSqliteQueryTakeFirstSync(

@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { consumeSwarmStructuredOutput } from "../../tools/structured-output-tool.js";
 import { ensureCompletionState } from "../registry/subagent-delivery-state.js";
 import { SUBAGENT_ENDED_REASON_KILLED } from "../registry/subagent-lifecycle-events.js";
@@ -30,7 +30,7 @@ function resolveStatus(
 /** Freeze the waitable collector record after raw completion capture. */
 export function updateSwarmCollectorCompletion(
   entry: SubagentRunRecord,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): boolean {
   if (!entry.collect) {
     return false;

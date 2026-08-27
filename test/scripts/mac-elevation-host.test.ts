@@ -77,8 +77,8 @@ function writeAppInfoPlist(appPath: string, sourceCommit: string, peekabooCommit
     [
       '<?xml version="1.0" encoding="UTF-8"?>',
       '<plist version="1.0"><dict>',
-      "<key>CFBundleIdentifier</key><string>ai.openclaw.mac</string>",
-      `<key>OpenClawGitCommit</key><string>${sourceCommit}</string>`,
+      "<key>CFBundleIdentifier</key><string>ai.afora.mac</string>",
+      `<key>AforaGitCommit</key><string>${sourceCommit}</string>`,
       `<key>PeekabooSourceCommit</key><string>${peekabooCommit}</string>`,
       "<key>CFBundleShortVersionString</key><string>4.2.0</string>",
       "<key>CFBundleVersion</key><string>420</string>",
@@ -90,11 +90,11 @@ function writeAppInfoPlist(appPath: string, sourceCommit: string, peekabooCommit
 }
 
 function createStatusHarness(permissionMode: "fail" | "invalid") {
-  const tempRoot = tempDirs.make(`openclaw-elevation-status-${permissionMode}-`);
+  const tempRoot = tempDirs.make(`afora-elevation-status-${permissionMode}-`);
   const binDir = path.join(tempRoot, "bin");
-  const appPath = path.join(tempRoot, "OpenClaw.app");
+  const appPath = path.join(tempRoot, "Afora.app");
   const stateDir = path.join(tempRoot, "state");
-  const configPath = path.join(stateDir, "openclaw.json");
+  const configPath = path.join(stateDir, "afora.json");
   const launchAgentsDir = path.join(tempRoot, "Library", "LaunchAgents");
   mkdirSync(path.join(appPath, "Contents", "MacOS"), { recursive: true });
   mkdirSync(binDir, { recursive: true });
@@ -103,7 +103,7 @@ function createStatusHarness(permissionMode: "fail" | "invalid") {
   writeFileSync(path.join(appPath, "Contents", "Info.plist"), "fixture", "utf8");
   writeFileSync(configPath, "{}\n", "utf8");
   writeFileSync(
-    path.join(launchAgentsDir, "ai.openclaw.mac.elevation-host.plist"),
+    path.join(launchAgentsDir, "ai.afora.mac.elevation-host.plist"),
     "fixture",
     "utf8",
   );
@@ -111,7 +111,7 @@ function createStatusHarness(permissionMode: "fail" | "invalid") {
     path.join(stateDir, "elevation-host-install.json"),
     JSON.stringify({
       schemaVersion: 3,
-      kind: "openclaw-elevation-install",
+      kind: "afora-elevation-install",
       transactionState: "installed",
       transactionId: "00000000-0000-4000-8000-000000000001",
       sourceCommit: "0".repeat(40),
@@ -127,7 +127,7 @@ function createStatusHarness(permissionMode: "fail" | "invalid") {
       configPath,
       backupPath: "",
       backupCDHashes: { arm64: "", x86_64: "" },
-      plistPath: path.join(launchAgentsDir, "ai.openclaw.mac.elevation-host.plist"),
+      plistPath: path.join(launchAgentsDir, "ai.afora.mac.elevation-host.plist"),
       previousPlist: "",
       previousPlistSha256: "",
       previousPlistWasLoaded: false,
@@ -156,7 +156,7 @@ function createStatusHarness(permissionMode: "fail" | "invalid") {
       "  cdhash=TESTCDHASH",
       '  if [[ "$*" == *"--arch arm64"* ]]; then cdhash=TESTCDHASHARM64; fi',
       '  if [[ "$*" == *"--arch x86_64"* ]]; then cdhash=TESTCDHASHX8664; fi',
-      "  printf '%s\\n' 'Authority=Developer ID Application: OpenClaw Foundation (FWJYW4S8P8)' >&2",
+      "  printf '%s\\n' 'Authority=Developer ID Application: Afora Foundation (FWJYW4S8P8)' >&2",
       "  printf '%s\\n' 'TeamIdentifier=FWJYW4S8P8' >&2",
       "  printf 'CDHash=%s\\n' \"$cdhash\" >&2",
       "fi",
@@ -169,7 +169,7 @@ function createStatusHarness(permissionMode: "fail" | "invalid") {
     [
       "#!/usr/bin/env bash",
       "set -euo pipefail",
-      'if [[ "${1:-}" == "print" && "${2:-}" == */ai.openclaw.mac.elevation-host ]]; then',
+      'if [[ "${1:-}" == "print" && "${2:-}" == */ai.afora.mac.elevation-host ]]; then',
       "  printf '%s\\n' '    pid = 4242'",
       "  exit 0",
       "fi",
@@ -183,13 +183,13 @@ function createStatusHarness(permissionMode: "fail" | "invalid") {
       "#!/usr/bin/env bash",
       "set -euo pipefail",
       'case "${2:-}" in',
-      "  CFBundleIdentifier) printf '%s\\n' 'ai.openclaw.mac' ;;",
-      "  OpenClawGitCommit) printf '%040d\\n' 0 ;;",
+      "  CFBundleIdentifier) printf '%s\\n' 'ai.afora.mac' ;;",
+      "  AforaGitCommit) printf '%040d\\n' 0 ;;",
       "  PeekabooSourceCommit) printf '%040d\\n' 1 ;;",
       "  CFBundleShortVersionString) printf '%s\\n' '4.2.0' ;;",
-      '  ProgramArguments) printf \'["%s/Contents/MacOS/OpenClaw","--elevation-host"]\\n\' "$TEST_APP_PATH" ;;',
-      "  EnvironmentVariables.OPENCLAW_STATE_DIR) printf '%s\\n' \"$TEST_STATE_DIR\" ;;",
-      "  EnvironmentVariables.OPENCLAW_CONFIG_PATH) printf '%s\\n' \"$TEST_CONFIG_PATH\" ;;",
+      '  ProgramArguments) printf \'["%s/Contents/MacOS/Afora","--elevation-host"]\\n\' "$TEST_APP_PATH" ;;',
+      "  EnvironmentVariables.AFORA_STATE_DIR) printf '%s\\n' \"$TEST_STATE_DIR\" ;;",
+      "  EnvironmentVariables.AFORA_CONFIG_PATH) printf '%s\\n' \"$TEST_CONFIG_PATH\" ;;",
       "  RunAtLoad|KeepAlive) printf '%s\\n' 'true' ;;",
       "  *) exit 1 ;;",
       "esac",
@@ -201,8 +201,8 @@ function createStatusHarness(permissionMode: "fail" | "invalid") {
   writeExecutable(path.join(binDir, "spctl"), "#!/bin/sh\nexit 0\n");
   writeExecutable(path.join(binDir, "xcrun"), "#!/bin/sh\nexit 0\n");
   writeExecutable(
-    path.join(binDir, "openclaw"),
-    '#!/bin/sh\nprintf \'%s\\n\' \'{"nodes":[{"nodeId":"fixture-node","connected":true,"connectedAtMs":20,"clientId":"openclaw-macos","clientMode":"node","uiVersion":"4.2.0","caps":["computer"],"commands":["screen.snapshot","computer.act"],"computerUse":{"version":2}}]}\'\n',
+    path.join(binDir, "afora"),
+    '#!/bin/sh\nprintf \'%s\\n\' \'{"nodes":[{"nodeId":"fixture-node","connected":true,"connectedAtMs":20,"clientId":"afora-macos","clientMode":"node","uiVersion":"4.2.0","caps":["computer"],"commands":["screen.snapshot","computer.act"],"computerUse":{"version":2}}]}\'\n',
   );
   writeExecutable(
     path.join(binDir, "peekaboo"),
@@ -239,20 +239,20 @@ function createStatusHarness(permissionMode: "fail" | "invalid") {
 }
 
 function createMigrationPlanHarness(launchState: "absent" | "error" | "loaded" = "absent") {
-  const tempRoot = tempDirs.make(`openclaw-elevation-migration-${launchState}-`);
+  const tempRoot = tempDirs.make(`afora-elevation-migration-${launchState}-`);
   const binDir = path.join(tempRoot, "bin");
   const launchAgentsDir = path.join(tempRoot, "Library", "LaunchAgents");
-  const appPath = path.join(tempRoot, "OpenClaw.app");
+  const appPath = path.join(tempRoot, "Afora.app");
   const stateDir = path.join(tempRoot, "node-state");
-  const configPath = path.join(stateDir, "openclaw.json");
-  const label = "ai.openclaw.mac.node-fixture";
+  const configPath = path.join(stateDir, "afora.json");
+  const label = "ai.afora.mac.node-fixture";
   const plistPath = path.join(launchAgentsDir, `${label}.plist`);
   mkdirSync(binDir, { recursive: true });
   mkdirSync(launchAgentsDir, { recursive: true });
   mkdirSync(stateDir, { recursive: true });
   mkdirSync(path.join(stateDir, "state"), { recursive: true });
   writeFileSync(configPath, "{}\n", "utf8");
-  writeFileSync(path.join(stateDir, "state", "openclaw.sqlite"), "fixture", "utf8");
+  writeFileSync(path.join(stateDir, "state", "afora.sqlite"), "fixture", "utf8");
   writeFileSync(
     plistPath,
     [
@@ -260,12 +260,12 @@ function createMigrationPlanHarness(launchState: "absent" | "error" | "loaded" =
       '<plist version="1.0"><dict>',
       `<key>Label</key><string>${label}</string>`,
       "<key>ProgramArguments</key><array>",
-      `<string>${appPath}/Contents/MacOS/OpenClaw</string>`,
+      `<string>${appPath}/Contents/MacOS/Afora</string>`,
       "<string>--attach-only</string><string>--background-only</string>",
       "</array>",
       "<key>EnvironmentVariables</key><dict>",
-      `<key>OPENCLAW_STATE_DIR</key><string>${stateDir}</string>`,
-      `<key>OPENCLAW_CONFIG_PATH</key><string>${configPath}</string>`,
+      `<key>AFORA_STATE_DIR</key><string>${stateDir}</string>`,
+      `<key>AFORA_CONFIG_PATH</key><string>${configPath}</string>`,
       "</dict>",
       "</dict></plist>",
       "",
@@ -289,7 +289,7 @@ function createMigrationPlanHarness(launchState: "absent" | "error" | "loaded" =
   writeExecutable(path.join(binDir, "defaults"), "#!/bin/sh\nprintf '%s\\n' primary\n");
   writeExecutable(path.join(binDir, "sqlite3"), "#!/bin/sh\nprintf '%s\\n' fixture-node\n");
   writeExecutable(
-    path.join(binDir, "openclaw"),
+    path.join(binDir, "afora"),
     [
       "#!/usr/bin/env bash",
       "set -euo pipefail",
@@ -324,22 +324,22 @@ function createCanonicalNodeMigrationHarness(nodeId = "fixture-node") {
   const harness = createMigrationPlanHarness("loaded");
   const binDir = path.join(harness.env.HOME, "bin");
   const serviceEnvDir = path.join(harness.stateDir, "service-env");
-  const label = "ai.openclaw.node";
+  const label = "ai.afora.node";
   const plistPath = path.join(harness.env.HOME, "Library", "LaunchAgents", `${label}.plist`);
   const envPath = path.join(serviceEnvDir, `${label}.env`);
   const wrapperPath = path.join(serviceEnvDir, `${label}-env-wrapper.sh`);
   const nodePath = path.join(binDir, "node-runtime");
-  const entrypointPath = path.join(harness.env.HOME, "openclaw", "dist", "index.js");
+  const entrypointPath = path.join(harness.env.HOME, "afora", "dist", "index.js");
   mkdirSync(serviceEnvDir, { recursive: true });
   mkdirSync(path.dirname(entrypointPath), { recursive: true });
   writeFileSync(entrypointPath, "fixture", "utf8");
   writeFileSync(
     envPath,
     [
-      "# Generated by OpenClaw. Do not edit while the gateway service is installed.",
-      `export OPENCLAW_STATE_DIR='${harness.stateDir}'`,
-      `export OPENCLAW_CONFIG_PATH='${harness.configPath}'`,
-      "export OPENCLAW_GATEWAY_TOKEN='ignored-secret-shape'",
+      "# Generated by Afora. Do not edit while the gateway service is installed.",
+      `export AFORA_STATE_DIR='${harness.stateDir}'`,
+      `export AFORA_CONFIG_PATH='${harness.configPath}'`,
+      "export AFORA_GATEWAY_TOKEN='ignored-secret-shape'",
       "",
     ].join("\n"),
     "utf8",
@@ -487,7 +487,7 @@ function runMigrationReceiptBindingVerifier(
 
 function addRunningAppFixture(harness: ReturnType<typeof createMigrationPlanHarness>) {
   const binDir = path.join(harness.env.HOME, "bin");
-  const appBinary = `${harness.appPath}/Contents/MacOS/OpenClaw`;
+  const appBinary = `${harness.appPath}/Contents/MacOS/Afora`;
   writeExecutable(path.join(binDir, "pgrep"), "#!/bin/sh\nprintf '%s\\n' 4242\n");
   writeExecutable(
     path.join(binDir, "lsof"),
@@ -500,11 +500,11 @@ function addRunningAppFixture(harness: ReturnType<typeof createMigrationPlanHarn
 }
 
 function createArtifactVerificationHarness() {
-  const tempRoot = tempDirs.make("openclaw-elevation-artifact-");
+  const tempRoot = tempDirs.make("afora-elevation-artifact-");
   const binDir = path.join(tempRoot, "bin");
-  const archivePath = path.join(tempRoot, "OpenClaw-fixture-stable.zip");
-  const installerPath = path.join(tempRoot, "OpenClaw-fixture-stable-installer.sh");
-  const receiptPath = path.join(tempRoot, "OpenClaw-fixture-stable.json");
+  const archivePath = path.join(tempRoot, "Afora-fixture-stable.zip");
+  const installerPath = path.join(tempRoot, "Afora-fixture-stable-installer.sh");
+  const receiptPath = path.join(tempRoot, "Afora-fixture-stable.json");
   const dittoMarker = path.join(tempRoot, "ditto-called");
   const sourceCommit = "a".repeat(40);
   const peekabooCommit = "b".repeat(40);
@@ -523,14 +523,14 @@ function createArtifactVerificationHarness() {
       "  exit 0",
       "fi",
       'destination="${4}"',
-      'app="$destination/OpenClaw.app"',
+      'app="$destination/Afora.app"',
       'mkdir -p "$app/Contents/MacOS"',
       'printf \'%s\\n\' \'<?xml version="1.0" encoding="UTF-8"?>\' \'<plist version="1.0"><dict>\' >"$app/Contents/Info.plist"',
-      "printf '%s\\n' '<key>CFBundleIdentifier</key><string>ai.openclaw.mac</string>' >>\"$app/Contents/Info.plist\"",
-      `printf '%s\\n' '<key>OpenClawGitCommit</key><string>${sourceCommit}</string>' >>"$app/Contents/Info.plist"`,
+      "printf '%s\\n' '<key>CFBundleIdentifier</key><string>ai.afora.mac</string>' >>\"$app/Contents/Info.plist\"",
+      `printf '%s\\n' '<key>AforaGitCommit</key><string>${sourceCommit}</string>' >>"$app/Contents/Info.plist"`,
       `printf '%s\\n' '<key>PeekabooSourceCommit</key><string>${peekabooCommit}</string>' >>"$app/Contents/Info.plist"`,
       "printf '%s\\n' '<key>CFBundleShortVersionString</key><string>4.2.0</string>' '<key>CFBundleVersion</key><string>420</string>' '</dict></plist>' >>\"$app/Contents/Info.plist\"",
-      "cat >\"$app/Contents/MacOS/OpenClaw\" <<'APP_HELPER'",
+      "cat >\"$app/Contents/MacOS/Afora\" <<'APP_HELPER'",
       "#!/bin/sh",
       'if [ "${1:-}" = "--elevation-sync-file" ] && [ "${TEST_KILL_AFTER_PENDING_RECEIPT:-0}" = "1" ] && [ ! -e "$TEST_PENDING_KILL_MARKER" ] && echo "${2:-}" | grep -q \'elevation-host-install[.]pending[.]json$\'; then',
       '  : >"$TEST_PENDING_KILL_MARKER"',
@@ -538,7 +538,7 @@ function createArtifactVerificationHarness() {
       "fi",
       'if [ "${1:-}" = "--elevation-rename-exclusive" ]; then',
       '  if [ "${TEST_DANGLING_ROLLBACK_DURING_MOVE:-0}" = "1" ] && echo "$3" | grep -q \'[.]rollback-elevation-host-\'; then',
-      '    ln -s /missing/openclaw-rollback-target "$3"',
+      '    ln -s /missing/afora-rollback-target "$3"',
       "  fi",
       '  if [ "${TEST_SIGNAL_BEFORE_ROLLBACK_APP_MOVE:-0}" = "1" ] && echo "$3" | grep -q \'[.]rollback-elevation-host-\'; then',
       '    kill -TERM "$PPID"',
@@ -548,7 +548,7 @@ function createArtifactVerificationHarness() {
       '    rm -f "$2"',
       '    ln -s /replacement-owner "$2"',
       "  fi",
-      '  if [ "${TEST_SYMLINK_DAMAGED_APP_BEFORE_CUSTODY:-0}" = "1" ] && echo "$3" | grep -q \'[.]failed-elevation-host-.*[/]OpenClaw[.]app$\'; then',
+      '  if [ "${TEST_SYMLINK_DAMAGED_APP_BEFORE_CUSTODY:-0}" = "1" ] && echo "$3" | grep -q \'[.]failed-elevation-host-.*[/]Afora[.]app$\'; then',
       '    rm -rf "$2"',
       '    ln -s /replacement-app "$2"',
       "  fi",
@@ -556,7 +556,7 @@ function createArtifactVerificationHarness() {
       '    /bin/mv "$2" "$2.race-displaced"',
       '    /bin/cp -p "$2.race-displaced" "$2"',
       "  fi",
-      '  if [ "${TEST_REPLACE_DAMAGED_APP_DIRECTORY_BEFORE_CUSTODY:-0}" = "1" ] && echo "$3" | grep -q \'[.]failed-elevation-host-.*[/]OpenClaw[.]app$\'; then',
+      '  if [ "${TEST_REPLACE_DAMAGED_APP_DIRECTORY_BEFORE_CUSTODY:-0}" = "1" ] && echo "$3" | grep -q \'[.]failed-elevation-host-.*[/]Afora[.]app$\'; then',
       '    /bin/mv "$2" "$2.race-displaced"',
       '    /bin/mkdir -p "$2/Contents/MacOS"',
       "    printf '%s\\n' replacement-directory >\"$2/Contents/replacement\"",
@@ -582,19 +582,19 @@ function createArtifactVerificationHarness() {
       '  if [ "${TEST_REPLACE_MIGRATION_SOURCE_DURING_REVERSAL_CUSTODY:-0}" = "1" ] && echo "$3" | grep -q \'[.]reversal-custody[.]\'; then',
       "    printf '%s\\n' replacement-owner >\"$2\"",
       "  fi",
-      '  if [ "${TEST_RECREATE_APP_DURING_DAMAGED_CUSTODY:-0}" = "1" ] && echo "$3" | grep -q \'[.]failed-elevation-host-.*[/]OpenClaw[.]app$\'; then',
+      '  if [ "${TEST_RECREATE_APP_DURING_DAMAGED_CUSTODY:-0}" = "1" ] && echo "$3" | grep -q \'[.]failed-elevation-host-.*[/]Afora[.]app$\'; then',
       '    mkdir -p "$2/Contents/MacOS"',
       "    printf '%s\\n' replacement >\"$2/Contents/replacement\"",
       "  fi",
-      '  if [ "${TEST_SIGNAL_DURING_RECOVERY_APP_MOVE:-0}" = "1" ] && echo "$3" | grep -q \'[.]failed-elevation-host-.*[/]OpenClaw[.]app$\'; then',
+      '  if [ "${TEST_SIGNAL_DURING_RECOVERY_APP_MOVE:-0}" = "1" ] && echo "$3" | grep -q \'[.]failed-elevation-host-.*[/]Afora[.]app$\'; then',
       '    kill -TERM "$PPID"',
       "  fi",
       "  exit 0",
       "fi",
       "exit 0",
       "APP_HELPER",
-      'printf helper >"$app/Contents/MacOS/openclaw-mlx-tts"',
-      'chmod 755 "$app/Contents/MacOS/OpenClaw" "$app/Contents/MacOS/openclaw-mlx-tts"',
+      'printf helper >"$app/Contents/MacOS/afora-mlx-tts"',
+      'chmod 755 "$app/Contents/MacOS/Afora" "$app/Contents/MacOS/afora-mlx-tts"',
       "",
     ].join("\n"),
   );
@@ -607,7 +607,7 @@ function createArtifactVerificationHarness() {
       'if [[ "$*" == *"--verify"* && "$*" == *"--all-architectures"* && "${TEST_ROLLBACK_NON_NATIVE_SIGNATURE_INVALID:-0}" == "1" && -e "$target/Contents/old-fixture" ]]; then',
       "  exit 1",
       "fi",
-      'if [[ "$*" == *"--verify"* && -d "$target" && ! -e "$target/Contents/MacOS/OpenClaw" ]]; then',
+      'if [[ "$*" == *"--verify"* && -d "$target" && ! -e "$target/Contents/MacOS/Afora" ]]; then',
       "  exit 1",
       "fi",
       'if [[ "$*" == *"--verify"* && "${TEST_FINAL_SIGNATURE_INVALID:-0}" == "1" && "$target" == "${TEST_INSTALLED_APP_PATH:-}" && -f "${TEST_LAUNCH_STATE_FILE:-}" && "$(tr -d \'\\n\' <"$TEST_LAUNCH_STATE_FILE")" == "elevation-loaded" ]]; then',
@@ -637,7 +637,7 @@ function createArtifactVerificationHarness() {
       '  if [[ "${TEST_FINAL_CDHASH_MISMATCH:-0}" == "1" && "$target" == "${TEST_INSTALLED_APP_PATH:-}" && "$*" == *"--arch x86_64"* && -f "${TEST_LAUNCH_STATE_FILE:-}" && "$(tr -d \'\\n\' <"$TEST_LAUNCH_STATE_FILE")" == "elevation-loaded" ]]; then',
       "    cdhash=FINALMISMATCHX8664",
       "  fi",
-      "  printf '%s\\n' 'Authority=Developer ID Application: OpenClaw Foundation (FWJYW4S8P8)' >&2",
+      "  printf '%s\\n' 'Authority=Developer ID Application: Afora Foundation (FWJYW4S8P8)' >&2",
       "  printf '%s\\n' 'TeamIdentifier=FWJYW4S8P8' >&2",
       "  printf 'CDHash=%s\\n' \"$cdhash\" >&2",
       "fi",
@@ -654,7 +654,7 @@ function createArtifactVerificationHarness() {
   writeExecutable(path.join(binDir, "xcrun"), "#!/bin/sh\nexit 0\n");
   const receipt = {
     schemaVersion: 1,
-    kind: "openclaw-elevation-artifact",
+    kind: "afora-elevation-artifact",
     archive: path.basename(archivePath),
     archiveSha256: sha256(readFileSync(archivePath)),
     archiveChecksum: `${path.basename(archivePath)}.sha256`,
@@ -665,7 +665,7 @@ function createArtifactVerificationHarness() {
     peekabooCommit,
     version: "4.2.0",
     build: "420",
-    authority: "Developer ID Application: OpenClaw Foundation (FWJYW4S8P8)",
+    authority: "Developer ID Application: Afora Foundation (FWJYW4S8P8)",
     teamIdentifier: "FWJYW4S8P8",
     cdhashes: { arm64: "FIXTURECDHASHARM64", x86_64: "FIXTURECDHASHX8664" },
     architectures: { main: "x86_64 arm64", helper: "x86_64 arm64" },
@@ -734,11 +734,11 @@ function createInstallRollbackHarness(
   const tempRoot = artifact.env.HOME;
   const binDir = path.join(tempRoot, "bin");
   const stateDir = path.join(tempRoot, "node-state");
-  const configPath = path.join(stateDir, "openclaw.json");
-  const appPath = path.join(tempRoot, "InstalledOpenClaw.app");
+  const configPath = path.join(stateDir, "afora.json");
+  const appPath = path.join(tempRoot, "InstalledAfora.app");
   const oldSourceCommit = options.sameSourceExistingApp ? artifact.sourceCommit : "c".repeat(40);
   const oldPeekabooCommit = "d".repeat(40);
-  const label = "ai.openclaw.mac.node-fixture";
+  const label = "ai.afora.mac.node-fixture";
   const launchAgentsDir = path.join(tempRoot, "Library", "LaunchAgents");
   const sourcePlist = path.join(launchAgentsDir, `${label}.plist`);
   const launchStateFile = path.join(tempRoot, "launch-state");
@@ -746,21 +746,21 @@ function createInstallRollbackHarness(
   mkdirSync(path.join(stateDir, "state"), { recursive: true });
   mkdirSync(launchAgentsDir, { recursive: true });
   writeFileSync(configPath, "{}\n", "utf8");
-  writeFileSync(path.join(stateDir, "state", "openclaw.sqlite"), "fixture", "utf8");
+  writeFileSync(path.join(stateDir, "state", "afora.sqlite"), "fixture", "utf8");
   writeAppInfoPlist(appPath, oldSourceCommit, oldPeekabooCommit);
-  writeExecutable(path.join(appPath, "Contents", "MacOS", "OpenClaw"), "#!/bin/sh\nexit 0\n");
+  writeExecutable(path.join(appPath, "Contents", "MacOS", "Afora"), "#!/bin/sh\nexit 0\n");
   writeFileSync(path.join(appPath, "Contents", "old-fixture"), "old\n", "utf8");
   const sourceContents = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<plist version="1.0"><dict>',
     `<key>Label</key><string>${label}</string>`,
     "<key>ProgramArguments</key><array>",
-    `<string>${appPath}/Contents/MacOS/OpenClaw</string>`,
+    `<string>${appPath}/Contents/MacOS/Afora</string>`,
     "<string>--attach-only</string><string>--background-only</string>",
     "</array>",
     "<key>EnvironmentVariables</key><dict>",
-    `<key>OPENCLAW_STATE_DIR</key><string>${stateDir}</string>`,
-    `<key>OPENCLAW_CONFIG_PATH</key><string>${configPath}</string>`,
+    `<key>AFORA_STATE_DIR</key><string>${stateDir}</string>`,
+    `<key>AFORA_CONFIG_PATH</key><string>${configPath}</string>`,
     "</dict></dict></plist>",
     "",
   ].join("\n");
@@ -775,7 +775,7 @@ function createInstallRollbackHarness(
         "#!/usr/bin/env bash",
         "set -euo pipefail",
         'target="${!#}"',
-        'if [[ "$target" == */openclaw-elevation.*/OpenClaw.app/Contents/MacOS/OpenClaw ]]; then',
+        'if [[ "$target" == */afora-elevation.*/Afora.app/Contents/MacOS/Afora ]]; then',
         '  if [[ -e "$TEST_RENAME_HELPER_HASH_MARKER" ]]; then',
         "    printf '%s\\n' '#!/bin/sh' 'exit 0' >\"$target\"",
         '    chmod 755 "$target"',
@@ -821,7 +821,7 @@ function createInstallRollbackHarness(
       "#!/usr/bin/env bash",
       "set -euo pipefail",
       '[[ "$TEST_FAIL_LSOF_INSPECTION" != "1" ]] || exit 7',
-      `printf '%s\\n' p777777 n${JSON.stringify(path.join(appPath, "Contents", "MacOS", "OpenClaw"))}`,
+      `printf '%s\\n' p777777 n${JSON.stringify(path.join(appPath, "Contents", "MacOS", "Afora"))}`,
       "",
     ].join("\n"),
   );
@@ -846,7 +846,7 @@ function createInstallRollbackHarness(
       '  /bin/mv "$@"',
       "  exit 7",
       "fi",
-      'if [[ "$TEST_SIGNAL_DURING_RECOVERY_APP_MOVE" == "1" && "$destination" == *.failed-elevation-host-*/OpenClaw.app ]]; then',
+      'if [[ "$TEST_SIGNAL_DURING_RECOVERY_APP_MOVE" == "1" && "$destination" == *.failed-elevation-host-*/Afora.app ]]; then',
       '  /bin/mv "$@"',
       '  kill -TERM "$PPID"',
       "  exit 0",
@@ -874,7 +874,7 @@ function createInstallRollbackHarness(
     ].join("\n"),
   );
   writeExecutable(
-    path.join(binDir, "openclaw"),
+    path.join(binDir, "afora"),
     [
       "#!/usr/bin/env bash",
       "set -euo pipefail",
@@ -888,7 +888,7 @@ function createInstallRollbackHarness(
       '    if [[ "$state" == "elevation-loaded" ]]; then',
       '      generation="$(tr -d \'\\n\' <"$TEST_NODE_GENERATION_FILE")"',
       '      connected_at="$((10 + generation * 10))"',
-      '      printf \'{"nodes":[{"nodeId":"fixture-node","paired":true,"connected":true,"connectedAtMs":%s,"clientId":"openclaw-macos","clientMode":"node","uiVersion":"4.2.0","caps":["computer"],"commands":["screen.snapshot","computer.act"],"computerUse":{"version":2}}]}\\n\' "$connected_at"',
+      '      printf \'{"nodes":[{"nodeId":"fixture-node","paired":true,"connected":true,"connectedAtMs":%s,"clientId":"afora-macos","clientMode":"node","uiVersion":"4.2.0","caps":["computer"],"commands":["screen.snapshot","computer.act"],"computerUse":{"version":2}}]}\\n\' "$connected_at"',
       "    else",
       '      printf \'%s\\n\' \'{"nodes":[{"nodeId":"fixture-node","paired":true,"connected":true,"connectedAtMs":10}]}\'',
       "    fi ;;",
@@ -906,31 +906,31 @@ function createInstallRollbackHarness(
       'target="${2:-}"',
       'state="$(tr -d \'\\n\' <"$TEST_LAUNCH_STATE_FILE")"',
       'if [[ "$command_name" == "print" ]]; then',
-      '  if [[ "$target" == */ai.openclaw.mac.node-fixture && "$state" == "source-loaded" ]]; then',
+      '  if [[ "$target" == */ai.afora.mac.node-fixture && "$state" == "source-loaded" ]]; then',
       "    printf '%s\\n' '    pid = 999999'",
       "    exit 0",
       "  fi",
-      '  if [[ "$target" == */ai.openclaw.mac.elevation-host && "$state" == "elevation-loaded" ]]; then',
+      '  if [[ "$target" == */ai.afora.mac.elevation-host && "$state" == "elevation-loaded" ]]; then',
       "    printf '%s\\n' '    pid = 555555'",
       "    exit 0",
       "  fi",
       "  printf '%s\\n' 'Could not find service in domain' >&2",
       "  exit 113",
       "fi",
-      'if [[ "$command_name" == "bootout" && "$target" == */ai.openclaw.mac.node-fixture ]]; then',
+      'if [[ "$command_name" == "bootout" && "$target" == */ai.afora.mac.node-fixture ]]; then',
       "  printf '%s\\n' source-absent >\"$TEST_LAUNCH_STATE_FILE\"",
       '  if [[ "$TEST_RECREATE_SOURCE_DURING_BOOTOUT" == "1" ]]; then',
       "    printf '%s\\n' replacement-owner >\"$TEST_SOURCE_PLIST\"",
       "  fi",
       "  exit 0",
       "fi",
-      'if [[ "$command_name" == "bootout" && "$target" == */ai.openclaw.mac.elevation-host ]]; then',
+      'if [[ "$command_name" == "bootout" && "$target" == */ai.afora.mac.elevation-host ]]; then',
       "  printf '%s\\n' elevation-absent >\"$TEST_LAUNCH_STATE_FILE\"",
       "  exit 0",
       "fi",
       'if [[ "$command_name" == "bootstrap" ]]; then',
       '  plist="${3:-}"',
-      '  if [[ "$plist" == *ai.openclaw.mac.elevation-host.plist ]]; then',
+      '  if [[ "$plist" == *ai.afora.mac.elevation-host.plist ]]; then',
       '    if [[ "$TEST_LAUNCHD_BOOTSTRAP_FAILS" == "1" ]]; then',
       '      if [[ "$TEST_RECREATE_SOURCE_ON_FAILURE" == "1" ]]; then',
       "        printf '%s\\n' replacement-owner >\"$TEST_SOURCE_PLIST\"",
@@ -942,7 +942,7 @@ function createInstallRollbackHarness(
       "    printf '%s\\n' elevation-loaded >\"$TEST_LAUNCH_STATE_FILE\"",
       "    exit 0",
       "  fi",
-      '  if [[ "$plist" == *ai.openclaw.mac.node-fixture.plist ]]; then',
+      '  if [[ "$plist" == *ai.afora.mac.node-fixture.plist ]]; then',
       '    if [[ "$TEST_KILL_AFTER_MIGRATION_RESTORE_BOOTSTRAP_ONCE" == "1" && ! -e "$TEST_RECOVERY_KILL_MARKER" ]]; then',
       '      : >"$TEST_RECOVERY_KILL_MARKER"',
       "      printf '%s\\n' source-loaded >\"$TEST_LAUNCH_STATE_FILE\"",
@@ -972,7 +972,7 @@ function createInstallRollbackHarness(
       "set -euo pipefail",
       'if [[ "${1:-}" == "bridge" ]]; then',
       '  if [[ "${TEST_REMOVE_INSTALLED_EXECUTABLE_AFTER_READINESS:-0}" == "1" ]]; then',
-      '    rm -f "$TEST_INSTALLED_APP_PATH/Contents/MacOS/OpenClaw"',
+      '    rm -f "$TEST_INSTALLED_APP_PATH/Contents/MacOS/Afora"',
       "  fi",
       '  printf \'%s\\n\' \'{"success":true,"data":{"selected":{"handshake":{"hostIdentity":{"processIdentifier":555555}}}}}\'',
       "  exit 0",
@@ -1084,17 +1084,17 @@ describe("mac elevation host command contract", () => {
     expect(result.stdout).toContain("status");
     expect(result.stdout).toContain("recover");
     expect(result.stdout).toContain("uninstall");
-    expect(result.stdout).toContain("never rewrites ordinary OpenClaw");
+    expect(result.stdout).toContain("never rewrites ordinary Afora");
   });
 
   it("keeps the elevation service separate and fail-closed", () => {
     const script = readFileSync(scriptPath, "utf8");
 
-    expect(script).toContain('ELEVATION_LABEL="ai.openclaw.mac.elevation-host"');
-    expect(script).toContain('NORMAL_LABEL="ai.openclaw.mac"');
+    expect(script).toContain('ELEVATION_LABEL="ai.afora.mac.elevation-host"');
+    expect(script).toContain('NORMAL_LABEL="ai.afora.mac"');
     expect(script).toContain("ordinary Launch at login is installed");
-    expect(script).toContain("conflicting OpenClaw launch agent is installed");
-    expect(script).toContain("unsupervised or conflicting OpenClaw process is running");
+    expect(script).toContain("conflicting Afora launch agent is installed");
+    expect(script).toContain("unsupervised or conflicting Afora process is running");
     expect(script).toContain("plutil -insert KeepAlive -bool true");
     expect(script).toContain("plutil -insert RunAtLoad -bool true");
     expect(script).toContain('[$executable,"--elevation-host"]');
@@ -1179,7 +1179,7 @@ describe("mac elevation host command contract", () => {
     () => {
       const harness = createMigrationPlanHarness();
       const plist = readFileSync(harness.plistPath, "utf8").replace(
-        `<key>OPENCLAW_CONFIG_PATH</key><string>${harness.configPath}</string>\n`,
+        `<key>AFORA_CONFIG_PATH</key><string>${harness.configPath}</string>\n`,
         "",
       );
       writeFileSync(harness.plistPath, plist, "utf8");
@@ -1199,7 +1199,7 @@ describe("mac elevation host command contract", () => {
 
       expect(result.status).toBe(1);
       expect(result.stderr).toContain(
-        "--config-path does not match the migration LaunchAgent OPENCLAW_CONFIG_PATH",
+        "--config-path does not match the migration LaunchAgent AFORA_CONFIG_PATH",
       );
     },
   );
@@ -1327,7 +1327,7 @@ describe("mac elevation host command contract", () => {
     () => {
       const harness = createCanonicalNodeMigrationHarness();
       const binDir = path.join(harness.env.HOME, "bin");
-      rmSync(path.join(binDir, "openclaw"));
+      rmSync(path.join(binDir, "afora"));
       const jqPath = spawnSync("bash", ["-lc", "command -v jq"], {
         encoding: "utf8",
       }).stdout.trim();
@@ -1342,7 +1342,7 @@ describe("mac elevation host command contract", () => {
       );
 
       expect(result.status).toBe(1);
-      expect(result.stderr).toContain("openclaw CLI is required for gateway node attestation");
+      expect(result.stderr).toContain("afora CLI is required for gateway node attestation");
     },
   );
 
@@ -1424,7 +1424,7 @@ describe("mac elevation host command contract", () => {
       const harness = createCanonicalNodeMigrationHarness();
       const relativeBin = path.join(harness.env.HOME, "relative-cli");
       mkdirSync(relativeBin);
-      writeExecutable(path.join(relativeBin, "openclaw"), "#!/bin/sh\nexit 0\n");
+      writeExecutable(path.join(relativeBin, "afora"), "#!/bin/sh\nexit 0\n");
       const relativePathEntry = path.relative(process.cwd(), relativeBin);
       const result = runInstaller(
         scriptPath,
@@ -1436,7 +1436,7 @@ describe("mac elevation host command contract", () => {
       );
 
       expect(result.status).toBe(1);
-      expect(result.stderr).toContain("openclaw CLI is required for gateway node attestation");
+      expect(result.stderr).toContain("afora CLI is required for gateway node attestation");
     },
   );
 
@@ -1464,9 +1464,9 @@ describe("mac elevation host command contract", () => {
       writeFileSync(
         harness.envPath,
         [
-          "# Generated by OpenClaw. Do not edit while the gateway service is installed.",
-          "export OPENCLAW_STATE_DIR='relative-state'",
-          `export OPENCLAW_CONFIG_PATH='${harness.configPath}'`,
+          "# Generated by Afora. Do not edit while the gateway service is installed.",
+          "export AFORA_STATE_DIR='relative-state'",
+          `export AFORA_CONFIG_PATH='${harness.configPath}'`,
           "",
         ].join("\n"),
         "utf8",
@@ -1478,7 +1478,7 @@ describe("mac elevation host command contract", () => {
       );
 
       expect(result.status).toBe(1);
-      expect(result.stderr).toContain("canonical node OPENCLAW_STATE_DIR must be absolute");
+      expect(result.stderr).toContain("canonical node AFORA_STATE_DIR must be absolute");
     },
   );
 
@@ -1488,7 +1488,7 @@ describe("mac elevation host command contract", () => {
       const harness = createCanonicalNodeMigrationHarness();
       writeFileSync(
         harness.envPath,
-        `${readFileSync(harness.envPath, "utf8")}OPENCLAW_STATE_DIR=/attacker-selected\n`,
+        `${readFileSync(harness.envPath, "utf8")}AFORA_STATE_DIR=/attacker-selected\n`,
         "utf8",
       );
       const result = runInstaller(
@@ -1601,7 +1601,7 @@ describe("mac elevation host command contract", () => {
     "restores the exact app, source LaunchAgent, and loaded state when cutover launchd bootstrap fails",
     () => {
       const harness = createInstallRollbackHarness();
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const priorFailedPath = `${harness.appPath}.failed-elevation-host-${"a".repeat(40)}`;
       mkdirSync(priorFailedPath);
       const result = runInstaller(
@@ -1623,7 +1623,7 @@ describe("mac elevation host command contract", () => {
 
       expect(result.status).toBe(1);
       expect(result.stderr).toContain("could not bootstrap elevation host");
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
@@ -1635,7 +1635,7 @@ describe("mac elevation host command contract", () => {
             harness.env.HOME,
             "Library",
             "LaunchAgents",
-            "ai.openclaw.mac.elevation-host.plist",
+            "ai.afora.mac.elevation-host.plist",
           ),
         ),
       ).toBe(false);
@@ -1671,7 +1671,7 @@ describe("mac elevation host command contract", () => {
 
       expect(result.status).toBe(1);
       expect(result.stderr).toContain(
-        "installed OpenClaw app does not pass strict signature and identity validation",
+        "installed Afora app does not pass strict signature and identity validation",
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
       expect(readFileSync(harness.launchStateFile, "utf8").trim()).toBe("source-loaded");
@@ -1686,7 +1686,7 @@ describe("mac elevation host command contract", () => {
         launchdBootstrapFails: false,
         recreateSourceDuringBootout: true,
       });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const result = runInstaller(
         harness.installerPath,
         [
@@ -1710,7 +1710,7 @@ describe("mac elevation host command contract", () => {
       );
       expect(result.stderr).toContain("automatic elevation-host rollback was incomplete");
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe("replacement-owner\n");
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(readFileSync(harness.launchStateFile, "utf8").trim()).toBe("elevation-absent");
@@ -1759,7 +1759,7 @@ describe("mac elevation host command contract", () => {
     "never overwrites a raced migration custody destination",
     () => {
       const harness = createInstallRollbackHarness({ raceMigrationCustodyDestination: true });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const result = runInstaller(
         harness.installerPath,
         [
@@ -1780,7 +1780,7 @@ describe("mac elevation host command contract", () => {
       expect(result.status).toBe(1);
       expect(result.stderr).toContain("could not take exact custody");
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       const custodyName = readdirSync(path.dirname(harness.sourcePlist)).find((name) =>
@@ -1839,7 +1839,7 @@ describe("mac elevation host command contract", () => {
     "recovers a persisted install killed after migration custody",
     () => {
       const harness = createInstallRollbackHarness({ killAfterInitialMigrationCustody: true });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const installArgs = [
         "install",
         "--archive",
@@ -1876,7 +1876,7 @@ describe("mac elevation host command contract", () => {
         harness.env,
       );
       expect(recovered.status, recovered.stderr).toBe(0);
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
@@ -1890,7 +1890,7 @@ describe("mac elevation host command contract", () => {
     "recovers on the first attempt when killed immediately after publishing the prepared receipt",
     () => {
       const harness = createInstallRollbackHarness({ killAfterPendingReceipt: true });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const interrupted = runInstaller(
         harness.installerPath,
         [
@@ -1927,7 +1927,7 @@ describe("mac elevation host command contract", () => {
         harness.env,
       );
       expect(recovered.status, recovered.stderr).toBe(0);
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
@@ -1988,7 +1988,7 @@ describe("mac elevation host command contract", () => {
     "recovers a persisted install killed after rollback app custody",
     () => {
       const harness = createInstallRollbackHarness({ killAfterRollbackAppCustody: true });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const interrupted = runInstaller(
         harness.installerPath,
         [
@@ -2025,7 +2025,7 @@ describe("mac elevation host command contract", () => {
         harness.env,
       );
       expect(recovered.status, recovered.stderr).toBe(0);
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
@@ -2041,7 +2041,7 @@ describe("mac elevation host command contract", () => {
       const harness = createInstallRollbackHarness({
         replaceAuthenticatedRenameHelperBeforeUse: true,
       });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const result = runInstaller(
         harness.installerPath,
         [
@@ -2062,7 +2062,7 @@ describe("mac elevation host command contract", () => {
       expect(result.status).toBe(1);
       expect(result.stderr).toContain("authenticated elevation helper could not sync");
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(existsSync(path.join(harness.stateDir, "elevation-host-install.json"))).toBe(false);
@@ -2107,7 +2107,7 @@ describe("mac elevation host command contract", () => {
         sameSourceExistingApp: true,
         signalBeforeRollbackAppMove: true,
       });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const result = runInstaller(
         harness.installerPath,
         [
@@ -2126,7 +2126,7 @@ describe("mac elevation host command contract", () => {
       );
 
       expect(result.signal).toBe("SIGTERM");
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
@@ -2139,7 +2139,7 @@ describe("mac elevation host command contract", () => {
     "restores source ownership when a dangling rollback destination races the exclusive move",
     () => {
       const harness = createInstallRollbackHarness({ danglingRollbackDuringMove: true });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const result = runInstaller(
         harness.installerPath,
         [
@@ -2159,7 +2159,7 @@ describe("mac elevation host command contract", () => {
 
       expect(result.status).toBe(1);
       expect(result.stderr).toContain("could not take verified custody");
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
@@ -2171,7 +2171,7 @@ describe("mac elevation host command contract", () => {
     "refuses cutover when an app-backed owner restarts before bootout completes",
     () => {
       const harness = createInstallRollbackHarness({ restartAppDuringBootout: true });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const result = runInstaller(
         harness.installerPath,
         [
@@ -2190,9 +2190,9 @@ describe("mac elevation host command contract", () => {
       );
 
       expect(result.status).toBe(1);
-      expect(result.stderr).toContain("an OpenClaw app process survived owner shutdown");
+      expect(result.stderr).toContain("an Afora app process survived owner shutdown");
       expect(result.stderr).toContain("automatic elevation-host rollback was incomplete");
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(existsSync(harness.sourcePlist)).toBe(false);
@@ -2212,7 +2212,7 @@ describe("mac elevation host command contract", () => {
     "rechecks launchd after a transient replacement app process exits",
     () => {
       const harness = createInstallRollbackHarness({ transientAppRestartReloadsJob: true });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const result = runInstaller(
         harness.installerPath,
         [
@@ -2232,7 +2232,7 @@ describe("mac elevation host command contract", () => {
 
       expect(result.status).toBe(1);
       expect(result.stderr).toContain("migration LaunchAgent reloaded during owner shutdown");
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
@@ -2242,10 +2242,10 @@ describe("mac elevation host command contract", () => {
   );
 
   it.skipIf(process.platform !== "darwin")(
-    "never treats a live but uninspectable OpenClaw PID as quiescent",
+    "never treats a live but uninspectable Afora PID as quiescent",
     () => {
       const harness = createInstallRollbackHarness({ failLsofInspection: true });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const result = runInstaller(
         harness.installerPath,
         [
@@ -2264,9 +2264,9 @@ describe("mac elevation host command contract", () => {
       );
 
       expect(result.status).toBe(1);
-      expect(result.stderr).toContain("an OpenClaw app process survived owner shutdown");
+      expect(result.stderr).toContain("an Afora app process survived owner shutdown");
       expect(result.stderr).toContain("automatic elevation-host rollback was incomplete");
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(existsSync(harness.sourcePlist)).toBe(false);
@@ -2284,7 +2284,7 @@ describe("mac elevation host command contract", () => {
     "never treats a pgrep inspection error as quiescence",
     () => {
       const harness = createInstallRollbackHarness({ failPgrepInspection: true });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const result = runInstaller(
         harness.installerPath,
         [
@@ -2303,9 +2303,9 @@ describe("mac elevation host command contract", () => {
       );
 
       expect(result.status).toBe(1);
-      expect(result.stderr).toContain("an OpenClaw app process survived owner shutdown");
+      expect(result.stderr).toContain("an Afora app process survived owner shutdown");
       expect(result.stderr).toContain("automatic elevation-host rollback was incomplete");
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(existsSync(harness.sourcePlist)).toBe(false);
@@ -2342,7 +2342,7 @@ describe("mac elevation host command contract", () => {
 
       expect(result.status).toBe(1);
       expect(result.stderr).toContain(
-        "installed OpenClaw app does not pass strict signature and identity validation",
+        "installed Afora app does not pass strict signature and identity validation",
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
       expect(readFileSync(harness.launchStateFile, "utf8").trim()).toBe("source-loaded");
@@ -2413,7 +2413,7 @@ describe("mac elevation host command contract", () => {
         readFileSync(path.join(harness.stateDir, "elevation-host-install.json"), "utf8"),
       ) as Record<string, unknown>;
       expect(installReceipt).toMatchObject({
-        kind: "openclaw-elevation-install",
+        kind: "afora-elevation-install",
         nodeId: "fixture-node",
         nodeProfile: "primary",
       });
@@ -2491,7 +2491,7 @@ describe("mac elevation host command contract", () => {
         finalCDHashMismatch: true,
         launchdBootstrapFails: false,
       });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const result = runInstaller(
         harness.installerPath,
         [
@@ -2511,7 +2511,7 @@ describe("mac elevation host command contract", () => {
 
       expect(result.status).toBe(1);
       expect(result.stderr).toContain("artifact receipt x86_64 CDHash mismatch");
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
@@ -2527,7 +2527,7 @@ describe("mac elevation host command contract", () => {
         finalSignatureInvalid: true,
         launchdBootstrapFails: false,
       });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const result = runInstaller(
         harness.installerPath,
         [
@@ -2546,7 +2546,7 @@ describe("mac elevation host command contract", () => {
       );
 
       expect(result.status).toBe(1);
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
@@ -2562,7 +2562,7 @@ describe("mac elevation host command contract", () => {
         launchdBootstrapFails: false,
         removeInstalledExecutableAfterReadiness: true,
       });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const result = runInstaller(
         harness.installerPath,
         [
@@ -2581,7 +2581,7 @@ describe("mac elevation host command contract", () => {
       );
 
       expect(result.status).toBe(1);
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
@@ -2589,7 +2589,7 @@ describe("mac elevation host command contract", () => {
       expect(existsSync(path.join(harness.stateDir, "elevation-host-install.json"))).toBe(false);
       expect(
         readdirSync(harness.env.HOME).some((name) =>
-          name.startsWith("InstalledOpenClaw.app.failed-elevation-host-"),
+          name.startsWith("InstalledAfora.app.failed-elevation-host-"),
         ),
       ).toBe(true);
     },
@@ -2636,7 +2636,7 @@ describe("mac elevation host command contract", () => {
         failAfterReceiptCommitMove: true,
         launchdBootstrapFails: false,
       });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const result = runInstaller(
         harness.installerPath,
         [
@@ -2656,7 +2656,7 @@ describe("mac elevation host command contract", () => {
 
       expect(result.status).toBe(1);
       expect(result.stderr).toContain("could not atomically publish the install receipt");
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
@@ -2741,7 +2741,7 @@ describe("mac elevation host command contract", () => {
     "explicitly recovers the prior app and source job from the verified install receipt",
     () => {
       const harness = createInstallRollbackHarness({ launchdBootstrapFails: false });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const installed = runInstaller(
         harness.installerPath,
         [
@@ -2766,7 +2766,7 @@ describe("mac elevation host command contract", () => {
         harness.env,
       );
       expect(recovered.status, recovered.stderr).toBe(0);
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
@@ -2784,7 +2784,7 @@ describe("mac elevation host command contract", () => {
     "restores a verified backup when the current app is missing",
     () => {
       const harness = createInstallRollbackHarness({ launchdBootstrapFails: false });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const installed = runInstaller(
         harness.installerPath,
         [
@@ -2833,7 +2833,7 @@ describe("mac elevation host command contract", () => {
         harness.env,
       );
       expect(recovered.status, recovered.stderr).toBe(0);
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
@@ -2849,7 +2849,7 @@ describe("mac elevation host command contract", () => {
         killDuringMigrationRestoreBootstrapOnce: true,
         launchdBootstrapFails: false,
       });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const installed = runInstaller(
         harness.installerPath,
         [
@@ -2886,7 +2886,7 @@ describe("mac elevation host command contract", () => {
         harness.env,
       );
       expect(resumed.status, resumed.stderr).toBe(0);
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
@@ -2930,7 +2930,7 @@ describe("mac elevation host command contract", () => {
       const receiptPath = path.join(harness.stateDir, "elevation-host-install.json");
       const recordedIdentity = spawnSync(
         "/usr/bin/xattr",
-        ["-p", "com.openclaw.elevation.recovery-migration-identity", receiptPath],
+        ["-p", "com.afora.elevation.recovery-migration-identity", receiptPath],
         { encoding: "utf8" },
       ).stdout.trim();
       expect(recordedIdentity).toBe(durableFileIdentity(harness.sourcePlist));
@@ -2953,7 +2953,7 @@ describe("mac elevation host command contract", () => {
         killDuringMigrationRestoreBootstrapOnce: true,
         launchdBootstrapFails: false,
       });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const installed = runInstaller(
         harness.installerPath,
         [
@@ -2994,7 +2994,7 @@ describe("mac elevation host command contract", () => {
 
       const resumed = runInstaller(harness.installerPath, recoveryArgs, harness.env);
       expect(resumed.status, resumed.stderr).toBe(0);
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
@@ -3090,7 +3090,7 @@ describe("mac elevation host command contract", () => {
         harness.env,
       );
       expect(recovered.status).toBe(1);
-      expect(recovered.stderr).toContain("current OpenClaw app has an unsupported entry type");
+      expect(recovered.stderr).toContain("current Afora app has an unsupported entry type");
       expect(readFileSync(installReceiptPath, "utf8")).toBe(receiptContents);
       expect(readFileSync(harness.launchStateFile, "utf8").trim()).toBe("elevation-loaded");
     },
@@ -3100,7 +3100,7 @@ describe("mac elevation host command contract", () => {
     "places a damaged current app into evidence custody before restoring its backup",
     () => {
       const harness = createInstallRollbackHarness({ launchdBootstrapFails: false });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const installed = runInstaller(
         harness.installerPath,
         [
@@ -3137,13 +3137,13 @@ describe("mac elevation host command contract", () => {
         harness.env,
       );
       expect(recovered.status, recovered.stderr).toBe(0);
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
       expect(
         readdirSync(harness.env.HOME).some((name) =>
-          name.startsWith("InstalledOpenClaw.app.failed-elevation-host-"),
+          name.startsWith("InstalledAfora.app.failed-elevation-host-"),
         ),
       ).toBe(true);
     },
@@ -3199,7 +3199,7 @@ describe("mac elevation host command contract", () => {
       expect(readFileSync(installReceiptPath, "utf8")).toBe(receiptContents);
       expect(
         readdirSync(harness.env.HOME).some((name) =>
-          name.startsWith("InstalledOpenClaw.app.failed-elevation-host-"),
+          name.startsWith("InstalledAfora.app.failed-elevation-host-"),
         ),
       ).toBe(true);
     },
@@ -3253,7 +3253,7 @@ describe("mac elevation host command contract", () => {
       expect(recovered.status).toBe(1);
       expect(recovered.stderr).toContain("Restored replacement app entry at");
       expect(recovered.stderr).toContain(
-        "recovery failed and the current OpenClaw installation could not be restored completely",
+        "recovery failed and the current Afora installation could not be restored completely",
       );
       expect(readFileSync(path.join(harness.appPath, "Contents", "replacement"), "utf8")).toBe(
         "replacement-directory\n",
@@ -3400,7 +3400,7 @@ describe("mac elevation host command contract", () => {
       const installReceiptPath = path.join(harness.stateDir, "elevation-host-install.json");
       const receiptContents = readFileSync(installReceiptPath, "utf8");
       const currentBinary = readFileSync(
-        path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"),
+        path.join(harness.appPath, "Contents", "MacOS", "Afora"),
       );
 
       const recovered = runInstaller(
@@ -3412,7 +3412,7 @@ describe("mac elevation host command contract", () => {
       expect(recovered.stderr).toContain("Preserved reversed migration plist at");
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe("replacement-owner\n");
       expect(readFileSync(installReceiptPath, "utf8")).toBe(receiptContents);
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         currentBinary,
       );
     },
@@ -3446,7 +3446,7 @@ describe("mac elevation host command contract", () => {
       const installReceiptPath = path.join(harness.stateDir, "elevation-host-install.json");
       const receiptContents = readFileSync(installReceiptPath, "utf8");
       const currentBinary = readFileSync(
-        path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"),
+        path.join(harness.appPath, "Contents", "MacOS", "Afora"),
       );
 
       const recovered = runInstaller(
@@ -3458,13 +3458,13 @@ describe("mac elevation host command contract", () => {
       expect(recovered.status).toBe(1);
       expect(recovered.stderr).toContain("Restored unexpected reversal entry at");
       expect(recovered.stderr).toContain(
-        "recovery failed and the current OpenClaw installation could not be restored completely",
+        "recovery failed and the current Afora installation could not be restored completely",
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
       expect(readFileSync(displacedSource, "utf8")).toBe(harness.sourceContents);
       expect(lstatSync(harness.sourcePlist).ino).not.toBe(lstatSync(displacedSource).ino);
       expect(readFileSync(installReceiptPath, "utf8")).toBe(receiptContents);
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         currentBinary,
       );
       expect(readFileSync(harness.launchStateFile, "utf8").trim()).toBe("elevation-absent");
@@ -3659,7 +3659,7 @@ describe("mac elevation host command contract", () => {
         launchdBootstrapFails: false,
         signalDuringRecoveryAppMove: true,
       });
-      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"));
+      const oldBinary = readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"));
       const installed = runInstaller(
         harness.installerPath,
         [
@@ -3685,7 +3685,7 @@ describe("mac elevation host command contract", () => {
       );
 
       expect(recovered.signal).toBe("SIGTERM");
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         oldBinary,
       );
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe(harness.sourceContents);
@@ -3767,7 +3767,7 @@ describe("mac elevation host command contract", () => {
       const installReceiptPath = path.join(harness.stateDir, "elevation-host-install.json");
       const currentReceipt = readFileSync(installReceiptPath, "utf8");
       const currentBinary = readFileSync(
-        path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"),
+        path.join(harness.appPath, "Contents", "MacOS", "Afora"),
       );
       const rollbackPath = (JSON.parse(currentReceipt) as { backupPath: string }).backupPath;
 
@@ -3779,10 +3779,10 @@ describe("mac elevation host command contract", () => {
 
       expect(recovered.status).toBe(1);
       expect(recovered.stderr).toContain(
-        "could not restore the previous OpenClaw installation completely",
+        "could not restore the previous Afora installation completely",
       );
       expect(readFileSync(installReceiptPath, "utf8")).toBe(currentReceipt);
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         currentBinary,
       );
       expect(existsSync(rollbackPath)).toBe(true);
@@ -3827,7 +3827,7 @@ describe("mac elevation host command contract", () => {
 
       expect(recovered.status).toBe(1);
       expect(recovered.stderr).toContain(
-        "current OpenClaw installation could not be restored completely",
+        "current Afora installation could not be restored completely",
       );
       expect(readFileSync(installReceiptPath, "utf8")).toBe(currentReceipt);
       expect(readFileSync(installReceiptPath, "utf8")).not.toContain("partial");
@@ -3858,7 +3858,7 @@ describe("mac elevation host command contract", () => {
       const installReceiptPath = path.join(harness.stateDir, "elevation-host-install.json");
       const currentReceipt = readFileSync(installReceiptPath, "utf8");
       const currentBinary = readFileSync(
-        path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"),
+        path.join(harness.appPath, "Contents", "MacOS", "Afora"),
       );
       const rollbackPath = (JSON.parse(currentReceipt) as { backupPath: string }).backupPath;
       rmSync(rollbackPath, { recursive: true });
@@ -3874,7 +3874,7 @@ describe("mac elevation host command contract", () => {
         "receipt app backup is missing, symlinked, or not a bundle directory",
       );
       expect(readFileSync(installReceiptPath, "utf8")).toBe(currentReceipt);
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         currentBinary,
       );
       expect(readFileSync(harness.launchStateFile, "utf8").trim()).toBe("elevation-loaded");
@@ -3905,7 +3905,7 @@ describe("mac elevation host command contract", () => {
       const installReceiptPath = path.join(harness.stateDir, "elevation-host-install.json");
       const currentReceipt = readFileSync(installReceiptPath, "utf8");
       const currentBinary = readFileSync(
-        path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"),
+        path.join(harness.appPath, "Contents", "MacOS", "Afora"),
       );
       const rollbackPath = (JSON.parse(currentReceipt) as { backupPath: string }).backupPath;
       writeFileSync(path.join(rollbackPath, "Contents", "invalid-signature"), "invalid\n", "utf8");
@@ -3921,7 +3921,7 @@ describe("mac elevation host command contract", () => {
         "receipt app backup does not pass strict signature and identity validation",
       );
       expect(readFileSync(installReceiptPath, "utf8")).toBe(currentReceipt);
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         currentBinary,
       );
       expect(readFileSync(harness.launchStateFile, "utf8").trim()).toBe("elevation-loaded");
@@ -3953,7 +3953,7 @@ describe("mac elevation host command contract", () => {
       const currentReceipt = readFileSync(installReceiptPath, "utf8");
       const receipt = JSON.parse(currentReceipt) as { migration: { backupPlist: string } };
       const currentBinary = readFileSync(
-        path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"),
+        path.join(harness.appPath, "Contents", "MacOS", "Afora"),
       );
       writeFileSync(receipt.migration.backupPlist, "corrupt\n", "utf8");
 
@@ -3966,7 +3966,7 @@ describe("mac elevation host command contract", () => {
       expect(recovered.status).toBe(1);
       expect(recovered.stderr).toContain("migration plist backup failed digest validation");
       expect(readFileSync(installReceiptPath, "utf8")).toBe(currentReceipt);
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         currentBinary,
       );
       expect(readFileSync(harness.launchStateFile, "utf8").trim()).toBe("elevation-loaded");
@@ -3984,7 +3984,7 @@ describe("mac elevation host command contract", () => {
 
       const harness = createInstallRollbackHarness({ launchdBootstrapFails: false });
       const originalBinary = readFileSync(
-        path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"),
+        path.join(harness.appPath, "Contents", "MacOS", "Afora"),
       );
       const firstInstall = runInstaller(
         harness.installerPath,
@@ -4062,7 +4062,7 @@ describe("mac elevation host command contract", () => {
       expect(legacyStatus.status, legacyStatus.stderr).toBe(0);
       expect(legacyStatus.stdout).toContain("Elevation host ready");
       writeExecutable(
-        path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"),
+        path.join(harness.appPath, "Contents", "MacOS", "Afora"),
         "#!/bin/sh\nexit 0\n",
       );
 
@@ -4094,7 +4094,7 @@ describe("mac elevation host command contract", () => {
         harness.env,
       );
       expect(legacyRecovery.status, legacyRecovery.stderr).toBe(0);
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         originalBinary,
       );
       expect(existsSync(installReceiptPath)).toBe(false);
@@ -4141,13 +4141,13 @@ describe("mac elevation host command contract", () => {
         }),
         "utf8",
       );
-      const customConfig = path.join(harness.stateDir, "custom-openclaw.json");
+      const customConfig = path.join(harness.stateDir, "custom-afora.json");
       writeFileSync(customConfig, "{}\n", "utf8");
       const elevationPlistPath = path.join(
         harness.env.HOME,
         "Library",
         "LaunchAgents",
-        "ai.openclaw.mac.elevation-host.plist",
+        "ai.afora.mac.elevation-host.plist",
       );
       writeFileSync(
         elevationPlistPath,
@@ -4204,7 +4204,7 @@ describe("mac elevation host command contract", () => {
       expect(installed.status, installed.stderr).toBe(0);
       writeFileSync(harness.sourcePlist, "replacement owner\n", "utf8");
       const installedBinary = readFileSync(
-        path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"),
+        path.join(harness.appPath, "Contents", "MacOS", "Afora"),
       );
 
       const recovered = runInstaller(
@@ -4213,9 +4213,9 @@ describe("mac elevation host command contract", () => {
         harness.env,
       );
       expect(recovered.status).toBe(1);
-      expect(recovered.stderr).toContain("could not restore the previous OpenClaw installation");
+      expect(recovered.stderr).toContain("could not restore the previous Afora installation");
       expect(readFileSync(harness.sourcePlist, "utf8")).toBe("replacement owner\n");
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         installedBinary,
       );
       expect(readFileSync(harness.launchStateFile, "utf8").trim()).toBe("elevation-loaded");
@@ -4252,7 +4252,7 @@ describe("mac elevation host command contract", () => {
       );
       expect(installed.status, installed.stderr).toBe(0);
       const installedBinary = readFileSync(
-        path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"),
+        path.join(harness.appPath, "Contents", "MacOS", "Afora"),
       );
       symlinkSync(path.join(harness.env.HOME, "missing-owner.plist"), harness.sourcePlist);
 
@@ -4262,8 +4262,8 @@ describe("mac elevation host command contract", () => {
         harness.env,
       );
       expect(recovered.status).toBe(1);
-      expect(recovered.stderr).toContain("could not restore the previous OpenClaw installation");
-      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "OpenClaw"))).toEqual(
+      expect(recovered.stderr).toContain("could not restore the previous Afora installation");
+      expect(readFileSync(path.join(harness.appPath, "Contents", "MacOS", "Afora"))).toEqual(
         installedBinary,
       );
     },
@@ -4345,7 +4345,7 @@ describe("mac elevation host command contract", () => {
     );
     const relaunchBody = script.slice(
       script.indexOf("relaunch_adopted_app()"),
-      script.indexOf("run_openclaw_cli()"),
+      script.indexOf("run_afora_cli()"),
     );
     const recoverBody = script.slice(
       script.indexOf("recover_install()"),
@@ -4362,15 +4362,15 @@ describe("mac elevation host command contract", () => {
     expect(installBody.indexOf("adopted_app_is_current || fail")).toBeLessThan(
       installBody.indexOf('kill "$ADOPTION_PID"'),
     );
-    expect(relaunchBody).toContain('--env "OPENCLAW_STATE_DIR=$STATE_DIR"');
-    expect(relaunchBody).toContain('--env "OPENCLAW_CONFIG_PATH=$CONFIG_PATH"');
+    expect(relaunchBody).toContain('--env "AFORA_STATE_DIR=$STATE_DIR"');
+    expect(relaunchBody).toContain('--env "AFORA_CONFIG_PATH=$CONFIG_PATH"');
     expect(relaunchBody).toContain("-g");
     expect(relaunchBody).toContain("wait_for_adopted_app_resume");
     expect(installBody.indexOf("CUTOVER_ADOPTION_TERMINATION_SENT=1")).toBeGreaterThan(
       installBody.indexOf('kill "$ADOPTION_PID"'),
     );
     expect(installBody.indexOf("CUTOVER_ADOPTION_TERMINATION_SENT=1")).toBeLessThan(
-      installBody.indexOf("adopted OpenClaw process did not exit"),
+      installBody.indexOf("adopted Afora process did not exit"),
     );
     expect(recoverBody).toContain("restore_adopted_app_after_cutover || recovery_failed=1");
     expect(recoverHostBody).toContain('CONFIG_PATH="$(jq -r \'.configPath\' "$RECEIPT_PATH")"');
@@ -4470,10 +4470,10 @@ describe("mac elevation host command contract", () => {
     const script = readFileSync(scriptPath, "utf8");
 
     expect(script).toContain(
-      'prefix="OpenClaw-${source_commit}-Peekaboo-${EXPECTED_PEEKABOO_SOURCE_COMMIT}-stable"',
+      'prefix="Afora-${source_commit}-Peekaboo-${EXPECTED_PEEKABOO_SOURCE_COMMIT}-stable"',
     );
     expect(script).toContain("immutable elevation output already exists");
-    expect(script).toContain("OPENCLAW_MAC_SIGNING_VARIANT=elevation-host");
+    expect(script).toContain("AFORA_MAC_SIGNING_VARIANT=elevation-host");
     expect(script).toContain("SKIP_DMG=1");
     expect(script).toContain("NOTARY_RESULT_FILE");
     expect(script).toContain("archiveSha256");
@@ -4481,7 +4481,7 @@ describe("mac elevation host command contract", () => {
     expect(script).toContain('installer_path="$OUTPUT_DIR/${prefix}-installer.sh"');
     expect(script).toContain("installerSha256");
     expect(script).toContain("installerChecksum");
-    expect(script).toContain("openclaw-elevation-artifact");
+    expect(script).toContain("afora-elevation-artifact");
     expect(script).toContain("verify_artifact_receipt");
     expect(script).toContain(
       'git -C "$ROOT_DIR" show "${source_commit}:scripts/mac-elevation-host.sh"',
@@ -4490,7 +4490,7 @@ describe("mac elevation host command contract", () => {
     expect(script).not.toContain("--elevation-installer");
     expect(script).toContain("notarizationId");
     expect(script).toContain("entitlementsSha256");
-    expect(script).toContain("elevation archive root must contain exactly OpenClaw.app");
+    expect(script).toContain("elevation archive root must contain exactly Afora.app");
     expect(script).toContain("codesign --verify --strict --test-requirement='=notarized'");
     expect(script).toContain('spctl --assess --type execute "$app"');
   });
@@ -4516,10 +4516,10 @@ describe("mac elevation host command contract", () => {
   it.skipIf(process.platform !== "darwin")(
     "renders a persistent background-only launchd job without changing normal login",
     () => {
-      const tempRoot = tempDirs.make("openclaw-elevation-plist-");
+      const tempRoot = tempDirs.make("afora-elevation-plist-");
       const stateDir = path.join(tempRoot, "state");
-      const configPath = path.join(stateDir, "openclaw.json");
-      const appPath = path.join(tempRoot, "OpenClaw.app");
+      const configPath = path.join(stateDir, "afora.json");
+      const appPath = path.join(tempRoot, "Afora.app");
       const result = spawnSync(
         "bash",
         [
@@ -4547,22 +4547,22 @@ describe("mac elevation host command contract", () => {
       expect(json.status, json.stderr).toBe(0);
       const plist = JSON.parse(json.stdout) as Record<string, unknown>;
 
-      expect(plist.Label).toBe("ai.openclaw.mac.elevation-host");
+      expect(plist.Label).toBe("ai.afora.mac.elevation-host");
       expect(plist.ProgramArguments).toEqual([
-        `${appPath}/Contents/MacOS/OpenClaw`,
+        `${appPath}/Contents/MacOS/Afora`,
         "--elevation-host",
       ]);
       expect(plist.RunAtLoad).toBe(true);
       expect(plist.KeepAlive).toBe(true);
       expect(plist.EnvironmentVariables).toMatchObject({
-        OPENCLAW_CONFIG_PATH: configPath,
-        OPENCLAW_STATE_DIR: stateDir,
+        AFORA_CONFIG_PATH: configPath,
+        AFORA_STATE_DIR: stateDir,
       });
     },
   );
 
   it("rejects non-absolute state paths before probing host tools", () => {
-    const tempRoot = tempDirs.make("openclaw-elevation-input-");
+    const tempRoot = tempDirs.make("afora-elevation-input-");
     const result = runInstaller(scriptPath, ["status", "--state-dir", "relative/state"], {
       ...process.env,
       HOME: tempRoot,

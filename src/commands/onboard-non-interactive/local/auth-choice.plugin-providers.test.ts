@@ -1,10 +1,10 @@
 // Non-interactive plugin provider auth tests cover provider choice setup and runtime plugin install requirements.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { AforaConfig } from "../../../config/config.js";
 import { applyNonInteractivePluginProviderChoice } from "./auth-choice.plugin-providers.js";
 
 type RuntimePluginInstallResult = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   required: boolean;
   installed: boolean;
   status?: "installed" | "skipped" | "failed" | "timed_out";
@@ -12,7 +12,7 @@ type RuntimePluginInstallResult = {
 
 const ensureCodexRuntimePluginForModelSelection = vi.hoisted(() =>
   vi.fn(
-    async ({ cfg }: { cfg: OpenClawConfig }): Promise<RuntimePluginInstallResult> => ({
+    async ({ cfg }: { cfg: AforaConfig }): Promise<RuntimePluginInstallResult> => ({
       cfg,
       required: false,
       installed: false,
@@ -25,7 +25,7 @@ vi.mock("../../codex-runtime-plugin-install.js", () => ({
 }));
 const ensureCopilotRuntimePluginForModelSelection = vi.hoisted(() =>
   vi.fn(
-    async ({ cfg }: { cfg: OpenClawConfig }): Promise<RuntimePluginInstallResult> => ({
+    async ({ cfg }: { cfg: AforaConfig }): Promise<RuntimePluginInstallResult> => ({
       cfg,
       required: false,
       installed: false,
@@ -142,7 +142,7 @@ function expectRuntimeErrorIncludes(runtime: ReturnType<typeof createRuntime>, t
 async function applyProviderModelChoice(params: {
   providerId: string;
   modelRef: string;
-  nextConfig?: OpenClawConfig;
+  nextConfig?: AforaConfig;
 }) {
   const runtime = createRuntime();
   const nextConfig = params.nextConfig ?? { agents: { defaults: {} } };
@@ -151,7 +151,7 @@ async function applyProviderModelChoice(params: {
     pluginId: params.providerId,
     label: params.providerId,
   };
-  const runNonInteractive = vi.fn(async ({ config }: { config: OpenClawConfig }) => ({
+  const runNonInteractive = vi.fn(async ({ config }: { config: AforaConfig }) => ({
     ...config,
     agents: {
       ...config.agents,
@@ -260,11 +260,11 @@ describe("applyNonInteractivePluginProviderChoice", () => {
     });
 
     const result = await applyNonInteractivePluginProviderChoice({
-      nextConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      nextConfig: { agents: { defaults: {} } } as AforaConfig,
       authChoice: "provider-plugin:vllm:custom",
       opts: {} as never,
       runtime: runtime as never,
-      baseConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      baseConfig: { agents: { defaults: {} } } as AforaConfig,
       target,
       resolveApiKey: vi.fn(),
       toApiKeyCredential: vi.fn(),
@@ -289,7 +289,7 @@ describe("applyNonInteractivePluginProviderChoice", () => {
 
   it("installs an official catalog provider before applying a cold auth choice", async () => {
     const runtime = createRuntime();
-    const runNonInteractive = vi.fn(async ({ config }: { config: OpenClawConfig }) => ({
+    const runNonInteractive = vi.fn(async ({ config }: { config: AforaConfig }) => ({
       ...config,
       agents: {
         defaults: {
@@ -303,7 +303,7 @@ describe("applyNonInteractivePluginProviderChoice", () => {
       label: "Groq",
       origin: "bundled",
       install: {
-        npmSpec: "@openclaw/groq-provider",
+        npmSpec: "@afora/groq-provider",
         defaultChoice: "npm",
       },
     } as never);
@@ -326,11 +326,11 @@ describe("applyNonInteractivePluginProviderChoice", () => {
     });
 
     const result = await applyNonInteractivePluginProviderChoice({
-      nextConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      nextConfig: { agents: { defaults: {} } } as AforaConfig,
       authChoice: "groq-api-key",
       opts: { groqApiKey: "groq-key" } as never,
       runtime: runtime as never,
-      baseConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      baseConfig: { agents: { defaults: {} } } as AforaConfig,
       target,
       resolveApiKey: vi.fn(),
       toApiKeyCredential: vi.fn(),
@@ -349,7 +349,7 @@ describe("applyNonInteractivePluginProviderChoice", () => {
           pluginId: "groq",
           label: "Groq",
           install: {
-            npmSpec: "@openclaw/groq-provider",
+            npmSpec: "@afora/groq-provider",
             defaultChoice: "npm",
           },
           trustedSourceLinkedOfficialInstall: true,
@@ -380,11 +380,11 @@ describe("applyNonInteractivePluginProviderChoice", () => {
     } as never);
 
     const result = await applyNonInteractivePluginProviderChoice({
-      nextConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      nextConfig: { agents: { defaults: {} } } as AforaConfig,
       authChoice: "modelstudio-api-key",
       opts: {} as never,
       runtime: runtime as never,
-      baseConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      baseConfig: { agents: { defaults: {} } } as AforaConfig,
       target,
       resolveApiKey: vi.fn(),
       toApiKeyCredential: vi.fn(),
@@ -404,11 +404,11 @@ describe("applyNonInteractivePluginProviderChoice", () => {
     const runtime = createRuntime();
 
     const result = await applyNonInteractivePluginProviderChoice({
-      nextConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      nextConfig: { agents: { defaults: {} } } as AforaConfig,
       authChoice: "provider-plugin:workspace-provider:api-key",
       opts: {} as never,
       runtime: runtime as never,
-      baseConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      baseConfig: { agents: { defaults: {} } } as AforaConfig,
       target,
       resolveApiKey: vi.fn(),
       toApiKeyCredential: vi.fn(),
@@ -432,11 +432,11 @@ describe("applyNonInteractivePluginProviderChoice", () => {
     } as never);
 
     const result = await applyNonInteractivePluginProviderChoice({
-      nextConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      nextConfig: { agents: { defaults: {} } } as AforaConfig,
       authChoice: "workspace-provider-api-key",
       opts: {} as never,
       runtime: runtime as never,
-      baseConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      baseConfig: { agents: { defaults: {} } } as AforaConfig,
       target,
       resolveApiKey: vi.fn(),
       toApiKeyCredential: vi.fn(),
@@ -474,11 +474,11 @@ describe("applyNonInteractivePluginProviderChoice", () => {
     });
 
     const result = await applyNonInteractivePluginProviderChoice({
-      nextConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      nextConfig: { agents: { defaults: {} } } as AforaConfig,
       authChoice: "provider-plugin:demo-provider:custom",
       opts: {} as never,
       runtime: runtime as never,
-      baseConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      baseConfig: { agents: { defaults: {} } } as AforaConfig,
       target,
       resolveApiKey: vi.fn(),
       toApiKeyCredential: vi.fn(),
@@ -497,11 +497,11 @@ describe("applyNonInteractivePluginProviderChoice", () => {
     resolvePreferredProviderForAuthChoice.mockResolvedValue(undefined);
 
     await applyNonInteractivePluginProviderChoice({
-      nextConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      nextConfig: { agents: { defaults: {} } } as AforaConfig,
       authChoice: "openai-api-key",
       opts: {} as never,
       runtime: runtime as never,
-      baseConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      baseConfig: { agents: { defaults: {} } } as AforaConfig,
       target,
       resolveApiKey: vi.fn(),
       toApiKeyCredential: vi.fn(),
@@ -517,11 +517,11 @@ describe("applyNonInteractivePluginProviderChoice", () => {
     const runtime = createRuntime();
     const selectedConfig = {
       agents: { defaults: { model: { primary: "openai/gpt-5.5" } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const installedConfig = {
       ...selectedConfig,
       plugins: { entries: { codex: { enabled: true } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const runNonInteractive = vi.fn(async () => selectedConfig);
     ensureCodexRuntimePluginForModelSelection.mockResolvedValue({
       cfg: installedConfig,
@@ -535,11 +535,11 @@ describe("applyNonInteractivePluginProviderChoice", () => {
     });
 
     const result = await applyNonInteractivePluginProviderChoice({
-      nextConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      nextConfig: { agents: { defaults: {} } } as AforaConfig,
       authChoice: "openai-api-key",
       opts: {} as never,
       runtime: runtime as never,
-      baseConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      baseConfig: { agents: { defaults: {} } } as AforaConfig,
       target,
       resolveApiKey: vi.fn(),
       toApiKeyCredential: vi.fn(),
@@ -568,11 +568,11 @@ describe("applyNonInteractivePluginProviderChoice", () => {
           "github-copilot": { agentRuntime: { id: "copilot" } },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const installedConfig = {
       ...selectedConfig,
       plugins: { entries: { copilot: { enabled: true } } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const runNonInteractive = vi.fn(async () => selectedConfig);
     ensureCopilotRuntimePluginForModelSelection.mockResolvedValue({
       cfg: installedConfig,
@@ -588,11 +588,11 @@ describe("applyNonInteractivePluginProviderChoice", () => {
     });
 
     const result = await applyNonInteractivePluginProviderChoice({
-      nextConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      nextConfig: { agents: { defaults: {} } } as AforaConfig,
       authChoice: "github-copilot",
       opts: {} as never,
       runtime: runtime as never,
-      baseConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      baseConfig: { agents: { defaults: {} } } as AforaConfig,
       target,
       resolveApiKey: vi.fn(),
       toApiKeyCredential: vi.fn(),
@@ -610,7 +610,7 @@ describe("applyNonInteractivePluginProviderChoice", () => {
     const runtime = createRuntime();
     const selectedConfig = {
       agents: { defaults: { model: { primary: "openai/gpt-5.5" } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const runNonInteractive = vi.fn(async () => selectedConfig);
     ensureCodexRuntimePluginForModelSelection.mockResolvedValue({
       cfg: selectedConfig,
@@ -624,11 +624,11 @@ describe("applyNonInteractivePluginProviderChoice", () => {
     });
 
     await applyNonInteractivePluginProviderChoice({
-      nextConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      nextConfig: { agents: { defaults: {} } } as AforaConfig,
       authChoice: "openai-api-key",
       opts: {} as never,
       runtime: runtime as never,
-      baseConfig: { agents: { defaults: {} } } as OpenClawConfig,
+      baseConfig: { agents: { defaults: {} } } as AforaConfig,
       target,
       resolveApiKey: vi.fn(),
       toApiKeyCredential: vi.fn(),

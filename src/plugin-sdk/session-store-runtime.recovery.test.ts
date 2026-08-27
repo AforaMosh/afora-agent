@@ -15,7 +15,7 @@ describe("session-store-runtime recovery boundary", () => {
   let storePath: string;
 
   beforeEach(() => {
-    tempDir = tempDirs.make("openclaw-sdk-session-recovery-");
+    tempDir = tempDirs.make("afora-sdk-session-recovery-");
     storePath = path.join(tempDir, "sessions.json");
   });
 

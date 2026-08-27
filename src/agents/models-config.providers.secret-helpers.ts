@@ -1,8 +1,8 @@
 /**
  * Resolves configured provider secrets from env, profiles, and SecretRefs.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import { coerceSecretRef, resolveSecretInputRef } from "../config/types.secrets.js";
 import { normalizeOptionalSecretInput } from "../utils/normalize-secret-input.js";
 import type { AuthProfileStore } from "./auth-profiles/types.js";
@@ -23,8 +23,8 @@ import { resolveProviderIdForAuth } from "./provider-auth-aliases.js";
  * lookups into provider apiKey/header values while preserving non-printable
  * markers for secrets managed outside plain environment variables.
  */
-type ModelsConfig = NonNullable<OpenClawConfig["models"]>;
-/** Provider config entry from the canonical OpenClaw models config. */
+type ModelsConfig = NonNullable<AforaConfig["models"]>;
+/** Provider config entry from the canonical Afora models config. */
 export type ProviderConfig = NonNullable<ModelsConfig["providers"]>[string];
 
 /** Default secret reference sources applied when config omits an explicit source. */

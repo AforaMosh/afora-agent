@@ -2,7 +2,7 @@
 // Summarizes Docker E2E timing artifacts.
 // Accepts scheduler summary.json or lane-timings.json so agents can see the
 // slowest lanes and phase critical path before deciding what to rerun.
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { readDockerE2eJsonArtifact } from "./lib/docker-e2e-json-artifacts.mts";
 import { parsePositiveInt } from "./lib/numeric-options.mjs";
 

@@ -9,7 +9,7 @@ import {
   resolveSessionRuntimeOverrideForProvider,
 } from "../../agents/session-runtime-compat.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
 type ModelRuntimeDirectiveResolution =
   | { kind: "unchanged" }
@@ -21,7 +21,7 @@ type ModelRuntimeDirectiveResolution =
 export function resolveModelRuntimeDirective(params: {
   rawRuntime?: string;
   provider: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionEntry?: Pick<SessionEntry, "agentRuntimeOverride">;
 }): ModelRuntimeDirectiveResolution {
   const rawRuntime = params.rawRuntime?.trim();

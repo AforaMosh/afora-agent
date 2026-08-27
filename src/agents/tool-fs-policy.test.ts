@@ -1,7 +1,7 @@
 // Tool filesystem policy tests cover how global and agent-specific tool
 // profiles decide workspace-only access and root expansion.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import {
   resolveEffectiveToolFsRootExpansionAllowed,
   resolveEffectiveToolFsWorkspaceOnly,
@@ -13,14 +13,14 @@ describe("resolveEffectiveToolFsWorkspaceOnly", () => {
   });
 
   it("uses global tools.fs.workspaceOnly when no agent override exists", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: { fs: { workspaceOnly: true } },
     };
     expect(resolveEffectiveToolFsWorkspaceOnly({ cfg, agentId: "main" })).toBe(true);
   });
 
   it("prefers agent-specific tools.fs.workspaceOnly override over global setting", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: { fs: { workspaceOnly: true } },
       agents: {
         list: [
@@ -37,7 +37,7 @@ describe("resolveEffectiveToolFsWorkspaceOnly", () => {
   });
 
   it("supports agent-specific enablement when global workspaceOnly is off", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: { fs: { workspaceOnly: false } },
       agents: {
         list: [
@@ -60,7 +60,7 @@ describe("resolveEffectiveToolFsRootExpansionAllowed", () => {
   });
 
   it("disables root expansion for messaging profile agents without filesystem opt-in", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: { profile: "messaging" },
     };
     expect(resolveEffectiveToolFsRootExpansionAllowed({ cfg, agentId: "main" })).toBe(false);
@@ -69,7 +69,7 @@ describe("resolveEffectiveToolFsRootExpansionAllowed", () => {
   it("does not re-enable root expansion from tools.fs alone under messaging profile (#47487)", () => {
     // A messaging profile needs an explicit read opt-in; merely configuring
     // tools.fs should not widen filesystem reach.
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         profile: "messaging",
         fs: { workspaceOnly: false },
@@ -79,7 +79,7 @@ describe("resolveEffectiveToolFsRootExpansionAllowed", () => {
   });
 
   it("does not treat an explicit tools.fs block as a filesystem opt-in (#47487)", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         profile: "messaging",
         fs: {},
@@ -89,7 +89,7 @@ describe("resolveEffectiveToolFsRootExpansionAllowed", () => {
   });
 
   it("re-enables root expansion when alsoAllow explicitly includes read (#47487)", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         profile: "messaging",
         alsoAllow: ["read"],
@@ -100,7 +100,7 @@ describe("resolveEffectiveToolFsRootExpansionAllowed", () => {
   });
 
   it("keeps root expansion disabled when tools.fs only restricts access to the workspace", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         profile: "messaging",
         fs: { workspaceOnly: true },
@@ -110,7 +110,7 @@ describe("resolveEffectiveToolFsRootExpansionAllowed", () => {
   });
 
   it("prefers agent profile overrides over the global profile in both directions", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: { profile: "messaging" },
       agents: {
         list: [
@@ -122,7 +122,7 @@ describe("resolveEffectiveToolFsRootExpansionAllowed", () => {
 
     expect(resolveEffectiveToolFsRootExpansionAllowed({ cfg, agentId: "coder" })).toBe(true);
 
-    const invertedCfg: OpenClawConfig = {
+    const invertedCfg: AforaConfig = {
       tools: { profile: "coding" },
       agents: {
         list: [{ id: "messenger", tools: { profile: "messaging" } }],
@@ -135,7 +135,7 @@ describe("resolveEffectiveToolFsRootExpansionAllowed", () => {
   });
 
   it("uses agent alsoAllow in place of global alsoAllow when resolving expansion", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         profile: "messaging",
         alsoAllow: ["read"],
@@ -156,7 +156,7 @@ describe("resolveEffectiveToolFsRootExpansionAllowed", () => {
   });
 
   it("honors agent workspaceOnly overrides over global fs opt-in", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         profile: "messaging",
         fs: { workspaceOnly: false },

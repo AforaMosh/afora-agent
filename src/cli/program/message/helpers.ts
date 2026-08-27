@@ -1,7 +1,7 @@
 import {
   parseStrictNonNegativeInteger,
   parseStrictPositiveInteger,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 // Shared helpers for message CLI actions: common flags, plugin preload, numeric validation, and stop hooks.
 import type { Command } from "commander";
 import { getChannelPlugin } from "../../../channels/plugins/index.js";

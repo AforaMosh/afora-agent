@@ -1,13 +1,13 @@
 {
-  "name": "@openclaw/together-provider",
+  "name": "@afora/together-provider",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw Together provider plugin",
+  "description": "Afora Together provider plugin",
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

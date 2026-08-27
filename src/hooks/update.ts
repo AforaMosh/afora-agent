@@ -1,5 +1,5 @@
 // Hook update helpers refresh installed hook records and config references.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { buildNpmResolutionFields } from "../infra/install-source-utils.js";
 import {
   expectedIntegrityForUpdate,
@@ -33,7 +33,7 @@ type HookPackUpdateOutcome = {
 
 /** Aggregate update result with the possibly updated config. */
 type HookPackUpdateSummary = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   changed: boolean;
   outcomes: HookPackUpdateOutcome[];
 };
@@ -75,7 +75,7 @@ function createHookPackUpdateIntegrityDriftHandler(params: {
 
 /** Update npm-installed hook packs and return config changes plus per-pack outcomes. */
 export async function updateNpmInstalledHookPacks(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   dangerouslyForceUnsafeInstall?: boolean;
   onInstallPolicyWarning?: InstallSafetyOverrides["onInstallPolicyWarning"];
   logger?: HookPackUpdateLogger;

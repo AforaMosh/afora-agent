@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 // Keep the facade cold here; plugin suites own schema behavior and loader fixtures own resolution.
 import type { z } from "zod";
 import { IMessageConfigSchema, TelegramConfigSchema } from "./bundled-channel-config-schema.js";
-import type { OpenClawConfig } from "./config-contracts.js";
+import type { AforaConfig } from "./config-contracts.js";
 
 describe("bundled channel config schema facade", () => {
   it("exposes lazy Telegram and iMessage schemas with config-compatible output types", () => {
-    type ChannelConfig = NonNullable<OpenClawConfig["channels"]>;
+    type ChannelConfig = NonNullable<AforaConfig["channels"]>;
     const telegramConfig: NonNullable<ChannelConfig["telegram"]> = {} as z.output<
       typeof TelegramConfigSchema
     >;

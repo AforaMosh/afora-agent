@@ -1,11 +1,11 @@
-import { OPENAI_RESPONSES_APIS } from "@openclaw/ai/internal/openai-responses-payload-policy";
+import { OPENAI_RESPONSES_APIS } from "@afora/ai/internal/openai-responses-payload-policy";
 /**
  * Agent transcript redaction helpers.
  *
  * Applies logging redaction rules to persisted messages while preserving unchanged object identity.
  */
-import { findNormalizedProviderValue } from "@openclaw/model-catalog-core/provider-id";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { findNormalizedProviderValue } from "@afora/model-catalog-core/provider-id";
+import type { AforaConfig } from "../config/types.afora.js";
 import { readLoggingConfig } from "../logging/config.js";
 import {
   getDefaultRedactPatterns,
@@ -27,7 +27,7 @@ function resolveTranscriptRedactPatterns(patterns?: string[]) {
   return patterns && patterns.length > 0 ? [...patterns, ...getDefaultRedactPatterns()] : undefined;
 }
 
-function redactTranscriptOptions(cfg?: OpenClawConfig) {
+function redactTranscriptOptions(cfg?: AforaConfig) {
   const configuredLogging = readLoggingConfig();
   const patterns = resolveTranscriptRedactPatterns(
     cfg?.logging?.redactPatterns ?? configuredLogging?.redactPatterns,
@@ -41,19 +41,19 @@ function redactTranscriptOptions(cfg?: OpenClawConfig) {
   };
 }
 
-function isTranscriptRedactionDisabled(cfg?: OpenClawConfig): boolean {
+function isTranscriptRedactionDisabled(cfg?: AforaConfig): boolean {
   void cfg;
   return false;
 }
 
-function redactTranscriptText(value: string, cfg?: OpenClawConfig): string {
+function redactTranscriptText(value: string, cfg?: AforaConfig): string {
   return redactSensitiveText(value, redactTranscriptOptions(cfg));
 }
 
 function redactTranscriptStructuredFieldValue(
   key: string,
   value: string,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
 ): string {
   // Preserve pagination state only in transcripts; value-pattern and global log redaction remain.
   return /^(?:next[_-]?)?page[_-]?token$|^page[_-]?cursor$/i.test(key)
@@ -83,16 +83,16 @@ const GOOGLE_REASONING_APIS = new Set([
   "google-generative-ai",
   "google-vertex",
   "google-gemini-cli",
-  "openclaw-google-generative-ai-transport",
+  "afora-google-generative-ai-transport",
 ]);
 const ANTHROPIC_REASONING_APIS = new Set([
   "anthropic-messages",
   "bedrock-converse-stream",
-  "openclaw-anthropic-messages-transport",
+  "afora-anthropic-messages-transport",
 ]);
 const OPENAI_COMPLETIONS_APIS = new Set([
   "openai-completions",
-  "openclaw-openai-completions-transport",
+  "afora-openai-completions-transport",
 ]);
 const OPAQUE_REPLAY_TOKEN_RE = /^[A-Za-z0-9+/_-]+={0,2}$/;
 const GOOGLE_THOUGHT_SIGNATURE_RE =
@@ -156,7 +156,7 @@ function isCustomProviderRoute(route: TranscriptAssistantRoute | undefined): boo
 
 function isGitHubCopilotResponsesRoute(route: TranscriptAssistantRoute | undefined): boolean {
   return (
-    (route?.api === "openai-responses" || route?.api === "openclaw-openai-responses-transport") &&
+    (route?.api === "openai-responses" || route?.api === "afora-openai-responses-transport") &&
     route.provider === "github-copilot"
   );
 }
@@ -192,7 +192,7 @@ function isGoogleThoughtSignature(value: string): boolean {
 
 function resolveTranscriptAssistantRoute(
   source: Record<string, unknown>,
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
 ): TranscriptAssistantRoute {
   const api = typeof source.api === "string" ? source.api : undefined;
   const model = typeof source.model === "string" ? source.model : undefined;
@@ -281,7 +281,7 @@ const OPENAI_REASONING_REPLAY_METADATA_KEYS = new Set([
   "sessionHash",
   "authProfileHash",
 ]);
-const OPENAI_REASONING_REPLAY_METADATA_KEY = "__openclaw_replay";
+const OPENAI_REASONING_REPLAY_METADATA_KEY = "__afora_replay";
 
 function sanitizeOpenAIReasoningReplayMetadata(
   value: unknown,
@@ -477,7 +477,7 @@ function sanitizeOpenAICompletionsToolSignature(
 
 function redactTranscriptStructuredValue(
   value: unknown,
-  cfg?: OpenClawConfig,
+  cfg?: AforaConfig,
   fieldKey?: string,
   seen: WeakSet<object> = new WeakSet<object>(),
   preserveImageDataUrlFields = false,
@@ -561,7 +561,7 @@ function redactTranscriptStructuredValue(
       (isOpenAIResponsesRoute(currentAssistantRoute) ||
         isCustomProviderRoute(currentAssistantRoute)) &&
       source.type === "thinking" &&
-      key === "openclawReasoningReplay"
+      key === "aforaReasoningReplay"
     ) {
       const sanitizedMetadata = sanitizeOpenAIReasoningReplayMetadata(item, currentAssistantRoute);
       if (sanitizedMetadata !== undefined) {
@@ -668,7 +668,7 @@ function redactTranscriptStructuredValue(
 }
 
 /** Return a redacted transcript message according to logging config. */
-export function redactTranscriptMessage(message: AgentMessage, cfg?: OpenClawConfig): AgentMessage {
+export function redactTranscriptMessage(message: AgentMessage, cfg?: AforaConfig): AgentMessage {
   if (isTranscriptRedactionDisabled(cfg)) {
     return message;
   }

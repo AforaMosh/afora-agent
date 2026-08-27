@@ -1,7 +1,7 @@
 // Feishu tests cover chat plugin behavior.
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawPluginApi, PluginRuntime } from "../runtime-api.js";
+import type { AforaPluginApi, PluginRuntime } from "../runtime-api.js";
 import type { FeishuConfig } from "./types.js";
 
 const createFeishuClientMock = vi.hoisted(() => vi.fn());
@@ -52,9 +52,9 @@ describe("registerFeishuChatTools", () => {
   }
 
   function createChatToolApi(params: {
-    config: OpenClawPluginApi["config"];
-    registerTool: OpenClawPluginApi["registerTool"];
-  }): OpenClawPluginApi {
+    config: AforaPluginApi["config"];
+    registerTool: AforaPluginApi["registerTool"];
+  }): AforaPluginApi {
     return createTestPluginApi({
       id: "feishu-test",
       name: "Feishu Test",
@@ -66,7 +66,7 @@ describe("registerFeishuChatTools", () => {
     });
   }
 
-  function createChatConfig(overrides: Partial<FeishuConfig> = {}): OpenClawPluginApi["config"] {
+  function createChatConfig(overrides: Partial<FeishuConfig> = {}): AforaPluginApi["config"] {
     return {
       channels: {
         feishu: {
@@ -92,7 +92,7 @@ describe("registerFeishuChatTools", () => {
   function registerChatTool(
     params: {
       account?: Partial<FeishuConfig>;
-      config?: OpenClawPluginApi["config"];
+      config?: AforaPluginApi["config"];
       context?: RegisteredToolContext;
     } = {},
   ) {

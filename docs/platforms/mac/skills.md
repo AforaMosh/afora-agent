@@ -6,16 +6,16 @@ read_when:
 title: "Skills (macOS)"
 ---
 
-The macOS app surfaces OpenClaw skills via the gateway; it does not parse skills locally.
+The macOS app surfaces Afora skills via the gateway; it does not parse skills locally.
 
 ## Data source
 
 - `skills.status` (gateway) returns all skills plus eligibility and missing requirements, including allowlist blocks for bundled skills.
-- Requirements come from `metadata.openclaw.requires` in each `SKILL.md`.
+- Requirements come from `metadata.afora.requires` in each `SKILL.md`.
 
 ## Install actions
 
-- `metadata.openclaw.install` defines install options (brew/node/go/uv/download).
+- `metadata.afora.install` defines install options (brew/node/go/uv/download).
 - The app calls `skills.install` to run installers on the gateway host.
 - Operator-owned `security.installPolicy` (`enabled`, `targets`, `exec`) runs before installer metadata. `block` results and policy failures stop the install. A `warn` result also stops the gateway-backed request: review it with the matching direct CLI when one exists, or change the policy to allow the reviewed request, then retry.
 - If every install option is `download`, the gateway surfaces all download choices.
@@ -24,7 +24,7 @@ The macOS app surfaces OpenClaw skills via the gateway; it does not parse skills
 
 ## Env/API keys
 
-- The app stores keys in `~/.openclaw/openclaw.json` under `skills.entries.<skillKey>`.
+- The app stores keys in `~/.AforaMosh/afora-agent.json` under `skills.entries.<skillKey>`.
 - `skills.update` patches `enabled`, `apiKey`, and `env`.
 
 ## Remote mode

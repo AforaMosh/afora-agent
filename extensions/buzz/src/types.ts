@@ -1,11 +1,11 @@
 import { getPublicKey, nip19 } from "nostr-tools";
-import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/account-id";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import { DEFAULT_ACCOUNT_ID } from "afora-agent/plugin-sdk/account-id";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   hasConfiguredSecretInput,
   normalizeSecretInputString,
-} from "openclaw/plugin-sdk/secret-input";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/secret-input";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { BuzzConfig, BuzzConfigInput } from "./config-schema.js";
 import { parseBuzzTarget } from "./target.js";
 
@@ -21,7 +21,7 @@ export interface ResolvedBuzzAccount {
   config: BuzzConfig;
 }
 
-function resolveChannelConfig(cfg: OpenClawConfig): BuzzConfigInput | undefined {
+function resolveChannelConfig(cfg: AforaConfig): BuzzConfigInput | undefined {
   return (cfg.channels as Record<string, unknown> | undefined)?.buzz as BuzzConfigInput | undefined;
 }
 
@@ -50,7 +50,7 @@ export function resolveBuzzPublicKey(privateKey: string): string {
   return getPublicKey(decodeBuzzPrivateKey(privateKey));
 }
 
-export function listBuzzAccountIds(cfg: OpenClawConfig): string[] {
+export function listBuzzAccountIds(cfg: AforaConfig): string[] {
   const config = resolveChannelConfig(cfg);
   const relayUrl = config?.relayUrl?.trim() || process.env.BUZZ_RELAY_URL?.trim();
   const privateKeyConfigured =
@@ -59,12 +59,12 @@ export function listBuzzAccountIds(cfg: OpenClawConfig): string[] {
   return relayUrl || privateKeyConfigured ? [DEFAULT_ACCOUNT_ID] : [];
 }
 
-export function resolveDefaultBuzzAccountId(_cfg: OpenClawConfig): string {
+export function resolveDefaultBuzzAccountId(_cfg: AforaConfig): string {
   return DEFAULT_ACCOUNT_ID;
 }
 
 export function resolveBuzzAccount(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): ResolvedBuzzAccount {
   const rawConfig = resolveChannelConfig(params.cfg) ?? {};
@@ -88,7 +88,7 @@ export function resolveBuzzAccount(params: {
   }
   return {
     accountId: DEFAULT_ACCOUNT_ID,
-    name: normalizeOptionalString(config.name) ?? "OpenClaw",
+    name: normalizeOptionalString(config.name) ?? "Afora",
     enabled: config.enabled !== false,
     configured: Boolean(relayUrl && privateKey),
     relayUrl,

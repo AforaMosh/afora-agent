@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import {
   buildTuiLastSessionScopeKey,
   clearTuiLastSessionPointers,
@@ -16,13 +16,13 @@ import {
 const tempDirs: string[] = [];
 
 async function makeTempStateDir() {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-tui-last-session-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-tui-last-session-"));
   tempDirs.push(dir);
   return dir;
 }
 
 afterEach(async () => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   await Promise.all(tempDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })));
 });
 
@@ -31,7 +31,7 @@ describe("tui last session state", () => {
     const stateDir = await makeTempStateDir();
 
     await expect(readTuiLastSessionKey({ scopeKey: "missing", stateDir })).resolves.toBeNull();
-    await expect(fs.stat(path.join(stateDir, "state", "openclaw.sqlite"))).rejects.toMatchObject({
+    await expect(fs.stat(path.join(stateDir, "state", "afora.sqlite"))).rejects.toMatchObject({
       code: "ENOENT",
     });
   });
@@ -55,7 +55,7 @@ describe("tui last session state", () => {
       code: "ENOENT",
     });
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await expect(readTuiLastSessionKey({ scopeKey, stateDir })).resolves.toBe("agent:main:tui-123");
   });
 

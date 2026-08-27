@@ -91,7 +91,7 @@ describe("resolveToolCallView", () => {
     }
   });
 
-  it("computes an edit diff from openclaw-style oldText/newText args", () => {
+  it("computes an edit diff from afora-style oldText/newText args", () => {
     const view = resolveToolCallView({
       name: "edit",
       args: { path: "/repo/a.ts", oldText: "old line", newText: "new line" },

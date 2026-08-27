@@ -4,7 +4,7 @@ import type {
   ImageGenerationProviderPlugin,
   MediaUnderstandingProviderPlugin,
   MusicGenerationProviderPlugin,
-  OpenClawPluginApi,
+  AforaPluginApi,
   ProviderPlugin,
   RealtimeTranscriptionProviderPlugin,
   SpeechProviderPlugin,
@@ -16,7 +16,7 @@ import type {
 export { createCapturedPluginRegistration };
 
 type RegistrablePlugin = {
-  register(api: OpenClawPluginApi): void;
+  register(api: AforaPluginApi): void;
 };
 
 export type RegisteredProviderCollections = {
@@ -32,7 +32,7 @@ export type RegisteredProviderCollections = {
 
 /** Registers one provider plugin callback and returns its first provider. */
 export async function registerSingleProviderPlugin(params: {
-  register(api: OpenClawPluginApi): void;
+  register(api: AforaPluginApi): void;
 }): Promise<ProviderPlugin> {
   const captured = createCapturedPluginRegistration();
   params.register(captured.api);

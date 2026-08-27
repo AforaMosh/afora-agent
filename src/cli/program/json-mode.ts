@@ -7,7 +7,7 @@ import {
 } from "../machine-output-argv.js";
 import { hasCommanderOptionValue } from "./commander-parse-facts.js";
 
-const jsonModeSymbol = Symbol("openclaw.cli.jsonMode");
+const jsonModeSymbol = Symbol("afora.cli.jsonMode");
 const JSON_FLAG = new Set(["--json"]);
 
 type CommandJsonMode = "output" | "parse-only";

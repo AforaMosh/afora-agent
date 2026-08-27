@@ -22,21 +22,21 @@ describe("shared auth store relocation", () => {
   });
 
   afterEach(async () => {
-    const [{ closeOpenClawAgentDatabasesForTest }, { closeOpenClawStateDatabaseForTest }] =
+    const [{ closeAforaAgentDatabasesForTest }, { closeAforaStateDatabaseForTest }] =
       await Promise.all([
-        import("../state/openclaw-agent-db.js"),
-        import("../state/openclaw-state-db.js"),
+        import("../state/afora-agent-db.js"),
+        import("../state/afora-state-db.js"),
       ]);
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     vi.unstubAllEnvs();
   });
 
   async function createFixture() {
-    const stateDir = tempDirs.make("openclaw-shared-auth-relocate-");
-    vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
-    vi.stubEnv("OPENCLAW_AGENT_DIR", "");
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir, OPENCLAW_AGENT_DIR: undefined };
+    const stateDir = tempDirs.make("afora-shared-auth-relocate-");
+    vi.stubEnv("AFORA_STATE_DIR", stateDir);
+    vi.stubEnv("AFORA_AGENT_DIR", "");
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir, AFORA_AGENT_DIR: undefined };
     const [paths, ownership, sqlite, storeModule, persisted, authState, migration, stateDb] =
       await Promise.all([
         import("../agents/auth-profiles/shared-main-dir.js"),
@@ -46,7 +46,7 @@ describe("shared auth store relocation", () => {
         import("../agents/auth-profiles/persisted.js"),
         import("../agents/auth-profiles/state.js"),
         import("./state-migrations.shared-auth-store.js"),
-        import("../state/openclaw-state-db.js"),
+        import("../state/afora-state-db.js"),
       ]);
     const mainAgentDir = paths.resolveSharedMainAuthAgentDir(env);
     const opsAgentDir = path.join(stateDir, "agents", "ops", "agent");
@@ -78,10 +78,10 @@ describe("shared auth store relocation", () => {
   }
 
   async function createEmptyFixture(createSourceDatabase: boolean) {
-    const stateDir = tempDirs.make("openclaw-shared-auth-empty-");
-    vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
-    vi.stubEnv("OPENCLAW_AGENT_DIR", "");
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir, OPENCLAW_AGENT_DIR: undefined };
+    const stateDir = tempDirs.make("afora-shared-auth-empty-");
+    vi.stubEnv("AFORA_STATE_DIR", stateDir);
+    vi.stubEnv("AFORA_AGENT_DIR", "");
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir, AFORA_AGENT_DIR: undefined };
     const [paths, ownership, sqlite, migration] = await Promise.all([
       import("../agents/auth-profiles/shared-main-dir.js"),
       import("../agents/auth-profiles/path-resolve.js"),
@@ -151,7 +151,7 @@ describe("shared auth store relocation", () => {
       ops: effectiveBytes(fixture.opsAgentDir),
     }).toEqual(before);
 
-    const database = fixture.stateDb.openOpenClawStateDatabase({ env: fixture.env }).db;
+    const database = fixture.stateDb.openAforaStateDatabase({ env: fixture.env }).db;
     expect(
       database
         .prepare("SELECT store_key, store_json FROM auth_profile_stores WHERE store_key = 'shared'")
@@ -194,7 +194,7 @@ describe("shared auth store relocation", () => {
           "SELECT state_json, updated_at FROM auth_profile_state WHERE state_key = 'primary'",
         )
         .get() as { state_json: string; updated_at: number };
-      const target = fixture.stateDb.openOpenClawStateDatabase({ env: fixture.env }).db;
+      const target = fixture.stateDb.openAforaStateDatabase({ env: fixture.env }).db;
       target
         .prepare("INSERT INTO auth_profile_stores VALUES ('shared', ?, ?)")
         .run(sourceStore.store_json, sourceStore.updated_at);
@@ -291,8 +291,8 @@ describe("shared auth store relocation", () => {
   it("fails closed when the legacy source is a dangling symlink", async () => {
     const fixture = await createFixture();
     const sourcePath = fixture.sqlite.resolveAuthProfileDatabasePath(fixture.mainAgentDir);
-    const { closeOpenClawAgentDatabasesForTest } = await import("../state/openclaw-agent-db.js");
-    closeOpenClawAgentDatabasesForTest();
+    const { closeAforaAgentDatabasesForTest } = await import("../state/afora-agent-db.js");
+    closeAforaAgentDatabasesForTest();
     fs.unlinkSync(sourcePath);
     fs.symlinkSync(`${sourcePath}.missing`, sourcePath);
 
@@ -305,13 +305,13 @@ describe("shared auth store relocation", () => {
       expect.objectContaining({
         name: "SharedAuthStoreSourceInspectionError",
         code: "SHARED_AUTH_STORE_SOURCE_UNREADABLE",
-        action: "openclaw doctor --fix",
+        action: "afora doctor --fix",
         sourcePath,
       }),
     );
     expect(
       fixture.stateDb
-        .openOpenClawStateDatabase({ env: fixture.env })
+        .openAforaStateDatabase({ env: fixture.env })
         .db.prepare(
           "SELECT value_json FROM config_machine_state WHERE state_key = 'auth.sharedStore'",
         )
@@ -350,7 +350,7 @@ describe("shared auth store relocation", () => {
     );
     expect(
       fixture.stateDb
-        .openOpenClawStateDatabase({ env: fixture.env })
+        .openAforaStateDatabase({ env: fixture.env })
         .db.prepare(
           "SELECT value_json FROM config_machine_state WHERE state_key = 'auth.sharedStore'",
         )

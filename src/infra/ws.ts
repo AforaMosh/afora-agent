@@ -1,8 +1,8 @@
-import { rawDataToString as gatewayRawDataToString } from "@openclaw/gateway-client/websocket-data";
+import { rawDataToString as gatewayRawDataToString } from "@afora/gateway-client/websocket-data";
 import type WebSocket from "ws";
 
 // Keep the declaration owner stable for the shipped webhook-ingress SDK export;
-// WebSocket conversion itself is canonical in @openclaw/gateway-client.
+// WebSocket conversion itself is canonical in @afora/gateway-client.
 export function rawDataToString(
   data: WebSocket.RawData,
   encoding: BufferEncoding = "utf8",

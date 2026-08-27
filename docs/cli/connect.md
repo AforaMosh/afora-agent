@@ -1,30 +1,30 @@
 ---
-summary: "Connect a machine to an OpenClaw Gateway with one pasted command"
+summary: "Connect a machine to an Afora Gateway with one pasted command"
 read_when:
   - Pairing a new headless node with a Gateway
   - Installing a node host from a join URL or setup code
 title: "Connect"
 ---
 
-# `openclaw connect`
+# `afora connect`
 
-Connect the current machine to an OpenClaw Gateway as a headless node. The
+Connect the current machine to an Afora Gateway as a headless node. The
 command redeems a short-lived bootstrap credential, saves the Gateway endpoint
 in the existing node-host state, and runs the same runtime as
-[`openclaw node run`](/cli/node).
+[`afora node run`](/cli/node).
 
 ## Create a join command
 
 On the Gateway host, use admin credentials to mint a single-use join URL:
 
 ```bash
-openclaw devices join-code
+afora devices join-code
 ```
 
 The command prints the URL and a pasteable command:
 
 ```bash
-npx openclaw connect https://gateway.example/j/<shortcode>
+npx afora connect https://gateway.example/j/<shortcode>
 ```
 
 The shortcode has 128 bits of entropy, expires with the setup credential after
@@ -36,13 +36,13 @@ expires or has already been used.
 Paste the printed command on the machine you want to connect:
 
 ```bash
-npx openclaw connect https://gateway.example/j/<shortcode>
+npx afora connect https://gateway.example/j/<shortcode>
 ```
 
 Set the device name during enrollment when useful:
 
 ```bash
-npx openclaw connect https://gateway.example/j/<shortcode> --display-name "Build Node"
+npx afora connect https://gateway.example/j/<shortcode> --display-name "Build Node"
 ```
 
 The node stays in the foreground until you stop it.
@@ -53,18 +53,18 @@ Pass `--service` to redeem the bootstrap credential and install the node host as
 the platform user service:
 
 ```bash
-npx openclaw connect https://gateway.example/j/<shortcode> --service
+npx afora connect https://gateway.example/j/<shortcode> --service
 ```
 
-OpenClaw completes the first authenticated connection before installing the
+Afora completes the first authenticated connection before installing the
 service. The short-lived bootstrap token is never stored in the service command
 or node-host configuration; later starts use the durable paired-device token.
-Use [`openclaw node status`](/cli/node#service-background) to inspect the
+Use [`afora node status`](/cli/node#service-background) to inspect the
 installed service.
 
 ## Accepted targets
 
-`openclaw connect <target>` accepts:
+`afora connect <target>` accepts:
 
 - an `https://<gateway>/j/<shortcode>` join URL;
 - an `oc-pair://<setup-code>` URL;
@@ -76,7 +76,7 @@ Gateway TLS certificate fingerprint, which lets the node host pin a self-signed
 Gateway certificate after decoding the payload.
 
 The payload determines the saved host, port, TLS mode, WebSocket context path,
-and ordered fallback endpoints. No additional `openclaw.json` keys are created.
+and ordered fallback endpoints. No additional `afora.json` keys are created.
 
 ## Revocation behavior
 
@@ -85,12 +85,12 @@ A join code and a paired device have separate lifecycles:
 - Burning or expiring a join code prevents another enrollment with that code.
 - It does not disconnect or remove a node that already redeemed it.
 - To revoke an enrolled machine, remove its paired device with
-  [`openclaw devices remove <deviceId>`](/cli/devices#openclaw-devices-remove-%3Cdeviceid%3E).
+  [`afora devices remove <deviceId>`](/cli/devices#afora-devices-remove-%3Cdeviceid%3E).
 
 ## Troubleshooting
 
 If the join URL reports that it is missing or expired, mint a new one with
-`openclaw devices join-code`. A used code intentionally returns the same result
+`afora devices join-code`. A used code intentionally returns the same result
 as an unknown code.
 
 If an HTTPS join URL uses a certificate the local machine does not trust, use

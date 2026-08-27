@@ -128,7 +128,7 @@ export function createMemoryPage(params: {
       return () => gatewayListeners.delete(notify);
     },
   };
-  const element = document.createElement("openclaw-memory-settings") as MemoryPageElement;
+  const element = document.createElement("afora-memory-settings") as MemoryPageElement;
   element.configObject = params.configObject;
   element.routeData = params.routeData ?? memoryTabRoute("settings");
   let mutationQueue = Promise.resolve();

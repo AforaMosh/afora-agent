@@ -1,10 +1,10 @@
 // Covers core TUI state transitions and backend event rendering.
 import { EventEmitter } from "node:events";
 import path from "node:path";
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AgentSelectionRequiredError } from "../agents/agent-scope-config.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { retainLegacyDefaultAgentId } from "../config/legacy.default-agent-owner.js";
 import { MALFORMED_STREAMING_FRAGMENT_ERROR_MESSAGE } from "../shared/assistant-error-format.js";
 import { withEnv } from "../test-utils/env.js";
@@ -73,7 +73,7 @@ describe("resolveTuiLocalAuthCliInvocation", () => {
   it("filters inspector flags while preserving the current CLI runtime context", () => {
     const originalArgv = [...process.argv];
     try {
-      const cliEntry = path.resolve("openclaw.mjs");
+      const cliEntry = path.resolve("afora.mjs");
       process.argv[1] = cliEntry;
 
       expect(
@@ -177,19 +177,19 @@ describe("resolveTuiShutdownHardExitMs", () => {
   });
 
   it("adds local run shutdown grace before forcing embedded shutdown", () => {
-    withEnv({ OPENCLAW_TUI_LOCAL_RUN_SHUTDOWN_GRACE_MS: "3456" }, () => {
+    withEnv({ AFORA_TUI_LOCAL_RUN_SHUTDOWN_GRACE_MS: "3456" }, () => {
       expect(resolveTuiShutdownHardExitMs({ localMode: true })).toBe(5456);
     });
   });
 
   it("ignores partial local run shutdown grace values", () => {
-    withEnv({ OPENCLAW_TUI_LOCAL_RUN_SHUTDOWN_GRACE_MS: "3456abc" }, () => {
+    withEnv({ AFORA_TUI_LOCAL_RUN_SHUTDOWN_GRACE_MS: "3456abc" }, () => {
       expect(resolveTuiShutdownHardExitMs({ localMode: true })).toBe(122000);
     });
   });
 
   it("clamps oversized local run shutdown grace values", () => {
-    withEnv({ OPENCLAW_TUI_LOCAL_RUN_SHUTDOWN_GRACE_MS: String(Number.MAX_SAFE_INTEGER) }, () => {
+    withEnv({ AFORA_TUI_LOCAL_RUN_SHUTDOWN_GRACE_MS: String(Number.MAX_SAFE_INTEGER) }, () => {
       expect(resolveTuiShutdownHardExitMs({ localMode: true })).toBe(MAX_TIMER_TIMEOUT_MS + 2000);
     });
   });
@@ -304,12 +304,12 @@ describe("resolveTuiSessionKey", () => {
 });
 
 describe("resolveInitialTuiAgentId", () => {
-  const cfg: OpenClawConfig = {
+  const cfg: AforaConfig = {
     agents: {
       ownership: "explicit",
       list: [
-        { id: "main", workspace: "/tmp/openclaw" },
-        { id: "ops", workspace: "/tmp/openclaw/projects/ops" },
+        { id: "main", workspace: "/tmp/afora" },
+        { id: "ops", workspace: "/tmp/afora/projects/ops" },
       ],
     },
   };
@@ -320,7 +320,7 @@ describe("resolveInitialTuiAgentId", () => {
         cfg,
         fallbackAgentId: "main",
         initialSessionInput: "",
-        cwd: "/tmp/openclaw/projects/ops/src",
+        cwd: "/tmp/afora/projects/ops/src",
       }),
     ).toBe("ops");
   });
@@ -332,7 +332,7 @@ describe("resolveInitialTuiAgentId", () => {
         fallbackAgentId: "main",
         initialSessionInput: "agent:main:incident",
         agentId: "ops",
-        cwd: "/tmp/openclaw/projects/ops/src",
+        cwd: "/tmp/afora/projects/ops/src",
       }),
     ).toBe("main");
   });
@@ -344,7 +344,7 @@ describe("resolveInitialTuiAgentId", () => {
         fallbackAgentId: "main",
         initialSessionInput: "global",
         agentId: "ops",
-        cwd: "/tmp/openclaw",
+        cwd: "/tmp/afora",
       }),
     ).toBe("ops");
   });
@@ -385,7 +385,7 @@ describe("resolveInitialTuiAgentId", () => {
   });
 
   it("uses the persisted fixed-store owner for an unscoped global session", () => {
-    const restartConfig: OpenClawConfig = {
+    const restartConfig: AforaConfig = {
       session: { scope: "global", store: "/tmp/shared.sqlite" },
       agents: {
         ownership: "explicit",
@@ -398,14 +398,14 @@ describe("resolveInitialTuiAgentId", () => {
       resolveInitialTuiAgentId({
         cfg: restartConfig,
         initialSessionInput: "global",
-        cwd: "/tmp/openclaw",
+        cwd: "/tmp/afora",
       }),
     ).toBe("ops");
-    expect(resolveInitialTuiAgentId({ cfg: restartConfig, cwd: "/tmp/openclaw" })).toBe("ops");
+    expect(resolveInitialTuiAgentId({ cfg: restartConfig, cwd: "/tmp/afora" })).toBe("ops");
   });
 
   it("uses the persisted fixed-store owner for any bare initial session key", () => {
-    const restartConfig: OpenClawConfig = {
+    const restartConfig: AforaConfig = {
       session: { store: "/tmp/shared.sqlite" },
       agents: {
         ownership: "explicit",
@@ -418,7 +418,7 @@ describe("resolveInitialTuiAgentId", () => {
       resolveInitialTuiAgentId({
         cfg: restartConfig,
         initialSessionInput: "incident-42",
-        cwd: "/tmp/openclaw",
+        cwd: "/tmp/afora",
       }),
     ).toBe("ops");
   });
@@ -426,7 +426,7 @@ describe("resolveInitialTuiAgentId", () => {
 
 describe("resolveTuiSessionSelection", () => {
   it("keeps a fixed-store bare key with its persisted owner", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       session: { store: "/tmp/shared.sqlite" },
       agents: {
         ownership: "explicit",
@@ -447,7 +447,7 @@ describe("resolveTuiSessionSelection", () => {
   });
 
   it("carries an explicit owner while unwrapping global storage", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: { ownership: "explicit", list: [{ id: "ops" }, { id: "research" }] },
     };
     expect(
@@ -476,12 +476,12 @@ describe("resolveGatewayDisconnectState", () => {
     });
     expect(state.connectionStatus).toContain("pairing required");
     expect(state.activityStatus).toBe("device approval needed: preview latest request");
-    expect(state.remediation).toContain("openclaw devices approve --latest");
-    expect(state.remediation).toContain("openclaw devices approve <requestId>");
+    expect(state.remediation).toContain("afora devices approve --latest");
+    expect(state.remediation).toContain("afora devices approve <requestId>");
     expect(state.remediation).toContain("--url");
     expect(state.remediation).toContain("--token/--password");
     // Must steer users to `devices`, not the unrelated chat-DM `pairing` command.
-    expect(state.remediation).not.toContain("openclaw pairing");
+    expect(state.remediation).not.toContain("afora pairing");
   });
 
   it("uses structured pairing details before the generic close reason", () => {
@@ -491,7 +491,7 @@ describe("resolveGatewayDisconnectState", () => {
     });
     expect(state.activityStatus).toBe("device approval needed: preview latest request");
     expect(state.connectionStatus).toContain("scope upgrade pending approval");
-    expect(state.remediation).toContain("openclaw devices approve --latest");
+    expect(state.remediation).toContain("afora devices approve --latest");
   });
 
   it("shows the device-token rotation command for structured token mismatch", () => {
@@ -501,7 +501,7 @@ describe("resolveGatewayDisconnectState", () => {
     });
     expect(state.activityStatus).toBe("gateway authentication needs attention");
     expect(state.remediation).toContain(
-      "openclaw devices rotate --device <deviceId> --role operator",
+      "afora devices rotate --device <deviceId> --role operator",
     );
   });
 
@@ -633,7 +633,7 @@ describe("createBackspaceDeduper", () => {
   it("preserves Ctrl+Backspace in Windows Terminal", () => {
     withEnv(
       {
-        WT_SESSION: "openclaw-tui-test",
+        WT_SESSION: "afora-tui-test",
         SSH_CONNECTION: undefined,
         SSH_CLIENT: undefined,
         SSH_TTY: undefined,
@@ -649,7 +649,7 @@ describe("createBackspaceDeduper", () => {
   it("still deduplicates legacy backspace through an SSH session in Windows Terminal", () => {
     withEnv(
       {
-        WT_SESSION: "openclaw-tui-test",
+        WT_SESSION: "afora-tui-test",
         SSH_CONNECTION: "192.0.2.10 12345 192.0.2.20 22",
         SSH_CLIENT: undefined,
         SSH_TTY: undefined,
@@ -1109,7 +1109,7 @@ describe("TUI shutdown safety", () => {
     await vi.advanceTimersByTimeAsync(1999);
     expect(exit).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
-    expect(writeStderr).toHaveBeenCalledWith("openclaw tui forcing process exit after return\n");
+    expect(writeStderr).toHaveBeenCalledWith("afora tui forcing process exit after return\n");
     expect(exit).toHaveBeenCalledWith(0);
     clearInterval(lingeringHandle);
   });

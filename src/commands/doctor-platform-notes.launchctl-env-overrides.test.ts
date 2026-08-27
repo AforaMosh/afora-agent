@@ -1,7 +1,7 @@
 // Doctor launchctl environment tests cover macOS gateway platform warnings for env overrides.
 import fs from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 
 const processMocks = vi.hoisted(() => ({
   runExec: vi.fn(),
@@ -14,7 +14,7 @@ vi.mock("../process/exec.js", () => ({
 import {
   collectMacGatewayPlatformWarnings,
   noteMacLaunchctlGatewayEnvOverrides,
-  noteMacStaleOpenClawUpdateLaunchdJobs,
+  noteMacStaleAforaUpdateLaunchdJobs,
 } from "./doctor-platform-notes.js";
 
 function requireNoteCall(noteFn: { mock: { calls: unknown[][] } }, index = 0): unknown[] {
@@ -33,7 +33,7 @@ describe("noteMacLaunchctlGatewayEnvOverrides", () => {
   it("collects clear unsetenv instructions for token override", async () => {
     const noteFn = vi.fn();
     const getenv = vi.fn(async (name: string) =>
-      name === "OPENCLAW_GATEWAY_TOKEN" ? "launchctl-token" : undefined,
+      name === "AFORA_GATEWAY_TOKEN" ? "launchctl-token" : undefined,
     );
     const cfg = {
       gateway: {
@@ -41,21 +41,21 @@ describe("noteMacLaunchctlGatewayEnvOverrides", () => {
           token: "config-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await noteMacLaunchctlGatewayEnvOverrides(cfg, { platform: "darwin", getenv, noteFn });
     const [warning] = requireNoteCall(noteFn);
 
     expect(warning).toContain("Host-wide launchctl gateway auth overrides detected");
-    expect(warning).toContain("OPENCLAW_GATEWAY_TOKEN");
-    expect(warning).toContain("launchctl unsetenv OPENCLAW_GATEWAY_TOKEN");
-    expect(warning).not.toContain("OPENCLAW_GATEWAY_PASSWORD");
+    expect(warning).toContain("AFORA_GATEWAY_TOKEN");
+    expect(warning).toContain("launchctl unsetenv AFORA_GATEWAY_TOKEN");
+    expect(warning).not.toContain("AFORA_GATEWAY_PASSWORD");
   });
 
   it("prints clear unsetenv instructions for token override", async () => {
     const noteFn = vi.fn();
     const getenv = vi.fn(async (name: string) =>
-      name === "OPENCLAW_GATEWAY_TOKEN" ? "launchctl-token" : undefined,
+      name === "AFORA_GATEWAY_TOKEN" ? "launchctl-token" : undefined,
     );
     const cfg = {
       gateway: {
@@ -63,7 +63,7 @@ describe("noteMacLaunchctlGatewayEnvOverrides", () => {
           token: "config-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await noteMacLaunchctlGatewayEnvOverrides(cfg, { platform: "darwin", getenv, noteFn });
 
@@ -74,15 +74,15 @@ describe("noteMacLaunchctlGatewayEnvOverrides", () => {
     expect(title).toBe("Gateway (macOS)");
     expect(message).toContain("Host-wide launchctl gateway auth overrides detected");
     expect(message).toContain("Current managed Gateway installs do not need these values");
-    expect(message).toContain("OPENCLAW_GATEWAY_TOKEN");
-    expect(message).toContain("launchctl unsetenv OPENCLAW_GATEWAY_TOKEN");
-    expect(message).not.toContain("OPENCLAW_GATEWAY_PASSWORD");
+    expect(message).toContain("AFORA_GATEWAY_TOKEN");
+    expect(message).toContain("launchctl unsetenv AFORA_GATEWAY_TOKEN");
+    expect(message).not.toContain("AFORA_GATEWAY_PASSWORD");
   });
 
   it("does nothing when config has no gateway credentials", async () => {
     const noteFn = vi.fn();
     const getenv = vi.fn(async () => "launchctl-token");
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
 
     await noteMacLaunchctlGatewayEnvOverrides(cfg, { platform: "darwin", getenv, noteFn });
 
@@ -93,12 +93,12 @@ describe("noteMacLaunchctlGatewayEnvOverrides", () => {
   it("treats SecretRef-backed credentials as configured", async () => {
     const noteFn = vi.fn();
     const getenv = vi.fn(async (name: string) =>
-      name === "OPENCLAW_GATEWAY_PASSWORD" ? "launchctl-password" : undefined,
+      name === "AFORA_GATEWAY_PASSWORD" ? "launchctl-password" : undefined,
     );
     const cfg = {
       gateway: {
         auth: {
-          password: { source: "env", provider: "default", id: "OPENCLAW_GATEWAY_PASSWORD" },
+          password: { source: "env", provider: "default", id: "AFORA_GATEWAY_PASSWORD" },
         },
       },
       secrets: {
@@ -106,13 +106,13 @@ describe("noteMacLaunchctlGatewayEnvOverrides", () => {
           default: { source: "env" },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await noteMacLaunchctlGatewayEnvOverrides(cfg, { platform: "darwin", getenv, noteFn });
 
     expect(noteFn).toHaveBeenCalledTimes(1);
     const [message] = requireNoteCall(noteFn);
-    expect(message).toContain("OPENCLAW_GATEWAY_PASSWORD");
+    expect(message).toContain("AFORA_GATEWAY_PASSWORD");
   });
 
   it("does nothing on non-darwin platforms", async () => {
@@ -124,7 +124,7 @@ describe("noteMacLaunchctlGatewayEnvOverrides", () => {
           token: "config-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await noteMacLaunchctlGatewayEnvOverrides(cfg, { platform: "linux", getenv, noteFn });
 
@@ -141,31 +141,31 @@ describe("noteMacLaunchctlGatewayEnvOverrides", () => {
           token: "config-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await noteMacLaunchctlGatewayEnvOverrides(cfg, { platform: "darwin", noteFn });
 
     expect(processMocks.runExec).toHaveBeenNthCalledWith(
       1,
       "/bin/launchctl",
-      ["getenv", "OPENCLAW_GATEWAY_TOKEN"],
+      ["getenv", "AFORA_GATEWAY_TOKEN"],
       { logOutput: false, timeoutMs: 5_000 },
     );
     expect(processMocks.runExec).toHaveBeenNthCalledWith(
       2,
       "/bin/launchctl",
-      ["getenv", "OPENCLAW_GATEWAY_PASSWORD"],
+      ["getenv", "AFORA_GATEWAY_PASSWORD"],
       { logOutput: false, timeoutMs: 5_000 },
     );
     expect(noteFn).not.toHaveBeenCalled();
   });
 });
 
-describe("noteMacStaleOpenClawUpdateLaunchdJobs", () => {
+describe("noteMacStaleAforaUpdateLaunchdJobs", () => {
   it("uses service env for gateway platform stale updater warnings", async () => {
     const serviceEnv = {
-      OPENCLAW_STATE_DIR: "/tmp/openclaw-daemon",
-      OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.manual-update.gateway",
+      AFORA_STATE_DIR: "/tmp/afora-daemon",
+      AFORA_LAUNCHD_LABEL: "ai.afora.manual-update.gateway",
     };
     const service = {
       readCommand: vi.fn(async () => ({
@@ -175,7 +175,7 @@ describe("noteMacStaleOpenClawUpdateLaunchdJobs", () => {
     };
     const findJobs = vi.fn(async () => []);
 
-    await collectMacGatewayPlatformWarnings({} as OpenClawConfig, {
+    await collectMacGatewayPlatformWarnings({} as AforaConfig, {
       platform: "darwin",
       service,
       findJobs,
@@ -184,16 +184,16 @@ describe("noteMacStaleOpenClawUpdateLaunchdJobs", () => {
     expect(service.readCommand).toHaveBeenCalledTimes(1);
     expect(findJobs).toHaveBeenCalledWith(
       expect.objectContaining({
-        OPENCLAW_STATE_DIR: "/tmp/openclaw-daemon",
-        OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.manual-update.gateway",
+        AFORA_STATE_DIR: "/tmp/afora-daemon",
+        AFORA_LAUNCHD_LABEL: "ai.afora.manual-update.gateway",
       }),
     );
   });
 
   it("uses service env for doctor stale updater notes", async () => {
     const serviceEnv = {
-      OPENCLAW_STATE_DIR: "/tmp/openclaw-daemon",
-      OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.manual-update.gateway",
+      AFORA_STATE_DIR: "/tmp/afora-daemon",
+      AFORA_LAUNCHD_LABEL: "ai.afora.manual-update.gateway",
     };
     const service = {
       readCommand: vi.fn(async () => ({
@@ -203,7 +203,7 @@ describe("noteMacStaleOpenClawUpdateLaunchdJobs", () => {
     };
     const findJobs = vi.fn(async () => []);
 
-    await noteMacStaleOpenClawUpdateLaunchdJobs({
+    await noteMacStaleAforaUpdateLaunchdJobs({
       platform: "darwin",
       service,
       findJobs,
@@ -212,8 +212,8 @@ describe("noteMacStaleOpenClawUpdateLaunchdJobs", () => {
     expect(service.readCommand).toHaveBeenCalledTimes(1);
     expect(findJobs).toHaveBeenCalledWith(
       expect.objectContaining({
-        OPENCLAW_STATE_DIR: "/tmp/openclaw-daemon",
-        OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.manual-update.gateway",
+        AFORA_STATE_DIR: "/tmp/afora-daemon",
+        AFORA_LAUNCHD_LABEL: "ai.afora.manual-update.gateway",
       }),
     );
   });
@@ -225,16 +225,16 @@ describe("noteMacStaleOpenClawUpdateLaunchdJobs", () => {
     };
     const findJobs = vi.fn(async () => [
       {
-        label: "ai.openclaw.update.2026.5.12",
+        label: "ai.afora.update.2026.5.12",
         lastExitStatus: 127,
       },
       {
-        label: "ai.openclaw.manual-update.1717168800",
+        label: "ai.afora.manual-update.1717168800",
         lastExitStatus: 0,
       },
     ]);
 
-    await noteMacStaleOpenClawUpdateLaunchdJobs({
+    await noteMacStaleAforaUpdateLaunchdJobs({
       platform: "darwin",
       service,
       findJobs,
@@ -244,11 +244,11 @@ describe("noteMacStaleOpenClawUpdateLaunchdJobs", () => {
     expect(findJobs).toHaveBeenCalledTimes(1);
     const [message, title] = requireNoteCall(noteFn);
     expect(title).toBe("Gateway (macOS)");
-    expect(message).toContain("Stale OpenClaw updater launchd job(s) detected");
-    expect(message).toContain("ai.openclaw.update.2026.5.12");
-    expect(message).toContain("ai.openclaw.manual-update.1717168800");
+    expect(message).toContain("Stale Afora updater launchd job(s) detected");
+    expect(message).toContain("ai.afora.update.2026.5.12");
+    expect(message).toContain("ai.afora.manual-update.1717168800");
     expect(message).toContain("launchctl remove <label>");
-    expect(message).toContain("openclaw gateway restart");
+    expect(message).toContain("afora gateway restart");
   });
 
   it("does nothing when no stale updater jobs exist", async () => {
@@ -258,7 +258,7 @@ describe("noteMacStaleOpenClawUpdateLaunchdJobs", () => {
     };
     const findJobs = vi.fn(async () => []);
 
-    await noteMacStaleOpenClawUpdateLaunchdJobs({
+    await noteMacStaleAforaUpdateLaunchdJobs({
       platform: "darwin",
       service,
       findJobs,
@@ -275,7 +275,7 @@ describe("collectMacGatewayPlatformWarnings", () => {
       .spyOn(fs, "existsSync")
       .mockImplementation((candidate) => String(candidate).includes("disable-launchagent"));
     try {
-      const warnings = await collectMacGatewayPlatformWarnings({} as OpenClawConfig, {
+      const warnings = await collectMacGatewayPlatformWarnings({} as AforaConfig, {
         platform: "darwin",
         service: { readCommand: vi.fn(async () => null) },
         findJobs: vi.fn(async () => []),
@@ -292,7 +292,7 @@ describe("collectMacGatewayPlatformWarnings", () => {
     const exists = vi.spyOn(fs, "existsSync").mockReturnValue(false);
     try {
       await expect(
-        collectMacGatewayPlatformWarnings({} as OpenClawConfig, {
+        collectMacGatewayPlatformWarnings({} as AforaConfig, {
           platform: "darwin",
           service: { readCommand: vi.fn(async () => null) },
           findJobs: vi.fn(async () => []),

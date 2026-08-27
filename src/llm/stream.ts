@@ -1,9 +1,9 @@
 // Streams LLM responses through registered providers and normalizes events.
 // This facade owns the process-default AI runtime wiring: it installs the
-// OpenClaw host policy ports and registers built-in providers exactly once,
+// Afora host policy ports and registers built-in providers exactly once,
 // before any caller imports the stream API.
-import { defaultApiRegistry, defaultLlmRuntime } from "@openclaw/ai/internal/runtime";
-import { registerBuiltInApiProviders } from "@openclaw/ai/providers";
+import { defaultApiRegistry, defaultLlmRuntime } from "@afora/ai/internal/runtime";
+import { registerBuiltInApiProviders } from "@afora/ai/providers";
 import { getModelLlmRuntime } from "./model-runtime-binding.js";
 import "./ai-transport-host.js";
 import type {

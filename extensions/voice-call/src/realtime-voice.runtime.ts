@@ -4,4 +4,4 @@ export {
   getRealtimeVoiceProvider,
   listRealtimeVoiceProviders,
   resolveConfiguredRealtimeVoiceProvider,
-} from "openclaw/plugin-sdk/realtime-voice";
+} from "afora-agent/plugin-sdk/realtime-voice";

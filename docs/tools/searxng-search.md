@@ -7,7 +7,7 @@ read_when:
 title: "SearXNG search"
 ---
 
-OpenClaw supports [SearXNG](https://docs.searxng.org/) as a **self-hosted,
+Afora supports [SearXNG](https://docs.searxng.org/) as a **self-hosted,
 key-free** `web_search` provider. SearXNG is an open-source meta-search engine
 that aggregates results from Google, Bing, DuckDuckGo, and other sources.
 
@@ -22,7 +22,7 @@ Advantages:
 <Steps>
   <Step title="Install the plugin">
     ```bash
-    openclaw plugins install @openclaw/searxng-plugin
+    afora plugins install @afora/searxng-plugin
     ```
   </Step>
   <Step title="Run a SearXNG instance">
@@ -36,7 +36,7 @@ Advantages:
   </Step>
   <Step title="Configure">
     ```bash
-    openclaw configure --section web
+    afora configure --section web
     # Select "searxng" as the provider
     ```
 
@@ -128,7 +128,7 @@ and `language` as per-call overrides.
 - **Self-hosted** -- you control the instance, queries, and upstream search engines
 - **Categories** default to `general` when not configured
 - **Category fallback** -- if a non-`general` category request succeeds but
-  returns zero results, OpenClaw retries the same query once with `general`
+  returns zero results, Afora retries the same query once with `general`
   before returning an empty result set
 - **Result caching** -- identical queries (same query, count, categories,
   language, and base URL) are cached in-process for a short TTL

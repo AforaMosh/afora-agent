@@ -2,7 +2,7 @@
  * Arcee setup preset appliers. They seed model catalog defaults for direct
  * Arcee API usage and the OpenRouter-backed path.
  */
-import { createModelCatalogPresetAppliers } from "openclaw/plugin-sdk/provider-onboard";
+import { createModelCatalogPresetAppliers } from "afora-agent/plugin-sdk/provider-onboard";
 import { ARCEE_BASE_URL } from "./models.js";
 import {
   buildArceeCatalogModels,

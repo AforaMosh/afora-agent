@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => {
   };
   return {
     runtime,
-    serveOpenClawChannelMcp: vi.fn(),
+    serveAforaChannelMcp: vi.fn(),
     clearMcpOAuthCredentials: vi.fn(),
     clearMcpOAuthRequesters: vi.fn(),
     clearMcpOAuthServer: vi.fn(),
@@ -35,7 +35,7 @@ const mocks = vi.hoisted(() => {
 
 export const mockLog = mocks.runtime.log;
 export const mockError = mocks.runtime.error;
-export const serveOpenClawChannelMcp = mocks.serveOpenClawChannelMcp;
+export const serveAforaChannelMcp = mocks.serveAforaChannelMcp;
 export const clearMcpOAuthCredentials = mocks.clearMcpOAuthCredentials;
 export const completeMcpOAuthAuthorization = mocks.completeMcpOAuthAuthorization;
 export const readMcpOAuthCredentialsStatus = mocks.readMcpOAuthCredentialsStatus;
@@ -46,7 +46,7 @@ vi.mock("../runtime.js", () => ({
 }));
 
 vi.mock("../mcp/channel-server.js", () => ({
-  serveOpenClawChannelMcp: mocks.serveOpenClawChannelMcp,
+  serveAforaChannelMcp: mocks.serveAforaChannelMcp,
 }));
 
 vi.mock("../agents/mcp-oauth.js", () => ({
@@ -72,7 +72,7 @@ const tempDirs: string[] = [];
 let sharedProgram: Command;
 
 export async function createWorkspace(): Promise<string> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-cli-mcp-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-cli-mcp-"));
   tempDirs.push(dir);
   return dir;
 }

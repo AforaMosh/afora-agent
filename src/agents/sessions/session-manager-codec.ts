@@ -1,5 +1,5 @@
-import { stripCompactionReplayCheckpointInPlace } from "@openclaw/ai/transports";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { stripCompactionReplayCheckpointInPlace } from "@afora/ai/transports";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { z } from "zod";
 import { selectSessionTranscriptLeafControlledPath } from "../../config/sessions/transcript-tree.js";
 import { CURRENT_SESSION_VERSION } from "../../config/sessions/version.js";

@@ -1,4 +1,4 @@
-// Check No Extension Src Imports script supports OpenClaw repository automation.
+// Check No Extension Src Imports script supports Afora repository automation.
 import fs from "node:fs";
 import path from "node:path";
 import { collectFilesSync, isCodeFile, relativeToCwd } from "./check-file-utils.js";
@@ -31,7 +31,7 @@ function main() {
       console.error(`- ${relativeToCwd(offender)}`);
     }
     console.error(
-      "Publish a focused openclaw/plugin-sdk/<subpath> surface or use the extension's own public barrel instead.",
+      "Publish a focused afora/plugin-sdk/<subpath> surface or use the extension's own public barrel instead.",
     );
     process.exit(1);
   }

@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { createSuiteTempRootTracker } from "../test-helpers/temp-dir.js";
 import { cellAuthSecretDir, cellOwnerId } from "./cell-profile.js";
 import type { FleetContainerInspectResult, FleetContainerRuntime } from "./containers.runtime.js";
@@ -20,10 +20,10 @@ function createFleetService(options: FleetServiceOptions = {}) {
 
 function fleetLabels(tenant = "acme", attemptId = TEST_ATTEMPT_ID): Record<string, string> {
   return {
-    "openclaw.fleet.tenant": tenant,
-    "openclaw.fleet.owner": cellOwnerId(path.join(root, "fleet", "cells", tenant)),
-    "openclaw.fleet.attempt": attemptId,
-    "openclaw.fleet.env-keys": "FEATURE",
+    "afora.fleet.tenant": tenant,
+    "afora.fleet.owner": cellOwnerId(path.join(root, "fleet", "cells", tenant)),
+    "afora.fleet.attempt": attemptId,
+    "afora.fleet.env-keys": "FEATURE",
   };
 }
 
@@ -38,7 +38,7 @@ function runningInspection(
     labels: fleetLabels(),
     environment: {
       HOME: "/home/node",
-      OPENCLAW_GATEWAY_TOKEN: "old-token",
+      AFORA_GATEWAY_TOKEN: "old-token",
       FEATURE: "enabled",
       NODE_VERSION: "old-image-default",
     },
@@ -159,11 +159,11 @@ function createContainerMock(
 describe("fleet service", () => {
   let env: NodeJS.ProcessEnv;
 
-  const tempRoot = createSuiteTempRootTracker({ prefix: "openclaw-fleet-service-" });
+  const tempRoot = createSuiteTempRootTracker({ prefix: "afora-fleet-service-" });
 
   beforeEach(async () => {
     root = await tempRoot.setup();
-    env = { ...process.env, OPENCLAW_STATE_DIR: root };
+    env = { ...process.env, AFORA_STATE_DIR: root };
     vi.stubGlobal(
       "fetch",
       vi.fn<typeof fetch>(async () => new Response(null, { status: 200 })),
@@ -171,7 +171,7 @@ describe("fleet service", () => {
   });
 
   afterEach(async () => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     vi.unstubAllGlobals();
     await tempRoot.cleanup();
   });
@@ -192,9 +192,9 @@ describe("fleet service", () => {
 
     expect(result).toEqual({
       tenant: "acme",
-      containerName: "openclaw-cell-acme",
+      containerName: "afora-cell-acme",
       port: 19_100,
-      image: "ghcr.io/openclaw/openclaw:latest",
+      image: "ghcr.io/AforaMosh/afora-agent:latest",
       runtime: "docker",
       started: true,
       token: "gw-token",
@@ -208,16 +208,16 @@ describe("fleet service", () => {
     expect(start).toBe(false);
     expect(containers.createNetwork).toHaveBeenCalledWith(
       "docker",
-      "openclaw-cell-acme-net",
+      "afora-cell-acme-net",
       {
-        "openclaw.fleet.tenant": "acme",
-        "openclaw.fleet.owner": cellOwnerId(path.join(root, "fleet", "cells", "acme")),
-        "openclaw.fleet.attempt": expect.stringMatching(/^[a-f0-9]{32}$/u),
+        "afora.fleet.tenant": "acme",
+        "afora.fleet.owner": cellOwnerId(path.join(root, "fleet", "cells", "acme")),
+        "afora.fleet.attempt": expect.stringMatching(/^[a-f0-9]{32}$/u),
       },
       { internal: false },
     );
-    expect(containers.start).toHaveBeenCalledWith("docker", "openclaw-cell-acme");
-    expect(profile?.networkName).toBe("openclaw-cell-acme-net");
+    expect(containers.start).toHaveBeenCalledWith("docker", "afora-cell-acme");
+    expect(profile?.networkName).toBe("afora-cell-acme-net");
     expect(containers.createNetwork.mock.invocationCallOrder[0] ?? -1).toBeLessThan(
       containers.run.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
     );
@@ -225,12 +225,12 @@ describe("fleet service", () => {
       containers.start.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
     );
     expect(profile?.environment).toMatchObject({
-      OPENCLAW_GATEWAY_TOKEN: "gw-token",
+      AFORA_GATEWAY_TOKEN: "gw-token",
       FEATURE: "a=b",
     });
 
     const dataDir = path.join(root, "fleet", "cells", "acme");
-    const config = JSON.parse(await fs.readFile(path.join(dataDir, "openclaw.json"), "utf8")) as {
+    const config = JSON.parse(await fs.readFile(path.join(dataDir, "afora.json"), "utf8")) as {
       gateway?: {
         mode?: string;
         bind?: string;
@@ -297,7 +297,7 @@ describe("fleet service", () => {
     });
 
     await expect(service.create({ tenant: "sick", gatewayToken: "token" })).rejects.toThrow(
-      "Fleet cell sick was created but did not become healthy within 60s; inspect it with `openclaw fleet status sick` or `openclaw fleet logs sick`, or remove it with `openclaw fleet rm sick --force`.",
+      "Fleet cell sick was created but did not become healthy within 60s; inspect it with `afora fleet status sick` or `afora fleet logs sick`, or remove it with `afora fleet rm sick --force`.",
     );
 
     expect(getFleetCell(env, "sick")).toBeDefined();
@@ -400,7 +400,7 @@ describe("fleet service", () => {
     expect(containers.run.mock.calls[0]?.[0]).toMatchObject({ diskSize: "10g" });
     expect(containers.createNetwork).toHaveBeenCalledWith(
       "podman",
-      "openclaw-cell-acme-net",
+      "afora-cell-acme-net",
       expect.any(Object),
       { internal: true },
     );
@@ -544,7 +544,7 @@ describe("fleet service", () => {
 
     await expect(service.lifecycle("acme", action)).resolves.toEqual({ tenant: "acme", action });
 
-    expect(containers[action]).toHaveBeenCalledWith("docker", "openclaw-cell-acme");
+    expect(containers[action]).toHaveBeenCalledWith("docker", "afora-cell-acme");
   });
 
   it("pins logs to the inspected container generation after proving ownership", async () => {
@@ -609,46 +609,46 @@ describe("fleet service", () => {
     containers.run.mockClear();
     // The disk limit replays from the fleet label because Podman inspect has no
     // HostConfig.StorageOpt; the label is the cross-runtime carrier.
-    const diskLabels = { ...fleetLabels(), "openclaw.fleet.disk-limit": "10g" };
+    const diskLabels = { ...fleetLabels(), "afora.fleet.disk-limit": "10g" };
     containers.inspect
       .mockResolvedValue(runningInspection({ labels: diskLabels }))
       .mockResolvedValueOnce(runningInspection({ labels: diskLabels }))
       .mockResolvedValueOnce(runningInspection({ labels: fleetLabels("acme", NEXT_ATTEMPT_ID) }));
 
-    const result = await service.upgrade("acme", "ghcr.io/openclaw/openclaw:v2");
+    const result = await service.upgrade("acme", "ghcr.io/AforaMosh/afora-agent:v2");
 
     expect(result).toEqual({
       tenant: "acme",
       action: "upgrade",
-      image: "ghcr.io/openclaw/openclaw:v2",
+      image: "ghcr.io/AforaMosh/afora-agent:v2",
     });
-    expect(containers.pull).toHaveBeenCalledWith("docker", "ghcr.io/openclaw/openclaw:v2");
-    expect(containers.stop).toHaveBeenCalledWith("docker", "openclaw-cell-acme");
-    expect(containers.remove).toHaveBeenCalledWith("docker", "openclaw-cell-acme", false);
-    expect(containers.inspectNetwork).toHaveBeenCalledWith("docker", "openclaw-cell-acme-net");
+    expect(containers.pull).toHaveBeenCalledWith("docker", "ghcr.io/AforaMosh/afora-agent:v2");
+    expect(containers.stop).toHaveBeenCalledWith("docker", "afora-cell-acme");
+    expect(containers.remove).toHaveBeenCalledWith("docker", "afora-cell-acme", false);
+    expect(containers.inspectNetwork).toHaveBeenCalledWith("docker", "afora-cell-acme-net");
     const [profile, start] = containers.run.mock.calls[0] ?? [];
     expect(start).toBe(true);
     expect(profile).toMatchObject({
-      image: "ghcr.io/openclaw/openclaw:v2",
+      image: "ghcr.io/AforaMosh/afora-agent:v2",
       hostPort: 19_100,
       memory: "2147483648",
       cpus: "2",
       pidsLimit: 512,
       diskSize: "10g",
-      networkName: "openclaw-cell-acme-net",
+      networkName: "afora-cell-acme-net",
       environment: {
         HOME: "/home/node",
-        OPENCLAW_GATEWAY_TOKEN: "old-token",
+        AFORA_GATEWAY_TOKEN: "old-token",
         FEATURE: "enabled",
       },
     });
     expect(profile?.environment).not.toHaveProperty("NODE_VERSION");
-    expect(getFleetCell(env, "acme")?.image).toBe("ghcr.io/openclaw/openclaw:v2");
+    expect(getFleetCell(env, "acme")?.image).toBe("ghcr.io/AforaMosh/afora-agent:v2");
   });
 
   it("passes digest-pinned images verbatim to create and upgrade", async () => {
     const containers = createContainerMock();
-    const digest = `ghcr.io/openclaw/openclaw@sha256:${"a".repeat(64)}`;
+    const digest = `ghcr.io/AforaMosh/afora-agent@sha256:${"a".repeat(64)}`;
     const service = createFleetService({
       env,
       containers: containers.runtime,
@@ -682,7 +682,7 @@ describe("fleet service", () => {
 
     expect(containers.run).toHaveBeenCalledTimes(2);
     expect(containers.run.mock.calls[1]?.[0].image).toBe("sha256:old-image-id");
-    expect(getFleetCell(env, "acme")?.image).toBe("ghcr.io/openclaw/openclaw:latest");
+    expect(getFleetCell(env, "acme")?.image).toBe("ghcr.io/AforaMosh/afora-agent:latest");
   });
 
   it("restarts the old cell when removal fails after stop", async () => {
@@ -698,8 +698,8 @@ describe("fleet service", () => {
 
     await expect(service.upgrade("acme")).rejects.toThrow(/previous container was restored/iu);
 
-    expect(containers.stop).toHaveBeenCalledWith("docker", "openclaw-cell-acme");
-    expect(containers.start).toHaveBeenCalledWith("docker", "openclaw-cell-acme");
+    expect(containers.stop).toHaveBeenCalledWith("docker", "afora-cell-acme");
+    expect(containers.start).toHaveBeenCalledWith("docker", "afora-cell-acme");
     expect(containers.run).not.toHaveBeenCalled();
   });
 
@@ -727,9 +727,9 @@ describe("fleet service", () => {
 
     expect(containers.run).toHaveBeenCalledTimes(2);
     expect(containers.run.mock.calls[1]?.[0].image).toBe("sha256:old-image-id");
-    expect(containers.remove).toHaveBeenCalledWith("docker", "openclaw-cell-acme", true);
+    expect(containers.remove).toHaveBeenCalledWith("docker", "afora-cell-acme", true);
     expect(containers.removeNetwork).not.toHaveBeenCalled();
-    expect(getFleetCell(env, "acme")?.image).toBe("ghcr.io/openclaw/openclaw:latest");
+    expect(getFleetCell(env, "acme")?.image).toBe("ghcr.io/AforaMosh/afora-agent:latest");
   });
 
   it("restores the previous cell when the replacement container is not running", async () => {
@@ -756,7 +756,7 @@ describe("fleet service", () => {
 
     expect(containers.run).toHaveBeenCalledTimes(2);
     expect(containers.run.mock.calls[1]?.[0].image).toBe("sha256:old-image-id");
-    expect(getFleetCell(env, "acme")?.image).toBe("ghcr.io/openclaw/openclaw:latest");
+    expect(getFleetCell(env, "acme")?.image).toBe("ghcr.io/AforaMosh/afora-agent:latest");
   });
 
   it("restores the previous cell when the replacement crashes after starting", async () => {
@@ -790,7 +790,7 @@ describe("fleet service", () => {
 
     expect(containers.run).toHaveBeenCalledTimes(2);
     expect(containers.run.mock.calls[1]?.[0].image).toBe("sha256:old-image-id");
-    expect(getFleetCell(env, "acme")?.image).toBe("ghcr.io/openclaw/openclaw:latest");
+    expect(getFleetCell(env, "acme")?.image).toBe("ghcr.io/AforaMosh/afora-agent:latest");
   });
 
   it("restores the previous cell when the replacement never becomes healthy", async () => {
@@ -821,7 +821,7 @@ describe("fleet service", () => {
 
     expect(containers.run).toHaveBeenCalledTimes(2);
     expect(containers.run.mock.calls[1]?.[0].image).toBe("sha256:old-image-id");
-    expect(getFleetCell(env, "acme")?.image).toBe("ghcr.io/openclaw/openclaw:latest");
+    expect(getFleetCell(env, "acme")?.image).toBe("ghcr.io/AforaMosh/afora-agent:latest");
   });
 
   it("refuses upgrade before pull or removal when the inspected token is missing", async () => {
@@ -847,7 +847,7 @@ describe("fleet service", () => {
       kind: "ok",
       labels: fleetLabels(),
       attachedContainers: [
-        { id: "cell-id", name: "openclaw-cell-acme" },
+        { id: "cell-id", name: "afora-cell-acme" },
         { id: "peer-id", name: "unexpected-peer" },
       ],
       internal: false,
@@ -904,7 +904,7 @@ describe("fleet service", () => {
       /already allocated/iu,
     );
 
-    expect(containers.remove).toHaveBeenCalledWith("docker", "openclaw-cell-acme", true);
+    expect(containers.remove).toHaveBeenCalledWith("docker", "afora-cell-acme", true);
     expect(getFleetCell(env, "acme")).toBeUndefined();
   });
 
@@ -948,7 +948,7 @@ describe("fleet service", () => {
     );
 
     expect(containers.run).not.toHaveBeenCalled();
-    expect(containers.removeNetwork).toHaveBeenCalledWith("docker", "openclaw-cell-acme-net");
+    expect(containers.removeNetwork).toHaveBeenCalledWith("docker", "afora-cell-acme-net");
     expect(getFleetCell(env, "acme")).toBeUndefined();
   });
 
@@ -1003,7 +1003,7 @@ describe("fleet service", () => {
       /reservation changed/iu,
     );
 
-    expect(containers.remove).toHaveBeenCalledWith("docker", "openclaw-cell-acme", true);
+    expect(containers.remove).toHaveBeenCalledWith("docker", "afora-cell-acme", true);
     expect(containers.start).not.toHaveBeenCalled();
     expect(getFleetCell(env, "acme")).toBeUndefined();
   });
@@ -1045,7 +1045,7 @@ describe("fleet service", () => {
       runningInspection({
         labels: {
           ...fleetLabels(),
-          "openclaw.fleet.owner": "11111111111111111111111111111111",
+          "afora.fleet.owner": "11111111111111111111111111111111",
         },
       }),
     );

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import type { DatabaseSync } from "node:sqlite";
-import { asOptionalObjectRecord } from "@openclaw/normalization-core/record-coerce";
+import { asOptionalObjectRecord } from "@afora/normalization-core/record-coerce";
 import type { Selectable } from "kysely";
 import type { ProgressCard, ProgressCardStep } from "../../packages/gateway-protocol/src/index.js";
 import {
@@ -10,10 +10,10 @@ import {
 } from "../infra/kysely-sync.js";
 import { openNodeSqliteDatabase } from "../infra/node-sqlite.js";
 import { runSqliteImmediateTransactionSync } from "../infra/sqlite-transaction.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../state/openclaw-agent-db.generated.js";
-import { ensureOpenClawAgentProgressCardSchemaInTransaction } from "../state/openclaw-agent-progress-card-schema.js";
+import type { DB as AforaAgentKyselyDatabase } from "../state/afora-agent-db.generated.js";
+import { ensureAforaAgentProgressCardSchemaInTransaction } from "../state/afora-agent-progress-card-schema.js";
 
-type ProgressCardDatabase = Pick<OpenClawAgentKyselyDatabase, "session_progress_cards">;
+type ProgressCardDatabase = Pick<AforaAgentKyselyDatabase, "session_progress_cards">;
 type ProgressCardDatabaseInput = string | DatabaseSync;
 type StoredProgressCardRow = Selectable<ProgressCardDatabase["session_progress_cards"]>;
 
@@ -23,7 +23,7 @@ function withProgressCardDatabase<T>(
   operation: (db: DatabaseSync, label: string) => T,
 ): T {
   if (typeof input !== "string") {
-    return operation(input, "openclaw-agent.sqlite");
+    return operation(input, "afora-agent.sqlite");
   }
   const db = openNodeSqliteDatabase(input, { readOnly });
   try {
@@ -116,7 +116,7 @@ export function writeSessionProgressCard(
 ): { card: ProgressCard } | { cleared: true } {
   return withProgressCardDatabase(dbPathOrDb, false, (db, label) => {
     const write = (): { card: ProgressCard } | { cleared: true } => {
-      ensureOpenClawAgentProgressCardSchemaInTransaction(db);
+      ensureAforaAgentProgressCardSchemaInTransaction(db);
       const kysely = getNodeSqliteKysely<ProgressCardDatabase>(db);
       const markdown = input.markdown?.trim() ? input.markdown : undefined;
       const steps = input.steps && input.steps.length > 0 ? input.steps : undefined;

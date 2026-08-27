@@ -17,8 +17,8 @@ type FrameSample = {
 };
 
 type SamplerWindow = Window & {
-  openclawSendFrameSamples?: FrameSample[];
-  openclawSendFrameSamplerStop?: () => void;
+  aforaSendFrameSamples?: FrameSample[];
+  aforaSendFrameSamplerStop?: () => void;
 };
 
 const PROBE_TEXT = "Flicker probe message 4242";
@@ -32,9 +32,9 @@ async function startFrameSampler(currentPage: Page, probeText = PROBE_TEXT): Pro
   await currentPage.evaluate((text) => {
     const win = window as SamplerWindow;
     const frames: FrameSample[] = [];
-    win.openclawSendFrameSamples = frames;
+    win.aforaSendFrameSamples = frames;
     let running = true;
-    win.openclawSendFrameSamplerStop = () => {
+    win.aforaSendFrameSamplerStop = () => {
       running = false;
     };
     const sample = () => {
@@ -65,8 +65,8 @@ async function startFrameSampler(currentPage: Page, probeText = PROBE_TEXT): Pro
 async function stopFrameSampler(currentPage: Page): Promise<FrameSample[]> {
   return currentPage.evaluate(() => {
     const win = window as SamplerWindow;
-    win.openclawSendFrameSamplerStop?.();
-    return win.openclawSendFrameSamples ?? [];
+    win.aforaSendFrameSamplerStop?.();
+    return win.aforaSendFrameSamples ?? [];
   });
 }
 
@@ -104,7 +104,7 @@ const BASE_HISTORY = [
     content: [{ text: "Ready.", type: "text" }],
     role: "assistant",
     timestamp: Date.now() - 5_000,
-    __openclaw: { seq: 1 },
+    __afora: { seq: 1 },
   },
 ];
 
@@ -160,7 +160,7 @@ async function finishRunAndSettle(
       content: [{ text: "Run complete.", type: "text" }],
       role: "assistant",
       timestamp: Date.now() + 1,
-      __openclaw: { seq: 3 },
+      __afora: { seq: 3 },
     },
   ]);
   // The terminal reconciliation must re-read history; baseline before the
@@ -170,7 +170,7 @@ async function finishRunAndSettle(
     content: [{ text: "Run complete.", type: "text" }],
     role: "assistant",
     timestamp: Date.now() + 1,
-    __openclaw: { seq: 3 },
+    __afora: { seq: 3 },
   };
   await gateway.emitChatFinal({ runId, text: "Run complete." });
   await currentPage
@@ -240,7 +240,7 @@ suite.define(() => {
         await expect
           .poll(() =>
             currentPage.evaluate(() =>
-              ((window as SamplerWindow).openclawSendFrameSamples ?? []).some(
+              ((window as SamplerWindow).aforaSendFrameSamples ?? []).some(
                 (frame) =>
                   frame.rowKeys.length === 1 &&
                   frame.imageCount === 1 &&
@@ -262,7 +262,7 @@ suite.define(() => {
           ],
           role: "user",
           timestamp: Date.now(),
-          __openclaw: { id: USER_ECHO_ENTRY_ID, idempotencyKey: runId, seq: 2 },
+          __afora: { id: USER_ECHO_ENTRY_ID, idempotencyKey: runId, seq: 2 },
         });
 
         const keyTimeline = analyzeFrameContinuity(frames, isHealthyImageFrame);
@@ -289,7 +289,7 @@ suite.define(() => {
           content: [{ text: PROBE_TEXT, type: "text" }],
           role: "user",
           timestamp: Date.now(),
-          __openclaw: { id: USER_ECHO_ENTRY_ID, idempotencyKey: runId, seq: 2 },
+          __afora: { id: USER_ECHO_ENTRY_ID, idempotencyKey: runId, seq: 2 },
         };
         await gateway.setHistoryMessages([...BASE_HISTORY, userEcho]);
         const historyRequestsBefore = (await gateway.getRequests("chat.history")).length;

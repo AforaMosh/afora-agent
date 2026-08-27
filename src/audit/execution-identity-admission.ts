@@ -1,7 +1,7 @@
 /** Bounded execution-identity facts captured at authoritative run admission. */
 import { randomUUID } from "node:crypto";
 import { isProxy } from "node:util/types";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { type Static, Type } from "typebox";
 import { Value } from "typebox/value";
 import { redactSensitiveText } from "../logging/redact.js";

@@ -3,11 +3,11 @@ import { mkdtemp, readFile, rm, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { persistSessionTranscriptTurn } from "../../config/sessions/session-accessor.js";
 import { resolveSessionStorePathForScope } from "../../config/sessions/session-store-path.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
+import { closeAforaAgentDatabasesForTest } from "../../state/afora-agent-db.js";
 import { buildContextReply } from "./commands-context-report.js";
 import { buildCommandContext } from "./commands-context.js";
 import type { HandleCommandsParams } from "./commands-types.js";
@@ -108,7 +108,7 @@ async function withTranscript(
   }) => Promise<void>,
   options: { agentId?: string; sessionKey?: string } = {},
 ): Promise<void> {
-  const dir = await mkdtemp(join(tmpdir(), "openclaw-context-report-"));
+  const dir = await mkdtemp(join(tmpdir(), "afora-context-report-"));
   try {
     const agentId = options.agentId ?? "default";
     const target = {
@@ -130,7 +130,7 @@ async function withTranscript(
     );
     await run(target);
   } finally {
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
     await rm(dir, { recursive: true, force: true });
   }
 }
@@ -458,7 +458,7 @@ describe("buildCommandContext", () => {
 
     const result = buildCommandContext({
       ctx,
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       isGroup: false,
       triggerBodyNormalized: "/id",
       commandAuthorized: true,
@@ -481,7 +481,7 @@ describe("buildCommandContext", () => {
 
     const result = buildCommandContext({
       ctx,
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       isGroup: false,
       triggerBodyNormalized: stripStructuralPrefixes("/reset soft\nre-read persona files"),
       commandAuthorized: true,
@@ -505,7 +505,7 @@ describe("buildCommandContext", () => {
 
     const result = buildCommandContext({
       ctx,
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       isGroup: false,
       triggerBodyNormalized: stripStructuralPrefixes(body),
       commandAuthorized: true,
@@ -531,7 +531,7 @@ describe("buildCommandContext", () => {
 
     const result = buildCommandContext({
       ctx,
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       isGroup: false,
       triggerBodyNormalized: "/codex bind",
       commandAuthorized: true,

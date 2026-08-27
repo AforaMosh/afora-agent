@@ -34,7 +34,7 @@ Only `toolResult` messages are eligible; normal conversation text is left alone.
 
 ## Legacy image cleanup
 
-OpenClaw also builds a separate idempotent replay view for sessions that persist raw image blocks or prompt-hydration media markers in history.
+Afora also builds a separate idempotent replay view for sessions that persist raw image blocks or prompt-hydration media markers in history.
 
 - It preserves the **3 most recent completed turns** byte-for-byte so prompt cache prefixes for recent follow-ups stay stable. This count includes all completed turns, not just image-bearing ones, so text-only turns consume the window too.
 - In the replay view, older already-processed image blocks from `user` or `toolResult` history are replaced with `[image data removed - already processed by model]`.
@@ -51,7 +51,7 @@ The bundled Anthropic plugin auto-configures pruning and heartbeat cadence the f
 | OAuth/token (including Claude CLI reuse) | `cache-ttl`           | `1h`                 | `1h`              |
 | API key                                  | `cache-ttl`           | `1h`                 | `30m`             |
 
-If you set `agents.defaults.contextPruning.mode` or `agents.defaults.heartbeat.every` yourself, OpenClaw does not override them. This auto-default only fires for Anthropic-family auth; other providers get pruning `off` unless you configure it.
+If you set `agents.defaults.contextPruning.mode` or `agents.defaults.heartbeat.every` yourself, Afora does not override them. This auto-default only fires for Anthropic-family auth; other providers get pruning `off` unless you configure it.
 
 ## Enable or disable
 

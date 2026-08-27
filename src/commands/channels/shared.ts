@@ -5,7 +5,7 @@ import type { ChannelId } from "../../channels/plugins/types.public.js";
 import { resolveCommandConfigWithSecrets } from "../../cli/command-config-resolution.js";
 import type { CommandSecretResolutionMode } from "../../cli/command-secret-gateway.js";
 import { getChannelsCommandSecretTargetIds } from "../../cli/command-secret-targets.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { DEFAULT_ACCOUNT_ID } from "../../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../../runtime.js";
 import { requireValidConfig, requireValidConfigFileSnapshot } from "../config-validation.js";
@@ -22,7 +22,7 @@ export async function requireValidChannelConfig(
     mode?: CommandSecretResolutionMode;
     skipPluginValidation?: boolean;
   },
-): Promise<OpenClawConfig | null> {
+): Promise<AforaConfig | null> {
   const cfg = await requireValidConfig(
     runtime,
     secretResolution?.skipPluginValidation ? { skipPluginValidation: true } : undefined,

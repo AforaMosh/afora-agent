@@ -19,11 +19,11 @@ import { readPublicationArtifactArchive, sha256Digest } from "./lib/actions-arti
 import { fetchNpmRegistryPackumentWithRetry } from "./lib/npm-publish-plan.mjs";
 
 const MANIFEST_FILENAME = "npm-placeholder-manifest.json";
-const MANIFEST_SCHEMA = "openclaw.npm-placeholder-publication/v1";
+const MANIFEST_SCHEMA = "afora.npm-placeholder-publication/v1";
 const PACKAGE_VERSION = "0.0.0";
 const PUBLISH_TAG = "placeholder";
 const WORKFLOW_PATH = ".github/workflows/npm-placeholder-bootstrap.yml";
-const PACKAGE_NAME_RE = /^@openclaw\/[a-z0-9][a-z0-9._-]*$/u;
+const PACKAGE_NAME_RE = /^@afora\/[a-z0-9][a-z0-9._-]*$/u;
 const SHA_RE = /^[0-9a-f]{40}$/u;
 const SHA256_RE = /^[0-9a-f]{64}$/u;
 const MAX_ARTIFACT_BYTES = 32 * 1024 * 1024;
@@ -91,11 +91,11 @@ function placeholderPackageJson(packageName) {
   return {
     name: packageName,
     version: PACKAGE_VERSION,
-    description: "Reserved package name for an official OpenClaw plugin.",
+    description: "Reserved package name for an official Afora plugin.",
     license: "MIT",
     repository: {
       type: "git",
-      url: "git+https://github.com/openclaw/openclaw.git",
+      url: "git+https://github.com/AforaMosh/afora-agent.git",
     },
     publishConfig: {
       access: "public",
@@ -105,7 +105,7 @@ function placeholderPackageJson(packageName) {
 }
 
 function placeholderReadme(packageName) {
-  return `# ${packageName}\n\nReserved placeholder for the official OpenClaw plugin package. Use a published release version instead.\n`;
+  return `# ${packageName}\n\nReserved placeholder for the official Afora plugin package. Use a published release version instead.\n`;
 }
 
 function writeTarString(header, offset, length, value) {
@@ -141,7 +141,7 @@ function tarEntry(path, content) {
 
 export function createPlaceholderTarball(packageName) {
   if (!PACKAGE_NAME_RE.test(packageName)) {
-    throw new Error(`Invalid OpenClaw package name: ${packageName}`);
+    throw new Error(`Invalid Afora package name: ${packageName}`);
   }
   const packageJson = Buffer.from(canonicalJson(placeholderPackageJson(packageName)), "utf8");
   const readme = Buffer.from(placeholderReadme(packageName), "utf8");
@@ -161,7 +161,7 @@ export function parseSelectedPackages(input) {
   }
   for (const packageName of packages) {
     if (!PACKAGE_NAME_RE.test(packageName)) {
-      throw new Error(`Invalid OpenClaw package name: ${packageName}`);
+      throw new Error(`Invalid Afora package name: ${packageName}`);
     }
   }
   if (new Set(packages).size !== packages.length) {
@@ -206,7 +206,7 @@ export function resolveSelectedPackageSources(repoRoot, packageNames) {
       if (
         entry?.source === "official" &&
         typeof entry.name === "string" &&
-        entry.openclaw?.install?.npmSpec === entry.name
+        entry.afora?.install?.npmSpec === entry.name
       ) {
         officialPackageNames.add(entry.name);
       }
@@ -245,9 +245,9 @@ export function resolveSelectedPackageSources(repoRoot, packageNames) {
     if (
       match.packageJson.private === true ||
       ["private", "restricted"].includes(match.packageJson.publishConfig?.access) ||
-      match.packageJson.openclaw?.install?.npmSpec !== packageName ||
-      match.packageJson.openclaw?.build?.bundledDist !== false ||
-      match.packageJson.openclaw?.release?.publishToNpm !== true
+      match.packageJson.afora?.install?.npmSpec !== packageName ||
+      match.packageJson.afora?.build?.bundledDist !== false ||
+      match.packageJson.afora?.release?.publishToNpm !== true
     ) {
       throw new Error(`${packageName} is not a public release-enabled npm plugin.`);
     }
@@ -649,7 +649,7 @@ export async function publishPlaceholders(params) {
   );
   const npmToken = assertTrimmedString(params.npmToken, "NPM token");
   const publishHome = mkdtempSync(
-    join(resolve(params.tempRoot ?? tmpdir()), "openclaw-npm-placeholder-"),
+    join(resolve(params.tempRoot ?? tmpdir()), "afora-npm-placeholder-"),
   );
   try {
     const npmrc = join(publishHome, "npmrc");

@@ -670,7 +670,7 @@ function parseUpdateFileChunk(
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.applyPatchTestApi")] = {
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.applyPatchTestApi")] = {
     applyPatch,
   };
 }

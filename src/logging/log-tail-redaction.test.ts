@@ -17,11 +17,11 @@ afterEach(async () => {
 
 describe("readConfiguredLogTail redaction", () => {
   it("redacts raw auth headers before returning log lines", async () => {
-    const dir = tempDirs.make("openclaw-log-tail-redaction-");
-    const logFile = path.join(dir, "openclaw.log");
-    const configFile = path.join(dir, "openclaw.json");
+    const dir = tempDirs.make("afora-log-tail-redaction-");
+    const logFile = path.join(dir, "afora.log");
+    const configFile = path.join(dir, "afora.json");
     const basicSecret = "c2VjcmV0OnBhc3M=";
-    const openClawToken = "supersecretgatewaytoken1234567890";
+    const aforaToken = "supersecretgatewaytoken1234567890";
     const pomeriumJwt = "eyJheaderabcd.eyJpayloadabcd.signatureabcd123456";
 
     await fs.writeFile(
@@ -33,7 +33,7 @@ describe("readConfiguredLogTail redaction", () => {
       logFile,
       [
         `Authorization: Basic ${basicSecret}`,
-        `X-OpenClaw-Token: ${openClawToken}`,
+        `X-Afora-Token: ${aforaToken}`,
         `x-pomerium-jwt-assertion: ${pomeriumJwt}`,
         "normal diagnostic line",
       ].join("\n"),
@@ -42,17 +42,17 @@ describe("readConfiguredLogTail redaction", () => {
     setLoggerOverride({ file: logFile });
 
     const payload = await withEnvAsync(
-      { OPENCLAW_CONFIG_PATH: configFile },
+      { AFORA_CONFIG_PATH: configFile },
       async () => await readConfiguredLogTail({ limit: 10 }),
     );
     const text = payload.lines.join("\n");
 
     expect(text).toContain("Authorization: Basic ***");
-    expect(text).toContain("X-OpenClaw-Token: supers…7890");
+    expect(text).toContain("X-Afora-Token: supers…7890");
     expect(text).toContain("x-pomerium-jwt-assertion: eyJhea…3456");
     expect(text).toContain("normal diagnostic line");
     expect(text).not.toContain(basicSecret);
-    expect(text).not.toContain(openClawToken);
+    expect(text).not.toContain(aforaToken);
     expect(text).not.toContain(pomeriumJwt);
   });
 });

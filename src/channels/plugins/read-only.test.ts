@@ -68,7 +68,7 @@ vi.mock("../../plugins/bundled-dir.js", async (importOriginal) => {
   return {
     ...actual,
     resolveBundledPluginsDir: (env: NodeJS.ProcessEnv = process.env) =>
-      env.OPENCLAW_BUNDLED_PLUGINS_DIR ?? actual.resolveBundledPluginsDir(env),
+      env.AFORA_BUNDLED_PLUGINS_DIR ?? actual.resolveBundledPluginsDir(env),
   };
 });
 
@@ -115,9 +115,9 @@ function writeExternalSetupChannelPlugin(
     path.join(pluginDir, "package.json"),
     JSON.stringify(
       {
-        name: `@example/openclaw-${pluginId}`,
+        name: `@example/afora-${pluginId}`,
         version: "1.0.0",
-        openclaw: {
+        afora: {
           extensions: ["./index.cjs"],
           ...(setupEntry ? { setupEntry: "./setup-entry.cjs" } : {}),
           channel: {
@@ -132,7 +132,7 @@ function writeExternalSetupChannelPlugin(
     "utf-8",
   );
   fs.writeFileSync(
-    path.join(pluginDir, "openclaw.plugin.json"),
+    path.join(pluginDir, "afora.plugin.json"),
     JSON.stringify(
       {
         id: pluginId,
@@ -204,7 +204,7 @@ module.exports = {
             {
               id: ${JSON.stringify(`channels.${channelId}.token`)},
               targetType: "channel",
-              configFile: "openclaw.json",
+              configFile: "afora.json",
               pathPattern: ${JSON.stringify(`channels.${channelId}.token`)},
               secretShape: "secret_input",
               expectedResolvedValue: "string",
@@ -248,7 +248,7 @@ module.exports = {
             {
               id: ${JSON.stringify(`channels.${setupChannelId}.token`)},
               targetType: "channel",
-              configFile: "openclaw.json",
+              configFile: "afora.json",
               pathPattern: ${JSON.stringify(`channels.${setupChannelId}.token`)},
           secretShape: "secret_input",
           expectedResolvedValue: "string",
@@ -275,7 +275,7 @@ function writeBundledSetupChannelPlugin(
   } = {},
 ) {
   const bundledRoot = makePluginLoaderTempDir();
-  process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledRoot;
+  process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledRoot;
   const pluginId = options.pluginId ?? "bundled-chat";
   const channelId = options.channelId ?? pluginId;
   const envVar = options.envVar ?? "BUNDLED_CHAT_TOKEN";
@@ -288,10 +288,10 @@ function writeBundledSetupChannelPlugin(
     path.join(pluginDir, "package.json"),
     JSON.stringify(
       {
-        name: `@openclaw/${pluginId}`,
+        name: `@afora/${pluginId}`,
         version: "1.0.0",
         type: "commonjs",
-        openclaw: {
+        afora: {
           extensions: ["./index.cjs"],
           setupEntry: "./setup-entry.cjs",
           channel: {
@@ -310,7 +310,7 @@ function writeBundledSetupChannelPlugin(
     "utf-8",
   );
   fs.writeFileSync(
-    path.join(pluginDir, "openclaw.plugin.json"),
+    path.join(pluginDir, "afora.plugin.json"),
     JSON.stringify(
       {
         id: pluginId,
@@ -545,7 +545,7 @@ describe("listReadOnlyChannelPluginsForConfig", () => {
     });
     expect(pluginIds(first)).toContain("external-chat");
     expect(fs.existsSync(setupMarker)).toBe(true);
-    const manifestPath = path.join(pluginDir, "openclaw.plugin.json");
+    const manifestPath = path.join(pluginDir, "afora.plugin.json");
     const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
     manifest.channels = ["other-chat"];
     fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), "utf-8");
@@ -681,7 +681,7 @@ describe("listReadOnlyChannelPluginsForConfig", () => {
     );
 
     const plugin = plugins.find((entry) => entry.id === "external-chat");
-    expect(plugin?.meta.label).toBe("@example/openclaw-external-chat");
+    expect(plugin?.meta.label).toBe("@example/afora-external-chat");
     expect(plugin?.meta.blurb).toBe("");
     expect(plugin?.configSchema).toBeUndefined();
     expect(
@@ -1109,7 +1109,7 @@ describe("listReadOnlyChannelPluginsForConfig", () => {
 
   it("discovers trusted external channel plugins from the default agent workspace", () => {
     const workspaceDir = makePluginLoaderTempDir();
-    const pluginDir = path.join(workspaceDir, ".openclaw", "extensions", "external-chat-plugin");
+    const pluginDir = path.join(workspaceDir, ".afora", "extensions", "external-chat-plugin");
     fs.mkdirSync(pluginDir, { recursive: true });
     const { fullMarker, setupMarker } = writeExternalSetupChannelPlugin({
       pluginDir,

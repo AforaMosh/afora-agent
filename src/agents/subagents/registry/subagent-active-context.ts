@@ -3,7 +3,7 @@
  *
  * Renders sanitized runtime-owned subagent state into system prompt additions.
  */
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { sanitizeForPromptLiteral } from "../../sanitize-for-prompt.js";
 import {
   resolveInternalSessionKey,
@@ -20,7 +20,7 @@ function quotePromptData(value: string): string {
 
 /** Builds the runtime-owned active subagent section appended to the system prompt. */
 export function buildActiveSubagentSystemPromptAddition(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   controllerSessionKey?: string;
   controllerAgentId?: string;
   hasSessionsYield?: boolean;

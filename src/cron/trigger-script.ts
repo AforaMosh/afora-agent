@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
   resolveAgentConfig,
   resolveAgentDir,
@@ -8,7 +8,7 @@ import {
 } from "../agents/agent-scope.js";
 import type { HookContext } from "../agents/agent-tools.before-tool-call.js";
 import {
-  createOpenClawCodingTools,
+  createAforaCodingTools,
   resolveToolLoopDetectionConfig,
 } from "../agents/agent-tools.js";
 import type {
@@ -40,7 +40,7 @@ import {
 import type { AnyAgentTool } from "../agents/tools/common.js";
 import { ensureAgentWorkspace } from "../agents/workspace.js";
 import { parseDurationMs } from "../cli/parse-duration.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessageWithCode } from "../infra/errors.js";
 import { pruneMapToMaxSize } from "../infra/map-size.js";
 import type { PluginRegistry } from "../plugins/registry-types.js";
@@ -86,7 +86,7 @@ type PreparedTriggerRuntime = {
 };
 
 type PrepareTriggerRuntime = (params: {
-  runtimeConfig: OpenClawConfig;
+  runtimeConfig: AforaConfig;
   jobId: string;
   agentId?: string;
   toolsAllow?: string[];
@@ -95,24 +95,24 @@ type PrepareTriggerRuntime = (params: {
 }) => Promise<PreparedTriggerRuntime>;
 
 type CronTriggerEvaluatorDeps = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   runHeadless?: typeof runCodeModeScriptHeadless;
   prepareRuntime?: PrepareTriggerRuntime;
 };
 
 type TriggerRuntimeCacheEntry = {
   promise: Promise<PreparedTriggerRuntime>;
-  configEpoch: OpenClawConfig;
+  configEpoch: AforaConfig;
   agentId: string;
   toolsAllowKey: string;
 };
 
-function resolveTriggerAgentId(config: OpenClawConfig, agentId?: string): string {
+function resolveTriggerAgentId(config: AforaConfig, agentId?: string): string {
   return agentId?.trim() ? normalizeAgentId(agentId) : resolveDefaultAgentId(config);
 }
 
 async function prepareTriggerRuntime(params: {
-  runtimeConfig: OpenClawConfig;
+  runtimeConfig: AforaConfig;
   jobId: string;
   agentId?: string;
   toolsAllow?: string[];
@@ -165,7 +165,7 @@ async function prepareTriggerRuntime(params: {
     // Bundle MCP tools are source:"mcp", which the headless bridge excludes.
     // LSP runtimes are session-scoped and intentionally outside trigger v1.
     const allTools = toolPlan.constructTools
-      ? createOpenClawCodingTools({
+      ? createAforaCodingTools({
           agentId,
           exec: { config },
           sandbox,
@@ -342,7 +342,7 @@ function createCronCodeModeRunner(deps: CronTriggerEvaluatorDeps) {
   const runtimeCache = new Map<string, TriggerRuntimeCacheEntry>();
 
   const resolveCachedRuntime = async (request: {
-    runtimeConfig: OpenClawConfig;
+    runtimeConfig: AforaConfig;
     jobId: string;
     requestedAgentId?: string;
     agentId: string;

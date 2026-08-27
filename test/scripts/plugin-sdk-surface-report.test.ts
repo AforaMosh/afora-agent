@@ -8,7 +8,7 @@ import {
   readPluginSdkSurfaceBudgets,
 } from "../../scripts/plugin-sdk-surface-report.mts";
 
-const pluginSdkSurfaceBudgetEnvPattern = /^OPENCLAW_PLUGIN_SDK_MAX_/u;
+const pluginSdkSurfaceBudgetEnvPattern = /^AFORA_PLUGIN_SDK_MAX_/u;
 
 function baseSurfaceReportEnv(): NodeJS.ProcessEnv {
   return Object.fromEntries(
@@ -100,33 +100,33 @@ describe("plugin SDK surface report", () => {
 
   it("rejects loose numeric budget env vars before collecting SDK stats", () => {
     const result = runSurfaceReport({
-      OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_EXPORTS: "1e9",
+      AFORA_PLUGIN_SDK_MAX_PUBLIC_EXPORTS: "1e9",
     });
 
     expect(result.status).toBe(1);
     expect(result.stdout).toBe("");
     expect(result.stderr).toContain(
-      "OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_EXPORTS must be a non-negative integer",
+      "AFORA_PLUGIN_SDK_MAX_PUBLIC_EXPORTS must be a non-negative integer",
     );
     expect(result.stderr).not.toContain("at ");
   });
 
   it("rejects unsafe budget env vars before collecting SDK stats", () => {
     const result = runSurfaceReport({
-      OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_EXPORTS: "9007199254740992",
+      AFORA_PLUGIN_SDK_MAX_PUBLIC_EXPORTS: "9007199254740992",
     });
 
     expect(result.status).toBe(1);
     expect(result.stdout).toBe("");
     expect(result.stderr).toContain(
-      "OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_EXPORTS must be a safe non-negative integer",
+      "AFORA_PLUGIN_SDK_MAX_PUBLIC_EXPORTS must be a safe non-negative integer",
     );
     expect(result.stderr).not.toContain("at ");
   });
 
   it("accepts exact deprecated export budget overrides by public entrypoint", () => {
     const budgetConfig = readPluginSdkSurfaceBudgets({
-      OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_DEPRECATED_EXPORTS_BY_ENTRYPOINT: JSON.stringify({ core: 3 }),
+      AFORA_PLUGIN_SDK_MAX_PUBLIC_DEPRECATED_EXPORTS_BY_ENTRYPOINT: JSON.stringify({ core: 3 }),
     });
 
     expect(evaluatePluginSdkSurfaceReport(surfaceReport, budgetConfig)).not.toContain(
@@ -157,7 +157,7 @@ describe("plugin SDK surface report", () => {
   it("rejects callable surface growth from the canonical source graph", () => {
     const budget = readDefaultPublicSurfaceBudgets().callableExports;
     const budgetConfig = readPluginSdkSurfaceBudgets({
-      OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_FUNCTION_EXPORTS: String(budget - 1),
+      AFORA_PLUGIN_SDK_MAX_PUBLIC_FUNCTION_EXPORTS: String(budget - 1),
     });
 
     expect(evaluatePluginSdkSurfaceReport(surfaceReport, budgetConfig)).toContain(
@@ -166,22 +166,22 @@ describe("plugin SDK surface report", () => {
   });
 
   it("strips ambient CI budget overrides from CLI checks", () => {
-    const original = process.env.OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_EXPORTS;
-    process.env.OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_EXPORTS = "1";
+    const original = process.env.AFORA_PLUGIN_SDK_MAX_PUBLIC_EXPORTS;
+    process.env.AFORA_PLUGIN_SDK_MAX_PUBLIC_EXPORTS = "1";
     try {
-      expect(baseSurfaceReportEnv()).not.toHaveProperty("OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_EXPORTS");
+      expect(baseSurfaceReportEnv()).not.toHaveProperty("AFORA_PLUGIN_SDK_MAX_PUBLIC_EXPORTS");
     } finally {
       if (original === undefined) {
-        delete process.env.OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_EXPORTS;
+        delete process.env.AFORA_PLUGIN_SDK_MAX_PUBLIC_EXPORTS;
       } else {
-        process.env.OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_EXPORTS = original;
+        process.env.AFORA_PLUGIN_SDK_MAX_PUBLIC_EXPORTS = original;
       }
     }
   });
 
   it("rejects deprecated export growth by public entrypoint", () => {
     const budgetConfig = readPluginSdkSurfaceBudgets({
-      OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_DEPRECATED_EXPORTS_BY_ENTRYPOINT: JSON.stringify({ core: 1 }),
+      AFORA_PLUGIN_SDK_MAX_PUBLIC_DEPRECATED_EXPORTS_BY_ENTRYPOINT: JSON.stringify({ core: 1 }),
     });
 
     expect(evaluatePluginSdkSurfaceReport(surfaceReport, budgetConfig)).toContain(

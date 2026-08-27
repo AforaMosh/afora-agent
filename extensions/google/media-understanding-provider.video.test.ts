@@ -1,10 +1,10 @@
 // Google tests cover media understanding provider.video plugin behavior.
 import { createServer, type Server } from "node:http";
-import { withFetchPreconnect } from "openclaw/plugin-sdk/test-env";
+import { withFetchPreconnect } from "afora-agent/plugin-sdk/test-env";
 import {
   createRequestCaptureJsonFetch,
   installPinnedHostnameTestHooks,
-} from "openclaw/plugin-sdk/test-media-understanding";
+} from "afora-agent/plugin-sdk/test-media-understanding";
 import { describe, expect, it } from "vitest";
 import { describeGeminiVideo, transcribeGeminiAudio } from "./media-understanding-provider.js";
 import { resolveGoogleGenerativeAiHttpRequestConfig } from "./runtime-api.js";
@@ -176,7 +176,7 @@ describe("describeGeminiVideo", () => {
     expect(url).toBe(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
     );
-    expect(new Headers(init?.headers).get("x-goog-api-client")).toMatch(/^openclaw\//u);
+    expect(new Headers(init?.headers).get("x-goog-api-client")).toMatch(/^afora\//u);
   });
 
   it("uses the canonical endpoint for blank audio base URLs", async () => {
@@ -197,7 +197,7 @@ describe("describeGeminiVideo", () => {
     expect(url).toBe(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
     );
-    expect(new Headers(init?.headers).get("x-goog-api-client")).toMatch(/^openclaw\//u);
+    expect(new Headers(init?.headers).get("x-goog-api-client")).toMatch(/^afora\//u);
   });
 
   it("bounds oversized video JSON responses and closes the stream early", async () => {

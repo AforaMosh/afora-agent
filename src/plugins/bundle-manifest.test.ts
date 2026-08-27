@@ -1,4 +1,4 @@
-/** Tests bundle manifest parsing for Agent, Codex, Claude, Cursor, and OpenClaw formats. */
+/** Tests bundle manifest parsing for Agent, Codex, Claude, Cursor, and Afora formats. */
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -36,7 +36,7 @@ type ReadonlyBundleManifestExpectation = Omit<
 const tempDirs: string[] = [];
 
 function makeTempDir() {
-  return makeTrackedTempDir("openclaw-bundle-manifest", tempDirs);
+  return makeTrackedTempDir("afora-bundle-manifest", tempDirs);
 }
 
 const mkdirSafe = mkdirSafeDir;
@@ -155,9 +155,9 @@ afterEach(() => {
 });
 
 describe("bundle manifest parsing", () => {
-  it("does not treat openclaw.bundle.json as a bundle manifest", () => {
+  it("does not treat afora.bundle.json as a bundle manifest", () => {
     const rootDir = makeTempDir();
-    writeBundleManifest(rootDir, "openclaw.bundle.json", {
+    writeBundleManifest(rootDir, "afora.bundle.json", {
       name: "Not Real",
       skills: ["skills"],
     });
@@ -425,7 +425,7 @@ describe("bundle manifest parsing", () => {
 
     const nativeRoot = makeTempDir();
     writeBundleFixtureFiles(nativeRoot, {
-      "openclaw.plugin.json": { id: "native", configSchema: { type: "object" } },
+      "afora.plugin.json": { id: "native", configSchema: { type: "object" } },
       [AGENT_BUNDLE_MANIFEST_RELATIVE_PATH]: {
         $schema: AGENT_BUNDLE_MANIFEST_SCHEMA,
         name: "Agent",
@@ -533,7 +533,7 @@ describe("bundle manifest parsing", () => {
     expect(expectLoadedManifest(rootDir, "agent").skills).toStrictEqual([]);
   });
 
-  it("loads ai.openclaw activation like an equivalent Claude bundle", () => {
+  it("loads ai.afora activation like an equivalent Claude bundle", () => {
     const activation = {
       onStartup: true,
       onCommands: [" summarize ", ""],
@@ -544,7 +544,7 @@ describe("bundle manifest parsing", () => {
       $schema: AGENT_BUNDLE_MANIFEST_SCHEMA,
       name: "portable",
       extensions: {
-        "ai.openclaw": { activation },
+        "ai.afora": { activation },
       },
     });
     const claudeRoot = makeTempDir();
@@ -565,8 +565,8 @@ describe("bundle manifest parsing", () => {
   it.each([
     { name: "non-object extensions", extensions: "invalid" },
     {
-      name: "non-object ai.openclaw extension",
-      extensions: { "ai.openclaw": "invalid" },
+      name: "non-object ai.afora extension",
+      extensions: { "ai.afora": "invalid" },
     },
     {
       name: "unknown extension namespace",
@@ -583,13 +583,13 @@ describe("bundle manifest parsing", () => {
     expect(expectLoadedManifest(rootDir, "agent").activation).toBeUndefined();
   });
 
-  it("ignores unknown fields inside the ai.openclaw extension", () => {
+  it("ignores unknown fields inside the ai.afora extension", () => {
     const rootDir = makeTempDir();
     writeBundleManifest(rootDir, AGENT_BUNDLE_MANIFEST_RELATIVE_PATH, {
       $schema: AGENT_BUNDLE_MANIFEST_SCHEMA,
       name: "portable",
       extensions: {
-        "ai.openclaw": {
+        "ai.afora": {
           activation: { onStartup: true },
           futureField: { enabled: true },
         },

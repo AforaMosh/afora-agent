@@ -50,7 +50,7 @@ describe("media reference intake product proof", () => {
   });
 
   it("loads every supported reference and trusts PNG bytes over text hints", async () => {
-    const root = tempDirs.make("openclaw-media-reference-intake-");
+    const root = tempDirs.make("afora-media-reference-intake-");
     const png = createSolidPngBuffer(2, 2, { r: 32, g: 96, b: 224 });
     const localPath = path.join(root, "misleading.txt");
     await fs.writeFile(localPath, png);
@@ -68,7 +68,7 @@ describe("media reference intake product proof", () => {
     const port = await listenOnLoopback(server);
     const remoteUrl = `http://127.0.0.1:${port}/misleading.txt`;
 
-    await withEnvAsync({ OPENCLAW_STATE_DIR: path.join(root, "state") }, async () => {
+    await withEnvAsync({ AFORA_STATE_DIR: path.join(root, "state") }, async () => {
       const stored = await saveMediaBuffer(png, "text/plain", "inbound", 1024 * 1024, "stored.txt");
       expect(stored.contentType).toBe("image/png");
       expect(stored.id).toMatch(/\.txt$/);

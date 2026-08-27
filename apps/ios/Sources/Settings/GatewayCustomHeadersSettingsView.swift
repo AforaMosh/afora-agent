@@ -1,4 +1,4 @@
-import OpenClawKit
+import AforaKit
 import SwiftUI
 
 /// Per-gateway custom header editor for gateways behind authenticating reverse proxies
@@ -25,14 +25,14 @@ struct GatewayCustomHeadersSettingsView: View {
                     ForEach(self.$entries) { $entry in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(entry.name)
-                                .font(OpenClawType.subheadSemiBold)
+                                .font(AforaType.subheadSemiBold)
                             self.headerValueField("Value", text: $entry.value)
                         }
                     }
                     .onDelete(perform: self.removeEntries)
                 } header: {
                     Text("Headers")
-                        .font(OpenClawType.captionSemiBold)
+                        .font(AforaType.captionSemiBold)
                 } footer: {
                     // Keep the extraction key contiguous for the native localization inventory.
                     // swiftlint:disable line_length
@@ -40,17 +40,17 @@ struct GatewayCustomHeadersSettingsView: View {
                         String(
                             localized:
                             "Sent with foreground app connections to this gateway. Changes apply on the next reconnect; Share extension delivery is not yet supported."))
-                        .font(OpenClawType.caption)
+                        .font(AforaType.caption)
                     // swiftlint:enable line_length
                 }
             }
 
             Section {
-                TextField(text: self.$newName, prompt: Text("Header name").font(OpenClawType.subhead)) {
+                TextField(text: self.$newName, prompt: Text("Header name").font(AforaType.subhead)) {
                     Text("Header name")
-                        .font(OpenClawType.subhead)
+                        .font(AforaType.subhead)
                 }
-                .font(OpenClawType.subhead)
+                .font(AforaType.subhead)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 self.headerValueField("Header value", text: self.$newValue)
@@ -59,7 +59,7 @@ struct GatewayCustomHeadersSettingsView: View {
                 } label: {
                     Label {
                         Text("Add Header")
-                            .font(OpenClawType.subheadSemiBold)
+                            .font(AforaType.subheadSemiBold)
                     } icon: {
                         Image(systemName: "plus")
                     }
@@ -67,16 +67,16 @@ struct GatewayCustomHeadersSettingsView: View {
                 .disabled(!self.canAddEntry)
             } header: {
                 Text("Add Header")
-                    .font(OpenClawType.captionSemiBold)
+                    .font(AforaType.captionSemiBold)
             } footer: {
                 Text(self.addFooterText)
-                    .font(OpenClawType.caption)
+                    .font(AforaType.caption)
             }
         }
         .navigationTitle("Custom Headers")
         .toolbar {
             EditButton()
-                .font(OpenClawType.subheadSemiBold)
+                .font(AforaType.subheadSemiBold)
         }
         .onAppear(perform: self.loadOnce)
         .onChange(of: self.entries) { _, _ in
@@ -116,13 +116,13 @@ struct GatewayCustomHeadersSettingsView: View {
     private func headerValueField(_ placeholder: String, text: Binding<String>) -> some View {
         ZStack(alignment: .leading) {
             SecureField("", text: text)
-                .font(OpenClawType.subhead)
+                .font(AforaType.subhead)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .accessibilityLabel(placeholder)
             if text.wrappedValue.isEmpty {
                 Text(placeholder)
-                    .font(OpenClawType.subhead)
+                    .font(AforaType.subhead)
                     .foregroundStyle(.tertiary)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)

@@ -19,7 +19,7 @@ function actionBlock(label: string, value: string) {
     elements: [
       {
         type: "button",
-        action_id: "openclaw:reply_button",
+        action_id: "afora:reply_button",
         text: { type: "plain_text", text: label },
         value,
       },

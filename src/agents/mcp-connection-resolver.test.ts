@@ -4,7 +4,7 @@ import http from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { buildGatewayReloadPlan } from "../gateway/config-reload-plan.js";
 import { createGatewayCronReconciliation } from "../gateway/server-cron-reconciled.js";
 import { createGatewayReloadHandlers } from "../gateway/server-reload-handlers.js";
@@ -53,7 +53,7 @@ async function startAuthenticatedMcpProofServer() {
   const endpoints: AuthenticatedMcpProofEndpoint[] = [];
 
   const addEndpoint = async (owner: string, authorization: string) => {
-    const server = new McpServer({ name: `openclaw-${owner}-proof`, version: "1.0.0" });
+    const server = new McpServer({ name: `afora-${owner}-proof`, version: "1.0.0" });
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: randomUUID,
     });
@@ -167,7 +167,7 @@ function createMcpProofPluginRegistry() {
         source: `/plugins/${pluginId}/index.ts`,
       });
       pluginRegistry.registry.plugins.push(record);
-      return pluginRegistry.createApi(record, { config: {} as OpenClawConfig });
+      return pluginRegistry.createApi(record, { config: {} as AforaConfig });
     },
   };
 }
@@ -328,7 +328,7 @@ describe("mcp connection resolver helpers", () => {
             async start() {},
             stop() {},
           } as GatewayReloadProofState["cronState"]["cron"],
-          storePath: "/tmp/openclaw-mcp-gateway-reload-proof-cron",
+          storePath: "/tmp/afora-mcp-gateway-reload-proof-cron",
           cronEnabled: false,
           reconcileExitWatchers: async () => {},
           stopExitWatchers: () => {},
@@ -340,7 +340,7 @@ describe("mcp connection resolver helpers", () => {
       };
       const reloadLog = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
       const requestRecoveryRestart = vi.fn(() => ({ status: "failed" as const }));
-      const nextConfig: OpenClawConfig = {
+      const nextConfig: AforaConfig = {
         plugins: {
           entries: {
             "startup-mail": { enabled: false },

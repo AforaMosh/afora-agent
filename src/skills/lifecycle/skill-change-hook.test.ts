@@ -16,7 +16,7 @@ describe("committed skill change dispatch", () => {
     await dispatchCommittedSkillChangeBestEffort({
       action: "created",
       source: "source-install",
-      workspaceDir: "/tmp/openclaw-workspace",
+      workspaceDir: "/tmp/afora-workspace",
     });
 
     expect(handler).toHaveBeenCalledWith(
@@ -24,7 +24,7 @@ describe("committed skill change dispatch", () => {
         action: "created",
         source: "source-install",
       }),
-      { workspaceDir: "/tmp/openclaw-workspace" },
+      { workspaceDir: "/tmp/afora-workspace" },
     );
   });
 });

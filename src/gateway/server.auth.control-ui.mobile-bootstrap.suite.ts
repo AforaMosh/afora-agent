@@ -73,7 +73,7 @@ export function registerControlUiMobileBootstrapSuite(): void {
     const { getPairedDevice, listDevicePairing } = await import("../infra/device-pairing.js");
     const { server, port, prevToken } = await startProxiedControlUiServer("secret");
     const { identityPath, identity } = await createOperatorIdentityFixture(
-      "openclaw-bootstrap-voice-node-",
+      "afora-bootstrap-voice-node-",
     );
     const client = {
       id: "node-host",
@@ -187,10 +187,10 @@ export function registerControlUiMobileBootstrapSuite(): void {
     const { server, port, prevToken } = await startProxiedControlUiServer("secret");
 
     const { identityPath, identity } = await createOperatorIdentityFixture(
-      "openclaw-bootstrap-node-",
+      "afora-bootstrap-node-",
     );
     const client = {
-      id: "openclaw-ios",
+      id: "afora-ios",
       version: "2026.3.30",
       platform: "iOS 26.3.1",
       mode: "node",
@@ -342,9 +342,9 @@ export function registerControlUiMobileBootstrapSuite(): void {
   test.each([
     {
       name: "Android",
-      identityPrefix: "openclaw-bootstrap-android-node-",
+      identityPrefix: "afora-bootstrap-android-node-",
       client: {
-        id: "openclaw-android",
+        id: "afora-android",
         version: "2026.6.2",
         platform: "Android 16",
         mode: "node" as const,
@@ -353,9 +353,9 @@ export function registerControlUiMobileBootstrapSuite(): void {
     },
     {
       name: "iPadOS",
-      identityPrefix: "openclaw-bootstrap-ipados-node-",
+      identityPrefix: "afora-bootstrap-ipados-node-",
       client: {
-        id: "openclaw-ios",
+        id: "afora-ios",
         version: "2026.6.2",
         platform: "iPadOS 26.3.1",
         mode: "node" as const,
@@ -404,9 +404,9 @@ export function registerControlUiMobileBootstrapSuite(): void {
 
   test("limited qr setup keeps the previous bounded operator handoff", async () => {
     const { identity, initial } = await connectSetupCodeBootstrapNode({
-      identityPrefix: "openclaw-bootstrap-limited-node-",
+      identityPrefix: "afora-bootstrap-limited-node-",
       client: {
-        id: "openclaw-ios",
+        id: "afora-ios",
         version: "2026.7.13",
         platform: "iOS 26.3.1",
         mode: "node",
@@ -460,9 +460,9 @@ export function registerControlUiMobileBootstrapSuite(): void {
   });
 
   test("full qr setup upgrades an existing limited mobile pairing", async () => {
-    const identityPrefix = "openclaw-bootstrap-limited-upgrade-node-";
+    const identityPrefix = "afora-bootstrap-limited-upgrade-node-";
     const client = {
-      id: "openclaw-ios",
+      id: "afora-ios",
       version: "2026.7.13",
       platform: "iOS 26.3.1",
       mode: "node" as const,
@@ -503,9 +503,9 @@ export function registerControlUiMobileBootstrapSuite(): void {
   test.each([
     {
       name: "mobile client id with mismatched platform metadata",
-      identityPrefix: "openclaw-bootstrap-mobile-spoof-",
+      identityPrefix: "afora-bootstrap-mobile-spoof-",
       client: {
-        id: "openclaw-android",
+        id: "afora-android",
         version: "2026.6.2",
         platform: "iOS 26.3.1",
         mode: "node" as const,
@@ -514,7 +514,7 @@ export function registerControlUiMobileBootstrapSuite(): void {
     },
     {
       name: "valid non-mobile client id with mobile metadata",
-      identityPrefix: "openclaw-bootstrap-node-host-spoof-",
+      identityPrefix: "afora-bootstrap-node-host-spoof-",
       client: {
         id: "node-host",
         version: "2026.6.2",

@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { Type } from "typebox";
 import { readMissingScopeErrorDetails } from "../../../packages/gateway-protocol/src/gateway-error-details.js";
 import { buildControlUiSessionPath } from "../../../packages/session-url-contract/src/index.js";
@@ -9,7 +9,7 @@ import {
 import { getRuntimeConfig } from "../../config/config.js";
 import { resolveGatewayPublicOrigin } from "../../config/gateway-public-origin.js";
 import { resolveSessionStorePathCore } from "../../config/sessions/paths.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { ADMIN_SCOPE } from "../../gateway/method-scopes.js";
 import { resolveWorkspacePathContainment } from "../../gateway/server-methods/workspace-path-containment.js";
 import { isPathInside } from "../../infra/path-guards.js";
@@ -67,7 +67,7 @@ type VisibleSessionsSpawnOptions = VisibleSessionsSpawnDeps & {
   currentChannelId?: string;
   currentThreadTs?: string;
   sandboxed?: boolean;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   requesterAgentIdOverride?: string;
   inheritedToolAllowlist?: string[];
   inheritedToolDenylist?: string[];
@@ -78,7 +78,7 @@ function summarizeSessionsSpawnError(error: unknown): string {
 }
 
 function resolveVisibleSessionUrl(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   childSessionKey: string,
   targetAgentId: string,
 ): string | undefined {
@@ -359,7 +359,7 @@ export async function maybeSpawnVisibleSession(params: {
       ) {
         return {
           status: "forbidden",
-          error: `Visible session cwd "${spawnedCwd}" is outside configured agent workspaces and requires operator.admin. Omit cwd to use the target agent workspace, or ask the operator to start the session from a registered project. Do not substitute the synchronous \`openclaw agent\` CLI for a persistent visible session.`,
+          error: `Visible session cwd "${spawnedCwd}" is outside configured agent workspaces and requires operator.admin. Omit cwd to use the target agent workspace, or ask the operator to start the session from a registered project. Do not substitute the synchronous \`afora agent\` CLI for a persistent visible session.`,
         };
       }
       throw error;

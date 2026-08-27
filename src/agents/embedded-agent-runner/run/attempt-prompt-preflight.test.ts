@@ -13,7 +13,7 @@ import {
 const attempt = {
   provider: "test-provider",
   modelId: "test-model",
-  sessionFile: "/tmp/openclaw-attempt-preflight-test.jsonl",
+  sessionFile: "/tmp/afora-attempt-preflight-test.jsonl",
   sessionId: "session-1",
   sessionKey: "agent:test:main",
 };

@@ -3,8 +3,8 @@
  */
 import crypto from "node:crypto";
 import type { FetchLike } from "@modelcontextprotocol/sdk/shared/transport.js";
-import { filterStringRecord, isRecord } from "@openclaw/normalization-core/record-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { filterStringRecord, isRecord } from "@afora/normalization-core/record-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { BundleMcpConfig, BundleMcpServerConfig } from "../plugins/bundle-mcp.js";
 import { resolveApiKeyForProfile } from "./auth-profiles/oauth.js";
 import { loadAuthProfileStoreForSecretsRuntime } from "./auth-profiles/store.js";
@@ -18,7 +18,7 @@ import { resolveMcpOAuthAccessToken, type McpOAuthConfig } from "./mcp-oauth.js"
 import { resolveMcpTransportConfig } from "./mcp-transport-config.js";
 
 type McpAuthProfileOptions = {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentDir?: string;
 };
 
@@ -33,7 +33,7 @@ export function resolveMcpAuthProfileId(rawServer: unknown): string | undefined 
     : undefined;
 }
 
-/** Returns whether a server needs an OpenClaw-managed bearer projected externally. */
+/** Returns whether a server needs an Afora-managed bearer projected externally. */
 export function requiresMcpBearerProjection(rawServer: unknown): boolean {
   if (!isRecord(rawServer) || rawServer.auth !== "oauth") {
     return false;
@@ -89,7 +89,7 @@ async function resolveMcpAuthProfileBearerToken(
 async function resolveMcpBearerToken(params: {
   serverName: string;
   server: BundleMcpServerConfig;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentDir?: string;
 }): Promise<string | undefined> {
   const authProfileId = resolveMcpAuthProfileId(params.server);
@@ -163,10 +163,10 @@ export function withMcpAuthProfileBearer(
 
 function buildTokenEnvVarName(serverName: string): string {
   const hash = crypto.createHash("sha256").update(serverName).digest("hex").slice(0, 12);
-  return `OPENCLAW_MCP_AUTH_${hash.toUpperCase()}_TOKEN`;
+  return `AFORA_MCP_AUTH_${hash.toUpperCase()}_TOKEN`;
 }
 
-function stripOpenClawOnlyOAuthConfig(server: BundleMcpServerConfig): BundleMcpServerConfig {
+function stripAforaOnlyOAuthConfig(server: BundleMcpServerConfig): BundleMcpServerConfig {
   const next = { ...server };
   delete next.auth;
   delete next.oauth;
@@ -221,7 +221,7 @@ export async function resolveMcpBearerBundleConfig(
     }
     const headers = withoutMcpAuthorizationHeader(filterStringRecord(server.headers));
     nextServers ??= { ...params.config.mcpServers };
-    nextServers[serverName] = stripOpenClawOnlyOAuthConfig({
+    nextServers[serverName] = stripAforaOnlyOAuthConfig({
       ...server,
       headers: {
         ...headers,

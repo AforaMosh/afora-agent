@@ -1,8 +1,8 @@
-import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-coercion";
+import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 // Control UI view renders sessions screen content.
 import { html, nothing } from "lit";
 import type { SessionsSearchHit } from "../../../../packages/gateway-protocol/src/index.js";
@@ -250,9 +250,9 @@ function renderSessionStatusBadge(row: GatewaySessionRow) {
   const kind = active || row.status === "done" ? "ok" : idle || !row.status ? "muted" : "danger";
   const title = `${t("sessionsView.status")}: ${label}`;
   return html`
-    <openclaw-tooltip .content=${title}>
+    <afora-tooltip .content=${title}>
       ${renderSettingsStatus({ kind, label })}
-    </openclaw-tooltip>
+    </afora-tooltip>
   `;
 }
 
@@ -318,7 +318,7 @@ function renderTokensCell(row: GatewaySessionRow) {
     context: context.toLocaleString(),
   });
   return html`
-    <openclaw-tooltip .content=${title}>
+    <afora-tooltip .content=${title}>
       <div class="session-tokens">
         <span class="session-tokens__value"
           >${totalLabel} / ${formatCompactTokenCount(context)}</span
@@ -331,7 +331,7 @@ function renderTokensCell(row: GatewaySessionRow) {
           <span class="session-context-meter__fill" style=${`width: ${percent}%`}></span>
         </span>
       </div>
-    </openclaw-tooltip>
+    </afora-tooltip>
   `;
 }
 
@@ -704,11 +704,11 @@ function renderSessionGoalStatus(goal: GatewaySessionRow["goal"]) {
   // tabindex lets keyboard users trigger the tooltip; aria-label exposes the
   // full objective detail that sighted users only get on hover.
   return html`
-    <openclaw-tooltip .content=${detail}>
+    <afora-tooltip .content=${detail}>
       <span tabindex="0" aria-label=${detail}>
         ${renderSettingsStatus({ kind, label: formatGoalSummary(goal) })}
       </span>
-    </openclaw-tooltip>
+    </afora-tooltip>
   `;
 }
 
@@ -930,7 +930,7 @@ function renderFilterToggle(params: {
     .filter(Boolean)
     .join(" ");
   return html`
-    <openclaw-tooltip .content=${params.title}>
+    <afora-tooltip .content=${params.title}>
       <label class=${className}>
         <input
           name=${params.name}
@@ -942,7 +942,7 @@ function renderFilterToggle(params: {
         <span class="session-filter-check__mark" aria-hidden="true">${icons.check}</span>
         <span class="session-filter-check__label">${params.label}</span>
       </label>
-    </openclaw-tooltip>
+    </afora-tooltip>
   `;
 }
 
@@ -1029,9 +1029,9 @@ export function renderSessions(props: SessionsProps) {
     ${t("sessionsView.title")}
     ${props.result
       ? html`
-          <openclaw-tooltip .content=${t("sessionsView.store", { path: props.result.path })}>
+          <afora-tooltip .content=${t("sessionsView.store", { path: props.result.path })}>
             <span class="settings-count">${rawRows.length}</span>
-          </openclaw-tooltip>
+          </afora-tooltip>
         `
       : nothing}
   `;
@@ -1159,7 +1159,7 @@ function renderSessionsTable(props: SessionsProps, ctx: SessionsTableContext) {
       <div class="session-filter-primary-row">
         ${filterInputs.map(
           ([key, suffix, label, tooltip, placeholder, disabled]) => html`
-            <openclaw-tooltip .content=${tooltip}>
+            <afora-tooltip .content=${tooltip}>
               <label class="session-filter-field">
                 <span class="session-filter-label">${label}</span>
                 <input
@@ -1171,7 +1171,7 @@ function renderSessionsTable(props: SessionsProps, ctx: SessionsTableContext) {
                     updateFilter(key, (event.target as HTMLInputElement).value)}
                 />
               </label>
-            </openclaw-tooltip>
+            </afora-tooltip>
           `,
         )}
       </div>
@@ -1478,7 +1478,7 @@ function renderRows(row: GatewaySessionRow, props: SessionsProps) {
         />
       </td>
       <td class="data-table-key-col">
-        <openclaw-tooltip .content=${keyCellTitle}>
+        <afora-tooltip .content=${keyCellTitle}>
           <div class=${friendlyKeyLabel ? "session-key-cell" : "mono session-key-cell"}>
             ${renderSessionAvatar(row)}
             <div class="session-key-cell__text">
@@ -1517,7 +1517,7 @@ function renderRows(row: GatewaySessionRow, props: SessionsProps) {
                 : nothing}
             </div>
           </div>
-        </openclaw-tooltip>
+        </afora-tooltip>
       </td>
       ${categoryMode ? renderCategoryCell(row, props) : nothing}
       <td>
@@ -1730,9 +1730,9 @@ function renderSessionDetailsRow(params: {
             (item) => html`
               <div class="session-detail-stat">
                 <div class="session-detail-stat__label">${item.label}</div>
-                <openclaw-tooltip .content=${item.value}>
+                <afora-tooltip .content=${item.value}>
                   <div class="session-detail-stat__value">${item.value}</div>
-                </openclaw-tooltip>
+                </afora-tooltip>
               </div>
             `,
           )}

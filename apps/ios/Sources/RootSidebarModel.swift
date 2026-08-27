@@ -1,11 +1,11 @@
 import Foundation
 import Observation
-import OpenClawChatUI
-import OpenClawKit
-import OpenClawProtocol
+import AforaChatUI
+import AforaKit
+import AforaProtocol
 
 struct ChatSessionRosterSnapshot: Sendable {
-    let sessions: [OpenClawChatSessionEntry]
+    let sessions: [AforaChatSessionEntry]
     let isCached: Bool
 }
 
@@ -54,7 +54,7 @@ final class RootSidebarModel {
         let generation: UInt64
     }
 
-    private(set) var sessions: [OpenClawChatSessionEntry] = []
+    private(set) var sessions: [AforaChatSessionEntry] = []
     private(set) var usage: CostUsageSummaryLite?
     private(set) var cronJobs: [CronJob] = []
     private(set) var isRefreshing = false
@@ -82,7 +82,7 @@ final class RootSidebarModel {
         currentSessionKey: String,
         mainSessionKey: String,
         activeAgentID: String?,
-        groups: [OpenClawChatSessionGroup]) -> [ChatSessionSidebarModel.Section]
+        groups: [AforaChatSessionGroup]) -> [ChatSessionSidebarModel.Section]
     {
         ChatSessionSidebarModel.sections(
             sessions: self.sessions,
@@ -187,7 +187,7 @@ final class RootSidebarModel {
             // The Gateway may apply a change before its reply times out. An old
             // confirmation must never suppress the next recovery declaration.
             self.sessionObserverDeclaration = nil
-            let request = OpenClawChatGatewayRequests.setSessionObserverVisibility(
+            let request = AforaChatGatewayRequests.setSessionObserverVisibility(
                 visible,
                 timeoutMs: 12000)
             do {
@@ -236,7 +236,7 @@ final class RootSidebarModel {
                 await appModel.operatorSession.subscribeServerEvents(bufferingNewest: 200)
             },
             subscribe: {
-                let request = OpenClawChatGatewayRequests.subscribeSessions(timeoutMs: 12000)
+                let request = AforaChatGatewayRequests.subscribeSessions(timeoutMs: 12000)
                 _ = try await appModel.operatorSession.request(
                     method: request.method,
                     params: request.params,
@@ -336,7 +336,7 @@ final class RootSidebarModel {
     }
 
     private func handleSessionEvent(_ frame: EventFrame, appModel: NodeAppModel) async -> Bool {
-        guard let event = OpenClawChatGatewayPayloadCodec.event(from: frame) else { return false }
+        guard let event = AforaChatGatewayPayloadCodec.event(from: frame) else { return false }
         switch event {
         case .sessionsChanged:
             await self.refreshSessions(appModel: appModel)
@@ -357,7 +357,7 @@ final class RootSidebarModel {
         self.sessionErrorText = error.localizedDescription
     }
 
-    static func tokenUsageSummary(for sessions: [OpenClawChatSessionEntry]) -> TokenUsageSummary {
+    static func tokenUsageSummary(for sessions: [AforaChatSessionEntry]) -> TokenUsageSummary {
         let knownTotals = sessions.compactMap(\.totalTokens)
         return TokenUsageSummary(
             total: knownTotals.isEmpty ? nil : knownTotals.reduce(0, +),

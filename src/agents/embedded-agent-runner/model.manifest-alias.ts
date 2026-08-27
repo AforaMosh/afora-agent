@@ -1,7 +1,7 @@
-import type { ModelCatalogAlias } from "@openclaw/model-catalog-core/model-catalog-types";
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
+import type { ModelCatalogAlias } from "@afora/model-catalog-core/model-catalog-types";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
 import type { ModelProviderConfig } from "../../config/types.models.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { planManifestModelCatalogSuppressions } from "../../model-catalog/manifest-planner.js";
 import { normalizePluginsConfig } from "../../plugins/config-state.js";
 import { getCurrentPluginMetadataSnapshot } from "../../plugins/current-plugin-metadata-snapshot.js";
@@ -26,7 +26,7 @@ function hasModelCatalogAliasEndpointSurface(alias: ModelCatalogAlias): boolean 
 
 function findConfiguredModelCatalogProviderConfig(params: {
   provider: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): Partial<ModelProviderConfig> | undefined {
   const provider = normalizeProviderId(params.provider);
   if (!provider) {
@@ -43,7 +43,7 @@ function findConfiguredModelCatalogProviderConfig(params: {
 function hasConfiguredModelCatalogProviderEndpointSurface(params: {
   provider: string;
   modelId?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): boolean {
   const provider = normalizeProviderId(params.provider);
   if (!provider) {
@@ -71,7 +71,7 @@ function hasConfiguredModelCatalogProviderEndpointSurface(params: {
 function resolveConfiguredModelCatalogProviderApi(params: {
   provider: string;
   modelId?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): ModelCatalogAlias["api"] {
   const provider = normalizeProviderId(params.provider);
   const config = findConfiguredModelCatalogProviderConfig({ provider, cfg: params.cfg });
@@ -140,7 +140,7 @@ type ManifestModelCatalogProviderAliasResolution =
     };
 
 function listEligibleManifestModelCatalogAliasPlugins(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   plugins: readonly ManifestModelCatalogAliasPlugin[];
 }): readonly ManifestModelCatalogAliasPlugin[] {
   const normalizedConfig = normalizePluginsConfig(params.cfg?.plugins);
@@ -189,7 +189,7 @@ function resolveManifestAliasTargetApi(params: {
 function resolveManifestModelCatalogProviderAlias(params: {
   provider: string;
   modelId?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   plugins: readonly ManifestModelCatalogAliasPlugin[];
 }): ManifestModelCatalogProviderAliasResolution {
   const provider = normalizeProviderId(params.provider);
@@ -288,7 +288,7 @@ function resolveManifestModelCatalogProviderAlias(params: {
 export function resolveManifestModelCatalogProviderAliasMetadata(params: {
   provider: string;
   modelId?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
 }): ManifestModelCatalogProviderAliasMetadata {

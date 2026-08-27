@@ -1,8 +1,8 @@
 // Database-bound delivery queue serialization and mutations used by shared transactions.
 import type { DatabaseSync } from "node:sqlite";
 import type { Insertable } from "kysely";
-import type { OpenClawStateDatabase } from "../state/openclaw-state-db-contract.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { AforaStateDatabase } from "../state/afora-state-db-contract.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import type { DeliveryQueueEntryState } from "./delivery-queue-sqlite.types.js";
 import {
   executeSqliteQuerySync,
@@ -11,7 +11,7 @@ import {
 } from "./kysely-sync.js";
 
 type QueueStatus = "pending" | "failed" | "completed";
-type DeliveryQueueTable = OpenClawStateKyselyDatabase["delivery_queue_entries"];
+type DeliveryQueueTable = AforaStateKyselyDatabase["delivery_queue_entries"];
 const COMPLETED_TOMBSTONE_RETENTION_MS = 30 * 24 * 60 * 60_000;
 const BOUNDED_DELIVERY_RECEIPTS_SQL = `
   SELECT * FROM (
@@ -28,7 +28,7 @@ const BOUNDED_DELIVERY_RECEIPTS_SQL = `
     AND typeof(max_age_ms) = 'integer' AND max_age_ms BETWEEN 1 AND 9007199254740991
     AND typeof(max_entries) = 'integer' AND max_entries BETWEEN 1 AND 9007199254740991`;
 
-export type DeliveryQueueDatabase = Pick<OpenClawStateKyselyDatabase, "delivery_queue_entries">;
+export type DeliveryQueueDatabase = Pick<AforaStateKyselyDatabase, "delivery_queue_entries">;
 export const deliveryQueueRowColumns = [
   "id",
   "entry_json",
@@ -245,7 +245,7 @@ export function bindDeliveryQueueEntry(
 /** Mutates only the exact supplied shared-state handle; never opens or hardens a file. */
 export function upsertBoundDeliveryQueueEntryInDatabase(
   bound: BoundDeliveryQueueEntry,
-  database: OpenClawStateDatabase,
+  database: AforaStateDatabase,
 ): boolean {
   const queueDb = getNodeSqliteKysely<DeliveryQueueDatabase>(database.db);
   const insert = queueDb.insertInto("delivery_queue_entries").values(bound.row);
@@ -281,7 +281,7 @@ export function upsertBoundDeliveryQueueEntryInDatabase(
 
 /** Reads one row from the exact supplied handle for cross-owner invariant validation. */
 export function loadDeliveryQueueEntryInDatabase(
-  database: OpenClawStateDatabase,
+  database: AforaStateDatabase,
   queueName: string,
   id: string,
   pendingOnly = false,

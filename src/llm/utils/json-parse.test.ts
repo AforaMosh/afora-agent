@@ -1,4 +1,4 @@
-import { parseJsonWithRepair, parseStreamingJson, repairJson } from "@openclaw/ai/internal/runtime";
+import { parseJsonWithRepair, parseStreamingJson, repairJson } from "@afora/ai/internal/runtime";
 // JSON parse tests cover tolerant parsing of partial model JSON output.
 import { describe, expect, it } from "vitest";
 

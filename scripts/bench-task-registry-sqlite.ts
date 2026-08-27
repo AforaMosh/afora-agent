@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { classifyBoundedUnsignedDecimal } from "./lib/arg-utils.mts";
 
 const DEFAULT_SIZES = [24, 64, 128];
@@ -112,7 +112,7 @@ type BenchmarkRuntime = {
 };
 
 function usage(): string {
-  return `OpenClaw durable task registry churn benchmark
+  return `Afora durable task registry churn benchmark
 
 Usage:
   node --import tsx scripts/bench-task-registry-sqlite.ts [options]
@@ -452,7 +452,7 @@ function runWorker(
   size: number,
   runtime: WorkerLaunchRuntime = {},
 ): WorkerResult {
-  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-task-registry-bench-"));
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-task-registry-bench-"));
   const spawnWorker =
     runtime.spawnWorker ??
     ((command, args, spawnOptions) => spawnSync(command, args, spawnOptions));

@@ -3,10 +3,10 @@ import {
   createChannelIngressResolver,
   type ChannelIngressContextBinding,
   defineStableChannelIngressIdentity,
-} from "openclaw/plugin-sdk/channel-ingress-runtime";
-import { createChannelPairingChallengeIssuer } from "openclaw/plugin-sdk/channel-pairing";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { upsertChannelPairingRequest } from "openclaw/plugin-sdk/conversation-runtime";
+} from "afora-agent/plugin-sdk/channel-ingress-runtime";
+import { createChannelPairingChallengeIssuer } from "afora-agent/plugin-sdk/channel-pairing";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { upsertChannelPairingRequest } from "afora-agent/plugin-sdk/conversation-runtime";
 import {
   formatSignalSenderId,
   looksLikeUuid,
@@ -119,7 +119,7 @@ export async function resolveSignalAccessState(params: {
   sender: SignalSender;
   groupId?: string;
   isGroup?: boolean;
-  cfg?: Pick<OpenClawConfig, "accessGroups" | "commands">;
+  cfg?: Pick<AforaConfig, "accessGroups" | "commands">;
   hasControlCommand?: boolean;
   readStoreAllowFrom?: () => Promise<string[]>;
   contextBinding?: ChannelIngressContextBinding;

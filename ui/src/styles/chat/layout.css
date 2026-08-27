@@ -3,7 +3,7 @@
    ============================================= */
 
 /* Main chat card - flex column layout, transparent background */
-openclaw-chat-page {
+afora-chat-page {
   display: flex;
   flex: 1 1 0;
   min-width: 0;
@@ -1121,8 +1121,8 @@ openclaw-chat-page {
   display: block;
 }
 
-openclaw-chat-audio-player,
-openclaw-chat-video-player {
+afora-chat-audio-player,
+afora-chat-video-player {
   display: block;
 }
 
@@ -3292,7 +3292,7 @@ button.chat-pr__diff {
   --chat-picker-hover-color: var(--accent);
 }
 
-.chat-talk-control > openclaw-tooltip {
+.chat-talk-control > afora-tooltip {
   display: inline-flex;
 }
 
@@ -5473,7 +5473,7 @@ button.chat-pr__diff {
     height: 77px;
   }
 
-  .agent-chat__welcome-clawd openclaw-mascot {
+  .agent-chat__welcome-clawd afora-mascot {
     transform: scale(0.6875);
   }
 

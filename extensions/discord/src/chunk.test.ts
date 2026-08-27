@@ -1,6 +1,6 @@
 // Discord tests cover chunk plugin behavior.
-import { expectDefined } from "@openclaw/normalization-core";
-import { countLines, hasBalancedFences } from "openclaw/plugin-sdk/test-fixtures";
+import { expectDefined } from "@afora/normalization-core";
+import { countLines, hasBalancedFences } from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, it } from "vitest";
 import { chunkDiscordTextWithMode } from "./chunk.js";
 

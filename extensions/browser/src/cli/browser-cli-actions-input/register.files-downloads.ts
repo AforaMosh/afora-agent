@@ -2,7 +2,7 @@
  * Browser CLI file upload, dialog, and download commands.
  */
 import type { Command } from "commander";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   BROWSER_TAB_REFERENCE_HELP,
   callBrowserRequest,
@@ -95,7 +95,7 @@ export function registerBrowserFilesAndDownloadsCommands(
     .description("Arm file upload for the next file chooser")
     .argument(
       "<paths...>",
-      "File paths to upload from OpenClaw temp uploads or managed inbound media (e.g. /tmp/openclaw/uploads/file.pdf or media://inbound/<id>)",
+      "File paths to upload from Afora temp uploads or managed inbound media (e.g. /tmp/afora/uploads/file.pdf or media://inbound/<id>)",
     )
     .option("--ref <ref>", "Ref id from snapshot to click after arming")
     .option("--input-ref <ref>", "Ref id for <input type=file> to set directly")
@@ -137,7 +137,7 @@ export function registerBrowserFilesAndDownloadsCommands(
     .description("Wait for the next download (and save it)")
     .argument(
       "[path]",
-      "Save path within openclaw temp downloads dir (default: /tmp/openclaw/downloads/...; fallback: os.tmpdir()/openclaw/downloads/...)",
+      "Save path within afora temp downloads dir (default: /tmp/afora/downloads/...; fallback: os.tmpdir()/afora/downloads/...)",
     )
     .option("--target-id <id>", BROWSER_TAB_REFERENCE_HELP)
     .option(
@@ -160,7 +160,7 @@ export function registerBrowserFilesAndDownloadsCommands(
     .argument("<ref>", "Ref id from snapshot to click")
     .argument(
       "<path>",
-      "Save path within openclaw temp downloads dir (e.g. report.pdf or /tmp/openclaw/downloads/report.pdf)",
+      "Save path within afora temp downloads dir (e.g. report.pdf or /tmp/afora/downloads/report.pdf)",
     )
     .option("--target-id <id>", BROWSER_TAB_REFERENCE_HELP)
     .option(

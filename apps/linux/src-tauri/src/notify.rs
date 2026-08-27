@@ -84,13 +84,13 @@ mod tests {
     #[test]
     fn recognizes_only_executables_inside_macos_app_bundles() {
         assert!(is_macos_app_bundle_executable(Path::new(
-            "/Applications/OpenClaw.app/Contents/MacOS/openclaw-desktop"
+            "/Applications/Afora.app/Contents/MacOS/afora-desktop"
         )));
         assert!(!is_macos_app_bundle_executable(Path::new(
-            "/tmp/OpenClaw/Contents/MacOS/openclaw-desktop"
+            "/tmp/Afora/Contents/MacOS/afora-desktop"
         )));
         assert!(!is_macos_app_bundle_executable(Path::new(
-            "/tmp/target/debug/openclaw-desktop"
+            "/tmp/target/debug/afora-desktop"
         )));
     }
 }

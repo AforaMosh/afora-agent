@@ -1,1 +1,1 @@
-export { default as fa } from "virtual:openclaw-control-ui-locale/fa";
+export { default as fa } from "virtual:afora-control-ui-locale/fa";

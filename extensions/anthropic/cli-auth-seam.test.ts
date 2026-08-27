@@ -4,7 +4,7 @@ const { readClaudeCliCredentialsCached } = vi.hoisted(() => ({
   readClaudeCliCredentialsCached: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/provider-auth", () => ({
+vi.mock("afora-agent/plugin-sdk/provider-auth", () => ({
   readClaudeCliCredentialsCached,
 }));
 

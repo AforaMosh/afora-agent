@@ -1,13 +1,13 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
 import {
   listSessionCatalogEntries,
   sessionCatalogAdoptedSessionKey,
   sessionCatalogAdoptedSourceKey,
   type SessionCatalogEntrySnapshot,
-} from "openclaw/plugin-sdk/session-catalog";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/session-catalog";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { CodexThread } from "./app-server/protocol.js";
 import {
   reclaimCurrentCodexSessionGeneration,
@@ -101,7 +101,7 @@ function readCodexSupervisionMarker(entry: {
 export async function listAdoptedSessionEntries(params: {
   agentId?: string;
   bindingStore: CodexAppServerBindingStore;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   runtime: PluginRuntime;
   sessionEntries?: SessionCatalogEntrySnapshot;
 }): Promise<Map<string, AdoptedSessionEntry>> {
@@ -146,7 +146,7 @@ export async function listAdoptedSessionEntries(params: {
     );
     if (adopted.has(sourceKey)) {
       throw new Error(
-        `multiple OpenClaw sessions adopt Codex thread ${sourceThreadId} from the same home`,
+        `multiple Afora sessions adopt Codex thread ${sourceThreadId} from the same home`,
       );
     }
     adopted.set(sourceKey, { key: sessionKey, sessionId, agentId, boundThreadId });
@@ -157,7 +157,7 @@ export async function listAdoptedSessionEntries(params: {
 async function findAdoptedSessionEntry(params: {
   agentId?: string;
   bindingStore: CodexAppServerBindingStore;
-  config: OpenClawConfig;
+  config: AforaConfig;
   runtime: PluginRuntime;
   threadId: string;
   sourceHomeId?: string;
@@ -206,7 +206,7 @@ async function clearCreatedAdoptionBinding(params: {
   } catch (readError) {
     const cleanupFailure = new AggregateError(
       [params.cause, ...(clearError ? [clearError] : []), readError],
-      `OpenClaw session creation failed and the Codex binding could not be verified for ${params.sourceThreadId}`,
+      `Afora session creation failed and the Codex binding could not be verified for ${params.sourceThreadId}`,
       { cause: readError },
     );
     throw cleanupFailure;
@@ -218,7 +218,7 @@ async function clearCreatedAdoptionBinding(params: {
   }
   throw new AggregateError(
     [params.cause, ...(clearError ? [clearError] : [])],
-    `OpenClaw session creation failed and the Codex binding could not be cleared for ${params.sourceThreadId}`,
+    `Afora session creation failed and the Codex binding could not be cleared for ${params.sourceThreadId}`,
     { cause: params.cause },
   );
 }
@@ -270,7 +270,7 @@ function matchesPendingSupervisionOwner(
 
 async function ensurePendingAdoptionBinding(params: {
   bindingStore: CodexAppServerBindingStore;
-  config: OpenClawConfig;
+  config: AforaConfig;
   identity: ReturnType<typeof sessionBindingIdentity>;
   sourceThreadId: string;
   connectionFingerprint: string;
@@ -288,14 +288,14 @@ async function ensurePendingAdoptionBinding(params: {
     config: params.config,
   });
   if (!ownsGeneration) {
-    throw new Error(`failed to claim the OpenClaw session generation for ${params.sourceThreadId}`);
+    throw new Error(`failed to claim the Afora session generation for ${params.sourceThreadId}`);
   }
   const existing = await params.bindingStore.read(params.identity);
   if (existing) {
     if (matchesPendingAdoptionBinding(existing, params)) {
       return;
     }
-    throw new Error(`OpenClaw session is already bound to Codex thread ${existing.threadId}`);
+    throw new Error(`Afora session is already bound to Codex thread ${existing.threadId}`);
   }
   const binding = {
     threadId: params.sourceThreadId,
@@ -326,15 +326,15 @@ async function ensurePendingAdoptionBinding(params: {
   }
   const raced = await params.bindingStore.read(params.identity);
   if (!matchesPendingAdoptionBinding(raced, params)) {
-    throw new Error(`failed to bind OpenClaw session to Codex thread ${params.sourceThreadId}`);
+    throw new Error(`failed to bind Afora session to Codex thread ${params.sourceThreadId}`);
   }
 }
 
 async function createOrReuseAdoptedSession(params: {
   agentId: string;
-  api: OpenClawPluginApi;
+  api: AforaPluginApi;
   bindingStore: CodexAppServerBindingStore;
-  config: OpenClawConfig;
+  config: AforaConfig;
   sourceThread: CodexThread;
   connectionFingerprint: string;
   sourceHomeId?: string;
@@ -437,9 +437,9 @@ async function createOrReuseAdoptedSession(params: {
 
 type ContinueLocalCodexSessionParams = {
   agentId: string;
-  api: OpenClawPluginApi;
+  api: AforaPluginApi;
   bindingStore: CodexAppServerBindingStore;
-  config: OpenClawConfig;
+  config: AforaConfig;
   control: CodexSessionCatalogControl;
   threadId: string;
   hostId?: string;
@@ -462,7 +462,7 @@ async function continueLocalCodexSessionInner(
     // Catalog state can race archive/reset. Restore only the same locked generation
     // under the session-store write lock so a stale Open Chat cannot revive a replacement.
     const changedError = () =>
-      new CatalogParamsError("Codex OpenClaw session changed before it could be opened. Retry.");
+      new CatalogParamsError("Codex Afora session changed before it could be opened. Retry.");
     const restored = await params.api.runtime.agent.session.patchSessionEntry({
       sessionKey: existing.key,
       readConsistency: "latest",
@@ -523,7 +523,7 @@ async function continueLocalCodexSessionInner(
   return { sessionKey: adopted.key, disposition: "forked" };
 }
 
-/** Creates one locked OpenClaw branch whose first harness run forks the Codex source. */
+/** Creates one locked Afora branch whose first harness run forks the Codex source. */
 export async function continueLocalCodexSession(params: ContinueLocalCodexSessionParams): Promise<{
   sessionKey: string;
   disposition: CodexSessionDisposition;

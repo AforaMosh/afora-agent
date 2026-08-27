@@ -1,12 +1,12 @@
 import { buffer } from "node:stream/consumers";
 import { Bot } from "grammy";
 import type { Message } from "grammy/types";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   createPluginStateKeyedStoreForTests,
   createPluginStateSyncKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createTelegramCallbackMessageActions } from "./bot-handlers.callback-actions.js";
 import { asTelegramClientFetch } from "./client-fetch.js";
@@ -32,8 +32,8 @@ const DIRECT_CHAT_ID = -100321;
 const DIRECT_TOPIC_ID = 77;
 const cfg = {
   channels: { telegram: { botToken: TOKEN } },
-  session: { store: "/tmp/openclaw-telegram-transport-payload-test.json" },
-} satisfies OpenClawConfig;
+  session: { store: "/tmp/afora-telegram-transport-payload-test.json" },
+} satisfies AforaConfig;
 
 function installTelegramStateRuntimeForTest(): void {
   setTelegramRuntime({
@@ -185,7 +185,7 @@ describe("Telegram topic transport payloads", () => {
     const richCfg = {
       ...cfg,
       channels: { telegram: { botToken: TOKEN, richMessages: true } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     await sendMessageTelegram(`${DIRECT_CHAT_ID}:direct-topic:${DIRECT_TOPIC_ID}`, "**rich**", {
       cfg: richCfg,
       token: TOKEN,

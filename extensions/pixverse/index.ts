@@ -1,5 +1,5 @@
-// Pixverse plugin entrypoint registers its OpenClaw integration.
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+// Pixverse plugin entrypoint registers its Afora integration.
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import { PIXVERSE_PROVIDER_ID } from "./constants.js";
 import { buildPixVerseApiKeyAuthMethod } from "./onboard.js";
 import { buildPixVerseVideoGenerationProvider } from "./video-generation-provider.js";

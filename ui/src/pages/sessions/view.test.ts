@@ -543,8 +543,8 @@ describe("sessions view", () => {
     dropWithPayload(["text/plain"], { "text/plain": "not-a-session" });
     expect(onAssignCategory).toHaveBeenCalledTimes(1);
 
-    dropWithPayload(["application/x-openclaw-session-key"], {
-      "application/x-openclaw-session-key": "agent:main:main",
+    dropWithPayload(["application/x-afora-session-key"], {
+      "application/x-afora-session-key": "agent:main:main",
     });
     expect(onAssignCategory).toHaveBeenCalledWith("agent:main:main", "Research");
   });
@@ -583,7 +583,7 @@ describe("sessions view", () => {
     const drop = new Event("drop", { bubbles: true, cancelable: true });
     Object.defineProperty(drop, "dataTransfer", {
       value: {
-        types: ["application/x-openclaw-session-key"],
+        types: ["application/x-afora-session-key"],
         getData: () => "agent:main:main",
       },
     });
@@ -694,7 +694,7 @@ describe("sessions view", () => {
     const filters = container.querySelector(".sessions-filter-bar");
     const activeField = filters?.querySelector(".session-filter-input--minutes")?.closest("label");
     const tooltips = Array.from(
-      filters?.querySelectorAll<HTMLElement>("openclaw-tooltip") ?? [],
+      filters?.querySelectorAll<HTMLElement>("afora-tooltip") ?? [],
     ).map((tooltip) => (tooltip as HTMLElement & { content: string }).content);
 
     expect(activeField?.querySelector(".session-filter-label")?.textContent).toBe("Updated within");

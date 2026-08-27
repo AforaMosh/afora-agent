@@ -12,4 +12,4 @@ export {
   stripInvalidGoogleThinkingBudget,
   type GoogleThinkingInputLevel,
   type GoogleThinkingLevel,
-} from "openclaw/plugin-sdk/provider-stream-shared";
+} from "afora-agent/plugin-sdk/provider-stream-shared";

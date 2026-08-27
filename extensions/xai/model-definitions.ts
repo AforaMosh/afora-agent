@@ -1,9 +1,9 @@
 // Xai plugin module implements model definitions behavior.
-import type { ModelDefinitionConfig } from "openclaw/plugin-sdk/provider-model-shared";
+import type { ModelDefinitionConfig } from "afora-agent/plugin-sdk/provider-model-shared";
 import {
   asOptionalRecord,
   normalizeOptionalLowercaseString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { isXaiFrontierModelId, isXaiGrok46ModelId, normalizeXaiModelId } from "./model-id.js";
 
 export const XAI_BASE_URL = "https://api.x.ai/v1";
@@ -55,7 +55,7 @@ const XAI_GROK_43_COST = {
 } satisfies XaiCost;
 
 // xAI publishes separate short-context cached-input rates for Grok 4.5 and 4.6.
-// The flat OpenClaw catalog stores short-context rates; xAI doubles input,
+// The flat Afora catalog stores short-context rates; xAI doubles input,
 // cached-input, and output pricing at its documented 200k-token long-context threshold.
 const XAI_GROK_45_COST = {
   input: 2,

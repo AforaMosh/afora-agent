@@ -1,11 +1,11 @@
-import { isRecord } from "openclaw/plugin-sdk/channel-secret-basic-runtime";
-import type { AnyAgentTool, OpenClawPluginToolContext } from "openclaw/plugin-sdk/plugin-entry";
-import { asNonArrayRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { jsonResult } from "openclaw/plugin-sdk/tool-results";
+import { isRecord } from "afora-agent/plugin-sdk/channel-secret-basic-runtime";
+import type { AnyAgentTool, AforaPluginToolContext } from "afora-agent/plugin-sdk/plugin-entry";
+import { asNonArrayRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { jsonResult } from "afora-agent/plugin-sdk/tool-results";
 import type {
   PluginHookToolResultPersistEvent,
   PluginHookToolResultPersistResult,
-} from "openclaw/plugin-sdk/types";
+} from "afora-agent/plugin-sdk/types";
 import { parseToolInput, type OnePasswordBroker } from "./broker.js";
 import { OnePasswordError } from "./errors.js";
 import { AUTHORIZATION_NONCE_PARAM } from "./pending-authorization.js";
@@ -90,7 +90,7 @@ export function redactPersistedOnePasswordResult(
 
 export function createOnePasswordTool(
   broker: OnePasswordBroker,
-  invocation: OpenClawPluginToolContext,
+  invocation: AforaPluginToolContext,
 ): AnyAgentTool {
   return {
     name: "onepassword",

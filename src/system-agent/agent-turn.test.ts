@@ -5,7 +5,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { listAgentEntries } from "../agents/agent-scope-config.js";
 import { testing as cliBackendsTesting } from "../agents/cli-backends.test-support.js";
 import { fingerprintResolvedProviderAuth } from "../agents/execution-auth-binding.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import {
   cleanupSystemAgentSession,
   createSystemAgentSession,
@@ -53,7 +53,7 @@ vi.mock("../config/config.js", async (importOriginal) => ({
   readConfigFileSnapshot: vi.fn(async () => ({
     exists: true,
     valid: true,
-    path: "/tmp/openclaw.json",
+    path: "/tmp/afora.json",
     hash: "hash",
     config: { agents: { defaults: { model: { primary: "openai/gpt-5.5" } } } },
     runtimeConfig: { agents: { defaults: { model: { primary: "openai/gpt-5.5" } } } },
@@ -67,18 +67,18 @@ let restoreCliBackendFixture: (() => void) | undefined;
 let pluginMetadataSnapshot: SystemAgentPluginMetadataTestSnapshot | undefined;
 
 function useTempStateDir(): string {
-  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-turn-"));
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-turn-"));
   tempDirs.push(stateDir);
-  vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+  vi.stubEnv("AFORA_STATE_DIR", stateDir);
   pluginMetadataSnapshot?.rebindForCurrentEnv();
   return stateDir;
 }
 
-function configSnapshot(config: OpenClawConfig) {
+function configSnapshot(config: AforaConfig) {
   return {
     exists: true,
     valid: true,
-    path: "/tmp/openclaw.json",
+    path: "/tmp/afora.json",
     hash: "hash",
     config,
     runtimeConfig: config,
@@ -94,7 +94,7 @@ function requireValue<T>(value: T | undefined, message: string): T {
   return value;
 }
 
-async function createVerifiedSession(config: OpenClawConfig) {
+async function createVerifiedSession(config: AforaConfig) {
   const fixture = await createSystemAgentVerifiedInferenceTestFixture(config);
   return {
     ...fixture,
@@ -133,14 +133,14 @@ describe("runSystemAgentTurn", () => {
         defaults: {
           model: "openai/gpt-5.5",
           models: {
-            "openai/gpt-5.5": { agentRuntime: { id: "openclaw" } },
+            "openai/gpt-5.5": { agentRuntime: { id: "afora" } },
           },
         },
       },
       auth: {
         profiles: { "openai:p2": { provider: "openai", mode: "api_key" } },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const configuredRoute = await resolveSystemAgentConfiguredRouteFromConfig(verifiedConfig);
     if (!configuredRoute) {
       throw new Error("missing test route");
@@ -171,14 +171,14 @@ describe("runSystemAgentTurn", () => {
       auth: {
         authProfileId: "openai:p2",
         authFingerprint,
-        agentHarnessId: "openclaw",
+        agentHarnessId: "afora",
         modelId: executionRoute.model,
         modelApi: "openai-responses",
       },
       deps: authDeps,
     });
     const session = createSystemAgentSession(binding);
-    let currentConfig: OpenClawConfig = verifiedConfig;
+    let currentConfig: AforaConfig = verifiedConfig;
     const runEmbeddedAgent = vi.fn(async () => ({
       meta: { finalAssistantVisibleText: "ready" },
     }));
@@ -222,7 +222,7 @@ describe("runSystemAgentTurn", () => {
     useTempStateDir();
     const config = {
       agents: { defaults: { model: { primary: "openai/gpt-5.5" } } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const overview = { defaultModel: "openai/gpt-5.5" } as never;
     const fixture = await createSystemAgentVerifiedInferenceTestFixture(config);
     const first = createSystemAgentSession(fixture.binding);
@@ -269,7 +269,7 @@ describe("runSystemAgentTurn", () => {
     expect(first.sessionManager).toBeUndefined();
   });
 
-  it("uses the default agent CLI route while keeping OpenClaw session identity", async () => {
+  it("uses the default agent CLI route while keeping Afora session identity", async () => {
     const stateDir = useTempStateDir();
     const agentDir = path.join(stateDir, "ops-agent");
     const config = {
@@ -286,7 +286,7 @@ describe("runSystemAgentTurn", () => {
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const runCliAgent = vi.fn(async (_params: RunCliAgentParams) => ({
       payloads: [{ text: "ready" }],
     }));
@@ -319,27 +319,27 @@ describe("runSystemAgentTurn", () => {
       model: "claude-opus-4-8",
       agentDir,
       authProfileId: "claude-cli:ops",
-      agentId: "openclaw",
-      sessionKey: "agent:openclaw:main",
+      agentId: "afora",
+      sessionKey: "agent:afora:main",
       sessionId: session.sessionId,
-      workspaceDir: path.join(stateDir, "openclaw", "workspace"),
+      workspaceDir: path.join(stateDir, "afora", "workspace"),
       sessionFile: `in-memory:${session.sessionId}`,
-      messageChannel: "openclaw",
-      messageProvider: "openclaw",
+      messageChannel: "afora",
+      messageProvider: "afora",
     });
     expect(call.disableCliLiveSession).toBe(true);
     expect(call.cleanupCliLiveSessionOnRunEnd).toBe(true);
     expect(call.cliToolAvailability).toEqual({
       native: [],
-      openClaw: ["openclaw"],
+      afora: ["afora"],
     });
     expect(call.toolsAllow).toBeUndefined();
-    expect(requireValue(call.systemAgentTool, "missing CLI OpenClaw tool").proposalRef).toBe(
+    expect(requireValue(call.systemAgentTool, "missing CLI Afora tool").proposalRef).toBe(
       session.proposalRef,
     );
   });
 
-  it("rejects an always-on CLI backend before launching OpenClaw", async () => {
+  it("rejects an always-on CLI backend before launching Afora", async () => {
     useTempStateDir();
     cliBackendsTesting.setDepsForTest({
       resolveRuntimeCliBackends: () => [
@@ -358,7 +358,7 @@ describe("runSystemAgentTurn", () => {
           model: "google-gemini-cli/gemini-3.1-pro-preview",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const runCliAgent = vi.fn();
     const runEmbeddedAgent = vi.fn();
     const { session, deps } = await createVerifiedSession(config);
@@ -388,7 +388,7 @@ describe("runSystemAgentTurn", () => {
     expect((failure as SystemAgentInferenceUnavailableError).failures).toEqual([
       expect.objectContaining({
         message: expect.stringContaining(
-          "CLI backend google-gemini-cli cannot enforce OpenClaw's exact tool availability",
+          "CLI backend google-gemini-cli cannot enforce Afora's exact tool availability",
         ),
       }),
     ]);
@@ -404,7 +404,7 @@ describe("runSystemAgentTurn", () => {
           model: "claude-cli/claude-opus-4-8@claude-cli:ops",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const binding = {
       sessionId: "native-claude-session",
       authProfileId: "claude-cli:ops",
@@ -470,7 +470,7 @@ describe("runSystemAgentTurn", () => {
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const runCliAgent = vi.fn(async (_params: RunCliAgentParams) => ({
       payloads: [{ text: "ready" }],
     }));
@@ -519,14 +519,14 @@ describe("runSystemAgentTurn", () => {
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const binding = {
       sessionId: "native-claude-session",
       authProfileId: "claude-cli:ops",
       authEpoch: "auth-epoch",
       authEpochVersion: 1,
       cwdHash: "cwd-hash",
-      mcpResumeHash: "openclaw-mcp-resume",
+      mcpResumeHash: "afora-mcp-resume",
     };
     const runCliAgent = vi.fn(async (_params: RunCliAgentParams) => ({
       payloads: [{ text: "ready" }],
@@ -582,7 +582,7 @@ describe("runSystemAgentTurn", () => {
             model: `claude-cli/claude-opus-4-8@${profileId}`,
           },
         },
-      }) as OpenClawConfig;
+      }) as AforaConfig;
     const binding = { sessionId: "native-claude-session", authEpochVersion: 1 };
     const runCliAgent = vi.fn(async (_params: RunCliAgentParams) => ({
       payloads: [{ text: "ready" }],
@@ -630,13 +630,13 @@ describe("runSystemAgentTurn", () => {
             {
               id: "ops",
               default: true,
-              // Keep the model owner's policy stable. OpenClaw executes with
+              // Keep the model owner's policy stable. Afora executes with
               // its own identity and therefore follows the changing global policy.
               tools: { exec: { mode: "ask" } },
             },
           ],
         },
-      }) as OpenClawConfig;
+      }) as AforaConfig;
     const binding = {
       sessionId: "native-claude-session",
       authProfileId: "claude-cli:ops",
@@ -690,7 +690,7 @@ describe("runSystemAgentTurn", () => {
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const embeddedConfig = {
       agents: {
         list: [
@@ -703,7 +703,7 @@ describe("runSystemAgentTurn", () => {
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const binding = { sessionId: "native-claude-session", authEpochVersion: 1 };
     const runCliAgent = vi.fn(async (_params: RunCliAgentParams) => ({
       payloads: [{ text: "cli" }],
@@ -755,7 +755,7 @@ describe("runSystemAgentTurn", () => {
           model: { primary: "anthropic/claude-global" },
           systemAgent: { agentId: "ops" },
           models: {
-            "openai/gpt-5.4": { agentRuntime: { id: "openclaw" } },
+            "openai/gpt-5.4": { agentRuntime: { id: "afora" } },
           },
         },
         list: [
@@ -771,13 +771,13 @@ describe("runSystemAgentTurn", () => {
             },
           },
           {
-            id: "openclaw",
+            id: "afora",
             params: { temperature: 1.7 },
             tools: { allow: ["exec"] },
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const runCliAgent = vi.fn(async (_params: RunCliAgentParams) => ({ payloads: [] }));
     const runEmbeddedAgent = vi.fn(async (_params: RunEmbeddedAgentParams) => ({
       payloads: [{ text: "ready" }],
@@ -811,23 +811,23 @@ describe("runSystemAgentTurn", () => {
       authProfileId: "openai:ops",
       authProfileIdSource: "user",
       agentHarnessRuntimeOverride: "codex",
-      agentId: "openclaw",
-      sessionKey: "agent:openclaw:main",
+      agentId: "afora",
+      sessionKey: "agent:afora:main",
       sessionId: session.sessionId,
-      workspaceDir: path.join(stateDir, "openclaw", "workspace"),
+      workspaceDir: path.join(stateDir, "afora", "workspace"),
       sessionFile: `in-memory:${session.sessionId}`,
-      messageChannel: "openclaw",
-      messageProvider: "openclaw",
-      toolsAllow: ["openclaw"],
+      messageChannel: "afora",
+      messageProvider: "afora",
+      toolsAllow: ["afora"],
       disableMessageTool: true,
     });
     expect(call.agentHarnessId).toBeUndefined();
-    expect(listAgentEntries(call.config ?? {}).find((agent) => agent.id === "openclaw")).toEqual({
-      id: "openclaw",
+    expect(listAgentEntries(call.config ?? {}).find((agent) => agent.id === "afora")).toEqual({
+      id: "afora",
       params: { temperature: 0.2 },
       tools: { allow: ["read"], deny: ["exec"] },
     });
-    expect(requireValue(call.systemAgentTool, "missing embedded OpenClaw tool").proposalRef).toBe(
+    expect(requireValue(call.systemAgentTool, "missing embedded Afora tool").proposalRef).toBe(
       session.proposalRef,
     );
   });
@@ -840,7 +840,7 @@ describe("runSystemAgentTurn", () => {
       configSnapshot({ agents: { defaults: { model: "openai/gpt-5.5" } } }),
     );
     const unverifiedSession = {
-      sessionId: "openclaw-unverified",
+      sessionId: "afora-unverified",
       proposalRef: {},
     } as unknown as SystemAgentSession;
 
@@ -869,7 +869,7 @@ describe("runSystemAgentTurn", () => {
     useTempStateDir();
     const config = {
       agents: { defaults: { model: "openai/gpt-5.5" } },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const { session, deps } = await createVerifiedSession(config);
     session.proposalRef.current = "partial-proposal";
     session.cliSession = {
@@ -911,7 +911,7 @@ describe("runSystemAgentTurn", () => {
     },
   ])("clears partial session state after $name", async ({ runEmbeddedAgent }) => {
     useTempStateDir();
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       agents: { defaults: { model: { primary: "openai/gpt-5.5" } } },
     };
     const { session, deps } = await createVerifiedSession(config);

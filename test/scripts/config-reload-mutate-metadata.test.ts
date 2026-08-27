@@ -17,15 +17,15 @@ function runMutateMetadata(configPath: string) {
     encoding: "utf8",
     env: {
       ...process.env,
-      OPENCLAW_CONFIG_PATH: configPath,
+      AFORA_CONFIG_PATH: configPath,
     },
   });
 }
 
 describe("config reload metadata mutator", () => {
   it("updates config display metadata without dropping existing config", () => {
-    const root = makeTempDir(tempDirs, "openclaw-config-reload-metadata-");
-    const configPath = path.join(root, "openclaw.json");
+    const root = makeTempDir(tempDirs, "afora-config-reload-metadata-");
+    const configPath = path.join(root, "afora.json");
     writeFileSync(
       configPath,
       `${JSON.stringify(

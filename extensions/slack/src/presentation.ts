@@ -1,5 +1,5 @@
 // Slack presentation limits shared by the hot channel facade and lazy renderer.
-import type { ChannelOutboundAdapter } from "openclaw/plugin-sdk/channel-send-result";
+import type { ChannelOutboundAdapter } from "afora-agent/plugin-sdk/channel-send-result";
 
 export const SLACK_ACTION_BLOCK_ELEMENTS_MAX = 25;
 export const SLACK_ACTION_LABEL_MAX = 75;

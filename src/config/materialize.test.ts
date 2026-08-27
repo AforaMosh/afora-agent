@@ -1,12 +1,12 @@
 // Verifies snapshot/load materialization parity for prepared-runtime config matching.
 import { describe, expect, it } from "vitest";
 import { materializeRuntimeConfig } from "./materialize.js";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import type { AforaConfig } from "./types.afora.js";
 
 describe("materializeRuntimeConfig", () => {
   it("materializes snapshot and load identically when defaults must be injected", () => {
     // A compaction block without a mode is the shape that forces default injection.
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       agents: {
         defaults: {
           compaction: {},
@@ -22,7 +22,7 @@ describe("materializeRuntimeConfig", () => {
   });
 
   it("keeps an explicit compaction mode unchanged in both modes", () => {
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       agents: {
         defaults: {
           compaction: { mode: "safeguard" },

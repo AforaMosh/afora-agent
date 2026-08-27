@@ -19,7 +19,7 @@ export function renderNewSessionIncognitoControl(submission: {
   const description = disabledReason ?? t("newSession.incognitoDescription");
   return html`
     <div class="new-session-page__incognito-rail">
-      <openclaw-tooltip .content=${description}>
+      <afora-tooltip .content=${description}>
         <button
           type="button"
           class="shell-chrome-controls__button new-session-page__incognito-toggle ${active
@@ -38,7 +38,7 @@ export function renderNewSessionIncognitoControl(submission: {
         >
           ${icons.eyeOff}
         </button>
-      </openclaw-tooltip>
+      </afora-tooltip>
     </div>
   `;
 }

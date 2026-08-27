@@ -1,11 +1,11 @@
 // ClawHub package, skill, resolver URL, and GitHub archive downloads.
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
-import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-coercion";
+import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   createClawHubError,
   readClawHubBytes,
@@ -176,7 +176,7 @@ export async function downloadClawHubPackageArchive(params: {
     const rawSpecVersion = response.headers.get("X-ClawHub-ClawPack-Spec-Version");
     const specVersion = parseStrictPositiveInteger(rawSpecVersion);
     const target = await createTempDownloadTarget({
-      prefix: "openclaw-clawhub-clawpack",
+      prefix: "afora-clawhub-clawpack",
       fileName: npmTarballName,
     });
     await fs.writeFile(target.path, bytes);
@@ -218,7 +218,7 @@ export async function downloadClawHubPackageArchive(params: {
   });
   const sha256Digest = sha256Hex(bytes);
   const target = await createTempDownloadTarget({
-    prefix: "openclaw-clawhub-package",
+    prefix: "afora-clawhub-package",
     fileName: `${params.name}.zip`,
   });
   await fs.writeFile(target.path, bytes);
@@ -264,7 +264,7 @@ export async function downloadClawHubSkillArchive(params: {
   });
   const sha256Digest = sha256Hex(bytes);
   const target = await createTempDownloadTarget({
-    prefix: "openclaw-clawhub-skill",
+    prefix: "afora-clawhub-skill",
     fileName: `${params.slug}.zip`,
   });
   await fs.writeFile(target.path, bytes);
@@ -306,7 +306,7 @@ export async function downloadClawHubSkillArchiveUrl(params: {
   });
   const sha256Digest = sha256Hex(bytes);
   const target = await createTempDownloadTarget({
-    prefix: "openclaw-clawhub-skill",
+    prefix: "afora-clawhub-skill",
     fileName: "skill.zip",
   });
   await fs.writeFile(target.path, bytes);
@@ -342,7 +342,7 @@ export async function downloadClawHubGitHubSkillArchive(params: {
   });
   const sha256Digest = sha256Hex(bytes);
   const target = await createTempDownloadTarget({
-    prefix: "openclaw-clawhub-github-skill",
+    prefix: "afora-clawhub-github-skill",
     fileName: `${params.commit}.zip`,
   });
   await fs.writeFile(target.path, bytes);

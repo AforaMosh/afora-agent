@@ -192,8 +192,8 @@ export const slackQaMpimAppMentionDedupeScenario: SlackQaScenarioImplementation 
 
 export const slackQaAllowlistBlockScenario: SlackQaScenarioImplementation = {
   configOverrides: {
-    allowFrom: ["U_OPENCLAW_QA_NEVER_ALLOWED"],
-    users: ["U_OPENCLAW_QA_NEVER_ALLOWED"],
+    allowFrom: ["U_AFORA_QA_NEVER_ALLOWED"],
+    users: ["U_AFORA_QA_NEVER_ALLOWED"],
   },
   buildRun: (sutUserId) => {
     const token = `SLACK_QA_BLOCK_${randomUUID().slice(0, 8).toUpperCase()}`;

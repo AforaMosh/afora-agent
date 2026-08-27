@@ -1,7 +1,7 @@
 // Migrate Hermes helper module supports auth config behavior.
-import { resolveMigrationConfigRuntime } from "openclaw/plugin-sdk/migration";
-import type { MigrationProviderContext } from "openclaw/plugin-sdk/plugin-entry";
-import { applyAuthProfileConfig, type OpenClawConfig } from "openclaw/plugin-sdk/provider-auth";
+import { resolveMigrationConfigRuntime } from "afora-agent/plugin-sdk/migration";
+import type { MigrationProviderContext } from "afora-agent/plugin-sdk/plugin-entry";
+import { applyAuthProfileConfig, type AforaConfig } from "afora-agent/plugin-sdk/provider-auth";
 
 export type HermesAuthProfileConfig = {
   profileId: string;
@@ -16,7 +16,7 @@ type HermesAuthConfigApplyResult = "configured" | "conflict" | "unavailable";
 class HermesAuthConfigConflict extends Error {}
 
 function existingProfileIsCompatible(
-  existing: NonNullable<NonNullable<OpenClawConfig["auth"]>["profiles"]>[string],
+  existing: NonNullable<NonNullable<AforaConfig["auth"]>["profiles"]>[string],
   profile: HermesAuthProfileConfig,
 ): boolean {
   if (existing.provider !== profile.provider || existing.mode !== profile.mode) {
@@ -29,7 +29,7 @@ function existingProfileIsCompatible(
 }
 
 export function hasAuthProfileConfigConflict(
-  config: OpenClawConfig,
+  config: AforaConfig,
   profile: HermesAuthProfileConfig,
   overwrite: boolean,
 ): boolean {
@@ -40,8 +40,8 @@ export function hasAuthProfileConfigConflict(
   return Boolean(existing && !existingProfileIsCompatible(existing, profile));
 }
 
-function replaceConfigDraft(draft: OpenClawConfig, next: OpenClawConfig): void {
-  for (const key of Object.keys(draft) as Array<keyof OpenClawConfig>) {
+function replaceConfigDraft(draft: AforaConfig, next: AforaConfig): void {
+  for (const key of Object.keys(draft) as Array<keyof AforaConfig>) {
     delete draft[key];
   }
   Object.assign(draft, next);
@@ -54,7 +54,7 @@ export function hasCurrentAuthProfileConfigConflict(
   let config = ctx.config;
   try {
     config =
-      (resolveMigrationConfigRuntime(ctx)?.current?.() as OpenClawConfig | undefined) ?? config;
+      (resolveMigrationConfigRuntime(ctx)?.current?.() as AforaConfig | undefined) ?? config;
   } catch {
     // Fall back to the planning snapshot; apply still rechecks inside mutate.
   }
@@ -64,7 +64,7 @@ export function hasCurrentAuthProfileConfigConflict(
 export async function applyAuthProfileConfigWithConflictCheck(params: {
   ctx: MigrationProviderContext;
   profile: HermesAuthProfileConfig;
-  applyConfigPatch?: (config: OpenClawConfig) => OpenClawConfig;
+  applyConfigPatch?: (config: AforaConfig) => AforaConfig;
 }): Promise<HermesAuthConfigApplyResult> {
   const configApi = resolveMigrationConfigRuntime(params.ctx);
   if (!configApi?.current || !configApi.mutateConfigFile) {

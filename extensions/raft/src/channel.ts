@@ -1,13 +1,13 @@
 // Raft channel plugin wires the wake bridge into the canonical channel runtime.
-import { describeAccountSnapshot } from "openclaw/plugin-sdk/account-helpers";
-import { createChatChannelPlugin, type ChannelPlugin } from "openclaw/plugin-sdk/channel-core";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { detectBinary } from "openclaw/plugin-sdk/setup-tools";
+import { describeAccountSnapshot } from "afora-agent/plugin-sdk/account-helpers";
+import { createChatChannelPlugin, type ChannelPlugin } from "afora-agent/plugin-sdk/channel-core";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { detectBinary } from "afora-agent/plugin-sdk/setup-tools";
 import {
   buildBaseChannelStatusSummary,
   createComputedAccountStatusAdapter,
   createDefaultChannelRuntimeState,
-} from "openclaw/plugin-sdk/status-helpers";
+} from "afora-agent/plugin-sdk/status-helpers";
 import {
   listRaftAccountIds,
   RAFT_CHANNEL_ID,
@@ -44,7 +44,7 @@ export const raftPlugin: ChannelPlugin<ResolvedRaftAccount, RaftProbe> = createC
     configSchema: raftChannelConfigSchema,
     config: {
       listAccountIds: listRaftAccountIds,
-      resolveAccount: (cfg: OpenClawConfig, accountId?: string | null) =>
+      resolveAccount: (cfg: AforaConfig, accountId?: string | null) =>
         resolveRaftAccount({ cfg, accountId }),
       defaultAccountId: resolveDefaultRaftAccountId,
       isConfigured: (account) => account.configured,

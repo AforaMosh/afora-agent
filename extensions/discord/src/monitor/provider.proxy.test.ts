@@ -164,21 +164,21 @@ vi.mock("ws", () => ({
   },
 }));
 
-vi.mock("openclaw/plugin-sdk/proxy-capture", () => ({
+vi.mock("afora-agent/plugin-sdk/proxy-capture", () => ({
   captureHttpExchange: captureHttpExchangeSpy,
   captureWsEvent: captureWsEventSpy,
   resolveEffectiveDebugProxyUrl: (configuredProxyUrl?: string) =>
-    configuredProxyUrl?.trim() || process.env.OPENCLAW_DEBUG_PROXY_URL,
+    configuredProxyUrl?.trim() || process.env.AFORA_DEBUG_PROXY_URL,
   resolveDebugProxySettings: resolveDebugProxySettingsMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ({
   fetchWithSsrFGuard: fetchWithSsrFGuardMock,
 }));
 
 describe("createDiscordGatewayPlugin", () => {
   const proxyEnvKeys = [
-    "OPENCLAW_PROXY_URL",
+    "AFORA_PROXY_URL",
     "ALL_PROXY",
     "HTTPS_PROXY",
     "HTTP_PROXY",
@@ -335,8 +335,8 @@ describe("createDiscordGatewayPlugin", () => {
     for (const key of proxyEnvKeys) {
       vi.stubEnv(key, undefined);
     }
-    vi.stubEnv("OPENCLAW_DEBUG_PROXY_ENABLED", "");
-    vi.stubEnv("OPENCLAW_DEBUG_PROXY_URL", "");
+    vi.stubEnv("AFORA_DEBUG_PROXY_ENABLED", "");
+    vi.stubEnv("AFORA_DEBUG_PROXY_URL", "");
     vi.stubGlobal("fetch", globalFetchMock);
     vi.useRealTimers();
     baseRegisterClientSpy.mockClear();
@@ -739,7 +739,7 @@ describe("createDiscordGatewayPlugin", () => {
 
   it("uses env gateway metadata timeout when config is unset", async () => {
     vi.useFakeTimers();
-    vi.stubEnv("OPENCLAW_DISCORD_GATEWAY_INFO_TIMEOUT_MS", "6000");
+    vi.stubEnv("AFORA_DISCORD_GATEWAY_INFO_TIMEOUT_MS", "6000");
     const runtime = createRuntime();
     globalFetchMock.mockImplementation(() => new Promise(() => {}));
     const plugin = createDiscordGatewayPlugin({

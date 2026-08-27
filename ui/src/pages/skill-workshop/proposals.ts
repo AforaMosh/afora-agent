@@ -1,5 +1,5 @@
 // Control UI controller manages skill workshop gateway state.
-import { parseDateStringTimestampMs } from "@openclaw/normalization-core/number-coercion";
+import { parseDateStringTimestampMs } from "@afora/normalization-core/number-coercion";
 import type { AgentSelectionCapability } from "../../app/agent-selection.ts";
 import type { ApplicationGateway } from "../../app/context.ts";
 import { t } from "../../i18n/index.ts";
@@ -45,7 +45,7 @@ type SkillProposalManifestEntry = {
 };
 
 type SkillProposalManifest = {
-  schema: "openclaw.skill-workshop.proposals-manifest.v1";
+  schema: "afora.skill-workshop.proposals-manifest.v1";
   updatedAt: string;
   proposals: SkillProposalManifestEntry[];
 };

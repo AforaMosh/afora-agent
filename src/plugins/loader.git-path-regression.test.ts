@@ -12,7 +12,7 @@ import {
 const tempRoots: string[] = [];
 
 function makeTempDir() {
-  return makeTrackedTempDir("openclaw-plugin-loader", tempRoots);
+  return makeTrackedTempDir("afora-plugin-loader", tempRoots);
 }
 
 const mkdirSafe = mkdirSafeDir;
@@ -32,7 +32,7 @@ describe("plugin loader git path regression", () => {
     fs.writeFileSync(sourceLoaderBaseFile, "export {};\n", "utf-8");
     fs.writeFileSync(
       path.join(copiedSourceDir, "channel.runtime.ts"),
-      `import { resolveOutboundSendDep } from "openclaw/plugin-sdk/channel-outbound";
+      `import { resolveOutboundSendDep } from "afora-agent/plugin-sdk/channel-outbound";
 import { PAIRING_APPROVED_MESSAGE } from "../runtime-api.js";
 
 export const copiedRuntimeMarker = {
@@ -76,7 +76,7 @@ export const copiedRuntimeMarker = {
         tryNative: false,
         extensions: [".ts", ".tsx", ".mts", ".cts", ".mtsx", ".ctsx", ".js", ".mjs", ".cjs", ".json"],
         alias: {
-          "openclaw/plugin-sdk/channel-outbound": ${JSON.stringify(copiedChannelRuntimeShim)},
+          "afora-agent/plugin-sdk/channel-outbound": ${JSON.stringify(copiedChannelRuntimeShim)},
         },
       });
       const mod = withAlias(${JSON.stringify(copiedChannelRuntime)});

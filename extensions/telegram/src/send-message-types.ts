@@ -1,14 +1,14 @@
-import type { MessageReceipt } from "openclaw/plugin-sdk/channel-outbound";
-import type { MarkdownTableMode, ReplyToMode } from "openclaw/plugin-sdk/config-contracts";
-import type { OutboundMediaAccess } from "openclaw/plugin-sdk/media-runtime";
-import type { RetryConfig } from "openclaw/plugin-sdk/retry-runtime";
+import type { MessageReceipt } from "afora-agent/plugin-sdk/channel-outbound";
+import type { MarkdownTableMode, ReplyToMode } from "afora-agent/plugin-sdk/config-contracts";
+import type { OutboundMediaAccess } from "afora-agent/plugin-sdk/media-runtime";
+import type { RetryConfig } from "afora-agent/plugin-sdk/retry-runtime";
 import type { TelegramInlineButtons } from "./button-types.js";
 import type { createTelegramPromptContextProjectionCursor } from "./prompt-context-projection.js";
 import type { TelegramApi, TelegramApiOverride } from "./send-context.js";
-import type { OpenClawConfig } from "./send.runtime.js";
+import type { AforaConfig } from "./send.runtime.js";
 
 export type TelegramSendOpts = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   token?: string;
   accountId?: string;
   verbose?: boolean;

@@ -1,6 +1,6 @@
 // Gateway iOS approval push delivery.
 // Sends APNs request/resolution wakes to paired operator devices.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { getRuntimeConfig } from "../config/io.js";
 import type { ChannelApprovalKind } from "../infra/approval-types.js";
 import { loadOrCreateProcessDeviceIdentity } from "../infra/device-identity.js";

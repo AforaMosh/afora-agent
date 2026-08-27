@@ -1,6 +1,6 @@
 /** Lifecycle-owned model catalog access. */
 import { getRuntimeConfig } from "../config/config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   listAgentIds,
   resolveAgentDir,
@@ -45,7 +45,7 @@ import {
 export type LoadPreparedModelCatalogParams = {
   agentId?: string;
   agentDir?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   readOnly?: boolean;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
@@ -350,7 +350,7 @@ async function loadScopedReadOnlyModelCatalog(
  * then scoped live discovery only for providers whose models exist solely at runtime.
  */
 export async function loadProviderScopedThinkingCatalog(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   provider: string;
   model: string;
   agentId?: string;

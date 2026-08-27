@@ -23,7 +23,7 @@ type CronTimerTestApi = {
 
 function getTestApi(): CronTimerTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.cronTimerTestApi")
+    Symbol.for("afora.cronTimerTestApi")
   ] as CronTimerTestApi;
 }
 

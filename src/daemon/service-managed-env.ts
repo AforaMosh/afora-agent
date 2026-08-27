@@ -1,12 +1,12 @@
 /** Tracks managed service environment keys across reinstall and repair flows. */
-import { sortUniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { sortUniqueStrings } from "@afora/normalization-core/string-normalization";
 import { normalizeEnvVarKey } from "../infra/host-env-security.js";
 import { detectRespawnSupervisor } from "../infra/supervisor-markers.js";
 import type { GatewayServiceEnvironmentValueSource } from "./service-types.js";
 
-const MANAGED_SERVICE_ENV_KEYS_VAR = "OPENCLAW_SERVICE_MANAGED_ENV_KEYS";
+const MANAGED_SERVICE_ENV_KEYS_VAR = "AFORA_SERVICE_MANAGED_ENV_KEYS";
 
-// Tracks which service environment keys OpenClaw owns across reinstall/start flows.
+// Tracks which service environment keys Afora owns across reinstall/start flows.
 type ServiceEnvCommand = {
   environment?: Record<string, string | undefined>;
   environmentValueSources?: Record<string, GatewayServiceEnvironmentValueSource | undefined>;

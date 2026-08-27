@@ -1,5 +1,5 @@
 // Feishu tests cover comment handler plugin behavior.
-import { buildChannelInboundEventContext } from "openclaw/plugin-sdk/channel-inbound";
+import { buildChannelInboundEventContext } from "afora-agent/plugin-sdk/channel-inbound";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClawdbotConfig, PluginRuntime } from "../runtime-api.js";
 import { handleFeishuCommentEvent } from "./comment-handler.js";
@@ -32,8 +32,8 @@ vi.mock("./drive.js", () => ({
   deliverCommentThreadText: deliverCommentThreadTextMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/reply-runtime", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/reply-runtime")>()),
+vi.mock("afora-agent/plugin-sdk/reply-runtime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/reply-runtime")>()),
   dispatchInboundMessage: dispatchInboundMessageMock,
 }));
 
@@ -462,7 +462,7 @@ describe("handleFeishuCommentEvent", () => {
       file_type: "docx",
       comment_id: "comment_1",
       content: [
-        "OpenClaw: access not configured.",
+        "Afora: access not configured.",
         "",
         "Your Feishu user id: ou_sender",
         "Pairing code:",
@@ -472,7 +472,7 @@ describe("handleFeishuCommentEvent", () => {
         "",
         "Ask the bot owner to approve with:",
         "```",
-        "openclaw pairing approve feishu TESTCODE",
+        "afora pairing approve feishu TESTCODE",
         "```",
       ].join("\n"),
       is_whole_comment: false,

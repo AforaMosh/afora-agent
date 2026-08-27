@@ -1,8 +1,8 @@
 // Persists and resolves voice wake routing rules.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { normalizeAgentId } from "../routing/session-key.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
-import { openOpenClawStateDatabase } from "../state/openclaw-state-db.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
+import { openAforaStateDatabase } from "../state/afora-state-db.js";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
@@ -38,13 +38,13 @@ const DEFAULT_ROUTING: VoiceWakeRoutingConfig = {
 };
 
 type VoiceWakeRoutingDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "voicewake_routing_config" | "voicewake_routing_routes"
 >;
 
 function openStateDatabase(stateDir?: string) {
-  return openOpenClawStateDatabase({
-    env: stateDir ? { ...process.env, OPENCLAW_STATE_DIR: stateDir } : process.env,
+  return openAforaStateDatabase({
+    env: stateDir ? { ...process.env, AFORA_STATE_DIR: stateDir } : process.env,
   });
 }
 

@@ -2,8 +2,8 @@ import {
   COMPUTER_USE_V2_ACTION_NAMES,
   type ComputerActResult,
   type ComputerUseV2ActionName,
-} from "openclaw/plugin-sdk/computer-use";
-import { canonicalizeBase64 } from "openclaw/plugin-sdk/media-runtime";
+} from "afora-agent/plugin-sdk/computer-use";
+import { canonicalizeBase64 } from "afora-agent/plugin-sdk/media-runtime";
 import { z } from "zod";
 import type { CuaDriverSession, CuaToolResult } from "./driver-client.js";
 import {

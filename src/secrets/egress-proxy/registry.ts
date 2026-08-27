@@ -2,7 +2,7 @@ import { resolveGlobalSingleton } from "../../shared/global-singleton.js";
 import type { SecretEgressProxyHandle, SecretEgressSentinelBinding } from "./proxy-server.js";
 
 type SecretEgressProxyRegistryState = { activeProxy?: SecretEgressProxyHandle };
-const SECRET_EGRESS_PROXY_REGISTRY_KEY = Symbol.for("openclaw.secretEgressProxy.registry");
+const SECRET_EGRESS_PROXY_REGISTRY_KEY = Symbol.for("afora.secretEgressProxy.registry");
 
 function getSecretEgressProxyRegistry(): SecretEgressProxyRegistryState {
   return resolveGlobalSingleton<SecretEgressProxyRegistryState>(

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createGatewayCronReconciliation } from "./server-cron-reconciled.js";
 
 type RunHook = Parameters<typeof createGatewayCronReconciliation>[0]["runHook"];
@@ -8,10 +8,10 @@ describe("gateway cron reconciliation lifecycle", () => {
   it("emits only the public snapshot fields and captures the reconciled service", async () => {
     const runHook = vi.fn<RunHook>(async () => undefined);
     const cron = { id: "startup-cron" };
-    const config = { cron: { enabled: true } } as OpenClawConfig;
+    const config = { cron: { enabled: true } } as AforaConfig;
     const reconciliation = createGatewayCronReconciliation({
       port: 18789,
-      workspaceDir: "/tmp/openclaw-workspace",
+      workspaceDir: "/tmp/afora-workspace",
       isClosing: () => false,
       runHook,
     });
@@ -35,7 +35,7 @@ describe("gateway cron reconciliation lifecycle", () => {
     expect(Object.keys(event ?? {}).toSorted()).toEqual(["enabled", "reason"]);
     expect(ctx).toMatchObject({
       port: 18789,
-      workspaceDir: "/tmp/openclaw-workspace",
+      workspaceDir: "/tmp/afora-workspace",
       config,
     });
     expect(ctx?.getCron?.()).toBe(cron);
@@ -47,18 +47,18 @@ describe("gateway cron reconciliation lifecycle", () => {
     const runHook = vi.fn<RunHook>(async () => undefined);
     const reconciliation = createGatewayCronReconciliation({
       port: 18789,
-      workspaceDir: "/tmp/openclaw-workspace",
+      workspaceDir: "/tmp/afora-workspace",
       isClosing: () => false,
       runHook,
     });
     const startup = reconciliation.arm({
       reason: "startup",
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       cronState: createCronState("startup", true),
     });
     const reload = reconciliation.arm({
       reason: "reload",
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       cronState: createCronState("reload", true),
     });
 
@@ -74,13 +74,13 @@ describe("gateway cron reconciliation lifecycle", () => {
     const runHook = vi.fn<RunHook>(async () => undefined);
     const reconciliation = createGatewayCronReconciliation({
       port: 18789,
-      workspaceDir: "/tmp/openclaw-workspace",
+      workspaceDir: "/tmp/afora-workspace",
       isClosing: () => closing,
       runHook,
     });
     const invalidated = reconciliation.arm({
       reason: "reload",
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       cronState: createCronState("invalidated", true),
     });
     reconciliation.invalidate();
@@ -88,7 +88,7 @@ describe("gateway cron reconciliation lifecycle", () => {
 
     const shutdown = reconciliation.arm({
       reason: "reload",
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       cronState: createCronState("shutdown", false),
     });
     closing = true;
@@ -113,20 +113,20 @@ describe("gateway cron reconciliation lifecycle", () => {
     });
     const reconciliation = createGatewayCronReconciliation({
       port: 18789,
-      workspaceDir: "/tmp/openclaw-workspace",
+      workspaceDir: "/tmp/afora-workspace",
       isClosing: () => false,
       runHook,
     });
     const startup = reconciliation.arm({
       reason: "startup",
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       cronState: createCronState("startup", true),
     });
     const startupCompletion = startup.complete();
     await vi.waitFor(() => expect(order).toEqual(["startup:start"]));
     const reload = reconciliation.arm({
       reason: "reload",
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       cronState: createCronState("reload", true),
     });
     expect(startupSignal?.aborted).toBe(true);
@@ -153,13 +153,13 @@ describe("gateway cron reconciliation lifecycle", () => {
     });
     const reconciliation = createGatewayCronReconciliation({
       port: 18789,
-      workspaceDir: "/tmp/openclaw-workspace",
+      workspaceDir: "/tmp/afora-workspace",
       isClosing: () => false,
       runHook,
     });
     const armed = reconciliation.arm({
       reason: "startup",
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       cronState: createCronState("startup", true),
     });
     const completion = armed.complete();

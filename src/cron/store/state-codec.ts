@@ -1,6 +1,6 @@
 /** SQLite column codec for mutable cron runtime state. */
-import { safeParseJson } from "@openclaw/normalization-core";
-import { asRecord } from "@openclaw/normalization-core/record-coerce";
+import { safeParseJson } from "@afora/normalization-core";
+import { asRecord } from "@afora/normalization-core/record-coerce";
 import type { CronJobState } from "../types.js";
 import { booleanToInteger, integerToBoolean, normalizeNumber } from "./scalar-codec.js";
 import type { CronJobInsert, CronJobRow } from "./schema.js";

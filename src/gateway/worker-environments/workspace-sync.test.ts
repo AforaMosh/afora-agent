@@ -162,7 +162,7 @@ describe("worker workspace rsync transport retry", () => {
   });
 
   it("gives an inbound fallback only the remaining operation timeout", async () => {
-    const destinationRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-rsync-budget-"));
+    const destinationRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-rsync-budget-"));
     try {
       let now = 3_000;
       vi.spyOn(Date, "now").mockImplementation(() => now);
@@ -198,7 +198,7 @@ describe("worker workspace rsync transport retry", () => {
 
 describe("bounded inbound workspace transfer", () => {
   it("aborts an in-flight transfer when the destination crosses quota", async () => {
-    const destinationRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-rsync-quota-"));
+    const destinationRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-rsync-quota-"));
     let transferSignal: AbortSignal | undefined;
     try {
       const runTask = vi.fn(async (_argv: string[], options: CommandOptions) => {
@@ -234,7 +234,7 @@ describe("bounded inbound workspace transfer", () => {
   });
 
   it("rejects a completed over-quota transfer in the authoritative final scan", async () => {
-    const destinationRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-rsync-final-quota-"));
+    const destinationRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-rsync-final-quota-"));
     try {
       const runTask = vi.fn(async () => {
         await fs.writeFile(path.join(destinationRoot, "oversized"), "over quota");

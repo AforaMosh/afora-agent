@@ -8,11 +8,11 @@ import { cleanupTrackedTempDirs, makeTrackedTempDir } from "./test-helpers/fs-fi
 const tempDirs: string[] = [];
 
 function makePluginDir() {
-  return makeTrackedTempDir("openclaw-manifest-model-catalog", tempDirs);
+  return makeTrackedTempDir("afora-manifest-model-catalog", tempDirs);
 }
 
 function writeManifest(dir: string, manifest: Record<string, unknown>) {
-  fs.writeFileSync(path.join(dir, "openclaw.plugin.json"), JSON.stringify(manifest), "utf8");
+  fs.writeFileSync(path.join(dir, "afora.plugin.json"), JSON.stringify(manifest), "utf8");
 }
 
 describe("plugin manifest model catalog", () => {

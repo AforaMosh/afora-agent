@@ -21,9 +21,9 @@ describe("runNodeIdentityShow", () => {
   let writeStdoutSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-node-identity-"));
-    prevStateDir = process.env.OPENCLAW_STATE_DIR;
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+    stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-node-identity-"));
+    prevStateDir = process.env.AFORA_STATE_DIR;
+    process.env.AFORA_STATE_DIR = stateDir;
     stdout = [];
     logSpy = vi.spyOn(defaultRuntime, "log").mockImplementation(() => {});
     errorSpy = vi.spyOn(defaultRuntime, "error").mockImplementation(() => {});
@@ -38,9 +38,9 @@ describe("runNodeIdentityShow", () => {
 
   afterEach(() => {
     if (prevStateDir === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.AFORA_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = prevStateDir;
+      process.env.AFORA_STATE_DIR = prevStateDir;
     }
     logSpy.mockRestore();
     errorSpy.mockRestore();
@@ -54,7 +54,7 @@ describe("runNodeIdentityShow", () => {
     runNodeIdentityShow({});
     expect(errorSpy).toHaveBeenCalledOnce();
     expect(exitSpy).toHaveBeenCalledWith(1);
-    expect(fs.existsSync(path.join(stateDir, "state", "openclaw.sqlite"))).toBe(false);
+    expect(fs.existsSync(path.join(stateDir, "state", "afora.sqlite"))).toBe(false);
   });
 
   it("writes deviceId and raw public key JSON to stdout", () => {

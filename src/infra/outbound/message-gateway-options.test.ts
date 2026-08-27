@@ -1,4 +1,4 @@
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 // Covers outbound gateway option defaults, timeout clamping, and backend URL
 // suppression.
 import { describe, expect, it } from "vitest";

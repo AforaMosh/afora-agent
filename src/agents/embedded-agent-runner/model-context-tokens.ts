@@ -1,7 +1,7 @@
 /**
  * Reads normalized context-token metadata from resolved model definitions.
  */
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
+import { asFiniteNumber } from "@afora/normalization-core/number-coercion";
 import type { Model } from "../../llm/types.js";
 
 /**

@@ -4,20 +4,20 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import process from "node:process";
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
-import { timestampMsToIsoString } from "openclaw/plugin-sdk/number-runtime";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
+import { timestampMsToIsoString } from "afora-agent/plugin-sdk/number-runtime";
 import type {
-  OpenClawPluginNodeHostCommand,
-  OpenClawPluginNodeInvokePolicy,
-} from "openclaw/plugin-sdk/plugin-entry";
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+  AforaPluginNodeHostCommand,
+  AforaPluginNodeInvokePolicy,
+} from "afora-agent/plugin-sdk/plugin-entry";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import {
   materializeWindowsSpawnProgram,
   resolveWindowsSpawnProgram,
-} from "openclaw/plugin-sdk/windows-spawn";
+} from "afora-agent/plugin-sdk/windows-spawn";
 import { formatCodexDisplayText } from "./command-formatters.js";
 import { JSONL_FIRST_LINE_CHUNK_BYTES, visitJsonlLines } from "./jsonl-lines.js";
 
@@ -70,7 +70,7 @@ const DEFAULT_RESUME_SPAWN_RUNTIME: CodexCliResumeSpawnRuntime = {
   execPath: process.execPath,
 };
 
-export function createCodexCliSessionNodeHostCommands(): OpenClawPluginNodeHostCommand[] {
+export function createCodexCliSessionNodeHostCommands(): AforaPluginNodeHostCommand[] {
   return [
     {
       command: CODEX_CLI_SESSIONS_LIST_COMMAND,
@@ -86,7 +86,7 @@ export function createCodexCliSessionNodeHostCommands(): OpenClawPluginNodeHostC
   ];
 }
 
-export function createCodexCliSessionNodeInvokePolicies(): OpenClawPluginNodeInvokePolicy[] {
+export function createCodexCliSessionNodeInvokePolicies(): AforaPluginNodeInvokePolicy[] {
   return [
     {
       commands: [CODEX_CLI_SESSIONS_LIST_COMMAND],
@@ -260,7 +260,7 @@ async function runCodexExecResume(params: {
   timeoutMs: number;
 }): Promise<string> {
   const outputPath = path.join(
-    await fs.mkdtemp(path.join(resolvePreferredOpenClawTmpDir(), "openclaw-codex-cli-")),
+    await fs.mkdtemp(path.join(resolvePreferredAforaTmpDir(), "afora-codex-cli-")),
     "last-message.txt",
   );
   try {

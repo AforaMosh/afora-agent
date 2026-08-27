@@ -1,6 +1,6 @@
 import Testing
 import WebKit
-@testable import OpenClaw
+@testable import Afora
 
 @MainActor
 private func mountScreen(_ screen: ScreenController) throws -> (ScreenWebViewCoordinator, WKWebView) {
@@ -86,18 +86,18 @@ private func mountScreen(_ screen: ScreenController) throws -> (ScreenWebViewCoo
     @Test("remote A2UI URL is not trusted for native actions")
     @MainActor func remoteA2UIURLIsNotTrustedForNativeActions() throws {
         let screen = ScreenController()
-        let trusted = "https://node.ts.net:18789/__openclaw__/a2ui/?platform=ios"
+        let trusted = "https://node.ts.net:18789/__afora__/a2ui/?platform=ios"
         screen.navigate(to: trusted, trustA2UIActions: true)
 
         #expect(screen.isShowingLocalA2UI() == false)
 
         let urls = try [
             trusted,
-            "https://node.ts.net:18789/__openclaw__/a2ui/?platform=ios#step2",
-            "http://192.168.0.10:18789/__openclaw__/a2ui/?platform=ios",
-            "https://node.ts.net:18789/__openclaw__/a2ui/?platform=android",
-            "https://node.ts.net:18789/__openclaw__/canvas/",
-            "https://evil.ts.net:18789/__openclaw__/a2ui/?platform=ios",
+            "https://node.ts.net:18789/__afora__/a2ui/?platform=ios#step2",
+            "http://192.168.0.10:18789/__afora__/a2ui/?platform=ios",
+            "https://node.ts.net:18789/__afora__/a2ui/?platform=android",
+            "https://node.ts.net:18789/__afora__/canvas/",
+            "https://evil.ts.net:18789/__afora__/a2ui/?platform=ios",
         ].map { try #require(URL(string: $0)) }
 
         for url in urls {

@@ -1,7 +1,7 @@
 /**
  * Application keybinding definitions and user-config migration helpers.
  *
- * Wraps pi-tui keybindings with OpenClaw-specific actions and per-agent overrides.
+ * Wraps pi-tui keybindings with Afora-specific actions and per-agent overrides.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -13,10 +13,10 @@ import {
   TUI_KEYBINDINGS,
   KeybindingsManager as TuiKeybindingsManager,
 } from "@earendil-works/pi-tui";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { getAgentDir } from "../config.js";
 
-/** OpenClaw-specific key ids added to the shared pi-tui keybinding registry. */
+/** Afora-specific key ids added to the shared pi-tui keybinding registry. */
 interface AppKeybindings {
   "app.interrupt": true;
   "app.clear": true;
@@ -345,7 +345,7 @@ function loadRawConfig(path: string): Record<string, unknown> | undefined {
   }
 }
 
-/** Keybinding manager that loads OpenClaw defaults plus optional user overrides. */
+/** Keybinding manager that loads Afora defaults plus optional user overrides. */
 export class KeybindingsManager extends TuiKeybindingsManager {
   private configPath: string | undefined;
 

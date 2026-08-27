@@ -7,7 +7,7 @@ import {
   type NormalizeLegacyChannelAccountParams,
   type RetiredChannelKeyRemoval,
 } from "./channel-compat-normalization.js";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import type { AforaConfig } from "./types.afora.js";
 
 /** Applies one channel-specific doctor migration to every object-shaped account. */
 export function normalizeChannelAccounts(params: {
@@ -45,11 +45,11 @@ export function normalizeChannelAccounts(params: {
 
 /** Applies the same channel-specific doctor migration at root and account scope. */
 export function normalizeChannelConfigEntries(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channelId: string;
   changes?: string[];
   normalizeEntry: (params: NormalizeChannelConfigEntryParams) => CompatMutationResult;
-}): { config: OpenClawConfig; changes: string[] } {
+}): { config: AforaConfig; changes: string[] } {
   const changes = params.changes ?? [];
   const channels = params.cfg.channels as Record<string, unknown> | undefined;
   const entry = asObjectRecord(channels?.[params.channelId]);
@@ -77,7 +77,7 @@ export function normalizeChannelConfigEntries(params: {
     config: {
       ...params.cfg,
       channels: { ...channels, [params.channelId]: accounts.entry },
-    } as OpenClawConfig,
+    } as AforaConfig,
     changes,
   };
 }
@@ -131,12 +131,12 @@ function stripRetiredKeys(params: {
 
 /** Removes retired keys recursively or from a channel root and its accounts. */
 export function stripRetiredChannelKeys(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channelId: string;
   keys: ReadonlySet<string>;
   scope: "recursive" | "root-and-accounts";
   onRemove?: (removed: RetiredChannelKeyRemoval) => void;
-}): { config: OpenClawConfig; changed: boolean } {
+}): { config: AforaConfig; changed: boolean } {
   const channels = params.cfg.channels as Record<string, unknown> | undefined;
   const entry = asObjectRecord(channels?.[params.channelId]);
   if (!entry) {
@@ -156,7 +156,7 @@ export function stripRetiredChannelKeys(params: {
           config: {
             ...params.cfg,
             channels: { ...channels, [params.channelId]: stripped.value },
-          } as OpenClawConfig,
+          } as AforaConfig,
           changed: true,
         }
       : { config: params.cfg, changed: false };
@@ -180,11 +180,11 @@ export function stripRetiredChannelKeys(params: {
 
 /** Materializes root/default-account inheritance after aliases create streaming. */
 export function materializeInheritedAccountStreaming(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channelId: string;
   accountsBefore: Record<string, unknown> | null;
   changes: string[];
-}): OpenClawConfig {
+}): AforaConfig {
   const channels = params.cfg.channels as Record<string, unknown> | undefined;
   const entry = asObjectRecord(channels?.[params.channelId]);
   const accounts = asObjectRecord(entry?.accounts);
@@ -238,6 +238,6 @@ export function materializeInheritedAccountStreaming(params: {
           ...channels,
           [params.channelId]: { ...entry, accounts: nextAccounts },
         },
-      } as OpenClawConfig)
+      } as AforaConfig)
     : params.cfg;
 }

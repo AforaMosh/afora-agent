@@ -1,6 +1,6 @@
 // Presentation data for the plugins catalog: bundled cover art, deterministic
 // fallback gradients, category shelving, and curated connector suggestions.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { inferControlUiPublicAssetPath } from "../../app/public-assets.ts";
 import { t } from "../../i18n/index.ts";
 import { takeGraphemes } from "../../lib/graphemes.ts";

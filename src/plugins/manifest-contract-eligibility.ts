@@ -1,10 +1,10 @@
 // Determines which manifest contracts are eligible for plugin activation.
-import { sortUniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { sortUniqueStrings } from "@afora/normalization-core/string-normalization";
 import {
   hasMeaningfulChannelConfigShallow,
   resolveChannelConfigRecord,
 } from "../config/channel-configured-shared.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { readBundledDiscoveryMode } from "./bundled-discovery-state.js";
 import { normalizePluginsConfig } from "./config-state.js";
 import { isInstalledPluginEnabled } from "./installed-plugin-index.js";
@@ -29,7 +29,7 @@ export function isManifestPluginOwnerAllowedByControlPlanePolicy(params: {
   plugin: Pick<PluginManifestRecord, "id" | "origin"> & {
     channels?: readonly string[];
   };
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   allowRestrictiveAllowlistBypass?: boolean;
 }): boolean {
   if (!params.config?.plugins) {
@@ -70,7 +70,7 @@ export function isManifestPluginAvailableForControlPlane(params: {
     PluginManifestRecord,
     "id" | "origin" | "enabledByDefault" | "enabledByDefaultOnPlatforms"
   > & { channels?: readonly string[] };
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   allowRestrictiveAllowlistBypass?: boolean;
 }): boolean {
   if (!isManifestPluginOwnerAllowedByControlPlanePolicy(params)) {
@@ -95,7 +95,7 @@ export function listAvailableManifestContractPlugins(params: {
   snapshot: Pick<PluginMetadataSnapshot, "index" | "plugins">;
   contract: PluginManifestContractListKey;
   value?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): PluginManifestRecord[] {
   return params.snapshot.plugins.filter(
     (plugin) =>
@@ -115,7 +115,7 @@ export function listAvailableManifestContractPlugins(params: {
 export function listAvailableManifestContractValues(params: {
   snapshot: Pick<PluginMetadataSnapshot, "index" | "plugins">;
   contract: PluginManifestContractListKey;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): string[] {
   const values = new Set<string>();
   for (const plugin of listAvailableManifestContractPlugins(params)) {
@@ -127,7 +127,7 @@ export function listAvailableManifestContractValues(params: {
 }
 
 export function loadManifestContractSnapshot(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
 }): PluginMetadataManifestView {
@@ -139,7 +139,7 @@ export function loadManifestContractSnapshot(params: {
 }
 
 export function loadManifestMetadataRegistry(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
 }): PluginMetadataRegistryView {
@@ -151,7 +151,7 @@ export function loadManifestMetadataRegistry(params: {
 }
 
 export function loadManifestMetadataSnapshot(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
 }): PluginMetadataSnapshot {

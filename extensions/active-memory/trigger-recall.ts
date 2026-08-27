@@ -1,10 +1,10 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   stripMemoryAnnotationCarriers,
   type MemorySearchResult,
-} from "openclaw/plugin-sdk/memory-core-host-engine-storage";
-import { getActiveMemorySearchManager } from "openclaw/plugin-sdk/memory-host-search";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
+import { getActiveMemorySearchManager } from "afora-agent/plugin-sdk/memory-host-search";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { buildPromptPrefix } from "./prompt.js";
 
 const TRIGGER_CANDIDATE_LIMIT = 24;
@@ -131,7 +131,7 @@ export function buildTriggerRecallContext(matches: TriggerRecallMatch[]): string
 }
 
 type TriggerLookupParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   query: string;
   activeProjectKeys?: string[];
@@ -142,7 +142,7 @@ type TriggerLookupParams = {
 type TriggerRecallPrewarmEntry = {
   activeProjectKeys: string[];
   agentId: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   promise: Promise<MemorySearchResult[]>;
   query: string;
 };

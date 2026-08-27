@@ -7,9 +7,9 @@ import { inspectQaExecutionIdentityStorage } from "./execution-identity-storage-
 
 describe("inspectQaExecutionIdentityStorage", () => {
   it("returns only context and decision counts from the isolated QA database", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-qa-identity-counts-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-qa-identity-counts-"));
     try {
-      const databasePath = path.join(stateDir, "state", "openclaw.sqlite");
+      const databasePath = path.join(stateDir, "state", "afora.sqlite");
       await fs.mkdir(path.dirname(databasePath), { recursive: true });
       const database = new DatabaseSync(databasePath);
       database.exec(`
@@ -23,7 +23,7 @@ describe("inspectQaExecutionIdentityStorage", () => {
       expect(
         inspectQaExecutionIdentityStorage({
           gateway: {
-            runtimeEnv: { OPENCLAW_STATE_DIR: stateDir },
+            runtimeEnv: { AFORA_STATE_DIR: stateDir },
           } as never,
         }),
       ).toEqual({ contextCount: 2, decisionCount: 1 });

@@ -41,12 +41,12 @@ export function beginSecretsRuntimeIsolationForTest(): SecretsRuntimeEnvSnapshot
   secretsRuntimePluginMocks.resolvePluginWebSearchProvidersMock.mockReset();
   secretsRuntimePluginMocks.resolvePluginWebSearchProvidersMock.mockReturnValue([]);
   const envSnapshot = captureEnv([
-    "OPENCLAW_BUNDLED_PLUGINS_DIR",
-    "OPENCLAW_DISABLE_BUNDLED_PLUGINS",
-    "OPENCLAW_VERSION",
+    "AFORA_BUNDLED_PLUGINS_DIR",
+    "AFORA_DISABLE_BUNDLED_PLUGINS",
+    "AFORA_VERSION",
   ]);
-  delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
-  delete process.env.OPENCLAW_VERSION;
+  delete process.env.AFORA_BUNDLED_PLUGINS_DIR;
+  delete process.env.AFORA_VERSION;
   return envSnapshot;
 }
 

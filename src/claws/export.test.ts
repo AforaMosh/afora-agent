@@ -4,9 +4,9 @@ import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
 import type { McpServerConfig } from "../config/types.mcp.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { PLUGIN_ARTIFACT_ADAPTER_IDENTITY } from "../plugins/install-artifact-inspection.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { applyClawAddPlan } from "./add.js";
 import { exportClawAgent } from "./export.js";
 import { buildClawAddPlan } from "./lifecycle.js";
@@ -18,7 +18,7 @@ import {
 } from "./provenance.js";
 import { readClawManifestFile } from "./reader.js";
 import { parseClawManifest } from "./schema.js";
-import type { ClawOpenClawProfile, ClawSourceIdentity } from "./types.js";
+import type { ClawAforaProfile, ClawSourceIdentity } from "./types.js";
 
 const lifecycleStateTestControl = vi.hoisted(() => ({
   afterRead: undefined as (() => Promise<void>) | undefined,
@@ -51,7 +51,7 @@ vi.mock("./source-limits.js", async (importOriginal) => {
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   lifecycleStateTestControl.afterRead = undefined;
   vi.unstubAllEnvs();
 });
@@ -67,7 +67,7 @@ async function installedFixture(
     withPackage?: boolean;
   } = {},
 ) {
-  const root = tempDirs.make("openclaw-claw-export-");
+  const root = tempDirs.make("afora-claw-export-");
   await mkdir(join(root, "source", "reference"), { recursive: true });
   const content = (label: string) => `managed ${label}\n`;
   await writeFile(join(root, "source", "SOUL.md"), options.soulContent ?? content("soul"));
@@ -114,7 +114,7 @@ async function installedFixture(
   if (!parsed.ok) {
     throw new Error(JSON.stringify(parsed.diagnostics));
   }
-  const openClawProfile: ClawOpenClawProfile = {
+  const aforaProfile: ClawAforaProfile = {
     schemaVersion: 1,
     agent: {
       tools: {
@@ -137,7 +137,7 @@ async function installedFixture(
     name: "@acme/worker",
     version: "1.2.3",
     packageRoot: root,
-    manifestPath: join(root, "openclaw.claw.json"),
+    manifestPath: join(root, "afora.claw.json"),
     integrityKind: "artifact",
     integrity: "sha256:manifest",
     byteLength: 100,
@@ -162,13 +162,13 @@ async function installedFixture(
           },
         }
       : {}),
-    openClawProfile,
+    aforaProfile,
     context: { workspace: join(root, "workspace-worker") },
   });
-  let config: OpenClawConfig = {};
+  let config: AforaConfig = {};
   await applyClawAddPlan(plan, {
     consentPlanIntegrity: plan.planIntegrity,
-    env: { OPENCLAW_STATE_DIR: join(root, "state") },
+    env: { AFORA_STATE_DIR: join(root, "state") },
     commitConfig: async (transform) => {
       config = transform(config);
     },
@@ -193,14 +193,14 @@ async function installedFixture(
         version: "2.0.0",
         integrity: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       },
-      { env: { OPENCLAW_STATE_DIR: join(root, "state") } },
+      { env: { AFORA_STATE_DIR: join(root, "state") } },
     );
   }
   return {
     root,
     plan,
     config,
-    env: { OPENCLAW_STATE_DIR: join(root, "state") },
+    env: { AFORA_STATE_DIR: join(root, "state") },
     packageDeps: {
       planSkill: async () => ({
         ok: true as const,
@@ -250,12 +250,12 @@ describe("exportClawAgent", () => {
       sourceMcpServers: fixture.sourceMcpServers,
     });
 
-    expect(result.openClawProfile?.agent.tools).toMatchObject({
+    expect(result.aforaProfile?.agent.tools).toMatchObject({
       profile: "full",
       allow: expect.arrayContaining(["session_status"]),
       deny: ["exec"],
     });
-    expect(result.openClawProfile?.agent.tools).not.toHaveProperty("alsoAllow");
+    expect(result.aforaProfile?.agent.tools).not.toHaveProperty("alsoAllow");
   });
 
   it("rejects export of an unbounded legacy full profile", async () => {
@@ -314,7 +314,7 @@ describe("exportClawAgent", () => {
     });
 
     expect(result).toMatchObject({
-      schemaVersion: "openclaw.clawExportResult.v1",
+      schemaVersion: "afora.clawExportResult.v1",
       stability: "experimental",
       agentId: "worker",
       manifest: {
@@ -353,7 +353,7 @@ describe("exportClawAgent", () => {
           },
         ],
       },
-      openClawProfile: {
+      aforaProfile: {
         schemaVersion: 1,
         agent: {
           tools: {
@@ -371,8 +371,8 @@ describe("exportClawAgent", () => {
     });
     const packageJson = JSON.parse(await readFile(join(out, "package.json"), "utf8"));
     expect(packageJson).toMatchObject({
-      name: "openclaw-claw-worker",
-      openclaw: { claw: "CLAW.md" },
+      name: "afora-claw-worker",
+      afora: { claw: "CLAW.md" },
     });
     expect(packageJson.version).toMatch(/^0\.0\.0-export\.[0-9a-f]{64}$/);
     const clawMarkdown = await readFile(join(out, "CLAW.md"), "utf8");
@@ -385,13 +385,13 @@ describe("exportClawAgent", () => {
     }
     expect(exported.clawMarkdownBody?.toString("utf8")).toBe("managed soul\n");
     expect(exported.manifest.metadata).toEqual({});
-    expect(exported.openClawProfile).toMatchObject({
+    expect(exported.aforaProfile).toMatchObject({
       schemaVersion: 1,
       agent: { tools: fixture.plan.agent.config.tools },
     });
-    expect(exported.openClawProfile?.agent.tools).not.toHaveProperty("alsoAllow");
+    expect(exported.aforaProfile?.agent.tools).not.toHaveProperty("alsoAllow");
     expect(exported.manifest.workspace.bootstrapFiles).not.toHaveProperty("SOUL.md");
-    await expect(readFile(join(out, "profiles", "openclaw.yml"), "utf8")).resolves.toContain(
+    await expect(readFile(join(out, "profiles", "afora.yml"), "utf8")).resolves.toContain(
       "profile: full",
     );
     await expect(readFile(join(out, "workspace", "SOUL.md"), "utf8")).rejects.toThrow();
@@ -439,7 +439,7 @@ describe("exportClawAgent", () => {
     expect(result.manifest.workspace.files).toContainEqual(
       expect.objectContaining({ path: "reference/policy.md" }),
     );
-    expect(result.openClawProfile).toMatchObject({
+    expect(result.aforaProfile).toMatchObject({
       schemaVersion: 1,
       extensions: [
         {

@@ -1,6 +1,6 @@
 // Owns hook-pack probing and plugin-to-hook fallback during plugin installation.
 import fs from "node:fs";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { theme } from "../../packages/terminal-core/src/theme.js";
 import {
   installHooksFromNpmSpec,

@@ -2,8 +2,8 @@
 name: graincrawl
 description: "Granola archive: search, sync freshness, notes, transcripts, panels, SQL counts, and Graincrawl repo work."
 metadata:
-  openclaw:
-    homepage: https://github.com/openclaw/graincrawl
+  afora:
+    homepage: https://github.com/afora/graincrawl
     requires:
       bins:
         - graincrawl

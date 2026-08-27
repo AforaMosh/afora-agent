@@ -2,8 +2,8 @@
 import { rmSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import { sanitizeTerminalText } from "openclaw/plugin-sdk/test-fixtures";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+import { sanitizeTerminalText } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { loginWeb } from "./login.js";
 import { renderQrTerminal } from "./qr-terminal.js";
@@ -11,17 +11,17 @@ import { createWaSocket, formatError, waitForWaConnection } from "./session.js";
 
 const rmMock = vi.spyOn(fs, "rm");
 const testState = vi.hoisted(() => ({
-  authDir: `${(process.env.TMPDIR ?? "/tmp").replace(/\/+$/, "")}/openclaw-wa-creds-${process.pid}-${Math.random().toString(16).slice(2)}`,
+  authDir: `${(process.env.TMPDIR ?? "/tmp").replace(/\/+$/, "")}/afora-wa-creds-${process.pid}-${Math.random().toString(16).slice(2)}`,
 }));
 
 function resolveTestAuthDir() {
   return testState.authDir;
 }
 
-vi.mock("openclaw/plugin-sdk/runtime-config-snapshot", async () => {
+vi.mock("afora-agent/plugin-sdk/runtime-config-snapshot", async () => {
   const actual = await vi.importActual<
-    typeof import("openclaw/plugin-sdk/runtime-config-snapshot")
-  >("openclaw/plugin-sdk/runtime-config-snapshot");
+    typeof import("afora-agent/plugin-sdk/runtime-config-snapshot")
+  >("afora-agent/plugin-sdk/runtime-config-snapshot");
   return {
     ...actual,
     getRuntimeConfig: () =>

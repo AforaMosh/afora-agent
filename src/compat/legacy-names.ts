@@ -1,6 +1,6 @@
-// Product/package naming constants that bridge current OpenClaw manifests with
+// Product/package naming constants that bridge current Afora manifests with
 // legacy Clawdbot keys still seen in older configs and packages.
-const PROJECT_NAME = "openclaw" as const;
+const PROJECT_NAME = "afora" as const;
 
 const LEGACY_PROJECT_NAMES = ["clawdbot"] as const;
 

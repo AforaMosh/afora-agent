@@ -49,12 +49,12 @@ switch (scenario) {
     expectEqual("gateway.auth.mode", cfg?.gateway?.auth?.mode, "token");
     expectEqual("gateway.auth.token.source", cfg?.gateway?.auth?.token?.source, "env");
     expectEqual("gateway.auth.token.provider", cfg?.gateway?.auth?.token?.provider, "default");
-    expectEqual("gateway.auth.token.id", cfg?.gateway?.auth?.token?.id, "OPENCLAW_GATEWAY_TOKEN");
+    expectEqual("gateway.auth.token.id", cfg?.gateway?.auth?.token?.id, "AFORA_GATEWAY_TOKEN");
     break;
   case "local-password":
     assertLocalWizard();
     expectEqual("gateway.auth.mode", cfg?.gateway?.auth?.mode, "password");
-    if (cfg?.gateway?.auth?.password !== "openclaw-onboard-password-e2e") {
+    if (cfg?.gateway?.auth?.password !== "afora-onboard-password-e2e") {
       errors.push("gateway.auth.password mismatch");
     }
     break;

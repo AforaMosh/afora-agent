@@ -3,13 +3,13 @@ import crypto from "node:crypto";
 import {
   parseStrictNonNegativeInteger,
   parseDateStringTimestampMs,
-} from "openclaw/plugin-sdk/number-runtime";
+} from "afora-agent/plugin-sdk/number-runtime";
 import {
   isRecord,
   normalizeOptionalString,
   normalizeStringEntries,
   uniqueStrings,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { getMSTeamsRuntime } from "./runtime.js";
 import {
   resolveMSTeamsSqliteStateEnv,
@@ -127,15 +127,15 @@ export function extractMSTeamsPollVote(
     return null;
   }
   const pollId =
-    readNestedString(value, ["openclawPollId"]) ??
+    readNestedString(value, ["aforaPollId"]) ??
     readNestedString(value, ["pollId"]) ??
-    readNestedString(value, ["openclaw", "pollId"]) ??
-    readNestedString(value, ["openclaw", "poll", "id"]) ??
-    readNestedString(value, ["data", "openclawPollId"]) ??
+    readNestedString(value, ["afora", "pollId"]) ??
+    readNestedString(value, ["afora", "poll", "id"]) ??
+    readNestedString(value, ["data", "aforaPollId"]) ??
     readNestedString(value, ["data", "pollId"]) ??
-    readNestedString(value, ["data", "openclaw", "pollId"]) ??
+    readNestedString(value, ["data", "afora", "pollId"]) ??
     // Action.Execute (Universal Action Model) payload shape: value.action.data
-    readNestedString(value, ["action", "data", "openclawPollId"]) ??
+    readNestedString(value, ["action", "data", "aforaPollId"]) ??
     readNestedString(value, ["action", "data", "pollId"]);
   if (!pollId) {
     return null;
@@ -217,9 +217,9 @@ export function buildMSTeamsPollCard(params: {
       {
         type: "Action.Execute",
         title: "Vote",
-        verb: "openclaw.poll.vote",
+        verb: "afora.poll.vote",
         data: {
-          openclawPollId: pollId,
+          aforaPollId: pollId,
           pollId,
         },
       },

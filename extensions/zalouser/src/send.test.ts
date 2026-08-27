@@ -1,5 +1,5 @@
 // Zalouser tests cover send plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createZalouserSendReceipt } from "./send-receipt.js";
 import {
@@ -397,12 +397,12 @@ describe("zalouser send helpers", () => {
   it("delegates link helper to JS transport", async () => {
     mockSendLink.mockResolvedValueOnce(sendFailure("boom", "thread-3"));
 
-    const result = await sendLinkZalouser("thread-3", "https://openclaw.ai", {
+    const result = await sendLinkZalouser("thread-3", "https://afora.ai", {
       profile: "p3",
       isGroup: true,
     });
 
-    expect(mockSendLink).toHaveBeenCalledWith("thread-3", "https://openclaw.ai", {
+    expect(mockSendLink).toHaveBeenCalledWith("thread-3", "https://afora.ai", {
       profile: "p3",
       isGroup: true,
     });

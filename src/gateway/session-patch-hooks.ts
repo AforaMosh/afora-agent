@@ -2,7 +2,7 @@
 // Publishes internal mutation notifications after Gateway session patch calls.
 import type { SessionsPatchParams } from "../../packages/gateway-protocol/src/index.js";
 import type { SessionEntry } from "../config/sessions.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   hasInternalHookListeners,
   triggerInternalHook,
@@ -14,7 +14,7 @@ import {
 // so hook listeners cannot mutate the live session entry or patch object.
 /** Triggers internal session patch hooks when listeners are registered. */
 export function triggerSessionPatchHook(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionEntry: SessionEntry;
   sessionKey: string;
   patch: SessionsPatchParams;

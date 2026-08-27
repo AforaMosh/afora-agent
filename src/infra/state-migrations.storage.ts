@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { DatabaseSync, SQLInputValue } from "node:sqlite";
-import { expectDefined } from "@openclaw/normalization-core";
-import { asSafeIntegerInRange } from "@openclaw/normalization-core/number-coercion";
+import { expectDefined } from "@afora/normalization-core";
+import { asSafeIntegerInRange } from "@afora/normalization-core/number-coercion";
 import {
   copyPluginInstallRecordMap,
   createPluginInstallRecordMap,
@@ -18,7 +18,7 @@ import {
   INSTALLED_PLUGIN_INDEX_VERSION,
   type InstalledPluginIndex,
 } from "../plugins/installed-plugin-index.js";
-import { runOpenClawStateWriteTransaction } from "../state/openclaw-state-db.js";
+import { runAforaStateWriteTransaction } from "../state/afora-state-db.js";
 import { deliveryQueueMetadata } from "./delivery-queue-sqlite-bound.js";
 import {
   inferDeliveryQueueFailureRetention,
@@ -665,7 +665,7 @@ async function migrateLegacyTaskRunsSidecar(params: {
     let importedTasks = 0;
     let importedDeliveryStates = 0;
     let skippedOrphanDeliveryStates = 0;
-    runOpenClawStateWriteTransaction(
+    runAforaStateWriteTransaction(
       ({ db }) => {
         const taskColumns = [
           "runtime",
@@ -736,7 +736,7 @@ async function migrateLegacyTaskRunsSidecar(params: {
           throw new LegacyTaskStateSidecarConflictError(conflicts);
         }
       },
-      { env: { ...process.env, OPENCLAW_STATE_DIR: params.stateDir } },
+      { env: { ...process.env, AFORA_STATE_DIR: params.stateDir } },
     );
     if (importedTasks > 0) {
       changes.push(
@@ -799,7 +799,7 @@ async function migrateLegacyFlowRunsSidecar(params: {
   try {
     const conflicts: string[] = [];
     let imported = 0;
-    runOpenClawStateWriteTransaction(
+    runAforaStateWriteTransaction(
       ({ db }) => {
         const columns = [
           "shape",
@@ -839,7 +839,7 @@ async function migrateLegacyFlowRunsSidecar(params: {
           throw new LegacyTaskStateSidecarConflictError(conflicts);
         }
       },
-      { env: { ...process.env, OPENCLAW_STATE_DIR: params.stateDir } },
+      { env: { ...process.env, AFORA_STATE_DIR: params.stateDir } },
     );
     if (imported > 0) {
       changes.push(
@@ -1069,7 +1069,7 @@ export async function migrateLegacyDeliveryQueues(params: {
     let skipped = 0;
     const conflicts: string[] = [];
     try {
-      runOpenClawStateWriteTransaction(
+      runAforaStateWriteTransaction(
         ({ db }) => {
           const insert = db.prepare(
             `
@@ -1124,7 +1124,7 @@ export async function migrateLegacyDeliveryQueues(params: {
             imported++;
           }
         },
-        { env: { ...process.env, OPENCLAW_STATE_DIR: params.stateDir } },
+        { env: { ...process.env, AFORA_STATE_DIR: params.stateDir } },
       );
     } catch (err) {
       warnings.push(`Failed migrating ${queue.label} ${queueDir}: ${String(err)}`);

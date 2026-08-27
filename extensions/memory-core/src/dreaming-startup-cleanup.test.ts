@@ -1,13 +1,13 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
-import { getSessionEntry, upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
+import { getSessionEntry, upsertSessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
 import {
   appendSqliteSessionTranscriptEventForTest,
-  closeOpenClawAgentDatabasesForTest,
-} from "openclaw/plugin-sdk/sqlite-runtime-testing";
+  closeAforaAgentDatabasesForTest,
+} from "afora-agent/plugin-sdk/sqlite-runtime-testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { registerShortTermPromotionDreaming } from "./dreaming.js";
 
@@ -19,14 +19,14 @@ let stateDir: string;
 let stopGateway: (() => Promise<void>) | undefined;
 
 beforeEach(async () => {
-  stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-dreaming-startup-"));
-  vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+  stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-dreaming-startup-"));
+  vi.stubEnv("AFORA_STATE_DIR", stateDir);
 });
 
 afterEach(async () => {
   await stopGateway?.();
   stopGateway = undefined;
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
   vi.useRealTimers();
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
@@ -51,7 +51,7 @@ function createGateway(
       },
     },
     ...(params.sessionStore ? { session: { store: params.sessionStore } } : {}),
-  } as OpenClawConfig;
+  } as AforaConfig;
   const hooks = new Map<string, GatewayHook>();
   const logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
   const cron = {
@@ -72,7 +72,7 @@ function createGateway(
     logger,
     runtime: { config: { current: () => config } },
     on: (eventName: string, hook: GatewayHook) => hooks.set(eventName, hook),
-  } as unknown as OpenClawPluginApi;
+  } as unknown as AforaPluginApi;
   registerShortTermPromotionDreaming(api);
 
   const start = async () => {

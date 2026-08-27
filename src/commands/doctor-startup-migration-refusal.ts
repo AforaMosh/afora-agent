@@ -10,9 +10,9 @@ export function formatStartupMigrationFailure(params: {
     ...params.blockers.map((blocker) => `- ${blocker}`),
   ];
   return [
-    "OpenClaw startup migrations did not complete cleanly; refusing to report the gateway ready.",
+    "Afora startup migrations did not complete cleanly; refusing to report the gateway ready.",
     ...details,
-    'Run "openclaw doctor --fix" against the same state/config, then restart the gateway.',
+    'Run "afora doctor --fix" against the same state/config, then restart the gateway.',
   ].join("\n");
 }
 
@@ -24,13 +24,13 @@ export function throwStartupMigrationRefusal(message: string): never {
 
 export function throwStartupMigrationGuardRejected(): never {
   throw new Error(
-    "OpenClaw startup migrations were skipped because the selected config changed during startup; refusing to report the gateway ready. Retry startup so the new config can be validated.",
+    "Afora startup migrations were skipped because the selected config changed during startup; refusing to report the gateway ready. Retry startup so the new config can be validated.",
   );
 }
 
 export function throwStartupMigrationIdentityChanged(): never {
   throwStartupMigrationRefusal(
-    "OpenClaw plugin migration inputs changed during startup convergence; refusing to report the gateway ready. Restart OpenClaw so state migrations run against the final config and plugin inventory.",
+    "Afora plugin migration inputs changed during startup convergence; refusing to report the gateway ready. Restart Afora so state migrations run against the final config and plugin inventory.",
   );
 }
 
@@ -53,7 +53,7 @@ export async function describeLiveGatewayOwnerStartupBlocker(
   if (!activeGateway) {
     return undefined;
   }
-  return `Another gateway (pid ${activeGateway.pid}) already owns this state directory; refusing to run automatic startup migrations or report the gateway ready. Stop it with "openclaw gateway stop" (or select a different OPENCLAW_STATE_DIR), then retry startup.`;
+  return `Another gateway (pid ${activeGateway.pid}) already owns this state directory; refusing to run automatic startup migrations or report the gateway ready. Stop it with "afora gateway stop" (or select a different AFORA_STATE_DIR), then retry startup.`;
 }
 
 export async function refuseStartupMigrationsForLiveGatewayOwner(

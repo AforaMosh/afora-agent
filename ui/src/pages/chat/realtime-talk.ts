@@ -1,6 +1,6 @@
 // Control UI chat module implements realtime talk behavior.
-import { DEFAULT_GATEWAY_REQUEST_TIMEOUT_MS } from "@openclaw/gateway-client/browser";
-import type { TalkCatalogResult } from "@openclaw/gateway-protocol";
+import { DEFAULT_GATEWAY_REQUEST_TIMEOUT_MS } from "@afora/gateway-client/browser";
+import type { TalkCatalogResult } from "@afora/gateway-protocol";
 import { normalizeTalkTransport } from "../../../../src/talk/talk-session-controller.js";
 import {
   normalizeVoiceTranscriptText,

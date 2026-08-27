@@ -8,7 +8,7 @@ import { saveCronStore } from "./store.js";
 import type { CronJob } from "./types.js";
 
 const noopLogger = createNoopLogger();
-const { makeStorePath } = createCronStoreHarness({ prefix: "openclaw-cron-tight-loop-" });
+const { makeStorePath } = createCronStoreHarness({ prefix: "afora-cron-tight-loop-" });
 
 /**
  * Create a cron job that is past-due AND has a stuck `runningAtMs` marker.

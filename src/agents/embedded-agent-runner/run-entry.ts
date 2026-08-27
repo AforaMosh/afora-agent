@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ContextEngineHostSupport } from "../../context-engine/host-compat.js";
 import { requireActivePluginRegistry } from "../../plugins/runtime.js";
 import { buildAgentRunTerminalOutcome } from "../agent-run-terminal-outcome.js";
@@ -91,7 +91,7 @@ type EmbeddedAgentRunEntryResult<T extends EmbeddedAgentRunResult> = {
 
 type EmbeddedAgentRunEntryParams<T extends EmbeddedAgentRunResult> = {
   selection: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     provider: string;
     model: string;
     requestedRouteResolution?: ModelFallbackRouteResolution;

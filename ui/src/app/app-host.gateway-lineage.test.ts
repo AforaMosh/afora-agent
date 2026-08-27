@@ -47,7 +47,7 @@ function renderGatewaySurface(
     history.replaceState({}, "", `?view=${documentView}`);
   }
   try {
-    const app = document.createElement("openclaw-app") as unknown as {
+    const app = document.createElement("afora-app") as unknown as {
       runtime: Pick<ApplicationRuntime, "context" | "documentMode">;
       render: () => { strings: readonly string[] };
       synchronizeGateway: (gateway: ApplicationGateway) => void;
@@ -85,8 +85,8 @@ describe("Control UI Gateway target lineage", () => {
 
     const surface = renderGatewaySurface(gateway);
 
-    expect(surface).toContain("<openclaw-login-gate");
-    expect(surface).not.toContain("<openclaw-app-shell");
+    expect(surface).toContain("<afora-login-gate");
+    expect(surface).not.toContain("<afora-app-shell");
   });
 
   it("keeps retryable Gateway startup on the initial progress surface", () => {
@@ -110,7 +110,7 @@ describe("Control UI Gateway target lineage", () => {
     expect(gateway.snapshot.phase).toBe("starting");
     expect(surface).toContain('class="connect-splash"');
     expect(surface).toContain("Gateway starting…");
-    expect(surface).not.toContain("<openclaw-login-gate");
+    expect(surface).not.toContain("<afora-login-gate");
   });
 
   it("shows startup progress after a manual connection attempt", () => {
@@ -121,7 +121,7 @@ describe("Control UI Gateway target lineage", () => {
       reason: "manual connection required",
       willRetry: true,
     });
-    const app = document.createElement("openclaw-app") as unknown as {
+    const app = document.createElement("afora-app") as unknown as {
       runtime: Pick<ApplicationRuntime, "context" | "documentMode">;
       render: () => { strings: readonly string[] };
       synchronizeGateway: (gateway: ApplicationGateway) => void;
@@ -138,7 +138,7 @@ describe("Control UI Gateway target lineage", () => {
     app.synchronizeGateway(gateway);
     const container = document.createElement("div");
     render(app.render(), container);
-    const loginGate = container.querySelector("openclaw-login-gate") as unknown as {
+    const loginGate = container.querySelector("afora-login-gate") as unknown as {
       props: { onConnect: () => void };
     };
 
@@ -158,11 +158,11 @@ describe("Control UI Gateway target lineage", () => {
     render(app.render(), container);
 
     expect(container.innerHTML).toContain("Gateway starting…");
-    expect(container.innerHTML).not.toContain("<openclaw-login-gate");
+    expect(container.innerHTML).not.toContain("<afora-login-gate");
 
     clients[1]?.opts.onHello?.(HELLO);
     render(app.render(), container);
-    expect(container.innerHTML).toContain("<openclaw-app-shell");
+    expect(container.innerHTML).toContain("<afora-app-shell");
   });
 
   it.each(["desktop", "terminal"] as const)(
@@ -198,8 +198,8 @@ describe("Control UI Gateway target lineage", () => {
 
     const surface = renderGatewaySurface(gateway);
 
-    expect(surface).toContain("<openclaw-app-shell");
-    expect(surface).not.toContain("<openclaw-login-gate");
+    expect(surface).toContain("<afora-app-shell");
+    expect(surface).not.toContain("<afora-login-gate");
   });
 
   it("retains a replacement Gateway's dashboard after its own successful hello", () => {
@@ -212,7 +212,7 @@ describe("Control UI Gateway target lineage", () => {
 
     const surface = renderGatewaySurface(gateway);
 
-    expect(surface).toContain("<openclaw-app-shell");
-    expect(surface).not.toContain("<openclaw-login-gate");
+    expect(surface).toContain("<afora-app-shell");
+    expect(surface).not.toContain("<afora-login-gate");
   });
 });

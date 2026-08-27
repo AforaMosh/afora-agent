@@ -1,7 +1,7 @@
 // Imported by register.test.ts to keep its mocked suite in one Vitest module graph.
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
-import { runDoctorLintChecks, type OpenClawConfig } from "openclaw/plugin-sdk/health";
+import { runDoctorLintChecks, type AforaConfig } from "afora-agent/plugin-sdk/health";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { collectPolicyEvidence } from "../policy-state.js";
 import { registerPolicyDoctorChecks } from "./register.js";
@@ -24,7 +24,7 @@ function writeDataHandlingPolicyFixture(dataHandling: object): Promise<string> {
   return writePolicyFixture({ dataHandling });
 }
 
-function runRegisteredPolicyDoctor(configPath: string, cfg: OpenClawConfig) {
+function runRegisteredPolicyDoctor(configPath: string, cfg: AforaConfig) {
   registerPolicyDoctorChecks();
   return runDoctorLintChecks(ctx(configPath, cfg));
 }
@@ -48,7 +48,7 @@ describe("registerPolicyDoctorChecks", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture({
       gateway: {
         http: {
@@ -71,7 +71,7 @@ describe("registerPolicyDoctorChecks", () => {
           oauth: { provider: "github", mode: "oauth" },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture({
       auth: {
         profiles: { requireMetadata: ["provider", "mode"], allowModes: ["api_key", "token"] },
@@ -84,13 +84,13 @@ describe("registerPolicyDoctorChecks", () => {
       expect.objectContaining({
         checkId: "policy/auth-profile-invalid-metadata",
         severity: "error",
-        ocPath: "oc://openclaw.config/auth/profiles/missingMode",
+        ocPath: "oc://afora.config/auth/profiles/missingMode",
         requirement: "oc://policy.jsonc/auth/profiles/requireMetadata",
       }),
       expect.objectContaining({
         checkId: "policy/auth-profile-unapproved-mode",
         severity: "error",
-        ocPath: "oc://openclaw.config/auth/profiles/oauth",
+        ocPath: "oc://afora.config/auth/profiles/oauth",
         requirement: "oc://policy.jsonc/auth/profiles/allowModes",
       }),
     ]);
@@ -102,7 +102,7 @@ describe("registerPolicyDoctorChecks", () => {
       diagnostics: { otel: { enabled: true, captureContent: true } },
       session: { maintenance: { mode: "warn" } },
       memory: { search: { rememberAcrossConversations: true, sources: ["sessions"] } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writeDataHandlingPolicyFixture({
       sensitiveLogging: { requireRedaction: true },
       telemetry: { denyContentCapture: true },
@@ -117,22 +117,22 @@ describe("registerPolicyDoctorChecks", () => {
       expect.arrayContaining([
         expect.objectContaining({
           kind: "sensitiveLoggingRedaction",
-          source: "oc://openclaw.invariant/logging/redaction",
+          source: "oc://afora.invariant/logging/redaction",
           value: true,
         }),
         expect.objectContaining({
           kind: "telemetryContentCapture",
-          source: "oc://openclaw.config/diagnostics/otel/captureContent",
+          source: "oc://afora.config/diagnostics/otel/captureContent",
           value: true,
         }),
         expect.objectContaining({
           kind: "sessionRetentionMode",
-          source: "oc://openclaw.config/session/maintenance/mode",
+          source: "oc://afora.config/session/maintenance/mode",
           value: "warn",
         }),
         expect.objectContaining({
           kind: "memorySessionTranscriptIndexing",
-          source: "oc://openclaw.config/memory/search/rememberAcrossConversations",
+          source: "oc://afora.config/memory/search/rememberAcrossConversations",
           value: true,
         }),
       ]),
@@ -141,17 +141,17 @@ describe("registerPolicyDoctorChecks", () => {
       expect.arrayContaining([
         expect.objectContaining({
           checkId: "policy/data-handling-telemetry-content-capture",
-          ocPath: "oc://openclaw.config/diagnostics/otel/captureContent",
+          ocPath: "oc://afora.config/diagnostics/otel/captureContent",
           requirement: "oc://policy.jsonc/dataHandling/telemetry/denyContentCapture",
         }),
         expect.objectContaining({
           checkId: "policy/data-handling-session-retention-not-enforced",
-          ocPath: "oc://openclaw.config/session/maintenance/mode",
+          ocPath: "oc://afora.config/session/maintenance/mode",
           requirement: "oc://policy.jsonc/dataHandling/retention/requireSessionMaintenance",
         }),
         expect.objectContaining({
           checkId: "policy/data-handling-session-transcript-memory-enabled",
-          ocPath: "oc://openclaw.config/memory/search/rememberAcrossConversations",
+          ocPath: "oc://afora.config/memory/search/rememberAcrossConversations",
           requirement: "oc://policy.jsonc/dataHandling/memory/denySessionTranscriptIndexing",
         }),
       ]),
@@ -162,7 +162,7 @@ describe("registerPolicyDoctorChecks", () => {
     const cfg = {
       ...cfgWithPolicy(),
       session: {},
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writeDataHandlingPolicyFixture({
       retention: { requireSessionMaintenance: true },
     });
@@ -174,7 +174,7 @@ describe("registerPolicyDoctorChecks", () => {
       expect.arrayContaining([
         expect.objectContaining({
           kind: "sessionRetentionMode",
-          source: "oc://openclaw.config/session/maintenance/mode",
+          source: "oc://afora.config/session/maintenance/mode",
           value: "enforce",
           explicit: false,
         }),
@@ -187,7 +187,7 @@ describe("registerPolicyDoctorChecks", () => {
     const cfg = {
       ...cfgWithPolicy(),
       diagnostics: { otel: { captureContent: false } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writeDataHandlingPolicyFixture({
       telemetry: { denyContentCapture: true },
     });
@@ -204,7 +204,7 @@ describe("registerPolicyDoctorChecks", () => {
         enabled: false,
         otel: { enabled: true, captureContent: true },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writeDataHandlingPolicyFixture({
       telemetry: { denyContentCapture: true },
     });
@@ -220,7 +220,7 @@ describe("registerPolicyDoctorChecks", () => {
       diagnostics: {
         otel: { enabled: true, traces: false, logs: true, captureContent: true },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writeDataHandlingPolicyFixture({
       telemetry: { denyContentCapture: true },
     });
@@ -230,7 +230,7 @@ describe("registerPolicyDoctorChecks", () => {
     expect(result.findings).toEqual([
       expect.objectContaining({
         checkId: "policy/data-handling-telemetry-content-capture",
-        ocPath: "oc://openclaw.config/diagnostics/otel/captureContent",
+        ocPath: "oc://afora.config/diagnostics/otel/captureContent",
       }),
     ]);
   });
@@ -248,7 +248,7 @@ describe("registerPolicyDoctorChecks", () => {
           buddy: { memory: { search: { rememberAcrossConversations: false } } },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture({
       scopes: {
         restricted: {
@@ -263,7 +263,7 @@ describe("registerPolicyDoctorChecks", () => {
     expect(result.findings).toEqual([
       expect.objectContaining({
         checkId: "policy/data-handling-session-transcript-memory-enabled",
-        ocPath: "oc://openclaw.config/memory/search/rememberAcrossConversations",
+        ocPath: "oc://afora.config/memory/search/rememberAcrossConversations",
         requirement:
           "oc://policy.jsonc/scopes/restricted/dataHandling/memory/denySessionTranscriptIndexing",
       }),
@@ -276,7 +276,7 @@ describe("registerPolicyDoctorChecks", () => {
       memory: {
         search: { rememberAcrossConversations: true, sources: ["sessions"] },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture({
       scopes: {
         restricted: {
@@ -291,7 +291,7 @@ describe("registerPolicyDoctorChecks", () => {
     expect(result.findings).toEqual([
       expect.objectContaining({
         checkId: "policy/data-handling-session-transcript-memory-enabled",
-        ocPath: "oc://openclaw.config/memory/search/rememberAcrossConversations",
+        ocPath: "oc://afora.config/memory/search/rememberAcrossConversations",
         requirement:
           "oc://policy.jsonc/scopes/restricted/dataHandling/memory/denySessionTranscriptIndexing",
       }),
@@ -308,7 +308,7 @@ describe("registerPolicyDoctorChecks", () => {
           sources: ["sessions"],
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writeDataHandlingPolicyFixture({
       memory: { denySessionTranscriptIndexing: true },
     });
@@ -394,7 +394,7 @@ describe("registerPolicyDoctorChecks", () => {
       join(workspaceDir, "exec-approvals.json"),
       JSON.stringify({
         version: 1,
-        socket: { path: "/tmp/openclaw.sock", token: "secret-token" },
+        socket: { path: "/tmp/afora.sock", token: "secret-token" },
         defaults: { security: "full" },
         agents: {
           sebby: {
@@ -887,10 +887,10 @@ describe("registerPolicyDoctorChecks", () => {
     ]);
   });
 
-  it("uses OPENCLAW_HOME for the default exec approvals artifact path", async () => {
-    const openclawHome = join(workspaceDir, "home");
-    const approvalsDir = join(openclawHome, ".openclaw");
-    const previousOpenClawHome = process.env.OPENCLAW_HOME;
+  it("uses AFORA_HOME for the default exec approvals artifact path", async () => {
+    const aforaHome = join(workspaceDir, "home");
+    const approvalsDir = join(aforaHome, ".afora");
+    const previousAforaHome = process.env.AFORA_HOME;
     await fs.mkdir(approvalsDir, { recursive: true });
     const configPath = await writeExecApprovalsPolicyFixture({
       defaults: { allowSecurity: ["deny"] },
@@ -901,7 +901,7 @@ describe("registerPolicyDoctorChecks", () => {
       "utf-8",
     );
 
-    process.env.OPENCLAW_HOME = openclawHome;
+    process.env.AFORA_HOME = aforaHome;
     try {
       const result = await runRegisteredPolicyDoctor(configPath, cfgWithPolicy());
 
@@ -912,15 +912,15 @@ describe("registerPolicyDoctorChecks", () => {
         }),
       ]);
     } finally {
-      if (previousOpenClawHome === undefined) {
-        delete process.env.OPENCLAW_HOME;
+      if (previousAforaHome === undefined) {
+        delete process.env.AFORA_HOME;
       } else {
-        process.env.OPENCLAW_HOME = previousOpenClawHome;
+        process.env.AFORA_HOME = previousAforaHome;
       }
     }
   });
 
-  it("uses OPENCLAW_STATE_DIR for the exec approvals artifact path", async () => {
+  it("uses AFORA_STATE_DIR for the exec approvals artifact path", async () => {
     const stateDir = join(workspaceDir, "state");
     await fs.mkdir(stateDir, { recursive: true });
     const configPath = await writeExecApprovalsPolicyFixture({
@@ -937,7 +937,7 @@ describe("registerPolicyDoctorChecks", () => {
       "utf-8",
     );
 
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+    process.env.AFORA_STATE_DIR = stateDir;
 
     const result = await runRegisteredPolicyDoctor(configPath, cfgWithPolicy());
 
@@ -1044,7 +1044,7 @@ describe("registerPolicyDoctorChecks", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture({
       secrets: {
         requireManagedProviders: true,
@@ -1062,7 +1062,7 @@ describe("registerPolicyDoctorChecks", () => {
       expect.arrayContaining([
         expect.objectContaining({
           checkId: "policy/secrets-unmanaged-provider",
-          ocPath: "oc://openclaw.config/models/providers/openai/apiKey",
+          ocPath: "oc://afora.config/models/providers/openai/apiKey",
         }),
         expect.objectContaining({
           checkId: "policy/policy-jsonc-invalid",
@@ -1132,7 +1132,7 @@ describe("registerPolicyDoctorChecks", () => {
           allowPrivateNetwork: true,
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const configPath = await writePolicyFixture({
       network: {
         privateNetwork: { allow: true },
@@ -1152,7 +1152,7 @@ describe("registerPolicyDoctorChecks", () => {
           openrouter: {},
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const configPath = await writePolicyFixture({
       network: {
         privateNetwork: { allow: false },

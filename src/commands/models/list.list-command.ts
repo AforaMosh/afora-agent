@@ -1,5 +1,5 @@
-/** Implementation of `openclaw models list`. */
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+/** Implementation of `afora models list`. */
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { sanitizeTerminalText } from "../../../packages/terminal-core/src/safe-text.js";
 import { DEFAULT_PROVIDER } from "../../agents/defaults.js";
 import { parseModelRef } from "../../agents/model-selection-normalize.js";
@@ -119,7 +119,7 @@ export async function modelsListCommand(
     );
     if (!knownProviderIds.has(providerFilter)) {
       runtime.error(
-        `Unknown provider filter "${sanitizeTerminalText(rawProviderFilter ?? providerFilter)}" for this installation. Run ${formatCliCommand("openclaw plugins list --json")} to see installed providers, or configure it under models.providers.`,
+        `Unknown provider filter "${sanitizeTerminalText(rawProviderFilter ?? providerFilter)}" for this installation. Run ${formatCliCommand("afora plugins list --json")} to see installed providers, or configure it under models.providers.`,
       );
       process.exitCode = 1;
       return;

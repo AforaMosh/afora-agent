@@ -2,7 +2,7 @@ import {
   MeetingPlatformAdapter,
   type MeetingBrowserJoinSession,
   type MeetingManualActionCategory,
-} from "openclaw/plugin-sdk/meeting-runtime";
+} from "afora-agent/plugin-sdk/meeting-runtime";
 import type { ZoomMeetingsMode } from "../config.js";
 import type { ZoomMeetingsChromeHealth, ZoomMeetingsTranscriptSnapshot } from "./types.js";
 import {
@@ -72,7 +72,7 @@ export const ZOOM_MEETINGS_PLATFORM_ADAPTER = MeetingPlatformAdapter.create<
     participantIdentity: (transport) =>
       transport === "chrome-node"
         ? "Zoom guest in Chrome on a paired node"
-        : "Zoom guest in the OpenClaw Chrome profile",
+        : "Zoom guest in the Afora Chrome profile",
   },
   nodeCommandName: ZOOM_MEETINGS_NODE_COMMAND,
   nodeConfigPath: "plugins.entries.zoom-meetings.config.chromeNode.node",
@@ -112,7 +112,7 @@ export const ZOOM_MEETINGS_PLATFORM_ADAPTER = MeetingPlatformAdapter.create<
       category: "browser-control-unavailable",
       reason: "browser-control-unavailable",
       message:
-        "Open the OpenClaw browser profile, finish the Zoom sign-in, admission, or permission prompt, then retry.",
+        "Open the Afora browser profile, finish the Zoom sign-in, admission, or permission prompt, then retry.",
     }),
     buildLeaveScript: (meetingUrl) =>
       zoomMeetingLeaveScript({

@@ -14,7 +14,7 @@ type CliAuthTestApi = {
 
 function getTestApi(): CliAuthTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.cliCredentialsTestApi")
+    Symbol.for("afora.cliCredentialsTestApi")
   ] as CliAuthTestApi;
 }
 

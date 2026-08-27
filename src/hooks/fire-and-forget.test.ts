@@ -1,4 +1,4 @@
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 // Fire-and-forget hook tests cover async hook execution without blocking callers.
 import { describe, expect, it, vi } from "vitest";
 import { fireAndForgetBoundedHook, fireAndForgetHook } from "./fire-and-forget.js";

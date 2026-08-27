@@ -1,4 +1,4 @@
-import { dispatchReplyWithBufferedBlockDispatcher as dispatchReplyWithBufferedBlockDispatcherRuntime } from "openclaw/plugin-sdk/reply-dispatch-runtime";
+import { dispatchReplyWithBufferedBlockDispatcher as dispatchReplyWithBufferedBlockDispatcherRuntime } from "afora-agent/plugin-sdk/reply-dispatch-runtime";
 import { expect, it, vi } from "vitest";
 import {
   expectWindowRetiredAfterFinal,
@@ -28,8 +28,8 @@ import { createTestDraftStream } from "./draft-stream.test-helpers.js";
 
 const draftWarn = vi.hoisted(() => vi.fn());
 
-vi.mock("openclaw/plugin-sdk/runtime-env", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/runtime-env")>();
+vi.mock("afora-agent/plugin-sdk/runtime-env", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/runtime-env")>();
   return {
     ...actual,
     createSubsystemLogger: (subsystem: string) => {

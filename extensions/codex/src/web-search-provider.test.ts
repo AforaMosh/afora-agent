@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { createCodexWebSearchProvider as createContractCodexWebSearchProvider } from "../web-search-contract-api.js";
 import type { CodexAppServerClient } from "./app-server/client.js";
@@ -47,7 +47,7 @@ function threadStartResult() {
       updatedAt: 1,
       status: { type: "idle" },
       path: null,
-      cwd: "/tmp/openclaw-agent",
+      cwd: "/tmp/afora-agent",
       cliVersion: "0.147.0",
       source: "unknown",
       agentNickname: null,
@@ -59,7 +59,7 @@ function threadStartResult() {
     model: "gpt-5.5",
     modelProvider: "openai",
     serviceTier: null,
-    cwd: "/tmp/openclaw-agent",
+    cwd: "/tmp/afora-agent",
     instructionSources: [],
     approvalPolicy: "on-request",
     approvalsReviewer: "user",
@@ -155,7 +155,7 @@ function createFakeClient(options?: {
   return { client, requests };
 }
 
-function createConfig(): OpenClawConfig {
+function createConfig(): AforaConfig {
   return {
     tools: {
       web: {
@@ -223,7 +223,7 @@ describe("codex web search provider", () => {
     const tool = provider.createTool({
       config,
       searchConfig: config.tools?.web?.search,
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
     });
 
     await expect(tool?.execute({ query: "plumbers in Edmonton Alberta" })).rejects.toThrow(
@@ -259,7 +259,7 @@ describe("codex web search provider", () => {
     const tool = provider.createTool({
       config,
       searchConfig: config.tools?.web?.search,
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
     });
 
     const result = await tool?.execute({ query: "plumbers in Edmonton Alberta" });
@@ -313,7 +313,7 @@ describe("codex web search provider", () => {
     });
     const threadStartCwd = (requests[1]?.params as { cwd?: string } | undefined)?.cwd;
     const isolatedCodexHome = isolatedStartOptions?.env?.CODEX_HOME;
-    expect(threadStartCwd).not.toBe("/tmp/openclaw-agent");
+    expect(threadStartCwd).not.toBe("/tmp/afora-agent");
     expect(isolatedStartOptions?.args).toEqual([
       "app-server",
       "-c",
@@ -325,7 +325,7 @@ describe("codex web search provider", () => {
     ]);
     expect(isolatedStartOptions?.clearEnv).toEqual([
       "KEEP_CLEARED",
-      "OPENCLAW_CODEX_APP_SERVER_ARGS",
+      "AFORA_CODEX_APP_SERVER_ARGS",
     ]);
     expect(isolatedCodexHome).toEqual(expect.any(String));
     if (!threadStartCwd || !isolatedCodexHome) {
@@ -348,7 +348,7 @@ describe("codex web search provider", () => {
     const tool = provider.createTool({
       config,
       searchConfig: config.tools?.web?.search,
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
     });
 
     const result = await tool?.execute({ query: "plumbers in Edmonton Alberta" });
@@ -373,7 +373,7 @@ describe("codex web search provider", () => {
     const tool = provider.createTool({
       config,
       searchConfig: config.tools?.web?.search,
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
     });
 
     await expect(tool?.execute({ query: "plumbers in Edmonton Alberta" })).rejects.toThrow(
@@ -391,7 +391,7 @@ describe("codex web search provider", () => {
     const tool = provider.createTool({
       config,
       searchConfig: config.tools?.web?.search,
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
     });
 
     await expect(tool?.execute({ query: "plumbers in Edmonton Alberta" })).rejects.toThrow(

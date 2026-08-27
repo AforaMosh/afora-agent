@@ -139,7 +139,7 @@ describe("exec safe-bin runtime policy", () => {
   it.runIf(process.platform !== "win32")(
     "expands trusted package-manager symlink dirs to current safe-bin target dirs",
     async () => {
-      await withTestDir({ prefix: "openclaw-safe-bin-trusted-symlink-" }, async (root) => {
+      await withTestDir({ prefix: "afora-safe-bin-trusted-symlink-" }, async (root) => {
         const trustedDir = path.join(root, "bin");
         const targetDir = path.join(root, "cellar", "jq", "1.7.1", "bin");
         const target = path.join(targetDir, "jq");
@@ -170,7 +170,7 @@ describe("exec safe-bin runtime policy", () => {
   it.runIf(process.platform !== "win32")(
     "refreshes trusted package-manager target dirs when safe-bin symlinks retarget",
     async () => {
-      await withTestDir({ prefix: "openclaw-safe-bin-trusted-retarget-" }, async (root) => {
+      await withTestDir({ prefix: "afora-safe-bin-trusted-retarget-" }, async (root) => {
         const trustedDir = path.join(root, "bin");
         const targetDir1 = path.join(root, "cellar", "jq", "1.7.1", "bin");
         const targetDir2 = path.join(root, "cellar", "jq", "1.8.0", "bin");
@@ -229,7 +229,7 @@ describe("exec safe-bin runtime policy", () => {
   it.runIf(process.platform !== "win32")(
     "does not derive target-dir trust from non-executable safe-bin links",
     async () => {
-      await withTestDir({ prefix: "openclaw-safe-bin-trusted-nonexec-" }, async (root) => {
+      await withTestDir({ prefix: "afora-safe-bin-trusted-nonexec-" }, async (root) => {
         const trustedDir = path.join(root, "bin");
         const nonExecutableDir = path.join(root, "targets", "nonexec");
         const directoryTarget = path.join(root, "targets", "directory");
@@ -289,7 +289,7 @@ describe("exec safe-bin runtime policy", () => {
     if (process.platform === "win32") {
       return;
     }
-    await withTestDir({ prefix: "openclaw-safe-bin-runtime-" }, async (dir) => {
+    await withTestDir({ prefix: "afora-safe-bin-runtime-" }, async (dir) => {
       try {
         await fs.chmod(dir, 0o777);
         const onWarning = vi.fn();

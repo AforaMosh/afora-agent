@@ -1,10 +1,10 @@
 // Gateway chat attachment parser.
 // Normalizes image attachments, offloads large media, and reports unsupported payloads.
-import { estimateBase64DecodedBytes } from "@openclaw/media-core/base64";
-import { MAX_IMAGE_BYTES, type MediaKind } from "@openclaw/media-core/constants";
-import { extensionForMime, kindFromMime, mimeTypeFromFilePath } from "@openclaw/media-core/mime";
-import { expectDefined } from "@openclaw/normalization-core";
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+import { estimateBase64DecodedBytes } from "@afora/media-core/base64";
+import { MAX_IMAGE_BYTES, type MediaKind } from "@afora/media-core/constants";
+import { extensionForMime, kindFromMime, mimeTypeFromFilePath } from "@afora/media-core/mime";
+import { expectDefined } from "@afora/normalization-core";
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { formatErrorMessage, formatUncaughtError } from "../infra/errors.js";
 import type { SubsystemLogger } from "../logging/subsystem.js";
 import type { MediaFact } from "../media/media-facts.js";

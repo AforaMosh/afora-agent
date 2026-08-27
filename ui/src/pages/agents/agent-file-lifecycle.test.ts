@@ -70,7 +70,7 @@ describe("agent file lifecycle", () => {
     const agents = {
       files: () => ({ list, loading: false, error: null }),
     } as unknown as ApplicationContext["agents"];
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     page.context = { gateway: gateway(snapshot(client)), agents } as unknown as ApplicationContext;
     setPageGateway(page, client);
     page.agentsSelectedId = "main";
@@ -97,7 +97,7 @@ describe("agent file lifecycle", () => {
       files: () => ({ list: null, loading: false, error: null }),
       refreshFiles,
     } as unknown as ApplicationContext["agents"];
-    const page = document.createElement("openclaw-agents-page") as TestAgentsPage;
+    const page = document.createElement("afora-agents-page") as TestAgentsPage;
     page.context = { gateway: gateway(snapshot(client)), agents } as unknown as ApplicationContext;
     setPageGateway(page, client);
     page.agentsSelectedId = "main";

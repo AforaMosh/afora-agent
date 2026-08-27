@@ -2,8 +2,8 @@
  * Submits or skips the prompt after build/preflight and before stream execution.
  * It may assume prompt context is assembled and admission state is published.
  */
-import { MAX_IMAGE_BYTES } from "@openclaw/media-core/constants";
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
+import { MAX_IMAGE_BYTES } from "@afora/media-core/constants";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
 import type { ImageContent } from "../../../llm/types.js";
 import { getAgentScopedMediaLocalRoots } from "../../../media/local-roots.js";
 import { readPersistedMediaFacts } from "../../../media/media-facts.js";

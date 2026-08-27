@@ -9,7 +9,7 @@ title: "Mantis Slack desktop runbook"
 ---
 
 Mantis Slack desktop QA is the real-UI lane for Slack-class bugs that need a
-Linux desktop, VNC rescue, Slack Web, a real OpenClaw gateway, screenshots,
+Linux desktop, VNC rescue, Slack Web, a real Afora gateway, screenshots,
 videos, and a PR evidence comment. Use it when unit tests or the headless
 Slack live lane cannot prove the bug.
 
@@ -23,7 +23,7 @@ Mantis uses three storage layers:
 - **Warm lease state** - owned by the current operator session. Can hold a
   logged-in browser profile, `/var/cache/crabbox/pnpm`, and a prepared source
   checkout while the lease is alive.
-- **Mantis artifacts** - owned by the OpenClaw run. Live under
+- **Mantis artifacts** - owned by the Afora run. Live under
   `.artifacts/qa-e2e/mantis/...`; GitHub Actions uploads them and the Mantis
   GitHub App comments inline evidence on the PR.
 
@@ -47,7 +47,7 @@ gh workflow run mantis-slack-desktop-smoke.yml \
 
 `candidate_ref` is restricted because the workflow uses live credentials: it
 must resolve to current `main` ancestry, a release tag, or an open PR head in
-`openclaw/openclaw`.
+`AforaMosh/afora-agent`.
 
 The workflow produces:
 
@@ -56,7 +56,7 @@ The workflow produces:
 - `slack-desktop-smoke.png`, `slack-desktop-smoke.mp4`
 - `slack-desktop-smoke-preview.gif`, `slack-desktop-smoke-change.mp4`
 - `mantis-slack-desktop-smoke-summary.json`, `mantis-slack-desktop-smoke-report.md`
-- remote logs: `slack-desktop-command.log`, `openclaw-gateway.log`, `chrome.log`, `ffmpeg.log`
+- remote logs: `slack-desktop-command.log`, `afora-gateway.log`, `chrome.log`, `ffmpeg.log`
 
 The PR comment is updated in place via the hidden `<!-- mantis-slack-desktop-smoke -->` marker.
 
@@ -65,7 +65,7 @@ The PR comment is updated in place via the hidden `<!-- mantis-slack-desktop-smo
 Cold source proof:
 
 ```bash
-pnpm openclaw qa mantis slack-desktop-smoke \
+pnpm afora qa mantis slack-desktop-smoke \
   --provider aws \
   --class standard \
   --gateway-setup \
@@ -81,7 +81,7 @@ pnpm openclaw qa mantis slack-desktop-smoke \
 Keep the VM for VNC rescue:
 
 ```bash
-pnpm openclaw qa mantis slack-desktop-smoke \
+pnpm afora qa mantis slack-desktop-smoke \
   --provider aws \
   --class standard \
   --gateway-setup \
@@ -98,7 +98,7 @@ crabbox vnc --provider aws --id <cbx_id> --open
 Reuse a warm lease:
 
 ```bash
-pnpm openclaw qa mantis slack-desktop-smoke \
+pnpm afora qa mantis slack-desktop-smoke \
   --provider aws \
   --lease-id <cbx_id-or-slug> \
   --gateway-setup \
@@ -112,7 +112,7 @@ has `node_modules` and a built `dist/`; Mantis fails closed otherwise.
 Prove native Slack approval UI:
 
 ```bash
-pnpm openclaw qa mantis slack-desktop-smoke \
+pnpm afora qa mantis slack-desktop-smoke \
   --provider aws \
   --class standard \
   --approval-checkpoints \
@@ -157,12 +157,12 @@ also reuses `/var/cache/crabbox/pnpm` when present.
 - `crabbox.warmup` - cloud provider boot, desktop/browser readiness, SSH.
 - `crabbox.inspect` - lease metadata lookup.
 - `credentials.prepare` - Convex credential lease acquisition.
-- `crabbox.remote_run` - sync, browser launch, OpenClaw install/build or
+- `crabbox.remote_run` - sync, browser launch, Afora install/build or
   hydrate validation, gateway startup, screenshot, and video capture.
 - `artifacts.copy` - rsync back from the VM.
 
 `crabbox.remote_run` can show `accepted` when Crabbox returns a non-zero
-remote status but Mantis copied metadata proving either the OpenClaw gateway
+remote status but Mantis copied metadata proving either the Afora gateway
 setup completed or the Slack QA command itself exited successfully. Treat
 `accepted` as pass-with-explanation, not a failed scenario.
 
@@ -202,7 +202,7 @@ If the VM run fails but screenshots were copied back, inspect:
 cat mantis-slack-desktop-smoke-report.md
 cat mantis-slack-desktop-smoke-summary.json
 cat slack-desktop-command.log
-cat openclaw-gateway.log
+cat afora-gateway.log
 cat chrome.log
 cat ffmpeg.log
 ```

@@ -215,7 +215,7 @@ suite.define(() => {
       await expect.poll(() => preview.getAttribute("src")).toMatch(/^data:image\/png;base64,/u);
       await captureUiProof(page, "new-session-picked-image-preview.png");
       await previewButton.click();
-      const lightbox = page.locator("openclaw-image-lightbox");
+      const lightbox = page.locator("afora-image-lightbox");
       const dialog = page.getByRole("dialog", { name: "Image preview: favicon-32.png" });
       await dialog.waitFor({ state: "visible" });
       await expect(lightbox.getAttribute("title")).resolves.toBe("favicon-32.png");
@@ -280,7 +280,7 @@ suite.define(() => {
                   },
                 ],
                 timestamp: activeOutputTimestamp,
-                __openclaw: { id: "active-assistant", seq: 2 },
+                __afora: { id: "active-assistant", seq: 2 },
               },
               {
                 role: "toolResult",
@@ -288,7 +288,7 @@ suite.define(() => {
                 toolName: "read",
                 content: [{ type: "text", text: "working" }],
                 timestamp: activeOutputTimestamp + 1,
-                __openclaw: { id: "active-tool-result", seq: 3 },
+                __afora: { id: "active-tool-result", seq: 3 },
               },
             ],
             sessionId: "visible-initial-prompt",
@@ -355,7 +355,7 @@ suite.define(() => {
       await expect
         .poll(() =>
           page.evaluate(() => {
-            const app = document.querySelector("openclaw-app") as HTMLElement & {
+            const app = document.querySelector("afora-app") as HTMLElement & {
               runtime?: { context: { gateway: { snapshot: { phase: string } } } };
             };
             return app.runtime?.context.gateway.snapshot.phase;
@@ -389,7 +389,7 @@ suite.define(() => {
           { type: "text", text: message },
         ],
         timestamp: Date.now(),
-        __openclaw: {
+        __afora: {
           id: "persisted-image-prompt",
           idempotencyKey: `${runId}:user`,
           seq: 1,
@@ -559,7 +559,7 @@ suite.define(() => {
         .toBe(1);
 
       await page.evaluate(() => {
-        const app = document.querySelector("openclaw-app") as HTMLElement & {
+        const app = document.querySelector("afora-app") as HTMLElement & {
           runtime?: { context: { navigate: (routeId: string) => void } };
         };
         app.runtime?.context.navigate("chat");
@@ -616,7 +616,7 @@ suite.define(() => {
       const navigate = (routeId: string, search = "") =>
         page.evaluate(
           ({ targetRouteId, targetSearch }) => {
-            const app = document.querySelector("openclaw-app") as HTMLElement & {
+            const app = document.querySelector("afora-app") as HTMLElement & {
               runtime?: {
                 context: {
                   navigate: (routeId: string, options?: { search?: string }) => void;
@@ -624,7 +624,7 @@ suite.define(() => {
               };
             };
             if (!app.runtime) {
-              throw new Error("OpenClaw application runtime is unavailable");
+              throw new Error("Afora application runtime is unavailable");
             }
             app.runtime.context.navigate(targetRouteId, { search: targetSearch });
           },
@@ -872,7 +872,7 @@ suite.define(() => {
         const setItem = Object.getOwnPropertyDescriptor(Storage.prototype, "setItem")
           ?.value as Storage["setItem"];
         Storage.prototype.setItem = function (key: string, value: string) {
-          if (key.startsWith("openclaw.control.chatComposer.v2:")) {
+          if (key.startsWith("afora.control.chatComposer.v2:")) {
             throw new DOMException("Quota exceeded", "QuotaExceededError");
           }
           return setItem.call(this, key, value);

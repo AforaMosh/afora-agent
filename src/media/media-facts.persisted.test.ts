@@ -18,7 +18,7 @@ describe("canonical persisted media", () => {
     },
     {
       name: "facts-only",
-      message: { __openclaw: { media: [canonicalFact] } },
+      message: { __afora: { media: [canonicalFact] } },
       expected: [{ ...canonicalFact, kind: "image" }],
     },
     {
@@ -31,7 +31,7 @@ describe("canonical persisted media", () => {
       message: {
         MediaPath: canonicalFact.path,
         MediaType: canonicalFact.contentType,
-        __openclaw: { media: [canonicalFact] },
+        __afora: { media: [canonicalFact] },
       },
       expected: [{ ...canonicalFact, kind: "image" }],
     },
@@ -40,7 +40,7 @@ describe("canonical persisted media", () => {
       message: {
         MediaPath: "/media/legacy-conflict.jpg",
         MediaType: "image/jpeg",
-        __openclaw: { media: [canonicalFact] },
+        __afora: { media: [canonicalFact] },
       },
       expected: [{ ...canonicalFact, kind: "image" }],
     },
@@ -49,7 +49,7 @@ describe("canonical persisted media", () => {
       message: {
         MediaPaths: ["", "/media/second.png"],
         MediaTypes: ["", "image/png"],
-        __openclaw: { media: [{ url: "https://example.test/first" }] },
+        __afora: { media: [{ url: "https://example.test/first" }] },
       },
       expected: [
         { url: "https://example.test/first" },
@@ -63,7 +63,7 @@ describe("canonical persisted media", () => {
     },
     {
       name: "media-only",
-      message: { role: "user", content: "", __openclaw: { media: [canonicalFact] } },
+      message: { role: "user", content: "", __afora: { media: [canonicalFact] } },
       expected: [{ ...canonicalFact, kind: "image" }],
     },
   ])("canonicalizes $name rows", ({ message, expected }) => {
@@ -83,11 +83,11 @@ describe("canonical persisted media", () => {
       MediaTranscribedIndexes: [0],
       MediaStaged: true,
       MediaWorkspaceDir: "/media/workspace",
-      __openclaw: { traceId: "trace-1", media: [{ messageId: "m1" }] },
+      __afora: { traceId: "trace-1", media: [{ messageId: "m1" }] },
     });
 
     expect(result.message).toEqual({
-      __openclaw: {
+      __afora: {
         traceId: "trace-1",
         media: [
           expect.objectContaining({
@@ -111,7 +111,7 @@ describe("canonical persisted media", () => {
 
   it("round-trips duration and dimensions in canonical persisted facts", () => {
     const result = canonicalizePersistedUserMessageMedia({
-      __openclaw: {
+      __afora: {
         media: [
           {
             path: "/media/clip.mp4",
@@ -158,7 +158,7 @@ describe("canonical persisted media", () => {
     const result = canonicalizePersistedUserMessageMedia({
       MediaPaths: ["/media/a.bin", "/media/b.pdf"],
       MediaTypes: ["application/pdf"],
-      __openclaw: {
+      __afora: {
         media: [
           { path: "/media/a.bin", contentType: "application/octet-stream" },
           { path: "/media/b.pdf", contentType: "application/pdf" },
@@ -180,12 +180,12 @@ describe("canonical persisted media", () => {
       MediaPaths: ["", "/media/b.png"],
       MediaType: "image",
       MediaTypes: ["image/png"],
-      __openclaw: {
+      __afora: {
         media: [{}, { path: "/media/b.png", contentType: "image/png" }],
       },
     });
 
-    expect((result.message["__openclaw"] as { media: unknown[] }).media).toEqual([
+    expect((result.message["__afora"] as { media: unknown[] }).media).toEqual([
       {},
       expect.objectContaining({ path: "/media/b.png", contentType: "image/png" }),
     ]);
@@ -194,7 +194,7 @@ describe("canonical persisted media", () => {
   it("removes a conflicting top-level media copy", () => {
     const result = canonicalizePersistedUserMessageMedia({
       media: [{ path: "/media/runtime.png", contentType: "image/png" }],
-      __openclaw: { media: [canonicalFact] },
+      __afora: { media: [canonicalFact] },
     });
 
     expect(result.message).not.toHaveProperty("media");
@@ -278,7 +278,7 @@ describe("canonical image media facts", () => {
 
   it("keeps persisted filename SVG and TIFF aligned with the canonical image owner", () => {
     const media = readPersistedMediaFacts({
-      __openclaw: {
+      __afora: {
         media: [
           { path: "/tmp/diagram.svg" },
           { path: "/tmp/scan.tiff", contentType: "application/octet-stream" },

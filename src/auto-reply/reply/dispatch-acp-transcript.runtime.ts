@@ -1,14 +1,14 @@
-// Bridges ACP transcript events into persisted OpenClaw session transcripts.
-import { resolveAcpSessionCwd } from "@openclaw/acp-core/runtime/session-identifiers";
+// Bridges ACP transcript events into persisted Afora session transcripts.
+import { resolveAcpSessionCwd } from "@afora/acp-core/runtime/session-identifiers";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import { persistAcpTurnTranscript } from "../../agents/command/attempt-execution.js";
 import { resolveSessionStorePathCore } from "../../config/sessions.js";
 import { loadSessionEntryReadOnly } from "../../config/sessions/session-accessor.js";
 import type { SessionAcpMeta } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
 export async function persistAcpDispatchTranscript(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   promptText: string;
   finalText: string;

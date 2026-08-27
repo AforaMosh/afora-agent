@@ -1,6 +1,6 @@
 // Normalizes provider model metadata from plugin manifests and hooks.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { DEFAULT_CONTEXT_TOKENS } from "../agents/defaults.js";
 import { normalizeModelCompat } from "./provider-model-compat.js";
 import type { ProviderRuntimeModel } from "./provider-runtime-model.types.js";

@@ -1,11 +1,11 @@
-# OpenClaw WhatsApp
+# Afora WhatsApp
 
-Official OpenClaw channel plugin for WhatsApp Web chats.
+Official Afora channel plugin for WhatsApp Web chats.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/whatsapp
+afora plugins install @afora/whatsapp
 ```
 
-Link a WhatsApp account through the plugin's setup flow, then configure which chats OpenClaw agents should monitor and reply to.
+Link a WhatsApp account through the plugin's setup flow, then configure which chats Afora agents should monitor and reply to.

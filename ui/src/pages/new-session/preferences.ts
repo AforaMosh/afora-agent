@@ -1,10 +1,10 @@
-import { gatewayOriginScope } from "@openclaw/gateway-client/browser";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { gatewayOriginScope } from "@afora/gateway-client/browser";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { normalizeAgentId } from "../../lib/sessions/session-key.ts";
 import { getSafeLocalStorage } from "../../local-storage.ts";
 
-const STORAGE_KEY_PREFIX = "openclaw.new-session.preferences.v1:";
+const STORAGE_KEY_PREFIX = "afora.new-session.preferences.v1:";
 const IDENTITY_KEY_PREFIX = "new-session.v1:";
 export const PREFS_MIGRATION_KEY = "new-session.migration.v1";
 

@@ -1,4 +1,4 @@
-import { asNullableRecord as catalogRawRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord as catalogRawRecord } from "@afora/normalization-core/record-coerce";
 import type { SessionCatalogPullRequestSummary } from "../../../../packages/gateway-protocol/src/index.js";
 import type { ControlUiSessionPullRequest } from "../../../../src/gateway/control-ui-contract.js";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
@@ -158,7 +158,7 @@ export type ResolvedBoardView = {
 };
 
 export const boardChatDockLayout = createDockPanelLayout({
-  storageKey: "openclaw.control.board-chat-dock.v1",
+  storageKey: "afora.control.board-chat-dock.v1",
   minHeight: 180,
   minWidth: 320,
   defaultDock: "right",
@@ -201,7 +201,7 @@ export function catalogRawResult(raw: unknown): string | null {
 }
 export function nativeHistoryMessageIdentity(message: unknown): string | null {
   const record = catalogRawRecord(message);
-  const metadata = catalogRawRecord(record?.["__openclaw"]);
+  const metadata = catalogRawRecord(record?.["__afora"]);
   const seq = metadata?.seq;
   const id = metadata?.id ?? record?.messageId;
   const sourceIdentity =

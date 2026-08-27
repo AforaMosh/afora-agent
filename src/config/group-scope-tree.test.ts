@@ -1,6 +1,6 @@
 // Verifies canonical group scope precedence and sender policy resolution.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "./config.js";
+import type { AforaConfig } from "./config.js";
 import { resolveChannelGroupRequireMention, resolveToolsBySender } from "./group-policy.js";
 import {
   resolveScopeKeyCaseInsensitive,
@@ -117,7 +117,7 @@ describe("resolveScopeRequireMention", () => {
     const tree: ScopeTree = { scopes: { room: node } };
     const cfg = {
       channels: { whatsapp: { groups: { room: node } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(
       resolveScopeRequireMention({

@@ -3,7 +3,7 @@
  * this module to merge implicit provider discovery, explicit config, and
  * preserved secrets before touching models.json.
  */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginMetadataSnapshot } from "../plugins/plugin-metadata-snapshot.js";
 import type { ProviderCatalogOutcome } from "../plugins/provider-catalog.types.js";
 import type { PreparedProviderStaticCatalog } from "../plugins/provider-discovery.js";
@@ -28,12 +28,12 @@ import {
   resolvePluginModelCatalogOwnerPluginId,
 } from "./plugin-model-catalog.js";
 
-type ModelsConfig = NonNullable<OpenClawConfig["models"]>;
+type ModelsConfig = NonNullable<AforaConfig["models"]>;
 
 export type PreparedModelsConfigContext = Readonly<{
-  cfg: OpenClawConfig;
-  discoveryAuthConfig: OpenClawConfig;
-  sourceConfigForSecrets: OpenClawConfig;
+  cfg: AforaConfig;
+  discoveryAuthConfig: AforaConfig;
+  sourceConfigForSecrets: AforaConfig;
   agentDir: string;
   env: NodeJS.ProcessEnv;
   envFingerprint: NodeJS.ProcessEnv | string;
@@ -53,8 +53,8 @@ export type PreparedModelsConfigContext = Readonly<{
 type ResolveImplicitProvidersForModelsJson = (params: {
   agentDir: string;
   authStore?: AuthProfileStore;
-  config: OpenClawConfig;
-  discoveryAuthConfig?: OpenClawConfig;
+  config: AforaConfig;
+  discoveryAuthConfig?: AforaConfig;
   env: NodeJS.ProcessEnv;
   workspaceDir?: string;
   explicitProviders: Record<string, ProviderConfig>;
@@ -137,7 +137,7 @@ async function resolveProvidersForModelsJsonWithDeps(
     : context.cfg;
   // When models.mode is "replace" the user opts out of provider discovery, so
   // skip the (potentially slow) implicit-provider resolver entirely and return
-  // only the explicit providers. See openclaw#66957.
+  // only the explicit providers. See afora#66957.
   if (cfg.models?.mode === "replace") {
     return mergeProviders({ implicit: {}, explicit: explicitProviders });
   }
@@ -233,7 +233,7 @@ function filterWritableProviders(
 }
 
 /** Plans root and plugin-owned model catalog writes with injectable provider discovery. */
-async function planOpenClawModelsJsonWithDeps(
+async function planAforaModelsJsonWithDeps(
   params: {
     context: PreparedModelsConfigContext;
     authStore?: AuthProfileStore;
@@ -331,15 +331,15 @@ async function planOpenClawModelsJsonWithDeps(
 }
 
 /** Plans root and plugin-owned model catalog writes for the current runtime. */
-export async function planOpenClawModelsJson(
-  params: Parameters<typeof planOpenClawModelsJsonWithDeps>[0],
+export async function planAforaModelsJson(
+  params: Parameters<typeof planAforaModelsJsonWithDeps>[0],
 ): Promise<ModelsJsonPlan> {
-  return planOpenClawModelsJsonWithDeps(params);
+  return planAforaModelsJsonWithDeps(params);
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.modelsConfigPlanTestApi")] = {
-    planOpenClawModelsJsonWithDeps,
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.modelsConfigPlanTestApi")] = {
+    planAforaModelsJsonWithDeps,
     resolveProvidersForModelsJsonWithDeps,
   };
 }

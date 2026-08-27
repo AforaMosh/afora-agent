@@ -4,9 +4,9 @@ import path from "node:path";
 import {
   validateJsonSchemaValue,
   type JsonSchemaObject,
-} from "openclaw/plugin-sdk/json-schema-runtime";
+} from "afora-agent/plugin-sdk/json-schema-runtime";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../api.js";
+import type { AforaConfig } from "../api.js";
 import {
   memoryWikiConfigSchema,
   resolveMemoryWikiAgentConfig,
@@ -15,7 +15,7 @@ import {
 
 function compileManifestConfigSchema() {
   const manifest = JSON.parse(
-    fs.readFileSync(new URL("../openclaw.plugin.json", import.meta.url), "utf8"),
+    fs.readFileSync(new URL("../afora.plugin.json", import.meta.url), "utf8"),
   ) as { configSchema: JsonSchemaObject };
   return (value: unknown) =>
     validateJsonSchemaValue({
@@ -33,7 +33,7 @@ describe("resolveMemoryWikiConfig", () => {
     expect(config.vaultMode).toBe("isolated");
     expect(config.vault.scope).toBe("global");
     expect(config.vault.renderMode).toBe("native");
-    expect(config.vault.path).toBe(path.join("/Users/tester", ".openclaw", "wiki", "main"));
+    expect(config.vault.path).toBe(path.join("/Users/tester", ".afora", "wiki", "main"));
     expect(config.search.backend).toBe("shared");
     expect(config.search.corpus).toBe("wiki");
     expect(config.context.includeCompiledDigestPrompt).toBe(false);
@@ -80,7 +80,7 @@ describe("resolveMemoryWikiConfig", () => {
       agents: {
         list: [{ id: "Support Team", default: true }, { id: "Marketing" }],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const support = resolveMemoryWikiAgentConfig({
       config: base,
@@ -116,7 +116,7 @@ describe("resolveMemoryWikiConfig", () => {
       appConfig: { agents: { list: [{ id: "support", default: true }] } },
     });
 
-    const expectedRoot = path.join("/Users/tester", ".openclaw", "wiki");
+    const expectedRoot = path.join("/Users/tester", ".afora", "wiki");
     expect(base.vault.path).toBe(expectedRoot);
     expect(resolved.vault.path).toBe(path.join(expectedRoot, "support"));
   });
@@ -125,7 +125,7 @@ describe("resolveMemoryWikiConfig", () => {
     const config = resolveMemoryWikiConfig({ vault: { scope: "agent" } });
     const appConfig = {
       agents: { list: [{ id: "support", default: true }, { id: "marketing" }] },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(() => resolveMemoryWikiAgentConfig({ config, appConfig })).toThrow(
       "agentId is required",
@@ -136,7 +136,7 @@ describe("resolveMemoryWikiConfig", () => {
     const config = resolveMemoryWikiConfig({ vault: { scope: "agent" } });
     const appConfig = {
       agents: { list: [{ id: "support", default: true }, { id: "marketing" }] },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     expect(() => resolveMemoryWikiAgentConfig({ config, appConfig, agentId: "finance" })).toThrow(
       "Unknown memory-wiki agentId: finance",

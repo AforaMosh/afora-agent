@@ -1,6 +1,6 @@
-import type { ResolvedAgentRoute } from "openclaw/plugin-sdk/routing";
+import type { ResolvedAgentRoute } from "afora-agent/plugin-sdk/routing";
 // Policy plugin evidence types.
-import type { coerceSecretRef } from "openclaw/plugin-sdk/secret-input";
+import type { coerceSecretRef } from "afora-agent/plugin-sdk/secret-input";
 
 export type PolicyAttestation = {
   readonly checkedAt: string;

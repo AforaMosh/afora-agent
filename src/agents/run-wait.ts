@@ -11,16 +11,16 @@ import {
   parseFiniteNumber,
   resolveDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import { callGateway } from "../gateway/call.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { hasRetryableConnectionErrorCode } from "../infra/retryable-network-errors.js";
 import { normalizeBlockedLivenessWaitStatus } from "../shared/agent-liveness.js";
 import {
-  isOpenClawInternalSourceReplyMirrorAssistantMessage,
-  isOpenClawMessageToolMirrorAssistantMessage,
-  isTranscriptOnlyOpenClawAssistantMessage,
-} from "../shared/transcript-only-openclaw-assistant.js";
+  isAforaInternalSourceReplyMirrorAssistantMessage,
+  isAforaMessageToolMirrorAssistantMessage,
+  isTranscriptOnlyAforaAssistantMessage,
+} from "../shared/transcript-only-afora-assistant.js";
 import {
   buildAgentRunTerminalOutcomeFromWaitResult,
   type AgentRunTerminalOutcome,
@@ -170,8 +170,8 @@ function normalizePendingRunIds(runIds: Iterable<string>): string[] {
 
 function isWaitedReplyTranscriptArtifact(message: unknown): boolean {
   return (
-    isTranscriptOnlyOpenClawAssistantMessage(message) ||
-    isOpenClawMessageToolMirrorAssistantMessage(message) ||
+    isTranscriptOnlyAforaAssistantMessage(message) ||
+    isAforaMessageToolMirrorAssistantMessage(message) ||
     isInterSessionInputMessage(message)
   );
 }
@@ -214,7 +214,7 @@ function readTranscriptMessageSeq(message: unknown): number | undefined {
   if (!message || typeof message !== "object" || Array.isArray(message)) {
     return undefined;
   }
-  const meta = (message as { __openclaw?: unknown })["__openclaw"];
+  const meta = (message as { __afora?: unknown })["__afora"];
   if (!meta || typeof meta !== "object" || Array.isArray(meta)) {
     return undefined;
   }
@@ -225,7 +225,7 @@ function readInternalSourceReplyMessageSeq(message: unknown): number | undefined
   if (!message || typeof message !== "object" || Array.isArray(message)) {
     return undefined;
   }
-  const marker = (message as { openclawMessageToolMirror?: unknown }).openclawMessageToolMirror;
+  const marker = (message as { aforaMessageToolMirror?: unknown }).aforaMessageToolMirror;
   if (!marker || typeof marker !== "object" || Array.isArray(marker)) {
     return undefined;
   }
@@ -268,7 +268,7 @@ function resolveLatestAssistantReplySnapshot(
     }
     if (
       opts?.stopAtTranscriptArtifact === true &&
-      isOpenClawInternalSourceReplyMirrorAssistantMessage(candidate)
+      isAforaInternalSourceReplyMirrorAssistantMessage(candidate)
     ) {
       // Internal source replies still need the outer A2A flow to deliver them.
       // The source seq prevents a late old result from crossing a new turn.

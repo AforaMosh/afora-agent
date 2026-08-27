@@ -24,7 +24,7 @@ export default defineConfig({
     maxWorkers: 1,
     setupFiles: [
       ...new Set(
-        [...(baseTest.setupFiles ?? []), "test/setup-openclaw-runtime.ts"].map(resolveRepoRootPath),
+        [...(baseTest.setupFiles ?? []), "test/setup-afora-runtime.ts"].map(resolveRepoRootPath),
       ),
     ],
     include: [

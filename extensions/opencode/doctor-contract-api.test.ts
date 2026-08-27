@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import { normalizeCompatibilityConfig } from "./doctor-contract-api.js";
 
@@ -84,7 +84,7 @@ describe("OpenCode doctor compatibility normalization", () => {
     const original = structuredClone(input);
 
     const first = normalizeCompatibilityConfig({
-      cfg: input as unknown as OpenClawConfig,
+      cfg: input as unknown as AforaConfig,
     });
     const migrated = first.config as unknown as typeof input;
 
@@ -173,7 +173,7 @@ describe("OpenCode doctor compatibility normalization", () => {
     };
 
     const result = normalizeCompatibilityConfig({
-      cfg: legacy as unknown as OpenClawConfig,
+      cfg: legacy as unknown as AforaConfig,
     }).config as unknown as typeof legacy;
 
     expect(result.agents.list[0]).toEqual({
@@ -195,7 +195,7 @@ describe("OpenCode doctor compatibility normalization", () => {
     };
 
     const result = normalizeCompatibilityConfig({
-      cfg: input as unknown as OpenClawConfig,
+      cfg: input as unknown as AforaConfig,
     });
 
     expect(result).toEqual({ config: input, changes: [] });
@@ -217,7 +217,7 @@ describe("OpenCode doctor compatibility normalization", () => {
       },
     };
 
-    expect(normalizeCompatibilityConfig({ cfg: input as unknown as OpenClawConfig })).toEqual({
+    expect(normalizeCompatibilityConfig({ cfg: input as unknown as AforaConfig })).toEqual({
       config: input,
       changes: [],
     });
@@ -250,7 +250,7 @@ describe("OpenCode doctor compatibility normalization", () => {
     const original = structuredClone(input);
 
     const result = normalizeCompatibilityConfig({
-      cfg: input as unknown as OpenClawConfig,
+      cfg: input as unknown as AforaConfig,
     });
     const migrated = result.config as unknown as typeof input;
 
@@ -281,7 +281,7 @@ describe("OpenCode doctor compatibility normalization", () => {
     "opencode/hy3-free@profile/with/slash",
   ])("does not rewrite non-exact ref %s", (model) => {
     const input = { agents: { defaults: { model } } };
-    const result = normalizeCompatibilityConfig({ cfg: input as OpenClawConfig });
+    const result = normalizeCompatibilityConfig({ cfg: input as AforaConfig });
 
     expect(result).toEqual({ config: input, changes: [] });
     expect(result.config).toBe(input);
@@ -298,7 +298,7 @@ describe("OpenCode doctor compatibility normalization", () => {
       },
     };
     const result = normalizeCompatibilityConfig({
-      cfg: input as unknown as OpenClawConfig,
+      cfg: input as unknown as AforaConfig,
     });
 
     expect(result).toEqual({ config: input, changes: [] });

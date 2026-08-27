@@ -31,13 +31,13 @@ function writeFixtureFile(fixtureRoot: string, relativePath: string, value: stri
   fs.writeFileSync(fullPath, value, "utf8");
 }
 
-function writeOpenClawPackageFixture(fixtureRoot: string) {
+function writeAforaPackageFixture(fixtureRoot: string) {
   writeFixtureFile(
     fixtureRoot,
     "package.json",
     JSON.stringify(
       {
-        name: "openclaw",
+        name: "afora",
         type: "module",
         exports: {
           "./plugin-sdk/core": "./dist/plugin-sdk/core.js",
@@ -47,7 +47,7 @@ function writeOpenClawPackageFixture(fixtureRoot: string) {
       2,
     ) + "\n",
   );
-  writeFixtureFile(fixtureRoot, "openclaw.mjs", "export {};\n");
+  writeFixtureFile(fixtureRoot, "afora.mjs", "export {};\n");
   writeFixtureFile(fixtureRoot, "dist/plugin-sdk/core.js", "export {};\n");
 }
 
@@ -90,7 +90,7 @@ afterEach(() => {
 it("loads the source-checkout runtime wrapper through native ESM import", async () => {
   const fixtureRoot = makeFixtureRoot(".tmp-matrix-source-runtime-");
 
-  writeOpenClawPackageFixture(fixtureRoot);
+  writeAforaPackageFixture(fixtureRoot);
   writeSourceRuntimeWrapperFixture(fixtureRoot);
 
   expectRuntimeWrapperExports(
@@ -101,7 +101,7 @@ it("loads the source-checkout runtime wrapper through native ESM import", async 
 it("loads the packaged runtime wrapper without recursing through the stable root alias", async () => {
   const fixtureRoot = makeFixtureRoot(".tmp-matrix-runtime-");
 
-  writeOpenClawPackageFixture(fixtureRoot);
+  writeAforaPackageFixture(fixtureRoot);
   writeFixtureFile(
     fixtureRoot,
     "dist/plugin-entry.runtime-C88YIa_v.js",
@@ -126,7 +126,7 @@ it("loads the packaged runtime wrapper without recursing through the stable root
 it("does not load when only a TypeScript Matrix runtime shim exists", async () => {
   const fixtureRoot = makeFixtureRoot(".tmp-matrix-runtime-ts-only-");
 
-  writeOpenClawPackageFixture(fixtureRoot);
+  writeAforaPackageFixture(fixtureRoot);
   writeSourceRuntimeWrapperFixture(fixtureRoot, { runtimeExtension: ".ts" });
 
   await expect(

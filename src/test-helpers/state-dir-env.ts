@@ -5,10 +5,10 @@ import path from "node:path";
 import { captureEnv, setTestEnvValue } from "../test-utils/env.js";
 import { cleanupSessionStateForTest } from "../test-utils/session-state-cleanup.js";
 
-// OPENCLAW_STATE_DIR test helpers isolate stateful tests and restore the caller
+// AFORA_STATE_DIR test helpers isolate stateful tests and restore the caller
 // environment even when session cleanup fails.
 export function snapshotStateDirEnv() {
-  return captureEnv(["OPENCLAW_STATE_DIR"]);
+  return captureEnv(["AFORA_STATE_DIR"]);
 }
 
 export function restoreStateDirEnv(snapshot: ReturnType<typeof snapshotStateDirEnv>): void {
@@ -16,7 +16,7 @@ export function restoreStateDirEnv(snapshot: ReturnType<typeof snapshotStateDirE
 }
 
 export function setStateDirEnv(stateDir: string): void {
-  setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+  setTestEnvValue("AFORA_STATE_DIR", stateDir);
 }
 
 export async function withStateDirEnv<T>(

@@ -71,7 +71,7 @@ type GatewaySuspendCoordinatorState = {
 };
 
 const COORDINATOR_STATE = resolveGlobalSingleton(
-  Symbol.for("openclaw.gatewaySuspendCoordinatorState"),
+  Symbol.for("afora.gatewaySuspendCoordinatorState"),
   (): GatewaySuspendCoordinatorState => ({
     current: null,
     retiredForLifecycleReset: null,

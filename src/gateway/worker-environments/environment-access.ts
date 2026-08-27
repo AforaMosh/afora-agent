@@ -1,5 +1,5 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import type { OpenClawConfig } from "../../config/types.js";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import type { AforaConfig } from "../../config/types.js";
 import { withTimeout } from "../../infra/fs-safe.js";
 import type { WorkerProvider } from "../../plugins/types.js";
 import {
@@ -20,7 +20,7 @@ const TUNNEL_START_TIMEOUT_MS = 3 * 60_000;
 
 type WorkerEnvironmentAccessOptions = {
   store: WorkerEnvironmentStore;
-  getConfig: () => OpenClawConfig;
+  getConfig: () => AforaConfig;
   prepareCurrentBundle: () => Promise<ExpectedWorkerBuild>;
   tunnelManager?: WorkerTunnelManager;
   nodeTunnelManager?: NodeWorkerTunnelManager;
@@ -151,7 +151,7 @@ export function createWorkerEnvironmentAccess(options: WorkerEnvironmentAccessOp
           sessionId,
           expectedBuild: {
             bundleHash: currentBundle.bundleHash,
-            openclawVersion: currentBundle.openclawVersion,
+            aforaVersion: currentBundle.aforaVersion,
             protocolFeatures: [...currentBundle.protocolFeatures],
           },
         });

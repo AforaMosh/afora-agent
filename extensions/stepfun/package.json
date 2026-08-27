@@ -1,22 +1,22 @@
 {
-  "name": "@openclaw/stepfun-provider",
+  "name": "@afora/stepfun-provider",
   "version": "2026.8.1",
-  "description": "OpenClaw StepFun provider plugin.",
+  "description": "Afora StepFun provider plugin.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   },
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
     "install": {
-      "clawhubSpec": "clawhub:@openclaw/stepfun-provider",
-      "npmSpec": "@openclaw/stepfun-provider",
+      "clawhubSpec": "clawhub:@afora/stepfun-provider",
+      "npmSpec": "@afora/stepfun-provider",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.6.9"
     },
@@ -24,7 +24,7 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1",
+      "aforaVersion": "2026.8.1",
       "bundledDist": false
     },
     "release": {

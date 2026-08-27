@@ -1,5 +1,5 @@
 // Qa Lab plugin module implements capture saved view behavior.
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import type { CaptureSavedView } from "./ui-render.js";
 
 const MAX_SAVED_VIEWS = 12;

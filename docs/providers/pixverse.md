@@ -1,18 +1,18 @@
 ---
-summary: "PixVerse video generation setup in OpenClaw"
+summary: "PixVerse video generation setup in Afora"
 title: "PixVerse"
 read_when:
-  - You want to use PixVerse video generation in OpenClaw
+  - You want to use PixVerse video generation in Afora
   - You need the PixVerse API key/env setup
   - You want to make PixVerse the default video provider
 ---
 
-OpenClaw provides `pixverse` as an official external plugin for hosted PixVerse video generation. The plugin registers the `pixverse` provider against the `videoGenerationProviders` contract.
+Afora provides `pixverse` as an official external plugin for hosted PixVerse video generation. The plugin registers the `pixverse` provider against the `videoGenerationProviders` contract.
 
 | Property           | Value                                                                |
 | ------------------ | -------------------------------------------------------------------- |
 | Provider id        | `pixverse`                                                           |
-| Plugin package     | `@openclaw/pixverse-provider`                                        |
+| Plugin package     | `@afora/pixverse-provider`                                        |
 | Auth env var       | `PIXVERSE_API_KEY`                                                   |
 | Onboarding flag    | `--auth-choice pixverse-api-key`                                     |
 | Direct CLI flag    | `--pixverse-api-key <key>`                                           |
@@ -25,13 +25,13 @@ OpenClaw provides `pixverse` as an official external plugin for hosted PixVerse 
 <Steps>
   <Step title="Install the plugin">
     ```bash
-    openclaw plugins install @openclaw/pixverse-provider
-    openclaw gateway restart
+    afora plugins install @afora/pixverse-provider
+    afora gateway restart
     ```
   </Step>
   <Step title="Set the API key">
     ```bash
-    openclaw onboard --auth-choice pixverse-api-key
+    afora onboard --auth-choice pixverse-api-key
     ```
 
     The wizard prompts for the International or CN endpoint (see API region
@@ -45,7 +45,7 @@ OpenClaw provides `pixverse` as an official external plugin for hosted PixVerse 
   </Step>
   <Step title="Switch an existing default video provider (optional)">
     ```bash
-    openclaw config set agents.defaults.mediaModels.video.primary "pixverse/v6"
+    afora config set agents.defaults.mediaModels.video.primary "pixverse/v6"
     ```
   </Step>
   <Step title="Generate a video">
@@ -55,7 +55,7 @@ OpenClaw provides `pixverse` as an official external plugin for hosted PixVerse 
 
 ## Supported modes and models
 
-The provider exposes PixVerse generation models through OpenClaw's shared video tool.
+The provider exposes PixVerse generation models through Afora's shared video tool.
 
 | Mode           | Models               | Reference input         |
 | -------------- | -------------------- | ----------------------- |
@@ -72,7 +72,7 @@ Local image references are uploaded to PixVerse before the image-to-video reques
 | Generated audio | `audio: true`                                                                                                                    |
 
 <Note>
-PixVerse image template generation is not exposed through `image_generate` yet. That API is template-id driven, while OpenClaw's shared image-generation contract does not currently have a PixVerse-specific typed option bag.
+PixVerse image template generation is not exposed through `image_generate` yet. That API is template-id driven, while Afora's shared image-generation contract does not currently have a PixVerse-specific typed option bag.
 </Note>
 
 ## Provider options
@@ -115,7 +115,7 @@ The video provider accepts these optional provider-specific keys:
 
     Set `models.providers.pixverse.region` manually when your key belongs to a
     specific PixVerse platform region, or run
-    `openclaw onboard --auth-choice pixverse-api-key` to choose one in the
+    `afora onboard --auth-choice pixverse-api-key` to choose one in the
     setup wizard:
 
     ```json5
@@ -153,7 +153,7 @@ The video provider accepts these optional provider-specific keys:
   </Accordion>
 
   <Accordion title="Task polling">
-    PixVerse returns a `video_id` from the generation request. OpenClaw polls
+    PixVerse returns a `video_id` from the generation request. Afora polls
     `/openapi/v2/video/result/{video_id}` every 5 seconds until the task
     succeeds, fails, or hits the timeout (default 5 minutes; override with
     `agents.defaults.mediaModels.video.timeoutMs`).

@@ -1,6 +1,6 @@
 // Terminal progress reporter used by long-running CLI commands.
 import { spinner } from "@clack/prompts";
-import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
+import { resolveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
 import {
   createOscProgressController,
   supportsOscProgress,

@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 struct AgentOverviewRefreshGateTests {
     @Test func `legacy skill missing requirements default new fields`() throws {

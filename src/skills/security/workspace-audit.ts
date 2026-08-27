@@ -5,7 +5,7 @@ import {
   listAgentWorkspaceDirs,
   listExplicitAgentWorkspaceDirs,
 } from "../../agents/workspace-dirs.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import type { SecurityAuditFinding } from "../../security/audit.types.js";
 import { isPathInside } from "../../security/scan-paths.js";
 
@@ -115,7 +115,7 @@ async function listWorkspaceSkillMarkdownFiles(
 }
 
 export async function collectWorkspaceSkillSymlinkEscapeFindings(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   workspaceDir?: string;
   skillScanLimits?: WorkspaceSkillScanLimits;
 }): Promise<SecurityAuditFinding[]> {

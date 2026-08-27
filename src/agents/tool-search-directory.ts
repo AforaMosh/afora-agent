@@ -1,5 +1,5 @@
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import {
   applyToolCatalogCompaction,
   collectUniqueCatalogToolNames,
@@ -132,7 +132,7 @@ function formatToolDirectoryIdentifier(value: string | undefined): string | unde
 }
 
 function formatToolDirectoryEntry(entry: ToolSearchCatalogEntry): string | undefined {
-  if (entry.source !== "openclaw") {
+  if (entry.source !== "afora") {
     return undefined;
   }
   const name = formatToolDirectoryIdentifier(entry.name);
@@ -153,7 +153,7 @@ function renderToolSearchCatalogDirectory(
   const omitted = total - lines.length;
   const guidance =
     mode === "code"
-      ? "Use tool_search_code with openclaw.tools.search(query), openclaw.tools.describe(id), and openclaw.tools.call(id, args)."
+      ? "Use tool_search_code with afora.tools.search(query), afora.tools.describe(id), and afora.tools.call(id, args)."
       : omitted > 0
         ? "Use tool_search to find them, then tool_describe to load a full schema before tool_call."
         : "Call tool_describe with a listed tool name to load its full schema before using tool_call.";

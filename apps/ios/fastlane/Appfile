@@ -1,4 +1,4 @@
-app_identifier("ai.openclawfoundation.app")
+app_identifier("ai.aforafoundation.app")
 
 # Auth is expected via App Store Connect API key.
 # Provide either:
@@ -9,7 +9,7 @@ app_identifier("ai.openclawfoundation.app")
 # - APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID, and
 #   APP_STORE_CONNECT_KEY_CONTENT (base64 or raw p8 content)
 # - APP_STORE_CONNECT_KEY_ID and APP_STORE_CONNECT_ISSUER_ID plus Keychain fallback:
-#   APP_STORE_CONNECT_KEYCHAIN_SERVICE (default: openclaw-app-store-connect-key)
+#   APP_STORE_CONNECT_KEYCHAIN_SERVICE (default: afora-app-store-connect-key)
 #   APP_STORE_CONNECT_KEYCHAIN_ACCOUNT (default: USER/LOGNAME)
 #
 # Optional deliver app lookup overrides:

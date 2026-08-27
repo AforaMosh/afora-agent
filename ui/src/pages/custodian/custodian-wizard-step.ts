@@ -1,4 +1,4 @@
-import type { WizardAnswer } from "@openclaw/gateway-protocol";
+import type { WizardAnswer } from "@afora/gateway-protocol";
 import type { WizardStep } from "../../api/types.ts";
 import { t } from "../../i18n/index.ts";
 

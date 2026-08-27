@@ -1,7 +1,7 @@
 // Matrix test support owns plugin-local fixture cleanup.
 import fs from "node:fs";
 import path from "node:path";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
 
 type RegisterTempDirCleanup = (cleanup: () => void) => unknown;
 
@@ -15,8 +15,8 @@ export function useAutoCleanupTempDirTracker(registerCleanup: RegisterTempDirCle
   });
   return {
     make(prefix: string): string {
-      // openclaw-temp-dir: allow extension-local test support cannot import the core-only tracker.
-      const dir = fs.mkdtempSync(path.join(resolvePreferredOpenClawTmpDir(), prefix));
+      // afora-temp-dir: allow extension-local test support cannot import the core-only tracker.
+      const dir = fs.mkdtempSync(path.join(resolvePreferredAforaTmpDir(), prefix));
       dirs.add(dir);
       return dir;
     },

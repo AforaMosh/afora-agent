@@ -11,8 +11,8 @@ title: "Onepassword plugin"
 
 ## Distribution
 
-- Package: `@openclaw/onepassword`
-- Install route: included in OpenClaw
+- Package: `@afora/onepassword`
+- Install route: included in Afora
 
 ## Surface
 

@@ -92,7 +92,7 @@ suite.define(() => {
         await expect.poll(() => page.locator(".chat-attachment-thumb").count()).toBe(2);
         await expect.poll(() => composer.inputValue()).toBe("Send both files");
 
-        const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+        const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
         if (artifactDir) {
           await mkdir(artifactDir, { recursive: true });
           await page.screenshot({ path: path.join(artifactDir, "attachment-frame-rejected.png") });
@@ -183,7 +183,7 @@ suite.define(() => {
         await page.goto(controlUiSessionUrl(suite.server.baseUrl, firstSession));
         const activeComposer = () =>
           page.locator(
-            'openclaw-chat-pane[aria-hidden="false"] .agent-chat__composer-combobox textarea',
+            'afora-chat-pane[aria-hidden="false"] .agent-chat__composer-combobox textarea',
           );
         await activeComposer().fill("Private session A attachment");
         await pastePng(activeComposer());
@@ -204,7 +204,7 @@ suite.define(() => {
           .toBe(0);
         await expect
           .poll(() =>
-            page.locator('openclaw-chat-pane[aria-hidden="false"] .chat-attachment-thumb').count(),
+            page.locator('afora-chat-pane[aria-hidden="false"] .chat-attachment-thumb').count(),
           )
           .toBe(0);
 
@@ -228,7 +228,7 @@ suite.define(() => {
         });
         await page
           .locator(
-            'openclaw-chat-pane[aria-hidden="false"] .chat-attachment-thumb img[alt="Attachment preview"]',
+            'afora-chat-pane[aria-hidden="false"] .chat-attachment-thumb img[alt="Attachment preview"]',
           )
           .waitFor();
       },

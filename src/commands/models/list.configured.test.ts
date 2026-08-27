@@ -124,7 +124,7 @@ describe("resolveConfiguredEntries", () => {
   });
 
   it("canonicalizes manifest-owned provider aliases in configured rows", () => {
-    vi.stubEnv("OPENCLAW_BUNDLED_PLUGINS_DIR", path.resolve("extensions"));
+    vi.stubEnv("AFORA_BUNDLED_PLUGINS_DIR", path.resolve("extensions"));
 
     const { entries } = resolveConfiguredEntries({
       agents: {
@@ -144,14 +144,14 @@ describe("resolveConfiguredEntries", () => {
   });
 
   it("recovers bundled source aliases when stale dist metadata omits them", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-model-alias-source-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-model-alias-source-"));
     try {
       const distPluginRoot = path.join(root, "dist", "extensions", "zai");
       const sourcePluginRoot = path.join(root, "extensions", "zai");
       fs.mkdirSync(distPluginRoot, { recursive: true });
       fs.mkdirSync(sourcePluginRoot, { recursive: true });
       fs.writeFileSync(
-        path.join(sourcePluginRoot, "openclaw.plugin.json"),
+        path.join(sourcePluginRoot, "afora.plugin.json"),
         JSON.stringify({
           id: "zai",
           configSchema: { type: "object" },
@@ -189,7 +189,7 @@ describe("resolveConfiguredEntries", () => {
                 skills: [],
                 hooks: [],
                 modelCatalog: { providers: {}, discovery: { zai: "static" } },
-                manifestPath: path.join(distPluginRoot, "openclaw.plugin.json"),
+                manifestPath: path.join(distPluginRoot, "afora.plugin.json"),
               },
             ],
           },
@@ -205,7 +205,7 @@ describe("resolveConfiguredEntries", () => {
 
 describe("configured model list rows", () => {
   it("keeps raw alias auth for self-prefixed implicit models in replace mode", async () => {
-    vi.stubEnv("OPENCLAW_BUNDLED_PLUGINS_DIR", path.resolve("extensions"));
+    vi.stubEnv("AFORA_BUNDLED_PLUGINS_DIR", path.resolve("extensions"));
     const catalogEntry = {
       id: "glm-4.7",
       name: "GLM 4.7",
@@ -265,7 +265,7 @@ describe("configured model list rows", () => {
       entries,
       context: {
         cfg,
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: { evaluateModelAuth },
         configuredByKey: new Map(entries.map((entry) => [entry.key, entry])),
         discoveredKeys: new Set(),
@@ -319,7 +319,7 @@ describe("configured model list rows", () => {
       entries,
       context: {
         cfg,
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: {
           evaluateModelAuth: () => ({ availability: true, routeResolution: null }),
         },
@@ -393,7 +393,7 @@ describe("configured model list rows", () => {
       entries,
       context: {
         cfg,
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         authIndex: { evaluateModelAuth: () => ({ availability: true, routeResolution: null }) },
         configuredByKey: new Map(entries.map((entry) => [entry.key, entry])),
         discoveredKeys: new Set<string>(),

@@ -1,7 +1,7 @@
 import {
   hasOutboundReplyContent,
   isFastModeAutoProgressPayload,
-} from "openclaw/plugin-sdk/reply-payload";
+} from "afora-agent/plugin-sdk/reply-payload";
 import { isAskUserPromptPending } from "../../agents/tools/ask-user-tool.js";
 import { normalizeAgentPlanSteps } from "../../channels/streaming.js";
 import { logVerbose } from "../../globals.js";

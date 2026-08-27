@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it, vi } from "vitest";
 import {
   BUILD_ALL_PROFILES,
@@ -71,7 +71,7 @@ function withBuildCacheFixture(
     };
   }) => void,
 ) {
-  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-build-cache-"));
+  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-build-cache-"));
   try {
     const inputPath = path.join(rootDir, "src/input.ts");
     const outputPath = path.join(rootDir, "dist/output.js");
@@ -114,10 +114,10 @@ describe("resolveBuildAllStep", () => {
     expect(uiInvocation.options.env).toMatchObject({
       FOO: "bar",
       GIT_COMMIT: commit,
-      OPENCLAW_BUILD_TIMESTAMP: "2026-07-10T12:34:56.789Z",
+      AFORA_BUILD_TIMESTAMP: "2026-07-10T12:34:56.789Z",
     });
-    expect(buildInfoInvocation.options.env.OPENCLAW_BUILD_TIMESTAMP).toBe(
-      uiInvocation.options.env.OPENCLAW_BUILD_TIMESTAMP,
+    expect(buildInfoInvocation.options.env.AFORA_BUILD_TIMESTAMP).toBe(
+      uiInvocation.options.env.AFORA_BUILD_TIMESTAMP,
     );
   });
 
@@ -165,14 +165,14 @@ describe("resolveBuildAllStep", () => {
   it("preserves an explicit build timestamp after trimming outer whitespace", () => {
     expect(
       resolveBuildAllEnvironment({
-        OPENCLAW_BUILD_TIMESTAMP: " 2026-07-10T01:02:03.000Z ",
-      }).OPENCLAW_BUILD_TIMESTAMP,
+        AFORA_BUILD_TIMESTAMP: " 2026-07-10T01:02:03.000Z ",
+      }).AFORA_BUILD_TIMESTAMP,
     ).toBe("2026-07-10T01:02:03.000Z");
   });
 
   it("routes pnpm steps through the npm_execpath pnpm runner on Windows", () => {
     const step = getBuildAllStep("plugins:assets:build");
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-pnpm-runner-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-pnpm-runner-"));
     const npmExecPath = path.join(tempDir, "pnpm.cjs");
     fs.writeFileSync(npmExecPath, "console.log('pnpm');\n");
 
@@ -221,7 +221,7 @@ describe("resolveBuildAllStep", () => {
     {
       label: "write-plugin-sdk-entry-dts",
       scriptPath: "scripts/write-plugin-sdk-entry-dts.ts",
-      expectedEnv: { FOO: "bar", OPENCLAW_PLUGIN_SDK_CANONICAL_DTS: "1" },
+      expectedEnv: { FOO: "bar", AFORA_PLUGIN_SDK_CANONICAL_DTS: "1" },
     },
     {
       label: "copy-hook-metadata",
@@ -261,7 +261,7 @@ describe("resolveBuildAllStep", () => {
 
     const result = resolveBuildAllStep(step, {
       nodeExecPath: "/custom/node",
-      env: { OPENCLAW_BUILD_ALL_NO_PNPM: "1" },
+      env: { AFORA_BUILD_ALL_NO_PNPM: "1" },
     });
 
     expect(result).toEqual({
@@ -269,7 +269,7 @@ describe("resolveBuildAllStep", () => {
       args: ["--import", "tsx", "scripts/bundled-plugin-assets.mts", "--phase", "build"],
       options: {
         stdio: "inherit",
-        env: { OPENCLAW_BUILD_ALL_NO_PNPM: "1" },
+        env: { AFORA_BUILD_ALL_NO_PNPM: "1" },
       },
     });
   });
@@ -278,14 +278,14 @@ describe("resolveBuildAllStep", () => {
     expect(
       resolveBuildAllStep(getBuildAllStep("ui:build"), {
         nodeExecPath: "/custom/node",
-        env: { OPENCLAW_BUILD_ALL_NO_PNPM: "1" },
+        env: { AFORA_BUILD_ALL_NO_PNPM: "1" },
       }),
     ).toEqual({
       command: "/custom/node",
       args: ["scripts/ui.js", "build"],
       options: {
         stdio: "inherit",
-        env: { OPENCLAW_BUILD_ALL_NO_PNPM: "1" },
+        env: { AFORA_BUILD_ALL_NO_PNPM: "1" },
       },
     });
   });
@@ -392,17 +392,17 @@ describe("resolveBuildAllSteps", () => {
       "tsdown.ai.config.ts",
     ]);
     expect(packages.args).toEqual(
-      expect.arrayContaining(["--config", "tsdown.config.ts", "--filter", "openclaw-packages"]),
+      expect.arrayContaining(["--config", "tsdown.config.ts", "--filter", "afora-packages"]),
     );
     expect(unified.args).toEqual(
-      expect.arrayContaining(["--config", "tsdown.config.ts", "--filter", "openclaw-unified"]),
+      expect.arrayContaining(["--config", "tsdown.config.ts", "--filter", "afora-unified"]),
     );
     for (const step of [ai, packages, unified]) {
       expect(step.cache?.restore).toBe("always");
-      expect(step.cache?.env).toContain("OPENCLAW_RUN_NODE_SKIP_DTS_BUILD");
-      expect(step.cache?.runOnHit?.env).toEqual({ OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: "1" });
+      expect(step.cache?.env).toContain("AFORA_RUN_NODE_SKIP_DTS_BUILD");
+      expect(step.cache?.runOnHit?.env).toEqual({ AFORA_RUN_NODE_SKIP_DTS_BUILD: "1" });
       expect(resolveBuildAllStepOnCacheHit(step)?.env).toMatchObject({
-        OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: "1",
+        AFORA_RUN_NODE_SKIP_DTS_BUILD: "1",
       });
       expect(step.cache?.outputs).toEqual(
         expect.arrayContaining([
@@ -410,7 +410,7 @@ describe("resolveBuildAllSteps", () => {
         ]),
       );
     }
-    expect(unified.cache?.env).toContain("OPENCLAW_BUILD_PRIVATE_QA");
+    expect(unified.cache?.env).toContain("AFORA_BUILD_PRIVATE_QA");
     expect(unified.cache?.inputs).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -424,7 +424,7 @@ describe("resolveBuildAllSteps", () => {
       throw new Error("Missing tsdown-unified required output resolver");
     }
     const productionOutputs = requiredOutputs({});
-    const privateQaOutputs = requiredOutputs({ OPENCLAW_BUILD_PRIVATE_QA: "1" });
+    const privateQaOutputs = requiredOutputs({ AFORA_BUILD_PRIVATE_QA: "1" });
     expect(productionOutputs).toEqual(listPluginSdkDeclarationOutputs());
     expect(privateQaOutputs).toEqual(listPluginSdkDeclarationOutputs(pluginSdkEntrypoints));
     expect(productionOutputs).toContain("dist/plugin-sdk/core.d.ts");
@@ -467,12 +467,12 @@ describe("resolveBuildAllSteps", () => {
       expect(
         expectDefined(BUILD_ALL_PROFILE_STEP_ENV[profile], `${profile} build step env`).tsdown,
       ).toMatchObject({
-        OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: "1",
+        AFORA_RUN_NODE_SKIP_DTS_BUILD: "1",
       });
       expect(
-        resolveBuildAllStep(tsdown, { env: { OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: "0" } }).options.env,
+        resolveBuildAllStep(tsdown, { env: { AFORA_RUN_NODE_SKIP_DTS_BUILD: "0" } }).options.env,
       ).toMatchObject({
-        OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: "1",
+        AFORA_RUN_NODE_SKIP_DTS_BUILD: "1",
       });
     }
   });
@@ -488,15 +488,15 @@ describe("resolveBuildAllSteps", () => {
       throw new Error("Missing ciArtifacts tsdown step");
     }
     expect(resolveBuildAllStep(tsdown, { env: {} }).options.env).toMatchObject({
-      OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: "1",
-      OPENCLAW_PRESERVE_CLI_STARTUP_METADATA: "1",
+      AFORA_RUN_NODE_SKIP_DTS_BUILD: "1",
+      AFORA_PRESERVE_CLI_STARTUP_METADATA: "1",
     });
 
     const entryDts = steps.find((step) => step.label === "write-plugin-sdk-entry-dts");
     if (!entryDts) {
       throw new Error("Missing ciArtifacts write-plugin-sdk-entry-dts step");
     }
-    expect(entryDts.env).toMatchObject({ OPENCLAW_PLUGIN_SDK_CANONICAL_DTS: "0" });
+    expect(entryDts.env).toMatchObject({ AFORA_PLUGIN_SDK_CANONICAL_DTS: "0" });
     expect(entryDts.cache?.inputs).toEqual(
       expect.arrayContaining([
         "package.json",
@@ -523,7 +523,7 @@ describe("resolveBuildAllSteps", () => {
     const fullEntryDts = resolveBuildAllSteps("full").find(
       (step) => step.label === "write-plugin-sdk-entry-dts",
     );
-    expect(fullEntryDts?.env).toMatchObject({ OPENCLAW_PLUGIN_SDK_CANONICAL_DTS: "1" });
+    expect(fullEntryDts?.env).toMatchObject({ AFORA_PLUGIN_SDK_CANONICAL_DTS: "1" });
     expect(fullEntryDts?.cache).toBeDefined();
     expect(fullEntryDts?.cache?.inputs).not.toContainEqual(
       expect.objectContaining({ path: "src" }),
@@ -541,7 +541,7 @@ describe("resolveBuildAllSteps", () => {
       throw new Error("Missing full tsdown-unified step");
     }
     expect(resolveBuildAllStep(fullTsdown, { env: {} }).options.env).toMatchObject({
-      OPENCLAW_PRESERVE_CLI_STARTUP_METADATA: "1",
+      AFORA_PRESERVE_CLI_STARTUP_METADATA: "1",
     });
 
     for (const profile of ["ciArtifacts", "sourcePerformance", "cliStartup"]) {
@@ -551,7 +551,7 @@ describe("resolveBuildAllSteps", () => {
       }
 
       expect(resolveBuildAllStep(tsdown, { env: {} }).options.env).toMatchObject({
-        OPENCLAW_PRESERVE_CLI_STARTUP_METADATA: "1",
+        AFORA_PRESERVE_CLI_STARTUP_METADATA: "1",
       });
     }
 
@@ -562,7 +562,7 @@ describe("resolveBuildAllSteps", () => {
       }
 
       expect(resolveBuildAllStep(tsdown, { env: {} }).options.env).not.toHaveProperty(
-        "OPENCLAW_PRESERVE_CLI_STARTUP_METADATA",
+        "AFORA_PRESERVE_CLI_STARTUP_METADATA",
       );
     }
   });
@@ -632,14 +632,14 @@ describe("resolveBuildAllSteps", () => {
           "runtime-postbuild"
         ],
       ).toEqual({
-        OPENCLAW_RUNTIME_POSTBUILD_STATIC_ASSETS: "0",
+        AFORA_RUNTIME_POSTBUILD_STATIC_ASSETS: "0",
       });
       expect(
         resolveBuildAllStep(runtimePostbuild, {
-          env: { OPENCLAW_RUNTIME_POSTBUILD_STATIC_ASSETS: "1" },
+          env: { AFORA_RUNTIME_POSTBUILD_STATIC_ASSETS: "1" },
         }).options.env,
       ).toMatchObject({
-        OPENCLAW_RUNTIME_POSTBUILD_STATIC_ASSETS: "0",
+        AFORA_RUNTIME_POSTBUILD_STATIC_ASSETS: "0",
       });
     }
   });
@@ -660,10 +660,10 @@ describe("resolveBuildAllSteps", () => {
       ).toBeUndefined();
       expect(
         resolveBuildAllStep(runtimePostbuild, {
-          env: { OPENCLAW_RUNTIME_POSTBUILD_STATIC_ASSETS: "1" },
+          env: { AFORA_RUNTIME_POSTBUILD_STATIC_ASSETS: "1" },
         }).options.env,
       ).toMatchObject({
-        OPENCLAW_RUNTIME_POSTBUILD_STATIC_ASSETS: "1",
+        AFORA_RUNTIME_POSTBUILD_STATIC_ASSETS: "1",
       });
     }
   });
@@ -729,7 +729,7 @@ describe("resolveBuildAllSteps", () => {
 
   it("does not cache ui:build because Vite reads package.json, git HEAD, and env metadata", () => {
     // ui/vite.config.ts derives the Control UI build ID from package.json,
-    // git HEAD, and OPENCLAW_CONTROL_UI_BUILD_ID env, so a file-input
+    // git HEAD, and AFORA_CONTROL_UI_BUILD_ID env, so a file-input
     // signature cannot exactly invalidate generated assets. Leaving this
     // step uncached avoids restoring stale service-worker/app cache
     // metadata after `tsdown` clears `dist`.
@@ -741,10 +741,10 @@ describe("resolveBuildAllSteps", () => {
 
   it("caches plugin-sdk entry declarations without restoring compiled JS", () => {
     const step = getBuildAllStep("write-plugin-sdk-entry-dts");
-    expect(step.env).toEqual({ OPENCLAW_PLUGIN_SDK_CANONICAL_DTS: "1" });
+    expect(step.env).toEqual({ AFORA_PLUGIN_SDK_CANONICAL_DTS: "1" });
     expect(step.cache?.env).toEqual([
-      "OPENCLAW_BUILD_PRIVATE_QA",
-      "OPENCLAW_PLUGIN_SDK_CANONICAL_DTS",
+      "AFORA_BUILD_PRIVATE_QA",
+      "AFORA_PLUGIN_SDK_CANONICAL_DTS",
     ]);
     expect(step.cache?.inputs).toEqual(
       expect.arrayContaining([
@@ -798,9 +798,9 @@ describe("build-all timing output", () => {
 
 describe("resolveBuildAllStepCacheState", () => {
   it("restores exact declaration snapshots across checkout roots", () => {
-    const cacheRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-shared-build-cache-"));
-    const firstRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-build-cache-source-"));
-    const secondRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-build-cache-target-"));
+    const cacheRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-shared-build-cache-"));
+    const firstRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-build-cache-source-"));
+    const secondRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-build-cache-target-"));
     const step = {
       label: "tsdown-unified",
       cache: {
@@ -857,7 +857,7 @@ describe("resolveBuildAllStepCacheState", () => {
   });
 
   it("invalidates only declaration groups that depend on the changed module", () => {
-    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-tsdown-group-cache-"));
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-tsdown-group-cache-"));
     const ai = getBuildAllStep("tsdown-ai");
     const packages = getBuildAllStep("tsdown-packages");
     const unified = getBuildAllStep("tsdown-unified");
@@ -1106,18 +1106,18 @@ describe("resolveBuildAllStepCacheState", () => {
         ...step,
         cache: {
           ...step.cache,
-          env: ["OPENCLAW_BUILD_PRIVATE_QA"],
+          env: ["AFORA_BUILD_PRIVATE_QA"],
         },
       };
       const cacheState = resolveBuildAllStepCacheState(envStep, {
         rootDir,
-        env: { OPENCLAW_BUILD_PRIVATE_QA: "0" },
+        env: { AFORA_BUILD_PRIVATE_QA: "0" },
       });
       writeBuildAllStepCacheStamp(envStep, cacheState, { rootDir });
 
       const stale = resolveBuildAllStepCacheState(envStep, {
         rootDir,
-        env: { OPENCLAW_BUILD_PRIVATE_QA: "1" },
+        env: { AFORA_BUILD_PRIVATE_QA: "1" },
       });
       expect(stale.cacheable).toBe(true);
       expect(stale.fresh).toBe(false);

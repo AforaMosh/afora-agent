@@ -5,13 +5,13 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveGatewayScopedTools } from "./tool-resolution.js";
 
 describe("resolveGatewayScopedTools", () => {
   beforeAll(() => {
     resolveGatewayScopedTools({
-      cfg: { tools: { profile: "minimal" } } as OpenClawConfig,
+      cfg: { tools: { profile: "minimal" } } as AforaConfig,
       sessionKey: "agent:main:telegram:group:-100123",
       messageProvider: "telegram",
       inboundEventKind: "room_event",
@@ -21,7 +21,7 @@ describe("resolveGatewayScopedTools", () => {
 
   it("force-allows the message tool for room-event loopback turns", () => {
     const result = resolveGatewayScopedTools({
-      cfg: { tools: { profile: "minimal" } } as OpenClawConfig,
+      cfg: { tools: { profile: "minimal" } } as AforaConfig,
       sessionKey: "agent:main:telegram:group:-100123",
       messageProvider: "telegram",
       inboundEventKind: "room_event",
@@ -34,7 +34,7 @@ describe("resolveGatewayScopedTools", () => {
 
   it("keeps webchat room-event turns on automatic source delivery", () => {
     const result = resolveGatewayScopedTools({
-      cfg: { tools: { profile: "minimal" } } as OpenClawConfig,
+      cfg: { tools: { profile: "minimal" } } as AforaConfig,
       sessionKey: "agent:main:webchat:forge-main",
       messageProvider: "webchat",
       inboundEventKind: "room_event",
@@ -46,7 +46,7 @@ describe("resolveGatewayScopedTools", () => {
 
   it("force-allows the message tool for routed webchat room-event turns", () => {
     const result = resolveGatewayScopedTools({
-      cfg: { tools: { profile: "minimal" } } as OpenClawConfig,
+      cfg: { tools: { profile: "minimal" } } as AforaConfig,
       sessionKey: "agent:main:telegram:group:-100123",
       messageProvider: "webchat",
       inboundEventKind: "room_event",
@@ -60,7 +60,7 @@ describe("resolveGatewayScopedTools", () => {
 
   it("keeps ordinary loopback turns under the configured profile", () => {
     const result = resolveGatewayScopedTools({
-      cfg: { tools: { profile: "minimal" } } as OpenClawConfig,
+      cfg: { tools: { profile: "minimal" } } as AforaConfig,
       sessionKey: "agent:main:telegram:group:-100123",
       messageProvider: "telegram",
       inboundEventKind: "user_request",
@@ -73,7 +73,7 @@ describe("resolveGatewayScopedTools", () => {
   it("keeps default-agent credentials out of unbound gateway calls", () => {
     const cfg = {
       agents: { defaults: { imageModel: { primary: "openai/gpt-5.4-mini" } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const unbound = resolveGatewayScopedTools({
       cfg,
       sessionKey: "agent:main:main",
@@ -92,7 +92,7 @@ describe("resolveGatewayScopedTools", () => {
 
   it("uses the prepared vision fact for the loopback image loader", () => {
     const result = resolveGatewayScopedTools({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       agentDir: "/agents/cli",
       sessionKey: "agent:main:main",
       modelHasVision: true,
@@ -116,7 +116,7 @@ describe("resolveGatewayScopedTools", () => {
           worker: { tools: { deny: ["sessions_list"] } },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const result = resolveGatewayScopedTools({
       cfg,
@@ -138,7 +138,7 @@ describe("resolveGatewayScopedTools", () => {
         ownership: "explicit",
         entries: { main: {}, worker: {} },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(() =>
       resolveGatewayScopedTools({
@@ -153,10 +153,10 @@ describe("resolveGatewayScopedTools", () => {
   });
 
   it("materializes an executable write tool on the mediated CLI surface", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-mediated-write-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-mediated-write-"));
     try {
       const result = resolveGatewayScopedTools({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         sessionKey: "agent:main:cron:mediated-write",
         surface: "loopback",
         workspaceDir,
@@ -183,7 +183,7 @@ describe("resolveGatewayScopedTools", () => {
       cfg: {
         agents: { defaults: { sandbox: { mode: "all" } } },
         tools: { sandbox: { tools: { deny: ["sessions_list"] } } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       sessionKey: "agent:main:main",
       surface: "loopback",
     });
@@ -198,7 +198,7 @@ describe("resolveGatewayScopedTools", () => {
       cfg: {
         agents: { defaults: { sandbox: { mode: "non-main" } } },
         tools: { sandbox: { tools: { deny: ["sessions_list"] } } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       sessionKey: "agent:main:main",
       surface: "loopback",
     });
@@ -208,12 +208,12 @@ describe("resolveGatewayScopedTools", () => {
 
   it("exposes task suggestion tools only for actionable loopback turns", () => {
     const withoutActions = resolveGatewayScopedTools({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       sessionKey: "agent:main:main",
       surface: "loopback",
     });
     const withActions = resolveGatewayScopedTools({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       sessionKey: "agent:main:main",
       taskSuggestionDeliveryMode: "gateway",
       surface: "loopback",
@@ -228,7 +228,7 @@ describe("resolveGatewayScopedTools", () => {
   it("passes loopback yield context into sessions_yield", async () => {
     const onYield = vi.fn();
     const result = resolveGatewayScopedTools({
-      cfg: { tools: { profile: "minimal", alsoAllow: ["sessions_yield"] } } as OpenClawConfig,
+      cfg: { tools: { profile: "minimal", alsoAllow: ["sessions_yield"] } } as AforaConfig,
       sessionKey: "agent:main:telegram:group:-100123",
       sessionId: "session-123",
       onYield,

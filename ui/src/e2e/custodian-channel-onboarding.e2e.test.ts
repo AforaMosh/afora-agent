@@ -14,7 +14,7 @@ import {
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
 const artifactDir = path.join(
   process.cwd(),
@@ -81,9 +81,9 @@ describeControlUiE2e("Control UI Custodian channel onboarding mocked Gateway E2E
         "chat.startup",
         "channels.pairing.list",
         "channels.status",
-        "openclaw.setup.detect",
-        "openclaw.setup.activate",
-        "openclaw.chat",
+        "afora.setup.detect",
+        "afora.setup.activate",
+        "afora.chat",
       ],
       methodResponses: {
         "channels.pairing.list": {
@@ -93,7 +93,7 @@ describeControlUiE2e("Control UI Custodian channel onboarding mocked Gateway E2E
           limits: { pendingPerAccount: 3, ttlMs: 3_600_000 },
         },
         "channels.status": emptyChannelSnapshot,
-        "openclaw.setup.detect": {
+        "afora.setup.detect": {
           candidates: [
             {
               kind: "codex-cli",
@@ -106,16 +106,16 @@ describeControlUiE2e("Control UI Custodian channel onboarding mocked Gateway E2E
             },
           ],
           manualProviders: [{ id: "openai", label: "OpenAI" }],
-          workspace: "/tmp/openclaw-e2e",
+          workspace: "/tmp/afora-e2e",
           setupComplete: false,
         },
-        "openclaw.setup.activate": {
+        "afora.setup.activate": {
           ok: true,
           modelRef: "openai/gpt-5",
           latencyMs: 73,
           lines: ["Model ready"],
         },
-        "openclaw.chat": {
+        "afora.chat": {
           sessionId: "e2e-channel-onboarding",
           reply: "Your AI is ready. The web app works now.",
           action: "none",

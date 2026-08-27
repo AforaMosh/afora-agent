@@ -1,5 +1,5 @@
 // Matrix plugin module implements setup contract behavior.
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/routing";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "afora-agent/plugin-sdk/routing";
 
 export const matrixSingleAccountKeysToMove = [
   "homeserver",

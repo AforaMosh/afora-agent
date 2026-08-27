@@ -6,7 +6,7 @@ import type {
   ChannelOutboundAdapter,
   ChannelOutboundContext,
 } from "../../channels/plugins/types.adapters.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { createEmptyPluginRegistry } from "../../plugins/registry.js";
 import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../../test-utils/channel-plugins.js";
@@ -22,7 +22,7 @@ import { acceptedPreparedOutboundEntries } from "./prepared-batch.js";
 
 let deliverOutboundPayloads: typeof import("./deliver.js").deliverOutboundPayloads;
 
-const cfg = {} as OpenClawConfig;
+const cfg = {} as AforaConfig;
 
 function installMatrixAdapter(outbound: ChannelOutboundAdapter): void {
   setActivePluginRegistry(
@@ -92,7 +92,7 @@ describe("delivery-queue MEDIA-directive durability (end-to-end)", () => {
 
   beforeEach(async () => {
     tmpDir = fixtures.tmpDir();
-    process.env.OPENCLAW_STATE_DIR = tmpDir;
+    process.env.AFORA_STATE_DIR = tmpDir;
     spoolRoot = path.join(tmpDir, "delivery-queue-media");
     sourceDir = await fs.realpath(await fs.mkdtemp(path.join(tmpDir, "src-")));
   });

@@ -8,7 +8,7 @@ import {
 import type {
   DB as StateDatabase,
   WorkerSessionPlacements,
-} from "../../state/openclaw-state-db.generated.js";
+} from "../../state/afora-state-db.generated.js";
 import {
   activeTurnClaimForState,
   assertRecordShape,

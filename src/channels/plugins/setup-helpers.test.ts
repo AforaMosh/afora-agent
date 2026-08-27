@@ -1,8 +1,8 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 // Setup helper tests cover channel setup helper outputs and lifecycle cleanup.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "../../plugins/runtime.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../routing/session-key.js";
 import {
@@ -19,13 +19,13 @@ import {
 } from "./setup-helpers.js";
 import type { ChannelSetupAdapter } from "./types.adapters.js";
 
-function asConfig(value: unknown): OpenClawConfig {
-  return value as OpenClawConfig;
+function asConfig(value: unknown): AforaConfig {
+  return value as AforaConfig;
 }
 
 const requireRecord = createRequireRecord("record", "expected-non-array-record");
 
-function channelRecord(cfg: OpenClawConfig, channelKey: string): Record<string, unknown> {
+function channelRecord(cfg: AforaConfig, channelKey: string): Record<string, unknown> {
   return requireRecord(cfg.channels?.[channelKey]);
 }
 

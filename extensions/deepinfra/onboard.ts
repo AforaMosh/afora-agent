@@ -1,13 +1,13 @@
 // Deepinfra setup module handles plugin onboarding behavior.
 import {
   createAliasOnlyPresetAppliers,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/provider-onboard";
+  type AforaConfig,
+} from "afora-agent/plugin-sdk/provider-onboard";
 import { DEEPINFRA_DEFAULT_MODEL_REF } from "./provider-models.js";
 
 export function applyDeepInfraConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   modelRef: string = DEEPINFRA_DEFAULT_MODEL_REF,
-): OpenClawConfig {
+): AforaConfig {
   return createAliasOnlyPresetAppliers({ modelRef, alias: "DeepInfra" }).applyConfig(cfg);
 }

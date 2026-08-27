@@ -1,5 +1,5 @@
 // Coverage for prompt-cache diagnostic tracking across turns.
-import { SYSTEM_PROMPT_CACHE_BOUNDARY } from "@openclaw/ai/internal/shared";
+import { SYSTEM_PROMPT_CACHE_BOUNDARY } from "@afora/ai/internal/shared";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   beginPromptCacheObservation,
@@ -352,7 +352,7 @@ describe("prompt cache observability", () => {
     // new session ids.
     beginPromptCacheObservation({
       sessionId: "isolated-run-1",
-      promptCacheKey: scopedKey("openclaw-cron-stable-cache-key"),
+      promptCacheKey: scopedKey("afora-cron-stable-cache-key"),
       sessionKey: "agent:cron:run:isolated-run-1",
       provider: "openai",
       modelId: "gpt-5.4",
@@ -363,14 +363,14 @@ describe("prompt cache observability", () => {
     });
     completePromptCacheObservation({
       sessionId: "isolated-run-1",
-      promptCacheKey: scopedKey("openclaw-cron-stable-cache-key"),
+      promptCacheKey: scopedKey("afora-cron-stable-cache-key"),
       sessionKey: "agent:cron:run:isolated-run-1",
       usage: { cacheRead: 8_000 },
     });
 
     const nextRun = beginPromptCacheObservation({
       sessionId: "isolated-run-2",
-      promptCacheKey: scopedKey("openclaw-cron-stable-cache-key"),
+      promptCacheKey: scopedKey("afora-cron-stable-cache-key"),
       sessionKey: "agent:cron:run:isolated-run-2",
       provider: "openai",
       modelId: "gpt-5.4",

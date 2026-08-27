@@ -1,14 +1,14 @@
 // Migrate Hermes tests cover provider.secret failure plugin behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolveAuthStorePathForDisplay } from "openclaw/plugin-sdk/agent-runtime";
-import type { MigrationProviderContext } from "openclaw/plugin-sdk/plugin-entry";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/provider-auth";
+import { resolveAuthStorePathForDisplay } from "afora-agent/plugin-sdk/agent-runtime";
+import type { MigrationProviderContext } from "afora-agent/plugin-sdk/plugin-entry";
+import type { AforaConfig } from "afora-agent/plugin-sdk/provider-auth";
 import {
-  resolvePreferredOpenClawTmpDir,
+  resolvePreferredAforaTmpDir,
   tempWorkspace,
   type TempWorkspace,
-} from "openclaw/plugin-sdk/temp-path";
+} from "afora-agent/plugin-sdk/temp-path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HERMES_REASON_AUTH_PROFILE_WRITE_FAILED } from "./items.js";
 
@@ -16,8 +16,8 @@ const mocks = vi.hoisted(() => ({
   updateAuthProfileStoreWithLock: vi.fn(async () => null),
 }));
 
-vi.mock("openclaw/plugin-sdk/provider-auth", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/provider-auth")>()),
+vi.mock("afora-agent/plugin-sdk/provider-auth", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/provider-auth")>()),
   updateAuthProfileStoreWithLock: mocks.updateAuthProfileStoreWithLock,
 }));
 
@@ -49,7 +49,7 @@ function makeContext(params: {
           workspace: params.workspaceDir,
         },
       },
-    } as OpenClawConfig,
+    } as AforaConfig,
     stateDir: params.stateDir,
     source: params.source,
     includeSecrets: true,
@@ -72,8 +72,8 @@ function authProfileTarget(agentDir: string, profileId: string): string {
 describe("Hermes migration provider secret write failures", () => {
   beforeEach(async () => {
     testWorkspace = await tempWorkspace({
-      rootDir: resolvePreferredOpenClawTmpDir(),
-      prefix: "openclaw-hermes-secret-failure-",
+      rootDir: resolvePreferredAforaTmpDir(),
+      prefix: "afora-hermes-secret-failure-",
     });
   });
 

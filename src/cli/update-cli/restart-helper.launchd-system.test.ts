@@ -26,7 +26,7 @@ describe("macOS update restart system ownership", () => {
       value: "darwin",
     });
     process.getuid = () => 501;
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-restart-system-"));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-restart-system-"));
     const fakeBinDir = path.join(tmpDir, "bin");
     const stateDir = path.join(tmpDir, "state");
     const activationMarker = path.join(tmpDir, "activation-ran");
@@ -35,7 +35,7 @@ describe("macOS update restart system ownership", () => {
     await fs.writeFile(
       path.join(fakeBinDir, "launchctl"),
       `#!/bin/sh
-if [ "$1" = "print" ] && [ "$2" = "system/ai.openclaw.gateway" ]; then
+if [ "$1" = "print" ] && [ "$2" = "system/ai.afora.gateway" ]; then
   exit 0
 fi
 printf activated > "$ACTIVATION_MARKER"
@@ -46,9 +46,9 @@ exit 0
 
     try {
       const scriptPath = await prepareRestartScript({
-        OPENCLAW_PROFILE: "default",
+        AFORA_PROFILE: "default",
         HOME: path.join(tmpDir, "home"),
-        OPENCLAW_STATE_DIR: stateDir,
+        AFORA_STATE_DIR: stateDir,
       });
       if (!scriptPath) {
         throw new Error("expected restart script path");
@@ -70,8 +70,8 @@ exit 0
 
       expect(exitCode).toBe(78);
       await expect(fs.access(activationMarker)).rejects.toMatchObject({ code: "ENOENT" });
-      expect(log).toContain("openclaw restart blocked source=update");
-      expect(log).toContain("loaded system LaunchDaemon system/ai.openclaw.gateway");
+      expect(log).toContain("afora restart blocked source=update");
+      expect(log).toContain("loaded system LaunchDaemon system/ai.afora.gateway");
     } finally {
       await fs.rm(tmpDir, { recursive: true, force: true });
     }

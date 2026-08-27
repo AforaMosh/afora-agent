@@ -1,5 +1,5 @@
 // Tests user-facing pairing messages and setup command copy.
-import { expectPairingReplyText } from "openclaw/plugin-sdk/channel-test-helpers";
+import { expectPairingReplyText } from "afora-agent/plugin-sdk/channel-test-helpers";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { captureEnv } from "../test-utils/env.js";
 import { buildPairingReply } from "./pairing-messages.js";
@@ -8,9 +8,9 @@ describe("buildPairingReply", () => {
   let envSnapshot: ReturnType<typeof captureEnv>;
 
   beforeEach(() => {
-    envSnapshot = captureEnv(["OPENCLAW_CONTAINER_HINT", "OPENCLAW_PROFILE"]);
-    delete process.env.OPENCLAW_CONTAINER_HINT;
-    process.env.OPENCLAW_PROFILE = "isolated";
+    envSnapshot = captureEnv(["AFORA_CONTAINER_HINT", "AFORA_PROFILE"]);
+    delete process.env.AFORA_CONTAINER_HINT;
+    process.env.AFORA_PROFILE = "isolated";
   });
 
   afterEach(() => {
@@ -52,7 +52,7 @@ describe("buildPairingReply", () => {
 
   function expectPairingApproveCommand(text: string, testCase: (typeof pairingReplyCases)[number]) {
     const commandRe = new RegExp(
-      `(?:openclaw|openclaw) --profile isolated pairing approve ${testCase.channel} ${testCase.code}`,
+      `(?:afora|afora) --profile isolated pairing approve ${testCase.channel} ${testCase.code}`,
     );
     expect(text).toMatch(commandRe);
     expect(

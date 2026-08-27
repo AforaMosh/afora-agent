@@ -25,7 +25,7 @@ describe("runGcloud interpreter resolution", () => {
     "resolves a working python path and caches the result",
     async () => {
       const { runGcloud } = await loadGmailSetupUtils();
-      const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-python-"));
+      const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "afora-python-"));
       try {
         const realPython = path.join(tmp, "python-real");
         await fs.writeFile(realPython, "#!/bin/sh\nexit 0\n", "utf-8");
@@ -76,7 +76,7 @@ describe("runGcloud interpreter resolution", () => {
     "skips Python versions below and above gcloud's supported range",
     async () => {
       const { runGcloud } = await loadGmailSetupUtils();
-      const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-python-ver-"));
+      const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "afora-python-ver-"));
       try {
         const oldPython = path.join(tmp, "python-old");
         await fs.writeFile(oldPython, "#!/bin/sh\nexit 0\n", "utf-8");
@@ -149,7 +149,7 @@ describe("runGcloud", () => {
     "overrides an inherited CLOUDSDK_PYTHON value with a resolved interpreter",
     async () => {
       const { runGcloud } = await loadGmailSetupUtils();
-      const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gcloud-python-"));
+      const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "afora-gcloud-python-"));
       try {
         const realPython = path.join(tmp, "python-real");
         await fs.writeFile(realPython, "#!/bin/sh\nexit 0\n", "utf-8");

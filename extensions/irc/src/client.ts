@@ -1,8 +1,8 @@
 // Irc plugin module implements client behavior.
 import net from "node:net";
 import tls from "node:tls";
-import { withTimeout } from "openclaw/plugin-sdk/security-runtime";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { withTimeout } from "afora-agent/plugin-sdk/security-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   parseIrcLine,
   parseIrcPrefix,
@@ -104,7 +104,7 @@ let nickCollisionFallbackSeq = 0;
 function buildFallbackNick(nick: string): string {
   const normalized = nick.replace(/\s+/g, "");
   const safe = normalized.replace(/[^A-Za-z0-9_\-[\]\\`^{}|]/g, "");
-  const base = safe || "openclaw";
+  const base = safe || "afora";
   const seq = ++nickCollisionFallbackSeq;
   const suffix = seq === 1 ? "_" : `_${seq}`;
   const maxNickLen = 30;

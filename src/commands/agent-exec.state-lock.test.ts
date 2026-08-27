@@ -32,8 +32,8 @@ function createGatewayLockOptions(
     allowInTests: true,
     env: {
       ...process.env,
-      OPENCLAW_CONFIG_PATH: path.join(stateDir, "openclaw.json"),
-      OPENCLAW_STATE_DIR: stateDir,
+      AFORA_CONFIG_PATH: path.join(stateDir, "afora.json"),
+      AFORA_STATE_DIR: stateDir,
     },
     lockDir: path.join(stateDir, "gateway-locks"),
     timeoutMs: 100,
@@ -68,7 +68,7 @@ function createSignalProcess() {
 
 describe("agent exec retained-state ownership", () => {
   it("refuses a state directory owned by a live Gateway", async () => {
-    const stateDir = tempDirs.make("openclaw-agent-exec-gateway-owner-");
+    const stateDir = tempDirs.make("afora-agent-exec-gateway-owner-");
     const lockOptions = createGatewayLockOptions(stateDir, {
       readProcessStartTime: () => 123_456,
     });
@@ -88,7 +88,7 @@ describe("agent exec retained-state ownership", () => {
       expect(result.exitCode).toBe(1);
       expect(runAgent).not.toHaveBeenCalled();
       expect(error).toHaveBeenCalledWith(
-        `A Gateway is running for this state directory (pid ${process.pid}, port 28789). Omit --state-dir to use isolated temporary state, or stop the Gateway first (openclaw gateway stop).`,
+        `A Gateway is running for this state directory (pid ${process.pid}, port 28789). Omit --state-dir to use isolated temporary state, or stop the Gateway first (afora gateway stop).`,
       );
     } finally {
       await gatewayLock.release();
@@ -96,7 +96,7 @@ describe("agent exec retained-state ownership", () => {
   });
 
   it("holds and releases the embedded state lock around the run", async () => {
-    const stateDir = tempDirs.make("openclaw-agent-exec-lock-owner-");
+    const stateDir = tempDirs.make("afora-agent-exec-lock-owner-");
     const lockOptions = createGatewayLockOptions(stateDir);
     const stateLockPath = path.join(lockOptions.lockDir!, "gateway.state.lock");
 
@@ -116,7 +116,7 @@ describe("agent exec retained-state ownership", () => {
   });
 
   it("releases the embedded state lock when SIGTERM aborts the run", async () => {
-    const stateDir = tempDirs.make("openclaw-agent-exec-signal-owner-");
+    const stateDir = tempDirs.make("afora-agent-exec-signal-owner-");
     const lockOptions = createGatewayLockOptions(stateDir);
     const stateLockPath = path.join(lockOptions.lockDir!, "gateway.state.lock");
     const signals = createSignalProcess();

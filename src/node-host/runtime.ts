@@ -1,7 +1,7 @@
 /** Transport-independent CLI node-host runtime shared by Gateway and app workers. */
 import fs from "node:fs";
 import type { CloudflareAccessCredentials } from "../../packages/gateway-client/src/cloudflare-access.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { getRuntimeConfig } from "../config/config.js";
 import type { SkillBinTrustEntry } from "../infra/exec-approvals.js";
 import { resolveExecutableFromPathEnv } from "../infra/executable-path.js";
@@ -15,12 +15,12 @@ import {
   NODE_SYSTEM_RUN_COMMANDS,
   NODE_TERMINAL_UPLOAD_COMMAND,
 } from "../infra/node-commands.js";
-import { ensureOpenClawCliOnPath } from "../infra/path-env.js";
+import { ensureAforaCliOnPath } from "../infra/path-env.js";
 import { ensureTerminalUploadCleanup } from "../infra/terminal-file-upload.js";
 import { logDebug } from "../logger.js";
 import type { ComputerUseCapabilityDescriptor } from "../plugins/computer-use-contract.js";
-import type { OpenClawPluginNodeHostCommandIo } from "../plugins/types.js";
-import type { OpenClawPluginNodeHostCommandContext } from "../plugins/types.node-host.js";
+import type { AforaPluginNodeHostCommandIo } from "../plugins/types.js";
+import type { AforaPluginNodeHostCommandContext } from "../plugins/types.node-host.js";
 import { BoundedBuffer } from "../shared/bounded-buffer.js";
 import { NODE_DESKTOP_STREAM_COMMAND } from "../shared/node-desktop-stream.js";
 import type { NodeHostClient } from "./client.js";
@@ -207,7 +207,7 @@ class SkillBinsCache implements SkillBinsProvider {
 }
 
 function ensureNodePathEnv(): string {
-  ensureOpenClawCliOnPath({ pathEnv: process.env.PATH ?? "" });
+  ensureAforaCliOnPath({ pathEnv: process.env.PATH ?? "" });
   const current = process.env.PATH ?? "";
   if (current.trim()) {
     return current;
@@ -246,7 +246,7 @@ function sameManifest(left: NodeHostManifest, right: NodeHostManifest): boolean 
 }
 
 export async function prepareNodeHostRuntime(params?: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   /** The embedded app worker never advertises native agent runs. */
   enableAgentRuns?: boolean;
@@ -341,7 +341,7 @@ export async function prepareNodeHostRuntime(params?: {
       const skillBins = new SkillBinsCache(client, pathEnv);
       const activeInvokes = new Map<string, ActiveNodeInvoke>();
       let pluginDisconnectCleanup: Promise<void> = Promise.resolve();
-      const pluginCommandContext: OpenClawPluginNodeHostCommandContext = {
+      const pluginCommandContext: AforaPluginNodeHostCommandContext = {
         sendNodeEvent: async (event, payload) =>
           await client.request("node.event", buildNodeEventParams(event, payload)),
       };
@@ -434,7 +434,7 @@ export async function prepareNodeHostRuntime(params?: {
           if (duplexCommand) {
             progress?.startHeartbeats();
           }
-          const pluginCommandIo: OpenClawPluginNodeHostCommandIo | undefined =
+          const pluginCommandIo: AforaPluginNodeHostCommandIo | undefined =
             input && progress
               ? {
                   signal: controller.signal,

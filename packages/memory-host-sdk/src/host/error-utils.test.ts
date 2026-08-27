@@ -16,9 +16,9 @@ const TOKEN_CASES = [
 let tempDirs: string[] = [];
 
 function writeConfig(source: string): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-memory-redact-config-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-memory-redact-config-"));
   tempDirs.push(dir);
-  const configPath = path.join(dir, "openclaw.json");
+  const configPath = path.join(dir, "afora.json");
   fs.writeFileSync(configPath, source);
   return configPath;
 }
@@ -91,7 +91,7 @@ describe("formatErrorMessage", () => {
     const providerToken = `ghp_${"a".repeat(20)}`;
     const customSecret = "internal-ticket-12345";
 
-    const output = withEnv({ OPENCLAW_CONFIG_PATH: configPath }, () =>
+    const output = withEnv({ AFORA_CONFIG_PATH: configPath }, () =>
       formatErrorMessage(`memory failed: ${providerToken} ${customSecret}`),
     );
 

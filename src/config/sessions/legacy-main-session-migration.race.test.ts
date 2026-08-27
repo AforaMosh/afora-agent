@@ -3,10 +3,10 @@ import path from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  runOpenClawAgentWriteTransaction,
-} from "../../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  runAforaAgentWriteTransaction,
+} from "../../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../../state/afora-state-db.js";
 import { migrateLegacyMainSessionKeys } from "./legacy-main-session-migration.js";
 import { readExactSessionEntryRowForCanonicalRepair } from "./session-accessor.sqlite-canonical-repair.js";
 import { writeSessionEntry } from "./session-accessor.sqlite-entry-store.js";
@@ -33,11 +33,11 @@ vi.mock("./session-accessor.sqlite-lifecycle.js", async (importOriginal) => {
 const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 function databasePath(stateDir: string, agentId: string): string {
-  return path.join(stateDir, "agents", agentId, "agent", "openclaw-agent.sqlite");
+  return path.join(stateDir, "agents", agentId, "agent", "afora-agent.sqlite");
 }
 
 function seedClaim(databaseAgentId: string, databasePathname: string, key: string): void {
-  runOpenClawAgentWriteTransaction(
+  runAforaAgentWriteTransaction(
     (database) => {
       const entry = { sessionId: "race-session", updatedAt: 100 };
       writeSessionEntry(database, key, entry, {
@@ -61,7 +61,7 @@ function seedClaim(databaseAgentId: string, databasePathname: string, key: strin
 }
 
 function readClaim(databaseAgentId: string, databasePathname: string, key: string) {
-  return runOpenClawAgentWriteTransaction(
+  return runAforaAgentWriteTransaction(
     (database) => {
       const entry = readExactSessionEntryRowForCanonicalRepair(database, key)?.entry;
       return entry
@@ -77,17 +77,17 @@ function readClaim(databaseAgentId: string, databasePathname: string, key: strin
 
 afterEach(() => {
   race.beforeDelete = undefined;
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 async function runCleanupRace(mutateSource: (mainPath: string) => void) {
-  const root = fs.realpathSync.native(tempDirs.make("openclaw-legacy-main-race-"));
+  const root = fs.realpathSync.native(tempDirs.make("afora-legacy-main-race-"));
   const stateDir = path.join(root, "state");
   fs.mkdirSync(stateDir, { recursive: true });
   const mainPath = databasePath(stateDir, "main");
   const opsPath = databasePath(stateDir, "ops");
-  const env = { ...process.env, OPENCLAW_AGENT_DIR: undefined, OPENCLAW_STATE_DIR: stateDir };
+  const env = { ...process.env, AFORA_AGENT_DIR: undefined, AFORA_STATE_DIR: stateDir };
   seedClaim("main", mainPath, "agent:main:chat");
   race.beforeDelete = () => mutateSource(mainPath);
 
@@ -102,7 +102,7 @@ async function runCleanupRace(mutateSource: (mainPath: string) => void) {
 
 it("preserves both claims when the source transcript changes before atomic cleanup", async () => {
   const { mainPath, opsPath, result } = await runCleanupRace((sourcePath) => {
-    runOpenClawAgentWriteTransaction(
+    runAforaAgentWriteTransaction(
       (database) => {
         appendTranscriptEventInTransaction(
           database,
@@ -128,7 +128,7 @@ it("preserves both claims when the source transcript changes before atomic clean
 
 it("preserves both claims when the source entry becomes locked before cleanup", async () => {
   const { mainPath, opsPath, result } = await runCleanupRace((sourcePath) => {
-    runOpenClawAgentWriteTransaction(
+    runAforaAgentWriteTransaction(
       (database) => {
         const current = readExactSessionEntryRowForCanonicalRepair(
           database,

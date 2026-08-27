@@ -5,8 +5,8 @@ import {
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../infra/kysely-sync.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "../state/openclaw-state-db-readonly.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import { withExistingAforaStateDatabaseReadOnly } from "../state/afora-state-db-readonly.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 
 export type ReservedKeyRename = { from: string; to: string };
 
@@ -154,7 +154,7 @@ function collectJsonStringValues(value: unknown, values: Set<string>): void {
 }
 
 export function readRepairJournal(database: DatabaseSync): ReservedKeyRename[] {
-  const db = getNodeSqliteKysely<Pick<OpenClawStateKyselyDatabase, "state_leases">>(database);
+  const db = getNodeSqliteKysely<Pick<AforaStateKyselyDatabase, "state_leases">>(database);
   const row = executeSqliteQueryTakeFirstSync(
     database,
     db
@@ -186,7 +186,7 @@ export function readRepairJournal(database: DatabaseSync): ReservedKeyRename[] {
 
 export function readRepairJournalReadOnly(env: NodeJS.ProcessEnv): ReservedKeyRename[] {
   return (
-    withExistingOpenClawStateDatabaseReadOnly((database) => readRepairJournal(database.db), {
+    withExistingAforaStateDatabaseReadOnly((database) => readRepairJournal(database.db), {
       env,
     }) ?? []
   );
@@ -197,7 +197,7 @@ export function writeRepairJournal(
   renames: readonly ReservedKeyRename[],
 ): void {
   const now = Date.now();
-  const db = getNodeSqliteKysely<Pick<OpenClawStateKyselyDatabase, "state_leases">>(database);
+  const db = getNodeSqliteKysely<Pick<AforaStateKyselyDatabase, "state_leases">>(database);
   executeSqliteQuerySync(
     database,
     db
@@ -205,7 +205,7 @@ export function writeRepairJournal(
       .values({
         scope: REPAIR_JOURNAL_SCOPE,
         lease_key: REPAIR_JOURNAL_KEY,
-        owner: "openclaw-doctor",
+        owner: "afora-doctor",
         expires_at: null,
         heartbeat_at: null,
         payload_json: JSON.stringify({ version: 1, renames }),
@@ -214,7 +214,7 @@ export function writeRepairJournal(
       })
       .onConflict((conflict) =>
         conflict.columns(["scope", "lease_key"]).doUpdateSet({
-          owner: "openclaw-doctor",
+          owner: "afora-doctor",
           payload_json: JSON.stringify({ version: 1, renames }),
           updated_at: now,
         }),
@@ -223,7 +223,7 @@ export function writeRepairJournal(
 }
 
 export function deleteRepairJournal(database: DatabaseSync): void {
-  const db = getNodeSqliteKysely<Pick<OpenClawStateKyselyDatabase, "state_leases">>(database);
+  const db = getNodeSqliteKysely<Pick<AforaStateKyselyDatabase, "state_leases">>(database);
   executeSqliteQuerySync(
     database,
     db

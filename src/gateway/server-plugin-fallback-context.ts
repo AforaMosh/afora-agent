@@ -2,7 +2,7 @@ import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 import type { GatewayRequestContext } from "./server-methods/types.js";
 
 const FALLBACK_GATEWAY_CONTEXT_STATE_KEY: unique symbol = Symbol.for(
-  "openclaw.fallbackGatewayContextState",
+  "afora.fallbackGatewayContextState",
 );
 
 type FallbackGatewayContextState = {

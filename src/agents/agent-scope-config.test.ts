@@ -1,7 +1,7 @@
 // Agent scope tests cover which per-agent fields may flatten into runtime defaults.
 import { describe, expect, it, vi } from "vitest";
 import { migratePersistedImplicitMainRoster } from "../config/legacy.roster.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   AgentSelectionRequiredError,
   listAgentEntriesWithSource,
@@ -106,7 +106,7 @@ describe("agent roster resolution", () => {
         defaults: { workspace: "/srv/ops" },
         entries: { ops: { default: true }, research: {} },
       },
-    }).config as OpenClawConfig;
+    }).config as AforaConfig;
 
     expect(cfg.agents?.entries?.ops?.default).toBeUndefined();
     expect(cfg.agents?.entries?.ops?.workspace).toBeUndefined();
@@ -115,7 +115,7 @@ describe("agent roster resolution", () => {
   });
 
   it("keeps a raw legacy marker owner on the inherited workspace", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: { workspace: "/srv/ops" },
         entries: { ops: { default: true }, research: {} },
@@ -127,12 +127,12 @@ describe("agent roster resolution", () => {
   });
 
   it("keeps the implicit default workspace inside an overridden state directory", () => {
-    const stateDir = "/srv/openclaw-scratch";
+    const stateDir = "/srv/afora-scratch";
 
     expect(
       resolveAgentWorkspaceDir({}, "main", {
         HOME: "/home/operator",
-        OPENCLAW_STATE_DIR: stateDir,
+        AFORA_STATE_DIR: stateDir,
       }),
     ).toBe(`${stateDir}/workspace`);
   });
@@ -143,7 +143,7 @@ describe("agent roster resolution", () => {
       expect(
         tryResolveDefaultAgentId({
           agents: { entries: { alpha: { default: marker } } },
-        } as unknown as OpenClawConfig),
+        } as unknown as AforaConfig),
       ).toBe("alpha");
     }
   });
@@ -152,7 +152,7 @@ describe("agent roster resolution", () => {
     const entry = JSON.parse('{"__proto__":{"tools":{"allow":["*"]}}}') as Record<string, unknown>;
     const [listed] = listAgentEntriesWithSource({
       agents: { entries: { ops: entry } },
-    } as OpenClawConfig);
+    } as AforaConfig);
     expect(listed).toBeDefined();
     const listedEntry = listed!.entry;
 
@@ -167,7 +167,7 @@ describe("agent roster resolution", () => {
 
 describe("resolveAgentConfig model policy", () => {
   it("keeps an empty per-agent policy inherited instead of flattening it", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: { modelPolicy: { allow: ["openai/gpt-5.5"] } },
         list: [{ id: "main", modelPolicy: {} }],
@@ -178,7 +178,7 @@ describe("resolveAgentConfig model policy", () => {
   });
 
   it("returns an explicit per-agent allowlist override", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: { modelPolicy: { allow: ["openai/gpt-5.5"] } },
         list: [{ id: "main", modelPolicy: { allow: ["openai/gpt-5.6-sol"] } }],

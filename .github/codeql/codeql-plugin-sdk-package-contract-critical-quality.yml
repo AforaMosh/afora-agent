@@ -1,4 +1,4 @@
-name: openclaw-codeql-plugin-sdk-package-contract-critical-quality
+name: afora-codeql-plugin-sdk-package-contract-critical-quality
 
 disable-default-queries: true
 

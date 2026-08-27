@@ -1,6 +1,6 @@
 // Telegram tests cover bot handler registration behavior.
 import { Bot } from "grammy";
-import { getChildLogger } from "openclaw/plugin-sdk/runtime-env";
+import { getChildLogger } from "afora-agent/plugin-sdk/runtime-env";
 import { describe, expect, it, vi } from "vitest";
 import { defaultTelegramBotDeps } from "./bot-deps.js";
 import { registerTelegramHandlers } from "./bot-handlers.runtime.js";

@@ -1,7 +1,7 @@
 // Models method tests cover slow catalog timeouts, configured/all views,
 // validation errors, and protocol response shapes.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createDeferred } from "../../../test/helpers/promise.js";
 import { resolveAgentDir, resolveDefaultAgentId } from "../../agents/agent-scope.js";
@@ -13,14 +13,14 @@ import {
 } from "../../agents/auth-profiles.js";
 import type { PreparedModelRuntimeAuth } from "../../agents/prepared-model-runtime-auth.js";
 import { clearRuntimeConfigSnapshot, setRuntimeConfigSnapshot } from "../../config/config.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { loadManifestMetadataSnapshot } from "../../plugins/manifest-contract-eligibility.js";
 import type { PluginMetadataSnapshot } from "../../plugins/plugin-metadata-snapshot.types.js";
 import { withEnvAsync } from "../../test-utils/env.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../../test-utils/afora-test-state.js";
 import { assertPluginMetadataSnapshotConsistency } from "../plugin-metadata.test-helpers.js";
 import {
   type PreparedGatewayModelCatalogSnapshot,
@@ -53,7 +53,7 @@ const modelPluginMetadataSnapshot = vi.hoisted(() => {
       origin: "bundled",
       rootDir: "/test/anthropic",
       source: "/test/anthropic/index.js",
-      manifestPath: "/test/anthropic/openclaw.plugin.json",
+      manifestPath: "/test/anthropic/afora.plugin.json",
     },
     {
       id: "byteplus",
@@ -70,7 +70,7 @@ const modelPluginMetadataSnapshot = vi.hoisted(() => {
       origin: "bundled",
       rootDir: "/test/byteplus",
       source: "/test/byteplus/index.js",
-      manifestPath: "/test/byteplus/openclaw.plugin.json",
+      manifestPath: "/test/byteplus/afora.plugin.json",
     },
     {
       id: "github-copilot",
@@ -91,7 +91,7 @@ const modelPluginMetadataSnapshot = vi.hoisted(() => {
       origin: "bundled",
       rootDir: "/test/github-copilot",
       source: "/test/github-copilot/index.js",
-      manifestPath: "/test/github-copilot/openclaw.plugin.json",
+      manifestPath: "/test/github-copilot/afora.plugin.json",
     },
   ];
   return {
@@ -160,7 +160,7 @@ const withoutOpenAIEnvAuth = async <T>(run: () => Promise<T>): Promise<T> =>
   await withEnvAsync(
     {
       CODEX_API_KEY: undefined,
-      CODEX_HOME: "/__openclaw_models_list_test__/codex",
+      CODEX_HOME: "/__afora_models_list_test__/codex",
       OPENAI_API_KEY: undefined,
       OPENAI_BASE_URL: undefined,
       OPENAI_OAUTH_TOKEN: undefined,
@@ -169,13 +169,13 @@ const withoutOpenAIEnvAuth = async <T>(run: () => Promise<T>): Promise<T> =>
     run,
   );
 
-let modelsTestState: OpenClawTestState;
+let modelsTestState: AforaTestState;
 
 beforeAll(async () => {
   assertPluginMetadataSnapshotConsistency(modelPluginMetadataSnapshot as PluginMetadataSnapshot);
-  modelsTestState = await createOpenClawTestState({
+  modelsTestState = await createAforaTestState({
     layout: "state-only",
-    prefix: "openclaw-models-list-",
+    prefix: "afora-models-list-",
     agentEnv: "main",
   });
 });
@@ -186,8 +186,8 @@ afterAll(async () => {
 });
 
 async function withModelsTestState<T>(
-  options: NonNullable<Parameters<typeof createOpenClawTestState>[0]>,
-  run: (state: OpenClawTestState) => Promise<T>,
+  options: NonNullable<Parameters<typeof createAforaTestState>[0]>,
+  run: (state: AforaTestState) => Promise<T>,
 ): Promise<T> {
   clearRuntimeAuthProfileStoreSnapshots();
   await modelsTestState.writeAuthProfiles({ version: 1, profiles: {} });
@@ -217,8 +217,8 @@ function requestModelsList(params: {
   view: "default" | "configured" | "provider-config" | "all";
   agentId?: string;
   respond?: ReturnType<typeof vi.fn>;
-  runtimeConfig?: OpenClawConfig;
-  getRuntimeConfig?: () => OpenClawConfig;
+  runtimeConfig?: AforaConfig;
+  getRuntimeConfig?: () => AforaConfig;
   loadGatewayModelCatalog: (params?: {
     agentId?: string;
     agentDir?: string;
@@ -231,7 +231,7 @@ function requestModelsList(params: {
   preparedAuthModes?: PreparedModelRuntimeAuth["authModes"];
 }) {
   const respond = params.respond ?? vi.fn();
-  const runtimeConfig = params.runtimeConfig ?? ({} as OpenClawConfig);
+  const runtimeConfig = params.runtimeConfig ?? ({} as AforaConfig);
   const getRuntimeConfig = params.getRuntimeConfig ?? (() => runtimeConfig);
   const resolveOwnerFacts = () => {
     const config = getRuntimeConfig();
@@ -380,10 +380,10 @@ describe("models.list", () => {
   it("uses the replacement owner config for the whole catalog projection", async () => {
     const initialConfig = {
       agents: { defaults: { models: { "test/old": {} } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const latestConfig = {
       agents: { defaults: { models: { "test/demo": {} } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     let currentConfig = initialConfig;
     const loadGatewayModelCatalog = vi.fn(async () => {
       if (currentConfig === initialConfig) {
@@ -411,10 +411,10 @@ describe("models.list", () => {
   it("escalates to the full owner when replacement config adds a provider wildcard", async () => {
     const initialConfig = {
       agents: { defaults: { models: { "test/demo": {} } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const latestConfig = {
       agents: { defaults: { models: { "test/*": {} } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     let currentConfig = initialConfig;
     let firstLoad = true;
     const loadGatewayModelCatalog = vi.fn(async (_params?: { readOnly?: boolean }) => {
@@ -505,7 +505,7 @@ describe("models.list", () => {
         providers: {
           "mounted-json": {
             source: "file",
-            path: "/tmp/openclaw-test-secrets.json",
+            path: "/tmp/afora-test-secrets.json",
             mode: "json",
           },
         },
@@ -515,7 +515,7 @@ describe("models.list", () => {
           vllm: sourceProvider,
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const runtimeConfig = {
       ...sourceConfig,
       models: {
@@ -527,7 +527,7 @@ describe("models.list", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const loadGatewayModelCatalog = vi.fn(() =>
       Promise.resolve([
         {
@@ -591,7 +591,7 @@ describe("models.list", () => {
         providers: {
           "mounted-json": {
             source: "file",
-            path: "/tmp/openclaw-test-secrets.json",
+            path: "/tmp/afora-test-secrets.json",
             mode: "json",
           },
         },
@@ -615,7 +615,7 @@ describe("models.list", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     setRuntimeConfigSnapshot(config, config);
     try {
       const { request, respond } = requestModelsList({
@@ -658,7 +658,7 @@ describe("models.list", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
       try {
@@ -682,7 +682,7 @@ describe("models.list", () => {
                 name: "GPT Test",
                 provider: "openai",
                 agentRuntime: {
-                  id: "openclaw",
+                  id: "afora",
                   cloudPlacementSupported: true,
                   source: "implicit",
                 },
@@ -713,7 +713,7 @@ describe("models.list", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
       try {
@@ -740,7 +740,7 @@ describe("models.list", () => {
                 name: "GPT Test",
                 provider: "openai",
                 agentRuntime: {
-                  id: "openclaw",
+                  id: "afora",
                   cloudPlacementSupported: true,
                   source: "implicit",
                 },
@@ -767,7 +767,7 @@ describe("models.list", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
       const { request, respond } = requestModelsList({
         view: "configured",
         runtimeConfig,
@@ -789,7 +789,7 @@ describe("models.list", () => {
               name: "GPT Test",
               provider: "openai",
               agentRuntime: {
-                id: "openclaw",
+                id: "afora",
                 cloudPlacementSupported: true,
                 source: "implicit",
               },
@@ -814,7 +814,7 @@ describe("models.list", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
       const { request, respond } = requestModelsList({
         view: "configured",
         runtimeConfig,
@@ -868,7 +868,7 @@ describe("models.list", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     try {
@@ -912,7 +912,7 @@ describe("models.list", () => {
         providers: {
           "mounted-json": {
             source: "file",
-            path: "/tmp/openclaw-test-secrets.json",
+            path: "/tmp/afora-test-secrets.json",
             mode: "json",
           },
         },
@@ -930,7 +930,7 @@ describe("models.list", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     try {
@@ -1066,7 +1066,7 @@ describe("models.list", () => {
             vllm: { apiKey: "test-key" },
           },
         },
-      } as unknown as OpenClawConfig;
+      } as unknown as AforaConfig;
 
       const loadConfiguredCatalog = vi.fn(() => Promise.resolve(catalog));
       const { request: configuredRequest, respond: configuredRespond } = requestModelsList({
@@ -1167,7 +1167,7 @@ describe("models.list", () => {
       await withModelsTestState(
         {
           layout: "state-only",
-          prefix: "openclaw-models-list-local-wildcard-",
+          prefix: "afora-models-list-local-wildcard-",
           agentEnv: "main",
           env: { VLLM_API_KEY: undefined },
         },
@@ -1199,7 +1199,7 @@ describe("models.list", () => {
                 },
               },
             },
-          } as unknown as OpenClawConfig;
+          } as unknown as AforaConfig;
           const expected = {
             models: [
               {
@@ -1237,7 +1237,7 @@ describe("models.list", () => {
       await withModelsTestState(
         {
           layout: "state-only",
-          prefix: "openclaw-models-list-codex-alias-",
+          prefix: "afora-models-list-codex-alias-",
           agentEnv: "main",
         },
         async (state) => {
@@ -1300,7 +1300,7 @@ describe("models.list", () => {
       await withModelsTestState(
         {
           layout: "state-only",
-          prefix: "openclaw-models-list-cli-runtime-",
+          prefix: "afora-models-list-cli-runtime-",
           agentEnv: "main",
         },
         async (state) => {
@@ -1327,7 +1327,7 @@ describe("models.list", () => {
                 },
               },
             },
-          } as unknown as OpenClawConfig;
+          } as unknown as AforaConfig;
           const { request, respond } = requestModelsList({
             view: "all",
             runtimeConfig,
@@ -1375,7 +1375,7 @@ describe("models.list", () => {
         providers: {
           "mounted-json": {
             source: "file",
-            path: "/tmp/openclaw-test-secrets.json",
+            path: "/tmp/afora-test-secrets.json",
             mode: "json",
           },
         },
@@ -1398,7 +1398,7 @@ describe("models.list", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const { request, respond } = requestModelsList({
       view: "all",
@@ -1434,7 +1434,7 @@ describe("models.list", () => {
           },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
 
     const { request, respond } = requestModelsList({
       view: "all",
@@ -1456,12 +1456,12 @@ describe("models.list", () => {
   });
 
   it("uses an exact hydrated runtime snapshot as managed SecretRef proof", async () => {
-    const sourceConfig: OpenClawConfig = {
+    const sourceConfig: AforaConfig = {
       secrets: {
         providers: {
           "mounted-json": {
             source: "file",
-            path: "/tmp/openclaw-test-secrets.json",
+            path: "/tmp/afora-test-secrets.json",
             mode: "json",
           },
         },
@@ -1484,7 +1484,7 @@ describe("models.list", () => {
       sourceConfig.models?.providers?.vllm,
       "source vLLM provider",
     );
-    const runtimeConfig: OpenClawConfig = {
+    const runtimeConfig: AforaConfig = {
       ...sourceConfig,
       models: {
         providers: {
@@ -1523,7 +1523,7 @@ describe("models.list", () => {
     await withModelsTestState(
       {
         layout: "state-only",
-        prefix: "openclaw-models-list-expired-profile-",
+        prefix: "afora-models-list-expired-profile-",
         agentEnv: "main",
       },
       async (state) => {
@@ -1565,7 +1565,7 @@ describe("models.list", () => {
     await withModelsTestState(
       {
         layout: "state-only",
-        prefix: "openclaw-models-list-stale-runtime-profile-",
+        prefix: "afora-models-list-stale-runtime-profile-",
         agentEnv: "main",
       },
       async (state) => {
@@ -1623,7 +1623,7 @@ describe("models.list", () => {
     await withModelsTestState(
       {
         layout: "state-only",
-        prefix: "openclaw-models-list-env-profile-",
+        prefix: "afora-models-list-env-profile-",
         agentEnv: "main",
         env: {
           DEMO_PROVIDER_TOKEN: "test-token",
@@ -1677,7 +1677,7 @@ describe("models.list", () => {
     await withModelsTestState(
       {
         layout: "state-only",
-        prefix: "openclaw-models-list-file-profile-",
+        prefix: "afora-models-list-file-profile-",
         agentEnv: "main",
       },
       async (state) => {
@@ -1704,12 +1704,12 @@ describe("models.list", () => {
               providers: {
                 "mounted-json": {
                   source: "file",
-                  path: "/tmp/openclaw-test-secrets.json",
+                  path: "/tmp/afora-test-secrets.json",
                   mode: "json",
                 },
               },
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
           loadGatewayModelCatalog: vi.fn(() =>
             Promise.resolve([{ id: "demo-model", name: "Demo Model", provider: "demo-provider" }]),
           ),
@@ -1742,7 +1742,7 @@ describe("models.list", () => {
     await withModelsTestState(
       {
         layout: "state-only",
-        prefix: "openclaw-models-list-inline-cooldown-",
+        prefix: "afora-models-list-inline-cooldown-",
         agentEnv: "main",
       },
       async (state) => {
@@ -1757,7 +1757,7 @@ describe("models.list", () => {
               },
             },
           },
-        } as unknown as OpenClawConfig;
+        } as unknown as AforaConfig;
         const catalog = [{ id: "qwen-remote", name: "Qwen Remote", provider: "cliproxyapi" }];
         const writeCooldown = (disabledUntil: number) =>
           state.writeAuthProfiles({
@@ -1816,7 +1816,7 @@ describe("models.list", () => {
     await withModelsTestState(
       {
         layout: "state-only",
-        prefix: "openclaw-models-list-hydrated-file-profile-",
+        prefix: "afora-models-list-hydrated-file-profile-",
         agentEnv: "main",
       },
       async (state) => {
@@ -1859,12 +1859,12 @@ describe("models.list", () => {
                 providers: {
                   "mounted-json": {
                     source: "file",
-                    path: "/tmp/openclaw-test-secrets.json",
+                    path: "/tmp/afora-test-secrets.json",
                     mode: "json",
                   },
                 },
               },
-            } as OpenClawConfig,
+            } as AforaConfig,
             loadGatewayModelCatalog: vi.fn(() =>
               Promise.resolve([
                 { id: "demo-model", name: "Demo Model", provider: "demo-provider" },
@@ -1910,10 +1910,10 @@ describe("models.list", () => {
       await withModelsTestState(
         {
           layout: "state-only",
-          prefix: `openclaw-models-list-provider-${fixture.name}-profile-`,
+          prefix: `afora-models-list-provider-${fixture.name}-profile-`,
           agentEnv: "main",
           env: {
-            OPENCLAW_TEST_PROFILE_API_KEY: "test-token",
+            AFORA_TEST_PROFILE_API_KEY: "test-token",
             VLLM_API_KEY: undefined,
           },
         },
@@ -1927,7 +1927,7 @@ describe("models.list", () => {
                 keyRef: {
                   source: "env",
                   provider: "default",
-                  id: "OPENCLAW_TEST_PROFILE_API_KEY",
+                  id: "AFORA_TEST_PROFILE_API_KEY",
                 },
               },
             },
@@ -1948,7 +1948,7 @@ describe("models.list", () => {
                 },
               },
             },
-          } as unknown as OpenClawConfig;
+          } as unknown as AforaConfig;
 
           const { request, respond } = requestModelsList({
             view: "all",

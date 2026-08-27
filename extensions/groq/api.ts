@@ -1,5 +1,5 @@
 // Groq API module exposes the plugin public contract.
-import type { ModelCompatConfig } from "openclaw/plugin-sdk/provider-model-shared";
+import type { ModelCompatConfig } from "afora-agent/plugin-sdk/provider-model-shared";
 
 const GROQ_QWEN3_6_27B_ID = "qwen/qwen3.6-27b";
 const GROQ_GPT_OSS_REASONING_IDS = new Set([

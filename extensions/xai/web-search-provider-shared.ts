@@ -2,7 +2,7 @@
 import {
   createWebSearchProviderContractFields,
   type WebSearchProviderPlugin,
-} from "openclaw/plugin-sdk/provider-web-search-config-contract";
+} from "afora-agent/plugin-sdk/provider-web-search-config-contract";
 
 const XAI_WEB_SEARCH_CREDENTIAL_PATH = "plugins.entries.xai.config.webSearch.apiKey";
 
@@ -20,7 +20,7 @@ export function buildXaiWebSearchProviderBase(): Omit<
     authProviderId: "xai",
     placeholder: "xai-...",
     signupUrl: "https://console.x.ai/",
-    docsUrl: "https://docs.openclaw.ai/tools/web",
+    docsUrl: "https://docs.afora.ai/tools/web",
     autoDetectOrder: 30,
     credentialPath: XAI_WEB_SEARCH_CREDENTIAL_PATH,
     ...createWebSearchProviderContractFields({

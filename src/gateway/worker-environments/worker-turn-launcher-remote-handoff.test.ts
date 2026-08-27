@@ -154,7 +154,7 @@ describe("worker turn launcher remote handoff", () => {
         expect(Value.Check(WorkerConnectRequestFrameSchema, connectFrame)).toBe(true);
         expect(descriptor.admission.handshake).toEqual({
           bundleHash: bootstrapReceipt.bundleHash,
-          openclawVersion: bootstrapReceipt.openclawVersion,
+          aforaVersion: bootstrapReceipt.aforaVersion,
           protocolFeatures: bootstrapReceipt.protocolFeatures,
         });
         expect(descriptor.admission.handshake).not.toHaveProperty("installKind");
@@ -249,14 +249,14 @@ describe("worker turn launcher remote handoff", () => {
     });
     expect(reconcileWorkspace).toHaveBeenCalledWith(expect.objectContaining({ localPath: root }));
     const conflictSummary =
-      "Cloud result applied with 1 conflict(s); kept local versions: src/local.ts. Cloud versions staged at refs/openclaw/worker-results/";
+      "Cloud result applied with 1 conflict(s); kept local versions: src/local.ts. Cloud versions staged at refs/afora/worker-results/";
     expect(result.payloads).toEqual([
       { text: expect.stringContaining(`Worker reply\n\n${conflictSummary}`) },
     ]);
     expect(placements.get(SESSION_ID)?.turnClaim).toBeNull();
     expect(placements.get(SESSION_ID)?.workspaceResultConflict).toMatchObject({
       paths: ["src/local.ts"],
-      stagedResultRef: expect.stringMatching(/^refs\/openclaw\/worker-results\//u),
+      stagedResultRef: expect.stringMatching(/^refs\/afora\/worker-results\//u),
     });
     expect(onAgentEvent).toHaveBeenCalledWith({
       stream: "assistant",
@@ -306,7 +306,7 @@ describe("worker turn launcher remote handoff", () => {
     expect(descriptor?.assignment.toolAuthority.allowedToolNames).toEqual(["browser"]);
     expect(descriptor?.assignment.browser).toEqual({
       cdpUrl: "http://127.0.0.1:9222",
-      launcherPath: "/usr/local/bin/openclaw-worker-browser",
+      launcherPath: "/usr/local/bin/afora-worker-browser",
     });
     expect(descriptor?.assignment.initialMessages).toEqual([
       {

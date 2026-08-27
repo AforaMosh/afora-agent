@@ -7,8 +7,8 @@ describe("runEmbeddedAttempt sessions_spawn workspace inheritance", () => {
   it("passes the real workspace to sessions_spawn when workspaceAccess is ro", () => {
     // Read-only sandbox copies should not become the child session workspace;
     // spawned sessions need the canonical real workspace.
-    const realWorkspace = "/tmp/openclaw-real-workspace";
-    const sandboxWorkspace = "/tmp/openclaw-sandbox-workspace";
+    const realWorkspace = "/tmp/afora-real-workspace";
+    const sandboxWorkspace = "/tmp/afora-sandbox-workspace";
     const sandbox = createAgentToolsSandboxContext({
       workspaceDir: sandboxWorkspace,
       agentWorkspaceDir: realWorkspace,
@@ -26,7 +26,7 @@ describe("runEmbeddedAttempt sessions_spawn workspace inheritance", () => {
   });
 
   it("does not override spawned workspace when sandbox workspace is rw", () => {
-    const realWorkspace = "/tmp/openclaw-real-workspace";
+    const realWorkspace = "/tmp/afora-real-workspace";
     const sandbox = createAgentToolsSandboxContext({
       workspaceDir: realWorkspace,
       agentWorkspaceDir: realWorkspace,

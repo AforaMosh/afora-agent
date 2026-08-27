@@ -5,10 +5,10 @@ import { describe, expect, it } from "vitest";
 
 const ALLOWED_PLUGIN_SDK_FIXTURE_IMPORTS = new Set([
   // Intentional jiti alias regression test.
-  'src/plugins/loader.git-path-regression.test.ts:`import { resolveOutboundSendDep } from "openclaw/plugin-sdk/channel-outbound";',
-  'src/plugins/loader.git-path-regression.test.ts:          "openclaw/plugin-sdk/channel-outbound": ${JSON.stringify(copiedChannelRuntimeShim)},',
+  'src/plugins/loader.git-path-regression.test.ts:`import { resolveOutboundSendDep } from "afora-agent/plugin-sdk/channel-outbound";',
+  'src/plugins/loader.git-path-regression.test.ts:          "afora-agent/plugin-sdk/channel-outbound": ${JSON.stringify(copiedChannelRuntimeShim)},',
   // Intentional packaged bundled-plugin SDK alias regression tests.
-  'src/plugins/loader.test.ts:`import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";`,',
+  'src/plugins/loader.test.ts:`import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";`,',
 ]);
 
 const LOADER_FIXTURE_TEST_FILES = [
@@ -24,8 +24,8 @@ function findLoaderFixtureSdkImports(): string[] {
     const source = fs.readFileSync(path.join(repoRoot, file), "utf-8");
     for (const line of source.split("\n")) {
       if (
-        line.includes('require("openclaw/plugin-sdk') ||
-        (line.includes("import ") && line.includes('"openclaw/plugin-sdk'))
+        line.includes('require("afora-agent/plugin-sdk') ||
+        (line.includes("import ") && line.includes('"afora-agent/plugin-sdk'))
       ) {
         matches.push(`${file}:${line.trim()}`);
       }

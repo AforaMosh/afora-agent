@@ -1,5 +1,5 @@
-import { safeParseJson } from "@openclaw/normalization-core";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { safeParseJson } from "@afora/normalization-core";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { normalizeSqliteNumber } from "../../infra/sqlite-number.js";
 
 export function tryParseJsonObject(raw: string): Record<string, unknown> | undefined {

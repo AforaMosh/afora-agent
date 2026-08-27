@@ -1,9 +1,9 @@
 // Slack tests cover threading tool context plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it } from "vitest";
 import { buildSlackThreadingToolContext } from "./threading-tool-context.js";
 
-const emptyCfg = {} as OpenClawConfig;
+const emptyCfg = {} as AforaConfig;
 
 function resolveReplyToModeWithConfig(params: {
   slackConfig: Record<string, unknown>;
@@ -13,7 +13,7 @@ function resolveReplyToModeWithConfig(params: {
     channels: {
       slack: params.slackConfig,
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
   const result = buildSlackThreadingToolContext({
     cfg,
     accountId: null,
@@ -28,7 +28,7 @@ describe("buildSlackThreadingToolContext", () => {
       channels: {
         slack: { replyToMode: "first" },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const result = buildSlackThreadingToolContext({
       cfg,
       accountId: null,
@@ -68,7 +68,7 @@ describe("buildSlackThreadingToolContext", () => {
           replyToMode: "first",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const result = buildSlackThreadingToolContext({
       cfg,
       accountId: null,
@@ -117,7 +117,7 @@ describe("buildSlackThreadingToolContext", () => {
             replyToModeByChatType: { direct: "off" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       accountId: null,
       context: {
         ChatType: "direct",
@@ -142,7 +142,7 @@ describe("buildSlackThreadingToolContext", () => {
             replyToModeByChatType: { direct: "off" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       accountId: null,
       context: {
         ChatType: "direct",
@@ -166,7 +166,7 @@ describe("buildSlackThreadingToolContext", () => {
             replyToModeByChatType: { direct: "off" },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       accountId: null,
       context: {
         ChatType: "direct",
@@ -188,7 +188,7 @@ describe("buildSlackThreadingToolContext", () => {
             replyToMode: "first",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       accountId: null,
       context: {
         ChatType: "direct",
@@ -209,7 +209,7 @@ describe("buildSlackThreadingToolContext", () => {
             replyToMode: "first",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       accountId: null,
       context: {
         ChatType: "channel",
@@ -231,7 +231,7 @@ describe("buildSlackThreadingToolContext", () => {
           replyToModeByChatType: { channel: "first" },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const result = buildSlackThreadingToolContext({
       cfg,
       accountId: null,
@@ -246,7 +246,7 @@ describe("buildSlackThreadingToolContext", () => {
         channels: {
           slack: { replyToMode: "all" },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       accountId: null,
       context: {
         ChatType: "channel",

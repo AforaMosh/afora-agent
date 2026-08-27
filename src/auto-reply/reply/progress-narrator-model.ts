@@ -3,7 +3,7 @@ import {
   completeWithPreparedSimpleCompletionModel,
   prepareSimpleCompletionModelForAgent,
 } from "../../agents/simple-completion-runtime.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { logVerbose } from "../../globals.js";
 import type { TextContent } from "../../llm/types.js";
 
@@ -62,7 +62,7 @@ function buildNarrationUserPrompt(input: ProgressNarrationInput): string {
   ].join("\n\n");
 }
 
-export async function prepareNarrationModel(params: { cfg: OpenClawConfig; agentId: string }) {
+export async function prepareNarrationModel(params: { cfg: AforaConfig; agentId: string }) {
   try {
     const prepared = await prepareSimpleCompletionModelForAgent({
       cfg: params.cfg,
@@ -82,7 +82,7 @@ export async function prepareNarrationModel(params: { cfg: OpenClawConfig; agent
 }
 
 export async function generateNarrationWithUtilityModel(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   prepared: NonNullable<Awaited<ReturnType<typeof prepareNarrationModel>>>;
   input: ProgressNarrationInput;
   abortSignal?: AbortSignal;

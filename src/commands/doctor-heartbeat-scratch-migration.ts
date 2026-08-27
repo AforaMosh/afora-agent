@@ -7,7 +7,7 @@ import { resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import { DEFAULT_HEARTBEAT_FILENAME } from "../agents/workspace.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { resolveStateDir } from "../config/paths.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { CRON_JOB_SCRATCH_MAX_BYTES } from "../cron/scratch-contract.js";
 import {
   deleteCronJobScratch,
@@ -43,7 +43,7 @@ type HeartbeatSource = {
 };
 
 async function readHeartbeatSource(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
   options?: { recoverClaims?: boolean },
 ): Promise<HeartbeatSource | undefined> {
@@ -74,7 +74,7 @@ async function readHeartbeatSource(
     }
     if (!options?.recoverClaims) {
       throw new Error(
-        `an interrupted migration claim exists at ${staleClaim}; run openclaw doctor --fix to restore it`,
+        `an interrupted migration claim exists at ${staleClaim}; run afora doctor --fix to restore it`,
         { cause: error },
       );
     }
@@ -354,13 +354,13 @@ function migrationFinding(params: {
     path: params.path,
     target: params.agentId,
     requirement: params.requirement,
-    fixHint: `Run ${formatCliCommand("openclaw doctor --fix")} to migrate HEARTBEAT.md into cron scratch.`,
+    fixHint: `Run ${formatCliCommand("afora doctor --fix")} to migrate HEARTBEAT.md into cron scratch.`,
   };
 }
 
 /** Reports remaining workspace heartbeat files without changing them. */
 export async function collectHeartbeatScratchMigrationFindings(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): Promise<readonly HealthFinding[]> {
   const findings: HealthFinding[] = [];
   for (const agent of resolveHeartbeatAgents(cfg)) {
@@ -398,7 +398,7 @@ export async function collectHeartbeatScratchMigrationFindings(
 
 /** Migrates each enrolled agent's heartbeat file into its stable monitor job. */
 export async function maybeMigrateHeartbeatFilesToScratch(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   shouldRepair: boolean;
   env?: NodeJS.ProcessEnv;
 }): Promise<HeartbeatScratchMigrationResult> {

@@ -2,11 +2,11 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { PlatformMessageNotDispatchedError } from "openclaw/plugin-sdk/error-runtime";
-import { SILENT_REPLY_TOKEN } from "openclaw/plugin-sdk/reply-chunking";
-import type { PluginRuntime } from "openclaw/plugin-sdk/runtime-store";
-import { resolvePreferredOpenClawTmpDir } from "openclaw/plugin-sdk/temp-path";
-import { withServer } from "openclaw/plugin-sdk/test-env";
+import { PlatformMessageNotDispatchedError } from "afora-agent/plugin-sdk/error-runtime";
+import { SILENT_REPLY_TOKEN } from "afora-agent/plugin-sdk/reply-chunking";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/runtime-store";
+import { resolvePreferredAforaTmpDir } from "afora-agent/plugin-sdk/temp-path";
+import { withServer } from "afora-agent/plugin-sdk/test-env";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { StoredConversationReference } from "./conversation-store.js";
 const graphUploadMockState = vi.hoisted(() => ({
@@ -357,7 +357,7 @@ describe("msteams messenger", () => {
     });
 
     it("requires SharePoint storage for channel files", async () => {
-      const tmpDir = await mkdtemp(path.join(resolvePreferredOpenClawTmpDir(), "msteams-storage-"));
+      const tmpDir = await mkdtemp(path.join(resolvePreferredAforaTmpDir(), "msteams-storage-"));
       const localFile = path.join(tmpDir, "note.txt");
       await writeFile(localFile, "hello");
 
@@ -385,7 +385,7 @@ describe("msteams messenger", () => {
 
     it("marks local activity preparation failures as never dispatched", async () => {
       const sendActivity = vi.fn(async () => ({ id: "should-not-send" }));
-      const missingPath = path.join(resolvePreferredOpenClawTmpDir(), "missing-msteams-file.txt");
+      const missingPath = path.join(resolvePreferredAforaTmpDir(), "missing-msteams-file.txt");
 
       await expect(
         sendMSTeamsMessages({
@@ -402,7 +402,7 @@ describe("msteams messenger", () => {
 
     it("loads uppercase file URLs before sending personal images", async () => {
       const tmpDir = await mkdtemp(
-        path.join(resolvePreferredOpenClawTmpDir(), "msteams-file-url-"),
+        path.join(resolvePreferredAforaTmpDir(), "msteams-file-url-"),
       );
       const localFile = path.join(tmpDir, "café image.png");
       const png = Buffer.from(
@@ -434,7 +434,7 @@ describe("msteams messenger", () => {
 
     it("does not claim no dispatch after an earlier batch message was sent", async () => {
       const sendActivity = vi.fn(async () => ({ id: "sent-first" }));
-      const missingPath = path.join(resolvePreferredOpenClawTmpDir(), "missing-second-file.txt");
+      const missingPath = path.join(resolvePreferredAforaTmpDir(), "missing-second-file.txt");
 
       const error = await sendMSTeamsMessages({
         replyStyle: "thread",
@@ -509,7 +509,7 @@ describe("msteams messenger", () => {
     });
 
     it("retries full activity preparation when media upload fails transiently", async () => {
-      const tmpDir = await mkdtemp(path.join(resolvePreferredOpenClawTmpDir(), "msteams-retry-"));
+      const tmpDir = await mkdtemp(path.join(resolvePreferredAforaTmpDir(), "msteams-retry-"));
       const localFile = path.join(tmpDir, "retry.txt");
       await writeFile(localFile, "hello");
 

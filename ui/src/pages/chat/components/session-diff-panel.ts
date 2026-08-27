@@ -24,7 +24,7 @@ import type { DiffLine } from "../../../lib/chat/tool-call-diff.ts";
 import { copyToClipboard } from "../../../lib/clipboard.ts";
 import { openEditor } from "../../../lib/editor-links.ts";
 import { formatUiError } from "../../../lib/format-error.ts";
-import { OpenClawLightDomElement } from "../../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../../lit/afora-element.ts";
 import { getSafeLocalStorage } from "../../../local-storage.ts";
 import { renderDiffBlock, renderDiffStatChips } from "./chat-diff-render.ts";
 import type {
@@ -50,7 +50,7 @@ type SessionDiffTaskResult = {
 };
 
 type SessionDiffPreferences = { split: boolean; wrap: boolean };
-const PREFERENCES_KEY = "openclaw.control.sessionDiff.v1";
+const PREFERENCES_KEY = "afora.control.sessionDiff.v1";
 
 function loadPreferences(): SessionDiffPreferences {
   try {
@@ -153,7 +153,7 @@ function taskResult(result: SessionsDiffResult): SessionDiffTaskResult {
   };
 }
 
-class SessionDiffPanel extends OpenClawLightDomElement {
+class SessionDiffPanel extends AforaLightDomElement {
   @property({ attribute: false }) loader: SessionDiffLoader | null = null;
   @property({ attribute: false }) loadFileText: SessionDiffFileTextLoader | null = null;
   @property({ attribute: false }) openFile: ((path: string) => void) | null = null;
@@ -301,7 +301,7 @@ class SessionDiffPanel extends OpenClawLightDomElement {
               ${t("chat.sessionDiff.sync")} ${icons.chevronDown}
             </button>`
           : nothing}
-        <openclaw-tooltip .content=${t("chat.sessionDiff.viewOptions")}>
+        <afora-tooltip .content=${t("chat.sessionDiff.viewOptions")}>
           <button
             class="btn btn--ghost btn--icon session-diff__toolbar-icon"
             type="button"
@@ -315,8 +315,8 @@ class SessionDiffPanel extends OpenClawLightDomElement {
           >
             ${icons.moreHorizontal}
           </button>
-        </openclaw-tooltip>
-        <openclaw-tooltip .content=${t("chat.sessionDiff.refresh")}>
+        </afora-tooltip>
+        <afora-tooltip .content=${t("chat.sessionDiff.refresh")}>
           <button
             class="btn btn--ghost btn--icon session-diff__refresh"
             type="button"
@@ -326,7 +326,7 @@ class SessionDiffPanel extends OpenClawLightDomElement {
           >
             ${icons.refresh}
           </button>
-        </openclaw-tooltip>
+        </afora-tooltip>
       </div>
     `;
   }
@@ -629,13 +629,13 @@ class SessionDiffPanel extends OpenClawLightDomElement {
         ${this.menu
           ? keyed(
               this.menu,
-              html`<openclaw-session-diff-menu
+              html`<afora-session-diff-menu
                 .menu=${this.menu}
                 .onAction=${(action: SessionDiffMenuAction) => this.handleMenuAction(action)}
                 .onClose=${() => {
                   this.menu = null;
                 }}
-              ></openclaw-session-diff-menu>`,
+              ></afora-session-diff-menu>`,
             )
           : nothing}
       </div>
@@ -643,12 +643,12 @@ class SessionDiffPanel extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-session-diff")) {
-  customElements.define("openclaw-session-diff", SessionDiffPanel);
+if (!customElements.get("afora-session-diff")) {
+  customElements.define("afora-session-diff", SessionDiffPanel);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "openclaw-session-diff": SessionDiffPanel;
+    "afora-session-diff": SessionDiffPanel;
   }
 }

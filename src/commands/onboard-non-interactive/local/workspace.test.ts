@@ -8,7 +8,7 @@ describe("resolveNonInteractiveWorkspaceDir", () => {
   let root: string;
 
   beforeEach(async () => {
-    const createdRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-onboard-workspace-"));
+    const createdRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-onboard-workspace-"));
     root = await fs.realpath(createdRoot);
   });
 
@@ -18,51 +18,51 @@ describe("resolveNonInteractiveWorkspaceDir", () => {
 
   it("keeps the existing default workspace for the default state directory", () => {
     const home = path.join(root, "home");
-    const defaultWorkspaceDir = path.join(home, ".openclaw", "workspace");
+    const defaultWorkspaceDir = path.join(home, ".afora", "workspace");
     const resolved = resolveNonInteractiveWorkspaceDir({
       opts: {},
       baseConfig: {},
       defaultWorkspaceDir,
       env: {
         HOME: home,
-        OPENCLAW_HOME: home,
-        OPENCLAW_STATE_DIR: path.join(home, ".openclaw"),
+        AFORA_HOME: home,
+        AFORA_STATE_DIR: path.join(home, ".afora"),
       },
     });
 
     expect(resolved).toBe(defaultWorkspaceDir);
   });
 
-  it("preserves OPENCLAW_WORKSPACE_DIR with a non-default state directory", () => {
+  it("preserves AFORA_WORKSPACE_DIR with a non-default state directory", () => {
     const home = path.join(root, "home");
     const workspaceOverride = path.join(root, "explicit-workspace");
     const resolved = resolveNonInteractiveWorkspaceDir({
       opts: {},
       baseConfig: {},
-      defaultWorkspaceDir: path.join(home, ".openclaw", "workspace"),
+      defaultWorkspaceDir: path.join(home, ".afora", "workspace"),
       env: {
         HOME: home,
-        OPENCLAW_HOME: home,
-        OPENCLAW_STATE_DIR: path.join(root, "scratch-state"),
-        OPENCLAW_WORKSPACE_DIR: workspaceOverride,
+        AFORA_HOME: home,
+        AFORA_STATE_DIR: path.join(root, "scratch-state"),
+        AFORA_WORKSPACE_DIR: workspaceOverride,
       },
     });
 
     expect(resolved).toBe(workspaceOverride);
   });
 
-  it("ignores a blank OPENCLAW_WORKSPACE_DIR", () => {
+  it("ignores a blank AFORA_WORKSPACE_DIR", () => {
     const home = path.join(root, "home");
     const stateDir = path.join(root, "scratch-state");
     const resolved = resolveNonInteractiveWorkspaceDir({
       opts: {},
       baseConfig: {},
-      defaultWorkspaceDir: path.join(home, ".openclaw", "workspace"),
+      defaultWorkspaceDir: path.join(home, ".afora", "workspace"),
       env: {
         HOME: home,
-        OPENCLAW_HOME: home,
-        OPENCLAW_STATE_DIR: stateDir,
-        OPENCLAW_WORKSPACE_DIR: "   ",
+        AFORA_HOME: home,
+        AFORA_STATE_DIR: stateDir,
+        AFORA_WORKSPACE_DIR: "   ",
       },
     });
 
@@ -75,11 +75,11 @@ describe("resolveNonInteractiveWorkspaceDir", () => {
     const resolved = resolveNonInteractiveWorkspaceDir({
       opts: { workspace: "   " },
       baseConfig: { agents: { defaults: { workspace: "\t" } } },
-      defaultWorkspaceDir: path.join(home, ".openclaw", "workspace"),
+      defaultWorkspaceDir: path.join(home, ".afora", "workspace"),
       env: {
         HOME: home,
-        OPENCLAW_HOME: home,
-        OPENCLAW_STATE_DIR: stateDir,
+        AFORA_HOME: home,
+        AFORA_STATE_DIR: stateDir,
       },
     });
 

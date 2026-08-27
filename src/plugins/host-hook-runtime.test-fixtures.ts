@@ -19,7 +19,7 @@ export function listPluginSessionSchedulerJobs(
   pluginId?: string,
 ): PluginSessionSchedulerJobHandle[] {
   const state = resolveGlobalSingleton<PluginHostRuntimeState>(
-    Symbol.for("openclaw.pluginHostRuntimeState"),
+    Symbol.for("afora.pluginHostRuntimeState"),
     () => ({ schedulerJobsByPlugin: new Map() }),
   );
   const records: PluginSessionSchedulerJobHandle[] = [];

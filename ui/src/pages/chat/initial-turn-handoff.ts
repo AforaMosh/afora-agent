@@ -69,7 +69,7 @@ export function prepareInitialUserMessageHandoff(
     role: "user",
     content: buildUserChatMessageContentBlocks(item.text, durableAttachments),
     timestamp: item.createdAt,
-    __openclaw: {
+    __afora: {
       idempotencyKey: `${runId}:user`,
       ...(messageSequence === undefined ? {} : { seq: messageSequence }),
     },

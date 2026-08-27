@@ -6,26 +6,26 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$ROOT_DIR/scripts/lib/docker-e2e-image.sh"
 
-IMAGE_NAME="$(docker_e2e_resolve_image "openclaw-openai-image-auth-e2e" OPENCLAW_OPENAI_IMAGE_AUTH_E2E_IMAGE)"
-SKIP_BUILD="${OPENCLAW_OPENAI_IMAGE_AUTH_E2E_SKIP_BUILD:-0}"
+IMAGE_NAME="$(docker_e2e_resolve_image "afora-openai-image-auth-e2e" AFORA_OPENAI_IMAGE_AUTH_E2E_IMAGE)"
+SKIP_BUILD="${AFORA_OPENAI_IMAGE_AUTH_E2E_SKIP_BUILD:-0}"
 
 docker_e2e_build_or_reuse "$IMAGE_NAME" openai-image-auth "$ROOT_DIR/scripts/e2e/Dockerfile" "$ROOT_DIR" "" "$SKIP_BUILD"
-OPENCLAW_TEST_STATE_SCRIPT_B64="$(docker_e2e_test_state_shell_b64 openai-image-auth empty)"
+AFORA_TEST_STATE_SCRIPT_B64="$(docker_e2e_test_state_shell_b64 openai-image-auth empty)"
 
 echo "Running OpenAI image auth Docker E2E..."
 # Harness files are mounted read-only; the app under test comes from /app/dist.
 docker_e2e_run_logged_with_harness openai-image-auth \
-  -e "OPENAI_API_KEY=sk-openclaw-image-auth-e2e" \
-  -e "OPENCLAW_QA_ALLOW_LOCAL_IMAGE_PROVIDER=1" \
-  -e "OPENCLAW_TEST_STATE_SCRIPT_B64=$OPENCLAW_TEST_STATE_SCRIPT_B64" \
+  -e "OPENAI_API_KEY=sk-afora-image-auth-e2e" \
+  -e "AFORA_QA_ALLOW_LOCAL_IMAGE_PROVIDER=1" \
+  -e "AFORA_TEST_STATE_SCRIPT_B64=$AFORA_TEST_STATE_SCRIPT_B64" \
   -i "$IMAGE_NAME" bash -lc '
 set -euo pipefail
-source scripts/lib/openclaw-e2e-instance.sh
-openclaw_e2e_eval_test_state_from_b64 "${OPENCLAW_TEST_STATE_SCRIPT_B64:?missing OPENCLAW_TEST_STATE_SCRIPT_B64}"
-export OPENCLAW_SKIP_CHANNELS=1
-export OPENCLAW_SKIP_GMAIL_WATCHER=1
-export OPENCLAW_SKIP_CRON=1
-export OPENCLAW_SKIP_CANVAS_HOST=1
+source scripts/lib/afora-e2e-instance.sh
+afora_e2e_eval_test_state_from_b64 "${AFORA_TEST_STATE_SCRIPT_B64:?missing AFORA_TEST_STATE_SCRIPT_B64}"
+export AFORA_SKIP_CHANNELS=1
+export AFORA_SKIP_GMAIL_WATCHER=1
+export AFORA_SKIP_CRON=1
+export AFORA_SKIP_CANVAS_HOST=1
 
 tsx test/e2e/qa-lab/runtime/openai-image-auth-docker-client.ts
 '

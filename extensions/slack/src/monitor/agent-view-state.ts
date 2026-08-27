@@ -1,5 +1,5 @@
 // Slack plugin module owns durable Agent View mode state.
-import type { PluginStateKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { PluginStateKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import { getOptionalSlackRuntime } from "../runtime.js";
 
 const SLACK_AGENT_VIEW_STATE_NAMESPACE = "agent-view-workspaces";

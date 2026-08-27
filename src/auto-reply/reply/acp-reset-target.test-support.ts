@@ -15,7 +15,7 @@ type AcpResetTargetTestApi = {
 
 function getTestApi(): AcpResetTargetTestApi {
   const api = (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.acpResetTargetTestApi")
+    Symbol.for("afora.acpResetTargetTestApi")
   ];
   if (!api) {
     throw new Error("ACP reset target test API is unavailable");

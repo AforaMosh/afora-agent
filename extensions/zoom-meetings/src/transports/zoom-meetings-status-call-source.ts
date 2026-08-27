@@ -1,14 +1,14 @@
-import { MeetingPlatformAdapter } from "openclaw/plugin-sdk/meeting-runtime";
+import { MeetingPlatformAdapter } from "afora-agent/plugin-sdk/meeting-runtime";
 
 export function zoomMeetingStatusCallSource(): string {
   return MeetingPlatformAdapter.createStatusCallSource({
     platform: {
-      audioOutputElementIdPrefix: "openclaw-zoom-audio-output-",
+      audioOutputElementIdPrefix: "afora-zoom-audio-output-",
       displayName: "Zoom",
       globals: {
-        audioOutputs: "__openclawZoomAudioOutputs",
-        captions: "__openclawZoomCaptions",
-        meeting: "__openclawZoomMeeting",
+        audioOutputs: "__aforaZoomAudioOutputs",
+        captions: "__aforaZoomCaptions",
+        meeting: "__aforaZoomMeeting",
       },
       manualActionReasonPrefix: "zoom",
     },

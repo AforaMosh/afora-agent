@@ -6,7 +6,7 @@ const text = (value: string) => ({ type: "text", text: value }) as const;
 const thinking = (value: string) => ({ type: "thinking", thinking: value }) as const;
 const toolUse = () => ({ type: "tool_use", name: "search" }) as const;
 const pairingQr = (terminalText: string) =>
-  ({ type: "openclaw_pairing_qr", terminalText }) as const;
+  ({ type: "afora_pairing_qr", terminalText }) as const;
 
 const messageWithContent = (content: readonly Record<string, unknown>[]) =>
   ({
@@ -108,12 +108,12 @@ describe("TuiStreamAssembler", () => {
     const finalText = assembler.finalize(
       "run-pair-qr",
       messageWithContent([
-        text("Scan this QR code with the OpenClaw iOS app:"),
+        text("Scan this QR code with the Afora iOS app:"),
         pairingQr("\u001b[47m\u001b[30m█ ▄\u001b[0m"),
       ]),
       false,
     );
-    expect(finalText).toContain("Scan this QR code with the OpenClaw iOS app:");
+    expect(finalText).toContain("Scan this QR code with the Afora iOS app:");
     expect(finalText).toContain("█ ▄");
     expect(finalText).not.toContain("\u001b[47m");
     expect(finalText).not.toBe("(no output)");

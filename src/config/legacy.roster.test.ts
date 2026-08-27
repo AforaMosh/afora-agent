@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { withTempHome } from "openclaw/plugin-sdk/test-env";
+import { withTempHome } from "afora-agent/plugin-sdk/test-env";
 import { describe, expect, it } from "vitest";
 import { configIncludeOwnsAgentRoster } from "./agent-roster-provenance.js";
 import { readConfigFileSnapshot, resetConfigRuntimeState } from "./config.js";
@@ -10,7 +10,7 @@ import { validateConfigObjectRaw } from "./validation.js";
 describe("persisted implicit-main roster migration", () => {
   it("normalizes a commented pre-roster config in memory without rewriting it", async () => {
     await withTempHome(async (home) => {
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
+      const configPath = path.join(home, ".afora", "afora.json");
       await fs.mkdir(path.dirname(configPath), { recursive: true });
       const raw = `// operator comment\n{ gateway: { mode: "local" } }\n`;
       await fs.writeFile(configPath, raw);
@@ -34,8 +34,8 @@ describe("persisted implicit-main roster migration", () => {
 
   it("retains include-resolved roster provenance before migration", async () => {
     await withTempHome(async (home) => {
-      const configDir = path.join(home, ".openclaw");
-      const configPath = path.join(configDir, "openclaw.json");
+      const configDir = path.join(home, ".afora");
+      const configPath = path.join(configDir, "afora.json");
       const includePath = path.join(configDir, "included.json");
       await fs.mkdir(configDir, { recursive: true });
       await fs.writeFile(configPath, JSON.stringify({ $include: "./included.json" }));
@@ -64,8 +64,8 @@ describe("persisted implicit-main roster migration", () => {
 
   it("tracks nested mixed roster includes at the entries boundary", async () => {
     await withTempHome(async (home) => {
-      const configDir = path.join(home, ".openclaw");
-      const configPath = path.join(configDir, "openclaw.json");
+      const configDir = path.join(home, ".afora");
+      const configPath = path.join(configDir, "afora.json");
       await fs.mkdir(configDir, { recursive: true });
       await fs.writeFile(
         configPath,
@@ -107,10 +107,10 @@ describe("persisted implicit-main roster migration", () => {
 
   it("keeps an unrelated ancestor include from owning a locally authored roster", async () => {
     await withTempHome(async (home) => {
-      const configDir = path.join(home, ".openclaw");
+      const configDir = path.join(home, ".afora");
       await fs.mkdir(configDir, { recursive: true });
       await fs.writeFile(
-        path.join(configDir, "openclaw.json"),
+        path.join(configDir, "afora.json"),
         JSON.stringify({
           $include: "./channels.json",
           agents: { entries: {} },
@@ -131,10 +131,10 @@ describe("persisted implicit-main roster migration", () => {
 
   it("does not publish partial provenance when a later include fails", async () => {
     await withTempHome(async (home) => {
-      const configDir = path.join(home, ".openclaw");
+      const configDir = path.join(home, ".afora");
       await fs.mkdir(configDir, { recursive: true });
       await fs.writeFile(
-        path.join(configDir, "openclaw.json"),
+        path.join(configDir, "afora.json"),
         JSON.stringify({
           agents: { $include: ["./delegating.json", "./missing.json"] },
         }),
@@ -158,11 +158,11 @@ describe("persisted implicit-main roster migration", () => {
 
   it("records an identical ancestor roster contribution as include-owned", async () => {
     await withTempHome(async (home) => {
-      const configDir = path.join(home, ".openclaw");
+      const configDir = path.join(home, ".afora");
       const entries = { main: { default: true } };
       await fs.mkdir(configDir, { recursive: true });
       await fs.writeFile(
-        path.join(configDir, "openclaw.json"),
+        path.join(configDir, "afora.json"),
         JSON.stringify({ $include: "./base.json", agents: { entries } }),
       );
       await fs.writeFile(
@@ -180,10 +180,10 @@ describe("persisted implicit-main roster migration", () => {
 
   it("keeps an entry-internal identity include locally roster-owned", async () => {
     await withTempHome(async (home) => {
-      const configDir = path.join(home, ".openclaw");
+      const configDir = path.join(home, ".afora");
       await fs.mkdir(configDir, { recursive: true });
       await fs.writeFile(
-        path.join(configDir, "openclaw.json"),
+        path.join(configDir, "afora.json"),
         JSON.stringify({
           agents: {
             entries: {
@@ -207,10 +207,10 @@ describe("persisted implicit-main roster migration", () => {
 
   it("records a legacy list id include as roster-owned", async () => {
     await withTempHome(async (home) => {
-      const configDir = path.join(home, ".openclaw");
+      const configDir = path.join(home, ".afora");
       await fs.mkdir(configDir, { recursive: true });
       await fs.writeFile(
-        path.join(configDir, "openclaw.json"),
+        path.join(configDir, "afora.json"),
         JSON.stringify({
           agents: {
             list: [{ id: { $include: "./agent-id.json" }, default: true }],
@@ -388,7 +388,7 @@ describe("persisted implicit-main roster migration", () => {
 
   it("migrates a persisted empty roster to explicit main", async () => {
     await withTempHome(async (home) => {
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
+      const configPath = path.join(home, ".afora", "afora.json");
       await fs.mkdir(path.dirname(configPath), { recursive: true });
       await fs.writeFile(configPath, JSON.stringify({ agents: { entries: {} } }));
       resetConfigRuntimeState();
@@ -417,7 +417,7 @@ describe("persisted implicit-main roster migration", () => {
     },
   ])("rejects $label without inventing legacy ownership", async ({ entries }) => {
     await withTempHome(async (home) => {
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
+      const configPath = path.join(home, ".afora", "afora.json");
       await fs.mkdir(path.dirname(configPath), { recursive: true });
       await fs.writeFile(configPath, JSON.stringify({ agents: { entries } }));
       resetConfigRuntimeState();
@@ -436,7 +436,7 @@ describe("persisted implicit-main roster migration", () => {
 
   it("keeps a shipped single-marker fleet valid while retaining its owner", async () => {
     await withTempHome(async (home) => {
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
+      const configPath = path.join(home, ".afora", "afora.json");
       const entries = { ops: {}, research: { default: true } };
       await fs.mkdir(path.dirname(configPath), { recursive: true });
       await fs.writeFile(configPath, JSON.stringify({ agents: { entries } }));
@@ -455,7 +455,7 @@ describe("persisted implicit-main roster migration", () => {
 
   it("leaves non-boolean default markers for schema validation", async () => {
     await withTempHome(async (home) => {
-      const configPath = path.join(home, ".openclaw", "openclaw.json");
+      const configPath = path.join(home, ".afora", "afora.json");
       await fs.mkdir(path.dirname(configPath), { recursive: true });
       await fs.writeFile(
         configPath,

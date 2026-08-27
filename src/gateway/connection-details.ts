@@ -1,8 +1,8 @@
 // Gateway connection detail builder for CLI/user-facing target diagnostics.
-import { redactSensitiveUrlLikeString } from "@openclaw/net-policy/redact-sensitive-url";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { redactSensitiveUrlLikeString } from "@afora/net-policy/redact-sensitive-url";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { resolveConfigPath, resolveGatewayPort } from "../config/paths.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { isSecureWebSocketUrl } from "./net.js";
 
 /** Resolved gateway target plus redacted display text for diagnostics. */
@@ -31,15 +31,15 @@ export function projectGatewayUrlForDiagnostics(url: string): string {
 }
 
 type GatewayConnectionDetailResolvers = {
-  getRuntimeConfig?: () => OpenClawConfig;
+  getRuntimeConfig?: () => AforaConfig;
   resolveConfigPath?: (env: NodeJS.ProcessEnv) => string;
-  resolveGatewayPort?: (cfg?: OpenClawConfig, env?: NodeJS.ProcessEnv) => number;
+  resolveGatewayPort?: (cfg?: AforaConfig, env?: NodeJS.ProcessEnv) => number;
 };
 
 /** Build gateway target details and reject unsafe remote plaintext websocket URLs. */
 export function buildGatewayConnectionDetailsWithResolvers(
   options: {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     url?: string;
     configPath?: string;
     urlSource?: "cli" | "env";
@@ -67,7 +67,7 @@ export function buildGatewayConnectionDetailsWithResolvers(
   const envUrlOverride =
     cliUrlOverride || options.ignoreEnvUrlOverride || options.localPortOverride !== undefined
       ? undefined
-      : normalizeOptionalString(process.env.OPENCLAW_GATEWAY_URL);
+      : normalizeOptionalString(process.env.AFORA_GATEWAY_URL);
   const urlOverride = cliUrlOverride ?? envUrlOverride;
   const remoteUrl = normalizeOptionalString(remote?.url);
   const remoteMisconfigured = isRemoteMode && !urlOverride && !remoteUrl;
@@ -77,7 +77,7 @@ export function buildGatewayConnectionDetailsWithResolvers(
   const displayUrl = redactSensitiveUrlLikeString(url);
   const urlSource = urlOverride
     ? urlSourceHint === "env"
-      ? "env OPENCLAW_GATEWAY_URL"
+      ? "env AFORA_GATEWAY_URL"
       : "cli --url"
     : remoteUrl
       ? "config gateway.remote.url"
@@ -89,7 +89,7 @@ export function buildGatewayConnectionDetailsWithResolvers(
     ? "Warn: gateway.mode=remote but gateway.remote.url is missing; set gateway.remote.url or switch gateway.mode=local."
     : undefined;
 
-  const allowPrivateWs = process.env.OPENCLAW_ALLOW_INSECURE_PRIVATE_WS === "1";
+  const allowPrivateWs = process.env.AFORA_ALLOW_INSECURE_PRIVATE_WS === "1";
   if (!isSecureWebSocketUrl(url, { allowPrivateWs })) {
     throw new Error(
       [
@@ -103,9 +103,9 @@ export function buildGatewayConnectionDetailsWithResolvers(
         "- or use Tailscale Serve/Funnel for HTTPS remote access",
         allowPrivateWs
           ? undefined
-          : "Break-glass (trusted private networks only): set OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1",
-        "Doctor: openclaw doctor --fix",
-        "Docs: https://docs.openclaw.ai/gateway/remote",
+          : "Break-glass (trusted private networks only): set AFORA_ALLOW_INSECURE_PRIVATE_WS=1",
+        "Doctor: afora doctor --fix",
+        "Docs: https://docs.afora.ai/gateway/remote",
       ].join("\n"),
     );
   }

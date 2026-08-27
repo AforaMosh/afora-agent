@@ -91,19 +91,19 @@ describe("codex plugin lifecycle: doctor migration safety matrix", () => {
       config: {},
     },
     {
-      name: "mixed profile with defaults OpenClaw pin",
+      name: "mixed profile with defaults Afora pin",
       profileShape: "mixed" as const,
-      config: { agents: { defaults: { agentRuntime: { id: "openclaw" } } } },
-      expectedRemovedRuntimePins: ["agentRuntime.id=openclaw"],
+      config: { agents: { defaults: { agentRuntime: { id: "afora" } } } },
+      expectedRemovedRuntimePins: ["agentRuntime.id=afora"],
     },
     {
-      name: "mixed profile with main-agent OpenClaw pin",
+      name: "mixed profile with main-agent Afora pin",
       profileShape: "mixed" as const,
-      config: { agents: { list: { main: { agentRuntime: { id: "openclaw" } } } } },
-      expectedRemovedRuntimePins: ["agentRuntime.id=openclaw"],
+      config: { agents: { list: { main: { agentRuntime: { id: "afora" } } } } },
+      expectedRemovedRuntimePins: ["agentRuntime.id=afora"],
     },
   ])(
-    "keeps codex auth and strips stale OpenClaw runtime pins for $name",
+    "keeps codex auth and strips stale Afora runtime pins for $name",
     async ({ profileShape, config, expectedRemovedRuntimePins = [] }) => {
       const { agentDir, agentId, stateDir } = await createAgentState("qa-codex-doctor-matrix-");
       await installCodexPluginFixture(agentDir);

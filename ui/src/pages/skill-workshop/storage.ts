@@ -1,9 +1,9 @@
 import type { SkillWorkshopMode } from "../../lib/skill-workshop/index.ts";
 import { getSafeLocalStorage } from "../../local-storage.ts";
 
-const SKILL_WORKSHOP_MODE_KEY = "openclaw:control-ui:skill-workshop-mode:v1";
+const SKILL_WORKSHOP_MODE_KEY = "afora:control-ui:skill-workshop-mode:v1";
 const SKILL_WORKSHOP_CURRENT_CHAT_REVISIONS_KEY =
-  "openclaw:control-ui:skill-workshop-current-chat-revisions:v1";
+  "afora:control-ui:skill-workshop-current-chat-revisions:v1";
 
 export function loadSkillWorkshopMode(): SkillWorkshopMode {
   try {

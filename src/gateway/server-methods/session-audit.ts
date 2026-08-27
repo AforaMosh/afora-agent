@@ -1,9 +1,9 @@
 import { SessionManager } from "../../agents/sessions/session-manager.js";
 import type { SessionEntry } from "../../config/sessions.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
 export async function appendSessionAudit(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   target: {
     agentId: string;
     entry: Pick<SessionEntry, "sessionId">;
@@ -22,7 +22,7 @@ export async function appendSessionAudit(params: {
     { ...identity, sessionKey: params.target.sessionKey },
     {
       role: "custom",
-      customType: "openclaw.system-note",
+      customType: "afora.system-note",
       content: `System note: ${params.text}`,
       display: true,
       timestamp: params.now,

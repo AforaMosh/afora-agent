@@ -99,7 +99,7 @@ const mocks = vi.hoisted(() => {
     sourceConfig,
     resolvedConfig,
     loadModelsConfigWithSource: vi.fn(),
-    ensureOpenClawModelsJson: vi.fn(),
+    ensureAforaModelsJson: vi.fn(),
     ensureAuthProfileStore: vi.fn(),
     resolveDefaultAgentDir: vi.fn(),
     resolveModelsTargetAgent: vi.fn(),
@@ -123,12 +123,12 @@ function resetMocks() {
     resolvedConfig: mocks.resolvedConfig,
     diagnostics: [],
   });
-  mocks.ensureOpenClawModelsJson.mockResolvedValue({ wrote: false });
+  mocks.ensureAforaModelsJson.mockResolvedValue({ wrote: false });
   mocks.ensureAuthProfileStore.mockReturnValue({ version: 1, profiles: {}, order: {} });
-  mocks.resolveDefaultAgentDir.mockReturnValue("/tmp/openclaw-agent");
+  mocks.resolveDefaultAgentDir.mockReturnValue("/tmp/afora-agent");
   mocks.resolveModelsTargetAgent.mockReturnValue({
     agentId: "main",
-    agentDir: "/tmp/openclaw-agent",
+    agentDir: "/tmp/afora-agent",
   });
   mocks.loadModelRegistry.mockResolvedValue({
     models: [],
@@ -309,7 +309,7 @@ function installModelsListCommandForwardCompatMocks() {
 
   vi.doMock("../../agents/agent-scope.js", () => ({
     listAgentEntries: vi.fn(() => []),
-    resolveAgentWorkspaceDir: vi.fn(() => "/tmp/openclaw-workspace"),
+    resolveAgentWorkspaceDir: vi.fn(() => "/tmp/afora-workspace"),
     resolveDefaultAgentDir: mocks.resolveDefaultAgentDir,
     resolveDefaultAgentId: vi.fn(() => "main"),
     resolveSessionAgentIds: vi.fn(() => ({ defaultAgentId: "main", sessionAgentId: "main" })),
@@ -379,7 +379,7 @@ async function buildAllOpenAiCodexRows(opts: { supplementCatalog?: boolean } = {
   const rows: unknown[] = [];
   const context = {
     cfg: mocks.resolvedConfig,
-    agentDir: "/tmp/openclaw-agent",
+    agentDir: "/tmp/afora-agent",
     authIndex: {
       evaluateModelAuth: (provider: string) => ({
         availability: provider === "openai",
@@ -420,13 +420,13 @@ describe("modelsListCommand forward-compat", () => {
   it("uses the explicitly selected agent for auth and catalog discovery", async () => {
     mocks.resolveModelsTargetAgent.mockReturnValueOnce({
       agentId: "research",
-      agentDir: "/tmp/openclaw-agent-research",
+      agentDir: "/tmp/afora-agent-research",
     });
 
     await modelsListCommand({ agent: "research", json: true }, createRuntime() as never);
 
     expect(mocks.resolveModelsTargetAgent).toHaveBeenCalledWith(mocks.resolvedConfig, "research");
-    expect(mocks.ensureAuthProfileStore).toHaveBeenCalledWith("/tmp/openclaw-agent-research");
+    expect(mocks.ensureAuthProfileStore).toHaveBeenCalledWith("/tmp/afora-agent-research");
   });
 
   it("rejects unknown provider filters before loading the model registry", async () => {
@@ -627,7 +627,7 @@ describe("modelsListCommand forward-compat", () => {
             {
               id: "moonshot",
               origin: "bundled",
-              rootDir: "/tmp/openclaw-moonshot",
+              rootDir: "/tmp/afora-moonshot",
               modelCatalog: {
                 aliases: {
                   kimi: { provider: "moonshot" },
@@ -1098,7 +1098,7 @@ describe("modelsListCommand forward-compat", () => {
         mocks.resolvedConfig,
         expect.objectContaining({
           agentId: "main",
-          agentDir: "/tmp/openclaw-agent",
+          agentDir: "/tmp/afora-agent",
         }),
       );
       expect(mocks.printModelTable).toHaveBeenCalled();
@@ -1266,7 +1266,7 @@ describe("modelsListCommand forward-compat", () => {
 
       await modelsListCommand({ all: true, provider: "codex", json: true }, runtime as never);
 
-      expect(mocks.ensureOpenClawModelsJson).not.toHaveBeenCalled();
+      expect(mocks.ensureAforaModelsJson).not.toHaveBeenCalled();
       expect(mocks.loadModelRegistry).toHaveBeenCalledOnce();
       expect(mocks.loadModelCatalog).toHaveBeenCalledOnce();
       const rows = lastPrintedRows<{ key: string; available: boolean | null }>();

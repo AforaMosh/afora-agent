@@ -1,6 +1,6 @@
 /** Normalizes isolated cron run output into summaries, delivery payloads, and error state. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { hasOutboundReplyContent } from "openclaw/plugin-sdk/reply-payload";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { hasOutboundReplyContent } from "afora-agent/plugin-sdk/reply-payload";
 import {
   DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
   stripHeartbeatToken,

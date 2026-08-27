@@ -13,7 +13,7 @@
  * - This is intentionally lossy; it trades edge-case path fidelity for prompt integrity.
  * - If you need lossless representation, escape instead of stripping.
  */
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 
 export function sanitizeForPromptLiteral(value: string): string {
   return value.replace(/[\p{Cc}\p{Cf}\u2028\u2029]/gu, "");

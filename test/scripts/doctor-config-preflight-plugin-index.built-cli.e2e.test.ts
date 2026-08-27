@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { resolveDefaultAgentWorkspaceDir } from "../../src/agents/workspace-default.js";
-import type { OpenClawConfig } from "../../src/config/types.openclaw.js";
+import type { AforaConfig } from "../../src/config/types.afora.js";
 import { hasActiveStartupMigrationLease } from "../../src/infra/startup-migration-checkpoint.js";
 import {
   readPersistedInstalledPluginIndexSync,
@@ -12,53 +12,53 @@ import {
 import { clearPluginMetadataLifecycleCaches } from "../../src/plugins/plugin-metadata-lifecycle.js";
 import { loadPluginMetadataSnapshot } from "../../src/plugins/plugin-metadata-snapshot.js";
 import { writeManagedNpmPlugin } from "../../src/plugins/test-helpers/managed-npm-plugin.js";
-import { closeOpenClawStateDatabaseForTest } from "../../src/state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../../src/state/afora-state-db.js";
 import {
-  createOpenClawTestInstance,
-  type OpenClawTestInstance,
-} from "../helpers/openclaw-test-instance.js";
+  createAforaTestInstance,
+  type AforaTestInstance,
+} from "../helpers/afora-test-instance.js";
 
-const instances: OpenClawTestInstance[] = [];
+const instances: AforaTestInstance[] = [];
 
 afterEach(async () => {
   await Promise.all(instances.splice(0).map((instance) => instance.cleanup()));
   clearPluginMetadataLifecycleCaches();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
 });
 
 describe("Doctor plugin index persistence built CLI proof", () => {
   it("starts after replacing and verifying a stale persisted Doctor index", async () => {
-    const instance = await createOpenClawTestInstance({
+    const instance = await createAforaTestInstance({
       name: "doctor-plugin-index-persistence",
       env: {
-        OPENCLAW_TEST_FAST: "1",
+        AFORA_TEST_FAST: "1",
       },
       startTimeoutMs: 90_000,
     });
     instances.push(instance);
     const workspaceDir = resolveDefaultAgentWorkspaceDir(instance.env);
 
-    const config = JSON.parse(fs.readFileSync(instance.configPath, "utf8")) as OpenClawConfig;
+    const config = JSON.parse(fs.readFileSync(instance.configPath, "utf8")) as AforaConfig;
     const pluginId = "legacy-doctor-index";
     const pluginDir = writeManagedNpmPlugin({
       stateDir: instance.stateDir,
-      packageName: "@openclaw/legacy-doctor-index",
+      packageName: "@afora/legacy-doctor-index",
       pluginId,
       version: "1.0.0",
     });
     const packageJsonPath = path.join(pluginDir, "package.json");
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8")) as {
-      openclaw: Record<string, unknown>;
+      afora: Record<string, unknown>;
     };
     fs.writeFileSync(
       packageJsonPath,
       JSON.stringify({
         ...packageJson,
-        openclaw: {
-          ...packageJson.openclaw,
+        afora: {
+          ...packageJson.afora,
           build: {
             bundledDist: false,
-            openclawVersion: "2026.7.2",
+            aforaVersion: "2026.7.2",
             pluginSdkVersion: "2026.7.2",
           },
         },
@@ -90,7 +90,7 @@ describe("Doctor plugin index persistence built CLI proof", () => {
     };
     writePersistedInstalledPluginIndexSync(legacyIndex, { env: instance.env });
     clearPluginMetadataLifecycleCaches();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
 
     expect(await instance.entrypoint()).toEqual([
       expect.stringMatching(/^dist\/index\.(?:js|mjs)$/u),
@@ -99,7 +99,7 @@ describe("Doctor plugin index persistence built CLI proof", () => {
     expect(hasActiveStartupMigrationLease({ env: instance.env }), instance.logs()).toBe(false);
 
     clearPluginMetadataLifecycleCaches();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const reread = loadPluginMetadataSnapshot({
       config,
       env: instance.env,

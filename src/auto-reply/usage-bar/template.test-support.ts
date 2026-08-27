@@ -6,7 +6,7 @@ type UsageBarTemplateTestApi = {
 
 function getTestApi(): UsageBarTemplateTestApi {
   const api = (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.usageBarTemplateTestApi")
+    Symbol.for("afora.usageBarTemplateTestApi")
   ];
   if (!api) {
     throw new Error("usage bar template test API is unavailable");

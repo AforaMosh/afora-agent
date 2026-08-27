@@ -1,6 +1,6 @@
 // Telegram plugin module implements update offset store behavior.
-import { readJsonFileWithFallback } from "openclaw/plugin-sdk/json-store";
-import type { PluginStateKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
+import { readJsonFileWithFallback } from "afora-agent/plugin-sdk/json-store";
+import type { PluginStateKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import { getTelegramRuntime } from "./runtime.js";
 import { normalizeTelegramStateAccountId } from "./state-account-id.js";
 import {

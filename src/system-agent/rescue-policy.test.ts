@@ -1,9 +1,9 @@
-// OpenClaw rescue policy tests cover eligibility and safety decisions.
+// Afora rescue policy tests cover eligibility and safety decisions.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveSystemAgentRescuePolicy } from "./rescue-policy.js";
 
-function decide(cfg: OpenClawConfig, overrides = {}) {
+function decide(cfg: AforaConfig, overrides = {}) {
   return resolveSystemAgentRescuePolicy({
     cfg,
     senderIsOwner: true,

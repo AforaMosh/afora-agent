@@ -1,5 +1,5 @@
 // Feishu plugin module implements sequential queue behavior.
-import { resolveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
+import { resolveTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
 
 /**
  * Per-key serial task queue for Feishu inbound message handling.

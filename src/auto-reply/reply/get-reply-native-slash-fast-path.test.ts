@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import { testing as cliBackendsTesting } from "../../agents/cli-backends.test-support.js";
 import * as preparedModelCatalog from "../../agents/prepared-model-catalog.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import {
   loadExactSessionEntry,
   loadSessionEntry,
@@ -78,7 +78,7 @@ function runTestNativeSlashFastReply(
 describe("maybeResolveNativeSlashCommandFastReply", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+    vi.stubEnv("AFORA_TEST_FAST", "1");
     vi.spyOn(preparedModelCatalog, "loadPreparedModelCatalogSnapshot").mockResolvedValue({
       entries: [
         {
@@ -105,7 +105,7 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
 
   async function resolveNativeDirectiveCommand(
     body: string,
-    config?: OpenClawConfig,
+    config?: AforaConfig,
     response: { shouldContinue: boolean; reply?: { text: string } } = { shouldContinue: true },
   ) {
     handleCommandsMock.mockResolvedValue(response);
@@ -115,9 +115,9 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
       config ??
       ({
         session: {
-          store: path.join(tempDirs.make("openclaw-native-directive-"), "sessions.json"),
+          store: path.join(tempDirs.make("afora-native-directive-"), "sessions.json"),
         },
-      } as OpenClawConfig);
+      } as AforaConfig);
     const result = await runTestNativeSlashFastReply({
       ctx: buildTestCtx({
         Body: body,
@@ -231,7 +231,7 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
   it.each(["--runtime codex -s", "-s --runtime codex"])(
     "applies native /model runtime and session options from %s",
     async (options) => {
-      const storePath = path.join(tempDirs.make("openclaw-native-model-options-"), "sessions.json");
+      const storePath = path.join(tempDirs.make("afora-native-model-options-"), "sessions.json");
       const { result } = await resolveNativeDirectiveCommand(
         `/model openai/gpt-5.5 ${options}`,
         {
@@ -277,7 +277,7 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
       reply: { text: "⚙️ Compacted" },
     });
 
-    const storePath = path.join(tempDirs.make("openclaw-native-override-"), "sessions.json");
+    const storePath = path.join(tempDirs.make("afora-native-override-"), "sessions.json");
     await replaceSessionEntry(
       { agentId: "main", sessionKey: "agent:main:main", storePath },
       {
@@ -312,7 +312,7 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
       cfg: markCompleteReplyConfig(
         {
           session: { store: storePath },
-        } as OpenClawConfig,
+        } as AforaConfig,
         { runtimeMode: "full" },
       ),
       agentId: "main",
@@ -438,7 +438,7 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
           },
         });
       }
-      const storePath = path.join(tempDirs.make("openclaw-native-source-"), "sessions.json");
+      const storePath = path.join(tempDirs.make("afora-native-source-"), "sessions.json");
       await replaceSessionEntry(
         { agentId: targetAgentId, sessionKey: targetSessionKey, storePath },
         {
@@ -528,7 +528,7 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
                   },
                 }
               : {}),
-          } as OpenClawConfig,
+          } as AforaConfig,
           { runtimeMode: "full" },
         ),
         agentId: targetAgentId,
@@ -578,7 +578,7 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
   ])("preserves canonical native /status $selection", async (testCase) => {
     vi.spyOn(preparedModelCatalog, "loadPreparedModelCatalog").mockResolvedValueOnce([]);
     const targetSessionKey = "agent:main:main";
-    const storePath = path.join(tempDirs.make("openclaw-native-status-"), "sessions.json");
+    const storePath = path.join(tempDirs.make("afora-native-status-"), "sessions.json");
     await replaceSessionEntry(
       { agentId: "main", sessionKey: targetSessionKey, storePath },
       {
@@ -631,7 +631,7 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
           },
         },
         channels: { modelByChannel: { telegram: { "123": "openai/gpt-5.5" } } },
-      } as OpenClawConfig),
+      } as AforaConfig),
       agentId: "main",
       commandAuthorized: true,
       typing: createTypingController(),
@@ -655,7 +655,7 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
   it("keeps model-independent /status plugins available under an invalid model policy", async () => {
     const { result } = await resolveNativeDirectiveCommand(
       "/status plugins",
-      { agents: { defaults: { modelPolicy: { allow: ["anthropic/*"] } } } } as OpenClawConfig,
+      { agents: { defaults: { modelPolicy: { allow: ["anthropic/*"] } } } } as AforaConfig,
       { shouldContinue: false, reply: { text: "plugin status" } },
     );
 
@@ -670,14 +670,14 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
         `/${commandName}`,
         {
           session: {
-            store: path.join(tempDirs.make("openclaw-native-recovery-"), "sessions.json"),
+            store: path.join(tempDirs.make("afora-native-recovery-"), "sessions.json"),
           },
           agents: {
             defaults: {
               modelPolicy: { allow: ["anthropic/*"] },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         { shouldContinue: false, reply: { text: "recovery available" } },
       );
 
@@ -717,9 +717,9 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
       ctx,
       cfg: markCompleteReplyConfig({
         session: {
-          store: path.join(tempDirs.make("openclaw-text-slash-"), "sessions.json"),
+          store: path.join(tempDirs.make("afora-text-slash-"), "sessions.json"),
         },
-      } as OpenClawConfig),
+      } as AforaConfig),
       agentId: "dev",
       commandAuthorized: true,
       typing,
@@ -764,9 +764,9 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
       ctx,
       cfg: markCompleteReplyConfig({
         session: {
-          store: path.join(tempDirs.make("openclaw-external-text-slash-"), "sessions.json"),
+          store: path.join(tempDirs.make("afora-external-text-slash-"), "sessions.json"),
         },
-      } as OpenClawConfig),
+      } as AforaConfig),
       agentId: "dev",
       commandAuthorized: true,
       typing,
@@ -784,7 +784,7 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
   ])("rejects unauthorized native /$commandName before model selection", async (testCase) => {
     const { commandName, authorized } = testCase;
     const storePath = path.join(
-      tempDirs.make("openclaw-native-slash-unauthorized-"),
+      tempDirs.make("afora-native-slash-unauthorized-"),
       "sessions.json",
     );
     const sessionKey = "agent:main:telegram:slash:unauthorized";
@@ -817,7 +817,7 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
         ...("deniedByPolicy" in testCase
           ? { commands: { allowFrom: { "*": ["approved-sender"] } } }
           : {}),
-      } as OpenClawConfig),
+      } as AforaConfig),
       agentId: "main",
       commandAuthorized: authorized,
       typing: createTypingController(),
@@ -867,7 +867,7 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
   );
 
   it("adopts a supported legacy alias before native command initialization", async () => {
-    const storePath = path.join(tempDirs.make("openclaw-native-slash-alias-"), "sessions.json");
+    const storePath = path.join(tempDirs.make("afora-native-slash-alias-"), "sessions.json");
     const sessionKey = "agent:main:main";
     await replaceSessionEntry({ sessionKey: "Agent:main:main", storePath }, {
       sessionId: "legacy-session",
@@ -893,7 +893,7 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
           body: "/compact",
         },
       }),
-      cfg: markCompleteReplyConfig({ session: { store: storePath } } as OpenClawConfig),
+      cfg: markCompleteReplyConfig({ session: { store: storePath } } as AforaConfig),
       agentId: "main",
       commandAuthorized: true,
       typing: createTypingController(),
@@ -907,7 +907,7 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
   });
 
   it("does not mutate an archived session during native command initialization", async () => {
-    const storePath = path.join(tempDirs.make("openclaw-native-slash-archived-"), "sessions.json");
+    const storePath = path.join(tempDirs.make("afora-native-slash-archived-"), "sessions.json");
     const sessionKey = "agent:main:main";
     const archivedEntry = {
       sessionId: "archived-session",
@@ -935,7 +935,7 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
           body: "/compact",
         },
       }),
-      cfg: markCompleteReplyConfig({ session: { store: storePath } } as OpenClawConfig),
+      cfg: markCompleteReplyConfig({ session: { store: storePath } } as AforaConfig),
       agentId: "main",
       commandAuthorized: true,
       typing: createTypingController(),
@@ -950,7 +950,7 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
   });
 
   it("persists fast-path session initialization before command mutation", async () => {
-    const storePath = path.join(tempDirs.make("openclaw-native-slash-init-"), "sessions.json");
+    const storePath = path.join(tempDirs.make("afora-native-slash-init-"), "sessions.json");
     const sessionKey = "agent:main:main";
     await replaceSessionEntry({ sessionKey, storePath }, {
       sessionId: "session-1",
@@ -988,7 +988,7 @@ describe("maybeResolveNativeSlashCommandFastReply", () => {
             body: "/compact",
           },
         }),
-        cfg: markCompleteReplyConfig({ session: { store: storePath } } as OpenClawConfig),
+        cfg: markCompleteReplyConfig({ session: { store: storePath } } as AforaConfig),
         agentId: "main",
         commandAuthorized: true,
         typing: createTypingController(),

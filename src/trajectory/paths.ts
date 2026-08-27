@@ -33,7 +33,7 @@ export function resolveTrajectoryFilePath(params: {
   sessionId: string;
 }): string {
   const env = params.env ?? process.env;
-  const dirOverride = env.OPENCLAW_TRAJECTORY_DIR?.trim();
+  const dirOverride = env.AFORA_TRAJECTORY_DIR?.trim();
   if (dirOverride) {
     return resolveContainedPath(
       resolveHomeRelativePath(dirOverride),

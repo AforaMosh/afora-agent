@@ -3,16 +3,16 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import {
   createPluginStateKeyedStoreForTests,
   createPluginStateSyncKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import type {
   OpenKeyedStoreOptions,
   PluginDoctorStateMigrationContext,
-} from "openclaw/plugin-sdk/runtime-doctor-migrations";
+} from "afora-agent/plugin-sdk/runtime-doctor-migrations";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { resolveSessionStoreAgentIds, stateMigrations } from "./doctor-contract-api.js";
 import {
@@ -67,12 +67,12 @@ describe("voice-call doctor state migration", () => {
 
   beforeAll(async () => {
     resetPluginStateStoreForTests();
-    const warmStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-voice-call-doctor-"));
+    const warmStateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-voice-call-doctor-"));
     const warmStorePath = createTestStorePath();
     const warmEnv = {
       ...process.env,
       HOME: warmStateDir,
-      OPENCLAW_STATE_DIR: warmStateDir,
+      AFORA_STATE_DIR: warmStateDir,
     };
     try {
       installStateRuntime();
@@ -86,7 +86,7 @@ describe("voice-call doctor state migration", () => {
       const config = {
         plugins: {
           entries: {
-            "@openclaw/voice-call": {
+            "@afora/voice-call": {
               config: { store: warmStorePath },
             },
           },
@@ -120,9 +120,9 @@ describe("voice-call doctor state migration", () => {
 
   beforeEach(async () => {
     resetPluginStateStoreForTests();
-    stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-voice-call-doctor-"));
+    stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-voice-call-doctor-"));
     storePath = createTestStorePath();
-    env = { ...process.env, HOME: stateDir, OPENCLAW_STATE_DIR: stateDir };
+    env = { ...process.env, HOME: stateDir, AFORA_STATE_DIR: stateDir };
     installStateRuntime();
   });
 
@@ -155,7 +155,7 @@ describe("voice-call doctor state migration", () => {
     expect(
       resolveSessionStoreAgentIds({
         cfg: {
-          plugins: { entries: { "@openclaw/voice-call": { config: {} } } },
+          plugins: { entries: { "@afora/voice-call": { config: {} } } },
         },
       }),
     ).toEqual(["main"]);
@@ -188,7 +188,7 @@ describe("voice-call doctor state migration", () => {
     const config = {
       plugins: {
         entries: {
-          "@openclaw/voice-call": {
+          "@afora/voice-call": {
             config: { store: storePath },
           },
         },
@@ -231,7 +231,7 @@ describe("voice-call doctor state migration", () => {
     expect(history[0]?.callId).toBe("call-doctor");
   });
 
-  it("honors OPENCLAW_STATE_DIR for the default store", async () => {
+  it("honors AFORA_STATE_DIR for the default store", async () => {
     const defaultStorePath = path.join(stateDir, "voice-calls");
     const call = makePersistedCall({
       callId: "call-isolated-state",
@@ -271,7 +271,7 @@ describe("voice-call doctor state migration", () => {
   });
 
   it("repairs the plugin-local SQLite schema without a legacy call log", async () => {
-    const databasePath = path.join(storePath, "state", "openclaw.sqlite");
+    const databasePath = path.join(storePath, "state", "afora.sqlite");
     await fs.mkdir(path.dirname(databasePath), { recursive: true });
     const db = new DatabaseSync(databasePath);
     try {
@@ -365,7 +365,7 @@ describe("voice-call doctor state migration", () => {
     const config = {
       plugins: {
         entries: {
-          "@openclaw/voice-call": {
+          "@afora/voice-call": {
             config: { store: storePath },
           },
         },

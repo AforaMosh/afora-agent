@@ -2,9 +2,9 @@
 import {
   listNativeCommandSpecs,
   listNativeCommandSpecsForConfig,
-} from "openclaw/plugin-sdk/native-command-registry";
+} from "afora-agent/plugin-sdk/native-command-registry";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 
 const { getLoadConfigMock, listSkillCommandsForAgents, setMyCommandsSpy, telegramBotDepsForTest } =
   await import("./bot.create-telegram-bot.test-harness.js");
@@ -113,7 +113,7 @@ describe("createTelegramBot command menu", () => {
           ],
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     loadConfig.mockReturnValue(config);
     const commandsSynced = waitForNextSetMyCommands();
 
@@ -160,7 +160,7 @@ describe("createTelegramBot command menu", () => {
           ],
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     loadConfig.mockReturnValue(config);
     const commandsSynced = waitForNextSetMyCommands();
 
@@ -224,7 +224,7 @@ describe("createTelegramBot command menu", () => {
           ],
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     loadConfig.mockReturnValue(config);
     const commandsSynced = waitForNextSetMyCommands();
 

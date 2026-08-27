@@ -1,11 +1,11 @@
 // Gateway webhook helpers for external hook dispatch into agents and wake flows.
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage } from "node:http";
-import type { Result } from "@openclaw/normalization-core/result";
+import type { Result } from "@afora/normalization-core/result";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { listAgentIds } from "../agents/agent-scope-config.js";
 import { listChannelPlugins } from "../channels/plugins/index.js";
 import { tryResolveLegacyCompatibilityAgentId } from "../config/legacy.default-agent-owner.js";
@@ -14,7 +14,7 @@ import {
   resolvePersistedSessionStoreOwnerForKey,
 } from "../config/sessions/session-store-owner.js";
 import type { HookSessionMode } from "../config/types.hooks.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { readJsonBodyWithLimit, requestBodyErrorToText } from "../infra/http-body.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
 import type { HookExternalContentSource } from "../security/external-content.js";
@@ -58,7 +58,7 @@ type HookSessionPolicyResolved = {
 type HookSessionKeySource = "request" | "mapping-static" | "mapping-templated";
 
 /** Resolve and validate hook config, returning null when hooks are disabled. */
-export function resolveHooksConfig(cfg: OpenClawConfig): HooksConfigResolved | null {
+export function resolveHooksConfig(cfg: AforaConfig): HooksConfigResolved | null {
   if (cfg.hooks?.enabled !== true) {
     return null;
   }
@@ -130,7 +130,7 @@ export function commitHooksConfigReload(): void {
   commitHookTransformMappingReload();
 }
 
-function resolveKnownAgentIds(cfg: OpenClawConfig, defaultAgentId?: string): Set<string> {
+function resolveKnownAgentIds(cfg: AforaConfig, defaultAgentId?: string): Set<string> {
   const known = new Set(listAgentIds(cfg));
   if (defaultAgentId) {
     known.add(defaultAgentId);
@@ -171,7 +171,7 @@ export function isSessionKeyAllowedByPrefix(sessionKey: string, prefixes: string
   return prefixes.some((prefix) => normalized.startsWith(prefix));
 }
 
-/** Extract the hook bearer token from Authorization or x-openclaw-token headers. */
+/** Extract the hook bearer token from Authorization or x-afora-token headers. */
 export function extractHookToken(req: IncomingMessage): string | undefined {
   const auth = normalizeOptionalString(req.headers.authorization) ?? "";
   if (normalizeLowercaseStringOrEmpty(auth).startsWith("bearer ")) {
@@ -180,7 +180,7 @@ export function extractHookToken(req: IncomingMessage): string | undefined {
       return token;
     }
   }
-  const headerToken = normalizeOptionalString(req.headers["x-openclaw-token"]) ?? "";
+  const headerToken = normalizeOptionalString(req.headers["x-afora-token"]) ?? "";
   if (headerToken) {
     return headerToken;
   }
@@ -406,7 +406,7 @@ export function resolveHookIdempotencyKey(params: {
 }): string | undefined {
   return (
     resolveOptionalHookIdempotencyKey(params.headers?.["idempotency-key"]) ||
-    resolveOptionalHookIdempotencyKey(params.headers?.["x-openclaw-idempotency-key"]) ||
+    resolveOptionalHookIdempotencyKey(params.headers?.["x-afora-idempotency-key"]) ||
     resolveOptionalHookIdempotencyKey(params.payload.idempotencyKey)
   );
 }

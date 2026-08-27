@@ -5,7 +5,7 @@ import {
   startQaBusServer,
   startQaGatewayChild,
 } from "../../../../extensions/qa-lab/api.js";
-import type { OpenClawConfig } from "../../../../src/config/types.openclaw.js";
+import type { AforaConfig } from "../../../../src/config/types.afora.js";
 import { createQaScriptEvidenceWriter } from "./script-evidence.js";
 
 const SOURCE_PATH = "test/e2e/qa-lab/runtime/gateway-rpc-account-health.ts";
@@ -37,7 +37,7 @@ function sleep(ms: number) {
   });
 }
 
-export function withSiblingAccount(config: OpenClawConfig, baseUrl?: string): OpenClawConfig {
+export function withSiblingAccount(config: AforaConfig, baseUrl?: string): AforaConfig {
   const channel = config.channels?.[CHANNEL_ID] as Record<string, unknown> | undefined;
   return {
     ...config,
@@ -48,8 +48,8 @@ export function withSiblingAccount(config: OpenClawConfig, baseUrl?: string): Op
         ...(baseUrl && {
           enabled: true,
           baseUrl,
-          botUserId: "openclaw",
-          botDisplayName: "OpenClaw QA",
+          botUserId: "afora",
+          botDisplayName: "Afora QA",
           allowFrom: ["*"],
           pollTimeoutMs: 250,
         }),

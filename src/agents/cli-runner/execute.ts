@@ -158,7 +158,7 @@ export async function executePreparedCliRun(
 
   const basePrompt = cliSessionIdToUse
     ? params.prompt
-    : (context.openClawHistoryPrompt ?? params.prompt);
+    : (context.aforaHistoryPrompt ?? params.prompt);
   let prompt =
     params.controlOperation !== undefined
       ? basePrompt
@@ -227,7 +227,7 @@ export async function executePreparedCliRun(
     toolAvailability: params.cliToolAvailability
       ? buildCliBackendToolAvailability(
           nodePlacement
-            ? { native: params.cliToolAvailability.native, openClaw: [] }
+            ? { native: params.cliToolAvailability.native, afora: [] }
             : params.cliToolAvailability,
         )
       : undefined,
@@ -378,7 +378,7 @@ export async function executePreparedCliRun(
           cliSessionId: cliSessionIdToUse,
           resolvedSessionId,
           reusableSession: context.reusableCliSession,
-          hasHistoryPrompt: Boolean(context.openClawHistoryPrompt),
+          hasHistoryPrompt: Boolean(context.aforaHistoryPrompt),
         }),
       );
       const logOutputText =

@@ -1,12 +1,12 @@
-# OpenClaw DeepSeek Provider
+# Afora DeepSeek Provider
 
-Official OpenClaw provider plugin for DeepSeek.
+Official Afora provider plugin for DeepSeek.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/deepseek-provider
-openclaw gateway restart
+afora plugins install @afora/deepseek-provider
+afora gateway restart
 ```
 
-See <https://docs.openclaw.ai/providers/deepseek> for setup and configuration.
+See <https://docs.afora.ai/providers/deepseek> for setup and configuration.

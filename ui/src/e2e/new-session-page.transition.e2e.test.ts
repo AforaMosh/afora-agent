@@ -13,7 +13,7 @@ const suite = createNewSessionPageE2eSuite();
 const SESSION_KEY = "agent:main:transition-proof-0f403cb8-3920-4cf1-8eb7-79f2f00ce488";
 const RUN_ID = "transition-proof-run";
 const proofDir = path.join(process.cwd(), ".artifacts", "control-ui-e2e", "new-session-transition");
-const captureProofEnabled = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+const captureProofEnabled = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 
 async function captureProof(page: import("playwright").Page, fileName: string) {
   if (!captureProofEnabled) {
@@ -143,9 +143,9 @@ suite.define(() => {
 
       await page.evaluate(() => {
         const frames = { invalid: 0, running: true };
-        Reflect.set(globalThis, "__openclawSessionTransitionFrames", frames);
+        Reflect.set(globalThis, "__aforaSessionTransitionFrames", frames);
         const sample = () => {
-          const outlet = document.querySelector("openclaw-router-outlet");
+          const outlet = document.querySelector("afora-router-outlet");
           const handoffCover = outlet?.classList.contains("session-route-handoff") === true;
           const newSessionVisible = Boolean(
             document.querySelector(".new-session-page__start-submit")?.getClientRects().length,
@@ -175,7 +175,7 @@ suite.define(() => {
               const effect = animation.effect as KeyframeEffect | null;
               return (
                 effect?.target instanceof HTMLElement &&
-                effect.target.tagName === "OPENCLAW-ROUTER-OUTLET" &&
+                effect.target.tagName === "AFORA-ROUTER-OUTLET" &&
                 effect.getKeyframes().every((keyframe) => keyframe.opacity === undefined)
               );
             }),
@@ -186,7 +186,7 @@ suite.define(() => {
         .poll(() => page.getByText("keep progress moving", { exact: true }).count())
         .toBe(1);
       const invalidFrames = await page.evaluate(() => {
-        const frames = Reflect.get(globalThis, "__openclawSessionTransitionFrames") as {
+        const frames = Reflect.get(globalThis, "__aforaSessionTransitionFrames") as {
           invalid: number;
           running: boolean;
         };
@@ -197,7 +197,7 @@ suite.define(() => {
       await captureProof(page, "02-session-route-transition.png");
       await gateway.resolveDeferred("chat.startup");
       await waitForCommittedChatRoute(page);
-      await page.locator("openclaw-chat-page").waitFor();
+      await page.locator("afora-chat-page").waitFor();
       await expect
         .poll(() =>
           page.evaluate(

@@ -10,7 +10,7 @@ import { cleanupTrackedTempDirs, makeTrackedTempDir } from "./test-helpers/fs-fi
 const tempDirs: string[] = [];
 
 function makeTempDir() {
-  return makeTrackedTempDir("openclaw-manifest-json5", tempDirs);
+  return makeTrackedTempDir("afora-manifest-json5", tempDirs);
 }
 
 afterEach(() => {
@@ -26,7 +26,7 @@ describe("loadPluginManifest JSON5 tolerance", () => {
       configSchema: { type: "object" },
     };
     fs.writeFileSync(
-      path.join(dir, "openclaw.plugin.json"),
+      path.join(dir, "afora.plugin.json"),
       JSON.stringify(manifest, null, 2),
       "utf-8",
     );
@@ -40,7 +40,7 @@ describe("loadPluginManifest JSON5 tolerance", () => {
   it("normalizes static doctor session route-state owners", () => {
     const dir = makeTempDir();
     fs.writeFileSync(
-      path.join(dir, "openclaw.plugin.json"),
+      path.join(dir, "afora.plugin.json"),
       JSON.stringify({
         id: "doctor-owners",
         configSchema: { type: "object" },
@@ -79,7 +79,7 @@ describe("loadPluginManifest JSON5 tolerance", () => {
     const json5Parse = vi.spyOn(JSON5, "parse");
     const dir = makeTempDir();
     fs.writeFileSync(
-      path.join(dir, "openclaw.plugin.json"),
+      path.join(dir, "afora.plugin.json"),
       JSON.stringify({
         id: "strict-json",
         configSchema: { type: "object" },
@@ -96,7 +96,7 @@ describe("loadPluginManifest JSON5 tolerance", () => {
   it("reuses unchanged manifest loads by file signature", () => {
     const dir = makeTempDir();
     fs.writeFileSync(
-      path.join(dir, "openclaw.plugin.json"),
+      path.join(dir, "afora.plugin.json"),
       JSON.stringify({
         id: "cached-json",
         configSchema: { type: "object" },
@@ -124,7 +124,7 @@ describe("loadPluginManifest JSON5 tolerance", () => {
     },
   },
 }`;
-    fs.writeFileSync(path.join(dir, "openclaw.plugin.json"), json5Content, "utf-8");
+    fs.writeFileSync(path.join(dir, "afora.plugin.json"), json5Content, "utf-8");
     const result = loadPluginManifest(dir, false);
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -139,7 +139,7 @@ describe("loadPluginManifest JSON5 tolerance", () => {
   "id": "commented-plugin",
   "configSchema": { "type": "object" }
 }`;
-    fs.writeFileSync(path.join(dir, "openclaw.plugin.json"), json5Content, "utf-8");
+    fs.writeFileSync(path.join(dir, "afora.plugin.json"), json5Content, "utf-8");
     const result = loadPluginManifest(dir, false);
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -153,7 +153,7 @@ describe("loadPluginManifest JSON5 tolerance", () => {
   id: "unquoted-keys",
   configSchema: { type: "object" }
 }`;
-    fs.writeFileSync(path.join(dir, "openclaw.plugin.json"), json5Content, "utf-8");
+    fs.writeFileSync(path.join(dir, "afora.plugin.json"), json5Content, "utf-8");
     const result = loadPluginManifest(dir, false);
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -210,7 +210,7 @@ describe("loadPluginManifest JSON5 tolerance", () => {
   ])("normalizes $name", ({ rawKind, expectedKind }) => {
     const dir = makeTempDir();
     fs.writeFileSync(
-      path.join(dir, "openclaw.plugin.json"),
+      path.join(dir, "afora.plugin.json"),
       JSON.stringify({
         id: "kind-normalization",
         kind: rawKind,
@@ -230,7 +230,7 @@ describe("loadPluginManifest JSON5 tolerance", () => {
   it("keeps duplicate memory declarations subject to the exclusive memory slot", () => {
     const dir = makeTempDir();
     fs.writeFileSync(
-      path.join(dir, "openclaw.plugin.json"),
+      path.join(dir, "afora.plugin.json"),
       JSON.stringify({
         id: "duplicate-memory",
         kind: ["memory", "memory"],
@@ -265,7 +265,7 @@ describe("loadPluginManifest JSON5 tolerance", () => {
   },
   configSchema: { type: "object" }
 }`;
-    fs.writeFileSync(path.join(dir, "openclaw.plugin.json"), json5Content, "utf-8");
+    fs.writeFileSync(path.join(dir, "afora.plugin.json"), json5Content, "utf-8");
     const result = loadPluginManifest(dir, false);
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -286,7 +286,7 @@ describe("loadPluginManifest JSON5 tolerance", () => {
   },
   configSchema: { type: "object" }
 }`;
-    fs.writeFileSync(path.join(dir, "openclaw.plugin.json"), json5Content, "utf-8");
+    fs.writeFileSync(path.join(dir, "afora.plugin.json"), json5Content, "utf-8");
 
     const result = loadPluginManifest(dir, false);
 
@@ -299,7 +299,7 @@ describe("loadPluginManifest JSON5 tolerance", () => {
   it("retains static MCP server declarations", () => {
     const dir = makeTempDir();
     fs.writeFileSync(
-      path.join(dir, "openclaw.plugin.json"),
+      path.join(dir, "afora.plugin.json"),
       JSON.stringify({
         id: "mcp-app-plugin",
         configSchema: { type: "object" },
@@ -358,7 +358,7 @@ describe("loadPluginManifest JSON5 tolerance", () => {
   },
   configSchema: { type: "object" }
 }`;
-    fs.writeFileSync(path.join(dir, "openclaw.plugin.json"), json5Content, "utf-8");
+    fs.writeFileSync(path.join(dir, "afora.plugin.json"), json5Content, "utf-8");
     const result = loadPluginManifest(dir, false);
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -395,7 +395,7 @@ describe("loadPluginManifest JSON5 tolerance", () => {
 
   it("still rejects completely invalid syntax", () => {
     const dir = makeTempDir();
-    fs.writeFileSync(path.join(dir, "openclaw.plugin.json"), "not json at all {{{}}", "utf-8");
+    fs.writeFileSync(path.join(dir, "afora.plugin.json"), "not json at all {{{}}", "utf-8");
     const result = loadPluginManifest(dir, false);
     expect(result.ok).toBe(false);
     if (!result.ok) {
@@ -405,7 +405,7 @@ describe("loadPluginManifest JSON5 tolerance", () => {
 
   it("rejects JSON5 values that parse but are not objects", () => {
     const dir = makeTempDir();
-    fs.writeFileSync(path.join(dir, "openclaw.plugin.json"), "'just a string'", "utf-8");
+    fs.writeFileSync(path.join(dir, "afora.plugin.json"), "'just a string'", "utf-8");
     const result = loadPluginManifest(dir, false);
     expect(result.ok).toBe(false);
     if (!result.ok) {

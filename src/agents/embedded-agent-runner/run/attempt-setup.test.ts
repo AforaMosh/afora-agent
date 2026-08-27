@@ -46,7 +46,7 @@ describe("prepareEmbeddedAttemptSetup", () => {
       sessionKey: "agent:marketing:main",
       thinkLevel: "high",
       timeoutMs: 30_000,
-      workspaceDir: path.join(os.tmpdir(), "openclaw-attempt-setup-agent-identities"),
+      workspaceDir: path.join(os.tmpdir(), "afora-attempt-setup-agent-identities"),
     } as unknown as EmbeddedRunAttemptParams);
 
     expect(setup.defaultAgentId).toBe("main");
@@ -54,7 +54,7 @@ describe("prepareEmbeddedAttemptSetup", () => {
   });
 
   it("hydrates recent history media from the prepared session agent workspace", async () => {
-    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-attempt-history-"));
+    const workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-attempt-history-"));
     const imagePath = path.join(workspaceDir, "photo.png");
     await fs.writeFile(imagePath, Buffer.from(TINY_PNG_BASE64, "base64"));
     const agent = {} as {
@@ -107,7 +107,7 @@ describe("prepareEmbeddedAttemptSetup", () => {
   });
 
   it("prepares one closed session permission policy", async () => {
-    const root = path.join(os.tmpdir(), "openclaw-attempt-permission-root");
+    const root = path.join(os.tmpdir(), "afora-attempt-permission-root");
     const setup = await prepareEmbeddedAttemptSetup({
       config: {},
       modelId: "gpt-5.4",
@@ -142,7 +142,7 @@ describe("prepareEmbeddedAttemptSetup", () => {
       skillsSnapshot,
       thinkLevel: "high",
       timeoutMs: 30_000,
-      workspaceDir: path.join(os.tmpdir(), "openclaw-attempt-setup-sandbox-skills"),
+      workspaceDir: path.join(os.tmpdir(), "afora-attempt-setup-sandbox-skills"),
     } as unknown as EmbeddedRunAttemptParams);
 
     expect(resolveSandboxContext).toHaveBeenCalledWith(expect.objectContaining({ skillsSnapshot }));
@@ -151,7 +151,7 @@ describe("prepareEmbeddedAttemptSetup", () => {
   it.each(["ro", "rw"] as const)(
     "keeps collection review on the host workspace with %s sandbox access",
     async (workspaceAccess) => {
-      const workspaceDir = path.join(os.tmpdir(), "openclaw-attempt-setup-collection-review");
+      const workspaceDir = path.join(os.tmpdir(), "afora-attempt-setup-collection-review");
       const setup = await resolveAttemptWorkspaceSandbox({
         agentId: "main",
         config: { agents: { defaults: { sandbox: { mode: "all", workspaceAccess } } } },
@@ -168,7 +168,7 @@ describe("prepareEmbeddedAttemptSetup", () => {
 
   it("reuses lifecycle metadata and the provider handle from the runtime plan", async () => {
     const metadataSnapshot = { plugins: [] } as never;
-    const workspaceDir = path.join(os.tmpdir(), "openclaw-attempt-setup-prepared");
+    const workspaceDir = path.join(os.tmpdir(), "afora-attempt-setup-prepared");
     const providerRuntimeHandle: ProviderRuntimePluginHandle & { prepared: true } = {
       provider: "openai",
       modelId: "gpt-5.4",
@@ -208,7 +208,7 @@ describe("prepareEmbeddedAttemptSetup", () => {
       sessionId: "session-partial",
       thinkLevel: "high",
       timeoutMs: 30_000,
-      workspaceDir: path.join(os.tmpdir(), "openclaw-attempt-setup-partial"),
+      workspaceDir: path.join(os.tmpdir(), "afora-attempt-setup-partial"),
       preparedModelRuntime: {
         metadataSnapshot: { pluginIds: ["other"] },
       } as never,

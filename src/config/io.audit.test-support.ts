@@ -15,7 +15,7 @@ export function listConfigAuditRecordsForTests(params: {
     maxEntries: CONFIG_AUDIT_MAX_ENTRIES,
     env: {
       ...params.env,
-      OPENCLAW_STATE_DIR: resolveStateDir(params.env, params.homedir),
+      AFORA_STATE_DIR: resolveStateDir(params.env, params.homedir),
     },
   })
     .entries()

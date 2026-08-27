@@ -1,5 +1,5 @@
 // Model-backed compaction request construction.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { resolveAgentWorkspaceDir } from "../../agents/agent-scope.js";
 import { compactEmbeddedAgentSession } from "../../agents/embedded-agent.js";
 import { resolveManualCompactionCliTarget } from "../../agents/session-runtime-compat.js";
@@ -17,12 +17,12 @@ import {
   scanSessionTranscriptTree,
   selectSessionTranscriptTreePathNodes,
 } from "../../config/sessions/transcript-tree.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveSessionModelRef } from "../session-utils.js";
 
 type GatewaySessionCompactionParams = {
   agentId: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   entry: SessionEntry;
   sessionId: string;
   sessionKey: string;
@@ -30,7 +30,7 @@ type GatewaySessionCompactionParams = {
   storePath: string;
 };
 
-function usesLegacyOpenClawCompaction(params: GatewaySessionCompactionParams): boolean {
+function usesLegacyAforaCompaction(params: GatewaySessionCompactionParams): boolean {
   const resolvedModel = resolveSessionModelRef(params.cfg, params.entry, params.agentId);
   const persistedRuntime = resolveManualCompactionCliTarget({
     provider: resolvedModel.provider,
@@ -39,7 +39,7 @@ function usesLegacyOpenClawCompaction(params: GatewaySessionCompactionParams): b
   }).agentHarnessId;
   const contextEngine = params.cfg.plugins?.slots?.contextEngine?.trim();
   return (
-    (!persistedRuntime || persistedRuntime === "openclaw") &&
+    (!persistedRuntime || persistedRuntime === "afora") &&
     (!contextEngine || contextEngine === "legacy")
   );
 }
@@ -57,7 +57,7 @@ async function resolveGatewayCompactionTranscriptTarget(params: GatewaySessionCo
 export async function preflightGatewaySessionCompaction(
   params: GatewaySessionCompactionParams,
 ): Promise<{ reason: "Already compacted" | "Nothing to compact (session too small)" } | undefined> {
-  if (!usesLegacyOpenClawCompaction(params)) {
+  if (!usesLegacyAforaCompaction(params)) {
     return undefined;
   }
   try {

@@ -19,7 +19,7 @@ describe("path-resolve helpers (direct-import coverage attribution)", () => {
   let stateDir = "";
 
   beforeEach(async () => {
-    stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-path-direct-"));
+    stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-path-direct-"));
   });
 
   afterEach(async () => {
@@ -35,20 +35,20 @@ describe("path-resolve helpers (direct-import coverage attribution)", () => {
 
   it("resolveAuthStorePath falls back to the default agent dir when agentDir is omitted", () => {
     // Omitting agentDir exercises the default agent-dir branch. With
-    // OPENCLAW_STATE_DIR set to our tempdir, the resolved path must live under it.
-    withEnv({ OPENCLAW_STATE_DIR: stateDir }, () => {
+    // AFORA_STATE_DIR set to our tempdir, the resolved path must live under it.
+    withEnv({ AFORA_STATE_DIR: stateDir }, () => {
       const resolved = resolveAuthStorePath();
       expect(resolved.startsWith(stateDir)).toBe(true);
       expect(path.basename(resolved)).toMatch(/auth-profiles/);
     });
   });
 
-  it("honors OPENCLAW_AGENT_DIR in both no-argument auth path implementations", () => {
+  it("honors AFORA_AGENT_DIR in both no-argument auth path implementations", () => {
     const relocatedAgentDir = path.join(stateDir, "relocated-main-agent");
-    withEnv({ OPENCLAW_STATE_DIR: stateDir, OPENCLAW_AGENT_DIR: relocatedAgentDir }, () => {
+    withEnv({ AFORA_STATE_DIR: stateDir, AFORA_AGENT_DIR: relocatedAgentDir }, () => {
       expect(path.dirname(resolveAuthStorePath())).toBe(relocatedAgentDir);
       expect(resolveAuthStorePathForDisplay()).toBe(
-        path.join(relocatedAgentDir, "openclaw-agent.sqlite"),
+        path.join(relocatedAgentDir, "afora-agent.sqlite"),
       );
     });
   });
@@ -61,7 +61,7 @@ describe("path-resolve helpers (direct-import coverage attribution)", () => {
   });
 
   it("resolveLegacyAuthStorePath falls back to the default agent dir", () => {
-    withEnv({ OPENCLAW_STATE_DIR: stateDir }, () => {
+    withEnv({ AFORA_STATE_DIR: stateDir }, () => {
       const resolved = resolveLegacyAuthStorePath();
       expect(resolved.startsWith(stateDir)).toBe(true);
     });
@@ -74,7 +74,7 @@ describe("path-resolve helpers (direct-import coverage attribution)", () => {
   });
 
   it("resolveAuthStatePath falls back to the default agent dir", () => {
-    withEnv({ OPENCLAW_STATE_DIR: stateDir }, () => {
+    withEnv({ AFORA_STATE_DIR: stateDir }, () => {
       const resolved = resolveAuthStatePath();
       expect(resolved.startsWith(stateDir)).toBe(true);
     });
@@ -84,18 +84,18 @@ describe("path-resolve helpers (direct-import coverage attribution)", () => {
     const agentDir = path.join(stateDir, "agents", "main", "agent");
     const resolved = resolveAuthStorePathForDisplay(agentDir);
     expect(resolved.startsWith(stateDir)).toBe(true);
-    expect(path.basename(resolved)).toBe("openclaw-agent.sqlite");
+    expect(path.basename(resolved)).toBe("afora-agent.sqlite");
   });
 
   it("resolveAuthStorePathForDisplay expands a tilde-rooted agent dir to the sqlite store", () => {
-    const tildeAgentDir = "~fake-openclaw-no-expand";
+    const tildeAgentDir = "~fake-afora-no-expand";
     const resolved = resolveAuthStorePathForDisplay(tildeAgentDir);
-    expect(resolved).toBe(path.resolve(tildeAgentDir, "openclaw-agent.sqlite"));
+    expect(resolved).toBe(path.resolve(tildeAgentDir, "afora-agent.sqlite"));
   });
 
   it("resolveAuthStatePathForDisplay returns the sqlite auth state store", () => {
     const agentDir = path.join(stateDir, "agents", "main", "agent");
     const resolved = resolveAuthStatePathForDisplay(agentDir);
-    expect(resolved).toBe(path.join(agentDir, "openclaw-agent.sqlite"));
+    expect(resolved).toBe(path.join(agentDir, "afora-agent.sqlite"));
   });
 });

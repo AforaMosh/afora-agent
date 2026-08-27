@@ -1,18 +1,18 @@
 import { replaceConfigFile } from "../../config/config.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { commitConfigWithPendingPluginInstalls } from "../../plugins/install-record-commit.js";
 import { refreshPluginRegistryAfterConfigMutation } from "../../plugins/registry-refresh.js";
 import type { RuntimeEnv } from "../../runtime.js";
 
 export async function persistResolvedChannelPluginConfig(params: {
   resolved: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     configChanged: boolean;
     pluginInstalled: boolean;
   };
   baseHash?: string;
   runtime: RuntimeEnv;
-}): Promise<OpenClawConfig> {
+}): Promise<AforaConfig> {
   if (!params.resolved.configChanged) {
     return params.resolved.cfg;
   }

@@ -3,7 +3,7 @@
  *
  * Recomputes required metadata fields while preserving optional manifest/registry fields.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { ChannelMeta } from "./types.public.js";
 
 function stripRequiredChannelMeta(meta?: Partial<ChannelMeta> | null) {

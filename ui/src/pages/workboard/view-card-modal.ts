@@ -182,10 +182,10 @@ export function renderCardModal(props: WorkboardProps) {
     return true;
   };
   return html`
-    <openclaw-modal-dialog
+    <afora-modal-dialog
       label=${editing ? t("workboard.editCard") : t("workboard.newCard")}
       description=${editing ? t("workboard.editCardHelp") : t("workboard.newCardHelp")}
-      style="--openclaw-modal-width: min(1120px, calc(100vw - 56px)); --openclaw-modal-max-height: calc(100dvh - 56px);"
+      style="--afora-modal-width: min(1120px, calc(100vw - 56px)); --afora-modal-max-height: calc(100dvh - 56px);"
       @modal-cancel=${(event: Event) => {
         if (!dismissDraft()) {
           event.preventDefault();
@@ -230,7 +230,7 @@ export function renderCardModal(props: WorkboardProps) {
               ${editing ? t("workboard.editCardHelp") : t("workboard.newCardHelp")}
             </p>
           </div>
-          <openclaw-tooltip .content=${t("common.cancel")}>
+          <afora-tooltip .content=${t("common.cancel")}>
             <button
               class="btn btn--icon workboard-card__icon"
               type="button"
@@ -244,7 +244,7 @@ export function renderCardModal(props: WorkboardProps) {
             >
               ${icons.x}
             </button>
-          </openclaw-tooltip>
+          </afora-tooltip>
         </div>
         <div class="workboard-draft__body">
           ${!editing
@@ -314,7 +314,7 @@ export function renderCardModal(props: WorkboardProps) {
             })}
             <div class="workboard-field">
               <span>${t("workboard.fieldAgent")}</span>
-              <openclaw-agent-select
+              <afora-agent-select
                 class="workboard-agent-select"
                 .options=${assignableAgentOptions}
                 .value=${state.draftAgentId}
@@ -324,7 +324,7 @@ export function renderCardModal(props: WorkboardProps) {
                   state.draftAgentId = value;
                   props.onRequestUpdate?.();
                 }}
-              ></openclaw-agent-select>
+              ></afora-agent-select>
             </div>
             ${renderWorkboardSelect({
               value: state.draftSessionKey,
@@ -410,6 +410,6 @@ export function renderCardModal(props: WorkboardProps) {
           </button>
         </div>
       </form>
-    </openclaw-modal-dialog>
+    </afora-modal-dialog>
   `;
 }

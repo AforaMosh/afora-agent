@@ -1,6 +1,6 @@
 // Telegram plugin module implements sent message cache behavior.
-import type { PluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
+import type { PluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
 import { getTelegramRuntime } from "./runtime.js";
 import {
   resolveSentMessageScopeKey,
@@ -13,7 +13,7 @@ import {
 } from "./sent-message-cache.legacy-state.js";
 
 const CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
-const TELEGRAM_SENT_MESSAGES_STATE_KEY = Symbol.for("openclaw.telegramSentMessagesState");
+const TELEGRAM_SENT_MESSAGES_STATE_KEY = Symbol.for("afora.telegramSentMessagesState");
 
 type SentMessageStore = Map<string, Map<string, number>>;
 type SentMessagePersistentStore = PluginStateSyncKeyedStore<PersistedSentMessage>;

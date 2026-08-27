@@ -44,10 +44,10 @@ describe("hosted media provider live QA producer", () => {
       "--artifact-base",
       ".artifacts/qa-e2e/image",
       "--providers-env",
-      "OPENCLAW_QA_HOSTED_MEDIA_PROVIDERS",
+      "AFORA_QA_HOSTED_MEDIA_PROVIDERS",
     ]);
     const command = buildHostedMediaCommand({
-      env: { OPENCLAW_QA_HOSTED_MEDIA_PROVIDERS: "openai,google" },
+      env: { AFORA_QA_HOSTED_MEDIA_PROVIDERS: "openai,google" },
       options,
     });
 
@@ -55,7 +55,7 @@ describe("hosted media provider live QA producer", () => {
     expect(command.args).toContain("image");
     expect(command.args).toContain("--image-providers");
     expect(command.args).toContain("openai,google");
-    expect(command.env.OPENCLAW_LIVE_VIDEO_GENERATION_FULL_MODES).toBeUndefined();
+    expect(command.env.AFORA_LIVE_VIDEO_GENERATION_FULL_MODES).toBeUndefined();
   });
 
   it("forces full video modes so reference image and video inputs are covered", () => {
@@ -68,7 +68,7 @@ describe("hosted media provider live QA producer", () => {
     const command = buildHostedMediaCommand({ env: {}, options });
 
     expect(command.args).toContain("video");
-    expect(command.env.OPENCLAW_LIVE_VIDEO_GENERATION_FULL_MODES).toBe("1");
+    expect(command.env.AFORA_LIVE_VIDEO_GENERATION_FULL_MODES).toBe("1");
   });
 
   it("classifies missing live media auth as blocked evidence", () => {
@@ -81,7 +81,7 @@ describe("hosted media provider live QA producer", () => {
   });
 
   it("binds video provider coverage from the scenario catalog", () => {
-    const artifactBase = path.join(os.tmpdir(), "openclaw-hosted-media-live-test");
+    const artifactBase = path.join(os.tmpdir(), "afora-hosted-media-live-test");
     const options = parseHostedMediaOptions(["--suite", "video", "--artifact-base", artifactBase]);
     const evidence = buildHostedMediaEvidence({
       options,

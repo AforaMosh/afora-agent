@@ -4,10 +4,10 @@ import {
   embeddedAgentLog,
   formatErrorMessage,
   resolveAgentHarnessBeforePromptBuildResult,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   buildCodexSystemPromptReport,
-  prependCodexOpenClawPromptContext,
+  prependCodexAforaPromptContext,
   readContextEngineThreadBootstrapProjection,
   resolveCodexDeliveryHintPreservedInputRange,
   resolveContextEngineBootstrapProjectionDecision,
@@ -33,7 +33,7 @@ import {
   codexLegacyDynamicToolsFingerprint,
 } from "./thread-lifecycle.js";
 
-const CODEX_META_KEY = "__openclaw";
+const CODEX_META_KEY = "__afora";
 
 function isRestrictivePromptToolsAllow(toolsAllow: string[] | undefined): boolean {
   return toolsAllow !== undefined && !toolsAllow.some((name) => name.trim() === "*");
@@ -48,7 +48,7 @@ export async function prepareCodexAttemptPrompt(context: CodexAttemptContext) {
     workspaceBootstrapContext,
     buildActiveContextEngineRuntimeContext,
     baseDeveloperInstructions,
-    openClawPromptContext,
+    aforaPromptContext,
     skillsCollaborationInstructions,
     promptState,
     codexContextProjectionMaxChars,
@@ -262,9 +262,9 @@ export async function prepareCodexAttemptPrompt(context: CodexAttemptContext) {
     prompt: string;
     promptInputRange?: { start: number; end: number };
   }) => {
-    const turnPromptText = prependCodexOpenClawPromptContext(
+    const turnPromptText = prependCodexAforaPromptContext(
       promptBuildResult.prompt,
-      openClawPromptContext,
+      aforaPromptContext,
       {
         preservePromptWithoutContext:
           params.bootstrapContextMode === "lightweight" &&

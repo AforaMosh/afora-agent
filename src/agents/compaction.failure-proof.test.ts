@@ -1,7 +1,7 @@
 // Real-behavior proof: failed compaction must surface as CompactionError,
 // report the actual provider failure, and leave the transcript unrotated.
-import type { ExtensionContext } from "openclaw/plugin-sdk/agent-sessions";
-import type { UserMessage } from "openclaw/plugin-sdk/llm";
+import type { ExtensionContext } from "afora-agent/plugin-sdk/agent-sessions";
+import type { UserMessage } from "afora-agent/plugin-sdk/llm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as agentSessions from "./sessions/index.js";
 

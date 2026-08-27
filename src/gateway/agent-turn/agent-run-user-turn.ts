@@ -12,7 +12,7 @@ import {
 import type { ExecElevatedDefaults } from "../../agents/bash-tools.exec-types.js";
 import { runAgentHarnessBeforeMessageWriteHook } from "../../agents/harness/hook-helpers.js";
 import type { SessionEntry } from "../../config/sessions.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { deleteMediaBuffer } from "../../media/store.js";
 import type { InputProvenance } from "../../sessions/input-provenance.js";
 import {
@@ -53,8 +53,8 @@ export type PreparedAgentRunUserTurn = {
 
 export async function prepareAgentRunUserTurn(params: {
   request: AgentRunRequest;
-  cfg: OpenClawConfig;
-  cfgForAgent?: OpenClawConfig;
+  cfg: AforaConfig;
+  cfgForAgent?: AforaConfig;
   sessionEntry?: SessionEntry;
   resolvedSessionKey?: string;
   requestedSessionKeyRaw?: string;

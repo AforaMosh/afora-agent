@@ -1,5 +1,5 @@
 // Completed cron work must become durable before unrelated batch work drains.
-import { MAX_DATE_TIMESTAMP_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_DATE_TIMESTAMP_MS } from "@afora/normalization-core/number-coercion";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createDueIsolatedJob,
@@ -8,7 +8,7 @@ import {
 } from "../../../test/helpers/cron/service-regression-fixtures.js";
 import { createDeferred } from "../../../test/helpers/promise.js";
 import { DEFAULT_CRON_MAX_CONCURRENT_RUNS } from "../../config/cron-limits.js";
-import { openOpenClawStateDatabase } from "../../state/openclaw-state-db.js";
+import { openAforaStateDatabase } from "../../state/afora-state-db.js";
 import { listTaskRecordsUnsorted } from "../../tasks/task-registry.js";
 import { resetTaskRegistryForTests } from "../../tasks/task-runtime.test-helpers.js";
 import { isCronJobActive, markCronJobActive } from "../active-jobs.js";
@@ -123,7 +123,7 @@ describe("cron batch outcome finalization", () => {
         expect((await loadCronStore(store.storePath)).jobs[0]?.state.runningAtMs).toBe(
           installSuccessor ? successorAt : undefined,
         );
-        const receipt = openOpenClawStateDatabase()
+        const receipt = openAforaStateDatabase()
           .db.prepare(
             "SELECT status FROM cron_run_receipts WHERE store_key = ? AND job_id = ? ORDER BY started_at_ms DESC LIMIT 1",
           )
@@ -171,7 +171,7 @@ describe("cron batch outcome finalization", () => {
         runIsolatedAgentJob,
         onEvent: (event) => events.push(event),
       });
-      const database = openOpenClawStateDatabase().db;
+      const database = openAforaStateDatabase().db;
       const functionName = `observe_advanced_clock_${trigger}`;
       const triggerName = `observe_advanced_clock_${trigger}`;
       database.function(functionName, (writtenJobId, stateJson) => {
@@ -401,7 +401,7 @@ describe("cron batch outcome finalization", () => {
           deliveryContext?: unknown;
         },
       ) => {
-        const persisted = openOpenClawStateDatabase()
+        const persisted = openAforaStateDatabase()
           .db.prepare("SELECT enabled FROM cron_jobs WHERE store_key = ? AND job_id = ?")
           .get(cronStoreKey(store.storePath), job.id) as { enabled: number };
         expect(persisted.enabled).toBe(0);
@@ -439,7 +439,7 @@ describe("cron batch outcome finalization", () => {
     expect(order).toEqual(["notify", "heartbeat"]);
     expect(enqueueSystemEvent).toHaveBeenCalledOnce();
     expect(enqueueSystemEvent).toHaveBeenCalledWith(
-      expect.stringContaining(`openclaw automations enable ${job.id}`),
+      expect.stringContaining(`afora automations enable ${job.id}`),
       {
         agentId: "main",
         sessionKey: undefined,
@@ -488,7 +488,7 @@ describe("cron batch outcome finalization", () => {
 
     const order: string[] = [];
     const enqueueSystemEvent = vi.fn((_text: string) => {
-      const persisted = openOpenClawStateDatabase()
+      const persisted = openAforaStateDatabase()
         .db.prepare("SELECT enabled FROM cron_jobs WHERE store_key = ? AND job_id = ?")
         .get(cronStoreKey(store.storePath), job.id) as { enabled: number };
       expect(persisted.enabled).toBe(0);
@@ -564,7 +564,7 @@ describe("cron batch outcome finalization", () => {
       requestHeartbeat: vi.fn(),
       runIsolatedAgentJob: vi.fn(),
     });
-    const database = openOpenClawStateDatabase().db;
+    const database = openAforaStateDatabase().db;
     database.exec(`
       CREATE TEMP TRIGGER reject_auto_disable_terminal_write
       BEFORE UPDATE ON cron_jobs
@@ -703,7 +703,7 @@ describe("cron batch outcome finalization", () => {
       const secondStarted = createDeferred();
       const releaseSecond = createDeferred<{ status: "ok"; summary: string }>();
       let rejectedTerminalWrite = false;
-      const database = openOpenClawStateDatabase().db;
+      const database = openAforaStateDatabase().db;
       const functionName = `reject_sibling_terminal_${trigger}`;
       const triggerName = `reject_sibling_terminal_${trigger}`;
       database.function(functionName, (jobId, stateJson) => {
@@ -782,7 +782,7 @@ describe("cron batch outcome finalization", () => {
     await saveCronStore(store.storePath, { version: 1, jobs: [first, unstarted] });
 
     let rejectedTerminalWrite = false;
-    const database = openOpenClawStateDatabase().db;
+    const database = openAforaStateDatabase().db;
     database.function("reject_startup_terminal", (jobId, stateJson) => {
       if (jobId === first.id && typeof stateJson === "string") {
         const persistedState = JSON.parse(stateJson) as CronJob["state"];

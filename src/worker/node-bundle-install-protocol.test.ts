@@ -8,7 +8,7 @@ import {
 
 const build = {
   bundleHash: "a".repeat(64),
-  openclawVersion: "2026.8.1",
+  aforaVersion: "2026.8.1",
   protocolFeatures: ["worker-execution-context-v2"],
 };
 const input = {
@@ -26,7 +26,7 @@ describe("node worker bundle install protocol", () => {
     expect(parseNodeWorkerBundleInstallInput(JSON.stringify(input))).toEqual(input);
     expect(parseNodeWorkerBundleInstallResult(build)).toEqual(build);
     expect(nodeWorkerBundleTransferPath(build.bundleHash)).toBe(
-      `/__openclaw__/worker-bundle/v1/bundles/${build.bundleHash}`,
+      `/__afora__/worker-bundle/v1/bundles/${build.bundleHash}`,
     );
   });
 

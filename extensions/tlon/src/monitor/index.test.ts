@@ -1,7 +1,7 @@
 // Tlon monitor tests cover authentication, inbound context, and shutdown lifecycle.
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
@@ -67,20 +67,20 @@ const {
 
 const runningServers: Server[] = [];
 
-vi.mock("openclaw/plugin-sdk/agent-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/agent-runtime", () => ({
   resolveHumanDelayConfig: vi.fn(() => undefined),
 }));
 
-vi.mock("openclaw/plugin-sdk/channel-inbound", () => ({
+vi.mock("afora-agent/plugin-sdk/channel-inbound", () => ({
   createChannelInboundEnvelopeBuilder: createChannelInboundEnvelopeBuilderMock,
   formatInboundMediaUnavailableText: formatInboundMediaUnavailableTextMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/runtime-env", () => ({
+vi.mock("afora-agent/plugin-sdk/runtime-env", () => ({
   sleepWithAbort: sleepWithAbortMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/media-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/media-runtime", () => ({
   MAX_IMAGE_BYTES: 6 * 1024 * 1024,
   readRemoteMediaBuffer: vi.fn(),
   saveRemoteMedia: saveRemoteMediaMock,
@@ -231,7 +231,7 @@ describe("monitorTlonProvider inbound media truth", () => {
         }
         return {
           id: `photo-${index}.png`,
-          path: `/tmp/openclaw/media/inbound/photo-${index}.png`,
+          path: `/tmp/afora/media/inbound/photo-${index}.png`,
           size: 10,
           contentType: "image/png",
         };
@@ -246,7 +246,7 @@ describe("monitorTlonProvider inbound media truth", () => {
       const expectedMedia = Array.from({ length: Math.min(imageCount, 8) }, (_, index) => index)
         .filter((index) => !failedIndexes.includes(index))
         .map((index) => ({
-          path: `/tmp/openclaw/media/inbound/photo-${index}.png`,
+          path: `/tmp/afora/media/inbound/photo-${index}.png`,
           contentType: "image/png",
         }));
       const expectedMediaPrompt = [

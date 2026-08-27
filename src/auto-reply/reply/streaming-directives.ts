@@ -1,6 +1,6 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 // Converts streaming reply directives into payload delivery decisions.
-import { hasOutboundReplyContent } from "openclaw/plugin-sdk/reply-payload";
+import { hasOutboundReplyContent } from "afora-agent/plugin-sdk/reply-payload";
 import { parseInlineDirectives } from "../../utils/directive-tags.js";
 import {
   isSilentReplyPrefixText,

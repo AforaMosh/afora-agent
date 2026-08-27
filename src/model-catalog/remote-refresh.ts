@@ -1,15 +1,15 @@
 import {
   validateAndSanitizeRemoteModelCatalogBundle,
   type RemoteModelCatalogBundle,
-} from "@openclaw/model-catalog-core";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
-import { compareOpenClawVersions } from "../config/version.js";
+} from "@afora/model-catalog-core";
+import type { AforaConfig } from "../config/types.afora.js";
+import { compareAforaVersions } from "../config/version.js";
 import { readResponseWithLimit } from "../infra/http-body.js";
 import {
   fetchConfiguredLocalOriginWithSsrFGuard,
   fetchWithSsrFGuard,
 } from "../infra/net/fetch-guard.js";
-import type { OpenClawStateDatabaseOptions } from "../state/openclaw-state-db.js";
+import type { AforaStateDatabaseOptions } from "../state/afora-state-db.js";
 import { VERSION } from "../version.js";
 import { bundledCatalogGeneratedAt } from "./bundled-catalog-stamp.js";
 import {
@@ -18,7 +18,7 @@ import {
   writeRemoteModelCatalog,
 } from "./remote-store.js";
 
-const DEFAULT_REMOTE_MODEL_CATALOG_URL = "https://catalog.openclaw.ai/models/v1/catalog.json";
+const DEFAULT_REMOTE_MODEL_CATALOG_URL = "https://catalog.afora.ai/models/v1/catalog.json";
 export const REMOTE_MODEL_CATALOG_TTL_MS = 6 * 60 * 60_000;
 const REMOTE_MODEL_CATALOG_TIMEOUT_MS = 15_000;
 const REMOTE_MODEL_CATALOG_MAX_BYTES = 4 * 1024 * 1024;
@@ -30,11 +30,11 @@ type RemoteModelCatalogRefreshResult =
   | { status: "disabled"; providers: 0; models: 0 }
   | { status: "error"; error: string; providers: 0; models: 0 };
 
-export function isRemoteModelCatalogRefreshEnabled(config: OpenClawConfig): boolean {
+export function isRemoteModelCatalogRefreshEnabled(config: AforaConfig): boolean {
   return config.models?.catalogRefresh?.enabled !== false;
 }
 
-export function resolveRemoteCatalogUrl(config: OpenClawConfig): string {
+export function resolveRemoteCatalogUrl(config: AforaConfig): string {
   return config.models?.catalogRefresh?.url?.trim() || DEFAULT_REMOTE_MODEL_CATALOG_URL;
 }
 
@@ -55,18 +55,18 @@ function assertCompatibleMinVersion(bundle: RemoteModelCatalogBundle): void {
   if (!bundle.minVersion) {
     return;
   }
-  const comparison = compareOpenClawVersions(VERSION, bundle.minVersion);
+  const comparison = compareAforaVersions(VERSION, bundle.minVersion);
   if (comparison === null) {
     throw new Error(`invalid remote catalog minVersion: ${bundle.minVersion}`);
   }
   if (comparison < 0) {
     throw new Error(
-      `remote catalog requires OpenClaw ${bundle.minVersion} or newer (current ${VERSION})`,
+      `remote catalog requires Afora ${bundle.minVersion} or newer (current ${VERSION})`,
     );
   }
 }
 
-function isExplicitLocalHttpUrl(config: OpenClawConfig, url: string): boolean {
+function isExplicitLocalHttpUrl(config: AforaConfig, url: string): boolean {
   if (!config.models?.catalogRefresh?.url) {
     return false;
   }
@@ -80,11 +80,11 @@ function isExplicitLocalHttpUrl(config: OpenClawConfig, url: string): boolean {
 }
 
 export async function refreshRemoteModelCatalog(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   force?: boolean;
   signal?: AbortSignal;
   fetchImpl?: typeof fetch;
-  databaseOptions?: OpenClawStateDatabaseOptions;
+  databaseOptions?: AforaStateDatabaseOptions;
   now?: () => number;
   bundledGeneratedAt?: () => number | undefined;
 }): Promise<RemoteModelCatalogRefreshResult> {

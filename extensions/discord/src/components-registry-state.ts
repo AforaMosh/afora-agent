@@ -1,4 +1,4 @@
-import { resolveGlobalSingleton } from "openclaw/plugin-sdk/global-singleton";
+import { resolveGlobalSingleton } from "afora-agent/plugin-sdk/global-singleton";
 import type { DiscordComponentEntry, DiscordModalEntry } from "./components.js";
 
 type PersistedDiscordRegistryEntry<T extends { id: string }> = {
@@ -18,7 +18,7 @@ export type DiscordRegistryStore<T extends { id: string }> = DiscordPersistentSt
 >;
 
 export const discordComponentRegistryState = resolveGlobalSingleton(
-  Symbol.for("openclaw.discord.componentRegistryState"),
+  Symbol.for("afora.discord.componentRegistryState"),
   () => ({
     componentEntries: new Map<string, DiscordComponentEntry>(),
     modalEntries: new Map<string, DiscordModalEntry>(),

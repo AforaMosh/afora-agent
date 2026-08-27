@@ -7,7 +7,7 @@ scenario:
   coverage:
     primary:
       - telegram.other-bot-command-gating
-  objective: Verify a command addressed to another Telegram bot does not wake OpenClaw.
+  objective: Verify a command addressed to another Telegram bot does not wake Afora.
   successCriteria:
     - The driver sends a native status command addressed to another bot.
     - The Telegram group remains quiet for the observation window.
@@ -17,7 +17,7 @@ scenario:
   execution:
     kind: flow
     channel: telegram
-    summary: Address a command to another bot and verify OpenClaw ignores it.
+    summary: Address a command to another bot and verify Afora ignores it.
 
 flow:
   steps:
@@ -31,7 +31,7 @@ flow:
             conversation: { id: telegram-command-room, kind: channel }
             senderId: qa-command-operator
             senderName: QA Command Operator
-            text: /status@OpenClawQaOtherBot
+            text: /status@AforaQaOtherBot
             nativeCommand: { name: status }
         - waitForNoOutbound:
             quietMs: 8000

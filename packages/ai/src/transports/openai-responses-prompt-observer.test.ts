@@ -1,5 +1,5 @@
 import { zstdDecompressSync } from "node:zlib";
-import type { Api, AssistantMessage, Context, Model } from "@openclaw/llm-core";
+import type { Api, AssistantMessage, Context, Model } from "@afora/llm-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { configureAiTransportHost, getAiTransportHost } from "../host.js";
 import { responsesPromptObserver, type ResponsesPromptObservation } from "../internal/openai.js";
@@ -498,8 +498,8 @@ describe("OpenAI Responses provider prompt observer", () => {
     const run = await runObservedRequest({
       context: createContext(prompt, { tools: [tool("exec"), tool("wait")] as never }),
       options: {
-        openclawCodeModeToolSurface: true,
-        openclawCodeModeAllowedHostedToolTypes: new Set(["web_search"]),
+        aforaCodeModeToolSurface: true,
+        aforaCodeModeAllowedHostedToolTypes: new Set(["web_search"]),
         onPayload: async () => {
           await Promise.resolve();
           return {

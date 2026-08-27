@@ -1,5 +1,5 @@
-// Slack plugin entrypoint registers its OpenClaw integration.
-import { defineBundledChannelEntry } from "openclaw/plugin-sdk/channel-entry-contract";
+// Slack plugin entrypoint registers its Afora integration.
+import { defineBundledChannelEntry } from "afora-agent/plugin-sdk/channel-entry-contract";
 import { registerSlackPluginHttpRoutes } from "./http-routes-api.js";
 
 export default defineBundledChannelEntry({

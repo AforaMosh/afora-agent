@@ -1,5 +1,5 @@
-import { asPositiveSafeInteger } from "@openclaw/normalization-core/number-coercion";
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
+import { asPositiveSafeInteger } from "@afora/normalization-core/number-coercion";
+import { asNullableRecord } from "@afora/normalization-core/record-coerce";
 
 export type DeliveryQueueCompletionRetention =
   | "permanent"

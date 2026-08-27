@@ -41,12 +41,12 @@ import {
   GatewayPageController,
   type GatewayPageChange,
 } from "../../lit/gateway-page-controller.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { PollController } from "../../lit/poll-controller.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import { renderDevices } from "./view.ts";
 
-const DEVICES_DOCS_URL = "https://docs.openclaw.ai/nodes";
+const DEVICES_DOCS_URL = "https://docs.afora.ai/nodes";
 
 export type DevicesRouteData = {
   // Client identity alone cannot distinguish provider replacement or reconnect epochs.
@@ -79,7 +79,7 @@ function presenceConnectivitySignature(entries: PresenceEntry[]): string {
   return JSON.stringify([...states].toSorted(([left], [right]) => left.localeCompare(right)));
 }
 
-class DevicesPage extends OpenClawLightDomElement {
+class DevicesPage extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context!: ApplicationContext;
 
@@ -583,6 +583,6 @@ class DevicesPage extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-devices-page")) {
-  customElements.define("openclaw-devices-page", DevicesPage);
+if (!customElements.get("afora-devices-page")) {
+  customElements.define("afora-devices-page", DevicesPage);
 }

@@ -4,9 +4,9 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { resolveAgentModelPrimaryValue } from "../config/model-input.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { DEFAULT_PROVIDER } from "./defaults.js";
 import { findModelInCatalog } from "./model-catalog-lookup.js";
 import type { ModelCatalogEntry } from "./model-catalog.types.js";
@@ -204,7 +204,7 @@ export function normalizeStoredOverrideModel(params: {
 
 export async function canonicalizeCaseOnlyCatalogModelRef(params: {
   raw: string | undefined;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   defaultProvider: string;
   loadCatalog: () => Promise<ModelCatalogEntry[]>;
   aliasIndex?: ModelAliasIndex;
@@ -287,7 +287,7 @@ function resolveModelThroughAliases(value: string, aliasIndex: ModelAliasIndex):
 }
 
 export function resolveSubagentSpawnModelSelection(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   modelOverride?: unknown;
 }): string {
@@ -315,7 +315,7 @@ export function resolveSubagentSpawnModelSelection(params: {
 }
 
 export function resolveConfiguredSubagentSpawnModelSelection(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   modelOverride?: unknown;
   defaultProvider?: string;
@@ -346,7 +346,7 @@ export function resolveConfiguredSubagentSpawnModelSelection(params: {
 
 export function buildAllowedModelSet(
   params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     catalog: ModelCatalogEntry[];
     defaultProvider: string;
     defaultModel?: string;
@@ -374,7 +374,7 @@ export function buildAllowedModelSet(
 
 export function resolveAllowedModelRef(
   params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     catalog: ModelCatalogEntry[];
     raw: string;
     defaultProvider: string;

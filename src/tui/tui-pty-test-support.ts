@@ -240,12 +240,12 @@ async function writePtyInput(
   env: NodeJS.ProcessEnv,
   opts: { delay?: boolean } = {},
 ): Promise<void> {
-  const delayMs = readPositiveIntegerEnv("OPENCLAW_TUI_PTY_TYPE_DELAY_MS", env);
+  const delayMs = readPositiveIntegerEnv("AFORA_TUI_PTY_TYPE_DELAY_MS", env);
   if (!delayMs || opts.delay === false) {
     pty.write(data);
     return;
   }
-  const chunkSize = readPositiveIntegerEnv("OPENCLAW_TUI_PTY_TYPE_CHUNK_SIZE", env) ?? 1;
+  const chunkSize = readPositiveIntegerEnv("AFORA_TUI_PTY_TYPE_CHUNK_SIZE", env) ?? 1;
   // Chunk by Unicode characters so stress typing never sends half of a surrogate pair.
   const characters = Array.from(data);
   for (let idx = 0; idx < characters.length; idx += chunkSize) {
@@ -257,7 +257,7 @@ async function writePtyInput(
 }
 
 function mirrorPtyOutput(data: string) {
-  const mirrorPath = process.env.OPENCLAW_TUI_PTY_MIRROR_PATH;
+  const mirrorPath = process.env.AFORA_TUI_PTY_MIRROR_PATH;
   if (!mirrorPath) {
     return;
   }
@@ -291,8 +291,8 @@ export function startPty(
       ptyEnv[key] = value;
     }
   }
-  const cols = readPtyDimensionEnv("OPENCLAW_TUI_PTY_COLS", 100, ptyEnv);
-  const rows = readPtyDimensionEnv("OPENCLAW_TUI_PTY_ROWS", 30, ptyEnv);
+  const cols = readPtyDimensionEnv("AFORA_TUI_PTY_COLS", 100, ptyEnv);
+  const rows = readPtyDimensionEnv("AFORA_TUI_PTY_ROWS", 30, ptyEnv);
   const pty = nodePty.spawn(command, args, {
     name: "xterm-256color",
     cols,

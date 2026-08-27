@@ -29,7 +29,7 @@ vi.mock("../config/config.js", () => ({
   get isNixMode() {
     return cleanupConfigState.isNixMode;
   },
-  resolveConfigPath: () => "/tmp/.openclaw/openclaw.json",
+  resolveConfigPath: () => "/tmp/.AforaMosh/afora-agent.json",
 }));
 
 vi.mock("../daemon/service.js", () => ({
@@ -55,17 +55,17 @@ export function createCleanupCommandRuntime() {
 export function resetCleanupCommandMocks() {
   vi.clearAllMocks();
   const cleanupPlan = {
-    stateDir: "/tmp/.openclaw",
-    configPath: "/tmp/.openclaw/openclaw.json",
-    oauthDir: "/tmp/.openclaw/credentials",
+    stateDir: "/tmp/.afora",
+    configPath: "/tmp/.AforaMosh/afora-agent.json",
+    oauthDir: "/tmp/.afora/credentials",
     configInsideState: true,
     oauthInsideState: true,
-    workspaceDirs: ["/tmp/.openclaw/workspace"],
+    workspaceDirs: ["/tmp/.afora/workspace"],
   };
   resolveCleanupPlanForDryRun.mockResolvedValue(cleanupPlan);
   resolveCleanupPlanForRemoval.mockResolvedValue(cleanupPlan);
   removePath.mockResolvedValue({ ok: true });
-  listAgentSessionDirs.mockResolvedValue(["/tmp/.openclaw/agents/main/sessions"]);
+  listAgentSessionDirs.mockResolvedValue(["/tmp/.afora/agents/main/sessions"]);
   prepareLegacyWorkspaceStateReset.mockImplementation((workspaceDir: string) => ({ workspaceDir }));
   removeLegacyWorkspaceStateForReset.mockResolvedValue({ removedPaths: [], warnings: [] });
   removeStateAndLinkedPaths.mockResolvedValue(true);

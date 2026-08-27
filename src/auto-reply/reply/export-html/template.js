@@ -30,7 +30,7 @@
 
   // Parse URL parameters for deep linking: leafId and targetId
   // Check for injected params (when loaded in iframe via srcdoc) or use window.location
-  const injectedParams = document.querySelector('meta[name="openclaw-url-params"]');
+  const injectedParams = document.querySelector('meta[name="afora-url-params"]');
   const searchString = injectedParams
     ? injectedParams.content
     : window.location.search.substring(1);
@@ -1278,7 +1278,7 @@
    */
   function buildShareUrl(entryId) {
     // Check for injected base URL (used when loaded in iframe via srcdoc)
-    const baseUrlMeta = document.querySelector('meta[name="openclaw-share-base-url"]');
+    const baseUrlMeta = document.querySelector('meta[name="afora-share-base-url"]');
     const baseUrl = baseUrlMeta ? baseUrlMeta.content : window.location.href.split("?")[0];
 
     const url = new URL(window.location.href);

@@ -46,7 +46,7 @@ describe("initial user message handoff", () => {
           },
         ],
         timestamp: 123,
-        __openclaw: { idempotencyKey: "initial-image-run:user", seq: 1 },
+        __afora: { idempotencyKey: "initial-image-run:user", seq: 1 },
       },
     });
   });

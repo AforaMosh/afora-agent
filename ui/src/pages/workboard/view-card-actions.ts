@@ -175,7 +175,7 @@ function renderCardActionButton(params: {
     </button>
   `;
   return params.iconOnly
-    ? html`<openclaw-tooltip .content=${params.label}>${button}</openclaw-tooltip>`
+    ? html`<afora-tooltip .content=${params.label}>${button}</afora-tooltip>`
     : button;
 }
 
@@ -346,7 +346,7 @@ export function renderStartExecutionButton(
     </button>
   `;
   return options.iconOnly
-    ? html`<openclaw-tooltip .content=${title}>${button}</openclaw-tooltip>`
+    ? html`<afora-tooltip .content=${title}>${button}</afora-tooltip>`
     : button;
 }
 

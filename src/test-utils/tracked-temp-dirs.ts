@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 
 /** Allocates temp directories under reusable roots with explicit cleanup control. */
 export function createTrackedTempDirs() {

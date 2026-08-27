@@ -1,6 +1,6 @@
 // Firecrawl tests cover firecrawl client behavior — URL safety,
 // scrape payload parsing, and search-item extraction.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 let firecrawlClient: typeof import("./firecrawl-client.js").testing;
@@ -117,7 +117,7 @@ describe("resolveSearchItems", () => {
     const result = firecrawlClient.resolveSearchItems({
       data: [
         { url: "https://example.com", title: "Example" },
-        { url: "https://openclaw.ai", title: "OpenClaw" },
+        { url: "https://afora.ai", title: "Afora" },
       ],
     });
 
@@ -127,8 +127,8 @@ describe("resolveSearchItems", () => {
       title: "Example",
     });
     expect(requireSearchResult(result, 1)).toMatchObject({
-      url: "https://openclaw.ai",
-      title: "OpenClaw",
+      url: "https://afora.ai",
+      title: "Afora",
     });
   });
 

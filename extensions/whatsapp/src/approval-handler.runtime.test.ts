@@ -57,7 +57,7 @@ describe("whatsappApprovalNativeRuntime", () => {
         request: {
           title: "Allow Codex to use 1Password?",
           description: "Allow Codex to use 1Password?",
-          pluginId: "openclaw-codex-app-server",
+          pluginId: "afora-codex-app-server",
           toolName: "codex_mcp_tool_approval",
           severity: "warning",
           allowedDecisions: ["allow-once", "allow-always", "deny"],

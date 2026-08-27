@@ -53,7 +53,7 @@ flow:
             timeoutMs: 20000
           saveAs: pairingReply
         - assert:
-            expr: "/OpenClaw: access not configured|Pairing code:/iu.test(pairingReply.text) && !pairingReply.text.includes(marker)"
+            expr: "/Afora: access not configured|Pairing code:/iu.test(pairingReply.text) && !pairingReply.text.includes(marker)"
             message:
               expr: "`expected pairing guidance without agent marker, got ${pairingReply.text}`"
       detailsExpr: pairingReply.text

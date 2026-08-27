@@ -1,9 +1,9 @@
 // Qa Lab tests cover Crabline local-provider transport integration behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { OpenClawCrablineChannelDriverSelection } from "@openclaw/crabline";
-import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
-import { withTempDir } from "openclaw/plugin-sdk/test-env";
+import type { AforaCrablineChannelDriverSelection } from "@openclaw/crabline";
+import { fetchWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime";
+import { withTempDir } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createQaBusState } from "./bus-state.js";
 import { createQaCrablineTransportAdapter } from "./crabline-transport.js";
@@ -12,7 +12,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function createSelection(channel: OpenClawCrablineChannelDriverSelection["channel"] = "telegram") {
+function createSelection(channel: AforaCrablineChannelDriverSelection["channel"] = "telegram") {
   return {
     capabilityMatrixPath: "crabline-fake-provider-capabilities.json",
     channel,
@@ -65,7 +65,7 @@ describe("crabline transport", () => {
     });
   });
 
-  it("configures OpenClaw's Telegram plugin against a Crabline local provider server", async () => {
+  it("configures Afora's Telegram plugin against a Crabline local provider server", async () => {
     await withTempDir("qa-crabline-transport-", async (outputDir) => {
       const transport = await createQaCrablineTransportAdapter({
         outputDir,
@@ -290,7 +290,7 @@ describe("crabline transport", () => {
     });
   });
 
-  it("configures OpenClaw's Slack plugin against a Crabline local provider server", async () => {
+  it("configures Afora's Slack plugin against a Crabline local provider server", async () => {
     await withTempDir("qa-crabline-transport-", async (outputDir) => {
       const transport = await createQaCrablineTransportAdapter({
         outputDir,
@@ -398,7 +398,7 @@ describe("crabline transport", () => {
     });
   });
 
-  it("configures OpenClaw's WhatsApp plugin against a Crabline Baileys WebSocket server", async () => {
+  it("configures Afora's WhatsApp plugin against a Crabline Baileys WebSocket server", async () => {
     await withTempDir("qa-crabline-transport-", async (outputDir) => {
       const transport = await createQaCrablineTransportAdapter({
         outputDir,
@@ -431,7 +431,7 @@ describe("crabline transport", () => {
           CRABLINE_WHATSAPP_ADMIN_TOKEN: expect.any(String),
           CRABLINE_WHATSAPP_RECORDER_PATH: expect.stringMatching(/whatsapp-fake-provider\.jsonl$/u),
           CRABLINE_WHATSAPP_SELF_JID: "15550000000@s.whatsapp.net",
-          OPENCLAW_WHATSAPP_WEB_SOCKET_URL: expect.stringMatching(
+          AFORA_WHATSAPP_WEB_SOCKET_URL: expect.stringMatching(
             /^ws:\/\/127\.0\.0\.1:\d+\/ws\/chat\?access_token=/u,
           ),
         });
@@ -714,7 +714,7 @@ describe("crabline transport", () => {
               encryption: false,
               homeserver: expect.stringMatching(/^http:\/\/127\.0\.0\.1:\d+$/u),
               network: { dangerouslyAllowPrivateNetwork: true },
-              userId: "@openclaw:matrix.test",
+              userId: "@afora:matrix.test",
             },
           },
         });
@@ -726,7 +726,7 @@ describe("crabline transport", () => {
         expect(transport.createRuntimeEnvPatch?.()).toMatchObject({
           MATRIX_ACCESS_TOKEN: expect.any(String),
           MATRIX_BASE_URL: expect.stringMatching(/^http:\/\/127\.0\.0\.1:\d+$/u),
-          MATRIX_USER_ID: "@openclaw:matrix.test",
+          MATRIX_USER_ID: "@afora:matrix.test",
         });
 
         const roomId = "main";
@@ -753,7 +753,7 @@ describe("crabline transport", () => {
           "Matrix QA conversation id must be non-empty",
         );
         expect(() => transport.buildAgentDelivery({ target: "thread:/v1/main/%24event" })).toThrow(
-          "Matrix thread targets require OpenClaw QA thread forwarding",
+          "Matrix thread targets require Afora QA thread forwarding",
         );
         await expect(
           transport.state.addInboundMessage({

@@ -1,4 +1,4 @@
-import type { OpenAICompatibleModelDiscoveryOptions } from "openclaw/plugin-sdk/provider-catalog-live-runtime";
+import type { OpenAICompatibleModelDiscoveryOptions } from "afora-agent/plugin-sdk/provider-catalog-live-runtime";
 import { COHERE_BASE_URL } from "./models.js";
 
 export const COHERE_LIVE_MODEL_DISCOVERY: OpenAICompatibleModelDiscoveryOptions = {

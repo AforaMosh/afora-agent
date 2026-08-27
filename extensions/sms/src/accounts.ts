@@ -1,18 +1,18 @@
-import { createAccountListHelpers } from "openclaw/plugin-sdk/account-helpers";
+import { createAccountListHelpers } from "afora-agent/plugin-sdk/account-helpers";
 // Sms plugin module implements accounts behavior.
-import { normalizeOptionalAccountId } from "openclaw/plugin-sdk/account-id";
+import { normalizeOptionalAccountId } from "afora-agent/plugin-sdk/account-id";
 import {
   DEFAULT_ACCOUNT_ID,
   hasConfiguredAccountValue,
   resolveAccountEntry,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/account-resolution";
-import { parseStrictPositiveInteger } from "openclaw/plugin-sdk/number-runtime";
+  type AforaConfig,
+} from "afora-agent/plugin-sdk/account-resolution";
+import { parseStrictPositiveInteger } from "afora-agent/plugin-sdk/number-runtime";
 import {
   hasConfiguredSecretInput,
   normalizeResolvedSecretInputString,
-} from "openclaw/plugin-sdk/secret-input";
-import { normalizeStringEntries } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/secret-input";
+import { normalizeStringEntries } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { normalizeSmsAllowFrom, normalizeSmsPhoneNumber } from "./phone.js";
 import { parseSmsPublicWebhookUrl } from "./public-webhook-url.js";
 import type { ResolvedSmsAccount, SmsChannelConfig } from "./types.js";
@@ -21,7 +21,7 @@ const CHANNEL_ID = "sms";
 const DEFAULT_WEBHOOK_PATH = "/webhooks/sms";
 const DEFAULT_TEXT_CHUNK_LIMIT = 1500;
 
-function getChannelConfig(cfg: OpenClawConfig): SmsChannelConfig | undefined {
+function getChannelConfig(cfg: AforaConfig): SmsChannelConfig | undefined {
   return cfg?.channels?.[CHANNEL_ID] as SmsChannelConfig | undefined;
 }
 
@@ -82,7 +82,7 @@ const {
 export { listSmsAccountIds, resolveDefaultSmsAccountId };
 
 export function resolveSmsAccount(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   accountId?: string | null,
 ): ResolvedSmsAccount {
   const channelCfg = getChannelConfig(cfg) ?? {};
@@ -136,7 +136,7 @@ export function resolveSmsAccount(
   };
 }
 
-export function inspectSmsAccount(cfg: OpenClawConfig, accountId?: string | null) {
+export function inspectSmsAccount(cfg: AforaConfig, accountId?: string | null) {
   const account = resolveSmsAccount(cfg, accountId);
   const configured = isSmsAccountConfigured(account);
   return {

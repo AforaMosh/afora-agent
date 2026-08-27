@@ -4,23 +4,23 @@ set -euo pipefail
 # Build the mac app bundle, then create a zip (Sparkle) + styled DMG (humans).
 #
 # Output:
-# - dist/OpenClaw.app
-# - dist/OpenClaw-<version>.zip
-# - dist/OpenClaw-<version>.dmg
+# - dist/Afora.app
+# - dist/Afora-<version>.zip
+# - dist/Afora-<version>.dmg
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT_DIR/scripts/lib/plistbuddy.sh"
 source "$ROOT_DIR/scripts/lib/swift-toolchain.sh"
 
 BUILD_ROOT="$ROOT_DIR/apps/macos/.build"
-PRODUCT="OpenClaw"
+PRODUCT="Afora"
 BUILD_CONFIG="${BUILD_CONFIG:-release}"
 APP_VERSION_INPUT="${APP_VERSION:-}"
 
 # Default to universal binary for distribution builds (supports both Apple Silicon and Intel Macs)
 export BUILD_ARCHS="${BUILD_ARCHS:-all}"
 export BUILD_CONFIG
-export OPENCLAW_CONTROL_UI_RELEASE_BUILD=1
+export AFORA_CONTROL_UI_RELEASE_BUILD=1
 DSYM_ARCHS_VALUE="$BUILD_ARCHS"
 if [[ "$DSYM_ARCHS_VALUE" == "all" ]]; then
   DSYM_ARCHS_VALUE="arm64 x86_64"
@@ -29,7 +29,7 @@ IFS=' ' read -r -a DSYM_ARCHS <<< "$DSYM_ARCHS_VALUE"
 
 # Use release bundle ID (not .debug) so Sparkle auto-update works.
 # The .debug suffix in package-mac-app.sh blanks SUFeedURL intentionally for dev builds.
-export BUNDLE_ID="${BUNDLE_ID:-ai.openclaw.mac}"
+export BUNDLE_ID="${BUNDLE_ID:-ai.afora.mac}"
 
 DIST_PNPM_CMD=()
 SPARKLE_BUILD_DEPS_RETRIED=0
@@ -70,7 +70,7 @@ canonical_sparkle_build() {
   local output
   local stderr_file
 
-  stderr_file="$(mktemp "${TMPDIR:-/tmp}/openclaw-sparkle-build.XXXXXX")" || {
+  stderr_file="$(mktemp "${TMPDIR:-/tmp}/afora-sparkle-build.XXXXXX")" || {
     echo "ERROR: failed to create temporary stderr capture for Sparkle build metadata." >&2
     return 1
   }
@@ -144,7 +144,7 @@ fi
 
 "$ROOT_DIR/scripts/package-mac-app.sh"
 
-APP="$ROOT_DIR/dist/OpenClaw.app"
+APP="$ROOT_DIR/dist/Afora.app"
 if [[ ! -d "$APP" ]]; then
   echo "Error: missing app bundle at $APP" >&2
   exit 1
@@ -154,10 +154,10 @@ VERSION="$(plist_print_required "$APP/Contents/Info.plist" CFBundleShortVersionS
 BUNDLE_VERSION="$(plist_print_required "$APP/Contents/Info.plist" CFBundleVersion)"
 ACTUAL_BUNDLE_ID="$(plist_print_required "$APP/Contents/Info.plist" CFBundleIdentifier)"
 ACTUAL_FEED_URL="$(plist_print_required "$APP/Contents/Info.plist" SUFeedURL)"
-ZIP="$ROOT_DIR/dist/OpenClaw-$VERSION.zip"
-DMG="$ROOT_DIR/dist/OpenClaw-$VERSION.dmg"
-NOTARY_ZIP="$ROOT_DIR/dist/OpenClaw-$VERSION.notary.zip"
-DSYM_ZIP="$ROOT_DIR/dist/OpenClaw-$VERSION.dSYM.zip"
+ZIP="$ROOT_DIR/dist/Afora-$VERSION.zip"
+DMG="$ROOT_DIR/dist/Afora-$VERSION.dmg"
+NOTARY_ZIP="$ROOT_DIR/dist/Afora-$VERSION.notary.zip"
+DSYM_ZIP="$ROOT_DIR/dist/Afora-$VERSION.dSYM.zip"
 SKIP_NOTARIZE="${SKIP_NOTARIZE:-0}"
 NOTARIZE=1
 SKIP_DSYM="${SKIP_DSYM:-0}"

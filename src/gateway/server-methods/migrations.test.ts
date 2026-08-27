@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 // Gateway migration tests cover agent scoping, fresh plans, and exact item selection.
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ErrorCodes } from "../../../packages/gateway-protocol/src/index.js";
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
@@ -153,7 +153,7 @@ async function loadPlanFingerprint(overwrite = false): Promise<string> {
 
 describe("memory migration gateway handlers", () => {
   beforeEach(async () => {
-    sourceRoot = tempDirs.make("openclaw-memory-gateway-");
+    sourceRoot = tempDirs.make("afora-memory-gateway-");
     await fs.writeFile(path.join(sourceRoot, "MEMORY.md"), "reviewed memory", "utf8");
     config = createConfig();
     mocks.providers = [provider()];

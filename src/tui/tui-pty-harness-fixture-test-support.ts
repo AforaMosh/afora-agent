@@ -27,15 +27,15 @@ export async function disposeActiveTuiFixtures(): Promise<void> {
 }
 
 export async function startTuiFixture(opts: { env?: NodeJS.ProcessEnv } = {}) {
-  const tempDir = await mkdtemp(path.join(tmpdir(), "openclaw-tui-pty-"));
+  const tempDir = await mkdtemp(path.join(tmpdir(), "afora-tui-pty-"));
   const scriptPath = await writeTuiPtyFixtureScript(tempDir);
   const logPath = path.join(tempDir, "fixture-log.jsonl");
   const run = startPty(process.execPath, ["--import", "tsx", scriptPath], {
     activeRuns,
     cwd: process.cwd(),
     env: {
-      OPENCLAW_THEME: "dark",
-      OPENCLAW_TUI_PTY_LOG_PATH: logPath,
+      AFORA_THEME: "dark",
+      AFORA_TUI_PTY_LOG_PATH: logPath,
       NO_COLOR: undefined,
       ...opts.env,
     },
@@ -79,39 +79,39 @@ export async function writeTuiPtyFixtureScript(dir: string) {
       import type { TuiBackend } from ${JSON.stringify(tuiModuleUrl.replace("/tui.ts", "/tui-backend.ts"))};
       import { runTui } from ${JSON.stringify(tuiModuleUrl)};
 
-      const actionLogPath = process.env.OPENCLAW_TUI_PTY_LOG_PATH;
-      const gatewayStatus = process.env.OPENCLAW_TUI_PTY_GATEWAY_STATUS ?? "fixture gateway ok";
-      const startupDelayMs = Number(process.env.OPENCLAW_TUI_PTY_STARTUP_DELAY_MS ?? 0);
-      const footerModel = process.env.OPENCLAW_TUI_PTY_MODEL;
-      const footerThinkingLevel = process.env.OPENCLAW_TUI_PTY_THINKING_LEVEL;
-      let verboseLevel = process.env.OPENCLAW_TUI_PTY_VERBOSE_LEVEL;
+      const actionLogPath = process.env.AFORA_TUI_PTY_LOG_PATH;
+      const gatewayStatus = process.env.AFORA_TUI_PTY_GATEWAY_STATUS ?? "fixture gateway ok";
+      const startupDelayMs = Number(process.env.AFORA_TUI_PTY_STARTUP_DELAY_MS ?? 0);
+      const footerModel = process.env.AFORA_TUI_PTY_MODEL;
+      const footerThinkingLevel = process.env.AFORA_TUI_PTY_THINKING_LEVEL;
+      let verboseLevel = process.env.AFORA_TUI_PTY_VERBOSE_LEVEL;
       let modeTargetTraceLevel: string | undefined;
-      const launchThinkingLevel = process.env.OPENCLAW_TUI_PTY_LAUNCH_THINKING;
-      const initialMessage = process.env.OPENCLAW_TUI_PTY_INITIAL_MESSAGE;
-      const inFlightRunText = process.env.OPENCLAW_TUI_PTY_IN_FLIGHT_TEXT;
-      const dynamicCommandDescription = process.env.OPENCLAW_TUI_PTY_DYNAMIC_COMMAND_DESCRIPTION;
-      const thinkingLabel = process.env.OPENCLAW_TUI_PTY_THINKING_LABEL;
-      const safeThinkingLabel = process.env.OPENCLAW_TUI_PTY_SAFE_THINKING_LABEL;
+      const launchThinkingLevel = process.env.AFORA_TUI_PTY_LAUNCH_THINKING;
+      const initialMessage = process.env.AFORA_TUI_PTY_INITIAL_MESSAGE;
+      const inFlightRunText = process.env.AFORA_TUI_PTY_IN_FLIGHT_TEXT;
+      const dynamicCommandDescription = process.env.AFORA_TUI_PTY_DYNAMIC_COMMAND_DESCRIPTION;
+      const thinkingLabel = process.env.AFORA_TUI_PTY_THINKING_LABEL;
+      const safeThinkingLabel = process.env.AFORA_TUI_PTY_SAFE_THINKING_LABEL;
       const liveReplyHistory: unknown[] = [];
       let liveReplySequence = 0;
       const thinkingLevels = [
         ...(thinkingLabel ? [{ id: "fixture-thinking", label: thinkingLabel }] : []),
         ...(safeThinkingLabel ? [{ id: "fixture-thinking-safe", label: safeThinkingLabel }] : []),
       ];
-      const disconnectReason = process.env.OPENCLAW_TUI_PTY_DISCONNECT_REASON;
+      const disconnectReason = process.env.AFORA_TUI_PTY_DISCONNECT_REASON;
       let disconnectPending = disconnectReason !== undefined;
-      const enablePickerFixture = process.env.OPENCLAW_TUI_PTY_PICKER_FIXTURE === "1";
-      const pickerModelValue = process.env.OPENCLAW_TUI_PTY_PICKER_MODEL_VALUE ?? "fixture-provider/fixture-model-2";
-      const pickerModelName = process.env.OPENCLAW_TUI_PTY_PICKER_MODEL_NAME ?? "Fixture 2";
-      const pickerSessionKey = process.env.OPENCLAW_TUI_PTY_PICKER_SESSION_KEY ?? "agent:main:picker-target";
-      const pickerSessionTitle = process.env.OPENCLAW_TUI_PTY_PICKER_SESSION_TITLE;
-      const pickerSessionPreview = process.env.OPENCLAW_TUI_PTY_PICKER_SESSION_PREVIEW;
-      const pickerSessionDisplayName = process.env.OPENCLAW_TUI_PTY_PICKER_SESSION_DISPLAY_NAME ?? "Picker target";
-      const initialPluginApprovalSessionKey = process.env.OPENCLAW_TUI_PTY_INITIAL_APPROVAL_SESSION_KEY;
+      const enablePickerFixture = process.env.AFORA_TUI_PTY_PICKER_FIXTURE === "1";
+      const pickerModelValue = process.env.AFORA_TUI_PTY_PICKER_MODEL_VALUE ?? "fixture-provider/fixture-model-2";
+      const pickerModelName = process.env.AFORA_TUI_PTY_PICKER_MODEL_NAME ?? "Fixture 2";
+      const pickerSessionKey = process.env.AFORA_TUI_PTY_PICKER_SESSION_KEY ?? "agent:main:picker-target";
+      const pickerSessionTitle = process.env.AFORA_TUI_PTY_PICKER_SESSION_TITLE;
+      const pickerSessionPreview = process.env.AFORA_TUI_PTY_PICKER_SESSION_PREVIEW;
+      const pickerSessionDisplayName = process.env.AFORA_TUI_PTY_PICKER_SESSION_DISPLAY_NAME ?? "Picker target";
+      const initialPluginApprovalSessionKey = process.env.AFORA_TUI_PTY_INITIAL_APPROVAL_SESSION_KEY;
       const xaiLimitError = '403 {"code":"The caller does not have permission to execute the specified operation","error":"Your team team-redacted has either used all available credits or reached its monthly spending limit. To continue making API requests, please purchase more credits or raise your spending limit."}';
       let currentModel = footerModel ?? "fixture-provider/fixture-model";
       let currentThinkingLevel = footerThinkingLevel;
-      let fastMode = process.env.OPENCLAW_TUI_PTY_FAST_MODE === "true";
+      let fastMode = process.env.AFORA_TUI_PTY_FAST_MODE === "true";
       function pluginApproval(sessionKey: string) {
         return {
           id: "plugin:skill-pty",
@@ -231,7 +231,7 @@ export async function writeTuiPtyFixtureScript(dir: string) {
             const userMessage = {
               role: "user",
               content: [{ type: "text", text: opts.message }],
-              __openclaw: {
+              __afora: {
                 id: "live-user-" + userSequence,
                 idempotencyKey: runId + ":user",
                 seq: userSequence,
@@ -240,7 +240,7 @@ export async function writeTuiPtyFixtureScript(dir: string) {
             const assistantMessage = {
               role: "assistant",
               content: [{ type: "text", text: reply }],
-              __openclaw: { id: "live-assistant-" + assistantSequence, seq: assistantSequence },
+              __afora: { id: "live-assistant-" + assistantSequence, seq: assistantSequence },
             };
             liveReplyHistory.push(userMessage, assistantMessage);
             queueMicrotask(() => {
@@ -249,7 +249,7 @@ export async function writeTuiPtyFixtureScript(dir: string) {
                 payload: {
                   sessionKey: opts.sessionKey,
                   message: userMessage,
-                  messageId: userMessage.__openclaw.id,
+                  messageId: userMessage.__afora.id,
                   messageSeq: userSequence,
                 },
               });
@@ -278,7 +278,7 @@ export async function writeTuiPtyFixtureScript(dir: string) {
                 payload: {
                   sessionKey: opts.sessionKey,
                   message: assistantMessage,
-                  messageId: assistantMessage.__openclaw.id,
+                  messageId: assistantMessage.__afora.id,
                   messageSeq: assistantSequence,
                 },
               });
@@ -305,7 +305,7 @@ export async function writeTuiPtyFixtureScript(dir: string) {
                   kind: "btw",
                   runId,
                   sessionKey: opts.sessionKey,
-                  question: process.env.OPENCLAW_TUI_PTY_BTW_QUESTION ?? "picker focus proof",
+                  question: process.env.AFORA_TUI_PTY_BTW_QUESTION ?? "picker focus proof",
                   text: "PTY_SIDE_OK",
                 },
               });
@@ -677,11 +677,11 @@ export async function writeTuiPtyFixtureScript(dir: string) {
             },
             session: { scope: "per-sender", mainKey: "main" },
           },
-          deliver: process.env.OPENCLAW_TUI_PTY_DELIVER === "1",
+          deliver: process.env.AFORA_TUI_PTY_DELIVER === "1",
           thinking: launchThinkingLevel,
           message: initialMessage,
           historyLimit: 5,
-          title: "openclaw tui pty fixture",
+          title: "afora tui pty fixture",
           ${TUI_PTY_RESET_FIXTURE.options}
         });
       }

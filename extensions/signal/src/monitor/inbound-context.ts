@@ -2,10 +2,10 @@
 import {
   filterChannelInboundQuoteContext,
   resolveInboundSupplementalSenderAllowed,
-} from "openclaw/plugin-sdk/channel-inbound";
-import { resolveChannelContextVisibilityMode } from "openclaw/plugin-sdk/context-visibility-runtime";
-import type { ContextVisibilityDecision } from "openclaw/plugin-sdk/security-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/channel-inbound";
+import { resolveChannelContextVisibilityMode } from "afora-agent/plugin-sdk/context-visibility-runtime";
+import type { ContextVisibilityDecision } from "afora-agent/plugin-sdk/security-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   formatSignalSenderDisplay,
   isSignalSenderAllowed,

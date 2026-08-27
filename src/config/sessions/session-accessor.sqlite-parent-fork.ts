@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { derivePromptTokens, normalizeUsage } from "../../agents/usage.js";
 import type {
   SessionParentForkDecision,

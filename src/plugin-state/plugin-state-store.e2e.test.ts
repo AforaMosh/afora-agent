@@ -1,8 +1,8 @@
 // Plugin state store E2E tests cover persisted plugin state across runtime calls.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import {
   closePluginStateDatabase,
   createPluginStateKeyedStore,
@@ -21,7 +21,7 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 describe("runtime smoke", () => {
   it("writes and reads a value", async () => {
-    await withOpenClawTestState({ label: "e2e-smoke-rw" }, async () => {
+    await withAforaTestState({ label: "e2e-smoke-rw" }, async () => {
       const store = createPluginStateKeyedStore<{ msg: string }>("fixture-plugin", {
         namespace: "data",
         maxEntries: 10,
@@ -32,7 +32,7 @@ describe("runtime smoke", () => {
   });
 
   it("consumes a value exactly once", async () => {
-    await withOpenClawTestState({ label: "e2e-smoke-consume" }, async () => {
+    await withAforaTestState({ label: "e2e-smoke-consume" }, async () => {
       const store = createPluginStateKeyedStore<{ token: string }>("fixture-plugin", {
         namespace: "tokens",
         maxEntries: 10,
@@ -55,7 +55,7 @@ describe("runtime smoke", () => {
 // ---------------------------------------------------------------------------
 describe("persistence", () => {
   it("survives close and reopen of the store", async () => {
-    await withOpenClawTestState({ label: "e2e-persist" }, async () => {
+    await withAforaTestState({ label: "e2e-persist" }, async () => {
       const storeA = createPluginStateKeyedStore<{ persisted: boolean }>("fixture-plugin", {
         namespace: "durable",
         maxEntries: 10,
@@ -82,7 +82,7 @@ describe("persistence", () => {
 // ---------------------------------------------------------------------------
 describe("TTL", () => {
   it("hides expired values and sweep removes the row", async () => {
-    await withOpenClawTestState({ label: "e2e-ttl" }, async () => {
+    await withAforaTestState({ label: "e2e-ttl" }, async () => {
       vi.useFakeTimers();
       vi.setSystemTime(10_000);
 
@@ -121,7 +121,7 @@ describe("TTL", () => {
 // ---------------------------------------------------------------------------
 describe("isolation", () => {
   it("segregates plugins sharing namespace and key", async () => {
-    await withOpenClawTestState({ label: "e2e-isolation" }, async () => {
+    await withAforaTestState({ label: "e2e-isolation" }, async () => {
       const pluginA = createPluginStateKeyedStore<{ owner: string }>("plugin-a", {
         namespace: "x",
         maxEntries: 10,
@@ -150,7 +150,7 @@ describe("isolation", () => {
 // ---------------------------------------------------------------------------
 describe("limits", () => {
   it("accepts a value at the 64 KB boundary", async () => {
-    await withOpenClawTestState({ label: "e2e-limit-accept" }, async () => {
+    await withAforaTestState({ label: "e2e-limit-accept" }, async () => {
       const store = createPluginStateKeyedStore<string>("fixture-plugin", {
         namespace: "size",
         maxEntries: 10,
@@ -164,7 +164,7 @@ describe("limits", () => {
   });
 
   it("rejects a value one byte over 64 KB", async () => {
-    await withOpenClawTestState({ label: "e2e-limit-reject" }, async () => {
+    await withAforaTestState({ label: "e2e-limit-reject" }, async () => {
       const store = createPluginStateKeyedStore<string>("fixture-plugin", {
         namespace: "size",
         maxEntries: 10,
@@ -178,7 +178,7 @@ describe("limits", () => {
   });
 
   it("evicts oldest entries when namespace maxEntries is exceeded", async () => {
-    await withOpenClawTestState({ label: "e2e-limit-eviction" }, async () => {
+    await withAforaTestState({ label: "e2e-limit-eviction" }, async () => {
       vi.useFakeTimers();
       const store = createPluginStateKeyedStore<number>("fixture-plugin", {
         namespace: "capped",
@@ -207,10 +207,10 @@ describe("limits", () => {
 // ---------------------------------------------------------------------------
 describe("failure safety", () => {
   it("probe returns redacted diagnostics without leaking stored values", async () => {
-    await withOpenClawTestState({ label: "e2e-fail-probe" }, async () => {
+    await withAforaTestState({ label: "e2e-fail-probe" }, async () => {
       const result = probePluginStateStore();
       expect(result.ok).toBe(true);
-      expect(result.databasePath).toContain("openclaw.sqlite");
+      expect(result.databasePath).toContain("afora.sqlite");
       expect(result.steps.length).toBeGreaterThanOrEqual(4);
       const failedSteps = result.steps.filter((step) => !step.ok);
       expect(failedSteps).toEqual([]);
@@ -222,7 +222,7 @@ describe("failure safety", () => {
   });
 
   it("close and reopen cycle is clean", async () => {
-    await withOpenClawTestState({ label: "e2e-fail-reopen" }, async () => {
+    await withAforaTestState({ label: "e2e-fail-reopen" }, async () => {
       const store = createPluginStateKeyedStore<{ v: number }>("fixture-plugin", {
         namespace: "reopen",
         maxEntries: 10,

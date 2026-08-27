@@ -7,7 +7,7 @@ import { parseRegistryNpmSpec } from "../infra/npm-registry-spec.js";
 import { findBundledPluginSource, type BundledPluginSource } from "../plugins/bundled-sources.js";
 import { parseGitPluginSpec } from "../plugins/git-install.js";
 import {
-  resolveOpenClawTrustedNpmPackageInstall,
+  resolveAforaTrustedNpmPackageInstall,
   type NonClawHubInstallSourceClass,
 } from "../plugins/install-provenance.js";
 import { PLUGIN_INSTALL_ERROR_CODE } from "../plugins/install.js";
@@ -155,7 +155,7 @@ export function resolvePluginInstallSourcePlan(params: {
       params.raw,
     );
   }
-  const trusted = resolveOpenClawTrustedNpmPackageInstall(npmSpec);
+  const trusted = resolveAforaTrustedNpmPackageInstall(npmSpec);
   return sourcePlan(
     {
       source: "npm",
@@ -195,7 +195,7 @@ function isSourceCheckoutBundledPath(localPath: string): boolean {
       fs.readFileSync(path.join(packageRoot, "package.json"), "utf8"),
     ) as { name?: unknown };
     return (
-      packageJson.name === "openclaw" &&
+      packageJson.name === "afora" &&
       fs.existsSync(path.join(packageRoot, ".git")) &&
       fs.existsSync(path.join(packageRoot, "pnpm-workspace.yaml")) &&
       fs.existsSync(path.join(packageRoot, "src")) &&
@@ -289,7 +289,7 @@ function resolveBundledInstallPlanBeforeNpm(params: {
   }
   return {
     bundledSource,
-    warning: `Using bundled plugin "${bundledSource.pluginId}" from ${shortenHomePath(bundledSource.localPath)} for npm install spec "${rawSpec}" because this plugin ships with the current OpenClaw build. To force an external npm override, use npm:${rawSpec}.`,
+    warning: `Using bundled plugin "${bundledSource.pluginId}" from ${shortenHomePath(bundledSource.localPath)} for npm install spec "${rawSpec}" because this plugin ships with the current Afora build. To force an external npm override, use npm:${rawSpec}.`,
   };
 }
 

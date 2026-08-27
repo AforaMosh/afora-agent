@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resetLogger, setLoggerOverride } from "../../logging/logger.js";
 import { loggingState } from "../../logging/state.js";
 import { setCurrentPluginMetadataSnapshot } from "../../plugins/current-plugin-metadata-snapshot.js";
@@ -29,11 +29,11 @@ vi.mock("../../plugins/manifest-registry.js", async () => {
   const pathLocal = await import("node:path");
   return {
     loadPluginManifestRegistryCore: (params: { workspaceDir?: string }) => {
-      const extensionsRoot = pathLocal.join(params.workspaceDir ?? "", ".openclaw", "extensions");
+      const extensionsRoot = pathLocal.join(params.workspaceDir ?? "", ".afora", "extensions");
       const plugins = [];
       for (const id of ["open-prose", "browser"]) {
         const rootDir = pathLocal.join(extensionsRoot, id);
-        const manifestPath = pathLocal.join(rootDir, "openclaw.plugin.json");
+        const manifestPath = pathLocal.join(rootDir, "afora.plugin.json");
         if (!fsLocal.existsSync(manifestPath)) {
           continue;
         }
@@ -63,11 +63,11 @@ let tempRoot = "";
 let workspaceCaseIndex = 0;
 
 function createWorkspacePluginRegistry(workspaceDir: string): PluginManifestRegistry {
-  const extensionsRoot = path.join(workspaceDir, ".openclaw", "extensions");
+  const extensionsRoot = path.join(workspaceDir, ".afora", "extensions");
   const plugins: PluginManifestRecord[] = [];
   for (const id of ["open-prose", "browser"]) {
     const rootDir = path.join(extensionsRoot, id);
-    const manifestPath = path.join(rootDir, "openclaw.plugin.json");
+    const manifestPath = path.join(rootDir, "afora.plugin.json");
     if (!fsSync.existsSync(manifestPath)) {
       continue;
     }
@@ -99,7 +99,7 @@ function createWorkspacePluginRegistry(workspaceDir: string): PluginManifestRegi
 
 function createWorkspacePluginMetadataSnapshot(params: {
   workspaceDir: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   manifestRegistry: PluginManifestRegistry;
 }): PluginMetadataSnapshot {
   const policyHash = resolveInstalledPluginIndexPolicyHash(params.config);
@@ -145,7 +145,7 @@ function createWorkspacePluginMetadataSnapshot(params: {
   };
 }
 
-function setWorkspacePluginMetadataSnapshot(workspaceDir: string, config?: OpenClawConfig): void {
+function setWorkspacePluginMetadataSnapshot(workspaceDir: string, config?: AforaConfig): void {
   const manifestRegistry = createWorkspacePluginRegistry(workspaceDir);
   setCurrentPluginMetadataSnapshot(
     createWorkspacePluginMetadataSnapshot({
@@ -202,7 +202,7 @@ function loadTestWorkspaceSkills(
 }
 
 beforeAll(async () => {
-  tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-skills-workspace-"));
+  tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-skills-workspace-"));
   fakeHome = path.join(tempRoot, "home");
   await fs.mkdir(fakeHome, { recursive: true });
   envSnapshot = setMockSkillsHomeEnv(fakeHome);
@@ -226,7 +226,7 @@ afterAll(async () => {
 async function setupWorkspaceWithProsePlugin() {
   const workspaceDir = await createTempWorkspaceDir();
   const managedDir = path.join(workspaceDir, ".managed");
-  const pluginRoot = path.join(workspaceDir, ".openclaw", "extensions", "open-prose");
+  const pluginRoot = path.join(workspaceDir, ".afora", "extensions", "open-prose");
 
   await writePluginWithSkill({
     pluginRoot,
@@ -268,7 +268,7 @@ describe("loadWorkspaceSkills", () => {
   it("loads the browser plugin automation skill when the bundled plugin is enabled", async () => {
     const workspaceDir = await createTempWorkspaceDir();
     const managedDir = path.join(workspaceDir, ".managed");
-    const pluginRoot = path.join(workspaceDir, ".openclaw", "extensions", "browser");
+    const pluginRoot = path.join(workspaceDir, ".afora", "extensions", "browser");
 
     await writePluginWithSkill({
       pluginRoot,
@@ -277,7 +277,7 @@ describe("loadWorkspaceSkills", () => {
       skillDescription: "Browser automation",
     });
     await fs.writeFile(
-      path.join(pluginRoot, "openclaw.plugin.json"),
+      path.join(pluginRoot, "afora.plugin.json"),
       JSON.stringify(
         {
           id: "browser",
@@ -365,7 +365,7 @@ name: json5-metadata
 description: JSON5-style metadata
 metadata:
   {
-    "openclaw":
+    "afora":
       {
         "requires":
           {
@@ -471,7 +471,7 @@ description: Broken skill
       dir: path.join(workspaceDir, "skills", "remote-only"),
       name: "remote-only",
       description: "Needs a remote bin",
-      metadata: '{"openclaw":{"requires":{"anyBins":["missingbin","sandboxbin"]}}}',
+      metadata: '{"afora":{"requires":{"anyBins":["missingbin","sandboxbin"]}}}',
     });
 
     const entries = loadTestWorkspaceSkills(workspaceDir, {
@@ -508,7 +508,7 @@ description: Broken skill
       dir: path.join(workspaceDir, "skills", "remote-only"),
       name: "remote-only",
       description: "Needs a remote bin",
-      metadata: '{"openclaw":{"requires":{"anyBins":["missingbin","sandboxbin"]}}}',
+      metadata: '{"afora":{"requires":{"anyBins":["missingbin","sandboxbin"]}}}',
     });
 
     const entries = loadTestWorkspaceSkills(workspaceDir, {

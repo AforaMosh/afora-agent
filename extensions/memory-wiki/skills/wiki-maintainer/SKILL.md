@@ -1,6 +1,6 @@
 ---
 name: wiki-maintainer
-description: Maintain the OpenClaw memory wiki vault with deterministic pages, managed blocks, and source-backed updates.
+description: Maintain the Afora memory wiki vault with deterministic pages, managed blocks, and source-backed updates.
 ---
 
 Use this skill when working inside a memory-wiki vault.
@@ -10,9 +10,9 @@ Use this skill when working inside a memory-wiki vault.
 - Use `wiki_search` to discover candidate pages when you want wiki-specific ranking/provenance, then `wiki_get` to inspect the exact page before editing or citing it. Verify contact data before use; generated people facts need source-class provenance.
 - Use `wiki_apply` for narrow synthesis filing and metadata updates when a tool-level mutation is enough.
 - Run `wiki_lint` after meaningful wiki updates so contradictions, provenance gaps, and open questions get surfaced before you trust the vault.
-- Use `openclaw wiki ingest`, `openclaw wiki compile`, and `openclaw wiki lint` as the default maintenance loop.
-- In `bridge` mode, run `openclaw wiki bridge import` before relying on search results if you need the latest public memory artifacts pulled in.
-- In `unsafe-local` mode, use `openclaw wiki unsafe-local import` only when the user explicitly opted into private local path access.
+- Use `afora wiki ingest`, `afora wiki compile`, and `afora wiki lint` as the default maintenance loop.
+- In `bridge` mode, run `afora wiki bridge import` before relying on search results if you need the latest public memory artifacts pulled in.
+- In `unsafe-local` mode, use `afora wiki unsafe-local import` only when the user explicitly opted into private local path access.
 - Keep generated sections inside managed markers. Do not overwrite human note blocks.
 - Treat raw sources, memory artifacts, and daily notes as evidence. Do not let wiki pages become the only source of truth for new claims.
 - Keep page identity stable. Favor updating existing entities and concepts over spawning duplicates with slightly different names.

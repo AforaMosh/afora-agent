@@ -41,7 +41,7 @@ describe("readFields", () => {
 
   it("rejects conflicting inline and file form fields", async () => {
     await expect(
-      readFields({ fields: "[]", fieldsFile: "/tmp/openclaw-browser-fields.json" }),
+      readFields({ fields: "[]", fieldsFile: "/tmp/afora-browser-fields.json" }),
     ).rejects.toThrow("Specify only one of --fields or --fields-file");
   });
 });
@@ -49,7 +49,7 @@ describe("readFields", () => {
 describe("readActionsPayload", () => {
   it("rejects conflicting inline and file actions before reading the file", async () => {
     await expect(
-      readActionsPayload({ actions: "[]", actionsFile: "/tmp/openclaw-browser-actions.json" }),
+      readActionsPayload({ actions: "[]", actionsFile: "/tmp/afora-browser-actions.json" }),
     ).rejects.toThrow("Specify only one of --actions or --actions-file");
   });
 });

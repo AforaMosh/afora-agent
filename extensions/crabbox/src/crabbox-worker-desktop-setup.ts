@@ -1,8 +1,8 @@
 import path from "node:path";
-import { WorkerProviderError, type WorkerDesktopEndpoint } from "openclaw/plugin-sdk/plugin-entry";
+import { WorkerProviderError, type WorkerDesktopEndpoint } from "afora-agent/plugin-sdk/plugin-entry";
 
-const CRABBOX_WORKER_BROWSER_PATH = "/usr/local/bin/openclaw-worker-browser";
-const CRABBOX_WORKER_TERMINAL_PATH = "/usr/local/bin/openclaw-worker-terminal";
+const CRABBOX_WORKER_BROWSER_PATH = "/usr/local/bin/afora-worker-browser";
+const CRABBOX_WORKER_TERMINAL_PATH = "/usr/local/bin/afora-worker-terminal";
 const CRABBOX_WORKER_BROWSER_CDP_PORT = 9222;
 
 const SSH_USER_PATTERN = /^(?:root|[a-z_][a-z0-9_-]{0,31})$/u;
@@ -22,7 +22,7 @@ function browserLauncher(home: string, browserProfilePath: string): string[] {
   return [
     "#!/bin/bash",
     "set -euo pipefail",
-    '[ "$#" -eq 0 ] || { echo "openclaw-worker-browser does not accept arguments" >&2; exit 64; }',
+    '[ "$#" -eq 0 ] || { echo "afora-worker-browser does not accept arguments" >&2; exit 64; }',
     '[ -r /var/lib/crabbox/desktop.env ] || { echo "Crabbox desktop environment is unavailable" >&2; exit 1; }',
     '[ -r /var/lib/crabbox/browser.env ] || { echo "Crabbox browser environment is unavailable" >&2; exit 1; }',
     ". /var/lib/crabbox/desktop.env",
@@ -34,7 +34,7 @@ function browserLauncher(home: string, browserProfilePath: string): string[] {
     `export CRABBOX_BROWSER_PROFILE=${browserProfilePath}`,
     'mkdir -p "$CRABBOX_BROWSER_PROFILE"',
     'chmod 700 "$CRABBOX_BROWSER_PROFILE"',
-    'exec 9>"$CRABBOX_BROWSER_PROFILE/.openclaw-launch.lock"',
+    'exec 9>"$CRABBOX_BROWSER_PROFILE/.afora-launch.lock"',
     "flock -x 9",
     `cdp_url=http://127.0.0.1:${CRABBOX_WORKER_BROWSER_CDP_PORT}/json/version`,
     'if curl --fail --silent --show-error --max-time 1 "$cdp_url" >/dev/null; then',
@@ -58,7 +58,7 @@ function terminalLauncher(): string[] {
   return [
     "#!/bin/bash",
     "set -euo pipefail",
-    '[ "$#" -eq 0 ] || { echo "openclaw-worker-terminal does not accept arguments" >&2; exit 64; }',
+    '[ "$#" -eq 0 ] || { echo "afora-worker-terminal does not accept arguments" >&2; exit 64; }',
     '[ -r /var/lib/crabbox/desktop.env ] || { echo "Crabbox desktop environment is unavailable" >&2; exit 1; }',
     ". /var/lib/crabbox/desktop.env",
     '[ "${CRABBOX_DESKTOP_ENV:-}" = "xfce" ] || { echo "Crabbox desktop environment is not XFCE" >&2; exit 1; }',
@@ -92,7 +92,7 @@ function workerWallpaper(): string[] {
     '    <circle cx="45" cy="35" r="6" fill="#111512" stroke="none"/>',
     '    <circle cx="75" cy="35" r="6" fill="#111512" stroke="none"/>',
     "  </g>",
-    '  <text x="960" y="790" text-anchor="middle" fill="#cbd0cc" fill-opacity="0.42" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="24" letter-spacing="8">OPENCLAW WORKER</text>',
+    '  <text x="960" y="790" text-anchor="middle" fill="#cbd0cc" fill-opacity="0.42" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="24" letter-spacing="8">AFORA WORKER</text>',
     "</svg>",
   ];
 }
@@ -103,8 +103,8 @@ function heredoc(target: string, marker: string, contents: string[]): string[] {
 
 function buildCrabboxWorkerDesktopSetup(sshUser: string): string {
   const home = resolveCrabboxWorkerHome(sshUser);
-  const browserProfilePath = `${home}/.cache/openclaw/worker-browser`;
-  const wallpaperPath = `${home}/.local/share/backgrounds/openclaw-worker.svg`;
+  const browserProfilePath = `${home}/.cache/afora/worker-browser`;
+  const wallpaperPath = `${home}/.local/share/backgrounds/afora-worker.svg`;
   const lines = [
     "set -euo pipefail",
     `ssh_user=${sshUser}`,
@@ -127,7 +127,7 @@ function buildCrabboxWorkerDesktopSetup(sshUser: string): string {
     ...heredoc("wallpaper.svg", "WORKER_WALLPAPER_EOF", workerWallpaper()),
     `as_root install -o root -g root -m 0755 "$setup_dir/browser" ${CRABBOX_WORKER_BROWSER_PATH}`,
     `as_root install -o root -g root -m 0755 "$setup_dir/terminal" ${CRABBOX_WORKER_TERMINAL_PATH}`,
-    'as_root install -d -o "$ssh_user" -g "$ssh_group" -m 0755 "$ssh_home/.cache" "$ssh_home/.cache/openclaw"',
+    'as_root install -d -o "$ssh_user" -g "$ssh_group" -m 0755 "$ssh_home/.cache" "$ssh_home/.cache/afora"',
     `as_root install -d -o "$ssh_user" -g "$ssh_group" -m 0700 ${browserProfilePath}`,
     'as_root install -d -o "$ssh_user" -g "$ssh_group" -m 0755 "$ssh_home/.local" "$ssh_home/.local/share" "$ssh_home/.local/share/backgrounds"',
     `as_root install -o "$ssh_user" -g "$ssh_group" -m 0644 "$setup_dir/wallpaper.svg" ${wallpaperPath}`,

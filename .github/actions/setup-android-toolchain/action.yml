@@ -1,5 +1,5 @@
 name: Setup Android toolchain
-description: Set up the pinned Java and Android SDK toolchain used by OpenClaw builds.
+description: Set up the pinned Java and Android SDK toolchain used by Afora builds.
 runs:
   using: composite
   steps:

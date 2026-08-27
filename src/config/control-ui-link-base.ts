@@ -1,9 +1,9 @@
-import { normalizeControlUiBasePath } from "@openclaw/session-url-contract";
+import { normalizeControlUiBasePath } from "@afora/session-url-contract";
 import { resolveGatewayPublicOrigin } from "./gateway-public-origin.js";
-import type { OpenClawConfig } from "./types.js";
+import type { AforaConfig } from "./types.js";
 
 export function resolveControlUiSessionLinkBase(
-  cfg: Pick<OpenClawConfig, "gateway"> | null | undefined,
+  cfg: Pick<AforaConfig, "gateway"> | null | undefined,
 ): string | undefined {
   // Session tool descriptions advertise links only when the operator exposes
   // a public Gateway origin and the Control UI can serve those session routes.

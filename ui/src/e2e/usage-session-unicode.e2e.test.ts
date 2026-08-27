@@ -12,7 +12,7 @@ const suite = createControlUiE2eSuite({
     `Playwright Chromium is not available at ${executablePath}`,
 });
 
-const proofDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+const proofDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
 
 const usageTotals = {
   input: 100,
@@ -164,7 +164,7 @@ suite.define(() => {
         const previousRequests = (await gateway.getRequests("sessions.usage")).length;
         await gateway.setMethodResponse("sessions.usage", usageResponse());
         await page
-          .locator("openclaw-usage-page")
+          .locator("afora-usage-page")
           .getByRole("button", { name: "Refresh", exact: true })
           .click();
         await expect

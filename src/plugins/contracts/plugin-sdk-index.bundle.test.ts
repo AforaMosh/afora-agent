@@ -15,7 +15,7 @@ const require = createRequire(import.meta.url);
 const tsdownModuleUrl = pathToFileURL(require.resolve("tsdown")).href;
 const bundledRepresentativeEntrypoints = ["browser-config"] as const;
 const bundleTempRootTracker = createSyncSuiteTempRootTracker(
-  "openclaw-plugin-sdk-build",
+  "afora-plugin-sdk-build",
   path.join(process.cwd(), "node_modules", ".cache"),
 );
 const matrixRuntimeCoverageEntries = {

@@ -230,7 +230,7 @@ function parseOptions(argv: string[] = process.argv.slice(2)): CliOptions {
 }
 
 function printUsage(): void {
-  console.log(`OpenClaw Gateway concurrency benchmark
+  console.log(`Afora Gateway concurrency benchmark
 
 Usage:
   pnpm test:gateway:concurrency -- [options]
@@ -602,7 +602,7 @@ async function runTurn(
   const started = await rpc<{ runId?: string; status?: string }>("agent", {
     sessionKey: options?.sessionKey ?? `agent:main:gateway-concurrency-${index + 1}`,
     message: toolEvents
-      ? `OPENCLAW_E2E_DRAFTPROOF benchmark tool stream ${index + 1}.`
+      ? `AFORA_E2E_DRAFTPROOF benchmark tool stream ${index + 1}.`
       : `Reply with benchmark stream ${index + 1}.`,
     deliver: false,
     idempotencyKey: requestedRunId,
@@ -776,7 +776,7 @@ async function runGatewaySample(options: {
   toolEvents: boolean;
   workspaceFanout: boolean;
 }): Promise<BenchmarkRun> {
-  const root = mkdtempSync(path.join(tmpdir(), "openclaw-gateway-concurrency-"));
+  const root = mkdtempSync(path.join(tmpdir(), "afora-gateway-concurrency-"));
   const [port, mockPort] = await Promise.all([getFreePort(), getFreePort()]);
   const runStartedAt = performance.now();
   const timelinePath = path.join(root, "diagnostics-timeline.jsonl");
@@ -796,7 +796,7 @@ async function runGatewaySample(options: {
         PATH: process.env.PATH,
         MOCK_PORT: String(mockPort),
         MOCK_RESPONSE_CHUNK_DELAY_MS: String(MOCK_RESPONSE_CHUNK_DELAY_MS),
-        SUCCESS_MARKER: "OpenClaw gateway concurrency benchmark streaming response.",
+        SUCCESS_MARKER: "Afora gateway concurrency benchmark streaming response.",
       },
     });
     mockOutput = captureChildOutput(mockProvider);
@@ -817,9 +817,9 @@ async function runGatewaySample(options: {
         env: {
           ...createGatewayBenchEnv(root, configPath, {
             caseEnv: {
-              OPENCLAW_DIAGNOSTICS: "timeline",
-              OPENCLAW_DIAGNOSTICS_TIMELINE_PATH: timelinePath,
-              OPENCLAW_SKIP_CHANNELS: "1",
+              AFORA_DIAGNOSTICS: "timeline",
+              AFORA_DIAGNOSTICS_TIMELINE_PATH: timelinePath,
+              AFORA_SKIP_CHANNELS: "1",
             },
           }),
           OPENAI_API_KEY: "gateway-concurrency-benchmark",

@@ -8,7 +8,7 @@ read_when:
   - You want to enable multimodal memory indexing
 ---
 
-This page lists every configuration knob for OpenClaw memory search. For conceptual overviews, see:
+This page lists every configuration knob for Afora memory search. For conceptual overviews, see:
 
 <CardGroup cols={2}>
   <Card title="Memory overview" href="/concepts/memory">
@@ -25,7 +25,7 @@ This page lists every configuration knob for OpenClaw memory search. For concept
   </Card>
 </CardGroup>
 
-All shared memory settings live under top-level `memory` in `openclaw.json`. Search defaults use `memory.search`; per-agent search overrides use `agents.entries.*.memory.search`.
+All shared memory settings live under top-level `memory` in `afora.json`. Search defaults use `memory.search`; per-agent search overrides use `agents.entries.*.memory.search`.
 
 <Note>
 For the recommended personal-agent workflow, use
@@ -70,10 +70,10 @@ override. Any configured DM isolation defaults it off. An explicit `true` or
 `false` always wins. Enabling it implies session transcript indexing and adds
 `sessions` to the agent's resolved memory sources.
 
-OpenClaw's built-in memory provider supports this protected path. Alternate memory providers can keep using their own
+Afora's built-in memory provider supports this protected path. Alternate memory providers can keep using their own
 recall hooks and advanced Active Memory tools, but this setting is skipped
 unless the current provider supports protected private transcript recall.
-`openclaw doctor` reports an unsupported provider or an explicit Active Memory
+`afora doctor` reports an unsupported provider or an explicit Active Memory
 `toolsAllow` list that omits `memory_search`.
 
 The retrieval boundary is narrower than general session search:
@@ -101,7 +101,7 @@ reply.
 | `model`    | `string`  | provider default | Embedding model name                                                                                                                                                                                                                                                                        |
 | `fallback` | `string`  | `"none"`         | Fallback adapter ID when the primary fails                                                                                                                                                                                                                                                  |
 
-When `provider` is not set, OpenClaw uses OpenAI embeddings. Set `provider`
+When `provider` is not set, Afora uses OpenAI embeddings. Set `provider`
 explicitly to use Bedrock, DeepInfra, Gemini, GitHub Copilot, Mistral, Ollama,
 Voyage, a local GGUF model, or an OpenAI-compatible `/v1/embeddings` endpoint.
 Legacy configs that still say `provider: "auto"` resolve to `openai`.
@@ -109,10 +109,10 @@ Legacy configs that still say `provider: "auto"` resolve to `openai`.
 <Warning>
 Changing the embedding provider, model, provider settings, sources, scope,
 chunking, or tokenizer can make the existing SQLite vector index incompatible.
-OpenClaw pauses vector search and reports an index identity warning instead of
+Afora pauses vector search and reports an index identity warning instead of
 automatically re-embedding everything. Rebuild when you are ready with
-`openclaw memory status --index --agent <id>` or
-`openclaw memory index --force --agent <id>`.
+`afora memory status --index --agent <id>` or
+`afora memory index --force --agent <id>`.
 </Warning>
 
 When `provider` is unset, legacy `provider: "auto"` is present, or
@@ -129,7 +129,7 @@ provider/auth configuration, switch to a reachable provider, or set
 
 ### Custom provider ids
 
-`memory.search.provider` can point at a custom `models.providers.<id>` entry for memory-specific provider adapters such as `ollama`, or for OpenAI-compatible model APIs such as `openai-responses` / `openai-completions`. OpenClaw resolves that provider's `api` owner for the embedding adapter while preserving the custom provider id for endpoint, auth, and model-prefix handling. This lets multi-GPU or multi-host setups dedicate memory embeddings to a specific local endpoint:
+`memory.search.provider` can point at a custom `models.providers.<id>` entry for memory-specific provider adapters such as `ollama`, or for OpenAI-compatible model APIs such as `openai-responses` / `openai-completions`. Afora resolves that provider's `api` owner for the embedding adapter while preserving the custom provider id for endpoint, auth, and model-prefix handling. This lets multi-GPU or multi-host setups dedicate memory embeddings to a specific local endpoint:
 
 ```json5
 {
@@ -215,7 +215,7 @@ Use `provider: "openai-compatible"` for a generic OpenAI-compatible
     | `outputDimensionality` | `number` | `3072`                 | For Embedding 2: 768, 1536, or 3072        |
 
     <Warning>
-    Changing model or `outputDimensionality` changes the index identity. OpenClaw
+    Changing model or `outputDimensionality` changes the index identity. Afora
     pauses vector search until you explicitly rebuild the memory index.
     </Warning>
 
@@ -252,7 +252,7 @@ Use `provider: "openai-compatible"` for a generic OpenAI-compatible
   <Accordion title="Bedrock">
     ### Bedrock embedding config
 
-    Bedrock uses the AWS SDK default credential chain plus an OpenClaw-checked bearer token, so no API keys are stored in config. If OpenClaw runs on EC2 with a Bedrock-enabled instance role, just set the provider and model:
+    Bedrock uses the AWS SDK default credential chain plus an Afora-checked bearer token, so no API keys are stored in config. If Afora runs on EC2 with a Bedrock-enabled instance role, just set the provider and model:
 
     ```json5
     {
@@ -289,7 +289,7 @@ Use `provider: "openai-compatible"` for a generic OpenAI-compatible
 
     **Region:** resolved in this order: the `memory.search.remote.baseUrl` override, the `models.providers.amazon-bedrock.baseUrl` config, `AWS_REGION`, `AWS_DEFAULT_REGION`, then a default of `us-east-1`.
 
-    **Authentication:** OpenClaw checks for `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` or `AWS_BEARER_TOKEN_BEDROCK` first, then falls through to the standard AWS SDK default credential provider chain:
+    **Authentication:** Afora checks for `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` or `AWS_BEARER_TOKEN_BEDROCK` first, then falls through to the standard AWS SDK default credential provider chain:
 
     1. Environment variables (`AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY`), unless `AWS_PROFILE` is also set
     2. SSO (only when SSO fields are configured)
@@ -321,18 +321,18 @@ Use `provider: "openai-compatible"` for a generic OpenAI-compatible
     | `local.modelPath` | `string` | auto-downloaded | Path to GGUF model file |
 
     Install the official llama.cpp provider, then choose llama.cpp once in
-    interactive setup. OpenClaw installs a pinned, verified `llama-server` and
+    interactive setup. Afora installs a pinned, verified `llama-server` and
     writes its loopback `localService` configuration. Default model:
     `embeddinggemma-300m-qat-Q8_0.gguf` (~0.3 GB, auto-downloaded).
 
     Use the standalone CLI to verify the same provider path the Gateway uses:
 
     ```bash
-    openclaw memory status --deep --agent main
-    openclaw memory index --force --agent main
+    afora memory status --deep --agent main
+    afora memory index --force --agent main
     ```
 
-    Cache placement is provider-owned. `openclaw memory status --deep` reports
+    Cache placement is provider-owned. `afora memory status --deep` reports
     server build, model path, capability, and endpoint facts observed from the
     managed server after it has handled an embedding request.
 
@@ -346,7 +346,7 @@ Use `provider: "openai-compatible"` for a generic OpenAI-compatible
 ## Indexing behavior
 
 Memory engines own synchronization, batching, watch, and post-compaction
-indexing heuristics. OpenClaw keeps these behaviors enabled with maintained
+indexing heuristics. Afora keeps these behaviors enabled with maintained
 defaults rather than exposing per-install timing switches.
 
 ## Hybrid search config
@@ -470,7 +470,7 @@ both `memory` and `sessions`, resulting in overlapping search results and
 additional embedding work. For hook-only recall, set `sources: ["memory"]` and
 `rememberAcrossConversations: false`; `sources` alone is insufficient because
 cross-conversation recall automatically adds `sessions`. For full-transcript
-recall instead, run `openclaw hooks disable session-memory`. Enable both only
+recall instead, run `afora hooks disable session-memory`. Enable both only
 when you intentionally want both representations.
 </Note>
 
@@ -515,14 +515,14 @@ For same-agent gateway-to-DM recall:
 | `store.vector.enabled`       | `boolean` | `true`  | Use sqlite-vec for vector queries |
 | `store.vector.extensionPath` | `string`  | bundled | Override sqlite-vec path          |
 
-When sqlite-vec is unavailable, OpenClaw falls back to in-process cosine similarity automatically.
+When sqlite-vec is unavailable, Afora falls back to in-process cosine similarity automatically.
 
 ---
 
 ## Index storage
 
-Built-in memory indexes live in each agent's OpenClaw SQLite database at
-`agents/<agentId>/agent/openclaw-agent.sqlite`.
+Built-in memory indexes live in each agent's Afora SQLite database at
+`agents/<agentId>/agent/afora-agent.sqlite`.
 
 | Key                   | Type     | Default     | Description                               |
 | --------------------- | -------- | ----------- | ----------------------------------------- |

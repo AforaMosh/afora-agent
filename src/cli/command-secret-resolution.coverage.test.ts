@@ -1,5 +1,5 @@
 // Command secret resolution coverage tests cover plugin secret resolution branches.
-import { bundledPluginFile } from "openclaw/plugin-sdk/test-fixtures";
+import { bundledPluginFile } from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, it } from "vitest";
 import { readCommandSource } from "./command-source.test-helpers.js";
 

@@ -6,8 +6,8 @@ import path from "node:path";
 import {
   clearRuntimeConfigSnapshot,
   setRuntimeConfigSnapshot,
-} from "openclaw/plugin-sdk/runtime-config-snapshot";
-import { withEnvAsync } from "openclaw/plugin-sdk/test-env";
+} from "afora-agent/plugin-sdk/runtime-config-snapshot";
+import { withEnvAsync } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, describe, expect, it } from "vitest";
 import { WebSocket, type RawData } from "ws";
 import { parsePairingString } from "../../../chrome-extension/modules/relay-core.js";
@@ -47,7 +47,7 @@ afterEach(async () => {
 
 describe.sequential("local Gateway extension relay wakeup", () => {
   it("starts Browser control and the CDP relay from the first authenticated extension request", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-gateway-relay-wakeup-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-gateway-relay-wakeup-"));
     try {
       const gatewayPort = await getFreePort();
       let relayPort = await getFreePort();
@@ -76,8 +76,8 @@ describe.sequential("local Gateway extension relay wakeup", () => {
 
       await withEnvAsync(
         {
-          OPENCLAW_STATE_DIR: stateDir,
-          OPENCLAW_GATEWAY_PORT: String(gatewayPort),
+          AFORA_STATE_DIR: stateDir,
+          AFORA_GATEWAY_PORT: String(gatewayPort),
         },
         async () => {
           const gatewayServer = http.createServer((_req, res) => {
@@ -155,7 +155,7 @@ describe.sequential("local Gateway extension relay wakeup", () => {
               throw new Error("extension relay did not start");
             }
 
-            const authorization = Buffer.from(`openclaw-internal:${relay.internalToken}`).toString(
+            const authorization = Buffer.from(`afora-internal:${relay.internalToken}`).toString(
               "base64",
             );
             const response = await fetch(`http://127.0.0.1:${pairing.relayPort}/json/version`, {

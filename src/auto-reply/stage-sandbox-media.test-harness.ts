@@ -1,6 +1,6 @@
 /** Shared harness for sandbox media staging tests. */
 import { join } from "node:path";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { withTempHome as withTempHomeBase } from "../plugin-sdk/test-env.js";
 import type { RuntimeMsgContext as MsgContext, TemplateContext } from "./templating.js";
 
@@ -26,12 +26,12 @@ export function createSandboxMediaContexts(mediaPath: string): {
   return { ctx, sessionCtx: { ...ctx } };
 }
 
-export function createSandboxMediaStageConfig(home: string): OpenClawConfig {
+export function createSandboxMediaStageConfig(home: string): AforaConfig {
   return {
     agents: {
       defaults: {
         model: "anthropic/claude-opus-4-6",
-        workspace: join(home, "openclaw"),
+        workspace: join(home, "afora"),
         sandbox: {
           mode: "non-main",
           workspaceRoot: join(home, "sandboxes"),
@@ -40,5 +40,5 @@ export function createSandboxMediaStageConfig(home: string): OpenClawConfig {
     },
     channels: { whatsapp: { allowFrom: ["*"] } },
     session: { store: join(home, "sessions.json") },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }

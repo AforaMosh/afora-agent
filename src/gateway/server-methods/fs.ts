@@ -1,6 +1,6 @@
 // Host directory browsing for the new-session folder picker. Write-scoped
 // callers stay inside configured agent workspaces; admin retains host access.
-import { safeParseJson } from "@openclaw/normalization-core";
+import { safeParseJson } from "@afora/normalization-core";
 import {
   ErrorCodes,
   errorShape,

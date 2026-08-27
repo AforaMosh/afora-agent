@@ -11,7 +11,7 @@ import {
 } from "../commands/onboard-inference.js";
 import { createMergePatch } from "../config/merge-patch.js";
 import { normalizeAgentModelRefForConfig } from "../config/model-input.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { enablePluginInConfig } from "../plugins/enable.js";
 import {
@@ -52,8 +52,8 @@ export async function buildTestPlan(params: {
   modelRef?: string;
   authChoice?: string;
   apiKey?: string;
-  cfg: OpenClawConfig;
-  sourceCfg: OpenClawConfig;
+  cfg: AforaConfig;
+  sourceCfg: AforaConfig;
   workspaceDir: string;
   pluginWorkspaceDir: string;
   agentDir: string;
@@ -193,7 +193,7 @@ export async function buildTestPlan(params: {
         modelRef,
         agentDir: params.agentDir,
         config: prepared.config,
-        agentId: "openclaw",
+        agentId: "afora",
         routeAgentId,
         ...(prepared.selectedProfileId ? { authProfileId: prepared.selectedProfileId } : {}),
         persistModelRef: modelRef,
@@ -247,7 +247,7 @@ export async function buildTestPlan(params: {
         modelRef: route.modelLabel,
         config: cfg,
         executionConfig: route.runConfig,
-        agentId: "openclaw",
+        agentId: "afora",
         routeAgentId: route.agentId,
         agentDir: route.agentDir,
         ...(route.runner === "embedded" && route.agentHarnessRuntimeOverride
@@ -267,7 +267,7 @@ export async function buildTestPlan(params: {
         ...ref,
         modelRef,
         config: cfg,
-        agentId: "openclaw",
+        agentId: "afora",
         routeAgentId,
         persistModelRef: modelRef,
       };
@@ -283,7 +283,7 @@ export async function buildTestPlan(params: {
         ...ref,
         modelRef,
         config: cfg,
-        agentId: "openclaw",
+        agentId: "afora",
         routeAgentId,
         persistModelRef: modelRef,
       };
@@ -315,7 +315,7 @@ export async function buildTestPlan(params: {
           modelRef,
           agentHarnessRuntimeOverride: "codex",
           config: preparedAuth.config,
-          agentId: "openclaw",
+          agentId: "afora",
           routeAgentId,
           agentDir: params.agentDir,
           cleanupBundleMcpOnRunEnd: true,
@@ -335,7 +335,7 @@ export async function buildTestPlan(params: {
         modelRef,
         agentHarnessRuntimeOverride: "codex",
         config: cfg,
-        agentId: "openclaw",
+        agentId: "afora",
         routeAgentId,
         agentDir: params.agentDir,
         cleanupBundleMcpOnRunEnd: true,
@@ -353,7 +353,7 @@ export async function buildTestPlan(params: {
         ...ref,
         modelRef,
         config: cfg,
-        agentId: "openclaw",
+        agentId: "afora",
         routeAgentId,
         persistModelRef: modelRef,
       };
@@ -369,7 +369,7 @@ export async function buildTestPlan(params: {
         ...ref,
         modelRef,
         config: cfg,
-        agentId: "openclaw",
+        agentId: "afora",
         routeAgentId,
         persistModelRef: modelRef,
       };
@@ -449,7 +449,7 @@ export async function buildTestPlan(params: {
         };
       }
       let result: ProviderAuthResult;
-      let preparedConfig: OpenClawConfig;
+      let preparedConfig: AforaConfig;
       try {
         if (interactive) {
           if (!params.prompter) {
@@ -612,7 +612,7 @@ export async function buildTestPlan(params: {
         modelRef,
         agentDir: params.agentDir,
         config: preparedAuth.config,
-        agentId: "openclaw",
+        agentId: "afora",
         routeAgentId,
         ...(preparedAuth.selectedProfileId
           ? { authProfileId: preparedAuth.selectedProfileId }

@@ -1,7 +1,7 @@
 import {
   AgentHarnessPreflightError,
   type EmbeddedRunAttemptParams,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 /** Enforces one bounded startup budget across Codex plugin config discovery. */
 import {
   defaultCodexAppInventoryCache,

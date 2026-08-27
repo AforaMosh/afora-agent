@@ -1,4 +1,4 @@
-import { ConnectErrorDetailCodes } from "@openclaw/gateway-protocol/connect-error-details";
+import { ConnectErrorDetailCodes } from "@afora/gateway-protocol/connect-error-details";
 import { describe, expect, it } from "vitest";
 import { shouldPauseGatewayReconnect } from "./reconnect-policy.js";
 

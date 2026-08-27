@@ -2,15 +2,15 @@
 import {
   createStartAccountContext,
   installChannelDmPolicyContractSuite,
-} from "openclaw/plugin-sdk/channel-test-helpers";
+} from "afora-agent/plugin-sdk/channel-test-helpers";
 import {
   createPluginSetupWizardConfigure,
   createTestWizardPrompter,
   runSetupWizardConfigure,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
-import type { WizardPrompter } from "openclaw/plugin-sdk/plugin-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
+import type { WizardPrompter } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig, PluginRuntime, ResolvedLineAccount } from "../api.js";
+import type { AforaConfig, PluginRuntime, ResolvedLineAccount } from "../api.js";
 import { linePlugin } from "./channel.js";
 import { lineGatewayAdapter } from "./gateway.js";
 import { probeLineBot } from "./probe.js";
@@ -55,7 +55,7 @@ describe("line setup wizard", () => {
 
     const result = await runSetupWizardConfigure({
       configure: lineConfigure,
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       prompter,
       options: {},
     });
@@ -100,7 +100,7 @@ describe("line setup wizard", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
     });
 
     expect(configured).toBe(false);
@@ -135,9 +135,9 @@ describe("probeLineBot", () => {
 
   it("returns bot info when available", async () => {
     getBotInfoMock.mockResolvedValue({
-      displayName: "OpenClaw",
+      displayName: "Afora",
       userId: "U123",
-      basicId: "@openclaw",
+      basicId: "@afora",
       pictureUrl: "https://example.com/bot.png",
     });
 
@@ -157,14 +157,14 @@ describe("linePlugin status.probeAccount", () => {
       return { getBotInfo: getBotInfoMock };
     });
     getBotInfoMock.mockResolvedValue({
-      displayName: "OpenClaw",
+      displayName: "Afora",
       userId: "U123",
-      basicId: "@openclaw",
+      basicId: "@afora",
       pictureUrl: "https://example.com/bot.png",
     });
 
     const params = {
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       account: {
         accountId: "default",
         enabled: true,

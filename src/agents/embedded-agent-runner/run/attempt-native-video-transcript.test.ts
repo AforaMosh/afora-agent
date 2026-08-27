@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { readSessionTranscriptRawDelta } from "openclaw/plugin-sdk/session-transcript-runtime";
+import { readSessionTranscriptRawDelta } from "afora-agent/plugin-sdk/session-transcript-runtime";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../../../test/helpers/temp-dir.js";
 import {
@@ -18,12 +18,12 @@ const MP4 = Buffer.from("0000001c6674797069736f6d0000000069736f6d000000000000000
 
 describe("native video transcript replay", () => {
   it("replays native video after reopening the canonical transcript", async () => {
-    const stateDir = tempDirs.make("openclaw-video-transcript-replay-");
+    const stateDir = tempDirs.make("afora-video-transcript-replay-");
     const inboundDir = path.join(stateDir, "media", "inbound");
     await fs.mkdir(inboundDir, { recursive: true });
     await fs.writeFile(path.join(inboundDir, "history.mp4"), MP4);
-    const env = captureEnv(["OPENCLAW_STATE_DIR"]);
-    setTestEnvValue("OPENCLAW_STATE_DIR", stateDir);
+    const env = captureEnv(["AFORA_STATE_DIR"]);
+    setTestEnvValue("AFORA_STATE_DIR", stateDir);
     const target = {
       agentId: "main",
       sessionId: "video-replay",

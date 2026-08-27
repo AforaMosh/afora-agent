@@ -1,8 +1,8 @@
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import {
-  openOpenClawAgentDatabase,
-  runOpenClawAgentWriteTransaction,
-} from "../../state/openclaw-agent-db.js";
+  openAforaAgentDatabase,
+  runAforaAgentWriteTransaction,
+} from "../../state/afora-agent-db.js";
 import { isInternalSessionEffectsKey } from "./internal-session-key.js";
 import type {
   SessionEntryReplacementSnapshot,
@@ -68,7 +68,7 @@ async function applySqliteSessionEntryReplacementProjection<T, TReplacement>(
     storePath: params.storePath,
   });
   const committed = await runExclusiveSqliteSessionWrite(resolved, async () => {
-    const database = openOpenClawAgentDatabase(toDatabaseOptions(resolved));
+    const database = openAforaAgentDatabase(toDatabaseOptions(resolved));
     const selectedKeys = params.sessionKeys ? new Set(params.sessionKeys) : undefined;
     const selectedStatuses = params.statuses ? new Set(params.statuses) : undefined;
     const entries = selectedStatuses
@@ -148,7 +148,7 @@ async function applySqliteSessionEntryReplacementProjection<T, TReplacement>(
     const maintenancePlans: SessionEntryMaintenancePlan[] = [];
     const previous = new Map<string, SessionEntry>();
     const current = new Map<string, SessionEntry>();
-    runOpenClawAgentWriteTransaction(
+    runAforaAgentWriteTransaction(
       (transactionDb) => {
         const transactionEntries = new Map<string, SessionEntry>();
         for (const sessionKey of validationKeys) {

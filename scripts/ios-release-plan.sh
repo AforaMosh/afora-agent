@@ -62,7 +62,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-PLAN_FILE="$(mktemp "${TMPDIR:-/tmp}/openclaw-ios-release-plan.XXXXXX")"
+PLAN_FILE="$(mktemp "${TMPDIR:-/tmp}/afora-ios-release-plan.XXXXXX")"
 trap 'rm -f "${PLAN_FILE}"' EXIT
 FASTLANE_ARGS=(ios release_plan "output_path:${PLAN_FILE}")
 [[ -n "${RELEASE_VERSION}" ]] && FASTLANE_ARGS+=("release_version:${RELEASE_VERSION}")

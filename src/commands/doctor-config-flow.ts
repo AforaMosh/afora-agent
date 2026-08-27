@@ -9,7 +9,7 @@ import { configIncludeOwnsAgentRoster } from "../config/agent-roster-provenance.
 import { retainLegacyDefaultAgentId } from "../config/legacy.default-agent-owner.js";
 import { migratePersistedImplicitMainRoster } from "../config/legacy.roster.js";
 import { CONFIG_PATH } from "../config/paths.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { callGateway } from "../gateway/call.js";
 import { isPathInside } from "../infra/path-guards.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -38,7 +38,7 @@ import { normalizeCompatibilityConfigValues } from "./doctor/shared/legacy-confi
 import type { DoctorPluginMetadataSnapshotState } from "./doctor/shared/plugin-metadata-snapshot-scope.js";
 
 function collectInvalidHookTransformsDirWarnings(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   configPath: string,
 ): string[] {
   const transformsDir = cfg.hooks?.transformsDir?.trim();
@@ -58,7 +58,7 @@ function collectInvalidHookTransformsDirWarnings(
   ];
 }
 
-function collectUnsupportedInternalHookEntryWarnings(cfg: OpenClawConfig): string[] {
+function collectUnsupportedInternalHookEntryWarnings(cfg: AforaConfig): string[] {
   const entries = cfg.hooks?.internal?.entries;
   if (!entries) {
     return [];
@@ -83,7 +83,7 @@ function collectUnsupportedInternalHookEntryWarnings(cfg: OpenClawConfig): strin
   );
 }
 
-function collectConfiguredChannelIds(cfg: OpenClawConfig): string[] {
+function collectConfiguredChannelIds(cfg: AforaConfig): string[] {
   const channels =
     cfg.channels && typeof cfg.channels === "object" && !Array.isArray(cfg.channels)
       ? cfg.channels
@@ -159,7 +159,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
   const shouldRepair = params.options.repair === true || params.options.yes === true;
   const preflight = await withProgress(
     {
-      label: "Checking OpenClaw state…",
+      label: "Checking Afora state…",
       enabled: params.options.nonInteractive !== true && params.options.json !== true,
       delayMs: 200,
     },
@@ -192,7 +192,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
     pluginMetadataSnapshotState.current = undefined;
     pluginMetadataSnapshotScope.invalidate();
   };
-  const runWithCurrentPluginMetadata = <T>(config: OpenClawConfig, run: () => T): T => {
+  const runWithCurrentPluginMetadata = <T>(config: AforaConfig, run: () => T): T => {
     const soleAgentId = tryResolveSoleAgentId(config);
     return runWithPluginMetadataSnapshot(
       {
@@ -211,7 +211,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
   const explicitSetPaths: string[][] = [];
   let shouldRepairCronCodexModelRefsAfterConfigWrite = false;
   let openAICodexAuthProfileIdMap: ReadonlyMap<string, string> | undefined;
-  const doctorFixCommand = formatCliCommand("openclaw doctor --fix");
+  const doctorFixCommand = formatCliCommand("afora doctor --fix");
   const changesPanelSink = createDoctorChangesPanelSink(shouldRepair);
   const applyConfigMutation = (
     mutation: DoctorConfigMutationResult & { warnings?: string[] },
@@ -262,7 +262,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
     // again after health repairs, when the retired owner marker is no longer available to recover it.
     const migrated = migratePersistedImplicitMainRoster(state.candidate, {
       materializeWorkspace: true,
-    }).config as OpenClawConfig;
+    }).config as AforaConfig;
     const migratedRoster = readAgentRosterProperty(migrated);
     const migratedEntries = migratedRoster?.kind === "entries" ? migratedRoster.value : undefined;
     const { list: _legacyList, ...candidateAgents } = migrated.agents ?? {};
@@ -274,7 +274,7 @@ export async function loadAndMaybeMigrateDoctorConfig(params: {
         agents: {
           ...candidateAgents,
           ...(stampsExplicitOwnership ? { ownership: "explicit" as const } : {}),
-          entries: migratedEntries as NonNullable<OpenClawConfig["agents"]>["entries"],
+          entries: migratedEntries as NonNullable<AforaConfig["agents"]>["entries"],
         },
       },
       changes: [

@@ -1,11 +1,11 @@
 // Decorative lobster pet that perches on the sidebar footer and mirrors
 // gateway status: it idles (naps, waves, wanders) when nothing is running,
 // scurries while runs are active, and paces worriedly while disconnected.
-// Drawn in the smooth OpenClaw lobster style (see the dreams scene and
+// Drawn in the smooth Afora lobster style (see the dreams scene and
 // icons.lobster). Look and personality are seeded per session + page load so
 // every new session hatches a slightly different lobster.
 import "../styles/lobster-pet.css";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { LitElement, nothing } from "lit";
 import { property, state } from "lit/decorators.js";
 import { isLobsterDay } from "../../../src/shared/lobster-day.js";
@@ -756,6 +756,6 @@ class LobsterPet extends LitElement {
     ];
   }
 }
-if (!customElements.get("openclaw-lobster-pet")) {
-  customElements.define("openclaw-lobster-pet", LobsterPet);
+if (!customElements.get("afora-lobster-pet")) {
+  customElements.define("afora-lobster-pet", LobsterPet);
 }

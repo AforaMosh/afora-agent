@@ -1,5 +1,5 @@
 // Install extraction helpers validate and unpack skill archives into install roots.
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 import {
   createTarEntryPreflightChecker,
   extractArchive as extractArchiveSafe,

@@ -292,12 +292,12 @@ describe("createApplicationGateway connection phase", () => {
     current().opts.onHello?.({
       ...HELLO,
       pluginSurfaceUrls: {
-        canvas: "https://canvas.test/__openclaw__/cap/hello",
+        canvas: "https://canvas.test/__afora__/cap/hello",
       },
     });
 
     expect(gateway.snapshot.canvasPluginSurfaceUrl).toBe(
-      "https://canvas.test/__openclaw__/cap/hello",
+      "https://canvas.test/__afora__/cap/hello",
     );
 
     current().opts.onClose?.({ code: 1006, reason: "socket lost", willRetry: true });
@@ -315,18 +315,18 @@ describe("createApplicationGateway connection phase", () => {
     first.request.mockReturnValueOnce(firstRefresh);
     first.opts.onHello?.({
       ...HELLO,
-      pluginSurfaceUrls: { canvas: "https://canvas.test/__openclaw__/cap/first" },
+      pluginSurfaceUrls: { canvas: "https://canvas.test/__afora__/cap/first" },
     });
     await vi.waitFor(() => expect(first.request).toHaveBeenCalledOnce());
 
     gateway.connect();
     current().opts.onHello?.({
       ...HELLO,
-      pluginSurfaceUrls: { canvas: "https://canvas.test/__openclaw__/cap/current" },
+      pluginSurfaceUrls: { canvas: "https://canvas.test/__afora__/cap/current" },
     });
     resolveRefresh({
       surface: "canvas",
-      pluginSurfaceUrls: { canvas: "https://canvas.test/__openclaw__/cap/stale-refresh" },
+      pluginSurfaceUrls: { canvas: "https://canvas.test/__afora__/cap/stale-refresh" },
       expiresAtMs: Date.now() + 60_000,
     });
     await new Promise<void>((resolve) => {
@@ -334,7 +334,7 @@ describe("createApplicationGateway connection phase", () => {
     });
 
     expect(gateway.snapshot.canvasPluginSurfaceUrl).toBe(
-      "https://canvas.test/__openclaw__/cap/current",
+      "https://canvas.test/__afora__/cap/current",
     );
     gateway.stop();
   });
@@ -1031,8 +1031,8 @@ describe("createApplicationGateway connection phase", () => {
   it("does not copy selected-remote settings into an ephemeral document Gateway", () => {
     const pageGateway = "ws://127.0.0.1:18789";
     const remoteGateway = "wss://saved-remote.example.test";
-    const pageSettingsKey = `openclaw.control.settings.v1:${pageGateway}`;
-    const selectionKey = `openclaw.control.currentGateway.v1:${pageGateway}`;
+    const pageSettingsKey = `afora.control.settings.v1:${pageGateway}`;
+    const selectionKey = `afora.control.currentGateway.v1:${pageGateway}`;
     const storedPageSettings = JSON.stringify({
       gatewayUrl: pageGateway,
       theme: "claw",
@@ -1067,8 +1067,8 @@ describe("createApplicationGateway connection phase", () => {
     const pageGateway = "ws://127.0.0.1:18789";
     const remoteGateway = "wss://saved-remote.example.test";
     const otherGateway = "wss://other-remote.example.test";
-    const pageSettingsKey = `openclaw.control.settings.v1:${pageGateway}`;
-    const selectionKey = `openclaw.control.currentGateway.v1:${pageGateway}`;
+    const pageSettingsKey = `afora.control.settings.v1:${pageGateway}`;
+    const selectionKey = `afora.control.currentGateway.v1:${pageGateway}`;
     const settings = {
       ...loadSettings(),
       gatewayUrl: pageGateway,

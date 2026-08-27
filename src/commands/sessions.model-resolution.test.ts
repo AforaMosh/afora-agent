@@ -5,8 +5,8 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { replaceSessionEntry } from "../config/sessions/session-accessor.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import {
   mockSessionsConfig,
   resetMockSessionsConfig,
@@ -65,8 +65,8 @@ async function withSqliteStore<T>(
     );
     return await run(storePath);
   } finally {
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     fs.rmSync(dir, { force: true, recursive: true });
   }
 }
@@ -165,13 +165,13 @@ describe("sessionsCommand model resolution", () => {
     );
   });
 
-  it("reports the owning Codex harness for locked sessions despite a stale OpenClaw override", async () => {
+  it("reports the owning Codex harness for locked sessions despite a stale Afora override", async () => {
     setMockSessionsConfig(() => ({
       agents: {
         defaults: {
           model: { primary: "openai/gpt-5.5" },
           models: {
-            "openai/gpt-5.5": { agentRuntime: { id: "openclaw" } },
+            "openai/gpt-5.5": { agentRuntime: { id: "afora" } },
           },
         },
       },
@@ -185,7 +185,7 @@ describe("sessionsCommand model resolution", () => {
           modelProvider: "openai",
           model: "gpt-5.5",
           agentHarnessId: "codex",
-          agentRuntimeOverride: "openclaw",
+          agentRuntimeOverride: "afora",
           modelSelectionLocked: true,
         },
       },

@@ -1,6 +1,6 @@
 // Policy plugin channel, model, MCP, and network evidence.
-import { normalizeProviderId } from "openclaw/plugin-sdk/provider-model-shared";
-import { asNonArrayRecord, isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeProviderId } from "afora-agent/plugin-sdk/provider-model-shared";
+import { asNonArrayRecord, isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { ocPathSegment, readBooleanPath } from "./policy-state-helpers.js";
 import { RESERVED_CHANNEL_CONFIG_KEYS } from "./policy-state-types.js";
 import type {
@@ -24,7 +24,7 @@ export function scanPolicyChannels(cfg: Record<string, unknown>): readonly Polic
       } = {
         id,
         provider: id,
-        source: `oc://openclaw.config/channels/${id}`,
+        source: `oc://afora.config/channels/${id}`,
       };
       if (isRecord(value) && typeof value.enabled === "boolean") {
         entry.enabled = value.enabled;
@@ -48,7 +48,7 @@ export function scanPolicyMcpServers(
       } = {
         id,
         transport: mcpServerTransport(value),
-        source: `oc://openclaw.config/mcp/servers/${ocPathSegment(id)}`,
+        source: `oc://afora.config/mcp/servers/${ocPathSegment(id)}`,
       };
       if (isRecord(value)) {
         if (typeof value.command === "string") {
@@ -69,7 +69,7 @@ export function scanPolicyModelProviders(
     .toSorted((a, b) => a.localeCompare(b))
     .map((id) => ({
       id: normalizeProviderId(id),
-      source: `oc://openclaw.config/models/providers/${id}`,
+      source: `oc://afora.config/models/providers/${id}`,
     }));
 }
 
@@ -78,7 +78,7 @@ export function scanPolicyModelRefs(
 ): readonly PolicyModelRefEvidence[] {
   const refs: PolicyModelRefEvidence[] = [];
   if (isRecord(cfg.agents)) {
-    collectModelRefsFromRecord(refs, cfg.agents, "oc://openclaw.config/agents");
+    collectModelRefsFromRecord(refs, cfg.agents, "oc://afora.config/agents");
     collectModelRefsFromAgentAllowlist(refs, cfg.agents);
   }
   return refs.toSorted(
@@ -92,37 +92,37 @@ export function scanPolicyNetwork(cfg: Record<string, unknown>): readonly Policy
       cfg,
       "browser-private-network",
       ["browser", "ssrfPolicy", "dangerouslyAllowPrivateNetwork"],
-      "oc://openclaw.config/browser/ssrfPolicy/dangerouslyAllowPrivateNetwork",
+      "oc://afora.config/browser/ssrfPolicy/dangerouslyAllowPrivateNetwork",
     ),
     networkBooleanEvidence(
       cfg,
       "browser-private-network-legacy",
       ["browser", "ssrfPolicy", "allowPrivateNetwork"],
-      "oc://openclaw.config/browser/ssrfPolicy/allowPrivateNetwork",
+      "oc://afora.config/browser/ssrfPolicy/allowPrivateNetwork",
     ),
     networkBooleanEvidence(
       cfg,
       "web-fetch-private-network",
       ["tools", "web", "fetch", "ssrfPolicy", "dangerouslyAllowPrivateNetwork"],
-      "oc://openclaw.config/tools/web/fetch/ssrfPolicy/dangerouslyAllowPrivateNetwork",
+      "oc://afora.config/tools/web/fetch/ssrfPolicy/dangerouslyAllowPrivateNetwork",
     ),
     networkBooleanEvidence(
       cfg,
       "web-fetch-private-network-legacy",
       ["tools", "web", "fetch", "ssrfPolicy", "allowPrivateNetwork"],
-      "oc://openclaw.config/tools/web/fetch/ssrfPolicy/allowPrivateNetwork",
+      "oc://afora.config/tools/web/fetch/ssrfPolicy/allowPrivateNetwork",
     ),
     networkBooleanEvidence(
       cfg,
       "web-fetch-rfc2544-benchmark-range",
       ["tools", "web", "fetch", "ssrfPolicy", "allowRfc2544BenchmarkRange"],
-      "oc://openclaw.config/tools/web/fetch/ssrfPolicy/allowRfc2544BenchmarkRange",
+      "oc://afora.config/tools/web/fetch/ssrfPolicy/allowRfc2544BenchmarkRange",
     ),
     networkBooleanEvidence(
       cfg,
       "web-fetch-ipv6-unique-local-range",
       ["tools", "web", "fetch", "ssrfPolicy", "allowIpv6UniqueLocalRange"],
-      "oc://openclaw.config/tools/web/fetch/ssrfPolicy/allowIpv6UniqueLocalRange",
+      "oc://afora.config/tools/web/fetch/ssrfPolicy/allowIpv6UniqueLocalRange",
     ),
   ].filter((entry): entry is PolicyNetworkEvidence => entry !== undefined);
 }
@@ -232,7 +232,7 @@ function collectModelRefsFromAgentAllowlist(
     collectModelRefsFromModelMap(
       refs,
       defaults.models,
-      "oc://openclaw.config/agents/defaults/models",
+      "oc://afora.config/agents/defaults/models",
     );
   }
 
@@ -247,7 +247,7 @@ function collectModelRefsFromAgentAllowlist(
     collectModelRefsFromModelMap(
       refs,
       agent.models,
-      `oc://openclaw.config/agents/list/#${index}/models`,
+      `oc://afora.config/agents/list/#${index}/models`,
     );
   }
 }

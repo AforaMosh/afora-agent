@@ -1,4 +1,4 @@
-import { markOpenClawExecEnv } from "../../infra/openclaw-exec-env.js";
+import { markAforaExecEnv } from "../../infra/afora-exec-env.js";
 /**
  * Low-level Docker command helpers for sandbox runtimes.
  *
@@ -213,11 +213,11 @@ export async function ensureContainerImage(engine: SandboxContainerEngine, image
   if (image === DEFAULT_SANDBOX_IMAGE) {
     if (engine.id === "docker") {
       throw new Error(
-        `Sandbox image not found: ${image}. Build it with scripts/sandbox-setup.sh before enabling Docker sandboxing. The default image includes python3 for sandbox write/edit helpers; OpenClaw will not substitute plain debian:bookworm-slim.`,
+        `Sandbox image not found: ${image}. Build it with scripts/sandbox-setup.sh before enabling Docker sandboxing. The default image includes python3 for sandbox write/edit helpers; Afora will not substitute plain debian:bookworm-slim.`,
       );
     }
     throw new Error(
-      `Sandbox image not found in ${engine.displayName}: ${image}. Build it with podman build -t ${image} -f scripts/docker/sandbox/Dockerfile . before enabling container sandboxing. The default image includes python3 for sandbox write/edit helpers; OpenClaw will not substitute plain debian:bookworm-slim.`,
+      `Sandbox image not found in ${engine.displayName}: ${image}. Build it with podman build -t ${image} -f scripts/docker/sandbox/Dockerfile . before enabling container sandboxing. The default image includes python3 for sandbox write/edit helpers; Afora will not substitute plain debian:bookworm-slim.`,
     );
   }
   if (engine.id === "docker") {
@@ -350,13 +350,13 @@ export function buildSandboxCreateArgs(params: {
   // The container engine's init owns PID 1 so orphaned children from long-running
   // tool and browser workloads are reaped instead of accumulating against pidsLimit.
   args.push("--init");
-  args.push("--label", "openclaw.sandbox=1");
-  args.push("--label", `openclaw.sessionKey=${params.scopeKey}`);
-  args.push("--label", `openclaw.createdAtMs=${createdAtMs}`);
-  args.push("--label", `openclaw.mountFormatVersion=${SANDBOX_MOUNT_FORMAT_VERSION}`);
-  args.push("--label", `openclaw.createArgsEpoch=${SANDBOX_DOCKER_CREATE_ARGS_EPOCH}`);
+  args.push("--label", "afora.sandbox=1");
+  args.push("--label", `afora.sessionKey=${params.scopeKey}`);
+  args.push("--label", `afora.createdAtMs=${createdAtMs}`);
+  args.push("--label", `afora.mountFormatVersion=${SANDBOX_MOUNT_FORMAT_VERSION}`);
+  args.push("--label", `afora.createArgsEpoch=${SANDBOX_DOCKER_CREATE_ARGS_EPOCH}`);
   if (params.configHash) {
-    args.push("--label", `openclaw.configHash=${params.configHash}`);
+    args.push("--label", `afora.configHash=${params.configHash}`);
   }
   for (const [key, value] of Object.entries(params.labels ?? {})) {
     if (key && value) {
@@ -386,7 +386,7 @@ export function buildSandboxCreateArgs(params: {
       `Suspicious configured sandbox environment variables: ${envSanitization.warnings.join(", ")}`,
     );
   }
-  for (const [key, value] of Object.entries(markOpenClawExecEnv(envSanitization.allowed))) {
+  for (const [key, value] of Object.entries(markAforaExecEnv(envSanitization.allowed))) {
     args.push("--env", `${key}=${value}`);
   }
   for (const cap of params.cfg.capDrop) {
@@ -538,7 +538,7 @@ async function readContainerConfigHash(
   engine: SandboxContainerEngine,
   containerName: string,
 ): Promise<string | null> {
-  return await readContainerLabel(engine, containerName, "openclaw.configHash");
+  return await readContainerLabel(engine, containerName, "afora.configHash");
 }
 
 type EnsureSandboxContainerParams = {

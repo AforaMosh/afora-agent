@@ -1,6 +1,6 @@
 // Cron tool tests cover schedule guidance, scoped job operations, delivery
 // context inheritance, session routing, and agent id ownership.
-import { MAX_DATE_TIMESTAMP_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_DATE_TIMESTAMP_MS } from "@afora/normalization-core/number-coercion";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { callGatewayMock, extractDeliveryInfoMock } = vi.hoisted(() => ({
@@ -312,7 +312,7 @@ describe("cron tool", () => {
   it("allows scoped isolated cron runs to read cron scheduler status", async () => {
     callGatewayMock.mockResolvedValueOnce({
       enabled: true,
-      storePath: "/home/user/.openclaw/cron/jobs.json",
+      storePath: "/home/user/.afora/cron/jobs.json",
       jobs: 37,
       nextWakeAtMs: 1_234,
     });

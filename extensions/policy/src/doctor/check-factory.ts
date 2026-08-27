@@ -1,4 +1,4 @@
-import type { HealthCheck } from "openclaw/plugin-sdk/health";
+import type { HealthCheck } from "afora-agent/plugin-sdk/health";
 import type { POLICY_CHECK_IDS } from "./check-ids.js";
 import type { PolicyDoctorCheckDeps } from "./types.js";
 

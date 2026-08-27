@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { AgentSelectionRequiredError } from "./agent-scope.js";
 import { resolveModelWorkspaceDir } from "./model-discovery-context.js";
 
-function multiAgentConfig(): OpenClawConfig {
+function multiAgentConfig(): AforaConfig {
   return {
     agents: {
       entries: {
@@ -11,7 +11,7 @@ function multiAgentConfig(): OpenClawConfig {
         beta: { workspace: "/workspaces/beta" },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 describe("resolveModelWorkspaceDir", () => {

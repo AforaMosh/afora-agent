@@ -14,7 +14,7 @@ type FixturePlugin = {
   }): void;
 };
 
-const runtimeCoordinatorKey = Symbol.for("openclaw.voice-call.runtimeCoordinator");
+const runtimeCoordinatorKey = Symbol.for("afora.voice-call.runtimeCoordinator");
 const unavailableError = {
   code: "UNAVAILABLE",
   message: "Voice Call runtime stream issuer unavailable",

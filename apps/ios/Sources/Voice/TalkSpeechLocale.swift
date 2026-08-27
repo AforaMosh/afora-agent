@@ -1,6 +1,6 @@
 import AVFoundation
 import Foundation
-import OpenClawKit
+import AforaKit
 import Speech
 
 enum TalkSpeechLocale {

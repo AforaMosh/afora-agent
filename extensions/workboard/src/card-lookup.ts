@@ -1,5 +1,5 @@
 // Workboard plugin module implements card lookup behavior.
-import type { WorkboardCard } from "@openclaw/workboard-contract";
+import type { WorkboardCard } from "@afora/workboard-contract";
 
 type WorkboardCardLookupResult =
   | { card: WorkboardCard; error?: undefined }

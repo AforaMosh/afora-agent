@@ -1,7 +1,7 @@
 // Message action tests cover channel message action schema and invocation behavior.
 import { Type } from "typebox";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { getPreparedMessageToolCatalog } from "../../plugins/prepared-message-tool-catalog.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { defaultRuntime } from "../../runtime.js";
@@ -101,13 +101,13 @@ describe("message action capability checks", () => {
   it("aggregates capabilities across plugins", () => {
     activateMessageActionTestRegistry();
 
-    expect(channelSupportsMessageCapability({} as OpenClawConfig, "presentation")).toBe(true);
-    expect(channelSupportsMessageCapability({} as OpenClawConfig, "delivery-pin")).toBe(true);
+    expect(channelSupportsMessageCapability({} as AforaConfig, "presentation")).toBe(true);
+    expect(channelSupportsMessageCapability({} as AforaConfig, "delivery-pin")).toBe(true);
   });
 
   it("does not replace an explicitly empty prepared channel catalog", () => {
     activateMessageActionTestRegistry();
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
 
     expect(
       channelSupportsMessageCapability(cfg, "presentation", EMPTY_PREPARED_MESSAGE_TOOL_CATALOG),
@@ -134,7 +134,7 @@ describe("message action capability checks", () => {
     };
     setActivePluginRegistry(createTestRegistry([{ pluginId: plugin.id, source: "test", plugin }]));
     const preparedMessageToolCatalog = getPreparedMessageToolCatalog();
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
     const supportsAccountCapability = (accountId: string, capability: ChannelMessageCapability) =>
       channelSupportsMessageCapabilityForChannel(
         { cfg, channel: plugin.id, accountId, preparedMessageToolCatalog },
@@ -148,7 +148,7 @@ describe("message action capability checks", () => {
 
   it("checks per-channel capabilities", () => {
     activateMessageActionTestRegistry();
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
     const supportsCapability = (
       channel: string | undefined,
       capability: ChannelMessageCapability,
@@ -171,7 +171,7 @@ describe("message action capability checks", () => {
 
     expect(
       channelSupportsMessageCapabilityForChannel(
-        { cfg: {} as OpenClawConfig, channel: "demo-cards-alias" },
+        { cfg: {} as AforaConfig, channel: "demo-cards-alias" },
         "delivery-pin",
       ),
     ).toBe(true);
@@ -192,10 +192,10 @@ describe("message action capability checks", () => {
       }),
     });
 
-    expect(channelSupportsMessageCapability({} as OpenClawConfig, "presentation")).toBe(true);
+    expect(channelSupportsMessageCapability({} as AforaConfig, "presentation")).toBe(true);
     expect(
       resolveChannelMessageToolSchemaProperties({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         channel: "demo-unified",
       }),
     ).toHaveProperty("components");
@@ -221,7 +221,7 @@ describe("message action capability checks", () => {
     });
 
     const properties = resolveChannelMessageToolSchemaProperties({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       channel: "demo-contrib",
     });
     // Regression: required leakage made every message tool call fail validation
@@ -247,7 +247,7 @@ describe("message action capability checks", () => {
 
     expect(
       listCrossChannelSchemaSupportedMessageActions({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         channel: "demo-scoped-schema",
       }),
     ).toEqual(["read", "list-pins"]);
@@ -269,7 +269,7 @@ describe("message action capability checks", () => {
 
     expect(
       listCrossChannelSchemaSupportedMessageActions({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         channel: "demo-unscoped-schema",
       }),
     ).toStrictEqual([]);
@@ -292,7 +292,7 @@ describe("message action capability checks", () => {
 
     expect(
       listCrossChannelSchemaSupportedMessageActions({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         channel: "demo-empty-scoped-schema",
       }),
     ).toEqual(["read", "list-pins"]);
@@ -319,14 +319,14 @@ describe("message action capability checks", () => {
 
     expect(
       resolveChannelMessageToolMediaSourceParamKeys({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         action: "set-profile",
         channel: "demo-media",
       }),
     ).toEqual(["avatarUrl", "avatarPath"]);
     expect(
       resolveChannelMessageToolMediaSourceParamKeys({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         action: "send",
         channel: "demo-media",
       }),
@@ -345,7 +345,7 @@ describe("message action capability checks", () => {
 
     expect(
       resolveChannelMessageToolMediaSourceParamKeys({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         action: "set-profile",
         channel: "demo-media-flat",
       }),
@@ -361,10 +361,10 @@ describe("message action capability checks", () => {
       },
     });
 
-    expect(channelSupportsMessageCapability({} as OpenClawConfig, "presentation")).toBe(false);
+    expect(channelSupportsMessageCapability({} as AforaConfig, "presentation")).toBe(false);
     expect(errorSpy).toHaveBeenCalledTimes(1);
 
-    expect(channelSupportsMessageCapability({} as OpenClawConfig, "presentation")).toBe(false);
+    expect(channelSupportsMessageCapability({} as AforaConfig, "presentation")).toBe(false);
     expect(errorSpy).toHaveBeenCalledTimes(1);
   });
 });

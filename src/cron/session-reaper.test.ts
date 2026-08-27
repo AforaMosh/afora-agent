@@ -12,16 +12,16 @@ import {
   resolveExistingAgentSessionStoreTargetsSync,
 } from "../config/sessions/targets.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { isCronRunSessionKey } from "../sessions/session-key-utils.js";
 import { beginSessionWorkAdmission } from "../sessions/session-lifecycle-admission.js";
 import {
-  isSameOpenClawAgentDatabasePath,
-  listOpenClawRegisteredAgentDatabases,
-  unregisterOpenClawAgentDatabase,
-} from "../state/openclaw-agent-db-registry.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+  isSameAforaAgentDatabasePath,
+  listAforaRegisteredAgentDatabases,
+  unregisterAforaAgentDatabase,
+} from "../state/afora-agent-db-registry.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import type { Logger } from "./service/state.js";
 import { sweepCronRunSessions as sweepCronRunSessionsImpl } from "./session-reaper.js";
 import { resetReaperThrottle } from "./session-reaper.test-support.js";
@@ -109,8 +109,8 @@ describe("sweepCronRunSessions", () => {
 
   afterEach(() => {
     clearRuntimeConfigSnapshot();
-    closeOpenClawAgentDatabasesForTest();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaAgentDatabasesForTest();
+    closeAforaStateDatabaseForTest();
     cleanupTempDirs(tempDirs);
   });
 
@@ -230,7 +230,7 @@ describe("sweepCronRunSessions", () => {
   it("discovers, accesses, and reaps a logical owner in one shared exact store", async () => {
     const now = Date.now();
     const exactStorePath = path.join(tmpDir, "shared.sqlite");
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       session: { store: exactStorePath },
       agents: { entries: { main: { default: true } } },
     };
@@ -254,11 +254,11 @@ describe("sweepCronRunSessions", () => {
       },
       { sessionId: "ops-run", updatedAt: now - 25 * 3_600_000 },
     );
-    closeOpenClawAgentDatabasesForTest();
-    unregisterOpenClawAgentDatabase({ agentId: "main", path: exactStorePath });
+    closeAforaAgentDatabasesForTest();
+    unregisterAforaAgentDatabase({ agentId: "main", path: exactStorePath });
     expect(
-      listOpenClawRegisteredAgentDatabases().filter((entry) =>
-        isSameOpenClawAgentDatabasePath(entry.path, exactStorePath),
+      listAforaRegisteredAgentDatabases().filter((entry) =>
+        isSameAforaAgentDatabasePath(entry.path, exactStorePath),
       ),
     ).toEqual([]);
 

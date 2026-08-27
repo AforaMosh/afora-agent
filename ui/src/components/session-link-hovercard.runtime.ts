@@ -1,8 +1,8 @@
 import { initialState, Task } from "@lit/task";
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { readNonBlankString } from "@openclaw/normalization-core/string-coerce";
-import { controlUiSessionSlug } from "@openclaw/session-url-contract";
+import { asFiniteNumber } from "@afora/normalization-core/number-coercion";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { readNonBlankString } from "@afora/normalization-core/string-coerce";
+import { controlUiSessionSlug } from "@afora/session-url-contract";
 import { ReactiveElement } from "lit";
 import type { ControlUiSessionPreview } from "../../../src/gateway/control-ui-contract.js";
 import type { GatewayBrowserClient } from "../api/gateway.ts";
@@ -555,7 +555,7 @@ export class SessionLinkHovercardProvider extends ReactiveElement {
     }
     const card = document.createElement("div");
     nextHovercardId += 1;
-    card.id = `openclaw-session-hovercard-${nextHovercardId}`;
+    card.id = `afora-session-hovercard-${nextHovercardId}`;
     card.className = "session-link-hovercard";
     card.dataset.open = "true";
     card.setAttribute("role", "dialog");

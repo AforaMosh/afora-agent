@@ -3,10 +3,10 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanupTempDirs, makeTempDir } from "../../test/helpers/temp-dir.js";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "../state/openclaw-agent-db.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "../state/afora-agent-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { migrateLegacyMediaPersistence } from "./state-migrations.media-persistence.js";
 
 const tempDirs: string[] = [];
@@ -16,9 +16,9 @@ function createArchiveFixture(bytes: Uint8Array): {
   env: NodeJS.ProcessEnv;
 } {
   const stateDir = fs.realpathSync(makeTempDir(tempDirs, "media-persistence-archive-"));
-  const env = { OPENCLAW_STATE_DIR: stateDir };
-  openOpenClawAgentDatabase({ agentId: "main", env });
-  closeOpenClawAgentDatabasesForTest();
+  const env = { AFORA_STATE_DIR: stateDir };
+  openAforaAgentDatabase({ agentId: "main", env });
+  closeAforaAgentDatabasesForTest();
   const archivePath = path.join(
     stateDir,
     "agents",
@@ -32,8 +32,8 @@ function createArchiveFixture(bytes: Uint8Array): {
 }
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaAgentDatabasesForTest();
+  closeAforaStateDatabaseForTest();
   cleanupTempDirs(tempDirs);
 });
 

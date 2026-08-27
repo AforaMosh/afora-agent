@@ -1,6 +1,6 @@
 // Cron doctor repair planning helpers for previewing and merging legacy rows.
 import { isDeepStrictEqual } from "node:util";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { normalizeOptionalStringifiedId } from "../../../../packages/normalization-core/src/string-coerce.js";
 import { normalizeCronJobInput } from "../../../cron/normalize.js";
 import type { CronJob } from "../../../cron/types.js";
@@ -36,7 +36,7 @@ export function formatUnresolvedCommandPromptAdvisory(names: string[]): string |
   return [
     `${pluralize(names.length, "isolated automation")} ${describeVerb} a shell command in the agent prompt but ${accessVerb} shell/process tool access${formatJobNameList(names)}.`,
     "- This is not the supported shell-tool prompt shape, so doctor cannot prove the job will execute the requested command.",
-    '- Recreate it as a command automation (`openclaw automations add ... --command "<shell>"`) or grant explicit shell/process tool access before relying on it.',
+    '- Recreate it as a command automation (`afora automations add ... --command "<shell>"`) or grant explicit shell/process tool access before relying on it.',
   ].join("\n");
 }
 
@@ -54,7 +54,7 @@ export function formatUnresolvedShellPromptAdvisory(names: string[]): string | n
   return [
     `${pluralize(names.length, "isolated automation")} ${verb} shell/process tools from the agent prompt and ${keepVerb} running as-is${formatJobNameList(names)}.`,
     "- This is a supported shape, not a legacy store row, so the doctor fix path cannot convert it and the finding is informational only.",
-    '- For a deterministic run, recreate it as a command automation (`openclaw automations add ... --command "<shell>"`).',
+    '- For a deterministic run, recreate it as a command automation (`afora automations add ... --command "<shell>"`).',
   ].join("\n");
 }
 
@@ -79,7 +79,7 @@ export function formatScheduledToolPolicyAdvisory(params: {
   }
   lines.push(
     "- These jobs continue through restrictive sender-policy resolution; doctor will not infer authority from delivery or current configuration.",
-    "- Reauthorize with an exact explicit cap: `openclaw cron edit <id> --tools <tool,...>`.",
+    "- Reauthorize with an exact explicit cap: `afora cron edit <id> --tools <tool,...>`.",
   );
   return lines.join("\n");
 }
@@ -92,7 +92,7 @@ export function formatIncompleteInheritedAuthorityAdvisory(names: string[]): str
   return [
     `${pluralize(names.length, "automation")} ${names.length === 1 ? "has" : "have"} an inherited default tool cap captured before final configured-MCP provenance was recorded${formatJobNameList(names)}.`,
     "- The stored finite cap remains unchanged; doctor will not silently widen or rewrite it.",
-    "- If the job uses Codex configured MCP, reauthorize in place with an exact explicit list: `openclaw automations edit <id> --tools <tool,...>`.",
+    "- If the job uses Codex configured MCP, reauthorize in place with an exact explicit list: `afora automations edit <id> --tools <tool,...>`.",
   ].join("\n");
 }
 

@@ -7,7 +7,7 @@ import {
   hasModelPolicyAllowlistMigrationMarker,
   isExplicitModelPolicy,
 } from "./model-policy-allowlist-migration.js";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import type { AforaConfig } from "./types.afora.js";
 
 /** Metadata keys automatically stamped on config writes. */
 const AUTO_MANAGED_CONFIG_META_FIELDS = {
@@ -38,7 +38,7 @@ function collectLegacyDefaultModelAllow(value: unknown): string[] | null {
   });
 }
 
-function withDefaultModelAllow(cfg: OpenClawConfig, allow: string[]): OpenClawConfig {
+function withDefaultModelAllow(cfg: AforaConfig, allow: string[]): AforaConfig {
   return {
     ...cfg,
     agents: {
@@ -55,11 +55,11 @@ function withDefaultModelAllow(cfg: OpenClawConfig, allow: string[]): OpenClawCo
 }
 
 function withModelPolicyAllowlistMigrationMarker(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   params: {
     defaultAllow?: string[];
   } = {},
-): OpenClawConfig {
+): AforaConfig {
   const withDefault = params.defaultAllow ? withDefaultModelAllow(cfg, params.defaultAllow) : cfg;
   return {
     ...withDefault,
@@ -74,9 +74,9 @@ function withModelPolicyAllowlistMigrationMarker(
 }
 
 function stampModelPolicyAllowlistMigrationForWrite(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   previousConfig: unknown,
-): OpenClawConfig {
+): AforaConfig {
   const previousDefaultAllow = collectLegacyDefaultModelAllow(previousConfig);
   const defaultAllow = isExplicitModelPolicy(cfg.agents?.defaults?.modelPolicy)
     ? undefined
@@ -93,11 +93,11 @@ function stampModelPolicyAllowlistMigrationForWrite(
 }
 
 export function stampConfigWriteMetadata(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   _now: string = new Date().toISOString(),
   version: string = VERSION,
   previousConfig?: unknown,
-): OpenClawConfig {
+): AforaConfig {
   const migrationStamped =
     previousConfig === undefined
       ? cfg

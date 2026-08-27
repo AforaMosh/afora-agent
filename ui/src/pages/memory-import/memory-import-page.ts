@@ -14,7 +14,7 @@ import { t } from "../../i18n/index.ts";
 import { listSelectableAgents } from "../../lib/agents/display.ts";
 import { formatUiError } from "../../lib/format-error.ts";
 import { isGatewayMethodAdvertised } from "../../lib/gateway-methods.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import {
   renderMemoryImport,
@@ -24,7 +24,7 @@ import {
 } from "./view.ts";
 
 const SESSION_BACKFILL_BATCH_DAYS = 14;
-const MEMORY_IMPORT_DOCS_URL = "https://docs.openclaw.ai/install/migrating";
+const MEMORY_IMPORT_DOCS_URL = "https://docs.afora.ai/install/migrating";
 
 type PendingMemoryImport = {
   providerId: string;
@@ -49,7 +49,7 @@ function createIdempotencyKey(): string {
     .join("");
 }
 
-export class MemoryImportPage extends OpenClawLightDomElement {
+export class MemoryImportPage extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context!: ApplicationContext;
 
@@ -578,6 +578,6 @@ export class MemoryImportPage extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-memory-import-page")) {
-  customElements.define("openclaw-memory-import-page", MemoryImportPage);
+if (!customElements.get("afora-memory-import-page")) {
+  customElements.define("afora-memory-import-page", MemoryImportPage);
 }

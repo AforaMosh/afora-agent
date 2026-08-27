@@ -7,14 +7,14 @@ import {
   type ChannelInboundMediaPayload,
   type InboundMediaFacts,
   type MediaPlaceholderTextFact,
-} from "openclaw/plugin-sdk/channel-inbound";
-import { pruneMapToMaxSize } from "openclaw/plugin-sdk/collection-runtime";
-import type { MediaKind } from "openclaw/plugin-sdk/media-runtime";
+} from "afora-agent/plugin-sdk/channel-inbound";
+import { pruneMapToMaxSize } from "afora-agent/plugin-sdk/collection-runtime";
+import type { MediaKind } from "afora-agent/plugin-sdk/media-runtime";
 import {
   asDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "openclaw/plugin-sdk/number-runtime";
-import { normalizeStringEntries } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/number-runtime";
+import { normalizeStringEntries } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   buildMattermostApiUrl,
   fetchMattermostChannel,

@@ -1,18 +1,18 @@
-// Machine-owned values retired from openclaw.json live in the shared state database.
+// Machine-owned values retired from afora.json live in the shared state database.
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../infra/kysely-sync.js";
-import { withExistingOpenClawStateDatabaseReadOnly } from "./openclaw-state-db-readonly.js";
-import { tableExists } from "./openclaw-state-db-schema-helpers.js";
-import type { DB as OpenClawStateKyselyDatabase } from "./openclaw-state-db.generated.js";
+import { withExistingAforaStateDatabaseReadOnly } from "./afora-state-db-readonly.js";
+import { tableExists } from "./afora-state-db-schema-helpers.js";
+import type { DB as AforaStateKyselyDatabase } from "./afora-state-db.generated.js";
 import {
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "./openclaw-state-db.js";
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "./afora-state-db.js";
 
-type ConfigMachineStateDatabase = Pick<OpenClawStateKyselyDatabase, "config_machine_state">;
+type ConfigMachineStateDatabase = Pick<AforaStateKyselyDatabase, "config_machine_state">;
 
 function normalizeStateKey(key: string): string {
   const normalized = key.trim();
@@ -33,9 +33,9 @@ function serializeStateValue(value: unknown): string {
 // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Callers own the JSON shape for open-ended state keys.
 export function readConfigMachineState<T>(
   key: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): T | undefined {
-  return withExistingOpenClawStateDatabaseReadOnly(({ db: database }) => {
+  return withExistingAforaStateDatabaseReadOnly(({ db: database }) => {
     if (!tableExists(database, "config_machine_state")) {
       return undefined;
     }
@@ -54,12 +54,12 @@ export function readConfigMachineState<T>(
 export function writeConfigMachineState(
   key: string,
   value: unknown,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): void {
   const stateKey = normalizeStateKey(key);
   const valueJson = serializeStateValue(value);
   const now = Date.now();
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     (database) => {
       const db = getNodeSqliteKysely<ConfigMachineStateDatabase>(database.db);
       executeSqliteQuerySync(
@@ -81,11 +81,11 @@ export function writeConfigMachineState(
 export function updateConfigMachineState<T>(
   key: string,
   update: (current: T | undefined) => T,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): T {
   const stateKey = normalizeStateKey(key);
   const now = Date.now();
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     (database) => {
       const db = getNodeSqliteKysely<ConfigMachineStateDatabase>(database.db);
       const row = executeSqliteQueryTakeFirstSync(
@@ -116,7 +116,7 @@ export function updateConfigMachineState<T>(
 /** Import retired config values without replacing newer canonical database state. */
 export function importConfigMachineState(
   entries: ReadonlyArray<readonly [key: string, value: unknown]>,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): { imported: string[]; kept: string[] } {
   if (entries.length === 0) {
     return { imported: [], kept: [] };
@@ -126,7 +126,7 @@ export function importConfigMachineState(
     valueJson: serializeStateValue(value),
   }));
   const now = Date.now();
-  return runOpenClawStateWriteTransaction(
+  return runAforaStateWriteTransaction(
     (database) => {
       const db = getNodeSqliteKysely<ConfigMachineStateDatabase>(database.db);
       const imported: string[] = [];

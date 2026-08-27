@@ -5,7 +5,7 @@
  */
 import { Type } from "typebox";
 import { getRuntimeConfig } from "../../config/config.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { textToSpeech } from "../../tts/tts.js";
 import type { AnyAgentTool } from "./common.js";
 import { readPositiveIntegerParam, readToolStringParam } from "./common.js";
@@ -43,7 +43,7 @@ function sanitizeTranscriptForToolContent(text: string): string {
 }
 
 export function createTtsTool(opts?: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentChannel?: string;
   agentId?: string;
   agentAccountId?: string;

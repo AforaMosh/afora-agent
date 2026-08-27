@@ -4,11 +4,11 @@ import type {
   EmbeddingProvider,
   EmbeddingProviderAdapter,
   EmbeddingProviderCreateOptions,
-} from "openclaw/plugin-sdk/embedding-providers";
+} from "afora-agent/plugin-sdk/embedding-providers";
 import type {
   MemoryEmbeddingProvider,
   MemoryEmbeddingProviderCreateOptions,
-} from "openclaw/plugin-sdk/memory-core-host-engine-embeddings";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-embeddings";
 import {
   createDeepInfraEmbeddingProvider,
   DEFAULT_DEEPINFRA_EMBEDDING_MODEL,

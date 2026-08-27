@@ -3,12 +3,12 @@ import type { Chat, Message, MessageOrigin, User } from "grammy/types";
 import type {
   ChannelInboundMediaInput,
   NormalizedLocation,
-} from "openclaw/plugin-sdk/channel-inbound";
+} from "afora-agent/plugin-sdk/channel-inbound";
 import {
   isRecord,
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { telegramHtmlToPlainTextFallback } from "../format.js";
 import { renderTelegramTextEntities } from "./inbound-text-entities.js";
 

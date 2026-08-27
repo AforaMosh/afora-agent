@@ -3,13 +3,13 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig, PluginRuntime } from "../runtime-api.js";
+import type { AforaConfig, PluginRuntime } from "../runtime-api.js";
 import { maybeCreateDynamicAgent } from "./dynamic-agent.js";
 
 let tempRoot: string;
 
 beforeEach(async () => {
-  tempRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), "openclaw-feishu-agent-"));
+  tempRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), "afora-feishu-agent-"));
 });
 
 afterEach(async () => {
@@ -17,15 +17,15 @@ afterEach(async () => {
 });
 
 function createRuntime(
-  currentCfg?: OpenClawConfig,
-  persistedCfg?: OpenClawConfig,
-  mutationCfg?: OpenClawConfig,
+  currentCfg?: AforaConfig,
+  persistedCfg?: AforaConfig,
+  mutationCfg?: AforaConfig,
 ) {
-  let runtimeCfg = structuredClone(currentCfg ?? ({} as OpenClawConfig));
+  let runtimeCfg = structuredClone(currentCfg ?? ({} as AforaConfig));
   const commitConfig = vi.fn();
   const mutateConfigFile = vi.fn(
     async (params: {
-      mutate: (draft: OpenClawConfig, context: { snapshot: never; previousHash: null }) => unknown;
+      mutate: (draft: AforaConfig, context: { snapshot: never; previousHash: null }) => unknown;
     }) => {
       const draft = structuredClone(mutationCfg ?? runtimeCfg);
       const result = await params.mutate(draft, { snapshot: {} as never, previousHash: null });
@@ -81,7 +81,7 @@ describe("maybeCreateDynamicAgent", () => {
       },
       agents: createCanonicalAgentRoster(),
       bindings: [],
-    } as OpenClawConfig;
+    } as AforaConfig;
     const { runtime, mutateConfigFile } = createRuntime(cfg);
 
     const result = await maybeCreateDynamicAgent({
@@ -104,7 +104,7 @@ describe("maybeCreateDynamicAgent", () => {
       channels: { feishu: { dynamicAgentCreation: createDynamicConfig() } },
       agents: createCanonicalAgentRoster(),
       bindings: [],
-    } as OpenClawConfig;
+    } as AforaConfig;
     const { runtime, mutateConfigFile } = createRuntime(cfg);
 
     const result = await maybeCreateDynamicAgent({
@@ -151,7 +151,7 @@ describe("maybeCreateDynamicAgent", () => {
       channels: { feishu: { dynamicAgentCreation: createDynamicConfig() } },
       agents: createCanonicalAgentRoster(),
       bindings: [],
-    } as OpenClawConfig;
+    } as AforaConfig;
     const { runtime, mutateConfigFile } = createRuntime(cfg);
 
     const result = await maybeCreateDynamicAgent({
@@ -174,10 +174,10 @@ describe("maybeCreateDynamicAgent", () => {
       channels: { feishu: { dynamicAgentCreation: createDynamicConfig() } },
       agents: createCanonicalAgentRoster(),
       bindings: [],
-    } as OpenClawConfig;
+    } as AforaConfig;
     const { runtime, commitConfig, mutateConfigFile } = createRuntime(cfg);
     const canCreateForConfig = vi
-      .fn<(cfg: OpenClawConfig) => Promise<boolean>>()
+      .fn<(cfg: AforaConfig) => Promise<boolean>>()
       .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(false);
 
@@ -205,7 +205,7 @@ describe("maybeCreateDynamicAgent", () => {
       channels: { feishu: { dynamicAgentCreation: createDynamicConfig() } },
       agents: createCanonicalAgentRoster(),
       bindings: [],
-    } as OpenClawConfig;
+    } as AforaConfig;
     const mutationCfg = {
       ...cfg,
       bindings: [
@@ -214,7 +214,7 @@ describe("maybeCreateDynamicAgent", () => {
           match: { channel: "feishu", accountId: "default" },
         },
       ],
-    } as OpenClawConfig;
+    } as AforaConfig;
     const { runtime, commitConfig, mutateConfigFile } = createRuntime(cfg, undefined, mutationCfg);
 
     const result = await maybeCreateDynamicAgent({
@@ -237,7 +237,7 @@ describe("maybeCreateDynamicAgent", () => {
       channels: { feishu: { dynamicAgentCreation: createDynamicConfig() } },
       agents: createCanonicalAgentRoster(),
       bindings: [],
-    } as OpenClawConfig;
+    } as AforaConfig;
     const { runtime } = createRuntime(cfg);
 
     const result = await maybeCreateDynamicAgent({
@@ -269,7 +269,7 @@ describe("maybeCreateDynamicAgent", () => {
       channels: { feishu: { dynamicAgentCreation: createDynamicConfig() } },
       agents: createCanonicalAgentRoster(),
       bindings: [],
-    } as OpenClawConfig;
+    } as AforaConfig;
     const { runtime } = createRuntime(cfg);
 
     const first = await maybeCreateDynamicAgent({
@@ -320,7 +320,7 @@ describe("maybeCreateDynamicAgent", () => {
         ],
       },
       bindings: [],
-    } as OpenClawConfig;
+    } as AforaConfig;
     const { runtime, mutateConfigFile } = createRuntime(cfg);
 
     const result = await maybeCreateDynamicAgent({
@@ -335,7 +335,7 @@ describe("maybeCreateDynamicAgent", () => {
         },
         agents: cfg.agents,
         bindings: [],
-      } as OpenClawConfig,
+      } as AforaConfig,
       runtime,
       accountId: "default",
       senderOpenId: "ou_sender",
@@ -369,11 +369,11 @@ describe("maybeCreateDynamicAgent", () => {
           },
         },
       ],
-    } as OpenClawConfig;
+    } as AforaConfig;
     const { runtime, mutateConfigFile } = createRuntime(currentCfg);
 
     const result = await maybeCreateDynamicAgent({
-      cfg: { agents: createCanonicalAgentRoster(), bindings: [] } as OpenClawConfig,
+      cfg: { agents: createCanonicalAgentRoster(), bindings: [] } as AforaConfig,
       runtime,
       accountId: "default",
       senderOpenId: "ou_sender",
@@ -417,7 +417,7 @@ describe("maybeCreateDynamicAgent", () => {
       },
       agents: createCanonicalAgentRoster(),
       bindings: [],
-    } as OpenClawConfig;
+    } as AforaConfig;
     const persistedCfg = {
       channels: {
         feishu: {
@@ -427,7 +427,7 @@ describe("maybeCreateDynamicAgent", () => {
       },
       agents: createCanonicalAgentRoster(),
       bindings: [],
-    } as OpenClawConfig;
+    } as AforaConfig;
     const { runtime } = createRuntime(currentCfg, persistedCfg);
 
     const result = await maybeCreateDynamicAgent({
@@ -465,14 +465,14 @@ describe("maybeCreateDynamicAgent", () => {
           },
         },
       ],
-    } as OpenClawConfig;
+    } as AforaConfig;
     const { runtime, mutateConfigFile } = createRuntime(currentCfg);
 
     const result = await maybeCreateDynamicAgent({
       cfg: {
         agents: createCanonicalAgentRoster(),
         bindings: [],
-      } as OpenClawConfig,
+      } as AforaConfig,
       runtime,
       accountId: "default",
       senderOpenId: "ou_sender",

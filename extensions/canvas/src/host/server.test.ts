@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import type { Duplex } from "node:stream";
 import vm from "node:vm";
-import { defaultRuntime } from "openclaw/plugin-sdk/runtime-env";
+import { defaultRuntime } from "afora-agent/plugin-sdk/runtime-env";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { A2UI_PATH, CANVAS_HOST_PATH, CANVAS_WS_PATH, injectCanvasRuntime } from "./a2ui-shared.js";
 
@@ -170,7 +170,7 @@ function runInjectedScript(
     location: {
       host: "control.example",
       protocol: "https:",
-      pathname: "/__openclaw__/canvas/",
+      pathname: "/__afora__/canvas/",
       reload: vi.fn(),
       search: "",
       ...locationOverrides,
@@ -242,7 +242,7 @@ describe("canvas host", () => {
     ({ createCanvasHostHandler } = serverModule);
     const wsModule = await vi.importActual<typeof import("ws")>("ws");
     WebSocketServerClass = wsModule.WebSocketServer;
-    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-canvas-fixtures-"));
+    fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-canvas-fixtures-"));
   });
 
   beforeEach(() => {
@@ -256,40 +256,40 @@ describe("canvas host", () => {
   });
 
   it("injects the Canvas runtime before authored page scripts", () => {
-    const authoredScript = "globalThis.bridgeReadyAtStartup = typeof openclawSendUserAction";
+    const authoredScript = "globalThis.bridgeReadyAtStartup = typeof aforaSendUserAction";
     const out = injectCanvasRuntime(
       `<!doctype html><html><head><script>${authoredScript}</script></head><body>Hello</body></html>`,
     );
     expect(out).toContain(CANVAS_WS_PATH);
     expect(out).toContain("location.reload");
-    expect(out).toContain("openclawCanvasA2UIAction");
-    expect(out).toContain("openclawSendUserAction");
+    expect(out).toContain("aforaCanvasA2UIAction");
+    expect(out).toContain("aforaSendUserAction");
     expect(out).toContain("crypto?.getRandomValues");
     expect(out).not.toContain("String(Date.now())");
-    expect(out.indexOf("globalThis.OpenClaw.postMessage")).toBeGreaterThan(out.indexOf("<head>"));
-    expect(out.indexOf("globalThis.OpenClaw.postMessage")).toBeLessThan(
+    expect(out.indexOf("globalThis.Afora.postMessage")).toBeGreaterThan(out.indexOf("<head>"));
+    expect(out.indexOf("globalThis.Afora.postMessage")).toBeLessThan(
       out.indexOf(authoredScript),
     );
   });
 
   it("keeps the Canvas bridge when live reload is disabled", () => {
     const out = injectCanvasRuntime("<html><body>Hello</body></html>", { liveReload: false });
-    expect(out).toContain("openclawCanvasA2UIAction");
-    expect(out).toContain("openclawSendUserAction");
+    expect(out).toContain("aforaCanvasA2UIAction");
+    expect(out).toContain("aforaSendUserAction");
     expect(out).not.toContain(CANVAS_WS_PATH);
     expect(out).not.toContain("new WebSocket");
   });
 
   it("ignores commented tags and quoted closing brackets when injecting", () => {
-    const authoredScript = "globalThis.bridgeReadyAfterComment = typeof openclawSendUserAction";
+    const authoredScript = "globalThis.bridgeReadyAfterComment = typeof aforaSendUserAction";
     const comment = "<!-- example: <head> -->";
     const head = '<head data-note="quoted > bracket">';
     const out = injectCanvasRuntime(
       `${comment}\n${head}<script>${authoredScript}</script><body>Hello</body>`,
     );
 
-    expect(out.indexOf("globalThis.OpenClaw.postMessage")).toBeGreaterThan(out.indexOf(head));
-    expect(out.indexOf("globalThis.OpenClaw.postMessage")).toBeLessThan(
+    expect(out.indexOf("globalThis.Afora.postMessage")).toBeGreaterThan(out.indexOf(head));
+    expect(out.indexOf("globalThis.Afora.postMessage")).toBeLessThan(
       out.indexOf(authoredScript),
     );
     expect(out.slice(0, out.indexOf(head))).toBe(`${comment}\n`);
@@ -302,7 +302,7 @@ describe("canvas host", () => {
     const { consoleError } = runInjectedScript(ThrowingWebSocket);
 
     expect(consoleError).toHaveBeenCalledTimes(1);
-    expect(consoleError).toHaveBeenCalledWith("OpenClaw canvas live reload unavailable");
+    expect(consoleError).toHaveBeenCalledWith("Afora canvas live reload unavailable");
   });
 
   it("reports asynchronous websocket connection errors once", () => {
@@ -353,7 +353,7 @@ describe("canvas host", () => {
         urls.push(url);
       },
       {
-        pathname: "/__openclaw__/cap/current-token/__openclaw__/canvas/",
+        pathname: "/__afora__/cap/current-token/__afora__/canvas/",
         search: "?oc_cap=stale-token",
       },
     );
@@ -380,7 +380,7 @@ describe("canvas host", () => {
       const response = await captureHandlerResponse(handler, `${CANVAS_HOST_PATH}/`);
       expect(response.status).toBe(200);
       expect(response.body).toContain("Interactive test page");
-      expect(response.body).toContain("openclawSendUserAction");
+      expect(response.body).toContain("aforaSendUserAction");
       expect(response.body).toContain(CANVAS_WS_PATH);
       expect(response.body).toContain('document.createElement("span")');
       expect(response.body).not.toContain("statusEl.innerHTML");
@@ -398,7 +398,7 @@ describe("canvas host", () => {
       const response = await captureHandlerResponse(handler, `${CANVAS_HOST_PATH}/`);
       expect(response.status).toBe(200);
       expect(response.body).toContain("no-reload");
-      expect(response.body).toContain("openclawSendUserAction");
+      expect(response.body).toContain("aforaSendUserAction");
       expect(response.body).not.toContain(CANVAS_WS_PATH);
 
       const wsResponse = await captureHandlerResponse(handler, CANVAS_WS_PATH);
@@ -409,7 +409,7 @@ describe("canvas host", () => {
   });
 
   it("watches Canvas content when the state directory is hidden", async () => {
-    const dir = path.join(fixtureRoot, ".openclaw", `case-${fixtureCount++}`);
+    const dir = path.join(fixtureRoot, ".afora", `case-${fixtureCount++}`);
     await fs.mkdir(dir, { recursive: true });
     const handler = await createTestCanvasHostHandler(dir);
 
@@ -627,11 +627,11 @@ describe("canvas host", () => {
       await fs.mkdir(nestedAssetDir, { recursive: true });
       await fs.writeFile(
         path.join(a2uiRoot, "index.html"),
-        `<openclaw-a2ui-host></openclaw-a2ui-host>
-<script>openclawCanvasA2UIAction</script>`,
+        `<afora-a2ui-host></afora-a2ui-host>
+<script>aforaCanvasA2UIAction</script>`,
         "utf8",
       );
-      await fs.writeFile(bundlePath, "window.openclawA2UI = {};", "utf8");
+      await fs.writeFile(bundlePath, "window.aforaA2UI = {};", "utf8");
       await fs.writeFile(path.join(nestedAssetDir, "sample.txt"), "nested asset", "utf8");
       await fs.symlink(path.join(process.cwd(), "package.json"), linkPath);
       setA2uiRootRealForTest(await fs.realpath(a2uiRoot));
@@ -639,17 +639,17 @@ describe("canvas host", () => {
       const res = await captureA2uiFixtureResponse(`${A2UI_PATH}/`);
       const html = res.body;
       expect(res.status).toBe(200);
-      expect(html).toContain("openclaw-a2ui-host");
-      expect(html).toContain("openclawCanvasA2UIAction");
+      expect(html).toContain("afora-a2ui-host");
+      expect(html).toContain("aforaCanvasA2UIAction");
 
       const noReloadRes = await captureA2uiFixtureResponse(`${A2UI_PATH}/`, "GET", false);
-      expect(noReloadRes.body).toContain("openclawCanvasA2UIAction");
+      expect(noReloadRes.body).toContain("aforaCanvasA2UIAction");
       expect(noReloadRes.body).not.toContain(CANVAS_WS_PATH);
 
       const bundleRes = await captureA2uiFixtureResponse(`${A2UI_PATH}/a2ui.bundle.js`);
       const js = bundleRes.body;
       expect(bundleRes.status).toBe(200);
-      expect(js).toContain("openclawA2UI");
+      expect(js).toContain("aforaA2UI");
 
       const assetRes = await captureA2uiFixtureResponse(
         `${A2UI_PATH}/${nestedAssetUrlPath}/sample.txt`,
@@ -682,13 +682,13 @@ describe("canvas host", () => {
       await fs.mkdir(a2uiRoot, { recursive: true });
       await fs.writeFile(
         path.join(a2uiRoot, "index.html"),
-        `<openclaw-a2ui-host></openclaw-a2ui-host>
-<script>openclawCanvasA2UIAction</script>`,
+        `<afora-a2ui-host></afora-a2ui-host>
+<script>aforaCanvasA2UIAction</script>`,
         "utf8",
       );
       await fs.writeFile(
         path.join(a2uiRoot, "a2ui.bundle.js"),
-        "window.openclawA2UI = {};",
+        "window.aforaA2UI = {};",
         "utf8",
       );
       setA2uiRootRealForTest(await fs.realpath(a2uiRoot));

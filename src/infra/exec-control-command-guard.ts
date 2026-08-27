@@ -1,9 +1,9 @@
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { expectDefined } from "@openclaw/normalization-core";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { normalizeStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { expectDefined } from "@afora/normalization-core";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import { normalizeStringEntries } from "@afora/normalization-core/string-normalization";
 import { splitShellArgs } from "../utils/shell-argv.js";
 import { resolvePathViaExistingAncestorSync } from "./boundary-path.js";
 import {
@@ -73,21 +73,21 @@ function normalizeCommandBaseName(token: string | undefined): string {
   return base.replace(/\.(?:cmd|exe)$/u, "");
 }
 
-function stripOpenClawPackageRunner(argv: string[]): string[] {
+function stripAforaPackageRunner(argv: string[]): string[] {
   const commandName = normalizeCommandBaseName(argv[0]);
-  if (commandName === "openclaw") {
+  if (commandName === "afora") {
     return argv;
   }
   if (
     (commandName === "pnpm" || commandName === "npm" || commandName === "yarn") &&
-    normalizeCommandBaseName(argv[1]) === "openclaw"
+    normalizeCommandBaseName(argv[1]) === "afora"
   ) {
     return argv.slice(1);
   }
   if (
     (commandName === "pnpm" || commandName === "npm" || commandName === "yarn") &&
     (argv[1] === "exec" || argv[1] === "dlx" || argv[1] === "run") &&
-    normalizeCommandBaseName(argv[2]) === "openclaw"
+    normalizeCommandBaseName(argv[2]) === "afora"
   ) {
     return argv.slice(2);
   }
@@ -107,23 +107,23 @@ function stripOpenClawPackageRunner(argv: string[]): string[] {
         idx += 1;
       }
     }
-    if (normalizeCommandBaseName(argv[idx]) === "openclaw") {
+    if (normalizeCommandBaseName(argv[idx]) === "afora") {
       return argv.slice(idx);
     }
   }
   return argv;
 }
 
-function parseOpenClawChannelsLoginShellCommand(raw: string): boolean {
+function parseAforaChannelsLoginShellCommand(raw: string): boolean {
   const argv = splitShellArgs(raw);
   if (!argv) {
     return false;
   }
-  const openclawArgv = stripOpenClawPackageRunner(argv);
+  const aforaArgv = stripAforaPackageRunner(argv);
   return (
-    normalizeCommandBaseName(openclawArgv[0]) === "openclaw" &&
-    (openclawArgv[1] === "channels" || openclawArgv[1] === "channel") &&
-    openclawArgv[2] === "login"
+    normalizeCommandBaseName(aforaArgv[0]) === "afora" &&
+    (aforaArgv[1] === "channels" || aforaArgv[1] === "channel") &&
+    aforaArgv[2] === "login"
   );
 }
 
@@ -197,7 +197,7 @@ function expandSqliteDatabaseToken(token: string, stateDir: string): string | nu
     return null;
   }
   const stateVariable = expanded.match(
-    /^\$(?:OPENCLAW_STATE_DIR|\{OPENCLAW_STATE_DIR\})(?=$|[\\/])/u,
+    /^\$(?:AFORA_STATE_DIR|\{AFORA_STATE_DIR\})(?=$|[\\/])/u,
   );
   if (stateVariable) {
     expanded = `${stateDir}${expanded.slice(stateVariable[0].length)}`;
@@ -235,7 +235,7 @@ function targetsLiveStateSqliteDatabase(
   if (!stateDir) {
     return false;
   }
-  // External SQLite clients bypass OpenClaw's runtime/version guard and can join the live WAL.
+  // External SQLite clients bypass Afora's runtime/version guard and can join the live WAL.
   // Resolve existing ancestors so an alias outside the state root cannot hide that ownership.
   const canonicalStateDir = resolvePathViaExistingAncestorSync(stateDir);
   return parseSqliteDatabaseTokens(argv).some((databaseToken) => {
@@ -288,7 +288,7 @@ export async function detectUnsafeExecControlShellCommand(
     if (parseExecApprovalShellCommand(candidate)) {
       return "approve";
     }
-    if (parseOpenClawChannelsLoginShellCommand(candidate)) {
+    if (parseAforaChannelsLoginShellCommand(candidate)) {
       return "channel-login";
     }
   }
@@ -313,8 +313,8 @@ export async function rejectUnsafeExecControlShellCommand(command: string): Prom
   if (unsafeKind === "channel-login") {
     throw new Error(
       [
-        "exec cannot run interactive OpenClaw channel login commands.",
-        "Run `openclaw channels login` in a terminal on the gateway host, or use the channel-specific login agent tool when available (for WhatsApp: `whatsapp_login`).",
+        "exec cannot run interactive Afora channel login commands.",
+        "Run `afora channels login` in a terminal on the gateway host, or use the channel-specific login agent tool when available (for WhatsApp: `whatsapp_login`).",
       ].join(" "),
     );
   }
@@ -330,8 +330,8 @@ export async function rejectUnsafeExecLiveStateSqliteShellCommand(
   }
   throw new Error(
     [
-      "external sqlite3 cannot open databases under the active OpenClaw state directory.",
-      "Use OpenClaw commands for live state, or inspect a private backup copy outside `OPENCLAW_STATE_DIR`.",
+      "external sqlite3 cannot open databases under the active Afora state directory.",
+      "Use Afora commands for live state, or inspect a private backup copy outside `AFORA_STATE_DIR`.",
     ].join(" "),
   );
 }

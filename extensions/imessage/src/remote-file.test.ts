@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const warnMock = vi.hoisted(() => vi.fn());
 
-vi.mock("openclaw/plugin-sdk/runtime-env", () => ({
+vi.mock("afora-agent/plugin-sdk/runtime-env", () => ({
   createSubsystemLogger: () => ({ warn: warnMock }),
 }));
 
@@ -70,13 +70,13 @@ describe("withIMessageRemoteFile", () => {
       "ForwardX11=no",
       "--",
       "/gateway/private/a file;$(touch nope).png",
-      "bot@messages-mac:/tmp/openclaw-imessage-a1b2c3d4e5f60718293a4b5c6d7e8f90/a-file-touch-nope-.png",
+      "bot@messages-mac:/tmp/afora-imessage-a1b2c3d4e5f60718293a4b5c6d7e8f90/a-file-touch-nope-.png",
     ]);
     expect(use).toHaveBeenCalledWith(
-      "/tmp/openclaw-imessage-a1b2c3d4e5f60718293a4b5c6d7e8f90/a-file-touch-nope-.png",
+      "/tmp/afora-imessage-a1b2c3d4e5f60718293a4b5c6d7e8f90/a-file-touch-nope-.png",
     );
     expect(runCommand.mock.calls[2]?.[1].input).toBe(
-      "set -eu\nrm -rf -- /tmp/openclaw-imessage-a1b2c3d4e5f60718293a4b5c6d7e8f90\n",
+      "set -eu\nrm -rf -- /tmp/afora-imessage-a1b2c3d4e5f60718293a4b5c6d7e8f90\n",
     );
   });
 
@@ -134,7 +134,7 @@ describe("withIMessageRemoteFile", () => {
     ).rejects.toThrow("allocation failed (timeout)");
     expect(runCommand.mock.calls.map(([argv]) => argv[0])).toEqual(["ssh", "ssh"]);
     expect(runCommand.mock.calls[1]?.[1].input).toContain(
-      "rm -rf -- /tmp/openclaw-imessage-0123456789abcdef0123456789abcdef",
+      "rm -rf -- /tmp/afora-imessage-0123456789abcdef0123456789abcdef",
     );
   });
 

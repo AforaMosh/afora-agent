@@ -1,7 +1,7 @@
 // Resolves channel implicit-mention policy across account, channel, and shared defaults.
 import { resolveAccountEntry } from "../routing/account-lookup.js";
 import { normalizeAccountId } from "../routing/session-key.js";
-import type { OpenClawConfig } from "./config.js";
+import type { AforaConfig } from "./config.js";
 import type { ChannelImplicitMentionsConfig } from "./types.channels.js";
 
 export type ResolvedChannelImplicitMentions = Required<ChannelImplicitMentionsConfig>;
@@ -19,7 +19,7 @@ const SHIPPED_IMPLICIT_MENTION_DEFAULTS: ResolvedChannelImplicitMentions = {
 
 /** Resolves each implicit-mention kind using account, channel, defaults, then shipped behavior. */
 export function resolveChannelImplicitMentions(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   accountId?: string | null;
 }): ResolvedChannelImplicitMentions {

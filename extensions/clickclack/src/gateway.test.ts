@@ -1,6 +1,6 @@
 // Clickclack tests cover gateway plugin behavior.
 import { EventEmitter } from "node:events";
-import type { ChannelGatewayContext } from "openclaw/plugin-sdk/channel-contract";
+import type { ChannelGatewayContext } from "afora-agent/plugin-sdk/channel-contract";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ResolvedClickClackAccount } from "./types.js";
 
@@ -52,7 +52,7 @@ vi.mock("./inbound.js", () => ({
   handleClickClackInbound: mocks.handleClickClackInbound,
 }));
 
-vi.mock("openclaw/plugin-sdk/native-command-registry", () => ({
+vi.mock("afora-agent/plugin-sdk/native-command-registry", () => ({
   listNativeCommandSpecsForConfig: () => [],
 }));
 

@@ -7,7 +7,7 @@ import type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 import { createConfigIO, replaceConfigFile } from "../config/config.js";
 import { collectIncludePathsRecursive } from "../config/includes-scan.js";
 import { resolveConfigPath, resolveOAuthDir, resolveStateDir } from "../config/paths.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { runExec } from "../process/exec.js";
 import { LEGACY_IMPLICIT_AGENT_ID, normalizeAgentId } from "../routing/session-key.js";
 import { createIcaclsResetCommand, formatIcaclsResetCommand, type ExecFn } from "./windows-acl.js";
@@ -192,14 +192,14 @@ async function safeAclReset(params: {
 }
 
 function setGroupPolicyAllowlist(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   changes: string[];
 }): void {
   if (!params.cfg.channels) {
     return;
   }
-  const section = params.cfg.channels[params.channel as keyof OpenClawConfig["channels"]] as
+  const section = params.cfg.channels[params.channel as keyof AforaConfig["channels"]] as
     | Record<string, unknown>
     | undefined;
   if (!section || typeof section !== "object") {
@@ -233,8 +233,8 @@ function setGroupPolicyAllowlist(params: {
   }
 }
 
-function applyConfigFixes(params: { cfg: OpenClawConfig; env: NodeJS.ProcessEnv }): {
-  cfg: OpenClawConfig;
+function applyConfigFixes(params: { cfg: AforaConfig; env: NodeJS.ProcessEnv }): {
+  cfg: AforaConfig;
   changes: string[];
 } {
   const next = structuredClone(params.cfg ?? {});
@@ -248,11 +248,11 @@ function applyConfigFixes(params: { cfg: OpenClawConfig; env: NodeJS.ProcessEnv 
 }
 
 async function applySecurityFixConfigMutations(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   channelPlugins?: ChannelPlugin[];
 }): Promise<{
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   changes: string[];
 }> {
   const fixed = applyConfigFixes({ cfg: params.cfg, env: params.env });
@@ -268,7 +268,7 @@ async function applySecurityFixConfigMutations(params: {
 }
 
 async function collectChannelSecurityConfigFixMutation(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   channelPlugins?: ChannelPlugin[];
 }) {
@@ -309,7 +309,7 @@ async function collectSecurityPermissionTargets(params: {
   env: NodeJS.ProcessEnv;
   stateDir: string;
   configPath: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   includePaths?: readonly string[];
 }): Promise<SecurityPermissionTarget[]> {
   const targets: SecurityPermissionTarget[] = [

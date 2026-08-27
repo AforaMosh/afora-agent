@@ -40,7 +40,7 @@ struct ShareContentExtractorTests {
                 image,
                 self.dataProvider(type: .movie),
                 self.dataProvider(type: .fileURL),
-                self.dataProvider(type: UTType(exportedAs: "ai.openclaw.tests.unknown")),
+                self.dataProvider(type: UTType(exportedAs: "ai.afora.tests.unknown")),
             ]),
         ])
 

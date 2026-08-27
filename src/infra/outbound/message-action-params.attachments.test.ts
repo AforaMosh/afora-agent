@@ -3,11 +3,11 @@ import os from "node:os";
 import path from "node:path";
 // Covers message-action media hydration, sandbox path normalization,
 // attachments, and channel/plugin media source aliases.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { jsonResult } from "../../agents/tools/common.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createTestRegistry } from "../../test-utils/channel-plugins.js";
 import {
@@ -71,7 +71,7 @@ function requireLoadWebMediaCall(): readonly unknown[] {
 }
 
 async function runAttachmentRemoteMediaAction(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   action: "sendAttachment" | "upload-file";
 }) {
   return runMessageAction({
@@ -108,7 +108,7 @@ describe("runMessageAction media behavior", () => {
           password: "test-password",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const attachmentPlugin: ChannelPlugin = {
       id: "attachmentchat",
       meta: {
@@ -162,7 +162,7 @@ describe("runMessageAction media behavior", () => {
     }
 
     async function expectRejectsLocalAbsolutePathWithoutSandbox(params: {
-      cfg?: OpenClawConfig;
+      cfg?: AforaConfig;
       action: "sendAttachment" | "setGroupIcon";
       target: string;
       mediaField?: "media" | "mediaUrl" | "fileUrl";
@@ -391,7 +391,7 @@ describe("runMessageAction media behavior", () => {
 
   describe("reply hydration", () => {
     // The reply action accepts attachments via the same media/path/filePath
-    // params as send. Before openclaw#79864 the runner only hydrated
+    // params as send. Before afora#79864 the runner only hydrated
     // sendAttachment/setGroupIcon/upload-file, so a channel plugin's reply
     // handler saw the raw path and could forward it directly to its CLI —
     // bypassing localRoots, sandbox, and size checks. These tests pin the
@@ -406,7 +406,7 @@ describe("runMessageAction media behavior", () => {
           enabled: true,
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const handleActionMock = vi.fn();
     const replyPlugin: ChannelPlugin = {
       id: "replychat",

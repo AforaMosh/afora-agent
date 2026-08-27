@@ -3,7 +3,7 @@ import {
   getLoadedChannelPlugin,
   resolveChannelApprovalCapability,
 } from "../channels/plugins/index.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   doesApprovalRequestSelectChannelAccount,
   type ApprovalRequestLike,
@@ -16,7 +16,7 @@ type PreparedApprovalChannelCustody = {
 };
 
 export function prepareApprovalChannelCustody(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   approvalKind: ChannelApprovalKind;
   reviewer: ApprovalChannelReviewer;
 }): PreparedApprovalChannelCustody | null {

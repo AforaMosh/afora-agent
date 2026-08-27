@@ -8,7 +8,7 @@ type LanceDbRuntimeTestApi = {
   }) => { load: () => Promise<LanceDbModule> };
 };
 
-const api = Reflect.get(globalThis, Symbol.for("openclaw.memoryLanceDbRuntimeTestApi"));
+const api = Reflect.get(globalThis, Symbol.for("afora.memoryLanceDbRuntimeTestApi"));
 if (!api) {
   throw new Error("Memory LanceDB runtime test API is unavailable");
 }

@@ -1,7 +1,7 @@
 import path from "node:path";
 import { listAgentIds, resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import { resolveBootstrapMaxChars } from "../agents/embedded-agent-helpers.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 type ToolsMdMigrationWorkspaceTarget = {
   primaryAgentId: string;
@@ -10,7 +10,7 @@ type ToolsMdMigrationWorkspaceTarget = {
 };
 
 export function resolveToolsMdMigrationWorkspaceTargets(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): ToolsMdMigrationWorkspaceTarget[] {
   const targets = new Map<string, ToolsMdMigrationWorkspaceTarget>();
   for (const agentId of listAgentIds(cfg)) {
@@ -28,7 +28,7 @@ export function resolveToolsMdMigrationWorkspaceTargets(
 
 /** One finding per agent whose own bootstrap budget cannot hold the merged file. */
 export function describeToolsMdMergedBootstrapLimits(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentIds: readonly string[];
   mergedChars: number;
 }): Array<{ agentId: string; message: string }> {

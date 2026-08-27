@@ -1,11 +1,11 @@
 /** Converts image provider base64/data-url payloads into generated or source image assets. */
-import { canonicalizeBase64 } from "@openclaw/media-core/base64";
-import { MAX_IMAGE_BYTES } from "@openclaw/media-core/constants";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { canonicalizeBase64 } from "@afora/media-core/base64";
+import { MAX_IMAGE_BYTES } from "@afora/media-core/constants";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import type { GeneratedImageAsset, ImageGenerationSourceImage } from "./types.js";
 
 const DEFAULT_IMAGE_MIME_TYPE = "image/png";

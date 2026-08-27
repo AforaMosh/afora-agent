@@ -1,11 +1,11 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 // Voice Call tests cover telephony tts plugin behavior.
-import { MAX_TIMER_TIMEOUT_MS } from "openclaw/plugin-sdk/number-runtime";
+import { MAX_TIMER_TIMEOUT_MS } from "afora-agent/plugin-sdk/number-runtime";
 import { describe, expect, it, vi } from "vitest";
 import type { VoiceCallTtsConfig } from "./config.js";
 import { createTelephonyTtsProvider, type TelephonyTtsRuntime } from "./telephony-tts.js";
 
-function createCoreConfig(): OpenClawConfig {
+function createCoreConfig(): AforaConfig {
   const tts: VoiceCallTtsConfig = {
     provider: "openai",
     providers: {
@@ -37,7 +37,7 @@ function createRuntime(
 
 describe("createTelephonyTtsProvider", () => {
   it("uses shared preparation for the surface override and request text", async () => {
-    const effectiveConfig: OpenClawConfig = {
+    const effectiveConfig: AforaConfig = {
       tts: { provider: "openai", timeoutMs: 15_000 },
     };
     const prepareTtsRequest = vi.fn<TelephonyTtsRuntime["prepareTtsRequest"]>(

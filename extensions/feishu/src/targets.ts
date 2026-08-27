@@ -1,5 +1,5 @@
 // Feishu plugin module implements targets behavior.
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { FeishuIdType } from "./types.js";
 
 const CHAT_ID_PREFIX = "oc_";

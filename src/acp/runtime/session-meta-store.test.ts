@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
 const mocks = vi.hoisted(() => ({
   listSessionEntryKeysReadOnly: vi.fn((): string[] => []),
@@ -19,7 +19,7 @@ vi.mock("../../config/sessions/paths.js", () => ({
 const { readSessionEntryFromStore, resolveSessionStorePathForAcp } =
   await import("./session-meta-store.js");
 
-function explicitFleet(): OpenClawConfig {
+function explicitFleet(): AforaConfig {
   return {
     agents: {
       ownership: "explicit",
@@ -52,7 +52,7 @@ describe("ACP session metadata store ownership", () => {
         ...explicitFleet().agents,
         defaults: { sessionStore: { agentId: "ops" } },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     mocks.loadExactSessionEntryReadOnly.mockReturnValue({
       entry: { sessionId: "ops-session" },
     });
@@ -77,7 +77,7 @@ describe("ACP session metadata store ownership", () => {
         ...explicitFleet().agents,
         defaults: { sessionStore: { agentId: "retired" } },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(() => readSessionEntryFromStore({ cfg, sessionKey: "global" })).toThrowError(
       expect.objectContaining({ code: "AGENT_SELECTION_REQUIRED" }),
@@ -96,7 +96,7 @@ describe("ACP session metadata store ownership", () => {
         ...explicitFleet().agents,
         defaults: { sessionStore: { agentId: "ops" } },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(() =>
       readSessionEntryFromStore({ cfg, agentId: "research", sessionKey: "global" }),

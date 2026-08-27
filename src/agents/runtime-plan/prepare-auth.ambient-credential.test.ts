@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { AuthProfileStore } from "../auth-profiles.js";
 import { prepareAgentRuntimeAuth } from "./prepare-auth.js";
 
@@ -42,7 +42,7 @@ const config = {
       models: { "claude-cli/claude-fable-5": { alias: "fable5" } },
     },
   },
-} as unknown as OpenClawConfig;
+} as unknown as AforaConfig;
 
 const ambientEnv = { ANTHROPIC_API_KEY: "ambient-anthropic-key" } as NodeJS.ProcessEnv;
 
@@ -88,7 +88,7 @@ describe("ambient provider credentials are not queued behind a declared profile"
       modelId: "gpt-5.5",
       config: {
         auth: { order: { openai: ["openai:primary", "openai:backup"] } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: { OPENAI_API_KEY: "ambient-platform-key" } as NodeJS.ProcessEnv,
       authProfileStore: {
         version: 1,
@@ -128,7 +128,7 @@ describe("ambient provider credentials are not queued behind a declared profile"
       modelId: "gpt-5.5",
       config: {
         auth: { order: { openai: ["openai:chatgpt", "openai:platform"] } },
-      } as OpenClawConfig,
+      } as AforaConfig,
       env: { OPENAI_API_KEY: "ambient-platform-key" } as NodeJS.ProcessEnv,
       authProfileStore: {
         version: 1,

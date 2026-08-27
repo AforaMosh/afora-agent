@@ -10,18 +10,18 @@ export type {
   ChannelPlugin,
   ChatType,
   HistoryEntry,
-  OpenClawConfig,
-  OpenClawPluginApi,
+  AforaConfig,
+  AforaPluginApi,
   PluginRuntime,
-} from "openclaw/plugin-sdk/core";
-export type { RuntimeEnv } from "openclaw/plugin-sdk/runtime";
-export type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
-export type { ModelsProviderData } from "openclaw/plugin-sdk/models-provider-runtime";
+} from "afora-agent/plugin-sdk/core";
+export type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime";
+export type { ReplyPayload } from "afora-agent/plugin-sdk/reply-runtime";
+export type { ModelsProviderData } from "afora-agent/plugin-sdk/models-provider-runtime";
 export type {
   BlockStreamingCoalesceConfig,
   DmPolicy,
   GroupPolicy,
-} from "openclaw/plugin-sdk/config-contracts";
+} from "afora-agent/plugin-sdk/config-contracts";
 export {
   DEFAULT_ACCOUNT_ID,
   buildChannelConfigSchema,
@@ -29,31 +29,31 @@ export {
   parseStrictPositiveInteger,
   resolveClientIp,
   isTrustedProxyAddress,
-} from "openclaw/plugin-sdk/core";
-export { buildComputedAccountStatusSnapshot } from "openclaw/plugin-sdk/channel-status";
-export { createAccountStatusSink } from "openclaw/plugin-sdk/channel-outbound";
+} from "afora-agent/plugin-sdk/core";
+export { buildComputedAccountStatusSnapshot } from "afora-agent/plugin-sdk/channel-status";
+export { createAccountStatusSink } from "afora-agent/plugin-sdk/channel-outbound";
 export {
   listSkillCommandsForAgents,
   resolveControlCommandGate,
   resolveStoredModelOverride,
-} from "openclaw/plugin-sdk/command-auth-native";
-export { buildModelsProviderData } from "openclaw/plugin-sdk/models-provider-runtime";
+} from "afora-agent/plugin-sdk/command-auth-native";
+export { buildModelsProviderData } from "afora-agent/plugin-sdk/models-provider-runtime";
 export {
   GROUP_POLICY_BLOCKED_LABEL,
   resolveAllowlistProviderRuntimeGroupPolicy,
   resolveDefaultGroupPolicy,
   warnMissingProviderGroupPolicyFallbackOnce,
-} from "openclaw/plugin-sdk/runtime-group-policy";
-export { isDangerousNameMatchingEnabled } from "openclaw/plugin-sdk/dangerous-name-runtime";
-export { resolveStorePath } from "openclaw/plugin-sdk/session-store-runtime";
-export { formatInboundFromLabel } from "openclaw/plugin-sdk/channel-inbound";
-export { logInboundDrop } from "openclaw/plugin-sdk/channel-inbound";
-export { createChannelPairingController } from "openclaw/plugin-sdk/channel-pairing";
-export { createChannelMessageReplyPipeline } from "openclaw/plugin-sdk/channel-outbound";
-export { logTypingFailure } from "openclaw/plugin-sdk/channel-feedback";
-export { loadOutboundMediaFromUrl } from "openclaw/plugin-sdk/outbound-media";
-export { rawDataToString } from "openclaw/plugin-sdk/webhook-ingress";
-export { chunkTextForOutbound } from "openclaw/plugin-sdk/text-chunking";
+} from "afora-agent/plugin-sdk/runtime-group-policy";
+export { isDangerousNameMatchingEnabled } from "afora-agent/plugin-sdk/dangerous-name-runtime";
+export { resolveStorePath } from "afora-agent/plugin-sdk/session-store-runtime";
+export { formatInboundFromLabel } from "afora-agent/plugin-sdk/channel-inbound";
+export { logInboundDrop } from "afora-agent/plugin-sdk/channel-inbound";
+export { createChannelPairingController } from "afora-agent/plugin-sdk/channel-pairing";
+export { createChannelMessageReplyPipeline } from "afora-agent/plugin-sdk/channel-outbound";
+export { logTypingFailure } from "afora-agent/plugin-sdk/channel-feedback";
+export { loadOutboundMediaFromUrl } from "afora-agent/plugin-sdk/outbound-media";
+export { rawDataToString } from "afora-agent/plugin-sdk/webhook-ingress";
+export { chunkTextForOutbound } from "afora-agent/plugin-sdk/text-chunking";
 // Legacy map-helper exports stay for older plugin consumers. New message-turn
 // code should use createChannelHistoryWindow.
 export {
@@ -62,22 +62,22 @@ export {
   buildPendingHistoryContextFromMap,
   clearHistoryEntriesIfEnabled,
   recordPendingHistoryEntryIfEnabled,
-} from "openclaw/plugin-sdk/reply-history";
-export { normalizeAccountId, resolveThreadSessionKeys } from "openclaw/plugin-sdk/routing";
-export { resolveAllowlistMatchSimple } from "openclaw/plugin-sdk/allow-from";
-export { registerPluginHttpRoute } from "openclaw/plugin-sdk/webhook-targets";
+} from "afora-agent/plugin-sdk/reply-history";
+export { normalizeAccountId, resolveThreadSessionKeys } from "afora-agent/plugin-sdk/routing";
+export { resolveAllowlistMatchSimple } from "afora-agent/plugin-sdk/allow-from";
+export { registerPluginHttpRoute } from "afora-agent/plugin-sdk/webhook-targets";
 export {
   isRequestBodyLimitError,
   readRequestBodyWithLimit,
-} from "openclaw/plugin-sdk/webhook-ingress";
+} from "afora-agent/plugin-sdk/webhook-ingress";
 export {
   applyAccountNameToChannelSection,
   applySetupAccountConfigPatch,
   migrateBaseNameToDefaultAccount,
-} from "openclaw/plugin-sdk/setup";
+} from "afora-agent/plugin-sdk/setup";
 export {
   getAgentScopedMediaLocalRoots,
   resolveChannelMediaMaxBytes,
-} from "openclaw/plugin-sdk/media-runtime";
-export { normalizeProviderId } from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/media-runtime";
+export { normalizeProviderId } from "afora-agent/plugin-sdk/provider-model-shared";
 export { setMattermostRuntime } from "./src/runtime.js";

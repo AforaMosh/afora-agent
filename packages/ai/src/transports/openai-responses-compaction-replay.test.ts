@@ -4,7 +4,7 @@ import type {
   Context,
   Model,
   ProviderReplayState,
-} from "@openclaw/llm-core";
+} from "@afora/llm-core";
 import { describe, expect, it } from "vitest";
 import { convertResponsesMessages as convertProviderResponsesMessages } from "../providers/openai-responses-shared.js";
 import {

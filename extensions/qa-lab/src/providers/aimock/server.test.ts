@@ -70,7 +70,7 @@ describe("qa aimock server", () => {
         body: JSON.stringify({
           model: "aimock/gpt-5.6-luna",
           stream: false,
-          input: [makeResponsesInput("@openclaw explain the QA lab")],
+          input: [makeResponsesInput("@afora explain the QA lab")],
         }),
       });
       expect(response.status).toBe(200);
@@ -81,7 +81,7 @@ describe("qa aimock server", () => {
       expect(debug.status).toBe(200);
       const expectedBody = {
         model: "aimock/gpt-5.6-luna",
-        messages: [{ role: "user", content: "@openclaw explain the QA lab" }],
+        messages: [{ role: "user", content: "@afora explain the QA lab" }],
         stream: false,
         _endpointType: "chat",
       };
@@ -89,8 +89,8 @@ describe("qa aimock server", () => {
         {
           raw: JSON.stringify(expectedBody),
           body: expectedBody,
-          prompt: "@openclaw explain the QA lab",
-          allInputText: "@openclaw explain the QA lab",
+          prompt: "@afora explain the QA lab",
+          allInputText: "@afora explain the QA lab",
           toolOutput: "",
           model: "aimock/gpt-5.6-luna",
           providerVariant: "openai",

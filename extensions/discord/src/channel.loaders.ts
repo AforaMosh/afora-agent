@@ -1,5 +1,5 @@
 // Discord plugin module implements channel.loaders behavior.
-import { createLazyRuntimeModule } from "openclaw/plugin-sdk/lazy-runtime";
+import { createLazyRuntimeModule } from "afora-agent/plugin-sdk/lazy-runtime";
 import type { DiscordProbe } from "./probe.js";
 
 export const loadDiscordDirectoryConfigModule = createLazyRuntimeModule(

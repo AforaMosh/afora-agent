@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from "node:util";
-import { normalizeConfiguredProviderCatalogModelId } from "@openclaw/model-catalog-core/provider-model-id-normalization";
-import { normalizeLowercaseStringOrEmpty as normalizeString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeConfiguredProviderCatalogModelId } from "@afora/model-catalog-core/provider-model-id-normalization";
+import { normalizeLowercaseStringOrEmpty as normalizeString } from "@afora/normalization-core/string-coerce";
 import { splitTrailingAuthProfile } from "../../../agents/model-ref-profile.js";
 import { ensureRecord, getRecord } from "../../../config/legacy.shared.js";
 import { normalizeAgentModelRefForConfig } from "../../../config/model-input.js";
@@ -737,4 +737,4 @@ export function rewriteKnownModelRefs(
 }
 
 export const MODEL_REF_CANONICALIZATION_MESSAGE =
-  'Configured retired or noncanonical model refs are no longer in the bundled catalogs; run "openclaw doctor --fix" to upgrade them.';
+  'Configured retired or noncanonical model refs are no longer in the bundled catalogs; run "afora doctor --fix" to upgrade them.';

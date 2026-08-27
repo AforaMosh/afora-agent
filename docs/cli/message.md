@@ -1,19 +1,19 @@
 ---
-summary: "CLI reference for `openclaw message` (send + channel actions)"
+summary: "CLI reference for `afora message` (send + channel actions)"
 read_when:
   - Adding or modifying message CLI actions
   - Changing outbound channel behavior
 title: "Message"
 ---
 
-# `openclaw message`
+# `afora message`
 
 Single outbound command for sending messages and channel actions across
 Discord, Google Chat, iMessage, Matrix, Mattermost (plugin), Microsoft Teams,
 Signal, Slack, Telegram, and WhatsApp.
 
 ```bash
-openclaw message <subcommand> [flags]
+afora message <subcommand> [flags]
 ```
 
 ## Channel selection
@@ -52,7 +52,7 @@ Every action accepts: `--channel <name>`, `--account <id>`, `--json`,
 
 ## SecretRef resolution
 
-`openclaw message` resolves channel SecretRefs before running the action,
+`afora message` resolves channel SecretRefs before running the action,
 scoped as narrowly as possible:
 
 - channel-scoped when `--channel` is set (or inferred from a prefixed target)
@@ -84,7 +84,7 @@ unresolved SecretRef on the selected channel/account fails the action closed.
 ### Send
 
 ```bash
-openclaw message send --channel discord \
+afora message send --channel discord \
   --target channel:123 --message "hi" --reply-to 456
 ```
 
@@ -105,13 +105,13 @@ true}`. `--pin` is shorthand for pinned delivery when the channel supports
 - `--gif-playback` (WhatsApp only): treat video media as GIF playback.
 
 ```bash
-openclaw message send --channel discord \
+afora message send --channel discord \
   --target channel:123 --message "Choose:" \
   --presentation '{"blocks":[{"type":"buttons","buttons":[{"label":"Approve","value":"approve","style":"success"},{"label":"Decline","value":"decline","style":"danger"}]}]}'
 ```
 
 ```bash
-openclaw message send --channel telegram --target @mychat --message "Choose:" \
+afora message send --channel telegram --target @mychat --message "Choose:" \
   --presentation '{"blocks":[{"type":"buttons","buttons":[{"label":"Yes","value":"cmd:yes"},{"label":"No","value":"cmd:no"}]}]}'
 ```
 
@@ -119,7 +119,7 @@ Slack renders supported chart blocks natively; other channels receive the same
 data as readable text:
 
 ```bash
-openclaw message send --channel slack --target channel:C123 \
+afora message send --channel slack --target channel:C123 \
   --presentation '{"blocks":[{"type":"chart","chartType":"bar","title":"Quarterly revenue","categories":["Q1","Q2"],"series":[{"name":"Revenue","values":[120,145]}],"xLabel":"Quarter"}]}'
 ```
 
@@ -127,7 +127,7 @@ Slack also renders explicit table blocks natively. Other channels receive the
 caption and every row as deterministic text:
 
 ```bash
-openclaw message send --channel slack --target channel:C123 \
+afora message send --channel slack --target channel:C123 \
   --presentation '{"title":"Pipeline report","blocks":[{"type":"table","caption":"Open pipeline","headers":["Account","Stage","ARR"],"rows":[["Acme","Won",125000],["Globex","Review",82000]],"rowHeaderColumnIndex":0}]}'
 ```
 
@@ -135,17 +135,17 @@ Telegram Mini App buttons use `webApp` (`web_app` still parses for legacy
 JSON) and only render in private chats between a user and the bot:
 
 ```bash
-openclaw message send --channel telegram --target 123456789 --message "Open app:" \
+afora message send --channel telegram --target 123456789 --message "Open app:" \
   --presentation '{"blocks":[{"type":"buttons","buttons":[{"label":"Launch","webApp":{"url":"https://example.com/app"}}]}]}'
 ```
 
 ```bash
-openclaw message send --channel telegram --target @mychat \
+afora message send --channel telegram --target @mychat \
   --media ./diagram.png --force-document
 ```
 
 ```bash
-openclaw message send --channel msteams \
+afora message send --channel msteams \
   --target conversation:19:abc@thread.tacv2 \
   --presentation '{"title":"Status update","blocks":[{"type":"text","text":"Build completed"}]}'
 ```
@@ -153,7 +153,7 @@ openclaw message send --channel msteams \
 ### Poll
 
 ```bash
-openclaw message poll --channel discord \
+afora message poll --channel discord \
   --target channel:123 \
   --poll-question "Snack?" \
   --poll-option Pizza --poll-option Sushi \
@@ -167,7 +167,7 @@ openclaw message poll --channel discord \
   `--poll-anonymous` / `--poll-public`, `--thread-id`.
 
 ```bash
-openclaw message poll --channel telegram \
+afora message poll --channel telegram \
   --target @mychat \
   --poll-question "Lunch?" \
   --poll-option Pizza --poll-option Sushi \
@@ -175,7 +175,7 @@ openclaw message poll --channel telegram \
 ```
 
 ```bash
-openclaw message poll --channel msteams \
+afora message poll --channel msteams \
   --target conversation:19:abc@thread.tacv2 \
   --poll-question "Lunch?" \
   --poll-option Pizza --poll-option Sushi
@@ -225,7 +225,7 @@ openclaw message poll --channel msteams \
 ### Broadcast
 
 ```bash
-openclaw message broadcast --targets <target...> [--channel all] [--message <text>] [--media <url>] [--dry-run]
+afora message broadcast --targets <target...> [--channel all] [--message <text>] [--media <url>] [--dry-run]
 ```
 
 Sends one payload to multiple targets. `--targets` takes a space-separated

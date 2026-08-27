@@ -6,10 +6,10 @@ import { stripVTControlCharacters } from "node:util";
 import { describe, expect, it } from "vitest";
 import { type RawData, WebSocketServer } from "ws";
 import {
-  closeOpenClawStateDatabaseByPath,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
-import { createOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+  closeAforaStateDatabaseByPath,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
+import { createAforaTestState } from "../test-utils/afora-test-state.js";
 
 const CHILD_PROCESS_TIMEOUT_MS = 30_000;
 
@@ -27,7 +27,7 @@ const INITIALIZE_FRAME = {
 };
 
 async function createPreparedAcpProcessState() {
-  const state = await createOpenClawTestState({
+  const state = await createAforaTestState({
     applyEnv: false,
     label: "acp-process",
     scenario: "minimal",
@@ -35,8 +35,8 @@ async function createPreparedAcpProcessState() {
   try {
     // These cases assert bridge stderr after normal startup. Prepare canonical
     // shared state so the one-time migration diagnostic is not part of that signal.
-    const database = openOpenClawStateDatabase({ env: state.env });
-    closeOpenClawStateDatabaseByPath(database.path);
+    const database = openAforaStateDatabase({ env: state.env });
+    closeAforaStateDatabaseByPath(database.path);
     return state;
   } catch (error) {
     await state.cleanup();
@@ -50,8 +50,8 @@ function createAcpProcessEnv(baseEnv: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
     NODE_ENV: undefined,
     NODE_OPTIONS: "--use-openssl-ca",
     NODE_USE_SYSTEM_CA: "0",
-    OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-    OPENCLAW_NO_RESPAWN: "1",
+    AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+    AFORA_NO_RESPAWN: "1",
     VITEST: undefined,
   };
 }

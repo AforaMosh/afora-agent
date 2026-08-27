@@ -20,8 +20,8 @@ import { parsePositiveInt } from "./lib/numeric-options.mjs";
 import { isDirectScriptRun, runVitestBatch } from "./lib/vitest-batch-runner.mts";
 import type { VitestBatchRunParams } from "./lib/vitest-batch-runner.mts";
 
-const FS_MODULE_CACHE_PATH_ENV_KEY = "OPENCLAW_VITEST_FS_MODULE_CACHE_PATH";
-const PARALLEL_ENV_KEY = "OPENCLAW_EXTENSION_BATCH_PARALLEL";
+const FS_MODULE_CACHE_PATH_ENV_KEY = "AFORA_VITEST_FS_MODULE_CACHE_PATH";
+const PARALLEL_ENV_KEY = "AFORA_EXTENSION_BATCH_PARALLEL";
 const ALLOW_NO_TESTS_FLAG = "--allow-no-tests";
 const ALLOW_EMPTY_AFTER_EXCLUDE_FLAG = "--allow-empty-after-exclude";
 

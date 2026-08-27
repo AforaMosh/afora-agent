@@ -4,7 +4,7 @@ import { isTerminalOnlyView, terminalDocumentPath } from "./terminal-document-mo
 describe("terminal document mode", () => {
   it.each([
     ["the root route", { pathname: "/terminal", search: "" }, ""],
-    ["a base-mounted route", { pathname: "/openclaw/terminal", search: "" }, "/openclaw"],
+    ["a base-mounted route", { pathname: "/afora/terminal", search: "" }, "/afora"],
     ["the embedded query form", { pathname: "/", search: "?view=terminal" }, ""],
   ])("recognizes %s", (_label, location, basePath) => {
     expect(isTerminalOnlyView(location, basePath)).toBe(true);
@@ -15,6 +15,6 @@ describe("terminal document mode", () => {
   });
 
   it("builds a base-path-aware user-facing route", () => {
-    expect(terminalDocumentPath("/openclaw/")).toBe("/openclaw/terminal");
+    expect(terminalDocumentPath("/afora/")).toBe("/afora/terminal");
   });
 });

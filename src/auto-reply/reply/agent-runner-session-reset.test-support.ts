@@ -6,7 +6,7 @@ type AgentRunnerSessionResetTestApi = {
 
 function getTestApi(): AgentRunnerSessionResetTestApi {
   const api = (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.agentRunnerSessionResetTestApi")
+    Symbol.for("afora.agentRunnerSessionResetTestApi")
   ];
   if (!api) {
     throw new Error("agent runner session reset test API is unavailable");

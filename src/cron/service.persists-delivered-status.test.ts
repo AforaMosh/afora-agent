@@ -933,7 +933,7 @@ describe("CronService persists delivered status", () => {
   });
 
   it("surfaces a successful run's delivery error on the finished event", async () => {
-    // Regression for https://github.com/openclaw/openclaw/issues/95419:
+    // Regression for https://github.com/AforaMosh/afora-agent/issues/95419:
     // when an isolated turn succeeds but post-run delivery fails, the run keeps
     // `status: "ok"` (#94058) while the runner now reports the dispatch failure
     // on a dedicated `deliveryError` field. That diagnostic must travel through

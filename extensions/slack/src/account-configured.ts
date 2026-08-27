@@ -1,5 +1,5 @@
 // Slack helper module supports account configured behavior.
-import { hasConfiguredAccountValue } from "openclaw/plugin-sdk/account-resolution";
+import { hasConfiguredAccountValue } from "afora-agent/plugin-sdk/account-resolution";
 import type { ResolvedSlackAccount } from "./accounts.js";
 
 export function isSlackPluginAccountConfigured(account: ResolvedSlackAccount): boolean {

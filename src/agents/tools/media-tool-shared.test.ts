@@ -3,7 +3,7 @@
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { withEnvAsync } from "../../test-utils/env.js";
 import {
   hasGenerationToolAvailability,
@@ -19,7 +19,7 @@ import {
 // tests cover the real bundled contract loader.
 vi.mock("../../media/channel-inbound-roots.js", () => ({
   resolveChannelInboundAttachmentRootsForChannel: (params: {
-    cfg?: OpenClawConfig;
+    cfg?: AforaConfig;
     channelId?: string | null;
     accountId?: string | null;
   }) => {
@@ -70,11 +70,11 @@ describe("readBooleanToolParam", () => {
 
 describe("resolveMediaToolLocalRoots", () => {
   it("does not widen default local roots from media sources", async () => {
-    const stateDir = path.join("/tmp", "openclaw-media-tool-roots-state");
+    const stateDir = path.join("/tmp", "afora-media-tool-roots-state");
     const picturesDir =
       process.platform === "win32" ? "C:\\Users\\peter\\Pictures" : "/Users/peter/Pictures";
 
-    const { localRoots } = await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, () =>
+    const { localRoots } = await withEnvAsync({ AFORA_STATE_DIR: stateDir }, () =>
       resolveMediaToolReferenceAccess({
         input: path.join(picturesDir, "photo.png"),
         isDataUrl: false,
@@ -92,8 +92,8 @@ describe("resolveMediaToolLocalRoots", () => {
   it("keeps channel inbound attachment roots separate from local roots", async () => {
     // Inbound channel roots may include broad chat attachment folders; keep them
     // out of local filesystem allowlists unless the channel context asks.
-    const accountRoot = path.join("/tmp", "openclaw-imessage-work");
-    const sharedRoot = path.join("/tmp", "openclaw-imessage-shared");
+    const accountRoot = path.join("/tmp", "afora-imessage-work");
+    const sharedRoot = path.join("/tmp", "afora-imessage-shared");
     const cfg = {
       channels: {
         imessage: {

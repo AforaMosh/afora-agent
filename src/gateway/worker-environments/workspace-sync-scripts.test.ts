@@ -39,7 +39,7 @@ function spawnTransaction(argv: string[], env: NodeJS.ProcessEnv) {
 }
 
 async function fixture() {
-  const root = tempDirs.make("openclaw-quiescence-test-");
+  const root = tempDirs.make("afora-quiescence-test-");
   const home = path.join(root, "home");
   let workspace = path.join(root, "workspace");
   const bin = path.join(root, "bin");
@@ -50,7 +50,7 @@ async function fixture() {
   await fs.mkdir(bin);
   await fs.writeFile(
     path.join(bin, "ps"),
-    '#!/bin/sh\ncase "$*" in\n  *"stat=,lstart= -p"*|*"lstart= -p"*) exec /bin/ps "$@" ;;\n  *) printf "%s %s %s S Tue Jul 15 08:00:00 2026\\n" "$$" "$PPID" "$(id -u)"; if [ -f "$OPENCLAW_TEST_PS_EXTRA" ]; then extra_pid=$(cat "$OPENCLAW_TEST_PS_EXTRA"); /bin/ps -o pid=,ppid=,uid=,stat=,lstart= -p "$extra_pid"; fi ;;\nesac\n',
+    '#!/bin/sh\ncase "$*" in\n  *"stat=,lstart= -p"*|*"lstart= -p"*) exec /bin/ps "$@" ;;\n  *) printf "%s %s %s S Tue Jul 15 08:00:00 2026\\n" "$$" "$PPID" "$(id -u)"; if [ -f "$AFORA_TEST_PS_EXTRA" ]; then extra_pid=$(cat "$AFORA_TEST_PS_EXTRA"); /bin/ps -o pid=,ppid=,uid=,stat=,lstart= -p "$extra_pid"; fi ;;\nesac\n',
   );
   await fs.chmod(path.join(bin, "ps"), 0o755);
   return {
@@ -60,7 +60,7 @@ async function fixture() {
     env: {
       ...process.env,
       HOME: home,
-      OPENCLAW_TEST_PS_EXTRA: extraProcessPath,
+      AFORA_TEST_PS_EXTRA: extraProcessPath,
       PATH: `${bin}:${process.env.PATH ?? ""}`,
     },
   };
@@ -89,7 +89,7 @@ async function quiesce(input: Awaited<ReturnType<typeof fixture>>, sharedHost = 
 
 function leasePath(home: string, workspace: string, nonce: string) {
   const key = createHash("sha256").update(workspace).digest("hex");
-  return path.join(home, ".openclaw-worker", "quiescence", `${key}.${nonce}.json`);
+  return path.join(home, ".afora-worker", "quiescence", `${key}.${nonce}.json`);
 }
 
 async function resume(input: Awaited<ReturnType<typeof fixture>>, nonce: string) {
@@ -271,7 +271,7 @@ describe("remote workspace quiescence scripts", () => {
 
 describe("remote workspace manifest script", () => {
   it("atomically applies and rolls back accepted workspace paths", async () => {
-    const root = tempDirs.make("openclaw-accepted-paths-test-");
+    const root = tempDirs.make("afora-accepted-paths-test-");
     const home = path.join(root, "home");
     const workspace = path.join(root, "workspace");
     await Promise.all([fs.mkdir(home), fs.mkdir(workspace)]);
@@ -359,7 +359,7 @@ describe("remote workspace manifest script", () => {
       path.dirname(committedTransaction),
       path
         .basename(committedTransaction)
-        .replace(".openclaw-accepted-", ".openclaw-accepted-cleanup-"),
+        .replace(".afora-accepted-", ".afora-accepted-cleanup-"),
     );
     await fs.rename(committedTransaction, interruptedCleanup);
 
@@ -437,7 +437,7 @@ describe("remote workspace manifest script", () => {
   });
 
   it("reports strict settlement outcomes for each durable transaction phase", async () => {
-    const root = tempDirs.make("openclaw-accepted-settlement-outcomes-");
+    const root = tempDirs.make("afora-accepted-settlement-outcomes-");
     let workspace = path.join(root, "workspace");
     await fs.mkdir(workspace);
     workspace = await fs.realpath(workspace);
@@ -498,13 +498,13 @@ describe("remote workspace manifest script", () => {
       "committed\n",
     );
     expect(
-      (await fs.readdir(root)).filter((name) => name.startsWith(".openclaw-accepted-")),
+      (await fs.readdir(root)).filter((name) => name.startsWith(".afora-accepted-")),
     ).toEqual([]);
   });
 
   it("serializes a live apply against rollback and recovery", async () => {
     for (const contender of ["rollback", "recover"] as const) {
-      const root = tempDirs.make(`openclaw-accepted-${contender}-`);
+      const root = tempDirs.make(`afora-accepted-${contender}-`);
       let workspace = path.join(root, "workspace");
       const gate = path.join(root, "gate.fifo");
       const applyMarker = path.join(root, "apply-started");
@@ -523,19 +523,19 @@ const renameSync = fs.renameSync;
 let applyGated = false;
 fs.renameSync = function(source, destination) {
   const result = renameSync.apply(this, arguments);
-  if (!applyGated && process.argv[1] === "apply" && source === process.env.OPENCLAW_TEST_GATE_SOURCE && destination.includes(path.sep + "backup" + path.sep)) {
+  if (!applyGated && process.argv[1] === "apply" && source === process.env.AFORA_TEST_GATE_SOURCE && destination.includes(path.sep + "backup" + path.sep)) {
     applyGated = true;
-    fs.writeFileSync(process.env.OPENCLAW_TEST_APPLY_MARKER, "");
-    fs.readFileSync(process.env.OPENCLAW_TEST_GATE);
+    fs.writeFileSync(process.env.AFORA_TEST_APPLY_MARKER, "");
+    fs.readFileSync(process.env.AFORA_TEST_GATE);
   }
   return result;
 };
 const kill = process.kill.bind(process);
 let contenderMarked = false;
 process.kill = function(pid, signal) {
-  if (!contenderMarked && signal === 0 && process.argv[1] === process.env.OPENCLAW_TEST_CONTENDER) {
+  if (!contenderMarked && signal === 0 && process.argv[1] === process.env.AFORA_TEST_CONTENDER) {
     contenderMarked = true;
-    fs.writeFileSync(process.env.OPENCLAW_TEST_CONTENDER_MARKER, "");
+    fs.writeFileSync(process.env.AFORA_TEST_CONTENDER_MARKER, "");
   }
   return kill(pid, signal);
 };
@@ -543,11 +543,11 @@ process.kill = function(pid, signal) {
       );
       const env = {
         ...process.env,
-        OPENCLAW_TEST_GATE: gate,
-        OPENCLAW_TEST_GATE_SOURCE: path.join(workspace, "result.txt"),
-        OPENCLAW_TEST_APPLY_MARKER: applyMarker,
-        OPENCLAW_TEST_CONTENDER: contender,
-        OPENCLAW_TEST_CONTENDER_MARKER: contenderMarker,
+        AFORA_TEST_GATE: gate,
+        AFORA_TEST_GATE_SOURCE: path.join(workspace, "result.txt"),
+        AFORA_TEST_APPLY_MARKER: applyMarker,
+        AFORA_TEST_CONTENDER: contender,
+        AFORA_TEST_CONTENDER_MARKER: contenderMarker,
       };
       const nonce = contender === "rollback" ? "3".repeat(32) : "4".repeat(32);
       const begin = await runCommandWithTimeout(
@@ -612,13 +612,13 @@ process.kill = function(pid, signal) {
       expect(await competing).toMatchObject({ code: 0, stderr: "" });
       await expect(fs.readFile(path.join(workspace, "result.txt"), "utf8")).resolves.toBe("old\n");
       expect(
-        (await fs.readdir(root)).filter((name) => name.startsWith(".openclaw-accepted-")),
+        (await fs.readdir(root)).filter((name) => name.startsWith(".afora-accepted-")),
       ).toEqual([]);
     }
   });
 
   it("restores a dead reclaimer before settling its dead apply owner", async () => {
-    const root = tempDirs.make("openclaw-accepted-dead-owner-");
+    const root = tempDirs.make("afora-accepted-dead-owner-");
     let workspace = path.join(root, "workspace");
     await fs.mkdir(workspace);
     workspace = await fs.realpath(workspace);
@@ -654,7 +654,7 @@ process.kill = function(pid, signal) {
       path.join(transaction, "backup/result.txt"),
     );
     const workspaceKey = createHash("sha256").update(workspace).digest("hex");
-    const lock = path.join(root, `.openclaw-accepted-lock-${workspaceKey}`);
+    const lock = path.join(root, `.afora-accepted-lock-${workspaceKey}`);
     const deadPid = 2_147_483_647;
     const token = "9".repeat(32);
     await fs.mkdir(lock);
@@ -679,12 +679,12 @@ process.kill = function(pid, signal) {
     });
     await expect(fs.readFile(path.join(workspace, "result.txt"), "utf8")).resolves.toBe("old\n");
     expect(
-      (await fs.readdir(root)).filter((name) => name.startsWith(".openclaw-accepted-")),
+      (await fs.readdir(root)).filter((name) => name.startsWith(".afora-accepted-")),
     ).toEqual([]);
   });
 
   it("keeps the gateway's canonical manifest available across a second turn", async () => {
-    const root = tempDirs.make("openclaw-manifest-lifecycle-test-");
+    const root = tempDirs.make("afora-manifest-lifecycle-test-");
     const home = path.join(root, "home");
     const workspace = path.join(root, "workspace");
     await Promise.all([fs.mkdir(home), fs.mkdir(workspace)]);
@@ -694,9 +694,9 @@ process.kill = function(pid, signal) {
       ["add", ".gitignore"],
       [
         "-c",
-        "user.name=OpenClaw Test",
+        "user.name=Afora Test",
         "-c",
-        "user.email=test@openclaw.invalid",
+        "user.email=test@afora.invalid",
         "commit",
         "--quiet",
         "-m",
@@ -741,7 +741,7 @@ process.kill = function(pid, signal) {
     expect(firstTurn.code).toBe(0);
     const firstTurnRef = firstTurn.stdout.trim();
     const firstTurnDigest = firstTurnRef.slice("sha256:".length);
-    const manifestRoot = path.join(home, ".openclaw-worker", "manifests");
+    const manifestRoot = path.join(home, ".afora-worker", "manifests");
     const firstTurnPath = path.join(manifestRoot, `${firstTurnDigest}.json`);
     const firstTurnRaw = await fs.readFile(firstTurnPath, "utf8");
     const firstTurnManifest = parseWorkerWorkspaceManifest(firstTurnRaw, firstTurnRef);
@@ -838,7 +838,7 @@ process.kill = function(pid, signal) {
   });
 
   it("drops derived artifacts from the worker manifest", async () => {
-    const root = tempDirs.make("openclaw-manifest-derived-test-");
+    const root = tempDirs.make("afora-manifest-derived-test-");
     const home = path.join(root, "home");
     const workspace = path.join(root, "workspace");
     const files = [
@@ -869,7 +869,7 @@ process.kill = function(pid, signal) {
     expect(result.code).toBe(0);
     const digest = result.stdout.trim().slice("sha256:".length);
     const manifest = JSON.parse(
-      await fs.readFile(path.join(home, ".openclaw-worker", "manifests", `${digest}.json`), "utf8"),
+      await fs.readFile(path.join(home, ".afora-worker", "manifests", `${digest}.json`), "utf8"),
     ) as { entries: Array<{ path: string }> };
     const manifestPaths = manifest.entries.map((entry) => entry.path);
     expect(manifestPaths).toContain("keep.ts");
@@ -879,7 +879,7 @@ process.kill = function(pid, signal) {
   });
 
   it("keeps base tombstones in the final ignored-path verification", async () => {
-    const root = tempDirs.make("openclaw-manifest-tombstone-test-");
+    const root = tempDirs.make("afora-manifest-tombstone-test-");
     const home = path.join(root, "home");
     const workspace = path.join(root, "workspace");
     await fs.mkdir(home);
@@ -890,9 +890,9 @@ process.kill = function(pid, signal) {
       ["add", ".gitignore"],
       [
         "-c",
-        "user.name=OpenClaw Test",
+        "user.name=Afora Test",
         "-c",
-        "user.email=test@openclaw.invalid",
+        "user.email=test@afora.invalid",
         "commit",
         "--quiet",
         "-m",
@@ -957,7 +957,7 @@ process.kill = function(pid, signal) {
   });
 
   it("drops stale descendants when a tracked directory becomes a file", async () => {
-    const root = tempDirs.make("openclaw-manifest-test-");
+    const root = tempDirs.make("afora-manifest-test-");
     const home = path.join(root, "home");
     const workspace = path.join(root, "workspace");
     await fs.mkdir(home);
@@ -968,9 +968,9 @@ process.kill = function(pid, signal) {
       ["add", "."],
       [
         "-c",
-        "user.name=OpenClaw Test",
+        "user.name=Afora Test",
         "-c",
-        "user.email=test@openclaw.invalid",
+        "user.email=test@afora.invalid",
         "commit",
         "--quiet",
         "-m",
@@ -1020,7 +1020,7 @@ process.kill = function(pid, signal) {
       await fs.readFile(
         path.join(
           home,
-          ".openclaw-worker",
+          ".afora-worker",
           "manifests",
           current.stdout.trim().slice("sha256:".length) + ".json",
         ),

@@ -8,7 +8,7 @@ import {
   resolveFutureConfigActionBlock,
 } from "../../config/future-version-guard.js";
 // Gateway-specific future-config actions shared by pre-bootstrap and runtime startup.
-import type { ConfigFileSnapshot, OpenClawConfig } from "../../config/types.js";
+import type { ConfigFileSnapshot, AforaConfig } from "../../config/types.js";
 import type { RuntimeEnv } from "../../runtime.js";
 import type { GatewayRunOpts } from "./run-options.js";
 
@@ -17,11 +17,11 @@ export type GatewayRunPreBootstrapOptions = Pick<GatewayRunOpts, "force" | "rese
 type GatewayRunFutureConfigGuardParams = {
   opts: GatewayRunPreBootstrapOptions;
   snapshot?: ConfigFileSnapshot | null;
-  config?: Pick<OpenClawConfig, "env" | "meta"> | null;
+  config?: Pick<AforaConfig, "env" | "meta"> | null;
 };
 
 function resolveGatewayRunFutureConfigBlock(params: GatewayRunFutureConfigGuardParams) {
-  const processServiceMode = Boolean(process.env.OPENCLAW_SERVICE_MARKER?.trim());
+  const processServiceMode = Boolean(process.env.AFORA_SERVICE_MARKER?.trim());
   const candidateConfig =
     params.config ??
     (params.snapshot?.valid ? (params.snapshot.sourceConfig ?? params.snapshot.config) : undefined);
@@ -29,7 +29,7 @@ function resolveGatewayRunFutureConfigBlock(params: GatewayRunFutureConfigGuardP
     !params.opts.reset &&
     Boolean(
       candidateConfig
-        ? createConfigRuntimeEnv(candidateConfig, process.env).OPENCLAW_SERVICE_MARKER?.trim()
+        ? createConfigRuntimeEnv(candidateConfig, process.env).AFORA_SERVICE_MARKER?.trim()
         : undefined,
     );
   const serviceMode = processServiceMode || candidateServiceMode;

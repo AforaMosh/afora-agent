@@ -15,7 +15,7 @@ describe("local SQLite snapshot repository on Windows", () => {
   it.runIf(process.platform === "win32")(
     "verifies and cleans staging when the SQLite path exceeds MAX_PATH",
     async () => {
-      const tempDir = tempDirs.make("openclaw-snapshot-repository-windows-");
+      const tempDir = tempDirs.make("afora-snapshot-repository-windows-");
       const privateRootPath = path.join(tempDir, "private");
       await createPrivateSqliteDirectory(privateRootPath);
       const sourcePath = path.join(privateRootPath, "source.sqlite");

@@ -1,4 +1,4 @@
-import { createTestPluginApi } from "openclaw/plugin-sdk/plugin-test-api";
+import { createTestPluginApi } from "afora-agent/plugin-sdk/plugin-test-api";
 import { describe, expect, it, vi } from "vitest";
 import plugin from "./index.js";
 import { MemorySyncKeyedStore } from "./src/memory-store.test-support.js";
@@ -26,7 +26,7 @@ describe("onepassword plugin", () => {
           state: {
             openKeyedStore,
             openSyncKeyedStore,
-            resolveStateDir: () => "/tmp/openclaw-onepassword-test",
+            resolveStateDir: () => "/tmp/afora-onepassword-test",
           },
         } as never,
         registerCli,
@@ -96,7 +96,7 @@ describe("onepassword plugin", () => {
           state: {
             openKeyedStore: () => store,
             openSyncKeyedStore: () => new MemorySyncKeyedStore(),
-            resolveStateDir: () => "/tmp/openclaw-onepassword-test",
+            resolveStateDir: () => "/tmp/afora-onepassword-test",
           },
         } as never,
         registerCli: vi.fn(),

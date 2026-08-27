@@ -1,25 +1,25 @@
-import type { ChatCommandDefinition } from "openclaw/plugin-sdk/command-auth-native";
+import type { ChatCommandDefinition } from "afora-agent/plugin-sdk/command-auth-native";
 // Slack tests cover slash plugin behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
-import type { NativeCommandSpec } from "openclaw/plugin-sdk/native-command-registry";
-import { clearPluginCommands, registerPluginCommand } from "openclaw/plugin-sdk/plugin-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
+import type { NativeCommandSpec } from "afora-agent/plugin-sdk/native-command-registry";
+import { clearPluginCommands, registerPluginCommand } from "afora-agent/plugin-sdk/plugin-runtime";
 import {
   createEmptyPluginRegistry,
   getActivePluginRegistry,
   setActivePluginRegistry,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
-import { dispatchReplyWithBufferedBlockDispatcher } from "openclaw/plugin-sdk/reply-dispatch-runtime";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { dispatchReplyWithBufferedBlockDispatcher } from "afora-agent/plugin-sdk/reply-dispatch-runtime";
 import {
   clearRuntimeConfigSnapshot,
   setRuntimeConfigSnapshot,
-} from "openclaw/plugin-sdk/runtime-config-snapshot";
+} from "afora-agent/plugin-sdk/runtime-config-snapshot";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { getSlackSlashMocks, resetSlackSlashMocks } from "./slash.test-harness.js";
 
-vi.mock("openclaw/plugin-sdk/agent-runtime", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/agent-runtime")>(
-    "openclaw/plugin-sdk/agent-runtime",
+vi.mock("afora-agent/plugin-sdk/agent-runtime", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/agent-runtime")>(
+    "afora-agent/plugin-sdk/agent-runtime",
   );
   return {
     ...actual,
@@ -134,9 +134,9 @@ const pluginCommandFixtures = vi.hoisted(() => ({
 
 const retainNativeCatalog = vi.hoisted(() => vi.fn());
 
-vi.mock("openclaw/plugin-sdk/plugin-command-runtime", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/plugin-command-runtime", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("openclaw/plugin-sdk/plugin-command-runtime")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/plugin-command-runtime")>();
   return {
     ...actual,
     createPluginCommandRuntime: () => {
@@ -261,7 +261,7 @@ function findFirstActionsBlock(payload: { blocks?: Array<{ type: string }> }) {
 }
 
 function createArgMenusHarness(
-  cfg: OpenClawConfig = { commands: { native: true, nativeSkills: false } },
+  cfg: AforaConfig = { commands: { native: true, nativeSkills: false } },
   scope?: {
     installationIdentity?:
       | { kind: "workspace"; teamId: string }
@@ -330,7 +330,7 @@ function createArgMenusHarness(
     channelsConfig: undefined,
     slashCommand: {
       enabled: false,
-      name: "openclaw",
+      name: "afora",
       ephemeral: true,
       sessionPrefix: "slack:slash",
     },
@@ -624,8 +624,8 @@ describe("Slack native command argument menus", () => {
     unsafeConfirmHandler = requireHandler(harness.commands, "/unsafeconfirm", "/unsafeconfirm");
     longConfirmHandler = requireHandler(harness.commands, "/longconfirm", "/longconfirm");
     agentStatusHandler = requireHandler(harness.commands, "/agentstatus", "/agentstatus");
-    argMenuHandler = requireHandler(harness.actions, /^openclaw_cmdarg/, "arg-menu action");
-    argMenuOptionsHandler = requireHandler(harness.options, "openclaw_cmdarg", "arg-menu options");
+    argMenuHandler = requireHandler(harness.actions, /^afora_cmdarg/, "arg-menu action");
+    argMenuOptionsHandler = requireHandler(harness.options, "afora_cmdarg", "arg-menu options");
   });
 
   beforeEach(() => {
@@ -801,10 +801,10 @@ describe("Slack native command argument menus", () => {
     ).slashCommand.enabled = true;
     const registration = await registerCommands(configuredHarness.ctx, configuredHarness.account);
 
-    expect(registration).toEqual({ mode: "single", name: "openclaw" });
+    expect(registration).toEqual({ mode: "single", name: "afora" });
     expect(
       [...configuredHarness.commands.keys()].some(
-        (command) => command instanceof RegExp && command.test("/openclaw"),
+        (command) => command instanceof RegExp && command.test("/afora"),
       ),
     ).toBe(true);
     expect(configuredHarness.commands.has("/usage")).toBe(false);
@@ -835,10 +835,10 @@ describe("Slack native command argument menus", () => {
     expect(testHarness.commands.size).toBeGreaterThan(0);
     expect(
       Array.from(testHarness.actions.keys()).some(
-        (key) => key instanceof RegExp && String(key) === String(/^openclaw_cmdarg/),
+        (key) => key instanceof RegExp && String(key) === String(/^afora_cmdarg/),
       ),
     ).toBe(true);
-    expect(testHarness.options.has("openclaw_cmdarg")).toBe(true);
+    expect(testHarness.options.has("afora_cmdarg")).toBe(true);
     expect(testHarness.optionsReceiverContexts[0]).toBe(testHarness.app);
   });
 
@@ -950,7 +950,7 @@ describe("Slack native command argument menus", () => {
       { name: pluginName, description: "Colliding plugin", acceptsArgs: false, execute },
     ];
     const skillHarness = createArgMenusHarness({ commands: { native: true, nativeSkills: true } });
-    (skillHarness.account as { config: OpenClawConfig }).config = {
+    (skillHarness.account as { config: AforaConfig }).config = {
       commands: { native: true, nativeSkills: true },
     };
     await registerCommands(skillHarness.ctx, skillHarness.account);
@@ -970,9 +970,9 @@ describe("Slack native command argument menus", () => {
         description: "Skill agent status",
       },
     ];
-    const config: OpenClawConfig = { commands: { native: true, nativeSkills: true } };
+    const config: AforaConfig = { commands: { native: true, nativeSkills: true } };
     const testHarness = createArgMenusHarness(config);
-    (testHarness.account as { config: OpenClawConfig }).config = config;
+    (testHarness.account as { config: AforaConfig }).config = config;
 
     await registerCommands(testHarness.ctx, testHarness.account);
 
@@ -983,7 +983,7 @@ describe("Slack native command argument menus", () => {
 
   it.each([
     { agentRuntime: "codex", includesUltra: false },
-    { agentRuntime: "openclaw", includesUltra: true },
+    { agentRuntime: "afora", includesUltra: true },
   ] as const)(
     "renders runtime-specific /think choices for $agentRuntime",
     async ({ agentRuntime, includesUltra }) => {
@@ -1027,7 +1027,7 @@ describe("Slack native command argument menus", () => {
     );
     expect(
       Array.from(testHarness.actions.keys()).some(
-        (key) => key instanceof RegExp && String(key) === String(/^openclaw_cmdarg/),
+        (key) => key instanceof RegExp && String(key) === String(/^afora_cmdarg/),
       ),
     ).toBe(true);
 
@@ -1055,8 +1055,8 @@ describe("Slack native command argument menus", () => {
     const actions = expectArgMenuLayout(respond);
     const elementType = actions?.elements?.[0]?.type;
     expect(elementType).toBe("button");
-    expect(actions?.elements?.[0]?.action_id).toBe("openclaw_cmdarg_0_0");
-    expect(actions?.elements?.[1]?.action_id).toBe("openclaw_cmdarg_0_1");
+    expect(actions?.elements?.[0]?.action_id).toBe("afora_cmdarg_0_0");
+    expect(actions?.elements?.[1]?.action_id).toBe("afora_cmdarg_0_1");
     expect(actions?.elements?.[0]).toHaveProperty("confirm");
   });
 
@@ -1065,7 +1065,7 @@ describe("Slack native command argument menus", () => {
     const actions = expectArgMenuLayout(respond);
     const element = actions?.elements?.[0];
     expect(element?.type).toBe("static_select");
-    expect(element?.action_id).toBe("openclaw_cmdarg");
+    expect(element?.action_id).toBe("afora_cmdarg");
     expect(element).toHaveProperty("confirm");
   });
 
@@ -1127,7 +1127,7 @@ describe("Slack native command argument menus", () => {
   it("shows an overflow menu when choices fit compact range", async () => {
     const element = await getFirstActionElementFromCommand(usageHandler);
     expect(element?.type).toBe("overflow");
-    expect(element?.action_id).toBe("openclaw_cmdarg");
+    expect(element?.action_id).toBe("afora_cmdarg");
     expect(element).toHaveProperty("confirm");
   });
 
@@ -1173,7 +1173,7 @@ describe("Slack native command argument menus", () => {
     await registerCommands(enterpriseHarness.ctx, enterpriseHarness.account);
     const enterpriseArgMenuHandler = requireHandler(
       enterpriseHarness.actions,
-      /^openclaw_cmdarg/,
+      /^afora_cmdarg/,
       "Enterprise arg-menu action",
     );
 
@@ -1316,15 +1316,15 @@ describe("Slack native command argument menus", () => {
     const actions = findFirstActionsBlock(payload);
     const element = actions?.elements?.[0];
     expect(element?.type).toBe("external_select");
-    expect(element?.action_id).toBe("openclaw_cmdarg");
-    expect(blockId).toContain("openclaw_cmdarg_ext:");
-    const token = (blockId ?? "").slice("openclaw_cmdarg_ext:".length);
+    expect(element?.action_id).toBe("afora_cmdarg");
+    expect(blockId).toContain("afora_cmdarg_ext:");
+    const token = (blockId ?? "").slice("afora_cmdarg_ext:".length);
     expect(token).toMatch(/^[A-Za-z0-9_-]{24}$/);
   });
 
   it("serves filtered options for external_select menus", async () => {
     const { blockId } = await runCommandAndResolveActionsBlock(reportExternalHandler);
-    expect(blockId).toContain("openclaw_cmdarg_ext:");
+    expect(blockId).toContain("afora_cmdarg_ext:");
 
     const ackOptions = vi.fn().mockResolvedValue(undefined);
     await argMenuOptionsHandler({
@@ -1346,7 +1346,7 @@ describe("Slack native command argument menus", () => {
 
   it("truncates served option labels on a surrogate boundary", async () => {
     const { blockId } = await runCommandAndResolveActionsBlock(reportExternalHandler);
-    expect(blockId).toContain("openclaw_cmdarg_ext:");
+    expect(blockId).toContain("afora_cmdarg_ext:");
 
     const ackOptions = vi.fn().mockResolvedValue(undefined);
     await argMenuOptionsHandler({
@@ -1386,7 +1386,7 @@ describe("Slack native command argument menus", () => {
     );
     const argMenuOptionsTrackingHandler = requireHandler(
       trackingHarness.options,
-      "openclaw_cmdarg",
+      "afora_cmdarg",
       "arg-menu options",
     );
     const { blockId } = await runCommandAndResolveActionsBlock(reportExternalTrackingHandler);
@@ -1407,7 +1407,7 @@ describe("Slack native command argument menus", () => {
 
   it("rejects external_select option requests without user identity", async () => {
     const { blockId } = await runCommandAndResolveActionsBlock(reportExternalHandler);
-    expect(blockId).toContain("openclaw_cmdarg_ext:");
+    expect(blockId).toContain("afora_cmdarg_ext:");
 
     const ackOptions = vi.fn().mockResolvedValue(undefined);
     await argMenuOptionsHandler({
@@ -1444,7 +1444,7 @@ describe("Slack native command argument menus", () => {
     await registerCommands(trackingHarness.ctx, trackingHarness.account, trackEvent);
     const argMenuTrackingHandler = requireHandler(
       trackingHarness.actions,
-      /^openclaw_cmdarg/,
+      /^afora_cmdarg/,
       "arg-menu action",
     );
 
@@ -1550,7 +1550,7 @@ function createPolicyHarness(overrides?: {
     channelsConfig: overrides?.channelsConfig,
     slashCommand: {
       enabled: overrides?.slashCommandEnabled ?? true,
-      name: overrides?.slashCommandName ?? "openclaw",
+      name: overrides?.slashCommandName ?? "afora",
       ephemeral: overrides?.slashEphemeral ?? true,
       sessionPrefix: "slack:slash",
     },
@@ -1879,12 +1879,12 @@ describe("slack slash command session metadata", () => {
       channelName: "directmessage",
       resolveChannelName: async () => ({ name: "directmessage", type: "im" }),
     });
-    const sourceCfg = (harness.ctx as { cfg: OpenClawConfig }).cfg;
+    const sourceCfg = (harness.ctx as { cfg: AforaConfig }).cfg;
     const runtimeCfg = {
       ...sourceCfg,
       session: { dmScope: "per-channel-peer" },
-    } as OpenClawConfig;
-    resolveAgentRouteMock.mockImplementation((params: { cfg: OpenClawConfig }) => ({
+    } as AforaConfig;
+    resolveAgentRouteMock.mockImplementation((params: { cfg: AforaConfig }) => ({
       agentId: "main",
       accountId: "acct",
       sessionKey:

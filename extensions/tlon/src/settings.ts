@@ -9,7 +9,7 @@
  * without requiring a gateway restart.
  */
 
-import { filterStringEntries } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { filterStringEntries } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { UrbitSSEClient } from "./urbit/sse-client.js";
 
 /** Pending approval request stored for persistence */

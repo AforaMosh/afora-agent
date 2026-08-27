@@ -39,7 +39,7 @@ function buildAssistantMessage(text: string) {
 
 describe("SessionManager persistence compatibility", () => {
   it("persists canonical delivery facts and keeps the live assistant bytes identical", async () => {
-    const dir = tempDirs.make("openclaw-session-manager-directives-");
+    const dir = tempDirs.make("afora-session-manager-directives-");
     const storePath = path.join(dir, "sessions.json");
     const sessionId = "directive-session";
     const sessionKey = "agent:main:dashboard:directives";
@@ -72,7 +72,7 @@ describe("SessionManager persistence compatibility", () => {
 
     expect(tagged.content).toEqual([{ type: "text", text: "Final answer" }]);
     expect(tagged).toMatchObject({
-      openclawDelivery: {
+      aforaDelivery: {
         audioAsVoice: true,
         replyToCurrent: true,
         replyToId: "message-7",
@@ -89,8 +89,8 @@ describe("SessionManager persistence compatibility", () => {
       },
     });
     expect(codeExample.content).toEqual([{ type: "text", text: codeExampleText }]);
-    expect(codeExample).not.toHaveProperty("openclawDelivery");
-    expect(indentedCode).not.toHaveProperty("openclawDelivery");
+    expect(codeExample).not.toHaveProperty("aforaDelivery");
+    expect(indentedCode).not.toHaveProperty("aforaDelivery");
 
     const persistedMessages = (await loadTranscriptEvents(scope))
       .filter((event) => (event as { type?: unknown }).type === "message")
@@ -104,7 +104,7 @@ describe("SessionManager persistence compatibility", () => {
   });
 
   it("rewrites SQLite transcript rows when removing trailing entries", async () => {
-    const dir = tempDirs.make("openclaw-session-manager-compat-");
+    const dir = tempDirs.make("afora-session-manager-compat-");
     const storePath = path.join(dir, "sessions.json");
     const sessionId = "sqlite-remove-trailing-session";
     const sessionKey = "agent:main:dashboard:sqlite-remove-trailing";
@@ -171,7 +171,7 @@ describe("SessionManager persistence compatibility", () => {
   });
 
   it("keeps the default fixture cwd independent from its transcript directory", async () => {
-    const dir = tempDirs.make("openclaw-session-manager-compat-");
+    const dir = tempDirs.make("afora-session-manager-compat-");
     const manager = openFileBackedSessionManagerForTest(path.join(dir, "session.jsonl"));
 
     expect(manager.getCwd()).toBe(process.cwd());
@@ -179,7 +179,7 @@ describe("SessionManager persistence compatibility", () => {
   });
 
   it("keeps requested file fixture session identities aligned", async () => {
-    const dir = tempDirs.make("openclaw-session-manager-compat-");
+    const dir = tempDirs.make("afora-session-manager-compat-");
     const sessionFile = path.join(dir, "session.jsonl");
     const manager = openFileBackedSessionManagerForTest(sessionFile, {
       sessionId: "session-1",
@@ -205,7 +205,7 @@ describe("SessionManager persistence compatibility", () => {
   });
 
   it("separates appended records from a final unterminated JSONL record", async () => {
-    const dir = tempDirs.make("openclaw-session-manager-compat-");
+    const dir = tempDirs.make("afora-session-manager-compat-");
     const sessionFile = path.join(dir, "unterminated.jsonl");
     await fs.writeFile(
       sessionFile,
@@ -228,7 +228,7 @@ describe("SessionManager persistence compatibility", () => {
   });
 
   it("rotates new-session fixtures without rewriting the previous file", async () => {
-    const dir = tempDirs.make("openclaw-session-manager-compat-");
+    const dir = tempDirs.make("afora-session-manager-compat-");
     const sessionFile = path.join(dir, "original.jsonl");
     const manager = openFileBackedSessionManagerForTest(sessionFile, dir);
     manager.appendMessage({ role: "user", content: "original", timestamp: 1 });

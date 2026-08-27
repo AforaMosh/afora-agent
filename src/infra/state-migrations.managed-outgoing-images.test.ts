@@ -12,9 +12,9 @@ import {
   type ManagedImageRecordDatabase,
 } from "../gateway/managed-image-record-store.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { executeSqliteQueryTakeFirstSync, getNodeSqliteKysely } from "./kysely-sync.js";
 import {
   detectLegacyManagedOutgoingImages,
@@ -91,7 +91,7 @@ describe("legacy managed outgoing image migration", () => {
   });
 
   afterEach(async () => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fsp.rm(stateDir, { recursive: true, force: true });
   });
 
@@ -116,8 +116,8 @@ describe("legacy managed outgoing image migration", () => {
         path: undefined,
       },
     });
-    const database = openOpenClawStateDatabase({
-      env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+    const database = openAforaStateDatabase({
+      env: { ...process.env, AFORA_STATE_DIR: stateDir },
     });
     const row = executeSqliteQueryTakeFirstSync(
       database.db,

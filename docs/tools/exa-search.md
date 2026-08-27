@@ -14,8 +14,8 @@ summaries).
 ## Install plugin
 
 ```bash
-openclaw plugins install @openclaw/exa-plugin
-openclaw gateway restart
+afora plugins install @afora/exa-plugin
+afora gateway restart
 ```
 
 ## Get an API key
@@ -29,7 +29,7 @@ openclaw gateway restart
     Set `EXA_API_KEY` in the Gateway environment, or configure via:
 
     ```bash
-    openclaw configure --section web
+    afora configure --section web
     ```
 
   </Step>
@@ -45,7 +45,7 @@ openclaw gateway restart
         config: {
           webSearch: {
             apiKey: "exa-...", // optional if EXA_API_KEY is set
-            baseUrl: "https://api.exa.ai", // optional; OpenClaw appends /search
+            baseUrl: "https://api.exa.ai", // optional; Afora appends /search
           },
         },
       },
@@ -62,13 +62,13 @@ openclaw gateway restart
 ```
 
 **Environment alternative:** set `EXA_API_KEY` in the Gateway environment. For
-a gateway install, put it in `~/.openclaw/.env`. See
+a gateway install, put it in `~/.afora/.env`. See
 [Env vars](/help/faq#env-vars-and-env-loading).
 
 ## Base URL override
 
 Set `plugins.entries.exa.config.webSearch.baseUrl` to route Exa search
-requests through a compatible proxy or alternate endpoint. OpenClaw
+requests through a compatible proxy or alternate endpoint. Afora
 normalizes bare hosts by prepending `https://` and appends `/search` unless
 the path already ends there. The resolved endpoint is part of the search
 cache key, so results from different endpoints are never shared.

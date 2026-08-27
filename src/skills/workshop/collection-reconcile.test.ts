@@ -2,16 +2,16 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { __setFsSafeTestHooksForTest } from "@openclaw/fs-safe/test-hooks";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { sha256Hex } from "../../infra/crypto-digest.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../../state/afora-state-db.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../../test-utils/afora-test-state.js";
 import { createTrackedTempDirs } from "../../test-utils/tracked-temp-dirs.js";
 import { getSkillsSnapshotVersion } from "../runtime/refresh-state.js";
 import { writeSkill, writeWorkspaceSkills } from "../test-support/e2e-test-helpers.js";
@@ -55,7 +55,7 @@ vi.mock("../lifecycle/skill-change-hook.js", () => ({
 }));
 
 const tempDirs = createTrackedTempDirs();
-let testState: OpenClawTestState;
+let testState: AforaTestState;
 let workspaceDir: string;
 
 beforeEach(async () => {
@@ -66,16 +66,16 @@ beforeEach(async () => {
   dispatchCommittedSkillChangeBestEffort.mockClear();
   snapshotCommittedSkillArtifactBestEffort.mockReset();
   snapshotCommittedSkillArtifactBestEffort.mockResolvedValue(undefined);
-  testState = await createOpenClawTestState({
+  testState = await createAforaTestState({
     layout: "state-only",
-    prefix: "openclaw-skill-collection-state-",
+    prefix: "afora-skill-collection-state-",
   });
-  workspaceDir = await fs.realpath(await tempDirs.make("openclaw-skill-collection-workspace-"));
+  workspaceDir = await fs.realpath(await tempDirs.make("afora-skill-collection-workspace-"));
 });
 
 afterEach(async () => {
   __setFsSafeTestHooksForTest(undefined);
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   await testState.cleanup();
   await tempDirs.cleanup();
 });
@@ -84,7 +84,7 @@ describe("skill collection reconciliation", () => {
   it.runIf(process.platform !== "win32")(
     "keeps trusted external symlink targets outside the autonomous collection",
     async () => {
-      const targetSkillsDir = await tempDirs.make("openclaw-skill-collection-readonly-target-");
+      const targetSkillsDir = await tempDirs.make("afora-skill-collection-readonly-target-");
       const targetSkillDir = path.join(targetSkillsDir, "shared-skill");
       await writeSkill({
         dir: targetSkillDir,
@@ -118,7 +118,7 @@ describe("skill collection reconciliation", () => {
   it.runIf(process.platform !== "win32")(
     "rejects a collection drop before traversing a trusted external skills root",
     async () => {
-      const targetSkillsDir = await tempDirs.make("openclaw-skill-collection-external-root-");
+      const targetSkillsDir = await tempDirs.make("afora-skill-collection-external-root-");
       const targetSkillDir = path.join(targetSkillsDir, "shared-skill");
       await writeSkill({
         dir: targetSkillDir,
@@ -155,7 +155,7 @@ describe("skill collection reconciliation", () => {
       await writeWorkspaceSkills(workspaceDir, [
         { name: "procedure", description: "Workspace procedure" },
       ]);
-      const outsideWorkspace = await tempDirs.make("openclaw-skill-collection-swap-target-");
+      const outsideWorkspace = await tempDirs.make("afora-skill-collection-swap-target-");
       await writeWorkspaceSkills(outsideWorkspace, [
         { name: "procedure", description: "External procedure" },
       ]);
@@ -440,7 +440,7 @@ describe("skill collection reconciliation", () => {
     await writeWorkspaceSkills(workspaceDir, [
       { name: "obsolete", description: "Obsolete procedure" },
     ]);
-    const aliasParent = await tempDirs.make("openclaw-skill-collection-lock-alias-");
+    const aliasParent = await tempDirs.make("afora-skill-collection-lock-alias-");
     const workspaceAlias = path.join(aliasParent, "workspace-alias");
     await fs.symlink(
       workspaceDir,
@@ -708,7 +708,7 @@ describe("skill collection reconciliation", () => {
       { name: "archived", description: "Archived procedure", body: "# Original\n" },
     ]);
     const skillFile = path.join(workspaceDir, "skills", "archived", "SKILL.md");
-    openOpenClawStateDatabase({ env: testState.env })
+    openAforaStateDatabase({ env: testState.env })
       .db.prepare(
         `INSERT INTO skill_lifecycle (
           skill_file, skill_key, skill_name, state, pinned,
@@ -855,7 +855,7 @@ describe("skill collection reconciliation", () => {
     try {
       await Promise.all([
         expect(listSkillProposals({ workspaceDir, env: testState.env })).rejects.toMatchObject({
-          code: "OPENCLAW_STATE_LEASE_TIMEOUT",
+          code: "AFORA_STATE_LEASE_TIMEOUT",
         }),
         expect(
           inspectSkillProposal(proposal.record.id, {
@@ -863,7 +863,7 @@ describe("skill collection reconciliation", () => {
             env: testState.env,
           }),
         ).rejects.toMatchObject({
-          code: "OPENCLAW_STATE_LEASE_TIMEOUT",
+          code: "AFORA_STATE_LEASE_TIMEOUT",
         }),
       ]);
     } finally {
@@ -937,7 +937,7 @@ describe("skill collection reconciliation", () => {
   });
 });
 
-async function readCollectionReceipt(config?: OpenClawConfig) {
+async function readCollectionReceipt(config?: AforaConfig) {
   const skills = listWritableSkillCollection(workspaceDir, { config });
   return {
     readSkillHashes: new Map(

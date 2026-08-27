@@ -2,7 +2,7 @@
  * Browser plugin entry. It wires the browser tool, gateway request handler,
  * node-host command, services, reload policy, and security audit collectors.
  */
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   browserPluginNodeHostCommands,
   browserPluginReload,

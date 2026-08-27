@@ -1,4 +1,4 @@
-import { getRootOptionAwareCommandPath } from "openclaw/plugin-sdk/cli-argv";
+import { getRootOptionAwareCommandPath } from "afora-agent/plugin-sdk/cli-argv";
 
 const DEFAULT_JSON_COMMANDS = new Set(["join", "status", "test-listen", "test-speech"]);
 

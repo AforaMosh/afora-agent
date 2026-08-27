@@ -1,6 +1,6 @@
-## OpenClaw Android App
+## Afora Android App
 
-OpenClaw Android is the officially released Google Play app. It connects to an OpenClaw Gateway as a companion node for chat, voice, approvals, screen, and device-aware automation.
+Afora Android is the officially released Google Play app. It connects to an Afora Gateway as a companion node for chat, voice, approvals, screen, and device-aware automation.
 
 ### Current App Surface
 
@@ -65,8 +65,8 @@ cd apps/android
 Repository-backed debug Gradle invocations, including `pnpm android:run` and
 `pnpm android:screenshots`, stamp the full checkout commit and capture one UTC
 build timestamp shared by every debug variant in that invocation. Release
-tasks still require explicit `openclawBuildCommit` and
-`openclawBuildTimestamp` properties so signed artifacts remain reproducible.
+tasks still require explicit `aforaBuildCommit` and
+`aforaBuildTimestamp` properties so signed artifacts remain reproducible.
 
 Android release archives use the pinned version in `apps/android/version.json`. Update it with:
 
@@ -95,8 +95,8 @@ pnpm android:screenshots
 ```
 
 The screenshot script captures both form factors with retained
-`OpenClaw_Screenshots_API36` (Pixel 2) and
-`OpenClaw_Wear_Screenshots_API34` (Wear OS Large Round) AVDs. It creates a
+`Afora_Screenshots_API36` (Pixel 2) and
+`Afora_Wear_Screenshots_API34` (Wear OS Large Round) AVDs. It creates a
 missing AVD, boots it headlessly, waits for Android to finish booting, disables
 animations, captures the screenshots, then shuts down the emulator it started.
 Install the API 36 Google APIs and API 34 Wear OS system images in the local
@@ -105,15 +105,15 @@ explicitly capture one form factor from another emulator.
 
 `pnpm android:release:archive` builds signed release artifacts into `apps/android/build/release-artifacts/` and writes `.sha256` checksum files:
 
-- Play build: `openclaw-<version>-play-release.aab`
-- Wear build: `openclaw-<version>-wear-release.aab`
-- Third-party build: `openclaw-<version>-third-party-release.apk`
+- Play build: `afora-<version>-play-release.aab`
+- Wear build: `afora-<version>-wear-release.aab`
+- Third-party build: `afora-<version>-third-party-release.apk`
 
 `pnpm android:bundle:release` is an alias for the same Fastlane archive lane.
 
-Regular final and correction OpenClaw releases publish the signed third-party APK as `OpenClaw-Android.apk` with a checksum manifest and GitHub Actions provenance. `.github/workflows/android-release.yml` is the only automated GitHub Release upload path; `OpenClaw Release Publish` dispatches it while the canonical release is still a draft and blocks publication until the uploaded asset contract verifies.
+Regular final and correction Afora releases publish the signed third-party APK as `Afora-Android.apk` with a checksum manifest and GitHub Actions provenance. `.github/workflows/android-release.yml` is the only automated GitHub Release upload path; `Afora Release Publish` dispatches it while the canonical release is still a draft and blocks publication until the uploaded asset contract verifies.
 
-The protected `android-release` environment supplies `MATCH_PASSWORD`; the repository's read-only GitHub App token checks out encrypted material from `openclaw/apps-signing`. The workflow builds the exact release tag, refuses to replace different existing bytes, and re-downloads the APK for checksum, certificate, and provenance verification.
+The protected `android-release` environment supplies `MATCH_PASSWORD`; the repository's read-only GitHub App token checks out encrypted material from `afora/apps-signing`. The workflow builds the exact release tag, refuses to replace different existing bytes, and re-downloads the APK for checksum, certificate, and provenance verification.
 
 `pnpm android:release:archive` is for local archive validation only. It is not a
 fallback upload path after `pnpm android:release:upload` fails.
@@ -137,9 +137,9 @@ Prefer `pnpm android:release:archive`, which stamps and validates the full Git c
 cd apps/android
 commit="$(git -C ../.. rev-parse HEAD)"
 built_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-./gradlew -PopenclawBuildCommit="$commit" -PopenclawBuildTimestamp="$built_at" :app:bundlePlayRelease
-./gradlew -PopenclawBuildCommit="$commit" -PopenclawBuildTimestamp="$built_at" :wear:bundleRelease
-./gradlew -PopenclawBuildCommit="$commit" -PopenclawBuildTimestamp="$built_at" :app:bundleThirdPartyRelease
+./gradlew -PaforaBuildCommit="$commit" -PaforaBuildTimestamp="$built_at" :app:bundlePlayRelease
+./gradlew -PaforaBuildCommit="$commit" -PaforaBuildTimestamp="$built_at" :wear:bundleRelease
+./gradlew -PaforaBuildCommit="$commit" -PaforaBuildTimestamp="$built_at" :app:bundleThirdPartyRelease
 ```
 
 ## Kotlin Lint + Format
@@ -226,7 +226,7 @@ Use `adb reverse` so Android `localhost:18789` tunnels to your laptop `localhost
 Terminal A (gateway):
 
 ```bash
-pnpm openclaw gateway --port 18789 --verbose
+pnpm afora gateway --port 18789 --verbose
 ```
 
 Terminal B (USB tunnel):
@@ -248,14 +248,14 @@ This app is native Kotlin + Jetpack Compose.
 - For Compose UI edits: use Android Studio **Live Edit** on a debug build (works on physical devices; project `minSdk=31` already meets API requirement).
 - For many non-structural code/resource changes: use Android Studio **Apply Changes**.
 - For structural/native/manifest/Gradle changes: do full reinstall (`pnpm android:run`).
-- Canvas web content already supports live reload when loaded from Gateway `__openclaw__/canvas/` (see `docs/platforms/android.md`).
+- Canvas web content already supports live reload when loaded from Gateway `__afora__/canvas/` (see `docs/platforms/android.md`).
 
 ## Connect / Pair
 
 1) Start the gateway (on your main machine):
 
 ```bash
-pnpm openclaw gateway --port 18789 --verbose
+pnpm afora gateway --port 18789 --verbose
 ```
 
 2) In the Android app:
@@ -266,8 +266,8 @@ pnpm openclaw gateway --port 18789 --verbose
 3) Approve pairing (on the gateway machine):
 
 ```bash
-openclaw devices list
-openclaw devices approve <requestId>
+afora devices list
+afora devices approve <requestId>
 ```
 
 More details: `docs/platforms/android.md`.
@@ -300,7 +300,7 @@ Why these matter:
 - The Play build removes these behind the `play` flavor.
 - Photo library access is also removed from the Play build. Use third-party builds for `photos.latest`.
 
-Current OpenClaw Android implication:
+Current Afora Android implication:
 
 - APK / sideload build can keep SMS, Call Log, and recent-photo features.
 - Google Play build excludes SMS send/search, Call Log search, and recent-photo access unless the product is intentionally positioned and approved under the relevant policy exception.
@@ -336,19 +336,19 @@ This suite assumes setup is already done manually. It does **not** install/run/p
 Pre-req checklist:
 
 1) Gateway is running and reachable from the Android app.
-2) Android app is connected to that gateway and `openclaw nodes status` shows it as paired + connected.
+2) Android app is connected to that gateway and `afora nodes status` shows it as paired + connected.
 3) App stays unlocked and in foreground for the whole run.
 4) Open the app **Screen** tab and keep it active during the run (canvas/A2UI commands require the canvas WebView attached there).
 5) Grant runtime permissions for capabilities you expect to pass (camera/mic/location/notification listener/location, etc.).
 6) No interactive system dialogs should be pending before test start.
-7) Canvas host is enabled and reachable from the device for remote Canvas checks (do not run gateway with `OPENCLAW_SKIP_CANVAS_HOST=1`; startup logs should include `canvas host mounted at .../__openclaw__/`).
+7) Canvas host is enabled and reachable from the device for remote Canvas checks (do not run gateway with `AFORA_SKIP_CANVAS_HOST=1`; startup logs should include `canvas host mounted at .../__afora__/`).
 8) Local operator test client pairing is approved. If first run fails with `pairing required`, preview the latest pending request, approve the printed request ID, then rerun:
 9) For A2UI checks, keep the app on **Screen** tab; the node uses its bundled app-owned A2UI page for message application.
 
 ```bash
-openclaw devices list
-openclaw devices approve --latest   # preview only; copy the requestId from output
-openclaw devices approve <requestId>
+afora devices list
+afora devices approve --latest   # preview only; copy the requestId from output
+afora devices approve <requestId>
 ```
 
 Run:
@@ -359,10 +359,10 @@ pnpm android:test:integration
 
 Optional overrides:
 
-- `OPENCLAW_ANDROID_GATEWAY_URL=ws://...` (default: from your local OpenClaw config)
-- `OPENCLAW_ANDROID_GATEWAY_TOKEN=...`
-- `OPENCLAW_ANDROID_GATEWAY_PASSWORD=...`
-- `OPENCLAW_ANDROID_NODE_ID=...` or `OPENCLAW_ANDROID_NODE_NAME=...`
+- `AFORA_ANDROID_GATEWAY_URL=ws://...` (default: from your local Afora config)
+- `AFORA_ANDROID_GATEWAY_TOKEN=...`
+- `AFORA_ANDROID_GATEWAY_PASSWORD=...`
+- `AFORA_ANDROID_NODE_ID=...` or `AFORA_ANDROID_NODE_NAME=...`
 
 What it does:
 
@@ -376,7 +376,7 @@ What it does:
 Common failure quick-fixes:
 
 - `pairing required` before tests start:
-  - list pending requests (`openclaw devices list`), then approve with the exact ID (`openclaw devices approve <requestId>`) and rerun.
+  - list pending requests (`afora devices list`), then approve with the exact ID (`afora devices approve <requestId>`) and rerun.
 - `A2UI host not reachable` / `A2UI_HOST_UNAVAILABLE`:
   - keep the app foregrounded on the **Screen** tab and rerun. A2UI commands use the bundled app-owned A2UI page; the Gateway Canvas host is still needed for remote Canvas checks, but not for A2UI message application.
 - `NODE_BACKGROUND_UNAVAILABLE: canvas unavailable`:

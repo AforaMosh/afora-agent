@@ -36,8 +36,8 @@ export const page = definePage({
       header: true,
       render: (data: unknown) => {
         const ref = (data ?? { pluginId: "", id: "" }) as PluginTabRef;
-        return html`<openclaw-plugin-page .pluginId=${ref.pluginId} .tabId=${ref.id}>
-        </openclaw-plugin-page>`;
+        return html`<afora-plugin-page .pluginId=${ref.pluginId} .tabId=${ref.id}>
+        </afora-plugin-page>`;
       },
     })),
 });

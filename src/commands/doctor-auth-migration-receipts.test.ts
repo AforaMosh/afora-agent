@@ -3,13 +3,13 @@ import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../test-utils/afora-test-state.js";
 import {
   archiveAuthProfileMigrationSource,
   createAuthProfileMigrationSourceReceipt,
@@ -34,23 +34,23 @@ const {
   recordAuthProfileMigrationCompleted,
   restoreAuthProfileMigrationArchiveNoClobber,
 } = (globalThis as Record<PropertyKey, unknown>)[
-  Symbol.for("openclaw.authProfileMigrationReceiptsTestApi")
+  Symbol.for("afora.authProfileMigrationReceiptsTestApi")
 ] as MigrationReceiptTestApi;
 
 describe("auth profile migration receipts", () => {
-  const states: OpenClawTestState[] = [];
+  const states: AforaTestState[] = [];
 
   afterEach(async () => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     for (const state of states.splice(0)) {
       await state.cleanup();
     }
   });
 
   async function makeReceipt() {
-    const state = await createOpenClawTestState({
+    const state = await createAforaTestState({
       layout: "state-only",
-      prefix: "openclaw-auth-receipt-",
+      prefix: "afora-auth-receipt-",
     });
     states.push(state);
     const sourcePath = await state.writeText(
@@ -61,7 +61,7 @@ describe("auth profile migration receipts", () => {
       sourcePath,
       sourceBytes: fs.readFileSync(sourcePath),
       sourceRecordCount: 1,
-      targetDatabasePath: path.join(state.agentDir(), "openclaw-agent.sqlite"),
+      targetDatabasePath: path.join(state.agentDir(), "afora-agent.sqlite"),
       targetTable: "auth_profile_store",
       now: new Date("2026-07-25T12:00:00.000Z"),
       env: state.env,
@@ -76,7 +76,7 @@ describe("auth profile migration receipts", () => {
     expect(resumePendingAuthProfileMigrationArchives(state.env)).toHaveLength(1);
     expect(fs.existsSync(sourcePath)).toBe(false);
     expect(fs.existsSync(receipt.archivePath)).toBe(true);
-    const row = openOpenClawStateDatabase({ env: state.env })
+    const row = openAforaStateDatabase({ env: state.env })
       .db.prepare("SELECT status, removed_source FROM migration_sources WHERE source_key = ?")
       .get(receipt.sourceKey);
     expect(row).toEqual({ status: "completed", removed_source: 1 });
@@ -126,7 +126,7 @@ describe("auth profile migration receipts", () => {
     ]);
     expect(fs.existsSync(sourcePath)).toBe(true);
     expect(fs.existsSync(receipt.archivePath)).toBe(false);
-    const row = openOpenClawStateDatabase({ env: state.env })
+    const row = openAforaStateDatabase({ env: state.env })
       .db.prepare("SELECT status FROM migration_sources WHERE source_key = ?")
       .get(receipt.sourceKey);
     expect(row).toEqual({ status: "retryable" });
@@ -152,7 +152,7 @@ describe("auth profile migration receipts", () => {
     ]);
     expect(fs.existsSync(sourcePath)).toBe(true);
     expect(fs.existsSync(receipt.archivePath)).toBe(false);
-    const row = openOpenClawStateDatabase({ env: state.env })
+    const row = openAforaStateDatabase({ env: state.env })
       .db.prepare("SELECT status FROM migration_sources WHERE source_key = ?")
       .get(receipt.sourceKey);
     expect(row).toEqual({ status: "superseded" });
@@ -239,7 +239,7 @@ describe("auth profile migration receipts", () => {
     archiveAuthProfileMigrationSource(receipt);
 
     resumePendingAuthProfileMigrationArchives(state.env);
-    const row = openOpenClawStateDatabase({ env: state.env })
+    const row = openAforaStateDatabase({ env: state.env })
       .db.prepare("SELECT status FROM migration_sources WHERE source_key = ?")
       .get(receipt.sourceKey);
     expect(row).toEqual({ status: "archived-unparsed" });

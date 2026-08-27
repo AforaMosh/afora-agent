@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { describeRootFileOpenFailure, openRootFileSync } from "../infra/boundary-file-read.js";
 import type { NormalizedPluginsConfig } from "./config-state.js";
 import {
@@ -17,7 +17,7 @@ import type { PluginManifestRecord } from "./manifest-registry.js";
 import { withProfile } from "./plugin-load-profile.js";
 import { resolveCanonicalDistRuntimeSource } from "./plugin-runtime-artifact-resolution.js";
 import type { createPluginRegistry, PluginRecord } from "./registry.js";
-import type { OpenClawPluginModule, PluginLogger } from "./types.js";
+import type { AforaPluginModule, PluginLogger } from "./types.js";
 
 type PluginRegistryBuilder = ReturnType<typeof createPluginRegistry>;
 
@@ -26,7 +26,7 @@ type PluginRegistryBuilder = ReturnType<typeof createPluginRegistry>;
  * Returns true when the candidate is complete (loaded, disabled, or failed).
  */
 export function loadSetupRuntimeChannelCandidate(params: {
-  mod: OpenClawPluginModule | null;
+  mod: AforaPluginModule | null;
   manifestRecord: PluginManifestRecord;
   record: PluginRecord;
   registrationPlan: PluginRegistrationPlan;
@@ -35,7 +35,7 @@ export function loadSetupRuntimeChannelCandidate(params: {
   rejectHardlinks: boolean;
   loadPluginModule: PluginModuleLoader;
   registryBuilder: PluginRegistryBuilder;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   entry: NormalizedPluginsConfig["entries"][string] | undefined;
   seenIds: Map<string, PluginRecord["origin"]>;
   candidateOrigin: PluginRecord["origin"];
@@ -114,12 +114,12 @@ export function loadSetupRuntimeChannelCandidate(params: {
     }
     const safeRuntimeSource = runtimeOpened.path;
     fs.closeSync(runtimeOpened.fd);
-    let runtimeMod: OpenClawPluginModule | null;
+    let runtimeMod: AforaPluginModule | null;
     try {
       runtimeMod = withProfile(
         { pluginId: record.id, source: safeRuntimeSource },
         "load-setup-runtime-entry",
-        () => params.loadPluginModule(safeRuntimeSource) as OpenClawPluginModule,
+        () => params.loadPluginModule(safeRuntimeSource) as AforaPluginModule,
       );
     } catch (error) {
       recordPluginError({

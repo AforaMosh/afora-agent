@@ -1,5 +1,5 @@
 // Feishu JSON response helpers shared by credentialed API paths.
-import { readProviderJsonResponse } from "openclaw/plugin-sdk/provider-http";
+import { readProviderJsonResponse } from "afora-agent/plugin-sdk/provider-http";
 
 /** Feishu control-plane JSON responses are tiny; 16 MiB leaves ample headroom. */
 const FEISHU_JSON_MAX_BYTES = 16 * 1024 * 1024;

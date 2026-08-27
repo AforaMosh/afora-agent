@@ -7,14 +7,14 @@ read_when:
 title: "API usage and costs"
 ---
 
-Map of OpenClaw features that can call paid provider APIs, where each reads its credentials, and where the resulting cost shows up.
+Map of Afora features that can call paid provider APIs, where each reads its credentials, and where the resulting cost shows up.
 
 ## Where costs show up
 
 **`/status`** (per-session snapshot)
 
 - Shows the current session model, context usage, and last-response tokens.
-- Adds an **estimated cost** for the last reply when OpenClaw has usage metadata and local pricing for the active model, including explicitly priced non-API-key providers such as Bedrock `aws-sdk` models.
+- Adds an **estimated cost** for the last reply when Afora has usage metadata and local pricing for the active model, including explicitly priced non-API-key providers such as Bedrock `aws-sdk` models.
 - If the live session snapshot is sparse, `/status` recovers token/cache counters and the active model label from the latest transcript usage entry. Existing nonzero live values win over transcript data; a prompt-sized transcript total can still win when the stored total is missing or smaller.
 
 **`/usage`** (per-message footer)
@@ -22,7 +22,7 @@ Map of OpenClaw features that can call paid provider APIs, where each reads its 
 - `/usage full` appends a usage footer to every reply, including **estimated cost** when local pricing is configured and usage metadata is available.
 - `/usage tokens` shows tokens only. Subscription-style OAuth/token and CLI runtimes show tokens only unless they supply compatible usage metadata plus an explicit local price.
 - `/usage cost` prints a local cost summary; `/usage off` disables the footer.
-- Gemini CLI note: both `stream-json` and legacy `json` output carry usage under `stats`. OpenClaw normalizes `stats.cached` into `cacheRead` and derives input tokens from `stats.input_tokens - stats.cached` when needed.
+- Gemini CLI note: both `stream-json` and legacy `json` output carry usage under `stats`. Afora normalizes `stats.cached` into `cacheRead` and derives input tokens from `stats.input_tokens - stats.cached` when needed.
 
 **Control UI → Usage** (cross-session analysis)
 
@@ -33,10 +33,10 @@ Map of OpenClaw features that can call paid provider APIs, where each reads its 
 
 **CLI usage windows** (provider quotas, not per-message cost)
 
-- `openclaw status --usage` and `openclaw channels list` show provider **usage windows** as `X% left`.
+- `afora status --usage` and `afora channels list` show provider **usage windows** as `X% left`.
 - Current usage-window providers: Anthropic, ClawRouter, DeepSeek, GitHub Copilot, MiniMax, OpenAI (covers ChatGPT/Codex OAuth/token auth), Xiaomi, and z.ai. See [Models CLI](/cli/models) and [Channels CLI](/cli/channels) for the full provider/flag list.
-- MiniMax's raw `usage_percent` / `usagePercent` fields report remaining quota, so OpenClaw inverts them; count-based fields win when present. If the response includes a `model_remains` array, OpenClaw picks the chat-model entry, derives the window label from timestamps when needed, and includes the model name in the plan label.
-- Usage auth comes from provider-specific hooks when available, otherwise OpenClaw falls back to matching OAuth/API-key credentials from auth profiles, env, or config.
+- MiniMax's raw `usage_percent` / `usagePercent` fields report remaining quota, so Afora inverts them; count-based fields win when present. If the response includes a `model_remains` array, Afora picks the chat-model entry, derives the window label from timestamps when needed, and includes the model name in the plan label.
+- Usage auth comes from provider-specific hooks when available, otherwise Afora falls back to matching OAuth/API-key credentials from auth profiles, env, or config.
 
 See [Token use and costs](/reference/token-use) for detailed examples.
 
@@ -55,7 +55,7 @@ Anthropic has confirmed that Claude CLI reuse (including `claude -p`) is a sanct
 
 ### Core model responses (chat + tools)
 
-Every reply or tool call runs on the current model provider. This is the primary source of usage and cost, including subscription-style hosted plans that bill outside OpenClaw's local UI: OpenAI Codex, Alibaba Cloud Model Studio Coding Plan, MiniMax Coding Plan, Z.AI/GLM Coding Plan, and Anthropic's Claude-login path with Extra Usage enabled.
+Every reply or tool call runs on the current model provider. This is the primary source of usage and cost, including subscription-style hosted plans that bill outside Afora's local UI: OpenAI Codex, Alibaba Cloud Model Studio Coding Plan, MiniMax Coding Plan, Z.AI/GLM Coding Plan, and Anthropic's Claude-login path with Extra Usage enabled.
 
 See [Models](/providers/models) for pricing config and [Token use and costs](/reference/token-use) for display.
 
@@ -109,7 +109,7 @@ See [Web tools](/tools/web).
 
 ### Provider usage snapshots (status/health)
 
-`openclaw status --usage` and `openclaw models status --json` call provider usage endpoints to show quota windows or auth health. Calls are low-volume but still hit provider APIs.
+`afora status --usage` and `afora models status --json` call provider usage endpoints to show quota windows or auth health. Calls are low-volume but still hit provider APIs.
 
 See [Models CLI](/cli/models).
 
@@ -121,7 +121,7 @@ See [Session management and compaction](/reference/session-management-compaction
 
 ### Model scan / probe
 
-`openclaw models scan` can probe OpenRouter models and uses `OPENROUTER_API_KEY` when probing is enabled.
+`afora models scan` can probe OpenRouter models and uses `OPENROUTER_API_KEY` when probing is enabled.
 
 See [Models CLI](/cli/models).
 

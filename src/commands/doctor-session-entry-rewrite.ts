@@ -4,8 +4,8 @@ import {
 } from "../config/sessions/session-accessor.sqlite-entry-cache.js";
 import { parseSqliteSessionEntryRecord } from "../config/sessions/session-entry-json.js";
 import { executeSqliteQuerySync, getNodeSqliteKysely } from "../infra/kysely-sync.js";
-import type { DB as OpenClawAgentKyselyDatabase } from "../state/openclaw-agent-db.generated.js";
-import type { OpenClawAgentDatabase } from "../state/openclaw-agent-db.js";
+import type { DB as AforaAgentKyselyDatabase } from "../state/afora-agent-db.generated.js";
+import type { AforaAgentDatabase } from "../state/afora-agent-db.js";
 
 export type DoctorSessionEntryRow = {
   current_session_id: string;
@@ -16,14 +16,14 @@ export type DoctorSessionEntryRow = {
 
 /** Persist a doctor-proven entry rewrite and settle the schema-owned validity projection. */
 export function writeValidatedDoctorSessionEntryJson(
-  database: OpenClawAgentDatabase,
+  database: AforaAgentDatabase,
   row: DoctorSessionEntryRow,
   entryJson: string,
 ): void {
   if (!parseSqliteSessionEntryRecord({ ...row, entry_json: entryJson })) {
     throw new Error(`Refusing invalid SQLite session entry rewrite for ${row.session_key}`);
   }
-  const db = getNodeSqliteKysely<OpenClawAgentKyselyDatabase>(database.db);
+  const db = getNodeSqliteKysely<AforaAgentKyselyDatabase>(database.db);
   const writeGeneration = trackSessionEntryCacheWrite(database, () => {
     executeSqliteQuerySync(
       database.db,

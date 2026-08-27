@@ -38,8 +38,8 @@ suite.define(() => {
             },
             "cron.status": { enabled: true, jobs: 0, nextWakeAtMs: null },
             "skills.status": {
-              workspaceDir: "/tmp/openclaw-e2e/workspace",
-              managedSkillsDir: "/tmp/openclaw-e2e/skills",
+              workspaceDir: "/tmp/afora-e2e/workspace",
+              managedSkillsDir: "/tmp/afora-e2e/skills",
               skills: [],
             },
           },
@@ -125,7 +125,7 @@ suite.define(() => {
 
         const chatResponse = await page.goto(`${suite.server.baseUrl}chat?session=main`);
         expect(chatResponse?.status()).toBe(200);
-        await page.locator("openclaw-chat-page").waitFor();
+        await page.locator("afora-chat-page").waitFor();
 
         const chatMarkdownStyles = await page.evaluate(() => {
           const probe = document.createElement("div");

@@ -6,8 +6,8 @@
 // cycle).
 import { getSafeLocalStorage } from "../local-storage.ts";
 
-const LOBSTERDEX_KEY = "openclaw.control.lobsterdex.v1";
-const FAMILIARITY_KEY = "openclaw.control.lobsterpet.familiarity.v1";
+const LOBSTERDEX_KEY = "afora.control.lobsterdex.v1";
+const FAMILIARITY_KEY = "afora.control.lobsterpet.familiarity.v1";
 
 type LobsterdexEntry = {
   firstSeenAt: number | null;

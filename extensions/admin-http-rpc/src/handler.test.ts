@@ -10,7 +10,7 @@ const { dispatchGatewayMethod } = vi.hoisted(() => ({
   dispatchGatewayMethod: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/gateway-method-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/gateway-method-runtime", () => ({
   dispatchGatewayMethod,
 }));
 

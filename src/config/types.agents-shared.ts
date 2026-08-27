@@ -30,7 +30,7 @@ export type AgentToolModelConfig =
 
 /** Runtime selection policy attached to providers, models, and agent defaults. */
 export type AgentRuntimePolicyConfig = {
-  /** Agent runtime id. Omitted uses "openclaw"; "auto" opts into plugin harness auto-selection. */
+  /** Agent runtime id. Omitted uses "afora"; "auto" opts into plugin harness auto-selection. */
   id?: string;
 };
 

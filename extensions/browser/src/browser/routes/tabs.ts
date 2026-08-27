@@ -4,7 +4,7 @@
  * Lists, opens, focuses, closes, and mutates tabs while applying navigation
  * policy checks and profile reachability probes.
  */
-import { clampPositiveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
+import { clampPositiveTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
 import {
   BrowserProfileUnavailableError,
   BrowserTabNotFoundError,

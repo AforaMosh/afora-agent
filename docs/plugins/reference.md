@@ -1,14 +1,14 @@
 ---
-summary: "Generated index of OpenClaw plugin reference pages"
+summary: "Generated index of Afora plugin reference pages"
 read_when:
-  - You need a reference page for a specific OpenClaw plugin
+  - You need a reference page for a specific Afora plugin
   - You are auditing plugin docs coverage
 title: "Plugin reference"
 ---
 
 # Plugin reference
 
-This page is generated from top-level `extensions/*/openclaw.plugin.json`
+This page is generated from top-level `extensions/*/afora.plugin.json`
 manifests. Package metadata enriches entries when `package.json` is present.
 Regenerate it with:
 

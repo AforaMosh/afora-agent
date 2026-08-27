@@ -87,22 +87,22 @@ async function startDesktopDocument(
   await page.setViewportSize({ width: 390, height: 844 });
   const gateway = await installMockGateway(page, {
     deferredMethods: ["environments.list"],
-    featureMethods: ["desktop.observe", "environments.list", "openclaw.setup.detect"],
+    featureMethods: ["desktop.observe", "environments.list", "afora.setup.detect"],
     methodResponses: {
       "desktop.observe": desktopObserve,
       ...(describedSession === undefined
         ? {}
         : { "sessions.describe": { session: describedSession } }),
-      "openclaw.setup.detect": {
+      "afora.setup.detect": {
         candidates: [],
         manualProviders: [],
-        workspace: "/tmp/openclaw-desktop-document",
+        workspace: "/tmp/afora-desktop-document",
         setupComplete: false,
       },
     },
   });
   await page.goto(`${suite.server.baseUrl}${route}`);
-  const panel = page.locator("openclaw-desktop-panel");
+  const panel = page.locator("afora-desktop-panel");
   await panel.waitFor({ state: "attached" });
   await gateway.waitForRequest("environments.list");
   await installDesktopClientFake(panel);
@@ -132,7 +132,7 @@ suite.define(() => {
       await viewer.waitFor();
       await panel.getByText("Desktop sources", { exact: true }).waitFor();
 
-      expect(await page.locator("openclaw-app-shell").count()).toBe(0);
+      expect(await page.locator("afora-app-shell").count()).toBe(0);
       expect(page.url()).not.toContain("model-setup");
       const bounds = await viewer.boundingBox();
       expect(bounds?.width).toBeGreaterThanOrEqual(389);

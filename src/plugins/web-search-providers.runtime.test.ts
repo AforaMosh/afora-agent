@@ -1,5 +1,5 @@
 /** Covers runtime loading and sorting for plugin web search providers. */
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 type RegistryModule = typeof import("./registry.js");
@@ -34,7 +34,7 @@ let loadInstalledPluginManifestRegistryMock: ReturnType<
 >;
 let setActivePluginRegistry: RuntimeModule["setActivePluginRegistry"];
 let resolvePluginWebSearchProviders: WebSearchProvidersRuntimeModule["resolvePluginWebSearchProviders"];
-let loadOpenClawPluginsMock: ReturnType<typeof vi.fn>;
+let loadAforaPluginsMock: ReturnType<typeof vi.fn>;
 let loaderModule: typeof import("./loader.js");
 let pluginAutoEnableModule: PluginAutoEnableModule;
 let applyPluginAutoEnableSpy: ReturnType<typeof vi.fn>;
@@ -112,7 +112,7 @@ function createBraveAllowConfig() {
 
 function createWebSearchEnv(overrides?: Partial<NodeJS.ProcessEnv>) {
   return {
-    OPENCLAW_HOME: "/tmp/openclaw-home",
+    AFORA_HOME: "/tmp/afora-home",
     ...overrides,
   } as NodeJS.ProcessEnv;
 }
@@ -151,7 +151,7 @@ function createManifestRegistryFixture(): PluginManifestRegistry {
         origin: "bundled",
         rootDir: "/tmp/brave",
         source: "/tmp/brave/index.js",
-        manifestPath: "/tmp/brave/openclaw.plugin.json",
+        manifestPath: "/tmp/brave/afora.plugin.json",
         channels: [],
         providers: [],
         cliBackends: [],
@@ -166,7 +166,7 @@ function createManifestRegistryFixture(): PluginManifestRegistry {
         origin: "bundled",
         rootDir: "/tmp/noise",
         source: "/tmp/noise/index.js",
-        manifestPath: "/tmp/noise/openclaw.plugin.json",
+        manifestPath: "/tmp/noise/afora.plugin.json",
         channels: [],
         providers: [],
         cliBackends: [],
@@ -190,7 +190,7 @@ function createWebSearchManifestRecord(params: {
     origin: "bundled",
     rootDir: `/tmp/${params.id}`,
     source: `/tmp/${params.id}/index.js`,
-    manifestPath: `/tmp/${params.id}/openclaw.plugin.json`,
+    manifestPath: `/tmp/${params.id}/afora.plugin.json`,
     channels: [],
     providers: [],
     cliBackends: [],
@@ -203,7 +203,7 @@ function createWebSearchManifestRecord(params: {
 }
 
 function expectLoaderCallCount(count: number) {
-  expect(loadOpenClawPluginsMock).toHaveBeenCalledTimes(count);
+  expect(loadAforaPluginsMock).toHaveBeenCalledTimes(count);
 }
 
 const requireRecord = createRequireRecord("record", "expected-non-array-record");
@@ -228,7 +228,7 @@ function requirePluginsConfig(params: Record<string, unknown>): Record<string, u
 function expectScopedWebSearchCandidates(pluginIds: readonly string[]) {
   expect(loadInstalledPluginManifestRegistryMock).toHaveBeenCalled();
   expect(
-    requireLastCallFirstArg(loadOpenClawPluginsMock, "loadOpenClawPlugins").onlyPluginIds,
+    requireLastCallFirstArg(loadAforaPluginsMock, "loadAforaPlugins").onlyPluginIds,
   ).toEqual([...pluginIds]);
 }
 
@@ -240,7 +240,7 @@ function expectAutoEnabledWebSearchLoad(params: {
     config: params.rawConfig,
     env: createWebSearchEnv(),
   });
-  const loaderParams = requireLastCallFirstArg(loadOpenClawPluginsMock, "loadOpenClawPlugins");
+  const loaderParams = requireLastCallFirstArg(loadAforaPluginsMock, "loadAforaPlugins");
   const plugins = requirePluginsConfig(loaderParams);
   expect(plugins.allow).toEqual([...params.expectedAllow]);
 }
@@ -339,8 +339,8 @@ describe("resolvePluginWebSearchProviders", () => {
     loadPluginManifestRegistryMock.mockReturnValue(createManifestRegistryFixture());
     loadInstalledPluginManifestRegistryMock.mockReset();
     loadInstalledPluginManifestRegistryMock.mockReturnValue(createManifestRegistryFixture());
-    loadOpenClawPluginsMock = vi
-      .spyOn(loaderModule, "loadOpenClawPlugins")
+    loadAforaPluginsMock = vi
+      .spyOn(loaderModule, "loadAforaPlugins")
       .mockImplementation((params) => {
         const registry = createEmptyPluginRegistry();
         registry.webSearchProviders = buildMockedWebSearchProviders(params);
@@ -373,7 +373,7 @@ describe("resolvePluginWebSearchProviders", () => {
     });
 
     expect(toRuntimeProviderKeys(providers)).toEqual(["brave:brave"]);
-    expect(loadOpenClawPluginsMock).not.toHaveBeenCalled();
+    expect(loadAforaPluginsMock).not.toHaveBeenCalled();
   });
 
   it("loads plugin web-search providers from the auto-enabled config snapshot", () => {
@@ -424,7 +424,7 @@ describe("resolvePluginWebSearchProviders", () => {
 
     expect(toRuntimeProviderKeys(providers)).toEqual(["brave:brave"]);
     expectScopedWebSearchCandidates(["brave"]);
-    const loaderParams = requireLastCallFirstArg(loadOpenClawPluginsMock, "loadOpenClawPlugins");
+    const loaderParams = requireLastCallFirstArg(loadAforaPluginsMock, "loadAforaPlugins");
     expect(requirePluginsConfig(loaderParams)).toEqual({
       allow: ["brave"],
       entries: { brave: { enabled: true } },
@@ -452,7 +452,7 @@ describe("resolvePluginWebSearchProviders", () => {
       "loadPluginManifestRegistryForInstalledIndex",
     );
     expect(manifestParams.workspaceDir).toBe("/tmp/runtime-workspace");
-    const loaderParams = requireLastCallFirstArg(loadOpenClawPluginsMock, "loadOpenClawPlugins");
+    const loaderParams = requireLastCallFirstArg(loadAforaPluginsMock, "loadAforaPlugins");
     expect(loaderParams.workspaceDir).toBe("/tmp/runtime-workspace");
     expect(loaderParams.onlyPluginIds).toEqual(["brave"]);
   });
@@ -478,7 +478,7 @@ describe("resolvePluginWebSearchProviders", () => {
 
   it("resolves current config contents when config changes in place", () => {
     const config = createBraveAllowConfig();
-    const env = createWebSearchEnv({ OPENCLAW_HOME: "/tmp/openclaw-home-a" });
+    const env = createWebSearchEnv({ AFORA_HOME: "/tmp/afora-home-a" });
 
     expectSnapshotLoaderCalls({
       config,
@@ -492,13 +492,13 @@ describe("resolvePluginWebSearchProviders", () => {
 
   it("resolves current env contents when env changes in place", () => {
     const config = createBraveAllowConfig();
-    const env = createWebSearchEnv({ OPENCLAW_HOME: "/tmp/openclaw-home-a" });
+    const env = createWebSearchEnv({ AFORA_HOME: "/tmp/afora-home-a" });
 
     expectSnapshotLoaderCalls({
       config,
       env,
       mutate: () => {
-        env.OPENCLAW_HOME = "/tmp/openclaw-home-b";
+        env.AFORA_HOME = "/tmp/afora-home-b";
       },
       expectedLoaderCalls: 2,
     });
@@ -523,6 +523,6 @@ describe("resolvePluginWebSearchProviders", () => {
       }
     }
 
-    expect(loadOpenClawPluginsMock).toHaveBeenCalledTimes(2);
+    expect(loadAforaPluginsMock).toHaveBeenCalledTimes(2);
   });
 });

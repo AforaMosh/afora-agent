@@ -1,7 +1,7 @@
 type NamedPluginRuntimeStoreSlot = { runtime: unknown };
 type NamedPluginRuntimeStoreRegistry = Map<string, NamedPluginRuntimeStoreSlot>;
 
-const pluginRuntimeStoreRegistryKey = Symbol.for("openclaw.plugin-sdk.runtime-store-registry");
+const pluginRuntimeStoreRegistryKey = Symbol.for("afora.plugin-sdk.runtime-store-registry");
 
 function getNamedPluginRuntimeStoreRegistry(): NamedPluginRuntimeStoreRegistry {
   const globalRecord = globalThis as typeof globalThis & {

@@ -1,6 +1,6 @@
 import type { AgentMessage } from "../runtime/index.js";
 
-const STEERING_MESSAGE_IDENTITY = Symbol.for("openclaw.steeringMessageIdentity");
+const STEERING_MESSAGE_IDENTITY = Symbol.for("afora.steeringMessageIdentity");
 const steeringMessagePersistenceFailureListeners = new Map<string, Set<(error: unknown) => void>>();
 
 export function setSteeringMessageIdentity(

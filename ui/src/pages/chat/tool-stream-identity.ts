@@ -1,5 +1,5 @@
-import { asNullableRecord as asToolRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { asNullableRecord as asToolRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   isToolCallContentType,
   isToolResultContentType,

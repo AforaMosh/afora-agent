@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ModelCatalogEntry } from "../../agents/model-catalog.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.plugin.js";
@@ -252,7 +252,7 @@ vi.mock("../../agents/cli-backends.js", () => ({
 }));
 
 vi.mock("../../agents/harness/selection.js", () => ({
-  selectAgentHarness: () => ({ id: "openclaw" }),
+  selectAgentHarness: () => ({ id: "afora" }),
   resolveAgentHarnessPolicy: ({
     provider,
     modelId,
@@ -260,7 +260,7 @@ vi.mock("../../agents/harness/selection.js", () => ({
   }: {
     provider?: string;
     modelId?: string;
-    config?: OpenClawConfig;
+    config?: AforaConfig;
   }) => {
     const modelRuntime =
       provider && modelId
@@ -316,7 +316,7 @@ import {
   replaceRuntimeAuthProfileStoreSnapshots,
 } from "../../agents/auth-profiles.js";
 import type { ModelAliasIndex } from "../../agents/model-selection.js";
-import type { ModelDefinitionConfig, OpenClawConfig } from "../../config/config.js";
+import type { ModelDefinitionConfig, AforaConfig } from "../../config/config.js";
 import type { SessionEntry } from "../../config/sessions.js";
 import { loadSessionEntry, replaceSessionEntry } from "../../config/sessions/session-accessor.js";
 import {
@@ -414,11 +414,11 @@ function baseAliasIndex(): ModelAliasIndex {
   return { byAlias: new Map(), byKey: new Map() };
 }
 
-function baseConfig(): OpenClawConfig {
+function baseConfig(): AforaConfig {
   return {
     commands: { text: true },
     agents: { defaults: {} },
-  } as unknown as OpenClawConfig;
+  } as unknown as AforaConfig;
 }
 
 function modelDefinition(id: string, name: string): ModelDefinitionConfig {
@@ -473,7 +473,7 @@ function setOpenAiRuntimeScopedUltraProvider(): void {
           { id: "medium" },
           { id: "high" },
           { id: "max" },
-          ...(agentRuntime === "openclaw" ? ([{ id: "ultra" }] as const) : []),
+          ...(agentRuntime === "afora" ? ([{ id: "ultra" }] as const) : []),
         ],
       }),
     },
@@ -555,12 +555,12 @@ function resolveModelSelectionForCommand(params: {
   command: string;
   allowedModelKeys: Set<string>;
   allowedModelCatalog: Array<{ provider: string; id: string }>;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentId?: string;
 }) {
   return resolveModelSelectionFromDirective({
     directives: parseInlineSessionDirectives(params.command),
-    cfg: params.cfg ?? ({ commands: { text: true } } as unknown as OpenClawConfig),
+    cfg: params.cfg ?? ({ commands: { text: true } } as unknown as AforaConfig),
     agentId: params.agentId,
     agentDir: TEST_AGENT_DIR,
     defaultProvider: "anthropic",
@@ -575,7 +575,7 @@ function resolveModelSelectionForCommand(params: {
 async function persistModelDirectiveForTest(params: {
   command: string;
   profiles?: Record<string, ApiKeyProfile>;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   aliasIndex?: ModelAliasIndex;
   allowedModelKeys: string[];
   allowedModelCatalog?: ModelCatalogEntry[];
@@ -770,7 +770,7 @@ async function withWorkspaceAuthFixture(
 ) {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), `${fixture.pluginId}-`));
   const workspaceDir = path.join(tempRoot, "workspace");
-  const pluginDir = path.join(workspaceDir, ".openclaw", "extensions", fixture.pluginId);
+  const pluginDir = path.join(workspaceDir, ".afora", "extensions", fixture.pluginId);
   const bundledDir = path.join(tempRoot, "bundled");
   const stateDir = path.join(tempRoot, "state");
   const credentialPath = path.join(tempRoot, "credentials.json");
@@ -780,7 +780,7 @@ async function withWorkspaceAuthFixture(
   fs.writeFileSync(path.join(pluginDir, "index.ts"), "export default {}\n", "utf8");
   fs.writeFileSync(credentialPath, "{}", "utf8");
   fs.writeFileSync(
-    path.join(pluginDir, "openclaw.plugin.json"),
+    path.join(pluginDir, "afora.plugin.json"),
     JSON.stringify({
       id: fixture.pluginId,
       configSchema: { type: "object" },
@@ -806,8 +806,8 @@ async function withWorkspaceAuthFixture(
   try {
     await withEnvAsync(
       {
-        OPENCLAW_BUNDLED_PLUGINS_DIR: bundledDir,
-        OPENCLAW_STATE_DIR: stateDir,
+        AFORA_BUNDLED_PLUGINS_DIR: bundledDir,
+        AFORA_STATE_DIR: stateDir,
         [fixture.envVar]: credentialPath,
         ...fixture.env,
       },
@@ -843,7 +843,7 @@ function nestedOpenRouterStatusFixture(configureDirectProvider: boolean) {
           },
         },
       },
-    } as unknown as OpenClawConfig,
+    } as unknown as AforaConfig,
     allowedModelCatalog: [
       { provider: "google", id: "gemini-3-flash-preview", name: "Gemini 3 Flash" },
       {
@@ -934,7 +934,7 @@ describe("/model chat UX", () => {
             { id: "medium" },
             { id: "high" },
             { id: "max" },
-            ...(agentRuntime === "openclaw" ? ([{ id: "ultra" }] as const) : []),
+            ...(agentRuntime === "afora" ? ([{ id: "ultra" }] as const) : []),
           ],
         }),
       },
@@ -980,7 +980,7 @@ describe("/model chat UX", () => {
           cfg: {
             ...baseConfig(),
             plugins: { allow: ["workspace-model-list"] },
-          } as unknown as OpenClawConfig,
+          } as unknown as AforaConfig,
         });
 
         expect(reply?.text).toContain("- anthropic");
@@ -1028,7 +1028,7 @@ describe("/model chat UX", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       allowedModelCatalog: [
         { provider: "anthropic", id: "claude-opus-4-6", name: "Claude Opus 4.5" },
         { provider: "openai", id: "gpt-4.1-mini", name: "GPT-4.1 mini" },
@@ -1057,7 +1057,7 @@ describe("/model chat UX", () => {
             modelPolicy: { allow: ["anthropic/*"] },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       allowedModelKeys: new Set(["anthropic/*"]),
       allowedModelCatalog: [
         { provider: "anthropic", id: "claude-sonnet-4-6", name: "Claude Sonnet 4.6" },
@@ -1083,7 +1083,7 @@ describe("/model chat UX", () => {
           modelPolicy: { allow: ["openrouter:free"] },
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const policy = createModelVisibilityPolicy({
       cfg,
       catalog: [],
@@ -1126,7 +1126,7 @@ describe("/model chat UX", () => {
           },
         ],
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     const policy = createModelVisibilityPolicy({
       cfg,
       catalog: [],
@@ -1213,7 +1213,7 @@ describe("/model chat UX", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       allowedModelCatalog: [{ provider: "openai", id: "gpt-5.5", name: "GPT-5.5" }],
     });
 
@@ -1255,7 +1255,7 @@ describe("/model chat UX", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       allowedModelCatalog: [{ provider: "openai", id: "gpt-5.5", name: "GPT-5.5" }],
     });
 
@@ -1264,7 +1264,7 @@ describe("/model chat UX", () => {
     expect(reply?.text).not.toContain("via codex runtime");
   });
 
-  it("does not borrow Codex auth when OpenAI model policy pins OpenClaw runtime", async () => {
+  it("does not borrow Codex auth when OpenAI model policy pins Afora runtime", async () => {
     setAuthProfiles({
       "openai:patrick@example.test": {
         type: "oauth",
@@ -1288,12 +1288,12 @@ describe("/model chat UX", () => {
             model: { primary: "openai/gpt-5.5" },
             models: {
               "openai/gpt-5.5": {
-                agentRuntime: { id: "openclaw" },
+                agentRuntime: { id: "afora" },
               },
             },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       allowedModelCatalog: [{ provider: "openai", id: "gpt-5.5", name: "GPT-5.5" }],
     });
 
@@ -1330,12 +1330,12 @@ describe("/model chat UX", () => {
             model: { primary: "openai/gpt-5.5" },
             models: {
               "openai/gpt-5.5": {
-                agentRuntime: { id: "openclaw" },
+                agentRuntime: { id: "afora" },
               },
             },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       allowedModelCatalog: [{ provider: "openai", id: "gpt-5.5", name: "GPT-5.5" }],
     });
 
@@ -1371,12 +1371,12 @@ describe("/model chat UX", () => {
             model: { primary: "openai/gpt-5.5" },
             models: {
               "openai/gpt-5.5": {
-                agentRuntime: { id: "openclaw" },
+                agentRuntime: { id: "afora" },
               },
             },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       allowedModelCatalog: [{ provider: "openai", id: "gpt-5.5", name: "GPT-5.5" }],
     });
 
@@ -1410,7 +1410,7 @@ describe("/model chat UX", () => {
                 },
               },
             },
-          } as unknown as OpenClawConfig,
+          } as unknown as AforaConfig,
           allowedModelCatalog: [
             { provider: "anthropic", id: "claude-opus-4-6", name: "Claude Opus 4.6" },
           ],
@@ -1423,7 +1423,7 @@ describe("/model chat UX", () => {
 
   it("auto-applies closest match for typos", () => {
     const directives = parseInlineSessionDirectives("/model anthropic/claud-opus-4-5");
-    const cfg = { commands: { text: true } } as unknown as OpenClawConfig;
+    const cfg = { commands: { text: true } } as unknown as AforaConfig;
 
     const resolved = resolveModelSelectionFromDirective({
       directives,
@@ -1470,7 +1470,7 @@ describe("/model chat UX", () => {
       'Add "openai/gpt-5.5" or its provider wildcard to agents.defaults.modelPolicy.allow.',
     );
     expect(resolved.errorText).toContain("Then retry: /model openai/gpt-5.5 --runtime codex");
-    expect(resolved.errorText).toContain("openclaw plugins enable codex");
+    expect(resolved.errorText).toContain("afora plugins enable codex");
   });
 
   it("names the active per-agent allowlist in repair guidance", () => {
@@ -1574,7 +1574,7 @@ describe("/model chat UX", () => {
 
     const resolved = resolveModelSelectionFromDirective({
       directives: parseInlineSessionDirectives(`/model gpt@${OPENAI_DATE_PROFILE_ID}`),
-      cfg: { commands: { text: true } } as unknown as OpenClawConfig,
+      cfg: { commands: { text: true } } as unknown as AforaConfig,
       agentDir: TEST_AGENT_DIR,
       defaultProvider: "anthropic",
       defaultModel: "claude-opus-4-6",
@@ -1691,7 +1691,7 @@ describe("/model chat UX", () => {
             },
           },
         },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
     });
 
     expect(persisted.provider).toBe("openai");
@@ -1712,7 +1712,7 @@ describe("/model chat UX", () => {
           contextTokens: 272_000,
         },
       ],
-      cfg: baseConfig() as OpenClawConfig,
+      cfg: baseConfig() as AforaConfig,
     });
 
     expect(persisted.contextTokens).toBe(272_000);
@@ -1757,7 +1757,7 @@ describe("/model chat UX", () => {
       providerOverride: "anthropic",
       modelOverride: "claude-opus-4-6",
       modelOverrideSource: "user",
-      agentRuntimeOverride: "openclaw",
+      agentRuntimeOverride: "afora",
     });
     const { persisted } = await persistModelDirectiveForTest({
       command: "/model openai/gpt-4o --runtime claude-cli hello",
@@ -1770,7 +1770,7 @@ describe("/model chat UX", () => {
       providerOverride: "anthropic",
       modelOverride: "claude-opus-4-6",
       modelOverrideSource: "user",
-      agentRuntimeOverride: "openclaw",
+      agentRuntimeOverride: "afora",
     });
     expect(enqueueSystemEvent).not.toHaveBeenCalled();
   });
@@ -1791,7 +1791,7 @@ describe("/model chat UX", () => {
       providerOverride: "openai",
       modelOverride: "gpt-5.6-sol",
       modelOverrideSource: "user",
-      agentRuntimeOverride: "openclaw",
+      agentRuntimeOverride: "afora",
       thinkingLevel: "high",
     });
     const initialSessionEntry = { ...sessionEntry };
@@ -1816,7 +1816,7 @@ describe("/model chat UX", () => {
     setOpenAiRuntimeScopedUltraProvider();
     const sessionEntry = createSessionEntry({ thinkingLevel: "high" });
     const { persisted } = await persistModelDirectiveForTest({
-      command: "/model openai/gpt-5.6-luna --runtime openclaw /think ultra please solve",
+      command: "/model openai/gpt-5.6-luna --runtime afora /think ultra please solve",
       allowedModelKeys: ["openai/gpt-5.6-luna"],
       sessionEntry,
     });
@@ -1826,7 +1826,7 @@ describe("/model chat UX", () => {
       providerOverride: "openai",
       modelOverride: "gpt-5.6-luna",
       modelOverrideSource: "user",
-      agentRuntimeOverride: "openclaw",
+      agentRuntimeOverride: "afora",
       thinkingLevel: "ultra",
     });
   });
@@ -2044,7 +2044,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
     const sessionEntry = createSessionEntry();
     const result = await handleDirectiveOnly(
       createHandleParams({
-        directives: parseInlineSessionDirectives("/model openai/gpt-4o --runtime openclaw"),
+        directives: parseInlineSessionDirectives("/model openai/gpt-4o --runtime afora"),
         sessionEntry,
       }),
     );
@@ -2052,12 +2052,12 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
     expect(result?.text).toContain(
       "Model set to openai/gpt-4o for this session. Configured default update requested.",
     );
-    expect(result?.text).toContain("Runtime set to openclaw for this session.");
+    expect(result?.text).toContain("Runtime set to afora for this session.");
     expect(sessionEntry).toMatchObject({
       providerOverride: "openai",
       modelOverride: "gpt-4o",
       modelOverrideSource: "user",
-      agentRuntimeOverride: "openclaw",
+      agentRuntimeOverride: "afora",
     });
   });
 
@@ -2066,7 +2066,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
       providerOverride: "anthropic",
       modelOverride: "claude-opus-4-6",
       modelOverrideSource: "user",
-      agentRuntimeOverride: "openclaw",
+      agentRuntimeOverride: "afora",
     });
     const initialSessionEntry = { ...sessionEntry };
     const result = await handleDirectiveOnly(
@@ -2106,7 +2106,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
 
     const result = await handleDirectiveOnly(
       createHandleParams({
-        directives: parseInlineSessionDirectives("/model openai/gpt-4o --runtime openclaw"),
+        directives: parseInlineSessionDirectives("/model openai/gpt-4o --runtime afora"),
         sessionEntry,
       }),
     );
@@ -2117,7 +2117,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
   });
 
   it("rechecks a newly persisted model lock before committing directive changes", async () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-model-directive-lock-"));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-model-directive-lock-"));
     const storePath = path.join(tempRoot, "sessions.json");
     const sessionEntry = createSessionEntry({
       providerOverride: "anthropic",
@@ -2324,7 +2324,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
   });
 
   it("suppresses model side effects when a concurrent switch wins", async () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-model-directive-race-"));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-model-directive-race-"));
     const storePath = path.join(tempRoot, "sessions.json");
     const sessionEntry = createSessionEntry({
       providerOverride: "anthropic",
@@ -2375,7 +2375,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
   });
 
   it("reports a rejected non-model directive after session rotation", async () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-elevated-directive-race-"));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-elevated-directive-race-"));
     const storePath = path.join(tempRoot, "sessions.json");
     const sessionEntry = createSessionEntry({ elevatedLevel: "full" });
     const rotatedEntry: SessionEntry = {
@@ -2414,7 +2414,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
   });
 
   it("rejects an explicit same-value directive after a concurrent change", async () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-elevated-directive-race-"));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-elevated-directive-race-"));
     const storePath = path.join(tempRoot, "sessions.json");
     const sessionEntry = createSessionEntry({ elevatedLevel: "off" });
     const concurrentEntry: SessionEntry = {
@@ -2456,7 +2456,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
         }),
       },
     ]);
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-thinking-remap-race-"));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-thinking-remap-race-"));
     const storePath = path.join(tempRoot, "sessions.json");
     const sessionEntry = createSessionEntry({ thinkingLevel: "xhigh" });
     const concurrentEntry: SessionEntry = {
@@ -2527,7 +2527,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
       nextThinking: {
         level: undefined,
         catalog: allowedModelCatalog,
-        agentRuntime: "openclaw",
+        agentRuntime: "afora",
       },
     });
     expect(enqueueSystemEvent).toHaveBeenCalledWith(
@@ -2613,7 +2613,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
             { id: "medium" },
             { id: "high" },
             { id: "max" },
-            ...(agentRuntime === "openclaw" ? ([{ id: "ultra" }] as const) : []),
+            ...(agentRuntime === "afora" ? ([{ id: "ultra" }] as const) : []),
           ],
         }),
       },
@@ -2873,7 +2873,7 @@ describe("handleDirectiveOnly model persist behavior (fixes #1435)", () => {
 
 describe("canonical session directive persistence policy", () => {
   it("checks an explicit same-value model selection against persisted state", async () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-inline-model-race-"));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-inline-model-race-"));
     const storePath = path.join(tempRoot, "sessions.json");
     const sessionKey = "agent:main:dm:same-model";
     const sessionEntry = createSessionEntry({
@@ -2917,7 +2917,7 @@ describe("canonical session directive persistence policy", () => {
   });
 
   it("returns the concurrent model winner without emitting switch side effects", async () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-inline-model-race-"));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-inline-model-race-"));
     const storePath = path.join(tempRoot, "sessions.json");
     const sessionKey = "agent:main:dm:race";
     const sessionEntry = createSessionEntry({

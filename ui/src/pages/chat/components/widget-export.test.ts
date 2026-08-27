@@ -7,7 +7,7 @@ const PNG_DATA_URL = "data:image/png;base64,aW1hZ2U=";
 
 function createWidgetFrame(): HTMLIFrameElement {
   const frame = document.createElement("iframe");
-  frame.src = "/__openclaw__/canvas/documents/cv_export/index.html";
+  frame.src = "/__afora__/canvas/documents/cv_export/index.html";
   document.body.append(frame);
   expect(frame.contentWindow).not.toBeNull();
   return frame;
@@ -34,20 +34,20 @@ describe("widget export", () => {
     });
 
     expect(postMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "openclaw:widget-snapshot-request" }),
+      expect.objectContaining({ type: "afora:widget-snapshot-request" }),
       "*",
     );
     const request = postMessage.mock.calls[0]?.[0] as { id: string };
     window.dispatchEvent(
       new MessageEvent("message", {
         source: frame.contentWindow,
-        data: { type: "openclaw:widget-snapshot", id: "snapshot-2", dataUrl: PNG_DATA_URL },
+        data: { type: "afora:widget-snapshot", id: "snapshot-2", dataUrl: PNG_DATA_URL },
       }),
     );
     window.dispatchEvent(
       new MessageEvent("message", {
         source: window,
-        data: { type: "openclaw:widget-snapshot", id: request.id, dataUrl: PNG_DATA_URL },
+        data: { type: "afora:widget-snapshot", id: request.id, dataUrl: PNG_DATA_URL },
       }),
     );
     await Promise.resolve();
@@ -56,7 +56,7 @@ describe("widget export", () => {
     window.dispatchEvent(
       new MessageEvent("message", {
         source: frame.contentWindow,
-        data: { type: "openclaw:widget-snapshot", id: request.id, dataUrl: PNG_DATA_URL },
+        data: { type: "afora:widget-snapshot", id: request.id, dataUrl: PNG_DATA_URL },
       }),
     );
     await expect(result).resolves.toBe("png");
@@ -153,7 +153,7 @@ describe("widget export", () => {
       window.dispatchEvent(
         new MessageEvent("message", {
           source: frame.contentWindow,
-          data: { type: "openclaw:widget-snapshot", id, dataUrl },
+          data: { type: "afora:widget-snapshot", id, dataUrl },
         }),
       );
       await expect(result).rejects.toThrow("widget returned an invalid snapshot");

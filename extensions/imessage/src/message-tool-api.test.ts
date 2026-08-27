@@ -68,7 +68,7 @@ describe("iMessage message-tool artifact", () => {
   });
 
   it("uses an already-cached legacy wrapper host for synchronous poll guidance", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-imessage-tool-host-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-imessage-tool-host-"));
     tempDirs.push(dir);
     const cliPath = path.join(dir, "imsg-ssh");
     await fs.writeFile(cliPath, '#!/bin/sh\nexec ssh bot@messages-mac imsg "$@"\n');

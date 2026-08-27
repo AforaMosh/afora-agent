@@ -2,11 +2,11 @@
 // replacement session cannot be initialized. These drive the real transcript
 // store so the assertion is the persisted boundary, not a mock call count.
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resetCommandQueueStateForTest } from "../../process/command-queue.test-support.js";
-import { closeOpenClawStateDatabase } from "../../state/openclaw-state-db.js";
+import { closeAforaStateDatabase } from "../../state/afora-state-db.js";
 import { SystemAgentChatEngine } from "../../system-agent/chat-engine.js";
 import { SystemAgentInferenceUnavailableError } from "../../system-agent/inference-error.js";
 import { createSystemAgentVerifiedInferenceTestFixture } from "../../system-agent/system-agent.test-helpers.js";
@@ -44,7 +44,7 @@ const PRE_RESET_TURNS = [
   { role: "assistant" as const, text: "pre-reset answer", at: 2 },
 ];
 
-const verifiedConfig: OpenClawConfig = {
+const verifiedConfig: AforaConfig = {
   agents: { defaults: { model: "openai/gpt-5.5@openai:verified" } },
   auth: { profiles: { "openai:verified": { provider: "openai", mode: "api_key" } } },
 };
@@ -54,7 +54,7 @@ const client = {
   connect: { device: { id: "device-test" } },
 } as GatewayClient;
 
-const originalStateDir = process.env.OPENCLAW_STATE_DIR;
+const originalStateDir = process.env.AFORA_STATE_DIR;
 
 beforeEach(async () => {
   const fixture = await createSystemAgentVerifiedInferenceTestFixture(verifiedConfig);
@@ -69,11 +69,11 @@ beforeEach(async () => {
 afterEach(() => {
   vi.restoreAllMocks();
   inferenceFallbackMocks.verifySystemAgentInferenceWithFallback.mockReset();
-  closeOpenClawStateDatabase();
+  closeAforaStateDatabase();
   if (originalStateDir === undefined) {
-    delete process.env.OPENCLAW_STATE_DIR;
+    delete process.env.AFORA_STATE_DIR;
   } else {
-    process.env.OPENCLAW_STATE_DIR = originalStateDir;
+    process.env.AFORA_STATE_DIR = originalStateDir;
   }
   resetCommandQueueStateForTest();
 });
@@ -98,8 +98,8 @@ async function resetSession(params: {
   approvalManager?: { expire: (id: string, reason: string) => void };
 }): Promise<void> {
   await expectDefined(
-    systemAgentHandlers["openclaw.chat"],
-    'systemAgentHandlers["openclaw.chat"] test invariant',
+    systemAgentHandlers["afora.chat"],
+    'systemAgentHandlers["afora.chat"] test invariant',
   )({
     params: { sessionId: "s1", reset: true },
     client,
@@ -113,7 +113,7 @@ async function resetSession(params: {
 
 /** Turns the next ordinary session would seed into model context. */
 function nextSessionSeed() {
-  closeOpenClawStateDatabase();
+  closeAforaStateDatabase();
   return readTranscriptTail(30, { afterLastReset: true });
 }
 
@@ -123,16 +123,16 @@ function nextSessionSeed() {
  */
 async function withTranscriptState(prefix: string, run: () => Promise<void>): Promise<void> {
   await withTestDir({ prefix }, async (stateDir) => {
-    process.env.OPENCLAW_STATE_DIR = stateDir;
+    process.env.AFORA_STATE_DIR = stateDir;
     try {
       await run();
     } finally {
-      closeOpenClawStateDatabase();
+      closeAforaStateDatabase();
     }
   });
 }
 
-describe("openclaw.chat reset boundary", () => {
+describe("afora.chat reset boundary", () => {
   // The reset discards the live session before initialization runs, so the
   // durable boundary has to survive a failed replacement. Otherwise the next
   // ordinary session seeds from the pre-reset transcript and undoes the reset.
@@ -156,7 +156,7 @@ describe("openclaw.chat reset boundary", () => {
       },
     ],
   ])("keeps the boundary when %s", async (_label, arrangeFailure) => {
-    await withTranscriptState("openclaw-reset-boundary-", async () => {
+    await withTranscriptState("afora-reset-boundary-", async () => {
       for (const turn of PRE_RESET_TURNS) {
         appendTranscriptTurn(turn);
       }
@@ -179,7 +179,7 @@ describe("openclaw.chat reset boundary", () => {
   // Matches the success path, which records a boundary for any accepted reset
   // rather than only for resets that had something live to discard.
   it("keeps the boundary when the reset had no live session", async () => {
-    await withTranscriptState("openclaw-reset-boundary-empty-", async () => {
+    await withTranscriptState("afora-reset-boundary-empty-", async () => {
       for (const turn of PRE_RESET_TURNS) {
         appendTranscriptTurn(turn);
       }
@@ -201,7 +201,7 @@ describe("openclaw.chat reset boundary", () => {
   // Expiring a pending approval writes to a durable store and can rethrow, so it
   // is inside the same guarded cleanup as disposal.
   it("keeps the boundary when expiring the pending approval throws", async () => {
-    await withTranscriptState("openclaw-reset-boundary-approval-", async () => {
+    await withTranscriptState("afora-reset-boundary-approval-", async () => {
       for (const turn of PRE_RESET_TURNS) {
         appendTranscriptTurn(turn);
       }
@@ -223,7 +223,7 @@ describe("openclaw.chat reset boundary", () => {
   });
 
   it("keeps the boundary when disposing the discarded engine rejects", async () => {
-    await withTranscriptState("openclaw-reset-boundary-dispose-", async () => {
+    await withTranscriptState("afora-reset-boundary-dispose-", async () => {
       for (const turn of PRE_RESET_TURNS) {
         appendTranscriptTurn(turn);
       }

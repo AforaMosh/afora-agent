@@ -2,7 +2,7 @@
 import * as fsSync from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { escapeRegExp } from "../shared/regexp.js";
 import { execFileUtf8 } from "./exec-file.js";
 import type { GatewayServiceEnv } from "./service-types.js";

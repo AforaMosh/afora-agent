@@ -3,7 +3,7 @@
  *
  * Resolves where sessions_send/subagent completion announcements should be delivered.
  */
-import { normalizeOptionalStringifiedId } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalStringifiedId } from "@afora/normalization-core/string-coerce";
 import { getChannelPlugin, normalizeChannelId } from "../../channels/plugins/index.js";
 import {
   parseSessionDeliveryRoute,

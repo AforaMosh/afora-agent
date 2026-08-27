@@ -8,7 +8,7 @@ import { runLiveTransportQaSuiteCommand } from "./live-transport-suite.runtime.j
 
 describe("live transport suite runtime", () => {
   beforeEach(() => {
-    vi.stubEnv("OPENCLAW_QA_CREDENTIAL_SOURCE", "");
+    vi.stubEnv("AFORA_QA_CREDENTIAL_SOURCE", "");
     vi.clearAllMocks();
   });
 
@@ -79,7 +79,7 @@ describe("live transport suite runtime", () => {
   });
 
   it("normalizes the shared credential source environment override", async () => {
-    vi.stubEnv("OPENCLAW_QA_CREDENTIAL_SOURCE", " convex ");
+    vi.stubEnv("AFORA_QA_CREDENTIAL_SOURCE", " convex ");
 
     await runLiveTransportQaSuiteCommand({
       channelId: "buzz",

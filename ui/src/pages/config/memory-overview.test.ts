@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { render } from "lit";
 import { describe, expect, it, vi } from "vitest";
 import type { DoctorMemoryStatusPayload } from "../../../../src/gateway/server-methods/doctor.ts";
@@ -203,7 +203,7 @@ describe("renderMemoryOverview", () => {
     expect(phaseRows.every((row) => row.textContent?.includes("0 3 * * *"))).toBe(true);
 
     const docs = container.querySelector<HTMLAnchorElement>(
-      'a[href="https://docs.openclaw.ai/concepts/dreaming"]',
+      'a[href="https://docs.afora.ai/concepts/dreaming"]',
     );
     expect(docs?.textContent).toContain("Open dreaming guide");
     expect(docs?.target).toBe("_blank");
@@ -230,13 +230,13 @@ describe("renderMemoryOverview", () => {
     payload.embedding = {
       ok: false,
       checked: false,
-      error: "run `openclaw memory status --deep` to probe",
+      error: "run `afora memory status --deep` to probe",
     };
     const onProbeEmbeddings = vi.fn();
     const container = renderOverview({ kind: "ready", payload }, undefined, { onProbeEmbeddings });
 
     expect(container.textContent).toContain("Embedding readiness has not been checked yet.");
-    expect(container.textContent).not.toContain("openclaw memory status --deep");
+    expect(container.textContent).not.toContain("afora memory status --deep");
     const testButton = [...container.querySelectorAll<HTMLButtonElement>("button")].find(
       (button) => button.textContent?.trim() === "Test",
     );

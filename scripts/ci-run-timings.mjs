@@ -8,7 +8,7 @@ import { isDirectRunUrl } from "./lib/direct-run.mjs";
 import { parsePositiveInt } from "./lib/numeric-options.mjs";
 import { execPlainGh } from "./lib/plain-gh.mjs";
 
-const DEFAULT_GITHUB_REPOSITORY = "openclaw/openclaw";
+const DEFAULT_GITHUB_REPOSITORY = "AforaMosh/afora-agent";
 const RUN_JOBS_PAGE_SIZE = 100;
 const RUN_JOBS_MAX_PAGES = 25;
 const TREND_RUNS_MAX_PAGES = 100;
@@ -454,7 +454,7 @@ function isSyntheticTimingJob(job) {
 }
 
 function isAggregateTimingJob(job) {
-  return isSyntheticTimingJob(job) || job.name === "openclaw/ci-gate";
+  return isSyntheticTimingJob(job) || job.name === "afora-agent/ci-gate";
 }
 
 function summarizeTrendRun(run) {

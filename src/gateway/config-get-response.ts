@@ -1,7 +1,7 @@
 import { readConfigFileSnapshot } from "../config/config.js";
 import { redactConfigSnapshot } from "../config/redact-snapshot.js";
 import { getRuntimeConfigAppliedHash, hashRuntimeConfigValue } from "../config/runtime-snapshot.js";
-import type { ConfigFileSnapshot } from "../config/types.openclaw.js";
+import type { ConfigFileSnapshot } from "../config/types.afora.js";
 import { getActivePluginRegistryVersion } from "../plugins/runtime.js";
 import type { GatewayHotReloadStatus } from "./config-reload-status.types.js";
 

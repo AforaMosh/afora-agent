@@ -1,9 +1,9 @@
-import { spawn as startOpenClawCliProcess, spawnSync } from "node:child_process";
+import { spawn as startAforaCliProcess, spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { resolveQaWindowsSystem32ExePath } from "../../../windows-system-tools.js";
 
-export function resolveMatrixQaOpenClawCliEntryPath(cwd: string): string {
+export function resolveMatrixQaAforaCliEntryPath(cwd: string): string {
   const mjsEntryPath = path.join(cwd, "dist", "index.mjs");
   if (existsSync(mjsEntryPath)) {
     return mjsEntryPath;
@@ -12,7 +12,7 @@ export function resolveMatrixQaOpenClawCliEntryPath(cwd: string): string {
 }
 
 export function killMatrixQaCliChild(
-  child: ReturnType<typeof startOpenClawCliProcess>,
+  child: ReturnType<typeof startAforaCliProcess>,
   signal: NodeJS.Signals,
   runTaskkill: typeof spawnSync = spawnSync,
 ): void {

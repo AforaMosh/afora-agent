@@ -1,7 +1,7 @@
 // Configure wizard tests cover guided setup routing across gateway, auth, channels, skills, and search.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import {
@@ -52,15 +52,15 @@ const mocks = vi.hoisted(() => {
     promptAuthConfig: vi.fn(),
     promptGatewayConfig: vi.fn(),
     promptRemoteGatewayConfig: vi.fn(
-      async (cfg: OpenClawConfig): Promise<OpenClawConfig> => ({
+      async (cfg: AforaConfig): Promise<AforaConfig> => ({
         ...cfg,
         gateway: { mode: "remote", remote: { url: "wss://gateway.example.test" } },
       }),
     ),
-    isCodexNativeWebSearchRelevant: vi.fn(({ config }: { config: OpenClawConfig }) =>
+    isCodexNativeWebSearchRelevant: vi.fn(({ config }: { config: AforaConfig }) =>
       Boolean(config.auth?.profiles?.["openai:default"]),
     ),
-    setupChannels: vi.fn(async (cfg: OpenClawConfig) => cfg),
+    setupChannels: vi.fn(async (cfg: AforaConfig) => cfg),
     guardCancel: vi.fn((value: unknown, _runtime: RuntimeEnv, _exitCode?: number) => value),
   };
 });
@@ -75,14 +75,14 @@ vi.mock("@clack/prompts", () => ({
 }));
 
 vi.mock("../config/config.js", () => ({
-  CONFIG_PATH: "~/.openclaw/openclaw.json",
+  CONFIG_PATH: "~/.AforaMosh/afora-agent.json",
   createConfigIO: () => ({
     readConfigFileSnapshotForWrite: async () => ({
       snapshot: await mocks.readConfigFileSnapshot(),
       writeOptions: {
         assertConfigPathForWrite: mocks.assertConfigPathForWrite,
-        expectedConfigPath: "/tmp/openclaw.json",
-        ownedConfigPathForWrite: "/tmp/openclaw.json",
+        expectedConfigPath: "/tmp/afora.json",
+        ownedConfigPathForWrite: "/tmp/afora.json",
       },
     }),
   }),
@@ -92,9 +92,9 @@ vi.mock("../config/config.js", () => ({
     writeOptions: {
       assertConfigPathForWrite: mocks.assertConfigPathForWrite,
       envSnapshotForRestore: { SECRET: "resolved-secret" },
-      expectedConfigPath: "/tmp/openclaw.json",
+      expectedConfigPath: "/tmp/afora.json",
       includeFileHashesForWrite: { "/tmp/plugins.json5": "stale-hash" },
-      ownedConfigPathForWrite: "/tmp/openclaw.json",
+      ownedConfigPathForWrite: "/tmp/afora.json",
     },
   }),
   resolveConfigWriteAfterWrite: (afterWrite?: { mode: string }) => afterWrite ?? { mode: "auto" },
@@ -141,7 +141,7 @@ vi.mock("../infra/windows-gateway-firewall-diagnostics.js", () => ({
   formatWindowsGatewayFirewallGuidance: (params: { bind?: string }) =>
     params.bind === "lan"
       ? [
-          "Windows firewall: if another device cannot connect to the LAN URL, run `openclaw gateway status --deep` from this Windows host.",
+          "Windows firewall: if another device cannot connect to the LAN URL, run `afora gateway status --deep` from this Windows host.",
         ]
       : [],
 }));
@@ -155,8 +155,8 @@ vi.mock("../../packages/terminal-core/src/note.js", () => ({
 }));
 
 vi.mock("./onboard-helpers.js", () => ({
-  DEFAULT_WORKSPACE: "~/.openclaw/workspace",
-  applyWizardMetadata: (cfg: OpenClawConfig) => cfg,
+  DEFAULT_WORKSPACE: "~/.afora/workspace",
+  applyWizardMetadata: (cfg: AforaConfig) => cfg,
   ensureWorkspaceAndSessions: vi.fn(),
   guardCancel: mocks.guardCancel,
   printWizardHeader: mocks.printWizardHeader,
@@ -232,7 +232,7 @@ import { runConfigureWizard } from "./configure.wizard.js";
 
 const createRuntime = createWizardTestRuntime;
 
-function setupBaseWizardState(config: OpenClawConfig = {}) {
+function setupBaseWizardState(config: AforaConfig = {}) {
   setupBaseWizardTestState(mocks, config);
 }
 
@@ -300,14 +300,14 @@ describe("runConfigureWizard", () => {
       },
     ]);
     mocks.setupSearch.mockReset();
-    mocks.setupSearch.mockImplementation(async (cfg: OpenClawConfig) => ({
+    mocks.setupSearch.mockImplementation(async (cfg: AforaConfig) => ({
       outcome: "completed",
       config: cfg,
     }));
     mocks.promptAuthConfig.mockReset();
-    mocks.promptAuthConfig.mockImplementation(async (cfg: OpenClawConfig) => cfg);
+    mocks.promptAuthConfig.mockImplementation(async (cfg: AforaConfig) => cfg);
     mocks.promptGatewayConfig.mockReset();
-    mocks.promptGatewayConfig.mockImplementation(async (cfg: OpenClawConfig) => ({
+    mocks.promptGatewayConfig.mockImplementation(async (cfg: AforaConfig) => ({
       config: cfg,
       port: 18789,
     }));
@@ -319,15 +319,15 @@ describe("runConfigureWizard", () => {
     setupBaseWizardState();
     queueWizardPrompts({ select: ["local", "configure"], confirm: [] });
     const events: string[] = [];
-    mocks.promptAuthConfig.mockImplementationOnce(async (cfg: OpenClawConfig) => {
+    mocks.promptAuthConfig.mockImplementationOnce(async (cfg: AforaConfig) => {
       events.push("model");
       return cfg;
     });
-    mocks.promptGatewayConfig.mockImplementationOnce(async (cfg: OpenClawConfig) => {
+    mocks.promptGatewayConfig.mockImplementationOnce(async (cfg: AforaConfig) => {
       events.push("gateway");
       return { config: cfg, port: 18789 };
     });
-    mocks.setupChannels.mockImplementationOnce(async (cfg: OpenClawConfig) => {
+    mocks.setupChannels.mockImplementationOnce(async (cfg: AforaConfig) => {
       events.push("channels");
       return cfg;
     });
@@ -351,15 +351,15 @@ describe("runConfigureWizard", () => {
       confirm: [],
     });
     const events: string[] = [];
-    mocks.promptAuthConfig.mockImplementationOnce(async (cfg: OpenClawConfig) => {
+    mocks.promptAuthConfig.mockImplementationOnce(async (cfg: AforaConfig) => {
       events.push("model");
       return cfg;
     });
-    mocks.promptGatewayConfig.mockImplementationOnce(async (cfg: OpenClawConfig) => {
+    mocks.promptGatewayConfig.mockImplementationOnce(async (cfg: AforaConfig) => {
       events.push("gateway");
       return { config: cfg, port: 18789 };
     });
-    mocks.setupChannels.mockImplementationOnce(async (cfg: OpenClawConfig) => {
+    mocks.setupChannels.mockImplementationOnce(async (cfg: AforaConfig) => {
       events.push("channels");
       return cfg;
     });
@@ -379,7 +379,7 @@ describe("runConfigureWizard", () => {
     setupBaseWizardState();
     queueWizardPrompts({ select: ["local"], confirm: [] });
     const events: string[] = [];
-    mocks.promptGatewayConfig.mockImplementationOnce(async (cfg: OpenClawConfig) => {
+    mocks.promptGatewayConfig.mockImplementationOnce(async (cfg: AforaConfig) => {
       events.push("gateway");
       return { config: cfg, port: 18991 };
     });
@@ -402,7 +402,7 @@ describe("runConfigureWizard", () => {
 
   it("keeps remote password health when the configured token ref is unresolved", async () => {
     const remotePassword = "remote-password"; // pragma: allowlist secret
-    const remoteConfig: OpenClawConfig = {
+    const remoteConfig: AforaConfig = {
       gateway: {
         mode: "remote",
         remote: {
@@ -442,7 +442,7 @@ describe("runConfigureWizard", () => {
   });
 
   it("skips remote health when a configured SecretRef is unresolved", async () => {
-    const unresolvedConfig: OpenClawConfig = {
+    const unresolvedConfig: AforaConfig = {
       gateway: {
         mode: "remote",
         remote: {
@@ -455,7 +455,7 @@ describe("runConfigureWizard", () => {
     setupBaseWizardState(unresolvedConfig);
     queueWizardPrompts({ select: ["remote"], confirm: [] });
     mocks.promptRemoteGatewayConfig.mockResolvedValueOnce(unresolvedConfig);
-    await withEnvAsync({ OPENCLAW_GATEWAY_PASSWORD: "ambient-password" }, async () => {
+    await withEnvAsync({ AFORA_GATEWAY_PASSWORD: "ambient-password" }, async () => {
       await runConfigureWizard({ command: "configure", sections: ["health"] }, createRuntime());
     });
 
@@ -498,7 +498,7 @@ describe("runConfigureWizard", () => {
         },
       },
     });
-    await withEnvAsync({ OPENCLAW_GATEWAY_PASSWORD: "env-password" }, async () => {
+    await withEnvAsync({ AFORA_GATEWAY_PASSWORD: "env-password" }, async () => {
       await runConfigureWizard({ command: "configure", sections: ["gateway"] }, createRuntime());
     });
 
@@ -524,13 +524,13 @@ describe("runConfigureWizard", () => {
         auth: { token: "configured-token", password: "configured-password" },
       },
     });
-    process.env.OPENCLAW_GATEWAY_TOKEN = "";
-    process.env.OPENCLAW_GATEWAY_PASSWORD = "";
+    process.env.AFORA_GATEWAY_TOKEN = "";
+    process.env.AFORA_GATEWAY_PASSWORD = "";
     try {
       await runConfigureWizard({ command: "configure", sections: ["gateway"] }, createRuntime());
     } finally {
-      delete process.env.OPENCLAW_GATEWAY_TOKEN;
-      delete process.env.OPENCLAW_GATEWAY_PASSWORD;
+      delete process.env.AFORA_GATEWAY_TOKEN;
+      delete process.env.AFORA_GATEWAY_PASSWORD;
     }
 
     const probeRequests = mocks.probeGatewayReachable.mock.calls.map(([request]) =>
@@ -684,7 +684,7 @@ describe("runConfigureWizard", () => {
       [
         "Remote Gateway:",
         "wss://gateway.example.test",
-        "Docs: https://docs.openclaw.ai/gateway/remote",
+        "Docs: https://docs.afora.ai/gateway/remote",
       ].join("\n"),
       "Gateway",
     );
@@ -692,7 +692,7 @@ describe("runConfigureWizard", () => {
 
   it("persists provider-owned web search config changes returned by setupSearch", async () => {
     setupBaseWizardState();
-    mocks.setupSearch.mockImplementation(async (cfg: OpenClawConfig) => {
+    mocks.setupSearch.mockImplementation(async (cfg: AforaConfig) => {
       const configured = createEnabledWebSearchConfig("firecrawl", {
         enabled: true,
         config: { webSearch: { apiKey: "fc-entered-key" } },
@@ -750,7 +750,7 @@ describe("runConfigureWizard", () => {
 
   it("keeps web_search disabled when provider setup has no credential", async () => {
     setupBaseWizardState();
-    mocks.setupSearch.mockImplementation(async (cfg: OpenClawConfig) => ({
+    mocks.setupSearch.mockImplementation(async (cfg: AforaConfig) => ({
       outcome: "completed",
       config: {
         ...cfg,
@@ -798,7 +798,7 @@ describe("runConfigureWizard", () => {
       [
         "No web search providers are currently available under this plugin policy.",
         "Enable plugins or remove deny rules, then rerun configure.",
-        "Docs: https://docs.openclaw.ai/tools/web",
+        "Docs: https://docs.afora.ai/tools/web",
       ].join("\n"),
       "Web search",
     );
@@ -852,11 +852,11 @@ describe("runConfigureWizard", () => {
         envVars: [],
         placeholder: "(no key needed)",
         signupUrl: "https://duckduckgo.com/",
-        docsUrl: "https://docs.openclaw.ai/tools/web",
+        docsUrl: "https://docs.afora.ai/tools/web",
         credentialPath: "",
       }),
     ]);
-    mocks.setupSearch.mockImplementation(async (cfg: OpenClawConfig) => ({
+    mocks.setupSearch.mockImplementation(async (cfg: AforaConfig) => ({
       outcome: "completed",
       config: createEnabledWebSearchConfig("duckduckgo", {
         enabled: true,
@@ -902,7 +902,7 @@ describe("runConfigureWizard", () => {
         "Web search lets your agent look things up online using the `web_search` tool.",
         "Codex-capable models can use native Codex web search.",
         "Other models use a separate web search provider, which you can configure here.",
-        "Docs: https://docs.openclaw.ai/tools/web",
+        "Docs: https://docs.afora.ai/tools/web",
       ].join("\n"),
       "Web search",
     );
@@ -910,7 +910,7 @@ describe("runConfigureWizard", () => {
       [
         "Codex-capable models can use native Codex web search instead of a separate provider.",
         "Other models need a separate web search provider.",
-        "If you do not choose one, OpenClaw can select a provider from available credentials; otherwise other models may not have web search.",
+        "If you do not choose one, Afora can select a provider from available credentials; otherwise other models may not have web search.",
       ].join("\n"),
       "Codex native search",
     );
@@ -980,7 +980,7 @@ describe("runConfigureWizard", () => {
   });
 
   it("retries without dropping nested plugin config written during wizard flow (issue #64188)", async () => {
-    const baseConfig: OpenClawConfig = {
+    const baseConfig: AforaConfig = {
       plugins: {
         entries: {
           "github-copilot": {
@@ -1078,7 +1078,7 @@ describe("runConfigureWizard", () => {
     };
     const agents = requireRecord(retryCall.nextConfig.agents, "agents config");
     const defaults = requireRecord(agents.defaults, "agent defaults");
-    expect(String(defaults.workspace)).toContain("/.openclaw/workspace");
+    expect(String(defaults.workspace)).toContain("/.afora/workspace");
     const githubCopilot = getPluginEntry(retryCall.nextConfig, "github-copilot");
     expect(githubCopilot.enabled).toBe(false);
     const pluginConfig = requireRecord(githubCopilot.config, "github-copilot config");

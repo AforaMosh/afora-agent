@@ -7,7 +7,7 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { completeSimple, type Model } from "openclaw/plugin-sdk/llm";
+import { completeSimple, type Model } from "afora-agent/plugin-sdk/llm";
 import { describe, expect, it } from "vitest";
 import { validateAnthropicSetupToken } from "../commands/auth-token.js";
 import { discoverAuthStorage, discoverModels } from "./agent-model-discovery.js";
@@ -20,13 +20,13 @@ import {
 import { isLiveTestEnabled, readLiveTestConfig } from "./live-test-helpers.js";
 import { getApiKeyForModelCore, requireApiKey } from "./model-auth.js";
 import { normalizeProviderId, parseModelRef } from "./model-selection.js";
-import { ensureOpenClawModelsJson } from "./models-config.js";
+import { ensureAforaModelsJson } from "./models-config.js";
 
 const LIVE = isLiveTestEnabled();
-const SETUP_TOKEN_RAW = process.env.OPENCLAW_LIVE_SETUP_TOKEN?.trim() ?? "";
-const SETUP_TOKEN_VALUE = process.env.OPENCLAW_LIVE_SETUP_TOKEN_VALUE?.trim() ?? "";
-const SETUP_TOKEN_PROFILE = process.env.OPENCLAW_LIVE_SETUP_TOKEN_PROFILE?.trim() ?? "";
-const SETUP_TOKEN_MODEL = process.env.OPENCLAW_LIVE_SETUP_TOKEN_MODEL?.trim() ?? "";
+const SETUP_TOKEN_RAW = process.env.AFORA_LIVE_SETUP_TOKEN?.trim() ?? "";
+const SETUP_TOKEN_VALUE = process.env.AFORA_LIVE_SETUP_TOKEN_VALUE?.trim() ?? "";
+const SETUP_TOKEN_PROFILE = process.env.AFORA_LIVE_SETUP_TOKEN_PROFILE?.trim() ?? "";
+const SETUP_TOKEN_MODEL = process.env.AFORA_LIVE_SETUP_TOKEN_MODEL?.trim() ?? "";
 
 const ENABLED = LIVE && Boolean(SETUP_TOKEN_RAW || SETUP_TOKEN_VALUE || SETUP_TOKEN_PROFILE);
 const describeLive = ENABLED ? describe : describe.skip;
@@ -76,7 +76,7 @@ async function resolveTokenSource(): Promise<TokenSource> {
     if (error) {
       throw new Error(`Invalid setup-token: ${error}`);
     }
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-setup-token-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-setup-token-"));
     const profileId = `anthropic:setup-token-live-${randomUUID()}`;
     const store = ensureAuthProfileStore(tempDir, {
       allowKeychainPrompt: false,
@@ -114,13 +114,13 @@ async function resolveTokenSource(): Promise<TokenSource> {
 
   if (SETUP_TOKEN_RAW && SETUP_TOKEN_RAW !== "1" && SETUP_TOKEN_RAW !== "auto") {
     throw new Error(
-      "OPENCLAW_LIVE_SETUP_TOKEN did not look like a setup-token. Use OPENCLAW_LIVE_SETUP_TOKEN_VALUE for raw tokens.",
+      "AFORA_LIVE_SETUP_TOKEN did not look like a setup-token. Use AFORA_LIVE_SETUP_TOKEN_VALUE for raw tokens.",
     );
   }
 
   if (candidates.length === 0) {
     throw new Error(
-      "No Anthropics setup-token profiles found. Set OPENCLAW_LIVE_SETUP_TOKEN_VALUE or OPENCLAW_LIVE_SETUP_TOKEN_PROFILE.",
+      "No Anthropics setup-token profiles found. Set AFORA_LIVE_SETUP_TOKEN_VALUE or AFORA_LIVE_SETUP_TOKEN_PROFILE.",
     );
   }
   return { agentDir, profileId: pickSetupTokenProfile(candidates) };
@@ -186,7 +186,7 @@ describeLive("live anthropic setup-token", () => {
       const tokenSource = await resolveTokenSource();
       try {
         const cfg = await readLiveTestConfig();
-        await ensureOpenClawModelsJson(cfg, tokenSource.agentDir);
+        await ensureAforaModelsJson(cfg, tokenSource.agentDir);
 
         const authStorage = discoverAuthStorage(tokenSource.agentDir);
         const modelRegistry = discoverModels(authStorage, tokenSource.agentDir);

@@ -2,7 +2,7 @@
 import {
   stripCompactionReplayCheckpoint,
   type OpenAIResponsesCompactionRejection,
-} from "@openclaw/ai/transports";
+} from "@afora/ai/transports";
 import { emitSessionTranscriptUpdate } from "../../sessions/transcript-events.js";
 import type { AgentMessage } from "../runtime/index.js";
 import { log } from "./logger.js";

@@ -3,4 +3,4 @@
 export {
   getRealtimeTranscriptionProvider,
   listRealtimeTranscriptionProviders,
-} from "openclaw/plugin-sdk/realtime-transcription";
+} from "afora-agent/plugin-sdk/realtime-transcription";

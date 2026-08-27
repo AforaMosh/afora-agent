@@ -1,8 +1,8 @@
-import { resolveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
-import { inspectTlsCertificateError } from "openclaw/plugin-sdk/provider-http";
+import { resolveTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
+import { inspectTlsCertificateError } from "afora-agent/plugin-sdk/provider-http";
 
 const OPENAI_AUTH_PROBE_URL =
-  "https://auth.openai.com/oauth/authorize?response_type=code&client_id=openclaw-preflight&redirect_uri=http%3A%2F%2Flocalhost%3A1455%2Fauth%2Fcallback&scope=openid+profile+email";
+  "https://auth.openai.com/oauth/authorize?response_type=code&client_id=afora-preflight&redirect_uri=http%3A%2F%2Flocalhost%3A1455%2Fauth%2Fcallback&scope=openid+profile+email";
 type PreflightFailureKind = "tls-cert" | "network";
 type OpenAIOAuthTlsPreflightResult =
   | { ok: true }

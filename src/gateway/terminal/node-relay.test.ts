@@ -33,7 +33,7 @@ describe("createNodeRelayBackend", () => {
           },
         },
         connect: {
-          client: { id: "openclaw-node-host", mode: "node" },
+          client: { id: "afora-node-host", mode: "node" },
           device: { id: "node-validated" },
           commands: ["codex.terminal.resume.v1"],
         },

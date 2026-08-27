@@ -8,12 +8,12 @@ import { root } from "../infra/fs-safe.js";
 import { resolveUserPath } from "../utils.js";
 import { resolveWorkspaceStateIdentity } from "./workspace-state-store.js";
 
-export const LEGACY_WORKSPACE_STATE_DIRNAME = ".openclaw";
+export const LEGACY_WORKSPACE_STATE_DIRNAME = ".afora";
 const LEGACY_WORKSPACE_STATE_FILENAME = "workspace-state.json";
-export const LEGACY_WORKSPACE_STATE_CURRENT_FILENAME = "openclaw-workspace-state.json";
+export const LEGACY_WORKSPACE_STATE_CURRENT_FILENAME = "afora-workspace-state.json";
 export const LEGACY_WORKSPACE_ATTESTATION_DIRNAME = "workspace-attestations";
 const LEGACY_WORKSPACE_ATTESTATION_SUFFIX = ".attested";
-export const LEGACY_WORKSPACE_ATTESTATION_HEADER = "openclaw-workspace-attestation:v1";
+export const LEGACY_WORKSPACE_ATTESTATION_HEADER = "afora-workspace-attestation:v1";
 export const LEGACY_WORKSPACE_ATTESTATION_MAX_BYTES = 2048;
 export const WORKSPACE_DOCTOR_CLAIM_SUFFIX = ".doctor-importing";
 
@@ -175,7 +175,7 @@ export function assertNoUnmigratedWorkspaceState(params: { workspaceDir: string 
     );
   if (hasLegacy) {
     throw new Error(
-      `Legacy workspace setup state requires migration for ${identity.workspacePath}; run openclaw doctor --fix.`,
+      `Legacy workspace setup state requires migration for ${identity.workspacePath}; run afora doctor --fix.`,
     );
   }
   checkedWorkspaceSourceSets.add(sourceSetKey);
@@ -186,7 +186,7 @@ function resetLegacyWorkspaceStateCheckForTest(): void {
 }
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.workspaceLegacyStateTestApi")] =
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.workspaceLegacyStateTestApi")] =
     { resetLegacyWorkspaceStateCheckForTest };
 }
 
@@ -214,7 +214,7 @@ export function prepareLegacyWorkspaceStateReset(
     ...sources.stateDirAttestationPaths.map((sourcePath) => ({
       rootDir: path.dirname(path.dirname(sourcePath)),
       sourcePath,
-      // Hashed paths inside OpenClaw-owned attestation directories are
+      // Hashed paths inside Afora-owned attestation directories are
       // reserved state. Explicit reset must remove malformed blockers too.
       requireAttestationHeader: false,
     })),
@@ -228,7 +228,7 @@ export function prepareLegacyWorkspaceStateReset(
     {
       ...candidate,
       sourcePath: `${candidate.sourcePath}${WORKSPACE_DOCTOR_CLAIM_SUFFIX}`,
-      // Sibling claims remain outside OpenClaw-owned roots. Renaming a claimed
+      // Sibling claims remain outside Afora-owned roots. Renaming a claimed
       // marker preserves its header, so require that ownership proof there too.
       requireAttestationHeader: candidate.requireAttestationHeader,
     },

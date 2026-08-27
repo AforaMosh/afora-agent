@@ -18,8 +18,8 @@ describe("ChatVideoPlayer", () => {
       .mockResolvedValueOnce(new Response(null, { status: 202 }))
       .mockResolvedValueOnce(new Response(null, { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
-    const player = document.createElement("openclaw-chat-video-player");
-    player.src = "/__openclaw__/assistant-media?source=clip.avi&mediaTicket=ticket";
+    const player = document.createElement("afora-chat-video-player");
+    player.src = "/__afora__/assistant-media?source=clip.avi&mediaTicket=ticket";
     player.sourceIdentity = "media:clip";
     player.label = "clip.avi";
     player.playback = "transcode";
@@ -37,7 +37,7 @@ describe("ChatVideoPlayer", () => {
   });
 
   it("does not preserve a previous attachment when a new rendition fails", async () => {
-    const player = document.createElement("openclaw-chat-video-player");
+    const player = document.createElement("afora-chat-video-player");
     player.src = "https://example.com/first.mp4";
     player.sourceIdentity = "media:first";
     player.label = "first.mp4";
@@ -51,7 +51,7 @@ describe("ChatVideoPlayer", () => {
       "fetch",
       vi.fn<typeof fetch>(async () => new Response(null, { status: 500 })),
     );
-    player.src = "/__openclaw__/assistant-media?source=second.caf&mediaTicket=ticket";
+    player.src = "/__afora__/assistant-media?source=second.caf&mediaTicket=ticket";
     player.sourceIdentity = "media:second";
     player.label = "second.caf";
     player.playback = "transcode";
@@ -71,7 +71,7 @@ describe("ChatVideoPlayer", () => {
   });
 
   it("hides a previous attachment while the replacement HEAD is stalled", async () => {
-    const player = document.createElement("openclaw-chat-video-player");
+    const player = document.createElement("afora-chat-video-player");
     player.src = "https://example.com/first.mp4";
     player.sourceIdentity = "media:first-stalled";
     player.label = "first.mp4";
@@ -80,7 +80,7 @@ describe("ChatVideoPlayer", () => {
 
     const fetchMock = vi.fn<typeof fetch>(async () => await new Promise<Response>(() => {}));
     vi.stubGlobal("fetch", fetchMock);
-    player.src = "/__openclaw__/assistant-media?source=second.caf&mediaTicket=ticket";
+    player.src = "/__afora__/assistant-media?source=second.caf&mediaTicket=ticket";
     player.sourceIdentity = "media:second-stalled";
     player.label = "second.caf";
     player.playback = "transcode";
@@ -92,7 +92,7 @@ describe("ChatVideoPlayer", () => {
   });
 
   it("pauses and clears the source when disconnected while playing", async () => {
-    const player = document.createElement("openclaw-chat-video-player");
+    const player = document.createElement("afora-chat-video-player");
     player.src = "https://example.com/playing.mp4";
     player.sourceIdentity = "media:playing";
     player.label = "playing.mp4";

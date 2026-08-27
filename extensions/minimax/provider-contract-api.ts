@@ -1,5 +1,5 @@
 // Minimax API module exposes the plugin public contract.
-import type { ProviderPlugin } from "openclaw/plugin-sdk/provider-model-shared";
+import type { ProviderPlugin } from "afora-agent/plugin-sdk/provider-model-shared";
 import { resolveMinimaxThinkingProfile } from "./thinking.js";
 
 const noopAuth = async () => ({ profiles: [] });

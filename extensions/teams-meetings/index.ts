@@ -1,6 +1,6 @@
-import { MeetingPlatformAdapter } from "openclaw/plugin-sdk/meeting-runtime";
-import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { MeetingPlatformAdapter } from "afora-agent/plugin-sdk/meeting-runtime";
+import { normalizeAgentId } from "afora-agent/plugin-sdk/routing";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { Type } from "typebox";
 import { teamsMeetingsConfig } from "./src/config.js";
 import { TeamsMeetingsInvalidRequestError, teamsMeetingsInvalidRequest } from "./src/errors.js";

@@ -12,16 +12,16 @@ const messageHookRunner = vi.hoisted(() => ({
   runMessageSent: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/hook-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/hook-runtime")>();
+vi.mock("afora-agent/plugin-sdk/hook-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/hook-runtime")>();
   return {
     ...actual,
     triggerInternalHook,
   };
 });
 
-vi.mock("openclaw/plugin-sdk/plugin-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/plugin-runtime")>();
+vi.mock("afora-agent/plugin-sdk/plugin-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/plugin-runtime")>();
   return {
     ...actual,
     getGlobalHookRunner: () => messageHookRunner,
@@ -182,7 +182,7 @@ describe("deliverReplies identity passthrough", () => {
       .mockResolvedValueOnce({ messageId: "media-ts", channelId: "C123" })
       .mockResolvedValueOnce({ messageId: "chart-ts", channelId: "C123" });
     const identity = { username: "Bot", iconEmoji: ":chart_with_upwards_trend:" };
-    const metadata = { event_type: "openclaw_test", event_payload: { source: "chart" } };
+    const metadata = { event_type: "afora_test", event_payload: { source: "chart" } };
     const listenerClient = { chat: { postMessage: vi.fn() } } as never;
     const eventScope = {
       teamId: "T1",
@@ -309,7 +309,7 @@ describe("deliverReplies identity passthrough", () => {
         elements: [
           {
             type: "button",
-            action_id: "openclaw:reply_button",
+            action_id: "afora:reply_button",
             text: { type: "plain_text", text: "Option A" },
             value: "reply_1_option_a",
           },
@@ -371,7 +371,7 @@ describe("deliverReplies identity passthrough", () => {
     expect(blocks[0]?.type).toBe("section");
     expect(blocks[1]?.type).toBe("actions");
     expect(blocks[1]?.elements).toHaveLength(1);
-    expect(blocks[1]?.elements?.[0]?.action_id).toBe("openclaw:reply_button:1:1");
+    expect(blocks[1]?.elements?.[0]?.action_id).toBe("afora:reply_button:1:1");
     expect(blocks[1]?.elements?.[0]?.style).toBe("primary");
     expect(blocks[1]?.elements?.[0]?.value).toBe("approve");
   });
@@ -606,7 +606,7 @@ describe("deliverSlackSlashReplies chunking", () => {
         elements: [
           {
             type: "button",
-            action_id: "openclaw:reply_button",
+            action_id: "afora:reply_button",
             text: { type: "plain_text", text: "Refresh" },
             value: "refresh",
           },
@@ -791,7 +791,7 @@ describe("deliverSlackSlashReplies chunking", () => {
       elements: [
         {
           type: "button",
-          action_id: "openclaw:reply_button",
+          action_id: "afora:reply_button",
           text: { type: "plain_text", text: "Refresh" },
           value: "refresh",
         },

@@ -11,8 +11,8 @@
 //
 // chrome-mcp path keeps its own inline overlay (renderChromeMcpLabels) for now.
 
-const ANNOTATION_OVERLAY_ATTR = "data-openclaw-labels";
-const ANNOTATION_OVERLAY_ROOT_ID = "__openclaw-annotations__";
+const ANNOTATION_OVERLAY_ATTR = "data-afora-labels";
+const ANNOTATION_OVERLAY_ROOT_ID = "__afora-annotations__";
 export const ANNOTATION_MAX_LABELS_DEFAULT = 150;
 
 export type CoordinateSpace = "viewport" | "fullpage" | "element";

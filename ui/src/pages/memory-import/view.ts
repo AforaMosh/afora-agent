@@ -381,7 +381,7 @@ function renderConfirmation(props: MemoryImportViewProps) {
   const title = t("memoryImport.confirmTitle", { provider: providerLabel(provider) });
   const description = t("memoryImport.confirmDescription", { count: String(count) });
   return html`
-    <openclaw-modal-dialog
+    <afora-modal-dialog
       label=${title}
       description=${description}
       @modal-cancel=${() => {
@@ -420,7 +420,7 @@ function renderConfirmation(props: MemoryImportViewProps) {
           </button>
         </div>
       </div>
-    </openclaw-modal-dialog>
+    </afora-modal-dialog>
   `;
 }
 
@@ -441,7 +441,7 @@ function renderIntroSection(props: MemoryImportViewProps) {
         ? renderSettingsRow({
             title: t("memoryImport.agent"),
             control: html`
-              <openclaw-agent-select
+              <afora-agent-select
                 class="agent-select--settings"
                 name="memory-import-agent"
                 .options=${props.agents.map((agent) => ({
@@ -453,7 +453,7 @@ function renderIntroSection(props: MemoryImportViewProps) {
                 .accessibleLabel=${t("memoryImport.agent")}
                 .disabled=${busy}
                 .onSelect=${props.onSelectAgent}
-              ></openclaw-agent-select>
+              ></afora-agent-select>
             `,
           })
         : nothing}
@@ -473,7 +473,7 @@ function renderBackfillConfirmation(props: MemoryImportViewProps) {
     return nothing;
   }
   return html`
-    <openclaw-modal-dialog
+    <afora-modal-dialog
       label=${t("memoryImport.backfill.rollbackConfirmTitle")}
       description=${t("memoryImport.backfill.rollbackConfirmDescription")}
       @modal-cancel=${props.onBackfillRollbackCancel}
@@ -508,7 +508,7 @@ function renderBackfillConfirmation(props: MemoryImportViewProps) {
           </button>
         </div>
       </div>
-    </openclaw-modal-dialog>
+    </afora-modal-dialog>
   `;
 }
 

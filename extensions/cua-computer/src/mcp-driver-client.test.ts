@@ -24,7 +24,7 @@ type FakeEndpoint = {
 async function createFakeEndpoint(
   handle: (request: RpcRequest, endpoint: FakeEndpoint) => void,
 ): Promise<FakeEndpoint> {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-cua-mcp-test-"));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "afora-cua-mcp-test-"));
   const socketPath = path.join(directory, "daemon.sock");
   const binaryPath = path.join(directory, "cua-driver");
   await fs.writeFile(
@@ -121,7 +121,7 @@ function toolResult(structuredContent: Record<string, unknown>, image = false) {
 
 function sessionState(scope: "window" | "desktop") {
   return toolResult({
-    session: "openclaw-test",
+    session: "afora-test",
     capture_scope: scope,
     effective_scope: scope,
     desktop_unlocked: scope === "desktop",
@@ -184,7 +184,7 @@ describe.runIf(process.platform !== "win32")("CUA MCP proxy transport", () => {
           fake.respond(request, sessionState("desktop"));
           break;
         case "end_session":
-          fake.respond(request, toolResult({ session: "openclaw-test", active: false }));
+          fake.respond(request, toolResult({ session: "afora-test", active: false }));
           break;
         default:
           break;
@@ -327,7 +327,7 @@ describe.runIf(process.platform !== "win32")("CUA MCP proxy transport", () => {
       await expect(desktopCall).resolves.toBeInstanceOf(Error);
       await expect(disposeCall).resolves.toBeInstanceOf(Error);
       expect(endedSessions).toHaveLength(1);
-      expect(endedSessions[0]).toEqual(expect.stringMatching(/^openclaw-window-/));
+      expect(endedSessions[0]).toEqual(expect.stringMatching(/^afora-window-/));
     } finally {
       await endpoint.close();
     }
@@ -347,7 +347,7 @@ describe.runIf(process.platform !== "win32")("CUA MCP proxy transport", () => {
       } else if (request.method === "tools/call" && request.params?.name === "list_windows") {
         held.push(request);
       } else if (request.method === "tools/call" && request.params?.name === "end_session") {
-        fake.respond(request, toolResult({ session: "openclaw-test", active: false }));
+        fake.respond(request, toolResult({ session: "afora-test", active: false }));
       }
     });
     try {
@@ -357,7 +357,7 @@ describe.runIf(process.platform !== "win32")("CUA MCP proxy transport", () => {
       await expect(calls[64]).rejects.toThrow("too many pending requests");
       await vi.waitFor(() => expect(held).toHaveLength(64));
       expect(held[0]?.params?.arguments).toMatchObject({
-        session: expect.stringMatching(/^openclaw-/),
+        session: expect.stringMatching(/^afora-/),
       });
       for (const request of held) {
         endpoint.respond(request, toolResult({ windows: [] }));

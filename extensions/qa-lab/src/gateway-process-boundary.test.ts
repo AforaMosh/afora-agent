@@ -76,7 +76,7 @@ describe("gateway process boundary", () => {
           version: 1,
           generation: prepared.generation,
           status: "pass",
-          envKeys: ["PATH", "HOME", "PATH", "OPENCLAW_QA_SUT_PREENTRY_STOP"],
+          envKeys: ["PATH", "HOME", "PATH", "AFORA_QA_SUT_PREENTRY_STOP"],
         })}\n`,
         { mode: 0o640 },
       );
@@ -154,7 +154,7 @@ describe("gateway process boundary", () => {
     const evidenceDir = await fs.mkdtemp(path.join(os.tmpdir(), "qa-process-boundary-marker-"));
     cleanupPaths.push(evidenceDir);
     const env = {
-      OPENCLAW_QA_TELEGRAM_SUT_PROCESS_BOUNDARY_DIR: evidenceDir,
+      AFORA_QA_TELEGRAM_SUT_PROCESS_BOUNDARY_DIR: evidenceDir,
     };
     const markerPath = path.join(evidenceDir, `${RETAIN_LEASE_PREFIX}controller.json`);
 
@@ -168,7 +168,7 @@ describe("gateway process boundary", () => {
 
   it("requires a durable Convex lease before isolated execution", () => {
     const env = {
-      OPENCLAW_QA_TELEGRAM_SUT_PROCESS_BOUNDARY_DIR: "/tmp/process-boundary",
+      AFORA_QA_TELEGRAM_SUT_PROCESS_BOUNDARY_DIR: "/tmp/process-boundary",
     };
     expect(() =>
       assertQaGatewayCredentialLeaseQuarantine(
@@ -247,7 +247,7 @@ describe("gateway process boundary", () => {
       expect(first.retainCredentialLeasePath).not.toBe(second.retainCredentialLeasePath);
       await expect(
         shouldRetainQaGatewayCredentialLease({
-          OPENCLAW_QA_TELEGRAM_SUT_PROCESS_BOUNDARY_DIR: evidenceDir,
+          AFORA_QA_TELEGRAM_SUT_PROCESS_BOUNDARY_DIR: evidenceDir,
         }),
       ).resolves.toBe(true);
       expect((await fs.stat(first.retainCredentialLeasePath)).mode & 0o777).toBe(0o600);

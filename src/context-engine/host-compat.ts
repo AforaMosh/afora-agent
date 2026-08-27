@@ -27,9 +27,9 @@ const GENERIC_CLI_CONTEXT_ENGINE_HOST_CAPABILITIES = [
   "maintain",
 ] as const satisfies readonly ContextEngineHostCapability[];
 
-export const OPENCLAW_EMBEDDED_CONTEXT_ENGINE_HOST = {
-  id: "openclaw-embedded",
-  label: "OpenClaw embedded runner",
+export const AFORA_EMBEDDED_CONTEXT_ENGINE_HOST = {
+  id: "afora-embedded",
+  label: "Afora embedded runner",
   capabilities: [
     "bootstrap",
     "assemble-before-prompt",

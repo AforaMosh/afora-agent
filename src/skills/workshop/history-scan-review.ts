@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { prepareSystemAgentRunAdmission } from "../../agents/admitted-run-context.js";
 import { resolveDefaultModelForAgent } from "../../agents/model-selection-config.js";
 import { SessionManager } from "../../agents/sessions/index.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { CommandLane } from "../../process/lanes.js";
 import {
   buildSkillHistoryScanPrompt,
@@ -20,7 +20,7 @@ const HISTORY_SCAN_TIMEOUT_MS = 10 * 60_000;
 
 export async function runSkillHistoryScanReview(params: {
   agentId: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   env?: NodeJS.ProcessEnv;
   modelRef?: { model: string; provider: string };
   onComplete?: (ideasFound: number) => Promise<void>;
@@ -78,8 +78,8 @@ export async function runSkillHistoryScanReview(params: {
       agentId: params.agentId,
       trigger: "manual",
       lane: CommandLane.SkillWorkshopReview,
-      agentHarnessId: "openclaw",
-      agentHarnessRuntimeOverride: "openclaw",
+      agentHarnessId: "afora",
+      agentHarnessRuntimeOverride: "afora",
       workspaceDir: params.workspaceDir,
       config: params.config,
       prompt: buildSkillHistoryScanPrompt({

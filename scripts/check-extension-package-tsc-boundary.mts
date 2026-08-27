@@ -135,9 +135,9 @@ export function resolveCompileConcurrency(
   env: NodeJS.ProcessEnv = process.env,
   availableParallelism = os.availableParallelism(),
 ) {
-  const raw = env.OPENCLAW_EXTENSION_BOUNDARY_CONCURRENCY?.trim();
+  const raw = env.AFORA_EXTENSION_BOUNDARY_CONCURRENCY?.trim();
   if (raw) {
-    return parsePositiveInt(raw, "OPENCLAW_EXTENSION_BOUNDARY_CONCURRENCY");
+    return parsePositiveInt(raw, "AFORA_EXTENSION_BOUNDARY_CONCURRENCY");
   }
   return Math.max(1, Math.min(6, Math.floor(availableParallelism / 2)));
 }
@@ -909,7 +909,7 @@ async function runCompileCheck(extensionIds: string[]) {
   runNodeStep("plugin-sdk boundary prep", prepareBoundaryArtifactsArgs, 420_000);
   const prepElapsedMs = Date.now() - prepStartedAt;
   const concurrency = resolveCompileConcurrency();
-  const verboseFreshLogs = process.env.OPENCLAW_EXTENSION_BOUNDARY_VERBOSE_FRESH === "1";
+  const verboseFreshLogs = process.env.AFORA_EXTENSION_BOUNDARY_VERBOSE_FRESH === "1";
   const sharedNewestInputMtimeMs = Math.max(
     collectNewestMtime(resolve(repoRoot, "dist/plugin-sdk"), {
       skipDistDirectories: false,

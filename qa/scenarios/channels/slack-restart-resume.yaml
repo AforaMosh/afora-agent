@@ -24,7 +24,7 @@ scenario:
       conversationKind: group
       conversationId: C0123456789
       senderId: U0123456789
-      mentionPrefix: "@openclaw "
+      mentionPrefix: "@afora "
       firstPrefix: SLACK_QA_RESTART
       secondPrefix: SLACK_QA_RESTART_AFTER
       timeoutMs: 60000

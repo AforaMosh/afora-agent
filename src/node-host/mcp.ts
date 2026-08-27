@@ -3,10 +3,10 @@ import { isDeepStrictEqual } from "node:util";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { ErrorCode, type CallToolResult, type Tool } from "@modelcontextprotocol/sdk/types.js";
-import { redactSensitiveUrlLikeString } from "@openclaw/net-policy/redact-sensitive-url";
-import { clampPositiveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { redactSensitiveUrlLikeString } from "@afora/net-policy/redact-sensitive-url";
+import { clampPositiveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import type { NodePluginToolDescriptor } from "../../packages/gateway-protocol/src/schema/nodes.js";
 import {
   connectMcpClient,
@@ -264,7 +264,7 @@ export async function startNodeHostMcpManager(
     deps.createClient ??
     ((_serverName, options) =>
       new Client(
-        { name: "openclaw-node-host", version: VERSION },
+        { name: "afora-node-host", version: VERSION },
         {
           jsonSchemaValidator: createMcpJsonSchemaValidator(),
           listChanged: {

@@ -1,13 +1,13 @@
 ---
-summary: "macOS IPC architecture for OpenClaw app, gateway node transport, and PeekabooBridge"
+summary: "macOS IPC architecture for Afora app, gateway node transport, and PeekabooBridge"
 read_when:
   - Editing IPC contracts or menu bar app IPC
 title: "macOS IPC"
 ---
 
-# OpenClaw macOS IPC architecture
+# Afora macOS IPC architecture
 
-A local Unix socket connects the node host service to the macOS app for exec approvals and `system.run`. An `openclaw-mac` debug CLI (`apps/macos/Sources/OpenClawMacCLI`) exists for discovery/connect checks; agent actions still flow through the Gateway WebSocket and `node.invoke`. The node-backed `computer.act` path runs embedded Peekaboo automation in-process; standalone Peekaboo clients use PeekabooBridge.
+A local Unix socket connects the node host service to the macOS app for exec approvals and `system.run`. An `afora-mac` debug CLI (`apps/macos/Sources/AforaMacCLI`) exists for discovery/connect checks; agent actions still flow through the Gateway WebSocket and `node.invoke`. The node-backed `computer.act` path runs embedded Peekaboo automation in-process; standalone Peekaboo clients use PeekabooBridge.
 
 ## Goals
 
@@ -42,8 +42,8 @@ Agent -> Gateway -> Node Service (WS)
 ### PeekabooBridge (UI automation)
 
 - The built-in agent `computer` tool does **not** use this socket. A paired macOS node fulfills `computer.act` in the app process with embedded Peekaboo services.
-- UI automation uses a separate UNIX socket (`~/Library/Application Support/OpenClaw/<socket>`) and the PeekabooBridge JSON protocol.
-- Host preference order (client-side): Peekaboo.app -> Claude.app -> OpenClaw.app -> local execution.
+- UI automation uses a separate UNIX socket (`~/Library/Application Support/Afora/<socket>`) and the PeekabooBridge JSON protocol.
+- Host preference order (client-side): Peekaboo.app -> Claude.app -> Afora.app -> local execution.
 - Security: bridge hosts require the exact signed Peekaboo client bundle identifier and Peekaboo's canonical
   current/legacy release signer set; a DEBUG-only same-UID escape hatch is guarded by
   `PEEKABOO_ALLOW_UNSIGNED_SOCKET_CLIENTS=1` (Peekaboo convention).
@@ -61,7 +61,7 @@ Agent -> Gateway -> Node Service (WS)
 - All communication remains local-only; no network sockets are exposed.
 - TCC prompts originate only from the GUI app bundle; keep the signed bundle ID stable across rebuilds.
 - Exec approvals socket hardening: file mode `0600`, shared token stored in the
-  `exec_approvals_config` row of `state/openclaw.sqlite`, peer-UID check
+  `exec_approvals_config` row of `state/afora.sqlite`, peer-UID check
   (`getpeereid`), HMAC-SHA256 challenge/response, and a short TTL on requests.
 
 ## Related

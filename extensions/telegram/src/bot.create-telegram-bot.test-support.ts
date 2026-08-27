@@ -2,15 +2,15 @@ import { setTimeout as delay } from "node:timers/promises";
 import type { TelegramBotInfo } from "./bot-info.js";
 
 type DispatchReplyWithBufferedBlockDispatcher =
-  typeof import("openclaw/plugin-sdk/reply-dispatch-runtime").dispatchReplyWithBufferedBlockDispatcher;
+  typeof import("afora-agent/plugin-sdk/reply-dispatch-runtime").dispatchReplyWithBufferedBlockDispatcher;
 type DispatchChannelInboundTurn =
-  typeof import("openclaw/plugin-sdk/channel-inbound").dispatchChannelInboundTurn;
+  typeof import("afora-agent/plugin-sdk/channel-inbound").dispatchChannelInboundTurn;
 
 export const telegramBotInfoForTest = {
   id: 9_876_543_210,
   is_bot: true,
-  first_name: "OpenClaw",
-  username: "openclaw_bot",
+  first_name: "Afora",
+  username: "afora_bot",
   can_join_groups: true,
   can_read_all_group_messages: false,
   can_manage_bots: false,

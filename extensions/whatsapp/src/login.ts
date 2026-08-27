@@ -1,8 +1,8 @@
 // Whatsapp plugin module implements login behavior.
-import { formatCliCommand } from "openclaw/plugin-sdk/cli-runtime";
-import { logInfo } from "openclaw/plugin-sdk/logging-core";
-import { getRuntimeConfig } from "openclaw/plugin-sdk/runtime-config-snapshot";
-import { danger, success, defaultRuntime, type RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+import { formatCliCommand } from "afora-agent/plugin-sdk/cli-runtime";
+import { logInfo } from "afora-agent/plugin-sdk/logging-core";
+import { getRuntimeConfig } from "afora-agent/plugin-sdk/runtime-config-snapshot";
+import { danger, success, defaultRuntime, type RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
 import { resolveWhatsAppAccount } from "./accounts.js";
 import { restoreCredsFromBackupIfNeeded } from "./auth-store.js";
 import { closeWaSocketSoon, waitForWhatsAppLoginResult } from "./connection-controller.js";
@@ -142,7 +142,7 @@ export async function loginWeb(
     if (result.outcome === "logged-out") {
       runtime.error(
         danger(
-          `WhatsApp reported the session is logged out. Cleared cached web session; please rerun ${formatCliCommand("openclaw channels login")} and scan the QR again.`,
+          `WhatsApp reported the session is logged out. Cleared cached web session; please rerun ${formatCliCommand("afora channels login")} and scan the QR again.`,
         ),
       );
       throw new Error("Session logged out; cache cleared. Re-run login.", {

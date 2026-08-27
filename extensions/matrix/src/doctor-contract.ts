@@ -2,8 +2,8 @@
 import type {
   ChannelDoctorConfigMutation,
   ChannelDoctorLegacyConfigRule,
-} from "openclaw/plugin-sdk/channel-contract";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+} from "afora-agent/plugin-sdk/channel-contract";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   defineChannelAliasMigration,
   defineKeyMoveMigration,
@@ -12,8 +12,8 @@ import {
   hasLegacyFlatAllowPrivateNetworkAlias,
   migrateLegacyFlatAllowPrivateNetworkAlias,
   stripRetiredChannelKeys,
-} from "openclaw/plugin-sdk/runtime-doctor-migrations";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/runtime-doctor-migrations";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { MatrixStreamingMode } from "./types.js";
 
 function parseMatrixStreamingMode(value: unknown): MatrixStreamingMode | null {
@@ -111,13 +111,13 @@ export const legacyConfigRules: ChannelDoctorLegacyConfigRule[] = [
   {
     path: ["channels", "matrix"],
     message:
-      'channels.matrix.allowPrivateNetwork is legacy; use channels.matrix.network.dangerouslyAllowPrivateNetwork instead. Run "openclaw doctor --fix".',
+      'channels.matrix.allowPrivateNetwork is legacy; use channels.matrix.network.dangerouslyAllowPrivateNetwork instead. Run "afora doctor --fix".',
     match: (value) => hasLegacyFlatAllowPrivateNetworkAlias(isRecord(value) ? value : {}),
   },
   {
     path: ["channels", "matrix", "accounts"],
     message:
-      'channels.matrix.accounts.<id>.allowPrivateNetwork is legacy; use channels.matrix.accounts.<id>.network.dangerouslyAllowPrivateNetwork instead. Run "openclaw doctor --fix".',
+      'channels.matrix.accounts.<id>.allowPrivateNetwork is legacy; use channels.matrix.accounts.<id>.network.dangerouslyAllowPrivateNetwork instead. Run "afora doctor --fix".',
     match: (value) =>
       hasLegacyAccountStreamingAliases(value, (account) =>
         hasLegacyFlatAllowPrivateNetworkAlias(isRecord(account) ? account : {}),
@@ -126,19 +126,19 @@ export const legacyConfigRules: ChannelDoctorLegacyConfigRule[] = [
   {
     path: ["channels", "matrix", "groups"],
     message:
-      'channels.matrix.groups.<room>.allow is legacy; use channels.matrix.groups.<room>.enabled instead. Run "openclaw doctor --fix".',
+      'channels.matrix.groups.<room>.allow is legacy; use channels.matrix.groups.<room>.enabled instead. Run "afora doctor --fix".',
     match: roomAllowMigration.hasLegacy,
   },
   {
     path: ["channels", "matrix", "rooms"],
     message:
-      'channels.matrix.rooms.<room>.allow is legacy; use channels.matrix.rooms.<room>.enabled instead. Run "openclaw doctor --fix".',
+      'channels.matrix.rooms.<room>.allow is legacy; use channels.matrix.rooms.<room>.enabled instead. Run "afora doctor --fix".',
     match: roomAllowMigration.hasLegacy,
   },
   {
     path: ["channels", "matrix", "accounts"],
     message:
-      'channels.matrix.accounts.<id>.{groups,rooms}.<room>.allow is legacy; use channels.matrix.accounts.<id>.{groups,rooms}.<room>.enabled instead. Run "openclaw doctor --fix".',
+      'channels.matrix.accounts.<id>.{groups,rooms}.<room>.allow is legacy; use channels.matrix.accounts.<id>.{groups,rooms}.<room>.enabled instead. Run "afora doctor --fix".',
     match: (value) =>
       hasLegacyAccountStreamingAliases(value, (account) => {
         if (!isRecord(account)) {
@@ -153,13 +153,13 @@ export const legacyConfigRules: ChannelDoctorLegacyConfigRule[] = [
   {
     path: ["channels", "matrix"],
     message:
-      'channels.matrix.dm.policy "trusted" is legacy; use "allowlist" (with allowFrom entries) or "pairing" instead. Run "openclaw doctor --fix".',
+      'channels.matrix.dm.policy "trusted" is legacy; use "allowlist" (with allowFrom entries) or "pairing" instead. Run "afora doctor --fix".',
     match: hasLegacyTrustedDmPolicy,
   },
   {
     path: ["channels", "matrix", "accounts"],
     message:
-      'channels.matrix.accounts.<id>.dm.policy "trusted" is legacy; use "allowlist" (with allowFrom entries) or "pairing" instead. Run "openclaw doctor --fix".',
+      'channels.matrix.accounts.<id>.dm.policy "trusted" is legacy; use "allowlist" (with allowFrom entries) or "pairing" instead. Run "afora doctor --fix".',
     match: (value) => hasLegacyAccountStreamingAliases(value, hasLegacyTrustedDmPolicy),
   },
 ];
@@ -197,7 +197,7 @@ function normalizeMatrixEntry(params: {
 export function normalizeCompatibilityConfig({
   cfg,
 }: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }): ChannelDoctorConfigMutation {
   const changes: string[] = [];
   // `streamMode` was never honored by Matrix, so remove it before the generic

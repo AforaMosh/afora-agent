@@ -4,7 +4,7 @@ import { resolveSessionTranscriptRuntimeTarget } from "../../../config/sessions/
 import type { resolveContextEngine } from "../../../context-engine/registry.js";
 import { attachModelProviderRuntimePluginHandle } from "../../../plugins/provider-hook-runtime.js";
 import { createTrajectoryRuntimeRecorder } from "../../../trajectory/runtime.js";
-import { agentHarnessBuildsOpenClawTools } from "../../harness/selection.js";
+import { agentHarnessBuildsAforaTools } from "../../harness/selection.js";
 import { buildAgentRuntimePlan } from "../../runtime-plan/build.js";
 import { createEmbeddedRunReplayState } from "../replay-state.js";
 import { mapThinkingLevelForProvider } from "../utils.js";
@@ -236,7 +236,7 @@ export async function prepareAndDispatchEmbeddedRunAttempt(input: {
       initialReplayState: input.replayState,
       authStorage,
       authProfileStore: resolveRunAttemptAuthProfileStore(),
-      toolAuthProfileStore: agentHarnessBuildsOpenClawTools(runtime.agentHarness.id)
+      toolAuthProfileStore: agentHarnessBuildsAforaTools(runtime.agentHarness.id)
         ? attemptAuthProfileStore
         : undefined,
       modelRegistry,

@@ -3,7 +3,7 @@
 // Split from `sticker-cache-store.ts`, which also value-loads the plugin runtime
 // slot and the logger graph. Doctor enumeration cold-loads this module to plan the
 // legacy-state import, so it stays a leaf.
-import { loadJsonFile } from "openclaw/plugin-sdk/json-store";
+import { loadJsonFile } from "afora-agent/plugin-sdk/json-store";
 
 const CACHE_VERSION = 1;
 export const TELEGRAM_STICKER_CACHE_NAMESPACE = "telegram.sticker-cache";

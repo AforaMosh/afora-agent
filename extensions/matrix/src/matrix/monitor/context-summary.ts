@@ -1,5 +1,5 @@
 // Matrix plugin module implements context summary behavior.
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   formatMatrixMessageText,
   resolveMatrixMessageAttachment,

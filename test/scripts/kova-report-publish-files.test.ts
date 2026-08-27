@@ -11,7 +11,7 @@ const tempRoots = useAutoCleanupTempDirTracker(afterEach);
 
 describe("Kova report publish files", () => {
   it("publishes bundle metadata while leaving the full archive in the Actions artifact", () => {
-    const root = tempRoots.make("openclaw-kova-publish-");
+    const root = tempRoots.make("afora-kova-publish-");
     const bundleDir = join(root, "artifact", "bundle");
     const destinationDir = join(root, "report", "bundles");
     mkdirSync(bundleDir, { recursive: true });
@@ -30,7 +30,7 @@ describe("Kova report publish files", () => {
   });
 
   it("requires bundle metadata and a checksum", () => {
-    const root = tempRoots.make("openclaw-kova-publish-");
+    const root = tempRoots.make("afora-kova-publish-");
     const bundleDir = join(root, "bundle");
     mkdirSync(bundleDir);
     writeFileSync(join(bundleDir, "bundle.tar.gz"), Buffer.alloc(1));
@@ -46,7 +46,7 @@ describe("Kova report publish files", () => {
   });
 
   it("accepts the size boundary and rejects the first oversized published file", () => {
-    const root = tempRoots.make("openclaw-kova-publish-");
+    const root = tempRoots.make("afora-kova-publish-");
     writeFileSync(join(root, "at-limit.json"), Buffer.alloc(100));
 
     expect(assertPublishedFileSizeLimit({ publishRoot: root, maxFileBytes: 100 })).toBe(1);

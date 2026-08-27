@@ -1,7 +1,7 @@
 // Control UI tests cover workboard behavior.
 import { copyFile, mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import type { BrowserContext, Locator, Page } from "playwright";
 import { expect, it } from "vitest";
 import { PROTOCOL_VERSION } from "../../../../packages/gateway-protocol/src/version.js";
@@ -23,7 +23,7 @@ import {
 const suite = createControlUiE2eSuite({
   name: "Control UI Workboard mocked Gateway E2E",
   unavailableMessage: (executablePath) =>
-    `Playwright Chromium is not installed at ${executablePath}. Run \`pnpm --dir ui exec playwright install chromium\`, or set OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
+    `Playwright Chromium is not installed at ${executablePath}. Run \`pnpm --dir ui exec playwright install chromium\`, or set AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
 });
 
 const artifactDir = path.resolve(process.cwd(), ".artifacts/control-ui-e2e/workboard");
@@ -76,7 +76,7 @@ type UpdatingElement = HTMLElement & {
 };
 
 async function waitForWorkboardRender(page: Page, requestUpdate = false): Promise<void> {
-  await page.locator("openclaw-workboard-page").evaluate(async (element, shouldRequestUpdate) => {
+  await page.locator("afora-workboard-page").evaluate(async (element, shouldRequestUpdate) => {
     const workboardPage = element as UpdatingElement;
     if (shouldRequestUpdate) {
       workboardPage.requestUpdate?.();
@@ -183,7 +183,7 @@ function workboardConfigSnapshot() {
   return {
     config,
     hash: "workboard-e2e-config",
-    path: "/tmp/openclaw-e2e/openclaw.json",
+    path: "/tmp/afora-e2e/afora.json",
     raw: JSON.stringify(config, null, 2),
     resolved: config,
     sourceConfig: config,
@@ -437,7 +437,7 @@ suite.define(() => {
         .getByRole("button", { name: /New card/u })
         .click();
       const createDialog = writable.page.getByRole("dialog", { name: "New card" });
-      const createForm = writable.page.locator('openclaw-modal-dialog[label="New card"]');
+      const createForm = writable.page.locator('afora-modal-dialog[label="New card"]');
       await expect.poll(() => createDialog.isVisible()).toBe(true);
       await setWorkboardDraftField(createForm, "Title", createdCard.title);
       await setWorkboardDraftField(createForm, "Notes", createdCard.notes ?? "");
@@ -492,7 +492,7 @@ suite.define(() => {
         .locator('button[aria-label="Edit card"]')
         .click();
       const editDialog = writable.page.getByRole("dialog", { name: "Edit card" });
-      const editForm = writable.page.locator('openclaw-modal-dialog[label="Edit card"]');
+      const editForm = writable.page.locator('afora-modal-dialog[label="Edit card"]');
       await expect.poll(() => editDialog.isVisible()).toBe(true);
       await setWorkboardDraftField(editForm, "Title", editedCard.title);
       await setWorkboardDraftField(editForm, "Notes", editedCard.notes ?? "");

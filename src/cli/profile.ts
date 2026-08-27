@@ -1,7 +1,7 @@
 // Root --profile/--dev parsing and environment projection for profile-specific state.
 import os from "node:os";
 import path from "node:path";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   GATEWAY_SERVICE_SELECTOR_ENV_KEYS,
   isGatewayServiceEnv,
@@ -86,18 +86,18 @@ export function applyCliProfileEnv(params: {
     return;
   }
 
-  const inheritedProfile = normalizeOptionalString(env.OPENCLAW_PROFILE) ?? "default";
-  const existingStateDir = normalizeOptionalString(env.OPENCLAW_STATE_DIR);
-  const existingConfigPath = normalizeOptionalString(env.OPENCLAW_CONFIG_PATH);
+  const inheritedProfile = normalizeOptionalString(env.AFORA_PROFILE) ?? "default";
+  const existingStateDir = normalizeOptionalString(env.AFORA_STATE_DIR);
+  const existingConfigPath = normalizeOptionalString(env.AFORA_CONFIG_PATH);
   const profileEnv = env as NodeJS.ProcessEnv;
   const inheritedProfileStateDir = resolveProfileStateDir(inheritedProfile, profileEnv, homedir);
   const selectedProfileStateDir = resolveProfileStateDir(profile, profileEnv, homedir);
   const switchesInheritedProfile = inheritedProfileStateDir !== selectedProfileStateDir;
   const inheritedSystemdServiceName = resolveGatewaySystemdServiceName(inheritedProfile);
   const inheritedServiceSelectors = {
-    OPENCLAW_LAUNCHD_LABEL: [resolveGatewayLaunchAgentLabel(inheritedProfile)],
-    OPENCLAW_SYSTEMD_UNIT: [inheritedSystemdServiceName, `${inheritedSystemdServiceName}.service`],
-    OPENCLAW_WINDOWS_TASK_NAME: [resolveGatewayWindowsTaskName(inheritedProfile)],
+    AFORA_LAUNCHD_LABEL: [resolveGatewayLaunchAgentLabel(inheritedProfile)],
+    AFORA_SYSTEMD_UNIT: [inheritedSystemdServiceName, `${inheritedSystemdServiceName}.service`],
+    AFORA_WINDOWS_TASK_NAME: [resolveGatewayWindowsTaskName(inheritedProfile)],
   };
   const switchesInheritedProfileState = Boolean(
     existingStateDir &&
@@ -114,7 +114,7 @@ export function applyCliProfileEnv(params: {
     resolveHomeRelativePath(existingConfigPath, {
       env: env as NodeJS.ProcessEnv,
       homedir,
-    }) === path.join(inheritedProfileStateDir, "openclaw.json"),
+    }) === path.join(inheritedProfileStateDir, "afora.json"),
   );
   const inheritedManagedServiceSelectors =
     switchesInheritedProfile &&
@@ -130,20 +130,20 @@ export function applyCliProfileEnv(params: {
 
   // A service's canonical profile paths are inherited defaults, not custom overrides.
   // Switch them together so an explicit profile cannot mutate the service's profile.
-  env.OPENCLAW_PROFILE = profile;
+  env.AFORA_PROFILE = profile;
 
   const retainedStateDir = inheritedManagedServiceSelectors ? undefined : existingStateDir;
   const stateDir =
     retainedStateDir && !switchesInheritedProfileState ? retainedStateDir : selectedProfileStateDir;
   if (!retainedStateDir || switchesInheritedProfileState) {
-    env.OPENCLAW_STATE_DIR = stateDir;
+    env.AFORA_STATE_DIR = stateDir;
   }
 
   if (
     !inheritedManagedServiceSelectors &&
     (!existingConfigPath || replacesInheritedProfileConfig)
   ) {
-    env.OPENCLAW_CONFIG_PATH = path.join(stateDir, "openclaw.json");
+    env.AFORA_CONFIG_PATH = path.join(stateDir, "afora.json");
   }
 
   if (switchesInheritedProfile && !inheritedManagedServiceSelectors) {
@@ -155,7 +155,7 @@ export function applyCliProfileEnv(params: {
     }
   }
 
-  if (profile === "dev" && !env.OPENCLAW_GATEWAY_PORT?.trim()) {
-    env.OPENCLAW_GATEWAY_PORT = "19001";
+  if (profile === "dev" && !env.AFORA_GATEWAY_PORT?.trim()) {
+    env.AFORA_GATEWAY_PORT = "19001";
   }
 }

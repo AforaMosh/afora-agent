@@ -1,11 +1,11 @@
 import fsp from "node:fs/promises";
-import type { SandboxContext } from "openclaw/plugin-sdk/agent-harness-runtime";
+import type { SandboxContext } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   buildAgentHookContextChannelFields,
   isHostScopedAgentToolActive,
   resolveSandboxContext as defaultResolveSandboxContext,
   resolveSessionAgentIds,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import { readNonEmptyString, readResolvedAttemptPath, resolveModelRef } from "./attempt-config.js";
 import type {
   AttemptParamsLike,
@@ -48,11 +48,11 @@ export function prepareCopilotAttemptContext(
   ) as AttemptParamsLike;
   const createToolBridge = deps.createToolBridge ?? createCopilotToolBridge;
   const hostSystemAgentActive =
-    deps.isHostScopedToolActive?.("openclaw") ?? isHostScopedAgentToolActive("openclaw");
+    deps.isHostScopedToolActive?.("afora") ?? isHostScopedAgentToolActive("afora");
   const ringZeroSystemAgentRun =
     hostSystemAgentActive &&
     input.toolsAllow?.length === 1 &&
-    input.toolsAllow[0]?.trim().toLowerCase() === "openclaw";
+    input.toolsAllow[0]?.trim().toLowerCase() === "afora";
   const messages = Array.isArray(input.messages) ? [...input.messages] : [];
   const modelRef = resolveModelRef(input);
   const resolvedWorkspaceForSandbox =

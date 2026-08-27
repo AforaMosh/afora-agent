@@ -1,5 +1,5 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { runOpenClawAgentWriteTransaction } from "../../state/openclaw-agent-db.js";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { runAforaAgentWriteTransaction } from "../../state/afora-agent-db.js";
 import {
   deleteLegacySessionEntryRows,
   normalizeLifecycleTarget,
@@ -83,7 +83,7 @@ export async function recoverSessionEntryFromRestartTombstone(params: {
   };
 
   await runExclusiveSqliteSessionWrite(resolved, async () => {
-    runOpenClawAgentWriteTransaction((database) => {
+    runAforaAgentWriteTransaction((database) => {
       const source = resolveLifecyclePrimaryEntry(database, sourceTarget)?.entry as
         | InternalSessionEntry
         | undefined;

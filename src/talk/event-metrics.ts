@@ -4,7 +4,7 @@
  * Talk event payloads are provider-owned JSON blobs, so callers must coerce
  * records and read only bounded numeric counters that are safe to export.
  */
-import { asNonNegativeFiniteNumber } from "@openclaw/normalization-core/number-coercion";
+import { asNonNegativeFiniteNumber } from "@afora/normalization-core/number-coercion";
 
 /** Read the first non-negative finite number from a provider payload record. */
 export function firstFiniteTalkEventNumber(

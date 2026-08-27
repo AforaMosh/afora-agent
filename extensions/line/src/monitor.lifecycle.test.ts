@@ -2,10 +2,10 @@
 import crypto from "node:crypto";
 import { EventEmitter } from "node:events";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
-import { createMockIncomingRequest } from "openclaw/plugin-sdk/test-env";
-import { WEBHOOK_IN_FLIGHT_DEFAULTS } from "openclaw/plugin-sdk/webhook-request-guards";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
+import { createMockIncomingRequest } from "afora-agent/plugin-sdk/test-env";
+import { WEBHOOK_IN_FLIGHT_DEFAULTS } from "afora-agent/plugin-sdk/webhook-request-guards";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 type LineNodeWebhookHandler = (req: IncomingMessage, res: ServerResponse) => Promise<void>;
@@ -77,14 +77,14 @@ vi.mock("./bot.js", () => ({
   createLineBot: createLineBotMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/reply-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/reply-runtime", () => ({
   chunkMarkdownText: vi.fn(),
   dispatchReplyWithBufferedBlockDispatcher: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/runtime-env", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/runtime-env")>(
-    "openclaw/plugin-sdk/runtime-env",
+vi.mock("afora-agent/plugin-sdk/runtime-env", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/runtime-env")>(
+    "afora-agent/plugin-sdk/runtime-env",
   );
   return {
     ...actual,
@@ -93,9 +93,9 @@ vi.mock("openclaw/plugin-sdk/runtime-env", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/webhook-ingress", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/webhook-ingress")>(
-    "openclaw/plugin-sdk/webhook-ingress",
+vi.mock("afora-agent/plugin-sdk/webhook-ingress", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/webhook-ingress")>(
+    "afora-agent/plugin-sdk/webhook-ingress",
   );
   return {
     ...actual,
@@ -104,9 +104,9 @@ vi.mock("openclaw/plugin-sdk/webhook-ingress", async () => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/webhook-request-guards", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/webhook-request-guards")>(
-    "openclaw/plugin-sdk/webhook-request-guards",
+vi.mock("afora-agent/plugin-sdk/webhook-request-guards", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/webhook-request-guards")>(
+    "afora-agent/plugin-sdk/webhook-request-guards",
   );
   runDetachedWebhookWorkMock.mockImplementation(actual.runDetachedWebhookWork);
   return {
@@ -153,10 +153,10 @@ describe("monitorLineProvider lifecycle", () => {
 
   afterAll(() => {
     vi.doUnmock("./bot.js");
-    vi.doUnmock("openclaw/plugin-sdk/reply-runtime");
-    vi.doUnmock("openclaw/plugin-sdk/runtime-env");
-    vi.doUnmock("openclaw/plugin-sdk/webhook-ingress");
-    vi.doUnmock("openclaw/plugin-sdk/webhook-request-guards");
+    vi.doUnmock("afora-agent/plugin-sdk/reply-runtime");
+    vi.doUnmock("afora-agent/plugin-sdk/runtime-env");
+    vi.doUnmock("afora-agent/plugin-sdk/webhook-ingress");
+    vi.doUnmock("afora-agent/plugin-sdk/webhook-request-guards");
     vi.doUnmock("./webhook-node.js");
     vi.doUnmock("./auto-reply-delivery.js");
     vi.doUnmock("./markdown-to-line.js");
@@ -229,7 +229,7 @@ describe("monitorLineProvider lifecycle", () => {
     const task = monitorLineProvider({
       channelAccessToken: "token",
       channelSecret: "secret", // pragma: allowlist secret
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       runtime: {} as RuntimeEnv,
       abortSignal: abort.signal,
       statusSink,
@@ -260,7 +260,7 @@ describe("monitorLineProvider lifecycle", () => {
       channelAccessToken: "token",
       channelSecret: "secret", // pragma: allowlist secret
       accountId: "work",
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       runtime: {} as RuntimeEnv,
     });
 
@@ -284,7 +284,7 @@ describe("monitorLineProvider lifecycle", () => {
     await monitorLineProvider({
       channelAccessToken: "token",
       channelSecret: "secret", // pragma: allowlist secret
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       runtime: {} as RuntimeEnv,
       abortSignal: abort.signal,
     });
@@ -296,7 +296,7 @@ describe("monitorLineProvider lifecycle", () => {
     const monitor = await monitorLineProvider({
       channelAccessToken: "token",
       channelSecret: "secret", // pragma: allowlist secret
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       runtime: {} as RuntimeEnv,
     });
 
@@ -322,7 +322,7 @@ describe("monitorLineProvider lifecycle", () => {
             },
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       runtime: {} as RuntimeEnv,
     });
 
@@ -342,7 +342,7 @@ describe("monitorLineProvider lifecycle", () => {
       monitorLineProvider({
         channelAccessToken: "token",
         channelSecret: "secret", // pragma: allowlist secret
-        config: {} as OpenClawConfig,
+        config: {} as AforaConfig,
         runtime: {} as RuntimeEnv,
       }),
     ).rejects.toThrow("line bot startup failed");
@@ -360,7 +360,7 @@ describe("monitorLineProvider lifecycle", () => {
       monitorLineProvider({
         channelAccessToken: "token",
         channelSecret: "secret", // pragma: allowlist secret
-        config: {} as OpenClawConfig,
+        config: {} as AforaConfig,
         runtime: {} as RuntimeEnv,
         statusSink,
       }),
@@ -378,14 +378,14 @@ describe("monitorLineProvider lifecycle", () => {
       channelAccessToken: "first-token",
       channelSecret: "first-secret", // pragma: allowlist secret
       accountId: "first",
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       runtime: {} as RuntimeEnv,
     });
     const secondMonitor = await monitorLineProvider({
       channelAccessToken: "second-token",
       channelSecret: "second-secret", // pragma: allowlist secret
       accountId: "second",
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       runtime: {} as RuntimeEnv,
     });
 
@@ -426,7 +426,7 @@ describe("monitorLineProvider lifecycle", () => {
       channelAccessToken: "token",
       channelSecret: "secret", // pragma: allowlist secret
       accountId: "default",
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       runtime,
     });
     const route = requireRegisteredRoute();
@@ -458,7 +458,7 @@ describe("monitorLineProvider lifecycle", () => {
         body: payload,
       });
       expect(rejected.status).toBe(401);
-      expect(rejected.headers.get("x-openclaw-delivery-accepted")).toBeNull();
+      expect(rejected.headers.get("x-afora-delivery-accepted")).toBeNull();
       expect(await rejected.json()).toEqual({ error: "Invalid signature" });
 
       const bot = createLineBotMock.mock.results[0]?.value;
@@ -481,7 +481,7 @@ describe("monitorLineProvider lifecycle", () => {
         body: verificationPayload,
       });
       expect(verification.status).toBe(200);
-      expect(verification.headers.get("x-openclaw-delivery-accepted")).toBeNull();
+      expect(verification.headers.get("x-afora-delivery-accepted")).toBeNull();
       expect(await verification.json()).toEqual({ status: "ok" });
       expect(bot.handleWebhook).not.toHaveBeenCalled();
 
@@ -515,7 +515,7 @@ describe("monitorLineProvider lifecycle", () => {
       releaseAdmission();
       const accepted = await acceptedRequest;
       expect(accepted.status).toBe(200);
-      expect(accepted.headers.get("x-openclaw-delivery-accepted")).toBe("durable");
+      expect(accepted.headers.get("x-afora-delivery-accepted")).toBe("durable");
       expect(await accepted.json()).toEqual({ status: "ok" });
 
       const bearerToken = "test_line_access_token_1234567890";
@@ -534,7 +534,7 @@ describe("monitorLineProvider lifecycle", () => {
       });
 
       expect(response.status).toBe(500);
-      expect(response.headers.get("x-openclaw-delivery-accepted")).toBeNull();
+      expect(response.headers.get("x-afora-delivery-accepted")).toBeNull();
       expect(await response.json()).toEqual({ error: "Internal server error" });
       expect(bot.handleWebhook).toHaveBeenCalledTimes(2);
       expect(runtimeError).toHaveBeenCalledTimes(1);
@@ -569,7 +569,7 @@ describe("monitorLineProvider lifecycle", () => {
       channelSecret: "secret", // pragma: allowlist secret
       webhookPath: "/Line//Webhook/",
       accountId: "default",
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       runtime: {} as RuntimeEnv,
     });
 
@@ -601,7 +601,7 @@ describe("monitorLineProvider lifecycle", () => {
       channelAccessToken: "token",
       channelSecret: "secret", // pragma: allowlist secret
       accountId: "default",
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       runtime: {} as RuntimeEnv,
     });
 
@@ -631,7 +631,7 @@ describe("monitorLineProvider lifecycle", () => {
       channelAccessToken: "token",
       channelSecret: "secret", // pragma: allowlist secret
       accountId: "default",
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       runtime: {} as RuntimeEnv,
     });
 
@@ -676,14 +676,14 @@ describe("monitorLineProvider lifecycle", () => {
       channelAccessToken: "first-token",
       channelSecret: "shared-secret", // pragma: allowlist secret
       accountId: "first",
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       runtime: {} as RuntimeEnv,
     });
     const secondMonitor = await monitorLineProvider({
       channelAccessToken: "second-token",
       channelSecret: "shared-secret", // pragma: allowlist secret
       accountId: "second",
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       runtime: {} as RuntimeEnv,
     });
 
@@ -721,7 +721,7 @@ describe("monitorLineProvider lifecycle", () => {
     const monitor = await monitorLineProvider({
       channelAccessToken: "token",
       channelSecret: "secret", // pragma: allowlist secret
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       runtime: {} as RuntimeEnv,
     });
 

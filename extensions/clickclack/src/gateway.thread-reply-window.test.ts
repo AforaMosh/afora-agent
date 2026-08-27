@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import type { ChannelGatewayContext } from "openclaw/plugin-sdk/channel-contract";
+import type { ChannelGatewayContext } from "afora-agent/plugin-sdk/channel-contract";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WebSocketServer } from "ws";
 import type { ClickClackMessage, ResolvedClickClackAccount } from "./types.js";

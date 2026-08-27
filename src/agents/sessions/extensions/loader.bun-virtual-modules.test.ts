@@ -38,7 +38,7 @@ let virtualModulesCase: {
 beforeAll(async () => {
   const { clearExtensionCache, loadExtensionsCached } = await import("./loader.js");
   clearExtensionCache();
-  const dir = await mkdtemp(join(tmpdir(), "openclaw-extension-sdk-"));
+  const dir = await mkdtemp(join(tmpdir(), "afora-extension-sdk-"));
   tempDirs.push(dir);
   const extensionPath = join(dir, "extension.ts");
   await writeFile(extensionPath, "export default function extension() {}\n");
@@ -65,12 +65,12 @@ describe("loadExtensionsCached in Bun binary mode", () => {
     expect(virtualModulesCase.errors).toEqual([]);
     expect(virtualModulesCase.virtualModuleIds).toEqual(
       expect.arrayContaining([
-        "openclaw/plugin-sdk/agent-core",
-        "@openclaw/plugin-sdk/agent-core",
-        "openclaw/plugin-sdk/llm",
-        "@openclaw/plugin-sdk/llm",
-        "openclaw/plugin-sdk/agent-sessions",
-        "@openclaw/plugin-sdk/agent-sessions",
+        "afora-agent/plugin-sdk/agent-core",
+        "@afora/plugin-sdk/agent-core",
+        "afora-agent/plugin-sdk/llm",
+        "@afora/plugin-sdk/llm",
+        "afora-agent/plugin-sdk/agent-sessions",
+        "@afora/plugin-sdk/agent-sessions",
       ]),
     );
   });

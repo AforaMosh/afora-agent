@@ -1,8 +1,8 @@
 import path from "node:path";
 import type { FetchLike } from "@modelcontextprotocol/sdk/shared/transport.js";
-import { withTempHome as withBaseTempHome } from "openclaw/plugin-sdk/test-env";
+import { withTempHome as withBaseTempHome } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { withMcpOAuthBearer } from "./mcp-oauth-fetch.js";
 import { operatorMcpOAuthIdentity } from "./mcp-oauth-identity.js";
 import { createMcpOAuthClientProvider } from "./mcp-oauth-provider.js";
@@ -23,17 +23,17 @@ async function withTempHome<T>(
   options: Parameters<typeof withBaseTempHome>[1],
 ): Promise<T> {
   return withBaseTempHome(async (home) => {
-    const previousStateDir = process.env.OPENCLAW_STATE_DIR;
-    process.env.OPENCLAW_STATE_DIR = path.join(home, ".openclaw");
-    closeOpenClawStateDatabaseForTest();
+    const previousStateDir = process.env.AFORA_STATE_DIR;
+    process.env.AFORA_STATE_DIR = path.join(home, ".afora");
+    closeAforaStateDatabaseForTest();
     try {
       return await run();
     } finally {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       if (previousStateDir === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.AFORA_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = previousStateDir;
+        process.env.AFORA_STATE_DIR = previousStateDir;
       }
     }
   }, options);
@@ -136,12 +136,12 @@ function readStore() {
 
 const TEMP_HOME_OPTIONS = {
   skipSessionCleanup: true,
-  env: { OPENCLAW_CONFIG_PATH: undefined, OPENCLAW_STATE_DIR: undefined },
+  env: { AFORA_CONFIG_PATH: undefined, AFORA_STATE_DIR: undefined },
 };
 
 describe("MCP OAuth refresh issuer binding", () => {
-  beforeEach(() => closeOpenClawStateDatabaseForTest());
-  afterEach(() => closeOpenClawStateDatabaseForTest());
+  beforeEach(() => closeAforaStateDatabaseForTest());
+  afterEach(() => closeAforaStateDatabaseForTest());
 
   it("does not send the stored refresh token to a different issuer from a challenge", async () => {
     await withTempHome(
@@ -163,7 +163,7 @@ describe("MCP OAuth refresh issuer binding", () => {
           refresh_token: STORED_REFRESH,
         });
       },
-      { prefix: "openclaw-mcp-oauth-issuer-switch-", ...TEMP_HOME_OPTIONS },
+      { prefix: "afora-mcp-oauth-issuer-switch-", ...TEMP_HOME_OPTIONS },
     );
   });
 
@@ -188,7 +188,7 @@ describe("MCP OAuth refresh issuer binding", () => {
         expect(network.tokenRequests[0]?.body).toContain(`refresh_token=${STORED_REFRESH}`);
         expect(readStore().tokens?.access_token).toBe("rotated-access");
       },
-      { prefix: "openclaw-mcp-oauth-issuer-same-", ...TEMP_HOME_OPTIONS },
+      { prefix: "afora-mcp-oauth-issuer-same-", ...TEMP_HOME_OPTIONS },
     );
   });
 
@@ -225,7 +225,7 @@ describe("MCP OAuth refresh issuer binding", () => {
             refresh_token: STORED_REFRESH,
           });
         },
-        { prefix: "openclaw-mcp-oauth-issuer-normalization-", ...TEMP_HOME_OPTIONS },
+        { prefix: "afora-mcp-oauth-issuer-normalization-", ...TEMP_HOME_OPTIONS },
       );
     },
   );
@@ -253,7 +253,7 @@ describe("MCP OAuth refresh issuer binding", () => {
         expect(network.tokenRequests[0]?.body).toContain(`refresh_token=${STORED_REFRESH}`);
         expect(readStore().tokensAuthorizationServerUrl).toBe(ORIGINAL_ISSUER);
       },
-      { prefix: "openclaw-mcp-oauth-issuer-upgrade-", ...TEMP_HOME_OPTIONS },
+      { prefix: "afora-mcp-oauth-issuer-upgrade-", ...TEMP_HOME_OPTIONS },
     );
   });
 
@@ -280,7 +280,7 @@ describe("MCP OAuth refresh issuer binding", () => {
         expect(newIssuer.tokenRequests).toEqual([]);
         expect(readStore().tokensAuthorizationServerUrl).toBe(ORIGINAL_ISSUER);
       },
-      { prefix: "openclaw-mcp-oauth-issuer-upgrade-challenge-", ...TEMP_HOME_OPTIONS },
+      { prefix: "afora-mcp-oauth-issuer-upgrade-challenge-", ...TEMP_HOME_OPTIONS },
     );
   });
 
@@ -306,7 +306,7 @@ describe("MCP OAuth refresh issuer binding", () => {
           refresh_token: STORED_REFRESH,
         });
       },
-      { prefix: "openclaw-mcp-oauth-issuer-legacy-", ...TEMP_HOME_OPTIONS },
+      { prefix: "afora-mcp-oauth-issuer-legacy-", ...TEMP_HOME_OPTIONS },
     );
   });
 
@@ -338,7 +338,7 @@ describe("MCP OAuth refresh issuer binding", () => {
         expect(network.tokenRequests).toEqual([]);
         expect(readStore().tokens).toMatchObject({ refresh_token: STORED_REFRESH });
       },
-      { prefix: "openclaw-mcp-oauth-issuer-tokenonly-", ...TEMP_HOME_OPTIONS },
+      { prefix: "afora-mcp-oauth-issuer-tokenonly-", ...TEMP_HOME_OPTIONS },
     );
   });
 
@@ -356,10 +356,10 @@ describe("MCP OAuth refresh issuer binding", () => {
           buildOAuthFetch(network.fetchFn)(SERVER_URL, { method: "POST", body: "{}" }),
         ).rejects.toThrow(/OAuth authorization/);
 
-        closeOpenClawStateDatabaseForTest();
+        closeAforaStateDatabaseForTest();
         expect(readStore().tokensAuthorizationServerUrl).toBe(ORIGINAL_ISSUER);
       },
-      { prefix: "openclaw-mcp-oauth-issuer-reload-", ...TEMP_HOME_OPTIONS },
+      { prefix: "afora-mcp-oauth-issuer-reload-", ...TEMP_HOME_OPTIONS },
     );
   });
 });

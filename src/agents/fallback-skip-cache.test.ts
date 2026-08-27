@@ -301,7 +301,7 @@ describe("fallback-skip-cache", () => {
   });
 
   it("does not enable the cache for a suffixed TTL value", () => {
-    vi.stubEnv("OPENCLAW_FALLBACK_SKIP_TTL_MS", "1000ms");
+    vi.stubEnv("AFORA_FALLBACK_SKIP_TTL_MS", "1000ms");
     markFallbackCandidateSkipped({
       sessionId: "s1",
       provider: "anthropic",
@@ -319,8 +319,8 @@ describe("fallback-skip-cache", () => {
     ).toBe(false);
   });
 
-  it("uses OPENCLAW_FALLBACK_SKIP_TTL_MS as an opt-in default TTL", () => {
-    vi.stubEnv("OPENCLAW_FALLBACK_SKIP_TTL_MS", "60000");
+  it("uses AFORA_FALLBACK_SKIP_TTL_MS as an opt-in default TTL", () => {
+    vi.stubEnv("AFORA_FALLBACK_SKIP_TTL_MS", "60000");
     markFallbackCandidateSkipped({
       sessionId: "s1",
       provider: "anthropic",

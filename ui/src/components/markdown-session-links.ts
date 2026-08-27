@@ -1,4 +1,4 @@
-import type { ControlUiSessionNamespace } from "@openclaw/session-url-contract";
+import type { ControlUiSessionNamespace } from "@afora/session-url-contract";
 import type MarkdownIt from "markdown-it";
 import type { ApplicationContext } from "../app/context.ts";
 import { sessionNavigationTarget } from "../lib/sessions/route-navigation.ts";

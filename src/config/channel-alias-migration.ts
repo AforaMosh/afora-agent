@@ -11,7 +11,7 @@ import {
 } from "./channel-compat-normalization.js";
 import { materializeInheritedAccountStreaming } from "./channel-doctor-helpers.js";
 import type { LegacyConfigRule } from "./legacy.shared.js";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import type { AforaConfig } from "./types.afora.js";
 
 export type StreamingAliasMode = "off" | "partial" | "block" | "progress";
 
@@ -99,7 +99,7 @@ function buildAliasRuleMessage(params: {
   const prefixedCount = params.root && !streaming.deliveryOnly ? 2 : 1;
   const keys = flat.map((key, index) => (index < prefixedCount ? `${prefix}.${key}` : key));
   const keyList = `${keys.slice(0, -1).join(", ")}, and ${keys.at(-1)}`;
-  return `${keyList} are legacy; use ${prefix}.streaming.{${nested.join(",")}}. Run "openclaw doctor --fix".`;
+  return `${keyList} are legacy; use ${prefix}.streaming.{${nested.join(",")}}. Run "afora doctor --fix".`;
 }
 
 function hasLegacyDmAliases(value: unknown): boolean {
@@ -117,8 +117,8 @@ export function defineChannelAliasMigration<TMode extends string = StreamingAlia
 ): {
   legacyConfigRules: LegacyConfigRule[];
   hasLegacyAliases: (value: unknown) => boolean;
-  normalizeChannelConfig: (params: { cfg: OpenClawConfig; changes?: string[] }) => {
-    config: OpenClawConfig;
+  normalizeChannelConfig: (params: { cfg: AforaConfig; changes?: string[] }) => {
+    config: AforaConfig;
     changes: string[];
   };
 } {
@@ -152,7 +152,7 @@ export function defineChannelAliasMigration<TMode extends string = StreamingAlia
     resolvedNativeTransport: streaming.resolveNativeTransport?.(entry),
   });
 
-  const normalizeChannelConfig = (params: { cfg: OpenClawConfig; changes?: string[] }) => {
+  const normalizeChannelConfig = (params: { cfg: AforaConfig; changes?: string[] }) => {
     const changes = params.changes ?? [];
     const channels = params.cfg.channels as Record<string, unknown> | undefined;
     const entry = asObjectRecord(channels?.[spec.channelId]);
@@ -188,7 +188,7 @@ export function defineChannelAliasMigration<TMode extends string = StreamingAlia
     const config = {
       ...params.cfg,
       channels: { ...channels, [spec.channelId]: result.entry },
-    } as OpenClawConfig;
+    } as AforaConfig;
     return {
       config: spec.accountStreamingInheritsDefaultAccount
         ? materializeInheritedAccountStreaming({
@@ -221,14 +221,14 @@ export function defineChannelAliasMigration<TMode extends string = StreamingAlia
   if (spec.dm?.root) {
     legacyConfigRules.push({
       path: ["channels", spec.channelId],
-      message: `${pathPrefix}.dm.policy and ${pathPrefix}.dm.allowFrom are legacy; use ${pathPrefix}.dmPolicy and ${pathPrefix}.allowFrom. Run "openclaw doctor --fix".`,
+      message: `${pathPrefix}.dm.policy and ${pathPrefix}.dm.allowFrom are legacy; use ${pathPrefix}.dmPolicy and ${pathPrefix}.allowFrom. Run "afora doctor --fix".`,
       match: hasLegacyDmAliases,
     });
   }
   if (spec.dm?.accounts) {
     legacyConfigRules.push({
       path: ["channels", spec.channelId, "accounts"],
-      message: `${pathPrefix}.accounts.<id>.dm.policy and dm.allowFrom are legacy; use ${pathPrefix}.accounts.<id>.dmPolicy and allowFrom. Run "openclaw doctor --fix".`,
+      message: `${pathPrefix}.accounts.<id>.dm.policy and dm.allowFrom are legacy; use ${pathPrefix}.accounts.<id>.dmPolicy and allowFrom. Run "afora doctor --fix".`,
       match: (value) => hasLegacyAccountStreamingAliases(value, hasLegacyDmAliases),
     });
   }

@@ -1,4 +1,4 @@
-import { asRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { asRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 // Feishu helper module supports card test helpers behavior.
 import { expect } from "vitest";
 

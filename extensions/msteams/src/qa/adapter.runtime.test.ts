@@ -18,8 +18,8 @@ afterEach(async () => {
 
 describe("Microsoft Teams QA transport adapter", () => {
   it("creates a private bootstrap, sends real webhook-shaped inbound, and cleans up", async () => {
-    // openclaw-temp-dir: allow extension tests cannot import repo-only test helpers; afterEach removes it.
-    const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-msteams-qa-"));
+    // afora-temp-dir: allow extension tests cannot import repo-only test helpers; afterEach removes it.
+    const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-msteams-qa-"));
     createdDirs.push(outputDir);
     const addInboundMessage = vi.fn(async (input) => ({
       ...input,
@@ -47,13 +47,13 @@ describe("Microsoft Teams QA transport adapter", () => {
     });
 
     const env = adapter.createRuntimeEnvPatch?.();
-    expect(env?.OPENCLAW_BUILD_PRIVATE_QA).toBe("1");
-    expect(env).not.toHaveProperty("OPENCLAW_QA_MSTEAMS_CONNECTOR_URL");
+    expect(env?.AFORA_BUILD_PRIVATE_QA).toBe("1");
+    expect(env).not.toHaveProperty("AFORA_QA_MSTEAMS_CONNECTOR_URL");
     const bootstrapUrl = /--import=(\S+)/u.exec(env?.NODE_OPTIONS ?? "")?.[1];
     expect(bootstrapUrl).toMatch(/^file:/u);
     const bootstrapPath = fileURLToPath(bootstrapUrl!);
     const bootstrap = await fs.readFile(bootstrapPath, "utf8");
-    expect(bootstrap).toContain('Symbol.for("openclaw.msteams.privateQaRuntime")');
+    expect(bootstrap).toContain('Symbol.for("afora.msteams.privateQaRuntime")');
     expect(bootstrap).toContain("http://127.0.0.1:");
     const bootstrapConfig = JSON.parse(
       /globalThis\[key\] = (.+);$/mu.exec(bootstrap)?.[1] ?? "{}",
@@ -91,17 +91,17 @@ describe("Microsoft Teams QA transport adapter", () => {
         conversation: { id: "qa-primary", kind: "channel" },
         senderId: "driver",
         senderName: "Driver",
-        text: "@openclaw qa ingress",
+        text: "@afora qa ingress",
         threadId: "thread-root",
         replyToId: "quoted-parent",
       });
       expect(inboundActivity).toMatchObject({
-        text: "<at>openclaw</at> qa ingress",
+        text: "<at>afora</at> qa ingress",
         entities: [
           {
             type: "mention",
-            text: "<at>openclaw</at>",
-            mentioned: { id: "qa-msteams-app", name: "OpenClaw QA" },
+            text: "<at>afora</at>",
+            mentioned: { id: "qa-msteams-app", name: "Afora QA" },
           },
         ],
         serviceUrl: "https://smba.trafficmanager.net/qa",
@@ -131,7 +131,7 @@ describe("Microsoft Teams QA transport adapter", () => {
         headers: {
           authorization: `Bearer ${bootstrapConfig.botToken}`,
           "content-type": "application/json",
-          "x-openclaw-msteams-qa-nonce": bootstrapConfig.nonce!,
+          "x-afora-msteams-qa-nonce": bootstrapConfig.nonce!,
         },
         body: JSON.stringify({ type: "message", text: "qa outbound" }),
       },
@@ -151,8 +151,8 @@ describe("Microsoft Teams QA transport adapter", () => {
   });
 
   it("does not follow webhook redirects to another loopback origin", async () => {
-    // openclaw-temp-dir: allow extension tests cannot import repo-only test helpers; afterEach removes it.
-    const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-msteams-qa-"));
+    // afora-temp-dir: allow extension tests cannot import repo-only test helpers; afterEach removes it.
+    const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-msteams-qa-"));
     createdDirs.push(outputDir);
     const addInboundMessage = vi.fn();
     const adapter = await createMSTeamsQaTransportAdapter({

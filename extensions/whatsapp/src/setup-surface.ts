@@ -4,8 +4,8 @@ import {
   setSetupChannelEnabled,
   createSetupTranslator,
   type ChannelSetupWizard,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/setup";
+  type AforaConfig,
+} from "afora-agent/plugin-sdk/setup";
 import { listWhatsAppAccountIds, resolveWhatsAppAuthDir } from "./accounts.js";
 import { formatWhatsAppWebAuthStatusState, readWebAuthState } from "./auth-store.js";
 
@@ -16,7 +16,7 @@ const channel = "whatsapp" as const;
 type WhatsAppSetupLinkState = "linked" | "not-linked" | "unstable";
 
 async function readWhatsAppSetupLinkState(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   accountId: string,
 ): Promise<WhatsAppSetupLinkState> {
   const { authDir } = resolveWhatsAppAuthDir({ cfg, accountId });

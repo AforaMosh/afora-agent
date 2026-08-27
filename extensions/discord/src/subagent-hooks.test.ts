@@ -2,8 +2,8 @@
 import {
   getRequiredHookHandler,
   registerHookHandlersForTest,
-} from "openclaw/plugin-sdk/channel-test-helpers";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/core";
+} from "afora-agent/plugin-sdk/channel-test-helpers";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/core";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 type ThreadBindingRecord = {
@@ -32,7 +32,7 @@ vi.mock("./subagent-progress.js", () => {
 });
 
 function registerHandlersForTest() {
-  return registerHookHandlersForTest<OpenClawPluginApi>({
+  return registerHookHandlersForTest<AforaPluginApi>({
     config: {},
     register: registerDiscordSubagentHooks,
   });

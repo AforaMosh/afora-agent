@@ -1,4 +1,4 @@
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 
 // Windows PowerShell one-shots pay cold first-use costs: module analysis ("Preparing modules
 // for first use") and NGEN image compilation exceeded 10 seconds on loaded CI runners.

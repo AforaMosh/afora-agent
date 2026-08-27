@@ -1,5 +1,5 @@
 import { resolveChannelTtsVoiceDelivery } from "../channels/plugins/tts-capabilities.js";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { logVerbose } from "../globals.js";
 import { transcodeAudioBuffer } from "../media/media-services.js";
 import type { TtsDirectiveOverrides } from "./provider-types.js";
@@ -14,7 +14,7 @@ import {
 
 export type TtsAudioPersistence = (params: {
   audioBuffer: Buffer;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   fileExtension: string;
   outputFormat?: string;
 }) => Promise<string>;
@@ -81,7 +81,7 @@ export function shouldDeliverTtsAsVoice(params: {
 export async function textToSpeechCore(
   params: {
     text: string;
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     prefsPath?: string;
     channel?: string;
     overrides?: TtsDirectiveOverrides;
@@ -206,7 +206,7 @@ async function maybePreTranscodeForVoiceDelivery(params: {
 
 export async function synthesizeSpeech(params: {
   text: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   prefsPath?: string;
   channel?: string;
   overrides?: TtsDirectiveOverrides;

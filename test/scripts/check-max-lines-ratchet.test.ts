@@ -103,7 +103,7 @@ describe("check-max-lines-ratchet", () => {
   });
 
   it("rejects baseline growth even when the new suppression is listed", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-max-lines-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-max-lines-"));
     tempDirs.push(root);
     fs.mkdirSync(path.join(root, "config"), { recursive: true });
     fs.mkdirSync(path.join(root, "src"), { recursive: true });
@@ -134,7 +134,7 @@ describe("check-max-lines-ratchet", () => {
   });
 
   it("rejects replacing an explicit max-lines suppression with an all-rule disable", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-max-lines-all-rule-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-max-lines-all-rule-"));
     tempDirs.push(root);
     fs.mkdirSync(path.join(root, "config"), { recursive: true });
     fs.mkdirSync(path.join(root, "src"), { recursive: true });
@@ -157,7 +157,7 @@ describe("check-max-lines-ratchet", () => {
   });
 
   it("rejects a new all-rule disable without baseline growth", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-max-lines-all-rule-new-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-max-lines-all-rule-new-"));
     tempDirs.push(root);
     fs.mkdirSync(path.join(root, "config"), { recursive: true });
     fs.mkdirSync(path.join(root, "src"), { recursive: true });
@@ -180,7 +180,7 @@ describe("check-max-lines-ratchet", () => {
   });
 
   it("transfers grandfathered debt across a verified rename", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-max-lines-rename-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-max-lines-rename-"));
     tempDirs.push(root);
     fs.mkdirSync(path.join(root, "config"), { recursive: true });
     fs.mkdirSync(path.join(root, "src"), { recursive: true });
@@ -207,7 +207,7 @@ describe("check-max-lines-ratchet", () => {
   });
 
   it("defaults worktree comparisons to origin/main", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-max-lines-default-base-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-max-lines-default-base-"));
     tempDirs.push(root);
     fs.mkdirSync(path.join(root, "config"), { recursive: true });
     fs.mkdirSync(path.join(root, "src"), { recursive: true });
@@ -234,7 +234,7 @@ describe("check-max-lines-ratchet", () => {
   });
 
   it("compares an explicit moving base at the branch fork", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-max-lines-diverged-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-max-lines-diverged-"));
     tempDirs.push(root);
     fs.mkdirSync(path.join(root, "config"), { recursive: true });
     fs.mkdirSync(path.join(root, "src"), { recursive: true });
@@ -263,7 +263,7 @@ describe("check-max-lines-ratchet", () => {
   });
 
   it("falls back to main when no merge base is available", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-max-lines-disconnected-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-max-lines-disconnected-"));
     tempDirs.push(root);
     fs.mkdirSync(path.join(root, "config"), { recursive: true });
     fs.mkdirSync(path.join(root, "src"), { recursive: true });
@@ -291,7 +291,7 @@ describe("check-max-lines-ratchet", () => {
   });
 
   it("checks staged content instead of unstaged worktree edits", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-max-lines-staged-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-max-lines-staged-"));
     tempDirs.push(root);
     fs.mkdirSync(path.join(root, "config"), { recursive: true });
     fs.mkdirSync(path.join(root, "src"), { recursive: true });
@@ -318,7 +318,7 @@ describe("check-max-lines-ratchet", () => {
   });
 
   it.skipIf(process.platform === "win32")("keeps staged filenames NUL-framed", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-max-lines-nul-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-max-lines-nul-"));
     tempDirs.push(root);
     fs.mkdirSync(path.join(root, "src"), { recursive: true });
     git(root, ["init"]);
@@ -330,7 +330,7 @@ describe("check-max-lines-ratchet", () => {
   });
 
   it("checks untracked sources and tolerates unstaged deletions", () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-max-lines-worktree-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "afora-max-lines-worktree-"));
     tempDirs.push(root);
     fs.mkdirSync(path.join(root, "config"), { recursive: true });
     fs.mkdirSync(path.join(root, "src"), { recursive: true });

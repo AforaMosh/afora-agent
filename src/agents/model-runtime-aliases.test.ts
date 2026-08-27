@@ -1,6 +1,6 @@
 // Verifies CLI runtime alias resolution and runtime model-ref equivalence.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { testing as cliBackendsTesting } from "./cli-backends.test-support.js";
 import {
   createModelPickerVisibleProviderPredicate,
@@ -39,8 +39,8 @@ function resolveCliRuntimeExecutionProvider(
 
 function createAnthropicAuthConfig(params: {
   order?: string[];
-  models?: NonNullable<NonNullable<OpenClawConfig["agents"]>["defaults"]>["models"];
-}): OpenClawConfig {
+  models?: NonNullable<NonNullable<AforaConfig["agents"]>["defaults"]>["models"];
+}): AforaConfig {
   // Auth order controls whether Anthropic execution is direct API or Claude
   // CLI-backed when no explicit runtime policy overrides it.
   return {
@@ -56,7 +56,7 @@ function createAnthropicAuthConfig(params: {
         models: params.models,
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 describe("resolveCliRuntimeExecutionProvider", () => {
@@ -129,15 +129,15 @@ describe("resolveCliRuntimeExecutionProvider", () => {
     ).toBe("claude-cli");
   });
 
-  it("does not override an explicit OpenClaw model-runtime policy with CLI auth", () => {
+  it("does not override an explicit Afora model-runtime policy with CLI auth", () => {
     // Runtime policy is more explicit than profile order, so CLI auth cannot
-    // force a model onto the CLI harness when config says OpenClaw.
+    // force a model onto the CLI harness when config says Afora.
     expect(
       resolveCliRuntimeExecutionProvider({
         cfg: createAnthropicAuthConfig({
           order: ["anthropic:claude-cli"],
           models: {
-            "anthropic/opus-4.7": { agentRuntime: { id: "openclaw" } },
+            "anthropic/opus-4.7": { agentRuntime: { id: "afora" } },
           },
         }),
         provider: "anthropic",
@@ -173,7 +173,7 @@ describe("resolveCliRuntimeExecutionProvider", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         provider: "",
         modelId: "anthropic/opus-4.7",
       }),

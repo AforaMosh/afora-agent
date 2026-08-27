@@ -3,7 +3,7 @@
  */
 import { expect } from "vitest";
 import type {
-  OpenClawPluginApi,
+  AforaPluginApi,
   UnifiedModelCatalogEntry,
   UnifiedModelCatalogKind,
   UnifiedModelCatalogProviderPlugin,
@@ -11,7 +11,7 @@ import type {
 import { createCapturedPluginRegistration } from "../plugin-test-runtime.js";
 
 type RegistrablePlugin = {
-  register(api: OpenClawPluginApi): void;
+  register(api: AforaPluginApi): void;
 };
 
 /** Verifies catalog rows are normalized and owned by the expected provider/kind. */

@@ -6,8 +6,8 @@ import {
   resolveClaudeModelIdentity,
   resolveClaudeMythos5ModelIdentity,
   resolveClaudeThinkingProfile,
-} from "openclaw/plugin-sdk/provider-model-shared";
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-types";
+} from "afora-agent/plugin-sdk/provider-model-shared";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-model-types";
 import { CLAUDE_CLI_OFF_THINKING_PROFILE } from "./cli-shared.js";
 import {
   applyAnthropicConfigDefaults,

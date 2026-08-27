@@ -3,8 +3,8 @@ import {
   claimPendingAgentQuestionAnswer,
   embeddedAgentLog,
   setActiveEmbeddedRun,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import type { queueAgentHarnessMessage } from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import type { queueAgentHarnessMessage } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import type { AttemptTranscriptJournal } from "./attempt-transcript-journal.js";
 import type { AttemptParamsLike } from "./attempt-types.js";
 import type { attachEventBridge, SessionLike } from "./event-bridge.js";

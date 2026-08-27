@@ -31,7 +31,7 @@ export function createWizardPrompter(
 
 /** Create isolated auth state and agent directories for auth tests. */
 export async function setupAuthTestEnv(
-  prefix = "openclaw-auth-",
+  prefix = "afora-auth-",
   options?: { agentSubdir?: string },
 ): Promise<{
   stateDir: string;
@@ -39,8 +39,8 @@ export async function setupAuthTestEnv(
 }> {
   const stateDir = await makeTempWorkspace(prefix);
   const agentDir = path.join(stateDir, options?.agentSubdir ?? "agent");
-  process.env.OPENCLAW_STATE_DIR = stateDir;
-  process.env.OPENCLAW_AGENT_DIR = agentDir;
+  process.env.AFORA_STATE_DIR = stateDir;
+  process.env.AFORA_AGENT_DIR = agentDir;
   await fs.mkdir(agentDir, { recursive: true });
   return { stateDir, agentDir };
 }

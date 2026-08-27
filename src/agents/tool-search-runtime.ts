@@ -1,8 +1,8 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
   normalizeStringEntries,
   uniqueStrings,
-} from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-normalization";
 import { getPluginToolMeta } from "../plugins/tools.js";
 import {
   truncateSanitizedExternalContent,
@@ -71,7 +71,7 @@ function toolSearchEntryText(entry: ToolSearchCatalogEntry, parameterText?: stri
   // as "unknown" for the same reason, and a client may hand us a lazy object that
   // throws on property access.
   const parameters =
-    parameterText ?? (entry.source === "openclaw" ? readParameterText(entry.parameters) : "");
+    parameterText ?? (entry.source === "afora" ? readParameterText(entry.parameters) : "");
   return [entry.name, entry.id, entry.label ?? "", entry.description, parameters]
     .filter(Boolean)
     .join(" ");
@@ -154,7 +154,7 @@ function formatUnknownToolIdError(
   ).slice(0, 3);
   const recoveryText =
     options.recoverySurface === "code-mode"
-      ? "Use openclaw.tools.search to find a tool, openclaw.tools.describe to inspect it, then openclaw.tools.call with the exact id or name."
+      ? "Use afora.tools.search to find a tool, afora.tools.describe to inspect it, then afora.tools.call with the exact id or name."
       : options.recoverySurface === "tools"
         ? "Use tools.search to find a tool, tools.describe to inspect it, then tools.call with the exact id or name."
         : "Use tool_search to find a tool, tool_describe to inspect it, then tool_call with the exact id or name.";
@@ -292,7 +292,7 @@ export function prepareToolSearchDispatcherArguments(args: unknown): unknown {
 }
 
 function getTelemetry(catalog: ToolSearchCatalogSession) {
-  const sources: Record<CatalogSource, number> = { openclaw: 0, mcp: 0, client: 0 };
+  const sources: Record<CatalogSource, number> = { afora: 0, mcp: 0, client: 0 };
   for (const entry of catalog.entries) {
     sources[entry.source] += 1;
   }
@@ -340,7 +340,7 @@ function matchesCachedToolSearchIndex(
         snapshot.description === entry.description &&
         snapshot.parameters === entry.parameters &&
         snapshot.parameterText ===
-          (entry.source === "openclaw" ? readParameterText(entry.parameters) : "")
+          (entry.source === "afora" ? readParameterText(entry.parameters) : "")
       );
     })
   );
@@ -377,7 +377,7 @@ async function validateCatalogSchemaValue(
   value: unknown,
 ): Promise<CatalogSchemaValidation | undefined> {
   const schema = schemaName === "inputSchema" ? entry.parameters : entry.outputSchema;
-  if (entry.source !== "openclaw" || !schema) {
+  if (entry.source !== "afora" || !schema) {
     return undefined;
   }
   try {
@@ -518,7 +518,7 @@ export class ToolSearchRuntime {
         label: entry.label,
         description: entry.description,
         parameters: entry.parameters,
-        parameterText: entry.source === "openclaw" ? readParameterText(entry.parameters) : "",
+        parameterText: entry.source === "afora" ? readParameterText(entry.parameters) : "",
       }));
       cachedIndex = {
         entries: indexedEntries,
@@ -603,7 +603,7 @@ export class ToolSearchRuntime {
     } catch {
       return false;
     }
-    if (entry.source !== "openclaw") {
+    if (entry.source !== "afora") {
       return false;
     }
     const pluginMeta = getPluginToolMeta(entry.tool as Parameters<typeof getPluginToolMeta>[0]);
@@ -654,7 +654,7 @@ export class ToolSearchRuntime {
       await assertCatalogOutputMatchesSchema(entry, snapshot);
       return snapshot;
     };
-    const validateInput = this.options.validateInput && entry.source === "openclaw";
+    const validateInput = this.options.validateInput && entry.source === "afora";
     const executionTool =
       validateInput && !isToolWrappedWithBeforeToolCallHook(entry.tool as never)
         ? wrapToolWithBeforeToolCallHook(entry.tool as never)

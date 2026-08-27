@@ -30,7 +30,7 @@ afterEach(async () => {
 
 describe("browser proxy upload transport", () => {
   it("reads Gateway-owned files into a versioned envelope and omits node-facing paths", async () => {
-    const root = await createTempRoot("openclaw-browser-proxy-gateway-");
+    const root = await createTempRoot("afora-browser-proxy-gateway-");
     const uploadDir = path.join(root, "uploads");
     const inboundMediaDir = path.join(root, "media", "inbound");
     await fs.mkdir(uploadDir, { recursive: true });
@@ -58,7 +58,7 @@ describe("browser proxy upload transport", () => {
   });
 
   it("preserves zero-byte files", async () => {
-    const root = await createTempRoot("openclaw-browser-proxy-empty-");
+    const root = await createTempRoot("afora-browser-proxy-empty-");
     const uploadDir = path.join(root, "uploads");
     await fs.mkdir(uploadDir, { recursive: true });
     const sourcePath = path.join(uploadDir, "empty.txt");
@@ -76,7 +76,7 @@ describe("browser proxy upload transport", () => {
   });
 
   it("transfers Gateway inbound media bytes instead of resolving the URI on the node", async () => {
-    const root = await createTempRoot("openclaw-browser-proxy-inbound-");
+    const root = await createTempRoot("afora-browser-proxy-inbound-");
     const uploadDir = path.join(root, "uploads");
     const inboundMediaDir = path.join(root, "media", "inbound");
     await fs.mkdir(inboundMediaDir, { recursive: true });
@@ -100,8 +100,8 @@ describe("browser proxy upload transport", () => {
   });
 
   it("carries a prepared Gateway file through real node staging and route validation", async () => {
-    const gatewayRoot = await createTempRoot("openclaw-browser-proxy-gateway-root-");
-    const nodeRoot = await createTempRoot("openclaw-browser-proxy-node-root-");
+    const gatewayRoot = await createTempRoot("afora-browser-proxy-gateway-root-");
+    const nodeRoot = await createTempRoot("afora-browser-proxy-node-root-");
     const gatewayUploadDir = path.join(gatewayRoot, "uploads");
     const nodeUploadDir = path.join(nodeRoot, "uploads");
     await fs.mkdir(gatewayUploadDir, { recursive: true });
@@ -145,8 +145,8 @@ describe("browser proxy upload transport", () => {
   });
 
   it("round-trips the exact 16 MiB aggregate file limit", async () => {
-    const gatewayRoot = await createTempRoot("openclaw-browser-proxy-limit-gateway-");
-    const nodeRoot = await createTempRoot("openclaw-browser-proxy-limit-node-");
+    const gatewayRoot = await createTempRoot("afora-browser-proxy-limit-gateway-");
+    const nodeRoot = await createTempRoot("afora-browser-proxy-limit-node-");
     const gatewayUploadDir = path.join(gatewayRoot, "uploads");
     const nodeUploadDir = path.join(nodeRoot, "uploads");
     await fs.mkdir(gatewayUploadDir, { recursive: true });
@@ -183,7 +183,7 @@ describe("browser proxy upload transport", () => {
   });
 
   it("stages files under the node upload root with route-valid paths", async () => {
-    const root = await createTempRoot("openclaw-browser-proxy-node-");
+    const root = await createTempRoot("afora-browser-proxy-node-");
     const uploadDir = path.join(root, "uploads");
     const upload: BrowserProxyUploadV1 = {
       envelope: BROWSER_PROXY_UPLOAD_ENVELOPE,
@@ -225,7 +225,7 @@ describe("browser proxy upload transport", () => {
   });
 
   it("rejects ambiguous request bodies and invalid encodings before dispatch", async () => {
-    const root = await createTempRoot("openclaw-browser-proxy-invalid-");
+    const root = await createTempRoot("afora-browser-proxy-invalid-");
     const upload: BrowserProxyUploadV1 = {
       envelope: BROWSER_PROXY_UPLOAD_ENVELOPE,
       files: [{ name: "report.txt", contentBase64: "not-base64" }],
@@ -253,7 +253,7 @@ describe("browser proxy upload transport", () => {
   });
 
   it("rejects malformed Gateway path arrays instead of forwarding them to the node", async () => {
-    const root = await createTempRoot("openclaw-browser-proxy-malformed-");
+    const root = await createTempRoot("afora-browser-proxy-malformed-");
     const uploadDir = path.join(root, "uploads");
     await fs.mkdir(uploadDir, { recursive: true });
     const sourcePath = path.join(uploadDir, "report.txt");
@@ -271,7 +271,7 @@ describe("browser proxy upload transport", () => {
   });
 
   it("uses portable names for Windows-reserved aliases", async () => {
-    const root = await createTempRoot("openclaw-browser-proxy-portable-");
+    const root = await createTempRoot("afora-browser-proxy-portable-");
     const staged = await stageBrowserProxyUploadRequest({
       method: "POST",
       path: "/hooks/file-chooser",
@@ -288,7 +288,7 @@ describe("browser proxy upload transport", () => {
   });
 
   it("enforces retained byte and directory limits across concurrent requests", async () => {
-    const root = await createTempRoot("openclaw-browser-proxy-limits-");
+    const root = await createTempRoot("afora-browser-proxy-limits-");
     const uploadDir = path.join(root, "uploads");
     const upload: BrowserProxyUploadV1 = {
       envelope: BROWSER_PROXY_UPLOAD_ENVELOPE,
@@ -336,7 +336,7 @@ describe("browser proxy upload transport", () => {
   });
 
   it("rejects staging when retained bytes alone exceed the quota", async () => {
-    const root = await createTempRoot("openclaw-browser-proxy-byte-limit-");
+    const root = await createTempRoot("afora-browser-proxy-byte-limit-");
     const uploadDir = path.join(root, "uploads");
     const upload: BrowserProxyUploadV1 = {
       envelope: BROWSER_PROXY_UPLOAD_ENVELOPE,
@@ -367,7 +367,7 @@ describe("browser proxy upload transport", () => {
   });
 
   it("counts the ownership marker against retained-byte admission", async () => {
-    const root = await createTempRoot("openclaw-browser-proxy-marker-limit-");
+    const root = await createTempRoot("afora-browser-proxy-marker-limit-");
     await expect(
       stageBrowserProxyUploadRequest({
         method: "POST",
@@ -385,13 +385,13 @@ describe("browser proxy upload transport", () => {
   });
 
   it("removes expired staged directories during startup recovery", async () => {
-    const root = await createTempRoot("openclaw-browser-proxy-recovery-");
+    const root = await createTempRoot("afora-browser-proxy-recovery-");
     const uploadDir = path.join(root, "uploads");
     const staleDirectory = path.join(uploadDir, ".proxy-uploads", "upload-stale");
     await fs.mkdir(staleDirectory, { recursive: true });
     await fs.writeFile(
-      path.join(staleDirectory, ".openclaw-browser-proxy-upload-v1"),
-      "openclaw-browser-proxy-upload-v1\n",
+      path.join(staleDirectory, ".afora-browser-proxy-upload-v1"),
+      "afora-browser-proxy-upload-v1\n",
       "utf8",
     );
     await fs.writeFile(path.join(staleDirectory, "report.txt"), "stale", "utf8");
@@ -408,7 +408,7 @@ describe("browser proxy upload transport", () => {
   });
 
   it("evicts the oldest retained directory during restart recovery when over quota", async () => {
-    const root = await createTempRoot("openclaw-browser-proxy-recovery-quota-");
+    const root = await createTempRoot("afora-browser-proxy-recovery-quota-");
     const uploadDir = path.join(root, "uploads");
     const stagingRoot = path.join(uploadDir, ".proxy-uploads");
     const oldestDirectory = path.join(stagingRoot, "upload-oldest");
@@ -419,8 +419,8 @@ describe("browser proxy upload transport", () => {
     ] as const) {
       await fs.mkdir(directory, { recursive: true });
       await fs.writeFile(
-        path.join(directory, ".openclaw-browser-proxy-upload-v1"),
-        "openclaw-browser-proxy-upload-v1\n",
+        path.join(directory, ".afora-browser-proxy-upload-v1"),
+        "afora-browser-proxy-upload-v1\n",
         "utf8",
       );
       await fs.writeFile(path.join(directory, "report.txt"), contents, "utf8");
@@ -443,7 +443,7 @@ describe("browser proxy upload transport", () => {
   });
 
   it("does not recover unmarked directories from the private staging root", async () => {
-    const root = await createTempRoot("openclaw-browser-proxy-recovery-unmarked-");
+    const root = await createTempRoot("afora-browser-proxy-recovery-unmarked-");
     const uploadDir = path.join(root, "uploads");
     const unrelatedDirectory = path.join(uploadDir, ".proxy-uploads", "upload-archive");
     await fs.mkdir(unrelatedDirectory, { recursive: true });
@@ -463,7 +463,7 @@ describe("browser proxy upload transport", () => {
   });
 
   it("leaves unrelated proxy requests unchanged", async () => {
-    const body = { paths: ["/tmp/openclaw/uploads/report.txt"] };
+    const body = { paths: ["/tmp/afora/uploads/report.txt"] };
     await expect(
       prepareBrowserProxyUploadRequest({
         method: "POST",

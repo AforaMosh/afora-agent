@@ -31,7 +31,7 @@ export const MAX_RUNNING_WORKER_SESSION_TOOL_OPERATIONS = 4;
 const workerSessionToolOperationWaiters = resolveGlobalMap<
   string,
   Map<string, Set<WorkerSessionToolOperationWaiter>>
->(Symbol.for("openclaw.workerSessionToolOperationWaiters"), (waitersByPath) => {
+>(Symbol.for("afora.workerSessionToolOperationWaiters"), (waitersByPath) => {
   const error = new Error("Gateway lifecycle ended while waiting for worker session operations");
   for (const byClaim of waitersByPath.values()) {
     for (const waiters of byClaim.values()) {

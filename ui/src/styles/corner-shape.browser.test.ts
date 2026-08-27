@@ -19,7 +19,7 @@ const describeCornerShape = canRunPlaywrightChromium(chromiumExecutablePath)
 // its value to one no engine implements is how this file reproduces Firefox
 // and Safari from the shipped stylesheet instead of a hand-copied fallback.
 const SUPPORTS_CONDITION = "@supports (corner-shape: superellipse(1.5))";
-const UNSUPPORTED_CONDITION = "@supports (corner-shape: openclaw-unsupported-shape)";
+const UNSUPPORTED_CONDITION = "@supports (corner-shape: afora-unsupported-shape)";
 
 type CornerCase = {
   /** Corner radius an engine without `corner-shape` keeps drawing. */

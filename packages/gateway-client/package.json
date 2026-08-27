@@ -1,22 +1,22 @@
 {
-  "name": "@openclaw/gateway-client",
+  "name": "@afora/gateway-client",
   "version": "2026.8.1",
-  "description": "Reference WebSocket client for the OpenClaw Gateway protocol",
+  "description": "Reference WebSocket client for the Afora Gateway protocol",
   "keywords": [
     "client",
     "gateway",
-    "openclaw",
+    "afora",
     "websocket"
   ],
-  "homepage": "https://github.com/openclaw/openclaw#readme",
+  "homepage": "https://github.com/AforaMosh/afora-agent#readme",
   "bugs": {
-    "url": "https://github.com/openclaw/openclaw/issues"
+    "url": "https://github.com/AforaMosh/afora-agent/issues"
   },
   "license": "MIT",
-  "author": "OpenClaw Foundation (https://openclaw.org)",
+  "author": "Afora Foundation (https://afora.ai)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/openclaw/openclaw.git",
+    "url": "git+https://github.com/AforaMosh/afora-agent.git",
     "directory": "packages/gateway-client"
   },
   "files": [
@@ -65,12 +65,12 @@
     "build": "tsdown src/index.ts src/browser.ts src/readiness.ts src/scope-upgrade.ts src/timeouts.ts src/websocket-data.ts --no-config --platform node --format esm --dts --out-dir dist --clean"
   },
   "dependencies": {
-    "@openclaw/gateway-protocol": "workspace:*",
+    "@afora/gateway-protocol": "workspace:*",
     "ipaddr.js": "2.4.0",
     "ws": "8.21.1"
   },
   "devDependencies": {
-    "@openclaw/normalization-core": "workspace:*"
+    "@afora/normalization-core": "workspace:*"
   },
   "engines": {
     "node": ">=22.19.0"
@@ -78,7 +78,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "openclaw": {
+  "afora": {
     "release": {
       "publishToNpm": true
     }

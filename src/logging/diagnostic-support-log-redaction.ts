@@ -1,6 +1,6 @@
 // Support log redaction helpers scrub sensitive fields from diagnostic log payloads.
-import { safeParseJsonRecord } from "@openclaw/normalization-core";
-import { asOptionalRecord } from "@openclaw/normalization-core/record-coerce";
+import { safeParseJsonRecord } from "@afora/normalization-core";
+import { asOptionalRecord } from "@afora/normalization-core/record-coerce";
 import { isBlockedObjectKey } from "../infra/prototype-keys.js";
 import {
   redactSupportString,

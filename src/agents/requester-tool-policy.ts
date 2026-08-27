@@ -3,7 +3,7 @@
  * Sender-dependent policy resolves once at trusted ingress; verified descendants
  * consume the persisted effective parent projection instead of guessing identity.
  */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { InputProvenance } from "../sessions/input-provenance.js";
 import { normalizeInputProvenance } from "../sessions/input-provenance.js";
 import {
@@ -46,7 +46,7 @@ type RequesterToolPolicyResolution = {
 type SenderPolicyMode = "always" | "when-sender-id" | "never";
 
 type RequesterToolPolicyParams = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   sessionKey?: string;
   subagentSessionKey?: string;

@@ -171,7 +171,7 @@ describe("runResumeCommand", () => {
   ])("rejects a handoff combined with %s", async (_name, query, url) => {
     const handoff = encodeResumeHandoff({
       sessionKey: "agent:main:alpha",
-      gatewayUrl: "wss://gateway.example/openclaw",
+      gatewayUrl: "wss://gateway.example/afora",
     });
 
     await expect(runResumeCommand(query, { handoff, ...(url ? { url } : {}) })).rejects.toThrow(
@@ -183,7 +183,7 @@ describe("runResumeCommand", () => {
 
   it("passes an exact handoff target and explicit auth directly into the bound TUI", async () => {
     const sessionKey = "agent:main: hostile-'\"$&;|<>^()%![]{}\\`-%PATH% ";
-    const url = "wss://gateway.example/openclaw/$&;=()+,![]{}'`/%25PATH%25";
+    const url = "wss://gateway.example/afora/$&;=()+,![]{}'`/%25PATH%25";
     const handoff = encodeResumeHandoff({ sessionKey, gatewayUrl: url });
     const client = createGatewayClient([], {
       url: "wss://normalized.example/different-path",
@@ -315,7 +315,7 @@ describe("runResumeCommand", () => {
     async (_name, result, message) => {
       const handoff = encodeResumeHandoff({
         sessionKey: "agent:main:alpha",
-        gatewayUrl: "wss://gateway.example/openclaw",
+        gatewayUrl: "wss://gateway.example/afora",
       });
       const client = createGatewayClient([]);
       client.resolveSession.mockResolvedValue(result);
@@ -329,7 +329,7 @@ describe("runResumeCommand", () => {
   it("rejects a handoff resolution RPC error without exposing it or launching the TUI", async () => {
     const handoff = encodeResumeHandoff({
       sessionKey: "agent:main:alpha",
-      gatewayUrl: "wss://gateway.example/openclaw",
+      gatewayUrl: "wss://gateway.example/afora",
     });
     const client = createGatewayClient([]);
     client.resolveSession.mockRejectedValue(new Error("sensitive upstream details"));
@@ -409,7 +409,7 @@ describe("runResumeCommand", () => {
     Object.defineProperty(process.stdout, "isTTY", { configurable: true, value: false });
 
     await expect(runResumeCommand("global", {})).rejects.toThrow(
-      "Attaching to a session requires an interactive terminal. Re-run `openclaw resume [query]` from an interactive terminal.",
+      "Attaching to a session requires an interactive terminal. Re-run `afora resume [query]` from an interactive terminal.",
     );
     expect(mocks.connect).not.toHaveBeenCalled();
     expect(mocks.runTui).not.toHaveBeenCalled();
@@ -418,7 +418,7 @@ describe("runResumeCommand", () => {
 
 describe("resume command registration", () => {
   it("documents the additive opaque handoff option", () => {
-    const program = new Command().name("openclaw");
+    const program = new Command().name("afora");
     registerResumeCli(program);
 
     expect(program.commands[0]?.helpInformation()).toContain("--handoff <payload>");

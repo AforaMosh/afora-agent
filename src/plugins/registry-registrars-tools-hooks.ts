@@ -2,7 +2,7 @@ import path from "node:path";
 import {
   normalizeStringEntries,
   uniqueValues,
-} from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-normalization";
 import type { AnyAgentTool } from "../agents/tools/common.js";
 import type { InternalHookHandler } from "../hooks/internal-hook-types.js";
 import type { HookEntry } from "../hooks/types.js";
@@ -38,11 +38,11 @@ import {
   isPromptInjectionHookName,
 } from "./types.js";
 import type {
-  OpenClawPluginApi,
-  OpenClawPluginHookOptions,
-  OpenClawPluginToolContext,
-  OpenClawPluginToolFactory,
-  OpenClawPluginToolOptions,
+  AforaPluginApi,
+  AforaPluginHookOptions,
+  AforaPluginToolContext,
+  AforaPluginToolFactory,
+  AforaPluginToolOptions,
   PluginHookHandlerMap,
   PluginHookName,
   PluginHookRegistrationOptions,
@@ -70,7 +70,7 @@ export function createToolHookRegistrars(state: PluginRegistryState) {
 
   const registerCodexAppServerExtensionFactory = (
     record: PluginRecord,
-    factory: Parameters<OpenClawPluginApi["registerCodexAppServerExtensionFactory"]>[0],
+    factory: Parameters<AforaPluginApi["registerCodexAppServerExtensionFactory"]>[0],
   ) => {
     if (record.origin !== "bundled") {
       pushDiagnostic({
@@ -133,8 +133,8 @@ export function createToolHookRegistrars(state: PluginRegistryState) {
 
   const registerAgentToolResultMiddleware = (
     record: PluginRecord,
-    handler: Parameters<OpenClawPluginApi["registerAgentToolResultMiddleware"]>[0],
-    options: Parameters<OpenClawPluginApi["registerAgentToolResultMiddleware"]>[1],
+    handler: Parameters<AforaPluginApi["registerAgentToolResultMiddleware"]>[0],
+    options: Parameters<AforaPluginApi["registerAgentToolResultMiddleware"]>[1],
     policy?: PluginTypedHookPolicy,
   ) => {
     if (typeof (handler as unknown) !== "function") {
@@ -222,8 +222,8 @@ export function createToolHookRegistrars(state: PluginRegistryState) {
 
   const registerTool = (
     record: PluginRecord,
-    tool: AnyAgentTool | OpenClawPluginToolFactory,
-    opts?: OpenClawPluginToolOptions,
+    tool: AnyAgentTool | AforaPluginToolFactory,
+    opts?: AforaPluginToolOptions,
   ) => {
     if (pluginsWithChannelRegistrationConflict.has(record.id)) {
       return;
@@ -240,8 +240,8 @@ export function createToolHookRegistrars(state: PluginRegistryState) {
     }
     const names = [...(opts?.names ?? []), ...(opts?.name ? [opts.name] : [])];
     const optional = opts?.optional === true;
-    const factory: OpenClawPluginToolFactory =
-      typeof tool === "function" ? tool : (_ctx: OpenClawPluginToolContext) => tool;
+    const factory: AforaPluginToolFactory =
+      typeof tool === "function" ? tool : (_ctx: AforaPluginToolContext) => tool;
     if (typeof tool !== "function") {
       names.push(tool.name);
     }
@@ -276,8 +276,8 @@ export function createToolHookRegistrars(state: PluginRegistryState) {
     record: PluginRecord,
     events: string | string[],
     handler: InternalHookHandler,
-    opts: OpenClawPluginHookOptions | undefined,
-    config: OpenClawPluginApi["config"],
+    opts: AforaPluginHookOptions | undefined,
+    config: AforaPluginApi["config"],
     pluginConfig: unknown,
   ) => {
     const normalizedEvents = normalizeStringEntries(Array.isArray(events) ? events : [events]);
@@ -322,7 +322,7 @@ export function createToolHookRegistrars(state: PluginRegistryState) {
             ...entry.hook,
             name: hookName,
             description,
-            source: "openclaw-plugin",
+            source: "afora-plugin",
             pluginId: record.id,
           },
           metadata: { ...entry.metadata, events: normalizedEvents },
@@ -331,7 +331,7 @@ export function createToolHookRegistrars(state: PluginRegistryState) {
           hook: {
             name: hookName,
             description,
-            source: "openclaw-plugin",
+            source: "afora-plugin",
             pluginId: record.id,
             filePath: record.source,
             baseDir: path.dirname(record.source),

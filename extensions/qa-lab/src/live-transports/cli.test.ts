@@ -1,6 +1,6 @@
 // Qa Lab tests cover live transport CLI and adapter contribution discovery.
 import { Command } from "commander";
-import type { QaRunnerCliContribution } from "openclaw/plugin-sdk/qa-runner-runtime";
+import type { QaRunnerCliContribution } from "afora-agent/plugin-sdk/qa-runner-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { listQaRunnerCliContributions, runLiveTransportQaSuiteCommand, runTelegram } = vi.hoisted(
@@ -11,7 +11,7 @@ const { listQaRunnerCliContributions, runLiveTransportQaSuiteCommand, runTelegra
   }),
 );
 
-vi.mock("openclaw/plugin-sdk/qa-runner-runtime", () => ({ listQaRunnerCliContributions }));
+vi.mock("afora-agent/plugin-sdk/qa-runner-runtime", () => ({ listQaRunnerCliContributions }));
 vi.mock("./shared/live-transport-suite.runtime.js", () => ({ runLiveTransportQaSuiteCommand }));
 vi.mock("./telegram/cli.runtime.js", () => ({ runQaTelegramCommand: runTelegram }));
 
@@ -42,7 +42,7 @@ describe("live transport QA contributions", () => {
       const qa = new Command();
       registration?.register(qa);
 
-      await qa.parseAsync(["node", "openclaw", commandName, "--scenario", `${commandName}-canary`]);
+      await qa.parseAsync(["node", "afora", commandName, "--scenario", `${commandName}-canary`]);
 
       expect(runLiveTransportQaSuiteCommand).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -60,7 +60,7 @@ describe("live transport QA contributions", () => {
     const qa = new Command();
     registration?.register(qa);
 
-    await qa.parseAsync(["node", "openclaw", "telegram", "--scenario", "telegram-canary"]);
+    await qa.parseAsync(["node", "afora", "telegram", "--scenario", "telegram-canary"]);
 
     expect(runTelegram).toHaveBeenCalledWith(
       expect.objectContaining({ scenarioIds: ["telegram-canary"] }),

@@ -1,18 +1,18 @@
 ---
-summary: "CLI reference for `openclaw doctor` (health checks + guided repairs)"
+summary: "CLI reference for `afora doctor` (health checks + guided repairs)"
 read_when:
   - You have connectivity/auth issues and want guided fixes
   - You updated and want a sanity check
 title: "Doctor"
 ---
 
-# `openclaw doctor`
+# `afora doctor`
 
 Health checks and quick fixes for the gateway, channels, plugins, skills, model routing, local state, and config migrations. Use it whenever something is not behaving as expected and you want one command to explain what is wrong.
 
-When Gateway status reports degraded SecretRef owners, doctor prints a **Secret runtime degradation** warning with every cold or stale owner, affected config path, redacted reason, and the `openclaw secrets reload` retry command.
+When Gateway status reports degraded SecretRef owners, doctor prints a **Secret runtime degradation** warning with every cold or stale owner, affected config path, redacted reason, and the `afora secrets reload` retry command.
 
-When channel ingress events are dead-lettered, doctor names each affected channel account and points to [`openclaw channels dead-letters list`](/cli/channels#inbound-dead-letters) for inspection and recovery.
+When channel ingress events are dead-lettered, doctor names each affected channel account and points to [`afora channels dead-letters list`](/cli/channels#inbound-dead-letters) for inspection and recovery.
 
 When the Gateway has exporter health facts, doctor reports the latest trusted
 per-signal state and transport under **Telemetry exporters**. The summary is
@@ -30,46 +30,46 @@ Doctor has five postures:
 
 | Posture                   | Command                                      | Behavior                                                                        |
 | ------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| Inspect                   | `openclaw doctor` / `openclaw doctor --json` | Advisory checks in human or machine-readable form.                              |
-| Repair                    | `openclaw doctor --fix`                      | Applies supported repairs, using prompts unless non-interactive repair is safe. |
-| Lint                      | `openclaw doctor --lint [--json]`            | Read-only findings with threshold-based exit codes for CI gates.                |
-| Shared SQLite maintenance | `openclaw doctor --state-sqlite compact`     | Explicitly checkpoints, compacts, and verifies the canonical shared state DB.   |
-| Session SQLite migration  | `openclaw doctor --session-sqlite <mode>`    | Inspects, imports, validates, compacts, recovers, or restores session state.    |
+| Inspect                   | `afora doctor` / `afora doctor --json` | Advisory checks in human or machine-readable form.                              |
+| Repair                    | `afora doctor --fix`                      | Applies supported repairs, using prompts unless non-interactive repair is safe. |
+| Lint                      | `afora doctor --lint [--json]`            | Read-only findings with threshold-based exit codes for CI gates.                |
+| Shared SQLite maintenance | `afora doctor --state-sqlite compact`     | Explicitly checkpoints, compacts, and verifies the canonical shared state DB.   |
+| Session SQLite migration  | `afora doctor --session-sqlite <mode>`    | Inspects, imports, validates, compacts, recovers, or restores session state.    |
 
-Use `openclaw doctor --json` when an operator or script wants the advisory Doctor report as JSON. It exits successfully after producing a report; inspect `ok` and `findings` for health state. Use explicit `openclaw doctor --lint --json` when CI should exit nonzero for findings at the selected severity threshold. Prefer `--fix` when a human operator wants Doctor to edit config or state.
+Use `afora doctor --json` when an operator or script wants the advisory Doctor report as JSON. It exits successfully after producing a report; inspect `ok` and `findings` for health state. Use explicit `afora doctor --lint --json` when CI should exit nonzero for findings at the selected severity threshold. Prefer `--fix` when a human operator wants Doctor to edit config or state.
 
 ## Examples
 
 ```bash
-openclaw doctor
-openclaw doctor --lint
-openclaw doctor --json
-openclaw doctor --lint --json
-openclaw doctor --lint --severity-min warning
-openclaw doctor --lint --all
-openclaw doctor --lint --allow-exec
-openclaw doctor --deep
-openclaw doctor --fix
-openclaw doctor --fix --non-interactive
-openclaw doctor --generate-gateway-token
-openclaw doctor --post-upgrade
-openclaw doctor --post-upgrade --json
-openclaw doctor --state-sqlite compact
-openclaw doctor --state-sqlite compact --json
-openclaw doctor --session-sqlite inspect --session-sqlite-all-agents
-openclaw doctor --session-sqlite dry-run --session-sqlite-agent main --json
-openclaw doctor --session-sqlite import --session-sqlite-all-agents
-openclaw doctor --session-sqlite validate --session-sqlite-all-agents --json
-openclaw doctor --session-sqlite compact --session-sqlite-all-agents
-openclaw doctor --session-sqlite recover --github-issue
-openclaw doctor --session-sqlite restore --session-sqlite-all-agents
+afora doctor
+afora doctor --lint
+afora doctor --json
+afora doctor --lint --json
+afora doctor --lint --severity-min warning
+afora doctor --lint --all
+afora doctor --lint --allow-exec
+afora doctor --deep
+afora doctor --fix
+afora doctor --fix --non-interactive
+afora doctor --generate-gateway-token
+afora doctor --post-upgrade
+afora doctor --post-upgrade --json
+afora doctor --state-sqlite compact
+afora doctor --state-sqlite compact --json
+afora doctor --session-sqlite inspect --session-sqlite-all-agents
+afora doctor --session-sqlite dry-run --session-sqlite-agent main --json
+afora doctor --session-sqlite import --session-sqlite-all-agents
+afora doctor --session-sqlite validate --session-sqlite-all-agents --json
+afora doctor --session-sqlite compact --session-sqlite-all-agents
+afora doctor --session-sqlite recover --github-issue
+afora doctor --session-sqlite restore --session-sqlite-all-agents
 ```
 
 For channel-specific permissions, use the channel probes instead of `doctor`:
 
 ```bash
-openclaw channels capabilities --channel discord --target channel:<channel-id>
-openclaw channels status --probe
+afora channels capabilities --channel discord --target channel:<channel-id>
+afora channels status --probe
 ```
 
 `channels capabilities` reports the bot's effective permissions for a specific channel target. `channels status --probe` audits all configured channels and voice auto-join targets.
@@ -93,7 +93,7 @@ openclaw channels status --probe
 | `--session-sqlite-store <path>` | With `--session-sqlite`: select one legacy `sessions.json` store path.                                                                                                                  |
 | `--session-sqlite-agent <id>`   | With `--session-sqlite`: select one configured agent.                                                                                                                                   |
 | `--session-sqlite-all-agents`   | With `--session-sqlite`: select configured and discovered agent stores.                                                                                                                 |
-| `--github-issue`                | With `--session-sqlite recover`: prepare a sanitized openclaw/openclaw issue report; doctor creates it with `gh` after `--yes` or interactive confirmation.                             |
+| `--github-issue`                | With `--session-sqlite recover`: prepare a sanitized AforaMosh/afora-agent issue report; doctor creates it with `gh` after `--yes` or interactive confirmation.                             |
 | `--json`                        | Emit read-only JSON. Bare `--json` is advisory; combine with `--lint` for threshold-based exit codes. With another machine mode, emit that mode's existing JSON report.                 |
 | `--severity-min <level>`        | With `--lint`: drop findings below `info`, `warning`, or `error`.                                                                                                                       |
 | `--all`                         | With `--lint`: run all registered checks, including opt-in checks excluded from the default set.                                                                                        |
@@ -104,20 +104,20 @@ openclaw channels status --probe
 
 ## Lint mode
 
-Bare `openclaw doctor --json` is read-only and non-interactive: no prompts, repairs, or config/state rewrites. It emits the same default findings as lint mode, but exits `0` after a report is produced so output formatting does not change ordinary Doctor's advisory success contract. Read the payload's `ok` and `findings` fields to determine health.
+Bare `afora doctor --json` is read-only and non-interactive: no prompts, repairs, or config/state rewrites. It emits the same default findings as lint mode, but exits `0` after a report is produced so output formatting does not change ordinary Doctor's advisory success contract. Read the payload's `ok` and `findings` fields to determine health.
 
-Explicit `openclaw doctor --lint` is the deployment-preflight posture. Add `--json` for machine-readable output without changing lint's threshold-based exit code.
+Explicit `afora doctor --lint` is the deployment-preflight posture. Add `--json` for machine-readable output without changing lint's threshold-based exit code.
 
 ```bash
-openclaw doctor --json
-openclaw doctor --lint
-openclaw doctor --lint --severity-min warning
-openclaw doctor --lint --json
-openclaw doctor --lint --all
-openclaw doctor --lint --allow-exec
-openclaw doctor --lint --only core/doctor/gateway-config --json
-openclaw doctor --lint --only core/doctor/local-audio-acceleration --severity-min info
-openclaw doctor --lint --only memory-core/managed-local-embedding-setup --severity-min error --json
+afora doctor --json
+afora doctor --lint
+afora doctor --lint --severity-min warning
+afora doctor --lint --json
+afora doctor --lint --all
+afora doctor --lint --allow-exec
+afora doctor --lint --only core/doctor/gateway-config --json
+afora doctor --lint --only core/doctor/local-audio-acceleration --severity-min info
+afora doctor --lint --only memory-core/managed-local-embedding-setup --severity-min error --json
 ```
 
 The managed local embedding setup check is a scoped, non-mutating pre-cutover gate for existing
@@ -131,7 +131,7 @@ Human output is compact:
 ```text
 doctor --lint: ran 6 check(s), 1 finding(s)
   [warning] core/doctor/gateway-config gateway.mode - gateway.mode is unset; gateway start will be blocked.
-    fix: Run `openclaw configure` and set Gateway mode (local/remote), or `openclaw config set gateway.mode local`.
+    fix: Run `afora configure` and set Gateway mode (local/remote), or `afora config set gateway.mode local`.
 ```
 
 JSON output is the scripting surface:
@@ -147,7 +147,7 @@ JSON output is the scripting surface:
       "severity": "warning",
       "message": "gateway.mode is unset; gateway start will be blocked.",
       "path": "gateway.mode",
-      "fixHint": "Run `openclaw configure` and set Gateway mode (local/remote), or `openclaw config set gateway.mode local`."
+      "fixHint": "Run `afora configure` and set Gateway mode (local/remote), or `afora config set gateway.mode local`."
     }
   ]
 }
@@ -161,9 +161,9 @@ Explicit lint exit codes:
 | `1`  | At least one finding meets the selected threshold.            |
 | `2`  | Command/runtime failure before lint findings can be produced. |
 
-`--severity-min` controls both which findings print and the exit threshold: `openclaw doctor --lint --severity-min error` can print nothing and exit `0` even when lower-severity `info`/`warning` findings exist.
+`--severity-min` controls both which findings print and the exit threshold: `afora doctor --lint --severity-min error` can print nothing and exit `0` even when lower-severity `info`/`warning` findings exist.
 
-Bare `openclaw doctor --json` exits `0` once it emits a findings payload, including when `ok` is `false`. Argument errors or runtime failures before a payload can be produced remain nonzero.
+Bare `afora doctor --json` exits `0` once it emits a findings payload, including when `ok` is `false`. Argument errors or runtime failures before a payload can be produced remain nonzero.
 
 `--all` controls which checks are selected before severity filtering. The default lint run excludes checks that are deep, historical, or more likely to surface repairable legacy residue; use `--all` for the complete inventory. `--only <id>` is the most precise selector and can run any registered check by id.
 
@@ -196,62 +196,62 @@ A finding includes:
 | `ocPath`          | Precise `oc://` address when a check can point to one. |
 | `fixHint`         | Suggested operator action or repair summary.           |
 
-Modernized core doctor checks stay attached to the ordered doctor contribution that owns their human `doctor` / `doctor --fix` behavior. The shared structured health registry is the extension point: bundled and plugin-backed checks run after core doctor checks once their owning package registers them in the active command path. `openclaw/plugin-sdk/health` exposes the same contract for plugin authors.
+Modernized core doctor checks stay attached to the ordered doctor contribution that owns their human `doctor` / `doctor --fix` behavior. The shared structured health registry is the extension point: bundled and plugin-backed checks run after core doctor checks once their owning package registers them in the active command path. `afora/plugin-sdk/health` exposes the same contract for plugin authors.
 
 ## Check selection
 
 ```bash
-openclaw doctor --lint --only core/doctor/gateway-config --json
-openclaw doctor --lint --skip core/doctor/skills-readiness
+afora doctor --lint --only core/doctor/gateway-config --json
+afora doctor --lint --skip core/doctor/skills-readiness
 ```
 
 `--only` and `--skip` accept full check ids and may be repeated. If an `--only` id is not registered, no check runs for that id; use `checksRun`/`checksSkipped` in the output to confirm a focused gate selects the checks you expect.
 
 ## Post-upgrade mode
 
-`openclaw doctor --post-upgrade` runs plugin compatibility probes for chaining after a build or upgrade. Findings go to stdout; exit code is 1 if any finding has `level: "error"`. Add `--json` for a machine-readable envelope (`{ probesRun, findings }`), suitable for CI, the community `fork-upgrade` skill, and other post-upgrade smoke tooling. If the installed plugin index is missing or malformed, JSON mode still emits the envelope with a `plugin.index_unavailable` error finding.
+`afora doctor --post-upgrade` runs plugin compatibility probes for chaining after a build or upgrade. Findings go to stdout; exit code is 1 if any finding has `level: "error"`. Add `--json` for a machine-readable envelope (`{ probesRun, findings }`), suitable for CI, the community `fork-upgrade` skill, and other post-upgrade smoke tooling. If the installed plugin index is missing or malformed, JSON mode still emits the envelope with a `plugin.index_unavailable` error finding.
 
 Container image startup is the exception to the usual "run doctor after
-updating" flow. When `openclaw gateway run` starts on a new OpenClaw version, it
+updating" flow. When `afora gateway run` starts on a new Afora version, it
 runs safe state and plugin repairs before reporting ready. If repair cannot
 finish safely, startup exits and tells you to run the same image once with
-`openclaw doctor --fix` against the same mounted state/config before restarting
+`afora doctor --fix` against the same mounted state/config before restarting
 the container normally.
 
 ## Legacy state migration
 
-`openclaw doctor --fix` is the only owner for persistent file-to-SQLite migrations. It validates and claims each recognized source, writes and verifies canonical rows, records a migration receipt, then removes the retired source. Runtime code does not perform lazy imports or fallback reads.
+`afora doctor --fix` is the only owner for persistent file-to-SQLite migrations. It validates and claims each recognized source, writes and verifies canonical rows, records a migration receipt, then removes the retired source. Runtime code does not perform lazy imports or fallback reads.
 
-Doctor also reports when shared auth still uses the legacy `agents/main/agent/openclaw-agent.sqlite` owner. `openclaw doctor --fix` copies its auth profile and runtime-state rows into `state/openclaw.sqlite`, verifies the exact payloads, removes the source rows, and records the new ownership only after the transaction succeeds. Auth resolution has no dual-read fallback: before migration the legacy database is complete; after migration the shared state database is complete. Once relocated, deleting `main` no longer risks fleet credentials.
+Doctor also reports when shared auth still uses the legacy `agents/main/agent/afora-agent.sqlite` owner. `afora doctor --fix` copies its auth profile and runtime-state rows into `state/afora.sqlite`, verifies the exact payloads, removes the source rows, and records the new ownership only after the transaction succeeds. Auth resolution has no dual-read fallback: before migration the legacy database is complete; after migration the shared state database is complete. Once relocated, deleting `main` no longer risks fleet credentials.
 
 For the retired QMD memory backend, including config rewrites and derived
 workspace cleanup, see [Migrating from QMD](/concepts/memory-builtin#migrating-from-qmd).
 
-This includes retired MCP OAuth files under `<state-dir>/mcp-oauth/*.json`. Stop the Gateway before repair. Doctor imports valid credentials into `<state-dir>/state/openclaw.sqlite`, preserves an existing canonical SQLite session when both stores exist, drops the obsolete persisted OAuth `state` value, and uses its receipt to prevent a recreated stale file from resurrecting logged-out credentials. Retired `.lock` sidecars fail closed: if Doctor reports a stale owner, verify that no older OpenClaw process is running, remove that sidecar, and rerun Doctor.
+This includes retired MCP OAuth files under `<state-dir>/mcp-oauth/*.json`. Stop the Gateway before repair. Doctor imports valid credentials into `<state-dir>/state/afora.sqlite`, preserves an existing canonical SQLite session when both stores exist, drops the obsolete persisted OAuth `state` value, and uses its receipt to prevent a recreated stale file from resurrecting logged-out credentials. Retired `.lock` sidecars fail closed: if Doctor reports a stale owner, verify that no older Afora process is running, remove that sidecar, and rerun Doctor.
 
 ## Shared state SQLite compaction
 
 See [Database schemas](/reference/database-schemas) for schema versioning, integrity checks, and downgrade recovery.
 
-`openclaw doctor --state-sqlite compact` is explicit offline maintenance for
+`afora doctor --state-sqlite compact` is explicit offline maintenance for
 the canonical shared state database at
-`<state-dir>/state/openclaw.sqlite`. It does not accept an arbitrary database
+`<state-dir>/state/afora.sqlite`. It does not accept an arbitrary database
 path, is never invoked by normal Gateway operation, and is not part of
-`openclaw doctor --fix`. The command acquires the same state ownership lock as
+`afora doctor --fix`. The command acquires the same state ownership lock as
 Gateway startup and holds it through validation, checkpointing, `VACUUM`, and
 the final integrity checks. It refuses to run while a Gateway or another
 SQLite maintenance command owns that lock. The state lock remains active when
-`OPENCLAW_ALLOW_MULTI_GATEWAY=1` skips the per-config Gateway singleton, so an
+`AFORA_ALLOW_MULTI_GATEWAY=1` skips the per-config Gateway singleton, so an
 operator shell does not need to inherit the Gateway service's environment for
 maintenance to detect it.
 
 Stop the Gateway and create a verified backup first:
 
 ```bash
-openclaw gateway stop
-openclaw backup create --verify
-openclaw doctor --state-sqlite compact --json
-openclaw gateway start
+afora gateway stop
+afora backup create --verify
+afora doctor --state-sqlite compact --json
+afora gateway start
 ```
 
 The command:
@@ -260,7 +260,7 @@ The command:
    database is reported as `skipped` and exits successfully.
 2. Validates the current supported schema version and
    `schema_meta.role = "global"` before checkpointing or changing the file.
-3. Requires a non-busy `wal_checkpoint(TRUNCATE)`. Stop any remaining OpenClaw
+3. Requires a non-busy `wal_checkpoint(TRUNCATE)`. Stop any remaining Afora
    process and retry if the checkpoint is busy.
 4. Sets `auto_vacuum` to `INCREMENTAL`, runs a full `VACUUM`, and checkpoints
    again.
@@ -274,25 +274,25 @@ fail-closed and has no separate success field. SQLite reports `auto_vacuum` as
 `0` for none, `1` for full, and `2` for incremental.
 
 Compaction fails without mutation when the schema is old, newer than the
-running OpenClaw build, or belongs to an agent database. Run
-`openclaw doctor --fix` first for an older shared-state schema. Restore a
-compatible backup or upgrade OpenClaw for a newer schema.
+running Afora build, or belongs to an agent database. Run
+`afora doctor --fix` first for an older shared-state schema. Restore a
+compatible backup or upgrade Afora for a newer schema.
 
 ## Session SQLite migration
 
-OpenClaw imports legacy session rows and transcript history into each agent's
+Afora imports legacy session rows and transcript history into each agent's
 SQLite database automatically during gateway startup and during
-`openclaw doctor --fix`. `openclaw doctor --session-sqlite <mode>` is the
+`afora doctor --fix`. `afora doctor --session-sqlite <mode>` is the
 targeted inspection and validation tool for that migration. Current runtime
 session rows live in
-`~/.openclaw/agents/<agentId>/agent/openclaw-agent.sqlite`. Legacy
+`~/.afora/agents/<agentId>/agent/afora-agent.sqlite`. Legacy
 `sessions.json` files are migration sources. Hot transcript JSONL files are
 imported and archived out of the active sessions directory after successful
 import; archive-tier JSONL files remain support artifacts, not runtime
 fallbacks.
 
-The regular `openclaw doctor` pass also reports canonical SQLite transcripts
-whose initial session header was never persisted. `openclaw doctor --fix`
+The regular `afora doctor` pass also reports canonical SQLite transcripts
+whose initial session header was never persisted. `afora doctor --fix`
 prepends a current header and rebuilds the transcript indexes in one
 transaction while preserving existing event IDs, parent links, row timestamps,
 and session-list recency. Headerless legacy or malformed transcripts remain
@@ -320,15 +320,15 @@ Selectors:
 Manual inspection sequence:
 
 ```bash
-openclaw doctor --session-sqlite inspect --session-sqlite-all-agents
-openclaw doctor --session-sqlite dry-run --session-sqlite-all-agents --json
-openclaw doctor --session-sqlite import --session-sqlite-all-agents
-openclaw doctor --session-sqlite validate --session-sqlite-all-agents --json
-openclaw doctor --session-sqlite compact --session-sqlite-all-agents
-openclaw doctor --session-sqlite recover --github-issue
+afora doctor --session-sqlite inspect --session-sqlite-all-agents
+afora doctor --session-sqlite dry-run --session-sqlite-all-agents --json
+afora doctor --session-sqlite import --session-sqlite-all-agents
+afora doctor --session-sqlite validate --session-sqlite-all-agents --json
+afora doctor --session-sqlite compact --session-sqlite-all-agents
+afora doctor --session-sqlite recover --github-issue
 ```
 
-Back up the OpenClaw state directory before running `import` on an install with
+Back up the Afora state directory before running `import` on an install with
 important history. `validate` exits non-zero when a selected legacy entry is
 missing from SQLite, a session id differs, or a transcript event count differs.
 When using `--session-sqlite-store <path>`, check that the report contains the
@@ -336,7 +336,7 @@ expected target count; a nonexistent explicit store path selects no targets.
 
 SQLite deletes reclaim pages inside the database first; they do not necessarily
 shrink the database file immediately. After deleting or archiving large
-transcripts, run `openclaw doctor --session-sqlite compact --session-sqlite-all-agents`
+transcripts, run `afora doctor --session-sqlite compact --session-sqlite-all-agents`
 to checkpoint WAL files, run `VACUUM`, and report before/after database and WAL
 sizes. Compaction requires a regular file with the current agent schema, the
 selected agent's durable owner metadata, and no open handle in the doctor
@@ -345,19 +345,19 @@ hold the same state ownership lock as Gateway startup for their full operation;
 `inspect`, `dry-run`, and `validate` remain read-only and do not take it. Stop
 the Gateway first. Destructive modes fail instead of racing live writes or
 racing another maintenance command. A destructive `--session-sqlite-store`
-target must be inside the active state directory; set `OPENCLAW_STATE_DIR` to
+target must be inside the active state directory; set `AFORA_STATE_DIR` to
 the store's owning state directory before maintaining another installation.
 Existing hard-linked targets are rejected because another path can share the
 same database inode outside the locked state directory. The same ownership
 checks cover SQLite WAL, shared-memory, and rollback-journal sidecars.
 
 Each import writes a manifest under
-`~/.openclaw/session-sqlite-migration-runs/` before moving transcript artifacts
+`~/.afora/session-sqlite-migration-runs/` before moving transcript artifacts
 into the archive. If startup reports a failed session SQLite migration after
 artifacts moved, run recovery:
 
 ```bash
-openclaw doctor --session-sqlite recover --github-issue
+afora doctor --session-sqlite recover --github-issue
 ```
 
 Recovery selects the latest failed migration manifest, restores only the
@@ -376,7 +376,7 @@ failure rolls already-moved files back before reporting failure, so a
 recoverable file set is not silently split. Stop the Gateway before recovery;
 copying or renaming an actively changing SQLite file set is unsafe and behaves
 differently across operating systems. With `--github-issue --yes`, doctor uses
-the GitHub CLI to create the issue in `openclaw/openclaw`; without confirmation
+the GitHub CLI to create the issue in `AforaMosh/afora-agent`; without confirmation
 it writes the local support report and prints a prefilled issue URL.
 
 `restore` remains the lower-level undo operation. It uses manifest
@@ -391,11 +391,11 @@ restore fail closed so restore cannot silently replace or hide recoverable data.
 
 ### Downgrading After Session SQLite Migration
 
-Before starting an older file-backed OpenClaw version, restore the archived
+Before starting an older file-backed Afora version, restore the archived
 legacy transcript artifacts:
 
 ```bash
-openclaw doctor --session-sqlite restore --session-sqlite-all-agents
+afora doctor --session-sqlite restore --session-sqlite-all-agents
 ```
 
 Older versions read `sessions.json` entries and the `sessionFile` paths recorded
@@ -406,43 +406,43 @@ their original paths.
 
 Restore does not delete SQLite data. Sessions created after the SQLite flip
 exist only in SQLite and will not appear to the older runtime. If you later
-upgrade again, run the normal migration validation sequence above so OpenClaw can
+upgrade again, run the normal migration validation sequence above so Afora can
 compare restored legacy artifacts with the SQLite rows before importing.
 
 ## Notes
 
-- In Nix mode (`OPENCLAW_NIX_MODE=1`), read-only doctor checks still work, but `doctor --fix`, `doctor --repair`, `doctor --yes`, and `doctor --generate-gateway-token` are disabled because `openclaw.json` is immutable. Edit the Nix source for this install instead; for nix-openclaw, use the agent-first [Quick Start](https://github.com/openclaw/nix-openclaw#quick-start).
+- In Nix mode (`AFORA_NIX_MODE=1`), read-only doctor checks still work, but `doctor --fix`, `doctor --repair`, `doctor --yes`, and `doctor --generate-gateway-token` are disabled because `afora.json` is immutable. Edit the Nix source for this install instead; for nix-afora, use the agent-first [Quick Start](https://github.com/afora/nix-afora#quick-start).
 - Interactive prompts (keychain/OAuth fixes, etc.) only run when stdin is a TTY and `--non-interactive` is **not** set. Headless runs (cron, Telegram, no terminal) skip prompts.
 - Non-interactive `doctor` runs skip eager plugin loading so headless health checks stay fast. Interactive sessions still load the plugin surfaces needed by the legacy health/repair flow.
 - `--lint` is stricter than `--non-interactive`: always read-only, never prompts, never applies safe migrations. Use `doctor --fix` or `doctor --repair` when you want doctor to make changes.
 - Doctor does not execute `exec` SecretRefs while checking secrets by default. Use `--allow-exec` (with or without `--lint`) only when you intentionally want doctor to run those configured secret resolvers.
-- Any config write (including a `--fix` repair) rotates a backup to `~/.openclaw/openclaw.json.bak` (with a numbered `.bak.1`..`.bak.4` ring). `--fix` also drops unknown config keys reported by schema validation, listing each removal; it skips this while an update is in progress so partially written upgrade state is not stripped before its migration finishes.
-- If `openclaw.json` cannot be parsed and no last-known-good config can be recovered, `doctor --fix` preserves the original as `openclaw.json.clobbered.<timestamp>`, leaves the current file unchanged, and exits with an error instead of writing a partial replacement.
-- Set `OPENCLAW_SERVICE_REPAIR_POLICY=external` when another supervisor owns the gateway lifecycle. Doctor still reports gateway/service health and applies non-service repairs, but skips service install/start/restart/bootstrap and legacy service cleanup.
-- Doctor reports the managed Gateway's applied heap limit and the adaptive derivation used for the current host or container memory limit. Use `openclaw gateway status` for the same report outside a repair pass.
-- On Linux, doctor ignores inactive extra gateway-like systemd units and does not rewrite command/entrypoint metadata for a running systemd gateway service during repair. Stop the service first, or use `openclaw gateway install --force` to replace the active launcher.
-- `doctor --fix --non-interactive` reports missing or stale gateway service definitions but does not install or rewrite them outside update repair mode. Run `openclaw gateway install` for a missing service, or `openclaw gateway install --force` to replace the launcher.
+- Any config write (including a `--fix` repair) rotates a backup to `~/.AforaMosh/afora-agent.json.bak` (with a numbered `.bak.1`..`.bak.4` ring). `--fix` also drops unknown config keys reported by schema validation, listing each removal; it skips this while an update is in progress so partially written upgrade state is not stripped before its migration finishes.
+- If `afora.json` cannot be parsed and no last-known-good config can be recovered, `doctor --fix` preserves the original as `afora.json.clobbered.<timestamp>`, leaves the current file unchanged, and exits with an error instead of writing a partial replacement.
+- Set `AFORA_SERVICE_REPAIR_POLICY=external` when another supervisor owns the gateway lifecycle. Doctor still reports gateway/service health and applies non-service repairs, but skips service install/start/restart/bootstrap and legacy service cleanup.
+- Doctor reports the managed Gateway's applied heap limit and the adaptive derivation used for the current host or container memory limit. Use `afora gateway status` for the same report outside a repair pass.
+- On Linux, doctor ignores inactive extra gateway-like systemd units and does not rewrite command/entrypoint metadata for a running systemd gateway service during repair. Stop the service first, or use `afora gateway install --force` to replace the active launcher.
+- `doctor --fix --non-interactive` reports missing or stale gateway service definitions but does not install or rewrite them outside update repair mode. Run `afora gateway install` for a missing service, or `afora gateway install --force` to replace the launcher.
 - State integrity checks detect orphan transcript files in the sessions directory. Archiving them as `.deleted.<timestamp>` requires interactive confirmation; `--fix`, `--yes`, and headless runs leave them in place.
-- Doctor scans historical `~/.openclaw/cron/jobs.json` stores and previously configured legacy store locations for old cron job shapes, imports jobs and quarantine records into SQLite, and archives the migrated JSON files.
+- Doctor scans historical `~/.afora/cron/jobs.json` stores and previously configured legacy store locations for old cron job shapes, imports jobs and quarantine records into SQLite, and archives the migrated JSON files.
 - Doctor reports cron jobs with an explicit `payload.model` override, including provider-namespace counts and mismatches against `agents.defaults.model`, so scheduled jobs that do not inherit the default model are visible during auth or billing investigations.
-- Doctor reports cron jobs still marked in-flight (`state.runningAtMs`), which can make `openclaw cron list` show them as `running`. This check is read-only: if no Gateway is currently executing a marked job, the next cron service startup records the interrupted run and clears the marker.
-- Doctor reports legacy image-inspection policy entries named `image`. `openclaw doctor --fix` rewrites supported config allow/deny surfaces and persisted automation `toolsAllow` entries to `view_image`; old-only wildcard patterns such as `image*` are preserved and gain an explicit `view_image`, while patterns that already cover both names remain unchanged. Runtime exposes only the canonical name.
-- On Linux, doctor warns when the user's crontab still runs the unmaintained legacy `~/.openclaw/bin/ensure-whatsapp.sh`, which can misreport `Gateway inactive` when cron lacks the systemd user-bus environment.
-- When WhatsApp is enabled, doctor checks for a degraded Gateway event loop with local `openclaw-tui` clients still running. `doctor --fix` stops only verified local TUI clients so WhatsApp replies are not queued behind stale TUI refresh loops.
+- Doctor reports cron jobs still marked in-flight (`state.runningAtMs`), which can make `afora cron list` show them as `running`. This check is read-only: if no Gateway is currently executing a marked job, the next cron service startup records the interrupted run and clears the marker.
+- Doctor reports legacy image-inspection policy entries named `image`. `afora doctor --fix` rewrites supported config allow/deny surfaces and persisted automation `toolsAllow` entries to `view_image`; old-only wildcard patterns such as `image*` are preserved and gain an explicit `view_image`, while patterns that already cover both names remain unchanged. Runtime exposes only the canonical name.
+- On Linux, doctor warns when the user's crontab still runs the unmaintained legacy `~/.afora/bin/ensure-whatsapp.sh`, which can misreport `Gateway inactive` when cron lacks the systemd user-bus environment.
+- When WhatsApp is enabled, doctor checks for a degraded Gateway event loop with local `afora-tui` clients still running. `doctor --fix` stops only verified local TUI clients so WhatsApp replies are not queued behind stale TUI refresh loops.
 - When HTTP(S) proxy environment variables are present but `tools.web.fetch.useTrustedEnvProxy` is disabled, doctor explains that `web_fetch` still uses direct routing, runs a short direct TLS connectivity probe, and names the explicit opt-in. It never enables proxy trust automatically.
 - Doctor rewrites legacy `codex/*` and `openai-codex/*` model refs to canonical `openai/*` refs across primary models, fallbacks, model allowlists, image/video generation models, heartbeat/subagent/compaction overrides, hooks, channel model overrides, cron payloads, and stale session/transcript route pins. `--fix` also merges legacy `models.providers.codex` and `models.providers.openai-codex` config when safe, migrates legacy `openai-codex:*` auth profiles and `auth.order.openai-codex` entries to `openai:*`, moves Codex intent onto provider/model-scoped `agentRuntime.id: "codex"` entries, removes stale whole-agent/session runtime pins, and keeps repaired OpenAI agent refs on Codex auth routing instead of direct OpenAI API-key auth.
 - Doctor reports nonempty `auth.order.<provider>` lists whose referenced profiles are all gone while compatible stored credentials exist. `doctor --fix` deletes only those stale overrides, restoring automatic per-agent credential selection; explicit empty orders, partially live lists, and orders without a compatible stored credential stay unchanged. If an active SQLite auth store is unreadable or malformed, doctor explains why it skipped this repair. Restart a running Gateway before rechecking auth status if its config reload mode does not apply the write automatically.
-- Doctor cleans legacy plugin dependency staging state from older OpenClaw versions and relinks the host `openclaw` package for managed npm plugins that declare it as a peer dependency. It also repairs missing downloadable plugins referenced by config (`plugins.entries`, configured channels, configured provider/search settings, configured agent runtimes). During package updates, doctor skips package-manager plugin repair until the package swap completes; rerun `openclaw doctor --fix` afterward if a configured plugin still needs recovery. If a download fails, doctor reports the install error and preserves the configured plugin entry for the next repair attempt.
+- Doctor cleans legacy plugin dependency staging state from older Afora versions and relinks the host `afora` package for managed npm plugins that declare it as a peer dependency. It also repairs missing downloadable plugins referenced by config (`plugins.entries`, configured channels, configured provider/search settings, configured agent runtimes). During package updates, doctor skips package-manager plugin repair until the package swap completes; rerun `afora doctor --fix` afterward if a configured plugin still needs recovery. If a download fails, doctor reports the install error and preserves the configured plugin entry for the next repair attempt.
 - Doctor repairs stale plugin config by removing missing plugin ids from `plugins.allow`/`plugins.deny`/`plugins.entries`, plus matching dangling channel config, heartbeat targets, and channel model overrides, when plugin discovery is healthy.
 - Doctor quarantines invalid plugin config by disabling the affected `plugins.entries.<id>` entry and removing its invalid `config` payload. Gateway startup already skips only that bad plugin so other plugins and channels keep running.
 - Doctor removes the retired `plugins.entries.codex.config.codexDynamicToolsProfile`; the Codex app-server always keeps Codex-native workspace tools native.
 - Doctor auto-migrates legacy flat Talk config (`talk.voiceId`, `talk.modelId`, and friends) into `talk.provider` + `talk.providers.<provider>`. Repeat `doctor --fix` runs no longer report/apply Talk normalization when the only difference is object key order.
-- Doctor includes a memory-search readiness check and can recommend `openclaw configure --section model` when embedding credentials are missing.
+- Doctor includes a memory-search readiness check and can recommend `afora configure --section model` when embedding credentials are missing.
 - Doctor warns when no command owner is configured. The command owner is the human operator account allowed to run owner-only commands and approve dangerous actions. DM pairing only lets someone talk to the bot; if you approved a sender before first-owner bootstrap existed, set `commands.ownerAllowFrom` explicitly.
-- Doctor reports an info note when Codex-mode agents are configured and personal Codex CLI assets exist in the operator's Codex home. Local Codex app-server launches use isolated per-agent homes; install the Codex plugin first if needed, then use `openclaw migrate plan codex` to inventory assets that should be promoted deliberately.
+- Doctor reports an info note when Codex-mode agents are configured and personal Codex CLI assets exist in the operator's Codex home. Local Codex app-server launches use isolated per-agent homes; install the Codex plugin first if needed, then use `afora migrate plan codex` to inventory assets that should be promoted deliberately.
 - Doctor warns when skills allowed for the default agent are unavailable in the current runtime environment (missing bins, env vars, config, or OS requirements). `doctor --fix` can disable those unavailable skills with `skills.entries.<skill>.enabled=false`; install/configure the missing requirement instead if you want to keep the skill active.
-- If sandbox mode is enabled but Docker is unavailable, doctor reports a high-signal warning with remediation (`install Docker` or `openclaw config set agents.defaults.sandbox.mode off`).
-- If legacy sandbox registry files or shard directories are present (`~/.openclaw/sandbox/containers.json`, `~/.openclaw/sandbox/browsers.json`, `~/.openclaw/sandbox/containers/`, or `~/.openclaw/sandbox/browsers/`), doctor reports them; `--fix` migrates valid entries into SQLite and quarantines invalid legacy files.
+- If sandbox mode is enabled but Docker is unavailable, doctor reports a high-signal warning with remediation (`install Docker` or `afora config set agents.defaults.sandbox.mode off`).
+- If legacy sandbox registry files or shard directories are present (`~/.afora/sandbox/containers.json`, `~/.afora/sandbox/browsers.json`, `~/.afora/sandbox/containers/`, or `~/.afora/sandbox/browsers/`), doctor reports them; `--fix` migrates valid entries into SQLite and quarantines invalid legacy files.
 - If `gateway.auth.token`/`gateway.auth.password` are SecretRef-managed and unavailable in the current command path, doctor reports a read-only warning and does not write plaintext fallback credentials. For exec-backed SecretRefs, doctor skips execution unless `--allow-exec` is present.
 - If channel SecretRef inspection fails in a fix path, doctor continues and reports a warning instead of exiting early.
 - After state-directory migrations, doctor warns when enabled default Telegram or Discord accounts depend on env fallback and `TELEGRAM_BOT_TOKEN` or `DISCORD_BOT_TOKEN` is unavailable to the doctor process.
@@ -450,14 +450,14 @@ compare restored legacy artifacts with the SQLite rows before importing.
 
 ## macOS: `launchctl` env overrides
 
-If you previously ran `launchctl setenv OPENCLAW_GATEWAY_TOKEN ...` (or `...PASSWORD`), that value overrides your config file and can cause persistent "unauthorized" errors.
+If you previously ran `launchctl setenv AFORA_GATEWAY_TOKEN ...` (or `...PASSWORD`), that value overrides your config file and can cause persistent "unauthorized" errors.
 
 ```bash
-launchctl getenv OPENCLAW_GATEWAY_TOKEN
-launchctl getenv OPENCLAW_GATEWAY_PASSWORD
+launchctl getenv AFORA_GATEWAY_TOKEN
+launchctl getenv AFORA_GATEWAY_PASSWORD
 
-launchctl unsetenv OPENCLAW_GATEWAY_TOKEN
-launchctl unsetenv OPENCLAW_GATEWAY_PASSWORD
+launchctl unsetenv AFORA_GATEWAY_TOKEN
+launchctl unsetenv AFORA_GATEWAY_PASSWORD
 ```
 
 ## Related

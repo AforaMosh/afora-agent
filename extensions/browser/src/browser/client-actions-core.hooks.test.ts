@@ -24,18 +24,18 @@ describe("browser hook client actions", () => {
 
   it("adds transport slack to an atomic file chooser upload", async () => {
     await browserArmFileChooser(undefined, {
-      paths: ["/tmp/openclaw/uploads/report.pdf"],
+      paths: ["/tmp/afora/uploads/report.pdf"],
       ref: "e12",
       targetId: "tab-1",
       timeoutMs: 30_000,
-      profile: "openclaw",
+      profile: "afora",
     });
 
     const call = lastFetchCall();
-    expect(call.url).toBe("/hooks/file-chooser?profile=openclaw");
+    expect(call.url).toBe("/hooks/file-chooser?profile=afora");
     expect(call.options.timeoutMs).toBe(35_000);
     expect(JSON.parse(call.options.body ?? "{}")).toEqual({
-      paths: ["/tmp/openclaw/uploads/report.pdf"],
+      paths: ["/tmp/afora/uploads/report.pdf"],
       ref: "e12",
       targetId: "tab-1",
       timeoutMs: 30_000,
@@ -44,14 +44,14 @@ describe("browser hook client actions", () => {
 
   it("preserves paths-only arming with the advertised 120 second default", async () => {
     await browserArmFileChooser(undefined, {
-      paths: ["/tmp/openclaw/uploads/report.pdf"],
+      paths: ["/tmp/afora/uploads/report.pdf"],
     });
 
     const call = lastFetchCall();
     expect(call.url).toBe("/hooks/file-chooser");
     expect(call.options.timeoutMs).toBe(125_000);
     expect(JSON.parse(call.options.body ?? "{}")).toEqual({
-      paths: ["/tmp/openclaw/uploads/report.pdf"],
+      paths: ["/tmp/afora/uploads/report.pdf"],
     });
   });
 

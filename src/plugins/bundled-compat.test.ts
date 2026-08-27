@@ -1,6 +1,6 @@
 /** Covers bundled plugin compatibility modes and their activation defaults. */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { withBundledPluginEnablementCompat } from "./bundled-compat.js";
 
 const readBundledDiscoveryMode = vi.hoisted(() => vi.fn<() => "compat" | "allowlist">());
@@ -14,7 +14,7 @@ describe("withBundledPluginEnablementCompat", () => {
   });
 
   it("returns unchanged config for an empty plugin list without reading upgrade state", () => {
-    const config = { plugins: { allow: ["openai"] } } satisfies OpenClawConfig;
+    const config = { plugins: { allow: ["openai"] } } satisfies AforaConfig;
 
     expect(withBundledPluginEnablementCompat({ config, pluginIds: [] })).toBe(config);
     expect(readBundledDiscoveryMode).not.toHaveBeenCalled();
@@ -26,7 +26,7 @@ describe("withBundledPluginEnablementCompat", () => {
       plugins: {
         allow: ["discord"],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const result = withBundledPluginEnablementCompat({
       config,
@@ -45,7 +45,7 @@ describe("withBundledPluginEnablementCompat", () => {
       plugins: {
         allow: ["openai"],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(
       withBundledPluginEnablementCompat({
@@ -66,7 +66,7 @@ describe("withBundledPluginEnablementCompat", () => {
           deepseek: { enabled: true },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(
       withBundledPluginEnablementCompat({

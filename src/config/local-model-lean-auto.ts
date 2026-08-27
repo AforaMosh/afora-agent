@@ -1,6 +1,6 @@
-import { isCloudModelRef } from "@openclaw/model-catalog-core/model-catalog-refs";
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import { isCloudModelRef } from "@afora/model-catalog-core/model-catalog-refs";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import type { AforaConfig } from "./types.afora.js";
 
 const AUTO_LOCAL_MODEL_LEAN_PROVIDER_IDS = new Set(["lmstudio", "ollama"]);
 
@@ -17,12 +17,12 @@ function shouldAutoEnableLocalModelLean(providerId: string, modelRef: string): b
   return !isCloudModelRef(modelRef);
 }
 
-function resolveDefaultModelRef(config: OpenClawConfig): string | undefined {
+function resolveDefaultModelRef(config: AforaConfig): string | undefined {
   const model = config.agents?.defaults?.model;
   return typeof model === "string" ? model : model?.primary;
 }
 
-function clearAutoModel(config: OpenClawConfig): OpenClawConfig {
+function clearAutoModel(config: AforaConfig): AforaConfig {
   const wizard = { ...config.wizard };
   delete wizard.localModelLeanAutoModel;
   return { ...config, wizard };
@@ -30,12 +30,12 @@ function clearAutoModel(config: OpenClawConfig): OpenClawConfig {
 
 /** Maintains the onboarding-owned lean default while preserving explicit user configuration. */
 export function applyAutoLocalModelLean(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   providerId: string;
   modelRef: string;
   previousModelRef?: string;
 }): {
-  config: OpenClawConfig;
+  config: AforaConfig;
   changed: boolean;
   enabled: boolean;
 } {

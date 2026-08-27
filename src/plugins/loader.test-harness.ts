@@ -1,7 +1,7 @@
 /** Broad plugin loader coverage for manifest discovery, runtime registration, and diagnostics. */
 import fs from "node:fs";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { expect } from "vitest";
 import { listRegisteredAgentHarnesses } from "../agents/harness/registry.js";
 import { clearRuntimeConfigSnapshot } from "../config/runtime-snapshot.js";
@@ -13,7 +13,7 @@ import {
   listRegisteredEmbeddingProviders,
 } from "./embedding-providers.js";
 import { getGlobalHookRunner } from "./hook-runner-global.js";
-import { loadOpenClawPlugins, type PluginLoadOptions } from "./loader.js";
+import { loadAforaPlugins, type PluginLoadOptions } from "./loader.js";
 import {
   cleanupPluginLoaderFixturesForTest,
   EMPTY_PLUGIN_SCHEMA,
@@ -118,7 +118,7 @@ export function updatePluginManifest(
   plugin: Pick<TempPlugin, "dir">,
   patch: Record<string, unknown>,
 ) {
-  const manifestPath = path.join(plugin.dir, "openclaw.plugin.json");
+  const manifestPath = path.join(plugin.dir, "afora.plugin.json");
   const raw = JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as Record<string, unknown>;
   fs.writeFileSync(manifestPath, JSON.stringify({ ...raw, ...patch }, null, 2), "utf-8");
 }
@@ -155,7 +155,7 @@ export function setupBundledDreamingMemoryPlugins(params?: {
   });
   const openSchema = { type: "object", additionalProperties: true };
   fs.writeFileSync(
-    path.join(memoryCoreDir, "openclaw.plugin.json"),
+    path.join(memoryCoreDir, "afora.plugin.json"),
     JSON.stringify(
       { id: "memory-core", kind: "memory", configSchema: EMPTY_PLUGIN_SCHEMA },
       null,
@@ -164,7 +164,7 @@ export function setupBundledDreamingMemoryPlugins(params?: {
     "utf-8",
   );
   fs.writeFileSync(
-    path.join(selectedMemoryDir, "openclaw.plugin.json"),
+    path.join(selectedMemoryDir, "afora.plugin.json"),
     JSON.stringify(
       {
         id: selectedId,
@@ -176,7 +176,7 @@ export function setupBundledDreamingMemoryPlugins(params?: {
     ),
     "utf-8",
   );
-  process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
+  process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledDir;
   return { bundledDir, selectedId };
 }
 
@@ -198,14 +198,14 @@ export function writeBundledPlugin(params: {
     filename: params.filename ?? "index.cjs",
     body: params.body ?? simplePluginBody(params.id),
   });
-  delete process.env.OPENCLAW_DISABLE_BUNDLED_PLUGINS;
-  process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
+  delete process.env.AFORA_DISABLE_BUNDLED_PLUGINS;
+  process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledDir;
   return { bundledDir, plugin };
 }
 
-export function makeOpenClawDevSourceRoot() {
+export function makeAforaDevSourceRoot() {
   const root = makePluginLoaderTempDir();
-  fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ name: "openclaw" }), "utf-8");
+  fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ name: "afora" }), "utf-8");
   mkdirSafe(path.join(root, "src"));
   mkdirSafe(path.join(root, "extensions"));
   return root;
@@ -218,7 +218,7 @@ export function writeWorkspacePlugin(params: {
   workspaceDir?: string;
 }) {
   const workspaceDir = params.workspaceDir ?? makePluginLoaderTempDir();
-  const workspacePluginDir = path.join(workspaceDir, ".openclaw", "extensions", params.id);
+  const workspacePluginDir = path.join(workspaceDir, ".afora", "extensions", params.id);
   mkdirSafe(workspacePluginDir);
   const plugin = writePlugin({
     id: params.id,
@@ -231,7 +231,7 @@ export function writeWorkspacePlugin(params: {
 
 export function withStateDir<T>(run: (stateDir: string) => T) {
   const stateDir = makePluginLoaderTempDir();
-  return withEnv({ OPENCLAW_STATE_DIR: stateDir }, () => run(stateDir));
+  return withEnv({ AFORA_STATE_DIR: stateDir }, () => run(stateDir));
 }
 
 export function loadBundledMemoryPluginRegistry(options?: {
@@ -240,8 +240,8 @@ export function loadBundledMemoryPluginRegistry(options?: {
   pluginFilename?: string;
 }) {
   if (!options && cachedBundledMemoryDir) {
-    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = cachedBundledMemoryDir;
-    return loadOpenClawPlugins({
+    process.env.AFORA_BUNDLED_PLUGINS_DIR = cachedBundledMemoryDir;
+    return loadAforaPlugins({
       cache: false,
       workspaceDir: cachedBundledMemoryDir,
       config: {
@@ -269,7 +269,7 @@ export function loadBundledMemoryPluginRegistry(options?: {
           name: options.packageMeta.name,
           version: options.packageMeta.version,
           description: options.packageMeta.description,
-          openclaw: { extensions: [`./${pluginFilename}`] },
+          afora: { extensions: [`./${pluginFilename}`] },
         },
         null,
         2,
@@ -289,9 +289,9 @@ export function loadBundledMemoryPluginRegistry(options?: {
   if (!options) {
     cachedBundledMemoryDir = bundledDir;
   }
-  process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = bundledDir;
+  process.env.AFORA_BUNDLED_PLUGINS_DIR = bundledDir;
 
-  return loadOpenClawPlugins({
+  return loadAforaPlugins({
     cache: false,
     workspaceDir: bundledDir,
     config: {
@@ -314,10 +314,10 @@ export function setupBundledTelegramPlugin() {
       filename: "telegram.cjs",
     });
   }
-  process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = cachedBundledTelegramDir;
+  process.env.AFORA_BUNDLED_PLUGINS_DIR = cachedBundledTelegramDir;
 }
 
-export function expectTelegramLoaded(registry: ReturnType<typeof loadOpenClawPlugins>) {
+export function expectTelegramLoaded(registry: ReturnType<typeof loadAforaPlugins>) {
   const telegram = registry.plugins.find((entry) => entry.id === "telegram");
   expect(telegram?.status).toBe("loaded");
   expect(registry.channels.map((entry) => entry.plugin.id)).toContain("telegram");
@@ -327,10 +327,10 @@ export function loadRegistryFromSinglePlugin(params: {
   plugin: TempPlugin;
   pluginConfig?: Record<string, unknown>;
   includeWorkspaceDir?: boolean;
-  options?: Omit<Parameters<typeof loadOpenClawPlugins>[0], "cache" | "workspaceDir" | "config">;
+  options?: Omit<Parameters<typeof loadAforaPlugins>[0], "cache" | "workspaceDir" | "config">;
 }) {
   const pluginConfig = params.pluginConfig ?? {};
-  return loadOpenClawPlugins({
+  return loadAforaPlugins({
     cache: false,
     ...(params.includeWorkspaceDir === false ? {} : { workspaceDir: params.plugin.dir }),
     ...params.options,
@@ -345,9 +345,9 @@ export function loadRegistryFromSinglePlugin(params: {
 
 export function loadRegistryFromAllowedPlugins(
   plugins: TempPlugin[],
-  options?: Omit<Parameters<typeof loadOpenClawPlugins>[0], "cache" | "config">,
+  options?: Omit<Parameters<typeof loadAforaPlugins>[0], "cache" | "config">,
 ) {
-  return loadOpenClawPlugins({
+  return loadAforaPlugins({
     cache: false,
     ...options,
     config: {
@@ -437,7 +437,7 @@ export function expectLoadedPluginProvenance(params: {
     params.warnings.some(
       (msg) =>
         msg.includes(params.pluginId) &&
-        msg.includes("OpenClaw can't verify where this plugin came from"),
+        msg.includes("Afora can't verify where this plugin came from"),
     ),
     params.scenario.label,
   ).toBe(params.expectWarning);
@@ -603,7 +603,7 @@ function createEscapingEntryFixture(params: { id: string; sourceBody: string }) 
   const linkedEntry = path.join(pluginDir, "entry.cjs");
   fs.writeFileSync(outsideEntry, params.sourceBody, "utf-8");
   fs.writeFileSync(
-    path.join(pluginDir, "openclaw.plugin.json"),
+    path.join(pluginDir, "afora.plugin.json"),
     JSON.stringify(
       {
         id: params.id,
@@ -618,7 +618,7 @@ function createEscapingEntryFixture(params: { id: string; sourceBody: string }) 
 }
 
 function resolveLoadedPluginSource(
-  registry: ReturnType<typeof loadOpenClawPlugins>,
+  registry: ReturnType<typeof loadAforaPlugins>,
   pluginId: string,
 ) {
   return fs.realpathSync(registry.plugins.find((entry) => entry.id === pluginId)?.source ?? "");
@@ -626,8 +626,8 @@ function resolveLoadedPluginSource(
 
 export function expectCachePartitionByPluginSource(params: {
   pluginId: string;
-  loadFirst: () => ReturnType<typeof loadOpenClawPlugins>;
-  loadSecond: () => ReturnType<typeof loadOpenClawPlugins>;
+  loadFirst: () => ReturnType<typeof loadAforaPlugins>;
+  loadSecond: () => ReturnType<typeof loadAforaPlugins>;
   expectedFirstSource: string;
   expectedSecondSource: string;
 }) {
@@ -644,8 +644,8 @@ export function expectCachePartitionByPluginSource(params: {
 }
 
 export function expectCacheMissThenHit(params: {
-  loadFirst: () => ReturnType<typeof loadOpenClawPlugins>;
-  loadVariant: () => ReturnType<typeof loadOpenClawPlugins>;
+  loadFirst: () => ReturnType<typeof loadAforaPlugins>;
+  loadVariant: () => ReturnType<typeof loadAforaPlugins>;
 }) {
   const first = params.loadFirst();
   const second = params.loadVariant();
@@ -689,7 +689,7 @@ export function createSetupEntryChannelPluginFixture(params: {
     JSON.stringify(
       {
         name: params.packageName,
-        openclaw: {
+        afora: {
           extensions: ["./index.cjs"],
           setupEntry: "./setup-entry.cjs",
         },
@@ -700,7 +700,7 @@ export function createSetupEntryChannelPluginFixture(params: {
     "utf-8",
   );
   fs.writeFileSync(
-    path.join(pluginDir, "openclaw.plugin.json"),
+    path.join(pluginDir, "afora.plugin.json"),
     JSON.stringify(
       {
         id: params.id,
@@ -888,10 +888,10 @@ module.exports = {
 
 export function createEnvResolvedPluginFixture(pluginId: string) {
   useNoBundledPlugins();
-  const openclawHome = makePluginLoaderTempDir();
+  const aforaHome = makePluginLoaderTempDir();
   const ignoredHome = makePluginLoaderTempDir();
   const stateDir = makePluginLoaderTempDir();
-  const pluginDir = path.join(openclawHome, "plugins", pluginId);
+  const pluginDir = path.join(aforaHome, "plugins", pluginId);
   mkdirSafe(pluginDir);
   const plugin = writePlugin({
     id: pluginId,
@@ -901,10 +901,10 @@ export function createEnvResolvedPluginFixture(pluginId: string) {
   });
   const env = {
     ...process.env,
-    OPENCLAW_HOME: openclawHome,
+    AFORA_HOME: aforaHome,
     HOME: ignoredHome,
-    OPENCLAW_STATE_DIR: stateDir,
-    OPENCLAW_BUNDLED_PLUGINS_DIR: "/nonexistent/bundled/plugins",
+    AFORA_STATE_DIR: stateDir,
+    AFORA_BUNDLED_PLUGINS_DIR: "/nonexistent/bundled/plugins",
   };
   return { plugin, env };
 }
@@ -935,7 +935,7 @@ export function expectEscapingEntryRejected(params: {
     throw err;
   }
 
-  const registry = loadOpenClawPlugins({
+  const registry = loadAforaPlugins({
     cache: false,
     config: {
       plugins: {

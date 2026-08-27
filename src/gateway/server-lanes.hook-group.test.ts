@@ -10,20 +10,20 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_CRON_MAX_CONCURRENT_RUNS } from "../config/cron-limits.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { enqueueCommandInLane, getCommandLaneSnapshot } from "../process/command-queue.js";
 import { resetCommandQueueStateForTest } from "../process/command-queue.test-support.js";
 import { CommandLane } from "../process/lanes.js";
 import { applyGatewayLaneConcurrency, resolveGatewayLaneConcurrency } from "./server-lanes.js";
 
-function publish(config: OpenClawConfig): void {
+function publish(config: AforaConfig): void {
   applyGatewayLaneConcurrency(resolveGatewayLaneConcurrency(config));
 }
 
 const HOOKS_ON = {
   hooks: { enabled: true, token: "t" },
-} as unknown as OpenClawConfig;
-const HOOKS_OFF = {} as OpenClawConfig;
+} as unknown as AforaConfig;
+const HOOKS_OFF = {} as AforaConfig;
 
 function gate() {
   let release!: () => void;

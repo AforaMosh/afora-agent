@@ -1,46 +1,46 @@
 {
   "teamId": "FWJYW4S8P8",
-  "signingRepo": "git@github.com:openclaw/apps-signing.git",
+  "signingRepo": "git@github.com:afora/apps-signing.git",
   "signingBranch": "main",
   "profileType": "appstore",
-  "appGroupId": "group.ai.openclawfoundation.app.shared",
+  "appGroupId": "group.ai.aforafoundation.app.shared",
   "targets": [
     {
-      "target": "OpenClaw",
-      "displayName": "OpenClaw",
-      "bundleId": "ai.openclawfoundation.app",
+      "target": "Afora",
+      "displayName": "Afora",
+      "bundleId": "ai.aforafoundation.app",
       "platform": "IOS",
-      "profileKey": "OPENCLAW_APP_PROFILE",
-      "profileName": "OpenClaw App Store ai.openclawfoundation.app",
+      "profileKey": "AFORA_APP_PROFILE",
+      "profileName": "Afora App Store ai.aforafoundation.app",
       "capabilities": ["PUSH_NOTIFICATIONS", "APP_GROUPS", "APP_ATTEST", "HEALTH_KIT"],
-      "appGroups": ["group.ai.openclawfoundation.app.shared"]
+      "appGroups": ["group.ai.aforafoundation.app.shared"]
     },
     {
-      "target": "OpenClawShareExtension",
-      "displayName": "OpenClaw Share",
-      "bundleId": "ai.openclawfoundation.app.share",
+      "target": "AforaShareExtension",
+      "displayName": "Afora Share",
+      "bundleId": "ai.aforafoundation.app.share",
       "platform": "IOS",
-      "profileKey": "OPENCLAW_SHARE_PROFILE",
-      "profileName": "OpenClaw App Store ai.openclawfoundation.app.share",
+      "profileKey": "AFORA_SHARE_PROFILE",
+      "profileName": "Afora App Store ai.aforafoundation.app.share",
       "capabilities": ["APP_GROUPS"],
-      "appGroups": ["group.ai.openclawfoundation.app.shared"]
+      "appGroups": ["group.ai.aforafoundation.app.shared"]
     },
     {
-      "target": "OpenClawActivityWidget",
-      "displayName": "OpenClaw Activity Widget",
-      "bundleId": "ai.openclawfoundation.app.activitywidget",
+      "target": "AforaActivityWidget",
+      "displayName": "Afora Activity Widget",
+      "bundleId": "ai.aforafoundation.app.activitywidget",
       "platform": "IOS",
-      "profileKey": "OPENCLAW_ACTIVITY_WIDGET_PROFILE",
-      "profileName": "OpenClaw App Store ai.openclawfoundation.app.activitywidget",
+      "profileKey": "AFORA_ACTIVITY_WIDGET_PROFILE",
+      "profileName": "Afora App Store ai.aforafoundation.app.activitywidget",
       "capabilities": []
     },
     {
-      "target": "OpenClawWatchApp",
-      "displayName": "OpenClaw Watch App",
-      "bundleId": "ai.openclawfoundation.app.watchkitapp",
+      "target": "AforaWatchApp",
+      "displayName": "Afora Watch App",
+      "bundleId": "ai.aforafoundation.app.watchkitapp",
       "platform": "IOS",
-      "profileKey": "OPENCLAW_WATCH_APP_PROFILE",
-      "profileName": "OpenClaw App Store ai.openclawfoundation.app.watchkitapp",
+      "profileKey": "AFORA_WATCH_APP_PROFILE",
+      "profileName": "Afora App Store ai.aforafoundation.app.watchkitapp",
       "capabilities": []
     }
   ]

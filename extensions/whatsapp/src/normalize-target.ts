@@ -1,10 +1,10 @@
 // Whatsapp helper module supports normalize target behavior.
-import { normalizeE164 } from "openclaw/plugin-sdk/account-resolution";
-import { formatNormalizedAllowFromEntries } from "openclaw/plugin-sdk/allow-from";
+import { normalizeE164 } from "afora-agent/plugin-sdk/account-resolution";
+import { formatNormalizedAllowFromEntries } from "afora-agent/plugin-sdk/allow-from";
 import {
   normalizeLowercaseStringOrEmpty,
   uniqueStrings,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 const WHATSAPP_USER_JID_RE = /^(\d+)(?::\d+)?@s\.whatsapp\.net$/i;
 const WHATSAPP_LEGACY_USER_JID_RE = /^(\d+)@c\.us$/i;

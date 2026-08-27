@@ -1,6 +1,6 @@
 // Tests bash stop command handling and active-process cancellation.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import type { MsgContext } from "../templating.js";
 
 const {
@@ -33,7 +33,7 @@ const { handleBashChatCommand } = await import("./bash-command.js");
 function buildParams(commandBody: string) {
   const cfg = {
     commands: { bash: true },
-  } as OpenClawConfig;
+  } as AforaConfig;
 
   const ctx = {
     CommandBody: commandBody,
@@ -216,10 +216,10 @@ describe("handleBashChatCommand stop", () => {
       sessionKey: "agent:target:telegram:direct:target-session",
     });
     expect(result.text).toContain(
-      "openclaw sandbox explain --session agent:target:telegram:direct:target-session",
+      "afora sandbox explain --session agent:target:telegram:direct:target-session",
     );
     expect(result.text).not.toContain(
-      "openclaw sandbox explain --session agent:main:telegram:slash-session",
+      "afora sandbox explain --session agent:main:telegram:slash-session",
     );
   });
 });

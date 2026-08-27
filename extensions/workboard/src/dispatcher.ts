@@ -4,14 +4,14 @@ import type {
   WorkboardCard,
   WorkboardExecution,
   WorkboardWorkspace,
-} from "@openclaw/workboard-contract";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+} from "@afora/workboard-contract";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import {
   isFutureDateTimestampMs,
   resolveNonNegativeIntegerOption,
-} from "openclaw/plugin-sdk/number-runtime";
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
-import { canonicalPathFromExistingAncestor } from "openclaw/plugin-sdk/security-runtime";
+} from "afora-agent/plugin-sdk/number-runtime";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
+import { canonicalPathFromExistingAncestor } from "afora-agent/plugin-sdk/security-runtime";
 import {
   assertRestrictedWorkboardTarget,
   managedWorktreeName,
@@ -189,7 +189,7 @@ function buildWorkerPrompt(params: {
   token: string;
 }): string {
   return [
-    `Work on this OpenClaw Workboard card: ${params.card.title}`,
+    `Work on this Afora Workboard card: ${params.card.title}`,
     "",
     "## Worker protocol",
     `Card id: ${params.card.id}`,

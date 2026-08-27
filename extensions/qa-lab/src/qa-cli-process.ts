@@ -1,9 +1,9 @@
 // Qa Lab plugin module runs CLI processes and parses their structured output.
 import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:child_process";
 import path from "node:path";
-import { resolveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
-import { isRecord as isJsonRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { resolveTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
+import { isRecord as isJsonRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import {
   appendQaChildOutput,
   appendQaChildOutputTail,
@@ -233,7 +233,7 @@ async function runQaCli(
         .join("\n");
       return new QaSuiteInfraError(
         "qa_cli_timeout",
-        `qa cli timed out: openclaw ${args.join(" ")}${diagnostics ? `\n${diagnostics}` : ""}`,
+        `qa cli timed out: afora ${args.join(" ")}${diagnostics ? `\n${diagnostics}` : ""}`,
       );
     };
     const getExitError = (code: number | null) => {

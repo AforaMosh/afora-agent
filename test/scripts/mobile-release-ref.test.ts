@@ -26,7 +26,7 @@ function git(cwd: string, args: string[]): string {
 }
 
 function createFixtureRepo(): { cleanup: () => void; remote: string; root: string; sha: string } {
-  const root = mkdtempSync(path.join(os.tmpdir(), "openclaw-mobile-release-ref-"));
+  const root = mkdtempSync(path.join(os.tmpdir(), "afora-mobile-release-ref-"));
   const remote = path.join(root, "remote.git");
   const checkout = path.join(root, "checkout");
 
@@ -51,7 +51,7 @@ function createFixtureRepo(): { cleanup: () => void; remote: string; root: strin
 describe("mobile-release-ref", () => {
   it("renders platform release refs from store identities", () => {
     expect(mobileReleaseRefFor({ platform: "ios", version: "2026.6.10", build: "8" })).toBe(
-      "refs/openclaw/mobile-releases/ios/2026.6.10-8",
+      "refs/afora/mobile-releases/ios/2026.6.10-8",
     );
     expect(
       mobileReleaseRefFor({
@@ -59,7 +59,7 @@ describe("mobile-release-ref", () => {
         version: "2026.6.10",
         versionCode: "2026061008",
       }),
-    ).toBe("refs/openclaw/mobile-releases/android/2026.6.10-2026061008");
+    ).toBe("refs/afora/mobile-releases/android/2026.6.10-2026061008");
   });
 
   it("validates platform-specific numeric identities", () => {
@@ -130,13 +130,13 @@ describe("mobile-release-ref", () => {
 
       expect(preflightMobileReleaseRef(options).status).toBe("available");
       expect(recordMobileReleaseRef(options)).toMatchObject({
-        ref: "refs/openclaw/mobile-releases/ios/2026.6.10-8",
+        ref: "refs/afora/mobile-releases/ios/2026.6.10-8",
         sha: fixture.sha,
         status: "created",
       });
       expect(recordMobileReleaseRef(options).status).toBe("already-recorded");
       expect(resolveMobileReleaseRef(options)).toMatchObject({
-        ref: "refs/openclaw/mobile-releases/ios/2026.6.10-8",
+        ref: "refs/afora/mobile-releases/ios/2026.6.10-8",
         sha: fixture.sha,
       });
     } finally {
@@ -202,14 +202,14 @@ describe("mobile-release-ref", () => {
         process.cwd(),
       );
 
-      expect(stdout).toBe(`${fixture.sha}\trefs/openclaw/mobile-releases/ios/2026.6.10-9\n`);
+      expect(stdout).toBe(`${fixture.sha}\trefs/afora/mobile-releases/ios/2026.6.10-9\n`);
     } finally {
       fixture.cleanup();
     }
   });
 
   it("runs the CLI entrypoint from a path containing spaces", () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "openclaw mobile release ref-"));
+    const root = mkdtempSync(path.join(os.tmpdir(), "afora mobile release ref-"));
     try {
       const scriptDir = path.join(root, "script dir");
       const scriptPath = path.join(scriptDir, "mobile-release-ref.ts");

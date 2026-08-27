@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { closeOpenClawStateDatabase } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabase } from "../state/afora-state-db.js";
 import { withTestDir } from "../test-helpers/temp-dir.js";
 import { appendTranscriptTurn, readTranscriptTail } from "./transcript-store.js";
 
@@ -8,16 +8,16 @@ const SYSTEM_AGENT_TRANSCRIPT_MAX_ENTRIES = 1_000;
 
 describe("system-agent transcript store", () => {
   afterEach(() => {
-    closeOpenClawStateDatabase();
+    closeAforaStateDatabase();
   });
 
   it("appends turns and returns a bounded tail oldest-first", async () => {
-    await withTestDir({ prefix: "openclaw-system-agent-transcript-" }, async (stateDir) => {
-      const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    await withTestDir({ prefix: "afora-system-agent-transcript-" }, async (stateDir) => {
+      const env = { ...process.env, AFORA_STATE_DIR: stateDir };
       appendTranscriptTurn({ role: "assistant", text: "welcome", at: 1 }, { env });
       appendTranscriptTurn({ role: "user", text: "status", at: 2 }, { env });
       appendTranscriptTurn({ role: "assistant", text: "healthy", at: 2 }, { env });
-      closeOpenClawStateDatabase();
+      closeAforaStateDatabase();
 
       expect(readTranscriptTail(2, { env })).toEqual([
         { role: "user", text: "status", at: 2 },
@@ -28,8 +28,8 @@ describe("system-agent transcript store", () => {
   });
 
   it("prunes the oldest rows beyond the rolling retention limit", async () => {
-    await withTestDir({ prefix: "openclaw-system-agent-transcript-prune-" }, async (stateDir) => {
-      const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    await withTestDir({ prefix: "afora-system-agent-transcript-prune-" }, async (stateDir) => {
+      const env = { ...process.env, AFORA_STATE_DIR: stateDir };
       for (let index = 0; index <= SYSTEM_AGENT_TRANSCRIPT_MAX_ENTRIES; index += 1) {
         appendTranscriptTurn({ role: "user", text: `turn-${index}`, at: index }, { env });
       }
@@ -42,14 +42,14 @@ describe("system-agent transcript store", () => {
   });
 
   it("hides reset markers and seeds only turns after a marker within the tail window", async () => {
-    await withTestDir({ prefix: "openclaw-system-agent-transcript-reset-" }, async (stateDir) => {
-      const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    await withTestDir({ prefix: "afora-system-agent-transcript-reset-" }, async (stateDir) => {
+      const env = { ...process.env, AFORA_STATE_DIR: stateDir };
       appendTranscriptTurn({ role: "user", text: "before reset", at: 1 }, { env });
       appendTranscriptTurn({ role: "assistant", text: "old answer", at: 2 }, { env });
       appendTranscriptTurn({ role: "reset", text: "", at: 3 }, { env });
       appendTranscriptTurn({ role: "user", text: "after reset", at: 4 }, { env });
       appendTranscriptTurn({ role: "assistant", text: "new answer", at: 5 }, { env });
-      closeOpenClawStateDatabase();
+      closeAforaStateDatabase();
 
       expect(readTranscriptTail(10, { env })).toEqual([
         { role: "user", text: "before reset", at: 1 },
@@ -66,15 +66,15 @@ describe("system-agent transcript store", () => {
 
   it("does not let a reset marker older than the requested tail truncate newer turns", async () => {
     await withTestDir(
-      { prefix: "openclaw-system-agent-transcript-old-reset-" },
+      { prefix: "afora-system-agent-transcript-old-reset-" },
       async (stateDir) => {
-        const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+        const env = { ...process.env, AFORA_STATE_DIR: stateDir };
         appendTranscriptTurn({ role: "user", text: "before reset", at: 1 }, { env });
         appendTranscriptTurn({ role: "reset", text: "", at: 2 }, { env });
         appendTranscriptTurn({ role: "user", text: "newer one", at: 3 }, { env });
         appendTranscriptTurn({ role: "assistant", text: "newer two", at: 4 }, { env });
         appendTranscriptTurn({ role: "user", text: "newer three", at: 5 }, { env });
-        closeOpenClawStateDatabase();
+        closeAforaStateDatabase();
 
         expect(readTranscriptTail(2, { afterLastReset: true, env })).toEqual([
           { role: "assistant", text: "newer two", at: 4 },

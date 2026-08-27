@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { retainLegacyDefaultAgentId } from "../config/legacy.default-agent-owner.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginRuntime } from "./runtime/types.js";
 import { importSessionCatalogHistory } from "./session-catalog-history-import.js";
 import { listSessionCatalogEntries } from "./session-catalog.js";
@@ -73,7 +73,7 @@ function importHistory(
       sessionId: "session-1",
       sessionKey: "agent:main:catalog-adopt",
       agentId: "main",
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
     }),
   };
 }
@@ -93,7 +93,7 @@ describe("listSessionCatalogEntries", () => {
     const config = retainLegacyDefaultAgentId(
       {
         agents: { list: [{ id: "alpha" }, { id: "beta" }] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       "beta",
     );
     const listSessionEntries = vi.fn((_params: { agentId: string }) => []);
@@ -114,7 +114,7 @@ describe("listSessionCatalogEntries", () => {
         ownership: "explicit",
         list: [{ id: "alpha" }, { id: "beta" }],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const listSessionEntries = vi.fn(() => []);
     const runtime = {
       agent: { session: { listSessionEntries } },
@@ -171,7 +171,7 @@ describe("importSessionCatalogHistory", () => {
       "Tool call\n\nbash",
       "Other\n\ncheckpoint",
     ]);
-    expect(transcript.messages[0]?.["__openclaw"]).toEqual({
+    expect(transcript.messages[0]?.["__afora"]).toEqual({
       mirrorOrigin: "pi-catalog-import",
     });
     expect(transcript.messages[0]?.timestamp).toBe(Date.parse("2026-07-25T12:00:00.000Z"));

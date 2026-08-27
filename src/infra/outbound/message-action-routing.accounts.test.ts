@@ -1,10 +1,10 @@
 // Covers plugin-dispatched message actions, target resolution, dry-run behavior,
 // and plugin tool-result extraction.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { jsonResult } from "../../agents/tools/common.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createTestRegistry } from "../../test-utils/channel-plugins.js";
 import {
@@ -65,7 +65,7 @@ describe("runMessageAction plugin dispatch", () => {
       {
         name: "uses defaultAccountId override",
         args: {
-          cfg: {} as OpenClawConfig,
+          cfg: {} as AforaConfig,
           defaultAccountId: "ops",
         },
         expectedAccountId: "ops",
@@ -77,7 +77,7 @@ describe("runMessageAction plugin dispatch", () => {
             bindings: [
               { agentId: "agent-b", match: { channel: "accountchat", accountId: "account-b" } },
             ],
-          } as OpenClawConfig,
+          } as AforaConfig,
           agentId: "agent-b",
         },
         expectedAccountId: "account-b",
@@ -108,7 +108,7 @@ describe("runMessageAction plugin dispatch", () => {
                 match: { channel: "accountchat", accountId: "agent-fallback" },
               },
             ],
-          } as OpenClawConfig,
+          } as AforaConfig,
           agentId: "agent-b",
           target: "channel:C_TARGET",
         },
@@ -141,7 +141,7 @@ describe("runMessageAction plugin dispatch", () => {
 
     it("allows an explicitly selected configured account", async () => {
       await runMessageAction({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         action: "send",
         params: {
           channel: "accountchat",
@@ -162,7 +162,7 @@ describe("runMessageAction plugin dispatch", () => {
     ])("rejects an explicitly selected $name account before plugin code", async (testCase) => {
       await expect(
         runMessageAction({
-          cfg: {} as OpenClawConfig,
+          cfg: {} as AforaConfig,
           action: "send",
           params: {
             channel: "accountchat",
@@ -178,7 +178,7 @@ describe("runMessageAction plugin dispatch", () => {
 
     it("preserves an unlisted host-derived binding account", async () => {
       await runMessageAction({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         action: "send",
         params: {
           channel: "accountchat",

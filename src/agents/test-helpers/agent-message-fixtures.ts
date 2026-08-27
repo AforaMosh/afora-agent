@@ -4,7 +4,7 @@
  * These helpers keep fixture construction terse while still returning the
  * runtime message shapes expected by agent test harnesses.
  */
-import type { AssistantMessage, UserMessage } from "openclaw/plugin-sdk/llm";
+import type { AssistantMessage, UserMessage } from "afora-agent/plugin-sdk/llm";
 import type { AgentMessage } from "../runtime/index.js";
 import { ZERO_USAGE_FIXTURE } from "./usage-fixtures.js";
 

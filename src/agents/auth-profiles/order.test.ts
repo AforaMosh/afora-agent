@@ -7,7 +7,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resetProviderAuthAliasMapCacheForTest } from "../provider-auth-aliases.test-support.js";
 import { isAmbientCredentialAllowedByProviderAuthPin } from "./ambient-auth.js";
 import { saveAuthProfileStore } from "./store.js";
@@ -90,7 +90,7 @@ describe("resolveAuthProfileOrder", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const store: AuthProfileStore = {
       version: 1,
       profiles: {
@@ -126,7 +126,7 @@ describe("resolveAuthProfileOrder", () => {
           "fixture-provider-plan": { baseUrl: "https://example.invalid", models: [] },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(
       isAmbientCredentialAllowedByProviderAuthPin({
@@ -153,7 +153,7 @@ describe("resolveAuthProfileOrder", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const store: AuthProfileStore = { version: 1, profiles: {} };
 
     expect(
@@ -513,7 +513,7 @@ describe("resolveAuthProfileOrder", () => {
           "fixture-provider": ["fixture-provider:primary", "fixture-provider:backup"],
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(
       resolveAuthProfileOrder({
@@ -563,7 +563,7 @@ describe("resolveAuthProfileOrder", () => {
           "fixture-provider": ["fixture-provider:primary", "fixture-provider:backup"],
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     expect(
       resolveAuthProfileOrder({
@@ -594,7 +594,7 @@ describe("resolveAuthProfileOrder", () => {
           refresh: "",
           expires: 0,
           oauthRef: {
-            source: "openclaw-credentials",
+            source: "afora-credentials",
             provider: "openai-codex",
             id: "00000000000000000000000000000000",
           },
@@ -845,7 +845,7 @@ describe("resolveAuthProfileOrder", () => {
   });
 
   it("marks profile success with one canonical last-good and usage update", async () => {
-    const agentDir = await mkdtemp(path.join(os.tmpdir(), "openclaw-auth-profile-success-"));
+    const agentDir = await mkdtemp(path.join(os.tmpdir(), "afora-auth-profile-success-"));
     try {
       const store: AuthProfileStore = {
         version: 1,

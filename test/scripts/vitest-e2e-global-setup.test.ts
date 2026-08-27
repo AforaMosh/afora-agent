@@ -40,8 +40,8 @@ describe("vitest E2E global setup", () => {
         ["scripts/run-node.mjs", "--version"],
         {
           ...process.env,
-          OPENCLAW_BUILD_PRIVATE_QA: "1",
-          OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: "0",
+          AFORA_BUILD_PRIVATE_QA: "1",
+          AFORA_RUN_NODE_SKIP_DTS_BUILD: "0",
         },
       ],
       [
@@ -61,7 +61,7 @@ describe("vitest E2E global setup", () => {
     );
   });
 
-  it.each(["OPENCLAW_E2E_SKIP_BUILD", "OPENCLAW_E2E_USE_PREBUILT_DIST"] as const)(
+  it.each(["AFORA_E2E_SKIP_BUILD", "AFORA_E2E_USE_PREBUILT_DIST"] as const)(
     "skips rebuilding when %s is set",
     async (envName) => {
       const runCommand = vi.fn<SetupCommandRunner>();
@@ -73,7 +73,7 @@ describe("vitest E2E global setup", () => {
   );
 
   posixIt("forwards output and SIGTERM through the runner process group", async () => {
-    const fixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-e2e-setup-group-"));
+    const fixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-e2e-setup-group-"));
     const fixturePath = path.join(fixtureDir, "build-fixture.mjs");
     const pidPaths = ["child.pid", "descendant.pid"].map((name) => path.join(fixtureDir, name));
     fs.writeFileSync(

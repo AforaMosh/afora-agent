@@ -31,7 +31,7 @@ describe("DefaultPackageManager", () => {
   it("keeps manifest resource entries inside the package root", async () => {
     // Manifest globs are package-owned; path traversal or symlink hops must not
     // expose arbitrary host files as skills.
-    const root = tempDirs.make("openclaw-package-manager-");
+    const root = tempDirs.make("afora-package-manager-");
     const packageRoot = join(root, "package");
     const outsideRoot = join(root, "outside");
     const insideSkill = join(packageRoot, "skills", "inside", "SKILL.md");
@@ -51,7 +51,7 @@ describe("DefaultPackageManager", () => {
 
     await writeFile(
       join(packageRoot, "package.json"),
-      JSON.stringify({ openclaw: { skills: entries } }),
+      JSON.stringify({ afora: { skills: entries } }),
       "utf-8",
     );
 
@@ -69,7 +69,7 @@ describe("DefaultPackageManager", () => {
   });
 
   it("expands manifest resource globs without hidden paths", async () => {
-    const root = tempDirs.make("openclaw-package-manager-");
+    const root = tempDirs.make("afora-package-manager-");
     const packageRoot = join(root, "package");
     const visibleSkill = join(packageRoot, "skills", "visible", "SKILL.md");
     const hiddenSkill = join(packageRoot, "skills", ".hidden", "SKILL.md");
@@ -79,7 +79,7 @@ describe("DefaultPackageManager", () => {
     await writeFile(hiddenSkill, "# Hidden\n", "utf-8");
     await writeFile(
       join(packageRoot, "package.json"),
-      JSON.stringify({ openclaw: { skills: ["skills/*"] } }),
+      JSON.stringify({ afora: { skills: ["skills/*"] } }),
       "utf-8",
     );
 
@@ -96,7 +96,7 @@ describe("DefaultPackageManager", () => {
   });
 
   it("keeps convention-discovered resource entries inside the package root", async () => {
-    const root = tempDirs.make("openclaw-package-manager-");
+    const root = tempDirs.make("afora-package-manager-");
     const packageRoot = join(root, "package");
     const outsideRoot = join(root, "outside");
     const insideSkill = join(packageRoot, "skills", "inside", "SKILL.md");
@@ -128,7 +128,7 @@ describe("DefaultPackageManager", () => {
   });
 
   it("keeps auto-discovered project skills inside their skill root", async () => {
-    const root = tempDirs.make("openclaw-package-manager-");
+    const root = tempDirs.make("afora-package-manager-");
     const agentsSkillsRoot = join(root, ".agents", "skills");
     const insideSkill = join(agentsSkillsRoot, "group", "deep", "t", "SKILL.md");
     const ignoredSkill = join(agentsSkillsRoot, "group", "deep", "i", "SKILL.md");
@@ -169,7 +169,7 @@ describe("DefaultPackageManager", () => {
   });
 
   it("loads home-scoped personal skills only for the default state directory", async () => {
-    const root = tempDirs.make("openclaw-package-manager-personal-");
+    const root = tempDirs.make("afora-package-manager-personal-");
     const home = join(root, "home");
     const workspace = join(root, "workspace");
     const personalSkill = join(home, ".agents", "skills", "personal", "SKILL.md");
@@ -179,7 +179,7 @@ describe("DefaultPackageManager", () => {
 
     const resolveSkillPaths = async (stateDir: string) =>
       await withEnvAsync(
-        { HOME: home, OPENCLAW_HOME: undefined, OPENCLAW_STATE_DIR: stateDir },
+        { HOME: home, AFORA_HOME: undefined, AFORA_STATE_DIR: stateDir },
         async () => {
           const manager = new DefaultPackageManager({
             cwd: workspace,
@@ -190,15 +190,15 @@ describe("DefaultPackageManager", () => {
         },
       );
 
-    expect(await resolveSkillPaths(join(home, ".openclaw"))).toContain(personalSkill);
+    expect(await resolveSkillPaths(join(home, ".afora"))).toContain(personalSkill);
     expect(await resolveSkillPaths(join(root, "scratch-state"))).not.toContain(personalSkill);
   });
 
   it("keeps auto-discovered project resources inside their resource roots", async () => {
     // Project resources may be auto-discovered, but each resource type remains
     // confined to its expected root.
-    const root = tempDirs.make("openclaw-package-manager-");
-    const configRoot = join(root, ".openclaw");
+    const root = tempDirs.make("afora-package-manager-");
+    const configRoot = join(root, ".afora");
     const outsideRoot = join(root, "outside");
     const insidePrompt = join(configRoot, "prompts", "inside.md");
     const insideTheme = join(configRoot, "themes", "inside.json");
@@ -269,11 +269,11 @@ describe("DefaultPackageManager", () => {
   });
 
   it("does not auto-install missing npm package resources", async () => {
-    const root = tempDirs.make("openclaw-package-manager-");
+    const root = tempDirs.make("afora-package-manager-");
     const manager = new DefaultPackageManager({
       cwd: root,
       agentDir: join(root, "agent"),
-      settingsManager: SettingsManager.inMemory({ packages: ["npm:@openclaw/missing-test"] }),
+      settingsManager: SettingsManager.inMemory({ packages: ["npm:@afora/missing-test"] }),
     });
 
     const resolved = await manager.resolve();
@@ -285,15 +285,15 @@ describe("DefaultPackageManager", () => {
   });
 
   it("keeps temporary package paths in a private per-agent directory", async () => {
-    const root = tempDirs.make("openclaw-package-manager-temp-");
+    const root = tempDirs.make("afora-package-manager-temp-");
     const agentDir = join(root, "agent");
     const manager = new DefaultPackageManager({
       cwd: root,
       agentDir,
       settingsManager: SettingsManager.inMemory({}),
     }) as unknown as PackageManagerInternals;
-    const npmSource = manager.parseSource("npm:@openclaw/example");
-    const gitSource = manager.parseSource("https://github.com/openclaw/example.git");
+    const npmSource = manager.parseSource("npm:@afora/example");
+    const gitSource = manager.parseSource("https://github.com/afora/example.git");
     if (npmSource.type !== "npm" || gitSource.type !== "git") {
       throw new Error("Expected package sources");
     }

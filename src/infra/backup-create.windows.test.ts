@@ -14,7 +14,7 @@ type ReportBackupProgress = Parameters<
 
 describe("writeArchiveStreamToFile", () => {
   it("removes the exclusive partial archive when its initial descriptor stat fails", async () => {
-    const tempDir = tempDirs.make("openclaw-backup-stream-fstat-");
+    const tempDir = tempDirs.make("afora-backup-stream-fstat-");
     const archivePath = path.join(tempDir, "partial.tar.gz");
     const archiveStream = new PassThrough();
     const fstatSpy = vi.spyOn(fsSync, "fstatSync").mockImplementationOnce(() => {
@@ -35,7 +35,7 @@ describe("writeArchiveStreamToFile", () => {
   });
 
   it("closes a partial archive before propagating a stream error", async () => {
-    const tempDir = tempDirs.make("openclaw-backup-stream-");
+    const tempDir = tempDirs.make("afora-backup-stream-");
     const archivePath = path.join(tempDir, "partial.tar.gz");
     const archiveStream = new PassThrough();
     const writePromise = writeArchiveStreamToFile({
@@ -52,7 +52,7 @@ describe("writeArchiveStreamToFile", () => {
   it("aborts and closes a partial archive when the source stops producing data", async () => {
     vi.useFakeTimers();
     try {
-      const tempDir = tempDirs.make("openclaw-backup-stream-timeout-");
+      const tempDir = tempDirs.make("afora-backup-stream-timeout-");
       const archivePath = path.join(tempDir, "partial.tar.gz");
       const archiveStream = new PassThrough();
       const writePromise = writeArchiveStreamToFile({
@@ -77,7 +77,7 @@ describe("writeArchiveStreamToFile", () => {
   it("resets the idle timeout when archive data keeps arriving", async () => {
     vi.useFakeTimers();
     try {
-      const tempDir = tempDirs.make("openclaw-backup-stream-progress-");
+      const tempDir = tempDirs.make("afora-backup-stream-progress-");
       const archivePath = path.join(tempDir, "complete.tar.gz");
       const archiveStream = new PassThrough();
       const writePromise = writeArchiveStreamToFile({
@@ -102,7 +102,7 @@ describe("writeArchiveStreamToFile", () => {
   it("keeps the archive alive while the producer reports silent traversal progress", async () => {
     vi.useFakeTimers();
     try {
-      const tempDir = tempDirs.make("openclaw-backup-stream-traversal-progress-");
+      const tempDir = tempDirs.make("afora-backup-stream-traversal-progress-");
       const archivePath = path.join(tempDir, "complete.tar.gz");
       const archiveStream = new PassThrough();
       let reportProgress: ReportBackupProgress | undefined;
@@ -130,7 +130,7 @@ describe("writeArchiveStreamToFile", () => {
   it("keeps the archive alive through more than five minutes of one entry's raw bytes", async () => {
     vi.useFakeTimers();
     try {
-      const tempDir = tempDirs.make("openclaw-backup-stream-entry-progress-");
+      const tempDir = tempDirs.make("afora-backup-stream-entry-progress-");
       const archivePath = path.join(tempDir, "complete.tar.gz");
       const archiveStream = new PassThrough();
       const entry = new Minipass();
@@ -184,7 +184,7 @@ describe("writeArchiveStreamToFile", () => {
   it("cleans a partial archive when one entry stops producing raw bytes", async () => {
     vi.useFakeTimers();
     try {
-      const tempDir = tempDirs.make("openclaw-backup-stream-entry-timeout-");
+      const tempDir = tempDirs.make("afora-backup-stream-entry-timeout-");
       const archivePath = path.join(tempDir, "partial.tar.gz");
       const archiveStream = new PassThrough();
       const entry = new Minipass();

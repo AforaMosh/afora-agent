@@ -1,19 +1,19 @@
 {
-  "name": "@openclaw/tencent-provider",
+  "name": "@afora/tencent-provider",
   "version": "2026.8.1",
-  "description": "OpenClaw Tencent Cloud provider plugin (TokenHub + Token Plan)",
+  "description": "Afora Tencent Cloud provider plugin (TokenHub + Token Plan)",
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
     "setupEntry": "./setup-api.ts",
     "install": {
-      "clawhubSpec": "clawhub:@openclaw/tencent-provider",
-      "npmSpec": "@openclaw/tencent-provider",
+      "clawhubSpec": "clawhub:@afora/tencent-provider",
+      "npmSpec": "@afora/tencent-provider",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.6.9"
     },
@@ -21,7 +21,7 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1",
+      "aforaVersion": "2026.8.1",
       "bundledDist": false
     },
     "release": {
@@ -31,6 +31,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   }
 }

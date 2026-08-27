@@ -1,5 +1,5 @@
 // Feishu plugin module implements monitor.bot menu.lifecycle support behavior.
-import { createRuntimeEnv } from "openclaw/plugin-sdk/plugin-test-runtime";
+import { createRuntimeEnv } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // Preserve module setup before modules that consume it.
 // oxfmt-ignore
@@ -33,7 +33,7 @@ const {
   withReplyDispatcherMock,
 } = getFeishuLifecycleTestMocks();
 let lastRuntime = createRuntimeEnv();
-const originalStateDir = process.env.OPENCLAW_STATE_DIR;
+const originalStateDir = process.env.AFORA_STATE_DIR;
 const lifecycleConfig = createFeishuLifecycleConfig({
   accountId: "acct-menu",
   appId: "cli_test",
@@ -90,7 +90,7 @@ describe("Feishu bot-menu lifecycle", () => {
     vi.useRealTimers();
     resetFeishuLifecycleTestMocks();
     lastRuntime = createRuntimeEnv();
-    setFeishuLifecycleStateDir("openclaw-feishu-bot-menu");
+    setFeishuLifecycleStateDir("afora-feishu-bot-menu");
 
     createFeishuReplyDispatcherMock.mockReturnValue(createFeishuLifecycleReplyDispatcher());
 

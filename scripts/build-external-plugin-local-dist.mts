@@ -35,7 +35,7 @@ export function listExternalPluginLocalDistPackageDirs(
   return listPublishablePluginPackageDirs({ repoRoot }).filter((packageDir) => {
     const packageJson = readPluginPackageJson(repoRoot, packageDir);
     return (
-      packageJson.openclaw?.build?.bundledDist === false &&
+      packageJson.afora?.build?.bundledDist === false &&
       shouldBuildBundledCluster(path.basename(packageDir), env, { packageJson })
     );
   });

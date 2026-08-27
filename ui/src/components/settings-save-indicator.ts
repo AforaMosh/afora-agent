@@ -138,6 +138,6 @@ class SettingsSaveIndicator extends LitElement {
   }
 }
 
-if (!customElements.get("openclaw-settings-save-indicator")) {
-  customElements.define("openclaw-settings-save-indicator", SettingsSaveIndicator);
+if (!customElements.get("afora-settings-save-indicator")) {
+  customElements.define("afora-settings-save-indicator", SettingsSaveIndicator);
 }

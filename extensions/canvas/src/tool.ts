@@ -9,31 +9,31 @@ import {
   callGatewayTool,
   listNodes,
   resolveNodeIdFromList,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   imageResultFromFile,
   jsonResult,
   readStringParam,
-} from "openclaw/plugin-sdk/channel-actions";
-import { saveMediaBuffer } from "openclaw/plugin-sdk/media-store";
+} from "afora-agent/plugin-sdk/channel-actions";
+import { saveMediaBuffer } from "afora-agent/plugin-sdk/media-store";
 import {
   addTimerTimeoutGraceMs,
   clampPositiveTimerTimeoutMs,
-} from "openclaw/plugin-sdk/number-runtime";
-import { readFiniteNumberParam, readPositiveIntegerParam } from "openclaw/plugin-sdk/param-readers";
-import type { AnyAgentTool, OpenClawConfig } from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/number-runtime";
+import { readFiniteNumberParam, readPositiveIntegerParam } from "afora-agent/plugin-sdk/param-readers";
+import type { AnyAgentTool, AforaConfig } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   readRegularFile,
   truncateSanitizedExternalContent,
   wrapExternalContent,
-} from "openclaw/plugin-sdk/security-runtime";
-import { DEFAULT_MAX_LIVE_TOOL_RESULT_CHARS } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/security-runtime";
+import { DEFAULT_MAX_LIVE_TOOL_RESULT_CHARS } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { validateSupportedA2UIJsonl } from "./a2ui-jsonl.js";
 import { normalizeCanvasSnapshotFileExtension, parseCanvasSnapshotPayload } from "./cli-helpers.js";
 import { CanvasToolSchema } from "./tool-schema.js";
 
 type CanvasToolOptions = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   agentSessionKey?: string;
 };
@@ -149,7 +149,7 @@ async function readJsonlFromPath(jsonlPath: string, workspaceDir?: string): Prom
 }
 
 function resolveCanvasImageSanitizationLimits(
-  config?: OpenClawConfig,
+  config?: AforaConfig,
 ): CanvasImageSanitizationLimits {
   const configured = config?.agents?.defaults?.imageMaxDimensionPx;
   if (typeof configured !== "number" || !Number.isFinite(configured)) {

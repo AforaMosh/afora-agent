@@ -139,7 +139,7 @@ describe("createMeetingRealtimeEngineBindings", () => {
       event: {
         itemId: "item-1",
         callId: "call-1",
-        name: "openclaw_agent_consult",
+        name: "afora_agent_consult",
         args: { question: "What should I say?" },
       },
       meetingSessionId: "meeting-4",
@@ -167,7 +167,7 @@ describe("createMeetingRealtimeEngineBindings", () => {
         event: {
           itemId: "item-1",
           callId: "call-1",
-          name: "openclaw_agent_consult",
+          name: "afora_agent_consult",
           args: { question: "What should I say?" },
         },
         meetingSessionId: "meeting-5",

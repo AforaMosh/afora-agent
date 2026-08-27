@@ -1,7 +1,7 @@
 // Message action security tests cover channel message action authorization and validation.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { jsonResult } from "../../agents/tools/common.js";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import {
   createChannelTestPluginBase,
@@ -13,7 +13,7 @@ function dispatchTestChannelMessageAction(
   overrides: Omit<Parameters<typeof dispatchChannelMessageAction>[0], "cfg">,
 ) {
   return dispatchChannelMessageAction({
-    cfg: {} as OpenClawConfig,
+    cfg: {} as AforaConfig,
     ...overrides,
   });
 }
@@ -354,7 +354,7 @@ describe("dispatchChannelMessageAction conversation-read provenance", () => {
       dispatchChannelMessageAction({
         channel: "discord",
         action: "read",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         params: {
           target: "123",
           channelId: "123",
@@ -582,7 +582,7 @@ describe("dispatchChannelMessageAction conversation-read provenance", () => {
     await dispatchChannelMessageAction({
       channel: "mattermost",
       action: "read",
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       params: { channelId: "configured" },
       conversationReadOrigin: "delegated",
     });
@@ -601,7 +601,7 @@ describe("dispatchChannelMessageAction conversation-read provenance", () => {
       dispatchChannelMessageAction({
         channel: "mattermost",
         action: "react",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         params: { channelId: "other", messageId: "post-1", emoji: "eyes" },
         accountId: "default",
         requesterAccountId: "default",
@@ -793,7 +793,7 @@ describe("dispatchChannelMessageAction conversation-read provenance", () => {
     await dispatchChannelMessageAction({
       channel: "nextcloud-talk",
       action: "read",
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       params: {
         target: "room:current",
         to: "room:current",
@@ -826,7 +826,7 @@ describe("dispatchChannelMessageAction conversation-read provenance", () => {
       dispatchChannelMessageAction({
         channel: "nextcloud-talk",
         action: "read",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         params: {
           target: "room:current",
           to: "room:current",
@@ -856,7 +856,7 @@ describe("dispatchChannelMessageAction conversation-read provenance", () => {
       dispatchChannelMessageAction({
         channel: "nextcloud-talk",
         action: "read",
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         params: {
           target: "room:other",
           to: "room:other",
@@ -884,7 +884,7 @@ describe("dispatchChannelMessageAction conversation-read provenance", () => {
     await dispatchChannelMessageAction({
       channel: "nextcloud-talk",
       action: "read",
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       params: {
         target: "room:other",
         to: "room:other",

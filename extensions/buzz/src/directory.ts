@@ -1,7 +1,7 @@
 import type {
   ChannelDirectoryEntry,
   DirectoryConfigParams,
-} from "openclaw/plugin-sdk/directory-runtime";
+} from "afora-agent/plugin-sdk/directory-runtime";
 import { queryBuzzDirectoryProfiles, queryBuzzDirectoryRooms } from "./directory-relay.js";
 import { BuzzDirectoryState } from "./directory-state.js";
 import { getActiveBuzzBus } from "./gateway.js";
@@ -33,7 +33,7 @@ function createConfiguredDirectoryState(params: DirectoryConfigParams): {
     channelIds,
     state: new BuzzDirectoryState({
       publicKey: account.publicKey,
-      fallbackProfileName: account.name ?? "OpenClaw",
+      fallbackProfileName: account.name ?? "Afora",
       channelIds,
     }),
   };

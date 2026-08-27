@@ -8,11 +8,11 @@
  *
  * Byte-fidelity: `emitMd(parse(raw)) === raw`.
  *
- * @module @openclaw/oc-path/parse
+ * @module @afora/oc-path/parse
  */
 
 import MarkdownIt from "markdown-it";
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
 import type { AstBlock, AstItem, Diagnostic, FrontmatterEntry, ParseResult } from "./ast.js";
 import { slugify } from "./slug.js";
 

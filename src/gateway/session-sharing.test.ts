@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { upsertSessionEntryCore } from "../config/sessions/session-accessor.js";
 import { addSessionMember } from "../config/sessions/session-sharing-store.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import { sessionGroupHandlers } from "./server-methods/sessions-groups.js";
 import type { GatewayClient, GatewayRequestContext, RespondFn } from "./server-methods/types.js";
 import {
@@ -21,7 +21,7 @@ import {
   SessionMutationAuthorizationChangedError,
 } from "./session-sharing.js";
 
-afterEach(() => closeOpenClawAgentDatabasesForTest());
+afterEach(() => closeAforaAgentDatabasesForTest());
 
 type SharingTarget = Parameters<typeof resolveSessionSharingRole>[0]["target"];
 
@@ -44,7 +44,7 @@ function client(params: {
       minProtocol: 1,
       maxProtocol: 1,
       client: {
-        id: "openclaw-control-ui",
+        id: "afora-control-ui",
         version: "test",
         platform: "test",
         mode: "webchat",
@@ -96,7 +96,7 @@ function target(createdActor?: { type: "human"; id: string; label?: string }): S
 
 describe("session sharing policy", () => {
   it("requires participation before sessions.create can adopt a categorized key", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const sessionKey = "agent:main:dashboard:categorized-adoption";
       await upsertSessionEntryCore(
         { agentId: "main", sessionKey },
@@ -123,7 +123,7 @@ describe("session sharing policy", () => {
   });
 
   it("rechecks group members before committing a defaults update", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       putSessionGroups(["Race"]);
       updateSessionGroupDefaults("Race", { cwd: "/repos/race", worktree: true });
       const viewer = client({ user: "viewer@example.com" });
@@ -166,7 +166,7 @@ describe("session sharing policy", () => {
   });
 
   it("filters group defaults and blocks updates for sessions the caller cannot mutate", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       putSessionGroups(["Projects", "Personal"]);
       updateSessionGroupDefaults("Projects", { cwd: "/repos/projects", worktree: true });
       updateSessionGroupDefaults("Personal", { cwd: "/repos/personal", worktree: false });
@@ -295,7 +295,7 @@ describe("session sharing policy", () => {
   });
 
   it("keeps incognito admin-only while treating identityless connections as owner-equivalent", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const sessionKey = "agent:main:dashboard:incognito-private";
       const entry = {
         sessionId: "session-incognito",
@@ -366,7 +366,7 @@ describe("session sharing policy", () => {
   });
 
   it("keeps agent scope for indirect run and approval authorization", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       await upsertSessionEntryCore(
         { agentId: "main", sessionKey: "global" },
         { sessionId: "session-main-global", updatedAt: 1, visibility: "shared" },
@@ -448,7 +448,7 @@ describe("session sharing policy", () => {
   });
 
   it("limits suggestion events to participants and the suggestion author", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const sessionKey = "agent:main:suggestions";
       await upsertSessionEntryCore(
         { agentId: "main", sessionKey },
@@ -493,7 +493,7 @@ describe("session sharing policy", () => {
   });
 
   it("keeps draft typing events owner and admin only", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const sessionKey = "agent:main:draft-typing";
       await upsertSessionEntryCore(
         { agentId: "main", sessionKey },

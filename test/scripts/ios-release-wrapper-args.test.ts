@@ -131,7 +131,7 @@ describe("iOS release shell wrapper arguments", () => {
       ["--version", "2026.7.2", "--revision", "1", "--build-number", "3"],
       {
         IOS_DEVELOPMENT_TEAM: "FWJYW4S8P8",
-        OPENCLAW_PUSH_RELAY_BASE_URL: "https://relay.example.com",
+        AFORA_PUSH_RELAY_BASE_URL: "https://relay.example.com",
       },
     );
 
@@ -144,7 +144,7 @@ describe("iOS release shell wrapper arguments", () => {
   it("requires stamped build metadata for App Store release preparation", () => {
     const script = readFileSync(path.join(process.cwd(), "scripts/ios-release-prepare.sh"), "utf8");
 
-    expect(script).toContain("OPENCLAW_REQUIRE_BUILD_METADATA=1");
+    expect(script).toContain("AFORA_REQUIRE_BUILD_METADATA=1");
     expect(script).toContain(
       'RELEASE_SOURCE_HELPER="${ROOT_DIR}/scripts/apple-release-source-check.sh"',
     );
@@ -156,7 +156,7 @@ describe("iOS release shell wrapper arguments", () => {
   });
 
   it("preserves Fastlane failures through the shared runner", () => {
-    const binDir = tempDirs.make("openclaw-fastlane-test-");
+    const binDir = tempDirs.make("afora-fastlane-test-");
     const fastlane = path.join(binDir, "fastlane");
     writeFileSync(
       fastlane,

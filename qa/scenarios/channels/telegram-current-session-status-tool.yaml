@@ -32,7 +32,7 @@ flow:
             conversation: { id: telegram-command-room, kind: channel }
             senderId: qa-command-operator
             senderName: QA Command Operator
-            text: "@openclaw Telegram current session_status QA check. Call session_status with sessionKey set to current, then reply with the exact QA marker and resolved session key."
+            text: "@afora Telegram current session_status QA check. Call session_status with sessionKey set to current, then reply with the exact QA marker and resolved session key."
         - waitForOutbound:
             conversation: { id: telegram-command-room, kind: channel }
             textIncludes: QA-TELEGRAM-CURRENT-SESSION-OK

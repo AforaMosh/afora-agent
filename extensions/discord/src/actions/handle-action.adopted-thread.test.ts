@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const runtimeModule = await import("./runtime.js");
@@ -9,10 +9,10 @@ const { handleDiscordMessageAction } = await import("./handle-action.js");
 const { beginDiscordActiveTurnThreadRoute, notifyDiscordActiveTurnThreadCreated } =
   await import("../active-turn-thread-route.js");
 
-function discordConfig(actions?: Record<string, boolean>): OpenClawConfig {
+function discordConfig(actions?: Record<string, boolean>): AforaConfig {
   return {
     channels: { discord: { token: "tok", ...(actions ? { actions } : {}) } },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 describe("handleDiscordMessageAction adopted thread delivery", () => {

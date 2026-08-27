@@ -1,4 +1,4 @@
-import { readNonEmptyStringPreservingWhitespace as normalizeTurnId } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { readNonEmptyStringPreservingWhitespace as normalizeTurnId } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { describe, expect, it } from "vitest";
 import type { CodexThread } from "./app-server/protocol.js";
 import { codexUpstreamBaseline } from "./session-upstream-marker.js";

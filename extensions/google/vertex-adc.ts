@@ -4,16 +4,16 @@ import os from "node:os";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
 import type { GoogleAuthOptions } from "google-auth-library";
-import { buildTimeoutAbortSignal } from "openclaw/plugin-sdk/extension-shared";
+import { buildTimeoutAbortSignal } from "afora-agent/plugin-sdk/extension-shared";
 import {
   asDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
   resolveExpiresAtMsFromDurationSeconds,
-} from "openclaw/plugin-sdk/number-runtime";
-import { readResponseWithLimit } from "openclaw/plugin-sdk/response-limit-runtime";
-import { readSecretFileSync } from "openclaw/plugin-sdk/secret-file-runtime";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { withTimeout } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/number-runtime";
+import { readResponseWithLimit } from "afora-agent/plugin-sdk/response-limit-runtime";
+import { readSecretFileSync } from "afora-agent/plugin-sdk/secret-file-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { withTimeout } from "afora-agent/plugin-sdk/text-utility-runtime";
 
 type GoogleAuthorizedUserCredentials = {
   type: "authorized_user";
@@ -52,7 +52,7 @@ const GOOGLE_VERTEX_TOKEN_EXPIRY_BUFFER_MS = 60_000;
 const GOOGLE_VERTEX_DEFAULT_TOKEN_LIFETIME_SECONDS = 3600;
 const GOOGLE_VERTEX_AUTHLIB_TOKEN_CACHE_MS = 5 * 60_000;
 const GOOGLE_OAUTH_TOKEN_RESPONSE_MAX_BYTES = 1024 * 1024;
-const VERTEX_ADC_TEST_API_KEY = Symbol.for("openclaw.google.vertexAdcTestApi");
+const VERTEX_ADC_TEST_API_KEY = Symbol.for("afora.google.vertexAdcTestApi");
 
 let cachedGoogleVertexAuthorizedUserToken: GoogleVertexAuthorizedUserToken | undefined;
 let cachedGoogleAuthClient:
@@ -204,7 +204,7 @@ function readGoogleAdcCredentialsTypeSync(credentialsPath: string): string | und
  *      application-default login` produces this).
  *   2. `external_account` credentials file (Workload Identity Federation).
  *   3. `service_account` credentials file (raw GSA key - rarely used in
- *      OpenClaw, included for completeness).
+ *      Afora, included for completeness).
  * Metadata-server ADC is intentionally not detected here: `google-auth-library`
  * probes the default metadata hosts asynchronously at request time, and the
  * provider wires the Vertex transport without this sync predicate.
@@ -440,7 +440,7 @@ async function resolveGoogleVertexAccessTokenViaGoogleAuth(
  * Resolve `Authorization: Bearer ...` headers for Google Vertex calls.
  *
  * We try the hand-rolled `authorized_user` refresh path first (preserves the
- * existing fetchImpl test seam and the OpenClaw upstream behaviour); when the
+ * existing fetchImpl test seam and the Afora upstream behaviour); when the
  * configured ADC source is anything other than `authorized_user` (the common
  * production cases on GKE: Workload Identity, Workload Identity Federation,
  * service-account JSON keys), we hand off to `google-auth-library` which

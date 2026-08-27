@@ -1,7 +1,7 @@
 // Marks managed npm packages excluded from recovery and classifies cleanup eligibility.
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { safePathSegmentHashed } from "../infra/install-safe-path.js";
 import { isPathInside } from "../infra/path-guards.js";
 import {
@@ -12,7 +12,7 @@ import {
 import { RETAINED_MANAGED_NPM_KEEP_FILES_REASON } from "./managed-npm-retention-contract.js";
 import { listManagedPluginNpmRootsSync } from "./npm-project-roots.js";
 
-const RETAINED_MANAGED_NPM_INSTALL_MARKER_DIR = ".openclaw-retained-npm-installs";
+const RETAINED_MANAGED_NPM_INSTALL_MARKER_DIR = ".afora-retained-npm-installs";
 
 function markerPreservesPackageFiles(markerPath: string): boolean {
   try {
@@ -82,7 +82,7 @@ export async function clearRetainedManagedNpmInstallMarker(packageDir: string): 
   try {
     await fs.promises.rmdir(path.dirname(info.markerPath));
   } catch {
-    // Best effort: keep the OpenClaw-owned marker directory if it is not empty.
+    // Best effort: keep the Afora-owned marker directory if it is not empty.
   }
   return true;
 }

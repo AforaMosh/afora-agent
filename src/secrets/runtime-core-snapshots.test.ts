@@ -45,12 +45,12 @@ type SecretsRuntimeEnvSnapshot = ReturnType<typeof captureEnv>;
 
 function beginSecretsRuntimeIsolationForTest(): SecretsRuntimeEnvSnapshot {
   const envSnapshot = captureEnv([
-    "OPENCLAW_BUNDLED_PLUGINS_DIR",
-    "OPENCLAW_DISABLE_BUNDLED_PLUGINS",
-    "OPENCLAW_VERSION",
+    "AFORA_BUNDLED_PLUGINS_DIR",
+    "AFORA_DISABLE_BUNDLED_PLUGINS",
+    "AFORA_VERSION",
   ]);
-  delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
-  delete process.env.OPENCLAW_VERSION;
+  delete process.env.AFORA_BUNDLED_PLUGINS_DIR;
+  delete process.env.AFORA_VERSION;
   return envSnapshot;
 }
 
@@ -80,8 +80,8 @@ describe("secrets runtime snapshot core lanes", () => {
   async function prepareOpenAiRuntimeSnapshot(params?: { includeAuthStoreRefs?: boolean }) {
     return withEnvAsync(
       {
-        OPENCLAW_BUNDLED_PLUGINS_DIR: undefined,
-        OPENCLAW_VERSION: undefined,
+        AFORA_BUNDLED_PLUGINS_DIR: undefined,
+        AFORA_VERSION: undefined,
       },
       async () =>
         prepareSecretsRuntimeSnapshot({
@@ -97,7 +97,7 @@ describe("secrets runtime snapshot core lanes", () => {
             },
           }),
           env: { OPENAI_API_KEY: "sk-runtime" },
-          agentDirs: ["/tmp/openclaw-agent-main"],
+          agentDirs: ["/tmp/afora-agent-main"],
           includeAuthStoreRefs: params?.includeAuthStoreRefs,
           loadablePluginOrigins: new Map(),
           loadAuthStore: () =>
@@ -210,7 +210,7 @@ describe("secrets runtime snapshot core lanes", () => {
         OPENAI_API_KEY: "sk-env-openai",
         GITHUB_TOKEN: "ghp-env-token",
       },
-      agentDirs: ["/tmp/openclaw-agent-main"],
+      agentDirs: ["/tmp/afora-agent-main"],
       loadablePluginOrigins: new Map(),
       loadAuthStore: () =>
         loadAuthStoreWithProfiles({
@@ -230,9 +230,9 @@ describe("secrets runtime snapshot core lanes", () => {
     });
 
     const warningPaths = snapshot.warnings.map((warning) => warning.path);
-    expect(warningPaths).toContain("/tmp/openclaw-agent-main.auth-profiles.openai:default.key");
+    expect(warningPaths).toContain("/tmp/afora-agent-main.auth-profiles.openai:default.key");
     expect(warningPaths).toContain(
-      "/tmp/openclaw-agent-main.auth-profiles.github-copilot:default.token",
+      "/tmp/afora-agent-main.auth-profiles.github-copilot:default.token",
     );
     const openAiProfile = snapshot.authStores[0]?.store.profiles["openai:default"] as
       | Record<string, unknown>
@@ -269,7 +269,7 @@ describe("secrets runtime snapshot core lanes", () => {
       config,
       assignmentConfig: config,
       env: { OPENAI_API_KEY: resolvedApiKey },
-      agentDirs: ["/tmp/openclaw-agent-main"],
+      agentDirs: ["/tmp/afora-agent-main"],
       includeConfigRefs: false,
       loadablePluginOrigins: new Map(),
       loadAuthStore: () =>
@@ -294,7 +294,7 @@ describe("secrets runtime snapshot core lanes", () => {
       env: {
         OPENAI_API_KEY: "sk-env-openai",
       },
-      agentDirs: ["/tmp/openclaw-agent-main"],
+      agentDirs: ["/tmp/afora-agent-main"],
       loadablePluginOrigins: new Map(),
       loadAuthStore: () =>
         loadAuthStoreWithProfiles({
@@ -329,7 +329,7 @@ describe("secrets runtime snapshot core lanes", () => {
     const prepared = await prepareOpenAiRuntimeSnapshot();
     activateSecretsRuntimeSnapshot(prepared);
 
-    const runtimeProfile = ensureAuthProfileStore("/tmp/openclaw-agent-main").profiles[
+    const runtimeProfile = ensureAuthProfileStore("/tmp/afora-agent-main").profiles[
       "openai:default"
     ] as Record<string, unknown> | undefined;
     expect(runtimeProfile?.type).toBe("api_key");

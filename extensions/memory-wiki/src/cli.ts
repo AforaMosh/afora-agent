@@ -1,16 +1,16 @@
 // Memory Wiki plugin module implements cli behavior.
 import fs from "node:fs/promises";
 import type { Command } from "commander";
-import { callGatewayFromCli } from "openclaw/plugin-sdk/gateway-runtime";
-import { resolveDefaultAgentId } from "openclaw/plugin-sdk/memory-host-core";
-import { parseStrictPositiveInteger } from "openclaw/plugin-sdk/number-runtime";
+import { callGatewayFromCli } from "afora-agent/plugin-sdk/gateway-runtime";
+import { resolveDefaultAgentId } from "afora-agent/plugin-sdk/memory-host-core";
+import { parseStrictPositiveInteger } from "afora-agent/plugin-sdk/number-runtime";
 import {
   isRecord,
   normalizeStringEntries,
   uniqueStrings,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
-import type { OpenClawConfig } from "../api.js";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
+import type { AforaConfig } from "../api.js";
 import { applyMemoryWikiMutation } from "./apply.js";
 import {
   importChatGptConversations,
@@ -173,7 +173,7 @@ type WikiCommandOptions = {
 type MemoryWikiCliRegistration = {
   config: ResolvedMemoryWikiConfig;
   resolveConfig?: MemoryWikiConfigResolver;
-  getAppConfig?: () => OpenClawConfig | undefined;
+  getAppConfig?: () => AforaConfig | undefined;
 };
 
 function sanitizeGatewayStringForTerminal(value: string): string {
@@ -426,7 +426,7 @@ async function runWikiCommandWithSummary<T>(params: {
 
 async function runSyncedWikiCommandWithSummary<T>(params: {
   config: ResolvedMemoryWikiConfig;
-  appConfig?: OpenClawConfig;
+  appConfig?: AforaConfig;
   json?: boolean;
   stdout?: Pick<NodeJS.WriteStream, "write">;
   run: () => Promise<T>;
@@ -487,7 +487,7 @@ function addWikiApplyMutationOptions<T extends Command>(command: T): T {
 
 async function runWikiStatus(params: {
   config: ResolvedMemoryWikiConfig;
-  appConfig?: OpenClawConfig;
+  appConfig?: AforaConfig;
   agentId?: string;
   json?: boolean;
   stdout?: Pick<NodeJS.WriteStream, "write">;
@@ -512,7 +512,7 @@ async function runWikiStatus(params: {
 
 async function runWikiDoctor(params: {
   config: ResolvedMemoryWikiConfig;
-  appConfig?: OpenClawConfig;
+  appConfig?: AforaConfig;
   agentId?: string;
   json?: boolean;
   stdout?: Pick<NodeJS.WriteStream, "write">;
@@ -556,7 +556,7 @@ async function runWikiInit(params: {
 
 async function runWikiCompile(params: {
   config: ResolvedMemoryWikiConfig;
-  appConfig?: OpenClawConfig;
+  appConfig?: AforaConfig;
   json?: boolean;
   stdout?: Pick<NodeJS.WriteStream, "write">;
 }) {
@@ -573,7 +573,7 @@ async function runWikiCompile(params: {
 
 async function runWikiLint(params: {
   config: ResolvedMemoryWikiConfig;
-  appConfig?: OpenClawConfig;
+  appConfig?: AforaConfig;
   json?: boolean;
   stdout?: Pick<NodeJS.WriteStream, "write">;
 }) {
@@ -629,7 +629,7 @@ async function runWikiOkfImport(params: {
 
 async function runWikiSearch(params: {
   config: ResolvedMemoryWikiConfig;
-  appConfig?: OpenClawConfig;
+  appConfig?: AforaConfig;
   agentId?: string;
   query: string;
   maxResults?: number;
@@ -669,7 +669,7 @@ async function runWikiSearch(params: {
 
 async function runWikiGet(params: {
   config: ResolvedMemoryWikiConfig;
-  appConfig?: OpenClawConfig;
+  appConfig?: AforaConfig;
   agentId?: string;
   lookup: string;
   fromLine?: number;
@@ -699,7 +699,7 @@ async function runWikiGet(params: {
 
 async function runWikiApplySynthesis(params: {
   config: ResolvedMemoryWikiConfig;
-  appConfig?: OpenClawConfig;
+  appConfig?: AforaConfig;
   title: string;
   body?: string;
   bodyFile?: string;
@@ -740,7 +740,7 @@ async function runWikiApplySynthesis(params: {
 
 async function runWikiApplyMetadata(params: {
   config: ResolvedMemoryWikiConfig;
-  appConfig?: OpenClawConfig;
+  appConfig?: AforaConfig;
   lookup: string;
   sourceIds?: string[];
   contradictions?: string[];
@@ -780,7 +780,7 @@ async function runWikiApplyMetadata(params: {
 
 async function runWikiBridgeImport(params: {
   config: ResolvedMemoryWikiConfig;
-  appConfig?: OpenClawConfig;
+  appConfig?: AforaConfig;
   agentId?: string;
   json?: boolean;
   stdout?: Pick<NodeJS.WriteStream, "write">;
@@ -806,7 +806,7 @@ async function runWikiBridgeImport(params: {
 
 async function runWikiUnsafeLocalImport(params: {
   config: ResolvedMemoryWikiConfig;
-  appConfig?: OpenClawConfig;
+  appConfig?: AforaConfig;
   json?: boolean;
   stdout?: Pick<NodeJS.WriteStream, "write">;
 }) {
@@ -974,7 +974,7 @@ export function registerWikiCli(program: Command, registration: MemoryWikiCliReg
         ...(agentId ? { agentId } : {}),
       }));
   let commandContext:
-    | { agentId?: string; appConfig?: OpenClawConfig; config: ResolvedMemoryWikiConfig }
+    | { agentId?: string; appConfig?: AforaConfig; config: ResolvedMemoryWikiConfig }
     | undefined;
   const requireCommandContext = () => {
     if (!commandContext) {
@@ -1003,7 +1003,7 @@ export function registerWikiCli(program: Command, registration: MemoryWikiCliReg
         agentId = resolveDefaultAgentId(currentAppConfig ?? {});
       } catch {
         throw new Error(
-          "No default memory-wiki agent is configured. Pass --agent <id>, or add an agent with `openclaw agents add`.",
+          "No default memory-wiki agent is configured. Pass --agent <id>, or add an agent with `afora agents add`.",
         );
       }
     }

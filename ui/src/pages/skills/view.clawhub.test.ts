@@ -74,7 +74,7 @@ describe("renderSkills ClawHub", () => {
               score: 0.95,
               slug: "github",
               displayName: "GitHub",
-              summary: "GitHub integration for OpenClaw",
+              summary: "GitHub integration for Afora",
               icon: `https://clawhub.ai/api/v1/skill-icons/${"a".repeat(64)}`,
               version: "1.2.3",
             },
@@ -97,7 +97,7 @@ describe("renderSkills ClawHub", () => {
     expect(detailButton?.contains(installButton)).toBe(false);
     expect(resultItem?.querySelector(".settings-row__title")?.textContent?.trim()).toBe("GitHub");
     expect(resultItem?.querySelector(".settings-row__desc")?.textContent?.trim()).toBe(
-      "GitHub integration for OpenClaw · github",
+      "GitHub integration for Afora · github",
     );
     expect(resultItem?.querySelector(".settings-row__value")?.textContent?.trim()).toBe("v1.2.3");
     expect(resultItem?.querySelector<HTMLImageElement>(".clawhub-skill-icon")?.src).toBe(
@@ -125,7 +125,7 @@ describe("renderSkills ClawHub", () => {
             skill: {
               slug: "github",
               displayName: "GitHub",
-              summary: "GitHub integration for OpenClaw",
+              summary: "GitHub integration for Afora",
               icon: `https://clawhub.ai/api/v1/skill-icons/${"b".repeat(64)}`,
               createdAt: 1_700_000_000,
               updatedAt: 1_700_000_100,
@@ -139,8 +139,8 @@ describe("renderSkills ClawHub", () => {
               os: ["macos", "linux"],
             },
             owner: {
-              displayName: "OpenClaw",
-              handle: "openclaw",
+              displayName: "Afora",
+              handle: "afora",
             },
           },
           onClawHubInstall,
@@ -155,7 +155,7 @@ describe("renderSkills ClawHub", () => {
       Array.from(container.querySelectorAll(".callout")).map((node) => normalizeText(node)),
     ).toEqual(["rate limited", "Installed github"]);
     expect(normalizeText(container.querySelector(".md-preview-dialog__body")!)).toBe(
-      "GitHub integration for OpenClaw By OpenClaw (@openclaw) Latest: v1.2.3 Added search support Platforms: macos, linux Install GitHub",
+      "GitHub integration for Afora By Afora (@afora) Latest: v1.2.3 Added search support Platforms: macos, linux Install GitHub",
     );
     expect(container.querySelector<HTMLImageElement>(".clawhub-skill-icon--detail")?.src).toBe(
       `https://clawhub.ai/api/v1/skill-icons/${"b".repeat(64)}`,
@@ -438,7 +438,7 @@ describe("renderSkills ClawHub", () => {
         valid: true,
         registry: "https://clawhub.ai",
         slug: "agentreceipt",
-        ownerHandle: "openclaw",
+        ownerHandle: "afora",
         installedVersion: "1.2.3",
         installedAt: 123,
       },
@@ -456,7 +456,7 @@ describe("renderSkills ClawHub", () => {
     const verdictKey = clawhubVerdictKey({
       registry: "https://clawhub.ai",
       slug: "agentreceipt",
-      ownerHandle: "openclaw",
+      ownerHandle: "afora",
       version: "1.2.3",
     });
     const onDetailTabChange = vi.fn();
@@ -474,12 +474,12 @@ describe("renderSkills ClawHub", () => {
               decision: "fail",
               reasons: ["security.suspicious"],
               requestedSlug: "agentreceipt",
-              requestedOwnerHandle: "openclaw",
+              requestedOwnerHandle: "afora",
               requestedVersion: "1.2.3",
               slug: "agentreceipt",
               version: "1.2.3",
               securityAuditUrl:
-                "https://clawhub.ai/openclaw/skills/agentreceipt/security-audit?version=1.2.3",
+                "https://clawhub.ai/afora/skills/agentreceipt/security-audit?version=1.2.3",
               securityStatus: "suspicious",
               securityPassed: false,
             },
@@ -491,7 +491,7 @@ describe("renderSkills ClawHub", () => {
     await Promise.resolve();
 
     expect(normalizeText(container)).toContain("Review");
-    expect(normalizeText(container)).toContain("@openclaw/agentreceipt@1.2.3");
+    expect(normalizeText(container)).toContain("@afora/agentreceipt@1.2.3");
     expect(normalizeText(container)).toContain("security.suspicious");
     expect(
       container.querySelector<HTMLAnchorElement>('a[href*="security-audit"]')?.textContent?.trim(),
@@ -520,10 +520,10 @@ describe("renderSkills ClawHub", () => {
               decision: "fail",
               reasons: ["security.suspicious"],
               requestedSlug: "agentreceipt",
-              requestedOwnerHandle: "openclaw",
+              requestedOwnerHandle: "afora",
               requestedVersion: "1.2.3",
               securityAuditUrl:
-                "https://clawhub.ai/openclaw/skills/agentreceipt/security-audit?version=1.2.3",
+                "https://clawhub.ai/afora/skills/agentreceipt/security-audit?version=1.2.3",
               securityStatus: "suspicious",
               securityPassed: false,
             },

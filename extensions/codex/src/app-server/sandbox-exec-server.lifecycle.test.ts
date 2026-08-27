@@ -2,7 +2,7 @@
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
-import type { SandboxContext } from "openclaw/plugin-sdk/sandbox";
+import type { SandboxContext } from "afora-agent/plugin-sdk/sandbox";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { WebSocket } from "ws";
 
@@ -18,7 +18,7 @@ vi.mock("node:child_process", async (importOriginal) => {
 import { createSandboxContext } from "./sandbox-exec-server.test-helpers.js";
 import { httpRequest } from "./sandbox-exec-server/http.js";
 import { startProcess } from "./sandbox-exec-server/processes.js";
-import type { ManagedProcess, OpenClawExecServer } from "./sandbox-exec-server/types.js";
+import type { ManagedProcess, AforaExecServer } from "./sandbox-exec-server/types.js";
 
 type FakeSocket = WebSocket & { send: ReturnType<typeof vi.fn> };
 
@@ -39,8 +39,8 @@ function createFakeSocket(): FakeSocket {
   }) as unknown as FakeSocket;
 }
 
-function createExecServer(sandbox: SandboxContext): OpenClawExecServer {
-  return { sandbox } as OpenClawExecServer;
+function createExecServer(sandbox: SandboxContext): AforaExecServer {
+  return { sandbox } as AforaExecServer;
 }
 
 function processStartParams(processId: string) {

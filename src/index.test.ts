@@ -23,22 +23,22 @@ describe("legacy root entry", () => {
       "Hello operator",
     );
 
-    await runLegacyCliEntry(["openclaw", "status"], { runCli });
-    expect(runCli).toHaveBeenCalledWith(["openclaw", "status"], undefined);
+    await runLegacyCliEntry(["afora", "status"], { runCli });
+    expect(runCli).toHaveBeenCalledWith(["afora", "status"], undefined);
   });
 
   it("forwards process-lifetime console routing for executable callers", async () => {
     const runCli = vi.fn(async () => undefined);
 
     await runLegacyCliEntry(
-      ["openclaw", "agent", "exec", "inspect", "--json"],
+      ["afora", "agent", "exec", "inspect", "--json"],
       { runCli },
       {
         retainConsoleRoutingUntilProcessExit: true,
       },
     );
 
-    expect(runCli).toHaveBeenCalledWith(["openclaw", "agent", "exec", "inspect", "--json"], {
+    expect(runCli).toHaveBeenCalledWith(["afora", "agent", "exec", "inspect", "--json"], {
       retainConsoleRoutingUntilProcessExit: true,
     });
   });

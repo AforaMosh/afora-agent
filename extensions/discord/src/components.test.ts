@@ -1,7 +1,7 @@
 // Discord tests cover components plugin behavior.
 import { ButtonStyle, MessageFlags } from "discord-api-types/v10";
-import { MAX_DATE_TIMESTAMP_MS } from "openclaw/plugin-sdk/number-runtime";
-import { createPluginRuntimeStore } from "openclaw/plugin-sdk/runtime-store";
+import { MAX_DATE_TIMESTAMP_MS } from "afora-agent/plugin-sdk/number-runtime";
+import { createPluginRuntimeStore } from "afora-agent/plugin-sdk/runtime-store";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { clearDiscordComponentEntriesForTest } from "./components-registry.test-support.js";
 import type { DiscordComponentEntry, DiscordModalEntry } from "./components.js";

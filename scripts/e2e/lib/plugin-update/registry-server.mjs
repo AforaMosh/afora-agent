@@ -39,9 +39,9 @@ const server = http.createServer((req, res) => {
 });
 
 const requestedPort =
-  process.env.OPENCLAW_PLUGIN_UPDATE_REGISTRY_PORT === undefined
+  process.env.AFORA_PLUGIN_UPDATE_REGISTRY_PORT === undefined
     ? 0
-    : readTcpPortEnv("OPENCLAW_PLUGIN_UPDATE_REGISTRY_PORT");
+    : readTcpPortEnv("AFORA_PLUGIN_UPDATE_REGISTRY_PORT");
 
 server.listen(requestedPort, "127.0.0.1", () => {
   const address = server.address();

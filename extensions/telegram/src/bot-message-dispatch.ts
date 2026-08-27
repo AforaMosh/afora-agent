@@ -1,6 +1,6 @@
-import { getGlobalHookRunner } from "openclaw/plugin-sdk/plugin-runtime";
-import { createSubsystemLogger, danger, logVerbose } from "openclaw/plugin-sdk/runtime-env";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { getGlobalHookRunner } from "afora-agent/plugin-sdk/plugin-runtime";
+import { createSubsystemLogger, danger, logVerbose } from "afora-agent/plugin-sdk/runtime-env";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { resolveDispatchTelegramContext } from "./bot-message-dispatch-context.js";
 import {
   createDeliveryState,

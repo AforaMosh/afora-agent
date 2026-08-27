@@ -141,7 +141,7 @@ describe("waitForControlUiDocument", () => {
   it("reads one bounded sanitized diagnostic only for terminal plain-text failures", async () => {
     const head = guardedResponse(new Response(null, { status: 503 }));
     const diagnostic = guardedResponse(
-      new Response("Invalid configured root\nRun openclaw doctor --fix", {
+      new Response("Invalid configured root\nRun afora doctor --fix", {
         status: 503,
         headers: { "content-type": "text/plain; charset=utf-8" },
       }),
@@ -150,7 +150,7 @@ describe("waitForControlUiDocument", () => {
 
     await expect(waitForControlUiDocument({ url: documentUrl, deps: { fetch } })).resolves.toEqual({
       ready: false,
-      reason: "Invalid configured root Run openclaw doctor --fix",
+      reason: "Invalid configured root Run afora doctor --fix",
       status: 503,
     });
 

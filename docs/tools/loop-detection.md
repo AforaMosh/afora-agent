@@ -8,7 +8,7 @@ read_when:
   - You hit `compaction_loop_persisted` aborts after a context-overflow retry
 ---
 
-OpenClaw has two cooperating guardrails against repetitive tool-call patterns,
+Afora has two cooperating guardrails against repetitive tool-call patterns,
 both configured under `tools.loopDetection`:
 
 1. **Loop detection** (`enabled`) - disabled by default. Watches the rolling
@@ -124,7 +124,7 @@ so a no-config user still gets the protection.
 
 ## Logs and expected behavior
 
-When a loop is detected, OpenClaw logs a loop event and either warns or blocks
+When a loop is detected, Afora logs a loop event and either warns or blocks
 the next tool-cycle depending on severity, protecting against runaway token
 spend and lockups while preserving normal tool access.
 

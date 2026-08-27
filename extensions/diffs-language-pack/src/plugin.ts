@@ -1,11 +1,11 @@
 // Diffs Language Pack plugin module implements plugin behavior.
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { OpenClawPluginApi } from "../api.js";
+import type { AforaPluginApi } from "../api.js";
 import { VIEWER_ASSET_PREFIX, VIEWER_RUNTIME_PATH, getServedViewerAsset } from "./viewer-assets.js";
 
 const IMMUTABLE_ASSET_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
-export function registerDiffsLanguagePackPlugin(api: OpenClawPluginApi): void {
+export function registerDiffsLanguagePackPlugin(api: AforaPluginApi): void {
   api.registerHttpRoute({
     path: "/plugins/diffs-language-pack",
     auth: "plugin",

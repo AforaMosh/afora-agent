@@ -1,7 +1,7 @@
 // Builds web-search install catalog entries from plugin metadata.
-import { normalizeOptionalString as normalizeString } from "@openclaw/normalization-core/string-coerce";
-import { normalizeTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeOptionalString as normalizeString } from "@afora/normalization-core/string-coerce";
+import { normalizeTrimmedStringList } from "@afora/normalization-core/string-normalization";
+import type { AforaConfig } from "../config/types.afora.js";
 import { isRecord } from "../utils.js";
 import { enablePluginInConfig } from "./enable.js";
 import type { PluginPackageInstall } from "./manifest.js";
@@ -40,7 +40,7 @@ function pathSegments(path: string): string[] {
     .filter((segment) => segment.length > 0);
 }
 
-function getConfigPath(config: OpenClawConfig | undefined, path: string): unknown {
+function getConfigPath(config: AforaConfig | undefined, path: string): unknown {
   let current: unknown = config;
   for (const segment of pathSegments(path)) {
     if (!isRecord(current)) {
@@ -51,7 +51,7 @@ function getConfigPath(config: OpenClawConfig | undefined, path: string): unknow
   return current;
 }
 
-function setConfigPath(target: OpenClawConfig, path: string, value: unknown): void {
+function setConfigPath(target: AforaConfig, path: string, value: unknown): void {
   const segments = pathSegments(path);
   let current: Record<string, unknown> = target as Record<string, unknown>;
   for (const segment of segments.slice(0, -1)) {
@@ -119,12 +119,12 @@ function buildProviderEntry(params: {
     setCredentialValue: (searchConfigTarget: Record<string, unknown>, value: unknown) => {
       searchConfigTarget.apiKey = value;
     },
-    getConfiguredCredentialValue: (config?: OpenClawConfig) =>
+    getConfiguredCredentialValue: (config?: AforaConfig) =>
       getConfigPath(config, credentialPath),
-    setConfiguredCredentialValue: (configTarget: OpenClawConfig, value: unknown) => {
+    setConfiguredCredentialValue: (configTarget: AforaConfig, value: unknown) => {
       setConfigPath(configTarget, credentialPath, value);
     },
-    applySelectionConfig: (config: OpenClawConfig) =>
+    applySelectionConfig: (config: AforaConfig) =>
       enablePluginInConfig(config, params.pluginId).config,
     createTool: () => null,
   };

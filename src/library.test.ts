@@ -2,7 +2,7 @@
 import fs, { readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import { loadSessionStore, saveSessionStore } from "./library.js";
 
@@ -44,7 +44,7 @@ describe("library module imports", () => {
   });
 
   it("keeps the deprecated root session-store wrappers uncached", async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-library-session-store-"));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-library-session-store-"));
     const storePath = path.join(dir, "sessions.json");
     try {
       await saveSessionStore(

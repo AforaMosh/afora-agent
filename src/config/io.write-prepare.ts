@@ -1,6 +1,6 @@
 // Prepares config writes by diffing current state and preserving metadata.
 import { isDeepStrictEqual } from "node:util";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import {
   hasAgentRosterProperty,
   listAgentEntries,
@@ -14,7 +14,7 @@ import { isRecord } from "../utils.js";
 import { configIncludeOwnsAgentRosterValues } from "./agent-roster-provenance.js";
 import { applyMergePatch, createMergePatch } from "./merge-patch.js";
 import { normalizeAgentModelMapForConfig, normalizeAgentModelRefForConfig } from "./model-input.js";
-import type { OpenClawConfig } from "./types.js";
+import type { AforaConfig } from "./types.js";
 
 const AGENT_ROSTER_PATHS = [
   ["agents", "entries"],
@@ -860,12 +860,12 @@ function shouldPersistCanonicalAgentRoster(params: {
     return true;
   }
   const runtimeRoster = toAgentEntriesRecord(
-    listAgentEntries(params.runtimeConfig as OpenClawConfig),
+    listAgentEntries(params.runtimeConfig as AforaConfig),
   );
   const sourceRoster = toAgentEntriesRecord(
-    listAgentEntries(params.sourceConfig as OpenClawConfig),
+    listAgentEntries(params.sourceConfig as AforaConfig),
   );
-  const nextRoster = toAgentEntriesRecord(listAgentEntries(params.nextConfig as OpenClawConfig));
+  const nextRoster = toAgentEntriesRecord(listAgentEntries(params.nextConfig as AforaConfig));
   return (
     !isDeepStrictEqual(runtimeRoster, nextRoster) && !isDeepStrictEqual(sourceRoster, nextRoster)
   );
@@ -880,11 +880,11 @@ function assertCanonicalAgentRosterRetainsEntries(params: {
     (params.allowedRemovals ?? []).map((agentId) => normalizeAgentId(agentId)),
   );
   const canonicalIds = new Set(
-    listAgentEntries(params.canonicalConfig as OpenClawConfig).map((entry) =>
+    listAgentEntries(params.canonicalConfig as AforaConfig).map((entry) =>
       normalizeAgentId(entry.id),
     ),
   );
-  const droppedIds = listAgentEntries(params.currentConfig as OpenClawConfig)
+  const droppedIds = listAgentEntries(params.currentConfig as AforaConfig)
     .filter((entry) => {
       const agentId = normalizeAgentId(entry.id);
       return !canonicalIds.has(agentId) && !allowedRemovals.has(agentId);
@@ -1087,16 +1087,16 @@ function canonicalizeAgentRosterForExplicitWrite(params: {
           }),
         )
       : (toAgentEntriesRecord(
-          listAgentEntries(params.rootAuthoredConfig as OpenClawConfig),
+          listAgentEntries(params.rootAuthoredConfig as AforaConfig),
         ) as Record<string, unknown>);
   const runtimeEntries = toAgentEntriesRecord(
-    listAgentEntries(params.runtimeConfig as OpenClawConfig),
+    listAgentEntries(params.runtimeConfig as AforaConfig),
   ) as Record<string, unknown>;
   const sourceEntries = toAgentEntriesRecord(
-    listAgentEntries(params.sourceConfig as OpenClawConfig),
+    listAgentEntries(params.sourceConfig as AforaConfig),
   ) as Record<string, unknown>;
   const nextEntries = toAgentEntriesRecord(
-    listAgentEntries(params.nextConfig as OpenClawConfig),
+    listAgentEntries(params.nextConfig as AforaConfig),
   ) as Record<string, unknown>;
   const explicitRoster = readAgentRosterProperty(params.valueSource);
   const renamedLegacyIndexes = new Set(
@@ -1201,7 +1201,7 @@ function canonicalizeAgentRosterForExplicitWrite(params: {
             return [[id, config]];
           }),
         )
-      : (toAgentEntriesRecord(listAgentEntries(params.valueSource as OpenClawConfig)) as Record<
+      : (toAgentEntriesRecord(listAgentEntries(params.valueSource as AforaConfig)) as Record<
           string,
           unknown
         >);
@@ -1523,7 +1523,7 @@ export function resolvePersistCandidateForWrite(params: {
       ? setPathValueCreatingParents(
           projectedAuthoredRoster,
           ["agents", "entries"],
-          toAgentEntriesRecord(listAgentEntries(params.sourceConfig as OpenClawConfig)),
+          toAgentEntriesRecord(listAgentEntries(params.sourceConfig as AforaConfig)),
         )
       : projectedAuthoredRoster;
   let persistedBase = preserveUntouchedIncludes({

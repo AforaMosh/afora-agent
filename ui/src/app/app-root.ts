@@ -6,12 +6,12 @@ import type { RouteId } from "../app-routes.ts";
 import "../components/gateway-url-confirmation.ts";
 import "../components/github-link-hovercard-registration.ts";
 import "../components/login-gate.ts";
-import "../components/openclaw-mascot.ts";
+import "../components/afora-mascot.ts";
 import "../components/tooltip.ts";
 import { t } from "../i18n/index.ts";
 import { normalizeAgentId } from "../lib/sessions/session-key.ts";
 import { isTerminalAvailable } from "../lib/terminal-availability.ts";
-import { OpenClawLightDomElement } from "../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../lit/afora-element.ts";
 import { SubscriptionsController } from "../lit/subscriptions-controller.ts";
 import { isDesktopPanelAvailable } from "./app-shell-chrome.ts";
 import { bootstrapApplication, type ApplicationRuntime } from "./bootstrap.ts";
@@ -41,7 +41,7 @@ function renderConnectingSplash(status?: string) {
       aria-live="polite"
       aria-label=${status ?? t("common.loading")}
     >
-      <openclaw-mascot mood="thinking" .size=${120}></openclaw-mascot>
+      <afora-mascot mood="thinking" .size=${120}></afora-mascot>
       ${status ? html`<span class="connect-splash__status">${status}</span>` : nothing}
     </main>
   `;
@@ -53,7 +53,7 @@ function renderApprovalDocument(runtime: ApplicationRuntime) {
     return nothing;
   }
   return html`
-    <openclaw-approval-page .approvalId=${documentMode.approvalId ?? ""}>
+    <afora-approval-page .approvalId=${documentMode.approvalId ?? ""}>
       <main class="approval-page approval-page--booting" role="status" aria-live="polite">
         <img
           class="connect-splash__logo"
@@ -62,11 +62,11 @@ function renderApprovalDocument(runtime: ApplicationRuntime) {
         />
         <span>${t("common.loading")}</span>
       </main>
-    </openclaw-approval-page>
+    </afora-approval-page>
   `;
 }
 
-export class OpenClawApp extends OpenClawLightDomElement {
+export class AforaApp extends AforaLightDomElement {
   // Pinned while a connect submitted from the visible login gate is in
   // flight, so a failed manual attempt cannot flash the shell in between.
   @state() private loginGatePinned = false;
@@ -142,7 +142,7 @@ export class OpenClawApp extends OpenClawLightDomElement {
     // their lazy source getters bind on both the initial mount and reconnect.
     this.requestUpdate();
     void this.runtime.start().catch((error: unknown) => {
-      console.error("[openclaw] application start failed", error);
+      console.error("[afora] application start failed", error);
     });
   }
 
@@ -160,7 +160,7 @@ export class OpenClawApp extends OpenClawLightDomElement {
 
   protected override firstUpdated(): void {
     if (this.runtime) {
-      globalThis.dispatchEvent(new Event("openclaw-control-ui-rendered"));
+      globalThis.dispatchEvent(new Event("afora-control-ui-rendered"));
     }
   }
 
@@ -212,7 +212,7 @@ export class OpenClawApp extends OpenClawLightDomElement {
       gatewaySnapshot.phase === "starting" ? t("common.gatewayStarting") : undefined;
     const gatewayUrlConfirmation = this.pendingGatewayUrl
       ? html`
-          <openclaw-gateway-url-confirmation
+          <afora-gateway-url-confirmation
             .props=${{
               pendingGatewayUrl: this.pendingGatewayUrl,
               onConfirm: () => {
@@ -224,7 +224,7 @@ export class OpenClawApp extends OpenClawLightDomElement {
                 this.pendingGatewayUrl = null;
               },
             }}
-          ></openclaw-gateway-url-confirmation>
+          ></afora-gateway-url-confirmation>
         `
       : nothing;
     // Full-screen terminals own the whole document. Keep the generic login gate
@@ -239,13 +239,13 @@ export class OpenClawApp extends OpenClawLightDomElement {
       const terminalAgentId = terminalOwner ? normalizeAgentId(terminalOwner) : null;
       // Embedded clients query this host immediately; keep it stable while the chunk loads.
       return html`
-        <openclaw-terminal-panel
+        <afora-terminal-panel
           .client=${gatewayConnected ? gatewaySnapshot.client : null}
           .available=${terminalAvailable}
           .agentId=${terminalAgentId}
           .themeMode=${resolveTerminalThemeMode()}
           fullscreen
-        ></openclaw-terminal-panel>
+        ></afora-terminal-panel>
         ${!gatewayConnected && gatewaySnapshot.lastError === null
           ? renderConnectingSplash(gatewayStartupStatus)
           : nothing}
@@ -263,7 +263,7 @@ export class OpenClawApp extends OpenClawLightDomElement {
     if (this.desktopOnly) {
       const desktopAvailable = isDesktopPanelAvailable(gatewaySnapshot);
       return html`
-        <openclaw-desktop-panel
+        <afora-desktop-panel
           .client=${gatewayConnected ? gatewaySnapshot.client : null}
           .available=${desktopAvailable}
           .documentMode=${true}
@@ -277,7 +277,7 @@ export class OpenClawApp extends OpenClawLightDomElement {
               globalThis.location.assign(context.basePath || "/");
             }
           }}
-        ></openclaw-desktop-panel>
+        ></afora-desktop-panel>
         ${!gatewayConnected && gatewaySnapshot.lastError === null
           ? renderConnectingSplash(gatewayStartupStatus)
           : nothing}
@@ -300,9 +300,9 @@ export class OpenClawApp extends OpenClawLightDomElement {
         (gatewaySnapshot.phase === "connecting" && !this.loginGatePinned));
     if (initialConnectPending) {
       return html`
-        <openclaw-tooltip-provider>
+        <afora-tooltip-provider>
           ${renderConnectingSplash(gatewayStartupStatus)} ${gatewayUrlConfirmation}
-        </openclaw-tooltip-provider>
+        </afora-tooltip-provider>
       `;
     }
     const shellOwnsRecovery =
@@ -310,8 +310,8 @@ export class OpenClawApp extends OpenClawLightDomElement {
     const showLoginGate = !gatewayConnected && !shellOwnsRecovery;
     if (showLoginGate) {
       return html`
-        <openclaw-tooltip-provider>
-          <openclaw-login-gate
+        <afora-tooltip-provider>
+          <afora-login-gate
             .props=${{
               basePath: context.basePath,
               connected: gatewayConnected,
@@ -348,35 +348,35 @@ export class OpenClawApp extends OpenClawLightDomElement {
                 });
               },
             }}
-          ></openclaw-login-gate>
+          ></afora-login-gate>
           ${gatewayUrlConfirmation}
-        </openclaw-tooltip-provider>
+        </afora-tooltip-provider>
       `;
     }
     if (runtime.documentMode?.kind === "approval") {
       return html`
-        <openclaw-tooltip-provider>
+        <afora-tooltip-provider>
           ${gatewayUrlConfirmation} ${renderApprovalDocument(runtime)}
-        </openclaw-tooltip-provider>
+        </afora-tooltip-provider>
       `;
     }
     return html`
-      <openclaw-tooltip-provider>
-        <openclaw-github-link-hovercard-provider .client=${gatewaySnapshot.client}>
-          <openclaw-session-link-hovercard-provider
+      <afora-tooltip-provider>
+        <afora-github-link-hovercard-provider .client=${gatewaySnapshot.client}>
+          <afora-session-link-hovercard-provider
             .client=${gatewaySnapshot.client}
             .context=${context}
           >
-            <openclaw-session-progress-hovercard-provider .gateway=${context.gateway}>
+            <afora-session-progress-hovercard-provider .gateway=${context.gateway}>
               ${gatewayUrlConfirmation}
-              <openclaw-app-shell
+              <afora-app-shell
                 .runtime=${runtime}
                 .onboarding=${this.onboarding}
-              ></openclaw-app-shell>
-            </openclaw-session-progress-hovercard-provider>
-          </openclaw-session-link-hovercard-provider>
-        </openclaw-github-link-hovercard-provider>
-      </openclaw-tooltip-provider>
+              ></afora-app-shell>
+            </afora-session-progress-hovercard-provider>
+          </afora-session-link-hovercard-provider>
+        </afora-github-link-hovercard-provider>
+      </afora-tooltip-provider>
     `;
   }
 }

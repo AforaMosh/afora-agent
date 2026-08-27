@@ -3,7 +3,7 @@
  *
  * Converts route, sender, command, media, and supplemental facts into finalized message context.
  */
-import { isPromiseLike } from "@openclaw/normalization-core/promise-like";
+import { isPromiseLike } from "@afora/normalization-core/promise-like";
 import {
   commandTurnKindToSource,
   createCommandTurnContext,

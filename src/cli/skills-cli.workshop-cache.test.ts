@@ -1,13 +1,13 @@
 import { Command } from "commander";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../test-utils/afora-test-state.js";
 import { createTrackedTempDirs } from "../test-utils/tracked-temp-dirs.js";
 
 const tempDirs = createTrackedTempDirs();
-let testState: OpenClawTestState;
+let testState: AforaTestState;
 let gatewaySnapshots: typeof import("../skills/runtime/session-snapshot.js");
 let gatewayRefreshState: typeof import("../skills/runtime/refresh-state.js");
 let gatewayWorkshop: typeof import("../skills/workshop/service.js");
@@ -70,11 +70,11 @@ describe("skills workshop CLI gateway snapshot invalidation", () => {
   });
 
   beforeEach(async () => {
-    testState = await createOpenClawTestState({
+    testState = await createAforaTestState({
       layout: "state-only",
-      prefix: "openclaw-skills-cli-workshop-cache-",
+      prefix: "afora-skills-cli-workshop-cache-",
     });
-    mocks.workspaceDir = await tempDirs.make("openclaw-skills-cli-workshop-cache-");
+    mocks.workspaceDir = await tempDirs.make("afora-skills-cli-workshop-cache-");
     delete mocks.config.gateway;
     mocks.gatewayApply = undefined;
     mocks.releaseGatewayLock.mockReset();
@@ -190,7 +190,7 @@ describe("skills workshop CLI gateway snapshot invalidation", () => {
     const authError = Object.assign(new Error("gateway health requires credentials"), {
       name: "GatewayCredentialsRequiredError",
       method: "health",
-      configPath: "/tmp/openclaw.json",
+      configPath: "/tmp/afora.json",
     });
     mocks.callGateway.mockRejectedValueOnce(authError);
 
@@ -224,7 +224,7 @@ describe("skills workshop CLI gateway snapshot invalidation", () => {
     const authError = Object.assign(new Error("gateway health requires credentials"), {
       name: "GatewayCredentialsRequiredError",
       method: "health",
-      configPath: "/tmp/openclaw.json",
+      configPath: "/tmp/afora.json",
     });
     mocks.callGateway.mockRejectedValueOnce(authError);
     mocks.acquireGatewayLock.mockRejectedValueOnce(new Error("gateway lock is owned"));

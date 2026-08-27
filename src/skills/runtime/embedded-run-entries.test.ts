@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   clearRuntimeConfigSnapshot,
   setRuntimeConfigSnapshot,
-  type OpenClawConfig,
+  type AforaConfig,
 } from "../../config/config.js";
 import * as skillsLoaderModule from "../loading/workspace-skill-loader.js";
 import { createCanonicalFixtureSkill } from "../test-support/test-helpers.js";
@@ -20,7 +20,7 @@ describe("resolveEmbeddedRunSkillEntries", () => {
   });
 
   it("loads skill entries with config when no resolved snapshot skills exist", () => {
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       plugins: {
         entries: {
           diffs: { enabled: true },
@@ -70,7 +70,7 @@ describe("resolveEmbeddedRunSkillEntries", () => {
     };
 
     resolveEmbeddedRunSkillEntries({
-      workspaceDir: "/tmp/workspace/.openclaw/sandbox-skills",
+      workspaceDir: "/tmp/workspace/.afora/sandbox-skills",
       config: {},
       eligibility,
       skillsSnapshot: {
@@ -80,7 +80,7 @@ describe("resolveEmbeddedRunSkillEntries", () => {
       workspaceOnly: true,
     });
 
-    expect(loadWorkspaceSkillsSpy).toHaveBeenCalledWith("/tmp/workspace/.openclaw/sandbox-skills", {
+    expect(loadWorkspaceSkillsSpy).toHaveBeenCalledWith("/tmp/workspace/.afora/sandbox-skills", {
       config: {},
       eligibility,
       workspaceOnly: true,
@@ -88,7 +88,7 @@ describe("resolveEmbeddedRunSkillEntries", () => {
   });
 
   it("prefers the active runtime snapshot when caller config still contains SecretRefs", () => {
-    const sourceConfig: OpenClawConfig = {
+    const sourceConfig: AforaConfig = {
       skills: {
         entries: {
           diffs: {
@@ -101,7 +101,7 @@ describe("resolveEmbeddedRunSkillEntries", () => {
         },
       },
     };
-    const runtimeConfig: OpenClawConfig = {
+    const runtimeConfig: AforaConfig = {
       skills: {
         entries: {
           diffs: {
@@ -127,7 +127,7 @@ describe("resolveEmbeddedRunSkillEntries", () => {
   });
 
   it("prefers caller config when the active runtime snapshot still contains raw skill SecretRefs", () => {
-    const sourceConfig: OpenClawConfig = {
+    const sourceConfig: AforaConfig = {
       skills: {
         entries: {
           diffs: {
@@ -140,8 +140,8 @@ describe("resolveEmbeddedRunSkillEntries", () => {
         },
       },
     };
-    const runtimeConfig: OpenClawConfig = structuredClone(sourceConfig);
-    const callerConfig: OpenClawConfig = {
+    const runtimeConfig: AforaConfig = structuredClone(sourceConfig);
+    const callerConfig: AforaConfig = {
       skills: {
         entries: {
           diffs: {

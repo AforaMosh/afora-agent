@@ -29,8 +29,8 @@ const {
   trackBackgroundTaskMock: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/channel-inbound", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/channel-inbound")>();
+vi.mock("afora-agent/plugin-sdk/channel-inbound", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/channel-inbound")>();
   return {
     ...actual,
     runChannelInboundEvent: async (params: Parameters<typeof actual.runChannelInboundEvent>[0]) => {
@@ -80,7 +80,7 @@ vi.mock("./inbound-dispatch.js", async (importOriginal) => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/plugin-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/plugin-runtime", () => ({
   getGlobalHookRunner: () => ({
     hasHooks: (hookName: string) => hookName === "message_received",
     runMessageReceived: runMessageReceivedMock,
@@ -174,7 +174,7 @@ vi.mock("./runtime-api.js", async (importOriginal) => {
   };
 });
 
-import { clearInternalHooks, registerInternalHook } from "openclaw/plugin-sdk/hook-runtime";
+import { clearInternalHooks, registerInternalHook } from "afora-agent/plugin-sdk/hook-runtime";
 import { attachWhatsAppIngressLifecycle } from "../../inbound/ingress-lifecycle.js";
 import { processMessage } from "./process-message.js";
 

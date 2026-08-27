@@ -1,10 +1,10 @@
 {
-  "name": "@openclaw/msteams",
+  "name": "@afora/msteams",
   "version": "2026.8.1",
-  "description": "OpenClaw Microsoft Teams channel plugin for bot conversations.",
+  "description": "Afora Microsoft Teams channel plugin for bot conversations.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaw/openclaw"
+    "url": "https://github.com/AforaMosh/afora-agent"
   },
   "type": "module",
   "dependencies": {
@@ -17,19 +17,19 @@
   },
   "devDependencies": {
     "@microsoft/teams.common": "2.0.14",
-    "@openclaw/plugin-sdk": "workspace:*",
+    "@afora/plugin-sdk": "workspace:*",
     "jose": "6.2.4",
-    "openclaw": "workspace:*"
+    "afora-agent": "workspace:*"
   },
   "peerDependencies": {
-    "openclaw": ">=2026.8.1"
+    "afora-agent": ">=2026.8.1"
   },
   "peerDependenciesMeta": {
-    "openclaw": {
+    "afora": {
       "optional": true
     }
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],
@@ -65,7 +65,7 @@
       }
     },
     "install": {
-      "npmSpec": "@openclaw/msteams",
+      "npmSpec": "@afora/msteams",
       "defaultChoice": "npm",
       "minHostVersion": ">=2026.4.10"
     },
@@ -73,7 +73,7 @@
       "pluginApi": ">=2026.8.1"
     },
     "build": {
-      "openclawVersion": "2026.8.1",
+      "aforaVersion": "2026.8.1",
       "runtimeFormat": "cjs"
     },
     "release": {

@@ -11,7 +11,7 @@ export type TrajectoryToolDefinition = {
 
 // Versioned event envelope for runtime and transcript-derived trajectory rows.
 export type TrajectoryEvent = {
-  traceSchema: "openclaw-trajectory";
+  traceSchema: "afora-trajectory";
   schemaVersion: 1;
   traceId: string;
   source: TrajectoryEventSource;
@@ -33,7 +33,7 @@ export type TrajectoryEvent = {
 
 // Bundle manifest written beside events.jsonl in trajectory exports.
 export type TrajectoryBundleManifest = {
-  traceSchema: "openclaw-trajectory";
+  traceSchema: "afora-trajectory";
   schemaVersion: 1;
   generatedAt: string;
   traceId: string;

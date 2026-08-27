@@ -10,7 +10,7 @@ const suite = createControlUiE2eSuite({
 
 suite.define(() => {
   it("references multiple skills inside a normal prompt and sends the visible tokens", async () => {
-    const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+    const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
     await suite.withPage(
       {
         viewport: { width: 1280, height: 900 },
@@ -54,7 +54,7 @@ suite.define(() => {
           methodResponses: {
             "chat.startup": {
               agentsList: {
-                agents: [{ id: "main", name: "OpenClaw" }],
+                agents: [{ id: "main", name: "Afora" }],
                 defaultId: "main",
                 mainKey: "main",
                 scope: "agent",

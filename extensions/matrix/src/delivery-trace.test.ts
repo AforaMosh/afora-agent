@@ -10,7 +10,7 @@
 // mints a new event id while the logical target id stays stable, and previews
 // are mentions-inert until a final either edits in place or gets redacted and
 // re-sent as a fresh mention-bearing event.
-// Refresh goldens with OPENCLAW_TRACE_UPDATE=1 (see delivery-trace harness docs).
+// Refresh goldens with AFORA_TRACE_UPDATE=1 (see delivery-trace harness docs).
 import {
   deliveryTraceScenarios,
   expectDeliveryTraceMatchesGolden,
@@ -18,18 +18,18 @@ import {
   type DeliveryTraceInStep,
   type DeliveryTraceScenario,
   type WireRecorder,
-} from "openclaw/plugin-sdk/channel-contract-testing";
+} from "afora-agent/plugin-sdk/channel-contract-testing";
 import {
   implicitMentionKindWhen,
   resolveInboundMentionDecision,
-} from "openclaw/plugin-sdk/channel-mention-gating";
-import { resolveMarkdownTableMode } from "openclaw/plugin-sdk/markdown-table-runtime";
+} from "afora-agent/plugin-sdk/channel-mention-gating";
+import { resolveMarkdownTableMode } from "afora-agent/plugin-sdk/markdown-table-runtime";
 import {
   chunkMarkdownTextWithMode,
   resolveChunkMode,
   resolveTextChunkLimit,
-} from "openclaw/plugin-sdk/reply-chunking";
-import { convertMarkdownTables } from "openclaw/plugin-sdk/text-chunking";
+} from "afora-agent/plugin-sdk/reply-chunking";
+import { convertMarkdownTables } from "afora-agent/plugin-sdk/text-chunking";
 import { beforeAll, describe, it, vi } from "vitest";
 import {
   createMatrixHandlerTestHarness,
@@ -40,7 +40,7 @@ import type { PluginRuntime, ReplyPayload } from "./runtime-api.js";
 import { installMatrixTestRuntime } from "./test-runtime.js";
 
 const ROOM_ID = "!room:example.org";
-const BOT_USER_ID = "@openclaw:example.org";
+const BOT_USER_ID = "@afora:example.org";
 const INBOUND_EVENT_ID = "$inbound-1";
 
 beforeAll(() => {

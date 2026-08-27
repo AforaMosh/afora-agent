@@ -3,9 +3,9 @@ import { randomUUID } from "node:crypto";
 import {
   MAX_TIMER_TIMEOUT_MS,
   resolveExpiresAtMsFromDurationMs,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
-import { resolveOpenClawStateSqlitePath } from "../../state/openclaw-state-db.paths.js";
+import { resolveAforaStateSqlitePath } from "../../state/afora-state-db.paths.js";
 import { retainBeforeToolCallForNativeHookRelay } from "./host-capability.js";
 import {
   clearNativeHookRelayBridgesForTests,
@@ -91,7 +91,7 @@ type RelayLifetime = {
   expiryTimer?: ReturnType<typeof setTimeout>;
 };
 
-const RELAY_LIFETIME = "__openclawNativeHookRelayLifetimeV1";
+const RELAY_LIFETIME = "__aforaNativeHookRelayLifetimeV1";
 
 /** Private bundled-runtime callbacks for retained direct-child hook policy. */
 export type NativeHookRelayRetention = Readonly<{
@@ -183,7 +183,7 @@ function registerNativeHookRelayInternal(
     throw new Error("Native hook relay expiry is outside the supported Date range");
   }
   const allowedEvents = normalizeAllowedEvents(params.allowedEvents);
-  const stateDbPath = resolveOpenClawStateSqlitePath();
+  const stateDbPath = resolveAforaStateSqlitePath();
   const deliverReplacedRegistrationUnregister = unregisterNativeHookRelay(relayId, undefined, {
     deferBridgeRecordRemovalMs: NATIVE_HOOK_BRIDGE_REPLACEMENT_RECORD_GRACE_MS,
     deferOnUnregister: true,

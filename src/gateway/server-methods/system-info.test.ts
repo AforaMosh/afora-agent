@@ -1,6 +1,6 @@
 /** Gateway system.info method tests. */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it, vi } from "vitest";
 import { validateSystemInfoResult } from "../../../packages/gateway-protocol/src/index.js";
 import { getGatewayProcessInstanceId } from "../process-instance.js";

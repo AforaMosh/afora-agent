@@ -151,7 +151,7 @@ export function writeWorkspaceFile(root: string, filePath: string, content: stri
 export function createWorkspaceFixture(prefix: string): string {
   const tempRoot = fs.realpathSync(os.tmpdir());
   const workspaceRoot = fs.mkdtempSync(path.join(tempRoot, prefix));
-  writeWorkspaceFile(workspaceRoot, "package.json", '{"name":"openclaw-test"}\n');
+  writeWorkspaceFile(workspaceRoot, "package.json", '{"name":"afora-test"}\n');
   writeWorkspaceFile(workspaceRoot, "src/readme.md", "# Read me\n");
   writeWorkspaceFile(workspaceRoot, "ui/chat.ts", "export const chat = true;\n");
   writeWorkspaceFile(workspaceRoot, "ui/vite.config.ts", "export default {};\n");
@@ -174,7 +174,7 @@ export function prepareSessionFilesTest(
 ): string {
   vi.clearAllMocks();
   mocks.readSessionTranscriptVisibleMessageDeltaCore.mockReset();
-  const workspaceRoot = createWorkspaceFixture("openclaw-session-files-test-");
+  const workspaceRoot = createWorkspaceFixture("afora-session-files-test-");
   mocks.resolveDefaultAgentId.mockReturnValue("main");
   mocks.resolveAgentWorkspaceDir.mockReturnValue(workspaceRoot);
   mocks.execOpenPath.mockResolvedValue(undefined);

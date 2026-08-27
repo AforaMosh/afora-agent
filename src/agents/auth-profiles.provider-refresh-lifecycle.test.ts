@@ -1,18 +1,18 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resetFileLockStateForTest } from "../infra/file-lock.js";
 import { isPluginRegistryLoadInFlight } from "../plugins/loader-cache.js";
 import {
   cleanupPluginLoaderFixturesForTest,
   EMPTY_PLUGIN_SCHEMA,
-  loadOpenClawPlugins,
+  loadAforaPlugins,
   resetPluginLoaderTestStateForTest,
   useNoBundledPlugins,
   writePlugin,
 } from "../plugins/loader.test-fixtures.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import {
   oauthCred,
   readAuthProfileStoreForTest,
@@ -21,7 +21,7 @@ import {
 import { resolveApiKeyForProfile } from "./auth-profiles/oauth.js";
 import { clearRuntimeAuthProfileStoreSnapshots } from "./auth-profiles/runtime-snapshots.js";
 
-const START_AUTH_CALLBACK = "__openclawProviderRefreshLifecycleStart";
+const START_AUTH_CALLBACK = "__aforaProviderRefreshLifecycleStart";
 const PLUGIN_ID = "provider-refresh-lifecycle";
 const PROVIDER_ID = "lifecycle-provider";
 const PROFILE_ID = `${PROVIDER_ID}:default`;
@@ -38,7 +38,7 @@ function writeLifecycleProviderPlugin(registerBody: string) {
     };`,
   });
   fs.writeFileSync(
-    path.join(plugin.dir, "openclaw.plugin.json"),
+    path.join(plugin.dir, "afora.plugin.json"),
     JSON.stringify(
       {
         id: plugin.id,
@@ -70,8 +70,8 @@ afterAll(cleanupPluginLoaderFixturesForTest);
 
 describe("provider OAuth refresh lifecycle", () => {
   it("resumes refresh after synchronous provider registration completes", async () => {
-    await withOpenClawTestState(
-      { layout: "state-only", prefix: "openclaw-provider-refresh-", agentEnv: "main" },
+    await withAforaTestState(
+      { layout: "state-only", prefix: "afora-provider-refresh-", agentEnv: "main" },
       async (state) => {
         const expiredCredential = oauthCred({
           provider: PROVIDER_ID,
@@ -109,8 +109,8 @@ describe("provider OAuth refresh lifecycle", () => {
             load: { paths: [plugin.file] },
             entries: { [plugin.id]: { enabled: true } },
           },
-        } satisfies OpenClawConfig;
-        const loadOptions: NonNullable<Parameters<typeof loadOpenClawPlugins>[0]> = {
+        } satisfies AforaConfig;
+        const loadOptions: NonNullable<Parameters<typeof loadAforaPlugins>[0]> = {
           cache: false,
           workspaceDir: plugin.dir,
           config,
@@ -132,7 +132,7 @@ describe("provider OAuth refresh lifecycle", () => {
         });
         vi.stubGlobal(START_AUTH_CALLBACK, startAuthDuringRegister);
 
-        loadOpenClawPlugins(loadOptions);
+        loadAforaPlugins(loadOptions);
 
         expect(isPluginRegistryLoadInFlight(loadOptions)).toBe(false);
         if (!authResolution) {

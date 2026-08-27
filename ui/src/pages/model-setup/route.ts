@@ -24,7 +24,7 @@ async function loadModelSetupRouteData(
   if (
     !client ||
     !hasOperatorAdminAccess(snapshot.hello?.auth ?? null) ||
-    isGatewayMethodAdvertised(snapshot, "openclaw.setup.detect") !== true
+    isGatewayMethodAdvertised(snapshot, "afora.setup.detect") !== true
   ) {
     return { state: { phase: "loading" }, connection, firstRun };
   }
@@ -59,7 +59,7 @@ async function loadModelSetupRouteData(
     current.phase === "connected" &&
     current.client &&
     hasOperatorAdminAccess(current.hello?.auth ?? null) &&
-    isGatewayMethodAdvertised(current, "openclaw.setup.detect") === true
+    isGatewayMethodAdvertised(current, "afora.setup.detect") === true
   ) {
     return loadModelSetupRouteData(context, location, false);
   }
@@ -79,6 +79,6 @@ export const page = definePage({
     import("./model-setup-page.ts").then(() => ({
       header: true,
       render: (data: ModelSetupRouteData | undefined) =>
-        html`<openclaw-model-setup-page .routeData=${data}></openclaw-model-setup-page>`,
+        html`<afora-model-setup-page .routeData=${data}></afora-model-setup-page>`,
     })),
 });

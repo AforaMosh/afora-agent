@@ -92,7 +92,7 @@ function createSessionResult(key: string, displayName: string): SessionsListResu
 
 async function mountPalette(context: ApplicationContext<RouteId>) {
   const provider = createApplicationContextProvider(context);
-  const palette = document.createElement("openclaw-command-palette") as CommandPalette;
+  const palette = document.createElement("afora-command-palette") as CommandPalette;
   palette.onNavigate = vi.fn();
   palette.onSelectSession = vi.fn();
   provider.append(palette);
@@ -139,7 +139,7 @@ describe("CommandPalette lifecycle", () => {
 
     palette.remove();
     provider.append(palette);
-    const modal = palette.querySelector("openclaw-modal-dialog");
+    const modal = palette.querySelector("afora-modal-dialog");
     const dialog = modal?.shadowRoot
       ?.querySelector("wa-dialog")
       ?.shadowRoot?.querySelector("dialog");

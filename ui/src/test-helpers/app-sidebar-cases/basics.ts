@@ -24,7 +24,7 @@ import "../../components/app-sidebar.ts";
 await import("../../components/viewer-facepile.ts");
 
 describe("AppSidebar update card wiring", () => {
-  it("keeps OpenClaw out of the workspace sidebar", async () => {
+  it("keeps Afora out of the workspace sidebar", async () => {
     const gateway = createGateway({} as GatewayBrowserClient);
     const { sidebar } = await mountSidebar(gateway, createSessions("main", ["agent:main:main"]));
 
@@ -49,8 +49,8 @@ describe("AppSidebar update card wiring", () => {
 
     const footer = sidebar.querySelector(".sidebar-shell__footer");
     // Attention chips (when present) stack above the update card.
-    expect(footer?.firstElementChild?.localName).toBe("openclaw-sidebar-attention");
-    const card = footer?.querySelector("openclaw-sidebar-update-card");
+    expect(footer?.firstElementChild?.localName).toBe("afora-sidebar-attention");
+    const card = footer?.querySelector("afora-sidebar-update-card");
     expect(card).not.toBeNull();
     const restoreDialogPolyfill = installDialogPolyfill();
     card?.querySelector<HTMLButtonElement>(".sidebar-update-card__action")?.click();
@@ -65,7 +65,7 @@ describe("AppSidebar update card wiring", () => {
     sidebar.refreshRequired = true;
     await sidebar.updateComplete;
     const refreshCard = footer?.querySelector<HTMLElement & { updateComplete: Promise<boolean> }>(
-      "openclaw-sidebar-update-card",
+      "afora-sidebar-update-card",
     );
     await refreshCard?.updateComplete;
     expect(refreshCard?.textContent).toContain("Server updated");
@@ -105,7 +105,7 @@ describe("AppSidebar viewer presence", () => {
 
     await vi.waitFor(() => {
       const avatar = sidebar.querySelector<HTMLImageElement>(
-        ".sidebar-identity-card openclaw-viewer-avatar img",
+        ".sidebar-identity-card afora-viewer-avatar img",
       );
       expect(avatar?.getAttribute("src")).toBe("/api/users/00-self/avatar?v=7");
     });
@@ -175,7 +175,7 @@ describe("AppSidebar viewer presence", () => {
     await sidebar.updateComplete;
 
     const sessionFacepile = sidebar.querySelector<HTMLElement>(
-      '[data-session-key="agent:main:work"] openclaw-viewer-facepile',
+      '[data-session-key="agent:main:work"] afora-viewer-facepile',
     );
     await (sessionFacepile as { updateComplete?: Promise<unknown> } | null)?.updateComplete;
     expect(
@@ -189,7 +189,7 @@ describe("AppSidebar viewer presence", () => {
     expect(sessionFacepile?.querySelector(".viewer-avatar--overflow")?.textContent).toContain("+3");
     expect(sessionFacepile?.querySelector('[data-viewer-id="alice"] img')).not.toBeNull();
     expect(
-      [...(sessionFacepile?.querySelectorAll("openclaw-tooltip") ?? [])].map(
+      [...(sessionFacepile?.querySelectorAll("afora-tooltip") ?? [])].map(
         (tooltip) => (tooltip as HTMLElement & { content?: string }).content,
       ),
     ).toEqual(["Alice", "bob@example.test", "Carol", "Dave\nErin\nFrank"]);
@@ -200,14 +200,14 @@ describe("AppSidebar viewer presence", () => {
     );
     expect(identityCard?.querySelector('[data-viewer-id="00-self"]')).not.toBeNull();
 
-    const avatar = identityCard?.querySelector<HTMLImageElement>("openclaw-viewer-avatar img");
+    const avatar = identityCard?.querySelector<HTMLImageElement>("afora-viewer-avatar img");
     expect(avatar?.getAttribute("src")).toBe("/api/users/00-self/avatar?v=1");
     const footer = sidebar.querySelector(".sidebar-footer-bar");
-    expect(footer?.querySelector("openclaw-viewer-facepile")).toBeNull();
-    expect(footer?.querySelector("openclaw-sidebar-build-chip")).toBeNull();
+    expect(footer?.querySelector("afora-viewer-facepile")).toBeNull();
+    expect(footer?.querySelector("afora-sidebar-build-chip")).toBeNull();
     expect(footer?.querySelector(".sidebar-brand__logo-slot")).toBeNull();
     expect([...(footer?.children ?? [])].map((element) => element.localName)).toEqual([
-      "openclaw-tooltip",
+      "afora-tooltip",
       "span",
     ]);
     gatewayHarness.gateway.updateSelfUser?.({
@@ -504,7 +504,7 @@ describe("AppSidebar agent chip", () => {
       expect(glyph?.getAttribute("aria-label")).toBe("Dashboard available");
       expect(glyph?.hasAttribute("title")).toBe(false);
       expect(
-        (glyph?.closest("openclaw-tooltip") as (HTMLElement & { content?: string }) | null)
+        (glyph?.closest("afora-tooltip") as (HTMLElement & { content?: string }) | null)
           ?.content,
       ).toBe("Dashboard available");
     } finally {

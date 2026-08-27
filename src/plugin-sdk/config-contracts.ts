@@ -36,7 +36,7 @@ export type {
   MSTeamsConfig,
   MSTeamsReplyStyle,
   MSTeamsTeamConfig,
-  OpenClawConfig,
+  AforaConfig,
   ReplyToMode,
   ResolvedTtsPersona,
   SignalReactionNotificationMode,

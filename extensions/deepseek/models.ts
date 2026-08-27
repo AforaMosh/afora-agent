@@ -1,7 +1,7 @@
 // Deepseek plugin module implements models behavior.
-import { buildManifestModelDefinition } from "openclaw/plugin-sdk/provider-catalog-shared";
-import type { ModelDefinitionConfig } from "openclaw/plugin-sdk/provider-model-shared";
-import manifest from "./openclaw.plugin.json" with { type: "json" };
+import { buildManifestModelDefinition } from "afora-agent/plugin-sdk/provider-catalog-shared";
+import type { ModelDefinitionConfig } from "afora-agent/plugin-sdk/provider-model-shared";
+import manifest from "./afora.plugin.json" with { type: "json" };
 
 const DEEPSEEK_MANIFEST_CATALOG = manifest.modelCatalog.providers.deepseek;
 export const DEEPSEEK_BASE_URL = DEEPSEEK_MANIFEST_CATALOG.baseUrl;

@@ -232,7 +232,7 @@ describe("new-session composer start control", () => {
       ".new-session-page__start-menu-trigger",
     );
     const item = composer.querySelector<HTMLElement>("wa-dropdown-item[value='start-terminal']");
-    const tooltips = composer.querySelectorAll<HTMLElement>("openclaw-tooltip");
+    const tooltips = composer.querySelectorAll<HTMLElement>("afora-tooltip");
 
     expect(trigger?.disabled).toBe(true);
     expect(item?.hasAttribute("disabled")).toBe(true);
@@ -349,7 +349,7 @@ describe("new-session composer attachment drops", () => {
       canSubmit: false,
       submitDisabledReason: "This action requires operator.write access.",
     });
-    const submitTooltip = composer.querySelector<HTMLElement>("openclaw-tooltip");
+    const submitTooltip = composer.querySelector<HTMLElement>("afora-tooltip");
 
     expect((submitTooltip as HTMLElement & { content?: string })?.content).toBe(
       "This action requires operator.write access.",

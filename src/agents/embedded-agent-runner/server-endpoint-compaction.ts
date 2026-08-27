@@ -2,8 +2,8 @@ import {
   captureOpenAIResponsesCompaction,
   requestPreparedOpenAIResponsesCompaction,
   resolveOpenAIResponsesCompactEndpointPlan,
-} from "@openclaw/ai/transports";
-import type { Message } from "@openclaw/llm-core";
+} from "@afora/ai/transports";
+import type { Message } from "@afora/llm-core";
 import { formatErrorMessage } from "../../infra/errors.js";
 import type { AgentMessage } from "../runtime/index.js";
 import { compactWithSafetyTimeout } from "./compaction-safety-timeout.js";

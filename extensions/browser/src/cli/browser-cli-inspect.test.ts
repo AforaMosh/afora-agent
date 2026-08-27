@@ -250,7 +250,7 @@ describe("browser cli snapshot defaults", () => {
     { label: "AI", args: [] },
     { label: "ARIA", args: ["--format", "aria"] },
   ])("keeps an existing $label snapshot when publication fails", async ({ args }) => {
-    const tempDir = fsSync.mkdtempSync(path.join(tmpdir(), "openclaw-browser-snapshot-"));
+    const tempDir = fsSync.mkdtempSync(path.join(tmpdir(), "afora-browser-snapshot-"));
     try {
       const outputPath = path.join(tempDir, "snapshot.txt");
       fsSync.writeFileSync(outputPath, "previous snapshot\n");

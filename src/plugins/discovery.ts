@@ -4,8 +4,8 @@ import path from "node:path";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
-import { sortUniqueStrings } from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-coerce";
+import { sortUniqueStrings } from "@afora/normalization-core/string-normalization";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { readRootJsonObjectSync, tryReadJsonSync } from "../infra/json-files.js";
 import { resolveUserPath } from "../utils.js";
@@ -31,7 +31,7 @@ import {
   loadPluginManifest,
   type PluginManifest,
   resolvePackageExtensionEntries,
-  type OpenClawPackageManifest,
+  type AforaPackageManifest,
   type PackageExtensionResolution,
   type PackageManifest,
 } from "./manifest.js";
@@ -92,7 +92,7 @@ export type PluginCandidate = {
   packageVersion?: string;
   packageDescription?: string;
   packageDir?: string;
-  packageManifest?: OpenClawPackageManifest;
+  packageManifest?: AforaPackageManifest;
   packageDependencies?: PluginDependencySpecMap;
   packageOptionalDependencies?: PluginDependencySpecMap;
   bundledManifestId?: string;
@@ -759,7 +759,7 @@ function pushInvalidPackageExtensionDiagnostic(params: {
     params.diagnostics.push({
       level: "error",
       source: params.source,
-      message: "package.json openclaw.extensions is empty",
+      message: "package.json afora.extensions is empty",
       ...(params.pluginId ? { pluginId: params.pluginId } : {}),
     });
     return true;
@@ -854,7 +854,7 @@ function addCandidate(params: {
     setupSource: params.setupSource,
     rootDir: resolvedRoot,
     origin: params.origin,
-    format: params.format ?? "openclaw",
+    format: params.format ?? "afora",
     bundleFormat: params.bundleFormat,
     workspaceDir: params.workspaceDir,
     packageName: normalizeOptionalString(manifest?.name),
@@ -958,14 +958,14 @@ function addLegacyNpmDeclarationDiagnostic(params: {
     level: "warn",
     pluginId: declaration.pluginId,
     source: declaration.source,
-    message: `legacy npm plugin declaration ignored for "${declaration.pluginId}"; run "openclaw doctor --fix" to install ${declaration.npmSpec} into the managed plugin root`,
+    message: `legacy npm plugin declaration ignored for "${declaration.pluginId}"; run "afora doctor --fix" to install ${declaration.npmSpec} into the managed plugin root`,
   });
   return true;
 }
 
 function shouldSkipIncompatiblePackagePluginApi(params: {
   origin: PluginOrigin;
-  packageManifest: OpenClawPackageManifest | undefined;
+  packageManifest: AforaPackageManifest | undefined;
   pluginId: string;
   packageDir: string;
   env: NodeJS.ProcessEnv;
@@ -979,7 +979,7 @@ function shouldSkipIncompatiblePackagePluginApi(params: {
     params.diagnostics.push({
       level: "warn",
       source: path.join(params.packageDir, "package.json"),
-      message: `invalid package plugin API metadata: ${packagePluginApiRangeCheck.error}; skipping discovery (check package.json openclaw.compat.pluginApi)`,
+      message: `invalid package plugin API metadata: ${packagePluginApiRangeCheck.error}; skipping discovery (check package.json afora.compat.pluginApi)`,
       pluginId: params.pluginId,
     });
     return true;
@@ -995,7 +995,7 @@ function shouldSkipIncompatiblePackagePluginApi(params: {
   params.diagnostics.push({
     level: "warn",
     source: path.join(params.packageDir, "package.json"),
-    message: `plugin requires plugin API ${packagePluginApiRange}, but this host is ${compatibilityHostVersion}; skipping discovery (check "openclaw --version", OPENCLAW_COMPATIBILITY_HOST_VERSION, or run "openclaw doctor")`,
+    message: `plugin requires plugin API ${packagePluginApiRange}, but this host is ${compatibilityHostVersion}; skipping discovery (check "afora --version", AFORA_COMPATIBILITY_HOST_VERSION, or run "afora doctor")`,
     pluginId: params.pluginId,
   });
   return true;
@@ -1504,7 +1504,7 @@ export function discoverConfiguredPluginLoadPaths(params: {
   return result;
 }
 
-export function discoverOpenClawPlugins(params: {
+export function discoverAforaPlugins(params: {
   workspaceDir?: string;
   extraPaths?: string[];
   installRecords?: Record<string, PluginInstallRecord>;
@@ -1543,7 +1543,7 @@ export function discoverOpenClawPlugins(params: {
               realpathCache,
             );
             if (roots.workspace && workspaceRoot && !workspaceMatchesBundledRoot) {
-              // Keep workspace auto-discovery constrained to the OpenClaw extensions root.
+              // Keep workspace auto-discovery constrained to the Afora extensions root.
               // Recursively scanning the full workspace treats arbitrary project folders as
               // plugin candidates and causes noisy "plugin manifest not found" validation failures.
               discoverInDirectory({

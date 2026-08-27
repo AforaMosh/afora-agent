@@ -1,7 +1,7 @@
 // Directory cache stores short-lived projections partitioned by config identity.
-import { resolveNonNegativeIntegerOption } from "@openclaw/normalization-core/number-coercion";
+import { resolveNonNegativeIntegerOption } from "@afora/normalization-core/number-coercion";
 import type { ChannelDirectoryEntryKind, ChannelId } from "../../channels/plugins/types.public.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { pruneMapToMaxSize } from "../map-size.js";
 
 type CacheEntry<T> = {
@@ -33,7 +33,7 @@ export function buildDirectoryCacheKey(key: DirectoryCacheKey): string {
  * Small TTL cache for channel directory lookups tied to a config object reference.
  */
 export class DirectoryCache<T> {
-  private cachesByConfig = new WeakMap<OpenClawConfig, Map<string, CacheEntry<T>>>();
+  private cachesByConfig = new WeakMap<AforaConfig, Map<string, CacheEntry<T>>>();
   private readonly ttlMs: number;
   private readonly maxSize: number;
 
@@ -45,7 +45,7 @@ export class DirectoryCache<T> {
   /**
    * Returns a cached value after applying config scoping, TTL, and capacity invalidation.
    */
-  get(key: string, cfg: OpenClawConfig): T | undefined {
+  get(key: string, cfg: AforaConfig): T | undefined {
     const cache = this.cacheForConfig(cfg);
     this.pruneExpired(cache, Date.now());
     const entry = cache.get(key);
@@ -58,7 +58,7 @@ export class DirectoryCache<T> {
   /**
    * Stores a value and refreshes its recency for bounded-size eviction.
    */
-  set(key: string, value: T, cfg: OpenClawConfig): void {
+  set(key: string, value: T, cfg: AforaConfig): void {
     const cache = this.cacheForConfig(cfg);
     const now = Date.now();
     this.pruneExpired(cache, now);
@@ -71,7 +71,7 @@ export class DirectoryCache<T> {
   /**
    * Clears matching entries without disturbing unrelated cached lookups.
    */
-  clearMatching(match: (key: string) => boolean, cfg: OpenClawConfig): void {
+  clearMatching(match: (key: string) => boolean, cfg: AforaConfig): void {
     const cache = this.cachesByConfig.get(cfg);
     if (!cache) {
       return;
@@ -86,7 +86,7 @@ export class DirectoryCache<T> {
   /**
    * Drops one config scope or all cached entries.
    */
-  clear(cfg?: OpenClawConfig): void {
+  clear(cfg?: AforaConfig): void {
     if (cfg) {
       this.cachesByConfig.delete(cfg);
     } else {
@@ -94,7 +94,7 @@ export class DirectoryCache<T> {
     }
   }
 
-  private cacheForConfig(cfg: OpenClawConfig): Map<string, CacheEntry<T>> {
+  private cacheForConfig(cfg: AforaConfig): Map<string, CacheEntry<T>> {
     let cache = this.cachesByConfig.get(cfg);
     if (!cache) {
       cache = new Map();

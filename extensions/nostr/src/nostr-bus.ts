@@ -4,8 +4,8 @@ import { decrypt, encrypt } from "nostr-tools/nip04";
 import {
   createDirectDmPreCryptoGuardPolicy,
   type DirectDmPreCryptoGuardPolicyOverrides,
-} from "openclaw/plugin-sdk/direct-dm-guard-policy";
-import { createFixedWindowRateLimiter } from "openclaw/plugin-sdk/webhook-ingress";
+} from "afora-agent/plugin-sdk/direct-dm-guard-policy";
+import { createFixedWindowRateLimiter } from "afora-agent/plugin-sdk/webhook-ingress";
 import type { NostrProfile } from "./config-schema.js";
 import { DEFAULT_RELAYS } from "./default-relays.js";
 import {

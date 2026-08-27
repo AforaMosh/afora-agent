@@ -1,17 +1,17 @@
 // Slack plugin module implements messages behavior.
 import type { AllMiddlewareArgs, SlackEventMiddlewareArgs } from "@slack/bolt";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import {
   createSubsystemLogger,
   danger,
   logVerbose,
   shouldLogVerbose,
-} from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/runtime-env";
 import {
   asOptionalRecord as asRecord,
   normalizeOptionalString as asString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
-import { enqueueRoutedSystemEvent } from "openclaw/plugin-sdk/system-event-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { enqueueRoutedSystemEvent } from "afora-agent/plugin-sdk/system-event-runtime";
 import { noteSlackDraftConversationMessage } from "../../draft-message-boundaries.js";
 import type { SlackAppMentionEvent, SlackMessageEvent } from "../../types.js";
 import { normalizeSlackChannelType } from "../channel-type.js";
@@ -358,7 +358,7 @@ export function registerSlackMessageEvents(params: {
           eventScope,
         });
         if (!channelType) {
-          // OpenClaw manifests pair app_mention with message.channels/groups/im/mpim.
+          // Afora manifests pair app_mention with message.channels/groups/im/mpim.
           // Never guess here: the canonical message event still owns delivery.
           logVerbose(
             `slack: drop typeless app_mention channel=${mention.channel} (conversation type unresolved; waiting for message event)`,

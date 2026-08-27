@@ -1,6 +1,6 @@
 // Shared compact-command mocks and fixtures for focused behavior suites.
 import { vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import {
   resolveAgentDirMock,
   resolveSessionAgentIdMock,
@@ -33,7 +33,7 @@ export const { handleCompactCommand } = await import("./commands-compact.js");
 
 export function buildCompactParams(
   commandBodyNormalized: string,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): HandleCommandsParams {
   return {
     cfg,
@@ -63,7 +63,7 @@ export function resetCompactCommandMocks() {
   vi.mocked(incrementCompactionCount).mockResolvedValue(1);
   vi.mocked(isCurrentSessionEntry).mockReturnValue(true);
   resolveAgentDirMock.mockImplementation(
-    (_cfg: unknown, agentId: string) => `/tmp/workspace/.openclaw/agents/${agentId}/agent`,
+    (_cfg: unknown, agentId: string) => `/tmp/workspace/.afora/agents/${agentId}/agent`,
   );
   resolveSessionAgentIdMock.mockReturnValue("main");
 }
@@ -87,7 +87,7 @@ export function requireIncrementCompactionCountCall(index = 0) {
 export function requireResolveSessionAgentIdCall(index = 0) {
   const call = (
     resolveSessionAgentIdMock.mock.calls[index] as unknown as [unknown] | undefined
-  )?.[0] as { sessionKey?: string; config?: OpenClawConfig } | undefined;
+  )?.[0] as { sessionKey?: string; config?: AforaConfig } | undefined;
   if (!call) {
     throw new Error(`resolveSessionAgentId call ${index} missing`);
   }
@@ -95,7 +95,7 @@ export function requireResolveSessionAgentIdCall(index = 0) {
 }
 
 export function requireResolveAgentDirCall(index = 0) {
-  const call = resolveAgentDirMock.mock.calls[index] as [OpenClawConfig, string] | undefined;
+  const call = resolveAgentDirMock.mock.calls[index] as [AforaConfig, string] | undefined;
   if (!call) {
     throw new Error(`resolveAgentDir call ${index} missing`);
   }

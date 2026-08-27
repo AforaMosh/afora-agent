@@ -9,9 +9,9 @@ require_artifact() {
 validate_pr_temp_storage() {
   local temp_dir="${TMPDIR:-/tmp}"
   local probe=""
-  if ! probe=$(mktemp "${temp_dir%/}/openclaw-pr.XXXXXX"); then
+  if ! probe=$(mktemp "${temp_dir%/}/afora-pr.XXXXXX"); then
     :
-  elif ! printf 'openclaw-pr-temp-probe\n' >"$probe"; then
+  elif ! printf 'afora-pr-temp-probe\n' >"$probe"; then
     rm -f "$probe" 2>/dev/null || true
   elif rm -f "$probe"; then
     return 0
@@ -60,7 +60,7 @@ changelog_required_for_changed_files() {
 }
 
 root_changelog_update_allowed_for_pr() {
-  case "${OPENCLAW_ALLOW_ROOT_CHANGELOG_PR:-}" in
+  case "${AFORA_ALLOW_ROOT_CHANGELOG_PR:-}" in
     1|true|TRUE|yes|YES|on|ON)
       return 0
       ;;
@@ -173,7 +173,7 @@ pr_contributor_allows_human_trailers() {
   normalized=$(printf '%s' "$contrib" | tr '[:upper:]' '[:lower:]')
 
   case "$normalized" in
-    ""|"null"|"app/"*|"codex"|"openclaw"|"clawsweeper"|"openclaw-clawsweeper"|"clawsweeper[bot]"|"openclaw-clawsweeper[bot]"|"steipete")
+    ""|"null"|"app/"*|"codex"|"afora"|"clawsweeper"|"afora-clawsweeper"|"clawsweeper[bot]"|"afora-clawsweeper[bot]"|"steipete")
       return 1
       ;;
   esac

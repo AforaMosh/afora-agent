@@ -86,7 +86,7 @@ export async function createAttachedBrowserToolRuntime(
     defaultProfile: ATTACHED_PROFILE_NAME,
     profiles: {
       [ATTACHED_PROFILE_NAME]: {
-        driver: "openclaw",
+        driver: "afora",
         attachOnly: true,
         cdpUrl,
       },
@@ -98,7 +98,7 @@ export async function createAttachedBrowserToolRuntime(
   // browser fallback paths into an attach-only worker turn.
   resolved.profiles = {
     [ATTACHED_PROFILE_NAME]: {
-      driver: "openclaw",
+      driver: "afora",
       attachOnly: true,
       cdpUrl,
     },

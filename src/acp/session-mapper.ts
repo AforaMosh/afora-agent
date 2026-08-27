@@ -1,6 +1,6 @@
-/** Resolves ACP request metadata into OpenClaw Gateway session keys and reset behavior. */
-import { readBool, readMetadataString } from "@openclaw/acp-core/meta";
-import type { AcpServerOptions } from "@openclaw/acp-core/types";
+/** Resolves ACP request metadata into Afora Gateway session keys and reset behavior. */
+import { readBool, readMetadataString } from "@afora/acp-core/meta";
+import type { AcpServerOptions } from "@afora/acp-core/types";
 import type { GatewayClient } from "../gateway/client.js";
 
 type AcpSessionMeta = {
@@ -11,7 +11,7 @@ type AcpSessionMeta = {
   prefixCwd?: boolean;
 };
 
-/** Parses ACP request metadata into OpenClaw session routing hints. */
+/** Parses ACP request metadata into Afora session routing hints. */
 export function parseSessionMeta(meta: unknown): AcpSessionMeta {
   if (!meta || typeof meta !== "object") {
     return {};

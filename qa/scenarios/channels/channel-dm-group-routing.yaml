@@ -62,7 +62,7 @@ flow:
             senderId: driver
             senderName: QA Driver
             text:
-              expr: "`@openclaw reply exactly: ${config.groupMarker}`"
+              expr: "`@afora reply exactly: ${config.groupMarker}`"
         - waitForOutbound:
             conversation:
               id: { ref: config.groupConversationId }

@@ -2,7 +2,7 @@
  * QuickJS worker for Code Mode guest execution and suspended VM snapshots.
  */
 import { parentPort, workerData } from "node:worker_threads";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { EvalFlags, JSException, QuickJS, type JSValueHandle } from "quickjs-wasi";
 import { CODE_MODE_CONTROLLER_SOURCE } from "./code-mode-controller-source.js";
 import { boundCodeModeResult, toCodeModeJsonSafe as toJsonSafe } from "./code-mode-json.js";
@@ -40,7 +40,7 @@ const canceledBridgeRequestIds: string[] = [];
 // QuickJS error stacks are backtrace frames only ("    at file:line:col"), with
 // no leading "Name: message" header like V8. Returning .stack alone therefore
 // dropped the actual cause, surfacing failures to the model as a bare location
-// (e.g. "at openclaw-code-mode:user.js:2:37"). Lead with name+message so the
+// (e.g. "at afora-code-mode:user.js:2:37"). Lead with name+message so the
 // model can self-correct, and keep the frames for location.
 function formatQuickJsError(name: string, message: string, stack: string | undefined): string {
   const header = message ? `${name}: ${message}` : name;
@@ -61,7 +61,7 @@ function errorMessage(error: unknown): string {
 }
 
 function buildUserSource(code: string): string {
-  return `globalThis.__openclawResult = (async () => {\n${code}\n})()`;
+  return `globalThis.__aforaResult = (async () => {\n${code}\n})()`;
 }
 
 function createHostRequestHandler(params: {
@@ -161,32 +161,32 @@ async function createVm(params: {
     },
   });
   vm.hostToHandle(params.catalog).consume((handle) =>
-    vm.global.setProp("__openclawCatalog", handle),
+    vm.global.setProp("__aforaCatalog", handle),
   );
   vm.hostToHandle(params.namespaces).consume((handle) =>
-    vm.global.setProp("__openclawNamespaces", handle),
+    vm.global.setProp("__aforaNamespaces", handle),
   );
   vm.hostToHandle(params.apiFiles).consume((handle) =>
-    vm.global.setProp("__openclawApiFiles", handle),
+    vm.global.setProp("__aforaApiFiles", handle),
   );
   vm.hostToHandle(params.swarmEnabled).consume((handle) =>
-    vm.global.setProp("__openclawSwarmEnabled", handle),
+    vm.global.setProp("__aforaSwarmEnabled", handle),
   );
   vm.newFunction(
-    "__openclawHostRequest",
+    "__aforaHostRequest",
     createHostRequestHandler({
       vm,
       pendingRequests: params.pendingRequests,
       config: params.config,
     }),
-  ).consume((hostRequest) => vm.global.setProp("__openclawHostRequest", hostRequest));
+  ).consume((hostRequest) => vm.global.setProp("__aforaHostRequest", hostRequest));
   vm.newFunction(
-    "__openclawHostCancelRequest",
+    "__aforaHostCancelRequest",
     createHostCancelRequestHandler({ vm, pendingRequests: params.pendingRequests }),
   ).consume((hostCancelRequest) =>
-    vm.global.setProp("__openclawHostCancelRequest", hostCancelRequest),
+    vm.global.setProp("__aforaHostCancelRequest", hostCancelRequest),
   );
-  vm.evalCode(CODE_MODE_CONTROLLER_SOURCE, "openclaw-code-mode:controller.js").dispose();
+  vm.evalCode(CODE_MODE_CONTROLLER_SOURCE, "afora-code-mode:controller.js").dispose();
   return { vm, didTimeout: () => timedOut || deadlineReached() };
 }
 
@@ -210,7 +210,7 @@ async function restoreVm(params: {
     },
   });
   vm.registerHostCallback(
-    "__openclawHostRequest",
+    "__aforaHostRequest",
     createHostRequestHandler({
       vm,
       pendingRequests: params.pendingRequests,
@@ -218,14 +218,14 @@ async function restoreVm(params: {
     }),
   );
   vm.registerHostCallback(
-    "__openclawHostCancelRequest",
+    "__aforaHostCancelRequest",
     createHostCancelRequestHandler({ vm, pendingRequests: params.pendingRequests }),
   );
   return { vm, didTimeout: () => timedOut || deadlineReached() };
 }
 
 function takeOutput(vm: QuickJS): unknown[] {
-  return vm.global.getProp("__openclawTakeOutput").consume((take) =>
+  return vm.global.getProp("__aforaTakeOutput").consume((take) =>
     vm.callFunction(take, vm.undefined).consume((output) => {
       const dumped = vm.dump(output);
       return Array.isArray(dumped) ? (dumped as unknown[]) : [];
@@ -355,7 +355,7 @@ async function runVmExecution(params: {
     params.prepare();
     params.vm.executePendingJobs();
     output = takeOutput(params.vm);
-    const resultHandle = params.vm.global.getProp("__openclawResult");
+    const resultHandle = params.vm.global.getProp("__aforaResult");
     try {
       const promisePending = resultHandle.isPromise && resultHandle.promiseState === 0;
       if (promisePending && params.pendingRequests.length === 0) {
@@ -411,7 +411,7 @@ async function runExec(input: Extract<CodeModeWorkerPayload, { kind: "exec" }>) 
     prepare: () => {
       vm.evalCode(
         buildUserSource(input.source),
-        "openclaw-code-mode:user.js",
+        "afora-code-mode:user.js",
         EvalFlags.ASYNC,
       ).dispose();
     },
@@ -434,7 +434,7 @@ async function runResume(input: Extract<CodeModeWorkerPayload, { kind: "resume" 
     pendingRequests,
     config: input.config,
     prepare: () => {
-      vm.global.getProp("__openclawSettleBridge").consume((settle) => {
+      vm.global.getProp("__aforaSettleBridge").consume((settle) => {
         for (const request of input.settledRequests) {
           const id = vm.newString(request.id);
           const payload = vm.newString(JSON.stringify(request.ok ? request.value : request.error));

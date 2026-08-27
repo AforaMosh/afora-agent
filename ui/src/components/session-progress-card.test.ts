@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import type { ProgressCard } from "@openclaw/gateway-protocol";
+import type { ProgressCard } from "@afora/gateway-protocol";
 import { render } from "lit";
 import { describe, expect, it } from "vitest";
 import { renderSessionProgressCard } from "./session-progress-card.ts";

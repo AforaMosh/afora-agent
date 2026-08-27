@@ -1,5 +1,5 @@
 // Live smoke test for Moonshot OpenAI-compatible completions behavior.
-import { completeSimple, type Model } from "openclaw/plugin-sdk/llm";
+import { completeSimple, type Model } from "afora-agent/plugin-sdk/llm";
 import { describe, expect, it } from "vitest";
 import {
   createSingleUserPromptMessage,

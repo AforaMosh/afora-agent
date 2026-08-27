@@ -56,7 +56,7 @@ function runCommand(timeoutMs?: number) {
     command: "/usr/local/bin/scenario-command",
     args: ["--run"],
     cwd: "/tmp/qa",
-    env: { OPENCLAW_QA_REF: "test" },
+    env: { AFORA_QA_REF: "test" },
     ...(timeoutMs === undefined ? {} : { timeoutMs }),
   });
 }
@@ -317,7 +317,7 @@ describe.skipIf(process.platform === "win32")("qa scenario command lifecycle", (
     expect(spawnMock).toHaveBeenCalledWith("/usr/local/bin/scenario-command", ["--run"], {
       cwd: "/tmp/qa",
       detached: true,
-      env: { OPENCLAW_QA_REF: "test" },
+      env: { AFORA_QA_REF: "test" },
       stdio: ["ignore", "pipe", "pipe"],
     });
     expect(parentHandlers.size).toBe(0);

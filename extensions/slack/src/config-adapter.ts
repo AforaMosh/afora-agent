@@ -1,8 +1,8 @@
-import { formatAllowFromLowercase } from "openclaw/plugin-sdk/allow-from";
+import { formatAllowFromLowercase } from "afora-agent/plugin-sdk/allow-from";
 import {
   adaptScopedAccountAccessor,
   createScopedChannelConfigAdapter,
-} from "openclaw/plugin-sdk/channel-config-helpers";
+} from "afora-agent/plugin-sdk/channel-config-helpers";
 import {
   listSlackAccountIds,
   resolveDefaultSlackAccountId,

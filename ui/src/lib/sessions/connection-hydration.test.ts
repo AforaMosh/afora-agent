@@ -3,7 +3,7 @@ import {
   DEFAULT_GATEWAY_REQUEST_TIMEOUT_MS,
   GatewayProtocolClient,
   type GatewayProtocolSocketHandlers,
-} from "@openclaw/gateway-client/browser";
+} from "@afora/gateway-client/browser";
 import { describe, expect, it, vi } from "vitest";
 import {
   GatewayRequestError,

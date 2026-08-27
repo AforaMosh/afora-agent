@@ -8,7 +8,7 @@ import { createScriptTestHarness } from "./test-helpers.js";
 const { createTempDir } = createScriptTestHarness();
 
 function writeScriptsTree(files: Record<string, string>): string {
-  const scriptsRoot = path.join(createTempDir("openclaw-script-erasability-"), "scripts");
+  const scriptsRoot = path.join(createTempDir("afora-script-erasability-"), "scripts");
   for (const [relativePath, content] of Object.entries(files)) {
     const filePath = path.join(scriptsRoot, relativePath);
     fs.mkdirSync(path.dirname(filePath), { recursive: true });

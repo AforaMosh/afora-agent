@@ -2,8 +2,8 @@
 import { once } from "node:events";
 import http2 from "node:http2";
 import tls from "node:tls";
-import { decodeTextPrefix } from "@openclaw/normalization-core";
-import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
+import { decodeTextPrefix } from "@afora/normalization-core";
+import { resolveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
 import { openProxyConnectTunnel } from "@openclaw/proxyline";
 import { toErrorObject } from "./errors.js";
 import {
@@ -308,8 +308,8 @@ export async function probeApnsHttp2ReachabilityViaProxy(
         ":path": `/3/device/${"0".repeat(64)}`,
         // APNs should reject this token with InvalidProviderToken. That failure
         // is the success signal that the proxy actually tunneled to Apple.
-        authorization: "bearer intentionally.invalid.openclaw.proxy.validation",
-        "apns-topic": "ai.openclaw.ios",
+        authorization: "bearer intentionally.invalid.afora.proxy.validation",
+        "apns-topic": "ai.afora.ios",
         "apns-push-type": "alert",
         "apns-priority": "10",
       });
@@ -340,7 +340,7 @@ export async function probeApnsHttp2ReachabilityViaProxy(
         }
         resolve({ status, body: getApnsResponseBodyCaptureText(body), responseHeaders });
       });
-      request.end(JSON.stringify({ aps: { alert: "OpenClaw APNs proxy validation" } }));
+      request.end(JSON.stringify({ aps: { alert: "Afora APNs proxy validation" } }));
     });
   } finally {
     if (!session.closed && !session.destroyed) {

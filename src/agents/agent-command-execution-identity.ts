@@ -2,7 +2,7 @@ import type {
   ExecutionIdentityAdmissionFacts,
   ExecutionIdentityAdmissionToken,
 } from "../audit/execution-identity-admission.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
@@ -38,7 +38,7 @@ function systemIngress(boundary: string): AgentCommandAdmissionIngress {
 function prepareAgentCommandRunAdmission(params: {
   admission?: AgentCommandOpts["executionIdentityAdmission"];
   agentId: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   ingress: AgentCommandAdmissionIngress;
   operationalRunInstance: OperationalRunInstanceRef;
   runId: string;
@@ -94,7 +94,7 @@ async function bindAgentCommandRecoveryExecutionIdentity(params: {
 export function prepareAgentCommandExecutionIdentity(params: {
   opts: AgentCommandOpts;
   prepared: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     runId: string;
     sessionAgentId: string;
     sessionId: string;

@@ -75,7 +75,7 @@ describe("scanPolicyChannels", () => {
         enabled: true,
         id: "telegram",
         provider: "telegram",
-        source: "oc://openclaw.config/channels/telegram",
+        source: "oc://afora.config/channels/telegram",
       },
     ]);
   });
@@ -243,7 +243,7 @@ describe("scanPolicyExecApprovals", () => {
     const evidence = scanPolicyExecApprovals(
       JSON.stringify({
         version: 1,
-        socket: { path: "/tmp/openclaw.sock", token: "secret-token" },
+        socket: { path: "/tmp/afora.sock", token: "secret-token" },
         defaults: { security: "full", ask: "off", askFallback: "full", autoAllowSkills: true },
         agents: {
           sebby: {

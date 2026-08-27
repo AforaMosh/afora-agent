@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { normalizeProviderId } from "openclaw/plugin-sdk/model-ref-parse";
+import { normalizeProviderId } from "afora-agent/plugin-sdk/model-ref-parse";
 
 export function normalizeModelRef(raw?: string): string | null {
   const value = raw?.trim();

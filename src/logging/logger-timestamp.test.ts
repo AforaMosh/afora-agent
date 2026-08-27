@@ -1,12 +1,12 @@
 // Logger timestamp tests cover timestamp formatting in log output.
 import fs from "node:fs";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { getLogger, resetLogger, setLoggerOverride } from "../logging.js";
 import { createSuiteLogPathTracker } from "./log-test-helpers.js";
 import { testApi } from "./logger.test-support.js";
 
-const logPathTracker = createSuiteLogPathTracker("openclaw-log-ts-");
+const logPathTracker = createSuiteLogPathTracker("afora-log-ts-");
 
 describe("logger timestamp format", () => {
   let logPath = "";

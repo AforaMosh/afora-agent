@@ -31,7 +31,7 @@ describe("pending-final delivery completion", () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-delivery-completion-"));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-delivery-completion-"));
     storePath = path.join(tmpDir, "sessions.json");
     completion.storePath = storePath;
     const entry: InternalSessionEntry = {

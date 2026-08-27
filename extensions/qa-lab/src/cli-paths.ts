@@ -1,6 +1,6 @@
 // Qa Lab plugin module implements cli paths behavior.
 import path from "node:path";
-import { assertNoSymlinkParents, pathScope } from "openclaw/plugin-sdk/security-runtime";
+import { assertNoSymlinkParents, pathScope } from "afora-agent/plugin-sdk/security-runtime";
 
 export function toRepoPath(filePath: string): string {
   return filePath.split(path.sep).join("/");

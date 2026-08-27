@@ -1,5 +1,5 @@
 // Huggingface provider module implements model/runtime integration.
-import type { ModelProviderConfig } from "openclaw/plugin-sdk/provider-model-types";
+import type { ModelProviderConfig } from "afora-agent/plugin-sdk/provider-model-types";
 import {
   discoverHuggingfaceModels,
   HUGGINGFACE_BASE_URL,

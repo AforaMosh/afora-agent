@@ -1,14 +1,14 @@
 /** Builds manifest registry records from installed plugin index snapshots. */
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { normalizeOptionalTrimmedStringList } from "@openclaw/normalization-core/string-normalization";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { normalizeOptionalTrimmedStringList } from "@afora/normalization-core/string-normalization";
 import {
   resolveChannelSetupFieldCliAttributeName,
   type ChannelSetupFieldMetadata,
 } from "../channels/plugins/setup-contract.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { tryReadJsonSync } from "../infra/json-files.js";
 import { pruneMapToMaxSize } from "../infra/map-size.js";
 import { recordPluginCandidateInstallOwner } from "./candidate-install-owner.js";
@@ -30,7 +30,7 @@ import {
   DEFAULT_PLUGIN_ENTRY_CANDIDATES,
   getPackageManifestMetadata,
   normalizeManifestChannelCommandDefaults,
-  type OpenClawPackageManifest,
+  type AforaPackageManifest,
   type PackageManifest,
   type PluginPackageChannel,
   type PluginPackageChannelCliOption,
@@ -48,7 +48,7 @@ const installedPackageMetadataCache = new Map<string, InstalledPackageMetadata>(
 const MAX_INSTALLED_PACKAGE_METADATA_CACHE_ENTRIES = 256;
 
 type InstalledPackageMetadata = {
-  packageManifest?: OpenClawPackageManifest;
+  packageManifest?: AforaPackageManifest;
   packageDependencies?: PluginDependencySpecMap;
   packageOptionalDependencies?: PluginDependencySpecMap;
 };
@@ -569,7 +569,7 @@ function toPluginCandidate(
 export function loadPluginManifestRegistryForInstalledIndex(params: {
   index: InstalledPluginIndex;
   manifestRegistry?: PluginManifestRegistry;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   pluginIds?: readonly string[];

@@ -1,6 +1,6 @@
-import type { Result } from "@openclaw/normalization-core/result";
+import type { Result } from "@afora/normalization-core/result";
 import type { TSchema } from "typebox";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginToolMcpMeta } from "../plugins/tools.js";
 import type { HookContext } from "./agent-tools.before-tool-call.js";
 import type { CodeModeSkill } from "./code-mode-skills.js";
@@ -37,7 +37,7 @@ export type ToolSearchMode = "code" | "tools" | "directory";
 export type ToolSearchRequest =
   | { kind: "single"; search: { query: string; limit: number } }
   | { kind: "batch"; searches: Array<{ query: string; limit: number }> };
-export type CatalogSource = "openclaw" | "mcp" | "client";
+export type CatalogSource = "afora" | "mcp" | "client";
 export type CatalogTool = AnyAgentTool | ToolDefinition;
 export type CatalogVisibilityOptions = {
   includeMcp?: boolean;
@@ -91,8 +91,8 @@ export type ToolSearchConfig = {
 
 /** Per-run/session context used by Tool Search control tools. */
 export type ToolSearchToolContext = {
-  config?: OpenClawConfig;
-  runtimeConfig?: OpenClawConfig;
+  config?: AforaConfig;
+  runtimeConfig?: AforaConfig;
   agentId?: string;
   sessionKey?: string;
   sessionId?: string;

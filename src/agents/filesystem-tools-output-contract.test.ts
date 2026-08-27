@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { Value } from "typebox/value";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createOpenClawReadTool } from "./agent-tools.read.js";
+import { createAforaReadTool } from "./agent-tools.read.js";
 import type { AnyAgentTool } from "./agent-tools.types.js";
 import { createApplyPatchTool } from "./apply-patch.js";
 import { createEditTool, createReadTool, createWriteTool } from "./sessions/index.js";
@@ -22,7 +22,7 @@ describe("filesystem tool output contracts", () => {
   let tmpDir = "";
 
   beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-filesystem-contract-"));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-filesystem-contract-"));
   });
 
   afterEach(async () => {
@@ -34,7 +34,7 @@ describe("filesystem tool output contracts", () => {
     await fs.writeFile(path.join(tmpDir, "pixel.png"), Buffer.from(ONE_PIXEL_PNG_BASE64, "base64"));
     await fs.writeFile(path.join(tmpDir, "long.txt"), "x".repeat(DEFAULT_MAX_BYTES + 1), "utf8");
 
-    const tool = createOpenClawReadTool(
+    const tool = createAforaReadTool(
       createReadTool(tmpDir, { autoResizeImages: false }) as unknown as AnyAgentTool,
     );
     const text = await tool.execute("read-text", { path: "notes.txt", limit: 10 });

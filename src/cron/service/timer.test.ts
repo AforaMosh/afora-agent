@@ -9,7 +9,7 @@ import { executeJobCore, onTimer } from "../../cron/service/timer.test-support.j
 import { loadCronStore } from "../../cron/store.js";
 import { cronStoreKey } from "../../cron/store/key.js";
 import type { CronJob } from "../../cron/types.js";
-import { openOpenClawStateDatabase } from "../../state/openclaw-state-db.js";
+import { openAforaStateDatabase } from "../../state/afora-state-db.js";
 import * as taskExecutor from "../../tasks/task-executor.js";
 import { findTaskByRunId, listTaskRecordsUnsorted } from "../../tasks/task-registry.js";
 import { resetTaskRegistryForTests } from "../../tasks/task-runtime.test-helpers.js";
@@ -276,7 +276,7 @@ describe("cron service timer seam coverage", () => {
         }
       },
     });
-    const database = openOpenClawStateDatabase().db;
+    const database = openAforaStateDatabase().db;
     database.function("observe_timer_reservation", (stateJson) => {
       if (typeof stateJson === "string") {
         const marker = (JSON.parse(stateJson) as CronJob["state"]).queuedAtMs;
@@ -329,7 +329,7 @@ describe("cron service timer seam coverage", () => {
     const finalizeSpy = vi
       .spyOn(taskExecutor, "finalizeTaskRunByRunIdCore")
       .mockImplementation((params) => {
-        const persistedJob = openOpenClawStateDatabase()
+        const persistedJob = openAforaStateDatabase()
           .db.prepare(
             "SELECT running_at_ms AS runningAtMs, next_run_at_ms AS nextRunAtMs FROM cron_jobs WHERE store_key = ? AND job_id = ?",
           )

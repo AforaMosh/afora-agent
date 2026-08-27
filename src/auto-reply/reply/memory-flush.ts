@@ -1,6 +1,6 @@
 // Builds memory flush prompts when conversation context exceeds model budget.
-import { resolveAnthropicServerCompactionPlan } from "@openclaw/ai/internal/anthropic";
-import { resolveOpenAIResponsesServerCompactionPlan } from "@openclaw/ai/internal/openai-responses-payload-policy";
+import { resolveAnthropicServerCompactionPlan } from "@afora/ai/internal/anthropic";
+import { resolveOpenAIResponsesServerCompactionPlan } from "@afora/ai/internal/openai-responses-payload-policy";
 import { resolveContextTokensForModel } from "../../agents/context.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import { resolveModelExtraParamSources } from "../../agents/model-extra-params.js";
@@ -12,11 +12,11 @@ import {
   resolveMergedModelProviderModels,
 } from "../../config/model-provider-config.js";
 import { resolveFreshSessionTotalTokens, type SessionEntry } from "../../config/sessions.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 
 export function resolveMemoryFlushContextWindowTokens(params: {
   modelId?: string;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   provider?: string;
 }): number {
   return (
@@ -29,7 +29,7 @@ export function resolveMemoryFlushContextWindowTokens(params: {
   );
 }
 
-export function resolveMaxActiveTranscriptBytes(cfg?: OpenClawConfig): number | undefined {
+export function resolveMaxActiveTranscriptBytes(cfg?: AforaConfig): number | undefined {
   const parsed = parseNonNegativeByteSize(
     cfg?.agents?.defaults?.compaction?.maxActiveTranscriptBytes,
   );
@@ -43,7 +43,7 @@ function resolvePositiveTokenCount(value: number | undefined): number | undefine
 }
 
 export function resolveResponsesServerCompactionThreshold(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   provider?: string;
   modelId?: string;
 }): number | undefined {

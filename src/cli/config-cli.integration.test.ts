@@ -20,7 +20,7 @@ vi.mock("../plugins/plugin-metadata-snapshot.js", async (importOriginal) => {
     ) => {
       snapshot ??= actual.loadPluginMetadataSnapshot({
         ...params,
-        pluginIds: ["discord", "openclaw-mem0"],
+        pluginIds: ["discord", "afora-mem0"],
         pluginIdScope: undefined,
       });
       return snapshot;
@@ -91,10 +91,10 @@ async function withExecDryRunConfigHarness(
   }) => Promise<void>,
 ) {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
-  const configPath = path.join(tempDir, "openclaw.json");
+  const configPath = path.join(tempDir, "afora.json");
   const batchPath = path.join(tempDir, "batch.json");
   const markerPath = path.join(tempDir, "marker.txt");
-  const envSnapshot = captureEnv(["OPENCLAW_CONFIG_PATH", "OPENCLAW_TEST_FAST"]);
+  const envSnapshot = captureEnv(["AFORA_CONFIG_PATH", "AFORA_TEST_FAST"]);
   try {
     fs.writeFileSync(
       configPath,
@@ -113,8 +113,8 @@ async function withExecDryRunConfigHarness(
       "utf8",
     );
 
-    setTestEnvValue("OPENCLAW_TEST_FAST", "1");
-    setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
+    setTestEnvValue("AFORA_TEST_FAST", "1");
+    setTestEnvValue("AFORA_CONFIG_PATH", configPath);
     clearConfigCache();
     clearRuntimeConfigSnapshot();
 
@@ -134,9 +134,9 @@ async function withExecDryRunConfigHarness(
 
 describe("config cli integration", () => {
   it("accepts plugin hook conversation-access policy via config set", async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-config-cli-plugin-hooks-"));
-    const configPath = path.join(tempDir, "openclaw.json");
-    const envSnapshot = captureEnv(["OPENCLAW_CONFIG_PATH", "OPENCLAW_TEST_FAST"]);
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-config-cli-plugin-hooks-"));
+    const configPath = path.join(tempDir, "afora.json");
+    const envSnapshot = captureEnv(["AFORA_CONFIG_PATH", "AFORA_TEST_FAST"]);
     try {
       fs.writeFileSync(
         configPath,
@@ -150,14 +150,14 @@ describe("config cli integration", () => {
         "utf8",
       );
 
-      setTestEnvValue("OPENCLAW_TEST_FAST", "1");
-      setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
+      setTestEnvValue("AFORA_TEST_FAST", "1");
+      setTestEnvValue("AFORA_CONFIG_PATH", configPath);
       clearConfigCache();
       clearRuntimeConfigSnapshot();
 
       const runtime = createTestRuntime();
       await runConfigSet({
-        path: "plugins.entries.openclaw-mem0.hooks.allowConversationAccess",
+        path: "plugins.entries.afora-mem0.hooks.allowConversationAccess",
         value: "true",
         cliOptions: {},
         runtime: runtime.runtime,
@@ -165,7 +165,7 @@ describe("config cli integration", () => {
 
       expect(runtime.errors).toStrictEqual([]);
       const afterWrite = JSON5.parse(fs.readFileSync(configPath, "utf8"));
-      expect(afterWrite.plugins?.entries?.["openclaw-mem0"]?.hooks).toEqual({
+      expect(afterWrite.plugins?.entries?.["afora-mem0"]?.hooks).toEqual({
         allowConversationAccess: true,
       });
     } finally {
@@ -177,12 +177,12 @@ describe("config cli integration", () => {
   });
 
   it("supports batch-file dry-run and then writes real config changes", async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-config-cli-int-"));
-    const configPath = path.join(tempDir, "openclaw.json");
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-config-cli-int-"));
+    const configPath = path.join(tempDir, "afora.json");
     const batchPath = path.join(tempDir, "batch.json");
     const envSnapshot = captureEnv([
-      "OPENCLAW_CONFIG_PATH",
-      "OPENCLAW_TEST_FAST",
+      "AFORA_CONFIG_PATH",
+      "AFORA_TEST_FAST",
       "DISCORD_BOT_TOKEN",
     ]);
     try {
@@ -220,8 +220,8 @@ describe("config cli integration", () => {
         "utf8",
       );
 
-      setTestEnvValue("OPENCLAW_TEST_FAST", "1");
-      setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
+      setTestEnvValue("AFORA_TEST_FAST", "1");
+      setTestEnvValue("AFORA_CONFIG_PATH", configPath);
       setTestEnvValue("DISCORD_BOT_TOKEN", "test-token");
       clearConfigCache();
       clearRuntimeConfigSnapshot();
@@ -266,11 +266,11 @@ describe("config cli integration", () => {
   });
 
   it("keeps file unchanged when real-file dry-run fails and reports JSON error payload", async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-config-cli-int-fail-"));
-    const configPath = path.join(tempDir, "openclaw.json");
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-config-cli-int-fail-"));
+    const configPath = path.join(tempDir, "afora.json");
     const envSnapshot = captureEnv([
-      "OPENCLAW_CONFIG_PATH",
-      "OPENCLAW_TEST_FAST",
+      "AFORA_CONFIG_PATH",
+      "AFORA_TEST_FAST",
       "MISSING_TEST_SECRET",
     ]);
     try {
@@ -291,8 +291,8 @@ describe("config cli integration", () => {
         "utf8",
       );
 
-      setTestEnvValue("OPENCLAW_TEST_FAST", "1");
-      setTestEnvValue("OPENCLAW_CONFIG_PATH", configPath);
+      setTestEnvValue("AFORA_TEST_FAST", "1");
+      setTestEnvValue("AFORA_CONFIG_PATH", configPath);
       deleteTestEnvValue("MISSING_TEST_SECRET");
       clearConfigCache();
       clearRuntimeConfigSnapshot();
@@ -339,7 +339,7 @@ describe("config cli integration", () => {
   });
 
   it("skips exec provider execution during dry-run by default", async () => {
-    await withExecDryRunConfigHarness("openclaw-config-cli-int-exec-skip-", async (params) => {
+    await withExecDryRunConfigHarness("afora-config-cli-int-exec-skip-", async (params) => {
       const before = fs.readFileSync(params.configPath, "utf8");
       await runConfigSet({
         cliOptions: {
@@ -361,7 +361,7 @@ describe("config cli integration", () => {
   });
 
   it("executes exec providers during dry-run when --allow-exec is set", async () => {
-    await withExecDryRunConfigHarness("openclaw-config-cli-int-exec-allow-", async (params) => {
+    await withExecDryRunConfigHarness("afora-config-cli-int-exec-allow-", async (params) => {
       const before = fs.readFileSync(params.configPath, "utf8");
       await runConfigSet({
         cliOptions: {

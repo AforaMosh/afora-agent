@@ -17,7 +17,7 @@ afterEach(async () => {
 });
 
 it("hides a stale approval when startup restores the remembered session", async () => {
-  const stateDir = tempDirs.make("openclaw-tui-identity-");
+  const stateDir = tempDirs.make("afora-tui-identity-");
   await writeTuiLastSessionKey({
     scopeKey: buildTuiLastSessionScopeKey({
       connectionUrl: "pty-fixture://local",
@@ -29,9 +29,9 @@ it("hides a stale approval when startup restores the remembered session", async 
   });
   const fixture = await startTuiFixture({
     env: {
-      OPENCLAW_STATE_DIR: stateDir,
-      OPENCLAW_TUI_PTY_INITIAL_APPROVAL_SESSION_KEY: "agent:main:main",
-      OPENCLAW_TUI_PTY_PICKER_FIXTURE: "1",
+      AFORA_STATE_DIR: stateDir,
+      AFORA_TUI_PTY_INITIAL_APPROVAL_SESSION_KEY: "agent:main:main",
+      AFORA_TUI_PTY_PICKER_FIXTURE: "1",
     },
   });
 

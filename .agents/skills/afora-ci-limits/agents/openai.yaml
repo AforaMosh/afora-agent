@@ -1,0 +1,4 @@
+interface:
+  display_name: "Afora CI Limits"
+  short_description: "Tune Afora CI fanout and runner budgets"
+  default_prompt: "Use $afora-ci-limits to inspect Afora CI pressure, tune runner-registration fanout safely, and document the exact validation before landing."

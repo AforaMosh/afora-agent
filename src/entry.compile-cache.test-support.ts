@@ -15,7 +15,7 @@ type CompileCacheRespawnPlan = {
 };
 
 type CompileCacheTestApi = {
-  buildOpenClawCompileCacheRespawnPlan(params: {
+  buildAforaCompileCacheRespawnPlan(params: {
     currentFile: string;
     env?: NodeJS.ProcessEnv;
     execArgv?: string[];
@@ -26,45 +26,45 @@ type CompileCacheTestApi = {
     platform?: NodeJS.Platform;
   }): CompileCacheRespawnPlan | undefined;
   isSourceCheckoutInstallRoot(installRoot: string): boolean;
-  resolveOpenClawCompileCacheDirectory(params: {
+  resolveAforaCompileCacheDirectory(params: {
     env?: NodeJS.ProcessEnv;
     installRoot: string;
   }): string;
-  runOpenClawCompileCacheRespawnPlan(
+  runAforaCompileCacheRespawnPlan(
     plan: CompileCacheRespawnPlan,
     runtime?: RespawnChildRuntime & { writeError(message: string): void },
   ): ChildProcess;
-  shouldEnableOpenClawCompileCache(params: CompileCacheParams): boolean;
+  shouldEnableAforaCompileCache(params: CompileCacheParams): boolean;
 };
 
 function getTestApi(): CompileCacheTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.entryCompileCacheTestApi")
+    Symbol.for("afora.entryCompileCacheTestApi")
   ] as CompileCacheTestApi;
 }
 
-export function buildOpenClawCompileCacheRespawnPlan(
-  params: Parameters<CompileCacheTestApi["buildOpenClawCompileCacheRespawnPlan"]>[0],
+export function buildAforaCompileCacheRespawnPlan(
+  params: Parameters<CompileCacheTestApi["buildAforaCompileCacheRespawnPlan"]>[0],
 ): CompileCacheRespawnPlan | undefined {
-  return getTestApi().buildOpenClawCompileCacheRespawnPlan(params);
+  return getTestApi().buildAforaCompileCacheRespawnPlan(params);
 }
 
 export function isSourceCheckoutInstallRoot(installRoot: string): boolean {
   return getTestApi().isSourceCheckoutInstallRoot(installRoot);
 }
 
-export function resolveOpenClawCompileCacheDirectory(
-  params: Parameters<CompileCacheTestApi["resolveOpenClawCompileCacheDirectory"]>[0],
+export function resolveAforaCompileCacheDirectory(
+  params: Parameters<CompileCacheTestApi["resolveAforaCompileCacheDirectory"]>[0],
 ): string {
-  return getTestApi().resolveOpenClawCompileCacheDirectory(params);
+  return getTestApi().resolveAforaCompileCacheDirectory(params);
 }
 
-export function runOpenClawCompileCacheRespawnPlan(
-  ...args: Parameters<CompileCacheTestApi["runOpenClawCompileCacheRespawnPlan"]>
+export function runAforaCompileCacheRespawnPlan(
+  ...args: Parameters<CompileCacheTestApi["runAforaCompileCacheRespawnPlan"]>
 ): ChildProcess {
-  return getTestApi().runOpenClawCompileCacheRespawnPlan(...args);
+  return getTestApi().runAforaCompileCacheRespawnPlan(...args);
 }
 
-export function shouldEnableOpenClawCompileCache(params: CompileCacheParams): boolean {
-  return getTestApi().shouldEnableOpenClawCompileCache(params);
+export function shouldEnableAforaCompileCache(params: CompileCacheParams): boolean {
+  return getTestApi().shouldEnableAforaCompileCache(params);
 }

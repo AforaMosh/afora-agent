@@ -37,7 +37,7 @@ jobs:
   scan:
     name: Scan changed paths (precise)
     if: ${{ !github.event.pull_request.draft }}
-    runs-on: ${{ vars.OPENCLAW_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || github.event.pull_request.head.repo.full_name == 'openclaw/openclaw' && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04' }}
+    runs-on: ${{ vars.AFORA_CI_RUNNER_BACKEND == 'github' && 'ubuntu-24.04' || github.event.pull_request.head.repo.full_name == 'AforaMosh/afora-agent' && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04' }}
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -71,7 +71,7 @@ jobs:
             -o "$binary" \
             "https://github.com/opengrep/opengrep/releases/download/${OPENGREP_VERSION}/opengrep_manylinux_x86"
           printf '%s  %s\n' "$OPENGREP_LINUX_X64_SHA256" "$binary" | sha256sum --check
-          install_dir="${RUNNER_TEMP}/openclaw-opengrep"
+          install_dir="${RUNNER_TEMP}/afora-opengrep"
           mkdir -p "$install_dir"
           install -m 0755 "$binary" "$install_dir/opengrep"
           echo "$install_dir" >> "$GITHUB_PATH"
@@ -81,8 +81,8 @@ jobs:
 
       - name: Run opengrep on PR diff
         env:
-          OPENCLAW_OPENGREP_BASE_REF: ${{ github.event.pull_request.base.sha }}...HEAD
-          OPENCLAW_OPENGREP_MERGE_HEAD_FIRST_PARENT: "1"
+          AFORA_OPENGREP_BASE_REF: ${{ github.event.pull_request.base.sha }}...HEAD
+          AFORA_OPENGREP_MERGE_HEAD_FIRST_PARENT: "1"
         # Findings from precise rules block this workflow. Pull requests scan
         # changed first-party source paths only so findings stay attributable to
         # the PR diff. Test/fixture/QA path exclusions live in `.semgrepignore`

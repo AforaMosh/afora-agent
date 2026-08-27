@@ -6,8 +6,8 @@ import {
   buildChannelConfigSchema,
   buildMultiAccountChannelSchema,
   ChannelBotLoopProtectionSchema,
-} from "openclaw/plugin-sdk/channel-config-schema";
-import { buildSecretInputSchema } from "openclaw/plugin-sdk/secret-input";
+} from "afora-agent/plugin-sdk/channel-config-schema";
+import { buildSecretInputSchema } from "afora-agent/plugin-sdk/secret-input";
 import { z } from "zod";
 
 const ClickClackAccountConfigSchema = z
@@ -66,7 +66,7 @@ const ClickClackConfigSchema = buildMultiAccountChannelSchema(ClickClackAccountC
 });
 
 /**
- * Config schema exported to core so `openclaw doctor` and config validation
+ * Config schema exported to core so `afora doctor` and config validation
  * understand both default and named ClickClack accounts.
  */
 export const clickClackConfigSchema = buildChannelConfigSchema(ClickClackConfigSchema);

@@ -1,4 +1,4 @@
-import { normalizeNullableString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeNullableString } from "@afora/normalization-core/string-coerce";
 
 export const DEFAULT_MAIN_KEY = "main";
 

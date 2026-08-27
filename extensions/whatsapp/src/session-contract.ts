@@ -1,5 +1,5 @@
 // Whatsapp plugin module implements session contract behavior.
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 function extractLegacyWhatsAppGroupId(key: string): string | null {
   const trimmed = key.trim();

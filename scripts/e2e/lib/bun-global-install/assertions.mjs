@@ -77,9 +77,9 @@ const resolveSignalExitCode = (signal) => {
 
 const runWithTimeout = async (timeout, command, commandArgs) => {
   const killGrace = parsePositiveNumber(
-    process.env.OPENCLAW_BUN_GLOBAL_SMOKE_TIMEOUT_KILL_GRACE_MS ??
+    process.env.AFORA_BUN_GLOBAL_SMOKE_TIMEOUT_KILL_GRACE_MS ??
       String(DEFAULT_TIMEOUT_KILL_GRACE_MS),
-    "OPENCLAW_BUN_GLOBAL_SMOKE_TIMEOUT_KILL_GRACE_MS",
+    "AFORA_BUN_GLOBAL_SMOKE_TIMEOUT_KILL_GRACE_MS",
   );
   const child = spawn(command, commandArgs, {
     detached: process.platform !== "win32",
@@ -182,7 +182,7 @@ if (mode === "run-with-timeout") {
 }
 
 if (mode === "assert-image-providers") {
-  const raw = process.env.OPENCLAW_IMAGE_PROVIDERS_JSON ?? "";
+  const raw = process.env.AFORA_IMAGE_PROVIDERS_JSON ?? "";
   let parsed;
   try {
     parsed = JSON.parse(raw);
@@ -216,7 +216,7 @@ if (mode === "assert-release-versions") {
   const aiManifest = JSON.parse(fs.readFileSync(aiManifestPath, "utf8"));
   const rootVersion = rootManifest.version;
   const aiVersion = aiManifest.version;
-  const rootAiVersion = rootManifest.dependencies?.["@openclaw/ai"];
+  const rootAiVersion = rootManifest.dependencies?.["@afora/ai"];
   if (
     typeof rootVersion !== "string" ||
     typeof aiVersion !== "string" ||
@@ -224,7 +224,7 @@ if (mode === "assert-release-versions") {
     rootAiVersion !== aiVersion
   ) {
     throw new Error(
-      `candidate version mismatch: openclaw=${String(rootVersion)}, dependency=${String(rootAiVersion)}, @openclaw/ai=${String(aiVersion)}`,
+      `candidate version mismatch: afora=${String(rootVersion)}, dependency=${String(rootAiVersion)}, @afora/ai=${String(aiVersion)}`,
     );
   }
   process.stdout.write(aiVersion);

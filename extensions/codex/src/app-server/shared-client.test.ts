@@ -1,7 +1,7 @@
 // Codex tests cover shared client plugin behavior.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { withTempDir } from "openclaw/plugin-sdk/test-env";
+import { withTempDir } from "afora-agent/plugin-sdk/test-env";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { WebSocketServer, type RawData } from "ws";
 import { CodexAppServerClient } from "./client.js";
@@ -47,7 +47,7 @@ const mocks = vi.hoisted(() => ({
   resolveManagedCodexAppServerStartOptions: vi.fn(async (startOptions) => startOptions),
   resolveManagedCodexNativeCommand: vi.fn((command: string) => `${command}.native`),
   embeddedAgentLog: { debug: vi.fn(), warn: vi.fn() },
-  resolveDefaultAgentDir: vi.fn(() => "/tmp/openclaw-agent"),
+  resolveDefaultAgentDir: vi.fn(() => "/tmp/afora-agent"),
 }));
 
 vi.mock("./auth-bridge.js", () => ({
@@ -69,13 +69,13 @@ vi.mock("./managed-binary.js", () => ({
   resolveManagedCodexNativeCommand: mocks.resolveManagedCodexNativeCommand,
 }));
 
-vi.mock("openclaw/plugin-sdk/agent-harness-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/agent-harness-runtime", () => ({
   embeddedAgentLog: mocks.embeddedAgentLog,
   formatErrorMessage: (error: unknown) => String(error),
-  OPENCLAW_VERSION: "test",
+  AFORA_VERSION: "test",
 }));
 
-vi.mock("openclaw/plugin-sdk/agent-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/agent-runtime", () => ({
   resolveDefaultAgentDir: mocks.resolveDefaultAgentDir,
 }));
 
@@ -191,7 +191,7 @@ function configureManagedDesktopFallback(): CodexAppServerStartOptions {
     ...startOptions,
     command: "/Applications/Codex.app/Contents/Resources/codex",
     commandSource: "resolved-managed",
-    managedFallbackCommandPaths: ["/cache/openclaw/codex"],
+    managedFallbackCommandPaths: ["/cache/afora/codex"],
   }));
   return {
     transport: "stdio",
@@ -276,7 +276,7 @@ describe("shared Codex app-server client", () => {
     // Model discovery uses the shared-client path, which owns child teardown
     // when initialize discovers an unsupported app-server.
     const listPromise = listCodexAppServerModels({ timeoutMs: 1000 });
-    await sendInitializeResult(harness, "openclaw/0.117.9 (macOS; test)");
+    await sendInitializeResult(harness, "afora-agent/0.117.9 (macOS; test)");
 
     await expect(listPromise).rejects.toThrow(
       `Codex app-server ${CODEX_APP_SERVER_VERSION} is required`,
@@ -345,7 +345,7 @@ describe("shared Codex app-server client", () => {
     const options = { config, startOptions, timeoutMs: 1_000 };
 
     const firstAcquire = getLeasedSharedCodexAppServerClient(options);
-    await sendInitializeResult(first, "openclaw/0.147.0 (Linux; test)");
+    await sendInitializeResult(first, "afora-agent/0.147.0 (Linux; test)");
     await expect(firstAcquire).resolves.toBe(first.client);
     expect(releaseLeasedSharedCodexAppServerClient(first.client)).toBe(true);
     expect(mocks.resolveCodexAppServerAuthProfileStore).toHaveBeenCalledOnce();
@@ -365,7 +365,7 @@ describe("shared Codex app-server client", () => {
 
     expect(clearSharedCodexAppServerClientIfCurrent(first.client)).toBe(true);
     const replacementAcquire = getLeasedSharedCodexAppServerClient(options);
-    await sendInitializeResult(replacement, "openclaw/0.147.0 (Linux; test)");
+    await sendInitializeResult(replacement, "afora-agent/0.147.0 (Linux; test)");
     await expect(replacementAcquire).resolves.toBe(replacement.client);
     expect(releaseLeasedSharedCodexAppServerClient(replacement.client)).toBe(true);
     expect(mocks.resolveCodexAppServerAuthProfileStore).toHaveBeenCalledTimes(3);
@@ -416,7 +416,7 @@ describe("shared Codex app-server client", () => {
     await expect(first).rejects.toThrow("codex app-server initialize aborted");
     expect(harness.stdinDestroyed).toBe(false);
 
-    await sendInitializeResult(harness, "openclaw/0.147.0 (Linux; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (Linux; test)");
     await expect(second).resolves.toBe(harness.client);
     expect(releaseLeasedSharedCodexAppServerClient(harness.client)).toBe(true);
   });
@@ -425,7 +425,7 @@ describe("shared Codex app-server client", () => {
     const harness = createClientHarness();
     vi.spyOn(CodexAppServerClient, "start").mockReturnValue(harness.client);
     const acquire = getLeasedSharedCodexAppServerClient({ timeoutMs: 1_000 });
-    await sendInitializeResult(harness, "openclaw/0.147.0 (Linux; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (Linux; test)");
     const client = await acquire;
 
     const retained = retainSharedCodexAppServerClientByInstanceId(client.getInstanceId());
@@ -439,7 +439,7 @@ describe("shared Codex app-server client", () => {
     vi.spyOn(CodexAppServerClient, "start").mockReturnValue(harness.client);
     const options = { timeoutMs: 1_000 };
     const firstLease = getLeasedSharedCodexAppServerClient(options);
-    await sendInitializeResult(harness, "openclaw/0.147.0 (Linux; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (Linux; test)");
     const client = await firstLease;
     await expect(getLeasedSharedCodexAppServerClient(options)).resolves.toBe(client);
     const ownedLease = { client };
@@ -480,8 +480,8 @@ describe("shared Codex app-server client", () => {
     const startOptions = configureManagedDesktopFallback();
 
     const firstAcquire = getSharedCodexAppServerClient({ startOptions, timeoutMs: 1_000 });
-    await sendInitializeResult(desktop, "openclaw/0.124.9 (macOS; test)");
-    await sendInitializeResult(pluginLocal, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(desktop, "afora-agent/0.124.9 (macOS; test)");
+    await sendInitializeResult(pluginLocal, "afora-agent/0.147.0 (macOS; test)");
     const firstClient = await firstAcquire;
 
     const secondClient = await getSharedCodexAppServerClient({ startOptions, timeoutMs: 1_000 });
@@ -496,10 +496,10 @@ describe("shared Codex app-server client", () => {
     expect(startSpy.mock.calls[0]?.[0]).toMatchObject({
       command: "/Applications/Codex.app/Contents/Resources/codex",
       commandSource: "resolved-managed",
-      managedFallbackCommandPaths: ["/cache/openclaw/codex"],
+      managedFallbackCommandPaths: ["/cache/afora/codex"],
     });
     expect(startSpy.mock.calls[1]?.[0]).toMatchObject({
-      command: "/cache/openclaw/codex",
+      command: "/cache/afora/codex",
       commandSource: "resolved-managed",
     });
     expect(startSpy.mock.calls[1]?.[0]).not.toHaveProperty("managedFallbackCommandPaths");
@@ -524,10 +524,10 @@ describe("shared Codex app-server client", () => {
     };
 
     const firstAcquire = getSharedCodexAppServerClient(options);
-    await sendInitializeResult(desktop, "openclaw/0.124.9 (macOS; test)");
+    await sendInitializeResult(desktop, "afora-agent/0.124.9 (macOS; test)");
     await vi.waitFor(() => expect(fallback.writes.length).toBeGreaterThanOrEqual(1));
     const secondAcquire = getSharedCodexAppServerClient(options);
-    await sendInitializeResult(fallback, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(fallback, "afora-agent/0.147.0 (macOS; test)");
 
     const [firstClient, secondClient] = await Promise.all([firstAcquire, secondAcquire]);
     expect(secondClient).toBe(firstClient);
@@ -537,7 +537,7 @@ describe("shared Codex app-server client", () => {
   });
 
   it("keeps capture clients separate from ordinary shared clients", async () => {
-    await withTempDir("openclaw-codex-capture-client-", async (root) => {
+    await withTempDir("afora-codex-capture-client-", async (root) => {
       const command = path.join(root, "codex");
       await fs.writeFile(command, "native-v1");
       const normal = createClientHarness();
@@ -555,13 +555,13 @@ describe("shared Codex app-server client", () => {
       };
 
       const normalPromise = getLeasedSharedCodexAppServerClient({ startOptions });
-      await sendInitializeResult(normal, "openclaw/0.147.0 (Linux; test)");
+      await sendInitializeResult(normal, "afora-agent/0.147.0 (Linux; test)");
       const normalClient = await normalPromise;
       const capturedPromise = getLeasedSharedCodexAppServerClient({
         startOptions,
         runtimeArtifactMode: "capture",
       });
-      await sendInitializeResult(captured, "openclaw/0.147.0 (Linux; test)");
+      await sendInitializeResult(captured, "afora-agent/0.147.0 (Linux; test)");
       const capturedClient = await capturedPromise;
 
       expect(capturedClient).not.toBe(normalClient);
@@ -578,7 +578,7 @@ describe("shared Codex app-server client", () => {
   });
 
   it("binds the managed fallback candidate that actually initialized", async () => {
-    await withTempDir("openclaw-codex-capture-fallback-", async (root) => {
+    await withTempDir("afora-codex-capture-fallback-", async (root) => {
       const desktopCommand = path.join(root, "desktop-codex");
       const fallbackCommand = path.join(root, "package-codex");
       await Promise.all([
@@ -612,8 +612,8 @@ describe("shared Codex app-server client", () => {
         startOptions: requested,
         runtimeArtifactMode: "capture",
       });
-      await sendInitializeResult(desktop, "openclaw/0.124.9 (macOS; test)");
-      await sendInitializeResult(fallback, "openclaw/0.147.0 (macOS; test)");
+      await sendInitializeResult(desktop, "afora-agent/0.124.9 (macOS; test)");
+      await sendInitializeResult(fallback, "afora-agent/0.147.0 (macOS; test)");
       const client = await acquire;
       const { readCodexAppServerClientRuntimeArtifact, validateCodexAppServerRuntimeArtifact } =
         await import("./runtime-artifact.js");
@@ -651,13 +651,13 @@ describe("shared Codex app-server client", () => {
   });
 
   it("detects persisted Computer Use enabled after managed client startup", async () => {
-    await withTempDir("openclaw-codex-managed-selection-", async (root) => {
+    await withTempDir("afora-codex-managed-selection-", async (root) => {
       const harness = createClientHarness();
       vi.spyOn(CodexAppServerClient, "start").mockReturnValue(harness.client);
       mocks.resolveManagedCodexAppServerStartOptions.mockImplementationOnce(
         async (startOptions) => ({
           ...startOptions,
-          command: "/cache/openclaw/codex",
+          command: "/cache/afora/codex",
           commandSource: "resolved-managed",
         }),
       );
@@ -676,17 +676,17 @@ describe("shared Codex app-server client", () => {
         startOptions,
         agentDir,
       });
-      await sendInitializeResult(harness, "openclaw/0.147.0 (macOS; test)");
+      await sendInitializeResult(harness, "afora-agent/0.147.0 (macOS; test)");
       const client = await clientPromise;
 
       expect(readCodexAppServerClientProcessIdentity(client)).toEqual({
         clientId: expect.any(String),
-        command: "/cache/openclaw/codex",
+        command: "/cache/afora/codex",
         argsFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
         commandSource: "resolved-managed",
-        nativeCommand: "/cache/openclaw/codex.native",
+        nativeCommand: "/cache/afora/codex.native",
         serverVersion: "0.147.0",
-        userAgent: "openclaw/0.147.0 (macOS; test)",
+        userAgent: "afora-agent/0.147.0 (macOS; test)",
       });
 
       expect(() =>
@@ -748,13 +748,13 @@ describe("shared Codex app-server client", () => {
   it.each(["abort", "timeout"] as const)(
     "holds the native config fence through process exit after a post-write %s",
     async (mode) => {
-      await withTempDir("openclaw-codex-guarded-request-cancel-", async (root) => {
+      await withTempDir("afora-codex-guarded-request-cancel-", async (root) => {
         const harness = createClientHarness();
         vi.spyOn(CodexAppServerClient, "start").mockReturnValue(harness.client);
         mocks.resolveManagedCodexAppServerStartOptions.mockImplementationOnce(
           async (startOptions) => ({
             ...startOptions,
-            command: "/cache/openclaw/codex",
+            command: "/cache/afora/codex",
             commandSource: "resolved-managed",
           }),
         );
@@ -770,7 +770,7 @@ describe("shared Codex app-server client", () => {
         };
 
         const clientPromise = createIsolatedCodexAppServerClient({ startOptions, agentDir });
-        await sendInitializeResult(harness, "openclaw/0.147.0 (macOS; test)");
+        await sendInitializeResult(harness, "afora-agent/0.147.0 (macOS; test)");
         const client = await clientPromise;
         const fenceKey = resolveCodexNativeConfigFenceKey({ client });
         expect(fenceKey).toBeTypeOf("string");
@@ -839,7 +839,7 @@ describe("shared Codex app-server client", () => {
 
     vi.useRealTimers();
     const secondList = listCodexAppServerModels({ timeoutMs: 1000 });
-    await sendInitializeResult(second, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(second, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(second);
 
     await expect(secondList).resolves.toEqual({ models: [] });
@@ -872,7 +872,7 @@ describe("shared Codex app-server client", () => {
     await expect(shortAcquire).rejects.toThrow("codex app-server initialize timed out");
     expect(harness.process.stdin.destroyed).toBe(false);
 
-    await sendInitializeResult(harness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (macOS; test)");
 
     await expect(longAcquire).resolves.toBe(harness.client);
     expect(startSpy).toHaveBeenCalledTimes(1);
@@ -885,7 +885,7 @@ describe("shared Codex app-server client", () => {
     const releaseAuth = deferNextAuthProfileApplication();
 
     const acquire = getSharedCodexAppServerClient({ timeoutMs: 100 });
-    await sendInitializeResult(harness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (macOS; test)");
 
     await expect(acquire).rejects.toThrow("codex app-server authentication timed out");
     expect(harness.process.stdin.destroyed).toBe(true);
@@ -899,7 +899,7 @@ describe("shared Codex app-server client", () => {
 
     const shortAcquire = getSharedCodexAppServerClient({ timeoutMs: 100 });
     const longAcquire = getSharedCodexAppServerClient({ timeoutMs: 1000 });
-    await sendInitializeResult(harness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (macOS; test)");
 
     await expect(shortAcquire).rejects.toThrow("codex app-server authentication timed out");
     expect(harness.process.stdin.destroyed).toBe(false);
@@ -928,7 +928,7 @@ describe("shared Codex app-server client", () => {
     abandonController.abort();
     expect(harness.process.stdin.destroyed).toBe(false);
 
-    await sendInitializeResult(harness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (macOS; test)");
 
     await abandonedRejection;
     await expect(activeAcquire).resolves.toBe(harness.client);
@@ -984,7 +984,7 @@ describe("shared Codex app-server client", () => {
     const rejection = expect(clientPromise).rejects.toThrow(
       "codex app-server initialize timed out",
     );
-    await sendInitializeResult(harness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (macOS; test)");
 
     await rejection;
     expect(harness.process.stdin.destroyed).toBe(true);
@@ -1000,7 +1000,7 @@ describe("shared Codex app-server client", () => {
     const clientPromise = createIsolatedCodexAppServerClient({ timeoutMs: 100 });
     await vi.waitFor(() => expect(harness.writes.length).toBeGreaterThanOrEqual(1));
     now = 101;
-    await sendInitializeResult(harness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (macOS; test)");
 
     await expect(clientPromise).rejects.toThrow("codex app-server initialize timed out");
     expect(mocks.applyCodexAppServerAuthProfile).not.toHaveBeenCalled();
@@ -1015,7 +1015,7 @@ describe("shared Codex app-server client", () => {
       timeoutMs: 1000,
       authProfileId: "openai:work",
     });
-    await sendInitializeResult(harness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(harness);
 
     await expect(listPromise).resolves.toEqual({ models: [] });
@@ -1042,11 +1042,11 @@ describe("shared Codex app-server client", () => {
       timeoutMs: 1000,
       authProfileStore,
     });
-    await sendInitializeResult(harness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (macOS; test)");
 
     await expect(clientPromise).resolves.toBe(harness.client);
     expect(mocks.resolveCodexAppServerAuthProfileStore).toHaveBeenCalledWith({
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       authProfileId: undefined,
       authProfileStore,
       config: undefined,
@@ -1064,7 +1064,7 @@ describe("shared Codex app-server client", () => {
     await vi.waitFor(() => expect(harness.writes.length).toBeGreaterThan(priorWriteCount));
 
     expect(mocks.refreshCodexAppServerAuthTokens).toHaveBeenCalledWith({
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       authProfileId: "openai:scoped",
       authProfileStore: preparedAuthProfileStore,
       config: undefined,
@@ -1101,7 +1101,7 @@ describe("shared Codex app-server client", () => {
         store: authProfileStore,
       },
     });
-    await sendInitializeResult(harness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (macOS; test)");
 
     await expect(clientPromise).resolves.toBe(harness.client);
     expect(mocks.resolveCodexAppServerAuthProfileStore).not.toHaveBeenCalled();
@@ -1134,7 +1134,7 @@ describe("shared Codex app-server client", () => {
     });
     await vi.waitFor(() => expect(harness.writes.length).toBeGreaterThan(priorWriteCount));
     expect(mocks.refreshCodexAppServerAuthTokens).toHaveBeenCalledWith({
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       authProfileId: "openai:scoped",
       authProfileStore,
       config: undefined,
@@ -1195,7 +1195,7 @@ describe("shared Codex app-server client", () => {
       timeoutMs: 1000,
       preparedAuth: { kind: "profile", profileId: "openai:scoped", store: firstStore },
     });
-    await sendInitializeResult(firstHarness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(firstHarness, "afora-agent/0.147.0 (macOS; test)");
     await expect(firstPromise).resolves.toBe(firstHarness.client);
 
     const secondPromise = getSharedCodexAppServerClient({
@@ -1203,7 +1203,7 @@ describe("shared Codex app-server client", () => {
       preparedAuth: { kind: "profile", profileId: "openai:scoped", store: secondStore },
     });
     await vi.waitFor(() => expect(startSpy).toHaveBeenCalledTimes(2));
-    await sendInitializeResult(secondHarness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(secondHarness, "afora-agent/0.147.0 (macOS; test)");
     await expect(secondPromise).resolves.toBe(secondHarness.client);
 
     expect(resolvedCacheKeys).toEqual(["account:sha256:first", "account:sha256:second"]);
@@ -1239,7 +1239,7 @@ describe("shared Codex app-server client", () => {
       timeoutMs: 1000,
       preparedAuth: { kind: "api-key", apiKey: "platform-key" },
     });
-    await sendInitializeResult(harness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (macOS; test)");
 
     await expect(clientPromise).resolves.toBe(harness.client);
     expect(mocks.resolveCodexAppServerAuthProfileStore).not.toHaveBeenCalled();
@@ -1288,7 +1288,7 @@ describe("shared Codex app-server client", () => {
       timeoutMs: 1000,
       preparedAuth: { kind: "api-key", apiKey: "first-platform-key" },
     });
-    await sendInitializeResult(firstHarness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(firstHarness, "afora-agent/0.147.0 (macOS; test)");
     await expect(firstPromise).resolves.toBe(firstHarness.client);
 
     const secondPromise = getSharedCodexAppServerClient({
@@ -1296,7 +1296,7 @@ describe("shared Codex app-server client", () => {
       preparedAuth: { kind: "api-key", apiKey: "second-platform-key" },
     });
     await vi.waitFor(() => expect(startSpy).toHaveBeenCalledTimes(2));
-    await sendInitializeResult(secondHarness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(secondHarness, "afora-agent/0.147.0 (macOS; test)");
     await expect(secondPromise).resolves.toBe(secondHarness.client);
 
     expect(cacheKeys).toEqual(["api_key:sha256:first", "api_key:sha256:second"]);
@@ -1322,9 +1322,9 @@ describe("shared Codex app-server client", () => {
     const clientPromise = createIsolatedCodexAppServerClient({
       timeoutMs: 1000,
       authProfileId: "openai:persisted",
-      agentDir: "/tmp/openclaw-persisted-agent",
+      agentDir: "/tmp/afora-persisted-agent",
     });
-    await sendInitializeResult(harness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (macOS; test)");
 
     await expect(clientPromise).resolves.toBe(harness.client);
     const priorWriteCount = harness.writes.length;
@@ -1336,7 +1336,7 @@ describe("shared Codex app-server client", () => {
     await vi.waitFor(() => expect(harness.writes.length).toBeGreaterThan(priorWriteCount));
 
     expect(mocks.refreshCodexAppServerAuthTokens).toHaveBeenCalledWith({
-      agentDir: "/tmp/openclaw-persisted-agent",
+      agentDir: "/tmp/afora-persisted-agent",
       authProfileId: "openai:persisted",
       config: undefined,
     });
@@ -1358,21 +1358,21 @@ describe("shared Codex app-server client", () => {
     const clientPromise = getSharedCodexAppServerClient({
       timeoutMs: 1000,
       authProfileId: null,
-      agentDir: "/tmp/openclaw-target-agent",
+      agentDir: "/tmp/afora-target-agent",
       agentId: "research",
       config,
     });
-    await sendInitializeResult(harness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (macOS; test)");
 
     await expect(clientPromise).resolves.toBe(harness.client);
     expect(mocks.resolveCodexAppServerAuthProfileIdForAgent).not.toHaveBeenCalled();
     const bridgeCall = bridgeStartOptionsCall();
-    expect(bridgeCall.agentDir).toBe("/tmp/openclaw-target-agent");
+    expect(bridgeCall.agentDir).toBe("/tmp/afora-target-agent");
     expect(bridgeCall.agentId).toBe("research");
     expect(bridgeCall.authProfileId).toBeNull();
     expect(bridgeCall.config).toBe(config);
     const applyCall = applyAuthProfileCall();
-    expect(applyCall.agentDir).toBe("/tmp/openclaw-target-agent");
+    expect(applyCall.agentDir).toBe("/tmp/afora-target-agent");
     expect(applyCall.authProfileId).toBeNull();
     expect(applyCall.config).toBe(config);
   });
@@ -1392,7 +1392,7 @@ describe("shared Codex app-server client", () => {
         headers: {},
       },
     });
-    await sendInitializeResult(harness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (macOS; test)");
 
     await expect(clientPromise).resolves.toBe(harness.client);
     expect(mocks.resolveCodexAppServerAuthProfileIdForAgent).not.toHaveBeenCalled();
@@ -1410,14 +1410,14 @@ describe("shared Codex app-server client", () => {
       timeoutMs: 1000,
       config,
     });
-    await sendInitializeResult(harness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(harness);
 
     await expect(listPromise).resolves.toEqual({ models: [] });
     const resolveCall = resolveAuthProfileCall();
     expect(resolveCall).toStrictEqual({
       authProfileId: undefined,
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       config,
     });
     const bridgeCall = bridgeStartOptionsCall();
@@ -1435,17 +1435,17 @@ describe("shared Codex app-server client", () => {
     const listPromise = listCodexAppServerModels({
       timeoutMs: 1000,
       authProfileId: "openai:work",
-      agentDir: "/tmp/openclaw-agent-nova",
+      agentDir: "/tmp/afora-agent-nova",
     });
-    await sendInitializeResult(harness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(harness);
 
     await expect(listPromise).resolves.toEqual({ models: [] });
     const bridgeCall = bridgeStartOptionsCall();
-    expect(bridgeCall?.agentDir).toBe("/tmp/openclaw-agent-nova");
+    expect(bridgeCall?.agentDir).toBe("/tmp/afora-agent-nova");
     expect(bridgeCall?.authProfileId).toBe("openai:work");
     const applyCall = applyAuthProfileCall();
-    expect(applyCall?.agentDir).toBe("/tmp/openclaw-agent-nova");
+    expect(applyCall?.agentDir).toBe("/tmp/afora-agent-nova");
     expect(applyCall?.authProfileId).toBe("openai:work");
   });
 
@@ -1459,17 +1459,17 @@ describe("shared Codex app-server client", () => {
 
     const firstList = listCodexAppServerModels({
       timeoutMs: 1000,
-      agentDir: "/tmp/openclaw-agent-one",
+      agentDir: "/tmp/afora-agent-one",
     });
-    await sendInitializeResult(first, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(first, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(first);
     await expect(firstList).resolves.toEqual({ models: [] });
 
     const secondList = listCodexAppServerModels({
       timeoutMs: 1000,
-      agentDir: "/tmp/openclaw-agent-two",
+      agentDir: "/tmp/afora-agent-two",
     });
-    await sendInitializeResult(second, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(second, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(second);
     await expect(secondList).resolves.toEqual({ models: [] });
 
@@ -1483,12 +1483,12 @@ describe("shared Codex app-server client", () => {
     const startSpy = vi.spyOn(CodexAppServerClient, "start").mockReturnValue(harness.client);
     mocks.resolveManagedCodexAppServerStartOptions.mockImplementationOnce(async (startOptions) => ({
       ...startOptions,
-      command: "/cache/openclaw/codex",
+      command: "/cache/afora/codex",
       commandSource: "resolved-managed",
     }));
 
     const listPromise = listCodexAppServerModels({ timeoutMs: 1000 });
-    await sendInitializeResult(harness, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(harness);
 
     await expect(listPromise).resolves.toEqual({ models: [] });
@@ -1496,15 +1496,15 @@ describe("shared Codex app-server client", () => {
     expect(managedCall?.command).toBe("codex");
     expect(managedCall?.commandSource).toBe("managed");
     const bridgeCall = bridgeStartOptionsCall();
-    expect(bridgeCall?.startOptions.command).toBe("/cache/openclaw/codex");
+    expect(bridgeCall?.startOptions.command).toBe("/cache/afora/codex");
     expect(bridgeCall?.startOptions.commandSource).toBe("resolved-managed");
     const startCall = clientStartCall(startSpy);
-    expect(startCall?.command).toBe("/cache/openclaw/codex");
+    expect(startCall?.command).toBe("/cache/afora/codex");
     expect(startCall?.commandSource).toBe("resolved-managed");
   });
 
   it("rechecks persisted native Computer Use before managed binary resolution", async () => {
-    await withTempDir("openclaw-codex-shared-native-", async (agentDir) => {
+    await withTempDir("afora-codex-shared-native-", async (agentDir) => {
       const codexHome = path.join(agentDir, "codex-home");
       await fs.mkdir(codexHome);
       await fs.writeFile(
@@ -1527,7 +1527,7 @@ describe("shared Codex app-server client", () => {
           headers: {},
         },
       });
-      await sendInitializeResult(harness, `openclaw/${CODEX_APP_SERVER_VERSION} (macOS; test)`);
+      await sendInitializeResult(harness, `afora/${CODEX_APP_SERVER_VERSION} (macOS; test)`);
 
       await expect(clientPromise).resolves.toBe(harness.client);
       expect(managedStartOptionsCall().managedCommandOrder).toBe("desktop-first");
@@ -1553,7 +1553,7 @@ describe("shared Codex app-server client", () => {
         headers: {},
       },
     });
-    await sendInitializeResult(first, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(first, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(first);
     await expect(firstList).resolves.toEqual({ models: [] });
 
@@ -1568,7 +1568,7 @@ describe("shared Codex app-server client", () => {
         headers: {},
       },
     });
-    await sendInitializeResult(second, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(second, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(second);
     await expect(secondList).resolves.toEqual({ models: [] });
 
@@ -1591,7 +1591,7 @@ describe("shared Codex app-server client", () => {
       timeoutMs: 1000,
       authRequirement: "api-key",
     });
-    await sendInitializeResult(first, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(first, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(first);
     await expect(firstList).resolves.toEqual({ models: [] });
 
@@ -1599,7 +1599,7 @@ describe("shared Codex app-server client", () => {
       timeoutMs: 1000,
       authRequirement: "api-key",
     });
-    await sendInitializeResult(second, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(second, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(second);
     await expect(secondList).resolves.toEqual({ models: [] });
 
@@ -1621,7 +1621,7 @@ describe("shared Codex app-server client", () => {
       authProfileId: "openai:work",
       authRequirement: "api-key",
     });
-    await sendInitializeResult(first, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(first, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(first);
     await expect(firstList).resolves.toEqual({ models: [] });
 
@@ -1630,7 +1630,7 @@ describe("shared Codex app-server client", () => {
       authProfileId: "openai:work",
       authRequirement: "subscription",
     });
-    await sendInitializeResult(second, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(second, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(second);
     await expect(secondList).resolves.toEqual({ models: [] });
 
@@ -1685,7 +1685,7 @@ describe("shared Codex app-server client", () => {
     });
     await vi.waitFor(() => expect(second.writes.length).toBeGreaterThanOrEqual(1));
 
-    await sendInitializeResult(second, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(second, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(second);
     await expect(secondList).resolves.toEqual({ models: [] });
 
@@ -1703,7 +1703,7 @@ describe("shared Codex app-server client", () => {
       .mockReturnValueOnce(second.client);
 
     const firstList = listCodexAppServerModels({ timeoutMs: 1000 });
-    await sendInitializeResult(first, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(first, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(first);
     await expect(firstList).resolves.toEqual({ models: [] });
 
@@ -1711,7 +1711,7 @@ describe("shared Codex app-server client", () => {
     expect(first.process.stdin.destroyed).toBe(true);
 
     const secondList = listCodexAppServerModels({ timeoutMs: 1000 });
-    await sendInitializeResult(second, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(second, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(second);
     await expect(secondList).resolves.toEqual({ models: [] });
 
@@ -1729,7 +1729,7 @@ describe("shared Codex app-server client", () => {
       .mockReturnValueOnce(second.client);
 
     const firstList = listCodexAppServerModels({ timeoutMs: 1000 });
-    await sendInitializeResult(first, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(first, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(first);
     await expect(firstList).resolves.toEqual({ models: [] });
 
@@ -1748,7 +1748,7 @@ describe("shared Codex app-server client", () => {
     await expect(activeRequest).rejects.toThrow("codex app-server client is closed");
 
     const secondList = listCodexAppServerModels({ timeoutMs: 1000 });
-    await sendInitializeResult(second, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(second, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(second);
     await expect(secondList).resolves.toEqual({ models: [] });
 
@@ -1768,7 +1768,7 @@ describe("shared Codex app-server client", () => {
     vi.spyOn(CodexAppServerClient, "start").mockReturnValueOnce(harness.client);
 
     const clientPromise = getLeasedSharedCodexAppServerClient({ timeoutMs: 1000 });
-    await sendInitializeResult(harness, "openclaw/0.147.0 (Linux; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (Linux; test)");
     const client = await clientPromise;
     const deliverCompletion = vi.fn(async () => ({ delivered: true, path: "direct" as const }));
     const taskRuntime = {
@@ -1863,7 +1863,7 @@ describe("shared Codex app-server client", () => {
 
     const firstLease = getLeasedSharedCodexAppServerClient({ timeoutMs: 1000 });
     const secondLease = getLeasedSharedCodexAppServerClient({ timeoutMs: 1000 });
-    await sendInitializeResult(first, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(first, "afora-agent/0.147.0 (macOS; test)");
     await expect(firstLease).resolves.toBe(first.client);
     await expect(secondLease).resolves.toBe(first.client);
 
@@ -1897,7 +1897,7 @@ describe("shared Codex app-server client", () => {
 
     const completedRunLease = getLeasedSharedCodexAppServerClient({ timeoutMs: 1000 });
     const siblingRunLease = getLeasedSharedCodexAppServerClient({ timeoutMs: 1000 });
-    await sendInitializeResult(first, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(first, "afora-agent/0.147.0 (macOS; test)");
     await expect(completedRunLease).resolves.toBe(first.client);
     await expect(siblingRunLease).resolves.toBe(first.client);
 
@@ -1946,7 +1946,7 @@ describe("shared Codex app-server client", () => {
     await expect(pendingLease).rejects.toThrow("codex app-server client is closed");
 
     const freshLease = getLeasedSharedCodexAppServerClient({ timeoutMs: 1000 });
-    await sendInitializeResult(second, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(second, "afora-agent/0.147.0 (macOS; test)");
     await expect(freshLease).resolves.toBe(second.client);
     expect(second.process.stdin.destroyed).toBe(false);
   });
@@ -1956,7 +1956,7 @@ describe("shared Codex app-server client", () => {
     vi.spyOn(CodexAppServerClient, "start").mockReturnValueOnce(first.client);
 
     const lease = getLeasedSharedCodexAppServerClient({ timeoutMs: 1000 });
-    await sendInitializeResult(first, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(first, "afora-agent/0.147.0 (macOS; test)");
     await expect(lease).resolves.toBe(first.client);
 
     // Routine cleanup detaches gracefully; a later terminal-idle kill must
@@ -1982,7 +1982,7 @@ describe("shared Codex app-server client", () => {
     vi.spyOn(CodexAppServerClient, "start").mockReturnValueOnce(first.client);
 
     const lease = getLeasedSharedCodexAppServerClient({ timeoutMs: 1000 });
-    await sendInitializeResult(first, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(first, "afora-agent/0.147.0 (macOS; test)");
     await expect(lease).resolves.toBe(first.client);
 
     // Routine cleanup (e.g. one-shot bundle-MCP) must not yank a healthy
@@ -2002,7 +2002,7 @@ describe("shared Codex app-server client", () => {
     vi.spyOn(CodexAppServerClient, "start").mockReturnValueOnce(harness.client);
 
     const lease = getLeasedSharedCodexAppServerClient({ timeoutMs: 1000 });
-    await sendInitializeResult(harness, "openclaw/0.147.0 (Linux; test)");
+    await sendInitializeResult(harness, "afora-agent/0.147.0 (Linux; test)");
     const client = await lease;
     const releaseRetain = retainSharedCodexAppServerClientIfCurrent(client);
     expect(releaseRetain).toBeTypeOf("function");
@@ -2033,17 +2033,17 @@ describe("shared Codex app-server client", () => {
 
     const firstList = listCodexAppServerModels({
       timeoutMs: 1000,
-      agentDir: "/tmp/openclaw-agent-one",
+      agentDir: "/tmp/afora-agent-one",
     });
-    await sendInitializeResult(first, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(first, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(first);
     await expect(firstList).resolves.toEqual({ models: [] });
 
     const secondList = listCodexAppServerModels({
       timeoutMs: 1000,
-      agentDir: "/tmp/openclaw-agent-two",
+      agentDir: "/tmp/afora-agent-two",
     });
-    await sendInitializeResult(second, "openclaw/0.147.0 (macOS; test)");
+    await sendInitializeResult(second, "afora-agent/0.147.0 (macOS; test)");
     await sendEmptyModelList(second);
     await expect(secondList).resolves.toEqual({ models: [] });
 
@@ -2069,7 +2069,7 @@ describe("shared Codex app-server client", () => {
         const message = JSON.parse(rawDataToText(data)) as { id?: number; method?: string };
         if (message.method === "initialize") {
           socket.send(
-            JSON.stringify({ id: message.id, result: { userAgent: "openclaw/0.147.0" } }),
+            JSON.stringify({ id: message.id, result: { userAgent: "afora-agent/0.147.0" } }),
           );
           return;
         }

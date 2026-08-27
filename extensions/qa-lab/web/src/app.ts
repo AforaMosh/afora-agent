@@ -1,5 +1,5 @@
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import type { QaBusStateSnapshot } from "openclaw/plugin-sdk/qa-channel-protocol";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import type { QaBusStateSnapshot } from "afora-agent/plugin-sdk/qa-channel-protocol";
 // Qa Lab plugin module implements app behavior.
 import { defaultQaModelForMode, isQaFastModeEnabled } from "../../model-selection.js";
 import { normalizeCaptureSavedView, normalizeCaptureSavedViews } from "./capture-saved-view.js";
@@ -1005,8 +1005,8 @@ export async function createQaLabApp(root: HTMLDivElement) {
     });
     root.querySelector<HTMLSelectElement>("#runtime-pair")?.addEventListener("change", (e) => {
       const runtimePair: RunnerSelection["runtimePair"] =
-        (e.currentTarget as HTMLSelectElement).value === "openclaw,codex"
-          ? ["openclaw", "codex"]
+        (e.currentTarget as HTMLSelectElement).value === "afora,codex"
+          ? ["afora", "codex"]
           : null;
       updateRunnerDraft((draft) => ({ ...draft, runtimePair }));
     });

@@ -3,7 +3,7 @@ summary: "Permission modes for host exec, Codex Guardian approvals, and ACPX har
 read_when:
   - Choosing auto, ask, allowlist, full, or deny for command permissions
   - Configuring Codex Guardian-reviewed approvals through tools.exec.mode
-  - Comparing OpenClaw exec approvals with ACPX harness permissions
+  - Comparing Afora exec approvals with ACPX harness permissions
 title: "Permission modes"
 ---
 
@@ -20,18 +20,18 @@ Permission modes decide how much authority an agent has before it runs host comm
 Use `auto` for coding agents that need useful host access without making every miss a human prompt:
 
 ```bash
-openclaw config set tools.exec.mode auto
-openclaw approvals get
-openclaw gateway restart
+afora config set tools.exec.mode auto
+afora approvals get
+afora gateway restart
 ```
 
 Then verify the effective policy:
 
 ```bash
-openclaw exec-policy show
+afora exec-policy show
 ```
 
-## OpenClaw host exec modes
+## Afora host exec modes
 
 `tools.exec.mode` is the normalized policy surface for host `exec`. Each mode resolves to an underlying `security` (allowlist strictness) and `ask` (prompt-on-miss) pair:
 
@@ -73,12 +73,12 @@ ACPX sessions are non-interactive, so they cannot click a TTY permission prompt.
 | `nonInteractivePermissions` | `fail`          | Abort when a prompt would be required.      |
 | `nonInteractivePermissions` | `deny`          | Deny the prompt and continue when possible. |
 
-Set ACPX permissions separately from OpenClaw exec approvals:
+Set ACPX permissions separately from Afora exec approvals:
 
 ```bash
-openclaw config set plugins.entries.acpx.config.permissionMode approve-all
-openclaw config set plugins.entries.acpx.config.nonInteractivePermissions fail
-openclaw gateway restart
+afora config set plugins.entries.acpx.config.permissionMode approve-all
+afora config set plugins.entries.acpx.config.nonInteractivePermissions fail
+afora gateway restart
 ```
 
 Use `approve-all` as the ACPX break-glass equivalent of a no-prompt harness session. For setup details and failure modes, see [ACP agents setup](/tools/acp-agents-setup#permission-configuration).
@@ -90,18 +90,18 @@ Use `approve-all` as the ACPX break-glass equivalent of a no-prompt harness sess
 | Block host commands completely                | `tools.exec.mode: "deny"`                                   |
 | Let known-safe commands run only              | `tools.exec.mode: "allowlist"`                              |
 | Ask a human for every new command shape       | `tools.exec.mode: "ask"`                                    |
-| Use Codex/OpenClaw auto-review before humans  | `tools.exec.mode: "auto"`                                   |
+| Use Codex/Afora auto-review before humans  | `tools.exec.mode: "auto"`                                   |
 | Skip host exec approvals entirely             | `tools.exec.mode: "full"` plus matching host approvals file |
 | Make non-interactive ACPX sessions write/exec | `plugins.entries.acpx.config.permissionMode: "approve-all"` |
 
 If a command still prompts or fails after changing mode, inspect both layers:
 
 ```bash
-openclaw approvals get
-openclaw exec-policy show
+afora approvals get
+afora exec-policy show
 ```
 
-Host exec uses the stricter result of OpenClaw config and the host-local approvals file. ACPX harness permissions do not loosen host exec approvals, and host exec approvals do not loosen ACPX harness prompts.
+Host exec uses the stricter result of Afora config and the host-local approvals file. ACPX harness permissions do not loosen host exec approvals, and host exec approvals do not loosen ACPX harness prompts.
 
 ## Related
 

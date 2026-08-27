@@ -9,9 +9,9 @@ import {
   type TrustedToolExecutionEvent,
 } from "../infra/diagnostic-events.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import { createAgentEventAuditRecorder } from "./agent-event-audit.js";
 import { listAuditEvents, pruneExpiredAuditEvents, recordAuditEvent } from "./audit-event-store.js";
 import type { AuditEventInput, ToolActionAuditEventInput } from "./audit-event-types.js";
@@ -25,7 +25,7 @@ let auditTestRunSequence = 0;
 let currentAuditTestRunId = "run-test-0";
 
 function createDatabaseOptions() {
-  return { env: { OPENCLAW_STATE_DIR: makeTempDir(tempDirs, "openclaw-audit-") } };
+  return { env: { AFORA_STATE_DIR: makeTempDir(tempDirs, "afora-audit-") } };
 }
 
 function auditInput(overrides: Partial<AuditEventInput> = {}): AuditEventInput {
@@ -118,7 +118,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   resetDiagnosticEventsForTest();
 });
 
@@ -162,7 +162,7 @@ describe("audit event persistence", () => {
     expect(first.events.map((event) => event.sourceSequence)).toEqual([3, 2]);
     expect(first.nextCursor).toBe(first.events[1]?.sequence);
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const second = listAuditEvents({ database, limit: 2, cursor: first.nextCursor });
     expect(second.events.map((event) => event.sourceSequence)).toEqual([1]);
     expect(second.events[0]?.eventId).toBe(oldest?.eventId);
@@ -200,7 +200,7 @@ describe("audit event persistence", () => {
   it("rejects persisted run lifecycle tuples outside the closed contract", () => {
     const database = createDatabaseOptions();
     recordAuditEvent(auditInput(), database);
-    const { db } = openOpenClawStateDatabase(database);
+    const { db } = openAforaStateDatabase(database);
     db.prepare("UPDATE audit_events SET status = ? WHERE kind = 'agent_run'").run("failed");
 
     expect(() => listAuditEvents({ database, limit: 10 })).toThrow(
@@ -212,7 +212,7 @@ describe("audit event persistence", () => {
     const database = createDatabaseOptions();
     const occurredAt = Date.now();
     recordAuditEvent(auditInput({ occurredAt }), database);
-    const { db } = openOpenClawStateDatabase(database);
+    const { db } = openAforaStateDatabase(database);
     db.prepare("UPDATE sqlite_sequence SET seq = ? WHERE name = 'audit_events'").run(
       AUDIT_EVENT_MAX_ROWS_CONTRACT + 1,
     );
@@ -224,7 +224,7 @@ describe("audit event persistence", () => {
 
   it("prunes row overflow in batches instead of scanning the full cap per insert", () => {
     const database = createDatabaseOptions();
-    const { db } = openOpenClawStateDatabase(database);
+    const { db } = openAforaStateDatabase(database);
     const occurredAt = Date.now();
     db.prepare(
       `WITH digits(d) AS (VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9)),
@@ -258,7 +258,7 @@ describe("audit event persistence", () => {
 
   it("rolls back an insert whose sequence cannot be represented safely", () => {
     const database = createDatabaseOptions();
-    const { db } = openOpenClawStateDatabase(database);
+    const { db } = openAforaStateDatabase(database);
     db.prepare("INSERT INTO sqlite_sequence (name, seq) VALUES ('audit_events', ?)").run(
       Number.MAX_SAFE_INTEGER,
     );

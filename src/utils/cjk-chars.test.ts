@@ -3,7 +3,7 @@ import {
   CHARS_PER_TOKEN_ESTIMATE,
   estimateStringChars,
   estimateTokensFromChars,
-} from "@openclaw/normalization-core/cjk-chars";
+} from "@afora/normalization-core/cjk-chars";
 import { describe, expect, it } from "vitest";
 
 describe("estimateStringChars", () => {

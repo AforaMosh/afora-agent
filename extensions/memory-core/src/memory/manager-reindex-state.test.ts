@@ -2,7 +2,7 @@
 import {
   MEMORY_CHUNKING_VERSION,
   type MemorySource,
-} from "openclaw/plugin-sdk/memory-core-host-engine-storage";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-storage";
 import { describe, expect, it } from "vitest";
 import {
   MEMORY_INDEX_PROVENANCE_VERSION,

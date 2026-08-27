@@ -7,7 +7,7 @@ read_when:
 title: "Deepgram"
 ---
 
-Deepgram is a speech-to-text API. OpenClaw uses it for inbound audio/voice-note
+Deepgram is a speech-to-text API. Afora uses it for inbound audio/voice-note
 transcription through `tools.media.audio` and for Voice Call streaming STT
 through `plugins.entries.voice-call.config.streaming`.
 
@@ -46,7 +46,7 @@ returns them.
     ```
   </Step>
   <Step title="Send a voice note">
-    Send an audio message through any connected channel. OpenClaw transcribes it
+    Send an audio message through any connected channel. Afora transcribes it
     via Deepgram and injects the transcript into the reply pipeline.
   </Step>
 </Steps>
@@ -184,6 +184,6 @@ Twilio media frames can be forwarded directly.
     Common issues and debugging steps.
   </Card>
   <Card title="FAQ" href="/help/faq" icon="circle-question">
-    Frequently asked questions about OpenClaw setup.
+    Frequently asked questions about Afora setup.
   </Card>
 </CardGroup>

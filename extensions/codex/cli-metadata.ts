@@ -1,7 +1,7 @@
 // Codex CLI metadata stays lightweight until the command runs.
-import { definePluginEntry, type OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
+import { definePluginEntry, type AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
 
-export function registerCodexCliMetadata(api: OpenClawPluginApi): void {
+export function registerCodexCliMetadata(api: AforaPluginApi): void {
   api.registerCli(
     async ({ program }) => {
       const { registerCodexSessionCli } = await import("./src/session-cli.js");

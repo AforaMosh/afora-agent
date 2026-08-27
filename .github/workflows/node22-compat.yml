@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   compat:
-    if: github.repository == 'openclaw/openclaw' || github.event_name == 'workflow_dispatch'
+    if: github.repository == 'AforaMosh/afora-agent' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -96,7 +96,7 @@ jobs:
           run-id: ${{ steps.declaration_cache.outputs.run_id }}
 
       - name: Configure Node test resources
-        run: echo "OPENCLAW_VITEST_MAX_WORKERS=2" >> "$GITHUB_ENV"
+        run: echo "AFORA_VITEST_MAX_WORKERS=2" >> "$GITHUB_ENV"
 
       - name: Run Node 22 compatibility
         env:
@@ -104,12 +104,12 @@ jobs:
         run: |
           pnpm build
           pnpm ui:build
-          node openclaw.mjs --help
-          node openclaw.mjs status --json --timeout 1
+          node afora.mjs --help
+          node afora.mjs status --json --timeout 1
           pnpm test:build:singleton
 
       - name: Publish trusted declaration cache artifact
-        if: success() && github.repository == 'openclaw/openclaw' && github.ref == 'refs/heads/main'
+        if: success() && github.repository == 'AforaMosh/afora-agent' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           compression-level: 1

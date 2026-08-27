@@ -9,7 +9,7 @@ type RunCommand = typeof runCommandWithTimeout;
 const tmpRoots: string[] = [];
 
 async function makeRoot(): Promise<string> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-dev-branch-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-dev-branch-"));
   tmpRoots.push(dir);
   // macOS tmpdir is a symlink (/var -> /private/var); production compares
   // canonical package and git roots.
@@ -42,8 +42,8 @@ async function resolveBranch(params: {
   runCommand: RunCommand;
 }): Promise<string | null> {
   vi.doMock("../process/exec.js", () => ({ runCommandWithTimeout: params.runCommand }));
-  vi.doMock("./openclaw-root.js", () => ({
-    resolveOpenClawPackageRoot: vi.fn(async () => params.root),
+  vi.doMock("./afora-root.js", () => ({
+    resolveAforaPackageRoot: vi.fn(async () => params.root),
   }));
   const { resolveDevInstallGitBranch } = await import("./dev-install-branch.js");
   return await resolveDevInstallGitBranch();
@@ -52,7 +52,7 @@ async function resolveBranch(params: {
 afterEach(() => {
   vi.resetModules();
   vi.doUnmock("../process/exec.js");
-  vi.doUnmock("./openclaw-root.js");
+  vi.doUnmock("./afora-root.js");
 });
 
 afterAll(async () => {
@@ -88,7 +88,7 @@ describe("resolveDevInstallGitBranch", () => {
 
   it("returns null when the package root is nested inside an unrelated repo", async () => {
     const root = await makeRoot();
-    const nested = path.join(root, "node_modules", "openclaw");
+    const nested = path.join(root, "node_modules", "afora");
     await fs.mkdir(nested, { recursive: true });
     const branch = await resolveBranch({
       root: nested,

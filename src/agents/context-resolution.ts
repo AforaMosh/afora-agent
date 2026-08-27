@@ -2,9 +2,9 @@ import {
   resolveClaudeOpus5ModelIdentity,
   resolveClaudeSonnet5ModelIdentity,
   supportsClaude1MContext,
-} from "@openclaw/llm-core";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+} from "@afora/llm-core";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   lookupCachedContextTokens,
   lookupCachedContextWindow,
@@ -23,7 +23,7 @@ export type ModelsConfig = {
 };
 
 export type ContextTokenResolutionParams = {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   provider?: string;
   modelProvider?: string;
   model?: string;
@@ -64,7 +64,7 @@ function resolveProviderModelRef(params: {
 }
 
 function resolveConfiguredProviderModel(
-  cfg: OpenClawConfig | null | undefined,
+  cfg: AforaConfig | null | undefined,
   provider: string,
   model: string,
 ): ConfigModelEntry | undefined {
@@ -105,7 +105,7 @@ function resolveProviderQualifiedModel(provider: string, model: string): string 
 }
 
 function resolveConfiguredRuntimeModel(
-  cfg: OpenClawConfig | null | undefined,
+  cfg: AforaConfig | null | undefined,
   provider: string,
   modelProvider: string | undefined,
   model: string,
@@ -137,7 +137,7 @@ function readAuthoredModelContextTokens(model: ConfigModelEntry | undefined): nu
     : undefined;
 }
 
-/** Returns only the per-model contextTokens value authored in OpenClaw config. */
+/** Returns only the per-model contextTokens value authored in Afora config. */
 export function resolveAuthoredModelContextTokens(
   params: Pick<ContextTokenResolutionParams, "cfg" | "provider" | "modelProvider" | "model">,
 ): number | undefined {

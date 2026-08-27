@@ -1,5 +1,5 @@
 /**
- * Hosts the local OpenClaw sandbox exec-server that Codex app-server native
+ * Hosts the local Afora sandbox exec-server that Codex app-server native
  * execution can register as an external environment.
  */
 import { createHash, randomUUID } from "node:crypto";
@@ -7,8 +7,8 @@ import { once } from "node:events";
 import type { IncomingMessage } from "node:http";
 import { isIP, type AddressInfo } from "node:net";
 import { pathToFileURL } from "node:url";
-import { embeddedAgentLog } from "openclaw/plugin-sdk/agent-harness-runtime";
-import type { SandboxContext } from "openclaw/plugin-sdk/sandbox";
+import { embeddedAgentLog } from "afora-agent/plugin-sdk/agent-harness-runtime";
+import type { SandboxContext } from "afora-agent/plugin-sdk/sandbox";
 import { WebSocketServer, type RawData, type WebSocket } from "ws";
 import type { CodexAppServerClient } from "./client.js";
 import type { CodexAppServerStartOptions } from "./config.js";
@@ -45,7 +45,7 @@ import {
 import type {
   JsonRpcRequest,
   ManagedProcess,
-  OpenClawExecServer,
+  AforaExecServer,
 } from "./sandbox-exec-server/types.js";
 
 /** Codex environment metadata registered for one sandbox exec-server lease. */
@@ -69,10 +69,10 @@ export async function ensureCodexSandboxExecServerEnvironment(params: {
   }
   if (!canExposeLocalExecServerToAppServer(params.appServerStartOptions)) {
     throw new Error(
-      "OpenClaw Codex exec-server uses a local loopback URL and cannot be registered with a remote Codex app-server.",
+      "Afora Codex exec-server uses a local loopback URL and cannot be registered with a remote Codex app-server.",
     );
   }
-  const execServer = await acquireOpenClawExecServer(params.sandbox);
+  const execServer = await acquireAforaExecServer(params.sandbox);
   try {
     await params.client.request(
       "environment/add",
@@ -83,7 +83,7 @@ export async function ensureCodexSandboxExecServerEnvironment(params: {
       { timeoutMs: params.timeoutMs, signal: params.signal },
     );
   } catch (error) {
-    await releaseOpenClawExecServer(execServer);
+    await releaseAforaExecServer(execServer);
     if (isEnvironmentAddUnsupported(error)) {
       embeddedAgentLog.warn("codex app-server does not support remote environments yet", {
         environmentId: execServer.environmentId,
@@ -109,7 +109,7 @@ export async function releaseCodexSandboxExecServerEnvironment(
     .get(sandbox.runtimeId)
     ?.catch(() => undefined);
   if (server) {
-    await releaseOpenClawExecServer(server);
+    await releaseAforaExecServer(server);
   }
 }
 
@@ -144,11 +144,11 @@ function canExposeLocalExecServerToAppServer(
   }
 }
 
-async function acquireOpenClawExecServer(sandbox: SandboxContext): Promise<OpenClawExecServer> {
+async function acquireAforaExecServer(sandbox: SandboxContext): Promise<AforaExecServer> {
   const key = sandbox.runtimeId;
   while (true) {
     const existing = sandboxExecServerRegistry.servers.get(key);
-    const promise = existing ?? startAndRememberOpenClawExecServer(sandbox);
+    const promise = existing ?? startAndRememberAforaExecServer(sandbox);
     const server = await promise;
     if (!server.closed && sandboxExecServerRegistry.servers.get(key) === promise) {
       server.refCount += 1;
@@ -157,8 +157,8 @@ async function acquireOpenClawExecServer(sandbox: SandboxContext): Promise<OpenC
   }
 }
 
-function startAndRememberOpenClawExecServer(sandbox: SandboxContext): Promise<OpenClawExecServer> {
-  const created = startOpenClawExecServer(sandbox);
+function startAndRememberAforaExecServer(sandbox: SandboxContext): Promise<AforaExecServer> {
+  const created = startAforaExecServer(sandbox);
   const key = sandbox.runtimeId;
   sandboxExecServerRegistry.servers.set(key, created);
   void created.catch(() => {
@@ -169,7 +169,7 @@ function startAndRememberOpenClawExecServer(sandbox: SandboxContext): Promise<Op
   return created;
 }
 
-async function startOpenClawExecServer(sandbox: SandboxContext): Promise<OpenClawExecServer> {
+async function startAforaExecServer(sandbox: SandboxContext): Promise<AforaExecServer> {
   const server = new WebSocketServer({
     host: "127.0.0.1",
     port: 0,
@@ -180,12 +180,12 @@ async function startOpenClawExecServer(sandbox: SandboxContext): Promise<OpenCla
   await once(server, "listening");
   const address = server.address();
   if (!address || typeof address === "string") {
-    throw new Error("OpenClaw Codex exec-server did not bind to a TCP port.");
+    throw new Error("Afora Codex exec-server did not bind to a TCP port.");
   }
   const environmentId = buildEnvironmentId(sandbox);
-  const authPath = `/openclaw-${randomUUID()}`;
+  const authPath = `/afora-${randomUUID()}`;
   const url = `ws://127.0.0.1:${(address as AddressInfo).port}${authPath}`;
-  const execServer: OpenClawExecServer = {
+  const execServer: AforaExecServer = {
     authPath,
     closed: false,
     environmentId,
@@ -211,7 +211,7 @@ async function startOpenClawExecServer(sandbox: SandboxContext): Promise<OpenCla
   return execServer;
 }
 
-async function releaseOpenClawExecServer(execServer: OpenClawExecServer): Promise<void> {
+async function releaseAforaExecServer(execServer: AforaExecServer): Promise<void> {
   if (execServer.closed) {
     return;
   }
@@ -228,10 +228,10 @@ async function releaseOpenClawExecServer(execServer: OpenClawExecServer): Promis
   if (current === execServer) {
     sandboxExecServerRegistry.servers.delete(execServer.sandbox.runtimeId);
   }
-  await closeOpenClawExecServer(execServer);
+  await closeAforaExecServer(execServer);
 }
 
-async function closeOpenClawExecServer(execServer: OpenClawExecServer): Promise<void> {
+async function closeAforaExecServer(execServer: AforaExecServer): Promise<void> {
   if (execServer.closed) {
     return;
   }
@@ -246,18 +246,18 @@ async function closeOpenClawExecServer(execServer: OpenClawExecServer): Promise<
 
 function buildEnvironmentId(sandbox: SandboxContext): string {
   const hash = createHash("sha256").update(sandbox.runtimeId).digest("hex").slice(0, 16);
-  return `openclaw-sandbox-${hash}`;
+  return `afora-sandbox-${hash}`;
 }
 
 function isAuthorizedExecServerRequest(
-  execServer: OpenClawExecServer,
+  execServer: AforaExecServer,
   request: IncomingMessage,
 ): boolean {
   const url = new URL(request.url ?? "", "ws://127.0.0.1");
   return url.pathname === execServer.authPath;
 }
 
-function handleConnection(execServer: OpenClawExecServer, socket: WebSocket): void {
+function handleConnection(execServer: AforaExecServer, socket: WebSocket): void {
   const processes = new Map<string, ManagedProcess>();
   const fileReads: CodexSandboxFileReadHandles = new Map();
   socket.on("message", (data) => {
@@ -278,7 +278,7 @@ function handleExecServerSocketError(error: unknown): void {
 }
 
 async function handleMessage(
-  execServer: OpenClawExecServer,
+  execServer: AforaExecServer,
   processes: Map<string, ManagedProcess>,
   fileReads: CodexSandboxFileReadHandles,
   socket: WebSocket,
@@ -313,7 +313,7 @@ async function handleMessage(
 }
 
 async function dispatchRequest(
-  execServer: OpenClawExecServer,
+  execServer: AforaExecServer,
   processes: Map<string, ManagedProcess>,
   fileReads: CodexSandboxFileReadHandles,
   socket: WebSocket,
@@ -371,7 +371,7 @@ async function dispatchRequest(
     default:
       throw new JsonRpcProtocolError(
         JSON_RPC_METHOD_NOT_FOUND,
-        `Unsupported OpenClaw sandbox exec-server method: ${request.method}`,
+        `Unsupported Afora sandbox exec-server method: ${request.method}`,
       );
   }
 }

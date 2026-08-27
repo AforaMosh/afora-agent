@@ -1,5 +1,5 @@
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import { requestSessionCreate } from "../sessions/index.ts";
 import { normalizeAgentId } from "../sessions/session-key.ts";
@@ -49,7 +49,7 @@ function engineModel(engine: WorkboardExecutionEngine | null | undefined): strin
 }
 
 function buildCardPrompt(card: WorkboardCard): string {
-  const lines = [`Work on this OpenClaw Workboard card: ${card.title}`];
+  const lines = [`Work on this Afora Workboard card: ${card.title}`];
   if (card.notes?.trim()) {
     lines.push("", card.notes.trim());
   }

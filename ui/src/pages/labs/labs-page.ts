@@ -16,7 +16,7 @@ import { resolveEditableSnapshotConfig } from "../../lib/config/config-state-mod
 import { buildExternalLinkRel, EXTERNAL_LINK_TARGET } from "../../lib/external-link.ts";
 import { formatUiError } from "../../lib/format-error.ts";
 import { GatewayPageController } from "../../lit/gateway-page-controller.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import {
   labFeatureMergePatch,
@@ -26,7 +26,7 @@ import {
   type LabFeature,
 } from "./labs-registry.ts";
 
-class LabsPage extends OpenClawLightDomElement {
+class LabsPage extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context!: ApplicationContext;
 
@@ -174,7 +174,7 @@ class LabsPage extends OpenClawLightDomElement {
       {
         intro: html`${t("labsPage.intro")}
         ${renderDocsLink(
-          "https://docs.openclaw.ai/concepts/experimental-features",
+          "https://docs.afora.ai/concepts/experimental-features",
           t("common.learnMore"),
         )}`,
       },
@@ -190,6 +190,6 @@ class LabsPage extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-labs-page")) {
-  customElements.define("openclaw-labs-page", LabsPage);
+if (!customElements.get("afora-labs-page")) {
+  customElements.define("afora-labs-page", LabsPage);
 }

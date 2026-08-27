@@ -3,10 +3,10 @@ import { WORKER_EXECUTION_CONTEXT_PROTOCOL_FEATURE } from "../../../packages/gat
 import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js";
 import { NODE_RUNNER_UPDATE_REQUIRED_ISSUE } from "../../infra/node-runner-inventory.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-  type OpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+  type AforaStateDatabase,
+} from "../../state/afora-state-db.js";
 import { bindDeviceWorkerAvailability } from "./device-provider.js";
 import { REQUEST, type PlacementStore } from "./placement-dispatch-test-fixtures.js";
 import { createHarness } from "./placement-dispatch-test-harness.js";
@@ -16,17 +16,17 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("device worker placement dispatch", () => {
   let root: string;
-  let database: OpenClawStateDatabase;
+  let database: AforaStateDatabase;
   let placementStore: PlacementStore;
 
   beforeEach(() => {
-    root = tempDirs.make("openclaw-device-dispatch-");
-    database = openOpenClawStateDatabase({ env: { OPENCLAW_STATE_DIR: root } });
+    root = tempDirs.make("afora-device-dispatch-");
+    database = openAforaStateDatabase({ env: { AFORA_STATE_DIR: root } });
     placementStore = createWorkerSessionPlacementStore({ database, now: () => 1_000 });
   });
 
   afterEach(() => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
   });
 
   it("provisions, syncs, and activates a local-install device environment", async () => {
@@ -41,7 +41,7 @@ describe("device worker placement dispatch", () => {
       sshEndpoint: null,
       bootstrapReceipt: {
         bundleHash: "a".repeat(64),
-        openclawVersion: "2026.8.12",
+        aforaVersion: "2026.8.12",
         protocolFeatures: [WORKER_EXECUTION_CONTEXT_PROTOCOL_FEATURE],
         installKind: "bundle",
       },
@@ -105,7 +105,7 @@ describe("device worker placement dispatch", () => {
     await expect(
       harness.service.dispatch(request, (placement) => states.push(placement.state)),
     ).rejects.toThrow(
-      "device worker node offline-device requires an update before it can host sessions; run openclaw update, then reconnect it (for a headless node, run openclaw node restart)",
+      "device worker node offline-device requires an update before it can host sessions; run afora update, then reconnect it (for a headless node, run afora node restart)",
     );
 
     expect(states).toEqual(["requested", "failed"]);
@@ -113,8 +113,8 @@ describe("device worker placement dispatch", () => {
     expect(createWorkerSessionPlacementStore({ database }).get(REQUEST.sessionId)).toMatchObject({
       state: "failed",
       environmentId: null,
-      recoveryError: expect.stringContaining("run openclaw update"),
-      terminalReason: expect.stringContaining("run openclaw node restart"),
+      recoveryError: expect.stringContaining("run afora update"),
+      terminalReason: expect.stringContaining("run afora node restart"),
       terminalAtMs: 1_000,
     });
   });

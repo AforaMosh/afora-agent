@@ -7,20 +7,20 @@ const platforms = [
     name: "Teams",
     token: "teams",
     globals: {
-      audioOutputs: "__openclawTeamsAudioOutputs",
-      captionArchive: "__openclawTeamsCaptionArchive",
-      captions: "__openclawTeamsCaptions",
-      meeting: "__openclawTeamsMeeting",
+      audioOutputs: "__aforaTeamsAudioOutputs",
+      captionArchive: "__aforaTeamsCaptionArchive",
+      captions: "__aforaTeamsCaptions",
+      meeting: "__aforaTeamsMeeting",
     },
   },
   {
     name: "Zoom",
     token: "zoom",
     globals: {
-      audioOutputs: "__openclawZoomAudioOutputs",
-      captionArchive: "__openclawZoomCaptionArchive",
-      captions: "__openclawZoomCaptions",
-      meeting: "__openclawZoomMeeting",
+      audioOutputs: "__aforaZoomAudioOutputs",
+      captionArchive: "__aforaZoomCaptionArchive",
+      captions: "__aforaZoomCaptions",
+      meeting: "__aforaZoomMeeting",
     },
   },
 ] as const;
@@ -30,7 +30,7 @@ describe.each(platforms)("$name meeting status source parity", (platform) => {
     const callOptions = {
       captionEnableSource: "captionsEnabledNow = true;",
       platform: {
-        audioOutputElementIdPrefix: `openclaw-${platform.token}-audio-output-`,
+        audioOutputElementIdPrefix: `afora-${platform.token}-audio-output-`,
         displayName: platform.name,
         globals: {
           audioOutputs: platform.globals.audioOutputs,
@@ -59,7 +59,7 @@ describe.each(platforms)("$name meeting status source parity", (platform) => {
       autoJoin: false,
       captureCaptions: false,
       expectedIdentity: `${platform.token}:meeting`,
-      guestName: "OpenClaw",
+      guestName: "Afora",
       pageIdentitySource: "const meetingIdentity = () => undefined;",
       selectors: "{}",
       toggleStateFunction: "() => undefined",

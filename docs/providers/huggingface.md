@@ -1,12 +1,12 @@
 ---
 summary: "Hugging Face Inference setup (auth + model selection)"
 read_when:
-  - You want to use Hugging Face Inference with OpenClaw
+  - You want to use Hugging Face Inference with Afora
   - You need the HF token env var or CLI auth choice
 title: "Hugging Face (inference)"
 ---
 
-[Hugging Face Inference Providers](https://huggingface.co/docs/inference-providers) exposes an OpenAI-compatible chat completions router in front of many hosted models (DeepSeek, Llama, and more) under one token. OpenClaw talks to the **chat completions endpoint only**; for text-to-image, embeddings, or speech use the [HF inference clients](https://huggingface.co/docs/api-inference/quicktour) directly.
+[Hugging Face Inference Providers](https://huggingface.co/docs/inference-providers) exposes an OpenAI-compatible chat completions router in front of many hosted models (DeepSeek, Llama, and more) under one token. Afora talks to the **chat completions endpoint only**; for text-to-image, embeddings, or speech use the [HF inference clients](https://huggingface.co/docs/api-inference/quicktour) directly.
 
 | Property     | Value                                                                                                                       |
 | ------------ | --------------------------------------------------------------------------------------------------------------------------- |
@@ -31,12 +31,12 @@ title: "Hugging Face (inference)"
     Choose **Hugging Face** in the provider dropdown, then enter your API key when prompted:
 
     ```bash
-    openclaw onboard --auth-choice huggingface-api-key
+    afora onboard --auth-choice huggingface-api-key
     ```
 
   </Step>
   <Step title="Select a default model">
-    In the **Default Hugging Face model** dropdown, pick a model. The list loads from the Inference API when your token is valid; otherwise OpenClaw shows the built-in catalog below. Your choice is saved as `agents.defaults.model.primary`:
+    In the **Default Hugging Face model** dropdown, pick a model. The list loads from the Inference API when your token is valid; otherwise Afora shows the built-in catalog below. Your choice is saved as `agents.defaults.model.primary`:
 
     ```json5
     {
@@ -51,7 +51,7 @@ title: "Hugging Face (inference)"
   </Step>
   <Step title="Verify the model is available">
     ```bash
-    openclaw models list --provider huggingface
+    afora models list --provider huggingface
     ```
   </Step>
 </Steps>
@@ -59,7 +59,7 @@ title: "Hugging Face (inference)"
 ### Non-interactive setup
 
 ```bash
-openclaw onboard --non-interactive --accept-risk --skip-health \
+afora onboard --non-interactive --accept-risk --skip-health \
   --mode local \
   --auth-choice huggingface-api-key \
   --huggingface-api-key "$HF_TOKEN"
@@ -69,7 +69,7 @@ Sets `huggingface/deepseek-ai/DeepSeek-R1` as the default model.
 
 ## Model IDs
 
-Model refs use the form `huggingface/<org>/<model>` (Hub-style IDs). OpenClaw's built-in catalog:
+Model refs use the form `huggingface/<org>/<model>` (Hub-style IDs). Afora's built-in catalog:
 
 | Model         | Ref (prefix with `huggingface/`) |
 | ------------- | -------------------------------- |
@@ -78,14 +78,14 @@ Model refs use the form `huggingface/<org>/<model>` (Hub-style IDs). OpenClaw's 
 | GPT-OSS 120B  | `openai/gpt-oss-120b`            |
 
 <Tip>
-When your token is valid, OpenClaw also discovers any other model from **GET** `https://router.huggingface.co/v1/models` at onboarding time and Gateway startup, so your catalog can include far more than the three models above. You can append `:fastest` or `:cheapest` to any model id; HF's router routes to the matching inference provider. Set your default provider order in [Inference Provider settings](https://hf.co/settings/inference-providers).
+When your token is valid, Afora also discovers any other model from **GET** `https://router.huggingface.co/v1/models` at onboarding time and Gateway startup, so your catalog can include far more than the three models above. You can append `:fastest` or `:cheapest` to any model id; HF's router routes to the matching inference provider. Set your default provider order in [Inference Provider settings](https://hf.co/settings/inference-providers).
 </Tip>
 
 ## Advanced configuration
 
 <AccordionGroup>
   <Accordion title="Model discovery and onboarding dropdown">
-    OpenClaw discovers models with:
+    Afora discovers models with:
 
     ```bash
     GET https://router.huggingface.co/v1/models
@@ -94,18 +94,18 @@ When your token is valid, OpenClaw also discovers any other model from **GET** `
 
     The response is OpenAI-style: `{ "object": "list", "data": [ { "id": "Qwen/Qwen3-8B", "owned_by": "Qwen", ... }, ... ] }`.
 
-    With a configured key (onboarding, `HUGGINGFACE_HUB_TOKEN`, or `HF_TOKEN`), the **Default Hugging Face model** dropdown during interactive setup is populated from this endpoint. Gateway startup repeats the same call to refresh the catalog. Discovered models are merged with the built-in catalog above (used for metadata like context window and cost when an id matches). If the request fails, returns no data, or no key is set, OpenClaw falls back to the built-in catalog only.
+    With a configured key (onboarding, `HUGGINGFACE_HUB_TOKEN`, or `HF_TOKEN`), the **Default Hugging Face model** dropdown during interactive setup is populated from this endpoint. Gateway startup repeats the same call to refresh the catalog. Discovered models are merged with the built-in catalog above (used for metadata like context window and cost when an id matches). If the request fails, returns no data, or no key is set, Afora falls back to the built-in catalog only.
 
     Disable discovery without removing the provider:
 
     ```bash
-    openclaw config set plugins.entries.huggingface.config.discovery.enabled false
+    afora config set plugins.entries.huggingface.config.discovery.enabled false
     ```
 
   </Accordion>
 
   <Accordion title="Model names, aliases, and policy suffixes">
-    - **Name from API:** discovered models use the API's `name`, `title`, or `display_name` when present; otherwise OpenClaw derives a name from the model id (e.g. `deepseek-ai/DeepSeek-R1` becomes "DeepSeek R1").
+    - **Name from API:** discovered models use the API's `name`, `title`, or `display_name` when present; otherwise Afora derives a name from the model id (e.g. `deepseek-ai/DeepSeek-R1` becomes "DeepSeek R1").
     - **Override display name:** set a custom label per model in config:
 
     ```json5
@@ -121,16 +121,16 @@ When your token is valid, OpenClaw also discovers any other model from **GET** `
     }
     ```
 
-    - **Policy suffixes:** `:fastest` and `:cheapest` are HF router conventions, not something OpenClaw rewrites: the suffix is sent verbatim as part of the model id and HF's router picks the matching inference provider. Add each variant as its own entry under `models.providers.huggingface.models` (or in `model.primary`) if you want a distinct alias per suffix.
+    - **Policy suffixes:** `:fastest` and `:cheapest` are HF router conventions, not something Afora rewrites: the suffix is sent verbatim as part of the model id and HF's router picks the matching inference provider. Add each variant as its own entry under `models.providers.huggingface.models` (or in `model.primary`) if you want a distinct alias per suffix.
     - **Config merge:** existing entries in `models.providers.huggingface.models` (e.g. in `models.json`) are kept on config merge, so any custom `name`, `alias`, or model options you set there persist across restarts.
 
   </Accordion>
 
   <Accordion title="Environment and daemon setup">
-    If the Gateway runs as a daemon (launchd/systemd), make sure `HUGGINGFACE_HUB_TOKEN` or `HF_TOKEN` is available to that process (for example, in `~/.openclaw/.env` or via `env.shellEnv`).
+    If the Gateway runs as a daemon (launchd/systemd), make sure `HUGGINGFACE_HUB_TOKEN` or `HF_TOKEN` is available to that process (for example, in `~/.afora/.env` or via `env.shellEnv`).
 
     <Note>
-    OpenClaw accepts both `HUGGINGFACE_HUB_TOKEN` and `HF_TOKEN`. If both are set, `HUGGINGFACE_HUB_TOKEN` takes precedence.
+    Afora accepts both `HUGGINGFACE_HUB_TOKEN` and `HF_TOKEN`. If both are set, `HUGGINGFACE_HUB_TOKEN` takes precedence.
     </Note>
 
   </Accordion>

@@ -48,7 +48,7 @@ describe("gatewayAuthTokenCommand", () => {
   });
 
   it("prints only the resolved token for an interactive operator", async () => {
-    const env = { OPENCLAW_GATEWAY_TOKEN: "environment-value" };
+    const env = { AFORA_GATEWAY_TOKEN: "environment-value" };
 
     await gatewayAuthTokenCommand(runtime, { env, interactive: true });
 
@@ -95,7 +95,7 @@ describe("gatewayAuthTokenCommand", () => {
     });
 
     await expect(gatewayAuthTokenCommand(runtime, { env: {}, interactive: true })).rejects.toThrow(
-      "openclaw doctor --generate-gateway-token",
+      "afora doctor --generate-gateway-token",
     );
 
     expect(runtime.writeStdout).not.toHaveBeenCalled();
@@ -109,7 +109,7 @@ describe("gatewayAuthTokenCommand", () => {
     await expect(
       gatewayAuthTokenCommand(runtime, {
         interactive: true,
-        env: { OPENCLAW_GATEWAY_TOKEN: "ambient-fallback" },
+        env: { AFORA_GATEWAY_TOKEN: "ambient-fallback" },
       }),
     ).rejects.toThrow("gateway.auth.token SecretRef is unresolved");
 
@@ -163,7 +163,7 @@ describe("gatewayAuthTokenCommand", () => {
     await expect(
       gatewayAuthTokenCommand(runtime, {
         interactive: true,
-        env: { OPENCLAW_GATEWAY_PASSWORD: "active-password" },
+        env: { AFORA_GATEWAY_PASSWORD: "active-password" },
       }),
     ).rejects.toThrow("Gateway auth mode is password");
 

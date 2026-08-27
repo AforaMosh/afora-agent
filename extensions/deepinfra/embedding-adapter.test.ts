@@ -1,5 +1,5 @@
 // Deepinfra tests cover its generic embedding adapter behavior.
-import type { MemoryEmbeddingProvider } from "openclaw/plugin-sdk/memory-core-host-engine-embeddings";
+import type { MemoryEmbeddingProvider } from "afora-agent/plugin-sdk/memory-core-host-engine-embeddings";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -44,7 +44,7 @@ describe("DeepInfra generic embedding adapter", () => {
   it("preserves model, dimensions, input types, and runtime identity when creating", async () => {
     const result = await deepinfraEmbeddingProviderAdapter.create({
       config: {},
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       provider: "deepinfra",
       remote: {
         baseUrl: "https://api.deepinfra.com/v1/openai",
@@ -61,7 +61,7 @@ describe("DeepInfra generic embedding adapter", () => {
 
     expect(mocks.createDeepInfraEmbeddingProvider).toHaveBeenCalledWith({
       config: {},
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
       provider: "deepinfra",
       fallback: "none",
       remote: {

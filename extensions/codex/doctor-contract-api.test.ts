@@ -5,12 +5,12 @@ import path from "node:path";
 import {
   createPluginStateKeyedStoreForTests,
   resetPluginStateStoreForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import type {
   OpenKeyedStoreOptions,
   PluginDoctorStateMigrationContext,
-} from "openclaw/plugin-sdk/runtime-doctor-migrations";
-import { getSessionEntry, upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
+} from "afora-agent/plugin-sdk/runtime-doctor-migrations";
+import { getSessionEntry, upsertSessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   legacyConfigRules,
@@ -67,8 +67,8 @@ async function createBindingMigrationFixture(options: {
   storeRoot?: "agent" | "fixed";
   threadId: string;
 }) {
-  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-doctor-"));
-  const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-doctor-"));
+  const env = { ...process.env, AFORA_STATE_DIR: stateDir };
   const sessionsDir =
     options.storeRoot === "fixed"
       ? path.join(stateDir, "fixed-sessions")
@@ -133,7 +133,7 @@ describe("codex doctor contract", () => {
   it("reports the retired dynamic tools profile config key", () => {
     expect(
       legacyConfigRules[0]?.match({
-        codexDynamicToolsProfile: "openclaw-compat",
+        codexDynamicToolsProfile: "afora-compat",
         codexDynamicToolsLoading: "direct",
       }),
     ).toBe(true);
@@ -193,7 +193,7 @@ describe("codex doctor contract", () => {
           codex: {
             enabled: true,
             config: {
-              codexDynamicToolsProfile: "openclaw-compat",
+              codexDynamicToolsProfile: "afora-compat",
               codexDynamicToolsLoading: "direct",
               codexDynamicToolsExclude: ["custom_tool"],
               appServer: { mode: "guardian" },
@@ -1212,7 +1212,7 @@ describe("codex doctor contract", () => {
       name: "unknown-owner",
       threadId: "thread-unknown-owner",
     });
-    const externalDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-store-"));
+    const externalDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-store-"));
     const externalStore = path.join(externalDir, "sessions.json");
     await fs.writeFile(externalStore, contents, "utf8");
     const params = {
@@ -1237,8 +1237,8 @@ describe("codex doctor contract", () => {
   });
 
   it("does not scan above stateDir or follow escaped external store locators", async () => {
-    const outerDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-doctor-outer-"));
-    const outsideDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-codex-doctor-outside-"));
+    const outerDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-doctor-outer-"));
+    const outsideDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-codex-doctor-outside-"));
     const stateDir = path.join(outerDir, "state");
     await fs.mkdir(stateDir, { recursive: true });
     const strayDir = path.join(outerDir, "unrelated");
@@ -1267,7 +1267,7 @@ describe("codex doctor contract", () => {
       }),
       "utf8",
     );
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
     const params = {
       // The store directory is exactly stateDir's parent. It stays indexed-only,
       // and its explicit locator cannot escape that directory.
@@ -1297,7 +1297,7 @@ describe("codex doctor contract", () => {
           codex: {
             enabled: true,
             config: {
-              codexDynamicToolsProfile: "openclaw-compat",
+              codexDynamicToolsProfile: "afora-compat",
               codexPlugins: {
                 enabled: true,
                 allow_destructive_actions: "on-request",

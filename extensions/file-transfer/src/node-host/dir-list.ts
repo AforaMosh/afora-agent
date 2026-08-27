@@ -1,7 +1,7 @@
 // File Transfer plugin module implements dir list behavior.
 import path from "node:path";
-import { parseStrictNonNegativeInteger } from "openclaw/plugin-sdk/number-runtime";
-import { root } from "openclaw/plugin-sdk/security-runtime";
+import { parseStrictNonNegativeInteger } from "afora-agent/plugin-sdk/number-runtime";
+import { root } from "afora-agent/plugin-sdk/security-runtime";
 import { mimeFromExtension } from "../shared/mime.js";
 import {
   classifyFsSafeReadError,

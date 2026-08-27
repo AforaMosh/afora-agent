@@ -1,5 +1,5 @@
 // Tencent config compatibility repairs shipped TokenHub model allowlists.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 
 const TENCENT_TOKENHUB_DEFAULT_MODEL_REF = "tencent-tokenhub/hy3";
 const TENCENT_TOKENHUB_PREVIEW_MODEL_REF = "tencent-tokenhub/hy3-preview";
@@ -7,7 +7,7 @@ const TENCENT_TOKENHUB_PREVIEW_MODEL_REF = "tencent-tokenhub/hy3-preview";
 const TOKENHUB_DEFAULT_ALIAS = "Hy3 (TokenHub)";
 const TOKENHUB_PREVIEW_ALIAS = "Hy3 preview (TokenHub)";
 
-type AgentDefaults = NonNullable<NonNullable<OpenClawConfig["agents"]>["defaults"]>;
+type AgentDefaults = NonNullable<NonNullable<AforaConfig["agents"]>["defaults"]>;
 type AgentDefaultModel = AgentDefaults["model"];
 type AgentModelEntry = NonNullable<AgentDefaults["models"]>[string];
 
@@ -56,8 +56,8 @@ function migrateDefaultModel(model: AgentDefaultModel): {
   return { model, changed: false };
 }
 
-export function migrateTencentTokenHubModelDefaults(cfg: OpenClawConfig): {
-  config: OpenClawConfig;
+export function migrateTencentTokenHubModelDefaults(cfg: AforaConfig): {
+  config: AforaConfig;
   changes: string[];
 } {
   const existingModels = cfg.agents?.defaults?.models;
@@ -88,7 +88,7 @@ export function migrateTencentTokenHubModelDefaults(cfg: OpenClawConfig): {
     ),
   };
 
-  const nextConfig: OpenClawConfig = {
+  const nextConfig: AforaConfig = {
     ...cfg,
     agents: {
       ...cfg.agents,

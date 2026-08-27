@@ -23,10 +23,10 @@ describe("Control UI service worker cache versioning", () => {
     const caches = {
       delete: cacheDelete,
       keys: vi.fn(async () => [
-        "openclaw-control-oldest",
-        "openclaw-control-older",
-        "openclaw-control-previous",
-        "openclaw-control-new-build",
+        "afora-control-oldest",
+        "afora-control-older",
+        "afora-control-previous",
+        "afora-control-new-build",
         "other-cache",
       ]),
       open: vi.fn(),
@@ -72,7 +72,7 @@ describe("Control UI service worker cache versioning", () => {
 
     expect(clients.matchAll).toHaveBeenCalledWith({ type: "window", includeUncontrolled: true });
     expect(clients.claim).toHaveBeenCalled();
-    expect(cacheDelete).toHaveBeenCalledWith("openclaw-control-oldest");
+    expect(cacheDelete).toHaveBeenCalledWith("afora-control-oldest");
     expect(windowClient.postMessage).toHaveBeenCalledWith({
       type: "sw-updated",
       version: "new-build",
@@ -83,8 +83,8 @@ describe("Control UI service worker cache versioning", () => {
 
 describe("Control UI service worker notification scope", () => {
   const rootScope = "https://control.example/";
-  const nestedScope = "https://control.example/openclaw/";
-  const nestedScopeWithoutSlash = "https://control.example/openclaw";
+  const nestedScope = "https://control.example/afora/";
+  const nestedScopeWithoutSlash = "https://control.example/afora";
 
   function notificationScenario(
     name: string,
@@ -306,27 +306,27 @@ describe("Control UI service worker notification scope", () => {
     notificationScenario(
       "never focuses a cross-origin window with the same nested pathname",
       nestedScope,
-      ["https://outside.example/openclaw/"],
+      ["https://outside.example/afora/"],
       { focusedClientIndex: -1, openedUrl: nestedScope },
     ),
     notificationScenario(
       "falls back to the registered scope for an explicit cross-origin target",
       nestedScope,
       [],
-      { target: "https://outside.example/openclaw/chat" },
+      { target: "https://outside.example/afora/chat" },
     ),
     notificationScenario(
       "rejects a sibling-prefix target and never focuses its window",
       nestedScope,
-      ["https://control.example/openclaw-other/chat"],
-      { target: "/openclaw-other/chat", focusedClientIndex: -1, openedUrl: nestedScope },
+      ["https://control.example/afora-other/chat"],
+      { target: "/afora-other/chat", focusedClientIndex: -1, openedUrl: nestedScope },
     ),
     notificationScenario(
       "rejects a sibling-prefix target for a slashless nested scope",
       nestedScopeWithoutSlash,
-      ["https://control.example/openclaw-other/chat"],
+      ["https://control.example/afora-other/chat"],
       {
-        target: "/openclaw-other/chat",
+        target: "/afora-other/chat",
         focusedClientIndex: -1,
         openedUrl: nestedScopeWithoutSlash,
       },
@@ -341,12 +341,12 @@ describe("Control UI service worker notification scope", () => {
       "rejects a cross-origin target for a slashless nested scope",
       nestedScopeWithoutSlash,
       [],
-      { target: "https://outside.example/openclaw/chat" },
+      { target: "https://outside.example/afora/chat" },
     ),
     notificationScenario(
       "never focuses a sibling-prefix window for the default nested target",
       nestedScope,
-      ["https://control.example/openclaw-other/"],
+      ["https://control.example/afora-other/"],
       { focusedClientIndex: -1, openedUrl: nestedScope },
     ),
     notificationScenario(
@@ -368,7 +368,7 @@ describe("Control UI service worker notification scope", () => {
     async ({ scope, target, clientUrls, focusedClientIndex, navigatedUrl, openedUrl }) => {
       const worker = createNotificationServiceWorker(scope, clientUrls);
       const payload: ServiceWorkerPushPayload = {
-        title: "OpenClaw",
+        title: "Afora",
         body: "Scoped notification",
       };
       if (target !== null) {

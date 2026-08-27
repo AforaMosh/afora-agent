@@ -1,5 +1,5 @@
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { resolveOpenClawStateSqlitePath } from "../../state/openclaw-state-db.paths.js";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import { resolveAforaStateSqlitePath } from "../../state/afora-state-db.paths.js";
 import { resolveCronListSnapshotRevision } from "../list-snapshot-revision.js";
 import { assertCronJobStateTimestamps } from "../persisted-shape.js";
 import { readCronJobScratchState, writeCronJobScratch } from "../scratch-store.js";
@@ -38,7 +38,7 @@ import { applyJobResult, armTimer } from "./timer.js";
 export async function status(state: CronServiceState) {
   return await locked(state, async () => {
     await ensureLoadedForRead(state);
-    const sqlitePath = resolveOpenClawStateSqlitePath();
+    const sqlitePath = resolveAforaStateSqlitePath();
     return {
       enabled: state.deps.cronEnabled,
       storePath: sqlitePath,

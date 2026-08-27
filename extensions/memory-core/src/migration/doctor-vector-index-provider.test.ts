@@ -2,8 +2,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { PluginDoctorStateMigrationContext } from "openclaw/plugin-sdk/runtime-doctor-migrations";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { PluginDoctorStateMigrationContext } from "afora-agent/plugin-sdk/runtime-doctor-migrations";
 import { afterEach, describe, expect, it } from "vitest";
 import { createVectorIndexProviderDiagnostic } from "./doctor-vector-index-provider-diagnostic.js";
 
@@ -21,9 +21,9 @@ afterEach(async () => {
 
 describe("memory vector index provider doctor diagnostic", () => {
   it("reports a protected semantic index when the configured provider cannot bootstrap", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-memory-vector-doctor-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-memory-vector-doctor-"));
     roots.add(stateDir);
-    const agentPath = path.join(stateDir, "agents", "main", "agent", "openclaw-agent.sqlite");
+    const agentPath = path.join(stateDir, "agents", "main", "agent", "afora-agent.sqlite");
     await fs.mkdir(path.dirname(agentPath), { recursive: true });
     const db = new DatabaseSync(agentPath);
     db.exec("CREATE TABLE memory_index_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL) STRICT");
@@ -35,10 +35,10 @@ describe("memory vector index provider doctor diagnostic", () => {
     const config = {
       memory: {},
       agents: { entries: {} },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const params = {
       config,
-      env: { OPENCLAW_STATE_DIR: stateDir },
+      env: { AFORA_STATE_DIR: stateDir },
       stateDir,
       oauthDir: path.join(stateDir, "oauth"),
       context: {} as PluginDoctorStateMigrationContext,

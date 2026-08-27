@@ -5,7 +5,7 @@ import {
 } from "../../../packages/gateway-protocol/src/index.js";
 import { isConfiguredSessionStoreAgentId } from "../../config/sessions.js";
 import { resolvePersistedSessionStoreOwnerForKey } from "../../config/sessions/session-store-owner.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { normalizeAgentIdStrict } from "../../routing/session-key.js";
 import { resolveRequestedSessionAgentId } from "../session-request-agent.js";
 import {
@@ -14,7 +14,7 @@ import {
   resolveStoredSessionKeyForAgentStore,
 } from "../session-store-key.js";
 
-export function resolveSessionSearchScope(cfg: OpenClawConfig, params: SessionsSearchParams) {
+export function resolveSessionSearchScope(cfg: AforaConfig, params: SessionsSearchParams) {
   const normalizedRequest =
     params.agentId === undefined ? null : normalizeAgentIdStrict(params.agentId);
   if (normalizedRequest && !normalizedRequest.ok) {

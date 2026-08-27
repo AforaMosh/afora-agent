@@ -46,7 +46,7 @@ function git(cwd: string, ...args: string[]): string {
 
 function initRepo(root: string): void {
   git(root, "init", "-q", "-b", "main");
-  git(root, "config", "user.email", "test@openclaw.test");
+  git(root, "config", "user.email", "test@afora.test");
   git(root, "config", "user.name", "Test");
   git(root, "config", "commit.gpgsign", "false");
 }
@@ -110,7 +110,7 @@ describe("loadSessionDiff", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    repoRoot = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-sessions-diff-")));
+    repoRoot = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "afora-sessions-diff-")));
     hoisted.resolveDefaultAgentId.mockReturnValue("main");
     hoisted.resolveAgentWorkspaceDir.mockReturnValue(repoRoot);
   });
@@ -410,7 +410,7 @@ describe("loadSessionDiff", () => {
   });
 
   it("withholds patch content for hardlinked files pointing outside the checkout", async () => {
-    const secretDir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-secret-")));
+    const secretDir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "afora-secret-")));
     const secretFile = path.join(secretDir, "secret.txt");
     fs.writeFileSync(secretFile, "TOP SECRET VALUE\n");
     try {

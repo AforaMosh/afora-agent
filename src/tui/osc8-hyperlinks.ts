@@ -1,5 +1,5 @@
 // Regex patterns for ANSI escape sequences (constructed from strings to
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 // satisfy the no-control-regex lint rule).
 const SGR_PATTERN = "\\x1b\\[[0-9;]*m";
 const OSC8_PATTERN = "\\x1b\\]8;;.*?(?:\\x07|\\x1b\\\\)";

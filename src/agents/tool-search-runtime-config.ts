@@ -1,14 +1,14 @@
 // Applies Tool Search overlays on top of the selected runtime config.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { applyLocalModelLeanToolSearchDefaults } from "./local-model-lean.js";
 import { resolveAgentRuntimeToolConfig } from "./tool-runtime-config.js";
 
 export function resolveAgentToolSearchRuntimeConfig(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   sessionKey?: string;
   forceDirectMessageTool?: boolean;
-}): OpenClawConfig | undefined {
+}): AforaConfig | undefined {
   // Select before overlay cloning; cloning source config first loses snapshot identity and can
   // reintroduce unresolved SecretRefs into plugin tool factories.
   const runtimeConfig = resolveAgentRuntimeToolConfig(params.config);

@@ -11,8 +11,8 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("state database coordinator", () => {
   it("reference-counts same-process owners", async () => {
-    const root = tempDirs.make("openclaw-state-database-coordinator-");
-    const databasePath = path.join(root, "selected-state", "state", "openclaw.sqlite");
+    const root = tempDirs.make("afora-state-database-coordinator-");
+    const databasePath = path.join(root, "selected-state", "state", "afora.sqlite");
     const runtimeDirectory = path.join(root, "runtime");
     await fs.mkdir(path.dirname(databasePath), { recursive: true });
     const first = acquireStateDatabaseCoordinator({
@@ -38,8 +38,8 @@ describe("state database coordinator", () => {
   });
 
   it("keeps Gateway presence independent from short state operations", async () => {
-    const root = tempDirs.make("openclaw-gateway-lifecycle-coordinator-");
-    const databasePath = path.join(root, "state", "openclaw.sqlite");
+    const root = tempDirs.make("afora-gateway-lifecycle-coordinator-");
+    const databasePath = path.join(root, "state", "afora.sqlite");
     const runtimeDirectory = path.join(root, "runtime");
     await fs.mkdir(path.dirname(databasePath), { recursive: true });
     const gateway = acquireGatewayLifecycleCoordinator({

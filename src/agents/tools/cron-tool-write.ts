@@ -1,5 +1,5 @@
 // Agent cron-tool write safety and optimistic update orchestration.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { isRecord } from "../../utils.js";
 import {
   CRON_CREATOR_AUTHORITY_RECOVERY_MESSAGE,

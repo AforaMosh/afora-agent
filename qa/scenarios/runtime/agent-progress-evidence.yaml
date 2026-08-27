@@ -50,7 +50,7 @@ scenario:
 
           Do not mark the task done until the status artifact has been written.
         FOLLOWTHROUGH_NOTE.md: |-
-          Task: prepare a local OpenClaw PR readiness note.
+          Task: prepare a local Afora PR readiness note.
           Pending: maintainer feedback before publishing.
           Blocked: publishing needs explicit user approval.
           Done: local evidence captured in personal-task-status.txt.
@@ -176,7 +176,7 @@ flow:
             message:
               expr: "`request 2 did not consume read 1 and plan a distinct read 2: ${JSON.stringify(secondReadRequest)}`"
         - assert:
-            expr: "writeRequest.toolOutputCallId === secondReadRequest.plannedToolCallId && writeRequest.toolOutputStructuredError !== true && String(writeRequest.toolOutput ?? '').includes('Task: prepare a local OpenClaw PR readiness note.') && writeRequest.plannedToolName === 'write' && writeRequest.plannedToolArgs?.path === config.artifactFile && typeof writeRequest.plannedToolCallId === 'string' && writeRequest.plannedToolCallId.length > 0 && writeRequest.plannedToolCallId !== secondReadRequest.plannedToolCallId"
+            expr: "writeRequest.toolOutputCallId === secondReadRequest.plannedToolCallId && writeRequest.toolOutputStructuredError !== true && String(writeRequest.toolOutput ?? '').includes('Task: prepare a local Afora PR readiness note.') && writeRequest.plannedToolName === 'write' && writeRequest.plannedToolArgs?.path === config.artifactFile && typeof writeRequest.plannedToolCallId === 'string' && writeRequest.plannedToolCallId.length > 0 && writeRequest.plannedToolCallId !== secondReadRequest.plannedToolCallId"
             message:
               expr: "`request 3 did not consume read 2 and plan the artifact write: ${JSON.stringify(writeRequest)}`"
         - assert:

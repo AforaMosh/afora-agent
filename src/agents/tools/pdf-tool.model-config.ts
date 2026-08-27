@@ -3,7 +3,7 @@
  *
  * Selects explicit PDF, image-model, native PDF, vision, or text-extraction fallback models.
  */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   providerSupportsNativePdfDocument,
   resolveAutoMediaKeyProviders,
@@ -38,7 +38,7 @@ function localModelIdForProvider(providerId: string, modelId: string): string {
 }
 
 function resolveConfiguredTextModelFromConfig(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   providerId: string;
 }): string | undefined {
   const providers = params.cfg?.models?.providers;
@@ -56,7 +56,7 @@ function resolveConfiguredTextModelFromConfig(params: {
 }
 
 function resolveImageCandidateRefs(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentDir: string;
   workspaceDir?: string;
   authStore?: AuthProfileStore;
@@ -107,7 +107,7 @@ function resolveImageCandidateRefs(params: {
 }
 
 function resolveTextExtractionCandidateRefs(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   primary: { provider: string; model: string };
   agentDir: string;
   workspaceDir?: string;
@@ -192,7 +192,7 @@ function resolveTextExtractionCandidateRefs(params: {
 }
 
 export function resolvePdfModelConfigForTool(params: {
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentDir: string;
   workspaceDir?: string;
   authStore?: AuthProfileStore;

@@ -93,7 +93,7 @@ export function createRuntimeHealthStore<T extends RuntimeHealthRecordEnvelope>(
   options: RuntimeHealthStoreOptions<T>,
 ): RuntimeHealthStore<T> {
   // The keyed store is opened per operation so records follow the state dir
-  // active at call time (tests and embedded runtimes swap OPENCLAW_STATE_DIR).
+  // active at call time (tests and embedded runtimes swap AFORA_STATE_DIR).
   const openStore = () =>
     createCorePluginStateSyncKeyedStore<T>({
       ownerId: options.ownerId,

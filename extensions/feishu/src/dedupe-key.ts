@@ -1,7 +1,7 @@
 // Feishu plugin module implements dedupe key behavior.
 import { createHash } from "node:crypto";
-import { parseStrictNonNegativeInteger } from "openclaw/plugin-sdk/number-runtime";
-import { asNullableRecord as readRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { parseStrictNonNegativeInteger } from "afora-agent/plugin-sdk/number-runtime";
+import { asNullableRecord as readRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { FeishuMessageEvent } from "./event-types.js";
 import { normalizeFeishuExternalKey } from "./external-keys.js";
 import { parsePostContent } from "./post.js";

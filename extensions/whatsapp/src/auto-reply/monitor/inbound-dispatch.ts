@@ -1,5 +1,5 @@
 // Whatsapp plugin module implements inbound dispatch behavior.
-import type { StatusReactionController } from "openclaw/plugin-sdk/channel-feedback";
+import type { StatusReactionController } from "afora-agent/plugin-sdk/channel-feedback";
 import {
   buildChannelInboundEventContext,
   createChannelPartialDeliveryError,
@@ -8,17 +8,17 @@ import {
   type ChannelInboundTurnPlan,
   toInboundMediaFactsWithMetadata,
   hasVisibleInboundReplyDispatch,
-} from "openclaw/plugin-sdk/channel-inbound";
+} from "afora-agent/plugin-sdk/channel-inbound";
 import {
   listMessageReceiptPlatformIds,
   resolveChannelStreamingBlockEnabled,
-} from "openclaw/plugin-sdk/channel-outbound";
-import { buildInboundHistoryFromEntries } from "openclaw/plugin-sdk/reply-history";
-import type { FinalizedMsgContext } from "openclaw/plugin-sdk/reply-runtime";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import { buildInboundHistoryFromEntries } from "afora-agent/plugin-sdk/reply-history";
+import type { FinalizedMsgContext } from "afora-agent/plugin-sdk/reply-runtime";
 import {
   normalizeOptionalString,
   normalizeStringEntries,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   requireWhatsAppInboundAdmission,
   resolveWhatsAppAdmissionChannelIngress,

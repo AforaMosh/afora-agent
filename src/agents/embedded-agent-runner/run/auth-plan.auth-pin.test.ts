@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import type { OAuthCredential } from "../../auth-profiles.js";
 import { testing as externalAuthTesting } from "../../auth-profiles/external-auth.test-support.js";
 import { prepareAgentRuntimeAuth } from "../../runtime-plan/prepare-auth.js";
@@ -22,7 +22,7 @@ describe("embedded run auth plan provider pin", () => {
   let agentDir: string;
 
   beforeEach(async () => {
-    agentDir = await mkdtemp(join(tmpdir(), "openclaw-auth-pin-"));
+    agentDir = await mkdtemp(join(tmpdir(), "afora-auth-pin-"));
     readCodexCliCredentialsCachedMock.mockReset().mockReturnValue({
       type: "oauth",
       provider: "openai",
@@ -46,7 +46,7 @@ describe("embedded run auth plan provider pin", () => {
           openai: { auth: "api-key", baseUrl: "", models: [] },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     vi.stubEnv("OPENAI_API_KEY", "platform-api-key");
 
     const authProfileStore = authPlanTesting.loadEmbeddedRunAuthProfileStore({

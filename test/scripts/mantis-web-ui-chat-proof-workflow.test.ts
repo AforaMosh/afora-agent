@@ -100,17 +100,17 @@ describe("Mantis Web UI chat proof workflow", () => {
       )?.[1],
     ).toBeUndefined();
     expect(
-      "@openclaw-mantis web ui chat proof: verify candidate=e63393c publishes evidence".match(
+      "@afora-mantis web ui chat proof: verify candidate=e63393c publishes evidence".match(
         pattern,
       )?.[1],
     ).toBe("e63393c");
     expect(
-      "@openclaw-mantis web ui chat proof: verify head: e63393c publishes evidence".match(
+      "@afora-mantis web ui chat proof: verify head: e63393c publishes evidence".match(
         pattern,
       )?.[1],
     ).toBe("e63393c");
     expect(
-      "@openclaw-mantis web ui chat proof: verify candidate=`e63393c` publishes evidence".match(
+      "@afora-mantis web ui chat proof: verify candidate=`e63393c` publishes evidence".match(
         pattern,
       )?.[1],
     ).toBe("e63393c");

@@ -1,7 +1,7 @@
-import { hasOutboundReplyContent } from "openclaw/plugin-sdk/reply-payload";
+import { hasOutboundReplyContent } from "afora-agent/plugin-sdk/reply-payload";
 import type { MessagingToolSend } from "../../agents/embedded-agent-messaging.types.js";
 import type { ReplyToMode } from "../../config/types.base.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { stripHeartbeatToken } from "../heartbeat.js";
 import { copyReplyPayloadMetadata, setReplyPayloadMetadata } from "../reply-payload.js";
 import type { OriginatingChannelType } from "../templating.js";
@@ -16,7 +16,7 @@ import { createReplyDeliveryContext, resolveReplyToMode } from "./reply-threadin
 
 /** Strips empty/heartbeat payloads, applies threading, and dedupes message-tool sends. */
 export function resolveFollowupDeliveryPayloads(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   payloads: ReplyPayload[];
   messageProvider?: string;
   originatingAccountId?: string;

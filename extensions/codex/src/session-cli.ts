@@ -4,15 +4,15 @@ import {
   addGatewayClientOptions,
   callGatewayFromCli,
   type GatewayRpcOpts,
-} from "openclaw/plugin-sdk/gateway-runtime";
-import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
+} from "afora-agent/plugin-sdk/gateway-runtime";
+import { normalizeAgentId } from "afora-agent/plugin-sdk/routing";
 import type {
   SessionCatalogHost as CodexSessionCatalogHost,
   SessionCatalogSession as CodexSessionCatalogSession,
-} from "openclaw/plugin-sdk/session-catalog";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { sanitizeTerminalText } from "openclaw/plugin-sdk/text-chunking";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/session-catalog";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { sanitizeTerminalText } from "afora-agent/plugin-sdk/text-chunking";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 import {
   CODEX_LOCAL_SESSION_HOST_ID,
   CODEX_SESSION_CATALOG_MAX_PAGE_LIMIT,
@@ -275,7 +275,7 @@ async function continueCodexSession(
     writeJson(result);
     return;
   }
-  writeLine(`OpenClaw session: ${singleLineTerminalText(result.sessionKey)}`);
+  writeLine(`Afora session: ${singleLineTerminalText(result.sessionKey)}`);
 }
 
 async function archiveCodexSession(
@@ -337,7 +337,7 @@ export function registerCodexSessionCli(program: Command): void {
   addGatewayClientOptions(
     codex
       .command("continue <thread-id>")
-      .description("Continue a Gateway-local Codex thread as an OpenClaw branch")
+      .description("Continue a Gateway-local Codex thread as an Afora branch")
       .option("--agent <id>", "Agent id that owns the Codex session")
       .option("--host <id>", "Stable local host id from codex sessions")
       .option("--json", "Print the structured response", false),
@@ -353,7 +353,7 @@ export function registerCodexSessionCli(program: Command): void {
       .option("--host <id>", "Stable local host id from codex sessions")
       .option(
         "--confirm-no-other-runner",
-        "Confirm no other Codex client or OpenClaw runner is using this thread",
+        "Confirm no other Codex client or Afora runner is using this thread",
         false,
       )
       .option("--json", "Print the structured response", false),

@@ -118,7 +118,7 @@ export async function confirmAndStartUpdateRuntime(
             : `${route.message} ${t("updates.confirm.impact")}`;
       render(
         html`
-          <openclaw-modal-dialog label=${route.title} description=${body} @modal-cancel=${finish}>
+          <afora-modal-dialog label=${route.title} description=${body} @modal-cancel=${finish}>
             <div class="exec-approval-card">
               <div class="exec-approval-header">
                 <div>
@@ -153,7 +153,7 @@ export async function confirmAndStartUpdateRuntime(
                     `}
               </div>
             </div>
-          </openclaw-modal-dialog>
+          </afora-modal-dialog>
         `,
         host,
       );

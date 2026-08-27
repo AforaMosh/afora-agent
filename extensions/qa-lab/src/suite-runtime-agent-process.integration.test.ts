@@ -36,7 +36,7 @@ describe("qa suite runtime CLI integration", () => {
         "import fs from 'node:fs';",
         "import path from 'node:path';",
         "const [command, subcommand] = process.argv.slice(2);",
-        "const metadataPath = path.join(process.env.OPENCLAW_BUNDLED_PLUGINS_DIR ?? '', 'memory-core', 'cli-metadata.js');",
+        "const metadataPath = path.join(process.env.AFORA_BUNDLED_PLUGINS_DIR ?? '', 'memory-core', 'cli-metadata.js');",
         "if (command === 'memory' && subcommand === 'status' && fs.existsSync(metadataPath)) {",
         "  console.log(JSON.stringify({ command, subcommand, status: 'ok' }));",
         "  process.exit(0);",
@@ -56,7 +56,7 @@ describe("qa suite runtime CLI integration", () => {
             tempRoot,
             runtimeEnv: {
               ...process.env,
-              OPENCLAW_BUNDLED_PLUGINS_DIR: bundledPluginsDir,
+              AFORA_BUNDLED_PLUGINS_DIR: bundledPluginsDir,
             },
           },
           primaryModel: "openai/gpt-5.6-luna",
@@ -110,7 +110,7 @@ describe("qa suite runtime CLI integration", () => {
 
     expect(error).toMatchObject({ code: "qa_cli_timeout" });
     const message = error instanceof Error ? error.message : String(error);
-    expect(message).toContain("qa cli timed out: openclaw qa suite");
+    expect(message).toContain("qa cli timed out: afora qa suite");
     expect(message).toContain("stdout:\ntimeout stdout marker");
     expect(message).toContain("stderr:\ntimeout stderr marker");
   });

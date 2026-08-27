@@ -155,7 +155,7 @@ describe("models cli", () => {
     });
 
     const originalArgv = process.argv;
-    process.argv = ["node", "openclaw", "models", flag];
+    process.argv = ["node", "afora", "models", flag];
     try {
       await program.parseAsync(["models", flag], { from: "user" });
     } finally {
@@ -173,7 +173,7 @@ describe("models cli", () => {
     });
 
     const originalArgv = process.argv;
-    process.argv = ["node", "openclaw", "models", "--status-json", "list"];
+    process.argv = ["node", "afora", "models", "--status-json", "list"];
     try {
       await program.parseAsync(["models", "--status-json", "list"], { from: "user" });
     } finally {

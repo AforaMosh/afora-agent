@@ -1,7 +1,7 @@
 import { consume } from "@lit/context";
 import { initialState, Task, TaskStatus } from "@lit/task";
-import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { html, nothing, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
@@ -66,7 +66,7 @@ import { showToast } from "../../lib/toast.ts";
 import { isActiveWorkboardCard } from "../../lib/workboard/card-state.ts";
 import { captureSessionToWorkboard } from "../../lib/workboard/index.ts";
 import { GatewayPageController } from "../../lit/gateway-page-controller.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import {
   searchVisibleSessionTranscripts,
@@ -78,7 +78,7 @@ import { loadStoredGroupBy, saveStoredGroupBy } from "./page-state.ts";
 import { sessionsPageListQuery, type SessionsRouteData } from "./route.ts";
 import { renderSessions, type SessionsProps, type TranscriptSearchState } from "./view.ts";
 
-const SESSIONS_DOCS_URL = "https://docs.openclaw.ai/concepts/session";
+const SESSIONS_DOCS_URL = "https://docs.afora.ai/concepts/session";
 
 type SessionsPageRequestScope = {
   epoch: number;
@@ -102,7 +102,7 @@ type SessionsPageListBinding = {
   key: string;
 };
 
-class SessionsPage extends OpenClawLightDomElement {
+class SessionsPage extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context?: ApplicationContext;
 
@@ -1428,7 +1428,7 @@ class SessionsPage extends OpenClawLightDomElement {
       isGatewayMethodAdvertised(gateway, cloudWorkerStopAction.method) === true,
     );
     return html`
-      <openclaw-session-menu
+      <afora-session-menu
         .session=${{
           label: normalizeOptionalString(row.label) ?? row.key,
           pinned: row.pinned === true,
@@ -1509,7 +1509,7 @@ class SessionsPage extends OpenClawLightDomElement {
               break;
           }
         }}
-      ></openclaw-session-menu>
+      ></afora-session-menu>
     `;
   }
 
@@ -1716,7 +1716,7 @@ class SessionsPage extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-sessions-page")) {
-  customElements.define("openclaw-sessions-page", SessionsPage);
+if (!customElements.get("afora-sessions-page")) {
+  customElements.define("afora-sessions-page", SessionsPage);
 }
 /* oxlint-disable max-lines -- TODO: split this grandfathered oversized file. */

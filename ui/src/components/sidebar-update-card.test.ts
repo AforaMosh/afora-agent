@@ -15,7 +15,7 @@ import {
 import { createStorageMock } from "../test-helpers/storage.ts";
 import "./sidebar-update-card.ts";
 
-const DISMISS_KEY = "openclaw:control-ui:update-banner-dismissed:v1";
+const DISMISS_KEY = "afora:control-ui:update-banner-dismissed:v1";
 
 /** Resolve the update confirmation the card opens, then let its dispatch settle. */
 async function resolveUpdateConfirmation(
@@ -51,7 +51,7 @@ async function mount(
   canHoldUpdate = true,
 ) {
   const element = document.createElement(
-    "openclaw-sidebar-update-card",
+    "afora-sidebar-update-card",
   ) as SidebarUpdateCardElement;
   element.updateAvailable = update;
   element.updateSchedule = schedule;
@@ -222,7 +222,7 @@ describe("SidebarUpdateCard", () => {
     const postMessage = vi.fn();
     Object.defineProperty(window, "webkit", {
       configurable: true,
-      value: { messageHandlers: { openclawUpdate: { postMessage } } },
+      value: { messageHandlers: { aforaUpdate: { postMessage } } },
     });
     const element = await mount({
       currentVersion: "1.0.0",
@@ -254,7 +254,7 @@ describe("SidebarUpdateCard", () => {
 
     Object.defineProperty(window, "webkit", {
       configurable: true,
-      value: { messageHandlers: { openclawUpdate: { postMessage: vi.fn() } } },
+      value: { messageHandlers: { aforaUpdate: { postMessage: vi.fn() } } },
     });
     window.dispatchEvent(new CustomEvent(NATIVE_UPDATE_AVAILABILITY_CHANGED_EVENT));
     await element.updateComplete;
@@ -279,7 +279,7 @@ describe("SidebarUpdateCard", () => {
 
     Object.defineProperty(window, "webkit", {
       configurable: true,
-      value: { messageHandlers: { openclawUpdate: { postMessage } } },
+      value: { messageHandlers: { aforaUpdate: { postMessage } } },
     });
     element.querySelector<HTMLButtonElement>(".sidebar-update-card__action")?.click();
     await resolveUpdateConfirmation("Update Mac app and restart");
@@ -318,7 +318,7 @@ describe("SidebarUpdateCard", () => {
     const postMessage = vi.fn();
     Object.defineProperty(window, "webkit", {
       configurable: true,
-      value: { messageHandlers: { openclawUpdate: { postMessage } } },
+      value: { messageHandlers: { aforaUpdate: { postMessage } } },
     });
     const element = await mount({
       currentVersion: "1.0.0",
@@ -350,7 +350,7 @@ describe("SidebarUpdateCard", () => {
     const postMessage = vi.fn();
     Object.defineProperty(window, "webkit", {
       configurable: true,
-      value: { messageHandlers: { openclawUpdate: { postMessage } } },
+      value: { messageHandlers: { aforaUpdate: { postMessage } } },
     });
     const element = await mount({
       currentVersion: "1.0.0",

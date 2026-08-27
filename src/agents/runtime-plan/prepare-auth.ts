@@ -4,7 +4,7 @@
  * resolves secrets or loads a provider runtime.
  */
 import { resolveMergedModelProviderConfig } from "../../config/model-provider-config.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { coerceSecretRef } from "../../config/types.secrets.js";
 import type { ProviderRouteOverridePresence } from "../../plugin-sdk/provider-model-types.js";
 import type { PluginMetadataSnapshot } from "../../plugins/plugin-metadata-snapshot.types.js";
@@ -38,7 +38,7 @@ type PrepareAgentRuntimeAuthPlanParams = {
   modelApi?: string | null;
   modelBaseUrl?: unknown;
   requestTransportOverrides?: ProviderRouteOverridePresence;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   env?: NodeJS.ProcessEnv;
   agentDir?: string;
   workspaceDir?: string;
@@ -52,7 +52,7 @@ type PrepareAgentRuntimeAuthPlanParams = {
   allowHarnessAuthProfileForwarding?: boolean;
   allowTransientCooldownProbe?: boolean;
   resolveProviderPreferredProfileId?(context: {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     agentDir?: string;
     workspaceDir?: string;
     provider: string;
@@ -365,7 +365,7 @@ export function prepareAgentRuntimeAuth(
       )
     : null;
   // OpenAI native account discovery is harness-owned synthetic auth, not a
-  // bearer credential for an OpenClaw request route.
+  // bearer credential for an Afora request route.
   const directPlanningEvidence =
     directPlanningCandidate?.kind === "setup-provider" &&
     authProfileSelectionProvider.trim().toLowerCase() === "openai"

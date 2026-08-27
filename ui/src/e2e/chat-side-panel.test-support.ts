@@ -21,7 +21,7 @@ export async function openChatSidePanelType(page: Page, label: string): Promise<
 
 export async function activateChatHeaderPanelAction(page: Page, label: string): Promise<void> {
   await page.locator(".chat-header-session-menu__trigger").click();
-  const menu = page.locator("openclaw-chat-header-session-menu");
+  const menu = page.locator("afora-chat-header-session-menu");
   const action = menu
     .locator('wa-dropdown-item[value^="quick:panels:"]')
     .filter({ hasText: label });
@@ -40,7 +40,7 @@ export async function activateChatHeaderPanelAction(page: Page, label: string): 
   await action.click();
   await afterHide;
   await page.waitForFunction(() => {
-    const dropdown = document.querySelector("openclaw-chat-header-session-menu wa-dropdown");
+    const dropdown = document.querySelector("afora-chat-header-session-menu wa-dropdown");
     return !dropdown || Reflect.get(dropdown, "open") !== true;
   });
 }

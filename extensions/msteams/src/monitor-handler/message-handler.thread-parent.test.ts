@@ -1,6 +1,6 @@
 // Msteams tests cover message handler.thread parent plugin behavior.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../runtime-api.js";
+import type { AforaConfig } from "../../runtime-api.js";
 // Preserve module setup before modules that consume it.
 // oxfmt-ignore
 import { getRuntimeApiMockState } from "./message-handler-mock-support.test-support.js";
@@ -85,9 +85,9 @@ describe("msteams thread parent context injection", () => {
     runtimeApiMockState.dispatchReplyWithBufferedBlockDispatcher.mockClear();
   });
 
-  const cfg: OpenClawConfig = {
+  const cfg: AforaConfig = {
     channels: { msteams: { groupPolicy: "open" } },
-  } as OpenClawConfig;
+  } as AforaConfig;
 
   it("enqueues a Replying to @sender system event on the first thread reply", async () => {
     fetchChannelMessageMock.mockResolvedValueOnce({
@@ -181,7 +181,7 @@ describe("msteams thread parent context injection", () => {
           },
         },
       },
-    } as OpenClawConfig);
+    } as AforaConfig);
     const handler = createMSTeamsMessageHandler(deps);
 
     await handler({
@@ -232,7 +232,7 @@ describe("msteams thread parent context injection", () => {
     });
     const { deps, enqueueSystemEvent } = createMessageHandlerDeps({
       channels: { msteams: { allowFrom: ["*"] } },
-    } as OpenClawConfig);
+    } as AforaConfig);
     const handler = createMSTeamsMessageHandler(deps);
 
     await handler({

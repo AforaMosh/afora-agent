@@ -4,12 +4,12 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { createChannelIngressQueue } from "../channels/message/ingress-queue.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { noteChannelIngressDeadLetters } from "./doctor-channel-ingress.js";
 
 describe("noteChannelIngressDeadLetters", () => {
   it("mentions affected channel accounts and the inspection command", async () => {
-    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-doctor-ingress-"));
+    const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-doctor-ingress-"));
     try {
       const queue = createChannelIngressQueue<{ text: string }>({
         channelId: "telegram",
@@ -31,10 +31,10 @@ describe("noteChannelIngressDeadLetters", () => {
         "Channel ingress",
       );
       expect(noteFn.mock.calls[0]?.[0]).toContain(
-        "openclaw channels dead-letters list --channel telegram --account ops",
+        "afora channels dead-letters list --channel telegram --account ops",
       );
     } finally {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       await fs.rm(stateDir, { recursive: true, force: true });
     }
   });

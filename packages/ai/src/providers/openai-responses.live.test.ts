@@ -7,11 +7,11 @@ import { streamOpenAIResponses } from "./openai-responses.js";
 // Live coverage for the Responses stream state machine: real streams interleave
 // reasoning/message/tool items, so unit fakes alone cannot prove slot tracking,
 // terminal-event handling, or the max_output_tokens floor against the real API.
-const LIVE = process.env.OPENCLAW_LIVE_TEST === "1";
+const LIVE = process.env.AFORA_LIVE_TEST === "1";
 const OPENAI_KEY = process.env.OPENAI_API_KEY ?? "";
 const describeLive = LIVE && OPENAI_KEY ? describe : describe.skip;
 
-const LIVE_MODEL_ID = process.env.OPENCLAW_LIVE_RESPONSES_MODEL || "gpt-5.6-luna";
+const LIVE_MODEL_ID = process.env.AFORA_LIVE_RESPONSES_MODEL || "gpt-5.6-luna";
 const LIVE_TIMEOUT_MS = 120_000;
 const OVERFLOW_MODEL_ID = "gpt-4o-mini";
 const OVERFLOW_CONTEXT_WINDOW = 128_000;

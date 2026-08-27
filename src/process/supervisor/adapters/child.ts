@@ -41,7 +41,7 @@ function resolveChildInvocation(params: {
   const candidate = resolveWindowsSpawnProgramCandidate({
     command,
     env: params.env,
-    // npm shims invoke `node` from PATH; process.execPath may be a packaged OpenClaw executable.
+    // npm shims invoke `node` from PATH; process.execPath may be a packaged Afora executable.
     execPath:
       process.platform === "win32"
         ? resolveWindowsExecutablePath("node", params.env ?? process.env)
@@ -77,10 +77,10 @@ type WorkerChildAdapter = ChildAdapter & {
   openStartGate?: () => Promise<void>;
 };
 
-const WORKER_START_MESSAGE = { type: "openclaw-worker-start-v1" } as const;
+const WORKER_START_MESSAGE = { type: "afora-worker-start-v1" } as const;
 
 function isServiceManagedRuntime(): boolean {
-  return Boolean(process.env.OPENCLAW_SERVICE_MARKER?.trim());
+  return Boolean(process.env.AFORA_SERVICE_MARKER?.trim());
 }
 
 export async function createChildAdapter(params: {

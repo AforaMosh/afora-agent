@@ -214,7 +214,7 @@ describe("agents bind/unbind commands", () => {
       await agentsBindCommand({ agent, bind: ["telegram"] }, runtime);
 
       expect(runtime.error).toHaveBeenCalledWith(
-        `Agent "${agent}" not found. Run openclaw agents list to see configured agents.`,
+        `Agent "${agent}" not found. Run afora agents list to see configured agents.`,
       );
       expect(runtime.exit).toHaveBeenCalledWith(1);
       expect(writeConfigFileMock).not.toHaveBeenCalled();

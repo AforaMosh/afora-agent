@@ -70,7 +70,7 @@ type RegistryDeps = {
 
 function getRegistryTestApi(): RegistryTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.subagentRegistryTestApi")
+    Symbol.for("afora.subagentRegistryTestApi")
   ] as RegistryTestApi;
 }
 

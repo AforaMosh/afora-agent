@@ -1,11 +1,11 @@
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { normalizeAgentIdStrict, normalizeOptionalAgentId } from "../../../routing/session-key.js";
 import { listAgentEntries } from "../../agent-scope-config.js";
 import { listAgentIds } from "../../agent-scope.js";
 
 export function resolveTargetAcpAgentId(params: {
   requestedAgentId?: string;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }): { ok: true; agentId: string; configAgentId?: string } | { ok: false; error: string } {
   const normalizedRequest =
     params.requestedAgentId === undefined ? null : normalizeAgentIdStrict(params.requestedAgentId);
@@ -28,8 +28,8 @@ export function resolveTargetAcpAgentId(params: {
       return {
         ok: false,
         error:
-          `agentId "${requested}" is an OpenClaw config agent, not an ACP harness. ` +
-          'Use runtime="subagent" or omit runtime for OpenClaw config agents. ' +
+          `agentId "${requested}" is an Afora config agent, not an ACP harness. ` +
+          'Use runtime="subagent" or omit runtime for Afora config agents. ' +
           'Use runtime="acp" only with external ACP harness ids such as codex, claude, droid, gemini, or opencode, or configure agents.entries.*.runtime.type="acp" with runtime.acp.agent.',
       };
     }
@@ -52,7 +52,7 @@ export function resolveTargetAcpAgentId(params: {
   };
 }
 
-function isExplicitlyAllowedAcpAgent(cfg: OpenClawConfig, agentId: string): boolean {
+function isExplicitlyAllowedAcpAgent(cfg: AforaConfig, agentId: string): boolean {
   return (cfg.acp?.allowedAgents ?? []).some((entry) => {
     if (entry.trim() === "*") {
       return true;
@@ -62,7 +62,7 @@ function isExplicitlyAllowedAcpAgent(cfg: OpenClawConfig, agentId: string): bool
   });
 }
 
-export function resolveConfiguredAcpSubagentTargetIds(cfg: OpenClawConfig): string[] {
+export function resolveConfiguredAcpSubagentTargetIds(cfg: AforaConfig): string[] {
   const ids = new Set<string>(listAgentIds(cfg));
   for (const agent of listAgentEntries(cfg)) {
     if (agent.runtime?.type !== "acp") {

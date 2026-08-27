@@ -1,4 +1,4 @@
-// Plugin Isolation script supports OpenClaw repository automation.
+// Plugin Isolation script supports Afora repository automation.
 import { shellQuote } from "./host-command.ts";
 import { providerIdFromModelId } from "./provider-auth.ts";
 
@@ -13,9 +13,9 @@ export function posixCodexPlatformPackageRepairFunction(): string {
   return `repair_missing_codex_platform_package() {
   output_file="$1"
   grep -F 'Missing optional dependency @openai/codex-' "$output_file" >/dev/null 2>&1 || return 1
-  state_home="\${OPENCLAW_PARALLELS_HOME:-\${HOME:-}}"
+  state_home="\${AFORA_PARALLELS_HOME:-\${HOME:-}}"
   codex_manifest=""
-  for candidate in "$state_home"/.openclaw/npm/projects/*/node_modules/@openclaw/codex/package.json; do
+  for candidate in "$state_home"/.afora/npm/projects/*/node_modules/@afora/codex/package.json; do
     [ -f "$candidate" ] || continue
     codex_manifest="$candidate"
     break
@@ -24,8 +24,8 @@ export function posixCodexPlatformPackageRepairFunction(): string {
     echo "codex-platform-repair: managed Codex project not found" >&2
     return 1
   fi
-  project_root="\${codex_manifest%/node_modules/@openclaw/codex/package.json}"
-  cache_dir="$(mktemp -d "\${TMPDIR:-/tmp}/openclaw-npm-cache.XXXXXX")"
+  project_root="\${codex_manifest%/node_modules/@afora/codex/package.json}"
+  cache_dir="$(mktemp -d "\${TMPDIR:-/tmp}/afora-npm-cache.XXXXXX")"
   echo "codex-platform-repair: retrying managed npm install once with a fresh cache" >&2
   repair_rc=0
   (
@@ -48,16 +48,16 @@ export function windowsCodexPlatformPackageRepairFunction(): string {
   if ($outputText -notmatch [regex]::Escape('Missing optional dependency @openai/codex-')) {
     return $false
   }
-  $projectsRoot = Join-Path $env:USERPROFILE '.openclaw\npm\projects'
+  $projectsRoot = Join-Path $env:USERPROFILE '.afora\npm\projects'
   $codexManifest = Get-ChildItem -Path $projectsRoot -Filter package.json -File -Recurse -ErrorAction SilentlyContinue |
-    Where-Object { $_.FullName -match 'node_modules[\\/]@openclaw[\\/]codex[\\/]package\.json$' } |
+    Where-Object { $_.FullName -match 'node_modules[\\/]@afora[\\/]codex[\\/]package\.json$' } |
     Select-Object -First 1
   if (-not $codexManifest) {
     Write-Warning 'codex-platform-repair: managed Codex project not found'
     return $false
   }
   $projectRoot = $codexManifest.Directory.Parent.Parent.Parent.FullName
-  $cacheDir = Join-Path ([System.IO.Path]::GetTempPath()) ('openclaw-npm-cache-' + [guid]::NewGuid().ToString('N'))
+  $cacheDir = Join-Path ([System.IO.Path]::GetTempPath()) ('afora-npm-cache-' + [guid]::NewGuid().ToString('N'))
   $oldUpperCache = [Environment]::GetEnvironmentVariable('NPM_CONFIG_CACHE', 'Process')
   $oldLowerCache = [Environment]::GetEnvironmentVariable('npm_config_cache', 'Process')
   $pushedLocation = $false
@@ -94,7 +94,7 @@ function providerOnlyPluginId(modelId: string, fallbackPluginId: string): string
 export function posixProviderOnlyPluginIsolationScript(options: PluginIsolationOptions): string {
   const nodeCommand = shellQuote(options.nodeCommand ?? "node");
   const homeEnv = options.homeFallback
-    ? `OPENCLAW_PARALLELS_HOME=${shellQuote(options.homeFallback)} `
+    ? `AFORA_PARALLELS_HOME=${shellQuote(options.homeFallback)} `
     : "";
   return `/usr/bin/env ${homeEnv}${nodeCommand} - <<'JS'
 ${providerOnlyPluginIsolationNodeScript(options)}
@@ -106,10 +106,10 @@ export function windowsProviderOnlyPluginIsolationScript(options: PluginIsolatio
     modelId: options.modelId,
     pluginId: providerOnlyPluginId(options.modelId, options.fallbackPluginId),
   });
-  return `$env:OPENCLAW_PARALLELS_PLUGIN_ISOLATION = @'
+  return `$env:AFORA_PARALLELS_PLUGIN_ISOLATION = @'
 ${payloadJson}
 '@
-$isolationScriptPath = Join-Path ([System.IO.Path]::GetTempPath()) ('openclaw-parallels-plugin-isolation-' + [guid]::NewGuid().ToString('N') + '.cjs')
+$isolationScriptPath = Join-Path ([System.IO.Path]::GetTempPath()) ('afora-parallels-plugin-isolation-' + [guid]::NewGuid().ToString('N') + '.cjs')
 try {
 @'
 ${providerOnlyPluginIsolationNodeSource()}
@@ -118,7 +118,7 @@ node.exe $isolationScriptPath
 if ($LASTEXITCODE -ne 0) { throw "plugin isolation failed with exit code $LASTEXITCODE" }
 } finally {
   Remove-Item $isolationScriptPath -Force -ErrorAction SilentlyContinue
-  Remove-Item Env:OPENCLAW_PARALLELS_PLUGIN_ISOLATION -Force -ErrorAction SilentlyContinue
+  Remove-Item Env:AFORA_PARALLELS_PLUGIN_ISOLATION -Force -ErrorAction SilentlyContinue
 }`;
 }
 
@@ -128,7 +128,7 @@ function providerOnlyPluginIsolationNodeScript(options: PluginIsolationOptions):
     modelId: options.modelId,
     pluginId: providerOnlyPluginId(options.modelId, options.fallbackPluginId),
   });
-  return `process.env.OPENCLAW_PARALLELS_PLUGIN_ISOLATION = ${JSON.stringify(payloadJson)};
+  return `process.env.AFORA_PARALLELS_PLUGIN_ISOLATION = ${JSON.stringify(payloadJson)};
 ${providerOnlyPluginIsolationNodeSource()}`;
 }
 
@@ -136,14 +136,14 @@ function providerOnlyPluginIsolationNodeSource(): string {
   return String.raw`const fs = require("node:fs");
 const path = require("node:path");
 
-const payload = JSON.parse(process.env.OPENCLAW_PARALLELS_PLUGIN_ISOLATION || "{}");
+const payload = JSON.parse(process.env.AFORA_PARALLELS_PLUGIN_ISOLATION || "{}");
 const home =
-  process.env.OPENCLAW_PARALLELS_HOME ||
+  process.env.AFORA_PARALLELS_HOME ||
   payload.homeFallback ||
   process.env.HOME ||
   process.env.USERPROFILE ||
   "/root";
-const configPath = path.join(home, ".openclaw", "openclaw.json");
+const configPath = path.join(home, ".afora", "afora.json");
 const stateDir = path.dirname(configPath);
 const modelId = String(payload.modelId || "");
 const allowedPluginId = String(payload.pluginId || "").trim();
@@ -199,7 +199,7 @@ if (providerEntry && typeof providerEntry === "object" && !Array.isArray(provide
   }
 }
 
-fs.rmSync(path.join(stateDir, "npm", "node_modules", "@openclaw", "codex"), {
+fs.rmSync(path.join(stateDir, "npm", "node_modules", "@afora", "codex"), {
   recursive: true,
   force: true,
 });

@@ -2,13 +2,13 @@
 export type {
   DiagnosticEventMetadata,
   DiagnosticEventPayload,
-} from "openclaw/plugin-sdk/diagnostic-runtime";
-export { isInternalDiagnosticEventMetadata } from "openclaw/plugin-sdk/diagnostic-runtime";
+} from "afora-agent/plugin-sdk/diagnostic-runtime";
+export { isInternalDiagnosticEventMetadata } from "afora-agent/plugin-sdk/diagnostic-runtime";
 export {
   emptyPluginConfigSchema,
-  type OpenClawPluginApi,
-  type OpenClawPluginHttpRouteHandler,
-  type OpenClawPluginService,
-  type OpenClawPluginServiceContext,
-} from "openclaw/plugin-sdk/plugin-entry";
-export { redactSensitiveText } from "openclaw/plugin-sdk/security-runtime";
+  type AforaPluginApi,
+  type AforaPluginHttpRouteHandler,
+  type AforaPluginService,
+  type AforaPluginServiceContext,
+} from "afora-agent/plugin-sdk/plugin-entry";
+export { redactSensitiveText } from "afora-agent/plugin-sdk/security-runtime";

@@ -17,18 +17,18 @@ import { renderDocsLink } from "../../components/settings-ui.ts";
 import { renderSettingsWorkspace } from "../../components/settings-workspace.ts";
 import { t } from "../../i18n/index.ts";
 import { isMissingOperatorReadScopeError } from "../../lib/gateway-errors.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { PollController } from "../../lit/poll-controller.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import { isUnknownSystemInfoMethodError, supportsSystemInfo } from "./system-info.ts";
 import { renderConnection } from "./view.ts";
 
 const SYSTEM_INFO_POLL_INTERVAL_MS = 10_000;
-const CONNECTION_DOCS_URL = "https://docs.openclaw.ai/gateway/remote";
+const CONNECTION_DOCS_URL = "https://docs.afora.ai/gateway/remote";
 
 export { supportsSystemInfo } from "./system-info.ts";
 
-export class ConnectionPage extends OpenClawLightDomElement {
+export class ConnectionPage extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context!: ApplicationContext;
 
@@ -288,6 +288,6 @@ export class ConnectionPage extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-connection-page")) {
-  customElements.define("openclaw-connection-page", ConnectionPage);
+if (!customElements.get("afora-connection-page")) {
+  customElements.define("afora-connection-page", ConnectionPage);
 }

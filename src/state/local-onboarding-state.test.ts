@@ -6,29 +6,29 @@ import {
   withConfigMutationExclusive,
 } from "../config/config.js";
 import { completeLocalSetupRecovery } from "../system-agent/setup-recovery.js";
-import { withOpenClawTestState } from "../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../test-utils/afora-test-state.js";
 import {
   beginLocalOnboarding,
   completeLocalOnboarding,
   readLocalOnboardingState,
   readLocalOnboardingStateForConfig,
 } from "./local-onboarding-state.js";
-import { closeOpenClawStateDatabaseForTest } from "./openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "./afora-state-db.js";
 
-afterEach(() => closeOpenClawStateDatabaseForTest());
+afterEach(() => closeAforaStateDatabaseForTest());
 
 const SECURITY_ACKNOWLEDGED_AT = "2026-08-02T00:00:00.000Z";
 
 describe("local onboarding state", () => {
   it("does not create persistent state when checking an unconfigured install", async () => {
-    await withOpenClawTestState({ label: "local-onboarding-empty" }, async (state) => {
+    await withAforaTestState({ label: "local-onboarding-empty" }, async (state) => {
       expect(readLocalOnboardingState(state.configPath, { env: state.env })).toBeUndefined();
-      expect(fs.existsSync(state.statePath("state", "openclaw.sqlite"))).toBe(false);
+      expect(fs.existsSync(state.statePath("state", "afora.sqlite"))).toBe(false);
     });
   });
 
   it("isolates receipts by configuration path", async () => {
-    await withOpenClawTestState({ label: "local-onboarding-paths" }, async (state) => {
+    await withAforaTestState({ label: "local-onboarding-paths" }, async (state) => {
       const database = { env: state.env };
       const first = beginLocalOnboarding({
         configPath: state.configPath,
@@ -46,7 +46,7 @@ describe("local onboarding state", () => {
   });
 
   it("preserves the pending owner across repeated activation commits", async () => {
-    await withOpenClawTestState({ label: "local-onboarding-owner" }, async (state) => {
+    await withAforaTestState({ label: "local-onboarding-owner" }, async (state) => {
       const database = { env: state.env };
       const first = beginLocalOnboarding({
         configPath: state.configPath,
@@ -85,7 +85,7 @@ describe("local onboarding state", () => {
   });
 
   it("prevents an interrupted pre-reset run from completing its replacement", async () => {
-    await withOpenClawTestState({ label: "local-onboarding-reset" }, async (state) => {
+    await withAforaTestState({ label: "local-onboarding-reset" }, async (state) => {
       const database = { env: state.env };
       beginLocalOnboarding({
         configPath: state.configPath,
@@ -115,7 +115,7 @@ describe("local onboarding state", () => {
   });
 
   it("completes the same run idempotently without changing its original timestamp", async () => {
-    await withOpenClawTestState({ label: "local-onboarding-idempotent" }, async (state) => {
+    await withAforaTestState({ label: "local-onboarding-idempotent" }, async (state) => {
       const database = { env: state.env };
       beginLocalOnboarding({
         configPath: state.configPath,
@@ -158,7 +158,7 @@ describe("local onboarding state", () => {
   });
 
   it("completes its validated owner idempotently without rewriting the locked config", async () => {
-    await withOpenClawTestState({ label: "local-onboarding-locked-completion" }, async (state) => {
+    await withAforaTestState({ label: "local-onboarding-locked-completion" }, async (state) => {
       const database = { env: state.env };
       await state.writeConfig({
         agents: {
@@ -195,7 +195,7 @@ describe("local onboarding state", () => {
   });
 
   it("rejects a canonical config mutation that wins the completion lock", async () => {
-    await withOpenClawTestState({ label: "local-onboarding-config-lock-race" }, async (state) => {
+    await withAforaTestState({ label: "local-onboarding-config-lock-race" }, async (state) => {
       const database = { env: state.env };
       await state.writeConfig({
         agents: {
@@ -253,7 +253,7 @@ describe("local onboarding state", () => {
   });
 
   it("rejects another receipt owner and an applied config at a different path", async () => {
-    await withOpenClawTestState({ label: "local-onboarding-locked-ownership" }, async (state) => {
+    await withAforaTestState({ label: "local-onboarding-locked-ownership" }, async (state) => {
       const database = { env: state.env };
       await state.writeConfig({
         agents: {
@@ -288,7 +288,7 @@ describe("local onboarding state", () => {
   });
 
   it("accepts the same run completing between the optimistic read and SQLite transaction", async () => {
-    await withOpenClawTestState({ label: "local-onboarding-completion-race" }, async (state) => {
+    await withAforaTestState({ label: "local-onboarding-completion-race" }, async (state) => {
       const database = { env: state.env };
       beginLocalOnboarding({
         configPath: state.configPath,
@@ -328,7 +328,7 @@ describe("local onboarding state", () => {
   });
 
   it("does not let a concurrent missing-config run replace the active owner", async () => {
-    await withOpenClawTestState({ label: "local-onboarding-concurrent" }, async (state) => {
+    await withAforaTestState({ label: "local-onboarding-concurrent" }, async (state) => {
       const database = { env: state.env };
       const active = beginLocalOnboarding({
         configPath: state.configPath,
@@ -353,7 +353,7 @@ describe("local onboarding state", () => {
   });
 
   it("does not let a delayed concurrent run reopen a completed owner", async () => {
-    await withOpenClawTestState({ label: "local-onboarding-completed-owner" }, async (state) => {
+    await withAforaTestState({ label: "local-onboarding-completed-owner" }, async (state) => {
       const database = { env: state.env };
       const first = beginLocalOnboarding({
         configPath: state.configPath,
@@ -387,7 +387,7 @@ describe("local onboarding state", () => {
   });
 
   it("replaces a completed owner only when reset observed its exact run", async () => {
-    await withOpenClawTestState({ label: "local-onboarding-completed-reset" }, async (state) => {
+    await withAforaTestState({ label: "local-onboarding-completed-reset" }, async (state) => {
       const database = { env: state.env };
       const first = beginLocalOnboarding({
         configPath: state.configPath,
@@ -416,7 +416,7 @@ describe("local onboarding state", () => {
   });
 
   it("binds receipts to the acknowledged configuration identity", async () => {
-    await withOpenClawTestState({ label: "local-onboarding-config-identity" }, async (state) => {
+    await withAforaTestState({ label: "local-onboarding-config-identity" }, async (state) => {
       const database = { env: state.env };
       const pending = beginLocalOnboarding({
         configPath: state.configPath,

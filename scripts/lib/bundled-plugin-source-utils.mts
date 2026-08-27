@@ -29,7 +29,7 @@ function collectTrackedBundledPluginSourceCandidates(repoRoot: string) {
     [
       "ls-files",
       "--",
-      ":(glob)extensions/*/openclaw.plugin.json",
+      ":(glob)extensions/*/afora.plugin.json",
       ":(glob)extensions/*/package.json",
     ],
     {
@@ -45,7 +45,7 @@ function collectTrackedBundledPluginSourceCandidates(repoRoot: string) {
   const candidatesByDir = new Map<string, BundledPluginSourceCandidate>();
   for (const rawLine of result.stdout.split("\n")) {
     const line = rawLine.trim().replaceAll("\\", "/");
-    const match = /^extensions\/([^/]+)\/(openclaw\.plugin\.json|package\.json)$/u.exec(line);
+    const match = /^extensions\/([^/]+)\/(afora\.plugin\.json|package\.json)$/u.exec(line);
     if (!match?.[1] || !match[2]) {
       continue;
     }
@@ -55,7 +55,7 @@ function collectTrackedBundledPluginSourceCandidates(repoRoot: string) {
       packageJsonPath: null,
       pluginDir: path.join(repoRoot, "extensions", match[1]),
     };
-    if (match[2] === "openclaw.plugin.json") {
+    if (match[2] === "afora.plugin.json") {
       current.manifestPath = path.join(repoRoot, line);
     } else {
       current.packageJsonPath = path.join(repoRoot, line);
@@ -79,7 +79,7 @@ function collectBundledPluginSourceCandidatesFromDirectory(repoRoot: string) {
     .filter((dirent) => dirent.isDirectory())
     .map((dirent) => {
       const pluginDir = path.join(extensionsRoot, dirent.name);
-      const manifestPath = path.join(pluginDir, "openclaw.plugin.json");
+      const manifestPath = path.join(pluginDir, "afora.plugin.json");
       const packageJsonPath = path.join(pluginDir, "package.json");
       return {
         dirName: dirent.name,

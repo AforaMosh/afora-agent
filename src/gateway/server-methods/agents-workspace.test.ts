@@ -73,7 +73,7 @@ describe("agents.workspace RPC handlers", () => {
     // Realpath the tmp root: macOS os.tmpdir() is a /var -> /private/var symlink
     // and fs-safe compares against the canonical root.
     workspaceRoot = fs.realpathSync(
-      fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-agents-workspace-test-")),
+      fs.mkdtempSync(path.join(os.tmpdir(), "afora-agents-workspace-test-")),
     );
     hoisted.listAgentIds.mockReturnValue(["main"]);
     hoisted.resolveAgentWorkspaceDir.mockReturnValue(workspaceRoot);
@@ -205,7 +205,7 @@ describe("agents.workspace RPC handlers", () => {
   );
 
   it("does not follow symlinked files out of the workspace", async () => {
-    const outsidePath = path.join(os.tmpdir(), `openclaw-workspace-linked-${process.pid}.txt`);
+    const outsidePath = path.join(os.tmpdir(), `afora-workspace-linked-${process.pid}.txt`);
     fs.writeFileSync(outsidePath, "outside\n", "utf8");
     fs.symlinkSync(outsidePath, path.join(workspaceRoot, "linked.txt"));
 
@@ -226,7 +226,7 @@ describe("agents.workspace RPC handlers", () => {
   });
 
   it("does not follow symlinked directories out of the workspace", async () => {
-    const outsideDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-workspace-parent-"));
+    const outsideDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-workspace-parent-"));
     writeWorkspaceFile(outsideDir, "secret.txt", "outside secret\n");
     fs.symlinkSync(outsideDir, path.join(workspaceRoot, "linked-dir"), "dir");
 
@@ -252,7 +252,7 @@ describe("agents.workspace RPC handlers", () => {
   });
 
   it("rejects hardlinked files shared outside the workspace", async () => {
-    const outsidePath = path.join(os.tmpdir(), `openclaw-workspace-hardlink-${process.pid}.txt`);
+    const outsidePath = path.join(os.tmpdir(), `afora-workspace-hardlink-${process.pid}.txt`);
     fs.writeFileSync(outsidePath, "shared\n", "utf8");
     fs.linkSync(outsidePath, path.join(workspaceRoot, "shared.txt"));
 

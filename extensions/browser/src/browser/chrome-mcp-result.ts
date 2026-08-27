@@ -4,7 +4,7 @@ import {
   asNullableRecord,
   normalizeOptionalString,
   readStringValue,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { toErrorObject } from "../infra/errors.js";
 import { redactToolPayloadText } from "../logging/redact.js";
 import { redactCdpUrl } from "./cdp.helpers.js";

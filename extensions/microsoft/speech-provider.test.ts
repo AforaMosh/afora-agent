@@ -1,20 +1,20 @@
 // Microsoft tests cover speech provider plugin behavior.
 import { writeFileSync } from "node:fs";
 import path from "node:path";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   finalizeDebugProxyCapture,
   getDebugProxyCaptureStore,
   initializeDebugProxyCapture,
-} from "openclaw/plugin-sdk/proxy-capture";
-import { createOpenClawTestState, type OpenClawTestState } from "openclaw/plugin-sdk/test-state";
+} from "afora-agent/plugin-sdk/proxy-capture";
+import { createAforaTestState, type AforaTestState } from "afora-agent/plugin-sdk/test-state";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installDebugProxyTestResetHooks } from "../test-support/debug-proxy-env-test-helpers.js";
 
 const fetchWithSsrFGuardMock = vi.hoisted(() => vi.fn());
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/ssrf-runtime")>();
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/ssrf-runtime")>();
   return {
     ...actual,
     fetchWithSsrFGuard: (...args: Parameters<typeof actual.fetchWithSsrFGuard>) => {
@@ -33,7 +33,7 @@ vi.mock("node-edge-tts", () => ({
 import { buildMicrosoftSpeechProvider } from "./speech-provider.js";
 import * as ttsModule from "./tts.js";
 
-const TEST_CFG = {} as OpenClawConfig;
+const TEST_CFG = {} as AforaConfig;
 
 async function listVoicesThroughProvider() {
   const listVoices = buildMicrosoftSpeechProvider().listVoices;
@@ -66,17 +66,17 @@ function requireFirstEdgeTtsCall(edgeSpy: ReturnType<typeof vi.spyOn>): {
 }
 
 describe("listMicrosoftVoices", () => {
-  let openClawState: OpenClawTestState;
+  let aforaState: AforaTestState;
 
   beforeEach(async () => {
-    openClawState = await createOpenClawTestState({
+    aforaState = await createAforaTestState({
       layout: "state-only",
       prefix: "microsoft-voices-capture-",
     });
   });
 
   afterEach(async () => {
-    await openClawState.cleanup();
+    await aforaState.cleanup();
   });
 
   // Install after local teardown so the proxy snapshot is restored before the
@@ -194,8 +194,8 @@ describe("listMicrosoftVoices", () => {
 
   it("records voice discovery exchanges in debug proxy capture mode", async () => {
     proxyReset.captureProxyEnv();
-    process.env.OPENCLAW_DEBUG_PROXY_ENABLED = "1";
-    process.env.OPENCLAW_DEBUG_PROXY_SESSION_ID = "ms-voices-session";
+    process.env.AFORA_DEBUG_PROXY_ENABLED = "1";
+    process.env.AFORA_DEBUG_PROXY_SESSION_ID = "ms-voices-session";
 
     globalThis.fetch = vi
       .fn()
@@ -208,8 +208,8 @@ describe("listMicrosoftVoices", () => {
       id: "ms-voices-session",
       startedAt: Date.now(),
       mode: "test",
-      sourceScope: "openclaw",
-      sourceProcess: "openclaw",
+      sourceScope: "afora",
+      sourceProcess: "afora",
     });
 
     await listVoicesThroughProvider();
@@ -231,8 +231,8 @@ describe("listMicrosoftVoices", () => {
 
   it("does not double-capture voice discovery when the global fetch patch is installed", async () => {
     proxyReset.captureProxyEnv();
-    process.env.OPENCLAW_DEBUG_PROXY_ENABLED = "1";
-    process.env.OPENCLAW_DEBUG_PROXY_SESSION_ID = "ms-voices-global-session";
+    process.env.AFORA_DEBUG_PROXY_ENABLED = "1";
+    process.env.AFORA_DEBUG_PROXY_SESSION_ID = "ms-voices-global-session";
 
     globalThis.fetch = vi.fn(
       async () => new Response(JSON.stringify([{ ShortName: "en-US-AvaNeural" }]), { status: 200 }),
@@ -243,8 +243,8 @@ describe("listMicrosoftVoices", () => {
       id: "ms-voices-global-session",
       startedAt: Date.now(),
       mode: "test",
-      sourceScope: "openclaw",
-      sourceProcess: "openclaw",
+      sourceScope: "afora",
+      sourceProcess: "afora",
     });
     initializeDebugProxyCapture("test");
 

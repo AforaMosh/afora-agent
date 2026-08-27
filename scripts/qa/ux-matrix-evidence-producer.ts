@@ -600,7 +600,7 @@ async function writeProducerMetadata(params: {
     return acc;
   }, {});
   await writeJson(path.join(params.artifactBase, "manifest.json"), {
-    kind: "openclaw.qa.ux-matrix",
+    kind: "afora.qa.ux-matrix",
     run: {
       status: counts.fail ? "fail" : counts.blocked ? "blocked" : "pass",
     },
@@ -621,7 +621,7 @@ async function writeProducerMetadata(params: {
       status: cell.status,
       surface: cell.surface,
     })),
-    kind: "openclaw.qa.ux-matrix.release-ledger",
+    kind: "afora.qa.ux-matrix.release-ledger",
   });
   await writeText(
     path.join(params.artifactBase, "commands.txt"),
@@ -647,7 +647,7 @@ async function runUxMatrixEvidenceProducer(options: ProducerOptions) {
     "logs.txt",
   );
   const cliResult = await runCommandForCell({
-    args: ["openclaw.mjs", "--help"],
+    args: ["afora.mjs", "--help"],
     artifactBase: options.artifactBase,
     command: process.execPath,
     cwd: options.repoRoot,

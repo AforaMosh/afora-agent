@@ -19,7 +19,7 @@ import {
   getRuntimeConfigSnapshot,
   setRuntimeConfigSnapshot,
 } from "../config/io.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { RuntimeEnv } from "../runtime.js";
 import {
   agentExecCommand,
@@ -71,7 +71,7 @@ describe("agent exec prompt sources", () => {
   });
 
   it("reads a UTF-8 prompt file", async () => {
-    const root = tempDirs.make("openclaw-agent-exec-prompt-");
+    const root = tempDirs.make("afora-agent-exec-prompt-");
     const promptPath = path.join(root, "prompt.md");
     await fs.writeFile(promptPath, "\uFEFFline one\nline two", "utf8");
 
@@ -229,7 +229,7 @@ describe("agent exec command composition", () => {
       {
         cwd: path.resolve(import.meta.dirname, "../.."),
         encoding: "utf8",
-        env: { ...process.env, OPENCLAW_TEST_RUNTIME_LOG: "1" },
+        env: { ...process.env, AFORA_TEST_RUNTIME_LOG: "1" },
       },
     );
 
@@ -303,8 +303,8 @@ describe("agent exec command composition", () => {
     let observedConfig: unknown;
     const result = await agentExecCommand("inspect", { authEnvOnly: true }, runtime, {
       runAgent: vi.fn(async () => {
-        observedStateDir = process.env.OPENCLAW_STATE_DIR ?? "";
-        observedConfigPath = process.env.OPENCLAW_CONFIG_PATH;
+        observedStateDir = process.env.AFORA_STATE_DIR ?? "";
+        observedConfigPath = process.env.AFORA_CONFIG_PATH;
         // The published snapshot is what the run reads; exec writes no config file.
         observedConfig = getRuntimeConfigSnapshot();
         await expect(fs.stat(observedStateDir)).resolves.toBeDefined();
@@ -315,7 +315,7 @@ describe("agent exec command composition", () => {
     expect(result.exitCode).toBe(0);
     expect(observedConfigPath).toBeUndefined();
     await expect(fs.readdir(observedStateDir).catch(() => [])).resolves.not.toContain(
-      "openclaw.json",
+      "afora.json",
     );
     expect(observedConfig).toMatchObject({
       agents: { defaults: { skipBootstrap: true, sandbox: { mode: "off" } } },
@@ -329,7 +329,7 @@ describe("agent exec command composition", () => {
   });
 
   it("flushes opted-in identity evidence through its owned direct-local writer", async () => {
-    const root = tempDirs.make("openclaw-agent-exec-audit-");
+    const root = tempDirs.make("afora-agent-exec-audit-");
     const admittedAt = Date.now();
     setRuntimeConfigSnapshot({ logging: { audit: { executionIdentity: true } } });
     try {
@@ -362,7 +362,7 @@ describe("agent exec command composition", () => {
       });
 
       expect(result.exitCode).toBe(0);
-      const database = new DatabaseSync(path.join(root, "state", "openclaw.sqlite"), {
+      const database = new DatabaseSync(path.join(root, "state", "afora.sqlite"), {
         readOnly: true,
       });
       try {
@@ -384,11 +384,11 @@ describe("agent exec command composition", () => {
   });
 
   it("discovers operator-installed plugins while run state stays ephemeral", async () => {
-    const operatorStateDir = tempDirs.make("openclaw-agent-exec-plugin-owner-");
+    const operatorStateDir = tempDirs.make("afora-agent-exec-plugin-owner-");
     const pluginDir = path.join(operatorStateDir, "extensions", "exec-provider");
     await fs.mkdir(pluginDir, { recursive: true });
     await fs.writeFile(
-      path.join(pluginDir, "openclaw.plugin.json"),
+      path.join(pluginDir, "afora.plugin.json"),
       JSON.stringify({
         id: "exec-provider",
         configSchema: { type: "object", additionalProperties: false },
@@ -402,20 +402,20 @@ describe("agent exec command composition", () => {
         name: "exec-provider",
         version: "1.0.0",
         type: "module",
-        openclaw: { extensions: ["./index.js"] },
+        afora: { extensions: ["./index.js"] },
       }),
       "utf8",
     );
     await fs.writeFile(path.join(pluginDir, "index.js"), "export default {}\n", "utf8");
-    const previousStateDir = process.env.OPENCLAW_STATE_DIR;
-    process.env.OPENCLAW_STATE_DIR = operatorStateDir;
+    const previousStateDir = process.env.AFORA_STATE_DIR;
+    process.env.AFORA_STATE_DIR = operatorStateDir;
     const { runtime } = createRuntime();
     let runtimeStateDir = "";
     let discoveredRoot = "";
     try {
       await agentExecCommand("inspect", {}, runtime, {
         runAgent: vi.fn(async () => {
-          runtimeStateDir = process.env.OPENCLAW_STATE_DIR ?? "";
+          runtimeStateDir = process.env.AFORA_STATE_DIR ?? "";
           const { resolvePluginMetadataSnapshot } =
             await import("../plugins/plugin-metadata-snapshot.js");
           const snapshot = resolvePluginMetadataSnapshot({
@@ -430,9 +430,9 @@ describe("agent exec command composition", () => {
       });
     } finally {
       if (previousStateDir === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.AFORA_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = previousStateDir;
+        process.env.AFORA_STATE_DIR = previousStateDir;
       }
     }
 
@@ -442,9 +442,9 @@ describe("agent exec command composition", () => {
   });
 
   it("keeps operator-installed plugins hidden under --isolated", async () => {
-    const operatorStateDir = tempDirs.make("openclaw-agent-exec-plugin-isolated-");
-    const previousStateDir = process.env.OPENCLAW_STATE_DIR;
-    process.env.OPENCLAW_STATE_DIR = operatorStateDir;
+    const operatorStateDir = tempDirs.make("afora-agent-exec-plugin-isolated-");
+    const previousStateDir = process.env.AFORA_STATE_DIR;
+    process.env.AFORA_STATE_DIR = operatorStateDir;
     const { runtime } = createRuntime();
     let resolvedExtensionsDir = "";
     try {
@@ -457,27 +457,27 @@ describe("agent exec command composition", () => {
       });
     } finally {
       if (previousStateDir === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.AFORA_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = previousStateDir;
+        process.env.AFORA_STATE_DIR = previousStateDir;
       }
     }
 
     expect(resolvedExtensionsDir).not.toBe(path.join(operatorStateDir, "extensions"));
-    expect(path.basename(path.dirname(resolvedExtensionsDir))).toMatch(/^openclaw-agent-exec-/u);
+    expect(path.basename(path.dirname(resolvedExtensionsDir))).toMatch(/^afora-agent-exec-/u);
   });
 
   it("keeps --state-dir scoped to run state instead of plugin installs", async () => {
-    const operatorStateDir = tempDirs.make("openclaw-agent-exec-plugin-operator-");
-    const retainedRunStateDir = tempDirs.make("openclaw-agent-exec-retained-state-");
-    const previousStateDir = process.env.OPENCLAW_STATE_DIR;
-    process.env.OPENCLAW_STATE_DIR = operatorStateDir;
+    const operatorStateDir = tempDirs.make("afora-agent-exec-plugin-operator-");
+    const retainedRunStateDir = tempDirs.make("afora-agent-exec-retained-state-");
+    const previousStateDir = process.env.AFORA_STATE_DIR;
+    process.env.AFORA_STATE_DIR = operatorStateDir;
     const { runtime } = createRuntime();
     let resolvedExtensionsDir = "";
     try {
       await agentExecCommand("inspect", { stateDir: retainedRunStateDir }, runtime, {
         runAgent: vi.fn(async () => {
-          expect(process.env.OPENCLAW_STATE_DIR).toBe(retainedRunStateDir);
+          expect(process.env.AFORA_STATE_DIR).toBe(retainedRunStateDir);
           const { resolveDefaultPluginExtensionsDir } = await import("../plugins/install-paths.js");
           resolvedExtensionsDir = resolveDefaultPluginExtensionsDir();
           return successResult();
@@ -485,9 +485,9 @@ describe("agent exec command composition", () => {
       });
     } finally {
       if (previousStateDir === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.AFORA_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = previousStateDir;
+        process.env.AFORA_STATE_DIR = previousStateDir;
       }
     }
 
@@ -541,7 +541,7 @@ describe("agent exec command composition", () => {
 
     const result = await agentExecCommand("inspect", { json: true }, runtime, {
       runAgent: vi.fn(async () => {
-        observedStateDir = process.env.OPENCLAW_STATE_DIR ?? "";
+        observedStateDir = process.env.AFORA_STATE_DIR ?? "";
         return successResult();
       }),
     });
@@ -564,7 +564,7 @@ describe("agent exec command composition", () => {
   });
 
   it("threads --cwd to both workspace and tool cwd", async () => {
-    const root = tempDirs.make("openclaw-agent-exec-cwd-");
+    const root = tempDirs.make("afora-agent-exec-cwd-");
     const { runtime } = createRuntime();
     const runAgent = vi.fn(async () => successResult());
 
@@ -621,11 +621,11 @@ describe("agent exec command composition", () => {
   });
 
   it("undoes environment mutations made by loading the config", async () => {
-    const seedDir = tempDirs.make("openclaw-agent-exec-envseed-");
-    const seedPath = path.join(seedDir, "openclaw.json");
+    const seedDir = tempDirs.make("afora-agent-exec-envseed-");
+    const seedPath = path.join(seedDir, "afora.json");
     await fs.writeFile(
       seedPath,
-      JSON.stringify({ env: { vars: { OPENCLAW_EXEC_ENV_PROBE: "from-config" } } }),
+      JSON.stringify({ env: { vars: { AFORA_EXEC_ENV_PROBE: "from-config" } } }),
       "utf8",
     );
     const { runtime } = createRuntime();
@@ -633,7 +633,7 @@ describe("agent exec command composition", () => {
 
     await agentExecCommand("inspect", { config: seedPath }, runtime, {
       runAgent: vi.fn(async () => {
-        observedDuringRun = process.env.OPENCLAW_EXEC_ENV_PROBE;
+        observedDuringRun = process.env.AFORA_EXEC_ENV_PROBE;
         return successResult();
       }),
     });
@@ -641,7 +641,7 @@ describe("agent exec command composition", () => {
     expect(observedDuringRun).toBe("from-config");
     // Config-applied values must not outlive the command, or a later isolated
     // run in the same process would inherit them.
-    expect(process.env.OPENCLAW_EXEC_ENV_PROBE).toBeUndefined();
+    expect(process.env.AFORA_EXEC_ENV_PROBE).toBeUndefined();
   });
 
   it("leaves no runtime config snapshot behind when the caller had none", async () => {
@@ -685,15 +685,15 @@ describe("agent exec command composition", () => {
   });
 
   it("publishes no config env values when the config load fails", async () => {
-    const seedDir = tempDirs.make("openclaw-agent-exec-badenv-");
-    const seedPath = path.join(seedDir, "openclaw.json");
+    const seedDir = tempDirs.make("afora-agent-exec-badenv-");
+    const seedPath = path.join(seedDir, "afora.json");
     // The loader owns this: it applies `env.vars` only after validation passes,
     // and restores them from its own catch. Pinned here because the observable
     // contract matters regardless of which layer enforces it.
     await fs.writeFile(
       seedPath,
       JSON.stringify({
-        env: { vars: { OPENCLAW_EXEC_FAILED_PROBE: "from-rejected-config" } },
+        env: { vars: { AFORA_EXEC_FAILED_PROBE: "from-rejected-config" } },
         agents: { defaults: { sandbox: { mode: "not-a-real-mode" } } },
       }),
       "utf8",
@@ -705,18 +705,18 @@ describe("agent exec command composition", () => {
     });
 
     expect(result.exitCode).not.toBe(0);
-    expect(process.env.OPENCLAW_EXEC_FAILED_PROBE).toBeUndefined();
+    expect(process.env.AFORA_EXEC_FAILED_PROBE).toBeUndefined();
   });
 
   it("leaves an explicit state directory untouched", async () => {
-    const stateDir = tempDirs.make("openclaw-agent-exec-state-");
+    const stateDir = tempDirs.make("afora-agent-exec-state-");
     const marker = path.join(stateDir, "keep.txt");
     await fs.writeFile(marker, "keep", "utf8");
     const { runtime } = createRuntime();
 
     await agentExecCommand("inspect", { stateDir }, runtime, {
       runAgent: vi.fn(async () => {
-        expect(process.env.OPENCLAW_STATE_DIR).toBe(stateDir);
+        expect(process.env.AFORA_STATE_DIR).toBe(stateDir);
         return successResult();
       }),
     });
@@ -728,7 +728,7 @@ describe("agent exec command composition", () => {
   });
 
   it("skips external Codex CLI credentials under --auth-env-only", async () => {
-    const codexHome = tempDirs.make("openclaw-agent-exec-codex-home-");
+    const codexHome = tempDirs.make("afora-agent-exec-codex-home-");
     await fs.writeFile(
       path.join(codexHome, "auth.json"),
       JSON.stringify({
@@ -798,10 +798,10 @@ describe("agent exec command composition", () => {
   });
 
   it("reads stored credentials from the configured agent directory", async () => {
-    const stateDir = tempDirs.make("openclaw-agent-exec-cfg-auth-");
+    const stateDir = tempDirs.make("afora-agent-exec-cfg-auth-");
     const customAgentDir = path.join(stateDir, "custom-home");
     await fs.mkdir(customAgentDir, { recursive: true });
-    const seedPath = path.join(stateDir, "openclaw.json");
+    const seedPath = path.join(stateDir, "afora.json");
     await fs.writeFile(
       seedPath,
       JSON.stringify({
@@ -833,10 +833,10 @@ describe("agent exec command composition", () => {
   });
 
   it("blocks direct persisted credential reads under --auth-env-only", async () => {
-    const normalStateDir = tempDirs.make("openclaw-agent-exec-hidden-auth-");
+    const normalStateDir = tempDirs.make("afora-agent-exec-hidden-auth-");
     const normalAgentDir = path.join(normalStateDir, "agents", "main", "agent");
-    const previousStateDir = process.env.OPENCLAW_STATE_DIR;
-    process.env.OPENCLAW_STATE_DIR = normalStateDir;
+    const previousStateDir = process.env.AFORA_STATE_DIR;
+    process.env.AFORA_STATE_DIR = normalStateDir;
     const { saveAuthProfileStore } = await import("../agents/auth-profiles.js");
     saveAuthProfileStore(
       {
@@ -866,9 +866,9 @@ describe("agent exec command composition", () => {
       });
     } finally {
       if (previousStateDir === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.AFORA_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = previousStateDir;
+        process.env.AFORA_STATE_DIR = previousStateDir;
       }
     }
 
@@ -877,10 +877,10 @@ describe("agent exec command composition", () => {
   });
 
   it("uses the normal stored auth profile when auth-env-only is disabled", async () => {
-    const normalStateDir = tempDirs.make("openclaw-agent-exec-normal-state-");
+    const normalStateDir = tempDirs.make("afora-agent-exec-normal-state-");
     const normalAgentDir = path.join(normalStateDir, "agents", "main", "agent");
-    const previousStateDir = process.env.OPENCLAW_STATE_DIR;
-    process.env.OPENCLAW_STATE_DIR = normalStateDir;
+    const previousStateDir = process.env.AFORA_STATE_DIR;
+    process.env.AFORA_STATE_DIR = normalStateDir;
     const { saveAuthProfileStore } = await import("../agents/auth-profiles.js");
     saveAuthProfileStore(
       {
@@ -896,7 +896,7 @@ describe("agent exec command composition", () => {
     try {
       await agentExecCommand("inspect", { authEnvOnly: false }, runtime, {
         runAgent: vi.fn(async () => {
-          expect(process.env.OPENCLAW_STATE_DIR).not.toBe(normalStateDir);
+          expect(process.env.AFORA_STATE_DIR).not.toBe(normalStateDir);
           profileIds = Object.keys(
             ensureAuthProfileStore(undefined, {
               allowKeychainPrompt: false,
@@ -908,9 +908,9 @@ describe("agent exec command composition", () => {
       });
     } finally {
       if (previousStateDir === undefined) {
-        delete process.env.OPENCLAW_STATE_DIR;
+        delete process.env.AFORA_STATE_DIR;
       } else {
-        process.env.OPENCLAW_STATE_DIR = previousStateDir;
+        process.env.AFORA_STATE_DIR = previousStateDir;
       }
     }
 
@@ -1060,17 +1060,17 @@ describe("agent exec base config resolution", () => {
         },
       },
     },
-  } satisfies OpenClawConfig;
+  } satisfies AforaConfig;
 
   async function writeSeed(body: string): Promise<string> {
-    const dir = tempDirs.make("openclaw-agent-exec-seed-");
-    const seedPath = path.join(dir, "openclaw.json");
+    const dir = tempDirs.make("afora-agent-exec-seed-");
+    const seedPath = path.join(dir, "afora.json");
     await fs.writeFile(seedPath, body, "utf8");
     return seedPath;
   }
 
   it("rejects a missing or invalid pinned config instead of falling back", async () => {
-    const missing = path.join(tempDirs.make("openclaw-agent-exec-seed-"), "absent.json");
+    const missing = path.join(tempDirs.make("afora-agent-exec-seed-"), "absent.json");
     await expect(resolveExecBaseConfig({ config: missing })).rejects.toThrow(
       "--config file not found",
     );

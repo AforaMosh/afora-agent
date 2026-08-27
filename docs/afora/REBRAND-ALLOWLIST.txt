@@ -27,3 +27,4 @@ pattern:@openclaw/proxyline # external published npm package, not ours to rename
 pattern:@openclaw/uirouter # external published npm package, not ours to rename
 pattern:"openclaw": "afora\.mjs" # undocumented legacy bin alias, tenants have openclaw on PATH
 pattern:- "openclaw" # the published openclaw registry package name in pnpm-workspace.yaml release-age excludes
+pattern:openclaw@20[0-9][0-9]\. # published legacy release specs used as upgrade-test baselines

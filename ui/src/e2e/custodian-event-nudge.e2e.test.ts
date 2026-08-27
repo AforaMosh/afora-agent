@@ -13,7 +13,7 @@ const suite = createControlUiE2eSuite({
   unavailableMessage: (executablePath) => `Playwright Chromium is unavailable at ${executablePath}`,
 });
 
-const captureUiProofEnabled = process.env.OPENCLAW_CAPTURE_UI_PROOF === "1";
+const captureUiProofEnabled = process.env.AFORA_CAPTURE_UI_PROOF === "1";
 const uiProofArtifactDir = path.join(
   process.cwd(),
   ".artifacts",
@@ -40,20 +40,20 @@ suite.define(() => {
       },
       async ({ page }) => {
         const gateway = await installMockGateway(page, {
-          featureMethods: ["chat.metadata", "chat.startup", "openclaw.chat"],
-          deferredMethods: ["openclaw.chat"],
+          featureMethods: ["chat.metadata", "chat.startup", "afora.chat"],
+          deferredMethods: ["afora.chat"],
           methodResponses: {},
         });
 
         const response = await page.goto(`${suite.server.baseUrl}custodian?onboarding=1`);
         expect(response?.status()).toBe(200);
-        await gateway.waitForRequest("openclaw.chat");
+        await gateway.waitForRequest("afora.chat");
         await page.getByRole("button", { name: "Exit setup" }).click();
         await expect.poll(() => new URL(page.url()).pathname).toBe("/chat/main");
         const destination = page.url();
         const agentListRequests = (await gateway.getRequests("agents.list")).length;
 
-        await gateway.resolveDeferred("openclaw.chat", {
+        await gateway.resolveDeferred("afora.chat", {
           sessionId: "late-e2e-custodian",
           reply: "Your agent is hatching — handing you over now.",
           action: "open-agent",
@@ -83,9 +83,9 @@ suite.define(() => {
       },
       async ({ page }) => {
         const gateway = await installMockGateway(page, {
-          featureMethods: ["chat.metadata", "chat.startup", "openclaw.chat"],
+          featureMethods: ["chat.metadata", "chat.startup", "afora.chat"],
           methodResponses: {
-            "openclaw.chat": {
+            "afora.chat": {
               sessionId: "e2e-custodian",
               reply: "I'm watching the system.",
               action: "none",
@@ -95,8 +95,8 @@ suite.define(() => {
 
         const response = await page.goto(`${suite.server.baseUrl}custodian`);
         expect(response?.status()).toBe(200);
-        await page.getByRole("heading", { name: "OpenClaw", exact: true }).waitFor();
-        await expect.poll(async () => (await gateway.getRequests("openclaw.chat")).length).toBe(1);
+        await page.getByRole("heading", { name: "Afora", exact: true }).waitFor();
+        await expect.poll(async () => (await gateway.getRequests("afora.chat")).length).toBe(1);
 
         if (captureUiProofEnabled) {
           await page.screenshot({
@@ -107,7 +107,7 @@ suite.define(() => {
 
         await gateway.emitGatewayEvent("config.changed", {
           hash: "config-hash",
-          path: "/tmp/openclaw.json",
+          path: "/tmp/afora.json",
           ts: Date.now(),
         });
         await settleUi(page);
@@ -131,10 +131,10 @@ suite.define(() => {
           });
         }
 
-        await gateway.deferNext("openclaw.chat");
+        await gateway.deferNext("afora.chat");
         await nudge.click();
-        await expect.poll(async () => (await gateway.getRequests("openclaw.chat")).length).toBe(2);
-        const requests = await gateway.getRequests("openclaw.chat");
+        await expect.poll(async () => (await gateway.getRequests("afora.chat")).length).toBe(2);
+        const requests = await gateway.getRequests("afora.chat");
         expect(requests[1]?.params).toMatchObject({
           message: "what happened with telegram?",
           sessionId: "e2e-custodian",
@@ -142,7 +142,7 @@ suite.define(() => {
         await page
           .locator(".chat-group.user", { hasText: "what happened with telegram?" })
           .waitFor();
-        await gateway.resolveDeferred("openclaw.chat", {
+        await gateway.resolveDeferred("afora.chat", {
           sessionId: "e2e-custodian",
           reply: "I'm watching the system.",
           action: "none",
@@ -179,17 +179,17 @@ suite.define(() => {
       },
       async ({ page }) => {
         const gateway = await installMockGateway(page, {
-          deferredMethods: ["openclaw.chat"],
-          featureMethods: ["chat.metadata", "chat.startup", "openclaw.chat"],
+          deferredMethods: ["afora.chat"],
+          featureMethods: ["chat.metadata", "chat.startup", "afora.chat"],
         });
 
         const response = await page.goto(`${suite.server.baseUrl}custodian`);
         expect(response?.status()).toBe(200);
-        await gateway.waitForRequest("openclaw.chat");
-        await gateway.rejectDeferred("openclaw.chat", {
+        await gateway.waitForRequest("afora.chat");
+        await gateway.rejectDeferred("afora.chat", {
           code: "UNAVAILABLE",
           message:
-            "OpenClaw requires working inference: No agent model is configured. Run `openclaw onboard` first.",
+            "Afora requires working inference: No agent model is configured. Run `afora onboard` first.",
           retryable: true,
         });
 
@@ -225,9 +225,9 @@ suite.define(() => {
       },
       async ({ page }) => {
         const gateway = await installMockGateway(page, {
-          featureMethods: ["chat.metadata", "chat.startup", "openclaw.chat"],
+          featureMethods: ["chat.metadata", "chat.startup", "afora.chat"],
           methodResponses: {
-            "openclaw.chat": {
+            "afora.chat": {
               sessionId: "e2e-sensitive-custodian",
               reply: "Paste your API key.",
               action: "none",
@@ -251,7 +251,7 @@ suite.define(() => {
         await nudge.evaluate((element) => (element as HTMLButtonElement).click());
         await settleUi(page);
 
-        expect(await gateway.getRequests("openclaw.chat")).toHaveLength(1);
+        expect(await gateway.getRequests("afora.chat")).toHaveLength(1);
         expect(await page.getByText("what happened with discord?").count()).toBe(0);
       },
     );
@@ -266,16 +266,16 @@ suite.define(() => {
       },
       async ({ page }) => {
         const gateway = await installMockGateway(page, {
-          featureMethods: ["chat.metadata", "chat.startup", "openclaw.chat"],
+          featureMethods: ["chat.metadata", "chat.startup", "afora.chat"],
           methodResponses: {
-            "openclaw.chat": {
+            "afora.chat": {
               sessionId: "e2e-wizard-custodian",
               reply: "Choose one.",
               action: "none",
               question: {
                 id: "access",
                 header: "Access",
-                question: "How should OpenClaw work?",
+                question: "How should Afora work?",
                 options: [{ label: "Full access" }, { label: "Ask first" }],
                 isOther: false,
               },
@@ -297,24 +297,24 @@ suite.define(() => {
         await expect.poll(() => nudge.isDisabled()).toBe(true);
         await nudge.evaluate((element) => (element as HTMLButtonElement).click());
         await settleUi(page);
-        expect(await gateway.getRequests("openclaw.chat")).toHaveLength(1);
+        expect(await gateway.getRequests("afora.chat")).toHaveLength(1);
 
-        await gateway.setMethodResponse("openclaw.chat", {
+        await gateway.setMethodResponse("afora.chat", {
           sessionId: "e2e-wizard-custodian",
           reply: "Moving on.",
           action: "none",
         });
         await skip.click();
 
-        await expect.poll(async () => (await gateway.getRequests("openclaw.chat")).length).toBe(2);
-        const requests = await gateway.getRequests("openclaw.chat");
+        await expect.poll(async () => (await gateway.getRequests("afora.chat")).length).toBe(2);
+        const requests = await gateway.getRequests("afora.chat");
         expect(requests[1]?.params).toMatchObject({
           message: "cancel",
           sessionId: "e2e-wizard-custodian",
         });
         await page.locator(".chat-group.user", { hasText: "Skip for now" }).waitFor();
         await page.getByText("Moving on.").waitFor();
-        expect(await page.locator("openclaw-option-card").count()).toBe(0);
+        expect(await page.locator("afora-option-card").count()).toBe(0);
       },
     );
   });
@@ -333,9 +333,9 @@ suite.define(() => {
       async ({ page }) => {
         const gateway = await installMockGateway(page, {
           featureCapabilities: [GATEWAY_SERVER_CAPS.SYSTEM_AGENT_WIZARD_CANCEL],
-          featureMethods: ["chat.metadata", "chat.startup", "openclaw.chat"],
+          featureMethods: ["chat.metadata", "chat.startup", "afora.chat"],
           methodResponses: {
-            "openclaw.chat": {
+            "afora.chat": {
               sessionId: "e2e-rich-wizard",
               reply: "Choose a channel.",
               action: "none",
@@ -358,7 +358,7 @@ suite.define(() => {
           content: ".custodian__wizard-step * { transition: none !important; }",
         });
         await page.getByLabel("Twitch").waitFor();
-        expect(await page.locator("openclaw-option-card").count()).toBe(0);
+        expect(await page.locator("afora-option-card").count()).toBe(0);
         expect(await page.locator(".agent-chat__composer-shell").count()).toBe(0);
 
         const twitchOption = page.locator(".wizard-step__option", { hasText: "Twitch" });
@@ -435,7 +435,7 @@ suite.define(() => {
           }
         }
 
-        await gateway.setMethodResponse("openclaw.chat", {
+        await gateway.setMethodResponse("afora.chat", {
           sessionId: "e2e-rich-wizard",
           reply: "Choose features.",
           action: "none",
@@ -458,7 +458,7 @@ suite.define(() => {
         await page.getByRole("button", { name: "Continue" }).click();
         await page.getByLabel("Announcements").waitFor();
 
-        await gateway.setMethodResponse("openclaw.chat", {
+        await gateway.setMethodResponse("afora.chat", {
           sessionId: "e2e-rich-wizard",
           reply: "Enter the secret.",
           action: "none",
@@ -484,7 +484,7 @@ suite.define(() => {
         await page.getByRole("button", { name: "Hide value" }).click();
         expect(await secretInput.getAttribute("type")).toBe("password");
 
-        await gateway.setMethodResponse("openclaw.chat", {
+        await gateway.setMethodResponse("afora.chat", {
           sessionId: "e2e-rich-wizard",
           reply: "Name this connection.",
           action: "none",
@@ -500,7 +500,7 @@ suite.define(() => {
         const labelInput = page.getByRole("textbox", { name: "Connection name" });
         await labelInput.waitFor();
 
-        await gateway.deferNext("openclaw.chat");
+        await gateway.deferNext("afora.chat");
         await labelInput.fill("Twitch ops");
         await page.getByRole("button", { name: "Submit" }).click();
         await expect
@@ -518,7 +518,7 @@ suite.define(() => {
           ).toBe(1);
         }
 
-        await gateway.resolveDeferred("openclaw.chat", {
+        await gateway.resolveDeferred("afora.chat", {
           sessionId: "e2e-rich-wizard",
           reply: "Confirm setup.",
           action: "none",
@@ -533,7 +533,7 @@ suite.define(() => {
         const yesButton = page.getByRole("button", { name: "Yes" });
         await noButton.waitFor();
 
-        await gateway.deferNext("openclaw.chat");
+        await gateway.deferNext("afora.chat");
         await yesButton.click();
         await expect.poll(() => noButton.isDisabled()).toBe(true);
         await expect.poll(() => yesButton.isDisabled()).toBe(true);
@@ -545,14 +545,14 @@ suite.define(() => {
           expect(restingStyle.cursor).toBe("not-allowed");
         }
 
-        await gateway.resolveDeferred("openclaw.chat", {
+        await gateway.resolveDeferred("afora.chat", {
           sessionId: "e2e-rich-wizard",
           reply: "Setup complete.",
           action: "none",
         });
         await page.getByText("Setup complete.").waitFor();
 
-        const requests = await gateway.getRequests("openclaw.chat");
+        const requests = await gateway.getRequests("afora.chat");
         expect(requests.map((request) => request.params)).toEqual([
           expect.objectContaining({ sessionId: expect.any(String) }),
           expect.objectContaining({
@@ -597,9 +597,9 @@ suite.define(() => {
       },
       async ({ page }) => {
         const gateway = await installMockGateway(page, {
-          featureMethods: ["chat.metadata", "chat.startup", "openclaw.chat"],
+          featureMethods: ["chat.metadata", "chat.startup", "afora.chat"],
           methodResponses: {
-            "openclaw.chat": {
+            "afora.chat": {
               sessionId: "e2e-onboarding-custodian",
               reply: "Let's finish setup.",
               action: "none",

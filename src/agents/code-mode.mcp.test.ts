@@ -1,6 +1,6 @@
 /** Tests Code Mode MCP namespace. */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { applyCodeModeCatalog } from "./code-mode.js";
 import {
@@ -60,8 +60,8 @@ describe("Code Mode MCP namespace", () => {
         const rootFile = await API.read("mcp/index.d.ts");
         const serverFile = await API.read("mcp/github.d.ts");
         const created = await MCP.github.createIssue({
-          owner: "openclaw",
-          repo: "openclaw",
+          owner: "afora",
+          repo: "afora",
           title: "Ship it",
         });
         const createdPayload = JSON.parse(created.content[0].text);
@@ -110,8 +110,8 @@ describe("Code Mode MCP namespace", () => {
         serverName: "github",
         toolName: "create_issue",
         input: {
-          owner: "openclaw",
-          repo: "openclaw",
+          owner: "afora",
+          repo: "afora",
           title: "Ship it",
           body: "",
         },
@@ -120,8 +120,8 @@ describe("Code Mode MCP namespace", () => {
         serverName: "github",
         toolName: "create_issue",
         input: {
-          owner: "openclaw",
-          repo: "openclaw",
+          owner: "afora",
+          repo: "afora",
           title: "Ship it",
           body: "",
         },
@@ -192,8 +192,8 @@ describe("Code Mode MCP namespace", () => {
         const files = await API.list("mcp");
         const api = await API.read("mcp/github.d.ts");
         const created = await MCP.github.createIssue({
-          owner: "openclaw",
-          repo: "openclaw",
+          owner: "afora",
+          repo: "afora",
           title: "From file docs",
         });
         return {
@@ -214,8 +214,8 @@ describe("Code Mode MCP namespace", () => {
         serverName: "github",
         toolName: "create_issue",
         input: {
-          owner: "openclaw",
-          repo: "openclaw",
+          owner: "afora",
+          repo: "afora",
           title: "From file docs",
         },
       },

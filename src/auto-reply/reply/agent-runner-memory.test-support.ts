@@ -6,7 +6,7 @@ type AgentRunnerMemoryTestApi = {
 
 function getTestApi(): AgentRunnerMemoryTestApi {
   const api = (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.agentRunnerMemoryTestApi")
+    Symbol.for("afora.agentRunnerMemoryTestApi")
   ];
   if (!api) {
     throw new Error("agent runner memory test API is unavailable");

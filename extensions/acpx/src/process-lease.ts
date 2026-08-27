@@ -1,34 +1,34 @@
 /**
- * Persistent lease store for ACPX wrapper processes. Leases let OpenClaw attach
+ * Persistent lease store for ACPX wrapper processes. Leases let Afora attach
  * gateway/session identity to spawned ACP processes and clean them up later.
  */
 import { randomUUID, createHash } from "node:crypto";
 import type {
   OpenKeyedStoreOptions,
   PluginStateKeyedStore,
-} from "openclaw/plugin-sdk/plugin-state-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-runtime";
 import { splitCommandParts } from "./command-line.js";
 import { ACPX_PROCESS_LEASE_MAX_ENTRIES, ACPX_PROCESS_LEASE_NAMESPACE } from "./state.js";
 
 /** CLI argument carrying the ACPX process lease id. */
-export const OPENCLAW_ACPX_LEASE_ID_ARG = "--openclaw-acpx-lease-id";
+export const AFORA_ACPX_LEASE_ID_ARG = "--afora-acpx-lease-id";
 /** CLI argument carrying the owning gateway instance id. */
-export const OPENCLAW_GATEWAY_INSTANCE_ID_ARG = "--openclaw-gateway-instance-id";
+export const AFORA_GATEWAY_INSTANCE_ID_ARG = "--afora-gateway-instance-id";
 /** Synthetic session identity for generated-wrapper health probes. */
-export const ACPX_PROBE_LEASE_SESSION_KEY = "openclaw:acpx:probe";
+export const ACPX_PROBE_LEASE_SESSION_KEY = "afora:acpx:probe";
 
 export type AcpxProcessLeaseIdentity = {
   leaseId: string;
   gatewayInstanceId: string;
 };
 
-/** Read OpenClaw lease identity from a generated wrapper command. */
+/** Read Afora lease identity from a generated wrapper command. */
 export function readAcpxProcessLeaseIdentity(
   command: string | undefined,
 ): AcpxProcessLeaseIdentity | undefined {
   const parts = splitCommandParts(command?.trim() ?? "");
-  const leaseIndex = parts.lastIndexOf(OPENCLAW_ACPX_LEASE_ID_ARG);
-  const gatewayIndex = parts.lastIndexOf(OPENCLAW_GATEWAY_INSTANCE_ID_ARG);
+  const leaseIndex = parts.lastIndexOf(AFORA_ACPX_LEASE_ID_ARG);
+  const gatewayIndex = parts.lastIndexOf(AFORA_GATEWAY_INSTANCE_ID_ARG);
   const leaseId = leaseIndex >= 0 ? parts[leaseIndex + 1]?.trim() : "";
   const gatewayInstanceId = gatewayIndex >= 0 ? parts[gatewayIndex + 1]?.trim() : "";
   if (!leaseId || !gatewayInstanceId) {
@@ -196,9 +196,9 @@ function appendAcpxLeaseArgs(params: {
 }): string {
   return [
     params.command,
-    OPENCLAW_ACPX_LEASE_ID_ARG,
+    AFORA_ACPX_LEASE_ID_ARG,
     quoteEnvValue(params.leaseId),
-    OPENCLAW_GATEWAY_INSTANCE_ID_ARG,
+    AFORA_GATEWAY_INSTANCE_ID_ARG,
     quoteEnvValue(params.gatewayInstanceId),
   ].join(" ");
 }

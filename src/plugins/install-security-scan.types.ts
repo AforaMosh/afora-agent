@@ -1,5 +1,5 @@
 // Defines plugin install security scan result types.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { InstallPolicyFinding } from "../security/install-policy.js";
 
 export type InstallPolicyWarningDetails = {
@@ -16,7 +16,7 @@ type InstallPolicyWarningAcknowledgementResult = { status: "approved" } | { stat
 
 /** Overrides that intentionally loosen install safety policy for trusted/operator paths. */
 export type InstallSafetyOverrides = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   dangerouslyForceUnsafeInstall?: boolean;
   onInstallPolicyWarning?: (
     request: InstallPolicyWarningAcknowledgementRequest,

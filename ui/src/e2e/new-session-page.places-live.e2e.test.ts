@@ -101,8 +101,8 @@ suite.define(() => {
     const updateIssue = {
       code: "update-required",
       action: "update-and-reconnect",
-      updateCommand: "openclaw update",
-      headlessReconnectCommand: "openclaw node restart",
+      updateCommand: "afora update",
+      headlessReconnectCommand: "afora node restart",
     };
     const lifecycleNowMs = Date.now();
     const disconnectedAtMs = lifecycleNowMs - 2 * 60_000;
@@ -296,7 +296,7 @@ suite.define(() => {
         profiles: [{ id: "aws", providerId: "crabbox", trust: "disposable" }],
       });
       await gateway.emitGatewayEvent("config.changed", {
-        path: "/tmp/openclaw.json",
+        path: "/tmp/afora.json",
         hash: "picker-cloud-refresh",
         ts: 3,
       });

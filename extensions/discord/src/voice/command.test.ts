@@ -1,5 +1,5 @@
 // Discord tests cover command plugin behavior.
-import type { DiscordAccountConfig, OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { DiscordAccountConfig, AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { describe, expect, it, vi } from "vitest";
 import type { CommandInteraction, CommandWithSubcommands } from "../internal/discord.js";
 import { createPartialDiscordChannelWithThrowingGetters } from "../test-support/partial-channel.js";
@@ -22,7 +22,7 @@ function findVoiceSubcommand(command: CommandWithSubcommands, name: string) {
 function createVoiceCommandHarness(
   manager: DiscordVoiceManager | null = null,
   overrides?: {
-    cfg?: OpenClawConfig;
+    cfg?: AforaConfig;
     discordConfig?: DiscordAccountConfig;
     groupPolicy?: DiscordAccountConfig["groupPolicy"];
     useAccessGroups?: boolean;

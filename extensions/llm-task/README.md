@@ -4,7 +4,7 @@ Adds an **optional** agent tool `llm-task` for running **JSON-only** LLM tasks
 (drafting, summarizing, classifying) with optional JSON Schema validation.
 
 Designed to be called from workflow engines (for example, Lobster via
-`openclaw.invoke --each`) without adding new OpenClaw code per workflow.
+`afora.invoke --each`) without adding new Afora code per workflow.
 
 ## Enable
 
@@ -63,7 +63,7 @@ Designed to be called from workflow engines (for example, Lobster via
 
 The host-owned `llm` policy authorizes model/profile overrides. Its
 `allowedCompletionModels` restricts every completion, including the resolved agent
-default. Run `openclaw doctor --fix` once for entries created by older releases;
+default. Run `afora doctor --fix` once for entries created by older releases;
 Doctor grants the shipped selection permissions and moves legacy
 `config.allowedModels` values into `llm.allowedCompletionModels` without widening them.
 
@@ -97,9 +97,9 @@ Returns `details.json` containing the parsed JSON (and validates against
 
 ## Bundled extension note
 
-This extension depends on OpenClaw internal modules (the embedded agent runner).
-It is intended to ship as a **bundled** OpenClaw extension (like `lobster`) and
+This extension depends on Afora internal modules (the embedded agent runner).
+It is intended to ship as a **bundled** Afora extension (like `lobster`) and
 be enabled via `plugins.entries` + tool allowlists.
 
 It is **not** currently designed to be copied into
-`~/.openclaw/extensions` as a standalone plugin directory.
+`~/.afora/extensions` as a standalone plugin directory.

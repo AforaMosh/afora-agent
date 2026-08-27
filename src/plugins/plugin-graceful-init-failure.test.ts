@@ -5,9 +5,9 @@ import { afterAll, describe, expect, it } from "vitest";
 import { cleanupTrackedTempDirs, makeTrackedTempDir } from "./test-helpers/fs-fixtures.js";
 
 const fixtureTempDirs: string[] = [];
-const fixtureRoot = makeTrackedTempDir("openclaw-plugin-graceful", fixtureTempDirs);
+const fixtureRoot = makeTrackedTempDir("afora-plugin-graceful", fixtureTempDirs);
 let tempDirIndex = 0;
-const { loadOpenClawPlugins, clearPluginLoaderCache } = await import("./loader.test-fixtures.js");
+const { loadAforaPlugins, clearPluginLoaderCache } = await import("./loader.test-fixtures.js");
 
 afterAll(() => {
   cleanupTrackedTempDirs(fixtureTempDirs);
@@ -30,7 +30,7 @@ function writePlugin(params: { id: string; body: string; dir?: string }): {
   const file = path.join(dir, filename);
   fs.writeFileSync(file, params.body, "utf-8");
   fs.writeFileSync(
-    path.join(dir, "openclaw.plugin.json"),
+    path.join(dir, "afora.plugin.json"),
     JSON.stringify({
       id: params.id,
       name: params.id,
@@ -44,7 +44,7 @@ function writePlugin(params: { id: string; body: string; dir?: string }): {
 }
 
 function readPluginId(pluginPath: string): string {
-  const manifestPath = path.join(path.dirname(pluginPath), "openclaw.plugin.json");
+  const manifestPath = path.join(path.dirname(pluginPath), "afora.plugin.json");
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as { id: string };
   return manifest.id;
 }
@@ -52,7 +52,7 @@ function readPluginId(pluginPath: string): string {
 async function loadPlugins(pluginPaths: string[], warnings?: string[]) {
   clearPluginLoaderCache();
   const allow = pluginPaths.map((pluginPath) => readPluginId(pluginPath));
-  return loadOpenClawPlugins({
+  return loadAforaPlugins({
     cache: false,
     config: {
       plugins: {
@@ -201,7 +201,7 @@ describe("graceful plugin initialization failure", () => {
     const summary = requireWarning(warnings, "failed to initialize");
     expect(summary).toContain("register: warn-register");
     expect(summary).toContain("validation: warn-validation");
-    expect(summary).toContain("openclaw plugins inspect <id> --runtime --json");
-    expect(summary).toContain("openclaw plugins list");
+    expect(summary).toContain("afora plugins inspect <id> --runtime --json");
+    expect(summary).toContain("afora plugins list");
   });
 });

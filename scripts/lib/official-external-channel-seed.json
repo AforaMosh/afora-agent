@@ -1,13 +1,13 @@
 {
   "entries": [
     {
-      "name": "@wecom/wecom-openclaw-plugin",
-      "description": "OpenClaw WeCom channel plugin by the Tencent WeCom team.",
+      "name": "@wecom/wecom-afora-plugin",
+      "description": "Afora WeCom channel plugin by the Tencent WeCom team.",
       "source": "external",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "plugin": {
-          "id": "wecom-openclaw-plugin",
+          "id": "wecom-afora-plugin",
           "label": "WeCom"
         },
         "contracts": {
@@ -35,20 +35,20 @@
           }
         },
         "install": {
-          "npmSpec": "@wecom/wecom-openclaw-plugin@2026.5.7",
+          "npmSpec": "@wecom/wecom-afora-plugin@2026.5.7",
           "defaultChoice": "npm",
           "expectedIntegrity": "sha512-TCkP9as00WfEhgFWG8YL/rcmaWGIshAki2HQh83nTRccGfVBCoGjrEboTTqq3yDmK9koWTV11zi8u8A4dNtvug=="
         }
       }
     },
     {
-      "name": "openclaw-plugin-yuanbao",
-      "description": "OpenClaw Yuanbao channel plugin by the Tencent Yuanbao team.",
+      "name": "afora-plugin-yuanbao",
+      "description": "Afora Yuanbao channel plugin by the Tencent Yuanbao team.",
       "source": "external",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "plugin": {
-          "id": "openclaw-plugin-yuanbao",
+          "id": "afora-plugin-yuanbao",
           "label": "Yuanbao"
         },
         "contracts": {
@@ -76,20 +76,20 @@
           }
         },
         "install": {
-          "npmSpec": "openclaw-plugin-yuanbao@2.15.0",
+          "npmSpec": "afora-plugin-yuanbao@2.15.0",
           "defaultChoice": "npm",
           "expectedIntegrity": "sha512-3GD+mf3EjTSUTOAREjTHAyp/deXdpgqB+q+xE0b19Qtat4ADhUV1mHDwFkVCRqTCBY5ATFKtKcipoDejqFj/+w=="
         }
       }
     },
     {
-      "name": "@tencent-connect/openclaw-qqbot",
-      "description": "OpenClaw QQ Bot channel plugin by the Tencent Connect team.",
+      "name": "@tencent-connect/afora-qqbot",
+      "description": "Afora QQ Bot channel plugin by the Tencent Connect team.",
       "source": "external",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "plugin": {
-          "id": "openclaw-qqbot",
+          "id": "afora-qqbot",
           "label": "QQ Bot"
         },
         "contracts": {
@@ -123,11 +123,11 @@
           "docsSource": "official",
           "docsInventory": {
             "package": {
-              "name": "@tencent-connect/openclaw-qqbot",
-              "description": "OpenClaw QQ Bot channel plugin by the Tencent Connect team.",
-              "openclaw": {
+              "name": "@tencent-connect/afora-qqbot",
+              "description": "Afora QQ Bot channel plugin by the Tencent Connect team.",
+              "afora": {
                 "install": {
-                  "npmSpec": "@tencent-connect/openclaw-qqbot",
+                  "npmSpec": "@tencent-connect/afora-qqbot",
                   "defaultChoice": "npm"
                 },
                 "release": {
@@ -138,7 +138,7 @@
             },
             "manifest": {
               "id": "qqbot",
-              "description": "OpenClaw QQ Bot channel plugin for group and direct-message workflows.",
+              "description": "Afora QQ Bot channel plugin for group and direct-message workflows.",
               "channels": ["qqbot"],
               "contracts": {
                 "tools": []
@@ -166,7 +166,7 @@
                       {
                         "anyOf": [
                           {
-                            "const": "openclaw:approval-disabled"
+                            "const": "afora:approval-disabled"
                           },
                           {
                             "type": "string",
@@ -198,7 +198,7 @@
                             {
                               "anyOf": [
                                 {
-                                  "const": "openclaw:approval-disabled"
+                                  "const": "afora:approval-disabled"
                                 },
                                 {
                                   "type": "string",
@@ -238,24 +238,24 @@
           }
         },
         "install": {
-          "npmSpec": "@tencent-connect/openclaw-qqbot@2.0.1",
+          "npmSpec": "@tencent-connect/afora-qqbot@2.0.1",
           "defaultChoice": "npm",
           "expectedIntegrity": "sha512-2010PaCummeQaxerLtaGfQ/5HChiXaW/KpTERid7V/1zyTs46S2ACi0hgZQ1SB7tH0t1InWr8tzVBJV/pLss3Q=="
         }
       }
     },
     {
-      "name": "@tencent-weixin/openclaw-weixin",
-      "description": "OpenClaw Weixin channel plugin by the Tencent Weixin team.",
+      "name": "@tencent-weixin/afora-weixin",
+      "description": "Afora Weixin channel plugin by the Tencent Weixin team.",
       "source": "external",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "plugin": {
-          "id": "openclaw-weixin",
+          "id": "afora-weixin",
           "label": "Weixin"
         },
         "channel": {
-          "id": "openclaw-weixin",
+          "id": "afora-weixin",
           "label": "Weixin",
           "selectionLabel": "Weixin（微信）",
           "detailLabel": "Weixin",
@@ -266,7 +266,7 @@
           "order": 75
         },
         "channelConfigs": {
-          "openclaw-weixin": {
+          "afora-weixin": {
             "label": "Weixin",
             "description": "Personal WeChat conversation channel.",
             "schema": {
@@ -276,7 +276,7 @@
           }
         },
         "install": {
-          "npmSpec": "@tencent-weixin/openclaw-weixin@2.4.6",
+          "npmSpec": "@tencent-weixin/afora-weixin@2.4.6",
           "defaultChoice": "npm",
           "expectedIntegrity": "sha512-qw9k3PLTiMWGNjjsknHgcTManH1w4j+Ji1ArWIaYLKCq3aFRsVwcqnPi127bvOoVMJGW4dbyJ8NECEMgoO+iRw==",
           "minHostVersion": ">=2026.5.12"
@@ -284,17 +284,17 @@
       }
     },
     {
-      "name": "@zalo-platforms/openclaw-zaloclawbot",
-      "description": "OpenClaw Zalo ClawBot channel plugin by the Zalo Platforms team.",
+      "name": "@zalo-platforms/afora-zaloclawbot",
+      "description": "Afora Zalo ClawBot channel plugin by the Zalo Platforms team.",
       "source": "external",
       "kind": "channel",
-      "openclaw": {
+      "afora": {
         "plugin": {
-          "id": "openclaw-zaloclawbot",
+          "id": "afora-zaloclawbot",
           "label": "Zalo ClawBot"
         },
         "channel": {
-          "id": "openclaw-zaloclawbot",
+          "id": "afora-zaloclawbot",
           "label": "Zalo ClawBot",
           "selectionLabel": "Zalo ClawBot (QR)",
           "detailLabel": "Zalo ClawBot",
@@ -305,7 +305,7 @@
           "order": 82
         },
         "channelConfigs": {
-          "openclaw-zaloclawbot": {
+          "afora-zaloclawbot": {
             "label": "Zalo ClawBot",
             "description": "Personal Zalo assistant — QR-onboarded, owner-bound.",
             "schema": {
@@ -315,7 +315,7 @@
           }
         },
         "install": {
-          "npmSpec": "@zalo-platforms/openclaw-zaloclawbot@0.1.4",
+          "npmSpec": "@zalo-platforms/afora-zaloclawbot@0.1.4",
           "defaultChoice": "npm",
           "expectedIntegrity": "sha512-5IxZriHJYACLLGqkCPPsTP9tas62kXEOFqTFAFMdunAM3SPhIJwVFRp0WvoP/m7L2PX85weD0g8LOtxM93VDYg==",
           "minHostVersion": ">=2026.4.10"

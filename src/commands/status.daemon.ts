@@ -10,7 +10,7 @@ type DaemonStatusSummary = {
   label: string;
   installed: boolean | null;
   loaded: boolean;
-  managedByOpenClaw: boolean;
+  managedByAfora: boolean;
   externallyManaged: boolean;
   loadedText: string;
   runtime: Awaited<ReturnType<typeof readServiceStatusSummary>>["runtime"];
@@ -30,7 +30,7 @@ async function buildDaemonStatusSummary(
     label: summary.label,
     installed: summary.installed,
     loaded: summary.loaded,
-    managedByOpenClaw: summary.managedByOpenClaw,
+    managedByAfora: summary.managedByAfora,
     externallyManaged: summary.externallyManaged,
     loadedText: summary.loadedText,
     runtime: summary.runtime,

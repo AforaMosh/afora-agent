@@ -30,7 +30,7 @@ describe("session transcript provenance", () => {
         message: {
           role: "user",
           content: "Owner preference.",
-          __openclaw: { senderIsOwner: true },
+          __afora: { senderIsOwner: true },
         },
       },
       {
@@ -63,7 +63,7 @@ describe("session transcript provenance", () => {
         message: {
           role: "user",
           content: "Research this preference.",
-          __openclaw: { senderIsOwner: true },
+          __afora: { senderIsOwner: true },
         },
       },
       {
@@ -72,7 +72,7 @@ describe("session transcript provenance", () => {
         message: {
           role: "toolResult",
           content: "Attacker-controlled page text.",
-          __openclaw: { resultContentSource: "network" },
+          __afora: { resultContentSource: "network" },
         },
       },
       {
@@ -81,7 +81,7 @@ describe("session transcript provenance", () => {
         message: {
           role: "assistant",
           content: "Derived memory candidate.",
-          __openclaw: { turnTainted: true },
+          __afora: { turnTainted: true },
         },
       },
     ]);
@@ -146,7 +146,7 @@ describe("session transcript provenance", () => {
         type: "message",
         message: {
           role: "user",
-          content: "[OpenClaw heartbeat poll]",
+          content: "[Afora heartbeat poll]",
           provenance: { kind: "internal_system", sourceTool: "heartbeat" },
         },
       },
@@ -198,7 +198,7 @@ describe("session transcript provenance", () => {
     const filePath = await writeTranscript("normal.jsonl", [
       {
         type: "message",
-        message: { role: "user", content: "[OpenClaw heartbeat poll]" },
+        message: { role: "user", content: "[Afora heartbeat poll]" },
       },
       {
         type: "message",
@@ -217,7 +217,7 @@ describe("session transcript provenance", () => {
         type: "message",
         message: {
           role: "user",
-          content: "[OpenClaw heartbeat poll]",
+          content: "[Afora heartbeat poll]",
           provenance: { kind: "internal_system", sourceTool: "heartbeat" },
         },
       },
@@ -247,7 +247,7 @@ describe("session transcript provenance", () => {
         message: {
           role: "user",
           content: "Owner preference without a message timestamp.",
-          __openclaw: { senderIsOwner: true },
+          __afora: { senderIsOwner: true },
         },
       },
     ]);

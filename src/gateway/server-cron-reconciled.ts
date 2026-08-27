@@ -1,6 +1,6 @@
 // Gateway cron reconciliation lifecycle.
 // Suppresses stale scheduler completions across reload and shutdown boundaries.
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type {
   PluginHookCronReconciledContext,
   PluginHookCronReconciledEvent,
@@ -10,7 +10,7 @@ import type { GatewayCronState } from "./server-cron.js";
 
 type GatewayCronReconciliationArmParams = {
   reason: PluginHookCronReconciledEvent["reason"];
-  config: OpenClawConfig;
+  config: AforaConfig;
   cronState: GatewayCronState;
 };
 

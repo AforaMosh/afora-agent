@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { resolveStateDir } from "openclaw/plugin-sdk/state-paths";
-import { asNullableRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { resolveStateDir } from "afora-agent/plugin-sdk/state-paths";
+import { asNullableRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   type BrowserNativeBootstrapResponse,
   decodeBrowserNativeFrame,
@@ -9,7 +9,7 @@ import {
   readBrowserNativeFrame,
 } from "./extension-native-protocol.js";
 
-export const BROWSER_NATIVE_HOST_NAME = "ai.openclaw.browser_bootstrap";
+export const BROWSER_NATIVE_HOST_NAME = "ai.afora.browser_bootstrap";
 const EXTENSION_ORIGIN_PATTERN = /^chrome-extension:\/\/[a-p]{32}\/$/;
 
 type NativeHostManifest = {

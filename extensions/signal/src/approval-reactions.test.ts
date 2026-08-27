@@ -1,8 +1,8 @@
-import { addApprovalReactionHintToText } from "openclaw/plugin-sdk/approval-reaction-runtime";
+import { addApprovalReactionHintToText } from "afora-agent/plugin-sdk/approval-reaction-runtime";
 import {
   buildExecApprovalPendingReplyPayload,
   buildPluginApprovalPendingReplyPayload,
-} from "openclaw/plugin-sdk/approval-reply-runtime";
+} from "afora-agent/plugin-sdk/approval-reply-runtime";
 // Signal tests cover approval reactions plugin behavior.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -20,10 +20,10 @@ const resolverMocks = vi.hoisted(() => ({
   isApprovalNotFoundError: vi.fn(() => false),
 }));
 
-vi.mock("openclaw/plugin-sdk/approval-gateway-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/approval-gateway-runtime", () => ({
   resolveApprovalOverGateway: resolverMocks.resolveSignalApproval,
 }));
-vi.mock("openclaw/plugin-sdk/error-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/error-runtime", () => ({
   isApprovalNotFoundError: resolverMocks.isApprovalNotFoundError,
 }));
 

@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 export function canonicalizeSetupMigrationValue(value: unknown): unknown {
   if (Array.isArray(value)) {
@@ -17,7 +17,7 @@ export function canonicalizeSetupMigrationValue(value: unknown): unknown {
   );
 }
 
-export function hashSetupMigrationConfig(config: OpenClawConfig): string {
+export function hashSetupMigrationConfig(config: AforaConfig): string {
   return crypto
     .createHash("sha256")
     .update(JSON.stringify(canonicalizeSetupMigrationValue(config)))

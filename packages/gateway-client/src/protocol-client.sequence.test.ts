@@ -1,4 +1,4 @@
-import type { EventFrame } from "@openclaw/gateway-protocol";
+import type { EventFrame } from "@afora/gateway-protocol";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { GatewayProtocolClient, type GatewayProtocolSocketHandlers } from "./protocol-client.js";
 

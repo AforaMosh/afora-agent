@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { html, render } from "lit";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDeferred } from "../../../../test/helpers/promise.js";
@@ -958,7 +958,7 @@ describe("cloud workspace conflict notice", () => {
       "src/path-5.ts",
       "src/path-6.ts",
     ],
-    stagedResultRef: "refs/openclaw/worker-results/claim-123",
+    stagedResultRef: "refs/afora/worker-results/claim-123",
     totalCount: 9,
   };
 
@@ -987,8 +987,8 @@ describe("cloud workspace conflict notice", () => {
       (element) => element.textContent,
     );
     expect(commands).toEqual([
-      "git show 'refs/openclaw/worker-results/claim-123:src/[path]-1.ts'",
-      "git checkout 'refs/openclaw/worker-results/claim-123' -- ':(top,literal)src/[path]-1.ts'",
+      "git show 'refs/afora/worker-results/claim-123:src/[path]-1.ts'",
+      "git checkout 'refs/afora/worker-results/claim-123' -- ':(top,literal)src/[path]-1.ts'",
     ]);
     expect(
       notice.querySelector<HTMLButtonElement>('[aria-label="Copy cloud inspect command"]'),
@@ -1021,7 +1021,7 @@ describe("cloud workspace conflict notice", () => {
         customType: "cloud-workspace-conflict",
         details: {
           paths: [entryPath],
-          stagedResultRef: "refs/openclaw/worker-results/claim-unsafe",
+          stagedResultRef: "refs/afora/worker-results/claim-unsafe",
         },
       });
       expect(normalizedConflict).toBeDefined();
@@ -1040,7 +1040,7 @@ describe("cloud workspace conflict notice", () => {
       customType: "cloud-workspace-conflict",
       details: {
         paths: ["src/unsafe\nname.ts", "src/safe.ts"],
-        stagedResultRef: "refs/openclaw/worker-results/claim-mixed",
+        stagedResultRef: "refs/afora/worker-results/claim-mixed",
       },
     });
     const container = renderChatView({ workspaceConflict: normalizedConflict });
@@ -1048,8 +1048,8 @@ describe("cloud workspace conflict notice", () => {
       (element) => element.textContent,
     );
     expect(commands).toEqual([
-      "git show 'refs/openclaw/worker-results/claim-mixed:src/safe.ts'",
-      "git checkout 'refs/openclaw/worker-results/claim-mixed' -- ':(top,literal)src/safe.ts'",
+      "git show 'refs/afora/worker-results/claim-mixed:src/safe.ts'",
+      "git checkout 'refs/afora/worker-results/claim-mixed' -- ':(top,literal)src/safe.ts'",
     ]);
   });
 });
@@ -1381,7 +1381,7 @@ describe("chat code-block copy", () => {
     { name: "keeps legacy raw data-code payloads copyable", payload: "legacy text" },
     {
       name: "does not decode unmarked raw data-code payloads that start with the block-art prefix",
-      payload: 'openclaw:block-art-code:"literal"',
+      payload: 'afora:block-art-code:"literal"',
     },
   ])("$name", async ({ payload }) => {
     const writeText = vi.fn().mockResolvedValue(undefined);
@@ -2880,7 +2880,7 @@ describe("chat voice controls", () => {
   it.each([
     ["connecting", "Connecting voice input..."],
     ["listening", "Listening..."],
-    ["thinking", "Asking OpenClaw..."],
+    ["thinking", "Asking Afora..."],
   ] as const)("renders %s voice activity without visible status copy", (status, label) => {
     const inputLevel = new RealtimeTalkLevelSignal();
     inputLevel.set(0.64);
@@ -2978,7 +2978,7 @@ describe("chat voice controls", () => {
     );
     const tooltip = talkButton.parentElement as (HTMLElement & { content?: string }) | null;
     expect(talkButton.getAttribute("title")).toBeNull();
-    expect(tooltip?.localName).toBe("openclaw-tooltip");
+    expect(tooltip?.localName).toBe("afora-tooltip");
     expect(tooltip?.content).toBe(t("chat.composer.voiceGestureHint"));
     expect(talkButton.textContent?.trim()).toBe(startTalkLabel);
     requireElement(
@@ -4027,8 +4027,8 @@ describe("chat slash menu accessibility", () => {
         category: "session",
       },
       {
-        key: "openclaw",
-        name: "openclaw",
+        key: "afora",
+        name: "afora",
         description: "Run the setup and repair helper.",
         tier: "essential",
         category: "tools",
@@ -4041,7 +4041,7 @@ describe("chat slash menu accessibility", () => {
       Array.from(container.querySelectorAll<HTMLElement>(".slash-menu [role='option']")).map(
         (option) => option.querySelector(".slash-menu-name")?.textContent?.trim(),
       ),
-    ).toEqual(["/pair", "/pair-device", "/openclaw"]);
+    ).toEqual(["/pair", "/pair-device", "/afora"]);
     expect(
       Array.from(container.querySelectorAll(".slash-menu-group__label")).map((label) =>
         label.textContent?.trim(),
@@ -4359,7 +4359,7 @@ describe("chat attachment picker", () => {
     chat.dispatchEvent(createDragEvent("dragleave"));
     expect(chat.hasAttribute("data-attachment-drop-active")).toBe(false);
 
-    chat.dispatchEvent(createDragEvent("dragenter", ["application/x-openclaw-session"]));
+    chat.dispatchEvent(createDragEvent("dragenter", ["application/x-afora-session"]));
     expect(chat.hasAttribute("data-attachment-drop-active")).toBe(false);
   });
 
@@ -5038,7 +5038,7 @@ describe("chat welcome", () => {
 
     const clawd = container.querySelector(".agent-chat__welcome-clawd");
     expect(clawd).not.toBeNull();
-    expect(clawd?.querySelector("openclaw-mascot")?.getAttribute("mood")).toBe("idle");
+    expect(clawd?.querySelector("afora-mascot")?.getAttribute("mood")).toBe("idle");
     expect(container.querySelector(".agent-chat__badge")).toBeNull();
   });
 
@@ -5062,7 +5062,7 @@ describe("chat welcome", () => {
       canSend: false,
       disabledBanner: {
         kind: "composer-replacement",
-        text: "We couldn't find a provider and model configured for this agent. Choose a supported connection; OpenClaw will test it before enabling chat.",
+        text: "We couldn't find a provider and model configured for this agent. Choose a supported connection; Afora will test it before enabling chat.",
         actionLabel: "Connect an AI provider",
         onAction: () => undefined,
       },
@@ -5078,7 +5078,7 @@ describe("chat welcome", () => {
     const welcome = requireElement(container, ".agent-chat__welcome", "welcome screen");
     const mascot = requireElement(
       container,
-      ".agent-chat__welcome-clawd openclaw-mascot",
+      ".agent-chat__welcome-clawd afora-mascot",
       "welcome mascot",
     ) as HTMLElement & { tease: boolean; catchOnce: () => void };
     const catchOnce = vi.spyOn(mascot, "catchOnce");
@@ -5382,7 +5382,7 @@ describe("chat model controls", () => {
     },
     {
       name: "uses a neutral model label for non-Codex locked sessions",
-      runtimeId: "openclaw",
+      runtimeId: "afora",
       expected: "Session model",
       omitSession: false,
     },
@@ -5409,7 +5409,7 @@ describe("chat model controls", () => {
     expect(container.querySelector(".chat-controls__inline-select-label")?.textContent).toContain(
       expected,
     );
-    if (runtimeId === "openclaw") {
+    if (runtimeId === "afora") {
       expect(container.textContent).not.toContain("Codex-controlled model");
     }
   });
@@ -5586,7 +5586,7 @@ describe("chat model controls", () => {
           name: "GPT-5.6 Sol",
           provider: "openai",
           contextWindow: 1_050_000,
-          agentRuntime: { id: "openclaw", source: "model" },
+          agentRuntime: { id: "afora", source: "model" },
         },
       ],
     });
@@ -5597,7 +5597,7 @@ describe("chat model controls", () => {
         updatedAt: 1,
         model: "gpt-5.6-sol",
         modelProvider: "openai",
-        agentRuntime: { id: "openclaw", source: "model" },
+        agentRuntime: { id: "afora", source: "model" },
         contextTokens: 1_000_000,
       },
     ]);
@@ -5607,11 +5607,11 @@ describe("chat model controls", () => {
     );
 
     expect(modelOption?.querySelector(".chat-controls__model-option-meta")?.textContent).toBe(
-      "1M active · 1M max · OpenClaw",
+      "1M active · 1M max · Afora",
     );
     expect(modelOption?.textContent).not.toContain("700k");
     expect(getChatModelSelect(container).querySelector(".chat-controls__trigger-meta")).toBeNull();
-    expect(modelOption?.closest("openclaw-tooltip")).toBeNull();
+    expect(modelOption?.closest("afora-tooltip")).toBeNull();
   });
 
   it("uses the default selection runtime for an implicit Codex model", () => {
@@ -5676,7 +5676,7 @@ describe("chat model controls", () => {
         updatedAt: 1,
         model: "gpt-5.6-sol",
         modelProvider: "openai",
-        agentRuntime: { id: "openclaw", source: "session" },
+        agentRuntime: { id: "afora", source: "session" },
         contextTokens: 272_000,
       },
     ]);
@@ -5706,7 +5706,7 @@ describe("chat model controls", () => {
     {
       name: "a different session runtime",
       modelSwitching: false,
-      sessionRuntimeId: "openclaw",
+      sessionRuntimeId: "afora",
       optionRuntimeId: "codex",
     },
     {
@@ -5796,7 +5796,7 @@ describe("chat model controls", () => {
           name: "GPT-5.6",
           provider: "openai",
           contextWindow: 1_000_000,
-          agentRuntime: { id: "openclaw", source: "model" },
+          agentRuntime: { id: "afora", source: "model" },
         },
         {
           id: "gpt-5.6-sol",
@@ -5824,7 +5824,7 @@ describe("chat model controls", () => {
           name: "GPT-5.6 Terra",
           provider: "openai",
           contextWindow: 1_000_000,
-          agentRuntime: { id: "openclaw", source: "implicit" },
+          agentRuntime: { id: "afora", source: "implicit" },
         },
       ],
     });
@@ -5834,7 +5834,7 @@ describe("chat model controls", () => {
         `[data-chat-model-option="${value}"] .chat-controls__model-option-meta`,
       )?.textContent;
 
-    expect(metaFor("openai/gpt-5.6")).toBe("1M · OpenClaw");
+    expect(metaFor("openai/gpt-5.6")).toBe("1M · Afora");
     expect(metaFor("openai/gpt-5.6")).not.toContain("Codex");
     expect(metaFor("openai/gpt-5.6-sol")).toBe("1M · Codex");
     // Known CLI runtime ids map to their product labels, not capitalized ids.
@@ -6016,14 +6016,14 @@ describe("chat model controls", () => {
         id: "google/gemma-4-26b-a4b-it",
         name: "Gemma 4",
         provider: "google",
-        agentRuntime: { id: "openclaw", source: "implicit" },
+        agentRuntime: { id: "afora", source: "implicit" },
       },
       {
         id: "google/gemma-4-26b-a4b-it",
         name: "Gemma 4",
         provider: "openrouter",
         contextWindow: 1_000_000,
-        agentRuntime: { id: "openclaw", source: "implicit" },
+        agentRuntime: { id: "afora", source: "implicit" },
       },
     ];
     state.sessionsResult = createSessionsListResult({
@@ -6033,7 +6033,7 @@ describe("chat model controls", () => {
       defaultsProvider: "openrouter",
     });
     state.sessionsResult.sessions[0]!.agentRuntime = {
-      id: "openclaw",
+      id: "afora",
       source: "implicit",
     };
     state.sessionsResult.sessions[0]!.contextTokens = 272_000;
@@ -6827,7 +6827,7 @@ describe("right-click Reply", () => {
     const confirmationTrigger = document.createElement("button");
     confirmationOwner.appendChild(confirmationTrigger);
     section.appendChild(confirmationOwner);
-    window.localStorage.removeItem("openclaw:skip-rewind-confirm");
+    window.localStorage.removeItem("afora:skip-rewind-confirm");
     chatMessage.openChatRewindConfirmation(confirmationTrigger, vi.fn());
     const confirmation = document.querySelector<HTMLElement>(".chat-confirm-popover");
     const { bubble } = appendChatBubble(container, { text: "open message actions" });
@@ -6862,7 +6862,7 @@ describe("right-click Reply", () => {
     expect(
       document
         .querySelector<HTMLElement>('[aria-label="Rewind to here"]')
-        ?.closest("openclaw-tooltip")?.content,
+        ?.closest("afora-tooltip")?.content,
     ).toBe("Rewind is unavailable while the agent is working");
   });
 

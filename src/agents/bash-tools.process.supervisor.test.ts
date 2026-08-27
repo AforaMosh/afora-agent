@@ -2,7 +2,7 @@
  * Regression coverage for process-tool supervisor cancellation.
  * Verifies canonical cancellation admission and lifecycle-owned registry state.
  */
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { supervisorMock } = vi.hoisted(() => ({

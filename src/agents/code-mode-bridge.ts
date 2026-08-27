@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { setTimeout as sleep } from "node:timers/promises";
-import { stableStringify } from "@openclaw/normalization-core";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { stableStringify } from "@afora/normalization-core";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { formatErrorMessage } from "../infra/errors.js";
 import { NODE_FS_LIST_DIR_COMMAND } from "../infra/node-commands.js";
 import { emitSessionLifecycleEvent } from "../sessions/session-lifecycle-events.js";
@@ -32,7 +32,7 @@ import { ToolInputError } from "./tools/common.js";
 import { resolveEligibleNodeFromList } from "./tools/nodes-utils.js";
 import { resolveInternalSessionKey, resolveMainSessionAlias } from "./tools/sessions-helpers.js";
 
-export const CODE_MODE_NODES_TOOL_ID = "openclaw:core:nodes";
+export const CODE_MODE_NODES_TOOL_ID = "afora:core:nodes";
 
 type CodeModeNode = {
   id: string;
@@ -250,7 +250,7 @@ async function runAgentSpawnBridge(params: {
   const agentId = readOptionalStringOption(options, "agentId");
   const spawnEntry = params.runtime
     .namespaceEntries()
-    .find((entry) => entry.source === "openclaw" && entry.name === "sessions_spawn");
+    .find((entry) => entry.source === "afora" && entry.name === "sessions_spawn");
   if (!spawnEntry) {
     throw new ToolInputError("agents.run requires the sessions_spawn tool.");
   }

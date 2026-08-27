@@ -16,7 +16,7 @@ import {
   type DiagnosticTraceContext,
 } from "../../../infra/diagnostic-trace-context.js";
 import { setAvatar } from "../../../state/user-profiles.js";
-import { withOpenClawTestState } from "../../../test-utils/openclaw-test-state.js";
+import { withAforaTestState } from "../../../test-utils/afora-test-state.js";
 import { mintAgentRuntimeIdentityToken } from "../../agent-runtime-identity-token.js";
 import type { AuthRateLimiter } from "../../auth-rate-limit.js";
 import type { ResolvedGatewayAuth } from "../../auth.js";
@@ -220,7 +220,7 @@ function createConnectedTestClient(params: {
     ...(params.invalidatedReason ? { invalidatedReason: params.invalidatedReason } : {}),
     connect: {
       client: {
-        id: "openclaw-control-ui",
+        id: "afora-control-ui",
         version: "dev",
         platform: "test",
         mode: "ui",
@@ -489,7 +489,7 @@ function connectTrustedProxyUser(connId: string) {
     minProtocol: PROTOCOL_VERSION,
     maxProtocol: PROTOCOL_VERSION,
     client: {
-      id: "openclaw-control-ui",
+      id: "afora-control-ui",
       version: "dev",
       platform: "test",
       mode: "ui",
@@ -736,7 +736,7 @@ describe("attachGatewayWsMessageHandler post-connect health refresh", () => {
   it("projects a stable durable profile into presence and refreshes avatar state on reconnect", async () => {
     const clock = vi.spyOn(Date, "now").mockReturnValue(1_800_000_000_000);
     try {
-      await withOpenClawTestState({ label: "gateway-profile-presence" }, async () => {
+      await withAforaTestState({ label: "gateway-profile-presence" }, async () => {
         const connect = async (suffix: string) => {
           const connId = `conn-trusted-proxy-user-${suffix}`;
           const harness = connectTrustedProxyUser(connId);
@@ -823,7 +823,7 @@ describe("attachGatewayWsMessageHandler post-connect health refresh", () => {
   });
 
   it("registers a verified profile before detached Tailscale avatar adoption completes", async () => {
-    await withOpenClawTestState({ label: "gateway-tailscale-avatar-detached" }, async () => {
+    await withAforaTestState({ label: "gateway-tailscale-avatar-detached" }, async () => {
       let resolveAvatar:
         | ((profile: {
             id: string;
@@ -1658,12 +1658,12 @@ describe("resolvePinnedClientMetadata", () => {
   );
 
   it.each([
-    ["openclaw-ios", "iOS 26.5.0", "iOS 26.4.2", "iPhone"],
-    ["openclaw-ios", "iPadOS 26.5.0", "iPadOS 26.4.2", "iPad"],
-    ["openclaw-ios", "iPadOS 26.5.0", "iOS 26.4.2", "iPad"],
-    ["openclaw-android", "Android 16", "Android 15", "Android"],
-    ["openclaw-macos", "macOS 26.5.1", "macOS 26.5.0", "Mac"],
-    ["openclaw-macos", "macOS 27.0.0", "macOS 26.5.1", "Mac"],
+    ["afora-ios", "iOS 26.5.0", "iOS 26.4.2", "iPhone"],
+    ["afora-ios", "iPadOS 26.5.0", "iPadOS 26.4.2", "iPad"],
+    ["afora-ios", "iPadOS 26.5.0", "iOS 26.4.2", "iPad"],
+    ["afora-android", "Android 16", "Android 15", "Android"],
+    ["afora-macos", "macOS 26.5.1", "macOS 26.5.0", "Mac"],
+    ["afora-macos", "macOS 27.0.0", "macOS 26.5.1", "Mac"],
   ])(
     "allows %s platform version refresh without metadata-upgrade approval",
     (clientId, claimedPlatform, pairedPlatform, deviceFamily) => {
@@ -1689,7 +1689,7 @@ describe("resolvePinnedClientMetadata", () => {
   it.each(["node", "ui"])("allows a macOS platform version refresh in %s mode", (clientMode) => {
     expect(
       resolvePinnedClientMetadata({
-        clientId: "openclaw-macos",
+        clientId: "afora-macos",
         clientMode,
         claimedPlatform: "macOS 26.5.2",
         claimedDeviceFamily: "Mac",
@@ -1726,7 +1726,7 @@ describe("resolvePinnedClientMetadata", () => {
   it("refreshes a shared node-host macOS pin from the native Mac app", () => {
     expect(
       resolvePinnedClientMetadata({
-        clientId: "openclaw-macos",
+        clientId: "afora-macos",
         clientMode: "ui",
         claimedPlatform: "macOS 26.5.2",
         claimedDeviceFamily: "Mac",
@@ -1745,7 +1745,7 @@ describe("resolvePinnedClientMetadata", () => {
   it("still requires approval when an iOS device family changes", () => {
     expect(
       resolvePinnedClientMetadata({
-        clientId: "openclaw-ios",
+        clientId: "afora-ios",
         clientMode: "node",
         claimedPlatform: "iOS 26.5.0",
         claimedDeviceFamily: "iPad",
@@ -1764,7 +1764,7 @@ describe("resolvePinnedClientMetadata", () => {
   it("still requires approval when a macOS device family changes", () => {
     expect(
       resolvePinnedClientMetadata({
-        clientId: "openclaw-macos",
+        clientId: "afora-macos",
         clientMode: "node",
         claimedPlatform: "macOS 26.5.2",
         claimedDeviceFamily: "VirtualMac",
@@ -1782,8 +1782,8 @@ describe("resolvePinnedClientMetadata", () => {
 
   it.each([
     ["node-host", "macOS 26.5.2", "macOS 26.5.1"],
-    ["openclaw-macos", "macOS anything", "macOS previous"],
-    ["openclaw-macos", "macOS", "macOS 26.5.1"],
+    ["afora-macos", "macOS anything", "macOS previous"],
+    ["afora-macos", "macOS", "macOS 26.5.1"],
   ])(
     "keeps non-version macOS platform changes approval-bound for %s",
     (clientId, claimed, paired) => {

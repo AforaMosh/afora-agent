@@ -23,7 +23,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.OpenClawWear">
+        android:theme="@style/Theme.AforaWear">
 
         <meta-data
             android:name="com.google.android.wearable.standalone"
@@ -49,19 +49,19 @@
                 <data
                     android:scheme="wear"
                     android:host="*"
-                    android:pathPrefix="/openclaw/wear/v1/" />
+                    android:pathPrefix="/afora/wear/v1/" />
             </intent-filter>
             <intent-filter>
                 <action android:name="com.google.android.gms.wearable.CAPABILITY_CHANGED" />
                 <data
                     android:scheme="wear"
                     android:host="*"
-                    android:path="/openclaw_phone_proxy_v1" />
+                    android:path="/afora_phone_proxy_v1" />
             </intent-filter>
         </service>
 
         <service
-            android:name=".OpenClawTileService"
+            android:name=".AforaTileService"
             android:description="@string/tile_description"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_foreground"

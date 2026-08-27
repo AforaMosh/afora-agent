@@ -4,24 +4,24 @@ import * as fsSync from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { describe, expect, it } from "vitest";
 import { isLocalOllamaBaseUrl } from "./src/discovery-shared.js";
 import { createOllamaEmbeddingProvider } from "./src/embedding-provider.js";
 import { createOllamaStreamFn } from "./src/stream.runtime.js";
 import { createOllamaWebSearchProvider } from "./src/web-search-provider.js";
 
-const LIVE = process.env.OPENCLAW_LIVE_TEST === "1" && process.env.OPENCLAW_LIVE_OLLAMA === "1";
+const LIVE = process.env.AFORA_LIVE_TEST === "1" && process.env.AFORA_LIVE_OLLAMA === "1";
 const OLLAMA_BASE_URL =
-  process.env.OPENCLAW_LIVE_OLLAMA_BASE_URL?.trim() || "http://127.0.0.1:11434";
-const CHAT_MODEL = process.env.OPENCLAW_LIVE_OLLAMA_MODEL?.trim() || "llama3.2:latest";
+  process.env.AFORA_LIVE_OLLAMA_BASE_URL?.trim() || "http://127.0.0.1:11434";
+const CHAT_MODEL = process.env.AFORA_LIVE_OLLAMA_MODEL?.trim() || "llama3.2:latest";
 const EMBEDDING_MODEL =
-  process.env.OPENCLAW_LIVE_OLLAMA_EMBED_MODEL?.trim() || "embeddinggemma:latest";
-const PROVIDER_ID = process.env.OPENCLAW_LIVE_OLLAMA_PROVIDER_ID?.trim() || "ollama-live-custom";
-const RUN_WEB_SEARCH = process.env.OPENCLAW_LIVE_OLLAMA_WEB_SEARCH !== "0";
+  process.env.AFORA_LIVE_OLLAMA_EMBED_MODEL?.trim() || "embeddinggemma:latest";
+const PROVIDER_ID = process.env.AFORA_LIVE_OLLAMA_PROVIDER_ID?.trim() || "ollama-live-custom";
+const RUN_WEB_SEARCH = process.env.AFORA_LIVE_OLLAMA_WEB_SEARCH !== "0";
 const RUN_EMBEDDINGS =
-  process.env.OPENCLAW_LIVE_OLLAMA_EMBEDDINGS === "1" ||
-  (process.env.OPENCLAW_LIVE_OLLAMA_EMBEDDINGS !== "0" && !isOllamaCloudBaseUrl(OLLAMA_BASE_URL));
+  process.env.AFORA_LIVE_OLLAMA_EMBEDDINGS === "1" ||
+  (process.env.AFORA_LIVE_OLLAMA_EMBEDDINGS !== "0" && !isOllamaCloudBaseUrl(OLLAMA_BASE_URL));
 const OLLAMA_CONFIG_API_KEY = isLocalOllamaBaseUrl(OLLAMA_BASE_URL)
   ? "ollama-local"
   : "OLLAMA_API_KEY";
@@ -42,7 +42,7 @@ function requireOllamaRuntimeApiKey(): string | undefined {
   const apiKey = process.env.OLLAMA_API_KEY?.trim();
   if (!apiKey) {
     throw new Error(
-      "OPENCLAW_LIVE_OLLAMA_BASE_URL points at a remote Ollama host; set OLLAMA_API_KEY.",
+      "AFORA_LIVE_OLLAMA_BASE_URL points at a remote Ollama host; set OLLAMA_API_KEY.",
     );
   }
   return apiKey;
@@ -60,11 +60,11 @@ async function collectStreamEvents<T>(stream: AsyncIterable<T>): Promise<T[]> {
   return events;
 }
 
-async function withTempOpenClawState<T>(run: (paths: { root: string }) => Promise<T>): Promise<T> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-ollama-cli-live-"));
+async function withTempAforaState<T>(run: (paths: { root: string }) => Promise<T>): Promise<T> {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-ollama-cli-live-"));
   try {
     await fs.writeFile(
-      path.join(root, "openclaw.json"),
+      path.join(root, "afora.json"),
       JSON.stringify(
         {
           models: {
@@ -88,15 +88,15 @@ async function withTempOpenClawState<T>(run: (paths: { root: string }) => Promis
   }
 }
 
-async function runOpenClawCli(args: string[], env: NodeJS.ProcessEnv) {
+async function runAforaCli(args: string[], env: NodeJS.ProcessEnv) {
   const hasBuiltEntry = ["entry.js", "entry.mjs"].some((entry) =>
     fsSync.existsSync(path.join(process.cwd(), "dist", entry)),
   );
   const sourceRunnerAvailable = !hasBuiltEntry;
   const commandArgs = sourceRunnerAvailable
     ? ["scripts/run-node.mjs", ...args]
-    : ["openclaw.mjs", ...args];
-  const outputRoot = fsSync.mkdtempSync(path.join(os.tmpdir(), "openclaw-ollama-cli-output-"));
+    : ["afora.mjs", ...args];
+  const outputRoot = fsSync.mkdtempSync(path.join(os.tmpdir(), "afora-ollama-cli-output-"));
   const stdoutPath = path.join(outputRoot, "stdout.txt");
   const stderrPath = path.join(outputRoot, "stderr.txt");
   const stdoutFd = fsSync.openSync(stdoutPath, "w");
@@ -146,13 +146,13 @@ function buildCliEnv(root: string): NodeJS.ProcessEnv {
     TMPDIR: process.env.TMPDIR,
     NODE_PATH: process.env.NODE_PATH,
     NODE_OPTIONS: process.env.NODE_OPTIONS,
-    OPENCLAW_LIVE_TEST: "1",
-    OPENCLAW_LIVE_OLLAMA: "1",
-    OPENCLAW_LIVE_OLLAMA_WEB_SEARCH: "0",
-    OPENCLAW_STATE_DIR: path.join(root, "state"),
-    OPENCLAW_CONFIG_PATH: path.join(root, "openclaw.json"),
-    OPENCLAW_NO_RESPAWN: "1",
-    OPENCLAW_TEST_FAST: "1",
+    AFORA_LIVE_TEST: "1",
+    AFORA_LIVE_OLLAMA: "1",
+    AFORA_LIVE_OLLAMA_WEB_SEARCH: "0",
+    AFORA_STATE_DIR: path.join(root, "state"),
+    AFORA_CONFIG_PATH: path.join(root, "afora.json"),
+    AFORA_NO_RESPAWN: "1",
+    AFORA_TEST_FAST: "1",
     PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN: "false",
     pnpm_config_verify_deps_before_run: "false",
     OLLAMA_API_KEY: apiKey ?? "ollama-local",
@@ -161,8 +161,8 @@ function buildCliEnv(root: string): NodeJS.ProcessEnv {
 
 describe.skipIf(!LIVE)("ollama live", () => {
   it("runs infer model run through the local CLI path without static model discovery", async () => {
-    await withTempOpenClawState(async ({ root }) => {
-      const result = await runOpenClawCli(
+    await withTempAforaState(async ({ root }) => {
+      const result = await runAforaCli(
         [
           "infer",
           "model",
@@ -322,7 +322,7 @@ describe.skipIf(!LIVE)("ollama live", () => {
       }
 
       const result = (await tool.execute({
-        query: "OpenClaw documentation",
+        query: "Afora documentation",
         count: 1,
       })) as {
         provider?: string;

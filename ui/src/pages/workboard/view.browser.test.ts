@@ -61,7 +61,7 @@ describe("workboard dialogs (browser)", () => {
       launcher?.click();
       await nextFrame();
 
-      const modal = container.querySelector("openclaw-modal-dialog");
+      const modal = container.querySelector("afora-modal-dialog");
       const dialog = modal?.shadowRoot
         ?.querySelector("wa-dialog")
         ?.shadowRoot?.querySelector("dialog");

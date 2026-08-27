@@ -6,19 +6,19 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { SkillWorkshopProposalMutationBudget } from "../../skills/workshop/types.js";
 import {
-  createOpenClawTestState,
-  type OpenClawTestState,
-} from "../../test-utils/openclaw-test-state.js";
+  createAforaTestState,
+  type AforaTestState,
+} from "../../test-utils/afora-test-state.js";
 import { createTrackedTempDirs } from "../../test-utils/tracked-temp-dirs.js";
 import { createSkillWorkshopTool } from "./skill-workshop-tool.js";
 
 const tempDirs = createTrackedTempDirs();
-let testState: OpenClawTestState;
+let testState: AforaTestState;
 
 beforeEach(async () => {
-  testState = await createOpenClawTestState({
+  testState = await createAforaTestState({
     layout: "state-only",
-    prefix: "openclaw-skill-workshop-review-state-",
+    prefix: "afora-skill-workshop-review-state-",
   });
 });
 
@@ -52,7 +52,7 @@ async function seedLiveSkill(
 
 describe("skill_workshop review mode", () => {
   it("restricts internal review runs to one pending proposal mutation", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-review-");
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-review-");
     const proposalMutationBudget: SkillWorkshopProposalMutationBudget = { remaining: 1 };
     const tool = createSkillWorkshopTool({
       workspaceDir,
@@ -101,7 +101,7 @@ describe("skill_workshop review mode", () => {
   });
 
   it("lets internal review runs draft update proposals for existing skills", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-review-update-");
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-review-update-");
     await seedLiveSkill(
       workspaceDir,
       "weather-planner",
@@ -140,7 +140,7 @@ describe("skill_workshop review mode", () => {
   });
 
   it("composes patch proposals by replacing the quoted span of the live body", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-review-extend-");
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-review-extend-");
     await seedLiveSkill(
       workspaceDir,
       "weather-planner",
@@ -207,7 +207,7 @@ describe("skill_workshop review mode", () => {
   });
 
   it("refuses a patch when the skill changed after the read", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-stale-patch-");
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-stale-patch-");
     await seedLiveSkill(
       workspaceDir,
       "weather-planner",
@@ -243,7 +243,7 @@ describe("skill_workshop review mode", () => {
   });
 
   it("refunds a stale update race so the reviewer can re-read and retry", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-stale-update-race-");
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-stale-update-race-");
     await seedLiveSkill(
       workspaceDir,
       "weather-planner",
@@ -303,7 +303,7 @@ describe("skill_workshop review mode", () => {
   });
 
   it("caps reviewer live-skill reads at the read budget", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-review-read-cap-");
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-review-read-cap-");
     await seedLiveSkill(
       workspaceDir,
       "big-skill",
@@ -337,7 +337,7 @@ describe("skill_workshop review mode", () => {
   });
 
   it("does not refund the review mutation budget after a failed mutation", async () => {
-    const workspaceDir = await tempDirs.make("openclaw-skill-workshop-review-failure-");
+    const workspaceDir = await tempDirs.make("afora-skill-workshop-review-failure-");
     const proposalMutationBudget: SkillWorkshopProposalMutationBudget = { remaining: 1 };
     const tool = createSkillWorkshopTool({
       workspaceDir,

@@ -1,1 +1,1 @@
-export { default as zh_TW } from "virtual:openclaw-control-ui-locale/zh-TW";
+export { default as zh_TW } from "virtual:afora-control-ui-locale/zh-TW";

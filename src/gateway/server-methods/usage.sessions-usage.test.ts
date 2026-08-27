@@ -3,9 +3,9 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { withEnvAsync } from "../../test-utils/env.js";
 
 vi.mock("../../config/config.js", () => {
@@ -123,7 +123,7 @@ const TEST_RUNTIME_CONFIG = {
 
 async function runSessionsUsage(
   params: Record<string, unknown>,
-  config: OpenClawConfig = TEST_RUNTIME_CONFIG,
+  config: AforaConfig = TEST_RUNTIME_CONFIG,
 ) {
   const respond = vi.fn();
   await expectDefined(
@@ -139,7 +139,7 @@ async function runSessionsUsage(
 
 async function runSessionsUsageTimeseries(
   params: Record<string, unknown>,
-  config: OpenClawConfig = TEST_RUNTIME_CONFIG,
+  config: AforaConfig = TEST_RUNTIME_CONFIG,
 ) {
   const respond = vi.fn();
   await expectDefined(
@@ -155,7 +155,7 @@ async function runSessionsUsageTimeseries(
 
 async function runSessionsUsageLogs(
   params: Record<string, unknown>,
-  config: OpenClawConfig = TEST_RUNTIME_CONFIG,
+  config: AforaConfig = TEST_RUNTIME_CONFIG,
 ) {
   const respond = vi.fn();
   await expectDefined(
@@ -204,7 +204,7 @@ function mockStoredSession(
   options: { resolution?: "valid" | "missing" } = {},
 ) {
   const entry = { sessionId, updatedAt: 1_000 };
-  const storePath = "/tmp/agents/opus/agent/openclaw-agent.sqlite";
+  const storePath = "/tmp/agents/opus/agent/afora-agent.sqlite";
   vi.mocked(loadGatewaySessionEntryReadOnly).mockReturnValueOnce({
     cfg: TEST_RUNTIME_CONFIG,
     agentId: "opus",
@@ -224,7 +224,7 @@ function mockStoredSession(
 async function withUsageState(
   run: (writeSessionFile: (fileName: string) => string) => Promise<void>,
 ) {
-  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-usage-test-"));
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-usage-test-"));
   const agentSessionsDir = path.join(stateDir, "agents", "opus", "sessions");
   const writeSessionFile = (fileName: string) => {
     const sessionFile = path.join(agentSessionsDir, fileName);
@@ -233,7 +233,7 @@ async function withUsageState(
   };
 
   try {
-    await withEnvAsync({ OPENCLAW_STATE_DIR: stateDir }, async () => {
+    await withEnvAsync({ AFORA_STATE_DIR: stateDir }, async () => {
       fs.mkdirSync(agentSessionsDir, { recursive: true });
       await run(writeSessionFile);
     });
@@ -584,7 +584,7 @@ describe("sessions.usage", () => {
   });
 
   it("keeps global session entries in requested-agent usage lookups", async () => {
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       agents: {
         list: [{ id: "main", default: true }, { id: "opus" }],
       },
@@ -866,7 +866,7 @@ describe("sessions.usage", () => {
   });
 
   it("loads bare-key usage details through the persisted fixed-store owner", async () => {
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       session: { store: "/tmp/shared-sessions.sqlite", scope: "global" },
       agents: {
         ownership: "explicit",

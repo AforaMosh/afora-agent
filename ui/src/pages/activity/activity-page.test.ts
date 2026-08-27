@@ -58,7 +58,7 @@ afterEach(() => {
 
 describe("ActivityPage gateway lifecycle", () => {
   it("replays the active gateway on initial bind and source replacement", () => {
-    const page = document.createElement("openclaw-activity-page") as TestActivityPage;
+    const page = document.createElement("afora-activity-page") as TestActivityPage;
     page.context = { gateway: gateway() } as unknown as ApplicationContext;
     page.entries = [staleEntry()];
 

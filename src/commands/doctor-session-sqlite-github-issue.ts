@@ -13,20 +13,20 @@ type SpawnGh = (
 
 const GITHUB_ISSUE_CREATE_TIMEOUT_MS = 30_000;
 
-/** Creates an openclaw/openclaw issue through the GitHub CLI using sanitized stdin. */
+/** Creates an AforaMosh/afora-agent issue through the GitHub CLI using sanitized stdin. */
 export function createSessionSqliteGithubIssue(
   issue: SessionSqliteMigrationFailureIssue,
   spawnGh: SpawnGh = defaultSpawnGh,
 ): SessionSqliteGithubIssueCreateResult {
   const result = spawnGh(
-    ["issue", "create", "--repo", "openclaw/openclaw", "--title", issue.title, "--body-file", "-"],
+    ["issue", "create", "--repo", "AforaMosh/afora-agent", "--title", issue.title, "--body-file", "-"],
     { input: issue.body },
   );
   if (!result.error && result.status === 0) {
     const url = String(result.stdout).trim().split(/\r?\n/).at(-1);
     return {
       ok: true,
-      url: url && url.length > 0 ? url : "https://github.com/openclaw/openclaw/issues",
+      url: url && url.length > 0 ? url : "https://github.com/AforaMosh/afora-agent/issues",
     };
   }
   const stderr = String(result.stderr).trim();

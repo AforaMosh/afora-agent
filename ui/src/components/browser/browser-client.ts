@@ -4,9 +4,9 @@
 // that is dispatched against the browser plugin's control routes, either
 // locally or via a browser-capable node. This module narrows the handful of
 // routes the browser panel needs and keeps route-path knowledge in one place.
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
-import { asNullableRecord as asRecord } from "@openclaw/normalization-core/record-coerce";
-import { readStringValue } from "@openclaw/normalization-core/string-coerce";
+import { asFiniteNumber } from "@afora/normalization-core/number-coercion";
+import { asNullableRecord as asRecord } from "@afora/normalization-core/record-coerce";
+import { readStringValue } from "@afora/normalization-core/string-coerce";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import { t } from "../../i18n/index.ts";
 
@@ -346,7 +346,7 @@ export async function fetchBrowserScreenshotDataUrl(params: {
   );
   let blob: Blob;
   try {
-    const res = await fetch(`${basePath}/__openclaw__/assistant-media?${search.toString()}`, {
+    const res = await fetch(`${basePath}/__afora__/assistant-media?${search.toString()}`, {
       method: "GET",
       headers,
       credentials: "same-origin",

@@ -5,16 +5,16 @@ describe("buildPostCoreHandoffEnv", () => {
   it("replaces only current-run handoff values without mutating the base env", () => {
     const baseEnv: NodeJS.ProcessEnv = {
       PATH: "/usr/bin",
-      OPENCLAW_COMPATIBILITY_HOST_VERSION: "stale-version",
-      OPENCLAW_UPDATE_POST_CORE_REQUESTED_CHANNEL: "beta",
-      OPENCLAW_UPDATE_POST_CORE_SOURCE_CONFIG_PATH: "/tmp/stale-config.json",
-      OPENCLAW_UNRELATED: "preserved",
+      AFORA_COMPATIBILITY_HOST_VERSION: "stale-version",
+      AFORA_UPDATE_POST_CORE_REQUESTED_CHANNEL: "beta",
+      AFORA_UPDATE_POST_CORE_SOURCE_CONFIG_PATH: "/tmp/stale-config.json",
+      AFORA_UNRELATED: "preserved",
     };
 
     const absent = buildPostCoreHandoffEnv({ baseEnv });
     expect(absent).toEqual({
       PATH: "/usr/bin",
-      OPENCLAW_UNRELATED: "preserved",
+      AFORA_UNRELATED: "preserved",
     });
 
     const fresh = buildPostCoreHandoffEnv({
@@ -24,16 +24,16 @@ describe("buildPostCoreHandoffEnv", () => {
       sourceConfigPath: "/tmp/current-config.json",
     });
     expect(fresh).toMatchObject({
-      OPENCLAW_COMPATIBILITY_HOST_VERSION: "2026.8.11",
-      OPENCLAW_UPDATE_POST_CORE_REQUESTED_CHANNEL: "dev",
-      OPENCLAW_UPDATE_POST_CORE_SOURCE_CONFIG_PATH: "/tmp/current-config.json",
-      OPENCLAW_UNRELATED: "preserved",
+      AFORA_COMPATIBILITY_HOST_VERSION: "2026.8.11",
+      AFORA_UPDATE_POST_CORE_REQUESTED_CHANNEL: "dev",
+      AFORA_UPDATE_POST_CORE_SOURCE_CONFIG_PATH: "/tmp/current-config.json",
+      AFORA_UNRELATED: "preserved",
     });
     expect(baseEnv).toMatchObject({
-      OPENCLAW_COMPATIBILITY_HOST_VERSION: "stale-version",
-      OPENCLAW_UPDATE_POST_CORE_REQUESTED_CHANNEL: "beta",
-      OPENCLAW_UPDATE_POST_CORE_SOURCE_CONFIG_PATH: "/tmp/stale-config.json",
-      OPENCLAW_UNRELATED: "preserved",
+      AFORA_COMPATIBILITY_HOST_VERSION: "stale-version",
+      AFORA_UPDATE_POST_CORE_REQUESTED_CHANNEL: "beta",
+      AFORA_UPDATE_POST_CORE_SOURCE_CONFIG_PATH: "/tmp/stale-config.json",
+      AFORA_UNRELATED: "preserved",
     });
   });
 
@@ -44,13 +44,13 @@ describe("buildPostCoreHandoffEnv", () => {
       expect(
         buildPostCoreHandoffEnv({
           baseEnv: {
-            OpenClaw_Compatibility_Host_Version: "stale-version",
-            OpenClaw_Update_Post_Core_Requested_Channel: "beta",
-            OpenClaw_Update_Post_Core_Source_Config_Path: "C:\\stale-config.json",
-            OPENCLAW_UNRELATED: "preserved",
+            Afora_Compatibility_Host_Version: "stale-version",
+            Afora_Update_Post_Core_Requested_Channel: "beta",
+            Afora_Update_Post_Core_Source_Config_Path: "C:\\stale-config.json",
+            AFORA_UNRELATED: "preserved",
           },
         }),
-      ).toEqual({ OPENCLAW_UNRELATED: "preserved" });
+      ).toEqual({ AFORA_UNRELATED: "preserved" });
     } finally {
       Object.defineProperty(process, "platform", platformDescriptor!);
     }

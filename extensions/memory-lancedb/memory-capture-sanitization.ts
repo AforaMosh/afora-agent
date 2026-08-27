@@ -1,7 +1,7 @@
-import { BUNDLED_CHAT_CHANNEL_ENVELOPE_PREFIXES } from "openclaw/plugin-sdk/chat-channel-ids";
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
-import { MESSAGE_TOOL_DELIVERY_HINTS } from "openclaw/plugin-sdk/message-tool-delivery-hints";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { BUNDLED_CHAT_CHANNEL_ENVELOPE_PREFIXES } from "afora-agent/plugin-sdk/chat-channel-ids";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
+import { MESSAGE_TOOL_DELIVERY_HINTS } from "afora-agent/plugin-sdk/message-tool-delivery-hints";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 
 const MEDIA_NOTE_HEADER = /^\[media attached(?: \d+\/\d+)?: /;
 
@@ -19,7 +19,7 @@ export function dropMediaNoteLines(text: string): string {
 }
 
 /**
- * Provenance marker appended to every OpenClaw-injected inbound context header
+ * Provenance marker appended to every Afora-injected inbound context header
  * by `buildInboundUserContextPrefix`. `sanitizeForMemoryCapture` and
  * `looksLikeEnvelopeSludge` key on this marker rather than on label text, so
  * detection is label-agnostic (arbitrary plugin `ChannelStructuredContext`
@@ -29,17 +29,17 @@ export function dropMediaNoteLines(text: string): string {
  * `src/auto-reply/reply/inbound-context-marker.ts`.
  */
 // A context header line: any line whose trimmed text ends with the marker.
-const MARKER_HEADER_LINE_RE = /^[^\n]*⟦openclaw:ctx⟧[ \t]*$/m;
+const MARKER_HEADER_LINE_RE = /^[^\n]*⟦afora:ctx⟧[ \t]*$/m;
 // A marker header immediately followed by its ```json fenced payload.
 const MARKER_JSON_BLOCK_RE =
-  /^[^\n]*⟦openclaw:ctx⟧[ \t]*\n[ \t]*```json[ \t]*\n[\s\S]*?\n[ \t]*```[ \t]*\n?/gm;
+  /^[^\n]*⟦afora:ctx⟧[ \t]*\n[ \t]*```json[ \t]*\n[\s\S]*?\n[ \t]*```[ \t]*\n?/gm;
 // A leading chronological-window marker header (`... (chronological, ...): ⟦marker⟧`).
 // Scoped to the chronological window blocks only: those carry the "keep the real
 // inbound envelope inside the window" handling in stripLeadingChronologicalContextBlocks.
 // Other prose headers (chat history, thread starter) defer to the current-message
 // marker via the sanitize pass-loop, so they must NOT match here.
 const LEADING_CHRONOLOGICAL_MARKER_HEADER_RE =
-  /^\s*[^\n]*chronological[^\n]*⟦openclaw:ctx⟧[ \t]*(?:\n|$)/;
+  /^\s*[^\n]*chronological[^\n]*⟦afora:ctx⟧[ \t]*(?:\n|$)/;
 
 const MESSAGE_TOOL_DELIVERY_HINT_RE = new RegExp(
   `^\\s*(?:${MESSAGE_TOOL_DELIVERY_HINTS.map((hint) =>
@@ -67,10 +67,10 @@ const LEADING_CURRENT_MESSAGE_CONTEXT_RE = /^\s*Current message:[ \t]*(?:\n|$)/;
 const LEADING_CURRENT_MESSAGE_REPLY_LINE_RE = /^\s*\[Replying to:[^\n]{0,1000}\]\s*\n/;
 const LEADING_CURRENT_MESSAGE_ID_SENDER_RE = /^#\d+\s+[^\n:]{1,100}:\s*/;
 
-const CONTEXT_HEADER_RE = /^Context:[ \t]*⟦openclaw:ctx⟧[ \t]*$/m;
+const CONTEXT_HEADER_RE = /^Context:[ \t]*⟦afora:ctx⟧[ \t]*$/m;
 
 /**
- * Matches JSON blobs that look like OpenClaw transport envelope metadata.
+ * Matches JSON blobs that look like Afora transport envelope metadata.
  * Orthogonal to the header marker: it catches a bare envelope payload by its
  * compound keys even when no marker header precedes it (e.g. a fragment that
  * leaked outside its ```json fence). Core's `formatContextJsonBlock` emits
@@ -187,7 +187,7 @@ function matchKnownChannelMarkerFreeEnvelopePrefix(
 }
 
 /**
- * Returns true if `text` looks like it contains OpenClaw-injected envelope or
+ * Returns true if `text` looks like it contains Afora-injected envelope or
  * transport metadata that should never be persisted as a long-term memory.
  */
 export function looksLikeEnvelopeSludge(text: string): boolean {
@@ -459,7 +459,7 @@ function stripLeadingChronologicalContextBlocks(text: string): string {
 }
 
 /**
- * Strips OpenClaw-injected envelope metadata from a user message so that only
+ * Strips Afora-injected envelope metadata from a user message so that only
  * the user's actual intent text remains. Returns empty string if nothing
  * meaningful survives.
  */

@@ -1,5 +1,5 @@
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-coercion";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import { parseStrictPositiveInteger } from "@afora/normalization-core/number-coercion";
 /**
  * OpenAI Responses payload policy.
  * Classifies endpoint capabilities and applies store, prompt-cache,
@@ -8,7 +8,7 @@ import { parseStrictPositiveInteger } from "@openclaw/normalization-core/number-
 import {
   normalizeOptionalLowercaseString,
   readStringValue,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { supportsOpenAIReasoningEffort } from "../providers/openai-reasoning-effort.js";
 import { OPENAI_RESPONSES_APIS } from "./openai-responses-contracts.js";
 
@@ -255,18 +255,18 @@ function resolveOpenAIResponsesPayloadCapabilities(
   return {
     allowsOpenAIServiceTier:
       (provider === "openai" &&
-        (api === "openai-responses" || api === "openclaw-openai-responses-transport") &&
+        (api === "openai-responses" || api === "afora-openai-responses-transport") &&
         endpointClass === "openai-public") ||
       (isOpenAIProvider &&
         (api === "openai-chatgpt-responses" ||
-          api === "openclaw-openai-chatgpt-responses-transport" ||
+          api === "afora-openai-chatgpt-responses-transport" ||
           api === "openai-responses" ||
-          api === "openclaw-openai-responses-transport") &&
+          api === "afora-openai-responses-transport") &&
         endpointClass === "openai"),
     allowsResponsesStore:
       supportsResponsesStoreField &&
       api !== "openai-chatgpt-responses" &&
-      api !== "openclaw-openai-chatgpt-responses-transport" &&
+      api !== "afora-openai-chatgpt-responses-transport" &&
       provider !== undefined &&
       OPENAI_RESPONSES_PROVIDERS.has(provider) &&
       usesKnownNativeOpenAIEndpoint,

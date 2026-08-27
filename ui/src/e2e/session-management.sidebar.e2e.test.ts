@@ -50,7 +50,7 @@ suite.define(() => {
       const firstRow = page.locator(`[data-session-key="${firstKey}"]`);
       const secondRow = page.locator(`[data-session-key="${secondKey}"]`);
       const composer = page.locator(
-        'openclaw-chat-pane[aria-hidden="false"] .agent-chat__composer-combobox > textarea',
+        'afora-chat-pane[aria-hidden="false"] .agent-chat__composer-combobox > textarea',
       );
       await firstRow.waitFor({ state: "visible", timeout: 10_000 });
       await secondRow.waitFor({ state: "visible" });
@@ -184,7 +184,7 @@ suite.define(() => {
         "sidebar-child-session-toggle--running",
       );
       for (const child of [staleRunningChild, failedChild]) {
-        expect(await child.locator("openclaw-elapsed-time").count()).toBe(0);
+        expect(await child.locator("afora-elapsed-time").count()).toBe(0);
         expect((await child.locator(".session-row-trail").textContent())?.trim()).toBeTruthy();
       }
       await captureUiProof(page, "child-sessions-expanded.png");
@@ -227,7 +227,7 @@ suite.define(() => {
 
     try {
       await page.goto(`${suite.server.baseUrl}chat`);
-      const sidebar = page.locator("openclaw-app-sidebar");
+      const sidebar = page.locator("afora-app-sidebar");
       const row = sidebar.locator(
         '.sidebar-recent-session[data-session-key="agent:main:research"]',
       );
@@ -266,7 +266,7 @@ suite.define(() => {
           .toBeLessThanOrEqual(0);
       };
       const hiddenActionCounts = async () => ({
-        confirms: await page.locator("openclaw-modal-dialog .exec-approval-actions").count(),
+        confirms: await page.locator("afora-modal-dialog .exec-approval-actions").count(),
         nativeDialogs: nativeDialogs.length,
         patches: (await gateway.getRequests("sessions.patch")).length,
       });
@@ -406,7 +406,7 @@ suite.define(() => {
       await expect
         .poll(() =>
           page
-            .locator("openclaw-session-menu")
+            .locator("afora-session-menu")
             .getByRole("menuitem", { name: "Pin session" })
             .evaluate((element) => element === document.activeElement),
         )
@@ -428,7 +428,7 @@ suite.define(() => {
       await expect
         .poll(() =>
           page
-            .locator("openclaw-session-menu")
+            .locator("afora-session-menu")
             .getByRole("menuitem", { name: "Pin session" })
             .evaluate((element) => element === document.activeElement),
         )
@@ -792,7 +792,7 @@ suite.define(() => {
           withWork
             ? {
                 execNode: nodeHash,
-                worktree: { branch: "openclaw/wt-1", repoRoot: "/Users/dev/Projects/clawdbot" },
+                worktree: { branch: "afora-agent/wt-1", repoRoot: "/Users/dev/Projects/clawdbot" },
               }
             : {},
         ),
@@ -885,7 +885,7 @@ suite.define(() => {
     const rows = [
       ...Array.from({ length: 8 }, (_, index) =>
         sessionRow(`agent:main:work-${index}`, `Work session ${index}`, baseTime - index * 60_000, {
-          worktree: { branch: `openclaw/wt-${index}`, repoRoot: "/Users/dev/Projects/clawdbot" },
+          worktree: { branch: `afora/wt-${index}`, repoRoot: "/Users/dev/Projects/clawdbot" },
         }),
       ),
       ...Array.from({ length: 30 }, (_, index) =>

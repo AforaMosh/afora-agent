@@ -174,7 +174,7 @@ suite.define(() => {
       const storedWorktree = await page.evaluate(() => {
         const key = Array.from({ length: localStorage.length }, (_, index) =>
           localStorage.key(index),
-        ).find((candidate) => candidate?.startsWith("openclaw.new-session.preferences.v1:"));
+        ).find((candidate) => candidate?.startsWith("afora.new-session.preferences.v1:"));
         const value = key
           ? (JSON.parse(localStorage.getItem(key) ?? "null") as {
               agents?: Record<string, { worktree?: boolean }>;
@@ -584,7 +584,7 @@ suite.define(() => {
       });
 
       await pollLocatorText(page.locator(".new-session-page__runtime")).toContain("Claude Code");
-      await pollLocatorText(folderLabel).toBe("openclaw");
+      await pollLocatorText(folderLabel).toBe("afora");
       await page.locator(".new-session-page__message").fill("retarget this draft");
       await page.getByRole("button", { name: "Start session" }).click();
 

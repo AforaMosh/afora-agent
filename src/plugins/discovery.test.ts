@@ -2,14 +2,14 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { bundledDistPluginFile } from "openclaw/plugin-sdk/test-fixtures";
+import { bundledDistPluginFile } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import {
   isPluginCandidateInstallOwnerAmbiguous,
   resolvePluginCandidateInstallOwner,
 } from "./candidate-install-owner.js";
-import { discoverOpenClawPlugins } from "./discovery.js";
+import { discoverAforaPlugins } from "./discovery.js";
 import * as pluginHardlinkPolicy from "./hardlink-policy.js";
 import { loadPluginManifestRegistryCore } from "./manifest-registry.js";
 import type { PackageManifest } from "./manifest.js";
@@ -27,14 +27,14 @@ vi.mock("./bundled-dir.js", async (importOriginal) => {
   return {
     ...actual,
     resolveBundledPluginsDir: (env: NodeJS.ProcessEnv = process.env) =>
-      env.OPENCLAW_BUNDLED_PLUGINS_DIR ?? actual.resolveBundledPluginsDir(env),
+      env.AFORA_BUNDLED_PLUGINS_DIR ?? actual.resolveBundledPluginsDir(env),
   };
 });
 
 const tempDirs: string[] = [];
 
 function makeTempDir() {
-  return makeTrackedTempDir("openclaw-plugins", tempDirs);
+  return makeTrackedTempDir("afora-plugins", tempDirs);
 }
 
 const mkdirSafe = mkdirSafeDir;
@@ -49,11 +49,11 @@ function countMatching<T>(items: readonly T[], predicate: (item: T) => boolean):
   return count;
 }
 
-function withOpenClawPackageArgv<T>(packageRoot: string, fn: () => T): T {
+function withAforaPackageArgv<T>(packageRoot: string, fn: () => T): T {
   mkdirSafe(path.join(packageRoot, "bin"));
-  fs.writeFileSync(path.join(packageRoot, "package.json"), '{"name":"openclaw"}\n', "utf-8");
+  fs.writeFileSync(path.join(packageRoot, "package.json"), '{"name":"afora-agent"}\n', "utf-8");
   const originalArgv = process.argv;
-  process.argv = [originalArgv[0] ?? "node", path.join(packageRoot, "bin", "openclaw")];
+  process.argv = [originalArgv[0] ?? "node", path.join(packageRoot, "bin", "afora")];
   try {
     return fn();
   } finally {
@@ -66,7 +66,7 @@ function symlinkDirectory(target: string, linkPath: string): void {
 }
 
 const canCreateDirectorySymlinks = (() => {
-  const probeDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-symlink-probe-"));
+  const probeDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-symlink-probe-"));
   const targetDir = path.join(probeDir, "target");
   const linkDir = path.join(probeDir, "link");
   try {
@@ -101,10 +101,10 @@ function buildDiscoveryEnv(stateDir: string): NodeJS.ProcessEnv {
   const bundledPluginsDir = path.join(stateDir, "empty-bundled-plugins");
   mkdirSafe(bundledPluginsDir);
   return {
-    OPENCLAW_STATE_DIR: stateDir,
-    OPENCLAW_HOME: undefined,
-    OPENCLAW_DISABLE_BUNDLED_PLUGINS: "1",
-    OPENCLAW_BUNDLED_PLUGINS_DIR: bundledPluginsDir,
+    AFORA_STATE_DIR: stateDir,
+    AFORA_HOME: undefined,
+    AFORA_DISABLE_BUNDLED_PLUGINS: "1",
+    AFORA_BUNDLED_PLUGINS_DIR: bundledPluginsDir,
   };
 }
 
@@ -113,11 +113,11 @@ function buildDiscoveryEnvWithOverrides(
   overrides: Partial<NodeJS.ProcessEnv> = {},
 ): NodeJS.ProcessEnv {
   const enablesBundledOverride =
-    Object.hasOwn(overrides, "OPENCLAW_BUNDLED_PLUGINS_DIR") &&
-    overrides.OPENCLAW_BUNDLED_PLUGINS_DIR !== undefined;
+    Object.hasOwn(overrides, "AFORA_BUNDLED_PLUGINS_DIR") &&
+    overrides.AFORA_BUNDLED_PLUGINS_DIR !== undefined;
   return {
     ...buildDiscoveryEnv(stateDir),
-    ...(enablesBundledOverride ? { OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined } : {}),
+    ...(enablesBundledOverride ? { AFORA_DISABLE_BUNDLED_PLUGINS: undefined } : {}),
     ...overrides,
   };
 }
@@ -125,20 +125,20 @@ function buildDiscoveryEnvWithOverrides(
 function buildBundledDiscoveryEnv(stateDir: string): NodeJS.ProcessEnv {
   return {
     ...buildDiscoveryEnv(stateDir),
-    OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
-    OPENCLAW_BUNDLED_PLUGINS_DIR: undefined,
+    AFORA_DISABLE_BUNDLED_PLUGINS: undefined,
+    AFORA_BUNDLED_PLUGINS_DIR: undefined,
   };
 }
 
 async function discoverWithStateDir(
   stateDir: string,
-  params: Parameters<typeof discoverOpenClawPlugins>[0],
+  params: Parameters<typeof discoverAforaPlugins>[0],
 ) {
-  return discoverOpenClawPlugins({ ...params, env: buildDiscoveryEnv(stateDir) });
+  return discoverAforaPlugins({ ...params, env: buildDiscoveryEnv(stateDir) });
 }
 
-function discoverWithEnv(params: Parameters<typeof discoverOpenClawPlugins>[0]) {
-  return discoverOpenClawPlugins(params);
+function discoverWithEnv(params: Parameters<typeof discoverAforaPlugins>[0]) {
+  return discoverAforaPlugins(params);
 }
 
 function writePluginPackageManifest(params: {
@@ -154,7 +154,7 @@ function writePluginPackageManifest(params: {
     path.join(params.packageDir, "package.json"),
     JSON.stringify({
       name: params.packageName,
-      openclaw: {
+      afora: {
         extensions: params.extensions,
         ...(params.runtimeExtensions ? { runtimeExtensions: params.runtimeExtensions } : {}),
         ...(params.setupEntry ? { setupEntry: params.setupEntry } : {}),
@@ -172,7 +172,7 @@ function writePluginManifest(params: {
   requiresPlugins?: string[];
 }) {
   fs.writeFileSync(
-    path.join(params.pluginDir, "openclaw.plugin.json"),
+    path.join(params.pluginDir, "afora.plugin.json"),
     JSON.stringify({
       id: params.id,
       ...(params.requiresPlugins ? { requiresPlugins: params.requiresPlugins } : {}),
@@ -373,7 +373,7 @@ function expectCandidateFields(candidate: object | undefined, expected: Record<s
 }
 
 function expectCandidatePresence(
-  result: Awaited<ReturnType<typeof discoverOpenClawPlugins>>,
+  result: Awaited<ReturnType<typeof discoverAforaPlugins>>,
   params: { present?: readonly string[]; absent?: readonly string[] },
 ) {
   const ids = result.candidates.map((candidate) => candidate.idHint);
@@ -472,19 +472,19 @@ afterEach(() => {
   cleanupTrackedTempDirs(tempDirs);
 });
 
-describe("discoverOpenClawPlugins", () => {
+describe("discoverAforaPlugins", () => {
   it("discovers global and workspace extensions", async () => {
     const stateDir = makeTempDir();
     const workspaceDir = path.join(stateDir, "workspace");
 
     createPackagePluginWithEntry({
       packageDir: path.join(stateDir, "extensions", "alpha"),
-      packageName: "@openclaw/alpha",
+      packageName: "@afora/alpha",
       pluginId: "alpha",
     });
     createPackagePluginWithEntry({
-      packageDir: path.join(workspaceDir, ".openclaw", "extensions", "beta"),
-      packageName: "@openclaw/beta",
+      packageDir: path.join(workspaceDir, ".afora", "extensions", "beta"),
+      packageName: "@afora/beta",
       pluginId: "beta",
     });
 
@@ -496,7 +496,7 @@ describe("discoverOpenClawPlugins", () => {
     const stateDir = makeTempDir();
     const workspaceDir = path.join(stateDir, "workspace");
     const globalExt = path.join(stateDir, "extensions");
-    const workspaceExt = path.join(workspaceDir, ".openclaw", "extensions");
+    const workspaceExt = path.join(workspaceDir, ".afora", "extensions");
     mkdirSafe(globalExt);
     mkdirSafe(workspaceExt);
     fs.writeFileSync(path.join(globalExt, "my-helper.mjs"), "export default {}", "utf-8");
@@ -537,7 +537,7 @@ describe("discoverOpenClawPlugins", () => {
     const pluginDir = path.join(stateDir, "extensions", "diffs-language-pack");
     createPackagePluginWithEntry({
       packageDir: pluginDir,
-      packageName: "@openclaw/diffs-language-pack",
+      packageName: "@afora/diffs-language-pack",
       pluginId: "diffs-language-pack",
     });
     writePluginManifest({
@@ -563,7 +563,7 @@ describe("discoverOpenClawPlugins", () => {
     const languagePackDir = path.join(extensionsDir, "diffs-language-pack");
     createPackagePluginWithEntry({
       packageDir: languagePackDir,
-      packageName: "@openclaw/diffs-language-pack",
+      packageName: "@afora/diffs-language-pack",
       pluginId: "diffs-language-pack",
     });
     writePluginManifest({
@@ -573,7 +573,7 @@ describe("discoverOpenClawPlugins", () => {
     });
     createPackagePluginWithEntry({
       packageDir: path.join(extensionsDir, "diffs"),
-      packageName: "@openclaw/diffs",
+      packageName: "@afora/diffs",
       pluginId: "diffs",
     });
 
@@ -630,7 +630,7 @@ describe("discoverOpenClawPlugins", () => {
       const linkedPluginDir = path.join(stateDir, "linked-plugin-src");
       createPackagePluginWithEntry({
         packageDir: linkedPluginDir,
-        packageName: "@openclaw/linked-plugin",
+        packageName: "@afora/linked-plugin",
         pluginId: "linked-plugin",
       });
 
@@ -650,13 +650,13 @@ describe("discoverOpenClawPlugins", () => {
     async () => {
       const stateDir = makeTempDir();
       const workspaceDir = path.join(stateDir, "workspace");
-      const workspaceExt = path.join(workspaceDir, ".openclaw", "extensions");
+      const workspaceExt = path.join(workspaceDir, ".afora", "extensions");
       mkdirSafe(workspaceExt);
 
       const linkedPluginDir = path.join(stateDir, "workspace-linked-plugin-src");
       createPackagePluginWithEntry({
         packageDir: linkedPluginDir,
-        packageName: "@openclaw/workspace-linked-plugin",
+        packageName: "@afora/workspace-linked-plugin",
         pluginId: "workspace-linked-plugin",
       });
 
@@ -689,22 +689,22 @@ describe("discoverOpenClawPlugins", () => {
   it("does not recurse arbitrary workspace directories for plugin auto-discovery", () => {
     const stateDir = makeTempDir();
     const workspaceDir = path.join(stateDir, "workspace");
-    const workspaceExt = path.join(workspaceDir, ".openclaw", "extensions");
+    const workspaceExt = path.join(workspaceDir, ".afora", "extensions");
 
     const expectedWorkspacePluginDir = path.join(workspaceExt, "workspace-plugin");
     createPackagePluginWithEntry({
       packageDir: expectedWorkspacePluginDir,
-      packageName: "@openclaw/workspace-plugin",
+      packageName: "@afora/workspace-plugin",
       pluginId: "workspace-plugin",
     });
 
     const unrelatedWorkspaceDir = path.join(workspaceDir, "lobster-integrations", "bin");
     createPackagePluginWithEntry({
       packageDir: unrelatedWorkspaceDir,
-      packageName: "@openclaw/stray-workspace-plugin",
+      packageName: "@afora/stray-workspace-plugin",
     });
 
-    const result = discoverOpenClawPlugins({
+    const result = discoverAforaPlugins({
       workspaceDir,
       env: buildDiscoveryEnv(stateDir),
     });
@@ -721,12 +721,12 @@ describe("discoverOpenClawPlugins", () => {
     const homeDir = makeTempDir();
     const workspaceRoot = path.join(homeDir, "workspace");
     createPackagePluginWithEntry({
-      packageDir: path.join(workspaceRoot, ".openclaw", "extensions", "tilde-workspace"),
-      packageName: "@openclaw/tilde-workspace",
+      packageDir: path.join(workspaceRoot, ".afora", "extensions", "tilde-workspace"),
+      packageName: "@afora/tilde-workspace",
       pluginId: "tilde-workspace",
     });
 
-    const result = discoverOpenClawPlugins({
+    const result = discoverAforaPlugins({
       workspaceDir: "~/workspace",
       env: {
         ...buildDiscoveryEnv(stateDir),
@@ -779,13 +779,13 @@ describe("discoverOpenClawPlugins", () => {
     );
     fs.writeFileSync(
       path.join(extensionDir, "package.json"),
-      '{"name":"@openclaw/twitch"}\n',
+      '{"name":"@afora/twitch"}\n',
       "utf-8",
     );
-    fs.writeFileSync(path.join(extensionDir, "openclaw.plugin.json"), '{"id":"twitch"}\n', "utf-8");
+    fs.writeFileSync(path.join(extensionDir, "afora.plugin.json"), '{"id":"twitch"}\n', "utf-8");
 
-    const result = withOpenClawPackageArgv(packageRoot, () =>
-      discoverOpenClawPlugins({ env: buildDiscoveryEnv(stateDir) }),
+    const result = withAforaPackageArgv(packageRoot, () =>
+      discoverAforaPlugins({ env: buildDiscoveryEnv(stateDir) }),
     );
 
     expect(result.diagnostics.map((entry) => entry.message).join("\n")).not.toContain(
@@ -795,7 +795,7 @@ describe("discoverOpenClawPlugins", () => {
 
   it("does not treat repo-level live or test files as plugin entrypoints", () => {
     const stateDir = makeTempDir();
-    const packageRoot = path.join(stateDir, "node_modules", "openclaw");
+    const packageRoot = path.join(stateDir, "node_modules", "afora");
     const bundledDir = path.join(packageRoot, "dist", "extensions");
     mkdirSafe(bundledDir);
 
@@ -809,16 +809,16 @@ describe("discoverOpenClawPlugins", () => {
     );
     createPackagePluginWithEntry({
       packageDir: path.join(bundledDir, "real-plugin"),
-      packageName: "@openclaw/real-plugin",
+      packageName: "@afora/real-plugin",
       pluginId: "real-plugin",
     });
 
-    const { candidates, diagnostics } = withOpenClawPackageArgv(packageRoot, () =>
-      discoverOpenClawPlugins({
+    const { candidates, diagnostics } = withAforaPackageArgv(packageRoot, () =>
+      discoverAforaPlugins({
         env: {
           ...buildDiscoveryEnv(stateDir),
-          OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
-          OPENCLAW_BUNDLED_PLUGINS_DIR: bundledDir,
+          AFORA_DISABLE_BUNDLED_PLUGINS: undefined,
+          AFORA_BUNDLED_PLUGINS_DIR: bundledDir,
         },
       }),
     );
@@ -829,31 +829,31 @@ describe("discoverOpenClawPlugins", () => {
 
   it("discovers bind-mounted bundled source overlays before packaged dist bundles", () => {
     const stateDir = makeTempDir();
-    const packageRoot = path.join(stateDir, "node_modules", "openclaw");
+    const packageRoot = path.join(stateDir, "node_modules", "afora");
     const bundledRoot = path.join(packageRoot, "dist", "extensions");
     const bundledPluginDir = path.join(bundledRoot, "synology-chat");
     const sourcePluginDir = path.join(packageRoot, "extensions", "synology-chat");
     createPackagePluginWithEntry({
       packageDir: bundledPluginDir,
-      packageName: "@openclaw/synology-chat",
+      packageName: "@afora/synology-chat",
       pluginId: "synology-chat",
       entryPath: "index.js",
     });
     createPackagePluginWithEntry({
       packageDir: sourcePluginDir,
-      packageName: "@openclaw/synology-chat",
+      packageName: "@afora/synology-chat",
       pluginId: "synology-chat",
     });
     mockLinuxMountInfo([sourcePluginDir]);
     const sourceEntryPath = path.join(sourcePluginDir, "src", "index.ts");
     const bundledEntryPath = path.join(bundledPluginDir, "index.js");
 
-    const { candidates, diagnostics } = withOpenClawPackageArgv(packageRoot, () =>
-      discoverOpenClawPlugins({
+    const { candidates, diagnostics } = withAforaPackageArgv(packageRoot, () =>
+      discoverAforaPlugins({
         env: {
           ...buildDiscoveryEnv(stateDir),
-          OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
-          OPENCLAW_BUNDLED_PLUGINS_DIR: bundledRoot,
+          AFORA_DISABLE_BUNDLED_PLUGINS: undefined,
+          AFORA_BUNDLED_PLUGINS_DIR: bundledRoot,
         },
       }),
     );
@@ -883,30 +883,30 @@ describe("discoverOpenClawPlugins", () => {
 
   it("keeps copied source plugin dirs inert when they are not mounted overlays", () => {
     const stateDir = makeTempDir();
-    const packageRoot = path.join(stateDir, "node_modules", "openclaw");
+    const packageRoot = path.join(stateDir, "node_modules", "afora");
     const bundledRoot = path.join(packageRoot, "dist", "extensions");
     const bundledPluginDir = path.join(bundledRoot, "synology-chat");
     const sourcePluginDir = path.join(packageRoot, "extensions", "synology-chat");
     createPackagePluginWithEntry({
       packageDir: bundledPluginDir,
-      packageName: "@openclaw/synology-chat",
+      packageName: "@afora/synology-chat",
       pluginId: "synology-chat",
       entryPath: "index.js",
     });
     createPackagePluginWithEntry({
       packageDir: sourcePluginDir,
-      packageName: "@openclaw/synology-chat",
+      packageName: "@afora/synology-chat",
       pluginId: "synology-chat",
     });
     mockLinuxMountInfo([]);
     const bundledEntryPath = path.join(bundledPluginDir, "index.js");
 
-    const { candidates, diagnostics } = withOpenClawPackageArgv(packageRoot, () =>
-      discoverOpenClawPlugins({
+    const { candidates, diagnostics } = withAforaPackageArgv(packageRoot, () =>
+      discoverAforaPlugins({
         env: {
           ...buildDiscoveryEnv(stateDir),
-          OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
-          OPENCLAW_BUNDLED_PLUGINS_DIR: bundledRoot,
+          AFORA_DISABLE_BUNDLED_PLUGINS: undefined,
+          AFORA_BUNDLED_PLUGINS_DIR: bundledRoot,
         },
       }),
     );
@@ -982,7 +982,7 @@ describe("discoverOpenClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: pluginDir,
-      packageName: "@openclaw/local-source-pack",
+      packageName: "@afora/local-source-pack",
       extensions: ["./index.ts"],
     });
     writePluginManifest({ pluginDir, id: "local-source-pack" });
@@ -1009,7 +1009,7 @@ describe("discoverOpenClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: pluginDir,
-      packageName: "@openclaw/linked-source-pack",
+      packageName: "@afora/linked-source-pack",
       extensions: ["./src/index.ts"],
       setupEntry: "./src/setup-entry.ts",
     });
@@ -1075,7 +1075,7 @@ describe("discoverOpenClawPlugins", () => {
       mkdirSafe(pluginDir);
       writePluginPackageManifest({
         packageDir: pluginDir,
-        packageName: "@openclaw/aliased-pack",
+        packageName: "@afora/aliased-pack",
         extensions: ["./index.ts"],
       });
       writePluginManifest({ pluginDir, id: "aliased-pack" });
@@ -1111,7 +1111,7 @@ describe("discoverOpenClawPlugins", () => {
       mkdirSafe(pluginDir);
       writePluginPackageManifest({
         packageDir: pluginDir,
-        packageName: "@openclaw/configured-alias-pack",
+        packageName: "@afora/configured-alias-pack",
         extensions: ["./one.ts", "./two.ts"],
       });
       writePluginManifest({ pluginDir, id: "configured-alias-pack" });
@@ -1146,7 +1146,7 @@ describe("discoverOpenClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: pluginDir,
-      packageName: "@openclaw/source-only-pack",
+      packageName: "@afora/source-only-pack",
       extensions: ["./src/index.ts"],
     });
     writePluginEntry(path.join(pluginDir, "src", "index.ts"));
@@ -1174,7 +1174,7 @@ describe("discoverOpenClawPlugins", () => {
     expect(
       result.diagnostics.some(
         (entry) =>
-          entry.pluginId === "source-only-pack" && entry.message.includes("openclaw doctor --fix"),
+          entry.pluginId === "source-only-pack" && entry.message.includes("afora doctor --fix"),
       ),
     ).toBe(false);
     expect(result.diagnostics).toHaveLength(1);
@@ -1189,7 +1189,7 @@ describe("discoverOpenClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: sourceDir,
-      packageName: "@openclaw/source-path-pack",
+      packageName: "@afora/source-path-pack",
       extensions: ["./src/index.ts"],
     });
     writePluginEntry(path.join(sourceDir, "src", "index.ts"));
@@ -1228,7 +1228,7 @@ describe("discoverOpenClawPlugins", () => {
 
       writePluginPackageManifest({
         packageDir: actualSourceDir,
-        packageName: "@openclaw/source-path-symlink-pack",
+        packageName: "@afora/source-path-symlink-pack",
         extensions: ["./src/index.ts"],
       });
       writePluginEntry(path.join(actualSourceDir, "src", "index.ts"));
@@ -1261,7 +1261,7 @@ describe("discoverOpenClawPlugins", () => {
     mkdirSafe(pluginDir);
     fs.writeFileSync(
       path.join(pluginDir, "package.json"),
-      JSON.stringify({ name: "@openclaw/metadata-only-pack", version: "0.0.1" }),
+      JSON.stringify({ name: "@afora/metadata-only-pack", version: "0.0.1" }),
       "utf-8",
     );
     writePluginManifest({ pluginDir, id: "metadata-only-pack" });
@@ -1281,7 +1281,7 @@ describe("discoverOpenClawPlugins", () => {
     const pluginDir = path.join(stateDir, "extensions", "guardrail-bridge");
     mkdirSafe(pluginDir);
     fs.writeFileSync(
-      path.join(pluginDir, "openclaw.extension.json"),
+      path.join(pluginDir, "afora.extension.json"),
       JSON.stringify({
         name: "guardrail-bridge",
         type: "npm",
@@ -1297,8 +1297,8 @@ describe("discoverOpenClawPlugins", () => {
       diagnostics: result.diagnostics,
       level: "warn",
       pluginId: "guardrail-bridge",
-      source: path.join(pluginDir, "openclaw.extension.json"),
-      messageIncludes: 'run "openclaw doctor --fix"',
+      source: path.join(pluginDir, "afora.extension.json"),
+      messageIncludes: 'run "afora doctor --fix"',
     });
   });
 
@@ -1309,7 +1309,7 @@ describe("discoverOpenClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: pluginDir,
-      packageName: "@openclaw/missing-runtime-pack",
+      packageName: "@afora/missing-runtime-pack",
       extensions: ["./index.ts"],
       runtimeExtensions: ["./dist/index.js"],
     });
@@ -1337,7 +1337,7 @@ describe("discoverOpenClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: bundledPluginDir,
-      packageName: "@openclaw/discord",
+      packageName: "@afora/discord",
       extensions: ["./index.js"],
     });
     writePluginManifest({ pluginDir: bundledPluginDir, id: "discord" });
@@ -1345,15 +1345,15 @@ describe("discoverOpenClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: installedPluginDir,
-      packageName: "@openclaw/discord",
+      packageName: "@afora/discord",
       extensions: ["./src/index.ts"],
     });
     writePluginManifest({ pluginDir: installedPluginDir, id: "discord" });
     writePluginEntry(path.join(installedPluginDir, "src", "index.ts"));
 
-    const result = discoverOpenClawPlugins({
+    const result = discoverAforaPlugins({
       env: buildDiscoveryEnvWithOverrides(stateDir, {
-        OPENCLAW_BUNDLED_PLUGINS_DIR: bundledDir,
+        AFORA_BUNDLED_PLUGINS_DIR: bundledDir,
       }),
       installRecords: {
         discord: {
@@ -1391,20 +1391,20 @@ describe("discoverOpenClawPlugins", () => {
     writePluginEntry(path.join(plainDir, "index.js"));
     writePluginPackageManifest({
       packageDir,
-      packageName: "@openclaw/package",
+      packageName: "@afora/package",
       extensions: ["./index.js"],
     });
     writePluginManifest({ pluginDir: packageDir, id: "package" });
     writePluginEntry(path.join(packageDir, "index.js"));
     const env = buildDiscoveryEnvWithOverrides(stateDir, {
-      OPENCLAW_BUNDLED_PLUGINS_DIR: bundledDir,
+      AFORA_BUNDLED_PLUGINS_DIR: bundledDir,
     });
     const installRecords = {
       "plain-owner": { source: "path", installPath: plainDir },
       "package-owner": { source: "path", installPath: packageDir },
     } satisfies Record<string, PluginInstallRecord>;
 
-    const result = discoverOpenClawPlugins({ env, installRecords });
+    const result = discoverAforaPlugins({ env, installRecords });
 
     expectCandidateSource(result.candidates, "plain", path.join(plainDir, "index.js"));
     expectCandidateFields(requireCandidateById(result.candidates, "plain"), {
@@ -1415,11 +1415,11 @@ describe("discoverOpenClawPlugins", () => {
     expectCandidateSource(result.candidates, "package", path.join(packageDir, "index.js"));
     expectCandidateFields(requireCandidateById(result.candidates, "package"), {
       origin: "bundled",
-      packageName: "@openclaw/package",
+      packageName: "@afora/package",
       installOwner: "package-owner",
     });
 
-    const ambiguous = discoverOpenClawPlugins({
+    const ambiguous = discoverAforaPlugins({
       env,
       installRecords: {
         ...installRecords,
@@ -1456,7 +1456,7 @@ describe("discoverOpenClawPlugins", () => {
     writePluginEntry(path.join(packageDir, "dist", "two.js"));
 
     const realpathSync = vi.spyOn(fs, "realpathSync");
-    const { candidates } = discoverOpenClawPlugins({
+    const { candidates } = discoverAforaPlugins({
       env: buildDiscoveryEnv(stateDir),
     });
 
@@ -1487,7 +1487,7 @@ describe("discoverOpenClawPlugins", () => {
       const canonicalPackageDir = fs.realpathSync(realPackageDir);
 
       const realpathSync = vi.spyOn(fs, "realpathSync");
-      const { candidates } = discoverOpenClawPlugins({
+      const { candidates } = discoverAforaPlugins({
         extraPaths: [linkedPackageDir, canonicalPackageDir],
         env: buildDiscoveryEnv(stateDir),
       });
@@ -1513,7 +1513,7 @@ describe("discoverOpenClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: pluginDir,
-      packageName: "@openclaw/runtime-pack",
+      packageName: "@afora/runtime-pack",
       extensions: ["./src/index.ts"],
       runtimeExtensions: ["./dist/index.js"],
       setupEntry: "./src/setup-entry.ts",
@@ -1542,7 +1542,7 @@ describe("discoverOpenClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: pluginDir,
-      packageName: "@openclaw/missing-runtime-setup-pack",
+      packageName: "@afora/missing-runtime-setup-pack",
       extensions: ["./dist/index.js"],
       setupEntry: "./src/setup-entry.ts",
       runtimeSetupEntry: "./dist/setup-entry.js",
@@ -1572,13 +1572,13 @@ describe("discoverOpenClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: pluginDir,
-      packageName: "@openclaw/missing-setup-pack",
+      packageName: "@afora/missing-setup-pack",
       extensions: ["./dist/index.js"],
       setupEntry: "./src/setup-entry.ts",
     });
     const packagePath = path.join(pluginDir, "package.json");
     const packageManifest = JSON.parse(fs.readFileSync(packagePath, "utf-8"));
-    packageManifest.openclaw.channel = { id: "explicit-setup-channel" };
+    packageManifest.afora.channel = { id: "explicit-setup-channel" };
     fs.writeFileSync(packagePath, JSON.stringify(packageManifest), "utf-8");
     writePluginEntry(path.join(pluginDir, "dist", "index.js"));
 
@@ -1609,7 +1609,7 @@ describe("discoverOpenClawPlugins", () => {
         path.join(pluginDir, "package.json"),
         JSON.stringify({
           name: 42,
-          openclaw: {
+          afora: {
             extensions: ["./dist/index.js"],
             setupEntry: "./src/setup-entry.ts",
             ...(runtimeSetup ? { runtimeSetupEntry: "./dist/setup-entry.js" } : {}),
@@ -1645,9 +1645,9 @@ describe("discoverOpenClawPlugins", () => {
     "normalizes setup owner metadata for callers without a prepared owner: %j",
     ({ pluginMetadataId, channelMetadataId, owner }) => {
       const pluginDir = makeTempDir();
-      const diagnostics: ReturnType<typeof discoverOpenClawPlugins>["diagnostics"] = [];
+      const diagnostics: ReturnType<typeof discoverAforaPlugins>["diagnostics"] = [];
       const manifest = structuredClone({
-        openclaw: {
+        afora: {
           setupEntry: "./missing-setup.js",
           plugin: { id: pluginMetadataId },
           channel: { id: channelMetadataId },
@@ -1683,7 +1683,7 @@ describe("discoverOpenClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: pluginDir,
-      packageName: "@openclaw/runtime-mismatch-pack",
+      packageName: "@afora/runtime-mismatch-pack",
       extensions: ["./src/one.ts", "./src/two.ts"],
       runtimeExtensions: ["./dist/one.js"],
     });
@@ -1712,7 +1712,7 @@ describe("discoverOpenClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: pluginDir,
-      packageName: "@openclaw/runtime-blank-pack",
+      packageName: "@afora/runtime-blank-pack",
       extensions: ["./src/index.ts"],
       runtimeExtensions: [" "],
     });
@@ -1726,7 +1726,7 @@ describe("discoverOpenClawPlugins", () => {
       result.diagnostics.some(
         (entry) =>
           entry.level === "error" &&
-          entry.message.includes("openclaw.runtimeExtensions[0]") &&
+          entry.message.includes("afora.runtimeExtensions[0]") &&
           entry.message.includes("non-empty string"),
       ),
     ).toBe(true);
@@ -1739,7 +1739,7 @@ describe("discoverOpenClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: pluginDir,
-      packageName: "@openclaw/extension-blank-pack",
+      packageName: "@afora/extension-blank-pack",
       extensions: ["./dist/index.js", " "],
     });
     writePluginEntry(path.join(pluginDir, "dist", "index.js"));
@@ -1751,7 +1751,7 @@ describe("discoverOpenClawPlugins", () => {
       result.diagnostics.some(
         (entry) =>
           entry.level === "error" &&
-          entry.message.includes("openclaw.extensions[1]") &&
+          entry.message.includes("afora.extensions[1]") &&
           entry.message.includes("non-empty string"),
       ),
     ).toBe(true);
@@ -1765,7 +1765,7 @@ describe("discoverOpenClawPlugins", () => {
       mkdirSafe(pluginDir);
       fs.writeFileSync(
         path.join(pluginDir, "package.json"),
-        JSON.stringify({ name: packageName, openclaw: { extensions: [" "] } }),
+        JSON.stringify({ name: packageName, afora: { extensions: [" "] } }),
         "utf-8",
       );
 
@@ -1777,7 +1777,7 @@ describe("discoverOpenClawPlugins", () => {
           level: "error",
           pluginId: "malformed-package-name",
           source: pluginDir,
-          message: "package.json openclaw.extensions[0] must be a non-empty string",
+          message: "package.json afora.extensions[0] must be a non-empty string",
         }),
       );
     },
@@ -1795,7 +1795,7 @@ describe("discoverOpenClawPlugins", () => {
         path.join(pluginDir, "package.json"),
         JSON.stringify({
           ...(packageName === undefined ? {} : { name: packageName }),
-          openclaw: { extensions: [" "] },
+          afora: { extensions: [" "] },
         }),
         "utf-8",
       );
@@ -1817,10 +1817,10 @@ describe("discoverOpenClawPlugins", () => {
       mkdirSafe(pluginDir);
       fs.writeFileSync(
         path.join(pluginDir, "package.json"),
-        JSON.stringify({ name: 42, openclaw: { extensions: ["./index.js"] } }),
+        JSON.stringify({ name: 42, afora: { extensions: ["./index.js"] } }),
         "utf-8",
       );
-      fs.writeFileSync(path.join(pluginDir, "openclaw.plugin.json"), '{"id":', "utf-8");
+      fs.writeFileSync(path.join(pluginDir, "afora.plugin.json"), '{"id":', "utf-8");
       writePluginEntry(path.join(pluginDir, "index.js"));
     }
 
@@ -1844,12 +1844,12 @@ describe("discoverOpenClawPlugins", () => {
     fs.writeFileSync(
       path.join(pluginDir, "package.json"),
       JSON.stringify({
-        name: "@openclaw/package-name-owner",
-        openclaw: { extensions: ["./index.js"], plugin: { id: "metadata-plugin-owner" } },
+        name: "@afora/package-name-owner",
+        afora: { extensions: ["./index.js"], plugin: { id: "metadata-plugin-owner" } },
       }),
       "utf-8",
     );
-    fs.writeFileSync(path.join(pluginDir, "openclaw.plugin.json"), '{"id":', "utf-8");
+    fs.writeFileSync(path.join(pluginDir, "afora.plugin.json"), '{"id":', "utf-8");
     writePluginEntry(path.join(pluginDir, "index.js"));
 
     const discovery = await discoverWithStateDir(stateDir, {});
@@ -1864,7 +1864,7 @@ describe("discoverOpenClawPlugins", () => {
   });
 
   it.each([
-    { packageName: "@openclaw/package-plugin-owner", candidateId: "package-plugin-owner" },
+    { packageName: "@afora/package-plugin-owner", candidateId: "package-plugin-owner" },
     { packageName: "@scope/", candidateId: "channel-package-root" },
     { packageName: "/", candidateId: "channel-package-root" },
     { packageName: 42, candidateId: "channel-package-root" },
@@ -1878,11 +1878,11 @@ describe("discoverOpenClawPlugins", () => {
         path.join(pluginDir, "package.json"),
         JSON.stringify({
           name: packageName,
-          openclaw: { extensions: ["./index.js"], channel: { id: "channel-diagnostic-owner" } },
+          afora: { extensions: ["./index.js"], channel: { id: "channel-diagnostic-owner" } },
         }),
         "utf-8",
       );
-      fs.writeFileSync(path.join(pluginDir, "openclaw.plugin.json"), '{"id":', "utf-8");
+      fs.writeFileSync(path.join(pluginDir, "afora.plugin.json"), '{"id":', "utf-8");
       writePluginEntry(path.join(pluginDir, "index.js"));
 
       const discovery = await discoverWithStateDir(stateDir, {});
@@ -1903,11 +1903,11 @@ describe("discoverOpenClawPlugins", () => {
   it("retains every owner when invalid package extension diagnostics are deduplicated", async () => {
     const stateDir = makeTempDir();
     for (const [packageName, pluginId, explicitOwner] of [
-      ["@openclaw/first-blank-pack", "first-blank-pack", undefined],
-      ["@openclaw/second-blank-pack", "second-blank-pack", undefined],
-      ["@openclaw/example-plugin", "example", undefined],
-      ["@openclaw/manifest-derived-package", "manifest-owner", "manifest"],
-      ["@openclaw/channel-derived-package", "channel-owner", "channel"],
+      ["@afora/first-blank-pack", "first-blank-pack", undefined],
+      ["@afora/second-blank-pack", "second-blank-pack", undefined],
+      ["@afora/example-plugin", "example", undefined],
+      ["@afora/manifest-derived-package", "manifest-owner", "manifest"],
+      ["@afora/channel-derived-package", "channel-owner", "channel"],
     ] as const) {
       const pluginDir = path.join(stateDir, "extensions", pluginId);
       mkdirSafe(path.join(pluginDir, "dist"));
@@ -1923,7 +1923,7 @@ describe("discoverOpenClawPlugins", () => {
       if (explicitOwner === "channel") {
         const packagePath = path.join(pluginDir, "package.json");
         const packageManifest = JSON.parse(fs.readFileSync(packagePath, "utf-8"));
-        packageManifest.openclaw.channel = { id: pluginId };
+        packageManifest.afora.channel = { id: pluginId };
         fs.writeFileSync(packagePath, JSON.stringify(packageManifest), "utf-8");
       }
     }
@@ -1931,7 +1931,7 @@ describe("discoverOpenClawPlugins", () => {
     const discovery = await discoverWithStateDir(stateDir, {});
     const registry = loadPluginManifestRegistryCore({ discovery, installRecords: {} });
     const errors = registry.diagnostics.filter((diagnostic) =>
-      diagnostic.message.includes("openclaw.extensions[1]"),
+      diagnostic.message.includes("afora.extensions[1]"),
     );
 
     expect(errors).toHaveLength(5);
@@ -1954,7 +1954,7 @@ describe("discoverOpenClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: pluginDir,
-      packageName: "@openclaw/built-peer-pack",
+      packageName: "@afora/built-peer-pack",
       extensions: ["src/index.ts"],
       setupEntry: "src/setup-entry.ts",
     });
@@ -1983,7 +1983,7 @@ describe("discoverOpenClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: pluginDir,
-      packageName: "@openclaw/nested-pack",
+      packageName: "@afora/nested-pack",
       extensions: ["./plugin/index.ts"],
     });
     writePluginEntry(path.join(pluginDir, "plugin", "index.ts"));
@@ -1999,19 +1999,19 @@ describe("discoverOpenClawPlugins", () => {
   it("keeps workspace package TypeScript entries unless runtime entries are explicit", () => {
     const stateDir = makeTempDir();
     const workspaceDir = path.join(stateDir, "workspace");
-    const pluginDir = path.join(workspaceDir, ".openclaw", "extensions", "workspace-pack");
+    const pluginDir = path.join(workspaceDir, ".afora", "extensions", "workspace-pack");
     mkdirSafe(path.join(pluginDir, "src"));
     mkdirSafe(path.join(pluginDir, "dist"));
 
     writePluginPackageManifest({
       packageDir: pluginDir,
-      packageName: "@openclaw/workspace-pack",
+      packageName: "@afora/workspace-pack",
       extensions: ["./src/index.ts"],
     });
     writePluginEntry(path.join(pluginDir, "src", "index.ts"));
     writePluginEntry(path.join(pluginDir, "dist", "index.js"));
 
-    const { candidates } = discoverOpenClawPlugins({
+    const { candidates } = discoverAforaPlugins({
       workspaceDir,
       env: buildDiscoveryEnv(stateDir),
     });
@@ -2026,14 +2026,14 @@ describe("discoverOpenClawPlugins", () => {
     const pluginDir = path.join(globalExt, "future-channel");
     createPackagePluginWithEntry({
       packageDir: pluginDir,
-      packageName: "@openclaw/future-channel",
+      packageName: "@afora/future-channel",
       pluginId: "future-channel",
       compatPluginApi: ">=2026.5.27-beta.2",
     });
 
-    const { candidates, diagnostics } = discoverOpenClawPlugins({
+    const { candidates, diagnostics } = discoverAforaPlugins({
       env: buildDiscoveryEnvWithOverrides(stateDir, {
-        OPENCLAW_COMPATIBILITY_HOST_VERSION: "2026.5.27-beta.1",
+        AFORA_COMPATIBILITY_HOST_VERSION: "2026.5.27-beta.1",
       }),
     });
 
@@ -2044,7 +2044,7 @@ describe("discoverOpenClawPlugins", () => {
       pluginId: "future-channel",
       source: path.join(pluginDir, "package.json"),
       messageIncludes:
-        'plugin requires plugin API >=2026.5.27-beta.2, but this host is 2026.5.27-beta.1; skipping discovery (check "openclaw --version", OPENCLAW_COMPATIBILITY_HOST_VERSION, or run "openclaw doctor")',
+        'plugin requires plugin API >=2026.5.27-beta.2, but this host is 2026.5.27-beta.1; skipping discovery (check "afora --version", AFORA_COMPATIBILITY_HOST_VERSION, or run "afora doctor")',
     });
   });
 
@@ -2056,8 +2056,8 @@ describe("discoverOpenClawPlugins", () => {
     fs.writeFileSync(
       path.join(pluginDir, "package.json"),
       JSON.stringify({
-        name: "@openclaw/malformed-channel",
-        openclaw: {
+        name: "@afora/malformed-channel",
+        afora: {
           extensions: ["./index.js"],
           plugin: { id: "malformed-channel" },
           compat: { pluginApi: 20260527 },
@@ -2067,9 +2067,9 @@ describe("discoverOpenClawPlugins", () => {
     );
     writePluginEntry(path.join(pluginDir, "index.js"));
 
-    const { candidates, diagnostics } = discoverOpenClawPlugins({
+    const { candidates, diagnostics } = discoverAforaPlugins({
       env: buildDiscoveryEnvWithOverrides(stateDir, {
-        OPENCLAW_COMPATIBILITY_HOST_VERSION: "2026.5.27",
+        AFORA_COMPATIBILITY_HOST_VERSION: "2026.5.27",
       }),
     });
 
@@ -2080,14 +2080,14 @@ describe("discoverOpenClawPlugins", () => {
       pluginId: "malformed-channel",
       source: path.join(pluginDir, "package.json"),
       messageIncludes:
-        "invalid package plugin API metadata: package.json openclaw.compat.pluginApi must be a string; skipping discovery (check package.json openclaw.compat.pluginApi)",
+        "invalid package plugin API metadata: package.json afora.compat.pluginApi must be a string; skipping discovery (check package.json afora.compat.pluginApi)",
     });
   });
 
   it.each([
     {
       name: "manifest owner wins for incompatible API ranges",
-      packageName: "@openclaw/package-owner",
+      packageName: "@afora/package-owner",
       manifestId: "manifest-owner",
       packagePluginId: "package-plugin-owner",
       packageChannelId: "package-channel-owner",
@@ -2096,7 +2096,7 @@ describe("discoverOpenClawPlugins", () => {
     },
     {
       name: "channel owner wins for malformed API ranges",
-      packageName: "@openclaw/package-owner",
+      packageName: "@afora/package-owner",
       manifestId: undefined,
       packagePluginId: 42,
       packageChannelId: "package-channel-owner",
@@ -2122,7 +2122,7 @@ describe("discoverOpenClawPlugins", () => {
         path.join(pluginDir, "package.json"),
         JSON.stringify({
           name: packageName,
-          openclaw: {
+          afora: {
             extensions: [" "],
             plugin: { id: packagePluginId },
             channel: { id: packageChannelId },
@@ -2135,9 +2135,9 @@ describe("discoverOpenClawPlugins", () => {
         writePluginManifest({ pluginDir, id: manifestId });
       }
 
-      const result = discoverOpenClawPlugins({
+      const result = discoverAforaPlugins({
         env: buildDiscoveryEnvWithOverrides(stateDir, {
-          OPENCLAW_COMPATIBILITY_HOST_VERSION: "2026.5.27-beta.1",
+          AFORA_COMPATIBILITY_HOST_VERSION: "2026.5.27-beta.1",
         }),
       });
 
@@ -2147,7 +2147,7 @@ describe("discoverOpenClawPlugins", () => {
       );
       expectNoDiagnostic({
         diagnostics: result.diagnostics,
-        messageIncludes: "openclaw.extensions",
+        messageIncludes: "afora.extensions",
       });
     },
   );
@@ -2160,8 +2160,8 @@ describe("discoverOpenClawPlugins", () => {
     fs.writeFileSync(
       path.join(pluginDir, "package.json"),
       JSON.stringify({
-        name: "@openclaw/future-shape",
-        openclaw: {
+        name: "@afora/future-shape",
+        afora: {
           extensions: { runtime: "./src/index.ts" },
           compat: { pluginApi: ">=2026.5.27-beta.2" },
         },
@@ -2169,9 +2169,9 @@ describe("discoverOpenClawPlugins", () => {
       "utf-8",
     );
 
-    const { candidates, diagnostics } = discoverOpenClawPlugins({
+    const { candidates, diagnostics } = discoverAforaPlugins({
       env: buildDiscoveryEnvWithOverrides(stateDir, {
-        OPENCLAW_COMPATIBILITY_HOST_VERSION: "2026.5.27-beta.1",
+        AFORA_COMPATIBILITY_HOST_VERSION: "2026.5.27-beta.1",
       }),
     });
 
@@ -2184,7 +2184,7 @@ describe("discoverOpenClawPlugins", () => {
       messageIncludes:
         "plugin requires plugin API >=2026.5.27-beta.2, but this host is 2026.5.27-beta.1; skipping discovery",
     });
-    expectNoDiagnostic({ diagnostics, messageIncludes: "openclaw.extensions" });
+    expectNoDiagnostic({ diagnostics, messageIncludes: "afora.extensions" });
   });
 
   it("discovers same-floor beta non-bundled package plugin API candidates", () => {
@@ -2192,14 +2192,14 @@ describe("discoverOpenClawPlugins", () => {
     const globalExt = path.join(stateDir, "extensions");
     createPackagePluginWithEntry({
       packageDir: path.join(globalExt, "current-channel"),
-      packageName: "@openclaw/current-channel",
+      packageName: "@afora/current-channel",
       pluginId: "current-channel",
       compatPluginApi: ">=2026.5.27-beta.1",
     });
 
-    const { candidates, diagnostics } = discoverOpenClawPlugins({
+    const { candidates, diagnostics } = discoverAforaPlugins({
       env: buildDiscoveryEnvWithOverrides(stateDir, {
-        OPENCLAW_COMPATIBILITY_HOST_VERSION: "2026.5.27-beta.1",
+        AFORA_COMPATIBILITY_HOST_VERSION: "2026.5.27-beta.1",
       }),
     });
 
@@ -2215,8 +2215,8 @@ describe("discoverOpenClawPlugins", () => {
     fs.writeFileSync(
       path.join(pluginDir, "package.json"),
       JSON.stringify({
-        name: "@openclaw/downloadable",
-        openclaw: {
+        name: "@afora/downloadable",
+        afora: {
           extensions: ["./index.ts"],
           compat: { pluginApi: ">=2099.1.1" },
         },
@@ -2226,9 +2226,9 @@ describe("discoverOpenClawPlugins", () => {
     writePluginManifest({ pluginDir, id: "downloadable" });
     writePluginEntry(path.join(pluginDir, "index.ts"));
 
-    const { candidates } = discoverOpenClawPlugins({
+    const { candidates } = discoverAforaPlugins({
       env: buildDiscoveryEnvWithOverrides(stateDir, {
-        OPENCLAW_BUNDLED_PLUGINS_DIR: bundledDir,
+        AFORA_BUNDLED_PLUGINS_DIR: bundledDir,
       }),
     });
 
@@ -2243,8 +2243,8 @@ describe("discoverOpenClawPlugins", () => {
     fs.writeFileSync(
       path.join(pluginDir, "package.json"),
       JSON.stringify({
-        name: "@openclaw/downloadable",
-        openclaw: {
+        name: "@afora/downloadable",
+        afora: {
           extensions: ["./index.ts"],
         },
       }),
@@ -2253,9 +2253,9 @@ describe("discoverOpenClawPlugins", () => {
     writePluginManifest({ pluginDir, id: "downloadable" });
     writePluginEntry(path.join(pluginDir, "index.js"));
 
-    const { candidates, diagnostics } = discoverOpenClawPlugins({
+    const { candidates, diagnostics } = discoverAforaPlugins({
       env: buildDiscoveryEnvWithOverrides(stateDir, {
-        OPENCLAW_BUNDLED_PLUGINS_DIR: bundledDir,
+        AFORA_BUNDLED_PLUGINS_DIR: bundledDir,
       }),
     });
 
@@ -2269,7 +2269,7 @@ describe("discoverOpenClawPlugins", () => {
 
   it("discovers source-checkout-only bundled plugins alongside built bundled plugins", () => {
     const stateDir = makeTempDir();
-    const packageRoot = path.join(stateDir, "openclaw");
+    const packageRoot = path.join(stateDir, "afora");
     const bundledDir = path.join(packageRoot, "dist", "extensions");
     const sourceDir = path.join(packageRoot, "extensions");
     const builtPluginDir = path.join(bundledDir, "shipped");
@@ -2284,14 +2284,14 @@ describe("discoverOpenClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: builtPluginDir,
-      packageName: "@openclaw/shipped",
+      packageName: "@afora/shipped",
       extensions: ["./index.js"],
     });
     writePluginManifest({ pluginDir: builtPluginDir, id: "shipped" });
     writePluginEntry(path.join(builtPluginDir, "index.js"));
     writePluginPackageManifest({
       packageDir: sourceBuiltPluginDir,
-      packageName: "@openclaw/shipped",
+      packageName: "@afora/shipped",
       extensions: ["./index.ts"],
     });
     writePluginManifest({ pluginDir: sourceBuiltPluginDir, id: "shipped" });
@@ -2299,8 +2299,8 @@ describe("discoverOpenClawPlugins", () => {
     fs.writeFileSync(
       path.join(sourceOnlyPluginDir, "package.json"),
       JSON.stringify({
-        name: "@openclaw/downloadable",
-        openclaw: {
+        name: "@afora/downloadable",
+        afora: {
           extensions: ["./index.ts"],
         },
       }),
@@ -2309,9 +2309,9 @@ describe("discoverOpenClawPlugins", () => {
     writePluginManifest({ pluginDir: sourceOnlyPluginDir, id: "downloadable" });
     writePluginEntry(path.join(sourceOnlyPluginDir, "index.ts"));
 
-    const { candidates } = discoverOpenClawPlugins({
+    const { candidates } = discoverAforaPlugins({
       env: buildDiscoveryEnvWithOverrides(stateDir, {
-        OPENCLAW_BUNDLED_PLUGINS_DIR: bundledDir,
+        AFORA_BUNDLED_PLUGINS_DIR: bundledDir,
       }),
     });
 
@@ -2326,11 +2326,11 @@ describe("discoverOpenClawPlugins", () => {
 
   it("does not discover nested node_modules copies under installed plugins", async () => {
     const stateDir = makeTempDir();
-    const pluginDir = path.join(stateDir, "extensions", "opik-openclaw");
+    const pluginDir = path.join(stateDir, "extensions", "opik-afora");
     const nestedDiffsDir = path.join(
       pluginDir,
       "node_modules",
-      "openclaw",
+      "afora",
       "dist",
       "extensions",
       "diffs",
@@ -2341,10 +2341,10 @@ describe("discoverOpenClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: pluginDir,
-      packageName: "@opik/opik-openclaw",
+      packageName: "@opik/opik-afora",
       extensions: ["./src/index.ts"],
     });
-    writePluginManifest({ pluginDir, id: "opik-openclaw" });
+    writePluginManifest({ pluginDir, id: "opik-afora" });
     fs.writeFileSync(
       path.join(pluginDir, "src", "index.ts"),
       "export default function () {}",
@@ -2357,8 +2357,8 @@ describe("discoverOpenClawPlugins", () => {
     );
 
     writePluginPackageManifest({
-      packageDir: path.join(pluginDir, "node_modules", "openclaw"),
-      packageName: "openclaw",
+      packageDir: path.join(pluginDir, "node_modules", "afora"),
+      packageName: "afora",
       extensions: [`./${bundledDistPluginFile("diffs", "index.js")}`],
     });
     writePluginManifest({ pluginDir: nestedDiffsDir, id: "diffs" });
@@ -2369,15 +2369,15 @@ describe("discoverOpenClawPlugins", () => {
     );
 
     const { candidates } = await discoverWithStateDir(stateDir, {});
-    expectCandidateOrder(candidates, ["opik-openclaw"]);
+    expectCandidateOrder(candidates, ["opik-afora"]);
   });
 
   it("skips dependency and build directories while scanning workspace roots", () => {
     const stateDir = makeTempDir();
     const workspaceDir = path.join(stateDir, "workspace");
-    const workspaceRoot = path.join(workspaceDir, ".openclaw", "extensions");
+    const workspaceRoot = path.join(workspaceDir, ".afora", "extensions");
     const workspacePluginDir = path.join(workspaceRoot, "workspace-plugin");
-    const nestedNodeModulesDir = path.join(workspaceRoot, "node_modules", "openclaw");
+    const nestedNodeModulesDir = path.join(workspaceRoot, "node_modules", "afora");
     const nestedDistDir = path.join(workspaceRoot, "dist", "extensions", "diffs");
     mkdirSafe(path.join(workspacePluginDir, "src"));
     mkdirSafe(path.join(nestedNodeModulesDir, "src"));
@@ -2385,13 +2385,13 @@ describe("discoverOpenClawPlugins", () => {
 
     createPackagePluginWithEntry({
       packageDir: workspacePluginDir,
-      packageName: "@openclaw/workspace-plugin",
+      packageName: "@afora/workspace-plugin",
       pluginId: "workspace-plugin",
     });
 
     createPackagePluginWithEntry({
       packageDir: nestedNodeModulesDir,
-      packageName: "openclaw",
+      packageName: "afora",
       pluginId: "node-modules-copy",
     });
 
@@ -2402,7 +2402,7 @@ describe("discoverOpenClawPlugins", () => {
       "utf-8",
     );
 
-    const { candidates } = discoverOpenClawPlugins({
+    const { candidates } = discoverAforaPlugins({
       workspaceDir,
       env: buildDiscoveryEnv(stateDir),
     });
@@ -2417,7 +2417,7 @@ describe("discoverOpenClawPlugins", () => {
         const packageDir = path.join(stateDir, "extensions", "voice-call-pack");
         createPackagePluginWithEntry({
           packageDir,
-          packageName: "@openclaw/voice-call",
+          packageName: "@afora/voice-call",
           entryPath: "src/index.ts",
         });
         return {};
@@ -2457,8 +2457,8 @@ describe("discoverOpenClawPlugins", () => {
       name: "normalizes bundled speech package ids to canonical plugin ids",
       setup: (stateDir: string) => {
         for (const [dirName, packageName, pluginId] of [
-          ["elevenlabs-speech-pack", "@openclaw/elevenlabs-speech", "elevenlabs"],
-          ["microsoft-speech-pack", "@openclaw/microsoft-speech", "microsoft"],
+          ["elevenlabs-speech-pack", "@afora/elevenlabs-speech", "elevenlabs"],
+          ["microsoft-speech-pack", "@afora/microsoft-speech", "microsoft"],
         ] as const) {
           const packageDir = path.join(stateDir, "extensions", dirName);
           createPackagePluginWithEntry({
@@ -2479,7 +2479,7 @@ describe("discoverOpenClawPlugins", () => {
         const packageDir = path.join(stateDir, "packs", "demo-plugin-dir");
         createPackagePluginWithEntry({
           packageDir,
-          packageName: "@openclaw/demo-plugin-dir",
+          packageName: "@afora/demo-plugin-dir",
           entryPath: "index.js",
         });
         return { extraPaths: [packageDir] };
@@ -2618,7 +2618,7 @@ describe("discoverOpenClawPlugins", () => {
     const result = await discoverWithStateDir(stateDir, setup(stateDir));
     const legacy = findCandidateById(result.candidates, "legacy-with-bad-bundle");
 
-    expect(legacy?.format).toBe("openclaw");
+    expect(legacy?.format).toBe("afora");
     expect(hasDiagnosticSourceSuffix(result.diagnostics, bundleMarker)).toBe(true);
   });
 
@@ -2632,7 +2632,7 @@ describe("discoverOpenClawPlugins", () => {
         mkdirSafe(globalExt);
         writePluginPackageManifest({
           packageDir: globalExt,
-          packageName: "@openclaw/escape-pack",
+          packageName: "@afora/escape-pack",
           extensions: ["../../outside.js"],
         });
         fs.writeFileSync(outside, "export default function () {}", "utf-8");
@@ -2646,7 +2646,7 @@ describe("discoverOpenClawPlugins", () => {
         mkdirSafe(path.join(globalExt, "src"));
         writePluginPackageManifest({
           packageDir: globalExt,
-          packageName: "@openclaw/escape-pack",
+          packageName: "@afora/escape-pack",
           extensions: ["../src/index.ts"],
         });
         fs.writeFileSync(path.join(globalExt, "src", "index.js"), "export default {}", "utf-8");
@@ -2660,7 +2660,7 @@ describe("discoverOpenClawPlugins", () => {
         mkdirSafe(path.join(globalExt, "dist"));
         writePluginPackageManifest({
           packageDir: globalExt,
-          packageName: "@openclaw/escape-pack",
+          packageName: "@afora/escape-pack",
           extensions: ["../src/index.ts"],
           runtimeExtensions: ["./dist/index.js"],
         });
@@ -2675,7 +2675,7 @@ describe("discoverOpenClawPlugins", () => {
         mkdirSafe(globalExt);
         writePluginPackageManifest({
           packageDir: globalExt,
-          packageName: "@openclaw/missing-entry-pack",
+          packageName: "@afora/missing-entry-pack",
           extensions: ["./missing.ts"],
         });
         return true;
@@ -2699,7 +2699,7 @@ describe("discoverOpenClawPlugins", () => {
         }
         writePluginPackageManifest({
           packageDir: globalExt,
-          packageName: "@openclaw/pack",
+          packageName: "@afora/pack",
           extensions: ["./linked/escape.ts"],
         });
         return true;
@@ -2731,7 +2731,7 @@ describe("discoverOpenClawPlugins", () => {
         }
         writePluginPackageManifest({
           packageDir: globalExt,
-          packageName: "@openclaw/pack",
+          packageName: "@afora/pack",
           extensions: ["./escape.ts"],
         });
         return true;
@@ -2763,7 +2763,7 @@ describe("discoverOpenClawPlugins", () => {
         }
         writePluginPackageManifest({
           packageDir: globalExt,
-          packageName: "@openclaw/pack",
+          packageName: "@afora/pack",
           extensions: ["./escape.ts"],
         });
         return true;
@@ -2796,7 +2796,7 @@ describe("discoverOpenClawPlugins", () => {
         }
         writePluginPackageManifest({
           packageDir: globalExt,
-          packageName: "@openclaw/pack",
+          packageName: "@afora/pack",
           extensions: ["./src/index.ts"],
         });
         return true;
@@ -2818,7 +2818,7 @@ describe("discoverOpenClawPlugins", () => {
     mkdirSafe(path.join(globalExt, "dist"));
     writePluginPackageManifest({
       packageDir: globalExt,
-      packageName: "@openclaw/escape-pack",
+      packageName: "@afora/escape-pack",
       extensions: ["./dist/index.js"],
       setupEntry: "../src/setup-entry.ts",
       runtimeSetupEntry: "./dist/setup-entry.js",
@@ -2848,8 +2848,8 @@ describe("discoverOpenClawPlugins", () => {
     fs.writeFileSync(
       outsideManifest,
       JSON.stringify({
-        name: "@openclaw/pack",
-        openclaw: { extensions: ["./entry.ts"] },
+        name: "@afora/pack",
+        afora: { extensions: ["./entry.ts"] },
       }),
       "utf-8",
     );
@@ -2872,7 +2872,7 @@ describe("discoverOpenClawPlugins", () => {
     const pluginDir = path.join(stateDir, "extensions", "world-open");
     createPackagePluginWithEntry({
       packageDir: pluginDir,
-      packageName: "@openclaw/world-open",
+      packageName: "@afora/world-open",
       pluginId: "world-open",
     });
     fs.chmodSync(pluginDir, 0o777);
@@ -2890,15 +2890,15 @@ describe("discoverOpenClawPlugins", () => {
     "repairs world-writable bundled plugin dirs before loading them",
     async () => {
       const stateDir = makeTempDir();
-      const packageRoot = path.join(stateDir, "node_modules", "openclaw");
+      const packageRoot = path.join(stateDir, "node_modules", "afora");
       const bundledDir = path.join(packageRoot, "dist", "extensions");
       const packDir = path.join(bundledDir, "demo-pack");
       mkdirSafe(packDir);
       fs.writeFileSync(path.join(packDir, "index.ts"), "export default function () {}", "utf-8");
       fs.chmodSync(packDir, 0o777);
 
-      const result = withOpenClawPackageArgv(packageRoot, () =>
-        discoverOpenClawPlugins({
+      const result = withAforaPackageArgv(packageRoot, () =>
+        discoverAforaPlugins({
           env: { ...process.env, ...buildBundledDiscoveryEnv(stateDir) },
         }),
       );
@@ -2919,7 +2919,7 @@ describe("discoverOpenClawPlugins", () => {
       const stateDir = makeTempDir();
       createPackagePluginWithEntry({
         packageDir: path.join(stateDir, "extensions", "owner-mismatch"),
-        packageName: "@openclaw/owner-mismatch",
+        packageName: "@afora/owner-mismatch",
         pluginId: "owner-mismatch",
       });
 
@@ -2951,10 +2951,10 @@ describe("discoverOpenClawPlugins", () => {
     fs.chmodSync(blockedDir, 0o777);
 
     try {
-      const result = discoverOpenClawPlugins({
+      const result = discoverAforaPlugins({
         env: {
           ...buildDiscoveryEnv(stateDir),
-          OPENCLAW_PLUGINS_PATHS: blockedDir,
+          AFORA_PLUGINS_PATHS: blockedDir,
         },
       });
       const blockedDiagnostics = result.diagnostics.filter(
@@ -2979,7 +2979,7 @@ describe("discoverOpenClawPlugins", () => {
       fs.chmodSync(pluginDir, 0o777);
 
       try {
-        const result = discoverOpenClawPlugins({
+        const result = discoverAforaPlugins({
           extraPaths: [pluginDir],
           env: {
             ...buildDiscoveryEnv(stateDir),
@@ -3007,12 +3007,12 @@ describe("discoverOpenClawPlugins", () => {
     const pluginDir = path.join(bundledDir, "cached-bundle");
     createPackagePluginWithEntry({
       packageDir: pluginDir,
-      packageName: "@openclaw/cached-bundle",
+      packageName: "@afora/cached-bundle",
       pluginId: "cached-bundle",
       entryPath: "index.js",
     });
     const env = buildDiscoveryEnvWithOverrides(stateDir, {
-      OPENCLAW_BUNDLED_PLUGINS_DIR: bundledDir,
+      AFORA_BUNDLED_PLUGINS_DIR: bundledDir,
     });
     const packageManifestPath = path.resolve(pluginDir, "package.json");
 
@@ -3041,12 +3041,12 @@ describe("discoverOpenClawPlugins", () => {
     const pluginDir = path.join(bundledDir, "cached-bundle");
     createPackagePluginWithEntry({
       packageDir: pluginDir,
-      packageName: "@openclaw/cache-one",
+      packageName: "@afora/cache-one",
       pluginId: "cached-bundle",
       entryPath: "index.js",
     });
     const env = buildDiscoveryEnvWithOverrides(stateDir, {
-      OPENCLAW_BUNDLED_PLUGINS_DIR: bundledDir,
+      AFORA_BUNDLED_PLUGINS_DIR: bundledDir,
     });
     const packageManifestPath = path.join(pluginDir, "package.json");
     const unchangedTimestamp = new Date("2025-01-01T00:00:00.000Z");
@@ -3054,12 +3054,12 @@ describe("discoverOpenClawPlugins", () => {
 
     const first = discoverWithEnv({ env });
     expect(requireCandidateById(first.candidates, "cached-bundle").packageName).toBe(
-      "@openclaw/cache-one",
+      "@afora/cache-one",
     );
     const originalStat = fs.statSync(packageManifestPath);
     writePluginPackageManifest({
       packageDir: pluginDir,
-      packageName: "@openclaw/cache-two",
+      packageName: "@afora/cache-two",
       extensions: ["./index.js"],
     });
     fs.utimesSync(packageManifestPath, unchangedTimestamp, unchangedTimestamp);
@@ -3069,14 +3069,14 @@ describe("discoverOpenClawPlugins", () => {
 
     const beforeReload = discoverWithEnv({ env });
     expect(requireCandidateById(beforeReload.candidates, "cached-bundle").packageName).toBe(
-      "@openclaw/cache-one",
+      "@afora/cache-one",
     );
 
     clearPluginMetadataLifecycleCaches();
 
     const afterReload = discoverWithEnv({ env });
     expect(requireCandidateById(afterReload.candidates, "cached-bundle").packageName).toBe(
-      "@openclaw/cache-two",
+      "@afora/cache-two",
     );
   });
 
@@ -3085,7 +3085,7 @@ describe("discoverOpenClawPlugins", () => {
     const pluginDir = path.join(stateDir, "extensions", "fresh-package");
     createPackagePluginWithEntry({
       packageDir: pluginDir,
-      packageName: "@openclaw/cache-one",
+      packageName: "@afora/cache-one",
       pluginId: "fresh-package",
       entryPath: "index.js",
     });
@@ -3096,12 +3096,12 @@ describe("discoverOpenClawPlugins", () => {
 
     const first = discoverWithEnv({ env });
     expect(requireCandidateById(first.candidates, "fresh-package").packageName).toBe(
-      "@openclaw/cache-one",
+      "@afora/cache-one",
     );
     const originalStat = fs.statSync(packageManifestPath);
     writePluginPackageManifest({
       packageDir: pluginDir,
-      packageName: "@openclaw/cache-two",
+      packageName: "@afora/cache-two",
       extensions: ["./index.js"],
     });
     fs.utimesSync(packageManifestPath, unchangedTimestamp, unchangedTimestamp);
@@ -3111,7 +3111,7 @@ describe("discoverOpenClawPlugins", () => {
 
     const second = discoverWithEnv({ env });
     expect(requireCandidateById(second.candidates, "fresh-package").packageName).toBe(
-      "@openclaw/cache-two",
+      "@afora/cache-two",
     );
   });
 
@@ -3129,13 +3129,13 @@ describe("discoverOpenClawPlugins", () => {
 
     writePluginPackageManifest({
       packageDir: pluginDir,
-      packageName: "@openclaw/fresh-package",
+      packageName: "@afora/fresh-package",
       extensions: ["./index.js"],
     });
 
     const second = discoverWithEnv({ env });
     expect(requireCandidateById(second.candidates, "fresh-package").packageName).toBe(
-      "@openclaw/fresh-package",
+      "@afora/fresh-package",
     );
   });
 
@@ -3144,7 +3144,7 @@ describe("discoverOpenClawPlugins", () => {
     const pluginDir = path.join(stateDir, "extensions", "fresh");
     createPackagePluginWithEntry({
       packageDir: pluginDir,
-      packageName: "@openclaw/fresh",
+      packageName: "@afora/fresh",
       pluginId: "fresh",
     });
 
@@ -3160,7 +3160,7 @@ describe("discoverOpenClawPlugins", () => {
 
   it("discovers bundled and global plugins for each workspace-specific scan", () => {
     const stateDir = makeTempDir();
-    const packageRoot = path.join(stateDir, "node_modules", "openclaw");
+    const packageRoot = path.join(stateDir, "node_modules", "afora");
     const bundledDir = path.join(packageRoot, "dist", "extensions");
     const globalExt = path.join(stateDir, "extensions");
     const workspaceA = path.join(stateDir, "workspace-a");
@@ -3168,31 +3168,31 @@ describe("discoverOpenClawPlugins", () => {
 
     createPackagePluginWithEntry({
       packageDir: path.join(bundledDir, "bundled-plugin"),
-      packageName: "@openclaw/bundled-plugin",
+      packageName: "@afora/bundled-plugin",
       pluginId: "bundled-plugin",
     });
     createPackagePluginWithEntry({
       packageDir: path.join(globalExt, "global-plugin"),
-      packageName: "@openclaw/global-plugin",
+      packageName: "@afora/global-plugin",
       pluginId: "global-plugin",
     });
     createPackagePluginWithEntry({
-      packageDir: path.join(workspaceA, ".openclaw", "extensions", "workspace-a-plugin"),
-      packageName: "@openclaw/workspace-a-plugin",
+      packageDir: path.join(workspaceA, ".afora", "extensions", "workspace-a-plugin"),
+      packageName: "@afora/workspace-a-plugin",
       pluginId: "workspace-a-plugin",
     });
     createPackagePluginWithEntry({
-      packageDir: path.join(workspaceB, ".openclaw", "extensions", "workspace-b-plugin"),
-      packageName: "@openclaw/workspace-b-plugin",
+      packageDir: path.join(workspaceB, ".afora", "extensions", "workspace-b-plugin"),
+      packageName: "@afora/workspace-b-plugin",
       pluginId: "workspace-b-plugin",
     });
 
     const env = {
       ...buildDiscoveryEnv(stateDir),
-      OPENCLAW_DISABLE_BUNDLED_PLUGINS: undefined,
-      OPENCLAW_BUNDLED_PLUGINS_DIR: bundledDir,
+      AFORA_DISABLE_BUNDLED_PLUGINS: undefined,
+      AFORA_BUNDLED_PLUGINS_DIR: bundledDir,
     };
-    const first = withOpenClawPackageArgv(packageRoot, () =>
+    const first = withAforaPackageArgv(packageRoot, () =>
       discoverWithEnv({ workspaceDir: workspaceA, env }),
     );
     expectCandidatePresence(first, {
@@ -3200,7 +3200,7 @@ describe("discoverOpenClawPlugins", () => {
       absent: ["workspace-b-plugin"],
     });
 
-    const second = withOpenClawPackageArgv(packageRoot, () =>
+    const second = withAforaPackageArgv(packageRoot, () =>
       discoverWithEnv({ workspaceDir: workspaceB, env }),
     );
     expectCandidatePresence(second, {
@@ -3217,12 +3217,12 @@ describe("discoverOpenClawPlugins", () => {
         const stateDirB = makeTempDir();
         createPackagePluginWithEntry({
           packageDir: path.join(stateDirA, "extensions", "alpha"),
-          packageName: "@openclaw/alpha",
+          packageName: "@afora/alpha",
           pluginId: "alpha",
         });
         createPackagePluginWithEntry({
           packageDir: path.join(stateDirB, "extensions", "beta"),
-          packageName: "@openclaw/beta",
+          packageName: "@afora/beta",
           pluginId: "beta",
         });
         return {

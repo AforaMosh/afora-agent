@@ -1,4 +1,4 @@
-const FIRST_REPLY_CONFETTI_KEY = "openclaw.confetti.firstReply";
+const FIRST_REPLY_CONFETTI_KEY = "afora.confetti.firstReply";
 const CONFETTI_COLORS = ["#ff4d4d", "#ff7079", "#00e5cc", "#f2a833"] as const;
 const CONFETTI_DURATION_MS = 1_500;
 const PARTICLE_COUNT = 64;

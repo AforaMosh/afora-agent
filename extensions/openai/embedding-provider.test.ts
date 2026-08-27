@@ -1,5 +1,5 @@
 // Openai tests cover embedding provider plugin behavior.
-import type { MemoryEmbeddingProviderCreateOptions } from "openclaw/plugin-sdk/memory-core-host-engine-embeddings";
+import type { MemoryEmbeddingProviderCreateOptions } from "afora-agent/plugin-sdk/memory-core-host-engine-embeddings";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const DEFAULT_MOCK_CLIENT = {
@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   resolveRemoteEmbeddingClient: vi.fn(async () => ({ ...DEFAULT_MOCK_CLIENT })),
 }));
 
-vi.mock("openclaw/plugin-sdk/memory-core-host-engine-embeddings", () => ({
+vi.mock("afora-agent/plugin-sdk/memory-core-host-engine-embeddings", () => ({
   fetchRemoteEmbeddingVectors: mocks.fetchRemoteEmbeddingVectors,
   resolveRemoteEmbeddingClient: mocks.resolveRemoteEmbeddingClient,
 }));

@@ -1,7 +1,7 @@
 import { arch, platform, release } from "node:os";
 import { zstdDecompressSync } from "node:zlib";
 // ChatGPT Responses provider tests cover stream handling and timeout behavior.
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { configureAiTransportHost } from "../host.js";
 import type { Context, Model } from "../types.js";
@@ -202,7 +202,7 @@ describe("streamOpenAICodexResponses transport", () => {
       })
       .result();
 
-    expect(userAgent).toBe(`openclaw (${platform()} ${release()}; ${arch()})`);
+    expect(userAgent).toBe(`afora (${platform()} ${release()}; ${arch()})`);
   });
 
   it("zstd-compresses SSE bodies without overriding an existing encoding", async () => {
@@ -787,7 +787,7 @@ describe("streamOpenAICodexResponses transport", () => {
 
     expect(result.stopReason).toBe("error");
     expect(capturedPayload?.instructions).toBe("Stable\nDynamic");
-    expect(JSON.stringify(capturedPayload)).not.toContain("OPENCLAW_CACHE_BOUNDARY");
+    expect(JSON.stringify(capturedPayload)).not.toContain("AFORA_CACHE_BOUNDARY");
   });
 
   it("falls back to the default instructions when no system prompt is set", async () => {

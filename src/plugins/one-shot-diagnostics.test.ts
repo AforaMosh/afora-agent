@@ -1,13 +1,13 @@
 // One-shot diagnostics exporter start/flush lifecycle for embedded CLI runs.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
-const loadOpenClawPlugins = vi.hoisted(() => vi.fn());
+const loadAforaPlugins = vi.hoisted(() => vi.fn());
 const startPluginServices = vi.hoisted(() => vi.fn());
 const waitForDiagnosticEventsDrained = vi.hoisted(() => vi.fn(async () => {}));
 const warn = vi.hoisted(() => vi.fn());
 
-vi.mock("./loader.js", () => ({ loadOpenClawPlugins }));
+vi.mock("./loader.js", () => ({ loadAforaPlugins }));
 vi.mock("./services.js", () => ({ startPluginServices }));
 vi.mock("../logging/subsystem.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../logging/subsystem.js")>()),
@@ -22,7 +22,7 @@ import { startOneShotDiagnosticsExporters } from "./one-shot-diagnostics.js";
 
 const otelEnabledConfig = {
   diagnostics: { otel: { enabled: true, endpoint: "http://127.0.0.1:4318" } },
-} as OpenClawConfig;
+} as AforaConfig;
 
 function mockRegistryWithServices(serviceIds: string[]) {
   const registry = {
@@ -34,7 +34,7 @@ function mockRegistryWithServices(serviceIds: string[]) {
       origin: "bundled",
     })),
   };
-  loadOpenClawPlugins.mockReturnValue(registry);
+  loadAforaPlugins.mockReturnValue(registry);
   return registry;
 }
 
@@ -50,10 +50,10 @@ describe("startOneShotDiagnosticsExporters", () => {
     ["diagnostics disabled", { diagnostics: { enabled: false, otel: { enabled: true } } }],
     ["otel disabled", { diagnostics: { otel: { enabled: false } } }],
   ])("skips plugin loading when otel export is not configured (%s)", async (_label, config) => {
-    const handle = await startOneShotDiagnosticsExporters({ config: config as OpenClawConfig });
+    const handle = await startOneShotDiagnosticsExporters({ config: config as AforaConfig });
 
     expect(handle).toBeNull();
-    expect(loadOpenClawPlugins).not.toHaveBeenCalled();
+    expect(loadAforaPlugins).not.toHaveBeenCalled();
     expect(startPluginServices).not.toHaveBeenCalled();
   });
 
@@ -64,7 +64,7 @@ describe("startOneShotDiagnosticsExporters", () => {
     const handle = await startOneShotDiagnosticsExporters({ config: otelEnabledConfig });
 
     expect(handle).not.toBeNull();
-    expect(loadOpenClawPlugins).toHaveBeenCalledWith(
+    expect(loadAforaPlugins).toHaveBeenCalledWith(
       expect.objectContaining({
         config: otelEnabledConfig,
         onlyPluginIds: ["diagnostics-otel"],
@@ -75,7 +75,7 @@ describe("startOneShotDiagnosticsExporters", () => {
     expect(startPluginServices).toHaveBeenCalledTimes(1);
     const startParams = startPluginServices.mock.calls[0]?.[0] as {
       registry: { services: Array<{ service: { id: string } }> };
-      config: OpenClawConfig;
+      config: AforaConfig;
     };
     expect(startParams.config).toBe(otelEnabledConfig);
     expect(startParams.registry.services.map((entry) => entry.service.id)).toEqual([
@@ -86,7 +86,7 @@ describe("startOneShotDiagnosticsExporters", () => {
   it("keeps OTLP logs but suppresses stdout JSONL logs when requested", async () => {
     const config = {
       diagnostics: { otel: { enabled: true, logs: true, logsExporter: "both" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     mockRegistryWithServices(["diagnostics-otel"]);
     startPluginServices.mockResolvedValue({ stop: vi.fn(async () => {}) });
 
@@ -97,7 +97,7 @@ describe("startOneShotDiagnosticsExporters", () => {
 
     expect(handle).not.toBeNull();
     const startParams = startPluginServices.mock.calls[0]?.[0] as {
-      config: OpenClawConfig;
+      config: AforaConfig;
     };
     expect(startParams.config.diagnostics?.otel?.logs).toBe(true);
     expect(startParams.config.diagnostics?.otel?.logsExporter).toBe("otlp");
@@ -107,7 +107,7 @@ describe("startOneShotDiagnosticsExporters", () => {
   it("disables stdout-only JSONL logs when requested", async () => {
     const config = {
       diagnostics: { otel: { enabled: true, logs: true, logsExporter: "stdout" } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     mockRegistryWithServices(["diagnostics-otel"]);
     startPluginServices.mockResolvedValue({ stop: vi.fn(async () => {}) });
 
@@ -118,7 +118,7 @@ describe("startOneShotDiagnosticsExporters", () => {
 
     expect(handle).not.toBeNull();
     const startParams = startPluginServices.mock.calls[0]?.[0] as {
-      config: OpenClawConfig;
+      config: AforaConfig;
     };
     expect(startParams.config.diagnostics?.otel?.logs).toBe(false);
     expect(startParams.config.diagnostics?.otel?.logsExporter).toBe("otlp");

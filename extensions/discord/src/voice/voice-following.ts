@@ -1,7 +1,7 @@
-import type { DiscordAccountConfig } from "openclaw/plugin-sdk/config-contracts";
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
-import { createSubsystemLogger } from "openclaw/plugin-sdk/runtime-env";
-import { formatErrorMessage } from "openclaw/plugin-sdk/ssrf-runtime";
+import type { DiscordAccountConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
+import { createSubsystemLogger } from "afora-agent/plugin-sdk/runtime-env";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/ssrf-runtime";
 import {
   getGuildVoiceState,
   isUnknownDiscordVoiceStateError,
@@ -81,7 +81,7 @@ function logFollowUserReconcileVerbose(reason: string, message: string): void {
 }
 
 function resolveVoiceConnectionGroup(accountId: string): string {
-  return `openclaw:${accountId}`;
+  return `afora:${accountId}`;
 }
 
 export class DiscordVoiceFollowing {

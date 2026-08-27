@@ -2,7 +2,7 @@
 import {
   asOptionalRecord,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   renderSlackDataTableFallbackText,
   renderSlackDataTableMrkdwnFallbackText,

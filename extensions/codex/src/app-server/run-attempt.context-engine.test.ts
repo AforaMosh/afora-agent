@@ -1,24 +1,24 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
-import type { EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams } from "openclaw/plugin-sdk/agent-harness";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
+import type { EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams } from "afora-agent/plugin-sdk/agent-harness";
 import {
   embeddedAgentLog,
   supportsModelTools,
   type HarnessContextEngine as ContextEngine,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { openFileBackedSessionManagerForTest } from "openclaw/plugin-sdk/agent-runtime-test-contracts";
-import { SessionManager } from "openclaw/plugin-sdk/agent-sessions";
-import { toErrorObject as toLintErrorObject } from "openclaw/plugin-sdk/error-runtime";
-import { initializeGlobalHookRunner } from "openclaw/plugin-sdk/hook-runtime";
-import { MESSAGE_TOOL_DELIVERY_HINTS } from "openclaw/plugin-sdk/message-tool-delivery-hints";
-import { createMockPluginRegistry } from "openclaw/plugin-sdk/plugin-test-runtime";
-import { registerSandboxBackend } from "openclaw/plugin-sdk/sandbox";
-import { upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
-import { formatSqliteSessionFileMarker } from "openclaw/plugin-sdk/sqlite-runtime-testing";
-import { readStringValue } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { openFileBackedSessionManagerForTest } from "afora-agent/plugin-sdk/agent-runtime-test-contracts";
+import { SessionManager } from "afora-agent/plugin-sdk/agent-sessions";
+import { toErrorObject as toLintErrorObject } from "afora-agent/plugin-sdk/error-runtime";
+import { initializeGlobalHookRunner } from "afora-agent/plugin-sdk/hook-runtime";
+import { MESSAGE_TOOL_DELIVERY_HINTS } from "afora-agent/plugin-sdk/message-tool-delivery-hints";
+import { createMockPluginRegistry } from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { registerSandboxBackend } from "afora-agent/plugin-sdk/sandbox";
+import { upsertSessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
+import { formatSqliteSessionFileMarker } from "afora-agent/plugin-sdk/sqlite-runtime-testing";
+import { readStringValue } from "afora-agent/plugin-sdk/string-coerce-runtime";
 // Codex tests cover run attempt.context engine plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, it, vi } from "vitest";
 import { readAttemptTerminal } from "./attempt-terminal.test-helper.js";
 import { shouldEnableCodexAppServerNativeToolSurface } from "./dynamic-tool-build.js";
@@ -48,7 +48,7 @@ function createParams(sessionFile: string, workspaceDir: string): EmbeddedRunAtt
   return params;
 }
 
-/** Keeps native Codex bindings reusable while omitting OpenClaw tools and search. */
+/** Keeps native Codex bindings reusable while omitting Afora tools and search. */
 function withPersistentCodexTestToolPolicy(
   params: EmbeddedRunAttemptParams,
 ): EmbeddedRunAttemptParams {
@@ -344,7 +344,7 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
     expect(readStringValue(threadStartParams.developerInstructions) ?? "").toContain(
       "context-engine system",
     );
-    expectRequestInputTextContains(harness, "OpenClaw assembled context for this turn:");
+    expectRequestInputTextContains(harness, "Afora assembled context for this turn:");
 
     await harness.completeTurn();
     await run;
@@ -586,7 +586,7 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
 
     const firstRun = runCodexAppServerAttempt(firstParams);
     await firstHarness.waitForMethod("turn/start");
-    expectRequestInputTextContains(firstHarness, "OpenClaw assembled context for this turn:");
+    expectRequestInputTextContains(firstHarness, "Afora assembled context for this turn:");
     expectRequestInputTextContains(firstHarness, "bootstrap-only context");
     await firstHarness.completeTurn();
     await firstRun;
@@ -612,7 +612,7 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
       "turn/start",
     ]);
     const secondInputText = getRequestInputTextAt(firstHarness, 1);
-    expect(secondInputText).not.toContain("OpenClaw assembled context for this turn:");
+    expect(secondInputText).not.toContain("Afora assembled context for this turn:");
     expect(secondInputText).not.toContain("bootstrap-only context");
     expect(secondInputText).toBe("hello");
     const projectionLogs = info.mock.calls.filter(
@@ -727,7 +727,7 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
       "turn/start",
     ]);
     const inputText = getRequestInputText(harness);
-    expect(inputText).not.toContain("OpenClaw assembled context for this turn:");
+    expect(inputText).not.toContain("Afora assembled context for this turn:");
     expect(inputText).not.toContain("already bootstrapped context");
     expect(inputText).toBe("hello");
 
@@ -809,7 +809,7 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
       "turn/start",
     ]);
     const inputText = getRequestInputText(harness);
-    expect(inputText).toContain("OpenClaw assembled context for this turn:");
+    expect(inputText).toContain("Afora assembled context for this turn:");
     expect(inputText).toContain("reprojected context");
 
     await harness.completeTurn("completed", "thread-fresh");
@@ -898,7 +898,7 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
       "turn/start",
     ]);
     const inputText = getRequestInputText(harness);
-    expect(inputText).not.toContain("OpenClaw assembled context for this turn:");
+    expect(inputText).not.toContain("Afora assembled context for this turn:");
     expect(inputText).not.toContain("previous stale-bootstrap request");
     expect(inputText).not.toContain("previous stale-bootstrap answer");
     expect(inputText).not.toContain("Current user request:");
@@ -946,7 +946,7 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
       "turn/start",
     ]);
     const inputText = getRequestInputText(harness);
-    expect(inputText).toContain("OpenClaw assembled context for this turn:");
+    expect(inputText).toContain("Afora assembled context for this turn:");
     expect(inputText).toContain("previous per-turn request");
     expect(inputText).toContain("previous per-turn answer");
     expect(inputText).toContain("Current user request:");
@@ -1000,7 +1000,7 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
       "thread/start",
       "turn/start",
     ]);
-    expectRequestInputTextContains(harness, "OpenClaw assembled context for this turn:");
+    expectRequestInputTextContains(harness, "Afora assembled context for this turn:");
     expectRequestInputTextContains(harness, "new epoch context");
 
     await harness.notify({
@@ -1088,7 +1088,7 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
       "thread/start",
       "turn/start",
     ]);
-    expectRequestInputTextContains(harness, "OpenClaw assembled context for this turn:");
+    expectRequestInputTextContains(harness, "Afora assembled context for this turn:");
     expectRequestInputTextContains(harness, "policy changed context");
 
     await harness.notify({
@@ -1200,7 +1200,7 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
         "thread/start",
         "turn/start",
       ]);
-      expectRequestInputTextContains(harness, "OpenClaw assembled context for this turn:");
+      expectRequestInputTextContains(harness, "Afora assembled context for this turn:");
       expectRequestInputTextContains(harness, "native-disabled context");
 
       await harness.notify({
@@ -1266,7 +1266,7 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
       "thread/start",
       "turn/start",
     ]);
-    expectRequestInputTextContains(harness, "OpenClaw assembled context for this turn:");
+    expectRequestInputTextContains(harness, "Afora assembled context for this turn:");
     expectRequestInputTextContains(harness, "per-turn context");
 
     await harness.notify({
@@ -1652,7 +1652,7 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
     expect(result.assistantTexts).toContain("final answer");
   });
 
-  it("fails first-turn Codex context overflow instead of falling back to OpenClaw compaction", async () => {
+  it("fails first-turn Codex context overflow instead of falling back to Afora compaction", async () => {
     const sessionFile = path.join(tempDir, "session.jsonl");
     const workspaceDir = path.join(tempDir, "workspace");
     const compact = vi.fn<ContextEngine["compact"]>(async () => ({
@@ -1783,8 +1783,8 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
     params.currentInboundContext = {
       text: [
         "Conversation context (chronological, selected for current message):",
-        "#6474 Sun 2026-05-10 22:22 GMT+5:30 [reply target] OpenClaw: anchor REPLYCTX this is the old message",
-        "#6498 Sun 2026-05-10 22:22 GMT+5:30 OpenClaw: filler REPLYCTX 23",
+        "#6474 Sun 2026-05-10 22:22 GMT+5:30 [reply target] Afora: anchor REPLYCTX this is the old message",
+        "#6498 Sun 2026-05-10 22:22 GMT+5:30 Afora: filler REPLYCTX 23",
       ].join("\n"),
     };
 
@@ -1792,9 +1792,9 @@ describe("runCodexAppServerAttempt context-engine lifecycle", () => {
     await harness.waitForMethod("turn/start");
 
     const inputText = getRequestInputText(harness);
-    expect(inputText).toContain("OpenClaw assembled context for this turn:");
+    expect(inputText).toContain("Afora assembled context for this turn:");
     expect(inputText).toContain("Current user request:\nhello");
-    expect(inputText).toContain("[reply target] OpenClaw: anchor REPLYCTX");
+    expect(inputText).toContain("[reply target] Afora: anchor REPLYCTX");
     expect(inputText.trim().startsWith("Conversation context (chronological")).toBe(true);
 
     await harness.completeTurn();

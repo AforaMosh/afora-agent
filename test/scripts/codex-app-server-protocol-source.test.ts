@@ -24,20 +24,20 @@ import {
 import { createScriptTestHarness } from "./test-helpers.js";
 
 const { createTempDir } = createScriptTestHarness();
-const originalOpenClawCodexRepo = process.env.OPENCLAW_CODEX_REPO;
+const originalAforaCodexRepo = process.env.AFORA_CODEX_REPO;
 
 afterEach(() => {
-  if (originalOpenClawCodexRepo === undefined) {
-    delete process.env.OPENCLAW_CODEX_REPO;
+  if (originalAforaCodexRepo === undefined) {
+    delete process.env.AFORA_CODEX_REPO;
   } else {
-    process.env.OPENCLAW_CODEX_REPO = originalOpenClawCodexRepo;
+    process.env.AFORA_CODEX_REPO = originalAforaCodexRepo;
   }
 });
 
 describe("Codex app-server generated artifact staging", () => {
   it("copies JSON bytes and normalizes nested TypeScript files in one pass", async () => {
-    const sourceRoot = createTempDir("openclaw-protocol-artifacts-source-");
-    const targetRoot = createTempDir("openclaw-protocol-artifacts-target-");
+    const sourceRoot = createTempDir("afora-protocol-artifacts-source-");
+    const targetRoot = createTempDir("afora-protocol-artifacts-target-");
     const typescriptRoot = path.join(targetRoot, "typescript");
     const jsonRoot = path.join(targetRoot, "json");
     const rootTypeScript = [
@@ -76,7 +76,7 @@ describe("Codex app-server generated artifact staging", () => {
   });
 
   it("materializes the upstream experimental precomputed export tree", async () => {
-    const root = createTempDir("openclaw-protocol-precomputed-");
+    const root = createTempDir("afora-protocol-precomputed-");
     const archivePath = path.join(root, "precomputed/app-server-exports-experimental.json.zst");
     fs.mkdirSync(path.dirname(archivePath), { recursive: true });
     fs.writeFileSync(
@@ -121,8 +121,8 @@ version = "9.9.9"
   });
 
   it("rejects a Codex checkout that differs from the pinned package version", async () => {
-    const repoRoot = createTempDir("openclaw-protocol-version-root-");
-    const codexRepo = createTempDir("openclaw-protocol-version-codex-");
+    const repoRoot = createTempDir("afora-protocol-version-root-");
+    const codexRepo = createTempDir("afora-protocol-version-codex-");
     fs.mkdirSync(path.join(repoRoot, "extensions/codex"), { recursive: true });
     fs.mkdirSync(path.join(codexRepo, "codex-rs"), { recursive: true });
     fs.writeFileSync(
@@ -176,7 +176,7 @@ version = "9.9.9"
   });
 
   it("allows an explicit local disk headroom override", () => {
-    expect(resolveCodexProtocolMinFreeBytes({ OPENCLAW_CODEX_PROTOCOL_MIN_FREE_BYTES: "0" })).toBe(
+    expect(resolveCodexProtocolMinFreeBytes({ AFORA_CODEX_PROTOCOL_MIN_FREE_BYTES: "0" })).toBe(
       0,
     );
     expect(() =>
@@ -190,7 +190,7 @@ version = "9.9.9"
 
   it("rejects malformed local disk headroom overrides", () => {
     expect(() =>
-      resolveCodexProtocolMinFreeBytes({ OPENCLAW_CODEX_PROTOCOL_MIN_FREE_BYTES: "nope" }),
+      resolveCodexProtocolMinFreeBytes({ AFORA_CODEX_PROTOCOL_MIN_FREE_BYTES: "nope" }),
     ).toThrow(/non-negative byte count/);
   });
 
@@ -252,11 +252,11 @@ version = "9.9.9"
     });
   });
 
-  it("uses OPENCLAW_CODEX_REPO when provided", async () => {
-    const root = createTempDir("openclaw-protocol-source-root-");
-    const codexRepo = createTempDir("openclaw-protocol-source-codex-");
+  it("uses AFORA_CODEX_REPO when provided", async () => {
+    const root = createTempDir("afora-protocol-source-root-");
+    const codexRepo = createTempDir("afora-protocol-source-codex-");
     createProtocolSchema(codexRepo);
-    process.env.OPENCLAW_CODEX_REPO = codexRepo;
+    process.env.AFORA_CODEX_REPO = codexRepo;
 
     await expect(resolveCodexAppServerProtocolSource(root)).resolves.toEqual({
       codexRepo,
@@ -265,20 +265,20 @@ version = "9.9.9"
   });
 
   it("finds the primary checkout sibling from a git worktree", async () => {
-    const parentDir = createTempDir("openclaw-protocol-source-parent-");
-    const primaryOpenClaw = path.join(parentDir, "openclaw");
+    const parentDir = createTempDir("afora-protocol-source-parent-");
+    const primaryAfora = path.join(parentDir, "afora");
     const codexRepo = path.join(parentDir, "codex");
-    const worktreeRoot = createTempDir("openclaw-protocol-source-worktree-");
-    fs.mkdirSync(path.join(primaryOpenClaw, ".git", "worktrees", "codex-harness"), {
+    const worktreeRoot = createTempDir("afora-protocol-source-worktree-");
+    fs.mkdirSync(path.join(primaryAfora, ".git", "worktrees", "codex-harness"), {
       recursive: true,
     });
     fs.mkdirSync(worktreeRoot, { recursive: true });
     fs.writeFileSync(
       path.join(worktreeRoot, ".git"),
-      `gitdir: ${path.join(primaryOpenClaw, ".git", "worktrees", "codex-harness")}\n`,
+      `gitdir: ${path.join(primaryAfora, ".git", "worktrees", "codex-harness")}\n`,
     );
     createProtocolSchema(codexRepo);
-    delete process.env.OPENCLAW_CODEX_REPO;
+    delete process.env.AFORA_CODEX_REPO;
 
     await expect(resolveCodexAppServerProtocolSource(worktreeRoot)).resolves.toEqual({
       codexRepo,

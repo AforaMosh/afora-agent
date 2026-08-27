@@ -1,6 +1,6 @@
 // Tests ACP context command output and session metadata handling.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../../config/config.js";
+import type { AforaConfig } from "../../../config/config.js";
 import {
   testing as sessionBindingTesting,
   getSessionBindingService,
@@ -17,7 +17,7 @@ import { resolveAcpCommandBindingContext, resolveAcpCommandConversationId } from
 
 const baseCfg = {
   session: { mainKey: "main", scope: "per-sender" },
-} satisfies OpenClawConfig;
+} satisfies AforaConfig;
 
 function parseTelegramChatIdForTest(raw?: string | null): string | undefined {
   const trimmed = raw?.trim().replace(/^telegram:/i, "");

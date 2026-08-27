@@ -6,7 +6,7 @@ import path from "node:path";
 import {
   findExistingAncestor,
   pathScope as sdkPathScope,
-} from "openclaw/plugin-sdk/security-runtime";
+} from "afora-agent/plugin-sdk/security-runtime";
 
 export {
   ensurePortAvailable,
@@ -23,8 +23,8 @@ export {
   SsrFBlockedError,
   writeExternalFileWithinRoot,
   wrapExternalContent,
-} from "openclaw/plugin-sdk/security-runtime";
-export type { LookupFn, SsrFPolicy } from "openclaw/plugin-sdk/security-runtime";
+} from "afora-agent/plugin-sdk/security-runtime";
+export type { LookupFn, SsrFPolicy } from "afora-agent/plugin-sdk/security-runtime";
 export { sdkPathScope as pathScope };
 
 /** Ensures an absolute directory exists without escaping its nearest existing ancestor. */

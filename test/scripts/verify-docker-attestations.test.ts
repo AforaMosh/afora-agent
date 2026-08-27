@@ -57,7 +57,7 @@ function createAttestation(
 describe("verify-docker-attestations", () => {
   it("bounds docker manifest inspection calls", () => {
     const calls: unknown[] = [];
-    const imageRef = "ghcr.io/openclaw/openclaw:test";
+    const imageRef = "ghcr.io/AforaMosh/afora-agent:test";
     const output = inspectRaw(imageRef, {
       execFileSyncImpl(command: string, args: string[], options: unknown) {
         calls.push({ args, command, options });
@@ -83,10 +83,10 @@ describe("verify-docker-attestations", () => {
 
   it("parses required platforms and image refs", () => {
     expect(
-      parseArgs(["--platform", "linux/amd64", "--platform", "linux/arm64", "ghcr.io/openclaw/app"]),
+      parseArgs(["--platform", "linux/amd64", "--platform", "linux/arm64", "ghcr.io/afora/app"]),
     ).toEqual({
       help: false,
-      imageRefs: ["ghcr.io/openclaw/app"],
+      imageRefs: ["ghcr.io/afora/app"],
       requiredPlatforms: [
         { architecture: "amd64", os: "linux", variant: undefined },
         { architecture: "arm64", os: "linux", variant: undefined },
@@ -102,17 +102,17 @@ describe("verify-docker-attestations", () => {
   });
 
   it("resolves digest refs from tagged image refs", () => {
-    expect(imageRefForDigest("ghcr.io/openclaw/openclaw:2026.4.26", imageDigest)).toBe(
-      `ghcr.io/openclaw/openclaw@${imageDigest}`,
+    expect(imageRefForDigest("ghcr.io/AforaMosh/afora-agent:2026.4.26", imageDigest)).toBe(
+      `ghcr.io/AforaMosh/afora-agent@${imageDigest}`,
     );
-    expect(imageRefForDigest("localhost:5000/openclaw:main", imageDigest)).toBe(
-      `localhost:5000/openclaw@${imageDigest}`,
+    expect(imageRefForDigest("localhost:5000/afora:main", imageDigest)).toBe(
+      `localhost:5000/afora@${imageDigest}`,
     );
   });
 
   it("accepts an image index with SBOM and provenance predicates", () => {
     const errors = collectDockerAttestationErrors({
-      imageRef: "ghcr.io/openclaw/openclaw:test",
+      imageRef: "ghcr.io/AforaMosh/afora-agent:test",
       index: createIndex(),
       requiredPlatforms: [parsePlatform("linux/amd64")],
       inspectAttestation: () => createAttestation(),
@@ -123,7 +123,7 @@ describe("verify-docker-attestations", () => {
 
   it("accepts attestation manifests with omitted artifactType", () => {
     const errors = collectDockerAttestationErrors({
-      imageRef: "ghcr.io/openclaw/openclaw:test",
+      imageRef: "ghcr.io/AforaMosh/afora-agent:test",
       index: createIndex(),
       requiredPlatforms: [parsePlatform("linux/amd64")],
       inspectAttestation: () => {
@@ -138,7 +138,7 @@ describe("verify-docker-attestations", () => {
 
   it("reports unexpected attestation artifact types", () => {
     const errors = collectDockerAttestationErrors({
-      imageRef: "ghcr.io/openclaw/openclaw:test",
+      imageRef: "ghcr.io/AforaMosh/afora-agent:test",
       index: createIndex(),
       requiredPlatforms: [parsePlatform("linux/amd64")],
       inspectAttestation: () => ({
@@ -148,7 +148,7 @@ describe("verify-docker-attestations", () => {
     });
 
     expect(errors).toEqual([
-      `ghcr.io/openclaw/openclaw:test: linux/amd64 attestation ${attestationDigest} has unexpected artifactType "application/vnd.unknown"`,
+      `ghcr.io/AforaMosh/afora-agent:test: linux/amd64 attestation ${attestationDigest} has unexpected artifactType "application/vnd.unknown"`,
     ]);
   });
 
@@ -157,27 +157,27 @@ describe("verify-docker-attestations", () => {
     index.manifests = index.manifests.slice(0, 1);
 
     const errors = collectDockerAttestationErrors({
-      imageRef: "ghcr.io/openclaw/openclaw:test",
+      imageRef: "ghcr.io/AforaMosh/afora-agent:test",
       index,
       requiredPlatforms: [parsePlatform("linux/amd64")],
       inspectAttestation: () => createAttestation(),
     });
 
     expect(errors).toEqual([
-      "ghcr.io/openclaw/openclaw:test: missing attestation manifest for linux/amd64",
+      "ghcr.io/AforaMosh/afora-agent:test: missing attestation manifest for linux/amd64",
     ]);
   });
 
   it("reports missing SBOM or provenance predicates", () => {
     const errors = collectDockerAttestationErrors({
-      imageRef: "ghcr.io/openclaw/openclaw:test",
+      imageRef: "ghcr.io/AforaMosh/afora-agent:test",
       index: createIndex(),
       requiredPlatforms: [parsePlatform("linux/amd64")],
       inspectAttestation: () => createAttestation(["https://spdx.dev/Document"]),
     });
 
     expect(errors).toEqual([
-      "ghcr.io/openclaw/openclaw:test: linux/amd64 missing predicate https://slsa.dev/provenance/v1",
+      "ghcr.io/AforaMosh/afora-agent:test: linux/amd64 missing predicate https://slsa.dev/provenance/v1",
     ]);
   });
 });

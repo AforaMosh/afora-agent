@@ -1,6 +1,6 @@
 /** Tests configured MCP tools survive policy/splitting to the outbound request boundary. */
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   createBundleMcpToolRuntime,
   materializeBundleMcpToolsForRun,
@@ -11,7 +11,7 @@ import { applyFinalEffectiveToolPolicy } from "./embedded-agent-runner/effective
 import { splitSdkTools } from "./embedded-agent-runner/tool-split.js";
 
 // Regression coverage for #76063. The reporter's evidence was a captured
-// outbound provider request body that contained only built-in OpenClaw tools
+// outbound provider request body that contained only built-in Afora tools
 // and no `server__*` MCP tool definitions, even though `cfg.mcp.servers`
 // declared healthy stdio servers. The materialize/policy/split units each
 // have their own focused tests, but ClawSweeper noted that the full request-
@@ -78,7 +78,7 @@ function makeConfiguredRuntime(
 }
 
 async function buildConfiguredMcpToolNamesAtRequestBoundary(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
 }): Promise<string[]> {
   const runtime = await createBundleMcpToolRuntime({
     workspaceDir: "/workspace",
@@ -174,7 +174,7 @@ describe("configured MCP tools reach the request boundary (#76063)", () => {
         toolNames: ["zeta_tool", "alpha_tool", "mu_tool"],
       }),
     });
-    const cfg: OpenClawConfig = { tools: { profile: "coding" } };
+    const cfg: AforaConfig = { tools: { profile: "coding" } };
     const filtered = applyFinalEffectiveToolPolicy({
       bundledTools: runtime.tools,
       config: cfg,

@@ -1,9 +1,9 @@
-/** Row builders used by `openclaw models list` source orchestration. */
+/** Row builders used by `afora models list` source orchestration. */
 import {
   normalizeProviderId,
   normalizeProviderIdForAuth,
-} from "@openclaw/model-catalog-core/provider-id";
-import { stripSelfProviderModelPrefix } from "@openclaw/model-catalog-core/provider-model-id-normalization";
+} from "@afora/model-catalog-core/provider-id";
+import { stripSelfProviderModelPrefix } from "@afora/model-catalog-core/provider-model-id-normalization";
 import { DEFAULT_CONTEXT_TOKENS } from "../../agents/defaults.js";
 import {
   projectModelCatalogEntryForRoute,
@@ -21,7 +21,7 @@ import {
 } from "../../agents/model-suppression.js";
 import { openAIModelCatalogRoutePolicy } from "../../agents/openai-model-routes.js";
 import type { ModelDefinitionConfig, ModelProviderConfig } from "../../config/types.models.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ModelRegistry } from "../../llm/model-registry.js";
 import type { Model } from "../../llm/types.js";
 import { createLazyImportLoader } from "../../shared/lazy-promise.js";
@@ -149,7 +149,7 @@ function hasSameCatalogRoute(left: ListRowModel, right: ListRowModel): boolean {
 function projectListRowModel(params: {
   model: ListRowModel;
   evaluation: ModelListAuthEvaluation;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   routeIndex?: ModelCatalogLogicalRouteIndex;
 }): ListRowModel {
   const projection =
@@ -365,7 +365,7 @@ function shouldListConfiguredProviderModel(params: {
 }
 
 function findConfiguredProviderModel(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   provider: string;
   modelId: string;
 }): ListRowModel | undefined {
@@ -383,7 +383,7 @@ function findConfiguredProviderModel(params: {
 
 function toFallbackConfiguredListModel(
   entry: ConfiguredEntry,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   catalogEntry?: ModelCatalogEntry,
 ): ListRowModel {
   // Explicit models.providers definitions stay authoritative; the prepared

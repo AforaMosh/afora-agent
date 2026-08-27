@@ -1,7 +1,7 @@
 import path from "node:path";
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord } from "@afora/normalization-core/record-coerce";
 import { Type } from "typebox";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { sha256Hex } from "../../infra/crypto-digest.js";
 import {
   MAX_RECONCILED_SKILLS,
@@ -73,7 +73,7 @@ export async function executeSkillCollectionReconcile(params: {
   workspaceDir: string;
   readSkillHashes: ReadonlyMap<string, string>;
   context?: SkillCollectionReconcileContext;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   agentId?: string;
   env?: NodeJS.ProcessEnv;
 }) {

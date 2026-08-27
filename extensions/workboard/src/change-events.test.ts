@@ -1,4 +1,4 @@
-import type { WorkboardChange } from "@openclaw/workboard-contract";
+import type { WorkboardChange } from "@afora/workboard-contract";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createWorkboardChangeEventService } from "./change-events.js";
 import type { WorkboardStore } from "./store.js";

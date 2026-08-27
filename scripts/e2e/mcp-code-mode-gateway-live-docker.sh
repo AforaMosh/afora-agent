@@ -6,15 +6,15 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$ROOT_DIR/scripts/lib/docker-e2e-image.sh"
 
-IMAGE_NAME="$(docker_e2e_resolve_image "openclaw-mcp-code-mode-gateway-live-e2e" OPENCLAW_IMAGE)"
-PORT="$(docker_e2e_read_tcp_port_env OPENCLAW_MCP_CODE_MODE_LIVE_GATEWAY_PORT 18789)"
-CLIENT_TIMEOUT_MS="$(docker_e2e_read_positive_int_env OPENCLAW_MCP_CODE_MODE_CLIENT_TIMEOUT_MS 300000)"
-CLIENT_BODY_MAX_BYTES="$(docker_e2e_read_positive_int_env OPENCLAW_MCP_CODE_MODE_CLIENT_BODY_MAX_BYTES 1048576)"
+IMAGE_NAME="$(docker_e2e_resolve_image "afora-mcp-code-mode-gateway-live-e2e" AFORA_IMAGE)"
+PORT="$(docker_e2e_read_tcp_port_env AFORA_MCP_CODE_MODE_LIVE_GATEWAY_PORT 18789)"
+CLIENT_TIMEOUT_MS="$(docker_e2e_read_positive_int_env AFORA_MCP_CODE_MODE_CLIENT_TIMEOUT_MS 300000)"
+CLIENT_BODY_MAX_BYTES="$(docker_e2e_read_positive_int_env AFORA_MCP_CODE_MODE_CLIENT_BODY_MAX_BYTES 1048576)"
 TOKEN="mcp-code-mode-live-e2e-$(date +%s)-$$"
-CONTAINER_NAME="openclaw-mcp-code-mode-live-e2e-$$"
-PROFILE_FILE="${OPENCLAW_MCP_CODE_MODE_LIVE_PROFILE_FILE:-${OPENCLAW_TESTBOX_PROFILE_FILE:-$HOME/.openclaw-testbox-live.profile}}"
+CONTAINER_NAME="afora-mcp-code-mode-live-e2e-$$"
+PROFILE_FILE="${AFORA_MCP_CODE_MODE_LIVE_PROFILE_FILE:-${AFORA_TESTBOX_PROFILE_FILE:-$HOME/.afora-testbox-live.profile}}"
 
-CLIENT_LOG="$(mktemp -t openclaw-mcp-code-mode-live-log.XXXXXX)"
+CLIENT_LOG="$(mktemp -t afora-mcp-code-mode-live-log.XXXXXX)"
 
 cleanup() {
   docker_e2e_docker_cmd rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
@@ -42,11 +42,11 @@ if [ -z "${OPENAI_API_KEY:-}" ]; then
   exit 1
 fi
 docker_e2e_build_or_reuse "$IMAGE_NAME" mcp-code-mode-gateway-live
-OPENCLAW_TEST_STATE_SCRIPT_B64="$(docker_e2e_test_state_shell_b64 mcp-code-mode-gateway-live empty)"
+AFORA_TEST_STATE_SCRIPT_B64="$(docker_e2e_test_state_shell_b64 mcp-code-mode-gateway-live empty)"
 
-# The profile is only a credential source. Keep this lane's OpenClaw runtime
+# The profile is only a credential source. Keep this lane's Afora runtime
 # isolated from host/testbox mode flags that can change packaged behavior.
-unset OPENCLAW_TESTBOX
+unset AFORA_TESTBOX
 
 echo "Running live Docker Gateway code-mode MCP API-file smoke..."
 echo "Profile file: $PROFILE_STATUS"
@@ -56,25 +56,25 @@ docker_e2e_run_with_harness \
   -e COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
   -e OPENAI_API_KEY \
   -e OPENAI_BASE_URL \
-  -e "OPENCLAW_DOCKER_OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}" \
-  -e "OPENCLAW_GATEWAY_TOKEN=$TOKEN" \
-  -e "OPENCLAW_SKIP_CHANNELS=1" \
-  -e "OPENCLAW_SKIP_GMAIL_WATCHER=1" \
-  -e "OPENCLAW_SKIP_CRON=1" \
-  -e "OPENCLAW_SKIP_CANVAS_HOST=1" \
-  -e "OPENCLAW_SKIP_ACPX_RUNTIME=1" \
-  -e "OPENCLAW_SKIP_ACPX_RUNTIME_PROBE=1" \
-  -e "OPENCLAW_TEST_STATE_SCRIPT_B64=$OPENCLAW_TEST_STATE_SCRIPT_B64" \
+  -e "AFORA_DOCKER_OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}" \
+  -e "AFORA_GATEWAY_TOKEN=$TOKEN" \
+  -e "AFORA_SKIP_CHANNELS=1" \
+  -e "AFORA_SKIP_GMAIL_WATCHER=1" \
+  -e "AFORA_SKIP_CRON=1" \
+  -e "AFORA_SKIP_CANVAS_HOST=1" \
+  -e "AFORA_SKIP_ACPX_RUNTIME=1" \
+  -e "AFORA_SKIP_ACPX_RUNTIME_PROBE=1" \
+  -e "AFORA_TEST_STATE_SCRIPT_B64=$AFORA_TEST_STATE_SCRIPT_B64" \
   -e "GW_URL=http://127.0.0.1:$PORT" \
   -e "GW_TOKEN=$TOKEN" \
-  -e "OPENCLAW_MCP_CODE_MODE_CLIENT_TIMEOUT_MS=$CLIENT_TIMEOUT_MS" \
-  -e "OPENCLAW_MCP_CODE_MODE_CLIENT_BODY_MAX_BYTES=$CLIENT_BODY_MAX_BYTES" \
-  -e "OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1" \
-  -e "OPENCLAW_MCP_CODE_MODE_MODEL=${OPENCLAW_MCP_CODE_MODE_LIVE_MODEL:-openclaw/main}" \
+  -e "AFORA_MCP_CODE_MODE_CLIENT_TIMEOUT_MS=$CLIENT_TIMEOUT_MS" \
+  -e "AFORA_MCP_CODE_MODE_CLIENT_BODY_MAX_BYTES=$CLIENT_BODY_MAX_BYTES" \
+  -e "AFORA_ALLOW_INSECURE_PRIVATE_WS=1" \
+  -e "AFORA_MCP_CODE_MODE_MODEL=${AFORA_MCP_CODE_MODE_LIVE_MODEL:-afora/main}" \
   "${PROFILE_MOUNT[@]}" \
   "$IMAGE_NAME" \
   bash -lc "set -euo pipefail
-    source scripts/lib/openclaw-e2e-instance.sh
+    source scripts/lib/afora-e2e-instance.sh
     for profile_path in \"\$HOME/.profile\" /home/appuser/.profile; do
       if [ -f \"\$profile_path\" ] && [ -r \"\$profile_path\" ]; then
         set +e +u
@@ -83,27 +83,27 @@ docker_e2e_run_with_harness \
         break
       fi
     done
-    unset OPENCLAW_TESTBOX
+    unset AFORA_TESTBOX
     if [ -z \"\${OPENAI_API_KEY:-}\" ]; then
       echo \"ERROR: OPENAI_API_KEY was not available inside the container.\" >&2
       exit 1
     fi
-    openclaw_e2e_eval_test_state_from_b64 \"\${OPENCLAW_TEST_STATE_SCRIPT_B64:?missing OPENCLAW_TEST_STATE_SCRIPT_B64}\"
-    entry=\"\$(openclaw_e2e_resolve_entrypoint)\"
+    afora_e2e_eval_test_state_from_b64 \"\${AFORA_TEST_STATE_SCRIPT_B64:?missing AFORA_TEST_STATE_SCRIPT_B64}\"
+    entry=\"\$(afora_e2e_resolve_entrypoint)\"
     gateway_pid=
     cleanup_inner() {
-      openclaw_e2e_stop_process \"\${gateway_pid:-}\"
+      afora_e2e_stop_process \"\${gateway_pid:-}\"
     }
     dump_logs_on_error() {
       status=\$?
       if [ \"\$status\" -ne 0 ]; then
-        openclaw_e2e_dump_logs \
+        afora_e2e_dump_logs \
           /tmp/mcp-code-mode-live-gateway.log \
           /tmp/mcp-code-mode-live-seed.log
-        if [ -d \"\${OPENCLAW_STATE_DIR:-}/agents/main/sessions\" ]; then
+        if [ -d \"\${AFORA_STATE_DIR:-}/agents/main/sessions\" ]; then
           echo \"--- session MCP/code-mode excerpts ---\" >&2
           grep -R -n -E 'API\\.|MCP\\.fixture|fixture__lookup_note|Unknown API file|\"telemetry\"|\"sources\"' \
-            \"\$OPENCLAW_STATE_DIR/agents/main/sessions\" >&2 || true
+            \"\$AFORA_STATE_DIR/agents/main/sessions\" >&2 || true
         fi
       fi
       cleanup_inner
@@ -112,8 +112,8 @@ docker_e2e_run_with_harness \
     trap cleanup_inner EXIT
     trap dump_logs_on_error ERR
     tsx scripts/e2e/mcp-code-mode-gateway-seed.ts >/tmp/mcp-code-mode-live-seed.log
-    gateway_pid=\"\$(openclaw_e2e_start_gateway \"\$entry\" $PORT /tmp/mcp-code-mode-live-gateway.log)\"
-    openclaw_e2e_wait_gateway_ready \"\$gateway_pid\" /tmp/mcp-code-mode-live-gateway.log 480 $PORT
+    gateway_pid=\"\$(afora_e2e_start_gateway \"\$entry\" $PORT /tmp/mcp-code-mode-live-gateway.log)\"
+    afora_e2e_wait_gateway_ready \"\$gateway_pid\" /tmp/mcp-code-mode-live-gateway.log 480 $PORT
     tsx scripts/e2e/mcp-code-mode-gateway-client.ts
   " >"$CLIENT_LOG" 2>&1
 status=${PIPESTATUS[0]}

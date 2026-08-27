@@ -1,11 +1,11 @@
 // E2E: hook dispatch uses every free slot inside the shared cron budget.
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../src/config/types.openclaw.js";
+import type { AforaConfig } from "../src/config/types.afora.js";
 import {
-  createOpenClawTestInstance,
-  type OpenClawTestInstance,
-} from "./helpers/openclaw-test-instance.js";
+  createAforaTestInstance,
+  type AforaTestInstance,
+} from "./helpers/afora-test-instance.js";
 import { createDeferred } from "./helpers/promise.js";
 
 const TEST_TIMEOUT_MS = 180_000;
@@ -32,7 +32,7 @@ type HeldModelServer = {
   url: string;
 };
 
-const instances: OpenClawTestInstance[] = [];
+const instances: AforaTestInstance[] = [];
 const modelServers: HeldModelServer[] = [];
 
 afterEach(async () => {
@@ -47,10 +47,10 @@ describe("Gateway hook concurrency", () => {
     async () => {
       const modelServer = await startHeldModelServer();
       modelServers.push(modelServer);
-      const instance = await createOpenClawTestInstance({
+      const instance = await createAforaTestInstance({
         name: "gateway-hook-concurrency",
         config: createTestConfig(modelServer.url),
-        env: { OPENCLAW_SKIP_PROVIDERS: undefined },
+        env: { AFORA_SKIP_PROVIDERS: undefined },
       });
       instances.push(instance);
       await instance.startGateway();
@@ -115,7 +115,7 @@ describe("Gateway hook concurrency", () => {
   );
 });
 
-function createTestConfig(baseUrl: string): OpenClawConfig {
+function createTestConfig(baseUrl: string): AforaConfig {
   return {
     plugins: { slots: { memory: "none" } },
     hooks: {
@@ -127,7 +127,7 @@ function createTestConfig(baseUrl: string): OpenClawConfig {
       defaults: {
         heartbeat: { every: "0m" },
         model: { primary: MODEL_REF },
-        models: { [MODEL_REF]: { agentRuntime: { id: "openclaw" } } },
+        models: { [MODEL_REF]: { agentRuntime: { id: "afora" } } },
         skipBootstrap: true,
         skills: [],
       },
@@ -160,7 +160,7 @@ function createTestConfig(baseUrl: string): OpenClawConfig {
 }
 
 async function warmGatewayHook(
-  instance: OpenClawTestInstance,
+  instance: AforaTestInstance,
   modelServer: HeldModelServer,
 ): Promise<void> {
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -186,7 +186,7 @@ async function warmGatewayHook(
   throw new Error("Gateway hook warmup did not reach the model after three attempts");
 }
 
-async function postHook(instance: OpenClawTestInstance, index: number): Promise<HookResponse> {
+async function postHook(instance: AforaTestInstance, index: number): Promise<HookResponse> {
   const response = await fetch(`http://127.0.0.1:${instance.port}/hooks/agent`, {
     method: "POST",
     headers: {

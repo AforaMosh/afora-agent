@@ -8,10 +8,10 @@ import type {
   PromptResponse,
   StopReason,
 } from "@agentclientprotocol/sdk";
-import { readBool, readMetadataString, readNonNegativeInteger } from "@openclaw/acp-core/meta";
-import type { AcpSessionStore } from "@openclaw/acp-core/session";
-import type { AcpServerOptions } from "@openclaw/acp-core/types";
-import { normalizeLowercaseStringOrEmpty as normalizedChatSendAckStatus } from "@openclaw/normalization-core/string-coerce";
+import { readBool, readMetadataString, readNonNegativeInteger } from "@afora/acp-core/meta";
+import type { AcpSessionStore } from "@afora/acp-core/session";
+import type { AcpServerOptions } from "@afora/acp-core/types";
+import { normalizeLowercaseStringOrEmpty as normalizedChatSendAckStatus } from "@afora/normalization-core/string-coerce";
 import type { EventFrame } from "../../packages/gateway-protocol/src/index.js";
 import type { GatewayClient } from "../gateway/client.js";
 import { shortenHomePath } from "../utils.js";
@@ -69,7 +69,7 @@ function buildSystemInputProvenance(originSessionId: string) {
     kind: "external_user" as const,
     originSessionId,
     sourceChannel: "acp",
-    sourceTool: "openclaw_acp",
+    sourceTool: "afora_acp",
   };
 }
 
@@ -80,7 +80,7 @@ function buildSystemProvenanceReceipt(params: {
 }) {
   return [
     "[Source Receipt]",
-    "bridge=openclaw-acp",
+    "bridge=afora-acp",
     `originHost=${os.hostname()}`,
     `originCwd=${shortenHomePath(params.cwd)}`,
     `acpSessionId=${params.sessionId}`,
@@ -580,8 +580,8 @@ export class AcpTranslatorPromptStream {
     try {
       if (options.recordDisconnectNotice) {
         const text = pending.sendAccepted
-          ? "[OpenClaw interruption] The Gateway disconnected after accepting this message, so its final outcome is unknown. Check the session before retrying."
-          : "[OpenClaw interruption] The Gateway disconnected before OpenClaw could confirm whether this message was accepted, so its final outcome is unknown. Check the session before retrying.";
+          ? "[Afora interruption] The Gateway disconnected after accepting this message, so its final outcome is unknown. Check the session before retrying."
+          : "[Afora interruption] The Gateway disconnected before Afora could confirm whether this message was accepted, so its final outcome is unknown. Check the session before retrying.";
         // Make replay durable before rejecting, but do not let ACP client backpressure
         // extend the disconnect deadline indefinitely.
         await this.sessionUpdates.emit({

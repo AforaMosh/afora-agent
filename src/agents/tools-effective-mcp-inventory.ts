@@ -3,7 +3,7 @@
  * schema policy quarantines incompatible tools and emits notices instead of
  * silently hiding them.
  */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { ProviderRuntimeModel } from "../plugins/provider-runtime-model.types.js";
 import { getPluginToolMeta } from "../plugins/tools.js";
 import { normalizeAgentRuntimeTools } from "./runtime-plan/tools.js";
@@ -70,7 +70,7 @@ function buildMcpToolInventoryEntries(
 /** Builds the runtime-compatible MCP tool inventory and quarantine notices. */
 export function buildRuntimeCompatibleMcpToolInventory(params: {
   tools: readonly AnyAgentTool[];
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   workspaceDir?: string;
   modelProvider?: string;
   modelId?: string;

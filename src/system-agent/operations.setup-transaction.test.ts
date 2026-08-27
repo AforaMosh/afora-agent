@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resetPluginStateStoreForTests } from "../plugin-state/plugin-state-store.js";
 import type { LocalOnboardingState } from "../state/local-onboarding-state.js";
 import { captureEnv, setTestEnvValue } from "../test-utils/env.js";
@@ -20,7 +20,7 @@ const localOnboarding = vi.hoisted(() => {
   return {
     states,
     read: vi.fn((configPath: string) => states.get(configPath)),
-    readForConfig: vi.fn((configPath: string, config: OpenClawConfig) => {
+    readForConfig: vi.fn((configPath: string, config: AforaConfig) => {
       const state = states.get(configPath);
       return state?.securityAcknowledgedAt === config.wizard?.securityAcknowledgedAt
         ? state
@@ -43,11 +43,11 @@ const localOnboarding = vi.hoisted(() => {
 
 const mockConfig = vi.hoisted(() => {
   const state = {
-    path: "/tmp/openclaw.json",
+    path: "/tmp/afora.json",
     exists: true,
-    config: { agents: { entries: { main: { default: true } } } } as OpenClawConfig,
+    config: { agents: { entries: { main: { default: true } } } } as AforaConfig,
   };
-  let bindPluginMetadata = (_config: OpenClawConfig) => {};
+  let bindPluginMetadata = (_config: AforaConfig) => {};
   const snapshot = () => {
     const config = structuredClone(state.config);
     bindPluginMetadata(config);
@@ -64,12 +64,12 @@ const mockConfig = vi.hoisted(() => {
   };
   const readConfigFileSnapshot = vi.fn(async () => snapshot());
   const withConfigMutationExclusive = vi.fn(
-    async (effect: (config: OpenClawConfig) => Promise<unknown>) =>
+    async (effect: (config: AforaConfig) => Promise<unknown>) =>
       await effect(snapshot().sourceConfig),
   );
   return {
     reset() {
-      state.path = "/tmp/openclaw.json";
+      state.path = "/tmp/afora.json";
       state.exists = true;
       state.config = { agents: { entries: { main: { default: true } } } };
       bindPluginMetadata(state.config);
@@ -83,14 +83,14 @@ const mockConfig = vi.hoisted(() => {
       state.exists = false;
       bindPluginMetadata(state.config);
     },
-    setConfig(config: OpenClawConfig) {
+    setConfig(config: AforaConfig) {
       state.config = structuredClone(config);
       bindPluginMetadata(state.config);
     },
-    bindPluginMetadata(config: OpenClawConfig) {
+    bindPluginMetadata(config: AforaConfig) {
       bindPluginMetadata(config);
     },
-    setPluginMetadataBinder(binder: (config: OpenClawConfig) => void) {
+    setPluginMetadataBinder(binder: (config: AforaConfig) => void) {
       bindPluginMetadata = binder;
     },
     readConfigFileSnapshot,
@@ -120,7 +120,7 @@ function createPendingLocalOnboarding(
   const pending: LocalOnboardingState = {
     version: 1,
     status: "pending",
-    configPath: "/tmp/openclaw.json",
+    configPath: "/tmp/afora.json",
     workspace,
     runId,
     securityAcknowledgedAt: "2026-08-02T00:00:00.000Z",
@@ -149,7 +149,7 @@ function createRecoverySetupResult(
   overrides: Partial<SystemAgentSetupApplyResult> = {},
 ): SystemAgentSetupApplyResult {
   return {
-    configPath: "/tmp/openclaw.json",
+    configPath: "/tmp/afora.json",
     configHashBefore: "before",
     configHashAfter: "after",
     bootstrapPending: true,
@@ -199,8 +199,8 @@ describe("system-agent setup transaction", () => {
     localOnboarding.read.mockClear();
     localOnboarding.readForConfig.mockClear();
     localOnboarding.complete.mockClear();
-    stateDirSnapshot = captureEnv(["OPENCLAW_STATE_DIR"]);
-    vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+    stateDirSnapshot = captureEnv(["AFORA_STATE_DIR"]);
+    vi.stubEnv("AFORA_TEST_FAST", "1");
   });
 
   afterEach(() => {
@@ -216,12 +216,12 @@ describe("system-agent setup transaction", () => {
         defaults: { model: { primary: "openai/gpt-5.5" } },
         list: [{ id: "main", default: true }],
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     mockConfig.bindPluginMetadata(config);
     mockConfig.readConfigFileSnapshot.mockResolvedValue({
       exists: true,
       valid: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       hash: "before",
       config,
       sourceConfig: config,
@@ -229,7 +229,7 @@ describe("system-agent setup transaction", () => {
       issues: [],
     });
     const applySetup = vi.fn(async () => {
-      throw new Error("OpenClaw config changed while AI access was being tested. Try setup again.");
+      throw new Error("Afora config changed while AI access was being tested. Try setup again.");
     });
     const { runtime } = createSystemAgentTestRuntime();
 
@@ -252,7 +252,7 @@ describe("system-agent setup transaction", () => {
     expect(mocks.ensureOnboardingAgent).not.toHaveBeenCalled();
   });
   it("resumes and completes the approved pending local onboarding owner", async () => {
-    setTestEnvValue("OPENCLAW_STATE_DIR", opTempDirs.make("openclaw-recovery-complete-"));
+    setTestEnvValue("AFORA_STATE_DIR", opTempDirs.make("afora-recovery-complete-"));
     const pending = createPendingLocalOnboarding();
     const applySetup = vi.fn(async () => createRecoverySetupResult());
     const beforePersistentApply = vi.fn(async () => {});
@@ -281,7 +281,7 @@ describe("system-agent setup transaction", () => {
   });
 
   it("does not adopt a pending receipt from the replaced config at the same path", async () => {
-    setTestEnvValue("OPENCLAW_STATE_DIR", opTempDirs.make("openclaw-recovery-stale-"));
+    setTestEnvValue("AFORA_STATE_DIR", opTempDirs.make("afora-recovery-stale-"));
     const pending = createPendingLocalOnboarding();
     setRecoveryConfig(pending, "2026-08-03T00:00:00.000Z");
     const applySetup = vi.fn(async () => createRecoverySetupResult());
@@ -315,7 +315,7 @@ describe("system-agent setup transaction", () => {
       error: "service install failed",
     },
   ])("keeps onboarding pending when $label fails", async ({ overrides, error }) => {
-    setTestEnvValue("OPENCLAW_STATE_DIR", opTempDirs.make("openclaw-recovery-failure-"));
+    setTestEnvValue("AFORA_STATE_DIR", opTempDirs.make("afora-recovery-failure-"));
     const pending = createPendingLocalOnboarding();
     const applySetup = vi.fn(async () => createRecoverySetupResult(overrides));
     const { runtime, lines } = createSystemAgentTestRuntime();
@@ -329,11 +329,11 @@ describe("system-agent setup transaction", () => {
 
     expect(localOnboarding.states.get(pending.configPath)).toEqual(pending);
     expect(localOnboarding.complete).not.toHaveBeenCalled();
-    expect(lines.join("\n")).not.toContain("[openclaw] done: openclaw.setup");
+    expect(lines.join("\n")).not.toContain("[afora] done: afora.setup");
   });
 
   it("never completes a competing onboarding owner after setup succeeds", async () => {
-    setTestEnvValue("OPENCLAW_STATE_DIR", opTempDirs.make("openclaw-recovery-replaced-"));
+    setTestEnvValue("AFORA_STATE_DIR", opTempDirs.make("afora-recovery-replaced-"));
     const pending = createPendingLocalOnboarding();
     const replacement: LocalOnboardingState = { ...pending, runId: "replacement-run" };
     const applySetup = vi.fn(async () => {
@@ -351,7 +351,7 @@ describe("system-agent setup transaction", () => {
 
     expect(localOnboarding.complete).not.toHaveBeenCalled();
     expect(localOnboarding.states.get(pending.configPath)).toEqual(replacement);
-    expect(lines.join("\n")).not.toContain("[openclaw] done: openclaw.setup");
+    expect(lines.join("\n")).not.toContain("[afora] done: afora.setup");
   });
 
   it("rejects a replacement owner at the setup config-write boundary", async () => {
@@ -417,7 +417,7 @@ describe("system-agent setup transaction", () => {
 
     expect(localOnboarding.complete).not.toHaveBeenCalled();
     expect(localOnboarding.states.get(pending.configPath)).toEqual(pending);
-    expect(lines.join("\n")).not.toContain("[openclaw] done: openclaw.setup");
+    expect(lines.join("\n")).not.toContain("[afora] done: afora.setup");
   });
 
   it("keeps onboarding pending when its configuration disappears after setup", async () => {
@@ -437,7 +437,7 @@ describe("system-agent setup transaction", () => {
 
     expect(localOnboarding.complete).not.toHaveBeenCalled();
     expect(localOnboarding.states.get(pending.configPath)).toEqual(pending);
-    expect(lines.join("\n")).not.toContain("[openclaw] done: openclaw.setup");
+    expect(lines.join("\n")).not.toContain("[afora] done: afora.setup");
   });
 
   it("does not complete an owner whose effective workspace changed during setup", async () => {
@@ -464,7 +464,7 @@ describe("system-agent setup transaction", () => {
 
     expect(localOnboarding.complete).not.toHaveBeenCalled();
     expect(localOnboarding.states.get(pending.configPath)).toEqual(pending);
-    expect(lines.join("\n")).not.toContain("[openclaw] done: openclaw.setup");
+    expect(lines.join("\n")).not.toContain("[afora] done: afora.setup");
   });
 
   it.each([
@@ -504,11 +504,11 @@ describe("system-agent setup transaction", () => {
     expect(mockConfig.withConfigMutationExclusive).toHaveBeenCalledOnce();
     expect(localOnboarding.complete).not.toHaveBeenCalled();
     expect(localOnboarding.states.get(pending.configPath)).toEqual(pending);
-    expect(lines.join("\n")).not.toContain("[openclaw] done: openclaw.setup");
+    expect(lines.join("\n")).not.toContain("[afora] done: afora.setup");
   });
 
   it("rechecks setup authority immediately before completing onboarding", async () => {
-    setTestEnvValue("OPENCLAW_STATE_DIR", opTempDirs.make("openclaw-recovery-authority-"));
+    setTestEnvValue("AFORA_STATE_DIR", opTempDirs.make("afora-recovery-authority-"));
     const pending = createPendingLocalOnboarding();
     const applySetup = vi.fn(async () => createRecoverySetupResult());
     let authorizations = 0;
@@ -531,7 +531,7 @@ describe("system-agent setup transaction", () => {
     expect(beforePersistentApply).toHaveBeenCalledTimes(2);
     expect(localOnboarding.complete).not.toHaveBeenCalled();
     expect(localOnboarding.states.get(pending.configPath)).toEqual(pending);
-    expect(lines.join("\n")).not.toContain("[openclaw] done: openclaw.setup");
+    expect(lines.join("\n")).not.toContain("[afora] done: afora.setup");
   });
 
   it("reads final config only after the completion authority check", async () => {
@@ -556,7 +556,7 @@ describe("system-agent setup transaction", () => {
     expect(beforePersistentApply).toHaveBeenCalledTimes(2);
     expect(localOnboarding.complete).not.toHaveBeenCalled();
     expect(localOnboarding.states.get(pending.configPath)).toEqual(pending);
-    expect(lines.join("\n")).not.toContain("[openclaw] done: openclaw.setup");
+    expect(lines.join("\n")).not.toContain("[afora] done: afora.setup");
   });
 
   it("rejects setup for a workspace owned by another onboarding run", async () => {
@@ -577,7 +577,7 @@ describe("system-agent setup transaction", () => {
   });
 
   it("does not adopt or complete local onboarding from a gateway-hosted setup", async () => {
-    setTestEnvValue("OPENCLAW_STATE_DIR", opTempDirs.make("openclaw-recovery-gateway-"));
+    setTestEnvValue("AFORA_STATE_DIR", opTempDirs.make("afora-recovery-gateway-"));
     const pending = createPendingLocalOnboarding();
     const applySetup = vi.fn(async () => createRecoverySetupResult());
     const { runtime } = createSystemAgentTestRuntime();

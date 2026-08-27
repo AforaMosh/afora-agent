@@ -2,7 +2,7 @@
 // reads/writes, identity merging, and safe deletion for operator clients.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { normalizeOptionalString as resolveOptionalStringParam } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString as resolveOptionalStringParam } from "@afora/normalization-core/string-coerce";
 import {
   GATEWAY_CLIENT_CAPS,
   hasGatewayClientCap,
@@ -81,7 +81,7 @@ import {
 import { purgeAgentSessionStoreEntries } from "../../config/sessions.js";
 import { resolveSessionTranscriptsDirForAgent } from "../../config/sessions/paths.js";
 import type { IdentityConfig } from "../../config/types.base.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { isMissingPathError } from "../../infra/errors.js";
 import { withAgentExecApprovalsRemoved } from "../../infra/exec-approvals.js";
 import { root, FsSafeError, type ReadResult } from "../../infra/fs-safe.js";
@@ -93,13 +93,13 @@ import {
   readAgentDeletionJournal,
   type AgentDeletionJournalCleanupPath,
 } from "../../state/agent-deletion-journal.js";
-import { assertNoOpenClawAgentDatabaseLeases } from "../../state/openclaw-agent-db-lease.js";
-import { unregisterOpenClawAgentDatabase } from "../../state/openclaw-agent-db-registry.js";
+import { assertNoAforaAgentDatabaseLeases } from "../../state/afora-agent-db-lease.js";
+import { unregisterAforaAgentDatabase } from "../../state/afora-agent-db-registry.js";
 import {
-  closeOpenClawAgentDatabaseByPath,
-  listOpenClawRegisteredAgentDatabases,
-  resolveOpenClawAgentSqlitePath,
-} from "../../state/openclaw-agent-db.js";
+  closeAforaAgentDatabaseByPath,
+  listAforaRegisteredAgentDatabases,
+  resolveAforaAgentSqlitePath,
+} from "../../state/afora-agent-db.js";
 import { resolveUserPath } from "../../utils.js";
 import { listAgentsForGateway } from "../session-utils.js";
 import {
@@ -157,9 +157,9 @@ const ALLOWED_FILE_NAMES = new Set<string>(WORKSPACE_BOOTSTRAP_FILENAMES);
 function resolveAgentWorkspaceFileOrRespondError(
   params: Record<string, unknown>,
   respond: RespondFn,
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
   workspaceDir: string;
   name: string;
@@ -298,7 +298,7 @@ async function listAgentFiles(workspaceDir: string, options?: { hideBootstrap?: 
   return files;
 }
 
-function resolveAgentIdOrError(agentIdRaw: string, cfg: OpenClawConfig) {
+function resolveAgentIdOrError(agentIdRaw: string, cfg: AforaConfig) {
   const normalized = normalizeAgentIdStrict(agentIdRaw);
   if (!normalized.ok) {
     return null;
@@ -348,7 +348,7 @@ type AgentDeletePathOutcome =
 class AgentCleanupIdentityMismatchError extends Error {}
 class AgentSharedAuthStoreOwnerError extends Error {}
 
-function agentOwnsSharedAuthStore(cfg: OpenClawConfig, agentId: string): boolean {
+function agentOwnsSharedAuthStore(cfg: AforaConfig, agentId: string): boolean {
   const agentDir = resolveAgentDir(cfg, agentId);
   return isSharedAuthStoreOwner({
     ownership: resolveSharedAuthStoreOwnership(),
@@ -674,7 +674,7 @@ type AgentDeleteDatabasePlan = {
 };
 
 function resolveSurvivingDatabaseFilePaths(
-  registeredDatabases: ReturnType<typeof listOpenClawRegisteredAgentDatabases>,
+  registeredDatabases: ReturnType<typeof listAforaRegisteredAgentDatabases>,
   agentId: string,
 ): string[] {
   return [
@@ -688,7 +688,7 @@ function resolveSurvivingDatabaseFilePaths(
 }
 
 function isPathOwnedBySurvivingAgent(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
   pathname: string,
   survivingDatabaseFilePaths: readonly string[] = [],
@@ -707,19 +707,19 @@ function isPathOwnedBySurvivingAgent(
 }
 
 function prepareAgentDeleteDatabases(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
   agentDir: string,
 ): AgentDeleteDatabasePlan {
-  const registeredDatabases = listOpenClawRegisteredAgentDatabases();
+  const registeredDatabases = listAforaRegisteredAgentDatabases();
   const survivingDatabaseFilePaths = resolveSurvivingDatabaseFilePaths(
     registeredDatabases,
     agentId,
   );
   const registeredDatabasePaths = new Set([
-    resolveOpenClawAgentSqlitePath({
+    resolveAforaAgentSqlitePath({
       agentId,
-      path: path.join(agentDir, "openclaw-agent.sqlite"),
+      path: path.join(agentDir, "afora-agent.sqlite"),
     }),
     ...registeredDatabases
       .filter((entry) => normalizeAgentId(entry.agentId) === agentId)
@@ -732,9 +732,9 @@ function prepareAgentDeleteDatabases(
     ),
   );
   for (const databasePath of databasePaths) {
-    closeOpenClawAgentDatabaseByPath(databasePath);
+    closeAforaAgentDatabaseByPath(databasePath);
   }
-  assertNoOpenClawAgentDatabaseLeases(agentId);
+  assertNoAforaAgentDatabaseLeases(agentId);
   const fileGroups = databasePaths.map(resolveSqliteDatabaseFilePaths);
   const relocatedFileGroups = fileGroups.filter((fileGroup) => {
     const relative = path.relative(agentDir, fileGroup[0] ?? agentDir);
@@ -750,12 +750,12 @@ function prepareAgentDeleteDatabases(
 
 function unregisterAgentDeleteDatabases(agentId: string, databasePaths: string[]): void {
   for (const databasePath of databasePaths) {
-    unregisterOpenClawAgentDatabase({ agentId, path: databasePath });
+    unregisterAforaAgentDatabase({ agentId, path: databasePath });
   }
 }
 
 function prepareJournaledAgentDirOwnership(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId: string,
   agentDir: string,
 ): void {
@@ -1274,7 +1274,7 @@ export const agentsHandlers: GatewayRequestHandlers = {
 
         if (deleteFiles) {
           const survivingDatabaseFilePaths = resolveSurvivingDatabaseFilePaths(
-            listOpenClawRegisteredAgentDatabases(),
+            listAforaRegisteredAgentDatabases(),
             agentId,
           );
           const workspaceTrashEligible = !isPathOwnedBySurvivingAgent(
@@ -1402,7 +1402,7 @@ export const agentsHandlers: GatewayRequestHandlers = {
               continue;
             }
             const refreshedDatabaseFilePaths = resolveSurvivingDatabaseFilePaths(
-              listOpenClawRegisteredAgentDatabases(),
+              listAforaRegisteredAgentDatabases(),
               agentId,
             );
             const blockingProtection = protectedCleanupPaths.find(

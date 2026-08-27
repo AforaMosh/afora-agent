@@ -1,19 +1,19 @@
 // Github Copilot plugin module implements embeddings behavior.
-import { redactToolPayloadText } from "openclaw/plugin-sdk/logging-core";
+import { redactToolPayloadText } from "afora-agent/plugin-sdk/logging-core";
 import {
   buildRemoteBaseUrlPolicy,
   sanitizeAndNormalizeEmbedding,
   withRemoteHttpResponse,
   type MemoryEmbeddingProvider,
   type MemoryEmbeddingProviderAdapter,
-} from "openclaw/plugin-sdk/memory-core-host-engine-embeddings";
-import { buildCopilotIdeHeaders } from "openclaw/plugin-sdk/provider-auth";
+} from "afora-agent/plugin-sdk/memory-core-host-engine-embeddings";
+import { buildCopilotIdeHeaders } from "afora-agent/plugin-sdk/provider-auth";
 import {
   readProviderJsonResponse,
   readResponseTextLimited,
-} from "openclaw/plugin-sdk/provider-http";
-import { normalizeResolvedSecretInputString } from "openclaw/plugin-sdk/secret-input";
-import { fetchWithSsrFGuard, type SsrFPolicy } from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/provider-http";
+import { normalizeResolvedSecretInputString } from "afora-agent/plugin-sdk/secret-input";
+import { fetchWithSsrFGuard, type SsrFPolicy } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { resolveFirstGithubToken } from "./auth.js";
 import { resolveGithubCopilotDomain } from "./domain.js";
 import { CopilotRuntimeAuthError } from "./runtime-auth-error.js";

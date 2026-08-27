@@ -1,13 +1,13 @@
-# Mattermost OpenClaw channel
+# Mattermost Afora channel
 
-Official OpenClaw channel plugin for Mattermost.
+Official Afora channel plugin for Mattermost.
 
 ## Install
 
 ```sh
-openclaw plugins install @openclaw/mattermost
+afora plugins install @afora/mattermost
 ```
 
 ## Docs
 
-See `docs/channels/mattermost.md` in the OpenClaw repository, or the published docs at `https://docs.openclaw.ai/channels/mattermost`.
+See `docs/channels/mattermost.md` in the Afora repository, or the published docs at `https://docs.afora.ai/channels/mattermost`.

@@ -1,4 +1,4 @@
-import OpenClawKit
+import AforaKit
 import SwiftUI
 
 /// Control-hub Terminal destination: embeds the gateway-served terminal page
@@ -6,12 +6,12 @@ import SwiftUI
 /// WKWebView, authenticated with the stored gateway credentials.
 struct TerminalHubScreen: View {
     @Environment(NodeAppModel.self) private var appModel
-    let headerSidebarAction: OpenClawSidebarHeaderAction?
+    let headerSidebarAction: AforaSidebarHeaderAction?
     let usesNativeNavigationChrome: Bool
     let gatewayAction: (() -> Void)?
 
     init(
-        headerSidebarAction: OpenClawSidebarHeaderAction? = nil,
+        headerSidebarAction: AforaSidebarHeaderAction? = nil,
         usesNativeNavigationChrome: Bool = false,
         gatewayAction: (() -> Void)? = nil)
     {
@@ -24,7 +24,7 @@ struct TerminalHubScreen: View {
         let config = self.appModel.activeGatewayConnectConfig
         let storedOperatorToken = Self.storedOperatorToken(config: config)
         ZStack {
-            OpenClawProBackground()
+            AforaProBackground()
             if let url = Self.terminalURL(config: config) {
                 AuthenticatedControlUIWebView(
                     url: url,
@@ -52,13 +52,13 @@ struct TerminalHubScreen: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: gatewayAction) {
                         Image(systemName: "antenna.radiowaves.left.and.right")
-                            .font(OpenClawType.subheadSemiBold)
+                            .font(AforaType.subheadSemiBold)
                     }
                     .accessibilityLabel("Gateway settings")
                 }
             }
             if let headerSidebarAction {
-                OpenClawSidebarToolbarItem(
+                AforaSidebarToolbarItem(
                     action: headerSidebarAction,
                     placement: .topBarLeading)
             }
@@ -67,20 +67,20 @@ struct TerminalHubScreen: View {
 
     private var unavailableCard: some View {
         VStack(spacing: 12) {
-            ProIconBadge(systemName: "terminal", color: OpenClawBrand.accent)
+            ProIconBadge(systemName: "terminal", color: AforaBrand.accent)
             Text("Terminal needs a connected gateway")
-                .font(OpenClawType.subheadSemiBold)
+                .font(AforaType.subheadSemiBold)
             Text("Connect to your gateway to open a shell in the agent workspace.")
-                .font(OpenClawType.caption)
+                .font(AforaType.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             if let gatewayAction {
                 Button(action: gatewayAction) {
                     Text("Open Gateway Settings")
-                        .font(OpenClawType.subheadSemiBold)
+                        .font(AforaType.subheadSemiBold)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(OpenClawBrand.accent)
+                .tint(AforaBrand.accent)
             }
         }
         .padding(24)
@@ -98,7 +98,7 @@ struct TerminalHubScreen: View {
     }
 
     /// Origin-gated document-start script that hands the gateway credentials to
-    /// the Control UI via its `__OPENCLAW_NATIVE_CONTROL_AUTH__` startup contract
+    /// the Control UI via its `__AFORA_NATIVE_CONTROL_AUTH__` startup contract
     /// (the same mechanism the macOS Dashboard window uses), so the token never
     /// appears in the page URL, WebKit history, or gateway request logs.
     static func terminalAuthUserScript(config: GatewayConnectConfig?) -> String? {

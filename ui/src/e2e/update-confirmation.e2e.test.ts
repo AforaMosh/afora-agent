@@ -24,7 +24,7 @@ const PROOF_DIR = path.resolve(".artifacts/control-ui-e2e/update-confirmation");
 
 /** The dialog element lives in a shadow root; its visible copy is slotted light DOM. */
 function confirmationCopy(page: Page) {
-  return page.locator("openclaw-modal-dialog");
+  return page.locator("afora-modal-dialog");
 }
 
 async function openUpdateCard(page: Page, baseUrl: string) {

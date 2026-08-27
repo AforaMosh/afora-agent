@@ -1,5 +1,5 @@
 // Tests private message-tool final delivery and visibility suppression.
-import { estimateStringChars } from "@openclaw/normalization-core/cjk-chars";
+import { estimateStringChars } from "@afora/normalization-core/cjk-chars";
 import { describe, expect, it } from "vitest";
 import { classifyPrivateMessageToolFinal } from "./private-message-tool-final.js";
 

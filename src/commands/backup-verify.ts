@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
-import { toStringifiedError } from "@openclaw/normalization-core/error-coercion";
+import { toStringifiedError } from "@afora/normalization-core/error-coercion";
 import * as tar from "tar";
 import { loadSqliteVecExtension } from "../../packages/memory-host-sdk/src/engine-storage.js";
 import {
@@ -253,16 +253,16 @@ function assertCanonicalSqlitePathCasing(relativePath: string, archivePath: stri
   const segments = relativePath.split("/");
   const portablePath = resolvePortableArchivePathKey(relativePath);
   const isGlobalAlias =
-    portablePath === "state/openclaw.sqlite" && relativePath !== "state/openclaw.sqlite";
+    portablePath === "state/afora.sqlite" && relativePath !== "state/afora.sqlite";
   const isAgentAlias =
     segments.length === 4 &&
     segments[0]?.toLowerCase() === "agents" &&
     Boolean(segments[1]) &&
     segments[2]?.toLowerCase() === "agent" &&
-    segments[3]?.toLowerCase() === "openclaw-agent.sqlite" &&
+    segments[3]?.toLowerCase() === "afora-agent.sqlite" &&
     (segments[0] !== "agents" ||
       segments[2] !== "agent" ||
-      segments[3] !== "openclaw-agent.sqlite");
+      segments[3] !== "afora-agent.sqlite");
   if (isGlobalAlias || isAgentAlias) {
     throw new Error(`Backup contains a case-mangled canonical SQLite path: ${archivePath}`);
   }
@@ -348,7 +348,7 @@ function resolveExpectedSqliteRole(entry: SqliteSnapshotEntry): ExpectedSqliteRo
 function resolveExpectedSqliteRoleFromRelativePath(
   relativePath: string,
 ): ExpectedSqliteRole | undefined {
-  if (relativePath === "state/openclaw.sqlite") {
+  if (relativePath === "state/afora.sqlite") {
     return "global";
   }
   const segments = relativePath.split("/");
@@ -357,7 +357,7 @@ function resolveExpectedSqliteRoleFromRelativePath(
     segments[0] === "agents" &&
     segments[1] &&
     segments[2] === "agent" &&
-    segments[3] === "openclaw-agent.sqlite"
+    segments[3] === "afora-agent.sqlite"
   ) {
     return "agent";
   }
@@ -479,7 +479,7 @@ async function verifySqliteSnapshots(params: {
 
   const tempRoot = os.tmpdir();
   assertSqliteExtractionBudget({ entries: sqliteEntries, tempRoot });
-  const tempDir = await fs.mkdtemp(path.join(tempRoot, "openclaw-backup-verify-sqlite-"));
+  const tempDir = await fs.mkdtemp(path.join(tempRoot, "afora-backup-verify-sqlite-"));
   try {
     const sqliteEntriesByRawPath = new Map(sqliteEntries.map((entry) => [entry.raw, entry]));
     await tar.x({
@@ -553,7 +553,7 @@ async function verifyResolvedBackupArchive(archivePath: string): Promise<BackupV
   } catch (error) {
     if (hasErrnoCode(error, "ENOENT")) {
       throw new Error(
-        "Archive does not exist. Check the path and run `openclaw backup verify <archive>` again.",
+        "Archive does not exist. Check the path and run `afora backup verify <archive>` again.",
         { cause: error },
       );
     }
@@ -564,7 +564,7 @@ async function verifyResolvedBackupArchive(archivePath: string): Promise<BackupV
   }
   if (!archiveStat.isFile()) {
     throw new Error(
-      "Archive must be a regular file. Choose a backup archive created by `openclaw backup create` and try again.",
+      "Archive must be a regular file. Choose a backup archive created by `afora backup create` and try again.",
     );
   }
 
@@ -575,7 +575,7 @@ async function verifyResolvedBackupArchive(archivePath: string): Promise<BackupV
   });
   if (listing.invalidReason) {
     throw new Error(
-      `Archive is not a valid OpenClaw backup. ${listing.invalidReason.replace(/[.!?]*$/u, ".")} Choose another archive or create a new one with \`openclaw backup create\`.`,
+      `Archive is not a valid Afora backup. ${listing.invalidReason.replace(/[.!?]*$/u, ".")} Choose another archive or create a new one with \`afora backup create\`.`,
     );
   }
   const rawEntries = listing.entries;

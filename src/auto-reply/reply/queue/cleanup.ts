@@ -1,5 +1,5 @@
 // Cleans stale queue state and recent dedupe entries.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { resolveEmbeddedSessionLane } from "../../../agents/embedded-agent-runner/lanes.js";
 import { clearCommandLane } from "../../../process/command-queue.js";
 import { clearFollowupDrainCallback } from "./drain.js";
@@ -51,7 +51,7 @@ const queueCleanupTestApi = {
 };
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
-  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("openclaw.queueCleanupTestApi")] =
+  (globalThis as Record<PropertyKey, unknown>)[Symbol.for("afora.queueCleanupTestApi")] =
     queueCleanupTestApi;
 }
 

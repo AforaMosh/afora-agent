@@ -23,8 +23,8 @@ function bundledSource(pluginId: string, localPath: string): Map<string, Bundled
 
 describe("listStaleLocalBundledPluginInstallRecords", () => {
   it("lists path install records that point at stale compiled bundled output", () => {
-    const currentPath = path.join("/opt/openclaw", "dist", "extensions", "discord");
-    const stalePath = path.join("/tmp/old-openclaw", "dist", "extensions", "discord");
+    const currentPath = path.join("/opt/afora", "dist", "extensions", "discord");
+    const stalePath = path.join("/tmp/old-afora", "dist", "extensions", "discord");
     const records: Record<string, PluginInstallRecord> = {
       discord: {
         source: "path",
@@ -54,7 +54,7 @@ describe("listStaleLocalBundledPluginInstallRecords", () => {
   });
 
   it("does not list the current bundled path", () => {
-    const currentPath = path.join("/opt/openclaw", "dist", "extensions", "discord");
+    const currentPath = path.join("/opt/afora", "dist", "extensions", "discord");
 
     expect(
       listStaleLocalBundledPluginInstallRecords({
@@ -71,38 +71,38 @@ describe("listStaleLocalBundledPluginInstallRecords", () => {
   });
 
   it("does not list compiled bundled paths without a stale version", () => {
-    const currentPath = path.join("/opt/openclaw", "dist", "extensions", "discord");
+    const currentPath = path.join("/opt/afora", "dist", "extensions", "discord");
 
     expect(
       listStaleLocalBundledPluginInstallRecords({
         installRecords: {
           discord: {
             source: "path",
-            installPath: path.join("/tmp/local-openclaw", "dist", "extensions", "discord"),
+            installPath: path.join("/tmp/local-afora", "dist", "extensions", "discord"),
           },
           acpx: {
             source: "path",
-            installPath: path.join("/tmp/local-openclaw", "dist", "extensions", "acpx"),
+            installPath: path.join("/tmp/local-afora", "dist", "extensions", "acpx"),
             version: "2026.5.20",
           },
         },
         bundled: new Map([
           ...bundledSource("discord", currentPath),
-          ...bundledSource("acpx", path.join("/opt/openclaw", "dist", "extensions", "acpx")),
+          ...bundledSource("acpx", path.join("/opt/afora", "dist", "extensions", "acpx")),
         ]),
       }),
     ).toStrictEqual([]);
   });
 
   it("does not list source checkout or arbitrary local plugin paths", () => {
-    const currentPath = path.join("/opt/openclaw", "dist", "extensions", "discord");
+    const currentPath = path.join("/opt/afora", "dist", "extensions", "discord");
 
     expect(
       listStaleLocalBundledPluginInstallRecords({
         installRecords: {
           discord: {
             source: "path",
-            installPath: path.join("/tmp/openclaw", "extensions", "discord"),
+            installPath: path.join("/tmp/afora", "extensions", "discord"),
             version: "2026.5.4-beta.3",
           },
           acpx: {
@@ -113,7 +113,7 @@ describe("listStaleLocalBundledPluginInstallRecords", () => {
         },
         bundled: new Map([
           ...bundledSource("discord", currentPath),
-          ...bundledSource("acpx", path.join("/opt/openclaw", "dist", "extensions", "acpx")),
+          ...bundledSource("acpx", path.join("/opt/afora", "dist", "extensions", "acpx")),
         ]),
       }),
     ).toStrictEqual([]);
@@ -122,8 +122,8 @@ describe("listStaleLocalBundledPluginInstallRecords", () => {
 
 describe("pruneStaleLocalBundledPluginInstallRecords", () => {
   it("removes only stale local bundled plugin install records", () => {
-    const currentPath = path.join("/opt/openclaw", "dist", "extensions", "discord");
-    const stalePath = path.join("/tmp/old-openclaw", "dist", "extensions", "discord");
+    const currentPath = path.join("/opt/afora", "dist", "extensions", "discord");
+    const stalePath = path.join("/tmp/old-afora", "dist", "extensions", "discord");
     const records: Record<string, PluginInstallRecord> = {
       discord: {
         source: "path",

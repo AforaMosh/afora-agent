@@ -1,6 +1,6 @@
 // Session checkout diff for operator clients, filtered against the exact
 // working-tree state captured when the logical session started.
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   ErrorCodes,
   errorShape,

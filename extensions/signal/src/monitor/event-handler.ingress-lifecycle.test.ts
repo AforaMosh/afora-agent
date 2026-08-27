@@ -1,5 +1,5 @@
 // Signal tests cover drain claim ownership through debounce, merge, and skip.
-import type { MsgContext } from "openclaw/plugin-sdk/reply-runtime";
+import type { MsgContext } from "afora-agent/plugin-sdk/reply-runtime";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SignalIngressLifecycle } from "../signal-ingress.js";
 
@@ -49,9 +49,9 @@ vi.mock("../send-reactions.js", () => ({
   removeReactionSignal: vi.fn(async () => ({ ok: true })),
 }));
 
-vi.mock("openclaw/plugin-sdk/channel-inbound", async () => {
-  const actual = await vi.importActual<typeof import("openclaw/plugin-sdk/channel-inbound")>(
-    "openclaw/plugin-sdk/channel-inbound",
+vi.mock("afora-agent/plugin-sdk/channel-inbound", async () => {
+  const actual = await vi.importActual<typeof import("afora-agent/plugin-sdk/channel-inbound")>(
+    "afora-agent/plugin-sdk/channel-inbound",
   );
   type RunParams = Parameters<typeof actual.runChannelInboundEvent>[0];
   return {
@@ -78,7 +78,7 @@ vi.mock("openclaw/plugin-sdk/channel-inbound", async () => {
         channel: resolved.channel,
         accountId: resolved.accountId,
         routeSessionKey: resolved.route.sessionKey,
-        storePath: "/tmp/openclaw/signal-sessions.json",
+        storePath: "/tmp/afora/signal-sessions.json",
         ctxPayload: resolved.ctxPayload,
         recordInboundSession: recordInboundSessionMock,
         afterRecord: resolved.afterRecord,

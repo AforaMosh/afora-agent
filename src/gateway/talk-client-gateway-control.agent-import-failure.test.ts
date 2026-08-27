@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 
 type ConsultParams = Parameters<
   typeof import("../talk/agent-consult-runtime.js").consultRealtimeVoiceAgent
@@ -31,7 +31,7 @@ import { createTalkClientAgentConsultRunner } from "./talk-client-gateway-contro
 it("does not create Talk admission when lazy core loading fails", async () => {
   mocks.consultRealtimeVoiceAgent.mockImplementationOnce(async (params: ConsultParams) => {
     await params.agentRuntime.runEmbeddedAgent({
-      config: {} as OpenClawConfig,
+      config: {} as AforaConfig,
       prompt: "check",
       runId: "run-talk-import-failure",
       sessionId: "session-talk-import-failure",
@@ -41,7 +41,7 @@ it("does not create Talk admission when lazy core loading fails", async () => {
     return { text: "unexpected" };
   });
   const runner = createTalkClientAgentConsultRunner({
-    config: {} as OpenClawConfig,
+    config: {} as AforaConfig,
     context: { chatAbortControllers: new Map(), logGateway: { warn: vi.fn() } } as never,
     agentId: "main",
     sessionKey: "agent:main:talk",

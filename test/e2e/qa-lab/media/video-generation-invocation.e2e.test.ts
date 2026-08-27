@@ -3,7 +3,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { PreparedModelRuntimeSnapshot } from "../../../../src/agents/prepared-model-runtime.js";
 import { createVideoGenerateTool } from "../../../../src/agents/tools/video-generate-tool.js";
-import type { OpenClawConfig } from "../../../../src/config/types.js";
+import type { AforaConfig } from "../../../../src/config/types.js";
 import { withEnvAsync } from "../../../../src/test-utils/env.js";
 import { resolveVideoGenerationModeCapabilities } from "../../../../src/video-generation/capabilities.js";
 import type {
@@ -28,7 +28,7 @@ function createPreparedRuntime(providers: VideoGenerationProvider[]): PreparedMo
   } as unknown as PreparedModelRuntimeSnapshot;
 }
 
-function createConfig(primary: string, fallbacks: string[]): OpenClawConfig {
+function createConfig(primary: string, fallbacks: string[]): AforaConfig {
   return {
     agents: {
       defaults: {
@@ -58,7 +58,7 @@ describe("video generation invocation QA", () => {
   const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
   it("selects image-to-video fallback, forwards declared options, and persists video bytes", async () => {
-    const root = tempDirs.make("openclaw-qa-video-invocation-");
+    const root = tempDirs.make("afora-qa-video-invocation-");
     const referenceBytes = createSolidPngBuffer(2, 2, { r: 32, g: 112, b: 224 });
     const referencePath = path.join(root, "reference.png");
     await fs.writeFile(referencePath, referenceBytes);
@@ -118,7 +118,7 @@ describe("video generation invocation QA", () => {
     const config = createConfig("qa-limited-video/limited-v1", ["qa-capable-video/capable-v1"]);
     const providerOptions = { seed: 17, draft: true };
 
-    await withEnvAsync({ OPENCLAW_STATE_DIR: path.join(root, "state") }, async () => {
+    await withEnvAsync({ AFORA_STATE_DIR: path.join(root, "state") }, async () => {
       const tool = requireVideoTool(
         createVideoGenerateTool({
           config,

@@ -2,8 +2,8 @@
  * Builds the prompt after session preparation and before provider submission.
  * It may assume session, hook, cache, and context-engine inputs are ready.
  */
-import { ensureSystemPromptCacheBoundary } from "@openclaw/ai/internal/shared";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { ensureSystemPromptCacheBoundary } from "@afora/ai/internal/shared";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { filterHeartbeatTranscriptArtifacts } from "../../../auto-reply/heartbeat-filter.js";
 import { getRuntimeConfig } from "../../../config/config.js";
 import type { SessionSystemPromptReport } from "../../../config/sessions/types.js";

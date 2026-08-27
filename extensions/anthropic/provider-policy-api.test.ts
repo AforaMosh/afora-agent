@@ -1,5 +1,5 @@
 // Anthropic tests cover provider policy api plugin behavior.
-import type { ModelDefinitionConfig } from "openclaw/plugin-sdk/provider-model-types";
+import type { ModelDefinitionConfig } from "afora-agent/plugin-sdk/provider-model-types";
 import { describe, expect, it } from "vitest";
 import {
   applyConfigDefaults,

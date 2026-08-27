@@ -1,9 +1,9 @@
 /** Filesystem discovery and bounded JSON readers for local secret storage audits. */
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord as isJsonObject } from "@openclaw/normalization-core/record-coerce";
+import { isRecord as isJsonObject } from "@afora/normalization-core/record-coerce";
 import { listAgentIds, resolveAgentDir } from "../agents/agent-scope.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { resolveUserPath } from "../utils.js";
 import { parseEnvValue } from "./shared.js";
@@ -23,7 +23,7 @@ export function listSecretsDotEnvPaths(params: { configPath: string; stateDir: s
 }
 
 function resolveActiveAgentDir(stateDir: string, env: NodeJS.ProcessEnv = process.env): string {
-  const override = env.OPENCLAW_AGENT_DIR?.trim() || env.PI_CODING_AGENT_DIR?.trim();
+  const override = env.AFORA_AGENT_DIR?.trim() || env.PI_CODING_AGENT_DIR?.trim();
   if (override) {
     return resolveUserPath(override, env);
   }
@@ -36,7 +36,7 @@ function resolveActiveAgentDir(stateDir: string, env: NodeJS.ProcessEnv = proces
  * Includes active env override, implicit main agent, discovered state dirs, and configured agents.
  */
 export function listAgentModelsJsonPaths(
-  config: OpenClawConfig,
+  config: AforaConfig,
   stateDir: string,
   env: NodeJS.ProcessEnv = process.env,
 ): string[] {

@@ -4,13 +4,13 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { TextDecoder } from "node:util";
-import { readByteStreamWithLimit } from "@openclaw/media-core/read-byte-stream-with-limit";
-import { parseStrictNonNegativeInteger } from "@openclaw/normalization-core/number-coercion";
+import { readByteStreamWithLimit } from "@afora/media-core/read-byte-stream-with-limit";
+import { parseStrictNonNegativeInteger } from "@afora/normalization-core/number-coercion";
 import { findAgentRunTerminalOutcome } from "../agents/agent-run-terminal-error.js";
 import type { EmbeddedAgentRunMeta } from "../agents/embedded-agent.js";
 import { isExecutionIdentityCollectionEnabled } from "../audit/audit-config.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { mergeDeep } from "../infra/deep-merge.js";
 import type {
   EmbeddedStateLockHandle,
@@ -299,7 +299,7 @@ function normalizeCodeMode(
  * `agents.bindings[].acp.cwd` needs no equivalent because exec runs no channel,
  * so no binding matches.
  */
-function stripInheritedAgentLocations(base: OpenClawConfig): OpenClawConfig {
+function stripInheritedAgentLocations(base: AforaConfig): AforaConfig {
   const { session, ...root } = base;
   const { store: _store, ...sessionWithoutStore } = session ?? {};
   const withoutSessionStore = session ? { ...root, session: sessionWithoutStore } : base;
@@ -322,14 +322,14 @@ function stripInheritedAgentLocations(base: OpenClawConfig): OpenClawConfig {
         }),
       ),
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function buildExecRunOverlay(params: {
-  base: OpenClawConfig;
+  base: AforaConfig;
   cwd: string;
   opts: Pick<AgentExecCliOptions, "codeMode" | "localModelLean">;
-}): OpenClawConfig {
+}): AforaConfig {
   const codeMode = normalizeCodeMode(params.opts.codeMode);
   // A per-agent `workspace` outranks `agents.defaults`, so pinning only the
   // defaults would let an inherited entry silently run the turn against a
@@ -350,7 +350,7 @@ function buildExecRunOverlay(params: {
     // observed and would leave Chokidar retaining the otherwise-finished CLI.
     skills: { load: { watch: false } },
     ...(codeMode !== undefined ? { tools: { codeMode } } : {}),
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 /**
@@ -358,7 +358,7 @@ function buildExecRunOverlay(params: {
  * operator who configured a tool profile, shell env, or sandbox keeps it;
  * notably exec must never downgrade a configured sandbox to `off`.
  */
-function buildExecConfigDefaults(): OpenClawConfig {
+function buildExecConfigDefaults(): AforaConfig {
   return {
     env: { shellEnv: { enabled: false } },
     agents: { defaults: { sandbox: { mode: "off" } } },
@@ -387,7 +387,7 @@ function buildExecConfigDefaults(): OpenClawConfig {
  */
 export async function resolveExecBaseConfig(
   opts: Pick<AgentExecCliOptions, "authEnvOnly" | "config" | "isolated">,
-): Promise<OpenClawConfig> {
+): Promise<AforaConfig> {
   // `--isolated` and `--auth-env-only` both mean "read no config", so pairing
   // either with `--config` is a contradiction. Failing beats silently ignoring
   // the pinned file, which would run a CI invocation on bare exec defaults.
@@ -424,17 +424,17 @@ export async function resolveExecBaseConfig(
 }
 
 export function buildExecRunConfig(params: {
-  base: OpenClawConfig;
+  base: AforaConfig;
   cwd: string;
   opts?: Pick<AgentExecCliOptions, "codeMode" | "localModelLean">;
-}): OpenClawConfig {
+}): AforaConfig {
   const opts = params.opts ?? {};
   const base = stripInheritedAgentLocations(params.base);
-  const withDefaults = mergeDeep(buildExecConfigDefaults(), base) as OpenClawConfig;
+  const withDefaults = mergeDeep(buildExecConfigDefaults(), base) as AforaConfig;
   return mergeDeep(
     withDefaults,
     buildExecRunOverlay({ base, cwd: params.cwd, opts }),
-  ) as OpenClawConfig;
+  ) as AforaConfig;
 }
 
 function normalizeTimeoutSeconds(value: string | undefined): string {
@@ -468,36 +468,36 @@ async function requireDirectory(value: string, label: string): Promise<string> {
 }
 
 function setAgentExecEnvironment(params: { stateDir: string; cwd: string }): () => void {
-  const previousStateDir = process.env.OPENCLAW_STATE_DIR;
+  const previousStateDir = process.env.AFORA_STATE_DIR;
   // Repointing the state dir would otherwise make the config resolve relative to
   // it (see `resolveConfigDir`), so clear any inherited path override and let the
   // published runtime snapshot own config for this run.
-  const previousConfigPath = process.env.OPENCLAW_CONFIG_PATH;
-  const previousWorkspaceDir = process.env.OPENCLAW_WORKSPACE_DIR;
-  process.env.OPENCLAW_STATE_DIR = params.stateDir;
-  delete process.env.OPENCLAW_CONFIG_PATH;
-  process.env.OPENCLAW_WORKSPACE_DIR = params.cwd;
+  const previousConfigPath = process.env.AFORA_CONFIG_PATH;
+  const previousWorkspaceDir = process.env.AFORA_WORKSPACE_DIR;
+  process.env.AFORA_STATE_DIR = params.stateDir;
+  delete process.env.AFORA_CONFIG_PATH;
+  process.env.AFORA_WORKSPACE_DIR = params.cwd;
   return () => {
     if (previousStateDir === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+      delete process.env.AFORA_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = previousStateDir;
+      process.env.AFORA_STATE_DIR = previousStateDir;
     }
     if (previousConfigPath === undefined) {
-      delete process.env.OPENCLAW_CONFIG_PATH;
+      delete process.env.AFORA_CONFIG_PATH;
     } else {
-      process.env.OPENCLAW_CONFIG_PATH = previousConfigPath;
+      process.env.AFORA_CONFIG_PATH = previousConfigPath;
     }
     if (previousWorkspaceDir === undefined) {
-      delete process.env.OPENCLAW_WORKSPACE_DIR;
+      delete process.env.AFORA_WORKSPACE_DIR;
     } else {
-      process.env.OPENCLAW_WORKSPACE_DIR = previousWorkspaceDir;
+      process.env.AFORA_WORKSPACE_DIR = previousWorkspaceDir;
     }
   };
 }
 
 function formatActiveGatewayExecRefusal(identity: GatewayLockIdentity): string {
-  return `A Gateway is running for this state directory (pid ${identity.pid}, port ${identity.port}). Omit --state-dir to use isolated temporary state, or stop the Gateway first (${formatCliCommand("openclaw gateway stop")}).`;
+  return `A Gateway is running for this state directory (pid ${identity.pid}, port ${identity.port}). Omit --state-dir to use isolated temporary state, or stop the Gateway first (${formatCliCommand("afora gateway stop")}).`;
 }
 
 function isStructuredTimeoutError(error: unknown): boolean {
@@ -590,7 +590,7 @@ export async function agentExecCommand(
     const cwd = await requireDirectory(opts.cwd ?? process.cwd(), "Working directory");
     const stateDir = opts.stateDir
       ? await requireDirectory(opts.stateDir, "State directory")
-      : await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-agent-exec-"));
+      : await fs.mkdtemp(path.join(os.tmpdir(), "afora-agent-exec-"));
     // Only a state dir this command created is removed; `--state-dir` is the
     // caller's and is left alone.
     temporaryStateDir = opts.stateDir ? undefined : stateDir;
@@ -627,7 +627,7 @@ export async function agentExecCommand(
     const runConfig = buildExecRunConfig({ base: baseConfig, cwd, opts });
     // Installed plugins belong to the operator config resolved above, not to
     // the disposable state root used for this run. Capture all roots before
-    // OPENCLAW_STATE_DIR moves so discovery and the installed-index DB agree.
+    // AFORA_STATE_DIR moves so discovery and the installed-index DB agree.
     const inheritInstalledPlugins = opts.isolated !== true && opts.authEnvOnly !== true;
     const pluginInstallContext = inheritInstalledPlugins
       ? await import("../plugins/install-root-context.js")
@@ -672,7 +672,7 @@ export async function agentExecCommand(
     // The runtime snapshot is the only in-process config cache (`clearConfigCache`
     // is a no-op shim), so publishing the composed config here is what makes the
     // run use it. Serializing it to a temporary file and repointing
-    // OPENCLAW_CONFIG_PATH would only feed this same snapshot, while writing
+    // AFORA_CONFIG_PATH would only feed this same snapshot, while writing
     // env-substituted provider keys to disk where the run's own exec tool
     // could read them.
     snapshotIo.setRuntimeConfigSnapshot(runConfig);

@@ -1,9 +1,9 @@
 /** Lazy preparation runtimes and session lifecycle helpers for cron runs. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { retireSessionMcpRuntime } from "../../agents/agent-bundle-mcp-tools.js";
 import { HEARTBEAT_TOKEN } from "../../auto-reply/tokens.js";
 import type { CliDeps } from "../../cli/outbound-send-deps.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { createLazyImportLoader } from "../../shared/lazy-promise.js";
 import type {
   CronAgentExecutionPhaseUpdate,
@@ -16,7 +16,7 @@ import { logWarn } from "./run.runtime.js";
 import type { RunCronAgentTurnResult } from "./run.types.js";
 
 export type RunCronAgentTurnParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   deps: CliDeps;
   job: CronStoredJob;
   message: string;
@@ -69,7 +69,7 @@ export async function loadCronModelPreflightRuntime() {
   return await cronModelPreflightRuntimeLoader.load();
 }
 
-export function hasConfiguredAuthProfiles(cfg: OpenClawConfig): boolean {
+export function hasConfiguredAuthProfiles(cfg: AforaConfig): boolean {
   return (
     Boolean(cfg.auth?.profiles && Object.keys(cfg.auth.profiles).length > 0) ||
     Boolean(cfg.auth?.order && Object.keys(cfg.auth.order).length > 0)

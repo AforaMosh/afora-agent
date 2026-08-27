@@ -216,7 +216,7 @@ describe("requestClaudeNativeToolApproval", () => {
   });
 
   it("checks Bash script drift before rejecting an unexpected allow-always", async () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-claude-always-drift-"));
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "afora-claude-always-drift-"));
     const script = path.join(cwd, "script.sh");
     try {
       fs.writeFileSync(script, "#!/bin/sh\necho approved\n");

@@ -374,9 +374,9 @@ export function createConfigWriteAuditRecordBase(params: {
     cwd: processSnapshot.cwd,
     argv: processSnapshot.argv,
     execArgv: processSnapshot.execArgv,
-    watchMode: params.env.OPENCLAW_WATCH_MODE === "1",
-    watchSession: normalizeAuditLabel(params.env.OPENCLAW_WATCH_SESSION),
-    watchCommand: normalizeAuditLabel(params.env.OPENCLAW_WATCH_COMMAND),
+    watchMode: params.env.AFORA_WATCH_MODE === "1",
+    watchSession: normalizeAuditLabel(params.env.AFORA_WATCH_SESSION),
+    watchCommand: normalizeAuditLabel(params.env.AFORA_WATCH_COMMAND),
     existsBefore: params.existsBefore,
     previousHash: params.previousHash,
     nextHash: params.nextHash,
@@ -486,7 +486,7 @@ export type ConfigAuditScrubResult = {
   rewritten: number;
   skipped: number;
   // True when the scrub detected concurrent appends mid-rewrite and refused
-  // to swap the file. Caller should re-run `openclaw doctor --fix` once the
+  // to swap the file. Caller should re-run `afora doctor --fix` once the
   // gateway is idle. No on-disk content was modified on abort.
   aborted: boolean;
 };

@@ -35,10 +35,10 @@ describe("redactSensitiveUrl", () => {
   it("redacts resource-scoped bearer token query params", () => {
     expect(
       redactSensitiveUrl(
-        `https://gateway.example.com/webhooks/sms?upstream-token=keep&__openclaw_mms_token_${"a".repeat(24)}=${"b".repeat(48)}`,
+        `https://gateway.example.com/webhooks/sms?upstream-token=keep&__afora_mms_token_${"a".repeat(24)}=${"b".repeat(48)}`,
       ),
     ).toBe(
-      `https://gateway.example.com/webhooks/sms?upstream-token=***&__openclaw_mms_token_${"a".repeat(24)}=***`,
+      `https://gateway.example.com/webhooks/sms?upstream-token=***&__afora_mms_token_${"a".repeat(24)}=***`,
     );
   });
 
@@ -298,7 +298,7 @@ describe("isSensitiveUrlQueryParamName", () => {
     expect(isSensitiveUrlQueryParamName("x-access-token")).toBe(true);
     expect(isSensitiveUrlQueryParamName("x-auth-token")).toBe(true);
     expect(isSensitiveUrlQueryParamName("upstream-token")).toBe(true);
-    expect(isSensitiveUrlQueryParamName(`__openclaw_mms_token_${"a".repeat(24)}`)).toBe(true);
+    expect(isSensitiveUrlQueryParamName(`__afora_mms_token_${"a".repeat(24)}`)).toBe(true);
     expect(isSensitiveUrlQueryParamName("signal")).toBe(false);
     expect(isSensitiveUrlQueryParamName("sigmoid")).toBe(false);
     expect(isSensitiveUrlQueryParamName("token_count")).toBe(false);

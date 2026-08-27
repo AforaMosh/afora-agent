@@ -1,17 +1,17 @@
 import { createHash } from "node:crypto";
-import type { Model } from "@openclaw/llm-core";
+import type { Model } from "@afora/llm-core";
 import {
   asFiniteNumberInRange,
   parseStrictFiniteNumber,
   parseStrictNonNegativeInteger,
-} from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+} from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { getAiTransportHost } from "../host.js";
 import { parseRetryAfterHttpDateMs } from "../internal/retry-after.js";
 
 export const MALFORMED_STREAMING_FRAGMENT_ERROR_MESSAGE =
-  "OpenClaw transport error: malformed_streaming_fragment";
+  "Afora transport error: malformed_streaming_fragment";
 export const CHARS_PER_TOKEN_ESTIMATE = 4;
 const NON_LATIN_RE =
   /[\u2E80-\u9FFF\uA000-\uA4FF\uAC00-\uD7AF\uF900-\uFAFF\uFF01-\uFF60\uFFE0-\uFFE6\u{20000}-\u{2FA1F}]/gu;

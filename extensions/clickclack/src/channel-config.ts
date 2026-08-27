@@ -1,6 +1,6 @@
 // ClickClack plugin module shares channel metadata and account config behavior.
-import type { ChannelPlugin } from "openclaw/plugin-sdk/channel-core";
-import { getChatChannelMeta } from "openclaw/plugin-sdk/channel-plugin-common";
+import type { ChannelPlugin } from "afora-agent/plugin-sdk/channel-core";
+import { getChatChannelMeta } from "afora-agent/plugin-sdk/channel-plugin-common";
 import {
   DEFAULT_ACCOUNT_ID,
   listClickClackAccountIds,

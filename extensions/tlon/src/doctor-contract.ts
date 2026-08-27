@@ -1,5 +1,5 @@
 // Tlon plugin module implements doctor contract behavior.
-import { createLegacyPrivateNetworkDoctorContract } from "openclaw/plugin-sdk/runtime-doctor-migrations";
+import { createLegacyPrivateNetworkDoctorContract } from "afora-agent/plugin-sdk/runtime-doctor-migrations";
 
 const contract = createLegacyPrivateNetworkDoctorContract({
   channelKey: "tlon",

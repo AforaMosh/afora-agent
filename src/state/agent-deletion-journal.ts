@@ -11,19 +11,19 @@ import { resolveSqliteDatabaseFilePaths } from "../infra/sqlite-files.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import { deleteAgentProvenanceForAgent, ensureAgentProvenanceSchema } from "./agent-provenance.js";
 import type {
-  OpenClawStateDatabase,
-  OpenClawStateDatabaseOptions,
-} from "./openclaw-state-db-contract.js";
-import { ensureAgentDeletionJournalSchema } from "./openclaw-state-db-schema-additive.js";
-import type { DB as OpenClawStateKyselyDatabase } from "./openclaw-state-db.generated.js";
-import { runOpenClawStateWriteTransaction } from "./openclaw-state-db.js";
+  AforaStateDatabase,
+  AforaStateDatabaseOptions,
+} from "./afora-state-db-contract.js";
+import { ensureAgentDeletionJournalSchema } from "./afora-state-db-schema-additive.js";
+import type { DB as AforaStateKyselyDatabase } from "./afora-state-db.generated.js";
+import { runAforaStateWriteTransaction } from "./afora-state-db.js";
 import {
-  resolveOpenClawRegisteredAgentDatabasePath,
-  resolveOpenClawStateSqlitePath,
-} from "./openclaw-state-db.paths.js";
+  resolveAforaRegisteredAgentDatabasePath,
+  resolveAforaStateSqlitePath,
+} from "./afora-state-db.paths.js";
 
 type AgentDeletionDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "agent_databases" | "agent_deletion_journal"
 >;
 
@@ -63,7 +63,7 @@ export function assertAgentDeletionIdentityClaimAllowed(
 ): void {
   if (deletedAgentId && normalizeAgentId(claimAgentId) === normalizeAgentId(deletedAgentId)) {
     throw new Error(
-      `OpenClaw agent database is unavailable while agent ${normalizeAgentId(deletedAgentId)} is deleted.`,
+      `Afora agent database is unavailable while agent ${normalizeAgentId(deletedAgentId)} is deleted.`,
     );
   }
 }
@@ -83,7 +83,7 @@ export type AgentDeletionJournalEntry = {
 
 export function prepareAgentDeletionPathFence(
   claim: { agentId: string; path: string; fenceAgentId?: string },
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): AgentDeletionPathFenceSnapshot {
   let rows: Array<{
     agent_id: string;
@@ -95,7 +95,7 @@ export function prepareAgentDeletionPathFence(
     cleanup_paths_json: string;
     cleanup_completed: number;
   }> = [];
-  runOpenClawStateWriteTransaction((database) => {
+  runAforaStateWriteTransaction((database) => {
     ensureAgentDeletionJournalSchema(database.db);
     const db = getNodeSqliteKysely<AgentDeletionDatabase>(database.db);
     rows = executeSqliteQuerySync(
@@ -150,7 +150,7 @@ export function prepareAgentDeletionPathFence(
 
 /** Refuse database claims beneath paths still owned by an unfinished deletion. */
 export function assertAgentDeletionPathFence(
-  database: OpenClawStateDatabase["db"],
+  database: AforaStateDatabase["db"],
   snapshot: AgentDeletionPathFenceSnapshot,
 ): void {
   ensureAgentDeletionJournalSchema(database);
@@ -251,7 +251,7 @@ export function assertAgentDeletionPathFence(
       );
       if (blockedPath) {
         throw new Error(
-          `OpenClaw agent database ${blockedPath} is unavailable while agent ${row.agent_id} deletion owns ${fence.path}.`,
+          `Afora agent database ${blockedPath} is unavailable while agent ${row.agent_id} deletion owns ${fence.path}.`,
         );
       }
     }
@@ -329,17 +329,17 @@ function parseCleanupPaths(value: string): AgentDeletionJournalCleanupPath[] {
 
 export function readAgentDeletionJournal(
   agentId: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): AgentDeletionJournalEntry | undefined {
   const id = normalizeAgentId(agentId);
   const databasePath = path.resolve(
-    options.path ?? resolveOpenClawStateSqlitePath(options.env ?? process.env),
+    options.path ?? resolveAforaStateSqlitePath(options.env ?? process.env),
   );
   if (!existsSync(databasePath)) {
     return undefined;
   }
   let entry: AgentDeletionJournalEntry | undefined;
-  runOpenClawStateWriteTransaction((database) => {
+  runAforaStateWriteTransaction((database) => {
     ensureAgentDeletionJournalSchema(database.db);
     const db = getNodeSqliteKysely<AgentDeletionDatabase>(database.db);
     const row = executeSqliteQueryTakeFirstSync(
@@ -359,7 +359,7 @@ export function beginAgentDeletionJournal(
     databasePaths?: string[];
     cleanupPaths?: AgentDeletionJournalCleanupPath[];
   },
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): AgentDeletionJournalEntry {
   const normalized = {
     ...entry,
@@ -371,7 +371,7 @@ export function beginAgentDeletionJournal(
   };
   let persisted: AgentDeletionJournalEntry | undefined;
   ensureAgentProvenanceSchema(options);
-  runOpenClawStateWriteTransaction((database) => {
+  runAforaStateWriteTransaction((database) => {
     ensureAgentDeletionJournalSchema(database.db);
     const db = getNodeSqliteKysely<AgentDeletionDatabase>(database.db);
     const existing = executeSqliteQueryTakeFirstSync(
@@ -386,7 +386,7 @@ export function beginAgentDeletionJournal(
       db.selectFrom("agent_databases").select("path").where("agent_id", "=", normalized.agentId),
     ).rows.flatMap((row) =>
       resolveSqliteDatabaseFilePaths(
-        resolveOpenClawRegisteredAgentDatabasePath(database.path, row.path),
+        resolveAforaRegisteredAgentDatabasePath(database.path, row.path),
       ),
     );
     const databasePaths = [
@@ -453,11 +453,11 @@ export function updateAgentDeletionJournalCleanupPaths(
   agentId: string,
   operationId: string,
   cleanupPaths: readonly AgentDeletionJournalCleanupPath[],
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): boolean {
   const id = normalizeAgentId(agentId);
   let updated = false;
-  runOpenClawStateWriteTransaction((database) => {
+  runAforaStateWriteTransaction((database) => {
     ensureAgentDeletionJournalSchema(database.db);
     const db = getNodeSqliteKysely<AgentDeletionDatabase>(database.db);
     const result = executeSqliteQuerySync(
@@ -478,12 +478,12 @@ export function updateAgentDeletionJournalDatabasePaths(
   agentId: string,
   operationId: string,
   databasePaths: readonly string[],
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): boolean {
   const id = normalizeAgentId(agentId);
   const normalizedPaths = [...new Set(databasePaths.map((entryPath) => path.resolve(entryPath)))];
   let updated = false;
-  runOpenClawStateWriteTransaction((database) => {
+  runAforaStateWriteTransaction((database) => {
     ensureAgentDeletionJournalSchema(database.db);
     const db = getNodeSqliteKysely<AgentDeletionDatabase>(database.db);
     const result = executeSqliteQuerySync(
@@ -503,11 +503,11 @@ export function updateAgentDeletionJournalDatabasePaths(
 export function completeAgentDeletionJournal(
   agentId: string,
   operationId: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): boolean {
   const id = normalizeAgentId(agentId);
   let completed = false;
-  runOpenClawStateWriteTransaction((database) => {
+  runAforaStateWriteTransaction((database) => {
     ensureAgentDeletionJournalSchema(database.db);
     const db = getNodeSqliteKysely<AgentDeletionDatabase>(database.db);
     const result = executeSqliteQuerySync(
@@ -526,11 +526,11 @@ export function completeAgentDeletionJournal(
 export function removeAgentDeletionJournal(
   agentId: string,
   operationId: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): boolean {
   const id = normalizeAgentId(agentId);
   let removed = false;
-  runOpenClawStateWriteTransaction((database) => {
+  runAforaStateWriteTransaction((database) => {
     ensureAgentDeletionJournalSchema(database.db);
     const db = getNodeSqliteKysely<AgentDeletionDatabase>(database.db);
     const result = executeSqliteQuerySync(
@@ -548,11 +548,11 @@ export function removeAgentDeletionJournal(
 export function claimCompletedAgentDeletionJournal(
   agentId: string,
   operationId: string,
-  options: OpenClawStateDatabaseOptions = {},
+  options: AforaStateDatabaseOptions = {},
 ): boolean {
   const id = normalizeAgentId(agentId);
   let removed = false;
-  runOpenClawStateWriteTransaction((database) => {
+  runAforaStateWriteTransaction((database) => {
     ensureAgentDeletionJournalSchema(database.db);
     const db = getNodeSqliteKysely<AgentDeletionDatabase>(database.db);
     const result = executeSqliteQuerySync(

@@ -1,7 +1,7 @@
 // Discord tests cover native command.command arg plugin behavior.
-import type { ChatCommandDefinition } from "openclaw/plugin-sdk/command-auth-native";
-import * as commandRegistryModule from "openclaw/plugin-sdk/command-auth-native";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { ChatCommandDefinition } from "afora-agent/plugin-sdk/command-auth-native";
+import * as commandRegistryModule from "afora-agent/plugin-sdk/command-auth-native";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DispatchDiscordCommandInteraction } from "./native-command-dispatch.js";
 import { createDiscordCommandArgFallbackButton } from "./native-command-ui.js";
@@ -33,13 +33,13 @@ function createCommandDefinition(): ChatCommandDefinition {
 }
 
 function createContext(
-  discordConfig: NonNullable<OpenClawConfig["channels"]>["discord"],
+  discordConfig: NonNullable<AforaConfig["channels"]>["discord"],
 ): CommandArgContext {
   const cfg = {
     channels: {
       discord: discordConfig,
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
   return {
     cfg,
     discordConfig,

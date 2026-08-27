@@ -6,7 +6,7 @@
  * only need to change their import path.
  */
 
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import type { SignalTransportConfig } from "./account-types.js";
 import { containerCheck, containerRpcRequest, streamContainerEvents } from "./client-container.js";
 import type { SignalRpcOptions } from "./client.js";

@@ -7,7 +7,7 @@ import {
   resolveAgentModelFallbackValues,
   resolveAgentModelPrimaryValue,
 } from "../../config/model-input.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { AssistantMessage } from "../../llm/types.js";
 import { providerSupportsNativePdfDocument } from "../../media-understanding/defaults.js";
 import { extractEmbeddedAssistantText } from "../embedded-agent-utils.js";
@@ -117,7 +117,7 @@ export function coercePdfAssistantText(params: {
 }
 
 /** Reads configured PDF primary/fallback models from agent defaults. */
-export function coercePdfModelConfig(cfg?: OpenClawConfig): PdfModelConfig {
+export function coercePdfModelConfig(cfg?: AforaConfig): PdfModelConfig {
   const primary = resolveAgentModelPrimaryValue(cfg?.agents?.defaults?.pdfModel);
   const fallbacks = resolveAgentModelFallbackValues(cfg?.agents?.defaults?.pdfModel);
   const modelConfig: PdfModelConfig = {};

@@ -1,5 +1,5 @@
 // Msteams plugin module implements graph teams behavior.
-import type { OpenClawConfig } from "../runtime-api.js";
+import type { AforaConfig } from "../runtime-api.js";
 import { type GraphResponse, fetchGraphJson, resolveGraphToken } from "./graph.js";
 
 // ---------------------------------------------------------------------------
@@ -16,7 +16,7 @@ type GraphTeamsChannel = {
 };
 
 type ListChannelsMSTeamsParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   teamId: string;
 };
 
@@ -31,7 +31,7 @@ type ListChannelsMSTeamsResult = {
 };
 
 type GetChannelInfoMSTeamsParams = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   teamId: string;
   channelId: string;
 };

@@ -1,7 +1,7 @@
 import { createServer, type Server } from "node:http";
-import { withFirstStreamEventTimeout } from "@openclaw/ai/internal/runtime";
+import { withFirstStreamEventTimeout } from "@afora/ai/internal/runtime";
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { ProviderRuntimeModel } from "../../plugins/provider-runtime-model.types.js";
 import type { StreamFn } from "../runtime/index.js";
 import { resolveModelAsync } from "./model.js";
@@ -54,7 +54,7 @@ function createRebuildingRuntimeHooks(
   };
 }
 
-function createProviderConfig(baseUrl: string, timeoutSeconds?: number): OpenClawConfig {
+function createProviderConfig(baseUrl: string, timeoutSeconds?: number): AforaConfig {
   return {
     models: {
       providers: {
@@ -88,7 +88,7 @@ async function resolveProviderModel(params: {
   const result = await resolveModelAsync(
     PROVIDER,
     MODEL_ID,
-    "/tmp/openclaw-provider-timeout-test-agent",
+    "/tmp/afora-provider-timeout-test-agent",
     createProviderConfig(params.baseUrl ?? "http://127.0.0.1:8123/v1", params.timeoutSeconds),
     {
       authStorage: { mocked: true } as never,

@@ -43,10 +43,10 @@ const ruleTextByMode: Record<BoundaryMode, string> = {
   "relative-outside-package":
     "Rule: production bundled plugins must not use relative imports that escape their own package root",
   "normalization-core-bypass":
-    "Rule: production bundled plugins must not import normalization-core directly; use the matching openclaw/plugin-sdk coercion runtime",
+    "Rule: production bundled plugins must not import normalization-core directly; use the matching afora/plugin-sdk coercion runtime",
 };
 
-const NORMALIZATION_CORE_PACKAGE = "@openclaw/normalization-core";
+const NORMALIZATION_CORE_PACKAGE = "@afora/normalization-core";
 const NORMALIZATION_CORE_ROOT = "packages/normalization-core";
 const DIRECT_COERCION_OWNER_PATHS = new Set(["src/infra/errors", "src/utils/boolean"]);
 
@@ -92,13 +92,13 @@ function recommendedCoercionFacade(resolvedPath: string): string | undefined {
     ownerPath.endsWith("/boolean-coercion") ||
     ownerPath === "src/utils/boolean"
   ) {
-    return "openclaw/plugin-sdk/string-coerce-runtime";
+    return "afora-agent/plugin-sdk/string-coerce-runtime";
   }
   if (ownerPath.endsWith("/number-coercion")) {
-    return "openclaw/plugin-sdk/number-runtime";
+    return "afora-agent/plugin-sdk/number-runtime";
   }
   if (ownerPath.endsWith("/error-coercion") || ownerPath === "src/infra/errors") {
-    return "openclaw/plugin-sdk/error-runtime";
+    return "afora-agent/plugin-sdk/error-runtime";
   }
   return undefined;
 }
@@ -112,16 +112,16 @@ function classifyReason(mode: BoundaryMode, kind: string, resolved: string, spec
         : "imports";
   if (mode === "normalization-core-bypass") {
     const facade = recommendedCoercionFacade(resolved);
-    if (facade === "openclaw/plugin-sdk/number-runtime") {
+    if (facade === "afora-agent/plugin-sdk/number-runtime") {
       return `${verb} ${specifier} directly; bundled plugin production code must use bundled/private-local ${facade}`;
     }
     return facade
       ? `${verb} ${specifier} directly; bundled plugin production code must use ${facade}`
-      : `${verb} ${specifier} directly; bundled plugin production code must use the matching openclaw/plugin-sdk facade, adding a narrow public SDK seam if needed`;
+      : `${verb} ${specifier} directly; bundled plugin production code must use the matching afora/plugin-sdk facade, adding a narrow public SDK seam if needed`;
   }
   if (mode === "relative-outside-package") {
     if (resolved.startsWith("src/plugin-sdk/")) {
-      return `${verb} plugin-sdk via relative path; use openclaw/plugin-sdk/<subpath>`;
+      return `${verb} plugin-sdk via relative path; use afora/plugin-sdk/<subpath>`;
     }
     if (resolved.startsWith("src/")) {
       return `${verb} core src path via relative path outside the extension package`;

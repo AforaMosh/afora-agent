@@ -1,5 +1,5 @@
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/channel-plugin-common";
-import type { PluginStateKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/channel-plugin-common";
+import type { PluginStateKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { registerDiscordActivities } from "./register.js";
 import { getDiscordActivitiesRuntime, setDiscordActivitiesRuntime } from "./runtime.js";
@@ -26,7 +26,7 @@ function createApi(config: Record<string, unknown>) {
     registerHttpRoute: vi.fn((route) => routes.push(route)),
     registerTool: vi.fn((tool, opts) => tools.push({ tool, opts })),
     resolvePath,
-  } as unknown as OpenClawPluginApi;
+  } as unknown as AforaPluginApi;
   return { api, routes, tools, warn, resolvePath };
 }
 

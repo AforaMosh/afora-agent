@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Duplex } from "node:stream";
 import type { Command } from "commander";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type {
   DiagnosticEventPrivateData,
   DiagnosticEventInput,
@@ -34,28 +34,28 @@ export type PluginInteractiveRegistration<
 
 export type PluginInteractiveHandlerRegistration = PluginInteractiveRegistration;
 
-export type OpenClawPluginHttpRouteAuth = "gateway" | "plugin";
-export type OpenClawPluginHttpRouteMatch = "exact" | "prefix";
-export type OpenClawPluginGatewayRuntimeScopeSurface = "write-default" | "trusted-operator";
+export type AforaPluginHttpRouteAuth = "gateway" | "plugin";
+export type AforaPluginHttpRouteMatch = "exact" | "prefix";
+export type AforaPluginGatewayRuntimeScopeSurface = "write-default" | "trusted-operator";
 
-export type OpenClawPluginHttpRouteHandler = (
+export type AforaPluginHttpRouteHandler = (
   req: IncomingMessage,
   res: ServerResponse,
 ) => Promise<boolean | void> | boolean | void;
 
-export type OpenClawPluginHttpRouteUpgradeHandler = (
+export type AforaPluginHttpRouteUpgradeHandler = (
   req: IncomingMessage,
   socket: Duplex,
   head: Buffer,
 ) => Promise<boolean | void> | boolean | void;
 
-export type OpenClawPluginHttpRouteParams = {
+export type AforaPluginHttpRouteParams = {
   path: string;
-  handler: OpenClawPluginHttpRouteHandler;
-  handleUpgrade?: OpenClawPluginHttpRouteUpgradeHandler;
-  auth: OpenClawPluginHttpRouteAuth;
-  match?: OpenClawPluginHttpRouteMatch;
-  gatewayRuntimeScopeSurface?: OpenClawPluginGatewayRuntimeScopeSurface;
+  handler: AforaPluginHttpRouteHandler;
+  handleUpgrade?: AforaPluginHttpRouteUpgradeHandler;
+  auth: AforaPluginHttpRouteAuth;
+  match?: AforaPluginHttpRouteMatch;
+  gatewayRuntimeScopeSurface?: AforaPluginGatewayRuntimeScopeSurface;
   nodeCapability?: {
     surface: string;
     ttlMs?: number;
@@ -63,88 +63,88 @@ export type OpenClawPluginHttpRouteParams = {
   replaceExisting?: boolean;
 };
 
-export type OpenClawPluginHostedMediaResolver = (
+export type AforaPluginHostedMediaResolver = (
   mediaUrl: string,
 ) => string | null | undefined | Promise<string | null | undefined>;
 
-export type OpenClawPluginCliContext = {
+export type AforaPluginCliContext = {
   /**
    * Command object where this plugin should register its commands.
    *
-   * For root CLI registrations this is the root `openclaw` program. For nested
+   * For root CLI registrations this is the root `afora` program. For nested
    * registrations it is the resolved parent command from `parentPath`.
    */
   program: Command;
   parentPath: readonly string[];
-  config: OpenClawConfig;
+  config: AforaConfig;
   workspaceDir?: string;
   logger: PluginLogger;
 };
 
-export type OpenClawPluginCliRegistrar = (ctx: OpenClawPluginCliContext) => void | Promise<void>;
+export type AforaPluginCliRegistrar = (ctx: AforaPluginCliContext) => void | Promise<void>;
 
 /**
  * Top-level CLI metadata for plugin-owned commands.
  *
  * Descriptors are the parse-time contract for lazy plugin CLI registration.
- * If you want OpenClaw to keep a plugin command lazy-loaded while still
+ * If you want Afora to keep a plugin command lazy-loaded while still
  * advertising it at the root CLI level, provide descriptors that cover every
  * top-level command root registered by that plugin CLI surface.
  */
-type OpenClawPluginCliCommandDescriptor = {
+type AforaPluginCliCommandDescriptor = {
   name: string;
   description: string;
   hasSubcommands: boolean;
 };
 
 /** Root-command metadata that is available before a plugin registrar is activated. */
-export type OpenClawPluginCliRootCommandDescriptor = OpenClawPluginCliCommandDescriptor & {
+export type AforaPluginCliRootCommandDescriptor = AforaPluginCliCommandDescriptor & {
   machineOutput?: (params: { argv: readonly string[]; stdoutIsTTY: boolean }) => boolean;
 };
 
-type OpenClawPluginRootCliRegistrationOptions = {
+type AforaPluginRootCliRegistrationOptions = {
   /** Omit or pass an empty path for root commands. */
   parentPath?: readonly [];
   commands?: readonly string[];
-  descriptors?: readonly OpenClawPluginCliRootCommandDescriptor[];
+  descriptors?: readonly AforaPluginCliRootCommandDescriptor[];
 };
 
 /** Backward-compatible registration shape for dynamic root or nested paths. */
-type OpenClawPluginLegacyCliRegistrationOptions = {
+type AforaPluginLegacyCliRegistrationOptions = {
   parentPath?: readonly string[];
   commands?: readonly string[];
-  descriptors?: readonly OpenClawPluginCliCommandDescriptor[];
+  descriptors?: readonly AforaPluginCliCommandDescriptor[];
 };
 
-export type OpenClawPluginCliRegistrationOptions =
-  | OpenClawPluginRootCliRegistrationOptions
-  | OpenClawPluginLegacyCliRegistrationOptions;
+export type AforaPluginCliRegistrationOptions =
+  | AforaPluginRootCliRegistrationOptions
+  | AforaPluginLegacyCliRegistrationOptions;
 
-export type OpenClawPluginNodeCliFeatureOptions = {
-  /** Explicit node feature command names owned under `openclaw nodes`. */
+export type AforaPluginNodeCliFeatureOptions = {
+  /** Explicit node feature command names owned under `afora nodes`. */
   commands?: string[];
   /**
    * Parse-time command descriptors for lazy node feature CLI registration.
    *
-   * Descriptors are registered under `openclaw nodes`, so a descriptor named
-   * `"camera"` exposes `openclaw nodes camera`.
+   * Descriptors are registered under `afora nodes`, so a descriptor named
+   * `"camera"` exposes `afora nodes camera`.
    */
-  descriptors?: OpenClawPluginCliCommandDescriptor[];
+  descriptors?: AforaPluginCliCommandDescriptor[];
 };
 
-export type OpenClawPluginReloadRegistration = {
+export type AforaPluginReloadRegistration = {
   restartPrefixes?: string[];
   hotPrefixes?: string[];
   noopPrefixes?: string[];
 };
 
 export type {
-  OpenClawPluginNodeHostCommand,
-  OpenClawPluginNodeHostCommandAvailabilityContext,
-  OpenClawPluginNodeHostCommandIo,
+  AforaPluginNodeHostCommand,
+  AforaPluginNodeHostCommandAvailabilityContext,
+  AforaPluginNodeHostCommandIo,
 } from "./types.node-host.js";
 
-export type OpenClawPluginNodeInvokeTransportResult =
+export type AforaPluginNodeInvokeTransportResult =
   | {
       ok: true;
       payload?: unknown;
@@ -157,9 +157,9 @@ export type OpenClawPluginNodeInvokeTransportResult =
       details?: Record<string, unknown>;
     };
 
-type OpenClawPluginNodeInvokeApprovalDecision = "allow-once" | "allow-always" | "deny";
+type AforaPluginNodeInvokeApprovalDecision = "allow-once" | "allow-always" | "deny";
 
-type OpenClawPluginNodeInvokePolicyApprovalRuntime = {
+type AforaPluginNodeInvokePolicyApprovalRuntime = {
   request: (input: {
     title: string;
     description: string;
@@ -171,17 +171,17 @@ type OpenClawPluginNodeInvokePolicyApprovalRuntime = {
     timeoutMs?: number;
   }) => Promise<{
     id?: string;
-    decision?: OpenClawPluginNodeInvokeApprovalDecision | null;
+    decision?: AforaPluginNodeInvokeApprovalDecision | null;
   }>;
 };
 
-export type OpenClawPluginNodeInvokePolicyContext = {
+export type AforaPluginNodeInvokePolicyContext = {
   nodeId: string;
   command: string;
   params: unknown;
   timeoutMs?: number;
   idempotencyKey?: string;
-  config: OpenClawConfig;
+  config: AforaConfig;
   pluginConfig?: Record<string, unknown>;
   node?: {
     nodeId: string;
@@ -199,15 +199,15 @@ export type OpenClawPluginNodeInvokePolicyContext = {
     /** Stable, content-free family name; never include user or action arguments. */
     family: string;
   };
-  approvals?: OpenClawPluginNodeInvokePolicyApprovalRuntime;
+  approvals?: AforaPluginNodeInvokePolicyApprovalRuntime;
   invokeNode: (input?: {
     params?: unknown;
     timeoutMs?: number;
     idempotencyKey?: string;
-  }) => Promise<OpenClawPluginNodeInvokeTransportResult>;
+  }) => Promise<AforaPluginNodeInvokeTransportResult>;
 };
 
-export type OpenClawPluginNodeInvokePolicyResult =
+export type AforaPluginNodeInvokePolicyResult =
   | {
       ok: true;
       payload?: unknown;
@@ -221,7 +221,7 @@ export type OpenClawPluginNodeInvokePolicyResult =
       unavailable?: boolean;
     };
 
-export type OpenClawPluginNodeInvokePolicy = {
+export type AforaPluginNodeInvokePolicy = {
   commands: string[];
   /**
    * Platforms where these node-handled commands should be allowlisted by default.
@@ -243,26 +243,26 @@ export type OpenClawPluginNodeInvokePolicy = {
    * Throwing rejects the invocation before dispatch.
    */
   classifyRisk?: (
-    ctx: Pick<OpenClawPluginNodeInvokePolicyContext, "command" | "params">,
-  ) => NonNullable<OpenClawPluginNodeInvokePolicyContext["risk"]>;
+    ctx: Pick<AforaPluginNodeInvokePolicyContext, "command" | "params">,
+  ) => NonNullable<AforaPluginNodeInvokePolicyContext["risk"]>;
   handle: (
-    ctx: OpenClawPluginNodeInvokePolicyContext,
-  ) => Promise<OpenClawPluginNodeInvokePolicyResult> | OpenClawPluginNodeInvokePolicyResult;
+    ctx: AforaPluginNodeInvokePolicyContext,
+  ) => Promise<AforaPluginNodeInvokePolicyResult> | AforaPluginNodeInvokePolicyResult;
 };
 
-export type OpenClawPluginSecurityAuditContext = {
-  config: OpenClawConfig;
-  sourceConfig: OpenClawConfig;
+export type AforaPluginSecurityAuditContext = {
+  config: AforaConfig;
+  sourceConfig: AforaConfig;
   env: NodeJS.ProcessEnv;
   stateDir: string;
   configPath: string;
 };
 
-export type OpenClawPluginSecurityAuditCollector = (
-  ctx: OpenClawPluginSecurityAuditContext,
+export type AforaPluginSecurityAuditCollector = (
+  ctx: AforaPluginSecurityAuditContext,
 ) => SecurityAuditFinding[] | Promise<SecurityAuditFinding[]>;
 
-export type OpenClawGatewayDiscoveryAdvertiseContext = {
+export type AforaGatewayDiscoveryAdvertiseContext = {
   machineDisplayName: string;
   gatewayPort: number;
   gatewayTlsEnabled: boolean;
@@ -275,20 +275,20 @@ export type OpenClawGatewayDiscoveryAdvertiseContext = {
   minimal: boolean;
 };
 
-export type OpenClawGatewayDiscoveryService = {
+export type AforaGatewayDiscoveryService = {
   id: string;
   advertise: (
-    ctx: OpenClawGatewayDiscoveryAdvertiseContext,
+    ctx: AforaGatewayDiscoveryAdvertiseContext,
   ) => void | Promise<void | { stop?: () => void | Promise<void> }>;
 };
 
 /** Context passed to long-lived plugin services. */
-export type OpenClawPluginServiceContext = {
-  config: OpenClawConfig;
+export type AforaPluginServiceContext = {
+  config: AforaConfig;
   workspaceDir?: string;
   stateDir: string;
   logger: PluginLogger;
-  gatewayEvents?: import("./gateway-events.js").OpenClawPluginGatewayEvents;
+  gatewayEvents?: import("./gateway-events.js").AforaPluginGatewayEvents;
   startupTrace?: {
     detail?: (name: string, metrics: ReadonlyArray<readonly [string, number | string]>) => void;
     measure: <T>(name: string, run: () => T | Promise<T>) => Promise<T>;
@@ -307,13 +307,13 @@ export type OpenClawPluginServiceContext = {
 };
 
 /** Background service registered by a plugin during `register(api)`. */
-export type OpenClawPluginService = {
+export type AforaPluginService = {
   id: string;
-  start: (ctx: OpenClawPluginServiceContext) => void | Promise<void>;
-  stop?: (ctx: OpenClawPluginServiceContext) => void | Promise<void>;
+  start: (ctx: AforaPluginServiceContext) => void | Promise<void>;
+  stop?: (ctx: AforaPluginServiceContext) => void | Promise<void>;
 };
 
-export type OpenClawPluginChannelRegistration = {
+export type AforaPluginChannelRegistration = {
   plugin: ChannelPlugin;
 };
 

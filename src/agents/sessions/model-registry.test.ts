@@ -2,7 +2,7 @@
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { getApiProvider } from "@openclaw/ai/internal/runtime";
+import { getApiProvider } from "@afora/ai/internal/runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   loadPersistedPluginModelCatalogs,
@@ -22,7 +22,7 @@ const PLUGIN_MODEL_CATALOG_FILE = "catalog.json";
 const tempDirs: string[] = [];
 
 function writeModelsJson(contents: unknown): string {
-  const dir = mkdtempSync(join(tmpdir(), "openclaw-model-registry-"));
+  const dir = mkdtempSync(join(tmpdir(), "afora-model-registry-"));
   tempDirs.push(dir);
   const file = join(dir, "models.json");
   writeFileSync(file, JSON.stringify(contents, null, 2), "utf-8");
@@ -52,7 +52,7 @@ function writeModelsJsonWithPluginCatalogs(params: {
     pluginCatalog: unknown;
   }>;
 }): string {
-  const dir = mkdtempSync(join(tmpdir(), "openclaw-model-registry-"));
+  const dir = mkdtempSync(join(tmpdir(), "afora-model-registry-"));
   tempDirs.push(dir);
   const file = join(dir, "models.json");
   writeFileSync(file, JSON.stringify(params.root, null, 2), "utf-8");
@@ -541,7 +541,7 @@ describe("ModelRegistry models.json auth", () => {
         },
       },
     });
-    writeFileSync(join(dirname(modelsPath), "openclaw-agent.sqlite"), "not a SQLite database");
+    writeFileSync(join(dirname(modelsPath), "afora-agent.sqlite"), "not a SQLite database");
 
     const registry = ModelRegistry.create(AuthStorage.inMemory(), modelsPath);
 

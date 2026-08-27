@@ -1,7 +1,7 @@
 // Extension test boundary tests enforce extension test layout rules.
 import fs from "node:fs";
 import path from "node:path";
-import { BUNDLED_PLUGIN_PATH_PREFIX } from "openclaw/plugin-sdk/test-fixtures";
+import { BUNDLED_PLUGIN_PATH_PREFIX } from "afora-agent/plugin-sdk/test-fixtures";
 import { describe, expect, it } from "vitest";
 import { GUARDED_EXTENSION_PUBLIC_SURFACE_BASENAMES } from "../src/plugin-sdk/test-helpers/public-artifacts.js";
 import { expectNoReaddirSyncDuring } from "../src/test-utils/fs-scan-assertions.js";
@@ -335,7 +335,7 @@ describe("non-extension test boundaries", () => {
 
   it("keeps extension tests off the legacy test alias and repo helper bridges", () => {
     const bannedPatterns = [
-      /["']openclaw\/plugin-sdk\/test-utils["']/u,
+      /["']afora\/plugin-sdk\/test-utils["']/u,
       /["'](?:\.\.\/)+(?:test\/helpers\/channels\/)[^"']+["']/u,
       /["'](?:\.\.\/)+(?:src\/channels\/plugins\/contracts\/test-helpers\/)[^"']+["']/u,
       /["'](?:\.\.\/)+(?:test\/helpers\/plugins\/)[^"']+["']/u,
@@ -372,8 +372,8 @@ describe("non-extension test boundaries", () => {
     // plugins only; bundled code imports channel-config-schema, plus the
     // bundled facade strictly for retained bundled provider schemas.
     const bannedSpecifiers = [
-      "openclaw/plugin-sdk/channel-config-schema-legacy",
-      "openclaw/plugin-sdk/channel-config-primitives",
+      "afora-agent/plugin-sdk/channel-config-schema-legacy",
+      "afora-agent/plugin-sdk/channel-config-primitives",
     ];
     const bundledProviderSchemaNames = new Set([
       "GoogleChatConfigSchema",
@@ -382,7 +382,7 @@ describe("non-extension test boundaries", () => {
       "WhatsAppConfigSchema",
     ]);
     const bundledFacadeBindingPattern =
-      /\b(?:import|export)\s+(?:type\s+)?\{(?<bindings>[^}]*)\}\s*from\s*["']openclaw\/plugin-sdk\/bundled-channel-config-schema["']/gu;
+      /\b(?:import|export)\s+(?:type\s+)?\{(?<bindings>[^}]*)\}\s*from\s*["']afora\/plugin-sdk\/bundled-channel-config-schema["']/gu;
 
     const offenders = files.flatMap((file) => {
       const source = fs.readFileSync(path.join(repoRoot, file), "utf8");

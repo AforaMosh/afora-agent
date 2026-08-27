@@ -1,7 +1,7 @@
 /**
  * Browser context and emulation state helpers for Playwright-backed tools.
  */
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { CDPSession, Page } from "playwright-core";
 import { playwrightCore } from "./playwright-core.runtime.js";
 import type { PageState } from "./pw-session-contracts.js";

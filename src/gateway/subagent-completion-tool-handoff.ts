@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import {
   isFutureDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type {
   SubagentCompletionToolHandoffRegistration,
   TrustedSubagentCompletionHandoff,
@@ -17,7 +17,7 @@ type SubagentCompletionToolHandoffEntry = SubagentCompletionToolHandoffRegistrat
 };
 
 const handoffs = resolveGlobalMap<string, SubagentCompletionToolHandoffEntry>(
-  Symbol.for("openclaw.subagentCompletionToolHandoffs"),
+  Symbol.for("afora.subagentCompletionToolHandoffs"),
   "close-and-restart",
 );
 

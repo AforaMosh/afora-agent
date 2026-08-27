@@ -24,7 +24,7 @@ function runPluginPublishWrapper(args: string[], env: NodeJS.ProcessEnv = {}) {
 }
 
 function makePackage(version: string): { packageDir: string; path: string; root: string } {
-  const root = mkdtempSync(join(tmpdir(), "openclaw-plugin-publish-test-"));
+  const root = mkdtempSync(join(tmpdir(), "afora-plugin-publish-test-"));
   tempDirs.push(root);
   const packageDir = join(root, "plugin");
   const binDir = join(root, "bin");
@@ -32,7 +32,7 @@ function makePackage(version: string): { packageDir: string; path: string; root:
   mkdirSync(binDir, { recursive: true });
   writeFileSync(
     join(packageDir, "package.json"),
-    JSON.stringify({ name: "@openclaw/demo", version }),
+    JSON.stringify({ name: "@afora/demo", version }),
   );
   const npmPath = join(binDir, "npm");
   writeFileSync(npmPath, "#!/bin/sh\nexit 1\n");
@@ -70,7 +70,7 @@ describe("plugin npm publish wrapper", () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain(`Resolved repository root: ${fixture.root}`);
     expect(result.stdout).toContain(`Resolved package dir: ${fixture.packageDir}`);
-    expect(result.stdout).toContain("Resolved package name: @openclaw/demo");
+    expect(result.stdout).toContain("Resolved package name: @afora/demo");
   });
 
   it("requires an explicit artifact directory for real pack mode", () => {
@@ -78,7 +78,7 @@ describe("plugin npm publish wrapper", () => {
 
     expect(result.status).toBe(2);
     expect(result.stdout).toBe("");
-    expect(result.stderr.trim()).toBe("--pack requires OPENCLAW_PLUGIN_NPM_PACK_OUTPUT_DIR");
+    expect(result.stderr.trim()).toBe("--pack requires AFORA_PLUGIN_NPM_PACK_OUTPUT_DIR");
   });
 
   it("rejects option-like package dirs before package checks", () => {
@@ -100,7 +100,7 @@ describe("plugin npm publish wrapper", () => {
   it("uses the extended-stable plan without latest or beta mirrors", () => {
     const fixture = makePackage("2026.7.33");
     const result = runPluginPublishWrapper(["--dry-run", fixture.packageDir], {
-      OPENCLAW_PLUGIN_NPM_PUBLISH_TAG: "extended-stable",
+      AFORA_PLUGIN_NPM_PUBLISH_TAG: "extended-stable",
       PATH: fixture.path,
     });
 
@@ -113,7 +113,7 @@ describe("plugin npm publish wrapper", () => {
   it("rejects extended-stable versions below patch 33", () => {
     const fixture = makePackage("2026.7.32");
     const result = runPluginPublishWrapper(["--dry-run", fixture.packageDir], {
-      OPENCLAW_PLUGIN_NPM_PUBLISH_TAG: "extended-stable",
+      AFORA_PLUGIN_NPM_PUBLISH_TAG: "extended-stable",
       PATH: fixture.path,
     });
 

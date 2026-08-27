@@ -44,7 +44,7 @@ type BoundaryFixture = {
 };
 
 function createBoundaryFixture(fixture: BoundaryFixture) {
-  const repoRoot = tempDirs.make("openclaw-normalization-boundary-");
+  const repoRoot = tempDirs.make("afora-normalization-boundary-");
   const pluginRoot = path.join(repoRoot, "extensions", "demo");
   const relativeFile = fixture.file ?? "src/runtime.ts";
   const filePath = path.join(pluginRoot, relativeFile);
@@ -52,7 +52,7 @@ function createBoundaryFixture(fixture: BoundaryFixture) {
   fs.writeFileSync(filePath, fixture.source, "utf8");
   fs.writeFileSync(
     path.join(pluginRoot, "package.json"),
-    JSON.stringify(fixture.packageJson ?? { name: "@openclaw/demo" }),
+    JSON.stringify(fixture.packageJson ?? { name: "@afora/demo" }),
     "utf8",
   );
   return createExtensionPluginSdkBoundaryChecker({ repoRoot });
@@ -63,42 +63,42 @@ describe("production plugin normalization ownership boundary", () => {
     {
       name: "static string import",
       source:
-        'import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";',
+        'import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";',
       kind: "import",
-      specifier: "@openclaw/normalization-core/string-coerce",
+      specifier: "@afora/normalization-core/string-coerce",
       resolvedPath: "packages/normalization-core/src/string-coerce.ts",
-      facade: "openclaw/plugin-sdk/string-coerce-runtime",
+      facade: "afora-agent/plugin-sdk/string-coerce-runtime",
     },
     {
       name: "record re-export from public barrel",
       file: "api.ts",
-      source: 'export { isRecord } from "@openclaw/normalization-core/record-coerce";',
+      source: 'export { isRecord } from "@afora/normalization-core/record-coerce";',
       kind: "export",
-      specifier: "@openclaw/normalization-core/record-coerce",
+      specifier: "@afora/normalization-core/record-coerce",
       resolvedPath: "packages/normalization-core/src/record-coerce.ts",
-      facade: "openclaw/plugin-sdk/string-coerce-runtime",
+      facade: "afora-agent/plugin-sdk/string-coerce-runtime",
     },
     {
       name: "dynamic number import",
-      source: 'await import("@openclaw/normalization-core/number-coercion");',
+      source: 'await import("@afora/normalization-core/number-coercion");',
       kind: "dynamic-import",
-      specifier: "@openclaw/normalization-core/number-coercion",
+      specifier: "@afora/normalization-core/number-coercion",
       resolvedPath: "packages/normalization-core/src/number-coercion.ts",
-      facade: "openclaw/plugin-sdk/number-runtime",
+      facade: "afora-agent/plugin-sdk/number-runtime",
     },
     {
       name: "error import",
-      source: 'import { toErrorObject } from "@openclaw/normalization-core/error-coercion";',
+      source: 'import { toErrorObject } from "@afora/normalization-core/error-coercion";',
       kind: "import",
-      specifier: "@openclaw/normalization-core/error-coercion",
+      specifier: "@afora/normalization-core/error-coercion",
       resolvedPath: "packages/normalization-core/src/error-coercion.ts",
-      facade: "openclaw/plugin-sdk/error-runtime",
+      facade: "afora-agent/plugin-sdk/error-runtime",
     },
     {
       name: "bare package import",
-      source: 'import { expectDefined } from "@openclaw/normalization-core";',
+      source: 'import { expectDefined } from "@afora/normalization-core";',
       kind: "import",
-      specifier: "@openclaw/normalization-core",
+      specifier: "@afora/normalization-core",
       resolvedPath: "packages/normalization-core/src/index.ts",
     },
     {
@@ -108,7 +108,7 @@ describe("production plugin normalization ownership boundary", () => {
       kind: "import",
       specifier: "../../../packages/normalization-core/src/record-coerce.js",
       resolvedPath: "packages/normalization-core/src/record-coerce.js",
-      facade: "openclaw/plugin-sdk/string-coerce-runtime",
+      facade: "afora-agent/plugin-sdk/string-coerce-runtime",
     },
     {
       name: "relative boolean owner escape",
@@ -116,7 +116,7 @@ describe("production plugin normalization ownership boundary", () => {
       kind: "import",
       specifier: "../../../src/utils/boolean.js",
       resolvedPath: "src/utils/boolean.js",
-      facade: "openclaw/plugin-sdk/string-coerce-runtime",
+      facade: "afora-agent/plugin-sdk/string-coerce-runtime",
     },
     {
       name: "relative core error owner escape",
@@ -124,7 +124,7 @@ describe("production plugin normalization ownership boundary", () => {
       kind: "import",
       specifier: "../../../src/infra/errors.js",
       resolvedPath: "src/infra/errors.js",
-      facade: "openclaw/plugin-sdk/error-runtime",
+      facade: "afora-agent/plugin-sdk/error-runtime",
     },
   ])(
     "rejects $name with a specific SDK facade when known",
@@ -147,8 +147,8 @@ describe("production plugin normalization ownership boundary", () => {
         specifier,
         resolvedPath,
       });
-      expect(entries[0]?.reason).toContain(facade ?? "matching openclaw/plugin-sdk facade");
-      if (facade === "openclaw/plugin-sdk/number-runtime") {
+      expect(entries[0]?.reason).toContain(facade ?? "matching afora/plugin-sdk facade");
+      if (facade === "afora-agent/plugin-sdk/number-runtime") {
         expect(entries[0]?.reason).toContain("bundled/private-local");
       }
     },
@@ -158,33 +158,33 @@ describe("production plugin normalization ownership boundary", () => {
     {
       name: "approved SDK facades",
       source: [
-        'import "openclaw/plugin-sdk/string-coerce-runtime";',
-        'import "openclaw/plugin-sdk/number-runtime";',
-        'import "openclaw/plugin-sdk/error-runtime";',
+        'import "afora-agent/plugin-sdk/string-coerce-runtime";',
+        'import "afora-agent/plugin-sdk/number-runtime";',
+        'import "afora-agent/plugin-sdk/error-runtime";',
       ].join("\n"),
     },
     { name: "plugin-local import", source: 'import "./local.js";' },
     {
       name: "test source",
       file: "src/runtime.test.ts",
-      source: 'import "@openclaw/normalization-core/record-coerce";',
+      source: 'import "@afora/normalization-core/record-coerce";',
     },
     {
       name: "dist generated source",
       file: "dist/generated.js",
-      source: 'import "@openclaw/normalization-core/record-coerce";',
+      source: 'import "@afora/normalization-core/record-coerce";',
     },
     {
       name: "declared generated asset",
       file: "src/generated.js",
       packageJson: {
-        name: "@openclaw/demo",
-        openclaw: {
+        name: "@afora/demo",
+        afora: {
           assetScripts: { build: "node build.mjs" },
           build: { staticAssets: [{ source: "src/generated.js", output: "generated.js" }] },
         },
       },
-      source: 'import "@openclaw/normalization-core/record-coerce";',
+      source: 'import "@afora/normalization-core/record-coerce";',
     },
   ])("allows $name", async ({ source, file, packageJson }) => {
     const checker = createBoundaryFixture({ source, file, packageJson });
@@ -197,7 +197,7 @@ describe("production plugin normalization ownership boundary", () => {
 
   it("renders actionable human diagnostics and fails strict mode", async () => {
     const checker = createBoundaryFixture({
-      source: 'export { toErrorObject } from "@openclaw/normalization-core/error-coercion";',
+      source: 'export { toErrorObject } from "@afora/normalization-core/error-coercion";',
       file: "runtime-api.ts",
     });
     const captured = createCapturedIo();
@@ -209,8 +209,8 @@ describe("production plugin normalization ownership boundary", () => {
     expect(captured.readStdout()).toContain("extensions/demo/runtime-api.ts");
     expect(captured.readStdout()).toContain("line 1 [export]");
     expect(captured.readStdout()).toContain("re-exports");
-    expect(captured.readStdout()).toContain("@openclaw/normalization-core/error-coercion");
-    expect(captured.readStdout()).toContain("openclaw/plugin-sdk/error-runtime");
+    expect(captured.readStdout()).toContain("@afora/normalization-core/error-coercion");
+    expect(captured.readStdout()).toContain("afora-agent/plugin-sdk/error-runtime");
     expect(captured.readStderr()).toContain("violations found (1)");
   });
 

@@ -1,5 +1,5 @@
 // Armable idle watchdog for long-running channel transports.
-import { resolveTimerTimeoutMs } from "@openclaw/normalization-core/number-coercion";
+import { resolveTimerTimeoutMs } from "@afora/normalization-core/number-coercion";
 import type { RuntimeEnv } from "../../runtime.js";
 
 export type StallWatchdogTimeoutMeta = {

@@ -6,12 +6,12 @@ import type { APIMessage } from "discord-api-types/v10";
 import {
   type ChannelIngressQueue,
   DEFAULT_INGRESS_RETRY_MAX_ATTEMPTS,
-} from "openclaw/plugin-sdk/channel-outbound";
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
 import {
-  closeOpenClawStateDatabaseForTest,
+  closeAforaStateDatabaseForTest,
   createChannelIngressQueueForTests,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { describe, expect, it, vi } from "vitest";
 import { createDiscordIngressMonitor } from "./ingress.js";
 import { createDiscordMessageHandler } from "./message-handler.js";
@@ -51,7 +51,7 @@ function rawMessage(id: string, channelId = "lane-a"): APIMessage {
 }
 
 async function withQueue(run: (queue: DiscordQueue) => Promise<void>): Promise<void> {
-  const created = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-discord-recovery-"));
+  const created = await fs.mkdtemp(path.join(os.tmpdir(), "afora-discord-recovery-"));
   const stateDir = await fs.realpath(created);
   const queue = createChannelIngressQueueForTests<DiscordIngressPayload>({
     channelId: "discord",
@@ -61,7 +61,7 @@ async function withQueue(run: (queue: DiscordQueue) => Promise<void>): Promise<v
   try {
     await run(queue);
   } finally {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(stateDir, { recursive: true, force: true });
   }
 }

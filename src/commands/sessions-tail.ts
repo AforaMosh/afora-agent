@@ -1,11 +1,11 @@
-import { parseStrictNonNegativeInteger } from "@openclaw/normalization-core/number-coercion";
+import { parseStrictNonNegativeInteger } from "@afora/normalization-core/number-coercion";
 /**
  * Session trajectory tail command.
  *
  * It selects active or requested sessions, renders recent trajectory events,
  * and can follow newly appended SQLite trajectory rows.
  */
-import { normalizeOptionalString as toOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString as toOptionalString } from "@afora/normalization-core/string-coerce";
 import { readAcpSessionMeta } from "../acp/runtime/session-meta.js";
 import { getRuntimeConfig } from "../config/config.js";
 import { listSessionEntriesReadOnly } from "../config/sessions/session-accessor.js";

@@ -11,7 +11,7 @@ import {
   createPrivateSqliteTempDirectory,
   createPrivateSqliteTempDirectorySync,
 } from "./sqlite-private-directory.js";
-import { resolvePreferredOpenClawTmpDir } from "./tmp-openclaw-dir.js";
+import { resolvePreferredAforaTmpDir } from "./tmp-afora-dir.js";
 
 const MAX_SNAPSHOT_ATTEMPTS = 10;
 const COPY_BUFFER_BYTES = 1024 * 1024;
@@ -380,8 +380,8 @@ async function createStableReadOnlyCopy(
   journalMode: Exclude<SourceJournalMode, "unknown">,
 ): Promise<PreparedSqliteReadOnlyLocation> {
   const tempDir = await createPrivateSqliteTempDirectory(
-    resolvePreferredOpenClawTmpDir(),
-    `openclaw-sqlite-readonly-${process.pid}-`,
+    resolvePreferredAforaTmpDir(),
+    `afora-sqlite-readonly-${process.pid}-`,
   );
   return createStableReadOnlyCopyInTempDirectory(pathname, journalMode, tempDir);
 }
@@ -391,8 +391,8 @@ function createStableReadOnlyCopySync(
   journalMode: Exclude<SourceJournalMode, "unknown">,
 ): PreparedSqliteReadOnlyLocation {
   const tempDir = createPrivateSqliteTempDirectorySync(
-    resolvePreferredOpenClawTmpDir(),
-    `openclaw-sqlite-readonly-${process.pid}-`,
+    resolvePreferredAforaTmpDir(),
+    `afora-sqlite-readonly-${process.pid}-`,
   );
   return createStableReadOnlyCopyInTempDirectory(pathname, journalMode, tempDir);
 }
@@ -401,8 +401,8 @@ async function createOnlineReadOnlyBackup(
   pathname: string,
 ): Promise<PreparedSqliteReadOnlyLocation> {
   const tempDir = await createPrivateSqliteTempDirectory(
-    resolvePreferredOpenClawTmpDir(),
-    `openclaw-sqlite-readonly-${process.pid}-`,
+    resolvePreferredAforaTmpDir(),
+    `afora-sqlite-readonly-${process.pid}-`,
   );
   const snapshotPath = path.join(tempDir, "database.sqlite");
   const sqlite = requireNodeSqlite();

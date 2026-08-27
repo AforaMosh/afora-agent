@@ -1,6 +1,6 @@
 // Matrix tests cover outbound plugin behavior.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { chunkTextForOutbound, type OpenClawConfig } from "../runtime-api.js";
+import { chunkTextForOutbound, type AforaConfig } from "../runtime-api.js";
 
 const mocks = vi.hoisted(() => ({
   sendMessageMatrix: vi.fn(),
@@ -106,7 +106,7 @@ describe("matrixOutbound cfg threading", () => {
           accessToken: "resolved-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await matrixOutbound.sendText!({
       cfg,
@@ -147,7 +147,7 @@ describe("matrixOutbound cfg threading", () => {
       }
 
       const result = await send({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         to: "room:!room:example",
         text: "first\nlast",
         mediaUrl: "file:///tmp/photo.png",
@@ -172,10 +172,10 @@ describe("matrixOutbound cfg threading", () => {
           accessToken: "resolved-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const mediaAccess = {
-      localRoots: ["/tmp/openclaw"],
-      workspaceDir: "/tmp/openclaw",
+      localRoots: ["/tmp/afora"],
+      workspaceDir: "/tmp/afora",
     };
 
     await matrixOutbound.sendMedia!({
@@ -196,7 +196,7 @@ describe("matrixOutbound cfg threading", () => {
     expect(options.cfg).toBe(cfg);
     expect(options.mediaUrl).toBe("chart.png");
     expect(options.mediaAccess).toBe(mediaAccess);
-    expect(options.mediaLocalRoots).toEqual(["/tmp/openclaw"]);
+    expect(options.mediaLocalRoots).toEqual(["/tmp/afora"]);
     expect(options.audioAsVoice).toBe(true);
   });
 
@@ -207,7 +207,7 @@ describe("matrixOutbound cfg threading", () => {
           accessToken: "resolved-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const matrix = vi.fn(async () => ({
       messageId: "evt-injected",
       roomId: "!room:example",
@@ -240,7 +240,7 @@ describe("matrixOutbound cfg threading", () => {
           accessToken: "resolved-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await matrixOutbound.sendPoll!({
       cfg,
@@ -291,7 +291,7 @@ describe("matrixOutbound cfg threading", () => {
     };
     expect(rendered?.text).toContain("fallback");
     expect(rendered?.text).toContain("Select thinking level");
-    expect(matrixData.extraContent?.["com.openclaw.presentation"]).toEqual({
+    expect(matrixData.extraContent?.["com.afora.presentation"]).toEqual({
       ...presentation,
       version: 1,
       type: "message.presentation",
@@ -312,7 +312,7 @@ describe("matrixOutbound cfg threading", () => {
     expect(rendered?.text).toBe("---");
     expect(
       (rendered!.channelData!.matrix as { extraContent?: Record<string, unknown> }).extraContent?.[
-        "com.openclaw.presentation"
+        "com.afora.presentation"
       ],
     ).toEqual({
       ...presentation,
@@ -360,7 +360,7 @@ describe("matrixOutbound cfg threading", () => {
           accessToken: "resolved-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const presentationContent = {
       version: 1,
@@ -384,7 +384,7 @@ describe("matrixOutbound cfg threading", () => {
         channelData: {
           matrix: {
             extraContent: {
-              "com.openclaw.presentation": presentationContent,
+              "com.afora.presentation": presentationContent,
             },
           },
         },
@@ -403,7 +403,7 @@ describe("matrixOutbound cfg threading", () => {
     expect(options.threadId).toBe("$thread");
     expect(options.replyToId).toBe("$reply");
     expect(options.extraContent).toEqual({
-      "com.openclaw.presentation": presentationContent,
+      "com.afora.presentation": presentationContent,
     });
   });
 
@@ -414,7 +414,7 @@ describe("matrixOutbound cfg threading", () => {
           accessToken: "resolved-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const presentationContent = {
       version: 1,
@@ -431,7 +431,7 @@ describe("matrixOutbound cfg threading", () => {
         channelData: {
           matrix: {
             extraContent: {
-              "com.openclaw.presentation": presentationContent,
+              "com.afora.presentation": presentationContent,
             },
           },
         },
@@ -443,7 +443,7 @@ describe("matrixOutbound cfg threading", () => {
     expect(call[0]).toBe("room:!room:example");
     expect(call[1]).toBe("---");
     expect(mockOptions(mocks.sendMessageMatrix, "sendMessageMatrix").extraContent).toEqual({
-      "com.openclaw.presentation": presentationContent,
+      "com.afora.presentation": presentationContent,
     });
   });
 
@@ -454,7 +454,7 @@ describe("matrixOutbound cfg threading", () => {
           accessToken: "resolved-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const presentationContent = {
       version: 1,
@@ -475,7 +475,7 @@ describe("matrixOutbound cfg threading", () => {
               body: "spoofed",
               msgtype: "m.notice",
               "m.relates_to": { "m.in_reply_to": { event_id: "$spoof" } },
-              "com.openclaw.presentation": presentationContent,
+              "com.afora.presentation": presentationContent,
             },
           },
         },
@@ -487,7 +487,7 @@ describe("matrixOutbound cfg threading", () => {
     expect(call[0]).toBe("room:!room:example");
     expect(call[1]).toBe("Select model");
     expect(mockOptions(mocks.sendMessageMatrix, "sendMessageMatrix").extraContent).toEqual({
-      "com.openclaw.presentation": presentationContent,
+      "com.afora.presentation": presentationContent,
     });
   });
 
@@ -498,7 +498,7 @@ describe("matrixOutbound cfg threading", () => {
           accessToken: "resolved-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await matrixOutbound.sendPayload!({
       cfg,
@@ -533,7 +533,7 @@ describe("matrixOutbound cfg threading", () => {
     const onPlatformSendDispatch = vi.fn();
 
     await matrixOutbound.sendPayload!({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: "room:!room:example",
       text: "caption",
       payload: {
@@ -584,7 +584,7 @@ describe("matrixOutbound cfg threading", () => {
       });
 
     const result = await matrixOutbound.sendPayload!({
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       to: "room:!room:example",
       text: "caption",
       payload: {
@@ -627,7 +627,7 @@ describe("matrixOutbound cfg threading", () => {
           accessToken: "resolved-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await matrixOutbound.sendPayload!({
       cfg,
@@ -639,7 +639,7 @@ describe("matrixOutbound cfg threading", () => {
         channelData: {
           matrix: {
             extraContent: {
-              "com.openclaw.presentation": {
+              "com.afora.presentation": {
                 version: 1,
                 type: "message.presentation",
               },
@@ -656,7 +656,7 @@ describe("matrixOutbound cfg threading", () => {
     expect(firstCall[0]).toBe("room:!room:example");
     expect(firstCall[1]).toBe("caption");
     expect(mockOptions(mocks.sendMessageMatrix, "sendMessageMatrix", 0).extraContent).toEqual({
-      "com.openclaw.presentation": {
+      "com.afora.presentation": {
         version: 1,
         type: "message.presentation",
       },
@@ -676,7 +676,7 @@ describe("matrixOutbound cfg threading", () => {
           accessToken: "test-access-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await matrixOutbound.sendPayload!({
       cfg,
@@ -688,7 +688,7 @@ describe("matrixOutbound cfg threading", () => {
         channelData: {
           matrix: {
             extraContent: {
-              "com.openclaw.presentation": {
+              "com.afora.presentation": {
                 version: 1,
                 type: "message.presentation",
               },
@@ -705,7 +705,7 @@ describe("matrixOutbound cfg threading", () => {
     const options = mockOptions(mocks.sendMessageMatrix, "sendMessageMatrix");
     expect(options.mediaUrl).toBe("file:///tmp/a.png");
     expect(options.extraContent).toEqual({
-      "com.openclaw.presentation": {
+      "com.afora.presentation": {
         version: 1,
         type: "message.presentation",
       },
@@ -719,7 +719,7 @@ describe("matrixOutbound cfg threading", () => {
           accessToken: "test-access-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     const result = await matrixOutbound.sendPayload!({
       cfg,
@@ -750,7 +750,7 @@ describe("matrixOutbound cfg threading", () => {
           accessToken: "regression-token",
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
 
     await matrixOutbound.sendPayload!({
       cfg,

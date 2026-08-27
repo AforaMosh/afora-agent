@@ -121,7 +121,7 @@ afterEach(async () => {
 describe("Codex supervision actions", () => {
   it("recovers the same pending session after a restart before binding commit", async () => {
     const sessionKey = supervisionSessionKey("thread-1");
-    const sessionId = "openclaw-interrupted-before-binding";
+    const sessionId = "afora-interrupted-before-binding";
     const crashedRuntime = createRuntime();
     crashedRuntime.entries.push({
       sessionKey,
@@ -180,7 +180,7 @@ describe("Codex supervision actions", () => {
 
   it("recovers the same pending session after a restart following binding commit", async () => {
     const sessionKey = supervisionSessionKey("thread-1");
-    const sessionId = "openclaw-interrupted-after-binding";
+    const sessionId = "afora-interrupted-after-binding";
     const crashedRuntime = createRuntime();
     crashedRuntime.entries.push({
       sessionKey,
@@ -247,7 +247,7 @@ describe("Codex supervision actions", () => {
     "pending cleanup artifacts",
   ] as const)("rejects recovery against %s in a same-thread binding", async (invalidState) => {
     const sessionKey = supervisionSessionKey("thread-1");
-    const sessionId = "openclaw-interrupted-invalid-binding";
+    const sessionId = "afora-interrupted-invalid-binding";
     const crashedRuntime = createRuntime();
     crashedRuntime.entries.push({
       sessionKey,
@@ -294,7 +294,7 @@ describe("Codex supervision actions", () => {
         control: createEligibleControl(),
         threadId: "thread-1",
       }),
-    ).rejects.toThrow("OpenClaw session is already bound to Codex thread thread-1");
+    ).rejects.toThrow("Afora session is already bound to Codex thread thread-1");
     expect(entries).toEqual([]);
   });
 
@@ -327,7 +327,7 @@ describe("Codex supervision actions", () => {
     await expect(
       bindingStore.read(
         sessionBindingIdentity({
-          sessionId: "openclaw-session-1",
+          sessionId: "afora-session-1",
           sessionKey: result.sessionKey,
           config,
         }),
@@ -339,7 +339,7 @@ describe("Codex supervision actions", () => {
     });
     const binding = await bindingStore.read(
       sessionBindingIdentity({
-        sessionId: "openclaw-session-1",
+        sessionId: "afora-session-1",
         sessionKey: result.sessionKey,
         config,
       }),
@@ -351,7 +351,7 @@ describe("Codex supervision actions", () => {
     const { runtime, entries, createSessionEntry, patchSessionEntry } = createRuntime();
     const { api } = createGatewayApi(runtime);
     const sessionKey = supervisionSessionKey("thread-1");
-    const sessionId = "openclaw-session-archived";
+    const sessionId = "afora-session-archived";
     entries.push({
       sessionKey,
       entry: {
@@ -415,7 +415,7 @@ describe("Codex supervision actions", () => {
       ),
     });
     const sessionKey = supervisionSessionKey("thread-1");
-    const sessionId = "openclaw-session-existing";
+    const sessionId = "afora-session-existing";
     entries.push({
       sessionKey,
       entry: adoptedEntry({ sourceThreadId: "thread-1", sessionId }),
@@ -456,7 +456,7 @@ describe("Codex supervision actions", () => {
       const bindingStore = createCodexTestBindingStore();
       if (mapped) {
         const sessionKey = supervisionSessionKey("thread-1");
-        const sessionId = "openclaw-session-existing";
+        const sessionId = "afora-session-existing";
         entries.push({
           sessionKey,
           entry: adoptedEntry({ sourceThreadId: "thread-1", sessionId }),
@@ -496,7 +496,7 @@ describe("Codex supervision actions", () => {
     const { runtime, entries, createSessionEntry, patchSessionEntry } = createRuntime();
     const { api } = createGatewayApi(runtime);
     const sessionKey = supervisionSessionKey("thread-1");
-    const sessionId = "openclaw-session-stale";
+    const sessionId = "afora-session-stale";
     entries.push({
       sessionKey,
       entry: {
@@ -517,7 +517,7 @@ describe("Codex supervision actions", () => {
         if (!entry) {
           throw new Error("missing mapped session");
         }
-        entry.sessionId = "openclaw-session-replacement";
+        entry.sessionId = "afora-session-replacement";
         return idleThread({ id: "thread-1-branch" });
       }),
     });
@@ -560,7 +560,7 @@ describe("Codex supervision actions", () => {
         control,
         threadId: "thread-1",
       }),
-    ).rejects.toThrow("failed to bind OpenClaw session to Codex thread thread-1");
+    ).rejects.toThrow("failed to bind Afora session to Codex thread thread-1");
     expect(entries).toEqual([]);
     expect(createSessionEntry).toHaveBeenCalledOnce();
     expect(transcriptMirrorMocks.importCodexThreadHistoryToTranscript).toHaveBeenCalledOnce();
@@ -585,7 +585,7 @@ describe("Codex supervision actions", () => {
     await expect(
       bindingStore.read(
         sessionBindingIdentity({
-          sessionId: "openclaw-session-1",
+          sessionId: "afora-session-1",
           sessionKey: supervisionSessionKey("thread-1"),
           config,
         }),
@@ -636,7 +636,7 @@ describe("Codex supervision actions", () => {
     await expect(
       bindingStore.read(
         sessionBindingIdentity({
-          sessionId: "openclaw-session-1",
+          sessionId: "afora-session-1",
           sessionKey: supervisionSessionKey("thread-1"),
           config,
         }),

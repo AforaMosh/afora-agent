@@ -1,21 +1,21 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "OpenClaw",
+  "productName": "Afora",
   "version": "0.1.0",
-  "identifier": "ai.openclaw.linux",
+  "identifier": "ai.afora.linux",
   "build": {
     "frontendDist": "../ui"
   },
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": ["openclaw"]
+        "schemes": ["afora"]
       }
     },
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDRDODJFMzU1QTQ0MUMwNkYKUldSdndFR2tWZU9DVE9RYnlIcHFoNG1xUlQzUlloa0plQmZjY0dPbHpjWlEzWFozdmt0cHBlY2gK",
       "endpoints": [
-        "https://github.com/openclaw/openclaw/releases/latest/download/latest.json"
+        "https://github.com/AforaMosh/afora-agent/releases/latest/download/latest.json"
       ]
     }
   },
@@ -25,7 +25,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "OpenClaw",
+        "title": "Afora",
         "url": "index.html",
         "width": 1080,
         "height": 720,
@@ -85,8 +85,8 @@
     "active": true,
     "createUpdaterArtifacts": true,
     "category": "Utility",
-    "shortDescription": "OpenClaw Linux companion",
-    "longDescription": "Installs OpenClaw, manages the local Gateway service, and hosts the Control UI.",
+    "shortDescription": "Afora Linux companion",
+    "longDescription": "Installs Afora, manages the local Gateway service, and hosts the Control UI.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

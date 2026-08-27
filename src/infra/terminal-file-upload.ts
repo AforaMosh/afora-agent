@@ -9,7 +9,7 @@ import {
 } from "../../packages/gateway-protocol/src/schema/terminal-constants.js";
 import { logWarn } from "../logger.js";
 
-const TERMINAL_UPLOAD_PREFIX = "openclaw-terminal-upload-";
+const TERMINAL_UPLOAD_PREFIX = "afora-terminal-upload-";
 const TERMINAL_UPLOAD_RETENTION_MS = 24 * 60 * 60 * 1000;
 const TERMINAL_UPLOAD_CLEANUP_RETRY_MS = 60 * 60 * 1000;
 const MAX_STAGED_NAME_BYTES = 180;
@@ -28,7 +28,7 @@ type TerminalUploadRootOptions = {
 /** Windows temp variables can point at a shared directory; inherit the user's profile ACL instead. */
 function resolveTerminalUploadRoot(options?: TerminalUploadRootOptions): string {
   return (options?.platform ?? process.platform) === "win32"
-    ? path.join(options?.homeDir ?? homedir(), ".openclaw", "tmp")
+    ? path.join(options?.homeDir ?? homedir(), ".afora", "tmp")
     : (options?.tempDir ?? tmpdir());
 }
 

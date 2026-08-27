@@ -1,5 +1,5 @@
 // Moonshot policy module exposes model-specific thinking controls before runtime registration.
-import type { ProviderDefaultThinkingPolicyContext } from "openclaw/plugin-sdk/core";
+import type { ProviderDefaultThinkingPolicyContext } from "afora-agent/plugin-sdk/core";
 import { isNativeMoonshotBaseUrl } from "./provider-catalog.js";
 
 export const KIMI_K2_7_CODE_MODEL_ID = "kimi-k2.7-code";

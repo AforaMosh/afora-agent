@@ -7,8 +7,8 @@ const hookRunner = vi.hoisted(() => ({
   runMessageReceived: vi.fn(async () => undefined),
 }));
 
-vi.mock("openclaw/plugin-sdk/plugin-runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/plugin-runtime")>();
+vi.mock("afora-agent/plugin-sdk/plugin-runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/plugin-runtime")>();
   return { ...actual, getGlobalHookRunner: () => hookRunner };
 });
 

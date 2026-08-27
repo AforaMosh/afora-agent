@@ -9,12 +9,12 @@ import { resolveSandboxRuntimeStatus } from "../agents/sandbox/runtime-status.js
 import { resolveSandboxWorkspaceLayoutPaths } from "../agents/sandbox/shared.js";
 import { resolveSessionStorePathCore } from "../config/sessions/paths.js";
 import { listSessionEntryKeysReadOnly } from "../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { parseAgentSessionKey } from "../routing/session-key.js";
 import { resolveUserPath } from "./home-dir.js";
 
 export function listSandboxWorkspaceDirs(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env: NodeJS.ProcessEnv;
   homedir: () => string;
   stateDir: string;

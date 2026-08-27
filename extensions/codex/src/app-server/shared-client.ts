@@ -4,9 +4,9 @@
  */
 import { createHash } from "node:crypto";
 import path from "node:path";
-import type { AgentHarnessRuntimeArtifactBinding } from "openclaw/plugin-sdk/agent-harness-runtime";
-import { resolveDefaultAgentDir, type AuthProfileStore } from "openclaw/plugin-sdk/agent-runtime";
-import { createDeferred } from "openclaw/plugin-sdk/extension-shared";
+import type { AgentHarnessRuntimeArtifactBinding } from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { resolveDefaultAgentDir, type AuthProfileStore } from "afora-agent/plugin-sdk/agent-runtime";
+import { createDeferred } from "afora-agent/plugin-sdk/extension-shared";
 import { CodexAppServerStartupError } from "./attempt-timeouts.js";
 import {
   applyCodexAppServerAuthProfile,
@@ -107,10 +107,10 @@ type CodexAppServerSpawnIdentity = Omit<
 // Symbol.for shares one client table across duplicate module copies (dist +
 // src bundles in one process). Plugin updates restart the gateway, so every
 // copy writing this state runs the same code and the shape never migrates.
-const SHARED_CODEX_APP_SERVER_CLIENT_STATE = Symbol.for("openclaw.codexAppServerClientState");
-const SHARED_CODEX_APP_SERVER_CLIENT_DISPOSER = Symbol.for("openclaw.codexAppServerClientDisposer");
+const SHARED_CODEX_APP_SERVER_CLIENT_STATE = Symbol.for("afora.codexAppServerClientState");
+const SHARED_CODEX_APP_SERVER_CLIENT_DISPOSER = Symbol.for("afora.codexAppServerClientDisposer");
 const CODEX_APP_SERVER_CLIENT_START_METADATA = Symbol.for(
-  "openclaw.codexAppServerClientStartMetadata",
+  "afora.codexAppServerClientStartMetadata",
 );
 
 function getSharedCodexAppServerClientState(): SharedCodexAppServerClientState {

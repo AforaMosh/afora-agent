@@ -1,14 +1,14 @@
 import { createServer } from "node:http";
-import { createOpenAICompletionsTransportStreamFn } from "@openclaw/ai/transports";
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
-import { attachModelProviderRequestTransport } from "openclaw/plugin-sdk/agent-harness-runtime";
+import { createOpenAICompletionsTransportStreamFn } from "@afora/ai/transports";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
+import { attachModelProviderRequestTransport } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   createAssistantMessageEventStream,
   type Context,
   type Model,
   type ProviderContext,
-} from "openclaw/plugin-sdk/llm";
-import { registerSingleProviderPlugin } from "openclaw/plugin-sdk/plugin-test-runtime";
+} from "afora-agent/plugin-sdk/llm";
+import { registerSingleProviderPlugin } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { describe, expect, it, vi } from "vitest";
 import plugin from "./index.js";
 import { wrapMoonshotStream } from "./native-video.js";
@@ -72,7 +72,7 @@ describe("Moonshot native video wrapper", () => {
     const payload = genericPayload();
     let dispatched: unknown;
     const caller = vi.fn((value: unknown) => {
-      expect(JSON.stringify(value)).not.toContain("__openclaw");
+      expect(JSON.stringify(value)).not.toContain("__afora");
       expect(JSON.stringify(value)).not.toContain("/private/");
       expect((value as typeof payload).messages[0]?.content.map((part) => part.type)).toEqual([
         "text",

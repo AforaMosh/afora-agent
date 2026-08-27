@@ -1,7 +1,7 @@
 /**
  * Extension relay auth material.
  *
- * The relay authenticates the loopback link between OpenClaw and the paired
+ * The relay authenticates the loopback link between Afora and the paired
  * Chrome extension with a host-local secret. It is persisted per machine in the
  * credentials dir, so the gateway host and every browser node host each own an
  * independent token — the extension pairs with whichever machine runs its
@@ -13,8 +13,8 @@ import {
   createSecretFileAtomic,
   readSecretFile,
   tryReadSecretFileSync,
-} from "openclaw/plugin-sdk/secret-file";
-import { resolveOAuthDir } from "openclaw/plugin-sdk/state-paths";
+} from "afora-agent/plugin-sdk/secret-file";
+import { resolveOAuthDir } from "afora-agent/plugin-sdk/state-paths";
 
 const RELAY_SECRET_FILE = "browser-extension-relay.secret";
 const RELAY_SECRET_REREAD_ATTEMPTS = 50;
@@ -40,7 +40,7 @@ export function readExtensionRelayToken(env: NodeJS.ProcessEnv = process.env): s
 
 /**
  * Read the host-local relay token, creating it on first use. Called from relay
- * startup and `openclaw browser extension pair` — both run on the machine that
+ * startup and `afora browser extension pair` — both run on the machine that
  * hosts the browser, so they resolve the same per-host secret.
  *
  * The create is atomic (O_CREAT|O_EXCL): the gateway service and the pair CLI

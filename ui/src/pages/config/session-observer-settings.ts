@@ -6,7 +6,7 @@ import { providerIdFromModelRef } from "../../components/provider-icon.ts";
 import { renderSettingsRow, renderSettingsToggleRow } from "../../components/settings-ui.ts";
 import { t } from "../../i18n/index.ts";
 
-const AUTO_VALUE = "__openclaw_observer_auto__";
+const AUTO_VALUE = "__afora_observer_auto__";
 
 export type SessionObserverModelSelection =
   | { kind: "auto" }

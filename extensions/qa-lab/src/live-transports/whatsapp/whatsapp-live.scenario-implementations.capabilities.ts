@@ -1,6 +1,6 @@
 // QA Lab WhatsApp Gateway capability and structured-message scenarios.
 import { randomUUID } from "node:crypto";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import type { WhatsAppQaScenarioImplementation } from "./whatsapp-live.contracts.js";
 import {
   WHATSAPP_QA_AUDIO_OGG_OPUS_MIME,
@@ -177,7 +177,7 @@ export const whatsappQaGroupOutboundMediaScenario: WhatsAppQaScenarioImplementat
       },
       configMode: "allowlist",
       expectReply: true,
-      input: `openclawqa reply with only this exact marker before group outbound media checks: ${token}`,
+      input: `aforaqa reply with only this exact marker before group outbound media checks: ${token}`,
       matchText: token,
       target: "group",
     };
@@ -219,7 +219,7 @@ export const whatsappQaGroupOutboundAudioScenario: WhatsAppQaScenarioImplementat
       },
       configMode: "allowlist",
       expectReply: true,
-      input: `openclawqa reply with only this exact marker before group outbound audio check: ${token}`,
+      input: `aforaqa reply with only this exact marker before group outbound audio check: ${token}`,
       matchText: token,
       target: "group",
     };
@@ -253,7 +253,7 @@ export const whatsappQaGroupOutboundPollScenario: WhatsAppQaScenarioImplementati
       },
       configMode: "allowlist",
       expectReply: true,
-      input: `openclawqa reply with only this exact marker before group outbound poll check: ${token}`,
+      input: `aforaqa reply with only this exact marker before group outbound poll check: ${token}`,
       matchText: token,
       target: "group",
     };

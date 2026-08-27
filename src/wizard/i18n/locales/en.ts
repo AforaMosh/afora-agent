@@ -82,7 +82,7 @@ export const en = {
       existingPasswordConfirm: "Use existing gateway password ({password})?",
       existingTokenConfirm: "Use existing gateway token ({token})?",
       passwordPrompt: "Gateway password",
-      plaintextPasswordHint: "Stores the password directly in OpenClaw config",
+      plaintextPasswordHint: "Stores the password directly in Afora config",
       plaintextPasswordLabel: "Enter password now",
       plaintextTokenHint: "Default",
       plaintextTokenLabel: "Generate/store plaintext token",
@@ -98,7 +98,7 @@ export const en = {
       websocketUrl: "Gateway WebSocket URL",
     },
     gatewayTailscale: {
-      docsNote: "Docs:\nhttps://docs.openclaw.ai/gateway/tailscale\nhttps://docs.openclaw.ai/web",
+      docsNote: "Docs:\nhttps://docs.afora.ai/gateway/tailscale\nhttps://docs.afora.ai/web",
       funnel: "Funnel",
       funnelHint: "Public HTTPS via Tailscale Funnel (internet)",
       missingBinNote:
@@ -123,7 +123,7 @@ export const en = {
       apply: "Apply this migration now?",
       appliedTitle: "Migration applied",
       cancelled: "migration cancelled",
-      complete: "Migration complete. Run `openclaw doctor` next.",
+      complete: "Migration complete. Run `afora doctor` next.",
       continuing: "Migration complete. Continuing setup.",
       importFrom: "Import from {source}",
       includeCredentials: "Import supported auth credentials too?",
@@ -139,7 +139,7 @@ export const en = {
     memoryImport: {
       applyFailed:
         "{label} memory import failed: {reason}\nRetry from the dashboard's Memory import page (Settings → Import Memory).",
-      confirm: "Import these memories into your OpenClaw workspace?",
+      confirm: "Import these memories into your Afora workspace?",
       conflictSuffix: ", {count} already imported",
       errorTitle: "Memory import failed",
       failureLine: "{label} failed: {reason}. Retry from the Memory import page.",
@@ -205,7 +205,7 @@ export const en = {
       arrayPromptSuffix: " (comma-separated, empty to clear)",
       arrayPlaceholder: "value1, value2",
       sensitiveField:
-        '"{label}" is sensitive. Set it via:\n  openclaw config set plugins.entries.{plugin}.config.{field} <value>\nor use the Web UI Settings page.',
+        '"{label}" is sensitive. Set it via:\n  afora config set plugins.entries.{plugin}.config.{field} <value>\nor use the Web UI Settings page.',
       sensitiveTitle: "Sensitive field",
       skipConfigHint: "Continue without configuring plugins",
       useLocalPluginPath: "Use local plugin path",
@@ -253,15 +253,15 @@ export const en = {
       gatewayPasswordStoredMessage: "Where is this gateway password stored?",
       gatewayTokenStoredMessage: "Where is this gateway token stored?",
       insecureRemoteUrl:
-        "Use wss:// for remote hosts, or ws://127.0.0.1/localhost via SSH tunnel. Break-glass: OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1 for trusted private networks.",
+        "Use wss:// for remote hosts, or ws://127.0.0.1/localhost via SSH tunnel. Break-glass: AFORA_ALLOW_INSECURE_PRIVATE_WS=1 for trusted private networks.",
       directDefaultsTls: "Direct remote access defaults to TLS.",
       loopbackSshHint:
         "If your gateway is loopback-only, choose SSH tunnel and keep ws://127.0.0.1:18789.",
       noGatewaysFound: "No gateways found",
       passwordPrompt: "Gateway password",
-      plaintextPasswordHint: "Stores the password directly in OpenClaw config",
+      plaintextPasswordHint: "Stores the password directly in Afora config",
       plaintextPasswordLabel: "Enter password now",
-      plaintextTokenHint: "Stores the token directly in OpenClaw config",
+      plaintextTokenHint: "Stores the token directly in Afora config",
       plaintextTokenLabel: "Enter token now",
       searchProgress: "Searching for gateways...",
       selectGateway: "Select gateway",
@@ -293,10 +293,10 @@ export const en = {
       codingAgentQuip:
         "I can see {labels} on this machine — good taste. Once your AI works I can bring their memories along too.",
       controlUiPreparing: "Preparing the Control UI…",
-      custodianIntro: "Hi — I'm OpenClaw. I keep this system running. Let's get you set up.",
+      custodianIntro: "Hi — I'm Afora. I keep this system running. Let's get you set up.",
       failedOptionsIntro: "These didn't work just now:",
       findMeLater:
-        "You can always find me later — run `openclaw` in a terminal, or open Settings in the dashboard.",
+        "You can always find me later — run `afora` in a terminal, or open Settings in the dashboard.",
       hatchingNow: "Hatching your agent now…",
       keepingCurrent: "Keeping the working AI you already have.",
       lookAroundManual: "No — I'll configure it manually",
@@ -309,8 +309,8 @@ export const en = {
       setupDone: "Everything's in place.",
       silentFailures:
         '{count} detected option(s) didn\'t respond — details under "See other options".',
-      complete: "OpenClaw is ready.",
-      completeWithoutAi: "OpenClaw setup is saved. Connect AI before opening chat.",
+      complete: "Afora is ready.",
+      completeWithoutAi: "Afora setup is saved. Connect AI before opening chat.",
       detected: "AI detection complete.",
       detectedCandidate: "{label} — {detail}{recommended}",
       detectedGroupLabel: "Detected on this machine",
@@ -320,7 +320,7 @@ export const en = {
       enterApiKey: "Enter API key — {label}",
       existingModelKept:
         "Your configured default model was kept unchanged. Choose how to continue below — retry it, connect another provider, or exit. The check runs outside your workspace, so a workspace-plugin model can fail here while still working in the agent.",
-      escapeHatches: "For the full step-by-step wizard, run `openclaw onboard --classic`.",
+      escapeHatches: "For the full step-by-step wizard, run `afora onboard --classic`.",
       failureAuth: "Authentication failed. Sign in again or check the key.",
       failureBilling: "Billing is not active for this model or account.",
       failureFormat: "The model did not return a usable reply.",
@@ -332,15 +332,15 @@ export const en = {
       recommendedInstall: "{label} — {hint}\n  {website}",
       recommendedInstallsTitle: "Recommended installs",
       intro: "Connect your AI",
-      invalidConfigDetails: "OpenClaw config {path} is invalid:\n{issues}",
+      invalidConfigDetails: "Afora config {path} is invalid:\n{issues}",
       invalidConfigRepair:
         "Nothing was changed. Repair with {fixCommand}, inspect with {inspectCommand}, then retry onboarding.",
       invalidConfigUnknown: "- The config could not be parsed.",
       manualChoice: "How would you like to connect AI?",
       nextSteps:
-        "Workspace: {workspace}\nAdd a channel: `openclaw channels add`\nPrefer chatting? Run `openclaw setup` and say `connect telegram` (or `connect slack`).\nOpen the dashboard: `openclaw dashboard`\nChat later: `openclaw`",
+        "Workspace: {workspace}\nAdd a channel: `afora channels add`\nPrefer chatting? Run `afora setup` and say `connect telegram` (or `connect slack`).\nOpen the dashboard: `afora dashboard`\nChat later: `afora`",
       nextStepsWithoutAi:
-        "Workspace: {workspace}\nAdd AI later: re-run `openclaw onboard`\nAfter AI connects, add a channel: `openclaw channels add`\nOpen the dashboard: `openclaw dashboard`",
+        "Workspace: {workspace}\nAdd AI later: re-run `afora onboard`\nAfter AI connects, add a channel: `afora channels add`\nOpen the dashboard: `afora dashboard`",
       nextStepsTitle: "Next steps",
       noInferenceOptions:
         "No inference option is available yet. Sign in to Claude Code or Codex, or configure an API-key provider, then run onboarding again.",
@@ -357,7 +357,7 @@ export const en = {
       testingManualProvider: "Testing {label} — real completion, not a ping…",
       tryCandidate: "Try {label} ({detail})",
       ttyRequired:
-        "Onboarding needs an interactive TTY. Use `openclaw onboard --non-interactive --accept-risk ...` for automation.",
+        "Onboarding needs an interactive TTY. Use `afora onboard --non-interactive --accept-risk ...` for automation.",
       welcomeTitle: "Setup choices",
       workspaceConflictClassic:
         "This verification run kept the configured workspace. Run `{command}` to review and explicitly approve moving the existing agent fleet.",
@@ -378,7 +378,7 @@ export const en = {
       flowKeepModelHint: "Skip model/auth setup and keep the current default model.",
       flowQuickstart: "QuickStart (recommended)",
       flowQuickstartHint: "Recommended local setup. Change details later with {command}.",
-      intro: "OpenClaw setup",
+      intro: "Afora setup",
       invalidConfigTitle: "Invalid config",
       keepCurrent: "Keep current values",
       localGateway: "Local gateway (this machine)",
@@ -433,7 +433,7 @@ export const en = {
       askForHelp:
         "Ask someone experienced to help before enabling tools or exposing it to the internet.",
       attribution:
-        "OpenClaw is an open-source assistant that learns and grows with you, by the OpenClaw Foundation (a non-profit).",
+        "Afora is an open-source assistant that learns and grows with you, by the Afora Foundation (a non-profit).",
       baselineDmSessions:
         "Shared inboxes: isolate DM sessions (session.dmScope: per-channel-peer) and keep tool access minimal.",
       baselinePairing: "Use pairing or allowlists; require mentions in group chats.",
@@ -446,10 +446,10 @@ export const en = {
       confirm:
         "I understand this is personal-by-default and shared/multi-user use requires lock-down. Continue?",
       hardeningRequired:
-        "If you're not comfortable managing access controls and security hardening, don't run OpenClaw without help.",
+        "If you're not comfortable managing access controls and security hardening, don't run Afora without help.",
       learnMore: "Learn more at",
-      notMultitenant: "OpenClaw is not designed to safely separate multiple users by default.",
-      personalAgent: "By default, OpenClaw is a personal agent for one operator.",
+      notMultitenant: "Afora is not designed to safely separate multiple users by default.",
+      personalAgent: "By default, Afora is a personal agent for one operator.",
       promptRisk: "A bad prompt can trick it into doing unsafe things.",
       recommendedBaseline: "Recommended safer setup",
       runRegularly: "Run regularly",
@@ -465,7 +465,7 @@ export const en = {
       containerBrewManual:
         "Use a custom image with Homebrew preinstalled or install those dependencies manually.",
       containerInstallsTitle: "Container skill installs",
-      docsLine: "Docs: https://docs.openclaw.ai/skills",
+      docsLine: "Docs: https://docs.afora.ai/skills",
       enterEnv: "Enter {env}",
       homebrewCommand: "Show Homebrew install command?",
       homebrewInstallTitle: "Homebrew install",
@@ -477,7 +477,7 @@ export const en = {
       installedWithWarnings: "Installed {name} (with warnings)",
       installing: "Installing {name}...",
       manualPrereqsDoctorHint:
-        "Install those tools first, then run `openclaw doctor` to review skills + requirements.",
+        "Install those tools first, then run `afora doctor` to review skills + requirements.",
       manualPrereqsIntro: "Skipped optional skill installs that need local tools first:",
       manualPrereqsTitle: "Manual skill prerequisites",
       nodeManager: "Preferred node manager for skill installs",
@@ -736,7 +736,7 @@ export const en = {
       connected: "Connected as @{handle} — workspace {workspace} resolved.",
       envPrompt: "CLICKCLACK_BOT_TOKEN detected. Use env var?",
       helpCreateToken:
-        "In ClickClack: Workspace settings → Integrations → OpenClaw → create bot → copy token",
+        "In ClickClack: Workspace settings → Integrations → Afora → create bot → copy token",
       invalidToken:
         "ClickClack rejected the bot token (401). Copy a current token and rerun setup.",
       validationWarningTitle: "ClickClack connection check",
@@ -761,7 +761,7 @@ export const en = {
       helpEnableRoom: "4) Enable the bot in your Nextcloud Talk room settings",
       helpEnvTip: "Tip: you can also set NEXTCLOUD_TALK_BOT_SECRET in your env.",
       helpInstallCommand:
-        '2) Run: ./occ talk:bot:install "OpenClaw" "<shared-secret>" "<webhook-url>" --feature webhook --feature response --feature reaction',
+        '2) Run: ./occ talk:bot:install "Afora" "<shared-secret>" "<webhook-url>" --feature webhook --feature response --feature reaction',
       helpSsh: "1) SSH into your Nextcloud server",
       instanceUrlPrompt: "Enter Nextcloud instance URL (e.g., https://cloud.example.com)",
       setupTitle: "Nextcloud Talk bot setup",
@@ -819,7 +819,7 @@ export const en = {
       linkNowPrompt: "Link WhatsApp now (QR)?",
       linkingTitle: "WhatsApp linking",
       numberTitle: "WhatsApp number",
-      ownerNumberNote: "We need the sender/owner number so OpenClaw can allowlist you.",
+      ownerNumberNote: "We need the sender/owner number so Afora can allowlist you.",
       personalNumberPrompt: "Your personal WhatsApp number (the phone you will message from)",
       personalPhoneLabel: "This is my personal phone number",
       personalPhoneModeEnabled: "Personal phone mode enabled.",
@@ -827,7 +827,7 @@ export const en = {
       phoneSetupPrompt: "WhatsApp phone setup",
       relinkPrompt: "WhatsApp already linked. Re-link now?",
       scanQr: "Scan the QR with WhatsApp on your phone.",
-      separatePhoneLabel: "Separate phone just for OpenClaw",
+      separatePhoneLabel: "Separate phone just for Afora",
       setAllowFromNumbers: "Set allowFrom to specific numbers",
       unsetAllowFromDefault: "Unset allowFrom (default)",
       unsetAllowFromPairing: "Unset allowFrom (use pairing approvals only)",
@@ -871,7 +871,7 @@ export const en = {
       helpRecommendedTls: "Recommended: TLS on port 6697.",
       multipleEntries: "Multiple entries: comma-separated.",
       nextRestartGateway: "Next: restart gateway and verify status.",
-      nextStatusCommand: "Command: openclaw channels status --probe",
+      nextStatusCommand: "Command: afora channels status --probe",
       nextStepsTitle: "IRC next steps",
       nickPrompt: "IRC nick",
       nickServConfigurePrompt: "Configure NickServ identify/register?",
@@ -920,7 +920,7 @@ export const en = {
       helpIncomingWebhook: "1) Create an incoming webhook in Synology Chat and copy its URL",
       helpOutgoingWebhook: "2) Create an outgoing webhook and copy its secret token",
       helpPointWebhook: "3) Point the outgoing webhook to https://<gateway-host>{path}",
-      incomingWebhookHelpReplies: "This is the URL OpenClaw uses to send replies back to Chat.",
+      incomingWebhookHelpReplies: "This is the URL Afora uses to send replies back to Chat.",
       incomingWebhookHelpUseUrl: "Use the incoming webhook URL from Synology Chat integrations.",
       incomingWebhookKeep: "Incoming webhook URL already configured. Keep it?",
       incomingWebhookTitle: "Synology Chat incoming webhook",
@@ -936,7 +936,7 @@ export const en = {
       publicWebhookUrlKeep: "Public attachment webhook URL already configured. Keep it?",
       publicWebhookUrlPrompt: "Public attachment webhook URL (optional)",
       publicWebhookUrlScope:
-        "Expose only this webhook route; OpenClaw uses it for short-lived attachment downloads.",
+        "Expose only this webhook route; Afora uses it for short-lived attachment downloads.",
       publicWebhookUrlTitle: "Synology Chat public attachment route",
       setupTitle: "Synology Chat webhook setup",
       tokenEnvPrompt: "SYNOLOGY_CHAT_TOKEN detected. Use env var?",
@@ -953,7 +953,7 @@ export const en = {
       examples: "Examples:",
       installPrompt: "signal-cli not found. Install now?",
       multipleEntries: "Multiple entries: comma-separated.",
-      nextLinkDevice: 'Link device with: signal-cli link -n "OpenClaw"',
+      nextLinkDevice: 'Link device with: signal-cli link -n "Afora"',
       nextScanQr: "Scan QR in Signal -> Linked Devices",
       nextStepsTitle: "Signal next steps",
       reinstallPrompt: "signal-cli detected. Reinstall/update now?",
@@ -1024,10 +1024,10 @@ export const en = {
       clientIdPrompt: "Twitch Client ID",
       clientSecretKeep: "Client secret already configured. Keep it?",
       clientSecretPrompt: "Twitch Client Secret (for token refresh)",
-      envPrompt: "Twitch env var OPENCLAW_TWITCH_ACCESS_TOKEN detected. Use env token?",
+      envPrompt: "Twitch env var AFORA_TWITCH_ACCESS_TOKEN detected. Use env token?",
       helpCopyToken: "3. Copy the token (starts with 'oauth:') and Client ID",
       helpCreateApp: "1. Create a Twitch application at https://dev.twitch.tv/console",
-      helpEnvVars: "Env vars supported: OPENCLAW_TWITCH_ACCESS_TOKEN",
+      helpEnvVars: "Env vars supported: AFORA_TWITCH_ACCESS_TOKEN",
       helpGenerateToken: "2. Generate a token with scopes: chat:read and chat:write",
       helpRequiresBot: "Twitch requires a bot account with OAuth token.",
       helpTokenTools: "   Use https://twitchtokengenerator.com/ or https://twitchapps.com/tmi/",
@@ -1068,7 +1068,7 @@ export const en = {
         qqbot: "Connect to QQ via official QQ Bot API",
         signal: 'signal-cli linked device; more setup (David Reagans: "Hop on Discord.").',
         slack: "supported (Socket Mode).",
-        synologyChat: "Connect your Synology NAS Chat to OpenClaw with full agent capabilities.",
+        synologyChat: "Connect your Synology NAS Chat to Afora with full agent capabilities.",
         telegram: "simplest way to get started — register a bot with @BotFather and get going.",
         tlon: "decentralized messaging on Urbit; install the plugin to enable.",
         twitch: "Twitch chat integration",
@@ -1084,7 +1084,7 @@ export const en = {
       credentialRequired: "{label} required",
       chooseProvider: "Choose a provider. Some providers need an API key, and some work key-free.",
       configured: "configured",
-      configureLaterHint: "Configure later with openclaw configure --section web",
+      configureLaterHint: "Configure later with afora configure --section web",
       docsLine: "Docs: {url}",
       intro: "Web search lets your agent look things up online.",
       keyFree: "key-free",
@@ -1102,10 +1102,10 @@ export const en = {
       codexNativeSearchOnly: "Used only for Codex-capable models.",
       codexNativeSearchTitle: "Codex native search",
       controlUiTitle: "Control UI",
-      controlUiDocs: "Docs: https://docs.openclaw.ai/web/control-ui",
-      dashboardCopyPaste: "Copy/paste this URL in a browser on this machine to control OpenClaw.",
+      controlUiDocs: "Docs: https://docs.afora.ai/web/control-ui",
+      dashboardCopyPaste: "Copy/paste this URL in a browser on this machine to control Afora.",
       dashboardLinkWithToken: "Dashboard link (with token): {url}",
-      dashboardOpened: "Opened in your browser. Keep that tab to control OpenClaw.",
+      dashboardOpened: "Opened in your browser. Keep that tab to control Afora.",
       dashboardOpenAnytime: "Open the dashboard anytime: {command}",
       dashboardReady: "Dashboard ready",
       dashboardTokenMemory:
@@ -1116,7 +1116,7 @@ export const en = {
       daemonRuntime: "Gateway service runtime",
       daemonRuntimeNode: "Node (recommended)",
       daemonRuntimeNodeHint:
-        "Required because OpenClaw state uses node:sqlite; Bun cannot run the Gateway.",
+        "Required because Afora state uses node:sqlite; Bun cannot run the Gateway.",
       editBootstrap: "Edit BOOTSTRAP.md later to change how the agent introduces itself.",
       bootstrapHatchMessage: "Wake up, my friend!",
       firstTerminalChat: 'The first Terminal chat run will send: "Wake up, my friend!"',
@@ -1139,7 +1139,7 @@ export const en = {
       gatewayTokenGenerate: "Generate token: {command}",
       gatewayTokenShared: "Gateway token: shared auth for the Gateway + Control UI.",
       gatewayTokenStored:
-        "Stored in: $OPENCLAW_CONFIG_PATH (default: ~/.openclaw/openclaw.json) under gateway.auth.token, or in OPENCLAW_GATEWAY_TOKEN.",
+        "Stored in: $AFORA_CONFIG_PATH (default: ~/.AforaMosh/afora-agent.json) under gateway.auth.token, or in AFORA_GATEWAY_TOKEN.",
       gatewayTokenView: "View token: {command}",
       gatewayWsUrl: "Gateway WS: {url}",
       hatchLater: "Hatch later",
@@ -1163,9 +1163,9 @@ export const en = {
       nodeIos: "iOS app (camera/canvas)",
       nodeMac: "macOS app (system + notifications)",
       optionalApps: "Optional apps",
-      outroDashboardLink: "Onboarding complete. Use the dashboard link above to control OpenClaw.",
+      outroDashboardLink: "Onboarding complete. Use the dashboard link above to control Afora.",
       outroDashboardOpened:
-        "Onboarding complete. Dashboard opened; keep that tab to control OpenClaw.",
+        "Onboarding complete. Dashboard opened; keep that tab to control Afora.",
       outroSeeded:
         "Onboarding complete. Web UI seeded in the background; open it anytime with the dashboard link above.",
       quickstartNodeRuntime: "QuickStart uses Node for the Gateway service (stable + supported).",
@@ -1174,9 +1174,9 @@ export const en = {
       restart: "Restart",
       containerRuntimeTitle: "Container runtime",
       containerSystemdUnavailable:
-        "Systemd user services are not available inside this container. OpenClaw is skipping only the background service install; run the Gateway in the foreground or use your container supervisor.",
+        "Systemd user services are not available inside this container. Afora is skipping only the background service install; run the Gateway in the foreground or use your container supervisor.",
       securityReminder:
-        "Running agents on your computer is risky — harden your setup: https://docs.openclaw.ai/security",
+        "Running agents on your computer is risky — harden your setup: https://docs.afora.ai/security",
       secretRefAuthFailed: "Could not resolve {field} SecretRef for setup auth.",
       skipHealthNextTime: "Or skip this probe next time: {command}",
       skipControlUi: "Skipping Control UI/TUI prompts.",
@@ -1191,7 +1191,7 @@ export const en = {
       sessionGatewayStarted: "Session Gateway started.",
       sessionGatewayStartFailed: "Session Gateway failed to start.",
       terminalHatch: "Hatch in Terminal (recommended)",
-      webDocs: "Docs: https://docs.openclaw.ai/tools/web",
+      webDocs: "Docs: https://docs.afora.ai/tools/web",
       webSearchAutoDetected: "Web search is available via {provider} (auto-detected).",
       webSearchDisabled: "Web search ({provider}) is configured but disabled.",
       webSearchEnabled:
@@ -1215,10 +1215,10 @@ export const en = {
         "web_search will not work until the provider is re-enabled or a different provider is selected.",
       webUiUrl: "Web UI: {url}",
       webUiWithTokenUrl: "Web UI (with token): {url}",
-      whatNow: 'What now: https://openclaw.ai/showcase ("What People Are Building").',
+      whatNow: 'What now: https://afora.ai/showcase ("What People Are Building").',
       whatNowTitle: "What now",
       workspaceBackupTitle: "Workspace backup",
-      workspaceDocs: "Docs: https://docs.openclaw.ai/concepts/agent-workspace",
+      workspaceDocs: "Docs: https://docs.afora.ai/concepts/agent-workspace",
       workspaceReady: "Your workspace is ready.",
     },
     gatewayNotes: {

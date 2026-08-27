@@ -2,7 +2,7 @@
 import { html, nothing } from "lit";
 import { property } from "lit/decorators.js";
 import { t } from "../i18n/index.ts";
-import { OpenClawLightDomContentsElement } from "../lit/openclaw-element.ts";
+import { AforaLightDomContentsElement } from "../lit/afora-element.ts";
 import "./modal-dialog.ts";
 
 type GatewayUrlConfirmationProps = {
@@ -21,7 +21,7 @@ function renderGatewayUrlConfirmation(props: GatewayUrlConfirmationProps) {
   const description = t("channels.gatewayUrlConfirmation.subtitle");
 
   return html`
-    <openclaw-modal-dialog
+    <afora-modal-dialog
       label=${title}
       description=${description}
       @modal-cancel=${props.onCancel}
@@ -42,11 +42,11 @@ function renderGatewayUrlConfirmation(props: GatewayUrlConfirmationProps) {
           <button class="btn" @click=${props.onCancel}>${t("common.cancel")}</button>
         </div>
       </div>
-    </openclaw-modal-dialog>
+    </afora-modal-dialog>
   `;
 }
 
-class GatewayUrlConfirmation extends OpenClawLightDomContentsElement {
+class GatewayUrlConfirmation extends AforaLightDomContentsElement {
   @property({ attribute: false }) props?: GatewayUrlConfirmationProps;
 
   override render() {
@@ -54,6 +54,6 @@ class GatewayUrlConfirmation extends OpenClawLightDomContentsElement {
   }
 }
 
-if (!customElements.get("openclaw-gateway-url-confirmation")) {
-  customElements.define("openclaw-gateway-url-confirmation", GatewayUrlConfirmation);
+if (!customElements.get("afora-gateway-url-confirmation")) {
+  customElements.define("afora-gateway-url-confirmation", GatewayUrlConfirmation);
 }

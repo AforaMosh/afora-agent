@@ -2,7 +2,7 @@
  * Legacy config migration for Amazon Bedrock discovery settings. It moves
  * old `models.bedrockDiscovery` config into plugin-local config shape.
  */
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 type JsonRecord = Record<string, unknown>;
 

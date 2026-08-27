@@ -2,8 +2,8 @@
  * Browser-local SDK bridge for gateway, plugin runtime, CLI runtime, and timeout
  * helpers.
  */
-import { toErrorObject } from "openclaw/plugin-sdk/error-runtime";
-import { clampTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
+import { toErrorObject } from "afora-agent/plugin-sdk/error-runtime";
+import { clampTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
 
 export {
   addGatewayClientOptions,
@@ -17,19 +17,19 @@ export {
   resolveGatewayAuth,
   resolveNodeCommandAllowlist,
   safeParseJson,
-} from "openclaw/plugin-sdk/gateway-runtime";
+} from "afora-agent/plugin-sdk/gateway-runtime";
 export type {
   GatewayRequestHandlers,
   GatewayRpcOpts,
   NodeSession,
-} from "openclaw/plugin-sdk/gateway-runtime";
-export { runCommandWithRuntime } from "openclaw/plugin-sdk/cli-runtime";
-export type { OpenClawPluginService } from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/gateway-runtime";
+export { runCommandWithRuntime } from "afora-agent/plugin-sdk/cli-runtime";
+export type { AforaPluginService } from "afora-agent/plugin-sdk/plugin-entry";
 export {
   startLazyPluginServiceModule,
   type LazyPluginServiceHandle,
-} from "openclaw/plugin-sdk/plugin-runtime";
-export { defaultRuntime } from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/plugin-runtime";
+export { defaultRuntime } from "afora-agent/plugin-sdk/runtime-env";
 
 function normalizeTimeoutMs(timeoutMs: number | undefined): number | undefined {
   return clampTimerTimeoutMs(timeoutMs);

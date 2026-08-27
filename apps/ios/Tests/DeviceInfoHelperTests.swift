@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import OpenClaw
+@testable import Afora
 
 struct DeviceInfoHelperTests {
     @Test func `iOS version display omits platform prefix`() {
@@ -11,7 +11,7 @@ struct DeviceInfoHelperTests {
 
     @Test func `build metadata prefers canonical iOS version`() {
         let metadata = DeviceInfoHelper.buildMetadata(infoDictionary: [
-            "OpenClawCanonicalVersion": "2026.7.10",
+            "AforaCanonicalVersion": "2026.7.10",
             "CFBundleShortVersionString": "2026.7.9",
             "CFBundleVersion": "42",
         ])
@@ -26,7 +26,7 @@ struct DeviceInfoHelperTests {
             interfaceIdiom: .pad,
             isIOSAppOnMac: true)
 
-        #expect(name == "OpenClaw Mac App")
+        #expect(name == "Afora Mac App")
     }
 
     @Test func `iOS app on Mac replaces persisted generic iPad device name`() {
@@ -36,7 +36,7 @@ struct DeviceInfoHelperTests {
             interfaceIdiom: .pad,
             isIOSAppOnMac: true)
 
-        #expect(name == "OpenClaw Mac App")
+        #expect(name == "Afora Mac App")
     }
 
     @Test func `iOS app on Mac replaces persisted generic iPhone device name`() {
@@ -46,7 +46,7 @@ struct DeviceInfoHelperTests {
             interfaceIdiom: .phone,
             isIOSAppOnMac: true)
 
-        #expect(name == "OpenClaw Mac App")
+        #expect(name == "Afora Mac App")
     }
 
     @Test func `iOS app on Mac preserves a custom node name`() {
@@ -81,7 +81,7 @@ struct DeviceInfoHelperTests {
 
     @Test func `physical iPhone replaces stale Mac compatibility default`() {
         let name = NodeDisplayName.resolve(
-            existing: "OpenClaw Mac App",
+            existing: "Afora Mac App",
             deviceName: "QA iPhone",
             interfaceIdiom: .phone,
             isIOSAppOnMac: false)

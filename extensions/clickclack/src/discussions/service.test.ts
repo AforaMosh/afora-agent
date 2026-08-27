@@ -54,7 +54,7 @@ describe("ClickClack discussion service", () => {
     expect(opened).toEqual({
       state: "open",
       embedUrl:
-        "https://clickclack.example/embed/channel/team-route/discussion-route?openclawHostTheme=1",
+        "https://clickclack.example/embed/channel/team-route/discussion-route?aforaHostTheme=1",
       openUrl: "https://clickclack.example/app/team-route/discussion-route",
     });
     expect(reopened).toEqual(opened);
@@ -502,7 +502,7 @@ describe("ClickClack discussion service", () => {
     expect(opened).toEqual({
       state: "open",
       embedUrl:
-        "https://clickclack.example/embed/channel/team-route/recovered-route?openclawHostTheme=1",
+        "https://clickclack.example/embed/channel/team-route/recovered-route?aforaHostTheme=1",
       openUrl: "https://clickclack.example/app/team-route/recovered-route",
     });
   });

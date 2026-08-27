@@ -267,7 +267,7 @@ describe("CI changed Node test plan", () => {
   });
 
   it("runs only the boundary shard when a diff deletes test files", () => {
-    const cwd = mkdtempSync(path.join(tmpdir(), "openclaw-ci-deleted-test-"));
+    const cwd = mkdtempSync(path.join(tmpdir(), "afora-ci-deleted-test-"));
     try {
       expect(createChangedNodeTestShards(["src/gone.test.ts"], { cwd })).toEqual([
         {
@@ -320,7 +320,7 @@ describe("CI changed Node test plan", () => {
   it("covers every extension config when core changes can impact extension consumers", () => {
     const shards = createChangedExtensionFallbackShards([
       "src/gateway/tool-resolution.ts",
-      "src/agents/openclaw-tools.ts",
+      "src/agents/afora-tools.ts",
       "extensions/discord/src/channel.ts",
     ]);
 
@@ -340,7 +340,7 @@ describe("CI changed Node test plan", () => {
   });
 
   it("classifies core and fallback-gate extension impact", () => {
-    expect(hasCoreExtensionImpact(["src/agents/openclaw-tools.ts"])).toBe(true);
+    expect(hasCoreExtensionImpact(["src/agents/afora-tools.ts"])).toBe(true);
     expect(hasCoreExtensionImpact(["scripts/lib/changed-extensions.mts"])).toBe(true);
     expect(hasCoreExtensionImpact(["scripts/lib/ci-changed-node-test-plan.mts"])).toBe(true);
     expect(hasCoreExtensionImpact(["scripts/lib/extension-test-plan.mts"])).toBe(true);
@@ -423,7 +423,7 @@ describe("CI changed Node test plan", () => {
   });
 
   it("falls back to bounded Codex config shards for deleted sources", () => {
-    const cwd = mkdtempSync(path.join(tmpdir(), "openclaw-ci-extension-fallback-"));
+    const cwd = mkdtempSync(path.join(tmpdir(), "afora-ci-extension-fallback-"));
     try {
       expectBoundedCodexFallback(
         createChangedExtensionFallbackShards(["extensions/codex/src/deleted-session-runtime.ts"], {
@@ -462,7 +462,7 @@ describe("CI changed Node test plan", () => {
   });
 
   it("fails safe when an unresolved source only finds an unrelated directory test", () => {
-    const cwd = mkdtempSync(path.join(tmpdir(), "openclaw-ci-target-"));
+    const cwd = mkdtempSync(path.join(tmpdir(), "afora-ci-target-"));
     try {
       mkdirSync(path.join(cwd, "src"));
       writeFileSync(path.join(cwd, "src/value.ts"), "export const value = 1;\n");

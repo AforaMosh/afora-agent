@@ -57,7 +57,7 @@ func translationPrompt(srcLang, tgtLang string, glossary []GlossaryEntry) string
 }
 
 var alwaysProtectedProductNames = []string{
-	"OpenClaw", "Raspberry Pi", "WhatsApp", "Telegram", "Discord", "iMessage", "Slack", "Microsoft Teams", "Google Chat", "Signal",
+	"Afora", "Raspberry Pi", "WhatsApp", "Telegram", "Discord", "iMessage", "Slack", "Microsoft Teams", "Google Chat", "Signal",
 }
 
 var contextualProtectedProductNames = []string{
@@ -153,7 +153,7 @@ const documentationQualityRules = `Documentation quality rules:
 - Preserve exact third-party UI labels only when the source clearly uses them as literal interface text: buttons, menu items, settings, form fields, option values, or arrow-separated navigation paths. Indicators include instructions to click, open, select, toggle, copy, or configure an item, plus tables that name fields in a third-party interface. Keep each protected label's spelling, capitalization, punctuation, and Markdown emphasis exactly.
 - In a table documenting third-party fields, preserve literal UI labels in data cells, but translate generic organizational column headings such as “Field”, “Value”, “Description”, “Example”, and “Required”. The same word may be protected when it names an actual UI control elsewhere.
 - Translate the surrounding actions and explanations. Do not preserve ordinary prose merely because it is bold, quoted, title-cased, or inside a table. Translate normal headings, emphasis, descriptions, conceptual labels, link text, and ordinary table headers.
-- Label precedence, highest to lowest: literal third-party UI text; locale-specific fixed terminology stated in this prompt; supplied glossary mappings; normal translation. A higher rule overrides every lower rule and the general instructions to translate all prose, headings, and labels. OpenClaw-owned UI and documentation labels use the highest applicable fixed term or glossary mapping; otherwise translate them normally.
+- Label precedence, highest to lowest: literal third-party UI text; locale-specific fixed terminology stated in this prompt; supplied glossary mappings; normal translation. A higher rule overrides every lower rule and the general instructions to translate all prose, headings, and labels. Afora-owned UI and documentation labels use the highest applicable fixed term or glossary mapping; otherwise translate them normally.
 - Preserve technical meaning over literal wording. Keep authentication, authorization, credentials, tokens, passwords, secrets, identities, and accounts distinct unless the source explicitly equates them. Preserve actors, objects, temporal order, negation, conditions, scope, singular/plural meaning, and requirement strength such as “must”, “required”, “only”, and “never”.
 - Preserve every factual value exactly, including numbers, units, versions, ports, limits, durations, paths, and comparison operators. Do not add explanations, infer missing facts, soften warnings, or correct the source.
 - Use one locale-appropriate register within each page. Do not mix formal, informal, honorific, or speech-level forms. Prefer impersonal documentation phrasing when the locale overlay does not specify a direct-address form.

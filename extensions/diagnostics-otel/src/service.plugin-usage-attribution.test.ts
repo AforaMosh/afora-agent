@@ -9,11 +9,11 @@ import {
   emitTrustedDiagnosticEventWithPrivateData,
   resetDiagnosticEventsForTest,
   waitForDiagnosticEventsDrained,
-} from "openclaw/plugin-sdk/diagnostic-runtime";
+} from "afora-agent/plugin-sdk/diagnostic-runtime";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { startOtelServiceWithHostUsage, stopStartedOtelServices } from "./service.test-helpers.js";
 
-const PRELOAD_ENV = "OPENCLAW_OTEL_PRELOADED";
+const PRELOAD_ENV = "AFORA_OTEL_PRELOADED";
 const OTEL_GLOBAL_API_KEY = Symbol.for("opentelemetry.js.api.1");
 
 type OtelGlobalRegistrations = {
@@ -100,9 +100,9 @@ test("adds plugin attribution only from trusted exporter-private provenance", as
 
   const usageSpans = exporter
     .getFinishedSpans()
-    .filter((span) => span.name === "openclaw.model.usage");
+    .filter((span) => span.name === "afora.model.usage");
   expect(usageSpans).toHaveLength(4);
-  expect(usageSpans.map((span) => span.attributes["openclaw.plugin"])).toEqual([
+  expect(usageSpans.map((span) => span.attributes["afora.plugin"])).toEqual([
     "llm-task",
     undefined,
     undefined,

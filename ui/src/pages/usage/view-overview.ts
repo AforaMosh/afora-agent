@@ -1,6 +1,6 @@
-import { expectDefined } from "@openclaw/normalization-core";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { expectDefined } from "@afora/normalization-core";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 // Control UI view renders usage render overview screen content.
 import { html, nothing } from "lit";
 import { ifDefined } from "lit/directives/if-defined.js";
@@ -165,11 +165,11 @@ function renderFilterChips(
           ({ labelKey, value, removeKey, onClear, title }) => html`
             <div class="filter-chip" title=${ifDefined(title)}>
               <span class="filter-chip-label">${t(labelKey)}: ${value}</span>
-              <openclaw-tooltip .content=${t("usage.filters.remove")}>
+              <afora-tooltip .content=${t("usage.filters.remove")}>
                 <button class="filter-chip-remove" @click=${onClear} aria-label=${t(removeKey)}>
                   ×
                 </button>
-              </openclaw-tooltip>
+              </afora-tooltip>
             </div>
           `,
         )}
@@ -363,7 +363,7 @@ function renderDailyChartCompact(
               const costLabel = formatAnalysisCost(d.totalCost);
               const segmentTotal = segments.reduce((sum, segment) => sum + segment.value, 0) || 1;
               return html`
-                <openclaw-tooltip
+                <afora-tooltip
                   .content=${[dateLabel, tokensLabel, costLabel, ...breakdownLines].join("\n")}
                 >
                   <div
@@ -402,7 +402,7 @@ function renderDailyChartCompact(
                         ></div>`}
                     <div class="${labelClass}">${shortLabel}</div>
                   </div>
-                </openclaw-tooltip>
+                </afora-tooltip>
               `;
             })}
           </div>
@@ -546,7 +546,7 @@ function renderSummaryStat(params: {
     <div class=${classes}>
       <div class="usage-summary-title">
         ${params.title}
-        <openclaw-tooltip open-on-click>
+        <afora-tooltip open-on-click>
           <button
             id=${hintId}
             type="button"
@@ -561,7 +561,7 @@ function renderSummaryStat(params: {
                click-to-open; the click handler still normalizes browsers that do
                not focus buttons on pointer activation. -->
           <span slot="content">${params.hint}</span>
-        </openclaw-tooltip>
+        </afora-tooltip>
       </div>
       <div class=${valueClasses}>${params.value}</div>
       <div class="usage-summary-sub">${params.sub}</div>
@@ -990,7 +990,7 @@ function renderSessionsCard(
               )}
             </select>
           </label>
-          <openclaw-tooltip
+          <afora-tooltip
             .content=${sessionSortDir === "desc"
               ? t("usage.sessions.descending")
               : t("usage.sessions.ascending")}
@@ -1004,7 +1004,7 @@ function renderSessionsCard(
             >
               ${sessionSortDir === "desc" ? "↓" : "↑"}
             </button>
-          </openclaw-tooltip>
+          </afora-tooltip>
           ${selectedCount > 0
             ? html`
                 <button class="btn btn--sm" @click=${onClearSessions}>

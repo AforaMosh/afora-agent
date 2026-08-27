@@ -1,5 +1,5 @@
 // Verifies transcript repair pairs tool calls/results and sanitizes tool inputs.
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
 import { describe, expect, it } from "vitest";
 import {
   sanitizeToolCallInputs,
@@ -10,7 +10,7 @@ import {
 import { castAgentMessage, castAgentMessages } from "./test-helpers/agent-message-fixtures.js";
 
 const DEFAULT_MISSING_TOOL_RESULT_TEXT =
-  "[openclaw] missing tool result in session history; inserted synthetic error result for transcript repair.";
+  "[afora] missing tool result in session history; inserted synthetic error result for transcript repair.";
 
 const TOOL_CALL_BLOCK_TYPES = new Set([
   "toolCall",
@@ -656,7 +656,7 @@ describe("repairToolUseResultPairing prefers real result over synthetic error", 
       toolCallId,
       toolName: "read",
       content: [{ type: "text", text }],
-      details: { openclawSyntheticMissingToolResult: true },
+      details: { aforaSyntheticMissingToolResult: true },
       isError: true,
     };
   }

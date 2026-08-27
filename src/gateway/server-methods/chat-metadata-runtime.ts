@@ -14,7 +14,7 @@ import type { PreparedModelRuntimeSnapshot } from "../../agents/prepared-model-r
 import { resolveSwarmConfig } from "../../agents/subagents/swarm/swarm-config.js";
 import { resolveRuntimeConfigCacheKey } from "../../config/runtime-snapshot.js";
 import { resolveSessionAuthProfileOverrideSource } from "../../config/sessions/auth-profile-override-provenance.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { pruneMapToMaxSize } from "../../infra/map-size.js";
 import { getActivePluginRegistryVersion } from "../../plugins/runtime.js";
@@ -43,7 +43,7 @@ type PreparedAgentFacts = {
 };
 
 type PreparedGenerationFacts = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   configKey: string;
   pluginRegistryVersion: number;
   agents: PreparedAgentFacts[];
@@ -75,7 +75,7 @@ type MetadataReplacement = {
 };
 
 type ChatMetadataRuntimeDeps = {
-  getConfig: () => OpenClawConfig;
+  getConfig: () => AforaConfig;
   getContext: () => GatewayRequestContext;
   getPreparedOwner: (
     params: LoadPreparedModelCatalogParams,
@@ -88,7 +88,7 @@ type ChatMetadataRuntimeDeps = {
   getSkillsVersion: (workspaceDir?: string) => number;
   getPluginRegistryVersion: () => number;
   buildCommands: (params: {
-    cfg: OpenClawConfig;
+    cfg: AforaConfig;
     agentId: string;
   }) => Promise<{ commands?: unknown[] }>;
   buildProjection: (params: {
@@ -202,7 +202,7 @@ function sessionProjectionKey(
 }
 
 async function defaultBuildCommands(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   agentId: string;
 }): Promise<{ commands?: unknown[] }> {
   const { buildCommandsListResult } = await import("./commands-list-result.js");
@@ -258,7 +258,7 @@ async function defaultBuildProjection(params: {
 }
 
 export function createGatewayChatMetadataRuntime(params: {
-  getConfig: () => OpenClawConfig;
+  getConfig: () => AforaConfig;
   getContext: () => GatewayRequestContext;
   beforeRefresh?: () => Promise<void>;
   refreshOnRead?: boolean;

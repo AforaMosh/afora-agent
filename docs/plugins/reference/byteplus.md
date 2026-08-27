@@ -1,5 +1,5 @@
 ---
-summary: "Adds BytePlus, BytePlus Plan model provider support to OpenClaw."
+summary: "Adds BytePlus, BytePlus Plan model provider support to Afora."
 read_when:
   - You are installing, configuring, or auditing the byteplus plugin
 title: "BytePlus plugin"
@@ -7,12 +7,12 @@ title: "BytePlus plugin"
 
 # BytePlus plugin
 
-Adds BytePlus, BytePlus Plan model provider support to OpenClaw.
+Adds BytePlus, BytePlus Plan model provider support to Afora.
 
 ## Distribution
 
-- Package: `@openclaw/byteplus-provider`
-- Install route: npm; ClawHub: `clawhub:@openclaw/byteplus-provider`
+- Package: `@afora/byteplus-provider`
+- Install route: npm; ClawHub: `clawhub:@afora/byteplus-provider`
 
 ## Surface
 

@@ -53,7 +53,7 @@ export async function retireCodexAppServerSessionGeneration(params: {
       const released = await releaseCodexAppServerLiveThread(clientLease.client, binding.threadId);
       if (!released && isIncognitoSessionKey(params.identity.sessionKey)) {
         // Ephemeral threads have no rollout to resume, so they intentionally
-        // bypass idle eviction but still end with their owning OpenClaw session.
+        // bypass idle eviction but still end with their owning Afora session.
         const unsubscribed = await unsubscribeCodexThreadBestEffort(clientLease.client, {
           threadId: binding.threadId,
           timeoutMs: CODEX_APP_SERVER_UNSUBSCRIBE_TIMEOUT_MS,

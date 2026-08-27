@@ -26,7 +26,7 @@ scenario:
     kind: flow
     providerMode: live-frontier
     channel: qa-channel
-    summary: Run with `pnpm openclaw qa suite --provider-mode live-frontier --cli-auth-mode subscription --model claude-cli/claude-sonnet-4-6 --alt-model claude-cli/claude-sonnet-4-6 --scenario claude-cli-inbound-image-subscription`.
+    summary: Run with `pnpm afora qa suite --provider-mode live-frontier --cli-auth-mode subscription --model claude-cli/claude-sonnet-4-6 --alt-model claude-cli/claude-sonnet-4-6 --scenario claude-cli-inbound-image-subscription`.
     config:
       authMode: subscription
       requiredProvider: claude-cli
@@ -45,15 +45,15 @@ flow:
             expr: splitModelRef(env.primaryModel)
         - set: preserveEnv
           value:
-            expr: "String(env.gateway.runtimeEnv.OPENCLAW_LIVE_CLI_BACKEND_PRESERVE_ENV ?? '')"
+            expr: "String(env.gateway.runtimeEnv.AFORA_LIVE_CLI_BACKEND_PRESERVE_ENV ?? '')"
         - assert:
             expr: "env.providerMode === 'live-frontier' && selected?.provider === config.requiredProvider"
             message:
               expr: "`expected live provider ${config.requiredProvider}, got mode=${env.providerMode} model=${env.primaryModel}`"
         - assert:
-            expr: "env.gateway.runtimeEnv.OPENCLAW_LIVE_CLI_BACKEND_AUTH_MODE === config.authMode"
+            expr: "env.gateway.runtimeEnv.AFORA_LIVE_CLI_BACKEND_AUTH_MODE === config.authMode"
             message:
-              expr: "`expected Claude CLI auth mode ${config.authMode}, got ${env.gateway.runtimeEnv.OPENCLAW_LIVE_CLI_BACKEND_AUTH_MODE ?? 'unset'}`"
+              expr: "`expected Claude CLI auth mode ${config.authMode}, got ${env.gateway.runtimeEnv.AFORA_LIVE_CLI_BACKEND_AUTH_MODE ?? 'unset'}`"
         - assert:
             expr: "!preserveEnv.includes('ANTHROPIC_API_KEY')"
             message:

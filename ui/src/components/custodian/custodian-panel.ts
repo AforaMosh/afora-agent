@@ -1,8 +1,8 @@
 import { html, nothing, type PropertyValues } from "lit";
 import { property } from "lit/decorators.js";
 import { t } from "../../i18n/index.ts";
-import "../openclaw-mascot.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import "../afora-mascot.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import {
   custodianSessionStore,
   type CustodianSessionStore,
@@ -16,7 +16,7 @@ import "../../styles/custodian-panel.css";
 type CustodianDock = Exclude<DockPanelSide, "left">;
 
 const panelLayout = createDockPanelLayout({
-  storageKey: "openclaw.custodian.panel.v1",
+  storageKey: "afora.custodian.panel.v1",
   minHeight: 240,
   minWidth: 320,
   defaultDock: "right",
@@ -25,7 +25,7 @@ const panelLayout = createDockPanelLayout({
   defaultWidth: 440,
 });
 
-export class OpenClawCustodianPanel extends OpenClawLightDomElement {
+export class AforaCustodianPanel extends AforaLightDomElement {
   @property({ type: Boolean }) available = false;
   @property({ type: Boolean }) suppressed = false;
   @property({ type: Number }) minimizeRequestId = 0;
@@ -107,10 +107,10 @@ export class OpenClawCustodianPanel extends OpenClawLightDomElement {
         ${this.dockLayout.renderResizer("cp", t("custodian.panel.resize"))}
         <header class="rail-header cp-header">
           <div class="cp-title">
-            <openclaw-mascot
+            <afora-mascot
               .mood=${this.store.sending ? "thinking" : "idle"}
               .size=${16}
-            ></openclaw-mascot>
+            ></afora-mascot>
             <strong class="rail-header__title">${t("custodian.panel.title")}</strong>
           </div>
           <div class="rail-header__actions cp-actions">
@@ -134,23 +134,23 @@ export class OpenClawCustodianPanel extends OpenClawLightDomElement {
             </button>
           </div>
         </header>
-        <openclaw-custodian-surface
+        <afora-custodian-surface
           .store=${this.store}
           .onboarding=${this.store.activeVariant === "onboarding"}
           .newAgentIntent=${this.store.activeVariant === "new-agent"}
           compact
-        ></openclaw-custodian-surface>
+        ></afora-custodian-surface>
       </section>
     `;
   }
 }
 
-if (!customElements.get("openclaw-custodian-panel")) {
-  customElements.define("openclaw-custodian-panel", OpenClawCustodianPanel);
+if (!customElements.get("afora-custodian-panel")) {
+  customElements.define("afora-custodian-panel", AforaCustodianPanel);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    "openclaw-custodian-panel": OpenClawCustodianPanel;
+    "afora-custodian-panel": AforaCustodianPanel;
   }
 }

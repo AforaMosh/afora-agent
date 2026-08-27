@@ -1,6 +1,6 @@
 // Twitch plugin module implements twitch behavior.
 import { randomUUID } from "node:crypto";
-import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeLowercaseStringOrEmpty } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 /**
  * Twitch-specific utility functions

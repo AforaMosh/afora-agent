@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import JSZip from "jszip";
-import type { RuntimeEnv } from "openclaw/plugin-sdk/runtime-env";
+import type { RuntimeEnv } from "afora-agent/plugin-sdk/runtime-env";
 import * as tar from "tar";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReleaseAsset } from "./install-signal-cli.js";
@@ -29,12 +29,12 @@ const {
   tempDownloadPaths: [] as string[],
 }));
 
-vi.mock("openclaw/plugin-sdk/ssrf-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/ssrf-runtime", () => ({
   fetchWithSsrFGuard: fetchWithSsrFGuardMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/setup-tools", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/setup-tools")>();
+vi.mock("afora-agent/plugin-sdk/setup-tools", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/setup-tools")>();
   return {
     ...actual,
     extractArchive: async (params: Parameters<typeof actual.extractArchive>[0]) => {
@@ -45,12 +45,12 @@ vi.mock("openclaw/plugin-sdk/setup-tools", async (importOriginal) => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/run-command", () => ({
+vi.mock("afora-agent/plugin-sdk/run-command", () => ({
   runPluginCommandWithTimeout: runPluginCommandWithTimeoutMock,
 }));
 
-vi.mock("openclaw/plugin-sdk/temp-path", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/temp-path")>();
+vi.mock("afora-agent/plugin-sdk/temp-path", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/temp-path")>();
   return {
     ...actual,
     withTempDownloadPath: async (
@@ -114,7 +114,7 @@ function okDownloadResponse(body: BodyInit, init: ResponseInit = {}) {
 }
 
 async function withTempFile(run: (filePath: string) => Promise<void>) {
-  const workDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-signal-download-"));
+  const workDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-signal-download-"));
   try {
     await run(path.join(workDir, "signal-cli.tgz"));
   } finally {
@@ -498,7 +498,7 @@ describe("installSignalCliFromRelease", () => {
       auditContext: "signal-cli-release-info",
       init: {
         headers: {
-          "User-Agent": "openclaw",
+          "User-Agent": "afora",
           Accept: "application/vnd.github+json",
         },
       },
@@ -532,7 +532,7 @@ describe("installSignalCliFromRelease", () => {
 
   it("removes the download temp dir on the success path too", async () => {
     setProcessPlatform("linux", "x64");
-    const staging = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-signal-staging-"));
+    const staging = await fs.mkdtemp(path.join(os.tmpdir(), "afora-signal-staging-"));
     try {
       const inner = path.join(staging, "signal-cli-0.0.0-success-test");
       await fs.mkdir(inner, { recursive: true });
@@ -612,7 +612,7 @@ describe("installSignalCliFromRelease", () => {
 describe("installSignalCli", () => {
   it("uses Homebrew on macOS instead of downloading the first GitHub release archive", async () => {
     setProcessPlatform("darwin", "arm64");
-    const brewPrefix = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-signal-brew-"));
+    const brewPrefix = await fs.mkdtemp(path.join(os.tmpdir(), "afora-signal-brew-"));
     await fs.mkdir(path.join(brewPrefix, "bin"), { recursive: true });
     await fs.writeFile(path.join(brewPrefix, "bin", "signal-cli"), "");
     resolveBrewExecutableMock.mockReturnValue("/opt/homebrew/bin/brew");
@@ -638,7 +638,7 @@ describe("installSignalCli", () => {
 
 describe("extractSignalCliArchive", () => {
   async function withArchiveWorkspace(run: (workDir: string) => Promise<void>) {
-    const workDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-signal-install-"));
+    const workDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-signal-install-"));
     try {
       await run(workDir);
     } finally {

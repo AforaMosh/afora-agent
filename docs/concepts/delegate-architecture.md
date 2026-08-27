@@ -1,17 +1,17 @@
 ---
-summary: "Delegate architecture: running OpenClaw as a named agent on behalf of an organization"
+summary: "Delegate architecture: running Afora as a named agent on behalf of an organization"
 title: Delegate architecture
 read_when: "You want an agent with its own identity that acts on behalf of humans in an organization."
 status: active
 ---
 
-Run OpenClaw as a **named delegate**: an agent with its own identity that acts "on behalf of" people in an organization. The agent never impersonates a human - it sends, reads, and schedules under its own account with explicit delegation permissions.
+Run Afora as a **named delegate**: an agent with its own identity that acts "on behalf of" people in an organization. The agent never impersonates a human - it sends, reads, and schedules under its own account with explicit delegation permissions.
 
 This extends [Multi-Agent Routing](/concepts/multi-agent) from personal use into organizational deployments.
 
 ## What is a delegate
 
-A delegate is an OpenClaw agent that:
+A delegate is an Afora agent that:
 
 - Has its **own identity** (email address, display name, calendar).
 - Acts **on behalf of** one or more humans, never pretends to be them.
@@ -22,7 +22,7 @@ This maps to how executive assistants work: their own credentials, mail sent "on
 
 ## Why delegates
 
-OpenClaw's default mode is a **personal assistant** - one human, one agent. Delegates extend this to organizations:
+Afora's default mode is a **personal assistant** - one human, one agent. Delegates extend this to organizations:
 
 | Personal mode               | Delegate mode                                  |
 | --------------------------- | ---------------------------------------------- |
@@ -34,7 +34,7 @@ OpenClaw's default mode is a **personal assistant** - one human, one agent. Dele
 Delegates solve two problems:
 
 1. **Accountability**: messages sent by the agent are clearly from the agent, not a human.
-2. **Scope control**: the identity provider enforces what the delegate can access, independent of OpenClaw's own tool policy.
+2. **Scope control**: the identity provider enforces what the delegate can access, independent of Afora's own tool policy.
 
 ## Capability tiers
 
@@ -98,7 +98,7 @@ Use per-agent tool policy to enforce boundaries at the Gateway level, independen
 ```json5
 {
   id: "delegate",
-  workspace: "~/.openclaw/workspace-delegate",
+  workspace: "~/.afora/workspace-delegate",
   tools: {
     allow: ["read", "exec", "message", "cron"],
     deny: ["write", "edit", "apply_patch", "browser", "canvas"],
@@ -113,7 +113,7 @@ For high-security deployments, sandbox the delegate agent so it cannot reach the
 ```json5
 {
   id: "delegate",
-  workspace: "~/.openclaw/workspace-delegate",
+  workspace: "~/.afora/workspace-delegate",
   sandbox: {
     mode: "all",
     scope: "agent",
@@ -127,11 +127,11 @@ See [Sandboxing](/gateway/sandboxing) and [Multi-Agent Sandbox & Tools](/tools/m
 
 Configure logging before the delegate handles any real data:
 
-- Cron run history: OpenClaw's shared SQLite state database.
-- Session transcripts: `~/.openclaw/agents/delegate/sessions`.
+- Cron run history: Afora's shared SQLite state database.
+- Session transcripts: `~/.afora/agents/delegate/sessions`.
 - Identity provider audit logs (Exchange, Google Workspace).
 
-All delegate actions flow through OpenClaw's session store. For compliance, retain and review these logs.
+All delegate actions flow through Afora's session store. For compliance, retain and review these logs.
 
 ## Setting up a delegate
 
@@ -140,14 +140,14 @@ With hardening in place, grant the delegate its identity and permissions.
 ### 1. Create the delegate agent
 
 ```bash
-openclaw agents add delegate --workspace ~/.openclaw/workspace-delegate
+afora agents add delegate --workspace ~/.afora/workspace-delegate
 ```
 
 This creates:
 
-- Workspace: `~/.openclaw/workspace-delegate`
-- Agent state: `~/.openclaw/agents/delegate/agent`
-- Sessions: `~/.openclaw/agents/delegate/sessions`
+- Workspace: `~/.afora/workspace-delegate`
+- Agent state: `~/.afora/agents/delegate/agent`
+- Sessions: `~/.afora/agents/delegate/sessions`
 
 Configure the delegate's personality in its workspace files:
 
@@ -210,9 +210,9 @@ Route inbound messages to the delegate agent using [Multi-Agent Routing](/concep
 {
   agents: {
     entries: {
-      main: { default: true, workspace: "~/.openclaw/workspace" },
+      main: { default: true, workspace: "~/.afora/workspace" },
       delegate: {
-        workspace: "~/.openclaw/workspace-delegate",
+        workspace: "~/.afora/workspace-delegate",
         tools: {
           deny: ["browser", "canvas"],
         },
@@ -242,7 +242,7 @@ Copy or create auth profiles for the delegate's own `agentDir`:
 
 ```bash
 # Delegate reads from its own auth store
-~/.openclaw/agents/delegate/agent/auth-profiles.json
+~/.afora/agents/delegate/agent/auth-profiles.json
 ```
 
 Never share the main agent's `agentDir` with the delegate. See [Multi-Agent Routing](/concepts/multi-agent) for auth isolation details.
@@ -255,11 +255,11 @@ A complete delegate configuration handling email, calendar, and social media:
 {
   agents: {
     entries: {
-      main: { default: true, workspace: "~/.openclaw/workspace" },
+      main: { default: true, workspace: "~/.afora/workspace" },
       "org-assistant": {
         name: "[Organization] Assistant",
-        workspace: "~/.openclaw/workspace-org",
-        agentDir: "~/.openclaw/agents/org-assistant/agent",
+        workspace: "~/.afora/workspace-org",
+        agentDir: "~/.afora/agents/org-assistant/agent",
         identity: { name: "[Organization] Assistant" },
         tools: {
           allow: ["read", "exec", "message", "cron", "sessions_list", "sessions_history"],
@@ -282,7 +282,7 @@ A complete delegate configuration handling email, calendar, and social media:
 
 The delegate's `AGENTS.md` defines its autonomous authority - what it may do without asking, what needs approval, and what is forbidden. [Cron Jobs](/automation/cron-jobs) drive its daily schedule.
 
-If you grant `sessions_history`, it is a bounded, safety-filtered recall view, not a raw transcript dump. OpenClaw redacts credential/token-like text, truncates long content, and strips internal scaffolding (thinking-block signatures, `<relevant-memories>` scaffolding tags, tool-call XML tags such as `<tool_call>`/`<function_calls>`, and similar leaked provider control tokens) from assistant recall. Oversized rows can be replaced with `[sessions_history omitted: message too large]` instead of returning the raw content. Use `nextOffset` when present to page backward through older transcript windows.
+If you grant `sessions_history`, it is a bounded, safety-filtered recall view, not a raw transcript dump. Afora redacts credential/token-like text, truncates long content, and strips internal scaffolding (thinking-block signatures, `<relevant-memories>` scaffolding tags, tool-call XML tags such as `<tool_call>`/`<function_calls>`, and similar leaked provider control tokens) from assistant recall. Oversized rows can be replaced with `[sessions_history omitted: message too large]` instead of returning the raw content. Use `nextOffset` when present to page backward through older transcript windows.
 
 ## Scaling pattern
 

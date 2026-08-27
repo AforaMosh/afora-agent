@@ -5,9 +5,9 @@ import type { AgentRuntimeIdentity } from "../agent-runtime-identity-token.js";
 import type { PluginNodeCapabilityClient } from "../plugin-node-capability.js";
 import type { WorkerConnectionIdentity } from "../worker-environments/connection-identity.js";
 
-export const GATEWAY_WS_CONNECTION_KIND_PROPERTY = "__openclawConnectionKind";
-export const GATEWAY_WS_PREAUTH_BUDGET_PROPERTY = "__openclawPreauthBudget";
-export const GATEWAY_WS_WORKER_INGRESS_PROPERTY = "__openclawWorkerIngress";
+export const GATEWAY_WS_CONNECTION_KIND_PROPERTY = "__aforaConnectionKind";
+export const GATEWAY_WS_PREAUTH_BUDGET_PROPERTY = "__aforaPreauthBudget";
+export const GATEWAY_WS_WORKER_INGRESS_PROPERTY = "__aforaWorkerIngress";
 type GatewayWsConnectionKind = "gateway" | "worker";
 export type GatewayWorkerIngress = "loopback" | "public";
 export type GatewayIngressWebSocket = WebSocket & {
@@ -16,8 +16,8 @@ export type GatewayIngressWebSocket = WebSocket & {
     release(clientIp: string | undefined): void;
   };
   [GATEWAY_WS_WORKER_INGRESS_PROPERTY]?: GatewayWorkerIngress;
-  __openclawPreauthBudgetClaimed?: boolean;
-  __openclawPreauthBudgetKey?: string;
+  __aforaPreauthBudgetClaimed?: boolean;
+  __aforaPreauthBudgetKey?: string;
 };
 
 /**

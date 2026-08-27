@@ -2,10 +2,10 @@
 import {
   resolveStableChannelMessageIngress,
   type ChannelIngressContextBinding,
-} from "openclaw/plugin-sdk/channel-ingress-runtime";
-import { createChannelPairingChallengeIssuer } from "openclaw/plugin-sdk/channel-pairing";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
+} from "afora-agent/plugin-sdk/channel-ingress-runtime";
+import { createChannelPairingChallengeIssuer } from "afora-agent/plugin-sdk/channel-pairing";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
 import { normalizeSmsPhoneNumber } from "./phone.js";
 import { sendSmsTextChunks } from "./send.js";
 import type { ResolvedSmsAccount, SmsInboundMessage } from "./types.js";
@@ -23,7 +23,7 @@ export type SmsChannelRuntime = Pick<
 >;
 
 async function authorizeSmsSender(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   account: ResolvedSmsAccount;
   channelRuntime: SmsChannelRuntime;
   from: string;
@@ -101,7 +101,7 @@ async function issueSmsPairingChallenge(params: {
 }
 
 export async function dispatchSmsInboundEvent(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   account: ResolvedSmsAccount;
   msg: SmsInboundMessage;
   channelRuntime: SmsChannelRuntime;

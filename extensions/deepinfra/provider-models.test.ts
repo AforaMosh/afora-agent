@@ -1,9 +1,9 @@
-import { clearLiveCatalogCacheForTests } from "openclaw/plugin-sdk/provider-catalog-live-runtime";
+import { clearLiveCatalogCacheForTests } from "afora-agent/plugin-sdk/provider-catalog-live-runtime";
 // Deepinfra tests cover provider models plugin behavior.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const isProviderApiKeyConfiguredMock = vi.hoisted(() => vi.fn<(p: unknown) => boolean>());
-vi.mock("openclaw/plugin-sdk/provider-auth", () => ({
+vi.mock("afora-agent/plugin-sdk/provider-auth", () => ({
   isProviderApiKeyConfigured: isProviderApiKeyConfiguredMock,
 }));
 
@@ -17,7 +17,7 @@ import {
 } from "./provider-models.js";
 
 const DEEPINFRA_MODELS_URL =
-  "https://api.deepinfra.com/v1/openai/models?sort_by=openclaw&filter=with_meta";
+  "https://api.deepinfra.com/v1/openai/models?sort_by=afora&filter=with_meta";
 
 beforeEach(() => {
   clearLiveCatalogCacheForTests();
@@ -147,9 +147,9 @@ describe("buildDeepInfraModelDefinition", () => {
 });
 
 describe("DEEPINFRA_MODELS_URL", () => {
-  it("points at /v1/openai/models with the openclaw sort + filter=with_meta gate", () => {
+  it("points at /v1/openai/models with the afora sort + filter=with_meta gate", () => {
     expect(DEEPINFRA_MODELS_URL).toBe(
-      "https://api.deepinfra.com/v1/openai/models?sort_by=openclaw&filter=with_meta",
+      "https://api.deepinfra.com/v1/openai/models?sort_by=afora&filter=with_meta",
     );
   });
 });
@@ -165,12 +165,12 @@ describe("hasDeepInfraApiKey", () => {
   it("falls back to the auth-profile store when no env var is set", () => {
     isProviderApiKeyConfiguredMock.mockReturnValue(true);
 
-    expect(hasDeepInfraApiKey({ env: {}, agentDir: "/tmp/openclaw-agent" })).toBe(true);
+    expect(hasDeepInfraApiKey({ env: {}, agentDir: "/tmp/afora-agent" })).toBe(true);
 
     expect(isProviderApiKeyConfiguredMock).toHaveBeenCalledTimes(1);
     expect(isProviderApiKeyConfiguredMock).toHaveBeenCalledWith({
       provider: "deepinfra",
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
     });
   });
 
@@ -178,7 +178,7 @@ describe("hasDeepInfraApiKey", () => {
     expect(
       hasDeepInfraApiKey({
         env: {},
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
         config: {
           models: {
             providers: {
@@ -200,7 +200,7 @@ describe("hasDeepInfraApiKey", () => {
     expect(
       hasDeepInfraApiKey({
         env: { DEEPINFRA_API_KEY: "sk-x" },
-        agentDir: "/tmp/openclaw-agent",
+        agentDir: "/tmp/afora-agent",
       }),
     ).toBe(true);
 
@@ -210,11 +210,11 @@ describe("hasDeepInfraApiKey", () => {
   it("returns false when env is empty and the auth-profile store has no deepinfra profile", () => {
     isProviderApiKeyConfiguredMock.mockReturnValue(false);
 
-    expect(hasDeepInfraApiKey({ env: {}, agentDir: "/tmp/openclaw-agent" })).toBe(false);
+    expect(hasDeepInfraApiKey({ env: {}, agentDir: "/tmp/afora-agent" })).toBe(false);
 
     expect(isProviderApiKeyConfiguredMock).toHaveBeenCalledWith({
       provider: "deepinfra",
-      agentDir: "/tmp/openclaw-agent",
+      agentDir: "/tmp/afora-agent",
     });
   });
 });
@@ -233,7 +233,7 @@ describe("discoverDeepInfraModels (chat-only shim)", () => {
     expect(streamingUsageIncompatibleModelIds).toStrictEqual([]);
   });
 
-  it("fetches the openclaw-projection endpoint and parses chat-surface entries when an API key is configured", async () => {
+  it("fetches the afora-projection endpoint and parses chat-surface entries when an API key is configured", async () => {
     const mockFetch = vi.fn().mockResolvedValue(jsonResponse({ data: [makeAgentModelEntry()] }));
 
     await withFetchPathTest(mockFetch, { DEEPINFRA_API_KEY: "sk-test" }, async () => {

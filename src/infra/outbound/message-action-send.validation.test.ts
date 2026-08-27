@@ -1,7 +1,7 @@
 // Covers send validation for target/channel mismatches, configured channel
 // availability, and explicit target requirements.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createTestRegistry } from "../../test-utils/channel-plugins.js";
 import { runMessageAction } from "./message-action-runner.js";
@@ -12,7 +12,7 @@ import {
   workspaceTestPlugin,
 } from "./message-action-runner.test-support.js";
 
-const emptyConfig = {} as OpenClawConfig;
+const emptyConfig = {} as AforaConfig;
 const portableLocation = { latitude: 48.858844, longitude: 2.294351 };
 describe("runMessageAction send validation", () => {
   beforeEach(() => {
@@ -56,7 +56,7 @@ describe("runMessageAction send validation", () => {
             botToken: "forum-test",
           },
         },
-      } as OpenClawConfig,
+      } as AforaConfig,
       actionParams: {
         channel: "forum",
         target: "123456",

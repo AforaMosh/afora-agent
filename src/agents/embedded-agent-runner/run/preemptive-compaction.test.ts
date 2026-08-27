@@ -1,6 +1,6 @@
 // Preemptive compaction tests cover token-pressure estimates before prompt
 // submission and the route chosen to compact, truncate, or proceed.
-import type { AgentMessage } from "openclaw/plugin-sdk/agent-core";
+import type { AgentMessage } from "afora-agent/plugin-sdk/agent-core";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import "../../test-helpers/agent-session-token-mock.js";
 import { estimateToolResultReductionPotential } from "../tool-result-truncation.js";

@@ -145,7 +145,7 @@ async function startTrustedProxyServerWithClient(scopes: string[]) {
     auth,
     wsHeaders: {
       ...TRUSTED_PROXY_HEADERS,
-      "x-openclaw-scopes": scopes.join(","),
+      "x-afora-scopes": scopes.join(","),
     },
   });
 }
@@ -157,7 +157,7 @@ async function openTrustedProxyPairingSession(
 ): Promise<WebSocket> {
   const pairingWs = await openTrackedWs(port, {
     ...TRUSTED_PROXY_HEADERS,
-    "x-openclaw-scopes": scopes.join(","),
+    "x-afora-scopes": scopes.join(","),
   });
   await connectOk(pairingWs, {
     skipDefaultAuth: true,

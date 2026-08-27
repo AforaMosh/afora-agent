@@ -1,5 +1,5 @@
 #!/usr/bin/env -S node --import tsx
-// Prepare Codex Ci Auth script supports OpenClaw repository automation.
+// Prepare Codex Ci Auth script supports Afora repository automation.
 import fs from "node:fs/promises";
 import path from "node:path";
 

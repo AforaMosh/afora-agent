@@ -14,15 +14,15 @@ const iosSourceRoots = [
 ];
 
 const sharedSourceRoots = [
-  path.join("..", "shared", "OpenClawKit", "Sources", "OpenClawChatUI"),
-  path.join("..", "shared", "OpenClawKit", "Sources", "OpenClawKit"),
-  path.join("..", "shared", "OpenClawKit", "Sources", "OpenClawNativeState"),
-  path.join("..", "shared", "OpenClawKit", "Sources", "OpenClawProtocol"),
+  path.join("..", "shared", "AforaKit", "Sources", "AforaChatUI"),
+  path.join("..", "shared", "AforaKit", "Sources", "AforaKit"),
+  path.join("..", "shared", "AforaKit", "Sources", "AforaNativeState"),
+  path.join("..", "shared", "AforaKit", "Sources", "AforaProtocol"),
   path.join("..", "swabble", "Sources", "SwabbleKit"),
 ];
 
 const excludedSwiftFiles = new Set([
-  "../shared/OpenClawKit/Sources/OpenClawProtocol/GatewayModels.swift",
+  "../shared/AforaKit/Sources/AforaProtocol/GatewayModels.swift",
 ]);
 
 function normalizeFileListPath(filePath: string): string {

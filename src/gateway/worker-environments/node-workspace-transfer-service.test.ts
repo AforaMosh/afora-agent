@@ -161,7 +161,7 @@ describe("node workspace transfer service", () => {
         isAuthorized: () => true,
       });
       const httpOrigin = gatewayUrl.replace(/^ws/u, "http");
-      const manifestPath = `/__openclaw__/worker-transfer/v1/environments/environment-1/snapshots/${prepared.snapshot.manifestRef.slice(7)}/manifest`;
+      const manifestPath = `/__afora__/worker-transfer/v1/environments/environment-1/snapshots/${prepared.snapshot.manifestRef.slice(7)}/manifest`;
       const crossEnvironment = await fetch(
         `${httpOrigin}${manifestPath.replace("environment-1", "environment-2")}`,
         { headers: { authorization: `Bearer ${prepared.token}` } },
@@ -189,7 +189,7 @@ describe("node workspace transfer service", () => {
         environmentId: "environment-1",
         sessionId: "session-1",
         generation: 2,
-        argv: ["openclaw-internal-workspace-transfer"],
+        argv: ["afora-internal-workspace-transfer"],
         transfer: {
           direction: "download",
           token: prepared.token,
@@ -224,7 +224,7 @@ describe("node workspace transfer service", () => {
             environmentId: "environment-1",
             sessionId: "session-1",
             generation: 2,
-            argv: ["openclaw-internal-workspace-transfer"],
+            argv: ["afora-internal-workspace-transfer"],
             transfer: {
               direction: "upload",
               token,
@@ -251,7 +251,7 @@ describe("node workspace transfer service", () => {
         persistenceRetry.release();
       }
       await upload;
-      const reconciliationUrl = `${httpOrigin}/__openclaw__/worker-transfer/v1/environments/environment-1/reconciliations/${prepared.snapshot.manifestRef.slice(7)}`;
+      const reconciliationUrl = `${httpOrigin}/__afora__/worker-transfer/v1/environments/environment-1/reconciliations/${prepared.snapshot.manifestRef.slice(7)}`;
       const replay = await fetch(reconciliationUrl, {
         method: "POST",
         headers: { authorization: `Bearer ${uploadToken}`, "content-length": "0" },

@@ -20,7 +20,7 @@ suite.define(() => {
     await installMockGateway(page);
     await page.goto(`${suite.server.baseUrl}chat`);
 
-    const sidebar = page.locator("openclaw-app-sidebar");
+    const sidebar = page.locator("afora-app-sidebar");
     await sidebar.locator(".sidebar-agent-card__main").click();
     await sidebar
       .locator('wa-dropdown.sidebar-agent-menu wa-dropdown-item[value="command:capabilities"]')
@@ -94,7 +94,7 @@ suite.define(() => {
     const { context, page } = await openSidebarCustomizationPage(suite);
 
     try {
-      const sidebar = page.locator("openclaw-app-sidebar");
+      const sidebar = page.locator("afora-app-sidebar");
       const moreButton = sidebar.locator(".sidebar-nav__head-action");
       await moreButton.click();
       await sidebar
@@ -138,7 +138,7 @@ suite.define(() => {
     const { context, page } = await openSidebarCustomizationPage(suite);
 
     try {
-      const sidebar = page.locator("openclaw-app-sidebar");
+      const sidebar = page.locator("afora-app-sidebar");
       await sidebar.locator(".sidebar-nav__head-action").click();
       const moreMenu = sidebar.locator("wa-dropdown.sidebar-more-menu");
       await expect
@@ -231,7 +231,7 @@ suite.define(() => {
 
     try {
       await page.goto(`${suite.server.baseUrl}chat`);
-      const sidebar = page.locator("openclaw-app-sidebar");
+      const sidebar = page.locator("afora-app-sidebar");
       await sidebar.getByRole("button", { name: /Switch agent/ }).click();
       const menu = sidebar.locator("wa-dropdown.sidebar-agent-menu");
       const mainSwitch = menu.getByRole("menuitemradio", { name: "Main" });
@@ -321,7 +321,7 @@ suite.define(() => {
     try {
       await page.goto(`${suite.server.baseUrl}chat`);
       await gateway.waitForRequest("agent.identity.get");
-      const card = page.locator("openclaw-app-sidebar openclaw-sidebar-agent-card");
+      const card = page.locator("afora-app-sidebar afora-sidebar-agent-card");
       await expect
         .poll(() => card.locator(".sidebar-agent-card__name").textContent())
         .toContain("Workspace Molty");

@@ -3,7 +3,7 @@
  * Centralizes expiry, missing-secret, and unresolved-reference checks used by
  * auth selection, refresh, health, and doctor flows.
  */
-import { MAX_DATE_TIMESTAMP_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_DATE_TIMESTAMP_MS } from "@afora/normalization-core/number-coercion";
 import { coerceSecretRef, normalizeSecretInputString } from "../../config/types.secrets.js";
 import type { AuthProfileCredential, OAuthCredential } from "./types.js";
 
@@ -87,7 +87,7 @@ export function isMalformedApiKeyInput(value: unknown): boolean {
   const normalized = normalizeSecretInputString(value);
   return (
     normalized !== undefined &&
-    /^openclaw\s+onboard(?:\s+.*)?\s+--auth-choice(?:\s|=|$)/i.test(normalized)
+    /^afora\s+onboard(?:\s+.*)?\s+--auth-choice(?:\s|=|$)/i.test(normalized)
   );
 }
 

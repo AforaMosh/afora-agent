@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import {
   asDateTimestampMs,
   resolveExpiresAtMsFromDurationMs,
-} from "@openclaw/normalization-core/number-coercion";
+} from "@afora/normalization-core/number-coercion";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import {
   CONTROL_UI_OWNER_BOOTSTRAP_PROFILE,

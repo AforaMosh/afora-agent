@@ -1,9 +1,9 @@
 /** Security warnings for gateway exposure, exec policy drift, channel DMs, and plaintext secrets. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { note } from "../../packages/terminal-core/src/note.js";
 import { listReadOnlyChannelPluginsForConfig } from "../channels/plugins/read-only.js";
 import { formatCliCommand } from "../cli/command-format.js";
-import type { OpenClawConfig, GatewayBindMode } from "../config/config.js";
+import type { AforaConfig, GatewayBindMode } from "../config/config.js";
 import type { AgentConfig } from "../config/types.agents.js";
 import { hasConfiguredSecretInput, resolveSecretInputRef } from "../config/types.secrets.js";
 import { resolveGatewayAuthTokenSourceConflict } from "../gateway/auth-token-source-conflict.js";
@@ -24,7 +24,7 @@ import { collectChannelSecurityFindingsCore } from "../security/audit-channel.js
 import type { SecurityAuditFinding } from "../security/audit.types.js";
 import { collectExecFilesystemPolicyDriftHits } from "../security/exec-filesystem-policy.js";
 
-function collectImplicitHeartbeatDirectPolicyWarnings(cfg: OpenClawConfig): SecurityAuditFinding[] {
+function collectImplicitHeartbeatDirectPolicyWarnings(cfg: AforaConfig): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
 
   const maybeWarn = (params: {
@@ -91,11 +91,11 @@ function execAskRank(value: ExecAsk): number {
   throw new Error("Unsupported exec ask value");
 }
 
-function collectExecPolicyConflictWarnings(cfg: OpenClawConfig): SecurityAuditFinding[] {
+function collectExecPolicyConflictWarnings(cfg: AforaConfig): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
   const approvals = loadExecApprovalsReadOnly();
-  const defaultRequestedSecuritySource = "OpenClaw default (full)";
-  const defaultRequestedAskSource = "OpenClaw default (off)";
+  const defaultRequestedSecuritySource = "Afora default (full)";
+  const defaultRequestedAskSource = "Afora default (off)";
 
   const maybeWarn = (params: {
     scopeLabel: string;
@@ -170,7 +170,7 @@ function collectExecPolicyConflictWarnings(cfg: OpenClawConfig): SecurityAuditFi
         `Host: ${hostParts.join(", ")}`,
         `Effective host exec stays security="${snapshot.security.effective}" ask="${snapshot.ask.effective}" because the stricter side wins.`,
         "Headless runs like isolated cron cannot answer approval prompts; align both files or enable Web UI, terminal UI, or chat exec approvals.",
-        `Inspect with: ${formatCliCommand("openclaw approvals get --gateway")}`,
+        `Inspect with: ${formatCliCommand("afora approvals get --gateway")}`,
       ].join("\n"),
     });
   };
@@ -193,12 +193,12 @@ function collectExecPolicyConflictWarnings(cfg: OpenClawConfig): SecurityAuditFi
   return findings;
 }
 
-function collectDurableExecApprovalWarnings(cfg: OpenClawConfig): SecurityAuditFinding[] {
+function collectDurableExecApprovalWarnings(cfg: AforaConfig): SecurityAuditFinding[] {
   void cfg;
   return [];
 }
 
-function collectExecFilesystemPolicyWarnings(cfg: OpenClawConfig): SecurityAuditFinding[] {
+function collectExecFilesystemPolicyWarnings(cfg: AforaConfig): SecurityAuditFinding[] {
   return collectExecFilesystemPolicyDriftHits(cfg).map((hit) => ({
     checkId: "doctor.exec_filesystem_policy",
     severity: "warn",
@@ -213,7 +213,7 @@ function collectExecFilesystemPolicyWarnings(cfg: OpenClawConfig): SecurityAudit
   }));
 }
 
-function collectPlaintextConfigSecretWarnings(cfg: OpenClawConfig): SecurityAuditFinding[] {
+function collectPlaintextConfigSecretWarnings(cfg: AforaConfig): SecurityAuditFinding[] {
   const plaintextPaths: string[] = [];
   const defaults = cfg.secrets?.defaults;
 
@@ -255,11 +255,11 @@ function collectPlaintextConfigSecretWarnings(cfg: OpenClawConfig): SecurityAudi
       checkId: "config.plaintext_secrets",
       severity: "warn",
       title: "WARNING",
-      detail: "openclaw.json contains plaintext secret-bearing config fields.",
+      detail: "afora.json contains plaintext secret-bearing config fields.",
       remediation: [
         `Paths: ${pathLine}`,
         "Agents or workspace tools that can read config files may see these API keys/tokens.",
-        `Migrate them to SecretRefs with ${formatCliCommand("openclaw secrets configure")} or ${formatCliCommand("openclaw secrets apply")}, then verify with ${formatCliCommand("openclaw secrets audit --check")}.`,
+        `Migrate them to SecretRefs with ${formatCliCommand("afora secrets configure")} or ${formatCliCommand("afora secrets apply")}, then verify with ${formatCliCommand("afora secrets audit --check")}.`,
       ].join("\n"),
     },
   ];
@@ -267,7 +267,7 @@ function collectPlaintextConfigSecretWarnings(cfg: OpenClawConfig): SecurityAudi
 
 /** Collects doctor security findings without emitting terminal notes. */
 export async function collectSecurityWarnings(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<SecurityAuditFinding[]> {
   const findings: SecurityAuditFinding[] = [];
@@ -280,7 +280,7 @@ export async function collectSecurityWarnings(
       detail: "approvals.exec.enabled=false disables approval forwarding only.",
       remediation: [
         `Host exec gating still comes from ${resolveExecApprovalsDisplayPath()}.`,
-        `Check local policy with: ${formatCliCommand("openclaw approvals get --gateway")}`,
+        `Check local policy with: ${formatCliCommand("afora approvals get --gateway")}`,
       ].join("\n"),
     });
   }
@@ -324,7 +324,7 @@ export async function collectSecurityWarnings(
   const saferRemoteAccessLines = [
     "Safer remote access: keep bind loopback and use Tailscale Serve/Funnel or an SSH tunnel.",
     "Example tunnel: ssh -N -L 18789:127.0.0.1:18789 user@gateway-host",
-    "Docs: https://docs.openclaw.ai/gateway/remote",
+    "Docs: https://docs.afora.ai/gateway/remote",
   ];
 
   if (isExposed) {
@@ -332,13 +332,13 @@ export async function collectSecurityWarnings(
       const authFixLines =
         resolvedAuth.mode === "password"
           ? [
-              `Fix: ${formatCliCommand("openclaw configure")} to set a password`,
-              `Or switch to token: ${formatCliCommand("openclaw config set gateway.auth.mode token")}`,
+              `Fix: ${formatCliCommand("afora configure")} to set a password`,
+              `Or switch to token: ${formatCliCommand("afora config set gateway.auth.mode token")}`,
             ]
           : [
-              `Fix: ${formatCliCommand("openclaw doctor --fix")} to generate a token`,
+              `Fix: ${formatCliCommand("afora doctor --fix")} to generate a token`,
               `Or set token directly: ${formatCliCommand(
-                "openclaw config set gateway.auth.mode token",
+                "afora config set gateway.auth.mode token",
               )}`,
             ];
       findings.push({
@@ -350,7 +350,7 @@ export async function collectSecurityWarnings(
           "Anyone on your network (or internet if port-forwarded) can fully control your agent.",
         ].join("\n"),
         remediation: [
-          `Fix: ${formatCliCommand("openclaw config set gateway.bind loopback")}`,
+          `Fix: ${formatCliCommand("afora config set gateway.bind loopback")}`,
           ...saferRemoteAccessLines,
           ...authFixLines,
         ].join("\n"),
@@ -405,11 +405,11 @@ function renderSecurityFindingLines(finding: SecurityAuditFinding): string[] {
 }
 
 /** Emits security warnings plus the deep audit follow-up command. */
-export async function noteSecurityWarnings(cfg: OpenClawConfig) {
+export async function noteSecurityWarnings(cfg: AforaConfig) {
   const findings = await collectSecurityWarnings(cfg);
   if (findings.length > 0) {
     const lines = findings.flatMap(renderSecurityFindingLines);
-    lines.push(`- Run: ${formatCliCommand("openclaw security audit --deep")}`);
+    lines.push(`- Run: ${formatCliCommand("afora security audit --deep")}`);
     note(lines.join("\n"), "Security");
   }
 }

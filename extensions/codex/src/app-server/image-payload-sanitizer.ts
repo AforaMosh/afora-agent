@@ -5,8 +5,8 @@
 import {
   INLINE_IMAGE_DATA_URL_PREFIX,
   sanitizeInlineImageDataUrl as sanitizeSharedInlineImageDataUrl,
-} from "openclaw/plugin-sdk/inline-image-data-url-runtime";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/inline-image-data-url-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 const IMAGE_OMITTED_TEXT = "omitted image payload: invalid inline image data";
 

@@ -1,6 +1,6 @@
 // Agent Core module implements messages behavior.
-import type { ImageContent, Message, TextContent } from "@openclaw/llm-core";
-import { parseDateStringTimestampMs as parseSessionTimestampMs } from "@openclaw/normalization-core/number-coercion";
+import type { ImageContent, Message, TextContent } from "@afora/llm-core";
+import { parseDateStringTimestampMs as parseSessionTimestampMs } from "@afora/normalization-core/number-coercion";
 import type {
   AgentMessage,
   BashExecutionMessage,

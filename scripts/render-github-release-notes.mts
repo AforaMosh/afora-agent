@@ -30,7 +30,7 @@ type ReleaseNotesTarget = {
 const CONTRIBUTION_RECORD_HEADING = "### Complete contribution record";
 const RELEASE_VERIFICATION_HEADING = "### Release verification";
 const SHIPPED_BASELINE_EXCLUSIONS_PREFIX = "Shipped baseline exclusions:";
-const OPENCLAW_RELEASE_TAG_PATTERN =
+const AFORA_RELEASE_TAG_PATTERN =
   /^v[0-9]{4}\.[1-9][0-9]*\.[1-9][0-9]*(?:-(?:(?:alpha|beta)\.[1-9][0-9]*|[1-9][0-9]*))?$/u;
 const RELEASE_HEADING_PATTERN =
   /^## (?<version>Unreleased|[0-9]{4}\.[1-9][0-9]*\.[1-9][0-9]*(?:-(?:(?:alpha|beta)\.[1-9][0-9]*|[1-9][0-9]*))?)\r?$/u;
@@ -62,7 +62,7 @@ function validateRepository(repository: string) {
 }
 
 function validateTag(tag: string) {
-  if (!OPENCLAW_RELEASE_TAG_PATTERN.test(tag)) {
+  if (!AFORA_RELEASE_TAG_PATTERN.test(tag)) {
     fail(`invalid release tag: ${tag}`);
   }
 }
@@ -194,7 +194,7 @@ export function releaseNotesVersionForTag(tag: unknown) {
 }
 
 function validateShippedBaselineRef(ref: string) {
-  if (!OPENCLAW_RELEASE_TAG_PATTERN.test(ref)) {
+  if (!AFORA_RELEASE_TAG_PATTERN.test(ref)) {
     fail(`invalid shipped release tag: ${ref}`);
   }
 }

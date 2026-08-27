@@ -10,7 +10,7 @@ type ExternalAuthTestApi = {
 
 function getTestApi(): ExternalAuthTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.externalAuthTestApi")
+    Symbol.for("afora.externalAuthTestApi")
   ] as ExternalAuthTestApi;
 }
 

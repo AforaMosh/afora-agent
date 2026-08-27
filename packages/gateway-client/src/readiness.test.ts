@@ -15,7 +15,7 @@ describe("startGatewayClientWithReadinessWait", () => {
 
     await startGatewayClientWithReadinessWait(waitForReady, client, {
       clientOptions: {
-        env: { OPENCLAW_CONNECT_CHALLENGE_TIMEOUT_MS: "6000" },
+        env: { AFORA_CONNECT_CHALLENGE_TIMEOUT_MS: "6000" },
       },
     });
 

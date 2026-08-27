@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { WorkerProviderError, type WorkerProfile } from "openclaw/plugin-sdk/plugin-entry";
-import { normalizeOptionalString as nonEmptyString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { WorkerProviderError, type WorkerProfile } from "afora-agent/plugin-sdk/plugin-entry";
+import { normalizeOptionalString as nonEmptyString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export { nonEmptyString };
 
@@ -18,7 +18,7 @@ const PROFILE_KEYS = new Set([
 const GO_DURATION_PATTERN = /^\+?(?:(?:\d+(?:\.\d*)?|\.\d+)(?:ns|us|µs|μs|ms|s|m|h))+$/u;
 const GO_DURATION_TOKEN_PATTERN = /(\d+(?:\.\d*)?|\.\d+)(ns|us|µs|μs|ms|s|m|h)/gu;
 const MAX_GO_DURATION_NANOSECONDS = 9_223_372_036_854_775_807n;
-const CRABBOX_LEASE_ID_DOMAIN = "openclaw:crabbox-worker-lease-id:v1\0";
+const CRABBOX_LEASE_ID_DOMAIN = "afora:crabbox-worker-lease-id:v1\0";
 const DURATION_UNIT_NANOSECONDS: Readonly<Record<string, bigint>> = {
   h: 3_600_000_000_000n,
   m: 60_000_000_000n,
@@ -223,7 +223,7 @@ function binaryCandidates(base: string, platform: NodeJS.Platform): string[] {
 export function resolveCrabboxBinary(params: {
   explicit?: string;
   isExecutable?: IsExecutable;
-  openclawRoot: string;
+  aforaRoot: string;
   pathEnv?: string;
   platform?: NodeJS.Platform;
 }): string {
@@ -233,7 +233,7 @@ export function resolveCrabboxBinary(params: {
   const platform = params.platform ?? process.platform;
   const isExecutable =
     params.isExecutable ?? ((candidate) => defaultIsExecutable(candidate, platform));
-  const siblingBase = path.resolve(params.openclawRoot, "../crabbox/bin/crabbox");
+  const siblingBase = path.resolve(params.aforaRoot, "../crabbox/bin/crabbox");
   for (const candidate of binaryCandidates(siblingBase, platform)) {
     if (isExecutable(candidate)) {
       return candidate;
@@ -255,7 +255,7 @@ export function resolveCrabboxBinary(params: {
   return "crabbox";
 }
 
-export function resolveOpenClawRoot(pluginRoot: string | undefined): string {
+export function resolveAforaRoot(pluginRoot: string | undefined): string {
   if (!pluginRoot) {
     return process.cwd();
   }
@@ -271,7 +271,7 @@ export function resolveOpenClawRoot(pluginRoot: string | undefined): string {
 }
 
 export function operationSlug(operationId: string): string {
-  return `openclaw-${createHash("sha256").update(operationId).digest("hex").slice(0, 32)}`;
+  return `afora-${createHash("sha256").update(operationId).digest("hex").slice(0, 32)}`;
 }
 
 export function operationLeaseId(operationId: string): string {

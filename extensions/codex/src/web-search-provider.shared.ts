@@ -1,7 +1,7 @@
 import {
   createWebSearchProviderContractFields,
   type WebSearchProviderPlugin,
-} from "openclaw/plugin-sdk/provider-web-search-contract";
+} from "afora-agent/plugin-sdk/provider-web-search-contract";
 
 export function createCodexWebSearchProviderBase(): Omit<WebSearchProviderPlugin, "createTool"> {
   return {
@@ -13,7 +13,7 @@ export function createCodexWebSearchProviderBase(): Omit<WebSearchProviderPlugin
     envVars: [],
     placeholder: "(uses Codex sign-in)",
     signupUrl: "https://chatgpt.com/codex",
-    docsUrl: "https://docs.openclaw.ai/tools/web",
+    docsUrl: "https://docs.afora.ai/tools/web",
     autoDetectOrder: 900,
     credentialPath: "",
     ...createWebSearchProviderContractFields({
@@ -25,7 +25,7 @@ export function createCodexWebSearchProviderBase(): Omit<WebSearchProviderPlugin
       await ctx.prompter.note(
         [
           "Codex Hosted Search uses the bundled Codex app-server and your Codex/OpenAI sign-in.",
-          "If needed, sign in with: openclaw models auth login --provider openai",
+          "If needed, sign in with: afora models auth login --provider openai",
           "Verify the app-server account with /codex status.",
         ].join("\n"),
         "Codex Hosted Search",

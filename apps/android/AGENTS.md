@@ -13,14 +13,14 @@ Root rules still apply. This file adds the Android release guardrails.
 ## Licenses Screen
 
 - Maintain the Settings-tab Licenses screen when Android app dependencies change.
-- Bundled license files live in `apps/android/THIRD_PARTY_LICENSES/openclaw/licenses/`.
+- Bundled license files live in `apps/android/THIRD_PARTY_LICENSES/afora/licenses/`.
 - License files must be UTF-8 `.txt` files. Do not add Markdown, HTML, RTF, JSON, XML, or generated notice bundles for this screen.
 - The Licenses screen discovers bundled `.txt` files at runtime through `AndroidLicenseNotices`; do not hardcode individual license rows in Compose.
 - License rows are ordered alphabetically in code by derived display title, case-insensitive, with filename as the tiebreaker. Do not use numeric filename prefixes for ordering.
 - The display title is the license filename without the `.txt` extension.
 - Filenames should be plain dependency names, for example `Manrope.txt`; the filename is the row title and must not be shown as a row subtitle.
-- Do not add OpenClaw, OpenClaw Foundation, or other first-party/self-owned license entries. The screen is for third-party/open-source dependency acknowledgements.
-- When adding, removing, or upgrading Android dependencies, audit whether `apps/android/THIRD_PARTY_LICENSES/openclaw/licenses/` needs updates. Exclude dependencies owned by OpenClaw Foundation from the published license list.
+- Do not add Afora, Afora Foundation, or other first-party/self-owned license entries. The screen is for third-party/open-source dependency acknowledgements.
+- When adding, removing, or upgrading Android dependencies, audit whether `apps/android/THIRD_PARTY_LICENSES/afora/licenses/` needs updates. Exclude dependencies owned by Afora Foundation from the published license list.
 - Keep license detail bodies rendered as verbatim monospace text.
 - Keep the Settings `Licenses` section at the bottom of Settings, after `Account`, with a single `Licenses` row and no row subtitle unless product direction changes.
-- When changing license loading or presentation, update `apps/android/app/src/test/java/ai/openclaw/app/AndroidLicenseNoticesTest.kt`, then run focused Android validation.
+- When changing license loading or presentation, update `apps/android/app/src/test/java/ai/afora/app/AndroidLicenseNoticesTest.kt`, then run focused Android validation.

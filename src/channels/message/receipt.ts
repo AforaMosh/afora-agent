@@ -3,7 +3,7 @@
  *
  * Builds stable receipts from platform send results and nested adapter receipt data.
  */
-import { normalizeUniqueStringEntries } from "@openclaw/normalization-core/string-normalization";
+import { normalizeUniqueStringEntries } from "@afora/normalization-core/string-normalization";
 import type {
   MessageReceipt,
   MessageReceiptPartKind,

@@ -4,9 +4,9 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildApprovalResolutionRef } from "../infra/approval-resolution-ref.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
 import { ExecApprovalManager } from "./exec-approval-manager.js";
 import { createOperatorApprovalSessionEventRuntime } from "./operator-approval-session-events.js";
 import {
@@ -24,10 +24,10 @@ const SIBLING_SESSION_KEY = "agent:main:parent:sibling";
 const tempDirs: string[] = [];
 type NewOperatorApproval = Parameters<typeof insertOperatorApproval>[0]["approval"];
 
-function createDatabaseOptions(): OpenClawStateDatabaseOptions {
-  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-approval-events-"));
+function createDatabaseOptions(): AforaStateDatabaseOptions {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-approval-events-"));
   tempDirs.push(stateDir);
-  return { env: { ...process.env, OPENCLAW_STATE_DIR: stateDir } };
+  return { env: { ...process.env, AFORA_STATE_DIR: stateDir } };
 }
 
 function createClient(params: {
@@ -119,7 +119,7 @@ function createTerminalRecord(
 
 function createRuntime(params: {
   clients: GatewayClient[];
-  databaseOptions?: OpenClawStateDatabaseOptions;
+  databaseOptions?: AforaStateDatabaseOptions;
   now?: () => number;
   controlUiBasePath?: string;
   reconcileTerminal?: Parameters<
@@ -141,7 +141,7 @@ function createRuntime(params: {
 }
 
 function insertPendingApproval(params: {
-  databaseOptions: OpenClawStateDatabaseOptions;
+  databaseOptions: AforaStateDatabaseOptions;
   id: string;
   audienceSessionKeys: string[];
   createdAtMs: number;
@@ -172,7 +172,7 @@ describe("operator approval session events", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     for (const dir of tempDirs.splice(0)) {
       fs.rmSync(dir, { force: true, recursive: true });
     }

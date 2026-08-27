@@ -22,7 +22,7 @@ type ClientVoiceSessionTestApi = {
 
 function getTestApi(): ClientVoiceSessionTestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.clientVoiceSessionTestApi")
+    Symbol.for("afora.clientVoiceSessionTestApi")
   ] as ClientVoiceSessionTestApi;
 }
 

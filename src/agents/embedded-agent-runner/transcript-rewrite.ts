@@ -1,5 +1,5 @@
 /** Rewrites transcript entries by branching and re-appending the active suffix. */
-import { stripCompactionReplayCheckpoint } from "@openclaw/ai/transports";
+import { stripCompactionReplayCheckpoint } from "@afora/ai/transports";
 import type {
   TranscriptRewriteReplacement,
   TranscriptRewriteResult,

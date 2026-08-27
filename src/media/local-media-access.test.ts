@@ -159,7 +159,7 @@ describe("assertLocalMediaAllowed", () => {
   it.runIf(process.platform !== "win32")(
     "reads through an in-root directory symlink but rejects a final symlink",
     async () => {
-      const base = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-media-root-alias-"));
+      const base = await fs.mkdtemp(path.join(os.tmpdir(), "afora-media-root-alias-"));
       const root = path.join(base, "root");
       const realDir = path.join(root, "real");
       const aliasDir = path.join(root, "alias");
@@ -187,7 +187,7 @@ describe("assertLocalMediaAllowed", () => {
   it.runIf(process.platform !== "win32")(
     "rejects inbound-root reads through a pre-existing directory symlink outside the root",
     async () => {
-      const base = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-inbound-root-alias-"));
+      const base = await fs.mkdtemp(path.join(os.tmpdir(), "afora-inbound-root-alias-"));
       const inboundRoot = path.join(base, "inbound");
       const outsideDir = path.join(base, "outside");
       const aliasDir = path.join(inboundRoot, "alias");
@@ -213,7 +213,7 @@ describe("assertLocalMediaAllowed", () => {
   it.runIf(process.platform !== "win32")(
     "rejects inbound wildcard reads when a nested directory symlink retargets before open",
     async () => {
-      const base = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-inbound-root-race-"));
+      const base = await fs.mkdtemp(path.join(os.tmpdir(), "afora-inbound-root-race-"));
       const inboundRoot = path.join(base, "alice", "Attachments");
       const insideDir = path.join(inboundRoot, "inside");
       const outsideDir = path.join(base, "outside");
@@ -251,8 +251,8 @@ describe("assertLocalMediaAllowed", () => {
   it.runIf(process.platform !== "win32")(
     "rejects inbound wildcard roots whose wildcard segment already resolves outside the anchor",
     async () => {
-      const base = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-inbound-anchor-"));
-      const outside = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-inbound-outside-"));
+      const base = await fs.mkdtemp(path.join(os.tmpdir(), "afora-inbound-anchor-"));
+      const outside = await fs.mkdtemp(path.join(os.tmpdir(), "afora-inbound-outside-"));
       const alias = path.join(base, "alice");
       const outsideAttachments = path.join(outside, "Attachments");
       const filePath = path.join(alias, "Attachments", "secret.bin");
@@ -277,7 +277,7 @@ describe("assertLocalMediaAllowed", () => {
   it.runIf(process.platform !== "win32")(
     "rejects hardlink aliases inside channel inbound roots",
     async () => {
-      const base = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-inbound-hardlink-"));
+      const base = await fs.mkdtemp(path.join(os.tmpdir(), "afora-inbound-hardlink-"));
       const inboundRoot = path.join(base, "inbound");
       const outsidePath = path.join(base, "outside.bin");
       const filePath = path.join(inboundRoot, "alias.bin");
@@ -312,7 +312,7 @@ describe("assertLocalMediaAllowed", () => {
   });
 
   it("preserves valid root-level wildcard inbound patterns", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-inbound-root-wildcard-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-inbound-root-wildcard-"));
     const filePath = path.join(root, "inside.bin");
     await fs.writeFile(filePath, "inside");
 
@@ -329,7 +329,7 @@ describe("assertLocalMediaAllowed", () => {
   });
 
   it("preserves not-found and not-file errors for root-bound reads", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-media-read-errors-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-media-read-errors-"));
     try {
       await expect(
         readLocalMediaFile(path.join(root, "missing.bin"), [root], { maxBytes: 1024 }),

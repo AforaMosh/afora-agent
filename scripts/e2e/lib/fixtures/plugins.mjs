@@ -20,7 +20,7 @@ function writePluginDemo([dir]) {
     path.join(requireArg(dir, "dir"), "index.js"),
     'module.exports = { id: "demo-plugin", name: "Demo Plugin", description: "Docker E2E demo plugin", register(api) { api.registerTool(() => null, { name: "demo_tool" }); api.registerGatewayMethod("demo.ping", async () => ({ ok: true })); api.registerCli(() => {}, { commands: ["demo"] }); api.registerService({ id: "demo-service", start: () => {} }); }, };\n',
   );
-  writePluginManifest(path.join(dir, "openclaw.plugin.json"), "demo-plugin", {
+  writePluginManifest(path.join(dir, "afora.plugin.json"), "demo-plugin", {
     contracts: { tools: ["demo_tool"] },
   });
 }
@@ -36,15 +36,15 @@ function writePlugin([dir, id, version, method, name]) {
     requireArg(value, label);
   }
   writeJson(path.join(dir, "package.json"), {
-    name: `@openclaw/${id}`,
+    name: `@afora/${id}`,
     version,
-    openclaw: { extensions: ["./index.js"] },
+    afora: { extensions: ["./index.js"] },
   });
   write(
     path.join(dir, "index.js"),
     `module.exports = { id: ${JSON.stringify(id)}, name: ${JSON.stringify(name)}, register(api) { api.registerGatewayMethod(${JSON.stringify(method)}, async () => ({ ok: true })); }, };\n`,
   );
-  writePluginManifest(path.join(dir, "openclaw.plugin.json"), id);
+  writePluginManifest(path.join(dir, "afora.plugin.json"), id);
 }
 
 function writePluginPack([dir, id, version, entryList]) {
@@ -65,9 +65,9 @@ function writePluginPack([dir, id, version, entryList]) {
     throw new Error("plugin-pack entries must not be empty");
   }
   writeJson(path.join(dir, "package.json"), {
-    name: `@openclaw/${id}`,
+    name: `@afora/${id}`,
     version,
-    openclaw: { extensions: entries.map((entry) => `./${entry}.js`) },
+    afora: { extensions: entries.map((entry) => `./${entry}.js`) },
   });
   for (const entry of entries) {
     const childId = `${id}/${entry}`;
@@ -76,17 +76,17 @@ function writePluginPack([dir, id, version, entryList]) {
       `module.exports = { id: ${JSON.stringify(childId)}, name: ${JSON.stringify(childId)}, register(api) { api.registerGatewayMethod(${JSON.stringify(`${id}.${entry}`)}, async () => ({ version: ${JSON.stringify(version)} })); }, };\n`,
     );
   }
-  writePluginManifest(path.join(dir, "openclaw.plugin.json"), id);
+  writePluginManifest(path.join(dir, "afora.plugin.json"), id);
 }
 
 function writePluginWithVendoredDependency([dir, id, version, method, name]) {
   writePlugin([dir, id, version, method, name]);
   const packageJsonPath = path.join(dir, "package.json");
   writeJson(packageJsonPath, {
-    name: `@openclaw/${id}`,
+    name: `@afora/${id}`,
     version,
     dependencies: { "is-number": "7.0.0" },
-    openclaw: { extensions: ["./index.js"] },
+    afora: { extensions: ["./index.js"] },
   });
   write(
     path.join(dir, "index.js"),
@@ -108,17 +108,17 @@ function writePluginWithCli([dir, id, version, method, name, cliRoot, cliOutput]
     requireArg(value, label);
   }
   writeJson(path.join(dir, "package.json"), {
-    name: `@openclaw/${id}`,
+    name: `@afora/${id}`,
     version,
     dependencies: { "is-number": "file:./deps/is-number" },
-    openclaw: { extensions: ["./index.js"] },
+    afora: { extensions: ["./index.js"] },
   });
   writeFakeIsNumberPackage(path.join(dir, "deps", "is-number"));
   write(
     path.join(dir, "index.js"),
     `const isNumber = require("is-number");\nmodule.exports = { id: ${JSON.stringify(id)}, name: ${JSON.stringify(name)}, register(api) { api.registerGatewayMethod(${JSON.stringify(method)}, async () => ({ ok: isNumber(42) })); api.registerCli(({ program }) => { const root = program.command(${JSON.stringify(cliRoot)}).description(${JSON.stringify(`${name} fixture command`)}); root.command("ping").description("Print fixture ping output").action(() => { console.log(${JSON.stringify(cliOutput)}); }); }, { descriptors: [{ name: ${JSON.stringify(cliRoot)}, description: ${JSON.stringify(`${name} fixture command`)}, hasSubcommands: true }] }); }, };\n`,
   );
-  writePluginManifest(path.join(dir, "openclaw.plugin.json"), id);
+  writePluginManifest(path.join(dir, "afora.plugin.json"), id);
 }
 
 function writePluginWithCliRegistryDependency([
@@ -142,16 +142,16 @@ function writePluginWithCliRegistryDependency([
     requireArg(value, label);
   }
   writeJson(path.join(dir, "package.json"), {
-    name: `@openclaw/${id}`,
+    name: `@afora/${id}`,
     version,
     dependencies: { "is-number": "7.0.0" },
-    openclaw: { extensions: ["./index.js"] },
+    afora: { extensions: ["./index.js"] },
   });
   write(
     path.join(dir, "index.js"),
     `const isNumber = require("is-number");\nmodule.exports = { id: ${JSON.stringify(id)}, name: ${JSON.stringify(name)}, register(api) { api.registerGatewayMethod(${JSON.stringify(method)}, async () => ({ ok: isNumber(42) })); api.registerCli(({ program }) => { const root = program.command(${JSON.stringify(cliRoot)}).description(${JSON.stringify(`${name} fixture command`)}); root.command("ping").description("Print fixture ping output").action(() => { console.log(${JSON.stringify(cliOutput)}); }); }, { descriptors: [{ name: ${JSON.stringify(cliRoot)}, description: ${JSON.stringify(`${name} fixture command`)}, hasSubcommands: true }] }); }, };\n`,
   );
-  writePluginManifest(path.join(dir, "openclaw.plugin.json"), id);
+  writePluginManifest(path.join(dir, "afora.plugin.json"), id);
 }
 
 function writeClaudeBundle(args) {
@@ -186,7 +186,7 @@ function writePluginMarketplace(args) {
   writeJson(path.join(process.env.HOME, ".claude", "plugins", "known_marketplaces.json"), {
     "claude-fixtures": {
       installLocation: root,
-      source: { type: "github", repo: "openclaw/fixture-marketplace" },
+      source: { type: "github", repo: "afora-agent/fixture-marketplace" },
     },
   });
 }

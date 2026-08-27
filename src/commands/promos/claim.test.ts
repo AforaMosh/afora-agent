@@ -114,7 +114,7 @@ function makePromotion(overrides: Record<string, unknown> = {}) {
 function makeSnapshot(config: Record<string, unknown> = {}) {
   return {
     valid: true,
-    path: "/tmp/openclaw.json",
+    path: "/tmp/afora.json",
     hash: "hash-1",
     issues: [],
     config,
@@ -141,7 +141,7 @@ beforeEach(() => {
   mocks.resolveProviderInstallCatalogEntry.mockReturnValue(undefined);
   mocks.loadManifestMetadataSnapshot.mockReturnValue({
     manifestRegistry: {
-      plugins: [{ id: "openrouter", packageName: "@openclaw/openrouter-provider" }],
+      plugins: [{ id: "openrouter", packageName: "@afora/openrouter-provider" }],
     },
   });
   mocks.promptYesNo.mockResolvedValue(false);
@@ -287,7 +287,7 @@ describe("promosClaimCommand", () => {
     mocks.resolveProviderInstallCatalogEntry.mockReturnValue(undefined);
 
     await expect(promosClaimCommand("spring-models", {}, makeRuntime())).rejects.toThrow(
-      /Update OpenClaw/,
+      /Update Afora/,
     );
     expect(mocks.replaceConfigFile).not.toHaveBeenCalled();
   });
@@ -305,7 +305,7 @@ describe("promosClaimCommand", () => {
 
   it("accepts a declared plugin package owned by the resolved auth choice", async () => {
     mocks.fetchClawHubPromotion.mockResolvedValue(
-      makePromotion({ pluginNames: ["@openclaw/openrouter-provider"] }),
+      makePromotion({ pluginNames: ["@afora/openrouter-provider"] }),
     );
 
     await promosClaimCommand("spring-models", {}, makeRuntime());
@@ -315,7 +315,7 @@ describe("promosClaimCommand", () => {
 
   it("refuses a declared plugin package not owned by the resolved auth choice", async () => {
     mocks.fetchClawHubPromotion.mockResolvedValue(
-      makePromotion({ pluginNames: ["@openclaw/other-provider"] }),
+      makePromotion({ pluginNames: ["@afora/other-provider"] }),
     );
 
     await expect(promosClaimCommand("spring-models", {}, makeRuntime())).rejects.toThrow(
@@ -420,11 +420,11 @@ describe("promosClaimCommand", () => {
     mocks.resolveProviderInstallCatalogEntry.mockReturnValue({
       ...authChoice,
       installSource: {
-        npm: { packageName: "@openclaw/openrouter-provider" },
+        npm: { packageName: "@afora/openrouter-provider" },
       },
     });
     mocks.fetchClawHubPromotion.mockResolvedValue(
-      makePromotion({ pluginNames: ["@openclaw/openrouter-provider"] }),
+      makePromotion({ pluginNames: ["@afora/openrouter-provider"] }),
     );
     mocks.hasAvailableAuthForProvider.mockResolvedValue(true);
     mocks.applyAuthChoiceLoadedPluginProvider.mockResolvedValue({ config: {} });

@@ -3,8 +3,8 @@
  *
  * Recovers flat or partial model/tool inputs into the structured cron job/patch shape.
  */
-import { timestampMsToIsoString } from "@openclaw/normalization-core/number-coercion";
-import { hasNonEmptyString as isNonEmptyString } from "@openclaw/normalization-core/string-coerce";
+import { timestampMsToIsoString } from "@afora/normalization-core/number-coercion";
+import { hasNonEmptyString as isNonEmptyString } from "@afora/normalization-core/string-coerce";
 import { isRecord } from "../../utils.js";
 import { isStringOption } from "../../utils/string-readers.js";
 

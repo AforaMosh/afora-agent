@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { shouldRouteCompletionThroughRequesterSession } from "../auto-reply/reply/completion-delivery-policy.js";
 import { channelSupportsThreadDelivery } from "../channels/thread-addressing.js";
 import { requestHeartbeat } from "../infra/heartbeat-wake.js";

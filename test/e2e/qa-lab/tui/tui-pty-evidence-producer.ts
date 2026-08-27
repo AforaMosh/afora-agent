@@ -4,7 +4,7 @@ import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import {
   QA_EVIDENCE_FILENAME,
   readQaScenarioById,
@@ -22,7 +22,7 @@ const PROOF_MATRIX_FILENAME = "proof-matrix.json";
 const REPORT_FRESHNESS_TOLERANCE_MS = 2_000;
 const MAX_PATTERN_LENGTH = 1_024;
 const BUILT_CLI_REQUIREMENT =
-  "cliMode=built requires readable openclaw.mjs and at least one readable dist/entry.js or dist/entry.mjs";
+  "cliMode=built requires readable afora.mjs and at least one readable dist/entry.js or dist/entry.mjs";
 
 export const TUI_PTY_TEST_FILE_ALLOWLIST = [
   "src/tui/tui-pty-harness-assertion-test-support.test.ts",
@@ -263,21 +263,21 @@ export function buildTuiPtyVitestCommand(params: {
   const usesLocalPty = testFiles.includes(LOCAL_PTY_TEST_FILE);
   const env: NodeJS.ProcessEnv = {
     ...process.env,
-    OPENCLAW_BEHAVIOR_EVIDENCE: "1",
-    OPENCLAW_VITEST_FS_MODULE_CACHE_PATH: path.join(
+    AFORA_BEHAVIOR_EVIDENCE: "1",
+    AFORA_VITEST_FS_MODULE_CACHE_PATH: path.join(
       path.dirname(params.reportPath),
       "vitest-fs-module-cache",
     ),
   };
   if (usesLocalPty) {
-    env.OPENCLAW_TUI_PTY_INCLUDE_LOCAL = "1";
+    env.AFORA_TUI_PTY_INCLUDE_LOCAL = "1";
   } else {
-    delete env.OPENCLAW_TUI_PTY_INCLUDE_LOCAL;
+    delete env.AFORA_TUI_PTY_INCLUDE_LOCAL;
   }
   if (params.cliMode === "built") {
-    env.OPENCLAW_TUI_PTY_USE_BUILT_CLI = "1";
+    env.AFORA_TUI_PTY_USE_BUILT_CLI = "1";
   } else {
-    delete env.OPENCLAW_TUI_PTY_USE_BUILT_CLI;
+    delete env.AFORA_TUI_PTY_USE_BUILT_CLI;
   }
   return {
     command: process.execPath,
@@ -407,7 +407,7 @@ async function requireBuiltCliArtifacts(repoRoot: string, cliMode: TuiPtyCliMode
     return;
   }
   const [launcher, ...entries] = await Promise.allSettled(
-    ["openclaw.mjs", "dist/entry.js", "dist/entry.mjs"].map((file) =>
+    ["afora.mjs", "dist/entry.js", "dist/entry.mjs"].map((file) =>
       fs.access(path.join(repoRoot, file), fsConstants.R_OK),
     ),
   );

@@ -10,7 +10,7 @@ const suite = createControlUiE2eSuite({
 
 suite.define(() => {
   it("keeps visible search results and keyboard selection in relevance order", async () => {
-    const artifactDir = process.env.OPENCLAW_UI_E2E_ARTIFACT_DIR?.trim();
+    const artifactDir = process.env.AFORA_UI_E2E_ARTIFACT_DIR?.trim();
     await suite.withPage(
       {
         viewport: { width: 1280, height: 900 },
@@ -43,7 +43,7 @@ suite.define(() => {
           methodResponses: {
             "chat.startup": {
               agentsList: {
-                agents: [{ id: "main", name: "OpenClaw" }],
+                agents: [{ id: "main", name: "Afora" }],
                 defaultId: "main",
                 mainKey: "main",
                 scope: "agent",
@@ -74,7 +74,7 @@ suite.define(() => {
                 .locator(".slash-menu-name")
                 .evaluateAll((names) => names.slice(0, 3).map((name) => name.textContent?.trim())),
           )
-          .toEqual(["/pair", "/pair-device", "/openclaw"]);
+          .toEqual(["/pair", "/pair-device", "/afora"]);
 
         await composer.press("ArrowDown");
         await expect.poll(() => options.nth(1).getAttribute("aria-selected")).toBe("true");

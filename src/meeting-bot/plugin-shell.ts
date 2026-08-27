@@ -1,6 +1,6 @@
 import type { Command } from "commander";
 import { getRootOptionAwareCommandPath } from "../infra/cli-root-options.js";
-import type { OpenClawPluginApi } from "../plugins/plugin-api.types.js";
+import type { AforaPluginApi } from "../plugins/plugin-api.types.js";
 import { createLazyRuntimeModule } from "../shared/lazy-runtime.js";
 import { createMeetingRealtimeEngineBindings } from "./agent-consult.js";
 import {
@@ -77,7 +77,7 @@ export function createMeetingPluginNodeHostHandler(options: MeetingPluginNodeHos
       buildProfileArgs: (profile) => ["--args", `--profile-directory=${profile}`],
       openedStatus: "chrome-opened",
       openedNotes: [
-        `${options.browserPageName} page control is handled by OpenClaw browser automation when using chrome-node.`,
+        `${options.browserPageName} page control is handled by Afora browser automation when using chrome-node.`,
       ],
     },
   });
@@ -121,7 +121,7 @@ export function createMeetingPluginCliMetadata(options: {
     name: options.name,
     description: `${options.name} CLI metadata`,
     descriptor,
-    register(api: OpenClawPluginApi) {
+    register(api: AforaPluginApi) {
       api.registerCli(() => {}, { descriptors: [descriptor] });
     },
   };
@@ -185,9 +185,9 @@ type MeetingPluginShellEntryOptions<
   platform: MeetingPluginShellPlatform;
   runtime: new (params: {
     config: Config;
-    fullConfig: OpenClawPluginApi["config"];
-    logger: OpenClawPluginApi["logger"];
-    runtime: OpenClawPluginApi["runtime"];
+    fullConfig: AforaPluginApi["config"];
+    logger: AforaPluginApi["logger"];
+    runtime: AforaPluginApi["runtime"];
   }) => Runtime;
   transcriptSource: { aliases?: readonly string[]; id: string };
 };
@@ -211,7 +211,7 @@ export function createMeetingPluginShellEntry<
     gatewayMethodPrefix: methodPrefix,
     nodeCommand: options.platform.nodeCommandName,
     normalizeUrl: (value) => options.platform.urls.validateAndNormalize(value),
-    toolDescription: `Join and manage ${options.browserGuestLabel} browser guests. Guest admission, tenant sign-in, and media permissions may require manual action in the OpenClaw Chrome profile.`,
+    toolDescription: `Join and manage ${options.browserGuestLabel} browser guests. Guest admission, tenant sign-in, and media permissions may require manual action in the Afora Chrome profile.`,
     toolLabel: options.platform.displayName,
     toolName,
     transcriptSource: { ...options.transcriptSource, name: options.platform.displayName },

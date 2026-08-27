@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { setPluginToolMeta } from "../plugins/tools.js";
 import {
   McpLoopbackToolCache,
@@ -22,7 +22,7 @@ function scopedToolFixture(names: string[]) {
 
 function scopeParams(overrides: Record<string, unknown> = {}) {
   return {
-    cfg: {} as OpenClawConfig,
+    cfg: {} as AforaConfig,
     sessionKey: "agent:main:recall",
     messageProvider: undefined,
     currentChannelId: undefined,
@@ -166,8 +166,8 @@ describe("McpLoopbackToolCache", () => {
   it("expires at the ttl boundary and partitions rows by config identity", () => {
     vi.useFakeTimers();
     const cache = new McpLoopbackToolCache();
-    const cfgA = {} as OpenClawConfig;
-    const cfgB = {} as OpenClawConfig;
+    const cfgA = {} as AforaConfig;
+    const cfgB = {} as AforaConfig;
     const paramsA = scopeParams({ cfg: cfgA });
 
     cache.resolve(paramsA);
@@ -185,7 +185,7 @@ describe("McpLoopbackToolCache", () => {
 
   it("does not share cache rows across different grant allowlists", () => {
     const cache = new McpLoopbackToolCache();
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
 
     const unrestricted = cache.resolve(scopeParams({ cfg }));
     const restricted = cache.resolve(scopeParams({ cfg, toolsAllow: ["memory_search"] }));
@@ -203,7 +203,7 @@ describe("McpLoopbackToolCache", () => {
 
   it("does not share cache rows across different runtime policy agents", () => {
     const cache = new McpLoopbackToolCache();
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
 
     cache.resolve(scopeParams({ cfg, runtimePolicyAgentId: "main" }));
     cache.resolve(scopeParams({ cfg, runtimePolicyAgentId: "worker" }));
@@ -214,7 +214,7 @@ describe("McpLoopbackToolCache", () => {
 
   it("does not share loopback tools across prepared vision capabilities", () => {
     const cache = new McpLoopbackToolCache();
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
 
     cache.resolve(scopeParams({ cfg, modelHasVision: true }));
     cache.resolve(scopeParams({ cfg, modelHasVision: false }));
@@ -231,7 +231,7 @@ describe("McpLoopbackToolCache", () => {
 
   it("does not share loopback message tools across prepared reply modes", () => {
     const cache = new McpLoopbackToolCache();
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
 
     cache.resolve(scopeParams({ cfg, replyToMode: "all" }));
     cache.resolve(scopeParams({ cfg, replyToMode: "off" }));
@@ -244,7 +244,7 @@ describe("McpLoopbackToolCache", () => {
 
   it("evicts only the revoked grant's cached tool closures", () => {
     const cache = new McpLoopbackToolCache();
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
 
     cache.resolve(scopeParams({ cfg, grantToken: "grant-a" }));
     cache.resolve(scopeParams({ cfg, grantToken: "grant-b" }));
@@ -261,7 +261,7 @@ describe("McpLoopbackToolCache", () => {
 
   it("preserves the global 256-entry cache cap across grants", () => {
     const cache = new McpLoopbackToolCache();
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
 
     for (let index = 0; index < 256; index += 1) {
       cache.resolve(
@@ -280,7 +280,7 @@ describe("McpLoopbackToolCache", () => {
 
   it("never reuses ordinary private-mode tools for a source-reply-only grant", () => {
     const cache = new McpLoopbackToolCache();
-    const cfg = {} as OpenClawConfig;
+    const cfg = {} as AforaConfig;
     const params = scopeParams({
       cfg,
       messageProvider: "telegram",

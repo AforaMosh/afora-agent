@@ -20,9 +20,9 @@ function createUiE2eVitestConfig(
   const baseSequence = (baseTest as { sequence?: object }).sequence;
   const exclude = [
     ...(baseTest.exclude ?? []).filter((pattern) => pattern !== "**/*.e2e.test.ts"),
-    ...(env.OPENCLAW_UI_E2E_SKIP_REAL_GATEWAY === "1" ? uiE2eRealGatewayTestFiles : []),
+    ...(env.AFORA_UI_E2E_SKIP_REAL_GATEWAY === "1" ? uiE2eRealGatewayTestFiles : []),
   ];
-  const includeFromEnv = loadPatternListFromEnv("OPENCLAW_VITEST_INCLUDE_FILE", env);
+  const includeFromEnv = loadPatternListFromEnv("AFORA_VITEST_INCLUDE_FILE", env);
   const include =
     includeFromEnv ??
     narrowIncludePatternsForCli(uiE2eIncludePatterns, argv) ??

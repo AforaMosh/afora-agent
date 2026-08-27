@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginKind } from "./plugin-kind.types.js";
 import { loadPluginMetadataSnapshot } from "./plugin-metadata-snapshot.js";
 import { applyExclusiveSlotSelection } from "./slots.js";
@@ -33,7 +33,7 @@ function mergeRuntimeKinds(
   };
 }
 
-function loadRuntimeKindReportForPlugins(config: OpenClawConfig, pluginIds: readonly string[]) {
+function loadRuntimeKindReportForPlugins(config: AforaConfig, pluginIds: readonly string[]) {
   return buildPluginDiagnosticsReport({
     config,
     onlyPluginIds: [...pluginIds],
@@ -41,7 +41,7 @@ function loadRuntimeKindReportForPlugins(config: OpenClawConfig, pluginIds: read
 }
 
 function buildSlotSelectionRegistry(
-  config: OpenClawConfig,
+  config: AforaConfig,
   pluginId: string,
 ): SlotSelectionRegistry {
   const plugins = loadPluginMetadataSnapshot({
@@ -57,9 +57,9 @@ function buildSlotSelectionRegistry(
 }
 
 export function applySlotSelectionForPlugin(
-  config: OpenClawConfig,
+  config: AforaConfig,
   pluginId: string,
-): { config: OpenClawConfig; warnings: string[] } {
+): { config: AforaConfig; warnings: string[] } {
   // Static metadata is preferred; runtime diagnostics fill in kind for older manifests.
   const report = buildSlotSelectionRegistry(config, pluginId);
   const plugin = report.plugins.find((entry) => entry.id === pluginId);

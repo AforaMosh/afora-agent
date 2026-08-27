@@ -1,5 +1,5 @@
-import { addTimerTimeoutGraceMs } from "@openclaw/normalization-core/number-coercion";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { addTimerTimeoutGraceMs } from "@afora/normalization-core/number-coercion";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginRuntime, RuntimeLogger } from "../plugins/runtime/types.js";
 import { resolveTranscriptsConfig } from "../transcripts/config.js";
 import type { createMeetingRealtimeEngineBindings } from "./agent-consult.js";
@@ -113,7 +113,7 @@ export function createMeetingChromeTransport<
   async function openOrRecoverMeeting(params: {
     callBrowser: MeetingBrowserRequestCaller;
     config: Config;
-    fullConfig: OpenClawConfig;
+    fullConfig: AforaConfig;
     meetingSessionId: string;
     mode: Mode;
     trackedTargetId?: string;
@@ -221,7 +221,7 @@ export function createMeetingChromeTransport<
   async function startLocalAudioBridge(params: {
     runtime: PluginRuntime;
     config: Config;
-    fullConfig: OpenClawConfig;
+    fullConfig: AforaConfig;
     meetingSessionId: string;
     requesterSessionKey?: string;
     mode: Mode;
@@ -283,7 +283,7 @@ export function createMeetingChromeTransport<
   async function launchInChrome(params: {
     runtime: PluginRuntime;
     config: Config;
-    fullConfig: OpenClawConfig;
+    fullConfig: AforaConfig;
     meetingSessionId: string;
     requesterSessionKey?: string;
     mode: Mode;
@@ -372,7 +372,7 @@ export function createMeetingChromeTransport<
   async function launchOnNode(params: {
     runtime: PluginRuntime;
     config: Config;
-    fullConfig: OpenClawConfig;
+    fullConfig: AforaConfig;
     meetingSessionId: string;
     requesterSessionKey?: string;
     mode: Mode;
@@ -502,7 +502,7 @@ export function createMeetingChromeTransport<
       });
       Reflect.set(
         transport,
-        Symbol.for("openclaw.internal.meeting-node-output-generation.v1"),
+        Symbol.for("afora.internal.meeting-node-output-generation.v1"),
         result.audioBridge.outputGeneration === true,
       );
       const bindings = options.runtime.createBindings({
@@ -584,7 +584,7 @@ export function createMeetingChromeTransport<
   async function recoverCurrentTab(params: {
     runtime: PluginRuntime;
     config: Config;
-    fullConfig?: OpenClawConfig;
+    fullConfig?: AforaConfig;
     meetingSessionId?: string;
     mode: Mode;
     nodeId?: string;

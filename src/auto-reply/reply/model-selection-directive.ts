@@ -1,7 +1,7 @@
 // Normalizes model selection directives into provider and model ids.
-import { normalizeProviderId } from "@openclaw/model-catalog-core/provider-id";
-import { expectDefined } from "@openclaw/normalization-core";
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeProviderId } from "@afora/model-catalog-core/provider-id";
+import { expectDefined } from "@afora/normalization-core";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import { modelKey } from "../../agents/model-ref-shared.js";
 import {
   isModelKeyAllowedBySet,
@@ -9,7 +9,7 @@ import {
   resolveConfiguredModelPolicyAllow,
   resolveModelRefFromString,
 } from "../../agents/model-selection-shared.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 export { modelKey };
 export type { ModelAliasIndex };
 
@@ -36,7 +36,7 @@ function formatNotAllowedError(params: {
     `Then retry: ${retryCommand}`,
   ];
   if (rawRuntime && normalizeProviderId(rawRuntime) === "codex") {
-    lines.push("If the Codex runtime is missing, run: openclaw plugins enable codex");
+    lines.push("If the Codex runtime is missing, run: afora plugins enable codex");
   }
   return lines.join("\n");
 }
@@ -231,7 +231,7 @@ export function resolveModelDirectiveSelection(params: {
   defaultModel: string;
   aliasIndex: ModelAliasIndex;
   allowedModelKeys: Set<string>;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
   agentId?: string;
   rawRuntime?: string | undefined;
 }): { selection?: ModelDirectiveSelection; error?: string } {

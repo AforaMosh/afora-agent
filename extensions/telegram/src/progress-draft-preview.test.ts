@@ -1,6 +1,6 @@
 // Telegram renders progress lines from their structured fields, so a line that
 // arrives without detail falls back to text that already carries its icon.
-import { buildChannelProgressDraftLine } from "openclaw/plugin-sdk/channel-outbound";
+import { buildChannelProgressDraftLine } from "afora-agent/plugin-sdk/channel-outbound";
 import { describe, expect, it } from "vitest";
 import { renderTelegramProgressDraftPreview } from "./progress-draft-preview.js";
 

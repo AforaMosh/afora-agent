@@ -1,5 +1,5 @@
-// Provider/account summary helpers for `openclaw agents list`.
-import { normalizeOptionalLowercaseString } from "@openclaw/normalization-core/string-coerce";
+// Provider/account summary helpers for `afora agents list`.
+import { normalizeOptionalLowercaseString } from "@afora/normalization-core/string-coerce";
 import { hasConfiguredUnavailableCredentialStatus } from "../channels/account-snapshot-fields.js";
 import { isChannelVisibleInConfiguredLists } from "../channels/plugins/exposure.js";
 import { resolveChannelDefaultAccountId } from "../channels/plugins/helpers.js";
@@ -13,7 +13,7 @@ import {
   resolveChannelAccountState,
 } from "../channels/status/account-state.js";
 import type { AgentBinding } from "../config/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { listExplicitConfiguredChannelIdsForConfig } from "../plugins/channel-plugin-ids.js";
 import { resolveMissingOfficialExternalChannelPluginRepairHints } from "../plugins/official-external-plugin-repair-hints.js";
 import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
@@ -64,7 +64,7 @@ function resolveProviderChannelId(params: {
 
 /** Build stable provider labels/default accounts without resolving live account state. */
 export function buildProviderSummaryMetadataIndex(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): Map<ChannelId, ProviderSummaryMetadata> {
   const metadata = new Map<ChannelId, ProviderSummaryMetadata>(
     listReadOnlyChannelPluginsForConfig(cfg, {
@@ -131,7 +131,7 @@ function formatProviderState(entry: ProviderAccountStatus): string {
 
 async function resolveReadOnlyAccount(params: {
   plugin: ChannelPlugin;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
 }): Promise<unknown> {
   if (params.plugin.config.inspectAccount) {
@@ -142,7 +142,7 @@ async function resolveReadOnlyAccount(params: {
 
 /** Inspect configured provider accounts and classify their display state. */
 export async function buildProviderStatusIndex(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): Promise<Map<string, ProviderAccountStatus>> {
   const map = new Map<string, ProviderAccountStatus>();
 
@@ -241,7 +241,7 @@ function resolveDefaultAccountId(
 
 function shouldShowProviderEntry(params: {
   entry: ProviderAccountStatus;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   metadataByProvider: ReadonlyMap<ChannelId, ProviderSummaryMetadata>;
 }): boolean {
   const visibleInConfiguredLists =
@@ -282,7 +282,7 @@ function formatMissingProviderEntry(params: {
 
 /** Render the provider/account routes implied by an agent's route bindings. */
 export function summarizeBindings(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   bindings: AgentBinding[],
   metadataByProvider = buildProviderSummaryMetadataIndex(cfg),
 ): string[] {
@@ -316,7 +316,7 @@ export function summarizeBindings(
 /** Render provider status lines relevant to a specific agent summary. */
 export function listProvidersForAgent(params: {
   summaryIsDefault: boolean;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   bindings: AgentBinding[];
   providerStatus: Map<string, ProviderAccountStatus>;
   providerMetadata?: ReadonlyMap<ChannelId, ProviderSummaryMetadata>;

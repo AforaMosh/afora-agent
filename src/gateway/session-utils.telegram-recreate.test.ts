@@ -12,7 +12,7 @@ import {
   replaceSessionEntry,
   updateSessionLastRoute,
 } from "../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createSuiteTempRootTracker } from "../test-helpers/temp-dir.js";
 import {
   deliveryContextFromSession,
@@ -26,13 +26,13 @@ const cfg = {
   agents: {
     defaults: {
       model: "openai/gpt-5.4",
-      workspace: "/tmp/openclaw",
+      workspace: "/tmp/afora",
     },
   },
   session: {
     dmScope: "per-channel-peer",
   },
-} satisfies Partial<OpenClawConfig> as OpenClawConfig;
+} satisfies Partial<AforaConfig> as AforaConfig;
 
 function createTelegramDirectContext(): MsgContext {
   return {
@@ -53,7 +53,7 @@ function createTelegramDirectContext(): MsgContext {
 
 describe("Telegram direct session recreation after delete", () => {
   const suiteRootTracker = createSuiteTempRootTracker({
-    prefix: "openclaw-telegram-session-recreate-",
+    prefix: "afora-telegram-session-recreate-",
   });
 
   beforeAll(async () => {
@@ -105,7 +105,7 @@ describe("Telegram direct session recreation after delete", () => {
     const runtimeCfg = {
       ...cfg,
       session: { ...cfg.session, store: storePath },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
     const loaded = loadCombinedSessionStoreForGatewayCore(runtimeCfg, { agentId: "main" });
     const listed = listSessionsFromStore({
       cfg: runtimeCfg,

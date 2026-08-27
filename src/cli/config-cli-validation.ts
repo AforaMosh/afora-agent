@@ -1,10 +1,10 @@
-import { isRecord as isPlainRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord as isPlainRecord } from "@afora/normalization-core/record-coerce";
 import type { ConfigFileSnapshot } from "../config/config.js";
 import { readConfigFileSnapshot } from "../config/config.js";
 import { formatConfigIssueLines, normalizeConfigIssues } from "../config/issue-format.js";
 import { renderConfigValidationIssueLines } from "../config/issue-location.js";
 import { isPluginPackagingRuntimeOutputInvalidConfigSnapshot } from "../config/recovery-policy.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   coerceSecretRef,
   resolveSecretInputRef,
@@ -39,7 +39,7 @@ function formatInvalidConfigRepairHint(
 ): string {
   return isPluginPackagingRuntimeOutputInvalidConfigSnapshot(snapshot)
     ? formatPluginPackagingRuntimeOutputRecoveryHint()
-    : `Run \`${formatCliCommand("openclaw doctor --fix")}\` ${doctorMessage}`;
+    : `Run \`${formatCliCommand("afora doctor --fix")}\` ${doctorMessage}`;
 }
 
 export async function loadValidConfig(
@@ -55,13 +55,13 @@ export async function loadValidConfig(
   }
   if (options.json) {
     writeRuntimeJson(runtime, {
-      ...formatCliJsonFailure(`OpenClaw config is invalid: ${shortenHomePath(snapshot.path)}`),
+      ...formatCliJsonFailure(`Afora config is invalid: ${shortenHomePath(snapshot.path)}`),
       issues: normalizeConfigIssues(snapshot.issues),
     });
     runtime.exit(1);
     return snapshot;
   }
-  runtime.error(`OpenClaw config is invalid: ${shortenHomePath(snapshot.path)}`);
+  runtime.error(`Afora config is invalid: ${shortenHomePath(snapshot.path)}`);
   for (const line of renderConfigValidationIssueLines(snapshot)) {
     runtime.error(line);
   }
@@ -91,7 +91,7 @@ function collectSecretRefsFromUnknown(value: unknown): SecretRef[] {
 }
 
 export function collectDryRunRefs(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   operations: ConfigSetOperation[];
 }): SecretRef[] {
   const refsByKey = new Map<string, SecretRef>();
@@ -140,7 +140,7 @@ export function collectDryRunRefs(params: {
 
 export async function collectDryRunResolvabilityErrors(params: {
   refs: SecretRef[];
-  config: OpenClawConfig;
+  config: AforaConfig;
 }): Promise<ConfigSetDryRunError[]> {
   const failures: ConfigSetDryRunError[] = [];
   for (const ref of params.refs) {
@@ -159,7 +159,7 @@ export async function collectDryRunResolvabilityErrors(params: {
 
 export function collectDryRunStaticErrorsForSkippedExecRefs(params: {
   refs: SecretRef[];
-  config: OpenClawConfig;
+  config: AforaConfig;
 }): ConfigSetDryRunError[] {
   const failures: ConfigSetDryRunError[] = [];
   for (const ref of params.refs) {
@@ -215,7 +215,7 @@ export function selectDryRunRefsForResolution(params: {
   return { refsToResolve, skippedExecRefs };
 }
 
-export function collectDryRunSchemaErrors(config: OpenClawConfig): ConfigSetDryRunError[] {
+export function collectDryRunSchemaErrors(config: AforaConfig): ConfigSetDryRunError[] {
   const validated = validateConfigObjectRawWithPlugins(config);
   if (validated.ok) {
     return [];
@@ -234,7 +234,7 @@ function touchesSecretProviderCollection(path: readonly string[]): boolean {
 }
 
 export function collectPluginIntegrationProviderErrors(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   operations: ConfigSetOperation[];
 }): ConfigSetDryRunError[] {
   const providers = params.config.secrets?.providers ?? {};

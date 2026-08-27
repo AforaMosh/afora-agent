@@ -1,4 +1,4 @@
-import type { PluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
+import type { PluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
 import type { MSTeamsDelegatedTokens } from "./oauth.shared.js";
 import { getMSTeamsRuntime } from "./runtime.js";
 

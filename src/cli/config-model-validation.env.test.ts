@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { checkTouchedTextModelRefs } from "./config-model-validation.js";
 
 type ResolverInput = {
-  config: OpenClawConfig;
+  config: AforaConfig;
   ref: {
     path: string;
     value: string;
@@ -17,7 +17,7 @@ type ResolverInput = {
 describe("config model validation env handling", () => {
   it("validates an expanded ref while preserving the authored config", async () => {
     const resolveModelRef = vi.fn(async (_params: ResolverInput) => undefined);
-    const config: OpenClawConfig = {
+    const config: AforaConfig = {
       agents: { defaults: { model: { primary: "${MODEL_REF}" } } },
     };
     const result = await checkTouchedTextModelRefs({

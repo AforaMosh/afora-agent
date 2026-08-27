@@ -34,7 +34,7 @@ export function resolveBundledSkillsContext(
   // Bundled skill metadata is process-stable; cache names until restart.
   const result = loadSkillsFromDirSafe({
     dir,
-    source: "openclaw-bundled",
+    source: "afora-bundled",
     onDiagnostic: (diagnostic) =>
       skillsLogger.warn(
         `Skipping bundled skill with invalid frontmatter (${diagnostic.path}): ${diagnostic.message}`,

@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { WAMessage } from "baileys";
-import { createChannelIngressQueueForTests } from "openclaw/plugin-sdk/plugin-state-test-runtime";
+import { createChannelIngressQueueForTests } from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { describe, expect, it, vi } from "vitest";
 import {
   deserializeWhatsAppDurableInboundMessage,
@@ -24,7 +24,7 @@ type WhatsAppDurableInboundPayload = {
 const REMOTE_JID = "1@s.whatsapp.net";
 
 async function withTempState<T>(fn: (stateDir: string) => Promise<T>): Promise<T> {
-  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-whatsapp-durable-"));
+  const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-whatsapp-durable-"));
   try {
     return await fn(stateDir);
   } finally {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveContextTokensForModelFromCache } from "../agents/context-resolution.js";
 import { migrateLegacyContextBudgetConfig } from "./legacy.context-budget.js";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import type { AforaConfig } from "./types.afora.js";
 
 const noCachedValue = () => undefined;
 
@@ -23,7 +23,7 @@ describe("legacy context-budget config migration", () => {
     };
 
     const migrated = migrateLegacyContextBudgetConfig(raw);
-    const config = migrated.config as OpenClawConfig;
+    const config = migrated.config as AforaConfig;
     const provider = config.models?.providers?.example;
     const beforeBudget = resolveContextTokensForModelFromCache(
       { provider: "example", model: "default", modelContextTokens: 32_000 },

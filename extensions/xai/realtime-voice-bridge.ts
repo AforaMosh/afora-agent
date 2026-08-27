@@ -1,17 +1,17 @@
 import { randomUUID } from "node:crypto";
-import { toStringifiedError } from "openclaw/plugin-sdk/error-runtime";
+import { toStringifiedError } from "afora-agent/plugin-sdk/error-runtime";
 import {
   captureWsEvent,
   createDebugProxyWebSocketAgent,
   resolveDebugProxySettings,
-} from "openclaw/plugin-sdk/proxy-capture";
+} from "afora-agent/plugin-sdk/proxy-capture";
 import type {
   RealtimeVoiceBridge,
   RealtimeVoiceSessionConnection,
   RealtimeVoiceToolResultOptions,
-} from "openclaw/plugin-sdk/realtime-voice";
-import { RealtimeVoiceSessionLifecycle } from "openclaw/plugin-sdk/realtime-voice";
-import { sleepWithAbort } from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/realtime-voice";
+import { RealtimeVoiceSessionLifecycle } from "afora-agent/plugin-sdk/realtime-voice";
+import { sleepWithAbort } from "afora-agent/plugin-sdk/runtime-env";
 import WebSocket from "ws";
 import { resolveXaiRealtimeApiKey } from "./realtime-voice-auth.runtime.js";
 import {

@@ -2,7 +2,7 @@
  * Lists and normalizes models exposed by the Codex app-server `model/list`
  * endpoint, including pagination and shared-client lease handling.
  */
-import { normalizeOptionalString, uniqueStrings } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { normalizeOptionalString, uniqueStrings } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type {
   CodexAppServerAuthRequirement,
   resolveCodexAppServerAuthProfileIdForAgent,
@@ -136,7 +136,7 @@ async function requestModelListPage(
   return readModelListResult(response);
 }
 
-/** Parses a raw Codex app-server model/list response into OpenClaw's normalized shape. */
+/** Parses a raw Codex app-server model/list response into Afora's normalized shape. */
 export function readModelListResult(value: unknown): CodexAppServerModelListResult {
   const response = assertCodexModelListResponse(value);
   const models = response.data.map((entry) => readCodexModel(entry));

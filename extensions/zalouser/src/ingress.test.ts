@@ -1,6 +1,6 @@
 // Zalouser tests cover durable socket admission, recovery, and replay semantics.
-import type { ChannelIngressQueue } from "openclaw/plugin-sdk/channel-outbound";
-import { closeOpenClawStateDatabaseForTest } from "openclaw/plugin-sdk/plugin-state-test-runtime";
+import type { ChannelIngressQueue } from "afora-agent/plugin-sdk/channel-outbound";
+import { closeAforaStateDatabaseForTest } from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createZalouserIngressMonitor, type ZalouserIngressLifecycle } from "./ingress.js";
 import {
@@ -15,7 +15,7 @@ function runtime() {
 }
 
 afterEach(() => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   vi.restoreAllMocks();
 });
 

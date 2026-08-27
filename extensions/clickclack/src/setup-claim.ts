@@ -4,14 +4,14 @@ import {
   readProviderJsonResponse,
   readResponseTextLimited,
   resolveProviderOperationTimeoutMs,
-} from "openclaw/plugin-sdk/provider-http";
+} from "afora-agent/plugin-sdk/provider-http";
 import {
   fetchWithSsrFGuard,
   resolvePinnedHostnameWithPolicy,
   ssrfPolicyFromHttpBaseUrlAllowedHostname,
   type LookupFn,
-} from "openclaw/plugin-sdk/ssrf-runtime";
-import { withTimeout } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/ssrf-runtime";
+import { withTimeout } from "afora-agent/plugin-sdk/text-utility-runtime";
 import {
   buildClickClackSetupClaimUrl,
   CLICKCLACK_SETUP_CODE_CLAIM_PATH,

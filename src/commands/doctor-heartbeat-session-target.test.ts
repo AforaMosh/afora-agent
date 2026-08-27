@@ -6,23 +6,23 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resolveSessionStorePathCore } from "../config/sessions/paths.js";
 import { upsertSessionEntryCore } from "../config/sessions/session-accessor.js";
 import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/session-sqlite-target.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
-import { closeOpenClawAgentDatabasesForTest } from "../state/openclaw-agent-db.js";
+import type { AforaConfig } from "../config/types.afora.js";
+import { closeAforaAgentDatabasesForTest } from "../state/afora-agent-db.js";
 import { describeHeartbeatSessionTargetIssues } from "./doctor-heartbeat-session-target.js";
 
 describe("describeHeartbeatSessionTargetIssues", () => {
   let tmpDir: string;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-heartbeat-doctor-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-heartbeat-doctor-"));
   });
 
   afterEach(() => {
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  function cfgWithSession(session: string, target: string | null = "slack"): OpenClawConfig {
+  function cfgWithSession(session: string, target: string | null = "slack"): AforaConfig {
     const heartbeat = target === null ? { session } : { session, target };
     return {
       session: {
@@ -37,13 +37,13 @@ describe("describeHeartbeatSessionTargetIssues", () => {
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
   }
 
   function cfgWithDefaultHeartbeat(
     session: string,
     target: string | null = "slack",
-  ): OpenClawConfig {
+  ): AforaConfig {
     const heartbeat = target === null ? { session } : { session, target };
     return {
       session: {
@@ -60,10 +60,10 @@ describe("describeHeartbeatSessionTargetIssues", () => {
           },
         ],
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
   }
 
-  function writeStore(cfg: OpenClawConfig, entries: Record<string, unknown>) {
+  function writeStore(cfg: AforaConfig, entries: Record<string, unknown>) {
     const storePath = resolveSessionStorePathCore(cfg.session?.store, { agentId: "ops" });
     fs.mkdirSync(path.dirname(storePath), { recursive: true });
     fs.writeFileSync(storePath, JSON.stringify(entries, null, 2));

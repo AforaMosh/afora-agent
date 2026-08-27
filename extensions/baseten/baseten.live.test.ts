@@ -4,10 +4,10 @@ import {
   type Context,
   type Model,
   type Tool,
-} from "openclaw/plugin-sdk/llm";
-import { registerSingleProviderPlugin } from "openclaw/plugin-sdk/plugin-test-runtime";
-import type { ModelDefinitionConfig } from "openclaw/plugin-sdk/provider-model-shared";
-import { isLiveTestEnabled } from "openclaw/plugin-sdk/test-live";
+} from "afora-agent/plugin-sdk/llm";
+import { registerSingleProviderPlugin } from "afora-agent/plugin-sdk/plugin-test-runtime";
+import type { ModelDefinitionConfig } from "afora-agent/plugin-sdk/provider-model-shared";
+import { isLiveTestEnabled } from "afora-agent/plugin-sdk/test-live";
 import { Type } from "typebox";
 import { describe, expect, it } from "vitest";
 import { runSingleProviderCatalog } from "../test-support/provider-model-test-helpers.js";
@@ -151,7 +151,7 @@ describeLive("Baseten plugin live", () => {
     20 * 60_000,
   );
 
-  it("runs an Inkling tool call through OpenClaw's completions transport", async () => {
+  it("runs an Inkling tool call through Afora's completions transport", async () => {
     const provider = await registerSingleProviderPlugin(basetenPlugin);
     const catalog = await runLiveBasetenCatalog(provider);
     const inkling = catalog.models.find((model) => model.id === BASETEN_DEFAULT_MODEL_ID);

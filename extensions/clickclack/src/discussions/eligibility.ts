@@ -1,4 +1,4 @@
-import type { SessionDiscussionInfo } from "openclaw/plugin-sdk/session-discussion";
+import type { SessionDiscussionInfo } from "afora-agent/plugin-sdk/session-discussion";
 import { listEnabledClickClackAccounts } from "../accounts.js";
 import type { CoreConfig, ResolvedClickClackAccount } from "../types.js";
 import type { ClickClackDiscussionBinding } from "./binding-store.js";
@@ -54,7 +54,7 @@ export function discussionInfoForBinding(
     state: "open",
     // Only this provider may opt into host-owned theme parameters; signed
     // discussion URLs from other providers must remain opaque.
-    embedUrl: `${baseUrl}/embed/channel/${encodeURIComponent(binding.workspaceRouteId)}/${encodeURIComponent(binding.channelRouteId)}?openclawHostTheme=1`,
+    embedUrl: `${baseUrl}/embed/channel/${encodeURIComponent(binding.workspaceRouteId)}/${encodeURIComponent(binding.channelRouteId)}?aforaHostTheme=1`,
     openUrl: `${baseUrl}/app/${encodeURIComponent(binding.workspaceRouteId)}/${encodeURIComponent(binding.channelRouteId)}`,
   };
 }

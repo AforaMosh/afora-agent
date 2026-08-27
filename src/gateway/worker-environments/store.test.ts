@@ -9,14 +9,14 @@ import type {
   WorkerProfile,
   WorkerSshEndpoint,
 } from "../../plugins/types.js";
-import { ensureAdditiveStateColumns } from "../../state/openclaw-state-db-schema-additive.js";
+import { ensureAdditiveStateColumns } from "../../state/afora-state-db-schema-additive.js";
 import {
-  assertOpenClawStateDatabaseForMaintenance,
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-  OPENCLAW_STATE_SCHEMA_VERSION,
-  type OpenClawStateDatabase,
-} from "../../state/openclaw-state-db.js";
+  assertAforaStateDatabaseForMaintenance,
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+  AFORA_STATE_SCHEMA_VERSION,
+  type AforaStateDatabase,
+} from "../../state/afora-state-db.js";
 import { hashWorkerCredential } from "./credential.js";
 import {
   createWorkerEnvironmentStore,
@@ -36,7 +36,7 @@ const SSH_ENDPOINT: WorkerEnvironmentSshEndpoint = {
   host: "worker.example.test",
   port: 2222,
   fallbackPorts: [22, 2200],
-  user: "openclaw",
+  user: "afora",
   hostKey: HOST_KEY,
   keyRef: {
     source: "file",
@@ -51,15 +51,15 @@ const DESKTOP: WorkerDesktopEndpoint = {
   apps: [
     {
       id: "browser",
-      executablePath: "/usr/local/bin/openclaw-worker-browser",
+      executablePath: "/usr/local/bin/afora-worker-browser",
       cdpPort: 9222,
     },
-    { id: "terminal", executablePath: "/usr/local/bin/openclaw-worker-terminal" },
+    { id: "terminal", executablePath: "/usr/local/bin/afora-worker-terminal" },
   ],
 };
 const BOOTSTRAP_RECEIPT: WorkerEnvironmentBootstrapReceipt = {
   bundleHash: "a".repeat(64),
-  openclawVersion: "2026.7.1",
+  aforaVersion: "2026.7.1",
   protocolFeatures: ["workspace-sync-v1", "model-proxy-v1"],
 };
 const CREDENTIAL = ["worker", "credential", "fixture"].join("-");
@@ -68,19 +68,19 @@ const PRUNE_NOW_MS = 10 * DAY_MS;
 
 describe("worker environment store", () => {
   let root: string;
-  let database: OpenClawStateDatabase;
+  let database: AforaStateDatabase;
   let store: WorkerEnvironmentStore;
   let nowMs: number;
 
   beforeEach(async () => {
-    root = await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()), "openclaw-worker-env-"));
-    database = openOpenClawStateDatabase({ env: { OPENCLAW_STATE_DIR: root } });
+    root = await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()), "afora-worker-env-"));
+    database = openAforaStateDatabase({ env: { AFORA_STATE_DIR: root } });
     nowMs = 1_000;
     store = createWorkerEnvironmentStore({ database, now: () => nowMs });
   });
 
   afterEach(async () => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     await fs.rm(root, { recursive: true, force: true });
   });
 
@@ -181,8 +181,8 @@ describe("worker environment store", () => {
     });
 
     snapshot.settings.region = "mutated-after-create";
-    closeOpenClawStateDatabaseForTest();
-    database = openOpenClawStateDatabase({ env: { OPENCLAW_STATE_DIR: root } });
+    closeAforaStateDatabaseForTest();
+    database = openAforaStateDatabase({ env: { AFORA_STATE_DIR: root } });
     store = createWorkerEnvironmentStore({ database, now: () => nowMs });
 
     expect(store.get("worker-crash")?.profileSnapshot).toEqual({
@@ -205,8 +205,8 @@ describe("worker environment store", () => {
       updatedAtMs: 1_050,
     });
 
-    closeOpenClawStateDatabaseForTest();
-    database = openOpenClawStateDatabase({ env: { OPENCLAW_STATE_DIR: root } });
+    closeAforaStateDatabaseForTest();
+    database = openAforaStateDatabase({ env: { AFORA_STATE_DIR: root } });
     store = createWorkerEnvironmentStore({ database, now: () => nowMs });
     expect(store.get("worker-cancelled")?.destroyRequestedAtMs).toBe(1_050);
   });
@@ -229,8 +229,8 @@ describe("worker environment store", () => {
       to: "ready",
       patch: readyPatch(),
     });
-    closeOpenClawStateDatabaseForTest();
-    database = openOpenClawStateDatabase({ env: { OPENCLAW_STATE_DIR: root } });
+    closeAforaStateDatabaseForTest();
+    database = openAforaStateDatabase({ env: { AFORA_STATE_DIR: root } });
     store = createWorkerEnvironmentStore({ database, now: () => nowMs });
     expect(store.get("worker-1")).toMatchObject({
       sshEndpoint: SSH_ENDPOINT,
@@ -315,20 +315,20 @@ describe("worker environment store", () => {
 
   it("lazily ensures the companion table once for a current database", () => {
     const databasePath = database.path;
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const { DatabaseSync } = requireNodeSqlite();
     const current = new DatabaseSync(databasePath);
     current.exec("DROP TABLE worker_environment_ssh_fallback_ports;");
     current.close();
 
-    database = openOpenClawStateDatabase({ env: { OPENCLAW_STATE_DIR: root } });
+    database = openAforaStateDatabase({ env: { AFORA_STATE_DIR: root } });
     expect(
       database.db
         .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = ?")
         .get("worker_environment_ssh_fallback_ports"),
     ).toBeUndefined();
     expect(database.db.prepare("PRAGMA user_version").get()).toEqual({
-      user_version: OPENCLAW_STATE_SCHEMA_VERSION,
+      user_version: AFORA_STATE_SCHEMA_VERSION,
     });
 
     store = createWorkerEnvironmentStore({ database, now: () => nowMs });
@@ -339,7 +339,7 @@ describe("worker environment store", () => {
         .get("worker_environment_ssh_fallback_ports"),
     ).toEqual({ name: "worker_environment_ssh_fallback_ports" });
     expect(() =>
-      assertOpenClawStateDatabaseForMaintenance(database.db, {
+      assertAforaStateDatabaseForMaintenance(database.db, {
         pathname: database.path,
       }),
     ).not.toThrow();
@@ -487,7 +487,7 @@ describe("worker environment store", () => {
       "duplicate app ids",
       [
         { id: "terminal", executablePath: "/usr/bin/xfce4-terminal" },
-        { id: "terminal", executablePath: "/usr/local/bin/openclaw-worker-terminal" },
+        { id: "terminal", executablePath: "/usr/local/bin/afora-worker-terminal" },
       ],
       "desktop app id terminal must be unique",
     ],
@@ -501,7 +501,7 @@ describe("worker environment store", () => {
       [
         {
           id: "browser",
-          executablePath: "/usr/local/bin/openclaw-worker-browser",
+          executablePath: "/usr/local/bin/afora-worker-browser",
           cdpPort: 65_536,
         },
       ],
@@ -512,7 +512,7 @@ describe("worker environment store", () => {
       [
         {
           id: "browser",
-          executablePath: "/usr/local/bin/openclaw-worker-browser",
+          executablePath: "/usr/local/bin/afora-worker-browser",
           cdpPort: 9222,
           args: ["--headless"],
         },
@@ -524,7 +524,7 @@ describe("worker environment store", () => {
       [
         {
           id: "terminal",
-          executablePath: "/usr/local/bin/openclaw-worker-terminal",
+          executablePath: "/usr/local/bin/afora-worker-terminal",
           env: { DISPLAY: ":99" },
         },
       ],
@@ -553,8 +553,8 @@ describe("worker environment store", () => {
       to: "bootstrapping",
       patch: { leaseId: "lease-desktop", sshEndpoint: SSH_ENDPOINT, desktop: DESKTOP },
     });
-    closeOpenClawStateDatabaseForTest();
-    database = openOpenClawStateDatabase({ env: { OPENCLAW_STATE_DIR: root } });
+    closeAforaStateDatabaseForTest();
+    database = openAforaStateDatabase({ env: { AFORA_STATE_DIR: root } });
     store = createWorkerEnvironmentStore({ database, now: () => nowMs });
     expect(store.get("worker-desktop")?.desktop).toEqual(DESKTOP);
 
@@ -603,8 +603,8 @@ describe("worker environment store", () => {
     expect(store.get("worker-owner")?.ownerEpoch).toBe(1);
     expect(store.getCredential("worker-owner")).toMatchObject({ ownerEpoch: 1, sessionId: null });
 
-    closeOpenClawStateDatabaseForTest();
-    database = openOpenClawStateDatabase({ env: { OPENCLAW_STATE_DIR: root } });
+    closeAforaStateDatabaseForTest();
+    database = openAforaStateDatabase({ env: { AFORA_STATE_DIR: root } });
     store = createWorkerEnvironmentStore({ database, now: () => nowMs });
     const renewal = [CREDENTIAL, "renewal"].join("-");
     expect(
@@ -870,7 +870,7 @@ describe("worker environment store", () => {
       UPDATE worker_environments
       SET
         bootstrap_bundle_hash = NULL,
-        bootstrap_openclaw_version = NULL,
+        bootstrap_afora_version = NULL,
         bootstrap_protocol_features_json = NULL
       WHERE environment_id = 'worker-rebootstrap';
     `);

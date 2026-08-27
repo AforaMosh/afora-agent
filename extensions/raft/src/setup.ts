@@ -1,5 +1,5 @@
-import { defineChannelSetupContract } from "openclaw/plugin-sdk/channel-setup";
-import type { ChannelPlugin } from "openclaw/plugin-sdk/core";
+import { defineChannelSetupContract } from "afora-agent/plugin-sdk/channel-setup";
+import type { ChannelPlugin } from "afora-agent/plugin-sdk/core";
 // Raft plugin setup owns only the Raft CLI profile, never Raft credentials.
 import {
   createPatchedAccountSetupAdapter,
@@ -7,9 +7,9 @@ import {
   formatDocsLink,
   setSetupChannelEnabled,
   type ChannelSetupInput,
-} from "openclaw/plugin-sdk/setup";
-import { detectBinary } from "openclaw/plugin-sdk/setup-tools";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/setup";
+import { detectBinary } from "afora-agent/plugin-sdk/setup-tools";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   listRaftAccountIds,
   RAFT_CHANNEL_ID,

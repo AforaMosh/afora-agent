@@ -37,7 +37,7 @@ let setPluginDoctorContractRegistryModuleLoaderFactoryForTest:
   | undefined;
 
 function makeTempDir(): string {
-  return makeTrackedTempDir("openclaw-doctor-contract-registry", tempDirs);
+  return makeTrackedTempDir("afora-doctor-contract-registry", tempDirs);
 }
 
 function requireFirstCreateJitiCall(): [string, { tryNative?: boolean }] {
@@ -371,7 +371,7 @@ describe("doctor-contract-registry module loader", () => {
       "utf-8",
     );
     mocks.loadPluginManifestRegistry.mockReturnValue({
-      plugins: [{ id: "test-plugin", packageName: "@openclaw/demo", rootDir: pluginRoot }],
+      plugins: [{ id: "test-plugin", packageName: "@afora/demo", rootDir: pluginRoot }],
       diagnostics: [],
     });
 
@@ -382,7 +382,7 @@ describe("doctor-contract-registry module loader", () => {
         },
         workspaceDir: pluginRoot,
         env: {},
-        pluginIds: ["@openclaw/demo"],
+        pluginIds: ["@afora/demo"],
       }),
     ).toEqual(["cards", "voice"]);
   });

@@ -12,27 +12,27 @@ import {
 } from "./qa-runtime.test-helpers.js";
 
 const loadBundledPluginPublicSurfaceModuleSync = vi.hoisted(() => vi.fn());
-const resolveOpenClawPackageRootSync = vi.hoisted(() => vi.fn());
+const resolveAforaPackageRootSync = vi.hoisted(() => vi.fn());
 
 vi.mock("./facade-runtime.js", () => ({
   loadBundledPluginPublicSurfaceModuleSync,
 }));
 
-vi.mock("../infra/openclaw-root.js", () => ({
-  resolveOpenClawPackageRootSync,
+vi.mock("../infra/afora-root.js", () => ({
+  resolveAforaPackageRootSync,
 }));
 
 describe("plugin-sdk qa-runtime", () => {
   const tempDirs: string[] = [];
-  const originalPrivateQaCli = process.env.OPENCLAW_ENABLE_PRIVATE_QA_CLI;
-  const originalBundledPluginsDir = process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+  const originalPrivateQaCli = process.env.AFORA_ENABLE_PRIVATE_QA_CLI;
+  const originalBundledPluginsDir = process.env.AFORA_BUNDLED_PLUGINS_DIR;
 
   beforeEach(() => {
     vi.resetModules();
     loadBundledPluginPublicSurfaceModuleSync.mockReset();
-    resolveOpenClawPackageRootSync.mockReset().mockReturnValue(null);
-    delete process.env.OPENCLAW_ENABLE_PRIVATE_QA_CLI;
-    delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+    resolveAforaPackageRootSync.mockReset().mockReturnValue(null);
+    delete process.env.AFORA_ENABLE_PRIVATE_QA_CLI;
+    delete process.env.AFORA_BUNDLED_PLUGINS_DIR;
   });
 
   afterEach(() => {
@@ -40,9 +40,9 @@ describe("plugin-sdk qa-runtime", () => {
     cleanupTempDirs(tempDirs);
     restorePrivateQaCliEnv(originalPrivateQaCli);
     if (originalBundledPluginsDir === undefined) {
-      delete process.env.OPENCLAW_BUNDLED_PLUGINS_DIR;
+      delete process.env.AFORA_BUNDLED_PLUGINS_DIR;
     } else {
-      process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = originalBundledPluginsDir;
+      process.env.AFORA_BUNDLED_PLUGINS_DIR = originalBundledPluginsDir;
     }
   });
 
@@ -104,7 +104,7 @@ describe("plugin-sdk qa-runtime", () => {
       tempDirs,
       importRuntime: () => import("./qa-runtime.js"),
       loadBundledPluginPublicSurfaceModuleSync,
-      resolveOpenClawPackageRootSync,
+      resolveAforaPackageRootSync,
     });
   });
 
@@ -181,13 +181,13 @@ describe("plugin-sdk qa-runtime", () => {
       })
       .register(qa);
 
-    await qa.parseAsync(["node", "openclaw", "telegram"]);
+    await qa.parseAsync(["node", "afora", "telegram"]);
     expect(run).toHaveBeenCalledWith(expect.objectContaining({ fastMode: undefined }));
     run.mockClear();
 
     await qa.parseAsync([
       "node",
-      "openclaw",
+      "afora",
       "telegram",
       "--repo-root",
       "/tmp/repo",

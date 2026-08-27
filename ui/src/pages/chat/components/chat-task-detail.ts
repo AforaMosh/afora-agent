@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import { html, nothing, type TemplateResult } from "lit";
 import "../../../components/elapsed-time.ts";
 import { icons } from "../../../components/icons.ts";
@@ -104,7 +104,7 @@ function renderTaskHeader(
               <span>${taskRuntimeLabel(task)}</span>
               ${active && startedMs > 0
                 ? html`<span aria-hidden="true">·</span>
-                    <openclaw-elapsed-time .startMs=${startedMs}></openclaw-elapsed-time>`
+                    <afora-elapsed-time .startMs=${startedMs}></afora-elapsed-time>`
                 : nothing}
               ${task.lastToolName
                 ? html`<span aria-hidden="true">·</span>

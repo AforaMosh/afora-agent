@@ -36,8 +36,8 @@ describe("Gateway startup plugin quarantine", () => {
   it("reaches readiness with a quarantined plugin beside a valid declared extension", async () => {
     const brokenPluginId = "broken-payload";
     const validPluginId = "valid-declared-extension";
-    const brokenRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-quarantined-plugin-"));
-    const validRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-valid-stale-main-"));
+    const brokenRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-quarantined-plugin-"));
+    const validRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-valid-stale-main-"));
     tempDirs.push(brokenRoot, validRoot);
     fs.writeFileSync(
       path.join(brokenRoot, "package.json"),
@@ -45,13 +45,13 @@ describe("Gateway startup plugin quarantine", () => {
         name: brokenPluginId,
         type: "commonjs",
         main: "./missing-main.cjs",
-        openclaw: { extensions: ["./index.cjs"] },
-        peerDependencies: { openclaw: ">=2026.1.1" },
+        afora: { extensions: ["./index.cjs"] },
+        peerDependencies: { afora: ">=2026.1.1" },
       }),
       "utf8",
     );
     fs.writeFileSync(
-      path.join(brokenRoot, "openclaw.plugin.json"),
+      path.join(brokenRoot, "afora.plugin.json"),
       JSON.stringify({
         id: brokenPluginId,
         configSchema: {
@@ -73,12 +73,12 @@ describe("Gateway startup plugin quarantine", () => {
         name: validPluginId,
         type: "commonjs",
         main: "./missing-main.cjs",
-        openclaw: { extensions: ["./index.cjs"] },
+        afora: { extensions: ["./index.cjs"] },
       }),
       "utf8",
     );
     fs.writeFileSync(
-      path.join(validRoot, "openclaw.plugin.json"),
+      path.join(validRoot, "afora.plugin.json"),
       JSON.stringify({
         id: validPluginId,
         configSchema: { type: "object", additionalProperties: false, properties: {} },
@@ -106,13 +106,13 @@ describe("Gateway startup plugin quarantine", () => {
     expect(smoke.failures).toMatchObject([
       {
         pluginId: brokenPluginId,
-        reason: "missing-openclaw-peer-link",
+        reason: "missing-afora-peer-link",
         installPath: brokenRoot,
       },
     ]);
     setActiveDegradedPlugins(buildDegradedPluginsFromVerificationFailures(smoke.failures));
 
-    const { loadOpenClawPlugins } =
+    const { loadAforaPlugins } =
       await vi.importActual<typeof import("../plugins/loader.js")>("../plugins/loader.js");
     const pluginConfig = {
       enabled: true,
@@ -123,7 +123,7 @@ describe("Gateway startup plugin quarantine", () => {
         [validPluginId]: { enabled: true },
       },
     };
-    const registry = loadOpenClawPlugins({
+    const registry = loadAforaPlugins({
       cache: false,
       config: { plugins: pluginConfig },
       onlyPluginIds: [brokenPluginId, validPluginId],
@@ -132,7 +132,7 @@ describe("Gateway startup plugin quarantine", () => {
       status: "error",
       activated: false,
       failurePhase: "validation",
-      activationReason: "configured-unavailable: missing-openclaw-peer-link",
+      activationReason: "configured-unavailable: missing-afora-peer-link",
     });
     expect(registry.plugins.find((plugin) => plugin.id === validPluginId)).toMatchObject({
       status: "loaded",
@@ -169,8 +169,8 @@ describe("Gateway startup plugin quarantine", () => {
 
   it("does not quarantine a healthy explicit root that shadows a broken install with the same id", async () => {
     const pluginId = "shadowed-payload";
-    const brokenRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-broken-install-"));
-    const selectedRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-selected-plugin-"));
+    const brokenRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-broken-install-"));
+    const selectedRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-selected-plugin-"));
     tempDirs.push(brokenRoot, selectedRoot);
     fs.writeFileSync(
       path.join(brokenRoot, "package.json"),
@@ -178,7 +178,7 @@ describe("Gateway startup plugin quarantine", () => {
         name: pluginId,
         type: "commonjs",
         main: "./missing-main.cjs",
-        openclaw: { extensions: ["./index.cjs"] },
+        afora: { extensions: ["./index.cjs"] },
       }),
       "utf8",
     );
@@ -188,12 +188,12 @@ describe("Gateway startup plugin quarantine", () => {
         name: pluginId,
         type: "commonjs",
         main: "./index.cjs",
-        openclaw: { extensions: ["./index.cjs"] },
+        afora: { extensions: ["./index.cjs"] },
       }),
       "utf8",
     );
     fs.writeFileSync(
-      path.join(selectedRoot, "openclaw.plugin.json"),
+      path.join(selectedRoot, "afora.plugin.json"),
       JSON.stringify({
         id: pluginId,
         configSchema: { type: "object", additionalProperties: false, properties: {} },
@@ -214,9 +214,9 @@ describe("Gateway startup plugin quarantine", () => {
     });
     setActiveDegradedPlugins(buildDegradedPluginsFromVerificationFailures(smoke.failures));
 
-    const { loadOpenClawPlugins } =
+    const { loadAforaPlugins } =
       await vi.importActual<typeof import("../plugins/loader.js")>("../plugins/loader.js");
-    const registry = loadOpenClawPlugins({
+    const registry = loadAforaPlugins({
       cache: false,
       config: {
         plugins: {
@@ -236,8 +236,8 @@ describe("Gateway startup plugin quarantine", () => {
 
   it("keeps the broken install visible when its explicit override fails to load", async () => {
     const pluginId = "failed-shadow";
-    const brokenRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-broken-install-"));
-    const selectedRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-selected-plugin-"));
+    const brokenRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-broken-install-"));
+    const selectedRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-selected-plugin-"));
     tempDirs.push(brokenRoot, selectedRoot);
     fs.writeFileSync(
       path.join(brokenRoot, "package.json"),
@@ -245,7 +245,7 @@ describe("Gateway startup plugin quarantine", () => {
         name: pluginId,
         type: "commonjs",
         main: "./missing-main.cjs",
-        openclaw: { extensions: ["./index.cjs"] },
+        afora: { extensions: ["./index.cjs"] },
       }),
       "utf8",
     );
@@ -255,12 +255,12 @@ describe("Gateway startup plugin quarantine", () => {
         name: pluginId,
         type: "commonjs",
         main: "./index.cjs",
-        openclaw: { extensions: ["./index.cjs"] },
+        afora: { extensions: ["./index.cjs"] },
       }),
       "utf8",
     );
     fs.writeFileSync(
-      path.join(selectedRoot, "openclaw.plugin.json"),
+      path.join(selectedRoot, "afora.plugin.json"),
       JSON.stringify({
         id: pluginId,
         configSchema: { type: "object", additionalProperties: false, properties: {} },
@@ -281,9 +281,9 @@ describe("Gateway startup plugin quarantine", () => {
     });
     setActiveDegradedPlugins(buildDegradedPluginsFromVerificationFailures(smoke.failures));
 
-    const { loadOpenClawPlugins } =
+    const { loadAforaPlugins } =
       await vi.importActual<typeof import("../plugins/loader.js")>("../plugins/loader.js");
-    const registry = loadOpenClawPlugins({
+    const registry = loadAforaPlugins({
       cache: false,
       config: {
         plugins: {

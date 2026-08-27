@@ -2,11 +2,11 @@ import path from "node:path";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   normalizeStringEntries,
   normalizeUniqueStringEntries,
-} from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-normalization";
 import {
   normalizeCommandDescriptorName,
   sanitizeCommandDescriptorDescription,
@@ -22,16 +22,16 @@ import { isReservedCommandName, registerPluginCommandInRegistry } from "./comman
 import type { PluginRegistryState } from "./registry-state.js";
 import type { PluginRecord } from "./registry-types.js";
 import type {
-  OpenClawGatewayDiscoveryService,
-  OpenClawPluginCliRegistrationOptions,
-  OpenClawPluginCliRegistrar,
-  OpenClawPluginCliRootCommandDescriptor,
-  OpenClawPluginCommandDefinition,
-  OpenClawPluginNodeHostCommand,
-  OpenClawPluginNodeInvokePolicy,
-  OpenClawPluginReloadRegistration,
-  OpenClawPluginSecurityAuditCollector,
-  OpenClawPluginService,
+  AforaGatewayDiscoveryService,
+  AforaPluginCliRegistrationOptions,
+  AforaPluginCliRegistrar,
+  AforaPluginCliRootCommandDescriptor,
+  AforaPluginCommandDefinition,
+  AforaPluginNodeHostCommand,
+  AforaPluginNodeInvokePolicy,
+  AforaPluginReloadRegistration,
+  AforaPluginSecurityAuditCollector,
+  AforaPluginService,
 } from "./types.js";
 
 function isOfficialCodexPluginRecord(
@@ -40,14 +40,14 @@ function isOfficialCodexPluginRecord(
   if (record.id !== "codex" || record.origin !== "global") {
     return false;
   }
-  if (record.packageName === "@openclaw/codex") {
+  if (record.packageName === "@afora/codex") {
     return true;
   }
   const sourcePath = path
     .normalize(record.rootDir ?? record.source)
     .split(path.sep)
     .join("/");
-  return sourcePath.includes("/node_modules/@openclaw/codex");
+  return sourcePath.includes("/node_modules/@afora/codex");
 }
 
 export function canClaimReservedCommandOwnership(
@@ -61,8 +61,8 @@ export function createOperationRegistrars(state: PluginRegistryState) {
 
   const registerCli = (
     record: PluginRecord,
-    registrar: OpenClawPluginCliRegistrar,
-    opts?: OpenClawPluginCliRegistrationOptions,
+    registrar: AforaPluginCliRegistrar,
+    opts?: AforaPluginCliRegistrationOptions,
   ) => {
     const normalizeCommandRoot = (raw: string, source: "command" | "descriptor") => {
       const normalized = normalizeCommandDescriptorName(raw);
@@ -89,12 +89,12 @@ export function createOperationRegistrars(state: PluginRegistryState) {
         const name = normalizeCommandRoot(descriptor.name, "descriptor");
         const description = sanitizeCommandDescriptorDescription(descriptor.description);
         const machineOutput = rootRegistration
-          ? (descriptor as OpenClawPluginCliRootCommandDescriptor).machineOutput
+          ? (descriptor as AforaPluginCliRootCommandDescriptor).machineOutput
           : undefined;
         if (!name || !description) {
           return null;
         }
-        const normalized: OpenClawPluginCliRootCommandDescriptor = {
+        const normalized: AforaPluginCliRootCommandDescriptor = {
           name,
           description,
           hasSubcommands: descriptor.hasSubcommands,
@@ -105,7 +105,7 @@ export function createOperationRegistrars(state: PluginRegistryState) {
         return normalized;
       })
       .filter(
-        (descriptor): descriptor is OpenClawPluginCliRootCommandDescriptor => descriptor !== null,
+        (descriptor): descriptor is AforaPluginCliRootCommandDescriptor => descriptor !== null,
       );
     const commands = [
       ...(opts?.commands ?? []),
@@ -156,8 +156,8 @@ export function createOperationRegistrars(state: PluginRegistryState) {
     });
   };
 
-  const registerReload = (record: PluginRecord, registration: OpenClawPluginReloadRegistration) => {
-    const normalized: OpenClawPluginReloadRegistration = {
+  const registerReload = (record: PluginRecord, registration: AforaPluginReloadRegistration) => {
+    const normalized: AforaPluginReloadRegistration = {
       restartPrefixes: normalizeStringEntries(registration.restartPrefixes),
       hotPrefixes: normalizeStringEntries(registration.hotPrefixes),
       noopPrefixes: normalizeStringEntries(registration.noopPrefixes),
@@ -193,7 +193,7 @@ export function createOperationRegistrars(state: PluginRegistryState) {
 
   const registerNodeHostCommand = (
     record: PluginRecord,
-    nodeCommand: OpenClawPluginNodeHostCommand,
+    nodeCommand: AforaPluginNodeHostCommand,
   ) => {
     const command = nodeCommand.command.trim();
     if (!command) {
@@ -239,7 +239,7 @@ export function createOperationRegistrars(state: PluginRegistryState) {
 
   const registerNodeInvokePolicy = (
     record: PluginRecord,
-    policy: OpenClawPluginNodeInvokePolicy,
+    policy: AforaPluginNodeInvokePolicy,
     pluginConfig?: Record<string, unknown>,
   ) => {
     const commands = normalizeUniqueStringEntries(
@@ -299,7 +299,7 @@ export function createOperationRegistrars(state: PluginRegistryState) {
 
   const registerSecurityAuditCollector = (
     record: PluginRecord,
-    collector: OpenClawPluginSecurityAuditCollector,
+    collector: AforaPluginSecurityAuditCollector,
   ) => {
     registry.securityAuditCollectors.push({
       pluginId: record.id,
@@ -310,7 +310,7 @@ export function createOperationRegistrars(state: PluginRegistryState) {
     });
   };
 
-  const registerService = (record: PluginRecord, service: OpenClawPluginService) => {
+  const registerService = (record: PluginRecord, service: AforaPluginService) => {
     const id = service.id.trim();
     if (!id) {
       return;
@@ -343,7 +343,7 @@ export function createOperationRegistrars(state: PluginRegistryState) {
 
   const registerGatewayDiscoveryService = (
     record: PluginRecord,
-    service: OpenClawGatewayDiscoveryService,
+    service: AforaGatewayDiscoveryService,
   ) => {
     const id = service.id.trim();
     if (!id) {
@@ -372,7 +372,7 @@ export function createOperationRegistrars(state: PluginRegistryState) {
     });
   };
 
-  const registerCommand = (record: PluginRecord, command: OpenClawPluginCommandDefinition) => {
+  const registerCommand = (record: PluginRecord, command: AforaPluginCommandDefinition) => {
     const name = command.name.trim();
     if (!name) {
       pushDiagnostic({

@@ -30,7 +30,7 @@ describe("generated extension asset lint planning", () => {
 
   it("keeps fallback extension lint for a manifest beside a generated browser asset", () => {
     const generatedAsset = "extensions/canvas/src/host/a2ui/a2ui.bundle.js";
-    const manifest = "extensions/canvas/openclaw.plugin.json";
+    const manifest = "extensions/canvas/afora.plugin.json";
     const result = detectChangedLanes([generatedAsset, manifest]);
     const plan = createChangedCheckPlan(result, { env: { PATH: "/usr/bin" } });
 

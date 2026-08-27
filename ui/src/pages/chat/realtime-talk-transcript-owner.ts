@@ -1,4 +1,4 @@
-import { DEFAULT_GATEWAY_REQUEST_TIMEOUT_MS } from "@openclaw/gateway-client/browser";
+import { DEFAULT_GATEWAY_REQUEST_TIMEOUT_MS } from "@afora/gateway-client/browser";
 import type { BoundedSerialQueue } from "../../../../src/shared/bounded-serial-queue.js";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
 import type { RealtimeTalkTransport } from "./realtime-talk-shared.ts";

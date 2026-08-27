@@ -3,15 +3,15 @@ import { randomUUID } from "node:crypto";
 import {
   resolveDateTimestampMs,
   resolveTimestampMsToIsoString,
-} from "@openclaw/normalization-core/number-coercion";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+} from "@afora/normalization-core/number-coercion";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { listAgentIds } from "../../agents/agent-scope.js";
 import { resolveChannelDefaultAccountId } from "../../channels/plugins/helpers.js";
 import type { CliDeps } from "../../cli/deps.types.js";
 import { getRuntimeConfig } from "../../config/io.js";
 import { canonicalizeMainSessionAlias, resolveAgentMainSessionKey } from "../../config/sessions.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type {
   CronAgentAdmissionDisposition,
   RunCronAgentTurnResult,
@@ -55,7 +55,7 @@ type HookEventTarget = {
 };
 
 function resolveHookEventTarget(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   resolvedAgentId: string;
   sessionKey?: string;
 }): HookEventTarget {
@@ -181,7 +181,7 @@ function createSessionKeyedHookDispatchQueue() {
 }
 
 function validateHookAgentDeliveryAccount(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   value: HookAgentDispatchPayload;
 }): HookAgentDispatchPayload {
   // Mapped hooks can defer partial/last targets to cron and cannot select an account.
@@ -363,7 +363,7 @@ export function createGatewayHooksRequestHandler(params: {
         });
       }
     };
-    let dispatchCfg: OpenClawConfig;
+    let dispatchCfg: AforaConfig;
     try {
       dispatchCfg = getRuntimeConfig();
     } catch (err) {

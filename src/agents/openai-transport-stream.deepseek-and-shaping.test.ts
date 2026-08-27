@@ -1,5 +1,5 @@
-import { SYSTEM_PROMPT_CACHE_BOUNDARY } from "@openclaw/ai/internal/shared";
-import type { Api, Model } from "openclaw/plugin-sdk/llm";
+import { SYSTEM_PROMPT_CACHE_BOUNDARY } from "@afora/ai/internal/shared";
+import type { Api, Model } from "afora-agent/plugin-sdk/llm";
 import { describe, expect, it } from "vitest";
 import {
   buildOpenAIResponsesParams,
@@ -342,8 +342,8 @@ describe("openai transport stream", () => {
         topP: 0.85,
       },
       {
-        openclaw_session_id: "session-123",
-        openclaw_turn_id: "turn-123",
+        afora_session_id: "session-123",
+        afora_turn_id: "turn-123",
       },
     ) as Record<string, unknown> & {
       input?: Array<{ role?: string }>;
@@ -366,12 +366,12 @@ describe("openai transport stream", () => {
     expect(params).not.toHaveProperty("top_p");
   });
 
-  it("keeps Codex response shaping when simple completions use the OpenClaw transport alias", () => {
+  it("keeps Codex response shaping when simple completions use the Afora transport alias", () => {
     const params = buildOpenAIResponsesParams(
       {
         id: "gpt-5.5",
         name: "GPT-5.5",
-        api: "openclaw-openai-chatgpt-responses-transport" as Api,
+        api: "afora-openai-chatgpt-responses-transport" as Api,
         provider: "openai",
         baseUrl: "https://chatgpt.com/backend-api/codex",
         reasoning: true,
@@ -394,8 +394,8 @@ describe("openai transport stream", () => {
         topP: 0.85,
       },
       {
-        openclaw_session_id: "session-123",
-        openclaw_turn_id: "turn-123",
+        afora_session_id: "session-123",
+        afora_turn_id: "turn-123",
       },
     ) as Record<string, unknown> & {
       input?: Array<{ role?: string }>;
@@ -420,7 +420,7 @@ describe("openai transport stream", () => {
       input: [],
       stream: true,
       max_output_tokens: 1024,
-      metadata: { openclaw_session_id: "session-123" },
+      metadata: { afora_session_id: "session-123" },
       prompt_cache_key: "session-123",
       prompt_cache_retention: "24h",
       service_tier: "auto",
@@ -470,16 +470,16 @@ describe("openai transport stream", () => {
         topP: 0.85,
       },
       {
-        openclaw_session_id: "session-123",
-        openclaw_turn_id: "turn-123",
+        afora_session_id: "session-123",
+        afora_turn_id: "turn-123",
       },
     ) as Record<string, unknown>;
 
     expect(params.instructions).toBe("Stable prefix\nDynamic suffix");
     expect(params.prompt_cache_key).toBe("session-123");
     expect(params.metadata).toEqual({
-      openclaw_session_id: "session-123",
-      openclaw_turn_id: "turn-123",
+      afora_session_id: "session-123",
+      afora_turn_id: "turn-123",
     });
     expect(params.max_output_tokens).toBe(1024);
     expect(params.temperature).toBe(0.2);
@@ -530,7 +530,7 @@ describe("openai transport stream", () => {
       input: [],
       stream: true,
       max_output_tokens: 1024,
-      metadata: { openclaw_session_id: "session-123" },
+      metadata: { afora_session_id: "session-123" },
       prompt_cache_key: "session-123",
       prompt_cache_retention: "24h",
       service_tier: "auto",

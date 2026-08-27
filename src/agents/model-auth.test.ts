@@ -1,6 +1,6 @@
 // Verifies provider auth resolution, synthetic auth, and auth header behavior.
 import { fileURLToPath } from "node:url";
-import type { Model } from "openclaw/plugin-sdk/llm";
+import type { Model } from "afora-agent/plugin-sdk/llm";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ModelProviderConfig } from "../config/config.js";
 import { resolveAuthProfileSecretOwnerId } from "../secrets/runtime-auth-profile-owner.js";
@@ -27,7 +27,7 @@ vi.mock("../plugins/plugin-registry.js", () => ({
           {
             pluginId: "ollama",
             manifestPath: fileURLToPath(
-              new URL("../../extensions/ollama/openclaw.plugin.json", import.meta.url),
+              new URL("../../extensions/ollama/afora.plugin.json", import.meta.url),
             ),
             manifestHash: "ollama-model-auth-fixture",
             rootDir,
@@ -60,7 +60,7 @@ vi.mock("../plugins/plugin-registry.js", () => ({
 }));
 
 vi.mock("../plugins/manifest-metadata-scan.js", () => ({
-  listOpenClawPluginManifestMetadata: () => [
+  listAforaPluginManifestMetadata: () => [
     {
       pluginDir: "/bundled/anthropic-vertex",
       origin: "bundled",
@@ -973,7 +973,7 @@ describe("resolveApiKeyForProviderCore", () => {
   });
 
   it("keeps a failed profile ref terminal without cooling an unrelated profile", async () => {
-    const agentDir = "/tmp/openclaw-agent-profile-isolation";
+    const agentDir = "/tmp/afora-agent-profile-isolation";
     const coldProfileId = "openai:cold";
     const healthyProfileId = "anthropic:healthy";
     const store = {
@@ -1063,7 +1063,7 @@ describe("resolveApiKeyForProviderCore", () => {
 
   it("sentinelizes credentials resolved from auth-profile SecretRefs", async () => {
     const profileId = "openai:secretref";
-    const agentDir = "/tmp/openclaw-agent-secretref-sentinel";
+    const agentDir = "/tmp/afora-agent-secretref-sentinel";
     const store = {
       version: 1 as const,
       profiles: {
@@ -1103,7 +1103,7 @@ describe("resolveApiKeyForProviderCore", () => {
 
   it("keeps SecretRef profile credentials request-ready outside model sentinel mode", async () => {
     const profileId = "openai:non-model";
-    const agentDir = "/tmp/openclaw-agent-secretref-plain";
+    const agentDir = "/tmp/afora-agent-secretref-plain";
     const store = {
       version: 1 as const,
       profiles: {
@@ -1642,7 +1642,7 @@ describe("resolveApiKeyForProviderCore", () => {
 
   it("preserves token mode for an env-backed provider SecretRef", async () => {
     await withEnv(
-      "OPENCLAW_TEST_PROVIDER_SUBSCRIPTION_TOKEN",
+      "AFORA_TEST_PROVIDER_SUBSCRIPTION_TOKEN",
       "env-subscription-credential",
       async () => {
         const resolved = await getApiKeyForModelCore({
@@ -1659,7 +1659,7 @@ describe("resolveApiKeyForProviderCore", () => {
                   apiKey: {
                     source: "env",
                     provider: "default",
-                    id: "OPENCLAW_TEST_PROVIDER_SUBSCRIPTION_TOKEN",
+                    id: "AFORA_TEST_PROVIDER_SUBSCRIPTION_TOKEN",
                   },
                   baseUrl: "https://subscription.example/v1",
                   models: [],
@@ -1674,7 +1674,7 @@ describe("resolveApiKeyForProviderCore", () => {
           apiKey: "env-subscription-credential",
           mode: "token",
         });
-        expect(resolved.source).toContain("OPENCLAW_TEST_PROVIDER_SUBSCRIPTION_TOKEN");
+        expect(resolved.source).toContain("AFORA_TEST_PROVIDER_SUBSCRIPTION_TOKEN");
       },
     );
   });

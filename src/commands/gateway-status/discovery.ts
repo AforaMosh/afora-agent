@@ -1,5 +1,5 @@
 /** Discovery helpers for turning gateway remote URLs and Bonjour beacons into SSH targets. */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import type { GatewayBonjourBeacon } from "../../infra/bonjour-discovery.js";
 import {
   buildGatewayDiscoveryTarget,

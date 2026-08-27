@@ -1,4 +1,4 @@
-// Shared test-only support for packed @openclaw/sdk consumers.
+// Shared test-only support for packed @afora/sdk consumers.
 import { spawn, spawnSync, type SpawnOptionsWithoutStdio } from "node:child_process";
 import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
@@ -188,7 +188,7 @@ function runNpmCommand(
 }
 
 function resolveWorkspacePackageRoot(repoRoot: string, packageName: string): string {
-  const prefix = "@openclaw/";
+  const prefix = "@afora/";
   if (!packageName.startsWith(prefix)) {
     throw new Error(`unsupported workspace package name: ${packageName}`);
   }
@@ -211,7 +211,7 @@ async function normalizeWorkspaceDependencies(
   const normalized: Record<string, string> = {};
   for (const [name, spec] of Object.entries(dependencies)) {
     normalized[name] =
-      name.startsWith("@openclaw/") && spec.startsWith("workspace:")
+      name.startsWith("@afora/") && spec.startsWith("workspace:")
         ? (await readRawPackageManifest(resolveWorkspacePackageRoot(repoRoot, name))).version
         : spec;
   }
@@ -291,7 +291,7 @@ function closeServer(server: Server): Promise<void> {
   });
 }
 
-async function startOpenClawRegistry(packages: PackedPackage[]): Promise<{
+async function startAforaRegistry(packages: PackedPackage[]): Promise<{
   registryUrl: string;
   close: () => Promise<void>;
 }> {
@@ -356,7 +356,7 @@ export async function createPackedSdkConsumer(): Promise<PackedSdkConsumer> {
     repoRoot,
     entryRoot: path.join(repoRoot, "packages", "sdk"),
   });
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-sdk-consumer-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-sdk-consumer-"));
   try {
     const packedPackages: PackedPackage[] = [];
     const buildLockTarget = path.join(repoRoot, ".artifacts", "sdk-package-e2e-build");
@@ -385,16 +385,16 @@ export async function createPackedSdkConsumer(): Promise<PackedSdkConsumer> {
       }
     });
     const sdkTarball =
-      packedPackages.find((pkg) => pkg.manifest.name === "@openclaw/sdk")?.tarball ?? "";
+      packedPackages.find((pkg) => pkg.manifest.name === "@afora/sdk")?.tarball ?? "";
     if (!sdkTarball) {
-      throw new Error("packed @openclaw/sdk tarball was not created");
+      throw new Error("packed @afora/sdk tarball was not created");
     }
-    const registry = await startOpenClawRegistry(packedPackages);
+    const registry = await startAforaRegistry(packedPackages);
     await fs.writeFile(
       path.join(root, "package.json"),
       JSON.stringify({ private: true, type: "module" }),
     );
-    await fs.writeFile(path.join(root, ".npmrc"), `@openclaw:registry=${registry.registryUrl}`);
+    await fs.writeFile(path.join(root, ".npmrc"), `@afora:registry=${registry.registryUrl}`);
     try {
       await runNpmCommand(["install", "--ignore-scripts", "--no-audit", "--no-fund", sdkTarball], {
         cwd: root,

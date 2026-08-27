@@ -1,7 +1,7 @@
 import {
   readSystemAgentSessionInvalidatedErrorDetails,
   type SystemAgentChatParams,
-} from "@openclaw/gateway-protocol";
+} from "@afora/gateway-protocol";
 import { inferBasePathFromPathname, routeIdFromPath } from "../../app-route-paths.ts";
 
 export type CustodianSessionVariant = "onboarding" | "new-agent" | "caretaker";

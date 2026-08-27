@@ -241,9 +241,9 @@ describe("matrixMessageActions account propagation", () => {
 
   it("forwards mediaLocalRoots for media sends", async () => {
     const mediaAccess = {
-      localRoots: ["/tmp/openclaw-matrix-test"],
+      localRoots: ["/tmp/afora-matrix-test"],
       readFile: async () => Buffer.from("chart"),
-      workspaceDir: "/tmp/openclaw-matrix-test",
+      workspaceDir: "/tmp/afora-matrix-test",
     };
     await matrixMessageActions.handleAction?.(
       createContext({
@@ -265,7 +265,7 @@ describe("matrixMessageActions account propagation", () => {
     expect(call.input.mediaUrl).toBe("chart.png");
     expect(call.cfg).toBeTypeOf("object");
     expect(call.options.mediaAccess).toBe(mediaAccess);
-    expect(call.options).toMatchObject({ mediaLocalRoots: ["/tmp/openclaw-matrix-test"] });
+    expect(call.options).toMatchObject({ mediaLocalRoots: ["/tmp/afora-matrix-test"] });
   });
 
   it("allows media-only sends without requiring a message body", async () => {

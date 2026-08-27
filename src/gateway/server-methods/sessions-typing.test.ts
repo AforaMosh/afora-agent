@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { upsertSessionEntryCore } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
-import { closeOpenClawAgentDatabasesForTest } from "../../state/openclaw-agent-db.js";
-import { withOpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+import type { AforaConfig } from "../../config/types.afora.js";
+import { closeAforaAgentDatabasesForTest } from "../../state/afora-agent-db.js";
+import { withAforaTestState } from "../../test-utils/afora-test-state.js";
 import { sessionSuggestionHandlers } from "./sessions-suggestions.js";
 import type { GatewayClient, GatewayRequestContext, RespondFn } from "./types.js";
 
@@ -24,7 +24,7 @@ function client(profileId: string, connId: string): GatewayClient {
       minProtocol: 1,
       maxProtocol: 1,
       client: {
-        id: "openclaw-control-ui",
+        id: "afora-control-ui",
         version: "test",
         platform: "test",
         mode: "webchat",
@@ -43,7 +43,7 @@ function client(profileId: string, connId: string): GatewayClient {
   };
 }
 
-function context(broadcast = vi.fn(), cfg: OpenClawConfig = {}): GatewayRequestContext {
+function context(broadcast = vi.fn(), cfg: AforaConfig = {}): GatewayRequestContext {
   return {
     getRuntimeConfig: () => cfg,
     broadcast,
@@ -86,7 +86,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
 });
 
 describe("session typing handler", () => {
@@ -94,10 +94,10 @@ describe("session typing handler", () => {
     { agentId: "main", expected: ["agent:main:global"] },
     { agentId: "work", expected: ["agent:work:global"] },
   ])("uses the canonical global subscription keys for $agentId", async ({ agentId, expected }) => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       const cfg = {
         agents: { list: [{ id: "main" }, { id: "work" }] },
-      } satisfies OpenClawConfig;
+      } satisfies AforaConfig;
       await upsertSessionEntryCore(
         { agentId, sessionKey: "global" },
         {
@@ -132,7 +132,7 @@ describe("session typing handler", () => {
   });
 
   it("keeps an identity typing until its last active connection stops", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       vi.useFakeTimers();
       vi.setSystemTime(10_000);
       const sessionKey = "agent:main:main";
@@ -180,7 +180,7 @@ describe("session typing handler", () => {
   });
 
   it("does not carry active connections across a session replacement", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       vi.useFakeTimers();
       vi.setSystemTime(15_000);
       const sessionKey = "agent:main:typing-instance";
@@ -253,7 +253,7 @@ describe("session typing handler", () => {
   });
 
   it("drops a delayed refresh after the session is replaced", async () => {
-    await withOpenClawTestState({ scenario: "minimal" }, async () => {
+    await withAforaTestState({ scenario: "minimal" }, async () => {
       vi.useFakeTimers();
       vi.setSystemTime(20_000);
       const sessionKey = "agent:main:typing-reset";

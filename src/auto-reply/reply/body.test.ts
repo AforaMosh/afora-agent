@@ -8,7 +8,7 @@ import type { SessionEntry } from "../../config/sessions/types.js";
 import { applySessionHints } from "./body.js";
 
 async function withTempStore<T>(run: (storePath: string) => Promise<T>): Promise<T> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-session-hints-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-session-hints-"));
   try {
     return await run(path.join(dir, "sessions.json"));
   } finally {

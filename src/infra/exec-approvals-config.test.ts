@@ -1,7 +1,7 @@
 // Covers exec approval config normalization and safe-bin policy.
 import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { tryParsePersistedExecApprovals } from "./exec-approvals-config.js";
 import { makeExecApprovalsTempDir } from "./exec-approvals-test-helpers.js";
 import {
@@ -33,10 +33,10 @@ describe.sequential("exec approval temp fixture cleanup", () => {
 describe("exec approvals wildcard agent", () => {
   it("merges wildcard allowlist entries with agent entries", () => {
     const dir = makeExecApprovalsTempDir();
-    const prevOpenClawHome = process.env.OPENCLAW_HOME;
+    const prevAforaHome = process.env.AFORA_HOME;
 
     try {
-      process.env.OPENCLAW_HOME = dir;
+      process.env.AFORA_HOME = dir;
       saveExecApprovals({
         version: 1,
         agents: {
@@ -51,11 +51,11 @@ describe("exec approvals wildcard agent", () => {
         "/usr/bin/uname",
       ]);
     } finally {
-      closeOpenClawStateDatabaseForTest();
-      if (prevOpenClawHome === undefined) {
-        delete process.env.OPENCLAW_HOME;
+      closeAforaStateDatabaseForTest();
+      if (prevAforaHome === undefined) {
+        delete process.env.AFORA_HOME;
       } else {
-        process.env.OPENCLAW_HOME = prevOpenClawHome;
+        process.env.AFORA_HOME = prevAforaHome;
       }
     }
   });

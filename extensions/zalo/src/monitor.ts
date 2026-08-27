@@ -1,41 +1,41 @@
 // Zalo plugin module implements monitor behavior.
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { logTypingFailure } from "openclaw/plugin-sdk/channel-feedback";
+import { logTypingFailure } from "afora-agent/plugin-sdk/channel-feedback";
 import {
   createChannelPartialDeliveryError,
   formatInboundMediaUnavailableText,
   resolveChannelInboundRouteEnvelope,
   type ChannelInboundMediaInput,
-} from "openclaw/plugin-sdk/channel-inbound";
+} from "afora-agent/plugin-sdk/channel-inbound";
 import {
   resolveStableChannelMessageIngress,
   type ChannelIngressContextBinding,
   type ResolvedChannelMessageIngress,
-} from "openclaw/plugin-sdk/channel-ingress-runtime";
-import { createMessageReceiptFromOutboundResults } from "openclaw/plugin-sdk/channel-outbound";
-import { createChannelPairingController } from "openclaw/plugin-sdk/channel-pairing";
-import type { MarkdownTableMode, OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { channelReadyPatch } from "openclaw/plugin-sdk/gateway-runtime";
+} from "afora-agent/plugin-sdk/channel-ingress-runtime";
+import { createMessageReceiptFromOutboundResults } from "afora-agent/plugin-sdk/channel-outbound";
+import { createChannelPairingController } from "afora-agent/plugin-sdk/channel-pairing";
+import type { MarkdownTableMode, AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { channelReadyPatch } from "afora-agent/plugin-sdk/gateway-runtime";
 import {
   createLazyRuntimeModule,
   createLazyRuntimeNamedExport,
-} from "openclaw/plugin-sdk/lazy-runtime";
+} from "afora-agent/plugin-sdk/lazy-runtime";
 import {
   deliverTextOrMediaReply,
   resolveSendableOutboundReplyParts,
   type OutboundReplyPayload,
-} from "openclaw/plugin-sdk/reply-payload";
-import { sleepWithAbort, waitForAbortSignal } from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/reply-payload";
+import { sleepWithAbort, waitForAbortSignal } from "afora-agent/plugin-sdk/runtime-env";
 import {
   resolveDefaultGroupPolicy,
   warnMissingProviderGroupPolicyFallbackOnce,
-} from "openclaw/plugin-sdk/runtime-group-policy";
-import { normalizeStringEntries } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/runtime-group-policy";
+import { normalizeStringEntries } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   canonicalizeWebhookRouteKey,
   registerPluginHttpRoute,
   resolveWebhookPath,
-} from "openclaw/plugin-sdk/webhook-ingress";
+} from "afora-agent/plugin-sdk/webhook-ingress";
 import type { ResolvedZaloAccount } from "./accounts.js";
 import {
   ZaloApiError,
@@ -73,7 +73,7 @@ const ZALO_MEDIA_RESPONSE_HEADER_TIMEOUT_MS = 120_000;
 type ZaloMonitorOptions = {
   token: string;
   account: ResolvedZaloAccount;
-  config: OpenClawConfig;
+  config: AforaConfig;
   runtime: ZaloRuntimeEnv;
   abortSignal: AbortSignal;
   useWebhook?: boolean;
@@ -103,7 +103,7 @@ type ZaloStatusSink = (patch: {
 type ZaloProcessingContext = {
   token: string;
   account: ResolvedZaloAccount;
-  config: OpenClawConfig;
+  config: AforaConfig;
   runtime: ZaloRuntimeEnv;
   core: ZaloCoreRuntime;
   mediaMaxMb: number;
@@ -797,7 +797,7 @@ async function deliverZaloReply(params: {
   token: string;
   chatId: string;
   core: ZaloCoreRuntime;
-  config: OpenClawConfig;
+  config: AforaConfig;
   webhookUrl?: string;
   webhookPath?: string;
   proxyUrl?: string;

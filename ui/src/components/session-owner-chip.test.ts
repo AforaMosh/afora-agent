@@ -19,7 +19,7 @@ afterEach(() => {
 
 async function mount(params: { participants?: SessionCreatedActor[]; participantCount?: number }) {
   // SAFETY: the imported module registers this custom element with these reactive properties.
-  const chip = document.createElement("openclaw-session-owner-chip") as OwnerChipElement;
+  const chip = document.createElement("afora-session-owner-chip") as OwnerChipElement;
   chip.createdActor = { type: "human", id: "profile-ada", label: "Ada" };
   chip.attribution = "owned";
   chip.size = "row";

@@ -118,7 +118,7 @@ describe("reset boundary planning", () => {
   });
 
   it("seeds only the bounded replay tail from a legacy transcript", async () => {
-    await withTestDir({ prefix: "openclaw-reset-boundary-" }, async (dir) => {
+    await withTestDir({ prefix: "afora-reset-boundary-" }, async (dir) => {
       const sessionFile = path.join(dir, "legacy.jsonl");
       const records = Array.from({ length: 20 }, (_, index) =>
         message({
@@ -157,7 +157,7 @@ describe("reset boundary planning", () => {
   });
 
   it("respects legacy reset cuts and reparents the selected tail", async () => {
-    await withTestDir({ prefix: "openclaw-reset-boundary-" }, async (dir) => {
+    await withTestDir({ prefix: "afora-reset-boundary-" }, async (dir) => {
       const sessionFile = path.join(dir, "legacy-reset.jsonl");
       const oldUser = message({
         id: "legacy-old-user",

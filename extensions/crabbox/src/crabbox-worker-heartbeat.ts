@@ -1,4 +1,4 @@
-import type { SpawnResult } from "openclaw/plugin-sdk/process-runtime";
+import type { SpawnResult } from "afora-agent/plugin-sdk/process-runtime";
 import { crabboxCommandError } from "./crabbox-worker-command-error.js";
 
 const CRABBOX_HEARTBEAT_UPGRADE =

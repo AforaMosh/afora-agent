@@ -1,6 +1,6 @@
-import { createChannelConfigUiHints } from "openclaw/plugin-sdk/channel-core";
+import { createChannelConfigUiHints } from "afora-agent/plugin-sdk/channel-core";
 // Matrix helper module supports config ui hints behavior.
-import type { ChannelConfigUiHint } from "openclaw/plugin-sdk/channel-core";
+import type { ChannelConfigUiHint } from "afora-agent/plugin-sdk/channel-core";
 
 export const matrixChannelConfigUiHints = {
   ...createChannelConfigUiHints({

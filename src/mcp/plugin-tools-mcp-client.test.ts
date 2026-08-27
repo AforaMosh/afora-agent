@@ -2,7 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { describe, expect, it, vi } from "vitest";
 import type { AnyAgentTool } from "../agents/tools/common.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { createPluginToolsMcpServer } from "./plugin-tools-serve.js";
 
 describe("plugin tools MCP client bridge", () => {
@@ -25,7 +25,7 @@ describe("plugin tools MCP client bridge", () => {
     } as unknown as AnyAgentTool;
 
     const server = createPluginToolsMcpServer({
-      config: { plugins: { enabled: true } } as OpenClawConfig,
+      config: { plugins: { enabled: true } } as AforaConfig,
       tools: [tool],
     });
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();

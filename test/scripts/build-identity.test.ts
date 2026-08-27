@@ -37,14 +37,14 @@ describe("resolveBuildIdentityEnvironment", () => {
         commitLabel: "runtime pack commit",
         env: {
           GITHUB_SHA: "e".repeat(40),
-          OPENCLAW_BUILD_TIMESTAMP: " 2026-07-10T01:02:03.000Z ",
+          AFORA_BUILD_TIMESTAMP: " 2026-07-10T01:02:03.000Z ",
         },
         now: () => new Date("2026-07-11T12:34:56.000Z"),
         readGitCommit: () => null,
       }),
     ).toMatchObject({
       GIT_COMMIT: "e".repeat(40),
-      OPENCLAW_BUILD_TIMESTAMP: "2026-07-10T01:02:03.000Z",
+      AFORA_BUILD_TIMESTAMP: "2026-07-10T01:02:03.000Z",
     });
   });
 

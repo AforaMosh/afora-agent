@@ -1,6 +1,6 @@
 import { resolveAgentEntry } from "../../agents/agent-scope-config.js";
 // Agent skill filter helpers select skills that apply to a configured agent.
-import type { OpenClawConfig } from "../../config/types.js";
+import type { AforaConfig } from "../../config/types.js";
 import { normalizeSkillFilter } from "./filter.js";
 
 type AgentSkillsLimits = {
@@ -12,7 +12,7 @@ type AgentSkillsLimits = {
  * Unknown agent ids also fall back to defaults so legacy/unresolved callers do not widen access.
  */
 export function resolveEffectiveAgentSkillFilter(
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
   agentId: string | undefined,
 ): string[] | undefined {
   if (!cfg) {
@@ -26,7 +26,7 @@ export function resolveEffectiveAgentSkillFilter(
 }
 
 export function resolveEffectiveAgentSkillsLimits(
-  cfg: OpenClawConfig | undefined,
+  cfg: AforaConfig | undefined,
   agentId: string | undefined,
 ): AgentSkillsLimits | undefined {
   if (!cfg || !agentId) {

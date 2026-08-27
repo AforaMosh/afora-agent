@@ -1,18 +1,18 @@
 // Channel plugin helper tests cover shared plugin helper behavior and edge cases.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import {
   buildAccountScopedDmSecurityPolicy,
   formatPairingApproveHint,
   parseOptionalDelimitedEntries,
 } from "./helpers.js";
 
-function cfgWithChannel(channelKey: string, accounts?: Record<string, unknown>): OpenClawConfig {
+function cfgWithChannel(channelKey: string, accounts?: Record<string, unknown>): AforaConfig {
   return {
     channels: {
       [channelKey]: accounts ? { accounts } : {},
     },
-  } as unknown as OpenClawConfig;
+  } as unknown as AforaConfig;
 }
 
 describe("buildAccountScopedDmSecurityPolicy", () => {
@@ -119,7 +119,7 @@ describe("buildAccountScopedDmSecurityPolicy", () => {
               },
             },
           },
-        } as unknown as OpenClawConfig,
+        } as unknown as AforaConfig,
         channelKey: "demo-root",
         accountId: "work",
         fallbackAccountId: "default",
@@ -145,14 +145,14 @@ describe("buildAccountScopedDmSecurityPolicy", () => {
         allowFrom: ["user-1"],
         defaultPolicy: "allowlist",
         policyPathSuffix: "dmPolicy",
-        approveHint: "openclaw pairing approve demo-default <code>",
+        approveHint: "afora pairing approve demo-default <code>",
       },
       expected: {
         policy: "allowlist",
         allowFrom: ["user-1"],
         policyPath: "channels.demo-default.dmPolicy",
         allowFromPath: "channels.demo-default.",
-        approveHint: "openclaw pairing approve demo-default <code>",
+        approveHint: "afora pairing approve demo-default <code>",
         normalizeEntry: undefined,
       },
     },

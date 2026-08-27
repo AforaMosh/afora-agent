@@ -1,5 +1,5 @@
-import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";
-import { createCrabboxWorkerProvider, resolveOpenClawRoot } from "./src/crabbox-worker-provider.js";
+import { definePluginEntry } from "afora-agent/plugin-sdk/plugin-entry";
+import { createCrabboxWorkerProvider, resolveAforaRoot } from "./src/crabbox-worker-provider.js";
 
 export default definePluginEntry({
   id: "crabbox",
@@ -8,7 +8,7 @@ export default definePluginEntry({
   register(api) {
     api.registerWorkerProvider(
       createCrabboxWorkerProvider({
-        openclawRoot: resolveOpenClawRoot(api.rootDir),
+        aforaRoot: resolveAforaRoot(api.rootDir),
         warn: (message) => api.logger.warn(message),
       }),
     );

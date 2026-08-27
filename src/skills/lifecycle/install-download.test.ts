@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawTestState } from "../../test-utils/openclaw-test-state.js";
+import type { AforaTestState } from "../../test-utils/afora-test-state.js";
 import { resolveSkillToolsRootDir } from "../runtime/tools-dir.js";
 import { createInstallDownloadTestState } from "../test-support/install-download-test-utils.js";
 import {
@@ -45,7 +45,7 @@ function buildEntry(name: string): SkillEntry {
       description: `${name} test skill`,
       filePath,
       baseDir: skillDir,
-      source: "openclaw-workspace",
+      source: "afora-workspace",
     }),
     frontmatter: {},
   };
@@ -144,7 +144,7 @@ function mockTarExtractionFlow(params: {
 }
 
 let workspaceDir = "";
-let testState: OpenClawTestState | undefined;
+let testState: AforaTestState | undefined;
 beforeAll(async () => {
   testState = await createInstallDownloadTestState();
   workspaceDir = testState.workspaceDir;

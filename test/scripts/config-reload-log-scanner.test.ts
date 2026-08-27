@@ -9,7 +9,7 @@ const tempRoots = useAutoCleanupTempDirTracker(afterEach);
 
 describe("config reload log scanner", () => {
   it("keeps previous matches while reading only appended log lines", () => {
-    const logPath = path.join(tempRoots.make("openclaw-config-reload-log-"), "gateway.log");
+    const logPath = path.join(tempRoots.make("afora-config-reload-log-"), "gateway.log");
     const scanner = createConfigReloadLogScanner(logPath, {
       maxReadBytes: 1024,
       tailLineLimit: 4,
@@ -36,7 +36,7 @@ describe("config reload log scanner", () => {
   });
 
   it("preserves partial lines between polls", () => {
-    const logPath = path.join(tempRoots.make("openclaw-config-reload-log-"), "gateway.log");
+    const logPath = path.join(tempRoots.make("afora-config-reload-log-"), "gateway.log");
     const scanner = createConfigReloadLogScanner(logPath, {
       maxReadBytes: 1024,
       tailLineLimit: 4,
@@ -52,7 +52,7 @@ describe("config reload log scanner", () => {
   });
 
   it("starts from a bounded tail of oversized logs", () => {
-    const logPath = path.join(tempRoots.make("openclaw-config-reload-log-"), "gateway.log");
+    const logPath = path.join(tempRoots.make("afora-config-reload-log-"), "gateway.log");
     const reloadLine = "config change detected; evaluating reload: ui.seamColor\n";
     writeFileSync(logPath, `${"x".repeat(4096)}\n${reloadLine}`);
 
@@ -67,7 +67,7 @@ describe("config reload log scanner", () => {
   });
 
   it("resets accumulated matches when the log rotates", () => {
-    const logPath = path.join(tempRoots.make("openclaw-config-reload-log-"), "gateway.log");
+    const logPath = path.join(tempRoots.make("afora-config-reload-log-"), "gateway.log");
     const scanner = createConfigReloadLogScanner(logPath, {
       maxReadBytes: 1024,
       tailLineLimit: 4,
@@ -85,7 +85,7 @@ describe("config reload log scanner", () => {
   });
 
   it("resets accumulated matches when a rotated log keeps the same size", () => {
-    const logPath = path.join(tempRoots.make("openclaw-config-reload-log-"), "gateway.log");
+    const logPath = path.join(tempRoots.make("afora-config-reload-log-"), "gateway.log");
     const scanner = createConfigReloadLogScanner(logPath, {
       maxReadBytes: 1024,
       tailLineLimit: 4,

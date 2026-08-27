@@ -1,6 +1,6 @@
 // Tests runtime-loaded fast-path command behavior for get-reply.
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import {
   createReplyRuntimeMocks,
   createTempHomeHarness,
@@ -13,14 +13,14 @@ import { loadGetReplyModuleForTest } from "./get-reply.test-loader.js";
 
 let getReplyFromConfig: typeof import("./get-reply.js").getReplyFromConfig;
 const agentMocks = createReplyRuntimeMocks();
-const { withTempHome } = createTempHomeHarness({ prefix: "openclaw-getreply-fast-" });
+const { withTempHome } = createTempHomeHarness({ prefix: "afora-getreply-fast-" });
 
 installReplyRuntimeMocks(agentMocks);
 
 describe("getReplyFromConfig fast-path runtime", () => {
   beforeAll(async () => {
     ({ getReplyFromConfig } = await loadGetReplyModuleForTest({ cacheKey: import.meta.url }));
-    vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+    vi.stubEnv("AFORA_TEST_FAST", "1");
     resetReplyRuntimeMocks(agentMocks);
     agentMocks.runEmbeddedAgent.mockResolvedValue(makeEmbeddedTextResult("warm runtime"));
     await withTempHome(async (home) => {
@@ -38,14 +38,14 @@ describe("getReplyFromConfig fast-path runtime", () => {
           ChatType: "direct",
         },
         {},
-        makeReplyConfig(home) as OpenClawConfig,
+        makeReplyConfig(home) as AforaConfig,
       );
     });
     vi.unstubAllEnvs();
   });
 
   beforeEach(async () => {
-    vi.stubEnv("OPENCLAW_TEST_FAST", "1");
+    vi.stubEnv("AFORA_TEST_FAST", "1");
     resetReplyRuntimeMocks(agentMocks);
   });
 
@@ -80,7 +80,7 @@ describe("getReplyFromConfig fast-path runtime", () => {
           ChatType: "direct",
         },
         {},
-        makeReplyConfig(home) as OpenClawConfig,
+        makeReplyConfig(home) as AforaConfig,
       );
 
       const text = Array.isArray(res) ? res[0]?.text : res?.text;
@@ -112,7 +112,7 @@ describe("getReplyFromConfig fast-path runtime", () => {
           ChatType: "direct",
         },
         {},
-        makeReplyConfig(home) as OpenClawConfig,
+        makeReplyConfig(home) as AforaConfig,
       );
 
       expect(agentMocks.runEmbeddedAgent).toHaveBeenCalledWith(
@@ -146,7 +146,7 @@ describe("getReplyFromConfig fast-path runtime", () => {
           ChatType: "direct",
         },
         {},
-        makeReplyConfig(home) as OpenClawConfig,
+        makeReplyConfig(home) as AforaConfig,
       );
 
       expect(agentMocks.runEmbeddedAgent).toHaveBeenCalledWith(

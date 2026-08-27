@@ -68,13 +68,13 @@ export function renderAgentScopeControl(params: AgentScopeControlParams) {
   return html`
     <div class="agent-scope-control">
       <span class="agent-scope-control__label">${t("agentScope.label")}</span>
-      <openclaw-agent-select
+      <afora-agent-select
         .options=${options}
         .value=${selected}
         .accessibleLabel=${t("agentScope.label")}
         .onSelect=${(value: string) =>
           allowAll ? params.selection.setScope(value || null) : params.selection.set(value || null)}
-      ></openclaw-agent-select>
+      ></afora-agent-select>
     </div>
   `;
 }

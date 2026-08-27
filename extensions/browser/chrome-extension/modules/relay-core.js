@@ -1,19 +1,19 @@
-// Pure helpers for the OpenClaw extension: pairing-string parsing, reconnect
+// Pure helpers for the Afora extension: pairing-string parsing, reconnect
 // backoff, and Chrome tab-group color mapping. No chrome.* usage here so the
 // repo's vitest suite can exercise the logic directly.
 
 /** Tab group shown to the user; an ACL in selected mode and an ownership marker in all mode. */
-export const OPENCLAW_TAB_GROUP_TITLE = "OpenClaw";
+export const AFORA_TAB_GROUP_TITLE = "Afora";
 export const ACCESS_MODE_ALL = "all";
 export const ACCESS_MODE_SELECTED = "selected";
-const EXTENSION_RELAY_PROTOCOL = "openclaw-extension-relay.v2";
+const EXTENSION_RELAY_PROTOCOL = "afora-extension-relay.v2";
 const RELAY_SECRET_PATTERN = /^[0-9a-f]{64}$/;
 const PAIRING_STORAGE_KEYS = ["relayUrl", "gatewayUrl", "token", "authVersion"];
 const ACCESS_MODE_KEY = "accessMode";
 const PAIRING_STATUS_KEY = "pairingStatus";
 const UNSUPPORTED_PROXY_PREFIX_STATUS = "proxy-prefix-unsupported";
 const UNSUPPORTED_PROXY_PREFIX_HINT =
-  "Stored proxy-prefixed browser relay pairing is no longer supported. Re-run `openclaw browser extension pair` with a Gateway URL that has no path prefix.";
+  "Stored proxy-prefixed browser relay pairing is no longer supported. Re-run `afora browser extension pair` with a Gateway URL that has no path prefix.";
 
 const CHROME_GROUP_COLORS = {
   grey: [128, 128, 128],
@@ -154,7 +154,7 @@ function validatePairingFields(relayUrl, token, gatewayUrl) {
 }
 
 /**
- * Parse a pairing string printed by `openclaw browser extension pair`.
+ * Parse a pairing string printed by `afora browser extension pair`.
  * Native local and direct-remote pairings use the Gateway route; local manual,
  * browser-node, and legacy local pairings use the host relay route.
  * The additive gateway hint is not a credential; old extensions safely pass

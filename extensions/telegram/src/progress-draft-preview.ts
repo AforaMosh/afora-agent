@@ -1,5 +1,5 @@
 // Telegram progress-draft formatting and HTML preview rendering.
-import type { ChannelProgressDraftCompositorLine } from "openclaw/plugin-sdk/channel-outbound";
+import type { ChannelProgressDraftCompositorLine } from "afora-agent/plugin-sdk/channel-outbound";
 import type { TelegramDraftPreview } from "./draft-stream.js";
 import { renderTelegramHtmlText } from "./format.js";
 import {

@@ -70,7 +70,7 @@ describe("plugin management uninstall channel ownership", () => {
     "preserves manifest channel ownership when uninstalling $label",
     async ({ enabled, channelIds }) => {
       const pluginId = "custom-plugin";
-      const installPath = "/tmp/openclaw-managed-linked-custom-plugin";
+      const installPath = "/tmp/afora-managed-linked-custom-plugin";
       const installRecord = { source: "path", sourcePath: installPath, installPath } as const;
       const channels = {
         [pluginId]: { enabled: true },
@@ -82,11 +82,11 @@ describe("plugin management uninstall channel ownership", () => {
         snapshot: {
           valid: true,
           parsed: {},
-          path: "/tmp/openclaw.json",
+          path: "/tmp/afora.json",
           sourceConfig: { plugins: { entries: { [pluginId]: { enabled } } }, channels },
           hash: "base-hash",
         },
-        writeOptions: { expectedConfigPath: "/tmp/openclaw.json" },
+        writeOptions: { expectedConfigPath: "/tmp/afora.json" },
       });
       mocks.installRecords.mockResolvedValue({ [pluginId]: installRecord });
       const manifest = recordPluginManifestInstallOwner(
@@ -138,17 +138,17 @@ describe("plugin management uninstall channel ownership", () => {
 
   it("fails closed when an owner record has no authoritative child metadata", async () => {
     const pluginId = "custom-plugin";
-    const installPath = "/tmp/openclaw-managed-missing-children";
+    const installPath = "/tmp/afora-managed-missing-children";
     const installRecord = { source: "path", sourcePath: installPath, installPath } as const;
     mocks.readConfig.mockResolvedValue({
       snapshot: {
         valid: true,
         parsed: {},
-        path: "/tmp/openclaw.json",
+        path: "/tmp/afora.json",
         sourceConfig: { plugins: { entries: { [pluginId]: { enabled: true } } } },
         hash: "base-hash",
       },
-      writeOptions: { expectedConfigPath: "/tmp/openclaw.json" },
+      writeOptions: { expectedConfigPath: "/tmp/afora.json" },
     });
     mocks.installRecords.mockResolvedValue({ [pluginId]: installRecord });
     mocks.metadata.mockReturnValue({
@@ -167,13 +167,13 @@ describe("plugin management uninstall channel ownership", () => {
   });
 
   it("resolves a child request to one package owner and removes every sibling policy", async () => {
-    const installPath = "/tmp/openclaw-managed-linked-pack";
+    const installPath = "/tmp/afora-managed-linked-pack";
     const installRecord = { source: "path", sourcePath: installPath, installPath } as const;
     mocks.readConfig.mockResolvedValue({
       snapshot: {
         valid: true,
         parsed: {},
-        path: "/tmp/openclaw.json",
+        path: "/tmp/afora.json",
         sourceConfig: {
           plugins: {
             allow: ["pack/one", "pack/two", "other"],
@@ -186,7 +186,7 @@ describe("plugin management uninstall channel ownership", () => {
         },
         hash: "pack-hash",
       },
-      writeOptions: { expectedConfigPath: "/tmp/openclaw.json" },
+      writeOptions: { expectedConfigPath: "/tmp/afora.json" },
     });
     mocks.installRecords.mockResolvedValue({ pack: installRecord });
     const manifests: Array<[string, { id: string; channels: string[] }]> = [
@@ -267,7 +267,7 @@ describe("plugin management uninstall channel ownership", () => {
       origin: "global",
       rootDir: "/tmp/pack",
       source: `/tmp/pack/${id.endsWith("one") ? "one" : "two"}.js`,
-      manifestPath: "/tmp/pack/openclaw.plugin.json",
+      manifestPath: "/tmp/pack/afora.plugin.json",
     }));
     mocks.metadata.mockReturnValue({
       index: {

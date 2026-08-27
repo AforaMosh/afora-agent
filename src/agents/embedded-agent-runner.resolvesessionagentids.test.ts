@@ -1,6 +1,6 @@
 // Covers resolving the active agent id from session keys and explicit config.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { AgentSelectionRequiredError } from "./agent-scope-config.js";
 import { resolveSessionAgentIds } from "./agent-scope.js";
 
@@ -9,10 +9,10 @@ describe("resolveSessionAgentIds", () => {
     agents: {
       entries: { main: {}, beta: {} },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 
   it("treats an explicitly undefined agentId as omitted", () => {
-    const config = { agents: { entries: { main: {} } } } as OpenClawConfig;
+    const config = { agents: { entries: { main: {} } } } as AforaConfig;
     expect(resolveSessionAgentIds({ config, agentId: undefined })).toEqual(
       resolveSessionAgentIds({ config }),
     );

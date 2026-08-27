@@ -1,7 +1,7 @@
 ---
 name: meme-maker
 description: Search meme templates, suggest formats, and generate local or hosted image memes.
-metadata: { "openclaw": { "emoji": "🖼️", "requires": { "bins": ["node"] } } }
+metadata: { "afora": { "emoji": "🖼️", "requires": { "bins": ["node"] } } }
 ---
 
 # Meme Maker
@@ -40,4 +40,4 @@ Hygiene
 - Do not ship template image files in the skill.
 - Do not use shared or hardcoded Imgflip credentials.
 - Keep Know Your Meme lookups out of the render hot path; use KYM links for explanation/provenance only.
-- If PNG output fails because `sharp` is missing, use `--out meme.svg` (or another `.svg` path). Do not `npm install` packages into the skill directory or the OpenClaw tree to enable PNG.
+- If PNG output fails because `sharp` is missing, use `--out meme.svg` (or another `.svg` path). Do not `npm install` packages into the skill directory or the Afora tree to enable PNG.

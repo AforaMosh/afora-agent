@@ -1,13 +1,13 @@
 import type { MessageOptions, SessionConfig, Tool as SdkTool } from "@github/copilot-sdk";
-import type { AgentMessage, SandboxContext } from "openclaw/plugin-sdk/agent-harness-runtime";
+import type { AgentMessage, SandboxContext } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   detectAndLoadAgentHarnessPromptImages,
   getModelProviderRequestTransport,
   resolveUserPath,
   TRANSCRIPT_CREDENTIAL_SAFETY_PROMPT,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { toStringifiedError as toCopilotError } from "openclaw/plugin-sdk/error-runtime";
-import { readNonEmptyStringPreservingWhitespace as readNonEmptyString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { toStringifiedError as toCopilotError } from "afora-agent/plugin-sdk/error-runtime";
+import { readNonEmptyStringPreservingWhitespace as readNonEmptyString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   COPILOT_ASK_USER_AVAILABLE_TOOLS,
   COPILOT_SETTLED_FINALIZATION_SYSTEM_MESSAGE,
@@ -37,7 +37,7 @@ export function createResult(
     aborted?: boolean;
     assistantTranscriptOwned?: boolean;
     assistantTranscriptIdempotencyKey?: string;
-    contextEngineTerminalAnchor?: import("openclaw/plugin-sdk/session-transcript-runtime").TranscriptEntryAnchor;
+    contextEngineTerminalAnchor?: import("afora-agent/plugin-sdk/session-transcript-runtime").TranscriptEntryAnchor;
     assistantTexts?: string[];
     codeModeEngaged?: boolean;
     currentAttemptAssistant?: AssistantMessage;

@@ -12,7 +12,7 @@ export {
 export { walkDirectory, type WalkDirectoryEntry } from "@openclaw/fs-safe/walk";
 
 const hasModeOverride = Object.keys(process.env).some((key) =>
-  /^(?:OPENCLAW_)?FS_SAFE_(?:NATIVE|PYTHON)_MODE$/u.test(
+  /^(?:AFORA_)?FS_SAFE_(?:NATIVE|PYTHON)_MODE$/u.test(
     process.platform === "win32" ? key.toUpperCase() : key,
   ),
 );

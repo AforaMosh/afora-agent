@@ -2,7 +2,7 @@
  * Claude CLI model catalog entries. Subscription-backed CLI models use picker
  * metadata and do not require API-key auth rows.
  */
-import type { ModelCatalogEntry } from "openclaw/plugin-sdk/agent-runtime";
+import type { ModelCatalogEntry } from "afora-agent/plugin-sdk/agent-runtime";
 import { CLAUDE_CLI_BACKEND_ID, CLAUDE_CLI_DEFAULT_ALLOWLIST_REFS } from "./cli-constants.js";
 
 // Claude CLI auth is subscription-backed, so catalog rows only need picker metadata.

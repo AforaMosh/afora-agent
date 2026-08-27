@@ -4,7 +4,7 @@
 
 import { AUTOMATIONS_TOOL_NAME } from "./tools/automations-tool-name.js";
 
-export type CoreToolFactoryFamily = "base-coding" | "shell" | "openclaw";
+export type CoreToolFactoryFamily = "base-coding" | "shell" | "afora";
 
 type CoreToolFactoryDescriptor = {
   name: string;
@@ -18,62 +18,62 @@ const CORE_TOOL_FACTORY_DESCRIPTORS = [
   { name: "apply_patch", family: "shell" },
   { name: "exec", family: "shell" },
   { name: "process", family: "shell" },
-  { name: "agents_list", family: "openclaw" },
+  { name: "agents_list", family: "afora" },
   // Static factory identity only; runtime and tools.catalog apply the Swarm config gate.
-  { name: "agents_wait", family: "openclaw" },
-  { name: "ask_user", family: "openclaw" },
-  { name: "openclaw", family: "openclaw" },
-  { name: "computer", family: "openclaw" },
-  { name: "conversations_list", family: "openclaw" },
-  { name: "conversations_send", family: "openclaw" },
-  { name: "conversations_turn", family: "openclaw" },
-  { name: AUTOMATIONS_TOOL_NAME, family: "openclaw" },
-  { name: "dashboard", family: "openclaw" },
-  { name: "gateway", family: "openclaw" },
-  { name: "get_goal", family: "openclaw" },
-  { name: "heartbeat_respond", family: "openclaw" },
-  { name: "view_image", family: "openclaw" },
-  { name: "image_generate", family: "openclaw" },
-  { name: "message", family: "openclaw" },
-  { name: "mobile_ui", family: "openclaw" },
-  { name: "music_generate", family: "openclaw" },
-  { name: "nodes", family: "openclaw" },
-  { name: "pdf", family: "openclaw" },
-  { name: "session_status", family: "openclaw" },
-  { name: "show_widget", family: "openclaw" },
-  { name: "progress_card", family: "openclaw" },
-  { name: "sessions", family: "openclaw" },
-  { name: "sessions_history", family: "openclaw" },
-  { name: "sessions_list", family: "openclaw" },
-  { name: "sessions_search", family: "openclaw" },
-  { name: "sessions_send", family: "openclaw" },
-  { name: "sessions_spawn", family: "openclaw" },
-  { name: "sessions_yield", family: "openclaw" },
-  { name: "structured_output", family: "openclaw" },
-  { name: "skill_workshop", family: "openclaw" },
-  { name: "suggest_task", family: "openclaw" },
-  { name: "create_goal", family: "openclaw" },
-  { name: "subagents", family: "openclaw" },
-  { name: "terminal", family: "openclaw" },
-  { name: "portal", family: "openclaw" },
-  { name: "transcripts", family: "openclaw" },
-  { name: "tts", family: "openclaw" },
-  { name: "update_goal", family: "openclaw" },
-  { name: "dismiss_task", family: "openclaw" },
-  { name: "video_generate", family: "openclaw" },
-  { name: "web_fetch", family: "openclaw" },
-  { name: "web_search", family: "openclaw" },
+  { name: "agents_wait", family: "afora" },
+  { name: "ask_user", family: "afora" },
+  { name: "afora", family: "afora" },
+  { name: "computer", family: "afora" },
+  { name: "conversations_list", family: "afora" },
+  { name: "conversations_send", family: "afora" },
+  { name: "conversations_turn", family: "afora" },
+  { name: AUTOMATIONS_TOOL_NAME, family: "afora" },
+  { name: "dashboard", family: "afora" },
+  { name: "gateway", family: "afora" },
+  { name: "get_goal", family: "afora" },
+  { name: "heartbeat_respond", family: "afora" },
+  { name: "view_image", family: "afora" },
+  { name: "image_generate", family: "afora" },
+  { name: "message", family: "afora" },
+  { name: "mobile_ui", family: "afora" },
+  { name: "music_generate", family: "afora" },
+  { name: "nodes", family: "afora" },
+  { name: "pdf", family: "afora" },
+  { name: "session_status", family: "afora" },
+  { name: "show_widget", family: "afora" },
+  { name: "progress_card", family: "afora" },
+  { name: "sessions", family: "afora" },
+  { name: "sessions_history", family: "afora" },
+  { name: "sessions_list", family: "afora" },
+  { name: "sessions_search", family: "afora" },
+  { name: "sessions_send", family: "afora" },
+  { name: "sessions_spawn", family: "afora" },
+  { name: "sessions_yield", family: "afora" },
+  { name: "structured_output", family: "afora" },
+  { name: "skill_workshop", family: "afora" },
+  { name: "suggest_task", family: "afora" },
+  { name: "create_goal", family: "afora" },
+  { name: "subagents", family: "afora" },
+  { name: "terminal", family: "afora" },
+  { name: "portal", family: "afora" },
+  { name: "transcripts", family: "afora" },
+  { name: "tts", family: "afora" },
+  { name: "update_goal", family: "afora" },
+  { name: "dismiss_task", family: "afora" },
+  { name: "video_generate", family: "afora" },
+  { name: "web_fetch", family: "afora" },
+  { name: "web_search", family: "afora" },
 ] as const satisfies readonly CoreToolFactoryDescriptor[];
 
 const CORE_TOOL_FACTORY_FAMILY_BY_NAME = new Map<string, CoreToolFactoryFamily>(
   CORE_TOOL_FACTORY_DESCRIPTORS.map(({ name, family }) => [name, family]),
 );
 
-export type OpenClawCodingToolConstructionPlan = {
+export type AforaCodingToolConstructionPlan = {
   includeBaseCodingTools: boolean;
   includeShellTools: boolean;
   includeChannelTools: boolean;
-  includeOpenClawTools: boolean;
+  includeAforaTools: boolean;
   includePluginTools: boolean;
 };
 

@@ -1,12 +1,12 @@
 /** Relays child ACP session stream updates back into the requester parent session. */
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
-import { asOptionalRecord as asObjectRecord } from "@openclaw/normalization-core/record-coerce";
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
+import { asFiniteNumber } from "@afora/normalization-core/number-coercion";
+import { asOptionalRecord as asObjectRecord } from "@afora/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
 import {
   sliceUtf16Safe,
   truncateUtf16Safe,
   truncateWithMarker,
-} from "@openclaw/normalization-core/utf16-slice";
+} from "@afora/normalization-core/utf16-slice";
 import {
   isAcpTagVisible,
   resolveAcpProjectionSettings,
@@ -16,7 +16,7 @@ import {
   resolveChannelStreamingProgressCommentary,
   type StreamingCompatEntry,
 } from "../../../channels/streaming.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { onAgentEvent } from "../../../infra/agent-events.js";
 import {
   type EventSessionRoutingPolicy,
@@ -120,7 +120,7 @@ function mergeStreamingEntry(
 }
 
 function resolveParentProgressStreamingEntry(params: {
-  cfg: OpenClawConfig | undefined;
+  cfg: AforaConfig | undefined;
   deliveryContext: DeliveryContext | undefined;
 }): StreamingCompatEntry | undefined {
   const channelId = normalizeOptionalString(params.deliveryContext?.channel);
@@ -143,7 +143,7 @@ function resolveParentProgressStreamingEntry(params: {
 }
 
 function resolveParentProgressCommentary(params: {
-  cfg: OpenClawConfig | undefined;
+  cfg: AforaConfig | undefined;
   deliveryContext: DeliveryContext | undefined;
 }): boolean {
   return resolveChannelStreamingProgressCommentary(
@@ -195,7 +195,7 @@ export function startAcpSpawnParentStreamRelay(params: {
   noOutputPollMs?: number;
   maxRelayLifetimeMs?: number;
   emitStartNotice?: boolean;
-  cfg?: OpenClawConfig;
+  cfg?: AforaConfig;
 }): AcpSpawnParentRelayHandle {
   const runId = normalizeOptionalString(params.runId) ?? "";
   const parentSessionKey = normalizeOptionalString(params.parentSessionKey) ?? "";

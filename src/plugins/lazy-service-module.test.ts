@@ -56,8 +56,8 @@ function expectLazyServiceHandle(
 
 describe("startLazyPluginServiceModule", () => {
   afterEach(() => {
-    delete process.env.OPENCLAW_LAZY_SERVICE_SKIP;
-    delete process.env.OPENCLAW_LAZY_SERVICE_OVERRIDE;
+    delete process.env.AFORA_LAZY_SERVICE_SKIP;
+    delete process.env.AFORA_LAZY_SERVICE_OVERRIDE;
   });
 
   it("starts the default module and returns its stop hook", async () => {
@@ -75,11 +75,11 @@ describe("startLazyPluginServiceModule", () => {
   });
 
   it("honors skip env before loading the module", async () => {
-    process.env.OPENCLAW_LAZY_SERVICE_SKIP = "1";
+    process.env.AFORA_LAZY_SERVICE_SKIP = "1";
     const loadDefaultModule = vi.fn(async () => createLazyModuleLifecycle().module);
 
     const handle = await startLazyPluginServiceModule({
-      skipEnvVar: "OPENCLAW_LAZY_SERVICE_SKIP",
+      skipEnvVar: "AFORA_LAZY_SERVICE_SKIP",
       loadDefaultModule,
       startExportNames: ["startDefault"],
     });
@@ -89,12 +89,12 @@ describe("startLazyPluginServiceModule", () => {
   });
 
   it("uses the override module when configured", async () => {
-    process.env.OPENCLAW_LAZY_SERVICE_OVERRIDE = "virtual:service";
+    process.env.AFORA_LAZY_SERVICE_OVERRIDE = "virtual:service";
     const start = createAsyncHookMock();
     const loadOverrideModule = vi.fn(async () => ({ startOverride: start }));
 
     await expectLifecycleStarted({
-      overrideEnvVar: "OPENCLAW_LAZY_SERVICE_OVERRIDE",
+      overrideEnvVar: "AFORA_LAZY_SERVICE_OVERRIDE",
       loadDefaultModule: async () => ({ startDefault: createAsyncHookMock() }),
       loadOverrideModule,
       startExportNames: ["startOverride", "startDefault"],
@@ -105,13 +105,13 @@ describe("startLazyPluginServiceModule", () => {
   });
 
   it("leaves caller-supplied override loaders responsible for their own specifiers", async () => {
-    process.env.OPENCLAW_LAZY_SERVICE_OVERRIDE = "C:\\Users\\alice\\browser-service.mjs";
+    process.env.AFORA_LAZY_SERVICE_OVERRIDE = "C:\\Users\\alice\\browser-service.mjs";
     const start = createAsyncHookMock();
     const loadOverrideModule = vi.fn(async () => ({ startOverride: start }));
 
     await withMockedWindowsPlatform(async () => {
       await expectLifecycleStarted({
-        overrideEnvVar: "OPENCLAW_LAZY_SERVICE_OVERRIDE",
+        overrideEnvVar: "AFORA_LAZY_SERVICE_OVERRIDE",
         loadOverrideModule,
         startExportNames: ["startOverride"],
       });
@@ -122,12 +122,12 @@ describe("startLazyPluginServiceModule", () => {
   });
 
   it("validates the override specifier before loading it", async () => {
-    process.env.OPENCLAW_LAZY_SERVICE_OVERRIDE = "virtual:service";
+    process.env.AFORA_LAZY_SERVICE_OVERRIDE = "virtual:service";
     const loadOverrideModule = vi.fn(async () => ({ startOverride: createAsyncHookMock() }));
     const validateOverrideSpecifier = vi.fn((specifier: string) => `validated:${specifier}`);
 
     await expectLifecycleStarted({
-      overrideEnvVar: "OPENCLAW_LAZY_SERVICE_OVERRIDE",
+      overrideEnvVar: "AFORA_LAZY_SERVICE_OVERRIDE",
       validateOverrideSpecifier,
       loadOverrideModule,
       startExportNames: ["startOverride"],
@@ -138,11 +138,11 @@ describe("startLazyPluginServiceModule", () => {
   });
 
   it("surfaces override validation failures", async () => {
-    process.env.OPENCLAW_LAZY_SERVICE_OVERRIDE = "data:text/javascript,boom";
+    process.env.AFORA_LAZY_SERVICE_OVERRIDE = "data:text/javascript,boom";
 
     await expect(
       expectLifecycleStarted({
-        overrideEnvVar: "OPENCLAW_LAZY_SERVICE_OVERRIDE",
+        overrideEnvVar: "AFORA_LAZY_SERVICE_OVERRIDE",
         validateOverrideSpecifier: () => {
           throw new Error("blocked override");
         },

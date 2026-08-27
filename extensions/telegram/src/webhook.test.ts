@@ -6,14 +6,14 @@ import os from "node:os";
 import nodePath from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import type { Update } from "grammy/types";
-import { DEFAULT_INGRESS_ADOPTION_STALL_MS } from "openclaw/plugin-sdk/channel-outbound";
+import { DEFAULT_INGRESS_ADOPTION_STALL_MS } from "afora-agent/plugin-sdk/channel-outbound";
 import {
-  closeOpenClawStateDatabaseForTest,
+  closeAforaStateDatabaseForTest,
   createChannelIngressQueueForTests as createChannelIngressQueue,
-} from "openclaw/plugin-sdk/plugin-state-test-runtime";
+} from "afora-agent/plugin-sdk/plugin-state-test-runtime";
 // Telegram tests cover webhook plugin behavior.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
-import { WEBHOOK_RATE_LIMIT_DEFAULTS } from "openclaw/plugin-sdk/webhook-ingress";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
+import { WEBHOOK_RATE_LIMIT_DEFAULTS } from "afora-agent/plugin-sdk/webhook-ingress";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildTelegramApprovalCallbackData } from "./approval-callback-data.js";
 import {
@@ -42,8 +42,8 @@ const stopSpy = vi.hoisted(() => vi.fn());
 const webhookBotInfo = vi.hoisted(() => ({
   id: 123,
   is_bot: true as const,
-  first_name: "OpenClaw",
-  username: "openclaw_bot",
+  first_name: "Afora",
+  username: "afora_bot",
   has_topics_enabled: false,
 }));
 const createTelegramBotSpy = vi.hoisted(() =>
@@ -218,7 +218,7 @@ function createTelegramPrivateTopicCallback(updateId: number) {
     message: {
       chat: { id: 1234, type: "private" as const },
       date: 1_736_380_800,
-      from: { id: webhookBotInfo.id, is_bot: true as const, first_name: "OpenClaw" },
+      from: { id: webhookBotInfo.id, is_bot: true as const, first_name: "Afora" },
       message_id: 10,
       message_thread_id: 42,
     },
@@ -302,7 +302,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   resetTelegramWebhookMocks();
-  webhookStateDir = await fs.mkdtemp(nodePath.join(os.tmpdir(), "openclaw-telegram-webhook-"));
+  webhookStateDir = await fs.mkdtemp(nodePath.join(os.tmpdir(), "afora-telegram-webhook-"));
   webhookSpoolDir = nodePath.join(webhookStateDir, "telegram", "ingress-spool-test");
   await fs.mkdir(webhookSpoolDir, { recursive: true });
   installTelegramIngressQueueRuntime(() => webhookStateDir ?? os.tmpdir());
@@ -312,7 +312,7 @@ afterEach(async () => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
   clearTelegramRuntime();
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   const stateDir = webhookStateDir;
   webhookStateDir = undefined;
   webhookSpoolDir = undefined;
@@ -630,10 +630,10 @@ describe("startTelegramWebhook", () => {
         expect(botParams.telegramTransport).toBeDefined();
         const health = await fetch(`http://127.0.0.1:${port}/healthz`);
         expect(health.status).toBe(200);
-        expect(health.headers.get("x-openclaw-delivery-accepted")).toBeNull();
+        expect(health.headers.get("x-afora-delivery-accepted")).toBeNull();
         const notFound = await fetch(`http://127.0.0.1:${port}/not-the-webhook`);
         expect(notFound.status).toBe(404);
-        expect(notFound.headers.get("x-openclaw-delivery-accepted")).toBeNull();
+        expect(notFound.headers.get("x-afora-delivery-accepted")).toBeNull();
         expect(initSpy).toHaveBeenCalledTimes(1);
         expect(setWebhookSpy).toHaveBeenCalled();
         expectMockMessageContains(runtimeLog, "webhook local listener on http://127.0.0.1:");
@@ -1102,7 +1102,7 @@ describe("startTelegramWebhook", () => {
         });
 
         expect(response.status).toBe(200);
-        expect(response.headers.get("x-openclaw-delivery-accepted")).toBe("durable");
+        expect(response.headers.get("x-afora-delivery-accepted")).toBe("durable");
         expect(await response.text()).toBe("");
         await waitForWebhookState(() => expect(workStarted).toBe(true));
         expect(workFinished).toBe(false);
@@ -1228,7 +1228,7 @@ describe("startTelegramWebhook", () => {
           releaseEnqueue?.();
           const response = await responseTask;
           expect(response.status).toBe(200);
-          expect(response.headers.get("x-openclaw-delivery-accepted")).toBe("durable");
+          expect(response.headers.get("x-afora-delivery-accepted")).toBe("durable");
           expect(await response.text()).toBe("");
         } finally {
           releaseEnqueue?.();
@@ -1304,7 +1304,7 @@ describe("startTelegramWebhook", () => {
       timeoutMs: DEFAULT_INGRESS_ADOPTION_STALL_MS,
     },
   ])("uses the $label for webhook adoption stalls", async ({ envValue, timeoutMs }) => {
-    vi.stubEnv("OPENCLAW_TELEGRAM_SPOOLED_HANDLER_TIMEOUT_MS", envValue);
+    vi.stubEnv("AFORA_TELEGRAM_SPOOLED_HANDLER_TIMEOUT_MS", envValue);
     vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
     let finishUpdate: (() => void) | undefined;
     const active: {
@@ -1523,7 +1523,7 @@ describe("startTelegramWebhook", () => {
           (record) => record.laneKey,
         ),
       ).toEqual([persistedLaneKey, canonicalLaneKey]);
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
 
       const seenUpdateIds: number[] = [];
       let releaseFirstUpdate: (() => void) | undefined;
@@ -1713,7 +1713,7 @@ describe("startTelegramWebhook", () => {
         update,
         laneKey: persistedLaneKey,
       });
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
 
       handleUpdateSpy.mockImplementationOnce(async () => {
         expect(await openTelegramIngressQueue(requireWebhookSpoolDir()).listClaims()).toMatchObject(
@@ -1771,7 +1771,7 @@ describe("startTelegramWebhook", () => {
         update,
         laneKey: persistedLaneKey,
       });
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
 
       await withStartedWebhook(
         {
@@ -2041,7 +2041,7 @@ describe("startTelegramWebhook", () => {
       update: { update_id: 141, callback_query: mutate(createTelegramPrivateTopicCallback(141)) },
       laneKey,
     });
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
 
     await withStartedWebhook(
       {
@@ -2076,7 +2076,7 @@ describe("startTelegramWebhook", () => {
         },
         laneKey,
       });
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
 
       await withStartedWebhook(
         {
@@ -2150,7 +2150,7 @@ describe("startTelegramWebhook", () => {
       update,
       laneKey,
     });
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
 
     await withStartedWebhook(
       {
@@ -2403,7 +2403,7 @@ describe("startTelegramWebhook", () => {
         });
 
         expect(response.status).toBe(500);
-        expect(response.headers.get("x-openclaw-delivery-accepted")).toBeNull();
+        expect(response.headers.get("x-afora-delivery-accepted")).toBeNull();
         expect(handleUpdateSpy).not.toHaveBeenCalled();
       },
     );
@@ -2450,13 +2450,13 @@ describe("startTelegramWebhook", () => {
 
           if (response.status === 429) {
             saw429 = true;
-            expect(response.headers.get("x-openclaw-delivery-accepted")).toBeNull();
+            expect(response.headers.get("x-afora-delivery-accepted")).toBeNull();
             expect(await response.text()).toBe("Too Many Requests");
             break;
           }
 
           expect(response.status).toBe(401);
-          expect(response.headers.get("x-openclaw-delivery-accepted")).toBeNull();
+          expect(response.headers.get("x-afora-delivery-accepted")).toBeNull();
           expect(await response.text()).toBe("unauthorized");
         }
 
@@ -2468,7 +2468,7 @@ describe("startTelegramWebhook", () => {
           secret: TELEGRAM_SECRET,
         });
         expect(validResponse.status).toBe(200);
-        expect(validResponse.headers.get("x-openclaw-delivery-accepted")).toBe("durable");
+        expect(validResponse.headers.get("x-afora-delivery-accepted")).toBe("durable");
         expect(await validResponse.text()).toBe("");
         await waitForWebhookState(() => expect(handleUpdateSpy).toHaveBeenCalledTimes(1));
       },

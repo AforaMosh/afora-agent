@@ -1,14 +1,14 @@
-import { isWssUrl } from "@openclaw/net-policy/url-protocol";
+import { isWssUrl } from "@afora/net-policy/url-protocol";
 import { requireTlsFingerprint } from "../../packages/gateway-client/src/client-address-utils.js";
 import type { GatewayTlsConfig } from "../config/types.gateway.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { GatewayTlsRuntime } from "../infra/tls/gateway.js";
 
 type GatewayTlsRuntimeLoader = (config: GatewayTlsConfig | undefined) => Promise<GatewayTlsRuntime>;
 
 /** Resolve the certificate pin for one already-selected Gateway target. */
 export async function resolveGatewayConnectionTlsFingerprint(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   url: string;
   urlSource: string;
   explicitTlsFingerprint?: string;
@@ -26,7 +26,7 @@ export async function resolveGatewayConnectionTlsFingerprint(params: {
   const remoteTlsFingerprint =
     params.config.gateway?.mode === "remote" &&
     (params.urlSource === "config gateway.remote.url" ||
-      params.urlSource === "env OPENCLAW_GATEWAY_URL")
+      params.urlSource === "env AFORA_GATEWAY_URL")
       ? params.config.gateway.remote?.tlsFingerprint
         ? requireTlsFingerprint(params.config.gateway.remote.tlsFingerprint)
         : undefined

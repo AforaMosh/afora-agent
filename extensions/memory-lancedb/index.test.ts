@@ -11,22 +11,22 @@
 import { Buffer } from "node:buffer";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { Command } from "commander";
-import { isToolResultError } from "openclaw/plugin-sdk/agent-harness-runtime";
+import { isToolResultError } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   buildContractReplyPayloads,
   createContractToolTerminalObserver,
-} from "openclaw/plugin-sdk/agent-runtime-test-contracts";
+} from "afora-agent/plugin-sdk/agent-runtime-test-contracts";
 import {
   clearMemoryPluginState,
   getMemoryCapabilityRegistration,
   listActiveMemoryPublicArtifacts,
   registerMemoryCapability,
   type MemoryPluginCapability,
-} from "openclaw/plugin-sdk/memory-host-core";
-import { MESSAGE_TOOL_DELIVERY_HINTS } from "openclaw/plugin-sdk/message-tool-delivery-hints";
-import { MAX_TIMER_TIMEOUT_MS } from "openclaw/plugin-sdk/number-runtime";
+} from "afora-agent/plugin-sdk/memory-host-core";
+import { MESSAGE_TOOL_DELIVERY_HINTS } from "afora-agent/plugin-sdk/message-tool-delivery-hints";
+import { MAX_TIMER_TIMEOUT_MS } from "afora-agent/plugin-sdk/number-runtime";
 import { afterEach, describe, test, expect, vi } from "vitest";
 import memoryPlugin, {
   detectCategory,
@@ -51,8 +51,8 @@ const moduleMocks = vi.hoisted(() => ({
   loadLanceDbModule: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
 }));
 
-vi.mock("openclaw/plugin-sdk/runtime-env", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("openclaw/plugin-sdk/runtime-env")>();
+vi.mock("afora-agent/plugin-sdk/runtime-env", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("afora-agent/plugin-sdk/runtime-env")>();
   return {
     ...actual,
     ensureGlobalUndiciEnvProxyDispatcher: () => {
@@ -77,9 +77,9 @@ vi.mock("openai", async (importOriginal) => {
   };
 });
 
-vi.mock("openclaw/plugin-sdk/memory-core-host-engine-embeddings", async (importOriginal) => {
+vi.mock("afora-agent/plugin-sdk/memory-core-host-engine-embeddings", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("openclaw/plugin-sdk/memory-core-host-engine-embeddings")>();
+    await importOriginal<typeof import("afora-agent/plugin-sdk/memory-core-host-engine-embeddings")>();
   return {
     ...actual,
     getMemoryEmbeddingProvider: (...args: Parameters<typeof actual.getMemoryEmbeddingProvider>) => {
@@ -104,10 +104,10 @@ vi.mock("./lancedb-runtime.js", async (importOriginal) => {
   };
 });
 
-// Provenance marker OpenClaw appends to every injected inbound-context header.
+// Provenance marker Afora appends to every injected inbound-context header.
 // Detectors key on this marker, not label text. Keep byte-identical with
 // src/auto-reply/reply/inbound-context-marker.ts (extensions cannot import core).
-const CTX = "⟦openclaw:ctx⟧";
+const CTX = "⟦afora:ctx⟧";
 // Marks a context header line the way buildInboundUserContextPrefix does.
 const ctxHeader = (label: string): string => `${label} ${CTX}`;
 
@@ -344,7 +344,7 @@ function createMemoryPluginApi<T extends Record<string, unknown>>(
 }
 
 describe("memory plugin e2e", () => {
-  const { getDbPath, getTmpDir } = installTmpDirHarness({ prefix: "openclaw-memory-test-" });
+  const { getDbPath, getTmpDir } = installTmpDirHarness({ prefix: "afora-memory-test-" });
 
   afterEach(() => {
     clearMemoryPluginState();
@@ -677,7 +677,7 @@ describe("memory plugin e2e", () => {
             current: () => cfg,
           },
           agent: {
-            resolveAgentDir: vi.fn(() => "/tmp/openclaw-agent"),
+            resolveAgentDir: vi.fn(() => "/tmp/afora-agent"),
           },
         },
         registerTool,
@@ -701,7 +701,7 @@ describe("memory plugin e2e", () => {
         "provider options",
       );
       expect(providerOptions.config).toBe(cfg);
-      expect(providerOptions.agentDir).toBe("/tmp/openclaw-agent");
+      expect(providerOptions.agentDir).toBe("/tmp/afora-agent");
       expect(providerOptions.provider).toBe("openai");
       expect(providerOptions.fallback).toBe("none");
       expect(providerOptions.model).toBe("text-embedding-3-small");
@@ -1201,7 +1201,7 @@ describe("memory plugin e2e", () => {
           const program = new Command();
           (registrar as (params: { program: Command }) => void)({ program });
 
-          await program.parseAsync(["node", "openclaw", "ltm", "list", "--limit", "+03"]);
+          await program.parseAsync(["node", "afora", "ltm", "list", "--limit", "+03"]);
 
           expect(limit).toHaveBeenCalledWith(3);
           expect(stdoutWrite).toHaveBeenCalledWith("[]\n");
@@ -2563,7 +2563,7 @@ describe("memory plugin e2e", () => {
             {
               role: "user",
               content: "[media attached: /tmp/I always prefer dark mode.png (image/png)]",
-              __openclaw: {
+              __afora: {
                 media: [{ path: "/tmp/photo.png", contentType: "image/png", kind: "image" }],
               },
             },
@@ -3646,7 +3646,7 @@ describe("memory plugin e2e", () => {
 
   test("looksLikeEnvelopeSludge detects marked inbound context headers", () => {
     // Detection keys on the provenance marker suffix, not label text: any header
-    // OpenClaw injects carries it, and it never collides with user prose.
+    // Afora injects carries it, and it never collides with user prose.
     expect(looksLikeEnvelopeSludge(ctxHeader("Conversation info:"))).toBe(true);
     expect(looksLikeEnvelopeSludge(ctxHeader("Sender:"))).toBe(true);
     expect(looksLikeEnvelopeSludge(`${ctxHeader("Sender:")}\nAlex\nI prefer dark mode`)).toBe(true);
@@ -3901,10 +3901,10 @@ describe("memory plugin e2e", () => {
     );
     expect(
       sanitizeForMemoryCapture(
-        "[Discord OpenClaw #dev channel id:456 +5m] Alice: I prefer dark mode",
+        "[Discord Afora #dev channel id:456 +5m] Alice: I prefer dark mode",
       ),
     ).toBe("I prefer dark mode");
-    expect(sanitizeForMemoryCapture("[Telegram OpenClaw id:-100] Alice: I prefer dark mode")).toBe(
+    expect(sanitizeForMemoryCapture("[Telegram Afora id:-100] Alice: I prefer dark mode")).toBe(
       "I prefer dark mode",
     );
     expect(sanitizeForMemoryCapture("[Signal Signal Group id:123] Bob (42): ping")).toBe("ping");
@@ -4257,7 +4257,7 @@ describe("memory plugin e2e", () => {
 
   test("sanitizeForMemoryCapture preserves an unknown structured-context label as user content", () => {
     // An arbitrary `<label>:` + fence whose JSON carries no envelope key is the
-    // user's own text, not an OpenClaw injection, so it survives capture intact.
+    // user's own text, not an Afora injection, so it survives capture intact.
     const input = [
       `${"Custom ".repeat(30)}label:`,
       "```json",
@@ -4476,10 +4476,10 @@ describe("memory plugin e2e", () => {
   test("escapeMemoryForPrompt preserves inert media text while escaping markup", () => {
     expect(
       escapeMemoryForPrompt(
-        "User sent <image> [media attached: /Users/alex/.openclaw/media/photo.jpg (image/jpeg)] & said hello",
+        "User sent <image> [media attached: /Users/alex/.afora/media/photo.jpg (image/jpeg)] & said hello",
       ),
     ).toBe(
-      "User sent &lt;image&gt; [media attached: /Users/alex/.openclaw/media/photo.jpg (image/jpeg)] &amp; said hello",
+      "User sent &lt;image&gt; [media attached: /Users/alex/.afora/media/photo.jpg (image/jpeg)] &amp; said hello",
     );
 
     expect(

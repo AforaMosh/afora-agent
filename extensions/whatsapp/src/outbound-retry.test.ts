@@ -1,5 +1,5 @@
 // WhatsApp tests cover outbound retry behavior.
-import { createChannelPartialDeliveryError } from "openclaw/plugin-sdk/channel-inbound";
+import { createChannelPartialDeliveryError } from "afora-agent/plugin-sdk/channel-inbound";
 import { describe, expect, it, vi } from "vitest";
 import { sendWhatsAppOutboundWithRetry } from "./outbound-retry.js";
 import { withWhatsAppSocketOperationTimeout } from "./socket-timing.js";

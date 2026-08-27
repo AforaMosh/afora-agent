@@ -1,14 +1,14 @@
 // Feishu plugin module implements accounts behavior.
 import {
   DEFAULT_ACCOUNT_ID,
-  type OpenClawConfig as ClawdbotConfig,
+  type AforaConfig as ClawdbotConfig,
   createAccountListHelpers,
   hasConfiguredAccountValue,
   normalizeAccountId,
   normalizeOptionalAccountId,
-} from "openclaw/plugin-sdk/account-resolution";
-import { coerceSecretRef } from "openclaw/plugin-sdk/provider-auth";
-import { normalizeOptionalString as normalizeString } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/account-resolution";
+import { coerceSecretRef } from "afora-agent/plugin-sdk/provider-auth";
+import { normalizeOptionalString as normalizeString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type {
   FeishuConfig,
   FeishuAccountConfig,

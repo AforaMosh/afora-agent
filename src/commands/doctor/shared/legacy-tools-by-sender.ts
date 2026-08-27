@@ -1,7 +1,7 @@
 // Doctor scanner and repair for legacy untyped toolsBySender sender keys.
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord } from "@afora/normalization-core/record-coerce";
 import { sanitizeForLog } from "../../../../packages/terminal-core/src/ansi.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { parseToolsBySenderTypedKey } from "../../../config/types.tools.js";
 import { formatConfigKeyPath, resolveConfigPathTarget } from "../../doctor-config-analysis.js";
 
@@ -59,7 +59,7 @@ function collectLegacyToolsBySenderKeyHits(
 }
 
 /** Find untyped toolsBySender keys that should be migrated to explicit id: keys. */
-export function scanLegacyToolsBySenderKeys(cfg: OpenClawConfig): LegacyToolsBySenderKeyHit[] {
+export function scanLegacyToolsBySenderKeys(cfg: AforaConfig): LegacyToolsBySenderKeyHit[] {
   const hits: LegacyToolsBySenderKeyHit[] = [];
   collectLegacyToolsBySenderKeyHits(cfg, [], hits);
   return hits;
@@ -85,8 +85,8 @@ export function collectLegacyToolsBySenderWarnings(params: {
 }
 
 /** Migrate untyped toolsBySender keys to typed id: keys where possible. */
-export function maybeRepairLegacyToolsBySenderKeys(cfg: OpenClawConfig): {
-  config: OpenClawConfig;
+export function maybeRepairLegacyToolsBySenderKeys(cfg: AforaConfig): {
+  config: AforaConfig;
   changes: string[];
 } {
   const hits = scanLegacyToolsBySenderKeys(cfg);

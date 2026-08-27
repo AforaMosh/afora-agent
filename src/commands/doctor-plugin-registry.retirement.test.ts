@@ -17,14 +17,14 @@ afterEach(() => {
 
 describe("stale managed bundled plugin retirement", () => {
   it("preserves payload and record state for a non-bundled external plugin", async () => {
-    const stateDir = makeTrackedTempDir("openclaw-doctor-plugin-retirement", tempDirs);
-    const packageName = "@openclaw/external-demo";
+    const stateDir = makeTrackedTempDir("afora-doctor-plugin-retirement", tempDirs);
+    const packageName = "@afora/external-demo";
     const version = "2026.5.2";
     const npmRoot = resolvePluginNpmProjectDir({
       npmDir: path.join(stateDir, "npm"),
       packageName,
     });
-    const packageDir = path.join(npmRoot, "node_modules", "@openclaw", "external-demo");
+    const packageDir = path.join(npmRoot, "node_modules", "@afora", "external-demo");
     fs.mkdirSync(packageDir, { recursive: true });
     fs.writeFileSync(
       path.join(npmRoot, "package.json"),
@@ -33,11 +33,11 @@ describe("stale managed bundled plugin retirement", () => {
     );
     fs.writeFileSync(
       path.join(packageDir, "package.json"),
-      JSON.stringify({ name: packageName, version, openclaw: { extensions: ["."] } }),
+      JSON.stringify({ name: packageName, version, afora: { extensions: ["."] } }),
       "utf8",
     );
     fs.writeFileSync(
-      path.join(packageDir, "openclaw.plugin.json"),
+      path.join(packageDir, "afora.plugin.json"),
       JSON.stringify({
         id: "external-demo",
         name: "external-demo",
@@ -71,8 +71,8 @@ describe("stale managed bundled plugin retirement", () => {
       { stateDir },
     );
     const env = {
-      OPENCLAW_BUNDLED_PLUGINS_DIR: undefined,
-      OPENCLAW_VERSION: "2026.4.25",
+      AFORA_BUNDLED_PLUGINS_DIR: undefined,
+      AFORA_VERSION: "2026.4.25",
       VITEST: "true",
     };
 

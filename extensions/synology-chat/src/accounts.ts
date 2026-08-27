@@ -3,26 +3,26 @@
  * merges per-account overrides, falls back to environment variables.
  */
 
-import { createAccountListHelpers } from "openclaw/plugin-sdk/account-helpers";
+import { createAccountListHelpers } from "afora-agent/plugin-sdk/account-helpers";
 import {
   DEFAULT_ACCOUNT_ID,
   hasConfiguredAccountValue,
-  type OpenClawConfig,
-} from "openclaw/plugin-sdk/account-resolution";
-import { resolveDangerousNameMatchingEnabled } from "openclaw/plugin-sdk/dangerous-name-runtime";
-import { parseStrictInteger } from "openclaw/plugin-sdk/number-runtime";
+  type AforaConfig,
+} from "afora-agent/plugin-sdk/account-resolution";
+import { resolveDangerousNameMatchingEnabled } from "afora-agent/plugin-sdk/dangerous-name-runtime";
+import { parseStrictInteger } from "afora-agent/plugin-sdk/number-runtime";
 import {
   normalizeOptionalString,
   normalizeStringEntries,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type {
   SynologyChatChannelConfig,
   ResolvedSynologyChatAccount,
   SynologyWebhookPathSource,
 } from "./types.js";
 
-/** Extract the channel config from the full OpenClaw config object. */
-function getChannelConfig(cfg: OpenClawConfig): SynologyChatChannelConfig | undefined {
+/** Extract the channel config from the full Afora config object. */
+function getChannelConfig(cfg: AforaConfig): SynologyChatChannelConfig | undefined {
   return cfg?.channels?.["synology-chat"] as SynologyChatChannelConfig | undefined;
 }
 
@@ -104,7 +104,7 @@ function parseRateLimitPerMinute(raw: string | undefined): number {
  * Falls back to env vars for the "default" account.
  */
 export function resolveAccount(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   accountId?: string | null,
 ): ResolvedSynologyChatAccount {
   const channelCfg = getChannelConfig(cfg) ?? {};
@@ -120,7 +120,7 @@ export function resolveAccount(
   const envNasHost = normalizeOptionalString(process.env.SYNOLOGY_NAS_HOST) ?? "localhost";
   const envAllowedUserIds = normalizeOptionalString(process.env.SYNOLOGY_ALLOWED_USER_IDS) ?? "";
   const envRateLimitValue = parseRateLimitPerMinute(process.env.SYNOLOGY_RATE_LIMIT);
-  const envBotName = normalizeOptionalString(process.env.OPENCLAW_BOT_NAME) ?? "OpenClaw";
+  const envBotName = normalizeOptionalString(process.env.AFORA_BOT_NAME) ?? "Afora";
   const webhookPathSource = resolveWebhookPathSource({ accountId: id, channelCfg, rawAccount });
   const dangerouslyAllowInheritedWebhookPath =
     rawAccount.dangerouslyAllowInheritedWebhookPath ??

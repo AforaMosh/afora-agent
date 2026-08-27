@@ -45,7 +45,7 @@ describe("native hook relay CLI import boundary", () => {
       "native-hook-relay-permissions.js",
       "native-hook-relay-state.js",
       "native-hook-relay-store.js",
-      "openclaw-state-db.js",
+      "afora-state-db.js",
       "gateway/call.js",
     ]) {
       expect(clientGraph).not.toContain(forbiddenImport);

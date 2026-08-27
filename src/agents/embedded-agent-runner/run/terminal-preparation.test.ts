@@ -1,4 +1,4 @@
-import type { AssistantMessage } from "openclaw/plugin-sdk/llm";
+import type { AssistantMessage } from "afora-agent/plugin-sdk/llm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createTestAdmittedRunContext } from "../../admitted-run-context.test-support.js";
 import { createUsageAccumulator } from "../usage-accumulator.js";
@@ -80,7 +80,7 @@ async function prepareAttempt(input: {
       admittedRunContext: createTestAdmittedRunContext("run-focused"),
       sessionId: "session-focused",
       runId: "run-focused",
-      workspaceDir: "/tmp/openclaw-test",
+      workspaceDir: "/tmp/afora-test",
       prompt: "hi",
       trigger: "user",
       timeoutMs: 60_000,
@@ -115,7 +115,7 @@ describe("prepareEmbeddedRunTerminal", () => {
           admittedRunContext: createTestAdmittedRunContext("run-1"),
           sessionId: "session-1",
           runId: "run-1",
-          workspaceDir: "/tmp/openclaw-test",
+          workspaceDir: "/tmp/afora-test",
           prompt: "hi",
           trigger: "user",
           timeoutMs: 60_000,
@@ -171,7 +171,7 @@ describe("prepareEmbeddedRunTerminal", () => {
         admittedRunContext: createTestAdmittedRunContext("run-current"),
         sessionId: "session-current",
         runId: "run-current",
-        workspaceDir: "/tmp/openclaw-test",
+        workspaceDir: "/tmp/afora-test",
         prompt: "hi",
         trigger: "user",
         timeoutMs: 60_000,
@@ -348,7 +348,7 @@ describe("prepareEmbeddedRunTerminal run stats", () => {
         admittedRunContext: createTestAdmittedRunContext("run-1"),
         sessionId: "session-1",
         runId: "run-1",
-        workspaceDir: "/tmp/openclaw-test",
+        workspaceDir: "/tmp/afora-test",
         prompt: "hi",
         trigger: "user",
         timeoutMs: 60_000,

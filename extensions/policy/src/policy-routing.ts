@@ -1,10 +1,10 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   resolveAgentRoute,
   type ResolvedAgentRoute,
   type RoutePeer,
-} from "openclaw/plugin-sdk/routing";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/routing";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export const ROUTING_MATCH_KINDS = [
   "binding.peer",
@@ -77,7 +77,7 @@ export function resolvePolicyRoutingProbe(
   probe: PolicyRoutingProbe,
 ): ResolvedAgentRoute {
   return resolveAgentRoute({
-    cfg: cfg as OpenClawConfig,
+    cfg: cfg as AforaConfig,
     channel: probe.route.channel,
     accountId: probe.route.accountId,
     peer: probe.route.peer,

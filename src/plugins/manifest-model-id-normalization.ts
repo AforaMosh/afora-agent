@@ -2,8 +2,8 @@
 import {
   collectManifestModelIdNormalizationPolicies,
   normalizeProviderModelIdWithPolicies,
-} from "@openclaw/model-catalog-core/provider-model-id-normalization";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+} from "@afora/model-catalog-core/provider-model-id-normalization";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginManifestRecord } from "./manifest-registry.js";
 import type { PluginManifestModelIdNormalizationProvider } from "./manifest.js";
 // Snapshot reads go through the registration-slot bridge so this module stays
@@ -16,7 +16,7 @@ import {
 import { getActivePluginRegistryWorkspaceDirFromStateCore } from "./runtime-workspace-state.js";
 
 type ManifestModelIdNormalizationLookupParams = {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   plugins?: readonly Pick<PluginManifestRecord, "modelIdNormalization">[];
@@ -89,7 +89,7 @@ function loadManifestModelIdNormalizationPolicies(
 /** Normalizes a provider model id using plugin manifest-declared model-id policies. */
 export function normalizeProviderModelIdWithManifest(params: {
   provider: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   plugins?: readonly Pick<PluginManifestRecord, "modelIdNormalization">[];

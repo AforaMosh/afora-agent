@@ -43,7 +43,7 @@ import { createPluginIdScopeSet } from "./plugin-scope.js";
 import { createPluginRegistry, type PluginRecord, type PluginRegistry } from "./registry.js";
 import type { PluginRuntime } from "./runtime/types.js";
 import { hasKind, kindsEqual } from "./slots.js";
-import type { OpenClawPluginModule } from "./types.js";
+import type { AforaPluginModule } from "./types.js";
 
 const CLI_METADATA_ENTRY_BASENAMES = [
   "cli-metadata.ts",
@@ -52,7 +52,7 @@ const CLI_METADATA_ENTRY_BASENAMES = [
   "cli-metadata.cjs",
 ] as const;
 
-export async function loadOpenClawPluginCliRegistry(
+export async function loadAforaPluginCliRegistry(
   options: PluginLoadOptions = {},
 ): Promise<PluginRegistry> {
   const context = resolvePluginLoadCacheContext({ ...options, activate: false });
@@ -235,12 +235,12 @@ export async function loadOpenClawPluginCliRegistry(
     }
     const safeSource = opened.path;
     fs.closeSync(opened.fd);
-    let mod: OpenClawPluginModule | null;
+    let mod: AforaPluginModule | null;
     try {
       mod = withProfile(
         { pluginId: record.id, source: safeSource },
         "cli-metadata",
-        () => loadPluginModule(safeSource) as OpenClawPluginModule,
+        () => loadPluginModule(safeSource) as AforaPluginModule,
       );
     } catch (error) {
       recordPluginError({

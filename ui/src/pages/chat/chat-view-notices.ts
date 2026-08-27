@@ -63,7 +63,7 @@ export function renderChatViewNotices(props: ChatViewNoticesProps) {
             <span class="chat-error__content">${props.error}</span>
             ${props.onDismissError
               ? html`
-                  <openclaw-tooltip .content=${t("chat.actions.dismissError")}>
+                  <afora-tooltip .content=${t("chat.actions.dismissError")}>
                     <button
                       class="chat-error__dismiss"
                       type="button"
@@ -72,7 +72,7 @@ export function renderChatViewNotices(props: ChatViewNoticesProps) {
                     >
                       ${icons.x}
                     </button>
-                  </openclaw-tooltip>
+                  </afora-tooltip>
                 `
               : nothing}
           </div>
@@ -84,7 +84,7 @@ export function renderChatViewNotices(props: ChatViewNoticesProps) {
     })}
     ${props.focusMode && props.onToggleFocusMode
       ? html`
-          <openclaw-tooltip .content=${t("chat.actions.exitFocusMode")}>
+          <afora-tooltip .content=${t("chat.actions.exitFocusMode")}>
             <button
               class="chat-focus-exit"
               type="button"
@@ -93,7 +93,7 @@ export function renderChatViewNotices(props: ChatViewNoticesProps) {
             >
               ${icons.x}
             </button>
-          </openclaw-tooltip>
+          </afora-tooltip>
         `
       : nothing}
     ${renderCloudStartupStatus(props.cloudStartup, props.onRetryCloudStartup)}

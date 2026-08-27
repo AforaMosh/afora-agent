@@ -11,7 +11,7 @@ import { t } from "../../i18n/index.ts";
 import { formatUiExternalText } from "../../lib/format-error.ts";
 import { COMMUNICATION_SETTINGS_TARGET_IDS } from "./settings-targets.ts";
 
-const NOTIFICATIONS_DOCS_URL = "https://docs.openclaw.ai/web/notifications";
+const NOTIFICATIONS_DOCS_URL = "https://docs.afora.ai/web/notifications";
 
 function renderNotificationsHint(copy: string) {
   return html`${copy} ${renderDocsLink(NOTIFICATIONS_DOCS_URL, t("common.learnMore"))}`;

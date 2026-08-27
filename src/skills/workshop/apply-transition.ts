@@ -1,5 +1,5 @@
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   dispatchCommittedSkillChangeBestEffort,
   hasCommittedSkillChangeHooks,
@@ -87,7 +87,7 @@ export type SkillProposalApplyTransitionDependencies = {
     env?: NodeJS.ProcessEnv,
     agentId?: string,
     readOptions?: {
-      config?: OpenClawConfig;
+      config?: AforaConfig;
       reconcile?: boolean;
     },
   ) => Promise<SkillProposalReadResult>;

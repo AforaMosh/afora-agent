@@ -18,7 +18,7 @@ export function renderModelSetupSuccessDialog(
   const providerId = providerIdFromModelRef(activation.modelRef);
   const providerIconId = providerId && hasProviderBrandIcon(providerId) ? providerId : null;
   return html`
-    <openclaw-modal-dialog
+    <afora-modal-dialog
       label=${t("modelSetup.success.title")}
       description=${t("modelSetup.success.body", { modelRef: activation.modelRef })}
       @modal-cancel=${onClose}
@@ -65,6 +65,6 @@ export function renderModelSetupSuccessDialog(
           </button>
         </footer>
       </section>
-    </openclaw-modal-dialog>
+    </afora-modal-dialog>
   `;
 }

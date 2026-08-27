@@ -1,6 +1,6 @@
 import type { AgentMessage } from "./types.js";
 
-export const TRANSCRIPT_NOT_CONTINUABLE_ERROR_CODE = "openclaw_transcript_not_continuable";
+export const TRANSCRIPT_NOT_CONTINUABLE_ERROR_CODE = "afora_transcript_not_continuable";
 
 export class TranscriptNotContinuableError extends Error {
   public readonly code = TRANSCRIPT_NOT_CONTINUABLE_ERROR_CODE;

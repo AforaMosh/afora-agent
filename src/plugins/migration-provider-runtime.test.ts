@@ -1,6 +1,6 @@
 // Covers migration provider runtime hooks supplied by plugins.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginRegistry } from "./registry-types.js";
 import { createEmptyPluginRegistry } from "./registry.js";
 import { getPluginRuntimeGatewayRequestScope } from "./runtime/gateway-request-scope.js";
@@ -148,7 +148,7 @@ describe("migration provider runtime", () => {
     }));
 
     ensureStandaloneMigrationProviderRegistryLoaded({
-      cfg: { plugins: { enabled: false } } as OpenClawConfig,
+      cfg: { plugins: { enabled: false } } as AforaConfig,
     });
 
     const standaloneParams = requireMockCallArg(
@@ -157,7 +157,7 @@ describe("migration provider runtime", () => {
     ) as {
       activate?: unknown;
       onlyPluginIds?: unknown;
-      config?: OpenClawConfig;
+      config?: AforaConfig;
     };
     expect(standaloneParams.activate).toBe(false);
     expect(standaloneParams.onlyPluginIds).toEqual(["migrate-hermes"]);
@@ -189,7 +189,7 @@ describe("migration provider runtime", () => {
   it("loads configured external migration-provider plugins from manifest contracts", async () => {
     const cfg = {
       plugins: { entries: { "external-migration": { enabled: true } } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const provider = createMigrationProvider("external-import");
     const active = createEmptyPluginRegistry();
     const loaded = createEmptyPluginRegistry();
@@ -257,7 +257,7 @@ describe("migration provider runtime", () => {
       "loadPluginManifestRegistry",
     ) as {
       index?: MockPluginIndex;
-      config?: OpenClawConfig;
+      config?: AforaConfig;
       env?: NodeJS.ProcessEnv;
       includeDisabled?: unknown;
     };
@@ -308,8 +308,8 @@ describe("migration provider runtime", () => {
   });
 
   it("does not reuse a standalone handle after the migration owner or config changes", () => {
-    const cfgA = { plugins: { allow: ["migration-a"] } } as OpenClawConfig;
-    const cfgB = { plugins: { allow: ["migration-b"] } } as OpenClawConfig;
+    const cfgA = { plugins: { allow: ["migration-a"] } } as AforaConfig;
+    const cfgB = { plugins: { allow: ["migration-b"] } } as AforaConfig;
     const provider = createMigrationProvider("shared-import");
     const loadedA = createEmptyPluginRegistry();
     loadedA.migrationProviders.push({

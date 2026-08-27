@@ -1,6 +1,6 @@
-# OpenClaw Installer for Windows
-# Usage: powershell -c "irm https://openclaw.ai/install.ps1 | iex"
-#        powershell -c "& ([scriptblock]::Create((irm https://openclaw.ai/install.ps1))) -Tag beta -NoOnboard -DryRun"
+# Afora Installer for Windows
+# Usage: powershell -c "irm https://afora.ai/install.ps1 | iex"
+#        powershell -c "& ([scriptblock]::Create((irm https://afora.ai/install.ps1))) -Tag beta -NoOnboard -DryRun"
 
 [CmdletBinding(PositionalBinding = $false)]
 param(
@@ -20,11 +20,11 @@ if ($Help) {
     @"
 Usage:
   powershell -File install.ps1 [options]
-  & ([scriptblock]::Create((irm https://openclaw.ai/install.ps1))) [options]
+  & ([scriptblock]::Create((irm https://afora.ai/install.ps1))) [options]
 
 Options:
   -InstallMethod npm|git  Install method (default: npm)
-  -Tag <tag|version>      OpenClaw version or dist-tag (default: latest)
+  -Tag <tag|version>      Afora version or dist-tag (default: latest)
   -GitDir <path>          Git checkout directory
   -NoOnboard              Skip onboarding
   -NoGitUpdate            Skip git pull
@@ -118,7 +118,7 @@ function Complete-Install {
         exit $script:InstallExitCode
     }
 
-    throw "OpenClaw installation failed with exit code $($script:InstallExitCode)."
+    throw "Afora installation failed with exit code $($script:InstallExitCode)."
 }
 
 function Resolve-InstallerTempDirectory {
@@ -206,40 +206,40 @@ if ($PSVersionTable.PSVersion.Major -lt 5) {
 }
 
 if (-not $PSBoundParameters.ContainsKey("InstallMethod")) {
-    if (-not [string]::IsNullOrWhiteSpace($env:OPENCLAW_INSTALL_METHOD)) {
-        $InstallMethod = $env:OPENCLAW_INSTALL_METHOD
+    if (-not [string]::IsNullOrWhiteSpace($env:AFORA_INSTALL_METHOD)) {
+        $InstallMethod = $env:AFORA_INSTALL_METHOD
     }
 }
 if (-not $PSBoundParameters.ContainsKey("GitDir")) {
-    if (-not [string]::IsNullOrWhiteSpace($env:OPENCLAW_GIT_DIR)) {
-        $GitDir = $env:OPENCLAW_GIT_DIR
+    if (-not [string]::IsNullOrWhiteSpace($env:AFORA_GIT_DIR)) {
+        $GitDir = $env:AFORA_GIT_DIR
     }
 }
 if (-not $PSBoundParameters.ContainsKey("NoOnboard")) {
-    if ($env:OPENCLAW_NO_ONBOARD -eq "1") {
+    if ($env:AFORA_NO_ONBOARD -eq "1") {
         $NoOnboard = $true
     }
 }
 if (-not $PSBoundParameters.ContainsKey("NoGitUpdate")) {
-    if ($env:OPENCLAW_GIT_UPDATE -eq "0") {
+    if ($env:AFORA_GIT_UPDATE -eq "0") {
         $NoGitUpdate = $true
     }
 }
 if (-not $PSBoundParameters.ContainsKey("DryRun")) {
-    if ($env:OPENCLAW_DRY_RUN -eq "1") {
+    if ($env:AFORA_DRY_RUN -eq "1") {
         $DryRun = $true
     }
 }
 
 if ([string]::IsNullOrWhiteSpace($GitDir)) {
     $userHome = [Environment]::GetFolderPath("UserProfile")
-    $GitDir = (Join-Path $userHome "openclaw")
+    $GitDir = (Join-Path $userHome "afora")
 }
 
 Initialize-InstallerTempDirectory
 
 Write-Host ""
-Write-Host "  OpenClaw Installer" -ForegroundColor Cyan
+Write-Host "  Afora Installer" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "[OK] Windows detected" -ForegroundColor Green
 
@@ -250,7 +250,7 @@ function Test-NodeVersionSupported {
     if ([string]::IsNullOrWhiteSpace($Version)) {
         return $false
     }
-    # This standalone installer runs before OpenClaw exists on disk. Mirror the
+    # This standalone installer runs before Afora exists on disk. Mirror the
     # release grammar in node-version.mjs; parity cases guard this boundary.
     $versionMatch = [regex]::Match(
         $Version,
@@ -374,7 +374,7 @@ function Get-WindowsPortableArchitecture {
     return "x64"
 }
 
-function Get-OpenClawDepsRoot {
+function Get-AforaDepsRoot {
     $localAppData = $env:LOCALAPPDATA
     if ([string]::IsNullOrWhiteSpace($localAppData)) {
         $localAppData = [Environment]::GetFolderPath("LocalApplicationData")
@@ -382,11 +382,11 @@ function Get-OpenClawDepsRoot {
     if ([string]::IsNullOrWhiteSpace($localAppData)) {
         $localAppData = Join-Path ([Environment]::GetFolderPath("UserProfile")) "AppData\Local"
     }
-    return (Join-Path $localAppData "OpenClaw\deps")
+    return (Join-Path $localAppData "Afora\deps")
 }
 
 function Get-PortableNodeRoot {
-    return (Join-Path (Get-OpenClawDepsRoot) "portable-node")
+    return (Join-Path (Get-AforaDepsRoot) "portable-node")
 }
 
 function Get-PortableNodeCommandPath {
@@ -416,7 +416,7 @@ function Ensure-PortableNodeOnUserPath {
 
     $nodeDir = Split-Path -Parent $nodeExe
     if (Add-ToUserPath $nodeDir) {
-        Write-Host "[!] Added $nodeDir to user PATH (restart terminal if node or openclaw is not found)" -ForegroundColor Yellow
+        Write-Host "[!] Added $nodeDir to user PATH (restart terminal if node or afora is not found)" -ForegroundColor Yellow
     }
 }
 
@@ -622,10 +622,10 @@ function Install-Node {
     return $false
 }
 
-# Check for existing OpenClaw installation
-function Check-ExistingOpenClaw {
-    if (Get-OpenClawCommandPath) {
-        Write-Host "[*] Existing OpenClaw installation detected" -ForegroundColor Yellow
+# Check for existing Afora installation
+function Check-ExistingAfora {
+    if (Get-AforaCommandPath) {
+        Write-Host "[*] Existing Afora installation detected" -ForegroundColor Yellow
         return $true
     }
     return $false
@@ -721,7 +721,7 @@ function Add-ToUserPath {
 }
 
 function Get-PortableGitRoot {
-    return (Join-Path (Get-OpenClawDepsRoot) "portable-git")
+    return (Join-Path (Get-AforaDepsRoot) "portable-git")
 }
 
 function Get-PortableGitCommandPath {
@@ -785,7 +785,7 @@ function Ensure-PortableGitOnUserPath {
 function Resolve-PortableGitDownload {
     $releaseApi = "https://api.github.com/repos/git-for-windows/git/releases/latest"
     $headers = @{
-        "User-Agent" = "openclaw-installer"
+        "User-Agent" = "afora-installer"
         "Accept" = "application/vnd.github+json"
     }
     $requestTimeouts = Get-WebRequestTimeoutParameters -CommandName "Invoke-RestMethod" -LegacyTimeoutSec 30
@@ -831,7 +831,7 @@ function Install-PortableGit {
     $download = Resolve-PortableGitDownload
     $portableRoot = Get-PortableGitRoot
     $portableParent = Split-Path -Parent $portableRoot
-    $tempName = "openclaw-portable-git-" + [guid]::NewGuid().ToString("N")
+    $tempName = "afora-portable-git-" + [guid]::NewGuid().ToString("N")
     $tmpZip = Join-Path $script:InstallerTempDirectory ($tempName + ".zip")
     $tmpExtract = Join-Path $script:InstallerTempDirectory $tempName
 
@@ -885,59 +885,59 @@ function Ensure-Git {
     }
 
     Write-Host ""
-    Write-Host "Error: Git is required to install OpenClaw." -ForegroundColor Red
+    Write-Host "Error: Git is required to install Afora." -ForegroundColor Red
     Write-Host "Auto-bootstrap of user-local Git did not succeed." -ForegroundColor Yellow
     Write-Host "Install Git for Windows manually, then re-run this installer:" -ForegroundColor Yellow
     Write-Host "  https://git-scm.com/download/win" -ForegroundColor Cyan
     return $false
 }
 
-function Get-OpenClawCommandPath {
-    $openclawCmd = Get-Command openclaw.cmd -ErrorAction SilentlyContinue
-    if ($openclawCmd -and $openclawCmd.Source) {
-        return $openclawCmd.Source
+function Get-AforaCommandPath {
+    $aforaCmd = Get-Command afora.cmd -ErrorAction SilentlyContinue
+    if ($aforaCmd -and $aforaCmd.Source) {
+        return $aforaCmd.Source
     }
 
-    $openclaw = Get-Command openclaw -ErrorAction SilentlyContinue
-    if ($openclaw -and $openclaw.Source) {
-        return $openclaw.Source
+    $afora = Get-Command afora -ErrorAction SilentlyContinue
+    if ($afora -and $afora.Source) {
+        return $afora.Source
     }
 
     return $null
 }
 
-function Invoke-OpenClawCommand {
+function Invoke-AforaCommand {
     param(
         [Parameter(ValueFromRemainingArguments = $true)]
         [string[]]$Arguments
     )
 
-    $commandPath = Get-OpenClawCommandPath
+    $commandPath = Get-AforaCommandPath
     if (-not $commandPath) {
-        throw "openclaw command not found on PATH."
+        throw "afora command not found on PATH."
     }
 
     & $commandPath @Arguments
     $exitCode = $LASTEXITCODE
     if ($exitCode -ne 0) {
-        throw "openclaw $($Arguments -join ' ') failed with exit code $exitCode."
+        throw "afora $($Arguments -join ' ') failed with exit code $exitCode."
     }
 }
 
-function Invoke-InteractiveOpenClawCommand {
+function Invoke-InteractiveAforaCommand {
     param(
         [Parameter(ValueFromRemainingArguments = $true)]
         [string[]]$Arguments
     )
 
-    $commandPath = Get-OpenClawCommandPath
+    $commandPath = Get-AforaCommandPath
     if (-not $commandPath) {
-        throw "openclaw command not found on PATH."
+        throw "afora command not found on PATH."
     }
 
     $process = Start-Process -FilePath $commandPath -ArgumentList $Arguments -NoNewWindow -Wait -PassThru
     if ($process.ExitCode -ne 0) {
-        throw "openclaw $($Arguments -join ' ') failed with exit code $($process.ExitCode)."
+        throw "afora $($Arguments -join ' ') failed with exit code $($process.ExitCode)."
     }
 }
 
@@ -1037,8 +1037,8 @@ function Get-NpmGlobalBinCandidates {
     return $candidates | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
 }
 
-function Ensure-OpenClawOnPath {
-    if (Get-OpenClawCommandPath) {
+function Ensure-AforaOnPath {
+    if (Get-AforaCommandPath) {
         return $true
     }
 
@@ -1051,7 +1051,7 @@ function Ensure-OpenClawOnPath {
 
     $npmBins = Get-NpmGlobalBinCandidates -NpmPrefix $npmPrefix
     foreach ($npmBin in $npmBins) {
-        if (-not (Test-Path (Join-Path $npmBin "openclaw.cmd"))) {
+        if (-not (Test-Path (Join-Path $npmBin "afora.cmd"))) {
             continue
         }
 
@@ -1061,7 +1061,7 @@ function Ensure-OpenClawOnPath {
         return $true
     }
 
-    Write-Host "[!] openclaw is not on PATH yet." -ForegroundColor Yellow
+    Write-Host "[!] afora is not on PATH yet." -ForegroundColor Yellow
     Write-Host "Restart PowerShell or add the npm global install folder to PATH." -ForegroundColor Yellow
     if ($npmBins.Count -gt 0) {
         Write-Host "Expected path (one of):" -ForegroundColor Gray
@@ -1175,7 +1175,7 @@ function Ensure-Pnpm {
     Write-Host "[OK] pnpm installed" -ForegroundColor Green
 }
 
-# Install OpenClaw
+# Install Afora
 function Resolve-LocalNpmPackagePath {
     param([string]$PackagePath)
 
@@ -1222,7 +1222,7 @@ function Resolve-LocalNpmPackageInstallSpec {
     }
 }
 
-function Resolve-NpmOpenClawInstallSpec {
+function Resolve-NpmAforaInstallSpec {
     param(
         [string]$PackageName,
         [string]$RequestedTag
@@ -1247,7 +1247,7 @@ function Resolve-NpmOpenClawInstallSpec {
     return "$PackageName@$trimmedTag"
 }
 
-function Test-OpenClawSourcePackageInstallSpec {
+function Test-AforaSourcePackageInstallSpec {
     param([string]$RequestedTag)
 
     if ([string]::IsNullOrWhiteSpace($RequestedTag)) {
@@ -1255,14 +1255,14 @@ function Test-OpenClawSourcePackageInstallSpec {
     }
 
     $normalizedTag = $RequestedTag.Trim().ToLowerInvariant()
-    if ($normalizedTag.StartsWith("openclaw@")) {
-        $normalizedTag = $normalizedTag.Substring("openclaw@".Length)
+    if ($normalizedTag.StartsWith("afora@")) {
+        $normalizedTag = $normalizedTag.Substring("afora@".Length)
     }
 
     if ($normalizedTag -eq "main") {
         return $true
     }
-    if ($normalizedTag -match '^github:openclaw/openclaw($|[#/])') {
+    if ($normalizedTag -match '^github:AforaMosh/afora-agent($|[#/])') {
         return $true
     }
 
@@ -1270,10 +1270,10 @@ function Test-OpenClawSourcePackageInstallSpec {
         $normalizedTag = $normalizedTag.Substring("git+".Length)
     }
     return (
-        $normalizedTag -match '^https?://github\.com/openclaw/openclaw(\.git)?($|[?#])' -or
-        $normalizedTag -match '^ssh://git@github\.com[:/]openclaw/openclaw(\.git)?($|[?#])' -or
-        $normalizedTag -match '^git://github\.com/openclaw/openclaw(\.git)?($|[?#])' -or
-        $normalizedTag -match '^git@github\.com:openclaw/openclaw(\.git)?($|[?#])'
+        $normalizedTag -match '^https?://github\.com/AforaMosh/afora-agent(\.git)?($|[?#])' -or
+        $normalizedTag -match '^ssh://git@github\.com[:/]AforaMosh/afora-agent(\.git)?($|[?#])' -or
+        $normalizedTag -match '^git://github\.com/AforaMosh/afora-agent(\.git)?($|[?#])' -or
+        $normalizedTag -match '^git@github\.com:AforaMosh/afora-agent(\.git)?($|[?#])'
     )
 }
 
@@ -1416,12 +1416,12 @@ function Write-NpmInstallFailureDetails {
     }
 }
 
-function Install-OpenClaw {
+function Install-Afora {
     if ([string]::IsNullOrWhiteSpace($Tag)) {
         $Tag = "latest"
     }
-    if (Test-OpenClawSourcePackageInstallSpec -RequestedTag $Tag) {
-        Write-Host "Error: npm installs do not support OpenClaw GitHub source targets like '$Tag'." -ForegroundColor Red
+    if (Test-AforaSourcePackageInstallSpec -RequestedTag $Tag) {
+        Write-Host "Error: npm installs do not support Afora GitHub source targets like '$Tag'." -ForegroundColor Red
         Write-Host "Use -InstallMethod git -Tag main for the moving main checkout, or use latest, beta, an exact version, or a built .tgz package." -ForegroundColor Yellow
         return $false
     }
@@ -1429,13 +1429,13 @@ function Install-OpenClaw {
         return $false
     }
 
-    # Use openclaw package for beta, openclaw for stable
-    $packageName = "openclaw"
+    # Use afora package for beta, afora for stable
+    $packageName = "afora-agent"
     if ($Tag -eq "beta" -or $Tag -match "^beta\.") {
-        $packageName = "openclaw"
+        $packageName = "afora-agent"
     }
-    $installSpec = Resolve-NpmOpenClawInstallSpec -PackageName $packageName -RequestedTag $Tag
-    Write-Host "[*] Installing OpenClaw ($installSpec)..." -ForegroundColor Yellow
+    $installSpec = Resolve-NpmAforaInstallSpec -PackageName $packageName -RequestedTag $Tag
+    Write-Host "[*] Installing Afora ($installSpec)..." -ForegroundColor Yellow
     $freshnessArgs = @("--min-release-age=0")
     $minReleaseAge = (Invoke-NpmCommand -Arguments @("config", "get", "min-release-age", "--global") 2>$null)
     $minReleaseAgeStatus = $LASTEXITCODE
@@ -1478,7 +1478,7 @@ function Install-OpenClaw {
                 Write-Host "  https://git-scm.com/download/win" -ForegroundColor Cyan
             } else {
                 Write-Host "Re-run with verbose output to see the full error:" -ForegroundColor Yellow
-                Write-Host '  powershell -c "irm https://openclaw.ai/install.ps1 | iex"' -ForegroundColor Cyan
+                Write-Host '  powershell -c "irm https://afora.ai/install.ps1 | iex"' -ForegroundColor Cyan
             }
             Write-NpmInstallFailureDetails -Output $npmOutput -CacheRoots $npmDebugLogRoots
             return $false
@@ -1491,11 +1491,11 @@ function Install-OpenClaw {
         $env:NPM_CONFIG_BEFORE = $prevBefore
         $env:NPM_CONFIG_MIN_RELEASE_AGE = $prevMinReleaseAge
     }
-    Write-Host "[OK] OpenClaw installed" -ForegroundColor Green
+    Write-Host "[OK] Afora installed" -ForegroundColor Green
     return $true
 }
 
-# Install OpenClaw from GitHub
+# Install Afora from GitHub
 function Assert-GitCheckoutHasCommit {
     param([string]$RepoDir)
 
@@ -1551,7 +1551,7 @@ function New-TransactionalGitCheckout {
     $preserveRepoDir = (Test-Path -LiteralPath $RepoDir -PathType Container) -and
         @(Get-ChildItem -LiteralPath $RepoDir -Force).Count -eq 0
     $stagingParent = if ($preserveRepoDir) { $RepoDir } else { $parentDir }
-    $stagingDir = Join-Path $stagingParent (".openclaw-clone-" + [guid]::NewGuid().ToString("N"))
+    $stagingDir = Join-Path $stagingParent (".afora-clone-" + [guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Path $stagingDir | Out-Null
     $retainStaging = $false
 
@@ -1602,7 +1602,7 @@ function New-TransactionalGitCheckout {
     }
 }
 
-function Install-OpenClawFromGit {
+function Install-AforaFromGit {
     param(
         [string]$RepoDir,
         [switch]$SkipUpdate
@@ -1612,8 +1612,8 @@ function Install-OpenClawFromGit {
     }
 
     $RepoDir = Resolve-GitCheckoutPath -RepoDir $RepoDir
-    $repoUrl = "https://github.com/openclaw/openclaw.git"
-    Write-Host "[*] Installing OpenClaw from GitHub ($repoUrl)..." -ForegroundColor Yellow
+    $repoUrl = "https://github.com/AforaMosh/afora-agent.git"
+    Write-Host "[*] Installing Afora from GitHub ($repoUrl)..." -ForegroundColor Yellow
 
     Assert-GitCheckoutHasCommit -RepoDir $RepoDir
     if (-not (Test-Path $RepoDir) -or @(Get-ChildItem -LiteralPath $RepoDir -Force).Count -eq 0) {
@@ -1705,7 +1705,7 @@ function Install-OpenClawFromGit {
 
     $entryPath = Join-Path $RepoDir "dist\\entry.js"
     if (-not (Test-Path $entryPath)) {
-        Write-Host "[!] OpenClaw build did not produce $entryPath" -ForegroundColor Red
+        Write-Host "[!] Afora build did not produce $entryPath" -ForegroundColor Red
         return $false
     }
 
@@ -1713,7 +1713,7 @@ function Install-OpenClawFromGit {
     if (-not (Test-Path $binDir)) {
         New-Item -ItemType Directory -Force -Path $binDir | Out-Null
     }
-    $cmdPath = Join-Path $binDir "openclaw.cmd"
+    $cmdPath = Join-Path $binDir "afora.cmd"
     $cmdContents = "@echo off`r`nnode ""$entryPath"" %*`r`n"
     Set-Content -Path $cmdPath -Value $cmdContents -NoNewline
 
@@ -1721,7 +1721,7 @@ function Install-OpenClawFromGit {
         Write-Host "[!] Added $binDir to user PATH (restart terminal if command not found)" -ForegroundColor Yellow
     }
 
-    Write-Host "[OK] OpenClaw wrapper installed to $cmdPath" -ForegroundColor Green
+    Write-Host "[OK] Afora wrapper installed to $cmdPath" -ForegroundColor Green
     Write-Host "[i] This checkout uses pnpm. For deps, run: pnpm install (avoid npm install in the repo)." -ForegroundColor Gray
     return $true
 }
@@ -1730,16 +1730,16 @@ function Install-OpenClawFromGit {
 function Run-Doctor {
     Write-Host "[*] Running doctor to migrate settings..." -ForegroundColor Yellow
     try {
-        Invoke-OpenClawCommand doctor --non-interactive
+        Invoke-AforaCommand doctor --non-interactive
         Write-Host "[OK] Migration complete" -ForegroundColor Green
     } catch {
-        Write-Host "[!] Migration failed; continuing. Run: openclaw doctor --non-interactive" -ForegroundColor Yellow
+        Write-Host "[!] Migration failed; continuing. Run: afora doctor --non-interactive" -ForegroundColor Yellow
     }
 }
 
 function Test-GatewayServiceLoaded {
     try {
-        $statusJson = (Invoke-OpenClawCommand daemon status --json 2>$null)
+        $statusJson = (Invoke-AforaCommand daemon status --json 2>$null)
         if ([string]::IsNullOrWhiteSpace($statusJson)) {
             return $false
         }
@@ -1754,7 +1754,7 @@ function Test-GatewayServiceLoaded {
 }
 
 function Refresh-GatewayServiceIfLoaded {
-    if (-not (Get-OpenClawCommandPath)) {
+    if (-not (Get-AforaCommandPath)) {
         return
     }
     if (-not (Test-GatewayServiceLoaded)) {
@@ -1763,27 +1763,27 @@ function Refresh-GatewayServiceIfLoaded {
 
     Write-Host "[*] Refreshing loaded gateway service..." -ForegroundColor Yellow
     try {
-        Invoke-OpenClawCommand gateway install --force | Out-Null
+        Invoke-AforaCommand gateway install --force | Out-Null
     } catch {
         Write-Host "[!] Gateway service refresh failed; continuing." -ForegroundColor Yellow
         return
     }
 
     try {
-        Invoke-OpenClawCommand gateway restart | Out-Null
-        Invoke-OpenClawCommand gateway status --json | Out-Null
+        Invoke-AforaCommand gateway restart | Out-Null
+        Invoke-AforaCommand gateway status --json | Out-Null
         Write-Host "[OK] Gateway service refreshed" -ForegroundColor Green
     } catch {
-        Write-Host "[!] Gateway service restart failed; continuing. Run: openclaw gateway restart" -ForegroundColor Yellow
+        Write-Host "[!] Gateway service restart failed; continuing. Run: afora gateway restart" -ForegroundColor Yellow
     }
 }
 
 function Get-LegacyRepoDir {
-    if (-not [string]::IsNullOrWhiteSpace($env:OPENCLAW_GIT_DIR)) {
-        return $env:OPENCLAW_GIT_DIR
+    if (-not [string]::IsNullOrWhiteSpace($env:AFORA_GIT_DIR)) {
+        return $env:AFORA_GIT_DIR
     }
     $userHome = [Environment]::GetFolderPath("UserProfile")
-    return (Join-Path $userHome "openclaw")
+    return (Join-Path $userHome "afora")
 }
 
 function Remove-LegacySubmodule {
@@ -1826,7 +1826,7 @@ function Main {
     }
 
     # Check for existing installation
-    $isUpgrade = Check-ExistingOpenClaw
+    $isUpgrade = Check-ExistingAfora
 
     # Step 1: Node.js
     if (-not (Check-Node)) {
@@ -1847,37 +1847,37 @@ function Main {
 
     $finalGitDir = $null
 
-    # Step 2: OpenClaw
+    # Step 2: Afora
     if ($InstallMethod -eq "git") {
         try {
             $npmCommand = Get-NpmCommandPath
             if ($npmCommand) {
-                Invoke-NpmCommand -Arguments @("uninstall", "-g", "openclaw") 2>$null | Out-Null
+                Invoke-NpmCommand -Arguments @("uninstall", "-g", "afora") 2>$null | Out-Null
                 Write-Host "[OK] Removed npm global install if present" -ForegroundColor Green
             }
         } catch { }
         $finalGitDir = $GitDir
-        $gitInstallResults = @(Install-OpenClawFromGit -RepoDir $GitDir -SkipUpdate:$NoGitUpdate)
+        $gitInstallResults = @(Install-AforaFromGit -RepoDir $GitDir -SkipUpdate:$NoGitUpdate)
         if (-not (Test-BooleanSuccessResult -Results $gitInstallResults)) {
             Fail-Install
             return
         }
     } else {
-        $gitWrapper = Join-Path (Join-Path $env:USERPROFILE ".local\\bin") "openclaw.cmd"
+        $gitWrapper = Join-Path (Join-Path $env:USERPROFILE ".local\\bin") "afora.cmd"
         if (Test-Path $gitWrapper) {
             Remove-Item -Force $gitWrapper
             Write-Host "[OK] Removed git wrapper (switching to npm)" -ForegroundColor Green
         }
-        $npmInstallResults = @(Install-OpenClaw)
+        $npmInstallResults = @(Install-Afora)
         if (-not (Test-BooleanSuccessResult -Results $npmInstallResults)) {
             Fail-Install
             return
         }
     }
 
-    if (-not (Ensure-OpenClawOnPath)) {
-        Write-Host "Install completed, but OpenClaw is not on PATH yet." -ForegroundColor Yellow
-        Write-Host "Open a new terminal, then run: openclaw doctor" -ForegroundColor Cyan
+    if (-not (Ensure-AforaOnPath)) {
+        Write-Host "Install completed, but Afora is not on PATH yet." -ForegroundColor Yellow
+        Write-Host "Open a new terminal, then run: afora doctor" -ForegroundColor Cyan
         return
     }
 
@@ -1890,15 +1890,15 @@ function Main {
 
     $installedVersion = $null
     try {
-        $installedVersion = (Invoke-OpenClawCommand --version 2>$null).Trim()
+        $installedVersion = (Invoke-AforaCommand --version 2>$null).Trim()
     } catch {
         $installedVersion = $null
     }
     if (-not $installedVersion) {
         try {
             $npmList = Invoke-NpmCommand -Arguments @("list", "-g", "--depth", "0", "--json") 2>$null | ConvertFrom-Json
-            if ($npmList -and $npmList.dependencies -and $npmList.dependencies.openclaw -and $npmList.dependencies.openclaw.version) {
-                $installedVersion = $npmList.dependencies.openclaw.version
+            if ($npmList -and $npmList.dependencies -and $npmList.dependencies.afora -and $npmList.dependencies.afora.version) {
+                $installedVersion = $npmList.dependencies.afora.version
             }
         } catch {
             $installedVersion = $null
@@ -1907,9 +1907,9 @@ function Main {
 
     Write-Host ""
     if ($installedVersion) {
-        Write-Host "OpenClaw installed successfully ($installedVersion)!" -ForegroundColor Green
+        Write-Host "Afora installed successfully ($installedVersion)!" -ForegroundColor Green
     } else {
-        Write-Host "OpenClaw installed successfully!" -ForegroundColor Green
+        Write-Host "Afora installed successfully!" -ForegroundColor Green
     }
     Write-Host ""
     if ($isUpgrade) {
@@ -1956,23 +1956,23 @@ function Main {
 
     if ($InstallMethod -eq "git") {
         Write-Host "Source checkout: $finalGitDir" -ForegroundColor Cyan
-        Write-Host "Wrapper: $env:USERPROFILE\\.local\\bin\\openclaw.cmd" -ForegroundColor Cyan
+        Write-Host "Wrapper: $env:USERPROFILE\\.local\\bin\\afora.cmd" -ForegroundColor Cyan
         Write-Host ""
     }
 
     if ($isUpgrade) {
         Write-Host "Upgrade complete. Run " -NoNewline
-        Write-Host "openclaw doctor" -ForegroundColor Cyan -NoNewline
+        Write-Host "afora doctor" -ForegroundColor Cyan -NoNewline
         Write-Host " to check for additional migrations."
     } else {
         if ($NoOnboard) {
             Write-Host "Skipping onboard (requested). Run " -NoNewline
-            Write-Host "openclaw onboard" -ForegroundColor Cyan -NoNewline
+            Write-Host "afora onboard" -ForegroundColor Cyan -NoNewline
             Write-Host " later."
         } else {
             Write-Host "Starting setup..." -ForegroundColor Cyan
             Write-Host ""
-            Invoke-InteractiveOpenClawCommand onboard
+            Invoke-InteractiveAforaCommand onboard
         }
     }
 

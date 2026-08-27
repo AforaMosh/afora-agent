@@ -57,7 +57,7 @@ describe("createCliDispatchTranscriptRecorder", () => {
     expect(records[0]?.message).toMatchObject({
       role: "user",
       content: [{ type: "text", text: "recall prompt" }],
-      __openclaw: { senderIsOwner: true },
+      __afora: { senderIsOwner: true },
     });
   });
 
@@ -120,11 +120,11 @@ describe("createCliDispatchTranscriptRecorder", () => {
     const messages = appendedRecords().map((record) => record.message);
     expect(messages[1]).toMatchObject({
       role: "toolResult",
-      __openclaw: { resultContentSource: "network" },
+      __afora: { resultContentSource: "network" },
     });
     expect(messages[2]).toMatchObject({
       role: "assistant",
-      __openclaw: { turnTainted: true },
+      __afora: { turnTainted: true },
     });
   });
 

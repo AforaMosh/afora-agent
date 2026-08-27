@@ -1,5 +1,5 @@
 // WebSocket message handler validates frames, dispatches gateway RPCs, manages pairing, and reports responses.
-import { rawDataToString } from "@openclaw/gateway-client/websocket-data";
+import { rawDataToString } from "@afora/gateway-client/websocket-data";
 import type { RawData } from "ws";
 import {
   GATEWAY_CLIENT_IDS,

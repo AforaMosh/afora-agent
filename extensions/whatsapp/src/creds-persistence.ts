@@ -1,7 +1,7 @@
 // Whatsapp plugin module implements creds persistence behavior.
-import { enqueueKeyedTask } from "openclaw/plugin-sdk/keyed-async-queue";
-import { resolveTimerTimeoutMs } from "openclaw/plugin-sdk/number-runtime";
-import { replaceFileAtomic } from "openclaw/plugin-sdk/security-runtime";
+import { enqueueKeyedTask } from "afora-agent/plugin-sdk/keyed-async-queue";
+import { resolveTimerTimeoutMs } from "afora-agent/plugin-sdk/number-runtime";
+import { replaceFileAtomic } from "afora-agent/plugin-sdk/security-runtime";
 import { assertWebCredsPathRegularFileOrMissing, resolveWebCredsPath } from "./creds-files.js";
 
 const CREDS_FILE_MODE = 0o600;

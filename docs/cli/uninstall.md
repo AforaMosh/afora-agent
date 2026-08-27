@@ -1,12 +1,12 @@
 ---
-summary: "CLI reference for `openclaw uninstall` (remove gateway service + local data)"
+summary: "CLI reference for `afora uninstall` (remove gateway service + local data)"
 read_when:
   - You want to remove the gateway service and/or local state
   - You want a dry-run first
 title: "Uninstall"
 ---
 
-# `openclaw uninstall`
+# `afora uninstall`
 
 Uninstall the Gateway service and/or local data. The CLI itself is not
 removed; uninstall it via npm/pnpm separately.
@@ -30,17 +30,17 @@ to remove (defaults to service, state, workspace preselected).
 ## Examples
 
 ```bash
-openclaw backup create
-openclaw uninstall
-openclaw uninstall --service --yes --non-interactive
-openclaw uninstall --state --workspace --yes --non-interactive
-openclaw uninstall --all --yes
-openclaw uninstall --dry-run
+afora backup create
+afora uninstall
+afora uninstall --service --yes --non-interactive
+afora uninstall --state --workspace --yes --non-interactive
+afora uninstall --all --yes
+afora uninstall --dry-run
 ```
 
 ## Notes
 
-- Run `openclaw backup create` first for a restorable snapshot before removing
+- Run `afora backup create` first for a restorable snapshot before removing
   state or workspaces.
 - Before removing state, `--state` requires exclusive state ownership. If an
   unmanaged or externally supervised Gateway is still running, uninstall

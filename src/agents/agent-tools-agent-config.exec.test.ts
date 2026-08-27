@@ -6,17 +6,17 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import "./test-helpers/fast-coding-tools.js";
-import "./test-helpers/fast-openclaw-tools.js";
+import "./test-helpers/fast-afora-tools.js";
 import { createTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { setActivePluginRegistry } from "../plugins/runtime.js";
 import { createSessionConversationTestRegistry } from "../test-utils/session-conversation-registry.js";
-import { createOpenClawCodingTools } from "./agent-tools.js";
+import { createAforaCodingTools } from "./agent-tools.js";
 import { resolveExecToolConfig } from "./lazy-exec-tool.js";
 
 function createExecHostDefaultsConfig(
   agents: Array<{ id: string; execHost?: "auto" | "gateway" | "sandbox" }>,
-): OpenClawConfig {
+): AforaConfig {
   return {
     tools: {
       exec: {
@@ -41,7 +41,7 @@ function createExecHostDefaultsConfig(
   };
 }
 
-function requireExecTool(tools: ReturnType<typeof createOpenClawCodingTools>) {
+function requireExecTool(tools: ReturnType<typeof createAforaCodingTools>) {
   const execTool = tools.find((tool) => tool.name === "exec");
   if (!execTool) {
     throw new Error("expected exec tool");
@@ -114,7 +114,7 @@ describe("Agent-specific exec tool defaults", () => {
   });
 
   it("should run exec synchronously when process is denied", async () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       tools: {
         deny: ["process"],
         exec: {
@@ -124,7 +124,7 @@ describe("Agent-specific exec tool defaults", () => {
       },
     };
 
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: cfg,
       sessionKey: "agent:main:main",
       ...createTempAgentDirs("test-main"),
@@ -141,7 +141,7 @@ describe("Agent-specific exec tool defaults", () => {
   });
 
   it("routes implicit auto exec to gateway without a sandbox runtime", async () => {
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: {
         tools: {
           exec: {
@@ -162,7 +162,7 @@ describe("Agent-specific exec tool defaults", () => {
   });
 
   it("passes normalized exec mode defaults into the exec tool", async () => {
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: {
         tools: {
           exec: {
@@ -183,7 +183,7 @@ describe("Agent-specific exec tool defaults", () => {
   });
 
   it("ignores per-call legacy security when configured mode is full", async () => {
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: {
         tools: {
           exec: {
@@ -205,7 +205,7 @@ describe("Agent-specific exec tool defaults", () => {
   });
 
   it("preserves mode-derived security for partial agent exec overrides", async () => {
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: {
         tools: {
           exec: {
@@ -239,7 +239,7 @@ describe("Agent-specific exec tool defaults", () => {
   });
 
   it("lets session legacy exec overrides clear inherited mode", async () => {
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: {
         tools: {
           exec: {
@@ -264,7 +264,7 @@ describe("Agent-specific exec tool defaults", () => {
   });
 
   it("fails closed when exec host=sandbox is requested without sandbox runtime", async () => {
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: {},
       sessionKey: "agent:main:main",
       ...createTempAgentDirs("test-main-fail-closed"),
@@ -284,7 +284,7 @@ describe("Agent-specific exec tool defaults", () => {
       { id: "helper" },
     ]);
 
-    const mainTools = createOpenClawCodingTools({
+    const mainTools = createAforaCodingTools({
       config: cfg,
       sessionKey: "agent:main:main",
       ...createTempAgentDirs("test-main-exec-defaults"),
@@ -303,7 +303,7 @@ describe("Agent-specific exec tool defaults", () => {
       }),
     ).rejects.toThrow("exec host not allowed");
 
-    const helperTools = createOpenClawCodingTools({
+    const helperTools = createAforaCodingTools({
       config: cfg,
       sessionKey: "agent:helper:main",
       ...createTempAgentDirs("test-helper-exec-defaults"),
@@ -327,7 +327,7 @@ describe("Agent-specific exec tool defaults", () => {
   it("applies explicit agentId exec defaults when sessionKey is opaque", async () => {
     const cfg = createExecHostDefaultsConfig([{ id: "main", execHost: "gateway" }]);
 
-    const tools = createOpenClawCodingTools({
+    const tools = createAforaCodingTools({
       config: cfg,
       agentId: "main",
       sessionKey: "run-opaque-123",

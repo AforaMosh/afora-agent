@@ -4,12 +4,12 @@ import { writeClaudeMcpConfig } from "./attach-cli.js";
 
 const MCP_CONFIG = {
   mcpServers: {
-    openclaw: {
+    afora: {
       type: "http",
       url: "http://127.0.0.1:54321/mcp",
       headers: {
-        Authorization: "Bearer ${OPENCLAW_MCP_TOKEN}",
-        "x-session-key": "${OPENCLAW_MCP_SESSION_KEY}",
+        Authorization: "Bearer ${AFORA_MCP_TOKEN}",
+        "x-session-key": "${AFORA_MCP_SESSION_KEY}",
       },
     },
   },

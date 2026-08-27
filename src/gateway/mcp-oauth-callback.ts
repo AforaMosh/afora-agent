@@ -1,11 +1,11 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
+import { isRecord } from "@afora/normalization-core/record-coerce";
 import { requesterMcpOAuthStoreKeyPrefix } from "../agents/mcp-oauth-identity.js";
 import { readMcpOAuthPendingAuthorization, readMcpOAuthStore } from "../agents/mcp-oauth-store.js";
 import { completeOAuthCallback } from "../agents/mcp-oauth.js";
 import { resolveMcpTransportConfig } from "../agents/mcp-transport-config.js";
 import { normalizeConfiguredMcpServers } from "../config/mcp-config-normalize.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 
 const MCP_OAUTH_CALLBACK_PATH = "/oauth/mcp/callback";
@@ -43,7 +43,7 @@ function isPerRequesterServer(server: Record<string, unknown>): boolean {
 export async function handleMcpOAuthCallback(
   req: IncomingMessage,
   res: ServerResponse,
-  params: { config: OpenClawConfig; log: CallbackLog },
+  params: { config: AforaConfig; log: CallbackLog },
 ): Promise<boolean> {
   if (req.method !== "GET") {
     return false;

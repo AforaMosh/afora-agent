@@ -1,6 +1,6 @@
-import { MAX_DATE_TIMESTAMP_MS } from "@openclaw/normalization-core/number-coercion";
+import { MAX_DATE_TIMESTAMP_MS } from "@afora/normalization-core/number-coercion";
 import { describe, expect, it, vi } from "vitest";
-import { openOpenClawStateDatabase } from "../state/openclaw-state-db.js";
+import { openAforaStateDatabase } from "../state/afora-state-db.js";
 import { setupCronServiceSuite } from "./service.test-harness.js";
 import { start } from "./service/ops-lifecycle.js";
 import { status } from "./service/ops-read.js";
@@ -12,7 +12,7 @@ import { cronStoreKey } from "./store/key.js";
 import type { CronJob } from "./types.js";
 
 const { logger: noopLogger, makeStorePath } = setupCronServiceSuite({
-  prefix: "openclaw-cron-overflow-",
+  prefix: "afora-cron-overflow-",
   baseTimeIso: "2025-12-13T17:00:00.000Z",
 });
 
@@ -182,7 +182,7 @@ describe("CronService startup catch-up repair scoping", () => {
     const enqueueSystemEvent = vi.fn((_text: string, context?: { contextKey?: string }) => {
       if (context?.contextKey && deferredAutoDisableReasons.has(context.contextKey)) {
         if (!order.includes("persist")) {
-          const rows = openOpenClawStateDatabase()
+          const rows = openAforaStateDatabase()
             .db.prepare(
               "SELECT job_id AS jobId, state_json AS stateJson FROM cron_jobs WHERE store_key = ? AND job_id IN (?, ?) ORDER BY job_id",
             )

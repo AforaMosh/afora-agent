@@ -1,5 +1,5 @@
 // ClickClack tests cover post-write connection verification and gateway guidance.
-import { createNonExitingRuntimeEnv } from "openclaw/plugin-sdk/plugin-test-runtime";
+import { createNonExitingRuntimeEnv } from "afora-agent/plugin-sdk/plugin-test-runtime";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   workspaces: vi.fn(),
 }));
 
-vi.mock("openclaw/plugin-sdk/gateway-runtime", () => ({
+vi.mock("afora-agent/plugin-sdk/gateway-runtime", () => ({
   callGatewayFromCli: mocks.callGatewayFromCli,
 }));
 
@@ -63,7 +63,7 @@ describe("ClickClack post-write setup verification", () => {
     vi.unstubAllEnvs();
     mocks.callGatewayFromCli.mockReset().mockResolvedValue({ ok: true });
     mocks.createClient.mockReset();
-    mocks.me.mockReset().mockResolvedValue({ id: "usr_bot", handle: "openclaw" });
+    mocks.me.mockReset().mockResolvedValue({ id: "usr_bot", handle: "afora" });
     mocks.resolveWorkspaceId.mockReset().mockResolvedValue("wsp_default");
     mocks.workspaces
       .mockReset()
@@ -83,11 +83,11 @@ describe("ClickClack post-write setup verification", () => {
 
     expect(runtime.log).toHaveBeenNthCalledWith(
       1,
-      "Connected as @openclaw — workspace clickclack resolved.",
+      "Connected as @afora — workspace clickclack resolved.",
     );
     expect(runtime.log).toHaveBeenNthCalledWith(
       2,
-      "OpenClaw is running — ClickClack will connect automatically.",
+      "Afora is running — ClickClack will connect automatically.",
     );
   });
 
@@ -120,7 +120,7 @@ describe("ClickClack post-write setup verification", () => {
     expect(runtime.log).toHaveBeenNthCalledWith(1, expected);
     expect(runtime.log).toHaveBeenNthCalledWith(
       2,
-      "OpenClaw is running — ClickClack will connect automatically.",
+      "Afora is running — ClickClack will connect automatically.",
     );
   });
 
@@ -146,7 +146,7 @@ describe("ClickClack post-write setup verification", () => {
     {
       name: "running",
       arrange: () => mocks.callGatewayFromCli.mockResolvedValue({ ok: true }),
-      expected: "OpenClaw is running — ClickClack will connect automatically.",
+      expected: "Afora is running — ClickClack will connect automatically.",
     },
     {
       name: "not running",
@@ -158,13 +158,13 @@ describe("ClickClack post-write setup verification", () => {
             code: 1006,
           }),
         ),
-      expected: "Start OpenClaw to connect: openclaw gateway",
+      expected: "Start Afora to connect: afora gateway",
     },
     {
       name: "unavailable",
       arrange: () => mocks.callGatewayFromCli.mockRejectedValue(new Error("probe failed")),
       expected:
-        "If OpenClaw is running it connects automatically; otherwise start it with: openclaw gateway",
+        "If Afora is running it connects automatically; otherwise start it with: afora gateway",
     },
   ])("prints the gateway next step when status is $name", async ({ arrange, expected }) => {
     arrange();

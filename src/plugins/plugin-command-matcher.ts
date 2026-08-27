@@ -1,7 +1,7 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import type { RegisteredPluginCommand } from "./command-registry-state.js";
 import { pluginCommandSupportsChannel } from "./plugin-command-metadata.js";
 

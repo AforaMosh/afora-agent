@@ -1,11 +1,11 @@
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { raftPlugin } from "./channel.js";
 
 const detectBinaryMock = vi.hoisted(() => vi.fn());
 
-vi.mock("openclaw/plugin-sdk/setup-tools", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("openclaw/plugin-sdk/setup-tools")>()),
+vi.mock("afora-agent/plugin-sdk/setup-tools", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("afora-agent/plugin-sdk/setup-tools")>()),
   detectBinary: detectBinaryMock,
 }));
 
@@ -49,7 +49,7 @@ describe("Raft channel plugin", () => {
             profile: "test-profile",
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       const account = raftPlugin.config.resolveAccount(cfg, "default");
 
       const result = await raftPlugin.status!.probeAccount!({

@@ -3,20 +3,20 @@
  * endpoints to Anthropic-compatible URLs and adjusts thinking-token budgets.
  */
 import Anthropic from "@anthropic-ai/sdk";
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
 import {
   stream,
   type Model,
   type SimpleStreamOptions,
   type ThinkingLevel,
-} from "openclaw/plugin-sdk/llm";
+} from "afora-agent/plugin-sdk/llm";
 import {
   requiresClaudeDefaultSampling,
   resolveClaudeMythos5ModelIdentity,
   resolveClaudeOpus5ModelIdentity,
   resolveClaudeSonnet5ModelIdentity,
-} from "openclaw/plugin-sdk/provider-model-shared";
-import { buildGuardedModelFetch } from "openclaw/plugin-sdk/provider-transport-runtime";
+} from "afora-agent/plugin-sdk/provider-model-shared";
+import { buildGuardedModelFetch } from "afora-agent/plugin-sdk/provider-transport-runtime";
 
 const MANTLE_ANTHROPIC_BETA = "fine-grained-tool-streaming-2025-05-14";
 type AnthropicOptions = ConstructorParameters<typeof Anthropic>[0];

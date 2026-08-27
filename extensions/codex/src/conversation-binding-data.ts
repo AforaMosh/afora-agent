@@ -1,11 +1,11 @@
 // Codex plugin module implements conversation binding data behavior.
 import { createHash, randomUUID } from "node:crypto";
 import process from "node:process";
-import type { PluginConversationBinding } from "openclaw/plugin-sdk/plugin-entry";
+import type { PluginConversationBinding } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   asOptionalRecord as readRecord,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 const APP_SERVER_BINDING_DATA_VERSION = 2;
 const CLI_BINDING_DATA_VERSION = 1;

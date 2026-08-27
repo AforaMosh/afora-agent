@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildRuntimeParityScenarioResult } from "./suite-runtime-parity-result.js";
 
 function makeCell(
-  runtime: "openclaw" | "codex",
+  runtime: "afora" | "codex",
   status: "pass" | "fail" | "skip",
   runtimeErrorClass?: string,
 ) {
@@ -27,8 +27,8 @@ describe("QA suite runtime parity result projection", () => {
       result: {
         scenarioId: "runtime-tool-read",
         cells: {
-          openclaw: {
-            ...makeCell("openclaw", "skip"),
+          afora: {
+            ...makeCell("afora", "skip"),
             details:
               "implementation unavailable\nRUNTIME_PARITY_SESSION_KEY=agent:qa:runtime-tool:read:happy",
           },
@@ -48,7 +48,7 @@ describe("QA suite runtime parity result projection", () => {
       result: {
         scenarioId: "runtime-tool-read",
         cells: {
-          openclaw: makeCell("openclaw", "skip"),
+          afora: makeCell("afora", "skip"),
           codex: makeCell("codex", "skip"),
         },
         drift: "failure-mode",
@@ -64,7 +64,7 @@ describe("QA suite runtime parity result projection", () => {
       result: {
         scenarioId: "runtime-tool-exec",
         cells: {
-          openclaw: makeCell("openclaw", "pass"),
+          afora: makeCell("afora", "pass"),
           codex: {
             ...makeCell("codex", "skip"),
             details:

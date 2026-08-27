@@ -1,11 +1,11 @@
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
-import { summarizeStringEntries } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { truncateUtf16Safe } from "openclaw/plugin-sdk/text-utility-runtime";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "afora-agent/plugin-sdk/account-id";
+import { summarizeStringEntries } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { truncateUtf16Safe } from "afora-agent/plugin-sdk/text-utility-runtime";
 // Discord plugin module implements transcripts source behavior.
 import type {
   TranscriptSourceProvider,
   TranscriptStartRequest,
-} from "openclaw/plugin-sdk/transcripts";
+} from "afora-agent/plugin-sdk/transcripts";
 import { listEnabledDiscordAccounts, resolveDiscordAccount } from "../accounts.js";
 import { authorizeDiscordVoiceIngress } from "./access.js";
 import { resolveDiscordVoiceEnabled } from "./config.js";

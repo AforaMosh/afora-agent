@@ -6,7 +6,7 @@
  */
 
 import { finalizeEvent, SimplePool, type Event } from "nostr-tools";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
 import type { NostrProfile } from "./config-schema.js";
 import { profileToContent } from "./nostr-profile-core.js";
 import { publishNostrEventToRelay } from "./relay-publish.js";

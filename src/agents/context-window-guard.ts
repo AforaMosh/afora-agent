@@ -4,8 +4,8 @@
  * Configured model values can cap provider metadata, and local endpoints get
  * more actionable remediation text.
  */
-import { findNormalizedProviderValue } from "@openclaw/model-catalog-core/provider-id";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { findNormalizedProviderValue } from "@afora/model-catalog-core/provider-id";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveProviderEndpoint } from "./provider-attribution.js";
 
 export const CONTEXT_WINDOW_HARD_MIN_TOKENS = 4_000;
@@ -52,7 +52,7 @@ function modelIdMatchesProviderScope(params: {
 
 /** Resolve the effective context window and source for one provider/model. */
 export function resolveContextWindowInfo(params: {
-  cfg: OpenClawConfig | undefined;
+  cfg: AforaConfig | undefined;
   provider: string;
   modelId: string;
   modelContextTokens?: number;
@@ -147,7 +147,7 @@ export function formatContextWindowWarningMessage(params: {
   }
   if (params.guard.source === "modelsConfig") {
     return (
-      `${base}; OpenClaw is using the configured model context limit for this model, ` +
+      `${base}; Afora is using the configured model context limit for this model, ` +
       `so raise contextWindow/contextTokens if it is set too low`
     );
   }
@@ -171,14 +171,14 @@ export function formatContextWindowBlockMessage(params: {
   }
   if (params.guard.source === "modelsConfig") {
     return (
-      `${base} OpenClaw is using the configured model context limit for this model. ` +
+      `${base} Afora is using the configured model context limit for this model. ` +
       `Raise contextWindow/contextTokens or choose a larger model.`
     );
   }
   return (
     `${base} This looks like a local model endpoint. ` +
     `Raise the server/model context limit or choose a larger model. ` +
-    `OpenClaw local/self-hosted runs work best at ${params.guard.warnBelowTokens}+ tokens.`
+    `Afora local/self-hosted runs work best at ${params.guard.warnBelowTokens}+ tokens.`
   );
 }
 

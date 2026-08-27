@@ -6,7 +6,7 @@ type CommandsLoginTestApi = {
 
 function getTestApi(): CommandsLoginTestApi {
   const api = (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.commandsLoginTestApi")
+    Symbol.for("afora.commandsLoginTestApi")
   ];
   if (!api) {
     throw new Error("commands login test API is unavailable");

@@ -1,4 +1,4 @@
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 // Resolves CLI command path policy from the declarative command catalog.
 import { resolveCliStartupCommandPath } from "./argv-invocation.js";
 import { getCommandPathWithRootOptions } from "./argv.js";
@@ -40,7 +40,7 @@ function isCommandPathPrefix(commandPath: string[], pattern: readonly string[]):
 }
 
 function resolveCliCatalogCommandPath(argv: string[]): string[] {
-  // Gateway `run openclaw ...` argv needs catalog routing against the embedded command path.
+  // Gateway `run afora ...` argv needs catalog routing against the embedded command path.
   const startupPath = resolveCliStartupCommandPath(argv);
   const gatewayPath = resolveGatewayCatalogCommandPath(argv);
   if (!gatewayPath && (startupPath[0] === "agent" || startupPath[0] === "models")) {

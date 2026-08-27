@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type {
   SessionCatalogProvider,
   SessionCatalogTranscriptItem,
-} from "openclaw/plugin-sdk/session-catalog";
+} from "afora-agent/plugin-sdk/session-catalog";
 import type { BeamStore } from "./store.js";
 import { BEAM_HOST_ID, type BeamStoredSession } from "./types.js";
 

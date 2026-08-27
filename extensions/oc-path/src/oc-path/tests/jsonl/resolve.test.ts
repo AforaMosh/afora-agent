@@ -71,7 +71,7 @@ describe("resolveJsonlOcPath", () => {
 });
 
 describe("resolveJsonlToUniversal — file-relative line metadata (regression)", () => {
-  // Regression: surfaced via the openclaw-path CLI scenario run on
+  // Regression: surfaced via the afora-path CLI scenario run on
   // a multi-line session.jsonl. Every match returned `line: 1`
   // because the inside-line jsonc parser numbers from 1 within each
   // line's bytes; the universal resolve was preferring that local

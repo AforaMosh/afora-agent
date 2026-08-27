@@ -1,15 +1,15 @@
 import type {
   ChannelIngressQueueClaim,
   ChannelIngressQueueRecord,
-} from "openclaw/plugin-sdk/channel-outbound";
+} from "afora-agent/plugin-sdk/channel-outbound";
 import {
   maybeResolveTextAlias,
   normalizeCommandBody,
-} from "openclaw/plugin-sdk/command-auth-native";
+} from "afora-agent/plugin-sdk/command-auth-native";
 import {
   isAbortRequestText,
   isBtwRequestText,
-} from "openclaw/plugin-sdk/command-primitives-runtime";
+} from "afora-agent/plugin-sdk/command-primitives-runtime";
 // Telegram plugin module owns pre-adoption supersede policy for durable ingress.
 import { isTelegramReadOnlyControlLaneText } from "./sequential-key.js";
 import type { TelegramSpooledUpdatePayload } from "./telegram-ingress-spool.payload.js";

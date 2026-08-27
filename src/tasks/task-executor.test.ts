@@ -44,7 +44,7 @@ import {
   setTaskRegistryDeliveryRuntimeForTests,
 } from "./task-runtime.test-helpers.js";
 
-const ORIGINAL_ENV = captureEnv(["OPENCLAW_STATE_DIR"]);
+const ORIGINAL_ENV = captureEnv(["AFORA_STATE_DIR"]);
 
 function createQueuedTaskRun(params: Parameters<typeof createQueuedTaskRunOrNull>[0]): TaskRecord {
   const task = createQueuedTaskRunOrNull(params);
@@ -108,7 +108,7 @@ vi.mock("../utils/message-channel.js", () => ({
 }));
 
 async function withTaskExecutorStateDir(run: (stateDir: string) => Promise<void>): Promise<void> {
-  await withStateDirEnv("openclaw-task-executor-", async ({ stateDir }) => {
+  await withStateDirEnv("afora-task-executor-", async ({ stateDir }) => {
     resetDetachedTaskLifecycleRuntimeForTests();
     resetSystemEventsForTest();
     resetAgentEventsForTest();

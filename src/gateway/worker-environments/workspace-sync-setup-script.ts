@@ -27,5 +27,5 @@ done
 cd "$current"
 find . -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
 canonical_workspace=$(pwd -P)
-node -e 'process.stdout.write(JSON.stringify({tag:"openclaw-workspace-setup-v1",canonicalHome:process.argv[1],canonicalWorkspace:process.argv[2]})+"\n")' "$canonical_home" "$canonical_workspace"
+node -e 'process.stdout.write(JSON.stringify({tag:"afora-workspace-setup-v1",canonicalHome:process.argv[1],canonicalWorkspace:process.argv[2]})+"\n")' "$canonical_home" "$canonical_workspace"
 `;

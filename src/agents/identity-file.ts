@@ -8,7 +8,7 @@ import path from "node:path";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import type { IdentityConfig } from "../config/types.base.js";
 import { readRegularFile, readRegularFileSync } from "../infra/regular-file.js";
 import { DEFAULT_IDENTITY_FILENAME } from "./workspace.js";

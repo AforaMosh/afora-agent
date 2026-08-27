@@ -1,5 +1,5 @@
-import { MeetingPlatformAdapter } from "openclaw/plugin-sdk/meeting-runtime";
-import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
+import { MeetingPlatformAdapter } from "afora-agent/plugin-sdk/meeting-runtime";
+import { normalizeAgentId } from "afora-agent/plugin-sdk/routing";
 import { Type } from "typebox";
 import { zoomMeetingsConfig } from "./src/config.js";
 import { ZoomMeetingsInvalidRequestError, zoomMeetingsInvalidRequest } from "./src/errors.js";

@@ -2,8 +2,8 @@
  * Provider behavior helpers shared by reply runners, embedded agents, and provider plugins.
  * Keep policy here generic; provider-specific reasoning rules belong in provider runtime hooks.
  */
-import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { normalizeOptionalString } from "@afora/normalization-core/string-coerce";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { ProviderRuntimePluginHandle } from "../plugins/provider-hook-runtime.js";
 import type { ProviderRuntimeModel } from "../plugins/provider-runtime-model.types.js";
 import { resolveProviderReasoningOutputModeWithPlugin } from "../plugins/provider-runtime.js";
@@ -14,7 +14,7 @@ import { resolveProviderReasoningOutputModeWithPlugin } from "../plugins/provide
  */
 function resolveReasoningOutputMode(params: {
   provider: string | undefined | null;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   workspaceDir?: string;
   env?: NodeJS.ProcessEnv;
   modelId?: string;
@@ -59,7 +59,7 @@ function resolveReasoningOutputMode(params: {
 export function isReasoningTagProvider(
   provider: string | undefined | null,
   options?: {
-    config?: OpenClawConfig;
+    config?: AforaConfig;
     workspaceDir?: string;
     env?: NodeJS.ProcessEnv;
     modelId?: string;

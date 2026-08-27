@@ -1,1 +1,1 @@
-Deploying OpenClaw on Fly.io
+Deploying Afora on Fly.io

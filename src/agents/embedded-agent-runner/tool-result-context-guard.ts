@@ -23,7 +23,7 @@ import {
 import { truncateToolResultMessage, truncateToolResultText } from "./tool-result-truncation.js";
 
 const SINGLE_TOOL_RESULT_CONTEXT_SHARE = 0.5;
-const TRANSCRIPT_PROMPT_TEXT_KEY = "__openclawTranscriptPromptText";
+const TRANSCRIPT_PROMPT_TEXT_KEY = "__aforaTranscriptPromptText";
 
 type GuardableTransformContext = (
   messages: AgentMessage[],

@@ -1,5 +1,5 @@
 /**
- * OpenClaw system prompt renderer.
+ * Afora system prompt renderer.
  *
  * Assembles runtime, workspace, tooling, memory, delegation, channel, and cache-boundary prompt sections.
  */
@@ -8,16 +8,16 @@ import {
   normalizePromptCapabilityIds,
   normalizeStructuredPromptSection,
   SYSTEM_PROMPT_CACHE_BOUNDARY,
-} from "@openclaw/ai/internal/shared";
+} from "@afora/ai/internal/shared";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import {
   normalizeStringEntries,
   normalizeStringEntriesLower,
   normalizeUniqueStringEntries,
-} from "@openclaw/normalization-core/string-normalization";
+} from "@afora/normalization-core/string-normalization";
 import type { SourceReplyDeliveryMode } from "../auto-reply/get-reply-options.types.js";
 import type { ReasoningLevel, ThinkLevel } from "../auto-reply/thinking.js";
 import { SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
@@ -53,8 +53,8 @@ import { MAX_OWNER_PROMPT_CONTENT_BYTES, resolveOwnerPromptNumbers } from "./own
 import { filterProjectScopedCuratedContextFiles } from "./project-memory-bootstrap.js";
 import { buildPromisedWorkPromptSection } from "./promised-work-prompt.js";
 import {
-  buildOpenClawToolFallbackText,
-  shouldRenderOpenClawToolWorkflowHints,
+  buildAforaToolFallbackText,
+  shouldRenderAforaToolWorkflowHints,
 } from "./prompt-surface.js";
 import { sanitizeForPromptLiteral } from "./sanitize-for-prompt.js";
 import {
@@ -532,8 +532,8 @@ function buildWebchatCanvasSection(params: {
     params.sourceMessageToolOnly
       ? "- Files: message attachment fields. Web rich render: `[embed ...]`."
       : "- Attachments: `MEDIA:`. Web rich render: `[embed ...]`.",
-    '- Hosted doc: `[embed ref="cv_123" title="Status" height="320" /]`; URL form: `[embed url="/__openclaw__/canvas/documents/cv_123/index.html" title="Status" height="320" /]`.',
-    "- Never local/file:// or arbitrary URL. URL must start `/__openclaw__/canvas/`; else use `ref`.",
+    '- Hosted doc: `[embed ref="cv_123" title="Status" height="320" /]`; URL form: `[embed url="/__afora__/canvas/documents/cv_123/index.html" title="Status" height="320" /]`.',
+    "- Never local/file:// or arbitrary URL. URL must start `/__afora__/canvas/`; else use `ref`.",
     "- Hosted root is profile-, not workspace-scoped; stage there.",
     "- Quote attributes. Prefer `ref`; use `url` only with full hosted URL.",
     "",
@@ -646,7 +646,7 @@ function buildMessagingSection(params: {
       : []),
     subagentOrchestrationGuidance,
     completionEventGuidance,
-    "- Provider messaging: never exec/curl; OpenClaw routes.",
+    "- Provider messaging: never exec/curl; Afora routes.",
     params.availableTools.has("message")
       ? [
           "",
@@ -733,17 +733,17 @@ function buildDocsSection(params: {
   }
   const lines = [
     "## Documentation",
-    docsPath ? `Docs: ${docsPath}` : "Docs: https://docs.openclaw.ai",
-    docsPath ? "Mirror: https://docs.openclaw.ai" : undefined,
-    sourcePath ? `Source: ${sourcePath}` : "Source: https://github.com/openclaw/openclaw",
+    docsPath ? `Docs: ${docsPath}` : "Docs: https://docs.afora.ai",
+    docsPath ? "Mirror: https://docs.afora.ai" : undefined,
+    sourcePath ? `Source: ${sourcePath}` : "Source: https://github.com/AforaMosh/afora-agent",
     docsPath
-      ? `OpenClaw behavior questions: docs first via \`${params.readToolName}\`/local search. AGENTS/project/workspace/profile/memory = instructions/user memory, not product design truth.`
-      : "OpenClaw behavior questions: docs mirror first when web exists. AGENTS/project/workspace/profile/memory = instructions/user memory, not product design truth.",
+      ? `Afora behavior questions: docs first via \`${params.readToolName}\`/local search. AGENTS/project/workspace/profile/memory = instructions/user memory, not product design truth.`
+      : "Afora behavior questions: docs mirror first when web exists. AGENTS/project/workspace/profile/memory = instructions/user memory, not product design truth.",
     "Config field: `gateway(config.schema.lookup)` exact path. Broader: `docs/gateway/configuration.md`, `docs/gateway/configuration-reference.md`.",
     sourcePath
       ? "If docs are silent/stale, say so and inspect local source."
       : "If docs are silent/stale, say so and inspect GitHub source.",
-    "Diagnosis: run `openclaw status` when possible; ask only if blocked.",
+    "Diagnosis: run `afora status` when possible; ask only if blocked.",
     "",
   ];
   return lines.filter((line): line is string => line !== undefined);
@@ -844,7 +844,7 @@ export function buildAgentSystemPrompt(params: {
   proactiveSubagentOrchestration?: boolean;
   /** Whether ACP-specific routing guidance should be included. Defaults to true. */
   acpEnabled?: boolean;
-  /** Prompt surface controls runtime-specific fallback fragments. Defaults to OpenClaw main. */
+  /** Prompt surface controls runtime-specific fallback fragments. Defaults to Afora main. */
   promptSurface?: AgentPromptSurfaceKind;
   /** Registered runtime slash/native command names such as `codex`. */
   nativeCommandNames?: string[];
@@ -891,7 +891,7 @@ export function buildAgentSystemPrompt(params: {
   promptContribution?: ProviderSystemPromptContribution;
 }) {
   const acpEnabled = params.acpEnabled === true;
-  const promptSurface = params.promptSurface ?? "openclaw_main";
+  const promptSurface = params.promptSurface ?? "afora_main";
   const sandboxedRuntime = params.sandboxInfo?.enabled === true;
   const acpSpawnRuntimeEnabled = acpEnabled && !sandboxedRuntime;
   const availableTools = new Set([
@@ -929,10 +929,10 @@ export function buildAgentSystemPrompt(params: {
     conversations_list: "List exact external conversation addresses",
     conversations_send: "Send directly to an external conversation",
     conversations_turn: "Send and wait for one correlated external reply",
-    openclaw: "Gateway restart/system setup/config; changes need human approval",
+    afora: "Gateway restart/system setup/config; changes need human approval",
     gateway: "Read gateway config/schema",
     agents_list: acpSpawnRuntimeEnabled
-      ? "List allowed OpenClaw subagent ids; not ACP ids"
+      ? "List allowed Afora subagent ids; not ACP ids"
       : "List allowed subagent ids",
     sessions_list: "List visible sessions; filters/last",
     sessions_history: "Read visible session/subagent history",
@@ -973,7 +973,7 @@ export function buildAgentSystemPrompt(params: {
     "conversations_list",
     "conversations_send",
     "conversations_turn",
-    "openclaw",
+    "afora",
     "gateway",
     "agents_list",
     "sessions_list",
@@ -1038,14 +1038,14 @@ export function buildAgentSystemPrompt(params: {
     toolLines.push(summary ? `- ${name}: ${summary}` : `- ${name}`);
   }
   const toolSchemaDirectoryPrompt = params.toolSchemaDirectoryPrompt?.trim();
-  const renderOpenClawToolWorkflowHints =
-    shouldRenderOpenClawToolWorkflowHints({
+  const renderAforaToolWorkflowHints =
+    shouldRenderAforaToolWorkflowHints({
       surface: promptSurface,
       hasToolList: toolLines.length > 0,
     }) && params.codeModeActive !== true;
 
   const hasGateway = availableTools.has("gateway");
-  const hasOpenClaw = availableTools.has("openclaw");
+  const hasAfora = availableTools.has("afora");
   const readToolName = resolveToolName("read");
   const execToolName = resolveToolName("exec");
   const processToolName = resolveToolName("process");
@@ -1120,7 +1120,7 @@ export function buildAgentSystemPrompt(params: {
       : "Single global file workspace unless explicitly told otherwise.";
   const workspaceOnlyGuidance =
     params.fsWorkspaceOnly === true
-      ? "tools.fs.workspaceOnly ON: file-tool scratch/temp/meta stays in workspace, preferably `.openclaw/tmp/`. If file tools need it later, never exec-write `/tmp`; use workspace path."
+      ? "tools.fs.workspaceOnly ON: file-tool scratch/temp/meta stays in workspace, preferably `.afora/tmp/`. If file tools need it later, never exec-write `/tmp`; use workspace path."
       : "";
   const safetySection = [
     "## Safety",
@@ -1132,7 +1132,7 @@ export function buildAgentSystemPrompt(params: {
     TRANSCRIPT_CREDENTIAL_SAFETY_PROMPT,
     "",
   ];
-  // CLI backends own native file tools outside OpenClaw's projected tool list.
+  // CLI backends own native file tools outside Afora's projected tool list.
   // Keep their skill catalog visible while embedded runs require a real read tool.
   const canAccessSkills = params.codeModeActive
     ? visibleTools.has("exec")
@@ -1170,7 +1170,7 @@ export function buildAgentSystemPrompt(params: {
 
   // For "none" mode, return just the basic identity line
   if (promptMode === "none") {
-    return ["You are a personal assistant running inside OpenClaw.", modelIdentityLine]
+    return ["You are a personal assistant running inside Afora.", modelIdentityLine]
       .filter(Boolean)
       .join("\n");
   }
@@ -1193,9 +1193,9 @@ export function buildAgentSystemPrompt(params: {
     toolLines,
     toolSchemaDirectoryPrompt,
     capabilityToolNames: [...availableTools].toSorted(),
-    renderOpenClawToolWorkflowHints,
+    renderAforaToolWorkflowHints,
     hasGateway,
-    hasOpenClaw,
+    hasAfora,
     readToolName,
     execToolName,
     processToolName,
@@ -1231,20 +1231,20 @@ export function buildAgentSystemPrompt(params: {
   });
   const stablePrefix = cacheStablePromptPrefix(stablePrefixCacheKey, () => {
     const lines = [
-      "You are a personal assistant running inside OpenClaw.",
+      "You are a personal assistant running inside Afora.",
       "",
       "## Tooling",
       "Tools policy-filtered. Names case-sensitive; call exact.",
       toolLines.length > 0
         ? toolLines.join("\n")
-        : buildOpenClawToolFallbackText({
+        : buildAforaToolFallbackText({
             surface: promptSurface,
           }),
       ...(toolSchemaDirectoryPrompt
         ? ["", "### Deferred Tool Schemas", toolSchemaDirectoryPrompt]
         : []),
       "The AGENTS.md Tools section guides usage; it never grants availability.",
-      ...(renderOpenClawToolWorkflowHints
+      ...(renderAforaToolWorkflowHints
         ? [
             `Long wait: no rapid poll. Use ${execToolName} yieldMs or ${processToolName}(poll, timeout=<ms>).`,
             ...(hasSessionsSpawn
@@ -1277,12 +1277,12 @@ export function buildAgentSystemPrompt(params: {
               : []),
           ]
         : []),
-      ...(renderOpenClawToolWorkflowHints && subagentStatusTools.length > 0
+      ...(renderAforaToolWorkflowHints && subagentStatusTools.length > 0
         ? [
             `Never loop-poll ${subagentStatusTools.map((name) => (name === "subagents" ? "`subagents list`" : `\`${name}\``)).join("/")}.${availableTools.has("sessions_yield") ? " Wait with `sessions_yield`." : ""} Status only on-demand/intervention/debug/request.`,
           ]
         : []),
-      ...(renderOpenClawToolWorkflowHints && sessionLookupTools.length > 0
+      ...(renderAforaToolWorkflowHints && sessionLookupTools.length > 0
         ? [
             `Asked about another chat/group/session not in context: check ${sessionLookupTools.map((name) => `\`${name}\``).join("/")} before claiming no access.`,
           ]
@@ -1328,11 +1328,11 @@ export function buildAgentSystemPrompt(params: {
         fallback: [],
       }),
       ...safetySection,
-      "## OpenClaw Control",
+      "## Afora Control",
       "Do not invent commands.",
-      ...(hasOpenClaw
+      ...(hasAfora
         ? [
-            "Gateway restart, config, channels, plugins, agents, models/providers, updates: ask `openclaw`. Never restart the Gateway through shell commands or write your own config.",
+            "Gateway restart, config, channels, plugins, agents, models/providers, updates: ask `afora`. Never restart the Gateway through shell commands or write your own config.",
           ]
         : [
             "Config read: `gateway` (`config.get|config.schema.lookup`). Write/restart unavailable; ask human.",
@@ -1422,7 +1422,7 @@ export function buildAgentSystemPrompt(params: {
       params.sandboxInfo?.enabled ? "" : "",
       ...bootstrapSystemPromptSections,
       "## Workspace Files (injected)",
-      "User-editable; OpenClaw loads below as Project Context.",
+      "User-editable; Afora loads below as Project Context.",
       "",
       ...buildAssistantOutputDirectivesSection({ isMinimal, sourceMessageToolOnly }),
     ];

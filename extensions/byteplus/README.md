@@ -1,17 +1,17 @@
-# OpenClaw BytePlus Provider
+# Afora BytePlus Provider
 
-Official OpenClaw provider plugin for BytePlus model inference and Seedance
+Official Afora provider plugin for BytePlus model inference and Seedance
 video generation.
 
-Install from OpenClaw:
+Install from Afora:
 
 ```bash
-openclaw plugins install @openclaw/byteplus-provider
-openclaw gateway restart
+afora plugins install @afora/byteplus-provider
+afora gateway restart
 ```
 
 Set `BYTEPLUS_API_KEY`, then select a `byteplus/*` or `byteplus-plan/*` model.
 
-See <https://docs.openclaw.ai/concepts/model-providers#byteplus-international>
-for model setup and <https://docs.openclaw.ai/tools/video-generation> for
+See <https://docs.afora.ai/concepts/model-providers#byteplus-international>
+for model setup and <https://docs.afora.ai/tools/video-generation> for
 Seedance video generation.

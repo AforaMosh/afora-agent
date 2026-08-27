@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"OpenClaw"</string>
+    <string name="app_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Afora"</string>
     <string name="chat" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"チャット"</string>
     <string name="session" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"セッション"</string>
     <string name="model" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"モデル"</string>
@@ -39,7 +39,7 @@
     <string name="agent" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"エージェント"</string>
     <string name="system" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"システム"</string>
     <string name="start_conversation" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"会話を開始"</string>
-    <string name="start_conversation_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ウォッチで話すか入力してください。ペアリング済みのスマートフォンが、認証済みのOpenClawセッションを通じてメッセージを送信します。"</string>
+    <string name="start_conversation_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ウォッチで話すか入力してください。ペアリング済みのスマートフォンが、認証済みのAforaセッションを通じてメッセージを送信します。"</string>
     <string name="current_session" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"現在のセッション"</string>
     <string name="appearance" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"外観"</string>
     <string name="theme_dark" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ダーク"</string>
@@ -61,28 +61,28 @@
     <string name="phone_ready" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"スマートフォンの準備ができました"</string>
     <string name="gateway_connected" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Gatewayに接続しました"</string>
     <string name="gateway_offline" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Gateway オフライン"</string>
-    <string name="gateway_offline_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ペアリングしたスマートフォンのOpenClawでGatewayに再接続してください。"</string>
-    <string name="open_phone_app" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"スマートフォンでOpenClawを開く"</string>
+    <string name="gateway_offline_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ペアリングしたスマートフォンのAforaでGatewayに再接続してください。"</string>
+    <string name="open_phone_app" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"スマートフォンでAforaを開く"</string>
     <string name="phone_not_ready_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ウォッチ自体がGatewayを起動したり、認証したりすることはありません。"</string>
     <string name="phone_unavailable" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"スマートフォンに接続できません"</string>
-    <string name="phone_unavailable_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ペアリングしたスマートフォンを近くに置き、対応するOpenClawアプリをインストールしてください。"</string>
+    <string name="phone_unavailable_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ペアリングしたスマートフォンを近くに置き、対応するAforaアプリをインストールしてください。"</string>
     <string name="selection_not_found" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"選択した項目は利用できなくなりました"</string>
     <string name="message_not_sent" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"操作を受け付けられませんでした"</string>
     <string name="something_went_wrong" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"問題が発生しました"</string>
     <string name="refresh_and_try_again" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"リストを更新して、もう一度お試しください。"</string>
     <string name="try_again" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"ウォッチからもう一度お試しください。"</string>
     <string name="update_required" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"アップデートが必要です"</string>
-    <string name="update_required_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"スマートフォンとウォッチの両方でOpenClawをアップデートしてください。"</string>
+    <string name="update_required_detail" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"スマートフォンとウォッチの両方でAforaをアップデートしてください。"</string>
     <string name="refresh" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"更新"</string>
     <string name="retry" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"再試行"</string>
-    <string name="notification_channel_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"OpenClawからの返信"</string>
+    <string name="notification_channel_name" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Aforaからの返信"</string>
     <string name="notification_reply" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"返信"</string>
-    <string name="notification_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"OpenClawの返信"</string>
+    <string name="notification_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Aforaの返信"</string>
     <string name="notification_reply_failed_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"返信を送信できませんでした"</string>
     <string name="notification_reply_failed_text" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"スマートフォンを利用できません。もう一度試すには「返信」をタップしてください。"</string>
-    <string name="notification_phone_changed_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"OpenClawを開いて返信"</string>
+    <string name="notification_phone_changed_title" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Aforaを開いて返信"</string>
     <string name="notification_phone_changed_text" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"優先するスマートフォンが変更されました。返信する前にアプリを開いてセッションを再読み込みしてください。"</string>
-    <string name="tile_label" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"OpenClaw"</string>
+    <string name="tile_label" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"Afora"</string>
     <string name="tile_description" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"セッションを開き、ペアリング済みのスマートフォン経由で返信"</string>
     <string name="tile_open" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"開く"</string>
     <string name="tile_phone_proxy" tools:ignore="Typos,TypographyDashes,TypographyEllipsis">"スマートフォンプロキシ"</string>

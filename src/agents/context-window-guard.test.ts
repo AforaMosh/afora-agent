@@ -1,6 +1,6 @@
 // Covers context-window guard thresholds and user-facing warning/block text.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import {
   evaluateContextWindowGuard,
   formatContextWindowBlockMessage,
@@ -31,7 +31,7 @@ describe("context-window-guard", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
   }
 
   it("blocks below the hard-min floor (model metadata)", () => {
@@ -152,7 +152,7 @@ describe("context-window-guard", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const info = resolveContextWindowInfo({
       cfg,
@@ -191,7 +191,7 @@ describe("context-window-guard", () => {
           },
         },
       },
-    } satisfies OpenClawConfig;
+    } satisfies AforaConfig;
 
     const info = resolveContextWindowInfo({
       cfg,

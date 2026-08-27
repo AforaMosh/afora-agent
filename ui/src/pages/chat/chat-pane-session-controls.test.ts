@@ -72,7 +72,7 @@ describe("chat pane composer controls", () => {
           key: "agent:main:permission-test",
           kind: "direct",
           permissionMode: "full",
-          sessionRoot: "/workspace/projects/openclaw",
+          sessionRoot: "/workspace/projects/afora",
         },
         agentDefaultModel: undefined,
         modelAccess: { allowed: true, requiredScope: "operator.write" },

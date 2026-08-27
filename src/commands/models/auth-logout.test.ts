@@ -1,7 +1,7 @@
 // Covers `models auth logout`: store removal, config-reference cleanup, and refusals.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthProfileStore } from "../../agents/auth-profiles.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { RuntimeEnv } from "../../runtime.js";
 
 const mocks = vi.hoisted(() => ({
@@ -30,7 +30,7 @@ vi.mock("./shared.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./shared.js")>();
   return {
     ...actual,
-    resolveModelsTargetAgent: (_cfg: OpenClawConfig, rawAgentId?: string) => ({
+    resolveModelsTargetAgent: (_cfg: AforaConfig, rawAgentId?: string) => ({
       agentId: rawAgentId ?? "main",
       agentDir: `/tmp/agent-${rawAgentId ?? "main"}`,
     }),
@@ -76,9 +76,9 @@ function storeWith(profileIds: string[]): AuthProfileStore {
 }
 
 /** Runs the config mutator captured by the mocked updateConfig. */
-function applyCapturedConfigUpdate(cfg: OpenClawConfig): OpenClawConfig {
+function applyCapturedConfigUpdate(cfg: AforaConfig): AforaConfig {
   const mutator = mocks.updateConfig.mock.calls[0]?.[0] as
-    | ((current: OpenClawConfig) => OpenClawConfig)
+    | ((current: AforaConfig) => AforaConfig)
     | undefined;
   if (!mutator) {
     throw new Error("expected updateConfig to be called");
@@ -111,8 +111,8 @@ describe("models auth logout", () => {
     mocks.removeAuthProfilesAcrossOwnerStores.mockResolvedValue(true);
     mocks.confirm.mockResolvedValue(true);
     mocks.listProfilesForProvider.mockReturnValue([]);
-    mocks.updateConfig.mockResolvedValue({} as OpenClawConfig);
-    mocks.loadModelsConfig.mockResolvedValue({} as OpenClawConfig);
+    mocks.updateConfig.mockResolvedValue({} as AforaConfig);
+    mocks.loadModelsConfig.mockResolvedValue({} as AforaConfig);
     mocks.ensureAuthProfileStoreWithoutExternalProfiles.mockReturnValue(
       storeWith(["openai:manual"]),
     );
@@ -148,7 +148,7 @@ describe("models auth logout", () => {
           anthropic: ["anthropic:manual"],
         },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     mocks.loadModelsConfig.mockResolvedValue(cfg);
 
     await modelsAuthLogoutCommand({ profileId: "openai:manual", yes: true }, createRuntime());
@@ -173,7 +173,7 @@ describe("models auth logout", () => {
         profiles: { "openai:manual": { provider: "openai", mode: "oauth" } },
         order: { openai: ["openai:manual"], anthropic: [] },
       },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     mocks.loadModelsConfig.mockResolvedValue(cfg);
 
     await modelsAuthLogoutCommand({ profileId: "openai:manual", yes: true }, createRuntime());
@@ -189,7 +189,7 @@ describe("models auth logout", () => {
   it("removes the config reference before deleting the credential", async () => {
     const cfg = {
       auth: { profiles: { "openai:manual": { provider: "openai", mode: "oauth" } } },
-    } as unknown as OpenClawConfig;
+    } as unknown as AforaConfig;
     mocks.loadModelsConfig.mockResolvedValue(cfg);
     const calls: string[] = [];
     mocks.updateConfig.mockImplementation(async () => {
@@ -210,7 +210,7 @@ describe("models auth logout", () => {
     {
       label: "unknown profile id",
       profileId: "openai:missing",
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       expected: 'Auth profile "openai:missing" not found for agent "main"',
     },
     {
@@ -218,13 +218,13 @@ describe("models auth logout", () => {
       profileId: "openai:manual",
       cfg: {
         models: { providers: { openai: { apiKey: "openai:manual" } } },
-      } as unknown as OpenClawConfig,
+      } as unknown as AforaConfig,
       expected: "referenced by models.providers.openai.apiKey",
     },
     {
       label: "blank profile id",
       profileId: "  ",
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       expected: "Missing profile id",
     },
   ])("refuses removal for $label", async ({ profileId, cfg, expected }) => {

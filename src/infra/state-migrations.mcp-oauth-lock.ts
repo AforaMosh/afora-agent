@@ -9,7 +9,7 @@ const LOCK_RETRIES = 20;
 const LOCK_RETRY_FACTOR = 1.3;
 const LOCK_RETRY_MIN_MS = 25;
 const LOCK_RETRY_MAX_MS = 500;
-const MCP_OAUTH_LOCKS = createFileLockManager("openclaw.mcp-oauth-legacy-migration");
+const MCP_OAUTH_LOCKS = createFileLockManager("afora.mcp-oauth-legacy-migration");
 function createLockPayload(): Record<string, unknown> {
   const payload: Record<string, unknown> = {
     pid: process.pid,

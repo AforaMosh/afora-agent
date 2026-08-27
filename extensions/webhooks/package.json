@@ -1,13 +1,13 @@
 {
-  "name": "@openclaw/webhooks",
+  "name": "@afora/webhooks",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw webhook bridge plugin",
+  "description": "Afora webhook bridge plugin",
   "type": "module",
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*"
+    "@afora/plugin-sdk": "workspace:*"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ]

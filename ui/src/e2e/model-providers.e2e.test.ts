@@ -14,11 +14,11 @@ import {
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
 
 const NOW = Date.now();
-const recordVisuals = process.env.OPENCLAW_UI_E2E_RECORD === "1";
+const recordVisuals = process.env.AFORA_UI_E2E_RECORD === "1";
 const artifactDir = path.resolve(".artifacts/control-ui-e2e/model-providers");
 const utilityHelpArtifactDir = path.resolve(".artifacts/control-ui-e2e/utility-model-help");
 const readinessArtifactDir = path.resolve(".artifacts/control-ui-e2e/models-provider-readiness");
@@ -83,7 +83,7 @@ describeControlUiE2e("Control UI Models mocked Gateway E2E", () => {
     const page = await context.newPage();
     const config = { auth: { profiles: { "openai:chatgpt": { provider: "openai" } } } };
     const gateway = await installMockGateway(page, {
-      featureMethods: ["chat.metadata", "chat.startup", "models.probe", "openclaw.setup.detect"],
+      featureMethods: ["chat.metadata", "chat.startup", "models.probe", "afora.setup.detect"],
       methodResponses: {
         "config.get": {
           config,
@@ -116,10 +116,10 @@ describeControlUiE2e("Control UI Models mocked Gateway E2E", () => {
             },
           ],
         },
-        "openclaw.setup.detect": {
+        "afora.setup.detect": {
           candidates: [],
           manualProviders: [{ id: "openai", label: "OpenAI" }],
-          workspace: "/tmp/openclaw-e2e",
+          workspace: "/tmp/afora-e2e",
           setupComplete: false,
         },
         "usage.status": { updatedAt: NOW, providers: [] },
@@ -373,7 +373,7 @@ describeControlUiE2e("Control UI Models mocked Gateway E2E", () => {
         await utilityField.waitFor();
         await expect
           .poll(() => modelPickerValue(utilityField.locator("wa-select")))
-          .toBe("__openclaw_automatic_utility__");
+          .toBe("__afora_automatic_utility__");
 
         if (recordVisuals) {
           await page.screenshot({
@@ -897,7 +897,7 @@ describeControlUiE2e("Control UI Models mocked Gateway E2E", () => {
 
     try {
       await page.goto(`${server.baseUrl}settings/model-providers`);
-      const agentPicker = page.locator(".agent-scope-control openclaw-agent-select");
+      const agentPicker = page.locator(".agent-scope-control afora-agent-select");
       await agentPicker.locator(".agent-select__trigger").click();
       await agentPicker.locator('wa-dropdown-item[aria-label="Writer"]').click();
       await expect

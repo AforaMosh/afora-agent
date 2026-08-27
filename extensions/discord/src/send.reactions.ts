@@ -1,5 +1,5 @@
 // Discord plugin module implements send.reactions behavior.
-import { requireRuntimeConfig } from "openclaw/plugin-sdk/plugin-config-runtime";
+import { requireRuntimeConfig } from "afora-agent/plugin-sdk/plugin-config-runtime";
 import {
   createOwnMessageReaction,
   deleteOwnMessageReaction,

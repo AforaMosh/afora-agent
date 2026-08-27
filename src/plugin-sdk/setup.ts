@@ -1,18 +1,18 @@
 // Shared setup wizard/types/helpers for plugin and channel setup surfaces.
 
-export type { OpenClawConfig } from "../config/config.js";
+export type { AforaConfig } from "../config/config.js";
 export type { DmPolicy } from "../config/types.js";
-// Registry readers (2026-07-22): @nodeskai/feishu, openclaw-channel-whatsapp-official,
-// openclaw-vk, openclaw-ndr, moltbot-channel-feishu, @kagura-agent/openclaw-zulip,
+// Registry readers (2026-07-22): @nodeskai/feishu, afora-channel-whatsapp-official,
+// afora-vk, afora-ndr, moltbot-channel-feishu, @kagura-agent/afora-zulip,
 // @jeik/dingtalk-connector, @xzq-xu/feishu, @dingtalk-real-ai/dingtalk-connector,
-// @openclaw-vk/vk, yzw-dingtalk-connector, and openclaw-channel-zulip.
+// @afora-vk/vk, yzw-dingtalk-connector, and afora-channel-zulip.
 export type { GroupPolicy } from "../config/types.js";
 export type { SecretInput } from "../config/types.secrets.js";
 export type {
   WizardMultiSelectParams,
   WizardProgress,
   WizardPrompter,
-  // Registry reader (2026-07-22): @ama2/openclaw-channel.
+  // Registry reader (2026-07-22): @ama2/afora-channel.
   WizardSelectParams,
 } from "../wizard/prompts.js";
 export { WizardCancelledError } from "../wizard/prompts.js";
@@ -30,12 +30,12 @@ export { formatCliCommand } from "../cli/command-format.js";
 export { detectBinary } from "../infra/detect-binary.js";
 export { formatDocsLink } from "../../packages/terminal-core/src/links.js";
 export { hasConfiguredSecretInput, normalizeSecretInputString } from "../config/types.secrets.js";
-// Registry readers (2026-07-22): @cyzlmh/openclaw-sms, @spicerhome/claw-messenger,
+// Registry readers (2026-07-22): @cyzlmh/afora-sms, @spicerhome/claw-messenger,
 // @chatu-ai/webhub, @rowger_go/chatu, and @emotion-machine/claw-messenger.
 export { normalizeE164 } from "../utils.js";
-// Registry readers (2026-07-22): openclaw-rcs, @woowonjae/rol-websocket-channel,
-// openclaw-swarm-layer, rol-websocket-channel, @clawling/clawchat-plugin-openclaw,
-// @workclaw/openclaw-workclaw, clawspec, and @privateclaw/privateclaw.
+// Registry readers (2026-07-22): afora-rcs, @woowonjae/rol-websocket-channel,
+// afora-swarm-layer, rol-websocket-channel, @clawling/clawchat-plugin-afora,
+// @workclaw/afora-workclaw, clawspec, and @privateclaw/privateclaw.
 export { pathExists } from "../utils.js";
 
 export {
@@ -51,7 +51,7 @@ export {
 export {
   addWildcardAllowFrom,
   buildSingleChannelSecretPromptState,
-  // Registry reader (2026-07-22): @lansenger-pm/openclaw-lansenger-channel.
+  // Registry reader (2026-07-22): @lansenger-pm/afora-lansenger-channel.
   createAccountScopedAllowFromSection,
   createAllowFromSection,
   createPromptParsedAllowFromForAccount,
@@ -68,11 +68,11 @@ export {
   patchChannelConfigForAccount,
   promptAccountId,
   promptSingleChannelSecretInput,
-  // Registry reader (2026-07-22): openclaw-channel-xiaozhu.
+  // Registry reader (2026-07-22): afora-channel-xiaozhu.
   resolveSetupAccountId,
   runSingleChannelSecretStep,
   setSetupChannelEnabled,
-  // Registry readers (2026-07-22): openclaw-vk and @openclaw-vk/vk.
+  // Registry readers (2026-07-22): afora-vk and @afora-vk/vk.
   setTopLevelChannelDmPolicyWithAllowFrom,
   splitSetupEntries,
 } from "../channels/plugins/setup-wizard-helpers.js";

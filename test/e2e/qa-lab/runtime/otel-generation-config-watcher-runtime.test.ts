@@ -29,7 +29,7 @@ describe("OTEL generation config watcher runtime", () => {
     const gatewayToken = "qa-suite-12345678-1234-1234-1234-123456789abc";
     const failure = sanitizeOtelWatcherFailure(
       new Error(
-        `failed at /workspace/repo/test.ts via ${localEndpoint} in /tmp/openclaw-qa-suite-private with ${gatewayToken}`,
+        `failed at /workspace/repo/test.ts via ${localEndpoint} in /tmp/afora-qa-suite-private with ${gatewayToken}`,
       ),
       "/workspace/repo",
     );

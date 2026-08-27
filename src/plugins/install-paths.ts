@@ -124,7 +124,7 @@ export function resolvePluginNpmProjectDir(params: {
   );
 }
 
-const PLUGIN_NPM_GENERATION_PROJECT_SEPARATOR = "__openclaw-generation__";
+const PLUGIN_NPM_GENERATION_PROJECT_SEPARATOR = "__afora-generation__";
 const PLUGIN_NPM_GENERATION_KEY_HASH_CHARS = 16;
 const PLUGIN_NPM_GENERATION_KEY_DIR_NAME_PATTERN = new RegExp(
   `^g-[a-f0-9]{${PLUGIN_NPM_GENERATION_KEY_HASH_CHARS}}$`,

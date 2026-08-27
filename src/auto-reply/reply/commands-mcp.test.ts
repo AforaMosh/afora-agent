@@ -1,6 +1,6 @@
 // Tests MCP command configuration, listing, and enablement behavior.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/config.js";
+import type { AforaConfig } from "../../config/config.js";
 import { withTempHome } from "../../config/home-env.test-harness.js";
 import { REDACTED_SENTINEL } from "../../config/redact-snapshot.js";
 import { createCommandWorkspaceHarness } from "./commands-filesystem.test-support.js";
@@ -16,7 +16,7 @@ const privateRouteMocks = vi.hoisted(() => ({
 vi.mock("../../config/mcp-config.js", () => ({
   listConfiguredMcpServers: vi.fn(async () => ({
     ok: true,
-    path: "/tmp/openclaw.json",
+    path: "/tmp/afora.json",
     config: {},
     mcpServers: Object.fromEntries(mcpServers),
   })),
@@ -27,7 +27,7 @@ vi.mock("../../agents/mcp-config-mutation.js", () => ({
     mcpServers.set(name, { ...(server as Record<string, unknown>) });
     return {
       ok: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       config: {},
       mcpServers: Object.fromEntries(mcpServers),
     };
@@ -36,7 +36,7 @@ vi.mock("../../agents/mcp-config-mutation.js", () => ({
     const removed = mcpServers.delete(name);
     return {
       ok: true,
-      path: "/tmp/openclaw.json",
+      path: "/tmp/afora.json",
       config: {},
       mcpServers: Object.fromEntries(mcpServers),
       removed,
@@ -55,7 +55,7 @@ vi.mock("./commands-private-route.js", async () => {
   };
 });
 
-const workspaceHarness = createCommandWorkspaceHarness("openclaw-command-mcp-");
+const workspaceHarness = createCommandWorkspaceHarness("afora-command-mcp-");
 
 function expectMcpResult<T>(result: T | null): T {
   if (result === null) {
@@ -64,7 +64,7 @@ function expectMcpResult<T>(result: T | null): T {
   return result;
 }
 
-function buildCfg(): OpenClawConfig {
+function buildCfg(): AforaConfig {
   return {
     commands: {
       text: true,
@@ -82,7 +82,7 @@ describe("handleCommands /mcp", () => {
   });
 
   it("writes MCP config and shows it back", async () => {
-    await withTempHome("openclaw-command-mcp-home-", async () => {
+    await withTempHome("afora-command-mcp-home-", async () => {
       const workspaceDir = await workspaceHarness.createWorkspace();
       const setParams = buildCommandTestParams(
         '/mcp set context7={"command":"uvx","args":["context7-mcp"]}',
@@ -106,7 +106,7 @@ describe("handleCommands /mcp", () => {
   });
 
   it("blocks authorized non-owner senders from writing MCP config", async () => {
-    await withTempHome("openclaw-command-mcp-home-", async () => {
+    await withTempHome("afora-command-mcp-home-", async () => {
       const workspaceDir = await workspaceHarness.createWorkspace();
       mcpServers.set("existing", { command: "uvx", args: ["existing-mcp"] });
       const setParams = buildCommandTestParams(
@@ -132,7 +132,7 @@ describe("handleCommands /mcp", () => {
   });
 
   it("blocks authorized non-owner senders from reading MCP config", async () => {
-    await withTempHome("openclaw-command-mcp-home-", async () => {
+    await withTempHome("afora-command-mcp-home-", async () => {
       const workspaceDir = await workspaceHarness.createWorkspace();
       mcpServers.set("context7", { command: "uvx", args: ["context7-mcp"] });
       const showParams = buildCommandTestParams("/mcp show context7", buildCfg(), undefined, {
@@ -149,7 +149,7 @@ describe("handleCommands /mcp", () => {
   });
 
   it("rejects internal writes without operator.admin", async () => {
-    await withTempHome("openclaw-command-mcp-home-", async () => {
+    await withTempHome("afora-command-mcp-home-", async () => {
       const workspaceDir = await workspaceHarness.createWorkspace();
       const params = buildCommandTestParams(
         '/mcp set context7={"command":"uvx","args":["context7-mcp"]}',
@@ -169,7 +169,7 @@ describe("handleCommands /mcp", () => {
   });
 
   it("accepts non-stdio MCP config at the config layer", async () => {
-    await withTempHome("openclaw-command-mcp-home-", async () => {
+    await withTempHome("afora-command-mcp-home-", async () => {
       const workspaceDir = await workspaceHarness.createWorkspace();
       const params = buildCommandTestParams(
         '/mcp set remote={"url":"https://example.com/mcp"}',
@@ -185,7 +185,7 @@ describe("handleCommands /mcp", () => {
   });
 
   it("routes group /mcp show privately and redacts the delivered config", async () => {
-    await withTempHome("openclaw-command-mcp-home-", async () => {
+    await withTempHome("afora-command-mcp-home-", async () => {
       const workspaceDir = await workspaceHarness.createWorkspace();
       const privateReplies: string[] = [];
       privateRouteMocks.resolvePrivateCommandRouteTargets.mockResolvedValue([
@@ -255,7 +255,7 @@ describe("handleCommands /mcp", () => {
       const namedGroupText = namedResult.reply?.text ?? "";
       expect(namedGroupText).toContain("sent the details to the owner privately");
       expect(namedGroupText).not.toContain("billing-server");
-      expect(namedGroupText).not.toContain("/tmp/openclaw.json");
+      expect(namedGroupText).not.toContain("/tmp/afora.json");
       expect(namedGroupText).not.toContain(headerSecret);
       expect(privateReplies).toHaveLength(1);
       const namedText = privateReplies[0] ?? "";
@@ -290,7 +290,7 @@ describe("handleCommands /mcp", () => {
       const allGroupText = allResult.reply?.text ?? "";
       expect(allGroupText).toContain("sent the details to the owner privately");
       expect(allGroupText).not.toContain("billing-server");
-      expect(allGroupText).not.toContain("/tmp/openclaw.json");
+      expect(allGroupText).not.toContain("/tmp/afora.json");
       expect(privateReplies).toHaveLength(2);
       const allText = privateReplies[1] ?? "";
       expect(allText).toContain('"billing-server"');
@@ -321,7 +321,7 @@ describe("handleCommands /mcp", () => {
       deliverPrivateMcpReply: async () => false,
     },
   ])("fails closed for group /mcp show with $name", async (route) => {
-    await withTempHome("openclaw-command-mcp-home-", async () => {
+    await withTempHome("afora-command-mcp-home-", async () => {
       const workspaceDir = await workspaceHarness.createWorkspace();
       const secret = "group-route-secret-value";
       mcpServers.set("billing-server", {
@@ -342,13 +342,13 @@ describe("handleCommands /mcp", () => {
       const groupText = result.reply?.text ?? "";
       expect(groupText).toContain("Run /mcp show from an owner DM");
       expect(groupText).not.toContain("billing-server");
-      expect(groupText).not.toContain("/tmp/openclaw.json");
+      expect(groupText).not.toContain("/tmp/afora.json");
       expect(groupText).not.toContain(secret);
     });
   });
 
   it("tries later private owner routes without exposing config to the group", async () => {
-    await withTempHome("openclaw-command-mcp-home-", async () => {
+    await withTempHome("afora-command-mcp-home-", async () => {
       const workspaceDir = await workspaceHarness.createWorkspace();
       const attemptedTargets: string[] = [];
       mcpServers.set("billing-server", {

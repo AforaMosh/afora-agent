@@ -2,13 +2,13 @@
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { requireNodeSqlite } from "../infra/node-sqlite.js";
-import { closeOpenClawStateDatabaseForTest } from "../state/openclaw-state-db.js";
+import { closeAforaStateDatabaseForTest } from "../state/afora-state-db.js";
 import { withTestDir } from "../test-helpers/temp-dir.js";
 import { createInMemoryAcpEventLedger, createSqliteAcpEventLedger } from "./event-ledger.js";
 
 describe("ACP event ledger", () => {
   afterEach(() => {
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
   });
 
   it("records complete in-memory session updates in sequence", async () => {
@@ -113,8 +113,8 @@ describe("ACP event ledger", () => {
   });
 
   it("persists SQLite-backed replay state across ledger instances", async () => {
-    await withTestDir({ prefix: "openclaw-acp-ledger-" }, async (dir) => {
-      const databasePath = path.join(dir, "openclaw.sqlite");
+    await withTestDir({ prefix: "afora-acp-ledger-" }, async (dir) => {
+      const databasePath = path.join(dir, "afora.sqlite");
       const first = createSqliteAcpEventLedger({ path: databasePath, now: () => 1000 });
       await first.startSession({
         sessionId: "session-1",
@@ -132,7 +132,7 @@ describe("ACP event ledger", () => {
         },
       });
 
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       const second = createSqliteAcpEventLedger({ path: databasePath });
       const replay = await second.readReplay({
         sessionId: "session-1",
@@ -149,9 +149,9 @@ describe("ACP event ledger", () => {
   });
 
   it("marks SQLite-backed replay incomplete when event retention truncates history", async () => {
-    await withTestDir({ prefix: "openclaw-acp-ledger-" }, async (dir) => {
+    await withTestDir({ prefix: "afora-acp-ledger-" }, async (dir) => {
       const ledger = createSqliteAcpEventLedger({
-        path: path.join(dir, "openclaw.sqlite"),
+        path: path.join(dir, "afora.sqlite"),
         maxEventsPerSession: 1,
       });
       await ledger.startSession({
@@ -184,8 +184,8 @@ describe("ACP event ledger", () => {
   });
 
   it("keeps footprint aggregates consistent while the byte budget evicts", async () => {
-    await withTestDir({ prefix: "openclaw-acp-ledger-" }, async (dir) => {
-      const databasePath = path.join(dir, "openclaw.sqlite");
+    await withTestDir({ prefix: "afora-acp-ledger-" }, async (dir) => {
+      const databasePath = path.join(dir, "afora.sqlite");
       const ledger = createSqliteAcpEventLedger({
         path: databasePath,
         // Small enough that appends force byte-budget eviction repeatedly.

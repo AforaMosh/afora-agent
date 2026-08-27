@@ -1,12 +1,12 @@
 // Signal transport binding for numbered ask_user reactions.
-import type { OutboundDeliveryResult } from "openclaw/plugin-sdk/channel-send-result";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
+import type { OutboundDeliveryResult } from "afora-agent/plugin-sdk/channel-send-result";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
 import {
   createQuestionReactionTargetStore,
   questionGatewayRuntime,
-} from "openclaw/plugin-sdk/question-gateway-runtime";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-runtime";
-import { normalizeAccountId } from "openclaw/plugin-sdk/routing";
+} from "afora-agent/plugin-sdk/question-gateway-runtime";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-runtime";
+import { normalizeAccountId } from "afora-agent/plugin-sdk/routing";
 import { resolveSignalTarget } from "./aliases.js";
 import {
   resolveSignalApprovalConversationKey,
@@ -40,7 +40,7 @@ const questionReactionTargets = createQuestionReactionTargetStore<
 });
 
 function resolveConversationKey(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   to: string;
 }): string | null {
@@ -58,7 +58,7 @@ function resolveConversationKey(params: {
 }
 
 export function registerSignalQuestionReactionTargetForDeliveredPayload(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   target: { channel: string; to: string; accountId?: string | null };
   payload: ReplyPayload;
   results: readonly OutboundDeliveryResult[];
@@ -92,7 +92,7 @@ export function registerSignalQuestionReactionTargetForDeliveredPayload(params: 
 }
 
 export async function maybeResolveSignalQuestionReaction(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   conversationKey: string;
   messageId: string;

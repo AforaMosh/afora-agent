@@ -4,12 +4,12 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { __setFsSafeTestHooksForTest } from "@openclaw/fs-safe/test-hooks";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import JSZip from "jszip";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { createSolidPngBuffer } from "../../test/helpers/image-fixtures.js";
 import { resolveStateDir } from "../config/paths.js";
-import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
+import { resolvePreferredAforaTmpDir } from "../infra/tmp-afora-dir.js";
 import { createEmptyPluginRegistry } from "../plugins/registry-empty.js";
 import { resetPluginRuntimeStateForTest, setActivePluginRegistry } from "../plugins/runtime.js";
 import { withEnvAsync } from "../test-utils/env.js";
@@ -25,7 +25,7 @@ let resolveImageCompressionGrid: typeof import("./web-media.js").resolveImageCom
 
 const TINY_PNG_BUFFER = createSolidPngBuffer(1, 1, { r: 255, g: 255, b: 255 });
 const TINY_PNG_BASE64 = TINY_PNG_BUFFER.toString("base64");
-const CANVAS_HOST_PATH = "/__openclaw__/canvas";
+const CANVAS_HOST_PATH = "/__afora__/canvas";
 
 let fixtureRoot = "";
 let tinyPngFile = "";
@@ -43,7 +43,7 @@ beforeAll(async () => {
     optimizeImageToJpeg,
     resolveImageCompressionGrid,
   } = await import("./web-media.js"));
-  fixtureRoot = await fs.mkdtemp(path.join(resolvePreferredOpenClawTmpDir(), "web-media-core-"));
+  fixtureRoot = await fs.mkdtemp(path.join(resolvePreferredAforaTmpDir(), "web-media-core-"));
   tinyPngFile = path.join(fixtureRoot, "tiny.png");
   await fs.writeFile(tinyPngFile, Buffer.from(TINY_PNG_BASE64, "base64"));
   workspaceDir = path.join(fixtureRoot, "workspace");
@@ -708,7 +708,7 @@ describe("loadWebMedia", () => {
   });
 
   it("resolves home-relative local media paths through allowed local roots", async () => {
-    await withEnvAsync({ OPENCLAW_HOME: fixtureRoot }, async () => {
+    await withEnvAsync({ AFORA_HOME: fixtureRoot }, async () => {
       const result = await loadWebMedia("~/workspace/chart.png", {
         maxBytes: 1024 * 1024,
         localRoots: [workspaceDir],
@@ -786,7 +786,7 @@ describe("loadWebMedia", () => {
     expect(result.contentType).toBe("text/markdown");
   });
 
-  it("allows trusted generated host-read HTML reports under OpenClaw temp root", async () => {
+  it("allows trusted generated host-read HTML reports under Afora temp root", async () => {
     const htmlFile = path.join(fixtureRoot, "report.html");
     await fs.writeFile(htmlFile, "<!doctype html><title>Report</title><h1>Report</h1>\n", "utf8");
     const result = await loadWebMedia(htmlFile, {
@@ -802,7 +802,7 @@ describe("loadWebMedia", () => {
   it("allows exact marked outbound HTML bytes and rejects same-size replacements", async () => {
     const stateRoot = await fs.mkdtemp(path.join(os.tmpdir(), "web-media-state-"));
     try {
-      await withEnvAsync({ OPENCLAW_STATE_DIR: stateRoot }, async () => {
+      await withEnvAsync({ AFORA_STATE_DIR: stateRoot }, async () => {
         const { saveMediaBuffer } = await import("./store.js");
         const { markTrustedGeneratedHtmlPath } = await import("./web-media.js");
         const original = Buffer.from("<!doctype html><h1>A</h1>", "utf8");
@@ -845,7 +845,7 @@ describe("loadWebMedia", () => {
   it("rejects unmarked outbound HTML", async () => {
     const stateRoot = await fs.mkdtemp(path.join(os.tmpdir(), "web-media-state-"));
     try {
-      await withEnvAsync({ OPENCLAW_STATE_DIR: stateRoot }, async () => {
+      await withEnvAsync({ AFORA_STATE_DIR: stateRoot }, async () => {
         const { saveMediaBuffer } = await import("./store.js");
         const saved = await saveMediaBuffer(
           Buffer.from("<!doctype html><h1>untrusted</h1>", "utf8"),
@@ -871,10 +871,10 @@ describe("loadWebMedia", () => {
 
   it("requires a marker when outbound staging is nested under the trusted temp root", async () => {
     const stateRoot = await fs.mkdtemp(
-      path.join(resolvePreferredOpenClawTmpDir(), "web-media-overlap-state-"),
+      path.join(resolvePreferredAforaTmpDir(), "web-media-overlap-state-"),
     );
     try {
-      await withEnvAsync({ OPENCLAW_STATE_DIR: stateRoot }, async () => {
+      await withEnvAsync({ AFORA_STATE_DIR: stateRoot }, async () => {
         const { saveMediaBuffer } = await import("./store.js");
         const saved = await saveMediaBuffer(
           Buffer.from("<!doctype html><h1>unmarked overlap</h1>", "utf8"),
@@ -883,7 +883,7 @@ describe("loadWebMedia", () => {
           1024 * 1024,
           "report.html",
         );
-        expect(path.resolve(saved.path)).toContain(path.resolve(resolvePreferredOpenClawTmpDir()));
+        expect(path.resolve(saved.path)).toContain(path.resolve(resolvePreferredAforaTmpDir()));
         await expectLoadWebMediaErrorCode(
           loadWebMedia(saved.path, {
             maxBytes: 1024 * 1024,
@@ -902,7 +902,7 @@ describe("loadWebMedia", () => {
   it("prunes markers whose staged file was removed", async () => {
     const stateRoot = await fs.mkdtemp(path.join(os.tmpdir(), "web-media-state-"));
     try {
-      await withEnvAsync({ OPENCLAW_STATE_DIR: stateRoot }, async () => {
+      await withEnvAsync({ AFORA_STATE_DIR: stateRoot }, async () => {
         const { saveMediaBuffer } = await import("./store.js");
         const { markTrustedGeneratedHtmlPath, pruneStaleTrustedGeneratedHtmlMarkers } =
           await import("./web-media.js");
@@ -937,7 +937,7 @@ describe("loadWebMedia", () => {
   it("keeps markers when filesystem inspection fails transiently", async () => {
     const stateRoot = await fs.mkdtemp(path.join(os.tmpdir(), "web-media-state-"));
     try {
-      await withEnvAsync({ OPENCLAW_STATE_DIR: stateRoot }, async () => {
+      await withEnvAsync({ AFORA_STATE_DIR: stateRoot }, async () => {
         const { saveMediaBuffer } = await import("./store.js");
         const { markTrustedGeneratedHtmlPath, pruneStaleTrustedGeneratedHtmlMarkers } =
           await import("./web-media.js");
@@ -975,11 +975,11 @@ describe("loadWebMedia", () => {
   it("prunes more stale markers than one SQLite parameter batch", async () => {
     const stateRoot = await fs.mkdtemp(path.join(os.tmpdir(), "web-media-state-"));
     try {
-      await withEnvAsync({ OPENCLAW_STATE_DIR: stateRoot }, async () => {
+      await withEnvAsync({ AFORA_STATE_DIR: stateRoot }, async () => {
         const { executeSqliteQuerySync, executeSqliteQueryTakeFirstSync, getNodeSqliteKysely } =
           await import("../infra/kysely-sync.js");
-        const { openOpenClawStateDatabase, runOpenClawStateWriteTransaction } =
-          await import("../state/openclaw-state-db.js");
+        const { openAforaStateDatabase, runAforaStateWriteTransaction } =
+          await import("../state/afora-state-db.js");
         const { pruneStaleTrustedGeneratedHtmlMarkers } = await import("./web-media.js");
         type ProvenanceDb = {
           outbound_media_provenance: {
@@ -991,7 +991,7 @@ describe("loadWebMedia", () => {
             created_at_ms: number;
           };
         };
-        runOpenClawStateWriteTransaction(({ db }) => {
+        runAforaStateWriteTransaction(({ db }) => {
           const kysely = getNodeSqliteKysely<ProvenanceDb>(db);
           for (let index = 0; index < 1_001; index += 1) {
             executeSqliteQuerySync(
@@ -1010,7 +1010,7 @@ describe("loadWebMedia", () => {
 
         await pruneStaleTrustedGeneratedHtmlMarkers();
 
-        const { db } = openOpenClawStateDatabase();
+        const { db } = openAforaStateDatabase();
         const count = executeSqliteQueryTakeFirstSync(
           db,
           getNodeSqliteKysely<ProvenanceDb>(db)
@@ -1038,7 +1038,7 @@ describe("loadWebMedia", () => {
     }
   });
 
-  it("rejects host-read HTML files outside the trusted OpenClaw temp root", async () => {
+  it("rejects host-read HTML files outside the trusted Afora temp root", async () => {
     const outsideRoot = await fs.mkdtemp(path.join(os.tmpdir(), "web-media-host-html-"));
     const htmlFile = path.join(outsideRoot, "report.html");
     await fs.writeFile(htmlFile, "<!doctype html><title>Report</title><h1>Report</h1>\n", "utf8");
@@ -1057,7 +1057,7 @@ describe("loadWebMedia", () => {
     }
   });
 
-  it("rejects trusted host-read HTML symlinks that resolve outside OpenClaw temp root", async () => {
+  it("rejects trusted host-read HTML symlinks that resolve outside Afora temp root", async () => {
     const outsideRoot = await fs.mkdtemp(path.join(os.tmpdir(), "web-media-host-html-"));
     const outsideHtml = path.join(outsideRoot, "report.html");
     const htmlLink = path.join(fixtureRoot, "linked-report.html");
@@ -1091,9 +1091,9 @@ describe("loadWebMedia", () => {
     }
   });
 
-  it("rejects trusted host-read HTML hardlinks to files outside OpenClaw temp root", async () => {
+  it("rejects trusted host-read HTML hardlinks to files outside Afora temp root", async () => {
     const outsideRoot = await fs.mkdtemp(
-      path.join(path.dirname(resolvePreferredOpenClawTmpDir()), "web-media-host-html-"),
+      path.join(path.dirname(resolvePreferredAforaTmpDir()), "web-media-host-html-"),
     );
     const outsideHtml = path.join(outsideRoot, "report.html");
     const htmlLink = path.join(fixtureRoot, "hardlinked-report.html");

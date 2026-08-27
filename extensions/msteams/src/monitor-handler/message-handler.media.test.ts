@@ -1,6 +1,6 @@
 // Msteams tests cover message handler media recovery behavior.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../runtime-api.js";
+import type { AforaConfig } from "../../runtime-api.js";
 import type { resolveMSTeamsInboundMedia } from "./inbound-media.js";
 // Preserve module setup before modules that consume it.
 // oxfmt-ignore
@@ -41,7 +41,7 @@ describe("msteams message handler Graph media recovery", () => {
     channels: {
       msteams: { groupPolicy: "open", requireMention: false, graphMediaFallback: true },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 
   beforeEach(() => {
     inboundMediaMockState.resolve.mockReset();
@@ -121,7 +121,7 @@ describe("msteams message handler Graph media recovery", () => {
     ]);
     const defaultCfg = {
       channels: { msteams: { groupPolicy: "open", requireMention: false } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const { deps, getTeamDetails } = createMessageHandlerDeps(defaultCfg);
     const handler = createMSTeamsMessageHandler(deps);
 
@@ -265,7 +265,7 @@ describe("msteams message handler Graph media recovery", () => {
   it("does not create a ghost event for unmentioned empty HTML", async () => {
     const mentionCfg = {
       channels: { msteams: { groupPolicy: "open", requireMention: true } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     inboundMediaMockState.resolve.mockResolvedValue([]);
     const { deps, enqueueSystemEvent, getTeamDetails } = createMessageHandlerDeps(mentionCfg);
     const handler = createMSTeamsMessageHandler(deps);

@@ -1,4 +1,4 @@
-// Shared policy and messaging for installs outside OpenClaw's trusted plugin sources.
+// Shared policy and messaging for installs outside Afora's trusted plugin sources.
 import { sanitizeTerminalText } from "../../packages/terminal-core/src/safe-text.js";
 import { parseRegistryNpmSpec } from "../infra/npm-registry-spec.js";
 import {
@@ -21,7 +21,7 @@ export type NonClawHubInstallSourceClass =
   | "npm"
   | "npm-pack";
 
-export function resolveOpenClawTrustedNpmPackageInstall(
+export function resolveAforaTrustedNpmPackageInstall(
   npmSpec: string,
   bundledSources: ReadonlyMap<string, BundledPluginSource> = getProcessBundledPluginSources(),
 ): {
@@ -42,7 +42,7 @@ export function resolveOpenClawTrustedNpmPackageInstall(
   return resolveCatalogOfficialExternalNpmPackageTrust(npmSpec);
 }
 
-export function isOpenClawTrustedPluginInstallSpec(
+export function isAforaTrustedPluginInstallSpec(
   spec: string,
   bundledSources: ReadonlyMap<string, BundledPluginSource> = getProcessBundledPluginSources(),
 ): boolean {
@@ -53,7 +53,7 @@ export function isOpenClawTrustedPluginInstallSpec(
   const explicitNpm = trimmed.toLowerCase().startsWith("npm:");
   const npmSpec = explicitNpm ? trimmed.slice("npm:".length) : trimmed;
   if (explicitNpm) {
-    return resolveOpenClawTrustedNpmPackageInstall(npmSpec, bundledSources) !== null;
+    return resolveAforaTrustedNpmPackageInstall(npmSpec, bundledSources) !== null;
   }
   const parsedPackageName = parseRegistryNpmSpec(npmSpec)?.name;
   const bundled =
@@ -73,7 +73,7 @@ export function isOpenClawTrustedPluginInstallSpec(
     });
   return Boolean(
     bundled ??
-    resolveOpenClawTrustedNpmPackageInstall(npmSpec, bundledSources) ??
+    resolveAforaTrustedNpmPackageInstall(npmSpec, bundledSources) ??
     resolveCatalogOfficialExternalInstallPlan(npmSpec),
   );
 }

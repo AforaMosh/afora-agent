@@ -1,7 +1,7 @@
 /** Authorized single-run, tree, and admin subagent kill orchestration. */
 import { resolveSubagentLabel } from "../../../auto-reply/reply/subagents-utils.js";
 import type { SessionEntry } from "../../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { SUBAGENT_KILL_TASK_ERROR } from "../../../tasks/detached-task-runtime-contract.js";
 import {
   killLatestSubagentRun,
@@ -23,7 +23,7 @@ import {
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
 async function killSubagentRunTree(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   runs: Iterable<SubagentRunRecord>;
   cache: Map<string, Record<string, SessionEntry>>;
   seenChildSessionKeys: Set<string>;
@@ -94,7 +94,7 @@ async function killSubagentRunTree(params: {
 }
 
 async function cascadeKillChildren(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   parentChildSessionKey: string;
   cache: Map<string, Record<string, SessionEntry>>;
   seenChildSessionKeys?: Set<string>;
@@ -112,7 +112,7 @@ async function cascadeKillChildren(params: {
 
 /** Kills every currently controlled child run and its descendants. */
 export async function killAllControlledSubagentRuns(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   controller: ResolvedSubagentController;
   runs: SubagentRunRecord[];
   suppressTaskDelivery?: boolean;
@@ -146,7 +146,7 @@ export async function killAllControlledSubagentRuns(params: {
 
 /** Kills one controlled subagent run and any active descendants. */
 export async function killControlledSubagentRun(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   controller: ResolvedSubagentController;
   entry: SubagentRunRecord;
   suppressTaskDelivery?: boolean;
@@ -270,7 +270,7 @@ export async function killControlledSubagentRun(params: {
 
 /** Admin kill path for a subagent session key, bypassing caller ownership checks. */
 export async function killSubagentRunAdmin(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey: string;
   agentId?: string;
 }) {

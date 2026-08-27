@@ -1,11 +1,11 @@
 // Tests queue setting normalization and directive parsing.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { resolveQueueSettingsCore } from "./settings.js";
 
 describe("resolveQueueSettingsCore", () => {
   it("defaults inbound channels to steering settings", () => {
-    expect(resolveQueueSettingsCore({ cfg: {} as OpenClawConfig })).toEqual({
+    expect(resolveQueueSettingsCore({ cfg: {} as AforaConfig })).toEqual({
       mode: "steer",
       debounceMs: 500,
       cap: 20,
@@ -22,7 +22,7 @@ describe("resolveQueueSettingsCore", () => {
               mode: "collect",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
       }),
     ).toEqual({
       mode: "collect",
@@ -44,7 +44,7 @@ describe("resolveQueueSettingsCore", () => {
               },
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
         channel: "discord",
       }),
     ).toEqual({
@@ -64,7 +64,7 @@ describe("resolveQueueSettingsCore", () => {
               mode: "steer",
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
       }),
     ).toEqual({
       mode: "steer",
@@ -83,7 +83,7 @@ describe("resolveQueueSettingsCore", () => {
               mode: "steer-backlog" as never,
             },
           },
-        } as OpenClawConfig,
+        } as AforaConfig,
       }),
     ).toEqual({
       mode: "steer",
@@ -96,13 +96,13 @@ describe("resolveQueueSettingsCore", () => {
   it("maps retired persisted session queue modes to compatible modes", () => {
     expect(
       resolveQueueSettingsCore({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         sessionEntry: { sessionId: "test-session", updatedAt: 0, queueMode: "queue" as never },
       }).mode,
     ).toBe("steer");
     expect(
       resolveQueueSettingsCore({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         sessionEntry: {
           sessionId: "test-session",
           updatedAt: 0,
@@ -112,7 +112,7 @@ describe("resolveQueueSettingsCore", () => {
     ).toBe("followup");
     expect(
       resolveQueueSettingsCore({
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         sessionEntry: {
           sessionId: "test-session",
           updatedAt: 0,

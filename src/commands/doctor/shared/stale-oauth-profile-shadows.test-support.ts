@@ -20,7 +20,7 @@ type TestApi = {
 
 function getTestApi(): TestApi {
   return (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.staleOAuthProfileShadowsTestApi")
+    Symbol.for("afora.staleOAuthProfileShadowsTestApi")
   ] as TestApi;
 }
 

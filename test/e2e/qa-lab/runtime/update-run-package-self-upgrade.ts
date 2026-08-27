@@ -12,7 +12,7 @@ import { createQaScriptEvidenceWriter } from "./script-evidence.js";
 
 const SOURCE_PATH = "test/e2e/qa-lab/runtime/update-run-package-self-upgrade.ts";
 const SCENARIO_ID = "update-run-package-self-upgrade";
-const ALLOW_ENV = "OPENCLAW_QA_ALLOW_UPDATE_RUN_SELF";
+const ALLOW_ENV = "AFORA_QA_ALLOW_UPDATE_RUN_SELF";
 
 type ProducerOptions = {
   artifactBase: string;
@@ -100,14 +100,14 @@ async function runDockerLane(options: ProducerOptions, appendLog: (chunk: unknow
         env: {
           ...process.env,
           [ALLOW_ENV]: "1",
-          OPENCLAW_DOCKER_ALL_BUILD: "1",
-          OPENCLAW_DOCKER_ALL_DRY_RUN: "0",
-          OPENCLAW_DOCKER_ALL_LANES: SCENARIO_ID,
-          OPENCLAW_DOCKER_ALL_LOG_DIR: dockerRunDir,
-          OPENCLAW_DOCKER_ALL_PARALLELISM: "1",
-          OPENCLAW_DOCKER_ALL_PREFLIGHT: "1",
-          OPENCLAW_DOCKER_ALL_TIMINGS_FILE: path.join(dockerRunDir, "lane-timings.json"),
-          OPENCLAW_UPDATE_RUN_SELF_UPGRADE_ARTIFACT_DIR: laneArtifactDir,
+          AFORA_DOCKER_ALL_BUILD: "1",
+          AFORA_DOCKER_ALL_DRY_RUN: "0",
+          AFORA_DOCKER_ALL_LANES: SCENARIO_ID,
+          AFORA_DOCKER_ALL_LOG_DIR: dockerRunDir,
+          AFORA_DOCKER_ALL_PARALLELISM: "1",
+          AFORA_DOCKER_ALL_PREFLIGHT: "1",
+          AFORA_DOCKER_ALL_TIMINGS_FILE: path.join(dockerRunDir, "lane-timings.json"),
+          AFORA_UPDATE_RUN_SELF_UPGRADE_ARTIFACT_DIR: laneArtifactDir,
         },
         stdio: ["ignore", "pipe", "pipe"],
       });
@@ -203,7 +203,7 @@ async function runProducer(options: ProducerOptions): Promise<QaEvidenceSummaryJ
         { kind: "log", filePath: path.join("lane", "systemctl-shim-setup.log") },
         { kind: "log", filePath: path.join("lane", "supervisor-monitor.log") },
         { kind: "log", filePath: path.join("lane", "systemctl-shim-gateway.log") },
-        { kind: "summary", filePath: path.join("lane", "openclaw-gateway.service") },
+        { kind: "summary", filePath: path.join("lane", "afora-gateway.service") },
         { kind: "health", filePath: path.join("lane", "healthz.json") },
         { kind: "health", filePath: path.join("lane", "readyz.json") },
         { kind: "health", filePath: path.join("lane", "gateway-status.json") },

@@ -1,5 +1,5 @@
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
+import type { AforaConfig } from "../config/types.afora.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import type { PluginRuntime } from "../plugins/runtime/types.js";
 import { resolveMeetingAudioRuntimeForFormat, type MeetingAudioRuntime } from "./audio-backend.js";
@@ -40,7 +40,7 @@ export function createMeetingRuntimeSetup<Config extends MeetingPluginConfig, Mo
 ) {
   return async (params: {
     config: Config;
-    fullConfig: OpenClawConfig;
+    fullConfig: AforaConfig;
     runtime: PluginRuntime;
     options?: { mode?: Mode; transport?: "chrome" | "chrome-node" };
   }) => {
@@ -55,7 +55,7 @@ export function createMeetingRuntimeSetup<Config extends MeetingPluginConfig, Mo
         ok: true,
         message: params.config.chrome.browserProfile
           ? `Chrome node profile configured: ${params.config.chrome.browserProfile}`
-          : "Local Chrome uses the configured OpenClaw browser profile",
+          : "Local Chrome uses the configured Afora browser profile",
       },
       { id: "guest-join", ...guestJoin },
       { id: "captions", ok: true, message: options.captionsMessage(mode) },

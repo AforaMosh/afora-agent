@@ -1,4 +1,4 @@
-import { controlUiSessionSlug, SHORT_SESSION_ID_RE } from "@openclaw/session-url-contract";
+import { controlUiSessionSlug, SHORT_SESSION_ID_RE } from "@afora/session-url-contract";
 import type { RouteLocation } from "@openclaw/uirouter";
 import { notFound } from "@openclaw/uirouter";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";

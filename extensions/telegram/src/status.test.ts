@@ -1,6 +1,6 @@
 // Telegram tests cover status plugin behavior.
-import type { ChannelAccountSnapshot } from "openclaw/plugin-sdk/channel-contract";
-import { DEFAULT_EMOJIS } from "openclaw/plugin-sdk/channel-feedback";
+import type { ChannelAccountSnapshot } from "afora-agent/plugin-sdk/channel-contract";
+import { DEFAULT_EMOJIS } from "afora-agent/plugin-sdk/channel-feedback";
 import { describe, expect, it } from "vitest";
 import type { TelegramChatDetails, TelegramGetChat } from "./bot/types.js";
 import { collectTelegramStatusIssues } from "./status-issues.js";

@@ -1,26 +1,26 @@
-import type { StreamFn } from "openclaw/plugin-sdk/agent-core";
+import type { StreamFn } from "afora-agent/plugin-sdk/agent-core";
 import type {
-  OpenClawConfig,
+  AforaConfig,
   ProviderRuntimeModel,
   ProviderWrapStreamFnContext,
-} from "openclaw/plugin-sdk/plugin-entry";
+} from "afora-agent/plugin-sdk/plugin-entry";
 import {
   DEFAULT_CONTEXT_TOKENS,
   normalizeProviderId,
-} from "openclaw/plugin-sdk/provider-model-shared";
+} from "afora-agent/plugin-sdk/provider-model-shared";
 import {
   createMoonshotThinkingWrapper,
   createPayloadPatchStreamWrapper,
   resolveMoonshotThinkingType,
-} from "openclaw/plugin-sdk/provider-stream-shared";
-import { isLoopbackHost } from "openclaw/plugin-sdk/ssrf-runtime";
+} from "afora-agent/plugin-sdk/provider-stream-shared";
+import { isLoopbackHost } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { shouldWrapOllamaCompatMoonshotThinking } from "./model-behavior.js";
 import { supportsOllamaCloudFullThinkingEffort } from "./model-reasoning.js";
 
 export type OllamaThinkValue = boolean | "low" | "medium" | "high" | "max";
 
 export function resolveConfiguredOllamaProviderConfig(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   providerId?: string;
 }) {
   const providerId = params.providerId?.trim();
@@ -74,7 +74,7 @@ export function isOllamaCompatProvider(model: {
 }
 
 export function resolveOllamaCompatNumCtxEnabled(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   providerId?: string;
 }): boolean {
   return resolveConfiguredOllamaProviderConfig(params)?.injectNumCtxForOpenAICompat ?? true;
@@ -82,7 +82,7 @@ export function resolveOllamaCompatNumCtxEnabled(params: {
 
 export function shouldInjectOllamaCompatNumCtx(params: {
   model: { api?: string; provider?: string; baseUrl?: string };
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   providerId?: string;
 }): boolean {
   if (params.model.api !== "openai-completions") {
@@ -137,7 +137,7 @@ function normalizeOllamaThinkValue(
     return "low";
   }
   if (value === "xhigh" || value === "adaptive") {
-    // These OpenClaw-only tiers are not advertised by Ollama; keep their established high mapping.
+    // These Afora-only tiers are not advertised by Ollama; keep their established high mapping.
     return "high";
   }
   return undefined;

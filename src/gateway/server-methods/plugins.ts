@@ -15,7 +15,7 @@ import {
   INSTALL_POLICY_WARNING_ACKNOWLEDGEMENT_REQUIRED,
   readInstallPolicyWarningErrorDetails,
 } from "../../../packages/gateway-protocol/src/install-policy-warning-error-details.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { searchInstallablePluginPackages } from "../../plugins/catalog-search.js";
 import {
@@ -31,7 +31,7 @@ import type { GatewayRequestHandlers } from "./types.js";
 import { assertValidParams } from "./validation.js";
 
 function pluginPolicyRestartRequired(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   changedPaths: readonly string[];
 }): boolean {
   const plan = buildGatewayReloadPlan([...params.changedPaths]);

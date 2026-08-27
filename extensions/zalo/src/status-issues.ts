@@ -2,12 +2,12 @@
 import type {
   ChannelAccountSnapshot,
   ChannelStatusIssue,
-} from "openclaw/plugin-sdk/channel-contract";
+} from "afora-agent/plugin-sdk/channel-contract";
 import {
   coerceStatusIssueAccountId,
   readStatusIssueFields,
-} from "openclaw/plugin-sdk/extension-shared";
-import { standardDmPolicyOpenIssue } from "openclaw/plugin-sdk/status-helpers";
+} from "afora-agent/plugin-sdk/extension-shared";
+import { standardDmPolicyOpenIssue } from "afora-agent/plugin-sdk/status-helpers";
 
 const ZALO_STATUS_FIELDS = ["accountId", "enabled", "configured", "dmPolicy"] as const;
 

@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { isLoopbackHost } from "openclaw/plugin-sdk/ssrf-runtime";
+import { isLoopbackHost } from "afora-agent/plugin-sdk/ssrf-runtime";
 import { z } from "zod";
 import { parseBuzzAuthTag } from "../relay-auth.js";
 import { parseBuzzTarget } from "../target.js";

@@ -130,7 +130,7 @@ flow:
                   message:
                     expr: "`terminal ${terminalCase.name}: expected ${terminalCase.expectedSendCount} outbound, got ${matchingOutbound.length}; messages=${JSON.stringify(state.getSnapshot().messages.slice(-10))} requests=${JSON.stringify(caseRequests)} logs=${JSON.stringify((env.gateway.logs?.().split('\\n') ?? []).filter((line) => /qa-channel|subagent|announce|completion|requester/i.test(line)).slice(-30))}`"
               - assert:
-                  expr: "caseOutbound.every((candidate) => !String(candidate.text ?? '').includes(config.metadataSentinel) && !String(candidate.text ?? '').includes('BEGIN_OPENCLAW_INTERNAL_CONTEXT'))"
+                  expr: "caseOutbound.every((candidate) => !String(candidate.text ?? '').includes(config.metadataSentinel) && !String(candidate.text ?? '').includes('BEGIN_AFORA_INTERNAL_CONTEXT'))"
                   message:
                     expr: "`terminal ${terminalCase.name}: protected internal metadata leaked; outbound=${recentOutboundSummary(state)}`"
               - assert:
@@ -289,7 +289,7 @@ flow:
             message:
               expr: "`empty completion expected one intentional visible representation, got ${emptyRepresentation.length}; outbound=${recentOutboundSummary(state)} requests=${JSON.stringify(emptyRequests)} logs=${JSON.stringify((env.gateway.logs?.().split('\\n') ?? []).filter((line) => /empty response|incomplete turn|qa-terminal-empty|subagent|announce|completion/i.test(line)).slice(-50))}`"
         - assert:
-            expr: "emptyOutbound.every((candidate) => String(candidate.text ?? '').trim() !== 'NO_REPLY' && !String(candidate.text ?? '').includes(config.metadataSentinel) && !String(candidate.text ?? '').includes('BEGIN_OPENCLAW_INTERNAL_CONTEXT'))"
+            expr: "emptyOutbound.every((candidate) => String(candidate.text ?? '').trim() !== 'NO_REPLY' && !String(candidate.text ?? '').includes(config.metadataSentinel) && !String(candidate.text ?? '').includes('BEGIN_AFORA_INTERNAL_CONTEXT'))"
             message:
               expr: "`empty completion leaked silence or internal metadata; outbound=${recentOutboundSummary(state)}`"
         - assert:

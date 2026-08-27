@@ -9,7 +9,7 @@ import { isLiveTestEnabled } from "../live-test-helpers.js";
 import { prepareCliBundleMcpConfig } from "./bundle-mcp.js";
 
 const execFileAsync = promisify(execFile);
-const LIVE = isLiveTestEnabled(["OPENCLAW_LIVE_CLI_MCP_GEMINI"]);
+const LIVE = isLiveTestEnabled(["AFORA_LIVE_CLI_MCP_GEMINI"]);
 const describeLive = LIVE ? describe : describe.skip;
 
 async function canRunGemini(command: string): Promise<boolean> {
@@ -27,8 +27,8 @@ async function startLocalStreamableHttpMcpServer(): Promise<{
 }> {
   // Real local MCP endpoint verifies Gemini consumes the generated settings
   // rather than just checking file shape.
-  const mcpServer = new McpServer({ name: "openclaw-gemini-live-probe", version: "1.0.0" });
-  mcpServer.tool("openclaw_live_probe", "OpenClaw Gemini MCP live probe", async () => ({
+  const mcpServer = new McpServer({ name: "afora-gemini-live-probe", version: "1.0.0" });
+  mcpServer.tool("afora_live_probe", "Afora Gemini MCP live probe", async () => ({
     content: [{ type: "text", text: "ok" }],
   }));
 
@@ -62,8 +62,8 @@ async function startLocalStreamableHttpMcpServer(): Promise<{
 }
 
 describeLive("Gemini CLI MCP settings smoke", () => {
-  it("connects to an OpenClaw-configured streamable-http server", async () => {
-    const geminiCommand = process.env.OPENCLAW_LIVE_GEMINI_COMMAND ?? "gemini";
+  it("connects to an Afora-configured streamable-http server", async () => {
+    const geminiCommand = process.env.AFORA_LIVE_GEMINI_COMMAND ?? "gemini";
     if (!(await canRunGemini(geminiCommand))) {
       console.warn(`Skipping Gemini MCP live smoke: ${geminiCommand} is not runnable.`);
       return;
@@ -82,7 +82,7 @@ describeLive("Gemini CLI MCP settings smoke", () => {
         plugins: { enabled: false },
         mcp: {
           servers: {
-            openclawLiveProbe: {
+            aforaLiveProbe: {
               transport: "streamable-http",
               url: probeServer.url,
             },
@@ -101,7 +101,7 @@ describeLive("Gemini CLI MCP settings smoke", () => {
         maxBuffer: 1024 * 1024,
       });
       const output = `${result.stdout}\n${result.stderr}`;
-      expect(output).toContain("openclawLiveProbe");
+      expect(output).toContain("aforaLiveProbe");
       expect(output).toMatch(/\(http\)|type:\s*http|http/i);
       expect(output).not.toContain("transport");
     } finally {

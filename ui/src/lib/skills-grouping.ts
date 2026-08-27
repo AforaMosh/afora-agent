@@ -9,10 +9,10 @@ export type SkillGroup = {
 };
 
 const SKILL_SOURCE_GROUPS: Array<{ id: string; labelKey: string; sources: string[] }> = [
-  { id: "workspace", labelKey: "skillGroups.workspace", sources: ["openclaw-workspace"] },
-  { id: "built-in", labelKey: "skillGroups.builtIn", sources: ["openclaw-bundled"] },
-  { id: "installed", labelKey: "skillGroups.installed", sources: ["openclaw-managed"] },
-  { id: "extra", labelKey: "skillGroups.extra", sources: ["openclaw-extra"] },
+  { id: "workspace", labelKey: "skillGroups.workspace", sources: ["afora-workspace"] },
+  { id: "built-in", labelKey: "skillGroups.builtIn", sources: ["afora-bundled"] },
+  { id: "installed", labelKey: "skillGroups.installed", sources: ["afora-managed"] },
+  { id: "extra", labelKey: "skillGroups.extra", sources: ["afora-extra"] },
 ];
 
 export function groupSkills(skills: SkillStatusEntry[]): SkillGroup[] {

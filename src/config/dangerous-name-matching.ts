@@ -1,7 +1,7 @@
 // Detects dangerous config names used by validation and warnings.
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord } from "@afora/normalization-core/record-coerce";
 import { asBoolean } from "../utils/boolean.js";
-import type { OpenClawConfig } from "./config.js";
+import type { AforaConfig } from "./config.js";
 
 type DangerousNameMatchingConfig = {
   dangerouslyAllowNameMatching?: boolean;
@@ -38,7 +38,7 @@ export function resolveDangerousNameMatchingEnabled(
 
 /** Collects provider/account scopes that policy and doctor surfaces can audit. */
 export function collectProviderDangerousNameMatchingScopes(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   provider: string,
 ): ProviderDangerousNameMatchingScope[] {
   const scopes: ProviderDangerousNameMatchingScope[] = [];

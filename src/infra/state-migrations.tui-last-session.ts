@@ -1,12 +1,12 @@
 // Doctor-only import for the retired TUI last-session JSON store.
 import fs from "node:fs";
 import path from "node:path";
-import { isRecord as isObjectRecord } from "@openclaw/normalization-core/record-coerce";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import { isRecord as isObjectRecord } from "@afora/normalization-core/record-coerce";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  openOpenClawStateDatabase,
-  runOpenClawStateWriteTransaction,
-} from "../state/openclaw-state-db.js";
+  openAforaStateDatabase,
+  runAforaStateWriteTransaction,
+} from "../state/afora-state-db.js";
 import {
   executeSqliteQuerySync,
   executeSqliteQueryTakeFirstSync,
@@ -20,7 +20,7 @@ import {
 } from "./state-migrations.source-snapshot.js";
 import type { LegacyStateDetection, MigrationMessages } from "./state-migrations.types.js";
 
-type TuiLastSessionMigrationDatabase = Pick<OpenClawStateKyselyDatabase, "tui_last_sessions">;
+type TuiLastSessionMigrationDatabase = Pick<AforaStateKyselyDatabase, "tui_last_sessions">;
 
 type LegacyTuiLastSession = {
   scopeKey: string;
@@ -146,7 +146,7 @@ export function migrateLegacyTuiLastSessions(params: {
   try {
     // No filesystem work belongs inside the synchronous SQLite commit section.
     assertLegacySourceUnchanged(params.detected.sourcePath, snapshot);
-    runOpenClawStateWriteTransaction(
+    runAforaStateWriteTransaction(
       ({ db }) => {
         const tuiDb = getNodeSqliteKysely<TuiLastSessionMigrationDatabase>(db);
         for (const record of activeRecords) {
@@ -199,7 +199,7 @@ export function migrateLegacyTuiLastSessions(params: {
           importedCount += 1;
         }
       },
-      { env: { ...process.env, OPENCLAW_STATE_DIR: params.stateDir } },
+      { env: { ...process.env, AFORA_STATE_DIR: params.stateDir } },
     );
   } catch (error) {
     warnings.push(`Failed migrating legacy TUI last-session state: ${String(error)}`);
@@ -208,8 +208,8 @@ export function migrateLegacyTuiLastSessions(params: {
 
   try {
     params.beforeVerify?.();
-    const database = openOpenClawStateDatabase({
-      env: { ...process.env, OPENCLAW_STATE_DIR: params.stateDir },
+    const database = openAforaStateDatabase({
+      env: { ...process.env, AFORA_STATE_DIR: params.stateDir },
     });
     const tuiDb = getNodeSqliteKysely<TuiLastSessionMigrationDatabase>(database.db);
     for (const expected of expectedRows.values()) {

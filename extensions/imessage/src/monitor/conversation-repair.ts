@@ -1,5 +1,5 @@
 // Imessage plugin module implements conversation repair behavior.
-import { hasNonEmptyString as isNonEmptyString } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { hasNonEmptyString as isNonEmptyString } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { IMessageRpcClient } from "../client.js";
 import type { IMessagePayload } from "./types.js";
 

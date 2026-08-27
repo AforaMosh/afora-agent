@@ -1,5 +1,5 @@
 ---
-summary: "Overview of OpenClaw onboarding options and flows"
+summary: "Overview of Afora onboarding options and flows"
 read_when:
   - Choosing an onboarding path
   - Setting up a new environment
@@ -7,9 +7,9 @@ title: "Onboarding overview"
 sidebarTitle: "Onboarding Overview"
 ---
 
-OpenClaw has terminal and macOS app onboarding. Both establish inference first:
+Afora has terminal and macOS app onboarding. Both establish inference first:
 they detect existing AI access, require a live completion, and only then start
-OpenClaw to configure the remaining setup. A reachable, configured Gateway
+Afora to configure the remaining setup. A reachable, configured Gateway
 whose default agent already has a configured model skips onboarding and opens
 the normal agent UI. The terminal flow also offers the full classic wizard for
 detailed setup.
@@ -19,10 +19,10 @@ detailed setup.
 |                | CLI onboarding                         | macOS app onboarding                                          |
 | -------------- | -------------------------------------- | ------------------------------------------------------------- |
 | **Platforms**  | macOS, Linux, Windows (native or WSL2) | macOS only                                                    |
-| **Interface**  | Inference setup, then OpenClaw         | Inference setup, then OpenClaw                                |
+| **Interface**  | Inference setup, then Afora         | Inference setup, then Afora                                |
 | **Best for**   | Servers, headless, full control        | Desktop Mac, visual setup                                     |
 | **Automation** | `--non-interactive` for scripts        | Manual only                                                   |
-| **Command**    | `openclaw onboard`                     | [Download the app](/platforms/macos#download), then launch it |
+| **Command**    | `afora onboard`                     | [Download the app](/platforms/macos#download), then launch it |
 
 Most users should start with **CLI onboarding** — it works everywhere and gives
 you the most control.
@@ -36,7 +36,7 @@ The guided inference phase establishes only:
 2. **Verified inference** — a real completion on the default agent's effective
    model
 
-After that completion passes, OpenClaw can configure the workspace, Gateway,
+After that completion passes, Afora can configure the workspace, Gateway,
 Gateway service, channels, agents, plugins, and other optional features.
 
 The classic CLI wizard can additionally configure:
@@ -51,7 +51,7 @@ The classic CLI wizard can additionally configure:
 Run in any terminal:
 
 ```bash
-openclaw onboard
+afora onboard
 ```
 
 The guided flow detects existing AI access, live-tests candidates in order,
@@ -59,38 +59,38 @@ and falls through on failure. If detection is exhausted, it shows OpenAI,
 Anthropic, xAI (Grok), Google, and OpenRouter first. **More…** contains the
 remaining providers in provider groups, with regions, plans, and supported
 browser, device, API-key, or token methods in a second menu. It saves the model
-and credential only after a passing completion, then starts OpenClaw to
+and credential only after a passing completion, then starts Afora to
 configure the workspace, Gateway, channels, agents, plugins, and other optional
-features. **Skip for now** exits without starting OpenClaw. There is no
-in-flow classic handoff; exit and run `openclaw onboard --classic` when you want
+features. **Skip for now** exits without starting Afora. There is no
+in-flow classic handoff; exit and run `afora onboard --classic` when you want
 the classic wizard instead.
 
-After inference passes, OpenClaw can hand channel setup to a masked terminal
-wizard. It does not open guided or classic provider setup; exit OpenClaw and
-run `openclaw onboard` to change the model provider or its authentication.
+After inference passes, Afora can hand channel setup to a masked terminal
+wizard. It does not open guided or classic provider setup; exit Afora and
+run `afora onboard` to change the model provider or its authentication.
 
-Use `openclaw onboard --classic` for detailed model/auth, channel, skill,
+Use `afora onboard --classic` for detailed model/auth, channel, skill,
 remote Gateway, or import setup. Adding `--install-daemon` also selects the
-classic flow and installs the background service in one step. Use `openclaw
-openclaw` for conversational non-inference setup and repair. `openclaw
+classic flow and installs the background service in one step. Use `afora
+afora` for conversational non-inference setup and repair. `afora
 onboard --modern` is a compatibility alias that uses the same live-inference
 gate.
 
 Full reference: [Onboarding (CLI)](/start/wizard)
-CLI command docs: [`openclaw onboard`](/cli/onboard)
+CLI command docs: [`afora onboard`](/cli/onboard)
 
 ## macOS app onboarding
 
 [Download the macOS app](/platforms/macos#download), then open it. If its
 configured local or remote Gateway is reachable
 and the default agent already has a configured model, the app skips onboarding
-and OpenClaw and opens the normal agent UI immediately.
+and Afora and opens the normal agent UI immediately.
 
 For a fresh or incomplete Gateway, the first-run flow detects existing AI
 access (Claude Code, Codex, or API keys), live-tests the best
 option, and saves it only after a real reply — falling back automatically and
 offering a verified manual API-key step when nothing is found. Sensitive
-credentials use masked input. Once inference passes, OpenClaw starts and
+credentials use masked input. Once inference passes, Afora starts and
 helps configure the rest.
 
 Gemini CLI remains available as an explicitly configured runtime after setup,
@@ -102,7 +102,7 @@ Full reference: [Onboarding (macOS App)](/start/onboarding)
 
 ## Custom or unlisted providers
 
-If your provider is not listed, run `openclaw onboard --classic`, choose
+If your provider is not listed, run `afora onboard --classic`, choose
 **Custom Provider**, and enter:
 
 - Endpoint compatibility: OpenAI-compatible (`/chat/completions`), OpenAI Responses-compatible (`/responses`), Anthropic-compatible (`/messages`), or unknown (probes all three and auto-detects)

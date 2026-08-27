@@ -2,7 +2,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "./api.js";
+import type { AforaConfig } from "./api.js";
 import plugin from "./index.js";
 import {
   createMemoryWikiCompiledCachePublicationId,
@@ -113,7 +113,7 @@ describe("memory-wiki plugin", () => {
     const rootDir = await createTempDir("memory-wiki-index-agents-");
     const appConfig = {
       agents: { entries: { support: { default: true }, marketing: {} } },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const { api, registerTool } = createPluginApi();
     api.config = appConfig;
     api.pluginConfig = {
@@ -186,8 +186,8 @@ describe("memory-wiki plugin", () => {
 
   it("activates an initialized legacy vault before an external compile", async () => {
     const rootDir = await createTempDir("memory-wiki-index-legacy-vault-");
-    await fs.mkdir(path.join(rootDir, ".openclaw-wiki"), { recursive: true });
-    await fs.writeFile(path.join(rootDir, ".openclaw-wiki", "log.jsonl"), "", "utf8");
+    await fs.mkdir(path.join(rootDir, ".afora-wiki"), { recursive: true });
+    await fs.writeFile(path.join(rootDir, ".afora-wiki", "log.jsonl"), "", "utf8");
     const { api, registerService } = createPluginApi();
     api.pluginConfig = { vault: { path: rootDir } };
 
@@ -206,8 +206,8 @@ describe("memory-wiki plugin", () => {
     api.pluginConfig = { vault: { path: rootDir } };
     plugin.register(api);
     const config = resolveMemoryWikiConfig(api.pluginConfig);
-    await fs.mkdir(path.join(rootDir, ".openclaw-wiki"), { recursive: true });
-    await fs.writeFile(path.join(rootDir, ".openclaw-wiki", "log.jsonl"), "", "utf8");
+    await fs.mkdir(path.join(rootDir, ".afora-wiki"), { recursive: true });
+    await fs.writeFile(path.join(rootDir, ".afora-wiki", "log.jsonl"), "", "utf8");
     const service = registerService.mock.calls[0]?.[0];
     await service?.start?.();
 

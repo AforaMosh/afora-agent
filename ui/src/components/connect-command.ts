@@ -11,7 +11,7 @@ function copyCommand(event: Event) {
 export function renderConnectCommand(command: string) {
   const copyLabel = t("connection.help.copyCommand");
   return html`
-    <openclaw-tooltip .content=${copyLabel}>
+    <afora-tooltip .content=${copyLabel}>
       <div
         class="login-gate__command"
         role="button"
@@ -34,6 +34,6 @@ export function renderConnectCommand(command: string) {
         <code translate="no">${command}</code>
         ${renderCopyButton(command, copyLabel)}
       </div>
-    </openclaw-tooltip>
+    </afora-tooltip>
   `;
 }

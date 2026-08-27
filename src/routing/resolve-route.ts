@@ -1,5 +1,5 @@
 // Route resolution helpers map user targets to configured channel routes.
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 import {
   AgentSelectionRequiredError,
   listAgentEntries,
@@ -9,7 +9,7 @@ import {
 import type { ChatType } from "../channels/chat-type.js";
 import { normalizeChatType } from "../channels/chat-type.js";
 import type { DmScope, GroupScope } from "../config/types.base.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { shouldLogVerbose } from "../globals.js";
 import { logDebug } from "../logger.js";
 import {
@@ -38,7 +38,7 @@ export type RoutePeer = {
 };
 
 export type ResolveAgentRouteInput = {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   /** Known owner when no configured binding matches this route. */
   defaultAgentId?: string;
@@ -121,14 +121,14 @@ export function buildAgentSessionKey(params: {
 }
 
 type AgentLookupCache = {
-  agentsRef: OpenClawConfig["agents"] | undefined;
+  agentsRef: AforaConfig["agents"] | undefined;
   byNormalizedId: Map<string, string>;
   fallbackSoleAgentId?: string;
 };
 
-const agentLookupCacheByCfg = new WeakMap<OpenClawConfig, AgentLookupCache>();
+const agentLookupCacheByCfg = new WeakMap<AforaConfig, AgentLookupCache>();
 
-function resolveAgentLookupCache(cfg: OpenClawConfig): AgentLookupCache {
+function resolveAgentLookupCache(cfg: AforaConfig): AgentLookupCache {
   const agentsRef = cfg.agents;
   const existing = agentLookupCacheByCfg.get(cfg);
   if (existing && existing.agentsRef === agentsRef) {
@@ -152,7 +152,7 @@ function resolveAgentLookupCache(cfg: OpenClawConfig): AgentLookupCache {
   return next;
 }
 
-export function pickFirstExistingAgentId(cfg: OpenClawConfig, agentId: string): string {
+export function pickFirstExistingAgentId(cfg: AforaConfig, agentId: string): string {
   const lookup = resolveAgentLookupCache(cfg);
   const trimmed = (agentId ?? "").trim();
   if (!trimmed) {
@@ -209,20 +209,20 @@ type BindingScope = {
 };
 
 type EvaluatedBindingsCache = {
-  bindingsRef: OpenClawConfig["bindings"];
+  bindingsRef: AforaConfig["bindings"];
   byChannel: Map<string, EvaluatedBindingsByChannel>;
   byChannelAccount: Map<string, EvaluatedBinding[]>;
   byChannelAccountIndex: Map<string, EvaluatedBindingsIndex>;
 };
 
-const evaluatedBindingsCacheByCfg = new WeakMap<OpenClawConfig, EvaluatedBindingsCache>();
+const evaluatedBindingsCacheByCfg = new WeakMap<AforaConfig, EvaluatedBindingsCache>();
 const MAX_EVALUATED_BINDINGS_CACHE_KEYS = 2000;
 const resolvedRouteCacheByCfg = new WeakMap<
-  OpenClawConfig,
+  AforaConfig,
   {
-    bindingsRef: OpenClawConfig["bindings"];
-    agentsRef: OpenClawConfig["agents"];
-    sessionRef: OpenClawConfig["session"];
+    bindingsRef: AforaConfig["bindings"];
+    agentsRef: AforaConfig["agents"];
+    sessionRef: AforaConfig["session"];
     byKey: Map<string, ResolvedAgentRoute>;
   }
 >();
@@ -244,7 +244,7 @@ type EvaluatedBindingsByChannel = {
 };
 
 function buildEvaluatedBindingsByChannel(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): Map<string, EvaluatedBindingsByChannel> {
   const byChannel = new Map<string, EvaluatedBindingsByChannel>();
   let order = 0;
@@ -428,7 +428,7 @@ function buildEvaluatedBindingsIndex(bindings: EvaluatedBinding[]): EvaluatedBin
 }
 
 function getEvaluatedBindingsForChannelAccount(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   channel: string,
   accountId: string,
 ): EvaluatedBinding[] {
@@ -471,7 +471,7 @@ function getEvaluatedBindingsForChannelAccount(
 }
 
 function getEvaluatedBindingIndexForChannelAccount(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   channel: string,
   accountId: string,
 ): EvaluatedBindingsIndex {
@@ -539,7 +539,7 @@ function normalizeBindingMatch(
   };
 }
 
-function resolveRouteCacheForConfig(cfg: OpenClawConfig): Map<string, ResolvedAgentRoute> {
+function resolveRouteCacheForConfig(cfg: AforaConfig): Map<string, ResolvedAgentRoute> {
   const existing = resolvedRouteCacheByCfg.get(cfg);
   if (
     existing &&
@@ -829,7 +829,7 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
 }
 
 /** @internal Lists bindings selectable by at least one group/channel route under runtime precedence. */
-export function listEffectiveGroupRouteBindings(cfg: OpenClawConfig) {
+export function listEffectiveGroupRouteBindings(cfg: AforaConfig) {
   const bindings = listBindings(cfg);
   const usedIds = new Set<string>();
   for (const binding of bindings) {
@@ -841,13 +841,13 @@ export function listEffectiveGroupRouteBindings(cfg: OpenClawConfig) {
       }
     }
   }
-  let sentinel = "openclaw-audit-route";
+  let sentinel = "afora-audit-route";
   while (usedIds.has(sentinel)) {
     sentinel += "-next";
   }
 
   const markerForIndex = (index: number) => `audit-binding-${index}`;
-  const probeCfg: OpenClawConfig = {
+  const probeCfg: AforaConfig = {
     ...cfg,
     agents: { entries: {} },
     bindings: bindings.map((binding, index) => ({ ...binding, agentId: markerForIndex(index) })),

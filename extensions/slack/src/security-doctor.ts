@@ -1,5 +1,5 @@
 // Slack plugin module implements security doctor behavior.
-import { buildMutableAllowEntryDetector } from "openclaw/plugin-sdk/channel-policy";
+import { buildMutableAllowEntryDetector } from "afora-agent/plugin-sdk/channel-policy";
 import { parseSlackTarget } from "./target-parsing.js";
 
 const isSlackMutableUnqualifiedAllowEntry = buildMutableAllowEntryDetector({

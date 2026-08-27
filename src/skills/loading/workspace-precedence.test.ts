@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { withEnv } from "../../test-utils/env.js";
 import { createFixtureSuite } from "../../test-utils/fixture-suite.js";
 import { writeSkill } from "../test-support/e2e-test-helpers.js";
-import type { OpenClawSkillMetadata, SkillEntry } from "../types.js";
+import type { AforaSkillMetadata, SkillEntry } from "../types.js";
 import { createSyntheticSourceInfo } from "./skill-contract.js";
 import { buildSkillSnapshot } from "./workspace-skill-prompt.js";
 
@@ -17,7 +17,7 @@ vi.mock("./plugin-skills.js", () => ({
   resolvePluginSkillDirs: () => [],
 }));
 
-const fixtureSuite = createFixtureSuite("openclaw-skills-prompt-suite-");
+const fixtureSuite = createFixtureSuite("afora-skills-prompt-suite-");
 
 beforeAll(async () => {
   await fixtureSuite.setup();
@@ -30,7 +30,7 @@ afterAll(async () => {
 function createSkillEntry(params: {
   name: string;
   description?: string;
-  metadata?: OpenClawSkillMetadata;
+  metadata?: AforaSkillMetadata;
 }): SkillEntry {
   const filePath = `/skills/${params.name}/SKILL.md`;
   return {

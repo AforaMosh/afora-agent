@@ -2,9 +2,9 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { installedPluginRoot } from "openclaw/plugin-sdk/test-fixtures";
+import { installedPluginRoot } from "afora-agent/plugin-sdk/test-fixtures";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/config.js";
+import type { AforaConfig } from "../config/config.js";
 import { hashConfigIncludeRaw } from "../config/includes.js";
 import { recordPluginManifestInstallOwner } from "../plugins/manifest-install-owner.js";
 import {
@@ -44,12 +44,12 @@ import {
   writePersistedInstalledPluginIndexInstallRecordsWithLeaseMock,
 } from "./plugins-cli-test-helpers.js";
 
-const CLI_STATE_ROOT = "/tmp/openclaw-state";
-const ORIGINAL_OPENCLAW_STATE_DIR = process.env.OPENCLAW_STATE_DIR;
-const ORIGINAL_OPENCLAW_NIX_MODE = process.env.OPENCLAW_NIX_MODE;
+const CLI_STATE_ROOT = "/tmp/afora-state";
+const ORIGINAL_AFORA_STATE_DIR = process.env.AFORA_STATE_DIR;
+const ORIGINAL_AFORA_NIX_MODE = process.env.AFORA_NIX_MODE;
 const ORIGINAL_STDIN_TTY = Object.getOwnPropertyDescriptor(process.stdin, "isTTY");
 const ORIGINAL_STDOUT_TTY = Object.getOwnPropertyDescriptor(process.stdout, "isTTY");
-const PROFILE_STATE_ROOT = "/tmp/openclaw-ledger-profile";
+const PROFILE_STATE_ROOT = "/tmp/afora-ledger-profile";
 
 const OFFICIAL_EXTERNAL_NPM_INSTALLS_WITHOUT_INTEGRITY = listOfficialExternalPluginCatalogEntries()
   .map((entry) => {
@@ -69,11 +69,11 @@ function cliInstallPath(pluginId: string): string {
 }
 
 function useProfileExtensionsDir(): string {
-  process.env.OPENCLAW_STATE_DIR = PROFILE_STATE_ROOT;
+  process.env.AFORA_STATE_DIR = PROFILE_STATE_ROOT;
   return path.resolve(PROFILE_STATE_ROOT, "extensions");
 }
 
-function createEnabledPluginConfig(pluginId: string): OpenClawConfig {
+function createEnabledPluginConfig(pluginId: string): AforaConfig {
   return {
     plugins: {
       entries: {
@@ -82,15 +82,15 @@ function createEnabledPluginConfig(pluginId: string): OpenClawConfig {
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
-function createEmptyPluginConfig(): OpenClawConfig {
+function createEmptyPluginConfig(): AforaConfig {
   return {
     plugins: {
       entries: {},
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function createClawHubInstallResult(params: {
@@ -173,12 +173,12 @@ function createNpmPackPluginInstallResult(
     targetDir: cliInstallPath(pluginId),
     version: "1.2.3",
     extensions: ["dist/index.js"],
-    manifestName: `@openclaw/${pluginId}`,
-    npmTarballName: `openclaw-${pluginId}-1.2.3.tgz`,
+    manifestName: `@afora/${pluginId}`,
+    npmTarballName: `afora-${pluginId}-1.2.3.tgz`,
     npmResolution: {
-      name: `@openclaw/${pluginId}`,
+      name: `@afora/${pluginId}`,
       version: "1.2.3",
-      resolvedSpec: `@openclaw/${pluginId}@1.2.3`,
+      resolvedSpec: `@afora/${pluginId}@1.2.3`,
       integrity: "sha512-pack-demo",
       shasum: "packdemosha",
       resolvedAt: "2026-05-06T00:00:00.000Z",
@@ -267,7 +267,7 @@ function primeSuccessfulClawHubPluginInstall(
   return result;
 }
 
-function createPathHookPackInstalledConfig(tmpRoot: string): OpenClawConfig {
+function createPathHookPackInstalledConfig(tmpRoot: string): AforaConfig {
   return {
     hooks: {
       internal: {
@@ -280,10 +280,10 @@ function createPathHookPackInstalledConfig(tmpRoot: string): OpenClawConfig {
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
-function createNpmHookPackInstalledConfig(): OpenClawConfig {
+function createNpmHookPackInstalledConfig(): AforaConfig {
   return {
     hooks: {
       internal: {
@@ -295,7 +295,7 @@ function createNpmHookPackInstalledConfig(): OpenClawConfig {
         },
       },
     },
-  } as OpenClawConfig;
+  } as AforaConfig;
 }
 
 function createHookPackInstallResult(targetDir: string): {
@@ -317,14 +317,14 @@ function createHookPackInstallResult(targetDir: string): {
 }
 
 function primeHookPackNpmFallback() {
-  const cfg = {} as OpenClawConfig;
+  const cfg = {} as AforaConfig;
   const installedCfg = createNpmHookPackInstalledConfig();
 
   pluginCliConfigMock.mockReturnValue(cfg);
   mockClawHubPackageNotFound("@acme/demo-hooks");
   installPluginFromNpmSpecMock.mockResolvedValue({
     ok: false,
-    error: "package.json missing openclaw.plugin.json",
+    error: "package.json missing afora.plugin.json",
   });
   installHooksFromNpmSpecMock.mockResolvedValue({
     ...createHookPackInstallResult("/tmp/hooks/demo-hooks"),
@@ -343,10 +343,10 @@ function primeHookPackNpmFallback() {
 function primeHookPackPathFallback(params: {
   tmpRoot: string;
   pluginInstallError: string;
-}): OpenClawConfig {
+}): AforaConfig {
   const installedCfg = createPathHookPackInstalledConfig(params.tmpRoot);
 
-  pluginCliConfigMock.mockReturnValue({} as OpenClawConfig);
+  pluginCliConfigMock.mockReturnValue({} as AforaConfig);
   installPluginFromPathMock.mockResolvedValueOnce({
     ok: false,
     error: params.pluginInstallError,
@@ -446,10 +446,10 @@ function persistedInstallRecord(pluginId: string, callIndex = 0): PersistedInsta
   return record;
 }
 
-function replaceConfigCall(callIndex = 0): { baseHash?: string; nextConfig?: OpenClawConfig } {
+function replaceConfigCall(callIndex = 0): { baseHash?: string; nextConfig?: AforaConfig } {
   return mockCallArg(replaceConfigFileMock, callIndex) as {
     baseHash?: string;
-    nextConfig?: OpenClawConfig;
+    nextConfig?: AforaConfig;
   };
 }
 
@@ -499,15 +499,15 @@ async function runAcknowledgedPluginsInstallCommand(args: string[]): Promise<voi
 }
 
 function primeInstallConfigSnapshot(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   configPath?: string;
   hash: string;
   parsed: Record<string, unknown>;
   includeFileHashesForWrite?: Record<string, string>;
   includeFileTargetsForWrite?: Record<string, string>;
 }): void {
-  const configPath = params.configPath ?? path.join(process.cwd(), "openclaw.json5");
-  const config = params.config ?? ({} as OpenClawConfig);
+  const configPath = params.configPath ?? path.join(process.cwd(), "afora.json5");
+  const config = params.config ?? ({} as AforaConfig);
   pluginCliConfigMock.mockReturnValue(config);
   readConfigFileSnapshotForWriteMock.mockResolvedValue({
     snapshot: {
@@ -540,16 +540,16 @@ function primeInstallConfigSnapshot(params: {
 }
 
 function primeBlockedPluginConfigMutation(
-  params: { blockHooks?: boolean; config?: OpenClawConfig } = {},
+  params: { blockHooks?: boolean; config?: AforaConfig } = {},
 ): void {
   const externalPluginsPath = path.join(
     path.parse(process.cwd()).root,
-    "external-openclaw",
+    "external-afora",
     "plugins.json5",
   );
   const externalHooksPath = path.join(
     path.parse(process.cwd()).root,
-    "external-openclaw",
+    "external-afora",
     "hooks.json5",
   );
   primeInstallConfigSnapshot({
@@ -567,10 +567,10 @@ function primeBlockedPluginConfigMutation(
 }
 
 function primeNestedPluginConfigMutation(tempRoot: string): void {
-  const configPath = path.join(tempRoot, "openclaw.json5");
+  const configPath = path.join(tempRoot, "afora.json5");
   const pluginsPath = path.join(tempRoot, "plugins.json5");
   const pluginsRaw = `${JSON.stringify({ entries: { $include: "./entries.json5" } }, null, 2)}\n`;
-  const config = { plugins: { entries: {} } } as OpenClawConfig;
+  const config = { plugins: { entries: {} } } as AforaConfig;
   fs.writeFileSync(pluginsPath, pluginsRaw);
   primeInstallConfigSnapshot({
     config,
@@ -586,7 +586,7 @@ function primeNestedPluginConfigMutation(tempRoot: string): void {
   });
 }
 
-function primeBlockedRootConfigMutation(config = {} as OpenClawConfig): void {
+function primeBlockedRootConfigMutation(config = {} as AforaConfig): void {
   primeInstallConfigSnapshot({
     config,
     hash: "blocked-root-config",
@@ -594,10 +594,10 @@ function primeBlockedRootConfigMutation(config = {} as OpenClawConfig): void {
   });
 }
 
-function primeBlockedHookConfigMutation(config = {} as OpenClawConfig): void {
+function primeBlockedHookConfigMutation(config = {} as AforaConfig): void {
   const externalHooksPath = path.join(
     path.parse(process.cwd()).root,
-    "external-openclaw",
+    "external-afora",
     "hooks.json5",
   );
   primeInstallConfigSnapshot({
@@ -616,15 +616,15 @@ describe("plugins cli install", () => {
   });
 
   afterEach(() => {
-    if (ORIGINAL_OPENCLAW_STATE_DIR === undefined) {
-      delete process.env.OPENCLAW_STATE_DIR;
+    if (ORIGINAL_AFORA_STATE_DIR === undefined) {
+      delete process.env.AFORA_STATE_DIR;
     } else {
-      process.env.OPENCLAW_STATE_DIR = ORIGINAL_OPENCLAW_STATE_DIR;
+      process.env.AFORA_STATE_DIR = ORIGINAL_AFORA_STATE_DIR;
     }
-    if (ORIGINAL_OPENCLAW_NIX_MODE === undefined) {
-      delete process.env.OPENCLAW_NIX_MODE;
+    if (ORIGINAL_AFORA_NIX_MODE === undefined) {
+      delete process.env.AFORA_NIX_MODE;
     } else {
-      process.env.OPENCLAW_NIX_MODE = ORIGINAL_OPENCLAW_NIX_MODE;
+      process.env.AFORA_NIX_MODE = ORIGINAL_AFORA_NIX_MODE;
     }
     restoreTty();
   });
@@ -645,11 +645,11 @@ describe("plugins cli install", () => {
   });
 
   it("refuses plugin installs in Nix mode before installer side effects", async () => {
-    process.env.OPENCLAW_NIX_MODE = "1";
+    process.env.AFORA_NIX_MODE = "1";
 
     await expect(
       runAcknowledgedPluginsInstallCommand(["plugins", "install", "@acme/demo"]),
-    ).rejects.toThrow("OPENCLAW_NIX_MODE=1");
+    ).rejects.toThrow("AFORA_NIX_MODE=1");
 
     expect(installPluginFromNpmSpecMock).not.toHaveBeenCalled();
     expect(installPluginFromPathMock).not.toHaveBeenCalled();
@@ -663,7 +663,7 @@ describe("plugins cli install", () => {
       primeBlockedPluginConfigMutation();
       installHooksFromNpmSpecMock.mockResolvedValue({
         ok: false,
-        error: "package.json missing openclaw.hooks",
+        error: "package.json missing afora.hooks",
       });
 
       await expect(
@@ -692,7 +692,7 @@ describe("plugins cli install", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     primeBlockedPluginConfigMutation();
     installHooksFromNpmSpecMock.mockResolvedValue({
       ok: true,
@@ -776,13 +776,13 @@ describe("plugins cli install", () => {
   });
 
   it("blocks local package inspection when plugin and hook config are include-owned", async () => {
-    const localPath = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hook-pack-"));
+    const localPath = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hook-pack-"));
     primeBlockedPluginConfigMutation({ blockHooks: true });
     installHooksFromPathMock.mockResolvedValue(createHookPackInstallResult(localPath));
     installPluginFromPathMock.mockResolvedValue({
       ok: false,
-      error: "package.json missing openclaw.extensions",
-      code: "missing_openclaw_extensions",
+      error: "package.json missing afora.extensions",
+      code: "missing_afora_extensions",
     });
 
     try {
@@ -801,7 +801,7 @@ describe("plugins cli install", () => {
   });
 
   it("blocks a proven local hook pack before plugin installer side effects when only hooks config is include-owned", async () => {
-    const localPath = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hook-pack-"));
+    const localPath = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hook-pack-"));
     primeBlockedHookConfigMutation();
     installHooksFromPathMock.mockResolvedValue(createHookPackInstallResult(localPath));
 
@@ -837,14 +837,14 @@ describe("plugins cli install", () => {
             },
           },
         },
-      } as OpenClawConfig;
+      } as AforaConfig;
       fs.mkdirSync(localPath);
       primeBlockedPluginConfigMutation();
       parseClawHubPluginSpecMock.mockReturnValue({ name: "demo-hooks" });
       installPluginFromPathMock.mockResolvedValue({
         ok: false,
-        error: "package.json missing openclaw.extensions",
-        code: "missing_openclaw_extensions",
+        error: "package.json missing afora.extensions",
+        code: "missing_afora_extensions",
       });
       installHooksFromPathMock.mockResolvedValue(createHookPackInstallResult(localPath));
       recordHookInstallMock.mockReturnValue(installedCfg);
@@ -872,7 +872,7 @@ describe("plugins cli install", () => {
     primeBlockedRootConfigMutation();
     installHooksFromNpmSpecMock.mockResolvedValue({
       ok: false,
-      error: "package.json missing openclaw.hooks",
+      error: "package.json missing afora.hooks",
     });
 
     await expect(
@@ -886,11 +886,11 @@ describe("plugins cli install", () => {
   });
 
   it("fails closed for ambiguous local plugins when the whole config is include-owned", async () => {
-    const localPath = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-demo-plugin-"));
+    const localPath = fs.mkdtempSync(path.join(os.tmpdir(), "afora-demo-plugin-"));
     primeBlockedRootConfigMutation();
     installHooksFromPathMock.mockResolvedValue({
       ok: false,
-      error: "package.json missing openclaw.hooks",
+      error: "package.json missing afora.hooks",
     });
 
     try {
@@ -908,12 +908,12 @@ describe("plugins cli install", () => {
   });
 
   it("fails closed before installing a blocked ambiguous local plugin", async () => {
-    const archivePath = path.join(os.tmpdir(), `openclaw-plugin-${process.pid}.tgz`);
+    const archivePath = path.join(os.tmpdir(), `afora-plugin-${process.pid}.tgz`);
     fs.writeFileSync(archivePath, "not-an-archive");
     primeBlockedPluginConfigMutation();
     installHooksFromPathMock.mockResolvedValue({
       ok: false,
-      error: "package.json missing openclaw.hooks",
+      error: "package.json missing afora.hooks",
     });
 
     try {
@@ -954,7 +954,7 @@ describe("plugins cli install", () => {
   });
 
   it("fails closed when a local hook probe finds a plugin-capable package", async () => {
-    const localPath = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-dual-package-"));
+    const localPath = fs.mkdtempSync(path.join(os.tmpdir(), "afora-dual-package-"));
     primeBlockedPluginConfigMutation();
     installHooksFromPathMock.mockResolvedValue({
       ...createHookPackInstallResult(localPath),
@@ -979,7 +979,7 @@ describe("plugins cli install", () => {
   });
 
   it("fails closed for a local bundle plugin instead of installing its hooks", async () => {
-    const localPath = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-bundle-plugin-"));
+    const localPath = fs.mkdtempSync(path.join(os.tmpdir(), "afora-bundle-plugin-"));
     primeBlockedPluginConfigMutation();
     installHooksFromPathMock.mockResolvedValue({
       ...createHookPackInstallResult(localPath),
@@ -1020,7 +1020,7 @@ describe("plugins cli install", () => {
   });
 
   it("fails closed when a blocked-config local hook probe throws", async () => {
-    const localPluginDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-local-plugin-"));
+    const localPluginDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-local-plugin-"));
     primeBlockedPluginConfigMutation();
     installHooksFromPathMock.mockRejectedValue(new Error("hook validation exploded"));
 
@@ -1135,7 +1135,7 @@ describe("plugins cli install", () => {
   });
 
   it("blocks explicit plugins through nested include config before installer side effects", async () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-nested-"));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-nested-"));
     primeNestedPluginConfigMutation(tempRoot);
     installPluginFromMarketplaceMock.mockResolvedValue({
       ok: true,
@@ -1180,7 +1180,7 @@ describe("plugins cli install", () => {
     ).rejects.toThrow("__exit__:1");
 
     expect(runtimeErrors.at(-1)).toContain("--link is not supported with --marketplace.");
-    expect(runtimeErrors.at(-1)).toContain("openclaw plugins install --link <path> --force");
+    expect(runtimeErrors.at(-1)).toContain("afora plugins install --link <path> --force");
     expect(installPluginFromMarketplaceMock).not.toHaveBeenCalled();
   });
 
@@ -1225,7 +1225,7 @@ describe("plugins cli install", () => {
       throw invalidConfigErr;
     });
     readConfigFileSnapshotMock.mockResolvedValue({
-      path: "/tmp/openclaw-config.json5",
+      path: "/tmp/afora-config.json5",
       exists: true,
       raw: '{ "models": { "default": 123 } }',
       parsed: { models: { default: 123 } },
@@ -1243,7 +1243,7 @@ describe("plugins cli install", () => {
     ).rejects.toThrow("__exit__:1");
 
     expect(runtimeErrors.at(-1)).toContain(
-      "Config invalid; run `openclaw doctor --fix` before installing plugins.",
+      "Config invalid; run `afora doctor --fix` before installing plugins.",
     );
     expect(installPluginFromMarketplaceMock).not.toHaveBeenCalled();
     expect(installPluginFromNpmSpecMock).not.toHaveBeenCalled();
@@ -1255,7 +1255,7 @@ describe("plugins cli install", () => {
       plugins: {
         entries: {},
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const enabledCfg = {
       plugins: {
         entries: {
@@ -1264,7 +1264,7 @@ describe("plugins cli install", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     pluginCliConfigMock.mockReturnValue(cfg);
     installPluginFromMarketplaceMock.mockResolvedValue({
       ok: true,
@@ -1296,7 +1296,7 @@ describe("plugins cli install", () => {
             hooks: [],
             rootDir: alphaRoot,
             source: `${alphaRoot}/index.js`,
-            manifestPath: `${alphaRoot}/openclaw.plugin.json`,
+            manifestPath: `${alphaRoot}/afora.plugin.json`,
           },
           "alpha",
         ),
@@ -1385,7 +1385,7 @@ describe("plugins cli install", () => {
     {
       label: "local path",
       prepare: () => {
-        const localPath = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-source-"));
+        const localPath = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-source-"));
         return {
           args: ["plugins", "install", localPath],
           cleanup: () => fs.rmSync(localPath, { recursive: true, force: true }),
@@ -1397,7 +1397,7 @@ describe("plugins cli install", () => {
     {
       label: "local archive",
       prepare: () => {
-        const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-source-"));
+        const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-source-"));
         const archivePath = `${tempRoot}.tgz`;
         fs.writeFileSync(archivePath, "archive");
         return {
@@ -1434,7 +1434,7 @@ describe("plugins cli install", () => {
   );
 
   it("does not require acknowledgement for a bundled plugin's local source path", async () => {
-    const localPath = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-bundled-plugin-source-"));
+    const localPath = fs.mkdtempSync(path.join(os.tmpdir(), "afora-bundled-plugin-source-"));
     findBundledPluginSourceMock.mockImplementation((params: unknown) => {
       const { lookup } = params as {
         lookup: { kind: "localPath" | "npmSpec" | "pluginId"; value: string };
@@ -1568,7 +1568,7 @@ describe("plugins cli install", () => {
   ])(
     "warns for acknowledged $label installs outside ClawHub",
     async ({ expectedSource, suffix }) => {
-      const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-source-"));
+      const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-source-"));
       const localSource = suffix ? `${tempRoot}${suffix}` : tempRoot;
       if (suffix) {
         fs.writeFileSync(localSource, "archive");
@@ -1764,7 +1764,7 @@ describe("plugins cli install", () => {
           paths: ["/existing/plugin"],
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     pluginCliConfigMock.mockReturnValue(cfg);
     findBundledPluginSourceMock.mockReturnValue({
       pluginId,
@@ -1785,7 +1785,7 @@ describe("plugins cli install", () => {
 
     const writtenConfig = configWriteMock.mock.calls[
       configWriteMock.mock.calls.length - 1
-    ]?.[0] as OpenClawConfig;
+    ]?.[0] as AforaConfig;
     expect(writtenConfig.plugins?.entries?.[pluginId]).toEqual({
       enabled: false,
       hooks: { timeoutMs: 5_000 },
@@ -1811,7 +1811,7 @@ describe("plugins cli install", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     pluginCliConfigMock.mockReturnValue(cfg);
     findBundledPluginSourceMock.mockReturnValue({
       pluginId,
@@ -1844,7 +1844,7 @@ describe("plugins cli install", () => {
           },
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const enabledCfg = createEnabledPluginConfig(pluginId);
     pluginCliConfigMock.mockReturnValue(cfg);
     findBundledPluginSourceMock.mockReturnValue({
@@ -1912,29 +1912,29 @@ describe("plugins cli install", () => {
       lookup: { kind: "pluginId", value: "brave" },
     });
     expect(installPluginFromClawHubMock).not.toHaveBeenCalled();
-    expect(npmInstallCall().spec).toBe("@openclaw/brave-plugin");
+    expect(npmInstallCall().spec).toBe("@afora/brave-plugin");
     expect(npmInstallCall().expectedPluginId).toBe("brave");
     expect(npmInstallCall().trustedSourceLinkedOfficialInstall).toBe(true);
     expect(runtimeLogsContain("outside ClawHub review")).toBe(false);
     const record = persistedInstallRecord("brave");
     expect(record.source).toBe("npm");
-    expect(record.spec).toBe("@openclaw/brave-plugin");
+    expect(record.spec).toBe("@afora/brave-plugin");
     expect(record.installPath).toBe(cliInstallPath("brave"));
     expect(record.version).toBe("1.2.3");
     expect(configWriteMock).toHaveBeenCalledWith(enabledCfg);
   });
 
   it("passes third-party external catalog integrity with catalog install trust", async () => {
-    primeSuccessfulPluginPersistence("wecom-openclaw-plugin");
+    primeSuccessfulPluginPersistence("wecom-afora-plugin");
     findBundledPluginSourceMock.mockReturnValue(undefined);
     installPluginFromNpmSpecMock.mockResolvedValue(
-      createNpmPluginInstallResult("wecom-openclaw-plugin"),
+      createNpmPluginInstallResult("wecom-afora-plugin"),
     );
 
     await runPluginsCommand(["plugins", "install", "wecom"]);
 
-    expect(npmInstallCall().spec).toBe("@wecom/wecom-openclaw-plugin@2026.5.7");
-    expect(npmInstallCall().expectedPluginId).toBe("wecom-openclaw-plugin");
+    expect(npmInstallCall().spec).toBe("@wecom/wecom-afora-plugin@2026.5.7");
+    expect(npmInstallCall().expectedPluginId).toBe("wecom-afora-plugin");
     expect(npmInstallCall().expectedIntegrity).toBe(
       "sha512-TCkP9as00WfEhgFWG8YL/rcmaWGIshAki2HQh83nTRccGfVBCoGjrEboTTqq3yDmK9koWTV11zi8u8A4dNtvug==",
     );
@@ -1966,19 +1966,19 @@ describe("plugins cli install", () => {
     findBundledPluginSourceMock.mockReturnValue(undefined);
     installPluginFromNpmSpecMock.mockResolvedValue({
       ok: false,
-      error: "package.json missing openclaw.extensions",
-      code: "missing_openclaw_extensions",
+      error: "package.json missing afora.extensions",
+      code: "missing_afora_extensions",
     });
     installHooksFromNpmSpecMock.mockResolvedValue({
       ok: false,
       error:
-        "aborted: npm package integrity drift detected for @wecom/wecom-openclaw-plugin@2026.5.7",
+        "aborted: npm package integrity drift detected for @wecom/wecom-afora-plugin@2026.5.7",
     });
 
     await expect(runPluginsCommand(["plugins", "install", "wecom"])).rejects.toThrow("__exit__:1");
 
     expect(npmInstallCall().trustedSourceLinkedOfficialInstall).toBe(true);
-    expect(hookNpmInstallCall().spec).toBe("@wecom/wecom-openclaw-plugin@2026.5.7");
+    expect(hookNpmInstallCall().spec).toBe("@wecom/wecom-afora-plugin@2026.5.7");
     expect(hookNpmInstallCall().expectedIntegrity).toBe(
       "sha512-TCkP9as00WfEhgFWG8YL/rcmaWGIshAki2HQh83nTRccGfVBCoGjrEboTTqq3yDmK9koWTV11zi8u8A4dNtvug==",
     );
@@ -2053,7 +2053,7 @@ describe("plugins cli install", () => {
 
   it("installs npm-pack archives through npm install semantics", async () => {
     const { enabledCfg } = primeSuccessfulPluginPersistence("demo");
-    const archivePath = "/tmp/openclaw-demo-1.2.3.tgz";
+    const archivePath = "/tmp/afora-demo-1.2.3.tgz";
     installPluginFromNpmPackArchiveMock.mockResolvedValue(createNpmPackPluginInstallResult("demo"));
 
     await runAcknowledgedPluginsInstallCommand(["plugins", "install", `npm-pack:${archivePath}`]);
@@ -2064,7 +2064,7 @@ describe("plugins cli install", () => {
     expect(installPluginFromNpmSpecMock).not.toHaveBeenCalled();
     const record = persistedInstallRecord("demo");
     expect(record.source).toBe("npm");
-    expect(record.spec).toBe("@openclaw/demo@1.2.3");
+    expect(record.spec).toBe("@afora/demo@1.2.3");
     expect(record.sourcePath).toBe(archivePath);
     expect(record.installPath).toBe(cliInstallPath("demo"));
     expect(record.version).toBe("1.2.3");
@@ -2072,7 +2072,7 @@ describe("plugins cli install", () => {
     expect(record.artifactFormat).toBe("tgz");
     expect(record.npmIntegrity).toBe("sha512-pack-demo");
     expect(record.npmShasum).toBe("packdemosha");
-    expect(record.npmTarballName).toBe("openclaw-demo-1.2.3.tgz");
+    expect(record.npmTarballName).toBe("afora-demo-1.2.3.tgz");
     expect(configWriteMock).toHaveBeenCalledWith(enabledCfg);
   });
 
@@ -2094,9 +2094,9 @@ describe("plugins cli install", () => {
     primeSuccessfulPluginPersistence("discord");
     installPluginFromNpmSpecMock.mockResolvedValue(createNpmPluginInstallResult("discord"));
 
-    await runPluginsCommand(["plugins", "install", "npm:@openclaw/discord"]);
+    await runPluginsCommand(["plugins", "install", "npm:@afora/discord"]);
 
-    expect(npmInstallCall().spec).toBe("@openclaw/discord");
+    expect(npmInstallCall().spec).toBe("@afora/discord");
     expect(npmInstallCall().expectedPluginId).toBe("discord");
     expect(npmInstallCall().trustedSourceLinkedOfficialInstall).toBe(true);
     expect(runtimeLogsContain("outside ClawHub review")).toBe(false);
@@ -2108,26 +2108,26 @@ describe("plugins cli install", () => {
     findBundledPluginSourceMock.mockReturnValue(undefined);
     installPluginFromNpmSpecMock.mockResolvedValue(createNpmPluginInstallResult("discord"));
 
-    await runPluginsCommand(["plugins", "install", "@openclaw/discord"]);
+    await runPluginsCommand(["plugins", "install", "@afora/discord"]);
 
-    expect(npmInstallCall().spec).toBe("@openclaw/discord");
+    expect(npmInstallCall().spec).toBe("@afora/discord");
     expect(npmInstallCall().expectedPluginId).toBe("discord");
     expect(npmInstallCall().trustedSourceLinkedOfficialInstall).toBe(true);
     expect(installPluginFromClawHubMock).not.toHaveBeenCalled();
   });
 
-  it("uses bundled OpenClaw package specs instead of pinning stale managed npm overrides", async () => {
+  it("uses bundled Afora package specs instead of pinning stale managed npm overrides", async () => {
     primeSuccessfulPluginPersistence("discord");
     const bundledPath = "/app/dist/extensions/discord";
     findBundledPluginSourceMock.mockImplementation((params: unknown) => {
       const { lookup } = params as {
         lookup: { kind: "pluginId" | "npmSpec"; value: string };
       };
-      return lookup.kind === "npmSpec" && lookup.value === "@openclaw/discord"
+      return lookup.kind === "npmSpec" && lookup.value === "@afora/discord"
         ? {
             pluginId: "discord",
             localPath: bundledPath,
-            npmSpec: "@openclaw/discord",
+            npmSpec: "@afora/discord",
             version: "2026.5.24-beta.2",
           }
         : undefined;
@@ -2135,40 +2135,40 @@ describe("plugins cli install", () => {
     await runPluginsCommand([
       "plugins",
       "install",
-      "@openclaw/discord@2026.5.20",
+      "@afora/discord@2026.5.20",
       "--pin",
       "--force",
     ]);
 
     expect(installPluginFromNpmSpecMock).not.toHaveBeenCalled();
     expect(findBundledPluginSourceMock).toHaveBeenCalledWith({
-      lookup: { kind: "npmSpec", value: "@openclaw/discord@2026.5.20" },
+      lookup: { kind: "npmSpec", value: "@afora/discord@2026.5.20" },
     });
     expect(findBundledPluginSourceMock).toHaveBeenCalledWith({
-      lookup: { kind: "npmSpec", value: "@openclaw/discord" },
+      lookup: { kind: "npmSpec", value: "@afora/discord" },
     });
     const record = persistedInstallRecord("discord");
     expect(record.source).toBe("path");
-    expect(record.spec).toBe("@openclaw/discord@2026.5.20");
+    expect(record.spec).toBe("@afora/discord@2026.5.20");
     expect(record.sourcePath).toBe(bundledPath);
     expect(record.installPath).toBe(bundledPath);
-    expect(runtimeLogsContain("ships with the current OpenClaw build")).toBe(true);
-    expect(runtimeLogsContain("npm:@openclaw/discord@2026.5.20")).toBe(true);
+    expect(runtimeLogsContain("ships with the current Afora build")).toBe(true);
+    expect(runtimeLogsContain("npm:@afora/discord@2026.5.20")).toBe(true);
   });
 
   it("marks catalog npm package installs with alternate selectors as trusted", async () => {
-    primeSuccessfulPluginPersistence("wecom-openclaw-plugin");
+    primeSuccessfulPluginPersistence("wecom-afora-plugin");
     findBundledPluginSourceMock.mockReturnValue(undefined);
     installPluginFromNpmSpecMock.mockResolvedValue(
-      createNpmPluginInstallResult("wecom-openclaw-plugin"),
+      createNpmPluginInstallResult("wecom-afora-plugin"),
     );
 
-    await runPluginsCommand(["plugins", "install", "@wecom/wecom-openclaw-plugin@latest"]);
+    await runPluginsCommand(["plugins", "install", "@wecom/wecom-afora-plugin@latest"]);
 
     // Alternate selectors stay trusted by catalog package name, but must not
     // inherit catalog integrity unless the install spec matches exactly.
-    expect(npmInstallCall().spec).toBe("@wecom/wecom-openclaw-plugin@latest");
-    expect(npmInstallCall().expectedPluginId).toBe("wecom-openclaw-plugin");
+    expect(npmInstallCall().spec).toBe("@wecom/wecom-afora-plugin@latest");
+    expect(npmInstallCall().expectedPluginId).toBe("wecom-afora-plugin");
     expect(npmInstallCall().trustedSourceLinkedOfficialInstall).toBe(true);
     expect(npmInstallCall().expectedIntegrity).toBeUndefined();
     expect(runtimeLogsContain("outside ClawHub review")).toBe(false);
@@ -2222,15 +2222,15 @@ describe("plugins cli install", () => {
   });
 
   it("reports npm install failures without trying ClawHub when npm: prefix is used", async () => {
-    pluginCliConfigMock.mockReturnValue({} as OpenClawConfig);
+    pluginCliConfigMock.mockReturnValue({} as AforaConfig);
     installPluginFromNpmSpecMock.mockResolvedValue({
       ok: false,
       error: "npm install failed",
     });
     installHooksFromNpmSpecMock.mockResolvedValue({
       ok: false,
-      error: "package.json missing openclaw.hooks",
-      code: "missing_openclaw_hooks",
+      error: "package.json missing afora.hooks",
+      code: "missing_afora_hooks",
     });
 
     await expect(
@@ -2243,7 +2243,7 @@ describe("plugins cli install", () => {
   });
 
   it("keeps actionable hook-pack fallback details", async () => {
-    pluginCliConfigMock.mockReturnValue({} as OpenClawConfig);
+    pluginCliConfigMock.mockReturnValue({} as AforaConfig);
     installPluginFromNpmSpecMock.mockResolvedValue({
       ok: false,
       error: "npm install failed",
@@ -2264,7 +2264,7 @@ describe("plugins cli install", () => {
   });
 
   it("adds a Git PATH hint when npm plugin dependency install cannot spawn git", async () => {
-    pluginCliConfigMock.mockReturnValue({} as OpenClawConfig);
+    pluginCliConfigMock.mockReturnValue({} as AforaConfig);
     installPluginFromNpmSpecMock.mockResolvedValue({
       ok: false,
       error: [
@@ -2276,12 +2276,12 @@ describe("plugins cli install", () => {
     });
     installHooksFromNpmSpecMock.mockResolvedValue({
       ok: false,
-      error: "package.json missing openclaw.hooks",
-      code: "missing_openclaw_hooks",
+      error: "package.json missing afora.hooks",
+      code: "missing_afora_hooks",
     });
 
     await expect(
-      runAcknowledgedPluginsInstallCommand(["plugins", "install", "npm:@openclaw/whatsapp"]),
+      runAcknowledgedPluginsInstallCommand(["plugins", "install", "npm:@afora/whatsapp"]),
     ).rejects.toThrow("__exit__:1");
 
     expect(installPluginFromClawHubMock).not.toHaveBeenCalled();
@@ -2293,7 +2293,7 @@ describe("plugins cli install", () => {
   });
 
   it("does not resolve npm: prefixed bundled plugin ids through bundled installs", async () => {
-    pluginCliConfigMock.mockReturnValue({ plugins: { load: { paths: [] } } } as OpenClawConfig);
+    pluginCliConfigMock.mockReturnValue({ plugins: { load: { paths: [] } } } as AforaConfig);
     installPluginFromNpmSpecMock.mockResolvedValue({
       ok: false,
       error: "Package not found on npm: memory-lancedb.",
@@ -2301,8 +2301,8 @@ describe("plugins cli install", () => {
     });
     installHooksFromNpmSpecMock.mockResolvedValue({
       ok: false,
-      error: "package.json missing openclaw.hooks",
-      code: "missing_openclaw_hooks",
+      error: "package.json missing afora.hooks",
+      code: "missing_afora_hooks",
     });
 
     await expect(
@@ -2317,7 +2317,7 @@ describe("plugins cli install", () => {
   });
 
   it("rejects empty npm: prefix installs before resolver lookup", async () => {
-    pluginCliConfigMock.mockReturnValue({} as OpenClawConfig);
+    pluginCliConfigMock.mockReturnValue({} as AforaConfig);
 
     await expect(
       runAcknowledgedPluginsInstallCommand(["plugins", "install", "npm:"]),
@@ -2353,7 +2353,7 @@ describe("plugins cli install", () => {
   });
 
   it("rejects --pin for git installs and points at git refs", async () => {
-    pluginCliConfigMock.mockReturnValue({} as OpenClawConfig);
+    pluginCliConfigMock.mockReturnValue({} as AforaConfig);
 
     await expect(
       runAcknowledgedPluginsInstallCommand([
@@ -2365,7 +2365,7 @@ describe("plugins cli install", () => {
     ).rejects.toThrow("__exit__:1");
 
     expect(installPluginFromGitSpecMock).not.toHaveBeenCalled();
-    expect(runtimeErrors.at(-1)).toContain("openclaw plugins install git:<repo>@<ref> --force");
+    expect(runtimeErrors.at(-1)).toContain("afora plugins install git:<repo>@<ref> --force");
   });
 
   it("passes dangerous force unsafe install to marketplace installs", async () => {
@@ -2404,9 +2404,9 @@ describe("plugins cli install", () => {
       plugins: {
         entries: {},
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const enabledCfg = createEnabledPluginConfig("demo");
-    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-plugin-link-"));
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-plugin-link-"));
 
     pluginCliConfigMock.mockReturnValue(cfg);
     installPluginFromPathMock.mockResolvedValueOnce({
@@ -2443,7 +2443,7 @@ describe("plugins cli install", () => {
   });
 
   it("passes dangerous force unsafe install to linked hook-pack probe fallback", async () => {
-    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hook-link-"));
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hook-link-"));
     primeHookPackPathFallback({
       tmpRoot,
       pluginInstallError: "plugin install probe failed",
@@ -2467,10 +2467,10 @@ describe("plugins cli install", () => {
   });
 
   it("does not fall back to hook pack for linked path when a no-flag security scan blocks", async () => {
-    const localPluginDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-link-plugin-"));
+    const localPluginDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-link-plugin-"));
     const pluginInstallError = "plugin blocked by security scan";
 
-    pluginCliConfigMock.mockReturnValue({} as OpenClawConfig);
+    pluginCliConfigMock.mockReturnValue({} as AforaConfig);
     installPluginFromPathMock.mockResolvedValue({
       ok: false,
       error: pluginInstallError,
@@ -2491,7 +2491,7 @@ describe("plugins cli install", () => {
   });
 
   it("passes dangerous force unsafe install to local hook-pack fallback installs", async () => {
-    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-hook-install-"));
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "afora-hook-install-"));
     primeHookPackPathFallback({
       tmpRoot,
       pluginInstallError: "plugin install failed",
@@ -2515,7 +2515,7 @@ describe("plugins cli install", () => {
 
   it("passes the active profile extensions dir to local path installs", async () => {
     const extensionsDir = useProfileExtensionsDir();
-    const localPluginDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-local-plugin-"));
+    const localPluginDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-local-plugin-"));
     primeSuccessfulPluginPersistence("demo");
     installPluginFromPathMock.mockResolvedValue({
       ok: true,
@@ -2543,16 +2543,16 @@ describe("plugins cli install", () => {
   });
 
   it("suggests update or --force when npm plugin install target already exists", async () => {
-    pluginCliConfigMock.mockReturnValue({} as OpenClawConfig);
+    pluginCliConfigMock.mockReturnValue({} as AforaConfig);
     mockClawHubPackageNotFound("@example/lossless-claw");
     installPluginFromNpmSpecMock.mockResolvedValue({
       ok: false,
       error:
-        "plugin already exists: /home/openclaw/.openclaw/extensions/lossless-claw (delete it first)",
+        "plugin already exists: /home/afora/.afora/extensions/lossless-claw (delete it first)",
     });
     installHooksFromNpmSpecMock.mockResolvedValue({
       ok: false,
-      error: "package.json missing openclaw.hooks",
+      error: "package.json missing afora.hooks",
     });
 
     await expect(
@@ -2560,22 +2560,22 @@ describe("plugins cli install", () => {
     ).rejects.toThrow("__exit__:1");
 
     expect(runtimeErrors.at(-1)).toContain(
-      "Use `openclaw plugins update <id-or-npm-spec>` to upgrade the tracked plugin, or rerun install with `--force` to replace it.",
+      "Use `afora plugins update <id-or-npm-spec>` to upgrade the tracked plugin, or rerun install with `--force` to replace it.",
     );
     expect(runtimeErrors.at(-1)).not.toContain("Also not a valid hook pack");
   });
 
   it("does not append hook-pack fallback details for managed extensions boundary failures", async () => {
-    const localPluginDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-local-plugin-"));
+    const localPluginDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-local-plugin-"));
 
-    pluginCliConfigMock.mockReturnValue({} as OpenClawConfig);
+    pluginCliConfigMock.mockReturnValue({} as AforaConfig);
     installPluginFromPathMock.mockResolvedValue({
       ok: false,
       error: "Invalid path: must stay within extensions directory",
     });
     installHooksFromPathMock.mockResolvedValue({
       ok: false,
-      error: "package.json missing openclaw.hooks",
+      error: "package.json missing afora.hooks",
     });
 
     try {
@@ -2591,7 +2591,7 @@ describe("plugins cli install", () => {
   });
 
   it("passes the install logger to the --link dry-run probe", async () => {
-    const localPluginDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-link-plugin-"));
+    const localPluginDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-link-plugin-"));
     const cfg = {
       plugins: {
         entries: {},
@@ -2599,7 +2599,7 @@ describe("plugins cli install", () => {
           paths: [],
         },
       },
-    } as OpenClawConfig;
+    } as AforaConfig;
     const enabledCfg = createEnabledPluginConfig("demo");
 
     pluginCliConfigMock.mockReturnValue(cfg);
@@ -2669,8 +2669,8 @@ describe("plugins cli install", () => {
       flags: ["--dangerously-force-unsafe-install"],
     },
   ] as const)("does not fall back to hook pack for local path when $name", async (testCase) => {
-    const localPluginDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-local-plugin-"));
-    pluginCliConfigMock.mockReturnValue({} as OpenClawConfig);
+    const localPluginDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-local-plugin-"));
+    pluginCliConfigMock.mockReturnValue({} as AforaConfig);
     installPluginFromPathMock.mockResolvedValue({
       ok: false,
       error: testCase.error,
@@ -2719,7 +2719,7 @@ describe("plugins cli install", () => {
       flags: ["--dangerously-force-unsafe-install"],
     },
   ] as const)("does not fall back to hook pack for npm installs when $name", async (testCase) => {
-    pluginCliConfigMock.mockReturnValue({} as OpenClawConfig);
+    pluginCliConfigMock.mockReturnValue({} as AforaConfig);
     mockClawHubPackageNotFound(testCase.spec);
     installPluginFromNpmSpecMock.mockResolvedValue({
       ok: false,
@@ -2742,12 +2742,12 @@ describe("plugins cli install", () => {
   });
 
   it("still falls back to local hook pack when dangerous force unsafe install is set for non-security errors", async () => {
-    const localHookDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-local-hook-pack-"));
-    pluginCliConfigMock.mockReturnValue({} as OpenClawConfig);
+    const localHookDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-local-hook-pack-"));
+    pluginCliConfigMock.mockReturnValue({} as AforaConfig);
     installPluginFromPathMock.mockResolvedValue({
       ok: false,
-      error: "package.json missing openclaw.plugin.json",
-      code: "missing_openclaw_extensions",
+      error: "package.json missing afora.plugin.json",
+      code: "missing_afora_extensions",
     });
     installHooksFromPathMock.mockResolvedValue({
       ok: true,
@@ -2792,7 +2792,7 @@ describe("plugins cli install", () => {
     parseClawHubPluginSpecMock.mockReturnValue({ name: "demo" });
     installPluginFromClawHubMock.mockResolvedValue({
       ok: false,
-      error: 'Use "openclaw skills install demo" instead.',
+      error: 'Use "afora skills install demo" instead.',
       code: "skill_package",
     });
 
@@ -2801,7 +2801,7 @@ describe("plugins cli install", () => {
     );
 
     expect(installPluginFromNpmSpecMock).not.toHaveBeenCalled();
-    expect(runtimeErrors.at(-1)).toContain('Use "openclaw skills install demo" instead.');
+    expect(runtimeErrors.at(-1)).toContain('Use "afora skills install demo" instead.');
   });
 
   it("falls back to installing hook packs from npm specs", async () => {

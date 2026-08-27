@@ -99,15 +99,15 @@ describe("createCanvasSurfaceLease", () => {
       .fn<(method: string, params: unknown) => Promise<unknown>>()
       .mockResolvedValueOnce({
         surface: "canvas",
-        pluginSurfaceUrls: { canvas: "https://canvas.test/__openclaw__/cap/two" },
+        pluginSurfaceUrls: { canvas: "https://canvas.test/__afora__/cap/two" },
         expiresAtMs: 200_000,
       })
       .mockResolvedValueOnce({
         surface: "canvas",
-        pluginSurfaceUrls: { canvas: "https://canvas.test/__openclaw__/cap/three" },
+        pluginSurfaceUrls: { canvas: "https://canvas.test/__afora__/cap/three" },
       });
     const { changes, clock, lease } = createLeaseHarness(request);
-    const helloUrl = "https://canvas.test/__openclaw__/cap/one";
+    const helloUrl = "https://canvas.test/__afora__/cap/one";
 
     lease.start(helloUrl);
     expect(changes).toEqual([helloUrl]);
@@ -118,11 +118,11 @@ describe("createCanvasSurfaceLease", () => {
       surface: "canvas",
       observedUrl: helloUrl,
     });
-    expect(changes.at(-1)).toBe("https://canvas.test/__openclaw__/cap/two");
+    expect(changes.at(-1)).toBe("https://canvas.test/__afora__/cap/two");
     expect(clock.nextDelayMs).toBe(85_000);
 
     await clock.advanceBy(85_000);
-    expect(changes.at(-1)).toBe("https://canvas.test/__openclaw__/cap/three");
+    expect(changes.at(-1)).toBe("https://canvas.test/__afora__/cap/three");
     expect(clock.nextDelayMs).toBe(60_000);
   });
 
@@ -132,12 +132,12 @@ describe("createCanvasSurfaceLease", () => {
       .fn<(method: string, params: unknown) => Promise<unknown>>()
       .mockResolvedValueOnce({
         surface: "canvas",
-        pluginSurfaceUrls: { canvas: "https://canvas.test/__openclaw__/cap/two" },
+        pluginSurfaceUrls: { canvas: "https://canvas.test/__afora__/cap/two" },
         expiresAtMs: 116_000,
       })
       .mockImplementation(() => pending.promise);
     const { clock, lease } = createLeaseHarness(request);
-    lease.start("https://canvas.test/__openclaw__/cap/one");
+    lease.start("https://canvas.test/__afora__/cap/one");
     await flushPromises();
 
     const callback = clock.takeNextCallback();
@@ -149,7 +149,7 @@ describe("createCanvasSurfaceLease", () => {
 
     pending.resolve({
       surface: "canvas",
-      pluginSurfaceUrls: { canvas: "https://canvas.test/__openclaw__/cap/two" },
+      pluginSurfaceUrls: { canvas: "https://canvas.test/__afora__/cap/two" },
     });
     await flushPromises();
     expect(clock.pendingCount).toBe(1);
@@ -164,11 +164,11 @@ describe("createCanvasSurfaceLease", () => {
       }
       return {
         surface: "canvas",
-        pluginSurfaceUrls: { canvas: "https://canvas.test/__openclaw__/cap/fresh" },
+        pluginSurfaceUrls: { canvas: "https://canvas.test/__afora__/cap/fresh" },
       };
     });
     const { changes, clock, lease } = createLeaseHarness(request);
-    const originalUrl = "https://canvas.test/__openclaw__/cap/one";
+    const originalUrl = "https://canvas.test/__afora__/cap/one";
     lease.start(originalUrl);
 
     await flushPromises();
@@ -181,7 +181,7 @@ describe("createCanvasSurfaceLease", () => {
     }
 
     expect(request).toHaveBeenCalledTimes(11);
-    expect(changes.at(-1)).toBe("https://canvas.test/__openclaw__/cap/fresh");
+    expect(changes.at(-1)).toBe("https://canvas.test/__afora__/cap/fresh");
     expect(clock.nextDelayMs).toBe(60_000);
   });
 
@@ -192,14 +192,14 @@ describe("createCanvasSurfaceLease", () => {
       const changes: Array<string | null> = [];
       const request = vi.fn(async () => ({
         surface: "canvas",
-        pluginSurfaceUrls: { canvas: "https://canvas.test/__openclaw__/cap/refreshed" },
+        pluginSurfaceUrls: { canvas: "https://canvas.test/__afora__/cap/refreshed" },
         expiresAtMs: 120_000,
       }));
       const lease = createCanvasSurfaceLease({
         request,
         onChange: (url) => {
           changes.push(url);
-          if (url === "https://canvas.test/__openclaw__/cap/refreshed") {
+          if (url === "https://canvas.test/__afora__/cap/refreshed") {
             if (transition === "stops") {
               lease.stop();
             } else {
@@ -212,13 +212,13 @@ describe("createCanvasSurfaceLease", () => {
         clearTimer: clock.clearTimer,
       });
 
-      lease.start("https://canvas.test/__openclaw__/cap/original");
+      lease.start("https://canvas.test/__afora__/cap/original");
       await flushPromises();
 
       expect(request).toHaveBeenCalledOnce();
       expect(changes).toEqual([
-        "https://canvas.test/__openclaw__/cap/original",
-        "https://canvas.test/__openclaw__/cap/refreshed",
+        "https://canvas.test/__afora__/cap/original",
+        "https://canvas.test/__afora__/cap/refreshed",
         null,
       ]);
       expect(clock.pendingCount).toBe(0);
@@ -230,23 +230,23 @@ describe("createCanvasSurfaceLease", () => {
       .fn<(method: string, params: unknown) => Promise<unknown>>()
       .mockResolvedValueOnce({
         surface: "canvas",
-        pluginSurfaceUrls: { canvas: "https://canvas.test/__openclaw__/cap/first" },
+        pluginSurfaceUrls: { canvas: "https://canvas.test/__afora__/cap/first" },
         expiresAtMs: 120_000,
       })
       .mockResolvedValueOnce({
         surface: "canvas",
-        pluginSurfaceUrls: { canvas: "https://canvas.test/__openclaw__/cap/reconnected" },
+        pluginSurfaceUrls: { canvas: "https://canvas.test/__afora__/cap/reconnected" },
         expiresAtMs: 180_000,
       });
     const { clock, lease } = createLeaseHarness(request);
 
-    lease.start("https://canvas.test/__openclaw__/cap/original");
+    lease.start("https://canvas.test/__afora__/cap/original");
     await flushPromises();
     const retiredCallback = clock.takeNextCallback();
     expect(retiredCallback).toBeDefined();
 
     lease.stop();
-    lease.start("https://canvas.test/__openclaw__/cap/reconnect");
+    lease.start("https://canvas.test/__afora__/cap/reconnect");
     await flushPromises();
     expect(clock.pendingCount).toBe(1);
 
@@ -262,12 +262,12 @@ describe("createCanvasSurfaceLease", () => {
     async (expiresAtMs) => {
       const request = vi.fn(async () => ({
         surface: "canvas",
-        pluginSurfaceUrls: { canvas: "https://canvas.test/__openclaw__/cap/refreshed" },
+        pluginSurfaceUrls: { canvas: "https://canvas.test/__afora__/cap/refreshed" },
         expiresAtMs,
       }));
       const { clock, lease } = createLeaseHarness(request);
 
-      lease.start("https://canvas.test/__openclaw__/cap/original");
+      lease.start("https://canvas.test/__afora__/cap/original");
       await flushPromises();
 
       expect(clock.nextDelayMs).toBe(2_147_483_647);
@@ -278,20 +278,20 @@ describe("createCanvasSurfaceLease", () => {
   it("stop clears timers, ignores an in-flight result, and publishes null once", async () => {
     const pending = deferred<unknown>();
     const { changes, clock, connectionChanges, lease } = createLeaseHarness(() => pending.promise);
-    lease.start("https://canvas.test/__openclaw__/cap/one");
+    lease.start("https://canvas.test/__afora__/cap/one");
     await flushPromises();
 
     lease.stop();
     lease.stop();
     expect(clock.pendingCount).toBe(0);
-    expect(changes).toEqual(["https://canvas.test/__openclaw__/cap/one", null]);
+    expect(changes).toEqual(["https://canvas.test/__afora__/cap/one", null]);
     expect(connectionChanges).toHaveLength(2);
 
     pending.resolve({
       surface: "canvas",
-      pluginSurfaceUrls: { canvas: "https://canvas.test/__openclaw__/cap/two" },
+      pluginSurfaceUrls: { canvas: "https://canvas.test/__afora__/cap/two" },
     });
     await flushPromises();
-    expect(changes).toEqual(["https://canvas.test/__openclaw__/cap/one", null]);
+    expect(changes).toEqual(["https://canvas.test/__afora__/cap/one", null]);
   });
 });

@@ -3,8 +3,8 @@
  *
  * Reads child session output, detects waiting states, and formats completion findings for announcements.
  */
-import { asFiniteNumber } from "@openclaw/normalization-core/number-coercion";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { asFiniteNumber } from "@afora/normalization-core/number-coercion";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../../../auto-reply/tokens.js";
 import type { SessionTranscriptRuntimeTarget } from "../../../config/sessions/session-accessor.js";
 import { resolveFreshSessionTotalTokens } from "../../../config/sessions/types.js";
@@ -709,6 +709,6 @@ const testing = {
 };
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
   (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.subagentAnnounceOutputTestApi")
+    Symbol.for("afora.subagentAnnounceOutputTestApi")
   ] = testing;
 }

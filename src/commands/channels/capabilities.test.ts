@@ -1,5 +1,5 @@
 // Channels capabilities tests cover capability reporting, account selection, probes, and installable plugins.
-import { createRequireRecord } from "openclaw/plugin-sdk/test-fixtures";
+import { createRequireRecord } from "afora-agent/plugin-sdk/test-fixtures";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getChannelPlugin, listChannelPlugins } from "../../channels/plugins/index.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.public.js";
@@ -144,11 +144,11 @@ describe("channelsCapabilitiesCommand", () => {
         userToken: "xoxp-user",
         config: { userToken: "xoxp-user" },
       },
-      probe: { ok: true, bot: { name: "openclaw" }, team: { name: "team" } },
+      probe: { ok: true, bot: { name: "afora" }, team: { name: "team" } },
     });
     plugin.status = {
       ...plugin.status,
-      formatCapabilitiesProbe: () => [{ text: "Bot: @openclaw" }, { text: "Team: team" }],
+      formatCapabilitiesProbe: () => [{ text: "Bot: @afora" }, { text: "Team: team" }],
       buildCapabilitiesDiagnostics: async () => ({
         lines: [
           { text: "Bot scopes (auth.scopes): chat:write" },
@@ -176,7 +176,7 @@ describe("channelsCapabilitiesCommand", () => {
         "slack:default",
         "Support: chatTypes=direct",
         "Actions: send, broadcast, poll",
-        "Bot: @openclaw",
+        "Bot: @afora",
         "Team: team",
         "Bot scopes (auth.scopes): chat:write",
         "User scopes (auth.scopes): users:read",

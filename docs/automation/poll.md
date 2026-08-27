@@ -3,7 +3,7 @@ summary: "Redirect to /cli/message"
 title: "Polls"
 ---
 
-This page moved. Poll documentation, including `openclaw message poll` flags and per-channel limits, lives in [Message tool](/cli/message).
+This page moved. Poll documentation, including `afora message poll` flags and per-channel limits, lives in [Message tool](/cli/message).
 
 ## Related
 

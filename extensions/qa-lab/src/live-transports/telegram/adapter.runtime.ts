@@ -1,6 +1,6 @@
 // Qa Lab plugin module implements Telegram live transport adapter behavior.
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { QaRunnerCliRegistration } from "openclaw/plugin-sdk/qa-runner-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { QaRunnerCliRegistration } from "afora-agent/plugin-sdk/qa-runner-runtime";
 import {
   assertQaGatewayCredentialLeaseQuarantine,
   shouldRetainQaGatewayCredentialLease,
@@ -73,7 +73,7 @@ function renderTelegramQaInboundText(
   botUsername: string,
 ) {
   const commandName = input.nativeCommand?.name.trim().toLowerCase();
-  const renderedText = input.text.replaceAll("@openclaw", `@${botUsername}`);
+  const renderedText = input.text.replaceAll("@afora", `@${botUsername}`);
   const commandToken = renderedText.match(/^\S+/u)?.[0];
   // Scenarios declare command semantics once; the live adapter owns Telegram's
   // bot-username targeting while local drivers may encode the same metadata differently.
@@ -281,7 +281,7 @@ export async function createTelegramQaTransportAdapter(
       observerState.relevantUpdateKinds.clear();
     },
     createGatewayConfig: () =>
-      buildTelegramQaConfig({} as OpenClawConfig, {
+      buildTelegramQaConfig({} as AforaConfig, {
         groupId: runtimeEnv.groupId,
         sutToken: runtimeEnv.sutToken,
         driverBotId: driverIdentity.id,

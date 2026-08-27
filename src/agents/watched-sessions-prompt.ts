@@ -1,13 +1,13 @@
 /**
- * Prepares the Watched Sessions system-prompt section (openclaw#114797).
+ * Prepares the Watched Sessions system-prompt section (afora#114797).
  *
  * Ambient group watches make same-agent group sessions readable from the main
  * session, but the model only acts on that when the prompt names them. Prepare
  * runs before synchronous prompt assembly, mirroring prepareAgentMemoryPrompt.
  */
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { loadExactSessionEntryReadOnly } from "../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { deriveSessionTitle } from "../gateway/session-utils.js";
 import { resolveSandboxSessionToolsVisibility } from "../plugin-sdk/session-visibility.js";
 import { buildAgentMainSessionKey, parseAgentSessionKey } from "../routing/session-key.js";
@@ -35,7 +35,7 @@ const WATCHED_SESSION_READ_TOOLS = ["sessions_history", "sessions_search"];
 /** Resolve watched same-agent group sessions for the current session's prompt. */
 export function prepareWatchedSessionsPrompt(params: {
   enabled: boolean;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   sessionKey?: string;
   sandboxed?: boolean;
   toolNames: Iterable<string>;

@@ -35,14 +35,14 @@ describe("custodian channel onboarding", () => {
       reply: "Your AI is ready.",
       action: "none",
     });
-    const { context } = createContext(request, ["openclaw.chat"], {
+    const { context } = createContext(request, ["afora.chat"], {
       channelsSnapshot: channelSnapshot(),
     });
     const { page } = await mountPage(context, { onboarding: true });
     await waitForFast(() => expect(request).toHaveBeenCalledOnce());
 
     const nudge = page.querySelector(".custodian__nudge--channel-onboarding");
-    expect(nudge?.textContent).toContain("Reach OpenClaw outside this app");
+    expect(nudge?.textContent).toContain("Reach Afora outside this app");
     expect(nudge?.textContent).toContain("The web app already works");
 
     page.querySelector<HTMLButtonElement>('button[aria-label="Keep using the web app"]')?.click();
@@ -58,7 +58,7 @@ describe("custodian channel onboarding", () => {
       reply: "Your AI is ready.",
       action: "none",
     });
-    const { context } = createContext(request, ["openclaw.chat"], {
+    const { context } = createContext(request, ["afora.chat"], {
       channelsSnapshot: channelSnapshot(),
     });
     const { page } = await mountPage(context, { onboarding: true });
@@ -156,7 +156,7 @@ describe("custodian channel onboarding", () => {
       reply: "Ready.",
       action: "none",
     });
-    const { context, setChannelsError } = createContext(request, ["openclaw.chat"], {
+    const { context, setChannelsError } = createContext(request, ["afora.chat"], {
       channelsSnapshot: channelSnapshot(),
     });
     const { page } = await mountPage(context, { onboarding: true });
@@ -265,7 +265,7 @@ describe("custodian channel onboarding", () => {
       reply: "Ready.",
       action: "none",
     });
-    const { context } = createContext(request, ["openclaw.chat"], {
+    const { context } = createContext(request, ["afora.chat"], {
       channelsSnapshot: snapshot,
     });
     const { page } = await mountPage(context, { onboarding });
@@ -280,7 +280,7 @@ describe("custodian channel onboarding", () => {
       reply: "Ready.",
       action: "none",
     });
-    const { context, setChannelsSnapshot } = createContext(request, ["openclaw.chat"], {
+    const { context, setChannelsSnapshot } = createContext(request, ["afora.chat"], {
       channelsSnapshot: channelSnapshot(),
     });
     const { page } = await mountPage(context, { onboarding: true });

@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { render } from "lit";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "../../../i18n/index.ts";
@@ -156,7 +156,7 @@ function buildProps(overrides?: Partial<DreamingProps>): DreamingProps {
     dreamDiaryActionArchivePath: null,
     dreamDiaryError: null,
     dreamDiaryContent:
-      "# Dream Diary\n\n<!-- openclaw:dreaming:diary:start -->\n\n---\n\n*April 5, 2026, 3:00 AM*\n\nThe repository whispered of forgotten endpoints tonight.\n\n<!-- openclaw:dreaming:diary:end -->",
+      "# Dream Diary\n\n<!-- afora:dreaming:diary:start -->\n\n---\n\n*April 5, 2026, 3:00 AM*\n\nThe repository whispered of forgotten endpoints tonight.\n\n<!-- afora:dreaming:diary:end -->",
     memoryWikiEnabled: true,
     wikiImportInsightsLoading: false,
     wikiImportInsightsError: null,
@@ -533,7 +533,7 @@ describe("dreaming view", () => {
     expect(compactText(container.querySelector(".dreams-diary__preview-hint"))).toBe(
       "Showing the first chunk of this page (6001 total lines).",
     );
-    expect(container.querySelector("openclaw-modal-dialog")).not.toBeNull();
+    expect(container.querySelector("afora-modal-dialog")).not.toBeNull();
     expect(container.querySelector(".dreams-diary__preview-backdrop")).toBeNull();
 
     const closePreviewButton = container.querySelector<HTMLButtonElement>(
@@ -754,13 +754,13 @@ describe("dreaming view", () => {
         dreamDiaryContent: [
           "# Dream Diary",
           "",
-          "<!-- openclaw:dreaming:diary:start -->",
+          "<!-- afora:dreaming:diary:start -->",
           "",
           "---",
           "",
           "*January 1, 2026*",
           "",
-          "<!-- openclaw:dreaming:backfill-entry day=2026-01-01 source=memory/2026-01-01.md -->",
+          "<!-- afora:dreaming:backfill-entry day=2026-01-01 source=memory/2026-01-01.md -->",
           "",
           "What Happened",
           "1. Always use Happy Together for flights.",
@@ -774,7 +774,7 @@ describe("dreaming view", () => {
           "Possible Lasting Updates",
           "- Use Happy Together for flights.",
           "",
-          "<!-- openclaw:dreaming:diary:end -->",
+          "<!-- afora:dreaming:diary:end -->",
         ].join("\n"),
       }),
     );
@@ -799,7 +799,7 @@ describe("dreaming view", () => {
         dreamDiaryContent: [
           "# Dream Diary",
           "",
-          "<!-- openclaw:dreaming:diary:start -->",
+          "<!-- afora:dreaming:diary:start -->",
           "",
           "---",
           "",
@@ -818,7 +818,7 @@ describe("dreaming view", () => {
           "Candidates",
           "- candidate",
           "",
-          "<!-- openclaw:dreaming:diary:end -->",
+          "<!-- afora:dreaming:diary:end -->",
         ].join("\n"),
       }),
     );

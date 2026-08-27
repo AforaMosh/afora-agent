@@ -15,7 +15,7 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 afterEach(() => resetGlobalHookRunner());
 
 async function fixture() {
-  const workspaceDir = tempDirs.make("openclaw-skill-uninstall-");
+  const workspaceDir = tempDirs.make("afora-skill-uninstall-");
   const slug = "triage";
   const skillDir = join(workspaceDir, "skills", slug);
   const content = "---\nname: triage\ndescription: Triage incidents\nversion: 0.9.0\n---\n";

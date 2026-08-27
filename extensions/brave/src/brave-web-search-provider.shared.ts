@@ -5,7 +5,7 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 type BraveConfig = {
   baseUrl?: unknown;
@@ -13,7 +13,7 @@ type BraveConfig = {
 };
 
 type BraveLlmContextResult = { url: string; title: string; snippets: string[] };
-/** Brave LLM Context API response subset used by OpenClaw. */
+/** Brave LLM Context API response subset used by Afora. */
 export type BraveLlmContextResponse = {
   grounding: { generic?: BraveLlmContextResult[] };
   sources?: { url?: string; hostname?: string; date?: string }[];

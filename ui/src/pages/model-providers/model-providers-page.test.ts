@@ -175,7 +175,7 @@ function createHarness(initialScopeId: string) {
 
 function appendPage(context: ApplicationContext) {
   const page = document.createElement(
-    "openclaw-model-providers-page",
+    "afora-model-providers-page",
   ) as ModelProvidersPageTestElement;
   page.context = context;
   document.body.append(page);
@@ -191,9 +191,9 @@ describe("ModelProvidersPage agent scope", () => {
   it("switches application ownership from the concrete agent picker", async () => {
     const { agentSelection, context } = createHarness("main");
     const page = appendPage(context);
-    await vi.waitFor(() => expect(page.querySelector("openclaw-agent-select")).not.toBeNull());
+    await vi.waitFor(() => expect(page.querySelector("afora-agent-select")).not.toBeNull());
 
-    page.querySelector<AgentSelectElement>("openclaw-agent-select")?.onSelect("writer");
+    page.querySelector<AgentSelectElement>("afora-agent-select")?.onSelect("writer");
 
     expect(agentSelection.set).toHaveBeenCalledWith("writer");
     expect(agentSelection.setScope).not.toHaveBeenCalled();
@@ -206,7 +206,7 @@ describe("ModelProvidersPage agent scope", () => {
 
     const link = page.querySelector<HTMLAnchorElement>(".page-subtitle a");
     expect(link?.textContent?.trim()).toBe("Learn more");
-    expect(link?.href).toBe("https://docs.openclaw.ai/concepts/model-providers");
+    expect(link?.href).toBe("https://docs.afora.ai/concepts/model-providers");
   });
 
   it("patches thinking and fast mode through the shared config draft", async () => {
@@ -628,7 +628,7 @@ describe("ModelProvidersPage agent scope", () => {
     const { context, request, snapshot } = createHarness("writer");
     const staleData = { ...EMPTY_MODEL_PROVIDERS_DATA, updatedAt: 1 };
     const page = document.createElement(
-      "openclaw-model-providers-page",
+      "afora-model-providers-page",
     ) as ModelProvidersPageTestElement;
     page.context = context;
     page.routeData = { data: staleData, client: snapshot.client, agentId: "main" };

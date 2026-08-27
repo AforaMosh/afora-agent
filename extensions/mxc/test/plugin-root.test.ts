@@ -21,7 +21,7 @@ describe("resolveMxcLauncherPath", () => {
     const root = mkdtempSync(path.join(tmpdir(), "mxc-packed-plugin-"));
     try {
       writeFileSync(path.join(root, "package.json"), "{}");
-      writeFileSync(path.join(root, "openclaw.plugin.json"), "{}");
+      writeFileSync(path.join(root, "afora.plugin.json"), "{}");
       const distDir = path.join(root, "dist");
       fs.mkdirSync(distDir, { recursive: true });
       const launcher = path.join(distDir, "mxc-spawn-launcher.mjs");

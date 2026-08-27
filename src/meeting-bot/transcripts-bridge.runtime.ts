@@ -1,5 +1,5 @@
 import path from "node:path";
-import { coerceErrorMessage } from "@openclaw/normalization-core/error-coercion";
+import { coerceErrorMessage } from "@afora/normalization-core/error-coercion";
 import { resolveStateDir } from "../config/paths.js";
 import { KeyedAsyncQueue } from "../plugin-sdk/keyed-async-queue.js";
 import { resolveTranscriptsConfig } from "../transcripts/config.js";
@@ -96,7 +96,7 @@ export function createMeetingDurableTranscriptBridge<
   const config = resolveTranscriptsConfig(params.options.config);
   const stateDir = params.options.stateDir ?? resolveStateDir();
   const store = new TranscriptsStore(path.join(stateDir, "transcripts"), {
-    env: { ...process.env, OPENCLAW_STATE_DIR: stateDir },
+    env: { ...process.env, AFORA_STATE_DIR: stateDir },
   });
   const captures = new Map<string, ActiveCapture<TSession>>();
   const pendingSubscribers = new Map<string, { agentId: string; meetingSessionId: string }>();

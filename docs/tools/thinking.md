@@ -30,15 +30,15 @@ title: "Thinking levels"
   - Direct DeepSeek V4 models expose `/think xhigh|max`; both map to DeepSeek `reasoning_effort: "max"` while lower non-off levels map to `high`.
   - OpenRouter-routed DeepSeek V4 models expose `/think xhigh` and send OpenRouter-supported `reasoning.effort` values instead of DeepSeek-native top-level `reasoning_effort`. Lower non-off levels map to `high`, and stored `max` overrides fall back to `xhigh`.
   - Ollama thinking-capable models expose `/think low|medium|high|max`. Verified full-effort Ollama Cloud families such as GLM 5.2 and DeepSeek V4 send each matching native `think` effort, including `max`; other models and local Ollama keep the compatible `high` mapping for `/think max`.
-  - OpenAI GPT models map `/think` through model-specific Responses API effort support. `/think off` sends `reasoning.effort: "none"` only when the target model supports it; otherwise OpenClaw omits the disabled reasoning payload instead of sending an unsupported value.
+  - OpenAI GPT models map `/think` through model-specific Responses API effort support. `/think off` sends `reasoning.effort: "none"` only when the target model supports it; otherwise Afora omits the disabled reasoning payload instead of sending an unsupported value.
   - GPT-5.6 Sol and Terra expose native `/think ultra` through the Codex runtime. GPT-5.6 Luna exposes levels through `max` because its Codex catalog does not advertise Ultra.
-  - The embedded OpenClaw runtime exposes logical `/think ultra` for GPT-5.6 Sol, Terra, and Luna. It sends provider max effort and adds run-scoped proactive sub-agent orchestration guidance.
+  - The embedded Afora runtime exposes logical `/think ultra` for GPT-5.6 Sol, Terra, and Luna. It sends provider max effort and adds run-scoped proactive sub-agent orchestration guidance.
   - Custom OpenAI-compatible catalog entries can opt into `/think xhigh` by setting `models.providers.<provider>.models[].compat.supportedReasoningEfforts` to include `"xhigh"`. This uses the same compat metadata that maps outbound OpenAI reasoning effort payloads, so menus, session validation, agent CLI, and `llm-task` agree with transport behavior.
   - Stale configured OpenRouter Hunter Alpha refs skip proxy reasoning injection because that retired route could return final answer text through reasoning fields.
   - Google Gemini maps `/think adaptive` to Gemini's provider-owned dynamic thinking. Gemini 3 requests omit a fixed `thinkingLevel`, while Gemini 2.5 requests send `thinkingBudget: -1`; fixed levels still map to the closest Gemini `thinkingLevel` or budget for that model family.
-  - MiniMax M2.x (`minimax/MiniMax-M2*`) on the Anthropic-compatible streaming path defaults to `thinking: { type: "disabled" }` unless you explicitly set thinking in model params or request params. This avoids leaked `reasoning_content` deltas from M2.x's non-native Anthropic stream format. MiniMax-M3 (and M3.x) is exempt: M3 emits proper Anthropic thinking blocks and returns empty content when thinking is disabled, so OpenClaw keeps M3 on the provider's omitted/adaptive thinking path.
+  - MiniMax M2.x (`minimax/MiniMax-M2*`) on the Anthropic-compatible streaming path defaults to `thinking: { type: "disabled" }` unless you explicitly set thinking in model params or request params. This avoids leaked `reasoning_content` deltas from M2.x's non-native Anthropic stream format. MiniMax-M3 (and M3.x) is exempt: M3 emits proper Anthropic thinking blocks and returns empty content when thinking is disabled, so Afora keeps M3 on the provider's omitted/adaptive thinking path.
   - Z.AI (`zai/*`) is binary (`on`/`off`) for most GLM models. GLM-5.2 is the exception: it exposes `/think off|low|high|max`, maps `low` and `high` to Z.AI `reasoning_effort: "high"`, and maps `max` to `reasoning_effort: "max"`.
-  - Moonshot API Kimi K3 (`moonshot/kimi-k3`) always thinks at `max`, sends `reasoning_effort: "max"`, omits the K2 `thinking` field and fixed sampling overrides, and preserves K3-supported tool choices. Kimi Code K3 (`kimi/k3` and `kimi/k3-256k`) exposes the full `/think` ladder with a `high` default: `off` sends `thinking.type: "disabled"`, `minimal`/`low` map to low effort, `medium`/`high`/`adaptive` to high effort, and `xhigh`/`max` to max effort. Current Kimi Code refs also include `kimi/kimi-for-coding` and `kimi/kimi-for-coding-highspeed`. Kimi K2.7 Code (`moonshot/kimi-k2.7-code` and `moonshot/kimi-k2.7-code-highspeed`) always thinks, exposes only `on`, and omits both outbound `thinking` and `reasoning_effort`. Other `moonshot/*` models map `/think off` to `thinking: { type: "disabled" }` and any non-`off` level to `thinking: { type: "enabled" }`. When K2 thinking is enabled, Moonshot only accepts `tool_choice` `auto|none`; OpenClaw normalizes incompatible values to `auto`.
+  - Moonshot API Kimi K3 (`moonshot/kimi-k3`) always thinks at `max`, sends `reasoning_effort: "max"`, omits the K2 `thinking` field and fixed sampling overrides, and preserves K3-supported tool choices. Kimi Code K3 (`kimi/k3` and `kimi/k3-256k`) exposes the full `/think` ladder with a `high` default: `off` sends `thinking.type: "disabled"`, `minimal`/`low` map to low effort, `medium`/`high`/`adaptive` to high effort, and `xhigh`/`max` to max effort. Current Kimi Code refs also include `kimi/kimi-for-coding` and `kimi/kimi-for-coding-highspeed`. Kimi K2.7 Code (`moonshot/kimi-k2.7-code` and `moonshot/kimi-k2.7-code-highspeed`) always thinks, exposes only `on`, and omits both outbound `thinking` and `reasoning_effort`. Other `moonshot/*` models map `/think off` to `thinking: { type: "disabled" }` and any non-`off` level to `thinking: { type: "enabled" }`. When K2 thinking is enabled, Moonshot only accepts `tool_choice` `auto|none`; Afora normalizes incompatible values to `auto`.
 
 ## Resolution order
 
@@ -58,7 +58,7 @@ title: "Thinking levels"
 
 ## Application by agent
 
-- **Embedded OpenClaw**: the resolved level is passed to the in-process OpenClaw agent runtime.
+- **Embedded Afora**: the resolved level is passed to the in-process Afora agent runtime.
 - **Claude CLI backend**: concrete non-off levels are passed to Claude Code as `--effort` when using `claude-cli`; `adaptive` removes configured effort flags and delegates effective effort to Claude Code's environment, settings, and model defaults. See [CLI backends](/gateway/cli-backends).
 
 ## Fast mode (/fast)
@@ -66,21 +66,21 @@ title: "Thinking levels"
 - Levels: `auto|on|off|default`.
 - Directive-only message toggles a session fast-mode override and replies `Fast mode set to auto.`, `Fast mode enabled.`, or `Fast mode disabled.`. Use `/fast default` to clear the session override and inherit the configured default; aliases include `inherit`, `clear`, `reset`, and `unpin`.
 - Send `/fast` (or `/fast status`) with no mode to see the current effective fast-mode state.
-- OpenClaw resolves fast mode in this order:
+- Afora resolves fast mode in this order:
   1. Inline `/fast auto|on|off` override on the current message
   2. Stored session override from a directive-only message (`/fast default` clears this layer)
   3. Per-agent default (`agents.entries.*.fastModeDefault`)
   4. Global default (`agents.defaults.fastModeDefault`)
   5. Per-model config (`agents.defaults.models["<provider>/<model>"].params.fastMode`)
   6. Fallback: `off`
-- Valid model-scoped `params.fastMode` / `params.fast_mode` values and valid cutoff keys are typed agent-runtime controls. They do not count as authored provider request params and do not select OpenClaw or Codex by themselves. Pin `agentRuntime.id: "openclaw"` or `agentRuntime.id: "codex"` when a recipe depends on one runtime.
+- Valid model-scoped `params.fastMode` / `params.fast_mode` values and valid cutoff keys are typed agent-runtime controls. They do not count as authored provider request params and do not select Afora or Codex by themselves. Pin `agentRuntime.id: "afora"` or `agentRuntime.id: "codex"` when a recipe depends on one runtime.
 - `auto` keeps the session/config mode as auto but resolves each new model call independently. Calls that start before the auto cutoff have fast mode enabled; later retry, fallback, tool-result, or continuation calls start with fast mode disabled. The cutoff defaults to 60 seconds; set `agents.defaults.models["<provider>/<model>"].params.fastAutoOnSeconds` on the active model to change it.
-- For `openai/*`, fast mode maps to OpenAI API Fast mode (formerly Priority processing). OpenClaw currently sends `service_tier=priority` on supported Responses requests.
-- On Codex harness turns, the shared runtime control supersedes a configured native app-server tier: Fast on sends `priority`, Fast off sends `null` to clear the OpenClaw-owned tier, and auto decides for each model call. A configured Codex tier is used only when no shared Fast-mode run control is supplied. See [Codex harness](/plugins/codex-harness#shared-fast-mode-and-codex-fast-mode).
+- For `openai/*`, fast mode maps to OpenAI API Fast mode (formerly Priority processing). Afora currently sends `service_tier=priority` on supported Responses requests.
+- On Codex harness turns, the shared runtime control supersedes a configured native app-server tier: Fast on sends `priority`, Fast off sends `null` to clear the Afora-owned tier, and auto decides for each model call. A configured Codex tier is used only when no shared Fast-mode run control is supplied. See [Codex harness](/plugins/codex-harness#shared-fast-mode-and-codex-fast-mode).
 - For direct public `anthropic/*` requests, including OAuth-authenticated traffic sent to `api.anthropic.com`, fast mode maps to Anthropic service tiers: `/fast on` sets `service_tier=auto`, `/fast off` sets `service_tier=standard_only`.
 - For `minimax/*` on the Anthropic-compatible path, `/fast on` (or `params.fastMode: true`) rewrites `MiniMax-M2.7` to `MiniMax-M2.7-highspeed`.
-- Explicit Anthropic `serviceTier` / `service_tier` model params override the fast-mode default when both are set. OpenClaw still skips Anthropic service-tier injection for non-Anthropic proxy base URLs.
-- `/status` reports the resolved OpenClaw policy (`on`, `off`, or `auto`) and the selected runtime. It does not report the upstream service tier actually honored or returned for a completed request. See [OpenAI Fast mode](/providers/openai#advanced-configuration) for provider details.
+- Explicit Anthropic `serviceTier` / `service_tier` model params override the fast-mode default when both are set. Afora still skips Anthropic service-tier injection for non-Anthropic proxy base URLs.
+- `/status` reports the resolved Afora policy (`on`, `off`, or `auto`) and the selected runtime. It does not report the upstream service tier actually honored or returned for a completed request. See [OpenAI Fast mode](/providers/openai#advanced-configuration) for provider details.
 
 ## Verbose directives (/verbose or /v)
 
@@ -117,7 +117,7 @@ title: "Thinking levels"
 - Send `/reasoning` (or `/reasoning:`) with no argument to see the current reasoning level.
 - Resolution order: inline directive, then session override, then per-agent default (`agents.entries.*.reasoningDefault`), then global default (`agents.defaults.reasoningDefault`), then fallback (`off`).
 
-Malformed local-model reasoning tags are handled conservatively. Closed `<think>...</think>` blocks stay hidden on normal replies, and unclosed reasoning after already visible text is also hidden. If a reply is fully wrapped in a single unclosed opening tag and would otherwise deliver as empty text, OpenClaw removes the malformed opening tag and delivers the remaining text.
+Malformed local-model reasoning tags are handled conservatively. Closed `<think>...</think>` blocks stay hidden on normal replies, and unclosed reasoning after already visible text is also hidden. If a reply is fully wrapped in a single unclosed opening tag and would otherwise deliver as empty text, Afora removes the malformed opening tag and delivers the remaining text.
 
 ## Related
 
@@ -141,7 +141,7 @@ Malformed local-model reasoning tags are handled conservatively. Closed `<think>
 ## Provider profiles
 
 - Provider plugins can expose `resolveThinkingProfile(ctx)` to define the model's supported levels and default.
-- Provider plugins that proxy Claude models should reuse `resolveClaudeThinkingProfile(modelId)` from `openclaw/plugin-sdk/provider-model-shared` so direct Anthropic and proxy catalogs stay aligned.
+- Provider plugins that proxy Claude models should reuse `resolveClaudeThinkingProfile(modelId)` from `afora/plugin-sdk/provider-model-shared` so direct Anthropic and proxy catalogs stay aligned.
 - Each profile level has a stored canonical `id` (`off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `adaptive`, `max`, or `ultra`) and may include a display `label`. Binary providers use `{ id: "low", label: "on" }`.
 - Profile hooks receive merged catalog facts when available, including `reasoning`, `compat.thinkingFormat`, and `compat.supportedReasoningEfforts`. Use those facts to expose binary or custom profiles only when the configured request contract supports the matching payload.
 - Tool plugins that need to validate an explicit thinking override should use `api.runtime.agent.resolveThinkingPolicy({ provider, model, agentRuntime })` plus `api.runtime.agent.normalizeThinkingLevel(...)`; they should not keep their own provider/model level lists. Pass `agentRuntime` when the tool owns the execution path, such as an always-embedded run.

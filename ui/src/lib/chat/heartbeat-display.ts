@@ -1,4 +1,4 @@
-import { normalizeLowercaseStringOrEmpty } from "@openclaw/normalization-core/string-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@afora/normalization-core/string-coerce";
 // Control UI chat module implements heartbeat display behavior.
 import { escapeRegExp } from "../../../../src/shared/regexp.js";
 

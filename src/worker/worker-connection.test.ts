@@ -42,7 +42,7 @@ const FRAME_CONNECT_PARAMS: WorkerConnectParams = {
     rpcSetVersion: WORKER_RPC_SET_VERSION,
     handshake: {
       bundleHash: "a".repeat(64),
-      openclawVersion: "listener-isolation-test",
+      aforaVersion: "listener-isolation-test",
       protocolFeatures: [...WORKER_PROTOCOL_FEATURES],
     },
     sessionId: "session-1",
@@ -70,7 +70,7 @@ function createIdleConnection() {
         rpcSetVersion: WORKER_RPC_SET_VERSION,
         handshake: {
           bundleHash: "a".repeat(64),
-          openclawVersion: "listener-isolation-test",
+          aforaVersion: "listener-isolation-test",
           protocolFeatures: [...WORKER_PROTOCOL_FEATURES],
         },
         sessionId: null,
@@ -145,7 +145,7 @@ describe("worker connection endpoint failures", () => {
     const connection = createWorkerConnection({
       endpoint: {
         kind: "websocket",
-        url: "ws://gateway.example/__openclaw__/worker",
+        url: "ws://gateway.example/__afora__/worker",
       },
       connectParams: FRAME_CONNECT_PARAMS,
       createSocket,

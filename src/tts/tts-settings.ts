@@ -12,7 +12,7 @@ import {
   selectApplicableRuntimeConfig,
 } from "../config/runtime-snapshot.js";
 import type {
-  OpenClawConfig,
+  AforaConfig,
   ResolvedTtsPersona,
   TtsAutoMode,
   TtsConfig,
@@ -73,7 +73,7 @@ function resolveTtsPrefsPathValue(prefsPath: string | undefined): string {
   if (prefsPath?.trim()) {
     return resolveUserPath(prefsPath.trim());
   }
-  const envPath = process.env.OPENCLAW_TTS_PREFS?.trim();
+  const envPath = process.env.AFORA_TTS_PREFS?.trim();
   if (envPath) {
     return resolveUserPath(envPath);
   }
@@ -113,7 +113,7 @@ export function resolveModelOverridePolicy(
   };
 }
 
-export function resolveTtsRuntimeConfig(cfg: OpenClawConfig): OpenClawConfig {
+export function resolveTtsRuntimeConfig(cfg: AforaConfig): AforaConfig {
   return (
     selectApplicableRuntimeConfig({
       inputConfig: cfg,
@@ -200,7 +200,7 @@ function collectDirectProviderConfigEntries(raw: TtsConfig): Record<string, Spee
 }
 
 export function resolveTtsConfig(
-  cfgInput: OpenClawConfig,
+  cfgInput: AforaConfig,
   contextOrAgentId?: string | TtsConfigResolutionContext,
 ): ResolvedTtsConfig {
   const cfg = resolveTtsRuntimeConfig(cfgInput);
@@ -304,7 +304,7 @@ type ResolvedTtsSettingsSnapshot = {
 };
 
 export function resolveTtsSettingsSnapshot(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionAuto?: string;
   agentId?: string;
   channelId?: string;
@@ -348,7 +348,7 @@ export function resolveTtsSettingsSnapshot(params: {
 }
 
 export function buildTtsSystemPromptHint(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   agentId?: string,
   options?: { messageToolOnly?: boolean },
 ): string | undefined {

@@ -9,13 +9,13 @@ import { useAutoCleanupTempDirTracker } from "../../../test/helpers/temp-dir.js"
 import { getWindowsCmdExePath } from "../../infra/windows-install-roots.js";
 import { prepareRestartScript, runRestartScript } from "./restart-helper.js";
 
-const windowsKillPolicyStartMarker = "# OPENCLAW_RESTART_KILL_POLICY_BEGIN";
-const windowsKillPolicyEndMarker = "# OPENCLAW_RESTART_KILL_POLICY_END";
+const windowsKillPolicyStartMarker = "# AFORA_RESTART_KILL_POLICY_BEGIN";
+const windowsKillPolicyEndMarker = "# AFORA_RESTART_KILL_POLICY_END";
 
 function findPowerShell(): string | null {
   const executable = process.platform === "win32" ? "pwsh.exe" : "pwsh";
   const candidates = [
-    process.env.OPENCLAW_TEST_PWSH,
+    process.env.AFORA_TEST_PWSH,
     ...(process.env.PATH ?? "")
       .split(path.delimiter)
       .filter(Boolean)
@@ -32,7 +32,7 @@ const powerShellPath = findPowerShell();
 const itWithPowerShell = powerShellPath ? it : it.skip;
 
 vi.mock("node:child_process", async () => {
-  const { mockNodeBuiltinModule } = await import("openclaw/plugin-sdk/test-node-mocks");
+  const { mockNodeBuiltinModule } = await import("afora-agent/plugin-sdk/test-node-mocks");
   return mockNodeBuiltinModule(
     () => vi.importActual<typeof import("node:child_process")>("node:child_process"),
     {
@@ -91,7 +91,7 @@ describe("restart-helper", () => {
     if (!powerShellPath) {
       throw new Error("PowerShell is unavailable");
     }
-    const scriptDir = tempDirs.make("openclaw-restart-policy-");
+    const scriptDir = tempDirs.make("afora-restart-policy-");
     const scriptPath = path.join(scriptDir, "policy-test.ps1");
     const policy = extractWindowsKillPolicy(content);
     await fs.writeFile(
@@ -174,19 +174,19 @@ ${body}`,
   }
 
   function expectWindowsRestartWaitOrdering(content: string, port = 18789) {
-    const stateCheck = "$taskState = Get-OpenClawScheduledTaskState -TaskName $taskName";
+    const stateCheck = "$taskState = Get-AforaScheduledTaskState -TaskName $taskName";
     const runningGuard = 'if ($taskState -eq "Running")';
     const endCommand =
-      'Invoke-OpenClawSchtasksWithTimeout -Arguments @("/End", "/TN", $taskName) -TimeoutSeconds 10';
-    const skipEndLog = "openclaw restart skipped schtasks end";
+      'Invoke-AforaSchtasksWithTimeout -Arguments @("/End", "/TN", $taskName) -TimeoutSeconds 10';
+    const skipEndLog = "afora restart skipped schtasks end";
     const pollLoop = "for ($attempt = 1; $attempt -le 10; $attempt++)";
-    const pollCall = `Get-OpenClawListenerSnapshot -Port $port`;
+    const pollCall = `Get-AforaListenerSnapshot -Port $port`;
     const forceKillBranch = "if ($attempt -eq 10)";
-    const ownerCheckFunction = "function Invoke-OpenClawVerifiedListenerKill";
-    const ownerCheckCall = "Invoke-OpenClawVerifiedListenerKill -ProcessId $listenerPid";
+    const ownerCheckFunction = "function Invoke-AforaVerifiedListenerKill";
+    const ownerCheckCall = "Invoke-AforaVerifiedListenerKill -ProcessId $listenerPid";
     const forceKillCommand = "if ($lease.Terminate())";
     const runCommand =
-      'Invoke-OpenClawSchtasksWithTimeout -Arguments @("/Run", "/TN", $taskName) -TimeoutSeconds 30';
+      'Invoke-AforaSchtasksWithTimeout -Arguments @("/Run", "/TN", $taskName) -TimeoutSeconds 30';
     const portAssignment = `$port = ${port}`;
     const stateCheckIndex = content.indexOf(stateCheck);
     const runningGuardIndex = content.indexOf(runningGuard, stateCheckIndex);
@@ -234,11 +234,11 @@ ${body}`,
     it("creates a systemd restart script on Linux", async () => {
       Object.defineProperty(process, "platform", { value: "linux" });
       const { scriptPath, content } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "default",
+        AFORA_PROFILE: "default",
       });
       expect(scriptPath.endsWith(".sh")).toBe(true);
       expect(content).toContain("#!/bin/sh");
-      expect(content).toContain("systemctl --user restart 'openclaw-gateway.service'");
+      expect(content).toContain("systemctl --user restart 'afora-gateway.service'");
       // Script should self-cleanup
       expect(content).toContain('rm -f "$0"');
       expect(content).toContain('rmdir "$script_dir" 2>/dev/null || true');
@@ -250,7 +250,7 @@ ${body}`,
       process.getuid = () => 2000;
       process.geteuid = () => 1000;
       const statSpy = mockLinuxUserBusSocket();
-      const tmpDir = tempDirs.make("openclaw-restart-helper-");
+      const tmpDir = tempDirs.make("afora-restart-helper-");
       const fakeBinDir = path.join(tmpDir, "bin");
       const callsPath = path.join(tmpDir, "systemctl-calls.log");
       await fs.mkdir(fakeBinDir, { recursive: true });
@@ -258,7 +258,7 @@ ${body}`,
       await fs.writeFile(
         path.join(fakeBinDir, "systemctl"),
         `#!/bin/sh
-printf 'runtime=%s bus=%s args=%s\n' "$XDG_RUNTIME_DIR" "$DBUS_SESSION_BUS_ADDRESS" "$*" >> "$OPENCLAW_SYSTEMCTL_CALLS"
+printf 'runtime=%s bus=%s args=%s\n' "$XDG_RUNTIME_DIR" "$DBUS_SESSION_BUS_ADDRESS" "$*" >> "$AFORA_SYSTEMCTL_CALLS"
 case "$2" in
   is-active|restart) exit 0 ;;
 esac
@@ -268,15 +268,15 @@ exit 1
       );
 
       const { scriptPath } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "default",
+        AFORA_PROFILE: "default",
         HOME: path.join(tmpDir, "home"),
-        OPENCLAW_STATE_DIR: path.join(tmpDir, "state"),
+        AFORA_STATE_DIR: path.join(tmpDir, "state"),
         XDG_RUNTIME_DIR: "/run/user/0",
         DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/0/bus",
       });
       const result = await executeScript(scriptPath, {
         PATH: `${fakeBinDir}:${process.env.PATH ?? ""}`,
-        OPENCLAW_SYSTEMCTL_CALLS: callsPath,
+        AFORA_SYSTEMCTL_CALLS: callsPath,
         XDG_RUNTIME_DIR: "/run/user/0",
         DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/0/bus",
       });
@@ -285,35 +285,35 @@ exit 1
       expect(result.code).toBeNull();
       expect(statSpy).toHaveBeenCalledWith("/run/user/1000/bus");
       expect(calls).toContain(
-        "runtime=/run/user/1000 bus=unix:path=/run/user/1000/bus args=--user is-active --quiet openclaw-gateway.service",
+        "runtime=/run/user/1000 bus=unix:path=/run/user/1000/bus args=--user is-active --quiet afora-gateway.service",
       );
       expect(calls).toContain(
-        "runtime=/run/user/1000 bus=unix:path=/run/user/1000/bus args=--user restart openclaw-gateway.service",
+        "runtime=/run/user/1000 bus=unix:path=/run/user/1000/bus args=--user restart afora-gateway.service",
       );
       expect(calls).not.toContain("runtime=/run/user/0");
       await fs.rm(tmpDir, { recursive: true, force: true });
     });
 
     it.each([
-      ["an abstract bus", "unix:abstract=/openclaw-user-bus"],
+      ["an abstract bus", "unix:abstract=/afora-user-bus"],
       ["a genuinely absent bus", undefined],
       ["an explicitly empty bus", ""],
       ["a whitespace-only bus", "   "],
       ["a cross-user standard bus", "unix:path=/run/user/0/bus"],
-      ["a fallback bus", "unix:path=/run/user/0/bus;unix:abstract=/openclaw-user-bus"],
+      ["a fallback bus", "unix:path=/run/user/0/bus;unix:abstract=/afora-user-bus"],
     ])("does not rewrite a custom user runtime with %s", async (_name, busAddress) => {
       Object.defineProperty(process, "platform", { value: "linux" });
       process.geteuid = () => 1000;
       const statSpy = mockLinuxUserBusSocket();
       const { scriptPath, content } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "default",
-        XDG_RUNTIME_DIR: "/srv/openclaw-runtime",
+        AFORA_PROFILE: "default",
+        XDG_RUNTIME_DIR: "/srv/afora-runtime",
         DBUS_SESSION_BUS_ADDRESS: busAddress,
       });
 
       const shouldClearBusAddress = busAddress !== undefined && !busAddress.trim();
       expect(statSpy.mock.calls).toEqual(
-        shouldClearBusAddress ? [["/srv/openclaw-runtime/bus"]] : [],
+        shouldClearBusAddress ? [["/srv/afora-runtime/bus"]] : [],
       );
       expect(content.includes("unset DBUS_SESSION_BUS_ADDRESS")).toBe(shouldClearBusAddress);
       expect(content).not.toContain("export XDG_RUNTIME_DIR=");
@@ -322,9 +322,9 @@ exit 1
     });
 
     it.each([
-      ["abstract transport", "unix:abstract=/openclaw-user-bus"],
+      ["abstract transport", "unix:abstract=/afora-user-bus"],
       ["path-looking abstract transport", "unix:abstract=/run/user/0/bus"],
-      ["multi-address transport", "unix:path=/run/user/0/bus;unix:abstract=/custom-openclaw-bus"],
+      ["multi-address transport", "unix:path=/run/user/0/bus;unix:abstract=/custom-afora-bus"],
       ["malformed escaped path", "unix:path=%2Frun%2Fuser%2F0%2Fbus%ZZ"],
     ])("preserves a custom %s when the runtime directory is missing", async (_name, busAddress) => {
       Object.defineProperty(process, "platform", { value: "linux" });
@@ -332,7 +332,7 @@ exit 1
       mockLinuxUserBusSocket();
 
       const { scriptPath, content } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "default",
+        AFORA_PROFILE: "default",
         XDG_RUNTIME_DIR: "",
         DBUS_SESSION_BUS_ADDRESS: busAddress,
       });
@@ -354,7 +354,7 @@ exit 1
       mockLinuxUserBusSocket();
 
       const { scriptPath, content } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "default",
+        AFORA_PROFILE: "default",
         XDG_RUNTIME_DIR: runtimeDir,
         DBUS_SESSION_BUS_ADDRESS: address,
       });
@@ -369,7 +369,7 @@ exit 1
       process.geteuid = () => 1000;
       mockLinuxUserBusSocket();
       const { scriptPath, content } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "default",
+        AFORA_PROFILE: "default",
         XDG_RUNTIME_DIR: "",
         DBUS_SESSION_BUS_ADDRESS: "",
       });
@@ -384,7 +384,7 @@ exit 1
       process.geteuid = () => 1000;
       const statSpy = vi.spyOn(fs, "stat");
       const { scriptPath, content } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "default",
+        AFORA_PROFILE: "default",
         XDG_RUNTIME_DIR: "/run/user/1000",
         DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/1000/bus",
       });
@@ -402,7 +402,7 @@ exit 1
         Object.assign(new Error("missing bus"), { code: "ENOENT" }),
       );
       const { scriptPath, content } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "default",
+        AFORA_PROFILE: "default",
         XDG_RUNTIME_DIR: "/run/user/0",
         DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/0/bus",
       });
@@ -414,8 +414,8 @@ exit 1
     it("creates restart scripts in a private temp directory with exclusive creation", async () => {
       Object.defineProperty(process, "platform", { value: "linux" });
       const timestamp = 1_727_201_234_567;
-      const oldCandidatePath = path.join(os.tmpdir(), `openclaw-restart-${timestamp}.sh`);
-      const victimDir = tempDirs.make("openclaw-restart-helper-victim-");
+      const oldCandidatePath = path.join(os.tmpdir(), `afora-restart-${timestamp}.sh`);
+      const victimDir = tempDirs.make("afora-restart-helper-victim-");
       const victimPath = path.join(victimDir, "restart.sh");
       await fs.rm(oldCandidatePath, { force: true });
       await fs.writeFile(victimPath, "preexisting script\n", "utf-8");
@@ -433,7 +433,7 @@ exit 1
 
       try {
         const { scriptPath } = await prepareAndReadScript({
-          OPENCLAW_PROFILE: "default",
+          AFORA_PROFILE: "default",
         });
         const scriptDir = path.dirname(scriptPath);
         const relativeScriptDir = path.relative(os.tmpdir(), scriptDir);
@@ -443,7 +443,7 @@ exit 1
         expect(relativeScriptDir).not.toBe("");
         expect(relativeScriptDir.startsWith("..")).toBe(false);
         expect(path.isAbsolute(relativeScriptDir)).toBe(false);
-        expect(path.basename(scriptDir)).toMatch(/^openclaw-restart-/);
+        expect(path.basename(scriptDir)).toMatch(/^afora-restart-/);
         expect(writeFileSpy).toHaveBeenLastCalledWith(
           scriptPath,
           expect.any(String),
@@ -464,11 +464,11 @@ exit 1
       }
     });
 
-    it("uses OPENCLAW_SYSTEMD_UNIT override for systemd scripts", async () => {
+    it("uses AFORA_SYSTEMD_UNIT override for systemd scripts", async () => {
       Object.defineProperty(process, "platform", { value: "linux" });
       const { scriptPath, content } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "default",
-        OPENCLAW_SYSTEMD_UNIT: "custom-gateway",
+        AFORA_PROFILE: "default",
+        AFORA_SYSTEMD_UNIT: "custom-gateway",
       });
       expect(content).toContain("systemctl --user restart 'custom-gateway.service'");
       await cleanupScript(scriptPath);
@@ -476,7 +476,7 @@ exit 1
 
     it("fails with sudo systemd guidance when the gateway unit is system-scoped", async () => {
       Object.defineProperty(process, "platform", { value: "linux" });
-      const tmpDir = tempDirs.make("openclaw-restart-helper-");
+      const tmpDir = tempDirs.make("afora-restart-helper-");
       const fakeBinDir = path.join(tmpDir, "bin");
       const callsPath = path.join(tmpDir, "systemctl-calls.log");
       await fs.mkdir(fakeBinDir, { recursive: true });
@@ -484,7 +484,7 @@ exit 1
       await fs.writeFile(
         path.join(fakeBinDir, "systemctl"),
         `#!/bin/sh
-printf '%s\\n' "$*" >> "$OPENCLAW_SYSTEMCTL_CALLS"
+printf '%s\\n' "$*" >> "$AFORA_SYSTEMCTL_CALLS"
 if [ "$1" = "--user" ] && [ "$2" = "is-active" ]; then exit 3; fi
 if [ "$1" = "--user" ] && [ "$2" = "is-enabled" ]; then exit 1; fi
 if [ "$1" = "is-active" ] && [ "$2" = "--quiet" ]; then exit 0; fi
@@ -496,22 +496,22 @@ exit 1
       );
 
       const { scriptPath } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "default",
+        AFORA_PROFILE: "default",
         HOME: path.join(tmpDir, "home"),
-        OPENCLAW_STATE_DIR: path.join(tmpDir, "state"),
+        AFORA_STATE_DIR: path.join(tmpDir, "state"),
       });
       const result = await executeScript(scriptPath, {
         PATH: `${fakeBinDir}:${process.env.PATH ?? ""}`,
-        OPENCLAW_SYSTEMCTL_CALLS: callsPath,
+        AFORA_SYSTEMCTL_CALLS: callsPath,
       });
       const calls = await fs.readFile(callsPath, "utf-8");
 
       expect(result.code).toBe(78);
-      expect(result.stderr).toContain("system-scoped openclaw gateway unit detected");
-      expect(result.stderr).toContain("sudo systemctl restart openclaw-gateway.service");
-      expect(calls).toContain("--user is-active --quiet openclaw-gateway.service");
-      expect(calls).toContain("is-active --quiet openclaw-gateway.service");
-      expect(calls).not.toContain("--user restart openclaw-gateway.service");
+      expect(result.stderr).toContain("system-scoped afora gateway unit detected");
+      expect(result.stderr).toContain("sudo systemctl restart afora-gateway.service");
+      expect(calls).toContain("--user is-active --quiet afora-gateway.service");
+      expect(calls).toContain("is-active --quiet afora-gateway.service");
+      expect(calls).not.toContain("--user restart afora-gateway.service");
     });
 
     it("creates a launchd restart script on macOS", async () => {
@@ -519,13 +519,13 @@ exit 1
       process.getuid = () => 501;
 
       const { scriptPath, content } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "default",
+        AFORA_PROFILE: "default",
       });
       expect(scriptPath.endsWith(".sh")).toBe(true);
       expect(content).toContain("#!/bin/sh");
-      expect(content).toContain("launchctl kickstart -k 'gui/501/ai.openclaw.gateway'");
+      expect(content).toContain("launchctl kickstart -k 'gui/501/ai.afora.gateway'");
       // Should clear disabled state and fall back to bootstrap when kickstart fails.
-      expect(content).toContain("launchctl enable 'gui/501/ai.openclaw.gateway'");
+      expect(content).toContain("launchctl enable 'gui/501/ai.afora.gateway'");
       expect(content).toContain("launchctl bootstrap 'gui/501'");
       expect(content).toContain("Bootstrap loads RunAtLoad agents");
       expect(content).toContain('rm -f "$0"');
@@ -533,7 +533,7 @@ exit 1
       await cleanupScript(scriptPath);
     });
 
-    it("captures macOS launchctl stderr to ~/.openclaw/logs/gateway-restart.log (#68486)", async () => {
+    it("captures macOS launchctl stderr to ~/.afora/logs/gateway-restart.log (#68486)", async () => {
       // Silent failure in macOS update restart helper: previously every
       // launchctl call redirected stderr to /dev/null and the final kickstart
       // was chained with `|| true`, so bootstrap/kickstart failures were
@@ -544,10 +544,10 @@ exit 1
       process.getuid = () => 501;
 
       const { scriptPath, content } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "default",
+        AFORA_PROFILE: "default",
         HOME: "/Users/testuser",
       });
-      expect(content).toContain("exec >>'/Users/testuser/.openclaw/logs/gateway-restart.log' 2>&1");
+      expect(content).toContain("exec >>'/Users/testuser/.afora/logs/gateway-restart.log' 2>&1");
       // Every launchctl call should allow output through now (no `2>/dev/null`)
       // and the final kickstart must not swallow its exit code.
       expect(content).not.toMatch(/launchctl[^\n]*2>\/dev\/null/);
@@ -555,27 +555,27 @@ exit 1
       await cleanupScript(scriptPath);
     });
 
-    it("uses OPENCLAW_STATE_DIR for the macOS update restart log", async () => {
+    it("uses AFORA_STATE_DIR for the macOS update restart log", async () => {
       Object.defineProperty(process, "platform", { value: "darwin" });
       process.getuid = () => 501;
 
       const { scriptPath, content } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "default",
+        AFORA_PROFILE: "default",
         HOME: "/Users/testuser",
-        OPENCLAW_STATE_DIR: "/tmp/openclaw-state",
+        AFORA_STATE_DIR: "/tmp/afora-state",
       });
 
       expect(content).toContain(
-        "if mkdir -p '/tmp/openclaw-state/logs' 2>/dev/null && : >>'/tmp/openclaw-state/logs/gateway-restart.log' 2>/dev/null; then",
+        "if mkdir -p '/tmp/afora-state/logs' 2>/dev/null && : >>'/tmp/afora-state/logs/gateway-restart.log' 2>/dev/null; then",
       );
-      expect(content).toContain("exec >>'/tmp/openclaw-state/logs/gateway-restart.log' 2>&1");
+      expect(content).toContain("exec >>'/tmp/afora-state/logs/gateway-restart.log' 2>&1");
       await cleanupScript(scriptPath);
     });
 
     it("returns the final macOS launchctl kickstart failure after logging cleanup", async () => {
       Object.defineProperty(process, "platform", { value: "darwin" });
       process.getuid = () => 501;
-      const tmpDir = tempDirs.make("openclaw-restart-helper-");
+      const tmpDir = tempDirs.make("afora-restart-helper-");
       const fakeBinDir = path.join(tmpDir, "bin");
       const stateDir = path.join(tmpDir, "state");
       await fs.mkdir(fakeBinDir, { recursive: true });
@@ -594,9 +594,9 @@ exit 0
       );
 
       const { scriptPath } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "default",
+        AFORA_PROFILE: "default",
         HOME: path.join(tmpDir, "home"),
-        OPENCLAW_STATE_DIR: stateDir,
+        AFORA_STATE_DIR: stateDir,
       });
 
       const result = await executeScript(scriptPath, {
@@ -605,16 +605,16 @@ exit 0
       const log = await fs.readFile(path.join(stateDir, "logs", "gateway-restart.log"), "utf-8");
 
       expect(result.code).toBe(42);
-      expect(log).toContain("openclaw restart attempt source=update target=ai.openclaw.gateway");
-      expect(log).toContain("launchctl kickstart -k gui/501/ai.openclaw.gateway");
-      expect(log).toContain("openclaw restart failed source=update status=42");
-      expect(log).not.toContain("openclaw restart done source=update");
+      expect(log).toContain("afora restart attempt source=update target=ai.afora.gateway");
+      expect(log).toContain("launchctl kickstart -k gui/501/ai.afora.gateway");
+      expect(log).toContain("afora restart failed source=update status=42");
+      expect(log).not.toContain("afora restart done source=update");
     });
 
     it("continues the macOS restart path when log setup fails", async () => {
       Object.defineProperty(process, "platform", { value: "darwin" });
       process.getuid = () => 501;
-      const tmpDir = tempDirs.make("openclaw-restart-helper-");
+      const tmpDir = tempDirs.make("afora-restart-helper-");
       const fakeBinDir = path.join(tmpDir, "bin");
       const stateFile = path.join(tmpDir, "state-file");
       const markerPath = path.join(tmpDir, "launchctl-ran");
@@ -630,9 +630,9 @@ exit 0
       );
 
       const { scriptPath } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "default",
+        AFORA_PROFILE: "default",
         HOME: path.join(tmpDir, "home"),
-        OPENCLAW_STATE_DIR: stateFile,
+        AFORA_STATE_DIR: stateFile,
       });
 
       const result = await executeScript(scriptPath, {
@@ -649,19 +649,19 @@ exit 0
       process.getuid = () => 501;
 
       await expect(
-        prepareRestartScript({ OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.$(echo injected)" }),
+        prepareRestartScript({ AFORA_LAUNCHD_LABEL: "ai.afora.$(echo injected)" }),
       ).resolves.toBeNull();
     });
 
-    it("uses OPENCLAW_LAUNCHD_LABEL override on macOS", async () => {
+    it("uses AFORA_LAUNCHD_LABEL override on macOS", async () => {
       Object.defineProperty(process, "platform", { value: "darwin" });
       process.getuid = () => 501;
 
       const { scriptPath, content } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "default",
-        OPENCLAW_LAUNCHD_LABEL: "com.custom.openclaw",
+        AFORA_PROFILE: "default",
+        AFORA_LAUNCHD_LABEL: "com.custom.afora",
       });
-      expect(content).toContain("launchctl kickstart -k 'gui/501/com.custom.openclaw'");
+      expect(content).toContain("launchctl kickstart -k 'gui/501/com.custom.afora'");
       await cleanupScript(scriptPath);
     });
 
@@ -669,7 +669,7 @@ exit 0
       Object.defineProperty(process, "platform", { value: "win32" });
 
       const { scriptPath, content } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "default",
+        AFORA_PROFILE: "default",
       });
       expect(scriptPath.endsWith(".cmd")).toBe(true);
       expect(content).toContain("@echo off");
@@ -677,20 +677,20 @@ exit 0
       expect(content).not.toContain("powershell -NoProfile -ExecutionPolicy Bypass -File");
       expect(content).toContain('$ErrorActionPreference = "Continue"');
       expect(content).toContain("gateway-restart.log");
-      expect(content).toContain("$taskName = 'OpenClaw Gateway'");
-      expect(content).toContain("function Invoke-OpenClawSchtasksWithTimeout");
-      expect(content).toContain("function Get-OpenClawScheduledTaskState");
-      expect(content).toContain("function Get-OpenClawListenerKillDecision");
-      expect(content).toContain("function Invoke-OpenClawVerifiedListenerKill");
-      expect(content).toContain("function Invoke-OpenClawStartupLauncher");
+      expect(content).toContain("$taskName = 'Afora Gateway'");
+      expect(content).toContain("function Invoke-AforaSchtasksWithTimeout");
+      expect(content).toContain("function Get-AforaScheduledTaskState");
+      expect(content).toContain("function Get-AforaListenerKillDecision");
+      expect(content).toContain("function Invoke-AforaVerifiedListenerKill");
+      expect(content).toContain("function Invoke-AforaStartupLauncher");
       expect(content).toContain("Get-ScheduledTask -TaskName $TaskName");
-      expect(content).toContain("openclaw restart skipped schtasks end");
+      expect(content).toContain("afora restart skipped schtasks end");
       expect(content).toContain("$gatewayScriptPath = ");
       expect(content).toContain("$expectedGatewayArgv = @()");
-      expect(content).toContain("openclaw restart launched startup fallback");
+      expect(content).toContain("afora restart launched startup fallback");
       expectWindowsRestartWaitOrdering(content);
       expect(content).toContain('del "%~f0" >nul 2>&1');
-      expect(content).toContain('rmdir "%OPENCLAW_RESTART_SCRIPT_DIR%" >nul 2>&1');
+      expect(content).toContain('rmdir "%AFORA_RESTART_SCRIPT_DIR%" >nul 2>&1');
       await cleanupScript(scriptPath);
     });
 
@@ -699,19 +699,19 @@ exit 0
 
       const expectedArgv = [
         "C:\\Program Files\\nodejs\\node.exe",
-        "C:\\Users\\O'Brien\\openclaw\\dist\\entry.js",
+        "C:\\Users\\O'Brien\\afora\\dist\\entry.js",
         "gateway",
         "--port",
         "18789",
       ];
       const { scriptPath, content } = await prepareAndReadScript(
-        { OPENCLAW_PROFILE: "default" },
+        { AFORA_PROFILE: "default" },
         18789,
         expectedArgv,
       );
 
       expect(content).toContain(
-        "$expectedGatewayArgv = @('C:\\Program Files\\nodejs\\node.exe', 'C:\\Users\\O''Brien\\openclaw\\dist\\entry.js', 'gateway', '--port', '18789')",
+        "$expectedGatewayArgv = @('C:\\Program Files\\nodejs\\node.exe', 'C:\\Users\\O''Brien\\afora\\dist\\entry.js', 'gateway', '--port', '18789')",
       );
       expect(content).toContain("CommandLineToArgvW");
       expect(content).toContain("PROCESS_QUERY_LIMITED_INFORMATION");
@@ -719,14 +719,14 @@ exit 0
       expect(content).toContain("creationTime - (creationTime % 10)");
       expect(content).toContain("$creationTimeFileTime -= $creationTimeFileTime % 10");
       expect(content).toContain("TryOpenProcess($QueryPid)");
-      expect(content).toContain("Get-OpenClawListenerKillDecision");
+      expect(content).toContain("Get-AforaListenerKillDecision");
       expect(content).toContain("$recheckedListeners = & $ListenerQuery $Port");
       expect(content).toContain("$recheckedProcess = & $ProcessQuery $ProcessId");
       expect(content).toContain("if ($lease.Terminate())");
       expect(content).toContain("$lease.Dispose()");
       expect(content).toContain('return "listener-query-unavailable"');
       expect(content).not.toContain("Stop-Process -Id");
-      expect(content).not.toContain("openclaw-gateway(\\.exe)?");
+      expect(content).not.toContain("afora-gateway(\\.exe)?");
       expect(content).not.toContain("Get-Content -LiteralPath $ScriptPath");
       await cleanupScript(scriptPath);
     });
@@ -736,9 +736,9 @@ exit 0
       async () => {
         Object.defineProperty(process, "platform", { value: "win32" });
         const { scriptPath, content } = await prepareAndReadScript(
-          { OPENCLAW_PROFILE: "default" },
+          { AFORA_PROFILE: "default" },
           18789,
-          ["node", "C:\\openclaw\\dist\\entry.js", "gateway", "--port", "18789"],
+          ["node", "C:\\afora\\dist\\entry.js", "gateway", "--port", "18789"],
         );
         try {
           const result = await executeWindowsKillPolicy(
@@ -806,7 +806,7 @@ function Invoke-MockedKill {
     $script:ProcessOpenCalls += 1
     return $script:MockLease
   }
-  Invoke-OpenClawVerifiedListenerKill -ProcessId 4242 -Port 18789 -ExpectedArgv $ExpectedArgv -ProcessQuery $processQuery -ListenerQuery $listenerQuery -ProcessOpen $processOpen
+  Invoke-AforaVerifiedListenerKill -ProcessId 4242 -Port 18789 -ExpectedArgv $ExpectedArgv -ProcessQuery $processQuery -ListenerQuery $listenerQuery -ProcessOpen $processOpen
 }
 
 # Get-NetTCPConnection exposes object properties, including duplicate IPv4/IPv6 rows.
@@ -818,7 +818,7 @@ function Get-NetTCPConnection {
     [pscustomobject]@{ LocalPort = 443; OwningProcess = 5252 }
   )
 }
-$snapshot = Get-OpenClawListenerSnapshot -Port 18789
+$snapshot = Get-AforaListenerSnapshot -Port 18789
 Assert-True $snapshot.Known "Get-NetTCPConnection snapshot should be known"
 Assert-True (@($snapshot.Pids).Count -eq 1) "duplicate listener PIDs should collapse"
 Assert-True (@($snapshot.Pids)[0] -eq 4242) "wrong Get-NetTCPConnection PID"
@@ -833,18 +833,18 @@ function netstat.exe {
     "  TCP    127.0.0.1:18789    127.0.0.1:61234 HERGESTELLT     5252"
   )
 }
-$snapshot = Get-OpenClawListenerSnapshot -Port 18789
+$snapshot = Get-AforaListenerSnapshot -Port 18789
 Assert-True $snapshot.Known "netstat snapshot should be known"
 Assert-True (@($snapshot.Pids).Count -eq 1) "netstat IPv4/IPv6 PIDs should collapse"
 Assert-True (@($snapshot.Pids)[0] -eq 4242) "wrong netstat PID"
 
 function netstat.exe { $script:LASTEXITCODE = 1 }
-$snapshot = Get-OpenClawListenerSnapshot -Port 18789
+$snapshot = Get-AforaListenerSnapshot -Port 18789
 Assert-True (-not $snapshot.Known) "failed listener queries must remain unknown"
 
 $creation = "133987654321000000"
-$expected = @("node", "C:\openclaw\dist\entry.js", "gateway", "--port", "18789")
-$managed = New-ProcessFacts 4242 $creation @("node.exe", "C:\openclaw\dist\entry.js", "gateway", "--port", "18789")
+$expected = @("node", "C:\afora\dist\entry.js", "gateway", "--port", "18789")
+$managed = New-ProcessFacts 4242 $creation @("node.exe", "C:\afora\dist\entry.js", "gateway", "--port", "18789")
 $knownListener = [pscustomobject]@{ Known = $true; Pids = @(4242) }
 
 $script:RestartLogs.Clear()
@@ -885,32 +885,32 @@ Assert-True (-not $recycledLease.Terminated) "recycled PID target was killed"
 Assert-True $recycledLease.Disposed "recycled PID handle was not disposed"
 Assert-DecisionLog "process-replaced"
 
-Write-Output "OPENCLAW_RESTART_POLICY_OK"
+Write-Output "AFORA_RESTART_POLICY_OK"
 `,
           );
 
           expect(result.stderr).toBe("");
-          expect(result.stdout).toContain("OPENCLAW_RESTART_POLICY_OK");
+          expect(result.stdout).toContain("AFORA_RESTART_POLICY_OK");
         } finally {
           await cleanupScript(scriptPath);
         }
       },
     );
 
-    it("uses OPENCLAW_WINDOWS_TASK_NAME override on Windows", async () => {
+    it("uses AFORA_WINDOWS_TASK_NAME override on Windows", async () => {
       Object.defineProperty(process, "platform", { value: "win32" });
 
       const { scriptPath, content } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "default",
-        OPENCLAW_WINDOWS_TASK_NAME: "OpenClaw Gateway (custom)",
+        AFORA_PROFILE: "default",
+        AFORA_WINDOWS_TASK_NAME: "Afora Gateway (custom)",
       });
-      expect(content).toContain("$taskName = 'OpenClaw Gateway (custom)'");
-      expect(content).toContain("Get-OpenClawScheduledTaskState -TaskName $taskName");
+      expect(content).toContain("$taskName = 'Afora Gateway (custom)'");
+      expect(content).toContain("Get-AforaScheduledTaskState -TaskName $taskName");
       expect(content).toContain(
-        'Invoke-OpenClawSchtasksWithTimeout -Arguments @("/End", "/TN", $taskName) -TimeoutSeconds 10',
+        'Invoke-AforaSchtasksWithTimeout -Arguments @("/End", "/TN", $taskName) -TimeoutSeconds 10',
       );
       expect(content).toContain(
-        "$status = Invoke-OpenClawStartupLauncher -LauncherPath $gatewayScriptPath",
+        "$status = Invoke-AforaStartupLauncher -LauncherPath $gatewayScriptPath",
       );
       expectWindowsRestartWaitOrdering(content);
       await cleanupScript(scriptPath);
@@ -922,7 +922,7 @@ Write-Output "OPENCLAW_RESTART_POLICY_OK"
 
       const { scriptPath, content } = await prepareAndReadScript(
         {
-          OPENCLAW_PROFILE: "default",
+          AFORA_PROFILE: "default",
         },
         customPort,
       );
@@ -937,9 +937,9 @@ Write-Output "OPENCLAW_RESTART_POLICY_OK"
     it("uses custom profile in service names", async () => {
       Object.defineProperty(process, "platform", { value: "linux" });
       const { scriptPath, content } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "production",
+        AFORA_PROFILE: "production",
       });
-      expect(content).toContain("openclaw-gateway-production.service");
+      expect(content).toContain("afora-gateway-production.service");
       await cleanupScript(scriptPath);
     });
 
@@ -948,9 +948,9 @@ Write-Output "OPENCLAW_RESTART_POLICY_OK"
       process.getuid = () => 502;
 
       const { scriptPath, content } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "staging",
+        AFORA_PROFILE: "staging",
       });
-      expect(content).toContain("gui/502/ai.openclaw.staging");
+      expect(content).toContain("gui/502/ai.afora.staging");
       await cleanupScript(scriptPath);
     });
 
@@ -958,9 +958,9 @@ Write-Output "OPENCLAW_RESTART_POLICY_OK"
       Object.defineProperty(process, "platform", { value: "win32" });
 
       const { scriptPath, content } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "production",
+        AFORA_PROFILE: "production",
       });
-      expect(content).toContain("$taskName = 'OpenClaw Gateway (production)'");
+      expect(content).toContain("$taskName = 'Afora Gateway (production)'");
       expectWindowsRestartWaitOrdering(content);
       await cleanupScript(scriptPath);
     });
@@ -978,7 +978,7 @@ Write-Output "OPENCLAW_RESTART_POLICY_OK"
         .mockRejectedValueOnce(new Error("simulated write failure"));
 
       const scriptPath = await prepareRestartScript({
-        OPENCLAW_PROFILE: "default",
+        AFORA_PROFILE: "default",
       });
 
       expect(scriptPath).toBeNull();
@@ -988,7 +988,7 @@ Write-Output "OPENCLAW_RESTART_POLICY_OK"
     it("escapes single quotes in profile names for shell scripts", async () => {
       Object.defineProperty(process, "platform", { value: "linux" });
       const { scriptPath, content } = await prepareAndReadScript({
-        OPENCLAW_PROFILE: "it's-a-test",
+        AFORA_PROFILE: "it's-a-test",
       });
       // Single quotes should be escaped with '\'' pattern
       expect(content).not.toContain("it's");
@@ -1002,7 +1002,7 @@ Write-Output "OPENCLAW_RESTART_POLICY_OK"
 
       const { scriptPath, content } = await prepareAndReadScript({
         HOME: "/Users/testuser",
-        OPENCLAW_PROFILE: "default",
+        AFORA_PROFILE: "default",
       });
       // The plist path must contain the resolved home dir, not literal $HOME
       expect(content).toMatch(/[\\/]Users[\\/]testuser[\\/]Library[\\/]LaunchAgents[\\/]/);
@@ -1016,7 +1016,7 @@ Write-Output "OPENCLAW_RESTART_POLICY_OK"
 
       const { scriptPath, content } = await prepareAndReadScript({
         HOME: "/Users/envhome",
-        OPENCLAW_PROFILE: "default",
+        AFORA_PROFILE: "default",
       });
       expect(content).toMatch(/[\\/]Users[\\/]envhome[\\/]Library[\\/]LaunchAgents[\\/]/);
       await cleanupScript(scriptPath);
@@ -1029,7 +1029,7 @@ Write-Output "OPENCLAW_RESTART_POLICY_OK"
       await expect(
         prepareRestartScript({
           HOME: "/Users/testuser",
-          OPENCLAW_LAUNCHD_LABEL: "ai.openclaw.it's-a-test",
+          AFORA_LAUNCHD_LABEL: "ai.afora.it's-a-test",
         }),
       ).resolves.toBeNull();
     });
@@ -1037,7 +1037,7 @@ Write-Output "OPENCLAW_RESTART_POLICY_OK"
     it("rejects unsafe batch profile names on Windows", async () => {
       Object.defineProperty(process, "platform", { value: "win32" });
       const scriptPath = await prepareRestartScript({
-        OPENCLAW_PROFILE: "test&whoami",
+        AFORA_PROFILE: "test&whoami",
       });
 
       expect(scriptPath).toBeNull();

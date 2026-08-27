@@ -437,7 +437,7 @@ describe("normalizeInitialApplicationLocation", () => {
       client,
       hello: {
         auth: { role: "operator", scopes: ["operator.admin"] },
-        features: { methods: ["openclaw.setup.detect"] },
+        features: { methods: ["afora.setup.detect"] },
       },
     } as Parameters<GatewayListener>[0];
     connectedListener(gateway.snapshot);

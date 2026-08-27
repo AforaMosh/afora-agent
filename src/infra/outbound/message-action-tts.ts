@@ -3,7 +3,7 @@
 import { getReplyPayloadMetadata, type ReplyPayload } from "../../auto-reply/reply-payload.js";
 import { resolveSessionStorePathCore } from "../../config/sessions.js";
 import { loadSessionEntryReadOnly } from "../../config/sessions/session-accessor.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import type { TtsAutoMode } from "../../config/types.tts.js";
 import { createLazyRuntimeModule } from "../../shared/lazy-runtime.js";
 import { shouldAttemptTtsPayload } from "../../tts/tts-config.js";
@@ -15,7 +15,7 @@ const loadMessageActionTtsRuntime = createLazyRuntimeModule(
 
 /** Reads the session-level TTS auto mode for a message-action send. */
 function resolveMessageActionSessionTtsAuto(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   sessionKey?: string;
   agentId?: string;
 }): TtsAutoMode | undefined {
@@ -41,7 +41,7 @@ function resolveMessageActionSessionTtsAuto(params: {
 /** Applies automatic TTS to a message-action send payload when config/session policy allows it. */
 export async function maybeApplyTtsToMessageActionSendPayload(params: {
   payload: ReplyPayload;
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   channel: string;
   accountId?: string | null;
   agentId?: string;

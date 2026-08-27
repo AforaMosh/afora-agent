@@ -2,7 +2,7 @@ import {
   embeddedAgentLog,
   formatErrorMessage,
   runAgentHarnessLlmOutputHook,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import { classifyCodexModelCallFailureKind } from "./attempt-diagnostics.js";
 import {
   buildCodexAppServerPromptTimeoutOutcome,
@@ -73,7 +73,7 @@ export async function finalizeCodexAttempt(
   const {
     state,
     completion,
-    pendingOpenClawDynamicToolCompletionIds,
+    pendingAforaDynamicToolCompletionIds,
     activeTurnItemIds,
     activeCompletionBlockerItemIds,
     activeFinalizationHookRunIds,
@@ -97,7 +97,7 @@ export async function finalizeCodexAttempt(
     state.activeAppServerTurnRequests === 0 &&
     activeTurnItemIds.size === 0 &&
     activeCompletionBlockerItemIds.size === 0 &&
-    pendingOpenClawDynamicToolCompletionIds.size === 0 &&
+    pendingAforaDynamicToolCompletionIds.size === 0 &&
     activeFinalizationHookRunIds.size === 0 &&
     state.unsettledFinalizationHookCount === 0 &&
     state.rejectedFinalizationHookAssistant === undefined;

@@ -4,7 +4,7 @@
  * Persists files returned by node-hosted browser proxy calls and rewrites
  * proxied result paths to local saved media paths.
  */
-import { canonicalizeBase64, estimateBase64DecodedBytes } from "openclaw/plugin-sdk/media-runtime";
+import { canonicalizeBase64, estimateBase64DecodedBytes } from "afora-agent/plugin-sdk/media-runtime";
 import {
   assertBrowserProxyFileCountWithinLimit,
   assertBrowserProxyFileBytesWithinLimits,

@@ -1,5 +1,5 @@
 // Matrix plugin module implements summary behavior.
-import { asNullableObjectRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { asNullableObjectRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { isMatrixNotFoundError } from "../errors.js";
 import { resolveMatrixMessageAttachment, resolveMatrixMessageBody } from "../media-text.js";
 import { fetchMatrixPollMessageSummary } from "../poll-summary.js";

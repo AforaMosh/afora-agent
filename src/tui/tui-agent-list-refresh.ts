@@ -1,4 +1,4 @@
-import { err, ok, type Result } from "@openclaw/normalization-core/result";
+import { err, ok, type Result } from "@afora/normalization-core/result";
 import type { TuiAgentsList } from "./tui-backend.js";
 import { formatTuiErrorMessage } from "./tui-formatters.js";
 

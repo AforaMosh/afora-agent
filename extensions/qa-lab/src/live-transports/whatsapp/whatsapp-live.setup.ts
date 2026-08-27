@@ -1,8 +1,8 @@
 // QA Lab WhatsApp auth archive and channel readiness setup.
 import fs from "node:fs/promises";
 import path from "node:path";
-import { runExec } from "openclaw/plugin-sdk/process-runtime";
-import { normalizeStringEntries } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { runExec } from "afora-agent/plugin-sdk/process-runtime";
+import { normalizeStringEntries } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { WhatsAppQaGateway } from "./whatsapp-live.contracts.js";
 
 const WHATSAPP_QA_READY_TIMEOUT_MS = 150_000;

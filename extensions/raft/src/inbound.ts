@@ -1,7 +1,7 @@
 // Raft delivers wake hints only; message content stays in the operator's Raft CLI session.
 import { randomUUID } from "node:crypto";
-import type { ChannelGatewayContext } from "openclaw/plugin-sdk/channel-contract";
-import type { PluginRuntime } from "openclaw/plugin-sdk/plugin-runtime";
+import type { ChannelGatewayContext } from "afora-agent/plugin-sdk/channel-contract";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/plugin-runtime";
 import type { ResolvedRaftAccount } from "./accounts.js";
 import { RAFT_CHANNEL_ID } from "./accounts.js";
 
@@ -95,7 +95,7 @@ export async function dispatchRaftWake(params: {
           route: { agentId: route.agentId, sessionKey: route.sessionKey },
           ctxPayload,
           // Raft's bridge only transports wake hints. The agent owns CLI delivery
-          // after it reads the pending Raft messages, so OpenClaw must not emit a
+          // after it reads the pending Raft messages, so Afora must not emit a
           // duplicate synthetic reply through the channel dispatcher.
           delivery: {
             deliver: async () => ({ visibleReplySent: false }),

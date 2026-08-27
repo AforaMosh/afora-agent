@@ -4,8 +4,8 @@
  * Pure helper – no side effects, no runtime imports.
  */
 
-import type { ChannelBotLoopProtectionConfig } from "openclaw/plugin-sdk/config-contracts";
-import { mergePairLoopGuardConfig } from "openclaw/plugin-sdk/pair-loop-guard-runtime";
+import type { ChannelBotLoopProtectionConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { mergePairLoopGuardConfig } from "afora-agent/plugin-sdk/pair-loop-guard-runtime";
 
 type ClickClackGroupPolicy = {
   requireMention: boolean;

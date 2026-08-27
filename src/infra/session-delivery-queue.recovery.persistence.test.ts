@@ -1,6 +1,6 @@
 // Covers real session-delivery retry failures against the persistent SQLite queue.
 import { describe, expect, it, vi } from "vitest";
-import { openOpenClawStateDatabase } from "../state/openclaw-state-db.js";
+import { openAforaStateDatabase } from "../state/afora-state-db.js";
 import { withTestDir } from "../test-helpers/temp-dir.js";
 import {
   drainPendingSessionDeliveries,
@@ -15,7 +15,7 @@ describe("session-delivery recovery persistence", () => {
   it.each(["startup", "targeted drain"] as const)(
     "surfaces real SQLite retry-persistence failures during %s recovery",
     async (mode) => {
-      await withTestDir({ prefix: "openclaw-session-delivery-" }, async (tempDir) => {
+      await withTestDir({ prefix: "afora-session-delivery-" }, async (tempDir) => {
         const id = await enqueueSessionDelivery(
           {
             kind: "systemEvent",
@@ -24,8 +24,8 @@ describe("session-delivery recovery persistence", () => {
           },
           tempDir,
         );
-        const { db } = openOpenClawStateDatabase({
-          env: { ...process.env, OPENCLAW_STATE_DIR: tempDir },
+        const { db } = openAforaStateDatabase({
+          env: { ...process.env, AFORA_STATE_DIR: tempDir },
         });
         const deliver = vi.fn(async () => {
           db.exec("PRAGMA query_only = ON");

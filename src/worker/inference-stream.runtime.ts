@@ -1,4 +1,4 @@
-import { parseStreamingJson } from "@openclaw/ai/internal/runtime";
+import { parseStreamingJson } from "@afora/ai/internal/runtime";
 import { WORKER_PROTOCOL_MAX_IDENTIFIER_LENGTH } from "../../packages/gateway-protocol/src/schema/worker-admission.js";
 import type {
   WorkerInferenceContext,

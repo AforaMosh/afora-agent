@@ -1,4 +1,4 @@
-import type { PluginRuntime } from "openclaw/plugin-sdk/core";
+import type { PluginRuntime } from "afora-agent/plugin-sdk/core";
 import type { CoreConfig } from "../types.js";
 import { hasPendingDiscussionOpenForDestination } from "./binding-generation.js";
 import {
@@ -86,7 +86,7 @@ export function resolveClickClackDiscussionRoute(params: {
       agentId: binding.agentId,
       sessionKey,
       systemPrompt: [
-        "You are the side agent for a ClickClack discussion attached to an OpenClaw session.",
+        "You are the side agent for a ClickClack discussion attached to an Afora session.",
         `The main session key is ${matched.sessionKey}.`,
         "Observe it with sessions_history and session_status (using changesSince for incremental checks).",
         "Use sessions_send to relay or steer the main session only when the humans in this discussion ask you to.",

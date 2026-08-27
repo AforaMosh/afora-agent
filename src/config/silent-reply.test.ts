@@ -1,7 +1,7 @@
 // Covers silent-reply config normalization and policy behavior.
 import { describe, expect, it } from "vitest";
 import { resolveSilentReplyPolicy } from "./silent-reply.js";
-import type { OpenClawConfig } from "./types.openclaw.js";
+import type { AforaConfig } from "./types.afora.js";
 
 describe("silent reply config resolution", () => {
   it("uses the default direct/group/internal policy", () => {
@@ -20,7 +20,7 @@ describe("silent reply config resolution", () => {
   });
 
   it("applies configured defaults by conversation type", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           silentReply: {
@@ -42,7 +42,7 @@ describe("silent reply config resolution", () => {
   });
 
   it("lets surface overrides beat the default policy", () => {
-    const cfg: OpenClawConfig = {
+    const cfg: AforaConfig = {
       agents: {
         defaults: {
           silentReply: {

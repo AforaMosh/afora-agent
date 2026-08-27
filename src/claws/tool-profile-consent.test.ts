@@ -15,7 +15,7 @@ describe("Claw tool profile consent", () => {
     if (!minimal?.allow) {
       throw new Error("expected minimal profile allowlist");
     }
-    const packageRoot = tempDirs.make("openclaw-claw-tool-profile-");
+    const packageRoot = tempDirs.make("afora-claw-tool-profile-");
     await mkdir(packageRoot, { recursive: true });
     const parsed = parseClawManifest({
       schemaVersion: 1,
@@ -27,7 +27,7 @@ describe("Claw tool profile consent", () => {
 
     const plan = await buildClawAddPlan({
       manifest: parsed.manifest,
-      openClawProfile: {
+      aforaProfile: {
         schemaVersion: 1,
         agent: {
           tools: {
@@ -43,7 +43,7 @@ describe("Claw tool profile consent", () => {
         name: "@acme/profile-worker",
         version: "1.0.0",
         packageRoot,
-        manifestPath: join(packageRoot, "openclaw.claw.json"),
+        manifestPath: join(packageRoot, "afora.claw.json"),
         integrityKind: "development-snapshot",
         integrity: "sha256:test",
         byteLength: 0,

@@ -101,7 +101,7 @@ function mockClawtributorsFixture({
       }
       if (
         args.join("\0") ===
-        ["api", "repos/openclaw/openclaw/contributors?per_page=100&anon=1", "--paginate"].join("\0")
+        ["api", "repos/AforaMosh/afora-agent/contributors?per_page=100&anon=1", "--paginate"].join("\0")
       ) {
         return `${JSON.stringify([contributor])}\n`;
       }
@@ -111,7 +111,7 @@ function mockClawtributorsFixture({
           "pr",
           "list",
           "-R",
-          "openclaw/openclaw",
+          "AforaMosh/afora-agent",
           "--state",
           "merged",
           "--limit",
@@ -185,7 +185,7 @@ describe("update-clawtributors", () => {
     };
     expect(fixture.execPlainGh).toHaveBeenNthCalledWith(
       1,
-      ["api", "repos/openclaw/openclaw/contributors?per_page=100&anon=1", "--paginate"],
+      ["api", "repos/AforaMosh/afora-agent/contributors?per_page=100&anon=1", "--paginate"],
       options,
     );
     expect(fixture.execPlainGh).toHaveBeenNthCalledWith(2, ["api", "users/extra"], options);
@@ -195,7 +195,7 @@ describe("update-clawtributors", () => {
         "pr",
         "list",
         "-R",
-        "openclaw/openclaw",
+        "AforaMosh/afora-agent",
         "--state",
         "merged",
         "--limit",

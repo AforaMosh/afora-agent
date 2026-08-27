@@ -30,8 +30,8 @@ vi.mock("../infra/net/fetch-guard.js", async (importOriginal) => {
 vi.mock("../runtime.js", () => ({ defaultRuntime: mocks.runtime }));
 
 const payload = {
-  url: "wss://192.168.1.20:8443/openclaw-gw",
-  urls: ["wss://192.168.1.20:8443/openclaw-gw", "wss://gateway.tailnet.example/tailnet-gw"],
+  url: "wss://192.168.1.20:8443/afora-gw",
+  urls: ["wss://192.168.1.20:8443/afora-gw", "wss://gateway.tailnet.example/tailnet-gw"],
   bootstrapToken: "bootstrap-token",
   tlsFingerprint: "ab".repeat(32),
 };
@@ -59,7 +59,7 @@ describe("connect cli", () => {
     { name: "oc-pair wrapper", target: () => `oc-pair://${setupCode()}`, fetched: false },
     {
       name: "HTTPS join URL",
-      target: () => `https://gateway.example/openclaw-gw/j/${"a".repeat(22)}`,
+      target: () => `https://gateway.example/afora-gw/j/${"a".repeat(22)}`,
       fetched: true,
     },
   ])("maps a $name into the existing node foreground runtime", async ({ target, fetched }) => {
@@ -81,12 +81,12 @@ describe("connect cli", () => {
       gatewayPort: 8443,
       gatewayTls: true,
       gatewayTlsFingerprint: "ab".repeat(32),
-      gatewayContextPath: "/openclaw-gw",
+      gatewayContextPath: "/afora-gw",
       gatewayCandidates: [
         {
           host: "192.168.1.20",
           port: 8443,
-          contextPath: "/openclaw-gw",
+          contextPath: "/afora-gw",
           tls: true,
           tlsFingerprint: "ab".repeat(32),
         },

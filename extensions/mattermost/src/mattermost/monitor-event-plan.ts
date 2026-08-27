@@ -1,5 +1,5 @@
 // Mattermost plugin module prepares shared routing and reply facts for monitor events.
-import { finalizeInboundContext } from "openclaw/plugin-sdk/reply-runtime";
+import { finalizeInboundContext } from "afora-agent/plugin-sdk/reply-runtime";
 import { resolveMattermostReplyToMode } from "./accounts.js";
 import type { MattermostChannel } from "./client.js";
 import { resolveMattermostTrustedChatKind } from "./monitor-auth.js";

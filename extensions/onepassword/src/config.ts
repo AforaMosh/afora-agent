@@ -1,5 +1,5 @@
 import path from "node:path";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 
 export const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 export const MAX_REGISTERED_ITEMS = 32;

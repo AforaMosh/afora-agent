@@ -1,13 +1,13 @@
 // Xiaomi tests cover index plugin behavior.
-import type { Context, Model } from "openclaw/plugin-sdk/llm";
-import { createAssistantMessageEventStream } from "openclaw/plugin-sdk/llm";
+import type { Context, Model } from "afora-agent/plugin-sdk/llm";
+import { createAssistantMessageEventStream } from "afora-agent/plugin-sdk/llm";
 import {
   registerProviderPlugin,
   requireRegisteredProvider,
   resolveProviderPluginChoice,
   type RegisteredProviderCollections,
-} from "openclaw/plugin-sdk/plugin-test-runtime";
-import { buildOpenAICompletionsParams } from "openclaw/plugin-sdk/provider-transport-runtime";
+} from "afora-agent/plugin-sdk/plugin-test-runtime";
+import { buildOpenAICompletionsParams } from "afora-agent/plugin-sdk/provider-transport-runtime";
 import { describe, expect, it, vi } from "vitest";
 import { runSingleProviderCatalog } from "../test-support/provider-model-test-helpers.js";
 import xiaomiPlugin from "./index.js";

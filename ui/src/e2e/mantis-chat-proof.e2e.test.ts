@@ -14,11 +14,11 @@ import {
 
 const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeMantisWebUiChat =
   chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
 const artifactDir = path.resolve(
-  process.env.OPENCLAW_MANTIS_WEB_UI_CHAT_OUTPUT_DIR ??
+  process.env.AFORA_MANTIS_WEB_UI_CHAT_OUTPUT_DIR ??
     path.join(process.cwd(), ".artifacts", "qa-e2e", "mantis", "web-ui-chat-proof"),
 );
 
@@ -48,7 +48,7 @@ describeMantisWebUiChat("Mantis Control UI web chat proof", () => {
   beforeAll(async () => {
     if (!chromiumAvailable) {
       throw new Error(
-        `Playwright Chromium is not installed or cannot start at ${chromiumExecutablePath}. Run \`pnpm --dir ui exec playwright install --with-deps chromium\`, set PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH to a compatible browser, or set OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
+        `Playwright Chromium is not installed or cannot start at ${chromiumExecutablePath}. Run \`pnpm --dir ui exec playwright install --with-deps chromium\`, set PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH to a compatible browser, or set AFORA_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
       );
     }
     await mkdir(artifactDir, { recursive: true });
@@ -75,7 +75,7 @@ describeMantisWebUiChat("Mantis Control UI web chat proof", () => {
         {
           role: "system",
           timestamp: Date.now() - 1_000,
-          __openclaw: {
+          __afora: {
             kind: "compaction",
             id: "mantis-compaction-entry",
             tokensBefore: 900_000,

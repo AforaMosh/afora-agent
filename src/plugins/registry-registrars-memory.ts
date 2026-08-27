@@ -1,7 +1,7 @@
 import type { PluginRegistryState } from "./registry-state.js";
 import type { PluginRecord } from "./registry-types.js";
 import { hasKind } from "./slots.js";
-import type { OpenClawPluginApi } from "./types.js";
+import type { AforaPluginApi } from "./types.js";
 
 export function createMemoryRegistrars(state: PluginRegistryState) {
   const { registry, pushDiagnostic } = state;
@@ -24,7 +24,7 @@ export function createMemoryRegistrars(state: PluginRegistryState) {
 
   const registerMemoryCapability = (
     record: PluginRecord,
-    capability: Parameters<OpenClawPluginApi["registerMemoryCapability"]>[0],
+    capability: Parameters<AforaPluginApi["registerMemoryCapability"]>[0],
   ) => {
     if (requireMemorySlot(record, "capability")) {
       registry.memoryCapabilities.push({ pluginId: record.id, capability });
@@ -33,7 +33,7 @@ export function createMemoryRegistrars(state: PluginRegistryState) {
 
   const registerMemoryPromptSupplement = (
     record: PluginRecord,
-    builder: Parameters<OpenClawPluginApi["registerMemoryPromptSupplement"]>[0],
+    builder: Parameters<AforaPluginApi["registerMemoryPromptSupplement"]>[0],
   ) => {
     if (typeof builder !== "function") {
       pushDiagnostic({
@@ -52,7 +52,7 @@ export function createMemoryRegistrars(state: PluginRegistryState) {
 
   const registerMemoryPromptPreparation = (
     record: PluginRecord,
-    prepare: Parameters<OpenClawPluginApi["registerMemoryPromptPreparation"]>[0],
+    prepare: Parameters<AforaPluginApi["registerMemoryPromptPreparation"]>[0],
   ) => {
     if (typeof prepare !== "function") {
       pushDiagnostic({
@@ -71,7 +71,7 @@ export function createMemoryRegistrars(state: PluginRegistryState) {
 
   const registerMemoryCorpusSupplement = (
     record: PluginRecord,
-    supplement: Parameters<OpenClawPluginApi["registerMemoryCorpusSupplement"]>[0],
+    supplement: Parameters<AforaPluginApi["registerMemoryCorpusSupplement"]>[0],
   ) => {
     registry.memoryCorpusSupplements = registry.memoryCorpusSupplements.filter(
       (entry) => entry.pluginId !== record.id,

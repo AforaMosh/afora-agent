@@ -5,7 +5,7 @@ import type { AgentMessage, StreamFn } from "../agents/runtime/index.js";
 import type { ProviderSystemPromptContribution } from "../agents/system-prompt-contribution.js";
 import type { AnyAgentTool } from "../agents/tools/common.js";
 import type { ModelProviderConfig } from "../config/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { ProviderUsageSnapshot } from "../infra/provider-usage.types.js";
 import type {
   OAuthCredentials as SessionOAuthCredentials,
@@ -163,7 +163,7 @@ export type ProviderPlugin = {
   /**
    * Optional async prefetch for dynamic model resolution.
    *
-   * OpenClaw calls this only from async model resolution paths. After it
+   * Afora calls this only from async model resolution paths. After it
    * completes, `resolveDynamicModel` is called again.
    */
   prepareDynamicModel?: (ctx: ProviderPrepareDynamicModelContext) => Promise<void>;
@@ -233,7 +233,7 @@ export type ProviderPlugin = {
   /**
    * Provider-owned replay-history sanitization.
    *
-   * Runs after OpenClaw performs generic transcript cleanup. Use this for
+   * Runs after Afora performs generic transcript cleanup. Use this for
    * provider-specific replay rewrites that should stay with the provider
    * plugin rather than in shared core compaction helpers.
    */
@@ -253,7 +253,7 @@ export type ProviderPlugin = {
   /**
    * Provider-owned tool-schema normalization.
    *
-   * Use this for transport-family schema cleanup before OpenClaw registers
+   * Use this for transport-family schema cleanup before Afora registers
    * tools with the embedded runner.
    */
   normalizeToolSchemas?: (
@@ -305,7 +305,7 @@ export type ProviderPlugin = {
    */
   createStreamFn?: (ctx: ProviderCreateStreamFnContext) => StreamFn | null | undefined;
   /**
-   * Provider-owned stream wrapper applied after generic OpenClaw wrappers.
+   * Provider-owned stream wrapper applied after generic Afora wrappers.
    *
    * Typical uses: provider attribution headers, request-body rewrites, or
    * provider-specific compat payload patches that do not justify a separate
@@ -354,7 +354,7 @@ export type ProviderPlugin = {
   /**
    * Runtime auth exchange hook.
    *
-   * Called after OpenClaw resolves the raw configured credential but before the
+   * Called after Afora resolves the raw configured credential but before the
    * runner stores it in runtime auth storage. This lets plugins exchange a
    * source credential (for example a GitHub token) into a short-lived runtime
    * token plus optional base URL override.
@@ -412,7 +412,7 @@ export type ProviderPlugin = {
    * Provider-owned missing-auth message override.
    *
    * Return a custom message when the provider wants a more specific recovery
-   * hint than OpenClaw's generic auth-store guidance.
+   * hint than Afora's generic auth-store guidance.
    */
   buildMissingAuthMessage?: (
     ctx: ProviderBuildMissingAuthMessageContext,
@@ -421,7 +421,7 @@ export type ProviderPlugin = {
    * Provider-owned unknown-model hint override.
    *
    * Return a suffix when the provider wants a more specific recovery hint than
-   * OpenClaw's generic `Unknown model` error after catalog/runtime lookup
+   * Afora's generic `Unknown model` error after catalog/runtime lookup
    * fails.
    */
   buildUnknownModelHint?: (ctx: ProviderBuildUnknownModelHintContext) => string | null | undefined;
@@ -429,7 +429,7 @@ export type ProviderPlugin = {
    * Provider-owned built-in model suppression.
    *
    * Return `{ suppress: true }` to hide a stale upstream row. Include
-   * `errorMessage` when OpenClaw should surface a provider-specific hint for
+   * `errorMessage` when Afora should surface a provider-specific hint for
    * direct model resolution failures.
    *
    * @deprecated Use manifest `modelCatalog.suppressions`. Runtime suppression
@@ -446,7 +446,7 @@ export type ProviderPlugin = {
    * compatibility during the migration window.
    *
    * Return extra rows to append to the final catalog after discovery/config
-   * merging. OpenClaw deduplicates by `provider/id`, so plugins only need to
+   * merging. Afora deduplicates by `provider/id`, so plugins only need to
    * describe the desired supplemental rows.
    */
   augmentModelCatalog?: (
@@ -461,7 +461,7 @@ export type ProviderPlugin = {
    * Provider-owned thinking level profile.
    *
    * Prefer this over the individual thinking capability hooks when a provider
-   * or model exposes a custom set of thinking levels. OpenClaw stores the
+   * or model exposes a custom set of thinking levels. Afora stores the
    * canonical `id`, shows `label` when provided, and downgrades stale stored
    * values by profile rank.
    */
@@ -472,7 +472,7 @@ export type ProviderPlugin = {
    * Provider-owned system-prompt contribution.
    *
    * Use this when a provider/model family needs cache-aware prompt tuning
-   * without replacing the full OpenClaw-owned system prompt.
+   * without replacing the full Afora-owned system prompt.
    */
   resolveSystemPromptContribution?: (
     ctx: ProviderSystemPromptContributionContext,
@@ -480,7 +480,7 @@ export type ProviderPlugin = {
   /**
    * Provider-owned GPT/model prompt overlay seam.
    *
-   * Runs after OpenClaw's built-in overlay is resolved and before the
+   * Runs after Afora's built-in overlay is resolved and before the
    * provider's regular system-prompt contribution is merged.
    */
   resolvePromptOverlay?: (
@@ -489,7 +489,7 @@ export type ProviderPlugin = {
   /**
    * Provider-owned fallback route override for model/profile failure handling.
    *
-   * Return undefined/null to keep OpenClaw's default fallback policy.
+   * Return undefined/null to keep Afora's default fallback policy.
    */
   followupFallbackRoute?: (
     ctx: ProviderFollowupFallbackRouteContext,
@@ -505,7 +505,7 @@ export type ProviderPlugin = {
    * Provider-owned final system-prompt transform.
    *
    * Use this sparingly when a provider transport needs small compatibility
-   * rewrites after OpenClaw has assembled the complete prompt. Return
+   * rewrites after Afora has assembled the complete prompt. Return
    * `undefined`/`null` to leave the prompt unchanged.
    */
   transformSystemPrompt?: (ctx: ProviderTransformSystemPromptContext) => string | null | undefined;
@@ -513,7 +513,7 @@ export type ProviderPlugin = {
    * Provider-owned bidirectional text replacements.
    *
    * `input` applies to system prompts and text message content before transport.
-   * `output` applies to assistant text deltas/final text before OpenClaw handles
+   * `output` applies to assistant text deltas/final text before Afora handles
    * its own control markers or channel delivery.
    */
   textTransforms?: PluginTextTransforms;
@@ -525,7 +525,7 @@ export type ProviderPlugin = {
    */
   applyConfigDefaults?: (
     ctx: ProviderApplyConfigDefaultsContext,
-  ) => OpenClawConfig | null | undefined;
+  ) => AforaConfig | null | undefined;
   /**
    * Provider-owned "modern model" matcher used by live profile/smoke filters.
    *
@@ -537,7 +537,7 @@ export type ProviderPlugin = {
   /**
    * Provider-owned auth-profile API-key formatter.
    *
-   * OpenClaw uses this when a stored auth profile is already valid and needs to
+   * Afora uses this when a stored auth profile is already valid and needs to
    * be converted into the runtime `apiKey` string expected by the provider. Use
    * this for providers whose auth profile stores extra metadata alongside the
    * bearer token (for example Gemini CLI's `{ token, projectId }` payload).
@@ -551,7 +551,7 @@ export type ProviderPlugin = {
    */
   loginOAuth?: (callbacks: OAuthLoginCallbacks) => Promise<SessionOAuthCredentials>;
   /**
-   * Legacy auth-profile ids that should be retired by `openclaw doctor`.
+   * Legacy auth-profile ids that should be retired by `afora doctor`.
    *
    * Use this when a provider plugin replaces an older core-managed profile id
    * and wants cleanup/migration messaging to live with the provider instead of
@@ -559,7 +559,7 @@ export type ProviderPlugin = {
    */
   deprecatedProfileIds?: string[];
   /**
-   * Legacy OAuth profile-id migrations that `openclaw doctor` should offer.
+   * Legacy OAuth profile-id migrations that `afora doctor` should offer.
    *
    * Use this when a provider moved from a legacy default OAuth profile id to a
    * newer identity-based id and wants doctor to own the config rewrite without
@@ -569,7 +569,7 @@ export type ProviderPlugin = {
   /**
    * Provider-owned OAuth refresh.
    *
-   * OpenClaw calls this before falling back to the shared `shared model runtime` OAuth
+   * Afora calls this before falling back to the shared `shared model runtime` OAuth
    * refreshers. Use it when the provider has a custom refresh endpoint, or when
    * the provider needs custom refresh-failure behavior that should stay out of
    * core auth-profile code.
@@ -580,7 +580,7 @@ export type ProviderPlugin = {
    *
    * Return a multiline repair hint when OAuth refresh fails and the provider
    * wants to steer users toward a specific auth-profile migration or recovery
-   * path. Return nothing to keep OpenClaw's generic error text.
+   * path. Return nothing to keep Afora's generic error text.
    */
   buildAuthDoctorHint?: (
     ctx: ProviderAuthDoctorHintContext,
@@ -635,7 +635,7 @@ export type ProviderPlugin = {
    *
    * Return true when a stored profile API key is only a provider-owned
    * synthetic placeholder and should yield to env/config-backed auth before
-   * OpenClaw falls back to that stored profile.
+   * Afora falls back to that stored profile.
    */
   shouldDeferSyntheticProfileAuth?: (
     ctx: ProviderDeferSyntheticProfileAuthContext,

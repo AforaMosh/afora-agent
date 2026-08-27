@@ -4,11 +4,11 @@ import {
   deriveDurableFinalDeliveryRequirements,
   projectOutboundPayloadPlanForDelivery,
   resolveTranscriptBackedChannelFinalText,
-} from "openclaw/plugin-sdk/channel-outbound";
-import { formatErrorMessage } from "openclaw/plugin-sdk/error-runtime";
-import type { ReplyPayload } from "openclaw/plugin-sdk/reply-payload";
-import { isSingleUseReplyToMode } from "openclaw/plugin-sdk/reply-reference";
-import { logVerbose } from "openclaw/plugin-sdk/runtime-env";
+} from "afora-agent/plugin-sdk/channel-outbound";
+import { formatErrorMessage } from "afora-agent/plugin-sdk/error-runtime";
+import type { ReplyPayload } from "afora-agent/plugin-sdk/reply-payload";
+import { isSingleUseReplyToMode } from "afora-agent/plugin-sdk/reply-reference";
+import { logVerbose } from "afora-agent/plugin-sdk/runtime-env";
 import {
   flushDraftLane,
   prepareAnswerLaneForText,

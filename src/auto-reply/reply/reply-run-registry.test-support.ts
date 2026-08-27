@@ -6,7 +6,7 @@ type ReplyRunRegistryTestApi = {
 
 function getTestApi(): ReplyRunRegistryTestApi {
   const api = (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.replyRunRegistryTestApi")
+    Symbol.for("afora.replyRunRegistryTestApi")
   ];
   if (!api) {
     throw new Error("reply run registry test API is unavailable");

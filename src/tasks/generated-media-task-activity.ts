@@ -1,8 +1,8 @@
 import { pruneMapToMaxSize } from "../infra/map-size.js";
 import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 
-const GENERATED_MEDIA_TASK_ACTIVITY_KEY = Symbol.for("openclaw.generatedMediaTaskActivity");
-const GENERATED_MEDIA_TASK_ADMISSIONS_KEY = Symbol.for("openclaw.generatedMediaTaskAdmissions");
+const GENERATED_MEDIA_TASK_ACTIVITY_KEY = Symbol.for("afora.generatedMediaTaskActivity");
+const GENERATED_MEDIA_TASK_ADMISSIONS_KEY = Symbol.for("afora.generatedMediaTaskAdmissions");
 const GENERATED_MEDIA_TASK_ADMISSIONS_MAX_ENTRIES = 2_048;
 
 function getActiveGeneratedMediaTasks(): Map<string, string> {
@@ -66,6 +66,6 @@ function resetGeneratedMediaTaskActivityForTests(): void {
 
 if (process.env.VITEST || process.env.NODE_ENV === "test") {
   (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.generatedMediaTaskActivityTestApi")
+    Symbol.for("afora.generatedMediaTaskActivityTestApi")
   ] = { resetGeneratedMediaTaskActivityForTests };
 }

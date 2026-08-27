@@ -82,13 +82,13 @@ describe("scripts/mantis/publish-pr-evidence", () => {
   it("renders a manifest-driven PR comment with inline screenshots and video links", () => {
     const manifest = loadEvidenceManifest(writeFixtureManifest());
     const body = renderEvidenceComment({
-      artifactUrl: "https://github.com/openclaw/openclaw/actions/runs/1/artifacts/2",
+      artifactUrl: "https://github.com/AforaMosh/afora-agent/actions/runs/1/artifacts/2",
       manifest,
       marker: "<!-- mantis-discord-status-reactions -->",
-      rawBase: "https://qa.openclaw.ai/mantis/discord/pr-1/run-1",
+      rawBase: "https://qa.afora.ai/mantis/discord/pr-1/run-1",
       requestSource: "workflow_dispatch",
-      runUrl: "https://github.com/openclaw/openclaw/actions/runs/1",
-      treeUrl: "https://qa.openclaw.ai/mantis/discord/pr-1/run-1",
+      runUrl: "https://github.com/AforaMosh/afora-agent/actions/runs/1",
+      treeUrl: "https://qa.afora.ai/mantis/discord/pr-1/run-1",
     });
 
     expect(body).toContain("<!-- mantis-discord-status-reactions -->");
@@ -97,10 +97,10 @@ describe("scripts/mantis/publish-pr-evidence", () => {
     expect(body).toContain('<th width="50%">Baseline queued-only</th>');
     expect(body).toContain('<th width="50%">Candidate queued -> thinking -> done</th>');
     expect(body).toContain(
-      '<td width="50%" align="center"><img src="https://qa.openclaw.ai/mantis/discord/pr-1/run-1/baseline.png" width="100%"',
+      '<td width="50%" align="center"><img src="https://qa.afora.ai/mantis/discord/pr-1/run-1/baseline.png" width="100%"',
     );
     expect(body).toContain(
-      "[Baseline change MP4](https://qa.openclaw.ai/mantis/discord/pr-1/run-1/baseline-change.mp4)",
+      "[Baseline change MP4](https://qa.afora.ai/mantis/discord/pr-1/run-1/baseline-change.mp4)",
     );
     expect(body).not.toContain("raw.githubusercontent.com");
     expect(body).toContain("- Overall: `true`");
@@ -137,7 +137,7 @@ describe("scripts/mantis/publish-pr-evidence", () => {
         accessKeyId: "access",
         bucket: "qa-artifacts",
         endpoint: "https://example.r2.cloudflarestorage.com",
-        publicBaseUrl: "https://qa.openclaw.ai",
+        publicBaseUrl: "https://qa.afora.ai",
         region: "auto",
         secretAccessKey: "secret",
       },
@@ -145,8 +145,8 @@ describe("scripts/mantis/publish-pr-evidence", () => {
 
     expect(published).toEqual({
       artifactRoot: "mantis/discord/pr-1/run-1",
-      rawBase: "https://qa.openclaw.ai/mantis/discord/pr-1/run-1",
-      treeUrl: "https://qa.openclaw.ai/mantis/discord/pr-1/run-1/index.json",
+      rawBase: "https://qa.afora.ai/mantis/discord/pr-1/run-1",
+      treeUrl: "https://qa.afora.ai/mantis/discord/pr-1/run-1/index.json",
     });
     expect(requests.map((request) => request.method)).toEqual(["PUT", "PUT", "PUT", "PUT", "PUT"]);
     expect(requests.every((request) => request.signal instanceof AbortSignal)).toBe(true);
@@ -165,7 +165,7 @@ describe("scripts/mantis/publish-pr-evidence", () => {
       "Credential=access/",
     );
     expect(String(requests[4]?.body)).toContain(
-      '"url": "https://qa.openclaw.ai/mantis/discord/pr-1/run-1/baseline.png"',
+      '"url": "https://qa.afora.ai/mantis/discord/pr-1/run-1/baseline.png"',
     );
   });
 
@@ -188,7 +188,7 @@ describe("scripts/mantis/publish-pr-evidence", () => {
         accessKeyId: "access",
         bucket: "qa-artifacts",
         endpoint: "https://example.r2.cloudflarestorage.com",
-        publicBaseUrl: "https://qa.openclaw.ai",
+        publicBaseUrl: "https://qa.afora.ai",
         region: "auto",
         secretAccessKey: "secret",
       },
@@ -225,7 +225,7 @@ describe("scripts/mantis/publish-pr-evidence", () => {
         accessKeyId: "access",
         bucket: "qa-artifacts",
         endpoint: "https://example.r2.cloudflarestorage.com",
-        publicBaseUrl: "https://qa.openclaw.ai",
+        publicBaseUrl: "https://qa.afora.ai",
         region: "auto",
         secretAccessKey: "secret",
       },
@@ -267,7 +267,7 @@ describe("scripts/mantis/publish-pr-evidence", () => {
         accessKeyId: "access",
         bucket: "qa-artifacts",
         endpoint: "https://example.r2.cloudflarestorage.com",
-        publicBaseUrl: "https://qa.openclaw.ai",
+        publicBaseUrl: "https://qa.afora.ai",
         region: "auto",
         secretAccessKey: "secret",
       },
@@ -300,7 +300,7 @@ describe("scripts/mantis/publish-pr-evidence", () => {
         accessKeyId: "access",
         bucket: "qa-artifacts",
         endpoint: "https://example.r2.cloudflarestorage.com",
-        publicBaseUrl: "https://qa.openclaw.ai",
+        publicBaseUrl: "https://qa.afora.ai",
         region: "auto",
         secretAccessKey: "secret",
       },
@@ -326,7 +326,7 @@ describe("scripts/mantis/publish-pr-evidence", () => {
         id: "slack-desktop-smoke",
         title: "Mantis Slack Desktop Smoke QA",
         summary: "Mantis could not finish VM setup.",
-        scenario: "slack-openclaw-desktop-smoke",
+        scenario: "slack-afora-desktop-smoke",
         comparison: {
           candidate: {
             expected: "Slack QA and VM gateway setup pass",
@@ -371,13 +371,13 @@ describe("scripts/mantis/publish-pr-evidence", () => {
       "mantis-evidence.json",
     ]);
     const body = renderEvidenceComment({
-      artifactUrl: "https://github.com/openclaw/openclaw/actions/runs/1/artifacts/2",
+      artifactUrl: "https://github.com/AforaMosh/afora-agent/actions/runs/1/artifacts/2",
       manifest,
       marker: "<!-- mantis-slack-desktop-smoke -->",
-      rawBase: "https://qa.openclaw.ai/mantis/slack/pr-1/run-1",
+      rawBase: "https://qa.afora.ai/mantis/slack/pr-1/run-1",
       requestSource: "workflow_dispatch",
-      runUrl: "https://github.com/openclaw/openclaw/actions/runs/1",
-      treeUrl: "https://qa.openclaw.ai/mantis/slack/pr-1/run-1",
+      runUrl: "https://github.com/AforaMosh/afora-agent/actions/runs/1",
+      treeUrl: "https://qa.afora.ai/mantis/slack/pr-1/run-1",
     });
 
     expect(body).toContain("Summary: Mantis could not finish VM setup.");
@@ -418,11 +418,11 @@ describe("scripts/mantis/publish-pr-evidence", () => {
       manifest,
       marker: "<!-- mantis-telegram-desktop-proof -->",
       rawBase:
-        "https://raw.githubusercontent.com/openclaw/openclaw/qa-artifacts/mantis/telegram-desktop/pr-1/run-1",
+        "https://raw.githubusercontent.com/AforaMosh/afora-agent/qa-artifacts/mantis/telegram-desktop/pr-1/run-1",
       requestSource: "issue_comment",
-      runUrl: "https://github.com/openclaw/openclaw/actions/runs/1",
+      runUrl: "https://github.com/AforaMosh/afora-agent/actions/runs/1",
       treeUrl:
-        "https://github.com/openclaw/openclaw/tree/qa-artifacts/mantis/telegram-desktop/pr-1/run-1",
+        "https://github.com/AforaMosh/afora-agent/tree/qa-artifacts/mantis/telegram-desktop/pr-1/run-1",
     });
 
     expect(manifest.artifacts.map((artifact) => artifact.targetPath)).toEqual([
@@ -470,10 +470,10 @@ describe("scripts/mantis/publish-pr-evidence", () => {
     const body = renderEvidenceComment({
       manifest,
       marker: "<!-- mantis-telegram-desktop-proof -->",
-      rawBase: "https://artifacts.openclaw.ai/mantis/telegram-desktop/pr-1/run-1",
+      rawBase: "https://artifacts.afora.ai/mantis/telegram-desktop/pr-1/run-1",
       requestSource: "pull_request_target",
-      runUrl: "https://github.com/openclaw/openclaw/actions/runs/1",
-      treeUrl: "https://artifacts.openclaw.ai/mantis/telegram-desktop/pr-1/run-1/index.json",
+      runUrl: "https://github.com/AforaMosh/afora-agent/actions/runs/1",
+      treeUrl: "https://artifacts.afora.ai/mantis/telegram-desktop/pr-1/run-1/index.json",
     });
 
     expect(body).toContain(

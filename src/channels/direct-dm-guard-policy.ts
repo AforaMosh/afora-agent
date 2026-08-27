@@ -3,7 +3,7 @@
  *
  * Defines conservative shape, size, timestamp, and rate limits before decryption work starts.
  */
-import { resolveIntegerOption } from "@openclaw/normalization-core/number-coercion";
+import { resolveIntegerOption } from "@afora/normalization-core/number-coercion";
 
 /** Runtime limits applied before direct-DM encrypted payloads are decrypted. */
 export type DirectDmPreCryptoGuardPolicy = {

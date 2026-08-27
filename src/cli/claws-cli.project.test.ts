@@ -32,7 +32,7 @@ vi.mock("../config/config.js", async () => ({
     issues: [],
     warnings: [],
     legacyIssues: [],
-    path: "/tmp/openclaw.json",
+    path: "/tmp/afora.json",
     raw: {},
     sourceConfig: {},
     resolved: {},
@@ -45,13 +45,13 @@ const tempDirs = useAutoCleanupTempDirTracker(afterEach);
 
 describe("Claw project CLI", () => {
   beforeEach(() => {
-    vi.stubEnv("OPENCLAW_EXPERIMENTAL_CLAWS", "1");
+    vi.stubEnv("AFORA_EXPERIMENTAL_CLAWS", "1");
     mocks.payloads.length = 0;
   });
 
   it("runs create, validate, build, and offline dev against the built artifact", async () => {
-    const root = join(tempDirs.make("openclaw-claw-author-"), "author-flow");
-    const artifact = join(tempDirs.make("openclaw-claw-author-output-"), "author-flow.tgz");
+    const root = join(tempDirs.make("afora-claw-author-"), "author-flow");
+    const artifact = join(tempDirs.make("afora-claw-author-output-"), "author-flow.tgz");
 
     await runClawsCreateCommand(root, { json: true });
     await runClawsValidateCommand(root, { json: true });
@@ -64,10 +64,10 @@ describe("Claw project CLI", () => {
 
     const payloads = mocks.payloads as Array<Record<string, unknown>>;
     expect(payloads.map((payload) => payload.schemaVersion)).toEqual([
-      "openclaw.clawProject.v1",
-      "openclaw.clawProject.v1",
-      "openclaw.clawBuild.v1",
-      "openclaw.clawDev.v1",
+      "afora.clawProject.v1",
+      "afora.clawProject.v1",
+      "afora.clawBuild.v1",
+      "afora.clawDev.v1",
     ]);
     expect(payloads[1]).toMatchObject({ excludedPaths: [] });
     expect(payloads[2]).toMatchObject({ excludedPaths: [] });
@@ -84,7 +84,7 @@ describe("Claw project CLI", () => {
   });
 
   it("emits stable dev plans without deleted extraction paths", async () => {
-    const root = join(tempDirs.make("openclaw-claw-dev-stable-"), "stable-dev");
+    const root = join(tempDirs.make("afora-claw-dev-stable-"), "stable-dev");
     await runClawsCreateCommand(root, { json: true });
     const options = {
       agentId: "stable-dev-preview",
@@ -100,16 +100,16 @@ describe("Claw project CLI", () => {
     const second = payloads[2] as { plan: ClawPlan };
     expect(first.plan).toEqual(second.plan);
     expect(first.plan.planIntegrity).toBe(second.plan.planIntegrity);
-    expect(JSON.stringify(first.plan)).not.toContain("openclaw-claw-artifact-");
+    expect(JSON.stringify(first.plan)).not.toContain("afora-claw-artifact-");
     expect(first.plan.claw.packageRoot).toMatch(/^claw-artifact:sha256:/u);
   });
 
   it("uses command-specific schemas for build and dev failures", async () => {
-    const missing = join(tempDirs.make("openclaw-claw-errors-"), "missing");
+    const missing = join(tempDirs.make("afora-claw-errors-"), "missing");
 
     await expect(
       runClawsBuildCommand(missing, {
-        out: join(tempDirs.make("openclaw-claw-error-output-"), "missing.tgz"),
+        out: join(tempDirs.make("afora-claw-error-output-"), "missing.tgz"),
         json: true,
       }),
     ).rejects.toThrow("__exit__:1");
@@ -117,8 +117,8 @@ describe("Claw project CLI", () => {
 
     const payloads = mocks.payloads as Array<Record<string, unknown>>;
     expect(payloads).toMatchObject([
-      { schemaVersion: "openclaw.clawBuild.v1", ok: false },
-      { schemaVersion: "openclaw.clawDev.v1", ok: false },
+      { schemaVersion: "afora.clawBuild.v1", ok: false },
+      { schemaVersion: "afora.clawDev.v1", ok: false },
     ]);
   });
 });

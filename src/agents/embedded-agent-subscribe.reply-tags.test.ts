@@ -1,6 +1,6 @@
 // Reply-tag tests cover streaming directive parsing for reply_to markers across
 // block replies and partial reply chunks.
-import type { AssistantMessage } from "openclaw/plugin-sdk/llm";
+import type { AssistantMessage } from "afora-agent/plugin-sdk/llm";
 import { describe, expect, it, vi } from "vitest";
 import {
   createStubSessionHarness,

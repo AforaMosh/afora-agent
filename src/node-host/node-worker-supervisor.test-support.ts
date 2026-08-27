@@ -16,7 +16,7 @@ const TEST_BUNDLE_HASH = "a".repeat(64);
 export const TEST_WORKER_CREDENTIAL = 'node worker/"credential\\secret?';
 export const TEST_WORKER_ENDPOINT: WorkerConnectionEndpoint = {
   kind: "unix",
-  socketPath: "/tmp/openclaw-worker/gateway.sock",
+  socketPath: "/tmp/afora-worker/gateway.sock",
 };
 
 export const TEST_WORKER_SOURCE = String.raw`
@@ -56,7 +56,7 @@ const onMessage = (message) => {
     message === null ||
     Array.isArray(message) ||
     Object.keys(message).length !== 1 ||
-    message.type !== "openclaw-worker-start-v1"
+    message.type !== "afora-worker-start-v1"
   ) {
     hardTerminate();
     return;
@@ -87,7 +87,7 @@ const mode = descriptor.assignment.prompt;
 if (mode === "connection-failure") {
   process.send(
     {
-      type: "openclaw-worker-connection-failure-v1",
+      type: "afora-worker-connection-failure-v1",
       cause: "certificate rejected " + descriptor.admission.credential,
     },
     () =>
@@ -158,7 +158,7 @@ export function testWorkerDescriptor(workspaceDir: string, prompt = "success"): 
       rpcSetVersion: WORKER_RPC_SET_VERSION,
       handshake: {
         bundleHash: TEST_BUNDLE_HASH,
-        openclawVersion: "2026.8.1",
+        aforaVersion: "2026.8.1",
         protocolFeatures: [...WORKER_PROTOCOL_FEATURES],
       },
     },
@@ -203,7 +203,7 @@ export function writeNodeWorkerFixture(root: string) {
   fs.mkdirSync(bundleDir, { recursive: true });
   fs.mkdirSync(workspaceDir, { recursive: true });
   fs.writeFileSync(path.join(bundleDir, "worker.mjs"), TEST_WORKER_SOURCE);
-  return { bundleRoot, env: { OPENCLAW_STATE_DIR: stateDir }, root, stateDir, workspaceDir };
+  return { bundleRoot, env: { AFORA_STATE_DIR: stateDir }, root, stateDir, workspaceDir };
 }
 
 export function testWorkerLaunchInput(

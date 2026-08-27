@@ -3,21 +3,21 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { Command } from "commander";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/memory-core-host-engine-foundation";
-import { resolveSessionTranscriptsDirForAgent as resolveTestSessionTranscriptsDirForAgent } from "openclaw/plugin-sdk/memory-core-host-runtime-core";
-import { upsertSessionEntry } from "openclaw/plugin-sdk/session-store-runtime";
-import { appendSessionTranscriptMessageByIdentity } from "openclaw/plugin-sdk/session-transcript-runtime";
-import { resolveOpenClawAgentSqlitePath } from "openclaw/plugin-sdk/sqlite-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/memory-core-host-engine-foundation";
+import { resolveSessionTranscriptsDirForAgent as resolveTestSessionTranscriptsDirForAgent } from "afora-agent/plugin-sdk/memory-core-host-runtime-core";
+import { upsertSessionEntry } from "afora-agent/plugin-sdk/session-store-runtime";
+import { appendSessionTranscriptMessageByIdentity } from "afora-agent/plugin-sdk/session-transcript-runtime";
+import { resolveAforaAgentSqlitePath } from "afora-agent/plugin-sdk/sqlite-runtime";
 import {
-  closeOpenClawAgentDatabasesForTest,
-  openOpenClawAgentDatabase,
-} from "openclaw/plugin-sdk/sqlite-runtime-testing";
+  closeAforaAgentDatabasesForTest,
+  openAforaAgentDatabase,
+} from "afora-agent/plugin-sdk/sqlite-runtime-testing";
 import {
   firstWrittenJsonArg,
   spyRuntimeErrors,
   spyRuntimeJson,
   spyRuntimeLogs,
-} from "openclaw/plugin-sdk/test-fixtures";
+} from "afora-agent/plugin-sdk/test-fixtures";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { formatMemoryIndexOutcome } from "./cli-runtime-common.js";
 import { openMemoryCoreStateStore } from "./dreaming-state.js";
@@ -67,7 +67,7 @@ async function seedCliBackfillTranscript(sessionId: string, days: string[]): Pro
         role: "user",
         content: `CLI lifecycle note for ${day}`,
         timestamp: `${day}T12:00:00.000Z`,
-        __openclaw: { senderIsOwner: true },
+        __afora: { senderIsOwner: true },
       },
     });
   }
@@ -90,9 +90,9 @@ vi.mock("./cli.host.runtime.js", async () => {
     { resolveSessionTranscriptsDirForAgent, resolveStateDir },
     { listMemoryFiles, normalizeExtraMemoryPaths },
   ] = await Promise.all([
-    import("openclaw/plugin-sdk/memory-core-host-runtime-cli"),
-    import("openclaw/plugin-sdk/memory-core-host-runtime-core"),
-    import("openclaw/plugin-sdk/memory-core-host-runtime-files"),
+    import("afora-agent/plugin-sdk/memory-core-host-runtime-cli"),
+    import("afora-agent/plugin-sdk/memory-core-host-runtime-core"),
+    import("afora-agent/plugin-sdk/memory-core-host-runtime-files"),
   ]);
   return {
     defaultRuntime,
@@ -116,9 +116,9 @@ vi.mock("./cli.host.runtime.js", async () => {
 });
 
 let registerMemoryCli: typeof import("./cli.js").registerMemoryCli;
-let defaultRuntime: typeof import("openclaw/plugin-sdk/memory-core-host-runtime-cli").defaultRuntime;
-let isVerbose: typeof import("openclaw/plugin-sdk/memory-core-host-runtime-cli").isVerbose;
-let setVerbose: typeof import("openclaw/plugin-sdk/memory-core-host-runtime-cli").setVerbose;
+let defaultRuntime: typeof import("afora-agent/plugin-sdk/memory-core-host-runtime-cli").defaultRuntime;
+let isVerbose: typeof import("afora-agent/plugin-sdk/memory-core-host-runtime-cli").isVerbose;
+let setVerbose: typeof import("afora-agent/plugin-sdk/memory-core-host-runtime-cli").setVerbose;
 let fixtureRoot = "";
 let workspaceFixtureRoot = "";
 let workspaceCaseId = 0;
@@ -130,7 +130,7 @@ beforeAll(async () => {
     defaultRuntime: loadedDefaultRuntime,
     isVerbose: loadedIsVerbose,
     setVerbose: loadedSetVerbose,
-  } = await import("openclaw/plugin-sdk/memory-core-host-runtime-cli");
+  } = await import("afora-agent/plugin-sdk/memory-core-host-runtime-cli");
   defaultRuntime = loadedDefaultRuntime;
   isVerbose = loadedIsVerbose;
   setVerbose = loadedSetVerbose;
@@ -150,7 +150,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  closeOpenClawAgentDatabasesForTest();
+  closeAforaAgentDatabasesForTest();
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
   process.exitCode = undefined;
@@ -193,7 +193,7 @@ describe("memory cli", () => {
       files: 0,
       chunks: 0,
       dirty: false,
-      workspaceDir: "/tmp/openclaw",
+      workspaceDir: "/tmp/afora",
       dbPath: "/tmp/memory.sqlite",
       provider: "openai",
       model: "text-embedding-3-small",
@@ -240,7 +240,7 @@ describe("memory cli", () => {
     {
       name: "keeps the genuine empty-index result as a no-op",
       files: 0,
-      expected: `No memory files found in /tmp/openclaw; nothing indexed (main).`,
+      expected: `No memory files found in /tmp/afora; nothing indexed (main).`,
     },
   ])("$name", ({ files, expected }) => {
     expect(
@@ -303,8 +303,8 @@ describe("memory cli", () => {
 
   it("drains session backfill in one apply command before preview", async () => {
     const workspaceDir = path.join(workspaceFixtureRoot, `session-backfill-${workspaceCaseId++}`);
-    vi.stubEnv("OPENCLAW_STATE_DIR", path.join(workspaceDir, "state"));
-    vi.stubEnv("OPENCLAW_CONFIG_PATH", path.join(workspaceDir, "openclaw.json"));
+    vi.stubEnv("AFORA_STATE_DIR", path.join(workspaceDir, "state"));
+    vi.stubEnv("AFORA_CONFIG_PATH", path.join(workspaceDir, "afora.json"));
     await fs.mkdir(workspaceDir, { recursive: true });
     await seedCliBackfillTranscript("drain", ["2026-01-01", "2026-01-02", "2026-01-03"]);
 
@@ -547,7 +547,7 @@ describe("memory cli", () => {
     const log = spyRuntimeLogs(defaultRuntime);
     await runMemoryCli(["status"]);
 
-    expectLogged(log, "Extra paths: /tmp/openclaw/notes (pattern: runbooks/**/*.md)");
+    expectLogged(log, "Extra paths: /tmp/afora/notes (pattern: runbooks/**/*.md)");
     expect(close).toHaveBeenCalled();
   });
 
@@ -605,7 +605,7 @@ describe("memory cli", () => {
     expectLogged(log, "Dirty: yes");
     expectLogged(log, "Index identity: index was built for provider openai, expected ollama");
     expectLogged(log, "Vector search: paused until memory is rebuilt");
-    expectLogged(log, "Fix: Run: openclaw memory status --index --agent main");
+    expectLogged(log, "Fix: Run: afora memory status --index --agent main");
     expect(close).toHaveBeenCalled();
   });
 
@@ -696,7 +696,7 @@ describe("memory cli", () => {
         status: () =>
           makeMemoryStatus({
             workspaceDir: undefined,
-            dbPath: `/state/agents/${agentId}/agent/openclaw-agent.sqlite`,
+            dbPath: `/state/agents/${agentId}/agent/afora-agent.sqlite`,
           }),
         close: vi.fn(async () => {}),
       },
@@ -718,7 +718,7 @@ describe("memory cli", () => {
         firstWrittenJsonArg<Array<{ agentId: string; status: { dbPath: string } }>>(json);
       expect(payload?.map(({ agentId }) => agentId)).toEqual(agentIds);
       expect(payload?.map(({ status }) => status.dbPath)).toEqual(
-        agentIds.map((agentId) => `/state/agents/${agentId}/agent/openclaw-agent.sqlite`),
+        agentIds.map((agentId) => `/state/agents/${agentId}/agent/afora-agent.sqlite`),
       );
       const storeOptions = { namespace: "cli-status-regression", maxEntries: 1 };
       expect(openMemoryCoreStateStore(storeOptions)).toBe(keyedStore);
@@ -815,19 +815,19 @@ describe("memory cli", () => {
   it("documents memory help examples", () => {
     const helpText = getMemoryHelpText();
 
-    expect(helpText).toContain("openclaw memory status --fix");
+    expect(helpText).toContain("afora memory status --fix");
     expect(helpText).toContain("Repair stale recall locks and normalize promotion metadata.");
-    expect(helpText).toContain("openclaw memory status --deep");
+    expect(helpText).toContain("afora memory status --deep");
     expect(helpText).toContain("Probe embedding provider readiness.");
-    expect(helpText).toContain('openclaw memory search "meeting notes"');
+    expect(helpText).toContain('afora memory search "meeting notes"');
     expect(helpText).toContain("Quick search using positional query.");
-    expect(helpText).toContain('openclaw memory search --query "deployment" --max-results 20');
+    expect(helpText).toContain('afora memory search --query "deployment" --max-results 20');
     expect(helpText).toContain("Limit results for focused troubleshooting.");
-    expect(helpText).toContain("openclaw memory promote --apply");
+    expect(helpText).toContain("afora memory promote --apply");
     expect(helpText).toContain("Append top-ranked short-term candidates into MEMORY.md.");
-    expect(helpText).toContain('openclaw memory promote-explain "router vlan"');
+    expect(helpText).toContain('afora memory promote-explain "router vlan"');
     expect(helpText).toContain("Explain why a specific candidate would or would not promote.");
-    expect(helpText).toContain("openclaw memory rem-harness --json");
+    expect(helpText).toContain("afora memory rem-harness --json");
     expect(helpText).toContain(
       "Preview REM reflections, candidate truths, and deep promotion output.",
     );
@@ -1262,7 +1262,7 @@ describe("memory cli", () => {
 
       const log = spyRuntimeLogs(defaultRuntime);
       await runMemoryCli(["status"]);
-      expectLogged(log, "Fix: openclaw memory status --fix --agent main");
+      expectLogged(log, "Fix: afora memory status --fix --agent main");
 
       log.mockClear();
       mockManager({
@@ -1271,7 +1271,7 @@ describe("memory cli", () => {
         close,
       });
       await runMemoryCli(["status", "--fix"]);
-      expectNotLogged(log, "Fix: openclaw memory status --fix --agent main");
+      expectNotLogged(log, "Fix: afora memory status --fix --agent main");
     });
   });
 
@@ -1627,8 +1627,8 @@ describe("memory cli", () => {
   ])("fails %s when the memory index has orphaned provenance", async (_label, args) => {
     const stateDir = path.join(fixtureRoot, `corrupt-state-${workspaceCaseId++}`);
     const workspaceDir = path.join(fixtureRoot, `corrupt-workspace-${workspaceCaseId++}`);
-    const env = { ...process.env, OPENCLAW_STATE_DIR: stateDir };
-    const agentDatabase = openOpenClawAgentDatabase({ agentId: "main", env });
+    const env = { ...process.env, AFORA_STATE_DIR: stateDir };
+    const agentDatabase = openAforaAgentDatabase({ agentId: "main", env });
     agentDatabase.db.exec(`
       PRAGMA foreign_keys = OFF;
       INSERT INTO memory_index_chunks (
@@ -1643,7 +1643,7 @@ describe("memory cli", () => {
       DELETE FROM memory_index_chunks WHERE id = 'orphaned-chunk';
       PRAGMA foreign_keys = ON;
     `);
-    closeOpenClawAgentDatabasesForTest();
+    closeAforaAgentDatabasesForTest();
 
     const cfg = {
       memory: {
@@ -1664,8 +1664,8 @@ describe("memory cli", () => {
         list: [{ id: "main", default: true }],
       },
       plugins: { enabled: false },
-    } as OpenClawConfig;
-    vi.stubEnv("OPENCLAW_STATE_DIR", stateDir);
+    } as AforaConfig;
+    vi.stubEnv("AFORA_STATE_DIR", stateDir);
     getRuntimeConfig.mockReturnValue(cfg);
     const actualMemory =
       await vi.importActual<typeof import("./memory/index.js")>("./memory/index.js");
@@ -1674,7 +1674,7 @@ describe("memory cli", () => {
     const error = spyRuntimeErrors(defaultRuntime);
     await runMemoryCli(args);
 
-    expect(resolveOpenClawAgentSqlitePath({ agentId: "main", env })).toBe(agentDatabase.path);
+    expect(resolveAforaAgentSqlitePath({ agentId: "main", env })).toBe(agentDatabase.path);
     expect(process.exitCode).toBe(1);
     expect(error).toHaveBeenCalledWith(expect.stringContaining("SQLite foreign_key_check failed"));
   });
@@ -1819,7 +1819,7 @@ describe("memory cli", () => {
       results: [],
       stale: true,
       warning: `Memory index is stale: ${reason}. Search results may be incomplete.`,
-      action: "Run: openclaw memory status --index --agent main",
+      action: "Run: afora memory status --index --agent main",
     });
   });
 
@@ -1836,7 +1836,7 @@ describe("memory cli", () => {
     await runMemoryCli(["search", "hidden codeword"]);
 
     expect(error).toHaveBeenCalledWith(
-      "Memory index is dirty. Search results may be incomplete. Run: openclaw memory status --index --agent main",
+      "Memory index is dirty. Search results may be incomplete. Run: afora memory status --index --agent main",
     );
     expect(log).toHaveBeenCalledWith("No matches.");
   });
@@ -2136,7 +2136,7 @@ describe("memory cli", () => {
       await runMemoryCli(["rem-backfill", "--path", historyPath]);
 
       const dreams = await fs.readFile(path.join(workspaceDir, "DREAMS.md"), "utf-8");
-      expect(dreams).toContain("openclaw:dreaming:backfill-entry");
+      expect(dreams).toContain("afora:dreaming:backfill-entry");
       expect(dreams).toContain(`source=${historyPath}`);
       expect(dreams).toContain("January 1, 2025");
       expect(dreams).toContain("What Happened");
@@ -2279,7 +2279,7 @@ describe("memory cli", () => {
       await fs.writeFile(
         historyPath,
         [
-          "## OpenClaw / runtime / workflow preferences and corrections",
+          "## Afora / runtime / workflow preferences and corrections",
           "- Mariano explicitly said that when he tells Razor there has been an error, the default interpretation should be that he wants it fixed, not merely diagnosed or acknowledged.",
           "- Mariano clarified that the problem with cron output is overlapping, independently unreasonable crons converging into dumb sludge.",
           "",
@@ -2479,7 +2479,7 @@ describe("memory cli", () => {
         [
           "# Dream Diary",
           "",
-          "<!-- openclaw:dreaming:diary:start -->",
+          "<!-- afora:dreaming:diary:start -->",
           "---",
           "",
           "*April 5, 2026, 3:00 AM*",
@@ -2490,12 +2490,12 @@ describe("memory cli", () => {
           "",
           "*January 1, 2025*",
           "",
-          "<!-- openclaw:dreaming:backfill-entry day=2025-01-01 source=memory/2025-01-01.md -->",
+          "<!-- afora:dreaming:backfill-entry day=2025-01-01 source=memory/2025-01-01.md -->",
           "",
           "What Happened",
           "1. Remove this entry.",
           "",
-          "<!-- openclaw:dreaming:diary:end -->",
+          "<!-- afora:dreaming:diary:end -->",
           "",
         ].join("\n"),
         "utf-8",
@@ -2570,7 +2570,7 @@ describe("memory cli", () => {
       const memoryPath = path.join(workspaceDir, "MEMORY.md");
       const memoryText = await fs.readFile(memoryPath, "utf-8");
       expect(memoryText).toContain("Promoted From Short-Term Memory");
-      expect(memoryText).toContain("openclaw-memory-promotion:");
+      expect(memoryText).toContain("afora-memory-promotion:");
       expect(memoryText).toContain("memory/2026-04-01.md:10-10");
       expectLogged(log, `Processed 1 candidate(s) for ${memoryPath}.`);
       expectLogged(log, "appended=1 reconciledExisting=0");

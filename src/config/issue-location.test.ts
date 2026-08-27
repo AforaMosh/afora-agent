@@ -18,7 +18,7 @@ function renderIssue(params: {
         raw: params.raw,
         parsed: params.parsed,
         sourceConfig: params.effective as ConfigFileSnapshot["sourceConfig"],
-        path: "/tmp/openclaw.json",
+        path: "/tmp/afora.json",
       },
       "",
     )[0] ?? ""
@@ -47,7 +47,7 @@ function resolveConfigIssueLineInRaw(raw: string, pathSegments: PathSegment[]): 
     parsed,
     effective: parsed,
   });
-  const match = rendered.match(/^openclaw\.json:(\d+) — /);
+  const match = rendered.match(/^afora\.json:(\d+) — /);
   return match?.[1] ? Number(match[1]) : undefined;
 }
 
@@ -343,7 +343,7 @@ describe("renderConfigValidationIssueLines", () => {
         effective: config,
       }),
     ).toBe(
-      'openclaw.json:4 — agents.list[0].tools.profile: Invalid input (allowed: "minimal", "coding"), got: "none"',
+      'afora.json:4 — agents.list[0].tools.profile: Invalid input (allowed: "minimal", "coding"), got: "none"',
     );
   });
 
@@ -373,7 +373,7 @@ describe("renderConfigValidationIssueLines", () => {
         parsed: config,
         effective: config,
       }),
-    ).toBe('openclaw.json:1 — foo.bar: Invalid input, got: "literal"');
+    ).toBe('afora.json:1 — foo.bar: Invalid input, got: "literal"');
     expect(
       renderIssue({
         issue: issue(["foo", "bar"], "Invalid input"),
@@ -381,7 +381,7 @@ describe("renderConfigValidationIssueLines", () => {
         parsed: config,
         effective: config,
       }),
-    ).toBe('openclaw.json:2 — foo.bar: Invalid input, got: "nested"');
+    ).toBe('afora.json:2 — foo.bar: Invalid input, got: "nested"');
   });
 
   it("omits values changed by environment substitution", () => {
@@ -392,7 +392,7 @@ describe("renderConfigValidationIssueLines", () => {
         parsed: { gateway: { bind: "${BIND}" } },
         effective: { gateway: { bind: "lan" } },
       }),
-    ).toBe("openclaw.json:1 — gateway.bind: Invalid input");
+    ).toBe("afora.json:1 — gateway.bind: Invalid input");
   });
 
   it.each(["custom", "vendor.plugin"])("omits plugin-owned values for %s", (pluginId) => {
@@ -406,6 +406,6 @@ describe("renderConfigValidationIssueLines", () => {
         parsed: config,
         effective: config,
       }),
-    ).toBe(`openclaw.json:1 — plugins.entries.${pluginId}.config.accessCode: Invalid input`);
+    ).toBe(`afora.json:1 — plugins.entries.${pluginId}.config.accessCode: Invalid input`);
   });
 });

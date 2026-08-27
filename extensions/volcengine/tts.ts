@@ -1,8 +1,8 @@
 // Volcengine plugin module implements tts behavior.
 import * as crypto from "node:crypto";
-import { canonicalizeBase64 } from "openclaw/plugin-sdk/media-runtime";
-import { readResponseWithLimit } from "openclaw/plugin-sdk/response-limit-runtime";
-import { fetchWithSsrFGuard } from "openclaw/plugin-sdk/ssrf-runtime";
+import { canonicalizeBase64 } from "afora-agent/plugin-sdk/media-runtime";
+import { readResponseWithLimit } from "afora-agent/plugin-sdk/response-limit-runtime";
+import { fetchWithSsrFGuard } from "afora-agent/plugin-sdk/ssrf-runtime";
 
 export type VolcengineTtsEncoding = "ogg_opus" | "mp3" | "pcm" | "wav";
 
@@ -129,7 +129,7 @@ async function seedSpeechTTS(params: VolcengineTTSParams & { apiKey: string }): 
   const audioFormat = seedAudioFormat(encoding);
 
   const payload = JSON.stringify({
-    user: { uid: "openclaw" },
+    user: { uid: "afora" },
     req_params: {
       text,
       speaker: voice,
@@ -220,7 +220,7 @@ async function legacyVolcengineTTS(
 
   const payload = JSON.stringify({
     app: { appid: appId, token, cluster },
-    user: { uid: "openclaw" },
+    user: { uid: "afora" },
     audio: {
       voice_type: voice,
       encoding,

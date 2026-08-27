@@ -2,7 +2,7 @@
 import {
   normalizeOptionalString as stringifyConfigValue,
   normalizeStringEntriesLower,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import type { QaSeedScenarioWithSource } from "./scenario-catalog.js";
 import {
   readQaScorecardTaxonomyReport,
@@ -397,7 +397,7 @@ function formatSuiteCommand(matches: readonly QaScenarioSearchMatch[]) {
   const selectedDriver = channels.length === 1 && channel !== "qa-channel" ? "live" : undefined;
   const driverArg = selectedDriver ? ` --channel-driver ${selectedDriver}` : "";
   const channelArg = driverArg && channel ? ` --channel ${channel}` : "";
-  return `pnpm openclaw qa suite${driverArg}${channelArg} ${scenarioArgs}`;
+  return `pnpm afora qa suite${driverArg}${channelArg} ${scenarioArgs}`;
 }
 
 function scenarioMatchCommandGroups(matches: readonly QaScenarioSearchMatch[]) {

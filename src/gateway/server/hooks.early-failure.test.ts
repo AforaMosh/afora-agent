@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { Readable } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { resolveSystemEventOptionsOwnerAgentId } from "../../infra/system-event-ownership.js";
 import {
   getActiveGatewayRootWorkCount,
@@ -11,7 +11,7 @@ import { resolveHooksConfig } from "../hooks.js";
 
 const mocks = vi.hoisted(() => ({
   enqueueSystemEvent: vi.fn(),
-  getRuntimeConfig: vi.fn<() => OpenClawConfig>(),
+  getRuntimeConfig: vi.fn<() => AforaConfig>(),
   requestHeartbeat: vi.fn(),
   runCronIsolatedAgentTurn: vi.fn(),
 }));
@@ -31,7 +31,7 @@ vi.mock("../../infra/system-events.js", () => ({
 
 const { createGatewayHooksRequestHandler } = await import("./hooks.js");
 
-function createConfig(global: boolean): OpenClawConfig {
+function createConfig(global: boolean): AforaConfig {
   return {
     agents: { entries: { main: { default: true }, hooks: {} } },
     hooks: { enabled: true, token: "hook-secret" },

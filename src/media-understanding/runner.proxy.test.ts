@@ -1,7 +1,7 @@
 // Media runner proxy tests cover environment proxy fetch selection for audio
 // and video providers.
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { OpenClawConfig } from "../config/types.js";
+import type { AforaConfig } from "../config/types.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { withAudioFixture, withVideoFixture } from "./runner.test-utils.js";
 import type { AudioTranscriptionRequest, VideoDescriptionRequest } from "./types.js";
@@ -38,7 +38,7 @@ let buildProviderRegistry: typeof import("./runner.js").buildProviderRegistry;
 let clearMediaUnderstandingBinaryCacheForTests: typeof import("./runner.test-support.js").clearMediaUnderstandingBinaryCacheForTests;
 let runCapability: typeof import("./runner.js").runCapability;
 
-function createOpenAiAudioCfg(providerOverrides: Record<string, unknown> = {}): OpenClawConfig {
+function createOpenAiAudioCfg(providerOverrides: Record<string, unknown> = {}): AforaConfig {
   return {
     models: {
       providers: {
@@ -57,7 +57,7 @@ function createOpenAiAudioCfg(providerOverrides: Record<string, unknown> = {}): 
         },
       },
     },
-  } as unknown as OpenClawConfig;
+  } as unknown as AforaConfig;
 }
 
 function expectSingleOutputText(
@@ -118,7 +118,7 @@ describe("runCapability proxy fetch passthrough", () => {
   it("passes fetchFn to audio provider when HTTPS_PROXY is set", async () => {
     await withEnvAsync({ HTTPS_PROXY: "http://proxy.test:8080" }, async () => {
       const seenFetchFn = await runAudioCapabilityWithFetchCapture({
-        fixturePrefix: "openclaw-audio-proxy",
+        fixturePrefix: "afora-audio-proxy",
         outputText: "transcribed",
       });
       expect(seenFetchFn).toBe(proxyFetchMocks.proxyFetch);
@@ -127,7 +127,7 @@ describe("runCapability proxy fetch passthrough", () => {
 
   it("passes fetchFn to video provider when HTTPS_PROXY is set", async () => {
     await withEnvAsync({ HTTPS_PROXY: "http://proxy.test:8080" }, async () => {
-      await withVideoFixture("openclaw-video-proxy", async ({ ctx, media, cache }) => {
+      await withVideoFixture("afora-video-proxy", async ({ ctx, media, cache }) => {
         let seenFetchFn: typeof fetch | undefined;
 
         const result = await runCapability({
@@ -149,7 +149,7 @@ describe("runCapability proxy fetch passthrough", () => {
                 },
               },
             },
-          } as unknown as OpenClawConfig,
+          } as unknown as AforaConfig,
           ctx,
           attachments: cache,
           media,
@@ -179,7 +179,7 @@ describe("runCapability proxy fetch passthrough", () => {
       { HTTPS_PROXY: "", HTTP_PROXY: "", https_proxy: "", http_proxy: "" },
       async () => {
         const seenFetchFn = await runAudioCapabilityWithFetchCapture({
-          fixturePrefix: "openclaw-audio-no-proxy",
+          fixturePrefix: "afora-audio-no-proxy",
           outputText: "ok",
         });
         expect(seenFetchFn).toBeUndefined();
@@ -190,7 +190,7 @@ describe("runCapability proxy fetch passthrough", () => {
   it("passes allowPrivateNetwork to audio provider when set in providerConfig.request", async () => {
     let seenRequest: AudioTranscriptionRequest["request"];
 
-    await withAudioFixture("openclaw-audio-allowprivatenetwork", async ({ ctx, media, cache }) => {
+    await withAudioFixture("afora-audio-allowprivatenetwork", async ({ ctx, media, cache }) => {
       const providerRegistry = buildProviderRegistry({
         openai: {
           id: "openai",

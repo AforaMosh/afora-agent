@@ -1,6 +1,6 @@
 /* @vitest-environment jsdom */
 
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { nothing, render } from "lit";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "../../i18n/index.ts";
@@ -236,14 +236,14 @@ describe("renderPlugins", () => {
     expect(onFilterChange).toHaveBeenCalledWith("issues");
   });
 
-  it.each(["@openclaw/workboard", "  @OPENCLAW/WORKBOARD  "])(
+  it.each(["@afora/workboard", "  @AFORA/WORKBOARD  "])(
     "finds an installed plugin by its scoped package name %s",
     (query) => {
-      const plugin = createPlugin({ packageName: "@openclaw/workboard" });
+      const plugin = createPlugin({ packageName: "@afora/workboard" });
       const container = mount(createProps({ query, result: createResult([plugin]) }));
 
       expect(container.querySelector('[data-plugin-id="workboard"]')).not.toBeNull();
-      expect(normalizedText(container)).toContain("@openclaw/workboard");
+      expect(normalizedText(container)).toContain("@afora/workboard");
     },
   );
 
@@ -254,7 +254,7 @@ describe("renderPlugins", () => {
     const plugin = createPlugin({
       id: "calendar-runtime",
       name: "Shared Calendar",
-      packageName: "@openclaw/calendar-runtime",
+      packageName: "@afora/calendar-runtime",
       description: "Schedule team events.",
       origin: "official",
       installed: false,
@@ -266,7 +266,7 @@ describe("renderPlugins", () => {
     const container = mount(
       createProps({
         activeTab: "discover",
-        query: "@openclaw/calendar-runtime",
+        query: "@afora/calendar-runtime",
         result: createResult([plugin]),
       }),
     );
@@ -359,7 +359,7 @@ describe("renderPlugins", () => {
       }),
     );
     const detail = container.querySelector<HTMLElement>(".plugins-detail")!;
-    expect(detail.closest("openclaw-modal-dialog")?.getAttribute("label")).toBe("Workboard");
+    expect(detail.closest("afora-modal-dialog")?.getAttribute("label")).toBe("Workboard");
     expect(normalizedText(detail.querySelector(".plugins-detail__title"))).toContain("Workboard");
     expect(normalizedText(detail.querySelector(".plugins-detail__meta"))).toContain("workboard");
     detail.querySelectorAll<HTMLButtonElement>(".plugins-detail__actions button")[0]?.click();
@@ -537,7 +537,7 @@ describe("renderPlugins", () => {
           {
             score: 0.9,
             package: {
-              name: "@openclaw/calendar-plus",
+              name: "@afora/calendar-plus",
               displayName: "Calendar Plus",
               family: "code-plugin",
               channel: "official",
@@ -571,7 +571,7 @@ describe("renderPlugins", () => {
     expect(link?.target).toBe("_blank");
 
     const result = container.querySelector<HTMLElement>(
-      '[data-package-name="@openclaw/calendar-plus"]',
+      '[data-package-name="@afora/calendar-plus"]',
     );
     expect(result?.dataset.pluginSource).toBe("clawhub");
     expect(normalizedText(result)).toContain("Official");
@@ -582,9 +582,9 @@ describe("renderPlugins", () => {
     expect(onInstall).toHaveBeenCalledWith(
       {
         source: "clawhub",
-        packageName: "@openclaw/calendar-plus",
+        packageName: "@afora/calendar-plus",
       },
-      clawHubKey("@openclaw/calendar-plus"),
+      clawHubKey("@afora/calendar-plus"),
     );
   });
 
@@ -623,7 +623,7 @@ describe("renderPlugins", () => {
   });
 
   it("renders row-local risk acknowledgement and busy state", () => {
-    const packageName = "@openclaw/calendar-plus";
+    const packageName = "@afora/calendar-plus";
     const key = clawHubKey(packageName);
     const onInstall = vi.fn();
     const container = mount(
@@ -672,7 +672,7 @@ describe("renderPlugins", () => {
   it("renders install policy findings with cancel and acknowledged retry actions", () => {
     const plugin = createPlugin({
       id: "kitchen-sink",
-      name: "OpenClaw Kitchen Sink",
+      name: "Afora Kitchen Sink",
       installed: false,
       enabled: false,
       state: "disabled",
@@ -695,7 +695,7 @@ describe("renderPlugins", () => {
               request,
               details: {
                 installPolicyCode: "install_policy_warning_acknowledgement_required",
-                targetName: "openclaw-kitchen-sink-fixture",
+                targetName: "afora-kitchen-sink-fixture",
                 targetType: "plugin",
                 requestMode: "install",
                 reason: "ClawScan found issues to review.",
@@ -782,7 +782,7 @@ describe("renderPlugins", () => {
     const plugin = createPlugin({
       id: "lobster",
       name: "Lobster",
-      packageName: "@openclaw/lobster",
+      packageName: "@afora/lobster",
       installed: false,
       enabled: false,
       state: "disabled",
@@ -802,7 +802,7 @@ describe("renderPlugins", () => {
           {
             score: 1,
             package: {
-              name: "@openclaw/lobster",
+              name: "@afora/lobster",
               displayName: "Lobster",
               family: "code-plugin",
               channel: "official",
@@ -819,7 +819,7 @@ describe("renderPlugins", () => {
               request,
               details: {
                 installPolicyCode: "install_policy_warning_acknowledgement_required",
-                targetName: "@openclaw/lobster",
+                targetName: "@afora/lobster",
                 targetType: "plugin",
                 requestMode: "install",
                 reason: "Review this plugin.",
@@ -837,7 +837,7 @@ describe("renderPlugins", () => {
       "catalog row",
     );
     const searchRow = expectDefined(
-      container.querySelector<HTMLElement>('[data-package-name="@openclaw/lobster"]'),
+      container.querySelector<HTMLElement>('[data-package-name="@afora/lobster"]'),
       "search row",
     );
     const detail = expectDefined(
@@ -871,7 +871,7 @@ describe("renderPlugins", () => {
           {
             score: 1,
             package: {
-              name: "@openclaw/lobster",
+              name: "@afora/lobster",
               displayName: "Lobster",
               family: "code-plugin",
               channel: "official",
@@ -886,7 +886,7 @@ describe("renderPlugins", () => {
 
     actionButton(container, "Install Lobster")?.click();
     expect(onInstall).toHaveBeenCalledWith(
-      { source: "clawhub", packageName: "@openclaw/lobster" },
+      { source: "clawhub", packageName: "@afora/lobster" },
       "plugin:lobster",
     );
   });

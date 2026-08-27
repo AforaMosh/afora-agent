@@ -3,11 +3,11 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { expectDefined } from "@openclaw/normalization-core";
+import { expectDefined } from "@afora/normalization-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clearSessionStoreCacheForTest } from "../config/sessions/store-writer-state.js";
 import type { SessionEntry } from "../config/sessions/types.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   saveLegacySessionStore as saveSessionStore,
   updateLegacySessionStore as updateSessionStore,
@@ -120,7 +120,7 @@ describe("doctor session snapshot stale runtime metadata", () => {
 
   beforeEach(async () => {
     note.mockClear();
-    root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-doctor-session-snapshots-"));
+    root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-doctor-session-snapshots-"));
     bundledSkillsDir = path.join(root, "current", "skills");
     await fs.mkdir(path.join(bundledSkillsDir, "doctor"), { recursive: true });
     await fs.writeFile(path.join(bundledSkillsDir, "doctor", "SKILL.md"), "# Doctor\n");
@@ -135,7 +135,7 @@ describe("doctor session snapshot stale runtime metadata", () => {
       root,
       "old-runtime",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -144,7 +144,7 @@ describe("doctor session snapshot stale runtime metadata", () => {
       path.sep,
       "private",
       "tmp",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -188,7 +188,7 @@ describe("doctor session snapshot stale runtime metadata", () => {
       root,
       "old-runtime",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -224,7 +224,7 @@ describe("doctor session snapshot stale runtime metadata", () => {
       path: storePath,
       target: stalePath,
       requirement: expect.stringContaining(bundledSkillsDir),
-      fixHint: expect.stringContaining("openclaw doctor --fix"),
+      fixHint: expect.stringContaining("afora doctor --fix"),
     });
     expect(sessionSnapshotIssueToRepairEffect(issue)).toEqual({
       kind: "file",
@@ -234,16 +234,16 @@ describe("doctor session snapshot stale runtime metadata", () => {
     });
   });
 
-  it("uses the OS home for cached OCM paths when OPENCLAW_HOME differs", () => {
+  it("uses the OS home for cached OCM paths when AFORA_HOME differs", () => {
     const homeDir = path.join(root, "home");
-    const currentBundledSkillsDir = path.join(homeDir, ".ocm/current/node_modules/openclaw/skills");
+    const currentBundledSkillsDir = path.join(homeDir, ".ocm/current/node_modules/afora/skills");
     const expectedPath = path.join(currentBundledSkillsDir, "doctor", "SKILL.md");
-    const currentPath = "~/.ocm/current/node_modules/openclaw/skills/doctor/SKILL.md";
-    const stalePath = "~/.ocm/old/node_modules/openclaw/skills/doctor/SKILL.md";
+    const currentPath = "~/.ocm/current/node_modules/afora/skills/doctor/SKILL.md";
+    const stalePath = "~/.ocm/old/node_modules/afora/skills/doctor/SKILL.md";
 
     const findings = scanSessionStoreForStaleRuntimeSnapshotPaths({
       bundledSkillsDir: currentBundledSkillsDir,
-      env: { HOME: homeDir, OPENCLAW_HOME: path.join(root, "ocm-profile") },
+      env: { HOME: homeDir, AFORA_HOME: path.join(root, "ocm-profile") },
       store: {
         "agent:current": sessionEntry({
           skillsSnapshot: { prompt: skillPrompt(currentPath), skills: [{ name: "doctor" }] },
@@ -270,7 +270,7 @@ describe("doctor session snapshot stale runtime metadata", () => {
       root,
       "old-runtime",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "imsg",
       "SKILL.md",
@@ -282,7 +282,7 @@ describe("doctor session snapshot stale runtime metadata", () => {
 
     const findings = scanSessionStoreForStaleRuntimeSnapshotPaths({
       bundledSkillsDir,
-      env: { OPENCLAW_STATE_DIR: stateDir },
+      env: { AFORA_STATE_DIR: stateDir },
       store: {
         "agent:imsg": sessionEntry({
           skillsSnapshot: {
@@ -304,7 +304,7 @@ describe("doctor session snapshot stale runtime metadata", () => {
   });
 
   it("repairs retired imsg paths even when cached under the current package skills root", async () => {
-    const packageSkillsDir = path.join(root, "node_modules", "openclaw", "skills");
+    const packageSkillsDir = path.join(root, "node_modules", "afora", "skills");
     const stalePath = path.join(packageSkillsDir, "imsg", "SKILL.md");
     const stateDir = path.join(root, "state");
     const pluginSkillPath = path.join(stateDir, "plugin-skills", "imsg", "SKILL.md");
@@ -313,7 +313,7 @@ describe("doctor session snapshot stale runtime metadata", () => {
 
     const findings = scanSessionStoreForStaleRuntimeSnapshotPaths({
       bundledSkillsDir: packageSkillsDir,
-      env: { OPENCLAW_STATE_DIR: stateDir },
+      env: { AFORA_STATE_DIR: stateDir },
       store: {
         "agent:imsg": sessionEntry({
           skillsSnapshot: {
@@ -340,7 +340,7 @@ describe("doctor session snapshot stale runtime metadata", () => {
     await fs.mkdir(distDir, { recursive: true });
     await fs.writeFile(
       path.join(packageRoot, "package.json"),
-      JSON.stringify({ name: "openclaw" }),
+      JSON.stringify({ name: "afora" }),
     );
     const modulePath = path.join(distDir, "doctor-session-snapshots.js");
     await fs.writeFile(modulePath, "// stub\n");
@@ -348,7 +348,7 @@ describe("doctor session snapshot stale runtime metadata", () => {
     expect(
       resolveSessionSnapshotBundledSkillsDir({
         moduleUrl: pathToFileURL(modulePath).href,
-        argv1: path.join(packageRoot, "bin", "openclaw"),
+        argv1: path.join(packageRoot, "bin", "afora"),
         cwd: distDir,
       }),
     ).toBe(path.join(packageRoot, "skills"));
@@ -357,10 +357,10 @@ describe("doctor session snapshot stale runtime metadata", () => {
   it("ignores current bundled locations and unrelated workspace skill locations", () => {
     const currentPath = path.join(bundledSkillsDir, "doctor", "SKILL.md");
     const workspacePath = path.join(root, "workspace", "skills", "doctor", "SKILL.md");
-    const openClawWorkspacePath = path.join(
+    const aforaWorkspacePath = path.join(
       root,
       "projects",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -374,9 +374,9 @@ describe("doctor session snapshot stale runtime metadata", () => {
         "agent:workspace": sessionEntry({
           skillsSnapshot: { prompt: skillPrompt(workspacePath), skills: [{ name: "doctor" }] },
         }),
-        "agent:openclaw-workspace": sessionEntry({
+        "agent:afora-workspace": sessionEntry({
           skillsSnapshot: {
-            prompt: skillPrompt(openClawWorkspacePath),
+            prompt: skillPrompt(aforaWorkspacePath),
             skills: [{ name: "doctor" }],
           },
         }),
@@ -392,10 +392,10 @@ describe("doctor session snapshot stale runtime metadata", () => {
       "C:\\",
       "Users",
       "alice",
-      ".openclaw",
+      ".afora",
       "lib",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
     );
     const currentPath = path.win32.join(windowsBundledSkillsDir, "doctor", "SKILL.md");
@@ -403,7 +403,7 @@ describe("doctor session snapshot stale runtime metadata", () => {
       "C:\\",
       "opt",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -437,7 +437,7 @@ describe("doctor session snapshot stale runtime metadata", () => {
       root,
       "old-runtime",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -469,7 +469,7 @@ describe("doctor session snapshot stale runtime metadata", () => {
       root,
       "old-runtime",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -499,7 +499,7 @@ describe("doctor session snapshot stale runtime metadata", () => {
       root,
       "old-runtime",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -532,7 +532,7 @@ describe("doctor session snapshot stale runtime metadata", () => {
       root,
       "old-runtime",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -551,9 +551,9 @@ describe("doctor session snapshot stale runtime metadata", () => {
     });
 
     await noteSessionSnapshotHealth({
-      cfg: { session: { store: configuredStorePath } } as OpenClawConfig,
+      cfg: { session: { store: configuredStorePath } } as AforaConfig,
       bundledSkillsDir,
-      env: { OPENCLAW_STATE_DIR: stateDir },
+      env: { AFORA_STATE_DIR: stateDir },
     });
 
     expect(note).toHaveBeenCalledTimes(1);
@@ -568,7 +568,7 @@ describe("doctor session snapshot stale runtime metadata", () => {
       root,
       "old-runtime",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -588,9 +588,9 @@ describe("doctor session snapshot stale runtime metadata", () => {
       cfg: {
         session: { store: templatedStore },
         agents: { list: [{ id: "main" }, { id: "ops" }] },
-      } as OpenClawConfig,
+      } as AforaConfig,
       bundledSkillsDir,
-      env: { OPENCLAW_STATE_DIR: path.join(root, "state") },
+      env: { AFORA_STATE_DIR: path.join(root, "state") },
     });
 
     expect(note).toHaveBeenCalledTimes(1);
@@ -607,7 +607,7 @@ describe("doctor session snapshot repair (shouldRepair)", () => {
 
   beforeEach(async () => {
     note.mockClear();
-    root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-doctor-repair-"));
+    root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-doctor-repair-"));
     bundledSkillsDir = path.join(root, "current", "skills");
     await fs.mkdir(path.join(bundledSkillsDir, "doctor"), { recursive: true });
     await fs.writeFile(path.join(bundledSkillsDir, "doctor", "SKILL.md"), "# Doctor\n");
@@ -622,7 +622,7 @@ describe("doctor session snapshot repair (shouldRepair)", () => {
       root,
       "old-runtime",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -657,7 +657,7 @@ describe("doctor session snapshot repair (shouldRepair)", () => {
       root,
       "old-runtime",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -723,7 +723,7 @@ describe("doctor session snapshot repair (shouldRepair)", () => {
       root,
       "old-runtime",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -768,7 +768,7 @@ describe("doctor session snapshot repair (shouldRepair)", () => {
       root,
       "old-runtime",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -807,7 +807,7 @@ describe("doctor session snapshot repair (shouldRepair)", () => {
       root,
       "old-runtime",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -842,7 +842,7 @@ describe("doctor session snapshot repair (shouldRepair)", () => {
       root,
       "old-runtime",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -882,7 +882,7 @@ describe("doctor session snapshot repair (shouldRepair)", () => {
       root,
       "old-runtime",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -924,7 +924,7 @@ describe("doctor session snapshot repair (shouldRepair)", () => {
       root,
       "old-runtime",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -968,7 +968,7 @@ describe("doctor session snapshot repair (shouldRepair)", () => {
       root,
       "old-runtime",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -1005,7 +1005,7 @@ describe("doctor session snapshot repair (shouldRepair)", () => {
       root,
       "old-runtime",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",
@@ -1044,7 +1044,7 @@ describe("doctor session snapshot repair (shouldRepair)", () => {
       root,
       "old-runtime",
       "node_modules",
-      "openclaw",
+      "afora",
       "skills",
       "doctor",
       "SKILL.md",

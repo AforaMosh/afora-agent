@@ -1,4 +1,4 @@
-import type { ChannelGroupContext } from "openclaw/plugin-sdk/channel-contract";
+import type { ChannelGroupContext } from "afora-agent/plugin-sdk/channel-contract";
 import {
   buildChannelGroupsScopeTree,
   resolveChannelGroupRequireMention,
@@ -7,9 +7,9 @@ import {
   scopeKey,
   type GroupToolPolicyConfig,
   type ScopeTree,
-} from "openclaw/plugin-sdk/channel-policy";
+} from "afora-agent/plugin-sdk/channel-policy";
 // Telegram plugin module implements group policy behavior.
-import { expectDefined } from "openclaw/plugin-sdk/expect-runtime";
+import { expectDefined } from "afora-agent/plugin-sdk/expect-runtime";
 
 function parseTelegramGroupId(value?: string | null) {
   const raw = value?.trim() ?? "";

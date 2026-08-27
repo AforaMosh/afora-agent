@@ -23,7 +23,7 @@ import {
 } from "./test-helpers/console-snapshot.js";
 
 let snapshot: ConsoleSnapshot;
-const logPathTracker = createSuiteLogPathTracker("openclaw-log-");
+const logPathTracker = createSuiteLogPathTracker("afora-log-");
 
 beforeAll(async () => {
   await logPathTracker.setup();
@@ -228,7 +228,7 @@ describe("enableConsoleCapture", () => {
     const warn = vi.fn();
     console.warn = warn;
 
-    withEnv({ OPENCLAW_CONFIG_PATH: configPath, MISSING_LOG_FILE: undefined }, () => {
+    withEnv({ AFORA_CONFIG_PATH: configPath, MISSING_LOG_FILE: undefined }, () => {
       createSubsystemLogger("sensitive-one\nsensitive-two").warn(
         "prefix sensitive-one\nsensitive-two suffix",
         {
@@ -270,7 +270,7 @@ describe("enableConsoleCapture", () => {
     const error = vi.fn();
     console.error = error;
 
-    withEnv({ OPENCLAW_CONFIG_PATH: configPath, MISSING_LOG_FILE: undefined }, () => {
+    withEnv({ AFORA_CONFIG_PATH: configPath, MISSING_LOG_FILE: undefined }, () => {
       enableConsoleCapture();
       console.trace("custom-only-secret");
     });
@@ -394,7 +394,7 @@ describe("enableConsoleCapture", () => {
   ])(
     "routes non-subsystem $name logs through one file and console sink",
     async ({ log, consoleMethod }) => {
-      vi.stubEnv("OPENCLAW_TEST_RUNTIME_LOG", "1");
+      vi.stubEnv("AFORA_TEST_RUNTIME_LOG", "1");
       const logPath = tempLogPath();
       setLoggerOverride({ level: "info", file: logPath });
       const consoleSpy = vi.fn();

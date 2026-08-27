@@ -195,16 +195,16 @@ describe("buildDraftSessionCreateParams", () => {
       buildDraftSessionCreateParams({
         agentId: "main",
         message: "work in the recorded repo",
-        projectId: "openclaw",
+        projectId: "afora",
         worktree: true,
-        cwd: "/recorded/openclaw",
+        cwd: "/recorded/afora",
         workspace: "/workspace",
         execNode: "ignored-node",
       }),
     ).toEqual({
       agentId: "main",
       message: "work in the recorded repo",
-      projectId: "openclaw",
+      projectId: "afora",
       worktree: true,
     });
   });

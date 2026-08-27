@@ -1,10 +1,10 @@
 // Slack plugin module owns its transport-private approval callback envelope.
-import { buildApprovalResolutionRef } from "openclaw/plugin-sdk/approval-reference-runtime";
-import type { MessagePresentationAction } from "openclaw/plugin-sdk/interactive-runtime";
+import { buildApprovalResolutionRef } from "afora-agent/plugin-sdk/approval-reference-runtime";
+import type { MessagePresentationAction } from "afora-agent/plugin-sdk/interactive-runtime";
 import { SLACK_BUTTON_VALUE_MAX } from "./presentation.js";
 
-const SLACK_APPROVAL_VALUE_PREFIX = "openclaw:approval:v1:";
-export const SLACK_APPROVAL_HEADER_BLOCK_ID = "openclaw_approval_header";
+const SLACK_APPROVAL_VALUE_PREFIX = "afora:approval:v1:";
+export const SLACK_APPROVAL_HEADER_BLOCK_ID = "afora_approval_header";
 
 export type SlackApprovalAction = Extract<MessagePresentationAction, { type: "approval" }>;
 

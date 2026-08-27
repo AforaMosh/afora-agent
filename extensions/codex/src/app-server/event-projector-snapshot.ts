@@ -1,15 +1,15 @@
 import type {
   AgentMessage,
   EmbeddedRunAttemptParamsV2 as EmbeddedRunAttemptParams,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
-import { projectAgentHarnessTranscriptMessageForDisplay } from "openclaw/plugin-sdk/agent-harness-runtime";
-import type { AssistantMessage } from "openclaw/plugin-sdk/llm";
-import { asDateTimestampMs } from "openclaw/plugin-sdk/number-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
+import { projectAgentHarnessTranscriptMessageForDisplay } from "afora-agent/plugin-sdk/agent-harness-runtime";
+import type { AssistantMessage } from "afora-agent/plugin-sdk/llm";
+import { asDateTimestampMs } from "afora-agent/plugin-sdk/number-runtime";
 import { attachCodexMirrorIdentity } from "./upstream-prompt-provenance.js";
 import { promptSnapshot } from "./user-prompt-message.js";
 
 type TurnTaintMetadata = { resultContentSource?: "network"; turnTainted?: true };
-const CODEX_META_KEY = "__openclaw";
+const CODEX_META_KEY = "__afora";
 
 function readTurnTaintMetadata(message: AgentMessage): TurnTaintMetadata | undefined {
   const metadata = CODEX_META_KEY in message ? message[CODEX_META_KEY] : undefined;
@@ -28,7 +28,7 @@ function applyStickyTurnTaint(messages: readonly AgentMessage[]): AgentMessage[]
     const metadata = readTurnTaintMetadata(message);
     tainted ||= metadata?.turnTainted === true || metadata?.resultContentSource === "network";
     return message.role === "assistant" && tainted
-      ? ({ ...message, __openclaw: { ...metadata, turnTainted: true } } as AgentMessage)
+      ? ({ ...message, __afora: { ...metadata, turnTainted: true } } as AgentMessage)
       : message;
   });
 }

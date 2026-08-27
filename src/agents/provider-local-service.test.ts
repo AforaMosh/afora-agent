@@ -6,11 +6,11 @@ import http from "node:http";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
-import { MAX_TIMER_TIMEOUT_MS } from "@openclaw/normalization-core/number-coercion";
-import type { Model } from "openclaw/plugin-sdk/llm";
+import { MAX_TIMER_TIMEOUT_MS } from "@afora/normalization-core/number-coercion";
+import type { Model } from "afora-agent/plugin-sdk/llm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { mintSecretSentinel } from "../secrets/sentinel.js";
 import { killPidIfAlive, readPidFile, waitForPidToExit } from "../test-utils/process-tree.js";
 import {
@@ -264,7 +264,7 @@ describe("provider local service", () => {
               },
             },
           },
-        }) as OpenClawConfig,
+        }) as AforaConfig,
     );
 
     const lease = await withSpawnReadyHealthProbe(() =>
@@ -527,7 +527,7 @@ describe("provider local service", () => {
   it("serializes concurrent chat and embedding starts with independent leases", async () => {
     const port = await freePort();
     const healthUrl = `http://127.0.0.1:${port}/v1/models`;
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-local-service-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-local-service-"));
     const startsPath = path.join(tempDir, "starts.txt");
     const service = {
       command: process.execPath,
@@ -582,7 +582,7 @@ describe("provider local service", () => {
     const secondPort = await freePort();
     const firstHealthUrl = `http://127.0.0.1:${firstPort}/v1/models`;
     const secondHealthUrl = `http://127.0.0.1:${secondPort}/v1/models`;
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-local-service-key-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-local-service-key-"));
     const startsPath = path.join(tempDir, "starts.txt");
     const args = [
       "-e",
@@ -635,10 +635,10 @@ describe("provider local service", () => {
     }
   });
 
-  it("restarts an OpenClaw-managed local service when its health endpoint is down", async () => {
+  it("restarts an Afora-managed local service when its health endpoint is down", async () => {
     const port = await freePort();
     const healthUrl = `http://127.0.0.1:${port}/v1/models`;
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-local-service-restart-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "afora-local-service-restart-"));
     const startsPath = path.join(tempDir, "starts.txt");
     const statusPath = path.join(tempDir, "status.txt");
     const forkedPidPath = path.join(tempDir, "forked.pid");
@@ -765,7 +765,7 @@ describe("provider local service", () => {
 
   it("does not keep one-shot hosts alive through diagnostic pipes", async () => {
     const port = await freePort();
-    const tempDir = tempDirs.make("openclaw-local-service-unref-");
+    const tempDir = tempDirs.make("afora-local-service-unref-");
     const servicePidPath = path.join(tempDir, "service.pid");
     const moduleUrl = new URL("./provider-local-service.ts", import.meta.url).href;
     const script = [
@@ -821,7 +821,7 @@ describe("provider local service", () => {
 
   it("does not keep failed one-shot hosts alive through diagnostic pipes", async () => {
     const port = await freePort();
-    const tempDir = tempDirs.make("openclaw-local-service-failed-unref-");
+    const tempDir = tempDirs.make("afora-local-service-failed-unref-");
     const servicePidPath = path.join(tempDir, "service.pid");
     const moduleUrl = new URL("./provider-local-service.ts", import.meta.url).href;
     const failedServiceReadyTimeoutMs = 60_000;
@@ -974,7 +974,7 @@ describe("provider local service", () => {
   });
 
   it("does not spawn a local service after its last startup caller aborts", async () => {
-    const tempDir = tempDirs.make("openclaw-local-service-abort-");
+    const tempDir = tempDirs.make("afora-local-service-abort-");
     const pidPath = path.join(tempDir, "child.pid");
     const controller = new AbortController();
     let probeCount = 0;

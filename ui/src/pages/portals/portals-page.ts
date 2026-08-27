@@ -3,7 +3,7 @@ import type {
   PortalCloseResult,
   PortalListResult,
   PortalSummary,
-} from "@openclaw/gateway-protocol";
+} from "@afora/gateway-protocol";
 import { html, nothing } from "lit";
 import { state } from "lit/decorators.js";
 import { keyed } from "lit/directives/keyed.js";
@@ -15,7 +15,7 @@ import { t } from "../../i18n/index.ts";
 import { formatUiError } from "../../lib/format-error.ts";
 import { canCallGatewayMethod, isGatewayMethodAdvertised } from "../../lib/gateway-methods.ts";
 import { GatewayPageController } from "../../lit/gateway-page-controller.ts";
-import { OpenClawLightDomElement } from "../../lit/openclaw-element.ts";
+import { AforaLightDomElement } from "../../lit/afora-element.ts";
 import { SubscriptionsController } from "../../lit/subscriptions-controller.ts";
 import { probePortalReachable, type PortalReachability } from "./portal-reachability.ts";
 import { resolvePortalUrl } from "./portal-url.ts";
@@ -29,7 +29,7 @@ type PortalProbeState = {
   status: "probing" | PortalReachability;
 };
 
-class PortalsPage extends OpenClawLightDomElement {
+class PortalsPage extends AforaLightDomElement {
   @consume({ context: applicationContext, subscribe: true })
   private context!: ApplicationContext;
 
@@ -376,6 +376,6 @@ class PortalsPage extends OpenClawLightDomElement {
   }
 }
 
-if (!customElements.get("openclaw-portals-page")) {
-  customElements.define("openclaw-portals-page", PortalsPage);
+if (!customElements.get("afora-portals-page")) {
+  customElements.define("afora-portals-page", PortalsPage);
 }

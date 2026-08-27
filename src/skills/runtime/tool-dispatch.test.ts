@@ -5,7 +5,7 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { replaceSessionEntry } from "../../config/sessions/session-accessor.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { GATEWAY_OWNER_ONLY_CORE_TOOLS } from "../../security/dangerous-tools.js";
 import { resolveSkillDispatchTools, type SkillToolDispatchDependencies } from "./tool-dispatch.js";
 
@@ -19,14 +19,14 @@ function makeTool(name: string) {
   };
 }
 
-const createOpenClawToolsMock = vi.fn<SkillToolDispatchDependencies["createOpenClawTools"]>(() => [
+const createAforaToolsMock = vi.fn<SkillToolDispatchDependencies["createAforaTools"]>(() => [
   makeTool("read"),
   makeTool("cron"),
   makeTool("exec"),
   makeTool("conversations_send"),
 ]);
 const dependencies: SkillToolDispatchDependencies = {
-  createOpenClawTools: createOpenClawToolsMock,
+  createAforaTools: createAforaToolsMock,
 };
 
 describe("resolveSkillDispatchTools", () => {
@@ -40,10 +40,10 @@ describe("resolveSkillDispatchTools", () => {
         },
         cfg: {
           tools: { allow: ["read", "cron"] },
-        } as OpenClawConfig,
+        } as AforaConfig,
         agentId: "main",
         sessionKey: "agent:main:telegram:group:restricted-room",
-        workspaceDir: "/tmp/openclaw-skill-tool-dispatch-test",
+        workspaceDir: "/tmp/afora-skill-tool-dispatch-test",
         provider: "openai",
         model: "gpt-5.5",
         senderIsOwner: true,
@@ -51,7 +51,7 @@ describe("resolveSkillDispatchTools", () => {
       dependencies,
     );
 
-    const args = createOpenClawToolsMock.mock.calls[0]?.[0];
+    const args = createAforaToolsMock.mock.calls[0]?.[0];
     expect(tools.map((tool) => tool.name)).toEqual(["read", "cron"]);
     expect(args?.cronCreatorToolAllowlist).toEqual([{ name: "read" }, { name: "automations" }]);
     expect(args?.nativeChannelId).toBe("native-room-1");
@@ -61,10 +61,10 @@ describe("resolveSkillDispatchTools", () => {
     const tools = resolveSkillDispatchTools(
       {
         message: { surface: "telegram", senderId: "user-1" },
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         agentId: "main",
         sessionKey: "agent:main:telegram:direct:user-1",
-        workspaceDir: "/tmp/openclaw-skill-tool-dispatch-test",
+        workspaceDir: "/tmp/afora-skill-tool-dispatch-test",
         provider: "openai",
         model: "gpt-5.5",
         senderIsOwner: true,
@@ -72,7 +72,7 @@ describe("resolveSkillDispatchTools", () => {
       dependencies,
     );
 
-    const args = createOpenClawToolsMock.mock.calls.at(-1)?.[0];
+    const args = createAforaToolsMock.mock.calls.at(-1)?.[0];
     expect(tools.map((tool) => tool.name)).toEqual(["read", "cron", "exec", "conversations_send"]);
     expect(args?.cronCreatorToolAllowlist).toEqual([
       { name: "read" },
@@ -86,10 +86,10 @@ describe("resolveSkillDispatchTools", () => {
     resolveSkillDispatchTools(
       {
         message: { surface: "telegram", senderId: "user-1" },
-        cfg: {} as OpenClawConfig,
+        cfg: {} as AforaConfig,
         agentId: "main",
         sessionKey: "agent:main:telegram:direct:user-1",
-        workspaceDir: "/tmp/openclaw-skill-tool-dispatch-test",
+        workspaceDir: "/tmp/afora-skill-tool-dispatch-test",
         provider: "openai",
         model: "gpt-5.5",
         senderIsOwner: true,
@@ -104,14 +104,14 @@ describe("resolveSkillDispatchTools", () => {
       dependencies,
     );
 
-    const args = createOpenClawToolsMock.mock.calls.at(-1)?.[0];
+    const args = createAforaToolsMock.mock.calls.at(-1)?.[0];
     expect(args?.beforeToolCallHookContext?.skillCommand?.skillFile).toBe(
       "/workspace/skills/daily-brief/SKILL.md",
     );
   });
 
   it("uses persisted delegated policy instead of a sender wildcard", async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-skill-delegated-policy-"));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "afora-skill-delegated-policy-"));
     const storePath = path.join(tempDir, "sessions.json");
     const sessionKey = "agent:main:subagent:skill-child";
     await replaceSessionEntry({ storePath, sessionKey }, {
@@ -136,10 +136,10 @@ describe("resolveSkillDispatchTools", () => {
                 "id:alice": {},
               },
             },
-          } as OpenClawConfig,
+          } as AforaConfig,
           agentId: "main",
           sessionKey,
-          workspaceDir: "/tmp/openclaw-skill-tool-dispatch-test",
+          workspaceDir: "/tmp/afora-skill-tool-dispatch-test",
           provider: "openai",
           model: "gpt-5.5",
           senderIsOwner: true,
@@ -156,10 +156,10 @@ describe("resolveSkillDispatchTools", () => {
   it("removes owner-only core tools for authorized non-owner dispatch", () => {
     const common = {
       message: { surface: "telegram", senderId: "allowed-user" },
-      cfg: {} as OpenClawConfig,
+      cfg: {} as AforaConfig,
       agentId: "main",
       sessionKey: "agent:main:telegram:direct:allowed-user",
-      workspaceDir: "/tmp/openclaw-skill-tool-dispatch-test",
+      workspaceDir: "/tmp/afora-skill-tool-dispatch-test",
       provider: "openai",
       model: "gpt-5.5",
     };
@@ -171,7 +171,7 @@ describe("resolveSkillDispatchTools", () => {
       },
       dependencies,
     );
-    const nonOwnerArgs = createOpenClawToolsMock.mock.calls.at(-1)?.[0];
+    const nonOwnerArgs = createAforaToolsMock.mock.calls.at(-1)?.[0];
     expect(nonOwnerTools.map((tool) => tool.name)).not.toContain("conversations_send");
     expect(nonOwnerArgs?.senderIsOwner).toBe(false);
     expect(nonOwnerArgs?.pluginToolDenylist).toEqual(
@@ -185,7 +185,7 @@ describe("resolveSkillDispatchTools", () => {
       },
       dependencies,
     );
-    const ownerArgs = createOpenClawToolsMock.mock.calls.at(-1)?.[0];
+    const ownerArgs = createAforaToolsMock.mock.calls.at(-1)?.[0];
     expect(ownerTools.map((tool) => tool.name)).toContain("conversations_send");
     expect(ownerArgs?.senderIsOwner).toBe(true);
     expect(ownerArgs?.pluginToolDenylist).not.toContain("conversations_send");

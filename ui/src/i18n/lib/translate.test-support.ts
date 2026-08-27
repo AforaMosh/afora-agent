@@ -9,7 +9,7 @@ type TranslateTestApi = {
 
 function getTestApi(): TranslateTestApi {
   const api = (globalThis as Record<PropertyKey, unknown>)[
-    Symbol.for("openclaw.i18nManagerTestApi")
+    Symbol.for("afora.i18nManagerTestApi")
   ];
   if (!api) {
     throw new Error("i18n manager test API is unavailable");
@@ -27,14 +27,14 @@ export function createI18nManagerForTesting(
 export function captureI18nStateForTesting(): () => Promise<void> {
   const previousLocale = i18n.getLocale();
   const storage = getSafeLocalStorage();
-  const previousPreference = storage?.getItem("openclaw.i18n.locale") ?? null;
+  const previousPreference = storage?.getItem("afora.i18n.locale") ?? null;
 
   return async () => {
     await i18n.setLocale(previousLocale);
     if (previousPreference === null) {
-      storage?.removeItem("openclaw.i18n.locale");
+      storage?.removeItem("afora.i18n.locale");
     } else {
-      storage?.setItem("openclaw.i18n.locale", previousPreference);
+      storage?.setItem("afora.i18n.locale", previousPreference);
     }
   };
 }

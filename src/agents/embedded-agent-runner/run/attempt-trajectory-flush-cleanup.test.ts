@@ -44,7 +44,7 @@ describe("embedded attempt trajectory flush cleanup", () => {
     expect(flush).toHaveBeenCalledTimes(1);
     expect(describeFlushState).toHaveBeenCalledTimes(1);
     expect(log.warn).toHaveBeenCalledWith(
-      "agent cleanup timed out: runId=run-trajectory sessionId=session-trajectory step=openclaw-trajectory-flush timeoutMs=5 details=pendingWrites=1 queuedBytes=704 activeOperation=file-append",
+      "agent cleanup timed out: runId=run-trajectory sessionId=session-trajectory step=afora-trajectory-flush timeoutMs=5 details=pendingWrites=1 queuedBytes=704 activeOperation=file-append",
     );
   });
 });

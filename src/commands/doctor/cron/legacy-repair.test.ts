@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, expect, it } from "vitest";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { saveCronStore } from "../../../cron/store.js";
 import { loadLegacyCronRepairState } from "./legacy-repair.js";
 
@@ -16,7 +16,7 @@ afterEach(async () => {
 });
 
 it("projects a canonical agent-less row through the runtime default", async () => {
-  tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-cron-owner-projection-"));
+  tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "afora-cron-owner-projection-"));
   const storePath = path.join(tempRoot, "cron", "jobs.json");
   await saveCronStore(storePath, {
     version: 1,
@@ -39,7 +39,7 @@ it("projects a canonical agent-less row through the runtime default", async () =
   const cfg = {
     cron: { store: storePath },
     agents: { entries: { ops: {} } },
-  } as OpenClawConfig;
+  } as AforaConfig;
   const state = await loadLegacyCronRepairState({ cfg, storePath, readOnly: true });
 
   expect(state?.projectedOwnersByJobId.get("dynamic-default")).toEqual({

@@ -1,7 +1,7 @@
 /** Integration coverage for breaker-suppressed startup SecretRef projection. */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "../secrets/runtime-telegram.test-support.ts";
-import type { ConfigFileSnapshot, OpenClawConfig } from "../config/types.js";
+import type { ConfigFileSnapshot, AforaConfig } from "../config/types.js";
 import {
   asConfig,
   beginSecretsRuntimeIsolationForTest,
@@ -26,10 +26,10 @@ import { buildTestConfigSnapshot } from "./test-helpers.config-snapshots.js";
 const GATEWAY_TOKEN_ENV = "BREAKER_GATEWAY_AUTH_TOKEN";
 const CHANNEL_TOKEN_ENV = "BREAKER_TELEGRAM_BOT_TOKEN";
 
-function buildSnapshot(config: OpenClawConfig): ConfigFileSnapshot {
+function buildSnapshot(config: AforaConfig): ConfigFileSnapshot {
   const raw = `${JSON.stringify(config, null, 2)}\n`;
   return buildTestConfigSnapshot({
-    path: "/tmp/openclaw-breaker-secrets-integration.json",
+    path: "/tmp/afora-breaker-secrets-integration.json",
     exists: true,
     raw,
     parsed: config,
@@ -58,10 +58,10 @@ describe("gateway breaker SecretRef integration", () => {
         {
           [GATEWAY_TOKEN_ENV]: "resolved-gateway-token",
           [CHANNEL_TOKEN_ENV]: undefined,
-          OPENCLAW_BUNDLED_PLUGINS_DIR: undefined,
-          OPENCLAW_SKIP_CHANNELS: undefined,
-          OPENCLAW_SKIP_PROVIDERS: undefined,
-          OPENCLAW_VERSION: undefined,
+          AFORA_BUNDLED_PLUGINS_DIR: undefined,
+          AFORA_SKIP_CHANNELS: undefined,
+          AFORA_SKIP_PROVIDERS: undefined,
+          AFORA_VERSION: undefined,
         },
         async () => {
           const gatewayTokenRef = {
@@ -98,7 +98,7 @@ describe("gateway breaker SecretRef integration", () => {
           ) =>
             await prepareSecretsRuntimeSnapshot({
               ...params,
-              agentDirs: ["/tmp/openclaw-agent-main"],
+              agentDirs: ["/tmp/afora-agent-main"],
               loadablePluginOrigins: EMPTY_LOADABLE_PLUGIN_ORIGINS,
               loadAuthStore: () => loadAuthStoreWithProfiles({}),
             });

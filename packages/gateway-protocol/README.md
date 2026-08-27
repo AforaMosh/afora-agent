@@ -1,22 +1,22 @@
-# `@openclaw/gateway-protocol`
+# `@afora/gateway-protocol`
 
-Typed schemas, inferred TypeScript types, and runtime validators for the OpenClaw
+Typed schemas, inferred TypeScript types, and runtime validators for the Afora
 Gateway WebSocket protocol.
 
 The current wire protocol is version 4. General clients must use v4; authenticated
 node clients and lightweight probes may use the N-1 window during rolling upgrades.
-See the [Gateway protocol specification](https://docs.openclaw.ai/gateway/protocol)
+See the [Gateway protocol specification](https://docs.afora.ai/gateway/protocol)
 for transport, authentication, roles, scopes, and complete frame examples.
 
 ## Versioning
 
-Package versions follow the OpenClaw calendar release train:
+Package versions follow the Afora calendar release train:
 `YYYY.M.PATCH`, with the same prerelease suffix when applicable. A package version
-therefore identifies the OpenClaw source release that produced the schemas; it is
+therefore identifies the Afora source release that produced the schemas; it is
 not the wire protocol number.
 
 The wire protocol integer is versioned separately. Its current value is exported
-as `PROTOCOL_VERSION` from `@openclaw/gateway-protocol/version`. Gateway protocol
+as `PROTOCOL_VERSION` from `@afora/gateway-protocol/version`. Gateway protocol
 changes are additive first. An incompatible wire change requires an explicit
 protocol-version decision and coordinated client follow-through. See
 [`CHANGELOG.md`](./CHANGELOG.md) for the wire and schema history.
@@ -24,26 +24,26 @@ protocol-version decision and coordinated client follow-through. See
 ## Install
 
 ```bash
-npm install @openclaw/gateway-protocol
+npm install @afora/gateway-protocol
 ```
 
 ## Entry points
 
-- `@openclaw/gateway-protocol` exports runtime validators, selected schemas, error
+- `@afora/gateway-protocol` exports runtime validators, selected schemas, error
   formatting, and their TypeScript types. This is the main TypeBox-backed entry.
-- `@openclaw/gateway-protocol/schema` exports the TypeBox schema graph, including
+- `@afora/gateway-protocol/schema` exports the TypeBox schema graph, including
   the `ProtocolSchemas` registry used by generators.
-- `@openclaw/gateway-protocol/frame-guards` exports dependency-free structural
+- `@afora/gateway-protocol/frame-guards` exports dependency-free structural
   guards for gateway event and response envelopes.
-- `@openclaw/gateway-protocol/client-info` exports client ID, mode, and capability
+- `@afora/gateway-protocol/client-info` exports client ID, mode, and capability
   registries plus normalization helpers.
-- `@openclaw/gateway-protocol/connect-error-details` exports structured connect
+- `@afora/gateway-protocol/connect-error-details` exports structured connect
   error readers and recovery metadata.
-- `@openclaw/gateway-protocol/gateway-error-details` exports helpers for reading
+- `@afora/gateway-protocol/gateway-error-details` exports helpers for reading
   structured details from general gateway errors.
-- `@openclaw/gateway-protocol/startup-unavailable` exports startup retry constants
+- `@afora/gateway-protocol/startup-unavailable` exports startup retry constants
   and helpers.
-- `@openclaw/gateway-protocol/version` exports the current and minimum accepted
+- `@afora/gateway-protocol/version` exports the current and minimum accepted
   protocol versions.
 
 The `frame-guards`, `client-info`, `connect-error-details`, `gateway-error-details`,
@@ -58,7 +58,7 @@ The compiled validators are callable type guards. Their `errors` property contai
 the most recent validation errors.
 
 ```ts
-import { formatValidationErrors, validateRequestFrame } from "@openclaw/gateway-protocol";
+import { formatValidationErrors, validateRequestFrame } from "@afora/gateway-protocol";
 
 const frame: unknown = JSON.parse(inboundText);
 
@@ -80,7 +80,7 @@ check dispatch-critical envelope fields and intentionally allow additive payload
 fields.
 
 ```ts
-import { isGatewayEventFrame } from "@openclaw/gateway-protocol/frame-guards";
+import { isGatewayEventFrame } from "@afora/gateway-protocol/frame-guards";
 
 const frame: unknown = JSON.parse(inboundText);
 
@@ -94,8 +94,8 @@ if (isGatewayEventFrame(frame)) {
 Protocol levels and client capabilities live in TypeBox-free entry points.
 
 ```ts
-import { GATEWAY_CLIENT_CAPS } from "@openclaw/gateway-protocol/client-info";
-import { MIN_CLIENT_PROTOCOL_VERSION, PROTOCOL_VERSION } from "@openclaw/gateway-protocol/version";
+import { GATEWAY_CLIENT_CAPS } from "@afora/gateway-protocol/client-info";
+import { MIN_CLIENT_PROTOCOL_VERSION, PROTOCOL_VERSION } from "@afora/gateway-protocol/version";
 
 const handshake = {
   minProtocol: MIN_CLIENT_PROTOCOL_VERSION,

@@ -1,12 +1,12 @@
 // Doctor warnings for multi-account channels missing explicit default account routing.
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord } from "@afora/normalization-core/record-coerce";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "@openclaw/normalization-core/string-coerce";
+} from "@afora/normalization-core/string-coerce";
 import { normalizeChatChannelId } from "../../../channels/ids.js";
 import { listRouteBindings } from "../../../config/bindings.js";
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import {
   formatChannelAccountsDefaultPath,
   formatSetExplicitDefaultInstruction,
@@ -33,7 +33,7 @@ function normalizeBindingChannelKey(raw?: string | null): string {
 }
 
 function collectChannelsMissingDefaultAccount(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
 ): ChannelMissingDefaultAccountContext[] {
   const channels = asNullableRecord(cfg.channels);
   if (!channels) {
@@ -67,7 +67,7 @@ function collectChannelsMissingDefaultAccount(
 }
 
 /** Warn when account-scoped route bindings do not cover channels without accounts.default. */
-export function collectMissingDefaultAccountBindingWarnings(cfg: OpenClawConfig): string[] {
+export function collectMissingDefaultAccountBindingWarnings(cfg: AforaConfig): string[] {
   const bindings = listRouteBindings(cfg);
   const warnings: string[] = [];
 
@@ -133,7 +133,7 @@ export function collectMissingDefaultAccountBindingWarnings(cfg: OpenClawConfig)
 }
 
 /** Warn when multi-account channels omit or misconfigure an explicit default account. */
-export function collectMissingExplicitDefaultAccountWarnings(cfg: OpenClawConfig): string[] {
+export function collectMissingExplicitDefaultAccountWarnings(cfg: AforaConfig): string[] {
   const warnings: string[] = [];
   for (const { channelKey, channel, normalizedAccountIds } of collectChannelsMissingDefaultAccount(
     cfg,

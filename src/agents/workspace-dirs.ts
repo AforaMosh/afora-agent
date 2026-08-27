@@ -4,14 +4,14 @@
  * File sync and cleanup paths use this to enumerate configured agent workspaces
  * plus the default agent workspace without duplicating agent-scope logic.
  */
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveUserPath } from "../utils.js";
 import { tryResolveSoleAgentId } from "./agent-scope-config.js";
 import { listAgentEntries, resolveAgentWorkspaceDir } from "./agent-scope.js";
 
 /** Lists unique workspace directories for configured agents and the default agent. */
 export function listAgentWorkspaceDirs(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   env: NodeJS.ProcessEnv = process.env,
 ): string[] {
   const dirs = new Set<string>();
@@ -26,7 +26,7 @@ export function listAgentWorkspaceDirs(
 }
 
 /** Lists only entry-authored workspace paths without requiring a valid default marker. */
-export function listExplicitAgentWorkspaceDirs(cfg: OpenClawConfig): string[] {
+export function listExplicitAgentWorkspaceDirs(cfg: AforaConfig): string[] {
   const dirs = new Set<string>();
   for (const entry of listAgentEntries(cfg)) {
     const workspace = typeof entry.workspace === "string" ? entry.workspace.trim() : "";

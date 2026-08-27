@@ -1,7 +1,7 @@
 /** Detects system-domain launchd ownership before mutating a user LaunchAgent. */
 import fs from "node:fs/promises";
 import path from "node:path";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { sanitizeForLog } from "../../packages/terminal-core/src/ansi.js";
 import { isMissingPathError } from "../infra/errors.js";
 import { execFileUtf8 } from "./exec-file.js";
@@ -39,75 +39,75 @@ function quotePosixArgument(value: string): string {
 
 /**
  * Renders the package-independent ownership probe used by detached restart helpers.
- * The caller must refuse activation when `openclaw_system_launchd_conflict` is non-empty.
+ * The caller must refuse activation when `afora_system_launchd_conflict` is non-empty.
  */
 export function renderSystemLaunchDaemonOwnershipShellProbe(label: string): string {
   const serviceTarget = `system/${label}`;
-  return `openclaw_system_launchd_conflict=""
-openclaw_system_launchd_detail=""
-openclaw_system_launchd_target=${quotePosixArgument(serviceTarget)}
-openclaw_system_launchd_dir=${quotePosixArgument(SYSTEM_LAUNCH_DAEMON_DIR)}
-openclaw_system_launchd_label=${quotePosixArgument(label)}
-openclaw_system_launchd_probe=$(launchctl print "$openclaw_system_launchd_target" 2>&1)
-openclaw_system_launchd_probe_status=$?
-if [ "$openclaw_system_launchd_probe_status" -eq 0 ]; then
-  openclaw_system_launchd_conflict="$openclaw_system_launchd_target"
-  openclaw_system_launchd_detail="loaded system LaunchDaemon $openclaw_system_launchd_target"
-elif ! printf '%s' "$openclaw_system_launchd_probe" | /usr/bin/grep -Eiq 'could not find service|no such process|not found'; then
-  openclaw_system_launchd_conflict="$openclaw_system_launchd_target"
-  openclaw_system_launchd_detail="could not verify $openclaw_system_launchd_target: $openclaw_system_launchd_probe"
+  return `afora_system_launchd_conflict=""
+afora_system_launchd_detail=""
+afora_system_launchd_target=${quotePosixArgument(serviceTarget)}
+afora_system_launchd_dir=${quotePosixArgument(SYSTEM_LAUNCH_DAEMON_DIR)}
+afora_system_launchd_label=${quotePosixArgument(label)}
+afora_system_launchd_probe=$(launchctl print "$afora_system_launchd_target" 2>&1)
+afora_system_launchd_probe_status=$?
+if [ "$afora_system_launchd_probe_status" -eq 0 ]; then
+  afora_system_launchd_conflict="$afora_system_launchd_target"
+  afora_system_launchd_detail="loaded system LaunchDaemon $afora_system_launchd_target"
+elif ! printf '%s' "$afora_system_launchd_probe" | /usr/bin/grep -Eiq 'could not find service|no such process|not found'; then
+  afora_system_launchd_conflict="$afora_system_launchd_target"
+  afora_system_launchd_detail="could not verify $afora_system_launchd_target: $afora_system_launchd_probe"
 fi
-if [ -z "$openclaw_system_launchd_conflict" ]; then
-  if [ ! -e "$openclaw_system_launchd_dir" ]; then
+if [ -z "$afora_system_launchd_conflict" ]; then
+  if [ ! -e "$afora_system_launchd_dir" ]; then
     :
-  elif [ ! -r "$openclaw_system_launchd_dir" ] || [ ! -x "$openclaw_system_launchd_dir" ]; then
-    openclaw_system_launchd_conflict="$openclaw_system_launchd_dir"
-    openclaw_system_launchd_detail="could not inspect $openclaw_system_launchd_dir"
+  elif [ ! -r "$afora_system_launchd_dir" ] || [ ! -x "$afora_system_launchd_dir" ]; then
+    afora_system_launchd_conflict="$afora_system_launchd_dir"
+    afora_system_launchd_detail="could not inspect $afora_system_launchd_dir"
   else
-    openclaw_system_launchd_entries=""
-    if openclaw_system_launchd_entries=$(/usr/bin/mktemp "\${TMPDIR:-/tmp}/openclaw-launchd-scan.XXXXXX" 2>&1); then
-      if /usr/bin/find "$openclaw_system_launchd_dir" -mindepth 1 -maxdepth 1 -name '*.plist' -print0 >"$openclaw_system_launchd_entries"; then
-        while IFS= read -r -d '' openclaw_system_launchd_plist; do
+    afora_system_launchd_entries=""
+    if afora_system_launchd_entries=$(/usr/bin/mktemp "\${TMPDIR:-/tmp}/afora-launchd-scan.XXXXXX" 2>&1); then
+      if /usr/bin/find "$afora_system_launchd_dir" -mindepth 1 -maxdepth 1 -name '*.plist' -print0 >"$afora_system_launchd_entries"; then
+        while IFS= read -r -d '' afora_system_launchd_plist; do
           # Unreadable plists are treated as foreign: loaded same-label daemons are caught by the
           # bracketing launchctl probes; an unloaded unreadable same-label plist is an accepted operator-created edge (#120481).
-          if [ ! -r "$openclaw_system_launchd_plist" ]; then
+          if [ ! -r "$afora_system_launchd_plist" ]; then
             continue
           fi
-          if openclaw_system_launchd_plist_label=$(/usr/bin/plutil -extract Label raw -o - -- "$openclaw_system_launchd_plist" 2>&1); then
-            if [ "$openclaw_system_launchd_plist_label" != "$openclaw_system_launchd_label" ]; then
+          if afora_system_launchd_plist_label=$(/usr/bin/plutil -extract Label raw -o - -- "$afora_system_launchd_plist" 2>&1); then
+            if [ "$afora_system_launchd_plist_label" != "$afora_system_launchd_label" ]; then
               continue
             fi
-            openclaw_system_launchd_conflict="$openclaw_system_launchd_plist"
-            openclaw_system_launchd_detail="installed same-label system LaunchDaemon plist $openclaw_system_launchd_plist"
+            afora_system_launchd_conflict="$afora_system_launchd_plist"
+            afora_system_launchd_detail="installed same-label system LaunchDaemon plist $afora_system_launchd_plist"
             break
-          elif /usr/bin/plutil -lint -- "$openclaw_system_launchd_plist" >/dev/null 2>&1; then
+          elif /usr/bin/plutil -lint -- "$afora_system_launchd_plist" >/dev/null 2>&1; then
             continue
           else
-            openclaw_system_launchd_conflict="$openclaw_system_launchd_plist"
-            openclaw_system_launchd_detail="could not inspect system LaunchDaemon plist $openclaw_system_launchd_plist: $openclaw_system_launchd_plist_label"
+            afora_system_launchd_conflict="$afora_system_launchd_plist"
+            afora_system_launchd_detail="could not inspect system LaunchDaemon plist $afora_system_launchd_plist: $afora_system_launchd_plist_label"
             break
           fi
-        done <"$openclaw_system_launchd_entries"
+        done <"$afora_system_launchd_entries"
       else
-        openclaw_system_launchd_conflict="$openclaw_system_launchd_dir"
-        openclaw_system_launchd_detail="could not enumerate $openclaw_system_launchd_dir"
+        afora_system_launchd_conflict="$afora_system_launchd_dir"
+        afora_system_launchd_detail="could not enumerate $afora_system_launchd_dir"
       fi
-      /bin/rm -f "$openclaw_system_launchd_entries"
+      /bin/rm -f "$afora_system_launchd_entries"
     else
-      openclaw_system_launchd_conflict="$openclaw_system_launchd_dir"
-      openclaw_system_launchd_detail="could not create a secure system LaunchDaemon scan snapshot: $openclaw_system_launchd_entries"
+      afora_system_launchd_conflict="$afora_system_launchd_dir"
+      afora_system_launchd_detail="could not create a secure system LaunchDaemon scan snapshot: $afora_system_launchd_entries"
     fi
   fi
 fi
-if [ -z "$openclaw_system_launchd_conflict" ]; then
-  openclaw_system_launchd_probe=$(launchctl print "$openclaw_system_launchd_target" 2>&1)
-  openclaw_system_launchd_probe_status=$?
-  if [ "$openclaw_system_launchd_probe_status" -eq 0 ]; then
-    openclaw_system_launchd_conflict="$openclaw_system_launchd_target"
-    openclaw_system_launchd_detail="loaded system LaunchDaemon $openclaw_system_launchd_target"
-  elif ! printf '%s' "$openclaw_system_launchd_probe" | /usr/bin/grep -Eiq 'could not find service|no such process|not found'; then
-    openclaw_system_launchd_conflict="$openclaw_system_launchd_target"
-    openclaw_system_launchd_detail="could not verify $openclaw_system_launchd_target: $openclaw_system_launchd_probe"
+if [ -z "$afora_system_launchd_conflict" ]; then
+  afora_system_launchd_probe=$(launchctl print "$afora_system_launchd_target" 2>&1)
+  afora_system_launchd_probe_status=$?
+  if [ "$afora_system_launchd_probe_status" -eq 0 ]; then
+    afora_system_launchd_conflict="$afora_system_launchd_target"
+    afora_system_launchd_detail="loaded system LaunchDaemon $afora_system_launchd_target"
+  elif ! printf '%s' "$afora_system_launchd_probe" | /usr/bin/grep -Eiq 'could not find service|no such process|not found'; then
+    afora_system_launchd_conflict="$afora_system_launchd_target"
+    afora_system_launchd_detail="could not verify $afora_system_launchd_target: $afora_system_launchd_probe"
   fi
 fi
 `;
@@ -282,7 +282,7 @@ function formatSystemLaunchDaemonOwnershipError(ownership: SystemLaunchDaemonCon
   return [
     formatSystemLaunchDaemonOwnershipSummary(ownership),
     "Refusing to create or activate a user LaunchAgent for the same label because duplicate KeepAlive managers can restart-loop the gateway.",
-    "OpenClaw does not manage system LaunchDaemons, and --force does not override system ownership.",
+    "Afora does not manage system LaunchDaemons, and --force does not override system ownership.",
     recovery,
   ].join("\n");
 }

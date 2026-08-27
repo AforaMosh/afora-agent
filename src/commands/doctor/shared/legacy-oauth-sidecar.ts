@@ -4,9 +4,9 @@ import { createDecipheriv, hash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { isRecord } from "@openclaw/normalization-core/record-coerce";
-import { readNonBlankString as readNonEmptyString } from "@openclaw/normalization-core/string-coerce";
-import { uniqueStrings } from "@openclaw/normalization-core/string-normalization";
+import { isRecord } from "@afora/normalization-core/record-coerce";
+import { readNonBlankString as readNonEmptyString } from "@afora/normalization-core/string-coerce";
+import { uniqueStrings } from "@afora/normalization-core/string-normalization";
 import { authProfilesLog } from "../../../agents/auth-profiles/constants.js";
 import { LEGACY_OAUTH_REF_PROVIDER } from "../../../agents/auth-profiles/legacy-oauth-ref.js";
 import type { LegacyOAuthRef } from "../../../agents/auth-profiles/legacy-oauth-ref.js";
@@ -20,8 +20,8 @@ export type { LegacyOAuthRef } from "../../../agents/auth-profiles/legacy-oauth-
 const LEGACY_OAUTH_SECRET_DIRNAME = "auth-profiles";
 const LEGACY_OAUTH_SECRET_VERSION = 1;
 const LEGACY_OAUTH_SECRET_ALGORITHM = "aes-256-gcm";
-const LEGACY_OAUTH_SECRET_KEY_ENV = "OPENCLAW_AUTH_PROFILE_SECRET_KEY";
-const LEGACY_OAUTH_SECRET_KEYCHAIN_SERVICE = "OpenClaw Auth Profile Secrets";
+const LEGACY_OAUTH_SECRET_KEY_ENV = "AFORA_AUTH_PROFILE_SECRET_KEY";
+const LEGACY_OAUTH_SECRET_KEYCHAIN_SERVICE = "Afora Auth Profile Secrets";
 const LEGACY_OAUTH_SECRET_KEYCHAIN_ACCOUNT = "oauth-profile-master-key";
 const LEGACY_OAUTH_SECRET_KEY_FILE_NAME = "auth-profile-secret-key";
 
@@ -107,7 +107,7 @@ function buildLegacyOAuthSecretAad(params: {
 function buildLegacyOAuthSecretKey(seed: string): Buffer {
   // Legacy #79006 compatibility: existing sidecars were encrypted with this
   // SHA-256 key derivation, so changing it would strand affected users.
-  return hash("sha256", `openclaw:auth-profile-oauth:${seed}`, "buffer");
+  return hash("sha256", `afora:auth-profile-oauth:${seed}`, "buffer");
 }
 
 function uniquePaths(paths: Array<string | undefined>): string[] {
@@ -119,9 +119,9 @@ function resolveLegacyOAuthSecretKeyFileCandidates(env: NodeJS.ProcessEnv): stri
     const home = env.USERPROFILE?.trim() || os.homedir();
     const root = env.APPDATA?.trim() || (home ? path.join(home, "AppData", "Roaming") : undefined);
     return uniquePaths([
-      root ? path.join(root, "OpenClaw", LEGACY_OAUTH_SECRET_KEY_FILE_NAME) : undefined,
+      root ? path.join(root, "Afora", LEGACY_OAUTH_SECRET_KEY_FILE_NAME) : undefined,
       home
-        ? path.join(home, ".openclaw-auth-profile-secrets", LEGACY_OAUTH_SECRET_KEY_FILE_NAME)
+        ? path.join(home, ".afora-auth-profile-secrets", LEGACY_OAUTH_SECRET_KEY_FILE_NAME)
         : undefined,
     ]);
   }
@@ -134,12 +134,12 @@ function resolveLegacyOAuthSecretKeyFileCandidates(env: NodeJS.ProcessEnv): stri
             home,
             "Library",
             "Application Support",
-            "OpenClaw",
+            "Afora",
             LEGACY_OAUTH_SECRET_KEY_FILE_NAME,
           )
         : undefined,
       home
-        ? path.join(home, ".openclaw-auth-profile-secrets", LEGACY_OAUTH_SECRET_KEY_FILE_NAME)
+        ? path.join(home, ".afora-auth-profile-secrets", LEGACY_OAUTH_SECRET_KEY_FILE_NAME)
         : undefined,
     ]);
   }
@@ -147,9 +147,9 @@ function resolveLegacyOAuthSecretKeyFileCandidates(env: NodeJS.ProcessEnv): stri
   const home = env.HOME?.trim() || os.homedir();
   const root = env.XDG_CONFIG_HOME?.trim() || (home ? path.join(home, ".config") : undefined);
   return uniquePaths([
-    root ? path.join(root, "openclaw", LEGACY_OAUTH_SECRET_KEY_FILE_NAME) : undefined,
+    root ? path.join(root, "afora", LEGACY_OAUTH_SECRET_KEY_FILE_NAME) : undefined,
     home
-      ? path.join(home, ".openclaw-auth-profile-secrets", LEGACY_OAUTH_SECRET_KEY_FILE_NAME)
+      ? path.join(home, ".afora-auth-profile-secrets", LEGACY_OAUTH_SECRET_KEY_FILE_NAME)
       : undefined,
   ]);
 }
@@ -220,7 +220,7 @@ function resolveLegacyOAuthSecretKeySeeds(env: NodeJS.ProcessEnv): string[] {
   };
   addSeed(env[LEGACY_OAUTH_SECRET_KEY_ENV]);
   if (env.NODE_ENV === "test" && env.VITEST === "true") {
-    addSeed("openclaw-test-oauth-profile-secret-key");
+    addSeed("afora-test-oauth-profile-secret-key");
   }
   addSeed(readLegacyOAuthSecretKeyFile(env));
   return seeds;
@@ -301,7 +301,7 @@ function emitKeychainOnlyMigrationHintOnce(profileId: string): void {
   keychainOnlyMigrationHintEmitted = true;
   authProfilesLog.warn(
     "Legacy Codex OAuth credentials are stored only in macOS Keychain on this host. " +
-      "Headless paths cannot prompt for Keychain access; run `openclaw doctor --fix` " +
+      "Headless paths cannot prompt for Keychain access; run `afora doctor --fix` " +
       "from an interactive terminal to migrate them back to inline auth-profiles.json credentials.",
     { profileId },
   );

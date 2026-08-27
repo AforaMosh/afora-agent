@@ -1,12 +1,12 @@
 // Resolves official provider plugins implied by configured auth and model selections.
-import type { OpenClawConfig } from "../../../config/types.openclaw.js";
+import type { AforaConfig } from "../../../config/types.afora.js";
 import { resolveProviderInstallCatalogEntries } from "../../../plugins/provider-install-catalog.js";
 import { collectConfiguredOfficialProviderPluginIds } from "./configured-provider-plugin-ids.js";
 import { collectConfiguredProviderSelectionIds } from "./configured-provider-selection-ids.js";
 
 /** Lists external provider plugins implied by configured auth profiles and model refs. */
 export function collectConfiguredProviderPluginIds(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   env?: NodeJS.ProcessEnv;
 }): string[] {
   const selectedProviderIds = collectConfiguredProviderSelectionIds(params.cfg);

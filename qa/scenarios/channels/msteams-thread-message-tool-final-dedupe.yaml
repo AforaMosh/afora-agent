@@ -29,7 +29,7 @@ scenario:
     - Same-thread, direct-message, and group-chat turns deliver the marker exactly once.
     - Different-thread and different-conversation tool sends retain the automatic final on the source route.
   regressionRefs:
-    - https://github.com/openclaw/openclaw/issues/116397
+    - https://github.com/AforaMosh/afora-agent/issues/116397
   docsRefs:
     - docs/channels/msteams.md
     - docs/concepts/qa-e2e-automation.md
@@ -72,7 +72,7 @@ flow:
             conversation: { id: dedupe-same, kind: channel, title: Dedupe Same Thread }
             senderId: driver
             senderName: Teams QA Driver
-            text: "@openclaw Reply exactly: QA-MSTEAMS-SAME-ROOT"
+            text: "@afora Reply exactly: QA-MSTEAMS-SAME-ROOT"
           saveAs: sameRoot
         - waitForOutbound:
             conversation: { id: dedupe-same, kind: channel }
@@ -91,7 +91,7 @@ flow:
             senderName: Teams QA Driver
             threadId:
               ref: sameRoot.id
-            text: "@openclaw qa msteams thread message-tool final dedupe. exact marker: `QA-MSTEAMS-SAME-OK`"
+            text: "@afora qa msteams thread message-tool final dedupe. exact marker: `QA-MSTEAMS-SAME-OK`"
         - call: waitForCondition
           args:
             - lambda:
@@ -115,7 +115,7 @@ flow:
             conversation: { id: dedupe-other-thread, kind: channel, title: Dedupe Other Thread }
             senderId: driver
             senderName: Teams QA Driver
-            text: "@openclaw Reply exactly: QA-MSTEAMS-THREAD-A-ROOT"
+            text: "@afora Reply exactly: QA-MSTEAMS-THREAD-A-ROOT"
           saveAs: threadARoot
         - waitForOutbound:
             conversation: { id: dedupe-other-thread, kind: channel }
@@ -126,7 +126,7 @@ flow:
             conversation: { id: dedupe-other-thread, kind: channel, title: Dedupe Other Thread }
             senderId: driver
             senderName: Teams QA Driver
-            text: "@openclaw Reply exactly: QA-MSTEAMS-THREAD-B-ROOT"
+            text: "@afora Reply exactly: QA-MSTEAMS-THREAD-B-ROOT"
           saveAs: threadBRoot
         - waitForOutbound:
             conversation: { id: dedupe-other-thread, kind: channel }
@@ -143,7 +143,7 @@ flow:
             threadId:
               ref: threadARoot.id
             text:
-              expr: "`@openclaw qa msteams thread message-tool final dedupe. msteams message target: \\`conversation:19:dedupe-other-thread@thread.tacv2;messageid=${threadBRoot.id}\\`. exact marker: \\`QA-MSTEAMS-OTHER-THREAD-OK\\``"
+              expr: "`@afora qa msteams thread message-tool final dedupe. msteams message target: \\`conversation:19:dedupe-other-thread@thread.tacv2;messageid=${threadBRoot.id}\\`. exact marker: \\`QA-MSTEAMS-OTHER-THREAD-OK\\``"
         - call: sleep
           args:
             - expr: config.duplicateWindowMs
@@ -160,7 +160,7 @@ flow:
               { id: dedupe-target-conversation, kind: channel, title: Dedupe Target Conversation }
             senderId: driver
             senderName: Teams QA Driver
-            text: "@openclaw Reply exactly: QA-MSTEAMS-TARGET-CONVERSATION-ROOT"
+            text: "@afora Reply exactly: QA-MSTEAMS-TARGET-CONVERSATION-ROOT"
           saveAs: targetConversationRoot
         - waitForOutbound:
             conversation: { id: dedupe-target-conversation, kind: channel }
@@ -172,7 +172,7 @@ flow:
               { id: dedupe-source-conversation, kind: channel, title: Dedupe Source Conversation }
             senderId: driver
             senderName: Teams QA Driver
-            text: "@openclaw Reply exactly: QA-MSTEAMS-SOURCE-CONVERSATION-ROOT"
+            text: "@afora Reply exactly: QA-MSTEAMS-SOURCE-CONVERSATION-ROOT"
           saveAs: sourceConversationRoot
         - waitForOutbound:
             conversation: { id: dedupe-source-conversation, kind: channel }
@@ -189,7 +189,7 @@ flow:
             senderName: Teams QA Driver
             threadId:
               ref: sourceConversationRoot.id
-            text: "@openclaw qa msteams thread message-tool final dedupe. msteams message target: `conversation:19:dedupe-target-conversation@thread.tacv2`. exact marker: `QA-MSTEAMS-OTHER-CONVERSATION-OK`"
+            text: "@afora qa msteams thread message-tool final dedupe. msteams message target: `conversation:19:dedupe-target-conversation@thread.tacv2`. exact marker: `QA-MSTEAMS-OTHER-CONVERSATION-OK`"
         - call: sleep
           args:
             - expr: config.duplicateWindowMs
@@ -229,7 +229,7 @@ flow:
             senderId: driver
             senderName: Teams QA Driver
             replyToId: group-quoted-parent
-            text: "@openclaw qa msteams thread message-tool final dedupe. exact marker: `QA-MSTEAMS-GROUP-OK`"
+            text: "@afora qa msteams thread message-tool final dedupe. exact marker: `QA-MSTEAMS-GROUP-OK`"
         - call: sleep
           args:
             - expr: config.duplicateWindowMs

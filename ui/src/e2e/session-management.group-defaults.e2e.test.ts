@@ -10,7 +10,7 @@ const suite = createSessionManagementE2eSuite();
 
 suite.define(() => {
   it("starts a session from a group with its saved folder and worktree defaults", async () => {
-    const workspace = "/home/peter/openclaw";
+    const workspace = "/home/peter/afora";
     const initialGroupCwd = "/home/peter";
     const groupCwd = "/home/peter/client-work";
     const context = await suite.browser.newContext({
@@ -50,7 +50,7 @@ suite.define(() => {
       await page.getByRole("menuitem", { name: "New session defaults…" }).click();
       await page.evaluate(async () => customElements.whenDefined("wa-popover"));
       const dialog = page.locator(
-        `openclaw-modal-dialog[label='New session defaults for "Client work"']`,
+        `afora-modal-dialog[label='New session defaults for "Client work"']`,
       );
       await dialog.waitFor({ state: "visible" });
       const folderTrigger = dialog.locator("#session-group-defaults-folder-trigger");
@@ -144,7 +144,7 @@ suite.define(() => {
         "sessions.list": sessionsListResponse([]),
       },
       sessionGroups: ["Client work"],
-      workspace: "/home/peter/openclaw",
+      workspace: "/home/peter/afora",
       workspaceGit: false,
     });
 
@@ -183,7 +183,7 @@ suite.define(() => {
       },
       sessionGroups: ["Client work"],
       sessionGroupDefaults: { "Client work": { cwd: initialCwd, worktree: true } },
-      workspace: "/home/peter/openclaw",
+      workspace: "/home/peter/afora",
       workspaceGit: true,
     });
 
@@ -194,7 +194,7 @@ suite.define(() => {
       await page.locator(".new-session-page__message").fill("keep this draft");
 
       await page.evaluate(async (cwd) => {
-        const app = document.querySelector("openclaw-app") as HTMLElement & {
+        const app = document.querySelector("afora-app") as HTMLElement & {
           runtime?: {
             context: {
               sessions: {
@@ -221,7 +221,7 @@ suite.define(() => {
         .toBe("keep this draft");
 
       await page.evaluate(async () => {
-        const app = document.querySelector("openclaw-app") as HTMLElement & {
+        const app = document.querySelector("afora-app") as HTMLElement & {
           runtime?: {
             context: {
               sessions: {
@@ -265,7 +265,7 @@ suite.define(() => {
       sessionGroupDefaults: {
         "Client work": { cwd: "/home/peter/client-work", worktree: true },
       },
-      workspace: "/home/peter/openclaw",
+      workspace: "/home/peter/afora",
       workspaceGit: true,
     });
 
@@ -318,7 +318,7 @@ suite.define(() => {
       methodResponses: { "sessions.list": sessionsListResponse([]) },
       sessionGroups: ["Client work"],
       sessionGroupDefaults: { "Client work": { cwd: groupCwd, worktree: true } },
-      workspace: "/home/peter/openclaw",
+      workspace: "/home/peter/afora",
       workspaceGit: true,
     });
 
@@ -330,7 +330,7 @@ suite.define(() => {
       await group.getByRole("button", { name: "Group options for Client work" }).click();
       await page.getByRole("menuitem", { name: "New session defaults…" }).click();
       const dialog = page.locator(
-        `openclaw-modal-dialog[label='New session defaults for "Client work"']`,
+        `afora-modal-dialog[label='New session defaults for "Client work"']`,
       );
       await dialog.waitFor({ state: "visible" });
       await dialog.locator('select[name="mode"]').selectOption("local");
@@ -376,7 +376,7 @@ suite.define(() => {
       methodResponses: { "sessions.list": sessionsListResponse([]) },
       sessionGroups: ["Client work"],
       sessionGroupDefaults: { "Client work": { cwd: groupCwd, worktree: true } },
-      workspace: "/home/peter/openclaw",
+      workspace: "/home/peter/afora",
       workspaceGit: true,
     });
 
@@ -394,7 +394,7 @@ suite.define(() => {
       expect(await gateway.getRequests("sessions.groups.update")).toHaveLength(0);
       expect(
         await page
-          .locator(`openclaw-modal-dialog[label='New session defaults for "Client work"']`)
+          .locator(`afora-modal-dialog[label='New session defaults for "Client work"']`)
           .count(),
       ).toBe(0);
 
@@ -423,7 +423,7 @@ suite.define(() => {
       await readyDefaultsAction.click();
 
       const dialog = page.locator(
-        `openclaw-modal-dialog[label='New session defaults for "Client work"']`,
+        `afora-modal-dialog[label='New session defaults for "Client work"']`,
       );
       await dialog.waitFor({ state: "visible" });
       await expect
@@ -449,7 +449,7 @@ suite.define(() => {
     const gateway = await installMockGateway(page, {
       methodResponses: { "sessions.list": sessionsListResponse([]) },
       sessionGroups: [],
-      workspace: "/home/peter/openclaw",
+      workspace: "/home/peter/afora",
       workspaceGit: true,
     });
 

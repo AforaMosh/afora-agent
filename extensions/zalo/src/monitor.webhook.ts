@@ -1,7 +1,7 @@
 // Zalo plugin module implements monitor.webhook behavior.
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { safeEqualSecret } from "openclaw/plugin-sdk/security-runtime";
-import { readWebhookBodyOrReject } from "openclaw/plugin-sdk/webhook-request-guards";
+import { safeEqualSecret } from "afora-agent/plugin-sdk/security-runtime";
+import { readWebhookBodyOrReject } from "afora-agent/plugin-sdk/webhook-request-guards";
 import type { ResolvedZaloAccount } from "./accounts.js";
 import type { ZaloRuntimeEnv } from "./monitor.types.js";
 import {
@@ -17,20 +17,20 @@ import {
   WEBHOOK_ANOMALY_COUNTER_DEFAULTS,
   WEBHOOK_RATE_LIMIT_DEFAULTS,
   resolveClientIp,
-  type OpenClawConfig,
+  type AforaConfig,
 } from "./runtime-api.js";
 import { ZaloWebhookPayloadError } from "./webhook-spool.js";
 
 type ZaloWebhookTarget = {
   account: ResolvedZaloAccount;
-  config: OpenClawConfig;
+  config: AforaConfig;
   runtime: ZaloRuntimeEnv;
   secret: string;
   path: string;
   acceptWebhook: (rawEvent: string) => Promise<void>;
 };
 
-const ZALO_WEBHOOK_ACCEPTED_HEADER = "x-openclaw-delivery-accepted";
+const ZALO_WEBHOOK_ACCEPTED_HEADER = "x-afora-delivery-accepted";
 const ZALO_WEBHOOK_ACCEPTED_VALUE = "durable";
 
 const webhookTargets = new Map<string, ZaloWebhookTarget[]>();

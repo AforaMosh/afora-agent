@@ -1,12 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
-import type { ConfiguredModelRef } from "@openclaw/model-catalog-core/configured-model-refs";
+import type { ConfiguredModelRef } from "@afora/model-catalog-core/configured-model-refs";
 import {
   findNormalizedProviderValue,
   normalizeProviderId,
-} from "@openclaw/model-catalog-core/provider-id";
-import { stableStringify } from "@openclaw/normalization-core";
+} from "@afora/model-catalog-core/provider-id";
+import { stableStringify } from "@afora/normalization-core";
 import { sha256Base64Url } from "../infra/crypto-digest.js";
 import { prepareMediaCapabilityProviders } from "../plugins/capability-provider-runtime.js";
 import {
@@ -38,7 +38,7 @@ import {
 import { createStaticModelIdMatcher } from "./embedded-agent-runner/model.static-id.js";
 import type { ModelCatalogSnapshot } from "./model-catalog.types.js";
 import { buildConfiguredModelCatalog } from "./model-selection-shared.js";
-import { ensureOpenClawModelsJson, planOpenClawModelsJsonSource } from "./models-config.js";
+import { ensureAforaModelsJson, planAforaModelsJsonSource } from "./models-config.js";
 import { prepareImplicitProviderStaticCatalog } from "./models-config.providers.implicit.js";
 import {
   loadPersistedPluginModelCatalogsReadOnly,
@@ -709,7 +709,7 @@ export async function prepareAgentCatalogSource(
         }),
   };
   if (!persist) {
-    const source = await planOpenClawModelsJsonSource(input.config, input.agentDir, {
+    const source = await planAforaModelsJsonSource(input.config, input.agentDir, {
       ...options,
       ...(sourceOptions.authStore ? { authStore: sourceOptions.authStore } : {}),
       ...(catalogMode === "live" ? { onProviderCatalogOutcome: recordProviderOutcome } : {}),
@@ -721,7 +721,7 @@ export async function prepareAgentCatalogSource(
     };
   }
   if (!input.readOnly) {
-    await ensureOpenClawModelsJson(input.config, input.agentDir, {
+    await ensureAforaModelsJson(input.config, input.agentDir, {
       ...options,
       ...(catalogMode === "live" ? { onProviderCatalogOutcome: recordProviderOutcome } : {}),
     });

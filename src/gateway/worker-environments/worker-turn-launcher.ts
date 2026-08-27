@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { truncateUtf16Safe } from "@openclaw/normalization-core/utf16-slice";
+import { truncateUtf16Safe } from "@afora/normalization-core/utf16-slice";
 import { mapThinkingLevelForProvider } from "../../agents/embedded-agent-runner/utils.js";
 import type { SandboxContext } from "../../agents/sandbox/types.js";
 import type {
@@ -9,7 +9,7 @@ import type {
 } from "../../agents/session-placement-admission.js";
 import { convertToLlm } from "../../agents/sessions/messages.js";
 import { SessionManager } from "../../agents/sessions/session-manager.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import { emitAgentRunStatusEvent } from "../../infra/agent-run-status-events.js";
 import { redactSensitiveText } from "../../logging/redact.js";
 import { parseWorkerLaunchPlan } from "../../worker/launch-descriptor.js";
@@ -207,7 +207,7 @@ async function executeWorkerTurn(params: {
     turnClaim: params.turnClaim,
   });
   // Project the wire handshake; the receipt also carries storage-only provenance.
-  const { bundleHash, openclawVersion, protocolFeatures } = bootstrapReceipt;
+  const { bundleHash, aforaVersion, protocolFeatures } = bootstrapReceipt;
   const launchPlan = await fitLaunchDescriptorWithRuntimeIdentity({
     runtimeIdentity,
     messages: initialMessages,
@@ -220,7 +220,7 @@ async function executeWorkerTurn(params: {
           sessionId: placement.sessionId,
           ownerEpoch: placement.activeOwnerEpoch,
           rpcSetVersion: credential.rpcSetVersion,
-          handshake: { bundleHash, openclawVersion, protocolFeatures },
+          handshake: { bundleHash, aforaVersion, protocolFeatures },
         },
         assignment: {
           agentId: placement.agentId,
@@ -395,7 +395,7 @@ export function createWorkerSessionTurnPlacementProvider(options: WorkerTurnLaun
   const provider: SessionPlacementAdmissionProvider & {
     resolveSandbox(params: {
       agentId: string;
-      config?: OpenClawConfig;
+      config?: AforaConfig;
       sessionId: string;
       sessionKey?: string;
       workspaceDir: string;

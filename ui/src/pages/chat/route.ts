@@ -82,7 +82,7 @@ function sessionPage(face: BoardFace) {
           }
           return routeData.kind === "ambiguous"
             ? renderAmbiguous(routeData)
-            : html`<openclaw-chat-page .data=${routeData}></openclaw-chat-page>`;
+            : html`<afora-chat-page .data=${routeData}></afora-chat-page>`;
         },
       })),
   });

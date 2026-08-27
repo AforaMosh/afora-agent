@@ -82,7 +82,7 @@ suite.define(() => {
         expect(response?.status()).toBe(200);
         await gateway.waitForRequest("agents.list");
         await gateway.waitForRequest("config.get");
-        const agentPicker = page.locator("openclaw-agents-page openclaw-agent-select");
+        const agentPicker = page.locator("afora-agents-page afora-agent-select");
         await agentPicker.locator(".agent-select__trigger").click();
         // Switching agents is the user action under test; the Tools panel must survive it.
         await agentPicker

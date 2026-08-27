@@ -1,4 +1,4 @@
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 import type { RunEmbeddedAgentParams } from "./embedded-agent-runner/run/params.js";
 import type { EmbeddedAgentRunResult } from "./embedded-agent-runner/types.js";
@@ -15,7 +15,7 @@ export type SessionPlacementTurnParams = RunEmbeddedAgentParams & { sessionFile:
 
 type SessionPlacementSandboxParams = {
   agentId: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   sessionId: string;
   sessionKey?: string;
   workspaceDir: string;
@@ -42,7 +42,7 @@ type SessionPlacementAdmissionState = {
 // Runtime chunks share one provider. The identity guard keeps an older gateway
 // shutdown from clearing a newer lifecycle's admission gate.
 const state = resolveGlobalSingleton(
-  Symbol.for("openclaw.sessionPlacementAdmissionState"),
+  Symbol.for("afora.sessionPlacementAdmissionState"),
   (): SessionPlacementAdmissionState => ({}),
 );
 

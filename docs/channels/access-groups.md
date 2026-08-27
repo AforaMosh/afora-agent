@@ -38,7 +38,7 @@ Static sender groups use `type: "message.senders"`. `members` is keyed by messag
 | `"*"`                      | Shared entries checked for every message channel that references the group. |
 | `discord`, `telegram`, ... | Entries checked only for that channel's allowlist matching.                 |
 
-Entries are matched with the destination channel's normal `allowFrom` rules. OpenClaw does not translate sender ids between channels: if Alice has a Telegram id and a Discord id, list both ids under the matching channel keys.
+Entries are matched with the destination channel's normal `allowFrom` rules. Afora does not translate sender ids between channels: if Alice has a Telegram id and a Discord id, list both ids under the matching channel keys.
 
 ## Reference groups from allowlists
 
@@ -121,7 +121,7 @@ Access groups work in the shared message-channel authorization paths:
 - channel-specific per-room sender allowlists that use the same sender matching rules (for example Google Chat `groups.<space>.users`)
 - command authorization paths that reuse message-channel sender allowlists
 
-Channel support depends on whether that channel is wired through the shared OpenClaw sender-authorization helpers. Current supported channel integrations include ClickClack, Discord, Feishu, Google Chat, iMessage, IRC, LINE, Mattermost, Microsoft Teams, Nextcloud Talk, Nostr, QQ Bot, Signal, Slack, SMS, Telegram, WhatsApp, Zalo, and Zalo Personal. Static `message.senders` groups are channel-agnostic, so new message channels get them by using the shared plugin SDK ingress helpers instead of custom allowlist expansion.
+Channel support depends on whether that channel is wired through the shared Afora sender-authorization helpers. Current supported channel integrations include ClickClack, Discord, Feishu, Google Chat, iMessage, IRC, LINE, Mattermost, Microsoft Teams, Nextcloud Talk, Nostr, QQ Bot, Signal, Slack, SMS, Telegram, WhatsApp, Zalo, and Zalo Personal. Static `message.senders` groups are channel-agnostic, so new message channels get them by using the shared plugin SDK ingress helpers instead of custom allowlist expansion.
 
 ## Discord channel audiences
 
@@ -146,7 +146,7 @@ Discord also supports a dynamic access group type:
 }
 ```
 
-`discord.channelAudience` means "allow Discord DM senders who can currently view this guild channel." OpenClaw resolves the sender through Discord at authorization time and applies Discord `ViewChannel` permission rules. `membership` is optional and defaults to `canViewChannel`.
+`discord.channelAudience` means "allow Discord DM senders who can currently view this guild channel." Afora resolves the sender through Discord at authorization time and applies Discord `ViewChannel` permission rules. `membership` is optional and defaults to `canViewChannel`.
 
 Use this when a Discord channel is already the source of truth for a team, such as `#maintainers` or `#on-call`.
 
@@ -163,7 +163,7 @@ More Discord-specific examples: [Discord access control](/channels/discord#acces
 Plugin authors can inspect structured access-group state without expanding it back into a flat allowlist:
 
 ```typescript
-import { resolveAccessGroupAllowFromState } from "openclaw/plugin-sdk/access-groups";
+import { resolveAccessGroupAllowFromState } from "afora-agent/plugin-sdk/access-groups";
 
 const state = await resolveAccessGroupAllowFromState({
   accessGroups: cfg.accessGroups,
@@ -194,4 +194,4 @@ If a sender should match but is blocked:
 4. Confirm the entry uses that channel's normal allowlist syntax.
 5. For Discord channel audiences, confirm the bot can see the guild channel and has Server Members Intent enabled.
 
-Run `openclaw doctor` after editing access-control config. It catches many invalid allowlist and policy combinations before runtime.
+Run `afora doctor` after editing access-control config. It catches many invalid allowlist and policy combinations before runtime.

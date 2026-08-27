@@ -5,12 +5,12 @@ import {
   executeSqliteQueryTakeFirstSync,
   getNodeSqliteKysely,
 } from "../infra/kysely-sync.js";
-import type { DB as OpenClawStateDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateDatabase } from "../state/afora-state-db.generated.js";
 import {
-  runOpenClawStateWriteTransaction,
-  type OpenClawStateDatabaseOptions,
-} from "../state/openclaw-state-db.js";
-import { OPENCLAW_STATE_SCHEMA_SQL } from "../state/openclaw-state-schema.js";
+  runAforaStateWriteTransaction,
+  type AforaStateDatabaseOptions,
+} from "../state/afora-state-db.js";
+import { AFORA_STATE_SCHEMA_SQL } from "../state/afora-state-schema.js";
 import type { NodeWorkerSupervisorIdentity } from "../worker/node-supervisor-protocol.js";
 import {
   inspectNodeWorkerProcessIdentity,
@@ -26,7 +26,7 @@ type NodeWorkerLaunchState =
   | "cancelled";
 export type NodeWorkerTerminalState = Exclude<NodeWorkerLaunchState, "pending" | "running">;
 
-type NodeWorkerLaunchDatabase = Pick<OpenClawStateDatabase, "node_worker_launches">;
+type NodeWorkerLaunchDatabase = Pick<AforaStateDatabase, "node_worker_launches">;
 type NodeWorkerLaunchRow = Selectable<NodeWorkerLaunchDatabase["node_worker_launches"]>;
 
 export type NodeWorkerLaunchReceipt = {
@@ -84,13 +84,13 @@ const TERMINAL_RECEIPT_RETENTION_MS = 24 * 60 * 60 * 1_000;
 const TERMINAL_PRUNE_BATCH_LIMIT = 256;
 
 function ensureNodeWorkerLaunchSchema(database: DatabaseSync): void {
-  const start = OPENCLAW_STATE_SCHEMA_SQL.indexOf(NODE_WORKER_LAUNCH_SCHEMA_START);
+  const start = AFORA_STATE_SCHEMA_SQL.indexOf(NODE_WORKER_LAUNCH_SCHEMA_START);
   const end =
-    start >= 0 ? OPENCLAW_STATE_SCHEMA_SQL.indexOf(NODE_WORKER_LAUNCH_SCHEMA_END, start) : -1;
+    start >= 0 ? AFORA_STATE_SCHEMA_SQL.indexOf(NODE_WORKER_LAUNCH_SCHEMA_END, start) : -1;
   if (start < 0 || end < start) {
-    throw new Error("OpenClaw node worker launch schema marker is missing.");
+    throw new Error("Afora node worker launch schema marker is missing.");
   }
-  database.exec(OPENCLAW_STATE_SCHEMA_SQL.slice(start, end + NODE_WORKER_LAUNCH_SCHEMA_END.length)); // sqlite-allow-raw -- Canonical feature-local additive DDL only.
+  database.exec(AFORA_STATE_SCHEMA_SQL.slice(start, end + NODE_WORKER_LAUNCH_SCHEMA_END.length)); // sqlite-allow-raw -- Canonical feature-local additive DDL only.
 }
 
 function query(database: DatabaseSync) {
@@ -290,7 +290,7 @@ function rowMatchesImmutableIdentity(
 
 /** Synchronous shared-state owner for durable node worker launch supervision. */
 export class NodeWorkerLaunchStore {
-  private readonly databaseOptions: OpenClawStateDatabaseOptions;
+  private readonly databaseOptions: AforaStateDatabaseOptions;
 
   constructor(options: { env?: NodeJS.ProcessEnv } = {}) {
     this.databaseOptions = options.env ? { env: options.env } : {};
@@ -298,7 +298,7 @@ export class NodeWorkerLaunchStore {
 
   private write<T>(operationLabel: string, operation: (database: DatabaseSync) => T): T {
     let initializedDatabase: DatabaseSync | undefined;
-    const result = runOpenClawStateWriteTransaction(
+    const result = runAforaStateWriteTransaction(
       ({ db }) => {
         if (!initializedDatabases.has(db)) {
           ensureNodeWorkerLaunchSchema(db);

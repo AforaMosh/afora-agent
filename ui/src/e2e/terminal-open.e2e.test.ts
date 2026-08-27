@@ -17,7 +17,7 @@ async function openTerminalSidePanel(page: Page): Promise<Locator> {
   await page.goto(`${suite.server.baseUrl}chat`);
   await waitForControlUiGatewayReady(page);
   await openChatSidePanelType(page, "Terminal");
-  return page.locator(".sidebar-region__right-runtime openclaw-terminal-panel");
+  return page.locator(".sidebar-region__right-runtime afora-terminal-panel");
 }
 
 async function canvasDigest(canvas: Locator): Promise<string> {
@@ -80,7 +80,7 @@ suite.define(() => {
               {
                 agentId: "main",
                 confined: false,
-                cwd: "/workspace/openclaw",
+                cwd: "/workspace/afora",
                 sessionId: "terminal-retry-ready",
                 shell: "/bin/zsh",
               },

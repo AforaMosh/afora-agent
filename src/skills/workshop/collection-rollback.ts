@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { asNullableRecord } from "@openclaw/normalization-core/record-coerce";
+import { asNullableRecord } from "@afora/normalization-core/record-coerce";
 import { removePathWithinRoot } from "../../infra/fs-safe-remove.js";
 import { pathExists, root } from "../../infra/fs-safe.js";
 import { logWarn } from "../../logger.js";
@@ -59,7 +59,7 @@ export async function stageSkillCollectionDrop(params: {
 }): Promise<{ name: string; baseDir: string; stagedDir: string }> {
   const stagedDir = path.join(
     path.dirname(params.baseDir),
-    `.openclaw-drop-${path.basename(params.baseDir)}-${randomUUID()}`,
+    `.afora-drop-${path.basename(params.baseDir)}-${randomUUID()}`,
   );
   const workspaceRoot = await root(params.workspaceDir);
   await workspaceRoot.move(

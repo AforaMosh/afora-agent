@@ -1,11 +1,11 @@
 import { accessSync, constants, statSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { resolveAcpSessionAvailability } from "openclaw/plugin-sdk/acp-runtime";
-import { resolveSessionAgentIds } from "openclaw/plugin-sdk/agent-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import { resolveNodeHostExecutable } from "openclaw/plugin-sdk/node-host";
-import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
+import { resolveAcpSessionAvailability } from "afora-agent/plugin-sdk/acp-runtime";
+import { resolveSessionAgentIds } from "afora-agent/plugin-sdk/agent-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import { resolveNodeHostExecutable } from "afora-agent/plugin-sdk/node-host";
+import type { AforaPluginApi } from "afora-agent/plugin-sdk/plugin-entry";
 import {
   createSessionCatalogFamily,
   createSessionCatalogNodeHostBindings,
@@ -14,8 +14,8 @@ import {
   sessionCatalogAdoptedSessionKey,
   type SessionCatalogEntrySnapshot,
   type SessionCatalogSession,
-} from "openclaw/plugin-sdk/session-catalog";
-import { isRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/session-catalog";
+import { isRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import {
   OPENCODE_LOCAL_SESSION_HOST_ID as LOCAL_HOST_ID,
   OPENCODE_NODE_INVOKE_TIMEOUT_MS as NODE_TIMEOUT_MS,
@@ -113,12 +113,12 @@ function assertOpenCodeLocalAccess(hostId: string, allowProcessHomeFallback?: bo
   }
 }
 
-function currentOpenCodeCatalogConfig(api: OpenClawPluginApi): OpenClawConfig {
-  return (api.runtime.config?.current?.() ?? api.config ?? {}) as OpenClawConfig;
+function currentOpenCodeCatalogConfig(api: AforaPluginApi): AforaConfig {
+  return (api.runtime.config?.current?.() ?? api.config ?? {}) as AforaConfig;
 }
 
 function listAdoptedOpenCodeSessions(
-  api: OpenClawPluginApi,
+  api: AforaPluginApi,
   agentId?: string,
   sessionEntries?: SessionCatalogEntrySnapshot,
 ): Map<string, string> {
@@ -142,7 +142,7 @@ function listAdoptedOpenCodeSessions(
 }
 
 async function loadContinuableOpenCodeSession(
-  api: OpenClawPluginApi,
+  api: AforaPluginApi,
   threadId: string,
 ): Promise<SessionCatalogSession> {
   const page = await listLocalOpenCodeSessionPage(
@@ -157,7 +157,7 @@ async function loadContinuableOpenCodeSession(
 }
 
 async function createAdoptedOpenCodeSession(params: {
-  api: OpenClawPluginApi;
+  api: AforaPluginApi;
   agentId: string;
   threadId: string;
   session: SessionCatalogSession;
@@ -201,7 +201,7 @@ async function createAdoptedOpenCodeSession(params: {
   return { sessionKey: created.key };
 }
 
-function createOpenCodeNodeHostBindings(api: OpenClawPluginApi) {
+function createOpenCodeNodeHostBindings(api: AforaPluginApi) {
   const available = ({ config, env }: { config: unknown; env: NodeJS.ProcessEnv }) =>
     fullConfigCatalogEnabled(config) && executableOnPath("opencode", env);
   return createSessionCatalogNodeHostBindings({
@@ -227,7 +227,7 @@ function createOpenCodeNodeHostBindings(api: OpenClawPluginApi) {
   });
 }
 
-export function registerOpenCodeSessionCatalog(api: OpenClawPluginApi): void {
+export function registerOpenCodeSessionCatalog(api: AforaPluginApi): void {
   if (!isOpenCodeSessionCatalogEnabled(api.pluginConfig)) {
     return;
   }

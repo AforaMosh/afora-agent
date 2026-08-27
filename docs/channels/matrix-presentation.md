@@ -1,14 +1,14 @@
 ---
-summary: "Matrix MessagePresentation metadata for OpenClaw-aware clients"
+summary: "Matrix MessagePresentation metadata for Afora-aware clients"
 read_when:
-  - Building Matrix clients that render OpenClaw rich responses
-  - Debugging com.openclaw.presentation event content
+  - Building Matrix clients that render Afora rich responses
+  - Debugging com.afora.presentation event content
 title: "Matrix presentation metadata"
 ---
 
-OpenClaw attaches normalized `MessagePresentation` metadata to outbound Matrix `m.room.message` events under the `com.openclaw.presentation` content key.
+Afora attaches normalized `MessagePresentation` metadata to outbound Matrix `m.room.message` events under the `com.afora.presentation` content key.
 
-Stock Matrix clients keep rendering the plain text `body`. OpenClaw-aware clients can read the structured metadata and render native UI such as buttons, selects, context rows, and dividers.
+Stock Matrix clients keep rendering the plain text `body`. Afora-aware clients can read the structured metadata and render native UI such as buttons, selects, context rows, and dividers.
 
 ## Event content
 
@@ -16,7 +16,7 @@ Stock Matrix clients keep rendering the plain text `body`. OpenClaw-aware client
 {
   "msgtype": "m.text",
   "body": "Select model\n\nChoose model:\n- DeepSeek",
-  "com.openclaw.presentation": {
+  "com.afora.presentation": {
     "version": 1,
     "type": "message.presentation",
     "title": "Select model",
@@ -43,7 +43,7 @@ Stock Matrix clients keep rendering the plain text `body`. OpenClaw-aware client
 
 ## Fallback behavior
 
-OpenClaw always renders a readable plain text fallback into `body`. The structured metadata is additive and must not be required for basic Matrix interoperability.
+Afora always renders a readable plain text fallback into `body`. The structured metadata is additive and must not be required for basic Matrix interoperability.
 
 Fallback rendering rules:
 
@@ -52,7 +52,7 @@ Fallback rendering rules:
 - Select blocks render the placeholder (or `Options:`) as a heading plus label-only option lines.
 - If nothing renders, for example a divider-only presentation, the body falls back to `---`.
 
-Unsupported clients keep showing the fallback text. OpenClaw-aware clients may prefer the structured metadata for display while preserving the fallback for copy, search, notifications, and accessibility.
+Unsupported clients keep showing the fallback text. Afora-aware clients may prefer the structured metadata for display while preserving the fallback for copy, search, notifications, and accessibility.
 
 ## Supported blocks
 
@@ -73,12 +73,12 @@ For example, a button with value `/model deepseek/deepseek-chat -s` can be handl
 
 ## Relationship to approval metadata
 
-`com.openclaw.presentation` is for general rich message presentation.
+`com.afora.presentation` is for general rich message presentation.
 
-Approval prompts use the dedicated `com.openclaw.approval` metadata because approvals carry safety-sensitive state, decisions, and exec/plugin details. If both metadata keys are present on the same event, clients should prefer the dedicated approval renderer.
+Approval prompts use the dedicated `com.afora.approval` metadata because approvals carry safety-sensitive state, decisions, and exec/plugin details. If both metadata keys are present on the same event, clients should prefer the dedicated approval renderer.
 
 ## Media messages
 
-When a reply contains multiple media URLs, OpenClaw sends one Matrix event per media URL. Caption text and presentation metadata attach only to the first event so clients get one stable structured payload without duplicate renderers. The same rule applies when long text is chunked across events: the metadata rides on the first event only.
+When a reply contains multiple media URLs, Afora sends one Matrix event per media URL. Caption text and presentation metadata attach only to the first event so clients get one stable structured payload without duplicate renderers. The same rule applies when long text is chunked across events: the metadata rides on the first event only.
 
 Keep presentation metadata compact. Large user-visible text should stay in `body` and use the normal Matrix text chunking path.

@@ -17,7 +17,7 @@ import {
   tryResolveLegacyCompatibilityAgentId,
 } from "../agents/agent-scope.js";
 import { getRuntimeConfig, readConfigFileSnapshot, replaceConfigFile } from "../config/config.js";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import {
   buildWorkspaceHookStatus,
   type HookStatusEntry,
@@ -75,12 +75,12 @@ type HooksReportTarget = {
   workspaceDir: string;
 };
 
-function resolveHooksReportTarget(config: OpenClawConfig, rawAgentId?: string): HooksReportTarget {
+function resolveHooksReportTarget(config: AforaConfig, rawAgentId?: string): HooksReportTarget {
   const requested = rawAgentId?.trim();
   const requestedAgentId = requested ? normalizeAgentId(requested) : undefined;
   if (requestedAgentId && !listAgentIds(config).includes(requestedAgentId)) {
     throw new Error(
-      `Unknown agent id "${requested}". Run ${formatCliCommand("openclaw agents list")} to see configured agents.`,
+      `Unknown agent id "${requested}". Run ${formatCliCommand("afora agents list")} to see configured agents.`,
     );
   }
   const agentId =
@@ -93,7 +93,7 @@ function resolveHooksReportTarget(config: OpenClawConfig, rawAgentId?: string): 
   return { agentId, workspaceDir: resolveAgentWorkspaceDir(config, agentId) };
 }
 
-function buildHooksReport(config: OpenClawConfig, target: HooksReportTarget): HookStatusReport {
+function buildHooksReport(config: AforaConfig, target: HooksReportTarget): HookStatusReport {
   // Plugin-managed and workspace hooks share one resolved policy view for status/actions.
   const workspaceDir = target.workspaceDir;
   const workspaceEntries = loadWorkspaceHookEntries(workspaceDir, { config });
@@ -177,11 +177,11 @@ function resolveHookForToggle(
 }
 
 function buildConfigWithHookEnabled(params: {
-  config: OpenClawConfig;
+  config: AforaConfig;
   hookName: string;
   enabled: boolean;
   ensureHooksEnabled?: boolean;
-}): OpenClawConfig {
+}): AforaConfig {
   const entries = { ...params.config.hooks?.internal?.entries };
   entries[params.hookName] = { ...entries[params.hookName], enabled: params.enabled };
 
@@ -324,7 +324,7 @@ export function formatHooksList(report: HookStatusReport, opts: HooksListOptions
 
   if (hooks.length === 0) {
     const message = opts.eligible
-      ? `No eligible hooks found. Run \`${formatCliCommand("openclaw hooks list")}\` to see all hooks.`
+      ? `No eligible hooks found. Run \`${formatCliCommand("afora hooks list")}\` to see all hooks.`
       : "No hooks found.";
     return message;
   }
@@ -380,7 +380,7 @@ export function formatHookInfo(
     if (opts.json) {
       return JSON.stringify({ error: "not found", hook: hookName }, null, 2);
     }
-    return `Hook "${hookName}" not found. Run \`${formatCliCommand("openclaw hooks list")}\` to see available hooks.`;
+    return `Hook "${hookName}" not found. Run \`${formatCliCommand("afora hooks list")}\` to see available hooks.`;
   }
 
   if (opts.json) {
@@ -556,7 +556,7 @@ export function formatHooksCheck(report: HookStatusReport, opts: HooksCheckOptio
 
 async function enableHook(hookName: string, agentId?: string): Promise<void> {
   const snapshot = await readConfigFileSnapshot();
-  const config = (snapshot.sourceConfig ?? snapshot.config) as OpenClawConfig;
+  const config = (snapshot.sourceConfig ?? snapshot.config) as AforaConfig;
   const hook = resolveHookForToggle(
     buildHooksReport(config, resolveHooksReportTarget(config, agentId)),
     hookName,
@@ -580,7 +580,7 @@ async function enableHook(hookName: string, agentId?: string): Promise<void> {
 
 async function disableHook(hookName: string, agentId?: string): Promise<void> {
   const snapshot = await readConfigFileSnapshot();
-  const config = (snapshot.sourceConfig ?? snapshot.config) as OpenClawConfig;
+  const config = (snapshot.sourceConfig ?? snapshot.config) as AforaConfig;
   const hook = resolveHookForToggle(
     buildHooksReport(config, resolveHooksReportTarget(config, agentId)),
     hookName,
@@ -609,7 +609,7 @@ export function registerHooksCli(program: Command): void {
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/hooks", "docs.openclaw.ai/cli/hooks")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/hooks", "docs.afora.ai/cli/hooks")}\n`,
     );
   const hasJsonOutput = (opts: { json?: boolean } | undefined): boolean =>
     Boolean(opts?.json || hooks.opts<{ json?: boolean }>().json);
@@ -621,7 +621,7 @@ export function registerHooksCli(program: Command): void {
       !new Set(["list", "info", "check", "enable", "disable"]).has(actionCommand.name())
     ) {
       throw new Error(
-        `openclaw hooks ${actionCommand.name()} does not support --agent; the option only selects an owner for read-only hook reports.`,
+        `afora hooks ${actionCommand.name()} does not support --agent; the option only selects an owner for read-only hook reports.`,
       );
     }
   });
@@ -707,7 +707,7 @@ export function registerHooksCli(program: Command): void {
 
   hooks
     .command("install")
-    .description("Deprecated: install a hook pack via `openclaw plugins install`")
+    .description("Deprecated: install a hook pack via `afora plugins install`")
     .argument("<path-or-spec>", "Path to a hook pack or npm package spec")
     .option("-l, --link", "Link a local path instead of copying", false)
     .option("--pin", "Record npm installs as exact resolved <name>@<version>", false)
@@ -719,7 +719,7 @@ export function registerHooksCli(program: Command): void {
     )
     .action(async (raw: string, opts: HooksInstallOptions) => {
       defaultRuntime.log(
-        theme.warn("`openclaw hooks install` is deprecated; use `openclaw plugins install`."),
+        theme.warn("`afora hooks install` is deprecated; use `afora plugins install`."),
       );
       await runPluginInstallCommand({
         raw,
@@ -731,7 +731,7 @@ export function registerHooksCli(program: Command): void {
 
   hooks
     .command("update")
-    .description("Deprecated: update hook packs via `openclaw plugins update`")
+    .description("Deprecated: update hook packs via `afora plugins update`")
     .argument("[id]", "Hook pack id (omit with --all)")
     .option("--all", "Update all tracked hooks", false)
     .option("--dry-run", "Show what would change without writing", false)
@@ -742,7 +742,7 @@ export function registerHooksCli(program: Command): void {
     )
     .action(async (id: string | undefined, opts: HooksUpdateOptions) => {
       defaultRuntime.log(
-        theme.warn("`openclaw hooks update` is deprecated; use `openclaw plugins update`."),
+        theme.warn("`afora hooks update` is deprecated; use `afora plugins update`."),
       );
       await runPluginUpdateCommand({ id, opts });
     });

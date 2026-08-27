@@ -9,9 +9,9 @@ import { resolveSqliteTargetFromSessionStorePath } from "../config/sessions/sess
 import type { SessionEntry } from "../config/sessions/types.js";
 import type { RuntimeEnv } from "../runtime.js";
 import {
-  closeOpenClawAgentDatabaseByPath,
-  openOpenClawAgentDatabase,
-} from "../state/openclaw-agent-db.js";
+  closeAforaAgentDatabaseByPath,
+  openAforaAgentDatabase,
+} from "../state/afora-agent-db.js";
 
 const sessionsConfigState = vi.hoisted<{ loadConfig: () => Record<string, unknown> }>(() => ({
   loadConfig: () => ({
@@ -96,11 +96,11 @@ export async function writeStore(
   const storePath = path.join(storeDir, "sessions.json");
   const agentId = options.agentId ?? "main";
   const databasePath = resolveSqliteTargetFromSessionStorePath(storePath, { agentId }).path;
-  openOpenClawAgentDatabase({ agentId, path: databasePath });
+  openAforaAgentDatabase({ agentId, path: databasePath });
   for (const [sessionKey, entry] of Object.entries(data)) {
     await replaceSessionEntry({ agentId, sessionKey, storePath }, entry);
   }
-  closeOpenClawAgentDatabaseByPath(databasePath);
+  closeAforaAgentDatabaseByPath(databasePath);
   return databasePath;
 }
 

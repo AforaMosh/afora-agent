@@ -5,11 +5,11 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { useAutoCleanupTempDirTracker } from "../../test/helpers/temp-dir.js";
-import type { DB as OpenClawStateKyselyDatabase } from "../state/openclaw-state-db.generated.js";
+import type { DB as AforaStateKyselyDatabase } from "../state/afora-state-db.generated.js";
 import {
-  closeOpenClawStateDatabaseForTest,
-  openOpenClawStateDatabase,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  openAforaStateDatabase,
+} from "../state/afora-state-db.js";
 import {
   normalizeLegacyDeviceIdentity,
   type NormalizedLegacyDeviceIdentity,
@@ -27,7 +27,7 @@ import {
 } from "./state-migrations.device-identity.js";
 
 type MigrationDatabase = Pick<
-  OpenClawStateKyselyDatabase,
+  AforaStateKyselyDatabase,
   "device_auth_tokens" | "device_identities" | "migration_sources"
 >;
 
@@ -39,21 +39,21 @@ const SWIFT_RAW_PRIVATE_KEY = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="; //
 describe("legacy device identity Doctor migration", () => {
   const tempDirs = useAutoCleanupTempDirTracker((cleanup) => {
     afterEach(() => {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       cleanup();
     });
   });
 
   function useStateDir(): { env: NodeJS.ProcessEnv; stateDir: string } {
-    const stateDir = tempDirs.make("openclaw-device-identity-migration-");
+    const stateDir = tempDirs.make("afora-device-identity-migration-");
     return {
-      env: { ...process.env, HOME: stateDir, OPENCLAW_STATE_DIR: stateDir },
+      env: { ...process.env, HOME: stateDir, AFORA_STATE_DIR: stateDir },
       stateDir,
     };
   }
 
   function database(env: NodeJS.ProcessEnv) {
-    return openOpenClawStateDatabase({ env }).db;
+    return openAforaStateDatabase({ env }).db;
   }
 
   function swiftIdentity() {
@@ -235,7 +235,7 @@ describe("legacy device identity Doctor migration", () => {
     expect(skipped).toEqual({ changes: [], warnings: [] });
     expect(fs.existsSync(sourcePath)).toBe(true);
     expect(identityRow(env)).toBeUndefined();
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
 
     const repaired = await migrateLegacyDeviceIdentity({
       detected: detectLegacyDeviceIdentity({ stateDir, doctorOnlyStateMigrations: true }),
@@ -687,7 +687,7 @@ describe("legacy device identity Doctor migration", () => {
     expect(fs.existsSync(`${sourcePath}.doctor-importing`)).toBe(true);
     expect(receipt(env)).toMatchObject({ removed_source: 0 });
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const retry = await migrate(stateDir, env);
 
     expect(retry.warnings).toEqual([]);
@@ -709,7 +709,7 @@ describe("legacy device identity Doctor migration", () => {
     const replacement = `${JSON.stringify({ ...nodeIdentity(), createdAtMs: CREATED_AT_MS + 1 })}\n`;
     await fsp.writeFile(sourcePath, replacement, "utf8");
 
-    closeOpenClawStateDatabaseForTest();
+    closeAforaStateDatabaseForTest();
     const retry = await migrate(stateDir, env);
 
     expect(retry.warnings.join("\n")).toContain("bytes differ from the migration receipt");
@@ -758,7 +758,7 @@ describe("legacy device identity Doctor migration", () => {
     cases.push({ ...invalid, sourcePath: invalidPath });
 
     for (const testCase of cases) {
-      closeOpenClawStateDatabaseForTest();
+      closeAforaStateDatabaseForTest();
       const result = await migrate(testCase.stateDir, testCase.env);
       expect(result.warnings.join("\n")).toContain("Failed reading legacy device identity");
       expect(fs.existsSync(testCase.sourcePath)).toBe(true);

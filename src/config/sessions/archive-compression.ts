@@ -5,7 +5,7 @@ import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
-import { resolvePreferredOpenClawTmpDir } from "../../infra/tmp-openclaw-dir.js";
+import { resolvePreferredAforaTmpDir } from "../../infra/tmp-afora-dir.js";
 
 export const SESSION_ARCHIVE_ZSTD_SUFFIX = ".zst";
 
@@ -92,7 +92,7 @@ export function materializeSessionArchiveForRead(filePath: string): string {
   if (!filePath.endsWith(SESSION_ARCHIVE_ZSTD_SUFFIX)) {
     return filePath;
   }
-  const cacheDir = path.join(resolvePreferredOpenClawTmpDir(), "session-archive-read-cache");
+  const cacheDir = path.join(resolvePreferredAforaTmpDir(), "session-archive-read-cache");
   const pathKey = createHash("sha256").update(filePath).digest("hex").slice(0, 32);
   // Source identity gates every hit: a deleted or replaced archive must never
   // keep serving plaintext from the cache (budget eviction deletes archives).

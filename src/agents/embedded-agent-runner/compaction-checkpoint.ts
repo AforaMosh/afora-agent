@@ -1,7 +1,7 @@
 import { formatSqliteSessionFileMarker } from "../../config/sessions/legacy-sqlite-marker.js";
 import type { SessionTranscriptRuntimeTarget } from "../../config/sessions/session-accessor.js";
 /** Owns the shared checkpoint lifecycle around both compaction entry points. */
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   createFileBackedCompactionCheckpointStore,
   readSessionLeafStateFromTranscriptAsync,
@@ -15,7 +15,7 @@ import { log } from "./logger.js";
 export const compactionCheckpointStore = createFileBackedCompactionCheckpointStore();
 
 export async function persistCompactionCheckpoint(params: {
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   sessionKey?: string;
   sessionId: string;
   trigger?: "budget" | "overflow" | "manual";

@@ -1,4 +1,4 @@
-import { getRootOptionAwareCommandPath } from "openclaw/plugin-sdk/cli-argv";
+import { getRootOptionAwareCommandPath } from "afora-agent/plugin-sdk/cli-argv";
 
 /** Policy commands follow Unix convention and switch to JSON when stdout is not a terminal. */
 function isPolicyMachineOutput(params: { argv: readonly string[]; stdoutIsTTY: boolean }): boolean {

@@ -8,7 +8,7 @@ import {
   type ForkSessionFromParentTranscriptResult,
 } from "../../config/sessions/session-accessor.js";
 import type { SessionEntry } from "../../config/sessions/types.js";
-import type { OpenClawConfig } from "../../config/types.openclaw.js";
+import type { AforaConfig } from "../../config/types.afora.js";
 import {
   isModelSelectionLocked,
   ModelSelectionLockedError,
@@ -30,7 +30,7 @@ type ParentForkDecision = SessionParentForkDecision;
 type ParentForkDecisionParams = {
   parentEntry: SessionEntry;
   agentId?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   storePath?: string;
 };
 
@@ -38,7 +38,7 @@ type ForkSessionFromParentParams = {
   parentSessionKey: string;
   parentEntry: SessionEntry;
   agentId: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   sessionKey: string;
   storePath?: string;
   forkFrom?: "last-completed";
@@ -92,7 +92,7 @@ type ForkSessionEntryFromParentParams = Omit<ForkSessionFromParentParams, "paren
 
 function resolveParentForkStorePath(params: {
   agentId?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   storePath?: string;
 }): string {
   return (

@@ -1,22 +1,22 @@
 // Googlechat plugin module implements accounts behavior.
-import { createAccountListHelpers } from "openclaw/plugin-sdk/account-helpers";
+import { createAccountListHelpers } from "afora-agent/plugin-sdk/account-helpers";
 import {
   DEFAULT_ACCOUNT_ID,
   normalizeAccountId,
-  type OpenClawConfig,
+  type AforaConfig,
   resolveAccountEntry,
-} from "openclaw/plugin-sdk/account-resolution";
-import { safeParseJsonWithSchema, safeParseWithSchema } from "openclaw/plugin-sdk/extension-shared";
-import { mergePairLoopGuardConfig } from "openclaw/plugin-sdk/pair-loop-guard-runtime";
-import { tryReadSecretFileSync } from "openclaw/plugin-sdk/secret-file-runtime";
+} from "afora-agent/plugin-sdk/account-resolution";
+import { safeParseJsonWithSchema, safeParseWithSchema } from "afora-agent/plugin-sdk/extension-shared";
+import { mergePairLoopGuardConfig } from "afora-agent/plugin-sdk/pair-loop-guard-runtime";
+import { tryReadSecretFileSync } from "afora-agent/plugin-sdk/secret-file-runtime";
 import {
   coerceSecretRef,
   isSecretRef,
   resolveSecretInputString,
   type SecretInputStringResolutionMode,
-} from "openclaw/plugin-sdk/secret-input";
-import { normalizeOptionalString } from "openclaw/plugin-sdk/string-coerce-runtime";
-import { resolveUserPath } from "openclaw/plugin-sdk/text-utility-runtime";
+} from "afora-agent/plugin-sdk/secret-input";
+import { normalizeOptionalString } from "afora-agent/plugin-sdk/string-coerce-runtime";
+import { resolveUserPath } from "afora-agent/plugin-sdk/text-utility-runtime";
 import { z } from "zod";
 import { MAX_GOOGLE_CHAT_SERVICE_ACCOUNT_FILE_BYTES } from "./google-auth-limits.js";
 import type { GoogleChatAccountConfig } from "./types.config.js";
@@ -63,7 +63,7 @@ const {
 export { listGoogleChatAccountIds, resolveDefaultGoogleChatAccountId };
 
 function mergeGoogleChatAccountConfig(
-  cfg: OpenClawConfig,
+  cfg: AforaConfig,
   accountId: string,
 ): GoogleChatAccountConfig {
   const raw = cfg.channels?.["googlechat"] ?? {};
@@ -93,7 +93,7 @@ function mergeGoogleChatAccountConfig(
 }
 
 export function resolveGoogleChatConfigAccessorAccount(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): GoogleChatConfigAccessorAccount {
   const accountId = normalizeAccountId(
@@ -119,7 +119,7 @@ function parseServiceAccount(value: unknown): Record<string, unknown> | null {
 }
 
 function resolveCredentialsFromConfig(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId: string;
   account: GoogleChatAccountConfig;
   mode: SecretInputStringResolutionMode;
@@ -206,7 +206,7 @@ function resolveCredentialsFromConfig(params: {
 }
 
 function resolveGoogleChatAccountWithMode(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
   mode: SecretInputStringResolutionMode;
 }): ResolvedGoogleChatAccount {
@@ -238,14 +238,14 @@ function resolveGoogleChatAccountWithMode(params: {
 }
 
 export function resolveGoogleChatAccount(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): ResolvedGoogleChatAccount {
   return resolveGoogleChatAccountWithMode({ ...params, mode: "strict" });
 }
 
 export function inspectGoogleChatAccount(params: {
-  cfg: OpenClawConfig;
+  cfg: AforaConfig;
   accountId?: string | null;
 }): ResolvedGoogleChatAccount {
   return resolveGoogleChatAccountWithMode({ ...params, mode: "inspect" });

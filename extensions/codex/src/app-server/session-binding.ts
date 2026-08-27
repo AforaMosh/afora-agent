@@ -4,18 +4,18 @@ import { createHash, randomUUID } from "node:crypto";
 import {
   AgentHarnessSessionSupersededError,
   embeddedAgentLog,
-} from "openclaw/plugin-sdk/agent-harness-runtime";
+} from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   ensureAuthProfileStore,
   resolveDefaultAgentDir,
   resolveProviderIdForAuth,
   resolveSessionAgentIds,
   type AuthProfileStore,
-} from "openclaw/plugin-sdk/agent-runtime";
-import type { OpenClawConfig } from "openclaw/plugin-sdk/config-contracts";
-import type { PluginStateSyncKeyedStore } from "openclaw/plugin-sdk/plugin-state-runtime";
-import { getSessionEntry, resolveStorePath } from "openclaw/plugin-sdk/session-store-runtime";
-import { asOptionalRecord } from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/agent-runtime";
+import type { AforaConfig } from "afora-agent/plugin-sdk/config-contracts";
+import type { PluginStateSyncKeyedStore } from "afora-agent/plugin-sdk/plugin-state-runtime";
+import { getSessionEntry, resolveStorePath } from "afora-agent/plugin-sdk/session-store-runtime";
+import { asOptionalRecord } from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { z } from "zod";
 import { CODEX_PLUGIN_MARKETPLACE_NAME_PATTERN, normalizeCodexServiceTier } from "./config.js";
 import type { PluginAppPolicyContext } from "./plugin-thread-config.js";
@@ -54,12 +54,12 @@ export type CodexAppServerBindingIdentity =
   | { kind: "session"; agentId: string; sessionId: string; sessionKey?: string }
   | { kind: "conversation"; bindingId: string };
 
-/** Resolves the same agent scope OpenClaw uses for transcript/session ownership. */
+/** Resolves the same agent scope Afora uses for transcript/session ownership. */
 export function sessionBindingIdentity(params: {
   sessionId: string;
   sessionKey?: string;
   agentId?: string;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
 }): Extract<CodexAppServerBindingIdentity, { kind: "session" }> {
   const { sessionAgentId } = resolveSessionAgentIds(params);
   const sessionKey = params.sessionKey?.trim();
@@ -76,7 +76,7 @@ export type CodexRunSessionBindingAuthority = "current" | "ephemeral" | "superse
 /** Decides whether a run may share the durable stable-key binding owner. */
 export function resolveCodexRunSessionBindingAuthority(params: {
   identity: Extract<CodexAppServerBindingIdentity, { kind: "session" }>;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   storePath?: string;
 }): CodexRunSessionBindingAuthority {
   const sessionKey = params.identity.sessionKey?.trim();
@@ -103,7 +103,7 @@ export function resolveCodexRunSessionBindingAuthority(params: {
   }
 }
 
-/** Builds the terminal coordination error used when a newer OpenClaw session owns the binding. */
+/** Builds the terminal coordination error used when a newer Afora session owns the binding. */
 export function createCodexSessionGenerationSupersededError(
   sessionId: string,
 ): AgentHarnessSessionSupersededError {
@@ -205,15 +205,15 @@ const threadBindingSchema = z
     cwd: z.string(),
     rolloutPath: optionalNonBlankStringSchema,
     // Private runtime ownership. Only the supervision catalog creates this
-    // marker; public OpenClaw session metadata must never authorize user-home access.
+    // marker; public Afora session metadata must never authorize user-home access.
     connectionScope: z.literal("supervision").optional(),
     supervisionSourceThreadId: z.string().trim().min(1).optional(),
     authProfileId: optionalStringSchema,
     model: optionalStringSchema,
     // Codex App Server owns selection for supervised and adopted threads. Keep
-    // this marker across resumes so OpenClaw never substitutes a default or fallback.
+    // this marker across resumes so Afora never substitutes a default or fallback.
     preserveNativeModel: z.literal(true).optional().catch(undefined),
-    // Continue creates the OpenClaw Chat before native execution. This closed
+    // Continue creates the Afora Chat before native execution. This closed
     // snapshot state is materialized only inside the fully configured harness.
     pendingSupervisionBranch: pendingSupervisionBranchSchema.optional(),
     modelProvider: z
@@ -614,11 +614,11 @@ export function scopeCodexRunBindingStore(params: {
   };
 }
 
-/** Lets the authoritative OpenClaw session generation claim a stale stable binding row. */
+/** Lets the authoritative Afora session generation claim a stale stable binding row. */
 export async function reclaimCurrentCodexSessionGeneration(params: {
   bindingStore: CodexAppServerBindingStore;
   identity: Extract<CodexAppServerBindingIdentity, { kind: "session" }>;
-  config?: OpenClawConfig;
+  config?: AforaConfig;
   storePath?: string;
 }): Promise<boolean> {
   const sessionKey = params.identity.sessionKey?.trim();
@@ -882,7 +882,7 @@ export function createCodexAppServerBindingStore(
                   current.retired === true &&
                   current.sessionId === mutation.expectedPreviousSessionId
                 ) {
-                  // Reset boundaries now retain the OpenClaw session id. The
+                  // Reset boundaries now retain the Afora session id. The
                   // authoritative session-store check above proves this fence
                   // belongs to the previous in-place lifecycle, not live work.
                   return {
@@ -1027,7 +1027,7 @@ export function createCodexAppServerBindingStore(
         if (!expectedSessionId) {
           throw new Error("Codex session generation adoption requires the previous session id");
         }
-        // Context-engine compaction rotates the physical OpenClaw session before
+        // Context-engine compaction rotates the physical Afora session before
         // secondary native compaction. Compare both generations so a delayed hook
         // cannot move a newer binding back to its stale predecessor.
         return await transactKey(key, (current) => {

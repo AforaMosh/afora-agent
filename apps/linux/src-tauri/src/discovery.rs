@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use tauri::{Manager, Url, WebviewUrl, WebviewWindowBuilder};
 
-const GATEWAY_SERVICE_TYPE: &str = "_openclaw-gw._tcp.local.";
+const GATEWAY_SERVICE_TYPE: &str = "_afora-gw._tcp.local.";
 
 type GatewayMap = Arc<Mutex<BTreeMap<String, DiscoveredGateway>>>;
 
@@ -128,7 +128,7 @@ impl GatewayDiscovery {
         // A dead receiver makes the next snapshot rebuild discovery. The generation
         // prevents an old receiver from clearing a newer runtime's snapshot on exit.
         let thread = thread::Builder::new()
-            .name("openclaw-gateway-discovery".to_string())
+            .name("afora-gateway-discovery".to_string())
             .spawn(move || {
                 while let Ok(event) = events.recv() {
                     if !apply_event(&gateways, event) {
@@ -378,7 +378,7 @@ fn service_instance_name(fullname: &str) -> String {
     let instance = strip_ascii_suffix(fullname, GATEWAY_SERVICE_TYPE).trim_end_matches('.');
     let name = prettify_instance_name(&decode_bonjour_name(instance));
     if name.is_empty() {
-        "OpenClaw Gateway".to_string()
+        "Afora Gateway".to_string()
     } else {
         name
     }
@@ -387,7 +387,7 @@ fn service_instance_name(fullname: &str) -> String {
 fn prettify_instance_name(name: &str) -> String {
     let normalized = name.split_whitespace().collect::<Vec<_>>().join(" ");
     let without_conflict = strip_conflict_suffix(&normalized).trim();
-    strip_ascii_suffix(without_conflict, " (OpenClaw)")
+    strip_ascii_suffix(without_conflict, " (Afora)")
         .trim()
         .to_string()
 }
@@ -476,7 +476,7 @@ pub fn connect_discovered_gateway(
         return Ok(());
     }
     WebviewWindowBuilder::new(&app, &label, WebviewUrl::External(url))
-        .title(format!("{name} — OpenClaw"))
+        .title(format!("{name} — Afora"))
         .inner_size(1080.0, 720.0)
         .min_inner_size(720.0, 520.0)
         .center()
@@ -493,7 +493,7 @@ mod tests {
     fn service() -> ResolvedService {
         let properties = [
             ("transport", "gateway"),
-            ("displayName", "Studio (OpenClaw)"),
+            ("displayName", "Studio (Afora)"),
             ("gatewayTls", "yes"),
             ("gatewayTlsSha256", "A1B2"),
             ("gatewayDirectReachable", "1"),
@@ -501,7 +501,7 @@ mod tests {
         ];
         ServiceInfo::new(
             GATEWAY_SERVICE_TYPE,
-            "studio (OpenClaw)",
+            "studio (Afora)",
             "studio.local.",
             "192.168.1.7,2001:db8::7",
             18789,
@@ -572,7 +572,7 @@ mod tests {
     fn plaintext_dashboard_url_uses_validated_resolved_ipv4_address() {
         let service = ServiceInfo::new(
             GATEWAY_SERVICE_TYPE,
-            "plaintext IPv4 (OpenClaw)",
+            "plaintext IPv4 (Afora)",
             "plaintext-ipv4.local.",
             "192.168.1.9",
             18789,
@@ -599,7 +599,7 @@ mod tests {
     fn plaintext_dashboard_url_brackets_validated_resolved_ipv6_address() {
         let service = ServiceInfo::new(
             GATEWAY_SERVICE_TYPE,
-            "plaintext IPv6 (OpenClaw)",
+            "plaintext IPv6 (Afora)",
             "plaintext-ipv6.local.",
             "fd00::7",
             18789,
@@ -655,7 +655,7 @@ mod tests {
     fn rejects_public_plaintext_resolved_address() {
         let service = ServiceInfo::new(
             GATEWAY_SERVICE_TYPE,
-            "public plaintext (OpenClaw)",
+            "public plaintext (Afora)",
             "public-plaintext.local.",
             "198.51.100.7",
             18789,
@@ -681,7 +681,7 @@ mod tests {
     fn rejects_public_plaintext_hostname_even_with_private_resolution() {
         let service = ServiceInfo::new(
             GATEWAY_SERVICE_TYPE,
-            "public hostname (OpenClaw)",
+            "public hostname (Afora)",
             "dashboard.example.com.",
             "192.168.1.9",
             18789,
@@ -707,7 +707,7 @@ mod tests {
     fn keeps_validated_tls_hostname_with_ipv6_resolution() {
         let service = ServiceInfo::new(
             GATEWAY_SERVICE_TYPE,
-            "ipv6 tls (OpenClaw)",
+            "ipv6 tls (Afora)",
             "ipv6-tls.local.",
             "2001:db8::7",
             443,
@@ -755,7 +755,7 @@ mod tests {
     fn rejects_gateway_without_direct_transport() {
         let service = ServiceInfo::new(
             GATEWAY_SERVICE_TYPE,
-            "relay only (OpenClaw)",
+            "relay only (Afora)",
             "relay-only.local.",
             "192.168.1.8",
             18789,
@@ -835,9 +835,9 @@ mod tests {
     #[test]
     fn decodes_and_prettifies_fallback_name() {
         assert_eq!(
-            service_instance_name("Peter\\032Studio\\032(OpenClaw)._openclaw-gw._tcp.local."),
+            service_instance_name("Peter\\032Studio\\032(Afora)._afora-gw._tcp.local."),
             "Peter Studio"
         );
-        assert_eq!(prettify_instance_name("Studio (OpenClaw) (2)"), "Studio");
+        assert_eq!(prettify_instance_name("Studio (Afora) (2)"), "Studio");
     }
 }

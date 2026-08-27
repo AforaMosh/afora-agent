@@ -1,7 +1,7 @@
 ---
 name: spike
 description: Run throwaway prototypes to validate feasibility, compare approaches, and report a verdict.
-metadata: { "openclaw": { "emoji": "🧪" } }
+metadata: { "afora": { "emoji": "🧪" } }
 ---
 
 # Spike
@@ -20,7 +20,7 @@ Loop
 
 Output shape
 
-- Default workspace: `.tmp/openclaw-spikes/<slug>` unless user asks for a tracked repo-local path.
+- Default workspace: `.tmp/afora-spikes/<slug>` unless user asks for a tracked repo-local path.
 - Repo-local option: `spikes/<NNN-slug>/` with `README.md` and minimal code.
 - Prefer runnable CLI, tiny HTML, one endpoint, or focused test.
 - Avoid package sprawl, Docker, env files, app frameworks, and production cleanup.

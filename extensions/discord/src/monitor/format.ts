@@ -1,4 +1,4 @@
-import { parseDateStringTimestampMs } from "openclaw/plugin-sdk/number-runtime";
+import { parseDateStringTimestampMs } from "afora-agent/plugin-sdk/number-runtime";
 // Discord helper module supports format behavior.
 import type { Guild, User } from "../internal/discord.js";
 

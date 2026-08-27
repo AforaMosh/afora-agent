@@ -5,7 +5,7 @@ import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { hasErrnoCode } from "../infra/errors.js";
 import { resolveUserPath } from "../infra/home-dir.js";
 import { readRootJsonObjectSync } from "../infra/json-files.js";
-import { resolveOpenClawPackageRootSync } from "../infra/openclaw-root.js";
+import { resolveAforaPackageRootSync } from "../infra/afora-root.js";
 import { isPathInside } from "../infra/path-guards.js";
 import { resolvePluginInstallDir } from "./install-paths.js";
 
@@ -21,7 +21,7 @@ type RelinkManagedNpmRootResult = {
   skipped: number;
 };
 
-export type OpenClawPeerLinkAuditIssue = {
+export type AforaPeerLinkAuditIssue = {
   packageName: string;
   packageDir: string;
   reason: string;
@@ -30,33 +30,33 @@ export type OpenClawPeerLinkAuditIssue = {
 type AuditManagedNpmRootResult = {
   checked: number;
   broken: number;
-  issues: OpenClawPeerLinkAuditIssue[];
+  issues: AforaPeerLinkAuditIssue[];
 };
 
-type OpenClawPeerLinkResult = "linked" | "skipped" | "unchanged";
+type AforaPeerLinkResult = "linked" | "skipped" | "unchanged";
 
-type OpenClawHostDependency = {
+type AforaHostDependency = {
   declaration: "peerDependencies" | "dependencies";
   spec: string;
 };
 
-type RegisteredOpenClawHostLinkResult = {
+type RegisteredAforaHostLinkResult = {
   checked: number;
   repaired: number;
   skipped: number;
-  issues: OpenClawPeerLinkAuditIssue[];
+  issues: AforaPeerLinkAuditIssue[];
 };
 
 /** Resolve the host declaration consistently for peer and direct runtime dependencies. */
-export function resolveOpenClawHostDependency(manifest: {
+export function resolveAforaHostDependency(manifest: {
   dependencies?: unknown;
   peerDependencies?: unknown;
-}): OpenClawHostDependency | null {
+}): AforaHostDependency | null {
   for (const declaration of ["peerDependencies", "dependencies"] as const) {
     const dependencies = manifest[declaration];
     const spec =
       typeof dependencies === "object" && dependencies !== null && !Array.isArray(dependencies)
-        ? (dependencies as Record<string, unknown>).openclaw
+        ? (dependencies as Record<string, unknown>).afora
         : undefined;
     if (typeof spec === "string" && spec) {
       return { declaration, spec };
@@ -95,12 +95,12 @@ async function readSafePackageManifest(
   return result.value;
 }
 
-async function readPackageOpenClawLinkDependencies(
+async function readPackageAforaLinkDependencies(
   packageDir: string,
 ): Promise<Record<string, string>> {
   const manifest = await readSafePackageManifest(packageDir);
-  const dependency = manifest ? resolveOpenClawHostDependency(manifest) : null;
-  return dependency ? { openclaw: dependency.spec } : {};
+  const dependency = manifest ? resolveAforaHostDependency(manifest) : null;
+  return dependency ? { afora: dependency.spec } : {};
 }
 
 async function listManagedNpmRootPackageDirs(npmRoot: string): Promise<string[]> {
@@ -159,12 +159,12 @@ function managedPackageNameFromDir(params: { npmRoot: string; packageDir: string
     .join("/");
 }
 
-async function auditOpenClawPeerDependency(params: {
+async function auditAforaPeerDependency(params: {
   hostRoot: string;
   packageDir: string;
   npmRoot?: string;
   packageName?: string;
-}): Promise<OpenClawPeerLinkAuditIssue | null> {
+}): Promise<AforaPeerLinkAuditIssue | null> {
   const packageName =
     params.packageName ??
     (params.npmRoot
@@ -188,13 +188,13 @@ async function auditOpenClawPeerDependency(params: {
       return {
         packageName,
         packageDir: params.packageDir,
-        reason: `missing ${path.join(nodeModulesDir, "openclaw")}`,
+        reason: `missing ${path.join(nodeModulesDir, "afora")}`,
       };
     }
     throw error;
   }
 
-  const linkPath = path.join(nodeModulesDir, "openclaw");
+  const linkPath = path.join(nodeModulesDir, "afora");
   const currentTarget = await safeRealpath(linkPath);
   if (!currentTarget) {
     return {
@@ -214,12 +214,12 @@ async function auditOpenClawPeerDependency(params: {
   return null;
 }
 
-export async function auditOpenClawPeerDependencyLink(params: {
+export async function auditAforaPeerDependencyLink(params: {
   packageDir: string;
   packageName?: string;
-}): Promise<OpenClawPeerLinkAuditIssue | null> {
+}): Promise<AforaPeerLinkAuditIssue | null> {
   const packageName = params.packageName ?? path.basename(params.packageDir);
-  const hostRoot = resolveOpenClawPackageRootSync({
+  const hostRoot = resolveAforaPackageRootSync({
     argv1: process.argv[1],
     moduleUrl: import.meta.url,
     cwd: process.cwd(),
@@ -228,26 +228,26 @@ export async function auditOpenClawPeerDependencyLink(params: {
     return {
       packageName,
       packageDir: params.packageDir,
-      reason: "could not locate openclaw package root",
+      reason: "could not locate afora package root",
     };
   }
-  return await auditOpenClawPeerDependency({
+  return await auditAforaPeerDependency({
     hostRoot,
     packageDir: params.packageDir,
     packageName,
   });
 }
 
-/** Audit the installed host only when the package actually declares an OpenClaw dependency. */
-export async function auditDeclaredOpenClawHostDependency(params: {
+/** Audit the installed host only when the package actually declares an Afora dependency. */
+export async function auditDeclaredAforaHostDependency(params: {
   packageDir: string;
   packageName?: string;
-}): Promise<OpenClawPeerLinkAuditIssue | null> {
-  const dependencies = await readPackageOpenClawLinkDependencies(params.packageDir);
-  if (!Object.hasOwn(dependencies, "openclaw")) {
+}): Promise<AforaPeerLinkAuditIssue | null> {
+  const dependencies = await readPackageAforaLinkDependencies(params.packageDir);
+  if (!Object.hasOwn(dependencies, "afora")) {
     return null;
   }
-  return await auditOpenClawPeerDependencyLink(params);
+  return await auditAforaPeerDependencyLink(params);
 }
 
 async function ensureRealNodeModulesDir(params: {
@@ -259,7 +259,7 @@ async function ensureRealNodeModulesDir(params: {
     const existing = await fs.lstat(nodeModulesDir);
     if (!existing.isDirectory() || existing.isSymbolicLink()) {
       params.logger.warn?.(
-        `Skipping openclaw peerDependency link because ${nodeModulesDir} is not a real directory.`,
+        `Skipping afora peerDependency link because ${nodeModulesDir} is not a real directory.`,
       );
       return null;
     }
@@ -274,19 +274,19 @@ async function ensureRealNodeModulesDir(params: {
   const created = await fs.lstat(nodeModulesDir);
   if (!created.isDirectory() || created.isSymbolicLink()) {
     params.logger.warn?.(
-      `Skipping openclaw peerDependency link because ${nodeModulesDir} is not a real directory.`,
+      `Skipping afora peerDependency link because ${nodeModulesDir} is not a real directory.`,
     );
     return null;
   }
   return nodeModulesDir;
 }
 
-async function linkOpenClawPeerDependency(params: {
+async function linkAforaPeerDependency(params: {
   hostRoot: string;
   installedDir: string;
   peerName: string;
   logger: PluginPeerLinkLogger;
-}): Promise<OpenClawPeerLinkResult> {
+}): Promise<AforaPeerLinkResult> {
   const nodeModulesDir = await ensureRealNodeModulesDir({
     installedDir: params.installedDir,
     logger: params.logger,
@@ -311,9 +311,9 @@ async function linkOpenClawPeerDependency(params: {
     });
     if (existing) {
       if (!existing.isSymbolicLink()) {
-        if (params.peerName === "openclaw" && existing.isDirectory()) {
+        if (params.peerName === "afora" && existing.isDirectory()) {
           const existingPackageName = await readPackageName(linkPath);
-          if (existingPackageName === "openclaw") {
+          if (existingPackageName === "afora") {
             await fs.rm(linkPath, { recursive: true, force: true });
             await fs.symlink(params.hostRoot, linkPath, "junction");
             params.logger.info?.(
@@ -323,7 +323,7 @@ async function linkOpenClawPeerDependency(params: {
           }
         }
         params.logger.warn?.(
-          `Skipping openclaw peerDependency link because ${linkPath} already exists and is not a symlink.`,
+          `Skipping afora peerDependency link because ${linkPath} already exists and is not a symlink.`,
         );
         return "skipped";
       }
@@ -344,28 +344,28 @@ async function readPackageName(packageDir: string): Promise<string | undefined> 
 }
 
 /**
- * Symlink the host openclaw package for plugins that declare it as a dependency.
+ * Symlink the host afora package for plugins that declare it as a dependency.
  * Plugin package managers still own third-party dependencies; this only wires
  * the host SDK package into the plugin-local Node graph.
  */
-export async function linkOpenClawPeerDependencies(params: {
+export async function linkAforaPeerDependencies(params: {
   installedDir: string;
   peerDependencies: Record<string, string>;
   logger: PluginPeerLinkLogger;
 }): Promise<{ repaired: number; skipped: number }> {
-  const peers = Object.keys(params.peerDependencies).filter((name) => name === "openclaw");
+  const peers = Object.keys(params.peerDependencies).filter((name) => name === "afora");
   if (peers.length === 0) {
     return { repaired: 0, skipped: 0 };
   }
 
-  const hostRoot = resolveOpenClawPackageRootSync({
+  const hostRoot = resolveAforaPackageRootSync({
     argv1: process.argv[1],
     moduleUrl: import.meta.url,
     cwd: process.cwd(),
   });
   if (!hostRoot) {
     params.logger.warn?.(
-      "Could not locate openclaw package root to symlink peerDependencies; plugin may fail to resolve openclaw at runtime.",
+      "Could not locate afora package root to symlink peerDependencies; plugin may fail to resolve afora at runtime.",
     );
     return { repaired: 0, skipped: peers.length };
   }
@@ -373,7 +373,7 @@ export async function linkOpenClawPeerDependencies(params: {
   let repaired = 0;
   let skipped = 0;
   for (const peerName of peers) {
-    const result = await linkOpenClawPeerDependency({
+    const result = await linkAforaPeerDependency({
       hostRoot,
       installedDir: params.installedDir,
       peerName,
@@ -392,14 +392,14 @@ export async function linkOpenClawPeerDependencies(params: {
  * Repair only npm-owned legacy installs named by the authoritative install ledger.
  * Local/path installs and symlink escapes remain developer-owned and are never mutated.
  */
-export async function reconcileRegisteredOpenClawHostLinks(params: {
+export async function reconcileRegisteredAforaHostLinks(params: {
   installRecords: Record<string, PluginInstallRecord>;
   extensionsDir: string;
   env?: NodeJS.ProcessEnv;
   mode: "audit" | "repair";
   logger?: PluginPeerLinkLogger;
   onPackageReadError?: (error: unknown, packageDir: string) => void;
-}): Promise<RegisteredOpenClawHostLinkResult> {
+}): Promise<RegisteredAforaHostLinkResult> {
   const extensionsRoot = path.resolve(params.extensionsDir);
   const extensionsRootRealPath = await safeRealpath(extensionsRoot);
   if (!extensionsRootRealPath) {
@@ -409,7 +409,7 @@ export async function reconcileRegisteredOpenClawHostLinks(params: {
   let checked = 0;
   let repaired = 0;
   let skipped = 0;
-  const issues: OpenClawPeerLinkAuditIssue[] = [];
+  const issues: AforaPeerLinkAuditIssue[] = [];
   for (const [pluginId, record] of Object.entries(params.installRecords).toSorted(
     ([left], [right]) => left.localeCompare(right),
   )) {
@@ -445,7 +445,7 @@ export async function reconcileRegisteredOpenClawHostLinks(params: {
 
     let dependencies: Record<string, string>;
     try {
-      dependencies = await readPackageOpenClawLinkDependencies(packageDir);
+      dependencies = await readPackageAforaLinkDependencies(packageDir);
     } catch (error) {
       if (!params.onPackageReadError) {
         throw error;
@@ -454,12 +454,12 @@ export async function reconcileRegisteredOpenClawHostLinks(params: {
       skipped += 1;
       continue;
     }
-    if (!Object.hasOwn(dependencies, "openclaw")) {
+    if (!Object.hasOwn(dependencies, "afora")) {
       continue;
     }
     checked += 1;
 
-    const issue = await auditOpenClawPeerDependencyLink({
+    const issue = await auditAforaPeerDependencyLink({
       packageDir,
       packageName: pluginId,
     });
@@ -471,7 +471,7 @@ export async function reconcileRegisteredOpenClawHostLinks(params: {
       continue;
     }
 
-    const result = await linkOpenClawPeerDependencies({
+    const result = await linkAforaPeerDependencies({
       installedDir: packageDir,
       peerDependencies: dependencies,
       logger: params.logger ?? {},
@@ -482,7 +482,7 @@ export async function reconcileRegisteredOpenClawHostLinks(params: {
   return { checked, repaired, skipped, issues };
 }
 
-export async function relinkOpenClawPeerDependenciesInManagedNpmRoot(params: {
+export async function relinkAforaPeerDependenciesInManagedNpmRoot(params: {
   npmRoot: string;
   logger: PluginPeerLinkLogger;
   onPackageReadError?: (error: unknown, packageDir: string) => void;
@@ -492,9 +492,9 @@ export async function relinkOpenClawPeerDependenciesInManagedNpmRoot(params: {
   let repaired = 0;
   let skipped = 0;
   for (const packageDir of await listManagedNpmRootPackageDirs(params.npmRoot)) {
-    let openClawLinkDependencies: Record<string, string>;
+    let aforaLinkDependencies: Record<string, string>;
     try {
-      openClawLinkDependencies = await readPackageOpenClawLinkDependencies(packageDir);
+      aforaLinkDependencies = await readPackageAforaLinkDependencies(packageDir);
     } catch (error) {
       if (!params.onPackageReadError) {
         throw error;
@@ -503,13 +503,13 @@ export async function relinkOpenClawPeerDependenciesInManagedNpmRoot(params: {
       skipped += 1;
       continue;
     }
-    if (!Object.hasOwn(openClawLinkDependencies, "openclaw")) {
+    if (!Object.hasOwn(aforaLinkDependencies, "afora")) {
       continue;
     }
     checked += 1;
-    const result = await linkOpenClawPeerDependencies({
+    const result = await linkAforaPeerDependencies({
       installedDir: packageDir,
-      peerDependencies: openClawLinkDependencies,
+      peerDependencies: aforaLinkDependencies,
       logger: params.logger,
     });
     attempted += 1;
@@ -519,11 +519,11 @@ export async function relinkOpenClawPeerDependenciesInManagedNpmRoot(params: {
   return { checked, attempted, repaired, skipped };
 }
 
-export async function auditOpenClawPeerDependenciesInManagedNpmRoot(params: {
+export async function auditAforaPeerDependenciesInManagedNpmRoot(params: {
   npmRoot: string;
   onPackageReadError?: (error: unknown, packageDir: string) => void;
 }): Promise<AuditManagedNpmRootResult> {
-  const hostRoot = resolveOpenClawPackageRootSync({
+  const hostRoot = resolveAforaPackageRootSync({
     argv1: process.argv[1],
     moduleUrl: import.meta.url,
     cwd: process.cwd(),
@@ -533,11 +533,11 @@ export async function auditOpenClawPeerDependenciesInManagedNpmRoot(params: {
   }
 
   let checked = 0;
-  const issues: OpenClawPeerLinkAuditIssue[] = [];
+  const issues: AforaPeerLinkAuditIssue[] = [];
   for (const packageDir of await listManagedNpmRootPackageDirs(params.npmRoot)) {
-    let openClawLinkDependencies: Record<string, string>;
+    let aforaLinkDependencies: Record<string, string>;
     try {
-      openClawLinkDependencies = await readPackageOpenClawLinkDependencies(packageDir);
+      aforaLinkDependencies = await readPackageAforaLinkDependencies(packageDir);
     } catch (error) {
       if (!params.onPackageReadError) {
         throw error;
@@ -545,11 +545,11 @@ export async function auditOpenClawPeerDependenciesInManagedNpmRoot(params: {
       params.onPackageReadError(error, packageDir);
       continue;
     }
-    if (!Object.hasOwn(openClawLinkDependencies, "openclaw")) {
+    if (!Object.hasOwn(aforaLinkDependencies, "afora")) {
       continue;
     }
     checked += 1;
-    const issue = await auditOpenClawPeerDependency({
+    const issue = await auditAforaPeerDependency({
       hostRoot,
       npmRoot: params.npmRoot,
       packageDir,

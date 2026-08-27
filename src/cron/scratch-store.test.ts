@@ -3,9 +3,9 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  closeOpenClawStateDatabaseForTest,
-  runOpenClawStateWriteTransaction,
-} from "../state/openclaw-state-db.js";
+  closeAforaStateDatabaseForTest,
+  runAforaStateWriteTransaction,
+} from "../state/afora-state-db.js";
 import { CRON_JOB_SCRATCH_MAX_BYTES } from "./scratch-contract.js";
 import {
   hashCronScratchSource,
@@ -19,14 +19,14 @@ import type { CronJob } from "./types.js";
 const tempDirs: string[] = [];
 
 afterEach(async () => {
-  closeOpenClawStateDatabaseForTest();
+  closeAforaStateDatabaseForTest();
   await Promise.all(tempDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })));
 });
 
 async function createFixture() {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-cron-scratch-"));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "afora-cron-scratch-"));
   tempDirs.push(root);
-  const env = { ...process.env, OPENCLAW_STATE_DIR: path.join(root, "state") };
+  const env = { ...process.env, AFORA_STATE_DIR: path.join(root, "state") };
   const fixture = {
     storePath: path.join(root, "cron", "jobs.json"),
     options: { env },
@@ -43,7 +43,7 @@ async function createFixture() {
     payload: { kind: "systemEvent", text: "test" },
     state: {},
   };
-  runOpenClawStateWriteTransaction(
+  runAforaStateWriteTransaction(
     ({ db }) => upsertCronJobRow(db, cronStoreKey(fixture.storePath), job, 0),
     fixture.options,
   );
@@ -143,7 +143,7 @@ describe("cron job scratch store", () => {
 
   it("rejects a late write after the owning job is durably deleted", async () => {
     const fixture = await createFixture();
-    runOpenClawStateWriteTransaction(
+    runAforaStateWriteTransaction(
       ({ db }) => replaceCronRows(db, cronStoreKey(fixture.storePath), { version: 1, jobs: [] }),
       fixture.options,
     );

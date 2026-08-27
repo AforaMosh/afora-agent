@@ -1,8 +1,8 @@
-import { normalizeUsage } from "openclaw/plugin-sdk/agent-harness-runtime";
+import { normalizeUsage } from "afora-agent/plugin-sdk/agent-harness-runtime";
 import {
   asSafeIntegerInRange,
   readStringField as readString,
-} from "openclaw/plugin-sdk/string-coerce-runtime";
+} from "afora-agent/plugin-sdk/string-coerce-runtime";
 import { isJsonObject, type JsonObject } from "./protocol.js";
 
 function readTokenCount(record: JsonObject, key: string): number | undefined {
@@ -75,7 +75,7 @@ export function normalizeCodexResponseTokenUsage(
 }
 
 function normalizeCodexTokenUsageBreakdown(record: JsonObject): ReturnType<typeof normalizeUsage> {
-  // v2 TokenUsageBreakdown. inputTokens includes cached input; OpenClaw usage
+  // v2 TokenUsageBreakdown. inputTokens includes cached input; Afora usage
   // tracks uncached input, cache reads, and cache writes separately.
   const totalTokens = readTokenCount(record, "totalTokens");
   const inputTokens = readTokenCount(record, "inputTokens");

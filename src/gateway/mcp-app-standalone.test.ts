@@ -200,7 +200,7 @@ describe("MCP App standalone host", () => {
   });
 
   it("serves a hash-protected static shell without per-view data", async () => {
-    const result = await request({ url: "/__openclaw__/mcp-app" });
+    const result = await request({ url: "/__afora__/mcp-app" });
     expect(result.handled).toBe(true);
     expect(result.res.statusCode).toBe(200);
     const body = String(result.end.mock.calls[0]?.[0]);
@@ -219,7 +219,7 @@ describe("MCP App standalone host", () => {
   });
 
   it("executes serialized fetch deadlines with visible outcomes", async () => {
-    const shell = await request({ url: "/__openclaw__/mcp-app" });
+    const shell = await request({ url: "/__afora__/mcp-app" });
     const html = String(shell.end.mock.calls[0]?.[0]);
     const source = /<script>([\s\S]+)<\/script>/u.exec(html)?.[1];
     expect(source).toBeDefined();
@@ -254,7 +254,7 @@ describe("MCP App standalone host", () => {
     );
     expect(initialTimeout).toHaveBeenCalledWith(30_000);
     expect(initialFetch).toHaveBeenCalledWith(
-      "/__openclaw__/mcp-app/view",
+      "/__afora__/mcp-app/view",
       expect.objectContaining({ signal: initialSignal }),
     );
 
@@ -346,14 +346,14 @@ describe("MCP App standalone host", () => {
     expect(timeout).toHaveBeenNthCalledWith(2, 65_000);
     expect(fetch).toHaveBeenNthCalledWith(
       2,
-      "/__openclaw__/mcp-app/view",
+      "/__afora__/mcp-app/view",
       expect.objectContaining({ signal: operationController.signal }),
     );
   });
 
   it("returns capabilities only for handlers installed on the live view", async () => {
     const issued = issueTicket({ sessionKey: "agent:main:main", view, nowMs, secret });
-    const route = "/__openclaw__/mcp-app/view";
+    const route = "/__afora__/mcp-app/view";
     expect((await request({ url: route })).res.statusCode).toBe(401);
     expect((await request({ url: `${route}?ticket=${issued.ticket}` })).res.statusCode).toBe(401);
     const accepted = await request({ url: route, authorization: `MCP-App ${issued.ticket}` });
@@ -378,7 +378,7 @@ describe("MCP App standalone host", () => {
     const issued = issueTicket({ sessionKey: "agent:main:main", view, nowMs, secret });
     const invoke = (body: unknown) =>
       request({
-        url: "/__openclaw__/mcp-app/view",
+        url: "/__afora__/mcp-app/view",
         method: "POST",
         authorization: `MCP-App ${issued.ticket}`,
         body,
@@ -409,7 +409,7 @@ describe("MCP App standalone host", () => {
     const issued = issueTicket({ sessionKey: "agent:main:main", view, nowMs, secret });
     const invoke = (body: unknown) =>
       request({
-        url: "/__openclaw__/mcp-app/view",
+        url: "/__afora__/mcp-app/view",
         method: "POST",
         authorization: `MCP-App ${issued.ticket}`,
         body,
@@ -429,7 +429,7 @@ describe("MCP App standalone host", () => {
     const issued = issueTicket({ sessionKey: "agent:main:main", view, nowMs, secret });
     const invoke = (body: unknown) =>
       request({
-        url: "/__openclaw__/mcp-app/view",
+        url: "/__afora__/mcp-app/view",
         method: "POST",
         authorization: `MCP-App ${issued.ticket}`,
         body,
@@ -451,7 +451,7 @@ describe("MCP App standalone host", () => {
     const issued = issueTicket({ sessionKey: "agent:main:main", view, nowMs, secret });
     const invoke = (now: number) =>
       request({
-        url: "/__openclaw__/mcp-app/view",
+        url: "/__afora__/mcp-app/view",
         method: "POST",
         authorization: `MCP-App ${issued.ticket}`,
         now,
@@ -461,7 +461,7 @@ describe("MCP App standalone host", () => {
     expect(
       (
         await request({
-          url: "/__openclaw__/mcp-app/view",
+          url: "/__afora__/mcp-app/view",
           authorization: `MCP-App ${issued.ticket}`,
           now: nowMs,
         })
@@ -478,7 +478,7 @@ describe("MCP App standalone host", () => {
     expect(
       (
         await request({
-          url: "/__openclaw__/mcp-app/view",
+          url: "/__afora__/mcp-app/view",
           method: "POST",
           authorization: `MCP-App ${issued.ticket}`,
           clock,
@@ -491,14 +491,14 @@ describe("MCP App standalone host", () => {
 
   it("is path-scoped and rejects malformed operations", async () => {
     const issued = issueTicket({ sessionKey: "agent:main:main", view, nowMs, secret });
-    expect((await request({ url: "/__openclaw__/mcp-app", method: "POST" })).res.statusCode).toBe(
+    expect((await request({ url: "/__afora__/mcp-app", method: "POST" })).res.statusCode).toBe(
       404,
     );
-    expect((await request({ url: "/__openclaw__/mcp-app/other" })).handled).toBe(false);
+    expect((await request({ url: "/__afora__/mcp-app/other" })).handled).toBe(false);
     expect(
       (
         await request({
-          url: "/__openclaw__/mcp-app/view",
+          url: "/__afora__/mcp-app/view",
           method: "POST",
           authorization: `MCP-App ${issued.ticket}`,
           body: { method: "gateway.call", params: {} },
@@ -518,7 +518,7 @@ describe("MCP App standalone host", () => {
       secret,
     });
     const accepted = await request({
-      url: "/__openclaw__/mcp-app/view",
+      url: "/__afora__/mcp-app/view",
       authorization: `MCP-App ${issued.ticket}`,
     });
     expect(accepted.res.statusCode).toBe(200);

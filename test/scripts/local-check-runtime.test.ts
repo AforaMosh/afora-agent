@@ -27,11 +27,11 @@ const ROOMY_HOST = {
 function makeEnv(overrides: Record<string, string | undefined> = {}) {
   const env: NodeJS.ProcessEnv = {
     ...process.env,
-    OPENCLAW_LOCAL_CHECK: "1",
+    AFORA_LOCAL_CHECK: "1",
     ...overrides,
   };
-  if (!Object.hasOwn(overrides, "OPENCLAW_LOCAL_CHECK_MODE")) {
-    delete env.OPENCLAW_LOCAL_CHECK_MODE;
+  if (!Object.hasOwn(overrides, "AFORA_LOCAL_CHECK_MODE")) {
+    delete env.AFORA_LOCAL_CHECK_MODE;
   }
   if (!Object.hasOwn(overrides, "GITHUB_ACTIONS")) {
     delete env.GITHUB_ACTIONS;
@@ -41,8 +41,8 @@ function makeEnv(overrides: Record<string, string | undefined> = {}) {
 
 describe("local-check-runtime", () => {
   it("resolves repo tools from the primary checkout for dependency-less worktrees", () => {
-    const primaryRoot = createTempDir("openclaw-primary-checkout-");
-    const cwd = path.join(primaryRoot, ".codex", "worktrees", "task", "openclaw");
+    const primaryRoot = createTempDir("afora-primary-checkout-");
+    const cwd = path.join(primaryRoot, ".codex", "worktrees", "task", "afora");
     const commonDir = path.join(primaryRoot, ".git");
     const localPath = path.resolve(cwd, "node_modules", ".bin", "oxlint");
     const primaryPath = path.join(primaryRoot, "node_modules", ".bin", "oxlint");
@@ -64,8 +64,8 @@ describe("local-check-runtime", () => {
   });
 
   it("links dependency-less worktrees to the selected checkout's modules", () => {
-    const primaryRoot = createTempDir("openclaw-primary-toolchain-");
-    const cwd = path.join(primaryRoot, ".codex", "worktrees", "task", "openclaw");
+    const primaryRoot = createTempDir("afora-primary-toolchain-");
+    const cwd = path.join(primaryRoot, ".codex", "worktrees", "task", "afora");
     const commonDir = path.join(primaryRoot, ".git");
     const primaryTsgo = path.join(primaryRoot, "node_modules", ".bin", "tsgo");
     const primaryNodeModules = path.join(primaryRoot, "node_modules");
@@ -91,7 +91,7 @@ describe("local-check-runtime", () => {
   });
 
   it("leaves existing worktree node_modules directories locally owned", () => {
-    const primaryRoot = createTempDir("openclaw-primary-toolchain-");
+    const primaryRoot = createTempDir("afora-primary-toolchain-");
     const commonDir = path.join(primaryRoot, ".git");
     const primaryTsgo = path.join(primaryRoot, "node_modules", ".bin", "tsgo");
     const cwd = path.join(primaryRoot, "worktree");
@@ -109,12 +109,12 @@ describe("local-check-runtime", () => {
   });
 
   it("reenables local check policy for local wrapper entrypoints", () => {
-    expect(resolveLocalCheckEnv({ OPENCLAW_LOCAL_CHECK: "0", PATH: "/usr/bin" })).toEqual({
-      OPENCLAW_LOCAL_CHECK: "1",
+    expect(resolveLocalCheckEnv({ AFORA_LOCAL_CHECK: "0", PATH: "/usr/bin" })).toEqual({
+      AFORA_LOCAL_CHECK: "1",
       PATH: "/usr/bin",
     });
-    expect(resolveLocalCheckEnv({ OPENCLAW_LOCAL_CHECK: "false", PATH: "/usr/bin" })).toEqual({
-      OPENCLAW_LOCAL_CHECK: "1",
+    expect(resolveLocalCheckEnv({ AFORA_LOCAL_CHECK: "false", PATH: "/usr/bin" })).toEqual({
+      AFORA_LOCAL_CHECK: "1",
       PATH: "/usr/bin",
     });
   });
@@ -123,12 +123,12 @@ describe("local-check-runtime", () => {
     expect(
       resolveLocalCheckEnv({
         CI: "true",
-        OPENCLAW_LOCAL_CHECK: "0",
+        AFORA_LOCAL_CHECK: "0",
         PATH: "/usr/bin",
       }),
     ).toEqual({
       CI: "true",
-      OPENCLAW_LOCAL_CHECK: "0",
+      AFORA_LOCAL_CHECK: "0",
       PATH: "/usr/bin",
     });
   });
@@ -152,7 +152,7 @@ describe("local-check-runtime", () => {
   });
 
   it("skips declaration transforms for no-emit tsgo checks", () => {
-    const { args } = applyLocalTsgoPolicy([], makeEnv({ OPENCLAW_LOCAL_CHECK: "0" }), ROOMY_HOST);
+    const { args } = applyLocalTsgoPolicy([], makeEnv({ AFORA_LOCAL_CHECK: "0" }), ROOMY_HOST);
 
     expect(args).toEqual(["--declaration", "false"]);
   });
@@ -164,7 +164,7 @@ describe("local-check-runtime", () => {
         GOMAXPROCS: "3",
         GOGC: "80",
         GOMEMLIMIT: "5GiB",
-        OPENCLAW_TSGO_PPROF_DIR: "/tmp/profile",
+        AFORA_TSGO_PPROF_DIR: "/tmp/profile",
       }),
       CONSTRAINED_HOST,
     );
@@ -184,7 +184,7 @@ describe("local-check-runtime", () => {
   });
 
   it("keeps explicit tsgo declaration flags intact", () => {
-    const env = makeEnv({ OPENCLAW_LOCAL_CHECK_MODE: "full" });
+    const env = makeEnv({ AFORA_LOCAL_CHECK_MODE: "full" });
     const longFlag = applyLocalTsgoPolicy(["--declaration"], env, ROOMY_HOST);
     const shortFlag = applyLocalTsgoPolicy(["-d"], env, ROOMY_HOST);
 
@@ -211,8 +211,8 @@ describe("local-check-runtime", () => {
     const { args } = applyLocalTsgoPolicy(
       [],
       makeEnv({
-        OPENCLAW_LOCAL_CHECK_MODE: "full",
-        OPENCLAW_TSGO_BUILD_INFO_FILE: ".artifacts/custom/tsgo.tsbuildinfo",
+        AFORA_LOCAL_CHECK_MODE: "full",
+        AFORA_TSGO_BUILD_INFO_FILE: ".artifacts/custom/tsgo.tsbuildinfo",
       }),
       ROOMY_HOST,
     );
@@ -229,7 +229,7 @@ describe("local-check-runtime", () => {
   it("avoids incremental cache reuse for ad hoc tsgo runs", () => {
     const { args } = applyLocalTsgoPolicy(
       ["--extendedDiagnostics"],
-      makeEnv({ OPENCLAW_LOCAL_CHECK_MODE: "full" }),
+      makeEnv({ AFORA_LOCAL_CHECK_MODE: "full" }),
       ROOMY_HOST,
     );
 
@@ -240,7 +240,7 @@ describe("local-check-runtime", () => {
     const { args, env } = applyLocalTsgoPolicy(
       [],
       makeEnv({
-        OPENCLAW_LOCAL_CHECK_MODE: "throttled",
+        AFORA_LOCAL_CHECK_MODE: "throttled",
       }),
       ROOMY_HOST,
     );
@@ -261,7 +261,7 @@ describe("local-check-runtime", () => {
   });
 
   it("does not oversubscribe a single-CPU host", () => {
-    const { env } = applyLocalTsgoPolicy([], makeEnv({ OPENCLAW_LOCAL_CHECK_MODE: "throttled" }), {
+    const { env } = applyLocalTsgoPolicy([], makeEnv({ AFORA_LOCAL_CHECK_MODE: "throttled" }), {
       logicalCpuCount: 1,
       totalMemoryBytes: 16 * 1024 ** 3,
     });
@@ -273,7 +273,7 @@ describe("local-check-runtime", () => {
     const { args, env } = applyLocalTsgoPolicy(
       [],
       makeEnv({
-        OPENCLAW_LOCAL_CHECK_MODE: "full",
+        AFORA_LOCAL_CHECK_MODE: "full",
       }),
       ROOMY_HOST,
     );
@@ -343,7 +343,7 @@ describe("local-check-runtime", () => {
   });
 
   it("passes the throttled Go concurrency limit to the oxlint child", () => {
-    const cwd = createTempDir("openclaw-oxlint-go-limit-");
+    const cwd = createTempDir("afora-oxlint-go-limit-");
     const binDir = path.join(cwd, "node_modules", ".bin");
     const capturePath = path.join(cwd, "gomaxprocs.txt");
     const oxlintPath = path.join(binDir, "oxlint");
@@ -357,9 +357,9 @@ describe("local-check-runtime", () => {
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       CAPTURE_PATH: capturePath,
-      OPENCLAW_LOCAL_CHECK: "1",
-      OPENCLAW_LOCAL_CHECK_MODE: "throttled",
-      OPENCLAW_OXLINT_SKIP_PREPARE: "1",
+      AFORA_LOCAL_CHECK: "1",
+      AFORA_LOCAL_CHECK_MODE: "throttled",
+      AFORA_OXLINT_SKIP_PREPARE: "1",
     };
     delete env.GOMAXPROCS;
 
@@ -379,7 +379,7 @@ describe("local-check-runtime", () => {
     const { args, env } = applyLocalOxlintPolicy(
       [],
       makeEnv({
-        OPENCLAW_LOCAL_CHECK_MODE: "full",
+        AFORA_LOCAL_CHECK_MODE: "full",
       }),
       ROOMY_HOST,
     );
@@ -400,7 +400,7 @@ describe("local-check-runtime", () => {
       ["--", "src/example.ts"],
       makeEnv({
         GITHUB_ACTIONS: "true",
-        OPENCLAW_LOCAL_CHECK_MODE: "full",
+        AFORA_LOCAL_CHECK_MODE: "full",
       }),
       ROOMY_HOST,
     );
@@ -415,7 +415,7 @@ describe("local-check-runtime", () => {
         [formatArg],
         makeEnv({
           GITHUB_ACTIONS: "true",
-          OPENCLAW_LOCAL_CHECK_MODE: "full",
+          AFORA_LOCAL_CHECK_MODE: "full",
         }),
         ROOMY_HOST,
       );

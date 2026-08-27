@@ -1,6 +1,6 @@
 // Manifest tool-availability tests cover config, auth, environment, and base-URL gates.
 import { describe, expect, it } from "vitest";
-import type { OpenClawConfig } from "../config/types.openclaw.js";
+import type { AforaConfig } from "../config/types.afora.js";
 import type { PluginManifestRecord } from "./manifest-registry.js";
 import {
   hasManifestToolAvailability,
@@ -21,13 +21,13 @@ function makePlugin(overrides: Partial<PluginManifestRecord>): PluginManifestRec
     origin: "bundled",
     rootDir: "/tmp/demo",
     source: "/tmp/demo/index.js",
-    manifestPath: "/tmp/demo/openclaw.plugin.json",
+    manifestPath: "/tmp/demo/afora.plugin.json",
     ...overrides,
   };
 }
 
-function makeConfig(value: Record<string, unknown>): OpenClawConfig {
-  return value as OpenClawConfig;
+function makeConfig(value: Record<string, unknown>): AforaConfig {
+  return value as AforaConfig;
 }
 
 const webSearchSignal = {
@@ -36,7 +36,7 @@ const webSearchSignal = {
   required: ["apiKey"],
 };
 
-function xaiConfig(config: Record<string, unknown>): OpenClawConfig {
+function xaiConfig(config: Record<string, unknown>): AforaConfig {
   return makeConfig({ plugins: { entries: { xai: { config } } } });
 }
 

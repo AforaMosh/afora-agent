@@ -1,8 +1,8 @@
 {
-  "name": "@openclaw/browser-plugin",
+  "name": "@afora/browser-plugin",
   "version": "2026.8.1",
   "private": true,
-  "description": "OpenClaw browser tool plugin",
+  "description": "Afora browser tool plugin",
   "type": "module",
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
@@ -13,10 +13,10 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@openclaw/plugin-sdk": "workspace:*",
+    "@afora/plugin-sdk": "workspace:*",
     "undici": "8.9.0"
   },
-  "openclaw": {
+  "afora": {
     "extensions": [
       "./index.ts"
     ],

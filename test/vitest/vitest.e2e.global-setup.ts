@@ -32,7 +32,7 @@ export async function runE2eGlobalSetup(
 ): Promise<void> {
   // Some focused suites bring their own fixtures, while exact-run artifact consumers already
   // have the complete built surface. In both cases rebuilding here would duplicate slow work.
-  if (env.OPENCLAW_E2E_SKIP_BUILD === "1" || env.OPENCLAW_E2E_USE_PREBUILT_DIST === "1") {
+  if (env.AFORA_E2E_SKIP_BUILD === "1" || env.AFORA_E2E_USE_PREBUILT_DIST === "1") {
     return;
   }
   const commands = [
@@ -40,8 +40,8 @@ export async function runE2eGlobalSetup(
       args: ["scripts/run-node.mjs", "--version"],
       env: {
         ...env,
-        OPENCLAW_BUILD_PRIVATE_QA: "1",
-        OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: "0",
+        AFORA_BUILD_PRIVATE_QA: "1",
+        AFORA_RUN_NODE_SKIP_DTS_BUILD: "0",
       },
     },
     {
